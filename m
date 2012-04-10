@@ -1,80 +1,186 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755173Ab2DJG5I (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Apr 2012 02:57:08 -0400
-Received: from na3sys009aog133.obsmtp.com ([74.125.149.82]:34454 "EHLO
-	psmtp.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1753713Ab2DJG5G (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Apr 2012 02:57:06 -0400
+	id S1755369Ab2DJG50 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Apr 2012 02:57:26 -0400
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:53884 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755267Ab2DJG5Y (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Apr 2012 02:57:24 -0400
+X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
+Message-ID: <4F83D965.4040506@jp.fujitsu.com>
+Date: Tue, 10 Apr 2012 15:55:33 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.0; rv:11.0) Gecko/20120327 Thunderbird/11.0.1
 MIME-Version: 1.0
-In-Reply-To: <1334011304.12400.81.camel@sbsiddha-desk.sc.intel.com>
-References: <1333951423-27621-1-git-send-email-santosh.shilimkar@ti.com> <1334011304.12400.81.camel@sbsiddha-desk.sc.intel.com>
-From: "Shilimkar, Santosh" <santosh.shilimkar@ti.com>
-Date: Tue, 10 Apr 2012 12:26:43 +0530
-Message-ID: <CAMQu2gwkGjWgLN3FVkzqeYCA+N-+==HPnjmH68AKgBsYrKtXaw@mail.gmail.com>
-Subject: Re: [PATCH] clockevents: Leave broadcast device shtudown only if the
- current device is always running.
-To: Suresh Siddha <suresh.b.siddha@intel.com>
-Cc: tglx@linutronix.de, linux-kernel@vger.kernel.org, johnstul@us.ibm.com
+To: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+CC: linux-mm@kvack.org, mgorman@suse.de, dhillf@gmail.com, aarcange@redhat.com,
+        mhocko@suse.cz, akpm@linux-foundation.org, hannes@cmpxchg.org,
+        linux-kernel@vger.kernel.org, cgroups@vger.kernel.org
+Subject: Re: [PATCH -V5 12/14] memcg: move HugeTLB resource count to parent
+ cgroup on memcg removal
+References: <1333738260-1329-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com> <1333738260-1329-13-git-send-email-aneesh.kumar@linux.vnet.ibm.com> <4F827EAD.9080300@jp.fujitsu.com>User-Agent: Notmuch/0.11.1+346~g13d19c3 (http://notmuchmail.org) Emacs/23.3.1 (x86_64-pc-linux-gnu) <87ty0tcjhx.fsf@skywalker.in.ibm.com>
+In-Reply-To: <87ty0tcjhx.fsf@skywalker.in.ibm.com>
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 10, 2012 at 4:11 AM, Suresh Siddha
-<suresh.b.siddha@intel.com> wrote:
-> On Mon, 2012-04-09 at 11:33 +0530, Santosh Shilimkar wrote:
->> Commit 77b0d60{clockevents: Leave the broadcast device in shutdown mode
->> when not needed} was intended to leave the broadcast device in shutdown mode
->> when the per-cpu clockevent devices are always running.
+(2012/04/09 19:00), Aneesh Kumar K.V wrote:
+
+> KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> writes:
+> 
+>> (2012/04/07 3:50), Aneesh Kumar K.V wrote:
 >>
->> This breaks the systems where per cpu clock events stop in low power states.
+>>> From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+>>>
+>>> This add support for memcg removal with HugeTLB resource usage.
+>>>
+>>> Signed-off-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
 >>
->> Hence revert 77b0d60 and implement the same requirement with use
->> of C3STOP feature flag.
->
-> Problem you encountered is not related to leaving the broadcast device
-> in shutdown mode. Problem is that we didn't track the mode change to
-> oneshot and later during idle entry/exit, when we request the broadcast
-> device services using CLOCK_EVT_NOTIFY_BROADCAST_ENTER etc,
-> tick_broadcast_oneshot_control() returns with out doing much as it
-> thinks broadcast device is in periodic mode.
->
-You are right. In my last traces I didn't track the broadcast device state
-fully. Did some more tracing and indeed the issue was the broadcast
-device mode.
+>>
+>> Hmm 
+>>
+>>
+> 
+> ....
+> ...
+> 
+>>> +	csize = PAGE_SIZE << compound_order(page);
+>>> +	/*
+>>> +	 * uncharge from child and charge the parent. If we have
+>>> +	 * use_hierarchy set, we can never fail here. In-order to make
+>>> +	 * sure we don't get -ENOMEM on parent charge, we first uncharge
+>>> +	 * the child and then charge the parent.
+>>> +	 */
+>>> +	if (parent->use_hierarchy) {
+>>
+>>
+>>> +		res_counter_uncharge(&memcg->hugepage[idx], csize);
+>>> +		if (!mem_cgroup_is_root(parent))
+>>> +			ret = res_counter_charge(&parent->hugepage[idx],
+>>> +						 csize, &fail_res);
+>>
+>>
+>> Ah, why is !mem_cgroup_is_root() checked ? no res_counter update for
+>> root cgroup ?
+> 
+> My mistake. Earlier version of the patch series didn't charge/uncharge the root
+> cgroup during different operations. Later as per your review I updated
+> the charge/uncharge path to charge root cgroup. I missed to update this code.
+> 
+>>
+>> I think it's better to have res_counter_move_parent()...to do ops in atomic.
+>> (I'll post a patch for that for my purpose). OR, just ignore res->usage if
+>> parent->use_hierarchy == 1.
+>>
+>> uncharge->charge will have a race.
+> 
+> 
+> 
+> How about the below
+> 
+> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+> index 7b6e79a..5b4bc98 100644
+> --- a/mm/memcontrol.c
+> +++ b/mm/memcontrol.c
+> @@ -3351,24 +3351,24 @@ int mem_cgroup_move_hugetlb_parent(int idx, struct cgroup *cgroup,
+>  
+>  	csize = PAGE_SIZE << compound_order(page);
+>  	/*
+> -	 * uncharge from child and charge the parent. If we have
+> -	 * use_hierarchy set, we can never fail here. In-order to make
+> -	 * sure we don't get -ENOMEM on parent charge, we first uncharge
+> -	 * the child and then charge the parent.
+> +	 * If we have use_hierarchy set we can never fail here. So instead of
+> +	 * using res_counter_uncharge use the open-coded variant which just
+> +	 * uncharge the child res_counter. The parent will retain the charge.
+>  	 */
+>  	if (parent->use_hierarchy) {
+> -		res_counter_uncharge(&memcg->hugepage[idx], csize);
+> -		if (!mem_cgroup_is_root(parent))
+> -			ret = res_counter_charge(&parent->hugepage[idx],
+> -						 csize, &fail_res);
+> +		unsigned long flags;
+> +		struct res_counter *counter;
+> +
+> +		counter = &memcg->hugepage[idx];
+> +		spin_lock_irqsave(&counter->lock, flags);
+> +		res_counter_uncharge_locked(counter, csize);
 
-> Can you please check if the appended patch fixes the issue? I could
-> reproduce the issue on my NHM platform which doesn't have always running
-> apic timer and with the appended fix, all is well with cpu's going into
-> tickless idle etc. Thanks.
-> ---
->
-Yes it does work on OMAP too.
 
-> From: Suresh Siddha <suresh.b.siddha@intel.com>
-> Subject: clockevents: track broadcast device mode change in tick_broadcast_switch_to_oneshot()
->
-> In the commit 77b0d60c5adf39c74039e2142a1d3cd1e4d53799,
-> "clockevents: Leave the broadcast device in shutdown mode when not needed",
-> we were bailing out too quickly in tick_broadcast_switch_to_oneshot(),
-> with out tracking the broadcast device mode change to 'TICKDEV_MODE_ONESHOT'.
->
-> This breaks the platforms which need broadcast device oneshot services during
-> deep idle states. tick_broadcast_oneshot_control() thinks that it is
-> in periodic mode and fails to take proper decisions based on the
-> CLOCK_EVT_NOTIFY_BROADCAST_[ENTER, EXIT] notifications during deep
-> idle entry/exit.
->
-> Fix this by tracking the broadcast device mode as 'TICKDEV_MODE_ONESHOT',
-> before leaving the broadcast HW device in shutdown mode if there are no active
-> requests for the moment.
->
-> Reported-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
-> Signed-off-by: Suresh Siddha <suresh.b.siddha@intel.com>
-> ---
-Thanks for the patch. Feel free to add,
-Tested-by: Santosh Shilimkar <santosh.shilimkar@ti.com>	
+Hm, uncharge_locked is not propagated to parent, I see.
+Ok, it seems to work...but please add enough comment here. Or define
+res_counter_move_parent().
 
-Regards
-Santosh
+> +		spin_unlock_irqrestore(&counter->lock, flags);
+>  	} else {
+> -		if (!mem_cgroup_is_root(parent)) {
+> -			ret = res_counter_charge(&parent->hugepage[idx],
+> -						 csize, &fail_res);
+> -			if (ret) {
+> -				ret = -EBUSY;
+> -				goto err_out;
+> -			}
+> +		ret = res_counter_charge(&parent->hugepage[idx],
+> +					 csize, &fail_res);
+> +		if (ret) {
+> +			ret = -EBUSY;
+> +			goto err_out;
+>  		}
+>  		res_counter_uncharge(&memcg->hugepage[idx], csize);
+>  	}
+> 
+> 
+>>
+>>> +	} else {
+>>> +		if (!mem_cgroup_is_root(parent)) {
+>>> +			ret = res_counter_charge(&parent->hugepage[idx],
+>>> +						 csize, &fail_res);
+>>> +			if (ret) {
+>>> +				ret = -EBUSY;
+>>> +				goto err_out;
+>>> +			}
+>>> +		}
+>>> +		res_counter_uncharge(&memcg->hugepage[idx], csize);
+>>> +	}
+>>
+>>
+>> Just a notice. Recently, Tejun changed failure of pre_destory() to show WARNING.
+>> Then, I'd like to move the usage to the root cgroup if use_hierarchy=0.
+>> Will it work for you ?
+> 
+> That should work.
+> 
+
+ok, I'll go ahead in that way.
+
+> 
+>>
+>>> +	/*
+>>> +	 * caller should have done css_get
+>>> +	 */
+>>
+>>
+>> Could you explain meaning of this comment ?
+>>
+> 
+> inherited from mem_cgroup_move_account. I guess it means css cannot go
+> away at this point. We have done a css_get on the child. For a generic
+> move_account function may be the comment is needed. I guess in our case
+> the comment is redundant ?
+> 
+
+
+Ah, IIUC, this code is hugetlb version of mem_cgroup_move_parent().
+At move_parent(), we don't need to take care of css counting because we're
+moving from an exisiting cgroup to an cgroup which cannot be destroyed.
+(move_account() is function to move account between arbitrary cgroup.)
+
+So, yes, please remove comment.
+
+Thanks,
+-Kame
+
+
