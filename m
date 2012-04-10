@@ -1,60 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759171Ab2DJPr3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Apr 2012 11:47:29 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:39864 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755905Ab2DJPr2 convert rfc822-to-8bit (ORCPT
+	id S1759247Ab2DJPt4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Apr 2012 11:49:56 -0400
+Received: from mail-pz0-f52.google.com ([209.85.210.52]:41429 "EHLO
+	mail-pz0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756673Ab2DJPty (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Apr 2012 11:47:28 -0400
+	Tue, 10 Apr 2012 11:49:54 -0400
+Date: Tue, 10 Apr 2012 08:49:43 -0700
+From: Tejun Heo <tj@kernel.org>
+To: "Michael S. Tsirkin" <mst@redhat.com>
+Cc: Avi Kivity <avi@redhat.com>, Ren Mingxin <renmx@cn.fujitsu.com>,
+        rusty@rustcorp.com.au, axboe@kernel.dk,
+        James.Bottomley@HansenPartnership.com, asamymuthupa@micron.com,
+        linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org,
+        kvm@vger.kernel.org, virtualization@lists.linux-foundation.org
+Subject: Re: [PATCH] virtio_blk: Add help function to format mass of disks
+Message-ID: <20120410154943.GB11614@dhcp-172-17-108-109.mtv.corp.google.com>
+References: <1334042885-8330-1-git-send-email-renmx@cn.fujitsu.com>
+ <4F84329A.60703@redhat.com>
+ <20120410133406.GA18899@redhat.com>
 MIME-Version: 1.0
-In-Reply-To: <4F840C3C.2060302@jp.fujitsu.com>
-References: <1333905129-8776-1-git-send-email-jiang.liu@huawei.com>
-	<1333905129-8776-3-git-send-email-jiang.liu@huawei.com>
-	<4F82CB64.8030808@jp.fujitsu.com>
-	<4F830804.6010007@gmail.com>
-	<4F840C3C.2060302@jp.fujitsu.com>
-Date: Tue, 10 Apr 2012 08:47:27 -0700
-X-Google-Sender-Auth: JMyfEI1-LMyqUQJ8wFmNRr0iqiY
-Message-ID: <CAE9FiQWZwkyp8F7HDTpGVZ=Q=09_68NR3tT_vCzwFH3ZhXDzCA@mail.gmail.com>
-Subject: Re: [PATCH 2/2] PCI, ACPI, x86: update MMCFG information when
- hot-plugging PCI host bridges
-From: Yinghai Lu <yinghai@kernel.org>
-To: Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>
-Cc: Jiang Liu <liuj97@gmail.com>, Taku Izumi <izumi.taku@jp.fujitsu.com>,
-        Bjorn Helgaas <bhelgaas@google.com>, Jiang Liu <jiang.liu@huawei.com>,
-        Keping Chen <chenkeping@huawei.com>, linux-kernel@vger.kernel.org,
-        linux-pci@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120410133406.GA18899@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 10, 2012 at 3:32 AM, Kenji Kaneshige
-<kaneshige.kenji@jp.fujitsu.com> wrote:
-> Additionally, I think there is a remaining issue even if we change
-> this check like below.
->
->
->        if (!!(pci_probe & PCI_PROBE_MASK & ~PCI_PROBE_MMCONF))
->                return 0;
->
-> I think this check has an assumption that system has at least one
-> MCFG table entry and it has been initialized before
-> acpi_pci_root_add() is called. I think this doesn't work on the
-> system that doesn't have MCFG and all the pci root bridge have
-> _CBA (that is, all host bridges are hot-pluggable and BIOS is
-> implemented in the way PCI FW spec defines). As a result, MMCONFIG
-> would never be enabled on such systems. Could you double check this?
+Hello, guys.
 
-You are right.
+On Tue, Apr 10, 2012 at 04:34:06PM +0300, Michael S. Tsirkin wrote:
+> > Why not use 'base' below?  neither unit nor base change.
+> 
+> Yes it's a bit strange, it was the same in Tejun's patch.
+> Tejun, any idea?
 
-We can just remove that checking.
+It was years ago, so I don't recall much.  I think I wanted to use a
+variable name which signifies its role - I worked out the rather
+convoluted base number logic on paper first and I probably wanted to
+keep the distinctions.  I don't think it really matters at this point
+tho.  Just make sure those functions are marked deprecated so that no
+one else copies them.
 
-But wonder if current x86_64 system support that.
-All peer root buses can be physically removed ?
+Thanks.
 
-Thanks
-
-Yinghai
+-- 
+tejun
