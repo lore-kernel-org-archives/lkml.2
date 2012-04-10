@@ -1,93 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754517Ab2DJJaK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Apr 2012 05:30:10 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:38570 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754185Ab2DJJaI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Apr 2012 05:30:08 -0400
+	id S1755065Ab2DJJb7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Apr 2012 05:31:59 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:63908 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753115Ab2DJJb5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Apr 2012 05:31:57 -0400
+Date: Tue, 10 Apr 2012 12:31:40 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        "David S. Miller" <davem@davemloft.net>,
+        Jamal Hadi Salim <hadi@cyberus.ca>,
+        Stephen Hemminger <shemminger@vyatta.com>,
+        Jason Wang <jasowang@redhat.com>, Neil Horman <nhorman@tuxdriver.com>,
+        Jiri Pirko <jpirko@redhat.com>,
+        Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
+        =?utf-8?B?TWljaGHFgiBNaXJvc8WCYXc=?= <mirq-linux@rere.qmqm.pl>,
+        Ben Hutchings <bhutchings@solarflare.com>,
+        Herbert Xu <herbert@gondor.hengli.com.au>
+Subject: Re: [PATCH] net: orphan queued skbs if device tx can stall
+Message-ID: <20120410093140.GA27651@redhat.com>
+References: <20120408171323.GA16012@redhat.com>
+ <1334044558.3126.5.camel@edumazet-glaptop>
+ <20120410084151.GA27193@redhat.com>
+ <1334048100.3126.21.camel@edumazet-glaptop>
 MIME-Version: 1.0
-Date: Tue, 10 Apr 2012 13:30:07 +0400
-Message-ID: <CACf55T4rmUn3XvEv5vFpAk2ZVX_5NMp5MucM9mOa4G1aL+5bPw@mail.gmail.com>
-Subject: kpagecount/kpageflags possible implementation problem
-From: Dmitry Smirnov <divis1969@gmail.com>
-To: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1334048100.3126.21.camel@edumazet-glaptop>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Tue, Apr 10, 2012 at 10:55:00AM +0200, Eric Dumazet wrote:
+> On Tue, 2012-04-10 at 11:41 +0300, Michael S. Tsirkin wrote:
+> > On Tue, Apr 10, 2012 at 09:55:58AM +0200, Eric Dumazet wrote:
+> 
+> > > In your case I would just not use qdisc at all, like other virtual
+> > > devices.
+> > 
+> > I think that if we do this, this also disables gso
+> > for the device, doesn't it?
+> 
+> Not at all, thats unrelated.
+> 
+> > If true that would be a problem as this would
+> > hurt performance of virtualized setups a lot.
+> 
+> In fact, removing qdisc layer will help a lot, removing a contention
+> point.
+>
+> Anyway, with a 500 packet limit in TUN queue itself, qdisc layer should
+> be always empty. Whats the point storing more than 500 packets for a
+> device ? Thats a latency killer.
 
-I'm trying to work with /proc/kpagecount and /proc/kpageflags to
-figure out what is causing fragmentation of the  kernel memory.
+AKA bufferbloat :)
+We could try and reduce the TUN queue so that qdisc can drop packets in
+an intelligent manner (e.g. choke) but this would conflict with what you
+propose, right?
 
-I see some problems with these files. For example, the length of the
-files is 2617344 (i.e. 327168 pages).
-But when I try to map the pages of the process (/proc/PID/pagemap), I
-see that process can have a pfn greater than 327168.
+> > 
+> > > diff --git a/drivers/net/tun.c b/drivers/net/tun.c
+> > > index bb8c72c..fd8c7f0 100644
+> > > --- a/drivers/net/tun.c
+> > > +++ b/drivers/net/tun.c
+> > > @@ -396,7 +396,7 @@ static netdev_tx_t tun_net_xmit(struct sk_buff *skb, struct net_device *dev)
+> > >  	    sk_filter(tun->socket.sk, skb))
+> > >  		goto drop;
+> > >  
+> > > -	if (skb_queue_len(&tun->socket.sk->sk_receive_queue) >= dev->tx_queue_len) {
+> > > +	if (skb_queue_len(&tun->socket.sk->sk_receive_queue) >= TUN_READQ_SIZE) {
+> > >  		if (!(tun->flags & TUN_ONE_QUEUE)) {
+> > >  			/* Normal queueing mode. */
+> > >  			/* Packet scheduler handles dropping of further packets. */
+> > 
+> > tx_queue_len is controllable by SIOCSIFTXQLEN
+> > so we'll need to override SIOCSIFTXQLEN somehow
+> > to avoid breaking userspace that actually uses SIOCSIFTXQLEN, right?
+> 
+> Right now, you control with this tx_queue_len both the qdisc limit (if
+> pfifo_fast default) and the receive_queue in TUN.
+> 
+> That doesnt seem right to me, and more a hack/side effect.
+> Maybe you want to introduce a new setting, only controling receive queue
+> limit, and use tx_queue_len for its original meaning.
+> 
+> Then, setting tx_queue_len to 0 permits to remove qdisc layer, as any
+> other netdevice.
+> 
+> 
 
-On my mind this is due to the memory model used in my target. It is
-"sparse", and I can see that there is a Normal zone only which starts
-at pfn 512 and spannes 327168 pages (see /proc/zoneinfo at the end).
-But fs/proc/page.c honors only max_pfn, which is exaclty 327168 and
-which limits the length of the kpagemap and kpagekount files.
+True. Still this is the only interface we have for controlling
+the internal queue length so it seems safe to assume someone
+is using it for this purpose.
 
-Also, I suppose that pages 0-512 should be treated as non-existent and
-should be reported with KPF_NOPAGE, but in fact, they are reported
-with some valid flags (KPF_MMAP). I also suspect that some other pages
-are not reported correctly too: the target has 114436 present pages
-(in 3 blocks: 60MB 141MB 256MB) but I can count 130560 "valid" pages
-(i.e. which are not marked with KPF_NOPAGE).
+And if that happens we get the deadlock back since
+tx_queue_len will get set to a non-0 value. Right?
 
-I would like to fix this, but have small experience with kernel memory
-implementation. So, any suggestions are welcome.
-
-Target is running 2.6.32 kernel (thought, I see that latest master'
-page.c does not change a lot).
-
-Node 0, zone   Normal
-  pages free     2140
-        min      676
-        low      845
-        high     1014
-        scanned  0
-        spanned  327168
-        present  114436
-    nr_free_pages 2140
-    nr_inactive_anon 15028
-    nr_active_anon 32194
-    nr_inactive_file 8551
-    nr_active_file 14977
-    nr_unevictable 4655
-    nr_mlock     4493
-    nr_anon_pages 47074
-    nr_mapped    22067
-    nr_file_pages 28338
-    nr_dirty     0
-    nr_writeback 0
-    nr_slab_reclaimable 1306
-    nr_slab_unreclaimable 2405
-    nr_page_table_pages 2003
-    nr_kernel_stack 708
-    nr_unstable  0
-    nr_bounce    0
-    nr_vmscan_write 0
-    nr_writeback_temp 0
-    nr_isolated_anon 0
-    nr_isolated_file 0
-    nr_shmem     4647
-        protection: (0, 0)
-  pagesets
-    cpu: 0
-              count: 131
-              high:  186
-              batch: 31
-  all_unreclaimable: 0
-  prev_priority:     12
-  start_pfn:         512
-  inactive_ratio:    1
-
-WBR,
-Dmitry
+-- 
+MST
