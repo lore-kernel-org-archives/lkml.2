@@ -1,175 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758273Ab2DJAXT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Apr 2012 20:23:19 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:57950 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756206Ab2DJAXR convert rfc822-to-8bit (ORCPT
+	id S1758262Ab2DJA2w (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Apr 2012 20:28:52 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:55302 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753320Ab2DJA2v (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Apr 2012 20:23:17 -0400
-MIME-Version: 1.0
-In-Reply-To: <alpine.DEB.2.00.1204091636160.21813@chino.kir.corp.google.com>
-References: <CA+55aFwTFXtMLhXo7g9F7uyHc3W8SCw7z1gTm9jbWXM3Nqc_ZA@mail.gmail.com>
-	<20120408195044.13ea6c8e.akpm@linux-foundation.org>
-	<CA+55aFw7GsiZbNW84WVMUMT6C0Sw82jxaYxeaaB8qq=41Ep5Wg@mail.gmail.com>
-	<alpine.DEB.2.00.1204090235350.14879@chino.kir.corp.google.com>
-	<CA+55aFxUQJC+_aA0qnj0b-LoGfCjfFoG3HXgQ+7LND7y8dFDhw@mail.gmail.com>
-	<alpine.DEB.2.00.1204091355280.10873@chino.kir.corp.google.com>
-	<CAMbhsRRUNVn9_eL_obZxcZv7LqDW_8SeRApdKzDePbaW_Y4uvg@mail.gmail.com>
-	<alpine.DEB.2.00.1204091636160.21813@chino.kir.corp.google.com>
-Date: Mon, 9 Apr 2012 17:23:16 -0700
-Message-ID: <CAMbhsRSV9Oy5n-GBjyhCtfCd=3_S9iif+qzEk0Oyy0EBC9AF6w@mail.gmail.com>
-Subject: Re: v3.4-rc2 out-of-memory problems (was Re: 3.4-rc1 sticks-and-crashs)
-From: Colin Cross <ccross@google.com>
-To: David Rientjes <rientjes@google.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>, werner <w.landgraf@ru.ru>,
-        Rik van Riel <riel@redhat.com>, Hugh Dickins <hughd@google.com>,
-        linux-kernel@vger.kernel.org, Oleg Nesterov <oleg@redhat.com>,
-        Rabin Vincent <rabin.vincent@stericsson.com>,
-        Christian Bejram <christian.bejram@stericsson.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Anton Vorontsov <anton.vorontsov@linaro.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        stable@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+	Mon, 9 Apr 2012 20:28:51 -0400
+Message-ID: <1334017721.2862.1.camel@phoenix>
+Subject: [PATCH v3] regulator: twl-regulator: Use DIV_ROUND_UP at
+ appropriate places
+From: Axel Lin <axel.lin@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Peter Ujfalusi <peter.ujfalusi@ti.com>, Rajendra Nayak <rnayak@ti.com>,
+        Tero Kristo <t-kristo@ti.com>, Liam Girdwood <lrg@ti.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Date: Tue, 10 Apr 2012 08:28:41 +0800
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2- 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 9, 2012 at 4:37 PM, David Rientjes <rientjes@google.com> wrote:
-> On Mon, 9 Apr 2012, Colin Cross wrote:
->
->> This was a known issue in 2010, in the android tree the use of
->> task_handoff_register was dropped one day after it was added and
->> replaced with a new task_free_register hook.
->
-> Why can't you just do this?  Are you concerned about the possibility of
-> depleting all memory reserves?
+Use DIV_ROUND_UP ensures we set the voltage falls within the specified range.
+Current code may set the voltage lower than the specified range.
 
-The point of the lowmem_deathpending patch was to avoid a stutter
-where the cpu would spend its time looping through the tasks due to
-repeated calls to lowmem_shrink instead of processing the kill signal
-to the selected thread.  With this patch, it will still loop through
-tasks until it finds the one that was previously killed and then
-abort.  It's possible that the improvements Anton made to the task
-loop reduce the performance impact enough that this whole mess could
-just be dropped (by reverting 1eda516, e5d7965, and 4755b72).
+For example:
 
-This may have also been impacted by another bug that is on my list of
-things to look at: when asked the size of it's "cache", lowmemkiller
-returns something on the order of all memory used by userspace, but
-under some conditions will refuse to kill any of it due to the current
-lowmem_minfree settings.  Due to the large size of the "cache", the
-shrinker can call lowmem_shrink hundreds of times for a single
-allocation, each time asking to reduce the size of the cache by 128
-pages.  The original lowmem_deathpending patch may have been a
-misguided "fix" for this bug.
+vsel = (min_uV - 600000) / 125;
+if (vsel % 100)
+        vsel += 100;
+vsel /= 100;
+vsel++
 
-> ---
->  drivers/staging/android/lowmemorykiller.c |   47 ++++-------------------------
->  1 file changed, 6 insertions(+), 41 deletions(-)
->
-> diff --git a/drivers/staging/android/lowmemorykiller.c b/drivers/staging/android/lowmemorykiller.c
-> --- a/drivers/staging/android/lowmemorykiller.c
-> +++ b/drivers/staging/android/lowmemorykiller.c
-> @@ -55,7 +55,6 @@ static int lowmem_minfree[6] = {
->  };
->  static int lowmem_minfree_size = 4;
->
-> -static struct task_struct *lowmem_deathpending;
->  static unsigned long lowmem_deathpending_timeout;
->
->  #define lowmem_print(level, x...)                      \
-> @@ -64,24 +63,6 @@ static unsigned long lowmem_deathpending_timeout;
->                        printk(x);                      \
->        } while (0)
->
-> -static int
-> -task_notify_func(struct notifier_block *self, unsigned long val, void *data);
-> -
-> -static struct notifier_block task_nb = {
-> -       .notifier_call  = task_notify_func,
-> -};
-> -
-> -static int
-> -task_notify_func(struct notifier_block *self, unsigned long val, void *data)
-> -{
-> -       struct task_struct *task = data;
-> -
-> -       if (task == lowmem_deathpending)
-> -               lowmem_deathpending = NULL;
-> -
-> -       return NOTIFY_OK;
-> -}
-> -
->  static int lowmem_shrink(struct shrinker *s, struct shrink_control *sc)
->  {
->        struct task_struct *tsk;
-> @@ -97,19 +78,6 @@ static int lowmem_shrink(struct shrinker *s, struct shrink_control *sc)
->        int other_file = global_page_state(NR_FILE_PAGES) -
->                                                global_page_state(NR_SHMEM);
->
-> -       /*
-> -        * If we already have a death outstanding, then
-> -        * bail out right away; indicating to vmscan
-> -        * that we have nothing further to offer on
-> -        * this pass.
-> -        *
-> -        * Note: Currently you need CONFIG_PROFILING
-> -        * for this to work correctly.
-> -        */
-> -       if (lowmem_deathpending &&
-> -           time_before_eq(jiffies, lowmem_deathpending_timeout))
-> -               return 0;
-> -
->        if (lowmem_adj_size < array_size)
->                array_size = lowmem_adj_size;
->        if (lowmem_minfree_size < array_size)
-> @@ -148,6 +116,11 @@ static int lowmem_shrink(struct shrinker *s, struct shrink_control *sc)
->                if (!p)
->                        continue;
->
-> +               if (test_tsk_thread_flag(p, TIF_MEMDIE) &&
-> +                   time_before_eq(jiffies, lowmem_deathpending_timeout)) {
-> +                       task_unlock(p);
-> +                       return 0;
-> +               }
->                oom_score_adj = p->signal->oom_score_adj;
->                if (oom_score_adj < min_score_adj) {
->                        task_unlock(p);
-> @@ -174,15 +147,9 @@ static int lowmem_shrink(struct shrinker *s, struct shrink_control *sc)
->                lowmem_print(1, "send sigkill to %d (%s), adj %d, size %d\n",
->                             selected->pid, selected->comm,
->                             selected_oom_score_adj, selected_tasksize);
-> -               /*
-> -                * If CONFIG_PROFILING is off, then we don't want to stall
-> -                * the killer by setting lowmem_deathpending.
-> -                */
-> -#ifdef CONFIG_PROFILING
-> -               lowmem_deathpending = selected;
->                lowmem_deathpending_timeout = jiffies + HZ;
-> -#endif
->                send_sig(SIGKILL, selected, 0);
-> +               set_tsk_thread_flag(selected, TIF_MEMDIE);
->                rem -= selected_tasksize;
->        }
->        lowmem_print(4, "lowmem_shrink %lu, %x, return %d\n",
-> @@ -198,7 +165,6 @@ static struct shrinker lowmem_shrinker = {
->
->  static int __init lowmem_init(void)
->  {
-> -       task_handoff_register(&task_nb);
->        register_shrinker(&lowmem_shrinker);
->        return 0;
->  }
-> @@ -206,7 +172,6 @@ static int __init lowmem_init(void)
->  static void __exit lowmem_exit(void)
->  {
->        unregister_shrinker(&lowmem_shrinker);
-> -       task_handoff_unregister(&task_nb);
->  }
->
->  module_param_named(cost, lowmem_shrinker.seeks, int, S_IRUGO | S_IWUSR);
+In the case min_uV is 712599 uV, the vsel will be 10.  Then current code set
+the voltage to 712500 uV which is lower than the specified range.
+
+Signed-off-by: Axel Lin <axel.lin@gmail.com>
+---
+v3: Fix off-by-one for vsel, the vsel++ after DIV_ROUND_UP is required because
+    current code does subtract index by 1 in the list_voltage callback.
+v2: Remove braces {} for single statement blocks
+
+ drivers/regulator/twl-regulator.c |   20 ++++----------------
+ 1 files changed, 4 insertions(+), 16 deletions(-)
+
+diff --git a/drivers/regulator/twl-regulator.c b/drivers/regulator/twl-regulator.c
+index 964946f..5d19b42 100644
+--- a/drivers/regulator/twl-regulator.c
++++ b/drivers/regulator/twl-regulator.c
+@@ -806,10 +806,7 @@ twl6030smps_set_voltage(struct regulator_dev *rdev, int min_uV, int max_uV,
+ 			vsel = 0;
+ 		else if ((min_uV >= 600000) && (min_uV <= 1300000)) {
+ 			int calc_uV;
+-			vsel = (min_uV - 600000) / 125;
+-			if (vsel % 100)
+-				vsel += 100;
+-			vsel /= 100;
++			vsel = DIV_ROUND_UP(min_uV - 600000, 12500);
+ 			vsel++;
+ 			calc_uV = twl6030smps_list_voltage(rdev, vsel);
+ 			if (calc_uV > max_uV)
+@@ -836,10 +833,7 @@ twl6030smps_set_voltage(struct regulator_dev *rdev, int min_uV, int max_uV,
+ 			vsel = 0;
+ 		else if ((min_uV >= 700000) && (min_uV <= 1420000)) {
+ 			int calc_uV;
+-			vsel = (min_uV - 700000) / 125;
+-			if (vsel % 100)
+-				vsel += 100;
+-			vsel /= 100;
++			vsel = DIV_ROUND_UP(min_uV - 700000, 12500);
+ 			vsel++;
+ 			calc_uV = twl6030smps_list_voltage(rdev, vsel);
+ 			if (calc_uV > max_uV)
+@@ -865,10 +859,7 @@ twl6030smps_set_voltage(struct regulator_dev *rdev, int min_uV, int max_uV,
+ 		if (min_uV == 0)
+ 			vsel = 0;
+ 		else if ((min_uV >= 1852000) && (max_uV <= 4013600)) {
+-			vsel = (min_uV - 1852000) / 386;
+-			if (vsel % 100)
+-				vsel += 100;
+-			vsel /= 100;
++			vsel = DIV_ROUND_UP(min_uV - 1852000, 38600);
+ 			vsel++;
+ 		}
+ 		break;
+@@ -876,10 +867,7 @@ twl6030smps_set_voltage(struct regulator_dev *rdev, int min_uV, int max_uV,
+ 		if (min_uV == 0)
+ 			vsel = 0;
+ 		else if ((min_uV >= 2161000) && (max_uV <= 4321000)) {
+-			vsel = (min_uV - 2161000) / 386;
+-			if (vsel % 100)
+-				vsel += 100;
+-			vsel /= 100;
++			vsel = DIV_ROUND_UP(min_uV - 2161000, 38600);
+ 			vsel++;
+ 		}
+ 		break;
+-- 
+1.7.5.4
+
+
+
