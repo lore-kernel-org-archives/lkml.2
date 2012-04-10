@@ -1,57 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758269Ab2DJSXT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Apr 2012 14:23:19 -0400
-Received: from mailout-de.gmx.net ([213.165.64.23]:47552 "HELO
-	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1755448Ab2DJSXS convert rfc822-to-8bit (ORCPT
+	id S1756552Ab2DJSYn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Apr 2012 14:24:43 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:60531 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753146Ab2DJSYm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Apr 2012 14:23:18 -0400
-X-Authenticated: #5108953
-X-Provags-ID: V01U2FsdGVkX1+CqZ0l+tKCgehGpWmwhwLci55O80dUh+NxmucYiO
-	XnFjN9oq8MwwUV
-From: Toralf =?utf-8?q?F=C3=B6rster?= <toralf.foerster@gmx.de>
-To: Jiri Slaby <jslaby@suse.cz>
-Subject: Re: /proc/interrupts has non-printable chars in kernel 3.3.1
-Date: Tue, 10 Apr 2012 20:23:07 +0200
-User-Agent: KMail/1.13.7 (Linux/3.3.1; KDE/4.8.2; i686; ; )
-Cc: linux-kernel@vger.kernel.org
-References: <201204101934.34046.toralf.foerster@gmx.de> <4F8479CD.5030907@suse.cz>
-In-Reply-To: <4F8479CD.5030907@suse.cz>
+	Tue, 10 Apr 2012 14:24:42 -0400
+Date: Tue, 10 Apr 2012 11:24:38 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Ian Abbott <abbotti@mev.co.uk>
+Cc: "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
+        Gerard Snitselaar <dev@snitselaar.org>,
+        Ian Abbott <ian.abbott@mev.co.uk>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "fmhess@users.sourceforge.net" <fmhess@users.sourceforge.net>
+Subject: Re: [PATCH v2] staging: comedi: resolve section mismatch in s626
+Message-ID: <20120410182438.GB2052@kroah.com>
+References: <1332123921-14347-1-git-send-email-dev@snitselaar.org>
+ <20120319030925.GB22956@perelman.Home>
+ <20120319163103.GC3694@kroah.com>
+ <20120319164325.GA31833@perelman.Home>
+ <20120319224649.GA7679@perelman.Home>
+ <20120319232656.GB6386@kroah.com>
+ <4F798416.8040709@mev.co.uk>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 8BIT
-Message-Id: <201204102023.07775.toralf.foerster@gmx.de>
-X-Y-GMX-Trusted: 0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4F798416.8040709@mev.co.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, Apr 02, 2012 at 11:48:54AM +0100, Ian Abbott wrote:
+> On 2012-03-19 23:26, Greg KH wrote:
+> >On Mon, Mar 19, 2012 at 03:46:49PM -0700, Gerard Snitselaar wrote:
+> >>On Mon, Mar 19, 2012 at 09:43:25AM -0700, Gerard Snitselaar wrote:
+> >>>On Mon, Mar 19, 2012 at 09:31:03AM -0700, Greg KH wrote:
+> >>>>
+> >>>>Ick, why is this loop even needed?  We are only here if the pci device
+> >>>>is present in the system so this shouldn't be needed at all, right?
+> >>>>
+> >>>>Or is this a bit more complex than I am making it out to be?
+> >>>>
+> >>>>greg k-h
+> >>>
+> >>>Most likely not. I will take a look at some of the other drivers in
+> >>>comedi and see how the attach code looks there. I believe the code
+> >>>section in hpdi_attach() was written by the same person. Unfortunately
+> >>>I don't have a device to actually play around and see what changes are
+> >>>doing.
+> >>>
+> >>
+> >>I looked at this a bit more. It looks like they lose visibility to the
+> >>pci_dev structure.
+> >>
+> >>*_probe()
+> >>    comedi_pci_auto_config()     pci_dev
+> >>       comedi_auto_config()      pci_dev->dev
+> >>          comedi_device_attach() ??
+> >>             driv->attach()      ??<= iterate through pci devices.
+> >>
+> >>Most of the examples I have looked at so far use for_each_pci_dev() to
+> >>find the device, and s626 shortcuts it a bit by directly making calls
+> >>to pci_get_subsys() with specific ids. They all verify they have the
+> >>right device by checking the bus and slot that are grabbed from the
+> >>pci_dev in comedi_pci_auto_config() and passed down.
+> >
+> >Ugh, surely there's a way to keep the pci dev through the
+> >comedi_device_attach() call, right?
+> 
+> comedi_device_attach() is also called for the COMEDI_DEVCONFIG ioctl
+> for "manually" configuring a comedi device, and that has no idea
+> about struct pci_dev, etc.
+> 
+> I recently posted a series of patches that allows lower-level comedi
+> drivers to supply separate hooks for auto-configuring PCI devices or
+> USB devices without abusing the old "manual configuration" code
+> paths, see <http://driverdev.linuxdriverproject.org/pipermail/devel/2012-March/025331.html>.
+> 
+> The old loop that searches the PCI bus is still needed for the
+> "manual configuration" code path.
 
-Jiri Slaby wrote at 20:19:57
-> On 04/10/2012 07:34 PM, Toralf Förster wrote:
-> > The interrrupt 47 shows (with powertop) a curious "Description" :
-> > 
-> > [@^EM-W] <interrupt>
-> > 
-> > under a stable Gentoo Linux at a Thinkpad T400  - the BIOS is the latest
-> > available. FWIW I attached the output of the command  $>cat
-> > /proc/interrupts
-> 
-> ...
-> 
-> >  47:     289270     468524   PCI-MSI-edge      @��
-> 
-> It would be great if you could dig out of dmesg, who is bound to the
-> interrupt.
-> 
-> regards,
-n22 /etc # dmesg | grep 'irq 47'
-snd_hda_intel 0000:00:1b.0: irq 47 for MSI/MSI-X
+So, now that I've applied your patches, this patch isn't needed anymore,
+right?  Or should it be reworked to use the new interfaces?
 
+thanks,
 
--- 
-MfG/Sincerely
-Toralf Förster
-pgp finger print: 7B1A 07F4 EC82 0F90 D4C2 8936 872A E508 7DB6 9DA3
+greg k-h
