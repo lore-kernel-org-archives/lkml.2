@@ -1,53 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759482Ab2DJVIa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Apr 2012 17:08:30 -0400
-Received: from mail-qa0-f42.google.com ([209.85.216.42]:46920 "EHLO
-	mail-qa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754664Ab2DJVI3 (ORCPT
+	id S1759456Ab2DJVO6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Apr 2012 17:14:58 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:34011 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755473Ab2DJVO4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Apr 2012 17:08:29 -0400
+	Tue, 10 Apr 2012 17:14:56 -0400
+Message-ID: <4F84A2CB.8040301@wwwdotorg.org>
+Date: Tue, 10 Apr 2012 15:14:51 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.28) Gecko/20120313 Thunderbird/3.1.20
 MIME-Version: 1.0
-In-Reply-To: <4F8462DE.4030004@ti.com>
-References: <1333442836-9947-1-git-send-email-akinobu.mita@gmail.com>
-	<1333442836-9947-3-git-send-email-akinobu.mita@gmail.com>
-	<4F8462DE.4030004@ti.com>
-Date: Wed, 11 Apr 2012 06:08:28 +0900
-Message-ID: <CAC5umygW+i=8=a+x7BnDuN=GPBFSXA4TWgrvQQvtWv0jSreWXw@mail.gmail.com>
-Subject: Re: [PATCH 3/4] arm: davinci: use for_each_set_bit_from
-From: Akinobu Mita <akinobu.mita@gmail.com>
-To: Sekhar Nori <nsekhar@ti.com>,
-        Christian Riesch <christian.riesch@omicron.at>
-Cc: linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
-        Kevin Hilman <khilman@ti.com>,
-        davinci-linux-open-source@linux.davincidsp.com,
-        Russell King <linux@arm.linux.org.uk>,
-        linux-arm-kernel@lists.infradead.org
-Content-Type: text/plain; charset=ISO-8859-1
+To: Dan Williams <dan.j.williams@intel.com>
+CC: gregkh@linuxfoundation.org, Sudhakar Mamillapalli <sudhakar@fb.com>,
+        Arnd Bergmann <arnd@arndb.de>, linux-kernel@vger.kernel.org,
+        Grant Likely <grant.likely@secretlab.ca>, linux-serial@vger.kernel.org,
+        Colin Cross <ccross@android.com>, Olof Johansson <olof@lixom.net>,
+        Nhan H Mai <nhan.h.mai@intel.com>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        Alan Cox <alan@linux.intel.com>
+Subject: Re: [PATCH v4 1/3] tegra, serial8250: add ->handle_break() uart_port
+ op
+References: <20120410210438.13805.40525.stgit@dwillia2-linux.jf.intel.com> <20120410211053.13805.18954.stgit@dwillia2-linux.jf.intel.com>
+In-Reply-To: <20120410211053.13805.18954.stgit@dwillia2-linux.jf.intel.com>
+X-Enigmail-Version: 1.1.2
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2012/4/11 Sekhar Nori <nsekhar@ti.com>:
-> Hi Akinobu,
->
-> On 4/3/2012 2:17 PM, Akinobu Mita wrote:
->> Use for_each_set_bit_from to iterate over all the set bit in a memory
->> region.
->>
->> Signed-off-by: Akinobu Mita <akinobu.mita@gmail.com>
->> Cc: Sekhar Nori <nsekhar@ti.com>
->> Cc: Kevin Hilman <khilman@ti.com>
->> Cc: davinci-linux-open-source@linux.davincidsp.com
->> Cc: Russell King <linux@arm.linux.org.uk>
->> Cc: linux-arm-kernel@lists.infradead.org
->
-> Looks good to me. If you are planning to send this upstream outside of
-> davinci tree, please add my:
->
-> Acked-by: Sekhar Nori <nsekhar@ti.com>
->
-> Else, let me know and I will be happy to queue it.
+On 04/10/2012 03:10 PM, Dan Williams wrote:
+> The "KT" serial port has another use case for a "received break" quirk,
+> so before adding another special case to the 8250 core take this
+> opportunity to push such quirks out of the core and into a uart_port op.
+> 
+> Stephen says:
+> "If the callback function is to no longer live in 8250.c itself,
+>  arch/arm/mach-tegra/devices.c isn't logically a good place to put it,
+>  and that file will be going away once we get rid of all the board files
+>  and move solely to device tree."
+> 
+> ...so since 8250_pci.c houses all the quirks for pci serial devices this
+> quirk is similarly housed in of_serial.c.  Once the open firmware
+> conversion completes the infrastructure details
+> (include/linux/of_serial.h, and the export) can all be removed to make
+> this self contained to of_serial.c.
 
-Christian found a bug in this patch. So  I'll resend it, then please queue it
-to your tree.
+Acked-by: Stephen Warren <swarren@wwwdotorg.org>
+Tested-by: Stephen Warren <swarren@wwwdotorg.org>
