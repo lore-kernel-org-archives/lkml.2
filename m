@@ -1,77 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758378Ab2DJDis (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Apr 2012 23:38:48 -0400
-Received: from db3ehsobe002.messaging.microsoft.com ([213.199.154.140]:48161
-	"EHLO db3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753391Ab2DJDir (ORCPT
+	id S1754706Ab2DJDjg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Apr 2012 23:39:36 -0400
+Received: from eu1sys200aog103.obsmtp.com ([207.126.144.115]:36512 "EHLO
+	eu1sys200aog103.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1758477Ab2DJDjP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Apr 2012 23:38:47 -0400
-X-SpamScore: -11
-X-BigFish: VS-11(zzbb2dI9371I1432N98dKzz1202hzz8275dhz2dh2a8h668h839h944hd25h)
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-Date: Tue, 10 Apr 2012 11:49:28 +0800
-From: Dong Aisheng <aisheng.dong@freescale.com>
-To: Stephen Warren <swarren@wwwdotorg.org>
-CC: Dong Aisheng-B29396 <B29396@freescale.com>,
+	Mon, 9 Apr 2012 23:39:15 -0400
+Message-ID: <4F83AAFD.1030507@st.com>
+Date: Tue, 10 Apr 2012 09:07:33 +0530
+From: Viresh Kumar <viresh.kumar@st.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:6.0) Gecko/20110812 Thunderbird/6.0
+MIME-Version: 1.0
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: Vinod Koul <vinod.koul@intel.com>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Dan Williams <dan.j.williams@intel.com>,
         "linux-arm-kernel@lists.infradead.org" 
 	<linux-arm-kernel@lists.infradead.org>,
-        "linus.walleij@stericsson.com" <linus.walleij@stericsson.com>
-Subject: Re: [PATCH 1/1] pinctrl: add some error checking for user
- interfaces
-Message-ID: <20120410034927.GA674@shlinux2.ap.freescale.net>
-References: <1333967409-8168-1-git-send-email-b29396@freescale.com>
- <4F82FA2A.3090604@wwwdotorg.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <4F82FA2A.3090604@wwwdotorg.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-OriginatorOrg: freescale.com
+        Russell King <linux@arm.linux.org.uk>,
+        Alim Akhtar <alim.akhtar@gmail.com>
+Subject: Re: [PATCH 1/2] dma/amba-pl08x: check for terminal count status only
+References: <1334004801-20185-1-git-send-email-linus.walleij@linaro.org>
+In-Reply-To: <1334004801-20185-1-git-send-email-linus.walleij@linaro.org>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 09, 2012 at 11:03:06PM +0800, Stephen Warren wrote:
-> On 04/09/2012 04:30 AM, Dong Aisheng wrote:
-> > From: Dong Aisheng <dong.aisheng@linaro.org>
-> > 
-> > This patch can avoid kernel oops in case the mux or config
-> > function is not supported by driver.
-> > 
-> > Signed-off-by: Dong Aisheng <dong.aisheng@linaro.org>
-> > ---
-> >  drivers/pinctrl/pinconf.c |    4 ++++
-> >  drivers/pinctrl/pinmux.c  |   15 +++++++++++++--
-> >  2 files changed, 17 insertions(+), 2 deletions(-)
-> > 
-> > diff --git a/drivers/pinctrl/pinconf.c b/drivers/pinctrl/pinconf.c
-> > index eb3a14f..384dcc1 100644
-> > --- a/drivers/pinctrl/pinconf.c
-> > +++ b/drivers/pinctrl/pinconf.c
-> > @@ -448,8 +448,12 @@ static void pinconf_dump_pin(struct pinctrl_dev *pctldev,
-> >  static int pinconf_pins_show(struct seq_file *s, void *what)
-> >  {
-> >  	struct pinctrl_dev *pctldev = s->private;
-> > +	const struct pinconf_ops *ops = pctldev->desc->confops;
-> >  	unsigned i, pin;
-> >  
-> > +	if (!ops || !ops->pin_config_get)
-> > +		return 0;
+On 4/10/2012 2:23 AM, Linus Walleij wrote:
+> For some reason I can't figure out we're reading the PL080_INT_STATUS
+> register instead of PL080_TC_STATUS when checking for the terminal
+> count. The PL080_INT_STATUS is a logical OR between the error and
+> terminal count status register and may not report what we want it
+> to, especially if there is an error and a terminal count at the same
+> time and the former is not lowered in time for the check in the TC
+> register. Make sure we read what we're actually interested in.
 > 
-> I don't think this is necessary; it looks like this function (and those
-> it calls) always checks ops where they're used.
+> Cc: Russell King <linux@arm.linux.org.uk>
+> Cc: Viresh Kumar <viresh.kumar@st.com>
+> Cc: Alim Akhtar <alim.akhtar@gmail.com>
+> Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
+> ---
+>  drivers/dma/amba-pl08x.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
 > 
-Yes, it's true.
-But it will still dump all pins configs although there's no config value
-which is almost the same as another debug entry 'pins'.
-It looks it does not make too much sense to dump this info if no config support.
-The existing pinconf_group_show did like this way(no output).
-So i changed pinconf_pins_show in the same behavior as pinconf_group_show.
+> diff --git a/drivers/dma/amba-pl08x.c b/drivers/dma/amba-pl08x.c
+> index c301a8e..08589c6 100644
+> --- a/drivers/dma/amba-pl08x.c
+> +++ b/drivers/dma/amba-pl08x.c
+> @@ -1615,7 +1615,7 @@ static irqreturn_t pl08x_irq(int irq, void *dev)
+>  			__func__, err);
+>  		writel(err, pl08x->base + PL080_ERR_CLEAR);
+>  	}
+> -	tc = readl(pl08x->base + PL080_INT_STATUS);
+> +	tc = readl(pl08x->base + PL080_TC_STATUS);
+>  	if (tc)
+>  		writel(tc, pl08x->base + PL080_TC_CLEAR);
+>  
 
-Do you think it's reasonable?
+Acked-by: Viresh Kumar <viresh.kumar@st.com>
 
-Regards
-Dong Aisheng
-
+-- 
+viresh
