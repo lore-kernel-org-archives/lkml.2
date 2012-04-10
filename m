@@ -1,53 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759508Ab2DJVPV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Apr 2012 17:15:21 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:65109 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755271Ab2DJVPT convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Apr 2012 17:15:19 -0400
+	id S1759500Ab2DJVUl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Apr 2012 17:20:41 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:50908 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754732Ab2DJVUk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Apr 2012 17:20:40 -0400
+Message-ID: <4F84A40E.8040907@zytor.com>
+Date: Tue, 10 Apr 2012 14:20:14 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120329 Thunderbird/11.0.1
 MIME-Version: 1.0
-In-Reply-To: <20120410204249.GA26627@electric-eye.fr.zoreil.com>
-References: <CACPM=kWa=UWuCMaYAtVMGJ7pzCy-PfyNRWBSuJnTZGtssU0W6g@mail.gmail.com>
-	<20120410204249.GA26627@electric-eye.fr.zoreil.com>
-Date: Tue, 10 Apr 2012 23:15:18 +0200
-X-Google-Sender-Auth: UAgqm0D4w-pBtiL1qhAvep7s8P8
-Message-ID: <CACPM=kWsU8QZOHqwEThTQCuSSvaTDoxO1d17EyoW=+kx8QG3vw@mail.gmail.com>
-Subject: Re: via-rhine: Problem with lost link after a while
-From: Bjarke Istrup Pedersen <gurligebis@gentoo.org>
-To: Francois Romieu <romieu@fr.zoreil.com>
-Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+To: NeilBrown <neilb@suse.de>
+CC: Jim Kukunas <james.t.kukunas@linux.intel.com>, x86@kernel.org,
+        linux-kernel@vger.kernel.org, mingo@redhat.com, tglx@linutronix.de,
+        linux-raid@vger.kernel.org
+Subject: Re: arch/86: AVX RAID5 xor checksumming
+References: <1334078551-6859-1-git-send-email-james.t.kukunas@linux.intel.com> <4F846FBC.9060503@zytor.com> <20120411061442.2f839c77@notabene.brown>
+In-Reply-To: <20120411061442.2f839c77@notabene.brown>
+X-Enigmail-Version: 1.4
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-10. apr. 2012 22.42 skrev Francois Romieu <romieu@fr.zoreil.com>:
-> Bjarke Istrup Pedersen <gurligebis@gentoo.org> :
-> [...]
->> Got any ideas?
->
-> http://git.kernel.org/?p=linux/kernel/git/torvalds/linux.git;h=3f8c91a7398b9266fbe7abcbe4bd5dffef907643
->
-> Courtesy of Andreas Mohr.
+On 04/10/2012 01:14 PM, NeilBrown wrote:
+>>
+>> I think this (and the SSSE3 patches for RAID-6) should go in via the
+>> RAID tree.  Neil, do you agree?
+> 
+> I'm happy to take the SSSE3 RAID-6 patches as they only affect lib/raid6, but
+> I felt that this one - being purely in arch/x86 - should probably go via the
+> x86 tree.
+> However I'm flexible and if you (collectively) are happy with these patches
+> going in through my tree, I'll do that.
+> 
 
-Great, I'll try a 3.4-rc2 kernel, and see how it runs.
+Go ahead and take them with my Acked-by: -- I think that's easier.
 
-The thread I was talking about earlier is here:
-http://lists.soekris.com/pipermail/soekris-tech/2012-April/018318.html
-Is there any of the changes he has there, that makes sense in the new
-driver you wrote?
+	-hpa
 
-Thanks :)
-
-/Bjarke
-
-> --
-> Ueimor
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
