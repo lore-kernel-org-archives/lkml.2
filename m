@@ -1,54 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759239Ab2DJPxi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Apr 2012 11:53:38 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:54326 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753686Ab2DJPxg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Apr 2012 11:53:36 -0400
-Date: Tue, 10 Apr 2012 18:53:08 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: Avi Kivity <avi@redhat.com>, Ren Mingxin <renmx@cn.fujitsu.com>,
-        rusty@rustcorp.com.au, axboe@kernel.dk,
-        James.Bottomley@HansenPartnership.com, asamymuthupa@micron.com,
-        linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org,
-        kvm@vger.kernel.org, virtualization@lists.linux-foundation.org
-Subject: Re: [PATCH] virtio_blk: Add help function to format mass of disks
-Message-ID: <20120410155308.GB20551@redhat.com>
-References: <1334042885-8330-1-git-send-email-renmx@cn.fujitsu.com>
- <4F84329A.60703@redhat.com>
- <20120410133406.GA18899@redhat.com>
- <20120410154943.GB11614@dhcp-172-17-108-109.mtv.corp.google.com>
+	id S1759091Ab2DJPzk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Apr 2012 11:55:40 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:44726 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752347Ab2DJPzj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Apr 2012 11:55:39 -0400
+Message-ID: <4F8457F9.7090309@wwwdotorg.org>
+Date: Tue, 10 Apr 2012 09:55:37 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.28) Gecko/20120313 Thunderbird/3.1.20
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120410154943.GB11614@dhcp-172-17-108-109.mtv.corp.google.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Linus Walleij <linus.walleij@linaro.org>
+CC: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH V4 REPOST 5/5] pinctrl: tegra: Add complete device tree
+ support
+References: <1333553270-9040-1-git-send-email-swarren@wwwdotorg.org>	<1333553270-9040-5-git-send-email-swarren@wwwdotorg.org> <CACRpkdZzET9OKC8xoXV_4OBAd9-EuhSh-OfG=es56bKidCoe9Q@mail.gmail.com>
+In-Reply-To: <CACRpkdZzET9OKC8xoXV_4OBAd9-EuhSh-OfG=es56bKidCoe9Q@mail.gmail.com>
+X-Enigmail-Version: 1.1.2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 10, 2012 at 08:49:43AM -0700, Tejun Heo wrote:
-> Hello, guys.
+On 04/10/2012 02:25 AM, Linus Walleij wrote:
+> On Wed, Apr 4, 2012 at 5:27 PM, Stephen Warren <swarren@wwwdotorg.org> wrote:
 > 
-> On Tue, Apr 10, 2012 at 04:34:06PM +0300, Michael S. Tsirkin wrote:
-> > > Why not use 'base' below?  neither unit nor base change.
-> > 
-> > Yes it's a bit strange, it was the same in Tejun's patch.
-> > Tejun, any idea?
+>> From: Stephen Warren <swarren@nvidia.com>
+>>
+>> Implement pinctrl_ops dt_node_to_map() and dt_free_map(). These allow
+>> complete specification of the desired pinmux configuration using device
+>> tree.
+>>
+>> Signed-off-by: Stephen Warren <swarren@nvidia.com>
+>> Acked-by: Dong Aisheng <dong.aisheng@linaro.org>
+>> ---
+>> v3: Rebase on of_property_for_each_string() API changes.
+>>    Improve DT parsing so it only calls krealloc() on the top-level map
+>>    table once per subnode, rather than once per subnode/pin combination.
+>> v2: Rebase on of_property_for_each_string() API changes.
 > 
-> It was years ago, so I don't recall much.  I think I wanted to use a
-> variable name which signifies its role - I worked out the rather
-> convoluted base number logic on paper first and I probably wanted to
-> keep the distinctions.  I don't think it really matters at this point
-> tho.  Just make sure those functions are marked deprecated so that no
-> one else copies them.
-> 
-> Thanks.
+> Applied to pinctrl, thanks!
+> Linus Walleij
 
-I guess I'll keep it same so it's easier to deduplicate
-if someon wants to.
+Great.
 
-> -- 
-> tejun
+Is your pinctrl for-next branch considered "stable" (i.e. it won't ever
+be rebased) at least up to commit a57be23 "pinctrl: tegra: Add complete
+device tree support"?
+
+If so, I'll use it as a base for the Tegra GPIO and pinmux rework branch.
+
+Thanks.
