@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754487Ab2DJGm6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Apr 2012 02:42:58 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:50399 "EHLO mx2.suse.de"
+	id S1755019Ab2DJGnP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Apr 2012 02:43:15 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:50414 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752827Ab2DJGm5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Apr 2012 02:42:57 -0400
-Date: Tue, 10 Apr 2012 08:42:55 +0200
-Message-ID: <s5hpqbgulxs.wl%tiwai@suse.de>
+	id S1752980Ab2DJGnN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Apr 2012 02:43:13 -0400
+Date: Tue, 10 Apr 2012 08:43:12 +0200
+Message-ID: <s5hobr0ulxb.wl%tiwai@suse.de>
 From: Takashi Iwai <tiwai@suse.de>
 To: Julia Lawall <Julia.Lawall@lip6.fr>
-Cc: Andrew Veliath <andrewtv@usa.net>, kernel-janitors@vger.kernel.org,
-        Jaroslav Kysela <perex@perex.cz>, alsa-devel@alsa-project.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] sound/oss/msnd_pinnacle.c: add vfrees
-In-Reply-To: <1333959392-18933-1-git-send-email-Julia.Lawall@lip6.fr>
-References: <1333959392-18933-1-git-send-email-Julia.Lawall@lip6.fr>
+Cc: Jaroslav Kysela <perex@perex.cz>, kernel-janitors@vger.kernel.org,
+        alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] sound/isa/sscape.c: add missing resource-release code
+In-Reply-To: <1333959395-18960-1-git-send-email-Julia.Lawall@lip6.fr>
+References: <1333959395-18960-1-git-send-email-Julia.Lawall@lip6.fr>
 User-Agent: Wanderlust/2.15.6 (Almost Unreal) SEMI/1.14.6 (Maruoka)
  FLIM/1.14.9 (=?UTF-8?B?R29qxY0=?=) APEL/10.7 Emacs/23.3
  (x86_64-suse-linux-gnu) MULE/6.0 (HANACHIRUSATO)
@@ -25,63 +24,47 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-At Mon,  9 Apr 2012 10:16:32 +0200,
+At Mon,  9 Apr 2012 10:16:35 +0200,
 Julia Lawall wrote:
 > 
 > From: Julia Lawall <Julia.Lawall@lip6.fr>
 > 
-> At the point of this error-handling code, HAVE_DSPCODEH may be undefined,
-> so free INITCODE and PERMCODE as done elsewhere.  A jump and label are
-> introduced to avoid code duplication.
+> At the point of this error-handling code, both regions and the dma have
+> been allocated, so free it as done in previous and subsequent
+> error-handling code.
 > 
 > Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
 
-Thanks, applied now.
+Applied now.  Thanks.
 
 
 Takashi
 
 > 
 > ---
->  sound/oss/msnd_pinnacle.c |    8 ++++++--
->  1 file changed, 6 insertions(+), 2 deletions(-)
+>  sound/isa/sscape.c |    6 ++++--
+>  1 file changed, 4 insertions(+), 2 deletions(-)
 > 
-> diff --git a/sound/oss/msnd_pinnacle.c b/sound/oss/msnd_pinnacle.c
-> index 2c79d60..536c4c0 100644
-> --- a/sound/oss/msnd_pinnacle.c
-> +++ b/sound/oss/msnd_pinnacle.c
-> @@ -1294,6 +1294,8 @@ static int __init calibrate_adc(WORD srate)
->  
->  static int upload_dsp_code(void)
->  {
-> +	int ret = 0;
-> +
->  	msnd_outb(HPBLKSEL_0, dev.io + HP_BLKS);
->  #ifndef HAVE_DSPCODEH
->  	INITCODESIZE = mod_firmware_load(INITCODEFILE, &INITCODE);
-> @@ -1312,7 +1314,8 @@ static int upload_dsp_code(void)
->  	memcpy_toio(dev.base, PERMCODE, PERMCODESIZE);
->  	if (msnd_upload_host(&dev, INITCODE, INITCODESIZE) < 0) {
->  		printk(KERN_WARNING LOGNAME ": Error uploading to DSP\n");
-> -		return -ENODEV;
-> +		ret = -ENODEV;
-> +		goto out;
+> diff --git a/sound/isa/sscape.c b/sound/isa/sscape.c
+> index b4a6aa9..131dd98 100644
+> --- a/sound/isa/sscape.c
+> +++ b/sound/isa/sscape.c
+> @@ -1019,13 +1019,15 @@ static int __devinit create_sscape(int dev, struct snd_card *card)
+>  	irq_cfg = get_irq_config(sscape->type, irq[dev]);
+>  	if (irq_cfg == INVALID_IRQ) {
+>  		snd_printk(KERN_ERR "sscape: Invalid IRQ %d\n", irq[dev]);
+> -		return -ENXIO;
+> +		err = -ENXIO;
+> +		goto _release_dma;
 >  	}
->  #ifdef HAVE_DSPCODEH
->  	printk(KERN_INFO LOGNAME ": DSP firmware uploaded (resident)\n");
-> @@ -1320,12 +1323,13 @@ static int upload_dsp_code(void)
->  	printk(KERN_INFO LOGNAME ": DSP firmware uploaded\n");
->  #endif
 >  
-> +out:
->  #ifndef HAVE_DSPCODEH
->  	vfree(INITCODE);
->  	vfree(PERMCODE);
->  #endif
+>  	mpu_irq_cfg = get_irq_config(sscape->type, mpu_irq[dev]);
+>  	if (mpu_irq_cfg == INVALID_IRQ) {
+>  		snd_printk(KERN_ERR "sscape: Invalid IRQ %d\n", mpu_irq[dev]);
+> -		return -ENXIO;
+> +		err = -ENXIO;
+> +		goto _release_dma;
+>  	}
 >  
-> -	return 0;
-> +	return ret;
->  }
->  
->  #ifdef MSND_CLASSIC
+>  	/*
 > 
