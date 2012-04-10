@@ -1,72 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758244Ab2DJSIH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Apr 2012 14:08:07 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:28887 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757653Ab2DJSID (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Apr 2012 14:08:03 -0400
-Date: Tue, 10 Apr 2012 13:40:36 -0400
-From: Mike Snitzer <snitzer@redhat.com>
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: Jens Axboe <axboe@kernel.dk>,
-        linux kernel mailing list <linux-kernel@vger.kernel.org>,
-        martin.petersen@oracle.com
-Subject: Re: [RFC PATCH] block: Change default IO scheduler to deadline
- except SATA
-Message-ID: <20120410174036.GA4178@redhat.com>
-References: <20120410133708.GE21801@redhat.com>
- <4F843C17.5050004@kernel.dk>
- <20120410142148.GG21801@redhat.com>
- <20120410151042.GH21801@redhat.com>
- <CAMM=eLf5qi_PL8vFh_b5V_nq_mxg0CN0asE8E9XYJn48J4mdPA@mail.gmail.com>
- <20120410172828.GI21801@redhat.com>
+	id S1756692Ab2DJSJx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Apr 2012 14:09:53 -0400
+Received: from server1.neighborhoods.net ([207.154.13.48]:45316 "EHLO
+	server1.neighborhoods.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752259Ab2DJSJw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Apr 2012 14:09:52 -0400
+Message-ID: <4F84776D.9070608@meetinghouse.net>
+Date: Tue, 10 Apr 2012 14:09:49 -0400
+From: Miles Fidelman <mfidelman@meetinghouse.net>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.6; rv:11.0) Gecko/20120312 Firefox/11.0 SeaMonkey/2.8
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120410172828.GI21801@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Matthew Garrett <mjg@redhat.com>
+CC: linux-kernel@vger.kernel.org, tglx@linutronix.de, mingo@redhat.com,
+        hpa@zytor.com, x86@kernel.org, peter.chubb@nicta.com.au,
+        michael.d.labriola@gmail.com
+Subject: Re: reboot via bios on X86_64?
+References: <4F8302B4.8040901@meetinghouse.net> <20120409155155.GA22974@srcf.ucam.org> <4F831BD0.3010707@meetinghouse.net> <20120409173223.GA25717@srcf.ucam.org> <4F83231A.8040005@meetinghouse.net> <20120409180711.GA26277@srcf.ucam.org> <4F843D9B.3010601@meetinghouse.net> <20120410142213.GA13294@srcf.ucam.org> <4F846D53.10409@meetinghouse.net> <20120410174423.GA19583@srcf.ucam.org>
+In-Reply-To: <20120410174423.GA19583@srcf.ucam.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 10 2012 at  1:28pm -0400,
-Vivek Goyal <vgoyal@redhat.com> wrote:
+Matthew Garrett wrote:
+> On Tue, Apr 10, 2012 at 01:26:43PM -0400, Miles Fidelman wrote:
+>> For what it's worth, creating a path for X86_64 mode to reboot
+>> through the bios seems like
+>> a good thing to put on the wish list.
+> Not really - it's far more attractive to figure out how our behaviour is
+> differing from Windows and change it to match. I'll see what I can find
+> out about this machine.
 
-> On Tue, Apr 10, 2012 at 12:13:07PM -0400, Mike Snitzer wrote:
-> 
-> [..]
-> > > So we are back to the question of can scsi devices find out if a Lun
-> > > is backed by single disk or multiple disks.
-> > 
-> > I'm not aware of any discrete attribute (comparable to 'rotational'
-> > flag) that SCSI devices will advertise that indicates "I'm a raid
-> > array".
-> > 
-> > That said, we can have a _very_ good hint that a SCSI device is a raid array if:
-> > 
-> > 1) optimal_io_size is not zero, minimum_io_size is not equal to
-> > optimal_io_size, and optimal_io_size is a multiple of minimum_io_size
-> > 
-> > 2) WCE=0 (higher-end arrays with a writeback cache)
-> > 
-> > Determining 1 could be enough, we should probably ignore 2 as it isn't
-> > an absolute indication that a device is composed of multiple devices
-> > (especially not if considered independently of 1).
-> 
-> Umm..., somehow relying on optimal_io_size != minimum_io_size sounds odd
-> to me (assuming it works).
-> 
-> I checked bunch of Luns exported to me and all of them have
-> optimal_io_size=0.
+Well.. keep in mind that that this particular machine has never run 
+windows,
+so I don't know if windows can reboot it either.
 
-As I said above, this would only apply if "optimal_io_size is not zero, ..."
+I expect it's like that long
+laundry list of Dell servers that are in the quirks code - they all seem to
+reboot via the bios when running in 32-bit mode.  I wonder what they
+do when running in 64-bit mode (at least some of them are amd64 compatible).
 
-> I have few FC Luns exported from two array vendors. I have few iscsi Luns
-> exported from two separate vendors and all these luns have
-> optimal_io_size=0.
+Miles
 
-Seems all those LUNs haven't exported their limits via BLOCK LIMITS VPD.
-But more recent firmware could rectify that.
 
-Anyway, there is no one size fits all here, sorry to disappoint you!
+-- 
+In theory, there is no difference between theory and practice.
+In practice, there is.   .... Yogi Berra
+
+
