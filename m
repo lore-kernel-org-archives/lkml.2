@@ -1,96 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759288Ab2DJTrM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Apr 2012 15:47:12 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:21922 "EHLO mx1.redhat.com"
+	id S1755315Ab2DJTvv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Apr 2012 15:51:51 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:40858 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753398Ab2DJTrK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Apr 2012 15:47:10 -0400
-Date: Tue, 10 Apr 2012 21:46:25 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: David Howells <dhowells@redhat.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 1/1] creds: kill __task_cred()->task_is_dead() validation
-Message-ID: <20120410194625.GB7196@redhat.com>
-References: <20120410194554.GA7196@redhat.com>
+	id S1753398Ab2DJTvu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Apr 2012 15:51:50 -0400
+Date: Tue, 10 Apr 2012 21:51:46 +0200
+From: Jan Kara <jack@suse.cz>
+To: Suresh Jayaraman <sjayaraman@suse.com>
+Cc: Jan Kara <jack@suse.cz>, Michael Tokarev <mjt@tls.msk.ru>,
+        Dave Chinner <david@fromorbit.com>,
+        Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: dramatic I/O slowdown after upgrading 2.6.38->3.0+
+Message-ID: <20120410195146.GD4936@quack.suse.cz>
+References: <4F75E46E.2000503@msgid.tls.msk.ru>
+ <20120405232913.GA6640@quack.suse.cz>
+ <4F7E74F4.90604@msgid.tls.msk.ru>
+ <20120410022628.GN18323@dastard>
+ <4F83CC86.2010805@msgid.tls.msk.ru>
+ <20120410151326.GA4936@quack.suse.cz>
+ <4F848938.1040202@suse.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120410194554.GA7196@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <4F848938.1040202@suse.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-commit 8f92054e:
+On Wed 11-04-12 00:55:44, Suresh Jayaraman wrote:
+> On 04/10/2012 08:43 PM, Jan Kara wrote:
+> > On Tue 10-04-12 10:00:38, Michael Tokarev wrote:
+> >> On 10.04.2012 06:26, Dave Chinner wrote:
+> >>
+> >>> Barriers. Turn them off, and see if that fixes your problem.
+> >>
+> >> Thank you Dave for a hint.  And nope, that's not it, not at all... ;)
+> >> While turning off barriers helps a tiny bit, to gain a few %% from
+> >> the huge slowdown, it does not cure the issue.
+> >>
+> >> Meanwhile, I observed the following:
+> >>
+> >> 1) the issue persists on more recent kernels too, I tried 3.3
+> >>    and it is also as slow as 3.0.
+> >>
+> >> 2) at least 2.6.38 kernel works fine, as fast as 2.6.32, I'll
+> >>    try 2.6.39 next.
+> >>
+> >>    I updated $subject accordingly.
+> >>
+> >> 3) the most important thing I think: this is general I/O speed
+> >>    issue.  Here's why:
+> >>
+> >>   2.6.38:
+> >>   # dd if=/dev/sdb of=/dev/null bs=1M iflag=direct count=100
+> >>   100+0 records in
+> >>   100+0 records out
+> >>   104857600 bytes (105 MB) copied, 1.73126 s, 60.6 MB/s
+> >>
+> >>   3.0:
+> >>   # dd if=/dev/sdb of=/dev/null bs=1M iflag=direct count=100
+> >>   100+0 records in
+> >>   100+0 records out
+> >>   104857600 bytes (105 MB) copied, 29.4508 s, 3.6 MB/s
+> >>
+> >> That's about 20 times difference on direct read from the
+> >> same - idle - device!!
+> >   Huh, that's a huge difference for such a trivial load. So we can rule out
+> > filesystems, writeback, mm. I also wouldn't think it's IO scheduler but
+> > you can always check by comparing dd numbers after
+> >   echo none >/sys/block/sdb/queue/scheduler
+> 
+> s/none/noop
+> you meant noop, of course?
+  Yeah. Thanks for correction!
 
-    add the following validation condition:
-
-        task->exit_state >= 0
-
-    to permit the access if the target task is dead and therefore
-    unable to change its own credentials.
-
-OK, but afaics currently this can only help wait_task_zombie() which
-calls __task_cred() without rcu lock.
-
-Remove this validation and change wait_task_zombie() to use task_uid()
-instead. This means we do rcu_read_lock() only to shut up the lockdep,
-but we already do the same in, say, wait_task_stopped().
-
-task_is_dead() should die, task->exit_state != 0 means that this task
-has passed exit_notify(), only do_wait-like code paths should use this.
-
-Unfortunately, we can't kill task_is_dead() right now, it has already
-found the bugy users in drivers/staging/, the fix already exists.
-
-Signed-off-by: Oleg Nesterov <oleg@redhat.com>
----
- include/linux/cred.h |   10 +++-------
- kernel/exit.c        |    2 +-
- 2 files changed, 4 insertions(+), 8 deletions(-)
-
-diff --git a/include/linux/cred.h b/include/linux/cred.h
-index adadf71..1b64c72 100644
---- a/include/linux/cred.h
-+++ b/include/linux/cred.h
-@@ -276,17 +276,13 @@ static inline void put_cred(const struct cred *_cred)
-  * @task: The task to query
-  *
-  * Access the objective credentials of a task.  The caller must hold the RCU
-- * readlock or the task must be dead and unable to change its own credentials.
-+ * readlock.
-  *
-  * The result of this function should not be passed directly to get_cred();
-  * rather get_task_cred() should be used instead.
-  */
--#define __task_cred(task)						\
--	({								\
--		const struct task_struct *__t = (task);			\
--		rcu_dereference_check(__t->real_cred,			\
--				      task_is_dead(__t));		\
--	})
-+#define __task_cred(task)	\
-+	rcu_dereference((task)->real_cred)
- 
- /**
-  * get_current_cred - Get the current task's subjective credentials
-diff --git a/kernel/exit.c b/kernel/exit.c
-index 4b4042f..7b36288 100644
---- a/kernel/exit.c
-+++ b/kernel/exit.c
-@@ -1214,7 +1213,7 @@ static int wait_task_zombie(struct wait_opts *wo, struct task_struct *p)
- 	unsigned long state;
- 	int retval, status, traced;
- 	pid_t pid = task_pid_vnr(p);
--	uid_t uid = __task_cred(p)->uid;
-+	uid_t uid = task_uid(p);
- 	struct siginfo __user *infop;
- 
- 	if (!likely(wo->wo_flags & WEXITED))
+								Honza
 -- 
-1.5.5.1
-
-
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
