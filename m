@@ -1,78 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758923Ab2DJO5i (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Apr 2012 10:57:38 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:35559 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1758806Ab2DJO5g (ORCPT
+	id S1758952Ab2DJO62 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Apr 2012 10:58:28 -0400
+Received: from mail-pz0-f52.google.com ([209.85.210.52]:42717 "EHLO
+	mail-pz0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753460Ab2DJO60 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Apr 2012 10:57:36 -0400
-Date: Tue, 10 Apr 2012 10:57:35 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Tomoya MORINAGA <tomoya.rohm@gmail.com>
-cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <qi.wang@intel.com>, <yong.y.wang@intel.com>, <joel.clark@intel.com>,
-        <kok.howg.ewe@intel.com>
-Subject: Re: [PATCH 1/2] usb/ehci-hub: Add workaround for EG20T/ML7213/ML7223/ML7831
-In-Reply-To: <1334030835-4681-1-git-send-email-tomoya.rohm@gmail.com>
-Message-ID: <Pine.LNX.4.44L0.1204101044490.1605-100000@iolanthe.rowland.org>
+	Tue, 10 Apr 2012 10:58:26 -0400
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <20120410134522.GC18899@redhat.com>
+References: <20120410025327.49693.93562.stgit@amd-6168-8-1.englab.nay.redhat.com>
+	<CAJSP0QWA1z6_YQe9hhpG7bCyZQarmU5NXbHsLGTL_zPTk3dOUA@mail.gmail.com>
+	<20120410124250.GB29808@redhat.com>
+	<CAEH94Li0==w=AUKd5WCPMcqxLh=+N6bKttOwrE8y-xuOyPt_QA@mail.gmail.com>
+	<20120410134522.GC18899@redhat.com>
+Date: Tue, 10 Apr 2012 22:58:25 +0800
+Message-ID: <CAEH94LjvFzwA_=tv9AJc-wAH0j1P=9QQ0TjucuB-KQAG2LBz-Q@mail.gmail.com>
+Subject: Re: [PATCH 0/2] adding tracepoints to vhost
+From: Zhi Yong Wu <zwu.kernel@gmail.com>
+To: "Michael S. Tsirkin" <mst@redhat.com>
+Cc: Stefan Hajnoczi <stefanha@gmail.com>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, kvm@vger.kernel.org,
+        virtualization@lists.linux-foundation.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 10 Apr 2012, Tomoya MORINAGA wrote:
+On Tue, Apr 10, 2012 at 9:45 PM, Michael S. Tsirkin <mst@redhat.com> wrote:
+> On Tue, Apr 10, 2012 at 09:10:48PM +0800, Zhi Yong Wu wrote:
+>> >> Perhaps this can replace the vhost log feature?  I'm not sure if
+>> >> tracepoints support the right data types but it seems like vhost
+>> >> debugging could be done using tracing with less code.
+>> >>
+>> >> Stefan
+>> >
+>> > vhost log is not a debugging tool, it logs memory accesses for
+>> > migration.
+>> Great, it is very appreciated if there's some docs about this
+>
+> About what? vhost logging? See the comment near the
+Yeah, thanks
+> definition of VHOST_SET_LOG_BASE in vhost.h
+>
+>> > _______________________________________________
+>> > Virtualization mailing list
+>> > Virtualization@lists.linux-foundation.org
+>> > https://lists.linuxfoundation.org/mailman/listinfo/virtualization
+>>
+>>
+>>
+>> --
+>> Regards,
+>>
+>> Zhi Yong Wu
 
-> ISSUE: When a bit of EHCI status register (USBSTS) is set
-> as 1, if the corresponded bit of EHCI interrupt enable
-> register(USBINTR) is set as 1, an interrupt occurs.
-> After that, even if the bit of USBINTR is set as 0, the
-> interrupt continues occurring.
-> Workaround: Clear the bit 3 of USBSTS before enabling the
-> interrupt, at resume process.
-
-These two patches do a lot more than is necessary.  At the same time, 
-they also seem to do a lot less.
-
-You don't have to check for the faulty product IDs; clearing the
-STS_FLR bit (bit 3 of USBSTS) is always okay because the driver doesn't 
-use it.
-
-On the other hand, the STS_FLR bit will get set once every second (at
-least) whenever the controller is running.  According to your
-description above, this means the controller will cause an interrupt
-storm as soon as its first interrupt occurs.  What you really need to
-do is clear STS_FLR in ehci_irq().
-
-Does the patch below fix your problem?
-
-Alan Stern
 
 
+-- 
+Regards,
 
- drivers/usb/host/ehci-hcd.c |    7 ++++++-
- 1 file changed, 6 insertions(+), 1 deletion(-)
-
-Index: usb-3.4/drivers/usb/host/ehci-hcd.c
-===================================================================
---- usb-3.4.orig/drivers/usb/host/ehci-hcd.c
-+++ usb-3.4/drivers/usb/host/ehci-hcd.c
-@@ -860,8 +860,13 @@ static irqreturn_t ehci_irq (struct usb_
- 		goto dead;
- 	}
- 
-+	/*
-+	 * We don't use STS_FLR, but some controllers don't like it to
-+	 * remain on, so mask it out along with the other status bits.
-+	 */
-+	masked_status = status & (INTR_MASK | STS_FLR);
-+
- 	/* Shared IRQ? */
--	masked_status = status & INTR_MASK;
- 	if (!masked_status || unlikely(ehci->rh_state == EHCI_RH_HALTED)) {
- 		spin_unlock(&ehci->lock);
- 		return IRQ_NONE;
-
+Zhi Yong Wu
