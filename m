@@ -1,76 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758862Ab2DJTDp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Apr 2012 15:03:45 -0400
-Received: from ppsw-50.csi.cam.ac.uk ([131.111.8.150]:49804 "EHLO
-	ppsw-50.csi.cam.ac.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758337Ab2DJTDn (ORCPT
+	id S1758971Ab2DJTD5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Apr 2012 15:03:57 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:54827 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758337Ab2DJTDy convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Apr 2012 15:03:43 -0400
-X-Cam-AntiVirus: no malware found
-X-Cam-SpamDetails: not scanned
-X-Cam-ScannerInfo: http://www.cam.ac.uk/cs/email/scanner/
-Message-ID: <4F84840B.9080104@cam.ac.uk>
-Date: Tue, 10 Apr 2012 20:03:39 +0100
-From: Jonathan Cameron <jic23@cam.ac.uk>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120314 Thunderbird/11.0
+	Tue, 10 Apr 2012 15:03:54 -0400
 MIME-Version: 1.0
-To: Greg KH <greg@kroah.com>
-CC: Jon Brenner <jbrenner@taosinc.com>, linux-iio <linux-iio@vger.kernel.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH V5] TAOS tsl2x7x
-References: <1333385439.2151.1.camel@jonz-ub2> <20120410173608.GA29862@kroah.com>
-In-Reply-To: <20120410173608.GA29862@kroah.com>
-X-Enigmail-Version: 1.4
+In-Reply-To: <20120406125517.77133b4e.akpm@linux-foundation.org>
+References: <1333051320-30872-1-git-send-email-wad@chromium.org>
+	<1333051320-30872-2-git-send-email-wad@chromium.org>
+	<20120406125517.77133b4e.akpm@linux-foundation.org>
+Date: Tue, 10 Apr 2012 14:03:49 -0500
+Message-ID: <CABqD9hbTWQ6uBn_jZ7WdbaAMtAcTHz3hWSer_tnAFU9iV-4GSQ@mail.gmail.com>
+Subject: Re: [PATCH v17 01/15] Add PR_{GET,SET}_NO_NEW_PRIVS to prevent execve
+ from granting privs
+From: Will Drewry <wad@chromium.org>
+To: Andrew Morton <akpm@linux-foundation.org>,
+        Andrew Lutomirski <luto@mit.edu>
+Cc: linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
+        linux-arch@vger.kernel.org, linux-doc@vger.kernel.org,
+        kernel-hardening@lists.openwall.com, netdev@vger.kernel.org,
+        x86@kernel.org, arnd@arndb.de, davem@davemloft.net, hpa@zytor.com,
+        mingo@redhat.com, oleg@redhat.com, peterz@infradead.org,
+        rdunlap@xenotime.net, mcgrathr@chromium.org, tglx@linutronix.de,
+        eparis@redhat.com, serge.hallyn@canonical.com, djm@mindrot.org,
+        scarybeasts@gmail.com, indan@nul.nu, pmoore@redhat.com, corbet@lwn.net,
+        eric.dumazet@gmail.com, markus@chromium.org, coreyb@linux.vnet.ibm.com,
+        keescook@chromium.org, jmorris@namei.org,
+        Andy Lutomirski <luto@amacapital.net>, linux-man@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/10/2012 06:36 PM, Greg KH wrote:
-> On Mon, Apr 02, 2012 at 11:50:39AM -0500, Jon Brenner wrote:
->> TAOS device driver (version 5) for the tsl/tmd 2771 and 2772 device families (inc. all variants).
+On Fri, Apr 6, 2012 at 2:55 PM, Andrew Morton <akpm@linux-foundation.org> wrote:
+> On Thu, 29 Mar 2012 15:01:46 -0500
+> Will Drewry <wad@chromium.org> wrote:
+>
+>> From: Andy Lutomirski <luto@amacapital.net>
 >>
->> Signed-off-by: Jon Brenner <jbrenner@taosinc.com>
->> ---
->>  .../light/sysfs-bus-iio-light-tsl2583              |    6 +
->>  .../light/sysfs-bus-iio-light-tsl2x7x              |   14 +
->>  drivers/staging/iio/Documentation/sysfs-bus-iio    |    7 +
->>  .../staging/iio/Documentation/sysfs-bus-iio-light  |    8 +-
->>  .../iio/Documentation/sysfs-bus-iio-light-tsl2583  |   20 -
->>  drivers/staging/iio/light/Kconfig                  |    8 +
->>  drivers/staging/iio/light/Makefile                 |    2 +
->>  drivers/staging/iio/light/tsl2x7x.h                |   99 ++
->>  drivers/staging/iio/light/tsl2x7x_core.c           | 1830 ++++++++++++++++++++
->>  9 files changed, 1970 insertions(+), 24 deletions(-)
+>> With this set, a lot of dangerous operations (chroot, unshare, etc)
+>> become a lot less dangerous because there is no possibility of
+>> subverting privileged binaries.
+>
+> The changelog doesn't explain the semantics of the new syscall.
+> There's a comment way-down-there which I guess suffices, if you hunt
+> for it.
+
+I'll bubble up luto's comment into the changelog when I resend the
+grand-unified-patchset.
+
+> And the changelog doesn't explain why this is being added.  Presumably
+> seccomp_filter wants/needs this feature but whowhatwherewhenwhy?  Spell
+> it all out, please.
+
+I'll try my hand at that and luto@ can yell at me if I misrepresent.
+Seem reasonable?
+
+> The new syscall mode will be documented in the prctl manpage.  Please
+> cc linux-man@vger.kernel.org and work with Michael on getting this
+> done?
+
+I'll add linux-man to the patch series since this applies to both
+no_new_privs and seccomp filter.
+
+Thanks!
+
 >>
->> diff --git a/drivers/staging/iio/Documentation/light/sysfs-bus-iio-light-tsl2583 b/drivers/staging/iio/Documentation/light/sysfs-bus-iio-light-tsl2583
->> new file mode 100644
->> index 0000000..8f2a038
->> --- /dev/null
->> +++ b/drivers/staging/iio/Documentation/light/sysfs-bus-iio-light-tsl2583
->> @@ -0,0 +1,6 @@
->> +What:		/sys/bus/iio/devices/device[n]/illuminance0_calibrate
->> +KernelVersion:	2.6.37
-> 
-> Really?  Are we traveling back in time now?
-> 
-> confused...
-> 
-> I need an ack from Jonathan before I can take this.
-That is a little curious given the entry is already in that file as far
-as I can see (and was indeed introduced back in 2.6.37 given these are
-docs for a different driver). Something weird gone wrong moving that
-to the other file Jon?
-
-More importantly Jon is still working on this driver (we were exchanging
-emails about it a couple of days ago and I think I owe
-Jon a reply to the last one (oops)    It was nearly there so I'd imagine
-you'll get a v6 or 7 in a few days...
-
-> 
-> thanks,
-> 
-> greg k-h
-
+>> ...
+>>
