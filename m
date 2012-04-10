@@ -1,75 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759340Ab2DJPU5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Apr 2012 11:20:57 -0400
-Received: from s15943758.onlinehome-server.info ([217.160.130.188]:38995 "EHLO
-	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759149Ab2DJPUz (ORCPT
+	id S932078Ab2DJPVI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Apr 2012 11:21:08 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:50344 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754181Ab2DJPVF convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Apr 2012 11:20:55 -0400
-From: Borislav Petkov <bp@amd64.org>
-To: Ingo Molnar <mingo@kernel.org>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Michal Marek <mmarek@suse.cz>, Sam Ravnborg <sam@ravnborg.org>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Borislav Petkov <borislav.petkov@amd.com>
-Subject: [PATCH v4 2/4] tools: Add a toplevel Makefile
-Date: Tue, 10 Apr 2012 17:20:38 +0200
-Message-Id: <1334071240-28692-3-git-send-email-bp@amd64.org>
-X-Mailer: git-send-email 1.7.9.3.362.g71319
-In-Reply-To: <1334071240-28692-1-git-send-email-bp@amd64.org>
-References: <1334071240-28692-1-git-send-email-bp@amd64.org>
+	Tue, 10 Apr 2012 11:21:05 -0400
+MIME-Version: 1.0
+In-Reply-To: <1334066771-10458-1-git-send-email-svenkatr@ti.com>
+References: <1334066771-10458-1-git-send-email-svenkatr@ti.com>
+From: Santosh Y <santoshsy@gmail.com>
+Date: Tue, 10 Apr 2012 20:50:42 +0530
+Message-ID: <CALMYJDtQ8Dbwhyk0WKe7_Xk_40+3_c11U6bMJ-Li4XhUp7=-Pw@mail.gmail.com>
+Subject: Re: [PATCH] scsi/ufs: use module_pci_driver
+To: Venkatraman S <svenkatr@ti.com>
+Cc: akpm@linux-foundation.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Borislav Petkov <borislav.petkov@amd.com>
+>  drivers/scsi/ufs/ufshcd.c |   19 +------------------
+>  1 file changed, 1 insertion(+), 18 deletions(-)
+>
+> diff --git a/drivers/scsi/ufs/ufshcd.c b/drivers/scsi/ufs/ufshcd.c
+> index cd59f6f..5ab9b3f 100644
+> --- a/drivers/scsi/ufs/ufshcd.c
+> +++ b/drivers/scsi/ufs/ufshcd.c
+> @@ -1952,24 +1952,7 @@ static struct pci_driver ufshcd_pci_driver = {
+>  #endif
+>  };
+>
+> -/**
+> - * ufshcd_init - Driver registration routine
+> - */
+> -static int __init ufshcd_init(void)
+> -{
+> -       return pci_register_driver(&ufshcd_pci_driver);
+> -}
+> -module_init(ufshcd_init);
+> -
+> -/**
+> - * ufshcd_exit - Driver exit clean-up routine
+> - */
+> -static void __exit ufshcd_exit(void)
+> -{
+> -       pci_unregister_driver(&ufshcd_pci_driver);
+> -}
+> -module_exit(ufshcd_exit);
+> -
+> +module_pci_driver(ufshcd_pci_driver);
 
-Add a Makefile with all the targets under tools/.
 
-Signed-off-by: Borislav Petkov <borislav.petkov@amd.com>
----
- tools/Makefile |   31 +++++++++++++++++++++++++++++++
- 1 file changed, 31 insertions(+)
- create mode 100644 tools/Makefile
+Acked-by: Santosh Y <santoshsy@gmail.com>
 
-diff --git a/tools/Makefile b/tools/Makefile
-new file mode 100644
-index 000000000000..e93b8ec3d250
---- /dev/null
-+++ b/tools/Makefile
-@@ -0,0 +1,31 @@
-+include scripts/Makefile.include
-+
-+perf firewire lguest usb virtio vm: FORCE
-+	$(QUIET_SUBDIR0)$@/ $(QUIET_SUBDIR1)
-+
-+cpupower: FORCE
-+	$(QUIET_SUBDIR0)power/$@/ $(QUIET_SUBDIR1)
-+
-+turbostat x86_energy_perf_policy: FORCE
-+	$(QUIET_SUBDIR0)power/x86/$@/ $(QUIET_SUBDIR1)
-+
-+selftests: FORCE
-+	$(QUIET_SUBDIR0)testing/$@/ $(QUIET_SUBDIR1)
-+
-+firewire_clean lguest_clean perf_clean vm_clean usb_clean virtio_clean:
-+	$(QUIET_SUBDIR0)$(@:_clean=)/ $(QUIET_SUBDIR1) clean
-+
-+cp_clean:
-+	$(QUIET_SUBDIR0)power/cpupower/ $(QUIET_SUBDIR1) clean
-+
-+turbostat_clean x86_energy_perf_policy_clean:
-+	$(QUIET_SUBDIR0)power/x86/$(@:_clean=)/ $(QUIET_SUBDIR1) clean
-+
-+selftests_clean:
-+	$(QUIET_SUBDIR0)testing/$(@:_clean=)/ $(QUIET_SUBDIR1) clean
-+
-+clean: cp_clean firewire_clean lguest_clean perf_clean selftests_clean \
-+		turbostat_clean usb_clean virtio_clean \
-+		x86_energy_perf_policy_clean
-+
-+.PHONY: FORCE
 -- 
-1.7.9.3.362.g71319
-
+~Santosh
