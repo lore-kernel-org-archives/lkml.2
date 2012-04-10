@@ -1,213 +1,183 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932254Ab2DJAz2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Apr 2012 20:55:28 -0400
-Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:43820 "EHLO
-	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753854Ab2DJAz0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Apr 2012 20:55:26 -0400
-X-AuditID: 9c93016f-b7b13ae000002492-be-4f8384fc700f
-Message-ID: <4F838584.1020002@kernel.org>
-Date: Tue, 10 Apr 2012 09:57:40 +0900
-From: Minchan Kim <minchan@kernel.org>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:11.0) Gecko/20120327 Thunderbird/11.0.1
-MIME-Version: 1.0
-Newsgroups: gmane.linux.kernel.mmc,gmane.comp.handhelds.android.kernel,gmane.linux.kernel.mm,gmane.linux.kernel
-To: Arnd Bergmann <arnd@arndb.de>
-CC: linaro-kernel@lists.linaro.org, android-kernel@googlegroups.com,
-        linux-mm@kvack.org, "Luca Porzio (lporzio)" <lporzio@micron.com>,
-        Alex Lemberg <alex.lemberg@sandisk.com>, linux-kernel@vger.kernel.org,
-        Saugata Das <saugata.das@linaro.org>,
-        Venkatraman S <venkat@linaro.org>, Yejin Moon <yejin.moon@samsung.com>,
-        Hyojin Jeong <syr.jeong@samsung.com>,
-        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>
-Subject: Re: swap on eMMC and other flash
-References: <201203301744.16762.arnd@arndb.de> <201204061616.11716.arnd@arndb.de> <4F82443F.9000804@kernel.org> <201204091235.48750.arnd@arndb.de>
-In-Reply-To: <201204091235.48750.arnd@arndb.de>
-Content-Type: text/plain; charset=UTF-8
+	id S1758289Ab2DJA56 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Apr 2012 20:57:58 -0400
+Received: from mga03.intel.com ([143.182.124.21]:5935 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753854Ab2DJA54 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Apr 2012 20:57:56 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="128936096"
+Message-ID: <1334019502.2387.211.camel@rui.sh.intel.com>
+Subject: Re: [PATCH V2 0/6] thermal: exynos: Add kernel thermal support for
+ exynos platform
+From: Zhang Rui <rui.zhang@intel.com>
+To: Amit Kachhap <amit.kachhap@linaro.org>
+Cc: lenb@kernel.org, linux-pm@lists.linux-foundation.org,
+        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        mjg59@srcf.ucam.org, linux-acpi@vger.kernel.org,
+        linaro-dev@lists.linaro.org, lm-sensors@lm-sensors.org,
+        patches@linaro.org, eduardo.valentin@ti.com, durgadoss.r@intel.com
+Date: Tue, 10 Apr 2012 08:58:22 +0800
+In-Reply-To: <CAK44p23jiXn6mn-VsdXr3h9J5FfKztXMiqu=XjaF6nqLnRQAmA@mail.gmail.com>
+References: <1332137864-12943-1-git-send-email-amit.kachhap@linaro.org>
+	 <CAK44p23jiXn6mn-VsdXr3h9J5FfKztXMiqu=XjaF6nqLnRQAmA@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2 (3.2.2-1.fc16) 
 Content-Transfer-Encoding: 8bit
-X-Brightmail-Tracker: AAAAAA==
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2012-04-09 오후 9:35, Arnd Bergmann 쓴 글:
+Hi, Amit,
 
-> On Monday 09 April 2012, Minchan Kim wrote:
->> 2012-04-07 오전 1:16, Arnd Bergmann 쓴 글:
->>
->>> larger chunks would generally be helpful, in order to guarantee that we
->>> the drive doesn't do any garbage collection, we would have to do all writes
->>
->>
->> And we should guarantee for avoiding unnecessary swapout, even OOM killing.
->>
->>> in aligned chunks. It would probably be enough to do this in 8kb or
->>> 16kb units for most devices over the next few years, but implementing it
->>> for 64kb should be the same amount of work and will get us a little bit
->>> further.
->>
->>
->> I understand it's best for writing 64K in your statement.
->> What the 8K, 16K? Could you elaborate relation between 8K, 16K and 64K?
+On 三, 2012-04-04 at 10:02 +0530, Amit Kachhap wrote:
+> Hi Len/Rui,
 > 
-> From my measurements, there are three sizes that are relevant here:
+> Any comment or feedback from your side about the status of this patch?
+> Is it merge-able or major re-work is needed? I have fixed most of the
+> comments in this patchset and currently working on some of the minor
+> comments received and will submit them shortly.
 > 
-> 1. The underlying page size of the flash: This used to be less than 4kb,
-> which is fine when paging out 4kb mmu pages, as long as the partition is
-> aligned. Today, most devices use 8kb pages and the number is increasing
-> over time, meaning we will see more 16kb page devices in the future and
-> presumably larger sizes after that. Writes that are not naturally aligned
-> multiples of the page size tend to be a significant problem for the
-> controller to deal with: in order to guarantee that a 4kb write makes it
-> into permanent storage, the device has to write 8kb and the next 4kb
-> write has to go into another 8kb page because each page can only be
-> written once before the block is erased. At a later point, all the partial
-> pages get rewritten into a new erase block, a process that can take
-> hundreds of miliseconds and that we absolutely want to prevent from
-> happening, as it can block all other I/O to the device. Writing all
-> (flash) pages in an erase block sequentially usually avoids this, as
-> long as you don't write to many different erase blocks at the same time.
-> Note that the page size depends on how the controller combines different
-> planes and channels.
+Sorry for the late response.
+
+First of all, it makes sense to me to introduce the generic cpufrq
+cooling implementation.
+But I still have some questions.
+I think the key reason why THERMAL_TRIP_STATE_INSTANCE is introduced is
+that the MONIROR_ZONE and WARN_ZONE on exynos4 can not fit into the
+current passive handling in the generic thermal layer well, right?
+e.g. there is no tc1/tc2 on exynos4.
+
+If yes, is it possible that we can enhance the passive cooling to
+support the generic processor cooling?
+say, introduce another way to throttle the processor in
+thermal_zone_device_passive when tc1 and tc2 are not available?
+
+thanks,
+rui
+
+> Regards,
+> Amit Daniel
 > 
-> 2. The super-page size of the flash: When you have multiple channels
-> between the controller and the individual flash chips, you can write
-> multiple pages simultaneously, which means that e.g. sending 32kb of
-> data to the device takes roughly the same amount of time as writing a
-> single 8kb page. Writing less than the super-page size when there is
-> more data waiting to get written out is a waste of time, although the
-> effects are much less drastic as writing data that is not aligned to
-> pages because it does not require garbage collection.
-> 
-> 3. optimum write size: While writing larger amounts of data in a single
-> request is usually faster than writing less, almost all devices
-> I've seen have a sharp cut-off where increasing the size of the write
-> does not actually help any more because of a bottleneck somewhere
-> in the stack. Writing more than 64kb almost never improves performance
-> and sometimes reduces performance.
+> On 19 March 2012 11:47, Amit Daniel Kachhap <amit.kachhap@linaro.org> wrote:
+> > Changes since V1:
+> > *Moved the sensor driver to driver/thermal folder from driver/hwmon folder
+> >  as suggested by Mark Brown and Guenter Roeck
+> > *Added notifier support to notify the registered drivers of any cpu cooling
+> >  action. The driver can modify the default cooling behaviour(eg set different
+> >  max clip frequency).
+> > *The percentage based frequency replaced with absolute clipped frequency.
+> > *Some more conditional checks when setting max frequency.
+> > *Renamed the new trip type THERMAL_TRIP_STATE_ACTIVE to
+> >  THERMAL_TRIP_STATE_INSTANCE
+> > *Many review comments from R, Durgadoss <durgadoss.r@intel.com> and
+> >  eduardo.valentin@ti.com implemented.
+> > *Removed cooling stats through debugfs patch
+> > *The V1 based can be found here,
+> >  https://lkml.org/lkml/2012/2/22/123
+> >  http://lkml.org/lkml/2012/3/3/32
+> >
+> > Changes since RFC:
+> > *Changed the cpu cooling registration/unregistration API's to instance based
+> > *Changed the STATE_ACTIVE trip type to pass correct instance id
+> > *Adding support to restore back the policy->max_freq after doing frequency
+> >  clipping.
+> > *Moved the trip cooling stats from sysfs node to debugfs node as suggested
+> >  by Greg KH greg@kroah.com
+> > *Incorporated several review comments from eduardo.valentin@ti.com
+> > *Moved the Temperature sensor driver from driver/hwmon/ to driver/mfd
+> >  as discussed with Guenter Roeck <guenter.roeck@ericsson.com> and
+> >  Donggeun Kim <dg77.kim@samsung.com> (https://lkml.org/lkml/2012/1/5/7)
+> > *Some changes according to the changes in common cpu cooling APIs
+> > *The RFC based patches can be found here,
+> >  https://lkml.org/lkml/2011/12/13/186
+> >  https://lkml.org/lkml/2011/12/21/169
+> >
+> >
+> > Brief Description:
+> >
+> > 1) The generic cooling devices code is placed inside driver/thermal/* as
+> > placing inside acpi folder will need un-necessary enabling of acpi code. This
+> > codes is architecture independent.
+> >
+> > 2) This patchset adds a new trip type THERMAL_TRIP_STATE_INSTANCE which passes
+> > cooling device instance number and may be helpful for cpufreq cooling devices
+> > to take the correct cooling action. This trip type avoids the temperature
+> > comparision check again inside the cooling handler.
+> >
+> > 3) This patchset adds generic cpu cooling low level implementation through
+> > frequency clipping and cpu hotplug. In future, other cpu related cooling
+> > devices may be added here. An ACPI version of this already exists
+> > (drivers/acpi/processor_thermal.c). But this will be useful for platforms
+> > like ARM using the generic thermal interface along with the generic cpu
+> > cooling devices. The cooling device registration API's return cooling device
+> > pointers which can be easily binded with the thermal zone trip points.
+> > The important APIs exposed are,
+> >   a)struct thermal_cooling_device *cpufreq_cooling_register(
+> >        struct freq_clip_table *tab_ptr, unsigned int tab_size,
+> >        const struct cpumask *mask_val)
+> >   b)void cpufreq_cooling_unregister(struct thermal_cooling_device *cdev)
+> >
+> > 4) Samsung exynos platform thermal implementation is done using the generic
+> > cpu cooling APIs and the new trip type. The temperature sensor driver present
+> > in the hwmon folder(registered as hwmon driver) is moved to thermal folder
+> > and registered as a thermal driver.
+> >
+> > All this patchset is based on Kernel version 3.3-rc7
+> >
+> > A simple data/control flow diagrams is shown below,
+> >
+> > Core Linux thermal <----->  Exynos thermal interface <----- Temperature Sensor
+> >          |                             |
+> >         \|/                            |
+> >  Cpufreq cooling device <---------------
+> >
+> >
+> > Amit Daniel Kachhap (6):
+> >  thermal: Add a new trip type to use cooling device instance number
+> >  thermal: Add generic cpufreq cooling implementation
+> >  thermal: Add generic cpuhotplug cooling implementation
+> >  hwmon: exynos4: Move thermal sensor driver to driver/thermal
+> >    directory
+> >  thermal: exynos4: Register the tmu sensor with the kernel thermal
+> >    layer
+> >  ARM: exynos4: Add thermal sensor driver platform device support
+> >
+> >  Documentation/hwmon/exynos4_tmu           |   81 ---
+> >  Documentation/thermal/cpu-cooling-api.txt |   76 +++
+> >  Documentation/thermal/exynos4_tmu         |   52 ++
+> >  Documentation/thermal/sysfs-api.txt       |    4 +-
+> >  arch/arm/mach-exynos/Kconfig              |   11 +
+> >  arch/arm/mach-exynos/Makefile             |    1 +
+> >  arch/arm/mach-exynos/clock.c              |    4 +
+> >  arch/arm/mach-exynos/dev-tmu.c            |   39 ++
+> >  arch/arm/mach-exynos/include/mach/irqs.h  |    2 +
+> >  arch/arm/mach-exynos/include/mach/map.h   |    1 +
+> >  arch/arm/mach-exynos/mach-origen.c        |    1 +
+> >  arch/arm/plat-samsung/include/plat/devs.h |    1 +
+> >  drivers/hwmon/Kconfig                     |   10 -
+> >  drivers/hwmon/Makefile                    |    1 -
+> >  drivers/hwmon/exynos4_tmu.c               |  514 -------------------
+> >  drivers/thermal/Kconfig                   |   21 +
+> >  drivers/thermal/Makefile                  |    2 +
+> >  drivers/thermal/cpu_cooling.c             |  529 +++++++++++++++++++
+> >  drivers/thermal/exynos4_thermal.c         |  790 +++++++++++++++++++++++++++++
+> >  drivers/thermal/thermal_sys.c             |   45 ++-
+> >  include/linux/cpu_cooling.h               |   78 +++
+> >  include/linux/platform_data/exynos4_tmu.h |    7 +
+> >  include/linux/thermal.h                   |    1 +
+> >  23 files changed, 1660 insertions(+), 611 deletions(-)
+> >  delete mode 100644 Documentation/hwmon/exynos4_tmu
+> >  create mode 100644 Documentation/thermal/cpu-cooling-api.txt
+> >  create mode 100644 Documentation/thermal/exynos4_tmu
+> >  create mode 100644 arch/arm/mach-exynos/dev-tmu.c
+> >  delete mode 100644 drivers/hwmon/exynos4_tmu.c
+> >  create mode 100644 drivers/thermal/cpu_cooling.c
+> >  create mode 100644 drivers/thermal/exynos4_thermal.c
+> >  create mode 100644 include/linux/cpu_cooling.h
+> >
 
 
-For our understanding, you mean we have to do aligned-write as follows
-if possible?
-
-"Nand internal page size write(8K, 16K)" < "Super-page size write(32K)
-which considers parallel working with number of channel and plane" <
-some sequential big write (64K)
-
-> 
-> From the I've done, a typical profile could look like
-> 
-> Size	Throughput
-> 1KB	200KB/s
-> 2KB	450KB/s
-> 4KB	1MB/s
-> 8KB	4MB/s		<== page size
-> 16KB	8MB/s
-> 32KB	16MB/s		<== superpage size
-> 64KB	18MB/s		<== optimum size
-> 128KB	17MB/s
-> ...
-> 8MB	18MB/s		<== erase block size
-> 
->>> I'm not sure what we would do when there are less than 64kb available
->>> for pageout on the inactive list. The two choices I can think of are
->>> either not writing anything, or wasting the swap slots and filling
->>
->>
->> No wrtite will cause unnecessary many pages to swap out by next prioirty
->> of scanning and we can't gaurantee how long we wait to queue up to 64KB
->> in anon pages. It might take longer than GC time so we need some deadline.
->>
->>
->>> up the data with zeroes.
->>
->>
->> Zero padding would be a good solution but I have a concern on WAP so we
->> need smart policy.
->>
->> To be honest, I think swapout is normally asynchonous operation so that
->> it should not affect system latency rather than swap read which is
->> synchronous operation. So if system is low memory pressure, we can queue
->> swap out pages up to 64KB and then batch write-out in empty cluster. If
->> we don't have any empty cluster in low memory pressure, we should write
->> out it in partial cluster. Maybe it doesn't affect system latency
->> severely in low memory pressure.
-> 
-> The main thing that can affect system latency is garbage collection
-> that blocks any other reads or writes for an extended amount of time.
-> If we can avoid that, we've got the 95% solution.
-
-
-I see.
-
-> 
-> Note that eMMC-4.5 provides a high-priority interrupt mechamism that
-> lets us interrupt the a write that has hit the garbage collection
-> path, so we can send a more important read request to the device.
-> This will not work on other devices though and the patches for this
-> are still under discussion.
-
-
-Nice feature but I think swap system doesn't need to consider such
-feature. I should be handled by I/O subsystem like I/O scheduler.
-
-> 
->> If system memory pressure is high(and It shoud be not frequent),
->> swap-out B/W would be more important. So we can reserve some clusters
->> for it and I think we can use page padding you mentioned in this case
->> for reducing latency if we can queue it up to 64KB within threshold time.
->>
->> Swap-read is also important. We have to investigate fragmentation of
->> swap slots because we disable swap readahead in non-rotation device. It
->> can make lots of hole in swap cluster and it makes to find empty
->> cluster. So for it, it might be better than enable swap-read in
->> non-rotation devices, too.
-> 
-> Yes, reading in up to 64kb or at least a superpage would also help here,
-> although there is no problem reading in a single cpu page, it will still
-> take no more time than reading in a superpage.
-> 
->>>>> 2) Make variable sized swap clusters. Right now, the swap space is
->>>>> organized in clusters of 256 pages (1MB), which is less than the typical
->>>>> erase block size of 4 or 8 MB. We should try to make the swap cluster
->>>>> aligned to erase blocks and have the size match to avoid garbage collection
->>>>> in the drive. The cluster size would typically be set by mkswap as a new
->>>>> option and interpreted at swapon time.
->>>>>
->>>>
->>>> If we can find such big contiguous swap slots easily, it would be good.
->>>> But I am not sure how often we can get such big slots. And maybe we have to
->>>> improve search method for getting such big empty cluster.
->>>
->>> As long as there are clusters available, we should try to find them. When
->>> free space is too fragmented to find any unused cluster, we can pick one
->>> that has very little data in it, so that we reduce the time it takes to
->>> GC that erase block in the drive. While we could theoretically do active
->>> garbage collection of swap data in the kernel, it won't get more efficient
->>> than the GC inside of the drive. If we do this, it unfortunately means that
->>> we can't just send a discard for the entire erase block.
->>
->>
->> Might need some compaction during idle time but WAP concern raises again. :(
-> 
-> Sorry for my ignorance, but what does WAP stand for?
-
-
-I should have written more general term. I means write amplication but
-WAF(Write Amplication Factor) is more popular. :(
-
-> 
-> 	Arnd
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-mmc" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> 
-
-
-
--- 
-Kind regards,
-Minchan Kim
