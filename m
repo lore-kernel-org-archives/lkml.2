@@ -1,128 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755474Ab2DJQVz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Apr 2012 12:21:55 -0400
-Received: from smtp.citrix.com ([66.165.176.89]:58845 "EHLO SMTP.CITRIX.COM"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751495Ab2DJQVy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Apr 2012 12:21:54 -0400
-X-IronPort-AV: E=Sophos;i="4.75,399,1330923600"; 
-   d="scan'208";a="24030591"
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-To: konrad.wilk@oracle.com
-CC: Stefano.Stabellini@eu.citrix.com, xen-devel@lists.xensource.com,
-        linux-kernel@vger.kernel.org,
-        Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-Subject: [PATCH v3] xen-blkfront: set pages are FOREIGN_FRAME when sharing them
-Date: Tue, 10 Apr 2012 17:25:19 +0100
-Message-ID: <1334075119-25102-1-git-send-email-stefano.stabellini@eu.citrix.com>
-X-Mailer: git-send-email 1.7.0.4
+	id S1755535Ab2DJQXU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Apr 2012 12:23:20 -0400
+Received: from mail-qc0-f174.google.com ([209.85.216.174]:61127 "EHLO
+	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751495Ab2DJQXS convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Apr 2012 12:23:18 -0400
 MIME-Version: 1.0
-Content-Type: text/plain
+In-Reply-To: <20120407080027.GA2584@quack.suse.cz>
+References: <20120403183655.GA23106@dhcp-172-17-108-109.mtv.corp.google.com>
+	<20120404145134.GC12676@redhat.com>
+	<20120407080027.GA2584@quack.suse.cz>
+Date: Tue, 10 Apr 2012 11:23:16 -0500
+Message-ID: <CAH2r5mvLVnM3Se5vBBsYzwaz5Ckp3i6SVnGp2T0XaGe9_u8YYA@mail.gmail.com>
+Subject: Re: [Lsf] [RFC] writeback and cgroup
+From: Steve French <smfrench@gmail.com>
+To: Jan Kara <jack@suse.cz>
+Cc: Vivek Goyal <vgoyal@redhat.com>, ctalbott@google.com, rni@google.com,
+        andrea@betterlinux.com, containers@lists.linux-foundation.org,
+        linux-kernel@vger.kernel.org, lsf@lists.linux-foundation.org,
+        linux-mm@kvack.org, jmoyer@redhat.com, lizefan@huawei.com,
+        cgroups@vger.kernel.org, linux-fsdevel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Set pages as FOREIGN_FRAME whenever blkfront shares them with another
-domain. Then when blkfront un-share them, also removes the
-FOREIGN_FRAME_BIT from the p2m.
+On Sat, Apr 7, 2012 at 3:00 AM, Jan Kara <jack@suse.cz> wrote:
+>  Hi Vivek,
+>
+> On Wed 04-04-12 10:51:34, Vivek Goyal wrote:
+>> On Tue, Apr 03, 2012 at 11:36:55AM -0700, Tejun Heo wrote:
+>> [..]
+>> > IIUC, without cgroup, the current writeback code works more or less
+>> > like this.  Throwing in cgroup doesn't really change the fundamental
+>> > design.  Instead of a single pipe going down, we just have multiple
+>> > pipes to the same device, each of which should be treated separately.
+>> > Of course, a spinning disk can't be divided that easily and their
+>> > performance characteristics will be inter-dependent, but the place to
+>> > solve that problem is where the problem is, the block layer.
+>>
+>> How do you take care of thorottling IO to NFS case in this model? Current
+>> throttling logic is tied to block device and in case of NFS, there is no
+>> block device.
+>  Yeah, for throttling NFS or other network filesystems we'd have to come
+> up with some throttling mechanism at some other level. The problem with
+> throttling at higher levels is that you have to somehow extract information
+> from lower levels about amount of work so I'm not completely certain now,
+> where would be the right place. Possibly it also depends on the intended
+> usecase - so far I don't know about any real user for this functionality...
 
-We do it so that when the source and the destination domain are the same
-(blkfront connected to blkback in the same domain) we can more easily
-recognize which ones are the source pfns and which ones are the
-destination pfns (both are going to be pointing to the same mfns).
+Remember to distinguish between the two ends of the network file system.
+There are slightly different problems.   The client has to be able to
+expose the number of requests (and size of writes, or equivalently
+number of pages it can write at one time) so that writeback is not done
+too aggressively.  File servers have to be able to
+discover the i/o limits dynamically of the underlying volume (not the
+block device, but potentially a pool of devices) so it can tell
+the client how much i/o it can send.  For SMB2 server (Samba) and
+eventually for NFS, how many simultaneous requests it
+can support will allow them to sanely set the number of "credits"
+on each response - ie tell the client how many requests
+are allowed in flight to a particular export.
 
-Without this patch enstablishing a connection between blkfront and QEMU
-qdisk in the same domain causes QEMU to hang and never return.
+In the case of block device throttling - other than the file system
+internally using such APIs who would use block device specific
+throttling - only the file system knows where it wants to put hot data,
+and in the case of btrfs, doesn't the file system manage the
+storage pool.   The block device should be transparent to the
+user in the long run, and only the volume visible.
 
 
-Changes in v3:
-- only set_phys_to_machine if xen_pv_domain.
-
-
-Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
----
- drivers/block/xen-blkfront.c |   33 ++++++++++++++++++++++++++++-----
- 1 files changed, 28 insertions(+), 5 deletions(-)
-
-diff --git a/drivers/block/xen-blkfront.c b/drivers/block/xen-blkfront.c
-index 2f22874..cabfbbb 100644
---- a/drivers/block/xen-blkfront.c
-+++ b/drivers/block/xen-blkfront.c
-@@ -262,7 +262,7 @@ static int blkif_ioctl(struct block_device *bdev, fmode_t mode,
- static int blkif_queue_request(struct request *req)
- {
- 	struct blkfront_info *info = req->rq_disk->private_data;
--	unsigned long buffer_mfn;
-+	unsigned long buffer_mfn, buffer_pfn;
- 	struct blkif_request *ring_req;
- 	unsigned long id;
- 	unsigned int fsect, lsect;
-@@ -321,7 +321,8 @@ static int blkif_queue_request(struct request *req)
- 		       BLKIF_MAX_SEGMENTS_PER_REQUEST);
- 
- 		for_each_sg(info->sg, sg, ring_req->u.rw.nr_segments, i) {
--			buffer_mfn = pfn_to_mfn(page_to_pfn(sg_page(sg)));
-+			buffer_pfn = page_to_pfn(sg_page(sg));
-+			buffer_mfn = pfn_to_mfn(buffer_pfn);
- 			fsect = sg->offset >> 9;
- 			lsect = fsect + (sg->length >> 9) - 1;
- 			/* install a grant reference. */
-@@ -340,6 +341,17 @@ static int blkif_queue_request(struct request *req)
- 						.gref       = ref,
- 						.first_sect = fsect,
- 						.last_sect  = lsect };
-+			/* 
-+			 * Set the page as foreign, considering that we are giving
-+			 * it to a foreign domain.
-+			 * This is important in case the destination domain is
-+			 * ourselves, so that we can more easily recognize the
-+			 * source pfn from destination pfn, both mapping to the same
-+			 * mfn.
-+			 */
-+			if (xen_pv_domain())
-+				set_phys_to_machine(buffer_pfn,
-+						FOREIGN_FRAME(buffer_mfn));
- 		}
- 	}
- 
-@@ -715,8 +727,12 @@ static void blkif_completion(struct blk_shadow *s)
- 	int i;
- 	/* Do not let BLKIF_OP_DISCARD as nr_segment is in the same place
- 	 * flag. */
--	for (i = 0; i < s->req.u.rw.nr_segments; i++)
-+	for (i = 0; i < s->req.u.rw.nr_segments; i++) {
- 		gnttab_end_foreign_access(s->req.u.rw.seg[i].gref, 0, 0UL);
-+		if (xen_pv_domain())
-+			set_phys_to_machine(s->frame[i],
-+					get_phys_to_machine(s->frame[i]) & ~FOREIGN_FRAME_BIT);
-+	}
- }
- 
- static irqreturn_t blkif_interrupt(int irq, void *dev_id)
-@@ -1051,13 +1067,20 @@ static int blkif_recover(struct blkfront_info *info)
- 		memcpy(&info->shadow[req->u.rw.id], &copy[i], sizeof(copy[i]));
- 
- 		if (req->operation != BLKIF_OP_DISCARD) {
-+			unsigned long buffer_pfn;
-+			unsigned long buffer_mfn;
- 		/* Rewrite any grant references invalidated by susp/resume. */
--			for (j = 0; j < req->u.rw.nr_segments; j++)
-+			for (j = 0; j < req->u.rw.nr_segments; j++) {
-+				buffer_pfn = info->shadow[req->u.rw.id].frame[j];
-+				buffer_mfn = pfn_to_mfn(buffer_pfn);
- 				gnttab_grant_foreign_access_ref(
- 					req->u.rw.seg[j].gref,
- 					info->xbdev->otherend_id,
--					pfn_to_mfn(info->shadow[req->u.rw.id].frame[j]),
-+					buffer_mfn,
- 					rq_data_dir(info->shadow[req->u.rw.id].request));
-+				if (xen_pv_domain())
-+					set_phys_to_machine(buffer_pfn, FOREIGN_FRAME(buffer_mfn));
-+			}
- 		}
- 		info->shadow[req->u.rw.id].req = *req;
- 
 -- 
-1.7.2.5
+Thanks,
 
+Steve
