@@ -1,76 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758536Ab2DJIfs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Apr 2012 04:35:48 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:45407 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752818Ab2DJIfr (ORCPT
+	id S1757413Ab2DJIhE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Apr 2012 04:37:04 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:36109 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752818Ab2DJIhB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Apr 2012 04:35:47 -0400
-Date: Tue, 10 Apr 2012 09:35:43 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: Shawn Guo <shawn.guo@linaro.org>, Grant Likely <grant.likely@secretlab.ca>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        linux-arm-kernel@lists.infradead.org,
-        spi-devel-general@lists.sourceforge.net, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH/RFC v2] ARM: amba: Remove AMBA level regulator support
-Message-ID: <20120410083543.GC3149@opensource.wolfsonmicro.com>
-References: <1333306720-28344-1-git-send-email-broonie@opensource.wolfsonmicro.com>
- <20120406074942.GO7264@S2101-09.ap.freescale.net>
- <20120410083130.GK24211@n2100.arm.linux.org.uk>
+	Tue, 10 Apr 2012 04:37:01 -0400
+Message-ID: <4F83F125.9080206@suse.cz>
+Date: Tue, 10 Apr 2012 10:36:53 +0200
+From: Jiri Slaby <jslaby@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120404 Thunderbird/13.0a2
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="bKyqfOwhbdpXa4YI"
-Content-Disposition: inline
-In-Reply-To: <20120410083130.GK24211@n2100.arm.linux.org.uk>
-X-Cookie: You enjoy the company of other people.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Jiri Slaby <jirislaby@gmail.com>
+CC: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
+        Karsten Keil <isdn@linux-pingi.de>,
+        Stephen Rothwell <sfr@canb.auug.org.au>
+Subject: Re: [PATCH 1/1] ISDN: remove uses of isdn_tty_revision
+References: <20120410130637.d9aff141830a3eb71ff21440@canb.auug.org.au> <1334046929-31282-1-git-send-email-jslaby@suse.cz>
+In-Reply-To: <1334046929-31282-1-git-send-email-jslaby@suse.cz>
+X-Enigmail-Version: 1.4
+Content-Type: text/plain; charset=ISO-8859-2
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 04/10/2012 10:35 AM, Jiri Slaby wrote:
+> Commit "ISDN: i4l, remove cvs crap" removed definition of
+> isdn_tty_revision, but there is still a user. So this causes linking
+> errors. This was hidden from my radar because the variable was not
+> declared in any header. Instead isdn_common.c declares it locally.
+> 
+> So remove this variable also from isdn_common.c, because there is
+> really no way to find out the version. Git commit or tag is...
+> 
+> Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+> Cc: Karsten Keil <isdn@linux-pingi.de>
 
---bKyqfOwhbdpXa4YI
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Oh, and
 
-On Tue, Apr 10, 2012 at 09:31:30AM +0100, Russell King - ARM Linux wrote:
-> On Fri, Apr 06, 2012 at 03:49:45PM +0800, Shawn Guo wrote:
-> > I believe this patch fixes the amba probe failure that impacts any
-> > AMBA platform build with CONFIG_REGULATOR enabled.  Could you consider
-> > to send the fix for -rc soon?
+Reported-by: Stephen Rothwell <sfr@canb.auug.org.au>
 
-> No idea.  I don't have Mark's patch in the patch system.
+Thanks!
 
-It's there as far as I can tell - it's 7366/1, which is visible in the
-web interface at:
+> ---
+>  drivers/isdn/i4l/isdn_common.c |    3 ---
+>  1 file changed, 3 deletions(-)
+> 
+> diff --git a/drivers/isdn/i4l/isdn_common.c b/drivers/isdn/i4l/isdn_common.c
+> index 2ffa0b73..8c610fa 100644
+> --- a/drivers/isdn/i4l/isdn_common.c
+> +++ b/drivers/isdn/i4l/isdn_common.c
+> @@ -46,7 +46,6 @@ static DEFINE_MUTEX(isdn_mutex);
+>  static char *isdn_revision = "$Revision: 1.1.2.3 $";
+>  
+>  extern char *isdn_net_revision;
+> -extern char *isdn_tty_revision;
+>  #ifdef CONFIG_ISDN_PPP
+>  extern char *isdn_ppp_revision;
+>  #else
+> @@ -2351,8 +2350,6 @@ static int __init isdn_init(void)
+>  
+>  	strcpy(tmprev, isdn_revision);
+>  	printk(KERN_NOTICE "ISDN subsystem Rev: %s/", isdn_getrev(tmprev));
+> -	strcpy(tmprev, isdn_tty_revision);
+> -	printk("%s/", isdn_getrev(tmprev));
+>  	strcpy(tmprev, isdn_net_revision);
+>  	printk("%s/", isdn_getrev(tmprev));
+>  	strcpy(tmprev, isdn_ppp_revision);
+> 
 
-http://www.arm.linux.org.uk/developer/patches/viewpatch.php?id=7366/1
 
-Is there something else I need to do?
 
---bKyqfOwhbdpXa4YI
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+-- 
+js
+suse labs
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAEBAgAGBQJPg/DYAAoJEBus8iNuMP3dCEAQAJjG3BtROC35/BAxtjp8usEl
-vAxPFg/TXDZ4X2JxwzN+GSXW6oWL29vDfaU77pMI8zITfeFzRj52UlWLw60WMttM
-BqKr89IQppiV/jm8099YKx1duFBsz7XRektApHPqsi3JM/lx+wlLTgYffIE187Vd
-pQDPGKmg6f50qMJQWShEqTOQDerVXf9ShNif1O8txPHZCc6OUzUXv/+2fUDoIh0m
-SkwJUKRBlDaZ60Tqx6GcH1ugNnMLXFHnFr6w5HY/K8nRlrl3PVUrhIdx0Invsjzx
-zK2ErfufDIXrSUq6nheY3H1A/euoVcvURL6wLsghkh862FSn7lm4MNh9NaqMgK/i
-8cDbe/f3OJzVSkSbvNyGhMk8c3eYQ1iQw0NVJZDz8vCU405ugLgvi0gbWwOGo4GN
-dj9HZHA6jdqTn8saKze8YBKjl14Qg41vj8a6GXtG0rNdDUpCW7pjXwq9P694ouY4
-+q4e0C8XW956NfXVnepla8dEcBTvBVCv3SeixBcKPjWpgDTMsy02vUeVAfO4K15m
-sfwKw2uX4d01rpGMDqDrOyNUhJbzAob+zcP607o1uuklBvORCUO6y9+McZHRoosA
-sCI5qP3SsYjGXo9gB7T66qQDyirjfE8J5a8buFMTHsl9ijgfrm9SOruxqjxfXg4O
-/UBzT2gMov9IcxvHYbV/
-=Y25J
------END PGP SIGNATURE-----
-
---bKyqfOwhbdpXa4YI--
