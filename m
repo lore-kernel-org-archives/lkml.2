@@ -1,50 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757947Ab2DJIXp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Apr 2012 04:23:45 -0400
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:51723 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753284Ab2DJIXm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Apr 2012 04:23:42 -0400
+	id S1758115Ab2DJIZB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Apr 2012 04:25:01 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:54484 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753284Ab2DJIY6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Apr 2012 04:24:58 -0400
+Date: Tue, 10 Apr 2012 09:24:54 +0100
+From: Mel Gorman <mgorman@suse.de>
+To: Ying Han <yinghan@google.com>
+Cc: Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Rik van Riel <riel@redhat.com>,
+        Konstantin Khlebnikov <khlebnikov@openvz.org>,
+        Hugh Dickins <hughd@google.com>
+Subject: Re: [PATCH 1/2] mm: vmscan: Remove lumpy reclaim
+Message-ID: <20120410082454.GA3789@suse.de>
+References: <1332950783-31662-1-git-send-email-mgorman@suse.de>
+ <1332950783-31662-2-git-send-email-mgorman@suse.de>
+ <CALWz4iymXkJ-88u9Aegc2DjwO2vZp3xVuw_5qTRW2KgPP8ti=g@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <1333553270-9040-4-git-send-email-swarren@wwwdotorg.org>
-References: <1333553270-9040-1-git-send-email-swarren@wwwdotorg.org>
-	<1333553270-9040-4-git-send-email-swarren@wwwdotorg.org>
-Date: Tue, 10 Apr 2012 10:23:42 +0200
-Message-ID: <CACRpkdZ2T2OUE2=NRXkzMNS61ojDYmaZv=H4AFm=1QPL_-JNyA@mail.gmail.com>
-Subject: Re: [PATCH V4 REPOST 4/5] dt: Document Tegra20/30 pinctrl binding
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Stephen Warren <swarren@wwwdotorg.org>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>
-Cc: linux-kernel@vger.kernel.org, Stephen Warren <swarren@nvidia.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CALWz4iymXkJ-88u9Aegc2DjwO2vZp3xVuw_5qTRW2KgPP8ti=g@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 4, 2012 at 5:27 PM, Stephen Warren <swarren@wwwdotorg.org> wrote:
+On Fri, Apr 06, 2012 at 04:52:09PM -0700, Ying Han wrote:
+> On Wed, Mar 28, 2012 at 9:06 AM, Mel Gorman <mgorman@suse.de> wrote:
+> > Lumpy reclaim had a purpose but in the mind of some, it was to kick
+> > the system so hard it trashed. For others the purpose was to complicate
+> > vmscan.c. Over time it was giving softer shoes and a nicer attitude but
+> > memory compaction needs to step up and replace it so this patch sends
+> > lumpy reclaim to the farm.
+> >
+> > Here are the important notes related to the patch.
+> >
+> > 1. The tracepoint format changes for isolating LRU pages.
+> >
+> > 2. This patch stops reclaim/compaction entering sync reclaim as this
+> >   was only intended for lumpy reclaim and an oversight. Page migration
+> >   has its own logic for stalling on writeback pages if necessary and
+> >   memory compaction is already using it. This is a behaviour change.
+> >
+> > 3. RECLAIM_MODE_SYNC no longer exists. pageout() does not stall
+> >   on PageWriteback with CONFIG_COMPACTION has been this way for a while.
+> >   I am calling it out in case this is a surpise to people.
+> 
+> Mel,
+> 
+> Can you point me the commit making that change? I am looking at
+> v3.4-rc1 where set_reclaim_mode() still set RECLAIM_MODE_SYNC for
+> COMPACTION_BUILD.
+> 
 
-> From: Stephen Warren <swarren@nvidia.com>
->
-> Define a new binding for the Tegra pin controller, which is capable of
-> defining all aspects of desired pin multiplexing and pin configuration.
-> This is all based on the new common pinctrl bindings.
->
-> Add Tegra30 binding based on Tegra20 binding.
->
-> Add some basic stuff that was missing before:
-> * How many and what reg property entries must be provided.
-> * An example.
->
-> Signed-off-by: Stephen Warren <swarren@nvidia.com>
-> Acked-by: Dong Aisheng <dong.aisheng@linaro.org>
-> ---
-> v3: Fix typo in Tegra20 binding example
+You're right.
 
-Would be nice to have Grants or Robs ACK but tentatively
-applied to the pinctrl tree anyway.
+There is only one call site that passes sync==true for set_reclaim_mode() in
+vmscan.c and that is only if should_reclaim_stall() returns true. It had the
+comment "Only stall on lumpy reclaim" but the comment is not accurate
+and that mislead me.
 
-Yours,
-Linus Walleij
+Thanks, I'll revisit the patch.
+
+-- 
+Mel Gorman
+SUSE Labs
