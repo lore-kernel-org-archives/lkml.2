@@ -1,60 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755253Ab2DJN4o (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Apr 2012 09:56:44 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:38711 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750885Ab2DJN4n (ORCPT
+	id S1758778Ab2DJN6r (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Apr 2012 09:58:47 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:32610 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753714Ab2DJN6q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Apr 2012 09:56:43 -0400
-Message-ID: <4F843C17.5050004@kernel.dk>
-Date: Tue, 10 Apr 2012 15:56:39 +0200
-From: Jens Axboe <axboe@kernel.dk>
-MIME-Version: 1.0
-To: Vivek Goyal <vgoyal@redhat.com>
-CC: linux kernel mailing list <linux-kernel@vger.kernel.org>,
-        Moyer Jeff Moyer <jmoyer@redhat.com>
-Subject: Re: [RFC PATCH] block: Change default IO scheduler to deadline except
- SATA
-References: <20120410133708.GE21801@redhat.com>
-In-Reply-To: <20120410133708.GE21801@redhat.com>
-X-Enigmail-Version: 1.4
-Content-Type: text/plain; charset=ISO-8859-1
+	Tue, 10 Apr 2012 09:58:46 -0400
+X-Authority-Analysis: v=2.0 cv=T5EOvo2Q c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=XQbtiDEiEegA:10 a=hzoqAax4KOoA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=M29pHIjLk_o7-QnifkkA:9 a=PUjeQqilurYA:10 a=jeBq3FmKZ4MA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.80.29
+Message-ID: <1334066322.23924.204.camel@gandalf.stny.rr.com>
+Subject: Re: [PATCH]sched_rt.c: Avoid unnecessary dequeue and enqueue of
+ pushable tasks in set_cpus_allowed_rt()
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Kirill Tkhai <tkhai@yandex.ru>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>
+Date: Tue, 10 Apr 2012 09:58:42 -0400
+In-Reply-To: <654301331942324@web109.yandex.ru>
+References: <1322774765.8386.2.camel@hp>
+	 <20120213172316.GA24145@home.goodmis.org> <944171329661049@web81.yandex.ru>
+	 <654301331942324@web109.yandex.ru>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.2.2-1 
 Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2012-04-10 15:37, Vivek Goyal wrote:
-> Hi,
-> 
-> I am wondering if CFQ as default scheduler is still the right choice. CFQ
-> generally works well on slow rotational media (SATA?). But often
-> underperforms on faster storage (storage arrays, PCIE SSDs, virtualized
-> disk in linux guests etc). People often put logic in user space to tune their
-> systems and change IO scheduler to deadline to get better performance on
-> faster storage.
-> 
-> Though there is not one good answer for all kind of storage and for all
-> kind of workloads, I am wondering if we can provide a better default and
-> that is change default IO scheduler to "deadline" except SATA.
-> 
-> One can argue that some SAS disks can be slow too and benefit from CFQ. Yes,
-> but default IO scheduler choice is not perfect anyway. It just tries to
-> cater to a wide variety of use cases out of the box.
-> 
-> So I am throwing this patch out see if it flies. Personally, I think it
-> might turn out to be a more reasonable default.
+On Sat, 2012-03-17 at 03:58 +0400, Kirill Tkhai wrote:
+> Steven, what is about the patch from my previous message? Is everything ok?
 
-I think it'd be a lot more sane to just use CFQ on rotational single
-devices, and default to deadline on raid or non-rotational devices. This
-still isn't perfect, since less worthy SSDs still benefit from the
-read/write separation, and some multi device configs will be faster as
-well. But it's better.
+You're timing is impeccable. I was in Chemnitz, Germany when you sent
+this, and it too was lost in the noise ;-)
 
-The below patch is not a good idea. There's no clear distinction between
-on what CFQ is now the default.
+I'll take a look at it today.
 
--- 
-Jens Axboe
+Thanks!
+
+-- Steve
+
+ 
+> 
+> Regards,
+> Kirill
+> 
+> 19.02.2012, 18:17, "Kirill Tkhai" <tkhai@yandex.ru>:
+> > 13.02.2012, 21:23, "Steven Rostedt" <rostedt@goodmis.org>:
+> >
+> >>  I wasn't on the Cc of the original message, but it was bounced to me
+> >>  awhile ago. I'm cleaning out my email and came across it.
+> >>
+> >>  Can you send me the latest version of this patch, either against latest
+> >>  Linus, or against tip/master.
+> >>
+> >>  Thanks,
+> >>
+> >>  -- Steve
+> >>
+> >>  P.S. I'll be at ELC this week so it may not get processed right away.
+> >
+> > Migration status depends on a difference of weight from 0 and 1.
+> > If weight > 1 (<= 1) and old weight <= 1 (> 1) then task becomes
+> > pushable (or not pushable). We are not insterested in its exact
+> > values, is it 3 or 4, for example.
+> >
+> > Now if we are changing affinity from a set of 3 cpus to a set of 4, the-
+> > task will be dequeued and enqueued sequentially without important
+> > difference in comparison with initial state. The only difference is in
+> > internal representation of plist queue of pushable tasks and the fact
+> > that the task may won't be the first in a sequence of the same priority
+> > tasks. But it seems to me it gives nothing.
+> >
+> > Signed-off-by: Tkhai Kirill <tkhai@yandex.ru>
+
 
