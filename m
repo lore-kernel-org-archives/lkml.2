@@ -1,139 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759547Ab2DJWDw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Apr 2012 18:03:52 -0400
-Received: from nm18-vm0.access.bullet.mail.mud.yahoo.com ([66.94.236.23]:26854
-	"HELO nm18-vm0.access.bullet.mail.mud.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1755709Ab2DJWDu (ORCPT
+	id S1759553Ab2DJWNE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Apr 2012 18:13:04 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:62980 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755615Ab2DJWNB convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Apr 2012 18:03:50 -0400
-X-Yahoo-Newman-Id: 888803.14055.bm@smtp106.biz.mail.ne1.yahoo.com
-X-Yahoo-Newman-Property: ymail-3
-X-YMail-OSG: TvdhZ34VM1mS0SYmU1A0JVcBlK3bmRoRXmqpiZpgW7GMWMw
- nGejDqzpFzUzhW7aBxmJEDXDdQ.y2vZv.kci6bqjHtnxIWic.m4EaploeqKP
- TcopwkIugA27DMsTZzPAp5kxmSVaN.k93q5L3QRLhEiim_V55HkcxWwNOoJ6
- XQRnSBE.g5ZbynXPzs14YFTZ6EIxk.bJwuw3JfzKM7QbdDtBEBLT8Wc0jy1c
- rQm2.iju.wdIPywnzCLL1EXj7Owufl.m2QOhmajZRrFSoxiZN6wxwXG1hIDV
- cIjMxbf9kmWlEde72LbyhLGL3q4gas9LJGFhBy5YVOHT7KyIvhX_TUzS0nQu
- rl1X7YKMc1IkaBVo2paFE9F6Qf6OrfaGEyPd771ggvlxlt5vDtpgCGTk.ayY
- m3MAbnmt22SfYo_lNvk3F3q2RaCmiipx.T6xFwQpBHI5_W5iXDI453PoRzb0
- PvjZghPdEtpdgbS0P6kfbn4xZx34XsorW.0MGmVNluLZPDUYGDWUbdpkJHUp
- xhy8MjlzESExgjw--
-X-Yahoo-SMTP: OIJXglSswBDfgLtXluJ6wiAYv6_cnw--
-Message-ID: <4F84AE44.1020505@schaufler-ca.com>
-Date: Tue, 10 Apr 2012 15:03:48 -0700
-From: Casey Schaufler <casey@schaufler-ca.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:11.0) Gecko/20120327 Thunderbird/11.0.1
+	Tue, 10 Apr 2012 18:13:01 -0400
 MIME-Version: 1.0
-To: Kees Cook <keescook@chromium.org>
-CC: linux-kernel@vger.kernel.org, James Morris <james.l.morris@oracle.com>,
-        Eric Paris <eparis@redhat.com>, Paul Moore <paul.moore@hp.com>,
-        Al Viro <viro@zeniv.linux.org.uk>, Andi Kleen <ak@linux.intel.com>,
-        linux-security-module@vger.kernel.org,
-        Casey Schaufler <casey@schaufler-ca.com>
-Subject: Re: [PATCH] Smack: build when CONFIG_AUDIT not defined
-References: <20120410202644.GA10466@www.outflux.net>
-In-Reply-To: <20120410202644.GA10466@www.outflux.net>
+In-Reply-To: <201204041235.32648.arnd@arndb.de>
+References: <1333503243-7702-1-git-send-email-robherring2@gmail.com>
+	<201204041235.32648.arnd@arndb.de>
+Date: Wed, 11 Apr 2012 00:13:00 +0200
+Message-ID: <CAGzjT4ehXa5vY8+7SP-k7kMCvEDZaGGd6NzFMkSVpgp0tDkm+Q@mail.gmail.com>
+Subject: Re: [PATCH 1/5] ARM: remove ixp23xx and ixp2000 platforms
+From: Jaccon Bastiaansen <jaccon.bastiaansen@gmail.com>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Rob Herring <robherring2@gmail.com>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        Russell King <linux@arm.linux.org.uk>,
+        Nicolas Pitre <nico@fluxnic.net>, Olof Johansson <olof@lixom.net>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Randy Dunlap <rdunlap@xenotime.net>,
+        Sascha Hauer <s.hauer@pengutronix.de>,
+        Russell Nelson <nelson@crynwr.com>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 4/10/2012 1:26 PM, Kees Cook wrote:
-> This fixes builds where CONFIG_AUDIT is not defined and
-> CONFIG_SECURITY_SMACK=y.
+Hello Arnd,
 
-This problem looks to have been introduced as part of
-the "common_audit_data cleanup" from Eric Paris, or of
-the integration of those changes from commit
-a5149bf3fed59b94207809704b5d06fec337a771
-This should probably be "[PATCH] Audit:" rather than
-"[PATCH] Smack". I am not planning anything from
-smack-next for 3.4.
-
+Op 4 april 2012 14:35 heeft Arnd Bergmann <arnd@arndb.de> het volgende
+geschreven:
+> On Wednesday 04 April 2012, Rob Herring wrote:
+>> From: Rob Herring <rob.herring@calxeda.com>
+>>
+>> ixp2xxx platforms have had no real changes since ~2006 and the maintainer
+>> has said on irc that they can be removed:
+>>
+>> 13:05 < nico> do you still care about ixp2000?
+>> 13:22 < lennert> not really, no
+>> 13:58 < nico> do you think we could remove it from the kernel tree?
+>> 14:01 < lennert> go for it, and remove ixp23xx too while you're at it
+>>
+>> Removing will help simplify ARM consolidation in general and PCI re-work
+>> specifically.
 >
-> Signed-off-by: Kees Cook <keescook@chromium.org>
+> This will let us kill another bit of ugly code:
+> 8<-----
+> [PATCH] net: cs89x0: remove ixp2xxx specific hacks
+>
+> The IXDP2351 and IXDP2X01 machines are getting removed from the kernel, so there
+> is no longer a need to special-case them in the cs89x0 driver.
+>
+> Signed-off-by: Arnd Bergmann <arnd@arndb.de>
 > ---
->  security/smack/smack_lsm.c |   19 +++++++++++++++----
->  1 files changed, 15 insertions(+), 4 deletions(-)
+>  drivers/net/ethernet/cirrus/cs89x0.c |   36 ----------------------------------
+>  1 files changed, 0 insertions(+), 36 deletions(-)
 >
-> diff --git a/security/smack/smack_lsm.c b/security/smack/smack_lsm.c
-> index 81c03a5..10056f2 100644
-> --- a/security/smack/smack_lsm.c
-> +++ b/security/smack/smack_lsm.c
-> @@ -1939,18 +1939,19 @@ static int smack_netlabel_send(struct sock *sk, struct sockaddr_in *sap)
->  	char *hostsp;
->  	struct socket_smack *ssp = sk->sk_security;
->  	struct smk_audit_info ad;
-> -	struct lsm_network_audit net;
->  
->  	rcu_read_lock();
->  	hostsp = smack_host_label(sap);
->  	if (hostsp != NULL) {
-> -		sk_lbl = SMACK_UNLABELED_SOCKET;
->  #ifdef CONFIG_AUDIT
-> +		struct lsm_network_audit net;
-> +
->  		smk_ad_init_net(&ad, __func__, LSM_AUDIT_DATA_NET, &net);
->  		ad.a.u.net->family = sap->sin_family;
->  		ad.a.u.net->dport = sap->sin_port;
->  		ad.a.u.net->v4info.daddr = sap->sin_addr.s_addr;
->  #endif
-> +		sk_lbl = SMACK_UNLABELED_SOCKET;
->  		rc = smk_access(ssp->smk_out, hostsp, MAY_WRITE, &ad);
->  	} else {
->  		sk_lbl = SMACK_CIPSO_SOCKET;
-> @@ -2809,11 +2810,14 @@ static int smack_unix_stream_connect(struct sock *sock,
->  	struct socket_smack *osp = other->sk_security;
->  	struct socket_smack *nsp = newsk->sk_security;
->  	struct smk_audit_info ad;
-> -	struct lsm_network_audit net;
->  	int rc = 0;
->  
-> +#ifdef CONFIG_AUDIT
-> +	struct lsm_network_audit net;
-> +
->  	smk_ad_init_net(&ad, __func__, LSM_AUDIT_DATA_NET, &net);
->  	smk_ad_setfield_u_net_sk(&ad, other);
-> +#endif
->  
->  	if (!capable(CAP_MAC_OVERRIDE))
->  		rc = smk_access(ssp->smk_out, osp->smk_in, MAY_WRITE, &ad);
-> @@ -2842,11 +2846,14 @@ static int smack_unix_may_send(struct socket *sock, struct socket *other)
->  	struct socket_smack *ssp = sock->sk->sk_security;
->  	struct socket_smack *osp = other->sk->sk_security;
->  	struct smk_audit_info ad;
-> -	struct lsm_network_audit net;
->  	int rc = 0;
->  
-> +#ifdef CONFIG_AUDIT
-> +	struct lsm_network_audit net;
-> +
->  	smk_ad_init_net(&ad, __func__, LSM_AUDIT_DATA_NET, &net);
->  	smk_ad_setfield_u_net_sk(&ad, other->sk);
-> +#endif
->  
->  	if (!capable(CAP_MAC_OVERRIDE))
->  		rc = smk_access(ssp->smk_out, osp->smk_in, MAY_WRITE, &ad);
-> @@ -2993,7 +3000,9 @@ static int smack_socket_sock_rcv_skb(struct sock *sk, struct sk_buff *skb)
->  	char *csp;
->  	int rc;
->  	struct smk_audit_info ad;
-> +#ifdef CONFIG_AUDIT
->  	struct lsm_network_audit net;
-> +#endif
->  	if (sk->sk_family != PF_INET && sk->sk_family != PF_INET6)
->  		return 0;
->  
-> @@ -3156,7 +3165,9 @@ static int smack_inet_conn_request(struct sock *sk, struct sk_buff *skb,
->  	char *sp;
->  	int rc;
->  	struct smk_audit_info ad;
-> +#ifdef CONFIG_AUDIT
->  	struct lsm_network_audit net;
-> +#endif
->  
->  	/* handle mapped IPv4 packets arriving via IPv6 sockets */
->  	if (family == PF_INET6 && skb->protocol == htons(ETH_P_IP))
+> diff --git a/drivers/net/ethernet/cirrus/cs89x0.c b/drivers/net/ethernet/cirrus/cs89x0.c
+> index b9406cb..6b92080 100644
+> --- a/drivers/net/ethernet/cirrus/cs89x0.c
+> +++ b/drivers/net/ethernet/cirrus/cs89x0.c
+> @@ -173,21 +173,11 @@ static char version[] __initdata =
+>  /* The cs8900 has 4 IRQ pins, software selectable. cs8900_irq_map maps
+>    them to system IRQ numbers. This mapping is card specific and is set to
+>    the configuration of the Cirrus Eval board for this chip. */
+> -#if defined(CONFIG_MACH_IXDP2351)
+> -#define CS89x0_NONISA_IRQ
+> -static unsigned int netcard_portlist[] __used __initdata = {IXDP2351_VIRT_CS8900_BASE, 0};
+> -static unsigned int cs8900_irq_map[] = {IRQ_IXDP2351_CS8900, 0, 0, 0};
+> -#elif defined(CONFIG_ARCH_IXDP2X01)
+> -#define CS89x0_NONISA_IRQ
+> -static unsigned int netcard_portlist[] __used __initdata = {IXDP2X01_CS8900_VIRT_BASE, 0};
+> -static unsigned int cs8900_irq_map[] = {IRQ_IXDP2X01_CS8900, 0, 0, 0};
+> -#else
+>  #ifndef CONFIG_CS89x0_PLATFORM
+>  static unsigned int netcard_portlist[] __used __initdata =
+>    { 0x300, 0x320, 0x340, 0x360, 0x200, 0x220, 0x240, 0x260, 0x280, 0x2a0, 0x2c0, 0x2e0, 0};
+>  static unsigned int cs8900_irq_map[] = {10,11,12,5};
+>  #endif
+> -#endif
+>
+>  #if DEBUGGING
+>  static unsigned int net_debug = DEBUGGING;
+> @@ -345,31 +335,6 @@ out:
+>  #endif
+>  #endif
+>
+> -#if defined(CONFIG_MACH_IXDP2351)
+> -static u16
+> -readword(unsigned long base_addr, int portno)
+> -{
+> -       return __raw_readw(base_addr + (portno << 1));
+> -}
+> -
+> -static void
+> -writeword(unsigned long base_addr, int portno, u16 value)
+> -{
+> -       __raw_writew(value, base_addr + (portno << 1));
+> -}
+> -#elif defined(CONFIG_ARCH_IXDP2X01)
+> -static u16
+> -readword(unsigned long base_addr, int portno)
+> -{
+> -       return __raw_readl(base_addr + (portno << 1));
+> -}
+> -
+> -static void
+> -writeword(unsigned long base_addr, int portno, u16 value)
+> -{
+> -       __raw_writel(value, base_addr + (portno << 1));
+> -}
+> -#else
+>  static u16
+>  readword(unsigned long base_addr, int portno)
+>  {
+> @@ -381,7 +346,6 @@ writeword(unsigned long base_addr, int portno, u16 value)
+>  {
+>        outw(value, base_addr + portno);
+>  }
+> -#endif
+>
+>  static void
+>  readwords(unsigned long base_addr, int portno, void *buf, int length)
 
+You can now also remove all the uses of CS89x0_NONISA_IRQ, since those
+are only used for the IXDP specific parts of the CS89x0 driver.
+
+Regards
+  Jaccon
