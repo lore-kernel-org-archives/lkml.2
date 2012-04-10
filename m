@@ -1,83 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752303Ab2DJFMg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Apr 2012 01:12:36 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:59123 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751321Ab2DJFMf (ORCPT
+	id S1752422Ab2DJFUk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Apr 2012 01:20:40 -0400
+Received: from mga14.intel.com ([143.182.124.37]:38053 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751529Ab2DJFUj convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Apr 2012 01:12:35 -0400
-Date: Tue, 10 Apr 2012 15:12:29 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: linux-next@vger.kernel.org
-Cc: LKML <linux-kernel@vger.kernel.org>
-Subject: Re: linux-next: Tree for Apr 10
-Message-Id: <20120410151229.836f8d8e806f33d26c4719f9@canb.auug.org.au>
-In-Reply-To: <20120410145546.65b54b0d515db38e23bb4624@canb.auug.org.au>
-References: <20120410145546.65b54b0d515db38e23bb4624@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0beta6 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Tue__10_Apr_2012_15_12_29_+1000_9O6XBa86OxS6o1eG"
+	Tue, 10 Apr 2012 01:20:39 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="129001077"
+From: "Pallala, Ramakrishna" <ramakrishna.pallala@intel.com>
+To: Anton Vorontsov <cbouatmailru@gmail.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Pallala, Ramakrishna" <ramakrishna.pallala@intel.com>
+Subject: RE: [PATCH] max17042_battery: fix driver exit function
+Thread-Topic: [PATCH] max17042_battery: fix driver exit function
+Thread-Index: AQHNC3xnErhAmXsEakusyRSed0Yq3paTm1ZA
+Date: Tue, 10 Apr 2012 05:20:33 +0000
+Message-ID: <D854C92F57B1B347B57E531E78D05EAD1071B1@BGSMSX102.gar.corp.intel.com>
+References: <1332756506-6905-1-git-send-email-ramakrishna.pallala@intel.com>
+In-Reply-To: <1332756506-6905-1-git-send-email-ramakrishna.pallala@intel.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.223.10.10]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Tue__10_Apr_2012_15_12_29_+1000_9O6XBa86OxS6o1eG
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Hi Anton,
 
-On Tue, 10 Apr 2012 14:55:46 +1000 Stephen Rothwell <sfr@canb.auug.org.au> =
-wrote:
->
-> Changes since 20120405:
->=20
-> New trees: sh-current, sh
->=20
-> The tile tree gained conflicts against Linus' tree.
->=20
-> The net-next tree lost its build failure.
->=20
-> The wireless-next tree gained a conflict against the net-next tree.
->=20
-> The trivial tree lost its conflict.
+> From: Pallala, Ramakrishna
+> Sent: Monday, March 26, 2012 3:38 PM
+> To: linux-kernel@vger.kernel.org
+> Cc: Anton Vorontsov; Anton Vorontsov; Pallala, Ramakrishna
+> Subject: [PATCH] max17042_battery: fix driver exit function
+> 
+> This patch frees the irq and sets the i2c client data to NULL in driver remove function.
+> 
+> Signed-off-by: Ramakrishna Pallala <ramakrishna.pallala@intel.com>
+> ---
+>  drivers/power/max17042_battery.c |    4 ++++
+>  1 files changed, 4 insertions(+), 0 deletions(-)
+> 
+> diff --git a/drivers/power/max17042_battery.c b/drivers/power/max17042_battery.c
+> index abf3400..d4868c5 100644
+> --- a/drivers/power/max17042_battery.c
+> +++ b/drivers/power/max17042_battery.c
+> @@ -721,6 +721,10 @@ static int __devexit max17042_remove(struct i2c_client *client)
+>  	struct max17042_chip *chip = i2c_get_clientdata(client);
+> 
+>  	power_supply_unregister(&chip->battery);
+> +	if (client->irq)
+> +		free_irq(client->irq, chip);
+> +	i2c_set_clientdata(client, NULL);
+> +
+>  	return 0;
+>  }
 
-The regulator tree gained a build failure so I used the version from
-next-20120405.
+I have not received any comments for this patch.
+Can I assume that this patch is in your merge queue?
 
-> The tty tree gained a build failure so I used the version from
-> next-20120405.
->=20
-> The pinctrl tree still had its build failure so I used the version from
-> next-20120403.
->=20
-> The akpm tree lost several patches that turned up in Linus' tree.
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
---Signature=_Tue__10_Apr_2012_15_12_29_+1000_9O6XBa86OxS6o1eG
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJPg8E9AAoJEECxmPOUX5FEi3kP/2joZcNSRWAZOsPDciJLTc+i
-oePPYcPQchNJix1XBGBssiMhOW2aM5sJZGpB5QnjmvseAX3UPUCovdovBekEw0g7
-usuxrYd0sj+IoFmAb3W6wG5Gtawa4Hy9mDgFGbmAwt5wojZfq8AbFvtciYEUJEaY
-n+2vdQ7UN+ZNLcctNfgl06S2tfhs8S74D362H4XdgpdFLf8sU30qW3g9yMIgShd3
-OngfWzlR25ecaeRvhF1BIImFfe0AYcCBW2XraAuLUV/8dVNnNssIY0l0cr0kg3Nd
-C4Z4ruP42fOn9OhHVHC1m35VjELEG94fMqfv73rN/nDBGM9b1l6IS8ZonIRVVLzx
-zqgMYqJgJdvUmJ01fMZTkSznyiGr+DDRn6MqXMUpI/cTgkwG1Aj37iOtoRtfscv8
-cMj8Xo7tstJXTfI9TZFuDSssPxVJgDUa2QS7g1Y0gquhR3Ka3VbXIr+HnZ+xEyjm
-PJBP1NYkF8unCjBEQyE7cphu7D7GdS/Z7k9LiH79h5NMPDbvDXvHoYVqkJbnhpBr
-kFowK7Ozh3FdRTklVgHtqM9lqcdvv1fKcy2ZGPkTiWlVgm1LgojSaq3UjNP01TYx
-I5R5XjwtXxniBYuUml1OFRIBX/yjPt8Nzqty9x+sEyEIb4NXnshTABEhI5nsBJDw
-dOIVShsWo/XgV3DPC5eN
-=Fa4u
------END PGP SIGNATURE-----
-
---Signature=_Tue__10_Apr_2012_15_12_29_+1000_9O6XBa86OxS6o1eG--
+Thanks,
+Ram
