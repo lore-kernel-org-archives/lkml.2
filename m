@@ -1,51 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758641Ab2DJMhH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Apr 2012 08:37:07 -0400
-Received: from moutng.kundenserver.de ([212.227.126.186]:62917 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758389Ab2DJMhF (ORCPT
+	id S1758637Ab2DJMjH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Apr 2012 08:39:07 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:33131 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752647Ab2DJMjF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Apr 2012 08:37:05 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Eric Andersson <eric.andersson@unixphere.com>
-Subject: Re: [PATCHv5 0/3] bmp085: add support for bmp18x chip
-Date: Tue, 10 Apr 2012 12:36:53 +0000
-User-Agent: KMail/1.12.2 (Linux/3.3.0-rc1; KDE/4.3.2; x86_64; ; )
-Cc: linux-kernel@vger.kernel.org, gregkh@linuxfoundation.org,
-        alan@lxorguk.ukuu.org.uk, zhengguang.guo@bosch-sensortec.com,
-        peter.moeller@cn.bosch.com, stefan.nilsson@unixphere.com,
-        broonie@opensource.wolfsonmicro.com, christoph.mair@gmail.com
-References: <1334002577-7786-1-git-send-email-eric.andersson@unixphere.com>
-In-Reply-To: <1334002577-7786-1-git-send-email-eric.andersson@unixphere.com>
+	Tue, 10 Apr 2012 08:39:05 -0400
+Message-ID: <4F842987.9010600@mvista.com>
+Date: Tue, 10 Apr 2012 16:37:27 +0400
+From: Sergei Shtylyov <sshtylyov@mvista.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:11.0) Gecko/20120327 Thunderbird/11.0.1
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
+To: Tomoya MORINAGA <tomoya.rohm@gmail.com>
+CC: Alan Stern <stern@rowland.harvard.edu>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
+        qi.wang@intel.com, yong.y.wang@intel.com, joel.clark@intel.com,
+        kok.howg.ewe@intel.com
+Subject: Re: [PATCH 1/2] usb/ehci-hub: Add workaround for EG20T/ML7213/ML7223/ML7831
+References: <1334030835-4681-1-git-send-email-tomoya.rohm@gmail.com>
+In-Reply-To: <1334030835-4681-1-git-send-email-tomoya.rohm@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-Message-Id: <201204101236.53406.arnd@arndb.de>
-X-Provags-ID: V02:K0:nbtJ7anWwmW0Oy72JJNWDxxULdEQ6i3GSZu+HTVrB9i
- 6xQbAVRvpcmdPpAheiGCidUa5epxu7F2gPfSC/rBlfkYZ0b/rp
- 1hrCtXAeng0PWqVxbO9MaLRD4daNolLHdS4jP/knPBzoqBbGxA
- dx6CtbWMclnAhgFn9qu7D09YFc5kju3Z3KYFJOU1+a3mS3sE4D
- NrbNOBfCJ4OjXZ+O8q100Xeq20dcjA0z3O06Mrolon0QcGH4rr
- /pxKY/1A3rFG+Lovrxyu4YBsgCts2ZOonn+k2mCJFj0KoFN7Wq
- VxvXJLkCB3N4k9xg65iXz0w60TtMnMz39kEPKuXNt29sqs9roq
- jCuHd0Zm63tclmJNXLJs=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 09 April 2012, Eric Andersson wrote:
-> Hi,
-> 
-> This is version 5 of the patch-set that adds support for the latest pressure
-> sensors from Bosch Sensortec.
-> 
-> Changes from last version:
-> - Added "bosch" to vendor-prefixes.txt
+Hello.
 
-As for the previous version:
+On 10-04-2012 8:07, Tomoya MORINAGA wrote:
 
-Looks all good to me now,
+> ISSUE: When a bit of EHCI status register (USBSTS) is set
+> as 1, if the corresponded bit of EHCI interrupt enable
+> register(USBINTR) is set as 1, an interrupt occurs.
+> After that, even if the bit of USBINTR is set as 0, the
+> interrupt continues occurring.
+> Workaround: Clear the bit 3 of USBSTS before enabling the
+> interrupt, at resume process.
 
-Reviewed-by: Arnd Bergmann <arnd@arndb.de>
+> This patch is for
+> Intel EG20T PCH
+> LAPIS Semiconductor ML7213 IOH
+> LAPIS Semiconductor ML7223 IOH
+> LAPIS Semiconductor ML7831 IOH
+
+> Signed-off-by: Tomoya MORINAGA<tomoya.rohm@gmail.com>
+> ---
+>   drivers/usb/host/ehci-hub.c |   18 ++++++++++++++++++
+>   1 files changed, 18 insertions(+), 0 deletions(-)
+
+> diff --git a/drivers/usb/host/ehci-hub.c b/drivers/usb/host/ehci-hub.c
+> index 256fbd4..7ddb62e 100644
+> --- a/drivers/usb/host/ehci-hub.c
+> +++ b/drivers/usb/host/ehci-hub.c
+[...]
+> @@ -451,6 +452,23 @@ static int ehci_bus_resume (struct usb_hcd *hcd)
+>
+>   	ehci->next_statechange = jiffies + msecs_to_jiffies(5);
+>
+> +	if ((pdev->vendor == PCI_VENDOR_ID_INTEL&&  pdev->device == 0x8807) ||
+> +	   (pdev->vendor == PCI_VENDOR_ID_INTEL&&  pdev->device == 0x880F) ||
+> +	   (pdev->vendor == 0x10DB&&  pdev->device == 0x801C) || /* ML7213 */
+> +	   (pdev->vendor == 0x10DB&&  pdev->device == 0x8007) || /* ML7223 */
+> +	   (pdev->vendor == 0x10DB&&  pdev->device == 0x8807)) { /* ML7831 */
+
+    Why not:
+
+	if ((pdev->vendor == PCI_VENDOR_ID_INTEL &&
+	    (pdev->device == 0x8807 || pdev->device == 0x880F)) ||
+	    (pdev->vendor == 0x10DB &&
+	    (pdev->device == 0x801C || /* ML7213 */
+	     pdev->device == 0x8007 || /* ML7223 */
+	     pdev->device == 0x8807)   /* ML7831 */
+	)) {
+
+which avoids the duplicate checks? The same about the next patch.
+
+WBR, Sergei
