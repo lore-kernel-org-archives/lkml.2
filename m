@@ -1,80 +1,144 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754075Ab2DJQyH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Apr 2012 12:54:07 -0400
-Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:37457 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751707Ab2DJQyF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Apr 2012 12:54:05 -0400
-Date: Tue, 10 Apr 2012 17:56:32 +0100
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: mingo@elte.hu, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH RESEND] x86, intel_mid: ADC management
-Message-ID: <20120410175632.5c11c36e@pyramind.ukuu.org.uk>
-In-Reply-To: <20120410151943.GM7499@opensource.wolfsonmicro.com>
-References: <20120410131930.28186.85370.stgit@bob.linux.org.uk>
-	<20120410131206.GB31551@sirena.org.uk>
-	<20120410142501.6045c6c0@pyramind.ukuu.org.uk>
-	<20120410133339.GK7499@opensource.wolfsonmicro.com>
-	<20120410144235.1e05efd4@pyramind.ukuu.org.uk>
-	<20120410140749.GL7499@opensource.wolfsonmicro.com>
-	<20120410151529.5bcc5ce6@pyramind.ukuu.org.uk>
-	<20120410151943.GM7499@opensource.wolfsonmicro.com>
-X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1754488Ab2DJQ4Z (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Apr 2012 12:56:25 -0400
+Received: from trent.utfs.org ([94.185.90.103]:44352 "EHLO trent.utfs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752618Ab2DJQ4X (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Apr 2012 12:56:23 -0400
+Date: Tue, 10 Apr 2012 09:56:07 -0700 (PDT)
+From: Christian Kujau <lists@nerdbynature.de>
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+cc: "Suzuki K. Poulose" <suzuki@in.ibm.com>, linuxppc-dev@lists.ozlabs.org,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: 3.4.0-rc1: No init found
+In-Reply-To: <1334042632.3040.54.camel@pasglop>
+Message-ID: <alpine.DEB.2.01.1204100953400.3375@trent.utfs.org>
+References: <alpine.DEB.2.01.1204030008080.4930@trent.utfs.org>  <1333440522.3040.9.camel@pasglop>  <alpine.DEB.2.01.1204030953320.4930@trent.utfs.org>  <4F7C4058.6090405@in.ibm.com>  <alpine.DEB.2.01.1204040944210.4930@trent.utfs.org>
+ <1334042632.3040.54.camel@pasglop>
+User-Agent: Alpine 2.01 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-AV-Checked: ClamAV using ClamSMTP (127.0.0.1)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > We can't go around blocking entire platforms because of the IIO blob. I
-> > raised this point with the whole previous *generation* of Intel SoC
-> > devices about IIO and nothing has been done about it.
+On Tue, 10 Apr 2012 at 17:23, Benjamin Herrenschmidt wrote:
+> can you test the patch below ?
+
+When applied to 3.4-rc2, Linux boots again, yay! :-)
+
+   Tested-by: Christian Kujau <lists@nerdbynature.de>
+
+Thanks!
+Christian.
+
+> From 08f1ec8a594c60bf3856e3c45b6d15fd691d90bb Mon Sep 17 00:00:00 2001
+> From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+> Date: Tue, 10 Apr 2012 17:21:35 +1000
+> Subject: [PATCH] powerpc: Fix page fault with lockdep regression
 > 
-> Including by Intel, of course.
-
-Given the responses I got to moving it out of staging were of the "not
-yet" and "no" variety it hardly got a request to be worked upon.
-
-> > Get IIO out of staing and we can look at it, until then IIO is staging
-> > code, it's not part of the kernel, it may never be part of the kernel,
-> > and it should never block actual kernel code.
+> commit a546498f3bf9aac311c66f965186373aee2ca0b0
+> introduced a regression on 32-bit when irq tracing
+> is enabled by exposing an old bug in our irq tracing
+> code for exception entry.
 > 
-> That's not where the rest of the embedded community has been coming from
-> on this stuff and from a deployment point of view staging isn't really
-> that big a blocker to users
+> The code would save and restore some GPRs around the
+> calls to the C lockdep code, however, it tries to be
+> too smart for its own good and restores some of the
+> GPRs from the exception frame (as saved there on
+> exception entry).
+> 
+> However, for page faults, we do replace those GPRs with
+> arguments to do_page_fault before we call transfer_to_handler
+> and so restoring from the exception frame is plain wrong in
+> this case.
+> 
+> This was fine as long as we didn't touch the interrupt state
+> when taking page fault, but when I started doing it, it would
+> trigger the lockdep calls and the bug.
+> 
+> This fixes it by cleaning up that code a bit. It did create
+> a small stack frame for the sake of backtraces, so let's
+> make it a bit bigger and use it to save and restore the
+> stuff we care about.
+> 
+> Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+> ---
+>  arch/powerpc/kernel/entry_32.S |   39 +++++++++++++++++++++------------------
+>  1 file changed, 21 insertions(+), 18 deletions(-)
+> 
+> diff --git a/arch/powerpc/kernel/entry_32.S b/arch/powerpc/kernel/entry_32.S
+> index 3e57a00..ba3aeb4 100644
+> --- a/arch/powerpc/kernel/entry_32.S
+> +++ b/arch/powerpc/kernel/entry_32.S
+> @@ -206,40 +206,43 @@ reenable_mmu:				/* re-enable mmu so we can */
+>  	andi.	r10,r10,MSR_EE		/* Did EE change? */
+>  	beq	1f
+>  
+> -	/* Save handler and return address into the 2 unused words
+> -	 * of the STACK_FRAME_OVERHEAD (sneak sneak sneak). Everything
+> -	 * else can be recovered from the pt_regs except r3 which for
+> -	 * normal interrupts has been set to pt_regs and for syscalls
+> -	 * is an argument, so we temporarily use ORIG_GPR3 to save it
+> -	 */
+> -	stw	r9,8(r1)
+> -	stw	r11,12(r1)
+> -	stw	r3,ORIG_GPR3(r1)
+>  	/*
+>  	 * The trace_hardirqs_off will use CALLER_ADDR0 and CALLER_ADDR1.
+>  	 * If from user mode there is only one stack frame on the stack, and
+>  	 * accessing CALLER_ADDR1 will cause oops. So we need create a dummy
+>  	 * stack frame to make trace_hardirqs_off happy.
+> +	 *
+> +	 * This is handy because we also need to save a bunch of GPRs,
+> +	 * r3 can be different from GPR3(r1) at this point, r9 and r11
+> +	 * contains the old MSR and handler address respectively,
+> +	 * r4 & r5 can contain page fault arguments that need to be passed
+> +	 * along as well. r12, CCR, CTR, XER etc... are left clobbered as
+> +	 * they aren't useful past this point (aren't syscall arguments),
+> +	 * the rest is restored from the exception frame.
+>  	 */
+> +	stwu	r1,-32(r1)
+> +	stw	r9,8(r1)
+> +	stw	r11,12(r1)
+> +	stw	r3,16(r1)
+> +	stw	r4,20(r1)
+> +	stw	r5,24(r1)
+>  	andi.	r12,r12,MSR_PR
+> -	beq	11f
+> -	stwu	r1,-16(r1)
+> +	b	11f
+>  	bl	trace_hardirqs_off
+> -	addi	r1,r1,16
+>  	b	12f
+> -
+>  11:
+>  	bl	trace_hardirqs_off
+>  12:
+> +	lwz	r5,24(r1)
+> +	lwz	r4,20(r1)
+> +	lwz	r3,16(r1)
+> +	lwz	r11,12(r1)
+> +	lwz	r9,8(r1)
+> +	addi	r1,r1,32
+>  	lwz	r0,GPR0(r1)
+> -	lwz	r3,ORIG_GPR3(r1)
+> -	lwz	r4,GPR4(r1)
+> -	lwz	r5,GPR5(r1)
+>  	lwz	r6,GPR6(r1)
+>  	lwz	r7,GPR7(r1)
+>  	lwz	r8,GPR8(r1)
+> -	lwz	r9,8(r1)
+> -	lwz	r11,12(r1)
+>  1:	mtctr	r11
+>  	mtlr	r9
+>  	bctr				/* jump to handler */
+> -- 
+> 1.7.9.5
+> 
+-- 
+BOFH excuse #292:
 
-Non-staging code cannot depend upon staging code. That is the rule GregKH
-laid down. The Intel drivers involved are established non staging drivers
-and the gpadc layer is basically cleaning up the fact they all do this
-themselves in private right now without any central co-ordination or
-abstraction.
-
-> Frankly at this point I don't understand why we can't just lift IIO out
-> of staging as-is, perhaps with the userspace ABI nobbled or moved into
-> debugfs for the time being if that's still a concern.  Alternatively
-> there is the option of you proposing some other generic framework.
-
-I've been saying this for over a year. It's still a huge blob of code
-that isn't needed for pure low level stuff, but that's fixable and
-something which can eventually be worked upon.
-
-You are trying to make the tail wag the dog. Staging is basically out of
-kernel. The x86 stuff is *in kernel*, this driver is the basis of
-cleaning it up. We can sort out making it talk to IIO later. Right now
-all you are doing is blocking a pile of much needed code cleanups, and
-without them you *won't* have an API for the gpadc on Intel, it'll be
-hardcoded in each driver still. That will mean you have *zero* change of
-getting IIO support at all.
-
-Whether gpadc then adopts an IIO interface is a question to ask later,
-after (if) IIO is ever merged. If the platform ever starts using gpadc
-for non internal hardware stuff then I'm pretty sure it'll end up adopting
-whatever generic GPADC layer eventually emerges simply because we'll want
-to share drivers.
-
-Alan
+We ran out of dial tone and we're and waiting for the phone company to deliver another bottle.
