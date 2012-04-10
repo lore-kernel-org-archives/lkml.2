@@ -1,129 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759344Ab2DJPQX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Apr 2012 11:16:23 -0400
-Received: from db3ehsobe003.messaging.microsoft.com ([213.199.154.141]:23387
-	"EHLO db3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758995Ab2DJPQU convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Apr 2012 11:16:20 -0400
-X-SpamScore: -12
-X-BigFish: VS-12(zz9371I542M1432Nzz1202hzz8275bhz2fh2a8h683h839h944hd25h)
-X-Forefront-Antispam-Report: CIP:131.107.125.8;KIP:(null);UIP:(null);IPV:NLI;H:TK5EX14HUBC104.redmond.corp.microsoft.com;RD:none;EFVD:NLI
-From: KY Srinivasan <kys@microsoft.com>
-To: KY Srinivasan <kys@microsoft.com>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
-        "virtualization@lists.osdl.org" <virtualization@lists.osdl.org>,
-        "ohering@suse.com" <ohering@suse.com>,
-        "jbottomley@parallels.com" <jbottomley@parallels.com>,
-        "hch@infradead.org" <hch@infradead.org>,
-        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
-        "apw@canonical.com" <apw@canonical.com>
-Subject: RE: [PATCH RESEND 1/1] Drivers: scsi: storvsc: Properly handle
- errors from the host
-Thread-Topic: [PATCH RESEND 1/1] Drivers: scsi: storvsc: Properly handle
- errors from the host
-Thread-Index: AQHNE2D+/mszzw7RBkKZE4dGKGbHP5aUMcDw
-Date: Tue, 10 Apr 2012 15:13:39 +0000
-Message-ID: <426367E2313C2449837CD2DE46E7EAF90250E2@BY2PRD0310MB378.namprd03.prod.outlook.com>
-References: <1333654012-23850-1-git-send-email-kys@microsoft.com>
-In-Reply-To: <1333654012-23850-1-git-send-email-kys@microsoft.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [173.61.53.133]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1759358Ab2DJPQf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Apr 2012 11:16:35 -0400
+Received: from mail-vb0-f46.google.com ([209.85.212.46]:45525 "EHLO
+	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759291Ab2DJPQW convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Apr 2012 11:16:22 -0400
 MIME-Version: 1.0
-X-OrganizationHeadersPreserved: BY2PRD0310HT003.namprd03.prod.outlook.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%LINUXFOUNDATION.ORG$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%VGER.KERNEL.ORG$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%LINUXDRIVERPROJECT.ORG$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%LISTS.OSDL.ORG$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%SUSE.COM$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%PARALLELS.COM$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%INFRADEAD.ORG$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%CANONICAL.COM$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
-X-CrossPremisesHeadersPromoted: TK5EX14HUBC104.redmond.corp.microsoft.com
-X-CrossPremisesHeadersFiltered: TK5EX14HUBC104.redmond.corp.microsoft.com
-X-OriginatorOrg: microsoft.com
+In-Reply-To: <CAJd=RBD6Sb4zmUkMTaT12cgwFLAQYmh6HuK1hLMa_Dda6FHBLQ@mail.gmail.com>
+References: <1334000524-23972-1-git-send-email-yinghan@google.com>
+	<CAJd=RBD6Sb4zmUkMTaT12cgwFLAQYmh6HuK1hLMa_Dda6FHBLQ@mail.gmail.com>
+Date: Tue, 10 Apr 2012 23:16:19 +0800
+Message-ID: <CAJd=RBAdRKaY1t_=ZxwW+u+1RmSJm7V=h8ywcxz5VJVe75O-PA@mail.gmail.com>
+Subject: Re: [PATCH] Revert "mm: vmscan: fix misused nr_reclaimed in shrink_mem_cgroup_zone()"
+From: Hillf Danton <dhillf@gmail.com>
+To: Ying Han <yinghan@google.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Rik van Riel <riel@redhat.com>,
+        Hugh Dickins <hughd@google.com>, linux-mm@kvack.org,
+        LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-
-> -----Original Message-----
-> From: K. Y. Srinivasan [mailto:kys@microsoft.com]
-> Sent: Thursday, April 05, 2012 3:27 PM
-> To: gregkh@linuxfoundation.org; linux-kernel@vger.kernel.org;
-> devel@linuxdriverproject.org; virtualization@lists.osdl.org; ohering@suse.com;
-> jbottomley@parallels.com; hch@infradead.org; linux-scsi@vger.kernel.org;
-> apw@canonical.com
-> Cc: KY Srinivasan
-> Subject: [PATCH RESEND 1/1] Drivers: scsi: storvsc: Properly handle errors from
-> the host
-> 
-> If the host returns error for pass through commands, deal with them
-> appropriately. I would like to thank James for patiently helping
-> me with this patch.
-
-James,
-
-Thank you for suggesting the fix here. I hope this is what you were looking for.
-
-Regards,
-
-K. Y
-> 
-> Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
-> Reviewed-by: Haiyang Zhang <haiyangz@microsoft.com>
-> ---
->  drivers/scsi/storvsc_drv.c |   20 +++++++++++++++-----
->  1 files changed, 15 insertions(+), 5 deletions(-)
-> 
-> diff --git a/drivers/scsi/storvsc_drv.c b/drivers/scsi/storvsc_drv.c
-> index 83a1972..528d52b 100644
-> --- a/drivers/scsi/storvsc_drv.c
-> +++ b/drivers/scsi/storvsc_drv.c
-> @@ -785,12 +785,22 @@ static void storvsc_command_completion(struct
-> storvsc_cmd_request *cmd_request)
->  	/*
->  	 * If there is an error; offline the device since all
->  	 * error recovery strategies would have already been
-> -	 * deployed on the host side.
-> +	 * deployed on the host side. However, if the command
-> +	 * were a pass-through command deal with it appropriately.
->  	 */
-> -	if (vm_srb->srb_status == SRB_STATUS_ERROR)
-> -		scmnd->result = DID_TARGET_FAILURE << 16;
-> -	else
-> -		scmnd->result = vm_srb->scsi_status;
-> +	scmnd->result = vm_srb->scsi_status;
-> +
-> +	if (vm_srb->srb_status == SRB_STATUS_ERROR) {
-> +		switch (scmnd->cmnd[0]) {
-> +		case ATA_16:
-> +		case ATA_12:
-> +			set_host_byte(scmnd, DID_PASSTHROUGH);
-> +			break;
-> +		default:
-> +			set_host_byte(scmnd, DID_TARGET_FAILURE);
-> +		}
-> +	}
-> +
-> 
->  	/*
->  	 * If the LUN is invalid; remove the device.
-> --
-> 1.7.4.1
-> 
-> 
-> 
-
-
-
+add lkml
+On Tue, Apr 10, 2012 at 11:00 PM, Hillf Danton <dhillf@gmail.com> wrote:
+> On Tue, Apr 10, 2012 at 3:42 AM, Ying Han <yinghan@google.com> wrote:
+>> This reverts commit c38446cc65e1f2b3eb8630c53943b94c4f65f670.
+>>
+>> Before the commit, the code makes senses to me but not after the commit. The
+>> "nr_reclaimed" is the number of pages reclaimed by scanning through the memcg's
+>> lru lists. The "nr_to_reclaim" is the target value for the whole function. For
+>> example, we like to early break the reclaim if reclaimed 32 pages under direct
+>> reclaim (not DEF_PRIORITY).
+>>
+>> After the reverted commit, the target "nr_to_reclaim" is decremented each time
+>> by "nr_reclaimed" but we still use it to compare the "nr_reclaimed". It just
+>> doesn't make sense to me...
+>>
+> I downloaded mm/vmscan.c from the next tree a couple minutes ago, and
+> see
+>                .nr_to_reclaim = SWAP_CLUSTER_MAX,
+> and
+>        nr_reclaimed = do_try_to_free_pages(zonelist, &sc, &shrink);
+>
+> in try_to_free_pages().
+>
+> I also see
+>                total_scanned += sc->nr_scanned;
+>                if (sc->nr_reclaimed >= sc->nr_to_reclaim)
+>                        goto out;
+>
+> in do_try_to_free_pages(),
+>
+> then would you please say a few words about the sense
+> of the check of nr_to_reclaim?
+>
+>
+>> Signed-off-by: Ying Han <yinghan@google.com>
+>> ---
+>>  mm/vmscan.c |    7 +------
+>>  1 files changed, 1 insertions(+), 6 deletions(-)
+>>
+>> diff --git a/mm/vmscan.c b/mm/vmscan.c
+>> index 33c332b..1a51868 100644
+>> --- a/mm/vmscan.c
+>> +++ b/mm/vmscan.c
+>> @@ -2107,12 +2107,7 @@ restart:
+>>                 * with multiple processes reclaiming pages, the total
+>>                 * freeing target can get unreasonably large.
+>>                 */
+>> -               if (nr_reclaimed >= nr_to_reclaim)
+>> -                       nr_to_reclaim = 0;
+>> -               else
+>> -                       nr_to_reclaim -= nr_reclaimed;
+>> -
+>> -               if (!nr_to_reclaim && priority < DEF_PRIORITY)
+>> +               if (nr_reclaimed >= nr_to_reclaim && priority < DEF_PRIORITY)
+>>                        break;
+>>        }
+>>        blk_finish_plug(&plug);
+>> --
+>> 1.7.7.3
+>>
