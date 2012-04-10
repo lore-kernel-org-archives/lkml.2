@@ -1,51 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758853Ab2DJOIF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Apr 2012 10:08:05 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:38042 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754338Ab2DJOIB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Apr 2012 10:08:01 -0400
-Date: Tue, 10 Apr 2012 07:07:56 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Markus Franke <markus.franke@informatik.tu-chemnitz.de>
-Cc: linux-kernel@vger.kernel.org, Evgeniy Polyakov <zbr@ioremap.net>
-Subject: Re: [PATCH 1/2] w1: Add 1-wire slave device driver for DS28E04-100
-Message-ID: <20120410140756.GA12537@kroah.com>
-References: <4F63AF9E.2090000@hrz.tu-chemnitz.de>
- <20120409220847.GA13124@kroah.com>
- <20120410075532.16392krd825c0ris@mail.tu-chemnitz.de>
+	id S1758832Ab2DJOK7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Apr 2012 10:10:59 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:44842 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754338Ab2DJOK6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Apr 2012 10:10:58 -0400
+Date: Tue, 10 Apr 2012 17:10:41 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        "David S. Miller" <davem@davemloft.net>,
+        Jamal Hadi Salim <hadi@cyberus.ca>,
+        Stephen Hemminger <shemminger@vyatta.com>,
+        Jason Wang <jasowang@redhat.com>, Neil Horman <nhorman@tuxdriver.com>,
+        Jiri Pirko <jpirko@redhat.com>,
+        Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
+        =?utf-8?B?TWljaGHFgiBNaXJvc8WCYXc=?= <mirq-linux@rere.qmqm.pl>,
+        Ben Hutchings <bhutchings@solarflare.com>,
+        Herbert Xu <herbert@gondor.hengli.com.au>
+Subject: Re: [PATCH] net: orphan queued skbs if device tx can stall
+Message-ID: <20120410141041.GA19556@redhat.com>
+References: <20120408171323.GA16012@redhat.com>
+ <1334044558.3126.5.camel@edumazet-glaptop>
+ <20120410084151.GA27193@redhat.com>
+ <1334048100.3126.21.camel@edumazet-glaptop>
+ <20120410093140.GA27651@redhat.com>
+ <1334052259.3126.68.camel@edumazet-glaptop>
+ <20120410112459.GA28825@redhat.com>
+ <1334058300.3126.99.camel@edumazet-glaptop>
+ <20120410124151.GA29808@redhat.com>
+ <1334065929.5300.40.camel@edumazet-glaptop>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120410075532.16392krd825c0ris@mail.tu-chemnitz.de>
+In-Reply-To: <1334065929.5300.40.camel@edumazet-glaptop>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 10, 2012 at 07:55:32AM +0200, Markus Franke wrote:
-> Dear Greg,
+On Tue, Apr 10, 2012 at 03:52:09PM +0200, Eric Dumazet wrote:
+> On Tue, 2012-04-10 at 15:41 +0300, Michael S. Tsirkin wrote:
 > 
-> Zitat von Greg KH <gregkh@linuxfoundation.org>:
+> > I think it's a bad interface too but it's in a userspace ABI
+> > now so I suspect we are stuck with it for now. We can try deprecating
+> > but we can't just drop it.
+> > 
 > 
-> >On Fri, Mar 16, 2012 at 10:24:46PM +0100, Markus Franke wrote:
-> >>This patch adds a 1-wire slave device driver for the DS28E04-100.
-> >>
-> >>It applies to the current linux kernel git tree.
-> >
-> >It's corrupted somehow and doesn't apply at all :(
-> >
-> >Care to redo this one, and your 2/2 patch, against the 3.4-rc2 release
-> >and resend it, with Evgeniy's acks, so that I can apply it?  Please
-> >ensure that your email client doesn't mess it up again (hint, it is
-> >adding spaces at the front of the line of some parts of the diff.)
-> 
-> I don't have a clue what might go wrong within my email client.
-> Would sending it as an attachement be an option? If not I might have
-> to switch to another client.
+> By the way, skb orphaning should already be done in skb_orphan_try(),
+> not sure why its done again in tun_net_xmit().
 
-Have you read Documentation/email_clients.txt yet?
+I think it's for when some tx flags are set.
 
-greg k-h
+> Note we perform orphaning right before giving skb to device on premise
+> it'll be sent (and freed) in a reasonable amount of time.
+
+Right. No way to ensure this with tun :(
+
+> With following patch, no more qdisc on top of tun device,
+
+I'll test this, thanks.
+
+> yet user can
+> change the limit
+
+Question: if tun is moved between namespaces after tx queue len
+is changed, will it get a queueing qdisc then?
+If yes we need some other hack to address that ...
+
+> (I would be curious to know if anybody changes tun
+> txqueuelen and why)
+>
+> diff --git a/drivers/net/tun.c b/drivers/net/tun.c
+> index bb8c72c..c4a00cf 100644
+> --- a/drivers/net/tun.c
+> +++ b/drivers/net/tun.c
+> @@ -379,6 +379,7 @@ static int tun_net_close(struct net_device *dev)
+>  static netdev_tx_t tun_net_xmit(struct sk_buff *skb, struct net_device *dev)
+>  {
+>  	struct tun_struct *tun = netdev_priv(dev);
+> +	int limit;
+>  
+>  	tun_debug(KERN_INFO, tun, "tun_net_xmit %d\n", skb->len);
+>  
+> @@ -396,7 +397,8 @@ static netdev_tx_t tun_net_xmit(struct sk_buff *skb, struct net_device *dev)
+>  	    sk_filter(tun->socket.sk, skb))
+>  		goto drop;
+>  
+> -	if (skb_queue_len(&tun->socket.sk->sk_receive_queue) >= dev->tx_queue_len) {
+> +	limit = dev->tx_queue_len ? : TUN_READQ_SIZE;
+> +	if (skb_queue_len(&tun->socket.sk->sk_receive_queue) >= limit) {
+>  		if (!(tun->flags & TUN_ONE_QUEUE)) {
+>  			/* Normal queueing mode. */
+>  			/* Packet scheduler handles dropping of further packets. */
+> @@ -521,7 +523,7 @@ static void tun_net_init(struct net_device *dev)
+>  		/* Zero header length */
+>  		dev->type = ARPHRD_NONE;
+>  		dev->flags = IFF_POINTOPOINT | IFF_NOARP | IFF_MULTICAST;
+> -		dev->tx_queue_len = TUN_READQ_SIZE;  /* We prefer our own queue length */
+> +		dev->tx_queue_len = 0;
+>  		break;
+>  
+>  	case TUN_TAP_DEV:
+> @@ -532,7 +534,7 @@ static void tun_net_init(struct net_device *dev)
+>  
+>  		eth_hw_addr_random(dev);
+>  
+> -		dev->tx_queue_len = TUN_READQ_SIZE;  /* We prefer our own queue length */
+> +		dev->tx_queue_len = 0;
+>  		break;
+>  	}
+>  }
+> 
