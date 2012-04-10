@@ -1,89 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755691Ab2DJH5Z (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Apr 2012 03:57:25 -0400
-Received: from e28smtp02.in.ibm.com ([122.248.162.2]:59181 "EHLO
-	e28smtp02.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754917Ab2DJH5X (ORCPT
+	id S1755627Ab2DJIBk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Apr 2012 04:01:40 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:41928 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752273Ab2DJIBj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Apr 2012 03:57:23 -0400
-From: Nikunj A Dadhania <nikunj@linux.vnet.ibm.com>
-To: paulmck@linux.vnet.ibm.com,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arjan van de Ven <arjan@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        "rusty\@rustcorp.com.au" <rusty@rustcorp.com.au>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
-        "akpm\@linux-foundation.org" <akpm@linux-foundation.org>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Milton Miller <miltonm@bga.com>, "mingo\@elte.hu" <mingo@elte.hu>,
-        Tejun Heo <tj@kernel.org>, KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Linux PM mailing list <linux-pm@vger.kernel.org>
-Subject: Re: CPU Hotplug rework
-In-Reply-To: <20120409164628.GA2430@linux.vnet.ibm.com>
-References: <4F674649.2000300@linux.vnet.ibm.com> <4F67474A.20707@linux.vnet.ibm.com> <20120405173918.GC8194@linux.vnet.ibm.com> <20120405175549.GA9127@linux.vnet.ibm.com> <20120405230654.GB19607@linux.vnet.ibm.com> <4F7F4EF0.70305@linux.vnet.ibm.com> <20120409164628.GA2430@linux.vnet.ibm.com>
-User-Agent: Notmuch/0.6.1 (http://notmuchmail.org) Emacs/23.3.1 (x86_64-redhat-linux-gnu)
-Date: Tue, 10 Apr 2012 13:26:55 +0530
-Message-ID: <87d37gxbnc.fsf@abhimanyu.in.ibm.com>
+	Tue, 10 Apr 2012 04:01:39 -0400
+Date: Tue, 10 Apr 2012 01:01:35 -0700
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: H Hartley Sweeten <hartleys@visionengravers.com>
+Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] Input: ep93xx_keypad - switch to using dev_pm_ops
+Message-ID: <20120410080134.GA19114@core.coreip.homeip.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-x-cbid: 12041007-5816-0000-0000-000002146D34
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 9 Apr 2012 09:46:28 -0700, "Paul E. McKenney" <paulmck@linux.vnet.ibm.com> wrote:
-> 
-> > > 2.	Read and understand the architecture-specific code, looking
-> > > 	for opportunities to consolidate additional function into
-> > > 	core code.
-> > > 
-> > > 	a.	Carry out any indicated consolidation.
-> > > 
-> > > 	b.	Convert all architectures to make use of the
-> > > 		consolidated implementation.
-> > > 
-> > > 	Not started.  Low priority from a big.LITTLE perspective.
-> > 
-> > 
-> > Recently this unexpectedly assumed high priority due to some scheduler
-> > changes and things got fixed up temporarily. And in that context,
-> > Peter Zijlstra gave some more technical pointers on what is wrong and needs
-> > to be done right. Link: https://lkml.org/lkml/2012/3/22/149
-> > 
-> > Nikunj (in CC) has offered to work with me on this consolidation.
-> 
-> Very cool!  I have added the following:
-> 
-> ------------------------------------------------------------------------
-> 
-> CONSOLIDATE ARCHITECTURE-SPECIFIC CPU-HOTPLUG CODE
-> 
-> 1.	Ensure that all CPU_STARTING notifiers complete before the
-> 	incoming CPU is marked online (the blackfin architecture
-> 	fails to do this).
-> 
-> 2.	Ensure that interrupts are disabled throughout the CPU_STARTING
-> 	notifiers.  Currently, blackfin, cris, m32r, mips, sh, sparc64,
-> 	um, and x86 fail to do this properly.
-> 
-> 3.	Ensure that all architectures that use CONFIG_USE_GENERIC_SMP_HELPERS
-> 	hold ipi_call_lock() over the entire CPU-online process.  Currently,
-> 	alpha, arm, m32r, mips, sh, and sparc32 seem to fail to do this
-> 	properly.
-> 
-> 4.	Additional memory barriers are likely to be needed, for example,
-> 	an smp_wmb() after setting cpu_active and an smp_rmb() in
-> 	select_fallback_rq() before reading cpu_active.
-> 
-> Srivatsa Bhat (srivatsa.bhat@linux.vnet.ibm.com) and Nikunj A Dadhania
-> (nikunj@linux.vnet.ibm.com) are taking on this work.
-> 
-Sounds good :-)
+Signed-off-by: Dmitry Torokhov <dtor@mail.ru>
+---
+ drivers/input/keyboard/ep93xx_keypad.c |   20 ++++++++++----------
+ 1 files changed, 10 insertions(+), 10 deletions(-)
 
-Regards
-Nikunj
+diff --git a/drivers/input/keyboard/ep93xx_keypad.c b/drivers/input/keyboard/ep93xx_keypad.c
+index 0ba69f3..d6cd634 100644
+--- a/drivers/input/keyboard/ep93xx_keypad.c
++++ b/drivers/input/keyboard/ep93xx_keypad.c
+@@ -182,16 +182,16 @@ static void ep93xx_keypad_close(struct input_dev *pdev)
+ }
+ 
+ 
+-#ifdef CONFIG_PM
++#ifdef CONFIG_PM_SLEEP
+ /*
+  * NOTE: I don't know if this is correct, or will work on the ep93xx.
+  *
+  * None of the existing ep93xx drivers have power management support.
+  * But, this is basically what the pxa27x_keypad driver does.
+  */
+-static int ep93xx_keypad_suspend(struct platform_device *pdev,
+-				 pm_message_t state)
++static int ep93xx_keypad_suspend(struct device *dev)
+ {
++	struct platform_device *pdev = to_platform_device(dev);
+ 	struct ep93xx_keypad *keypad = platform_get_drvdata(pdev);
+ 	struct input_dev *input_dev = keypad->input_dev;
+ 
+@@ -210,8 +210,9 @@ static int ep93xx_keypad_suspend(struct platform_device *pdev,
+ 	return 0;
+ }
+ 
+-static int ep93xx_keypad_resume(struct platform_device *pdev)
++static int ep93xx_keypad_resume(struct device *dev)
+ {
++	struct platform_device *pdev = to_platform_device(dev);
+ 	struct ep93xx_keypad *keypad = platform_get_drvdata(pdev);
+ 	struct input_dev *input_dev = keypad->input_dev;
+ 
+@@ -232,10 +233,10 @@ static int ep93xx_keypad_resume(struct platform_device *pdev)
+ 
+ 	return 0;
+ }
+-#else	/* !CONFIG_PM */
+-#define ep93xx_keypad_suspend	NULL
+-#define ep93xx_keypad_resume	NULL
+-#endif	/* !CONFIG_PM */
++#endif
++
++static SIMPLE_DEV_PM_OPS(ep93xx_keypad_pm_ops,
++			 ep93xx_keypad_suspend, ep93xx_keypad_resume);
+ 
+ static int __devinit ep93xx_keypad_probe(struct platform_device *pdev)
+ {
+@@ -384,11 +385,10 @@ static struct platform_driver ep93xx_keypad_driver = {
+ 	.driver		= {
+ 		.name	= "ep93xx-keypad",
+ 		.owner	= THIS_MODULE,
++		.pm	= &ep93xx_keypad_pm_ops,
+ 	},
+ 	.probe		= ep93xx_keypad_probe,
+ 	.remove		= __devexit_p(ep93xx_keypad_remove),
+-	.suspend	= ep93xx_keypad_suspend,
+-	.resume		= ep93xx_keypad_resume,
+ };
+ module_platform_driver(ep93xx_keypad_driver);
+ 
+-- 
+1.7.7.6
 
+
+-- 
+Dmitry
