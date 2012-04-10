@@ -1,61 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757493Ab2DJRgM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Apr 2012 13:36:12 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:45102 "EHLO
-	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756842Ab2DJRgK (ORCPT
+	id S1758096Ab2DJRgZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Apr 2012 13:36:25 -0400
+Received: from mga05.intel.com ([192.55.52.89]:45070 "EHLO
+	fmsmga101.fm.intel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1757856Ab2DJRgW convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Apr 2012 13:36:10 -0400
-X-Sasl-enc: R47+EBwNTAmvrQWSBUA9HFYVtTiqZKapaf9kmPR6yv4o 1334079369
-Date: Tue, 10 Apr 2012 10:36:08 -0700
-From: Greg KH <greg@kroah.com>
-To: Jon Brenner <jbrenner@taosinc.com>
-Cc: Jonathan Cameron <jic23@cam.ac.uk>, linux-iio <linux-iio@vger.kernel.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH V5] TAOS tsl2x7x
-Message-ID: <20120410173608.GA29862@kroah.com>
-References: <1333385439.2151.1.camel@jonz-ub2>
+	Tue, 10 Apr 2012 13:36:22 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1333385439.2151.1.camel@jonz-ub2>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <4F84575F.7090909@wwwdotorg.org>
+References: <20120409194514.8004.53204.stgit@dwillia2-linux.jf.intel.com>
+	<20120409194857.8004.86352.stgit@dwillia2-linux.jf.intel.com>
+	<4F84575F.7090909@wwwdotorg.org>
+Date: Tue, 10 Apr 2012 10:36:19 -0700
+Message-ID: <CABE8wwsDM=4Lp5Fa79V29tG2RypfA-MxN7zfhtze7sOLCVdL7A@mail.gmail.com>
+Subject: Re: [PATCH v3 1/3] tegra, serial8250: add ->handle_break() uart_port op
+From: Dan Williams <dan.j.williams@intel.com>
+To: Stephen Warren <swarren@wwwdotorg.org>
+Cc: gregkh@linuxfoundation.org, Sudhakar Mamillapalli <sudhakar@fb.com>,
+        linux-kernel@vger.kernel.org, ArndBergmannarnd@arndb.de,
+        Grant Likely <grant.likely@secretlab.ca>, linux-serial@vger.kernel.org,
+        Colin Cross <ccross@android.com>, Olof Johansson <olof@lixom.net>,
+        Nhan H Mai <nhan.h.mai@intel.com>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        Alan Cox <alan@linux.intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 02, 2012 at 11:50:39AM -0500, Jon Brenner wrote:
-> TAOS device driver (version 5) for the tsl/tmd 2771 and 2772 device families (inc. all variants).
-> 
-> Signed-off-by: Jon Brenner <jbrenner@taosinc.com>
-> ---
->  .../light/sysfs-bus-iio-light-tsl2583              |    6 +
->  .../light/sysfs-bus-iio-light-tsl2x7x              |   14 +
->  drivers/staging/iio/Documentation/sysfs-bus-iio    |    7 +
->  .../staging/iio/Documentation/sysfs-bus-iio-light  |    8 +-
->  .../iio/Documentation/sysfs-bus-iio-light-tsl2583  |   20 -
->  drivers/staging/iio/light/Kconfig                  |    8 +
->  drivers/staging/iio/light/Makefile                 |    2 +
->  drivers/staging/iio/light/tsl2x7x.h                |   99 ++
->  drivers/staging/iio/light/tsl2x7x_core.c           | 1830 ++++++++++++++++++++
->  9 files changed, 1970 insertions(+), 24 deletions(-)
-> 
-> diff --git a/drivers/staging/iio/Documentation/light/sysfs-bus-iio-light-tsl2583 b/drivers/staging/iio/Documentation/light/sysfs-bus-iio-light-tsl2583
-> new file mode 100644
-> index 0000000..8f2a038
-> --- /dev/null
-> +++ b/drivers/staging/iio/Documentation/light/sysfs-bus-iio-light-tsl2583
-> @@ -0,0 +1,6 @@
-> +What:		/sys/bus/iio/devices/device[n]/illuminance0_calibrate
-> +KernelVersion:	2.6.37
+On Tue, Apr 10, 2012 at 8:53 AM, Stephen Warren <swarren@wwwdotorg.org> wrote:
+> On 04/09/2012 01:48 PM, Dan Williams wrote:
+>> The "KT" serial port has another use case for a "received break" quirk,
+>> so before adding another special case to the 8250 core take this
+>> opportunity to push such quirks out of the core and into a uart_port op.
+>
+>> diff --git a/arch/arm/configs/tegra_defconfig b/arch/arm/configs/tegra_defconfig
+> ...
+>> +CONFIG_SERIAL_TEGRA=y
+>
+> Instead of that,
+>
+>> diff --git a/drivers/tty/serial/Kconfig b/drivers/tty/serial/Kconfig
+> ...
+>> +# FIXME remove this option when Tegra completes conversion to open firmware
+>> +config SERIAL_TEGRA
+>> +     bool "Tegra serial port support"
+>> +     depends on SERIAL_OF_PLATFORM=y
+>> +     help
+>> +       If you have a machine based on NVIDIA Tegra you can enable its
+>> +       onboard serial ports by enabling this option.
+>> +
+>
+> Can we just make that default y if ARCH_TEGRA?
+>
+> defconfig changes are apparently a little touchy.
+>
+> Actually, why even introduce a new config variable; why not replace the
+> ifdefs in of_serial.[ch] with CONFIG_ARCH_TEGRA?
 
-Really?  Are we traveling back in time now?
+Nice, yes, that makes things a bit cleaner.
 
-confused...
+>> --- a/arch/arm/mach-tegra/devices.h
+>> +++ b/arch/arm/mach-tegra/devices.h
+>> @@ -53,5 +53,4 @@ extern struct platform_device tegra_i2s_device1;
+>>  extern struct platform_device tegra_i2s_device2;
+>>  extern struct platform_device tegra_das_device;
+>>  extern struct platform_device tegra_pcm_device;
+>> -
+>>  #endif
+>
+> That's left over from a previous patch version.
 
-I need an ack from Jonathan before I can take this.
+yep.
 
-thanks,
+>> @@ -84,6 +106,9 @@ static int __devinit of_platform_serial_setup(struct platform_device *ofdev,
+>>               | UPF_FIXED_PORT | UPF_FIXED_TYPE;
+>>       port->dev = &ofdev->dev;
+>>
+>> +     if (type == PORT_TEGRA)
+>> +             port->handle_break = tegra_serial_handle_break;
+>
+> This is going to mean that everything in 8250.c:uart_config[] will move
+> into the exact same data structure in of_serial.c eventually, so I still
+> don't see the point of this exercise. But, I guess I won't argue against
+> it any more.
 
-greg k-h
+To me serial8250_config is about serial port geometries, uart_port ops
+are about quirks.  Once open firmware needs to deal with a serial port
+with a standard geometry but with a runtime quirk this approach of
+just looking at the type will need to be revisited.  The fact that
+'PORT_TEGRA' is enough to identify the geometry and the quirk is
+serendipitous.
+
+>> diff --git a/include/linux/of_serial.h b/include/linux/of_serial.h
+> ...
+>> + * FIXME remove this file when tegra finishes conversion to open firmware,
+>
+> remove this *prototype* not *file*?
+
+The entire file should go away since it is only there to export
+tegra_serial_handle_break to the deprecated board files.  Once this is
+open firmware only tegra_serial_handle_break can be marked static,
+right?
+
+--
+Dan
