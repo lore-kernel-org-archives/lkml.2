@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759241Ab2DJPKy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Apr 2012 11:10:54 -0400
-Received: from e7.ny.us.ibm.com ([32.97.182.137]:39234 "EHLO e7.ny.us.ibm.com"
+	id S1759257Ab2DJPLT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Apr 2012 11:11:19 -0400
+Received: from e7.ny.us.ibm.com ([32.97.182.137]:48415 "EHLO e7.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759212Ab2DJPKr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Apr 2012 11:10:47 -0400
-Message-ID: <1334070640.16827.25.camel@key-ThinkPad-W510>
-Subject: [PATCH v2 12/17] powerpc: crypto: SHA256 hash routines for nx
- encryption
+	id S1759036Ab2DJPLM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Apr 2012 11:11:12 -0400
+Message-ID: <1334070666.16827.31.camel@key-ThinkPad-W510>
+Subject: [PATCH v2 15/17] powerpc: crypto: debugfs routines and docs for the
+ nx device driver
 From: Kent Yoder <key@linux.vnet.ibm.com>
 To: linux-kernel@vger.kernel.org
 Cc: linux-crypto@vger.kernel.org, rcj@linux.vnet.ibm.com,
         key@linux.vnet.ibm.com, benh@kernel.crashing.org,
         linuxppc-dev@lists.ozlabs.org
-Date: Tue, 10 Apr 2012 10:10:40 -0500
+Date: Tue, 10 Apr 2012 10:11:06 -0500
 In-Reply-To: <1334070249.16827.1.camel@key-ThinkPad-W510>
 References: <1334070249.16827.1.camel@key-ThinkPad-W510>
 Content-Type: text/plain; charset="UTF-8"
@@ -22,28 +22,81 @@ X-Mailer: Evolution 3.2.2-
 Content-Transfer-Encoding: 7bit
 Mime-Version: 1.0
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12041015-5806-0000-0000-00001427993D
+x-cbid: 12041015-5806-0000-0000-000014279B8F
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-These routines add support for SHA-256 hashing on the Power7+ CPU's
-in-Nest accelerator driver.
+These routines add debugfs files supporting the Power7+ in-Nest encryption
+accelerator driver.
 
 Signed-off-by: Kent Yoder <key@linux.vnet.ibm.com>
 ---
- drivers/crypto/nx/nx-sha256.c |  244 +++++++++++++++++++++++++++++++++++++++++
- 1 files changed, 244 insertions(+), 0 deletions(-)
- create mode 100644 drivers/crypto/nx/nx-sha256.c
+ Documentation/ABI/testing/debugfs-pfo-nx-crypto |   45 ++++++++++
+ drivers/crypto/nx/nx_debugfs.c                  |  103 +++++++++++++++++++++++
+ 2 files changed, 148 insertions(+), 0 deletions(-)
+ create mode 100644 Documentation/ABI/testing/debugfs-pfo-nx-crypto
+ create mode 100644 drivers/crypto/nx/nx_debugfs.c
 
-diff --git a/drivers/crypto/nx/nx-sha256.c b/drivers/crypto/nx/nx-sha256.c
+diff --git a/Documentation/ABI/testing/debugfs-pfo-nx-crypto b/Documentation/ABI/testing/debugfs-pfo-nx-crypto
 new file mode 100644
-index 0000000..239cc3b
+index 0000000..685d5a4
 --- /dev/null
-+++ b/drivers/crypto/nx/nx-sha256.c
-@@ -0,0 +1,244 @@
++++ b/Documentation/ABI/testing/debugfs-pfo-nx-crypto
+@@ -0,0 +1,45 @@
++What:		/sys/kernel/debug/nx-crypto/*
++Date:		March 2012
++KernelVersion:	3.4
++Contact:	Kent Yoder <key@linux.vnet.ibm.com>
++Description:
++
++  These debugfs interfaces are built by the nx-crypto driver, built in
++arch/powerpc/crypto/nx.
++
++Error Detection
++===============
++
++errors:
++- A u32 providing a total count of errors since the driver was loaded. The
++only errors counted here are those returned from the hcall, H_COP_OP.
++
++last_error:
++- The most recent non-zero return code from the H_COP_OP hcall. -EBUSY is not
++recorded here (the hcall will retry until -EBUSY goes away).
++
++last_error_pid:
++- The process ID of the process who received the most recent error from the
++hcall.
++
++Device Use
++==========
++
++aes_bytes:
++- The total number of bytes encrypted using AES in any of the driver's
++supported modes.
++
++aes_ops:
++- The total number of AES operations submitted to the hardware.
++
++sha256_bytes:
++- The total number of bytes hashed by the hardware using SHA-256.
++
++sha256_ops:
++- The total number of SHA-256 operations submitted to the hardware.
++
++sha512_bytes:
++- The total number of bytes hashed by the hardware using SHA-512.
++
++sha512_ops:
++- The total number of SHA-512 operations submitted to the hardware.
+diff --git a/drivers/crypto/nx/nx_debugfs.c b/drivers/crypto/nx/nx_debugfs.c
+new file mode 100644
+index 0000000..7ab2e8d
+--- /dev/null
++++ b/drivers/crypto/nx/nx_debugfs.c
+@@ -0,0 +1,103 @@
 +/**
-+ * SHA-256 routines supporting the Power 7+ Nest Accelerators driver
++ * debugfs routines supporting the Power 7+ Nest Accelerators driver
 + *
 + * Copyright (C) 2011-2012 International Business Machines Inc.
 + *
@@ -63,229 +116,88 @@ index 0000000..239cc3b
 + * Author: Kent Yoder <yoder1@us.ibm.com>
 + */
 +
-+#include <crypto/internal/hash.h>
-+#include <crypto/sha.h>
++#include <linux/device.h>
++#include <linux/kobject.h>
++#include <linux/string.h>
++#include <linux/debugfs.h>
 +#include <linux/module.h>
++#include <linux/init.h>
++#include <linux/crypto.h>
++#include <crypto/hash.h>
 +#include <asm/vio.h>
 +
 +#include "nx_csbcpb.h"
 +#include "nx.h"
 +
++#ifdef CONFIG_DEBUG_FS
 +
-+static int nx_sha256_init(struct shash_desc *desc)
++/*
++ * debugfs
++ *
++ * For documentation on these attributes, please see:
++ *
++ * Documentation/ABI/testing/debugfs-pfo-nx-crypto
++ */
++
++int nx_debugfs_init(struct nx_crypto_driver *drv)
 +{
-+	struct sha256_state *sctx = shash_desc_ctx(desc);
-+	struct nx_crypto_ctx *nx_ctx = crypto_tfm_ctx(&desc->tfm->base);
-+	struct nx_sg *out_sg;
++	struct nx_debugfs *dfs = &drv->dfs;
 +
-+	nx_ctx_init(nx_ctx, HCOP_FC_SHA);
++	dfs->dfs_root = debugfs_create_dir(NX_NAME, NULL);
 +
-+	memset(sctx, 0, sizeof *sctx);
-+
-+	nx_ctx->ap = &nx_ctx->props[NX_PROPS_SHA256];
-+
-+	NX_CPB_SET_DIGEST_SIZE(nx_ctx->csbcpb, NX_DS_SHA256);
-+	out_sg = nx_build_sg_list(nx_ctx->out_sg, (u8 *)sctx->state,
-+				  SHA256_DIGEST_SIZE, nx_ctx->ap->sglen);
-+	nx_ctx->op.outlen = (nx_ctx->out_sg - out_sg) * sizeof(struct nx_sg);
-+
++	dfs->dfs_aes_ops =
++		debugfs_create_u32("aes_ops",
++				   S_IRUSR | S_IRGRP | S_IROTH,
++				   dfs->dfs_root, (u32 *)&drv->stats.aes_ops);
++	dfs->dfs_sha256_ops =
++		debugfs_create_u32("sha256_ops",
++				   S_IRUSR | S_IRGRP | S_IROTH,
++				   dfs->dfs_root,
++				   (u32 *)&drv->stats.sha256_ops);
++	dfs->dfs_sha512_ops =
++		debugfs_create_u32("sha512_ops",
++				   S_IRUSR | S_IRGRP | S_IROTH,
++				   dfs->dfs_root,
++				   (u32 *)&drv->stats.sha512_ops);
++	dfs->dfs_aes_bytes =
++		debugfs_create_u64("aes_bytes",
++				   S_IRUSR | S_IRGRP | S_IROTH,
++				   dfs->dfs_root,
++				   (u64 *)&drv->stats.aes_bytes);
++	dfs->dfs_sha256_bytes =
++		debugfs_create_u64("sha256_bytes",
++				   S_IRUSR | S_IRGRP | S_IROTH,
++				   dfs->dfs_root,
++				   (u64 *)&drv->stats.sha256_bytes);
++	dfs->dfs_sha512_bytes =
++		debugfs_create_u64("sha512_bytes",
++				   S_IRUSR | S_IRGRP | S_IROTH,
++				   dfs->dfs_root,
++				   (u64 *)&drv->stats.sha512_bytes);
++	dfs->dfs_errors =
++		debugfs_create_u32("errors",
++				   S_IRUSR | S_IRGRP | S_IROTH,
++				   dfs->dfs_root, (u32 *)&drv->stats.errors);
++	dfs->dfs_last_error =
++		debugfs_create_u32("last_error",
++				   S_IRUSR | S_IRGRP | S_IROTH,
++				   dfs->dfs_root,
++				   (u32 *)&drv->stats.last_error);
++	dfs->dfs_last_error_pid =
++		debugfs_create_u32("last_error_pid",
++				   S_IRUSR | S_IRGRP | S_IROTH,
++				   dfs->dfs_root,
++				   (u32 *)&drv->stats.last_error_pid);
 +	return 0;
 +}
 +
-+static int nx_sha256_update(struct shash_desc *desc, const u8 *data,
-+			    unsigned int len)
++void
++nx_debugfs_fini(struct nx_crypto_driver *drv)
 +{
-+	struct sha256_state *sctx = shash_desc_ctx(desc);
-+	struct nx_crypto_ctx *nx_ctx = crypto_tfm_ctx(&desc->tfm->base);
-+	struct nx_csbcpb *csbcpb = (struct nx_csbcpb *)nx_ctx->csbcpb;
-+	struct nx_sg *in_sg;
-+	u64 to_process, leftover;
-+	int rc = 0;
-+
-+	if (NX_CPB_FDM(csbcpb) & NX_FDM_CONTINUATION) {
-+		/* we've hit the nx chip previously and we're updating again,
-+		 * so copy over the partial digest */
-+		memcpy(csbcpb->cpb.sha256.input_partial_digest,
-+		       csbcpb->cpb.sha256.message_digest, SHA256_DIGEST_SIZE);
-+	}
-+
-+	/* 2 cases for total data len:
-+	 *  1: <= SHA256_BLOCK_SIZE: copy into state, return 0
-+	 *  2: > SHA256_BLOCK_SIZE: process X blocks, copy in leftover
-+	 */
-+	if (len + sctx->count <= SHA256_BLOCK_SIZE) {
-+		memcpy(sctx->buf + sctx->count, data, len);
-+		sctx->count += len;
-+		goto out;
-+	}
-+
-+	/* to_process: the SHA256_BLOCK_SIZE data chunk to process in this
-+	 * update */
-+	to_process = (sctx->count + len) & ~(SHA256_BLOCK_SIZE - 1);
-+	leftover = (sctx->count + len) & (SHA256_BLOCK_SIZE - 1);
-+
-+	if (sctx->count) {
-+		in_sg = nx_build_sg_list(nx_ctx->in_sg, (u8 *)sctx->buf,
-+					 sctx->count, nx_ctx->ap->sglen);
-+		in_sg = nx_build_sg_list(in_sg, (u8 *)data,
-+					 to_process - sctx->count,
-+					 nx_ctx->ap->sglen);
-+		nx_ctx->op.inlen = (nx_ctx->in_sg - in_sg) *
-+					sizeof(struct nx_sg);
-+	} else {
-+		in_sg = nx_build_sg_list(nx_ctx->in_sg, (u8 *)data,
-+					 to_process, nx_ctx->ap->sglen);
-+		nx_ctx->op.inlen = (nx_ctx->in_sg - in_sg) *
-+					sizeof(struct nx_sg);
-+	}
-+
-+	NX_CPB_FDM(csbcpb) |= NX_FDM_INTERMEDIATE;
-+
-+	if (!nx_ctx->op.inlen || !nx_ctx->op.outlen) {
-+		rc = -EINVAL;
-+		goto out;
-+	}
-+
-+	rc = nx_hcall_sync(nx_ctx, &nx_ctx->op);
-+	if (rc)
-+		goto out;
-+
-+	atomic_inc(&(nx_ctx->stats->sha256_ops));
-+
-+	/* copy the leftover back into the state struct */
-+	memcpy(sctx->buf, data + len - leftover, leftover);
-+	sctx->count = leftover;
-+
-+	csbcpb->cpb.sha256.message_bit_length += (u64)
-+		(csbcpb->cpb.sha256.spbc * 8);
-+
-+	/* everything after the first update is continuation */
-+	NX_CPB_FDM(csbcpb) |= NX_FDM_CONTINUATION;
-+out:
-+	return rc;
++	debugfs_remove_recursive(drv->dfs.dfs_root);
 +}
 +
-+static int nx_sha256_final(struct shash_desc *desc, u8 *out)
-+{
-+	struct sha256_state *sctx = shash_desc_ctx(desc);
-+	struct nx_crypto_ctx *nx_ctx = crypto_tfm_ctx(&desc->tfm->base);
-+	struct nx_csbcpb *csbcpb = (struct nx_csbcpb *)nx_ctx->csbcpb;
-+	struct nx_sg *in_sg, *out_sg;
-+	int rc;
-+
-+	if (NX_CPB_FDM(csbcpb) & NX_FDM_CONTINUATION) {
-+		/* we've hit the nx chip previously, now we're finalizing,
-+		 * so copy over the partial digest */
-+		memcpy(csbcpb->cpb.sha256.input_partial_digest,
-+		       csbcpb->cpb.sha256.message_digest, SHA256_DIGEST_SIZE);
-+	}
-+
-+	/* final is represented by continuing the operation and indicating that
-+	 * this is not an intermediate operation */
-+	NX_CPB_FDM(csbcpb) &= ~NX_FDM_INTERMEDIATE;
-+
-+	csbcpb->cpb.sha256.message_bit_length += (u64)(sctx->count * 8);
-+
-+	in_sg = nx_build_sg_list(nx_ctx->in_sg, (u8 *)sctx->buf,
-+				 sctx->count, nx_ctx->ap->sglen);
-+	out_sg = nx_build_sg_list(nx_ctx->out_sg, out, SHA256_DIGEST_SIZE,
-+				  nx_ctx->ap->sglen);
-+	nx_ctx->op.inlen = (nx_ctx->in_sg - in_sg) * sizeof(struct nx_sg);
-+	nx_ctx->op.outlen = (nx_ctx->out_sg - out_sg) * sizeof(struct nx_sg);
-+
-+	if (!nx_ctx->op.outlen) {
-+		rc = -EINVAL;
-+		goto out;
-+	}
-+
-+	rc = nx_hcall_sync(nx_ctx, &nx_ctx->op);
-+	if (rc)
-+		goto out;
-+
-+	atomic_inc(&(nx_ctx->stats->sha256_ops));
-+
-+	atomic64_add(csbcpb->cpb.sha256.message_bit_length,
-+		     &(nx_ctx->stats->sha256_bytes));
-+	memcpy(out, csbcpb->cpb.sha256.message_digest, SHA256_DIGEST_SIZE);
-+out:
-+	return rc;
-+}
-+
-+static int nx_sha256_export(struct shash_desc *desc, void *out)
-+{
-+	struct sha256_state *sctx = shash_desc_ctx(desc);
-+	struct nx_crypto_ctx *nx_ctx = crypto_tfm_ctx(&desc->tfm->base);
-+	struct nx_csbcpb *csbcpb = (struct nx_csbcpb *)nx_ctx->csbcpb;
-+	struct sha256_state *octx = out;
-+
-+	octx->count = sctx->count +
-+		      (csbcpb->cpb.sha256.message_bit_length / 8);
-+	memcpy(octx->buf, sctx->buf, sizeof(octx->buf));
-+
-+	/* if no data has been processed yet, we need to export SHA256's
-+	 * initial data, in case this context gets imported into a software
-+	 * context */
-+	if (csbcpb->cpb.sha256.message_bit_length)
-+		memcpy(octx->state, csbcpb->cpb.sha256.message_digest,
-+		       SHA256_DIGEST_SIZE);
-+	else {
-+		octx->state[0] = SHA256_H0;
-+		octx->state[1] = SHA256_H1;
-+		octx->state[2] = SHA256_H2;
-+		octx->state[3] = SHA256_H3;
-+		octx->state[4] = SHA256_H4;
-+		octx->state[5] = SHA256_H5;
-+		octx->state[6] = SHA256_H6;
-+		octx->state[7] = SHA256_H7;
-+	}
-+
-+	return 0;
-+}
-+
-+static int nx_sha256_import(struct shash_desc *desc, const void *in)
-+{
-+	struct sha256_state *sctx = shash_desc_ctx(desc);
-+	struct nx_crypto_ctx *nx_ctx = crypto_tfm_ctx(&desc->tfm->base);
-+	struct nx_csbcpb *csbcpb = (struct nx_csbcpb *)nx_ctx->csbcpb;
-+	const struct sha256_state *ictx = in;
-+
-+	memcpy(sctx->buf, ictx->buf, sizeof(ictx->buf));
-+
-+	sctx->count = ictx->count & 0x3f;
-+	csbcpb->cpb.sha256.message_bit_length = (ictx->count & ~0x3f) * 8;
-+
-+	if (csbcpb->cpb.sha256.message_bit_length) {
-+		memcpy(csbcpb->cpb.sha256.message_digest, ictx->state,
-+		       SHA256_DIGEST_SIZE);
-+
-+		NX_CPB_FDM(csbcpb) |= NX_FDM_CONTINUATION;
-+		NX_CPB_FDM(csbcpb) |= NX_FDM_INTERMEDIATE;
-+	}
-+
-+	return 0;
-+}
-+
-+struct shash_alg nx_shash_sha256_alg = {
-+	.digestsize = SHA256_DIGEST_SIZE,
-+	.init       = nx_sha256_init,
-+	.update     = nx_sha256_update,
-+	.final      = nx_sha256_final,
-+	.export     = nx_sha256_export,
-+	.import     = nx_sha256_import,
-+	.descsize   = sizeof(struct sha256_state),
-+	.statesize  = sizeof(struct sha256_state),
-+	.base       = {
-+		.cra_name        = "sha256",
-+		.cra_driver_name = "sha256-nx",
-+		.cra_priority    = 300,
-+		.cra_flags       = CRYPTO_ALG_TYPE_SHASH,
-+		.cra_blocksize   = SHA256_BLOCK_SIZE,
-+		.cra_module      = THIS_MODULE,
-+		.cra_ctxsize     = sizeof(struct nx_crypto_ctx),
-+		.cra_init        = nx_crypto_ctx_sha_init,
-+		.cra_exit        = nx_crypto_ctx_exit,
-+	}
-+};
++#endif
 -- 
 1.7.1
 
