@@ -1,90 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756196Ab2DJKFn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Apr 2012 06:05:43 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:62022 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755986Ab2DJKFk convert rfc822-to-8bit (ORCPT
+	id S1756015Ab2DJKGD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Apr 2012 06:06:03 -0400
+Received: from mail-vx0-f174.google.com ([209.85.220.174]:37911 "EHLO
+	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755877Ab2DJKF7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Apr 2012 06:05:40 -0400
+	Tue, 10 Apr 2012 06:05:59 -0400
 MIME-Version: 1.0
-In-Reply-To: <1333535036-24409-1-git-send-email-myungjoo.ham@samsung.com>
-References: <1333535036-24409-1-git-send-email-myungjoo.ham@samsung.com>
-Date: Tue, 10 Apr 2012 15:35:39 +0530
-Message-ID: <CAG17yqRq5+vQZngEwNjbANjhGPr68Hy8frwRSzRZH31juk=ahA@mail.gmail.com>
-Subject: Re: [PATCH] [CPUFREQ] EXYNOS: bugfix on retrieving old_index from freqs.old
-From: Inderpal Singh <inderpal.singh@linaro.org>
-To: MyungJoo Ham <myungjoo.ham@samsung.com>
-Cc: cpufreq@vger.kernel.org, Dave Jones <davej@redhat.com>,
-        Jaecheol Lee <jc.lee@samsung.com>,
-        Tushar Behera <tushar.behera@linaro.org>, kyungmin.park@samsung.com,
-        cw00.choi@samsung.com, myungjoo.ham@gmail.com,
-        linux-kernel@vger.kernel.org
+In-Reply-To: <CAD2nsn3HSq7UXFPvDP6cW9XmGs43ATkChT43fTvd4LpgPgSYTw@mail.gmail.com>
+References: <4F7A8EB7.4060200@silka.with-linux.com>
+	<CAD2nsn2ONstURLWBSPkNrDfFOeePWMWGQeGrEUkU3Wh4kUo+sg@mail.gmail.com>
+	<4F7AAAD9.2040307@silka.with-linux.com>
+	<CAD2nsn0G8_vDQug-u=4PRWMwRLPX-zp1z0X5gOVNaxk=V+daWw@mail.gmail.com>
+	<CAD2nsn0kogfuMhCN7tNNkiKF4PN-mG2Fa3gu0CGfw01qj-MWyg@mail.gmail.com>
+	<4F7AB6FE.3080009@silka.with-linux.com>
+	<20120403200306.0afbb48b@xenia.leun.net>
+	<CAD2nsn2k3mKMm3gK=fXqDYcOeKBwkyqGz9RWz1KOe=6=CDyhHA@mail.gmail.com>
+	<CAD2nsn1AshPTYd-FcydV-5HpiXPb0FfqLQPTqFYyw3kJX+fXEA@mail.gmail.com>
+	<20120404235104.682cfad3@xenia.leun.net>
+	<4F7DE3A4.1040705@candelatech.com>
+	<CAD2nsn16AozFF2QhiY063-48bKiXdyQLmSqJLLHPpsZ3H3JtHQ@mail.gmail.com>
+	<4F7F52BD.7060906@candelatech.com>
+	<20120409010816.36244f17@xenia.leun.net>
+	<CAD2nsn3-C8ZLmUpTDeA6HuPr-+=V5KkPJb6h5e7ZJsGi4v9p0g@mail.gmail.com>
+	<20120409122549.7469543a@xenia.leun.net>
+	<20120409160322.6b7b8c67@xenia.leun.net>
+	<CAD2nsn0n-VQ8ZOm69BNrbFv5HK3cdm+22yKrYprwoeFz-E2Uew@mail.gmail.com>
+	<20120409172933.4ca4775a@xenia.leun.net>
+	<CAD2nsn3HSq7UXFPvDP6cW9XmGs43ATkChT43fTvd4LpgPgSYTw@mail.gmail.com>
+Date: Tue, 10 Apr 2012 15:35:58 +0530
+Message-ID: <CAD2nsn0mk-Z=062ive7WhJKo2hxAunCyhn10FLebNwRPd-ip+A@mail.gmail.com>
+Subject: Re: [ath9k-devel] 3.4-rc ath9k regression (Re: 3.3.1 ath9k regression)
+From: Mohammed Shafi <shafi.wireless@gmail.com>
+To: Michael Leun <lkml20120218@newton.leun.net>
+Cc: Kelly Anderson <kelly@silka.with-linux.com>,
+        linux-wireless Mailing List <linux-wireless@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        casteyde.christian@free.fr,
+        "ath9k-devel@lists.ath9k.org" <ath9k-devel@venema.h4ckr.net>,
+        Peter Stuge <peter@stuge.se>,
+        Sujith Manoharan <c_manoha@qca.qualcomm.com>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi MyungJoo,
+Hi Michael,
 
-On 4 April 2012 15:53, MyungJoo Ham <myungjoo.ham@samsung.com> wrote:
-> The policy might have been changed since last call of target().
-> Thus, using cpufreq_frequency_table_target(), which depends on
-> policy to find the correspoding index from a frequency, may return
-> inconsistent index for freqs.old. Thus, old_index should be
-> calculated not based on the current policy.
->
-> We have been observing such issue when scaling_min/max_freq were
-> updated and sometimes caused system lockups due to incorrectly
-> configured voltages.
->
-> Signed-off-by: MyungJoo Ham <myungjoo.ham@samsung.com>
-> ---
->  drivers/cpufreq/exynos-cpufreq.c |   13 +++++++++++--
->  1 files changed, 11 insertions(+), 2 deletions(-)
->
-> diff --git a/drivers/cpufreq/exynos-cpufreq.c b/drivers/cpufreq/exynos-cpufreq.c
-> index b243a7e..1577522 100644
-> --- a/drivers/cpufreq/exynos-cpufreq.c
-> +++ b/drivers/cpufreq/exynos-cpufreq.c
-> @@ -62,8 +62,17 @@ static int exynos_target(struct cpufreq_policy *policy,
->                goto out;
->        }
->
-> -       if (cpufreq_frequency_table_target(policy, freq_table,
-> -                                          freqs.old, relation, &old_index)) {
-> +       /*
-> +        * The policy may have been changed so that we cannot get proper
-> +        * old_index with cpufreq_frequency_table_target(). Thus, ignore
-> +        * policy and get the index from the raw frequency table.
-> +        */
-> +       for (old_index = 0;
-> +            freq_table[old_index].frequency != CPUFREQ_TABLE_END;
-> +            old_index++)
-> +               if (freq_table[old_index].frequency == freqs.old)
-> +                       break;
-> +       if (freq_table[old_index].frequency == CPUFREQ_TABLE_END) {
->                ret = -EINVAL;
->                goto out;
->        }
+revert patch is sent by Sujith
+http://comments.gmane.org/gmane.linux.kernel.wireless.general/88543
+got to fix unassociated idle case power save.
 
-I also had the same issue and same fix while testing powertop 1.98 as
-it changes the scaling_min/max_freq.
-
-The only concern I have is when this code gets called for the very
-first time, the freqs.old will be the freq set by bootloader. Now if
-bootloader sets a freq which is not in the freq_table (not sure if its
-practical but theoretically its possible ), this code will error out.
-
-
-> --
-> 1.7.4.1
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe cpufreq" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-
-Thanks,
-Inder
+-- 
+thanks,
+shafi
