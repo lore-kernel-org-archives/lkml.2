@@ -1,51 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759581Ab2DJWlO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Apr 2012 18:41:14 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:51417 "EHLO mail.zytor.com"
+	id S1759624Ab2DJWlZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Apr 2012 18:41:25 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:52433 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753125Ab2DJWlO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Apr 2012 18:41:14 -0400
-Message-ID: <4F84B6B9.9080701@zytor.com>
-Date: Tue, 10 Apr 2012 15:39:53 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120329 Thunderbird/11.0.1
-MIME-Version: 1.0
-To: Cyrill Gorcunov <gorcunov@openvz.org>
-CC: Andrew Morton <akpm@linux-foundation.org>, Oleg Nesterov <oleg@redhat.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Pavel Emelyanov <xemul@parallels.com>,
-        Andrey Vagin <avagin@openvz.org>,
-        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
-        Glauber Costa <glommer@parallels.com>,
-        Andi Kleen <andi@firstfloor.org>, Tejun Heo <tj@kernel.org>,
-        Matt Helsley <matthltc@us.ibm.com>, Pekka Enberg <penberg@kernel.org>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        Vasiliy Kulikov <segoon@openwall.com>,
-        Alexey Dobriyan <adobriyan@gmail.com>, Valdis.Kletnieks@vt.edu,
-        Michal Marek <mmarek@suse.cz>,
-        Frederic Weisbecker <fweisbec@gmail.com>, linux-kernel@vger.kernel.org,
-        Jonathan Corbet <corbet@lwn.net>
-Subject: Re: + syscalls-x86-add-__nr_kcmp-syscall-v8.patch added to -mm tree
-References: <20120215143606.GA14037@redhat.com> <20120215160652.GA17680@redhat.com> <20120215162752.GF4533@moon> <20120409151027.7f3e0fa5.akpm@linux-foundation.org> <20120409222443.GW1625@moon> <4F836F3E.9090207@zytor.com> <20120410223758.GL24857@moon>
-In-Reply-To: <20120410223758.GL24857@moon>
-X-Enigmail-Version: 1.4
-Content-Type: text/plain; charset=UTF-8
+	id S1759598Ab2DJWlX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Apr 2012 18:41:23 -0400
+Message-ID: <1334097662.22483.17.camel@localhost>
+Subject: Re: [PATCH] Smack: build when CONFIG_AUDIT not defined
+From: Eric Paris <eparis@redhat.com>
+To: Kees Cook <keescook@chromium.org>
+Cc: linux-kernel@vger.kernel.org, James Morris <james.l.morris@oracle.com>,
+        Casey Schaufler <casey@schaufler-ca.com>,
+        Paul Moore <paul.moore@hp.com>, Al Viro <viro@zeniv.linux.org.uk>,
+        Andi Kleen <ak@linux.intel.com>, linux-security-module@vger.kernel.org,
+        torvalds@linux-foundation.org
+Date: Tue, 10 Apr 2012 18:41:02 -0400
+In-Reply-To: <20120410202644.GA10466@www.outflux.net>
+References: <20120410202644.GA10466@www.outflux.net>
+Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/10/2012 03:37 PM, Cyrill Gorcunov wrote:
-> + * bits even more (the oddity is important here, it allow
-> + * us to have meaningful production even if multiplicants
-> + * are big numbers).
+On Tue, 2012-04-10 at 13:26 -0700, Kees Cook wrote:
+> This fixes builds where CONFIG_AUDIT is not defined and
+> CONFIG_SECURITY_SMACK=y.
+> 
+> Signed-off-by: Kees Cook <keescook@chromium.org>
 
-I would be more clear:
+Linus I introduced this problem during our little stack space work,
+48c62af68a403ef1655546bd3e021070c8508573 , so probably best if you just
+grab this one too.
 
-"the odd multiplier guarantees that the product is unique ever after the
-high bits are truncated, since any odd number is relative prime to 2^n".
+Acked-by: Eric Paris <eparis@redhat.com>
 
-	-hpa
+> ---
+>  security/smack/smack_lsm.c |   19 +++++++++++++++----
+>  1 files changed, 15 insertions(+), 4 deletions(-)
+> 
+> diff --git a/security/smack/smack_lsm.c b/security/smack/smack_lsm.c
+> index 81c03a5..10056f2 100644
+> --- a/security/smack/smack_lsm.c
+> +++ b/security/smack/smack_lsm.c
+> @@ -1939,18 +1939,19 @@ static int smack_netlabel_send(struct sock *sk, struct sockaddr_in *sap)
+>  	char *hostsp;
+>  	struct socket_smack *ssp = sk->sk_security;
+>  	struct smk_audit_info ad;
+> -	struct lsm_network_audit net;
+>  
+>  	rcu_read_lock();
+>  	hostsp = smack_host_label(sap);
+>  	if (hostsp != NULL) {
+> -		sk_lbl = SMACK_UNLABELED_SOCKET;
+>  #ifdef CONFIG_AUDIT
+> +		struct lsm_network_audit net;
+> +
+>  		smk_ad_init_net(&ad, __func__, LSM_AUDIT_DATA_NET, &net);
+>  		ad.a.u.net->family = sap->sin_family;
+>  		ad.a.u.net->dport = sap->sin_port;
+>  		ad.a.u.net->v4info.daddr = sap->sin_addr.s_addr;
+>  #endif
+> +		sk_lbl = SMACK_UNLABELED_SOCKET;
+>  		rc = smk_access(ssp->smk_out, hostsp, MAY_WRITE, &ad);
+>  	} else {
+>  		sk_lbl = SMACK_CIPSO_SOCKET;
+> @@ -2809,11 +2810,14 @@ static int smack_unix_stream_connect(struct sock *sock,
+>  	struct socket_smack *osp = other->sk_security;
+>  	struct socket_smack *nsp = newsk->sk_security;
+>  	struct smk_audit_info ad;
+> -	struct lsm_network_audit net;
+>  	int rc = 0;
+>  
+> +#ifdef CONFIG_AUDIT
+> +	struct lsm_network_audit net;
+> +
+>  	smk_ad_init_net(&ad, __func__, LSM_AUDIT_DATA_NET, &net);
+>  	smk_ad_setfield_u_net_sk(&ad, other);
+> +#endif
+>  
+>  	if (!capable(CAP_MAC_OVERRIDE))
+>  		rc = smk_access(ssp->smk_out, osp->smk_in, MAY_WRITE, &ad);
+> @@ -2842,11 +2846,14 @@ static int smack_unix_may_send(struct socket *sock, struct socket *other)
+>  	struct socket_smack *ssp = sock->sk->sk_security;
+>  	struct socket_smack *osp = other->sk->sk_security;
+>  	struct smk_audit_info ad;
+> -	struct lsm_network_audit net;
+>  	int rc = 0;
+>  
+> +#ifdef CONFIG_AUDIT
+> +	struct lsm_network_audit net;
+> +
+>  	smk_ad_init_net(&ad, __func__, LSM_AUDIT_DATA_NET, &net);
+>  	smk_ad_setfield_u_net_sk(&ad, other->sk);
+> +#endif
+>  
+>  	if (!capable(CAP_MAC_OVERRIDE))
+>  		rc = smk_access(ssp->smk_out, osp->smk_in, MAY_WRITE, &ad);
+> @@ -2993,7 +3000,9 @@ static int smack_socket_sock_rcv_skb(struct sock *sk, struct sk_buff *skb)
+>  	char *csp;
+>  	int rc;
+>  	struct smk_audit_info ad;
+> +#ifdef CONFIG_AUDIT
+>  	struct lsm_network_audit net;
+> +#endif
+>  	if (sk->sk_family != PF_INET && sk->sk_family != PF_INET6)
+>  		return 0;
+>  
+> @@ -3156,7 +3165,9 @@ static int smack_inet_conn_request(struct sock *sk, struct sk_buff *skb,
+>  	char *sp;
+>  	int rc;
+>  	struct smk_audit_info ad;
+> +#ifdef CONFIG_AUDIT
+>  	struct lsm_network_audit net;
+> +#endif
+>  
+>  	/* handle mapped IPv4 packets arriving via IPv6 sockets */
+>  	if (family == PF_INET6 && skb->protocol == htons(ETH_P_IP))
+
 
