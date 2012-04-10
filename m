@@ -1,64 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754962Ab2DJQdN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Apr 2012 12:33:13 -0400
-Received: from mail-pz0-f52.google.com ([209.85.210.52]:63319 "EHLO
-	mail-pz0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752170Ab2DJQdM (ORCPT
+	id S1754868Ab2DJQe7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Apr 2012 12:34:59 -0400
+Received: from mail209.messagelabs.com ([216.82.255.3]:19437 "EHLO
+	mail209.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752692Ab2DJQe5 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Apr 2012 12:33:12 -0400
-Message-ID: <4F8460C4.4010503@gmail.com>
-Date: Tue, 10 Apr 2012 10:33:08 -0600
-From: David Ahern <dsahern@gmail.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:11.0) Gecko/20120327 Thunderbird/11.0.1
+	Tue, 10 Apr 2012 12:34:57 -0400
+X-Env-Sender: hartleys@visionengravers.com
+X-Msg-Ref: server-6.tower-209.messagelabs.com!1334075646!2859342!134
+X-Originating-IP: [216.166.12.180]
+X-StarScan-Version: 6.5.7; banners=-,-,-
+X-VirusChecked: Checked
+From: H Hartley Sweeten <hartleys@visionengravers.com>
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+CC: "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Tue, 10 Apr 2012 11:34:52 -0500
+Subject: RE: [PATCH] Input: ep93xx_keypad - switch to using dev_pm_ops
+Thread-Topic: [PATCH] Input: ep93xx_keypad - switch to using dev_pm_ops
+Thread-Index: Ac0W8Crt26Uwe/dNTkiYzaMyuOcp3wAROHsQ
+Message-ID: <ADE657CA350FB648AAC2C43247A983F00206986C017C@AUSP01VMBX24.collaborationhost.net>
+References: <20120410080134.GA19114@core.coreip.homeip.net>
+In-Reply-To: <20120410080134.GA19114@core.coreip.homeip.net>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: Stephane Eranian <eranian@google.com>, acme@redhat.com
-CC: linux-kernel@vger.kernel.org, mingo@elte.hu, peterz@infradead.org,
-        namhyung.kim@lge.com
-Subject: Re: [PATCH] perf report: fix error with -g in pipe mode
-References: <20120410101327.GA8104@quad>
-In-Reply-To: <20120410101327.GA8104@quad>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 4/10/12 4:13 AM, Stephane Eranian wrote:
-> In pipe mode, we cannot check the validity of sample_type
-> or the branch view mode until we start processing the events.
-> There is no meta-data information at the beginning of the pipe
-> mode stream. Instead, all the meta data is pushed via pseudo
-> records and those get processed by process_sample_events().
->
-> Without this patch:
->    $ perf record -g -o - foo | perf inject -b | perf report -g -i -
->    Selected -g but no callchain data. Did you call 'perf record' without -g?
->
-> Signed-off-by: Stephane Eranian<eranian@google.com>
-
-Reviewed-by: David Ahern <dsahern@gmail.com>
-Tested-by: David Ahern <dsahern@gmail.com>
-
-
+On Tuesday, April 10, 2012 1:02 AM, Dmitry Torokhov wrote:
+> 
+> Signed-off-by: Dmitry Torokhov <dtor@mail.ru>
 > ---
+>  drivers/input/keyboard/ep93xx_keypad.c |   20 ++++++++++----------
+>  1 files changed, 10 insertions(+), 10 deletions(-)
 >
-> diff --git a/tools/perf/builtin-report.c b/tools/perf/builtin-report.c
-> index 2e31743..c338b97 100644
-> --- a/tools/perf/builtin-report.c
-> +++ b/tools/perf/builtin-report.c
-> @@ -249,6 +249,13 @@ static int perf_report__setup_sample_type(struct perf_report *rep)
->   {
->   	struct perf_session *self = rep->session;
->
-> +	/*
-> +	 * cannot determine sample type, branch mode until we have
-> +	 * processed the meta-data pseudo records via process_sample_events()
-> +	 */
-> +	if (self->fd_pipe)
-> +		return 0;
+> diff --git a/drivers/input/keyboard/ep93xx_keypad.c b/drivers/input/keyboard/ep93xx_keypad.c
+> index 0ba69f3..d6cd634 100644
+> --- a/drivers/input/keyboard/ep93xx_keypad.c
+> +++ b/drivers/input/keyboard/ep93xx_keypad.c
+> @@ -182,16 +182,16 @@ static void ep93xx_keypad_close(struct input_dev *pdev)
+>  }
+>  
+>  
+> -#ifdef CONFIG_PM
+> +#ifdef CONFIG_PM_SLEEP
+>  /*
+>   * NOTE: I don't know if this is correct, or will work on the ep93xx.
+>   *
+>   * None of the existing ep93xx drivers have power management support.
+>   * But, this is basically what the pxa27x_keypad driver does.
+>   */
+
+Dmitry,
+
+The comment above can probably be removed also.
+
+> -static int ep93xx_keypad_suspend(struct platform_device *pdev,
+> -				 pm_message_t state)
+> +static int ep93xx_keypad_suspend(struct device *dev)
+>  {
+> +	struct platform_device *pdev = to_platform_device(dev);
+>  	struct ep93xx_keypad *keypad = platform_get_drvdata(pdev);
+>  	struct input_dev *input_dev = keypad->input_dev;
+>  
+> @@ -210,8 +210,9 @@ static int ep93xx_keypad_suspend(struct platform_device *pdev,
+>  	return 0;
+>  }
+>  
+> -static int ep93xx_keypad_resume(struct platform_device *pdev)
+> +static int ep93xx_keypad_resume(struct device *dev)
+>  {
+> +	struct platform_device *pdev = to_platform_device(dev);
+>  	struct ep93xx_keypad *keypad = platform_get_drvdata(pdev);
+>  	struct input_dev *input_dev = keypad->input_dev;
+>  
+> @@ -232,10 +233,10 @@ static int ep93xx_keypad_resume(struct platform_device *pdev)
+>  
+>  	return 0;
+>  }
+> -#else	/* !CONFIG_PM */
+> -#define ep93xx_keypad_suspend	NULL
+> -#define ep93xx_keypad_resume	NULL
+> -#endif	/* !CONFIG_PM */
+> +#endif
 > +
->   	if (!(self->sample_type&  PERF_SAMPLE_CALLCHAIN)) {
->   		if (sort__has_parent) {
->   			ui__warning("Selected --sort parent, but no "
+> +static SIMPLE_DEV_PM_OPS(ep93xx_keypad_pm_ops,
+> +			 ep93xx_keypad_suspend, ep93xx_keypad_resume);
+>  
+>  static int __devinit ep93xx_keypad_probe(struct platform_device *pdev)
+>  {
+> @@ -384,11 +385,10 @@ static struct platform_driver ep93xx_keypad_driver = {
+>  	.driver		= {
+>  		.name	= "ep93xx-keypad",
+>  		.owner	= THIS_MODULE,
+> +		.pm	= &ep93xx_keypad_pm_ops,
+>  	},
+>  	.probe		= ep93xx_keypad_probe,
+>  	.remove		= __devexit_p(ep93xx_keypad_remove),
+> -	.suspend	= ep93xx_keypad_suspend,
+> -	.resume		= ep93xx_keypad_resume,
+>  };
+>  module_platform_driver(ep93xx_keypad_driver);
+
+Acked-by: H Hartley Sweeten <hsweeten@visionengravers.com>
 
