@@ -1,344 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932374Ab2DJU4A (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Apr 2012 16:56:00 -0400
-Received: from mga03.intel.com ([143.182.124.21]:38911 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759448Ab2DJUzS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Apr 2012 16:55:18 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="129331036"
-Subject: [PATCH v4 1/3] tegra, serial8250: add ->handle_break() uart_port op
-To: gregkh@linuxfoundation.org
-From: Dan Williams <dan.j.williams@intel.com>
-Cc: Sudhakar Mamillapalli <sudhakar@fb.com>,
-        Stephen Warren <swarren@nvidia.com>, Arnd Bergmann <arnd@arndb.de>,
-        linux-kernel@vger.kernel.org, Grant Likely <grant.likely@secretlab.ca>,
-        linux-serial@vger.kernel.org, Colin Cross <ccross@android.com>,
-        Olof Johansson <olof@lixom.net>, Nhan H Mai <nhan.h.mai@intel.com>,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>, Alan Cox <alan@linux.intel.com>
-Date: Tue, 10 Apr 2012 14:10:53 -0700
-Message-ID: <20120410211053.13805.18954.stgit@dwillia2-linux.jf.intel.com>
-In-Reply-To: <20120410210438.13805.40525.stgit@dwillia2-linux.jf.intel.com>
-References: <20120410210438.13805.40525.stgit@dwillia2-linux.jf.intel.com>
-User-Agent: StGit/0.16-1-g7004
+	id S1759468Ab2DJU7D (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Apr 2012 16:59:03 -0400
+Received: from s15943758.onlinehome-server.info ([217.160.130.188]:40617 "EHLO
+	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759385Ab2DJU7B (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Apr 2012 16:59:01 -0400
+Date: Tue, 10 Apr 2012 22:58:49 +0200
+From: Borislav Petkov <bp@amd64.org>
+To: Sam Ravnborg <sam@ravnborg.org>
+Cc: Ingo Molnar <mingo@kernel.org>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Michal Marek <mmarek@suse.cz>, LKML <linux-kernel@vger.kernel.org>,
+        Borislav Petkov <borislav.petkov@amd.com>
+Subject: Re: [PATCH v4 1/4] tools: Add Makefile.include
+Message-ID: <20120410205849.GB30366@aftab>
+References: <1334071240-28692-1-git-send-email-bp@amd64.org>
+ <1334071240-28692-2-git-send-email-bp@amd64.org>
+ <20120410202721.GA28293@merkur.ravnborg.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120410202721.GA28293@merkur.ravnborg.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The "KT" serial port has another use case for a "received break" quirk,
-so before adding another special case to the 8250 core take this
-opportunity to push such quirks out of the core and into a uart_port op.
+On Tue, Apr 10, 2012 at 10:27:21PM +0200, Sam Ravnborg wrote:
+> Hi Borislav.
+> 
+> Some random comments as I really did not look at this
+> part of the patch-set before.
 
-Stephen says:
-"If the callback function is to no longer live in 8250.c itself,
- arch/arm/mach-tegra/devices.c isn't logically a good place to put it,
- and that file will be going away once we get rid of all the board files
- and move solely to device tree."
+.. and I appreciate those, thanks.
 
-...so since 8250_pci.c houses all the quirks for pci serial devices this
-quirk is similarly housed in of_serial.c.  Once the open firmware
-conversion completes the infrastructure details
-(include/linux/of_serial.h, and the export) can all be removed to make
-this self contained to of_serial.c.
+> > +#
+> > +# Include saner warnings here, which can catch bugs:
+> > +#
+> > +EXTRA_WARNINGS := -Wformat
+> > +EXTRA_WARNINGS := $(EXTRA_WARNINGS) -Wformat-security
+> 
+> Two general comments - and I know this is just something you copied...
 
-Cc: Nhan H Mai <nhan.h.mai@intel.com>
-Cc: Colin Cross <ccross@android.com>
-Cc: Olof Johansson <olof@lixom.net>
-Cc: Stephen Warren <swarren@nvidia.com>
-[stephen: kill CONFIG_SERIAL_TEGRA in favor just using CONFIG_ARCH_TEGRA]
-Cc: Grant Likely <grant.likely@secretlab.ca>
-Acked-by: Arnd Bergmann <arnd@arndb.de>
-Acked-by: Sudhakar Mamillapalli <sudhakar@fb.com>
-Reported-by: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Acked-by: Alan Cox <alan@linux.intel.com>
-Signed-off-by: Dan Williams <dan.j.williams@intel.com>
----
- arch/arm/mach-tegra/board-harmony.c   |    2 ++
- arch/arm/mach-tegra/board-paz00.c     |    3 +++
- arch/arm/mach-tegra/board-seaboard.c  |    2 ++
- arch/arm/mach-tegra/board-trimslice.c |    2 ++
- drivers/tty/serial/8250/8250.c        |   34 +++------------------------------
- drivers/tty/serial/of_serial.c        |   26 +++++++++++++++++++++++++
- include/linux/of_serial.h             |   17 +++++++++++++++++
- include/linux/serial_8250.h           |    1 +
- include/linux/serial_core.h           |    5 +++++
- 9 files changed, 61 insertions(+), 31 deletions(-)
- create mode 100644 include/linux/of_serial.h
+Yep, I did from perf's Makefile.
 
-diff --git a/arch/arm/mach-tegra/board-harmony.c b/arch/arm/mach-tegra/board-harmony.c
-index c00aadb..222182e 100644
---- a/arch/arm/mach-tegra/board-harmony.c
-+++ b/arch/arm/mach-tegra/board-harmony.c
-@@ -19,6 +19,7 @@
- #include <linux/init.h>
- #include <linux/platform_device.h>
- #include <linux/serial_8250.h>
-+#include <linux/of_serial.h>
- #include <linux/clk.h>
- #include <linux/dma-mapping.h>
- #include <linux/pda_power.h>
-@@ -52,6 +53,7 @@ static struct plat_serial8250_port debug_uart_platform_data[] = {
- 		.irq		= INT_UARTD,
- 		.flags		= UPF_BOOT_AUTOCONF | UPF_FIXED_TYPE,
- 		.type		= PORT_TEGRA,
-+		.handle_break	= tegra_serial_handle_break,
- 		.iotype		= UPIO_MEM,
- 		.regshift	= 2,
- 		.uartclk	= 216000000,
-diff --git a/arch/arm/mach-tegra/board-paz00.c b/arch/arm/mach-tegra/board-paz00.c
-index 330afdf..d0735c7 100644
---- a/arch/arm/mach-tegra/board-paz00.c
-+++ b/arch/arm/mach-tegra/board-paz00.c
-@@ -21,6 +21,7 @@
- #include <linux/init.h>
- #include <linux/platform_device.h>
- #include <linux/serial_8250.h>
-+#include <linux/of_serial.h>
- #include <linux/clk.h>
- #include <linux/dma-mapping.h>
- #include <linux/gpio_keys.h>
-@@ -55,6 +56,7 @@ static struct plat_serial8250_port debug_uart_platform_data[] = {
- 		.irq		= INT_UARTA,
- 		.flags		= UPF_BOOT_AUTOCONF | UPF_FIXED_TYPE,
- 		.type		= PORT_TEGRA,
-+		.handle_break	= tegra_serial_handle_break,
- 		.iotype		= UPIO_MEM,
- 		.regshift	= 2,
- 		.uartclk	= 216000000,
-@@ -65,6 +67,7 @@ static struct plat_serial8250_port debug_uart_platform_data[] = {
- 		.irq		= INT_UARTC,
- 		.flags		= UPF_BOOT_AUTOCONF | UPF_FIXED_TYPE,
- 		.type		= PORT_TEGRA,
-+		.handle_break	= tegra_serial_handle_break,
- 		.iotype		= UPIO_MEM,
- 		.regshift	= 2,
- 		.uartclk	= 216000000,
-diff --git a/arch/arm/mach-tegra/board-seaboard.c b/arch/arm/mach-tegra/board-seaboard.c
-index d669847..5b687b8 100644
---- a/arch/arm/mach-tegra/board-seaboard.c
-+++ b/arch/arm/mach-tegra/board-seaboard.c
-@@ -18,6 +18,7 @@
- #include <linux/init.h>
- #include <linux/platform_device.h>
- #include <linux/serial_8250.h>
-+#include <linux/of_serial.h>
- #include <linux/i2c.h>
- #include <linux/delay.h>
- #include <linux/input.h>
-@@ -47,6 +48,7 @@ static struct plat_serial8250_port debug_uart_platform_data[] = {
- 		/* Memory and IRQ filled in before registration */
- 		.flags		= UPF_BOOT_AUTOCONF | UPF_FIXED_TYPE,
- 		.type		= PORT_TEGRA,
-+		.handle_break	= tegra_serial_handle_break,
- 		.iotype		= UPIO_MEM,
- 		.regshift	= 2,
- 		.uartclk	= 216000000,
-diff --git a/arch/arm/mach-tegra/board-trimslice.c b/arch/arm/mach-tegra/board-trimslice.c
-index cd52820..f735858 100644
---- a/arch/arm/mach-tegra/board-trimslice.c
-+++ b/arch/arm/mach-tegra/board-trimslice.c
-@@ -22,6 +22,7 @@
- #include <linux/init.h>
- #include <linux/platform_device.h>
- #include <linux/serial_8250.h>
-+#include <linux/of_serial.h>
- #include <linux/io.h>
- #include <linux/i2c.h>
- #include <linux/gpio.h>
-@@ -48,6 +49,7 @@ static struct plat_serial8250_port debug_uart_platform_data[] = {
- 		.irq		= INT_UARTA,
- 		.flags		= UPF_BOOT_AUTOCONF | UPF_FIXED_TYPE,
- 		.type		= PORT_TEGRA,
-+		.handle_break	= tegra_serial_handle_break,
- 		.iotype		= UPIO_MEM,
- 		.regshift	= 2,
- 		.uartclk	= 216000000,
-diff --git a/drivers/tty/serial/8250/8250.c b/drivers/tty/serial/8250/8250.c
-index 5c27f7e..cbd94c3 100644
---- a/drivers/tty/serial/8250/8250.c
-+++ b/drivers/tty/serial/8250/8250.c
-@@ -1332,27 +1332,6 @@ static void serial8250_enable_ms(struct uart_port *port)
- }
- 
- /*
-- * Clear the Tegra rx fifo after a break
-- *
-- * FIXME: This needs to become a port specific callback once we have a
-- * framework for this
-- */
--static void clear_rx_fifo(struct uart_8250_port *up)
--{
--	unsigned int status, tmout = 10000;
--	do {
--		status = serial_in(up, UART_LSR);
--		if (status & (UART_LSR_FIFOE | UART_LSR_BRK_ERROR_BITS))
--			status = serial_in(up, UART_RX);
--		else
--			break;
--		if (--tmout == 0)
--			break;
--		udelay(1);
--	} while (1);
--}
--
--/*
-  * serial8250_rx_chars: processes according to the passed in LSR
-  * value, and returns the remaining LSR bits not handled
-  * by this Rx routine.
-@@ -1386,20 +1365,10 @@ serial8250_rx_chars(struct uart_8250_port *up, unsigned char lsr)
- 		up->lsr_saved_flags = 0;
- 
- 		if (unlikely(lsr & UART_LSR_BRK_ERROR_BITS)) {
--			/*
--			 * For statistics only
--			 */
- 			if (lsr & UART_LSR_BI) {
- 				lsr &= ~(UART_LSR_FE | UART_LSR_PE);
- 				port->icount.brk++;
- 				/*
--				 * If tegra port then clear the rx fifo to
--				 * accept another break/character.
--				 */
--				if (port->type == PORT_TEGRA)
--					clear_rx_fifo(up);
--
--				/*
- 				 * We do the SysRQ and SAK checking
- 				 * here because otherwise the break
- 				 * may get masked by ignore_status_mask
-@@ -3037,6 +3006,7 @@ static int __devinit serial8250_probe(struct platform_device *dev)
- 		port.serial_in		= p->serial_in;
- 		port.serial_out		= p->serial_out;
- 		port.handle_irq		= p->handle_irq;
-+		port.handle_break	= p->handle_break;
- 		port.set_termios	= p->set_termios;
- 		port.pm			= p->pm;
- 		port.dev		= &dev->dev;
-@@ -3209,6 +3179,8 @@ int serial8250_register_port(struct uart_port *port)
- 			uart->port.set_termios = port->set_termios;
- 		if (port->pm)
- 			uart->port.pm = port->pm;
-+		if (port->handle_break)
-+			uart->port.handle_break = port->handle_break;
- 
- 		if (serial8250_isa_config != NULL)
- 			serial8250_isa_config(0, &uart->port,
-diff --git a/drivers/tty/serial/of_serial.c b/drivers/tty/serial/of_serial.c
-index e8c9cee..5410c06 100644
---- a/drivers/tty/serial/of_serial.c
-+++ b/drivers/tty/serial/of_serial.c
-@@ -12,10 +12,13 @@
- #include <linux/init.h>
- #include <linux/module.h>
- #include <linux/slab.h>
-+#include <linux/delay.h>
- #include <linux/serial_core.h>
- #include <linux/serial_8250.h>
-+#include <linux/serial_reg.h>
- #include <linux/of_address.h>
- #include <linux/of_irq.h>
-+#include <linux/of_serial.h>
- #include <linux/of_platform.h>
- #include <linux/nwpserial.h>
- 
-@@ -24,6 +27,26 @@ struct of_serial_info {
- 	int line;
- };
- 
-+#ifdef CONFIG_ARCH_TEGRA
-+void tegra_serial_handle_break(struct uart_port *p)
-+{
-+	unsigned int status, tmout = 10000;
-+
-+	do {
-+		status = p->serial_in(p, UART_LSR);
-+		if (status & (UART_LSR_FIFOE | UART_LSR_BRK_ERROR_BITS))
-+			status = p->serial_in(p, UART_RX);
-+		else
-+			break;
-+		if (--tmout == 0)
-+			break;
-+		udelay(1);
-+	} while (1);
-+}
-+/* FIXME remove this export when tegra finishes conversion to open firmware */
-+EXPORT_SYMBOL_GPL(tegra_serial_handle_break);
-+#endif
-+
- /*
-  * Fill a struct uart_port for a given device node
-  */
-@@ -84,6 +107,9 @@ static int __devinit of_platform_serial_setup(struct platform_device *ofdev,
- 		| UPF_FIXED_PORT | UPF_FIXED_TYPE;
- 	port->dev = &ofdev->dev;
- 
-+	if (type == PORT_TEGRA)
-+		port->handle_break = tegra_serial_handle_break;
-+
- 	return 0;
- }
- 
-diff --git a/include/linux/of_serial.h b/include/linux/of_serial.h
-new file mode 100644
-index 0000000..4a73ed8
---- /dev/null
-+++ b/include/linux/of_serial.h
-@@ -0,0 +1,17 @@
-+#ifndef __LINUX_OF_SERIAL_H
-+#define __LINUX_OF_SERIAL_H
-+
-+/*
-+ * FIXME remove this file when tegra finishes conversion to open firmware,
-+ * expectation is that all quirks will then be self-contained in
-+ * drivers/tty/serial/of_serial.c.
-+ */
-+#ifdef CONFIG_ARCH_TEGRA
-+extern void tegra_serial_handle_break(struct uart_port *port);
-+#else
-+static inline void tegra_serial_handle_break(struct uart_port *port)
-+{
-+}
-+#endif
-+
-+#endif /* __LINUX_OF_SERIAL */
-diff --git a/include/linux/serial_8250.h b/include/linux/serial_8250.h
-index 8f012f8..a522fd9 100644
---- a/include/linux/serial_8250.h
-+++ b/include/linux/serial_8250.h
-@@ -38,6 +38,7 @@ struct plat_serial8250_port {
- 	int		(*handle_irq)(struct uart_port *);
- 	void		(*pm)(struct uart_port *, unsigned int state,
- 			      unsigned old);
-+	void		(*handle_break)(struct uart_port *);
- };
- 
- /*
-diff --git a/include/linux/serial_core.h b/include/linux/serial_core.h
-index 2db407a..65db992 100644
---- a/include/linux/serial_core.h
-+++ b/include/linux/serial_core.h
-@@ -310,6 +310,7 @@ struct uart_port {
- 	int			(*handle_irq)(struct uart_port *);
- 	void			(*pm)(struct uart_port *, unsigned int state,
- 				      unsigned int old);
-+	void			(*handle_break)(struct uart_port *);
- 	unsigned int		irq;			/* irq number */
- 	unsigned long		irqflags;		/* irq flags  */
- 	unsigned int		uartclk;		/* base uart clock */
-@@ -533,6 +534,10 @@ uart_handle_sysrq_char(struct uart_port *port, unsigned int ch)
- static inline int uart_handle_break(struct uart_port *port)
- {
- 	struct uart_state *state = port->state;
-+
-+	if (port->handle_break)
-+		port->handle_break(port);
-+
- #ifdef SUPPORT_SYSRQ
- 	if (port->cons && port->cons->index == port->line) {
- 		if (!port->sysrq) {
+> Why not use the += operator. The below looks like shell script syntax.
+> And we use the += operator in other places - at least in the kernel stuff.
 
+Yep, this makes this assignment monster a bit more readable, sure.
+
+> AND WHY ALL THESE SCREAMING CAPITAL LETTERS?
+> I know Makefiles and scripts are full of them - but that does not help
+> the readability.
+> 
+> For kbuild I generally shifted to use:
+> - lower-case names for local stuff
+> - Upper case letters for global stuff - properly prefixed to avoid collisions
+> EXTRA_WARNINGS likely fall into the category global-stuff,
+> but then a local variable could still be usefull.
+
+Well, my intention was to have EXTRA_WARNINGS be a global variable which
+all tools under tools/ could start using so that we can benefit from the
+compiler doing some more extensive checking. Thus all caps, no?
+
+-- 
+Regards/Gruss,
+Boris.
+
+Advanced Micro Devices GmbH
+Einsteinring 24, 85609 Dornach
+GM: Alberto Bozzo
+Reg: Dornach, Landkreis Muenchen
+HRB Nr. 43632 WEEE Registernr: 129 19551
