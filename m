@@ -1,89 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754822Ab2DJIzK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Apr 2012 04:55:10 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:41017 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753103Ab2DJIzI (ORCPT
+	id S1755005Ab2DJI44 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Apr 2012 04:56:56 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:56944 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752448Ab2DJI4y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Apr 2012 04:55:08 -0400
-Subject: Re: [PATCH] net: orphan queued skbs if device tx can stall
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: "Michael S. Tsirkin" <mst@redhat.com>
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        "David S. Miller" <davem@davemloft.net>,
-        Jamal Hadi Salim <hadi@cyberus.ca>,
-        Stephen Hemminger <shemminger@vyatta.com>,
-        Jason Wang <jasowang@redhat.com>, Neil Horman <nhorman@tuxdriver.com>,
-        Jiri Pirko <jpirko@redhat.com>,
-        Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
-        =?UTF-8?Q?Micha=C5=82_Miros=C5=82aw?= <mirq-linux@rere.qmqm.pl>,
-        Ben Hutchings <bhutchings@solarflare.com>,
-        Herbert Xu <herbert@gondor.hengli.com.au>
-In-Reply-To: <20120410084151.GA27193@redhat.com>
-References: <20120408171323.GA16012@redhat.com>
-	 <1334044558.3126.5.camel@edumazet-glaptop>
-	 <20120410084151.GA27193@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 10 Apr 2012 10:55:00 +0200
-Message-ID: <1334048100.3126.21.camel@edumazet-glaptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	Tue, 10 Apr 2012 04:56:54 -0400
+MIME-Version: 1.0
+Reply-To: axel.lin@gmail.com
+In-Reply-To: <20120410084346.GF3149@opensource.wolfsonmicro.com>
+References: <1334038367.15859.12.camel@phoenix> <20120410084346.GF3149@opensource.wolfsonmicro.com>
+From: Axel Lin <axel.lin@gmail.com>
+Date: Tue, 10 Apr 2012 16:56:34 +0800
+Message-ID: <CAF+7xW=Rfj8vtoTCy7szgYpEMw1nW0HVR64b4mgJtjCoBbGi4A@mail.gmail.com>
+Subject: Re: [linux-next][PATCH] regmap: fix build error if !CONFIG_DEBUG_FS
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: linux-kernel@vger.kernel.org, Stephen Warren <swarren@nvidia.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-04-10 at 11:41 +0300, Michael S. Tsirkin wrote:
-> On Tue, Apr 10, 2012 at 09:55:58AM +0200, Eric Dumazet wrote:
+2012/4/10 Mark Brown <broonie@opensource.wolfsonmicro.com>:
+> On Tue, Apr 10, 2012 at 02:12:47PM +0800, Axel Lin wrote:
+>> Fix build error introduced by commit 9eba4d
+>> "regmap: fix compilation when !CONFIG_DEBUG_FS".
+>
+> I've no idea what tree you're testing against but Stephen's fix is
+> needed for -next.
 
-> > In your case I would just not use qdisc at all, like other virtual
-> > devices.
-> 
-> I think that if we do this, this also disables gso
-> for the device, doesn't it?
+I'm testing with today's linux-next tree.
+It's strange in today's linux-next tree that "git show 79c64d5" can
+show the commit,
+but git log cannot find commit 79c64d5.
 
-Not at all, thats unrelated.
-
-> If true that would be a problem as this would
-> hurt performance of virtualized setups a lot.
-
-In fact, removing qdisc layer will help a lot, removing a contention
-point.
-
-Anyway, with a 500 packet limit in TUN queue itself, qdisc layer should
-be always empty. Whats the point storing more than 500 packets for a
-device ? Thats a latency killer.
-
-> 
-> > diff --git a/drivers/net/tun.c b/drivers/net/tun.c
-> > index bb8c72c..fd8c7f0 100644
-> > --- a/drivers/net/tun.c
-> > +++ b/drivers/net/tun.c
-> > @@ -396,7 +396,7 @@ static netdev_tx_t tun_net_xmit(struct sk_buff *skb, struct net_device *dev)
-> >  	    sk_filter(tun->socket.sk, skb))
-> >  		goto drop;
-> >  
-> > -	if (skb_queue_len(&tun->socket.sk->sk_receive_queue) >= dev->tx_queue_len) {
-> > +	if (skb_queue_len(&tun->socket.sk->sk_receive_queue) >= TUN_READQ_SIZE) {
-> >  		if (!(tun->flags & TUN_ONE_QUEUE)) {
-> >  			/* Normal queueing mode. */
-> >  			/* Packet scheduler handles dropping of further packets. */
-> 
-> tx_queue_len is controllable by SIOCSIFTXQLEN
-> so we'll need to override SIOCSIFTXQLEN somehow
-> to avoid breaking userspace that actually uses SIOCSIFTXQLEN, right?
-
-Right now, you control with this tx_queue_len both the qdisc limit (if
-pfifo_fast default) and the receive_queue in TUN.
-
-That doesnt seem right to me, and more a hack/side effect.
-
-Maybe you want to introduce a new setting, only controling receive queue
-limit, and use tx_queue_len for its original meaning.
-
-Then, setting tx_queue_len to 0 permits to remove qdisc layer, as any
-other netdevice.
-
-
-
+Regards,
+Axel
