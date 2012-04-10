@@ -1,47 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758921Ab2DJOmF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Apr 2012 10:42:05 -0400
-Received: from www.linutronix.de ([62.245.132.108]:53292 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758862Ab2DJOmE (ORCPT
+	id S1758940Ab2DJOpM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Apr 2012 10:45:12 -0400
+Received: from mail-pz0-f52.google.com ([209.85.210.52]:45316 "EHLO
+	mail-pz0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758913Ab2DJOpK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Apr 2012 10:42:04 -0400
-Date: Tue, 10 Apr 2012 16:42:01 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: LKML <linux-kernel@vger.kernel.org>
-cc: linux-rt-users <linux-rt-users@vger.kernel.org>,
-        Steven Rostedt <rostedt@goodmis.org>
-Subject: [ANNOUNCE] 3.2.14-rt24
-Message-ID: <alpine.LFD.2.02.1204101638180.2542@ionos>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+	Tue, 10 Apr 2012 10:45:10 -0400
+Message-ID: <1334069101.18312.1.camel@phoenix>
+Subject: [PATCH] regulator: Convert anatop to use a struct to pass in
+ regulator runtime configuration
+From: Axel Lin <axel.lin@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Nancy Chen <Nancy.Chen@freescale.com>,
+        "Ying-Chun Liu (PaulLiu)" <paul.liu@linaro.org>,
+        Liam Girdwood <lrg@ti.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Date: Tue, 10 Apr 2012 22:45:01 +0800
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2- 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dear RT Folks,
+Signed-off-by: Axel Lin <axel.lin@gmail.com>
+---
+ drivers/regulator/anatop-regulator.c |    9 +++++++--
+ 1 files changed, 7 insertions(+), 2 deletions(-)
 
-I'm pleased to announce the 3.2.14-rt24 release.
+diff --git a/drivers/regulator/anatop-regulator.c b/drivers/regulator/anatop-regulator.c
+index 81fd606..49b2112 100644
+--- a/drivers/regulator/anatop-regulator.c
++++ b/drivers/regulator/anatop-regulator.c
+@@ -122,6 +122,7 @@ static int __devinit anatop_regulator_probe(struct platform_device *pdev)
+ 	struct anatop_regulator *sreg;
+ 	struct regulator_init_data *initdata;
+ 	struct anatop *anatopmfd = dev_get_drvdata(pdev->dev.parent);
++	struct regulator_config config = { };
+ 	int ret = 0;
+ 
+ 	initdata = of_get_regulator_init_data(dev, np);
+@@ -178,9 +179,13 @@ static int __devinit anatop_regulator_probe(struct platform_device *pdev)
+ 	rdesc->n_voltages = (sreg->max_voltage - sreg->min_voltage)
+ 		/ 25000 + 1;
+ 
++	config.dev = &pdev->dev;
++	config.init_data = initdata;
++	config.driver_data = sreg;
++	config.of_node = pdev->dev.of_node;
++
+ 	/* register regulator */
+-	rdev = regulator_register(rdesc, dev,
+-				  initdata, sreg, pdev->dev.of_node);
++	rdev = regulator_register(rdesc, &config);
+ 	if (IS_ERR(rdev)) {
+ 		dev_err(dev, "failed to register %s\n",
+ 			rdesc->name);
+-- 
+1.7.5.4
 
-This is my last release based on 3.2. I'm handing the 3.2-rt series
-over to Steven and move on to 3.4.
 
 
-The RT patch against 3.2.14 can be found here:
-
-  http://www.kernel.org/pub/linux/kernel/projects/rt/3.2/patch-3.2.14-rt24.patch.xz
-
-
-The split quilt queue is available at:
-
-  http://www.kernel.org/pub/linux/kernel/projects/rt/3.2/patches-3.2.14-rt24.tar.xz
-
-
-Enjoy,
-
-	tglx
