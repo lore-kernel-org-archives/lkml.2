@@ -1,200 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755963Ab2DJPcB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Apr 2012 11:32:01 -0400
-Received: from g1t0027.austin.hp.com ([15.216.28.34]:39191 "EHLO
-	g1t0027.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754961Ab2DJPb7 (ORCPT
+	id S1755080Ab2DJPgb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Apr 2012 11:36:31 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:44223 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754507Ab2DJPga (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Apr 2012 11:31:59 -0400
-Message-ID: <1334071916.2287.12.camel@lorien2>
-Subject: Re: [PATCH RESEND] LEDS-One-Shot-Timer-Trigger-implementation
-From: Shuah Khan <shuahkhan@gmail.com>
-Reply-To: shuahkhan@gmail.com
-To: Richard Purdie <richard.purdie@linuxfoundation.org>
-Cc: shuahkhan@gmail.com, akpm@linux-foundation.org, neilb@suse.de,
-        LKML <linux-kernel@vger.kernel.org>
-Date: Tue, 10 Apr 2012 09:31:56 -0600
-In-Reply-To: <1334064283.10826.6.camel@ted>
-References: <1333310039.2879.4.camel@lorien2> <1334064283.10826.6.camel@ted>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2- 
+	Tue, 10 Apr 2012 11:36:30 -0400
+Message-ID: <4F84537A.2020300@wwwdotorg.org>
+Date: Tue, 10 Apr 2012 09:36:26 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.28) Gecko/20120313 Thunderbird/3.1.20
+MIME-Version: 1.0
+To: Linus Walleij <linus.walleij@stericsson.com>
+CC: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Shawn Guo <shawn.guo@freescale.com>,
+        Thomas Abraham <thomas.abraham@linaro.org>,
+        Dong Aisheng <dong.aisheng@linaro.org>,
+        Rajendra Nayak <rajendra.nayak@linaro.org>,
+        Haojian Zhuang <haojian.zhuang@marvell.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Arnd Bergmann <arnd@arndb.de>
+Subject: Re: [PATCH] pinctrl: implement pinctrl deferred probing
+References: <1334045048-15566-1-git-send-email-linus.walleij@stericsson.com>
+In-Reply-To: <1334045048-15566-1-git-send-email-linus.walleij@stericsson.com>
+X-Enigmail-Version: 1.1.2
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-04-10 at 14:24 +0100, Richard Purdie wrote:
-> On Sun, 2012-04-01 at 13:53 -0600, Shuah Khan wrote:
-> > LED infrastructure lacks support for one shot timer trigger and activation.
-> > The current support allows for setting two timers, one for specifying how
-> > long a state to be on, and the second for how long the state to be off. For
-> > example, delay_on value specifies the time period an LED should stay in on
-> > state, followed by a delay_off value that specifies how long the LED should
-> > stay in off state. The on and off cycle repeats until the trigger gets
-> > deactivated. There is no provision for one time activation to implement
-> > features that require an on or off state to be held just once and then stay
-> > in the original state forever.
-> > 
-> > This feature will help implement vibrate functionality which requires one
-> > time activation of vibrate mode without a continuous vibrate on/off cycles.
-> > 
-> > From 1ebe0fd67580da833f8f06fc3119445e9991100f Mon Sep 17 00:00:00 2001
-> > From: Shuah Khan <shuahkhan@gmail.com>
-> > Date: Sat, 31 Mar 2012 21:56:07 -0600
-> > Subject: [PATCH] LEDS-One-Shot-Timer-Trigger-implementation
-> > 
-> > Signed-off-by: Shuah Khan <shuahkhan@gmail.com>
-> > Reviewed-by: NeilBrown <neilb@suse.de>
-> > Cc: Richard Purdie <rpurdie@linux.intel.com>
-> > ---
-> >  Documentation/leds/leds-one-shot-timer.txt |   79 +++++++++++++++++++++
-> >  drivers/leds/led-class.c                   |    4 +-
-> >  drivers/leds/led-core.c                    |   26 ++++++-
-> >  drivers/leds/leds.h                        |    2 +
-> >  drivers/leds/ledtrig-timer.c               |  104 ++++++++++++++++++++--------
-> >  5 files changed, 180 insertions(+), 35 deletions(-)
-> >  create mode 100644 Documentation/leds/leds-one-shot-timer.txt
-> > 
-> > diff --git a/Documentation/leds/leds-one-shot-timer.txt b/Documentation/leds/leds-one-shot-timer.txt
-> > new file mode 100644
-> > index 0000000..a5429dd
-> > --- /dev/null
-> > +++ b/Documentation/leds/leds-one-shot-timer.txt
-> > @@ -0,0 +1,79 @@
-> > +
-> > +LED one shot timer feature
-> > +===========================
-> > +
-> > +LED infrastructure lacks support for one shot timer trigger and activation.
-> > +The current support allows for setting two timers, one for specifying how
-> > +long a state to be on, and the second for how long the state to be off. For
-> > +example, delay_on value specifies the time period an LED should stay in on
-> > +state, followed by a delay_off value that specifies how long the LED should
-> > +stay in off state. The on and off cycle repeats until the trigger gets
-> > +deactivated. There is no provision for one time activation to implement
-> > +features that require an on or off state to be held just once and then stay
-> > +in the original state forever.
-> > +
-> > +This feature will help implement vibrate functionality which requires one
-> > +time activation of vibrate mode without a continuous vibrate on/off cycles.
-> > +
-> > +This patch implements the timer-no-default trigger support by enhancing the
-> > +current led-class, led-core, and ledtrig-timer drivers to:
-> > +
-> > +- Add support for forever timer case. forever tag can be written to delay_on
-> > +  or delay_off files. Internally forever is mapped to ULONG_MAX with no timer
-> > +  associated with it.
-> > +
-> > +- The led_blink_set() which takes two pointers to times one each for delay_on
-> > +  and delay_off has been extended so that a NULL instead of a pointer means
-> > +  "forever".
-> > +
-> > +- Add a new timer-no-default trigger to ledtrig-timer
-> > +
-> > +The above enhancements support the following use-cases:
-> > +
-> > +use-case 1:
-> > +echo timer-no-default > /sys/class/leds/SOMELED/trigger
-> > +echo forever > /sys/class/leds/SOMELED/delay_off
-> > +echo 2000 > /sys/class/leds/SOMELED/delay_on
-> > +
-> > +When timer-no-default is activated in step1, unlike the timer trigger case,
-> > +timer-no-default activate routine activates the trigger without starting
-> > +any timers. The default 1 HZ delay_on and delay_off timers won't be started
-> > +like in the case of timer trigger activation. Not starting timers ensures
-> > +that the one time state isn't stuck if some error occurs before actual timer
-> > +periods are specified. delay_on and delay_off files get created with 0
-> > +values. Please note that it is important to set delay_off to forever prior
-> > +to setting delay_on value. If the order is reversed, the LED will be turned
-> > +on, with no timer set to turn it off.
-> > +
-> > +When delay_off value is specified in step 2, delay_off_store recognizes the
-> > +special forever tag and records it and returns without starting any timer.
-> > +Internally forever maps to ULONG_MAX. The led_blink_set() which takes
-> > +two pointers to times one each for delay_on and delay_off has been extended
-> > +so that a NULL instead of a pointer means "forever".
-> > +
-> > +When delay_on value is specified in step 3, a timer gets started for
-> > +delay_on period, and delay_off stays at ULONG_MAX with no timer associated
-> > +with it.
-> > +
-> > +use-case 2:
-> > +echo timer-no-default > /sys/class/leds/SOMELED/trigger
-> > +echo forever > /sys/class/leds/SOMELED/delay_on
-> > +echo 2000 > /sys/class/leds/SOMELED/delay_off
-> > +
-> > +When timer-no-default is activated in step1, unlike the timer trigger case,
-> > +timer-no-default activate routine activates the trigger without starting
-> > +any timers. The default 1 HZ delay_on and delay_off timers won't be started
-> > +like in the case of timer trigger activation. Not starting timers ensures
-> > +that the one time state isn't stuck if some error occurs before actual timer
-> > +periods are specified. delay_on and delay_off files get created with 0
-> > +values. Please note that it is important to set delay_on to forever prior
-> > +to setting delay_off value. If the order is reversed, the LED will be turned
-> > +off, with no timer set to turn it back on.
-> > +
-> > +When delay_on value is specified in step 2, delay_on_store recognizes the
-> > +special forever tag and records it and returns without starting any timer.
-> > +Internally forever maps to ULONG_MAX.
-> > +
-> > +When delay_off value is specified in step 3, a timer gets started for
-> > +delay_off period, and delay_on stays at ULONG_MAX with no timer associated
-> > +with it.
+On 04/10/2012 02:04 AM, Linus Walleij wrote:
+> From: Linus Walleij <linus.walleij@linaro.org>
 > 
-> Having looked at the code and read through the thread and Andrew's patch
-> review, I'm left wondering why you didn't add a new trigger for this
-> functionality?
-
-By new trigger do you mean, adding another interface to struct
-led_trigger. My first patch to solve this use-case indeed did that. I
-still happen to have a copy of that patch. It would require more changes
-to the infrastructure than this approach, however it is more explicit
-and clear.
-
-static struct led_trigger gpio_led_trigger = {
-       .name           = "gpio",
-+       .activate_once  = NULL,
-       .activate       = gpio_trig_activate,
-       .deactivate     = gpio_trig_deactivate,
-};
+> If drivers try to obtain pinctrl handles for a pin controller that
+> has not yet registered to the subsystem, we need to be able to
+> back out and retry with deferred probing. So let's return
+> -EPROBE_DEFER whenever this location fails.
 > 
-> The reason I ask that there do seem to be a number of questions about
-> backwards compatibility and this also seems to complicate the standard
-> timer trigger in non-obvious ways. Having a new trigger for this
-> functionality would allow for a much clearer namespace and no backwards
-> compatibility issues. It also means additional functionality can be
-> added later in a contained place. I'm wondering if there is a downside
-> to a separate trigger I'm missing?
+> Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>
+> Cc: Arnd Bergmann <arnd@arndb.de>
+> Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
 
-Please see above. I can send that patch for draft review if you would
-like to see it. I haven't done a lot of testing on that patch and also I
-think I have a few missing pieces. But I am open to either approach.
+This looks fine, except:
 
-> 
-> Dimity raises some valid questions about the force-feedback framework in
-> the input system too. We need to make a decision about where phone
-> vibration framework belongs and then stick to that. You can argue this
-> to either subsystem, neither "led" or "input" is a obvious description
-> of phone vibration at a first glance!
+> @@ -521,8 +521,11 @@ static int add_setting(struct pinctrl *p, struct pinctrl_map const *map)
+>  		dev_err(p->dev, "unknown pinctrl device %s in map entry",
+>  			map->ctrl_dev_name);
 
-force-feedback framework is another alternative. Making a decision is
-great, what are the next steps to get closer to making a call? 
+Perhaps this dev_err (and the one in the other hunk) should be
+downgraded to warn/info/debug?
 
-Thanks,
--- Shuah
-> 
-> Cheers,
-> 
-> Richard
-> 
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-> 
-
-
+> +		/*
+> +		 * OK let us guess that the driver is not there yet, and
+> +		 * let's defer obtaining this pinctrl handle to later...
+> +		 */
+> +		return -EPROBE_DEFER;
+>  	}
