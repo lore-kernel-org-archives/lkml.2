@@ -1,70 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752422Ab2DJFUk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Apr 2012 01:20:40 -0400
-Received: from mga14.intel.com ([143.182.124.37]:38053 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751529Ab2DJFUj convert rfc822-to-8bit (ORCPT
+	id S1752701Ab2DJF3f (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Apr 2012 01:29:35 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:34582 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751864Ab2DJF3e (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Apr 2012 01:20:39 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="129001077"
-From: "Pallala, Ramakrishna" <ramakrishna.pallala@intel.com>
-To: Anton Vorontsov <cbouatmailru@gmail.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Pallala, Ramakrishna" <ramakrishna.pallala@intel.com>
-Subject: RE: [PATCH] max17042_battery: fix driver exit function
-Thread-Topic: [PATCH] max17042_battery: fix driver exit function
-Thread-Index: AQHNC3xnErhAmXsEakusyRSed0Yq3paTm1ZA
-Date: Tue, 10 Apr 2012 05:20:33 +0000
-Message-ID: <D854C92F57B1B347B57E531E78D05EAD1071B1@BGSMSX102.gar.corp.intel.com>
-References: <1332756506-6905-1-git-send-email-ramakrishna.pallala@intel.com>
-In-Reply-To: <1332756506-6905-1-git-send-email-ramakrishna.pallala@intel.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.223.10.10]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	Tue, 10 Apr 2012 01:29:34 -0400
+Date: Tue, 10 Apr 2012 15:29:23 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Mike Sinkovsky <msink@permonline.ru>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>
+Subject: linux-next: build failure after merge of the final tree (net-next
+ tree related)
+Message-Id: <20120410152923.15aee4df478d819f167cd4af@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0beta6 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Tue__10_Apr_2012_15_29_23_+1000_fqp4ut43H.D7NEk7"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Anton,
+--Signature=_Tue__10_Apr_2012_15_29_23_+1000_fqp4ut43H.D7NEk7
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> From: Pallala, Ramakrishna
-> Sent: Monday, March 26, 2012 3:38 PM
-> To: linux-kernel@vger.kernel.org
-> Cc: Anton Vorontsov; Anton Vorontsov; Pallala, Ramakrishna
-> Subject: [PATCH] max17042_battery: fix driver exit function
-> 
-> This patch frees the irq and sets the i2c client data to NULL in driver remove function.
-> 
-> Signed-off-by: Ramakrishna Pallala <ramakrishna.pallala@intel.com>
-> ---
->  drivers/power/max17042_battery.c |    4 ++++
->  1 files changed, 4 insertions(+), 0 deletions(-)
-> 
-> diff --git a/drivers/power/max17042_battery.c b/drivers/power/max17042_battery.c
-> index abf3400..d4868c5 100644
-> --- a/drivers/power/max17042_battery.c
-> +++ b/drivers/power/max17042_battery.c
-> @@ -721,6 +721,10 @@ static int __devexit max17042_remove(struct i2c_client *client)
->  	struct max17042_chip *chip = i2c_get_clientdata(client);
-> 
->  	power_supply_unregister(&chip->battery);
-> +	if (client->irq)
-> +		free_irq(client->irq, chip);
-> +	i2c_set_clientdata(client, NULL);
-> +
->  	return 0;
->  }
+Hi all,
 
-I have not received any comments for this patch.
-Can I assume that this patch is in your merge queue?
+After merging the final tree, today's linux-next build (s390 allmodconfig)
+failed like this:
 
-Thanks,
-Ram
+drivers/net/ethernet/wiznet/w5100.c: In function 'w5100_read_direct':
+drivers/net/ethernet/wiznet/w5100.c:121:2: error: implicit declaration of f=
+unction 'ioread8' [-Werror=3Dimplicit-function-declaration]
+drivers/net/ethernet/wiznet/w5100.c: In function 'w5100_write_direct':
+drivers/net/ethernet/wiznet/w5100.c:127:2: error: implicit declaration of f=
+unction 'iowrite8' [-Werror=3Dimplicit-function-declaration]
+drivers/net/ethernet/wiznet/w5100.c: In function 'w5100_read_indirect':
+drivers/net/ethernet/wiznet/w5100.c:188:2: error: implicit declaration of f=
+unction 'mmiowb' [-Werror=3Dimplicit-function-declaration]
+drivers/net/ethernet/wiznet/w5100.c: In function 'w5100_hw_probe':
+drivers/net/ethernet/wiznet/w5100.c:680:6: error: 'IRQ_TYPE_LEVEL_LOW' unde=
+clared (first use in this function)
+
+Caused by commit 8b1467a31343 ("Ethernet driver for the WIZnet W5100 chip").
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Signature=_Tue__10_Apr_2012_15_29_23_+1000_fqp4ut43H.D7NEk7
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCAAGBQJPg8UzAAoJEECxmPOUX5FEj2QQAKIPTrkfZAgchm+3LDtneWk/
+aAOxt8O6f9qsUb2QFk9YtMVnSdYlPADAQXy39DMA9jo+P+gGVCxlevd+lDd9by0y
+eRWh/o4G06li1RJW6atldCG4fgE5ehwcMazhAzl1sSxfPDQBCNQnDPa7vFIol99q
+Hy1dJPW8h5a2pjq9vBuzTvpggyJizU6ll0lpY97snR9alATo9jG+dd63WPyL/kBz
+xNOAGiBLfYDJAQ82njXMQqNHAJL8URPJF7XgFbHAbf9YxXHmvO+nJK5gofQsORGl
+P9yQ4CBAq88CrguGmKNfRD+kNO0mzKByXtjjVQIYrpET/IHHdUDQpcBlhVzUfrld
+bFQIzAVjcOtPX4uQ11Lrf41gV1iGo7vrKUKYRrxzXw2B0Woq1p1TK0n+sD3AzWRj
+8InLz0Tn0vnq92pyrNJAQjMZsDosOZg1jEbwIN3TAo/B86prRhMNUVwq98zFUmCV
+1fZPT/gmdqnEla4pa8pjdhu5lzgmf1PCoOVz9/1oibdAq1DVmcwEhWKjwf6gxxhi
+TXEE//1n5s+rTLkQEHul4Pxsm6eF74A10jST7y9Clh3MOcXB13ybIUqUZGbTh3VJ
+0kxLLmFkpPgb/SGAdJ3vEf8/IXHxqD0i/UrJTJqpBb9q8KNPM2ztXW9QKIxTBr+E
+W/3JWZ0kVU/wIJYwKT5M
+=vuHG
+-----END PGP SIGNATURE-----
+
+--Signature=_Tue__10_Apr_2012_15_29_23_+1000_fqp4ut43H.D7NEk7--
