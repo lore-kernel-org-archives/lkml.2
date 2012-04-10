@@ -1,106 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759511Ab2DJVFP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Apr 2012 17:05:15 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:44309 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759430Ab2DJVFM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Apr 2012 17:05:12 -0400
-Date: Tue, 10 Apr 2012 23:05:05 +0200
-From: Jan Kara <jack@suse.cz>
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: Jan Kara <jack@suse.cz>, Tejun Heo <tj@kernel.org>,
-        Fengguang Wu <fengguang.wu@intel.com>, Jens Axboe <axboe@kernel.dk>,
-        linux-mm@kvack.org, sjayaraman@suse.com, andrea@betterlinux.com,
-        jmoyer@redhat.com, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, kamezawa.hiroyu@jp.fujitsu.com,
-        lizefan@huawei.com, containers@lists.linux-foundation.org,
-        cgroups@vger.kernel.org, ctalbott@google.com, rni@google.com,
-        lsf@lists.linux-foundation.org
-Subject: Re: [RFC] writeback and cgroup
-Message-ID: <20120410210505.GE4936@quack.suse.cz>
-References: <20120403183655.GA23106@dhcp-172-17-108-109.mtv.corp.google.com>
- <20120404145134.GC12676@redhat.com>
- <20120407080027.GA2584@quack.suse.cz>
- <20120410180653.GJ21801@redhat.com>
+	id S1759482Ab2DJVIa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Apr 2012 17:08:30 -0400
+Received: from mail-qa0-f42.google.com ([209.85.216.42]:46920 "EHLO
+	mail-qa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754664Ab2DJVI3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Apr 2012 17:08:29 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120410180653.GJ21801@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <4F8462DE.4030004@ti.com>
+References: <1333442836-9947-1-git-send-email-akinobu.mita@gmail.com>
+	<1333442836-9947-3-git-send-email-akinobu.mita@gmail.com>
+	<4F8462DE.4030004@ti.com>
+Date: Wed, 11 Apr 2012 06:08:28 +0900
+Message-ID: <CAC5umygW+i=8=a+x7BnDuN=GPBFSXA4TWgrvQQvtWv0jSreWXw@mail.gmail.com>
+Subject: Re: [PATCH 3/4] arm: davinci: use for_each_set_bit_from
+From: Akinobu Mita <akinobu.mita@gmail.com>
+To: Sekhar Nori <nsekhar@ti.com>,
+        Christian Riesch <christian.riesch@omicron.at>
+Cc: linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
+        Kevin Hilman <khilman@ti.com>,
+        davinci-linux-open-source@linux.davincidsp.com,
+        Russell King <linux@arm.linux.org.uk>,
+        linux-arm-kernel@lists.infradead.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  Hi Vivek,
-
-On Tue 10-04-12 14:06:53, Vivek Goyal wrote:
-> On Sat, Apr 07, 2012 at 10:00:27AM +0200, Jan Kara wrote:
-> > > In general, the core of the issue is that filesystems are not cgroup aware
-> > > and if you do throttling below filesystems, then invariably one or other
-> > > serialization issue will come up and I am concerned that we will be constantly
-> > > fixing those serialization issues. Or the desgin point could be so central
-> > > to filesystem design that it can't be changed.
-> >   We talked about this at LSF and Dave Chinner had the idea that we could
-> > make processes wait at the time when a transaction is started. At that time
-> > we don't hold any global locks so process can be throttled without
-> > serializing other processes. This effectively builds some cgroup awareness
-> > into filesystems but pretty simple one so it should be doable.
-> 
-> Ok. So what is the meaning of "make process wait" here? What it will be
-> dependent on? I am thinking of a case where a process has 100MB of dirty
-> data, has 10MB/s write limit and it issues fsync. So before that process
-> is able to open a transaction, one needs to wait atleast 10seconds
-> (assuming other processes are not doing IO in same cgroup). 
-  The original idea was that we'd have "bdi-congested-for-cgroup" flag
-and the process starting a transaction will wait for this flag to get
-cleared before starting a new transaction. This will be easy to implement
-in filesystems and won't have serialization issues. But my knowledge of
-blk-throttle is lacking so there might be some problems with this approach.
-
-> If this wait is based on making sure all dirty data has been written back
-> before opening transaction, then it will work without any interaction with
-> block layer and sounds more feasible.
-> 
-> > 
-> > > In general, if you do throttling deeper in the stakc and build back
-> > > pressure, then all the layers sitting above should be cgroup aware
-> > > to avoid problems. Two layers identified so far are writeback and
-> > > filesystems. Is it really worth the complexity. How about doing 
-> > > throttling in higher layers when IO is entering the kernel and
-> > > keep proportional IO logic at the lowest level and current mechanism
-> > > of building pressure continues to work?
-> >   I would like to keep single throttling mechanism for different limitting
-> > methods - i.e. handle proportional IO the same way as IO hard limits. So we
-> > cannot really rely on the fact that throttling is work preserving.
-> > 
-> > The advantage of throttling at IO layer is that we can keep all the details
-> > inside it and only export pretty minimal information (like is bdi congested
-> > for given cgroup) to upper layers. If we wanted to do throttling at upper
-> > layers (such as Fengguang's buffered write throttling), we need to export
-> > the internal details to allow effective throttling...
-> 
-> For absolute throttling we really don't have to expose any details. In
-> fact in my implementation of throttling buffered writes, I just had exported
-> a single function to be called in bdi dirty rate limit. The caller will
-> simply sleep long enough depending on the size of IO it is doing and
-> how many other processes are doing IO in same cgroup.
+2012/4/11 Sekhar Nori <nsekhar@ti.com>:
+> Hi Akinobu,
 >
-> So implementation was still in block layer and only a single function
-> was exposed to higher layers.
-  OK, I see.
- 
-> One more factor makes absolute throttling interesting and that is global
-> throttling and not per device throttling. For example in case of btrfs,
-> there is no single stacked device on which to put total throttling
-> limits.
-  Yes. My intended interface for the throttling is bdi. But you are right
-it does not exactly match the fact that the throttling happens per device
-so it might get tricky. Which brings up a question - shouldn't the
-throttling blk-throttle does rather happen at bdi layer? Because the
-uses of the functionality I have in mind would match that better.
+> On 4/3/2012 2:17 PM, Akinobu Mita wrote:
+>> Use for_each_set_bit_from to iterate over all the set bit in a memory
+>> region.
+>>
+>> Signed-off-by: Akinobu Mita <akinobu.mita@gmail.com>
+>> Cc: Sekhar Nori <nsekhar@ti.com>
+>> Cc: Kevin Hilman <khilman@ti.com>
+>> Cc: davinci-linux-open-source@linux.davincidsp.com
+>> Cc: Russell King <linux@arm.linux.org.uk>
+>> Cc: linux-arm-kernel@lists.infradead.org
+>
+> Looks good to me. If you are planning to send this upstream outside of
+> davinci tree, please add my:
+>
+> Acked-by: Sekhar Nori <nsekhar@ti.com>
+>
+> Else, let me know and I will be happy to queue it.
 
-								Honza
--- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+Christian found a bug in this patch. So  I'll resend it, then please queue it
+to your tree.
