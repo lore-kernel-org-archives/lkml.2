@@ -1,41 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758410Ab2DJSbZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Apr 2012 14:31:25 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:36042 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758371Ab2DJSbY (ORCPT
+	id S1758429Ab2DJSeX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Apr 2012 14:34:23 -0400
+Received: from g5t0006.atlanta.hp.com ([15.192.0.43]:10644 "EHLO
+	g5t0006.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754587Ab2DJSeW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Apr 2012 14:31:24 -0400
-MIME-Version: 1.0
-In-Reply-To: <4F8457F9.7090309@wwwdotorg.org>
-References: <1333553270-9040-1-git-send-email-swarren@wwwdotorg.org>
-	<1333553270-9040-5-git-send-email-swarren@wwwdotorg.org>
-	<CACRpkdZzET9OKC8xoXV_4OBAd9-EuhSh-OfG=es56bKidCoe9Q@mail.gmail.com>
-	<4F8457F9.7090309@wwwdotorg.org>
-Date: Tue, 10 Apr 2012 20:31:23 +0200
-Message-ID: <CACRpkdb=8ydKuX52cen8Y_iBzV+RwD61NCPrjQFXNgoO-=bc9Q@mail.gmail.com>
-Subject: Re: [PATCH V4 REPOST 5/5] pinctrl: tegra: Add complete device tree support
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Stephen Warren <swarren@wwwdotorg.org>
-Cc: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Tue, 10 Apr 2012 14:34:22 -0400
+Message-ID: <1334082859.2287.13.camel@lorien2>
+Subject: Re: [PATCH RESEND] LEDS-One-Shot-Timer-Trigger-implementation
+From: Shuah Khan <shuahkhan@gmail.com>
+Reply-To: shuahkhan@gmail.com
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Cc: shuahkhan@gmail.com, Andrew Morton <akpm@linux-foundation.org>,
+        neilb@suse.de, rpurdie@linux.intel.com,
+        LKML <linux-kernel@vger.kernel.org>
+Date: Tue, 10 Apr 2012 12:34:19 -0600
+In-Reply-To: <20120410071702.GA5244@core.coreip.homeip.net>
+References: <20120406165353.ab667eb0.akpm@linux-foundation.org>
+	 <1333808024.2728.39.camel@lorien2>
+	 <20120407215641.GA4539@core.coreip.homeip.net>
+	 <1333990549.2871.10.camel@lorien2>
+	 <20120409173703.GA18542@core.coreip.homeip.net>
+	 <1333995365.2871.17.camel@lorien2>
+	 <20120409184558.GB18542@core.coreip.homeip.net>
+	 <1334002847.2871.26.camel@lorien2>
+	 <20120409204202.GC18542@core.coreip.homeip.net>
+	 <1334011229.2871.32.camel@lorien2>
+	 <20120410071702.GA5244@core.coreip.homeip.net>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2- 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 10, 2012 at 5:55 PM, Stephen Warren <swarren@wwwdotorg.org> wrote:
 
-> Is your pinctrl for-next branch considered "stable" (i.e. it won't ever
-> be rebased) at least up to commit a57be23 "pinctrl: tegra: Add complete
-> device tree support"?
+> See if the following patch will make the decision a bit easier ;)  It
+> might need some love as I do not actually have the hardware.
+> 
 
-Not quite yet, because I would expect the occasional -rc fix for
--rc3 or so.
+Dmitry,
 
-> If so, I'll use it as a base for the Tegra GPIO and pinmux rework branch.
+Thanks - this will be good base to start. 
 
-Soon-ish that'd work...
+-- Shuah
 
-Yours,
-Linus Walleij
+
