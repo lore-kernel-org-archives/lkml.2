@@ -1,68 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756861Ab2DJPhA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Apr 2012 11:37:00 -0400
-Received: from mailhub.sw.ru ([195.214.232.25]:1280 "EHLO relay.sw.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754961Ab2DJPg6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Apr 2012 11:36:58 -0400
-Message-ID: <4F84537A.40100@parallels.com>
-Date: Tue, 10 Apr 2012 19:36:26 +0400
-From: Stanislav Kinsbursky <skinsbursky@parallels.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.28) Gecko/20120313 Lightning/1.0b2 Thunderbird/3.1.20
-MIME-Version: 1.0
-To: "bfields@fieldses.org" <bfields@fieldses.org>
-CC: "Myklebust, Trond" <Trond.Myklebust@netapp.com>,
-        Jeff Layton <jlayton@redhat.com>,
-        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: Grace period
-References: <4F82F16C.7030303@parallels.com> <20120409112739.6a823d6f@corrin.poochiereds.net> <4F830999.5000504@parallels.com> <20120409161114.GB6482@fieldses.org> <1333988226.2688.76.camel@lade.trondhjem.org> <20120409162107.GC6482@fieldses.org> <1333989216.2688.87.camel@lade.trondhjem.org> <4F8314CF.70302@parallels.com> <20120409181138.GA9581@fieldses.org> <4F8411CC.2070105@parallels.com> <20120410133913.GF18465@fieldses.org>
-In-Reply-To: <20120410133913.GF18465@fieldses.org>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+	id S1756831Ab2DJPjc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Apr 2012 11:39:32 -0400
+Received: from e38.co.us.ibm.com ([32.97.110.159]:37578 "EHLO
+	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754845Ab2DJPj3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Apr 2012 11:39:29 -0400
+Message-ID: <1334070489.16827.3.camel@key-ThinkPad-W510>
+Subject: [PATCH v2 01/17] powerpc: Add new hvcall constants to support PFO
+From: Kent Yoder <key@linux.vnet.ibm.com>
+To: linux-kernel@vger.kernel.org
+Cc: linux-crypto@vger.kernel.org, rcj@linux.vnet.ibm.com,
+        key@linux.vnet.ibm.com, benh@kernel.crashing.org,
+        linuxppc-dev@lists.ozlabs.org
+Date: Tue, 10 Apr 2012 10:08:09 -0500
+In-Reply-To: <1334070249.16827.1.camel@key-ThinkPad-W510>
+References: <1334070249.16827.1.camel@key-ThinkPad-W510>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2- 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12041015-5518-0000-0000-00000390D850
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-10.04.2012 17:39, bfields@fieldses.org пишет:
-> On Tue, Apr 10, 2012 at 02:56:12PM +0400, Stanislav Kinsbursky wrote:
->> 09.04.2012 22:11, bfields@fieldses.org пишет:
->>> Since NFSv4 doesn't have a separate MOUNT protocol, clients need to be
->>> able to do readdir's and lookups to get to exported filesystems.  We
->>> support this in the Linux server by exporting all the filesystems from
->>> "/" on down that must be traversed to reach a given filesystem.  These
->>> exports are very restricted (e.g. only parents of exports are visible).
->>>
->>
->> Ok, thanks for explanation.
->> So, this pseudoroot looks like a part of NFS server internal
->> implementation, but not a part of a standard. That's good.
->>
->>>> Why does it prevents implementing of check for "superblock-network
->>>> namespace" pair on NFS server start and forbid (?) it in case of
->>>> this pair is shared already in other namespace? I.e. maybe this
->>>> pseudoroot can be an exclusion from this rule?
->>>
->>> That might work.  It's read-only and consists only of directories, so
->>> the grace period doesn't affect it.
->>>
->>
->> I've just realized, that this per-sb grace period won't work.
->> I.e., it's a valid situation, when two or more containers located on
->> the same filesystem, but shares different parts of it. And there is
->> not conflict here at all.
->
-> Well, there may be some conflict in that a file could be hardlinked into
-> both subtrees, and that file could be locked from users of either
-> export.
->
+The Platform Facilities Option (PFO) adds several new h_calls and
+more return codes.
 
-Is this case handled if both links or visible in the same export?
-But anyway, this is not that bad. I.e it doesn't make things unpredictable.
-Probably, there are some more issues like this one (bind-mounting, for example).
-But I think, that it's root responsibility to handle such problems.
+Signed-off-by: Robert Jennings <rcj@linux.vnet.ibm.com>
+Signed-off-by: Kent Yoder <key@linux.vnet.ibm.com>
+---
+ arch/powerpc/include/asm/hvcall.h |   25 +++++++++++++++++++++++--
+ 1 files changed, 23 insertions(+), 2 deletions(-)
 
+diff --git a/arch/powerpc/include/asm/hvcall.h b/arch/powerpc/include/asm/hvcall.h
+index 1c324ff..6122523 100644
+--- a/arch/powerpc/include/asm/hvcall.h
++++ b/arch/powerpc/include/asm/hvcall.h
+@@ -77,8 +77,27 @@
+ #define H_MR_CONDITION  -43
+ #define H_NOT_ENOUGH_RESOURCES -44
+ #define H_R_STATE       -45
+-#define H_RESCINDEND    -46
+-#define H_MULTI_THREADS_ACTIVE -9005
++#define H_RESCINDED     -46
++#define H_P2		-55
++#define H_P3		-56
++#define H_P4		-57
++#define H_P5		-58
++#define H_P6		-59
++#define H_P7		-60
++#define H_P8		-61
++#define H_P9		-62
++#define H_TOO_BIG	-64
++#define H_OVERLAP	-68
++#define H_INTERRUPT	-69
++#define H_BAD_DATA	-70
++#define H_NOT_ACTIVE	-71
++#define H_SG_LIST	-72
++#define H_OP_MODE	-73
++#define H_COP_HW	-74
++#define H_UNSUPPORTED_FLAG_START	-256
++#define H_UNSUPPORTED_FLAG_END		-511
++#define H_MULTI_THREADS_ACTIVE	-9005
++#define H_OUTSTANDING_COP_OPS	-9006
+ 
+
+ /* Long Busy is a condition that can be returned by the firmware
+@@ -240,6 +259,8 @@
+ #define H_GET_MPP		0x2D4
+ #define H_HOME_NODE_ASSOCIATIVITY 0x2EC
+ #define H_BEST_ENERGY		0x2F4
++#define H_RANDOM		0x300
++#define H_COP			0x304
+ #define H_GET_MPP_X		0x314
+ #define MAX_HCALL_OPCODE	H_GET_MPP_X
+ 
 -- 
-Best regards,
-Stanislav Kinsbursky
+1.7.1
+
+
