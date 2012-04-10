@@ -1,217 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756394Ab2DJKIP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Apr 2012 06:08:15 -0400
-Received: from beauty.rexursive.com ([150.101.121.179]:38378 "EHLO
-	beauty.rexursive.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755901Ab2DJKIL (ORCPT
+	id S1756608Ab2DJKIU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Apr 2012 06:08:20 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:39687 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756492Ab2DJKIR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Apr 2012 06:08:11 -0400
-Message-ID: <1334052489.2178.9.camel@shrek.rexursive.com>
-Subject: [PATCH v10]: Hibernation: fix the number of pages used for
- hibernate/thaw buffering
-From: Bojan Smojver <bojan@rexursive.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: linux-kernel@vger.kernel.org, Per Olofsson <pelle@debian.org>
-Date: Tue, 10 Apr 2012 20:08:09 +1000
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 (3.2.3-2.fc16) 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Tue, 10 Apr 2012 06:08:17 -0400
+Date: Tue, 10 Apr 2012 11:08:13 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Jesper Juhl <jj@chaosbits.net>
+Cc: linux-kernel@vger.kernel.org, trivial@kernel.org,
+        alsa-devel@alsa-project.org, Takashi Iwai <tiwai@suse.de>,
+        Jaroslav Kysela <perex@perex.cz>, Liam Girdwood <lrg@ti.com>,
+        Dimitris Papastamos <dp@opensource.wolfsonmicro.com>,
+        Ian Lartey <ian@opensource.wolfsonmicro.com>
+Subject: Re: [PATCH 24/26] ASoC: wm8994: Don't test for NULL before
+ release_firmware()
+Message-ID: <20120410100813.GG7499@opensource.wolfsonmicro.com>
+References: <alpine.LNX.2.00.1204092157340.13925@swampdragon.chaosbits.net>
+ <alpine.LNX.2.00.1204092243450.14420@swampdragon.chaosbits.net>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="gm5TwAJMO0F2iVRz"
+Content-Disposition: inline
+In-Reply-To: <alpine.LNX.2.00.1204092243450.14420@swampdragon.chaosbits.net>
+X-Cookie: You dialed 5483.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Rafael,
 
-One more version. Heeding Per's suggestion to optimise when
-CONFIG_HIGHMEM is not configured.
+--gm5TwAJMO0F2iVRz
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
----------------------------------------
-Hibernation/thaw fixes/improvements:
+On Mon, Apr 09, 2012 at 10:52:19PM +0200, Jesper Juhl wrote:
+> release_firmware() does its own NULL ptr testing, it's redundant to
+> also test before calling it.
 
-1. Calculate the number of required free pages based on non-high memory
-pages only, because that is where the buffers will come from.
+Applied, thanks.
 
-2. Do not allocate memory for buffers from emergency pools, unless
-absolutely required. Do not warn about and do not retry non-essential
-failed allocations.
+--gm5TwAJMO0F2iVRz
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-3. Do not check the amount of free pages left on every single page
-write, but wait until one map is completely populated and then check.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
 
-4. Set maximum number of pages for read buffering consistently, instead
-of inadvertently depending on the size of the sector type.
+iQIcBAEBAgAGBQJPhAaGAAoJEBus8iNuMP3dXnwP/1ednHaejrBF4X8LF2n7qRZu
+7Uz3FQm27n7/nAkH0FNJmA3KSAfYjdWEWEUZHh5o0W4pDhUJnuJRRedhLfDmzFAI
+xZT67q0lP1icrSG6qqTYTF7bX6YIX3TMywTtEYUgSeDyKrY6hJ7IdSQTGa3RMeAW
+uqjxXcXwhu63Hj9BZyUJzuAL7nKHWguRMlwXxS+bRoWA9CHvW9nW7Vmz1jr7Geiw
+ZdZ25JwQ+LRHk+SAmKZhlbhecmNnnBCgNXInHOfF8hAw4V+JMER6GpalMsDUNUKQ
+Mz1546GRwUStCqaILyGwAUakgBUSa28yIdRwp5CRTW6YtGAYrIt0F9xsDuMQb0WM
+0VTLeyRWaCJKBlLjhnGUxlzpBAusB2DP1p4/oGkOzYB9UiA8ZduMttUmBJvycTY1
+SeKx9ye/u9In+oxYP10DuT+TXBa5RYj9hTlGF6O66Kv6aZyMTl09Gx5jgq2NEQe/
+Oiz9Q3JkWBWDbiJYu/ciXIq385Mk8JiwOJE+5abNqbx5PLxIgtvPE4XAzRrvEo/v
+HVd8xpYE7OYgeleX31tmlOKl4o1sthNMWD6vfsMvtyHIKPBxDP9mf0kGjQTA/kf2
+MlAotlLZe1eFg5/NFQxrifQvvS2NBp3fPxu3P6WNZkPUhenQuQkeBkebFWm6LYZH
+A1WQuPnOA5i650y4Jd1X
+=dUeq
+-----END PGP SIGNATURE-----
 
-5. Fix copyright line, which I missed when I submitted the hibernation
-threading patch.
-
-6. Dispense with bit shifting arithmetic to improve readability.
-
-Signed-off-by: Bojan Smojver <bojan@rexursive.com>
-Signed-off-by: Per Olofsson <pelle@debian.org>
----
- kernel/power/swap.c |   76 +++++++++++++++++++++++++++++++++++++++------------
- 1 files changed, 58 insertions(+), 18 deletions(-)
-
-diff --git a/kernel/power/swap.c b/kernel/power/swap.c
-index 8742fd0..8a1c293 100644
---- a/kernel/power/swap.c
-+++ b/kernel/power/swap.c
-@@ -6,7 +6,7 @@
-  *
-  * Copyright (C) 1998,2001-2005 Pavel Machek <pavel@ucw.cz>
-  * Copyright (C) 2006 Rafael J. Wysocki <rjw@sisk.pl>
-- * Copyright (C) 2010 Bojan Smojver <bojan@rexursive.com>
-+ * Copyright (C) 2010-2012 Bojan Smojver <bojan@rexursive.com>
-  *
-  * This file is released under the GPLv2.
-  *
-@@ -51,6 +51,36 @@
- 
- #define MAP_PAGE_ENTRIES	(PAGE_SIZE / sizeof(sector_t) - 1)
- 
-+/*
-+ * Number of free pages that are not high.
-+ */
-+#ifdef CONFIG_HIGHMEM
-+static unsigned long low_free_pages(void)
-+{
-+	struct zone *zone;
-+	unsigned long free = 0;
-+
-+	for_each_populated_zone(zone)
-+		if (!is_highmem(zone))
-+			free += zone_page_state(zone, NR_FREE_PAGES);
-+	return free;
-+}
-+#else
-+static inline unsigned long low_free_pages(void)
-+{
-+	return nr_free_pages();
-+}
-+#endif
-+
-+/*
-+ * Number of pages required to be kept free while writing the image. Always
-+ * half of all available low pages before the writing starts.
-+ */
-+static inline unsigned long reqd_free_pages(void)
-+{
-+	return low_free_pages() / 2;
-+}
-+
- struct swap_map_page {
- 	sector_t entries[MAP_PAGE_ENTRIES];
- 	sector_t next_swap;
-@@ -72,7 +102,7 @@ struct swap_map_handle {
- 	sector_t cur_swap;
- 	sector_t first_sector;
- 	unsigned int k;
--	unsigned long nr_free_pages, written;
-+	unsigned long reqd_free_pages;
- 	u32 crc32;
- };
- 
-@@ -265,14 +295,17 @@ static int write_page(void *buf, sector_t offset, struct bio **bio_chain)
- 		return -ENOSPC;
- 
- 	if (bio_chain) {
--		src = (void *)__get_free_page(__GFP_WAIT | __GFP_HIGH);
-+		src = (void *)__get_free_page(__GFP_WAIT | __GFP_NOWARN |
-+		                              __GFP_NORETRY);
- 		if (src) {
- 			copy_page(src, buf);
- 		} else {
- 			ret = hib_wait_on_bio_chain(bio_chain); /* Free pages */
- 			if (ret)
- 				return ret;
--			src = (void *)__get_free_page(__GFP_WAIT | __GFP_HIGH);
-+			src = (void *)__get_free_page(__GFP_WAIT |
-+			                              __GFP_NOWARN |
-+			                              __GFP_NORETRY);
- 			if (src) {
- 				copy_page(src, buf);
- 			} else {
-@@ -316,8 +349,7 @@ static int get_swap_writer(struct swap_map_handle *handle)
- 		goto err_rel;
- 	}
- 	handle->k = 0;
--	handle->nr_free_pages = nr_free_pages() >> 1;
--	handle->written = 0;
-+	handle->reqd_free_pages = reqd_free_pages();
- 	handle->first_sector = handle->cur_swap;
- 	return 0;
- err_rel:
-@@ -351,12 +383,17 @@ static int swap_write_page(struct swap_map_handle *handle, void *buf,
- 		clear_page(handle->cur);
- 		handle->cur_swap = offset;
- 		handle->k = 0;
--	}
--	if (bio_chain && ++handle->written > handle->nr_free_pages) {
--		error = hib_wait_on_bio_chain(bio_chain);
--		if (error)
--			goto out;
--		handle->written = 0;
-+
-+		if (bio_chain && low_free_pages() <= handle->reqd_free_pages) {
-+			error = hib_wait_on_bio_chain(bio_chain);
-+			if (error)
-+				goto out;
-+			/*
-+			 * Recalculate the number of required free pages, to
-+			 * make sure we never take more than half.
-+			 */
-+			handle->reqd_free_pages = reqd_free_pages();
-+		}
- 	}
-  out:
- 	return error;
-@@ -404,7 +441,7 @@ static int swap_writer_finish(struct swap_map_handle *handle,
- #define LZO_THREADS	3
- 
- /* Maximum number of pages for read buffering. */
--#define LZO_READ_PAGES	(MAP_PAGE_ENTRIES * 8)
-+#define LZO_READ_PAGES	8192
- 
- 
- /**
-@@ -615,10 +652,10 @@ static int save_image_lzo(struct swap_map_handle *handle,
- 	}
- 
- 	/*
--	 * Adjust number of free pages after all allocations have been done.
--	 * We don't want to run out of pages when writing.
-+	 * Adjust the number of required free pages after all allocations have
-+	 * been done. We don't want to run out of pages when writing.
- 	 */
--	handle->nr_free_pages = nr_free_pages() >> 1;
-+	handle->reqd_free_pages = reqd_free_pages();
- 
- 	/*
- 	 * Start the CRC32 thread.
-@@ -1129,14 +1166,17 @@ static int load_image_lzo(struct swap_map_handle *handle,
- 
- 	/*
- 	 * Adjust number of pages for read buffering, in case we are short.
-+	 * Never take more than half of all available low pages.
- 	 */
--	read_pages = (nr_free_pages() - snapshot_get_image_size()) >> 1;
-+	read_pages = (low_free_pages() - snapshot_get_image_size()) / 2;
- 	read_pages = clamp_val(read_pages, LZO_CMP_PAGES, LZO_READ_PAGES);
- 
- 	for (i = 0; i < read_pages; i++) {
- 		page[i] = (void *)__get_free_page(i < LZO_CMP_PAGES ?
- 		                                  __GFP_WAIT | __GFP_HIGH :
--		                                  __GFP_WAIT);
-+		                                  __GFP_WAIT | __GFP_NOWARN |
-+		                                  __GFP_NORETRY);
-+
- 		if (!page[i]) {
- 			if (i < LZO_CMP_PAGES) {
- 				ring_size = i;
----------------------------------------
-
--- 
-Bojan
-
+--gm5TwAJMO0F2iVRz--
