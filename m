@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759394Ab2DJPVv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Apr 2012 11:21:51 -0400
-Received: from s15943758.onlinehome-server.info ([217.160.130.188]:38988 "EHLO
+	id S1759381Ab2DJPVu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Apr 2012 11:21:50 -0400
+Received: from s15943758.onlinehome-server.info ([217.160.130.188]:39005 "EHLO
 	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759136Ab2DJPUz (ORCPT
+	with ESMTP id S1759156Ab2DJPUz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 10 Apr 2012 11:20:55 -0400
 From: Borislav Petkov <bp@amd64.org>
@@ -13,9 +13,9 @@ To: Ingo Molnar <mingo@kernel.org>,
         Michal Marek <mmarek@suse.cz>, Sam Ravnborg <sam@ravnborg.org>
 Cc: LKML <linux-kernel@vger.kernel.org>,
         Borislav Petkov <borislav.petkov@amd.com>
-Subject: [PATCH v4 1/4] tools: Add Makefile.include
-Date: Tue, 10 Apr 2012 17:20:37 +0200
-Message-Id: <1334071240-28692-2-git-send-email-bp@amd64.org>
+Subject: [PATCH v4 3/4] tools: Add a help target
+Date: Tue, 10 Apr 2012 17:20:39 +0200
+Message-Id: <1334071240-28692-4-git-send-email-bp@amd64.org>
 X-Mailer: git-send-email 1.7.9.3.362.g71319
 In-Reply-To: <1334071240-28692-1-git-send-email-bp@amd64.org>
 References: <1334071240-28692-1-git-send-email-bp@amd64.org>
@@ -25,157 +25,65 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Borislav Petkov <borislav.petkov@amd.com>
 
-Put generic enough build settings which could be reused by other tools
-into a common Makefile.include file.
-
-This commit reintroduces QUIET_SUBDIR{0,1} (see a3d1ee10d1bf) which are
-going to be used in the following patches.
+... and make it the default one so that calling 'make' without arguments
+in the tools/ directory gives you the possible targets to build along
+with a short description of what they are.
 
 Signed-off-by: Borislav Petkov <borislav.petkov@amd.com>
 ---
- tools/perf/Makefile            |   47 +--------------------------------
- tools/scripts/Makefile.include |   57 ++++++++++++++++++++++++++++++++++++++++
- 2 files changed, 58 insertions(+), 46 deletions(-)
- create mode 100644 tools/scripts/Makefile.include
+ tools/Makefile |   26 +++++++++++++++++++++++---
+ 1 file changed, 23 insertions(+), 3 deletions(-)
 
-diff --git a/tools/perf/Makefile b/tools/perf/Makefile
-index 820371f10d1b..4ca77cc0f284 100644
---- a/tools/perf/Makefile
-+++ b/tools/perf/Makefile
-@@ -1,18 +1,10 @@
--ifeq ("$(origin O)", "command line")
--	OUTPUT := $(O)/
--endif
-+include ../scripts/Makefile.include
+diff --git a/tools/Makefile b/tools/Makefile
+index e93b8ec3d250..c7ed814e12cf 100644
+--- a/tools/Makefile
++++ b/tools/Makefile
+@@ -1,5 +1,25 @@
+ include scripts/Makefile.include
  
- # The default target of this Makefile is...
- all:
++help:
++	@echo 'Possible targets:'
++	@echo ''
++	@echo '  cpupower   - a tool for all things x86 CPU power'
++	@echo '  firewire   - the userspace part of nosy, an IEEE-1394 traffic sniffer'
++	@echo '  lguest     - a minimal 32-bit x86 hypervisor'
++	@echo '  perf       - Linux performance measurement and analysis tool'
++	@echo '  selftests  - various kernel selftests'
++	@echo '  turbostat  - Intel CPU idle stats and freq reporting tool'
++	@echo '  usb        - USB testing tools'
++	@echo '  virtio     - vhost test module'
++	@echo '  vm         - misc vm tools'
++	@echo '  x86_energy_perf_policy - Intel energy policy tool'
++	@echo ''
++	@echo 'Cleaning targets:'
++	@echo ''
++	@echo '  all of the above with the "_clean" string appended cleans'
++	@echo '    the respective build directory.'
++	@echo '  clean: a summary clean target to clean _all_ folders'
++
+ perf firewire lguest usb virtio vm: FORCE
+ 	$(QUIET_SUBDIR0)$@/ $(QUIET_SUBDIR1)
  
- include config/utilities.mak
+@@ -15,7 +35,7 @@ selftests: FORCE
+ firewire_clean lguest_clean perf_clean vm_clean usb_clean virtio_clean:
+ 	$(QUIET_SUBDIR0)$(@:_clean=)/ $(QUIET_SUBDIR1) clean
  
--ifneq ($(OUTPUT),)
--# check that the output directory actually exists
--OUTDIR := $(shell cd $(OUTPUT) && /bin/pwd)
--$(if $(OUTDIR),, $(error output directory "$(OUTPUT)" does not exist))
--endif
--
- # Define V to have a more verbose compile.
- #
- # Define O to save output files in a separate directory.
-@@ -84,31 +76,6 @@ ifneq ($(WERROR),0)
- 	CFLAGS_WERROR := -Werror
- endif
+-cp_clean:
++cpupower_clean:
+ 	$(QUIET_SUBDIR0)power/cpupower/ $(QUIET_SUBDIR1) clean
  
--#
--# Include saner warnings here, which can catch bugs:
--#
--
--EXTRA_WARNINGS := -Wformat
--EXTRA_WARNINGS := $(EXTRA_WARNINGS) -Wformat-security
--EXTRA_WARNINGS := $(EXTRA_WARNINGS) -Wformat-y2k
--EXTRA_WARNINGS := $(EXTRA_WARNINGS) -Wshadow
--EXTRA_WARNINGS := $(EXTRA_WARNINGS) -Winit-self
--EXTRA_WARNINGS := $(EXTRA_WARNINGS) -Wpacked
--EXTRA_WARNINGS := $(EXTRA_WARNINGS) -Wredundant-decls
--EXTRA_WARNINGS := $(EXTRA_WARNINGS) -Wstrict-aliasing=3
--EXTRA_WARNINGS := $(EXTRA_WARNINGS) -Wswitch-default
--EXTRA_WARNINGS := $(EXTRA_WARNINGS) -Wswitch-enum
--EXTRA_WARNINGS := $(EXTRA_WARNINGS) -Wno-system-headers
--EXTRA_WARNINGS := $(EXTRA_WARNINGS) -Wundef
--EXTRA_WARNINGS := $(EXTRA_WARNINGS) -Wwrite-strings
--EXTRA_WARNINGS := $(EXTRA_WARNINGS) -Wbad-function-cast
--EXTRA_WARNINGS := $(EXTRA_WARNINGS) -Wmissing-declarations
--EXTRA_WARNINGS := $(EXTRA_WARNINGS) -Wmissing-prototypes
--EXTRA_WARNINGS := $(EXTRA_WARNINGS) -Wnested-externs
--EXTRA_WARNINGS := $(EXTRA_WARNINGS) -Wold-style-definition
--EXTRA_WARNINGS := $(EXTRA_WARNINGS) -Wstrict-prototypes
--EXTRA_WARNINGS := $(EXTRA_WARNINGS) -Wdeclaration-after-statement
--
- ifeq ("$(origin DEBUG)", "command line")
-   PERF_DEBUG = $(DEBUG)
- endif
-@@ -679,18 +646,6 @@ else
- 	endif
- endif
+ turbostat_clean x86_energy_perf_policy_clean:
+@@ -24,8 +44,8 @@ turbostat_clean x86_energy_perf_policy_clean:
+ selftests_clean:
+ 	$(QUIET_SUBDIR0)testing/$(@:_clean=)/ $(QUIET_SUBDIR1) clean
  
--ifneq ($(findstring $(MAKEFLAGS),s),s)
--ifndef V
--	QUIET_CC       = @echo '   ' CC $@;
--	QUIET_AR       = @echo '   ' AR $@;
--	QUIET_LINK     = @echo '   ' LINK $@;
--	QUIET_MKDIR    = @echo '   ' MKDIR $@;
--	QUIET_GEN      = @echo '   ' GEN $@;
--	QUIET_FLEX     = @echo '   ' FLEX $@;
--	QUIET_BISON    = @echo '   ' BISON $@;
--endif
--endif
--
- ifdef ASCIIDOC8
- 	export ASCIIDOC8
- endif
-diff --git a/tools/scripts/Makefile.include b/tools/scripts/Makefile.include
-new file mode 100644
-index 000000000000..52348d3bd8d3
---- /dev/null
-+++ b/tools/scripts/Makefile.include
-@@ -0,0 +1,57 @@
-+ifeq ("$(origin O)", "command line")
-+	OUTPUT := $(O)/
-+endif
-+
-+ifneq ($(OUTPUT),)
-+# check that the output directory actually exists
-+OUTDIR := $(shell cd $(OUTPUT) && /bin/pwd)
-+$(if $(OUTDIR),, $(error output directory "$(OUTPUT)" does not exist))
-+endif
-+
-+#
-+# Include saner warnings here, which can catch bugs:
-+#
-+EXTRA_WARNINGS := -Wformat
-+EXTRA_WARNINGS := $(EXTRA_WARNINGS) -Wformat-security
-+EXTRA_WARNINGS := $(EXTRA_WARNINGS) -Wformat-y2k
-+EXTRA_WARNINGS := $(EXTRA_WARNINGS) -Wshadow
-+EXTRA_WARNINGS := $(EXTRA_WARNINGS) -Winit-self
-+EXTRA_WARNINGS := $(EXTRA_WARNINGS) -Wpacked
-+EXTRA_WARNINGS := $(EXTRA_WARNINGS) -Wredundant-decls
-+EXTRA_WARNINGS := $(EXTRA_WARNINGS) -Wstrict-aliasing=3
-+EXTRA_WARNINGS := $(EXTRA_WARNINGS) -Wswitch-default
-+EXTRA_WARNINGS := $(EXTRA_WARNINGS) -Wswitch-enum
-+EXTRA_WARNINGS := $(EXTRA_WARNINGS) -Wno-system-headers
-+EXTRA_WARNINGS := $(EXTRA_WARNINGS) -Wundef
-+EXTRA_WARNINGS := $(EXTRA_WARNINGS) -Wwrite-strings
-+EXTRA_WARNINGS := $(EXTRA_WARNINGS) -Wbad-function-cast
-+EXTRA_WARNINGS := $(EXTRA_WARNINGS) -Wmissing-declarations
-+EXTRA_WARNINGS := $(EXTRA_WARNINGS) -Wmissing-prototypes
-+EXTRA_WARNINGS := $(EXTRA_WARNINGS) -Wnested-externs
-+EXTRA_WARNINGS := $(EXTRA_WARNINGS) -Wold-style-definition
-+EXTRA_WARNINGS := $(EXTRA_WARNINGS) -Wstrict-prototypes
-+EXTRA_WARNINGS := $(EXTRA_WARNINGS) -Wdeclaration-after-statement
-+
-+ifneq ($(findstring $(MAKEFLAGS), w),w)
-+PRINT_DIR = --no-print-directory
-+else
-+NO_SUBDIR = :
-+endif
-+
-+QUIET_SUBDIR0  = +$(MAKE) -C # space to separate -C and subdir
-+QUIET_SUBDIR1  =
-+
-+ifneq ($(findstring $(MAKEFLAGS),s),s)
-+ifndef V
-+	QUIET_CC       = @echo '   ' CC $@;
-+	QUIET_AR       = @echo '   ' AR $@;
-+	QUIET_LINK     = @echo '   ' LINK $@;
-+	QUIET_MKDIR    = @echo '   ' MKDIR $@;
-+	QUIET_GEN      = @echo '   ' GEN $@;
-+	QUIET_SUBDIR0  = +@subdir=
-+	QUIET_SUBDIR1  = ;$(NO_SUBDIR) echo '   ' SUBDIR $$subdir; \
-+			 $(MAKE) $(PRINT_DIR) -C $$subdir
-+	QUIET_FLEX     = @echo '   ' FLEX $@;
-+	QUIET_BISON    = @echo '   ' BISON $@;
-+endif
-+endif
+-clean: cp_clean firewire_clean lguest_clean perf_clean selftests_clean \
+-		turbostat_clean usb_clean virtio_clean \
++clean: cpupower_clean firewire_clean lguest_clean perf_clean \
++		selftests_clean turbostat_clean usb_clean virtio_clean \
+ 		x86_energy_perf_policy_clean
+ 
+ .PHONY: FORCE
 -- 
 1.7.9.3.362.g71319
 
