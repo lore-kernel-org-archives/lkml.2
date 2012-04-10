@@ -1,50 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759247Ab2DJPt4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Apr 2012 11:49:56 -0400
-Received: from mail-pz0-f52.google.com ([209.85.210.52]:41429 "EHLO
-	mail-pz0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756673Ab2DJPty (ORCPT
+	id S1759283Ab2DJPuQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Apr 2012 11:50:16 -0400
+Received: from forward14.mail.yandex.net ([95.108.130.92]:58624 "EHLO
+	forward14.mail.yandex.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759260Ab2DJPuO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Apr 2012 11:49:54 -0400
-Date: Tue, 10 Apr 2012 08:49:43 -0700
-From: Tejun Heo <tj@kernel.org>
-To: "Michael S. Tsirkin" <mst@redhat.com>
-Cc: Avi Kivity <avi@redhat.com>, Ren Mingxin <renmx@cn.fujitsu.com>,
-        rusty@rustcorp.com.au, axboe@kernel.dk,
-        James.Bottomley@HansenPartnership.com, asamymuthupa@micron.com,
-        linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org,
-        kvm@vger.kernel.org, virtualization@lists.linux-foundation.org
-Subject: Re: [PATCH] virtio_blk: Add help function to format mass of disks
-Message-ID: <20120410154943.GB11614@dhcp-172-17-108-109.mtv.corp.google.com>
-References: <1334042885-8330-1-git-send-email-renmx@cn.fujitsu.com>
- <4F84329A.60703@redhat.com>
- <20120410133406.GA18899@redhat.com>
+	Tue, 10 Apr 2012 11:50:14 -0400
+X-Greylist: delayed 633 seconds by postgrey-1.27 at vger.kernel.org; Tue, 10 Apr 2012 11:50:14 EDT
+Message-ID: <4F84544D.9060406@yandex.ru>
+Date: Tue, 10 Apr 2012 19:39:57 +0400
+From: Alex Stone <alex.parchment@yandex.ru>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120406 Thunderbird/11.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120410133406.GA18899@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Clemens Ladisch <clemens@ladisch.de>
+CC: linux-kernel@vger.kernel.org
+Subject: Re: Timing 250 versus 1000
+References: <4F815FCE.5040002@yandex.ru> <4F818DBA.3080108@ladisch.de> <4F81CE0A.6080207@yandex.ru> <4F840599.7060805@ladisch.de>
+In-Reply-To: <4F840599.7060805@ladisch.de>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, guys.
+On 04/10/2012 02:04 PM, Clemens Ladisch wrote:
+> Alex Stone wrote:
+>> On 04/08/2012 05:08 PM, Clemens Ladisch wrote:
+>>> Alex Stone wrote:
+>>>> those of us who write a lot of midi driven work, we're still more or
+>>>> less required to use some sort of RT kernel to get any degree of
+>>>> playback timing accuracy.
+>>> The ALSA sequencer timer stopped using the system timer years ago.
+>>> And the difference between RT and 'normal' kernels is not the timer
+>>> frequency.
+>> I'm using jack with seq, so are you saying the ALSA sequencer timer is
+>> using a higher timer rate than than is set in the kernel,
+> It's using different timers (RTC or hrtimer), which support higher
+> precision.
+>
+>> and there's no need for me to bother with this,
+> Yes.  If you want to be sure, check that G3 appears in /proc/asound/timers
+> when you're using the sequencer.
+>
+>
+> Regards,
+> Clemens
+It does.
 
-On Tue, Apr 10, 2012 at 04:34:06PM +0300, Michael S. Tsirkin wrote:
-> > Why not use 'base' below?  neither unit nor base change.
-> 
-> Yes it's a bit strange, it was the same in Tejun's patch.
-> Tejun, any idea?
+Thanks for the info.
 
-It was years ago, so I don't recall much.  I think I wanted to use a
-variable name which signifies its role - I worked out the rather
-convoluted base number logic on paper first and I probably wanted to
-keep the distinctions.  I don't think it really matters at this point
-tho.  Just make sure those functions are marked deprecated so that no
-one else copies them.
-
-Thanks.
-
--- 
-tejun
+Regards,
+Alex.
