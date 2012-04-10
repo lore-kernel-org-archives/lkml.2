@@ -1,41 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758609Ab2DJSnt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Apr 2012 14:43:49 -0400
-Received: from shards.monkeyblade.net ([198.137.202.13]:46847 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758567Ab2DJSnr (ORCPT
+	id S1758666Ab2DJSoB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Apr 2012 14:44:01 -0400
+Received: from mail-wi0-f172.google.com ([209.85.212.172]:60480 "EHLO
+	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758562Ab2DJSns (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Apr 2012 14:43:47 -0400
-Date: Tue, 10 Apr 2012 14:41:36 -0400 (EDT)
-Message-Id: <20120410.144136.1777978593334560368.davem@davemloft.net>
-To: key@linux.vnet.ibm.com
-Cc: linux-kernel@vger.kernel.org, linux-crypto@vger.kernel.org,
-        rcj@linux.vnet.ibm.com, benh@kernel.crashing.org,
-        linuxppc-dev@lists.ozlabs.org
-Subject: Re: [PATCH v2 14/17] powerpc: crypto: nx driver code supporting nx
- encryption
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1334070657.16827.29.camel@key-ThinkPad-W510>
-References: <1334070249.16827.1.camel@key-ThinkPad-W510>
-	<1334070657.16827.29.camel@key-ThinkPad-W510>
-X-Mailer: Mew version 6.4 on Emacs 23.3 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Tue, 10 Apr 2012 11:41:39 -0700 (PDT)
+	Tue, 10 Apr 2012 14:43:48 -0400
+To: Junio C Hamano <gitster@pobox.com>
+Cc: git@vger.kernel.org, Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [ANNOUNCE] Git 1.7.10
+References: <7v1uo01ta1.fsf@alter.siamese.dyndns.org>
+From: Jakub Narebski <jnareb@gmail.com>
+Date: Tue, 10 Apr 2012 11:43:46 -0700 (PDT)
+In-Reply-To: <7v1uo01ta1.fsf@alter.siamese.dyndns.org>
+Message-ID: <m3398bbf7y.fsf@localhost.localdomain>
+User-Agent: Gnus/5.09 (Gnus v5.9.0) Emacs/21.4
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Kent Yoder <key@linux.vnet.ibm.com>
-Date: Tue, 10 Apr 2012 10:10:57 -0500
+Junio C Hamano <gitster@pobox.com> writes:
 
-> These routines add the base device driver code supporting the Power7+
-> in-Nest encryption accelerator (nx) device.
+> Git v1.7.10 Release Notes
+> =========================
 > 
-> Signed-off-by: Kent Yoder <key@linux.vnet.ibm.com>
+> Compatibility Notes
+> -------------------
+[...]
+>  * The "--binary/-b" options to "git am" have been a no-op for quite a
+>    while and were deprecated in mid 2008 (v1.6.0).  When you give these
+>    options to "git am", it will now warn and ask you not to use them.
+[...]
+> Updates since v1.7.9
+> --------------------
+[...]
+>  * "git am" learned to pass "-b" option to underlying "git mailinfo", so
+>    that a bracketed string other than "PATCH" at the beginning can be kept.
 
-This patch should be earlier in the series, so it can
-appear before the drivers which use the helper routines
-in here.
+So how it is in 1.7.10?  Is "git am -b ..." a no-op, now showing
+deprecation notice, or does it pass "-b" to "git mailinfo" to limit
+stripping of bracketed strings to those containing the word "PATCH"?
+
+-- 
+Jakub Narebski
+
