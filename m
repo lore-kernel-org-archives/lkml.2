@@ -1,162 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759438Ab2DJUhO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Apr 2012 16:37:14 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:63543 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759397Ab2DJUhI (ORCPT
+	id S1759451Ab2DJUhh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Apr 2012 16:37:37 -0400
+Received: from smtp.snhosting.dk ([87.238.248.203]:20883 "EHLO
+	smtp.domainteam.dk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759399Ab2DJUhf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Apr 2012 16:37:08 -0400
-Message-ID: <4F8499EC.4010508@landley.net>
-Date: Tue, 10 Apr 2012 15:37:00 -0500
-From: Rob Landley <rob@landley.net>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.27) Gecko/20120216 Thunderbird/3.1.19
+	Tue, 10 Apr 2012 16:37:35 -0400
+Date: Tue, 10 Apr 2012 22:37:33 +0200
+From: Sam Ravnborg <sam@ravnborg.org>
+To: Borislav Petkov <bp@amd64.org>
+Cc: Ingo Molnar <mingo@kernel.org>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Michal Marek <mmarek@suse.cz>, LKML <linux-kernel@vger.kernel.org>,
+        Borislav Petkov <borislav.petkov@amd.com>
+Subject: Re: [PATCH v4 4/4] tools: Connect to the kernel build system
+Message-ID: <20120410203733.GD28293@merkur.ravnborg.org>
+References: <1334071240-28692-1-git-send-email-bp@amd64.org> <1334071240-28692-5-git-send-email-bp@amd64.org>
 MIME-Version: 1.0
-To: Andrew Lutomirski <luto@mit.edu>
-CC: Andrew Morton <akpm@linux-foundation.org>, Will Drewry <wad@chromium.org>,
-        linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
-        linux-arch@vger.kernel.org, linux-doc@vger.kernel.org,
-        kernel-hardening@lists.openwall.com, netdev@vger.kernel.org,
-        x86@kernel.org, arnd@arndb.de, davem@davemloft.net, hpa@zytor.com,
-        mingo@redhat.com, oleg@redhat.com, peterz@infradead.org,
-        rdunlap@xenotime.net, mcgrathr@chromium.org, tglx@linutronix.de,
-        eparis@redhat.com, serge.hallyn@canonical.com, djm@mindrot.org,
-        scarybeasts@gmail.com, indan@nul.nu, pmoore@redhat.com, corbet@lwn.net,
-        eric.dumazet@gmail.com, markus@chromium.org, coreyb@linux.vnet.ibm.com,
-        keescook@chromium.org, jmorris@namei.org,
-        Andy Lutomirski <luto@amacapital.net>, linux-man@vger.kernel.org
-Subject: Re: [PATCH v17 01/15] Add PR_{GET,SET}_NO_NEW_PRIVS to prevent execve
- from granting privs
-References: <1333051320-30872-1-git-send-email-wad@chromium.org> <1333051320-30872-2-git-send-email-wad@chromium.org> <20120406125517.77133b4e.akpm@linux-foundation.org> <CAObL_7EYb62o=a0ekzcDx=0TuN55A7aTYhLJbMNu2r8F0V77EA@mail.gmail.com>
-In-Reply-To: <CAObL_7EYb62o=a0ekzcDx=0TuN55A7aTYhLJbMNu2r8F0V77EA@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1334071240-28692-5-git-send-email-bp@amd64.org>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/06/2012 03:01 PM, Andrew Lutomirski wrote:
-> On Fri, Apr 6, 2012 at 12:55 PM, Andrew Morton
-> <akpm@linux-foundation.org> wrote:
->> On Thu, 29 Mar 2012 15:01:46 -0500
->> Will Drewry <wad@chromium.org> wrote:
->>
->>> From: Andy Lutomirski <luto@amacapital.net>
->>>
->>> With this set, a lot of dangerous operations (chroot, unshare, etc)
->>> become a lot less dangerous because there is no possibility of
->>> subverting privileged binaries.
->>
->> The changelog doesn't explain the semantics of the new syscall.
->> There's a comment way-down-there which I guess suffices, if you hunt
->> for it.
->>
->> And the changelog doesn't explain why this is being added.  Presumably
->> seccomp_filter wants/needs this feature but whowhatwherewhenwhy?  Spell
->> it all out, please.
->>
->> The new syscall mode will be documented in the prctl manpage.  Please
->> cc linux-man@vger.kernel.org and work with Michael on getting this
->> done?
+On Tue, Apr 10, 2012 at 05:20:40PM +0200, Borislav Petkov wrote:
+> From: Borislav Petkov <borislav.petkov@amd.com>
 > 
-> This has been bugging me for awhile.  Is there any interest in moving
-> the manpages into the kernel source tree?
+> Now you can do
+> 
+> $ make tools/<toolname>
+> 
+> from the toplevel kernel directory and have the respective tool built.
+> 
+> If you want to build and install it, do
+> 
+> $ make tools/<toolname>_install
+> 
+> $ make tools/<toolname>_clean
+> 
+> should clean the respective tool directories.
+> 
+> If you want to clean all in tools, simply do
+> 
+> $ make tools/clean
+> 
+> Also, if you want to get what the possible targets are, simply calling
+> 
+> $ make tools/
+> 
+> should give you the short help.
+> 
+> $ make tools/install
+> 
+> installs all tools, of course. Doh.
+> 
+> Cc: Sam Ravnborg <sam@ravnborg.org>
+> Signed-off-by: Borislav Petkov <borislav.petkov@amd.com>
+> ---
+>  Makefile       |    7 +++++++
+>  tools/Makefile |   25 ++++++++++++++++++++++++-
+>  2 files changed, 31 insertions(+), 1 deletion(-)
+> 
+> diff --git a/Makefile b/Makefile
+> index 0df3d003a079..e24ce7104f63 100644
+> --- a/Makefile
+> +++ b/Makefile
+> @@ -1468,6 +1468,13 @@ kernelrelease:
+>  kernelversion:
+>  	@echo $(KERNELVERSION)
+>  
+> +# Clear a bunch of variables before executing the submake
+> +tools/: FORCE
+> +	$(Q)$(MAKE) LDFLAGS= -C $(src)/tools/
+I think you need to clear MAKEFLAGS here too?
 
-Not that I know of. I'm pretty sure if the guy maintaining it (Michael
-Kerrisk) wanted to do that, he could have raised the issue at any time
-over the past several years.
+> +
+> +tools/%: FORCE
+> +	$(Q)$(MAKE) LDFLAGS= MAKEFLAGS= -C $(src)/tools/ $*
+> +
 
-> Then there could be a
-> general requirement that new APIs get documented when they're written.
+>  
+> -perf firewire lguest usb virtio vm: FORCE
+> +firewire lguest perf usb virtio vm: FORCE
+>  	$(QUIET_SUBDIR0)$@/ $(QUIET_SUBDIR1)
 
-Because having a Documentation directory, javadoc in the source itself
-(some of which is combined with the Documentation/DocBook xml files to
-form the make htmldocs output), menuconfig help text, and a whole buch
-of scattered readmes does _not_ get new APIs documented as they're written.
+Fold this into 2/4
 
-That isn't even counting git commit comments and mailing list messages
-in various web archives. Are you going to suck the linux weekly news
-kernel articles into the tree (http://lwn.net/Kernel/Index)? How about
-Linux Journal's complete archives going back to 2004
-(http://www.linuxjournal.com/magazine)? Or the h-online and
-kernelnewbies writeups? How about wikipedia pages on interesting kernel
-topics? The sourceforge pages for userspace projects like lxc.sf.net or
-i2c-utils? How about that device driver writing tutorial Greg KH
-recorded in 2008, that's only a 2.8 gigabyte video file.  Rusty's
-Unreliable Guides?  Greg KH's blog? (Heck, http://kernelplanet.org).
+>  
+>  cpupower: FORCE
+> @@ -32,6 +42,19 @@ turbostat x86_energy_perf_policy: FORCE
+>  selftests: FORCE
+>  	$(QUIET_SUBDIR0)testing/$@/ $(QUIET_SUBDIR1)
+>  
+> +firewire_install lguest_install perf_install usb_install virtio_install vm_install:
+> +	$(QUIET_SUBDIR0)$(@:_install=)/ $(QUIET_SUBDIR1) install
+> +
+> +cpupower_install:
+> +	$(QUIET_SUBDIR0)power/$(@:_install=)/ $(QUIET_SUBDIR1) install
+> +
+> +turbostat_install x86_energy_perf_policy_install:
+> +	$(QUIET_SUBDIR0)power/x86/$(@:_install=)/ $(QUIET_SUBDIR1) install
+> +
+> +install: firewire_install lguest_install perf_install usb_install \
+> +		virtio_install vm_install cpupower_install turbostat_install \
+> +		x86_energy_perf_policy_install
+> +
 
-Speaking of videos, here's the 2011 LinuxCon Japan talks:
+This really belongs in 2/4 or a separate patch.
 
-  http://video.linux.com/categories/2011-linuxcon-japan
+Sorry for bing picky about these details - but they destroy
+an otherwise fine patch-set.
 
-And here are videos for the Consumer Electronic Linux Forum:
-
-  http://free-electrons.com/blog/elc-2012-videos/
-
-(and you can get 2011, 2010, 2006...)
-
-Here are Ottawa Linux Symposium papers:
-
-  http://kernel.org/doc/ols
-
-Don't forget IBM Developerworks' library:
-
-http://www.ibm.com/developerworks/linux/library/l-linux-kernel/
-
-Have some standards documents:
-
-http://www.opengroup.org/onlinepubs/9699919799/
-http://busybox.net/~landley/c99-draft.html
-http://www.unix.org/whitepapers/64bit.html
-http://refspecs.linuxfoundation.org
-http://t10.org/scsi-3.htm
-
-Here's a random blog post about booting a bare metal "hello world"
-program on qemu for ARM:
-
-http://balau82.wordpress.com/2010/02/28/hello-world-for-bare-metal-arm-using-qemu/
-
-Let's pick a topic, like the ELF loader. Here's the best introduction of
-how ELF files _really_ work I've seen:
-
-http://muppetlabs.com/~breadbox/software/tiny/teensy.html
-
-Although http://linuxjournal.com/article/1059 is pretty good too, as
-were http://linuxjournal.com/article/1060 and
-http://linuxjournal.com/article/80 as well.  And if you want the
-_details_, here's an extremely dry online book:
-
-http;//www.iecc.com/linker/
-
-And here's the first entry in the blog series the guy who wrote "gold"
-did about writing his new linker:
-
-http://www.airs.com/blog/archives/38
-
-And so on, and so forth...
-
-> (There are plenty of barely- or incompletely-documented syscalls.
-> futex and relatives come to mind.)
-
-Your proposal does not address this problem.
-
-speaking of syscalls, I do note that ever since I tried to add Hexagon
-support to strace (less fun than it sounds), I've wanted a way to beat
-proper syscall information out of the kernel headers so I could get not
-just syscall numbers but how many arguments and a brief stab at the type
-of each argument.
-
-Of course you _can_ get argument type and count, but not from the
-headers: you have to use moderately horrible sed on the kernel's source
-code, ala:
-
-find . -name "*.c" -print0 | \
-xargs -n1 -0 sed -n -e 's/.*\(SYSCALL_DEFINE[0-9](\)/\1/' \
-  -e 't got;d;:got;s/).*/)/p;t;N;b got'
-
-> --Andy
-
-Rob
--- 
-GNU/Linux isn't: Linux=GPLv2, GNU=GPLv3+, they can't share code.
-Either it's "mere aggregation", or a license violation.  Pick one.
+	Sam
