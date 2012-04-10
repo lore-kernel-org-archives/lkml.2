@@ -1,46 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755112Ab2DJRV6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Apr 2012 13:21:58 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:39552 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751305Ab2DJRV4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Apr 2012 13:21:56 -0400
-Message-ID: <1334078512.12041.14.camel@joe2Laptop>
-Subject: Re: [PATCH] printk: support structured and multi-facility log
- messages
-From: Joe Perches <joe@perches.com>
-To: Kay Sievers <kay@vrfy.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, Greg Kroah-Hartmann <greg@kroah.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Date: Tue, 10 Apr 2012 10:21:52 -0700
-In-Reply-To: <1333846964.1834.33.camel@joe2Laptop>
-References: <1333569554.864.3.camel@mop>
-	 <CA+55aFyMO=xx0xNvggR-1fs-jKi_zaayNfgCa3HCNkvH0yA16g@mail.gmail.com>
-	 <1333655231.725.27.camel@mop> <1333674768.23520.123.camel@joe2Laptop>
-	 <CA+55aFyE41U9OPr7mrAA2ZJKuQ2jvH-KmusUNyfYbH8tOm6yiQ@mail.gmail.com>
-	 <1333737301.29217.11.camel@mop> <1333846964.1834.33.camel@joe2Laptop>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2- 
+	id S1755436Ab2DJRWc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Apr 2012 13:22:32 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:39124 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751028Ab2DJRWa (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Apr 2012 13:22:30 -0400
+Message-ID: <4F846C53.1070407@samsung.com>
+Date: Tue, 10 Apr 2012 10:22:27 -0700
+From: Kukjin Kim <kgene.kim@samsung.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:11.0) Gecko/20120327 Thunderbird/11.0.1
+MIME-Version: 1.0
+To: Olof Johansson <olof@lixom.net>
+CC: grant.likely@secretlab.ca, kgene.kim@samsung.com,
+        linus.walleij@stericsson.com, sangsu4u.park@samsung.com,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH] gpio: samsung: refactor gpiolib init for exynos4/5
+References: <1333913007-16032-1-git-send-email-olof@lixom.net>
+In-Reply-To: <1333913007-16032-1-git-send-email-olof@lixom.net>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2012-04-07 at 18:02 -0700, Joe Perches wrote:
-> I'll spend some time on breaking up Kay's
-> patch in the next couple of weeks.
-> 
-> I'll try to get my printk restructuring patch
-> out by Monday.
+Olof Johansson wrote:
+> Only code move, no functional change.
+>
+> Main reason to do this was to get rid of the warnings:
+>
+> drivers/gpio/gpio-samsung.c: In function 'samsung_gpiolib_init':
+> drivers/gpio/gpio-samsung.c:2974:1: warning: label 'err_ioremap4' defined but not used [-Wunused-label]
+> drivers/gpio/gpio-samsung.c:2722:47: warning: unused variable 'gpio_base4' [-Wunused-variable]
+>
+> without adding more ifdef mess.
+>
+> I think this whole file would do well being coverted over to a platform
+> driver and moving most of the tables out to SoC code and/or device trees,
+> but since that changes init ordering it needs to be done with some care,
+> i.e. not at this time.
+>
+> Signed-off-by: Olof Johansson<olof@lixom.net>
 
-I didn't get it done, and I won't even try to
-look at lkml again for a couple of weeks.
+Looks ok to me :)
 
-If anyone else does, great, otherwise I should
-have what I think is an acceptable patch set
-shortly after that.
+Acked-by: Kukjin Kim <kgene.kim@samsung.com>
 
+Thanks.
 
+Best regards,
+Kgene.
+--
+Kukjin Kim <kgene.kim@samsung.com>, Senior Engineer,
+SW Solution Development Team, Samsung Electronics Co., Ltd.
