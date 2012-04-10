@@ -1,114 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758737Ab2DJS5R (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Apr 2012 14:57:17 -0400
-Received: from mga09.intel.com ([134.134.136.24]:24289 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753678Ab2DJS5Q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Apr 2012 14:57:16 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
-   d="scan'208";a="127429646"
-From: Ramakrishna Pallala <ramakrishna.pallala@intel.com>
-To: linux-kernel@vger.kernel.org
-Cc: Anton Vorontsov <cbouatmailru@gmail.com>,
-        Anton Vorontsov <anton.vorontsov@linaro.org>,
-        Ramakrishna Pallala <ramakrishna.pallala@intel.com>
-Subject: [PATCH] power_supply: Add voltage_ocv property and use it for max17042 driver
-Date: Tue, 10 Apr 2012 16:21:20 +0530
-Message-Id: <1334055080-19521-1-git-send-email-ramakrishna.pallala@intel.com>
-X-Mailer: git-send-email 1.7.0.4
+	id S1758844Ab2DJTCp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Apr 2012 15:02:45 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:32870 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756261Ab2DJTCo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Apr 2012 15:02:44 -0400
+Message-ID: <4F8483CB.2010407@wwwdotorg.org>
+Date: Tue, 10 Apr 2012 13:02:35 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.28) Gecko/20120313 Thunderbird/3.1.20
+MIME-Version: 1.0
+To: Linus Walleij <linus.walleij@linaro.org>
+CC: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH V4 REPOST 5/5] pinctrl: tegra: Add complete device tree
+ support
+References: <1333553270-9040-1-git-send-email-swarren@wwwdotorg.org>	<1333553270-9040-5-git-send-email-swarren@wwwdotorg.org>	<CACRpkdZzET9OKC8xoXV_4OBAd9-EuhSh-OfG=es56bKidCoe9Q@mail.gmail.com>	<4F8457F9.7090309@wwwdotorg.org> <CACRpkdb=8ydKuX52cen8Y_iBzV+RwD61NCPrjQFXNgoO-=bc9Q@mail.gmail.com>
+In-Reply-To: <CACRpkdb=8ydKuX52cen8Y_iBzV+RwD61NCPrjQFXNgoO-=bc9Q@mail.gmail.com>
+X-Enigmail-Version: 1.1.2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This adds a new sysfs file called 'voltage_ocv' which gives the
-Open Circuit Voltage of the battery.
+On 04/10/2012 12:31 PM, Linus Walleij wrote:
+> On Tue, Apr 10, 2012 at 5:55 PM, Stephen Warren <swarren@wwwdotorg.org> wrote:
+> 
+>> Is your pinctrl for-next branch considered "stable" (i.e. it won't ever
+>> be rebased) at least up to commit a57be23 "pinctrl: tegra: Add complete
+>> device tree support"?
+> 
+> Not quite yet, because I would expect the occasional -rc fix for
+> -rc3 or so.
 
-This property can be used for platform shutdown policies and
-can be useful for initial capacity estimations.
+Hmm. Adding extra fixes wouldn't require you to rebase your branch would
+it, just add extra changes on top of it?
 
-Note: This patch is generated against linux-next branch.
+>> If so, I'll use it as a base for the Tegra GPIO and pinmux rework branch.
+> 
+> Soon-ish that'd work...
 
-Signed-off-by: Ramakrishna Pallala <ramakrishna.pallala@intel.com>
----
- Documentation/power/power_supply_class.txt |    2 ++
- drivers/power/max17042_battery.c           |    8 ++++++++
- drivers/power/power_supply_sysfs.c         |    1 +
- include/linux/power_supply.h               |    2 ++
- 4 files changed, 13 insertions(+), 0 deletions(-)
+Well, I guess I can base my branch on top of your current branch in
+order to include the Tegra changes in linux-next. Once pinctrl is
+stable, I can rebase on your stable commit and make sure I don't send
+any pull requests until that's happened.
 
-diff --git a/Documentation/power/power_supply_class.txt b/Documentation/power/power_supply_class.txt
-index 9f16c51..211831d 100644
---- a/Documentation/power/power_supply_class.txt
-+++ b/Documentation/power/power_supply_class.txt
-@@ -84,6 +84,8 @@ are already charged or discharging, 'n/a' can be displayed (or
- HEALTH - represents health of the battery, values corresponds to
- POWER_SUPPLY_HEALTH_*, defined in battery.h.
- 
-+VOLTAGE_OCV - open circuit voltage of the battery.
-+
- VOLTAGE_MAX_DESIGN, VOLTAGE_MIN_DESIGN - design values for maximal and
- minimal power supply voltages. Maximal/minimal means values of voltages
- when battery considered "full"/"empty" at normal conditions. Yes, there is
-diff --git a/drivers/power/max17042_battery.c b/drivers/power/max17042_battery.c
-index 04620c2..915767d 100644
---- a/drivers/power/max17042_battery.c
-+++ b/drivers/power/max17042_battery.c
-@@ -105,6 +105,7 @@ static enum power_supply_property max17042_battery_props[] = {
- 	POWER_SUPPLY_PROP_VOLTAGE_MIN_DESIGN,
- 	POWER_SUPPLY_PROP_VOLTAGE_NOW,
- 	POWER_SUPPLY_PROP_VOLTAGE_AVG,
-+	POWER_SUPPLY_PROP_VOLTAGE_OCV,
- 	POWER_SUPPLY_PROP_CAPACITY,
- 	POWER_SUPPLY_PROP_CHARGE_FULL,
- 	POWER_SUPPLY_PROP_TEMP,
-@@ -171,6 +172,13 @@ static int max17042_get_property(struct power_supply *psy,
- 
- 		val->intval = ret * 625 / 8;
- 		break;
-+	case POWER_SUPPLY_PROP_VOLTAGE_OCV:
-+		ret = max17042_read_reg(chip->client, MAX17042_OCVInternal);
-+		if (ret < 0)
-+			return ret;
-+
-+		val->intval = ret * 625 / 8;
-+		break;
- 	case POWER_SUPPLY_PROP_CAPACITY:
- 		ret = max17042_read_reg(chip->client, MAX17042_RepSOC);
- 		if (ret < 0)
-diff --git a/drivers/power/power_supply_sysfs.c b/drivers/power/power_supply_sysfs.c
-index 4368e7d..4150747 100644
---- a/drivers/power/power_supply_sysfs.c
-+++ b/drivers/power/power_supply_sysfs.c
-@@ -146,6 +146,7 @@ static struct device_attribute power_supply_attrs[] = {
- 	POWER_SUPPLY_ATTR(voltage_min_design),
- 	POWER_SUPPLY_ATTR(voltage_now),
- 	POWER_SUPPLY_ATTR(voltage_avg),
-+	POWER_SUPPLY_ATTR(voltage_ocv),
- 	POWER_SUPPLY_ATTR(current_max),
- 	POWER_SUPPLY_ATTR(current_now),
- 	POWER_SUPPLY_ATTR(current_avg),
-diff --git a/include/linux/power_supply.h b/include/linux/power_supply.h
-index c38c13d..fd17ae0 100644
---- a/include/linux/power_supply.h
-+++ b/include/linux/power_supply.h
-@@ -96,6 +96,7 @@ enum power_supply_property {
- 	POWER_SUPPLY_PROP_VOLTAGE_MIN_DESIGN,
- 	POWER_SUPPLY_PROP_VOLTAGE_NOW,
- 	POWER_SUPPLY_PROP_VOLTAGE_AVG,
-+	POWER_SUPPLY_PROP_VOLTAGE_OCV,
- 	POWER_SUPPLY_PROP_CURRENT_MAX,
- 	POWER_SUPPLY_PROP_CURRENT_NOW,
- 	POWER_SUPPLY_PROP_CURRENT_AVG,
-@@ -261,6 +262,7 @@ static inline bool power_supply_is_watt_property(enum power_supply_property psp)
- 	case POWER_SUPPLY_PROP_VOLTAGE_MIN_DESIGN:
- 	case POWER_SUPPLY_PROP_VOLTAGE_NOW:
- 	case POWER_SUPPLY_PROP_VOLTAGE_AVG:
-+	case POWER_SUPPLY_PROP_VOLTAGE_OCV:
- 	case POWER_SUPPLY_PROP_POWER_NOW:
- 		return 1;
- 	default:
--- 
-1.7.0.4
-
+I'd really like to allow other people to pick up all the Tegra GPIO and
+pinmux rework without having to work on top of my personal repo rather
+than linux-next.
