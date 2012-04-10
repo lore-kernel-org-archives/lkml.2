@@ -1,64 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758952Ab2DJO62 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Apr 2012 10:58:28 -0400
-Received: from mail-pz0-f52.google.com ([209.85.210.52]:42717 "EHLO
-	mail-pz0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753460Ab2DJO60 convert rfc822-to-8bit (ORCPT
+	id S1758978Ab2DJO6c (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Apr 2012 10:58:32 -0400
+Received: from moutng.kundenserver.de ([212.227.126.186]:56436 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758956Ab2DJO6a (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Apr 2012 10:58:26 -0400
+	Tue, 10 Apr 2012 10:58:30 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [ANNOUNCE] 3.4-rc2-rt1
+Date: Tue, 10 Apr 2012 14:58:19 +0000
+User-Agent: KMail/1.12.2 (Linux/3.3.0-rc1; KDE/4.3.2; x86_64; ; )
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        "linux-rt-users" <linux-rt-users@vger.kernel.org>
+References: <alpine.LFD.2.02.1204101642050.2542@ionos>
+In-Reply-To: <alpine.LFD.2.02.1204101642050.2542@ionos>
 MIME-Version: 1.0
-In-Reply-To: <20120410134522.GC18899@redhat.com>
-References: <20120410025327.49693.93562.stgit@amd-6168-8-1.englab.nay.redhat.com>
-	<CAJSP0QWA1z6_YQe9hhpG7bCyZQarmU5NXbHsLGTL_zPTk3dOUA@mail.gmail.com>
-	<20120410124250.GB29808@redhat.com>
-	<CAEH94Li0==w=AUKd5WCPMcqxLh=+N6bKttOwrE8y-xuOyPt_QA@mail.gmail.com>
-	<20120410134522.GC18899@redhat.com>
-Date: Tue, 10 Apr 2012 22:58:25 +0800
-Message-ID: <CAEH94LjvFzwA_=tv9AJc-wAH0j1P=9QQ0TjucuB-KQAG2LBz-Q@mail.gmail.com>
-Subject: Re: [PATCH 0/2] adding tracepoints to vhost
-From: Zhi Yong Wu <zwu.kernel@gmail.com>
-To: "Michael S. Tsirkin" <mst@redhat.com>
-Cc: Stefan Hajnoczi <stefanha@gmail.com>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, kvm@vger.kernel.org,
-        virtualization@lists.linux-foundation.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201204101458.20026.arnd@arndb.de>
+X-Provags-ID: V02:K0:YbXE1fl9idx61fJ/AXN95J5IO3kfbABSfDd6wPs8Knc
+ jCvlrTC8rOaLqH2xREQCPXjfGeyUcvIemBExqDNtssl/dRIgy6
+ qcXdU1i/d/ww+n4Bbs7U6q70oNBdKfl5ofq+OWa1COwO3yT4E4
+ kJIJKLxNoPhRm6phif6yGSP8DH2zvCpyODzvKdqfB0zoIPYflM
+ HZ70RPzmM5v/pT7NJNFX08tGxBS73xoGI2z77zQvtUOquFtsPe
+ CkbnriqyrEArnKw9Tm3+OueRyb8WjQnrmNposSdy2mTXKs5Bgy
+ XUFU6O521MfrlO7apRvAqn6JvrAIzTCiia2oqpY1tNH/Wt33Na
+ BhlT/UfOdMNCMl4NS5CM=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 10, 2012 at 9:45 PM, Michael S. Tsirkin <mst@redhat.com> wrote:
-> On Tue, Apr 10, 2012 at 09:10:48PM +0800, Zhi Yong Wu wrote:
->> >> Perhaps this can replace the vhost log feature?  I'm not sure if
->> >> tracepoints support the right data types but it seems like vhost
->> >> debugging could be done using tracing with less code.
->> >>
->> >> Stefan
->> >
->> > vhost log is not a debugging tool, it logs memory accesses for
->> > migration.
->> Great, it is very appreciated if there's some docs about this
->
-> About what? vhost logging? See the comment near the
-Yeah, thanks
-> definition of VHOST_SET_LOG_BASE in vhost.h
->
->> > _______________________________________________
->> > Virtualization mailing list
->> > Virtualization@lists.linux-foundation.org
->> > https://lists.linuxfoundation.org/mailman/listinfo/virtualization
->>
->>
->>
->> --
->> Regards,
->>
->> Zhi Yong Wu
+On Tuesday 10 April 2012, Thomas Gleixner wrote:
+> Dear RT Folks,
+> 
+> I'm pleased to announce the 3.4-rc2-rt1 release.
+> 
+> This is a straight forward update of the 3.2 series to 3.4-rc2. It's
+> slightly smaller than the 3.2 series. I hope to stabilize it fast so I
+> can concentrate on shuffling more parts of RT into 3.5.
+> 
+> The RT patch against 3.4-rc2-rt1 can be found here:
+> 
+>   http://www.kernel.org/pub/linux/kernel/projects/rt/3.4/patch-3.4-rc2-rt1.patch.xz
+> 
+> 
+> The split quilt queue is available at:
+> 
+>   http://www.kernel.org/pub/linux/kernel/projects/rt/3.4/patches-3.4-rc2-rt1.tar.xz
+> 
+> Enjoy,
+> 
+> 	tglx
+> ---
+> Index: linux-3.2/fs/autofs4/autofs_i.h
+> ===================================================================
+> --- linux-3.2.orig/fs/autofs4/autofs_i.h
+> +++ linux-3.2/fs/autofs4/autofs_i.h
 
+I guess the patch you attached here with this diffstat
 
+ block/blk-iopoll.c      |    3 +++
+ block/blk-softirq.c     |    3 +++
+ fs/autofs4/autofs_i.h   |    1 +
+ fs/autofs4/expire.c     |    2 +-
+ fs/dcache.c             |    7 ++++---
+ fs/namespace.c          |    3 ++-
+ include/linux/delay.h   |    6 ++++++
+ include/linux/preempt.h |    2 ++
+ kernel/irq/manage.c     |   44 ++++++++++++++++++++++++++++++++++++++------
+ localversion-rt         |    2 +-
+ net/core/dev.c          |    6 ++++++
+ net/packet/af_packet.c  |    5 +++--
+ net/rds/ib_rdma.c       |    3 ++-
+ 13 files changed, 72 insertions(+), 15 deletions(-)
 
--- 
-Regards,
+is not the one you describe above but the one for the 3.2.14-rt24 release,
+right? Otherwise it would be considerably smaller compared to 3.2-rt, not
+just a bit ;-)
 
-Zhi Yong Wu
+	Arnd
