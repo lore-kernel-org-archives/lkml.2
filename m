@@ -1,53 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932273Ab2DJAtc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Apr 2012 20:49:32 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:61914 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932102Ab2DJAtb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Apr 2012 20:49:31 -0400
-Message-ID: <4F838390.1080909@redhat.com>
-Date: Mon, 09 Apr 2012 20:49:20 -0400
-From: Rik van Riel <riel@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120329 Thunderbird/11.0.1
+	id S1758317Ab2DJAwy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Apr 2012 20:52:54 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:57275 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754130Ab2DJAwx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Apr 2012 20:52:53 -0400
+Date: Mon, 9 Apr 2012 17:52:50 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Hiroyuki Kamezawa <kamezawa.hiroyuki@gmail.com>
+cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Tejun Heo <tj@kernel.org>,
+        Mike Galbraith <mgalbraith@suse.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Ingo Molnar <mingo@redhat.com>, Paul Menage <paul@paulmenage.org>,
+        LKML <linux-kernel@vger.kernel.org>, Li Zefan <lizefan@huawei.com>
+Subject: Re: [patch 0/2] cpusets, cpu_cgroup: disallow attaching kthreadd
+In-Reply-To: <CABEgKgopoHYiisCQnqeFc4qT-Y4Md1b6enTcZdomoKn0vGv_RQ@mail.gmail.com>
+Message-ID: <alpine.DEB.2.00.1204091747470.4449@chino.kir.corp.google.com>
+References: <20120405160829.GA12854@google.com> <alpine.DEB.2.00.1204051417490.17852@chino.kir.corp.google.com> <20120405213704.GA29517@google.com> <alpine.DEB.2.00.1204051454070.17852@chino.kir.corp.google.com> <20120405222400.GC29517@google.com>
+ <alpine.DEB.2.00.1204051542280.25838@chino.kir.corp.google.com> <20120405225854.GE29517@google.com> <alpine.DEB.2.00.1204051559480.25838@chino.kir.corp.google.com> <20120405231306.GF29517@google.com> <alpine.DEB.2.00.1204051630400.25838@chino.kir.corp.google.com>
+ <20120406155203.GA4798@dhcp-172-17-108-109.mtv.corp.google.com> <1333736770.2960.114.camel@laptop> <alpine.DEB.2.00.1204061347180.23328@chino.kir.corp.google.com> <CABEgKgopoHYiisCQnqeFc4qT-Y4Md1b6enTcZdomoKn0vGv_RQ@mail.gmail.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-To: Minchan Kim <minchan@kernel.org>
-CC: Alexey Ivanov <rbtz@yandex-team.ru>,
-        "gnehzuil.lzheng@gmail.com" <gnehzuil.lzheng@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>, yinghan@google.com
-Subject: Re: mapped pagecache pages vs unmapped pages
-References: <37371333672160@webcorp7.yandex-team.ru> <4F7E9854.1020904@gmail.com> <12701333991475@webcorp7.yandex-team.ru> <4F8326FD.8020507@redhat.com> <8041334015453@webcorp4.yandex-team.ru> <4F837F6E.3010508@kernel.org>
-In-Reply-To: <4F837F6E.3010508@kernel.org>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/09/2012 08:31 PM, Minchan Kim wrote:
-> 2012-04-10 오전 8:50, Alexey Ivanov 쓴 글:
->
->> Did you consider making this ratio tunable, at least manually(i.e. via sysctl)?
->> I suppose we are not the only ones with almost-whole-ram-mmaped workload.
->
-> Personally, I think it's not good approach.
-> It depends on kernel's internal implemenatation which would be changed
-> in future as we chagend it at 2.6.28.
+On Sun, 8 Apr 2012, Hiroyuki Kamezawa wrote:
 
-I also believe that a tunable for this is not going to be
-a very workable approach, for the simple reason that changing
-the value does not make a predictable change in the effectiveness
-of working set detection or protection.
+> I'm sorry if I didn't read e-mails while a trip....let me understand...
+> 
+>  - Tejun at el, tries to disallow to move kthreadd into cgroups other than root.
+>  - You wants to account kthreadd's activity under memg at el.
+> 
 
-> In my opinion, kernel just should do best effort to keep active working
-> set except some critical pages which are code pages.
+memcg isn't the only use case, you can also use it for cpuacct and any 
+other future cgroup that wants to do so.
 
-Johannes has some experimental code to measure refaults, and
-calculate their distance in a multi-zone, multi-cgroup environment.
+> Then, 2 question from me is....
+> 1. If this patch only affects kthreadd, you can move other
+>     kthread. Is this correct ?
+> 
 
-That would allow us to predictably place things in the working set
-as required.
+Yes, but not those that are forked by kthreadd at runtime without some 
+delay between the fork and attaching it to a different cgroup.  With memcg 
+slab accounting, for example, allocating the task_struct for the kthread 
+should appropriately be accounted for in a non-root memcg.
 
--- 
-All rights reversed
+Keep in mind that this isn't only limited to memcg, I've just used it to 
+illustrate how account for slab is useful.  I don't know everybody's use 
+cases where they may want to do the same thing so I've been arguing 
+against unnecessarily restricting it from all cgroups other than those 
+that require it (cpuset and cpu).
+
+Using cpusets as an example, we can even completely remove the restriction 
+on attaching all PF_THREAD_BOUND threads by not allowing them only if the 
+destination cpuset has mems that are disjoint from the bound cpu and 
+disallow changing the mems to be disjoint from a member's bound cpu.
+
+So then we won't even need the restriction for some PF_THREAD_BOUND 
+threads for cpusets.  It's not even a rare restriction: users can easily 
+use sched_setaffinity() to restrict their scheduling to a subset of their 
+set of allowed mems.
+
+I haven't looked at the changes needed for the cpu cgroup, but I'm 
+assuming it will be even easier: disallow attaching kthreadd without rt 
+allocation.
