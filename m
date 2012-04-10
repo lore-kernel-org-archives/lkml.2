@@ -1,114 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753477Ab2DJF5M (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Apr 2012 01:57:12 -0400
-Received: from na3sys009aog105.obsmtp.com ([74.125.149.75]:43385 "EHLO
-	na3sys009aog105.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752258Ab2DJF5L convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Apr 2012 01:57:11 -0400
-From: "Nandigama, Nagalakshmi" <Nagalakshmi.Nandigama@lsi.com>
-To: Alex Shi <alex.shi@intel.com>,
-        "JBottomley@parallels.com" <JBottomley@parallels.com>
-CC: "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Tue, 10 Apr 2012 11:27:04 +0530
-Subject: RE: [PATCH] scsi/mpt2sas: fix unsafe preempt setting for ioc
-Thread-Topic: [PATCH] scsi/mpt2sas: fix unsafe preempt setting for ioc
-Thread-Index: Ac0LGKy5bZJA7f4AR2ewrr1a+St82wLxg9Lg
-Message-ID: <A6888A6805518E4EA4AF7072A28264A6067E7E4087@inbmail02.lsi.com>
-References: <1332742810-5116-1-git-send-email-alex.shi@intel.com>
-In-Reply-To: <1332742810-5116-1-git-send-email-alex.shi@intel.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1753979Ab2DJGAm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Apr 2012 02:00:42 -0400
+Received: from isrv.corpit.ru ([86.62.121.231]:53368 "EHLO isrv.corpit.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752640Ab2DJGAk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Apr 2012 02:00:40 -0400
+Message-ID: <4F83CC86.2010805@msgid.tls.msk.ru>
+Date: Tue, 10 Apr 2012 10:00:38 +0400
+From: Michael Tokarev <mjt@tls.msk.ru>
+Organization: Telecom Service, JSC
+User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:8.0) Gecko/20120216 Icedove/8.0
 MIME-Version: 1.0
+To: Dave Chinner <david@fromorbit.com>
+CC: Jan Kara <jack@suse.cz>,
+        Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: dramatic I/O slowdown after upgrading 2.6.38->3.0+
+References: <4F75E46E.2000503@msgid.tls.msk.ru> <20120405232913.GA6640@quack.suse.cz> <4F7E74F4.90604@msgid.tls.msk.ru> <20120410022628.GN18323@dastard>
+In-Reply-To: <20120410022628.GN18323@dastard>
+X-Enigmail-Version: 1.3.4
+OpenPGP: id=804465C5
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch seem to be fine. Please consider this patch as Acked-by: "Nandigama, Nagalakshmi" <Nagalakshmi.Nandigama@lsi.com>
+On 10.04.2012 06:26, Dave Chinner wrote:
 
-Regards,
-Nagalakshmi
+> Barriers. Turn them off, and see if that fixes your problem.
 
+Thank you Dave for a hint.  And nope, that's not it, not at all... ;)
+While turning off barriers helps a tiny bit, to gain a few %% from
+the huge slowdown, it does not cure the issue.
 
------Original Message-----
-From: Alex Shi [mailto:alex.shi@intel.com] 
-Sent: Monday, March 26, 2012 11:50 AM
-To: JBottomley@parallels.com
-Cc: Nandigama, Nagalakshmi; linux-scsi@vger.kernel.org; linux-kernel@vger.kernel.org
-Subject: [PATCH] scsi/mpt2sas: fix unsafe preempt setting for ioc
+Meanwhile, I observed the following:
 
-commit 911ae943 add a new function:
-+_base_get_msix_index(struct MPT2SAS_ADAPTER *ioc)
-+{
-+       return ioc->cpu_msix_table[smp_processor_id()];
-+}
-Here smp_processor_id() need be used in preempt safe condition. but
-caller did not give this assurance. So fix this in caller.
+1) the issue persists on more recent kernels too, I tried 3.3
+   and it is also as slow as 3.0.
 
-Signed-off-by: Alex Shi <alex.shi@intel.com>
----
- drivers/scsi/mpt2sas/mpt2sas_base.c |    6 ++++++
- 1 files changed, 6 insertions(+), 0 deletions(-)
+2) at least 2.6.38 kernel works fine, as fast as 2.6.32, I'll
+   try 2.6.39 next.
 
-diff --git a/drivers/scsi/mpt2sas/mpt2sas_base.c b/drivers/scsi/mpt2sas/mpt2sas_base.c
-index a78036f..55a368e 100644
---- a/drivers/scsi/mpt2sas/mpt2sas_base.c
-+++ b/drivers/scsi/mpt2sas/mpt2sas_base.c
-@@ -1803,6 +1803,7 @@ mpt2sas_base_put_smid_scsi_io(struct MPT2SAS_ADAPTER *ioc, u16 smid, u16 handle)
- 	u64 *request = (u64 *)&descriptor;
- 
- 
-+	preempt_disable();
- 	descriptor.SCSIIO.RequestFlags = MPI2_REQ_DESCRIPT_FLAGS_SCSI_IO;
- 	descriptor.SCSIIO.MSIxIndex =  _base_get_msix_index(ioc);
- 	descriptor.SCSIIO.SMID = cpu_to_le16(smid);
-@@ -1810,6 +1811,7 @@ mpt2sas_base_put_smid_scsi_io(struct MPT2SAS_ADAPTER *ioc, u16 smid, u16 handle)
- 	descriptor.SCSIIO.LMID = 0;
- 	_base_writeq(*request, &ioc->chip->RequestDescriptorPostLow,
- 	    &ioc->scsi_lookup_lock);
-+	preempt_enable();
- }
- 
- 
-@@ -1849,6 +1851,7 @@ mpt2sas_base_put_smid_default(struct MPT2SAS_ADAPTER *ioc, u16 smid)
- 	Mpi2RequestDescriptorUnion_t descriptor;
- 	u64 *request = (u64 *)&descriptor;
- 
-+	preempt_disable();
- 	descriptor.Default.RequestFlags = MPI2_REQ_DESCRIPT_FLAGS_DEFAULT_TYPE;
- 	descriptor.Default.MSIxIndex =  _base_get_msix_index(ioc);
- 	descriptor.Default.SMID = cpu_to_le16(smid);
-@@ -1856,6 +1859,7 @@ mpt2sas_base_put_smid_default(struct MPT2SAS_ADAPTER *ioc, u16 smid)
- 	descriptor.Default.DescriptorTypeDependent = 0;
- 	_base_writeq(*request, &ioc->chip->RequestDescriptorPostLow,
- 	    &ioc->scsi_lookup_lock);
-+	preempt_enable();
- }
- 
- /**
-@@ -1873,6 +1877,7 @@ mpt2sas_base_put_smid_target_assist(struct MPT2SAS_ADAPTER *ioc, u16 smid,
- 	Mpi2RequestDescriptorUnion_t descriptor;
- 	u64 *request = (u64 *)&descriptor;
- 
-+	preempt_disable();
- 	descriptor.SCSITarget.RequestFlags =
- 	    MPI2_REQ_DESCRIPT_FLAGS_SCSI_TARGET;
- 	descriptor.SCSITarget.MSIxIndex =  _base_get_msix_index(ioc);
-@@ -1881,6 +1886,7 @@ mpt2sas_base_put_smid_target_assist(struct MPT2SAS_ADAPTER *ioc, u16 smid,
- 	descriptor.SCSITarget.IoIndex = cpu_to_le16(io_index);
- 	_base_writeq(*request, &ioc->chip->RequestDescriptorPostLow,
- 	    &ioc->scsi_lookup_lock);
-+	preempt_enable();
- }
- 
- /**
--- 
-1.7.5.4
+   I updated $subject accordingly.
 
+3) the most important thing I think: this is general I/O speed
+   issue.  Here's why:
+
+  2.6.38:
+  # dd if=/dev/sdb of=/dev/null bs=1M iflag=direct count=100
+  100+0 records in
+  100+0 records out
+  104857600 bytes (105 MB) copied, 1.73126 s, 60.6 MB/s
+
+  3.0:
+  # dd if=/dev/sdb of=/dev/null bs=1M iflag=direct count=100
+  100+0 records in
+  100+0 records out
+  104857600 bytes (105 MB) copied, 29.4508 s, 3.6 MB/s
+
+That's about 20 times difference on direct read from the
+same - idle - device!!
+
+Preparing for another bisect attempt, slowly.....
+
+Thank you!
+
+/mjt
