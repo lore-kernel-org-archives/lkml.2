@@ -1,101 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759440Ab2DJUtT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Apr 2012 16:49:19 -0400
-Received: from smtp-out-106.synserver.de ([212.40.185.106]:1027 "EHLO
-	smtp-out-105.synserver.de" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1755324Ab2DJUtS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Apr 2012 16:49:18 -0400
-X-SynServer-TrustedSrc: 1
-X-SynServer-AuthUser: lars@metafoo.de
-X-SynServer-PPID: 1983
-From: Lars-Peter Clausen <lars@metafoo.de>
-To: linux-kernel@vger.kernel.org
-Cc: Lars-Peter Clausen <lars@metafoo.de>, Richard Purdie <rpurdie@rpsys.net>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: [PATCH 1/4] blacklight: Remove redundant spi driver bus initialization
-Date: Tue, 10 Apr 2012 22:51:26 +0200
-Message-Id: <1334091089-10138-1-git-send-email-lars@metafoo.de>
-X-Mailer: git-send-email 1.7.9.5
+	id S1759444Ab2DJUzL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Apr 2012 16:55:11 -0400
+Received: from mga09.intel.com ([134.134.136.24]:14661 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755463Ab2DJUzJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Apr 2012 16:55:09 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
+   d="scan'208";a="127468099"
+Subject: [PATCH v4 0/3] rework quirks for the "kt" serial port
+To: gregkh@linuxfoundation.org
+From: Dan Williams <dan.j.williams@intel.com>
+Cc: linux-kernel@vger.kernel.org, linux-serial@vger.kernel.org,
+        alan@linux.intel.com
+Date: Tue, 10 Apr 2012 14:10:48 -0700
+Message-ID: <20120410210438.13805.40525.stgit@dwillia2-linux.jf.intel.com>
+User-Agent: StGit/0.16-1-g7004
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In ancient times it was necessary to manually initialize the bus field of an
-spi_driver to spi_bus_type. These days this is done in spi_driver_register() so
-we can drop the manual assignment.
+Changes since v3: http://marc.info/?l=linux-serial&m=133400008811070&w=2
 
-The patch was generated using the following coccinelle semantic patch:
-// <smpl>
-@@
-identifier _driver;
-@@
-struct spi_driver _driver = {
-	.driver = {
--		.bus = &spi_bus_type,
-	},
-};
-// </smpl>
+* Cleaned up "tegra, serial8250: add ->handle_break() uart_port op" to
+  incorporate Stephen's feedback of just using CONFIG_ARCH_TEGRA instead
+  of adding CONFIG_SERIAL_TEGRA.
 
-Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
-Cc: Richard Purdie <rpurdie@rpsys.net>
-Cc: Andrew Morton <akpm@linux-foundation.org>
+* Added Arnd's ack
+
+* The other two patches have not changed.
+
 ---
- drivers/video/backlight/ams369fg06.c |    1 -
- drivers/video/backlight/ld9040.c     |    1 -
- drivers/video/backlight/ltv350qv.c   |    1 -
- drivers/video/backlight/s6e63m0.c    |    1 -
- 4 files changed, 4 deletions(-)
 
-diff --git a/drivers/video/backlight/ams369fg06.c b/drivers/video/backlight/ams369fg06.c
-index 7bdadc7..d2494c5 100644
---- a/drivers/video/backlight/ams369fg06.c
-+++ b/drivers/video/backlight/ams369fg06.c
-@@ -619,7 +619,6 @@ static void ams369fg06_shutdown(struct spi_device *spi)
- static struct spi_driver ams369fg06_driver = {
- 	.driver = {
- 		.name	= "ams369fg06",
--		.bus	= &spi_bus_type,
- 		.owner	= THIS_MODULE,
- 	},
- 	.probe		= ams369fg06_probe,
-diff --git a/drivers/video/backlight/ld9040.c b/drivers/video/backlight/ld9040.c
-index efd352b..2ea06a5f 100644
---- a/drivers/video/backlight/ld9040.c
-+++ b/drivers/video/backlight/ld9040.c
-@@ -846,7 +846,6 @@ static void ld9040_shutdown(struct spi_device *spi)
- static struct spi_driver ld9040_driver = {
- 	.driver = {
- 		.name	= "ld9040",
--		.bus	= &spi_bus_type,
- 		.owner	= THIS_MODULE,
- 	},
- 	.probe		= ld9040_probe,
-diff --git a/drivers/video/backlight/ltv350qv.c b/drivers/video/backlight/ltv350qv.c
-index 333949f..d23922f 100644
---- a/drivers/video/backlight/ltv350qv.c
-+++ b/drivers/video/backlight/ltv350qv.c
-@@ -310,7 +310,6 @@ static void ltv350qv_shutdown(struct spi_device *spi)
- static struct spi_driver ltv350qv_driver = {
- 	.driver = {
- 		.name		= "ltv350qv",
--		.bus		= &spi_bus_type,
- 		.owner		= THIS_MODULE,
- 	},
- 
-diff --git a/drivers/video/backlight/s6e63m0.c b/drivers/video/backlight/s6e63m0.c
-index e264f55..3ed05c7 100644
---- a/drivers/video/backlight/s6e63m0.c
-+++ b/drivers/video/backlight/s6e63m0.c
-@@ -899,7 +899,6 @@ static void s6e63m0_shutdown(struct spi_device *spi)
- static struct spi_driver s6e63m0_driver = {
- 	.driver = {
- 		.name	= "s6e63m0",
--		.bus	= &spi_bus_type,
- 		.owner	= THIS_MODULE,
- 	},
- 	.probe		= s6e63m0_probe,
--- 
-1.7.9.5
+Dan Williams (2):
+      tegra, serial8250: add ->handle_break() uart_port op
+      serial/8250_pci: fix suspend/resume vs init/exit quirks
 
+Sudhakar Mamillapalli (1):
+      serial/8250_pci: Clear FIFOs for Intel ME Serial Over Lan device on BI
+
+
+ arch/arm/mach-tegra/board-harmony.c   |    2 +
+ arch/arm/mach-tegra/board-paz00.c     |    3 ++
+ arch/arm/mach-tegra/board-seaboard.c  |    2 +
+ arch/arm/mach-tegra/board-trimslice.c |    2 +
+ drivers/tty/serial/8250/8250.c        |   44 ++++++++++----------------------
+ drivers/tty/serial/8250/8250.h        |    2 +
+ drivers/tty/serial/8250/8250_pci.c    |   45 +++++++++++++++++++++++++++++++++
+ drivers/tty/serial/of_serial.c        |   26 +++++++++++++++++++
+ include/linux/of_serial.h             |   17 ++++++++++++
+ include/linux/serial_8250.h           |    1 +
+ include/linux/serial_core.h           |    5 ++++
+ 11 files changed, 118 insertions(+), 31 deletions(-)
+ create mode 100644 include/linux/of_serial.h
