@@ -1,54 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759413Ab2DJU1Z (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Apr 2012 16:27:25 -0400
-Received: from smtp.snhosting.dk ([87.238.248.203]:59258 "EHLO
-	smtp.domainteam.dk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758885Ab2DJU1Y (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Apr 2012 16:27:24 -0400
-Date: Tue, 10 Apr 2012 22:27:21 +0200
-From: Sam Ravnborg <sam@ravnborg.org>
-To: Borislav Petkov <bp@amd64.org>
-Cc: Ingo Molnar <mingo@kernel.org>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Michal Marek <mmarek@suse.cz>, LKML <linux-kernel@vger.kernel.org>,
-        Borislav Petkov <borislav.petkov@amd.com>
-Subject: Re: [PATCH v4 1/4] tools: Add Makefile.include
-Message-ID: <20120410202721.GA28293@merkur.ravnborg.org>
-References: <1334071240-28692-1-git-send-email-bp@amd64.org> <1334071240-28692-2-git-send-email-bp@amd64.org>
+	id S1759409Ab2DJU33 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Apr 2012 16:29:29 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:24278 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755410Ab2DJU32 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Apr 2012 16:29:28 -0400
+From: Paul Moore <pmoore@redhat.com>
+To: Josh Boyer <jwboyer@gmail.com>, "H. Peter Anvin" <hpa@zytor.com>
+Cc: libseccomp-discuss@lists.sourceforge.net, linux-kernel@vger.kernel.org,
+        linux-security-module@vger.kernel.org, Will Drewry <wad@chromium.org>,
+        Kees Cook <keescook@chromium.org>
+Subject: Re: ANN: libseccomp
+Date: Tue, 10 Apr 2012 16:29:17 -0400
+Message-ID: <1673842.NkbWD6ec4k@sifl>
+Organization: Red Hat
+User-Agent: KMail/4.8.2 (Linux/3.3.1-gentoo; KDE/4.8.2; x86_64; ; )
+In-Reply-To: <1524909.RpscfJeEfO@sifl>
+References: <1540670.AFBi1SpGoi@sifl> <CA+5PVA6vQF5T4j2-GoURrLshzCybELd-Hn3cgEd5nHVcQgNV7w@mail.gmail.com> <1524909.RpscfJeEfO@sifl>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1334071240-28692-2-git-send-email-bp@amd64.org>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Borislav.
+On Monday, April 09, 2012 05:28:41 PM Paul Moore wrote:
+> On Monday, April 09, 2012 04:14:15 PM Josh Boyer wrote:
+> > On Mon, Apr 9, 2012 at 4:02 PM, H. Peter Anvin <hpa@zytor.com> wrote:
+> > > On 04/09/2012 12:25 PM, Josh Boyer wrote:
+> > >> Do you think the GPLv2 license will limit adoption of it's usage across
+> > >> a wider variety of software projects?  I'm not anti-GPL by any means
+> > >> but I am slightly surprised libseccomp is using it.
+> > >> 
+> > >> josh
+> > > 
+> > > Yes, on the surface of it this would seem more like LGPL material.
+> > > 
+> > > Other than that, very much needed!
+> > 
+> > Agreed on both points.  I only brought this up now as it's very early
+> > in the project's lifetime.  If a relicense were to happen it would be
+> > better to do it before a larger number of developers started
+> > contributing to the project.
+> 
+> You both bring up a good point, the LGPL seems like a better choice.  I
+> chose GPLv2 when I started simply out of habit; it is a license I am both
+> familiar and comfortable with so it has a tendency to get used when I start
+> a new chunk of code.
+> 
+> As you pointed out, the project is still very new with only a handful of
+> authors beyond myself.  I'll get in touch with them privately to make sure
+> they are comfortable with the relicense and assuming there are no problems
+> I'll report back when everything has been changed.
 
-Some random comments as I really did not look at this
-part of the patch-set before.
+Just an update, the project has just been relicensed under the LGPLv2.1 
+license.
 
-> +#
-> +# Include saner warnings here, which can catch bugs:
-> +#
-> +EXTRA_WARNINGS := -Wformat
-> +EXTRA_WARNINGS := $(EXTRA_WARNINGS) -Wformat-security
+-- 
+paul moore
+security and virtualization @ redhat
 
-Two general comments - and I know this is just something you copied...
-Why not use the += operator. The below looks like shell script syntax.
-And we use the += operator in other places - at least in the kernel stuff.
-
-AND WHY ALL THESE SCREAMING CAPITAL LETTERS?
-I know Makefiles and scripts are full of them - but that does not help
-the readability.
-
-For kbuild I generally shifted to use:
-- lower-case names for local stuff
-- Upper case letters for global stuff - properly prefixed to avoid collisions
-EXTRA_WARNINGS likely fall into the category global-stuff,
-but then a local variable could still be usefull.
-
-	Sam
