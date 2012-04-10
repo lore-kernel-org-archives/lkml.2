@@ -1,54 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758607Ab2DJM4v (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Apr 2012 08:56:51 -0400
-Received: from multi.imgtec.com ([194.200.65.239]:46165 "EHLO multi.imgtec.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753884Ab2DJM4u (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Apr 2012 08:56:50 -0400
-X-Greylist: delayed 974 seconds by postgrey-1.27 at vger.kernel.org; Tue, 10 Apr 2012 08:56:49 EDT
-Message-ID: <4F8429DD.3010700@imgtec.com>
-Date: Tue, 10 Apr 2012 13:38:53 +0100
-From: James Hogan <james.hogan@imgtec.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120329 Thunderbird/11.0.1
+	id S1758667Ab2DJM5S (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Apr 2012 08:57:18 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:58694 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754192Ab2DJM5R (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Apr 2012 08:57:17 -0400
+Message-ID: <4F842E28.8060609@gmail.com>
+Date: Tue, 10 Apr 2012 07:57:12 -0500
+From: Rob Herring <robherring2@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120402 Thunderbird/11.0.1
 MIME-Version: 1.0
-To: "James E.J. Bottomley" <JBottomley@parallels.com>,
-        <linux-scsi@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: [PATCH] scsi: make struct scsi_varlen_cdb_hdr packed
-Content-Type: text/plain; charset="ISO-8859-1"
+To: Fabio Estevam <festevam@gmail.com>
+CC: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        devicetree-discuss@lists.ozlabs.org,
+        Mike Turquette <mturquette@linaro.org>,
+        Thierry Reding <thierry.reding@avionic-design.de>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Sascha Hauer <kernel@pengutronix.de>, shawn.guo@linaro.org,
+        Mike Turquette <mturquette@ti.com>
+Subject: Re: [PATCH 3/4] clk: add DT clock binding support
+References: <1334003101-17274-1-git-send-email-robherring2@gmail.com> <1334003101-17274-4-git-send-email-robherring2@gmail.com> <CAOMZO5AKmnQRo4_3GVDSMUc0fMZ5orwvZSxjXfn6m-5Boew04A@mail.gmail.com>
+In-Reply-To: <CAOMZO5AKmnQRo4_3GVDSMUc0fMZ5orwvZSxjXfn6m-5Boew04A@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 10 Apr 2012 12:38:54.0035 (UTC) FILETIME=[E3B0DA30:01CD1716]
-X-SEF-Processed: 7_3_0_01181__2012_04_10_13_40_30
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The struct scsi_varlen_cdb_hdr is expected to be exactly 10 bytes when
-used in struct osd_cdb_head, but it isn't marked as packed. Some
-architectures will round the struct size up which triggers BUILD_BUG_ON
-compile errors in osd_initiator.c when the outer structs are unexpected
-sizes. This is fixed by marking struct scsi_varlen_cdb_hdr as __packed.
+On 04/09/2012 11:27 PM, Fabio Estevam wrote:
+> On Mon, Apr 9, 2012 at 5:25 PM, Rob Herring <robherring2@gmail.com> wrote:
+>> From: Grant Likely <grant.likely@secretlab.ca>
+>>
+>> Based on work 1st by Ben Herrenschmidt and Jeremy Kerr, then by Grant
+>> Likely, this patch adds support to clk_get to allow drivers to retrieve
+>> clock data from the device tree.
+>>
+>> Platforms scan for clocks in DT with of_clk_init and a match table, and
+>> the register a provider through of_clk_add_provider. The provider's
+>> clk_src_get function will be called when a device references the
+>> provider's OF node for a clock reference.
+>>
+>> v5 (Rob Herring):
+>>    - Move from drivers/of into common clock subsystem
+>>    - Squashed "dt/clock: add a simple provider get function" and
+>>      "dt/clock: add function to get parent clock name"
+>>    - Rebase to 3.4-rc1
+>>    - Drop CONFIG_OF_CLOCK and just use CONFIG_OF
+>>    - Add missing EXPORT_SYMBOL to various functions
+>>    - s/clock-output-name/clock-output-names/
+>>    - Define that fixed-clock binding is a single output
+> 
+> The patch history should go below the --- line,
 
-Signed-off-by: James Hogan <james.hogan@imgtec.com>
----
- include/scsi/scsi.h |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+No, depends who you ask, and Grant is very much in favor of retaining
+the history.
 
-diff --git a/include/scsi/scsi.h b/include/scsi/scsi.h
-index f34a5a8..c75c8c8 100644
---- a/include/scsi/scsi.h
-+++ b/include/scsi/scsi.h
-@@ -196,7 +196,7 @@ struct scsi_varlen_cdb_hdr {
- 	__u8 additional_cdb_length;         /* total cdb length - 8 */
- 	__be16 service_action;
- 	/* service specific data follows */
--};
-+} __packed;
- 
- static inline unsigned
- scsi_varlen_cdb_length(const void *hdr)
--- 
-1.7.7.6
-
-
+Rob
