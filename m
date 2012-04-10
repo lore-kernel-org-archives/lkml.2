@@ -1,20 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755019Ab2DJGnP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Apr 2012 02:43:15 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:50414 "EHLO mx2.suse.de"
+	id S1754948Ab2DJGpz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Apr 2012 02:45:55 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:50464 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752980Ab2DJGnN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Apr 2012 02:43:13 -0400
-Date: Tue, 10 Apr 2012 08:43:12 +0200
-Message-ID: <s5hobr0ulxb.wl%tiwai@suse.de>
+	id S1753322Ab2DJGpy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Apr 2012 02:45:54 -0400
+Date: Tue, 10 Apr 2012 08:45:51 +0200
+Message-ID: <s5hmx6kulsw.wl%tiwai@suse.de>
 From: Takashi Iwai <tiwai@suse.de>
-To: Julia Lawall <Julia.Lawall@lip6.fr>
-Cc: Jaroslav Kysela <perex@perex.cz>, kernel-janitors@vger.kernel.org,
-        alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] sound/isa/sscape.c: add missing resource-release code
-In-Reply-To: <1333959395-18960-1-git-send-email-Julia.Lawall@lip6.fr>
-References: <1333959395-18960-1-git-send-email-Julia.Lawall@lip6.fr>
+To: Jesper Juhl <jj@chaosbits.net>
+Cc: linux-kernel@vger.kernel.org, trivial@kernel.org,
+        alsa-devel@alsa-project.org, Clemens Ladisch <clemens@ladisch.de>,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Jaroslav Kysela <perex@perex.cz>
+Subject: Re: [PATCH 23/26] ALSA: riptide: remove redundant NULL test before release_firmware()
+In-Reply-To: <alpine.LNX.2.00.1204092241550.14420@swampdragon.chaosbits.net>
+References: <alpine.LNX.2.00.1204092157340.13925@swampdragon.chaosbits.net>
+	<alpine.LNX.2.00.1204092241550.14420@swampdragon.chaosbits.net>
 User-Agent: Wanderlust/2.15.6 (Almost Unreal) SEMI/1.14.6 (Maruoka)
  FLIM/1.14.9 (=?UTF-8?B?R29qxY0=?=) APEL/10.7 Emacs/23.3
  (x86_64-suse-linux-gnu) MULE/6.0 (HANACHIRUSATO)
@@ -24,47 +28,42 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-At Mon,  9 Apr 2012 10:16:35 +0200,
-Julia Lawall wrote:
+At Mon, 9 Apr 2012 22:52:10 +0200 (CEST),
+Jesper Juhl wrote:
 > 
-> From: Julia Lawall <Julia.Lawall@lip6.fr>
+> release_firmware() deals gracefully with NULL pointers, no need to check first.
 > 
-> At the point of this error-handling code, both regions and the dma have
-> been allocated, so free it as done in previous and subsequent
-> error-handling code.
-> 
-> Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
+> Signed-off-by: Jesper Juhl <jj@chaosbits.net>
 
 Applied now.  Thanks.
 
 
 Takashi
 
-> 
 > ---
->  sound/isa/sscape.c |    6 ++++--
->  1 file changed, 4 insertions(+), 2 deletions(-)
+>  sound/pci/riptide/riptide.c |    3 +--
+>  1 file changed, 1 insertion(+), 2 deletions(-)
 > 
-> diff --git a/sound/isa/sscape.c b/sound/isa/sscape.c
-> index b4a6aa9..131dd98 100644
-> --- a/sound/isa/sscape.c
-> +++ b/sound/isa/sscape.c
-> @@ -1019,13 +1019,15 @@ static int __devinit create_sscape(int dev, struct snd_card *card)
->  	irq_cfg = get_irq_config(sscape->type, irq[dev]);
->  	if (irq_cfg == INVALID_IRQ) {
->  		snd_printk(KERN_ERR "sscape: Invalid IRQ %d\n", irq[dev]);
-> -		return -ENXIO;
-> +		err = -ENXIO;
-> +		goto _release_dma;
+> diff --git a/sound/pci/riptide/riptide.c b/sound/pci/riptide/riptide.c
+> index 0481d94..cbeb3f7 100644
+> --- a/sound/pci/riptide/riptide.c
+> +++ b/sound/pci/riptide/riptide.c
+> @@ -1837,8 +1837,7 @@ static int snd_riptide_free(struct snd_riptide *chip)
 >  	}
->  
->  	mpu_irq_cfg = get_irq_config(sscape->type, mpu_irq[dev]);
->  	if (mpu_irq_cfg == INVALID_IRQ) {
->  		snd_printk(KERN_ERR "sscape: Invalid IRQ %d\n", mpu_irq[dev]);
-> -		return -ENXIO;
-> +		err = -ENXIO;
-> +		goto _release_dma;
->  	}
->  
->  	/*
+>  	if (chip->irq >= 0)
+>  		free_irq(chip->irq, chip);
+> -	if (chip->fw_entry)
+> -		release_firmware(chip->fw_entry);
+> +	release_firmware(chip->fw_entry);
+>  	release_and_free_resource(chip->res_port);
+>  	kfree(chip);
+>  	return 0;
+> -- 
+> 1.7.10
+> 
+> 
+> -- 
+> Jesper Juhl <jj@chaosbits.net>       http://www.chaosbits.net/
+> Don't top-post http://www.catb.org/jargon/html/T/top-post.html
+> Plain text mails only, please.
 > 
