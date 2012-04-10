@@ -1,95 +1,162 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932334Ab2DJUes (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Apr 2012 16:34:48 -0400
-Received: from smtp.snhosting.dk ([87.238.248.203]:41093 "EHLO
-	smtp.domainteam.dk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753227Ab2DJUeq (ORCPT
+	id S1759438Ab2DJUhO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Apr 2012 16:37:14 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:63543 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759397Ab2DJUhI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Apr 2012 16:34:46 -0400
-Date: Tue, 10 Apr 2012 22:34:44 +0200
-From: Sam Ravnborg <sam@ravnborg.org>
-To: Borislav Petkov <bp@amd64.org>
-Cc: Ingo Molnar <mingo@kernel.org>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Michal Marek <mmarek@suse.cz>, LKML <linux-kernel@vger.kernel.org>,
-        Borislav Petkov <borislav.petkov@amd.com>
-Subject: Re: [PATCH v4 3/4] tools: Add a help target
-Message-ID: <20120410203444.GC28293@merkur.ravnborg.org>
-References: <1334071240-28692-1-git-send-email-bp@amd64.org> <1334071240-28692-4-git-send-email-bp@amd64.org>
+	Tue, 10 Apr 2012 16:37:08 -0400
+Message-ID: <4F8499EC.4010508@landley.net>
+Date: Tue, 10 Apr 2012 15:37:00 -0500
+From: Rob Landley <rob@landley.net>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.27) Gecko/20120216 Thunderbird/3.1.19
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1334071240-28692-4-git-send-email-bp@amd64.org>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: Andrew Lutomirski <luto@mit.edu>
+CC: Andrew Morton <akpm@linux-foundation.org>, Will Drewry <wad@chromium.org>,
+        linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
+        linux-arch@vger.kernel.org, linux-doc@vger.kernel.org,
+        kernel-hardening@lists.openwall.com, netdev@vger.kernel.org,
+        x86@kernel.org, arnd@arndb.de, davem@davemloft.net, hpa@zytor.com,
+        mingo@redhat.com, oleg@redhat.com, peterz@infradead.org,
+        rdunlap@xenotime.net, mcgrathr@chromium.org, tglx@linutronix.de,
+        eparis@redhat.com, serge.hallyn@canonical.com, djm@mindrot.org,
+        scarybeasts@gmail.com, indan@nul.nu, pmoore@redhat.com, corbet@lwn.net,
+        eric.dumazet@gmail.com, markus@chromium.org, coreyb@linux.vnet.ibm.com,
+        keescook@chromium.org, jmorris@namei.org,
+        Andy Lutomirski <luto@amacapital.net>, linux-man@vger.kernel.org
+Subject: Re: [PATCH v17 01/15] Add PR_{GET,SET}_NO_NEW_PRIVS to prevent execve
+ from granting privs
+References: <1333051320-30872-1-git-send-email-wad@chromium.org> <1333051320-30872-2-git-send-email-wad@chromium.org> <20120406125517.77133b4e.akpm@linux-foundation.org> <CAObL_7EYb62o=a0ekzcDx=0TuN55A7aTYhLJbMNu2r8F0V77EA@mail.gmail.com>
+In-Reply-To: <CAObL_7EYb62o=a0ekzcDx=0TuN55A7aTYhLJbMNu2r8F0V77EA@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 10, 2012 at 05:20:39PM +0200, Borislav Petkov wrote:
-> From: Borislav Petkov <borislav.petkov@amd.com>
+On 04/06/2012 03:01 PM, Andrew Lutomirski wrote:
+> On Fri, Apr 6, 2012 at 12:55 PM, Andrew Morton
+> <akpm@linux-foundation.org> wrote:
+>> On Thu, 29 Mar 2012 15:01:46 -0500
+>> Will Drewry <wad@chromium.org> wrote:
+>>
+>>> From: Andy Lutomirski <luto@amacapital.net>
+>>>
+>>> With this set, a lot of dangerous operations (chroot, unshare, etc)
+>>> become a lot less dangerous because there is no possibility of
+>>> subverting privileged binaries.
+>>
+>> The changelog doesn't explain the semantics of the new syscall.
+>> There's a comment way-down-there which I guess suffices, if you hunt
+>> for it.
+>>
+>> And the changelog doesn't explain why this is being added.  Presumably
+>> seccomp_filter wants/needs this feature but whowhatwherewhenwhy?  Spell
+>> it all out, please.
+>>
+>> The new syscall mode will be documented in the prctl manpage.  Please
+>> cc linux-man@vger.kernel.org and work with Michael on getting this
+>> done?
 > 
-> ... and make it the default one so that calling 'make' without arguments
-> in the tools/ directory gives you the possible targets to build along
-> with a short description of what they are.
-> 
-> Signed-off-by: Borislav Petkov <borislav.petkov@amd.com>
-> ---
->  tools/Makefile |   26 +++++++++++++++++++++++---
->  1 file changed, 23 insertions(+), 3 deletions(-)
-> 
-> diff --git a/tools/Makefile b/tools/Makefile
-> index e93b8ec3d250..c7ed814e12cf 100644
-> --- a/tools/Makefile
-> +++ b/tools/Makefile
-> @@ -1,5 +1,25 @@
->  include scripts/Makefile.include
->  
-> +help:
-> +	@echo 'Possible targets:'
-> +	@echo ''
-> +	@echo '  cpupower   - a tool for all things x86 CPU power'
-> +	@echo '  firewire   - the userspace part of nosy, an IEEE-1394 traffic sniffer'
-> +	@echo '  lguest     - a minimal 32-bit x86 hypervisor'
-> +	@echo '  perf       - Linux performance measurement and analysis tool'
-> +	@echo '  selftests  - various kernel selftests'
-> +	@echo '  turbostat  - Intel CPU idle stats and freq reporting tool'
-> +	@echo '  usb        - USB testing tools'
-> +	@echo '  virtio     - vhost test module'
-> +	@echo '  vm         - misc vm tools'
-> +	@echo '  x86_energy_perf_policy - Intel energy policy tool'
-> +	@echo ''
-> +	@echo 'Cleaning targets:'
-> +	@echo ''
-> +	@echo '  all of the above with the "_clean" string appended cleans'
-> +	@echo '    the respective build directory.'
-> +	@echo '  clean: a summary clean target to clean _all_ folders'
-> +
->  perf firewire lguest usb virtio vm: FORCE
->  	$(QUIET_SUBDIR0)$@/ $(QUIET_SUBDIR1)
->  
-> @@ -15,7 +35,7 @@ selftests: FORCE
->  firewire_clean lguest_clean perf_clean vm_clean usb_clean virtio_clean:
->  	$(QUIET_SUBDIR0)$(@:_clean=)/ $(QUIET_SUBDIR1) clean
->  
-> -cp_clean:
-> +cpupower_clean:
->  	$(QUIET_SUBDIR0)power/cpupower/ $(QUIET_SUBDIR1) clean
+> This has been bugging me for awhile.  Is there any interest in moving
+> the manpages into the kernel source tree?
 
-Fold this into 2/4
+Not that I know of. I'm pretty sure if the guy maintaining it (Michael
+Kerrisk) wanted to do that, he could have raised the issue at any time
+over the past several years.
 
->  
->  turbostat_clean x86_energy_perf_policy_clean:
-> @@ -24,8 +44,8 @@ turbostat_clean x86_energy_perf_policy_clean:
->  selftests_clean:
->  	$(QUIET_SUBDIR0)testing/$(@:_clean=)/ $(QUIET_SUBDIR1) clean
->  
-> -clean: cp_clean firewire_clean lguest_clean perf_clean selftests_clean \
-> -		turbostat_clean usb_clean virtio_clean \
-> +clean: cpupower_clean firewire_clean lguest_clean perf_clean \
-> +		selftests_clean turbostat_clean usb_clean virtio_clean \
->  		x86_energy_perf_policy_clean
-Fold this into 2/4
+> Then there could be a
+> general requirement that new APIs get documented when they're written.
 
+Because having a Documentation directory, javadoc in the source itself
+(some of which is combined with the Documentation/DocBook xml files to
+form the make htmldocs output), menuconfig help text, and a whole buch
+of scattered readmes does _not_ get new APIs documented as they're written.
 
-	Sam
+That isn't even counting git commit comments and mailing list messages
+in various web archives. Are you going to suck the linux weekly news
+kernel articles into the tree (http://lwn.net/Kernel/Index)? How about
+Linux Journal's complete archives going back to 2004
+(http://www.linuxjournal.com/magazine)? Or the h-online and
+kernelnewbies writeups? How about wikipedia pages on interesting kernel
+topics? The sourceforge pages for userspace projects like lxc.sf.net or
+i2c-utils? How about that device driver writing tutorial Greg KH
+recorded in 2008, that's only a 2.8 gigabyte video file.  Rusty's
+Unreliable Guides?  Greg KH's blog? (Heck, http://kernelplanet.org).
+
+Speaking of videos, here's the 2011 LinuxCon Japan talks:
+
+  http://video.linux.com/categories/2011-linuxcon-japan
+
+And here are videos for the Consumer Electronic Linux Forum:
+
+  http://free-electrons.com/blog/elc-2012-videos/
+
+(and you can get 2011, 2010, 2006...)
+
+Here are Ottawa Linux Symposium papers:
+
+  http://kernel.org/doc/ols
+
+Don't forget IBM Developerworks' library:
+
+http://www.ibm.com/developerworks/linux/library/l-linux-kernel/
+
+Have some standards documents:
+
+http://www.opengroup.org/onlinepubs/9699919799/
+http://busybox.net/~landley/c99-draft.html
+http://www.unix.org/whitepapers/64bit.html
+http://refspecs.linuxfoundation.org
+http://t10.org/scsi-3.htm
+
+Here's a random blog post about booting a bare metal "hello world"
+program on qemu for ARM:
+
+http://balau82.wordpress.com/2010/02/28/hello-world-for-bare-metal-arm-using-qemu/
+
+Let's pick a topic, like the ELF loader. Here's the best introduction of
+how ELF files _really_ work I've seen:
+
+http://muppetlabs.com/~breadbox/software/tiny/teensy.html
+
+Although http://linuxjournal.com/article/1059 is pretty good too, as
+were http://linuxjournal.com/article/1060 and
+http://linuxjournal.com/article/80 as well.  And if you want the
+_details_, here's an extremely dry online book:
+
+http;//www.iecc.com/linker/
+
+And here's the first entry in the blog series the guy who wrote "gold"
+did about writing his new linker:
+
+http://www.airs.com/blog/archives/38
+
+And so on, and so forth...
+
+> (There are plenty of barely- or incompletely-documented syscalls.
+> futex and relatives come to mind.)
+
+Your proposal does not address this problem.
+
+speaking of syscalls, I do note that ever since I tried to add Hexagon
+support to strace (less fun than it sounds), I've wanted a way to beat
+proper syscall information out of the kernel headers so I could get not
+just syscall numbers but how many arguments and a brief stab at the type
+of each argument.
+
+Of course you _can_ get argument type and count, but not from the
+headers: you have to use moderately horrible sed on the kernel's source
+code, ala:
+
+find . -name "*.c" -print0 | \
+xargs -n1 -0 sed -n -e 's/.*\(SYSCALL_DEFINE[0-9](\)/\1/' \
+  -e 't got;d;:got;s/).*/)/p;t;N;b got'
+
+> --Andy
+
+Rob
+-- 
+GNU/Linux isn't: Linux=GPLv2, GNU=GPLv3+, they can't share code.
+Either it's "mere aggregation", or a license violation.  Pick one.
