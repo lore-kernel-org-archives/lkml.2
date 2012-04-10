@@ -1,49 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755598Ab2DJRob (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Apr 2012 13:44:31 -0400
-Received: from cavan.codon.org.uk ([93.93.128.6]:53692 "EHLO
-	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751495Ab2DJRoa (ORCPT
+	id S1756481Ab2DJRov (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Apr 2012 13:44:51 -0400
+Received: from mail-wi0-f178.google.com ([209.85.212.178]:52589 "EHLO
+	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755503Ab2DJRou (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Apr 2012 13:44:30 -0400
-Date: Tue, 10 Apr 2012 18:44:23 +0100
-From: Matthew Garrett <mjg@redhat.com>
-To: Miles Fidelman <mfidelman@meetinghouse.net>
-Cc: linux-kernel@vger.kernel.org, tglx@linutronix.de, mingo@redhat.com,
-        hpa@zytor.com, x86@kernel.org, peter.chubb@nicta.com.au,
-        michael.d.labriola@gmail.com
-Subject: Re: reboot via bios on X86_64?
-Message-ID: <20120410174423.GA19583@srcf.ucam.org>
-References: <4F8302B4.8040901@meetinghouse.net>
- <20120409155155.GA22974@srcf.ucam.org>
- <4F831BD0.3010707@meetinghouse.net>
- <20120409173223.GA25717@srcf.ucam.org>
- <4F83231A.8040005@meetinghouse.net>
- <20120409180711.GA26277@srcf.ucam.org>
- <4F843D9B.3010601@meetinghouse.net>
- <20120410142213.GA13294@srcf.ucam.org>
- <4F846D53.10409@meetinghouse.net>
+	Tue, 10 Apr 2012 13:44:50 -0400
+Message-ID: <4F84718C.4010706@gmail.com>
+Date: Tue, 10 Apr 2012 19:44:44 +0200
+From: Xose Vazquez Perez <xose.vazquez@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4F846D53.10409@meetinghouse.net>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
-X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
+To: linux-kernel@vger.kernel.org
+Subject: Re: [RFC PATCH] block: Change default IO scheduler to deadline except
+ SATA
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 10, 2012 at 01:26:43PM -0400, Miles Fidelman wrote:
-> For what it's worth, creating a path for X86_64 mode to reboot
-> through the bios seems like
-> a good thing to put on the wish list.
+Vivek Goyal wrote:
 
-Not really - it's far more attractive to figure out how our behaviour is 
-differing from Windows and change it to match. I'll see what I can find 
-out about this machine.
+ > I am wondering if CFQ as default scheduler is still the right choice. CFQ
+ > generally works well on slow rotational media (SATA?). But often
+ > underperforms on faster storage (storage arrays, PCIE SSDs, virtualized
+ > disk in linux guests etc). People often put logic in user space to tune their
+ > systems and change IO scheduler to deadline to get better performance on
+ > faster storage.
+ >
+ > Though there is not one good answer for all kind of storage and for all
+ > kind of workloads, I am wondering if we can provide a better default and
+ > that is change default IO scheduler to "deadline" except SATA.
+ >
+ > One can argue that some SAS disks can be slow too and benefit from CFQ. Yes,
+ > but default IO scheduler choice is not perfect anyway. It just tries to
+ > cater to a wide variety of use cases out of the box.
+ >
+ > So I am throwing this patch out see if it flies. Personally, I think it
+ > might turn out to be a more reasonable default.
 
--- 
-Matthew Garrett | mjg59@srcf.ucam.org
+done time ago for dasd devices.
+
+chuchi:~/curre/linux-2.6 $ grep -ri deadline drivers/s390/block/*
+drivers/s390/block/dasd.c:      rc = elevator_init(block->request_queue, "deadline");
+drivers/s390/block/Kconfig:     select IOSCHED_DEADLINE
