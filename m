@@ -1,63 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756449Ab2DJKG1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Apr 2012 06:06:27 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:36373 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755941Ab2DJKGY (ORCPT
+	id S1756245Ab2DJKIC (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Apr 2012 06:08:02 -0400
+Received: from mail-vx0-f174.google.com ([209.85.220.174]:41035 "EHLO
+	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755849Ab2DJKIA convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Apr 2012 06:06:24 -0400
-Date: Tue, 10 Apr 2012 11:06:22 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Axel Lin <axel.lin@gmail.com>
-Cc: linux-kernel@vger.kernel.org, Peter Ujfalusi <peter.ujfalusi@ti.com>,
-        Rajendra Nayak <rnayak@ti.com>, Tero Kristo <t-kristo@ti.com>,
-        Liam Girdwood <lrg@ti.com>
-Subject: Re: [PATCH v2] regulator: twl-regulator: Use DIV_ROUND_UP at
- appropriate places
-Message-ID: <20120410100621.GF7499@opensource.wolfsonmicro.com>
-References: <1333985710.16502.0.camel@phoenix>
+	Tue, 10 Apr 2012 06:08:00 -0400
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="gdTfX7fkYsEEjebm"
-Content-Disposition: inline
-In-Reply-To: <1333985710.16502.0.camel@phoenix>
-X-Cookie: You dialed 5483.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Originating-IP: [87.66.117.88]
+In-Reply-To: <20120407031306.B24D03E1F86@localhost>
+References: <CAORVsuWw1rwcsMUrSqZJCeSY_vjJDwakF27kfb6=utN8nBqvag@mail.gmail.com>
+	<CAORVsuUQbtC=SF9RP2g04mN-ksE8BU40ACfZvoyGUju=LRbwqg@mail.gmail.com>
+	<20120407031306.B24D03E1F86@localhost>
+Date: Tue, 10 Apr 2012 12:07:59 +0200
+Message-ID: <CAORVsuWVZMFpjtvNFxKWtCp4Jn2mAQiVRmWGiyqGdJCGxo4QPQ@mail.gmail.com>
+Subject: Re: gpiolib: per-gpio edges count
+From: Jean Pihet <jean.pihet@newoldbits.com>
+To: Grant Likely <grant.likely@secretlab.ca>
+Cc: Linus Walleij <linus.walleij@linaro.org>, linux-kernel@vger.kernel.org,
+        Kevin Hilman <khilman@ti.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Grant,
 
---gdTfX7fkYsEEjebm
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+On Sat, Apr 7, 2012 at 5:13 AM, Grant Likely <grant.likely@secretlab.ca> wrote:
+> On Wed, 4 Apr 2012 16:49:03 +0200, Jean Pihet <jean.pihet@newoldbits.com> wrote:
+>> Hi,
+>>
+>> On Wed, Apr 4, 2012 at 10:53 AM, Jean Pihet <jean.pihet@newoldbits.com> wrote:
+>> > Hi Grant, Linus,
+>> >
+>> > I would like to know if it is possible to get the edges count on a GPIO pin.
+>> > I was hoping to get it by configuring the pin as input with an edge
+>> > trigger but on OMAP there is only one irq line per controller (which
+>> > controls 32 pins).
+>> > Btw I am using a Beaglebone with OMAP AM3358.
+>>
+>> I figured it out, with the help from Kevin on IRC (thx!).
+>>
+>> Indeed there is a per-pin IRQ count available in /proc/interrupts.
+>> Sorry for the unconvenience.
+>>
+>> Thanks & regards,
+>> Jean
+>
+> Great, I'm glad you got it sorted out.  For the benefit of anyone
+> coming across this thread, would you mind replying with a summary of
+> how you solved the problem?
 
-On Mon, Apr 09, 2012 at 11:35:10PM +0800, Axel Lin wrote:
-> Signed-off-by: Axel Lin <axel.lin@gmail.com>
+Yes sure!
 
-Applied, thanks.
+This summary is from the experiments on the Beaglebone board but is
+applicable to all platforms due to the generic nature of the GPIO
+framework ;p
 
---gdTfX7fkYsEEjebm
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+The pin in use is gpio1_6, which is also known as gpmc_ad6.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
+First the mux must be set correctly by writing '7' to
+/sys/kernel/debug/omap_mux/gpmc_ad6':
 
-iQIcBAEBAgAGBQJPhAYWAAoJEBus8iNuMP3dTDsP/RKv827cQY9DDUV9ZYveHLgq
-YsheAZc5anUu8L7WEZYYLYjJnXb+Kbebm025B+wcvhoI1wOCgPOCkp021ZHyc/YZ
-V4T308tBZFTNL/8gGUXrnYKgsIAut5GWu+rqSM3WtaL3COVuWADW+MMQp5WlaCVf
-qS0NB0INI8IVaSmvFHts82E/q/n+VOgqm1YoyEYXPWCM41nGD3IEZCXN5Saltzt0
-0BRltSE8CjeM+Bkw7k3H5uKW/iuF8t8BtnozHQjpWnAkhWu15G0TH4ynamo6fL/B
-O1Uay4NfH9bciqjmNCqGTxkQCT6WzOgi4zLWHw3dlBBimN18YBNeNK3elGi/bOLF
-q/ThIfutnsuxn1C5fitD28ehTC0f5WwbA3r0w4yyna2Dw9oa4YJTpPq8XghYvW59
-5fCNprfP2ApY6zJbuCM1daA0P3YFA0ov2irIZrR4y67EgYoxcEaeHBxK5bqjJiSQ
-OJDknBeKsPbwAxTPl2r29GT64rPrzaFedati+LAPoYFRpUIhcS6n4im9Qbl09mf7
-ipj1CNU9pePUZRtXeFd8uZZikK2FjucLv9zUB9ERFQcdep3UuP8/207Z2m/hemDN
-+jFDLJ5SpmcgNY4tuCcv2RffrxJMMrJUwLt8hdXy6UdbEWRVsolra3SEwitS5D+1
-8hJPimGblfl410G4jLUR
-=nCLf
------END PGP SIGNATURE-----
+  root@beaglebone:/sys/class/gpio# cat /sys/kernel/debug/omap_mux/gpmc_ad6
+  name: gpmc_ad6.gpio1_6 (0x44e10818/0x818 = 0x0037), b NA, t NA
+  mode: OMAP_PIN_OUTPUT | OMAP_MUX_MODE7
+  signals: gpmc_ad6 | mmc1_dat6 | NA | NA | NA | NA | NA | gpio1_6
 
---gdTfX7fkYsEEjebm--
+Then the GPIO pin is exported to userspace:
+
+  root@beaglebone:/sys/class/gpio# echo 38 > export
+  root@beaglebone:/sys/class/gpio# cd gpio38
+  root@beaglebone:/sys/class/gpio/gpio38# ls
+  active_low  direction  edge  power  subsystem  uevent  value
+
+The pin is then setup as a input and to generate an IRQ on the falling edge:
+
+  root@beaglebone:/sys/class/gpio/gpio38# echo in > direction
+  root@beaglebone:/sys/class/gpio/gpio38# echo falling > edge
+
+A new entry has appeared in /proc/interrupts for the pin. The name is 'gpiolib'.
+Check that everything is OK from the GPIO point of view:
+  root@beaglebone:/sys/class/gpio/gpio38# cat /sys/kernel/debug/gpio
+  ...
+  GPIOs 32-63, gpio:
+   gpio-34  (sysfs               ) in  lo
+   gpio-35  (w1                  ) in  hi
+   gpio-38  (sysfs               ) in  hi
+   gpio-53  (beaglebone::usr0    ) out lo
+  ...
+
+After playing with the HW (connect the pin to GND a few times or
+through a sensor) the IRQ count is displayed for the pin:
+
+  root@beaglebone:/sys/class/gpio/gpio38# cat /proc/interrupts
+           CPU0
+  ...
+  194:          0      GPIO  gpiolib
+  198:         19      GPIO  gpiolib
+  Err:          0
+
+The procedure is pretty simple actually.
+The only catch is to figure out the mapping between the pin in the
+mux, the gpio and the IRQ subsystems. For this particular setup the HW
+pin GPIO1_6 is known as gpmc_ad6 in the mux, also known as gpio38 in
+GPIO and has IRQ 198 assigned.
+
+Thanks & regards,
+Jean
+
+>
+> Thanks,
+> g.
+>
+> --
+> Grant Likely, B.Sc, P.Eng.
+> Secret Lab Technologies,Ltd.
