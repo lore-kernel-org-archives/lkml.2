@@ -1,87 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754671Ab2DJJ3u (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Apr 2012 05:29:50 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:59179 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753538Ab2DJJ3t (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Apr 2012 05:29:49 -0400
-Date: Tue, 10 Apr 2012 10:29:44 +0100
-From: Mel Gorman <mgorman@suse.de>
-To: Ying Han <yinghan@google.com>
-Cc: Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Rik van Riel <riel@redhat.com>,
-        Konstantin Khlebnikov <khlebnikov@openvz.org>,
-        Hugh Dickins <hughd@google.com>
-Subject: Re: [PATCH 1/2] mm: vmscan: Remove lumpy reclaim
-Message-ID: <20120410092944.GC3789@suse.de>
-References: <1332950783-31662-1-git-send-email-mgorman@suse.de>
- <1332950783-31662-2-git-send-email-mgorman@suse.de>
- <CALWz4iymXkJ-88u9Aegc2DjwO2vZp3xVuw_5qTRW2KgPP8ti=g@mail.gmail.com>
- <20120410082454.GA3789@suse.de>
+	id S1754517Ab2DJJaK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Apr 2012 05:30:10 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:38570 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754185Ab2DJJaI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Apr 2012 05:30:08 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20120410082454.GA3789@suse.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Date: Tue, 10 Apr 2012 13:30:07 +0400
+Message-ID: <CACf55T4rmUn3XvEv5vFpAk2ZVX_5NMp5MucM9mOa4G1aL+5bPw@mail.gmail.com>
+Subject: kpagecount/kpageflags possible implementation problem
+From: Dmitry Smirnov <divis1969@gmail.com>
+To: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 10, 2012 at 09:24:54AM +0100, Mel Gorman wrote:
-> On Fri, Apr 06, 2012 at 04:52:09PM -0700, Ying Han wrote:
-> > On Wed, Mar 28, 2012 at 9:06 AM, Mel Gorman <mgorman@suse.de> wrote:
-> > > Lumpy reclaim had a purpose but in the mind of some, it was to kick
-> > > the system so hard it trashed. For others the purpose was to complicate
-> > > vmscan.c. Over time it was giving softer shoes and a nicer attitude but
-> > > memory compaction needs to step up and replace it so this patch sends
-> > > lumpy reclaim to the farm.
-> > >
-> > > Here are the important notes related to the patch.
-> > >
-> > > 1. The tracepoint format changes for isolating LRU pages.
-> > >
-> > > 2. This patch stops reclaim/compaction entering sync reclaim as this
-> > >   was only intended for lumpy reclaim and an oversight. Page migration
-> > >   has its own logic for stalling on writeback pages if necessary and
-> > >   memory compaction is already using it. This is a behaviour change.
-> > >
-> > > 3. RECLAIM_MODE_SYNC no longer exists. pageout() does not stall
-> > >   on PageWriteback with CONFIG_COMPACTION has been this way for a while.
-> > >   I am calling it out in case this is a surpise to people.
-> > 
-> > Mel,
-> > 
-> > Can you point me the commit making that change? I am looking at
-> > v3.4-rc1 where set_reclaim_mode() still set RECLAIM_MODE_SYNC for
-> > COMPACTION_BUILD.
-> > 
-> 
-> You're right.
-> 
-> There is only one call site that passes sync==true for set_reclaim_mode() in
-> vmscan.c and that is only if should_reclaim_stall() returns true. It had the
-> comment "Only stall on lumpy reclaim" but the comment is not accurate
-> and that mislead me.
-> 
-> Thanks, I'll revisit the patch.
-> 
+Hi,
 
-Just to be clear, I think the patch is right in that stalling on page
-writeback was intended just for lumpy reclaim. I've split out the patch
-that stops reclaim/compaction entering sync reclaim but the end result
-of the series is the same. Unfortunately we do not have tracing to record
-how often reclaim waited on writeback during compaction so my historical
-data does not indicate how often it happened. However, it may partially
-explain occasionaly complaints about interactivity during heavy writeback
-when THP is enabled (the bulk of the stalls were due to something else but
-on rare occasions disabling THP was reported to make a small unquantifable
-difference). I'll enable ftrace to record how often mm_vmscan_writepage()
-used RECLAIM_MODE_SYNC during tests for this series and include that
-information in the changelog.
+I'm trying to work with /proc/kpagecount and /proc/kpageflags to
+figure out what is causing fragmentation of the  kernel memory.
 
--- 
-Mel Gorman
-SUSE Labs
+I see some problems with these files. For example, the length of the
+files is 2617344 (i.e. 327168 pages).
+But when I try to map the pages of the process (/proc/PID/pagemap), I
+see that process can have a pfn greater than 327168.
+
+On my mind this is due to the memory model used in my target. It is
+"sparse", and I can see that there is a Normal zone only which starts
+at pfn 512 and spannes 327168 pages (see /proc/zoneinfo at the end).
+But fs/proc/page.c honors only max_pfn, which is exaclty 327168 and
+which limits the length of the kpagemap and kpagekount files.
+
+Also, I suppose that pages 0-512 should be treated as non-existent and
+should be reported with KPF_NOPAGE, but in fact, they are reported
+with some valid flags (KPF_MMAP). I also suspect that some other pages
+are not reported correctly too: the target has 114436 present pages
+(in 3 blocks: 60MB 141MB 256MB) but I can count 130560 "valid" pages
+(i.e. which are not marked with KPF_NOPAGE).
+
+I would like to fix this, but have small experience with kernel memory
+implementation. So, any suggestions are welcome.
+
+Target is running 2.6.32 kernel (thought, I see that latest master'
+page.c does not change a lot).
+
+Node 0, zone   Normal
+  pages free     2140
+        min      676
+        low      845
+        high     1014
+        scanned  0
+        spanned  327168
+        present  114436
+    nr_free_pages 2140
+    nr_inactive_anon 15028
+    nr_active_anon 32194
+    nr_inactive_file 8551
+    nr_active_file 14977
+    nr_unevictable 4655
+    nr_mlock     4493
+    nr_anon_pages 47074
+    nr_mapped    22067
+    nr_file_pages 28338
+    nr_dirty     0
+    nr_writeback 0
+    nr_slab_reclaimable 1306
+    nr_slab_unreclaimable 2405
+    nr_page_table_pages 2003
+    nr_kernel_stack 708
+    nr_unstable  0
+    nr_bounce    0
+    nr_vmscan_write 0
+    nr_writeback_temp 0
+    nr_isolated_anon 0
+    nr_isolated_file 0
+    nr_shmem     4647
+        protection: (0, 0)
+  pagesets
+    cpu: 0
+              count: 131
+              high:  186
+              batch: 31
+  all_unreclaimable: 0
+  prev_priority:     12
+  start_pfn:         512
+  inactive_ratio:    1
+
+WBR,
+Dmitry
