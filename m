@@ -1,60 +1,153 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932078Ab2DJPVI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Apr 2012 11:21:08 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:50344 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754181Ab2DJPVF convert rfc822-to-8bit (ORCPT
+	id S1759312Ab2DJPU4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Apr 2012 11:20:56 -0400
+Received: from s15943758.onlinehome-server.info ([217.160.130.188]:38983 "EHLO
+	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759148Ab2DJPUz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Apr 2012 11:21:05 -0400
-MIME-Version: 1.0
-In-Reply-To: <1334066771-10458-1-git-send-email-svenkatr@ti.com>
-References: <1334066771-10458-1-git-send-email-svenkatr@ti.com>
-From: Santosh Y <santoshsy@gmail.com>
-Date: Tue, 10 Apr 2012 20:50:42 +0530
-Message-ID: <CALMYJDtQ8Dbwhyk0WKe7_Xk_40+3_c11U6bMJ-Li4XhUp7=-Pw@mail.gmail.com>
-Subject: Re: [PATCH] scsi/ufs: use module_pci_driver
-To: Venkatraman S <svenkatr@ti.com>
-Cc: akpm@linux-foundation.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Tue, 10 Apr 2012 11:20:55 -0400
+From: Borislav Petkov <bp@amd64.org>
+To: Ingo Molnar <mingo@kernel.org>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Michal Marek <mmarek@suse.cz>, Sam Ravnborg <sam@ravnborg.org>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Borislav Petkov <borislav.petkov@amd.com>
+Subject: [PATCH v4 0/4] tools: Add a toplevel Makefile
+Date: Tue, 10 Apr 2012 17:20:36 +0200
+Message-Id: <1334071240-28692-1-git-send-email-bp@amd64.org>
+X-Mailer: git-send-email 1.7.9.3.362.g71319
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->  drivers/scsi/ufs/ufshcd.c |   19 +------------------
->  1 file changed, 1 insertion(+), 18 deletions(-)
->
-> diff --git a/drivers/scsi/ufs/ufshcd.c b/drivers/scsi/ufs/ufshcd.c
-> index cd59f6f..5ab9b3f 100644
-> --- a/drivers/scsi/ufs/ufshcd.c
-> +++ b/drivers/scsi/ufs/ufshcd.c
-> @@ -1952,24 +1952,7 @@ static struct pci_driver ufshcd_pci_driver = {
->  #endif
->  };
->
-> -/**
-> - * ufshcd_init - Driver registration routine
-> - */
-> -static int __init ufshcd_init(void)
-> -{
-> -       return pci_register_driver(&ufshcd_pci_driver);
-> -}
-> -module_init(ufshcd_init);
-> -
-> -/**
-> - * ufshcd_exit - Driver exit clean-up routine
-> - */
-> -static void __exit ufshcd_exit(void)
-> -{
-> -       pci_unregister_driver(&ufshcd_pci_driver);
-> -}
-> -module_exit(ufshcd_exit);
-> -
-> +module_pci_driver(ufshcd_pci_driver);
+From: Borislav Petkov <borislav.petkov@amd.com>
+
+Hi all,
+
+this is basically a new rediff of the patchset against 3.4-rc2 along
+with integrating all comments/reviews I got from the last iteration. If
+there are none this time, I would like to suggest merging this, maybe
+through -tip or Arnaldo's perf tree.
+
+State of the affairs on how to use it are in the 4/4 patch, adding them
+here too:
+
+Now you can do
+
+$ make tools/<toolname>
+
+from the toplevel kernel directory and have the respective tool built.
+
+If you want to build and install it, do
+
+$ make tools/<toolname>_install
+
+$ make tools/<toolname>_clean
+
+should clean the respective tool directories.
+
+If you want to clean all in tools, simply do
+
+$ make tools/clean
+
+Also, if you want to get what the possible targets are, simply calling
+
+$ make tools/
+
+should give you the short help.
+
+$ make tools/install
+
+installs all tools, of course. Doh.
+
+Thanks.
+
+Changelog:
+==========
+
+* v3:
+
+Yet another version of the toplevel Makefile integration of tools/.
+This round gives you the ability to build the tools from the toplevel
+Makefile (explanation below can be found also in patch 4/4's commit
+message):
+
+"Now you can do
+
+$ make tools/<toolname>
+
+from the toplevel kernel directory and have the respective tool built.
+
+If you want to build and install it, do
+
+$ make tools/<toolname> tinstall
+
+The install target is called "tinstall" so that there's no conflict with
+the main kernel install target and should mean "tool install".
+
+$ make tools/ <toolname>_clean
+
+should clean the respective tool directories.
+
+If you want to clean all in tools, simply do
+
+$ make  tools/ cleanall
+
+Also, if you want to get what the possible targets are, simply calling
+
+$ make tools/
+
+should give you the short help."
+
+Also included are all suggestions from the last time.
+
+Thanks.
+
+* v2:
+
+here's a refreshed version from yesterday incorporating all comments and
+suggestions along with a third patch that adds a 'help' target as the
+default one causing the following below. Btw, Arnaldo, could you please
+pick those up if there are no complaints since the first patch touches
+perf and I don't have a clear idea who else to send it to anyway :).
+
+Thanks.
+
+$ make
+Possible targets:
+
+  cpupower   - a tool for all things x86 CPU power
+  firewire   - the userspace part of nosy, an IEEE-1394 traffic sniffer
+  lguest     - a minimal 32-bit x86 hypervisor
+  perf       - Linux performance measurements tool
+  slub       - slabs reporting tool
+  turbostat  - Intel CPU idle stats and freq reporting tool
+  usb        - USB testing tools
+  virtio     - vhost test module
+  x86_energy_perf_policy - Intel energy policy tool
+
+Cleaning targets:
+
+  all of the above with the "_clean" string appended cleans
+    the respective build directory.
+  clean: a summary clean target to clean _all_ folders
 
 
-Acked-by: Santosh Y <santoshsy@gmail.com>
+* v1:
 
--- 
-~Santosh
+this is a refresh and carve-out of an old patchset. It adds a toplevel
+Makefile to tools/ so that one can build the tool of her/his liking by
+simply doing
+
+$ cd tools/
+$ make <toolname>
+
+By default, we build perf. There's also a scripts/Makefile.lib now which
+should contain all make-related generic stuff which can be used by all
+tools' build process after including this file.
+
+</Changelog>
+
+Any comments/suggestions are welcome,
+thanks.
