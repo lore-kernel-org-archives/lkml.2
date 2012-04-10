@@ -1,87 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754541Ab2DJQNb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Apr 2012 12:13:31 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:52979 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752922Ab2DJQN3 (ORCPT
+	id S1754591Ab2DJQPf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Apr 2012 12:15:35 -0400
+Received: from mail-pz0-f52.google.com ([209.85.210.52]:55835 "EHLO
+	mail-pz0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753138Ab2DJQPe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Apr 2012 12:13:29 -0400
-MIME-Version: 1.0
-In-Reply-To: <20120410151042.GH21801@redhat.com>
-References: <20120410133708.GE21801@redhat.com> <4F843C17.5050004@kernel.dk>
- <20120410142148.GG21801@redhat.com> <20120410151042.GH21801@redhat.com>
-From: Mike Snitzer <snitzer@redhat.com>
-Date: Tue, 10 Apr 2012 12:13:07 -0400
-X-Google-Sender-Auth: foTUoQ7HVlr2RFEKTjSqaIZgpQc
-Message-ID: <CAMM=eLf5qi_PL8vFh_b5V_nq_mxg0CN0asE8E9XYJn48J4mdPA@mail.gmail.com>
-Subject: Re: [RFC PATCH] block: Change default IO scheduler to deadline except SATA
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: Jens Axboe <axboe@kernel.dk>,
-        linux kernel mailing list <linux-kernel@vger.kernel.org>,
-        martin.petersen@oracle.com
-Content-Type: text/plain; charset=ISO-8859-1
+	Tue, 10 Apr 2012 12:15:34 -0400
+From: David Ahern <dsahern@gmail.com>
+To: acme@ghostprotocols.net, linux-kernel@vger.kernel.org
+Cc: mingo@elte.hu, peterz@infradead.org, eranian@google.com,
+        namhyung.kim@lge.com, David Ahern <dsahern@gmail.com>
+Subject: [PATCH] perf report: fix crash showing warning related to kernel maps
+Date: Tue, 10 Apr 2012 10:15:26 -0600
+Message-Id: <1334074526-67905-1-git-send-email-dsahern@gmail.com>
+X-Mailer: git-send-email 1.7.5.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 10, 2012 at 11:10 AM, Vivek Goyal <vgoyal@redhat.com> wrote:
->
-> On Tue, Apr 10, 2012 at 10:21:48AM -0400, Vivek Goyal wrote:
-> > On Tue, Apr 10, 2012 at 03:56:39PM +0200, Jens Axboe wrote:
+While testing https://lkml.org/lkml/2012/4/10/123 I hit this crash:
 
-> > > I think it'd be a lot more sane to just use CFQ on rotational single
-> > > devices, and default to deadline on raid or non-rotational devices.
-> > > This
-> > > still isn't perfect, since less worthy SSDs still benefit from the
-> > > read/write separation, and some multi device configs will be faster as
-> > > well. But it's better.
-> >
-> > Hi Jens,
-> >
-> > Thanks. Taking a decision based on rotational flag makes sense. I am
-> > not sure that does one get the information that a block device is a
-> > single
-> > device or not. Especially with HBAs, SCSI Luns over Fiber, iSCSI Luns
-> > etc.
-> > I have few Scsi Luns exported to me backed by a storage array.
-> > Everything
-> > runs CFQ by default. And though disks in the array are rotational, they
-> > are RAIDed and AFAIK, this information is not available to driver.
-> >
-> > I am not sure if there is an easy way to get similar info for dm/md
-> > devices.
->
-> Thinking more about it, even if we have a way to define a request queue
-> flag for multi devices (QUEUE_FLAG_MULTI_DEVICE), when can block layer
-> take a decision to change the IO scheduler. At queue alloc and init time
-> driver might not have even called add_disk() or set all the
-> flags/properties of the queue. So doing it at queue alloc/init time might
-> not be best.
->
-> And later we get control only when actual IO happens on the queue and
-> doing one more check or trying to change elevator in IO path is not a
-> good idea.
->
-> May be when driver tries to set ROTATIONAL or MULTI_DEVICE flag, we can
-> check and change elevator then.
->
-> So we are back to the question of can scsi devices find out if a Lun
-> is backed by single disk or multiple disks.
+(gdb) bt
+ 0  0x000000000042000f in __cmd_report (rep=0x7fff80cec580) at builtin-report.c:380
+ 1  cmd_report (argc=0, argv=<optimized out>, prefix=<optimized out>) at builtin-report.c:759
+ 2  0x0000000000414513 in run_builtin (p=0x7724a8, argc=3, argv=0x7fff80ceca70) at perf.c:273
+ 3  0x0000000000413d41 in handle_internal_command (argv=0x7fff80ceca70, argc=3) at perf.c:345
+ 4  run_argv (argv=0x7fff80cec880, argcp=0x7fff80cec88c) at perf.c:389
+ 5  main (argc=3, argv=0x7fff80ceca70) at perf.c:487
 
-I'm not aware of any discrete attribute (comparable to 'rotational'
-flag) that SCSI devices will advertise that indicates "I'm a raid
-array".
+kernel_map can be NULL, so need to handle it while dumping a warning
+to user.
 
-That said, we can have a _very_ good hint that a SCSI device is a raid array if:
+Signed-off-by: David Ahern <dsahern@gmail.com>
+---
+ tools/perf/builtin-report.c |   17 ++++++++++++-----
+ 1 files changed, 12 insertions(+), 5 deletions(-)
 
-1) optimal_io_size is not zero, minimum_io_size is not equal to
-optimal_io_size, and optimal_io_size is a multiple of minimum_io_size
+diff --git a/tools/perf/builtin-report.c b/tools/perf/builtin-report.c
+index 2e31743..002c644 100644
+--- a/tools/perf/builtin-report.c
++++ b/tools/perf/builtin-report.c
+@@ -374,16 +374,23 @@ static int __cmd_report(struct perf_report *rep)
+ 	    (kernel_map->dso->hit &&
+ 	     (kernel_kmap->ref_reloc_sym == NULL ||
+ 	      kernel_kmap->ref_reloc_sym->addr == 0))) {
+-		const struct dso *kdso = kernel_map->dso;
++		const char *desc = 
++		    "As no suitable kallsyms nor vmlinux was found, kernel samples\n"
++		    "can't be resolved.";
++
++		if (kernel_map) {
++			const struct dso *kdso = kernel_map->dso;
++			if (RB_EMPTY_ROOT(&kdso->symbols[MAP__FUNCTION])) {
++				desc = "If some relocation was applied (e.g. "
++				       "kexec) symbols may be misresolved.";
++			}
++		}
+ 
+ 		ui__warning(
+ "Kernel address maps (/proc/{kallsyms,modules}) were restricted.\n\n"
+ "Check /proc/sys/kernel/kptr_restrict before running 'perf record'.\n\n%s\n\n"
+ "Samples in kernel modules can't be resolved as well.\n\n",
+-			    RB_EMPTY_ROOT(&kdso->symbols[MAP__FUNCTION]) ?
+-"As no suitable kallsyms nor vmlinux was found, kernel samples\n"
+-"can't be resolved." :
+-"If some relocation was applied (e.g. kexec) symbols may be misresolved.");
++		desc);
+ 	}
+ 
+ 	if (dump_trace) {
+-- 
+1.7.5.4
 
-2) WCE=0 (higher-end arrays with a writeback cache)
-
-Determining 1 could be enough, we should probably ignore 2 as it isn't
-an absolute indication that a device is composed of multiple devices
-(especially not if considered independently of 1).
-
-Mike
