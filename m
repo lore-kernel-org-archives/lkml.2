@@ -1,47 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756481Ab2DJRov (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Apr 2012 13:44:51 -0400
-Received: from mail-wi0-f178.google.com ([209.85.212.178]:52589 "EHLO
-	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755503Ab2DJRou (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Apr 2012 13:44:50 -0400
-Message-ID: <4F84718C.4010706@gmail.com>
-Date: Tue, 10 Apr 2012 19:44:44 +0200
-From: Xose Vazquez Perez <xose.vazquez@gmail.com>
-MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org
-Subject: Re: [RFC PATCH] block: Change default IO scheduler to deadline except
- SATA
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1756538Ab2DJRus (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Apr 2012 13:50:48 -0400
+Received: from mga09.intel.com ([134.134.136.24]:1025 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754455Ab2DJRun (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Apr 2012 13:50:43 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
+   d="scan'208";a="127404013"
+User-Agent: Microsoft-MacOutlook/14.14.0.111121
+Date: Tue, 10 Apr 2012 10:49:41 -0700
+Subject: Re: [PATCH v17 15/15] Documentation: prctl/seccomp_filter
+From: Ryan Ware <ware@linux.intel.com>
+To: Will Drewry <wad@chromium.org>, Markus Gutschke <markus@chromium.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+CC: <linux-kernel@vger.kernel.org>, <linux-security-module@vger.kernel.org>,
+        <linux-arch@vger.kernel.org>, <linux-doc@vger.kernel.org>,
+        <kernel-hardening@lists.openwall.com>, <netdev@vger.kernel.org>,
+        <x86@kernel.org>, <arnd@arndb.de>, <davem@davemloft.net>,
+        <hpa@zytor.com>, <mingo@redhat.com>, <oleg@redhat.com>,
+        <peterz@infradead.org>, <rdunlap@xenotime.net>,
+        <mcgrathr@chromium.org>, <tglx@linutronix.de>, <luto@mit.edu>,
+        <eparis@redhat.com>, <serge.hallyn@canonical.com>, <djm@mindrot.org>,
+        <scarybeasts@gmail.com>, <indan@nul.nu>, <pmoore@redhat.com>,
+        <corbet@lwn.net>, <eric.dumazet@gmail.com>,
+        <coreyb@linux.vnet.ibm.com>, <keescook@chromium.org>,
+        <jmorris@namei.org>
+Message-ID: <CBA9C094.3CC91%ware@linux.intel.com>
+Thread-Topic: [PATCH v17 15/15] Documentation: prctl/seccomp_filter
+In-Reply-To: <CABqD9hYQPDmNadkPw9O6fRXHpWDxh=MVPf7VB_3fz_X72dNz4w@mail.gmail.com>
+Mime-version: 1.0
+Content-type: text/plain;
+	charset="US-ASCII"
+Content-transfer-encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Vivek Goyal wrote:
 
- > I am wondering if CFQ as default scheduler is still the right choice. CFQ
- > generally works well on slow rotational media (SATA?). But often
- > underperforms on faster storage (storage arrays, PCIE SSDs, virtualized
- > disk in linux guests etc). People often put logic in user space to tune their
- > systems and change IO scheduler to deadline to get better performance on
- > faster storage.
- >
- > Though there is not one good answer for all kind of storage and for all
- > kind of workloads, I am wondering if we can provide a better default and
- > that is change default IO scheduler to "deadline" except SATA.
- >
- > One can argue that some SAS disks can be slow too and benefit from CFQ. Yes,
- > but default IO scheduler choice is not perfect anyway. It just tries to
- > cater to a wide variety of use cases out of the box.
- >
- > So I am throwing this patch out see if it flies. Personally, I think it
- > might turn out to be a more reasonable default.
 
-done time ago for dasd devices.
+On 4/9/12 3:47 PM, "Will Drewry" <wad@chromium.org> wrote:
 
-chuchi:~/curre/linux-2.6 $ grep -ri deadline drivers/s390/block/*
-drivers/s390/block/dasd.c:      rc = elevator_init(block->request_queue, "deadline");
-drivers/s390/block/Kconfig:     select IOSCHED_DEADLINE
+>On Mon, Apr 9, 2012 at 3:58 PM, Ryan Ware <ware@linux.intel.com> wrote:
+>>
+>> On 4/9/12 1:47 PM, "Markus Gutschke" <markus@chromium.org> wrote:
+>>
+>>>No matter what you do, please leave the samples accessible somewhere.
+>>>They proved incredibly useful in figuring out how the API works. I am
+>>>sure, other developers are going to appreciate them as well.
+>>>
+>>>Alternatively, if you don't want to include the samples with the
+>>>kernel sources, figure out how you can include a sample in the
+>>>official manual page for prctl().
+>>>
+>>
+>> I second this!  They are extremely useful.
+>>
+>> Ryan
+>
+>In that case, would it make sense to put up a separate tools/testing
+>patch and leave samples where they lie? (I'd _love_ to keep this patch
+>series from acquiring another 1000 lines, but either way works :)
+>
+>My current tester and harness lives here:
+>  https://github.com/redpig/seccomp/blob/master/tests/
+>and the licensing can be sorted out prior to a patch mail.
+
+I have absolutely no problems with that solution.  Availability is the
+important thing.
+
+Ryan
+
+
