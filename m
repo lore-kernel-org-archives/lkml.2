@@ -1,60 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756167Ab2DJKE1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Apr 2012 06:04:27 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:56006 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751294Ab2DJKEZ (ORCPT
+	id S1755958Ab2DJKFj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Apr 2012 06:05:39 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:36364 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754857Ab2DJKFi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Apr 2012 06:04:25 -0400
-Subject: Re: [PATCH] net: orphan queued skbs if device tx can stall
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: "Michael S. Tsirkin" <mst@redhat.com>
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        "David S. Miller" <davem@davemloft.net>,
-        Jamal Hadi Salim <hadi@cyberus.ca>,
-        Stephen Hemminger <shemminger@vyatta.com>,
-        Jason Wang <jasowang@redhat.com>, Neil Horman <nhorman@tuxdriver.com>,
-        Jiri Pirko <jpirko@redhat.com>,
-        Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
-        =?UTF-8?Q?Micha=C5=82_Miros=C5=82aw?= <mirq-linux@rere.qmqm.pl>,
-        Ben Hutchings <bhutchings@solarflare.com>,
-        Herbert Xu <herbert@gondor.hengli.com.au>
-In-Reply-To: <20120410093140.GA27651@redhat.com>
-References: <20120408171323.GA16012@redhat.com>
-	 <1334044558.3126.5.camel@edumazet-glaptop>
-	 <20120410084151.GA27193@redhat.com>
-	 <1334048100.3126.21.camel@edumazet-glaptop>
-	 <20120410093140.GA27651@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 10 Apr 2012 12:04:19 +0200
-Message-ID: <1334052259.3126.68.camel@edumazet-glaptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	Tue, 10 Apr 2012 06:05:38 -0400
+Date: Tue, 10 Apr 2012 11:05:35 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Axel Lin <axel.lin@gmail.com>
+Cc: linux-kernel@vger.kernel.org, Jonghwan Choi <jhbird.choi@gmail.com>,
+        Haojian Zhuang <haojian.zhuang@marvell.com>,
+        Liam Girdwood <lrg@ti.com>
+Subject: Re: [PATCH 1/3] regulator: max8649: Use devm_* APIs
+Message-ID: <20120410100535.GD7499@opensource.wolfsonmicro.com>
+References: <1333812508.6390.1.camel@phoenix>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="u65IjBhB3TIa72Vp"
+Content-Disposition: inline
+In-Reply-To: <1333812508.6390.1.camel@phoenix>
+X-Cookie: You dialed 5483.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-04-10 at 12:31 +0300, Michael S. Tsirkin wrote:
 
-> True. Still this is the only interface we have for controlling
-> the internal queue length so it seems safe to assume someone
-> is using it for this purpose.
-> 
+--u65IjBhB3TIa72Vp
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-So to workaround a problem in tun, you want to hack net/core/dev.c :(
+On Sat, Apr 07, 2012 at 11:28:28PM +0800, Axel Lin wrote:
+> Signed-off-by: Axel Lin <axel.lin@gmail.com>
 
-Packets in qdisc should not be orphaned.
+Applied all, thanks.
 
-If you think about it, why do we attach skb to socket in the first
-place ?
+--u65IjBhB3TIa72Vp
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-If its not needed for tun, why should it be needed for other devices ?
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
 
-If TUN has a problem being stopped forever, maybe it should take
-appropriate action to flush all packets in qdisc queue after a while, as
-this makes no sense to delay packets forever.
+iQIcBAEBAgAGBQJPhAW2AAoJEBus8iNuMP3dbsUP/iFabN72g+D3+AQaPTFxhrdV
+i9MYmNvJ0pzXMkMQepRqNH3+JbGoj9xhNd4jGXxNtObUSBTr3i3qIXGm3Hil+8/6
+3mDyGq2nViOPZaLw7pOCx6zsSpPBF3Bbx4ZR7Tfd9DH4xkCJtAAAI7J+7HweD9A1
+2j441OUC0YqOCHcXTkaXhyvTTiO3TSHedbkgX8IQKcAmPtrlGXdKp876lu21NDN1
+aPexrP/aMlvlW/FE5je4XRP1C9e4PNgfEhG2C2rnfIm7hN8BH+FbfdTMczMU/ofF
+OU2eLpVdoR3vx3JhYCRbCxIRHlFvrIac8Izk6qRfIktKZEeSicrpdC1hpPO520CD
+5IYxQSihOd5ofFTH9PBU2+PukxNXcaR76DaW8bXLw/P5MX+Z7Era1wpXwXfKBhHh
+JjufOXYtxtObgu5/+izAHRwAFP76sKQsfCEs8Jzr/tq1eTI9JmmEzwxEXeSpnv5Y
+c6JXgrsKmiRyPBFowVI/WassUhUP5cOINMXlJUP702Cvtib2wo4Q4MPOtaxrjLB7
+Q4I5jNek8LeFqBkZ51UgcmWGdJ1hNZxuxArT56pP8D0kkMfiQL3e7td/EqUn+mAR
+7ujXr2KPhss/jdQusmqpevwgB68kQ6W9enNYb71sWbvnjGMXPna5r12yxNG3tbCr
+LQy1PmgRjFdciNpIe/DG
+=8HES
+-----END PGP SIGNATURE-----
 
-
-
+--u65IjBhB3TIa72Vp--
