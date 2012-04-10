@@ -1,87 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759358Ab2DJPQf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Apr 2012 11:16:35 -0400
-Received: from mail-vb0-f46.google.com ([209.85.212.46]:45525 "EHLO
-	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759291Ab2DJPQW convert rfc822-to-8bit (ORCPT
+	id S1759371Ab2DJPQo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Apr 2012 11:16:44 -0400
+Received: from mail-pz0-f52.google.com ([209.85.210.52]:32809 "EHLO
+	mail-pz0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758931Ab2DJPQm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Apr 2012 11:16:22 -0400
+	Tue, 10 Apr 2012 11:16:42 -0400
+Message-ID: <4F844ED5.6080608@gmail.com>
+Date: Tue, 10 Apr 2012 09:16:37 -0600
+From: David Ahern <dsahern@gmail.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:11.0) Gecko/20120327 Thunderbird/11.0.1
 MIME-Version: 1.0
-In-Reply-To: <CAJd=RBD6Sb4zmUkMTaT12cgwFLAQYmh6HuK1hLMa_Dda6FHBLQ@mail.gmail.com>
-References: <1334000524-23972-1-git-send-email-yinghan@google.com>
-	<CAJd=RBD6Sb4zmUkMTaT12cgwFLAQYmh6HuK1hLMa_Dda6FHBLQ@mail.gmail.com>
-Date: Tue, 10 Apr 2012 23:16:19 +0800
-Message-ID: <CAJd=RBAdRKaY1t_=ZxwW+u+1RmSJm7V=h8ywcxz5VJVe75O-PA@mail.gmail.com>
-Subject: Re: [PATCH] Revert "mm: vmscan: fix misused nr_reclaimed in shrink_mem_cgroup_zone()"
-From: Hillf Danton <dhillf@gmail.com>
-To: Ying Han <yinghan@google.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Rik van Riel <riel@redhat.com>,
-        Hugh Dickins <hughd@google.com>, linux-mm@kvack.org,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+To: "Nikunj A. Dadhania" <nikunj@linux.vnet.ibm.com>, acme@ghostprotocols.net
+CC: mingo@redhat.com, a.p.zijlstra@chello.nl, paulus@samba.org,
+        fweisbec@gmail.com, eranian@google.com, linux-kernel@vger.kernel.org
+Subject: Re: [BUG PATCH] perf: kvm - finding struct machine fails for PERF_RECORD_MMAP
+References: <20120409081835.10576.22018.stgit@abhimanyu.in.ibm.com>
+In-Reply-To: <20120409081835.10576.22018.stgit@abhimanyu.in.ibm.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-add lkml
-On Tue, Apr 10, 2012 at 11:00 PM, Hillf Danton <dhillf@gmail.com> wrote:
-> On Tue, Apr 10, 2012 at 3:42 AM, Ying Han <yinghan@google.com> wrote:
->> This reverts commit c38446cc65e1f2b3eb8630c53943b94c4f65f670.
->>
->> Before the commit, the code makes senses to me but not after the commit. The
->> "nr_reclaimed" is the number of pages reclaimed by scanning through the memcg's
->> lru lists. The "nr_to_reclaim" is the target value for the whole function. For
->> example, we like to early break the reclaim if reclaimed 32 pages under direct
->> reclaim (not DEF_PRIORITY).
->>
->> After the reverted commit, the target "nr_to_reclaim" is decremented each time
->> by "nr_reclaimed" but we still use it to compare the "nr_reclaimed". It just
->> doesn't make sense to me...
->>
-> I downloaded mm/vmscan.c from the next tree a couple minutes ago, and
-> see
->                .nr_to_reclaim = SWAP_CLUSTER_MAX,
-> and
->        nr_reclaimed = do_try_to_free_pages(zonelist, &sc, &shrink);
+On 4/9/12 2:22 AM, Nikunj A. Dadhania wrote:
+> From: Nikunj A. Dadhania<nikunj@linux.vnet.ibm.com>
 >
-> in try_to_free_pages().
+> Running 'perf kvm --host --guest --guestmount /tmp/guestmount record -a -g -- sleep 2'
 >
-> I also see
->                total_scanned += sc->nr_scanned;
->                if (sc->nr_reclaimed >= sc->nr_to_reclaim)
->                        goto out;
+> Was resulting in a segfault. For event type PERF_RECORD_MMAP,
+> event->ip.pid is being used in perf_session__find_machine_for_cpumode,
+> which is not correct.
 >
-> in do_try_to_free_pages(),
+> event->ip.pid happens to be 0 in this case and results in returning a
+> NULL machine object. Finally, access to self->pid in
+> machine__mmap_name, results in a segfault later.
 >
-> then would you please say a few words about the sense
-> of the check of nr_to_reclaim?
+> For PERF_RECORD_MMAP type, pass event->mmap.pid.
 >
+> Signed-off-by: Nikunj A. Dadhania<nikunj@linux.vnet.ibm.com>
+
+Reviewed-by: David Ahern <dsahern@gmail.com>
+Tested-by: David Ahern <dsahern@gmail.com>
+
+David
+
+> ---
 >
->> Signed-off-by: Ying Han <yinghan@google.com>
->> ---
->>  mm/vmscan.c |    7 +------
->>  1 files changed, 1 insertions(+), 6 deletions(-)
->>
->> diff --git a/mm/vmscan.c b/mm/vmscan.c
->> index 33c332b..1a51868 100644
->> --- a/mm/vmscan.c
->> +++ b/mm/vmscan.c
->> @@ -2107,12 +2107,7 @@ restart:
->>                 * with multiple processes reclaiming pages, the total
->>                 * freeing target can get unreasonably large.
->>                 */
->> -               if (nr_reclaimed >= nr_to_reclaim)
->> -                       nr_to_reclaim = 0;
->> -               else
->> -                       nr_to_reclaim -= nr_reclaimed;
->> -
->> -               if (!nr_to_reclaim && priority < DEF_PRIORITY)
->> +               if (nr_reclaimed >= nr_to_reclaim && priority < DEF_PRIORITY)
->>                        break;
->>        }
->>        blk_finish_plug(&plug);
->> --
->> 1.7.7.3
->>
+>   tools/perf/util/session.c |   12 ++++++++++--
+>   1 files changed, 10 insertions(+), 2 deletions(-)
+>
+> diff --git a/tools/perf/util/session.c b/tools/perf/util/session.c
+> index 9412e3b..00923cd 100644
+> --- a/tools/perf/util/session.c
+> +++ b/tools/perf/util/session.c
+> @@ -826,8 +826,16 @@ static struct machine *
+>   {
+>   	const u8 cpumode = event->header.misc&  PERF_RECORD_MISC_CPUMODE_MASK;
+>
+> -	if (cpumode == PERF_RECORD_MISC_GUEST_KERNEL&&  perf_guest)
+> -		return perf_session__find_machine(session, event->ip.pid);
+> +	if (cpumode == PERF_RECORD_MISC_GUEST_KERNEL&&  perf_guest) {
+> +		u32 pid;
+> +
+> +		if (event->header.type == PERF_RECORD_MMAP)
+> +			pid = event->mmap.pid;
+> +		else
+> +			pid = event->ip.pid;
+> +
+> +		return perf_session__find_machine(session, pid);
+> +	}
+>
+>   	return perf_session__find_host_machine(session);
+>   }
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+
