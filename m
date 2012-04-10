@@ -1,123 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752864Ab2DJLXq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Apr 2012 07:23:46 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:38554 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750716Ab2DJLXn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Apr 2012 07:23:43 -0400
-Message-ID: <4F8417DB.3040502@mvista.com>
-Date: Tue, 10 Apr 2012 15:22:03 +0400
-From: Sergei Shtylyov <sshtylyov@mvista.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:11.0) Gecko/20120327 Thunderbird/11.0.1
+	id S1753616Ab2DJLZM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Apr 2012 07:25:12 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:38795 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750773Ab2DJLZK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Apr 2012 07:25:10 -0400
+Date: Tue, 10 Apr 2012 14:25:00 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        "David S. Miller" <davem@davemloft.net>,
+        Jamal Hadi Salim <hadi@cyberus.ca>,
+        Stephen Hemminger <shemminger@vyatta.com>,
+        Jason Wang <jasowang@redhat.com>, Neil Horman <nhorman@tuxdriver.com>,
+        Jiri Pirko <jpirko@redhat.com>,
+        Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
+        =?utf-8?B?TWljaGHFgiBNaXJvc8WCYXc=?= <mirq-linux@rere.qmqm.pl>,
+        Ben Hutchings <bhutchings@solarflare.com>,
+        Herbert Xu <herbert@gondor.hengli.com.au>
+Subject: Re: [PATCH] net: orphan queued skbs if device tx can stall
+Message-ID: <20120410112459.GA28825@redhat.com>
+References: <20120408171323.GA16012@redhat.com>
+ <1334044558.3126.5.camel@edumazet-glaptop>
+ <20120410084151.GA27193@redhat.com>
+ <1334048100.3126.21.camel@edumazet-glaptop>
+ <20120410093140.GA27651@redhat.com>
+ <1334052259.3126.68.camel@edumazet-glaptop>
 MIME-Version: 1.0
-To: Thang Nguyen <tqnguyen@apm.com>
-CC: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>, Jeff Garzik <jgarzik@pobox.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>, linuxppc-dev@lists.ozlabs.org,
-        linux-kernel@vger.kernel.org, linux-ide@vger.kernel.org,
-        devicetree-discuss@lists.ozlabs.org
-Subject: Re: [PATCH 1/1] Add support 2 SATA ports for Maui and change filename
- from sata_dwc_460ex.c to sata_dwc_4xx.c
-References: <1333447938-16461-1-git-send-email-tqnguyen@apm.com> <4F82B61D.8010502@mvista.com> <8a0ea5bd221ddeb9eded16e180aa8fbb@mail.gmail.com>
-In-Reply-To: <8a0ea5bd221ddeb9eded16e180aa8fbb@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1334052259.3126.68.camel@edumazet-glaptop>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello.
+On Tue, Apr 10, 2012 at 12:04:19PM +0200, Eric Dumazet wrote:
+> On Tue, 2012-04-10 at 12:31 +0300, Michael S. Tsirkin wrote:
+> 
+> > True. Still this is the only interface we have for controlling
+> > the internal queue length so it seems safe to assume someone
+> > is using it for this purpose.
+> > 
+> 
+> So to workaround a problem in tun, you want to hack net/core/dev.c :(
 
-On 10-04-2012 7:46, Thang Nguyen wrote:
+Sorry about being unclear, I'm just saying that your patch assumes
+tx_queue_len == 0 since you set it that way at device init but we can't
+rely on this as existing users might have changed that value.
+One way to fix would be a patch at the bottom: then we
+can leave tun to treat tx_queue_len like it always did.
 
-> Hi Sergei,
-> Thanks for your review.
+> Packets in qdisc should not be orphaned.
+>
+> If you think about it, why do we attach skb to socket in the first
+> place ?
 
-> On Maui, there are 2 separate SATA controllers but they share the same
-> AHBDMA controller. Each SATA controller is assigned a fixed DMA channel on
-> the AHBDMA (channel 0 is assigned to SATA controller 0 and channel 1 is
-> assigned to SATA controller 1).
-> For the 460EX, there is only 1 SATA controller and it uses channel 0 for
-> transferring data.
+Good point. The answer is to avoid skb drops for local sockets by
+stopping them, right?
 
-> In my opinion, in the case of Maui, we can use the same DMA information in
-> 2 device nodes as they use the same DMA controller. And in another CPU, if
-> they use different DMA controller, the corresponding information will also
-> be different.
+> If its not needed for tun, why should it be needed for other devices ?
 
-    No, either the DMA controller should be a separate device node, or both 
-ports and DMA controller should be packed into the single device node. The way 
-you're doing it is incorrect because it creates memory resource conflict 
-between devices when they are instantiated as platfrom devices.
+Maybe needed but it's already broken for tun since the skbs in the
+private queue are orphaned by skb_orphan_try?
 
-> Regards,
-> Thang Nguyen -
-> -----Original Message-----
-> From: Sergei Shtylyov [mailto:sshtylyov@mvista.com]
-> Sent: Monday, April 09, 2012 5:13 PM
-> To: Thang Q. Nguyen
-> Cc: Benjamin Herrenschmidt; Paul Mackerras; Jeff Garzik; Grant Likely; Rob
-> Herring; linuxppc-dev@lists.ozlabs.org; linux-kernel@vger.kernel.org;
-> linux-ide@vger.kernel.org; devicetree-discuss@lists.ozlabs.org
-> Subject: Re: [PATCH 1/1] Add support 2 SATA ports for Maui and change
-> filename from sata_dwc_460ex.c to sata_dwc_4xx.c
+> If TUN has a problem being stopped forever, maybe it should take
+> appropriate action to flush all packets in qdisc queue after a while, as
+> this makes no sense to delay packets forever.
+> 
 
-> Hello.
+Well arbitrary timers aren't a solid protection, right?
+We get out of stalling transmitters forever but a bad VM can still
+degrade performance significantly for others...
 
-> On 03-04-2012 14:12, Thang Q. Nguyen wrote:
 
->> Signed-off-by: Thang Q. Nguyen<tqnguyen@apm.com>
-> [...]
+----
 
->> diff --git a/arch/powerpc/boot/dts/bluestone.dts
-> b/arch/powerpc/boot/dts/bluestone.dts
->> index cfa23bf..803fda6 100644
->> --- a/arch/powerpc/boot/dts/bluestone.dts
->> +++ b/arch/powerpc/boot/dts/bluestone.dts
->> @@ -155,6 +155,27 @@
->>    					/*RXDE*/  0x5 0x4>;
->>    		};
->>
->> +		/* SATA DWC devices */
->> +		SATA0: sata@bffd1000 {
->> +			compatible = "amcc,sata-apm821xx";
->> +			reg =<4 0xbffd1000 0x800   /* SATA0 */
->> +			       4 0xbffd0800 0x400>; /* AHBDMA */
->> +			dma-channel=<0>;
->> +			interrupt-parent =<&UIC0>;
->> +			interrupts =<26 4    /* SATA0 */
->> +			              25 4>;  /* AHBDMA */
->> +		};
->> +
->> +		SATA1: sata@bffd1800 {
->> +			compatible = "amcc,sata-apm821xx";
->> +			reg =<4 0xbffd1800 0x800   /* SATA1 */
->> +			       4 0xbffd0800 0x400>; /* AHBDMA */
->> +			dma-channel=<1>;
->> +			interrupt-parent =<&UIC0>;
->> +			interrupts =<27 4    /* SATA1 */
->> +			              25 4>;  /* AHBDMA */
->> +		};
->> +
+We don't want a queue for tun since it can stall forever, but userspace
+might tweak it's tx_queue_len as a way to control RX queue depth,
+and we don't want to break userspace. Use a private flag to disable queue.
 
->      So, this is dual SATA controller, not dual port SATA controller?
-> BTW, it's wrong to have the same AHBDMA resource in two device nodes I
-> think.
+Warning: untested.
 
-> MBR, Sergei
+Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
 
-    Can you get rid of the following? It looks stupid when you post to the 
-maliing list.
-
-> CONFIDENTIALITY NOTICE: This e-mail message, including any attachments,
-> is for the sole use of the intended recipient(s) and contains information
-> that is confidential and proprietary to AppliedMicro Corporation or its subsidiaries.
-> It is to be used solely for the purpose of furthering the parties' business relationship.
-> All unauthorized review, use, disclosure or distribution is prohibited.
-> If you are not the intended recipient, please contact the sender by reply e-mail
-> and destroy all copies of the original message.
-
-WBR, Sergei
+diff --git a/net/sched/sch_generic.c b/net/sched/sch_generic.c
+index 27883d1..644ca53 100644
+--- a/net/sched/sch_generic.c
++++ b/net/sched/sch_generic.c
+@@ -695,7 +692,7 @@ static void attach_one_default_qdisc(struct net_device *dev,
+ {
+ 	struct Qdisc *qdisc = &noqueue_qdisc;
+ 
+-	if (dev->tx_queue_len) {
++	if (dev->tx_queue_len && !(dev->priv_flags & IFF_TX_CAN_STALL)) {
+ 		qdisc = qdisc_create_dflt(dev_queue,
+ 					  &pfifo_fast_ops, TC_H_ROOT);
+ 		if (!qdisc) {
+-- 
+MST
