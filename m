@@ -1,68 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758508Ab2DJDGy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Apr 2012 23:06:54 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:44320 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753319Ab2DJDGw (ORCPT
+	id S1758488Ab2DJDOn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Apr 2012 23:14:43 -0400
+Received: from mail-wi0-f178.google.com ([209.85.212.178]:47774 "EHLO
+	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753938Ab2DJDOm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Apr 2012 23:06:52 -0400
-Date: Tue, 10 Apr 2012 13:06:37 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Greg KH <greg@kroah.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Jiri Slaby <jslaby@suse.cz>, Karsten Keil <isdn@linux-pingi.de>
-Subject: linux-next: build failure after merge of the tty tree
-Message-Id: <20120410130637.d9aff141830a3eb71ff21440@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0beta6 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Tue__10_Apr_2012_13_06_37_+1000_bUPyR=PBGOomClEe"
+	Mon, 9 Apr 2012 23:14:42 -0400
+MIME-Version: 1.0
+Date: Mon, 9 Apr 2012 23:14:40 -0400
+Message-ID: <CAHFgRy_S-FMwHKdzp2=kUDNwXBqBvkaetkkaZzkcsswJd+O36A@mail.gmail.com>
+Subject: 3.4.0-rc2 -- iwlwifi 0000:03:00.0: Hardware error detected. Restarting.
+From: Miles Lane <miles.lane@gmail.com>
+To: Wey-Yi Guy <wey-yi.w.guy@intel.com>,
+        Intel Linux Wireless <ilw@linux.intel.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Tue__10_Apr_2012_13_06_37_+1000_bUPyR=PBGOomClEe
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Not sure if this is information you need.  This is the first time I
+have seen this message.
 
-Hi Greg,
-
-After merging the tty tree, today's linux-next build (x86_64 allmodconfig)
-failed like this:
-
-ERROR: "isdn_tty_revision" [drivers/isdn/i4l/isdn.ko] undefined!
-
-Presumably caused by commit 1ca6711ec001 ("ISDN: i4l, remove cvs crap").
-That variable is still referenced in drivers/isdn/i4l/isdn_common.c.  Grep
-is your friend.
-
-I have used the tty tree from next-20120405 for today.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
---Signature=_Tue__10_Apr_2012_13_06_37_+1000_bUPyR=PBGOomClEe
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJPg6O9AAoJEECxmPOUX5FE7zgP/irmd/hN/6l2KW8QmUpuaCQI
-PdkilCkZH4+maPhZlBFai0z5xkJE5UM2IzAvp4lbhNQMYs4qJRIVimLIJ8JHyBmM
-VVWFZWmlOE7BN1eibeGIbQQvW2pi7XdbqzOOgdLHbuJtlMwaLfTGII1W2rv8tHy6
-4lSvMEGMRrR/nrTwO+iIGKfercx1ZVHeUy/gVzL5NGEezGzjl5D6mXuDmjra72FC
-rzS/pa7/BHHXEj5VdbtIpt0oC95v9QW+KWYITRAYsfceSxUf+sWj/8EDVprmZwu9
-CJTAiwpkGi6Z2YudPksmMrOVb1qTj4aYhcY3ld54u5vmeJ+axcJxPGOYpYNMVS9i
-L6LjpPSYCTAfHAvimVoz7mir+R1Oi0lDgCnTwP23WJr8xG1K2LSw0p4+KHEN/cbe
-6NfqsHlDSSNc7wd1GnRgiWwKVdSDxW1rGINsNLaoWxJlv672IG0N6Y+gfBZmoOM8
-J0wur6WXkY0mc6yN6nsGxNcdAPxb6uXT1+UzvFkpBghHdnIGmg9+xOiNh8fUvYVX
-X3Ymq26iJG9g5TATCiCcvE4Up8PTiGxKrRhJoqNemw4BkUqxU/KUTxCrN0/DSg3w
-sfFaOyda2q6DHEFnmy8per+lN0NGmrqIP1ep8TaQZ0SDcUxuTGKcRCv0nfaHSTnI
-ovq6ftcLAw84XDJzhde8
-=3haH
------END PGP SIGNATURE-----
-
---Signature=_Tue__10_Apr_2012_13_06_37_+1000_bUPyR=PBGOomClEe--
+wlan0: authenticate with 00:23:69:be:f3:e2
+wlan0: direct probe to 00:23:69:be:f3:e2 (try 1/3)
+wlan0: send auth to 00:23:69:be:f3:e2 (try 2/3)
+wlan0: authenticated
+wlan0: associate with 00:23:69:be:f3:e2 (try 1/3)
+wlan0: RX AssocResp from 00:23:69:be:f3:e2 (capab=0x411 status=0 aid=5)
+wlan0: associated
+wlan0: authenticate with 00:1b:2f:0e:ed:ba
+wlan0: direct probe to 00:1b:2f:0e:ed:ba (try 1/3)
+wlan0: send auth to 00:1b:2f:0e:ed:ba (try 2/3)
+wlan0: authenticated
+wlan0: associate with 00:1b:2f:0e:ed:ba (try 1/3)
+wlan0: RX AssocResp from 00:1b:2f:0e:ed:ba (capab=0x431 status=0 aid=2)
+wlan0: associated
+iwlwifi 0000:03:00.0: Hardware error detected.  Restarting.
+iwlwifi 0000:03:00.0: Loaded firmware version: 39.31.5.1 build 35138
+iwlwifi 0000:03:00.0: 0x00000000 | OK
+iwlwifi 0000:03:00.0: 0x00000000 | uPc
+iwlwifi 0000:03:00.0: 0x00000000 | branchlink1
+iwlwifi 0000:03:00.0: 0x00000000 | branchlink2
+iwlwifi 0000:03:00.0: 0x00000000 | interruptlink1
+iwlwifi 0000:03:00.0: 0x00000000 | interruptlink2
+iwlwifi 0000:03:00.0: 0x00000000 | data1
+iwlwifi 0000:03:00.0: 0x00000000 | data2
+iwlwifi 0000:03:00.0: 0x00000000 | line
+iwlwifi 0000:03:00.0: 0x00000000 | beacon time
+iwlwifi 0000:03:00.0: 0x00000000 | tsf low
+iwlwifi 0000:03:00.0: 0x00000000 | tsf hi
+iwlwifi 0000:03:00.0: 0x00000000 | time gp1
+iwlwifi 0000:03:00.0: 0x00000000 | time gp2
+iwlwifi 0000:03:00.0: 0x00000000 | time gp3
+iwlwifi 0000:03:00.0: 0x00000000 | uCode version
+iwlwifi 0000:03:00.0: 0x00000000 | hw version
+iwlwifi 0000:03:00.0: 0x00000000 | board version
+iwlwifi 0000:03:00.0: 0x00000000 | hcmd
+iwlwifi 0000:03:00.0: 0x00000000 | isr0
+iwlwifi 0000:03:00.0: 0x00000000 | isr1
+iwlwifi 0000:03:00.0: 0x00000000 | isr2
+iwlwifi 0000:03:00.0: 0x00000000 | isr3
+iwlwifi 0000:03:00.0: 0x00000000 | isr4
+iwlwifi 0000:03:00.0: 0x00000000 | isr_pref
+iwlwifi 0000:03:00.0: 0x00000000 | wait_event
+iwlwifi 0000:03:00.0: 0x00000000 | l2p_control
+iwlwifi 0000:03:00.0: 0x00000000 | l2p_duration
+iwlwifi 0000:03:00.0: 0x00000000 | l2p_mhvalid
+iwlwifi 0000:03:00.0: 0x00000000 | l2p_addr_match
+iwlwifi 0000:03:00.0: 0x00000000 | lmpm_pmg_sel
+iwlwifi 0000:03:00.0: 0x00000000 | timestamp
+iwlwifi 0000:03:00.0: 0x00000000 | flow_handler
+iwlwifi 0000:03:00.0: CSR values:
+iwlwifi 0000:03:00.0: (2nd byte of CSR_INT_COALESCING is CSR_INT_PERIODIC_REG)
+iwlwifi 0000:03:00.0:        CSR_HW_IF_CONFIG_REG: 0X00c80300
+iwlwifi 0000:03:00.0:          CSR_INT_COALESCING: 0X00000040
+iwlwifi 0000:03:00.0:                     CSR_INT: 0X20000000
+iwlwifi 0000:03:00.0:                CSR_INT_MASK: 0X00000000
+iwlwifi 0000:03:00.0:           CSR_FH_INT_STATUS: 0X00000000
+iwlwifi 0000:03:00.0:                 CSR_GPIO_IN: 0X00000000
+iwlwifi 0000:03:00.0:                   CSR_RESET: 0X00000008
+iwlwifi 0000:03:00.0:                CSR_GP_CNTRL: 0X080003c5
+iwlwifi 0000:03:00.0:                  CSR_HW_REV: 0X0000006c
+iwlwifi 0000:03:00.0:              CSR_EEPROM_REG: 0X00001885
+iwlwifi 0000:03:00.0:               CSR_EEPROM_GP: 0X90000001
+iwlwifi 0000:03:00.0:              CSR_OTP_GP_REG: 0X00010001
+iwlwifi 0000:03:00.0:                 CSR_GIO_REG: 0X00080042
+iwlwifi 0000:03:00.0:            CSR_GP_UCODE_REG: 0X0000c45f
+iwlwifi 0000:03:00.0:           CSR_GP_DRIVER_REG: 0X00000000
+iwlwifi 0000:03:00.0:           CSR_UCODE_DRV_GP1: 0X00000000
+iwlwifi 0000:03:00.0:           CSR_UCODE_DRV_GP2: 0X00000000
+iwlwifi 0000:03:00.0:                 CSR_LED_REG: 0X00000058
+iwlwifi 0000:03:00.0:        CSR_DRAM_INT_TBL_REG: 0X88129268
+iwlwifi 0000:03:00.0:        CSR_GIO_CHICKEN_BITS: 0X27800200
+iwlwifi 0000:03:00.0:             CSR_ANA_PLL_CFG: 0X00880300
+iwlwifi 0000:03:00.0:           CSR_HW_REV_WA_REG: 0X0001001a
+iwlwifi 0000:03:00.0:        CSR_DBG_HPET_MEM_REG: 0Xffff0000
+iwlwifi 0000:03:00.0: FH register values:
+iwlwifi 0000:03:00.0:         FH_RSCSR_CHNL0_STTS_WPTR_REG: 0X129cd100
+iwlwifi 0000:03:00.0:        FH_RSCSR_CHNL0_RBDCB_BASE_REG: 0X01326db0
+iwlwifi 0000:03:00.0:                  FH_RSCSR_CHNL0_WPTR: 0X00000020
+iwlwifi 0000:03:00.0:         FH_MEM_RCSR_CHNL0_CONFIG_REG: 0X80819104
+iwlwifi 0000:03:00.0:          FH_MEM_RSSR_SHARED_CTRL_REG: 0X000000fc
+iwlwifi 0000:03:00.0:            FH_MEM_RSSR_RX_STATUS_REG: 0X03030000
+iwlwifi 0000:03:00.0:    FH_MEM_RSSR_RX_ENABLE_ERR_IRQ2DRV: 0X00000000
+iwlwifi 0000:03:00.0:                FH_TSSR_TX_STATUS_REG: 0X07ff0001
+iwlwifi 0000:03:00.0:                 FH_TSSR_TX_ERROR_REG: 0X00000000
+iwlwifi 0000:03:00.0: Start IWL Event Log Dump: display last 20 entries
+iwlwifi 0000:03:00.0: EVT_LOGT:1386158447:0x000001d9:0601
+iwlwifi 0000:03:00.0: EVT_LOGT:1386158448:0x00000149:0636
+iwlwifi 0000:03:00.0: EVT_LOGT:1386158550:0x0000010f:0106
+iwlwifi 0000:03:00.0: EVT_LOGT:1386158551:0x00000000:0301
+iwlwifi 0000:03:00.0: EVT_LOGT:1386158933:0x00000080:0313
+iwlwifi 0000:03:00.0: EVT_LOGT:1386158936:0x0000057b:0501
+iwlwifi 0000:03:00.0: EVT_LOGT:1386159972:0x000002c1:0501
+iwlwifi 0000:03:00.0: EVT_LOGT:1386159978:0x00000000:0504
+iwlwifi 0000:03:00.0: EVT_LOGT:1386159980:0x00000000:0504
+iwlwifi 0000:03:00.0: EVT_LOGT:1386159980:0x00000057:0601
+iwlwifi 0000:03:00.0: EVT_LOGT:1386159981:0x52818a62:0600
+iwlwifi 0000:03:00.0: EVT_LOGT:1386159981:0x0000007d:0601
+iwlwifi 0000:03:00.0: EVT_LOGT:1386159982:0x52818a62:0600
+iwlwifi 0000:03:00.0: EVT_LOGT:1386159982:0x00000000:0600
+iwlwifi 0000:03:00.0: EVT_LOGT:1386159987:0x00c00007:0310
+iwlwifi 0000:03:00.0: EVT_LOGT:1386160000:0x000000d2:0601
+iwlwifi 0000:03:00.0: EVT_LOGT:1386160008:0x0000014b:0635
+iwlwifi 0000:03:00.0: EVT_LOGT:1386160011:0x000000f6:0601
+iwlwifi 0000:03:00.0: EVT_LOGT:1386160020:0x0000003a:1055
+iwlwifi 0000:03:00.0: EVT_LOGT:1386160022:0x52818a39:1073
+ieee80211 phy0: Hardware restart was requested
+iwlwifi 0000:03:00.0: L1 Enabled; Disabling L0S
+wlan0: authenticate with 00:23:69:be:f3:e2
+wlan0: direct probe to 00:23:69:be:f3:e2 (try 1/3)
+wlan0: send auth to 00:23:69:be:f3:e2 (try 2/3)
+wlan0: authenticated
+wlan0: associate with 00:23:69:be:f3:e2 (try 1/3)
+wlan0: RX AssocResp from 00:23:69:be:f3:e2 (capab=0x411 status=0 aid=5)
+wlan0: associated
