@@ -1,88 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758352Ab2DJBcW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Apr 2012 21:32:22 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:53355 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752277Ab2DJBcU (ORCPT
+	id S932369Ab2DJBdz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Apr 2012 21:33:55 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:34427 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754695Ab2DJBdy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Apr 2012 21:32:20 -0400
-Date: Tue, 10 Apr 2012 11:32:09 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: "John W. Linville" <linville@tuxdriver.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>,
-        Meenakshi Venkataraman <meenakshi.venkataraman@intel.com>,
-        "Wey-Yi Guy" <wey-yi.w.guy@intel.com>
-Subject: linux-next: manual merge of the wireless-next tree with the
- net-next tree
-Message-Id: <20120410113209.1fb17bdc05e5995a4821cf46@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0beta6 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Tue__10_Apr_2012_11_32_09_+1000_SdudSJy2oqGhwwA4"
+	Mon, 9 Apr 2012 21:33:54 -0400
+Date: Mon, 9 Apr 2012 18:33:51 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Colin Cross <ccross@google.com>
+cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>, werner <w.landgraf@ru.ru>,
+        Rik van Riel <riel@redhat.com>, Hugh Dickins <hughd@google.com>,
+        linux-kernel@vger.kernel.org, Oleg Nesterov <oleg@redhat.com>,
+        Rabin Vincent <rabin.vincent@stericsson.com>,
+        Christian Bejram <christian.bejram@stericsson.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Anton Vorontsov <anton.vorontsov@linaro.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        stable@vger.kernel.org
+Subject: Re: v3.4-rc2 out-of-memory problems (was Re: 3.4-rc1
+ sticks-and-crashs)
+In-Reply-To: <CAMbhsRSch1gJLRzPo1p8pCySsB9AJ01wUeVYKXf+zw31pnxumw@mail.gmail.com>
+Message-ID: <alpine.DEB.2.00.1204091831040.15391@chino.kir.corp.google.com>
+References: <CA+55aFwTFXtMLhXo7g9F7uyHc3W8SCw7z1gTm9jbWXM3Nqc_ZA@mail.gmail.com> <20120408195044.13ea6c8e.akpm@linux-foundation.org> <CA+55aFw7GsiZbNW84WVMUMT6C0Sw82jxaYxeaaB8qq=41Ep5Wg@mail.gmail.com> <alpine.DEB.2.00.1204090235350.14879@chino.kir.corp.google.com>
+ <CA+55aFxUQJC+_aA0qnj0b-LoGfCjfFoG3HXgQ+7LND7y8dFDhw@mail.gmail.com> <alpine.DEB.2.00.1204091355280.10873@chino.kir.corp.google.com> <CAMbhsRRUNVn9_eL_obZxcZv7LqDW_8SeRApdKzDePbaW_Y4uvg@mail.gmail.com> <alpine.DEB.2.00.1204091636160.21813@chino.kir.corp.google.com>
+ <CAMbhsRSV9Oy5n-GBjyhCtfCd=3_S9iif+qzEk0Oyy0EBC9AF6w@mail.gmail.com> <alpine.DEB.2.00.1204091724590.21813@chino.kir.corp.google.com> <CAMbhsRSch1gJLRzPo1p8pCySsB9AJ01wUeVYKXf+zw31pnxumw@mail.gmail.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Tue__10_Apr_2012_11_32_09_+1000_SdudSJy2oqGhwwA4
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Mon, 9 Apr 2012, Colin Cross wrote:
 
-Hi John,
+> Before Anton's fix, iterating the tasklist involved taking every task
+> lock, which probably made it very expensive.
 
-Today's linux-next merge of the wireless-next tree got a conflict in
-drivers/net/wireless/iwlwifi/iwl-testmode.c between commit d33e152e1edd
-("iwlwifi: Stop using NLA_PUT*()") from the net-next tree and commit
-a42506eb27aa ("iwlwifi: move ucode_type from shared to op_mode") from the
-wireless-next tree.
-
-I fixed it up (see below) and can carry the fix as necessary.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
-diff --cc drivers/net/wireless/iwlwifi/iwl-testmode.c
-index a54e20e,d65dac8..0000000
---- a/drivers/net/wireless/iwlwifi/iwl-testmode.c
-+++ b/drivers/net/wireless/iwlwifi/iwl-testmode.c
-@@@ -609,10 -605,9 +612,10 @@@ static int iwl_testmode_driver(struct i
-  			inst_size =3D img->sec[IWL_UCODE_SECTION_INST].len;
-  			data_size =3D img->sec[IWL_UCODE_SECTION_DATA].len;
-  		}
-- 		if (nla_put_u32(skb, IWL_TM_ATTR_FW_TYPE, priv->shrd->ucode_type) ||
- -		NLA_PUT_U32(skb, IWL_TM_ATTR_FW_TYPE, priv->cur_ucode);
- -		NLA_PUT_U32(skb, IWL_TM_ATTR_FW_INST_SIZE, inst_size);
- -		NLA_PUT_U32(skb, IWL_TM_ATTR_FW_DATA_SIZE, data_size);
-++		if (nla_put_u32(skb, IWL_TM_ATTR_FW_TYPE, priv->cur_ucode) ||
- +		    nla_put_u32(skb, IWL_TM_ATTR_FW_INST_SIZE, inst_size) ||
- +		    nla_put_u32(skb, IWL_TM_ATTR_FW_DATA_SIZE, data_size))
- +			goto nla_put_failure;
-  		status =3D cfg80211_testmode_reply(skb);
-  		if (status < 0)
-  			IWL_ERR(priv, "Error sending msg : %d\n", status);
-
---Signature=_Tue__10_Apr_2012_11_32_09_+1000_SdudSJy2oqGhwwA4
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJPg42ZAAoJEECxmPOUX5FEgt4P/0WiIo1LuvhyCLpfZ6xxDujQ
-Y/a/SWb8W0KEapXzuSok21N5JW42dtWyxD8YIzbSVEZdWGPUWgOFjvJ64HF+Gm0O
-5TiO7a391gUzFH12vFjc6yaHAWiMUKs0oiMF8m8m6Sclyse1m4uj9orxqfA1ztRo
-uSUAJaxAehRHBylBTx/sHchIzcGGW27TuSOf5VUKh6kjTBZsC9Bl2yTmNu7n8FdM
-08Quk4nEKjMb+PWqRcrHs8EEB94/8N50afVEfSbxOel02uBvwTfaoUpSMFtioHn6
-X4b5j0r7bfvfbhEfoMXLZqwlfwGW4Mq9j0oK7nMGARIjDnrJF3vIT2vdsWnBWWXN
-v9snTjZreQTNQXMrTBoeIzUYca2bCvbWn4nc+oG9VsHU1kxA6UoSim5Y6TSb/Z3p
-rCLqxTZ3N0/wAh1TSpbHzk5w6jtRGbx+BSMkjFpcHoKsplkMO3ot8EKrB00IPzR+
-I+PgHMbzVZCyS+yIhJ3dBsRj4Re3a4Ffho+wzVYzq78iQC0JMJtfA5wbe7qX2Yla
-qnn3XtmfX8outQTjE8+413K+QC6j/GUOh2FBrsaiWYZv92tVGjozIB+xqcwtfd8Z
-DEpGjQOku137vU6aC2+/4lejwS2qhdBpKYws4DNYuUBqabNUXN/UomG96pVtNr16
-XgnphierwkKIx/k7sSsx
-=EIvQ
------END PGP SIGNATURE-----
-
---Signature=_Tue__10_Apr_2012_11_32_09_+1000_SdudSJy2oqGhwwA4--
+I'm not sure of the fix you're referring to, but it's not in 3.4-rc2 
+because lowmem_shrink() still does find_lock_task_mm() for every user 
+process on the system, which is necessary to safely do get_mm_rss().
