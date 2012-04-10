@@ -1,94 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759313Ab2DJTwp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Apr 2012 15:52:45 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:36005 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756864Ab2DJTwo (ORCPT
+	id S1759303Ab2DJTyt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Apr 2012 15:54:49 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45170 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753457Ab2DJTyq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Apr 2012 15:52:44 -0400
-Message-ID: <4F848F88.7060009@suse.cz>
-Date: Tue, 10 Apr 2012 21:52:40 +0200
-From: Jiri Slaby <jslaby@suse.cz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120404 Thunderbird/13.0a2
-MIME-Version: 1.0
-To: Jesse Barnes <jbarnes@virtuousgeek.org>
-CC: Chris Wilson <chris@chris-wilson.co.uk>, Jiri Slaby <jirislaby@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>, dri-devel@lists.freedesktop.org,
-        daniel@ffwll.ch
-Subject: Re: i915_driver_irq_handler: irq 42: nobody cared
-References: <4F717CE3.4040206@suse.cz> <4F717D80.9040207@suse.cz> <4F758400.3080907@suse.cz> <1333104359_155028@CP5-2952> <20120409101119.47e770b2@jbarnes-desktop> <4F83F3B5.8080704@suse.cz> <20120410092619.26a15165@jbarnes-desktop> <4F8477D1.4080102@suse.cz> <20120410113448.540e4c1d@jbarnes-desktop>
-In-Reply-To: <20120410113448.540e4c1d@jbarnes-desktop>
-X-Enigmail-Version: 1.4
-Content-Type: text/plain; charset=ISO-8859-1
+	Tue, 10 Apr 2012 15:54:46 -0400
+Date: Tue, 10 Apr 2012 12:54:43 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: "Indan Zupancic" <indan@nul.nu>
+Cc: "Will Drewry" <wad@chromium.org>, linux-kernel@vger.kernel.org,
+        linux-security-module@vger.kernel.org, linux-arch@vger.kernel.org,
+        linux-doc@vger.kernel.org, kernel-hardening@lists.openwall.com,
+        netdev@vger.kernel.org, x86@kernel.org, arnd@arndb.de,
+        davem@davemloft.net, hpa@zytor.com, mingo@redhat.com, oleg@redhat.com,
+        peterz@infradead.org, rdunlap@xenotime.net, mcgrathr@chromium.org,
+        tglx@linutronix.de, luto@mit.edu, eparis@redhat.com,
+        serge.hallyn@canonical.com, djm@mindrot.org, scarybeasts@gmail.com,
+        pmoore@redhat.com, corbet@lwn.net, eric.dumazet@gmail.com,
+        markus@chromium.org, coreyb@linux.vnet.ibm.com, keescook@chromium.org,
+        jmorris@namei.org
+Subject: Re: [PATCH v17 08/15] seccomp: add system call filtering using BPF
+Message-Id: <20120410125443.3ab1a277.akpm@linux-foundation.org>
+In-Reply-To: <67e30a0c8655fc53a92e8138bba9de66.squirrel@webmail.greenhost.nl>
+References: <1333051320-30872-1-git-send-email-wad@chromium.org>
+	<1333051320-30872-9-git-send-email-wad@chromium.org>
+	<20120406132330.457a05cf.akpm@linux-foundation.org>
+	<67e30a0c8655fc53a92e8138bba9de66.squirrel@webmail.greenhost.nl>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/10/2012 08:34 PM, Jesse Barnes wrote:
-> On Tue, 10 Apr 2012 20:11:29 +0200 Jiri Slaby <jslaby@suse.cz>
-> wrote:
+On Mon, 9 Apr 2012 04:22:40 +1000
+"Indan Zupancic" <indan@nul.nu> wrote:
+
+> On Sat, April 7, 2012 06:23, Andrew Morton wrote:
+> > hm, I'm surprised that we don't have a zero-returning implementation of
+> > is_compat_task() when CONFIG_COMPAT=n.  Seems silly.  Blames Arnd.
 > 
->> On 04/10/2012 06:26 PM, Jesse Barnes wrote:
->>> So port hotplug is always reporting that port C has a hotplug 
->>> interrupt though...  If you write 0x3 back to it does the
->>> interrupt stop?
->> 
->> I'm not sure I got it right. This doesn't help: ---
->> a/drivers/gpu/drm/i915/i915_irq.c +++
->> b/drivers/gpu/drm/i915/i915_irq.c @@ -1416,6 +1416,17 @@ static
->> irqreturn_t i915_driver_irq_handler(DRM_IRQ_ARGS) iir = new_iir; 
->> }
->> 
->> +       if (ret == IRQ_NONE) { +               u32 hp =
->> I915_READ(PORT_HOTPLUG_STAT); +               if (hp) { +
->> I915_WRITE(PORT_HOTPLUG_STAT, hp); +
->> I915_READ(PORT_HOTPLUG_STAT); +               } + +
->> if (printk_ratelimit()) +                       printk(KERN_DEBUG
->> "%s: %.8x\n", __func__, hp); + +       }
->> 
->> return ret; }
+> It's sneakily hidden at the end of compat.h.
 > 
-> Yeah that looks right, you still get 0x300?
+> >> +/**
+> >> + * get_u32 - returns a u32 offset into data
+> >> + * @data: a unsigned 64 bit value
+> >> + * @index: 0 or 1 to return the first or second 32-bits
+> >> + *
+> >> + * This inline exists to hide the length of unsigned long.
+> >> + * If a 32-bit unsigned long is passed in, it will be extended
+> >> + * and the top 32-bits will be 0. If it is a 64-bit unsigned
+> >> + * long, then whatever data is resident will be properly returned.
+> >> + */
+> >> +static inline u32 get_u32(u64 data, int index)
+> >> +{
+> >> +	return ((u32 *)&data)[index];
+> >> +}
+> >
+> > This seems utterly broken on big-endian machines.  If so: fix.  If not:
+> > add comment explaining why?
+> 
+> It's not a bug, it's intentional.
 
-Yes.
+Well it looks like a bug, which is why I suggest that it be clearly
+commented.
 
-> You could try masking hotplug interrupts altogether.
+> >
+> >> +	if (total_insns > MAX_INSNS_PER_PATH)
+> >> +		return -ENOMEM;
+> >> +
+> >> +	/*
+> >> +	 * Installing a seccomp filter requires that the task have
+> >> +	 * CAP_SYS_ADMIN in its namespace or be running with no_new_privs.
+> >> +	 * This avoids scenarios where unprivileged tasks can affect the
+> >> +	 * behavior of privileged children.
+> >> +	 */
+> >> +	if (!current->no_new_privs &&
+> >> +	    security_capable_noaudit(current_cred(), current_user_ns(),
+> >> +				     CAP_SYS_ADMIN) != 0)
+> >> +		return -EACCES;
+> >> +
+> >> +	/* Allocate a new seccomp_filter */
+> >> +	filter = kzalloc(sizeof(struct seccomp_filter) + fp_size, GFP_KERNEL);
+> >
+> > I think this gives userspace an easy way of causing page allocation
+> > failure warnings, by permitting large kmalloc() attempts.  Add
+> > __GFP_NOWARN?
+> 
+> Max is 32kb. sk_attach_filter() in net/core/filter.c is worse,
+> it allocates up to 512kb before even checking the length.
 
-This doesn't help:
---- a/drivers/gpu/drm/i915/i915_irq.c
-+++ b/drivers/gpu/drm/i915/i915_irq.c
-@@ -2049,7 +2051,7 @@ static int i915_driver_irq_postinstall(struct
-drm_device *dev)
-        I915_WRITE(IER, enable_mask);
-        POSTING_READ(IER);
+An order-3 allocation attempt is pretty fragile.  This will sometimes
+fail.
 
--       if (I915_HAS_HOTPLUG(dev)) {
-+       if (0 && I915_HAS_HOTPLUG(dev)) {
-                u32 hotplug_en = I915_READ(PORT_HOTPLUG_EN);
+> What about using GFP_USER (and adding __GFP_NOWARN to GFP_USER) instead?
 
-                /* Note HDMI and DP share bits */
+Let's be conventional and use the open-coded __GFP_NOWARN. 
+__GFP_NOWARN says "this is a big allocation which will sometimes fail
+and I have carefully reviewed the failure paths and runtime tested
+them".
 
+Please carefully review the failure paths and runtime test them ;)
 
-> Also, just to sanity check things, can you look at the output of
-> "lspci -s 02.0 -vvv -xxx" and see if the "INTx" field is + or -?
-> If it's +, then the interrupt is definitely coming from an un-acked
-> IRQ source on the gfx device.  If it's INTx-, it means something in
-> one of the upper MSI layers isn't getting handled right.
+> >> +	/* Check and rewrite the fprog via the skb checker */
+> >> +	ret = sk_chk_filter(filter->insns, filter->len);
+> >> +	if (ret)
+> >> +		goto fail;
+> >> +
+> >> +	/* Check and rewrite the fprog for seccomp use */
+> >> +	ret = seccomp_chk_filter(filter->insns, filter->len);
+> >
+> > "check" is spelled "check"!
+> 
+> Yes, it is and he did spell "check" as "Check".
+> 
+> seccomp_chk_filter() mirrors sk_chk_filter(). So it refers to
+> "chk", not "check".
 
-Status: Cap+ 66MHz- UDF- FastB2B+ ParErr- DEVSEL=fast >TAbort-
-<TAbort- <MAbort- >SERR- <PERR- INTx-
-
-I tried 3.2 and 3.3. Although the spurious interrupts were always
-there, they occurred with frequency lower by a magnitude (15 vs. 300
-after X starts). So I bisected that and it lead to a commit which
-fixes bad tiling for me:
-http://cgit.freedesktop.org/~ickle/linux-2.6/commit/?h=for-jiri&id=79710e6ccabdac80c65cd13b944695ecc3e42a9d
-
-thanks,
--- 
-js
-suse labs
+bah.  Two poor identifiers isn't better than one.  Whatever.
 
 
