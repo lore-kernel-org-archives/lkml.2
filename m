@@ -1,54 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758200Ab2DJSRG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Apr 2012 14:17:06 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:5010 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755991Ab2DJSRE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Apr 2012 14:17:04 -0400
-Date: Tue, 10 Apr 2012 14:16:32 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Steve French <smfrench@gmail.com>
-Cc: Jan Kara <jack@suse.cz>, ctalbott@google.com, rni@google.com,
-        andrea@betterlinux.com, containers@lists.linux-foundation.org,
-        linux-kernel@vger.kernel.org, lsf@lists.linux-foundation.org,
-        linux-mm@kvack.org, jmoyer@redhat.com, lizefan@huawei.com,
-        cgroups@vger.kernel.org, linux-fsdevel@vger.kernel.org
-Subject: Re: [Lsf] [RFC] writeback and cgroup
-Message-ID: <20120410181631.GK21801@redhat.com>
-References: <20120403183655.GA23106@dhcp-172-17-108-109.mtv.corp.google.com>
- <20120404145134.GC12676@redhat.com>
- <20120407080027.GA2584@quack.suse.cz>
- <CAH2r5mvLVnM3Se5vBBsYzwaz5Ckp3i6SVnGp2T0XaGe9_u8YYA@mail.gmail.com>
+	id S1758310Ab2DJSRS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Apr 2012 14:17:18 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:50903 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757812Ab2DJSRF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Apr 2012 14:17:05 -0400
+Message-ID: <4F84791C.7090307@wwwdotorg.org>
+Date: Tue, 10 Apr 2012 12:17:00 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.28) Gecko/20120313 Thunderbird/3.1.20
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAH2r5mvLVnM3Se5vBBsYzwaz5Ckp3i6SVnGp2T0XaGe9_u8YYA@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Dan Williams <dan.j.williams@intel.com>
+CC: gregkh@linuxfoundation.org, Sudhakar Mamillapalli <sudhakar@fb.com>,
+        linux-kernel@vger.kernel.org, ArndBergmannarnd@arndb.de,
+        Grant Likely <grant.likely@secretlab.ca>, linux-serial@vger.kernel.org,
+        Colin Cross <ccross@android.com>, Olof Johansson <olof@lixom.net>,
+        Nhan H Mai <nhan.h.mai@intel.com>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        Alan Cox <alan@linux.intel.com>
+Subject: Re: [PATCH v3 1/3] tegra, serial8250: add ->handle_break() uart_port
+ op
+References: <20120409194514.8004.53204.stgit@dwillia2-linux.jf.intel.com>	<20120409194857.8004.86352.stgit@dwillia2-linux.jf.intel.com>	<4F84575F.7090909@wwwdotorg.org> <CABE8wwsDM=4Lp5Fa79V29tG2RypfA-MxN7zfhtze7sOLCVdL7A@mail.gmail.com>
+In-Reply-To: <CABE8wwsDM=4Lp5Fa79V29tG2RypfA-MxN7zfhtze7sOLCVdL7A@mail.gmail.com>
+X-Enigmail-Version: 1.1.2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 10, 2012 at 11:23:16AM -0500, Steve French wrote:
+On 04/10/2012 11:36 AM, Dan Williams wrote:
+> On Tue, Apr 10, 2012 at 8:53 AM, Stephen Warren <swarren@wwwdotorg.org> wrote:
+>> On 04/09/2012 01:48 PM, Dan Williams wrote:
+>>> The "KT" serial port has another use case for a "received break" quirk,
+>>> so before adding another special case to the 8250 core take this
+>>> opportunity to push such quirks out of the core and into a uart_port op.
+...
+>>> diff --git a/include/linux/of_serial.h b/include/linux/of_serial.h
+>> ...
+>>> + * FIXME remove this file when tegra finishes conversion to open firmware,
+>>
+>> remove this *prototype* not *file*?
+> 
+> The entire file should go away since it is only there to export
+> tegra_serial_handle_break to the deprecated board files.  Once this is
+> open firmware only tegra_serial_handle_break can be marked static,
+> right?
 
-[..]
-> In the case of block device throttling - other than the file system
-> internally using such APIs who would use block device specific
-> throttling - only the file system knows where it wants to put hot data,
-> and in the case of btrfs, doesn't the file system manage the
-> storage pool.   The block device should be transparent to the
-> user in the long run, and only the volume visible.
-
-This is a good point. I guess this goes back to Jan's question of what's
-the intended use case of absolute throttling. Having a dependency on 
-per device limits has the drawback of user knowing exactly the details
-of storage stack and it assumes that there is one single aggregation point
-of block devices. (Which is not true in case of btrfs).
-
-If user is simply looking for something like that I don't want a backup
-process to be writing at more than 50MB/s (so that other processes doing
-IO to same filesystem are effected less), then it is a case of global
-throttling and per device throttling really does not gel well.
-
-Thanks
-Vivek
+Ah yes, right.
