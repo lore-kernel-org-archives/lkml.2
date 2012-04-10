@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932409Ab2DJU4E (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Apr 2012 16:56:04 -0400
-Received: from mga02.intel.com ([134.134.136.20]:54593 "EHLO mga02.intel.com"
+	id S932389Ab2DJU4D (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Apr 2012 16:56:03 -0400
+Received: from mga11.intel.com ([192.55.52.93]:2094 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759455Ab2DJUzZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Apr 2012 16:55:25 -0400
+	id S1759454Ab2DJUzU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Apr 2012 16:55:20 -0400
 X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
-   d="scan'208";a="127468281"
-Subject: [PATCH v4 3/3] serial/8250_pci: fix suspend/resume vs init/exit
- quirks
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="140138760"
+Subject: [PATCH v4 2/3] serial/8250_pci: Clear FIFOs for Intel ME Serial
+ Over Lan device on BI
 To: gregkh@linuxfoundation.org
 From: Dan Williams <dan.j.williams@intel.com>
-Cc: linux-kernel@vger.kernel.org, linux-serial@vger.kernel.org,
+Cc: Sudhakar Mamillapalli <sudhakar@fb.com>, Nhan H Mai <nhan.h.mai@intel.com>,
+        linux-kernel@vger.kernel.org, linux-serial@vger.kernel.org,
         Alan Cox <alan@linux.intel.com>
-Date: Tue, 10 Apr 2012 14:11:03 -0700
-Message-ID: <20120410211103.13805.41517.stgit@dwillia2-linux.jf.intel.com>
+Date: Tue, 10 Apr 2012 14:10:58 -0700
+Message-ID: <20120410211058.13805.75833.stgit@dwillia2-linux.jf.intel.com>
 In-Reply-To: <20120410210438.13805.40525.stgit@dwillia2-linux.jf.intel.com>
 References: <20120410210438.13805.40525.stgit@dwillia2-linux.jf.intel.com>
 User-Agent: StGit/0.16-1-g7004
@@ -27,76 +28,124 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit e86ff4a6 "serial/8250_pci: init-quirk msi support for kt serial
-controller" introduced a regression in suspend/resume by causing msi's
-to be enabled twice without an intervening disable.
+From: Sudhakar Mamillapalli <sudhakar@fb.com>
 
-00:16.3 Serial controller: Intel Corporation Patsburg KT Controller (rev 05) (prog-if 02 [16550])
-       Subsystem: Intel Corporation Device 7270
-       Flags: bus master, 66MHz, fast devsel, latency 0, IRQ 72
-       I/O ports at 4080 [size=8]
-       Memory at d1c30000 (32-bit, non-prefetchable) [size=4K]
-       Capabilities: [c8] Power Management version 3
-       Capabilities: [d0] MSI: Enable+ Count=1/1 Maskable- 64bit+
-       Kernel driver in use: serial
+When using Serial Over Lan (SOL) over the virtual serial port in a Intel
+management engine (ME) device, on device reset the serial FIFOs need to
+be cleared to keep the FIFO indexes in-sync between the host and the
+engine.
 
-[  365.250523] sysfs: cannot create duplicate filename '/devices/pci0000:00/0000:00:16.3/msi_irqs'
-[  365.250525] Modules linked in: nls_utf8 ipv6 uinput sg iTCO_wdt
-  iTCO_vendor_support ioatdma dca i2c_i801 i2c_core wmi sd_mod ahci libahci isci
-  libsas libata scsi_transport_sas [last unloaded: scsi_wait_scan]
-[  365.250540] Pid: 9030, comm: kworker/u:1 Tainted: G        W    3.3.0-isci-3.0.213+ #1
-[  365.250542] Call Trace:
-[  365.250545]  [<ffffffff8115e955>] ? sysfs_add_one+0x99/0xad
-[  365.250548]  [<ffffffff8102db8b>] warn_slowpath_common+0x85/0x9e
-[  365.250551]  [<ffffffff8102dc96>] warn_slowpath_fmt+0x6e/0x70
-[  365.250555]  [<ffffffff8115e8fa>] ? sysfs_add_one+0x3e/0xad
-[  365.250558]  [<ffffffff8115e8b4>] ? sysfs_pathname+0x3c/0x44
-[  365.250561]  [<ffffffff8115e8b4>] ? sysfs_pathname+0x3c/0x44
-[  365.250564]  [<ffffffff8115e8b4>] ? sysfs_pathname+0x3c/0x44
-[  365.250567]  [<ffffffff8115e8b4>] ? sysfs_pathname+0x3c/0x44
-[  365.250570]  [<ffffffff8115e955>] sysfs_add_one+0x99/0xad
-[  365.250573]  [<ffffffff8115f031>] create_dir+0x72/0xa5
-[  365.250577]  [<ffffffff8115f194>] sysfs_create_dir+0xa2/0xbe
-[  365.250581]  [<ffffffff81262463>] kobject_add_internal+0x126/0x1f8
-[  365.250585]  [<ffffffff8126255b>] kset_register+0x26/0x3f
-[  365.250588]  [<ffffffff8126275a>] kset_create_and_add+0x62/0x7c
-[  365.250592]  [<ffffffff81293619>] populate_msi_sysfs+0x34/0x103
-[  365.250595]  [<ffffffff81293e1c>] pci_enable_msi_block+0x1b3/0x216
-[  365.250599]  [<ffffffff81303f7c>] try_enable_msi+0x13/0x17
-[  365.250603]  [<ffffffff81303fb3>] pciserial_resume_ports+0x21/0x42
-[  365.250607]  [<ffffffff81304041>] pciserial_resume_one+0x50/0x57
-[  365.250610]  [<ffffffff81283e1a>] pci_legacy_resume+0x38/0x47
-[  365.250613]  [<ffffffff81283e7d>] pci_pm_restore+0x54/0x87
-[  365.250616]  [<ffffffff81283e29>] ? pci_legacy_resume+0x47/0x47
-[  365.250619]  [<ffffffff8131e9e8>] dpm_run_callback+0x48/0x7b
-[  365.250623]  [<ffffffff8131f39a>] device_resume+0x342/0x394
-[  365.250626]  [<ffffffff8131f5b7>] async_resume+0x21/0x49
+On a reset the serial device assertes BI, so using that as a cue FIFOs
+are cleared.  So for this purpose a new handle_break callback has been
+added.  One other problem is that the serial registers might temporarily
+go to 0 on reset of this device.  So instead of using the IER register
+read, if 0 returned use the ier value in uart_8250_port. This is hidden
+under a custom serial_in.
 
-That patch has since been reverted, but by inspection it seems that
-pciserial_suspend_ports() should be invoking .exit() quirks to release
-resources acquired during .init().
-
+Cc: Nhan H Mai <nhan.h.mai@intel.com>
+Signed-off-by: Sudhakar Mamillapalli <sudhakar@fb.com>
 Acked-by: Alan Cox <alan@linux.intel.com>
 Signed-off-by: Dan Williams <dan.j.williams@intel.com>
 ---
- drivers/tty/serial/8250/8250_pci.c |    6 ++++++
- 1 file changed, 6 insertions(+)
+ drivers/tty/serial/8250/8250.c     |   10 +++++++++
+ drivers/tty/serial/8250/8250.h     |    2 ++
+ drivers/tty/serial/8250/8250_pci.c |   39 ++++++++++++++++++++++++++++++++++++
+ 3 files changed, 51 insertions(+)
 
+diff --git a/drivers/tty/serial/8250/8250.c b/drivers/tty/serial/8250/8250.c
+index cbd94c3..182efcc 100644
+--- a/drivers/tty/serial/8250/8250.c
++++ b/drivers/tty/serial/8250/8250.c
+@@ -568,6 +568,16 @@ static void serial8250_clear_fifos(struct uart_8250_port *p)
+ 	}
+ }
+ 
++void serial8250_clear_and_reinit_fifos(struct uart_8250_port *p)
++{
++	unsigned char fcr;
++
++	serial8250_clear_fifos(p);
++	fcr = uart_config[p->port.type].fcr;
++	serial_out(p, UART_FCR, fcr);
++}
++EXPORT_SYMBOL_GPL(serial8250_clear_and_reinit_fifos);
++
+ /*
+  * IER sleep support.  UARTs which have EFRs need the "extended
+  * capability" bit enabled.  Note that on XR16C850s, we need to
+diff --git a/drivers/tty/serial/8250/8250.h b/drivers/tty/serial/8250/8250.h
+index 2868a1d..c9d0ebe 100644
+--- a/drivers/tty/serial/8250/8250.h
++++ b/drivers/tty/serial/8250/8250.h
+@@ -96,6 +96,8 @@ static inline void serial_out(struct uart_8250_port *up, int offset, int value)
+ 	up->port.serial_out(&up->port, offset, value);
+ }
+ 
++void serial8250_clear_and_reinit_fifos(struct uart_8250_port *p);
++
+ #if defined(__alpha__) && !defined(CONFIG_PCI)
+ /*
+  * Digital did something really horribly wrong with the OUT1 and OUT2
 diff --git a/drivers/tty/serial/8250/8250_pci.c b/drivers/tty/serial/8250/8250_pci.c
-index 024551a..24ea98c 100644
+index 858dca8..024551a 100644
 --- a/drivers/tty/serial/8250/8250_pci.c
 +++ b/drivers/tty/serial/8250/8250_pci.c
-@@ -2814,6 +2814,12 @@ void pciserial_suspend_ports(struct serial_private *priv)
- 	for (i = 0; i < priv->nr; i++)
- 		if (priv->line[i] >= 0)
- 			serial8250_suspend_port(priv->line[i]);
+@@ -17,6 +17,7 @@
+ #include <linux/slab.h>
+ #include <linux/delay.h>
+ #include <linux/tty.h>
++#include <linux/serial_reg.h>
+ #include <linux/serial_core.h>
+ #include <linux/8250_pci.h>
+ #include <linux/bitops.h>
+@@ -1092,11 +1093,49 @@ static int skip_tx_en_setup(struct serial_private *priv,
+ 	return pci_default_setup(priv, board, port, idx);
+ }
+ 
++static void kt_handle_break(struct uart_port *p)
++{
++	struct uart_8250_port *up =
++		container_of(p, struct uart_8250_port, port);
++	/*
++	 * On receipt of a BI, serial device in Intel ME (Intel
++	 * management engine) needs to have its fifos cleared for sane
++	 * SOL (Serial Over Lan) output.
++	 */
++	serial8250_clear_and_reinit_fifos(up);
++}
++
++static unsigned int kt_serial_in(struct uart_port *p, int offset)
++{
++	struct uart_8250_port *up =
++		container_of(p, struct uart_8250_port, port);
++	unsigned int val;
 +
 +	/*
-+	 * Ensure that every init quirk is properly torn down
++	 * When the Intel ME (management engine) gets reset its serial
++	 * port registers could return 0 momentarily.  Functions like
++	 * serial8250_console_write, read and save the IER, perform
++	 * some operation and then restore it.  In order to avoid
++	 * setting IER register inadvertently to 0, if the value read
++	 * is 0, double check with ier value in uart_8250_port and use
++	 * that instead.  up->ier should be the same value as what is
++	 * currently configured.
 +	 */
-+	if (priv->quirk->exit)
-+		priv->quirk->exit(priv->dev);
++	val = inb(p->iobase + offset);
++	if (offset == UART_IER) {
++		if (val == 0)
++			val = up->ier;
++	}
++	return val;
++}
++
+ static int kt_serial_setup(struct serial_private *priv,
+ 			   const struct pciserial_board *board,
+ 			   struct uart_port *port, int idx)
+ {
+ 	port->flags |= UPF_BUG_THRE;
++	port->serial_in = kt_serial_in;
++	port->handle_break = kt_handle_break;
+ 	return skip_tx_en_setup(priv, board, port, idx);
  }
- EXPORT_SYMBOL_GPL(pciserial_suspend_ports);
  
 
