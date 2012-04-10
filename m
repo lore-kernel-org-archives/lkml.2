@@ -1,151 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758751Ab2DJN2O (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Apr 2012 09:28:14 -0400
-Received: from mailhub.sw.ru ([195.214.232.25]:31131 "EHLO relay.sw.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752840Ab2DJN2N (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Apr 2012 09:28:13 -0400
-Message-ID: <4F843553.3090004@parallels.com>
-Date: Tue, 10 Apr 2012 17:27:47 +0400
-From: Stanislav Kinsbursky <skinsbursky@parallels.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.28) Gecko/20120313 Lightning/1.0b2 Thunderbird/3.1.20
-MIME-Version: 1.0
-To: "akpm@linux-foundation.org" <akpm@linux-foundation.org>
-CC: Pavel Emelyanov <xemul@parallels.com>,
-        "serge.hallyn@canonical.com" <serge.hallyn@canonical.com>,
-        "criu@openvz.org" <criu@openvz.org>, "arnd@arndb.de" <arnd@arndb.de>,
-        "lucas.demarchi@profusion.mobi" <lucas.demarchi@profusion.mobi>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "dhowells@redhat.com" <dhowells@redhat.com>,
-        "mtk.manpages@gmail.com" <mtk.manpages@gmail.com>
-Subject: [CRIU] [PATCH v2 2/4] ipc: move all checkpoint-restore code under
- appropriate define
-References: <20120409175309.8358.21631.stgit@localhost6.localdomain6> <20120409175404.8358.32321.stgit@localhost6.localdomain6> <4F833CDF.4080300@parallels.com>
-In-Reply-To: <4F833CDF.4080300@parallels.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+	id S1758769Ab2DJN3D (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Apr 2012 09:29:03 -0400
+Received: from shards.monkeyblade.net ([198.137.202.13]:43347 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752840Ab2DJN3B (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Apr 2012 09:29:01 -0400
+Date: Tue, 10 Apr 2012 09:26:23 -0400 (EDT)
+Message-Id: <20120410.092623.821622563087500166.davem@davemloft.net>
+To: sfr@canb.auug.org.au
+Cc: netdev@vger.kernel.org, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, msink@permonline.ru,
+        schwidefsky@de.ibm.com, heiko.carstens@de.ibm.com
+Subject: Re: linux-next: build failure after merge of the final tree
+ (net-next tree related)
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <20120410152923.15aee4df478d819f167cd4af@canb.auug.org.au>
+References: <20120410152923.15aee4df478d819f167cd4af@canb.auug.org.au>
+X-Mailer: Mew version 6.4 on Emacs 23.3 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Tue, 10 Apr 2012 06:26:32 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-v2: added dummy compat_do_msg_peek_all() and do_msg_peek_all() functions used in 
-case of CONFIG_CHECKPOINT_RESTORE is not defined.
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+Date: Tue, 10 Apr 2012 15:29:23 +1000
 
-All new checkpoint/restore code parts are now covered with
-CONFIG_CHECKPOINT_RESTORE macro. So it would be easy to remove them, in case
-the whole project fails.
+> After merging the final tree, today's linux-next build (s390 allmodconfig)
+> failed like this:
 
+I just checked in the following which will hopefully cure this,
+thanks:
+
+--------------------
+wiznet: Fix Kconfig dependencies.
+
+Both drivers need to depend upon HAS_IOMEM, otherwise we
+get a build failure on platforms like S390.
+
+All the driver specific config options need to depend upon
+the drivers themselves.
+
+Reported-by: Stephen Rothwell <sfr@canb.auug.org.au>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 ---
-  ipc/compat.c |    8 +++++++-
-  ipc/msg.c    |   15 +++++++++++++++
-  2 files changed, 22 insertions(+), 1 deletions(-)
+ drivers/net/ethernet/wiznet/Kconfig |    4 ++++
+ 1 files changed, 4 insertions(+), 0 deletions(-)
 
-diff --git a/ipc/compat.c b/ipc/compat.c
-index 96cb9db..87317ff 100644
---- a/ipc/compat.c
-+++ b/ipc/compat.c
-@@ -334,7 +334,7 @@ long compat_sys_msgsnd(int first, int second, int third, 
-void __user *uptr)
-         return do_msgsnd(first, type, up->mtext, second, third);
-  }
+diff --git a/drivers/net/ethernet/wiznet/Kconfig b/drivers/net/ethernet/wiznet/Kconfig
+index 2bb383c..c8291bf 100644
+--- a/drivers/net/ethernet/wiznet/Kconfig
++++ b/drivers/net/ethernet/wiznet/Kconfig
+@@ -19,6 +19,7 @@ if NET_VENDOR_WIZNET
+ 
+ config WIZNET_W5100
+ 	tristate "WIZnet W5100 Ethernet support"
++	depends on HAS_IOMEM
+ 	---help---
+ 	  Support for WIZnet W5100 chips.
+ 
+@@ -31,6 +32,7 @@ config WIZNET_W5100
+ 
+ config WIZNET_W5300
+ 	tristate "WIZnet W5300 Ethernet support"
++	depends on HAS_IOMEM
+ 	---help---
+ 	  Support for WIZnet W5300 chips.
+ 
+@@ -43,6 +45,7 @@ config WIZNET_W5300
+ 
+ choice
+ 	prompt "WIZnet interface mode"
++	depends on WIZNET_W5100 || WIZNET_W5300
+ 	default WIZNET_BUS_ANY
+ 
+ config WIZNET_BUS_DIRECT
+@@ -69,6 +72,7 @@ endchoice
+ 
+ config WIZNET_TX_FLOW
+ 	bool "Use transmit flow control"
++	depends on WIZNET_W5100 || WIZNET_W5300
+ 	default y
+ 	help
+ 	  This enables transmit flow control for WIZnet chips.
+-- 
+1.7.7.6
 
--
-+#ifdef CONFIG_CHECKPOINT_RESTORE
-  static long compat_do_msg_peek_all(void __user *dest, struct msg_msg *msg, 
-size_t bufsz)
-  {
-         struct compat_msgbuf_a __user *msgp = dest;
-@@ -354,6 +354,12 @@ static long compat_do_msg_peek_all(void __user *dest, 
-struct msg_msg *msg, size_
-                 return -EFAULT;
-         return msgsz;
-  }
-+#else
-+static long compat_do_msg_peek_all(void __user *dest, struct msg_msg *msg, 
-size_t bufsz)
-+{
-+       return -EINVAL;
-+}
-+#endif
-
-  long compat_do_msg_fill(void __user *dest, struct msg_msg *msg, size_t bufsz)
-  {
-diff --git a/ipc/msg.c b/ipc/msg.c
-index 017bf0b..af08fe6 100644
---- a/ipc/msg.c
-+++ b/ipc/msg.c
-@@ -762,6 +762,7 @@ static inline int convert_mode(long *msgtyp, int msgflg)
-         return SEARCH_EQUAL;
-  }
-
-+#ifdef CONFIG_CHECKPOINT_RESTORE
-  static long do_msg_peek_all(void __user *dest, struct msg_msg *msg, size_t bufsz)
-  {
-         struct msgbuf_a __user *msgp = dest;
-@@ -788,6 +789,12 @@ static long do_msg_peek_all(void __user *dest, struct 
-msg_msg *msg, size_t bufsz
-                 return -EFAULT;
-         return msgsz;
-  }
-+#else
-+static long do_msg_peek_all(void __user *dest, struct msg_msg *msg, size_t bufsz)
-+{
-+       return -EINVAL;
-+}
-+#endif
-
-  static long do_msg_fill(void __user *dest, struct msg_msg *msg, size_t bufsz)
-  {
-@@ -811,7 +818,9 @@ long do_msgrcv(int msqid, void __user *buf, size_t bufsz, 
-long msgtyp,
-         struct msg_msg *msg;
-         int mode;
-         struct ipc_namespace *ns;
-+#ifdef CONFIG_CHECKPOINT_RESTORE
-         size_t arrsz = bufsz;
-+#endif
-
-         if (msqid < 0 || (long) bufsz < 0)
-                 return -EINVAL;
-@@ -845,6 +854,7 @@ long do_msgrcv(int msqid, void __user *buf, size_t bufsz, 
-long msgtyp,
-                                                 walk_msg->m_type != 1) {
-                                         msg = walk_msg;
-                                         msgtyp = walk_msg->m_type - 1;
-+#ifdef CONFIG_CHECKPOINT_RESTORE
-                                 } else if (msgflg & MSG_PEEK_ALL) {
-                                         long ret;
-
-@@ -855,6 +865,7 @@ long do_msgrcv(int msqid, void __user *buf, size_t bufsz, 
-long msgtyp,
-                                         }
-                                         buf += ret;
-                                         arrsz -= ret;
-+#endif
-                                 } else {
-                                         msg = walk_msg;
-                                         break;
-@@ -863,8 +874,10 @@ long do_msgrcv(int msqid, void __user *buf, size_t bufsz, 
-long msgtyp,
-                         tmp = tmp->next;
-                 }
-                 if (!IS_ERR(msg)) {
-+#ifdef CONFIG_CHECKPOINT_RESTORE
-                         if (msgflg & MSG_PEEK_ALL)
-                                 goto out_unlock;
-+#endif
-                         /*
-                          * Found a suitable message.
-                          * Unlink it from the queue.
-@@ -959,8 +972,10 @@ out_unlock:
-         if (IS_ERR(msg))
-                 return PTR_ERR(msg);
-
-+#ifdef CONFIG_CHECKPOINT_RESTORE
-         if (msgflg & MSG_PEEK_ALL)
-                 return bufsz - arrsz;
-+#endif
-
-         bufsz = msg_fill(buf, msg, bufsz);
-         free_msg(msg);
