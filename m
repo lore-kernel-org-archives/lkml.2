@@ -1,226 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759127Ab2DJPKa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Apr 2012 11:10:30 -0400
-Received: from e35.co.us.ibm.com ([32.97.110.153]:43595 "EHLO
-	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758989Ab2DJPK1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Apr 2012 11:10:27 -0400
-Message-ID: <1334070578.16827.17.camel@key-ThinkPad-W510>
-Subject: [PATCH v2 08/17] powerpc: crypto: AES-CTR mode routines for nx
- encryption
-From: Kent Yoder <key@linux.vnet.ibm.com>
-To: linux-kernel@vger.kernel.org
-Cc: linux-crypto@vger.kernel.org, rcj@linux.vnet.ibm.com,
-        key@linux.vnet.ibm.com, benh@kernel.crashing.org,
-        linuxppc-dev@lists.ozlabs.org
-Date: Tue, 10 Apr 2012 10:09:38 -0500
-In-Reply-To: <1334070249.16827.1.camel@key-ThinkPad-W510>
-References: <1334070249.16827.1.camel@key-ThinkPad-W510>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2- 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12041015-6148-0000-0000-000004EEEC31
+	id S1759228Ab2DJPKs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Apr 2012 11:10:48 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:4897 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759208Ab2DJPKp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Apr 2012 11:10:45 -0400
+Date: Tue, 10 Apr 2012 11:10:43 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Jens Axboe <axboe@kernel.dk>
+Cc: linux kernel mailing list <linux-kernel@vger.kernel.org>,
+        Moyer Jeff Moyer <jmoyer@redhat.com>
+Subject: Re: [RFC PATCH] block: Change default IO scheduler to deadline
+ except SATA
+Message-ID: <20120410151042.GH21801@redhat.com>
+References: <20120410133708.GE21801@redhat.com>
+ <4F843C17.5050004@kernel.dk>
+ <20120410142148.GG21801@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120410142148.GG21801@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-These routines add support for AES in CTR mode on the Power7+ CPU's
-in-Nest accelerator driver.
+On Tue, Apr 10, 2012 at 10:21:48AM -0400, Vivek Goyal wrote:
+> On Tue, Apr 10, 2012 at 03:56:39PM +0200, Jens Axboe wrote:
+> > On 2012-04-10 15:37, Vivek Goyal wrote:
+> > > Hi,
+> > > 
+> > > I am wondering if CFQ as default scheduler is still the right choice. CFQ
+> > > generally works well on slow rotational media (SATA?). But often
+> > > underperforms on faster storage (storage arrays, PCIE SSDs, virtualized
+> > > disk in linux guests etc). People often put logic in user space to tune their
+> > > systems and change IO scheduler to deadline to get better performance on
+> > > faster storage.
+> > > 
+> > > Though there is not one good answer for all kind of storage and for all
+> > > kind of workloads, I am wondering if we can provide a better default and
+> > > that is change default IO scheduler to "deadline" except SATA.
+> > > 
+> > > One can argue that some SAS disks can be slow too and benefit from CFQ. Yes,
+> > > but default IO scheduler choice is not perfect anyway. It just tries to
+> > > cater to a wide variety of use cases out of the box.
+> > > 
+> > > So I am throwing this patch out see if it flies. Personally, I think it
+> > > might turn out to be a more reasonable default.
+> > 
+> > I think it'd be a lot more sane to just use CFQ on rotational single
+> > devices, and default to deadline on raid or non-rotational devices. This
+> > still isn't perfect, since less worthy SSDs still benefit from the
+> > read/write separation, and some multi device configs will be faster as
+> > well. But it's better.
+> 
+> Hi Jens,
+> 
+> Thanks. Taking a decision based on rotational flag makes sense. I am
+> not sure that does one get the information that a block device is a single
+> device or not. Especially with HBAs, SCSI Luns over Fiber, iSCSI Luns etc.
+> I have few Scsi Luns exported to me backed by a storage array. Everything
+> runs CFQ by default. And though disks in the array are rotational, they
+> are RAIDed and AFAIK, this information is not available to driver.
+> 
+> I am not sure if there is an easy way to get similar info for dm/md devices.
 
-Signed-off-by: Kent Yoder <key@linux.vnet.ibm.com>
----
- drivers/crypto/nx/nx-aes-ctr.c |  177 ++++++++++++++++++++++++++++++++++++++++
- 1 files changed, 177 insertions(+), 0 deletions(-)
- create mode 100644 drivers/crypto/nx/nx-aes-ctr.c
+Thinking more about it, even if we have a way to define a request queue
+flag for multi devices (QUEUE_FLAG_MULTI_DEVICE), when can block layer
+take a decision to change the IO scheduler. At queue alloc and init time
+driver might not have even called add_disk() or set all the
+flags/properties of the queue. So doing it at queue alloc/init time might
+not be best.
 
-diff --git a/drivers/crypto/nx/nx-aes-ctr.c b/drivers/crypto/nx/nx-aes-ctr.c
-new file mode 100644
-index 0000000..141079c
---- /dev/null
-+++ b/drivers/crypto/nx/nx-aes-ctr.c
-@@ -0,0 +1,177 @@
-+/**
-+ * AES CTR routines supporting the Power 7+ Nest Accelerators driver
-+ *
-+ * Copyright (C) 2011-2012 International Business Machines Inc.
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation; version 2 only.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program; if not, write to the Free Software
-+ * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
-+ *
-+ * Author: Kent Yoder <yoder1@us.ibm.com>
-+ */
-+
-+#include <crypto/aes.h>
-+#include <crypto/ctr.h>
-+#include <crypto/algapi.h>
-+#include <linux/module.h>
-+#include <linux/types.h>
-+#include <linux/crypto.h>
-+#include <asm/vio.h>
-+
-+#include "nx_csbcpb.h"
-+#include "nx.h"
-+
-+
-+static int ctr_aes_nx_set_key(struct crypto_tfm *tfm,
-+			      const u8          *in_key,
-+			      unsigned int       key_len)
-+{
-+	struct nx_crypto_ctx *nx_ctx = crypto_tfm_ctx(tfm);
-+	struct nx_csbcpb *csbcpb = nx_ctx->csbcpb;
-+
-+	nx_ctx_init(nx_ctx, HCOP_FC_AES);
-+
-+	switch (key_len) {
-+	case AES_KEYSIZE_128:
-+		NX_CPB_SET_KEY_SIZE(csbcpb, NX_KS_AES_128);
-+		nx_ctx->ap = &nx_ctx->props[NX_PROPS_AES_128];
-+		break;
-+	case AES_KEYSIZE_192:
-+		NX_CPB_SET_KEY_SIZE(csbcpb, NX_KS_AES_192);
-+		nx_ctx->ap = &nx_ctx->props[NX_PROPS_AES_192];
-+		break;
-+	case AES_KEYSIZE_256:
-+		NX_CPB_SET_KEY_SIZE(csbcpb, NX_KS_AES_256);
-+		nx_ctx->ap = &nx_ctx->props[NX_PROPS_AES_256];
-+		break;
-+	default:
-+		return -EINVAL;
-+	}
-+
-+	csbcpb->cpb.hdr.mode = NX_MODE_AES_CTR;
-+	memcpy(csbcpb->cpb.aes_ctr.key, in_key, key_len);
-+
-+	return 0;
-+}
-+
-+static int ctr3686_aes_nx_set_key(struct crypto_tfm *tfm,
-+				  const u8          *in_key,
-+				  unsigned int       key_len)
-+{
-+	struct nx_crypto_ctx *nx_ctx = crypto_tfm_ctx(tfm);
-+
-+	if (key_len < CTR_RFC3686_NONCE_SIZE)
-+		return -EINVAL;
-+
-+	memcpy(nx_ctx->priv.ctr.iv,
-+	       in_key + key_len - CTR_RFC3686_NONCE_SIZE,
-+	       CTR_RFC3686_NONCE_SIZE);
-+
-+	key_len -= CTR_RFC3686_NONCE_SIZE;
-+
-+	return ctr_aes_nx_set_key(tfm, in_key, key_len);
-+}
-+
-+static int ctr_aes_nx_crypt(struct blkcipher_desc *desc,
-+			    struct scatterlist    *dst,
-+			    struct scatterlist    *src,
-+			    unsigned int           nbytes)
-+{
-+	struct nx_crypto_ctx *nx_ctx = crypto_blkcipher_ctx(desc->tfm);
-+	struct nx_csbcpb *csbcpb = nx_ctx->csbcpb;
-+	int rc;
-+
-+	if (nbytes > nx_ctx->ap->databytelen)
-+		return -EINVAL;
-+
-+	rc = nx_build_sg_lists(nx_ctx, desc, dst, src, nbytes,
-+			       csbcpb->cpb.aes_ctr.iv);
-+	if (rc)
-+		goto out;
-+
-+	if (!nx_ctx->op.inlen || !nx_ctx->op.outlen) {
-+		rc = -EINVAL;
-+		goto out;
-+	}
-+
-+	rc = nx_hcall_sync(nx_ctx, &nx_ctx->op);
-+	if (rc)
-+		goto out;
-+
-+	atomic_inc(&(nx_ctx->stats->aes_ops));
-+	atomic64_add(csbcpb->csb.processed_byte_count,
-+		     &(nx_ctx->stats->aes_bytes));
-+out:
-+	return rc;
-+}
-+
-+static int ctr3686_aes_nx_crypt(struct blkcipher_desc *desc,
-+				struct scatterlist    *dst,
-+				struct scatterlist    *src,
-+				unsigned int           nbytes)
-+{
-+	struct nx_crypto_ctx *nx_ctx = crypto_blkcipher_ctx(desc->tfm);
-+	u8 *iv = nx_ctx->priv.ctr.iv;
-+
-+	memcpy(iv + CTR_RFC3686_NONCE_SIZE,
-+	       desc->info, CTR_RFC3686_IV_SIZE);
-+	iv[15] = 1;
-+
-+	desc->info = nx_ctx->priv.ctr.iv;
-+
-+	return ctr_aes_nx_crypt(desc, dst, src, nbytes);
-+}
-+
-+struct crypto_alg nx_ctr_aes_alg = {
-+	.cra_name        = "ctr(aes)",
-+	.cra_driver_name = "ctr-aes-nx",
-+	.cra_priority    = 300,
-+	.cra_flags       = CRYPTO_ALG_TYPE_BLKCIPHER,
-+	.cra_blocksize   = 1,
-+	.cra_ctxsize     = sizeof(struct nx_crypto_ctx),
-+	.cra_type        = &crypto_blkcipher_type,
-+	.cra_module      = THIS_MODULE,
-+	.cra_list        = LIST_HEAD_INIT(nx_ctr_aes_alg.cra_list),
-+	.cra_init        = nx_crypto_ctx_aes_ctr_init,
-+	.cra_exit        = nx_crypto_ctx_exit,
-+	.cra_blkcipher = {
-+		.min_keysize = AES_MIN_KEY_SIZE,
-+		.max_keysize = AES_MAX_KEY_SIZE,
-+		.ivsize      = AES_BLOCK_SIZE,
-+		.setkey      = ctr_aes_nx_set_key,
-+		.encrypt     = ctr_aes_nx_crypt,
-+		.decrypt     = ctr_aes_nx_crypt,
-+	}
-+};
-+
-+struct crypto_alg nx_ctr3686_aes_alg = {
-+	.cra_name        = "rfc3686(ctr(aes))",
-+	.cra_driver_name = "rfc3686-ctr-aes-nx",
-+	.cra_priority    = 300,
-+	.cra_flags       = CRYPTO_ALG_TYPE_BLKCIPHER,
-+	.cra_blocksize   = 1,
-+	.cra_ctxsize     = sizeof(struct nx_crypto_ctx),
-+	.cra_type        = &crypto_blkcipher_type,
-+	.cra_module      = THIS_MODULE,
-+	.cra_list        = LIST_HEAD_INIT(nx_ctr3686_aes_alg.cra_list),
-+	.cra_init        = nx_crypto_ctx_aes_ctr_init,
-+	.cra_exit        = nx_crypto_ctx_exit,
-+	.cra_blkcipher = {
-+		.min_keysize = AES_MIN_KEY_SIZE + CTR_RFC3686_NONCE_SIZE,
-+		.max_keysize = AES_MAX_KEY_SIZE + CTR_RFC3686_NONCE_SIZE,
-+		.ivsize      = CTR_RFC3686_IV_SIZE,
-+		.geniv       = "seqiv",
-+		.setkey      = ctr3686_aes_nx_set_key,
-+		.encrypt     = ctr3686_aes_nx_crypt,
-+		.decrypt     = ctr3686_aes_nx_crypt,
-+	}
-+};
--- 
-1.7.1
+And later we get control only when actual IO happens on the queue and
+doing one more check or trying to change elevator in IO path is not a
+good idea.
 
+May be when driver tries to set ROTATIONAL or MULTI_DEVICE flag, we can
+check and change elevator then.
 
+So we are back to the question of can scsi devices find out if a Lun
+is backed by single disk or multiple disks.
+
+Thanks
+Vivek
