@@ -1,56 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759091Ab2DJPzk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Apr 2012 11:55:40 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:44726 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752347Ab2DJPzj (ORCPT
+	id S1757971Ab2DJQBN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Apr 2012 12:01:13 -0400
+Received: from mail-pz0-f52.google.com ([209.85.210.52]:62553 "EHLO
+	mail-pz0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752521Ab2DJQBK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Apr 2012 11:55:39 -0400
-Message-ID: <4F8457F9.7090309@wwwdotorg.org>
-Date: Tue, 10 Apr 2012 09:55:37 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.28) Gecko/20120313 Thunderbird/3.1.20
+	Tue, 10 Apr 2012 12:01:10 -0400
+Date: Tue, 10 Apr 2012 09:01:05 -0700
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: Olof Johansson <olof@lixom.net>, Sven Neumann <s.neumann@raumfeld.com>,
+        Haojian Zhuang <haojian.zhuang@marvell.com>,
+        linux-kernel@vger.kernel.org, Daniel Mack <daniel@caiaq.de>,
+        linux-input@vger.kernel.org, Daniel Mack <zonque@gmail.com>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH] Input: eeti_ts: Mark as CONFIG_BROKEN
+Message-ID: <20120410160105.GA19927@core.coreip.homeip.net>
+References: <1333777207-4151-1-git-send-email-olof@lixom.net>
+ <20120407070206.GA17623@core.coreip.homeip.net>
+ <4F8089A9.6080704@raumfeld.com>
+ <CAOesGMiPZ0so-ZN0HCHHhw16oPWWgfVD5t--wKSvEUtzQx94CA@mail.gmail.com>
+ <20120410101047.GQ24211@n2100.arm.linux.org.uk>
 MIME-Version: 1.0
-To: Linus Walleij <linus.walleij@linaro.org>
-CC: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH V4 REPOST 5/5] pinctrl: tegra: Add complete device tree
- support
-References: <1333553270-9040-1-git-send-email-swarren@wwwdotorg.org>	<1333553270-9040-5-git-send-email-swarren@wwwdotorg.org> <CACRpkdZzET9OKC8xoXV_4OBAd9-EuhSh-OfG=es56bKidCoe9Q@mail.gmail.com>
-In-Reply-To: <CACRpkdZzET9OKC8xoXV_4OBAd9-EuhSh-OfG=es56bKidCoe9Q@mail.gmail.com>
-X-Enigmail-Version: 1.1.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120410101047.GQ24211@n2100.arm.linux.org.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/10/2012 02:25 AM, Linus Walleij wrote:
-> On Wed, Apr 4, 2012 at 5:27 PM, Stephen Warren <swarren@wwwdotorg.org> wrote:
+On Tue, Apr 10, 2012 at 11:10:47AM +0100, Russell King - ARM Linux wrote:
+> On Sat, Apr 07, 2012 at 01:32:31PM -0700, Olof Johansson wrote:
+> > Haojian, I think it was probably premature to do the multiplatform
+> > change like that, since it means that a PXA-only kernel has no mapping
+> > from irq_to_gpio to pxa_irq_to_gpio. Can you please address this as a
+> > fix for 3.4?
 > 
->> From: Stephen Warren <swarren@nvidia.com>
->>
->> Implement pinctrl_ops dt_node_to_map() and dt_free_map(). These allow
->> complete specification of the desired pinmux configuration using device
->> tree.
->>
->> Signed-off-by: Stephen Warren <swarren@nvidia.com>
->> Acked-by: Dong Aisheng <dong.aisheng@linaro.org>
->> ---
->> v3: Rebase on of_property_for_each_string() API changes.
->>    Improve DT parsing so it only calls krealloc() on the top-level map
->>    table once per subnode, rather than once per subnode/pin combination.
->> v2: Rebase on of_property_for_each_string() API changes.
+> Please fix ezx-pcap instead - it's broken as it currently stands by using
+> irq_to_gpio(), and it's one reason why my randconfig builds on OMAP fail.
 > 
-> Applied to pinctrl, thanks!
-> Linus Walleij
+> The big problem is - what does this do:
+> 
+>         do {
+> ...
+>         } while (gpio_get_value(irq_to_gpio(pcap->spi->irq)));
+> 
+> if pcap->spi->irq has no GPIO associated with the interrupt?  irq_to_gpio()
+> probably returns some random number which might be some other GPIO in the
+> system, and gpio_get_value() could oops if irq_to_gpio returns a negative
+> or large positive number.  To put it another way, according to the above
+> code, irq_to_gpio() must always return a valid gpio for the IRQ even if
+> the IRQ doesn't have a GPIO associated with it.
+> 
+> This is a fine illustration of why irq_to_gpio() is just plain broken in
+> its design.
 
-Great.
-
-Is your pinctrl for-next branch considered "stable" (i.e. it won't ever
-be rebased) at least up to commit a57be23 "pinctrl: tegra: Add complete
-device tree support"?
-
-If so, I'll use it as a base for the Tegra GPIO and pinmux rework branch.
+OK, so we can fix eeti_ts and wacom_i2c; but what do we do with
+egalax_ts.c? It reconfigures gpio as output and sens a pulse to wake the
+controller from sleep. I guess we'll need platform data attached to
+it...
 
 Thanks.
+
+-- 
+Dmitry
