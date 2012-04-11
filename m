@@ -1,346 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760557Ab2DKOXH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Apr 2012 10:23:07 -0400
-Received: from kamaji.grokhost.net ([87.117.218.43]:54947 "EHLO
-	kamaji.grokhost.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760383Ab2DKOV0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Apr 2012 10:21:26 -0400
-From: Chris Boot <bootc@bootc.net>
-To: linux1394-devel@lists.sourceforge.net, target-devel@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, agrover@redhat.com, clemens@ladisch.de,
-        nab@linux-iscsi.org, stefanr@s5r6.in-berlin.de,
-        Chris Boot <bootc@bootc.net>
-Subject: [PATCH 07/11] firewire-sbp-target: Add sbp_management_agent.{c,h}
-Date: Wed, 11 Apr 2012 15:20:39 +0100
-Message-Id: <1334154043-69076-8-git-send-email-bootc@bootc.net>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1334154043-69076-1-git-send-email-bootc@bootc.net>
-References: <1329317248-94128-1-git-send-email-bootc@bootc.net>
- <1334154043-69076-1-git-send-email-bootc@bootc.net>
+	id S1760451Ab2DKOXd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Apr 2012 10:23:33 -0400
+Received: from emvm-gh1-uea08.nsa.gov ([63.239.67.9]:10766 "EHLO nsa.gov"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1760341Ab2DKOX3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Apr 2012 10:23:29 -0400
+X-TM-IMSS-Message-ID: <a315d8ba00017e52@nsa.gov>
+Subject: Re: [PATCH v2] Add security.* XATTR support for the UBIFS
+From: Stephen Smalley <sds@tycho.nsa.gov>
+To: Subodh Nijsure <subodh.nijsure@gmail.com>
+Cc: linux-mtd@lists.infradead.org, Artem Bityutskiy <dedekind1@gmail.com>,
+        Adrian Hunter <adrian.hunter@intel.com>, linux-kernel@vger.kernel.org,
+        linux-security-module@vger.kernel.org,
+        Subodh Nijsure <snijsure@grid-net.com>
+In-Reply-To: <CALr9Q3a89_wa48BfOriP=MEQAXa1Sgf+k_Ey=kuKN9Ydewwegw@mail.gmail.com>
+References: <1334015486-20616-1-git-send-email-snijsure@grid-net.com>
+	 <1334061985.23411.3.camel@moss-pluto>
+	 <CALr9Q3Yto9VOhFNRQFVqP7Zi6RWWBaoDUu1zxsup7=+g7_pijQ@mail.gmail.com>
+	 <1334149853.14296.29.camel@moss-pluto>
+	 <CALr9Q3a89_wa48BfOriP=MEQAXa1Sgf+k_Ey=kuKN9Ydewwegw@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Organization: National Security Agency
+Date: Wed, 11 Apr 2012 10:23:22 -0400
+Message-ID: <1334154202.14296.58.camel@moss-pluto>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This code implements the SBP-2 Management Agent. This is the first of
-two firewire address handlers that are used to communicate with the
-target. The Management Agent is used to handle login, reconnect and
-logout to a SCSI LUN as well as task management functions.
+On Wed, 2012-04-11 at 07:12 -0700, Subodh Nijsure wrote:
+> On Wed, Apr 11, 2012 at 6:10 AM, Stephen Smalley <sds@tycho.nsa.gov> wrote:
+> > On Wed, 2012-04-11 at 06:00 -0700, Subodh Nijsure wrote:
+> >> On Tue, Apr 10, 2012 at 5:46 AM, Stephen Smalley <sds@tycho.nsa.gov> wrote:
+> >> > On Mon, 2012-04-09 at 16:51 -0700, subodh.nijsure@gmail.com wrote:
+> >> >> From: Subodh Nijsure <snijsure@grid-net.com>
+> >> >>
+> >> >> Also fix couple of bugs in UBIFS extended attribute length calculation.
+> >> >>
+> >> >> Changes Since V1:
+> >> >>          Instead of just handling security.selinux extended attribute handle
+> >> >>          all security.* attributes.
+> >> >>
+> >> >> TESTING: Tested on  MX28 based platforms using Micron MT29F2G08ABAEAH4 NAND
+> >> >>          With these change we are able to label UBIFS filesystem with
+> >> >>          security.selinux and run system with selinux enabled.
+> >> >>          This change also allows one to set other security.* extended
+> >> >>          attributesr, such as security.smack security.evm, security.ima
+> >> >>          Ran integck test on UBI filesystem.
+> >> >>
+> >> >> Signed-off-by: Subodh Nijsure <snijsure@grid-net.com>
+> >> >> ---
+> >> >>  fs/ubifs/dir.c     |    4 ++
+> >> >>  fs/ubifs/file.c    |    6 ++
+> >> >>  fs/ubifs/journal.c |   12 +++-
+> >> >>  fs/ubifs/super.c   |    3 +
+> >> >>  fs/ubifs/ubifs.h   |    9 +++
+> >> >>  fs/ubifs/xattr.c   |  147 ++++++++++++++++++++++++++++++++++++++++++++++++----
+> >> >>  6 files changed, 167 insertions(+), 14 deletions(-)
+> >> >>
+> >> >> diff --git a/fs/ubifs/dir.c b/fs/ubifs/dir.c
+> >> >> index ec9f187..f4e06c4 100644
+> >> >> --- a/fs/ubifs/dir.c
+> >> >> +++ b/fs/ubifs/dir.c
+> >> >> @@ -293,6 +293,7 @@ static int ubifs_create(struct inode *dir, struct dentry *dentry, umode_t mode,
+> >> >>       ubifs_release_budget(c, &req);
+> >> >>       insert_inode_hash(inode);
+> >> >>       d_instantiate(dentry, inode);
+> >> >> +     ubifs_init_security(dir, inode, &dentry->d_name);
+> >> >>       return 0;
+> >> >>
+> >> >>  out_cancel:
+> >> >
+> >> > The ubifs_init_security() should occur before d_instantiate() so that
+> >> > the inode is not accessible to other threads before its security
+> >> > attributes have been set.  And if it fails, you would ideally drop the
+> >> > inode altogether and return an error to the creating process.
+> >> >
+> >>
+> >> I will look into moving ubifs_init_security() before d_instantiate().
+> >> Last time I had tried I had run into some issues and had to keep
+> >> creating inode and then creating xattr as two seperate items. I will
+> >> look through the UBIFS code that actually creates xattr ubi nodes.
+> >> Also I will wait for couple of days to send v3 patch with to see if
+> >> mtd folks have other comments this patch.
+> >
+> > I'd favor moving the call to ubifs_init_security() inside of
+> > ubifs_new_inode() so that it gets done as part of all inode creation.
+> > To do that, you'll need to pass the &dentry->d_name (const struct qstr
+> > *) down to ubifs_new_inode(). But you can see that it is done that way
+> > for ext4_new_inode(), for example.
+> >
+> > --
+> 
+> Okay, I will look at that code little bit mode.
+> 
+> UBIFS create_xattr() (fs/ubifs/xattr.c)  calls ubifs_new_inode() so it
+> can get tricky if I want to create xattr in ubifs_new_inode().
+> 
+> Also noticed that UBIFS doesn't d_instantiate() inode entry created to
+> hold extended attribute, not certain if that would be an issue.
+> 
+> I will look how other fs manage xattrs, I certainly don't want to
+> modify how UBIFS manages extended attributes.
 
-Signed-off-by: Chris Boot <bootc@bootc.net>
-Cc: Andy Grover <agrover@redhat.com>
-Cc: Clemens Ladisch <clemens@ladisch.de>
-Cc: Nicholas A. Bellinger <nab@linux-iscsi.org>
-Cc: Stefan Richter <stefanr@s5r6.in-berlin.de>
----
- drivers/target/sbp/sbp_management_agent.c |  255 +++++++++++++++++++++++++++++
- drivers/target/sbp/sbp_management_agent.h |   34 ++++
- 2 files changed, 289 insertions(+)
- create mode 100644 drivers/target/sbp/sbp_management_agent.c
- create mode 100644 drivers/target/sbp/sbp_management_agent.h
+Oh, I missed the fact that ubifs xattrs are implemented as their own
+inodes.  In that case, I guess you don't want to do what I said above,
+and your current approach is fine (aside from moving it up before
+d_instantiate and handling the error case).  ext4 doesn't implement the
+xattr as a regular inode so that is different.
 
-diff --git a/drivers/target/sbp/sbp_management_agent.c b/drivers/target/sbp/sbp_management_agent.c
-new file mode 100644
-index 0000000..71f7b2f
---- /dev/null
-+++ b/drivers/target/sbp/sbp_management_agent.c
-@@ -0,0 +1,255 @@
-+/*
-+ * SBP2 target driver (SCSI over IEEE1394 in target mode)
-+ *
-+ * Copyright (C) 2011  Chris Boot <bootc@bootc.net>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation; either version 2 of the License, or
-+ * (at your option) any later version.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program; if not, write to the Free Software Foundation,
-+ * Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
-+ */
-+
-+#define KMSG_COMPONENT "sbp_target"
-+#define pr_fmt(fmt) KMSG_COMPONENT ": " fmt
-+
-+#include <linux/firewire.h>
-+#include <linux/firewire-constants.h>
-+#include <linux/kref.h>
-+
-+#include <target/target_core_base.h>
-+
-+#include "sbp_base.h"
-+#include "sbp_management_agent.h"
-+#include "sbp_login.h"
-+#include "sbp_scsi_cmnd.h"
-+
-+static void sbp_mgt_agent_process(struct work_struct *work)
-+{
-+	struct sbp_management_agent *agent =
-+		container_of(work, struct sbp_management_agent, work);
-+	struct sbp_management_request *req = agent->request;
-+	int ret;
-+	int status_data_len = 0;
-+
-+	/* fetch the ORB from the initiator */
-+	ret = sbp_run_transaction(req->card, TCODE_READ_BLOCK_REQUEST,
-+		req->node_addr, req->generation, req->speed,
-+		agent->orb_offset, &req->orb, sizeof(req->orb));
-+	if (ret != RCODE_COMPLETE) {
-+		pr_debug("mgt_orb fetch failed: %x\n", ret);
-+		goto out;
-+	}
-+
-+	pr_debug("mgt_orb ptr1:0x%llx ptr2:0x%llx misc:0x%x len:0x%x status_fifo:0x%llx\n",
-+		sbp2_pointer_to_addr(&req->orb.ptr1),
-+		sbp2_pointer_to_addr(&req->orb.ptr2),
-+		be32_to_cpu(req->orb.misc), be32_to_cpu(req->orb.length),
-+		sbp2_pointer_to_addr(&req->orb.status_fifo));
-+
-+	if (!ORB_NOTIFY(be32_to_cpu(req->orb.misc)) ||
-+		ORB_REQUEST_FORMAT(be32_to_cpu(req->orb.misc)) != 0) {
-+		pr_err("mgt_orb bad request\n");
-+		goto out;
-+	}
-+
-+	switch (MANAGEMENT_ORB_FUNCTION(be32_to_cpu(req->orb.misc))) {
-+	case MANAGEMENT_ORB_FUNCTION_LOGIN:
-+		sbp_management_request_login(agent, req, &status_data_len);
-+		break;
-+
-+	case MANAGEMENT_ORB_FUNCTION_QUERY_LOGINS:
-+		sbp_management_request_query_logins(agent, req,
-+				&status_data_len);
-+		break;
-+
-+	case MANAGEMENT_ORB_FUNCTION_RECONNECT:
-+		sbp_management_request_reconnect(agent, req, &status_data_len);
-+		break;
-+
-+	case MANAGEMENT_ORB_FUNCTION_SET_PASSWORD:
-+		pr_notice("SET PASSWORD not implemented\n");
-+
-+		req->status.status = cpu_to_be32(
-+			STATUS_BLOCK_RESP(STATUS_RESP_REQUEST_COMPLETE) |
-+			STATUS_BLOCK_SBP_STATUS(SBP_STATUS_REQ_TYPE_NOTSUPP));
-+
-+		break;
-+
-+	case MANAGEMENT_ORB_FUNCTION_LOGOUT:
-+		sbp_management_request_logout(agent, req, &status_data_len);
-+		break;
-+
-+	case MANAGEMENT_ORB_FUNCTION_ABORT_TASK:
-+		pr_notice("ABORT TASK not implemented\n");
-+
-+		req->status.status = cpu_to_be32(
-+			STATUS_BLOCK_RESP(STATUS_RESP_REQUEST_COMPLETE) |
-+			STATUS_BLOCK_SBP_STATUS(SBP_STATUS_REQ_TYPE_NOTSUPP));
-+
-+		break;
-+
-+	case MANAGEMENT_ORB_FUNCTION_ABORT_TASK_SET:
-+		pr_notice("ABORT TASK SET not implemented\n");
-+
-+		req->status.status = cpu_to_be32(
-+			STATUS_BLOCK_RESP(STATUS_RESP_REQUEST_COMPLETE) |
-+			STATUS_BLOCK_SBP_STATUS(SBP_STATUS_REQ_TYPE_NOTSUPP));
-+
-+		break;
-+
-+	case MANAGEMENT_ORB_FUNCTION_LOGICAL_UNIT_RESET:
-+		pr_notice("LOGICAL UNIT RESET not implemented\n");
-+
-+		req->status.status = cpu_to_be32(
-+			STATUS_BLOCK_RESP(STATUS_RESP_REQUEST_COMPLETE) |
-+			STATUS_BLOCK_SBP_STATUS(SBP_STATUS_REQ_TYPE_NOTSUPP));
-+
-+		break;
-+
-+	case MANAGEMENT_ORB_FUNCTION_TARGET_RESET:
-+		pr_notice("TARGET RESET not implemented\n");
-+
-+		req->status.status = cpu_to_be32(
-+			STATUS_BLOCK_RESP(STATUS_RESP_REQUEST_COMPLETE) |
-+			STATUS_BLOCK_SBP_STATUS(SBP_STATUS_REQ_TYPE_NOTSUPP));
-+
-+		break;
-+
-+	default:
-+		pr_notice("unknown management function 0x%x\n",
-+			MANAGEMENT_ORB_FUNCTION(be32_to_cpu(req->orb.misc)));
-+
-+		req->status.status = cpu_to_be32(
-+			STATUS_BLOCK_RESP(STATUS_RESP_REQUEST_COMPLETE) |
-+			STATUS_BLOCK_SBP_STATUS(SBP_STATUS_REQ_TYPE_NOTSUPP));
-+
-+		break;
-+	}
-+
-+	req->status.status |= cpu_to_be32(
-+		STATUS_BLOCK_SRC(1) | /* Response to ORB, next_ORB absent */
-+		STATUS_BLOCK_LEN(DIV_ROUND_UP(status_data_len, 4) + 1) |
-+		STATUS_BLOCK_ORB_OFFSET_HIGH(agent->orb_offset >> 32));
-+	req->status.orb_low = cpu_to_be32(agent->orb_offset);
-+
-+	/* write the status block back to the initiator */
-+	ret = sbp_run_transaction(req->card, TCODE_WRITE_BLOCK_REQUEST,
-+		req->node_addr, req->generation, req->speed,
-+		sbp2_pointer_to_addr(&req->orb.status_fifo),
-+		&req->status, 8 + status_data_len);
-+	if (ret != RCODE_COMPLETE) {
-+		pr_debug("mgt_orb status write failed: %x\n", ret);
-+		goto out;
-+	}
-+
-+out:
-+	fw_card_put(req->card);
-+	kfree(req);
-+
-+	spin_lock_bh(&agent->lock);
-+	agent->state = MANAGEMENT_AGENT_STATE_IDLE;
-+	spin_unlock_bh(&agent->lock);
-+}
-+
-+static void sbp_mgt_agent_rw(struct fw_card *card,
-+	struct fw_request *request, int tcode, int destination, int source,
-+	int generation, unsigned long long offset, void *data, size_t length,
-+	void *callback_data)
-+{
-+	struct sbp_management_agent *agent = callback_data;
-+	struct sbp2_pointer *ptr = data;
-+	int rcode = RCODE_ADDRESS_ERROR;
-+
-+	if (!agent->tport->enable)
-+		goto out;
-+
-+	if ((offset != agent->handler.offset) || (length != 8))
-+		goto out;
-+
-+	if (tcode == TCODE_WRITE_BLOCK_REQUEST) {
-+		struct sbp_management_request *req;
-+		int prev_state;
-+
-+		spin_lock_bh(&agent->lock);
-+		prev_state = agent->state;
-+		agent->state = MANAGEMENT_AGENT_STATE_BUSY;
-+		spin_unlock_bh(&agent->lock);
-+
-+		if (prev_state == MANAGEMENT_AGENT_STATE_BUSY) {
-+			pr_notice("ignoring management request while busy\n");
-+			rcode = RCODE_CONFLICT_ERROR;
-+			goto out;
-+		}
-+
-+		req = kzalloc(sizeof(*req), GFP_ATOMIC);
-+		if (!req) {
-+			rcode = RCODE_CONFLICT_ERROR;
-+			goto out;
-+		}
-+
-+		req->card = fw_card_get(card);
-+		req->generation = generation;
-+		req->node_addr = source;
-+		req->speed = fw_get_request_speed(request);
-+
-+		agent->orb_offset = sbp2_pointer_to_addr(ptr);
-+		agent->request = req;
-+
-+		queue_work(system_unbound_wq, &agent->work);
-+		rcode = RCODE_COMPLETE;
-+	} else if (tcode == TCODE_READ_BLOCK_REQUEST) {
-+		addr_to_sbp2_pointer(agent->orb_offset, ptr);
-+		rcode = RCODE_COMPLETE;
-+	} else {
-+		rcode = RCODE_TYPE_ERROR;
-+	}
-+
-+out:
-+	fw_send_response(card, request, rcode);
-+}
-+
-+struct sbp_management_agent *sbp_management_agent_register(
-+		struct sbp_tport *tport)
-+{
-+	int ret;
-+	struct sbp_management_agent *agent;
-+
-+	agent = kmalloc(sizeof(*agent), GFP_KERNEL);
-+	if (!agent)
-+		return ERR_PTR(-ENOMEM);
-+
-+	spin_lock_init(&agent->lock);
-+	agent->tport = tport;
-+	agent->handler.length = 0x08;
-+	agent->handler.address_callback = sbp_mgt_agent_rw;
-+	agent->handler.callback_data = agent;
-+	agent->state = MANAGEMENT_AGENT_STATE_IDLE;
-+	INIT_WORK(&agent->work, sbp_mgt_agent_process);
-+	agent->orb_offset = 0;
-+	agent->request = NULL;
-+
-+	ret = fw_core_add_address_handler(&agent->handler,
-+			&sbp_register_region);
-+	if (ret < 0) {
-+		kfree(agent);
-+		return ERR_PTR(ret);
-+	}
-+
-+	return agent;
-+}
-+
-+void sbp_management_agent_unregister(struct sbp_management_agent *agent)
-+{
-+	fw_core_remove_address_handler(&agent->handler);
-+	cancel_work_sync(&agent->work);
-+	kfree(agent);
-+}
-diff --git a/drivers/target/sbp/sbp_management_agent.h b/drivers/target/sbp/sbp_management_agent.h
-new file mode 100644
-index 0000000..73237ae
---- /dev/null
-+++ b/drivers/target/sbp/sbp_management_agent.h
-@@ -0,0 +1,34 @@
-+#ifndef _SBP_MANAGEMENT_AGENT_H
-+#define _SBP_MANAGEMENT_AGENT_H
-+
-+#include <linux/types.h>
-+#include <linux/firewire.h>
-+#include <linux/spinlock.h>
-+#include <linux/workqueue.h>
-+
-+#include "sbp_base.h"
-+
-+struct sbp_management_agent {
-+	spinlock_t lock;
-+	struct sbp_tport *tport;
-+	struct fw_address_handler handler;
-+	int state;
-+	struct work_struct work;
-+	u64 orb_offset;
-+	struct sbp_management_request *request;
-+};
-+
-+struct sbp_management_request {
-+	struct sbp_management_orb orb;
-+	struct sbp_status_block status;
-+	struct fw_card *card;
-+	int generation;
-+	int node_addr;
-+	int speed;
-+};
-+
-+struct sbp_management_agent *sbp_management_agent_register(
-+		struct sbp_tport *tport);
-+void sbp_management_agent_unregister(struct sbp_management_agent *agent);
-+
-+#endif
 -- 
-1.7.9.5
+Stephen Smalley
+National Security Agency
 
