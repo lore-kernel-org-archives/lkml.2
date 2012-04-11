@@ -1,45 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760831Ab2DKSJs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Apr 2012 14:09:48 -0400
-Received: from fifo99.com ([67.223.236.141]:57298 "EHLO fifo99.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756869Ab2DKSJr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Apr 2012 14:09:47 -0400
-Date: Wed, 11 Apr 2012 11:09:44 -0700
-From: Daniel Walker <dwalker@fifo99.com>
-To: David Brown <davidb@codeaurora.org>
-Cc: Bryan Huntsman <bryanh@codeaurora.org>,
-        Russell King <linux@arm.linux.org.uk>, linux-kernel@vger.kernel.org,
-        linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH] ARM: msm: remove unused MSM boards
-Message-ID: <20120411180944.GE8114@fifo99.com>
-References: <1334165870-12487-1-git-send-email-davidb@codeaurora.org>
- <20120411175550.GB8114@fifo99.com>
- <20120411180408.GA12930@codeaurora.org>
+	id S1760846Ab2DKSKQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Apr 2012 14:10:16 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:65140 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752081Ab2DKSKO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Apr 2012 14:10:14 -0400
+Message-ID: <4F85C909.8040905@gmail.com>
+Date: Wed, 11 Apr 2012 14:10:17 -0400
+From: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:11.0) Gecko/20120327 Thunderbird/11.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120411180408.GA12930@codeaurora.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Johannes Weiner <hannes@cmpxchg.org>
+CC: Rik van Riel <riel@redhat.com>, Andrew Morton <akpm@linux-foundation.org>,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        kosaki.motohiro@gmail.com
+Subject: Re: [PATCH -mm] remove swap token code
+References: <20120409113201.6dff571a@annuminas.surriel.com> <20120411014855.GA1929@cmpxchg.org>
+In-Reply-To: <20120411014855.GA1929@cmpxchg.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 11, 2012 at 11:04:09AM -0700, David Brown wrote:
-> On Wed, Apr 11, 2012 at 10:55:50AM -0700, Daniel Walker wrote:
-> > On Wed, Apr 11, 2012 at 10:37:50AM -0700, David Brown wrote:
-> > > The "mahimahi" and "sapphire" were never finished, and have never been
-> > > built.
-> > > 
-> > > The "halibut" target was a dev board that hasn't ever been widely
-> > > available (MSM7201 "SURF").
-> > 
-> > I don't mind if you remove halibut, but the others are just incomplete
-> > phone support which someone may want to add to.. I'd prefer to fix those
-> > two..
-> 
-> Why, though?  It's obvious that nobody is using them, since they've
-> never worked.
+(4/10/12 9:48 PM), Johannes Weiner wrote:
+> On Mon, Apr 09, 2012 at 11:32:01AM -0400, Rik van Riel wrote:
+>> The swap token code no longer fits in with the current VM model.
+>> It does not play well with cgroups or the better NUMA placement
+>> code in development, since we have only one swap token globally.
+>>
+>> It also has the potential to mess with scalability of the system,
+>> by increasing the number of non-reclaimable pages on the active
+>> and inactive anon LRU lists.
+>>
+>> Last but not least, the swap token code has been broken for a
+>> year without complaints.  This suggests we no longer have much
+>> use for it.
+>>
+>> The days of sub-1G memory systems with heavy use of swap are
+>> over. If we ever need thrashing reducing code in the future,
+>> we will have to implement something that does scale.
+>>
+>> Signed-off-by: Rik van Riel<riel@redhat.com>
+>
+> Acked-by: Johannes Weiner<hannes@cmpxchg.org>
 
-https://lkml.org/lkml/2011/1/20/367
+Acked-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+
+I really think swap token is sane. but now (after merging Johannes's memcg naturalization)
+it don't work and we don't have a reason to maintain _current_ implementaion.
+
+
+
