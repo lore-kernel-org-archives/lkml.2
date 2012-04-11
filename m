@@ -1,89 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932650Ab2DKQwK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Apr 2012 12:52:10 -0400
-Received: from mms3.broadcom.com ([216.31.210.19]:2275 "EHLO MMS3.broadcom.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932418Ab2DKQwI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Apr 2012 12:52:08 -0400
-X-Server-Uuid: B730DE51-FC43-4C83-941F-F1F78A914BDD
-Message-ID: <4F85B6C9.7010003@broadcom.com>
-Date: Wed, 11 Apr 2012 18:52:25 +0200
-From: "Arend van Spriel" <arend@broadcom.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:10.0.2) Gecko/20120216
- Thunderbird/10.0.2
+	id S932645Ab2DKQwm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Apr 2012 12:52:42 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:50524 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932621Ab2DKQwl (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Apr 2012 12:52:41 -0400
+Date: Wed, 11 Apr 2012 18:52:23 +0200
+From: Sascha Hauer <s.hauer@pengutronix.de>
+To: Chris Ball <cjb@laptop.org>
+Cc: Dmitry Artamonow <mad_soft@inbox.ru>, linux-mmc@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Wolfram Sang <w.sang@pengutronix.de>
+Subject: Re: [PATCH] mmc: remove linux/blkdev.h include from host drivers
+Message-ID: <20120411165223.GP3852@pengutronix.de>
+References: <1334084783-3572-1-git-send-email-mad_soft@inbox.ru>
+ <87ty0qs2fz.fsf@laptop.org>
 MIME-Version: 1.0
-To: "Luis R. Rodriguez" <rodrigue@qca.qualcomm.com>,
-        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
-        "Michael Green" <green@qca.qualcomm.com>,
-        "David Quan" <dquan@qca.qualcomm.com>,
-        "Henry Ptasinski" <henry@logout.com>, linux-kernel@vger.kernel.org
-Subject: Re: Problems with regulatory domain support and BCM43224
-References: <4F69B604.4030303@broadcom.com>
- <20120321141916.GA23643@thinkpad-t410> <4F6A1514.9090907@broadcom.com>
- <20120321181753.GC24075@tux> <20120321193706.GC23643@thinkpad-t410>
- <20120322002715.GA3709@tux> <20120326193608.GE17126@thinkpad-t410>
- <20120404024632.GA13090@thinkpad-t410>
- <20120410162833.GD21994@thinkpad-t410> <4F855A08.6070902@broadcom.com>
- <20120411133940.GA15854@thinkpad-t410>
-In-Reply-To: <20120411133940.GA15854@thinkpad-t410>
-X-WSS-ID: 639B677F3E016461366-01-01
-Content-Type: text/plain;
- charset=iso-8859-1;
- format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <87ty0qs2fz.fsf@laptop.org>
+X-Sent-From: Pengutronix Hildesheim
+X-URL: http://www.pengutronix.de/
+X-IRC: #ptxdist @freenode
+X-Accept-Language: de,en
+X-Accept-Content-Type: text/plain
+X-Uptime: 18:50:18 up 151 days, 37 min, 55 users,  load average: 0.04, 0.08,
+ 0.06
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
+X-SA-Exim-Mail-From: sha@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/11/2012 03:39 PM, Seth Forshee wrote:
-> On Wed, Apr 11, 2012 at 12:16:40PM +0200, Arend van Spriel wrote:
->> On 04/10/2012 06:28 PM, Seth Forshee wrote:
->>>> The patch builds, and kind of works. Scanning seems to be fine; I can
->>>>>   see all the APs I expect in my area, including the one on a DFS channel
->>>>>   that I couldn't see previously. I can associate with my 2.4 GHz APs, but
->>>>>   not the 5 GHz AP. I see timme outs waiting for probe responses, and I'm
->>>>>   hitting the WARN_ON_ONCE in brcms_c_wait_for_tx_completion(). I haven't
->>>>>   really debugged this yet -- I thought I'd send out the patch to collect
->>>>>   comments while I debug. Suggestions of what's causing this are also
->>>>>   welcome:)
->>> This was due to always passing true for the value of mute_tx to
->>> brcms_b_set_chanspec() on passive channels. For now I'm just always
->>> passing false, which looks like it ought to be okay as we shouldn't have
->>> any tx on passive channels unless beacons are seen on the channel.
->>
->> Yes. I discovered this as well. Actually, I sent out a patch for
->> some people to test it. I submitted a slightly different patch to
->> John in which tx in unmuted upon receiving a beacon.
->
-> I assume you're talking about this patch?
->
-> http://www.spinics.net/lists/linux-wireless/msg88107.html
->
-> My original changes would mute tx whenever IEEE80211_CHAN_PASSIVE_SCAN
-> is set for the current channel. I'll try that again with your patch.
->
+On Wed, Apr 11, 2012 at 11:39:12AM -0400, Chris Ball wrote:
+> Hi Sascha, Wolfram,
+> 
+> On Tue, Apr 10 2012, Dmitry Artamonow wrote:
+> > I've compile tested everything with and without CONFIG_BLOCK enabled,
+> > except for imxmmc.c - this driver seems to be long time broken
+> > (at least since the removal of mach-imx in 2.6.31 - see commit
+> > 1341d34ffc296f98dc84876f35f3151525dc02a2 ) 
+> 
+> I can confirm that it no longer builds:
+> 
+> /home/cjb/git/mmc/drivers/mmc/host/imxmmc.c:32:26: fatal error: mach/imx-dma.h: No such file or directory
+> 
+> Should imxmmc simply be removed from drivers/mmc/host?  Do any of the
+> more current i.MX MMC drivers support the same hardware?
 
-That is the one.
+It has long been on my todo list to remove this driver. The more recent
+i.MX use the mxcmmc driver which is basically the same hardware but
+without a bunch of bugs which made the older imxmmc driver unusable on
+newer hardware. I can send a patch if you like.
 
->>>>>   One of the major unresolved issues in the patch is what to do with the
->>>>>   data in struct locale_mimo_info. The regulatory rules only hold one
->>>>>   power level. I'm unsure why the brcmsmac implementation differs in this
->>>>>   regard. Suggestions?
->>> This is still one of the largest unsolved issues. I'm probably going to
->>> need some advice on how to fill out the txpwr information when
->>> regualtory rules external to the driver can be applied.
->>>
->>
->> The power constraints for HT (covered by struct locale_mimo_info)
->> are handled differently from non-HT. I have to confirm internally
->> whether this is specific for our devices or actually needed to be
->> compliant.
->
-> Great, thanks.
->
+Sascha
 
-No answer on this one yet, but keep you posted.
-
-Gr. AvS
-
+-- 
+Pengutronix e.K.                           |                             |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
+Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
