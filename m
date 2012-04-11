@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965440Ab2DKX1q (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Apr 2012 19:27:46 -0400
-Received: from mail-pz0-f52.google.com ([209.85.210.52]:53150 "EHLO
-	mail-pz0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934052Ab2DKX1l (ORCPT
+	id S965538Ab2DKX14 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Apr 2012 19:27:56 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:45547 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965394Ab2DKX1y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Apr 2012 19:27:41 -0400
-Message-Id: <20120411231307.812978396@linuxfoundation.org>
+	Wed, 11 Apr 2012 19:27:54 -0400
+Message-Id: <20120411231308.383047518@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Wed, 11 Apr 2012 16:13:10 -0700
+Date: Wed, 11 Apr 2012 16:13:13 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Oliver Neukum <oliver@neukum.name>,
-        Rabin Vincent <rabin@rab.in>, "David S. Miller" <davem@davemloft.net>
-Subject: [ 03/42] net: usb: cdc_eem: fix mtu
+        alan@lxorguk.ukuu.org.uk,
+        Artem Bityutskiy <artem.bityutskiy@linux.intel.com>,
+        David Woodhouse <David.Woodhouse@intel.com>
+Subject: [ 06/42] mtd: lart: initialize writebufsize
 In-Reply-To: <20120411231443.GA808@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,36 +26,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
+From: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
 
-From: Rabin Vincent <rabin@rab.in>
+commit fcc44a07dae0af16e84e93425fc8afe642ddc603 upstream.
 
-[ Upstream commit 78fb72f7936c01d5b426c03a691eca082b03f2b9 ]
+The writebufsize concept was introduce by commit
+"0e4ca7e mtd: add writebufsize field to mtd_info struct" and it represents
+the maximum amount of data the device writes to the media at a time. This is
+an important parameter for UBIFS which is used during recovery and which
+basically defines how big a corruption caused by a power cut can be.
 
-Make CDC EEM recalculate the hard_mtu after adjusting the
-hard_header_len.
+Set writebufsize to 4 because this drivers writes at max 4 bytes at a time.
 
-Without this, usbnet adjusts the MTU down to 1494 bytes, and the host is
-unable to receive standard 1500-byte frames from the device.
-
-Tested with the Linux USB Ethernet gadget.
-
-Cc: Oliver Neukum <oliver@neukum.name>
-Signed-off-by: Rabin Vincent <rabin@rab.in>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
+Signed-off-by: David Woodhouse <David.Woodhouse@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
 ---
- drivers/net/usb/cdc_eem.c |    1 +
+ drivers/mtd/devices/lart.c |    1 +
  1 file changed, 1 insertion(+)
 
---- a/drivers/net/usb/cdc_eem.c
-+++ b/drivers/net/usb/cdc_eem.c
-@@ -93,6 +93,7 @@ static int eem_bind(struct usbnet *dev,
- 	/* no jumbogram (16K) support for now */
- 
- 	dev->net->hard_header_len += EEM_HEAD + ETH_FCS_LEN;
-+	dev->hard_mtu = dev->net->mtu + dev->net->hard_header_len;
- 
- 	return 0;
- }
+--- a/drivers/mtd/devices/lart.c
++++ b/drivers/mtd/devices/lart.c
+@@ -636,6 +636,7 @@ static int __init lart_flash_init (void)
+    mtd.name = module_name;
+    mtd.type = MTD_NORFLASH;
+    mtd.writesize = 1;
++   mtd.writebufsize = 4;
+    mtd.flags = MTD_CAP_NORFLASH;
+    mtd.size = FLASH_BLOCKSIZE_PARAM * FLASH_NUMBLOCKS_16m_PARAM + FLASH_BLOCKSIZE_MAIN * FLASH_NUMBLOCKS_16m_MAIN;
+    mtd.erasesize = FLASH_BLOCKSIZE_MAIN;
 
 
