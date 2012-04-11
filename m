@@ -1,52 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760935Ab2DKTSz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Apr 2012 15:18:55 -0400
-Received: from mail-qa0-f42.google.com ([209.85.216.42]:56251 "EHLO
-	mail-qa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756034Ab2DKTSx convert rfc822-to-8bit (ORCPT
+	id S1760949Ab2DKTUd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Apr 2012 15:20:33 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:61186 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756034Ab2DKTUb convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Apr 2012 15:18:53 -0400
+	Wed, 11 Apr 2012 15:20:31 -0400
 MIME-Version: 1.0
-In-Reply-To: <20120411191325.GL12044@thunk.org>
-References: <E1SHnDZ-0006Za-Kh@tytso-glaptop.cam.corp.google.com>
-	<20120411045107.GA324@x4>
-	<20120411180520.GE12044@thunk.org>
-	<20120411182856.GA327@x4>
-	<20120411191325.GL12044@thunk.org>
-Date: Wed, 11 Apr 2012 12:18:52 -0700
-Message-ID: <CAMe9rOrhJR1Gg02hGmXHE8prtTeZvS6JuR6q=waM3iSNLKFpuw@mail.gmail.com>
-Subject: Re: Trying to make a working kernel with the gold linker
-From: "H.J. Lu" <hjl.tools@gmail.com>
-To: "Ted Ts'o" <tytso@mit.edu>, Markus Trippelsdorf <markus@trippelsdorf.de>,
-        linux-kernel@vger.kernel.org, hjl.tools@gmail.com
+In-Reply-To: <4F85C6D5.6080904@zytor.com>
+References: <20120401125741.GA7484@p183.telecom.by> <4F78D0BA.9040709@zytor.com>
+ <CACVxJT_WJYjecpZMGkyUrbE5gNROX1tOfFAcD84-hoPsypxcFQ@mail.gmail.com>
+ <4F7F1864.8090606@zytor.com> <CAHGf_=rsJ8o8Fnd2z5Z8jHGc=cz370ay0_t3bhkiYRCBh3puVw@mail.gmail.com>
+ <4F85C6D5.6080904@zytor.com>
+From: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
+Date: Wed, 11 Apr 2012 15:20:10 -0400
+Message-ID: <CAHGf_=ro=TwrYw4UoUMaHjb08rVbz-KjovZfND608J26w=n4HQ@mail.gmail.com>
+Subject: Re: [PATCH] nextfd(2)
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Alexey Dobriyan <adobriyan@gmail.com>, akpm@linux-foundation.org,
+        viro@zeniv.linux.org.uk, torvalds@linux-foundation.org,
+        drepper@gmail.com, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 11, 2012 at 12:13 PM, Ted Ts'o <tytso@mit.edu> wrote:
-> On Wed, Apr 11, 2012 at 08:28:56PM +0200, Markus Trippelsdorf wrote:
+On Wed, Apr 11, 2012 at 2:00 PM, H. Peter Anvin <hpa@zytor.com> wrote:
+> On 04/10/2012 05:09 PM, KOSAKI Motohiro wrote:
 >>
->> Just compiling and installing a new binutils version should work fine.
+>> I know the reason. fcntl(F_NEXT) is one of a proposal of next SUS enhancement.
 >>
->> (But you should nonetheless consider to also upgrade gcc, because
->> gcc-4.4 is ancient and not even officially maintained anymore...)
+>>   http://austingroupbugs.net/view.php?id=149
+>>
+>> nextfd() has a semantics of F_NEXT.
+>>
 >
-> Well *someone* has to still make sure the kernel compiles correctly on
-> the enterprise distro's that a huge number of Linux users use...
-> (including RHEL 6, Debian Stable, SLES 11, Ubuntu LTS 10.04, etc.)
->
-> :-)
->
-> But yeah, I hope to get off of Ubuntu LTS real soon now, and onto
-> something a bit more hip, such as Debian testing.
->
->                                                - Ted
+> Looking at that bug report, it sounds like that proposal was rejected.
 
-To build Linux kernel with gold, you should at least try gold in
-binutils 2.22.
+?
 
--- 
-H.J.
+If I understand correctly, above URL says, latest satatus is
+
+  Resolution: Accepted As Marked
+
+Please see toppest issue summary. Or if I am missing something, can you please
+point out which line are you seeing?
