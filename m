@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965751Ab2DKX3V (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Apr 2012 19:29:21 -0400
+	id S965778Ab2DKX3c (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Apr 2012 19:29:32 -0400
 Received: from mail-pb0-f46.google.com ([209.85.160.46]:38577 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965720Ab2DKX3H (ORCPT
+	with ESMTP id S965748Ab2DKX3U (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Apr 2012 19:29:07 -0400
-Message-Id: <20120411231310.915461092@linuxfoundation.org>
+	Wed, 11 Apr 2012 19:29:20 -0400
+Message-Id: <20120411231313.390977748@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Wed, 11 Apr 2012 16:13:28 -0700
+Date: Wed, 11 Apr 2012 16:13:41 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Markus Heinz <markus.heinz@uni-dortmund.de>,
-        Chris Wilson <chris@chris-wilson.co.uk>,
-        Rodrigo Vivi <rodrigo.vivi@gmail.com>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>
-Subject: [ 21/42] drm/i915: quirk away broken OpRegion VBT
+        alan@lxorguk.ukuu.org.uk, Carlos Corbacho <carlos@strangeworlds.co.uk>,
+        Matthew Garrett <mjg@redhat.com>, Mattia Dongili <malattia@linux.it>,
+        Dimitris N <ddarlac@gmail.com>, "Lee, Chun-Yi" <jlee@suse.com>
+Subject: [ 34/42] acer-wmi: No wifi rfkill on Sony machines
 In-Reply-To: <20120411231443.GA808@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,69 +26,37 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Daniel Vetter <daniel.vetter@ffwll.ch>
+From: "Lee, Chun-Yi" <joeyli.kernel@gmail.com>
 
-commit 25e341cfc33d94435472983825163e97fe370a6c upstream.
+commit 5719b81988f3c24ff694dc3a37e35b35630a3966 upstream.
 
-Somehow the BIOS manages to screw things up when copying the VBT
-around, because the one we scrap from the VBIOS rom actually works.
+The wireless rfkill should charged by sony-laptop but not acer-wmi.
+So, add Sony's SNY5001 acpi device to blacklist in acer-wmi.
 
-Tested-by: Markus Heinz <markus.heinz@uni-dortmund.de>
-Acked-by: Chris Wilson <chris@chris-wilson.co.uk>
-Reviewed-by: Rodrigo Vivi <rodrigo.vivi@gmail.com>
-Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=28812
-Signed-Off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+Tested on Sony Vaio
+
+Cc: Carlos Corbacho <carlos@strangeworlds.co.uk>
+Cc: Matthew Garrett <mjg@redhat.com>
+Cc: Mattia Dongili <malattia@linux.it>
+Cc: Dimitris N <ddarlac@gmail.com>
+Tested-by: Dimitris N <ddarlac@gmail.com>
+Signed-off-by: Lee, Chun-Yi <jlee@suse.com>
+Signed-off-by: Matthew Garrett <mjg@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/i915/intel_bios.c |   23 ++++++++++++++++++++++-
- 1 file changed, 22 insertions(+), 1 deletion(-)
+ drivers/platform/x86/acer-wmi.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/drivers/gpu/drm/i915/intel_bios.c
-+++ b/drivers/gpu/drm/i915/intel_bios.c
-@@ -24,6 +24,7 @@
-  *    Eric Anholt <eric@anholt.net>
-  *
-  */
-+#include <linux/dmi.h>
- #include <drm/drm_dp_helper.h>
- #include "drmP.h"
- #include "drm.h"
-@@ -592,6 +593,26 @@ init_vbt_defaults(struct drm_i915_privat
- 	dev_priv->edp.bpp = 18;
- }
+--- a/drivers/platform/x86/acer-wmi.c
++++ b/drivers/platform/x86/acer-wmi.c
+@@ -689,6 +689,7 @@ static const struct acpi_device_id norfk
+ 	{ "VPC2004", 0},
+ 	{ "IBM0068", 0},
+ 	{ "LEN0068", 0},
++	{ "SNY5001", 0},	/* sony-laptop in charge */
+ 	{ "", 0},
+ };
  
-+static int __init intel_no_opregion_vbt_callback(const struct dmi_system_id *id)
-+{
-+	DRM_DEBUG_KMS("Falling back to manually reading VBT from "
-+		      "VBIOS ROM for %s\n",
-+		      id->ident);
-+	return 1;
-+}
-+
-+static const struct dmi_system_id intel_no_opregion_vbt[] = {
-+	{
-+		.callback = intel_no_opregion_vbt_callback,
-+		.ident = "ThinkCentre A57",
-+		.matches = {
-+			DMI_MATCH(DMI_SYS_VENDOR, "LENOVO"),
-+			DMI_MATCH(DMI_PRODUCT_NAME, "97027RG"),
-+		},
-+	},
-+	{ }
-+};
-+
- /**
-  * intel_parse_bios - find VBT and initialize settings from the BIOS
-  * @dev: DRM device
-@@ -612,7 +633,7 @@ intel_parse_bios(struct drm_device *dev)
- 	init_vbt_defaults(dev_priv);
- 
- 	/* XXX Should this validation be moved to intel_opregion.c? */
--	if (dev_priv->opregion.vbt) {
-+	if (!dmi_check_system(intel_no_opregion_vbt) && dev_priv->opregion.vbt) {
- 		struct vbt_header *vbt = dev_priv->opregion.vbt;
- 		if (memcmp(vbt->signature, "$VBT", 4) == 0) {
- 			DRM_DEBUG_DRIVER("Using VBT from OpRegion: %20s\n",
 
 
