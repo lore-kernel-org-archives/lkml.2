@@ -1,247 +1,148 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933492Ab2DKWOc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Apr 2012 18:14:32 -0400
-Received: from fieldses.org ([174.143.236.118]:34397 "EHLO fieldses.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1761289Ab2DKWOb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Apr 2012 18:14:31 -0400
-Date: Wed, 11 Apr 2012 18:14:29 -0400
-From: "J. Bruce Fields" <bfields@fieldses.org>
-To: Stanislav Kinsbursky <skinsbursky@parallels.com>
-Cc: linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org, devel@openvz.org
-Subject: Re: [PATCH 2/4] nfsd: make export cache allocated per network
- namespace context
-Message-ID: <20120411221429.GF31706@fieldses.org>
-References: <20120411111053.13840.66083.stgit@localhost6.localdomain6>
- <20120411111321.13840.93926.stgit@localhost6.localdomain6>
+	id S933503Ab2DKWQT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Apr 2012 18:16:19 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:33121 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933457Ab2DKWQR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Apr 2012 18:16:17 -0400
+Date: Wed, 11 Apr 2012 15:15:51 -0700
+From: tip-bot for Thomas Gleixner <tglx@linutronix.de>
+Message-ID: <tip-d48fc63f6f3f485ed5aa9cf019d8e8e3a7d10263@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, arjanvandeven@gmail.com, hpa@zytor.com,
+        mingo@kernel.org, johnstul@us.ibm.com, arjan@infradead.org,
+        mfwitten@gmail.com, lenb@kernel.org, tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, arjanvandeven@gmail.com,
+        linux-kernel@vger.kernel.org, johnstul@us.ibm.com, arjan@infradead.org,
+        mfwitten@gmail.com, lenb@kernel.org, tglx@linutronix.de
+In-Reply-To: <alpine.LFD.2.02.1204112303270.2542@ionos>
+References: <alpine.LFD.2.02.1204112303270.2542@ionos>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:timers/urgent] Revert "clocksource:
+  Load the ACPI PM clocksource asynchronously"
+Git-Commit-ID: d48fc63f6f3f485ed5aa9cf019d8e8e3a7d10263
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-In-Reply-To: <20120411111321.13840.93926.stgit@localhost6.localdomain6>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Wed, 11 Apr 2012 15:15:57 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 11, 2012 at 03:13:21PM +0400, Stanislav Kinsbursky wrote:
-> This patch also changes prototypes of nfsd_export_flush() and exp_rootfh():
-> network namespace parameter added.
+Commit-ID:  d48fc63f6f3f485ed5aa9cf019d8e8e3a7d10263
+Gitweb:     http://git.kernel.org/tip/d48fc63f6f3f485ed5aa9cf019d8e8e3a7d10263
+Author:     Thomas Gleixner <tglx@linutronix.de>
+AuthorDate: Wed, 11 Apr 2012 23:49:16 +0200
+Committer:  Thomas Gleixner <tglx@linutronix.de>
+CommitDate: Thu, 12 Apr 2012 00:05:05 +0200
 
-This also isn't applying cleanly for me.
+Revert "clocksource: Load the ACPI PM clocksource asynchronously"
 
-At this point I'm assuming any patches that aren't already applied to my
-git tree need to be resent.
+This reverts commit b519508298e0292e1771eecf14aaf67755adc39d.
 
---b.
+The reason for this revert is that making the frequency verification
+preemptible and interruptible is not working reliably. Michaels
+machine failed to use PM-timer with the message:
 
-> 
-> Signed-off-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
-> 
-> ---
->  fs/nfsd/export.c            |   47 +++++++++++++++++++++++++++++--------------
->  fs/nfsd/netns.h             |    2 ++
->  fs/nfsd/nfsctl.c            |    2 +-
->  fs/nfsd/nfssvc.c            |    2 +-
->  include/linux/nfsd/export.h |    4 ++--
->  5 files changed, 38 insertions(+), 19 deletions(-)
-> 
-> diff --git a/fs/nfsd/export.c b/fs/nfsd/export.c
-> index 688264b..84d020f 100644
-> --- a/fs/nfsd/export.c
-> +++ b/fs/nfsd/export.c
-> @@ -15,11 +15,13 @@
->  #include <linux/namei.h>
->  #include <linux/module.h>
->  #include <linux/exportfs.h>
-> +#include <linux/sunrpc/svc_xprt.h>
->  
->  #include <net/ipv6.h>
->  
->  #include "nfsd.h"
->  #include "nfsfh.h"
-> +#include "netns.h"
->  
->  #define NFSDDBG_FACILITY	NFSDDBG_EXPORT
->  
-> @@ -298,8 +300,6 @@ svc_expkey_update(struct cache_detail *cd, struct svc_expkey *new,
->  #define	EXPORT_HASHBITS		8
->  #define	EXPORT_HASHMAX		(1<< EXPORT_HASHBITS)
->  
-> -static struct cache_head *export_table[EXPORT_HASHMAX];
-> -
->  static void nfsd4_fslocs_free(struct nfsd4_fs_locations *fsloc)
->  {
->  	int i;
-> @@ -708,10 +708,9 @@ static struct cache_head *svc_export_alloc(void)
->  		return NULL;
->  }
->  
-> -struct cache_detail svc_export_cache = {
-> +struct cache_detail svc_export_cache_template = {
->  	.owner		= THIS_MODULE,
->  	.hash_size	= EXPORT_HASHMAX,
-> -	.hash_table	= export_table,
->  	.name		= "nfsd.export",
->  	.cache_put	= svc_export_put,
->  	.cache_upcall	= svc_export_upcall,
-> @@ -835,7 +834,7 @@ static struct svc_export *exp_parent(struct cache_detail *cd, svc_client *clp,
->   * since its harder to fool a kernel module than a user space program.
->   */
->  int
-> -exp_rootfh(svc_client *clp, char *name,
-> +exp_rootfh(struct net *net, svc_client *clp, char *name,
->  	   struct knfsd_fh *f, int maxsize)
->  {
->  	struct svc_export	*exp;
-> @@ -843,7 +842,8 @@ exp_rootfh(svc_client *clp, char *name,
->  	struct inode		*inode;
->  	struct svc_fh		fh;
->  	int			err;
-> -	struct cache_detail	*cd = &svc_export_cache;
-> +	struct nfsd_net		*nn = net_generic(net, nfsd_net_id);
-> +	struct cache_detail	*cd = nn->svc_export_cache;
->  
->  	err = -EPERM;
->  	/* NB: we probably ought to check that it's NUL-terminated */
-> @@ -930,7 +930,8 @@ struct svc_export *
->  rqst_exp_get_by_name(struct svc_rqst *rqstp, struct path *path)
->  {
->  	struct svc_export *gssexp, *exp = ERR_PTR(-ENOENT);
-> -	struct cache_detail *cd = &svc_export_cache;
-> +	struct nfsd_net *nn = net_generic(rqstp->rq_xprt->xpt_net, nfsd_net_id);
-> +	struct cache_detail *cd = nn->svc_export_cache;
->  
->  	if (rqstp->rq_client == NULL)
->  		goto gss;
-> @@ -960,7 +961,8 @@ struct svc_export *
->  rqst_exp_find(struct svc_rqst *rqstp, int fsid_type, u32 *fsidv)
->  {
->  	struct svc_export *gssexp, *exp = ERR_PTR(-ENOENT);
-> -	struct cache_detail *cd = &svc_export_cache;
-> +	struct nfsd_net *nn = net_generic(rqstp->rq_xprt->xpt_net, nfsd_net_id);
-> +	struct cache_detail *cd = nn->svc_export_cache;
->  
->  	if (rqstp->rq_client == NULL)
->  		goto gss;
-> @@ -1238,26 +1240,39 @@ int
->  nfsd_export_init(struct net *net)
->  {
->  	int rv;
-> +	struct nfsd_net *nn = net_generic(net, nfsd_net_id);
-> +
->  	dprintk("nfsd: initializing export module (net: %p).\n", net);
->  
-> -	rv = cache_register_net(&svc_export_cache, net);
-> +	nn->svc_export_cache = cache_create_net(&svc_export_cache_template, net);
-> +	if (IS_ERR(nn->svc_export_cache))
-> +		return PTR_ERR(nn->svc_export_cache);
-> +	rv = cache_register_net(nn->svc_export_cache, net);
->  	if (rv)
-> -		return rv;
-> +		goto destroy_export_cache;
-> +
->  	rv = cache_register_net(&svc_expkey_cache, net);
->  	if (rv)
-> -		cache_unregister_net(&svc_export_cache, net);
-> -	return rv;
-> +		goto unregister_export_cache;
-> +	return 0;
->  
-> +unregister_export_cache:
-> +	cache_unregister_net(nn->svc_export_cache, net);
-> +destroy_export_cache:
-> +	cache_destroy_net(nn->svc_export_cache, net);
-> +	return rv;
->  }
->  
->  /*
->   * Flush exports table - called when last nfsd thread is killed
->   */
->  void
-> -nfsd_export_flush(void)
-> +nfsd_export_flush(struct net *net)
->  {
-> +	struct nfsd_net *nn = net_generic(net, nfsd_net_id);
-> +
->  	cache_purge(&svc_expkey_cache);
-> -	cache_purge(&svc_export_cache);
-> +	cache_purge(nn->svc_export_cache);
->  }
->  
->  /*
-> @@ -1266,11 +1281,13 @@ nfsd_export_flush(void)
->  void
->  nfsd_export_shutdown(struct net *net)
->  {
-> +	struct nfsd_net *nn = net_generic(net, nfsd_net_id);
->  
->  	dprintk("nfsd: shutting down export module (net: %p).\n", net);
->  
->  	cache_unregister_net(&svc_expkey_cache, net);
-> -	cache_unregister_net(&svc_export_cache, net);
-> +	cache_unregister_net(nn->svc_export_cache, net);
-> +	cache_destroy_net(nn->svc_export_cache, net);
->  	svcauth_unix_purge();
->  
->  	dprintk("nfsd: export shutdown complete (net: %p).\n", net);
-> diff --git a/fs/nfsd/netns.h b/fs/nfsd/netns.h
-> index 12e0cff..c1c6242 100644
-> --- a/fs/nfsd/netns.h
-> +++ b/fs/nfsd/netns.h
-> @@ -28,6 +28,8 @@ struct cld_net;
->  
->  struct nfsd_net {
->  	struct cld_net *cld_net;
-> +
-> +	struct cache_detail *svc_export_cache;
->  };
->  
->  extern int nfsd_net_id;
-> diff --git a/fs/nfsd/nfsctl.c b/fs/nfsd/nfsctl.c
-> index bc76f8e..ddb9f87 100644
-> --- a/fs/nfsd/nfsctl.c
-> +++ b/fs/nfsd/nfsctl.c
-> @@ -354,7 +354,7 @@ static ssize_t write_filehandle(struct file *file, char *buf, size_t size)
->  	if (!dom)
->  		return -ENOMEM;
->  
-> -	len = exp_rootfh(dom, path, &fh,  maxsize);
-> +	len = exp_rootfh(&init_net, dom, path, &fh,  maxsize);
->  	auth_domain_put(dom);
->  	if (len)
->  		return len;
-> diff --git a/fs/nfsd/nfssvc.c b/fs/nfsd/nfssvc.c
-> index 78e5213..cb4d51d 100644
-> --- a/fs/nfsd/nfssvc.c
-> +++ b/fs/nfsd/nfssvc.c
-> @@ -261,7 +261,7 @@ static void nfsd_last_thread(struct svc_serv *serv, struct net *net)
->  
->  	printk(KERN_WARNING "nfsd: last server has exited, flushing export "
->  			    "cache\n");
-> -	nfsd_export_flush();
-> +	nfsd_export_flush(net);
->  }
->  
->  void nfsd_reset_versions(void)
-> diff --git a/include/linux/nfsd/export.h b/include/linux/nfsd/export.h
-> index 375096c..565c212 100644
-> --- a/include/linux/nfsd/export.h
-> +++ b/include/linux/nfsd/export.h
-> @@ -132,13 +132,13 @@ __be32 check_nfsd_access(struct svc_export *exp, struct svc_rqst *rqstp);
->   */
->  int			nfsd_export_init(struct net *);
->  void			nfsd_export_shutdown(struct net *);
-> -void			nfsd_export_flush(void);
-> +void			nfsd_export_flush(struct net *);
->  struct svc_export *	rqst_exp_get_by_name(struct svc_rqst *,
->  					     struct path *);
->  struct svc_export *	rqst_exp_parent(struct svc_rqst *,
->  					struct path *);
->  struct svc_export *	rqst_find_fsidzero_export(struct svc_rqst *);
-> -int			exp_rootfh(struct auth_domain *, 
-> +int			exp_rootfh(struct net *, struct auth_domain *,
->  					char *path, struct knfsd_fh *, int maxsize);
->  __be32			exp_pseudoroot(struct svc_rqst *, struct svc_fh *);
->  __be32			nfserrno(int errno);
-> 
+  PM-Timer running at invalid rate: 113% of normal - aborting.
+
+That's not a surprise as the frequency verification does rely on
+interrupts being disabled. With a async scheduled thread there is no
+guarantee to achieve the same result. Also some driver might fiddle
+with the CTC channel 2 during the verification period, which makes the
+result even more random and unpredictable.
+
+This can be solved by using the same mechanism as we use in the
+deferred TSC validation code, but that only will work if we verified a
+working HPET _BEFORE_ trying to do the PM-Timer lazy validation.
+
+So for now reverting is the safe option.
+
+Bisected-by: Michael Witten <mfwitten@gmail.com>
+Cc: Arjan van de Ven <arjanvandeven@gmail.com>
+Cc: Arjan van de Ven <arjan@infradead.org>
+Cc: John Stultz <johnstul@us.ibm.com>
+Cc: Len Brown <lenb@kernel.org>
+LKML-Reference: <alpine.LFD.2.02.1204112303270.2542@ionos>
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+---
+ drivers/clocksource/acpi_pm.c |   24 ++++++++----------------
+ 1 files changed, 8 insertions(+), 16 deletions(-)
+
+diff --git a/drivers/clocksource/acpi_pm.c b/drivers/clocksource/acpi_pm.c
+index 82e8820..6b5cf02 100644
+--- a/drivers/clocksource/acpi_pm.c
++++ b/drivers/clocksource/acpi_pm.c
+@@ -23,7 +23,6 @@
+ #include <linux/init.h>
+ #include <linux/pci.h>
+ #include <linux/delay.h>
+-#include <linux/async.h>
+ #include <asm/io.h>
+ 
+ /*
+@@ -180,15 +179,17 @@ static int verify_pmtmr_rate(void)
+ /* Number of reads we try to get two different values */
+ #define ACPI_PM_READ_CHECKS 10000
+ 
+-static void __init acpi_pm_clocksource_async(void *unused, async_cookie_t cookie)
++static int __init init_acpi_pm_clocksource(void)
+ {
+ 	cycle_t value1, value2;
+ 	unsigned int i, j = 0;
+ 
++	if (!pmtmr_ioport)
++		return -ENODEV;
+ 
+ 	/* "verify" this timing source: */
+ 	for (j = 0; j < ACPI_PM_MONOTONICITY_CHECKS; j++) {
+-		usleep_range(100 * j, 100 * j + 100);
++		udelay(100 * j);
+ 		value1 = clocksource_acpi_pm.read(&clocksource_acpi_pm);
+ 		for (i = 0; i < ACPI_PM_READ_CHECKS; i++) {
+ 			value2 = clocksource_acpi_pm.read(&clocksource_acpi_pm);
+@@ -202,34 +203,25 @@ static void __init acpi_pm_clocksource_async(void *unused, async_cookie_t cookie
+ 			       " 0x%#llx, 0x%#llx - aborting.\n",
+ 			       value1, value2);
+ 			pmtmr_ioport = 0;
+-			return;
++			return -EINVAL;
+ 		}
+ 		if (i == ACPI_PM_READ_CHECKS) {
+ 			printk(KERN_INFO "PM-Timer failed consistency check "
+ 			       " (0x%#llx) - aborting.\n", value1);
+ 			pmtmr_ioport = 0;
+-			return;
++			return -ENODEV;
+ 		}
+ 	}
+ 
+ 	if (verify_pmtmr_rate() != 0){
+ 		pmtmr_ioport = 0;
+-		return;
++		return -ENODEV;
+ 	}
+ 
+-	clocksource_register_hz(&clocksource_acpi_pm,
++	return clocksource_register_hz(&clocksource_acpi_pm,
+ 						PMTMR_TICKS_PER_SEC);
+ }
+ 
+-static int __init init_acpi_pm_clocksource(void)
+-{
+-	if (!pmtmr_ioport)
+-		return -ENODEV;
+-
+-	async_schedule(acpi_pm_clocksource_async, NULL);
+-	return 0;
+-}
+-
+ /* We use fs_initcall because we want the PCI fixups to have run
+  * but we still need to load before device_initcall
+  */
