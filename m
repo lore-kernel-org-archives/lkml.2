@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933293Ab2DKVFn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Apr 2012 17:05:43 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:49848 "EHLO
+	id S933253Ab2DKVFm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Apr 2012 17:05:42 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:49846 "EHLO
 	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933181Ab2DKVFj (ORCPT
+	with ESMTP id S933016Ab2DKVFj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 11 Apr 2012 17:05:39 -0400
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Namhyung Kim <namhyung@gmail.com>,
-        Namhyung Kim <namhyung.kim@lge.com>, Ingo Molnar <mingo@elte.hu>,
-        Paul Mackerras <paulus@samba.org>, Pekka Enberg <penberg@kernel.org>,
-        Peter@infradead.org, "Zijlstra <a.p.zijlstra"@chello.nl,
+Cc: linux-kernel@vger.kernel.org, Jiri Olsa <jolsa@redhat.com>,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+        Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 10/13] perf tools: Move GTK+ bits to tools/perf/ui/gtk directory
-Date: Wed, 11 Apr 2012 18:05:22 -0300
-Message-Id: <1334178325-19148-11-git-send-email-acme@infradead.org>
+Subject: [PATCH 07/13] perf tools: Fix parsers' rules to dependencies
+Date: Wed, 11 Apr 2012 18:05:19 -0300
+Message-Id: <1334178325-19148-8-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.7.9.2.358.g22243
 In-Reply-To: <1334178325-19148-1-git-send-email-acme@infradead.org>
 References: <1334178325-19148-1-git-send-email-acme@infradead.org>
@@ -26,60 +27,74 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Namhyung Kim <namhyung@gmail.com>
+From: Jiri Olsa <jolsa@redhat.com>
 
-Move those files to new directory in order to be prepared to
-further UI work. Makefile and header file pathes are adjusted
-accordingly. Also fix a build breakage if NO_GTK2=1 is given.
+Currently the parsers objects (bison/flex related) are each time perf
+is built. No matter the generated files are already in place, the
+parser generation is executed every time.
 
-Signed-off-by: Namhyung Kim <namhyung.kim@lge.com>
-Suggested-by: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Acked-by: Pekka Enberg <penberg@kernel.org>
+Changing the rules to have proper flex/bison objects generation
+dependencies.
+
+The parsers code is not rebuilt until the flex/bison source files
+are touched. Also when flex/bison source is changed, only dependent
+objects are rebuilt.
+
+Signed-off-by: Jiri Olsa <jolsa@redhat.com>
+Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Namhyung Kim <namhyung.kim@lge.com>
 Cc: Paul Mackerras <paulus@samba.org>
-Cc: Pekka Enberg <penberg@kernel.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl
-Link: http://lkml.kernel.org/r/1333523765-12092-1-git-send-email-namhyung.kim@lge.com
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Link: http://lkml.kernel.org/r/1334140791-3024-1-git-send-email-jolsa@redhat.com
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/Makefile                   |    4 ++--
- tools/perf/{util => ui}/gtk/browser.c |    0
- tools/perf/{util => ui}/gtk/gtk.h     |    0
- 3 files changed, 2 insertions(+), 2 deletions(-)
- rename tools/perf/{util => ui}/gtk/browser.c (100%)
- rename tools/perf/{util => ui}/gtk/gtk.h (100%)
+ tools/perf/Makefile |   19 ++++++++-----------
+ 1 file changed, 8 insertions(+), 11 deletions(-)
 
 diff --git a/tools/perf/Makefile b/tools/perf/Makefile
-index af6ccf8..e98e14c 100644
+index 4ca77cc..b28b610 100644
 --- a/tools/perf/Makefile
 +++ b/tools/perf/Makefile
-@@ -493,7 +493,7 @@ else
- endif
+@@ -204,21 +204,20 @@ export PERL_PATH
+ FLEX = $(CROSS_COMPILE)flex
+ BISON= $(CROSS_COMPILE)bison
  
- ifdef NO_GTK2
--	BASIC_CFLAGS += -DNO_GTK2
-+	BASIC_CFLAGS += -DNO_GTK2_SUPPORT
- else
- 	FLAGS_GTK2=$(ALL_CFLAGS) $(ALL_LDFLAGS) $(EXTLIBS) $(shell pkg-config --libs --cflags gtk+-2.0)
- 	ifneq ($(call try-cc,$(SOURCE_GTK2),$(FLAGS_GTK2)),y)
-@@ -502,7 +502,7 @@ else
- 	else
- 		BASIC_CFLAGS += $(shell pkg-config --cflags gtk+-2.0)
- 		EXTLIBS += $(shell pkg-config --libs gtk+-2.0)
--		LIB_OBJS += $(OUTPUT)util/gtk/browser.o
-+		LIB_OBJS += $(OUTPUT)ui/gtk/browser.o
- 	endif
- endif
+-event-parser:
+-	$(QUIET_BISON)$(BISON) -v util/parse-events.y -d -o $(OUTPUT)util/parse-events-bison.c
++$(OUTPUT)util/parse-events-flex.c: util/parse-events.l
+ 	$(QUIET_FLEX)$(FLEX) --header-file=$(OUTPUT)util/parse-events-flex.h -t util/parse-events.l > $(OUTPUT)util/parse-events-flex.c
  
-diff --git a/tools/perf/util/gtk/browser.c b/tools/perf/ui/gtk/browser.c
-similarity index 100%
-rename from tools/perf/util/gtk/browser.c
-rename to tools/perf/ui/gtk/browser.c
-diff --git a/tools/perf/util/gtk/gtk.h b/tools/perf/ui/gtk/gtk.h
-similarity index 100%
-rename from tools/perf/util/gtk/gtk.h
-rename to tools/perf/ui/gtk/gtk.h
+-$(OUTPUT)util/parse-events-flex.c: event-parser
+-$(OUTPUT)util/parse-events-bison.c: event-parser
++$(OUTPUT)util/parse-events-bison.c: util/parse-events.y
++	$(QUIET_BISON)$(BISON) -v util/parse-events.y -d -o $(OUTPUT)util/parse-events-bison.c
+ 
+-pmu-parser:
+-	$(QUIET_BISON)$(BISON) -v util/pmu.y -d -o $(OUTPUT)util/pmu-bison.c
++$(OUTPUT)util/pmu-flex.c: util/pmu.l
+ 	$(QUIET_FLEX)$(FLEX) --header-file=$(OUTPUT)util/pmu-flex.h -t util/pmu.l > $(OUTPUT)util/pmu-flex.c
+ 
+-$(OUTPUT)util/pmu-flex.c: pmu-parser
+-$(OUTPUT)util/pmu-bison.c: pmu-parser
++$(OUTPUT)util/pmu-bison.c: util/pmu.y
++	$(QUIET_BISON)$(BISON) -v util/pmu.y -d -o $(OUTPUT)util/pmu-bison.c
+ 
+-$(OUTPUT)util/parse-events.o: event-parser pmu-parser
++$(OUTPUT)util/parse-events.o: $(OUTPUT)util/parse-events-flex.c $(OUTPUT)util/parse-events-bison.c
++$(OUTPUT)util/pmu.o: $(OUTPUT)util/pmu-flex.c $(OUTPUT)util/pmu-bison.c
+ 
+ LIB_FILE=$(OUTPUT)libperf.a
+ 
+@@ -807,8 +806,6 @@ help:
+ 	@echo '  html		- make html documentation'
+ 	@echo '  info		- make GNU info documentation (access with info <foo>)'
+ 	@echo '  pdf		- make pdf documentation'
+-	@echo '  event-parser	- make event parser code'
+-	@echo '  pmu-parser	- make pmu format parser code'
+ 	@echo '  TAGS		- use etags to make tag information for source browsing'
+ 	@echo '  tags		- use ctags to make tag information for source browsing'
+ 	@echo '  cscope	- use cscope to make interactive browsing database'
 -- 
 1.7.9.2.358.g22243
 
