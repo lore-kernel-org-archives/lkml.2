@@ -1,72 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933280Ab2DKU6E (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Apr 2012 16:58:04 -0400
-Received: from na3sys009aog117.obsmtp.com ([74.125.149.242]:54343 "EHLO
-	na3sys009aog117.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S933238Ab2DKU6C convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S933257Ab2DKU6C (ORCPT <rfc822;w@1wt.eu>);
 	Wed, 11 Apr 2012 16:58:02 -0400
-From: Philip Rakity <prakity@marvell.com>
-To: Philippe De Swert <philippedeswert@gmail.com>
-CC: "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "john.calixto@modsystems.com" <john.calixto@modsystems.com>,
-        "cjb@laptop.org" <cjb@laptop.org>
-Date: Wed, 11 Apr 2012 13:56:39 -0700
-Subject: Re: [PATCH 2/2] mmc: Remove dead code
-Thread-Topic: [PATCH 2/2] mmc: Remove dead code
-Thread-Index: Ac0YJZcup8v74omNQgCB/MYtjNdsLQ==
-Message-ID: <5D6E9FAF-376B-44A8-89DC-691AC5187FB6@marvell.com>
-References: <1334176325-6221-1-git-send-email-philippedeswert@gmail.com>
-In-Reply-To: <1334176325-6221-1-git-send-email-philippedeswert@gmail.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-MIME-Version: 1.0
+Received: from casper.infradead.org ([85.118.1.10]:45862 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751032Ab2DKU57 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Apr 2012 16:57:59 -0400
+From: Arnaldo Carvalho de Melo <acme@infradead.org>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: linux-kernel@vger.kernel.org,
+        "Nikunj A. Dadhania" <nikunj@linux.vnet.ibm.com>,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Stephane Eranian <eranian@google.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: [PATCH 1/1] perf kvm: Finding struct machine fails for PERF_RECORD_MMAP
+Date: Wed, 11 Apr 2012 17:57:43 -0300
+Message-Id: <1334177863-18820-2-git-send-email-acme@infradead.org>
+X-Mailer: git-send-email 1.7.9.2.358.g22243
+In-Reply-To: <1334177863-18820-1-git-send-email-acme@infradead.org>
+References: <1334177863-18820-1-git-send-email-acme@infradead.org>
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by casper.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: "Nikunj A. Dadhania" <nikunj@linux.vnet.ibm.com>
 
-Acked-by: Philip Rakity <prakity@marvell.com>
+Running 'perf kvm --host --guest --guestmount /tmp/guestmount record -a -g -- sleep 2'
 
-On Apr 11, 2012, at 1:32 PM, Philippe De Swert wrote:
+Was resulting in a segfault. For event type PERF_RECORD_MMAP,
+event->ip.pid is being used in perf_session__find_machine_for_cpumode,
+which is not correct.
 
-> bus_width is passed to the function and when 0 (MMC_BUS_WIDTH_1)
-> will cause the function to return. So in in the second test it 
-> definitly is different from 0, and the third test is redundant.
-> 
-> Signed-off-by: Philippe De Swert <philippedeswert@gmail.com>
-> ---
-> drivers/mmc/core/mmc.c |    6 +-----
-> 1 file changed, 1 insertion(+), 5 deletions(-)
-> 
-> diff --git a/drivers/mmc/core/mmc.c b/drivers/mmc/core/mmc.c
-> index 54df5ad..4a1bf8f 100644
-> --- a/drivers/mmc/core/mmc.c
-> +++ b/drivers/mmc/core/mmc.c
-> @@ -556,14 +556,10 @@ static int mmc_compare_ext_csds(struct mmc_card *card, unsigned bus_width)
-> 	err = mmc_get_ext_csd(card, &bw_ext_csd);
-> 
-> 	if (err || bw_ext_csd == NULL) {
-> -		if (bus_width != MMC_BUS_WIDTH_1)
-> -			err = -EINVAL;
-> +		err = -EINVAL;
-> 		goto out;
-> 	}
-> 
-> -	if (bus_width == MMC_BUS_WIDTH_1)
-> -		goto out;
-> -
-> 	/* only compare read only fields */
-> 	err = !((card->ext_csd.raw_partition_support ==
-> 			bw_ext_csd[EXT_CSD_PARTITION_SUPPORT]) &&
-> -- 
-> 1.7.9.5
-> 
+The event->ip.pid field happens to be 0 in this case and results in
+returning a NULL machine object. Finally, access to self->pid in
+machine__mmap_name, results in a segfault later.
+
+For PERF_RECORD_MMAP type, pass event->mmap.pid.
+
+Signed-off-by: Nikunj A. Dadhania <nikunj@linux.vnet.ibm.com>
+Reviewed-by: David Ahern <dsahern@gmail.com>
+Tested-by: David Ahern <dsahern@gmail.com>
+Cc: David Ahern <dsahern@gmail.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@redhat.com>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Stephane Eranian <eranian@google.com>
+Cc: Nikunj A. Dadhania <nikunj@linux.vnet.ibm.com>
+Link: http://lkml.kernel.org/r/20120409081835.10576.22018.stgit@abhimanyu.in.ibm.com
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+---
+ tools/perf/util/session.c |   12 ++++++++++--
+ 1 file changed, 10 insertions(+), 2 deletions(-)
+
+diff --git a/tools/perf/util/session.c b/tools/perf/util/session.c
+index 9412e3b..00923cd 100644
+--- a/tools/perf/util/session.c
++++ b/tools/perf/util/session.c
+@@ -826,8 +826,16 @@ static struct machine *
+ {
+ 	const u8 cpumode = event->header.misc & PERF_RECORD_MISC_CPUMODE_MASK;
+ 
+-	if (cpumode == PERF_RECORD_MISC_GUEST_KERNEL && perf_guest)
+-		return perf_session__find_machine(session, event->ip.pid);
++	if (cpumode == PERF_RECORD_MISC_GUEST_KERNEL && perf_guest) {
++		u32 pid;
++
++		if (event->header.type == PERF_RECORD_MMAP)
++			pid = event->mmap.pid;
++		else
++			pid = event->ip.pid;
++
++		return perf_session__find_machine(session, pid);
++	}
+ 
+ 	return perf_session__find_host_machine(session);
+ }
+-- 
+1.7.9.2.358.g22243
 
