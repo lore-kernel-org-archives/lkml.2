@@ -1,47 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759601Ab2DKLmW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Apr 2012 07:42:22 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:37491 "EHLO
-	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758781Ab2DKLmU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Apr 2012 07:42:20 -0400
-X-Sasl-enc: 9nI7eAvpnX88bWCmQvuyz5TvFPCpNJgQvSQjiE1bBz/e 1334144538
-Date: Wed, 11 Apr 2012 08:42:11 -0300
-From: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
-To: Alex Hung <alex.hung@canonical.com>
-Cc: ibm-acpi@hmh.eng.br, mjg@redhat.com, ibm-acpi-devel@lists.sourceforge.net,
-        platform-driver-x86@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] thinkpad_acpi: added BIOS mute interfaces for volume
-Message-ID: <20120411114211.GA11445@khazad-dum.debian.net>
-References: <1334139302-7152-1-git-send-email-alex.hung@canonical.com>
- <4F855A2B.6070402@canonical.com>
+	id S1757316Ab2DKLn0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Apr 2012 07:43:26 -0400
+Received: from asix.com.tw ([113.196.140.82]:57123 "EHLO asix.com.tw"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752629Ab2DKLnY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Apr 2012 07:43:24 -0400
+From: "Donald" <donald@asix.com.tw>
+To: "'Johan Hovold'" <jhovold@gmail.com>
+Cc: "'Greg KH'" <gregkh@linuxfoundation.org>,
+        "'open list:USB SUBSYSTEM'" <linux-usb@vger.kernel.org>,
+        "'open list'" <linux-kernel@vger.kernel.org>
+References: <009c01cd00ee$924eb2e0$b6ec18a0$@com.tw> <20120313160951.GA18810@kroah.com> <005a01cd0db0$8ec89e50$ac59daf0$@com.tw> <20120329151343.GA32474@kroah.com> <006401cd17c6$157ba2c0$4072e840$@com.tw> <20120411110826.GA22200@localhost>
+In-Reply-To: <20120411110826.GA22200@localhost>
+Subject: RE: Patch "USB: serial: mos7840: Supported MCS7810 device"
+Date: Wed, 11 Apr 2012 19:43:14 +0800
+Message-ID: <006b01cd17d8$4acee420$e06cac60$@com.tw>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4F855A2B.6070402@canonical.com>
-X-GPG-Fingerprint: 1024D/1CDB0FE3 5422 5C61 F6B7 06FB 7E04  3738 EE25 DE3F
- 1CDB 0FE3
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: text/plain;
+	charset="us-ascii"
+Content-Transfer-Encoding: 7bit
+X-Mailer: Microsoft Office Outlook 12.0
+Thread-Index: Ac0X038C562cAsaSS5CzjJkFhXlDeAAA3lHQ
+Content-Language: zh-tw
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 11 Apr 2012, Alex Hung wrote:
-> I am modifying thinkpad_acpi so it can support the mute led, and I
-> am looking for suggestions and feedbacks.
+Hi Johan,
+
+Thank you for your kind and quick response.
+
+Regards,
+Donald
+
+-----Original Message-----
+From: Johan Hovold [mailto:jhovold@gmail.com] 
+Sent: Wednesday, April 11, 2012 7:08 PM
+To: Donald
+Cc: 'Greg KH'; 'open list:USB SUBSYSTEM'; 'open list'
+Subject: Re: Patch "USB: serial: mos7840: Supported MCS7810 device"
+
+On Wed, Apr 11, 2012 at 05:32:53PM +0800, Donald wrote:
+> Hi Greg,
 > 
-> For newer BIOS, it includes three aml methods that can be used to
-> get, set and enable the mute led.
+> I am re-submitting this patch that supports MCS7810 device for the 
+> mos7840 driver. This patch was created against 3.4-rc1 and has been 
+> verified on
+> 3.4-rc1 also. If you see any problem regarding this patch, please let 
+> me know at any time. Thank you for your help.
+> 
+> Besides, I found two things regarding 3.4-rc, firstly, it added a 
+> macro to replace module_init() and module_exit(); secondly, the system 
+> will crash if I remove module before unplug the dongle; while this 
+> issue doesn't happen on Linux kernel 3.2.9. I had been tested mcs7840 
+> and prolific-pl2303, both drivers have the same scenario. I am not 
+> sure if this issue is relating to the macro added in 3.4-rc and would 
+> like to know if you have any comment on this issue.
 
-Aha!  THANK YOU.
+This is a known issue which has been fixed by the following patch:
 
-I will look at the patches this week.  Please send me (directly) a full
-dmidecode and ACPI table dump.
+	http://marc.info/?l=linux-usb&m=133296552518354&w=2
 
--- 
-  "One disk to rule them all, One disk to find them. One disk to bring
-  them all and in the darkness grind them. In the Land of Redmond
-  where the shadows lie." -- The Silicon Valley Tarot
-  Henrique Holschuh
+It should show up in 3.4-rc shortly.
+
+Thanks,
+Johan
+
+
