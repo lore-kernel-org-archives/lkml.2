@@ -1,81 +1,153 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756674Ab2DKKkZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Apr 2012 06:40:25 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:53458 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754394Ab2DKKkY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Apr 2012 06:40:24 -0400
-From: Jiri Olsa <jolsa@redhat.com>
-To: acme@redhat.com, a.p.zijlstra@chello.nl, mingo@elte.hu, paulus@samba.org,
-        cjashfor@linux.vnet.ibm.com, fweisbec@gmail.com
-Cc: linux-kernel@vger.kernel.org, Jiri Olsa <jolsa@redhat.com>
-Subject: [PATCH] perf, tool: Fix parsers' rules to dependencies
-Date: Wed, 11 Apr 2012 12:39:51 +0200
-Message-Id: <1334140791-3024-1-git-send-email-jolsa@redhat.com>
+	id S1757075Ab2DKKmv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Apr 2012 06:42:51 -0400
+Received: from e23smtp03.au.ibm.com ([202.81.31.145]:39168 "EHLO
+	e23smtp03.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755094Ab2DKKmu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Apr 2012 06:42:50 -0400
+From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+To: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
+        LKML <linux-kernel@vger.kernel.org>, Linux-mm <linux-mm@kvack.org>,
+        Oleg Nesterov <oleg@redhat.com>, Andi Kleen <andi@firstfloor.org>,
+        Christoph Hellwig <hch@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Anton Arapov <anton@redhat.com>
+Date: Wed, 11 Apr 2012 16:05:27 +0530
+Message-Id: <20120411103527.23245.9835.sendpatchset@srdronam.in.ibm.com>
+In-Reply-To: <20120411103516.23245.2700.sendpatchset@srdronam.in.ibm.com>
+References: <20120411103516.23245.2700.sendpatchset@srdronam.in.ibm.com>
+Subject: [PATCH 2/2] uprobes/core: Decrement uprobe count before the pages are unmapped
+x-cbid: 12041100-6102-0000-0000-00000138E804
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently the parsers objects (bison/flex related) are each time perf
-is built. No matter the generated files are already in place, the
-parser generation is executed every time.
+From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
 
-Changing the rules to have proper flex/bison objects generation
-dependencies.
+Uprobes has a hook(uprobe_munmap) in unmap path to keep the uprobes count
+sane. In the exit path this hook gets called in unlink_file_vma. However by
+the time unlink_file_vma is called, the pages would have been unmapped
+(unmap_vmas) and the rss_stat counts accounted (zap_pte_range). If
+the exiting process has probepoints, uprobe_munmap checks if the breakpoint
+instruction was around before decrementing the probe count.
 
-The parsers code is not rebuilt until the flex/bison source files
-are touched. Also when flex/bison source is changed, only dependent
-objects are rebuilt.
+This results in a filebacked page being reread by uprobe_munmap and hence 
+it does not find the breakpoint.
 
-Signed-off-by: Jiri Olsa <jolsa@redhat.com>
+This patch fixes this problem by moving the hook to unmap_single_vma.
+Since unmap_single_vma may not unmap the complete vma, add start and end
+parameters to uprobe_munmap.
+This bug became apparent courtesy commit c3f0327f8e9d7.
+
+Signed-off-by: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
 ---
- tools/perf/Makefile |   19 ++++++++-----------
- 1 files changed, 8 insertions(+), 11 deletions(-)
+ include/linux/uprobes.h |    5 +++--
+ kernel/events/uprobes.c |    4 ++--
+ mm/memory.c             |    3 +++
+ mm/mmap.c               |    8 ++++----
+ 4 files changed, 12 insertions(+), 8 deletions(-)
 
-diff --git a/tools/perf/Makefile b/tools/perf/Makefile
-index 820371f..733336c 100644
---- a/tools/perf/Makefile
-+++ b/tools/perf/Makefile
-@@ -237,21 +237,20 @@ export PERL_PATH
- FLEX = $(CROSS_COMPILE)flex
- BISON= $(CROSS_COMPILE)bison
+diff --git a/include/linux/uprobes.h b/include/linux/uprobes.h
+index d594d3b..efe4b33 100644
+--- a/include/linux/uprobes.h
++++ b/include/linux/uprobes.h
+@@ -107,7 +107,7 @@ extern bool __weak is_swbp_insn(uprobe_opcode_t *insn);
+ extern int uprobe_register(struct inode *inode, loff_t offset, struct uprobe_consumer *uc);
+ extern void uprobe_unregister(struct inode *inode, loff_t offset, struct uprobe_consumer *uc);
+ extern int uprobe_mmap(struct vm_area_struct *vma);
+-extern void uprobe_munmap(struct vm_area_struct *vma);
++extern void uprobe_munmap(struct vm_area_struct *vma, unsigned long start, unsigned long end);
+ extern void uprobe_free_utask(struct task_struct *t);
+ extern void uprobe_copy_process(struct task_struct *t);
+ extern unsigned long __weak uprobe_get_swbp_addr(struct pt_regs *regs);
+@@ -134,7 +134,8 @@ static inline int uprobe_mmap(struct vm_area_struct *vma)
+ {
+ 	return 0;
+ }
+-static inline void uprobe_munmap(struct vm_area_struct *vma)
++static inline void
++uprobe_munmap(struct vm_area_struct *vma, unsigned long start, unsigned long end)
+ {
+ }
+ static inline void uprobe_notify_resume(struct pt_regs *regs)
+diff --git a/kernel/events/uprobes.c b/kernel/events/uprobes.c
+index c5caeec..985be4d 100644
+--- a/kernel/events/uprobes.c
++++ b/kernel/events/uprobes.c
+@@ -1112,7 +1112,7 @@ int uprobe_mmap(struct vm_area_struct *vma)
+ /*
+  * Called in context of a munmap of a vma.
+  */
+-void uprobe_munmap(struct vm_area_struct *vma)
++void uprobe_munmap(struct vm_area_struct *vma, unsigned long start, unsigned long end)
+ {
+ 	struct list_head tmp_list;
+ 	struct uprobe *uprobe, *u;
+@@ -1138,7 +1138,7 @@ void uprobe_munmap(struct vm_area_struct *vma)
+ 		list_del(&uprobe->pending_list);
+ 		vaddr = vma_address(vma, uprobe->offset);
  
--event-parser:
--	$(QUIET_BISON)$(BISON) -v util/parse-events.y -d -o $(OUTPUT)util/parse-events-bison.c
-+$(OUTPUT)util/parse-events-flex.c: util/parse-events.l
- 	$(QUIET_FLEX)$(FLEX) --header-file=$(OUTPUT)util/parse-events-flex.h -t util/parse-events.l > $(OUTPUT)util/parse-events-flex.c
+-		if (vaddr >= vma->vm_start && vaddr < vma->vm_end) {
++		if (vaddr >= start && vaddr < end) {
+ 			/*
+ 			 * An unregister could have removed the probe before
+ 			 * unmap. So check before we decrement the count.
+diff --git a/mm/memory.c b/mm/memory.c
+index 6105f47..bf8b403 100644
+--- a/mm/memory.c
++++ b/mm/memory.c
+@@ -1307,6 +1307,9 @@ static void unmap_single_vma(struct mmu_gather *tlb,
+ 	if (end <= vma->vm_start)
+ 		return;
  
--$(OUTPUT)util/parse-events-flex.c: event-parser
--$(OUTPUT)util/parse-events-bison.c: event-parser
-+$(OUTPUT)util/parse-events-bison.c: util/parse-events.y
-+	$(QUIET_BISON)$(BISON) -v util/parse-events.y -d -o $(OUTPUT)util/parse-events-bison.c
++	if (vma->vm_file)
++		uprobe_munmap(vma, start, end);
++
+ 	if (vma->vm_flags & VM_ACCOUNT)
+ 		*nr_accounted += (end - start) >> PAGE_SHIFT;
  
--pmu-parser:
--	$(QUIET_BISON)$(BISON) -v util/pmu.y -d -o $(OUTPUT)util/pmu-bison.c
-+$(OUTPUT)util/pmu-flex.c: util/pmu.l
- 	$(QUIET_FLEX)$(FLEX) --header-file=$(OUTPUT)util/pmu-flex.h -t util/pmu.l > $(OUTPUT)util/pmu-flex.c
+diff --git a/mm/mmap.c b/mm/mmap.c
+index b17a39f..15c21a1 100644
+--- a/mm/mmap.c
++++ b/mm/mmap.c
+@@ -218,7 +218,6 @@ void unlink_file_vma(struct vm_area_struct *vma)
+ 		mutex_lock(&mapping->i_mmap_mutex);
+ 		__remove_shared_vm_struct(vma, file, mapping);
+ 		mutex_unlock(&mapping->i_mmap_mutex);
+-		uprobe_munmap(vma);
+ 	}
+ }
  
--$(OUTPUT)util/pmu-flex.c: pmu-parser
--$(OUTPUT)util/pmu-bison.c: pmu-parser
-+$(OUTPUT)util/pmu-bison.c: util/pmu.y
-+	$(QUIET_BISON)$(BISON) -v util/pmu.y -d -o $(OUTPUT)util/pmu-bison.c
+@@ -548,10 +547,11 @@ again:			remove_next = 1 + (end > next->vm_end);
+ 		mapping = file->f_mapping;
+ 		if (!(vma->vm_flags & VM_NONLINEAR)) {
+ 			root = &mapping->i_mmap;
+-			uprobe_munmap(vma);
++			uprobe_munmap(vma, vma->vm_start, vma->vm_end);
  
--$(OUTPUT)util/parse-events.o: event-parser pmu-parser
-+$(OUTPUT)util/parse-events.o: $(OUTPUT)util/parse-events-flex.c $(OUTPUT)util/parse-events-bison.c
-+$(OUTPUT)util/pmu.o: $(OUTPUT)util/pmu-flex.c $(OUTPUT)util/pmu-bison.c
+ 			if (adjust_next)
+-				uprobe_munmap(next);
++				uprobe_munmap(next, next->vm_start,
++							next->vm_end);
+ 		}
  
- LIB_FILE=$(OUTPUT)libperf.a
+ 		mutex_lock(&mapping->i_mmap_mutex);
+@@ -632,7 +632,7 @@ again:			remove_next = 1 + (end > next->vm_end);
  
-@@ -852,8 +851,6 @@ help:
- 	@echo '  html		- make html documentation'
- 	@echo '  info		- make GNU info documentation (access with info <foo>)'
- 	@echo '  pdf		- make pdf documentation'
--	@echo '  event-parser	- make event parser code'
--	@echo '  pmu-parser	- make pmu format parser code'
- 	@echo '  TAGS		- use etags to make tag information for source browsing'
- 	@echo '  tags		- use ctags to make tag information for source browsing'
- 	@echo '  cscope	- use cscope to make interactive browsing database'
--- 
-1.7.7.6
+ 	if (remove_next) {
+ 		if (file) {
+-			uprobe_munmap(next);
++			uprobe_munmap(next, next->vm_start, next->vm_end);
+ 			fput(file);
+ 			if (next->vm_flags & VM_EXECUTABLE)
+ 				removed_exe_file_vma(mm);
+
 
