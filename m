@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964899Ab2DKXRp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Apr 2012 19:17:45 -0400
-Received: from mail-pz0-f52.google.com ([209.85.210.52]:51088 "EHLO
-	mail-pz0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964867Ab2DKXRe (ORCPT
+	id S964932Ab2DKXRz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Apr 2012 19:17:55 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:44096 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S964919Ab2DKXRw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Apr 2012 19:17:34 -0400
-Message-Id: <20120411231030.201154209@linuxfoundation.org>
+	Wed, 11 Apr 2012 19:17:52 -0400
+Message-Id: <20120411231028.693991808@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Wed, 11 Apr 2012 16:11:28 -0700
+Date: Wed, 11 Apr 2012 16:11:19 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Nishanth Menon <nm@ti.com>, Samuel Ortiz <sameo@linux.intel.com>
-Subject: [ 70/78] mfd: Clear twl6030 IRQ status register only once
+        alan@lxorguk.ukuu.org.uk, Frank Rowand <frank.rowand@am.sony.com>,
+        Alessio Igor Bogani <abogani@kernel.org>
+Subject: [ 61/78] modpost: Fix modpost license checking of vmlinux.o
 In-Reply-To: <20120411231102.GA6404@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,56 +25,70 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Nishanth Menon <nm@ti.com>
+From: Frank Rowand <frank.rowand@am.sony.com>
 
-commit 3f8349e6e98ba0455437724589072523865eae5e upstream.
+commit 258f742635360175564e9470eb060ff4d4b984e7 upstream.
 
-TWL6030 family of PMIC use a shadow interrupt status register
-while kernel processes the current interrupt event.
-However, any write(0 or 1) to register INT_STS_A, INT_STS_B or
-INT_STS_C clears all 3 interrupt status registers.
+Commit f02e8a6596b7 ("module: Sort exported symbols") sorts symbols
+placing each of them in its own elf section.  This sorting and merging
+into the canonical sections are done by the linker.
 
-Since clear of the interrupt is done on 32k clk, depending on I2C
-bus speed, we could in-adverently clear the status of a interrupt
-status pending on shadow register in the current implementation.
-This is due to the fact that multi-byte i2c write operation into
-three seperate status register could result in multiple load
-and clear of status and result in lost interrupts.
+Unfortunately modpost to generate Module.symvers file parses vmlinux.o
+(which is not linked yet) and all modules object files (which aren't
+linked yet).  These aren't sanitized by the linker yet.  That breaks
+modpost that can't detect license properly for modules.
 
-Instead, doing a single byte write to INT_STS_A register with 0x0
-will clear all three interrupt status registers without the related
-risk.
+This patch makes modpost aware of the new exported symbols structure.
 
-Acked-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
-Signed-off-by: Nishanth Menon <nm@ti.com>
-Signed-off-by: Samuel Ortiz <sameo@linux.intel.com>
+[ This above is a slightly corrected version of the explanation of the
+  problem, copied from commit 62a2635610db ("modpost: Fix modpost's
+  license checking V3").  That commit fixed the problem for module
+  object files, but not for vmlinux.o.  This patch fixes modpost for
+  vmlinux.o. ]
+
+Signed-off-by: Frank Rowand <frank.rowand@am.sony.com>
+Signed-off-by: Alessio Igor Bogani <abogani@kernel.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/mfd/twl6030-irq.c |   13 +++++++++++--
- 1 file changed, 11 insertions(+), 2 deletions(-)
+ scripts/mod/modpost.c |    7 +++++--
+ scripts/mod/modpost.h |    1 +
+ 2 files changed, 6 insertions(+), 2 deletions(-)
 
---- a/drivers/mfd/twl6030-irq.c
-+++ b/drivers/mfd/twl6030-irq.c
-@@ -185,8 +185,17 @@ static int twl6030_irq_thread(void *data
- 			}
- 		local_irq_enable();
- 		}
--		ret = twl_i2c_write(TWL_MODULE_PIH, sts.bytes,
--				REG_INT_STS_A, 3); /* clear INT_STS_A */
-+
-+		/*
-+		 * NOTE:
-+		 * Simulation confirms that documentation is wrong w.r.t the
-+		 * interrupt status clear operation. A single *byte* write to
-+		 * any one of STS_A to STS_C register results in all three
-+		 * STS registers being reset. Since it does not matter which
-+		 * value is written, all three registers are cleared on a
-+		 * single byte write, so we just use 0x0 to clear.
-+		 */
-+		ret = twl_i2c_write_u8(TWL_MODULE_PIH, 0x00, REG_INT_STS_A);
- 		if (ret)
- 			pr_warning("twl6030: I2C error in clearing PIH ISR\n");
+--- a/scripts/mod/modpost.c
++++ b/scripts/mod/modpost.c
+@@ -132,8 +132,10 @@ static struct module *new_module(char *m
+ 	/* strip trailing .o */
+ 	s = strrchr(p, '.');
+ 	if (s != NULL)
+-		if (strcmp(s, ".o") == 0)
++		if (strcmp(s, ".o") == 0) {
+ 			*s = '\0';
++			mod->is_dot_o = 1;
++		}
  
+ 	/* add to list */
+ 	mod->name = p;
+@@ -587,7 +589,8 @@ static void handle_modversions(struct mo
+ 	unsigned int crc;
+ 	enum export export;
+ 
+-	if (!is_vmlinux(mod->name) && strncmp(symname, "__ksymtab", 9) == 0)
++	if ((!is_vmlinux(mod->name) || mod->is_dot_o) &&
++	    strncmp(symname, "__ksymtab", 9) == 0)
+ 		export = export_from_secname(info, get_secindex(info, sym));
+ 	else
+ 		export = export_from_sec(info, get_secindex(info, sym));
+--- a/scripts/mod/modpost.h
++++ b/scripts/mod/modpost.h
+@@ -113,6 +113,7 @@ struct module {
+ 	int has_cleanup;
+ 	struct buffer dev_table_buf;
+ 	char	     srcversion[25];
++	int is_dot_o;
+ };
+ 
+ struct elf_info {
 
 
