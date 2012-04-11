@@ -1,60 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754272Ab2DKISr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Apr 2012 04:18:47 -0400
-Received: from mga14.intel.com ([143.182.124.37]:1734 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754102Ab2DKISo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Apr 2012 04:18:44 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="87729070"
-From: "Tu, Xiaobing" <xiaobing.tu@intel.com>
-To: "'akpm@linux-foundation.org'" <'akpm@linux-foundation.org'>,
-        "'mingo@elte.hu'" <'mingo@elte.hu'>,
-        "'rusty@rustcorp.com.au'" <'rusty@rustcorp.com.au'>,
-        "'a.p.zijlstra@chello.nl'" <'a.p.zijlstra@chello.nl'>,
-        "'linux-kernel@vger.kernel.org'" <'linux-kernel@vger.kernel.org'>,
-        "'yanmin_zhang@linux.intel.com'" <'yanmin_zhang@linux.intel.com'>,
-        "'rostedt@goodmis.org'" <'rostedt@goodmis.org'>
-CC: "Zuo, Jiao" <jiao.zuo@intel.com>
-Subject: [RFC 0/2] dump user space stack
-Thread-Topic: [RFC 0/2] dump user space stack
-Thread-Index: Ac0XpXMrB9NjJ+TRRsO00cW4fmSSgQADsvgAAAFyPXAAAFknUA==
-Importance: high
-X-Priority: 1
-Date: Wed, 11 Apr 2012 08:18:31 +0000
-Message-ID: <EE928378561BF1449699C96571234A740FCE374A@SHSMSX102.ccr.corp.intel.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.239.127.40]
-Content-Type: text/plain; charset="utf-8"
-MIME-Version: 1.0
+	id S1754320Ab2DKIUf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Apr 2012 04:20:35 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:44110 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751821Ab2DKIUc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Apr 2012 04:20:32 -0400
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Steven Rostedt <rostedt@goodmis.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>, Jiri Olsa <jolsa@redhat.com>
+Cc: linux-kernel@vger.kernel.org,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Subject: [PATCH] trace: Fix build breakage without CONFIG_PERF_EVENTS
+Date: Wed, 11 Apr 2012 09:20:29 +0100
+Message-Id: <1334132429-6091-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+X-Mailer: git-send-email 1.7.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id q3B8Itx8031549
 
-Resend as linux-kernel kicked it back.
+Today's -next fails to link for me:
 
-From: Tu, Xiaobing 
-Sent: Wednesday, April 11, 2012 4:07 PM
-To: 'akpm@linux-foundation.org'; 'mingo@elte.hu'; 'rusty@rustcorp.com.au'; 'a.p.zijlstra@chello.nl'; 'linux-kernel@vger.kernel.org'; 'yanmin_zhang@linux.intel.com'; 'rostedt@goodmis.org'
-Cc: Zuo, Jiao
-Subject: [RFC 0/2] dump user space stack
-Importance: High
+kernel/built-in.o:(.data+0x178e50): undefined reference to `perf_ftrace_event_register'
 
+It looks like multiple fixes have been merged for the issue fixed by
+commit fa73dc9 (tracing: Fix build breakage without CONFIG_PERF_EVENTS)
+though I can't identify the other changes that have gone in at the
+minute, it's possible that the changes which caused the breakage fixed
+by the previous commit got dropped but the fix made it in.
 
-ã€€ã€€We often need user space stack call-chain information when debugging hard issues. Here is a prototype and it could work well on X86 architecture.
-Â Â Â Â Â Â Â Â  The idea is to output user space stack call-chain from /proc/xxx/stack, currently, /proc/xxx/stack only output kernel stack call chain. We extend it to output user space call chain
-With hex format.
-Â Â Â  In user space, we implement a backtrace tool, it read kernel space and user space stack call chain from /proc/xxx/stack, and converts the hex format into symbols., we tested it on i386/i686 and x86-64. It works well.
+Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+---
+ kernel/trace/trace.h |    4 ++++
+ 1 files changed, 4 insertions(+), 0 deletions(-)
 
-Br
-Xiaobing
+diff --git a/kernel/trace/trace.h b/kernel/trace/trace.h
+index 95059f0..ff639ca 100644
+--- a/kernel/trace/trace.h
++++ b/kernel/trace/trace.h
+@@ -836,11 +836,15 @@ extern const char *__stop___trace_bprintk_fmt[];
+ 		     filter)
+ #include "trace_entries.h"
+ 
++#ifdef CONFIG_PERF_EVENTS
+ #ifdef CONFIG_FUNCTION_TRACER
+ int perf_ftrace_event_register(struct ftrace_event_call *call,
+ 			       enum trace_reg type, void *data);
+ #else
+ #define perf_ftrace_event_register NULL
+ #endif /* CONFIG_FUNCTION_TRACER */
++#else
++#define perf_ftrace_event_register NULL
++#endif /* CONFIG_PERF_EVENTS */
+ 
+ #endif /* _LINUX_KERNEL_TRACE_H */
+-- 
+1.7.9.1
 
-
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
