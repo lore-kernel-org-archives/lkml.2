@@ -1,48 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752682Ab2DKFrc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Apr 2012 01:47:32 -0400
-Received: from mail-pz0-f52.google.com ([209.85.210.52]:37733 "EHLO
-	mail-pz0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752120Ab2DKFrb (ORCPT
+	id S1752834Ab2DKF6X (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Apr 2012 01:58:23 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:55364 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751785Ab2DKF6W (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Apr 2012 01:47:31 -0400
-From: Grant Likely <grant.likely@secretlab.ca>
-Subject: Re: [PATCH 2/2] irq_domain: fix formatting of chip data pointer in virq_debug_show()
-To: Mika Westerberg <mika.westerberg@linux.intel.com>,
-        linux-kernel@vger.kernel.org
-Cc: tglx@linutronix.de, benh@kernel.crashing.org,
-        Mika Westerberg <mika.westerberg@linux.intel.com>
-In-Reply-To: <20120410232708.CAC3D3E079B@localhost>
-References: <1334060743-7901-1-git-send-email-mika.westerberg@linux.intel.com> <1334060743-7901-2-git-send-email-mika.westerberg@linux.intel.com> <20120410232708.CAC3D3E079B@localhost>
-Date: Tue, 10 Apr 2012 23:47:28 -0600
-Message-Id: <20120411054728.A6C093E081E@localhost>
+	Wed, 11 Apr 2012 01:58:22 -0400
+Message-ID: <1334123889.6776.1.camel@phoenix>
+Subject: [PATCH 1/2] regulator: Convert max8998 to get_voltage_sel
+From: Axel Lin <axel.lin@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Kyungmin Park <kyungmin.park@samsung.com>,
+        MyungJoo Ham <myungjoo.ham@smasung.com>, Liam Girdwood <lrg@ti.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Date: Wed, 11 Apr 2012 13:58:09 +0800
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2- 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 10 Apr 2012 17:27:08 -0600, Grant Likely <grant.likely@secretlab.ca> wrote:
-> On Tue, 10 Apr 2012 15:25:43 +0300, Mika Westerberg <mika.westerberg@linux.intel.com> wrote:
-> > On 32-bit machines reading the /sys/kernel/debug/irq_domain_mapping file
-> > outputs following:
-> > 
-> > virq   hwirq    chip name        chip data           domain name
-> >     9  0x00000  IO-APIC          0x        c175a0f8  none
-> >    10  0x00000  IO-APIC          0x        c175a108  none
-> >    11  0x00000  IO-APIC          0x        c175a118  none
-> > ...
-> > 
-> > which looks a bit funny. Fix that with filling the gap with zeroes instead
-> > of spaces.
-> > 
-> > Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
-> 
-> Applied, thanks.
+Signed-off-by: Axel Lin <axel.lin@gmail.com>
+---
+ drivers/regulator/max8998.c |   19 ++++++++++---------
+ 1 files changed, 10 insertions(+), 9 deletions(-)
 
-I've dropped this one again.  There is actually an easier way to
-achieve the same result.  By dropping the precision entirely from the
-format string the output will always get 0 extended.  I'll post an
-alternate patch soon.
+diff --git a/drivers/regulator/max8998.c b/drivers/regulator/max8998.c
+index 7e831a9..c96b87a 100644
+--- a/drivers/regulator/max8998.c
++++ b/drivers/regulator/max8998.c
+@@ -277,7 +277,7 @@ static int max8998_get_voltage_register(struct regulator_dev *rdev,
+ 	return 0;
+ }
+ 
+-static int max8998_get_voltage(struct regulator_dev *rdev)
++static int max8998_get_voltage_sel(struct regulator_dev *rdev)
+ {
+ 	struct max8998_data *max8998 = rdev_get_drvdata(rdev);
+ 	struct i2c_client *i2c = max8998->iodev->i2c;
+@@ -295,7 +295,7 @@ static int max8998_get_voltage(struct regulator_dev *rdev)
+ 	val >>= shift;
+ 	val &= mask;
+ 
+-	return max8998_list_voltage(rdev, val);
++	return val;
+ }
+ 
+ static int max8998_set_voltage_ldo(struct regulator_dev *rdev,
+@@ -359,7 +359,7 @@ static int max8998_set_voltage_buck(struct regulator_dev *rdev,
+ 	const struct voltage_map_desc *desc;
+ 	int buck = rdev_get_id(rdev);
+ 	int reg, shift = 0, mask, ret;
+-	int difference = 0, i, j = 0, previous_vol = 0;
++	int difference, i, j, previous_sel;
+ 	u8 val = 0;
+ 	static u8 buck1_last_val;
+ 
+@@ -388,13 +388,14 @@ static int max8998_set_voltage_buck(struct regulator_dev *rdev,
+ 	if (ret)
+ 		return ret;
+ 
+-	previous_vol = max8998_get_voltage(rdev);
++	previous_sel = max8998_get_voltage_sel(rdev);
+ 
+ 	/* Check if voltage needs to be changed */
+ 	/* if previous_voltage equal new voltage, return */
+-	if (previous_vol == max8998_list_voltage(rdev, i)) {
++	if (previous_sel == i) {
+ 		dev_dbg(max8998->dev, "No voltage change, old:%d, new:%d\n",
+-			previous_vol, max8998_list_voltage(rdev, i));
++			max8998_list_voltage(rdev, previous_sel),
++			max8998_list_voltage(rdev, i));
+ 		return ret;
+ 	}
+ 
+@@ -491,7 +492,7 @@ buck2_exit:
+ 	if (max8998->iodev->type == TYPE_MAX8998 && !(val & MAX8998_ENRAMP))
+ 		return ret;
+ 
+-	difference = desc->min + desc->step*i - previous_vol/1000;
++	difference = (i - previous_sel) * desc->step;
+ 	if (difference > 0)
+ 		udelay(difference / ((val & 0x0f) + 1));
+ 
+@@ -503,7 +504,7 @@ static struct regulator_ops max8998_ldo_ops = {
+ 	.is_enabled		= max8998_ldo_is_enabled,
+ 	.enable			= max8998_ldo_enable,
+ 	.disable		= max8998_ldo_disable,
+-	.get_voltage		= max8998_get_voltage,
++	.get_voltage_sel	= max8998_get_voltage_sel,
+ 	.set_voltage		= max8998_set_voltage_ldo,
+ 	.set_suspend_enable	= max8998_ldo_enable,
+ 	.set_suspend_disable	= max8998_ldo_disable,
+@@ -514,7 +515,7 @@ static struct regulator_ops max8998_buck_ops = {
+ 	.is_enabled		= max8998_ldo_is_enabled,
+ 	.enable			= max8998_ldo_enable,
+ 	.disable		= max8998_ldo_disable,
+-	.get_voltage		= max8998_get_voltage,
++	.get_voltage_sel	= max8998_get_voltage_sel,
+ 	.set_voltage		= max8998_set_voltage_buck,
+ 	.set_suspend_enable	= max8998_ldo_enable,
+ 	.set_suspend_disable	= max8998_ldo_disable,
+-- 
+1.7.5.4
 
-g.
+
 
