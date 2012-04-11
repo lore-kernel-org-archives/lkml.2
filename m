@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760029Ab2DKB5z (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Apr 2012 21:57:55 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:50670 "EHLO song.cn.fujitsu.com"
+	id S1760037Ab2DKB6v (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Apr 2012 21:58:51 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:38403 "EHLO song.cn.fujitsu.com"
 	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1759940Ab2DKB5x (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Apr 2012 21:57:53 -0400
+	id S1755899Ab2DKB6u (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Apr 2012 21:58:50 -0400
 X-IronPort-AV: E=Sophos;i="4.75,402,1330876800"; 
-   d="scan'208";a="4725464"
-Message-ID: <4F84E50E.2090008@cn.fujitsu.com>
-Date: Wed, 11 Apr 2012 09:57:34 +0800
+   d="scan'208";a="4725479"
+Message-ID: <4F84E54A.1080903@cn.fujitsu.com>
+Date: Wed, 11 Apr 2012 09:58:34 +0800
 From: zhangyanfei <zhangyanfei@cn.fujitsu.com>
 User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100413 Fedora/3.0.4-2.fc13 Thunderbird/3.0.4
 MIME-Version: 1.0
@@ -18,75 +18,79 @@ CC: ebiederm@xmission.com, luto@mit.edu, joerg.roedel@amd.com,
         dzickus@redhat.com, paul.gortmaker@windriver.com, gregkh@suse.de,
         ludwig.nussel@suse.de, linux-kernel@vger.kernel.org,
         kvm@vger.kernel.org, kexec@lists.infradead.org
-Subject: [PATCH 3/4] ksysfs: export VMCSINFO via sysfs
+Subject: [PATCH 4/4] kexec: Add crash_save_vmcsinfo to update VMCSINFO
 References: <4F84E0DF.8040206@cn.fujitsu.com>
 In-Reply-To: <4F84E0DF.8040206@cn.fujitsu.com>
 X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/04/11 09:57:12,
+ 2012/04/11 09:58:12,
 	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/04/11 09:57:16,
-	Serialize complete at 2012/04/11 09:57:16
+ 2012/04/11 09:58:14,
+	Serialize complete at 2012/04/11 09:58:14
 Content-Transfer-Encoding: 7bit
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch creates sysfs file to export where VMCSINFO is allocated,
-as below:
-        $ cat /sys/kernel/vmcsinfo
-        1cb88a0 2000
-number on the left-hand side is the physical address of VMCSINFO,
-while the one on the right-hand side is the max size of VMCSINFO.
+crash_save_vmcsinfo updates the VMCSINFO when kernel crashes.
+If no VMCSINFO has been saved before, this function will do nothing.
 
 Signed-off-by: zhangyanfei <zhangyanfei@cn.fujitsu.com>
 ---
- kernel/ksysfs.c |   19 +++++++++++++++++++
- 1 files changed, 19 insertions(+), 0 deletions(-)
+ include/linux/kexec.h |    1 +
+ kernel/kexec.c        |   14 ++++++++++++++
+ 2 files changed, 15 insertions(+), 0 deletions(-)
 
-diff --git a/kernel/ksysfs.c b/kernel/ksysfs.c
-index 4e316e1..becbb68 100644
---- a/kernel/ksysfs.c
-+++ b/kernel/ksysfs.c
-@@ -18,6 +18,8 @@
- #include <linux/stat.h>
- #include <linux/sched.h>
- #include <linux/capability.h>
+diff --git a/include/linux/kexec.h b/include/linux/kexec.h
+index 0d7d6a1..6e8ff13 100644
+--- a/include/linux/kexec.h
++++ b/include/linux/kexec.h
+@@ -145,6 +145,7 @@ void arch_crash_save_vmcoreinfo(void);
+ __printf(1, 2)
+ void vmcoreinfo_append_str(const char *fmt, ...);
+ unsigned long paddr_vmcoreinfo_note(void);
++void crash_save_vmcsinfo(void);
+ 
+ #define VMCOREINFO_OSRELEASE(value) \
+ 	vmcoreinfo_append_str("OSRELEASE=%s\n", value)
+diff --git a/kernel/kexec.c b/kernel/kexec.c
+index 4e2e472..19843ef 100644
+--- a/kernel/kexec.c
++++ b/kernel/kexec.c
+@@ -38,6 +38,7 @@
+ #include <asm/uaccess.h>
+ #include <asm/io.h>
+ #include <asm/sections.h>
 +#include <asm/vmcsinfo.h>
-+#include <asm/virtext.h>
  
- #define KERNEL_ATTR_RO(_name) \
- static struct kobj_attribute _name##_attr = __ATTR_RO(_name)
-@@ -133,6 +135,20 @@ KERNEL_ATTR_RO(vmcoreinfo);
+ /* Per cpu memory for storing cpu states in case of system crash. */
+ note_buf_t __percpu *crash_notes;
+@@ -1094,6 +1095,7 @@ void crash_kexec(struct pt_regs *regs)
  
- #endif /* CONFIG_KEXEC */
+ 			crash_setup_regs(&fixed_regs, regs);
+ 			crash_save_vmcoreinfo();
++			crash_save_vmcsinfo();
+ 			machine_crash_shutdown(&fixed_regs);
+ 			machine_kexec(kexec_crash_image);
+ 		}
+@@ -1458,6 +1460,18 @@ unsigned long __attribute__ ((weak)) paddr_vmcoreinfo_note(void)
+ 	return __pa((unsigned long)(char *)&vmcoreinfo_note);
+ }
  
 +#ifdef CONFIG_X86
-+static ssize_t vmcsinfo_show(struct kobject *kobj,
-+			     struct kobj_attribute *attr, char *buf)
++void crash_save_vmcsinfo(void)
 +{
-+	if (cpu_has_vmx())
-+		return sprintf(buf, "%lx %x\n",
-+			       paddr_vmcsinfo_note(),
-+			       (unsigned int)vmcsinfo_max_size);
-+	return 0;
++	if (!vmcsinfo_size)
++		return;
++	vmcsinfo_append_str("CRASHTIME=%ld", get_seconds());
++	update_vmcsinfo_note();
 +}
-+KERNEL_ATTR_RO(vmcsinfo);
-+
++#else
++void crash_save_vmcsinfo(void) {}
 +#endif /* CONFIG_X86 */
 +
- /* whether file capabilities are enabled */
- static ssize_t fscaps_show(struct kobject *kobj,
- 				  struct kobj_attribute *attr, char *buf)
-@@ -182,6 +198,9 @@ static struct attribute * kernel_attrs[] = {
- 	&kexec_crash_size_attr.attr,
- 	&vmcoreinfo_attr.attr,
- #endif
-+#ifdef CONFIG_X86
-+	&vmcsinfo_attr.attr,
-+#endif
- 	NULL
- };
- 
+ static int __init crash_save_vmcoreinfo_init(void)
+ {
+ 	VMCOREINFO_OSRELEASE(init_uts_ns.name.release);
 -- 
 1.7.1
