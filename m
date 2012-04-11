@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933931Ab2DLAAs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Apr 2012 20:00:48 -0400
-Received: from mail-pz0-f52.google.com ([209.85.210.52]:40940 "EHLO
-	mail-pz0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933897Ab2DKXQd (ORCPT
+	id S933893Ab2DKXQc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Apr 2012 19:16:32 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:44096 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933825Ab2DKXQ1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Apr 2012 19:16:33 -0400
-Message-Id: <20120411231024.235038330@linuxfoundation.org>
+	Wed, 11 Apr 2012 19:16:27 -0400
+Message-Id: <20120411231023.856915738@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Wed, 11 Apr 2012 16:10:53 -0700
+Date: Wed, 11 Apr 2012 16:10:51 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Jesse Barnes <jbarnes@virtuousgeek.org>,
-        Chris Wilson <chris@chris-wilson.co.uk>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>
-Subject: [ 35/78] drm/i915: treat src w & h as fixed point in sprite handling code
+        alan@lxorguk.ukuu.org.uk, Alex Deucher <alexander.deucher@amd.com>,
+        =?UTF-8?q?Michel=20D=C3=A4nzer?= <michel.daenzer@amd.com>,
+        Dave Airlie <airlied@redhat.com>
+Subject: [ 33/78] drm/radeon/kms: fix fans after resume
 In-Reply-To: <20120411231102.GA6404@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,32 +26,68 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jesse Barnes <jbarnes@virtuousgeek.org>
+From: Alex Deucher <alexander.deucher@amd.com>
 
-commit b4db1e35ac59c144965f517bc575a0d75b60b03f upstream.
+commit 402976fe51b2d1a58a29ba06fa1ca5ace3a4cdcd upstream.
 
-This was missed when we converted the source values to 16.16 fixed point.
+On pre-R600 asics, the SpeedFanControl table is not
+executed as part of ASIC_Init as it is on newer asics.
 
-Signed-off-by: Jesse Barnes <jbarnes@virtuousgeek.org>
-Tested-by: Chris Wilson <chris@chris-wilson.co.uk>
-Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+Fixes:
+https://bugzilla.kernel.org/show_bug.cgi?id=29412
+
+Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
+Reviewed-by: Michel Dänzer <michel.daenzer@amd.com>
+Signed-off-by: Dave Airlie <airlied@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/i915/intel_sprite.c |    3 +++
- 1 file changed, 3 insertions(+)
+ drivers/gpu/drm/radeon/atom.c |   15 ++++++++++++++-
+ drivers/gpu/drm/radeon/atom.h |    1 +
+ 2 files changed, 15 insertions(+), 1 deletion(-)
 
---- a/drivers/gpu/drm/i915/intel_sprite.c
-+++ b/drivers/gpu/drm/i915/intel_sprite.c
-@@ -411,6 +411,9 @@ intel_update_plane(struct drm_plane *pla
+--- a/drivers/gpu/drm/radeon/atom.c
++++ b/drivers/gpu/drm/radeon/atom.c
+@@ -1306,8 +1306,11 @@ struct atom_context *atom_parse(struct c
  
- 	old_obj = intel_plane->obj;
- 
-+	src_w = src_w >> 16;
-+	src_h = src_h >> 16;
+ int atom_asic_init(struct atom_context *ctx)
+ {
++	struct radeon_device *rdev = ctx->card->dev->dev_private;
+ 	int hwi = CU16(ctx->data_table + ATOM_DATA_FWI_PTR);
+ 	uint32_t ps[16];
++	int ret;
 +
- 	/* Pipe must be running... */
- 	if (!(I915_READ(PIPECONF(pipe)) & PIPECONF_ENABLE))
- 		return -EINVAL;
+ 	memset(ps, 0, 64);
+ 
+ 	ps[0] = cpu_to_le32(CU32(hwi + ATOM_FWI_DEFSCLK_PTR));
+@@ -1317,7 +1320,17 @@ int atom_asic_init(struct atom_context *
+ 
+ 	if (!CU16(ctx->cmd_table + 4 + 2 * ATOM_CMD_INIT))
+ 		return 1;
+-	return atom_execute_table(ctx, ATOM_CMD_INIT, ps);
++	ret = atom_execute_table(ctx, ATOM_CMD_INIT, ps);
++	if (ret)
++		return ret;
++
++	memset(ps, 0, 64);
++
++	if (rdev->family < CHIP_R600) {
++		if (CU16(ctx->cmd_table + 4 + 2 * ATOM_CMD_SPDFANCNTL))
++			atom_execute_table(ctx, ATOM_CMD_SPDFANCNTL, ps);
++	}
++	return ret;
+ }
+ 
+ void atom_destroy(struct atom_context *ctx)
+--- a/drivers/gpu/drm/radeon/atom.h
++++ b/drivers/gpu/drm/radeon/atom.h
+@@ -44,6 +44,7 @@
+ #define ATOM_CMD_SETSCLK	0x0A
+ #define ATOM_CMD_SETMCLK	0x0B
+ #define ATOM_CMD_SETPCLK	0x0C
++#define ATOM_CMD_SPDFANCNTL	0x39
+ 
+ #define ATOM_DATA_FWI_PTR	0xC
+ #define ATOM_DATA_IIO_PTR	0x32
 
 
