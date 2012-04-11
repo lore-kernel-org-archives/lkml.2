@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933807Ab2DLAGy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Apr 2012 20:06:54 -0400
-Received: from mail-pz0-f52.google.com ([209.85.210.52]:63303 "EHLO
-	mail-pz0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933661Ab2DKXPN (ORCPT
+	id S933655Ab2DKXPI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Apr 2012 19:15:08 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:35695 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933622Ab2DKXPD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Apr 2012 19:15:13 -0400
-Message-Id: <20120411231022.277118574@linuxfoundation.org>
+	Wed, 11 Apr 2012 19:15:03 -0400
+Message-Id: <20120411231021.774852554@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Wed, 11 Apr 2012 16:10:42 -0700
+Date: Wed, 11 Apr 2012 16:10:39 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Jan Beulich <jbeulich@suse.com>,
-        Michal Marek <mmarek@suse.cz>
-Subject: [ 24/78] modpost: fix ALL_INIT_DATA_SECTIONS
+        alan@lxorguk.ukuu.org.uk, Andi Kleen <ak@linux.intel.com>,
+        Len Brown <len.brown@intel.com>
+Subject: [ 21/78] ACPI: Do cpufreq clamping for throttling per package v2
 In-Reply-To: <20120411231102.GA6404@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,30 +25,129 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jan Beulich <JBeulich@suse.com>
+From: Andi Kleen <andi@firstfloor.org>
 
-commit 9aaf440f8fabcebf9ea79a62ccf4c212e6544b49 upstream.
+commit 2815ab92ba3ab27556212cc306288dc95692824b upstream.
 
-This was lacking a comma between two supposed to be separate strings.
+On Intel CPUs the processor typically uses the highest frequency
+set by any logical CPU. When the system overheats
+Linux first forces the frequency to the lowest available one
+to lower the temperature.
 
-Signed-off-by: Jan Beulich <jbeulich@suse.com>
-Signed-off-by: Michal Marek <mmarek@suse.cz>
+However this was done only per logical CPU, which means all
+logical CPUs in a package would need to go through this before
+the frequency is actually lowered.
+
+Worse this delay actually prevents real throttling, because
+the real throttle code only proceeds when the lowest frequency
+is already reached.
+
+So when a throttle event happens force the lowest frequency
+for all CPUs in the package where it happened. The per CPU
+state is now kept per package, not per logical CPU. An alternative
+would be to do it per cpufreq unit, but since we want to bring
+down the temperature of the complete chip it's better
+to do it for all.
+
+In principle it may even make sense to do it for all CPUs,
+but I kept it on the package for now.
+
+With this change the frequency is actually lowered, which
+in terms also allows real throttling to proceed.
+
+I also removed an unnecessary per cpu variable initialization.
+
+v2: Fix package mapping
+
+Signed-off-by: Andi Kleen <ak@linux.intel.com>
+Signed-off-by: Len Brown <len.brown@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- scripts/mod/modpost.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/acpi/processor_thermal.c |   45 ++++++++++++++++++++++++++++++++-------
+ 1 file changed, 37 insertions(+), 8 deletions(-)
 
---- a/scripts/mod/modpost.c
-+++ b/scripts/mod/modpost.c
-@@ -849,7 +849,7 @@ static void check_section(const char *mo
+--- a/drivers/acpi/processor_thermal.c
++++ b/drivers/acpi/processor_thermal.c
+@@ -57,6 +57,27 @@ ACPI_MODULE_NAME("processor_thermal");
+ static DEFINE_PER_CPU(unsigned int, cpufreq_thermal_reduction_pctg);
+ static unsigned int acpi_thermal_cpufreq_is_init = 0;
  
- #define ALL_INIT_DATA_SECTIONS \
- 	".init.setup$", ".init.rodata$", \
--	".devinit.rodata$", ".cpuinit.rodata$", ".meminit.rodata$" \
-+	".devinit.rodata$", ".cpuinit.rodata$", ".meminit.rodata$", \
- 	".init.data$", ".devinit.data$", ".cpuinit.data$", ".meminit.data$"
- #define ALL_EXIT_DATA_SECTIONS \
- 	".exit.data$", ".devexit.data$", ".cpuexit.data$", ".memexit.data$"
++#define reduction_pctg(cpu) \
++	per_cpu(cpufreq_thermal_reduction_pctg, phys_package_first_cpu(cpu))
++
++/*
++ * Emulate "per package data" using per cpu data (which should really be
++ * provided elsewhere)
++ *
++ * Note we can lose a CPU on cpu hotunplug, in this case we forget the state
++ * temporarily. Fortunately that's not a big issue here (I hope)
++ */
++static int phys_package_first_cpu(int cpu)
++{
++	int i;
++	int id = topology_physical_package_id(cpu);
++
++	for_each_online_cpu(i)
++		if (topology_physical_package_id(i) == id)
++			return i;
++	return 0;
++}
++
+ static int cpu_has_cpufreq(unsigned int cpu)
+ {
+ 	struct cpufreq_policy policy;
+@@ -76,7 +97,7 @@ static int acpi_thermal_cpufreq_notifier
+ 
+ 	max_freq = (
+ 	    policy->cpuinfo.max_freq *
+-	    (100 - per_cpu(cpufreq_thermal_reduction_pctg, policy->cpu) * 20)
++	    (100 - reduction_pctg(policy->cpu) * 20)
+ 	) / 100;
+ 
+ 	cpufreq_verify_within_limits(policy, 0, max_freq);
+@@ -102,16 +123,28 @@ static int cpufreq_get_cur_state(unsigne
+ 	if (!cpu_has_cpufreq(cpu))
+ 		return 0;
+ 
+-	return per_cpu(cpufreq_thermal_reduction_pctg, cpu);
++	return reduction_pctg(cpu);
+ }
+ 
+ static int cpufreq_set_cur_state(unsigned int cpu, int state)
+ {
++	int i;
++
+ 	if (!cpu_has_cpufreq(cpu))
+ 		return 0;
+ 
+-	per_cpu(cpufreq_thermal_reduction_pctg, cpu) = state;
+-	cpufreq_update_policy(cpu);
++	reduction_pctg(cpu) = state;
++
++	/*
++	 * Update all the CPUs in the same package because they all
++	 * contribute to the temperature and often share the same
++	 * frequency.
++	 */
++	for_each_online_cpu(i) {
++		if (topology_physical_package_id(i) ==
++		    topology_physical_package_id(cpu))
++			cpufreq_update_policy(i);
++	}
+ 	return 0;
+ }
+ 
+@@ -119,10 +152,6 @@ void acpi_thermal_cpufreq_init(void)
+ {
+ 	int i;
+ 
+-	for (i = 0; i < nr_cpu_ids; i++)
+-		if (cpu_present(i))
+-			per_cpu(cpufreq_thermal_reduction_pctg, i) = 0;
+-
+ 	i = cpufreq_register_notifier(&acpi_thermal_cpufreq_notifier_block,
+ 				      CPUFREQ_POLICY_NOTIFIER);
+ 	if (!i)
 
 
