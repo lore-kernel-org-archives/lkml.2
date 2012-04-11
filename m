@@ -1,116 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756847Ab2DKQc7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Apr 2012 12:32:59 -0400
-Received: from ch1ehsobe002.messaging.microsoft.com ([216.32.181.182]:25317
-	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1760638Ab2DKQc5 (ORCPT
+	id S1760693Ab2DKQdR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Apr 2012 12:33:17 -0400
+Received: from g1t0029.austin.hp.com ([15.216.28.36]:27390 "EHLO
+	g1t0029.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760638Ab2DKQdP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Apr 2012 12:32:57 -0400
-X-SpamScore: -24
-X-BigFish: VPS-24(z6c9Mz1432N98dKzz1202hzz15d4R8275bh8275dhz2dh668h839h944hd25h)
-X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
-X-WSS-ID: 0M2BPYQ-01-2AQ-02
-X-M-MSG: 
-Date: Wed, 11 Apr 2012 18:29:39 +0200
-From: Joerg Roedel <joerg.roedel@amd.com>
-To: Greg KH <gregkh@linuxfoundation.org>
-CC: <linux-kernel@vger.kernel.org>, <stable@vger.kernel.org>
-Subject: Re: [PATCH 3.2-stable] iommu/amd: Make sure IOMMU interrupts are
- re-enabled on resume
-Message-ID: <20120411162938.GJ2428@amd.com>
-References: <1334161546-11110-1-git-send-email-joerg.roedel@amd.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <1334161546-11110-1-git-send-email-joerg.roedel@amd.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginatorOrg: amd.com
+	Wed, 11 Apr 2012 12:33:15 -0400
+Message-ID: <1334161991.2226.18.camel@lorien2>
+Subject: Re: [PATCH 0/5] ACPI: Add _OST support for ACPI hotplug
+From: Shuah Khan <shuahkhan@gmail.com>
+Reply-To: shuahkhan@gmail.com
+To: Toshi Kani <toshi.kani@hp.com>
+Cc: shuahkhan@gmail.com, lenb@kernel.org, linux-acpi@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Date: Wed, 11 Apr 2012 10:33:11 -0600
+In-Reply-To: <1334096510-17319-1-git-send-email-toshi.kani@hp.com>
+References: <1334096510-17319-1-git-send-email-toshi.kani@hp.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2- 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 11, 2012 at 06:25:46PM +0200, Joerg Roedel wrote:
-> commit 9ddd592a191b32f2ee6c4b6ed2bd52665c3a49f5 upstream
+On Tue, 2012-04-10 at 16:21 -0600, Toshi Kani wrote:
+> This series of patches supports ACPI _OST (OSPM Status Indication)
+> method for ACPI-based CPU and memory hotplug operations.  After
+> ACPI-based hotplug operation completed, OSPM calls _OST to convey
+> the completion status to ACPI firmware.  If _OST is not present,
+> this change has no effect on the platform.
 > 
-> Unfortunatly the interrupts for the event log and the
-> peripheral page-faults are only enabled at boot but not
-> re-enabled at resume. Fix that for 3.2.
+> The _OST definition can be found in section 6.3.5 of ACPI 5.0 spec.
+> The HPPF spec below also describes hotplug flows with _OST.
 > 
-> Cc: stable@vger.kernel.org
-> Signed-off-by: Joerg Roedel <joerg.roedel@amd.com>
+>   DIG64 Hot-Plug & Partitioning Flow (HPPF) Specification R1.0
+>   http://www.dig64.org/home/DIG64_HPPF_R1_0.pdf
+> 
+> The change was tested by overriding DSDT with fake _OST methods.
 
-Argh, please ignore this one, this patch does a little bit too much.
+Could you please elaborate what it means by fake _OST method? I am
+assuming based on the above that this patch set was never tested on real
+hardware that has support for _OST method? Is that correct? If so why
+not wait until you have the opportunity to test it on real hardware
+before sending the patch?
 
+-- Shuah
+> 
 > ---
->  drivers/iommu/amd_iommu_init.c |   27 ++++++++++++++++++++-------
->  1 files changed, 20 insertions(+), 7 deletions(-)
+> Toshi Kani (4):
+>  ACPI: Set hotplug _OST support bit to _OSC
+>  ACPI: Add acpi_evaluate_ost() for calling _OST
+>  ACPI: Add _OST support for ACPI CPU hotplug
+>  ACPI: Add _OST support for ACPI memory hotplug
 > 
-> diff --git a/drivers/iommu/amd_iommu_init.c b/drivers/iommu/amd_iommu_init.c
-> index 5c74179..c90a709 100644
-> --- a/drivers/iommu/amd_iommu_init.c
-> +++ b/drivers/iommu/amd_iommu_init.c
-> @@ -1033,8 +1033,9 @@ static int iommu_setup_msi(struct amd_iommu *iommu)
->  {
->  	int r;
->  
-> -	if (pci_enable_msi(iommu->dev))
-> -		return 1;
-> +	r = pci_enable_msi(iommu->dev);
-> +	if (r)
-> +		return r;
->  
->  	r = request_threaded_irq(iommu->dev->irq,
->  				 amd_iommu_int_handler,
-> @@ -1044,24 +1045,36 @@ static int iommu_setup_msi(struct amd_iommu *iommu)
->  
->  	if (r) {
->  		pci_disable_msi(iommu->dev);
-> -		return 1;
-> +		return r;
->  	}
->  
->  	iommu->int_enabled = true;
-> -	iommu_feature_enable(iommu, CONTROL_EVT_INT_EN);
->  
->  	return 0;
->  }
->  
->  static int iommu_init_msi(struct amd_iommu *iommu)
->  {
-> +	int ret;
-> +
->  	if (iommu->int_enabled)
-> -		return 0;
-> +		goto enable_faults;
->  
->  	if (pci_find_capability(iommu->dev, PCI_CAP_ID_MSI))
-> -		return iommu_setup_msi(iommu);
-> +		ret = iommu_setup_msi(iommu);
-> +	else
-> +		ret = -ENODEV;
->  
-> -	return 1;
-> +	if (ret)
-> +		return ret;
-> +
-> +enable_faults:
-> +	iommu_feature_enable(iommu, CONTROL_EVT_INT_EN);
-> +
-> +	if (iommu->ppr_log != NULL)
-> +		iommu_feature_enable(iommu, CONTROL_PPFINT_EN);
-> +
-> +	return 0;
->  }
->  
->  /****************************************************************************
-> -- 
-> 1.7.5.4
+>  drivers/acpi/acpi_memhotplug.c  |   43 +++++++++++++++++++++++++++++----------
+>  drivers/acpi/bus.c              |    5 ++++
+>  drivers/acpi/processor_driver.c |   28 ++++++++++++++++++-------
+>  drivers/acpi/utils.c            |   34 ++++++++++++++++++++++++++++++
+>  include/acpi/acpi_bus.h         |    3 ++
+>  include/linux/acpi.h            |   26 ++++++++++++++++++++++-
+>  6 files changed, 119 insertions(+), 20 deletions(-)
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> 
 
--- 
-AMD Operating System Research Center
-
-Advanced Micro Devices GmbH Einsteinring 24 85609 Dornach
-General Managers: Alberto Bozzo
-Registration: Dornach, Landkr. Muenchen; Registerger. Muenchen, HRB Nr. 43632
 
