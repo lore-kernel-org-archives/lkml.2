@@ -1,50 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760949Ab2DKTUd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Apr 2012 15:20:33 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:61186 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756034Ab2DKTUb convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Apr 2012 15:20:31 -0400
+	id S932999Ab2DKTU6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Apr 2012 15:20:58 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:55663 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756034Ab2DKTU4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Apr 2012 15:20:56 -0400
+Date: Wed, 11 Apr 2012 21:20:52 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Glauber Costa <glommer@parallels.com>, linux-kernel@vger.kernel.org,
+        devel@openvz.org, linux-mm@kvack.org, cgroups@vger.kernel.org,
+        Johannes Weiner <hannes@cmpxchg.org>, kamezawa.hiroyu@jp.fujitsu.com,
+        Greg Thelen <gthelen@google.com>,
+        Suleiman Souhlal <suleiman@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH] remove BUG() in possible but rare condition
+Message-ID: <20120411192052.GB24831@tiehlicka.suse.cz>
+References: <1334167824-19142-1-git-send-email-glommer@parallels.com>
+ <20120411184845.GA24831@tiehlicka.suse.cz>
+ <CA+55aFx1GMWGgh0sTAzvvVSzPQsQ_4NKeaNv1zpKrP4fg1dG+Q@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <4F85C6D5.6080904@zytor.com>
-References: <20120401125741.GA7484@p183.telecom.by> <4F78D0BA.9040709@zytor.com>
- <CACVxJT_WJYjecpZMGkyUrbE5gNROX1tOfFAcD84-hoPsypxcFQ@mail.gmail.com>
- <4F7F1864.8090606@zytor.com> <CAHGf_=rsJ8o8Fnd2z5Z8jHGc=cz370ay0_t3bhkiYRCBh3puVw@mail.gmail.com>
- <4F85C6D5.6080904@zytor.com>
-From: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
-Date: Wed, 11 Apr 2012 15:20:10 -0400
-Message-ID: <CAHGf_=ro=TwrYw4UoUMaHjb08rVbz-KjovZfND608J26w=n4HQ@mail.gmail.com>
-Subject: Re: [PATCH] nextfd(2)
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Alexey Dobriyan <adobriyan@gmail.com>, akpm@linux-foundation.org,
-        viro@zeniv.linux.org.uk, torvalds@linux-foundation.org,
-        drepper@gmail.com, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CA+55aFx1GMWGgh0sTAzvvVSzPQsQ_4NKeaNv1zpKrP4fg1dG+Q@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 11, 2012 at 2:00 PM, H. Peter Anvin <hpa@zytor.com> wrote:
-> On 04/10/2012 05:09 PM, KOSAKI Motohiro wrote:
->>
->> I know the reason. fcntl(F_NEXT) is one of a proposal of next SUS enhancement.
->>
->>   http://austingroupbugs.net/view.php?id=149
->>
->> nextfd() has a semantics of F_NEXT.
->>
->
-> Looking at that bug report, it sounds like that proposal was rejected.
+On Wed 11-04-12 11:57:56, Linus Torvalds wrote:
+> On Wed, Apr 11, 2012 at 11:48 AM, Michal Hocko <mhocko@suse.cz> wrote:
+> >
+> > I am not familiar with the code much but a trivial call chain walk up to
+> > write_dev_supers (in btrfs) shows that we do not check for the return value
+> > from __getblk so we would nullptr and there might be more.
+> > I guess these need some treat before the BUG might be removed, right?
+> 
+> Well, realistically, isn't BUG() as bad as a NULL pointer dereference?
+> 
+> Do you care about the exact message on the screen when your machine dies?
 
-?
+I personally do not care as I do not allow anything to map at that area.
 
-If I understand correctly, above URL says, latest satatus is
+It just seems that there are some callers who do not expect that the
+allocation fails. BUG at the allocation failure which dates back when it
+replaced buffer_error might have let to some assumptions (not good of
+course but we should better fix them.
 
-  Resolution: Accepted As Marked
+That being said I am not against the patch. BUG on an allocation failure
+just doesn't feel right...
 
-Please see toppest issue summary. Or if I am missing something, can you please
-point out which line are you seeing?
+> 
+>                      Linus
+> 
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Fight unfair telecom internet charges in Canada: sign http://stopthemeter.ca/
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+
+-- 
+Michal Hocko
+SUSE Labs
+SUSE LINUX s.r.o.
+Lihovarska 1060/12
+190 00 Praha 9    
+Czech Republic
