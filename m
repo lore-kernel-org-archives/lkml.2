@@ -1,72 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965864Ab2DKXai (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Apr 2012 19:30:38 -0400
-Received: from mga11.intel.com ([192.55.52.93]:54358 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S965850Ab2DKXac (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Apr 2012 19:30:32 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="asc'?scan'208";a="140654514"
-Date: Thu, 12 Apr 2012 02:30:45 +0300
-From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-To: Jesper Juhl <jj@chaosbits.net>
-Cc: linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
-        Alan Cox <alan@linux.intel.com>, Dave Airlie <airlied@redhat.com>,
-        David Airlie <airlied@linux.ie>, jim liu <jim.liu@intel.com>,
-        Jackie Li <yaodong.li@intel.com>, trivial@kernel.org
-Subject: Re: [PATCH] gma500: Don't needlessly include version.h in
- mdfld_dsi_output.h
-Message-ID: <20120411233045.GA16184@otc-wbsnb-06>
-References: <alpine.LNX.2.00.1204120002390.2137@swampdragon.chaosbits.net>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="zYM0uCDKw75PZbzx"
-Content-Disposition: inline
-In-Reply-To: <alpine.LNX.2.00.1204120002390.2137@swampdragon.chaosbits.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S965829Ab2DKX3v (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Apr 2012 19:29:51 -0400
+Received: from mail-pz0-f52.google.com ([209.85.210.52]:53150 "EHLO
+	mail-pz0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965815Ab2DKX3q (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Apr 2012 19:29:46 -0400
+Message-Id: <20120411231314.787023068@linuxfoundation.org>
+User-Agent: quilt/0.60-19.1
+Date: Wed, 11 Apr 2012 16:13:49 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        alan@lxorguk.ukuu.org.uk, Peter Hurley <peter@hurleysoftware.com>,
+        Daniel Wagner <daniel.wagner@bmw-carit.de>,
+        Marcel Holtmann <marcel@holtmann.org>,
+        Johan Hedberg <johan.hedberg@intel.com>
+Subject: [ 42/42] Bluetooth: Fix l2cap conn failures for ssp devices
+In-Reply-To: <20120411231443.GA808@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+3.0-stable review patch.  If anyone has any objections, please let me know.
 
---zYM0uCDKw75PZbzx
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+------------------
 
-On Thu, Apr 12, 2012 at 12:05:29AM +0200, Jesper Juhl wrote:
-> drivers/gpu/drm/gma500/mdfld_dsi_output.h does not need to
-> '#include <linux/version.h>' - so don't.
->=20
-> Signed-off-by: Jesper Juhl <jj@chaosbits.net>
 
-Acked-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
+From: Peter Hurley <peter@hurleysoftware.com>
 
---=20
- Kirill A. Shutemov
+commit 18daf1644e634bae951a6e3d4d19d89170209762 upstream
 
---zYM0uCDKw75PZbzx
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+Commit 330605423c fixed l2cap conn establishment for non-ssp remote
+devices by not setting HCI_CONN_ENCRYPT_PEND every time conn security
+is tested (which was always returning failure on any subsequent
+security checks).
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+However, this broke l2cap conn establishment for ssp remote devices
+when an ACL link was already established at SDP-level security. This
+fix ensures that encryption must be pending whenever authentication
+is also pending.
 
-iQIcBAEBAgAGBQJPhhQlAAoJEAd+omnVudOMcYQP/1Mi3ROiaZK/wP6MmT35k9f4
-/33boHNSRYZst6sN/CMezQ5vTcGwHBbdMujlD7ED8ARcQKWVNDhH6lC3WsJPMG4k
-9G02Y3EyZQpDX/XHNU5fEJJgCOLoa+BW7ODYFdduYjyFrelxl0P1uxE/RrIx6NPD
-PPhX40uYn870y2TnTT2SyG0WtRJ3LDcIOXh83fGsSJo8/q8OC40WCvkPqUC5HWKV
-pryL6CXYeJpfVQRULQ28YrU2PatZuxRM3e7rKKsL/JohigegVEd9Cia5KVeSil8p
-GJgmwNSvYYbLJ0qi/pNxPXMVKrwfeIqJp5F72IaaoRhtl/IvejQbm4vZjJpLapxr
-mJIaCBxU2g8Y8WOy0SPDqtaD8LyKkc4q6HzgoyYJSOqPc9DMKPtplIMRJCxVAoFD
-GFXQbyvZR1knzI41Tcw5scGbqX7TQIuGgSBSZFjPYn3TubqyXqbIMjWRrxAxp7nU
-YJEilI068+80PyTPOayQ7XueV7gDOGgffqxFMjLHLdiseoV+3MixkqXB2s3U3MhM
-zmbupbE40Lw3vsfk/kWVbGxXi5xvFn1q0LsSyEs04DTNtgnNMlTLkWij6f1BX/xB
-MIX2u/6ZexWQDYngUlLn4E7qn7Yeopwcr4/7RS2HLWRe//KEMPSzMm/V8MNt3FNC
-bmqnbh6LxP08X/t8ZPqJ
-=SwWm
------END PGP SIGNATURE-----
+Signed-off-by: Peter Hurley <peter@hurleysoftware.com>
+Tested-by: Daniel Wagner <daniel.wagner@bmw-carit.de>
+Acked-by: Marcel Holtmann <marcel@holtmann.org>
+Signed-off-by: Johan Hedberg <johan.hedberg@intel.com>
 
---zYM0uCDKw75PZbzx--
+---
+ net/bluetooth/hci_conn.c |    4 ++++
+ 1 file changed, 4 insertions(+)
+
+--- a/net/bluetooth/hci_conn.c
++++ b/net/bluetooth/hci_conn.c
+@@ -548,6 +548,10 @@ static int hci_conn_auth(struct hci_conn
+ 
+ 	if (!test_and_set_bit(HCI_CONN_AUTH_PEND, &conn->pend)) {
+ 		struct hci_cp_auth_requested cp;
++
++		/* encrypt must be pending if auth is also pending */
++		set_bit(HCI_CONN_ENCRYPT_PEND, &conn->pend);
++
+ 		cp.handle = cpu_to_le16(conn->handle);
+ 		hci_send_cmd(conn->hdev, HCI_OP_AUTH_REQUESTED,
+ 							sizeof(cp), &cp);
+
+
