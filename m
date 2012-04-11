@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759838Ab2DKADn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Apr 2012 20:03:43 -0400
-Received: from lennier.cc.vt.edu ([198.82.162.213]:47981 "EHLO
+	id S932467Ab2DKAEF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Apr 2012 20:04:05 -0400
+Received: from lennier.cc.vt.edu ([198.82.162.213]:48014 "EHLO
 	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755747Ab2DKADm (ORCPT
+	with ESMTP id S1759834Ab2DKAED (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Apr 2012 20:03:42 -0400
+	Tue, 10 Apr 2012 20:04:03 -0400
 X-Mailer: exmh version 2.7.2 01/07/2005 with nmh-1.4-dev
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Cyrill Gorcunov <gorcunov@openvz.org>, Oleg Nesterov <oleg@redhat.com>,
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Cyrill Gorcunov <gorcunov@openvz.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Oleg Nesterov <oleg@redhat.com>,
         "Eric W. Biederman" <ebiederm@xmission.com>,
         Pavel Emelyanov <xemul@parallels.com>,
         Andrey Vagin <avagin@openvz.org>,
         KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
         Glauber Costa <glommer@parallels.com>,
         Andi Kleen <andi@firstfloor.org>, Tejun Heo <tj@kernel.org>,
         Matt Helsley <matthltc@us.ibm.com>, Pekka Enberg <penberg@kernel.org>,
@@ -25,21 +26,21 @@ Cc: Cyrill Gorcunov <gorcunov@openvz.org>, Oleg Nesterov <oleg@redhat.com>,
         Frederic Weisbecker <fweisbec@gmail.com>, linux-kernel@vger.kernel.org,
         Jonathan Corbet <corbet@lwn.net>
 Subject: Re: + syscalls-x86-add-__nr_kcmp-syscall-v8.patch added to -mm tree
-In-Reply-To: Your message of "Mon, 09 Apr 2012 15:10:27 -0700."
-             <20120409151027.7f3e0fa5.akpm@linux-foundation.org>
+In-Reply-To: Your message of "Mon, 09 Apr 2012 16:22:38 -0700."
+             <4F836F3E.9090207@zytor.com>
 From: Valdis.Kletnieks@vt.edu
-References: <20120215143606.GA14037@redhat.com> <20120215160652.GA17680@redhat.com> <20120215162752.GF4533@moon>
-            <20120409151027.7f3e0fa5.akpm@linux-foundation.org>
+References: <20120215143606.GA14037@redhat.com> <20120215160652.GA17680@redhat.com> <20120215162752.GF4533@moon> <20120409151027.7f3e0fa5.akpm@linux-foundation.org> <20120409222443.GW1625@moon>
+            <4F836F3E.9090207@zytor.com>
 Mime-Version: 1.0
-Content-Type: multipart/signed; boundary="==_Exmh_1334102329_1904P";
+Content-Type: multipart/signed; boundary="==_Exmh_1334102540_1904P";
 	 micalg=pgp-sha1; protocol="application/pgp-signature"
 Content-Transfer-Encoding: 7bit
-Date: Tue, 10 Apr 2012 19:58:49 -0400
-Message-ID: <7939.1334102329@turing-police.cc.vt.edu>
+Date: Tue, 10 Apr 2012 20:02:21 -0400
+Message-ID: <8169.1334102541@turing-police.cc.vt.edu>
 X-Mirapoint-Received-SPF: 198.82.161.152 auth3.smtp.vt.edu Valdis.Kletnieks@vt.edu 2 pass
-X-Junkmail-Status: score=10/50, host=dagger.cc.vt.edu
+X-Junkmail-Status: score=10/50, host=steiner.cc.vt.edu
 X-Junkmail-Signature-Raw: score=unknown,
-	refid=str=0001.0A020206.4F84C93D.005D,ss=1,re=0.000,fgs=0,
+	refid=str=0001.0A020204.4F84CA0E.001D,ss=1,re=0.000,fgs=0,
 	ip=0.0.0.0,
 	so=2011-07-25 19:15:43,
 	dmn=2011-05-27 18:58:46,
@@ -49,58 +50,54 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---==_Exmh_1334102329_1904P
+--==_Exmh_1334102540_1904P
 Content-Type: text/plain; charset=us-ascii
 
-On Mon, 09 Apr 2012 15:10:27 -0700, Andrew Morton said:
-> Back on to kcmp.
+On Mon, 09 Apr 2012 16:22:38 -0700, "H. Peter Anvin" said:
+> On 04/09/2012 03:24 PM, Cyrill Gorcunov wrote:
+> >>
+> >> Having re-read most of the (enormous) email discussion on the kcmp()
+> >> syscall patch, I'm thinking:
+> >>
+> >> - Nobody seems to understand the obfuscation logic.  Jon sounded
+> >>   confused, Oleg sounds confused and it's rather unclear what it does,
+> >>   how it does it and why it does it.
+> >
+> > The obfuscation logic was done with great help from hpa@. And the main
+> > idea was to have ordered results after obfuscation. Per-type noise increase
+> > randomization of results. So Andrew, I actually dont know what to add
+> > here. We don't want to provide kernel order back to user-space in
+> > naked manner.
+> >
+>
+> The obfuscation logic is to provide a 1:1 mapping but which doesn't
+> preserve ordering, thereby avoid leaking information of kernel pointers
+> to user space.
 
-I've totally forgotten what my original comment(s) on this patch were.. :)
+Oh, OK... Ignore my previous note then.  But we should lose the comment
+that implies we have an ordering?
 
-> +/*
-> + * 0 - equal, i.e. v1 = v2
-> + * 1 - less than, i.e. v1 < v2
-> + * 2 - greater than, i.e. v1 > v2
-> + * 3 - not equal but ordering unavailable (reserved for future)
-> + */
-> +static int kcmp_ptr(void *v1, void *v2, enum kcmp_type type)
-> +{
-> +	long ret;
-> +
-> +	ret = kptr_obfuscate((long)v1, type) - kptr_obfuscate((long)v2, type);
-
-I'm not able to convince myself that "less than" and "greater than" mean
-anything - do we have a good proof that for all v1 and v2, the obfuscated
-pointers have the same ordering as the original pointers?
-
-Hmm... consider the simplified example  v1 = 5 and v2= 16., and cookies[0] is
-also 16. Then obfus(v1) == 21, and obfus(v2) == 0, and the ordering is
-different.  So I'm thinking 0 and 3 are the only sane return values?
-
-Or do I need more caffeine?
-
-
---==_Exmh_1334102329_1904P
+--==_Exmh_1334102540_1904P
 Content-Type: application/pgp-signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.12 (GNU/Linux)
 Comment: Exmh version 2.5 07/13/2001
 
-iQIVAwUBT4TJOQdmEQWDXROgAQIc7w/+PASGPEgIOqBEANcsjAoVrTdpj31NSLIn
-+pP0O4T/NDGZpW+zht8Iz5dDfw8wBPiB1G3EqAaTrtbvnCOFmSCpVkgRbxQc/c37
-qidDM0xJ0Es1nGGqH4RvWCeSGwkN7WgAX2lcbVwykVDkHZRLlAEQCMRPCikyK0E6
-4MUIIsK5YvRVkZeOsZWG4joeeRgfh1VdS5yrzgVDwSbHiy+JbGnxLtAB9yWBrA1l
-zQTsj/J2HhhdYj0qw37yQkKsPNBpTMCQkyAy5KVFXgOK9vMBO/FcPvNU93Xve+0t
-1UnrazAOSxNLIao7oexuvEM/4Jn5O47FVqe82iRVVDWsHE6/E2mtxQXMlTdcRwXa
-Ylpj8aK8KoQXR8yGn//7dF90k9W/21QeW3w66YIM6M/09X80yz+rzzKXuQuylPBH
-tB034jXw7c31ENdV8a15Dqrd0L0/yVooQONTPhDJZY3u/+7kKP6/wEao2PFBArtz
-vZe0N+96+EFamjAfFDwyuaQ+/IGPk1ohsJO6gyo+DzsTe0Br1TDiG6NKgAShvGh9
-DVm1cgnvYC0VIE3eJjrhG9tiZRhLxarRgrI0+gz2oTq2VuIjtKrmVvQNj0821sr0
-5bo1N03HYcht7xiZZPRVjrjH6YkqeKRif97LuKxAjd17Nq8xTYDPV6mOIGdZ3yHU
-VHylWiAlQsQ=
-=T6Qv
+iQIVAwUBT4TKDAdmEQWDXROgAQLrZw//ekaoXqNZljXABAr8WtgWdZzz8HVQWjKP
+q1Sy+Bc18DNWORLCGjM/a0+VuGEpaG8nMN4ecOEvIlVOjFEnaubNKaBYCEUL1xth
+6KqEpcurzWyVnPNUxGqRajIS5XYfflr+b8D0S/WxQhIgjUQTo33UXHUsfV45xp40
+AOuDLz/QA0cbEhLM498p2Gmxx08/EubqZlnefRBiGuJghojnS/1tFtgpjtzAsubY
+RR3eVMzpwoeDsXQi9FJD9VpWrI75hwq+jCES2SiQCIJPWc1aW3dYHZ3g4NU/A2Ma
+mI/c5ogLmmElZJNRlnY/ARLnx6/3ArGn5IjPXdwczDI8C2KaGlHK/Av9BKbNliIX
+1IcCtkLj6AK3jooV1v6MfHonvaW/VFvlHAhKiZWvHsQgwbu4jcg6uhhckBOGy2tp
+n6E8H9aAhdOrXUPQZwfN6Ug8ZCJEwsUZ17CApvSrrECWfsVYaslUxCmRPEjdhBPE
+wZ4cWHKsxnFSeXOYry8hucjZz1Agf23uxQg3/z5Aoh4vd7p665f2OftPxF5P8pvH
+5ry7P9dGNCe+wE4CnrcrY61bL/mCFnuZE/SiazjuhdvCV2oD+bD+fQCc60cTjuwq
+iwzn0u2PJJ/n2SlWQzhUZ7Nfi94BPlNVJEY1+3Jl5XULxj1ZawwPt4yTcjk57bgy
+qqcPneg49WA=
+=/4d3
 -----END PGP SIGNATURE-----
 
---==_Exmh_1334102329_1904P--
+--==_Exmh_1334102540_1904P--
 
