@@ -1,81 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759794Ab2DKAKG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Apr 2012 20:10:06 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:18742 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754156Ab2DKAKE (ORCPT
+	id S1759853Ab2DKAKU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Apr 2012 20:10:20 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:64138 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759833Ab2DKAKR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Apr 2012 20:10:04 -0400
-X-Authority-Analysis: v=2.0 cv=Z8Fu7QtA c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=XQbtiDEiEegA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=GSO0uMklmUc0F6YJS4sA:9 a=PUjeQqilurYA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.80.29
-Message-ID: <1334102999.23924.232.camel@gandalf.stny.rr.com>
-Subject: Re: CPU Hotplug rework
-From: Steven Rostedt <rostedt@goodmis.org>
-To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Cc: paulmck@linux.vnet.ibm.com, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arjan van de Ven <arjan@infradead.org>,
-        "rusty@rustcorp.com.au" <rusty@rustcorp.com.au>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Milton Miller <miltonm@bga.com>, "mingo@elte.hu" <mingo@elte.hu>,
-        Tejun Heo <tj@kernel.org>, KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Linux PM mailing list <linux-pm@vger.kernel.org>
-Date: Tue, 10 Apr 2012 20:09:59 -0400
-In-Reply-To: <4F7F4977.4000302@linux.vnet.ibm.com>
-References: <4F674649.2000300@linux.vnet.ibm.com>
-	 <4F67474A.20707@linux.vnet.ibm.com>
-	 <20120405173918.GC8194@linux.vnet.ibm.com>
-	 <4F7F4977.4000302@linux.vnet.ibm.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.2.2-1 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Tue, 10 Apr 2012 20:10:17 -0400
+MIME-Version: 1.0
+In-Reply-To: <4F7F1864.8090606@zytor.com>
+References: <20120401125741.GA7484@p183.telecom.by> <4F78D0BA.9040709@zytor.com>
+ <CACVxJT_WJYjecpZMGkyUrbE5gNROX1tOfFAcD84-hoPsypxcFQ@mail.gmail.com> <4F7F1864.8090606@zytor.com>
+From: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
+Date: Tue, 10 Apr 2012 20:09:56 -0400
+Message-ID: <CAHGf_=rsJ8o8Fnd2z5Z8jHGc=cz370ay0_t3bhkiYRCBh3puVw@mail.gmail.com>
+Subject: Re: [PATCH] nextfd(2)
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Alexey Dobriyan <adobriyan@gmail.com>, akpm@linux-foundation.org,
+        viro@zeniv.linux.org.uk, torvalds@linux-foundation.org,
+        drepper@gmail.com, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2012-04-07 at 01:22 +0530, Srivatsa S. Bhat wrote:
+On Fri, Apr 6, 2012 at 12:23 PM, H. Peter Anvin <hpa@zytor.com> wrote:
+> On 04/06/2012 02:54 AM, Alexey Dobriyan wrote:
+>>
+>> Without proc knowledge about fdtable is gathered linearly and still unreliable.
+>> With nextfd(2), even procful environments could lose several failure branches.
+>> And they can keep old dumb fd++ or smart /proc/self/fd loops for a change.
+>>
+>
+> Incidentally, if we were to create a system call for this -- which I so
+> far see no reason for -- I would make it return a select-style bitmask
+> of file descriptors in use, not a "next fd" which would require a system
+> call per iteration.
 
-> Wrapping only do_setup() within get/put_online_cpus() wouldn't serve our
-> purpose, since the race with CPU Hotplug would still exist, just like
-> before. So, let's consider what happens when we wrap both the functions
-> within get/put_online_cpus():
-> 
-> 	get_online_cpus();
-> 	register_cpu_notifier(nb, mask);
-> 	do_setup(mask);
-> 	put_online_cpus();
-> 
-> Unfortunately this leads to an ABBA deadlock (see below).
->  
+I know the reason. fcntl(F_NEXT) is one of a proposal of next SUS enhancement.
 
-Just to throw out the stupid silly approach.
+  http://austingroupbugs.net/view.php?id=149
 
-What about creating a "__register_cpu_notifier()" that just does:
+nextfd() has a semantics of F_NEXT.
 
-int __ref __register_cpu_notifier(struct notifier_block *nb)
-{
-	return raw_notifier_chain_register(&cpu_chain, nb);
-}
+Next, why shoundn't we implement fcntl(F_NEXT) in our kernel? I think
+we have two reason.
 
-Also making cpu_maps_update_begin/done() global (and probably rename
-them).
-
-and then in the above code do:
-
-	cpu_maps_update_begin();
-	__register_cpu_notifier(nb);
-	do_setup();
-	cpu_maps_update_done();
+1) As linus pointed out, linux specific "flags" argument may be useful.
+2) The name of F_NEXT is not fixed yet. another url of the austin says
+it is FD_NEXT.
+     So, we can't choose right name yet. Moreover, A meanings of 3rd
+argument of F_NEXT
+     haven't been fixed.
 
 
-Just saying,
+I dont think following #ifdef is insane. but glibc also can provide
+correct F_NEXT when next SUS is published.
 
--- Steve
+#ifdef FOO
+#define NEXTFD(fd) nextfd(fd, flags)
+#else
+#define NEXTFD(fd) fcntl(fd, F_NEXT, O_FDWR)
+#endif
 
 
+In short, kernel developer don't care any standard at all. but
+application programmer usually care it.
