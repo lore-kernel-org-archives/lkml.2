@@ -1,64 +1,152 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759446Ab2DKPqj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Apr 2012 11:46:39 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:62884 "EHLO mx1.redhat.com"
+	id S1759428Ab2DKPr2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Apr 2012 11:47:28 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:50084 "EHLO bear.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755369Ab2DKPqi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Apr 2012 11:46:38 -0400
-Date: Wed, 11 Apr 2012 11:45:31 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Jan Kara <jack@suse.cz>
-Cc: Tejun Heo <tj@kernel.org>, Fengguang Wu <fengguang.wu@intel.com>,
-        Jens Axboe <axboe@kernel.dk>, linux-mm@kvack.org, sjayaraman@suse.com,
-        andrea@betterlinux.com, jmoyer@redhat.com,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        kamezawa.hiroyu@jp.fujitsu.com, lizefan@huawei.com,
-        containers@lists.linux-foundation.org, cgroups@vger.kernel.org,
-        ctalbott@google.com, rni@google.com, lsf@lists.linux-foundation.org
-Subject: Re: [RFC] writeback and cgroup
-Message-ID: <20120411154531.GE16692@redhat.com>
-References: <20120403183655.GA23106@dhcp-172-17-108-109.mtv.corp.google.com>
- <20120404145134.GC12676@redhat.com>
- <20120407080027.GA2584@quack.suse.cz>
- <20120410180653.GJ21801@redhat.com>
- <20120410210505.GE4936@quack.suse.cz>
- <20120410212041.GP21801@redhat.com>
- <20120410222425.GF4936@quack.suse.cz>
- <20120411154005.GD16692@redhat.com>
+	id S1755318Ab2DKPr0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Apr 2012 11:47:26 -0400
+Message-ID: <4F85A77E.30203@ti.com>
+Date: Wed, 11 Apr 2012 10:47:10 -0500
+From: Jon Hunter <jon-hunter@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120329 Thunderbird/11.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120411154005.GD16692@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: "Mohammed, Afzal" <afzal@ti.com>
+CC: "tony@atomide.com" <tony@atomide.com>, "Hilman, Kevin" <khilman@ti.com>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "dwmw2@infradead.org" <dwmw2@infradead.org>,
+        "sameo@linux.intel.com" <sameo@linux.intel.com>,
+        "grinberg@compulab.co.il" <grinberg@compulab.co.il>,
+        "mike@compulab.co.il" <mike@compulab.co.il>,
+        "Menon, Nishanth" <nm@ti.com>,
+        "artem.bityutskiy@linux.intel.com" <artem.bityutskiy@linux.intel.com>,
+        "vimal.newwork@gmail.com" <vimal.newwork@gmail.com>,
+        "dbaryshkov@gmail.com" <dbaryshkov@gmail.com>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Hiremath, Vaibhav" <hvaibhav@ti.com>
+Subject: Re: [PATCH v3 1/9] ARM: OMAP2+: gpmc: driver conversion
+References: <cover.1333640054.git.afzal@ti.com> <cefbe934da40f0a169b1e3a75c46451e5546a8bd.1333640054.git.afzal@ti.com> <4F7DFED5.4030000@ti.com> <C8443D0743D26F4388EA172BF4E2A7A9317C5E58@DBDE01.ent.ti.com> <4F833D8D.8000802@ti.com> <C8443D0743D26F4388EA172BF4E2A7A9317C693C@DBDE01.ent.ti.com> <4F8488A2.7030602@ti.com> <C8443D0743D26F4388EA172BF4E2A7A9317C6F4B@DBDE01.ent.ti.com>
+In-Reply-To: <C8443D0743D26F4388EA172BF4E2A7A9317C6F4B@DBDE01.ent.ti.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [172.24.16.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 11, 2012 at 11:40:05AM -0400, Vivek Goyal wrote:
-> On Wed, Apr 11, 2012 at 12:24:25AM +0200, Jan Kara wrote:
+Hi Afzal,
+
+On 04/11/2012 12:11 AM, Mohammed, Afzal wrote:
+> Hi Jon,
 > 
-> [..]
-> > > I have implemented and posted patches for per bdi per cgroup congestion
-> > > flag. The only problem I see with that is that a group might be congested
-> > > for a long time because of lots of other IO happening (say direct IO) and
-> > > if you keep on backing off and never submit the metadata IO (transaction),
-> > > you get starved. And if you go ahead and submit IO in a congested group,
-> > > we are back to serialization issue.
-> >   Clearly, we mustn't throttle metadata IO once it gets to the block layer.
-> > That's why we discuss throttling of processes at transaction start after
-> > all. But I agree starvation is an issue - I originally thought blk-throttle
-> > throttles synchronously which wouldn't have starvation issues.
+> On Wed, Apr 11, 2012 at 00:53:14, Hunter, Jon wrote:
+>> I agree with your argument but I was thinking today only OMAP uses the 
+>> GPMC so we could not worry about this. Ok, leave as-is, but can we 
+>> modify the code as follows as the "else if" is not really needed...
+>>
+>> if (gpmc->num_irq < GPMC_NR_IRQ) {
+>> 	dev_warn(gpmc->dev, "Insufficient interrupts for device\n");
+>> 	return -EINVAL;
+>> }
+>>
+>> gpmc->num_irq = GPMC_NR_IRQ;
+> 
+> Yes, it is better
+> 
+>>
+>>>>
+>>>> Furthermore, GPMC_NR_IRQ is defined as 6 which is correct for OMAP2/3
+>>>> but not for OMAP4/5, it is 5. Therefore, we need to detect whether we
+>>>> are using an OMAP2/3 or OMAP4+ and set num_irqs based upon this. This
+>>>> could be done in the probe and we can avoid passing this.
+>>>
+>>> Is it dependent on OMAPX or GPMC IP version? if it is IP version, then driver
+>>> can be enhanced to handle it, if not, platform has to pass this information.
+>>
+>> Here are the GPMC IP revisions ...
+>>
+>> OMAP5430 = 0x00000060
+>> OMAP4430 = 0x00000060
+>> OMAP3630 = 0x00000050
+>> OMAP3430 = 0x00000050
+>>
+>> So this should work for OMAP. We should check OMAP2 as well. What about 
+>> the AMxxx devices?
+> 
+> 
+> I badly needed this information, thanks.
+> 
+> AM3359 = 0x00000060, it has only 2 waitpin interrupts
 
-Current bio throttling is asynchrounous. Process can submit the bio
-and go back and wait for bio to finish. That bio will be queued at device
-queue in a per cgroup queue and will be dispatched to device according
-to configured IO rate for cgroup.
+Great so this is consistent!
 
-The additional feature for buffered throttle (which never went upstream),
-was synchronous in nature. That is we were actively putting writer to
-sleep on a per cgroup wait queue in the request queue and wake it up when
-it can do further IO based on cgroup limits.
+>>>>>>> +	res = platform_get_resource(pdev, IORESOURCE_IRQ, 0);
+>>>>>>> +	if (res == NULL)
+>>>>>>> +		dev_warn(gpmc->dev, "Failed to get resource: irq\n");
+>>>>>>> +	else
+>>>>>>> +		gpmc->master_irq = res->start;
+>>>>>>
+>>>>>> Why not return an error if the IRQ is not found? We don't know if anyone
+>>>>>> will be trying to use them.
+>>>>>
+>>>>> Why do you want to do that ?
+>>>>
+>>>> Because this indicates a BUG :-)
+>>>
+>>> I disagree, this need not be considered a bug always,
+>>> for eg. If gpmc irq is not connected to intc
+>>
+>> Ok, so for devices existing today this indicates a bug ;-)
+> 
+> I do not want to consider that case to be bug enough for probe
+> to fail, there are other drivers which does similar enhancing
+> its use cases,
+> 
+> eg. 1e351a9 mfd: Make TPS65910 usable without interrupts
 
-Thanks
-Vivek
+Ok, fine.
+
+>>
+>> At a minimum you need to improve the error handing here. If the 
+>> platform_get_resource fails you are still calling "gpmc_setup_irq()" 
+>> which appears to be pointless. It would be better if the gpmc irq chip 
+>> is not initialised in this case so that drivers attempting to request 
+>> these irqs failed.
+> 
+> Please see gpmc_setup_irq, if irq is not present, it returns in the
+> beginning, and gpmc_irq_chip is not initialized in that case.
+
+Yes you are right.
+
+>>>>>>> +	for (gdq = gp->device_pdata, gd = gpmc->device; *gdq; gdq++, i++) {
+>>>>>>> +		ret = gpmc_setup_device(*gdq, gd, gpmc);
+>>>>>>> +		if (IS_ERR_VALUE(ret))
+>>>>>>> +			dev_err(gpmc->dev, "gpmc setup on %s failed\n",
+>>>>>>> +								(*gdq)->name);
+>>>>>>> +		else
+>>>>>>> +			gd++;
+>>>>>>> +	}
+>>>>>>
+>>>>>> Would a while loop be simpler?
+>>>>>
+>>>>> My preference is to go with "for"
+>>>>
+>>>> Ok, just wondering if this could be cleaned up a little.
+>>>
+>>> For travelling through array of pointers, for looks natural to me, if you
+>>> have a better way, please send it, it can be folded in next version.
+>>
+>> Could you have num_devices to indicate how many platform devices there 
+>> are and then a simple for-loop of 0 to num_devices?
+> 
+> This will cause coding to be done by platform to be less simple, and my
+> preference is not to use another variable
+
+Hehe, I wondered if that would make life a little more difficult. Ok
+lets leave it for now.
+
+Jon
