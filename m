@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964885Ab2DKXRl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Apr 2012 19:17:41 -0400
-Received: from mail-pz0-f52.google.com ([209.85.210.52]:40940 "EHLO
+	id S964899Ab2DKXRp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Apr 2012 19:17:45 -0400
+Received: from mail-pz0-f52.google.com ([209.85.210.52]:51088 "EHLO
 	mail-pz0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933984Ab2DKXRh (ORCPT
+	with ESMTP id S964867Ab2DKXRe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Apr 2012 19:17:37 -0400
-Message-Id: <20120411231030.392265149@linuxfoundation.org>
+	Wed, 11 Apr 2012 19:17:34 -0400
+Message-Id: <20120411231030.201154209@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Wed, 11 Apr 2012 16:11:29 -0700
+Date: Wed, 11 Apr 2012 16:11:28 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Guan Xin <guanx.bac@gmail.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 71/78] USB: Add Motorola Rokr E6 Id to the USBNet driver "zaurus"
+        alan@lxorguk.ukuu.org.uk, Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Nishanth Menon <nm@ti.com>, Samuel Ortiz <sameo@linux.intel.com>
+Subject: [ 70/78] mfd: Clear twl6030 IRQ status register only once
 In-Reply-To: <20120411231102.GA6404@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,34 +25,56 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Guan Xin <guanx.bac@gmail.com>
+From: Nishanth Menon <nm@ti.com>
 
-commit a2daf263107ba3eb6db33931881731fa51c95045 upstream.
+commit 3f8349e6e98ba0455437724589072523865eae5e upstream.
 
-Added Vendor/Device Id of Motorola Rokr E6 (22b8:6027) so it can be
-recognized by the "zaurus" USBNet driver.
-Applies to Linux 3.2.13 and 2.6.39.4.
-Signed-off-by: Guan Xin <guanx.bac@gmail.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+TWL6030 family of PMIC use a shadow interrupt status register
+while kernel processes the current interrupt event.
+However, any write(0 or 1) to register INT_STS_A, INT_STS_B or
+INT_STS_C clears all 3 interrupt status registers.
+
+Since clear of the interrupt is done on 32k clk, depending on I2C
+bus speed, we could in-adverently clear the status of a interrupt
+status pending on shadow register in the current implementation.
+This is due to the fact that multi-byte i2c write operation into
+three seperate status register could result in multiple load
+and clear of status and result in lost interrupts.
+
+Instead, doing a single byte write to INT_STS_A register with 0x0
+will clear all three interrupt status registers without the related
+risk.
+
+Acked-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
+Signed-off-by: Nishanth Menon <nm@ti.com>
+Signed-off-by: Samuel Ortiz <sameo@linux.intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/usb/zaurus.c |    5 +++++
- 1 file changed, 5 insertions(+)
+ drivers/mfd/twl6030-irq.c |   13 +++++++++++--
+ 1 file changed, 11 insertions(+), 2 deletions(-)
 
---- a/drivers/net/usb/zaurus.c
-+++ b/drivers/net/usb/zaurus.c
-@@ -337,6 +337,11 @@ static const struct usb_device_id	produc
- 	.driver_info = ZAURUS_PXA_INFO,
- },
- {
-+	/* Motorola Rokr E6 */
-+	USB_DEVICE_AND_INTERFACE_INFO(0x22b8, 0x6027, USB_CLASS_COMM,
-+			USB_CDC_SUBCLASS_MDLM, USB_CDC_PROTO_NONE),
-+	.driver_info = (unsigned long) &bogus_mdlm_info,
-+}, {
- 	/* Motorola MOTOMAGX phones */
- 	USB_DEVICE_AND_INTERFACE_INFO(0x22b8, 0x6425, USB_CLASS_COMM,
- 			USB_CDC_SUBCLASS_MDLM, USB_CDC_PROTO_NONE),
+--- a/drivers/mfd/twl6030-irq.c
++++ b/drivers/mfd/twl6030-irq.c
+@@ -185,8 +185,17 @@ static int twl6030_irq_thread(void *data
+ 			}
+ 		local_irq_enable();
+ 		}
+-		ret = twl_i2c_write(TWL_MODULE_PIH, sts.bytes,
+-				REG_INT_STS_A, 3); /* clear INT_STS_A */
++
++		/*
++		 * NOTE:
++		 * Simulation confirms that documentation is wrong w.r.t the
++		 * interrupt status clear operation. A single *byte* write to
++		 * any one of STS_A to STS_C register results in all three
++		 * STS registers being reset. Since it does not matter which
++		 * value is written, all three registers are cleared on a
++		 * single byte write, so we just use 0x0 to clear.
++		 */
++		ret = twl_i2c_write_u8(TWL_MODULE_PIH, 0x00, REG_INT_STS_A);
+ 		if (ret)
+ 			pr_warning("twl6030: I2C error in clearing PIH ISR\n");
+ 
 
 
