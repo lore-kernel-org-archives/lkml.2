@@ -1,67 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932645Ab2DKQwm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Apr 2012 12:52:42 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:50524 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932621Ab2DKQwl (ORCPT
+	id S932674Ab2DKQy0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Apr 2012 12:54:26 -0400
+Received: from 206.83.70.73.ptr.us.xo.net ([206.83.70.73]:44371 "EHLO
+	king.tilera.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754442Ab2DKQyZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Apr 2012 12:52:41 -0400
-Date: Wed, 11 Apr 2012 18:52:23 +0200
-From: Sascha Hauer <s.hauer@pengutronix.de>
-To: Chris Ball <cjb@laptop.org>
-Cc: Dmitry Artamonow <mad_soft@inbox.ru>, linux-mmc@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Wolfram Sang <w.sang@pengutronix.de>
-Subject: Re: [PATCH] mmc: remove linux/blkdev.h include from host drivers
-Message-ID: <20120411165223.GP3852@pengutronix.de>
-References: <1334084783-3572-1-git-send-email-mad_soft@inbox.ru>
- <87ty0qs2fz.fsf@laptop.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <87ty0qs2fz.fsf@laptop.org>
-X-Sent-From: Pengutronix Hildesheim
-X-URL: http://www.pengutronix.de/
-X-IRC: #ptxdist @freenode
-X-Accept-Language: de,en
-X-Accept-Content-Type: text/plain
-X-Uptime: 18:50:18 up 151 days, 37 min, 55 users,  load average: 0.04, 0.08,
- 0.06
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
-X-SA-Exim-Mail-From: sha@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+	Wed, 11 Apr 2012 12:54:25 -0400
+Message-Id: <201204111654.q3BGsNFh003603@farm-0013.internal.tilera.com>
+From: Chris Metcalf <cmetcalf@tilera.com>
+Date: Wed, 11 Apr 2012 12:45:20 -0400
+Subject: [PATCH] arch/tile: avoid unused variable warning in proc.c for tilegx
+To: linux-kernel@vger.kernel.org
+X-OriginalArrivalTime: 11 Apr 2012 16:54:23.0888 (UTC) FILETIME=[BF688900:01CD1803]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 11, 2012 at 11:39:12AM -0400, Chris Ball wrote:
-> Hi Sascha, Wolfram,
-> 
-> On Tue, Apr 10 2012, Dmitry Artamonow wrote:
-> > I've compile tested everything with and without CONFIG_BLOCK enabled,
-> > except for imxmmc.c - this driver seems to be long time broken
-> > (at least since the removal of mach-imx in 2.6.31 - see commit
-> > 1341d34ffc296f98dc84876f35f3151525dc02a2 ) 
-> 
-> I can confirm that it no longer builds:
-> 
-> /home/cjb/git/mmc/drivers/mmc/host/imxmmc.c:32:26: fatal error: mach/imx-dma.h: No such file or directory
-> 
-> Should imxmmc simply be removed from drivers/mmc/host?  Do any of the
-> more current i.MX MMC drivers support the same hardware?
+Until we push the unaligned access support for tilegx, it's silly
+to have arch/tile/kernel/proc.c generate a warning about an unused
+variable.  Extend the #ifdef to cover all the code and data for now.
 
-It has long been on my todo list to remove this driver. The more recent
-i.MX use the mxcmmc driver which is basically the same hardware but
-without a bunch of bugs which made the older imxmmc driver unusable on
-newer hardware. I can send a patch if you like.
+Signed-off-by: Chris Metcalf <cmetcalf@tilera.com>
+---
+ arch/tile/kernel/proc.c |    4 +---
+ 1 files changed, 1 insertions(+), 3 deletions(-)
 
-Sascha
-
+diff --git a/arch/tile/kernel/proc.c b/arch/tile/kernel/proc.c
+index 7a93270..446a7f5 100644
+--- a/arch/tile/kernel/proc.c
++++ b/arch/tile/kernel/proc.c
+@@ -146,7 +146,6 @@ static ctl_table unaligned_table[] = {
+ 	},
+ 	{}
+ };
+-#endif
+ 
+ static struct ctl_path tile_path[] = {
+ 	{ .procname = "tile" },
+@@ -155,10 +154,9 @@ static struct ctl_path tile_path[] = {
+ 
+ static int __init proc_sys_tile_init(void)
+ {
+-#ifndef __tilegx__  /* FIXME: GX: no support for unaligned access yet */
+ 	register_sysctl_paths(tile_path, unaligned_table);
+-#endif
+ 	return 0;
+ }
+ 
+ arch_initcall(proc_sys_tile_init);
++#endif
 -- 
-Pengutronix e.K.                           |                             |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
-Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
-Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
+1.6.5.2
+
