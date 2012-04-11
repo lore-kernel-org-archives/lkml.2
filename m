@@ -1,122 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753682Ab2DKGhR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Apr 2012 02:37:17 -0400
-Received: from mga01.intel.com ([192.55.52.88]:60092 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752767Ab2DKGhM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Apr 2012 02:37:12 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="152249374"
-Date: Wed, 11 Apr 2012 14:34:53 +0800
-From: Feng Tang <feng.tang@intel.com>
-To: suresh.b.siddha@intel.com
-Cc: santosh.shilimkar@ti.com, tglx@linutronix.de, linux-kernel@vger.kernel.org,
-        johnstul@us.ibm.com
-Subject: Re: [PATCH] clockevents: Leave broadcast device shtudown only if
- the current device is always running.
-Message-ID: <20120411063452.GA25399@feng-i7>
-References: <1333951423-27621-1-git-send-email-santosh.shilimkar@ti.com>
- <1334011304.12400.81.camel@sbsiddha-desk.sc.intel.com>
- <CA++bM2th5XW1gxrHbcHwDK=qBBaNc3ut0ydbNNStfNa-Xa-9tA@mail.gmail.com>
+	id S1753507Ab2DKGkH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Apr 2012 02:40:07 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:62221 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751067Ab2DKGkF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Apr 2012 02:40:05 -0400
+Date: Wed, 11 Apr 2012 10:39:57 +0400
+From: Cyrill Gorcunov <gorcunov@openvz.org>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: "H. Peter Anvin" <hpa@zytor.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Pavel Emelyanov <xemul@parallels.com>,
+        Andrey Vagin <avagin@openvz.org>,
+        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
+        Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
+        Glauber Costa <glommer@parallels.com>,
+        Andi Kleen <andi@firstfloor.org>, Tejun Heo <tj@kernel.org>,
+        Matt Helsley <matthltc@us.ibm.com>, Pekka Enberg <penberg@kernel.org>,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        Vasiliy Kulikov <segoon@openwall.com>,
+        Alexey Dobriyan <adobriyan@gmail.com>, Valdis.Kletnieks@vt.edu,
+        Michal Marek <mmarek@suse.cz>,
+        Frederic Weisbecker <fweisbec@gmail.com>, linux-kernel@vger.kernel.org,
+        Jonathan Corbet <corbet@lwn.net>
+Subject: Re: + syscalls-x86-add-__nr_kcmp-syscall-v8.patch added to -mm tree
+Message-ID: <20120411063957.GA11629@moon>
+References: <20120215143606.GA14037@redhat.com>
+ <20120215160652.GA17680@redhat.com>
+ <20120215162752.GF4533@moon>
+ <20120409151027.7f3e0fa5.akpm@linux-foundation.org>
+ <20120409222443.GW1625@moon>
+ <4F836F3E.9090207@zytor.com>
+ <20120410223758.GL24857@moon>
+ <20120410230833.GA17620@redhat.com>
+ <4F84C2FA.8090703@zytor.com>
+ <20120410234206.GA19251@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CA++bM2th5XW1gxrHbcHwDK=qBBaNc3ut0ydbNNStfNa-Xa-9tA@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20120410234206.GA19251@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Suresh,
-
-> From: Suresh Siddha <suresh.b.siddha@intel.com>
-> Date: 2012/4/10
-> Subject: Re: [PATCH] clockevents: Leave broadcast device shtudown only
-> if the current device is always running.
-> To: Santosh Shilimkar <santosh.shilimkar@ti.com>
-> 抄送： tglx@linutronix.de, linux-kernel@vger.kernel.org, johnstul@us.ibm.com
-> 
-> 
-> On Mon, 2012-04-09 at 11:33 +0530, Santosh Shilimkar wrote:
-> > Commit 77b0d60{clockevents: Leave the broadcast device in shutdown mode
-> > when not needed} was intended to leave the broadcast device in shutdown mode
-> > when the per-cpu clockevent devices are always running.
+On Wed, Apr 11, 2012 at 01:42:06AM +0200, Oleg Nesterov wrote:
+> On 04/10, H. Peter Anvin wrote:
 > >
-> > This breaks the systems where per cpu clock events stop in low power states.
+> > On 04/10/2012 04:08 PM, Oleg Nesterov wrote:
+> > >
+> > > OK, since this is discussed again...
+> > >
+> > > Can this comment can also explain why do we obfuscate the pointers
+> > > by type? I mean, I don't really understand why the one-dimensional
+> > > cookies[2] is "not enough" from security pov.
 > >
-> > Hence revert 77b0d60 and implement the same requirement with use
-> > of C3STOP feature flag.
+> > Because it's cheap.  "Just enough" is not what you want to shoot for,
+> > ever, you want to get past the "just enough" point and then consider
+> > "what can I get for cheap at this point"?
 > 
-> Problem you encountered is not related to leaving the broadcast device
-> in shutdown mode. Problem is that we didn't track the mode change to
-> oneshot and later during idle entry/exit, when we request the broadcast
-> device services using CLOCK_EVT_NOTIFY_BROADCAST_ENTER etc,
-> tick_broadcast_oneshot_control() returns with out doing much as it
-> thinks broadcast device is in periodic mode.
+> OK, I am not arguing. Just I thought that the small note like
+> "we are doing this per-type to obfuscate even more" can help.
+> I wouldn't have asked, but Cyrill rewrites this comment anyway.
+> 
+> Perhaps this is just me, but my first (and wrong) impression was
+> that somehow this is needed for correctness.
 
-Just curious, IIUC, the tick_broadcast_switch_to_oneshot() is only called
-during CPU init process in boot time or bring a offlined cpu back on. Why
-is it related to the deep idle?
+Hi Oleg, would the form below sounds good?
 
-Thanks,
-Feng
-> 
-> Can you please check if the appended patch fixes the issue? I could
-> reproduce the issue on my NHM platform which doesn't have always running
-> apic timer and with the appended fix, all is well with cpu's going into
-> tickless idle etc. Thanks.
-> ---
-> 
-> From: Suresh Siddha <suresh.b.siddha@intel.com>
-> Subject: clockevents: track broadcast device mode change in
-> tick_broadcast_switch_to_oneshot()
-> 
-> In the commit 77b0d60c5adf39c74039e2142a1d3cd1e4d53799,
-> "clockevents: Leave the broadcast device in shutdown mode when not needed",
-> we were bailing out too quickly in tick_broadcast_switch_to_oneshot(),
-> with out tracking the broadcast device mode change to 'TICKDEV_MODE_ONESHOT'.
-> 
-> This breaks the platforms which need broadcast device oneshot services during
-> deep idle states. tick_broadcast_oneshot_control() thinks that it is
-> in periodic mode and fails to take proper decisions based on the
-> CLOCK_EVT_NOTIFY_BROADCAST_[ENTER, EXIT] notifications during deep
-> idle entry/exit.
-> 
-> Fix this by tracking the broadcast device mode as 'TICKDEV_MODE_ONESHOT',
-> before leaving the broadcast HW device in shutdown mode if there are no active
-> requests for the moment.
-> 
-> Reported-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
-> Signed-off-by: Suresh Siddha <suresh.b.siddha@intel.com>
-> ---
->  kernel/time/tick-broadcast.c |    4 +++-
->  1 files changed, 3 insertions(+), 1 deletions(-)
-> 
-> diff --git a/kernel/time/tick-broadcast.c b/kernel/time/tick-broadcast.c
-> index e883f57..bf57abd 100644
-> --- a/kernel/time/tick-broadcast.c
-> +++ b/kernel/time/tick-broadcast.c
-> @@ -575,10 +575,12 @@ void tick_broadcast_switch_to_oneshot(void)
->        unsigned long flags;
-> 
->        raw_spin_lock_irqsave(&tick_broadcast_lock, flags);
-> +
-> +       tick_broadcast_device.mode = TICKDEV_MODE_ONESHOT;
-> +
->        if (cpumask_empty(tick_get_broadcast_mask()))
->                goto end;
-> 
-> -       tick_broadcast_device.mode = TICKDEV_MODE_ONESHOT;
->        bc = tick_broadcast_device.evtdev;
->        if (bc)
->                tick_broadcast_setup_oneshot(bc);
-> 
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+---
+Subject: Add a comment on kcmp obfuscation method
+
+Signed-off-by: Cyrill Gorcunov <gorcunov@openvz.org>
+---
+ kernel/kcmp.c |   14 ++++++++++++++
+ 1 file changed, 14 insertions(+)
+
+Index: linux-2.6.git/kernel/kcmp.c
+===================================================================
+--- linux-2.6.git.orig/kernel/kcmp.c
++++ linux-2.6.git/kernel/kcmp.c
+@@ -17,6 +17,20 @@
+  * reasons, still the comparison results should be suitable for
+  * sorting. Thus, we obfuscate kernel pointers values and compare
+  * the production instead.
++ *
++ * The obfuscation is done in two steps. First -- we use xor on
++ * kernel pointer with random value, which puts pointer into
++ * a new position in reordered space. Second -- we multiply
++ * the xor production with big odd random number to permute
++ * bits even more (the odd multiplier guarantees that the product
++ * is unique ever after the high bits are truncated, since any odd
++ * number is relative prime to 2^n).
++ *
++ * The obfuscation is done with per-type cookie values to increase
++ * initial entropy of results.
++ *
++ * Note also the obfuscation itself is invisible to user-space
++ * and if needed it can be changed to any suitable scheme.
+  */
+ static unsigned long cookies[KCMP_TYPES][2] __read_mostly;
+ 
