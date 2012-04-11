@@ -1,112 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933988Ab2DKXvl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Apr 2012 19:51:41 -0400
-Received: from mail-pz0-f52.google.com ([209.85.210.52]:63303 "EHLO
-	mail-pz0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964954Ab2DKXSE (ORCPT
+	id S965004Ab2DKXwH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Apr 2012 19:52:07 -0400
+Received: from mail.windriver.com ([147.11.1.11]:39416 "EHLO
+	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934056Ab2DKXvy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Apr 2012 19:18:04 -0400
-Message-Id: <20120411231029.344840735@linuxfoundation.org>
-User-Agent: quilt/0.60-19.1
-Date: Wed, 11 Apr 2012 16:11:23 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Stanislaw Gruszka <sgruszka@redhat.com>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [ 65/78] iwlegacy: do not nulify il->vif on reset
-In-Reply-To: <20120411231102.GA6404@kroah.com>
+	Wed, 11 Apr 2012 19:51:54 -0400
+From: Paul Gortmaker <paul.gortmaker@windriver.com>
+To: linux-kbuild@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, davem@davemloft.net,
+        tony@bakeyournoodle.com, mmarek@suse.cz, lacombar@gmail.com,
+        Paul Gortmaker <paul.gortmaker@windriver.com>
+Subject: [PATCH 4/5] Revert "kconfig: fix __enabled_ macros definition for invisible and un-selected symbols"
+Date: Wed, 11 Apr 2012 19:50:56 -0400
+Message-Id: <1334188257-3449-5-git-send-email-paul.gortmaker@windriver.com>
+X-Mailer: git-send-email 1.7.9.1
+In-Reply-To: <1334188257-3449-1-git-send-email-paul.gortmaker@windriver.com>
+References: <1334188257-3449-1-git-send-email-paul.gortmaker@windriver.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.3-stable review patch.  If anyone has any objections, please let me know.
+This reverts commit 953742c8fe8ac45be453fee959d7be40cd89f920.
 
-------------------
+Dumping two lines into autoconf.h for all existing Kconfig
+options results in a giant file (~16k lines) we have to process
+each time.  Instead, lets work to just ensure things we care
+about have definitions and we'll only have about 1k lines.
 
-From: Stanislaw Gruszka <sgruszka@redhat.com>
-
-commit 883a649b737cdbe3ede7e50f3f939fd706ed5c4e upstream.
-
-This il->vif is dereferenced in different part of iwlegacy code, so do
-not nullify it. This should fix random crashes observed in companion
-with microcode errors i.e. crash in il3945_config_ap().
-
-Additionally this should address also
-WARNING: at drivers/net/wireless/iwlegacy/common.c:4656 il_mac_remove_interface
-at least one of the possible reasons of that warning.
-
-Signed-off-by: Stanislaw Gruszka <sgruszka@redhat.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
+Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- drivers/net/wireless/iwlegacy/3945-mac.c |    1 -
- drivers/net/wireless/iwlegacy/4965-mac.c |    1 -
- drivers/net/wireless/iwlegacy/common.c   |   18 ++++++++++++++++--
- 3 files changed, 16 insertions(+), 4 deletions(-)
+ scripts/kconfig/confdata.c |   49 +++++++++++--------------------------------
+ 1 files changed, 13 insertions(+), 36 deletions(-)
 
---- a/drivers/net/wireless/iwlegacy/3945-mac.c
-+++ b/drivers/net/wireless/iwlegacy/3945-mac.c
-@@ -2684,7 +2684,6 @@ il3945_bg_restart(struct work_struct *da
- 
- 	if (test_and_clear_bit(S_FW_ERROR, &il->status)) {
- 		mutex_lock(&il->mutex);
--		il->ctx.vif = NULL;
- 		il->is_open = 0;
- 		mutex_unlock(&il->mutex);
- 		il3945_down(il);
---- a/drivers/net/wireless/iwlegacy/4965-mac.c
-+++ b/drivers/net/wireless/iwlegacy/4965-mac.c
-@@ -5381,7 +5381,6 @@ il4965_bg_restart(struct work_struct *da
- 
- 	if (test_and_clear_bit(S_FW_ERROR, &il->status)) {
- 		mutex_lock(&il->mutex);
--		il->ctx.vif = NULL;
- 		il->is_open = 0;
- 
- 		__il4965_down(il);
---- a/drivers/net/wireless/iwlegacy/common.c
-+++ b/drivers/net/wireless/iwlegacy/common.c
-@@ -4575,6 +4575,7 @@ il_mac_add_interface(struct ieee80211_hw
- 	struct il_priv *il = hw->priv;
- 	struct il_vif_priv *vif_priv = (void *)vif->drv_priv;
- 	int err;
-+	bool reset;
- 	u32 modes;
- 
- 	D_MAC80211("enter: type %d, addr %pM\n", vif->type, vif->addr);
-@@ -4594,6 +4595,16 @@ il_mac_add_interface(struct ieee80211_hw
- 		goto out;
+diff --git a/scripts/kconfig/confdata.c b/scripts/kconfig/confdata.c
+index 0586085..9d06744 100644
+--- a/scripts/kconfig/confdata.c
++++ b/scripts/kconfig/confdata.c
+@@ -489,6 +489,17 @@ header_print_symbol(FILE *fp, struct symbol *sym, const char *value, void *arg)
+ 			fprintf(fp, "#define %s%s%s 1\n",
+ 			    CONFIG_, sym->name, suffix);
+ 		}
++		/*
++		 * Generate the __enabled_CONFIG_* and
++		 * __enabled_CONFIG_*_MODULE macros for use by the
++		 * IS_{ENABLED,BUILTIN,MODULE} macros. The _MODULE variant is
++		 * generated even for booleans so that the IS_ENABLED() macro
++		 * works.
++		 */
++		fprintf(fp, "#define __enabled_" CONFIG_ "%s %d\n",
++				sym->name, (*value == 'y'));
++		fprintf(fp, "#define __enabled_" CONFIG_ "%s_MODULE %d\n",
++				sym->name, (*value == 'm'));
+ 		break;
  	}
+ 	case S_HEX: {
+@@ -540,35 +551,6 @@ static struct conf_printer header_printer_cb =
+ };
  
-+	/*
-+	 * We do not support multiple virtual interfaces, but on hardware reset
-+	 * we have to add the same interface again.
-+	 */
-+	reset = (il->ctx.vif == vif);
-+	if (il->ctx.vif && !reset) {
-+		err = -EOPNOTSUPP;
-+		goto out;
-+	}
-+
- 	modes = il->ctx.interface_modes | il->ctx.exclusive_interface_modes;
- 	if (!(modes & BIT(vif->type))) {
- 		err = -EOPNOTSUPP;
-@@ -4605,8 +4616,11 @@ il_mac_add_interface(struct ieee80211_hw
+ /*
+- * Generate the __enabled_CONFIG_* and __enabled_CONFIG_*_MODULE macros for
+- * use by the IS_{ENABLED,BUILTIN,MODULE} macros. The _MODULE variant is
+- * generated even for booleans so that the IS_ENABLED() macro works.
+- */
+-static void
+-header_print__enabled_symbol(FILE *fp, struct symbol *sym, const char *value, void *arg)
+-{
+-
+-	switch (sym->type) {
+-	case S_BOOLEAN:
+-	case S_TRISTATE: {
+-		fprintf(fp, "#define __enabled_" CONFIG_ "%s %d\n",
+-		    sym->name, (*value == 'y'));
+-		fprintf(fp, "#define __enabled_" CONFIG_ "%s_MODULE %d\n",
+-		    sym->name, (*value == 'm'));
+-		break;
+-	}
+-	default:
+-		break;
+-	}
+-}
+-
+-static struct conf_printer header__enabled_printer_cb =
+-{
+-	.print_symbol = header_print__enabled_symbol,
+-	.print_comment = header_print_comment,
+-};
+-
+-/*
+  * Tristate printer
+  *
+  * This printer is used when generating the `include/config/tristate.conf' file.
+@@ -949,16 +931,11 @@ int conf_write_autoconf(void)
+ 	conf_write_heading(out_h, &header_printer_cb, NULL);
  
- 	err = il_setup_interface(il, &il->ctx);
- 	if (err) {
--		il->ctx.vif = NULL;
--		il->iw_mode = NL80211_IFTYPE_STATION;
-+		IL_WARN("Fail to set mode %d\n", vif->type);
-+		if (!reset) {
-+			il->ctx.vif = NULL;
-+			il->iw_mode = NL80211_IFTYPE_STATION;
-+		}
- 	}
+ 	for_all_symbols(i, sym) {
+-		if (!sym->name)
+-			continue;
+-
+ 		sym_calc_value(sym);
+-
+-		conf_write_symbol(out_h, sym, &header__enabled_printer_cb, NULL);
+-
+-		if (!(sym->flags & SYMBOL_WRITE))
++		if (!(sym->flags & SYMBOL_WRITE) || !sym->name)
+ 			continue;
  
- out:
-
++		/* write symbol to auto.conf, tristate and header files */
+ 		conf_write_symbol(out, sym, &kconfig_printer_cb, (void *)1);
+ 
+ 		conf_write_symbol(tristate, sym, &tristate_printer_cb, (void *)1);
+-- 
+1.7.9.1
 
