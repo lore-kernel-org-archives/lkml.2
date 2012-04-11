@@ -1,71 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761271Ab2DKViG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Apr 2012 17:38:06 -0400
-Received: from gate.crashing.org ([63.228.1.57]:45994 "EHLO gate.crashing.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755987Ab2DKViE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Apr 2012 17:38:04 -0400
-Message-ID: <1334180248.2984.39.camel@pasglop>
-Subject: Re: [PATCH v5 06/27] irq_domain/powerpc: eliminate irq_map; use
- irq_alloc_desc() instead
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: Grant Likely <grant.likely@secretlab.ca>
-Cc: Andreas Schwab <schwab@linux-m68k.org>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
-        Rob Herring <rob.herring@calxeda.com>, Milton Miller <miltonm@bga.com>,
-        Thomas Gleixner <tglx@linutronix.de>, linuxppc-dev@lists.ozlabs.org,
-        linux-arm-kernel@lists.infradead.org
-Date: Thu, 12 Apr 2012 07:37:28 +1000
-In-Reply-To: <20120411205707.68AC13E08B6@localhost>
-References: <1329383368-12122-1-git-send-email-grant.likely@secretlab.ca>
-	 <1329383368-12122-7-git-send-email-grant.likely@secretlab.ca>
-	 <m2iphj3zxr.fsf@igel.home> <m2hax2qeqs.fsf@igel.home>
-	 <20120402202848.1EB833E02A7@localhost>
-	 <20120402215524.GM24211@n2100.arm.linux.org.uk>
-	 <1333406005.30734.61.camel@pasglop>
-	 <20120402225223.GN24211@n2100.arm.linux.org.uk>
-	 <1333409927.30734.62.camel@pasglop> <m24nsx9iz1.fsf@igel.home>
-	 <1333755470.3040.38.camel@pasglop> <m2aa2n7mmw.fsf@igel.home>
-	 <1334106834.2984.17.camel@pasglop> <1334107996.2984.20.camel@pasglop>
-	 <1334122182.2984.33.camel@pasglop> <20120411205707.68AC13E08B6@localhost>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2- 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S933439Ab2DKVnc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Apr 2012 17:43:32 -0400
+Received: from swampdragon.chaosbits.net ([90.184.90.115]:17728 "EHLO
+	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755972Ab2DKVnb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Apr 2012 17:43:31 -0400
+Date: Wed, 11 Apr 2012 23:43:29 +0200 (CEST)
+From: Jesper Juhl <jj@chaosbits.net>
+To: linux-kernel@vger.kernel.org
+cc: linux-rdma@vger.kernel.org, "David S. Miller" <davem@davemloft.net>,
+        Jack Morgenstein <jackm@dev.mellanox.co.il>,
+        Roland Dreier <roland@kernel.org>,
+        Hal Rosenstock <hal.rosenstock@gmail.com>,
+        Sean Hefty <sean.hefty@intel.com>, Or Gerlitz <ogerlitz@mellanox.com>
+Subject: [PATCH] IB: mlx4: Fix mem leaks in ib_link_query_port()
+Message-ID: <alpine.LNX.2.00.1204112340360.2137@swampdragon.chaosbits.net>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-04-11 at 14:57 -0600, Grant Likely wrote:
-> 
-> Yeah, I've got a different way to fix it though.  There is exactly one
-> user of irq_virq_count in-tree right now: PS3.  Also, irq_virq_count
-> is only useful for the NOMAP mapping.  So, instead of having a single
-> global irq_virq_count values, I've dropped it entirely and added a
-> max_irq argument to irq_domain_add_nomap().  That makes it a property
-> of an individual nomap irq domain instead of a global system settting.
-> 
-> Hopefully I'll have a draft patch ready today. 
+If, in ib_link_query_port(), the call to mlx4_MAD_IFC() fails we will
+currently do 'return err;' which will leak 'in_mad' and 'out_mad' that
+we previously allocated. I believe we should instead do 'goto out;'
+where we'll properly free the memory we previously allocated.
 
-That works for me. I'll send patches for cleanup MPIC as well.
+Signed-off-by: Jesper Juhl <jj@chaosbits.net>
+---
+ drivers/infiniband/hw/mlx4/main.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-One thing tho (Thomas, Russell) is that I like using set_irq_trigger to
-establish the "defaults" in mpic, ie, it does the descriptor locking
-etc... for me, I'd rather avoid open coding all of that. What I need is
-a "variant" that doesn't actually change the trigger but instead
-initializes the irq_desc with whatever settings the HW currently has
-(ie, I need to make sure things are properly in sync) though other
-implementations may want to use that for defaults.
+diff --git a/drivers/infiniband/hw/mlx4/main.c b/drivers/infiniband/hw/mlx4/main.c
+index 75d3056..cc88c9c 100644
+--- a/drivers/infiniband/hw/mlx4/main.c
++++ b/drivers/infiniband/hw/mlx4/main.c
+@@ -247,7 +247,7 @@ static int ib_link_query_port(struct ib_device *ibdev, u8 port,
+ 		err = mlx4_MAD_IFC(to_mdev(ibdev), 1, 1, port,
+ 				   NULL, NULL, in_mad, out_mad);
+ 		if (err)
+-			return err;
++			goto out;
+ 
+ 		/* Checking LinkSpeedActive for FDR-10 */
+ 		if (out_mad->data[15] & 0x1)
+-- 
+1.7.10
 
-Any objection to defining something like IRQ_TYPE_DEFAULT ?
 
-I was thinking about making it equal to IRQ_TYPE_SENSE_MASK since that
-can obviously not be a valid trigger value and is distinct from
-IRQ_TYPE_NONE.
-
-Cheers,
-Ben.
-
+-- 
+Jesper Juhl <jj@chaosbits.net>       http://www.chaosbits.net/
+Don't top-post http://www.catb.org/jargon/html/T/top-post.html
+Plain text mails only, please.
 
