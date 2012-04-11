@@ -1,31 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760184Ab2DKNIK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Apr 2012 09:08:10 -0400
-Received: from publicidad911.com ([64.34.169.106]:2322 "EHLO
-	mail.nonboxconsulting.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753264Ab2DKNID (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Apr 2012 09:08:03 -0400
-X-Greylist: delayed 1366 seconds by postgrey-1.27 at vger.kernel.org; Wed, 11 Apr 2012 09:08:03 EDT
-Date: Wed, 11 Apr 2012 15:45:14 +0400
-From: Bobby Whitaker <melissat@nonboxconsulting.com>
-Organization: nqjigydo
-X-Priority: 3 (Normal)
-Message-ID: <5494984001.20120411154514@nonboxconsulting.com>
-To: linux-kernel@vger.kernel.org
-Subject: Fresh job....!!) 
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 8bit
+	id S1760187Ab2DKNLJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Apr 2012 09:11:09 -0400
+Received: from emvm-gh1-uea08.nsa.gov ([63.239.67.9]:65463 "EHLO nsa.gov"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1753264Ab2DKNLH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Apr 2012 09:11:07 -0400
+X-TM-IMSS-Message-ID: <a2d37d5100015dee@nsa.gov>
+Subject: Re: [PATCH v2] Add security.* XATTR support for the UBIFS
+From: Stephen Smalley <sds@tycho.nsa.gov>
+To: Subodh Nijsure <subodh.nijsure@gmail.com>
+Cc: linux-mtd@lists.infradead.org, Artem Bityutskiy <dedekind1@gmail.com>,
+        casey@schaufler-ca.com, Adrian Hunter <adrian.hunter@intel.com>,
+        linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
+        Subodh Nijsure <snijsure@grid-net.com>
+In-Reply-To: <CALr9Q3Yto9VOhFNRQFVqP7Zi6RWWBaoDUu1zxsup7=+g7_pijQ@mail.gmail.com>
+References: <1334015486-20616-1-git-send-email-snijsure@grid-net.com>
+	 <1334061985.23411.3.camel@moss-pluto>
+	 <CALr9Q3Yto9VOhFNRQFVqP7Zi6RWWBaoDUu1zxsup7=+g7_pijQ@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Organization: National Security Agency
+Date: Wed, 11 Apr 2012 09:10:53 -0400
+Message-ID: <1334149853.14296.29.camel@moss-pluto>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Find your calling....!))) 
-HI beloved set up something for you, youll be cheerily affect . 
+On Wed, 2012-04-11 at 06:00 -0700, Subodh Nijsure wrote:
+> On Tue, Apr 10, 2012 at 5:46 AM, Stephen Smalley <sds@tycho.nsa.gov> wrote:
+> > On Mon, 2012-04-09 at 16:51 -0700, subodh.nijsure@gmail.com wrote:
+> >> From: Subodh Nijsure <snijsure@grid-net.com>
+> >>
+> >> Also fix couple of bugs in UBIFS extended attribute length calculation.
+> >>
+> >> Changes Since V1:
+> >>          Instead of just handling security.selinux extended attribute handle
+> >>          all security.* attributes.
+> >>
+> >> TESTING: Tested on  MX28 based platforms using Micron MT29F2G08ABAEAH4 NAND
+> >>          With these change we are able to label UBIFS filesystem with
+> >>          security.selinux and run system with selinux enabled.
+> >>          This change also allows one to set other security.* extended
+> >>          attributesr, such as security.smack security.evm, security.ima
+> >>          Ran integck test on UBI filesystem.
+> >>
+> >> Signed-off-by: Subodh Nijsure <snijsure@grid-net.com>
+> >> ---
+> >>  fs/ubifs/dir.c     |    4 ++
+> >>  fs/ubifs/file.c    |    6 ++
+> >>  fs/ubifs/journal.c |   12 +++-
+> >>  fs/ubifs/super.c   |    3 +
+> >>  fs/ubifs/ubifs.h   |    9 +++
+> >>  fs/ubifs/xattr.c   |  147 ++++++++++++++++++++++++++++++++++++++++++++++++----
+> >>  6 files changed, 167 insertions(+), 14 deletions(-)
+> >>
+> >> diff --git a/fs/ubifs/dir.c b/fs/ubifs/dir.c
+> >> index ec9f187..f4e06c4 100644
+> >> --- a/fs/ubifs/dir.c
+> >> +++ b/fs/ubifs/dir.c
+> >> @@ -293,6 +293,7 @@ static int ubifs_create(struct inode *dir, struct dentry *dentry, umode_t mode,
+> >>       ubifs_release_budget(c, &req);
+> >>       insert_inode_hash(inode);
+> >>       d_instantiate(dentry, inode);
+> >> +     ubifs_init_security(dir, inode, &dentry->d_name);
+> >>       return 0;
+> >>
+> >>  out_cancel:
+> >
+> > The ubifs_init_security() should occur before d_instantiate() so that
+> > the inode is not accessible to other threads before its security
+> > attributes have been set.  And if it fails, you would ideally drop the
+> > inode altogether and return an error to the creating process.
+> >
+> 
+> I will look into moving ubifs_init_security() before d_instantiate().
+> Last time I had tried I had run into some issues and had to keep
+> creating inode and then creating xattr as two seperate items. I will
+> look through the UBIFS code that actually creates xattr ubi nodes.
+> Also I will wait for couple of days to send v3 patch with to see if
+> mtd folks have other comments this patch.
 
-http://forum.sportsmith.net/customavatars/thumbs/xxx.php
+I'd favor moving the call to ubifs_init_security() inside of
+ubifs_new_inode() so that it gets done as part of all inode creation.
+To do that, you'll need to pass the &dentry->d_name (const struct qstr
+*) down to ubifs_new_inode(). But you can see that it is done that way
+for ext4_new_inode(), for example.
 
- Cason~Morris gave to me this link.!) 
-If you need some more of that dont hestiate to ask me..!!!) 
+-- 
+Stephen Smalley
+National Security Agency
+
