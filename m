@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964826Ab2DKX5r (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Apr 2012 19:57:47 -0400
+	id S964839Ab2DKX6B (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Apr 2012 19:58:01 -0400
 Received: from mail-pz0-f52.google.com ([209.85.210.52]:40940 "EHLO
 	mail-pz0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964788Ab2DKXRD (ORCPT
+	with ESMTP id S964783Ab2DKXRB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Apr 2012 19:17:03 -0400
-Message-Id: <20120411231026.059050794@linuxfoundation.org>
+	Wed, 11 Apr 2012 19:17:01 -0400
+Message-Id: <20120411231025.844363877@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Wed, 11 Apr 2012 16:11:04 -0700
+Date: Wed, 11 Apr 2012 16:11:03 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Jason Wessel <jason.wessel@windriver.com>
-Subject: [ 46/78] kgdb,debug_core: pass the breakpoint struct instead of address and memory
+        alan@lxorguk.ukuu.org.uk, Stephen Boyd <sboyd@codeaurora.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>
+Subject: [ 45/78] PM / Sleep: Mitigate race between the freezer and request_firmware()
 In-Reply-To: <20120411231102.GA6404@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -24,175 +25,200 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jason Wessel <jason.wessel@windriver.com>
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
 
-commit 98b54aa1a2241b59372468bd1e9c2d207bdba54b upstream.
+commit 247bc03742545fec2f79939a3b9f738392a0f7b4 upstream.
 
-There is extra state information that needs to be exposed in the
-kgdb_bpt structure for tracking how a breakpoint was installed.  The
-debug_core only uses the the probe_kernel_write() to install
-breakpoints, but this is not enough for all the archs.  Some arch such
-as x86 need to use text_poke() in order to install a breakpoint into a
-read only page.
+There is a race condition between the freezer and request_firmware()
+such that if request_firmware() is run on one CPU and
+freeze_processes() is run on another CPU and usermodehelper_disable()
+called by it succeeds to grab umhelper_sem for writing before
+usermodehelper_read_trylock() called from request_firmware()
+acquires it for reading, the request_firmware() will fail and
+trigger a WARN_ON() complaining that it was called at a wrong time.
+However, in fact, it wasn't called at a wrong time and
+freeze_processes() simply happened to be executed simultaneously.
 
-Passing the kgdb_bpt structure to kgdb_arch_set_breakpoint() and
-kgdb_arch_remove_breakpoint() allows other archs to set the type
-variable which indicates how the breakpoint was installed.
+To avoid this race, at least in some cases, modify
+usermodehelper_read_trylock() so that it doesn't fail if the
+freezing of tasks has just started and hasn't been completed yet.
+Instead, during the freezing of tasks, it will try to freeze the
+task that has called it so that it can wait until user space is
+thawed without triggering the scary warning.
 
-Signed-off-by: Jason Wessel <jason.wessel@windriver.com>
+For this purpose, change usermodehelper_disabled so that it can
+take three different values, UMH_ENABLED (0), UMH_FREEZING and
+UMH_DISABLED.  The first one means that usermode helpers are
+enabled, the last one means "hard disable" (i.e. the system is not
+ready for usermode helpers to be used) and the second one
+is reserved for the freezer.  Namely, when freeze_processes() is
+started, it sets usermodehelper_disabled to UMH_FREEZING which
+tells usermodehelper_read_trylock() that it shouldn't fail just
+yet and should call try_to_freeze() if woken up and cannot
+return immediately.  This way all freezable tasks that happen
+to call request_firmware() right before freeze_processes() is
+started and lose the race for umhelper_sem with it will be
+frozen and will sleep until thaw_processes() unsets
+usermodehelper_disabled.  [For the non-freezable callers of
+request_firmware() the race for umhelper_sem against
+freeze_processes() is unfortunately unavoidable.]
+
+Reported-by: Stephen Boyd <sboyd@codeaurora.org>
+Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
+Acked-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- include/linux/kgdb.h      |    4 +--
- kernel/debug/debug_core.c |   53 ++++++++++++++++++++--------------------------
- 2 files changed, 26 insertions(+), 31 deletions(-)
+ include/linux/kmod.h   |   21 +++++++++++++++++++--
+ kernel/kmod.c          |   47 +++++++++++++++++++++++++++++++++++++----------
+ kernel/power/process.c |    3 ++-
+ 3 files changed, 58 insertions(+), 13 deletions(-)
 
---- a/include/linux/kgdb.h
-+++ b/include/linux/kgdb.h
-@@ -207,8 +207,8 @@ extern void kgdb_arch_set_pc(struct pt_r
+--- a/include/linux/kmod.h
++++ b/include/linux/kmod.h
+@@ -112,10 +112,27 @@ call_usermodehelper(char *path, char **a
  
- /* Optional functions. */
- extern int kgdb_validate_break_address(unsigned long addr);
--extern int kgdb_arch_set_breakpoint(unsigned long addr, char *saved_instr);
--extern int kgdb_arch_remove_breakpoint(unsigned long addr, char *bundle);
-+extern int kgdb_arch_set_breakpoint(struct kgdb_bkpt *bpt);
-+extern int kgdb_arch_remove_breakpoint(struct kgdb_bkpt *bpt);
+ extern struct ctl_table usermodehelper_table[];
+ 
++enum umh_disable_depth {
++	UMH_ENABLED = 0,
++	UMH_FREEZING,
++	UMH_DISABLED,
++};
++
+ extern void usermodehelper_init(void);
+ 
+-extern int usermodehelper_disable(void);
+-extern void usermodehelper_enable(void);
++extern int __usermodehelper_disable(enum umh_disable_depth depth);
++extern void __usermodehelper_set_disable_depth(enum umh_disable_depth depth);
++
++static inline int usermodehelper_disable(void)
++{
++	return __usermodehelper_disable(UMH_DISABLED);
++}
++
++static inline void usermodehelper_enable(void)
++{
++	__usermodehelper_set_disable_depth(UMH_ENABLED);
++}
++
+ extern int usermodehelper_read_trylock(void);
+ extern long usermodehelper_read_lock_wait(long timeout);
+ extern void usermodehelper_read_unlock(void);
+--- a/kernel/kmod.c
++++ b/kernel/kmod.c
+@@ -279,7 +279,7 @@ static void __call_usermodehelper(struct
+  * land has been frozen during a system-wide hibernation or suspend operation).
+  * Should always be manipulated under umhelper_sem acquired for write.
+  */
+-static int usermodehelper_disabled = 1;
++static enum umh_disable_depth usermodehelper_disabled = UMH_DISABLED;
+ 
+ /* Number of helpers running */
+ static atomic_t running_helpers = ATOMIC_INIT(0);
+@@ -304,13 +304,30 @@ static DECLARE_WAIT_QUEUE_HEAD(usermodeh
+ 
+ int usermodehelper_read_trylock(void)
+ {
++	DEFINE_WAIT(wait);
+ 	int ret = 0;
+ 
+ 	down_read(&umhelper_sem);
+-	if (usermodehelper_disabled) {
++	for (;;) {
++		prepare_to_wait(&usermodehelper_disabled_waitq, &wait,
++				TASK_INTERRUPTIBLE);
++		if (!usermodehelper_disabled)
++			break;
++
++		if (usermodehelper_disabled == UMH_DISABLED)
++			ret = -EAGAIN;
++
+ 		up_read(&umhelper_sem);
+-		ret = -EAGAIN;
++
++		if (ret)
++			break;
++
++		schedule();
++		try_to_freeze();
++
++		down_read(&umhelper_sem);
+ 	}
++	finish_wait(&usermodehelper_disabled_waitq, &wait);
+ 	return ret;
+ }
+ EXPORT_SYMBOL_GPL(usermodehelper_read_trylock);
+@@ -349,25 +366,35 @@ void usermodehelper_read_unlock(void)
+ EXPORT_SYMBOL_GPL(usermodehelper_read_unlock);
  
  /**
-  *	kgdb_arch_late - Perform any architecture specific initalization.
---- a/kernel/debug/debug_core.c
-+++ b/kernel/debug/debug_core.c
-@@ -157,37 +157,39 @@ early_param("nokgdbroundup", opt_nokgdbr
-  * Weak aliases for breakpoint management,
-  * can be overriden by architectures when needed:
+- * usermodehelper_enable - allow new helpers to be started again
++ * __usermodehelper_set_disable_depth - Modify usermodehelper_disabled.
++ * depth: New value to assign to usermodehelper_disabled.
++ *
++ * Change the value of usermodehelper_disabled (under umhelper_sem locked for
++ * writing) and wakeup tasks waiting for it to change.
   */
--int __weak kgdb_arch_set_breakpoint(unsigned long addr, char *saved_instr)
-+int __weak kgdb_arch_set_breakpoint(struct kgdb_bkpt *bpt)
+-void usermodehelper_enable(void)
++void __usermodehelper_set_disable_depth(enum umh_disable_depth depth)
  {
- 	int err;
- 
--	err = probe_kernel_read(saved_instr, (char *)addr, BREAK_INSTR_SIZE);
-+	err = probe_kernel_read(bpt->saved_instr, (char *)bpt->bpt_addr,
-+				BREAK_INSTR_SIZE);
- 	if (err)
- 		return err;
--
--	return probe_kernel_write((char *)addr, arch_kgdb_ops.gdb_bpt_instr,
--				  BREAK_INSTR_SIZE);
-+	err = probe_kernel_write((char *)bpt->bpt_addr,
-+				 arch_kgdb_ops.gdb_bpt_instr, BREAK_INSTR_SIZE);
-+	return err;
+ 	down_write(&umhelper_sem);
+-	usermodehelper_disabled = 0;
++	usermodehelper_disabled = depth;
+ 	wake_up(&usermodehelper_disabled_waitq);
+ 	up_write(&umhelper_sem);
  }
  
--int __weak kgdb_arch_remove_breakpoint(unsigned long addr, char *bundle)
-+int __weak kgdb_arch_remove_breakpoint(struct kgdb_bkpt *bpt)
+ /**
+- * usermodehelper_disable - prevent new helpers from being started
++ * __usermodehelper_disable - Prevent new helpers from being started.
++ * @depth: New value to assign to usermodehelper_disabled.
++ *
++ * Set usermodehelper_disabled to @depth and wait for running helpers to exit.
+  */
+-int usermodehelper_disable(void)
++int __usermodehelper_disable(enum umh_disable_depth depth)
  {
--	return probe_kernel_write((char *)addr,
--				  (char *)bundle, BREAK_INSTR_SIZE);
-+	return probe_kernel_write((char *)bpt->bpt_addr,
-+				  (char *)bpt->saved_instr, BREAK_INSTR_SIZE);
+ 	long retval;
+ 
++	if (!depth)
++		return -EINVAL;
++
+ 	down_write(&umhelper_sem);
+-	usermodehelper_disabled = 1;
++	usermodehelper_disabled = depth;
+ 	up_write(&umhelper_sem);
+ 
+ 	/*
+@@ -382,7 +409,7 @@ int usermodehelper_disable(void)
+ 	if (retval)
+ 		return 0;
+ 
+-	usermodehelper_enable();
++	__usermodehelper_set_disable_depth(UMH_ENABLED);
+ 	return -EAGAIN;
  }
  
- int __weak kgdb_validate_break_address(unsigned long addr)
+--- a/kernel/power/process.c
++++ b/kernel/power/process.c
+@@ -123,7 +123,7 @@ int freeze_processes(void)
  {
--	char tmp_variable[BREAK_INSTR_SIZE];
-+	struct kgdb_bkpt tmp;
- 	int err;
--	/* Validate setting the breakpoint and then removing it.  In the
-+	/* Validate setting the breakpoint and then removing it.  If the
- 	 * remove fails, the kernel needs to emit a bad message because we
- 	 * are deep trouble not being able to put things back the way we
- 	 * found them.
- 	 */
--	err = kgdb_arch_set_breakpoint(addr, tmp_variable);
-+	tmp.bpt_addr = addr;
-+	err = kgdb_arch_set_breakpoint(&tmp);
- 	if (err)
- 		return err;
--	err = kgdb_arch_remove_breakpoint(addr, tmp_variable);
-+	err = kgdb_arch_remove_breakpoint(&tmp);
- 	if (err)
- 		printk(KERN_ERR "KGDB: Critical breakpoint error, kernel "
- 		   "memory destroyed at: %lx", addr);
-@@ -231,7 +233,6 @@ static void kgdb_flush_swbreak_addr(unsi
-  */
- int dbg_activate_sw_breakpoints(void)
- {
--	unsigned long addr;
  	int error;
- 	int ret = 0;
- 	int i;
-@@ -240,16 +241,15 @@ int dbg_activate_sw_breakpoints(void)
- 		if (kgdb_break[i].state != BP_SET)
- 			continue;
  
--		addr = kgdb_break[i].bpt_addr;
--		error = kgdb_arch_set_breakpoint(addr,
--				kgdb_break[i].saved_instr);
-+		error = kgdb_arch_set_breakpoint(&kgdb_break[i]);
- 		if (error) {
- 			ret = error;
--			printk(KERN_INFO "KGDB: BP install failed: %lx", addr);
-+			printk(KERN_INFO "KGDB: BP install failed: %lx",
-+			       kgdb_break[i].bpt_addr);
- 			continue;
- 		}
+-	error = usermodehelper_disable();
++	error = __usermodehelper_disable(UMH_FREEZING);
+ 	if (error)
+ 		return error;
  
--		kgdb_flush_swbreak_addr(addr);
-+		kgdb_flush_swbreak_addr(kgdb_break[i].bpt_addr);
- 		kgdb_break[i].state = BP_ACTIVE;
+@@ -135,6 +135,7 @@ int freeze_processes(void)
+ 	error = try_to_freeze_tasks(true);
+ 	if (!error) {
+ 		printk("done.");
++		__usermodehelper_set_disable_depth(UMH_DISABLED);
+ 		oom_killer_disable();
  	}
- 	return ret;
-@@ -298,7 +298,6 @@ int dbg_set_sw_break(unsigned long addr)
- 
- int dbg_deactivate_sw_breakpoints(void)
- {
--	unsigned long addr;
- 	int error;
- 	int ret = 0;
- 	int i;
-@@ -306,15 +305,14 @@ int dbg_deactivate_sw_breakpoints(void)
- 	for (i = 0; i < KGDB_MAX_BREAKPOINTS; i++) {
- 		if (kgdb_break[i].state != BP_ACTIVE)
- 			continue;
--		addr = kgdb_break[i].bpt_addr;
--		error = kgdb_arch_remove_breakpoint(addr,
--					kgdb_break[i].saved_instr);
-+		error = kgdb_arch_remove_breakpoint(&kgdb_break[i]);
- 		if (error) {
--			printk(KERN_INFO "KGDB: BP remove failed: %lx\n", addr);
-+			printk(KERN_INFO "KGDB: BP remove failed: %lx\n",
-+			       kgdb_break[i].bpt_addr);
- 			ret = error;
- 		}
- 
--		kgdb_flush_swbreak_addr(addr);
-+		kgdb_flush_swbreak_addr(kgdb_break[i].bpt_addr);
- 		kgdb_break[i].state = BP_SET;
- 	}
- 	return ret;
-@@ -348,7 +346,6 @@ int kgdb_isremovedbreak(unsigned long ad
- 
- int dbg_remove_all_break(void)
- {
--	unsigned long addr;
- 	int error;
- 	int i;
- 
-@@ -356,12 +353,10 @@ int dbg_remove_all_break(void)
- 	for (i = 0; i < KGDB_MAX_BREAKPOINTS; i++) {
- 		if (kgdb_break[i].state != BP_ACTIVE)
- 			goto setundefined;
--		addr = kgdb_break[i].bpt_addr;
--		error = kgdb_arch_remove_breakpoint(addr,
--				kgdb_break[i].saved_instr);
-+		error = kgdb_arch_remove_breakpoint(&kgdb_break[i]);
- 		if (error)
- 			printk(KERN_ERR "KGDB: breakpoint remove failed: %lx\n",
--			   addr);
-+			       kgdb_break[i].bpt_addr);
- setundefined:
- 		kgdb_break[i].state = BP_UNDEFINED;
- 	}
+ 	printk("\n");
 
 
