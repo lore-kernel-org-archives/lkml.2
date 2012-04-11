@@ -1,17 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932492Ab2DKNdO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Apr 2012 09:33:14 -0400
-Received: from mailhub.sw.ru ([195.214.232.25]:46239 "EHLO relay.sw.ru"
+	id S932515Ab2DKNdV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Apr 2012 09:33:21 -0400
+Received: from mailhub.sw.ru ([195.214.232.25]:43774 "EHLO relay.sw.ru"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760224Ab2DKNdL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Apr 2012 09:33:11 -0400
-Subject: [PATCH 1/4] nfsd: pass network context to idmap init/exit functions
+	id S932499Ab2DKNdS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Apr 2012 09:33:18 -0400
+Subject: [PATCH 2/4] nfsd: make id-to-name cache allocated per network
+ namespace context
 To: bfields@fieldses.org
 From: Stanislav Kinsbursky <skinsbursky@parallels.com>
 Cc: linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org, devel@openvz.org
-Date: Wed, 11 Apr 2012 17:32:44 +0400
-Message-ID: <20120411133244.26953.78000.stgit@localhost6.localdomain6>
+Date: Wed, 11 Apr 2012 17:32:51 +0400
+Message-ID: <20120411133251.26953.85029.stgit@localhost6.localdomain6>
 In-Reply-To: <20120411133139.26953.85254.stgit@localhost6.localdomain6>
 References: <20120411133139.26953.85254.stgit@localhost6.localdomain6>
 User-Agent: StGit/0.15
@@ -22,104 +23,122 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-These functions will be called from per-net operations.
-
 Signed-off-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
 
 ---
- fs/nfsd/idmap.h     |    8 ++++----
- fs/nfsd/nfs4idmap.c |   14 +++++++-------
- fs/nfsd/nfsctl.c    |    6 +++---
- 3 files changed, 14 insertions(+), 14 deletions(-)
+ fs/nfsd/netns.h     |    3 +++
+ fs/nfsd/nfs4idmap.c |   33 +++++++++++++++++++++++----------
+ 2 files changed, 26 insertions(+), 10 deletions(-)
 
-diff --git a/fs/nfsd/idmap.h b/fs/nfsd/idmap.h
-index 2f3be13..9d513ef 100644
---- a/fs/nfsd/idmap.h
-+++ b/fs/nfsd/idmap.h
-@@ -42,14 +42,14 @@
- #define IDMAP_NAMESZ 128
+diff --git a/fs/nfsd/netns.h b/fs/nfsd/netns.h
+index 9794c6c..948a718 100644
+--- a/fs/nfsd/netns.h
++++ b/fs/nfsd/netns.h
+@@ -31,6 +31,9 @@ struct nfsd_net {
  
- #ifdef CONFIG_NFSD_V4
--int nfsd_idmap_init(void);
--void nfsd_idmap_shutdown(void);
-+int nfsd_idmap_init(struct net *);
-+void nfsd_idmap_shutdown(struct net *);
- #else
--static inline int nfsd_idmap_init(void)
-+static inline int nfsd_idmap_init(struct net *net)
- {
- 	return 0;
- }
--static inline void nfsd_idmap_shutdown(void)
-+static inline void nfsd_idmap_shutdown(struct net *net)
- {
- }
- #endif
+ 	struct cache_detail *svc_expkey_cache;
+ 	struct cache_detail *svc_export_cache;
++
++	struct cache_detail *idtoname_cache;
++
+ };
+ 
+ extern int nfsd_net_id;
 diff --git a/fs/nfsd/nfs4idmap.c b/fs/nfsd/nfs4idmap.c
-index 2ff4470..d37405f 100644
+index d37405f..b285a69 100644
 --- a/fs/nfsd/nfs4idmap.c
 +++ b/fs/nfsd/nfs4idmap.c
-@@ -469,24 +469,24 @@ nametoid_update(struct cache_detail *cd, struct ent *new, struct ent *old)
+@@ -36,9 +36,11 @@
+ #include <linux/seq_file.h>
+ #include <linux/sched.h>
+ #include <linux/slab.h>
++#include <linux/sunrpc/svc_xprt.h>
+ #include <net/net_namespace.h>
+ #include "idmap.h"
+ #include "nfsd.h"
++#include "netns.h"
+ 
+ /*
+  * Turn off idmapping when using AUTH_SYS.
+@@ -107,8 +109,6 @@ ent_alloc(void)
+  * ID -> Name cache
   */
  
- int
--nfsd_idmap_init(void)
-+nfsd_idmap_init(struct net *net)
+-static struct cache_head *idtoname_table[ENT_HASHMAX];
+-
+ static uint32_t
+ idtoname_hash(struct ent *ent)
+ {
+@@ -187,10 +187,9 @@ static struct ent *idtoname_lookup(struct cache_detail *, struct ent *);
+ static struct ent *idtoname_update(struct cache_detail *, struct ent *,
+ 				   struct ent *);
+ 
+-static struct cache_detail idtoname_cache = {
++static struct cache_detail idtoname_cache_template = {
+ 	.owner		= THIS_MODULE,
+ 	.hash_size	= ENT_HASHMAX,
+-	.hash_table	= idtoname_table,
+ 	.name		= "nfs4.idtoname",
+ 	.cache_put	= ent_put,
+ 	.cache_upcall	= idtoname_upcall,
+@@ -472,21 +471,34 @@ int
+ nfsd_idmap_init(struct net *net)
  {
  	int rv;
++	struct nfsd_net *nn = net_generic(net, nfsd_net_id);
  
--	rv = cache_register_net(&idtoname_cache, &init_net);
-+	rv = cache_register_net(&idtoname_cache, net);
+-	rv = cache_register_net(&idtoname_cache, net);
++	nn->idtoname_cache = cache_create_net(&idtoname_cache_template, net);
++	if (IS_ERR(nn->idtoname_cache))
++		return PTR_ERR(nn->idtoname_cache);
++	rv = cache_register_net(nn->idtoname_cache, net);
  	if (rv)
- 		return rv;
--	rv = cache_register_net(&nametoid_cache, &init_net);
-+	rv = cache_register_net(&nametoid_cache, net);
+-		return rv;
++		goto destroy_idtoname_cache;
+ 	rv = cache_register_net(&nametoid_cache, net);
  	if (rv)
--		cache_unregister_net(&idtoname_cache, &init_net);
-+		cache_unregister_net(&idtoname_cache, net);
+-		cache_unregister_net(&idtoname_cache, net);
++		goto unregister_idtoname_cache;
++	return 0;
++
++unregister_idtoname_cache:
++	cache_unregister_net(nn->idtoname_cache, net);
++destroy_idtoname_cache:
++	cache_destroy_net(nn->idtoname_cache, net);
  	return rv;
  }
  
  void
--nfsd_idmap_shutdown(void)
-+nfsd_idmap_shutdown(struct net *net)
+ nfsd_idmap_shutdown(struct net *net)
  {
--	cache_unregister_net(&idtoname_cache, &init_net);
--	cache_unregister_net(&nametoid_cache, &init_net);
-+	cache_unregister_net(&idtoname_cache, net);
-+	cache_unregister_net(&nametoid_cache, net);
+-	cache_unregister_net(&idtoname_cache, net);
++	struct nfsd_net *nn = net_generic(net, nfsd_net_id);
++
++	cache_unregister_net(nn->idtoname_cache, net);
+ 	cache_unregister_net(&nametoid_cache, net);
++	cache_destroy_net(nn->idtoname_cache, net);
  }
  
  static int
-diff --git a/fs/nfsd/nfsctl.c b/fs/nfsd/nfsctl.c
-index 08cd87a..d6e8b85 100644
---- a/fs/nfsd/nfsctl.c
-+++ b/fs/nfsd/nfsctl.c
-@@ -1186,7 +1186,7 @@ static int __init init_nfsd(void)
- 	if (retval)
- 		goto out_free_stat;
- 	nfsd_lockd_init();	/* lockd->nfsd callbacks */
--	retval = nfsd_idmap_init();
-+	retval = nfsd_idmap_init(&init_net);
- 	if (retval)
- 		goto out_free_lockd;
- 	retval = create_proc_exports_entry();
-@@ -1200,7 +1200,7 @@ out_free_all:
- 	remove_proc_entry("fs/nfs/exports", NULL);
- 	remove_proc_entry("fs/nfs", NULL);
- out_free_idmap:
--	nfsd_idmap_shutdown();
-+	nfsd_idmap_shutdown(&init_net);
- out_free_lockd:
- 	nfsd_lockd_shutdown();
- 	nfsd_reply_cache_shutdown();
-@@ -1223,7 +1223,7 @@ static void __exit exit_nfsd(void)
- 	remove_proc_entry("fs/nfs", NULL);
- 	nfsd_stat_shutdown();
- 	nfsd_lockd_shutdown();
--	nfsd_idmap_shutdown();
-+	nfsd_idmap_shutdown(&init_net);
- 	nfsd4_free_slabs();
- 	nfsd_fault_inject_cleanup();
- 	unregister_filesystem(&nfsd_fs_type);
+@@ -553,9 +565,10 @@ idmap_id_to_name(struct svc_rqst *rqstp, int type, uid_t id, char *name)
+ 		.type = type,
+ 	};
+ 	int ret;
++	struct nfsd_net *nn = net_generic(rqstp->rq_xprt->xpt_net, nfsd_net_id);
+ 
+ 	strlcpy(key.authname, rqst_authname(rqstp), sizeof(key.authname));
+-	ret = idmap_lookup(rqstp, idtoname_lookup, &key, &idtoname_cache, &item);
++	ret = idmap_lookup(rqstp, idtoname_lookup, &key, nn->idtoname_cache, &item);
+ 	if (ret == -ENOENT)
+ 		return sprintf(name, "%u", id);
+ 	if (ret)
+@@ -563,7 +576,7 @@ idmap_id_to_name(struct svc_rqst *rqstp, int type, uid_t id, char *name)
+ 	ret = strlen(item->name);
+ 	BUG_ON(ret > IDMAP_NAMESZ);
+ 	memcpy(name, item->name, ret);
+-	cache_put(&item->h, &idtoname_cache);
++	cache_put(&item->h, nn->idtoname_cache);
+ 	return ret;
+ }
+ 
 
