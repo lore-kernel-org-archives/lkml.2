@@ -1,38 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755215Ab2DKJLN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Apr 2012 05:11:13 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:52367 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753475Ab2DKJLM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Apr 2012 05:11:12 -0400
-Message-ID: <4F854AAC.3030409@gmail.com>
-Date: Wed, 11 Apr 2012 11:11:08 +0200
-From: Jiri Slaby <jirislaby@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120404 Thunderbird/13.0a2
+	id S1755397Ab2DKJLh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Apr 2012 05:11:37 -0400
+Received: from na3sys009aog134.obsmtp.com ([74.125.149.83]:54811 "EHLO
+	psmtp.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1753475Ab2DKJLf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Apr 2012 05:11:35 -0400
+Date: Wed, 11 Apr 2012 12:10:46 +0300
+From: Felipe Balbi <balbi@ti.com>
+To: Axel Lin <axel.lin@gmail.com>
+Cc: linux-kernel@vger.kernel.org, Thomas Dahlmann <dahlmann.thomas@arcor.de>,
+        Felipe Balbi <balbi@ti.com>, Xiaochen Shen <xiaochen.shen@intel.com>,
+        Pavankumar Kondeti <pkondeti@codeaurora.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-geode@lists.infradead.org, linux-usb@vger.kernel.org
+Subject: Re: [PATCH] usb: gadget: use module_pci_driver
+Message-ID: <20120411091044.GE12064@arwen.pp.htv.fi>
+Reply-To: balbi@ti.com
+References: <1333548898.5856.1.camel@phoenix>
 MIME-Version: 1.0
-To: Jiri Slaby <jslaby@suse.cz>
-CC: Keith Packard <keithp@keithp.com>, Chris Wilson <chris@chris-wilson.co.uk>,
-        dri-devel@lists.freedesktop.org, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: i915: NULL pointer dereference in pagevec_move_tail
-References: <4F840300.3090101@suse.cz>
-In-Reply-To: <4F840300.3090101@suse.cz>
-X-Enigmail-Version: 1.4
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="cYtjc4pxslFTELvY"
+Content-Disposition: inline
+In-Reply-To: <1333548898.5856.1.camel@phoenix>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/10/2012 11:53 AM, Jiri Slaby wrote:
-> in today's -next I see:
-> BUG: unable to handle kernel NULL pointer dereference at           (null)
 
-Forget about that, it was some fuzz. I cannot reproduce with today's -next.
+--cYtjc4pxslFTELvY
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-thanks,
--- 
-js
+On Wed, Apr 04, 2012 at 10:14:58PM +0800, Axel Lin wrote:
+> This patch converts the drivers in drivers/usb/gadget/* to use
+> module_pci_driver() macro which makes the code smaller and a bit simpler.
+>=20
+> Signed-off-by: Axel Lin <axel.lin@gmail.com>
+> Cc: Thomas Dahlmann <dahlmann.thomas@arcor.de>
+> Cc: Felipe Balbi <balbi@ti.com>
+> Cc: Xiaochen Shen <xiaochen.shen@intel.com>
+> Cc: Pavankumar Kondeti <pkondeti@codeaurora.org>
+> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
+applied, thanks
 
+--=20
+balbi
+
+--cYtjc4pxslFTELvY
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJPhUqUAAoJEIaOsuA1yqREB80P/2MzBdVQzsP0zei+/Wa5ROKh
+e3N7SrDbnyEggwrYu+FNz9uEj10Mir6hLDg+5uHGgz62IcwBOR6JK1L7KofFzhjm
+5IQJkRm0qHefUR6ybTYNNEpPeVSX/nmlQ8RzomCg/6sep5x6ed+Ka2Xqp3U79rKE
+KQMAyzqg/7v3eNeOgIZy0e/obtloXwUrCXh2hsZnnR6kKGYXxFCzzFKzM7suWWiZ
+4fH9YQu0mrYzkBkvrw3hm18h5c6/wJI934MXy5UMgXyVqpfb9a10Rh/Bkd2sFGrJ
+BS3xAwfR+HrWEDUjvoZycA8IwjwfT2SXclXDeGyvJlnhjH5LNU1aOxfQi7UFI9CQ
+O22mk9V9FkmCa4SX5hqydxRsC/aOcOvig5nYkm2Ijv1u/e82QZ2DtZEiVXbsheYp
+1hHPemKQF1ensBbh4G+B8UUll2gKPQLbPFX3udS8em0ozoXWL++qfsPhKwm5J+OV
+PSv9pi6zQffwxzVT4bJANSFkV5EbH6UK0MVmeHkj4JezE42gSA1TjRfkJnB+TlNr
+8T1lVOkH9B/To6GRSp4vm4fbKBCZgSUdX5F7fLFW+Rbv3SgeapAZyDFr0PGb79ZY
+W1VNS7EJMGotYrMKAcXED2jkhWkYM2wH4UhhV6KymBIqX+7iiZFqNtJKZ/BS8bBL
+mKyvDk5g7rOZowwVdlqZ
+=xQxH
+-----END PGP SIGNATURE-----
+
+--cYtjc4pxslFTELvY--
