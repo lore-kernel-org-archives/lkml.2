@@ -1,195 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755126Ab2DKJDj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Apr 2012 05:03:39 -0400
-Received: from csmtp2.one.com ([91.198.169.22]:38593 "EHLO csmtp2.one.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754943Ab2DKJDd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Apr 2012 05:03:33 -0400
-From: "Henrik Rydberg" <rydberg@bitmath.se>
-Date: Wed, 11 Apr 2012 11:05:56 +0200
-To: Daniel Kurtz <djkurtz@chromium.org>
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Joonyoung Shim <jy0922.shim@samsung.com>,
-        Nick Dyer <nick.dyer@itdev.co.uk>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Benson Leung <bleung@chromium.org>,
-        Yufeng Shen <miletus@chromium.org>
-Subject: Re: [PATCH 03/16 v2] Input: atmel_mxt_ts - refactor
- mxt_read/write_reg to take a length
-Message-ID: <20120411090556.GA32061@polaris.bitmath.org>
-References: <1333039766-8617-1-git-send-email-djkurtz@chromium.org>
- <1333039766-8617-4-git-send-email-djkurtz@chromium.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1333039766-8617-4-git-send-email-djkurtz@chromium.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1754919Ab2DKJDb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Apr 2012 05:03:31 -0400
+Received: from mail-wg0-f42.google.com ([74.125.82.42]:56078 "EHLO
+	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754493Ab2DKJDX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Apr 2012 05:03:23 -0400
+From: Stephane Eranian <eranian@google.com>
+To: linux-kernel@vger.kernel.org
+Cc: peterz@infradead.org, mingo@elte.hu, acme@redhat.com, dsahern@gmail.com,
+        namhyung.kim@lge.com
+Subject: [PATCH 2/5] perf tools: fix piped mode read code
+Date: Wed, 11 Apr 2012 11:01:26 +0200
+Message-Id: <1334134889-20312-3-git-send-email-eranian@google.com>
+X-Mailer: git-send-email 1.7.4.1
+In-Reply-To: <1334134889-20312-1-git-send-email-eranian@google.com>
+References: <1334134889-20312-1-git-send-email-eranian@google.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Daniel,
+In __perf_session__process_pipe_events(), there was a risk
+we would read more than what a union perf_event struct can
+hold. this could happen in case, perf is reading a file which
+contains new record types it does not know about and which are
+larger than anything it knows about.
 
-> The i2c bus requires 5 bytes to do a 1 byte read (1-byte i2c address + 2
-> byte offset + 1-byte i2c address + 1 byte data), or 4 bytes to do a
-> 1-byte write (1 byte i2c address + 2 byte offset + 1 byte data).
-> 
-> By taking a length with reads and writes, the driver can amortize
-> transaction overhead by performing larger transactions where appropriate.
-> 
-> This patch just sets up the new API.  Later patches refactor reads/writes
-> to take advantage of the larger transactions.
-> 
-> Signed-off-by: Daniel Kurtz <djkurtz@chromium.org>
-> Reviewed-by: Joonyoung Shim <jy0922.shim@samsung.com>
-> ---
->  drivers/input/touchscreen/atmel_mxt_ts.c |   47 +++++++++++++----------------
->  1 files changed, 21 insertions(+), 26 deletions(-)
-> 
-> diff --git a/drivers/input/touchscreen/atmel_mxt_ts.c b/drivers/input/touchscreen/atmel_mxt_ts.c
-> index 15ae6fd..971f9dc 100644
-> --- a/drivers/input/touchscreen/atmel_mxt_ts.c
-> +++ b/drivers/input/touchscreen/atmel_mxt_ts.c
-> @@ -397,8 +397,7 @@ static int mxt_fw_write(struct i2c_client *client,
->  	return 0;
->  }
->  
-> -static int __mxt_read_reg(struct i2c_client *client,
-> -			       u16 reg, u16 len, void *val)
-> +static int mxt_read_reg(struct i2c_client *client, u16 reg, u16 len, void *val)
->  {
->  	struct i2c_msg xfer[2];
->  	u8 buf[2];
-> @@ -419,28 +418,25 @@ static int __mxt_read_reg(struct i2c_client *client,
->  	xfer[1].buf = val;
->  
->  	if (i2c_transfer(client->adapter, xfer, 2) != 2) {
-> -		dev_err(&client->dev, "%s: i2c transfer failed\n", __func__);
-> +		dev_err(&client->dev, "%s: i2c read failed\n", __func__);
->  		return -EIO;
->  	}
->  
->  	return 0;
->  }
->  
-> -static int mxt_read_reg(struct i2c_client *client, u16 reg, u8 *val)
-> +static int mxt_write_reg(struct i2c_client *client, u16 reg, u16 len,
-> +			 const void *val)
->  {
-> -	return __mxt_read_reg(client, reg, 1, val);
-> -}
-> -
-> -static int mxt_write_reg(struct i2c_client *client, u16 reg, u8 val)
-> -{
-> -	u8 buf[3];
-> +	size_t count = 2 + len;		/* + 2-byte offset */
-> +	u8 buf[count];
+In general, perf is supposed to skip records it does not
+understand, but in pipe mode, those have to be read and ignored.
+The fixed size header contains the size of the record, but that
+size may be larger than union perf_event, yet it was used as
+the backing to the read in:
 
-How much stack space are you planning to use here?
+  union perf_event event;
+  void *p;
 
->  
->  	buf[0] = reg & 0xff;
->  	buf[1] = (reg >> 8) & 0xff;
-> -	buf[2] = val;
-> +	memcpy(&buf[2], val, len);
->  
-> -	if (i2c_master_send(client, buf, 3) != 3) {
-> -		dev_err(&client->dev, "%s: i2c send failed\n", __func__);
-> +	if (i2c_master_send(client, buf, count) != count) {
-> +		dev_err(&client->dev, "%s: i2c write failed\n", __func__);
->  		return -EIO;
->  	}
->  
-> @@ -450,8 +446,7 @@ static int mxt_write_reg(struct i2c_client *client, u16 reg, u8 val)
->  static int mxt_read_object_table(struct i2c_client *client,
->  				      u16 reg, u8 *object_buf)
->  {
-> -	return __mxt_read_reg(client, reg, MXT_OBJECT_SIZE,
-> -				   object_buf);
-> +	return mxt_read_reg(client, reg, MXT_OBJECT_SIZE, object_buf);
->  }
->  
->  static struct mxt_object *
-> @@ -481,8 +476,8 @@ static int mxt_read_message(struct mxt_data *data,
->  		return -EINVAL;
->  
->  	reg = object->start_address;
-> -	return __mxt_read_reg(data->client, reg,
-> -			sizeof(struct mxt_message), message);
-> +	return mxt_read_reg(data->client, reg, sizeof(struct mxt_message),
-> +			    message);
->  }
->  
->  static int mxt_read_object(struct mxt_data *data,
-> @@ -496,7 +491,7 @@ static int mxt_read_object(struct mxt_data *data,
->  		return -EINVAL;
->  
->  	reg = object->start_address;
-> -	return __mxt_read_reg(data->client, reg + offset, 1, val);
-> +	return mxt_read_reg(data->client, reg + offset, 1, val);
->  }
->  
->  static int mxt_write_object(struct mxt_data *data,
-> @@ -510,7 +505,7 @@ static int mxt_write_object(struct mxt_data *data,
->  		return -EINVAL;
->  
->  	reg = object->start_address;
-> -	return mxt_write_reg(data->client, reg + offset, val);
-> +	return mxt_write_reg(data->client, reg + offset, 1, &val);
->  }
->  
->  static void mxt_input_report(struct mxt_data *data, int single_id)
-> @@ -757,27 +752,27 @@ static int mxt_get_info(struct mxt_data *data)
->  	int error;
->  	u8 val;
->  
-> -	error = mxt_read_reg(client, MXT_FAMILY_ID, &val);
-> +	error = mxt_read_reg(client, MXT_FAMILY_ID, 1, &val);
->  	if (error)
->  		return error;
->  	info->family_id = val;
->  
-> -	error = mxt_read_reg(client, MXT_VARIANT_ID, &val);
-> +	error = mxt_read_reg(client, MXT_VARIANT_ID, 1, &val);
->  	if (error)
->  		return error;
->  	info->variant_id = val;
->  
-> -	error = mxt_read_reg(client, MXT_VERSION, &val);
-> +	error = mxt_read_reg(client, MXT_VERSION, 1, &val);
->  	if (error)
->  		return error;
->  	info->version = val;
->  
-> -	error = mxt_read_reg(client, MXT_BUILD, &val);
-> +	error = mxt_read_reg(client, MXT_BUILD, 1, &val);
->  	if (error)
->  		return error;
->  	info->build = val;
->  
-> -	error = mxt_read_reg(client, MXT_OBJECT_NUM, &val);
-> +	error = mxt_read_reg(client, MXT_OBJECT_NUM, 1, &val);
->  	if (error)
->  		return error;
->  	info->object_num = val;
-> @@ -860,12 +855,12 @@ static int mxt_initialize(struct mxt_data *data)
->  	msleep(MXT_RESET_TIME);
->  
->  	/* Update matrix size at info struct */
-> -	error = mxt_read_reg(client, MXT_MATRIX_X_SIZE, &val);
-> +	error = mxt_read_reg(client, MXT_MATRIX_X_SIZE, 1, &val);
->  	if (error)
->  		return error;
->  	info->matrix_xsize = val;
->  
-> -	error = mxt_read_reg(client, MXT_MATRIX_Y_SIZE, &val);
-> +	error = mxt_read_reg(client, MXT_MATRIX_Y_SIZE, 1, &val);
->  	if (error)
->  		return error;
->  	info->matrix_ysize = val;
-> -- 
-> 1.7.7.3
-> 
+  size = event->header.size;
 
-Thanks,
-Henrik
+  p = &event;
+  p += sizeof(struct perf_event_header);
+  if (size - sizeof(struct perf_event_header)) {
+    err = readn(self->fd, p, size - sizeof(struct perf_event_header));
+
+We fix this by allocating a buffer based on the size reported in
+the header. We reuse the buffer as much as we can. We realloc in
+case it becomes too small. In the  common case, the performance
+impact is negligible.
+
+Signed-off-by: Stephane Eranian <eranian@google.com>
+---
+ tools/perf/util/session.c |   35 +++++++++++++++++++++++++++--------
+ 1 files changed, 27 insertions(+), 8 deletions(-)
+
+diff --git a/tools/perf/util/session.c b/tools/perf/util/session.c
+index 9412e3b..d13e915 100644
+--- a/tools/perf/util/session.c
++++ b/tools/perf/util/session.c
+@@ -1056,8 +1056,9 @@ volatile int session_done;
+ static int __perf_session__process_pipe_events(struct perf_session *self,
+ 					       struct perf_tool *tool)
+ {
+-	union perf_event event;
+-	uint32_t size;
++	union perf_event *event;
++	uint32_t size, cur_size = 0;
++	void *buf = NULL;
+ 	int skip = 0;
+ 	u64 head;
+ 	int err;
+@@ -1066,8 +1067,14 @@ static int __perf_session__process_pipe_events(struct perf_session *self,
+ 	perf_tool__fill_defaults(tool);
+ 
+ 	head = 0;
++	cur_size = sizeof(union perf_event);
++
++	buf = malloc(cur_size);
++	if (!buf)
++		return -errno;
+ more:
+-	err = readn(self->fd, &event, sizeof(struct perf_event_header));
++	event = buf;
++	err = readn(self->fd, event, sizeof(struct perf_event_header));
+ 	if (err <= 0) {
+ 		if (err == 0)
+ 			goto done;
+@@ -1077,13 +1084,23 @@ static int __perf_session__process_pipe_events(struct perf_session *self,
+ 	}
+ 
+ 	if (self->header.needs_swap)
+-		perf_event_header__bswap(&event.header);
++		perf_event_header__bswap(&event->header);
+ 
+-	size = event.header.size;
++	size = event->header.size;
+ 	if (size == 0)
+ 		size = 8;
+ 
+-	p = &event;
++	if (size > cur_size) {
++		void *new = realloc(buf, size);
++		if (!new) {
++			pr_err("failed to allocate memory to read event\n");
++			goto out_err;
++		}
++		buf = new;
++		cur_size = size;
++		event = buf;
++	}
++	p = event;
+ 	p += sizeof(struct perf_event_header);
+ 
+ 	if (size - sizeof(struct perf_event_header)) {
+@@ -1099,9 +1116,10 @@ static int __perf_session__process_pipe_events(struct perf_session *self,
+ 		}
+ 	}
+ 
+-	if ((skip = perf_session__process_event(self, &event, tool, head)) < 0) {
++	skip = perf_session__process_event(self, event, tool, head);
++	if (skip < 0) {
+ 		dump_printf("%#" PRIx64 " [%#x]: skipping unknown header type: %d\n",
+-			    head, event.header.size, event.header.type);
++			    head, event->header.size, event->header.type);
+ 		/*
+ 		 * assume we lost track of the stream, check alignment, and
+ 		 * increment a single u64 in the hope to catch on again 'soon'.
+@@ -1122,6 +1140,7 @@ static int __perf_session__process_pipe_events(struct perf_session *self,
+ done:
+ 	err = 0;
+ out_err:
++	free(buf);
+ 	perf_session__warn_about_errors(self, tool);
+ 	perf_session_free_sample_buffers(self);
+ 	return err;
+-- 
+1.7.4.1
+
