@@ -1,194 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932658Ab2DKQuK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Apr 2012 12:50:10 -0400
-Received: from exchange.solarflare.com ([216.237.3.220]:10883 "EHLO
-	ocex02.SolarFlarecom.com" rhost-flags-OK-FAIL-OK-FAIL)
-	by vger.kernel.org with ESMTP id S932594Ab2DKQuG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Apr 2012 12:50:06 -0400
-Message-ID: <4F85B639.5090900@solarflare.com>
-Date: Wed, 11 Apr 2012 17:50:01 +0100
-From: Stuart Hodgson <smhodgson@solarflare.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:10.0.1) Gecko/20120216 Thunderbird/10.0.1
+	id S932650Ab2DKQwK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Apr 2012 12:52:10 -0400
+Received: from mms3.broadcom.com ([216.31.210.19]:2275 "EHLO MMS3.broadcom.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932418Ab2DKQwI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Apr 2012 12:52:08 -0400
+X-Server-Uuid: B730DE51-FC43-4C83-941F-F1F78A914BDD
+Message-ID: <4F85B6C9.7010003@broadcom.com>
+Date: Wed, 11 Apr 2012 18:52:25 +0200
+From: "Arend van Spriel" <arend@broadcom.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:10.0.2) Gecko/20120216
+ Thunderbird/10.0.2
 MIME-Version: 1.0
-To: Ben Hutchings <bhutchings@solarflare.com>
-CC: <netdev@vger.kernel.org>, <bruce.w.allan@intel.com>,
-        <mirq-linux@rere.qmqm.pl>, <decot@google.com>,
-        <amit.salecha@qlogic.com>, <alexander.h.duyck@intel.com>,
-        <davem@davemloft.net>, <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC PATCH 1/2] net: ethtool: Add capability to retrieve plug-in
- module EEPROM
-References: <4F71FE0A.3060203@solarflare.com> <1333389160.2623.30.camel@bwh-desktop.uk.solarflarecom.com>
-In-Reply-To: <1333389160.2623.30.camel@bwh-desktop.uk.solarflarecom.com>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
+To: "Luis R. Rodriguez" <rodrigue@qca.qualcomm.com>,
+        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
+        "Michael Green" <green@qca.qualcomm.com>,
+        "David Quan" <dquan@qca.qualcomm.com>,
+        "Henry Ptasinski" <henry@logout.com>, linux-kernel@vger.kernel.org
+Subject: Re: Problems with regulatory domain support and BCM43224
+References: <4F69B604.4030303@broadcom.com>
+ <20120321141916.GA23643@thinkpad-t410> <4F6A1514.9090907@broadcom.com>
+ <20120321181753.GC24075@tux> <20120321193706.GC23643@thinkpad-t410>
+ <20120322002715.GA3709@tux> <20120326193608.GE17126@thinkpad-t410>
+ <20120404024632.GA13090@thinkpad-t410>
+ <20120410162833.GD21994@thinkpad-t410> <4F855A08.6070902@broadcom.com>
+ <20120411133940.GA15854@thinkpad-t410>
+In-Reply-To: <20120411133940.GA15854@thinkpad-t410>
+X-WSS-ID: 639B677F3E016461366-01-01
+Content-Type: text/plain;
+ charset=iso-8859-1;
+ format=flowed
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.17.20.173]
-X-TM-AS-Product-Ver: SMEX-10.0.0.1412-6.800.1017-18830.005
-X-TM-AS-Result: No--16.480700-0.000000-31
-X-TM-AS-User-Approved-Sender: Yes
-X-TM-AS-User-Blocked-Sender: No
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/04/12 18:52, Ben Hutchings wrote:
-> We previously discussed the need for this in person, so I'm going to
-> review this as a submission rather than an RFC.
->
-> On Tue, 2012-03-27 at 18:51 +0100, Stuart Hodgson wrote:
->> Added extensions to the ethtool API to obtain plugin module eeprom data
->> This is useful for end users to be able to determine what the capabilities
->> of the in use module are.
+On 04/11/2012 03:39 PM, Seth Forshee wrote:
+> On Wed, Apr 11, 2012 at 12:16:40PM +0200, Arend van Spriel wrote:
+>> On 04/10/2012 06:28 PM, Seth Forshee wrote:
+>>>> The patch builds, and kind of works. Scanning seems to be fine; I can
+>>>>>   see all the APs I expect in my area, including the one on a DFS channel
+>>>>>   that I couldn't see previously. I can associate with my 2.4 GHz APs, but
+>>>>>   not the 5 GHz AP. I see timme outs waiting for probe responses, and I'm
+>>>>>   hitting the WARN_ON_ONCE in brcms_c_wait_for_tx_completion(). I haven't
+>>>>>   really debugged this yet -- I thought I'd send out the patch to collect
+>>>>>   comments while I debug. Suggestions of what's causing this are also
+>>>>>   welcome:)
+>>> This was due to always passing true for the value of mute_tx to
+>>> brcms_b_set_chanspec() on passive channels. For now I'm just always
+>>> passing false, which looks like it ought to be okay as we shouldn't have
+>>> any tx on passive channels unless beacons are seen on the channel.
 >>
->> The first provides a new struct ethtool_modinfo that will return the
->> type and size of plug-in module eeprom (such as SFP+) for parsing
->> by userland program.
->>
->> The second provides the API to get the raw eeprom information
->> using the existing ethtool_eeprom structture to return the data
->>
->> Signed-off-by: Stuart Hodgson<smhodgson@solarflare.com>
->> ---
->>    include/linux/ethtool.h |   20 ++++++++++++
->>    net/core/ethtool.c      |   79
->> +++++++++++++++++++++++++++++++++++++++++++++++
->>    2 files changed, 99 insertions(+), 0 deletions(-)
+>> Yes. I discovered this as well. Actually, I sent out a patch for
+>> some people to test it. I submitted a slightly different patch to
+>> John in which tx in unmuted upon receiving a beacon.
 >
-> This is line-wrapped; you'll need to take care to avoid that when
-> submitting the patch for real.  Tabs have been converted to spaces,
-> which you also need to avoid.  See Documentation/email-clients.txt.
+> I assume you're talking about this patch?
 >
->> diff --git a/include/linux/ethtool.h b/include/linux/ethtool.h
->> index da5b2de..50eaf35 100644
->> --- a/include/linux/ethtool.h
->> +++ b/include/linux/ethtool.h
->> @@ -117,6 +117,14 @@ struct ethtool_eeprom {
->>        __u8    data[0];
->>    };
->>
->> +/* for passing plug-in module information */
->> +struct ethtool_modinfo {
->> +    __u32   cmd;
->> +    __u32   type;
->> +    __u32   eeprom_len;
->> +    __u32   reserved[8];
->> +};
->> +
+> http://www.spinics.net/lists/linux-wireless/msg88107.html
 >
-> This needs a proper kernel-doc comment with a description of each of the
-> fields (except reserved).
->
->>    /**
->>     * struct ethtool_coalesce - coalescing parameters for IRQs and stats
->> updates
->>     * @cmd: ETHTOOL_{G,S}COALESCE
->> @@ -936,6 +944,10 @@ struct ethtool_ops {
->>        int    (*get_dump_data)(struct net_device *,
->>                     struct ethtool_dump *, void *);
->>        int    (*set_dump)(struct net_device *, struct ethtool_dump *);
->> +    int    (*get_module_info)(struct net_device *,
->> +                   struct ethtool_modinfo *);
->> +    int    (*get_module_eeprom)(struct net_device *,
->> +                     struct ethtool_eeprom *, u8 *);
->
-> These need to be described in the kernel-doc comment for this structure.
->
->>    };
->>    #endif /* __KERNEL__ */
->> @@ -1010,6 +1022,8 @@ struct ethtool_ops {
->>    #define ETHTOOL_SET_DUMP    0x0000003e /* Set dump settings */
->>    #define ETHTOOL_GET_DUMP_FLAG    0x0000003f /* Get dump settings */
->>    #define ETHTOOL_GET_DUMP_DATA    0x00000040 /* Get dump data */
->> +#define ETHTOOL_GMODULEINFO    0x00000041 /* Get plug-in module
->> information */
->> +#define ETHTOOL_GMODULEEEPROM    0x00000042 /* Get plug-in module eeprom */
->>
->>    /* compatibility with older code */
->>    #define SPARC_ETH_GSET        ETHTOOL_GSET
->> @@ -1159,6 +1173,12 @@ struct ethtool_ops {
->>    #define RX_CLS_LOC_FIRST    0xfffffffe
->>    #define RX_CLS_LOC_LAST        0xfffffffd
->>
->> +/* EEPROM Standards for plug in modules */
->> +#define SFF_8079        0x1
->> +#define SFF_8079_LEN        256
->> +#define SFF_8472        0x2
->> +#define SFF_8472_LEN        512
->> +
->
-> I think it's best to include a prefix of 'ethtool_' 'ETHTOOL_' or 'ETH_'
-> in new definitions in ethtool.h.  Since these are specific to modules I
-> would suggest a prefix of 'ETH_MODULE_'.
->
->>    /* Reset flags */
->>    /* The reset() operation must clear the flags for the components which
->>     * were actually reset.  On successful return, the flags indicate the
->> diff --git a/net/core/ethtool.c b/net/core/ethtool.c
->> index 3f79db1..1e86bd9 100644
->> --- a/net/core/ethtool.c
->> +++ b/net/core/ethtool.c
-> [...]
->> +static int ethtool_get_module_eeprom(struct net_device *dev,
->> +        void __user *useraddr)
->> +{
->> +    int ret;
->> +    struct ethtool_eeprom eeprom;
->> +    struct ethtool_modinfo modinfo;
->> +    const struct ethtool_ops *ops = dev->ethtool_ops;
->> +    void __user *userbuf = useraddr + sizeof(eeprom);
->> +    u8 *data;
->> +
->> +    if (!ops->get_module_info || !ops->get_module_eeprom)
->> +        return -EOPNOTSUPP;
->> +
->> +    if (copy_from_user(&eeprom, useraddr, sizeof(eeprom)))
->> +        return -EFAULT;
->> +
->> +    /* Check for wrap and zero */
->> +    if (eeprom.offset + eeprom.len<= eeprom.offset)
->> +        return -EINVAL;
->> +
->> +    /* Get the modinfo to get the length */
->> +    ret = ops->get_module_info(dev,&modinfo);
->> +    if (ret)
->> +        return ret;
->> +
->> +    if (eeprom.offset + eeprom.len>  modinfo.eeprom_len)
->> +        return -EINVAL;
->> +
->> +    data = kmalloc(PAGE_SIZE, GFP_USER);
->> +    if (!data)
->> +        return -ENOMEM;
->
-> What if some device has a larger EEPROM?  Surely this length should be
-> eeprom.len.
+> My original changes would mute tx whenever IEEE80211_CHAN_PASSIVE_SCAN
+> is set for the current channel. I'll try that again with your patch.
 >
 
-Do you mean what if the eeprom length in te device is larger than
-PAGE_SIZE? If so then it should really use modinfo.eeprom_len since
-this the size of the data. eeprom.len could be arbitary.
+That is the one.
 
->> +    ret = ops->get_module_eeprom(dev,&eeprom, data);
->> +    if (ret)
->> +        goto out;
->> +
->> +
->> +    if (copy_to_user(userbuf, data, eeprom.len)) {
->> +        ret = -EFAULT;
->> +        goto out;
->> +    }
->> +
->> +    if (copy_to_user(useraddr,&eeprom, sizeof(eeprom)))
->> +        ret = -EFAULT;
-> [...]
+>>>>>   One of the major unresolved issues in the patch is what to do with the
+>>>>>   data in struct locale_mimo_info. The regulatory rules only hold one
+>>>>>   power level. I'm unsure why the brcmsmac implementation differs in this
+>>>>>   regard. Suggestions?
+>>> This is still one of the largest unsolved issues. I'm probably going to
+>>> need some advice on how to fill out the txpwr information when
+>>> regualtory rules external to the driver can be applied.
+>>>
+>>
+>> The power constraints for HT (covered by struct locale_mimo_info)
+>> are handled differently from non-HT. I have to confirm internally
+>> whether this is specific for our devices or actually needed to be
+>> compliant.
 >
-> I think you can drop this last copy as there's no information to return
-> in the eeprom structure itself.
->
-> Ben.
+> Great, thanks.
 >
 
-Other comments have been addressed and will be re-submitted.
+No answer on this one yet, but keep you posted.
 
-Stu
+Gr. AvS
+
