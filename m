@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933798Ab2DKXP6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Apr 2012 19:15:58 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:35695 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933784Ab2DKXPx (ORCPT
+	id S933846Ab2DKXQR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Apr 2012 19:16:17 -0400
+Received: from mail-pz0-f52.google.com ([209.85.210.52]:63303 "EHLO
+	mail-pz0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933816Ab2DKXQL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Apr 2012 19:15:53 -0400
-Message-Id: <20120411231024.560436759@linuxfoundation.org>
+	Wed, 11 Apr 2012 19:16:11 -0400
+Message-Id: <20120411231022.978605039@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Wed, 11 Apr 2012 16:10:55 -0700
+Date: Wed, 11 Apr 2012 16:10:46 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Sean Paul <seanpaul@chromium.org>,
-        Chris Wilson <chris@chris-wilson.co.uk>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>
-Subject: [ 37/78] drm/i915: Add lock on drm_helper_resume_force_mode
+        alan@lxorguk.ukuu.org.uk, Geert Uytterhoeven <geert@linux-m68k.org>
+Subject: [ 28/78] m68k/mac: Add missing platform check before registering platform devices
 In-Reply-To: <20120411231102.GA6404@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,35 +24,31 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sean Paul <seanpaul@chromium.org>
+From: Geert Uytterhoeven <geert@linux-m68k.org>
 
-commit 927a2f119e8235238a2fc64871051b16c9bdae75 upstream.
+commit 6cfeba53911d6d2f17ebbd1246893557d5ff5aeb upstream.
 
-i915_drm_thaw was not locking the mode_config lock when calling
-drm_helper_resume_force_mode. When there were multiple wake sources,
-this caused FDI training failure on SNB which in turn corrupted the
-display.
+On multi-platform kernels, the Mac platform devices should be registered
+when running on Mac only. Else it may crash later.
 
-Signed-off-by: Sean Paul <seanpaul@chromium.org>
-Reviewed-by: Chris Wilson <chris@chris-wilson.co.uk>
-Signed-Off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/i915/i915_drv.c |    2 ++
- 1 file changed, 2 insertions(+)
+ arch/m68k/mac/config.c |    3 +++
+ 1 file changed, 3 insertions(+)
 
---- a/drivers/gpu/drm/i915/i915_drv.c
-+++ b/drivers/gpu/drm/i915/i915_drv.c
-@@ -508,7 +508,9 @@ static int i915_drm_thaw(struct drm_devi
- 		drm_irq_install(dev);
+--- a/arch/m68k/mac/config.c
++++ b/arch/m68k/mac/config.c
+@@ -981,6 +981,9 @@ int __init mac_platform_init(void)
+ {
+ 	u8 *swim_base;
  
- 		/* Resume the modeset for every activated CRTC */
-+		mutex_lock(&dev->mode_config.mutex);
- 		drm_helper_resume_force_mode(dev);
-+		mutex_unlock(&dev->mode_config.mutex);
- 
- 		if (IS_IRONLAKE_M(dev))
- 			ironlake_enable_rc6(dev);
++	if (!MACH_IS_MAC)
++		return -ENODEV;
++
+ 	/*
+ 	 * Serial devices
+ 	 */
 
 
