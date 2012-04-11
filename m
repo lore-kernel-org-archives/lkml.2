@@ -1,24 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965233Ab2DKXXD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Apr 2012 19:23:03 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:41234 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965218Ab2DKXW5 (ORCPT
+	id S965280Ab2DKXno (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Apr 2012 19:43:44 -0400
+Received: from mail-pz0-f52.google.com ([209.85.210.52]:51056 "EHLO
+	mail-pz0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965219Ab2DKXXA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Apr 2012 19:22:57 -0400
-Message-Id: <20120411231040.688459493@linuxfoundation.org>
+	Wed, 11 Apr 2012 19:23:00 -0400
+Message-Id: <20120411231040.842121975@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Wed, 11 Apr 2012 16:11:06 -0700
+Date: Wed, 11 Apr 2012 16:11:07 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Sameer Nanda <snanda@chromium.org>,
-        Francois Romieu <romieu@fr.zoreil.com>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>, Hayes Wang <hayeswang@realtek.com>,
-        Alan Stern <stern@rowland.harvard.edu>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 31/59] r8169: runtime resume before shutdown.
+        alan@lxorguk.ukuu.org.uk, Martin Svec <martin.svec@zoner.cz>,
+        Nicholas Bellinger <nab@linux-iscsi.org>
+Subject: [ 32/59] target: Fix unsupported WRITE_SAME sense payload
 In-Reply-To: <20120411231213.GA13124@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -28,55 +25,52 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: =?UTF-8?q?fran=C3=A7ois=20romieu?= <romieu@fr.zoreil.com>
+From: Martin Svec <martin.svec@zoner.cz>
 
-commit 2a15cd2ff488a9fdb55e5e34060f499853b27c77 upstream.
+commit 67236c44741e250199ccd77f1115568e68cf8848 upstream.
 
-With runtime PM, if the ethernet cable is disconnected, the device is
-transitioned to D3 state to conserve energy. If the system is shutdown
-in this state, any register accesses in rtl_shutdown are dropped on
-the floor. As the device was programmed by .runtime_suspend() to wake
-on link changes, it is thus brought back up as soon as the link recovers.
+This patch fixes a bug in target-core where unsupported WRITE_SAME ops
+from a target_check_write_same_discard() failure was incorrectly
+returning CHECK_CONDITION w/ TCM_INVALID_CDB_FIELD sense data.
+This was causing some clients to not properly fall back, so go ahead
+and use the correct TCM_UNSUPPORTED_SCSI_OPCODE sense for this case.
 
-Resuming every suspended device through the driver core would slow things
-down and it is not clear how many devices really need it now.
-
-Original report and D0 transition patch by Sameer Nanda. Patch has been
-changed to comply with advices by Rafael J. Wysocki and the PM folks.
-
-Reported-by: Sameer Nanda <snanda@chromium.org>
-Signed-off-by: Francois Romieu <romieu@fr.zoreil.com>
-Cc: Rafael J. Wysocki <rjw@sisk.pl>
-Cc: Hayes Wang <hayeswang@realtek.com>
-Cc: Alan Stern <stern@rowland.harvard.edu>
-Acked-by: Rafael J. Wysocki <rjw@sisk.pl>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Reported-by: Martin Svec <martin.svec@zoner.cz>
+Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/ethernet/realtek/r8169.c |    5 +++++
- 1 file changed, 5 insertions(+)
+ drivers/target/target_core_transport.c |    6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
---- a/drivers/net/ethernet/realtek/r8169.c
-+++ b/drivers/net/ethernet/realtek/r8169.c
-@@ -6194,6 +6194,9 @@ static void rtl_shutdown(struct pci_dev
- {
- 	struct net_device *dev = pci_get_drvdata(pdev);
- 	struct rtl8169_private *tp = netdev_priv(dev);
-+	struct device *d = &pdev->dev;
-+
-+	pm_runtime_get_sync(d);
+--- a/drivers/target/target_core_transport.c
++++ b/drivers/target/target_core_transport.c
+@@ -2666,7 +2666,7 @@ static int transport_generic_cmd_sequenc
+ 			cmd->se_cmd_flags |= SCF_SCSI_CONTROL_SG_IO_CDB;
  
- 	rtl8169_net_suspend(dev);
+ 			if (target_check_write_same_discard(&cdb[10], dev) < 0)
+-				goto out_invalid_cdb_field;
++				goto out_unsupported_cdb;
+ 			if (!passthrough)
+ 				cmd->execute_task = target_emulate_write_same;
+ 			break;
+@@ -2949,7 +2949,7 @@ static int transport_generic_cmd_sequenc
+ 		cmd->se_cmd_flags |= SCF_SCSI_CONTROL_SG_IO_CDB;
  
-@@ -6215,6 +6218,8 @@ static void rtl_shutdown(struct pci_dev
- 		pci_wake_from_d3(pdev, true);
- 		pci_set_power_state(pdev, PCI_D3hot);
- 	}
-+
-+	pm_runtime_put_noidle(d);
- }
- 
- static struct pci_driver rtl8169_pci_driver = {
+ 		if (target_check_write_same_discard(&cdb[1], dev) < 0)
+-			goto out_invalid_cdb_field;
++			goto out_unsupported_cdb;
+ 		if (!passthrough)
+ 			cmd->execute_task = target_emulate_write_same;
+ 		break;
+@@ -2972,7 +2972,7 @@ static int transport_generic_cmd_sequenc
+ 		 * of byte 1 bit 3 UNMAP instead of original reserved field
+ 		 */
+ 		if (target_check_write_same_discard(&cdb[1], dev) < 0)
+-			goto out_invalid_cdb_field;
++			goto out_unsupported_cdb;
+ 		if (!passthrough)
+ 			cmd->execute_task = target_emulate_write_same;
+ 		break;
 
 
