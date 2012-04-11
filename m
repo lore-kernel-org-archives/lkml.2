@@ -1,129 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761024Ab2DKToa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Apr 2012 15:44:30 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:56852 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752261Ab2DKTo2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Apr 2012 15:44:28 -0400
-Date: Wed, 11 Apr 2012 21:44:25 +0200
-From: Jan Kara <jack@suse.cz>
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: Jan Kara <jack@suse.cz>, Tejun Heo <tj@kernel.org>,
-        Fengguang Wu <fengguang.wu@intel.com>, Jens Axboe <axboe@kernel.dk>,
-        linux-mm@kvack.org, sjayaraman@suse.com, andrea@betterlinux.com,
-        jmoyer@redhat.com, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, kamezawa.hiroyu@jp.fujitsu.com,
-        lizefan@huawei.com, containers@lists.linux-foundation.org,
-        cgroups@vger.kernel.org, ctalbott@google.com, rni@google.com,
-        lsf@lists.linux-foundation.org
-Subject: Re: [RFC] writeback and cgroup
-Message-ID: <20120411194425.GG16008@quack.suse.cz>
-References: <20120404145134.GC12676@redhat.com>
- <20120407080027.GA2584@quack.suse.cz>
- <20120410180653.GJ21801@redhat.com>
- <20120410210505.GE4936@quack.suse.cz>
- <20120410212041.GP21801@redhat.com>
- <20120410222425.GF4936@quack.suse.cz>
- <20120411154005.GD16692@redhat.com>
- <20120411154531.GE16692@redhat.com>
- <20120411170542.GB16008@quack.suse.cz>
- <20120411172311.GF16692@redhat.com>
+	id S933105Ab2DKTpQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Apr 2012 15:45:16 -0400
+Received: from s15943758.onlinehome-server.info ([217.160.130.188]:45178 "EHLO
+	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932922Ab2DKTpO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Apr 2012 15:45:14 -0400
+Date: Wed, 11 Apr 2012 21:45:02 +0200
+From: Borislav Petkov <bp@amd64.org>
+To: David Ahern <dsahern@gmail.com>
+Cc: Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Borislav Petkov <bp@amd64.org>, Ingo Molnar <mingo@kernel.org>,
+        Michal Marek <mmarek@suse.cz>, Sam Ravnborg <sam@ravnborg.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v5 5/5] tools: Connect to the kernel build system
+Message-ID: <20120411194502.GA18114@aftab>
+References: <1334162178-17152-1-git-send-email-bp@amd64.org>
+ <1334162178-17152-6-git-send-email-bp@amd64.org>
+ <20120411180434.GH16257@infradead.org>
+ <20120411180837.GJ16257@infradead.org>
+ <4F85CB23.8030305@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120411172311.GF16692@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <4F85CB23.8030305@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed 11-04-12 13:23:11, Vivek Goyal wrote:
-> On Wed, Apr 11, 2012 at 07:05:42PM +0200, Jan Kara wrote:
-> > On Wed 11-04-12 11:45:31, Vivek Goyal wrote:
-> > > On Wed, Apr 11, 2012 at 11:40:05AM -0400, Vivek Goyal wrote:
-> > > > On Wed, Apr 11, 2012 at 12:24:25AM +0200, Jan Kara wrote:
-> > > > 
-> > > > [..]
-> > > > > > I have implemented and posted patches for per bdi per cgroup congestion
-> > > > > > flag. The only problem I see with that is that a group might be congested
-> > > > > > for a long time because of lots of other IO happening (say direct IO) and
-> > > > > > if you keep on backing off and never submit the metadata IO (transaction),
-> > > > > > you get starved. And if you go ahead and submit IO in a congested group,
-> > > > > > we are back to serialization issue.
-> > > > >   Clearly, we mustn't throttle metadata IO once it gets to the block layer.
-> > > > > That's why we discuss throttling of processes at transaction start after
-> > > > > all. But I agree starvation is an issue - I originally thought blk-throttle
-> > > > > throttles synchronously which wouldn't have starvation issues.
-> > > 
-> > > Current bio throttling is asynchrounous. Process can submit the bio
-> > > and go back and wait for bio to finish. That bio will be queued at device
-> > > queue in a per cgroup queue and will be dispatched to device according
-> > > to configured IO rate for cgroup.
-> > > 
-> > > The additional feature for buffered throttle (which never went upstream),
-> > > was synchronous in nature. That is we were actively putting writer to
-> > > sleep on a per cgroup wait queue in the request queue and wake it up when
-> > > it can do further IO based on cgroup limits.
-> >   Hmm, but then there would be similar starvation issues as with my simple
-> > scheme because async IO could always use the whole available bandwidth.
+On Wed, Apr 11, 2012 at 12:19:15PM -0600, David Ahern wrote:
+> Does this sequence still work?
 > 
-> It depends on how the throttling logic decides to divide bandwidth between
-> sync and async. I had chosen a round robin policy of dispatching some
-> bios and then allowing some async IO etc. So async IO was not consuming
-> the whole available bandwidth. We could easibly tilt it in favor of sync IO
-> with a tunable knob.
-  Ah, OK.
-
-> > Mixing of sync & async throttling is really problematic... I'm wondering
-> > how useful the async throttling is.
+> cd tools/perf
+> make O=/tmp/pbuild
 > 
-> If sync throttling is useful, then async throttling has to be useful too?
-> Especially given the fact that often async IO consumes all bandwidth
-> impacting sync latencies.
-  I wasn't clear enough I guess. I meant to ask if async throttling brings
-some serious advantage over the sync one. And I think your answer is that
-we want to have at least some IO prepared to be submitted to maintain
-reasonable device utilization.
+> and the O= is honored?
 
-> > Because we will block on request
-> > allocation once there are more than nr_requests pending requests so at that
-> > point throttling becomes sync anyway.
-> 
-> First of all flushers will block on nr_requests and not actual writers.
-  Well, but as soon as you are going to do real IO (not just use the
-cache), you can block - i.e. direct IO writers, or fsync, or readers can
-block.
+That still works:
 
-> And secondly we thought of having per group request descriptors so that
-> writes of one group don't impact others. So once the writes of a group
-> are backlogged, then flusher can query the congestion status of group
-> and not submit any more writes to that group. As some writes are already
-> queued in that group, writes will not be starved. Well, in case of
-> deadline, even direct writes go in write queue so theoritically we can
-> hit starvation issue (flush not being able to submit writes without
-> risking blocking) there too.
-> 
-> To avoid this starvation, ideally we need per bdi per cgroup flusher. so
-> that flusher can simply block if there are not enough request descriptors
-> in the cgroup.
-  Yeah, on one hand this would simplify some things, but on the other hand
-you would possibly create performance issue with interleaving IO from
-different flusher threads (although that shouldn't be a big problem because
-they would work on disjoint sets of inodes and should submit large enough
-chunks) and also fs-wide operations such as sync(2) would need some
-thinking.
+$ cd tools/perf/
+$ mkdir /tmp/pbuild
+$ make O=/tmp/pbuild
+    MKDIR /tmp/pbuild/arch/x86/util
+    MKDIR /tmp/pbuild/bench
+    MKDIR /tmp/pbuild/util
+    MKDIR /tmp/pbuild/util/ui
+    MKDIR /tmp/pbuild/util/ui/browsers
+PERF_VERSION = 3.4.rc2.28.g7f953
 
-Actually handling of sync(2) is interesting on it's own because if it
-should obey throttling limits for each cgroup whose inode is written, it
-may take *really* long time to complete it...
- 
-> So trying to throttle buffered writes synchronously in balance_dirty_pages(),
-> atleast simlifies the implementation.  I like my implementation better
-> over Fengguang's approach of throttling for simple reason that buffered
-> writes and direct writes can be subjected to same throttling limits
-> instead of separate limits for buffered writes.
-  I guess we all agree (including Fengguang) that this is desirable.
+...
+
+    CC /tmp/pbuild/util/ui/browsers/map.o
+    CC /tmp/pbuild/util/ui/helpline.o
+    CC /tmp/pbuild/util/ui/progress.o
+    CC /tmp/pbuild/util/ui/util.o
+    AR /tmp/pbuild/libperf.a
+    LINK /tmp/pbuild/perf
+    GEN perf-archive
+
+$ ls -al /tmp/pbuild/*.o | wc -l
+22
+
 -- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+Regards/Gruss,
+Boris.
+
+Advanced Micro Devices GmbH
+Einsteinring 24, 85609 Dornach
+GM: Alberto Bozzo
+Reg: Dornach, Landkreis Muenchen
+HRB Nr. 43632 WEEE Registernr: 129 19551
