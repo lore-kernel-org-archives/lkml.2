@@ -1,43 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932867Ab2DKSPD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Apr 2012 14:15:03 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:58576 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752081Ab2DKSPB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Apr 2012 14:15:01 -0400
-Message-ID: <4F85BEB5.6080702@redhat.com>
-Date: Wed, 11 Apr 2012 13:26:13 -0400
-From: Rik van Riel <riel@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120216 Thunderbird/10.0.1
-MIME-Version: 1.0
-To: Mel Gorman <mgorman@suse.de>
-CC: Andrew Morton <akpm@linux-foundation.org>,
-        Konstantin Khlebnikov <khlebnikov@openvz.org>,
-        Hugh Dickins <hughd@google.com>, Ying Han <yinghan@google.com>,
-        Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 2/3] mm: vmscan: Do not stall on writeback during memory
- compaction
-References: <1334162298-18942-1-git-send-email-mgorman@suse.de> <1334162298-18942-3-git-send-email-mgorman@suse.de>
-In-Reply-To: <1334162298-18942-3-git-send-email-mgorman@suse.de>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	id S1760858Ab2DKSRE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Apr 2012 14:17:04 -0400
+Received: from exchange.solarflare.com ([216.237.3.220]:51535 "EHLO
+	ocex02.SolarFlarecom.com" rhost-flags-OK-FAIL-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1755908Ab2DKSRB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Apr 2012 14:17:01 -0400
+Message-ID: <1334168217.2552.5.camel@bwh-desktop.uk.solarflarecom.com>
+Subject: Re: [RFC PATCH 1/2] net: ethtool: Add capability to retrieve
+ plug-in module EEPROM
+From: Ben Hutchings <bhutchings@solarflare.com>
+To: Stuart Hodgson <smhodgson@solarflare.com>
+CC: <netdev@vger.kernel.org>, <bruce.w.allan@intel.com>,
+        <mirq-linux@rere.qmqm.pl>, <decot@google.com>,
+        <amit.salecha@qlogic.com>, <alexander.h.duyck@intel.com>,
+        <davem@davemloft.net>, <linux-kernel@vger.kernel.org>
+Date: Wed, 11 Apr 2012 19:16:57 +0100
+In-Reply-To: <4F85B639.5090900@solarflare.com>
+References: <4F71FE0A.3060203@solarflare.com>
+	 <1333389160.2623.30.camel@bwh-desktop.uk.solarflarecom.com>
+	 <4F85B639.5090900@solarflare.com>
+Organization: Solarflare Communications
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 (3.2.3-1.fc16) 
 Content-Transfer-Encoding: 7bit
+MIME-Version: 1.0
+X-Originating-IP: [10.17.20.137]
+X-TM-AS-Product-Ver: SMEX-10.0.0.1412-6.800.1017-18830.005
+X-TM-AS-Result: No--15.154200-0.000000-31
+X-TM-AS-User-Approved-Sender: Yes
+X-TM-AS-User-Blocked-Sender: No
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/11/2012 12:38 PM, Mel Gorman wrote:
-> This patch stops reclaim/compaction entering sync reclaim as this was only
-> intended for lumpy reclaim and an oversight. Page migration has its own
-> logic for stalling on writeback pages if necessary and memory compaction
-> is already using it.
->
-> Waiting on page writeback is bad for a number of reasons but the primary
-> one is that waiting on writeback to a slow device like USB can take a
-> considerable length of time. Page reclaim instead uses wait_iff_congested()
-> to throttle if too many dirty pages are being scanned.
->
-> Signed-off-by: Mel Gorman<mgorman@suse.de>
+On Wed, 2012-04-11 at 17:50 +0100, Stuart Hodgson wrote:
+> On 02/04/12 18:52, Ben Hutchings wrote:
+[...]
+> >> --- a/net/core/ethtool.c
+> >> +++ b/net/core/ethtool.c
+[...]
+> >> +    if (eeprom.offset + eeprom.len>  modinfo.eeprom_len)
+> >> +        return -EINVAL;
+> >> +
+> >> +    data = kmalloc(PAGE_SIZE, GFP_USER);
+> >> +    if (!data)
+> >> +        return -ENOMEM;
+> >
+> > What if some device has a larger EEPROM?  Surely this length should be
+> > eeprom.len.
+> >
+> 
+> Do you mean what if the eeprom length in te device is larger than
+> PAGE_SIZE?
 
-Acked-by: Rik van Riel <riel@redhat.com>
+Yes.
+
+> If so then it should really use modinfo.eeprom_len since
+> this the size of the data. eeprom.len could be arbitary.
+
+No, eeprom.len is the size of the data and we've already validated it at
+this point.
+
+Ben.
+
 
