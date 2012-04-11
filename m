@@ -1,92 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761204Ab2DKU0j (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Apr 2012 16:26:39 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60380 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1761188Ab2DKU0h (ORCPT
+	id S933212Ab2DKU27 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Apr 2012 16:28:59 -0400
+Received: from smtp.fireflyinternet.com ([109.228.6.236]:25103 "EHLO
+	fireflyinternet.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753671Ab2DKU25 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Apr 2012 16:26:37 -0400
-Date: Wed, 11 Apr 2012 13:26:35 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Glauber Costa <glommer@parallels.com>
-Cc: <linux-kernel@vger.kernel.org>, <devel@openvz.org>, <linux-mm@kvack.org>,
-        <cgroups@vger.kernel.org>, Michal Hocko <mhocko@suse.cz>,
-        Johannes Weiner <hannes@cmpxchg.org>, <kamezawa.hiroyu@jp.fujitsu.com>,
-        Greg Thelen <gthelen@google.com>,
-        Suleiman Souhlal <suleiman@google.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [PATCH] remove BUG() in possible but rare condition
-Message-Id: <20120411132635.bfddc6bd.akpm@linux-foundation.org>
-In-Reply-To: <1334167824-19142-1-git-send-email-glommer@parallels.com>
-References: <1334167824-19142-1-git-send-email-glommer@parallels.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Wed, 11 Apr 2012 16:28:57 -0400
+X-Default-Received-SPF: pass (skip=forwardok (res=PASS)) x-ip-name=78.156.66.37;
+From: Chris Wilson <chris@chris-wilson.co.uk>
+Subject: Re: [PATCH 4/8 v7] drm/i915/intel_i2c: use WAIT cycle, not STOP
+To: Daniel Kurtz <djkurtz@chromium.org>, Daniel Kurtz <djkurtz@chromium.org>,
+        Keith Packard <keithp@keithp.com>, David Airlie <airlied@linux.ie>,
+        dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org,
+        Benson Leung <bleung@chromium.org>, Yufeng Shen <miletus@chromium.org>
+In-Reply-To: <CAGS+omD9dTTK4gRERy406nLFEMfqC=hw6ZFe3_V9yacSR2r9Sw@mail.gmail.com>
+References: <1333108003-6341-1-git-send-email-djkurtz@chromium.org> <1333108003-6341-5-git-send-email-djkurtz@chromium.org> <20120410103746.GH4115@phenom.ffwll.local> <20120410104147.GI4115@phenom.ffwll.local> <CAGS+omAjDPxs1qR-EwzKhjE9c5J26fZinv6+5RFz1RyAsfStmw@mail.gmail.com> <20120410150304.GJ4115@phenom.ffwll.local> <CAGS+omD9dTTK4gRERy406nLFEMfqC=hw6ZFe3_V9yacSR2r9Sw@mail.gmail.com>
+Date: Wed, 11 Apr 2012 21:28:47 +0100
+X-Originating-IP: 78.156.66.37
+Message-ID: <1334176129_372754@CP5-2952>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 11 Apr 2012 15:10:24 -0300
-Glauber Costa <glommer@parallels.com> wrote:
+On Thu, 12 Apr 2012 02:16:45 +0800, Daniel Kurtz <djkurtz@chromium.org> wrote:
+> On Tue, Apr 10, 2012 at 11:03 PM, Daniel Vetter <daniel@ffwll.ch> wrote:
+> > - Chris Wilson suggested on irc that we should wait for HW_READY even for
+> >  zero-length writes (and also reads), currently we don't.
+> 
+> I don't think so.  We just need to wait for (GMBUS_SATOER |
+> GMBUS_HW_WAIT_PHASE).
+> Why would we wait for HW_READY, too?
 
-> While stressing the kernel with with failing allocations today,
-> I hit the following chain of events:
-> 
-> alloc_page_buffers():
-> 
-> 	bh = alloc_buffer_head(GFP_NOFS);
-> 	if (!bh)
-> 		goto no_grow; <= path taken
-> 
-> grow_dev_page():
->         bh = alloc_page_buffers(page, size, 0);
->         if (!bh)
->                 goto failed;  <= taken, consequence of the above
-> 
-> and then the failed path BUG()s the kernel.
-> 
-> The failure is inserted a litte bit artificially, but even then,
-> I see no reason why it should be deemed impossible in a real box.
-> 
-> Even though this is not a condition that we expect to see
-> around every time, failed allocations are expected to be handled,
-> and BUG() sounds just too much. As a matter of fact, grow_dev_page()
-> can return NULL just fine in other circumstances, so I propose we just
-> remove it, then.
-> 
-> Signed-off-by: Glauber Costa <glommer@parallels.com>
-> CC: Linus Torvalds <torvalds@linux-foundation.org>
-> CC: Andrew Morton <akpm@linux-foundation.org>
-> ---
->  fs/buffer.c |    1 -
->  1 files changed, 0 insertions(+), 1 deletions(-)
-> 
-> diff --git a/fs/buffer.c b/fs/buffer.c
-> index 36d6665..351e18e 100644
-> --- a/fs/buffer.c
-> +++ b/fs/buffer.c
-> @@ -985,7 +985,6 @@ grow_dev_page(struct block_device *bdev, sector_t block,
->  	return page;
->  
->  failed:
-> -	BUG();
->  	unlock_page(page);
->  	page_cache_release(page);
->  	return NULL;
+Just paranoia when looking at the read/write sequences and wondering how
+safe they were with 0-length read/writes. No real reason to suspect that
+the code is incorrect in any way.
+-Chris
 
-Cute.
-
-AFAICT what happened was that in my April 2002 rewrite of this code I
-put a non-fatal buffer_error() warning in that case to tell us that
-something bad happened.
-
-Years later we removed the temporary buffer_error() and mistakenly
-replaced that warning with a BUG().  Only it *can* happen.
-
-We can remove the BUG() and fix up callers, or we can pass retry=1 into
-alloc_page_buffers(), so grow_dev_page() "cannot fail".  Immortal
-functions are a silly fiction, so we should remove the BUG() and fix up
-callers.
-
+-- 
+Chris Wilson, Intel Open Source Technology Centre
