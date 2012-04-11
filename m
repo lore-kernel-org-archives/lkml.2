@@ -1,65 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759721Ab2DKAI5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Apr 2012 20:08:57 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:52141 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752973Ab2DKAI4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Apr 2012 20:08:56 -0400
-Message-ID: <4F84CB21.80907@zytor.com>
-Date: Tue, 10 Apr 2012 17:06:57 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120329 Thunderbird/11.0.1
-MIME-Version: 1.0
-To: Valdis.Kletnieks@vt.edu
-CC: Andrew Morton <akpm@linux-foundation.org>,
-        Cyrill Gorcunov <gorcunov@openvz.org>, Oleg Nesterov <oleg@redhat.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Pavel Emelyanov <xemul@parallels.com>,
-        Andrey Vagin <avagin@openvz.org>,
-        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
-        Glauber Costa <glommer@parallels.com>,
-        Andi Kleen <andi@firstfloor.org>, Tejun Heo <tj@kernel.org>,
-        Matt Helsley <matthltc@us.ibm.com>, Pekka Enberg <penberg@kernel.org>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        Vasiliy Kulikov <segoon@openwall.com>,
-        Alexey Dobriyan <adobriyan@gmail.com>, Michal Marek <mmarek@suse.cz>,
-        Frederic Weisbecker <fweisbec@gmail.com>, linux-kernel@vger.kernel.org,
-        Jonathan Corbet <corbet@lwn.net>
-Subject: Re: + syscalls-x86-add-__nr_kcmp-syscall-v8.patch added to -mm tree
-References: <20120215143606.GA14037@redhat.com> <20120215160652.GA17680@redhat.com> <20120215162752.GF4533@moon>            <20120409151027.7f3e0fa5.akpm@linux-foundation.org> <7939.1334102329@turing-police.cc.vt.edu>
-In-Reply-To: <7939.1334102329@turing-police.cc.vt.edu>
-X-Enigmail-Version: 1.4
-Content-Type: text/plain; charset=UTF-8
+	id S1759794Ab2DKAKG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Apr 2012 20:10:06 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:18742 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754156Ab2DKAKE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Apr 2012 20:10:04 -0400
+X-Authority-Analysis: v=2.0 cv=Z8Fu7QtA c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=XQbtiDEiEegA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=GSO0uMklmUc0F6YJS4sA:9 a=PUjeQqilurYA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.80.29
+Message-ID: <1334102999.23924.232.camel@gandalf.stny.rr.com>
+Subject: Re: CPU Hotplug rework
+From: Steven Rostedt <rostedt@goodmis.org>
+To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+Cc: paulmck@linux.vnet.ibm.com, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arjan van de Ven <arjan@infradead.org>,
+        "rusty@rustcorp.com.au" <rusty@rustcorp.com.au>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Milton Miller <miltonm@bga.com>, "mingo@elte.hu" <mingo@elte.hu>,
+        Tejun Heo <tj@kernel.org>, KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Linux PM mailing list <linux-pm@vger.kernel.org>
+Date: Tue, 10 Apr 2012 20:09:59 -0400
+In-Reply-To: <4F7F4977.4000302@linux.vnet.ibm.com>
+References: <4F674649.2000300@linux.vnet.ibm.com>
+	 <4F67474A.20707@linux.vnet.ibm.com>
+	 <20120405173918.GC8194@linux.vnet.ibm.com>
+	 <4F7F4977.4000302@linux.vnet.ibm.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.2.2-1 
 Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/10/2012 04:58 PM, Valdis.Kletnieks@vt.edu wrote:
+On Sat, 2012-04-07 at 01:22 +0530, Srivatsa S. Bhat wrote:
+
+> Wrapping only do_setup() within get/put_online_cpus() wouldn't serve our
+> purpose, since the race with CPU Hotplug would still exist, just like
+> before. So, let's consider what happens when we wrap both the functions
+> within get/put_online_cpus():
 > 
-> I'm not able to convince myself that "less than" and "greater than"
-> mean anything - do we have a good proof that for all v1 and v2, the
-> obfuscated pointers have the same ordering as the original
-> pointers?
+> 	get_online_cpus();
+> 	register_cpu_notifier(nb, mask);
+> 	do_setup(mask);
+> 	put_online_cpus();
 > 
+> Unfortunately this leads to an ABBA deadlock (see below).
+>  
 
-No, of course they don't.
+Just to throw out the stupid silly approach.
 
-That's the point.
+What about creating a "__register_cpu_notifier()" that just does:
 
-The whole point is that kcmp() exports an ordered set, but the
-ordering is explicitly and intentionally different than the actual
-ordering in memory.  It is still valid for sorting, in particular.
+int __ref __register_cpu_notifier(struct notifier_block *nb)
+{
+	return raw_notifier_chain_register(&cpu_chain, nb);
+}
 
-> Hmm... consider the simplified example  v1 = 5 and v2= 16., and
-> cookies[0] is also 16. Then obfus(v1) == 21, and obfus(v2) == 0,
-> and the ordering is different.  So I'm thinking 0 and 3 are the
-> only sane return values?
-> 
-> Or do I need more caffeine?
+Also making cpu_maps_update_begin/done() global (and probably rename
+them).
 
-You need more caffeine.  You're thinking about the problem wrong.
+and then in the above code do:
 
-	-hpa
+	cpu_maps_update_begin();
+	__register_cpu_notifier(nb);
+	do_setup();
+	cpu_maps_update_done();
+
+
+Just saying,
+
+-- Steve
+
+
