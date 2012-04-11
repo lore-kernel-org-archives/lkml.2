@@ -1,144 +1,156 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760154Ab2DKM25 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Apr 2012 08:28:57 -0400
-Received: from e37.co.us.ibm.com ([32.97.110.158]:50904 "EHLO
-	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753122Ab2DKM24 (ORCPT
+	id S1760169Ab2DKM3D (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Apr 2012 08:29:03 -0400
+Received: from e34.co.us.ibm.com ([32.97.110.152]:54777 "EHLO
+	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753122Ab2DKM26 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Apr 2012 08:28:56 -0400
-Date: Wed, 11 Apr 2012 05:27:27 -0700
+	Wed, 11 Apr 2012 08:28:58 -0400
+Date: Wed, 11 Apr 2012 05:28:43 -0700
 From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Lai Jiangshan <laijs@cn.fujitsu.com>
-Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, dipankar@in.ibm.com,
-        akpm@linux-foundation.org, mathieu.desnoyers@polymtl.ca,
-        josh@joshtriplett.org, niv@us.ibm.com, tglx@linutronix.de,
-        peterz@infradead.org, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
-        dhowells@redhat.com, eric.dumazet@gmail.com, darren@dvhart.com,
-        fweisbec@gmail.com, patches@linaro.org
-Subject: Re: [PATCH 3/4 V2] implement per-domain single-thread state machine
- call_srcu()
-Message-ID: <20120411122727.GA9583@linux.vnet.ibm.com>
+To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arjan van de Ven <arjan@infradead.org>,
+        "rusty@rustcorp.com.au" <rusty@rustcorp.com.au>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Milton Miller <miltonm@bga.com>, "mingo@elte.hu" <mingo@elte.hu>,
+        Tejun Heo <tj@kernel.org>, KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Linux PM mailing list <linux-pm@vger.kernel.org>,
+        nikunj@linux.vnet.ibm.com
+Subject: Re: CPU Hotplug rework
+Message-ID: <20120411122843.GD2402@linux.vnet.ibm.com>
 Reply-To: paulmck@linux.vnet.ibm.com
-References: <1332144734-9375-1-git-send-email-laijs@cn.fujitsu.com>
- <1332144734-9375-4-git-send-email-laijs@cn.fujitsu.com>
- <20120410231858.GJ2428@linux.vnet.ibm.com>
+References: <4F674649.2000300@linux.vnet.ibm.com>
+ <4F67474A.20707@linux.vnet.ibm.com>
+ <20120405173918.GC8194@linux.vnet.ibm.com>
+ <4F7F4977.4000302@linux.vnet.ibm.com>
+ <1334102999.23924.232.camel@gandalf.stny.rr.com>
+ <20120411002836.GM2428@linux.vnet.ibm.com>
+ <1334104638.23924.233.camel@gandalf.stny.rr.com>
+ <20120411010015.GA2402@linux.vnet.ibm.com>
+ <4F851E91.70603@linux.vnet.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120410231858.GJ2428@linux.vnet.ibm.com>
+In-Reply-To: <4F851E91.70603@linux.vnet.ibm.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12041112-7408-0000-0000-0000041D7EDA
+x-cbid: 12041112-1780-0000-0000-000004ABC87A
+X-IBM-ISS-SpamDetectors: 
+X-IBM-ISS-DetailInfo: BY=3.00000266; HX=3.00000187; KW=3.00000007;
+ PH=3.00000001; SC=3.00000001; SDB=6.00129938; UDB=6.00030702; UTC=2012-04-11
+ 12:28:57
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 10, 2012 at 04:18:58PM -0700, Paul E. McKenney wrote:
-> On Mon, Mar 19, 2012 at 04:12:13PM +0800, Lai Jiangshan wrote:
-> > o	state machine is light way and single-threaded, it is preemptible when checking.
-> > 
-> > o	state machine is a work_struct. So, there is no thread occupied
-> > 	by SRCU when the srcu is not actived(no callback). And it does
-> > 	not sleep(avoid to occupy a thread when sleep).
-> > 
-> > o	state machine is the only thread can flip/check/write(*) the srcu_struct,
-> > 	so we don't need any mutex.
-> > 	(write(*): except ->per_cpu_ref, ->running, ->batch_queue)
-> > 
-> > o	synchronize_srcu() will take the processing ownership when no other
-> > 	state-machine is running.(the task of synchronize_srcu() becomes
-> > 	the state-machine-thread). This fast patch can avoid scheduling.
-> > 	When the fast path fails, it falls back to "call_srcu() + wait".
-> > 
-> > o	callback is probably called in the same CPU when it is queued.
-> > 
-> > The trip of a callback:
-> > 	1) ->batch_queue when call_srcu()
-> > 
-> > 	2) ->batch_check0 when try to do check_zero
-> > 
-> > 	3) ->batch_check1 after finish its first check_zero and the flip
-> > 
-> > 	4) ->batch_done after finish its second check_zero
-> > 
-> > The current requirement of the callbacks:
-> > 	The callback will be called inside process context.
-> > 	The callback should be fast without any sleeping path.
+On Wed, Apr 11, 2012 at 11:32:57AM +0530, Srivatsa S. Bhat wrote:
+> On 04/11/2012 06:30 AM, Paul E. McKenney wrote:
 > 
-> The basic algorithm looks safe, but I have some questions on liveness
-> and expeditedness below.
+> > On Tue, Apr 10, 2012 at 08:37:18PM -0400, Steven Rostedt wrote:
+> >> On Tue, 2012-04-10 at 17:28 -0700, Paul E. McKenney wrote:
+> >>
+> >>>> Just to throw out the stupid silly approach.
+> >>>>
+> >>>> What about creating a "__register_cpu_notifier()" that just does:
+> >>>>
+> >>>> int __ref __register_cpu_notifier(struct notifier_block *nb)
+> >>>> {
+> >>>> 	return raw_notifier_chain_register(&cpu_chain, nb);
+> >>>> }
+> >>>>
+> >>>> Also making cpu_maps_update_begin/done() global (and probably rename
+> >>>> them).
+> >>
+> >> I just noticed that the cpu_maps_update_begin/done() are already global.
+> >>
+> >>>>
+> >>>> and then in the above code do:
+> >>>>
+> >>>> 	cpu_maps_update_begin();
+> >>>> 	__register_cpu_notifier(nb);
+> >>>> 	do_setup();
+> >>>> 	cpu_maps_update_done();
+> >>>>
+> >>>>
+> 
+> 
+> Wow! Believe it or not, this is precisely the crux of the approach I was
+> suggesting all along!! :-) Just that when put to code, it looked slightly
+> different than this.. Sorry for not being clear.
+> 
+> So here is what I proposed, in a simplified form:
+> 
+> Modify the existing register_cpu_notifier() to this (by possibly giving
+> it a different name):
+> 
+> int __ref register_cpu_notifier(struct notifier_block *nb,
+> 					int (*do_setup)(void))
+> {
+> 	int ret;
+> 
+> 	cpu_maps_update_begin();
+> 	ret = raw_notifier_chain_register(&cpu_chain, nb);
+> 	do_setup();
+> 	cpu_maps_update_done();
+> 
+> 	return ret;
+> }
+> 
+> and then, in the caller, do:
+> 
+> 	register_cpu_notifier(nb, do_setup);
+> 
+> If the caller doesn't need any such extra setup, just do:
+> 
+> 	register_cpu_notifier(nb, NULL);
+> 
+> 
+> Of course, register_cpu_notifier() should handle NULL properly.
+> (My patch [1] handles it, along with some other special cases.)
+> 
+> That's it!
+> 
+> Also, it is to be noted that cpu_maps_update_begin/done() are global, but
+> not exported symbols - so modules can't use them. With the above approach,
+> we need not make them exported symbols, since the caller need not care about
+> these locks at all.
+> 
+> >>>> Just saying,
+> >>>
+> >>> That does have some attractive properties, now that you mention it.  ;-)
+> >>
+> >> Which property? Stupid or Silly ;-)
+> > 
+> > As with any piece of software, no matter how small, both.  ;-)
+> > 
+> > Of course, __register_cpu_notifier() would need lockdep checking to make
+> > sure that it wasn't called without the benefit of cpu_maps_update_begin().
+> 
+> 
+> Not with my approach ;-) Its all automatically handled :-)
 
-[ . . . ]
-
-> > +static void srcu_reschedule(struct srcu_struct *sp)
-> > +{
-> > +	bool pending = true;
-> > +
-> > +	if (rcu_batch_empty(&sp->batch_done) &&
-> > +	    rcu_batch_empty(&sp->batch_check1) &&
-> > +	    rcu_batch_empty(&sp->batch_check0) &&
-> > +	    rcu_batch_empty(&sp->batch_queue)) {
-> > +		spin_lock_irq(&sp->queue_lock);
-> > +		if (rcu_batch_empty(&sp->batch_queue)) {
-> > +			sp->running = false;
-> > +			pending = false;
-> > +		}
-> > +		spin_unlock_irq(&sp->queue_lock);
-> 
-> Hmmm...  What happens given the following sequence of events?
-> 
-> o	SRCU has just finished executing the last callback, so that
-> 	all callback queues are empty.
-> 
-> o	srcu_reschedule() executes the condition of its "if" statement,
-> 	but does not yet acquire the spinlock.  (If I read the code
-> 	correctly, preemption could legitimately occur at this point.)
-> 
-> o	call_srcu() initializes the callback, acquires the spinlock,
-> 	queues the callback, and invokes queue_delayed_work().
-
-Never mind!  The ->running is still set, so call_srcu() is not going
-to invoke queue_delayed_work().
+Good point, looks good!
 
 							Thanx, Paul
 
-> o	The delayed work starts executing process_srcu(), which
-> 	calls srcu_collect_new(), which moves the callback to
-> 	->batch_check0.
-> 
-> o	srcu_reschedule continues executing, acquires the spinlock,
-> 	sees that ->batch_queue is empty, and therefore sets
-> 	->running to false, thus setting the stage for two CPUs
-> 	mucking with the queues concurrently without protection.
-> 
-> I believe that you need to recheck all the queues under the lock,
-> not just ->batch_queue (and I did update the patch in this manner).
-> 
-> Or am I missing something subtle?
-> 
-> > +	}
-> > +
-> > +	if (pending)
-> > +		queue_delayed_work(system_nrt_wq, &sp->work, SRCU_INTERVAL);
-> 
-> Here, we carefully invoke queue_delayed_work() outside of the lock,
-> while in call_srcu() we invoke it under the lock.  Why the difference?
-> 
-> > +}
-> > +
-> > +static void process_srcu(struct work_struct *work)
-> > +{
-> > +	struct srcu_struct *sp;
-> > +
-> > +	sp = container_of(work, struct srcu_struct, work.work);
-> > +
-> > +	srcu_collect_new(sp);
-> > +	srcu_advance_batches(sp, 1);
-> > +	srcu_invoke_callbacks(sp);
-> > +	srcu_reschedule(sp);
-> > +}
-> > -- 
-> > 1.7.4.4
+> > I might be missing something, but as long as that was in place, seems
+> > like it is a lot simpler and easier to use than the alternatives that
+> > Srivatsa and I were kicking around.
 > > 
+> 
+> 
+> Hehe :-) Thanks for simplifying things, Steve!
+> 
+> 
+> [1]. https://lkml.org/lkml/2012/3/1/39
+> 
+> Regards,
+> Srivatsa S. Bhat
 
