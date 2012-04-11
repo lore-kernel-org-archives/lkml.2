@@ -1,186 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755947Ab2DKJya (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Apr 2012 05:54:30 -0400
-Received: from mail-pz0-f52.google.com ([209.85.210.52]:44889 "EHLO
-	mail-pz0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754175Ab2DKJy2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Apr 2012 05:54:28 -0400
-Date: Wed, 11 Apr 2012 18:54:18 +0900
-From: Minchan Kim <minchan@kernel.org>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Minchan Kim <minchan@kernel.org>, linaro-kernel@lists.linaro.org,
-        android-kernel@googlegroups.com, linux-mm@kvack.org,
-        "Luca Porzio (lporzio)" <lporzio@micron.com>,
-        Alex Lemberg <alex.lemberg@sandisk.com>, linux-kernel@vger.kernel.org,
-        Saugata Das <saugata.das@linaro.org>,
-        Venkatraman S <venkat@linaro.org>, Yejin Moon <yejin.moon@samsung.com>,
-        Hyojin Jeong <syr.jeong@samsung.com>,
-        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>
-Subject: Re: swap on eMMC and other flash
-Message-ID: <20120411095418.GA2228@barrios>
-References: <201203301744.16762.arnd@arndb.de>
- <201204091235.48750.arnd@arndb.de>
- <4F838584.1020002@kernel.org>
- <201204100832.52093.arnd@arndb.de>
+	id S1755436Ab2DKJ6f (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Apr 2012 05:58:35 -0400
+Received: from mail.secomea.com ([130.226.208.142]:1117 "EHLO mail.secomea.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752846Ab2DKJ6e (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Apr 2012 05:58:34 -0400
+X-Greylist: delayed 507 seconds by postgrey-1.27 at vger.kernel.org; Wed, 11 Apr 2012 05:58:34 EDT
+Message-ID: <4F8553BF.6030303@secomea.com>
+Date: Wed, 11 Apr 2012 11:49:51 +0200
+From: =?ISO-8859-1?Q?Svenning_S=F8rensen?= <sss@secomea.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:11.0) Gecko/20120327 Thunderbird/11.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <201204100832.52093.arnd@arndb.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Francois Romieu <romieu@fr.zoreil.com>
+CC: Bjarke Istrup Pedersen <gurligebis@gentoo.org>,
+        linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+        Andreas Mohr <andi@lisas.de>
+Subject: Re: via-rhine: Problem with lost link after a while
+References: <CACPM=kWa=UWuCMaYAtVMGJ7pzCy-PfyNRWBSuJnTZGtssU0W6g@mail.gmail.com> <20120410204249.GA26627@electric-eye.fr.zoreil.com> <CACPM=kWsU8QZOHqwEThTQCuSSvaTDoxO1d17EyoW=+kx8QG3vw@mail.gmail.com> <20120410225534.GA28480@electric-eye.fr.zoreil.com>
+In-Reply-To: <20120410225534.GA28480@electric-eye.fr.zoreil.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 10, 2012 at 08:32:51AM +0000, Arnd Bergmann wrote:
-> On Tuesday 10 April 2012, Minchan Kim wrote:
-> > 2012-04-09 오후 9:35, Arnd Bergmann 쓴 글:
-> 
-> > >>
-> > >> I understand it's best for writing 64K in your statement.
-> > >> What the 8K, 16K? Could you elaborate relation between 8K, 16K and 64K?
-> > > 
-> > > From my measurements, there are three sizes that are relevant here:
-> > > 
-> > > 1. The underlying page size of the flash: This used to be less than 4kb,
-> > > which is fine when paging out 4kb mmu pages, as long as the partition is
-> > > aligned. Today, most devices use 8kb pages and the number is increasing
-> > > over time, meaning we will see more 16kb page devices in the future and
-> > > presumably larger sizes after that. Writes that are not naturally aligned
-> > > multiples of the page size tend to be a significant problem for the
-> > > controller to deal with: in order to guarantee that a 4kb write makes it
-> > > into permanent storage, the device has to write 8kb and the next 4kb
-> > > write has to go into another 8kb page because each page can only be
-> > > written once before the block is erased. At a later point, all the partial
-> > > pages get rewritten into a new erase block, a process that can take
-> > > hundreds of miliseconds and that we absolutely want to prevent from
-> > > happening, as it can block all other I/O to the device. Writing all
-> > > (flash) pages in an erase block sequentially usually avoids this, as
-> > > long as you don't write to many different erase blocks at the same time.
-> > > Note that the page size depends on how the controller combines different
-> > > planes and channels.
-> > > 
-> > > 2. The super-page size of the flash: When you have multiple channels
-> > > between the controller and the individual flash chips, you can write
-> > > multiple pages simultaneously, which means that e.g. sending 32kb of
-> > > data to the device takes roughly the same amount of time as writing a
-> > > single 8kb page. Writing less than the super-page size when there is
-> > > more data waiting to get written out is a waste of time, although the
-> > > effects are much less drastic as writing data that is not aligned to
-> > > pages because it does not require garbage collection.
-> > > 
-> > > 3. optimum write size: While writing larger amounts of data in a single
-> > > request is usually faster than writing less, almost all devices
-> > > I've seen have a sharp cut-off where increasing the size of the write
-> > > does not actually help any more because of a bottleneck somewhere
-> > > in the stack. Writing more than 64kb almost never improves performance
-> > > and sometimes reduces performance.
-> > 
-> > 
-> > For our understanding, you mean we have to do aligned-write as follows
-> > if possible?
-> > 
-> > "Nand internal page size write(8K, 16K)" < "Super-page size write(32K)
-> > which considers parallel working with number of channel and plane" <
-> > some sequential big write (64K)
-> 
-> In the definition I gave above, page size (8k, 16k) would be the only
-> one that requires alignment. Writing 64k at an arbitrary 16k alignment
-> should still give us the best performance in almost all cases and
-> introduce no extra write amplification, while writing with less than
-> page alignment causes significant write amplification and long latencies.
-> 
-> > 
-> > > 
-> > > Note that eMMC-4.5 provides a high-priority interrupt mechamism that
-> > > lets us interrupt the a write that has hit the garbage collection
-> > > path, so we can send a more important read request to the device.
-> > > This will not work on other devices though and the patches for this
-> > > are still under discussion.
-> > 
-> > 
-> > Nice feature but I think swap system doesn't need to consider such
-> > feature. I should be handled by I/O subsystem like I/O scheduler.
-> 
-> Right, this is completely independent of swap. The current implementation
-> of the patch set favours only reads that are done for page-in operations
-> by interrupting any long-running writes when a more important read comes
-> in. IMHO we should do the same for any synchronous read, but that discussion
-> is completely orthogonal to having the swap device on emmc.
-> 
-> > >>>>> 2) Make variable sized swap clusters. Right now, the swap space is
-> > >>>>> organized in clusters of 256 pages (1MB), which is less than the typical
-> > >>>>> erase block size of 4 or 8 MB. We should try to make the swap cluster
-> > >>>>> aligned to erase blocks and have the size match to avoid garbage collection
-> > >>>>> in the drive. The cluster size would typically be set by mkswap as a new
-> > >>>>> option and interpreted at swapon time.
-> > >>>>>
-> > >>>>
-> > >>>> If we can find such big contiguous swap slots easily, it would be good.
-> > >>>> But I am not sure how often we can get such big slots. And maybe we have to
-> > >>>> improve search method for getting such big empty cluster.
-> > >>>
-> > >>> As long as there are clusters available, we should try to find them. When
-> > >>> free space is too fragmented to find any unused cluster, we can pick one
-> > >>> that has very little data in it, so that we reduce the time it takes to
-> > >>> GC that erase block in the drive. While we could theoretically do active
-> > >>> garbage collection of swap data in the kernel, it won't get more efficient
-> > >>> than the GC inside of the drive. If we do this, it unfortunately means that
-> > >>> we can't just send a discard for the entire erase block.
-> > >>
-> > >>
-> > >> Might need some compaction during idle time but WAP concern raises again. :(
-> > > 
-> > > Sorry for my ignorance, but what does WAP stand for?
-> > 
-> > 
-> > I should have written more general term. I means write amplication but
-> > WAF(Write Amplication Factor) is more popular. :(
-> 
-> D'oh. Thanks for the clarification. Note that the entire idea of increasing the
-> swap cluster size to the erase block size is to *reduce* write amplification:
-> 
-> If we pick arbitrary swap clusters that are part of an erase block (or worse,
-> span two partial erase blocks), sending a discard for one cluster does not
-> allow the device to actually discard an entire erase block. Consider the best
-> possible scenario where we have a 1MB cluster and 2MB erase blocks, all
-> naturally aligned. After we have written the entire swap device once, all
-> blocks are marked as used in the device, but some are available for reuse
-> in the kernel. The swap code picks a cluster that is currently unused and 
-> sends a discard to the device, then fills the cluster with new pages.
-> After that, we pick another swap cluster elsewhere. The erase block now
-> contains 50% new and 50% old data and has to be garbage collected, so the
-> device writes 2MB of data  to anther erase block. So, in order to write 1MB,
-> the device has written 3MB and the write amplification factor is 3. Using
-> 8MB erase blocks, it would be 9.
-> 
-> If we do the active compaction and increase the cluster size to the erase
-> block size, there is no write amplification inside of the device (and no
-> stalls from the garbage collection, which are the other concern), and
-> we only need to write a few blocks again that are still valid in a cluster
-> at the time we want to reuse it. On an ideal device, the write amplification
-> for active compaction should be exactly the same as what we get when we
-> write a cluster while some of the data in it is still valid and we skip
-> those pages, while some devices might now like having to gc themselves.
-> Doing the compaction in software means we have to spend CPU cycles on it,
-> but we get to choose when it happens and don't have to block on the device
-> during GC.
 
-Thanks for detail explanation.
-At least, we need active compaction to avoid GC completely when we can't find
-empty cluster and there are lots of hole.
-Indirection layer we discussed last LSF/MM could help slot change by
-compaction easily.
-I think way to find empty cluster should be changed because current linear scan
-is not proper for bigger cluster size.
 
-I am looking forward to your works!
+On 11-04-2012 00:55, Francois Romieu wrote:
+> Bjarke Istrup Pedersen<gurligebis@gentoo.org>  :
+>
+> [...]
+>> Great, I'll try a 3.4-rc2 kernel, and see how it runs.
+>>
+>> The thread I was talking about earlier is here:
+>> http://lists.soekris.com/pipermail/soekris-tech/2012-April/018318.html
+>> Is there any of the changes he has there, that makes sense in the new
+>> driver you wrote ?
+> (I did not write a new driver)
+>
+> Regarding Svenning's patch:
+> - the wmb in alloc_rbufs may help rhine_reset_task().
+> - one should probably add one in rhine_rx() as well.
+> - rhine_start_tx() is supposed to stop queueing when there is no room left.
+>    I'm curious to know if the "Tx descriptor busy" test triggered.
+> - the rmb() in rhine_tx() will not make a difference for a single core but
+>    it's a good reminder that I should not have forgotten to propagate the
+>    xmit / Tx completion fix back from the r8169 driver to the via-rhine one
+>    (sigh)
+>
+> mmiowb is probably missing. I doubt it hits hard right now.
+>
+> I have not checked if MMIO flushes are missing. Actually I need some sleep.
+>
 
-P.S) I'm afraid this work might raise endless war, again which host can do well VS
-device can do well. If we can work out, we don't need costly eMMC FTL, just need
-dumb bare nand, controller and simple firmware.
+Regarding the "Tx descriptor busy" test: no, I didn't see it trigger, I 
+just put it there just in case because I suspected there could be a race 
+due to the lock-free tx path.
+But I'm glad if you're confident that it can't happen :)
 
-> 
-> 	Arnd
+Svenning
