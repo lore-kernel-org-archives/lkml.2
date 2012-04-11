@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934093Ab2DKXv7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Apr 2012 19:51:59 -0400
-Received: from mail.windriver.com ([147.11.1.11]:39414 "EHLO
+	id S965028Ab2DKXw4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Apr 2012 19:52:56 -0400
+Received: from mail.windriver.com ([147.11.1.11]:39419 "EHLO
 	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934061Ab2DKXvy (ORCPT
+	with ESMTP id S934064Ab2DKXvz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Apr 2012 19:51:54 -0400
+	Wed, 11 Apr 2012 19:51:55 -0400
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: linux-kbuild@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, davem@davemloft.net,
         tony@bakeyournoodle.com, mmarek@suse.cz, lacombar@gmail.com,
         Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [PATCH 1/5] Revert "mm: replace PAGE_MIGRATION with IS_ENABLED(CONFIG_MIGRATION)"
-Date: Wed, 11 Apr 2012 19:50:53 -0400
-Message-Id: <1334188257-3449-2-git-send-email-paul.gortmaker@windriver.com>
+Subject: [PATCH 5/5] kconfig: limit IS_ENABLED & similar to CPP usage
+Date: Wed, 11 Apr 2012 19:50:57 -0400
+Message-Id: <1334188257-3449-6-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.7.9.1
 In-Reply-To: <1334188257-3449-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1334188257-3449-1-git-send-email-paul.gortmaker@windriver.com>
@@ -23,90 +23,101 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This reverts commit ce1744f4ed20ca873360e54502f8a71564ef7cc6.
-
 Using IS_ENABLED() within C (vs. within CPP #if statements) requires
 us to actually define every possible bool/tristate Kconfig option
 twice (__enabled_* and __enabled_*_MODULE variants).
 
-That means we end up with about 16k lines of __enabled_ in autoconf.h,
-instead of only less than 1k, and we'll be processing that extra 15k
-lines for each and every C file. [x86_64 defconfig]
+Commit 953742c8fe8ac45be453fee959d7be40cd89f920
 
-Kill off the C users of IS_ENABLED so we can shrink autoconf.h
+  "kconfig: fix __enabled_ macros definition for invisible
+   and un-selected symbols"
+
+caused the autoconf.h file to grow by a large factor, since it
+now defined tens of thousands(!) of __enabled_CONFIG* items.
+
+With the few C users that crept in over the last couple of releases
+gone, we can now limit these items to be just for CPP usage.  And
+in doing so, just emit lines where the options are really enabled
+as modules or built in.
+
+In doing so, the defconfig x86_64 autoconf.h size drops significantly:
+
+	before:	15934 of 16943 total are __enabled_CONFIG* lines
+	after:	943 of 1952 total are __enabled_CONFIG* lines
+
+The numbers for x86_64 allnoconfig are even more drastic:
+
+	before:	15934 of 16200 total are __enabled_CONFIG* lines
+	after:	224 of 490 total are __enabled_CONFIG* lines
 
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- include/linux/migrate.h |    2 ++
- mm/mprotect.c           |    2 +-
- mm/rmap.c               |    7 +++----
- 3 files changed, 6 insertions(+), 5 deletions(-)
+ include/linux/kconfig.h    |    8 ++++----
+ scripts/kconfig/confdata.c |   14 +++++++-------
+ 2 files changed, 11 insertions(+), 11 deletions(-)
 
-diff --git a/include/linux/migrate.h b/include/linux/migrate.h
-index 855c337..05ed282 100644
---- a/include/linux/migrate.h
-+++ b/include/linux/migrate.h
-@@ -8,6 +8,7 @@
- typedef struct page *new_page_t(struct page *, unsigned long private, int **);
+diff --git a/include/linux/kconfig.h b/include/linux/kconfig.h
+index 067eda0..5fa3f1b 100644
+--- a/include/linux/kconfig.h
++++ b/include/linux/kconfig.h
+@@ -4,7 +4,7 @@
+ #include <generated/autoconf.h>
  
- #ifdef CONFIG_MIGRATION
-+#define PAGE_MIGRATION 1
+ /*
+- * Helper macros to use CONFIG_ options in C expressions. Note that
++ * Helper macros to use CONFIG_ options in CPP #if expressions. Note that
+  * these only work with boolean and tristate options.
+  */
  
- extern void putback_lru_pages(struct list_head *l);
- extern int migrate_page(struct address_space *,
-@@ -31,6 +32,7 @@ extern void migrate_page_copy(struct page *newpage, struct page *page);
- extern int migrate_huge_page_move_mapping(struct address_space *mapping,
- 				  struct page *newpage, struct page *page);
- #else
-+#define PAGE_MIGRATION 0
+@@ -14,19 +14,19 @@
+  *
+  */
+ #define IS_ENABLED(option) \
+-	(__enabled_ ## option || __enabled_ ## option ## _MODULE)
++	(defined(__enabled_ ## option) || defined(__enabled_ ## option ## _MODULE))
  
- static inline void putback_lru_pages(struct list_head *l) {}
- static inline int migrate_pages(struct list_head *l, new_page_t x,
-diff --git a/mm/mprotect.c b/mm/mprotect.c
-index a409926..142ef4a 100644
---- a/mm/mprotect.c
-+++ b/mm/mprotect.c
-@@ -60,7 +60,7 @@ static void change_pte_range(struct mm_struct *mm, pmd_t *pmd,
- 				ptent = pte_mkwrite(ptent);
+ /*
+  * IS_BUILTIN(CONFIG_FOO) evaluates to 1 if CONFIG_FOO is set to 'y', 0
+  * otherwise. For boolean options, this is equivalent to
+  * IS_ENABLED(CONFIG_FOO).
+  */
+-#define IS_BUILTIN(option) __enabled_ ## option
++#define IS_BUILTIN(option) defined(__enabled_ ## option)
  
- 			ptep_modify_prot_commit(mm, addr, pte, ptent);
--		} else if (IS_ENABLED(CONFIG_MIGRATION) && !pte_file(oldpte)) {
-+		} else if (PAGE_MIGRATION && !pte_file(oldpte)) {
- 			swp_entry_t entry = pte_to_swp_entry(oldpte);
+ /*
+  * IS_MODULE(CONFIG_FOO) evaluates to 1 if CONFIG_FOO is set to 'm', 0
+  * otherwise.
+  */
+-#define IS_MODULE(option) __enabled_ ## option ## _MODULE
++#define IS_MODULE(option) defined(__enabled_ ## option ## _MODULE)
  
- 			if (is_write_migration_entry(entry)) {
-diff --git a/mm/rmap.c b/mm/rmap.c
-index 36d01a2..4720d3d 100644
---- a/mm/rmap.c
-+++ b/mm/rmap.c
-@@ -1298,7 +1298,7 @@ int try_to_unmap_one(struct page *page, struct vm_area_struct *vma,
- 			}
- 			dec_mm_counter(mm, MM_ANONPAGES);
- 			inc_mm_counter(mm, MM_SWAPENTS);
--		} else if (IS_ENABLED(CONFIG_MIGRATION)) {
-+		} else if (PAGE_MIGRATION) {
- 			/*
- 			 * Store the pfn of the page in a special migration
- 			 * pte. do_swap_page() will wait until the migration
-@@ -1309,8 +1309,7 @@ int try_to_unmap_one(struct page *page, struct vm_area_struct *vma,
- 		}
- 		set_pte_at(mm, address, pte, swp_entry_to_pte(entry));
- 		BUG_ON(pte_file(*pte));
--	} else if (IS_ENABLED(CONFIG_MIGRATION) &&
--		   (TTU_ACTION(flags) == TTU_MIGRATION)) {
-+	} else if (PAGE_MIGRATION && (TTU_ACTION(flags) == TTU_MIGRATION)) {
- 		/* Establish migration entry for a file page */
- 		swp_entry_t entry;
- 		entry = make_migration_entry(page, pte_write(pteval));
-@@ -1516,7 +1515,7 @@ static int try_to_unmap_anon(struct page *page, enum ttu_flags flags)
- 		 * locking requirements of exec(), migration skips
- 		 * temporary VMAs until after exec() completes.
+ #endif /* __LINUX_KCONFIG_H */
+diff --git a/scripts/kconfig/confdata.c b/scripts/kconfig/confdata.c
+index 9d06744..3651ee7 100644
+--- a/scripts/kconfig/confdata.c
++++ b/scripts/kconfig/confdata.c
+@@ -492,14 +492,14 @@ header_print_symbol(FILE *fp, struct symbol *sym, const char *value, void *arg)
+ 		/*
+ 		 * Generate the __enabled_CONFIG_* and
+ 		 * __enabled_CONFIG_*_MODULE macros for use by the
+-		 * IS_{ENABLED,BUILTIN,MODULE} macros. The _MODULE variant is
+-		 * generated even for booleans so that the IS_ENABLED() macro
+-		 * works.
++		 * IS_{ENABLED,BUILTIN,MODULE} cpp helpers.
  		 */
--		if (IS_ENABLED(CONFIG_MIGRATION) && (flags & TTU_MIGRATION) &&
-+		if (PAGE_MIGRATION && (flags & TTU_MIGRATION) &&
- 				is_vma_temporary_stack(vma))
- 			continue;
- 
+-		fprintf(fp, "#define __enabled_" CONFIG_ "%s %d\n",
+-				sym->name, (*value == 'y'));
+-		fprintf(fp, "#define __enabled_" CONFIG_ "%s_MODULE %d\n",
+-				sym->name, (*value == 'm'));
++		if (*value == 'y')
++			fprintf(fp, "#define __enabled_" CONFIG_ "%s\n",
++				sym->name);
++		if (*value == 'm')
++			fprintf(fp, "#define __enabled_" CONFIG_ "%s_MODULE\n",
++				sym->name);
+ 		break;
+ 	}
+ 	case S_HEX: {
 -- 
 1.7.9.1
 
