@@ -1,86 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760177Ab2DKOKz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Apr 2012 10:10:55 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:7516 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752363Ab2DKOKx (ORCPT
+	id S1760304Ab2DKOMw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Apr 2012 10:12:52 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:60077 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754054Ab2DKOMu convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Apr 2012 10:10:53 -0400
-X-Authority-Analysis: v=2.0 cv=P4S4d18u c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=XQbtiDEiEegA:10 a=TWBfIqSxIMQA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=f1VtjnAB8uqazjxa5owA:9 a=mXX03aRx6WGuHNVuXs8A:7 a=PUjeQqilurYA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.80.29
-Message-ID: <1334153450.23924.243.camel@gandalf.stny.rr.com>
-Subject: Re: [PATCH 06/16] sched: SCHED_DEADLINE push and pull logic
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Hillf Danton <dhillf@gmail.com>
-Cc: Juri Lelli <juri.lelli@gmail.com>, peterz@infradead.org,
-        tglx@linutronix.de, mingo@redhat.com, cfriesen@nortel.com,
-        oleg@redhat.com, fweisbec@gmail.com, darren@dvhart.com,
-        johan.eker@ericsson.com, p.faure@akatech.ch,
-        linux-kernel@vger.kernel.org, claudio@evidence.eu.com,
-        michael@amarulasolutions.com, fcheccon@jasper.es
-Date: Wed, 11 Apr 2012 10:10:50 -0400
-In-Reply-To: <CAJd=RBBm8yDBrZFj48tP_5WsG=z0Rsv_=j=kArV1Mj6yJvQjVA@mail.gmail.com>
-References: <1333696481-3433-1-git-send-email-juri.lelli@gmail.com>
-	 <1333696481-3433-7-git-send-email-juri.lelli@gmail.com>
-	 <CAJd=RBBm8yDBrZFj48tP_5WsG=z0Rsv_=j=kArV1Mj6yJvQjVA@mail.gmail.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.2.2-1 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Wed, 11 Apr 2012 10:12:50 -0400
+MIME-Version: 1.0
+In-Reply-To: <1334149853.14296.29.camel@moss-pluto>
+References: <1334015486-20616-1-git-send-email-snijsure@grid-net.com>
+	<1334061985.23411.3.camel@moss-pluto>
+	<CALr9Q3Yto9VOhFNRQFVqP7Zi6RWWBaoDUu1zxsup7=+g7_pijQ@mail.gmail.com>
+	<1334149853.14296.29.camel@moss-pluto>
+Date: Wed, 11 Apr 2012 07:12:48 -0700
+Message-ID: <CALr9Q3a89_wa48BfOriP=MEQAXa1Sgf+k_Ey=kuKN9Ydewwegw@mail.gmail.com>
+Subject: Re: [PATCH v2] Add security.* XATTR support for the UBIFS
+From: Subodh Nijsure <subodh.nijsure@gmail.com>
+To: Stephen Smalley <sds@tycho.nsa.gov>
+Cc: linux-mtd@lists.infradead.org, Artem Bityutskiy <dedekind1@gmail.com>,
+        Adrian Hunter <adrian.hunter@intel.com>, linux-kernel@vger.kernel.org,
+        linux-security-module@vger.kernel.org,
+        Subodh Nijsure <snijsure@grid-net.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2012-04-06 at 21:39 +0800, Hillf Danton wrote:
+On Wed, Apr 11, 2012 at 6:10 AM, Stephen Smalley <sds@tycho.nsa.gov> wrote:
+> On Wed, 2012-04-11 at 06:00 -0700, Subodh Nijsure wrote:
+>> On Tue, Apr 10, 2012 at 5:46 AM, Stephen Smalley <sds@tycho.nsa.gov> wrote:
+>> > On Mon, 2012-04-09 at 16:51 -0700, subodh.nijsure@gmail.com wrote:
+>> >> From: Subodh Nijsure <snijsure@grid-net.com>
+>> >>
+>> >> Also fix couple of bugs in UBIFS extended attribute length calculation.
+>> >>
+>> >> Changes Since V1:
+>> >>          Instead of just handling security.selinux extended attribute handle
+>> >>          all security.* attributes.
+>> >>
+>> >> TESTING: Tested on  MX28 based platforms using Micron MT29F2G08ABAEAH4 NAND
+>> >>          With these change we are able to label UBIFS filesystem with
+>> >>          security.selinux and run system with selinux enabled.
+>> >>          This change also allows one to set other security.* extended
+>> >>          attributesr, such as security.smack security.evm, security.ima
+>> >>          Ran integck test on UBI filesystem.
+>> >>
+>> >> Signed-off-by: Subodh Nijsure <snijsure@grid-net.com>
+>> >> ---
+>> >>  fs/ubifs/dir.c     |    4 ++
+>> >>  fs/ubifs/file.c    |    6 ++
+>> >>  fs/ubifs/journal.c |   12 +++-
+>> >>  fs/ubifs/super.c   |    3 +
+>> >>  fs/ubifs/ubifs.h   |    9 +++
+>> >>  fs/ubifs/xattr.c   |  147 ++++++++++++++++++++++++++++++++++++++++++++++++----
+>> >>  6 files changed, 167 insertions(+), 14 deletions(-)
+>> >>
+>> >> diff --git a/fs/ubifs/dir.c b/fs/ubifs/dir.c
+>> >> index ec9f187..f4e06c4 100644
+>> >> --- a/fs/ubifs/dir.c
+>> >> +++ b/fs/ubifs/dir.c
+>> >> @@ -293,6 +293,7 @@ static int ubifs_create(struct inode *dir, struct dentry *dentry, umode_t mode,
+>> >>       ubifs_release_budget(c, &req);
+>> >>       insert_inode_hash(inode);
+>> >>       d_instantiate(dentry, inode);
+>> >> +     ubifs_init_security(dir, inode, &dentry->d_name);
+>> >>       return 0;
+>> >>
+>> >>  out_cancel:
+>> >
+>> > The ubifs_init_security() should occur before d_instantiate() so that
+>> > the inode is not accessible to other threads before its security
+>> > attributes have been set.  And if it fails, you would ideally drop the
+>> > inode altogether and return an error to the creating process.
+>> >
+>>
+>> I will look into moving ubifs_init_security() before d_instantiate().
+>> Last time I had tried I had run into some issues and had to keep
+>> creating inode and then creating xattr as two seperate items. I will
+>> look through the UBIFS code that actually creates xattr ubi nodes.
+>> Also I will wait for couple of days to send v3 patch with to see if
+>> mtd folks have other comments this patch.
+>
+> I'd favor moving the call to ubifs_init_security() inside of
+> ubifs_new_inode() so that it gets done as part of all inode creation.
+> To do that, you'll need to pass the &dentry->d_name (const struct qstr
+> *) down to ubifs_new_inode(). But you can see that it is done that way
+> for ext4_new_inode(), for example.
+>
+> --
 
-> > +static void inc_dl_migration(struct sched_dl_entity *dl_se, struct dl_rq *dl_rq)
-> > +{
-> > +       dl_rq = &rq_of_dl_rq(dl_rq)->dl;
-> > +
-> > +       dl_rq->dl_nr_total++;
-> > +       if (dl_se->nr_cpus_allowed > 1)
-> > +               dl_rq->dl_nr_migratory++;
-> > +
-> > +       update_dl_migration(dl_rq);
-> 
-> 	if (dl_se->nr_cpus_allowed > 1) {
-> 		dl_rq->dl_nr_migratory++;
-> 		/* No change in migratory, no update of migration */
+Okay, I will look at that code little bit mode.
 
-This is not true. As dl_nr_total changed. If there was only one dl task
-queued that can migrate, and then another dl task is queued but this
-task can not migrate, the update_dl_migration still needs to be called.
-As dl_nr_migratory would be 1, but now dl_nr_total > 1. This means we
-are now overloaded.
+UBIFS create_xattr() (fs/ubifs/xattr.c)  calls ubifs_new_inode() so it
+can get tricky if I want to create xattr in ubifs_new_inode().
 
-> 		update_dl_migration(dl_rq);
-> 	}
-> 
-> > +}
-> > +
-> > +static void dec_dl_migration(struct sched_dl_entity *dl_se, struct dl_rq *dl_rq)
-> > +{
-> > +       dl_rq = &rq_of_dl_rq(dl_rq)->dl;
-> > +
-> > +       dl_rq->dl_nr_total--;
-> > +       if (dl_se->nr_cpus_allowed > 1)
-> > +               dl_rq->dl_nr_migratory--;
-> > +
-> > +       update_dl_migration(dl_rq);
-> 
-> ditto
+Also noticed that UBIFS doesn't d_instantiate() inode entry created to
+hold extended attribute, not certain if that would be an issue.
 
-ditto.
-
-> 
-> > +}
-> > +
-> > +/*
-> > + * The list of pushable -deadline task is not a plist, like in
-> > + * sched_rt.c, it is an rb-tree with tasks ordered by deadline.
-
--- Steve
+I will look how other fs manage xattrs, I certainly don't want to
+modify how UBIFS manages extended attributes.
 
 
+-Subodh
