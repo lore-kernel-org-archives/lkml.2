@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932542Ab2DKNd2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Apr 2012 09:33:28 -0400
-Received: from mailhub.sw.ru ([195.214.232.25]:14119 "EHLO relay.sw.ru"
+	id S932564Ab2DKNdd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Apr 2012 09:33:33 -0400
+Received: from mailhub.sw.ru ([195.214.232.25]:45116 "EHLO relay.sw.ru"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932499Ab2DKNdZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Apr 2012 09:33:25 -0400
-Subject: [PATCH 3/4] nfsd: make name-to-id cache allocated per network
- namespace context
+	id S932499Ab2DKNdb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Apr 2012 09:33:31 -0400
+Subject: [PATCH 4/4] nfsd: allocate id-to-name and name-to-id caches in
+ per-net operations.
 To: bfields@fieldses.org
 From: Stanislav Kinsbursky <skinsbursky@parallels.com>
 Cc: linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org, devel@openvz.org
-Date: Wed, 11 Apr 2012 17:32:58 +0400
-Message-ID: <20120411133258.26953.73735.stgit@localhost6.localdomain6>
+Date: Wed, 11 Apr 2012 17:33:05 +0400
+Message-ID: <20120411133305.26953.77258.stgit@localhost6.localdomain6>
 In-Reply-To: <20120411133139.26953.85254.stgit@localhost6.localdomain6>
 References: <20120411133139.26953.85254.stgit@localhost6.localdomain6>
 User-Agent: StGit/0.15
@@ -26,101 +26,63 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 Signed-off-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
 
 ---
- fs/nfsd/netns.h     |    2 +-
- fs/nfsd/nfs4idmap.c |   24 +++++++++++++++---------
- 2 files changed, 16 insertions(+), 10 deletions(-)
+ fs/nfsd/nfsctl.c |   14 +++++++-------
+ 1 files changed, 7 insertions(+), 7 deletions(-)
 
-diff --git a/fs/nfsd/netns.h b/fs/nfsd/netns.h
-index 948a718..3936563 100644
---- a/fs/nfsd/netns.h
-+++ b/fs/nfsd/netns.h
-@@ -33,7 +33,7 @@ struct nfsd_net {
- 	struct cache_detail *svc_export_cache;
+diff --git a/fs/nfsd/nfsctl.c b/fs/nfsd/nfsctl.c
+index d6e8b85..7269988 100644
+--- a/fs/nfsd/nfsctl.c
++++ b/fs/nfsd/nfsctl.c
+@@ -1145,14 +1145,20 @@ static __net_init int nfsd_init_net(struct net *net)
+ 	retval = nfsd_export_init(net);
+ 	if (retval)
+ 		goto out_export_error;
++	retval = nfsd_idmap_init(net);
++	if (retval)
++		goto out_idmap_error;
+ 	return 0;
  
- 	struct cache_detail *idtoname_cache;
--
-+	struct cache_detail *nametoid_cache;
- };
++out_idmap_error:
++	nfsd_export_shutdown(net);
+ out_export_error:
+ 	return retval;
+ }
  
- extern int nfsd_net_id;
-diff --git a/fs/nfsd/nfs4idmap.c b/fs/nfsd/nfs4idmap.c
-index b285a69..286a7f8 100644
---- a/fs/nfsd/nfs4idmap.c
-+++ b/fs/nfsd/nfs4idmap.c
-@@ -301,8 +301,6 @@ idtoname_update(struct cache_detail *cd, struct ent *new, struct ent *old)
-  * Name -> ID cache
-  */
- 
--static struct cache_head *nametoid_table[ENT_HASHMAX];
--
- static inline int
- nametoid_hash(struct ent *ent)
+ static __net_exit void nfsd_exit_net(struct net *net)
  {
-@@ -362,10 +360,9 @@ static struct ent *nametoid_update(struct cache_detail *, struct ent *,
- 				   struct ent *);
- static int         nametoid_parse(struct cache_detail *, char *, int);
- 
--static struct cache_detail nametoid_cache = {
-+static struct cache_detail nametoid_cache_template = {
- 	.owner		= THIS_MODULE,
- 	.hash_size	= ENT_HASHMAX,
--	.hash_table	= nametoid_table,
- 	.name		= "nfs4.nametoid",
- 	.cache_put	= ent_put,
- 	.cache_upcall	= nametoid_upcall,
-@@ -479,11 +476,18 @@ nfsd_idmap_init(struct net *net)
- 	rv = cache_register_net(nn->idtoname_cache, net);
- 	if (rv)
- 		goto destroy_idtoname_cache;
--	rv = cache_register_net(&nametoid_cache, net);
--	if (rv)
-+	nn->nametoid_cache = cache_create_net(&nametoid_cache_template, net);
-+	if (IS_ERR(nn->nametoid_cache)) {
-+		rv = PTR_ERR(nn->idtoname_cache);
- 		goto unregister_idtoname_cache;
-+	}
-+	rv = cache_register_net(nn->nametoid_cache, net);
-+	if (rv)
-+		goto destroy_nametoid_cache;
- 	return 0;
- 
-+destroy_nametoid_cache:
-+	cache_destroy_net(nn->nametoid_cache, net);
- unregister_idtoname_cache:
- 	cache_unregister_net(nn->idtoname_cache, net);
- destroy_idtoname_cache:
-@@ -497,8 +501,9 @@ nfsd_idmap_shutdown(struct net *net)
- 	struct nfsd_net *nn = net_generic(net, nfsd_net_id);
- 
- 	cache_unregister_net(nn->idtoname_cache, net);
--	cache_unregister_net(&nametoid_cache, net);
-+	cache_unregister_net(nn->nametoid_cache, net);
- 	cache_destroy_net(nn->idtoname_cache, net);
-+	cache_destroy_net(nn->nametoid_cache, net);
++	nfsd_idmap_shutdown(net);
+ 	nfsd_export_shutdown(net);
  }
  
- static int
-@@ -541,19 +546,20 @@ idmap_name_to_id(struct svc_rqst *rqstp, int type, const char *name, u32 namelen
- 		.type = type,
- 	};
- 	int ret;
-+	struct nfsd_net *nn = net_generic(rqstp->rq_xprt->xpt_net, nfsd_net_id);
- 
- 	if (namelen + 1 > sizeof(key.name))
- 		return nfserr_badowner;
- 	memcpy(key.name, name, namelen);
- 	key.name[namelen] = '\0';
- 	strlcpy(key.authname, rqst_authname(rqstp), sizeof(key.authname));
--	ret = idmap_lookup(rqstp, nametoid_lookup, &key, &nametoid_cache, &item);
-+	ret = idmap_lookup(rqstp, nametoid_lookup, &key, nn->nametoid_cache, &item);
- 	if (ret == -ENOENT)
- 		return nfserr_badowner;
- 	if (ret)
- 		return nfserrno(ret);
- 	*id = item->id;
--	cache_put(&item->h, &nametoid_cache);
-+	cache_put(&item->h, nn->nametoid_cache);
- 	return 0;
- }
- 
+@@ -1186,12 +1192,9 @@ static int __init init_nfsd(void)
+ 	if (retval)
+ 		goto out_free_stat;
+ 	nfsd_lockd_init();	/* lockd->nfsd callbacks */
+-	retval = nfsd_idmap_init(&init_net);
+-	if (retval)
+-		goto out_free_lockd;
+ 	retval = create_proc_exports_entry();
+ 	if (retval)
+-		goto out_free_idmap;
++		goto out_free_lockd;
+ 	retval = register_filesystem(&nfsd_fs_type);
+ 	if (retval)
+ 		goto out_free_all;
+@@ -1199,8 +1202,6 @@ static int __init init_nfsd(void)
+ out_free_all:
+ 	remove_proc_entry("fs/nfs/exports", NULL);
+ 	remove_proc_entry("fs/nfs", NULL);
+-out_free_idmap:
+-	nfsd_idmap_shutdown(&init_net);
+ out_free_lockd:
+ 	nfsd_lockd_shutdown();
+ 	nfsd_reply_cache_shutdown();
+@@ -1223,7 +1224,6 @@ static void __exit exit_nfsd(void)
+ 	remove_proc_entry("fs/nfs", NULL);
+ 	nfsd_stat_shutdown();
+ 	nfsd_lockd_shutdown();
+-	nfsd_idmap_shutdown(&init_net);
+ 	nfsd4_free_slabs();
+ 	nfsd_fault_inject_cleanup();
+ 	unregister_filesystem(&nfsd_fs_type);
 
