@@ -1,50 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760317Ab2DKORJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Apr 2012 10:17:09 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:23645 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760225Ab2DKORH (ORCPT
+	id S1760328Ab2DKOSq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Apr 2012 10:18:46 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:64859 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760280Ab2DKOSo convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Apr 2012 10:17:07 -0400
-X-Authority-Analysis: v=2.0 cv=T5EOvo2Q c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=XQbtiDEiEegA:10 a=18qOoESLcaoA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=NEAV23lmAAAA:8 a=WSz2HKxI4QUAiFOxDzYA:9 a=PUjeQqilurYA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.80.29
-Message-ID: <1334153822.23924.245.camel@gandalf.stny.rr.com>
-Subject: Re: [RFC][PATCH 00/16] sched: SCHED_DEADLINE v4
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Juri Lelli <juri.lelli@gmail.com>
-Cc: peterz@infradead.org, tglx@linutronix.de, mingo@redhat.com,
-        oleg@redhat.com, fweisbec@gmail.com, darren@dvhart.com,
-        johan.eker@ericsson.com, p.faure@akatech.ch,
-        linux-kernel@vger.kernel.org, claudio@evidence.eu.com,
-        michael@amarulasolutions.com, fchecconi@gmail.com,
-        tommaso.cucinotta@sssup.it, nicola.manica@disi.unitn.it,
-        luca.abeni@unitn.it, dhaval.giani@gmail.com, hgu1972@gmail.com,
-        paulmck@linux.vnet.ibm.com, raistlin@linux.it, insop.song@ericsson.com,
-        liming.wang@windriver.com
-Date: Wed, 11 Apr 2012 10:17:02 -0400
-In-Reply-To: <1333696481-3433-1-git-send-email-juri.lelli@gmail.com>
-References: <1333696481-3433-1-git-send-email-juri.lelli@gmail.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.2.2-1 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Wed, 11 Apr 2012 10:18:44 -0400
+MIME-Version: 1.0
+In-Reply-To: <1334148270-13139-1-git-send-email-otavio@ossystems.com.br>
+References: <1334148270-13139-1-git-send-email-otavio@ossystems.com.br>
+Date: Wed, 11 Apr 2012 10:18:44 -0400
+Message-ID: <CADkTA4OEioYy6QW251KZ7EkJ+oUaDA=CtTXkb+kUWwwtE95Neg@mail.gmail.com>
+Subject: Re: [PATCH] perf: do not prefix flex and bison calls with
+ CROSS_COMPILE prefix
+From: Bruce Ashfield <bruce.ashfield@gmail.com>
+To: Otavio Salvador <otavio@ossystems.com.br>
+Cc: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2012-04-06 at 09:14 +0200, Juri Lelli wrote:
+On Wed, Apr 11, 2012 at 8:44 AM, Otavio Salvador
+<otavio@ossystems.com.br> wrote:
+> Other parts of kernel calls bison and flex but do not use the
+> CROSS_COMPILE prefix so this ought to be done in same way.
 
-> The development is taking place at:
->    https://github.com/jlelli/sched-deadline
-> 
-> Check the repositories frequently if you're interested, and feel free to
-> e-mail me for any issue you run into.
-> 
+FWIW. I have the same fix here that I'm using with 3.4-rc2, but hadn't
+gotten around to sending it out yet.
 
-BTW, which branch should I be looking at?
+So that's a count of two without a cross prefixed flex and bison :)
 
--- Steve
+Cheers,
+
+Bruce
+
+>
+> Signed-off-by: Otavio Salvador <otavio@ossystems.com.br>
+> ---
+>  tools/perf/Makefile |    4 ++--
+>  1 file changed, 2 insertions(+), 2 deletions(-)
+>
+> diff --git a/tools/perf/Makefile b/tools/perf/Makefile
+> index 820371f..0ae8165 100644
+> --- a/tools/perf/Makefile
+> +++ b/tools/perf/Makefile
+> @@ -234,8 +234,8 @@ endif
+>
+>  export PERL_PATH
+>
+> -FLEX = $(CROSS_COMPILE)flex
+> -BISON= $(CROSS_COMPILE)bison
+> +FLEX = flex
+> +BISON= bison
+>
+>  event-parser:
+>        $(QUIET_BISON)$(BISON) -v util/parse-events.y -d -o $(OUTPUT)util/parse-events-bison.c
+> --
+> 1.7.9.5
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 
 
+
+-- 
+"Thou shalt not follow the NULL pointer, for chaos and madness await
+thee at its end"
