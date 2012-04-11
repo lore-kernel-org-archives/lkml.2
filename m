@@ -1,24 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965495Ab2DKX0n (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Apr 2012 19:26:43 -0400
-Received: from mail-pz0-f52.google.com ([209.85.210.52]:51056 "EHLO
-	mail-pz0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965400Ab2DKXYB (ORCPT
+	id S965444Ab2DKX1D (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Apr 2012 19:27:03 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:58738 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965390Ab2DKXX6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Apr 2012 19:24:01 -0400
-Message-Id: <20120411231044.299794032@linuxfoundation.org>
+	Wed, 11 Apr 2012 19:23:58 -0400
+Message-Id: <20120411231042.628376033@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Wed, 11 Apr 2012 16:11:27 -0700
+Date: Wed, 11 Apr 2012 16:11:17 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Salman Qazi <sqazi@google.com>,
-        John Stultz <john.stultz@linaro.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Turner <pjt@google.com>,
-        john stultz <johnstul@us.ibm.com>, Ingo Molnar <mingo@elte.hu>,
-        Mike Galbraith <efault@gmx.de>
-Subject: [ 52/59] sched/x86: Fix overflow in cyc2ns_offset
+        alan@lxorguk.ukuu.org.uk, Mark Rustad <mark.d.rustad@intel.com>,
+        Kiran Patil <Kiran.patil@intel.com>,
+        Nicholas Bellinger <nab@linux-iscsi.org>
+Subject: [ 42/59] tcm_fc: Add abort flag for gracefully handling exchange timeout
 In-Reply-To: <20120411231213.GA13124@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -28,93 +26,95 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Salman Qazi <sqazi@google.com>
+From: Mark Rustad <mark.d.rustad@intel.com>
 
-commit 9993bc635d01a6ee7f6b833b4ee65ce7c06350b1 upstream.
+commit e1c4038282c7586c3544542b37872c434669d3ac upstream.
 
-When a machine boots up, the TSC generally gets reset.  However,
-when kexec is used to boot into a kernel, the TSC value would be
-carried over from the previous kernel.  The computation of
-cycns_offset in set_cyc2ns_scale is prone to an overflow, if the
-machine has been up more than 208 days prior to the kexec.  The
-overflow happens when we multiply *scale, even though there is
-enough room to store the final answer.
+Add abort flag and use it to terminate processing when an exchange
+is timed out or is reset. The abort flag is used in place of the
+transport_generic_free_cmd function call in the reset and timeout
+cases, because calling that function in that context would free
+memory that was in use. The aborted flag allows the lifetime to
+be managed in a more normal way, while truncating the processing.
 
-We fix this issue by decomposing tsc_now into the quotient and
-remainder of division by CYC2NS_SCALE_FACTOR and then performing
-the multiplication separately on the two components.
+This change eliminates a source of memory corruption which
+manifested in a variety of ugly ways.
 
-Refactor code to share the calculation with the previous
-fix in __cycles_2_ns().
+(nab: Drop unused struct fc_exch *ep in ft_recv_seq)
 
-Signed-off-by: Salman Qazi <sqazi@google.com>
-Acked-by: John Stultz <john.stultz@linaro.org>
-Acked-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Paul Turner <pjt@google.com>
-Cc: john stultz <johnstul@us.ibm.com>
-Link: http://lkml.kernel.org/r/20120310004027.19291.88460.stgit@dungbeetle.mtv.corp.google.com
-Signed-off-by: Ingo Molnar <mingo@elte.hu>
-Cc: Mike Galbraith <efault@gmx.de>
+Signed-off-by: Mark Rustad <mark.d.rustad@intel.com>
+Acked-by: Kiran Patil <Kiran.patil@intel.com>
+Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/x86/include/asm/timer.h |    8 ++------
- arch/x86/kernel/tsc.c        |    3 ++-
- include/linux/kernel.h       |   13 +++++++++++++
- 3 files changed, 17 insertions(+), 7 deletions(-)
+ drivers/target/tcm_fc/tcm_fc.h  |    1 +
+ drivers/target/tcm_fc/tfc_cmd.c |   10 ++++++++--
+ drivers/target/tcm_fc/tfc_io.c  |    2 ++
+ 3 files changed, 11 insertions(+), 2 deletions(-)
 
---- a/arch/x86/include/asm/timer.h
-+++ b/arch/x86/include/asm/timer.h
-@@ -57,14 +57,10 @@ DECLARE_PER_CPU(unsigned long long, cyc2
+--- a/drivers/target/tcm_fc/tcm_fc.h
++++ b/drivers/target/tcm_fc/tcm_fc.h
+@@ -124,6 +124,7 @@ struct ft_cmd {
+ 	/* Local sense buffer */
+ 	unsigned char ft_sense_buffer[TRANSPORT_SENSE_BUFFER];
+ 	u32 was_ddp_setup:1;		/* Set only if ddp is setup */
++	u32 aborted:1;			/* Set if aborted by reset or timeout */
+ 	struct scatterlist *sg;		/* Set only if DDP is setup */
+ 	u32 sg_cnt;			/* No. of item in scatterlist */
+ };
+--- a/drivers/target/tcm_fc/tfc_cmd.c
++++ b/drivers/target/tcm_fc/tfc_cmd.c
+@@ -130,6 +130,8 @@ int ft_queue_status(struct se_cmd *se_cm
+ 	struct fc_exch *ep;
+ 	size_t len;
  
- static inline unsigned long long __cycles_2_ns(unsigned long long cyc)
- {
--	unsigned long long quot;
--	unsigned long long rem;
- 	int cpu = smp_processor_id();
- 	unsigned long long ns = per_cpu(cyc2ns_offset, cpu);
--	quot = (cyc >> CYC2NS_SCALE_FACTOR);
--	rem = cyc & ((1ULL << CYC2NS_SCALE_FACTOR) - 1);
--	ns += quot * per_cpu(cyc2ns, cpu) +
--		((rem * per_cpu(cyc2ns, cpu)) >> CYC2NS_SCALE_FACTOR);
-+	ns += mult_frac(cyc, per_cpu(cyc2ns, cpu),
-+			(1UL << CYC2NS_SCALE_FACTOR));
- 	return ns;
- }
++	if (cmd->aborted)
++		return 0;
+ 	ft_dump_cmd(cmd, __func__);
+ 	ep = fc_seq_exch(cmd->seq);
+ 	lport = ep->lp;
+@@ -196,6 +198,8 @@ int ft_write_pending(struct se_cmd *se_c
  
---- a/arch/x86/kernel/tsc.c
-+++ b/arch/x86/kernel/tsc.c
-@@ -622,7 +622,8 @@ static void set_cyc2ns_scale(unsigned lo
+ 	ft_dump_cmd(cmd, __func__);
  
- 	if (cpu_khz) {
- 		*scale = (NSEC_PER_MSEC << CYC2NS_SCALE_FACTOR)/cpu_khz;
--		*offset = ns_now - (tsc_now * *scale >> CYC2NS_SCALE_FACTOR);
-+		*offset = ns_now - mult_frac(tsc_now, *scale,
-+					     (1UL << CYC2NS_SCALE_FACTOR));
++	if (cmd->aborted)
++		return 0;
+ 	ep = fc_seq_exch(cmd->seq);
+ 	lport = ep->lp;
+ 	fp = fc_frame_alloc(lport, sizeof(*txrdy));
+@@ -266,10 +270,10 @@ static void ft_recv_seq(struct fc_seq *s
+ 	struct ft_cmd *cmd = arg;
+ 	struct fc_frame_header *fh;
+ 
+-	if (IS_ERR(fp)) {
++	if (unlikely(IS_ERR(fp))) {
+ 		/* XXX need to find cmd if queued */
+ 		cmd->seq = NULL;
+-		transport_generic_free_cmd(&cmd->se_cmd, 0);
++		cmd->aborted = true;
+ 		return;
  	}
  
- 	sched_clock_idle_wakeup_event(0);
---- a/include/linux/kernel.h
-+++ b/include/linux/kernel.h
-@@ -85,6 +85,19 @@
- }							\
- )
+@@ -447,6 +451,8 @@ int ft_queue_tm_resp(struct se_cmd *se_c
+ 	struct se_tmr_req *tmr = se_cmd->se_tmr_req;
+ 	enum fcp_resp_rsp_codes code;
  
-+/*
-+ * Multiplies an integer by a fraction, while avoiding unnecessary
-+ * overflow or loss of precision.
-+ */
-+#define mult_frac(x, numer, denom)(			\
-+{							\
-+	typeof(x) quot = (x) / (denom);			\
-+	typeof(x) rem  = (x) % (denom);			\
-+	(quot * (numer)) + ((rem * (numer)) / (denom));	\
-+}							\
-+)
-+
-+
- #define _RET_IP_		(unsigned long)__builtin_return_address(0)
- #define _THIS_IP_  ({ __label__ __here; __here: (unsigned long)&&__here; })
++	if (cmd->aborted)
++		return 0;
+ 	switch (tmr->response) {
+ 	case TMR_FUNCTION_COMPLETE:
+ 		code = FCP_TMF_CMPL;
+--- a/drivers/target/tcm_fc/tfc_io.c
++++ b/drivers/target/tcm_fc/tfc_io.c
+@@ -84,6 +84,8 @@ int ft_queue_data_in(struct se_cmd *se_c
+ 	void *from;
+ 	void *to = NULL;
  
++	if (cmd->aborted)
++		return 0;
+ 	ep = fc_seq_exch(cmd->seq);
+ 	lport = ep->lp;
+ 	cmd->seq = lport->tt.seq_start_next(cmd->seq);
 
 
