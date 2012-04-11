@@ -1,120 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965444Ab2DKX1D (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Apr 2012 19:27:03 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:58738 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965390Ab2DKXX6 (ORCPT
+	id S965498Ab2DKX1Q (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Apr 2012 19:27:16 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:50538 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965390Ab2DKX1N (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Apr 2012 19:23:58 -0400
-Message-Id: <20120411231042.628376033@linuxfoundation.org>
-User-Agent: quilt/0.60-19.1
-Date: Wed, 11 Apr 2012 16:11:17 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Mark Rustad <mark.d.rustad@intel.com>,
-        Kiran Patil <Kiran.patil@intel.com>,
-        Nicholas Bellinger <nab@linux-iscsi.org>
-Subject: [ 42/59] tcm_fc: Add abort flag for gracefully handling exchange timeout
-In-Reply-To: <20120411231213.GA13124@kroah.com>
+	Wed, 11 Apr 2012 19:27:13 -0400
+From: Daniel Vetter <daniel.vetter@ffwll.ch>
+To: Intel Graphics Development <intel-gfx@lists.freedesktop.org>
+Cc: DRI Development <dri-devel@lists.freedesktop.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>, Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH] drm/i915: clear fencing tracking state when retiring request
+Date: Thu, 12 Apr 2012 01:27:57 +0200
+Message-Id: <1334186877-6299-1-git-send-email-daniel.vetter@ffwll.ch>
+X-Mailer: git-send-email 1.7.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.2-stable review patch.  If anyone has any objections, please let me know.
+This fixes a regression introduce in
 
-------------------
+commit 7dd4906586274f3945f2aeaaa5a33b451c3b4bba
+Author: Chris Wilson <chris@chris-wilson.co.uk>
+Date:   Wed Mar 21 10:48:18 2012 +0000
 
-From: Mark Rustad <mark.d.rustad@intel.com>
+    drm/i915: Mark untiled BLT commands as fenced on gen2/3
 
-commit e1c4038282c7586c3544542b37872c434669d3ac upstream.
+which fixed fencing tracking for untiled blt commands.
 
-Add abort flag and use it to terminate processing when an exchange
-is timed out or is reset. The abort flag is used in place of the
-transport_generic_free_cmd function call in the reset and timeout
-cases, because calling that function in that context would free
-memory that was in use. The aborted flag allows the lifetime to
-be managed in a more normal way, while truncating the processing.
+A side effect of that patch was that now also untiled objects have a
+non-zero obj->last_fenced_seqno to track when a fence can be set up
+after a pipelined tiling change. Unfortunately this was only cleared
+by the fence setup and teardown code, resulting in tons of untiled but
+inactive objects with non-zero last_fenced_seqno.
 
-This change eliminates a source of memory corruption which
-manifested in a variety of ugly ways.
+Now after resume we completely reset the seqno tracking, both on the
+driver side (by setting dev_priv->next_seqno = 1) and on the hw side
+(by allocating a new hws page, which contains the seqnos). Hilarity
+and indefinite waits ensued from the stale seqnos in
+obj->last_fenced_seqno from before the suspend.
 
-(nab: Drop unused struct fc_exch *ep in ft_recv_seq)
+The fix is to properly clear the fencing tracking state like we
+already do for the normal gpu rendering while moving objects off the
+active list.
 
-Signed-off-by: Mark Rustad <mark.d.rustad@intel.com>
-Acked-by: Kiran Patil <Kiran.patil@intel.com>
-Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
+Reported-and-tested-by: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Jiri Slaby <jslaby@suse.cz>
+Signed-Off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
 ---
- drivers/target/tcm_fc/tcm_fc.h  |    1 +
- drivers/target/tcm_fc/tfc_cmd.c |   10 ++++++++--
- drivers/target/tcm_fc/tfc_io.c  |    2 ++
- 3 files changed, 11 insertions(+), 2 deletions(-)
+ drivers/gpu/drm/i915/i915_gem.c |    2 ++
+ 1 files changed, 2 insertions(+), 0 deletions(-)
 
---- a/drivers/target/tcm_fc/tcm_fc.h
-+++ b/drivers/target/tcm_fc/tcm_fc.h
-@@ -124,6 +124,7 @@ struct ft_cmd {
- 	/* Local sense buffer */
- 	unsigned char ft_sense_buffer[TRANSPORT_SENSE_BUFFER];
- 	u32 was_ddp_setup:1;		/* Set only if ddp is setup */
-+	u32 aborted:1;			/* Set if aborted by reset or timeout */
- 	struct scatterlist *sg;		/* Set only if DDP is setup */
- 	u32 sg_cnt;			/* No. of item in scatterlist */
- };
---- a/drivers/target/tcm_fc/tfc_cmd.c
-+++ b/drivers/target/tcm_fc/tfc_cmd.c
-@@ -130,6 +130,8 @@ int ft_queue_status(struct se_cmd *se_cm
- 	struct fc_exch *ep;
- 	size_t len;
+diff --git a/drivers/gpu/drm/i915/i915_gem.c b/drivers/gpu/drm/i915/i915_gem.c
+index 71934dd..cf50fbc 100644
+--- a/drivers/gpu/drm/i915/i915_gem.c
++++ b/drivers/gpu/drm/i915/i915_gem.c
+@@ -1415,6 +1415,7 @@ i915_gem_object_move_off_active(struct drm_i915_gem_object *obj)
+ {
+ 	list_del_init(&obj->ring_list);
+ 	obj->last_rendering_seqno = 0;
++	obj->last_fenced_seqno = 0;
+ }
  
-+	if (cmd->aborted)
-+		return 0;
- 	ft_dump_cmd(cmd, __func__);
- 	ep = fc_seq_exch(cmd->seq);
- 	lport = ep->lp;
-@@ -196,6 +198,8 @@ int ft_write_pending(struct se_cmd *se_c
+ static void
+@@ -1443,6 +1444,7 @@ i915_gem_object_move_to_inactive(struct drm_i915_gem_object *obj)
+ 	BUG_ON(!list_empty(&obj->gpu_write_list));
+ 	BUG_ON(!obj->active);
+ 	obj->ring = NULL;
++	obj->last_fenced_ring = NULL;
  
- 	ft_dump_cmd(cmd, __func__);
- 
-+	if (cmd->aborted)
-+		return 0;
- 	ep = fc_seq_exch(cmd->seq);
- 	lport = ep->lp;
- 	fp = fc_frame_alloc(lport, sizeof(*txrdy));
-@@ -266,10 +270,10 @@ static void ft_recv_seq(struct fc_seq *s
- 	struct ft_cmd *cmd = arg;
- 	struct fc_frame_header *fh;
- 
--	if (IS_ERR(fp)) {
-+	if (unlikely(IS_ERR(fp))) {
- 		/* XXX need to find cmd if queued */
- 		cmd->seq = NULL;
--		transport_generic_free_cmd(&cmd->se_cmd, 0);
-+		cmd->aborted = true;
- 		return;
- 	}
- 
-@@ -447,6 +451,8 @@ int ft_queue_tm_resp(struct se_cmd *se_c
- 	struct se_tmr_req *tmr = se_cmd->se_tmr_req;
- 	enum fcp_resp_rsp_codes code;
- 
-+	if (cmd->aborted)
-+		return 0;
- 	switch (tmr->response) {
- 	case TMR_FUNCTION_COMPLETE:
- 		code = FCP_TMF_CMPL;
---- a/drivers/target/tcm_fc/tfc_io.c
-+++ b/drivers/target/tcm_fc/tfc_io.c
-@@ -84,6 +84,8 @@ int ft_queue_data_in(struct se_cmd *se_c
- 	void *from;
- 	void *to = NULL;
- 
-+	if (cmd->aborted)
-+		return 0;
- 	ep = fc_seq_exch(cmd->seq);
- 	lport = ep->lp;
- 	cmd->seq = lport->tt.seq_start_next(cmd->seq);
-
+ 	i915_gem_object_move_off_active(obj);
+ 	obj->fenced_gpu_access = false;
+-- 
+1.7.9.1
 
