@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933917Ab2DLABp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Apr 2012 20:01:45 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:39063 "EHLO
+	id S933945Ab2DLACE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Apr 2012 20:02:04 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:35695 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933816Ab2DKXQR (ORCPT
+	with ESMTP id S933835Ab2DKXQP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Apr 2012 19:16:17 -0400
-Message-Id: <20120411231023.306730936@linuxfoundation.org>
+	Wed, 11 Apr 2012 19:16:15 -0400
+Message-Id: <20120411231023.148457861@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Wed, 11 Apr 2012 16:10:48 -0700
+Date: Wed, 11 Apr 2012 16:10:47 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Larry Finger <Larry.Finger@lwfinger.net>,
+        alan@lxorguk.ukuu.org.uk, "jan p. springer" <jsd@igroup.org>,
+        Stanislaw Gruszka <sgruszka@redhat.com>,
         "John W. Linville" <linville@tuxdriver.com>
-Subject: [ 30/78] rtlwifi: rtl8192ce: rtl8192cu: rtl8192de: Fix low-gain setting when scanning
+Subject: [ 29/78] mac80211: fix possible tid_rx->reorder_timer use after free
 In-Reply-To: <20120411231102.GA6404@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,49 +26,49 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Larry Finger <Larry.Finger@lwfinger.net>
+From: Stanislaw Gruszka <sgruszka@redhat.com>
 
-commit 643c61e119459e9d750087b7b34be94491efebf9 upstream.
+commit d72308bff5c2fa207949a5925b020bce74495e33 upstream.
 
-In https://bugzilla.redhat.com/show_bug.cgi?id=770207, slowdowns of driver
-rtl8192ce are reported. One fix (commit a9b89e2) has already been applied,
-and it helped, but the maximum RX speed would still drop to 1 Mbps. As in
-the previous fix, the initial gain was determined to be the problem; however,
-the problem arises from a setting of the gain when scans are started.
+Is possible that we will arm the tid_rx->reorder_timer after
+del_timer_sync() in ___ieee80211_stop_rx_ba_session(). We need to stop
+timer after RCU grace period finish, so move it to
+ieee80211_free_tid_rx(). Timer will not be armed again, as
+rcu_dereference(sta->ampdu_mlme.tid_rx[tid]) will return NULL.
 
-Driver rtl8192de also has the same code structure - this one is fixed as well.
+Debug object detected problem with the following warning:
+ODEBUG: free active (active state 0) object type: timer_list hint: sta_rx_agg_reorder_timer_expired+0x0/0xf0 [mac80211]
 
-Reported-and-Tested-by: Ivan Pesin <ivan.pesin@gmail.com>
-Signed-off-by: Larry Finger <Larry.Finger@lwfinger.net>
+Bug report (with all warning messages):
+https://bugzilla.redhat.com/show_bug.cgi?id=804007
+
+Reported-by: "jan p. springer" <jsd@igroup.org>
+Signed-off-by: Stanislaw Gruszka <sgruszka@redhat.com>
 Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/wireless/rtlwifi/rtl8192c/phy_common.c |    2 +-
- drivers/net/wireless/rtlwifi/rtl8192de/phy.c       |    2 +-
- 2 files changed, 2 insertions(+), 2 deletions(-)
+ net/mac80211/agg-rx.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/drivers/net/wireless/rtlwifi/rtl8192c/phy_common.c
-+++ b/drivers/net/wireless/rtlwifi/rtl8192c/phy_common.c
-@@ -1968,7 +1968,7 @@ void rtl92c_phy_set_io(struct ieee80211_
- 		break;
- 	case IO_CMD_PAUSE_DM_BY_SCAN:
- 		rtlphy->initgain_backup.xaagccore1 = dm_digtable.cur_igvalue;
--		dm_digtable.cur_igvalue = 0x17;
-+		dm_digtable.cur_igvalue = 0x37;
- 		rtl92c_dm_write_dig(hw);
- 		break;
- 	default:
---- a/drivers/net/wireless/rtlwifi/rtl8192de/phy.c
-+++ b/drivers/net/wireless/rtlwifi/rtl8192de/phy.c
-@@ -3192,7 +3192,7 @@ static void rtl92d_phy_set_io(struct iee
- 		break;
- 	case IO_CMD_PAUSE_DM_BY_SCAN:
- 		rtlphy->initgain_backup.xaagccore1 = de_digtable.cur_igvalue;
--		de_digtable.cur_igvalue = 0x17;
-+		de_digtable.cur_igvalue = 0x37;
- 		rtl92d_dm_write_dig(hw);
- 		break;
- 	default:
+--- a/net/mac80211/agg-rx.c
++++ b/net/mac80211/agg-rx.c
+@@ -49,6 +49,8 @@ static void ieee80211_free_tid_rx(struct
+ 		container_of(h, struct tid_ampdu_rx, rcu_head);
+ 	int i;
+ 
++	del_timer_sync(&tid_rx->reorder_timer);
++
+ 	for (i = 0; i < tid_rx->buf_size; i++)
+ 		dev_kfree_skb(tid_rx->reorder_buf[i]);
+ 	kfree(tid_rx->reorder_buf);
+@@ -91,7 +93,6 @@ void ___ieee80211_stop_rx_ba_session(str
+ 				     tid, WLAN_BACK_RECIPIENT, reason);
+ 
+ 	del_timer_sync(&tid_rx->session_timer);
+-	del_timer_sync(&tid_rx->reorder_timer);
+ 
+ 	call_rcu(&tid_rx->rcu_head, ieee80211_free_tid_rx);
+ }
 
 
