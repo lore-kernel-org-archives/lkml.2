@@ -1,72 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933401Ab2DKVWx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Apr 2012 17:22:53 -0400
-Received: from mail-pz0-f52.google.com ([209.85.210.52]:34318 "EHLO
-	mail-pz0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933381Ab2DKVWv (ORCPT
+	id S933416Ab2DKVXo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Apr 2012 17:23:44 -0400
+Received: from swampdragon.chaosbits.net ([90.184.90.115]:17559 "EHLO
+	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933381Ab2DKVXm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Apr 2012 17:22:51 -0400
-Date: Wed, 11 Apr 2012 14:22:44 -0700
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Jesper Juhl <jj@chaosbits.net>
-Cc: linux-kernel@vger.kernel.org, David Dajun Chen <dchen@diasemi.com>,
-        linux-input@vger.kernel.org,
-        Ashish Jangam <ashish.jangam@kpitcummins.com>
-Subject: Re: [PATCH] input: da9052: fix mem leak in da9052_onkey_probe()
-Message-ID: <20120411212244.GB27562@core.coreip.homeip.net>
-References: <alpine.LNX.2.00.1204112249110.2137@swampdragon.chaosbits.net>
+	Wed, 11 Apr 2012 17:23:42 -0400
+Date: Wed, 11 Apr 2012 23:23:41 +0200 (CEST)
+From: Jesper Juhl <jj@chaosbits.net>
+To: linux-can@vger.kernel.org
+cc: Stephane Grosjean <s.grosjean@peak-system.com>,
+        Wolfgang Grandegger <wg@grandegger.com>,
+        Marc Kleine-Budde <mkl@pengutronix.de>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] can: usb: PCAN-USB Pro: fix mem leaks in pcan_usb_pro_init()
+ on error paths
+Message-ID: <alpine.LNX.2.00.1204112320310.2137@swampdragon.chaosbits.net>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LNX.2.00.1204112249110.2137@swampdragon.chaosbits.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 11, 2012 at 10:56:10PM +0200, Jesper Juhl wrote:
-> If, in drivers/input/misc/da9052_onkey.c::da9052_onkey_probe(), the
-> call to either kzalloc() or input_allocate_device() fails then we will
-> return -ENOMEM from the function without freeing the other allocation
-> that may have succeeded, thus we leak either the memory allocated for
-> 'onkey' or the memory allocated for 'input_dev' if one succeeds and
-> the other fails.
-> Fix that by jumping to the 'err_free_mem' label at the end of the
-> function that properly cleans up rather than returning directly.
-> 
-> Signed-off-by: Jesper Juhl <jj@chaosbits.net>
+If either call to pcan_usb_pro_send_req() in
+drivers/net/can/usb/peak_usb/pcan_usb_pro.c::pcan_usb_pro_init()
+fails, we'll leak the memory we allocated to 'usb_if' with kzalloc()
+when the 'usb_if' variable goes out of scope without having been
+assigned to anything as we 'return err;'.
+Fix this by adding appropriate kfree(usb_if) calls to the error paths.
 
-I must have messed up error hanlding path when collapsing the 2 memory
-allocations; applied, thank Jesper.
+Signed-off-by: Jesper Juhl <jj@chaosbits.net>
+---
+ drivers/net/can/usb/peak_usb/pcan_usb_pro.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
-> ---
->  drivers/input/misc/da9052_onkey.c |    3 ++-
->  1 file changed, 2 insertions(+), 1 deletion(-)
-> 
-> diff --git a/drivers/input/misc/da9052_onkey.c b/drivers/input/misc/da9052_onkey.c
-> index 34aebb8..3c843cd 100644
-> --- a/drivers/input/misc/da9052_onkey.c
-> +++ b/drivers/input/misc/da9052_onkey.c
-> @@ -95,7 +95,8 @@ static int __devinit da9052_onkey_probe(struct platform_device *pdev)
->  	input_dev = input_allocate_device();
->  	if (!onkey || !input_dev) {
->  		dev_err(&pdev->dev, "Failed to allocate memory\n");
-> -		return -ENOMEM;
-> +		error = -ENOMEM;
-> +		goto err_free_mem;
->  	}
->  
->  	onkey->input = input_dev;
-> -- 
-> 1.7.10
-> 
-> 
-> -- 
-> Jesper Juhl <jj@chaosbits.net>       http://www.chaosbits.net/
-> Don't top-post http://www.catb.org/jargon/html/T/top-post.html
-> Plain text mails only, please.
-> 
+diff --git a/drivers/net/can/usb/peak_usb/pcan_usb_pro.c b/drivers/net/can/usb/peak_usb/pcan_usb_pro.c
+index 5234586..629c4ba 100644
+--- a/drivers/net/can/usb/peak_usb/pcan_usb_pro.c
++++ b/drivers/net/can/usb/peak_usb/pcan_usb_pro.c
+@@ -875,6 +875,7 @@ static int pcan_usb_pro_init(struct peak_usb_device *dev)
+ 					    PCAN_USBPRO_INFO_FW,
+ 					    &fi, sizeof(fi));
+ 		if (err) {
++			kfree(usb_if);
+ 			dev_err(dev->netdev->dev.parent,
+ 				"unable to read %s firmware info (err %d)\n",
+ 				pcan_usb_pro.name, err);
+@@ -885,6 +886,7 @@ static int pcan_usb_pro_init(struct peak_usb_device *dev)
+ 					    PCAN_USBPRO_INFO_BL,
+ 					    &bi, sizeof(bi));
+ 		if (err) {
++			kfree(usb_if);
+ 			dev_err(dev->netdev->dev.parent,
+ 				"unable to read %s bootloader info (err %d)\n",
+ 				pcan_usb_pro.name, err);
+-- 
+1.7.10
+
+
+
+(please CC me on replies)
+
 
 -- 
-Dmitry
+Jesper Juhl <jj@chaosbits.net>       http://www.chaosbits.net/
+Don't top-post http://www.catb.org/jargon/html/T/top-post.html
+Plain text mails only, please.
+
