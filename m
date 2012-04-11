@@ -1,58 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932487Ab2DKCYD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Apr 2012 22:24:03 -0400
-Received: from va3ehsobe002.messaging.microsoft.com ([216.32.180.12]:37479
-	"EHLO va3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1759956Ab2DKCYA (ORCPT
+	id S1759977Ab2DKChy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Apr 2012 22:37:54 -0400
+Received: from mx.logic.tuwien.ac.at ([128.130.175.19]:45778 "EHLO
+	mx.logic.tuwien.ac.at" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755965Ab2DKChw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Apr 2012 22:24:00 -0400
-X-SpamScore: -10
-X-BigFish: VPS-10(zzbb2dI1432N98dKzz1202hzz8275dhz2fh668h839hd25h)
-X-Forefront-Antispam-Report: CIP:160.33.98.74;KIP:(null);UIP:(null);IPV:NLI;H:mail7.fw-bc.sony.com;RD:mail7.fw-bc.sony.com;EFVD:NLI
-Message-ID: <4F84EB29.6030002@am.sony.com>
-Date: Tue, 10 Apr 2012 19:23:37 -0700
-From: Frank Rowand <frank.rowand@am.sony.com>
-Reply-To: <frank.rowand@am.sony.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc14 Thunderbird/3.1.10
+	Tue, 10 Apr 2012 22:37:52 -0400
+Date: Wed, 11 Apr 2012 11:37:47 +0900
+From: Norbert Preining <preining@logic.at>
+To: Emmanuel Grumbach <egrumbach@gmail.com>,
+        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
+        linux-kernel@vger.kernel.org, ipw3945-devel@lists.sourceforge.net,
+        "ilw@linux.intel.com" <ilw@linux.intel.com>
+Subject: 3.4-rc2, ilwagn still most of the time completely unusable
+Message-ID: <20120411023747.GA10126@gamma.logic.tuwien.ac.at>
+References: <20120330011734.GH6277@gamma.logic.tuwien.ac.at>
 MIME-Version: 1.0
-To: Thomas Gleixner <tglx@linutronix.de>
-CC: LKML <linux-kernel@vger.kernel.org>,
-        linux-rt-users <linux-rt-users@vger.kernel.org>
-Subject: Re: [ANNOUNCE] 3.4-rc2-rt1
-References: <alpine.LFD.2.02.1204101642050.2542@ionos>
-In-Reply-To: <alpine.LFD.2.02.1204101642050.2542@ionos>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-OriginatorOrg: am.sony.com
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20120330011734.GH6277@gamma.logic.tuwien.ac.at>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/10/12 07:46, Thomas Gleixner wrote:
-> Dear RT Folks,
+Dear all,
+
+I am now having problems with the iwlagn driver since about 4 kernel
+revisions, without any tendency that things are getting better.
+
+I already have reported that with 3.3-wl there are hundreds and thousands
+of lines
+	delba from 00:0a:79:eb:56:10 (initiator) tid 0 reason code 39
+	Rx BA session stop requested for ...
+*IF* it is connected.
+
+On the contrary, it sometimes not even connects, after reloading the module,
+retrying many times, today my log was smarmed with messages:
+	[ 9457.156030] wlan0: authentication with 00:24:c4:ab:bd:e0 timed out
+	[ 9457.176828] iwlwifi 0000:06:00.0: ACTIVATE a non DRIVER active station id 0 addr 00:24:c4:ab:bd:e0
+
+Above is all on the University network, which is rather new and
+in good shape.
+
+But I want to report *SOME* progress: Formerly I had *BIG* problems 
+with my home network (some strange Corega WL router AFAIR, Japanese only,
+but it was working without a click before 2.6.38 or 39 or so).
+Now, when I *DISABLE* 11n (11n_disable=1) then all the problems are
+gone *AT*HOME*, no warnings anymore, no complains, no hickups.
+On the university it is still a pain.
+
+As I have already sent debug output etc etc as requested here, I will
+not repeat that unless asked for it.
+
+Well, hope that in another 20 kernel revisions that might get fixed,
+we are not talking about a brand new wlan adapter anymore ... that
+was some years ago ... especially the regression from 2.6.38 where it
+was working without any problem to the current very sad state of affair
+is frustrating.
+
+
+On Fr, 30 Mär 2012, Norbert Preining wrote:
+> I am now running 3.3.0-wl, and I was now travelling quite some time
+> without having *any*problems with wlan. But as soon as I come
+> home or to the university the horror starts. Here at home I am 
+> now, after fresh reboot, no suspend involved, swamped with dmesg
+> lines:
+> [ 8206.158741] delba from 00:0a:79:eb:56:10 (initiator) tid 0 reason code 39
+> [ 8206.158744] Rx BA session stop requested for 00:0a:79:eb:56:10 tid 0 inititator reason: 0
+> [ 8206.430282] Rx A-MPDU request on tid 0 result 0
 > 
-> I'm pleased to announce the 3.4-rc2-rt1 release.
-> 
-> This is a straight forward update of the 3.2 series to 3.4-rc2. It's
-> slightly smaller than the 3.2 series. I hope to stabilize it fast so I
-> can concentrate on shuffling more parts of RT into 3.5.
+> So around 4000+ in 2 hours ... I guess you can evaluate how flaky the
+> connection is ...
 
+Best wishes
 
-3.4-rc2-rt1 builds and boots on some ARM boards (PandaBoard, Realview) for:
-
-  - SMP, PREEMPT_RT_FULL
-  - SMP, PREEMPT_NONE
-  - UP, PREEMPT_RT_FULL
-  - UP, PREEMPT_NONE
-
-Patch was required to compile (see earlier in this email thread).
-
-Second patch required to resolve NULL pointer dereference on boot
-of Realview.  Patch sent to lkml (https://lkml.org/lkml/2012/4/10/518).
-
-PandaBoard SMP, PREEMPT_RT_FULL has a lock warning on boot (reported
-earlier in this thread).
-
--Frank
-
+Norbert
+------------------------------------------------------------------------
+Norbert Preining            preining@{jaist.ac.jp, logic.at, debian.org}
+JAIST, Japan                                 TeX Live & Debian Developer
+DSA: 0x09C5B094   fp: 14DF 2E6C 0307 BE6D AD76  A9C0 D2BF 4AA3 09C5 B094
+------------------------------------------------------------------------
+GOLANT (adj.)
+Blank, sly and faintly embarrassed. Pertaining to the expression seen
+on the face of someone who has clearly forgotten your name.
+			--- Douglas Adams, The Meaning of Liff
