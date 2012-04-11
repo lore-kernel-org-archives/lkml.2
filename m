@@ -1,45 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751981Ab2DKFIO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Apr 2012 01:08:14 -0400
-Received: from linux-sh.org ([111.68.239.195]:33595 "EHLO linux-sh.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751165Ab2DKFIM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Apr 2012 01:08:12 -0400
-Date: Wed, 11 Apr 2012 14:07:57 +0900
-From: Paul Mundt <lethal@linux-sh.org>
-To: Kautuk Consul <consul.kautuk@gmail.com>
-Cc: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        linux-sh@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 16/19 v2] sh/mm/fault_32.c: Port OOM changes to do_page_fault
-Message-ID: <20120411050756.GD19696@linux-sh.org>
-References: <1333195571-5455-1-git-send-email-consul.kautuk@gmail.com>
+	id S1752022Ab2DKFMJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Apr 2012 01:12:09 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:43193 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751165Ab2DKFMI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Apr 2012 01:12:08 -0400
+Date: Wed, 11 Apr 2012 15:11:55 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Grant Likely <grant.likely@secretlab.ca>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Thomas Abraham <thomas.abraham@linaro.org>
+Subject: linux-next: build failure after merge of the final tree (devicetree
+ tree related)
+Message-Id: <20120411151155.b1a614f174442a592d1c1561@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0beta6 (GTK+ 2.24.10; i486-pc-linux-gnu)
 Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1333195571-5455-1-git-send-email-consul.kautuk@gmail.com>
-User-Agent: Mutt/1.4.1i
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Wed__11_Apr_2012_15_11_55_+1000_/5lwMDzloiumeSrR"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Mar 31, 2012 at 08:06:11AM -0400, Kautuk Consul wrote:
-> Commit d065bd810b6deb67d4897a14bfe21f8eb526ba99
-> (mm: retry page fault when blocking on disk transfer) and
-> commit 37b23e0525d393d48a7d59f870b3bc061a30ccdb
-> (x86,mm: make pagefault killable)
-> 
-> The above commits introduced changes into the x86 pagefault handler
-> for making the page fault handler retryable as well as killable.
-> 
-> These changes reduce the mmap_sem hold time, which is crucial
-> during OOM killer invocation.
-> 
-> Port these changes to the 32-bit SH platform.
-> 
-> Signed-off-by: Kautuk Consul <consul.kautuk@gmail.com>
+--Signature=_Wed__11_Apr_2012_15_11_55_+1000_/5lwMDzloiumeSrR
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Applied, thanks.
+Hi all,
 
-I've also made the change for sh64, and will send them out to Linus in
-the next round of updates.
+After merging the final tree, today's linux-next build (sparc64 defconfig)
+failed like this:
+
+drivers/of/of_mdio.c: In function 'of_mdiobus_register':
+drivers/of/of_mdio.c:75:4: error: implicit declaration of function 'irq_of_=
+parse_and_map' [-Werror=3Dimplicit-function-declaration]
+
+Caused by commit e46c11b94787 ("of/irq: add empty irq_of_parse_and_map()
+for non-dt builds").  SPARC has CONFIG_OF but not CONFIG_OF_IRQ ...
+
+I have reverted that commit for today.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Signature=_Wed__11_Apr_2012_15_11_55_+1000_/5lwMDzloiumeSrR
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCAAGBQJPhRKbAAoJEECxmPOUX5FEdW0P/1r+3uPcPIuiYgvE28K34M46
+YHFyFVX438KLrQGzRHRBg9E4Edj9Sp5idtM6haWaLC7vKvFvlY3aCZu2QWaRHvLG
+0PSUfkyptK9smAm9dvf/jQlEjD7CucGy0Svd6BI5xRVgFIe+V2srFAHDRfDYpmjn
+d+yKAxiwxCYkSSeOW+s7/pB1nO5A6M6aYMfV6B3oqLomf+bQnssS0EBBeoOtjMcy
+WuKu25Egf7H0zxcE4uF4ZdDykjlA9CvllDGJggK0NdOwOTVLHiDfCnFCA1oAhXkA
+pswb7rt/0MWzcMObPkUIVifOl3CMMkQIYiSkVgF/1qlkfjb5blImy2S5kDsDUAy+
+XJq8H+F7sSz7FI9wk9ZBdh6wEFuOkTbytMsHLmPlrv1oSJ7YHyKWonI8nhaSEZSp
+eyWS1PN1e0O4XR9/uTWm9OjUpDlAw976YSdqXuZD5iirc6ghBRpnteAVYMIRzyJA
+36ROZ/udZmszXfJL9/6nID8AALjI3dIybbxpirsrR1ia28KS5e55oiTFfL1eTU/S
+UrLttX6hEiYYO+B6TIHQ60MdF4952NYOH/q++jf4dt6cC4j1oxZEXalLq+Y2RsGG
+3RLxMrklQFxvpiul4kMQwnYJ929Xr7udBk3JBxH5M3ZyX9a8RvO6FLe0z7yTnArA
+2an2RDOc6TBdJM9BcJMT
+=jiaP
+-----END PGP SIGNATURE-----
+
+--Signature=_Wed__11_Apr_2012_15_11_55_+1000_/5lwMDzloiumeSrR--
