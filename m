@@ -1,80 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756397Ab2DKKZU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Apr 2012 06:25:20 -0400
-Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:34230 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754898Ab2DKKZS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Apr 2012 06:25:18 -0400
-Date: Wed, 11 Apr 2012 11:24:11 +0100
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: mingo@elte.hu, linux-kernel@vger.kernel.org,
-        Jonathan Cameron <jic23@kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: Re: [PATCH RESEND] x86, intel_mid: ADC management
-Message-ID: <20120411112411.11825eec@pyramind.ukuu.org.uk>
-In-Reply-To: <20120410175846.GQ7499@opensource.wolfsonmicro.com>
-References: <20120410131930.28186.85370.stgit@bob.linux.org.uk>
-	<20120410131206.GB31551@sirena.org.uk>
-	<20120410142501.6045c6c0@pyramind.ukuu.org.uk>
-	<20120410133339.GK7499@opensource.wolfsonmicro.com>
-	<20120410144235.1e05efd4@pyramind.ukuu.org.uk>
-	<20120410140749.GL7499@opensource.wolfsonmicro.com>
-	<20120410151529.5bcc5ce6@pyramind.ukuu.org.uk>
-	<20120410151943.GM7499@opensource.wolfsonmicro.com>
-	<20120410175632.5c11c36e@pyramind.ukuu.org.uk>
-	<20120410175846.GQ7499@opensource.wolfsonmicro.com>
-X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1756491Ab2DKK23 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Apr 2012 06:28:29 -0400
+Received: from mga02.intel.com ([134.134.136.20]:53043 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756144Ab2DKK21 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Apr 2012 06:28:27 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
+   d="scan'208";a="127672119"
+Message-ID: <4F855CD7.1000902@intel.com>
+Date: Wed, 11 Apr 2012 13:28:39 +0300
+From: Adrian Hunter <adrian.hunter@intel.com>
+Organization: Intel Finland Oy, Registered Address: PL 281, 00181 Helsinki,
+ Business Identity Code: 0357606 - 4, Domiciled in Helsinki 
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111115 Thunderbird/8.0
+MIME-Version: 1.0
+To: Arnd Bergmann <arnd@arndb.de>
+CC: Adrian Hunter <adrian.hunter@intel.com>, linaro-kernel@lists.linaro.org,
+        linux-mm@kvack.org, "Luca Porzio (lporzio)" <lporzio@micron.com>,
+        Alex Lemberg <alex.lemberg@sandisk.com>, linux-kernel@vger.kernel.org,
+        Saugata Das <saugata.das@linaro.org>,
+        Venkatraman S <venkat@linaro.org>, Yejin Moon <yejin.moon@samsung.com>,
+        Hyojin Jeong <syr.jeong@samsung.com>,
+        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
+        kernel-team@android.com
+Subject: Re: swap on eMMC and other flash
+References: <201203301744.16762.arnd@arndb.de> <201203301850.22784.arnd@arndb.de> <4F7C3CE2.5070803@intel.com> <201204041247.53289.arnd@arndb.de>
+In-Reply-To: <201204041247.53289.arnd@arndb.de>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > Non-staging code cannot depend upon staging code. That is the rule GregKH
-> > laid down. The Intel drivers involved are established non staging drivers
-> > and the gpadc layer is basically cleaning up the fact they all do this
-> > themselves in private right now without any central co-ordination or
-> > abstraction.
+On 04/04/12 15:47, Arnd Bergmann wrote:
+> On Wednesday 04 April 2012, Adrian Hunter wrote:
+>> On 30/03/12 21:50, Arnd Bergmann wrote:
+>>> (sorry for the duplicated email, this corrects the address of the android
+>>> kernel team, please reply here)
+>>>
+>>> On Friday 30 March 2012, Arnd Bergmann wrote:
+>>>
+>>>  We've had a discussion in the Linaro storage team (Saugata, Venkat and me,
+>>>  with Luca joining in on the discussion) about swapping to flash based media
+>>>  such as eMMC. This is a summary of what we found and what we think should
+>>>  be done. If people agree that this is a good idea, we can start working
+>>>  on it.
+>>
+>> There is mtdswap.
 > 
-> So, that's a bit different and not at all obvious from your e-mail - the
-> diffstat shows only the code you're adding, not the code you've factored
-> out of the existing mainline drivers.  The diffstat you posted was:
+> Ah, very interesting. I wasn't aware of that. Obviously we can't directly
+> use it on block devices that have their own garbage collection and wear
+> leveling built into them, but it's interesting to see how this was solved
+> before.
 > 
-> | arch/x86/include/asm/intel_mid_gpadc.h   |   13 +
-> | arch/x86/platform/mrst/Makefile          |    1
-> | arch/x86/platform/mrst/intel_mid_gpadc.c |  645 ++++++++++++++++++++++++++++++
-> | arch/x86/platform/mrst/mrst.c            |    6
-> | 4 files changed, 665 insertions(+), 0 deletions(-)
+> While we could build something similar that remaps blocks between an
+> eMMC device and the logical swap space that is used by the mm code,
+> my feeling is that it would be easier to modify the swap code itself
+> to do the right thing.
 > 
-> which is a pure addition of code and I'm not seeing anything in the
-> changelog about this either.
+>> Also the old Nokia N900 had swap to eMMC.
+>>
+>> The last I heard was that swap was considered to be simply too slow on hand
+>> held devices.
+> 
+> That's the part that we want to solve here. It has nothing to do with
+> handheld devices, but more with specific incompatibilities of the
+> block allocation in the swap code vs. what an eMMC device expects
+> to see for fast operation. If you write data in the wrong order on
+> flash devices, you get long delays that you don't get when you do
+> it the right way. The same problem exists for file systems, and is
+> being addressed there as well.
+> 
+>> As systems adopt more RAM, isn't there a decreasing demand for swap?
+> 
+> No. You would never be able to make hibernate work, no matter how much
+> RAM you add ;-)
 
-True.. the code factoring out stuff is supposed to follow once this is
-sorted.
-
-> We do have to be careful about this sort of "this is a little bit of low
-> level code" thing - it (along with "our hardware is unique") comes up
-> rather a lot and it's often missing a good chunk of the picture.
-
-Yes. But it also helps - there is no user space API here so the only bit
-of IIO that needs importing is small, and if the API in kernel changes
-nothing userspace will break.
-
-I don't btw think that layer should depend upon IIO though - IIO should
-depend upon that layer. There's no need to drag all the rest of IIO in
-for this, just as it can depend upon the gpio layer etc.
-
-If that code gets pulled out of IIO dumped into drivers/adc and has a bit
-of a different API to the gpadc code then no problem, gpadc can follow it
-happily enough. IIO can use it from staging and IIO can migrate whenever.
-
-It does make sense to think hard about userspace APIs for IIO but for
-kernel APIs its really being too conservative - we break kernel APIs
-every release. They are not set into stone.
-
-Alan
+Have you considered making hibernate work without swap?
