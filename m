@@ -1,76 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932609Ab2DKQZ2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Apr 2012 12:25:28 -0400
-Received: from mail-pz0-f52.google.com ([209.85.210.52]:47876 "EHLO
-	mail-pz0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932471Ab2DKQZ0 (ORCPT
+	id S932623Ab2DKQ0I (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Apr 2012 12:26:08 -0400
+Received: from va3ehsobe001.messaging.microsoft.com ([216.32.180.11]:40660
+	"EHLO va3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932471Ab2DKQ0G (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Apr 2012 12:25:26 -0400
-Date: Wed, 11 Apr 2012 09:25:19 -0700
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: =?utf-8?B?5p6X5b2l5L2R?= <tom_lin@emc.com.tw>
-Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
-        djkurtz@chromium.org, Jiri Kosina <jkosina@suse.cz>
-Subject: Re: [PATCH v3] Input: Elan HID-I2C device driver
-Message-ID: <20120411162519.GA27562@core.coreip.homeip.net>
-References: <1334061766-20577-1-git-send-email-tom_lin@emc.com.tw>
- <20120411071212.GB6894@core.coreip.homeip.net>
- <4F85583F.6050008@emc.com.tw>
+	Wed, 11 Apr 2012 12:26:06 -0400
+X-SpamScore: -5
+X-BigFish: VPS-5(z6c9Mzzz1202hzz8275bh8275dhz2dh668h839hd24h)
+X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
+X-WSS-ID: 0M2BPNC-01-1TZ-02
+X-M-MSG: 
+From: Joerg Roedel <joerg.roedel@amd.com>
+To: Greg KH <gregkh@linuxfoundation.org>
+CC: <linux-kernel@vger.kernel.org>, Joerg Roedel <joerg.roedel@amd.com>,
+        <stable@vger.kernel.org>
+Subject: [PATCH 3.2-stable] iommu/amd: Make sure IOMMU interrupts are re-enabled on resume
+Date: Wed, 11 Apr 2012 18:25:46 +0200
+Message-ID: <1334161546-11110-1-git-send-email-joerg.roedel@amd.com>
+X-Mailer: git-send-email 1.7.5.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <4F85583F.6050008@emc.com.tw>
-X-KMail-SignatureActionEnabled: false
-X-KMail-EncryptActionEnabled: false
-X-KMail-CryptoMessageFormat: 15
-X-KMail-Identity: 579597780
-X-KMail-Transport: 2086860242
-X-KMail-Fcc: 11
-X-KMail-Drafts: 19
-X-KMail-Templates: 38
-X-KMail-Link-Message: 603189
-X-KMail-Link-Type: reply
-User-Agent: KMail/4.8.1 (Linux/3.3.1-3.fc16.x86_64; KDE/4.8.1; x86_64; ; )
+Content-Type: text/plain
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday, April 11, 2012 06:09:03 PM 林彥佑 wrote:
-> Hi Daniel
-> 
-> On 04/11/2012 03:12 PM, Dmitry Torokhov wrote:
-> > Hi Tom,
-> > 
-> > On Tue, Apr 10, 2012 at 08:42:46PM +0800, Tom Lin wrote:
-> >> This patch adds driver for Elan I2C touchpad. These protocol of HID-I2C
-> >> was
-> >> defined by Microsoft. The kernel driver would use the multi-touch
-> >> protocol
-> >> format B.
-> > 
-> > If this device truly supports HID protocol shouldn't we define i2c-hid
-> > transport, similar to usbhid?
-> 
-> I merely follow defined by Microsoft.
-> It was called "HID OVER I2C" by Microsoft.
-> (http://msdn.microsoft.com/en-us/library/windows/hardware/hh825917(v=vs.85).
-> aspx) But I agree to change from hid i2c to i2chid.
-> Do you have any better opinions?
+commit 9ddd592a191b32f2ee6c4b6ed2bd52665c3a49f5 upstream
 
-I am not sure we are talking about same thing... I do not really care
-whether it is named "hid i2c" or "i2chid". What I meant if the device
-really speaks HID protocol, except that the transport is not USB or
-bluetooth but I2C, then instead of writing a custom driver for this
-particular part we need to add a new HID transport into
-drivers/hid/i2c-hid that is similar to drivers/hid/usbhid/ and reuse the
-rest of HID framework along with hid- multitouch.c which handles
-HID-compliant multitouch devices.
+Unfortunatly the interrupts for the event log and the
+peripheral page-faults are only enabled at boot but not
+re-enabled at resume. Fix that for 3.2.
 
-I am CCing Jiri (HID maintainer) for additional input.
+Cc: stable@vger.kernel.org
+Signed-off-by: Joerg Roedel <joerg.roedel@amd.com>
+---
+ drivers/iommu/amd_iommu_init.c |   27 ++++++++++++++++++++-------
+ 1 files changed, 20 insertions(+), 7 deletions(-)
 
-Thanks.
-
+diff --git a/drivers/iommu/amd_iommu_init.c b/drivers/iommu/amd_iommu_init.c
+index 5c74179..c90a709 100644
+--- a/drivers/iommu/amd_iommu_init.c
++++ b/drivers/iommu/amd_iommu_init.c
+@@ -1033,8 +1033,9 @@ static int iommu_setup_msi(struct amd_iommu *iommu)
+ {
+ 	int r;
+ 
+-	if (pci_enable_msi(iommu->dev))
+-		return 1;
++	r = pci_enable_msi(iommu->dev);
++	if (r)
++		return r;
+ 
+ 	r = request_threaded_irq(iommu->dev->irq,
+ 				 amd_iommu_int_handler,
+@@ -1044,24 +1045,36 @@ static int iommu_setup_msi(struct amd_iommu *iommu)
+ 
+ 	if (r) {
+ 		pci_disable_msi(iommu->dev);
+-		return 1;
++		return r;
+ 	}
+ 
+ 	iommu->int_enabled = true;
+-	iommu_feature_enable(iommu, CONTROL_EVT_INT_EN);
+ 
+ 	return 0;
+ }
+ 
+ static int iommu_init_msi(struct amd_iommu *iommu)
+ {
++	int ret;
++
+ 	if (iommu->int_enabled)
+-		return 0;
++		goto enable_faults;
+ 
+ 	if (pci_find_capability(iommu->dev, PCI_CAP_ID_MSI))
+-		return iommu_setup_msi(iommu);
++		ret = iommu_setup_msi(iommu);
++	else
++		ret = -ENODEV;
+ 
+-	return 1;
++	if (ret)
++		return ret;
++
++enable_faults:
++	iommu_feature_enable(iommu, CONTROL_EVT_INT_EN);
++
++	if (iommu->ppr_log != NULL)
++		iommu_feature_enable(iommu, CONTROL_PPFINT_EN);
++
++	return 0;
+ }
+ 
+ /****************************************************************************
 -- 
-Dmitry
+1.7.5.4
+
+
