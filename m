@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933713Ab2DLAHV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Apr 2012 20:07:21 -0400
+	id S933716Ab2DLAHs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Apr 2012 20:07:48 -0400
 Received: from mail-pz0-f52.google.com ([209.85.210.52]:63303 "EHLO
 	mail-pz0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933648Ab2DKXPH (ORCPT
+	with ESMTP id S933628Ab2DKXPA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Apr 2012 19:15:07 -0400
-Message-Id: <20120411231021.949846562@linuxfoundation.org>
+	Wed, 11 Apr 2012 19:15:00 -0400
+Message-Id: <20120411231021.617141259@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Wed, 11 Apr 2012 16:10:40 -0700
+Date: Wed, 11 Apr 2012 16:10:38 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Yinghai Lu <yinghai@kernel.org>,
-        Len Brown <len.brown@intel.com>
-Subject: [ 22/78] PNPACPI: Fix device ref leaking in acpi_pnp_match
+        alan@lxorguk.ukuu.org.uk, Brian Norris <computersforpeace@gmail.com>,
+        Artem Bityutskiy <artem.bityutskiy@linux.intel.com>,
+        David Woodhouse <David.Woodhouse@intel.com>
+Subject: [ 20/78] mtd: m25p80: set writebufsize
 In-Reply-To: <20120411231102.GA6404@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,41 +26,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Yinghai Lu <yinghai@kernel.org>
+From: Brian Norris <computersforpeace@gmail.com>
 
-commit 89e96ada572fb216e582dbe3f64e1a6939a37f74 upstream.
+commit b54f47c8bcfc5f766bf13ec31bd7dd1d4726d33b upstream.
 
-During testing pci root bus removal, found some root bus bridge is not freed.
-If booting with pnpacpi=off, those hostbridge could be freed without problem.
-It turns out that some devices reference are not released during acpi_pnp_match.
-that match should not hold one device ref during every calling.
-Add pu_device calling before returning.
+Using UBI on m25p80 can give messages like:
 
-Signed-off-by: Yinghai Lu <yinghai@kernel.org>
-Signed-off-by: Len Brown <len.brown@intel.com>
+    UBI error: io_init: bad write buffer size 0 for 1 min. I/O unit
+
+We need to initialize writebufsize; I think "page_size" is the correct
+"bufsize", although I'm not sure. Comments?
+
+Signed-off-by: Brian Norris <computersforpeace@gmail.com>
+Signed-off-by: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
+Signed-off-by: David Woodhouse <David.Woodhouse@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/pnp/pnpacpi/core.c |    7 ++++++-
- 1 file changed, 6 insertions(+), 1 deletion(-)
+ drivers/mtd/devices/m25p80.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/drivers/pnp/pnpacpi/core.c
-+++ b/drivers/pnp/pnpacpi/core.c
-@@ -321,9 +321,14 @@ static int __init acpi_pnp_match(struct
- {
- 	struct acpi_device *acpi = to_acpi_device(dev);
- 	struct pnp_dev *pnp = _pnp;
-+	struct device *physical_device;
-+
-+	physical_device = acpi_get_physical_device(acpi->handle);
-+	if (physical_device)
-+		put_device(physical_device);
+--- a/drivers/mtd/devices/m25p80.c
++++ b/drivers/mtd/devices/m25p80.c
+@@ -932,6 +932,7 @@ static int __devinit m25p_probe(struct s
+ 	ppdata.of_node = spi->dev.of_node;
+ 	flash->mtd.dev.parent = &spi->dev;
+ 	flash->page_size = info->page_size;
++	flash->mtd.writebufsize = flash->page_size;
  
- 	/* true means it matched */
--	return !acpi_get_physical_device(acpi->handle)
-+	return !physical_device
- 	    && compare_pnp_id(pnp->id, acpi_device_hid(acpi));
- }
- 
+ 	if (info->addr_width)
+ 		flash->addr_width = info->addr_width;
 
 
