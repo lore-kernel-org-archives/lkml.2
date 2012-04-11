@@ -1,118 +1,786 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760451Ab2DKOXd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Apr 2012 10:23:33 -0400
-Received: from emvm-gh1-uea08.nsa.gov ([63.239.67.9]:10766 "EHLO nsa.gov"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1760341Ab2DKOX3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Apr 2012 10:23:29 -0400
-X-TM-IMSS-Message-ID: <a315d8ba00017e52@nsa.gov>
-Subject: Re: [PATCH v2] Add security.* XATTR support for the UBIFS
-From: Stephen Smalley <sds@tycho.nsa.gov>
-To: Subodh Nijsure <subodh.nijsure@gmail.com>
-Cc: linux-mtd@lists.infradead.org, Artem Bityutskiy <dedekind1@gmail.com>,
-        Adrian Hunter <adrian.hunter@intel.com>, linux-kernel@vger.kernel.org,
-        linux-security-module@vger.kernel.org,
-        Subodh Nijsure <snijsure@grid-net.com>
-In-Reply-To: <CALr9Q3a89_wa48BfOriP=MEQAXa1Sgf+k_Ey=kuKN9Ydewwegw@mail.gmail.com>
-References: <1334015486-20616-1-git-send-email-snijsure@grid-net.com>
-	 <1334061985.23411.3.camel@moss-pluto>
-	 <CALr9Q3Yto9VOhFNRQFVqP7Zi6RWWBaoDUu1zxsup7=+g7_pijQ@mail.gmail.com>
-	 <1334149853.14296.29.camel@moss-pluto>
-	 <CALr9Q3a89_wa48BfOriP=MEQAXa1Sgf+k_Ey=kuKN9Ydewwegw@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Organization: National Security Agency
-Date: Wed, 11 Apr 2012 10:23:22 -0400
-Message-ID: <1334154202.14296.58.camel@moss-pluto>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
-Content-Transfer-Encoding: 7bit
+	id S1760536Ab2DKOX4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Apr 2012 10:23:56 -0400
+Received: from kamaji.grokhost.net ([87.117.218.43]:54933 "EHLO
+	kamaji.grokhost.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760380Ab2DKOVZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Apr 2012 10:21:25 -0400
+From: Chris Boot <bootc@bootc.net>
+To: linux1394-devel@lists.sourceforge.net, target-devel@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, agrover@redhat.com, clemens@ladisch.de,
+        nab@linux-iscsi.org, stefanr@s5r6.in-berlin.de,
+        Chris Boot <bootc@bootc.net>
+Subject: [PATCH 05/11] firewire-sbp-target: Add sbp_configfs.c
+Date: Wed, 11 Apr 2012 15:20:37 +0100
+Message-Id: <1334154043-69076-6-git-send-email-bootc@bootc.net>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1334154043-69076-1-git-send-email-bootc@bootc.net>
+References: <1329317248-94128-1-git-send-email-bootc@bootc.net>
+ <1334154043-69076-1-git-send-email-bootc@bootc.net>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-04-11 at 07:12 -0700, Subodh Nijsure wrote:
-> On Wed, Apr 11, 2012 at 6:10 AM, Stephen Smalley <sds@tycho.nsa.gov> wrote:
-> > On Wed, 2012-04-11 at 06:00 -0700, Subodh Nijsure wrote:
-> >> On Tue, Apr 10, 2012 at 5:46 AM, Stephen Smalley <sds@tycho.nsa.gov> wrote:
-> >> > On Mon, 2012-04-09 at 16:51 -0700, subodh.nijsure@gmail.com wrote:
-> >> >> From: Subodh Nijsure <snijsure@grid-net.com>
-> >> >>
-> >> >> Also fix couple of bugs in UBIFS extended attribute length calculation.
-> >> >>
-> >> >> Changes Since V1:
-> >> >>          Instead of just handling security.selinux extended attribute handle
-> >> >>          all security.* attributes.
-> >> >>
-> >> >> TESTING: Tested on  MX28 based platforms using Micron MT29F2G08ABAEAH4 NAND
-> >> >>          With these change we are able to label UBIFS filesystem with
-> >> >>          security.selinux and run system with selinux enabled.
-> >> >>          This change also allows one to set other security.* extended
-> >> >>          attributesr, such as security.smack security.evm, security.ima
-> >> >>          Ran integck test on UBI filesystem.
-> >> >>
-> >> >> Signed-off-by: Subodh Nijsure <snijsure@grid-net.com>
-> >> >> ---
-> >> >>  fs/ubifs/dir.c     |    4 ++
-> >> >>  fs/ubifs/file.c    |    6 ++
-> >> >>  fs/ubifs/journal.c |   12 +++-
-> >> >>  fs/ubifs/super.c   |    3 +
-> >> >>  fs/ubifs/ubifs.h   |    9 +++
-> >> >>  fs/ubifs/xattr.c   |  147 ++++++++++++++++++++++++++++++++++++++++++++++++----
-> >> >>  6 files changed, 167 insertions(+), 14 deletions(-)
-> >> >>
-> >> >> diff --git a/fs/ubifs/dir.c b/fs/ubifs/dir.c
-> >> >> index ec9f187..f4e06c4 100644
-> >> >> --- a/fs/ubifs/dir.c
-> >> >> +++ b/fs/ubifs/dir.c
-> >> >> @@ -293,6 +293,7 @@ static int ubifs_create(struct inode *dir, struct dentry *dentry, umode_t mode,
-> >> >>       ubifs_release_budget(c, &req);
-> >> >>       insert_inode_hash(inode);
-> >> >>       d_instantiate(dentry, inode);
-> >> >> +     ubifs_init_security(dir, inode, &dentry->d_name);
-> >> >>       return 0;
-> >> >>
-> >> >>  out_cancel:
-> >> >
-> >> > The ubifs_init_security() should occur before d_instantiate() so that
-> >> > the inode is not accessible to other threads before its security
-> >> > attributes have been set.  And if it fails, you would ideally drop the
-> >> > inode altogether and return an error to the creating process.
-> >> >
-> >>
-> >> I will look into moving ubifs_init_security() before d_instantiate().
-> >> Last time I had tried I had run into some issues and had to keep
-> >> creating inode and then creating xattr as two seperate items. I will
-> >> look through the UBIFS code that actually creates xattr ubi nodes.
-> >> Also I will wait for couple of days to send v3 patch with to see if
-> >> mtd folks have other comments this patch.
-> >
-> > I'd favor moving the call to ubifs_init_security() inside of
-> > ubifs_new_inode() so that it gets done as part of all inode creation.
-> > To do that, you'll need to pass the &dentry->d_name (const struct qstr
-> > *) down to ubifs_new_inode(). But you can see that it is done that way
-> > for ext4_new_inode(), for example.
-> >
-> > --
-> 
-> Okay, I will look at that code little bit mode.
-> 
-> UBIFS create_xattr() (fs/ubifs/xattr.c)  calls ubifs_new_inode() so it
-> can get tricky if I want to create xattr in ubifs_new_inode().
-> 
-> Also noticed that UBIFS doesn't d_instantiate() inode entry created to
-> hold extended attribute, not certain if that would be an issue.
-> 
-> I will look how other fs manage xattrs, I certainly don't want to
-> modify how UBIFS manages extended attributes.
+This is used to glue the target framework's configfs code to the target
+code, and what is used to create targets and link them to LUNs to
+export. The code to create the FireWire unit directory to advertise
+targets on the FireWire bus is also in here.
 
-Oh, I missed the fact that ubifs xattrs are implemented as their own
-inodes.  In that case, I guess you don't want to do what I said above,
-and your current approach is fine (aside from moving it up before
-d_instantiate and handling the error case).  ext4 doesn't implement the
-xattr as a regular inode so that is different.
+Signed-off-by: Chris Boot <bootc@bootc.net>
+Cc: Andy Grover <agrover@redhat.com>
+Cc: Clemens Ladisch <clemens@ladisch.de>
+Cc: Nicholas A. Bellinger <nab@linux-iscsi.org>
+Cc: Stefan Richter <stefanr@s5r6.in-berlin.de>
+---
+ drivers/target/sbp/sbp_configfs.c |  737 +++++++++++++++++++++++++++++++++++++
+ 1 file changed, 737 insertions(+)
+ create mode 100644 drivers/target/sbp/sbp_configfs.c
 
+diff --git a/drivers/target/sbp/sbp_configfs.c b/drivers/target/sbp/sbp_configfs.c
+new file mode 100644
+index 0000000..5399616
+--- /dev/null
++++ b/drivers/target/sbp/sbp_configfs.c
+@@ -0,0 +1,737 @@
++/*
++ * SBP2 target driver (SCSI over IEEE1394 in target mode)
++ *
++ * Copyright (C) 2011  Chris Boot <bootc@bootc.net>
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2 of the License, or
++ * (at your option) any later version.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software Foundation,
++ * Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
++ */
++
++#define KMSG_COMPONENT "sbp_target"
++#define pr_fmt(fmt) KMSG_COMPONENT ": " fmt
++
++#include <linux/module.h>
++#include <linux/moduleparam.h>
++#include <linux/version.h>
++#include <linux/init.h>
++#include <linux/slab.h>
++#include <linux/kthread.h>
++#include <linux/types.h>
++#include <linux/string.h>
++#include <linux/configfs.h>
++#include <linux/ctype.h>
++#include <linux/firewire.h>
++
++#include <asm/unaligned.h>
++
++#include <target/target_core_base.h>
++#include <target/target_core_backend.h>
++#include <target/target_core_fabric.h>
++#include <target/target_core_configfs.h>
++#include <target/target_core_fabric_configfs.h>
++#include <target/configfs_macros.h>
++
++#include "sbp_base.h"
++#include "sbp_fabric.h"
++#include "sbp_management_agent.h"
++
++/* Local pointer to allocated TCM configfs fabric module */
++struct target_fabric_configfs *sbp_fabric_configfs;
++
++/* FireWire address region for management and command block address handlers */
++const struct fw_address_region sbp_register_region = {
++	.start = CSR_REGISTER_BASE + 0x10000,
++	.end   = 0x1000000000000ULL,
++};
++
++static const u32 sbp_unit_directory_template[] = {
++	0x1200609e, /* unit_specifier_id: NCITS/T10 */
++	0x13010483, /* unit_sw_version: 1155D Rev 4 */
++	0x3800609e, /* command_set_specifier_id: NCITS/T10 */
++	0x390104d8, /* command_set: SPC-2 */
++	0x3b000000, /* command_set_revision: 0 */
++	0x3c000001, /* firmware_revision: 1 */
++};
++
++static int sbp_count_se_tpg_luns(struct se_portal_group *tpg)
++{
++	int i, count = 0;
++
++	spin_lock(&tpg->tpg_lun_lock);
++	for (i = 0; i < TRANSPORT_MAX_LUNS_PER_TPG; i++) {
++		struct se_lun *se_lun = tpg->tpg_lun_list[i];
++
++		if (se_lun->lun_status == TRANSPORT_LUN_STATUS_FREE)
++			continue;
++
++		count++;
++	}
++	spin_unlock(&tpg->tpg_lun_lock);
++
++	return count;
++}
++
++static int sbp_update_unit_directory(struct sbp_tport *tport)
++{
++	int num_luns, num_entries, idx = 0, mgt_agt_addr, ret, i;
++	u32 *data;
++
++	if (tport->unit_directory.data) {
++		fw_core_remove_descriptor(&tport->unit_directory);
++		kfree(tport->unit_directory.data);
++		tport->unit_directory.data = NULL;
++	}
++
++	if (!tport->enable || !tport->tpg)
++		return 0;
++
++	num_luns = sbp_count_se_tpg_luns(&tport->tpg->se_tpg);
++
++	/*
++	 * Number of entries in the final unit directory:
++	 *  - all of those in the template
++	 *  - management_agent
++	 *  - unit_characteristics
++	 *  - reconnect_timeout
++	 *  - unit unique ID
++	 *  - one for each LUN
++	 *
++	 *  MUST NOT include leaf or sub-directory entries
++	 */
++	num_entries = ARRAY_SIZE(sbp_unit_directory_template) + 4 + num_luns;
++
++	if (tport->directory_id != -1)
++		num_entries++;
++
++	/* allocate num_entries + 4 for the header and unique ID leaf */
++	data = kcalloc((num_entries + 4), sizeof(u32), GFP_KERNEL);
++	if (!data)
++		return -ENOMEM;
++
++	/* directory_length */
++	data[idx++] = num_entries << 16;
++
++	/* directory_id */
++	if (tport->directory_id != -1)
++		data[idx++] = (CSR_DIRECTORY_ID << 24) | tport->directory_id;
++
++	/* unit directory template */
++	memcpy(&data[idx], sbp_unit_directory_template,
++			sizeof(sbp_unit_directory_template));
++	idx += ARRAY_SIZE(sbp_unit_directory_template);
++
++	/* management_agent */
++	mgt_agt_addr = (tport->mgt_agt->handler.offset - CSR_REGISTER_BASE) / 4;
++	data[idx++] = 0x54000000 | (mgt_agt_addr & 0x00ffffff);
++
++	/* unit_characteristics */
++	data[idx++] = 0x3a000000 |
++		(((tport->mgt_orb_timeout * 2) << 8) & 0xff00) |
++		SBP_ORB_FETCH_SIZE;
++
++	/* reconnect_timeout */
++	data[idx++] = 0x3d000000 | (tport->max_reconnect_timeout & 0xffff);
++
++	/* unit unique ID (leaf is just after LUNs) */
++	data[idx++] = 0x8d000000 | (num_luns + 1);
++
++	spin_lock(&tport->tpg->se_tpg.tpg_lun_lock);
++	for (i = 0; i < TRANSPORT_MAX_LUNS_PER_TPG; i++) {
++		struct se_lun *se_lun = tport->tpg->se_tpg.tpg_lun_list[i];
++		struct se_device *dev;
++		int type;
++
++		if (se_lun->lun_status == TRANSPORT_LUN_STATUS_FREE)
++			continue;
++
++		spin_unlock(&tport->tpg->se_tpg.tpg_lun_lock);
++
++		dev = se_lun->lun_se_dev;
++		type = dev->transport->get_device_type(dev);
++
++		/* logical_unit_number */
++		data[idx++] = 0x14000000 |
++			((type << 16) & 0x1f0000) |
++			(se_lun->unpacked_lun & 0xffff);
++
++		spin_lock(&tport->tpg->se_tpg.tpg_lun_lock);
++	}
++	spin_unlock(&tport->tpg->se_tpg.tpg_lun_lock);
++
++	/* unit unique ID leaf */
++	data[idx++] = 2 << 16;
++	data[idx++] = tport->guid >> 32;
++	data[idx++] = tport->guid;
++
++	tport->unit_directory.length = idx;
++	tport->unit_directory.key = (CSR_DIRECTORY | CSR_UNIT) << 24;
++	tport->unit_directory.data = data;
++
++	ret = fw_core_add_descriptor(&tport->unit_directory);
++	if (ret < 0) {
++		kfree(tport->unit_directory.data);
++		tport->unit_directory.data = NULL;
++	}
++
++	return ret;
++}
++
++static ssize_t sbp_parse_wwn(const char *name, u64 *wwn, int strict)
++{
++	const char *cp;
++	char c, nibble;
++	int pos = 0, err;
++
++	*wwn = 0;
++	for (cp = name; cp < &name[SBP_NAMELEN - 1]; cp++) {
++		c = *cp;
++		if (c == '\n' && cp[1] == '\0')
++			continue;
++		if (c == '\0') {
++			err = 2;
++			if (pos != 16)
++				goto fail;
++			return cp - name;
++		}
++		err = 3;
++		if (isdigit(c))
++			nibble = c - '0';
++		else if (isxdigit(c) && (islower(c) || !strict))
++			nibble = tolower(c) - 'a' + 10;
++		else
++			goto fail;
++		*wwn = (*wwn << 4) | nibble;
++		pos++;
++	}
++	err = 4;
++fail:
++	printk(KERN_INFO "err %u len %zu pos %u\n",
++			err, cp - name, pos);
++	return -1;
++}
++
++static ssize_t sbp_format_wwn(char *buf, size_t len, u64 wwn)
++{
++	return snprintf(buf, len, "%016llx", wwn);
++}
++
++static struct se_node_acl *sbp_make_nodeacl(
++		struct se_portal_group *se_tpg,
++		struct config_group *group,
++		const char *name)
++{
++	struct se_node_acl *se_nacl, *se_nacl_new;
++	struct sbp_nacl *nacl;
++	u64 guid = 0;
++	u32 nexus_depth = 1;
++
++	if (sbp_parse_wwn(name, &guid, 1) < 0)
++		return ERR_PTR(-EINVAL);
++
++	se_nacl_new = sbp_alloc_fabric_acl(se_tpg);
++	if (!se_nacl_new)
++		return ERR_PTR(-ENOMEM);
++
++	/*
++	 * se_nacl_new may be released by core_tpg_add_initiator_node_acl()
++	 * when converting a NodeACL from demo mode -> explict
++	 */
++	se_nacl = core_tpg_add_initiator_node_acl(se_tpg, se_nacl_new,
++			name, nexus_depth);
++	if (IS_ERR(se_nacl)) {
++		sbp_release_fabric_acl(se_tpg, se_nacl_new);
++		return se_nacl;
++	}
++
++	nacl = container_of(se_nacl, struct sbp_nacl, se_node_acl);
++	nacl->guid = guid;
++	sbp_format_wwn(nacl->iport_name, SBP_NAMELEN, guid);
++
++	return se_nacl;
++}
++
++static void sbp_drop_nodeacl(struct se_node_acl *se_acl)
++{
++	struct sbp_nacl *nacl =
++		container_of(se_acl, struct sbp_nacl, se_node_acl);
++
++	core_tpg_del_initiator_node_acl(se_acl->se_tpg, se_acl, 1);
++	kfree(nacl);
++}
++
++static int sbp_post_link_lun(
++		struct se_portal_group *se_tpg,
++		struct se_lun *se_lun)
++{
++	struct sbp_tpg *tpg = container_of(se_tpg, struct sbp_tpg, se_tpg);
++
++	return sbp_update_unit_directory(tpg->tport);
++}
++
++static void sbp_pre_unlink_lun(
++		struct se_portal_group *se_tpg,
++		struct se_lun *se_lun)
++{
++	struct sbp_tpg *tpg = container_of(se_tpg, struct sbp_tpg, se_tpg);
++	struct sbp_tport *tport = tpg->tport;
++	int ret;
++
++	if (sbp_count_se_tpg_luns(&tpg->se_tpg) == 0)
++		tport->enable = 0;
++
++	ret = sbp_update_unit_directory(tport);
++	if (ret < 0)
++		pr_err("unlink LUN: failed to update unit directory\n");
++}
++
++static struct se_portal_group *sbp_make_tpg(
++		struct se_wwn *wwn,
++		struct config_group *group,
++		const char *name)
++{
++	struct sbp_tport *tport =
++		container_of(wwn, struct sbp_tport, tport_wwn);
++
++	struct sbp_tpg *tpg;
++	unsigned long tpgt;
++	int ret;
++
++	if (strstr(name, "tpgt_") != name)
++		return ERR_PTR(-EINVAL);
++	if (kstrtoul(name + 5, 10, &tpgt) || tpgt > UINT_MAX)
++		return ERR_PTR(-EINVAL);
++
++	if (tport->tpg) {
++		pr_err("Only one TPG per Unit is possible.\n");
++		return ERR_PTR(-EBUSY);
++	}
++
++	tpg = kzalloc(sizeof(*tpg), GFP_KERNEL);
++	if (!tpg) {
++		pr_err("Unable to allocate struct sbp_tpg\n");
++		return ERR_PTR(-ENOMEM);
++	}
++
++	tpg->tport = tport;
++	tpg->tport_tpgt = tpgt;
++	tport->tpg = tpg;
++
++	/* default attribute values */
++	tport->enable = 0;
++	tport->directory_id = -1;
++	tport->mgt_orb_timeout = 15;
++	tport->max_reconnect_timeout = 5;
++	tport->max_logins_per_lun = 1;
++
++	tport->mgt_agt = sbp_management_agent_register(tport);
++	if (IS_ERR(tport->mgt_agt)) {
++		ret = PTR_ERR(tport->mgt_agt);
++		kfree(tpg);
++		return ERR_PTR(ret);
++	}
++
++	ret = core_tpg_register(&sbp_fabric_configfs->tf_ops, wwn,
++			&tpg->se_tpg, (void *)tpg,
++			TRANSPORT_TPG_TYPE_NORMAL);
++	if (ret < 0) {
++		sbp_management_agent_unregister(tport->mgt_agt);
++		kfree(tpg);
++		return ERR_PTR(ret);
++	}
++
++	return &tpg->se_tpg;
++}
++
++static void sbp_drop_tpg(struct se_portal_group *se_tpg)
++{
++	struct sbp_tpg *tpg = container_of(se_tpg, struct sbp_tpg, se_tpg);
++	struct sbp_tport *tport = tpg->tport;
++
++	core_tpg_deregister(se_tpg);
++	sbp_management_agent_unregister(tport->mgt_agt);
++	tport->tpg = NULL;
++	kfree(tpg);
++}
++
++static struct se_wwn *sbp_make_tport(
++		struct target_fabric_configfs *tf,
++		struct config_group *group,
++		const char *name)
++{
++	struct sbp_tport *tport;
++	u64 guid = 0;
++
++	if (sbp_parse_wwn(name, &guid, 1) < 0)
++		return ERR_PTR(-EINVAL);
++
++	tport = kzalloc(sizeof(*tport), GFP_KERNEL);
++	if (!tport) {
++		pr_err("Unable to allocate struct sbp_tport\n");
++		return ERR_PTR(-ENOMEM);
++	}
++
++	tport->guid = guid;
++	sbp_format_wwn(tport->tport_name, SBP_NAMELEN, guid);
++
++	return &tport->tport_wwn;
++}
++
++static void sbp_drop_tport(struct se_wwn *wwn)
++{
++	struct sbp_tport *tport =
++		container_of(wwn, struct sbp_tport, tport_wwn);
++
++	kfree(tport);
++}
++
++static ssize_t sbp_wwn_show_attr_version(
++		struct target_fabric_configfs *tf,
++		char *page)
++{
++	return sprintf(page, "FireWire SBP fabric module %s\n", SBP_VERSION);
++}
++
++TF_WWN_ATTR_RO(sbp, version);
++
++static struct configfs_attribute *sbp_wwn_attrs[] = {
++	&sbp_wwn_version.attr,
++	NULL,
++};
++
++static ssize_t sbp_tpg_show_directory_id(
++		struct se_portal_group *se_tpg,
++		char *page)
++{
++	struct sbp_tpg *tpg = container_of(se_tpg, struct sbp_tpg, se_tpg);
++	struct sbp_tport *tport = tpg->tport;
++
++	if (tport->directory_id == -1)
++		return sprintf(page, "implicit\n");
++	else
++		return sprintf(page, "%06x\n", tport->directory_id);
++}
++
++static ssize_t sbp_tpg_store_directory_id(
++		struct se_portal_group *se_tpg,
++		const char *page,
++		size_t count)
++{
++	struct sbp_tpg *tpg = container_of(se_tpg, struct sbp_tpg, se_tpg);
++	struct sbp_tport *tport = tpg->tport;
++	unsigned long val;
++
++	if (tport->enable) {
++		pr_err("Cannot change the directory_id on an active target.\n");
++		return -EBUSY;
++	}
++
++	if (strstr(page, "implicit") == page) {
++		tport->directory_id = -1;
++	} else {
++		if (kstrtoul(page, 16, &val) < 0)
++			return -EINVAL;
++		if (val > 0xffffff)
++			return -EINVAL;
++
++		tport->directory_id = val;
++	}
++
++	return count;
++}
++
++static ssize_t sbp_tpg_show_enable(
++		struct se_portal_group *se_tpg,
++		char *page)
++{
++	struct sbp_tpg *tpg = container_of(se_tpg, struct sbp_tpg, se_tpg);
++	struct sbp_tport *tport = tpg->tport;
++	return sprintf(page, "%d\n", tport->enable);
++}
++
++static ssize_t sbp_tpg_store_enable(
++		struct se_portal_group *se_tpg,
++		const char *page,
++		size_t count)
++{
++	struct sbp_tpg *tpg = container_of(se_tpg, struct sbp_tpg, se_tpg);
++	struct sbp_tport *tport = tpg->tport;
++	unsigned long val;
++	int ret;
++
++	if (kstrtoul(page, 0, &val) < 0)
++		return -EINVAL;
++	if ((val != 0) && (val != 1))
++		return -EINVAL;
++
++	if (tport->enable == val)
++		return count;
++
++	if (val) {
++		if (sbp_count_se_tpg_luns(&tpg->se_tpg) == 0) {
++			pr_err("Cannot enable a target with no LUNs!\n");
++			return -EINVAL;
++		}
++	} else {
++		/* XXX: force-shutdown sessions instead? */
++		spin_lock_bh(&se_tpg->session_lock);
++		if (!list_empty(&se_tpg->tpg_sess_list)) {
++			spin_unlock_bh(&se_tpg->session_lock);
++			return -EBUSY;
++		}
++		spin_unlock_bh(&se_tpg->session_lock);
++	}
++
++	tport->enable = val;
++
++	ret = sbp_update_unit_directory(tport);
++	if (ret < 0) {
++		pr_err("Could not update Config ROM\n");
++		return ret;
++	}
++
++	return count;
++}
++
++TF_TPG_BASE_ATTR(sbp, directory_id, S_IRUGO | S_IWUSR);
++TF_TPG_BASE_ATTR(sbp, enable, S_IRUGO | S_IWUSR);
++
++static struct configfs_attribute *sbp_tpg_base_attrs[] = {
++	&sbp_tpg_directory_id.attr,
++	&sbp_tpg_enable.attr,
++	NULL,
++};
++
++static ssize_t sbp_tpg_attrib_show_mgt_orb_timeout(
++		struct se_portal_group *se_tpg,
++		char *page)
++{
++	struct sbp_tpg *tpg = container_of(se_tpg, struct sbp_tpg, se_tpg);
++	struct sbp_tport *tport = tpg->tport;
++	return sprintf(page, "%d\n", tport->mgt_orb_timeout);
++}
++
++static ssize_t sbp_tpg_attrib_store_mgt_orb_timeout(
++		struct se_portal_group *se_tpg,
++		const char *page,
++		size_t count)
++{
++	struct sbp_tpg *tpg = container_of(se_tpg, struct sbp_tpg, se_tpg);
++	struct sbp_tport *tport = tpg->tport;
++	unsigned long val;
++	int ret;
++
++	if (kstrtoul(page, 0, &val) < 0)
++		return -EINVAL;
++	if ((val < 1) || (val > 127))
++		return -EINVAL;
++
++	if (tport->mgt_orb_timeout == val)
++		return count;
++
++	tport->mgt_orb_timeout = val;
++
++	ret = sbp_update_unit_directory(tport);
++	if (ret < 0)
++		return ret;
++
++	return count;
++}
++
++static ssize_t sbp_tpg_attrib_show_max_reconnect_timeout(
++		struct se_portal_group *se_tpg,
++		char *page)
++{
++	struct sbp_tpg *tpg = container_of(se_tpg, struct sbp_tpg, se_tpg);
++	struct sbp_tport *tport = tpg->tport;
++	return sprintf(page, "%d\n", tport->max_reconnect_timeout);
++}
++
++static ssize_t sbp_tpg_attrib_store_max_reconnect_timeout(
++		struct se_portal_group *se_tpg,
++		const char *page,
++		size_t count)
++{
++	struct sbp_tpg *tpg = container_of(se_tpg, struct sbp_tpg, se_tpg);
++	struct sbp_tport *tport = tpg->tport;
++	unsigned long val;
++	int ret;
++
++	if (kstrtoul(page, 0, &val) < 0)
++		return -EINVAL;
++	if ((val < 1) || (val > 32767))
++		return -EINVAL;
++
++	if (tport->max_reconnect_timeout == val)
++		return count;
++
++	tport->max_reconnect_timeout = val;
++
++	ret = sbp_update_unit_directory(tport);
++	if (ret < 0)
++		return ret;
++
++	return count;
++}
++
++static ssize_t sbp_tpg_attrib_show_max_logins_per_lun(
++		struct se_portal_group *se_tpg,
++		char *page)
++{
++	struct sbp_tpg *tpg = container_of(se_tpg, struct sbp_tpg, se_tpg);
++	struct sbp_tport *tport = tpg->tport;
++	return sprintf(page, "%d\n", tport->max_logins_per_lun);
++}
++
++static ssize_t sbp_tpg_attrib_store_max_logins_per_lun(
++		struct se_portal_group *se_tpg,
++		const char *page,
++		size_t count)
++{
++	struct sbp_tpg *tpg = container_of(se_tpg, struct sbp_tpg, se_tpg);
++	struct sbp_tport *tport = tpg->tport;
++	unsigned long val;
++
++	if (kstrtoul(page, 0, &val) < 0)
++		return -EINVAL;
++	if ((val < 1) || (val > 127))
++		return -EINVAL;
++
++	/* XXX: also check against current count? */
++
++	tport->max_logins_per_lun = val;
++
++	return count;
++}
++
++TF_TPG_ATTRIB_ATTR(sbp, mgt_orb_timeout, S_IRUGO | S_IWUSR);
++TF_TPG_ATTRIB_ATTR(sbp, max_reconnect_timeout, S_IRUGO | S_IWUSR);
++TF_TPG_ATTRIB_ATTR(sbp, max_logins_per_lun, S_IRUGO | S_IWUSR);
++
++static struct configfs_attribute *sbp_tpg_attrib_attrs[] = {
++	&sbp_tpg_attrib_mgt_orb_timeout.attr,
++	&sbp_tpg_attrib_max_reconnect_timeout.attr,
++	&sbp_tpg_attrib_max_logins_per_lun.attr,
++	NULL,
++};
++
++static struct target_core_fabric_ops sbp_ops = {
++	.get_fabric_name		= sbp_get_fabric_name,
++	.get_fabric_proto_ident		= sbp_get_fabric_proto_ident,
++	.tpg_get_wwn			= sbp_get_fabric_wwn,
++	.tpg_get_tag			= sbp_get_tag,
++	.tpg_get_default_depth		= sbp_get_default_depth,
++	.tpg_get_pr_transport_id	= sbp_get_pr_transport_id,
++	.tpg_get_pr_transport_id_len	= sbp_get_pr_transport_id_len,
++	.tpg_parse_pr_out_transport_id	= sbp_parse_pr_out_transport_id,
++	.tpg_check_demo_mode		= sbp_check_true,
++	.tpg_check_demo_mode_cache	= sbp_check_true,
++	.tpg_check_demo_mode_write_protect = sbp_check_false,
++	.tpg_check_prod_mode_write_protect = sbp_check_false,
++	.tpg_alloc_fabric_acl		= sbp_alloc_fabric_acl,
++	.tpg_release_fabric_acl		= sbp_release_fabric_acl,
++	.tpg_get_inst_index		= sbp_tpg_get_inst_index,
++	.release_cmd			= sbp_release_cmd,
++	.shutdown_session		= sbp_shutdown_session,
++	.close_session			= sbp_close_session,
++	.sess_get_index			= sbp_sess_get_index,
++	.write_pending			= sbp_write_pending,
++	.write_pending_status		= sbp_write_pending_status,
++	.set_default_node_attributes	= sbp_set_default_node_attrs,
++	.get_task_tag			= sbp_get_task_tag,
++	.get_cmd_state			= sbp_get_cmd_state,
++	.queue_data_in			= sbp_queue_data_in,
++	.queue_status			= sbp_queue_status,
++	.queue_tm_rsp			= sbp_queue_tm_rsp,
++	.get_fabric_sense_len		= sbp_get_fabric_sense_len,
++	.set_fabric_sense_len		= sbp_set_fabric_sense_len,
++	.check_stop_free		= sbp_check_stop_free,
++
++	.fabric_make_wwn		= sbp_make_tport,
++	.fabric_drop_wwn		= sbp_drop_tport,
++	.fabric_make_tpg		= sbp_make_tpg,
++	.fabric_drop_tpg		= sbp_drop_tpg,
++	.fabric_post_link		= sbp_post_link_lun,
++	.fabric_pre_unlink		= sbp_pre_unlink_lun,
++	.fabric_make_np			= NULL,
++	.fabric_drop_np			= NULL,
++	.fabric_make_nodeacl		= sbp_make_nodeacl,
++	.fabric_drop_nodeacl		= sbp_drop_nodeacl,
++};
++
++static int sbp_register_configfs(void)
++{
++	struct target_fabric_configfs *fabric;
++	int ret;
++
++	fabric = target_fabric_configfs_init(THIS_MODULE, "sbp");
++	if (!fabric) {
++		pr_err("target_fabric_configfs_init() failed\n");
++		return -ENOMEM;
++	}
++
++	fabric->tf_ops = sbp_ops;
++
++	/*
++	 * Setup default attribute lists for various fabric->tf_cit_tmpl
++	 */
++	TF_CIT_TMPL(fabric)->tfc_wwn_cit.ct_attrs = sbp_wwn_attrs;
++	TF_CIT_TMPL(fabric)->tfc_tpg_base_cit.ct_attrs = sbp_tpg_base_attrs;
++	TF_CIT_TMPL(fabric)->tfc_tpg_attrib_cit.ct_attrs = sbp_tpg_attrib_attrs;
++	TF_CIT_TMPL(fabric)->tfc_tpg_param_cit.ct_attrs = NULL;
++	TF_CIT_TMPL(fabric)->tfc_tpg_np_base_cit.ct_attrs = NULL;
++	TF_CIT_TMPL(fabric)->tfc_tpg_nacl_base_cit.ct_attrs = NULL;
++	TF_CIT_TMPL(fabric)->tfc_tpg_nacl_attrib_cit.ct_attrs = NULL;
++	TF_CIT_TMPL(fabric)->tfc_tpg_nacl_auth_cit.ct_attrs = NULL;
++	TF_CIT_TMPL(fabric)->tfc_tpg_nacl_param_cit.ct_attrs = NULL;
++
++	ret = target_fabric_configfs_register(fabric);
++	if (ret < 0) {
++		pr_err("target_fabric_configfs_register() failed for SBP\n");
++		return ret;
++	}
++
++	sbp_fabric_configfs = fabric;
++
++	return 0;
++};
++
++static void sbp_deregister_configfs(void)
++{
++	if (!sbp_fabric_configfs)
++		return;
++
++	target_fabric_configfs_deregister(sbp_fabric_configfs);
++	sbp_fabric_configfs = NULL;
++};
++
++static int __init sbp_init(void)
++{
++	int ret;
++
++	ret = sbp_register_configfs();
++	if (ret < 0)
++		return ret;
++
++	return 0;
++};
++
++static void sbp_exit(void)
++{
++	sbp_deregister_configfs();
++};
++
++MODULE_DESCRIPTION("FireWire SBP fabric driver");
++MODULE_LICENSE("GPL");
++module_init(sbp_init);
++module_exit(sbp_exit);
 -- 
-Stephen Smalley
-National Security Agency
+1.7.9.5
 
