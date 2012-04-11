@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964793Ab2DKXRE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Apr 2012 19:17:04 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:44096 "EHLO
+	id S964822Ab2DKXRP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Apr 2012 19:17:15 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:39063 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964778Ab2DKXQ5 (ORCPT
+	with ESMTP id S964789Ab2DKXRJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Apr 2012 19:16:57 -0400
-Message-Id: <20120411231025.678269926@linuxfoundation.org>
+	Wed, 11 Apr 2012 19:17:09 -0400
+Message-Id: <20120411231026.428924044@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Wed, 11 Apr 2012 16:11:02 -0700
+Date: Wed, 11 Apr 2012 16:11:06 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, "Rafael J. Wysocki" <rjw@sisk.pl>
-Subject: [ 44/78] PM / Sleep: Move disabling of usermode helpers to the freezer
+        alan@lxorguk.ukuu.org.uk, Jason Wessel <jason.wessel@windriver.com>
+Subject: [ 48/78] kgdbts: (1 of 2) fix single step awareness to work correctly with SMP
 In-Reply-To: <20120411231102.GA6404@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -24,179 +24,209 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
+From: Jason Wessel <jason.wessel@windriver.com>
 
-commit 1e73203cd1157a03facc41ffb54050f5b28e55bd upstream.
+commit 486c5987a00a89d56c2c04c506417ef8f823ca2e upstream.
 
-The core suspend/hibernation code calls usermodehelper_disable() to
-avoid race conditions between the freezer and the starting of
-usermode helpers and each code path has to do that on its own.
-However, it is always called right before freeze_processes()
-and usermodehelper_enable() is always called right after
-thaw_processes().  For this reason, to avoid code duplication and
-to make the connection between usermodehelper_disable() and the
-freezer more visible, make freeze_processes() call it and remove the
-direct usermodehelper_disable() and usermodehelper_enable() calls
-from all suspend/hibernation code paths.
+The do_fork and sys_open tests have never worked properly on anything
+other than a UP configuration with the kgdb test suite.  This is
+because the test suite did not fully implement the behavior of a real
+debugger.  A real debugger tracks the state of what thread it asked to
+single step and can correctly continue other threads of execution or
+conditionally stop while waiting for the original thread single step
+request to return.
 
-Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
-Acked-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Below is a simple method to cause a fatal kernel oops with the kgdb
+test suite on a 4 processor x86 system:
+
+while [ 1 ] ; do ls > /dev/null 2> /dev/null; done&
+while [ 1 ] ; do ls > /dev/null 2> /dev/null; done&
+while [ 1 ] ; do ls > /dev/null 2> /dev/null; done&
+while [ 1 ] ; do ls > /dev/null 2> /dev/null; done&
+echo V1I1F1000 > /sys/module/kgdbts/parameters/kgdbts
+
+Very soon after starting the test the kernel will oops with a message like:
+
+kgdbts: BP mismatch 3b7da66480 expected ffffffff8106a590
+WARNING: at drivers/misc/kgdbts.c:303 check_and_rewind_pc+0xe0/0x100()
+Call Trace:
+ [<ffffffff812994a0>] check_and_rewind_pc+0xe0/0x100
+ [<ffffffff81298945>] validate_simple_test+0x25/0xc0
+ [<ffffffff81298f77>] run_simple_test+0x107/0x2c0
+ [<ffffffff81298a18>] kgdbts_put_char+0x18/0x20
+
+The warn will turn to a hard kernel crash shortly after that because
+the pc will not get properly rewound to the right value after hitting
+a breakpoint leading to a hard lockup.
+
+This change is broken up into 2 pieces because archs that have hw
+single stepping (2.6.26 and up) need different changes than archs that
+do not have hw single stepping (3.0 and up).  This change implements
+the correct behavior for an arch that supports hw single stepping.
+
+A minor defect was fixed where sys_open should be do_sys_open
+for the sys_open break point test.  This solves the problem of running
+a 64 bit with a 32 bit user space.  The sys_open() never gets called
+when using the 32 bit file system for the kgdb testsuite because the
+32 bit binaries invoke the compat_sys_open() call leading to the test
+never completing.
+
+In order to mimic a real debugger, the kgdb test suite now tracks the
+most recent thread that was continued (cont_thread_id), with the
+intent to single step just this thread.  When the response to the
+single step request stops in a different thread that hit the original
+break point that thread will now get continued, while the debugger
+waits for the thread with the single step pending.  Here is a high
+level description of the sequence of events.
+
+   cont_instead_of_sstep = 0;
+
+1) set breakpoint at do_fork
+2) continue
+3)   Save the thread id where we stop to cont_thread_id
+4) Remove breakpoint at do_fork
+5) Reset the PC if needed depending on kernel exception type
+6) if (cont_instead_of_sstep) { continue } else { single step }
+7)   Check where we stopped
+       if current thread != cont_thread_id {
+           cont_instead_of_sstep = 1;
+           goto step 5
+       } else {
+           cont_instead_of_sstep = 0;
+       }
+8) clean up and run test again if needed
+
+Signed-off-by: Jason Wessel <jason.wessel@windriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- kernel/power/hibernate.c |   11 -----------
- kernel/power/process.c   |    7 +++++++
- kernel/power/suspend.c   |    7 -------
- kernel/power/user.c      |   10 +---------
- 4 files changed, 8 insertions(+), 27 deletions(-)
+ drivers/misc/kgdbts.c |   54 +++++++++++++++++++++++++++++++++++++++-----------
+ 1 file changed, 43 insertions(+), 11 deletions(-)
 
---- a/kernel/power/hibernate.c
-+++ b/kernel/power/hibernate.c
-@@ -16,7 +16,6 @@
- #include <linux/string.h>
- #include <linux/device.h>
- #include <linux/async.h>
--#include <linux/kmod.h>
- #include <linux/delay.h>
- #include <linux/fs.h>
- #include <linux/mount.h>
-@@ -618,10 +617,6 @@ int hibernate(void)
- 	sys_sync();
- 	printk("done.\n");
- 
--	error = usermodehelper_disable();
--	if (error)
--		goto Exit;
--
- 	error = freeze_processes();
- 	if (error)
- 		goto Free_bitmaps;
-@@ -658,7 +653,6 @@ int hibernate(void)
-  Thaw:
- 	thaw_processes();
-  Free_bitmaps:
--	usermodehelper_enable();
- 	free_basic_memory_bitmaps();
-  Exit:
- 	pm_notifier_call_chain(PM_POST_HIBERNATION);
-@@ -778,10 +772,6 @@ static int software_resume(void)
- 	if (error)
- 		goto close_finish;
- 
--	error = usermodehelper_disable();
--	if (error)
--		goto close_finish;
--
- 	pr_debug("PM: Preparing processes for restore.\n");
- 	error = freeze_processes();
- 	if (error) {
-@@ -800,7 +790,6 @@ static int software_resume(void)
- 	swsusp_free();
- 	thaw_processes();
-  Done:
--	usermodehelper_enable();
- 	free_basic_memory_bitmaps();
-  Finish:
- 	pm_notifier_call_chain(PM_POST_RESTORE);
---- a/kernel/power/process.c
-+++ b/kernel/power/process.c
-@@ -16,6 +16,7 @@
- #include <linux/freezer.h>
- #include <linux/delay.h>
- #include <linux/workqueue.h>
-+#include <linux/kmod.h>
- 
- /* 
-  * Timeout for stopping processes
-@@ -122,6 +123,10 @@ int freeze_processes(void)
- {
- 	int error;
- 
-+	error = usermodehelper_disable();
-+	if (error)
-+		return error;
-+
- 	if (!pm_freezing)
- 		atomic_inc(&system_freezing_cnt);
- 
-@@ -187,6 +192,8 @@ void thaw_processes(void)
- 	} while_each_thread(g, p);
- 	read_unlock(&tasklist_lock);
- 
-+	usermodehelper_enable();
-+
- 	schedule();
- 	printk("done.\n");
+--- a/drivers/misc/kgdbts.c
++++ b/drivers/misc/kgdbts.c
+@@ -134,6 +134,9 @@ static int force_hwbrks;
+ static int hwbreaks_ok;
+ static int hw_break_val;
+ static int hw_break_val2;
++static int cont_instead_of_sstep;
++static unsigned long cont_thread_id;
++static unsigned long sstep_thread_id;
+ #if defined(CONFIG_ARM) || defined(CONFIG_MIPS) || defined(CONFIG_SPARC)
+ static int arch_needs_sstep_emulation = 1;
+ #else
+@@ -211,7 +214,7 @@ static unsigned long lookup_addr(char *a
+ 	if (!strcmp(arg, "kgdbts_break_test"))
+ 		addr = (unsigned long)kgdbts_break_test;
+ 	else if (!strcmp(arg, "sys_open"))
+-		addr = (unsigned long)sys_open;
++		addr = (unsigned long)do_sys_open;
+ 	else if (!strcmp(arg, "do_fork"))
+ 		addr = (unsigned long)do_fork;
+ 	else if (!strcmp(arg, "hw_break_val"))
+@@ -283,6 +286,16 @@ static void hw_break_val_write(void)
+ 	hw_break_val++;
  }
---- a/kernel/power/suspend.c
-+++ b/kernel/power/suspend.c
-@@ -12,7 +12,6 @@
- #include <linux/delay.h>
- #include <linux/errno.h>
- #include <linux/init.h>
--#include <linux/kmod.h>
- #include <linux/console.h>
- #include <linux/cpu.h>
- #include <linux/syscalls.h>
-@@ -101,17 +100,12 @@ static int suspend_prepare(void)
- 	if (error)
- 		goto Finish;
  
--	error = usermodehelper_disable();
--	if (error)
--		goto Finish;
--
- 	error = suspend_freeze_processes();
- 	if (!error)
- 		return 0;
- 
- 	suspend_stats.failed_freeze++;
- 	dpm_save_failed_step(SUSPEND_FREEZE);
--	usermodehelper_enable();
-  Finish:
- 	pm_notifier_call_chain(PM_POST_SUSPEND);
- 	pm_restore_console();
-@@ -259,7 +253,6 @@ int suspend_devices_and_enter(suspend_st
- static void suspend_finish(void)
++static int get_thread_id_continue(char *put_str, char *arg)
++{
++	char *ptr = &put_str[11];
++
++	if (put_str[1] != 'T' || put_str[2] != '0')
++		return 1;
++	kgdb_hex2long(&ptr, &cont_thread_id);
++	return 0;
++}
++
+ static int check_and_rewind_pc(char *put_str, char *arg)
  {
- 	suspend_thaw_processes();
--	usermodehelper_enable();
- 	pm_notifier_call_chain(PM_POST_SUSPEND);
- 	pm_restore_console();
- }
---- a/kernel/power/user.c
-+++ b/kernel/power/user.c
-@@ -12,7 +12,6 @@
- #include <linux/suspend.h>
- #include <linux/syscalls.h>
- #include <linux/reboot.h>
--#include <linux/kmod.h>
- #include <linux/string.h>
- #include <linux/device.h>
- #include <linux/miscdevice.h>
-@@ -222,14 +221,8 @@ static long snapshot_ioctl(struct file *
- 		sys_sync();
- 		printk("done.\n");
- 
--		error = usermodehelper_disable();
--		if (error)
--			break;
--
- 		error = freeze_processes();
--		if (error)
--			usermodehelper_enable();
--		else
-+		if (!error)
- 			data->frozen = 1;
- 		break;
- 
-@@ -238,7 +231,6 @@ static long snapshot_ioctl(struct file *
- 			break;
- 		pm_restore_gfp_mask();
- 		thaw_processes();
--		usermodehelper_enable();
- 		data->frozen = 0;
- 		break;
- 
+ 	unsigned long addr = lookup_addr(arg);
+@@ -324,6 +337,18 @@ static int check_single_step(char *put_s
+ 	gdb_regs_to_pt_regs(kgdbts_gdb_regs, &kgdbts_regs);
+ 	v2printk("Singlestep stopped at IP: %lx\n",
+ 		   instruction_pointer(&kgdbts_regs));
++
++	if (sstep_thread_id != cont_thread_id && !arch_needs_sstep_emulation) {
++		/*
++		 * Ensure we stopped in the same thread id as before, else the
++		 * debugger should continue until the original thread that was
++		 * single stepped is scheduled again, emulating gdb's behavior.
++		 */
++		v2printk("ThrID does not match: %lx\n", cont_thread_id);
++		cont_instead_of_sstep = 1;
++		ts.idx -= 4;
++		return 0;
++	}
+ 	if (instruction_pointer(&kgdbts_regs) == addr) {
+ 		eprintk("kgdbts: SingleStep failed at %lx\n",
+ 			   instruction_pointer(&kgdbts_regs));
+@@ -368,7 +393,12 @@ static int got_break(char *put_str, char
+ static void emul_sstep_get(char *arg)
+ {
+ 	if (!arch_needs_sstep_emulation) {
+-		fill_get_buf(arg);
++		if (cont_instead_of_sstep) {
++			cont_instead_of_sstep = 0;
++			fill_get_buf("c");
++		} else {
++			fill_get_buf(arg);
++		}
+ 		return;
+ 	}
+ 	switch (sstep_state) {
+@@ -398,9 +428,11 @@ static void emul_sstep_get(char *arg)
+ static int emul_sstep_put(char *put_str, char *arg)
+ {
+ 	if (!arch_needs_sstep_emulation) {
+-		if (!strncmp(put_str+1, arg, 2))
+-			return 0;
+-		return 1;
++		char *ptr = &put_str[11];
++		if (put_str[1] != 'T' || put_str[2] != '0')
++			return 1;
++		kgdb_hex2long(&ptr, &sstep_thread_id);
++		return 0;
+ 	}
+ 	switch (sstep_state) {
+ 	case 1:
+@@ -502,10 +534,10 @@ static struct test_struct bad_read_test[
+ static struct test_struct singlestep_break_test[] = {
+ 	{ "?", "S0*" }, /* Clear break points */
+ 	{ "kgdbts_break_test", "OK", sw_break, }, /* set sw breakpoint */
+-	{ "c", "T0*", }, /* Continue */
++	{ "c", "T0*", NULL, get_thread_id_continue }, /* Continue */
++	{ "kgdbts_break_test", "OK", sw_rem_break }, /*remove breakpoint */
+ 	{ "g", "kgdbts_break_test", NULL, check_and_rewind_pc },
+ 	{ "write", "OK", write_regs }, /* Write registers */
+-	{ "kgdbts_break_test", "OK", sw_rem_break }, /*remove breakpoint */
+ 	{ "s", "T0*", emul_sstep_get, emul_sstep_put }, /* Single step */
+ 	{ "g", "kgdbts_break_test", NULL, check_single_step },
+ 	{ "kgdbts_break_test", "OK", sw_break, }, /* set sw breakpoint */
+@@ -523,10 +555,10 @@ static struct test_struct singlestep_bre
+ static struct test_struct do_fork_test[] = {
+ 	{ "?", "S0*" }, /* Clear break points */
+ 	{ "do_fork", "OK", sw_break, }, /* set sw breakpoint */
+-	{ "c", "T0*", }, /* Continue */
++	{ "c", "T0*", NULL, get_thread_id_continue }, /* Continue */
++	{ "do_fork", "OK", sw_rem_break }, /*remove breakpoint */
+ 	{ "g", "do_fork", NULL, check_and_rewind_pc }, /* check location */
+ 	{ "write", "OK", write_regs }, /* Write registers */
+-	{ "do_fork", "OK", sw_rem_break }, /*remove breakpoint */
+ 	{ "s", "T0*", emul_sstep_get, emul_sstep_put }, /* Single step */
+ 	{ "g", "do_fork", NULL, check_single_step },
+ 	{ "do_fork", "OK", sw_break, }, /* set sw breakpoint */
+@@ -541,10 +573,10 @@ static struct test_struct do_fork_test[]
+ static struct test_struct sys_open_test[] = {
+ 	{ "?", "S0*" }, /* Clear break points */
+ 	{ "sys_open", "OK", sw_break, }, /* set sw breakpoint */
+-	{ "c", "T0*", }, /* Continue */
++	{ "c", "T0*", NULL, get_thread_id_continue }, /* Continue */
++	{ "sys_open", "OK", sw_rem_break }, /*remove breakpoint */
+ 	{ "g", "sys_open", NULL, check_and_rewind_pc }, /* check location */
+ 	{ "write", "OK", write_regs }, /* Write registers */
+-	{ "sys_open", "OK", sw_rem_break }, /*remove breakpoint */
+ 	{ "s", "T0*", emul_sstep_get, emul_sstep_put }, /* Single step */
+ 	{ "g", "sys_open", NULL, check_single_step },
+ 	{ "sys_open", "OK", sw_break, }, /* set sw breakpoint */
 
 
