@@ -1,43 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761132Ab2DKUHb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Apr 2012 16:07:31 -0400
-Received: from na3sys010aog103.obsmtp.com ([74.125.245.74]:49461 "HELO
-	na3sys010aog103.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1754625Ab2DKUH3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Apr 2012 16:07:29 -0400
-From: Roland Dreier <roland@kernel.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, linux-rdma@vger.kernel.org
-Subject: [GIT PULL] please pull infiniband.git
-Date: Wed, 11 Apr 2012 13:07:22 -0700
-Message-Id: <1334174842-13632-1-git-send-email-roland@kernel.org>
-X-Mailer: git-send-email 1.7.9.5
+	id S933076Ab2DKUIZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Apr 2012 16:08:25 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:15217 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1761059Ab2DKUIX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Apr 2012 16:08:23 -0400
+Message-ID: <4F85E4A8.2080506@redhat.com>
+Date: Wed, 11 Apr 2012 17:08:08 -0300
+From: Mauro Carvalho Chehab <mchehab@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120329 Thunderbird/11.0.1
+MIME-Version: 1.0
+To: =?UTF-8?B?UsOpbWkgRGVuaXMtQ291cm1vbnQ=?= <remi@remlab.net>
+CC: mchehab@infradead.org, linux-media@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Alan Cox <alan@lxorguk.ukuu.org.uk>
+Subject: Re: [RFC] [PATCH] v4l2: use unsigned rather than enums in ioctl()
+ structs
+References: <1333648371-24812-1-git-send-email-remi@remlab.net> <4F85B908.4070404@redhat.com> <201204112147.55348.remi@remlab.net>
+In-Reply-To: <201204112147.55348.remi@remlab.net>
+X-Enigmail-Version: 1.4
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+Em 11-04-2012 15:47, Rémi Denis-Courmont escreveu:
+> 	Hello,
+> 
+> Le mercredi 11 avril 2012 20:02:00 Mauro Carvalho Chehab, vous avez écrit :
+>> Using unsigned instead of enum is not a good idea, from API POV, as
+>> unsigned has different sizes on 32 bits and 64 bits.
+> 
+> Fair enough. But then we can do that instead:
+> typedef XXX __enum_t;
+> where XXX is the unsigned integer with the right number of bits. Since Linux 
+> does not use short enums, this ought to work fine.
 
-Please pull from
+I forgot to comment about that on the last e-mail. 
 
-    git://git.kernel.org/pub/scm/linux/kernel/git/roland/infiniband.git tags/rdma-for-linus
+A solution close to the above one were already proposed:
+	http://www.spinics.net/lists/vfl/msg25707.html
 
-----------------------------------------------------------------
-Fix regression in the /sys/class/infiniband/.../rate attribute -- old
-kernels used to just return something, even if the underlying value was
-out-of-bounds, while 3.4-rc1 returned EINVAL to userspace.  This breaks
-some applications that check for the error, so go back to the old
-behavior.
+There were also another proposal there that might solve:
+	http://www.spinics.net/lists/vfl/msg25702.html
 
-----------------------------------------------------------------
-Or Gerlitz (1):
-      IB/mlx4: Don't return an invalid speed when a port is down
 
-Roland Dreier (1):
-      IB/core: Don't return EINVAL from sysfs rate attribute for invalid speeds
+Something like:
 
- drivers/infiniband/core/sysfs.c   |    9 +++++----
- drivers/infiniband/hw/mlx4/main.c |    5 +++++
- 2 files changed, 10 insertions(+), 4 deletions(-)
+#if sizeof(enum) == 1
+	typedef u8	__enum_t;
+#elif sizeof(enum) == 2
+	typedef u16	__enum_t;
+#elif sizeof(enum) == 4
+	typedef u32	__enum_t;
+#elif sizeof(enum) == 8
+	typedef u64	__enum_t;
+#else
+	typedef enum __enum_t;
+#endif
+
+Can actually work. Not sure if I really like adding a typedef, but maybe
+this is the less dirty way to fix it.
+
+We'll need to properly test the v4l2-compat32 code, as it will need 
+to handle a different enum size on userspace. So, there, we'll likely
+need to replace every enum with just "u32". Hmm... arm with 64 bits
+(if/when added) may be an additional issue for the compat stuff.
+
+Regards,
+Mauro
