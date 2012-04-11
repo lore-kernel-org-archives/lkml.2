@@ -1,59 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933036Ab2DKTZ6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Apr 2012 15:25:58 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:55983 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760945Ab2DKTZ4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Apr 2012 15:25:56 -0400
-Date: Wed, 11 Apr 2012 21:25:54 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Glauber Costa <glommer@parallels.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, devel@openvz.org, linux-mm@kvack.org,
-        cgroups@vger.kernel.org, Johannes Weiner <hannes@cmpxchg.org>,
-        kamezawa.hiroyu@jp.fujitsu.com, Greg Thelen <gthelen@google.com>,
-        Suleiman Souhlal <suleiman@google.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH] remove BUG() in possible but rare condition
-Message-ID: <20120411192554.GC24831@tiehlicka.suse.cz>
-References: <1334167824-19142-1-git-send-email-glommer@parallels.com>
- <20120411184845.GA24831@tiehlicka.suse.cz>
- <CA+55aFx1GMWGgh0sTAzvvVSzPQsQ_4NKeaNv1zpKrP4fg1dG+Q@mail.gmail.com>
- <4F85D53B.1070806@parallels.com>
+	id S933089Ab2DKT1V (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Apr 2012 15:27:21 -0400
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:43609 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933026Ab2DKT1S convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Apr 2012 15:27:18 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4F85D53B.1070806@parallels.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <4F85D9E0.3070604@zytor.com>
+References: <20120401125741.GA7484@p183.telecom.by> <4F78D0BA.9040709@zytor.com>
+ <CACVxJT_WJYjecpZMGkyUrbE5gNROX1tOfFAcD84-hoPsypxcFQ@mail.gmail.com>
+ <4F7F1864.8090606@zytor.com> <CAHGf_=rsJ8o8Fnd2z5Z8jHGc=cz370ay0_t3bhkiYRCBh3puVw@mail.gmail.com>
+ <4F85C6D5.6080904@zytor.com> <CAHGf_=ro=TwrYw4UoUMaHjb08rVbz-KjovZfND608J26w=n4HQ@mail.gmail.com>
+ <4F85D9E0.3070604@zytor.com>
+From: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
+Date: Wed, 11 Apr 2012 15:26:56 -0400
+Message-ID: <CAHGf_=qgbP91fmkjxxcbt3SrNRSiDNOczK9A8JF5x_iqmqN7TQ@mail.gmail.com>
+Subject: Re: [PATCH] nextfd(2)
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Alexey Dobriyan <adobriyan@gmail.com>, akpm@linux-foundation.org,
+        viro@zeniv.linux.org.uk, torvalds@linux-foundation.org,
+        drepper@gmail.com, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed 11-04-12 16:02:19, Glauber Costa wrote:
-> On 04/11/2012 03:57 PM, Linus Torvalds wrote:
-> >On Wed, Apr 11, 2012 at 11:48 AM, Michal Hocko<mhocko@suse.cz>  wrote:
-> >>
-> >>I am not familiar with the code much but a trivial call chain walk up to
-> >>write_dev_supers (in btrfs) shows that we do not check for the return value
-> >>from __getblk so we would nullptr and there might be more.
-> >>I guess these need some treat before the BUG might be removed, right?
-> >
-> >Well, realistically, isn't BUG() as bad as a NULL pointer dereference?
-> >
-> >Do you care about the exact message on the screen when your machine dies?
-> Not particular, but I don't see why (I might be wrong) it would
-> necessarily lead to a NULL pointer dereference.
+On Wed, Apr 11, 2012 at 3:22 PM, H. Peter Anvin <hpa@zytor.com> wrote:
+> On 04/11/2012 12:20 PM, KOSAKI Motohiro wrote:
+>>
+>> If I understand correctly, above URL says, latest satatus is
+>>
+>>   Resolution: Accepted As Marked
+>>
+>> Please see toppest issue summary. Or if I am missing something, can you please
+>> point out which line are you seeing?
+>
+> You need to read through the entire set of notes for it to make sense.
 
-Ahh, OK scratch that. I have misread __getblk_slow which returns NULL
-only if grow_buffers returned with < 0 which doesn't happen for the
-allocation failure.
-
-Sorry about noise
--- 
-Michal Hocko
-SUSE Labs
-SUSE LINUX s.r.o.
-Lihovarska 1060/12
-190 00 Praha 9    
-Czech Republic
+The note described several downsides. but I have no seen a rejection.
