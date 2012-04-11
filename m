@@ -1,60 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933248Ab2DKUxk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Apr 2012 16:53:40 -0400
-Received: from smtp.snhosting.dk ([87.238.248.203]:58667 "EHLO
-	smtp.domainteam.dk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760165Ab2DKUxj (ORCPT
+	id S933269Ab2DKUyb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Apr 2012 16:54:31 -0400
+Received: from va3ehsobe006.messaging.microsoft.com ([216.32.180.16]:43765
+	"EHLO va3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1760165Ab2DKUy3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Apr 2012 16:53:39 -0400
-Date: Wed, 11 Apr 2012 22:53:37 +0200
-From: Sam Ravnborg <sam@ravnborg.org>
-To: Tejun Heo <tj@kernel.org>
-Cc: Yinghai Lu <yinghai@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        lkml <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] x86: drop obsolete ARCH_BOOTMEM support
-Message-ID: <20120411205337.GA29238@merkur.ravnborg.org>
-References: <20120406124735.GA6920@merkur.ravnborg.org> <20120411163016.GC12887@google.com> <CAE9FiQVmyTSUGKmusrVvj-38URhRFzvjv7w-2ch928kEiJPOhg@mail.gmail.com> <20120411171115.GE12887@google.com>
+	Wed, 11 Apr 2012 16:54:29 -0400
+X-SpamScore: -9
+X-BigFish: VPS-9(zzbb2dI1432N98dKzz1202hzz8275eha1495iz2fh668h839hd25h)
+X-Forefront-Antispam-Report: CIP:160.33.98.74;KIP:(null);UIP:(null);IPV:NLI;H:mail7.fw-bc.sony.com;RD:mail7.fw-bc.sony.com;EFVD:NLI
+Message-ID: <4F85EF6A.8040301@am.sony.com>
+Date: Wed, 11 Apr 2012 13:54:02 -0700
+From: Frank Rowand <frank.rowand@am.sony.com>
+Reply-To: <frank.rowand@am.sony.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc14 Thunderbird/3.1.10
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120411171115.GE12887@google.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: Thomas Gleixner <tglx@linutronix.de>
+CC: LKML <linux-kernel@vger.kernel.org>,
+        linux-rt-users <linux-rt-users@vger.kernel.org>
+Subject: Re: [ANNOUNCE] 3.4-rc2-rt2
+References: <alpine.LFD.2.02.1204111212440.2542@ionos>
+In-Reply-To: <alpine.LFD.2.02.1204111212440.2542@ionos>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-OriginatorOrg: am.sony.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 11, 2012 at 10:11:15AM -0700, Tejun Heo wrote:
-> On Wed, Apr 11, 2012 at 10:03:50AM -0700, Yinghai Lu wrote:
-> > On Wed, Apr 11, 2012 at 9:30 AM, Tejun Heo <tj@kernel.org> wrote:
-> > > On Fri, Apr 06, 2012 at 02:47:35PM +0200, Sam Ravnborg wrote:
-> > >> From ae6cdc767f973f39cb205af4b80ff13f35a1b66e Mon Sep 17 00:00:00 2001
-> > >> From: Sam Ravnborg <sam@ravnborg.org>
-> > >> Date: Fri, 6 Apr 2012 13:37:08 +0200
-> > >> Subject: [PATCH] x86: drop obsolete ARCH_BOOTMEM support
-> > >>
-> > >> x86 unconditionally uses NO_BOOTMEM so there is no use
-> > >> of the HAVE_ARCH_BOOTMEM support as mm/bootmem.c is the
-> > >> only file referencing this symbol.
-> > >>
-> > >> bootmem_arch_preferred_node() is the function referred
-> > >> in the mm/bootmem.c code and can thuis be dropped too.
-> > >>
-> > >> x86 was the sole user of HAVE_ARCH_BOOTMEM - so there is
-> > >> an opportunity to clean up a little in mm/bootmem.c too
-> > >> if we do not expect other users to emerge.
-> > >
-> > > avr32 seems to have it too?
-> > 
-> > avr32 is:
-> > 
-> > config HAVE_ARCH_BOOTMEM
-> >         def_bool n
-> > 
-> > so that is not used with avr32
+On 04/11/12 03:17, Thomas Gleixner wrote:
+> Dear RT Folks,
 > 
-> Yeah, then better remove the reference from there too, right?
-Yep - will do tomorrow.
+> I'm pleased to announce the 3.4-rc2-rt2 release.
 
-	Sam
+< snip >
+
+3.4-rc2-rt2 builds and boots on some ARM boards (PandaBoard, Realview) for:
+
+  - SMP, PREEMPT_RT_FULL
+  - SMP, PREEMPT_NONE
+  - UP, PREEMPT_RT_FULL
+  - UP, PREEMPT_NONE
+
+
+A patch is required to resolve a mainline NULL pointer dereference on boot
+of Realview.  The patch is in linux-next and should make it to Linus by the
+end of this week.
+
+The patch is available at http://marc.info/?l=linux-serial&m=133235774423240&w=2
+
+-Frank
+
+
+
