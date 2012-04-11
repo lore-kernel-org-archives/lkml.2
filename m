@@ -1,23 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965736Ab2DKX3R (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Apr 2012 19:29:17 -0400
-Received: from mail-pz0-f52.google.com ([209.85.210.52]:57856 "EHLO
-	mail-pz0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965669Ab2DKX3L (ORCPT
+	id S965790Ab2DKXcv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Apr 2012 19:32:51 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:38577 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965738Ab2DKX3R (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Apr 2012 19:29:11 -0400
-Message-Id: <20120411231312.874046161@linuxfoundation.org>
+	Wed, 11 Apr 2012 19:29:17 -0400
+Message-Id: <20120411231313.214447921@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Wed, 11 Apr 2012 16:13:38 -0700
+Date: Wed, 11 Apr 2012 16:13:40 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Svante Signell <svante.signell@telia.com>,
-        Jonathan Nieder <jrnieder@gmail.com>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>
-Subject: [ 31/42] x86/PCI: use host bridge _CRS info on MSI MS-7253
+        alan@lxorguk.ukuu.org.uk,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Jon Dufresne <jon@jondufresne.org>,
+        Suresh Siddha <suresh.b.siddha@intel.com>, <yinghai@kernel.org>,
+        Josh Boyer <jwboyer@redhat.com>, Ingo Molnar <mingo@elte.hu>,
+        Teck Choon Giam <giamteckchoon@gmail.com>, Ben Guthro <ben@guthro.net>
+Subject: [ 33/42] Revert "x86/ioapic: Add register level checks to detect bogus io-apic entries"
 In-Reply-To: <20120411231443.GA808@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,60 +29,95 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jonathan Nieder <jrnieder@gmail.com>
+This reverts commit c2ec63edaf48c90c3495eeb0b75bb05102fbf71a
+[73d63d038ee9f769f5e5b46792d227fe20e442c5 upstream]
 
-commit 8411371709610c826bf65684f886bfdfb5780ca1 upstream.
+It causes problems, so needs to be reverted from 3.2-stable for now.
 
-In the spirit of commit 29cf7a30f8a0 ("x86/PCI: use host bridge _CRS
-info on ASUS M2V-MX SE"), this DMI quirk turns on "pci_use_crs" by
-default on a board that needs it.
-
-This fixes boot failures and oopses introduced in 3e3da00c01d0
-("x86/pci: AMD one chain system to use pci read out res").  The quirk
-is quite targetted (to a specific board and BIOS version) for two
-reasons:
-
- (1) to emphasize that this method of tackling the problem one quirk
-     at a time is a little insane
-
- (2) to give BIOS vendors an opportunity to use simpler tables and
-     allow us to return to generic behavior (whatever that happens to
-     be) with a later BIOS update
-
-In other words, I am not at all happy with having quirks like this.
-But it is even worse for the kernel not to work out of the box on
-these machines, so...
-
-Reference: https://bugzilla.kernel.org/show_bug.cgi?id=42619
-Reported-by: Svante Signell <svante.signell@telia.com>
-Signed-off-by: Jonathan Nieder <jrnieder@gmail.com>
-Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
-Signed-off-by: Jesse Barnes <jbarnes@virtuousgeek.org>
+Reported-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Cc: Jon Dufresne <jon@jondufresne.org>
+Cc: Suresh Siddha <suresh.b.siddha@intel.com>
+Cc: <yinghai@kernel.org>
+Cc: Josh Boyer <jwboyer@redhat.com>
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: Teck Choon Giam <giamteckchoon@gmail.com>
+Cc: Ben Guthro <ben@guthro.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/x86/pci/acpi.c |   11 +++++++++++
- 1 file changed, 11 insertions(+)
+ arch/x86/kernel/apic/io_apic.c |   40 ++++++++--------------------------------
+ 1 file changed, 8 insertions(+), 32 deletions(-)
 
---- a/arch/x86/pci/acpi.c
-+++ b/arch/x86/pci/acpi.c
-@@ -54,6 +54,17 @@ static const struct dmi_system_id pci_us
- 			DMI_MATCH(DMI_BIOS_VENDOR, "American Megatrends Inc."),
- 		},
- 	},
-+	/* https://bugzilla.kernel.org/show_bug.cgi?id=42619 */
-+	{
-+		.callback = set_use_crs,
-+		.ident = "MSI MS-7253",
-+		.matches = {
-+			DMI_MATCH(DMI_BOARD_VENDOR, "MICRO-STAR INTERNATIONAL CO., LTD"),
-+			DMI_MATCH(DMI_BOARD_NAME, "MS-7253"),
-+			DMI_MATCH(DMI_BIOS_VENDOR, "Phoenix Technologies, LTD"),
-+			DMI_MATCH(DMI_BIOS_VERSION, "V1.6"),
-+		},
-+	},
- 	{}
- };
+--- a/arch/x86/kernel/apic/io_apic.c
++++ b/arch/x86/kernel/apic/io_apic.c
+@@ -3927,36 +3927,18 @@ int mp_find_ioapic_pin(int ioapic, u32 g
+ static __init int bad_ioapic(unsigned long address)
+ {
+ 	if (nr_ioapics >= MAX_IO_APICS) {
+-		pr_warn("WARNING: Max # of I/O APICs (%d) exceeded (found %d), skipping\n",
+-			MAX_IO_APICS, nr_ioapics);
++		printk(KERN_WARNING "WARNING: Max # of I/O APICs (%d) exceeded "
++		       "(found %d), skipping\n", MAX_IO_APICS, nr_ioapics);
+ 		return 1;
+ 	}
+ 	if (!address) {
+-		pr_warn("WARNING: Bogus (zero) I/O APIC address found in table, skipping!\n");
++		printk(KERN_WARNING "WARNING: Bogus (zero) I/O APIC address"
++		       " found in table, skipping!\n");
+ 		return 1;
+ 	}
+ 	return 0;
+ }
  
+-static __init int bad_ioapic_register(int idx)
+-{
+-	union IO_APIC_reg_00 reg_00;
+-	union IO_APIC_reg_01 reg_01;
+-	union IO_APIC_reg_02 reg_02;
+-
+-	reg_00.raw = io_apic_read(idx, 0);
+-	reg_01.raw = io_apic_read(idx, 1);
+-	reg_02.raw = io_apic_read(idx, 2);
+-
+-	if (reg_00.raw == -1 && reg_01.raw == -1 && reg_02.raw == -1) {
+-		pr_warn("I/O APIC 0x%x registers return all ones, skipping!\n",
+-			mpc_ioapic_addr(idx));
+-		return 1;
+-	}
+-
+-	return 0;
+-}
+-
+ void __init mp_register_ioapic(int id, u32 address, u32 gsi_base)
+ {
+ 	int idx = 0;
+@@ -3973,12 +3955,6 @@ void __init mp_register_ioapic(int id, u
+ 	ioapics[idx].mp_config.apicaddr = address;
+ 
+ 	set_fixmap_nocache(FIX_IO_APIC_BASE_0 + idx, address);
+-
+-	if (bad_ioapic_register(idx)) {
+-		clear_fixmap(FIX_IO_APIC_BASE_0 + idx);
+-		return;
+-	}
+-
+ 	ioapics[idx].mp_config.apicid = io_apic_unique_id(id);
+ 	ioapics[idx].mp_config.apicver = io_apic_get_version(idx);
+ 
+@@ -3999,10 +3975,10 @@ void __init mp_register_ioapic(int id, u
+ 	if (gsi_cfg->gsi_end >= gsi_top)
+ 		gsi_top = gsi_cfg->gsi_end + 1;
+ 
+-	pr_info("IOAPIC[%d]: apic_id %d, version %d, address 0x%x, GSI %d-%d\n",
+-		idx, mpc_ioapic_id(idx),
+-		mpc_ioapic_ver(idx), mpc_ioapic_addr(idx),
+-		gsi_cfg->gsi_base, gsi_cfg->gsi_end);
++	printk(KERN_INFO "IOAPIC[%d]: apic_id %d, version %d, address 0x%x, "
++	       "GSI %d-%d\n", idx, mpc_ioapic_id(idx),
++	       mpc_ioapic_ver(idx), mpc_ioapic_addr(idx),
++	       gsi_cfg->gsi_base, gsi_cfg->gsi_end);
+ 
+ 	nr_ioapics++;
+ }
 
 
