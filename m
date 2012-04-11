@@ -1,47 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759269Ab2DKWtZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Apr 2012 18:49:25 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:49475 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755281Ab2DKWtY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Apr 2012 18:49:24 -0400
-Date: Wed, 11 Apr 2012 15:49:20 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Xi Wang <xi.wang@gmail.com>
-Cc: Jesper Juhl <jj@chaosbits.net>, linux-kernel@vger.kernel.org,
-        devel@driverdev.osuosl.org, Joe Perches <joe@perches.com>,
-        Dan Carpenter <dan.carpenter@oracle.com>,
-        Forest Bond <forest@alittletooquiet.net>
-Subject: Re: [PATCH] staging: vt6656: Don't leak memory in
- drivers/staging/vt6656/ioctl.c::private_ioctl()
-Message-ID: <20120411224920.GA1612@kroah.com>
-References: <alpine.LNX.2.00.1204120032050.2137@swampdragon.chaosbits.net>
- <D26D474A-E696-447C-8B54-15295135368E@gmail.com>
+	id S1761384Ab2DKWwS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Apr 2012 18:52:18 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:37254 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1760811Ab2DKWwR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Apr 2012 18:52:17 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>
+Subject: Re: [Regression + patch] i915 / PM: System resume broken on 945GM
+Date: Thu, 12 Apr 2012 00:56:48 +0200
+User-Agent: KMail/1.13.6 (Linux/3.4.0-rc2+; KDE/4.6.0; x86_64; ; )
+Cc: Chris Wilson <chris@chris-wilson.co.uk>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Linux PM list <linux-pm@vger.kernel.org>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>
+References: <201204120012.46826.rjw@sisk.pl> <20120411222002.GA27568@kroah.com>
+In-Reply-To: <20120411222002.GA27568@kroah.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <D26D474A-E696-447C-8B54-15295135368E@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201204120056.49066.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 11, 2012 at 06:46:33PM -0400, Xi Wang wrote:
-> On Apr 11, 2012, at 6:35 PM, Jesper Juhl wrote:
-> 
-> > -		pNodeList = (PSNodeList)kmalloc(sizeof(SNodeList) + (sNodeList.uItem * sizeof(SNodeItem)), (int)GFP_ATOMIC);
-> > +		pNodeList = kmalloc(sizeof(SNodeList) + (sNodeList.uItem * sizeof(SNodeItem)), (int)GFP_ATOMIC);
-> 
-> Can you also remove casts like "(int)GFP_ATOMIC"?
-> 
-> The parentheses "(sNodeList.uItem * sizeof(SNodeItem))" are also
-> pointless..
+Hi,
 
-One thing at a time, odds are this is an "automated" patch, right
-Jesper?
+On Thursday, April 12, 2012, Greg Kroah-Hartman wrote:
+> On Thu, Apr 12, 2012 at 12:12:46AM +0200, Rafael J. Wysocki wrote:
+> > Hi Chris,
+> > 
+> > Unfortunately, your commit
+> > 
+> > commit 7dd4906586274f3945f2aeaaa5a33b451c3b4bba
+> > Author: Chris Wilson <chris@chris-wilson.co.uk>
+> > Date:   Wed Mar 21 10:48:18 2012 +0000
+> > 
+> >     drm/i915: Mark untiled BLT commands as fenced on gen2/3
+> > 
+> > breaks system resume on my Toshiba Portege R500 (945GM) which hangs hard
+> > during or right after returning to X.
+> 
+> Luckily this patch didn't apply properly to the 3.3-stable tree :)
 
-thanks,
+Your box hanged during resume from suspend with it IIRC, though, or was that
+a different issue?
 
-greg k-h
+Rafael
