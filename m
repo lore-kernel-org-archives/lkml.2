@@ -1,24 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965718Ab2DKX3H (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Apr 2012 19:29:07 -0400
-Received: from mail-pz0-f52.google.com ([209.85.210.52]:53150 "EHLO
-	mail-pz0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965702Ab2DKX3B (ORCPT
+	id S965751Ab2DKX3V (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Apr 2012 19:29:21 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:38577 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965720Ab2DKX3H (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Apr 2012 19:29:01 -0400
-Message-Id: <20120411231312.198081129@linuxfoundation.org>
+	Wed, 11 Apr 2012 19:29:07 -0400
+Message-Id: <20120411231310.915461092@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Wed, 11 Apr 2012 16:13:35 -0700
+Date: Wed, 11 Apr 2012 16:13:28 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Phillip Lougher <plougher@redhat.com>,
-        Kees Cook <keescook@chromium.org>,
-        Serge Hallyn <serge.hallyn@canonical.com>,
-        Richard Weinberger <richard@nod.at>,
-        James Morris <james.l.morris@oracle.com>
-Subject: [ 28/42] sysctl: fix write access to dmesg_restrict/kptr_restrict
+        alan@lxorguk.ukuu.org.uk, Markus Heinz <markus.heinz@uni-dortmund.de>,
+        Chris Wilson <chris@chris-wilson.co.uk>,
+        Rodrigo Vivi <rodrigo.vivi@gmail.com>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>
+Subject: [ 21/42] drm/i915: quirk away broken OpRegion VBT
 In-Reply-To: <20120411231443.GA808@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -28,69 +27,69 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Kees Cook <keescook@chromium.org>
+From: Daniel Vetter <daniel.vetter@ffwll.ch>
 
-commit 620f6e8e855d6d447688a5f67a4e176944a084e8 upstream.
+commit 25e341cfc33d94435472983825163e97fe370a6c upstream.
 
-Commit bfdc0b4 adds code to restrict access to dmesg_restrict,
-however, it incorrectly alters kptr_restrict rather than
-dmesg_restrict.
+Somehow the BIOS manages to screw things up when copying the VBT
+around, because the one we scrap from the VBIOS rom actually works.
 
-The original patch from Richard Weinberger
-(https://lkml.org/lkml/2011/3/14/362) alters dmesg_restrict as
-expected, and so the patch seems to have been misapplied.
-
-This adds the CAP_SYS_ADMIN check to both dmesg_restrict and
-kptr_restrict, since both are sensitive.
-
-Reported-by: Phillip Lougher <plougher@redhat.com>
-Signed-off-by: Kees Cook <keescook@chromium.org>
-Acked-by: Serge Hallyn <serge.hallyn@canonical.com>
-Acked-by: Richard Weinberger <richard@nod.at>
-Signed-off-by: James Morris <james.l.morris@oracle.com>
+Tested-by: Markus Heinz <markus.heinz@uni-dortmund.de>
+Acked-by: Chris Wilson <chris@chris-wilson.co.uk>
+Reviewed-by: Rodrigo Vivi <rodrigo.vivi@gmail.com>
+Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=28812
+Signed-Off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- kernel/sysctl.c |    8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+ drivers/gpu/drm/i915/intel_bios.c |   23 ++++++++++++++++++++++-
+ 1 file changed, 22 insertions(+), 1 deletion(-)
 
---- a/kernel/sysctl.c
-+++ b/kernel/sysctl.c
-@@ -172,7 +172,7 @@ static int proc_taint(struct ctl_table *
- #endif
- 
- #ifdef CONFIG_PRINTK
--static int proc_dmesg_restrict(struct ctl_table *table, int write,
-+static int proc_dointvec_minmax_sysadmin(struct ctl_table *table, int write,
- 				void __user *buffer, size_t *lenp, loff_t *ppos);
- #endif
- 
-@@ -709,7 +709,7 @@ static struct ctl_table kern_table[] = {
- 		.data		= &dmesg_restrict,
- 		.maxlen		= sizeof(int),
- 		.mode		= 0644,
--		.proc_handler	= proc_dointvec_minmax,
-+		.proc_handler	= proc_dointvec_minmax_sysadmin,
- 		.extra1		= &zero,
- 		.extra2		= &one,
- 	},
-@@ -718,7 +718,7 @@ static struct ctl_table kern_table[] = {
- 		.data		= &kptr_restrict,
- 		.maxlen		= sizeof(int),
- 		.mode		= 0644,
--		.proc_handler	= proc_dmesg_restrict,
-+		.proc_handler	= proc_dointvec_minmax_sysadmin,
- 		.extra1		= &zero,
- 		.extra2		= &two,
- 	},
-@@ -2416,7 +2416,7 @@ static int proc_taint(struct ctl_table *
+--- a/drivers/gpu/drm/i915/intel_bios.c
++++ b/drivers/gpu/drm/i915/intel_bios.c
+@@ -24,6 +24,7 @@
+  *    Eric Anholt <eric@anholt.net>
+  *
+  */
++#include <linux/dmi.h>
+ #include <drm/drm_dp_helper.h>
+ #include "drmP.h"
+ #include "drm.h"
+@@ -592,6 +593,26 @@ init_vbt_defaults(struct drm_i915_privat
+ 	dev_priv->edp.bpp = 18;
  }
  
- #ifdef CONFIG_PRINTK
--static int proc_dmesg_restrict(struct ctl_table *table, int write,
-+static int proc_dointvec_minmax_sysadmin(struct ctl_table *table, int write,
- 				void __user *buffer, size_t *lenp, loff_t *ppos)
- {
- 	if (write && !capable(CAP_SYS_ADMIN))
++static int __init intel_no_opregion_vbt_callback(const struct dmi_system_id *id)
++{
++	DRM_DEBUG_KMS("Falling back to manually reading VBT from "
++		      "VBIOS ROM for %s\n",
++		      id->ident);
++	return 1;
++}
++
++static const struct dmi_system_id intel_no_opregion_vbt[] = {
++	{
++		.callback = intel_no_opregion_vbt_callback,
++		.ident = "ThinkCentre A57",
++		.matches = {
++			DMI_MATCH(DMI_SYS_VENDOR, "LENOVO"),
++			DMI_MATCH(DMI_PRODUCT_NAME, "97027RG"),
++		},
++	},
++	{ }
++};
++
+ /**
+  * intel_parse_bios - find VBT and initialize settings from the BIOS
+  * @dev: DRM device
+@@ -612,7 +633,7 @@ intel_parse_bios(struct drm_device *dev)
+ 	init_vbt_defaults(dev_priv);
+ 
+ 	/* XXX Should this validation be moved to intel_opregion.c? */
+-	if (dev_priv->opregion.vbt) {
++	if (!dmi_check_system(intel_no_opregion_vbt) && dev_priv->opregion.vbt) {
+ 		struct vbt_header *vbt = dev_priv->opregion.vbt;
+ 		if (memcmp(vbt->signature, "$VBT", 4) == 0) {
+ 			DRM_DEBUG_DRIVER("Using VBT from OpRegion: %20s\n",
 
 
