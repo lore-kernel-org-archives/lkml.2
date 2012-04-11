@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965028Ab2DKXw4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Apr 2012 19:52:56 -0400
-Received: from mail.windriver.com ([147.11.1.11]:39419 "EHLO
+	id S934111Ab2DKXw6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Apr 2012 19:52:58 -0400
+Received: from mail.windriver.com ([147.11.1.11]:39418 "EHLO
 	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934064Ab2DKXvz (ORCPT
+	with ESMTP id S934063Ab2DKXvy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Apr 2012 19:51:55 -0400
+	Wed, 11 Apr 2012 19:51:54 -0400
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: linux-kbuild@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, davem@davemloft.net,
         tony@bakeyournoodle.com, mmarek@suse.cz, lacombar@gmail.com,
         Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [PATCH 5/5] kconfig: limit IS_ENABLED & similar to CPP usage
-Date: Wed, 11 Apr 2012 19:50:57 -0400
-Message-Id: <1334188257-3449-6-git-send-email-paul.gortmaker@windriver.com>
+Subject: [PATCH 2/5] ARM: remove C users of IS_ENABLED on THUMB2_KERNEL
+Date: Wed, 11 Apr 2012 19:50:54 -0400
+Message-Id: <1334188257-3449-3-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.7.9.1
 In-Reply-To: <1334188257-3449-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1334188257-3449-1-git-send-email-paul.gortmaker@windriver.com>
@@ -23,101 +23,181 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Using IS_ENABLED() within C (vs. within CPP #if statements) requires
-us to actually define every possible bool/tristate Kconfig option
-twice (__enabled_* and __enabled_*_MODULE variants).
-
-Commit 953742c8fe8ac45be453fee959d7be40cd89f920
-
-  "kconfig: fix __enabled_ macros definition for invisible
-   and un-selected symbols"
-
-caused the autoconf.h file to grow by a large factor, since it
-now defined tens of thousands(!) of __enabled_CONFIG* items.
-
-With the few C users that crept in over the last couple of releases
-gone, we can now limit these items to be just for CPP usage.  And
-in doing so, just emit lines where the options are really enabled
-as modules or built in.
-
-In doing so, the defconfig x86_64 autoconf.h size drops significantly:
-
-	before:	15934 of 16943 total are __enabled_CONFIG* lines
-	after:	943 of 1952 total are __enabled_CONFIG* lines
-
-The numbers for x86_64 allnoconfig are even more drastic:
-
-	before:	15934 of 16200 total are __enabled_CONFIG* lines
-	after:	224 of 490 total are __enabled_CONFIG* lines
+We need to limit our use of IS_ENABLED to CPP #if directives if
+we want to have a small autoconf.h file.  The use of it in C
+code also has the negative aspect of implicitly making it look
+like THUMB2_KERNEL is some kind of dynamic entity that is evaluated
+at runtime, when it really is a Kconfig bool and hence an
+either/or thing selected at config time.
 
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- include/linux/kconfig.h    |    8 ++++----
- scripts/kconfig/confdata.c |   14 +++++++-------
- 2 files changed, 11 insertions(+), 11 deletions(-)
+ arch/arm/include/asm/opcodes.h |    6 ++++++
+ arch/arm/kernel/ftrace.c       |    9 ++-------
+ arch/arm/kernel/insn.c         |    9 +++++----
+ arch/arm/kernel/kprobes.c      |   34 +++++++++++++++++-----------------
+ arch/arm/kernel/patch.c        |   28 +++++++++++++++-------------
+ 5 files changed, 45 insertions(+), 41 deletions(-)
 
-diff --git a/include/linux/kconfig.h b/include/linux/kconfig.h
-index 067eda0..5fa3f1b 100644
---- a/include/linux/kconfig.h
-+++ b/include/linux/kconfig.h
-@@ -4,7 +4,7 @@
- #include <generated/autoconf.h>
+diff --git a/arch/arm/include/asm/opcodes.h b/arch/arm/include/asm/opcodes.h
+index 19c48de..7e372d7 100644
+--- a/arch/arm/include/asm/opcodes.h
++++ b/arch/arm/include/asm/opcodes.h
+@@ -58,6 +58,12 @@ extern asmlinkage unsigned int arm_check_condition(u32 opcode, u32 psr);
+ #define __opcode_to_mem_thumb32(x) swahw32(x)
+ #endif
  
- /*
-- * Helper macros to use CONFIG_ options in C expressions. Note that
-+ * Helper macros to use CONFIG_ options in CPP #if expressions. Note that
-  * these only work with boolean and tristate options.
-  */
++#ifdef CONFIG_THUMB2_KERNEL
++#define __opcode_to_mem	__opcode_to_mem_thumb32
++#else
++#define __opcode_to_mem	__opcode_to_mem_arm
++#endif
++
+ #define __mem_to_opcode_arm(x) __opcode_to_mem_arm(x)
+ #define __mem_to_opcode_thumb16(x) __opcode_to_mem_thumb16(x)
+ #define __mem_to_opcode_thumb32(x) __opcode_to_mem_thumb32(x)
+diff --git a/arch/arm/kernel/ftrace.c b/arch/arm/kernel/ftrace.c
+index df0bf0c..0e41ff8 100644
+--- a/arch/arm/kernel/ftrace.c
++++ b/arch/arm/kernel/ftrace.c
+@@ -73,13 +73,8 @@ static int ftrace_modify_code(unsigned long pc, unsigned long old,
+ {
+ 	unsigned long replaced;
  
-@@ -14,19 +14,19 @@
-  *
-  */
- #define IS_ENABLED(option) \
--	(__enabled_ ## option || __enabled_ ## option ## _MODULE)
-+	(defined(__enabled_ ## option) || defined(__enabled_ ## option ## _MODULE))
+-	if (IS_ENABLED(CONFIG_THUMB2_KERNEL)) {
+-		old = __opcode_to_mem_thumb32(old);
+-		new = __opcode_to_mem_thumb32(new);
+-	} else {
+-		old = __opcode_to_mem_arm(old);
+-		new = __opcode_to_mem_arm(new);
+-	}
++	old = __opcode_to_mem(old);
++	new = __opcode_to_mem(new);
  
- /*
-  * IS_BUILTIN(CONFIG_FOO) evaluates to 1 if CONFIG_FOO is set to 'y', 0
-  * otherwise. For boolean options, this is equivalent to
-  * IS_ENABLED(CONFIG_FOO).
-  */
--#define IS_BUILTIN(option) __enabled_ ## option
-+#define IS_BUILTIN(option) defined(__enabled_ ## option)
+ 	if (validate) {
+ 		if (probe_kernel_read(&replaced, (void *)pc, MCOUNT_INSN_SIZE))
+diff --git a/arch/arm/kernel/insn.c b/arch/arm/kernel/insn.c
+index b760340..12f9fbd 100644
+--- a/arch/arm/kernel/insn.c
++++ b/arch/arm/kernel/insn.c
+@@ -55,8 +55,9 @@ __arm_gen_branch_arm(unsigned long pc, unsigned long addr, bool link)
+ unsigned long
+ __arm_gen_branch(unsigned long pc, unsigned long addr, bool link)
+ {
+-	if (IS_ENABLED(CONFIG_THUMB2_KERNEL))
+-		return __arm_gen_branch_thumb2(pc, addr, link);
+-	else
+-		return __arm_gen_branch_arm(pc, addr, link);
++#ifdef CONFIG_THUMB2_KERNEL
++	return __arm_gen_branch_thumb2(pc, addr, link);
++#else
++	return __arm_gen_branch_arm(pc, addr, link);
++#endif
+ }
+diff --git a/arch/arm/kernel/kprobes.c b/arch/arm/kernel/kprobes.c
+index 4dd41fc..859c7d2 100644
+--- a/arch/arm/kernel/kprobes.c
++++ b/arch/arm/kernel/kprobes.c
+@@ -109,25 +109,25 @@ void __kprobes arch_arm_kprobe(struct kprobe *p)
+ 	unsigned int brkp;
+ 	void *addr;
  
- /*
-  * IS_MODULE(CONFIG_FOO) evaluates to 1 if CONFIG_FOO is set to 'm', 0
-  * otherwise.
-  */
--#define IS_MODULE(option) __enabled_ ## option ## _MODULE
-+#define IS_MODULE(option) defined(__enabled_ ## option ## _MODULE)
+-	if (IS_ENABLED(CONFIG_THUMB2_KERNEL)) {
+-		/* Remove any Thumb flag */
+-		addr = (void *)((uintptr_t)p->addr & ~1);
+-
+-		if (is_wide_instruction(p->opcode))
+-			brkp = KPROBE_THUMB32_BREAKPOINT_INSTRUCTION;
+-		else
+-			brkp = KPROBE_THUMB16_BREAKPOINT_INSTRUCTION;
+-	} else {
+-		kprobe_opcode_t insn = p->opcode;
++#ifdef CONFIG_THUMB2_KERNEL
++	/* Remove any Thumb flag */
++	addr = (void *)((uintptr_t)p->addr & ~1);
  
- #endif /* __LINUX_KCONFIG_H */
-diff --git a/scripts/kconfig/confdata.c b/scripts/kconfig/confdata.c
-index 9d06744..3651ee7 100644
---- a/scripts/kconfig/confdata.c
-+++ b/scripts/kconfig/confdata.c
-@@ -492,14 +492,14 @@ header_print_symbol(FILE *fp, struct symbol *sym, const char *value, void *arg)
- 		/*
- 		 * Generate the __enabled_CONFIG_* and
- 		 * __enabled_CONFIG_*_MODULE macros for use by the
--		 * IS_{ENABLED,BUILTIN,MODULE} macros. The _MODULE variant is
--		 * generated even for booleans so that the IS_ENABLED() macro
--		 * works.
-+		 * IS_{ENABLED,BUILTIN,MODULE} cpp helpers.
- 		 */
--		fprintf(fp, "#define __enabled_" CONFIG_ "%s %d\n",
--				sym->name, (*value == 'y'));
--		fprintf(fp, "#define __enabled_" CONFIG_ "%s_MODULE %d\n",
--				sym->name, (*value == 'm'));
-+		if (*value == 'y')
-+			fprintf(fp, "#define __enabled_" CONFIG_ "%s\n",
-+				sym->name);
-+		if (*value == 'm')
-+			fprintf(fp, "#define __enabled_" CONFIG_ "%s_MODULE\n",
-+				sym->name);
- 		break;
+-		addr = p->addr;
+-		brkp = KPROBE_ARM_BREAKPOINT_INSTRUCTION;
++	if (is_wide_instruction(p->opcode))
++		brkp = KPROBE_THUMB32_BREAKPOINT_INSTRUCTION;
++	else
++		brkp = KPROBE_THUMB16_BREAKPOINT_INSTRUCTION;
++#else
++	kprobe_opcode_t insn = p->opcode;
+ 
+-		if (insn >= 0xe0000000)
+-			brkp |= 0xe0000000;  /* Unconditional instruction */
+-		else
+-			brkp |= insn & 0xf0000000;  /* Copy condition from insn */
+-	}
++	addr = p->addr;
++	brkp = KPROBE_ARM_BREAKPOINT_INSTRUCTION;
++
++	if (insn >= 0xe0000000)
++		brkp |= 0xe0000000;  /* Unconditional instruction */
++	else
++		brkp |= insn & 0xf0000000;  /* Copy condition from insn */
++#endif
+ 
+ 	patch_text(addr, brkp);
+ }
+diff --git a/arch/arm/kernel/patch.c b/arch/arm/kernel/patch.c
+index 07314af..2d1995c 100644
+--- a/arch/arm/kernel/patch.c
++++ b/arch/arm/kernel/patch.c
+@@ -15,13 +15,13 @@ struct patch {
+ 
+ void __kprobes __patch_text(void *addr, unsigned int insn)
+ {
+-	bool thumb2 = IS_ENABLED(CONFIG_THUMB2_KERNEL);
+-	int size;
++	int size = 0;
+ 
+-	if (thumb2 && __opcode_is_thumb16(insn)) {
++#ifdef CONFIG_THUMB2_KERNEL
++	if (__opcode_is_thumb16(insn)) {
+ 		*(u16 *)addr = __opcode_to_mem_thumb16(insn);
+ 		size = sizeof(u16);
+-	} else if (thumb2 && ((uintptr_t)addr & 2)) {
++	} else if (((uintptr_t)addr & 2)) {
+ 		u16 first = __opcode_thumb32_first(insn);
+ 		u16 second = __opcode_thumb32_second(insn);
+ 		u16 *addrh = addr;
+@@ -30,12 +30,10 @@ void __kprobes __patch_text(void *addr, unsigned int insn)
+ 		addrh[1] = __opcode_to_mem_thumb16(second);
+ 
+ 		size = sizeof(u32);
+-	} else {
+-		if (thumb2)
+-			insn = __opcode_to_mem_thumb32(insn);
+-		else
+-			insn = __opcode_to_mem_arm(insn);
+-
++	}
++#endif
++	if (!size) {
++		insn = __opcode_to_mem(insn);
+ 		*(u32 *)addr = insn;
+ 		size = sizeof(u32);
  	}
- 	case S_HEX: {
+@@ -63,10 +61,14 @@ void __kprobes patch_text(void *addr, unsigned int insn)
+ 	if (cache_ops_need_broadcast()) {
+ 		stop_machine(patch_text_stop_machine, &patch, cpu_online_mask);
+ 	} else {
+-		bool straddles_word = IS_ENABLED(CONFIG_THUMB2_KERNEL)
+-				      && __opcode_is_thumb32(insn)
+-				      && ((uintptr_t)addr & 2);
++		bool straddles_word;
+ 
++#ifdef CONFIG_THUMB2_KERNEL
++		straddles_word = __opcode_is_thumb32(insn)
++				      && ((uintptr_t)addr & 2);
++#else
++		straddles_word = 0;
++#endif
+ 		if (straddles_word)
+ 			stop_machine(patch_text_stop_machine, &patch, NULL);
+ 		else
 -- 
 1.7.9.1
 
