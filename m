@@ -1,43 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760900Ab2DKSws (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Apr 2012 14:52:48 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:14792 "EHLO mx1.redhat.com"
+	id S1760906Ab2DKSxl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Apr 2012 14:53:41 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:9940 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756933Ab2DKSwp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Apr 2012 14:52:45 -0400
-Message-ID: <4F85BE78.8040205@redhat.com>
-Date: Wed, 11 Apr 2012 13:25:12 -0400
-From: Rik van Riel <riel@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120216 Thunderbird/10.0.1
+	id S1756933Ab2DKSxk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Apr 2012 14:53:40 -0400
+Date: Wed, 11 Apr 2012 20:52:52 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        David Howells <dhowells@redhat.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/1] creds: kill __task_cred()->task_is_dead()
+	validation
+Message-ID: <20120411185252.GC22543@redhat.com>
+References: <20120410194554.GA7196@redhat.com> <20120410194625.GB7196@redhat.com> <m1obqyh960.fsf@fess.ebiederm.org>
 MIME-Version: 1.0
-To: Mel Gorman <mgorman@suse.de>
-CC: Andrew Morton <akpm@linux-foundation.org>,
-        Konstantin Khlebnikov <khlebnikov@openvz.org>,
-        Hugh Dickins <hughd@google.com>, Ying Han <yinghan@google.com>,
-        Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/3] mm: vmscan: Remove lumpy reclaim
-References: <1334162298-18942-1-git-send-email-mgorman@suse.de> <1334162298-18942-2-git-send-email-mgorman@suse.de>
-In-Reply-To: <1334162298-18942-2-git-send-email-mgorman@suse.de>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <m1obqyh960.fsf@fess.ebiederm.org>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/11/2012 12:38 PM, Mel Gorman wrote:
-> Lumpy reclaim had a purpose but in the mind of some, it was to kick
-> the system so hard it trashed. For others the purpose was to complicate
-> vmscan.c. Over time it was giving softer shoes and a nicer attitude but
-> memory compaction needs to step up and replace it so this patch sends
-> lumpy reclaim to the farm.
+On 04/11, Eric W. Biederman wrote:
 >
-> The tracepoint format changes for isolating LRU pages with this patch
-> applied. Furthermore reclaim/compaction can no longer queue dirty pages in
-> pageout() if the underlying BDI is congested. Lumpy reclaim used this logic
-> and reclaim/compaction was using it in error.
+> Oleg Nesterov <oleg@redhat.com> writes:
 >
-> Signed-off-by: Mel Gorman<mgorman@suse.de>
+> A small nit.  The subject should be:
+> "Remove task_is_dead from __task_cred() validation."
+> there is no method __task_cred()->task_is_dead().
 
-Acked-by: Rik van Riel <riel@redhat.com>
+I often use this notation to show the caller and the callee,
+but I don't really mind.
+
+> > Unfortunately, we can't kill task_is_dead() right now, it has already
+> > found the bugy users in drivers/staging/, the fix already exists.
+>
+> I would say task_is_dead() has already acquired buggy users in
+> drivers/staging.
+
+Argh, it least I shouldn't have said "bugy".
+
+> As for the patch itself, and the direction of removing task_is_dead().
+> It looks good from where I sit.
+>
+> Reviewed-by: "Eric W. Biederman" <ebiederm@xmission.com>
+
+Thanks! I'll fix the subject/changelog and resend with your and
+David's acks.
+
+Oleg.
 
