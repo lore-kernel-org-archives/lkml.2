@@ -1,56 +1,192 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933460Ab2DKWFd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Apr 2012 18:05:33 -0400
-Received: from swampdragon.chaosbits.net ([90.184.90.115]:17878 "EHLO
-	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933422Ab2DKWFc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Apr 2012 18:05:32 -0400
-Date: Thu, 12 Apr 2012 00:05:29 +0200 (CEST)
-From: Jesper Juhl <jj@chaosbits.net>
-To: linux-kernel@vger.kernel.org
-cc: dri-devel@lists.freedesktop.org, Alan Cox <alan@linux.intel.com>,
-        Dave Airlie <airlied@redhat.com>,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        David Airlie <airlied@linux.ie>, jim liu <jim.liu@intel.com>,
-        Jackie Li <yaodong.li@intel.com>, trivial@kernel.org
-Subject: [PATCH] gma500: Don't needlessly include version.h in
- mdfld_dsi_output.h
-Message-ID: <alpine.LNX.2.00.1204120002390.2137@swampdragon.chaosbits.net>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S933470Ab2DKWHL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Apr 2012 18:07:11 -0400
+Received: from fieldses.org ([174.143.236.118]:37921 "EHLO fieldses.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933444Ab2DKWHJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Apr 2012 18:07:09 -0400
+Date: Wed, 11 Apr 2012 18:07:07 -0400
+From: "J. Bruce Fields" <bfields@fieldses.org>
+To: Stanislav Kinsbursky <skinsbursky@parallels.com>
+Cc: linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org, devel@openvz.org
+Subject: Re: [PATCH] nfsd: remove hard-coded dereferences to name-to-id and
+ id-to-name caches
+Message-ID: <20120411220707.GE31706@fieldses.org>
+References: <20120411111844.14534.39808.stgit@localhost6.localdomain6>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120411111844.14534.39808.stgit@localhost6.localdomain6>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-drivers/gpu/drm/gma500/mdfld_dsi_output.h does not need to
-'#include <linux/version.h>' - so don't.
+On Wed, Apr 11, 2012 at 03:18:58PM +0400, Stanislav Kinsbursky wrote:
+> These dereferences to global static caches are redundant. They also prevents
+> converting these caches into per-net ones. So this patch is cleanup + precursor
+> of patch set, which will make them per-net.
 
-Signed-off-by: Jesper Juhl <jj@chaosbits.net>
----
- drivers/gpu/drm/gma500/mdfld_dsi_output.h |    1 -
- 1 file changed, 1 deletion(-)
+This isn't applying to my latest tree; could you look into that and
+resend?
 
-diff --git a/drivers/gpu/drm/gma500/mdfld_dsi_output.h b/drivers/gpu/drm/gma500/mdfld_dsi_output.h
-index 21071ce..36eb074 100644
---- a/drivers/gpu/drm/gma500/mdfld_dsi_output.h
-+++ b/drivers/gpu/drm/gma500/mdfld_dsi_output.h
-@@ -29,7 +29,6 @@
- #define __MDFLD_DSI_OUTPUT_H__
- 
- #include <linux/backlight.h>
--#include <linux/version.h>
- #include <drm/drmP.h>
- #include <drm/drm.h>
- #include <drm/drm_crtc.h>
--- 
-1.7.10
+I've applied and pushed out your cleanup patches, but not yet the two
+cache-containerization patches.
 
+--b.
 
--- 
-Jesper Juhl <jj@chaosbits.net>       http://www.chaosbits.net/
-Don't top-post http://www.catb.org/jargon/html/T/top-post.html
-Plain text mails only, please.
-
+> 
+> Signed-off-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
+> 
+> ---
+>  fs/nfsd/nfs4idmap.c |   50 ++++++++++++++++++++++++--------------------------
+>  1 files changed, 24 insertions(+), 26 deletions(-)
+> 
+> diff --git a/fs/nfsd/nfs4idmap.c b/fs/nfsd/nfs4idmap.c
+> index 322d11c..2ff4470 100644
+> --- a/fs/nfsd/nfs4idmap.c
+> +++ b/fs/nfsd/nfs4idmap.c
+> @@ -183,8 +183,9 @@ warn_no_idmapd(struct cache_detail *detail, int has_died)
+>  
+>  
+>  static int         idtoname_parse(struct cache_detail *, char *, int);
+> -static struct ent *idtoname_lookup(struct ent *);
+> -static struct ent *idtoname_update(struct ent *, struct ent *);
+> +static struct ent *idtoname_lookup(struct cache_detail *, struct ent *);
+> +static struct ent *idtoname_update(struct cache_detail *, struct ent *,
+> +				   struct ent *);
+>  
+>  static struct cache_detail idtoname_cache = {
+>  	.owner		= THIS_MODULE,
+> @@ -244,7 +245,7 @@ idtoname_parse(struct cache_detail *cd, char *buf, int buflen)
+>  		goto out;
+>  
+>  	error = -ENOMEM;
+> -	res = idtoname_lookup(&ent);
+> +	res = idtoname_lookup(cd, &ent);
+>  	if (!res)
+>  		goto out;
+>  
+> @@ -260,11 +261,11 @@ idtoname_parse(struct cache_detail *cd, char *buf, int buflen)
+>  	else
+>  		memcpy(ent.name, buf1, sizeof(ent.name));
+>  	error = -ENOMEM;
+> -	res = idtoname_update(&ent, res);
+> +	res = idtoname_update(cd, &ent, res);
+>  	if (res == NULL)
+>  		goto out;
+>  
+> -	cache_put(&res->h, &idtoname_cache);
+> +	cache_put(&res->h, cd);
+>  
+>  	error = 0;
+>  out:
+> @@ -275,10 +276,9 @@ out:
+>  
+>  
+>  static struct ent *
+> -idtoname_lookup(struct ent *item)
+> +idtoname_lookup(struct cache_detail *cd, struct ent *item)
+>  {
+> -	struct cache_head *ch = sunrpc_cache_lookup(&idtoname_cache,
+> -						    &item->h,
+> +	struct cache_head *ch = sunrpc_cache_lookup(cd, &item->h,
+>  						    idtoname_hash(item));
+>  	if (ch)
+>  		return container_of(ch, struct ent, h);
+> @@ -287,10 +287,9 @@ idtoname_lookup(struct ent *item)
+>  }
+>  
+>  static struct ent *
+> -idtoname_update(struct ent *new, struct ent *old)
+> +idtoname_update(struct cache_detail *cd, struct ent *new, struct ent *old)
+>  {
+> -	struct cache_head *ch = sunrpc_cache_update(&idtoname_cache,
+> -						    &new->h, &old->h,
+> +	struct cache_head *ch = sunrpc_cache_update(cd, &new->h, &old->h,
+>  						    idtoname_hash(new));
+>  	if (ch)
+>  		return container_of(ch, struct ent, h);
+> @@ -359,8 +358,9 @@ nametoid_show(struct seq_file *m, struct cache_detail *cd, struct cache_head *h)
+>  	return 0;
+>  }
+>  
+> -static struct ent *nametoid_lookup(struct ent *);
+> -static struct ent *nametoid_update(struct ent *, struct ent *);
+> +static struct ent *nametoid_lookup(struct cache_detail *, struct ent *);
+> +static struct ent *nametoid_update(struct cache_detail *, struct ent *,
+> +				   struct ent *);
+>  static int         nametoid_parse(struct cache_detail *, char *, int);
+>  
+>  static struct cache_detail nametoid_cache = {
+> @@ -426,14 +426,14 @@ nametoid_parse(struct cache_detail *cd, char *buf, int buflen)
+>  		set_bit(CACHE_NEGATIVE, &ent.h.flags);
+>  
+>  	error = -ENOMEM;
+> -	res = nametoid_lookup(&ent);
+> +	res = nametoid_lookup(cd, &ent);
+>  	if (res == NULL)
+>  		goto out;
+> -	res = nametoid_update(&ent, res);
+> +	res = nametoid_update(cd, &ent, res);
+>  	if (res == NULL)
+>  		goto out;
+>  
+> -	cache_put(&res->h, &nametoid_cache);
+> +	cache_put(&res->h, cd);
+>  	error = 0;
+>  out:
+>  	kfree(buf1);
+> @@ -443,10 +443,9 @@ out:
+>  
+>  
+>  static struct ent *
+> -nametoid_lookup(struct ent *item)
+> +nametoid_lookup(struct cache_detail *cd, struct ent *item)
+>  {
+> -	struct cache_head *ch = sunrpc_cache_lookup(&nametoid_cache,
+> -						    &item->h,
+> +	struct cache_head *ch = sunrpc_cache_lookup(cd, &item->h,
+>  						    nametoid_hash(item));
+>  	if (ch)
+>  		return container_of(ch, struct ent, h);
+> @@ -455,10 +454,9 @@ nametoid_lookup(struct ent *item)
+>  }
+>  
+>  static struct ent *
+> -nametoid_update(struct ent *new, struct ent *old)
+> +nametoid_update(struct cache_detail *cd, struct ent *new, struct ent *old)
+>  {
+> -	struct cache_head *ch = sunrpc_cache_update(&nametoid_cache,
+> -						    &new->h, &old->h,
+> +	struct cache_head *ch = sunrpc_cache_update(cd, &new->h, &old->h,
+>  						    nametoid_hash(new));
+>  	if (ch)
+>  		return container_of(ch, struct ent, h);
+> @@ -493,12 +491,12 @@ nfsd_idmap_shutdown(void)
+>  
+>  static int
+>  idmap_lookup(struct svc_rqst *rqstp,
+> -		struct ent *(*lookup_fn)(struct ent *), struct ent *key,
+> -		struct cache_detail *detail, struct ent **item)
+> +		struct ent *(*lookup_fn)(struct cache_detail *, struct ent *),
+> +		struct ent *key, struct cache_detail *detail, struct ent **item)
+>  {
+>  	int ret;
+>  
+> -	*item = lookup_fn(key);
+> +	*item = lookup_fn(detail, key);
+>  	if (!*item)
+>  		return -ENOMEM;
+>   retry:
+> @@ -506,7 +504,7 @@ idmap_lookup(struct svc_rqst *rqstp,
+>  
+>  	if (ret == -ETIMEDOUT) {
+>  		struct ent *prev_item = *item;
+> -		*item = lookup_fn(key);
+> +		*item = lookup_fn(detail, key);
+>  		if (*item != prev_item)
+>  			goto retry;
+>  		cache_put(&(*item)->h, detail);
+> 
