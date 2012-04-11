@@ -1,76 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758434Ab2DKP0u (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Apr 2012 11:26:50 -0400
-Received: from va3ehsobe010.messaging.microsoft.com ([216.32.180.30]:9563 "EHLO
-	va3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753657Ab2DKP0s (ORCPT
+	id S1758507Ab2DKPdi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Apr 2012 11:33:38 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:64339 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755241Ab2DKPdg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Apr 2012 11:26:48 -0400
-X-SpamScore: 0
-X-BigFish: VPS0(zzzz1202hzz8275bh8275dhz2dh668h839h93fhd25h)
-X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
-X-WSS-ID: 0M2BMWF-02-1RC-02
-X-M-MSG: 
-Date: Wed, 11 Apr 2012 17:26:40 +0200
-From: Andreas Herrmann <andreas.herrmann3@amd.com>
-To: Ingo Molnar <mingo@kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
-        Thomas Gleixner <tglx@linutronix.de>
-CC: <linux-kernel@vger.kernel.org>
-Subject: [PATCH] x86, amd: Re-enable CPU topology extensions in case BIOS has
- disabled it
-Message-ID: <20120411152640.GC4794@alberich.amd.com>
+	Wed, 11 Apr 2012 11:33:36 -0400
+Message-ID: <4F85A44D.2050909@gmail.com>
+Date: Wed, 11 Apr 2012 08:33:33 -0700
+From: David Daney <ddaney.cavm@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.15) Gecko/20101027 Fedora/3.0.10-1.fc12 Thunderbird/3.0.10
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginatorOrg: amd.com
+To: Grant Likely <grant.likely@secretlab.ca>
+CC: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
+        David Daney <david.daney@cavium.com>
+Subject: Re: [PATCH] iqrdomain: Improve formatting in debugfs.
+References: <1334016417-18748-1-git-send-email-ddaney.cavm@gmail.com> <20120411070332.6F3C03E081E@localhost>
+In-Reply-To: <20120411070332.6F3C03E081E@localhost>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 04/11/2012 12:03 AM, Grant Likely wrote:
+> On Mon,  9 Apr 2012 17:06:57 -0700, David Daney<ddaney.cavm@gmail.com>  wrote:
+>> From: David Daney<david.daney@cavium.com>
+>>
+>> The irq_domain_mapping file has some interesting output when chip_data
+>> contains leading zeros:
+>>
+>> virq   hwirq    chip name        chip data           domain name
+>> .
+>> .
+>> .
+>>    103  0x00000  CIU2-W           0x 5e0000000000000  none
+>>    104  0x00000  CIU2-W           0x 5f0000000000000  none
+>>    105  0x00000  CIU2-M           0x          (null)  none
+>>    113  0x00000  CIU2-E           0x1080000000000000  none
+>> .
+>> .
+>> .
+>>
+>> I think there should be no space in there between the "0x" and the
+>> rest.  Also the '(null)' entry doesn't make much sense at all with a
+>> "0x".
+>
+> Yeah, it doesn't make much sense with the '0x', but I don't want to
+> supress the (null) output because it is really important to highlight
+> when a domain isn't assigned to an active irq.
+>
+> Fixing the zero pad is trivial to fix though.  Just remove the
+> precision from the %p format.  Here's my counter-patch:
 
-For detection of thread siblings we are relying on the topology
-extension CPUID leafs. Thus we have to re-enable it in case BIOS tries
-to hide the correpsonding CPUID feature flag.
+This is good too.
 
-Cc: stable@vger.kernel.org
-Signed-off-by: Andreas Herrmann <andreas.herrmann3@amd.com>
----
- arch/x86/kernel/cpu/amd.c |   18 ++++++++++++++++++
- 1 files changed, 18 insertions(+), 0 deletions(-)
-
-diff --git a/arch/x86/kernel/cpu/amd.c b/arch/x86/kernel/cpu/amd.c
-index 0a44b90..56a694b 100644
---- a/arch/x86/kernel/cpu/amd.c
-+++ b/arch/x86/kernel/cpu/amd.c
-@@ -579,6 +579,24 @@ static void __cpuinit init_amd(struct cpuinfo_x86 *c)
- 		}
- 	}
- 
-+	/* re-enable TopologyExtensions if switched off by BIOS */
-+	if ((c->x86 == 0x15) &&
-+	    (c->x86_model >= 0x10) && (c->x86_model <= 0x1f) &&
-+	    !cpu_has(c, X86_FEATURE_TOPOEXT)) {
-+		u64 val;
-+
-+		if (!rdmsrl_amd_safe(0xc0011005, &val)) {
-+			val |= 1ULL << 54;
-+			wrmsrl_amd_safe(0xc0011005, val);
-+			rdmsrl(0xc0011005, val);
-+			if (val & (1ULL << 54)) {
-+				set_cpu_cap(c, X86_FEATURE_TOPOEXT);
-+				printk(KERN_INFO FW_INFO "CPU: Re-enabling "
-+				  "disabled Topology Extensions Support\n");
-+			}
-+		}
-+	}
-+
- 	cpu_detect_cache_sizes(c);
- 
- 	/* Multi core CPU? */
--- 
-1.7.5.rc3
+FWIW:
+Acked-by: David Daney <david.daney@cavium.com>
 
 
+>
+> ---
+>
+> diff --git a/kernel/irq/irqdomain.c b/kernel/irq/irqdomain.c
+> index 9310a8d..eb05e40 100644
+> --- a/kernel/irq/irqdomain.c
+> +++ b/kernel/irq/irqdomain.c
+> @@ -643,8 +643,8 @@ static int virq_debug_show(struct seq_file *m, void *private)
+>   	void *data;
+>   	int i;
+>
+> -	seq_printf(m, "%-5s  %-7s  %-15s  %-18s  %s\n", "virq", "hwirq",
+> -		      "chip name", "chip data", "domain name");
+> +	seq_printf(m, "%-5s  %-7s  %-15s  %-*s  %s\n", "irq", "hwirq",
+> +		      "chip name", 2 * sizeof(void *) + 2, "chip data", "domain name");
+>
+>   	for (i = 1; i<  nr_irqs; i++) {
+>   		desc = irq_to_desc(i);
+> @@ -667,7 +667,7 @@ static int virq_debug_show(struct seq_file *m, void *private)
+>   			seq_printf(m, "%-15s  ", p);
+>
+>   			data = irq_desc_get_chip_data(desc);
+> -			seq_printf(m, "0x%16p  ", data);
+> +			seq_printf(m, data ? "0x%p  " : "  %p  ", data);
+>
+>   			if (desc->irq_data.domain&&  desc->irq_data.domain->of_node)
+>   				p = desc->irq_data.domain->of_node->full_name;
 
