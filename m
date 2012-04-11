@@ -1,25 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964994Ab2DKXSN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Apr 2012 19:18:13 -0400
-Received: from mail-pz0-f52.google.com ([209.85.210.52]:63303 "EHLO
-	mail-pz0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964976Ab2DKXSI (ORCPT
+	id S965037Ab2DKXSX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Apr 2012 19:18:23 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:44096 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965010Ab2DKXST (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Apr 2012 19:18:08 -0400
-Message-Id: <20120411231029.492939631@linuxfoundation.org>
+	Wed, 11 Apr 2012 19:18:19 -0400
+Message-Id: <20120411231031.274448665@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Wed, 11 Apr 2012 16:11:24 -0700
+Date: Wed, 11 Apr 2012 16:11:34 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Jon Dufresne <jon@jondufresne.org>,
-        Suresh Siddha <suresh.b.siddha@intel.com>, <yinghai@kernel.org>,
-        Josh Boyer <jwboyer@redhat.com>, Ingo Molnar <mingo@elte.hu>,
-        Teck Choon Giam <giamteckchoon@gmail.com>, Ben Guthro <ben@guthro.net>
-Subject: [ 66/78] Revert "x86/ioapic: Add register level checks to detect bogus io-apic entries"
+        alan@lxorguk.ukuu.org.uk, Chris Rankin <rankincj@yahoo.com>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>
+Subject: [ 76/78] media: dvb_frontend: regression fix: userspace ABI broken for xine
 In-Reply-To: <20120411231102.GA6404@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -29,95 +25,67 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-This reverts commit a998dc2fa76f496d2944f0602b920d1d10d7467d
-[73d63d038ee9f769f5e5b46792d227fe20e442c5 upstream]
+From: Chris Rankin <rankincj@yahoo.com>
 
-It causes problems, so needs to be reverted from 3.2-stable for now.
+commit 556a0442e08a8bc8541587a349cbf26ed14ec6de upstream.
 
-Reported-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Cc: Jon Dufresne <jon@jondufresne.org>
-Cc: Suresh Siddha <suresh.b.siddha@intel.com>
-Cc: <yinghai@kernel.org>
-Cc: Josh Boyer <jwboyer@redhat.com>
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Teck Choon Giam <giamteckchoon@gmail.com>
-Cc: Ben Guthro <ben@guthro.net>
+The commit e399ce77e6e has broken the DVB ABI for xine:
+
+The problem is that xine is expecting every event after a successful
+FE_SET_FRONTEND ioctl to have a non-zero frequency parameter, regardless
+of whether the tuning process has LOCKed yet. What used to happen is
+that the events inherited the initial tuning parameters from the
+FE_SET_FRONTEND call. However, the fepriv->parameters_out struct is now
+not initialised until the status contains the FE_HAS_LOCK bit.
+
+You might argue that this behaviour is intentional, except that if an
+application other than xine uses the DVB adapter and manages to set the
+parameters_out.frequency field to something other than zero, then xine
+no longer has any problems until either the adapter is replugged or the
+kernel modules reloaded. This can only mean that the
+fepriv->parameters_out struct still contains the (stale) tuning
+information from the previous application.
+
+Signed-off-by: Chris Rankin <rankincj@yahoo.com>
+Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/x86/kernel/apic/io_apic.c |   40 ++++++++--------------------------------
- 1 file changed, 8 insertions(+), 32 deletions(-)
+ drivers/media/dvb/dvb-core/dvb_frontend.c |   10 ++++++++++
+ 1 file changed, 10 insertions(+)
 
---- a/arch/x86/kernel/apic/io_apic.c
-+++ b/arch/x86/kernel/apic/io_apic.c
-@@ -3967,36 +3967,18 @@ int mp_find_ioapic_pin(int ioapic, u32 g
- static __init int bad_ioapic(unsigned long address)
+--- a/drivers/media/dvb/dvb-core/dvb_frontend.c
++++ b/drivers/media/dvb/dvb-core/dvb_frontend.c
+@@ -143,6 +143,8 @@ struct dvb_frontend_private {
+ static void dvb_frontend_wakeup(struct dvb_frontend *fe);
+ static int dtv_get_frontend(struct dvb_frontend *fe,
+ 			    struct dvb_frontend_parameters *p_out);
++static int dtv_property_legacy_params_sync(struct dvb_frontend *fe,
++					   struct dvb_frontend_parameters *p);
+ 
+ static bool has_get_frontend(struct dvb_frontend *fe)
  {
- 	if (nr_ioapics >= MAX_IO_APICS) {
--		pr_warn("WARNING: Max # of I/O APICs (%d) exceeded (found %d), skipping\n",
--			MAX_IO_APICS, nr_ioapics);
-+		printk(KERN_WARNING "WARNING: Max # of I/O APICs (%d) exceeded "
-+		       "(found %d), skipping\n", MAX_IO_APICS, nr_ioapics);
- 		return 1;
- 	}
- 	if (!address) {
--		pr_warn("WARNING: Bogus (zero) I/O APIC address found in table, skipping!\n");
-+		printk(KERN_WARNING "WARNING: Bogus (zero) I/O APIC address"
-+		       " found in table, skipping!\n");
- 		return 1;
- 	}
- 	return 0;
- }
+@@ -695,6 +697,7 @@ restart:
+ 					fepriv->algo_status |= DVBFE_ALGO_SEARCH_AGAIN;
+ 					fepriv->delay = HZ / 2;
+ 				}
++				dtv_property_legacy_params_sync(fe, &fepriv->parameters_out);
+ 				fe->ops.read_status(fe, &s);
+ 				if (s != fepriv->status) {
+ 					dvb_frontend_add_event(fe, s); /* update event list */
+@@ -1831,6 +1834,13 @@ static int dtv_set_frontend(struct dvb_f
+ 		return -EINVAL;
  
--static __init int bad_ioapic_register(int idx)
--{
--	union IO_APIC_reg_00 reg_00;
--	union IO_APIC_reg_01 reg_01;
--	union IO_APIC_reg_02 reg_02;
--
--	reg_00.raw = io_apic_read(idx, 0);
--	reg_01.raw = io_apic_read(idx, 1);
--	reg_02.raw = io_apic_read(idx, 2);
--
--	if (reg_00.raw == -1 && reg_01.raw == -1 && reg_02.raw == -1) {
--		pr_warn("I/O APIC 0x%x registers return all ones, skipping!\n",
--			mpc_ioapic_addr(idx));
--		return 1;
--	}
--
--	return 0;
--}
--
- void __init mp_register_ioapic(int id, u32 address, u32 gsi_base)
- {
- 	int idx = 0;
-@@ -4013,12 +3995,6 @@ void __init mp_register_ioapic(int id, u
- 	ioapics[idx].mp_config.apicaddr = address;
- 
- 	set_fixmap_nocache(FIX_IO_APIC_BASE_0 + idx, address);
--
--	if (bad_ioapic_register(idx)) {
--		clear_fixmap(FIX_IO_APIC_BASE_0 + idx);
--		return;
--	}
--
- 	ioapics[idx].mp_config.apicid = io_apic_unique_id(id);
- 	ioapics[idx].mp_config.apicver = io_apic_get_version(idx);
- 
-@@ -4039,10 +4015,10 @@ void __init mp_register_ioapic(int id, u
- 	if (gsi_cfg->gsi_end >= gsi_top)
- 		gsi_top = gsi_cfg->gsi_end + 1;
- 
--	pr_info("IOAPIC[%d]: apic_id %d, version %d, address 0x%x, GSI %d-%d\n",
--		idx, mpc_ioapic_id(idx),
--		mpc_ioapic_ver(idx), mpc_ioapic_addr(idx),
--		gsi_cfg->gsi_base, gsi_cfg->gsi_end);
-+	printk(KERN_INFO "IOAPIC[%d]: apic_id %d, version %d, address 0x%x, "
-+	       "GSI %d-%d\n", idx, mpc_ioapic_id(idx),
-+	       mpc_ioapic_ver(idx), mpc_ioapic_addr(idx),
-+	       gsi_cfg->gsi_base, gsi_cfg->gsi_end);
- 
- 	nr_ioapics++;
- }
+ 	/*
++	 * Initialize output parameters to match the values given by
++	 * the user. FE_SET_FRONTEND triggers an initial frontend event
++	 * with status = 0, which copies output parameters to userspace.
++	 */
++	dtv_property_legacy_params_sync(fe, &fepriv->parameters_out);
++
++	/*
+ 	 * Be sure that the bandwidth will be filled for all
+ 	 * non-satellite systems, as tuners need to know what
+ 	 * low pass/Nyquist half filter should be applied, in
 
 
