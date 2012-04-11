@@ -1,232 +1,155 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965275Ab2DKXXQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Apr 2012 19:23:16 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:41234 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965254Ab2DKXXJ (ORCPT
+	id S965335Ab2DKXmT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Apr 2012 19:42:19 -0400
+Received: from mail.solarflare.com ([216.237.3.220]:58643 "EHLO
+	ocex02.SolarFlarecom.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S965286Ab2DKXmQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Apr 2012 19:23:09 -0400
-Message-Id: <20120411231041.345033906@linuxfoundation.org>
-User-Agent: quilt/0.60-19.1
-Date: Wed, 11 Apr 2012 16:11:10 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Jason Wessel <jason.wessel@windriver.com>
-Subject: [ 35/59] kgdbts: (1 of 2) fix single step awareness to work correctly with SMP
-In-Reply-To: <20120411231213.GA13124@kroah.com>
+	Wed, 11 Apr 2012 19:42:16 -0400
+Message-ID: <1334187728.2552.7.camel@bwh-desktop.uk.solarflarecom.com>
+Subject: Re: [RFC PATCH 1/2] net: ethtool: Add capability to retrieve
+ plug-in module EEPROM
+From: Ben Hutchings <bhutchings@solarflare.com>
+To: Stuart Hodgson <smhodgson@solarflare.com>
+CC: <netdev@vger.kernel.org>, <bruce.w.allan@intel.com>,
+        <mirq-linux@rere.qmqm.pl>, <decot@google.com>,
+        <amit.salecha@qlogic.com>, <alexander.h.duyck@intel.com>,
+        <davem@davemloft.net>, <linux-kernel@vger.kernel.org>
+Date: Thu, 12 Apr 2012 00:42:08 +0100
+In-Reply-To: <1334168217.2552.5.camel@bwh-desktop.uk.solarflarecom.com>
+References: <4F71FE0A.3060203@solarflare.com>
+	 <1333389160.2623.30.camel@bwh-desktop.uk.solarflarecom.com>
+	 <4F85B639.5090900@solarflare.com>
+	 <1334168217.2552.5.camel@bwh-desktop.uk.solarflarecom.com>
+Organization: Solarflare Communications
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 (3.2.3-1.fc16) 
+Content-Transfer-Encoding: 7bit
+MIME-Version: 1.0
+X-Originating-IP: [10.17.20.137]
+X-TM-AS-Product-Ver: SMEX-10.0.0.1412-6.800.1017-18830.005
+X-TM-AS-Result: No--25.127600-0.000000-31
+X-TM-AS-User-Approved-Sender: Yes
+X-TM-AS-User-Blocked-Sender: No
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.2-stable review patch.  If anyone has any objections, please let me know.
+On Wed, 2012-04-11 at 19:16 +0100, Ben Hutchings wrote:
+> On Wed, 2012-04-11 at 17:50 +0100, Stuart Hodgson wrote:
+> > On 02/04/12 18:52, Ben Hutchings wrote:
+> [...]
+> > >> --- a/net/core/ethtool.c
+> > >> +++ b/net/core/ethtool.c
+> [...]
+> > >> +    if (eeprom.offset + eeprom.len>  modinfo.eeprom_len)
+> > >> +        return -EINVAL;
+> > >> +
+> > >> +    data = kmalloc(PAGE_SIZE, GFP_USER);
+> > >> +    if (!data)
+> > >> +        return -ENOMEM;
+> > >
+> > > What if some device has a larger EEPROM?  Surely this length should be
+> > > eeprom.len.
+> > >
+> > 
+> > Do you mean what if the eeprom length in te device is larger than
+> > PAGE_SIZE?
+> 
+> Yes.
+> 
+> > If so then it should really use modinfo.eeprom_len since
+> > this the size of the data. eeprom.len could be arbitary.
+> 
+> No, eeprom.len is the size of the data and we've already validated it at
+> this point.
 
-------------------
+Maybe we should start by refactoring ethtool_get_eeprom() so we can
+reuse most of its code in ethtool_get_module_eeprom(), rather than
+having to worry about what the maximum size of a module EEPROM might be
+and whether we need a loop:
 
-From: Jason Wessel <jason.wessel@windriver.com>
+Subject: ethtool: Split ethtool_get_eeprom() to allow for additional EEPROM accessors
 
-commit 486c5987a00a89d56c2c04c506417ef8f823ca2e upstream.
+We want to support reading module (SFP+, XFP, ...) EEPROMs as well as
+NIC EEPROMs.  They will need a different command number and driver
+operation, but the structure and arguments will be the same and so we
+can share most of the code here.
 
-The do_fork and sys_open tests have never worked properly on anything
-other than a UP configuration with the kgdb test suite.  This is
-because the test suite did not fully implement the behavior of a real
-debugger.  A real debugger tracks the state of what thread it asked to
-single step and can correctly continue other threads of execution or
-conditionally stop while waiting for the original thread single step
-request to return.
-
-Below is a simple method to cause a fatal kernel oops with the kgdb
-test suite on a 4 processor x86 system:
-
-while [ 1 ] ; do ls > /dev/null 2> /dev/null; done&
-while [ 1 ] ; do ls > /dev/null 2> /dev/null; done&
-while [ 1 ] ; do ls > /dev/null 2> /dev/null; done&
-while [ 1 ] ; do ls > /dev/null 2> /dev/null; done&
-echo V1I1F1000 > /sys/module/kgdbts/parameters/kgdbts
-
-Very soon after starting the test the kernel will oops with a message like:
-
-kgdbts: BP mismatch 3b7da66480 expected ffffffff8106a590
-WARNING: at drivers/misc/kgdbts.c:303 check_and_rewind_pc+0xe0/0x100()
-Call Trace:
- [<ffffffff812994a0>] check_and_rewind_pc+0xe0/0x100
- [<ffffffff81298945>] validate_simple_test+0x25/0xc0
- [<ffffffff81298f77>] run_simple_test+0x107/0x2c0
- [<ffffffff81298a18>] kgdbts_put_char+0x18/0x20
-
-The warn will turn to a hard kernel crash shortly after that because
-the pc will not get properly rewound to the right value after hitting
-a breakpoint leading to a hard lockup.
-
-This change is broken up into 2 pieces because archs that have hw
-single stepping (2.6.26 and up) need different changes than archs that
-do not have hw single stepping (3.0 and up).  This change implements
-the correct behavior for an arch that supports hw single stepping.
-
-A minor defect was fixed where sys_open should be do_sys_open
-for the sys_open break point test.  This solves the problem of running
-a 64 bit with a 32 bit user space.  The sys_open() never gets called
-when using the 32 bit file system for the kgdb testsuite because the
-32 bit binaries invoke the compat_sys_open() call leading to the test
-never completing.
-
-In order to mimic a real debugger, the kgdb test suite now tracks the
-most recent thread that was continued (cont_thread_id), with the
-intent to single step just this thread.  When the response to the
-single step request stops in a different thread that hit the original
-break point that thread will now get continued, while the debugger
-waits for the thread with the single step pending.  Here is a high
-level description of the sequence of events.
-
-   cont_instead_of_sstep = 0;
-
-1) set breakpoint at do_fork
-2) continue
-3)   Save the thread id where we stop to cont_thread_id
-4) Remove breakpoint at do_fork
-5) Reset the PC if needed depending on kernel exception type
-6) if (cont_instead_of_sstep) { continue } else { single step }
-7)   Check where we stopped
-       if current thread != cont_thread_id {
-           cont_instead_of_sstep = 1;
-           goto step 5
-       } else {
-           cont_instead_of_sstep = 0;
-       }
-8) clean up and run test again if needed
-
-Signed-off-by: Jason Wessel <jason.wessel@windriver.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
+Signed-off-by: Ben Hutchings <bhutchings@solarflare.com>
 ---
- drivers/misc/kgdbts.c |   54 +++++++++++++++++++++++++++++++++++++++-----------
- 1 file changed, 43 insertions(+), 11 deletions(-)
+ net/core/ethtool.c |   24 +++++++++++++++++-------
+ 1 files changed, 17 insertions(+), 7 deletions(-)
 
---- a/drivers/misc/kgdbts.c
-+++ b/drivers/misc/kgdbts.c
-@@ -134,6 +134,9 @@ static int force_hwbrks;
- static int hwbreaks_ok;
- static int hw_break_val;
- static int hw_break_val2;
-+static int cont_instead_of_sstep;
-+static unsigned long cont_thread_id;
-+static unsigned long sstep_thread_id;
- #if defined(CONFIG_ARM) || defined(CONFIG_MIPS) || defined(CONFIG_SPARC)
- static int arch_needs_sstep_emulation = 1;
- #else
-@@ -211,7 +214,7 @@ static unsigned long lookup_addr(char *a
- 	if (!strcmp(arg, "kgdbts_break_test"))
- 		addr = (unsigned long)kgdbts_break_test;
- 	else if (!strcmp(arg, "sys_open"))
--		addr = (unsigned long)sys_open;
-+		addr = (unsigned long)do_sys_open;
- 	else if (!strcmp(arg, "do_fork"))
- 		addr = (unsigned long)do_fork;
- 	else if (!strcmp(arg, "hw_break_val"))
-@@ -283,6 +286,16 @@ static void hw_break_val_write(void)
- 	hw_break_val++;
+diff --git a/net/core/ethtool.c b/net/core/ethtool.c
+index beacdd9..ca7698f 100644
+--- a/net/core/ethtool.c
++++ b/net/core/ethtool.c
+@@ -751,18 +751,17 @@ static int ethtool_get_link(struct net_device *dev, char __user *useraddr)
+ 	return 0;
  }
  
-+static int get_thread_id_continue(char *put_str, char *arg)
+-static int ethtool_get_eeprom(struct net_device *dev, void __user *useraddr)
++static int ethtool_get_any_eeprom(struct net_device *dev, void __user *useraddr,
++				  int (*getter)(struct net_device *,
++						struct ethtool_eeprom *, u8 *),
++				  u32 total_len)
+ {
+ 	struct ethtool_eeprom eeprom;
+-	const struct ethtool_ops *ops = dev->ethtool_ops;
+ 	void __user *userbuf = useraddr + sizeof(eeprom);
+ 	u32 bytes_remaining;
+ 	u8 *data;
+ 	int ret = 0;
+ 
+-	if (!ops->get_eeprom || !ops->get_eeprom_len)
+-		return -EOPNOTSUPP;
+-
+ 	if (copy_from_user(&eeprom, useraddr, sizeof(eeprom)))
+ 		return -EFAULT;
+ 
+@@ -771,7 +770,7 @@ static int ethtool_get_eeprom(struct net_device *dev, void __user *useraddr)
+ 		return -EINVAL;
+ 
+ 	/* Check for exceeding total eeprom len */
+-	if (eeprom.offset + eeprom.len > ops->get_eeprom_len(dev))
++	if (eeprom.offset + eeprom.len > total_len)
+ 		return -EINVAL;
+ 
+ 	data = kmalloc(PAGE_SIZE, GFP_USER);
+@@ -782,7 +781,7 @@ static int ethtool_get_eeprom(struct net_device *dev, void __user *useraddr)
+ 	while (bytes_remaining > 0) {
+ 		eeprom.len = min(bytes_remaining, (u32)PAGE_SIZE);
+ 
+-		ret = ops->get_eeprom(dev, &eeprom, data);
++		ret = getter(dev, &eeprom, data);
+ 		if (ret)
+ 			break;
+ 		if (copy_to_user(userbuf, data, eeprom.len)) {
+@@ -803,6 +802,17 @@ static int ethtool_get_eeprom(struct net_device *dev, void __user *useraddr)
+ 	return ret;
+ }
+ 
++static int ethtool_get_eeprom(struct net_device *dev, void __user *useraddr)
 +{
-+	char *ptr = &put_str[11];
++	const struct ethtool_ops *ops = dev->ethtool_ops;
 +
-+	if (put_str[1] != 'T' || put_str[2] != '0')
-+		return 1;
-+	kgdb_hex2long(&ptr, &cont_thread_id);
-+	return 0;
++	if (!ops->get_eeprom || !ops->get_eeprom_len)
++		return -EOPNOTSUPP;
++
++	return ethtool_get_any_eeprom(dev, useraddr, ops->get_eeprom,
++				      ops->get_eeprom_len(dev));
 +}
 +
- static int check_and_rewind_pc(char *put_str, char *arg)
+ static int ethtool_set_eeprom(struct net_device *dev, void __user *useraddr)
  {
- 	unsigned long addr = lookup_addr(arg);
-@@ -324,6 +337,18 @@ static int check_single_step(char *put_s
- 	gdb_regs_to_pt_regs(kgdbts_gdb_regs, &kgdbts_regs);
- 	v2printk("Singlestep stopped at IP: %lx\n",
- 		   instruction_pointer(&kgdbts_regs));
-+
-+	if (sstep_thread_id != cont_thread_id && !arch_needs_sstep_emulation) {
-+		/*
-+		 * Ensure we stopped in the same thread id as before, else the
-+		 * debugger should continue until the original thread that was
-+		 * single stepped is scheduled again, emulating gdb's behavior.
-+		 */
-+		v2printk("ThrID does not match: %lx\n", cont_thread_id);
-+		cont_instead_of_sstep = 1;
-+		ts.idx -= 4;
-+		return 0;
-+	}
- 	if (instruction_pointer(&kgdbts_regs) == addr) {
- 		eprintk("kgdbts: SingleStep failed at %lx\n",
- 			   instruction_pointer(&kgdbts_regs));
-@@ -368,7 +393,12 @@ static int got_break(char *put_str, char
- static void emul_sstep_get(char *arg)
- {
- 	if (!arch_needs_sstep_emulation) {
--		fill_get_buf(arg);
-+		if (cont_instead_of_sstep) {
-+			cont_instead_of_sstep = 0;
-+			fill_get_buf("c");
-+		} else {
-+			fill_get_buf(arg);
-+		}
- 		return;
- 	}
- 	switch (sstep_state) {
-@@ -398,9 +428,11 @@ static void emul_sstep_get(char *arg)
- static int emul_sstep_put(char *put_str, char *arg)
- {
- 	if (!arch_needs_sstep_emulation) {
--		if (!strncmp(put_str+1, arg, 2))
--			return 0;
--		return 1;
-+		char *ptr = &put_str[11];
-+		if (put_str[1] != 'T' || put_str[2] != '0')
-+			return 1;
-+		kgdb_hex2long(&ptr, &sstep_thread_id);
-+		return 0;
- 	}
- 	switch (sstep_state) {
- 	case 1:
-@@ -502,10 +534,10 @@ static struct test_struct bad_read_test[
- static struct test_struct singlestep_break_test[] = {
- 	{ "?", "S0*" }, /* Clear break points */
- 	{ "kgdbts_break_test", "OK", sw_break, }, /* set sw breakpoint */
--	{ "c", "T0*", }, /* Continue */
-+	{ "c", "T0*", NULL, get_thread_id_continue }, /* Continue */
-+	{ "kgdbts_break_test", "OK", sw_rem_break }, /*remove breakpoint */
- 	{ "g", "kgdbts_break_test", NULL, check_and_rewind_pc },
- 	{ "write", "OK", write_regs }, /* Write registers */
--	{ "kgdbts_break_test", "OK", sw_rem_break }, /*remove breakpoint */
- 	{ "s", "T0*", emul_sstep_get, emul_sstep_put }, /* Single step */
- 	{ "g", "kgdbts_break_test", NULL, check_single_step },
- 	{ "kgdbts_break_test", "OK", sw_break, }, /* set sw breakpoint */
-@@ -523,10 +555,10 @@ static struct test_struct singlestep_bre
- static struct test_struct do_fork_test[] = {
- 	{ "?", "S0*" }, /* Clear break points */
- 	{ "do_fork", "OK", sw_break, }, /* set sw breakpoint */
--	{ "c", "T0*", }, /* Continue */
-+	{ "c", "T0*", NULL, get_thread_id_continue }, /* Continue */
-+	{ "do_fork", "OK", sw_rem_break }, /*remove breakpoint */
- 	{ "g", "do_fork", NULL, check_and_rewind_pc }, /* check location */
- 	{ "write", "OK", write_regs }, /* Write registers */
--	{ "do_fork", "OK", sw_rem_break }, /*remove breakpoint */
- 	{ "s", "T0*", emul_sstep_get, emul_sstep_put }, /* Single step */
- 	{ "g", "do_fork", NULL, check_single_step },
- 	{ "do_fork", "OK", sw_break, }, /* set sw breakpoint */
-@@ -541,10 +573,10 @@ static struct test_struct do_fork_test[]
- static struct test_struct sys_open_test[] = {
- 	{ "?", "S0*" }, /* Clear break points */
- 	{ "sys_open", "OK", sw_break, }, /* set sw breakpoint */
--	{ "c", "T0*", }, /* Continue */
-+	{ "c", "T0*", NULL, get_thread_id_continue }, /* Continue */
-+	{ "sys_open", "OK", sw_rem_break }, /*remove breakpoint */
- 	{ "g", "sys_open", NULL, check_and_rewind_pc }, /* check location */
- 	{ "write", "OK", write_regs }, /* Write registers */
--	{ "sys_open", "OK", sw_rem_break }, /*remove breakpoint */
- 	{ "s", "T0*", emul_sstep_get, emul_sstep_put }, /* Single step */
- 	{ "g", "sys_open", NULL, check_single_step },
- 	{ "sys_open", "OK", sw_break, }, /* set sw breakpoint */
+ 	struct ethtool_eeprom eeprom;
+-- 
+1.7.7.6
 
+-- 
+Ben Hutchings, Staff Engineer, Solarflare
+Not speaking for my employer; that's the marketing department's job.
+They asked us to note that Solarflare product names are trademarked.
 
