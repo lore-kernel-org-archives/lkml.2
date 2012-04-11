@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933865Ab2DLAC5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Apr 2012 20:02:57 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:39063 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933804Ab2DKXQC (ORCPT
+	id S933821Ab2DLADT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Apr 2012 20:03:19 -0400
+Received: from mail-pz0-f52.google.com ([209.85.210.52]:40940 "EHLO
+	mail-pz0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933787Ab2DKXP4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Apr 2012 19:16:02 -0400
-Message-Id: <20120411231025.070051172@linuxfoundation.org>
+	Wed, 11 Apr 2012 19:15:56 -0400
+Message-Id: <20120411231024.734741124@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Wed, 11 Apr 2012 16:10:58 -0700
+Date: Wed, 11 Apr 2012 16:10:56 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Stephen Boyd <sboyd@codeaurora.org>
-Subject: [ 40/78] firmware_class: Split _request_firmware() into three functions, v2
+        alan@lxorguk.ukuu.org.uk, Markus Heinz <markus.heinz@uni-dortmund.de>,
+        Chris Wilson <chris@chris-wilson.co.uk>,
+        Rodrigo Vivi <rodrigo.vivi@gmail.com>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>
+Subject: [ 38/78] drm/i915: quirk away broken OpRegion VBT
 In-Reply-To: <20120411231102.GA6404@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,143 +27,69 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
+From: Daniel Vetter <daniel.vetter@ffwll.ch>
 
-commit 811fa4004485dec8977176bf605a5b0508ee206c upstream.
+commit 25e341cfc33d94435472983825163e97fe370a6c upstream.
 
-Split _request_firmware() into three functions,
-_request_firmware_prepare() doing preparatory work that need not be
-done under umhelper_sem, _request_firmware_cleanup() doing the
-post-error cleanup and _request_firmware() carrying out the remaining
-operations.
+Somehow the BIOS manages to screw things up when copying the VBT
+around, because the one we scrap from the VBIOS rom actually works.
 
-This change is requisite for moving the acquisition of umhelper_sem
-from _request_firmware() to the callers, which is going to be done
-subsequently.
-
-Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
-Acked-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Reviewed-by: Stephen Boyd <sboyd@codeaurora.org>
+Tested-by: Markus Heinz <markus.heinz@uni-dortmund.de>
+Acked-by: Chris Wilson <chris@chris-wilson.co.uk>
+Reviewed-by: Rodrigo Vivi <rodrigo.vivi@gmail.com>
+Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=28812
+Signed-Off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/base/firmware_class.c |   58 +++++++++++++++++++++++++++++-------------
- 1 file changed, 41 insertions(+), 17 deletions(-)
+ drivers/gpu/drm/i915/intel_bios.c |   23 ++++++++++++++++++++++-
+ 1 file changed, 22 insertions(+), 1 deletion(-)
 
---- a/drivers/base/firmware_class.c
-+++ b/drivers/base/firmware_class.c
-@@ -435,7 +435,7 @@ static void firmware_class_timeout(u_lon
+--- a/drivers/gpu/drm/i915/intel_bios.c
++++ b/drivers/gpu/drm/i915/intel_bios.c
+@@ -24,6 +24,7 @@
+  *    Eric Anholt <eric@anholt.net>
+  *
+  */
++#include <linux/dmi.h>
+ #include <drm/drm_dp_helper.h>
+ #include "drmP.h"
+ #include "drm.h"
+@@ -621,6 +622,26 @@ init_vbt_defaults(struct drm_i915_privat
+ 	dev_priv->edp.bpp = 18;
  }
  
- static struct firmware_priv *
--fw_create_instance(struct firmware *firmware, const char *fw_name,
-+fw_create_instance(const struct firmware *firmware, const char *fw_name,
- 		   struct device *device, bool uevent, bool nowait)
- {
- 	struct firmware_priv *fw_priv;
-@@ -449,7 +449,7 @@ fw_create_instance(struct firmware *firm
- 		goto err_out;
- 	}
- 
--	fw_priv->fw = firmware;
-+	fw_priv->fw = (struct firmware *)firmware;
- 	fw_priv->nowait = nowait;
- 	strcpy(fw_priv->fw_id, fw_name);
- 	init_completion(&fw_priv->completion);
-@@ -510,13 +510,10 @@ static void fw_destroy_instance(struct f
- 	device_unregister(f_dev);
- }
- 
--static int _request_firmware(const struct firmware **firmware_p,
--			     const char *name, struct device *device,
--			     bool uevent, bool nowait)
-+static int _request_firmware_prepare(const struct firmware **firmware_p,
-+				     const char *name, struct device *device)
- {
--	struct firmware_priv *fw_priv;
- 	struct firmware *firmware;
--	int retval = 0;
- 
- 	if (!firmware_p)
- 		return -EINVAL;
-@@ -533,10 +530,26 @@ static int _request_firmware(const struc
- 		return 0;
- 	}
- 
++static int __init intel_no_opregion_vbt_callback(const struct dmi_system_id *id)
++{
++	DRM_DEBUG_KMS("Falling back to manually reading VBT from "
++		      "VBIOS ROM for %s\n",
++		      id->ident);
 +	return 1;
 +}
 +
-+static void _request_firmware_cleanup(const struct firmware **firmware_p)
-+{
-+	release_firmware(*firmware_p);
-+	*firmware_p = NULL;
-+}
++static const struct dmi_system_id intel_no_opregion_vbt[] = {
++	{
++		.callback = intel_no_opregion_vbt_callback,
++		.ident = "ThinkCentre A57",
++		.matches = {
++			DMI_MATCH(DMI_SYS_VENDOR, "LENOVO"),
++			DMI_MATCH(DMI_PRODUCT_NAME, "97027RG"),
++		},
++	},
++	{ }
++};
 +
-+static int _request_firmware(const struct firmware *firmware,
-+			     const char *name, struct device *device,
-+			     bool uevent, bool nowait)
-+{
-+	struct firmware_priv *fw_priv;
-+	int retval;
-+
- 	retval = usermodehelper_read_trylock();
- 	if (WARN_ON(retval)) {
- 		dev_err(device, "firmware: %s will not be loaded\n", name);
--		goto out_nolock;
-+		return retval;
- 	}
- 
- 	if (uevent)
-@@ -572,13 +585,6 @@ static int _request_firmware(const struc
- 
- out:
- 	usermodehelper_read_unlock();
--
--out_nolock:
--	if (retval) {
--		release_firmware(firmware);
--		*firmware_p = NULL;
--	}
--
- 	return retval;
- }
- 
-@@ -601,7 +607,17 @@ int
- request_firmware(const struct firmware **firmware_p, const char *name,
-                  struct device *device)
- {
--        return _request_firmware(firmware_p, name, device, true, false);
-+	int ret;
-+
-+	ret = _request_firmware_prepare(firmware_p, name, device);
-+	if (ret <= 0)
-+		return ret;
-+
-+	ret = _request_firmware(*firmware_p, name, device, true, false);
-+	if (ret)
-+		_request_firmware_cleanup(firmware_p);
-+
-+	return ret;
- }
- 
  /**
-@@ -639,8 +655,16 @@ static int request_firmware_work_func(vo
- 		return 0;
- 	}
+  * intel_parse_bios - find VBT and initialize settings from the BIOS
+  * @dev: DRM device
+@@ -641,7 +662,7 @@ intel_parse_bios(struct drm_device *dev)
+ 	init_vbt_defaults(dev_priv);
  
--	ret = _request_firmware(&fw, fw_work->name, fw_work->device,
-+	ret = _request_firmware_prepare(&fw, fw_work->name, fw_work->device);
-+	if (ret <= 0)
-+		goto out;
-+
-+	ret = _request_firmware(fw, fw_work->name, fw_work->device,
- 				fw_work->uevent, true);
-+	if (ret)
-+		_request_firmware_cleanup(&fw);
-+
-+ out:
- 	fw_work->cont(fw, fw_work->context);
- 
- 	module_put(fw_work->module);
+ 	/* XXX Should this validation be moved to intel_opregion.c? */
+-	if (dev_priv->opregion.vbt) {
++	if (!dmi_check_system(intel_no_opregion_vbt) && dev_priv->opregion.vbt) {
+ 		struct vbt_header *vbt = dev_priv->opregion.vbt;
+ 		if (memcmp(vbt->signature, "$VBT", 4) == 0) {
+ 			DRM_DEBUG_KMS("Using VBT from OpRegion: %20s\n",
 
 
