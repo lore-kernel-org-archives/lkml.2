@@ -1,80 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761306Ab2DKVHk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Apr 2012 17:07:40 -0400
-Received: from astoria.ccjclearline.com ([64.235.106.9]:42919 "EHLO
-	astoria.ccjclearline.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1761242Ab2DKVHh (ORCPT
+	id S933343Ab2DKVHX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Apr 2012 17:07:23 -0400
+Received: from casper.infradead.org ([85.118.1.10]:45981 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1761283Ab2DKVFf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Apr 2012 17:07:37 -0400
-Date: Wed, 11 Apr 2012 17:07:31 -0400 (EDT)
-From: "Robert P. J. Day" <rpjday@crashcourse.ca>
-X-X-Sender: rpjday@oneiric
-To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: almost time to run my kernel source cleaning scripts again?
-Message-ID: <alpine.DEB.2.02.1204111700170.4733@oneiric>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - astoria.ccjclearline.com
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - crashcourse.ca
-X-Source: 
-X-Source-Args: 
-X-Source-Dir: 
+	Wed, 11 Apr 2012 17:05:35 -0400
+From: Arnaldo Carvalho de Melo <acme@infradead.org>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: linux-kernel@vger.kernel.org, Namhyung Kim <namhyung.kim@lge.com>,
+        Ingo Molnar <mingo@redhat.com>, Namhyung Kim <namhyung@gmail.com>,
+        Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: [PATCH 01/13] perf tools: Ignore auto-generated bison/flex files
+Date: Wed, 11 Apr 2012 18:05:13 -0300
+Message-Id: <1334178325-19148-2-git-send-email-acme@infradead.org>
+X-Mailer: git-send-email 1.7.9.2.358.g22243
+In-Reply-To: <1334178325-19148-1-git-send-email-acme@infradead.org>
+References: <1334178325-19148-1-git-send-email-acme@infradead.org>
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by casper.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Namhyung Kim <namhyung.kim@lge.com>
 
-  it's been a while so i was thinking of firing up my scripts to
-peruse the source tree looking for oddities/inconsistencies/whatever
-(unless someone else is already doing that).
+The commit 65f3e56e0c81 ("perf tools: Remove auto-generated bison/flex
+files") removed those files from git, so they'll be listed on untracked
+files after building perf. Fix it.
 
-  one example is looking for preprocessor tests of symbols that aren't
-defined in any Kconfig file, and i can focus on any part of the source
-tree.  for example, if i run that script against drivers/mmc, i get:
+Signed-off-by: Namhyung Kim <namhyung.kim@lge.com>
+Cc: Ingo Molnar <mingo@redhat.com>
+Cc: Namhyung Kim <namhyung@gmail.com>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Link: http://lkml.kernel.org/r/1333948274-20043-1-git-send-email-namhyung.kim@lge.com
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+---
+ tools/perf/.gitignore |    2 ++
+ 1 file changed, 2 insertions(+)
 
->>>>> MMC_MSM7X00A_RESUME_IN_WQ
-drivers/mmc/host/msm_sdcc.c:1408:#ifdef CONFIG_MMC_MSM7X00A_RESUME_IN_WQ
-
-telling me that a source file is testing a CONFIG variable that
-doesn't exist.
-
-  the scripts are available online (maybe i better test them first),
-so anyone's free to run them against any part of the tree they want.
-
-  running this script against drivers/staging is always good for
-entertainment:
-
->>>>> CAVIUM_OCTEON_NUM_PACKET_BUFFERS
-drivers/staging/octeon/ethernet-defines.h:36: *  CONFIG_CAVIUM_OCTEON_NUM_PACKET_BUFFERS
-drivers/staging/octeon/ethernet.c:56:#if defined(CONFIG_CAVIUM_OCTEON_NUM_PACKET_BUFFERS) \
-drivers/staging/octeon/ethernet.c:57:	&& CONFIG_CAVIUM_OCTEON_NUM_PACKET_BUFFERS
-drivers/staging/octeon/ethernet.c:58:int num_packet_buffers = CONFIG_CAVIUM_OCTEON_NUM_PACKET_BUFFERS;
->>>>> CONSOLE_115200
-drivers/staging/serial/68360serial.c:310:#elif defined(CONFIG_CONSOLE_115200)
->>>>> CONSOLE_19200
-drivers/staging/serial/68360serial.c:308:#elif defined(CONFIG_CONSOLE_19200)
->>>>> CONSOLE_9600
-drivers/staging/serial/68360serial.c:306:#if defined(CONFIG_CONSOLE_9600)
->>>>> FORCE_HARD_FLOAT
-drivers/staging/rtl8192u/r8192U_core.c:27:#ifndef CONFIG_FORCE_HARD_FLOAT
-... lots more ...
-
-  i'll make sure the scripts work and maybe let them loose to find
-stuff in a day or two.
-
-rday
-
+diff --git a/tools/perf/.gitignore b/tools/perf/.gitignore
+index 416684b..26b823b 100644
+--- a/tools/perf/.gitignore
++++ b/tools/perf/.gitignore
+@@ -19,3 +19,5 @@ TAGS
+ cscope*
+ config.mak
+ config.mak.autogen
++*-bison.*
++*-flex.*
 -- 
+1.7.9.2.358.g22243
 
-========================================================================
-Robert P. J. Day                                 Ottawa, Ontario, CANADA
-                        http://crashcourse.ca
-
-Twitter:                                       http://twitter.com/rpjday
-LinkedIn:                               http://ca.linkedin.com/in/rpjday
-========================================================================
