@@ -1,60 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760768Ab2DKRTp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Apr 2012 13:19:45 -0400
-Received: from va3ehsobe002.messaging.microsoft.com ([216.32.180.12]:42206
-	"EHLO va3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756032Ab2DKRTn (ORCPT
+	id S932737Ab2DKRU6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Apr 2012 13:20:58 -0400
+Received: from e39.co.us.ibm.com ([32.97.110.160]:44828 "EHLO
+	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932715Ab2DKRUz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Apr 2012 13:19:43 -0400
-X-SpamScore: 0
-X-BigFish: VPS0(zzzz1202hzz8275bhz2fh668h839hd25h)
-X-Forefront-Antispam-Report: CIP:160.33.98.74;KIP:(null);UIP:(null);IPV:NLI;H:mail7.fw-bc.sony.com;RD:mail7.fw-bc.sony.com;EFVD:NLI
-Message-ID: <4F85BD04.3070407@am.sony.com>
-Date: Wed, 11 Apr 2012 10:19:00 -0700
-From: Tim Bird <tim.bird@am.sony.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.15) Gecko/20101027 Fedora/3.0.10-1.fc12 Thunderbird/3.0.10
+	Wed, 11 Apr 2012 13:20:55 -0400
+Date: Wed, 11 Apr 2012 22:42:25 +0530
+From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+To: Arnaldo Carvalho de Melo <acme@infradead.org>
+Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
+        LKML <linux-kernel@vger.kernel.org>, Linux-mm <linux-mm@kvack.org>,
+        Oleg Nesterov <oleg@redhat.com>, Andi Kleen <andi@firstfloor.org>,
+        Christoph Hellwig <hch@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Anton Arapov <anton@redhat.com>
+Subject: Re: [PATCH] perf/probe: Provide perf interface for uprobes
+Message-ID: <20120411170343.GB29831@linux.vnet.ibm.com>
+Reply-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+References: <20120411135742.29198.45061.sendpatchset@srdronam.in.ibm.com>
+ <20120411144918.GD16257@infradead.org>
 MIME-Version: 1.0
-To: Oleg Nesterov <oleg@redhat.com>, Andrew Morton <akpm@linux-foundation.org>,
-        Andrea Arcangeli <andrea@suse.de>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        linux kernel <linux-kernel@vger.kernel.org>
-Subject: [PATCH] stack usage: Add pid to warning printk in check_stack_usage
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-OriginatorOrg: am.sony.com
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+In-Reply-To: <20120411144918.GD16257@infradead.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12041117-4242-0000-0000-0000015010FE
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In embedded systems, sometimes the same program (busybox)
-is the cause of multiple warnings.  Outputting the pid
-with the program name in the warning printk helps
-distinguish which instances of a program are using
-the stack most.
+* Arnaldo Carvalho de Melo <acme@infradead.org> [2012-04-11 11:49:18]:
 
-This is a small patch, but useful.
+> Em Wed, Apr 11, 2012 at 07:27:42PM +0530, Srikar Dronamraju escreveu:
+> > From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+> > 
+> > - Enhances perf to probe user space executables and libraries.
+> > - Enhances -F/--funcs option of "perf probe" to list possible probe points in
+> >   an executable file or library.
+> > - Documents userspace probing support in perf.
+> > 
+> > [ Probing a function in the executable using function name  ]
+> > perf probe -x /bin/zsh zfree
+> > 
+> > [ Probing a library function using function name ]
+> > perf probe -x /lib64/libc.so.6 malloc
+> > 
+> > [ list probe-able functions in an executable ]
+> > perf probe -F -x /bin/zsh
+> > 
+> > [ list probe-able functions in an library]
+> > perf probe -F -x /lib/libc.so.6
+> 
+> Can we avoid the need for -x? I.e. we could figure out it is userspace
+> and act accordingly.
+> 
 
-Signed-off-by: Tim Bird <tim.bird@am.sony.com>
----
- exit.c |    6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+To list the functions in the module ipv6, we use "perf probe -F -m ipv6"
+So I used the same logic to use -x for specifying executables.
 
-diff --git a/kernel/exit.c b/kernel/exit.c
-index b8a6a09..bad923d 100644
---- a/kernel/exit.c
-+++ b/kernel/exit.c
-@@ -898,9 +898,9 @@ static void check_stack_usage(void)
 
- 	spin_lock(&low_water_lock);
- 	if (free < lowest_to_date) {
--		printk(KERN_WARNING "%s used greatest stack depth: %lu bytes "
--				"left\n",
--				current->comm, free);
-+		printk(KERN_WARNING "%s (%d) used greatest stack depth: "
-+				"%lu bytes left\n",
-+				current->comm, task_pid_nr(current), free);
- 		lowest_to_date = free;
- 	}
- 	spin_unlock(&low_water_lock);
+This is in agreement with probepoint addition where without any
+additional options would mean kernel probepoint; m option would mean
+module and x option would mean user space executable. 
+
+However if you still think we should change, do let me know.
+
+-- 
+Thanks and Regards
+Srikar
 
