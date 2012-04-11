@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760540Ab2DKOWl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Apr 2012 10:22:41 -0400
-Received: from kamaji.grokhost.net ([87.117.218.43]:54960 "EHLO
-	kamaji.grokhost.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760395Ab2DKOV1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1760399Ab2DKOV1 (ORCPT <rfc822;w@1wt.eu>);
 	Wed, 11 Apr 2012 10:21:27 -0400
+Received: from kamaji.grokhost.net ([87.117.218.43]:54911 "EHLO
+	kamaji.grokhost.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760374Ab2DKOVX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Apr 2012 10:21:23 -0400
 From: Chris Boot <bootc@bootc.net>
 To: linux1394-devel@lists.sourceforge.net, target-devel@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org, agrover@redhat.com, clemens@ladisch.de,
         nab@linux-iscsi.org, stefanr@s5r6.in-berlin.de,
         Chris Boot <bootc@bootc.net>
-Subject: [PATCH 02/11] firewire: Move fw_card kref functions into linux/firewire.h
-Date: Wed, 11 Apr 2012 15:20:34 +0100
-Message-Id: <1334154043-69076-3-git-send-email-bootc@bootc.net>
+Subject: [PATCH 03/11] firewire-sbp-target: Add Kconfig, Makefile and TODO
+Date: Wed, 11 Apr 2012 15:20:35 +0100
+Message-Id: <1334154043-69076-4-git-send-email-bootc@bootc.net>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1334154043-69076-1-git-send-email-bootc@bootc.net>
 References: <1329317248-94128-1-git-send-email-bootc@bootc.net>
@@ -23,90 +23,75 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When writing a firewire driver that doesn't deal with struct fw_device
-objects (e.g. it only publishes FireWire units and doesn't subscribe to
-them), you likely need to keep referenced to struct fw_card objects so
-that you can send messages to other nodes. This patch moves
-fw_card_put(), fw_card_get() and fw_card_release() into the public
-include/linux/firewire.h header instead of drivers/firewire/core.h, and
-adds EXPORT_SYMBOL_GPL(fw_card_release).
-
-The firewire-sbp-target module requires these so it can keep a reference
-to the fw_card object in order that it can fetch ORBs to execute and
-read/write related data and status information.
+The FireWire SBP-2 Target is a driver for using an IEEE-1394 connection
+as a SCSI transport. This module uses the SCSI Target framework to
+expose LUNs to other machines attached to a FireWire bus, in effect
+acting as a FireWire hard disk similar to FireWire Target Disk mode on
+many Apple computers.
 
 Signed-off-by: Chris Boot <bootc@bootc.net>
-Acked-by: Stefan Richter <stefanr@s5r6.in-berlin.de>
+Cc: Andy Grover <agrover@redhat.com>
 Cc: Clemens Ladisch <clemens@ladisch.de>
+Cc: Nicholas A. Bellinger <nab@linux-iscsi.org>
+Cc: Stefan Richter <stefanr@s5r6.in-berlin.de>
 ---
- drivers/firewire/core-card.c |    1 +
- drivers/firewire/core.h      |   15 ---------------
- include/linux/firewire.h     |   14 ++++++++++++++
- 3 files changed, 15 insertions(+), 15 deletions(-)
+ drivers/target/sbp/Kconfig  |   13 +++++++++++++
+ drivers/target/sbp/Makefile |   11 +++++++++++
+ drivers/target/sbp/TODO     |    7 +++++++
+ 3 files changed, 31 insertions(+)
+ create mode 100644 drivers/target/sbp/Kconfig
+ create mode 100644 drivers/target/sbp/Makefile
+ create mode 100644 drivers/target/sbp/TODO
 
-diff --git a/drivers/firewire/core-card.c b/drivers/firewire/core-card.c
-index cc595eb..f5552b3 100644
---- a/drivers/firewire/core-card.c
-+++ b/drivers/firewire/core-card.c
-@@ -676,6 +676,7 @@ void fw_card_release(struct kref *kref)
- 
- 	complete(&card->done);
- }
-+EXPORT_SYMBOL_GPL(fw_card_release);
- 
- void fw_core_remove_card(struct fw_card *card)
- {
-diff --git a/drivers/firewire/core.h b/drivers/firewire/core.h
-index 9047f55..b5a2f61 100644
---- a/drivers/firewire/core.h
-+++ b/drivers/firewire/core.h
-@@ -120,21 +120,6 @@ int fw_compute_block_crc(__be32 *block);
- void fw_schedule_bus_reset(struct fw_card *card, bool delayed, bool short_reset);
- void fw_schedule_bm_work(struct fw_card *card, unsigned long delay);
- 
--static inline struct fw_card *fw_card_get(struct fw_card *card)
--{
--	kref_get(&card->kref);
--
--	return card;
--}
--
--void fw_card_release(struct kref *kref);
--
--static inline void fw_card_put(struct fw_card *card)
--{
--	kref_put(&card->kref, fw_card_release);
--}
--
--
- /* -cdev */
- 
- extern const struct file_operations fw_device_ops;
-diff --git a/include/linux/firewire.h b/include/linux/firewire.h
-index 4683130..e83c24a 100644
---- a/include/linux/firewire.h
-+++ b/include/linux/firewire.h
-@@ -135,6 +135,20 @@ struct fw_card {
- 	__be32 maint_utility_register;
- };
- 
-+static inline struct fw_card *fw_card_get(struct fw_card *card)
-+{
-+	kref_get(&card->kref);
+diff --git a/drivers/target/sbp/Kconfig b/drivers/target/sbp/Kconfig
+new file mode 100644
+index 0000000..c9f85e9
+--- /dev/null
++++ b/drivers/target/sbp/Kconfig
+@@ -0,0 +1,13 @@
 +
-+	return card;
-+}
++config FIREWIRE_SBP_TARGET
++	tristate "FireWire SBP-2 fabric module"
++	depends on FIREWIRE && EXPERIMENTAL
++	help
++	  Say Y or M here to enable SCSI target functionality over FireWire.
++	  This enables you to expose SCSI devices to other nodes on the FireWire
++	  bus, for example hard disks. Similar to FireWire Target Disk mode on
++	  many Apple computers.
 +
-+void fw_card_release(struct kref *kref);
++	  To compile this driver as a module, say M here: The module will be
++	  called firewire-sbp-target.
 +
-+static inline void fw_card_put(struct fw_card *card)
-+{
-+	kref_put(&card->kref, fw_card_release);
-+}
+diff --git a/drivers/target/sbp/Makefile b/drivers/target/sbp/Makefile
+new file mode 100644
+index 0000000..c8f73f4
+--- /dev/null
++++ b/drivers/target/sbp/Makefile
+@@ -0,0 +1,11 @@
 +
- struct fw_attribute_group {
- 	struct attribute_group *groups[2];
- 	struct attribute_group group;
++firewire-sbp-target-y += \
++	sbp_configfs.o \
++	sbp_fabric.o \
++	sbp_login.o \
++	sbp_management_agent.o \
++	sbp_scsi_cmnd.o \
++	sbp_target_agent.o
++
++obj-$(CONFIG_FIREWIRE_SBP_TARGET) += firewire-sbp-target.o
++
+diff --git a/drivers/target/sbp/TODO b/drivers/target/sbp/TODO
+new file mode 100644
+index 0000000..eaec1c9
+--- /dev/null
++++ b/drivers/target/sbp/TODO
+@@ -0,0 +1,7 @@
++* Force-terminate sessions when disabling targets
++* Ability to have several SCSI commands in-flight (TCQ?)
++* Retry failed FireWire transactions a few times with exponential backoff
++* Take into account the page_size field for transfers and/or page tables
++* Handle descriptor format sense data
++* Implement QUERY LOGINS management ORB
++* Implement TASK MANAGEMENT functionality
 -- 
 1.7.9.5
 
