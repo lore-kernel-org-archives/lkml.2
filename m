@@ -1,98 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932725Ab2DKRwV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Apr 2012 13:52:21 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:49967 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759508Ab2DKRwU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Apr 2012 13:52:20 -0400
-Date: Wed, 11 Apr 2012 18:52:15 +0100
-From: Mel Gorman <mgorman@suse.de>
-To: Rik van Riel <riel@redhat.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Konstantin Khlebnikov <khlebnikov@openvz.org>,
-        Hugh Dickins <hughd@google.com>, Ying Han <yinghan@google.com>,
-        Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 0/3] Removal of lumpy reclaim V2
-Message-ID: <20120411175215.GI3789@suse.de>
-References: <1334162298-18942-1-git-send-email-mgorman@suse.de>
- <4F85BC8E.3020400@redhat.com>
+	id S1760827Ab2DKRzK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Apr 2012 13:55:10 -0400
+Received: from casper.infradead.org ([85.118.1.10]:42636 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756869Ab2DKRzI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Apr 2012 13:55:08 -0400
+Date: Wed, 11 Apr 2012 14:54:57 -0300
+From: Arnaldo Carvalho de Melo <acme@infradead.org>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Steven Rostedt <srostedt@redhat.com>, Ingo Molnar <mingo@kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <peterz@infradead.org>, Borislav Petkov <bp@alien8.de>,
+        Jiri Olsa <jolsa@redhat.com>, Arun Sharma <asharma@fb.com>,
+        Namhyung Kim <namhyung.kim@lge.com>
+Subject: Re: [PATCH 02/15] tools/events: Add files to create libtraceevent.a
+Message-ID: <20120411175457.GF16257@infradead.org>
+References: <1333666086-6517-1-git-send-email-fweisbec@gmail.com>
+ <1333666086-6517-3-git-send-email-fweisbec@gmail.com>
+ <20120411152059.GE16257@infradead.org>
+ <1334158690.23924.252.camel@gandalf.stny.rr.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4F85BC8E.3020400@redhat.com>
+In-Reply-To: <1334158690.23924.252.camel@gandalf.stny.rr.com>
+X-Url: http://acmel.wordpress.com
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by casper.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 11, 2012 at 01:17:02PM -0400, Rik van Riel wrote:
-> On 04/11/2012 12:38 PM, Mel Gorman wrote:
+Em Wed, Apr 11, 2012 at 11:38:10AM -0400, Steven Rostedt escreveu:
+> On Wed, 2012-04-11 at 12:20 -0300, Arnaldo Carvalho de Melo wrote:
+> > Em Fri, Apr 06, 2012 at 12:47:53AM +0200, Frederic Weisbecker escreveu:
+> > > From: Steven Rostedt <srostedt@redhat.com>
+> > > +struct cmdline {
+> > > +	char *comm;
+> > > +	int pid;
+> > > +};
+
+> > In perf we have 'struct thread' for that and some more stuff, they are
+> > kept in an rb_tree located in a 'struct machine', 'machine's exist to
+> > support KVM.
+
+> > At some point would be good to avoid this, but then it would make this
+> > code need parts of perf, that would have to then be moved to
+> > tools/libsymbol/ or some other more suitable name.
 > 
-> >Success rates are completely hosed for 3.4-rc2 which is almost certainly
-> >due to [fe2c2a10: vmscan: reclaim at order 0 when compaction is enabled]. I
-> >expected this would happen for kswapd and impair allocation success rates
-> >(https://lkml.org/lkml/2012/1/25/166) but I did not anticipate this much
-> >a difference: 80% less scanning, 37% less reclaim by kswapd
+> Agreed, this can be broken out too. Lets see if we can get the code in
+> first, and then start fixing it. As said, this would be the smoothest
+> transition of getting trace-cmd libary into perf. As it has been tested
+> quit intensively. Note, perf already has an older version built in. And
+> does most of this nastiness already.
+
+I just wanted to make sure my main pet peeves and concerns were written
+down :-)
+
+Knowing beforehand we agree on having them fixed eventually is enough
+for me, thanks.
+
+> > > +	cmdlines = malloc_or_die(sizeof(*cmdlines) * pevent->cmdline_count);
+> > 
+> > My biggest pet peeve, looks like this is New Hampshire code, all these
+> > "do foo or die" strikes a nerve in me :-(
+> > 
+> > Die calls in library code should just... die.
 > 
-> Also, no gratuitous pageouts of anonymous memory.
-> That was what really made a difference on a somewhat
-> heavily loaded desktop + kvm workload.
+> I also agree :-) We can keep this for now, and then nuke it in the next
+> patch. But to do so, would require an audit of this code. I could do the
+> work in trace-cmd, and then we could port it. Or we can port this as is,
+> and then update it.
 > 
+> The one thing I really wish C had, was the try/catch of C++. That would
+> solve the error code issue. But for now we need to do it with goto's and
+> such.
 
-Indeed.
+Yeah, we have to use what we can, and that is to do how we solve this
+matter in the kernel.
 
-> >In comparison, reclaim/compaction is not aggressive and gives up easily
-> >which is the intended behaviour. hugetlbfs uses __GFP_REPEAT and would be
-> >much more aggressive about reclaim/compaction than THP allocations are. The
-> >stress test above is allocating like neither THP or hugetlbfs but is much
-> >closer to THP.
+I.e. trying to follow the kernel coding style is something we should
+strive to in tools/ code, so that we encourage kernel developers to
+contribute as they will find the code familiar to how things are done in
+kernel land.
+
+> > Only tools can die, libraries just can't, IMHO.
+> > 
+> > > +struct func_map {
+> > > +	unsigned long long		addr;
+> > > +	char				*func;
+> > > +	char				*mod;
+> > > +};
+> > For this we have tools/perf/utils/symbol.c, that supports userland as
+> > well as java JIT maps, etc. The perf.data file doesn't have to carry a
+> > copy of kallsyms, etc, build-id support is there to make sure we don't
+> > misresolve symbols using the right DSO found in a cache or in -debuginfo
+> > packages, etc.
 > 
-> Next step: get rid of __GFP_NO_KSWAPD for THP, first
-> in the -mm kernel
-> 
+> This could be cleaned up too. Currently perf uses this code for the sw
+> events (aka tracepoints) of the kernel. The func_map and friends are
+> already used in perf.
 
-Initially the flag was introduced because kswapd reclaimed too
-aggressively. One would like to believe that it would be less of a problem
-now but we must avoid a situation where the CPU and reclaim cost of kswapd
-exceeds the benefit of allocating a THP.
+Right, one more thing we agree we should fix at some point, good.
 
-> >Mainline is now impaired in terms of high order allocation under heavy load
-> >although I do not know to what degree as I did not test with __GFP_REPEAT.
-> >Keep this in mind for bugs related to hugepage pool resizing, THP allocation
-> >and high order atomic allocation failures from network devices.
-> 
-> This might be due to smaller allocations not bumping
-> the compaction deferring code, when we have deferred
-> compaction for a higher order allocation.
-> 
+> > > +	if (mod)
+> > > +		item->mod = strdup(mod);
+> > > +	else
+> > > +		item->mod = NULL;
 
-It's one possibility but in this case I am not inclined to blame memory
-compaction as such although there is some indication that there is a bug in
-the free scanner that would make compaction less effective than it should be.
+> > strdup can fail, and no, we shouldn't die if that happens :-)
 
-> I wonder if the compaction deferring code is simply
-> too defer-happy, now that we ignore compaction at
-> lower orders than where compaction failed?
+> Again, this all needs to be audited. But this isn't much different than
+> what perf already does with the tools/perf/util/trace-event-parse.c
 
-I do not think it's a compaction deferral problem. We do not record
-statistics on how often we defer compaction but if you look at the compaction
-statistics you'll see that "Compaction stalls" and "Compaction pages moved"
-figures are much higher. This implies that we are using compaction more
-aggressively in 3.4-rc2 instead of deferring more.
+> Thus, getting the code out can be the first step. Cleaning it up into a
+> nice library the second.
 
-You may also note that "Compaction success" figures are more or less the
-same as 3.3 but that "Compaction failures" are higher. This indicates that
-in 3.2 the high success rate was partially due to lumpy reclaim freeing
-up the contiguous page before memory compaction was needed in memory
-pressure situations.  If that is accurate then adjusting the logic in
-should_continue_reclaim() for reclaim/compaction may partially address
-the issue but not 100% of the way as reclaim/compaction will still be
-racing with other allocation requests. This race is likely to be tigher
-now because an accidental side-effect of lumpy reclaim was to throttle
-parallel allocations requests in swap. It may not be very
-straight-forward to fix :)
+Ok.
 
--- 
-Mel Gorman
-SUSE Labs
+- Arnaldo
