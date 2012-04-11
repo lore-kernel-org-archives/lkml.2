@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964964Ab2DKXSG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Apr 2012 19:18:06 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:35695 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964948Ab2DKXR6 (ORCPT
+	id S933988Ab2DKXvl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Apr 2012 19:51:41 -0400
+Received: from mail-pz0-f52.google.com ([209.85.210.52]:63303 "EHLO
+	mail-pz0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S964954Ab2DKXSE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Apr 2012 19:17:58 -0400
-Message-Id: <20120411231029.021552568@linuxfoundation.org>
+	Wed, 11 Apr 2012 19:18:04 -0400
+Message-Id: <20120411231029.344840735@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Wed, 11 Apr 2012 16:11:21 -0700
+Date: Wed, 11 Apr 2012 16:11:23 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Werner Landgraf <w.landgraf@ru.ru>,
-        David Rientjes <rientjes@google.com>, Colin Cross <ccross@android.com>
-Subject: [ 63/78] android, lowmemorykiller: remove task handoff notifier
+        alan@lxorguk.ukuu.org.uk, Stanislaw Gruszka <sgruszka@redhat.com>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [ 65/78] iwlegacy: do not nulify il->vif on reset
 In-Reply-To: <20120411231102.GA6404@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,138 +25,88 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: David Rientjes <rientjes@google.com>
+From: Stanislaw Gruszka <sgruszka@redhat.com>
 
-commit 83dbbdbb38666e20a75fad2294cf1df77c52f121 upstream.
+commit 883a649b737cdbe3ede7e50f3f939fd706ed5c4e upstream.
 
-The task handoff notifier leaks task_struct since it never gets freed
-after the callback returns NOTIFY_OK, which means it is responsible for
-doing so.
+This il->vif is dereferenced in different part of iwlegacy code, so do
+not nullify it. This should fix random crashes observed in companion
+with microcode errors i.e. crash in il3945_config_ap().
 
-It turns out the lowmemorykiller actually doesn't need this notifier at
-all.  It's used to prevent unnecessary killing by waiting for a thread
-to exit as a result of lowmem_shrink(), however, it's possible to do
-this in the same way the kernel oom killer works by setting TIF_MEMDIE
-and avoid killing if we're still waiting for it to exit.
+Additionally this should address also
+WARNING: at drivers/net/wireless/iwlegacy/common.c:4656 il_mac_remove_interface
+at least one of the possible reasons of that warning.
 
-The kernel oom killer will already automatically set TIF_MEMDIE for
-threads that are attempting to allocate memory that have a fatal signal.
-The thread selected by lowmem_shrink() will have such a signal after the
-lowmemorykiller sends it a SIGKILL, so this won't result in an
-unnecessary use of memory reserves for the thread to exit.
-
-This has the added benefit that we don't have to rely on
-CONFIG_PROFILING to prevent needlessly killing tasks.
-
-Reported-by: Werner Landgraf <w.landgraf@ru.ru>
-Signed-off-by: David Rientjes <rientjes@google.com>
-Acked-by: Colin Cross <ccross@android.com>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Stanislaw Gruszka <sgruszka@redhat.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/staging/android/lowmemorykiller.c |   47 +++---------------------------
- 1 file changed, 6 insertions(+), 41 deletions(-)
+ drivers/net/wireless/iwlegacy/3945-mac.c |    1 -
+ drivers/net/wireless/iwlegacy/4965-mac.c |    1 -
+ drivers/net/wireless/iwlegacy/common.c   |   18 ++++++++++++++++--
+ 3 files changed, 16 insertions(+), 4 deletions(-)
 
---- a/drivers/staging/android/lowmemorykiller.c
-+++ b/drivers/staging/android/lowmemorykiller.c
-@@ -53,7 +53,6 @@ static size_t lowmem_minfree[6] = {
- };
- static int lowmem_minfree_size = 4;
+--- a/drivers/net/wireless/iwlegacy/3945-mac.c
++++ b/drivers/net/wireless/iwlegacy/3945-mac.c
+@@ -2684,7 +2684,6 @@ il3945_bg_restart(struct work_struct *da
  
--static struct task_struct *lowmem_deathpending;
- static unsigned long lowmem_deathpending_timeout;
+ 	if (test_and_clear_bit(S_FW_ERROR, &il->status)) {
+ 		mutex_lock(&il->mutex);
+-		il->ctx.vif = NULL;
+ 		il->is_open = 0;
+ 		mutex_unlock(&il->mutex);
+ 		il3945_down(il);
+--- a/drivers/net/wireless/iwlegacy/4965-mac.c
++++ b/drivers/net/wireless/iwlegacy/4965-mac.c
+@@ -5381,7 +5381,6 @@ il4965_bg_restart(struct work_struct *da
  
- #define lowmem_print(level, x...)			\
-@@ -62,24 +61,6 @@ static unsigned long lowmem_deathpending
- 			printk(x);			\
- 	} while (0)
+ 	if (test_and_clear_bit(S_FW_ERROR, &il->status)) {
+ 		mutex_lock(&il->mutex);
+-		il->ctx.vif = NULL;
+ 		il->is_open = 0;
  
--static int
--task_notify_func(struct notifier_block *self, unsigned long val, void *data);
--
--static struct notifier_block task_nb = {
--	.notifier_call	= task_notify_func,
--};
--
--static int
--task_notify_func(struct notifier_block *self, unsigned long val, void *data)
--{
--	struct task_struct *task = data;
--
--	if (task == lowmem_deathpending)
--		lowmem_deathpending = NULL;
--
--	return NOTIFY_OK;
--}
--
- static int lowmem_shrink(struct shrinker *s, struct shrink_control *sc)
- {
- 	struct task_struct *p;
-@@ -95,19 +76,6 @@ static int lowmem_shrink(struct shrinker
- 	int other_file = global_page_state(NR_FILE_PAGES) -
- 						global_page_state(NR_SHMEM);
+ 		__il4965_down(il);
+--- a/drivers/net/wireless/iwlegacy/common.c
++++ b/drivers/net/wireless/iwlegacy/common.c
+@@ -4575,6 +4575,7 @@ il_mac_add_interface(struct ieee80211_hw
+ 	struct il_priv *il = hw->priv;
+ 	struct il_vif_priv *vif_priv = (void *)vif->drv_priv;
+ 	int err;
++	bool reset;
+ 	u32 modes;
  
--	/*
--	 * If we already have a death outstanding, then
--	 * bail out right away; indicating to vmscan
--	 * that we have nothing further to offer on
--	 * this pass.
--	 *
--	 * Note: Currently you need CONFIG_PROFILING
--	 * for this to work correctly.
--	 */
--	if (lowmem_deathpending &&
--	    time_before_eq(jiffies, lowmem_deathpending_timeout))
--		return 0;
--
- 	if (lowmem_adj_size < array_size)
- 		array_size = lowmem_adj_size;
- 	if (lowmem_minfree_size < array_size)
-@@ -140,6 +108,11 @@ static int lowmem_shrink(struct shrinker
- 		struct signal_struct *sig;
- 		int oom_adj;
- 
-+		if (test_tsk_thread_flag(p, TIF_MEMDIE) &&
-+		    time_before_eq(jiffies, lowmem_deathpending_timeout)) {
-+			read_unlock(&tasklist_lock);
-+			return 0;
-+		}
- 		task_lock(p);
- 		mm = p->mm;
- 		sig = p->signal;
-@@ -173,15 +146,9 @@ static int lowmem_shrink(struct shrinker
- 		lowmem_print(1, "send sigkill to %d (%s), adj %d, size %d\n",
- 			     selected->pid, selected->comm,
- 			     selected_oom_adj, selected_tasksize);
--		/*
--		 * If CONFIG_PROFILING is off, then we don't want to stall
--		 * the killer by setting lowmem_deathpending.
--		 */
--#ifdef CONFIG_PROFILING
--		lowmem_deathpending = selected;
- 		lowmem_deathpending_timeout = jiffies + HZ;
--#endif
- 		force_sig(SIGKILL, selected);
-+		set_tsk_thread_flag(selected, TIF_MEMDIE);
- 		rem -= selected_tasksize;
+ 	D_MAC80211("enter: type %d, addr %pM\n", vif->type, vif->addr);
+@@ -4594,6 +4595,16 @@ il_mac_add_interface(struct ieee80211_hw
+ 		goto out;
  	}
- 	lowmem_print(4, "lowmem_shrink %lu, %x, return %d\n",
-@@ -197,7 +164,6 @@ static struct shrinker lowmem_shrinker =
  
- static int __init lowmem_init(void)
- {
--	task_handoff_register(&task_nb);
- 	register_shrinker(&lowmem_shrinker);
- 	return 0;
- }
-@@ -205,7 +171,6 @@ static int __init lowmem_init(void)
- static void __exit lowmem_exit(void)
- {
- 	unregister_shrinker(&lowmem_shrinker);
--	task_handoff_unregister(&task_nb);
- }
++	/*
++	 * We do not support multiple virtual interfaces, but on hardware reset
++	 * we have to add the same interface again.
++	 */
++	reset = (il->ctx.vif == vif);
++	if (il->ctx.vif && !reset) {
++		err = -EOPNOTSUPP;
++		goto out;
++	}
++
+ 	modes = il->ctx.interface_modes | il->ctx.exclusive_interface_modes;
+ 	if (!(modes & BIT(vif->type))) {
+ 		err = -EOPNOTSUPP;
+@@ -4605,8 +4616,11 @@ il_mac_add_interface(struct ieee80211_hw
  
- module_param_named(cost, lowmem_shrinker.seeks, int, S_IRUGO | S_IWUSR);
+ 	err = il_setup_interface(il, &il->ctx);
+ 	if (err) {
+-		il->ctx.vif = NULL;
+-		il->iw_mode = NL80211_IFTYPE_STATION;
++		IL_WARN("Fail to set mode %d\n", vif->type);
++		if (!reset) {
++			il->ctx.vif = NULL;
++			il->iw_mode = NL80211_IFTYPE_STATION;
++		}
+ 	}
+ 
+ out:
 
 
