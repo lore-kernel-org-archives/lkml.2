@@ -1,39 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932826Ab2DKRz4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Apr 2012 13:55:56 -0400
-Received: from fifo99.com ([67.223.236.141]:60397 "EHLO fifo99.com"
+	id S1760835Ab2DKR6g (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Apr 2012 13:58:36 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:59371 "EHLO mail.zytor.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760818Ab2DKRzy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Apr 2012 13:55:54 -0400
-Date: Wed, 11 Apr 2012 10:55:50 -0700
-From: Daniel Walker <dwalker@fifo99.com>
-To: David Brown <davidb@codeaurora.org>
-Cc: Bryan Huntsman <bryanh@codeaurora.org>,
-        Russell King <linux@arm.linux.org.uk>, linux-kernel@vger.kernel.org,
-        linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH] ARM: msm: remove unused MSM boards
-Message-ID: <20120411175550.GB8114@fifo99.com>
-References: <1334165870-12487-1-git-send-email-davidb@codeaurora.org>
+	id S1759508Ab2DKR6f (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Apr 2012 13:58:35 -0400
+Message-ID: <4F85C640.3060608@zytor.com>
+Date: Wed, 11 Apr 2012 10:58:24 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120329 Thunderbird/11.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1334165870-12487-1-git-send-email-davidb@codeaurora.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
+CC: Alexey Dobriyan <adobriyan@gmail.com>, akpm@linux-foundation.org,
+        viro@zeniv.linux.org.uk, torvalds@linux-foundation.org,
+        drepper@gmail.com, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org
+Subject: Re: [PATCH] nextfd(2)
+References: <20120401125741.GA7484@p183.telecom.by> <4F78D0BA.9040709@zytor.com> <CACVxJT_WJYjecpZMGkyUrbE5gNROX1tOfFAcD84-hoPsypxcFQ@mail.gmail.com> <4F7F1864.8090606@zytor.com> <CAHGf_=rsJ8o8Fnd2z5Z8jHGc=cz370ay0_t3bhkiYRCBh3puVw@mail.gmail.com>
+In-Reply-To: <CAHGf_=rsJ8o8Fnd2z5Z8jHGc=cz370ay0_t3bhkiYRCBh3puVw@mail.gmail.com>
+X-Enigmail-Version: 1.4
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 11, 2012 at 10:37:50AM -0700, David Brown wrote:
-> The "mahimahi" and "sapphire" were never finished, and have never been
-> built.
+On 04/10/2012 05:09 PM, KOSAKI Motohiro wrote:
 > 
-> The "halibut" target was a dev board that hasn't ever been widely
-> available (MSM7201 "SURF").
+> I know the reason. fcntl(F_NEXT) is one of a proposal of next SUS enhancement.
+> 
+>   http://austingroupbugs.net/view.php?id=149
+> 
+> nextfd() has a semantics of F_NEXT.
+> 
+> Next, why shoundn't we implement fcntl(F_NEXT) in our kernel? I think
+> we have two reason.
+> 
+> 1) As linus pointed out, linux specific "flags" argument may be useful.
+> 2) The name of F_NEXT is not fixed yet. another url of the austin says
+> it is FD_NEXT.
+>      So, we can't choose right name yet. Moreover, A meanings of 3rd
+> argument of F_NEXT
+>      haven't been fixed.
+> 
 
+But it still has the same braindamage: one system call per loop
+invocation, and we can do better.  I would much rather see fdwalk() in SUS.
 
-I don't mind if you remove halibut, but the others are just incomplete
-phone support which someone may want to add to.. I'd prefer to fix those
-two..
+	-hpa
 
-Daniel
