@@ -1,25 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965415Ab2DKXYG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Apr 2012 19:24:06 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:58738 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965383Ab2DKXXw (ORCPT
+	id S965433Ab2DKXYM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Apr 2012 19:24:12 -0400
+Received: from mail-pz0-f52.google.com ([209.85.210.52]:51056 "EHLO
+	mail-pz0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965383Ab2DKXYI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Apr 2012 19:23:52 -0400
-Message-Id: <20120411231043.808150219@linuxfoundation.org>
+	Wed, 11 Apr 2012 19:24:08 -0400
+Message-Id: <20120411231044.648668392@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Wed, 11 Apr 2012 16:11:24 -0700
+Date: Wed, 11 Apr 2012 16:11:29 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Jon Dufresne <jon@jondufresne.org>,
-        Suresh Siddha <suresh.b.siddha@intel.com>, <yinghai@kernel.org>,
-        Josh Boyer <jwboyer@redhat.com>, Ingo Molnar <mingo@elte.hu>,
-        Teck Choon Giam <giamteckchoon@gmail.com>, Ben Guthro <ben@guthro.net>
-Subject: [ 49/59] Revert "x86/ioapic: Add register level checks to detect bogus io-apic entries"
+        alan@lxorguk.ukuu.org.uk, Guan Xin <guanx.bac@gmail.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [ 54/59] USB: Add Motorola Rokr E6 Id to the USBNet driver "zaurus"
 In-Reply-To: <20120411231213.GA13124@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -29,95 +25,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-This reverts commit 273fb194e86b795b08a724c7646d0f694949070b
-[73d63d038ee9f769f5e5b46792d227fe20e442c5 upstream]
+From: Guan Xin <guanx.bac@gmail.com>
 
-It causes problems, so needs to be reverted from 3.2-stable for now.
+commit a2daf263107ba3eb6db33931881731fa51c95045 upstream.
 
-Reported-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Cc: Jon Dufresne <jon@jondufresne.org>
-Cc: Suresh Siddha <suresh.b.siddha@intel.com>
-Cc: <yinghai@kernel.org>
-Cc: Josh Boyer <jwboyer@redhat.com>
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Teck Choon Giam <giamteckchoon@gmail.com>
-Cc: Ben Guthro <ben@guthro.net>
+Added Vendor/Device Id of Motorola Rokr E6 (22b8:6027) so it can be
+recognized by the "zaurus" USBNet driver.
+Applies to Linux 3.2.13 and 2.6.39.4.
+Signed-off-by: Guan Xin <guanx.bac@gmail.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/x86/kernel/apic/io_apic.c |   40 ++++++++--------------------------------
- 1 file changed, 8 insertions(+), 32 deletions(-)
+ drivers/net/usb/zaurus.c |    5 +++++
+ 1 file changed, 5 insertions(+)
 
---- a/arch/x86/kernel/apic/io_apic.c
-+++ b/arch/x86/kernel/apic/io_apic.c
-@@ -3963,36 +3963,18 @@ int mp_find_ioapic_pin(int ioapic, u32 g
- static __init int bad_ioapic(unsigned long address)
+--- a/drivers/net/usb/zaurus.c
++++ b/drivers/net/usb/zaurus.c
+@@ -332,6 +332,11 @@ static const struct usb_device_id	produc
+ 	.driver_info = ZAURUS_PXA_INFO,
+ },
  {
- 	if (nr_ioapics >= MAX_IO_APICS) {
--		pr_warn("WARNING: Max # of I/O APICs (%d) exceeded (found %d), skipping\n",
--			MAX_IO_APICS, nr_ioapics);
-+		printk(KERN_WARNING "WARNING: Max # of I/O APICs (%d) exceeded "
-+		       "(found %d), skipping\n", MAX_IO_APICS, nr_ioapics);
- 		return 1;
- 	}
- 	if (!address) {
--		pr_warn("WARNING: Bogus (zero) I/O APIC address found in table, skipping!\n");
-+		printk(KERN_WARNING "WARNING: Bogus (zero) I/O APIC address"
-+		       " found in table, skipping!\n");
- 		return 1;
- 	}
- 	return 0;
- }
- 
--static __init int bad_ioapic_register(int idx)
--{
--	union IO_APIC_reg_00 reg_00;
--	union IO_APIC_reg_01 reg_01;
--	union IO_APIC_reg_02 reg_02;
--
--	reg_00.raw = io_apic_read(idx, 0);
--	reg_01.raw = io_apic_read(idx, 1);
--	reg_02.raw = io_apic_read(idx, 2);
--
--	if (reg_00.raw == -1 && reg_01.raw == -1 && reg_02.raw == -1) {
--		pr_warn("I/O APIC 0x%x registers return all ones, skipping!\n",
--			mpc_ioapic_addr(idx));
--		return 1;
--	}
--
--	return 0;
--}
--
- void __init mp_register_ioapic(int id, u32 address, u32 gsi_base)
- {
- 	int idx = 0;
-@@ -4009,12 +3991,6 @@ void __init mp_register_ioapic(int id, u
- 	ioapics[idx].mp_config.apicaddr = address;
- 
- 	set_fixmap_nocache(FIX_IO_APIC_BASE_0 + idx, address);
--
--	if (bad_ioapic_register(idx)) {
--		clear_fixmap(FIX_IO_APIC_BASE_0 + idx);
--		return;
--	}
--
- 	ioapics[idx].mp_config.apicid = io_apic_unique_id(id);
- 	ioapics[idx].mp_config.apicver = io_apic_get_version(idx);
- 
-@@ -4035,10 +4011,10 @@ void __init mp_register_ioapic(int id, u
- 	if (gsi_cfg->gsi_end >= gsi_top)
- 		gsi_top = gsi_cfg->gsi_end + 1;
- 
--	pr_info("IOAPIC[%d]: apic_id %d, version %d, address 0x%x, GSI %d-%d\n",
--		idx, mpc_ioapic_id(idx),
--		mpc_ioapic_ver(idx), mpc_ioapic_addr(idx),
--		gsi_cfg->gsi_base, gsi_cfg->gsi_end);
-+	printk(KERN_INFO "IOAPIC[%d]: apic_id %d, version %d, address 0x%x, "
-+	       "GSI %d-%d\n", idx, mpc_ioapic_id(idx),
-+	       mpc_ioapic_ver(idx), mpc_ioapic_addr(idx),
-+	       gsi_cfg->gsi_base, gsi_cfg->gsi_end);
- 
- 	nr_ioapics++;
- }
++	/* Motorola Rokr E6 */
++	USB_DEVICE_AND_INTERFACE_INFO(0x22b8, 0x6027, USB_CLASS_COMM,
++			USB_CDC_SUBCLASS_MDLM, USB_CDC_PROTO_NONE),
++	.driver_info = (unsigned long) &bogus_mdlm_info,
++}, {
+ 	/* Motorola MOTOMAGX phones */
+ 	USB_DEVICE_AND_INTERFACE_INFO(0x22b8, 0x6425, USB_CLASS_COMM,
+ 			USB_CDC_SUBCLASS_MDLM, USB_CDC_PROTO_NONE),
 
 
