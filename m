@@ -1,87 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759944Ab2DKBAf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Apr 2012 21:00:35 -0400
-Received: from e36.co.us.ibm.com ([32.97.110.154]:40710 "EHLO
-	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755835Ab2DKBAd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Apr 2012 21:00:33 -0400
-Date: Tue, 10 Apr 2012 18:00:22 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arjan van de Ven <arjan@infradead.org>,
-        "rusty@rustcorp.com.au" <rusty@rustcorp.com.au>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Milton Miller <miltonm@bga.com>, "mingo@elte.hu" <mingo@elte.hu>,
-        Tejun Heo <tj@kernel.org>, KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Linux PM mailing list <linux-pm@vger.kernel.org>
-Subject: Re: CPU Hotplug rework
-Message-ID: <20120411010015.GA2402@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <4F674649.2000300@linux.vnet.ibm.com>
- <4F67474A.20707@linux.vnet.ibm.com>
- <20120405173918.GC8194@linux.vnet.ibm.com>
- <4F7F4977.4000302@linux.vnet.ibm.com>
- <1334102999.23924.232.camel@gandalf.stny.rr.com>
- <20120411002836.GM2428@linux.vnet.ibm.com>
- <1334104638.23924.233.camel@gandalf.stny.rr.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1334104638.23924.233.camel@gandalf.stny.rr.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12041101-3352-0000-0000-000003EFD0B5
+	id S1759913Ab2DKBG2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Apr 2012 21:06:28 -0400
+Received: from mga02.intel.com ([134.134.136.20]:45033 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759880Ab2DKBG0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Apr 2012 21:06:26 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
+   d="scan'208";a="127540603"
+Subject: load balancing regression since commit 367456c7
+From: Tim Chen <tim.c.chen@linux.intel.com>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Suresh Siddha <suresh.b.siddha@intel.com>, Alex Shi <alex.shi@intel.com>,
+        Huang@vger.kernel.org, Ying <ying.huang@intel.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 10 Apr 2012 18:06:16 -0700
+Message-ID: <1334106376.19157.89.camel@schen9-DESK>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 10, 2012 at 08:37:18PM -0400, Steven Rostedt wrote:
-> On Tue, 2012-04-10 at 17:28 -0700, Paul E. McKenney wrote:
-> 
-> > > Just to throw out the stupid silly approach.
-> > > 
-> > > What about creating a "__register_cpu_notifier()" that just does:
-> > > 
-> > > int __ref __register_cpu_notifier(struct notifier_block *nb)
-> > > {
-> > > 	return raw_notifier_chain_register(&cpu_chain, nb);
-> > > }
-> > > 
-> > > Also making cpu_maps_update_begin/done() global (and probably rename
-> > > them).
-> 
-> I just noticed that the cpu_maps_update_begin/done() are already global.
-> 
-> > > 
-> > > and then in the above code do:
-> > > 
-> > > 	cpu_maps_update_begin();
-> > > 	__register_cpu_notifier(nb);
-> > > 	do_setup();
-> > > 	cpu_maps_update_done();
-> > > 
-> > > 
-> > > Just saying,
-> > 
-> > That does have some attractive properties, now that you mention it.  ;-)
-> 
-> Which property? Stupid or Silly ;-)
+Peter,
 
-As with any piece of software, no matter how small, both.  ;-)
+We noticed in a hackbench test (./hackbench 100 process 2000)
+on a Sandy bridge 2 socket server, there has been a slow down
+by a factor of 4 since commit 367456c7 was applied
+(sched: Ditch per cgroup task lists for load-balancing).
 
-Of course, __register_cpu_notifier() would need lockdep checking to make
-sure that it wasn't called without the benefit of cpu_maps_update_begin().
-I might be missing something, but as long as that was in place, seems
-like it is a lot simpler and easier to use than the alternatives that
-Srivatsa and I were kicking around.
+The commit 5d6523e (sched: Fix load-balance wreckage) did
+not fix the regression.
 
-							Thanx, Paul
+In the profile, there is heavy spin lock contention in the load_balance path of 3.4-rc2
+where it was less than .003% of cpu before commit 367456c7.
+
+When we looked into /proc/schedstat for 3.4-rc2 for the run duration, 
+on cpu0 schedule was called 13x more often, and schedule call which
+left the processor idle was 530x as much.
+
+There was also a big increase in try to wake up remote (sd->ttwu_wake_remote) count.
+		
+		increase in sd->ttwu_wake_remote for cpu0
+domain 0	540%
+domain 1 	7570%
+domain 2	4426%
+
+Wonder if there is unnecessary load balancing to remote cpu?
+
+Tim
+
+
+profile for 3.4-rc2
+
+     7.16%     hackbench  [kernel.kallsyms]      [k] _raw_spin_lock
+               |
+               --- _raw_spin_lock
+                  |
+                  |--56.52%-- load_balance
+                  |          idle_balance
+                  |          __schedule
+                  |          schedule
+                  |          |
+                  |          |--98.73%-- schedule_timeout
+                  |          |          |
+                  |          |          |--97.80%-- unix_stream_recvmsg
+                  |          |          |          sock_aio_read.part.7
+                  |          |          |          sock_aio_read
+                  |          |          |          do_sync_read
+                  |          |          |          vfs_read
+                  |          |          |          sys_read
+                  |          |          |          system_call
+                  |          |          |          __read_nocancel
+                  |          |          |          create_worker
+                  |          |          |          group
+                  |          |          |          main
+                  |          |          |          __libc_start_main
+                  |          |          |
+
+
+
+
+
 
