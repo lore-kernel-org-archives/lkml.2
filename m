@@ -1,409 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760470Ab2DKOVe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Apr 2012 10:21:34 -0400
-Received: from kamaji.grokhost.net ([87.117.218.43]:54983 "EHLO
-	kamaji.grokhost.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760425Ab2DKOV3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Apr 2012 10:21:29 -0400
-From: Chris Boot <bootc@bootc.net>
-To: linux1394-devel@lists.sourceforge.net, target-devel@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, agrover@redhat.com, clemens@ladisch.de,
-        nab@linux-iscsi.org, stefanr@s5r6.in-berlin.de,
-        Chris Boot <bootc@bootc.net>
-Subject: [PATCH 06/11] firewire-sbp-target: Add sbp_fabric.{c,h}
-Date: Wed, 11 Apr 2012 15:20:38 +0100
-Message-Id: <1334154043-69076-7-git-send-email-bootc@bootc.net>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1334154043-69076-1-git-send-email-bootc@bootc.net>
-References: <1329317248-94128-1-git-send-email-bootc@bootc.net>
- <1334154043-69076-1-git-send-email-bootc@bootc.net>
+	id S1760509Ab2DKOWF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Apr 2012 10:22:05 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:53196 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1760495Ab2DKOWB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Apr 2012 10:22:01 -0400
+Message-ID: <4F85936A.6060509@redhat.com>
+Date: Wed, 11 Apr 2012 17:21:30 +0300
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120316 Thunderbird/11.0
+MIME-Version: 1.0
+To: Takuya Yoshikawa <takuya.yoshikawa@gmail.com>
+CC: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>,
+        Marcelo Tosatti <mtosatti@redhat.com>,
+        Xiao Guangrong <xiaoguangrong.eric@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>, KVM <kvm@vger.kernel.org>
+Subject: Re: [PATCH 00/13] KVM: MMU: fast page fault
+References: <4F742951.7080003@linux.vnet.ibm.com> <4F82E04E.6000900@redhat.com> <20120409175829.GB21894@amt.cnet> <4F8329D3.7000605@gmail.com> <20120409194614.GB23053@amt.cnet> <4F840DD2.3090101@redhat.com> <20120410204031.ffb5b976225ac9fe6dae474e@gmail.com> <4F842074.1050108@linux.vnet.ibm.com> <20120411211514.35db29c11460516e604059b6@gmail.com> <4F857B61.9080602@linux.vnet.ibm.com> <20120411231441.9d0984672dd252b806f99128@gmail.com>
+In-Reply-To: <20120411231441.9d0984672dd252b806f99128@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This serves as further glue between the target framework and SBP-2, in
-this case dealing with SCSI command submission and data in/out.
+On 04/11/2012 05:14 PM, Takuya Yoshikawa wrote:
+> On Wed, 11 Apr 2012 20:38:57 +0800
+> Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com> wrote:
+>
+> > Well, my point is that live migration is so very useful that it is worth
+> > to be improved, the description of your also proves this point.
+> > 
+> > What is your really want to say but i missed?
+>
+> How to improve and what we should pay for that.
+>
+> Note that I am not objecting to O(1) itself.
+>
+> Do you remember that when we discussed O(1) issue last year, with Avi,
+> the agreement was that we should take more time and look carefully
+> with more measurements to confirm if it's really worthwhile.
+>
+> The point is whether we should do O(1) now, including near future.
+>
+> My opinion is that we should do what we can do now and wait for feedback
+> from real users.
+>
+> Before making the current code stable, I do not want to see it replaced
+> so dramatically.  Otherwise when can we use live migration with enough
+> confidence?  There may be another subtle bugs we should fix now.
+>
+> In addition, XBRZLE and post-copy is now being developed in QEMU.
+>
+>
+> What do you think about this Avi, Marcelo?
 
-Signed-off-by: Chris Boot <bootc@bootc.net>
-Cc: Andy Grover <agrover@redhat.com>
-Cc: Clemens Ladisch <clemens@ladisch.de>
-Cc: Nicholas A. Bellinger <nab@linux-iscsi.org>
-Cc: Stefan Richter <stefanr@s5r6.in-berlin.de>
----
- drivers/target/sbp/sbp_fabric.c |  314 +++++++++++++++++++++++++++++++++++++++
- drivers/target/sbp/sbp_fabric.h |   40 +++++
- 2 files changed, 354 insertions(+)
- create mode 100644 drivers/target/sbp/sbp_fabric.c
- create mode 100644 drivers/target/sbp/sbp_fabric.h
+Currently the main performance bottleneck for migration is qemu, which
+is single threaded and generally inefficient.  However I am sure that
+once the qemu bottlenecks will be removed we'll encounter kvm problems,
+particularly with wide (many vcpus) and large (lots of memory) guests. 
+So it's a good idea to improve in this area.  I agree we'll need to
+measure each change, perhaps with a test program until qemu catches up.
 
-diff --git a/drivers/target/sbp/sbp_fabric.c b/drivers/target/sbp/sbp_fabric.c
-new file mode 100644
-index 0000000..5230851
---- /dev/null
-+++ b/drivers/target/sbp/sbp_fabric.c
-@@ -0,0 +1,314 @@
-+/*
-+ * SBP2 target driver (SCSI over IEEE1394 in target mode)
-+ *
-+ * Copyright (C) 2011  Chris Boot <bootc@bootc.net>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation; either version 2 of the License, or
-+ * (at your option) any later version.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program; if not, write to the Free Software Foundation,
-+ * Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
-+ */
-+
-+#define KMSG_COMPONENT "sbp_target"
-+#define pr_fmt(fmt) KMSG_COMPONENT ": " fmt
-+
-+#include <linux/slab.h>
-+#include <linux/kthread.h>
-+#include <linux/types.h>
-+#include <linux/list.h>
-+#include <linux/types.h>
-+#include <linux/string.h>
-+#include <linux/ctype.h>
-+#include <linux/firewire.h>
-+
-+#include <asm/unaligned.h>
-+
-+#include <scsi/scsi.h>
-+#include <scsi/scsi_host.h>
-+#include <scsi/scsi_device.h>
-+#include <scsi/scsi_cmnd.h>
-+#include <scsi/libfc.h>
-+
-+#include <target/target_core_base.h>
-+#include <target/target_core_fabric.h>
-+
-+#include "sbp_base.h"
-+#include "sbp_fabric.h"
-+#include "sbp_target_agent.h"
-+#include "sbp_scsi_cmnd.h"
-+
-+int sbp_check_true(struct se_portal_group *se_tpg)
-+{
-+	return 1;
-+}
-+
-+int sbp_check_false(struct se_portal_group *se_tpg)
-+{
-+	return 0;
-+}
-+
-+char *sbp_get_fabric_name(void)
-+{
-+	return "sbp";
-+}
-+
-+char *sbp_get_fabric_wwn(struct se_portal_group *se_tpg)
-+{
-+	struct sbp_tpg *tpg = container_of(se_tpg, struct sbp_tpg, se_tpg);
-+	struct sbp_tport *tport = tpg->tport;
-+
-+	return &tport->tport_name[0];
-+}
-+
-+u16 sbp_get_tag(struct se_portal_group *se_tpg)
-+{
-+	struct sbp_tpg *tpg = container_of(se_tpg, struct sbp_tpg, se_tpg);
-+	return tpg->tport_tpgt;
-+}
-+
-+u32 sbp_get_default_depth(struct se_portal_group *se_tpg)
-+{
-+	return 1;
-+}
-+
-+struct se_node_acl *sbp_alloc_fabric_acl(struct se_portal_group *se_tpg)
-+{
-+	struct sbp_nacl *nacl;
-+
-+	nacl = kzalloc(sizeof(struct sbp_nacl), GFP_KERNEL);
-+	if (!nacl) {
-+		pr_err("Unable to alocate struct sbp_nacl\n");
-+		return NULL;
-+	}
-+
-+	return &nacl->se_node_acl;
-+}
-+
-+void sbp_release_fabric_acl(
-+	struct se_portal_group *se_tpg,
-+	struct se_node_acl *se_nacl)
-+{
-+	struct sbp_nacl *nacl =
-+		container_of(se_nacl, struct sbp_nacl, se_node_acl);
-+	kfree(nacl);
-+}
-+
-+u32 sbp_tpg_get_inst_index(struct se_portal_group *se_tpg)
-+{
-+	return 1;
-+}
-+
-+void sbp_release_cmd(struct se_cmd *se_cmd)
-+{
-+	struct sbp_target_request *req = container_of(se_cmd,
-+			struct sbp_target_request, se_cmd);
-+
-+	sbp_free_request(req);
-+}
-+
-+int sbp_shutdown_session(struct se_session *se_sess)
-+{
-+	return 0;
-+}
-+
-+void sbp_close_session(struct se_session *se_sess)
-+{
-+	return;
-+}
-+
-+u32 sbp_sess_get_index(struct se_session *se_sess)
-+{
-+	return 0;
-+}
-+
-+int sbp_write_pending(struct se_cmd *se_cmd)
-+{
-+	struct sbp_target_request *req = container_of(se_cmd,
-+			struct sbp_target_request, se_cmd);
-+	int ret;
-+
-+	ret = sbp_rw_data(req);
-+	if (ret) {
-+		req->status.status |= cpu_to_be32(
-+			STATUS_BLOCK_RESP(
-+				STATUS_RESP_TRANSPORT_FAILURE) |
-+			STATUS_BLOCK_DEAD(0) |
-+			STATUS_BLOCK_LEN(1) |
-+			STATUS_BLOCK_SBP_STATUS(
-+				SBP_STATUS_UNSPECIFIED_ERROR));
-+		sbp_send_status(req);
-+		return ret;
-+	}
-+
-+	transport_generic_process_write(se_cmd);
-+
-+	return 0;
-+}
-+
-+int sbp_write_pending_status(struct se_cmd *se_cmd)
-+{
-+	return 0;
-+}
-+
-+void sbp_set_default_node_attrs(struct se_node_acl *nacl)
-+{
-+	return;
-+}
-+
-+u32 sbp_get_task_tag(struct se_cmd *se_cmd)
-+{
-+	struct sbp_target_request *req = container_of(se_cmd,
-+			struct sbp_target_request, se_cmd);
-+
-+	/* only used for printk until we do TMRs */
-+	return (u32)req->orb_pointer;
-+}
-+
-+int sbp_get_cmd_state(struct se_cmd *se_cmd)
-+{
-+	return 0;
-+}
-+
-+int sbp_queue_data_in(struct se_cmd *se_cmd)
-+{
-+	struct sbp_target_request *req = container_of(se_cmd,
-+			struct sbp_target_request, se_cmd);
-+	int ret;
-+
-+	ret = sbp_rw_data(req);
-+	if (ret) {
-+		req->status.status |= cpu_to_be32(
-+			STATUS_BLOCK_RESP(STATUS_RESP_TRANSPORT_FAILURE) |
-+			STATUS_BLOCK_DEAD(0) |
-+			STATUS_BLOCK_LEN(1) |
-+			STATUS_BLOCK_SBP_STATUS(SBP_STATUS_UNSPECIFIED_ERROR));
-+		sbp_send_status(req);
-+		return ret;
-+	}
-+
-+	return sbp_send_sense(req);
-+}
-+
-+/*
-+ * Called after command (no data transfer) or after the write (to device)
-+ * operation is completed
-+ */
-+int sbp_queue_status(struct se_cmd *se_cmd)
-+{
-+	struct sbp_target_request *req = container_of(se_cmd,
-+			struct sbp_target_request, se_cmd);
-+
-+	return sbp_send_sense(req);
-+}
-+
-+int sbp_queue_tm_rsp(struct se_cmd *se_cmd)
-+{
-+	return 0;
-+}
-+
-+u16 sbp_set_fabric_sense_len(struct se_cmd *se_cmd, u32 sense_length)
-+{
-+	return 0;
-+}
-+
-+u16 sbp_get_fabric_sense_len(void)
-+{
-+	return 0;
-+}
-+
-+int sbp_check_stop_free(struct se_cmd *se_cmd)
-+{
-+	struct sbp_target_request *req = container_of(se_cmd,
-+			struct sbp_target_request, se_cmd);
-+
-+	transport_generic_free_cmd(&req->se_cmd, 0);
-+	return 1;
-+}
-+
-+/*
-+ * Handlers for Serial Bus Protocol 2/3 (SBP-2 / SBP-3)
-+ */
-+u8 sbp_get_fabric_proto_ident(struct se_portal_group *se_tpg)
-+{
-+	/*
-+	 * Return a IEEE 1394 SCSI Protocol identifier for loopback operations
-+	 * This is defined in section 7.5.1 Table 362 in spc4r17
-+	 */
-+	return SCSI_PROTOCOL_SBP;
-+}
-+
-+u32 sbp_get_pr_transport_id(
-+	struct se_portal_group *se_tpg,
-+	struct se_node_acl *se_nacl,
-+	struct t10_pr_registration *pr_reg,
-+	int *format_code,
-+	unsigned char *buf)
-+{
-+	int ret;
-+
-+	/*
-+	 * Set PROTOCOL IDENTIFIER to 3h for SBP
-+	 */
-+	buf[0] = SCSI_PROTOCOL_SBP;
-+	/*
-+	 * From spc4r17, 7.5.4.4 TransportID for initiator ports using SCSI
-+	 * over IEEE 1394
-+	 */
-+	ret = hex2bin(&buf[8], se_nacl->initiatorname, 8);
-+	if (ret < 0)
-+		pr_debug("sbp transport_id: invalid hex string\n");
-+
-+	/*
-+	 * The IEEE 1394 Transport ID is a hardcoded 24-byte length
-+	 */
-+	return 24;
-+}
-+
-+u32 sbp_get_pr_transport_id_len(
-+	struct se_portal_group *se_tpg,
-+	struct se_node_acl *se_nacl,
-+	struct t10_pr_registration *pr_reg,
-+	int *format_code)
-+{
-+	*format_code = 0;
-+	/*
-+	 * From spc4r17, 7.5.4.4 TransportID for initiator ports using SCSI
-+	 * over IEEE 1394
-+	 *
-+	 * The SBP Transport ID is a hardcoded 24-byte length
-+	 */
-+	return 24;
-+}
-+
-+/*
-+ * Used for handling SCSI fabric dependent TransportIDs in SPC-3 and above
-+ * Persistent Reservation SPEC_I_PT=1 and PROUT REGISTER_AND_MOVE operations.
-+ */
-+char *sbp_parse_pr_out_transport_id(
-+	struct se_portal_group *se_tpg,
-+	const char *buf,
-+	u32 *out_tid_len,
-+	char **port_nexus_ptr)
-+{
-+	/*
-+	 * Assume the FORMAT CODE 00b from spc4r17, 7.5.4.4 TransportID
-+	 * for initiator ports using SCSI over SBP Serial SCSI Protocol
-+	 *
-+	 * The TransportID for a IEEE 1394 Initiator Port is of fixed size of
-+	 * 24 bytes, and IEEE 1394 does not contain a I_T nexus identifier,
-+	 * so we return the **port_nexus_ptr set to NULL.
-+	 */
-+	*port_nexus_ptr = NULL;
-+	*out_tid_len = 24;
-+
-+	return (char *)&buf[8];
-+}
-diff --git a/drivers/target/sbp/sbp_fabric.h b/drivers/target/sbp/sbp_fabric.h
-new file mode 100644
-index 0000000..cf66eca
---- /dev/null
-+++ b/drivers/target/sbp/sbp_fabric.h
-@@ -0,0 +1,40 @@
-+
-+#include <linux/types.h>
-+#include <target/target_core_base.h>
-+
-+int sbp_check_true(struct se_portal_group *);
-+int sbp_check_false(struct se_portal_group *);
-+char *sbp_get_fabric_name(void);
-+char *sbp_get_fabric_wwn(struct se_portal_group *);
-+u16 sbp_get_tag(struct se_portal_group *);
-+u32 sbp_get_default_depth(struct se_portal_group *);
-+struct se_node_acl *sbp_alloc_fabric_acl(struct se_portal_group *);
-+void sbp_release_fabric_acl(struct se_portal_group *,
-+		struct se_node_acl *);
-+u32 sbp_tpg_get_inst_index(struct se_portal_group *);
-+void sbp_release_cmd(struct se_cmd *se_cmd);
-+int sbp_shutdown_session(struct se_session *);
-+void sbp_close_session(struct se_session *);
-+u32 sbp_sess_get_index(struct se_session *);
-+int sbp_write_pending(struct se_cmd *);
-+int sbp_write_pending_status(struct se_cmd *);
-+void sbp_set_default_node_attrs(struct se_node_acl *);
-+u32 sbp_get_task_tag(struct se_cmd *);
-+int sbp_get_cmd_state(struct se_cmd *);
-+int sbp_queue_data_in(struct se_cmd *);
-+int sbp_queue_status(struct se_cmd *);
-+int sbp_queue_tm_rsp(struct se_cmd *);
-+u16 sbp_set_fabric_sense_len(struct se_cmd *, u32);
-+u16 sbp_get_fabric_sense_len(void);
-+int sbp_check_stop_free(struct se_cmd *se_cmd);
-+
-+u8 sbp_get_fabric_proto_ident(struct se_portal_group *se_tpg);
-+u32 sbp_get_pr_transport_id(struct se_portal_group *se_tpg,
-+		struct se_node_acl *se_nacl, struct t10_pr_registration *pr_reg,
-+		int *format_code, unsigned char *buf);
-+u32 sbp_get_pr_transport_id_len(
-+		struct se_portal_group *se_tpg, struct se_node_acl *se_nacl,
-+		struct t10_pr_registration *pr_reg, int *format_code);
-+char *sbp_parse_pr_out_transport_id(
-+		struct se_portal_group *se_tpg, const char *buf,
-+		u32 *out_tid_len, char **port_nexus_ptr);
+> I am testing the current live migration to see when and for what it can
+> be used.  I really want to see it become stable and usable for real
+> services.
+
+Well, it's used in production now.
+
+> > Okay, let us to compare the performance number after O(1) implemented.
+>
+> From my experience, I want to say that live migration is very difficult
+> to say about performance.  That is the problem I am now struggling with.
+>
+> I developed dirty-log-perf unit-test for that but that was not enough.
+>
+> Needless to say, checking the correctness is harder.
+>
+>
+> So I really do not want to see drastic change now without any real need
+> or feedback from real users -- this is my point.
+>
+
+It's a good point, we should avoid change for its own sake.
+
 -- 
-1.7.9.5
+error compiling committee.c: too many arguments to function
 
