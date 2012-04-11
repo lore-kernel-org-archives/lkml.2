@@ -1,59 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754032Ab2DKHUR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Apr 2012 03:20:17 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:37016 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753273Ab2DKHUQ convert rfc822-to-8bit (ORCPT
+	id S1754027Ab2DKHXK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Apr 2012 03:23:10 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:50096 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750775Ab2DKHXH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Apr 2012 03:20:16 -0400
+	Wed, 11 Apr 2012 03:23:07 -0400
+Date: Wed, 11 Apr 2012 00:23:00 -0700
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: linux-input@vger.kernel.org
+Cc: Wanlong Gao <gaowanlong@cn.fujitsu.com>,
+        Che-Liang Chiou <clchiou@chromium.org>,
+        David Herrmann <dh.herrmann@googlemail.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Input: serio_raw - ensure we don't block in non-blocking
+ read
+Message-ID: <20120411072300.GA15759@core.coreip.homeip.net>
+References: <20120403202432.GA18564@core.coreip.homeip.net>
 MIME-Version: 1.0
-In-Reply-To: <201204110021.48140.rjw@sisk.pl>
-References: <1331805498-12903-1-git-send-email-linus.walleij@stericsson.com>
-	<20120315154323.GB23589@kroah.com>
-	<CACRpkdaLhdjOU0CUfR3SWbDzB9qRLqBpBz+zUwPf_Q5Bu2otow@mail.gmail.com>
-	<201204110021.48140.rjw@sisk.pl>
-Date: Wed, 11 Apr 2012 09:20:15 +0200
-Message-ID: <CACRpkdaUyEZQDC9QK4T6g7H0J8_RuJbbiLjn9h5zcHP-VkKE6g@mail.gmail.com>
-Subject: Re: [PATCH] driver core: always handle dpm_order
-From: Linus Walleij <linus.walleij@linaro.org>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Linus Walleij <linus.walleij@stericsson.com>,
-        linux-kernel@vger.kernel.org,
-        Rabin Vincent <rabin.vincent@stericsson.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120403202432.GA18564@core.coreip.homeip.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 11, 2012 at 12:21 AM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
-> On Tuesday, April 10, 2012, Linus Walleij wrote:
->> On Thu, Mar 15, 2012 at 4:43 PM, Greg Kroah-Hartman
->> <gregkh@linuxfoundation.org> wrote:
->> > On Thu, Mar 15, 2012 at 10:58:18AM +0100, Linus Walleij wrote:
->> >> From: Rabin Vincent <rabin.vincent@stericsson.com>
->> >>
->> >> If !dev->class, device_move() does not respect the dpm_order.
->> >> Fix it to do so.
->> >
->> > Is there code today in the kernel that needs this to go in now?  For
->> > older releases?  Or is 3.4 acceptable?
->>
->> To me it seems it has not been merged to 3.4 yet ... can we have it
->> for the -rc:s?
->
-> Could patch authors CC me on changes related to the code I'm supposed to
-> maintain (e.g. device PM this particular case), please?
+On Tue, Apr 03, 2012 at 01:24:33PM -0700, Dmitry Torokhov wrote:
+> Avoid calling wait_event_interruptible() if client requested non-blocking
+> read, since it is not guaranteed that another thread will not consume
+> event after we checked if serio_raw->head != serio_raw->tail.
+> 
+> Also ensure we do not return 0 but keep waiting instead in blocking case,
+> when another thread steals "our" byte.
+> 
+> Signed-off-by: Dmitry Torokhov <dtor@mail.ru>
 
-Ooops! Sorry.
+Anyone? It would be nice if someone could review my patches as well,
+otherwise we may end up with breakages...
 
-> Also, please point me to the patch if that's not a problem.
+Thanks.
 
-Enjoy:
-https://lkml.org/lkml/2012/3/15/70
+> ---
+>  drivers/input/serio/serio_raw.c |   43 ++++++++++++++++++++++----------------
+>  1 files changed, 25 insertions(+), 18 deletions(-)
+> 
+> diff --git a/drivers/input/serio/serio_raw.c b/drivers/input/serio/serio_raw.c
+> index 4494233..094d6fb 100644
+> --- a/drivers/input/serio/serio_raw.c
+> +++ b/drivers/input/serio/serio_raw.c
+> @@ -165,31 +165,38 @@ static ssize_t serio_raw_read(struct file *file, char __user *buffer,
+>  	struct serio_raw *serio_raw = client->serio_raw;
+>  	char uninitialized_var(c);
+>  	ssize_t read = 0;
+> -	int retval;
+> +	int error = 0;
+>  
+> -	if (serio_raw->dead)
+> -		return -ENODEV;
+> +	do {
+> +		if (serio_raw->dead)
+> +			return -ENODEV;
+>  
+> -	if (serio_raw->head == serio_raw->tail && (file->f_flags & O_NONBLOCK))
+> -		return -EAGAIN;
+> +		if (serio_raw->head == serio_raw->tail &&
+> +		    (file->f_flags & O_NONBLOCK))
+> +			return -EAGAIN;
+>  
+> -	retval = wait_event_interruptible(serio_raw->wait,
+> -			serio_raw->head != serio_raw->tail || serio_raw->dead);
+> -	if (retval)
+> -		return retval;
+> +		if (count == 0)
+> +			break;
+>  
+> -	if (serio_raw->dead)
+> -		return -ENODEV;
+> +		while (read < count && serio_raw_fetch_byte(serio_raw, &c)) {
+> +			if (put_user(c, buffer++)) {
+> +				error = -EFAULT;
+> +				goto out;
+> +			}
+> +			read++;
+> +		}
+>  
+> -	while (read < count && serio_raw_fetch_byte(serio_raw, &c)) {
+> -		if (put_user(c, buffer++)) {
+> -			retval = -EFAULT;
+> +		if (read)
+>  			break;
+> -		}
+> -		read++;
+> -	}
+>  
+> -	return read ?: retval;
+> +		if (!(file->f_flags & O_NONBLOCK))
+> +			error = wait_event_interruptible(serio_raw->wait,
+> +					serio_raw->head != serio_raw->tail ||
+> +					serio_raw->dead);
+> +	} while (!error);
+> +
+> +out:
+> +	return read ?: error;
+>  }
+>  
+>  static ssize_t serio_raw_write(struct file *file, const char __user *buffer,
+> -- 
+> 1.7.7.6
+> 
 
-Thanks for looking into this Rafael!
-Yours,
-Linus Walleij
+-- 
+Dmitry
