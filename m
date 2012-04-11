@@ -1,106 +1,172 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753507Ab2DKGkH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Apr 2012 02:40:07 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:62221 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751067Ab2DKGkF (ORCPT
+	id S1753809Ab2DKGk2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Apr 2012 02:40:28 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:52280 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751902Ab2DKGk0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Apr 2012 02:40:05 -0400
-Date: Wed, 11 Apr 2012 10:39:57 +0400
-From: Cyrill Gorcunov <gorcunov@openvz.org>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: "H. Peter Anvin" <hpa@zytor.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Pavel Emelyanov <xemul@parallels.com>,
-        Andrey Vagin <avagin@openvz.org>,
-        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
-        Glauber Costa <glommer@parallels.com>,
-        Andi Kleen <andi@firstfloor.org>, Tejun Heo <tj@kernel.org>,
-        Matt Helsley <matthltc@us.ibm.com>, Pekka Enberg <penberg@kernel.org>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        Vasiliy Kulikov <segoon@openwall.com>,
-        Alexey Dobriyan <adobriyan@gmail.com>, Valdis.Kletnieks@vt.edu,
-        Michal Marek <mmarek@suse.cz>,
-        Frederic Weisbecker <fweisbec@gmail.com>, linux-kernel@vger.kernel.org,
-        Jonathan Corbet <corbet@lwn.net>
-Subject: Re: + syscalls-x86-add-__nr_kcmp-syscall-v8.patch added to -mm tree
-Message-ID: <20120411063957.GA11629@moon>
-References: <20120215143606.GA14037@redhat.com>
- <20120215160652.GA17680@redhat.com>
- <20120215162752.GF4533@moon>
- <20120409151027.7f3e0fa5.akpm@linux-foundation.org>
- <20120409222443.GW1625@moon>
- <4F836F3E.9090207@zytor.com>
- <20120410223758.GL24857@moon>
- <20120410230833.GA17620@redhat.com>
- <4F84C2FA.8090703@zytor.com>
- <20120410234206.GA19251@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120410234206.GA19251@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 11 Apr 2012 02:40:26 -0400
+Message-ID: <1334126418.21963.0.camel@phoenix>
+Subject: [PATCH] regulator: Convert tps65xxx regulator drivers to use
+ devm_kzalloc
+From: Axel Lin <axel.lin@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Anuj Aggarwal <anuj.aggarwal@ti.com>, Cyril Chemparathy <cyril@ti.com>,
+        Margarita Olaya Cabrera <magi@slimlogic.co.uk>,
+        Graeme Gregory <gg@slimlogic.co.uk>, Liam Girdwood <lrg@ti.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Date: Wed, 11 Apr 2012 14:40:18 +0800
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2- 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 11, 2012 at 01:42:06AM +0200, Oleg Nesterov wrote:
-> On 04/10, H. Peter Anvin wrote:
-> >
-> > On 04/10/2012 04:08 PM, Oleg Nesterov wrote:
-> > >
-> > > OK, since this is discussed again...
-> > >
-> > > Can this comment can also explain why do we obfuscate the pointers
-> > > by type? I mean, I don't really understand why the one-dimensional
-> > > cookies[2] is "not enough" from security pov.
-> >
-> > Because it's cheap.  "Just enough" is not what you want to shoot for,
-> > ever, you want to get past the "just enough" point and then consider
-> > "what can I get for cheap at this point"?
-> 
-> OK, I am not arguing. Just I thought that the small note like
-> "we are doing this per-type to obfuscate even more" can help.
-> I wouldn't have asked, but Cyrill rewrites this comment anyway.
-> 
-> Perhaps this is just me, but my first (and wrong) impression was
-> that somehow this is needed for correctness.
-
-Hi Oleg, would the form below sounds good?
-
+Signed-off-by: Axel Lin <axel.lin@gmail.com>
 ---
-Subject: Add a comment on kcmp obfuscation method
+ drivers/regulator/tps6507x-regulator.c |    7 +------
+ drivers/regulator/tps6524x-regulator.c |    3 +--
+ drivers/regulator/tps65910-regulator.c |    9 +++------
+ drivers/regulator/tps65912-regulator.c |    6 +-----
+ 4 files changed, 6 insertions(+), 19 deletions(-)
 
-Signed-off-by: Cyrill Gorcunov <gorcunov@openvz.org>
----
- kernel/kcmp.c |   14 ++++++++++++++
- 1 file changed, 14 insertions(+)
-
-Index: linux-2.6.git/kernel/kcmp.c
-===================================================================
---- linux-2.6.git.orig/kernel/kcmp.c
-+++ linux-2.6.git/kernel/kcmp.c
-@@ -17,6 +17,20 @@
-  * reasons, still the comparison results should be suitable for
-  * sorting. Thus, we obfuscate kernel pointers values and compare
-  * the production instead.
-+ *
-+ * The obfuscation is done in two steps. First -- we use xor on
-+ * kernel pointer with random value, which puts pointer into
-+ * a new position in reordered space. Second -- we multiply
-+ * the xor production with big odd random number to permute
-+ * bits even more (the odd multiplier guarantees that the product
-+ * is unique ever after the high bits are truncated, since any odd
-+ * number is relative prime to 2^n).
-+ *
-+ * The obfuscation is done with per-type cookie values to increase
-+ * initial entropy of results.
-+ *
-+ * Note also the obfuscation itself is invisible to user-space
-+ * and if needed it can be changed to any suitable scheme.
-  */
- static unsigned long cookies[KCMP_TYPES][2] __read_mostly;
+diff --git a/drivers/regulator/tps6507x-regulator.c b/drivers/regulator/tps6507x-regulator.c
+index 16d27fc..8e432004b 100644
+--- a/drivers/regulator/tps6507x-regulator.c
++++ b/drivers/regulator/tps6507x-regulator.c
+@@ -429,7 +429,7 @@ static __devinit int tps6507x_pmic_probe(struct platform_device *pdev)
+ 	if (!init_data)
+ 		return -EINVAL;
  
+-	tps = kzalloc(sizeof(*tps), GFP_KERNEL);
++	tps = devm_kzalloc(&pdev->dev, sizeof(*tps), GFP_KERNEL);
+ 	if (!tps)
+ 		return -ENOMEM;
+ 
+@@ -479,8 +479,6 @@ static __devinit int tps6507x_pmic_probe(struct platform_device *pdev)
+ fail:
+ 	while (--i >= 0)
+ 		regulator_unregister(tps->rdev[i]);
+-
+-	kfree(tps);
+ 	return error;
+ }
+ 
+@@ -492,9 +490,6 @@ static int __devexit tps6507x_pmic_remove(struct platform_device *pdev)
+ 
+ 	for (i = 0; i < TPS6507X_NUM_REGULATOR; i++)
+ 		regulator_unregister(tps->rdev[i]);
+-
+-	kfree(tps);
+-
+ 	return 0;
+ }
+ 
+diff --git a/drivers/regulator/tps6524x-regulator.c b/drivers/regulator/tps6524x-regulator.c
+index 6616af7..b88b3df 100644
+--- a/drivers/regulator/tps6524x-regulator.c
++++ b/drivers/regulator/tps6524x-regulator.c
+@@ -595,7 +595,6 @@ static int pmic_remove(struct spi_device *spi)
+ 		hw->rdev[i] = NULL;
+ 	}
+ 	spi_set_drvdata(spi, NULL);
+-	kfree(hw);
+ 	return 0;
+ }
+ 
+@@ -614,7 +613,7 @@ static int __devinit pmic_probe(struct spi_device *spi)
+ 		return -EINVAL;
+ 	}
+ 
+-	hw = kzalloc(sizeof(struct tps6524x), GFP_KERNEL);
++	hw = devm_kzalloc(&spi->dev, sizeof(struct tps6524x), GFP_KERNEL);
+ 	if (!hw) {
+ 		dev_err(dev, "cannot allocate regulator private data\n");
+ 		return -ENOMEM;
+diff --git a/drivers/regulator/tps65910-regulator.c b/drivers/regulator/tps65910-regulator.c
+index 08976ad..747bf57 100644
+--- a/drivers/regulator/tps65910-regulator.c
++++ b/drivers/regulator/tps65910-regulator.c
+@@ -1109,7 +1109,7 @@ static __devinit int tps65910_probe(struct platform_device *pdev)
+ 	if (!pmic_plat_data)
+ 		return -EINVAL;
+ 
+-	pmic = kzalloc(sizeof(*pmic), GFP_KERNEL);
++	pmic = devm_kzalloc(&pdev->dev, sizeof(*pmic), GFP_KERNEL);
+ 	if (!pmic)
+ 		return -ENOMEM;
+ 
+@@ -1136,7 +1136,6 @@ static __devinit int tps65910_probe(struct platform_device *pdev)
+ 		break;
+ 	default:
+ 		pr_err("Invalid tps chip version\n");
+-		kfree(pmic);
+ 		return -ENODEV;
+ 	}
+ 
+@@ -1144,7 +1143,7 @@ static __devinit int tps65910_probe(struct platform_device *pdev)
+ 			sizeof(struct regulator_desc), GFP_KERNEL);
+ 	if (!pmic->desc) {
+ 		err = -ENOMEM;
+-		goto err_free_pmic;
++		goto err_out;
+ 	}
+ 
+ 	pmic->info = kcalloc(pmic->num_regulators,
+@@ -1233,8 +1232,7 @@ err_free_info:
+ 	kfree(pmic->info);
+ err_free_desc:
+ 	kfree(pmic->desc);
+-err_free_pmic:
+-	kfree(pmic);
++err_out:
+ 	return err;
+ }
+ 
+@@ -1249,7 +1247,6 @@ static int __devexit tps65910_remove(struct platform_device *pdev)
+ 	kfree(pmic->rdev);
+ 	kfree(pmic->info);
+ 	kfree(pmic->desc);
+-	kfree(pmic);
+ 	return 0;
+ }
+ 
+diff --git a/drivers/regulator/tps65912-regulator.c b/drivers/regulator/tps65912-regulator.c
+index 8c9c613..af335dd 100644
+--- a/drivers/regulator/tps65912-regulator.c
++++ b/drivers/regulator/tps65912-regulator.c
+@@ -477,7 +477,7 @@ static __devinit int tps65912_probe(struct platform_device *pdev)
+ 
+ 	reg_data = pmic_plat_data->tps65912_pmic_init_data;
+ 
+-	pmic = kzalloc(sizeof(*pmic), GFP_KERNEL);
++	pmic = devm_kzalloc(&pdev->dev, sizeof(*pmic), GFP_KERNEL);
+ 	if (!pmic)
+ 		return -ENOMEM;
+ 
+@@ -523,8 +523,6 @@ static __devinit int tps65912_probe(struct platform_device *pdev)
+ err:
+ 	while (--i >= 0)
+ 		regulator_unregister(pmic->rdev[i]);
+-
+-	kfree(pmic);
+ 	return err;
+ }
+ 
+@@ -535,8 +533,6 @@ static int __devexit tps65912_remove(struct platform_device *pdev)
+ 
+ 	for (i = 0; i < TPS65912_NUM_REGULATOR; i++)
+ 		regulator_unregister(tps65912_reg->rdev[i]);
+-
+-	kfree(tps65912_reg);
+ 	return 0;
+ }
+ 
+-- 
+1.7.5.4
+
+
+
