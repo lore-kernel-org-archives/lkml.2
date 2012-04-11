@@ -1,55 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760958Ab2DKUkq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Apr 2012 16:40:46 -0400
-Received: from mail-pz0-f52.google.com ([209.85.210.52]:43960 "EHLO
-	mail-pz0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754394Ab2DKUkp (ORCPT
+	id S933241Ab2DKUli (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Apr 2012 16:41:38 -0400
+Received: from swampdragon.chaosbits.net ([90.184.90.115]:16761 "EHLO
+	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756803Ab2DKUlh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Apr 2012 16:40:45 -0400
-Date: Wed, 11 Apr 2012 13:40:41 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Asai Thambi S P <asamymuthupa@micron.com>
-Cc: Jens Axboe <axboe@kernel.dk>, Sam Bradshaw <sbradshaw@micron.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] block: mtip32xx: remove HOTPLUG_PCI_PCIE dependancy
-Message-ID: <20120411204041.GA14375@kroah.com>
-References: <20120411183457.GA19379@kroah.com>
- <4F85E217.8060406@kernel.dk>
- <4F85EAA3.7010807@micron.com>
+	Wed, 11 Apr 2012 16:41:37 -0400
+Date: Wed, 11 Apr 2012 22:41:36 +0200 (CEST)
+From: Jesper Juhl <jj@chaosbits.net>
+To: linux-wireless@vger.kernel.org
+cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Robert Love <rlove@google.com>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        Kalle Valo <kvalo@qca.qualcomm.com>
+Subject: [PATCH] ath6kl: fix memory leak in ath6kl_fwlog_block_read()
+Message-ID: <alpine.LNX.2.00.1204112239070.2137@swampdragon.chaosbits.net>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4F85EAA3.7010807@micron.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 11, 2012 at 01:33:39PM -0700, Asai Thambi S P wrote:
-> On 4/11/2012 12:57 PM, Jens Axboe wrote:
-> 
-> > On 2012-04-11 20:34, Greg KH wrote:
-> >> This removes the HOTPLUG_PCI_PCIE dependency on the driver and makes it
-> >> depend on PCI.
-> > 
-> > I think it's an old dependency. I've built and run it here without as
-> > well, and no functional issues either.
-> > 
-> > Sam/Asai?
-> > 
-> 
-> 
-> Both driver and device will work fine without PCIe hotplug dependency. This
-> dependency is required for supporting surprise removal and surprise insertion
-> of the device on systems with PCIe hotplug controller.
+If, in
+drivers/net/wireless/ath/ath6kl/debug.c::ath6kl_fwlog_block_read(),
+the call to wait_for_completion_interruptible() returns -ERESTARTSYS
+then we'll return without freeing the (as yet unused) memory we
+allocated for 'buf' - thus leaking it.
 
-But that's not a driver-specific thing at all.  All PCI drivers need to
-be able to handle this (I like how you constantly check the pci id,
-that's cute.)
+Signed-off-by: Jesper Juhl <jj@chaosbits.net>
+---
+ drivers/net/wireless/ath/ath6kl/debug.c |    4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
-So I think a basic dependancy on PCI should be fine here.
+diff --git a/drivers/net/wireless/ath/ath6kl/debug.c b/drivers/net/wireless/ath/ath6kl/debug.c
+index d01403a..34eb927 100644
+--- a/drivers/net/wireless/ath/ath6kl/debug.c
++++ b/drivers/net/wireless/ath/ath6kl/debug.c
+@@ -401,8 +401,10 @@ static ssize_t ath6kl_fwlog_block_read(struct file *file,
+ 
+ 		ret = wait_for_completion_interruptible(
+ 			&ar->debug.fwlog_completion);
+-		if (ret == -ERESTARTSYS)
++		if (ret == -ERESTARTSYS) {
++			vfree(buf);
+ 			return ret;
++		}
+ 
+ 		spin_lock(&ar->debug.fwlog_queue.lock);
+ 	}
+-- 
+1.7.10
 
-thanks,
 
-greg k-h
+PS. Please CC me on replies.
+
+-- 
+Jesper Juhl <jj@chaosbits.net>       http://www.chaosbits.net/
+Don't top-post http://www.catb.org/jargon/html/T/top-post.html
+Plain text mails only, please.
+
