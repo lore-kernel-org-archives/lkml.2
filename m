@@ -1,84 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760977Ab2DKTeX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Apr 2012 15:34:23 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:64596 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755536Ab2DKTeW convert rfc822-to-8bit (ORCPT
+	id S933096Ab2DKTfm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Apr 2012 15:35:42 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:56087 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756143Ab2DKTfl convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Apr 2012 15:34:22 -0400
+	Wed, 11 Apr 2012 15:35:41 -0400
+From: Maciej Rutecki <maciej.rutecki@gmail.com>
+Reply-To: maciej.rutecki@gmail.com
+To: Daniel Vetter <daniel@ffwll.ch>
+Subject: Re: [3.4-rc1][Regression][intel] Resume from suspend to disk hangs on restoring backlight state
+Date: Wed, 11 Apr 2012 21:35:35 +0200
+User-Agent: KMail/1.13.7 (Linux/3.4.0-rc2; KDE/4.7.4; x86_64; ; )
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        dri-devel@lists.freedesktop.org, "Rafael J. Wysocki" <rjw@sisk.pl>
+References: <201204021939.39603.maciej.rutecki@gmail.com> <201204022100.11096.maciej.rutecki@gmail.com> <20120402190523.GB5260@phenom.ffwll.local>
+In-Reply-To: <20120402190523.GB5260@phenom.ffwll.local>
 MIME-Version: 1.0
-Reply-To: mtk.manpages@gmail.com
-From: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
-Date: Thu, 12 Apr 2012 07:34:01 +1200
-Message-ID: <CAKgNAki8ftSyd8CwDNXxujQzvTYUUvaaBaxFzQJ7DLriFdeV3A@mail.gmail.com>
-Subject: man-pages-3.38 is released
-To: lkml <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: Text/Plain;
+  charset="utf-8"
 Content-Transfer-Encoding: 8BIT
+Message-Id: <201204112135.35891.maciej.rutecki@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Gidday,
+On poniedziałek, 2 kwietnia 2012 o 21:05:23 Daniel Vetter wrote:
+> On Mon, Apr 02, 2012 at 09:00:11PM +0200, Maciej Rutecki wrote:
+> > On poniedziałek, 2 kwietnia 2012 o 19:54:02 Daniel Vetter wrote:
+> > > On Mon, Apr 02, 2012 at 07:39:39PM +0200, Maciej Rutecki wrote:
+> > > > Last known good: 3.3
+> > > > Bad kernel: 3.4-rc1
+> > > > Subsystem: power management/suspend/dri(intel)
+> > > > 
+> > > > When I resume from suspend to disk then system hangs on this screen:
+> > > > http://mrutecki.pl/download/kernel/3.4-rc1/suspend_resume/DSC_5479.jp
+> > > > g
+> > > > 
+> > > > It does not help SysRq keys. Only I can force power off by hold power
+> > > > button.
+> > > > 
+> > > > Dmesg:
+> > > > http://mrutecki.pl/download/kernel/3.4-rc1/suspend_resume/dmesg-3.4-r
+> > > > c1.t xt
+> > > > 
+> > > > Config:
+> > > > http://mrutecki.pl/download/kernel/3.4-rc1/suspend_resume/config-3.4.
+> > > > 0-rc 1
+> > > 
+> > > Likely a known regression, ppgtt support broke hibernate because my
+> > > code doesn't restore the ppgtt page directory correctly in the thaw
+> > > function.
+> > > 
+> > > Patch:
+> > > http://cgit.freedesktop.org/~danvet/drm-intel/commit/?h=drm-intel-fixes
+> > > &id= 55a254ac63a3ac1867d1501030e7fba69c7d4aeb
+> > > 
+> > > Please test whether this fixes your issue. You can also try adding
+> > > i915.i915_enable_ppgtt=0 to your kernel cmdline.
+> > > 
+> > > Thanks, Daniel
+> > 
+> > Patch solves problem.
+> > 
+> > Now resume hangs later on another subsystem: wireless :D
+> 
+> Woot, I'm off the hook ;-) Thanks for reporting this issue and testing the
+> patch.
+> 
+> Yours, Daniel
 
-I've released man-pages-3.38.tar.gz - man pages for Linux.
+Seems be resolved in -rc2.
 
-Tarball download:
-    http://www.kernel.org/doc/man-pages/download.html
-Git repository:
-    http://git.kernel.org/pub/scm/docs/man-pages/man-pages.git
-Online changelog:
-    http://man7.org/linux/man-pages/changelog.html#release_3.38
-
-A short summary of the release is blogged at:
-http://linux-man-pages.blogspot.com/2012/03/man-pages-338-is-released.html
-
-The current version of the pages is browsable at:
-http://man7.org/linux/man-pages/
-
-A few changes in this release that may be of interest to readers of
-this list are given below.
-
-Cheers,
-
-Michael
-
-
-==================== Changes in man-pages-3.38 ====================
-
-New and rewritten pages
------------------------
-
-get_nprocs_conf.3
-    Beňas Petr
-        New page documenting get_nprocs_conf(3) and get_nprocs(3)
-
-malloc_get_state.3
-    Michael Kerrisk
-        New page documenting malloc_get_state(3) and malloc_set_state(3)
-
-mallopt.3
-    Michael Kerrisk
-        New man page for mallopt(3)
-
-mtrace.3
-    Michael Kerrisk
-        Complete rewrite of page, adding much more detail
-
-scandirat.3
-    Mark R Bannister
-        New page for scandirat(3) (new in glibc 2.15)
-
-
-Changes to individual pages
----------------------------
-
-malloc.3
-    Michael Kerrisk
-        NOTES: Add a short discussion of arenas
-
+Thanks
 -- 
-Michael Kerrisk
-Linux man-pages maintainer; http://www.kernel.org/doc/man-pages/
-Author of "The Linux Programming Interface"; http://man7.org/tlpi/
+Maciej Rutecki
+http://www.mrutecki.pl
