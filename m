@@ -1,51 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932965Ab2DKTE1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Apr 2012 15:04:27 -0400
-Received: from mx2.parallels.com ([64.131.90.16]:41406 "EHLO mx2.parallels.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760903Ab2DKTEZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Apr 2012 15:04:25 -0400
-Message-ID: <4F85D53B.1070806@parallels.com>
-Date: Wed, 11 Apr 2012 16:02:19 -0300
-From: Glauber Costa <glommer@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120216 Thunderbird/10.0.1
+	id S932991Ab2DKTNb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Apr 2012 15:13:31 -0400
+Received: from li9-11.members.linode.com ([67.18.176.11]:49273 "EHLO
+	test.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932889Ab2DKTNa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Apr 2012 15:13:30 -0400
+Date: Wed, 11 Apr 2012 15:13:25 -0400
+From: "Ted Ts'o" <tytso@mit.edu>
+To: Markus Trippelsdorf <markus@trippelsdorf.de>
+Cc: linux-kernel@vger.kernel.org, hjl.tools@gmail.com
+Subject: Re: Trying to make a working kernel with the gold linker
+Message-ID: <20120411191325.GL12044@thunk.org>
+Mail-Followup-To: Ted Ts'o <tytso@mit.edu>,
+	Markus Trippelsdorf <markus@trippelsdorf.de>,
+	linux-kernel@vger.kernel.org, hjl.tools@gmail.com
+References: <E1SHnDZ-0006Za-Kh@tytso-glaptop.cam.corp.google.com>
+ <20120411045107.GA324@x4>
+ <20120411180520.GE12044@thunk.org>
+ <20120411182856.GA327@x4>
 MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: Michal Hocko <mhocko@suse.cz>, <linux-kernel@vger.kernel.org>,
-        <devel@openvz.org>, <linux-mm@kvack.org>, <cgroups@vger.kernel.org>,
-        "Johannes Weiner" <hannes@cmpxchg.org>,
-        <kamezawa.hiroyu@jp.fujitsu.com>, Greg Thelen <gthelen@google.com>,
-        Suleiman Souhlal <suleiman@google.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH] remove BUG() in possible but rare condition
-References: <1334167824-19142-1-git-send-email-glommer@parallels.com> <20120411184845.GA24831@tiehlicka.suse.cz> <CA+55aFx1GMWGgh0sTAzvvVSzPQsQ_4NKeaNv1zpKrP4fg1dG+Q@mail.gmail.com>
-In-Reply-To: <CA+55aFx1GMWGgh0sTAzvvVSzPQsQ_4NKeaNv1zpKrP4fg1dG+Q@mail.gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [201.82.19.44]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120411182856.GA327@x4>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on test.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/11/2012 03:57 PM, Linus Torvalds wrote:
-> On Wed, Apr 11, 2012 at 11:48 AM, Michal Hocko<mhocko@suse.cz>  wrote:
->>
->> I am not familiar with the code much but a trivial call chain walk up to
->> write_dev_supers (in btrfs) shows that we do not check for the return value
->> from __getblk so we would nullptr and there might be more.
->> I guess these need some treat before the BUG might be removed, right?
->
-> Well, realistically, isn't BUG() as bad as a NULL pointer dereference?
->
-> Do you care about the exact message on the screen when your machine dies?
-Not particular, but I don't see why (I might be wrong) it would 
-necessarily lead to a NULL pointer dereference.
+On Wed, Apr 11, 2012 at 08:28:56PM +0200, Markus Trippelsdorf wrote:
+> 
+> Just compiling and installing a new binutils version should work fine.
+> 
+> (But you should nonetheless consider to also upgrade gcc, because
+> gcc-4.4 is ancient and not even officially maintained anymore...)
 
-At least in my test cases, after turning this to a WARN (to make sure it 
-was still being hit), the machine could go on just fine.
+Well *someone* has to still make sure the kernel compiles correctly on
+the enterprise distro's that a huge number of Linux users use...
+(including RHEL 6, Debian Stable, SLES 11, Ubuntu LTS 10.04, etc.)
 
-I was running this in a container system, with restricted memory. After
-killing the container - at least in my ext4 system - everything seemed 
-as happy as ever.
+:-)
 
+But yeah, I hope to get off of Ubuntu LTS real soon now, and onto
+something a bit more hip, such as Debian testing.
+
+						- Ted
