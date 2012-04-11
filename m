@@ -1,43 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760407Ab2DKOmE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Apr 2012 10:42:04 -0400
-Received: from relay.parallels.com ([195.214.232.42]:54128 "EHLO
-	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756726Ab2DKOmC convert rfc822-to-8bit (ORCPT
+	id S1760429Ab2DKOnW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Apr 2012 10:43:22 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:49183 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754622Ab2DKOnV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Apr 2012 10:42:02 -0400
-Message-ID: <4F859823.4020902@parallels.com>
-Date: Wed, 11 Apr 2012 18:41:39 +0400
-From: Stanislav Kinsbursky <skinsbursky@parallels.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.28) Gecko/20120313 Lightning/1.0b2 Thunderbird/3.1.20
+	Wed, 11 Apr 2012 10:43:21 -0400
+From: John Kacur <jkacur@redhat.com>
+To: Thomas Gleixner <tglx@linutronix.de>,
+        Paul McKenney <paulmck@linux.vnet.ibm.com>
+Cc: lkml <linux-kernel@vger.kernel.org>,
+        rt-users <linux-rt-users@vger.kernel.org>,
+        John Kacur <jkacur@redhat.com>
+Subject: [PATCH] rcutree: Fix v3.4-rc2-rt2 build break
+Date: Wed, 11 Apr 2012 16:42:59 +0200
+Message-Id: <1334155379-18088-1-git-send-email-jkacur@redhat.com>
+X-Mailer: git-send-email 1.7.2.3
 MIME-Version: 1.0
-To: "J. Bruce Fields" <bfields@fieldses.org>
-CC: "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devel@openvz.org" <devel@openvz.org>
-Subject: Re: [PATCH 4/8] nfsd: use exp_put() for svc_export_cache put
-References: <20120328150152.2646.33607.stgit@localhost6.localdomain6> <20120328150921.2646.46229.stgit@localhost6.localdomain6> <20120411141614.GB27751@fieldses.org>
-In-Reply-To: <20120411141614.GB27751@fieldses.org>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-11.04.2012 18:16, J. Bruce Fields пишет:
-> On Wed, Mar 28, 2012 at 07:09:22PM +0400, Stanislav Kinsbursky wrote:
->> This patch replaces cache_put() call for svc_export_cache by exp_put() call.
->
-> Patch looks fine.  Minor peeve: the changelog doesn't tell me anything I
-> couldn't figure out immediately from reading the patch.  Tell me *why*
-> we're doing this ("Removing another hard-coded svc_export_cache will
-> simplify adding per-export caches later"), or if it's really totally
-> obvious I'd rather have an empty changelog than a useless one....
->
+Fix build break of the following types.
 
-Ok, will do so for further patches.
+linux-rt/kernel/rcutree_plugin.h: In function ‘print_cpu_stall_fast_no_hz’:
+linux-rt/kernel/rcutree_plugin.h:2195: error: ‘rcu_idle_gp_timer’ undeclared (first use in this function)
+linux-rt/kernel/rcutree_plugin.h:2195: error: (Each undeclared identifier is reported only once
+linux-rt/kernel/rcutree_plugin.h:2195: error: for each function it appears in.)
 
+The build break only occurs with the PREEMPT_RT_FULL patch applied, however
+the patch is meant to go upstream and be applied to v3.4-rc2 as well because
+it makes the code more legible there, and will reduce the number of places
+where #ifdef PREEMPT_RT_FULL is required should that go upstream someday.
+
+Signed-off-by: John Kacur <jkacur@redhat.com>
+---
+ kernel/rcutree_plugin.h |   19 +++++++++----------
+ 1 files changed, 9 insertions(+), 10 deletions(-)
+
+diff --git a/kernel/rcutree_plugin.h b/kernel/rcutree_plugin.h
+index 14acafc..1db9471 100644
+--- a/kernel/rcutree_plugin.h
++++ b/kernel/rcutree_plugin.h
+@@ -1938,6 +1938,12 @@ static void rcu_prepare_for_idle(int cpu)
+ {
+ }
+ 
++#ifdef CONFIG_RCU_CPU_STALL_INFO
++static void print_cpu_stall_fast_no_hz(char *cp, int cpu)
++{
++}
++#endif /* #ifdef CONFIG_RCU_CPU_STALL_INFO */
++
+ #else /* #if !defined(CONFIG_RCU_FAST_NO_HZ) */
+ 
+ /*
+@@ -2184,12 +2190,8 @@ static void rcu_prepare_for_idle(int cpu)
+ 		trace_rcu_prep_idle("Callbacks drained");
+ }
+ 
+-#endif /* #else #if !defined(CONFIG_RCU_FAST_NO_HZ) */
+ 
+ #ifdef CONFIG_RCU_CPU_STALL_INFO
+-
+-#ifdef CONFIG_RCU_FAST_NO_HZ
+-
+ static void print_cpu_stall_fast_no_hz(char *cp, int cpu)
+ {
+ 	struct hrtimer *hrtp = &per_cpu(rcu_idle_gp_timer, cpu);
+@@ -2201,14 +2203,11 @@ static void print_cpu_stall_fast_no_hz(char *cp, int cpu)
+ 			? ktime_to_us(hrtimer_get_remaining(hrtp))
+ 			: -1);
+ }
++#endif /* #ifdef CONFIG_RCU_CPU_STALL_INFO */
+ 
+-#else /* #ifdef CONFIG_RCU_FAST_NO_HZ */
+-
+-static void print_cpu_stall_fast_no_hz(char *cp, int cpu)
+-{
+-}
++#endif /* #else #if !defined(CONFIG_RCU_FAST_NO_HZ) */
+ 
+-#endif /* #else #ifdef CONFIG_RCU_FAST_NO_HZ */
++#ifdef CONFIG_RCU_CPU_STALL_INFO
+ 
+ /* Initiate the stall-info list. */
+ static void print_cpu_stall_info_begin(void)
 -- 
-Best regards,
-Stanislav Kinsbursky
+1.7.2.3
+
