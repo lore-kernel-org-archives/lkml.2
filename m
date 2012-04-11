@@ -1,51 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753598Ab2DLEXR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Apr 2012 00:23:17 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:33050 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751355Ab2DLEXP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Apr 2012 00:23:15 -0400
+	id S1753964Ab2DLE2n (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Apr 2012 00:28:43 -0400
+Received: from nyx.kos.net ([199.246.2.113]:38767 "EHLO nyx.kos.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752660Ab2DLE2m (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Apr 2012 00:28:42 -0400
+X-Greylist: delayed 24029 seconds by postgrey-1.27 at vger.kernel.org; Thu, 12 Apr 2012 00:28:42 EDT
+Message-ID: <8893d00a6bf64bbc246868246580cd83.squirrel@www.kos.net>
+Date: Wed, 11 Apr 2012 17:47:29 -0400
+Subject: Reply Back
+From: "Zhang Liu" <liuzhang369@yahoo.com.hk>
+Reply-To: zhangliu185@yahoo.com.hk
+User-Agent: SquirrelMail/1.4.22
 MIME-Version: 1.0
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Wed, 11 Apr 2012 21:22:53 -0700
-X-Google-Sender-Auth: tZ4OUJoM7jz-z7blhvgzUklMd_k
-Message-ID: <CA+55aFxWD1bE0oiR4GpLP19MCm2CzwuApuYhcE_NF7bC+tFYjg@mail.gmail.com>
-Subject: Regression due to "ath9k: fix going to full-sleep on PS idle"
-To: Heinz Diehl <htd@fancy-poultry.org>
-Cc: linux-kernel@vger.kernel.org, Greg KH <gregkh@linuxfoundation.org>,
-        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        linux-wireless Mailing List <linux-wireless@vger.kernel.org>,
-        Sujith Manoharan <c_manoha@qca.qualcomm.com>,
-        "ath9k-devel@lists.ath9k.org" <ath9k-devel@venema.h4ckr.net>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        David Miller <davem@davemloft.net>,
-        Network Development <netdev@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Priority: 3 (Normal)
+Importance: Normal
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 11, 2012 at 9:16 PM, Heinz Diehl <htd@fancy-poultry.org> wrote:
-> On 12.04.2012, Sergio Correia wrote:
->
->> is there any chance for this one to be included in this review cycle?
->>
->> http://www.spinics.net/lists/linux-wireless/msg87999.html
->
-> Thanks for pointing this out! This patch fixes my network problems
-> which forced me to go back to a previous kernel.
+I have a fund transfer deal for you to handle with me. Please get back for
+more details.
 
-You guys need to fix the subject line (like this), and make sure that
-the right people are cc'd. This is not a "stable" issue - stable
-cannot revert stuff that hasn't been reverted upstream.
-
-So instead of stable and Greg, it should be netdev and Davem.
-
-David/John: multiple people are complaining about that commit. It
-really should be reverted, or a fix found. It's broken.
-
-I can do the revert, but it would be better coming from the networking people.
-
-                         Linus
