@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965280Ab2DKXno (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Apr 2012 19:43:44 -0400
-Received: from mail-pz0-f52.google.com ([209.85.210.52]:51056 "EHLO
-	mail-pz0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965219Ab2DKXXA (ORCPT
+	id S965253Ab2DKXoI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Apr 2012 19:44:08 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:58738 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965194Ab2DKXWs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Apr 2012 19:23:00 -0400
-Message-Id: <20120411231040.842121975@linuxfoundation.org>
+	Wed, 11 Apr 2012 19:22:48 -0400
+Message-Id: <20120411231040.187618888@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Wed, 11 Apr 2012 16:11:07 -0700
+Date: Wed, 11 Apr 2012 16:11:03 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Martin Svec <martin.svec@zoner.cz>,
-        Nicholas Bellinger <nab@linux-iscsi.org>
-Subject: [ 32/59] target: Fix unsupported WRITE_SAME sense payload
+        alan@lxorguk.ukuu.org.uk, Chris Wilson <chris@chris-wilson.co.uk>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>
+Subject: [ 28/59] drm/i915: Sanitize BIOS debugging bits from PIPECONF
 In-Reply-To: <20120411231213.GA13124@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,52 +25,58 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Martin Svec <martin.svec@zoner.cz>
+From: Chris Wilson <chris@chris-wilson.co.uk>
 
-commit 67236c44741e250199ccd77f1115568e68cf8848 upstream.
+commit f47166d2b0001fcb752b40c5a2d4db986dfbea68 upstream.
 
-This patch fixes a bug in target-core where unsupported WRITE_SAME ops
-from a target_check_write_same_discard() failure was incorrectly
-returning CHECK_CONDITION w/ TCM_INVALID_CDB_FIELD sense data.
-This was causing some clients to not properly fall back, so go ahead
-and use the correct TCM_UNSUPPORTED_SCSI_OPCODE sense for this case.
+Quoting the BSpec from time immemorial:
 
-Reported-by: Martin Svec <martin.svec@zoner.cz>
-Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
+  PIPEACONF, bits 28:27: Frame Start Delay (Debug)
+
+  Used to delay the frame start signal that is sent to the display planes.
+  Care must be taken to insure that there are enough lines during VBLANK
+  to support this setting.
+
+An instance of the BIOS leaving these bits set was found in the wild,
+where it caused our modesetting to go all squiffy and skewiff.
+
+Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=47271
+Reported-and-tested-by: Eva Wang <evawang@linpus.com>
+Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=43012
+Reported-and-tested-by: Carl Richell <carl@system76.com>
+Signed-off-by: Chris Wilson <chris@chris-wilson.co.uk>
+Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/target/target_core_transport.c |    6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ drivers/gpu/drm/i915/i915_reg.h      |    1 +
+ drivers/gpu/drm/i915/intel_display.c |    6 ++++++
+ 2 files changed, 7 insertions(+)
 
---- a/drivers/target/target_core_transport.c
-+++ b/drivers/target/target_core_transport.c
-@@ -2666,7 +2666,7 @@ static int transport_generic_cmd_sequenc
- 			cmd->se_cmd_flags |= SCF_SCSI_CONTROL_SG_IO_CDB;
+--- a/drivers/gpu/drm/i915/i915_reg.h
++++ b/drivers/gpu/drm/i915/i915_reg.h
+@@ -2312,6 +2312,7 @@
+ #define   PIPECONF_DISABLE	0
+ #define   PIPECONF_DOUBLE_WIDE	(1<<30)
+ #define   I965_PIPECONF_ACTIVE	(1<<30)
++#define   PIPECONF_FRAME_START_DELAY_MASK (3<<27)
+ #define   PIPECONF_SINGLE_WIDE	0
+ #define   PIPECONF_PIPE_UNLOCKED 0
+ #define   PIPECONF_PIPE_LOCKED	(1<<25)
+--- a/drivers/gpu/drm/i915/intel_display.c
++++ b/drivers/gpu/drm/i915/intel_display.c
+@@ -7278,6 +7278,12 @@ static void intel_sanitize_modesetting(s
+ 	struct drm_i915_private *dev_priv = dev->dev_private;
+ 	u32 reg, val;
  
- 			if (target_check_write_same_discard(&cdb[10], dev) < 0)
--				goto out_invalid_cdb_field;
-+				goto out_unsupported_cdb;
- 			if (!passthrough)
- 				cmd->execute_task = target_emulate_write_same;
- 			break;
-@@ -2949,7 +2949,7 @@ static int transport_generic_cmd_sequenc
- 		cmd->se_cmd_flags |= SCF_SCSI_CONTROL_SG_IO_CDB;
++	/* Clear any frame start delays used for debugging left by the BIOS */
++	for_each_pipe(pipe) {
++		reg = PIPECONF(pipe);
++		I915_WRITE(reg, I915_READ(reg) & ~PIPECONF_FRAME_START_DELAY_MASK);
++	}
++
+ 	if (HAS_PCH_SPLIT(dev))
+ 		return;
  
- 		if (target_check_write_same_discard(&cdb[1], dev) < 0)
--			goto out_invalid_cdb_field;
-+			goto out_unsupported_cdb;
- 		if (!passthrough)
- 			cmd->execute_task = target_emulate_write_same;
- 		break;
-@@ -2972,7 +2972,7 @@ static int transport_generic_cmd_sequenc
- 		 * of byte 1 bit 3 UNMAP instead of original reserved field
- 		 */
- 		if (target_check_write_same_discard(&cdb[1], dev) < 0)
--			goto out_invalid_cdb_field;
-+			goto out_unsupported_cdb;
- 		if (!passthrough)
- 			cmd->execute_task = target_emulate_write_same;
- 		break;
 
 
