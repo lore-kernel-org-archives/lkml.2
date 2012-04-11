@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965700Ab2DKXeu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Apr 2012 19:34:50 -0400
-Received: from mail-pz0-f52.google.com ([209.85.210.52]:53150 "EHLO
-	mail-pz0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965653Ab2DKX2l (ORCPT
+	id S965726Ab2DKXfQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Apr 2012 19:35:16 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:45547 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965637Ab2DKX2f (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Apr 2012 19:28:41 -0400
-Message-Id: <20120411231311.101114860@linuxfoundation.org>
+	Wed, 11 Apr 2012 19:28:35 -0400
+Message-Id: <20120411231310.726862144@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Wed, 11 Apr 2012 16:13:29 -0700
+Date: Wed, 11 Apr 2012 16:13:27 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Jason Wessel <jason.wessel@windriver.com>
-Subject: [ 22/42] kgdb,debug_core: pass the breakpoint struct instead of address and memory
+        alan@lxorguk.ukuu.org.uk, Sean Paul <seanpaul@chromium.org>,
+        Chris Wilson <chris@chris-wilson.co.uk>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>
+Subject: [ 20/42] drm/i915: Add lock on drm_helper_resume_force_mode
 In-Reply-To: <20120411231443.GA808@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -24,175 +26,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jason Wessel <jason.wessel@windriver.com>
+From: Sean Paul <seanpaul@chromium.org>
 
-commit 98b54aa1a2241b59372468bd1e9c2d207bdba54b upstream.
+commit 927a2f119e8235238a2fc64871051b16c9bdae75 upstream.
 
-There is extra state information that needs to be exposed in the
-kgdb_bpt structure for tracking how a breakpoint was installed.  The
-debug_core only uses the the probe_kernel_write() to install
-breakpoints, but this is not enough for all the archs.  Some arch such
-as x86 need to use text_poke() in order to install a breakpoint into a
-read only page.
+i915_drm_thaw was not locking the mode_config lock when calling
+drm_helper_resume_force_mode. When there were multiple wake sources,
+this caused FDI training failure on SNB which in turn corrupted the
+display.
 
-Passing the kgdb_bpt structure to kgdb_arch_set_breakpoint() and
-kgdb_arch_remove_breakpoint() allows other archs to set the type
-variable which indicates how the breakpoint was installed.
-
-Signed-off-by: Jason Wessel <jason.wessel@windriver.com>
+Signed-off-by: Sean Paul <seanpaul@chromium.org>
+Reviewed-by: Chris Wilson <chris@chris-wilson.co.uk>
+Signed-Off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- include/linux/kgdb.h      |    4 +--
- kernel/debug/debug_core.c |   53 ++++++++++++++++++++--------------------------
- 2 files changed, 26 insertions(+), 31 deletions(-)
+ drivers/gpu/drm/i915/i915_drv.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
---- a/include/linux/kgdb.h
-+++ b/include/linux/kgdb.h
-@@ -207,8 +207,8 @@ extern void kgdb_arch_set_pc(struct pt_r
+--- a/drivers/gpu/drm/i915/i915_drv.c
++++ b/drivers/gpu/drm/i915/i915_drv.c
+@@ -442,7 +442,9 @@ static int i915_drm_thaw(struct drm_devi
+ 		drm_irq_install(dev);
  
- /* Optional functions. */
- extern int kgdb_validate_break_address(unsigned long addr);
--extern int kgdb_arch_set_breakpoint(unsigned long addr, char *saved_instr);
--extern int kgdb_arch_remove_breakpoint(unsigned long addr, char *bundle);
-+extern int kgdb_arch_set_breakpoint(struct kgdb_bkpt *bpt);
-+extern int kgdb_arch_remove_breakpoint(struct kgdb_bkpt *bpt);
+ 		/* Resume the modeset for every activated CRTC */
++		mutex_lock(&dev->mode_config.mutex);
+ 		drm_helper_resume_force_mode(dev);
++		mutex_unlock(&dev->mode_config.mutex);
  
- /**
-  *	kgdb_arch_late - Perform any architecture specific initalization.
---- a/kernel/debug/debug_core.c
-+++ b/kernel/debug/debug_core.c
-@@ -157,37 +157,39 @@ early_param("nokgdbroundup", opt_nokgdbr
-  * Weak aliases for breakpoint management,
-  * can be overriden by architectures when needed:
-  */
--int __weak kgdb_arch_set_breakpoint(unsigned long addr, char *saved_instr)
-+int __weak kgdb_arch_set_breakpoint(struct kgdb_bkpt *bpt)
- {
- 	int err;
- 
--	err = probe_kernel_read(saved_instr, (char *)addr, BREAK_INSTR_SIZE);
-+	err = probe_kernel_read(bpt->saved_instr, (char *)bpt->bpt_addr,
-+				BREAK_INSTR_SIZE);
- 	if (err)
- 		return err;
--
--	return probe_kernel_write((char *)addr, arch_kgdb_ops.gdb_bpt_instr,
--				  BREAK_INSTR_SIZE);
-+	err = probe_kernel_write((char *)bpt->bpt_addr,
-+				 arch_kgdb_ops.gdb_bpt_instr, BREAK_INSTR_SIZE);
-+	return err;
- }
- 
--int __weak kgdb_arch_remove_breakpoint(unsigned long addr, char *bundle)
-+int __weak kgdb_arch_remove_breakpoint(struct kgdb_bkpt *bpt)
- {
--	return probe_kernel_write((char *)addr,
--				  (char *)bundle, BREAK_INSTR_SIZE);
-+	return probe_kernel_write((char *)bpt->bpt_addr,
-+				  (char *)bpt->saved_instr, BREAK_INSTR_SIZE);
- }
- 
- int __weak kgdb_validate_break_address(unsigned long addr)
- {
--	char tmp_variable[BREAK_INSTR_SIZE];
-+	struct kgdb_bkpt tmp;
- 	int err;
--	/* Validate setting the breakpoint and then removing it.  In the
-+	/* Validate setting the breakpoint and then removing it.  If the
- 	 * remove fails, the kernel needs to emit a bad message because we
- 	 * are deep trouble not being able to put things back the way we
- 	 * found them.
- 	 */
--	err = kgdb_arch_set_breakpoint(addr, tmp_variable);
-+	tmp.bpt_addr = addr;
-+	err = kgdb_arch_set_breakpoint(&tmp);
- 	if (err)
- 		return err;
--	err = kgdb_arch_remove_breakpoint(addr, tmp_variable);
-+	err = kgdb_arch_remove_breakpoint(&tmp);
- 	if (err)
- 		printk(KERN_ERR "KGDB: Critical breakpoint error, kernel "
- 		   "memory destroyed at: %lx", addr);
-@@ -231,7 +233,6 @@ static void kgdb_flush_swbreak_addr(unsi
-  */
- int dbg_activate_sw_breakpoints(void)
- {
--	unsigned long addr;
- 	int error;
- 	int ret = 0;
- 	int i;
-@@ -240,16 +241,15 @@ int dbg_activate_sw_breakpoints(void)
- 		if (kgdb_break[i].state != BP_SET)
- 			continue;
- 
--		addr = kgdb_break[i].bpt_addr;
--		error = kgdb_arch_set_breakpoint(addr,
--				kgdb_break[i].saved_instr);
-+		error = kgdb_arch_set_breakpoint(&kgdb_break[i]);
- 		if (error) {
- 			ret = error;
--			printk(KERN_INFO "KGDB: BP install failed: %lx", addr);
-+			printk(KERN_INFO "KGDB: BP install failed: %lx",
-+			       kgdb_break[i].bpt_addr);
- 			continue;
- 		}
- 
--		kgdb_flush_swbreak_addr(addr);
-+		kgdb_flush_swbreak_addr(kgdb_break[i].bpt_addr);
- 		kgdb_break[i].state = BP_ACTIVE;
- 	}
- 	return ret;
-@@ -298,7 +298,6 @@ int dbg_set_sw_break(unsigned long addr)
- 
- int dbg_deactivate_sw_breakpoints(void)
- {
--	unsigned long addr;
- 	int error;
- 	int ret = 0;
- 	int i;
-@@ -306,15 +305,14 @@ int dbg_deactivate_sw_breakpoints(void)
- 	for (i = 0; i < KGDB_MAX_BREAKPOINTS; i++) {
- 		if (kgdb_break[i].state != BP_ACTIVE)
- 			continue;
--		addr = kgdb_break[i].bpt_addr;
--		error = kgdb_arch_remove_breakpoint(addr,
--					kgdb_break[i].saved_instr);
-+		error = kgdb_arch_remove_breakpoint(&kgdb_break[i]);
- 		if (error) {
--			printk(KERN_INFO "KGDB: BP remove failed: %lx\n", addr);
-+			printk(KERN_INFO "KGDB: BP remove failed: %lx\n",
-+			       kgdb_break[i].bpt_addr);
- 			ret = error;
- 		}
- 
--		kgdb_flush_swbreak_addr(addr);
-+		kgdb_flush_swbreak_addr(kgdb_break[i].bpt_addr);
- 		kgdb_break[i].state = BP_SET;
- 	}
- 	return ret;
-@@ -348,7 +346,6 @@ int kgdb_isremovedbreak(unsigned long ad
- 
- int dbg_remove_all_break(void)
- {
--	unsigned long addr;
- 	int error;
- 	int i;
- 
-@@ -356,12 +353,10 @@ int dbg_remove_all_break(void)
- 	for (i = 0; i < KGDB_MAX_BREAKPOINTS; i++) {
- 		if (kgdb_break[i].state != BP_ACTIVE)
- 			goto setundefined;
--		addr = kgdb_break[i].bpt_addr;
--		error = kgdb_arch_remove_breakpoint(addr,
--				kgdb_break[i].saved_instr);
-+		error = kgdb_arch_remove_breakpoint(&kgdb_break[i]);
- 		if (error)
- 			printk(KERN_ERR "KGDB: breakpoint remove failed: %lx\n",
--			   addr);
-+			       kgdb_break[i].bpt_addr);
- setundefined:
- 		kgdb_break[i].state = BP_UNDEFINED;
- 	}
+ 		if (IS_IRONLAKE_M(dev))
+ 			ironlake_enable_rc6(dev);
 
 
