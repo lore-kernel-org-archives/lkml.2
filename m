@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965106Ab2DKXWQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Apr 2012 19:22:16 -0400
-Received: from mail-pz0-f52.google.com ([209.85.210.52]:51108 "EHLO
-	mail-pz0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933880Ab2DKXWK (ORCPT
+	id S934035Ab2DKXWW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Apr 2012 19:22:22 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:41234 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965108Ab2DKXWQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Apr 2012 19:22:10 -0400
-Message-Id: <20120411231036.738496897@linuxfoundation.org>
+	Wed, 11 Apr 2012 19:22:16 -0400
+Message-Id: <20120411231038.523936477@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Wed, 11 Apr 2012 16:10:42 -0700
+Date: Wed, 11 Apr 2012 16:10:53 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-Subject: [ 07/59] ASoC: wm8994: Update WM8994 DCS calibration
+        alan@lxorguk.ukuu.org.uk, Jan Beulich <jbeulich@suse.com>,
+        Michal Marek <mmarek@suse.cz>
+Subject: [ 18/59] modpost: fix ALL_INIT_DATA_SECTIONS
 In-Reply-To: <20120411231213.GA13124@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,29 +25,30 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+From: Jan Beulich <JBeulich@suse.com>
 
-commit e16605855d58803fe0608417150c7a618b4f8243 upstream.
+commit 9aaf440f8fabcebf9ea79a62ccf4c212e6544b49 upstream.
 
-Based on latest production information.
+This was lacking a comma between two supposed to be separate strings.
 
-Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Signed-off-by: Jan Beulich <jbeulich@suse.com>
+Signed-off-by: Michal Marek <mmarek@suse.cz>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/soc/codecs/wm8994.c |    2 +-
+ scripts/mod/modpost.c |    2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/sound/soc/codecs/wm8994.c
-+++ b/sound/soc/codecs/wm8994.c
-@@ -3190,7 +3190,7 @@ static int wm8994_codec_probe(struct snd
- 		case 2:
- 		case 3:
- 			wm8994->hubs.dcs_codes_l = -9;
--			wm8994->hubs.dcs_codes_r = -5;
-+			wm8994->hubs.dcs_codes_r = -7;
- 			break;
- 		default:
- 			break;
+--- a/scripts/mod/modpost.c
++++ b/scripts/mod/modpost.c
+@@ -849,7 +849,7 @@ static void check_section(const char *mo
+ 
+ #define ALL_INIT_DATA_SECTIONS \
+ 	".init.setup$", ".init.rodata$", \
+-	".devinit.rodata$", ".cpuinit.rodata$", ".meminit.rodata$" \
++	".devinit.rodata$", ".cpuinit.rodata$", ".meminit.rodata$", \
+ 	".init.data$", ".devinit.data$", ".cpuinit.data$", ".meminit.data$"
+ #define ALL_EXIT_DATA_SECTIONS \
+ 	".exit.data$", ".devexit.data$", ".cpuexit.data$", ".memexit.data$"
 
 
