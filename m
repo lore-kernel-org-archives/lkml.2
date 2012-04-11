@@ -1,59 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933262Ab2DKUxn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Apr 2012 16:53:43 -0400
-Received: from mx2.parallels.com ([64.131.90.16]:56321 "EHLO mx2.parallels.com"
+	id S933277Ab2DKUxz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Apr 2012 16:53:55 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:60070 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760165Ab2DKUxl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Apr 2012 16:53:41 -0400
-Message-ID: <4F85EEED.1090906@parallels.com>
-Date: Wed, 11 Apr 2012 17:51:57 -0300
-From: Glauber Costa <glommer@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120216 Thunderbird/10.0.1
+	id S1760165Ab2DKUxx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Apr 2012 16:53:53 -0400
+Date: Wed, 11 Apr 2012 22:53:51 +0200 (CEST)
+From: Jiri Kosina <jkosina@suse.cz>
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Cc: =?GB2312?B?wdaPqdPT?= <tom_lin@emc.com.tw>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org, djkurtz@chromium.org
+Subject: Re: [PATCH v3] Input: Elan HID-I2C device driver
+In-Reply-To: <20120411162519.GA27562@core.coreip.homeip.net>
+Message-ID: <alpine.LNX.2.00.1204112250370.16373@pobox.suse.cz>
+References: <1334061766-20577-1-git-send-email-tom_lin@emc.com.tw> <20120411071212.GB6894@core.coreip.homeip.net> <4F85583F.6050008@emc.com.tw> <20120411162519.GA27562@core.coreip.homeip.net>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: <linux-kernel@vger.kernel.org>, <devel@openvz.org>, <linux-mm@kvack.org>,
-        <cgroups@vger.kernel.org>, Michal Hocko <mhocko@suse.cz>,
-        Johannes Weiner <hannes@cmpxchg.org>, <kamezawa.hiroyu@jp.fujitsu.com>,
-        Greg Thelen <gthelen@google.com>,
-        Suleiman Souhlal <suleiman@google.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [PATCH] remove BUG() in possible but rare condition
-References: <1334167824-19142-1-git-send-email-glommer@parallels.com> <20120411132635.bfddc6bd.akpm@linux-foundation.org>
-In-Reply-To: <20120411132635.bfddc6bd.akpm@linux-foundation.org>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [201.82.19.44]
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/11/2012 05:26 PM, Andrew Morton wrote:
->>
->> >    failed:
->> >  -	BUG();
->> >    	unlock_page(page);
->> >    	page_cache_release(page);
->> >    	return NULL;
-> Cute.
->
-> AFAICT what happened was that in my April 2002 rewrite of this code I
-> put a non-fatal buffer_error() warning in that case to tell us that
-> something bad happened.
->
-> Years later we removed the temporary buffer_error() and mistakenly
-> replaced that warning with a BUG().  Only it*can*  happen.
->
-> We can remove the BUG() and fix up callers, or we can pass retry=1 into
-> alloc_page_buffers(), so grow_dev_page() "cannot fail".  Immortal
-> functions are a silly fiction, so we should remove the BUG() and fix up
-> callers.
->
-Any particular caller you are concerned with ?
+On Wed, 11 Apr 2012, Dmitry Torokhov wrote:
 
-As I mentioned, this function already returns NULL for other reason - 
-that seem even more probable than this specific failure. So whoever is
-not checking this return value, is already broken without this patch as 
-well.
+> > >> This patch adds driver for Elan I2C touchpad. These protocol of 
+> > >> HID-I2C was defined by Microsoft. The kernel driver would use the 
+> > >> multi-touch protocol format B.
+> > > 
+> > > If this device truly supports HID protocol shouldn't we define i2c-hid
+> > > transport, similar to usbhid?
+> > 
+> > I merely follow defined by Microsoft.
+> > It was called "HID OVER I2C" by Microsoft.
+> > (http://msdn.microsoft.com/en-us/library/windows/hardware/hh825917(v=vs.85).
+> > aspx) But I agree to change from hid i2c to i2chid.
+> > Do you have any better opinions?
+> 
+> I am not sure we are talking about same thing... I do not really care
+> whether it is named "hid i2c" or "i2chid". What I meant if the device
+> really speaks HID protocol, except that the transport is not USB or
+> bluetooth but I2C, then instead of writing a custom driver for this
+> particular part we need to add a new HID transport into
+> drivers/hid/i2c-hid that is similar to drivers/hid/usbhid/ and reuse the
+> rest of HID framework along with hid- multitouch.c which handles
+> HID-compliant multitouch devices.
+> 
+> I am CCing Jiri (HID maintainer) for additional input.
 
+Yes, please.
 
+In case you'd be looking into a bit less bloated example of how transport 
+driver for HID subsystem looks like, see the Bluetooth one in 
+net/bluetooth/hidp/ (and we don't currently have any other examples than 
+these two :) ).
+
+I'd be happy to merge it once you convert to to proper HID transport 
+driver.
+
+Could the event processing part then be integrated into hid-multitouch?
+
+Thanks,
+
+-- 
+Jiri Kosina
+SUSE Labs
