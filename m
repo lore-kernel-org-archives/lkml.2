@@ -1,102 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754753Ab2DKIns (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Apr 2012 04:43:48 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:19815 "EHLO mx1.redhat.com"
+	id S1754689Ab2DKIsh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Apr 2012 04:48:37 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:5699 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754218Ab2DKInp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Apr 2012 04:43:45 -0400
-Date: Wed, 11 Apr 2012 11:43:42 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Ren Mingxin <renmx@cn.fujitsu.com>
-Cc: rusty@rustcorp.com.au, axboe@kernel.dk, tj@kernel.org,
-        James.Bottomley@HansenPartnership.com, asamymuthupa@micron.com,
-        linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org,
-        kvm@vger.kernel.org, virtualization@lists.linux-foundation.org
-Subject: Re: [PATCH] virtio_blk: Add help function to format mass of disks
-Message-ID: <20120411084342.GA9250@redhat.com>
-References: <1334042885-8330-1-git-send-email-renmx@cn.fujitsu.com>
+	id S1751175Ab2DKIsg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Apr 2012 04:48:36 -0400
+Message-ID: <4F85454E.6020201@redhat.com>
+Date: Wed, 11 Apr 2012 11:48:14 +0300
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120316 Thunderbird/11.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1334042885-8330-1-git-send-email-renmx@cn.fujitsu.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: zhangyanfei <zhangyanfei@cn.fujitsu.com>
+CC: mtosatti@redhat.com, ebiederm@xmission.com, luto@mit.edu,
+        joerg.roedel@amd.com, dzickus@redhat.com, paul.gortmaker@windriver.com,
+        gregkh@suse.de, ludwig.nussel@suse.de, linux-kernel@vger.kernel.org,
+        kvm@vger.kernel.org, kexec@lists.infradead.org
+Subject: Re: [PATCH 2/4] KVM: VMX: Add functions to fill VMCSINFO
+References: <4F84E0DF.8040206@cn.fujitsu.com> <4F84E365.10201@cn.fujitsu.com>
+In-Reply-To: <4F84E365.10201@cn.fujitsu.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 10, 2012 at 03:28:05PM +0800, Ren Mingxin wrote:
-> The current virtio block's naming algorithm just supports 18278
-> (26^3 + 26^2 + 26) disks. If there are mass of virtio blocks,
-> there will be disks with the same name.
-> 
-> Based on commit 3e1a7ff8a0a7b948f2684930166954f9e8e776fe, I add
-> function "virtblk_name_format()" for virtio block to support mass
-> of disks naming.
-> 
-> Signed-off-by: Ren Mingxin <renmx@cn.fujitsu.com>
+On 04/11/2012 04:50 AM, zhangyanfei wrote:
+> This patch is to implement the feature that at initialization of
+> kvm_intel module, fills VMCSINFO with a VMCS revision identifier,
+> and encoded offsets of VMCS fields. The reason why we put the
+> VMCSINFO processing at the initialization of kvm_intel module
+> is that it's dangerous to rob VMX resources while kvm module is
+> loaded.
 
-Applied, thanks everyone.
+Maybe it should be done by a separate module.
 
-> ---
->  drivers/block/virtio_blk.c |   38 ++++++++++++++++++++++++++------------
->  1 files changed, 26 insertions(+), 12 deletions(-)
-> 
-> diff --git a/drivers/block/virtio_blk.c b/drivers/block/virtio_blk.c
-> index c4a60ba..86516c8 100644
-> --- a/drivers/block/virtio_blk.c
-> +++ b/drivers/block/virtio_blk.c
-> @@ -374,6 +374,31 @@ static int init_vq(struct virtio_blk *vblk)
->  	return err;
->  }
->  
-> +static int virtblk_name_format(char *prefix, int index, char *buf, int buflen)
-> +{
-> +	const int base = 'z' - 'a' + 1;
-> +	char *begin = buf + strlen(prefix);
-> +	char *begin = buf + strlen(prefix);
-> +	char *end = buf + buflen;
-> +	char *p;
-> +	int unit;
 > +
-> +	p = end - 1;
-> +	*p = '\0';
-> +	unit = base;
-> +	do {
-> +		if (p == begin)
-> +			return -EINVAL;
-> +		*--p = 'a' + (index % unit);
-> +		index = (index / unit) - 1;
-> +	} while (index >= 0);
+> +	kvm_cpu_vmxon(__pa(per_cpu(vmxarea, raw_smp_processor_id())));
+> +	vmcs_load(vmcs);
+
+Should do this after writing into the vmcs directly (vmcs_load() may
+cache some information for vmcs_read()).
+
 > +
-> +	memmove(begin, p, end - p);
-> +	memcpy(buf, prefix, strlen(prefix));
+> +	VMCSINFO_REVISION_ID(vmcs->revision_id);
 > +
-> +	return 0;
-> +}
-> +
->  static int __devinit virtblk_probe(struct virtio_device *vdev)
->  {
->  	struct virtio_blk *vblk;
-> @@ -442,18 +467,7 @@ static int __devinit virtblk_probe(struct virtio_device *vdev)
->  
->  	q->queuedata = vblk;
->  
-> -	if (index < 26) {
-> -		sprintf(vblk->disk->disk_name, "vd%c", 'a' + index % 26);
-> -	} else if (index < (26 + 1) * 26) {
-> -		sprintf(vblk->disk->disk_name, "vd%c%c",
-> -			'a' + index / 26 - 1, 'a' + index % 26);
-> -	} else {
-> -		const unsigned int m1 = (index / 26 - 1) / 26 - 1;
-> -		const unsigned int m2 = (index / 26 - 1) % 26;
-> -		const unsigned int m3 =  index % 26;
-> -		sprintf(vblk->disk->disk_name, "vd%c%c%c",
-> -			'a' + m1, 'a' + m2, 'a' + m3);
-> -	}
-> +	virtblk_name_format("vd", index, vblk->disk->disk_name, DISK_NAME_LEN);
->  
->  	vblk->disk->major = major;
->  	vblk->disk->first_minor = index_to_minor(index);
-> -- 
-> 1.7.1
+> +	/*
+> +	 * Write encoded offsets into VMCS data for later vmcs_read.
+> +	 */
+> +	for (offset = FIELD_START; offset < vmcs_config.size;
+> +	     offset += sizeof(u16))
+> +		*(u16 *)((char *)vmcs + offset) = ENCODING_OFFSET(offset);
+
+This assumes vmcs field contents use the same encoding as
+vmread/vmwrite.  I guess it's a reasonable assumption.
+
+
+-- 
+error compiling committee.c: too many arguments to function
+
