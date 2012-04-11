@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933687Ab2DKXPW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Apr 2012 19:15:22 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:35695 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933673Ab2DKXPR (ORCPT
+	id S933671Ab2DKXPQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Apr 2012 19:15:16 -0400
+Received: from mail-pz0-f52.google.com ([209.85.210.52]:40940 "EHLO
+	mail-pz0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933639Ab2DKXPK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Apr 2012 19:15:17 -0400
-Message-Id: <20120411231022.424170202@linuxfoundation.org>
+	Wed, 11 Apr 2012 19:15:10 -0400
+Message-Id: <20120411231022.110530107@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Wed, 11 Apr 2012 16:10:43 -0700
+Date: Wed, 11 Apr 2012 16:10:41 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Jiang Liu <jiang.liu@huawei.com>,
-        Jiang Liu <liuj97@gmail.com>, Keping Chen <chenkeping@huawei.com>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: [ 25/78] genirq: Adjust irq thread affinity on IRQ_SET_MASK_OK_NOCOPY return value
+        alan@lxorguk.ukuu.org.uk, Julian Anastasov <ja@ssi.bg>,
+        Bob Moore <robert.moore@intel.com>, Len Brown <len.brown@intel.com>,
+        Jonathan Nieder <jrnieder@gmail.com>, Josh Boyer <jwboyer@gmail.com>
+Subject: [ 23/78] ACPICA: Fix regression in FADT revision checks
 In-Reply-To: <20120411231102.GA6404@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,52 +26,67 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jiang Liu <liuj97@gmail.com>
+From: Julian Anastasov <ja@ssi.bg>
 
-commit f5cb92ac82d06cb583c1f66666314c5c0a4d7913 upstream.
+commit 3e80acd1af40fcd91a200b0416a7616b20c5d647 upstream.
 
-irq_move_masked_irq() checks the return code of
-chip->irq_set_affinity() only for 0, but IRQ_SET_MASK_OK_NOCOPY is
-also a valid return code, which is there to avoid a redundant copy of
-the cpumask. But in case of IRQ_SET_MASK_OK_NOCOPY we not only avoid
-the redundant copy, we also fail to adjust the thread affinity of an
-eventually threaded interrupt handler.
+	commit 64b3db22c04586997ab4be46dd5a5b99f8a2d390 (2.6.39),
+"Remove use of unreliable FADT revision field" causes regression
+for old P4 systems because now cst_control and other fields are
+not reset to 0.
 
-Handle IRQ_SET_MASK_OK (==0) and IRQ_SET_MASK_OK_NOCOPY(==1) return
-values correctly by checking the valid return values seperately.
+	The effect is that acpi_processor_power_init will notice
+cst_control != 0 and a write to CST_CNT register is performed
+that should not happen. As result, the system oopses after the
+"No _CST, giving up" message, sometimes in acpi_ns_internalize_name,
+sometimes in acpi_ns_get_type, usually at random places. May be
+during migration to CPU 1 in acpi_processor_get_throttling.
 
-Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
-Cc: Jiang Liu <liuj97@gmail.com>
-Cc: Keping Chen <chenkeping@huawei.com>
-Link: http://lkml.kernel.org/r/1333120296-13563-2-git-send-email-jiang.liu@huawei.com
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+	Every one of these settings help to avoid this problem:
+ - acpi=off
+ - processor.nocst=1
+ - maxcpus=1
+
+	The fix is to update acpi_gbl_FADT.header.length after
+the original value is used to check for old revisions.
+
+https://bugzilla.kernel.org/show_bug.cgi?id=42700
+https://bugzilla.redhat.com/show_bug.cgi?id=727865
+
+Signed-off-by: Julian Anastasov <ja@ssi.bg>
+Acked-by: Bob Moore <robert.moore@intel.com>
+Signed-off-by: Len Brown <len.brown@intel.com>
+Cc: Jonathan Nieder <jrnieder@gmail.com>
+Cc: Josh Boyer <jwboyer@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- kernel/irq/migration.c |   10 +++++++---
- 1 file changed, 7 insertions(+), 3 deletions(-)
+ drivers/acpi/acpica/tbfadt.c |    8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
 
---- a/kernel/irq/migration.c
-+++ b/kernel/irq/migration.c
-@@ -43,12 +43,16 @@ void irq_move_masked_irq(struct irq_data
- 	 * masking the irqs.
- 	 */
- 	if (likely(cpumask_any_and(desc->pending_mask, cpu_online_mask)
--		   < nr_cpu_ids))
--		if (!chip->irq_set_affinity(&desc->irq_data,
--					    desc->pending_mask, false)) {
-+		   < nr_cpu_ids)) {
-+		int ret = chip->irq_set_affinity(&desc->irq_data,
-+						 desc->pending_mask, false);
-+		switch (ret) {
-+		case IRQ_SET_MASK_OK:
- 			cpumask_copy(desc->irq_data.affinity, desc->pending_mask);
-+		case IRQ_SET_MASK_OK_NOCOPY:
- 			irq_set_thread_affinity(desc);
- 		}
-+	}
+--- a/drivers/acpi/acpica/tbfadt.c
++++ b/drivers/acpi/acpica/tbfadt.c
+@@ -363,10 +363,6 @@ static void acpi_tb_convert_fadt(void)
+ 	u32 address32;
+ 	u32 i;
  
- 	cpumask_clear(desc->pending_mask);
- }
+-	/* Update the local FADT table header length */
+-
+-	acpi_gbl_FADT.header.length = sizeof(struct acpi_table_fadt);
+-
+ 	/*
+ 	 * Expand the 32-bit FACS and DSDT addresses to 64-bit as necessary.
+ 	 * Later code will always use the X 64-bit field. Also, check for an
+@@ -408,6 +404,10 @@ static void acpi_tb_convert_fadt(void)
+ 		acpi_gbl_FADT.boot_flags = 0;
+ 	}
+ 
++	/* Update the local FADT table header length */
++
++	acpi_gbl_FADT.header.length = sizeof(struct acpi_table_fadt);
++
+ 	/*
+ 	 * Expand the ACPI 1.0 32-bit addresses to the ACPI 2.0 64-bit "X"
+ 	 * generic address structures as necessary. Later code will always use
 
 
