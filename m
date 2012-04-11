@@ -1,399 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760720Ab2DKQjE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Apr 2012 12:39:04 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:46396 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760661Ab2DKQiW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Apr 2012 12:38:22 -0400
-From: Mel Gorman <mgorman@suse.de>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Rik van Riel <riel@redhat.com>,
-        Konstantin Khlebnikov <khlebnikov@openvz.org>,
-        Hugh Dickins <hughd@google.com>, Ying Han <yinghan@google.com>,
-        Mel Gorman <mgorman@suse.de>, Linux-MM <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH 1/3] mm: vmscan: Remove lumpy reclaim
-Date: Wed, 11 Apr 2012 17:38:16 +0100
-Message-Id: <1334162298-18942-2-git-send-email-mgorman@suse.de>
-X-Mailer: git-send-email 1.7.9.2
-In-Reply-To: <1334162298-18942-1-git-send-email-mgorman@suse.de>
-References: <1334162298-18942-1-git-send-email-mgorman@suse.de>
+	id S1760735Ab2DKQjU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Apr 2012 12:39:20 -0400
+Received: from va3ehsobe010.messaging.microsoft.com ([216.32.180.30]:28078
+	"EHLO va3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1760689Ab2DKQjB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Apr 2012 12:39:01 -0400
+X-SpamScore: 0
+X-BigFish: VPS0(zzzz1202hzzz2dh668h839h93fhd25h)
+X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
+X-WSS-ID: 0M2BQ8Q-02-89F-02
+X-M-MSG: 
+Date: Wed, 11 Apr 2012 18:38:50 +0200
+From: Andreas Herrmann <andreas.herrmann3@amd.com>
+To: Kay Sievers <kay.sievers@vrfy.org>
+CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "Petkov, Borislav" <Borislav.Petkov@amd.com>,
+        <linux-kernel@vger.kernel.org>
+Subject: x86, microcode: Conversion from sysdev class caused regression
+Message-ID: <20120411163849.GE4794@alberich.amd.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Lumpy reclaim had a purpose but in the mind of some, it was to kick
-the system so hard it trashed. For others the purpose was to complicate
-vmscan.c. Over time it was giving softer shoes and a nicer attitude but
-memory compaction needs to step up and replace it so this patch sends
-lumpy reclaim to the farm.
+Hi,
 
-The tracepoint format changes for isolating LRU pages with this patch
-applied. Furthermore reclaim/compaction can no longer queue dirty pages in
-pageout() if the underlying BDI is congested. Lumpy reclaim used this logic
-and reclaim/compaction was using it in error.
+commit 8a25a2fd126c621f44f3aeaef80d51f00fc11639 (cpu: convert 'cpu'
+and 'machinecheck' sysdev_class to a regular subsystem) causes a
+regression in the CPU microcode loader.
 
-Signed-off-by: Mel Gorman <mgorman@suse.de>
----
- include/trace/events/vmscan.h |   26 ++------
- mm/vmscan.c                   |  144 +++++------------------------------------
- 2 files changed, 19 insertions(+), 151 deletions(-)
+Previous behaviour was that module loading failed if no appropriate
+CPU was found. Now we get
 
-diff --git a/include/trace/events/vmscan.h b/include/trace/events/vmscan.h
-index f64560e..1c20a1f 100644
---- a/include/trace/events/vmscan.h
-+++ b/include/trace/events/vmscan.h
-@@ -263,22 +263,16 @@ DECLARE_EVENT_CLASS(mm_vmscan_lru_isolate_template,
- 		unsigned long nr_requested,
- 		unsigned long nr_scanned,
- 		unsigned long nr_taken,
--		unsigned long nr_lumpy_taken,
--		unsigned long nr_lumpy_dirty,
--		unsigned long nr_lumpy_failed,
- 		isolate_mode_t isolate_mode,
- 		int file),
- 
--	TP_ARGS(order, nr_requested, nr_scanned, nr_taken, nr_lumpy_taken, nr_lumpy_dirty, nr_lumpy_failed, isolate_mode, file),
-+	TP_ARGS(order, nr_requested, nr_scanned, nr_taken, isolate_mode, file),
- 
- 	TP_STRUCT__entry(
- 		__field(int, order)
- 		__field(unsigned long, nr_requested)
- 		__field(unsigned long, nr_scanned)
- 		__field(unsigned long, nr_taken)
--		__field(unsigned long, nr_lumpy_taken)
--		__field(unsigned long, nr_lumpy_dirty)
--		__field(unsigned long, nr_lumpy_failed)
- 		__field(isolate_mode_t, isolate_mode)
- 		__field(int, file)
- 	),
-@@ -288,22 +282,16 @@ DECLARE_EVENT_CLASS(mm_vmscan_lru_isolate_template,
- 		__entry->nr_requested = nr_requested;
- 		__entry->nr_scanned = nr_scanned;
- 		__entry->nr_taken = nr_taken;
--		__entry->nr_lumpy_taken = nr_lumpy_taken;
--		__entry->nr_lumpy_dirty = nr_lumpy_dirty;
--		__entry->nr_lumpy_failed = nr_lumpy_failed;
- 		__entry->isolate_mode = isolate_mode;
- 		__entry->file = file;
- 	),
- 
--	TP_printk("isolate_mode=%d order=%d nr_requested=%lu nr_scanned=%lu nr_taken=%lu contig_taken=%lu contig_dirty=%lu contig_failed=%lu file=%d",
-+	TP_printk("isolate_mode=%d order=%d nr_requested=%lu nr_scanned=%lu nr_taken=%lu file=%d",
- 		__entry->isolate_mode,
- 		__entry->order,
- 		__entry->nr_requested,
- 		__entry->nr_scanned,
- 		__entry->nr_taken,
--		__entry->nr_lumpy_taken,
--		__entry->nr_lumpy_dirty,
--		__entry->nr_lumpy_failed,
- 		__entry->file)
- );
- 
-@@ -313,13 +301,10 @@ DEFINE_EVENT(mm_vmscan_lru_isolate_template, mm_vmscan_lru_isolate,
- 		unsigned long nr_requested,
- 		unsigned long nr_scanned,
- 		unsigned long nr_taken,
--		unsigned long nr_lumpy_taken,
--		unsigned long nr_lumpy_dirty,
--		unsigned long nr_lumpy_failed,
- 		isolate_mode_t isolate_mode,
- 		int file),
- 
--	TP_ARGS(order, nr_requested, nr_scanned, nr_taken, nr_lumpy_taken, nr_lumpy_dirty, nr_lumpy_failed, isolate_mode, file)
-+	TP_ARGS(order, nr_requested, nr_scanned, nr_taken, isolate_mode, file)
- 
- );
- 
-@@ -329,13 +314,10 @@ DEFINE_EVENT(mm_vmscan_lru_isolate_template, mm_vmscan_memcg_isolate,
- 		unsigned long nr_requested,
- 		unsigned long nr_scanned,
- 		unsigned long nr_taken,
--		unsigned long nr_lumpy_taken,
--		unsigned long nr_lumpy_dirty,
--		unsigned long nr_lumpy_failed,
- 		isolate_mode_t isolate_mode,
- 		int file),
- 
--	TP_ARGS(order, nr_requested, nr_scanned, nr_taken, nr_lumpy_taken, nr_lumpy_dirty, nr_lumpy_failed, isolate_mode, file)
-+	TP_ARGS(order, nr_requested, nr_scanned, nr_taken, isolate_mode, file)
- 
- );
- 
-diff --git a/mm/vmscan.c b/mm/vmscan.c
-index 33c332b..a4b86bd 100644
---- a/mm/vmscan.c
-+++ b/mm/vmscan.c
-@@ -58,9 +58,6 @@
-  * RECLAIM_MODE_SINGLE: Reclaim only order-0 pages
-  * RECLAIM_MODE_ASYNC:  Do not block
-  * RECLAIM_MODE_SYNC:   Allow blocking e.g. call wait_on_page_writeback
-- * RECLAIM_MODE_LUMPYRECLAIM: For high-order allocations, take a reference
-- *			page from the LRU and reclaim all pages within a
-- *			naturally aligned range
-  * RECLAIM_MODE_COMPACTION: For high-order allocations, reclaim a number of
-  *			order-0 pages and then compact the zone
-  */
-@@ -68,7 +65,6 @@ typedef unsigned __bitwise__ reclaim_mode_t;
- #define RECLAIM_MODE_SINGLE		((__force reclaim_mode_t)0x01u)
- #define RECLAIM_MODE_ASYNC		((__force reclaim_mode_t)0x02u)
- #define RECLAIM_MODE_SYNC		((__force reclaim_mode_t)0x04u)
--#define RECLAIM_MODE_LUMPYRECLAIM	((__force reclaim_mode_t)0x08u)
- #define RECLAIM_MODE_COMPACTION		((__force reclaim_mode_t)0x10u)
- 
- struct scan_control {
-@@ -367,27 +363,17 @@ out:
- static void set_reclaim_mode(int priority, struct scan_control *sc,
- 				   bool sync)
- {
-+	/* Sync reclaim used only for compaction */
- 	reclaim_mode_t syncmode = sync ? RECLAIM_MODE_SYNC : RECLAIM_MODE_ASYNC;
- 
- 	/*
--	 * Initially assume we are entering either lumpy reclaim or
--	 * reclaim/compaction.Depending on the order, we will either set the
--	 * sync mode or just reclaim order-0 pages later.
--	 */
--	if (COMPACTION_BUILD)
--		sc->reclaim_mode = RECLAIM_MODE_COMPACTION;
--	else
--		sc->reclaim_mode = RECLAIM_MODE_LUMPYRECLAIM;
--
--	/*
--	 * Avoid using lumpy reclaim or reclaim/compaction if possible by
--	 * restricting when its set to either costly allocations or when
-+	 * Restrict reclaim/compaction to costly allocations or when
- 	 * under memory pressure
- 	 */
--	if (sc->order > PAGE_ALLOC_COSTLY_ORDER)
--		sc->reclaim_mode |= syncmode;
--	else if (sc->order && priority < DEF_PRIORITY - 2)
--		sc->reclaim_mode |= syncmode;
-+	if (COMPACTION_BUILD && sc->order &&
-+			(sc->order > PAGE_ALLOC_COSTLY_ORDER ||
-+			 priority < DEF_PRIORITY - 2))
-+		sc->reclaim_mode = RECLAIM_MODE_COMPACTION | syncmode;
- 	else
- 		sc->reclaim_mode = RECLAIM_MODE_SINGLE | RECLAIM_MODE_ASYNC;
- }
-@@ -416,10 +402,6 @@ static int may_write_to_queue(struct backing_dev_info *bdi,
- 		return 1;
- 	if (bdi == current->backing_dev_info)
- 		return 1;
--
--	/* lumpy reclaim for hugepage often need a lot of write */
--	if (sc->order > PAGE_ALLOC_COSTLY_ORDER)
--		return 1;
- 	return 0;
- }
- 
-@@ -710,10 +692,6 @@ static enum page_references page_check_references(struct page *page,
- 	referenced_ptes = page_referenced(page, 1, mz->mem_cgroup, &vm_flags);
- 	referenced_page = TestClearPageReferenced(page);
- 
--	/* Lumpy reclaim - ignore references */
--	if (sc->reclaim_mode & RECLAIM_MODE_LUMPYRECLAIM)
--		return PAGEREF_RECLAIM;
--
- 	/*
- 	 * Mlock lost the isolation race with us.  Let try_to_unmap()
- 	 * move the page to the unevictable list.
-@@ -824,7 +802,7 @@ static unsigned long shrink_page_list(struct list_head *page_list,
- 				wait_on_page_writeback(page);
- 			else {
- 				unlock_page(page);
--				goto keep_lumpy;
-+				goto keep_reclaim_mode;
- 			}
- 		}
- 
-@@ -908,7 +886,7 @@ static unsigned long shrink_page_list(struct list_head *page_list,
- 				goto activate_locked;
- 			case PAGE_SUCCESS:
- 				if (PageWriteback(page))
--					goto keep_lumpy;
-+					goto keep_reclaim_mode;
- 				if (PageDirty(page))
- 					goto keep;
- 
-@@ -1008,7 +986,7 @@ keep_locked:
- 		unlock_page(page);
- keep:
- 		reset_reclaim_mode(sc);
--keep_lumpy:
-+keep_reclaim_mode:
- 		list_add(&page->lru, &ret_pages);
- 		VM_BUG_ON(PageLRU(page) || PageUnevictable(page));
- 	}
-@@ -1064,11 +1042,7 @@ int __isolate_lru_page(struct page *page, isolate_mode_t mode, int file)
- 	if (!all_lru_mode && !!page_is_file_cache(page) != file)
- 		return ret;
- 
--	/*
--	 * When this function is being called for lumpy reclaim, we
--	 * initially look into all LRU pages, active, inactive and
--	 * unevictable; only give shrink_page_list evictable pages.
--	 */
-+	/* Do not give back unevictable pages for compaction */
- 	if (PageUnevictable(page))
- 		return ret;
- 
-@@ -1153,9 +1127,6 @@ static unsigned long isolate_lru_pages(unsigned long nr_to_scan,
- 	struct lruvec *lruvec;
- 	struct list_head *src;
- 	unsigned long nr_taken = 0;
--	unsigned long nr_lumpy_taken = 0;
--	unsigned long nr_lumpy_dirty = 0;
--	unsigned long nr_lumpy_failed = 0;
- 	unsigned long scan;
- 	int lru = LRU_BASE;
- 
-@@ -1168,10 +1139,6 @@ static unsigned long isolate_lru_pages(unsigned long nr_to_scan,
- 
- 	for (scan = 0; scan < nr_to_scan && !list_empty(src); scan++) {
- 		struct page *page;
--		unsigned long pfn;
--		unsigned long end_pfn;
--		unsigned long page_pfn;
--		int zone_id;
- 
- 		page = lru_to_page(src);
- 		prefetchw_prev_lru_page(page, src, flags);
-@@ -1193,84 +1160,6 @@ static unsigned long isolate_lru_pages(unsigned long nr_to_scan,
- 		default:
- 			BUG();
- 		}
--
--		if (!sc->order || !(sc->reclaim_mode & RECLAIM_MODE_LUMPYRECLAIM))
--			continue;
--
--		/*
--		 * Attempt to take all pages in the order aligned region
--		 * surrounding the tag page.  Only take those pages of
--		 * the same active state as that tag page.  We may safely
--		 * round the target page pfn down to the requested order
--		 * as the mem_map is guaranteed valid out to MAX_ORDER,
--		 * where that page is in a different zone we will detect
--		 * it from its zone id and abort this block scan.
--		 */
--		zone_id = page_zone_id(page);
--		page_pfn = page_to_pfn(page);
--		pfn = page_pfn & ~((1 << sc->order) - 1);
--		end_pfn = pfn + (1 << sc->order);
--		for (; pfn < end_pfn; pfn++) {
--			struct page *cursor_page;
--
--			/* The target page is in the block, ignore it. */
--			if (unlikely(pfn == page_pfn))
--				continue;
--
--			/* Avoid holes within the zone. */
--			if (unlikely(!pfn_valid_within(pfn)))
--				break;
--
--			cursor_page = pfn_to_page(pfn);
--
--			/* Check that we have not crossed a zone boundary. */
--			if (unlikely(page_zone_id(cursor_page) != zone_id))
--				break;
--
--			/*
--			 * If we don't have enough swap space, reclaiming of
--			 * anon page which don't already have a swap slot is
--			 * pointless.
--			 */
--			if (nr_swap_pages <= 0 && PageSwapBacked(cursor_page) &&
--			    !PageSwapCache(cursor_page))
--				break;
--
--			if (__isolate_lru_page(cursor_page, mode, file) == 0) {
--				unsigned int isolated_pages;
--
--				mem_cgroup_lru_del(cursor_page);
--				list_move(&cursor_page->lru, dst);
--				isolated_pages = hpage_nr_pages(cursor_page);
--				nr_taken += isolated_pages;
--				nr_lumpy_taken += isolated_pages;
--				if (PageDirty(cursor_page))
--					nr_lumpy_dirty += isolated_pages;
--				scan++;
--				pfn += isolated_pages - 1;
--			} else {
--				/*
--				 * Check if the page is freed already.
--				 *
--				 * We can't use page_count() as that
--				 * requires compound_head and we don't
--				 * have a pin on the page here. If a
--				 * page is tail, we may or may not
--				 * have isolated the head, so assume
--				 * it's not free, it'd be tricky to
--				 * track the head status without a
--				 * page pin.
--				 */
--				if (!PageTail(cursor_page) &&
--				    !atomic_read(&cursor_page->_count))
--					continue;
--				break;
--			}
--		}
--
--		/* If we break out of the loop above, lumpy reclaim failed */
--		if (pfn < end_pfn)
--			nr_lumpy_failed++;
- 	}
- 
- 	*nr_scanned = scan;
-@@ -1278,7 +1167,6 @@ static unsigned long isolate_lru_pages(unsigned long nr_to_scan,
- 	trace_mm_vmscan_lru_isolate(sc->order,
- 			nr_to_scan, scan,
- 			nr_taken,
--			nr_lumpy_taken, nr_lumpy_dirty, nr_lumpy_failed,
- 			mode, file);
- 	return nr_taken;
- }
-@@ -1466,13 +1354,13 @@ static inline bool should_reclaim_stall(unsigned long nr_taken,
- 					int priority,
- 					struct scan_control *sc)
- {
--	int lumpy_stall_priority;
-+	int stall_priority;
- 
- 	/* kswapd should not stall on sync IO */
- 	if (current_is_kswapd())
- 		return false;
- 
--	/* Only stall on lumpy reclaim */
-+	/* Only stall for memory compaction */
- 	if (sc->reclaim_mode & RECLAIM_MODE_SINGLE)
- 		return false;
- 
-@@ -1487,11 +1375,11 @@ static inline bool should_reclaim_stall(unsigned long nr_taken,
- 	 * priority to be much higher before stalling.
- 	 */
- 	if (sc->order > PAGE_ALLOC_COSTLY_ORDER)
--		lumpy_stall_priority = DEF_PRIORITY;
-+		stall_priority = DEF_PRIORITY;
- 	else
--		lumpy_stall_priority = DEF_PRIORITY / 3;
-+		stall_priority = DEF_PRIORITY / 3;
- 
--	return priority <= lumpy_stall_priority;
-+	return priority <= stall_priority;
- }
- 
- /*
-@@ -1523,8 +1411,6 @@ shrink_inactive_list(unsigned long nr_to_scan, struct mem_cgroup_zone *mz,
- 	}
- 
- 	set_reclaim_mode(priority, sc, false);
--	if (sc->reclaim_mode & RECLAIM_MODE_LUMPYRECLAIM)
--		isolate_mode |= ISOLATE_ACTIVE;
- 
- 	lru_add_drain();
- 
--- 
-1.7.9.2
+ [  131.717212] WARNING: at fs/sysfs/group.c:138 mc_device_remove+0x5f/0x70 [microcode]()
+ [  131.717218] Hardware name: 01972NG
+ [  131.717223] sysfs group ffffffffa00013d0 not found for kobject 'cpu0'
+ [  131.717228] Modules linked in: snd_hda_codec_hdmi snd_hda_codec_conexant snd_hda_intel
+                btusb snd_hda_codec bluetooth thinkpad_acpi rfkill microcode(-) [last unloaded: cfg80211]
+ [  131.717254] Pid: 4560, comm: modprobe Not tainted 3.4.0-rc2-00002-g258f742 #5
+ [  131.717260] Call Trace:
+ [  131.717277]  [<ffffffff8103113b>] ? warn_slowpath_common+0x7b/0xc0
+ [  131.717287]  [<ffffffff81031235>] ? warn_slowpath_fmt+0x45/0x50
+ [  131.717300]  [<ffffffff81120e74>] ? sysfs_remove_group+0x34/0x120
+ [  131.717311]  [<ffffffffa00000ef>] ? mc_device_remove+0x5f/0x70 [microcode]
+ [  131.717325]  [<ffffffff81331eb9>] ? subsys_interface_unregister+0x69/0xa0
+ [  131.717336]  [<ffffffff81563526>] ? mutex_lock+0x16/0x40
+ [  131.717346]  [<ffffffffa0000c3e>] ? microcode_exit+0x50/0x92 [microcode]
+ [  131.717357]  [<ffffffff8107051d>] ? sys_delete_module+0x16d/0x260
+ [  131.717369]  [<ffffffff810a0065>] ? wait_iff_congested+0x45/0x110
+ [  131.717379]  [<ffffffff815656af>] ? page_fault+0x1f/0x30
+ [  131.717389]  [<ffffffff81565ba2>] ? system_call_fastpath+0x16/0x1b
+
+
+after loading the driver on an unsupported CPU and the subsequent
+attempt to unload the driver.
+
+The reason for the error is that subsys_interface_register() doesn't
+handle the return value of sif->add_dev (and there's also no unwinding
+of the interface registration). Instead subsys_interface_register
+always returns 0. This is different to what we had for
+sysdev_driver_register(). The latter properly handled return codes of
+drv->add() functions.
+
+See Boris' commit f4203e3032e5ae74c3e89df85a5a6d96022d0c49 (sysdev: Do
+not register with sysdev when erroring on add).
+
+I don't know whether the microcode driver is the only driver that
+is affected.
+
+What's your suggestion for a fix? Should subsys_interface_register()
+be fixed or should each affected driver be adapted?
+
+
+Regards,
+Andreas
+
 
