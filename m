@@ -1,103 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761359Ab2DKVw3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Apr 2012 17:52:29 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:41194 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1761200Ab2DKVw1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Apr 2012 17:52:27 -0400
-Date: Thu, 12 Apr 2012 00:52:12 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        "David S. Miller" <davem@davemloft.net>,
-        Jamal Hadi Salim <hadi@cyberus.ca>,
-        Stephen Hemminger <shemminger@vyatta.com>,
-        Jason Wang <jasowang@redhat.com>, Neil Horman <nhorman@tuxdriver.com>,
-        Jiri Pirko <jpirko@redhat.com>,
-        Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
-        =?utf-8?B?TWljaGHFgiBNaXJvc8WCYXc=?= <mirq-linux@rere.qmqm.pl>,
-        Ben Hutchings <bhutchings@solarflare.com>,
-        Herbert Xu <herbert@gondor.hengli.com.au>
-Subject: Re: [PATCH] net: orphan queued skbs if device tx can stall
-Message-ID: <20120411215212.GA27550@redhat.com>
-References: <20120408171323.GA16012@redhat.com>
- <1334044558.3126.5.camel@edumazet-glaptop>
- <20120410084151.GA27193@redhat.com>
- <1334048100.3126.21.camel@edumazet-glaptop>
- <20120410093140.GA27651@redhat.com>
- <1334052259.3126.68.camel@edumazet-glaptop>
- <20120410112459.GA28825@redhat.com>
- <1334058300.3126.99.camel@edumazet-glaptop>
- <20120410124151.GA29808@redhat.com>
- <1334065929.5300.40.camel@edumazet-glaptop>
+	id S1761348Ab2DKV43 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Apr 2012 17:56:29 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:51384 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756290Ab2DKV42 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Apr 2012 17:56:28 -0400
+Message-ID: <4F85FE07.2060605@gmail.com>
+Date: Wed, 11 Apr 2012 23:56:23 +0200
+From: Juri Lelli <juri.lelli@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120329 Thunderbird/11.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1334065929.5300.40.camel@edumazet-glaptop>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Steven Rostedt <rostedt@goodmis.org>
+CC: peterz@infradead.org, tglx@linutronix.de, mingo@redhat.com,
+        cfriesen@nortel.com, oleg@redhat.com, fweisbec@gmail.com,
+        darren@dvhart.com, johan.eker@ericsson.com, p.faure@akatech.ch,
+        linux-kernel@vger.kernel.org, claudio@evidence.eu.com,
+        michael@amarulasolutions.com, fchecconi@gmail.com,
+        tommaso.cucinotta@sssup.it, nicola.manica@disi.unitn.it,
+        luca.abeni@unitn.it, dhaval.giani@gmail.com, hgu1972@gmail.com,
+        paulmck@linux.vnet.ibm.com, raistlin@linux.it, insop.song@ericsson.com,
+        liming.wang@windriver.com
+Subject: Re: [PATCH 08/16] sched: add period support for -deadline tasks.
+References: <1333696481-3433-1-git-send-email-juri.lelli@gmail.com>  <1333696481-3433-9-git-send-email-juri.lelli@gmail.com> <1334176337.23924.297.camel@gandalf.stny.rr.com>
+In-Reply-To: <1334176337.23924.297.camel@gandalf.stny.rr.com>
+Content-Type: text/plain; charset=ISO-8859-15; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 10, 2012 at 03:52:09PM +0200, Eric Dumazet wrote:
-> On Tue, 2012-04-10 at 15:41 +0300, Michael S. Tsirkin wrote:
-> 
-> > I think it's a bad interface too but it's in a userspace ABI
-> > now so I suspect we are stuck with it for now. We can try deprecating
-> > but we can't just drop it.
-> > 
-> 
-> By the way, skb orphaning should already be done in skb_orphan_try(),
-> not sure why its done again in tun_net_xmit(). Note we perform orphaning
-> right before giving skb to device on premise it'll be sent (and freed)
-> in a reasonable amount of time.
-> 
-> 
-> With following patch, no more qdisc on top of tun device, yet user can
-> change the limit (I would be curious to know if anybody changes tun
-> txqueuelen and why)
+On 04/11/2012 10:32 PM, Steven Rostedt wrote:
+> On Fri, 2012-04-06 at 09:14 +0200, Juri Lelli wrote:
+>
+>> @@ -293,7 +293,11 @@ static void replenish_dl_entity(struct sched_dl_entity *dl_se)
+>>    * assigned (function returns true if it can).
+>>    *
+>>    * For this to hold, we must check if:
+>> - *   runtime / (deadline - t)<  dl_runtime / dl_deadline .
+>> + *   runtime / (deadline - t)<  dl_runtime / dl_period .
+>> + *
+>> + * Notice that the bandwidth check is done against the period. For
+>> + * task with deadline equal to period this is the same of using
+>> + * dl_deadline instead of dl_period in the equation above.
+>
+> First, it seems that the function returns true if:
+>
+> 	dl_runtime / dl_period<  runtime / (deadline - t)
+>
 
-Following would makes the default visible with SIOCGIFTXQLEN
-same as it was + avoid branch on data path.
-Didn't have time to test yet - it should achieve
-same purpose, shouldn't it?
-Or do I misunderstand how it's designed to work?
+Right, the comment is wrong! Just reverse the inequality as you did.
+  
+>
+> I'm a little confused by this. We are comparing the ratio of runtime
+> left and deadline left, to the ratio of total runtime to period.
+>
+> I'm actually confused by this premise anyway. What's the purpose of
+> comparing the ratio? If runtime<  (deadline - t) wouldn't it not be able
+> to complete anyway? Or are we thinking that the runtime will be
+> interrupted proportionally by other tasks?
+>
 
-diff --git a/drivers/net/tun.c b/drivers/net/tun.c
-index bb8c72c..418abd1 100644
---- a/drivers/net/tun.c
-+++ b/drivers/net/tun.c
-@@ -521,7 +521,6 @@ static void tun_net_init(struct net_device *dev)
- 		/* Zero header length */
- 		dev->type = ARPHRD_NONE;
- 		dev->flags = IFF_POINTOPOINT | IFF_NOARP | IFF_MULTICAST;
--		dev->tx_queue_len = TUN_READQ_SIZE;  /* We prefer our own queue length */
- 		break;
- 
- 	case TUN_TAP_DEV:
-@@ -531,10 +530,9 @@ static void tun_net_init(struct net_device *dev)
- 		dev->priv_flags &= ~IFF_TX_SKB_SHARING;
- 
- 		eth_hw_addr_random(dev);
--
--		dev->tx_queue_len = TUN_READQ_SIZE;  /* We prefer our own queue length */
- 		break;
- 	}
-+	dev->tx_queue_len = 0;  /* Disable qdisc queueing */
- }
- 
- /* Character device part */
-@@ -1143,6 +1141,12 @@ static int tun_set_iff(struct net *net, struct file *file, struct ifreq *ifr)
- 		if (err < 0)
- 			goto err_free_sk;
- 
-+		/*
-+		 * We (ab)use queue length to limit our amount of buffering.
-+		 * Set our own default queue length.
-+		 */
-+		dev->tx_queue_len = TUN_READQ_SIZE;
-+
- 		if (device_create_file(&tun->dev->dev, &dev_attr_tun_flags) ||
- 		    device_create_file(&tun->dev->dev, &dev_attr_owner) ||
- 		    device_create_file(&tun->dev->dev, &dev_attr_group))
+We are actually applying one of the CBS rules. We want to be able to
+"slow down" a deadline task if it is going to exceed its reserved
+bandwidth. We are in fact checking here that the bandwidth this task
+will consume from t to its deadline is no more than its reserved one.
+
+>
+>
+>>    */
+>>   static bool dl_entity_overflow(struct sched_dl_entity *dl_se, u64 t)
+>>   {
+>> @@ -312,7 +316,7 @@ static bool dl_entity_overflow(struct sched_dl_entity *dl_se, u64 t)
+>>   	 * to the (absolute) deadline. Therefore, overflowing the u64
+>>   	 * type is very unlikely to occur in both cases.
+>>   	 */
+>> -	left = dl_se->dl_deadline * dl_se->runtime;
+>> +	left = dl_se->dl_period * dl_se->runtime;
+>>   	right = (dl_se->deadline - t) * dl_se->dl_runtime;
+>>
+>>   	return dl_time_before(right, left);
+>
+>
+
+Thanks,
+
+- Juri
