@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965359Ab2DKXlb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Apr 2012 19:41:31 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:41234 "EHLO
+	id S965362Ab2DKXlu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Apr 2012 19:41:50 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:58738 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965316Ab2DKXXb (ORCPT
+	with ESMTP id S965293Ab2DKXXW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Apr 2012 19:23:31 -0400
-Message-Id: <20120411231041.194484204@linuxfoundation.org>
+	Wed, 11 Apr 2012 19:23:22 -0400
+Message-Id: <20120411231042.113915265@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Wed, 11 Apr 2012 16:11:09 -0700
+Date: Wed, 11 Apr 2012 16:11:14 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Jason Wessel <jason.wessel@windriver.com>
-Subject: [ 34/59] kgdbts: Fix kernel oops with CONFIG_DEBUG_RODATA
+        alan@lxorguk.ukuu.org.uk,
+        "olof@lixom.net, Stephen Warren" <swarren@nvidia.com>
+Subject: [ 39/59] [PATCH] ARM: tegra: remove Tegra30 errata from MACH_TEGRA_DT
 In-Reply-To: <20120411231213.GA13124@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -24,119 +25,37 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jason Wessel <jason.wessel@windriver.com>
+From: Stephen Warren <swarren@nvidia.com>
 
-commit 456ca7ff24841bf2d2a2dfd690fe7d42ef70d932 upstream.
+[no upstream commit match, as this is a fix for a mis-applied patch in the
+previous 3.2-stable release. - gregkh]
 
-On x86 the kgdb test suite will oops when the kernel is compiled with
-CONFIG_DEBUG_RODATA and you run the tests after boot time. This is
-regression has existed since 2.6.26 by commit: b33cb815 (kgdbts: Use
-HW breakpoints with CONFIG_DEBUG_RODATA).
+Commit 83e4194 "ARM: tegra: select required CPU and L2 errata options"
+contained two chunks; one was errata for Tegra20 (correctly applied)
+and the second errata for Tegra30. The latter was accidentally applied
+to the wrong config option; Tegra30 support wasn't added until v3.3,
+and so the second chunk should have just been dropped. This patch does
+so.
 
-The test suite can use hw breakpoints for all the tests, but it has to
-execute the hardware breakpoint specific tests first in order to
-determine that the hw breakpoints actually work.  Specifically the
-very first test causes an oops:
-
-# echo V1I1 > /sys/module/kgdbts/parameters/kgdbts
-kgdb: Registered I/O driver kgdbts.
-kgdbts:RUN plant and detach test
-
-Entering kdb (current=0xffff880017aa9320, pid 1078) on processor 0 due to Keyboard Entry
-[0]kdb> kgdbts: ERROR PUT: end of test buffer on 'plant_and_detach_test' line 1 expected OK got $E14#aa
-WARNING: at drivers/misc/kgdbts.c:730 run_simple_test+0x151/0x2c0()
-[...oops clipped...]
-
-This commit re-orders the running of the tests and puts the RODATA
-check into its own function so as to correctly avoid the kernel oops
-by detecting and using the hw breakpoints.
-
-Signed-off-by: Jason Wessel <jason.wessel@windriver.com>
+Signed-off-by: Stephen Warren <swarren@nvidia.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- drivers/misc/kgdbts.c |   52 ++++++++++++++++++++++++++------------------------
- 1 file changed, 28 insertions(+), 24 deletions(-)
+ arch/arm/mach-tegra/Kconfig |    5 -----
+ 1 file changed, 5 deletions(-)
 
---- a/drivers/misc/kgdbts.c
-+++ b/drivers/misc/kgdbts.c
-@@ -885,6 +885,22 @@ static void run_singlestep_break_test(vo
- 	kgdbts_break_test();
- }
+--- a/arch/arm/mach-tegra/Kconfig
++++ b/arch/arm/mach-tegra/Kconfig
+@@ -61,11 +61,6 @@ config MACH_SEABOARD
+ config MACH_TEGRA_DT
+ 	bool "Generic Tegra board (FDT support)"
+ 	select USE_OF
+-	select ARM_ERRATA_743622
+-	select ARM_ERRATA_751472
+-	select ARM_ERRATA_754322
+-	select ARM_ERRATA_764369
+-	select PL310_ERRATA_769419 if CACHE_L2X0
+ 	help
+ 	  Support for generic nVidia Tegra boards using Flattened Device Tree
  
-+static void test_debug_rodata(void)
-+{
-+#ifdef CONFIG_DEBUG_RODATA
-+	/* Until there is an api to write to read-only text segments, use
-+	 * HW breakpoints for the remainder of any tests, else print a
-+	 * failure message if hw breakpoints do not work.
-+	 */
-+	if (!(arch_kgdb_ops.flags & KGDB_HW_BREAKPOINT && hwbreaks_ok)) {
-+		eprintk("kgdbts: HW breakpoints BROKEN, ending tests\n");
-+		return;
-+	}
-+	force_hwbrks = 1;
-+	v1printk("kgdbts:Using HW breakpoints for SW breakpoint tests\n");
-+#endif /* CONFIG_DEBUG_RODATA */
-+}
-+
- static void kgdbts_run_tests(void)
- {
- 	char *ptr;
-@@ -907,6 +923,18 @@ static void kgdbts_run_tests(void)
- 	if (ptr)
- 		sstep_test = simple_strtol(ptr+1, NULL, 10);
- 
-+	/* All HW break point tests */
-+	if (arch_kgdb_ops.flags & KGDB_HW_BREAKPOINT) {
-+		hwbreaks_ok = 1;
-+		v1printk("kgdbts:RUN hw breakpoint test\n");
-+		run_breakpoint_test(1);
-+		v1printk("kgdbts:RUN hw write breakpoint test\n");
-+		run_hw_break_test(1);
-+		v1printk("kgdbts:RUN access write breakpoint test\n");
-+		run_hw_break_test(0);
-+	}
-+	test_debug_rodata();
-+
- 	/* required internal KGDB tests */
- 	v1printk("kgdbts:RUN plant and detach test\n");
- 	run_plant_and_detach_test(0);
-@@ -924,35 +952,11 @@ static void kgdbts_run_tests(void)
- 
- 	/* ===Optional tests=== */
- 
--	/* All HW break point tests */
--	if (arch_kgdb_ops.flags & KGDB_HW_BREAKPOINT) {
--		hwbreaks_ok = 1;
--		v1printk("kgdbts:RUN hw breakpoint test\n");
--		run_breakpoint_test(1);
--		v1printk("kgdbts:RUN hw write breakpoint test\n");
--		run_hw_break_test(1);
--		v1printk("kgdbts:RUN access write breakpoint test\n");
--		run_hw_break_test(0);
--	}
--
- 	if (nmi_sleep) {
- 		v1printk("kgdbts:RUN NMI sleep %i seconds test\n", nmi_sleep);
- 		run_nmi_sleep_test(nmi_sleep);
- 	}
- 
--#ifdef CONFIG_DEBUG_RODATA
--	/* Until there is an api to write to read-only text segments, use
--	 * HW breakpoints for the remainder of any tests, else print a
--	 * failure message if hw breakpoints do not work.
--	 */
--	if (!(arch_kgdb_ops.flags & KGDB_HW_BREAKPOINT && hwbreaks_ok)) {
--		eprintk("kgdbts: HW breakpoints do not work,"
--			"skipping remaining tests\n");
--		return;
--	}
--	force_hwbrks = 1;
--#endif /* CONFIG_DEBUG_RODATA */
--
- 	/* If the do_fork test is run it will be the last test that is
- 	 * executed because a kernel thread will be spawned at the very
- 	 * end to unregister the debug hooks.
 
 
