@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933636Ab2DKXPB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Apr 2012 19:15:01 -0400
+	id S933798Ab2DKXP6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Apr 2012 19:15:58 -0400
 Received: from mail-pb0-f46.google.com ([209.85.160.46]:35695 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933622Ab2DKXO5 (ORCPT
+	with ESMTP id S933784Ab2DKXPx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Apr 2012 19:14:57 -0400
-Message-Id: <20120411231018.393451410@linuxfoundation.org>
+	Wed, 11 Apr 2012 19:15:53 -0400
+Message-Id: <20120411231024.560436759@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Wed, 11 Apr 2012 16:10:19 -0700
+Date: Wed, 11 Apr 2012 16:10:55 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Feiran Zhuang <zhuangfeiran@ict.ac.cn>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 01/78] x86 bpf_jit: fix a bug in emitting the 16-bit immediate operand of AND
+        alan@lxorguk.ukuu.org.uk, Sean Paul <seanpaul@chromium.org>,
+        Chris Wilson <chris@chris-wilson.co.uk>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>
+Subject: [ 37/78] drm/i915: Add lock on drm_helper_resume_force_mode
 In-Reply-To: <20120411231102.GA6404@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,32 +26,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Feiran Zhuang  <zhuangfeiran@ict.ac.cn>
+From: Sean Paul <seanpaul@chromium.org>
 
-[ Upstream commit 1d24fb3684f347226747c6b11ea426b7b992694e ]
+commit 927a2f119e8235238a2fc64871051b16c9bdae75 upstream.
 
-When K >= 0xFFFF0000, AND needs the two least significant bytes of K as
-its operand, but EMIT2() gives it the least significant byte of K and
-0x2. EMIT() should be used here to replace EMIT2().
+i915_drm_thaw was not locking the mode_config lock when calling
+drm_helper_resume_force_mode. When there were multiple wake sources,
+this caused FDI training failure on SNB which in turn corrupted the
+display.
 
-Signed-off-by: Feiran Zhuang  <zhuangfeiran@ict.ac.cn>
-Acked-by: Eric Dumazet <eric.dumazet@gmail.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Sean Paul <seanpaul@chromium.org>
+Reviewed-by: Chris Wilson <chris@chris-wilson.co.uk>
+Signed-Off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- arch/x86/net/bpf_jit_comp.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/arch/x86/net/bpf_jit_comp.c
-+++ b/arch/x86/net/bpf_jit_comp.c
-@@ -289,7 +289,7 @@ void bpf_jit_compile(struct sk_filter *f
- 					EMIT2(0x24, K & 0xFF); /* and imm8,%al */
- 				} else if (K >= 0xFFFF0000) {
- 					EMIT2(0x66, 0x25);	/* and imm16,%ax */
--					EMIT2(K, 2);
-+					EMIT(K, 2);
- 				} else {
- 					EMIT1_off32(0x25, K);	/* and imm32,%eax */
- 				}
+---
+ drivers/gpu/drm/i915/i915_drv.c |    2 ++
+ 1 file changed, 2 insertions(+)
+
+--- a/drivers/gpu/drm/i915/i915_drv.c
++++ b/drivers/gpu/drm/i915/i915_drv.c
+@@ -508,7 +508,9 @@ static int i915_drm_thaw(struct drm_devi
+ 		drm_irq_install(dev);
+ 
+ 		/* Resume the modeset for every activated CRTC */
++		mutex_lock(&dev->mode_config.mutex);
+ 		drm_helper_resume_force_mode(dev);
++		mutex_unlock(&dev->mode_config.mutex);
+ 
+ 		if (IS_IRONLAKE_M(dev))
+ 			ironlake_enable_rc6(dev);
 
 
