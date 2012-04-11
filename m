@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965661Ab2DKX2n (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Apr 2012 19:28:43 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:38577 "EHLO
+	id S965675Ab2DKX2t (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Apr 2012 19:28:49 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:45547 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965522Ab2DKX2i (ORCPT
+	with ESMTP id S965522Ab2DKX2p (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Apr 2012 19:28:38 -0400
-Message-Id: <20120411231309.320578569@linuxfoundation.org>
+	Wed, 11 Apr 2012 19:28:45 -0400
+Message-Id: <20120411231311.262241540@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Wed, 11 Apr 2012 16:13:19 -0700
+Date: Wed, 11 Apr 2012 16:13:30 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Jiang Liu <jiang.liu@huawei.com>,
-        Jiang Liu <liuj97@gmail.com>, Keping Chen <chenkeping@huawei.com>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: [ 12/42] genirq: Adjust irq thread affinity on IRQ_SET_MASK_OK_NOCOPY return value
+        alan@lxorguk.ukuu.org.uk, Jason Wessel <jason.wessel@windriver.com>
+Subject: [ 23/42] kgdbts: Fix kernel oops with CONFIG_DEBUG_RODATA
 In-Reply-To: <20120411231443.GA808@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,52 +24,119 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jiang Liu <liuj97@gmail.com>
+From: Jason Wessel <jason.wessel@windriver.com>
 
-commit f5cb92ac82d06cb583c1f66666314c5c0a4d7913 upstream.
+commit 456ca7ff24841bf2d2a2dfd690fe7d42ef70d932 upstream.
 
-irq_move_masked_irq() checks the return code of
-chip->irq_set_affinity() only for 0, but IRQ_SET_MASK_OK_NOCOPY is
-also a valid return code, which is there to avoid a redundant copy of
-the cpumask. But in case of IRQ_SET_MASK_OK_NOCOPY we not only avoid
-the redundant copy, we also fail to adjust the thread affinity of an
-eventually threaded interrupt handler.
+On x86 the kgdb test suite will oops when the kernel is compiled with
+CONFIG_DEBUG_RODATA and you run the tests after boot time. This is
+regression has existed since 2.6.26 by commit: b33cb815 (kgdbts: Use
+HW breakpoints with CONFIG_DEBUG_RODATA).
 
-Handle IRQ_SET_MASK_OK (==0) and IRQ_SET_MASK_OK_NOCOPY(==1) return
-values correctly by checking the valid return values seperately.
+The test suite can use hw breakpoints for all the tests, but it has to
+execute the hardware breakpoint specific tests first in order to
+determine that the hw breakpoints actually work.  Specifically the
+very first test causes an oops:
 
-Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
-Cc: Jiang Liu <liuj97@gmail.com>
-Cc: Keping Chen <chenkeping@huawei.com>
-Link: http://lkml.kernel.org/r/1333120296-13563-2-git-send-email-jiang.liu@huawei.com
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+# echo V1I1 > /sys/module/kgdbts/parameters/kgdbts
+kgdb: Registered I/O driver kgdbts.
+kgdbts:RUN plant and detach test
+
+Entering kdb (current=0xffff880017aa9320, pid 1078) on processor 0 due to Keyboard Entry
+[0]kdb> kgdbts: ERROR PUT: end of test buffer on 'plant_and_detach_test' line 1 expected OK got $E14#aa
+WARNING: at drivers/misc/kgdbts.c:730 run_simple_test+0x151/0x2c0()
+[...oops clipped...]
+
+This commit re-orders the running of the tests and puts the RODATA
+check into its own function so as to correctly avoid the kernel oops
+by detecting and using the hw breakpoints.
+
+Signed-off-by: Jason Wessel <jason.wessel@windriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- kernel/irq/migration.c |   10 +++++++---
- 1 file changed, 7 insertions(+), 3 deletions(-)
+ drivers/misc/kgdbts.c |   52 ++++++++++++++++++++++++++------------------------
+ 1 file changed, 28 insertions(+), 24 deletions(-)
 
---- a/kernel/irq/migration.c
-+++ b/kernel/irq/migration.c
-@@ -43,12 +43,16 @@ void irq_move_masked_irq(struct irq_data
- 	 * masking the irqs.
- 	 */
- 	if (likely(cpumask_any_and(desc->pending_mask, cpu_online_mask)
--		   < nr_cpu_ids))
--		if (!chip->irq_set_affinity(&desc->irq_data,
--					    desc->pending_mask, false)) {
-+		   < nr_cpu_ids)) {
-+		int ret = chip->irq_set_affinity(&desc->irq_data,
-+						 desc->pending_mask, false);
-+		switch (ret) {
-+		case IRQ_SET_MASK_OK:
- 			cpumask_copy(desc->irq_data.affinity, desc->pending_mask);
-+		case IRQ_SET_MASK_OK_NOCOPY:
- 			irq_set_thread_affinity(desc);
- 		}
-+	}
- 
- 	cpumask_clear(desc->pending_mask);
+--- a/drivers/misc/kgdbts.c
++++ b/drivers/misc/kgdbts.c
+@@ -884,6 +884,22 @@ static void run_singlestep_break_test(vo
+ 	kgdbts_break_test();
  }
+ 
++static void test_debug_rodata(void)
++{
++#ifdef CONFIG_DEBUG_RODATA
++	/* Until there is an api to write to read-only text segments, use
++	 * HW breakpoints for the remainder of any tests, else print a
++	 * failure message if hw breakpoints do not work.
++	 */
++	if (!(arch_kgdb_ops.flags & KGDB_HW_BREAKPOINT && hwbreaks_ok)) {
++		eprintk("kgdbts: HW breakpoints BROKEN, ending tests\n");
++		return;
++	}
++	force_hwbrks = 1;
++	v1printk("kgdbts:Using HW breakpoints for SW breakpoint tests\n");
++#endif /* CONFIG_DEBUG_RODATA */
++}
++
+ static void kgdbts_run_tests(void)
+ {
+ 	char *ptr;
+@@ -906,6 +922,18 @@ static void kgdbts_run_tests(void)
+ 	if (ptr)
+ 		sstep_test = simple_strtol(ptr+1, NULL, 10);
+ 
++	/* All HW break point tests */
++	if (arch_kgdb_ops.flags & KGDB_HW_BREAKPOINT) {
++		hwbreaks_ok = 1;
++		v1printk("kgdbts:RUN hw breakpoint test\n");
++		run_breakpoint_test(1);
++		v1printk("kgdbts:RUN hw write breakpoint test\n");
++		run_hw_break_test(1);
++		v1printk("kgdbts:RUN access write breakpoint test\n");
++		run_hw_break_test(0);
++	}
++	test_debug_rodata();
++
+ 	/* required internal KGDB tests */
+ 	v1printk("kgdbts:RUN plant and detach test\n");
+ 	run_plant_and_detach_test(0);
+@@ -923,35 +951,11 @@ static void kgdbts_run_tests(void)
+ 
+ 	/* ===Optional tests=== */
+ 
+-	/* All HW break point tests */
+-	if (arch_kgdb_ops.flags & KGDB_HW_BREAKPOINT) {
+-		hwbreaks_ok = 1;
+-		v1printk("kgdbts:RUN hw breakpoint test\n");
+-		run_breakpoint_test(1);
+-		v1printk("kgdbts:RUN hw write breakpoint test\n");
+-		run_hw_break_test(1);
+-		v1printk("kgdbts:RUN access write breakpoint test\n");
+-		run_hw_break_test(0);
+-	}
+-
+ 	if (nmi_sleep) {
+ 		v1printk("kgdbts:RUN NMI sleep %i seconds test\n", nmi_sleep);
+ 		run_nmi_sleep_test(nmi_sleep);
+ 	}
+ 
+-#ifdef CONFIG_DEBUG_RODATA
+-	/* Until there is an api to write to read-only text segments, use
+-	 * HW breakpoints for the remainder of any tests, else print a
+-	 * failure message if hw breakpoints do not work.
+-	 */
+-	if (!(arch_kgdb_ops.flags & KGDB_HW_BREAKPOINT && hwbreaks_ok)) {
+-		eprintk("kgdbts: HW breakpoints do not work,"
+-			"skipping remaining tests\n");
+-		return;
+-	}
+-	force_hwbrks = 1;
+-#endif /* CONFIG_DEBUG_RODATA */
+-
+ 	/* If the do_fork test is run it will be the last test that is
+ 	 * executed because a kernel thread will be spawned at the very
+ 	 * end to unregister the debug hooks.
 
 
