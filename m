@@ -1,61 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761481Ab2DKXUx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Apr 2012 19:20:53 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:60504 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753297Ab2DKXUv convert rfc822-to-8bit (ORCPT
+	id S965012Ab2DKXST (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Apr 2012 19:18:19 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:39063 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S964999Ab2DKXSQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Apr 2012 19:20:51 -0400
-MIME-Version: 1.0
-In-Reply-To: <1334186326-22649-1-git-send-email-grant.likely@secretlab.ca>
-References: <1334186326-22649-1-git-send-email-grant.likely@secretlab.ca>
-From: Grant Likely <grant.likely@secretlab.ca>
-Date: Wed, 11 Apr 2012 17:20:30 -0600
-X-Google-Sender-Auth: ROul-ZxUKDhQhPjpgl0gkWrlgOo
-Message-ID: <CACxGe6tYXfJ9JZkJ9_bVE8FTg8TZLo_V50wAy4Nf=4yObF71tQ@mail.gmail.com>
-Subject: Re: irq_domain fixes for v3.4-rc2
-To: linux-kernel@vger.kernel.org
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Milton Miller <miltonm@bga.com>,
-        Andreas Schwab <schwab@linux-m68k.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Wed, 11 Apr 2012 19:18:16 -0400
+Message-Id: <20120411231031.091500541@linuxfoundation.org>
+User-Agent: quilt/0.60-19.1
+Date: Wed, 11 Apr 2012 16:11:33 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        alan@lxorguk.ukuu.org.uk, Stephen Warren <swarren@nvidia.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Subject: [ 75/78] ASoC: tegra: fix i2s compilation when !CONFIG_DEBUG_FS
+In-Reply-To: <20120411231102.GA6404@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Oops, missed out the cc's.
+3.3-stable review patch.  If anyone has any objections, please let me know.
 
-g.
+------------------
 
-On Wed, Apr 11, 2012 at 5:18 PM, Grant Likely <grant.likely@secretlab.ca> wrote:
-> Hi Ben,
->
-> Here are the fixes I'm proposing for the irq_domain issues seen on
-> powermac.  I had originally only intended to remove the
-> irq_virq_count, but I already had the hint and slow path removal
-> patches written and reviewed, and removing them reduces the number of
-> failure paths, and simplifies the code quite a bit.
->
-> I've pushed this out to the following branch for testing:
->
-> git://git.secretlab.ca/git/linux-2.6 irqdomain/test
->
-> It has been boot tested on ARM, but not powerpc.  This series of three
-> patches applies on top of the existing irqdomain/merge branch on my
-> git server:
->
-> git://git.secretlab.ca/git/linux-2.6 irqdomain/merge
->
-> Can you test on your powermac?
->
-> Thanks,
-> g.
->
+From: Stephen Warren <swarren@nvidia.com>
+
+commit 8abe05c6eb358967f16bce8a02c88d57c82cfbd6 upstream.
+
+Commit d4a2eca "ASoC: Tegra I2S: Remove dependency on pdev->id" changed
+the prototype of tegra_i2s_debug_add, but didn't update the dummy inline
+used when !CONFIG_DEBUG_FS. Fix that.
+
+Signed-off-by: Stephen Warren <swarren@nvidia.com>
+Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ sound/soc/tegra/tegra_i2s.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+--- a/sound/soc/tegra/tegra_i2s.c
++++ b/sound/soc/tegra/tegra_i2s.c
+@@ -112,7 +112,7 @@ static void tegra_i2s_debug_remove(struc
+ 		debugfs_remove(i2s->debug);
+ }
+ #else
+-static inline void tegra_i2s_debug_add(struct tegra_i2s *i2s, int id)
++static inline void tegra_i2s_debug_add(struct tegra_i2s *i2s)
+ {
+ }
+ 
 
 
-
--- 
-Grant Likely, B.Sc., P.Eng.
-Secret Lab Technologies Ltd.
