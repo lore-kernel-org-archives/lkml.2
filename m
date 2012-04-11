@@ -1,22 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965236Ab2DKXtU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Apr 2012 19:49:20 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:41234 "EHLO
+	id S965145Ab2DKXtq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Apr 2012 19:49:46 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:58738 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964985Ab2DKXVz (ORCPT
+	with ESMTP id S933387Ab2DKXVs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Apr 2012 19:21:55 -0400
-Message-Id: <20120411231037.318027007@linuxfoundation.org>
+	Wed, 11 Apr 2012 19:21:48 -0400
+Message-Id: <20120411231037.053933012@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Wed, 11 Apr 2012 16:10:46 -0700
+Date: Wed, 11 Apr 2012 16:10:44 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
         alan@lxorguk.ukuu.org.uk,
+        Daniel Schwierzeck <daniel.schwierzeck@googlemail.com>,
+        John Crispin <blogic@openwrt.org>,
         Artem Bityutskiy <artem.bityutskiy@linux.intel.com>,
         David Woodhouse <David.Woodhouse@intel.com>
-Subject: [ 11/59] mtd: sst25l: initialize writebufsize
+Subject: [ 09/59] mtd: mips: lantiq: reintroduce support for cmdline partitions
 In-Reply-To: <20120411231213.GA13124@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,36 +28,42 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
+From: Daniel Schwierzeck <daniel.schwierzeck@googlemail.com>
 
-commit c4cc625ea5958d065c21cc0fcea29e9ed8f3d2bc upstream.
+commit bf011f2ed53d587fdd8148c173c4f09ed77bdf1a upstream.
 
-The writebufsize concept was introduce by commit
-"0e4ca7e mtd: add writebufsize field to mtd_info struct" and it represents
-the maximum amount of data the device writes to the media at a time. This is
-an important parameter for UBIFS which is used during recovery and which
-basically defines how big a corruption caused by a power cut can be.
+Since commit ca97dec2ab5c87e9fbdf7e882e1820004a3966fa the
+command line parsing of MTD partitions does not work anymore.
 
-Set writebufsize to the flash page size because it is the maximum amount of
-data it writes at a time.
-
+Signed-off-by: Daniel Schwierzeck <daniel.schwierzeck@googlemail.com>
+Signed-off-by: John Crispin <blogic@openwrt.org>
 Signed-off-by: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
+Acked-by: John Crispin <blogic@openwrt.org>
 Signed-off-by: David Woodhouse <David.Woodhouse@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/mtd/devices/sst25l.c |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/mtd/maps/lantiq-flash.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/drivers/mtd/devices/sst25l.c
-+++ b/drivers/mtd/devices/sst25l.c
-@@ -402,6 +402,7 @@ static int __devinit sst25l_probe(struct
- 	flash->mtd.flags	= MTD_CAP_NORFLASH;
- 	flash->mtd.erasesize	= flash_info->erase_size;
- 	flash->mtd.writesize	= flash_info->page_size;
-+	flash->mtd.writebufsize	= flash_info->page_size;
- 	flash->mtd.size		= flash_info->page_size * flash_info->nr_pages;
- 	flash->mtd.erase	= sst25l_erase;
- 	flash->mtd.read		= sst25l_read;
+--- a/drivers/mtd/maps/lantiq-flash.c
++++ b/drivers/mtd/maps/lantiq-flash.c
+@@ -45,6 +45,7 @@ struct ltq_mtd {
+ };
+ 
+ static char ltq_map_name[] = "ltq_nor";
++static const char *ltq_probe_types[] __devinitconst = { "cmdlinepart", NULL };
+ 
+ static map_word
+ ltq_read16(struct map_info *map, unsigned long adr)
+@@ -168,7 +169,7 @@ ltq_mtd_probe(struct platform_device *pd
+ 	cfi->addr_unlock1 ^= 1;
+ 	cfi->addr_unlock2 ^= 1;
+ 
+-	err = mtd_device_parse_register(ltq_mtd->mtd, NULL, 0,
++	err = mtd_device_parse_register(ltq_mtd->mtd, ltq_probe_types, 0,
+ 			ltq_mtd_data->parts, ltq_mtd_data->nr_parts);
+ 	if (err) {
+ 		dev_err(&pdev->dev, "failed to add partitions\n");
 
 
