@@ -1,112 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759229Ab2DKPlZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Apr 2012 11:41:25 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:31700 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755566Ab2DKPlX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Apr 2012 11:41:23 -0400
-Date: Wed, 11 Apr 2012 11:40:05 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Jan Kara <jack@suse.cz>
-Cc: Tejun Heo <tj@kernel.org>, Fengguang Wu <fengguang.wu@intel.com>,
-        Jens Axboe <axboe@kernel.dk>, linux-mm@kvack.org, sjayaraman@suse.com,
-        andrea@betterlinux.com, jmoyer@redhat.com,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        kamezawa.hiroyu@jp.fujitsu.com, lizefan@huawei.com,
-        containers@lists.linux-foundation.org, cgroups@vger.kernel.org,
-        ctalbott@google.com, rni@google.com, lsf@lists.linux-foundation.org
-Subject: Re: [RFC] writeback and cgroup
-Message-ID: <20120411154005.GD16692@redhat.com>
-References: <20120403183655.GA23106@dhcp-172-17-108-109.mtv.corp.google.com>
- <20120404145134.GC12676@redhat.com>
- <20120407080027.GA2584@quack.suse.cz>
- <20120410180653.GJ21801@redhat.com>
- <20120410210505.GE4936@quack.suse.cz>
- <20120410212041.GP21801@redhat.com>
- <20120410222425.GF4936@quack.suse.cz>
+	id S1759455Ab2DKPlc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Apr 2012 11:41:32 -0400
+Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:39518 "EHLO
+	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1759326Ab2DKPl3 convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Apr 2012 11:41:29 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120410222425.GF4936@quack.suse.cz>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <4F84F895.4080101@zytor.com>
+References: <1331781125-15658-1-git-send-email-wad@chromium.org>
+	<1331781125-15658-5-git-send-email-wad@chromium.org>
+	<4F6F7362.6030402@zytor.com>
+	<CABqD9hZgnrKFY_Wei-ysU=Dy7Og2iEemnqPvcQ14M0+vL65gHQ@mail.gmail.com>
+	<4F84F895.4080101@zytor.com>
+Date: Wed, 11 Apr 2012 10:41:24 -0500
+Message-ID: <CABqD9haw2YutkSQHO0Qq19eveqwKCEi=L3fpCYupqvakW3jDMw@mail.gmail.com>
+Subject: Re: [PATCH v15 04/13] arch/x86: add syscall_get_arch to syscall.h
+From: Will Drewry <wad@chromium.org>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
+        linux-doc@vger.kernel.org, kernel-hardening@lists.openwall.com,
+        netdev@vger.kernel.org, x86@kernel.org, arnd@arndb.de,
+        davem@davemloft.net, mingo@redhat.com, oleg@redhat.com,
+        peterz@infradead.org, rdunlap@xenotime.net, mcgrathr@chromium.org,
+        tglx@linutronix.de, luto@mit.edu, eparis@redhat.com,
+        serge.hallyn@canonical.com, djm@mindrot.org, scarybeasts@gmail.com,
+        indan@nul.nu, pmoore@redhat.com, akpm@linux-foundation.org,
+        corbet@lwn.net, eric.dumazet@gmail.com, markus@chromium.org,
+        coreyb@linux.vnet.ibm.com, keescook@chromium.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 11, 2012 at 12:24:25AM +0200, Jan Kara wrote:
+On Tue, Apr 10, 2012 at 10:20 PM, H. Peter Anvin <hpa@zytor.com> wrote:
+> On 04/10/2012 08:13 PM, Will Drewry wrote:
+>> On Sun, Mar 25, 2012 at 2:34 PM, H. Peter Anvin <hpa@zytor.com> wrote:
+>>> On 03/14/2012 08:11 PM, Will Drewry wrote:
+>>>>
+>>>> +static inline int syscall_get_arch(struct task_struct *task,
+>>>> +                                struct pt_regs *regs)
+>>>> +{
+>>>> +#ifdef CONFIG_IA32_EMULATION
+>>>> +     /*
+>>>> +      * TS_COMPAT is set for 32-bit syscall entries and then
+>>>> +      * remains set until we return to user mode.
+>>>> +      *
+>>>> +      * TIF_IA32 tasks should always have TS_COMPAT set at
+>>>> +      * system call time.
+>>>> +      */
+>>>> +     if (task_thread_info(task)->status & TS_COMPAT)
+>>>> +             return AUDIT_ARCH_I386;
+>>>> +#endif
+>>>> +     return AUDIT_ARCH_X86_64;
+>>>> +}
+>>>>  #endif       /* CONFIG_X86_32 */
+>>>>
+>>>>  #endif       /* _ASM_X86_SYSCALL_H */
+>>>
+>>> Just one FYI on this: after the x32 changes are upstream this can be
+>>> implemented in terms of is_ia32_task().
+>>
+>> Now that I've seen is_ia32_task(), it appears to be exactly the same as above:
+>> (1)  If we're x86_32, it's ia32
+>> (2)  If we're x86_64, ia32 == !!(status & TS_COMPAT)
+>> (3)  Otherwise, it's x86_64, including x32
+>>
+>> Am I missing something? Should is_ia32_task(void) take a task_struct?
+>> Right now, I don't see any reason to change the code, as posted, but
+>> maybe I am mis-reading?
+>>
+>
+> Sorry, answered the wrong question.  Yes, it is the same as above...
+> just wandered if we could centralize this test.  It might indeed make
+> sense to provide general predicates which take a task pointer.
 
-[..]
-> > I have implemented and posted patches for per bdi per cgroup congestion
-> > flag. The only problem I see with that is that a group might be congested
-> > for a long time because of lots of other IO happening (say direct IO) and
-> > if you keep on backing off and never submit the metadata IO (transaction),
-> > you get starved. And if you go ahead and submit IO in a congested group,
-> > we are back to serialization issue.
->   Clearly, we mustn't throttle metadata IO once it gets to the block layer.
-> That's why we discuss throttling of processes at transaction start after
-> all. But I agree starvation is an issue - I originally thought blk-throttle
-> throttles synchronously which wouldn't have starvation issues. But when
-> that's not the case things are a bit more tricky. We could treat
-> transaction start as an IO of some size (since we already have some
-> estimation how large a transaction will be when we are starting it) and let
-> the transaction start only when our "virtual" IO would be submitted but
-> I feel that gets maybe too complicated... Maybe we could just delay the
-> transaction start by the amount reported from blk-throttle layer? Something
-> along your callback for throttling you implemented?
+Makes sense to me. I'm leaving this specific patch alone at present.
 
-I think now I have lost you. It probably stems from the fact that I don't
-know much about transactions and filesystem.
- 
-So all the metadata IO will happen thorough journaling thread and that
-will be in root group which should remain unthrottled. So any journal
-IO going to disk should remain unthrottled.
+That said, a quick grep shows only  a handful of ia32 references:
+./arch/x86/include/asm/compat.h:        return is_ia32_task() || is_x32_task();
+./arch/x86/ia32/ia32_signal.c:  bool ia32 = is_ia32_task();
+./arch/x86/kernel/ptrace.c:     if (!is_ia32_task())
 
-Now, IIRC, fsync problem with throttling was that we had opened a
-transaction but could not write it back to disk because we had to
-wait for all the cached data to go to disk (which is throttled). So
-my question is, can't we first wait for all the data to be flushed
-to disk and then open a transaction for metadata. metadata will be
-unthrottled so filesystem will not have to do any tricks like bdi is
-congested or not.
+Would it make sense to make a new predicate or just expand the one
+added in 3.4 to take a task_struct parameter? I'm not sure if there'd
+be much fallout in converting these from directly checking
+current_thread_info to task_thread_info.
 
-IOW, can't we first wait for dependent operation to finish before we
-throw anything into metada stream.
+It's a small patch either way.
 
-[..]
-> > I guess throttling at bdi layer will take care of network filesystem
-> > case too?
->   Yes. At least for client side. On sever side Steve wants server to have
-> insight into how much IO we could push in future so that it can limit
-> number of outstanding requests if I understand him right. I'm not sure we
-> really want / are able to provide this amount of knowledge to filesystems
-> even less userspace...
-
-I am not sure what does it mean but server could simply query the bdi
-and read configured rate and then it knows at what rate IO will go to
-disk and make predictions about future?
-
-> 
-> > But isn't the notion of "bdi" internal to kernel and user does
-> > not really program thing in terms of bdi.
->   Well, it is. But we already have per-bdi tunables (e.g.  readahead) that
-> are exported in /sys/block/<device>/queue/ so we have some precedens.
-
-ok, so they are exposed as if they are queue/device tunables but
-internally stored in bdi and work accordingly.
-
->  
-> > Also per bdi limit mechanism will not solve the issue of global throttling
-> > where in case of btrfs an IO might go to multiple bdi's. So throttling limits
-> > are not total but per bdi.
->   Well, btrfs plays tricks with bdi's but there is a special bdi called
-> "btrfs" which backs the whole filesystem and that is what's put in
-> sb->s_bdi or in each inode's i_mapping->backing_dev_info. So we have a
-> global bdi to work with.
-
-Ok, that's good to know. How would we configure this special bdi? I am
-assuming there is no backing device visible in /sys/block/<device>/queue/?
-Same is true for network file systems.
-
-Thanks
-Vivek
+cheers!
+will
