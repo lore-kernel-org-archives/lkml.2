@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933910Ab2DLABY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Apr 2012 20:01:24 -0400
+	id S933917Ab2DLABp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Apr 2012 20:01:45 -0400
 Received: from mail-pb0-f46.google.com ([209.85.160.46]:39063 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933792Ab2DKXQX (ORCPT
+	with ESMTP id S933816Ab2DKXQR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Apr 2012 19:16:23 -0400
-Message-Id: <20120411231023.669013675@linuxfoundation.org>
+	Wed, 11 Apr 2012 19:16:17 -0400
+Message-Id: <20120411231023.306730936@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Wed, 11 Apr 2012 16:10:50 -0700
+Date: Wed, 11 Apr 2012 16:10:48 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Chris Wilson <chris@chris-wilson.co.uk>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>,
-        Dave Airlie <airlied@redhat.com>
-Subject: [ 32/78] drm: Validate requested virtual size against allocated fb size
+        alan@lxorguk.ukuu.org.uk, Larry Finger <Larry.Finger@lwfinger.net>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [ 30/78] rtlwifi: rtl8192ce: rtl8192cu: rtl8192de: Fix low-gain setting when scanning
 In-Reply-To: <20120411231102.GA6404@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,45 +25,49 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Chris Wilson <chris@chris-wilson.co.uk>
+From: Larry Finger <Larry.Finger@lwfinger.net>
 
-commit 62fb376e214d3c1bfdf6fbb77dac162f6da04d7e upstream.
+commit 643c61e119459e9d750087b7b34be94491efebf9 upstream.
 
-mplayer -vo fbdev tries to create a screen that is twice as tall as the
-allocated framebuffer for "doublebuffering". By default, and all in-tree
-users, only sufficient memory is allocated and mapped to satisfy the
-smallest framebuffer and the virtual size is no larger than the actual.
-For these users, we should therefore reject any userspace request to
-create a screen that requires a buffer larger than the framebuffer
-originally allocated.
+In https://bugzilla.redhat.com/show_bug.cgi?id=770207, slowdowns of driver
+rtl8192ce are reported. One fix (commit a9b89e2) has already been applied,
+and it helped, but the maximum RX speed would still drop to 1 Mbps. As in
+the previous fix, the initial gain was determined to be the problem; however,
+the problem arises from a setting of the gain when scans are started.
 
-References: https://bugs.freedesktop.org/show_bug.cgi?id=38138
-Signed-off-by: Chris Wilson <chris@chris-wilson.co.uk>
-Reviewed-by: Daniel Vetter <daniel.vetter@ffwll.ch>
-Signed-off-by: Dave Airlie <airlied@redhat.com>
+Driver rtl8192de also has the same code structure - this one is fixed as well.
+
+Reported-and-Tested-by: Ivan Pesin <ivan.pesin@gmail.com>
+Signed-off-by: Larry Finger <Larry.Finger@lwfinger.net>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/drm_fb_helper.c |    8 ++++++--
- 1 file changed, 6 insertions(+), 2 deletions(-)
+ drivers/net/wireless/rtlwifi/rtl8192c/phy_common.c |    2 +-
+ drivers/net/wireless/rtlwifi/rtl8192de/phy.c       |    2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
 
---- a/drivers/gpu/drm/drm_fb_helper.c
-+++ b/drivers/gpu/drm/drm_fb_helper.c
-@@ -617,9 +617,13 @@ int drm_fb_helper_check_var(struct fb_va
- 		return -EINVAL;
- 
- 	/* Need to resize the fb object !!! */
--	if (var->bits_per_pixel > fb->bits_per_pixel || var->xres > fb->width || var->yres > fb->height) {
-+	if (var->bits_per_pixel > fb->bits_per_pixel ||
-+	    var->xres > fb->width || var->yres > fb->height ||
-+	    var->xres_virtual > fb->width || var->yres_virtual > fb->height) {
- 		DRM_DEBUG("fb userspace requested width/height/bpp is greater than current fb "
--			  "object %dx%d-%d > %dx%d-%d\n", var->xres, var->yres, var->bits_per_pixel,
-+			  "request %dx%d-%d (virtual %dx%d) > %dx%d-%d\n",
-+			  var->xres, var->yres, var->bits_per_pixel,
-+			  var->xres_virtual, var->yres_virtual,
- 			  fb->width, fb->height, fb->bits_per_pixel);
- 		return -EINVAL;
- 	}
+--- a/drivers/net/wireless/rtlwifi/rtl8192c/phy_common.c
++++ b/drivers/net/wireless/rtlwifi/rtl8192c/phy_common.c
+@@ -1968,7 +1968,7 @@ void rtl92c_phy_set_io(struct ieee80211_
+ 		break;
+ 	case IO_CMD_PAUSE_DM_BY_SCAN:
+ 		rtlphy->initgain_backup.xaagccore1 = dm_digtable.cur_igvalue;
+-		dm_digtable.cur_igvalue = 0x17;
++		dm_digtable.cur_igvalue = 0x37;
+ 		rtl92c_dm_write_dig(hw);
+ 		break;
+ 	default:
+--- a/drivers/net/wireless/rtlwifi/rtl8192de/phy.c
++++ b/drivers/net/wireless/rtlwifi/rtl8192de/phy.c
+@@ -3192,7 +3192,7 @@ static void rtl92d_phy_set_io(struct iee
+ 		break;
+ 	case IO_CMD_PAUSE_DM_BY_SCAN:
+ 		rtlphy->initgain_backup.xaagccore1 = de_digtable.cur_igvalue;
+-		de_digtable.cur_igvalue = 0x17;
++		de_digtable.cur_igvalue = 0x37;
+ 		rtl92d_dm_write_dig(hw);
+ 		break;
+ 	default:
 
 
