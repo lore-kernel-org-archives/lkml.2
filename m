@@ -1,102 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933199Ab2DKUVg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Apr 2012 16:21:36 -0400
-Received: from wolverine02.qualcomm.com ([199.106.114.251]:62375 "EHLO
-	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933057Ab2DKUVf (ORCPT
+	id S933204Ab2DKUXv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Apr 2012 16:23:51 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:60464 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755356Ab2DKUXu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Apr 2012 16:21:35 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6677"; a="178510785"
-Message-ID: <4F85E7CE.7090504@codeaurora.org>
-Date: Wed, 11 Apr 2012 13:21:34 -0700
-From: Saravana Kannan <skannan@codeaurora.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:11.0) Gecko/20120327 Thunderbird/11.0.1
+	Wed, 11 Apr 2012 16:23:50 -0400
 MIME-Version: 1.0
-To: "Turquette, Mike" <mturquette@ti.com>
-CC: Sascha Hauer <s.hauer@pengutronix.de>, Andrew Lunn <andrew@lunn.ch>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Jamie Iles <jamie@jamieiles.com>,
-        Jeremy Kerr <jeremy.kerr@canonical.com>,
-        Magnus Damm <magnus.damm@gmail.com>,
-        Deepak Saxena <dsaxena@linaro.org>,
-        linux-arm-kernel@lists.infradead.org,
-        Arnd Bergman <arnd.bergmann@linaro.org>, linux-arm-msm@vger.kernel.org,
-        Rob Herring <rob.herring@calxeda.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Richard Zhao <richard.zhao@linaro.org>,
-        Shawn Guo <shawn.guo@freescale.com>, Paul Walmsley <paul@pwsan.com>,
-        Linus Walleij <linus.walleij@stericsson.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Stephen Boyd <sboyd@codeaurora.org>, linux-kernel@vger.kernel.org,
-        Amit Kucheria <amit.kucheria@linaro.org>,
-        Shawn Guo <shawn.guo@linaro.org>
-Subject: Re: [PATCH 2/2] clk: Move init fields from clk to clk_hw
-References: <CAJOA=zN2cSSpM92oRnW0RyU_ZzyoQ=jthc-fAkf-P3z37uWt7w@mail.gmail.com> <1332214706-675-1-git-send-email-skannan@codeaurora.org> <1332214706-675-2-git-send-email-skannan@codeaurora.org> <20120320072018.GC32469@S2101-09.ap.freescale.net> <cbd6490459b9fd68875fec4a7c7de073.squirrel@www.codeaurora.org> <20120320094031.GI3852@pengutronix.de> <20120320141811.GF32469@S2101-09.ap.freescale.net> <20120320181050.GN3852@pengutronix.de> <4F68E34A.70207@codeaurora.org> <20120320231242.GP3852@pengutronix.de> <CAJOA=zOGTW7OqACWgJQW6HSPLVev+apdNhv4vNXjHTcp=7N+uQ@mail.gmail.com> <4F694484.1030706@codeaurora.org> <4F714397.6080608@codeaurora.org> <CAJOA=zOq=kYfZUEnnQT_D4w=Kpp5n7R=k9oOCrxF59P5W-nw-w@mail.gmail.com> <4F7E4752.4020007@codeaurora.org> <CAJOA=zMEN_im3-T+_uXB_mTu842o_fRkr9-7h=X18fKBoH46aQ@mail.gmail.com> <4F85E238.9050102@codeaurora.org> <CAJOA=zOKE7hyvvjB3HLh_iAX8HGCbFQtUHijU3BM+0r+9-b72A@mail.gmail.com>
-In-Reply-To: <CAJOA=zOKE7hyvvjB3HLh_iAX8HGCbFQtUHijU3BM+0r+9-b72A@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20120411194751.GA7055@samfundet.no>
+References: <cover.1334137680.git.nicolas.ferre@atmel.com>
+	<05cc973152bedd39bf37fa1222960c2a2c438500.1334137680.git.nicolas.ferre@atmel.com>
+	<20120411194751.GA7055@samfundet.no>
+Date: Wed, 11 Apr 2012 13:23:49 -0700
+Message-ID: <CAF8ieYWOgvSZcnha+DxDVA1d3sJGyi0gGDip-s=S-zPTTz2bOQ@mail.gmail.com>
+Subject: Re: [PATCH 5/5] MAINTAINERS: remove non-responding web link for
+ atmel_usba driver
+From: =?ISO-8859-1?Q?H=E5vard_Skinnemoen?= <hskinnemoen@gmail.com>
+To: Hans-Christian Egtvedt <egtvedt@samfundet.no>
+Cc: Nicolas Ferre <nicolas.ferre@atmel.com>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, plagnioj@jcrosoft.com,
+        Josh.wu@atmel.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/11/2012 01:17 PM, Turquette, Mike wrote:
-> On Wed, Apr 11, 2012 at 12:57 PM, Saravana Kannan
-> <skannan@codeaurora.org>  wrote:
->> On 04/11/2012 10:59 AM, Turquette, Mike wrote:
->>> On Thu, Apr 5, 2012 at 6:30 PM, Saravana Kannan<skannan@codeaurora.org>
->>> My only concern with this series is that platform clock code will
->>> access struct clk_hw members without the appropriate lock held (namely
->>> prepare_lock).  I'm a bit worried that there might be a case where
->>> some clock code access clk_hw->name when clk_hw has somehow been
->>> destroyed/altered (e.g. if clk_put every finally gets implemented...).
->>>   Besides clk_put are there any real instances where this might happen?
->>
->> This problem is true for any struct/field marked as __init_data. So, I don't
->> think this is a real problem. If someone is stupid enough to mark their data
->> as __init_data and access them later, then there is not much we can do.
->> Also, I believe the compiler throws out some warning when you try to access
->> __init_data from non-init code.
->
-> I'm referring to platform clock code accessing clk_hw->name or
-> clk_hw->parent_names AFTER the core code has copied the initialization
-> data.  So this isn't an __initdata problem as much as it is a design
-> issue with exposing some members of struct clk_hw.  I think that this
-> is basically OK since the benefits of not having to use so many
-> helpers functions in platform clock code is obvious and if a platform
-> gets bitten by this then they will learn the hard way to honor the
-> locking semantics outlined in Documentation/clk.txt
+On Wed, Apr 11, 2012 at 12:47 PM, Hans-Christian Egtvedt
+<egtvedt@samfundet.no> wrote:
+> With regards to this specific driver, I am unsure how much information the
+> wiki really gives, it is probably out of sync as well now...
 
-That's what I meant too. The platform code and the static init data will 
-most likely be written by the same dev. So, hopefully they know what 
-they are doing.
+Hmm, yeah. The patches on that page are certainly useless, as they
+were merged a long time ago. I don't think the "known issues" are
+really valid anymore either.
 
->
->>> I'll be pushing my fixes branch out to the list soon.  Do you want to
->>> rebase this change on top of it taking into account the __initdata
->>> bits?
->>
->> I thought it might be easier for you to base your changes on top of my
->> patch. But I can try to rebase mine on top of your changes. Hopefully your
->> fixes aren't crazy big/complex.
->
-> I don't think the fixes are a big deal, especially in the core code.
->
->> This is a busy week for me at work. I will try to send a patch in a day or
->> two.
->
-> OK.  I might take a swing at it myself if I have time.
-
-I still need to make the changes to add the copying part. So, don't 
-bother with taking a swing at it. If you want to help out, help with 
-rebasing it on top of your fixes would be appreciated. But based on what 
-you said, it should be hard.
-
-TLDR: Just wait for me to send out the patches. :)
-
--Saravana
-
--- 
-Sent by an employee of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+Havard
