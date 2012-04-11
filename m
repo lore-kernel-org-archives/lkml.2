@@ -1,81 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761296Ab2DKVMA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Apr 2012 17:12:00 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:32694 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753593Ab2DKVL7 (ORCPT
+	id S1761309Ab2DKVMs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Apr 2012 17:12:48 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60821 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753625Ab2DKVMq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Apr 2012 17:11:59 -0400
-X-Authority-Analysis: v=2.0 cv=P4S4d18u c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=XQbtiDEiEegA:10 a=qp4yekXCDa0A:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=JfrnYn6hAAAA:8 a=pGLkceISAAAA:8 a=Ct8BtjlUBusx088obRIA:9 a=PUjeQqilurYA:10 a=3Rfx1nUSh_UA:10 a=MSl-tDqOz04A:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.80.29
-Message-ID: <1334178715.23924.308.camel@gandalf.stny.rr.com>
-Subject: Re: [PATCH 12/16] rtmutex: turn the plist into an rb-tree.
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Juri Lelli <juri.lelli@gmail.com>
-Cc: peterz@infradead.org, tglx@linutronix.de, mingo@redhat.com,
-        oleg@redhat.com, fweisbec@gmail.com, darren@dvhart.com,
-        johan.eker@ericsson.com, p.faure@akatech.ch,
-        linux-kernel@vger.kernel.org, claudio@evidence.eu.com,
-        michael@amarulasolutions.com, fchecconi@gmail.com,
-        tommaso.cucinotta@sssup.it, nicola.manica@disi.unitn.it,
-        luca.abeni@unitn.it, dhaval.giani@gmail.com, hgu1972@gmail.com,
-        paulmck@linux.vnet.ibm.com, raistlin@linux.it, insop.song@ericsson.com,
-        liming.wang@windriver.com
-Date: Wed, 11 Apr 2012 17:11:55 -0400
-In-Reply-To: <1333696481-3433-13-git-send-email-juri.lelli@gmail.com>
-References: <1333696481-3433-1-git-send-email-juri.lelli@gmail.com>
-	 <1333696481-3433-13-git-send-email-juri.lelli@gmail.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.2.2-1 
-Content-Transfer-Encoding: 7bit
+	Wed, 11 Apr 2012 17:12:46 -0400
+Date: Wed, 11 Apr 2012 14:12:44 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Glauber Costa <glommer@parallels.com>
+Cc: <linux-kernel@vger.kernel.org>, <devel@openvz.org>, <linux-mm@kvack.org>,
+        <cgroups@vger.kernel.org>, Michal Hocko <mhocko@suse.cz>,
+        Johannes Weiner <hannes@cmpxchg.org>, <kamezawa.hiroyu@jp.fujitsu.com>,
+        Greg Thelen <gthelen@google.com>,
+        Suleiman Souhlal <suleiman@google.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [PATCH] remove BUG() in possible but rare condition
+Message-Id: <20120411141244.2839d9a8.akpm@linux-foundation.org>
+In-Reply-To: <4F85EEED.1090906@parallels.com>
+References: <1334167824-19142-1-git-send-email-glommer@parallels.com>
+	<20120411132635.bfddc6bd.akpm@linux-foundation.org>
+	<4F85EEED.1090906@parallels.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2012-04-06 at 09:14 +0200, Juri Lelli wrote:
-> From: Peter Zijlstra <peterz@infradead.org>
-> 
-> Turn the pi-chains from plist to rb-tree, in the rt_mutex code,
-> and provide a proper comparison function for -deadline and
-> -priority tasks.
+On Wed, 11 Apr 2012 17:51:57 -0300
+Glauber Costa <glommer@parallels.com> wrote:
 
-I have to ask. Why not just add a rbtree with a plist? That is, add all
-deadline tasks to the rbtree and all others to the plist. As plist has a
-O(1) operation, and rbtree does not. We are making all RT tasks suffer
-the overhead of the rbtree.
+> On 04/11/2012 05:26 PM, Andrew Morton wrote:
+> >>
+> >> >    failed:
+> >> >  -	BUG();
+> >> >    	unlock_page(page);
+> >> >    	page_cache_release(page);
+> >> >    	return NULL;
+> > Cute.
+> >
+> > AFAICT what happened was that in my April 2002 rewrite of this code I
+> > put a non-fatal buffer_error() warning in that case to tell us that
+> > something bad happened.
+> >
+> > Years later we removed the temporary buffer_error() and mistakenly
+> > replaced that warning with a BUG().  Only it*can*  happen.
+> >
+> > We can remove the BUG() and fix up callers, or we can pass retry=1 into
+> > alloc_page_buffers(), so grow_dev_page() "cannot fail".  Immortal
+> > functions are a silly fiction, so we should remove the BUG() and fix up
+> > callers.
+> >
+> Any particular caller you are concerned with ?
 
-As deadline tasks always win, the two may stay agnostic from each other.
-Check first the rbtree, if it is empty, then check the plist.
+Didn't someone see a buggy caller in btrfs?
 
-This will become more predominant with the -rt tree as it converts most
-the locks in the kernel to pi mutexes.
+I'm thinking that we should retain some sort of assertion (a WARN_ON)
+if the try_to_free_buffers() failed.  This is a weird case which I
+assume handles the situation where a blockdev's blocksize has changed. 
+The code tries to throw away the old wrongly-sized buffer_heads and to
+then add new correctly-sized ones.  If that discarding of buffers
+fails then the kernel is in rather a mess.
 
--- Steve
-
-> 
-> This is done mainly because:
->  - classical prio field of the plist is just an int, which might
->    not be enough for representing a deadline;
->  - manipulating such a list would become O(nr_deadline_tasks),
->    which might be to much, as the number of -deadline task increases.
-> 
-> Therefore, an rb-tree is used, and tasks are queued in it according
-> to the following logic:
->  - among two -priority (i.e., SCHED_BATCH/OTHER/RR/FIFO) tasks, the
->    one with the higher (lower, actually!) prio wins;
->  - among a -priority and a -deadline task, the latter always wins;
->  - among two -deadline tasks, the one with the earliest deadline
->    wins.
-> 
-> Queueing and dequeueing functions are changed accordingly, for both
-> the list of a task's pi-waiters and the list of tasks blocked on
-> a pi-lock.
-> 
-> Signed-off-by: Peter Zijlstra <peterz@infradead.org>
-> Signed-off-by: Dario Faggioli <raistlin@linux.it>
-> Signed-off-by: Juri Lelli <juri.lelli@gmail.com>
-
+It's quite possible that this code is never executed - we _should_ have
+invalidated all the pagecache for that device when changing blocksize. 
+Or maybe it *is* executed, I dunno.  It's one of those things which has
+hung around for decades as code in other places has vastly changed.
 
