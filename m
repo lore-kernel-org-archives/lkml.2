@@ -1,87 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933257Ab2DKU6C (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Apr 2012 16:58:02 -0400
-Received: from casper.infradead.org ([85.118.1.10]:45862 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751032Ab2DKU57 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Apr 2012 16:57:59 -0400
-From: Arnaldo Carvalho de Melo <acme@infradead.org>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org,
-        "Nikunj A. Dadhania" <nikunj@linux.vnet.ibm.com>,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Stephane Eranian <eranian@google.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 1/1] perf kvm: Finding struct machine fails for PERF_RECORD_MMAP
-Date: Wed, 11 Apr 2012 17:57:43 -0300
-Message-Id: <1334177863-18820-2-git-send-email-acme@infradead.org>
-X-Mailer: git-send-email 1.7.9.2.358.g22243
-In-Reply-To: <1334177863-18820-1-git-send-email-acme@infradead.org>
-References: <1334177863-18820-1-git-send-email-acme@infradead.org>
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by casper.infradead.org
-	See http://www.infradead.org/rpr.html
+	id S933286Ab2DKU7H (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Apr 2012 16:59:07 -0400
+Received: from mga09.intel.com ([134.134.136.24]:17766 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751704Ab2DKU7F (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Apr 2012 16:59:05 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
+   d="scan'208";a="127924525"
+Subject: Re: [PATCH] clockevents: Leave broadcast device shtudown only if
+ the current device is always running.
+From: Suresh Siddha <suresh.b.siddha@intel.com>
+Reply-To: Suresh Siddha <suresh.b.siddha@intel.com>
+To: Feng Tang <feng.tang@intel.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>, santosh.shilimkar@ti.com,
+        linux-kernel@vger.kernel.org, johnstul@us.ibm.com
+Date: Wed, 11 Apr 2012 14:01:12 -0700
+In-Reply-To: <20120411160402.GA27044@feng-i7>
+References: <1333951423-27621-1-git-send-email-santosh.shilimkar@ti.com>
+	 <1334011304.12400.81.camel@sbsiddha-desk.sc.intel.com>
+	 <CA++bM2th5XW1gxrHbcHwDK=qBBaNc3ut0ydbNNStfNa-Xa-9tA@mail.gmail.com>
+	 <20120411063452.GA25399@feng-i7> <alpine.LFD.2.02.1204111208070.2542@ionos>
+	 <20120411160402.GA27044@feng-i7>
+Organization: Intel Corp
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.0.3 (3.0.3-1.fc15) 
+Content-Transfer-Encoding: 7bit
+Message-ID: <1334178072.27381.21.camel@sbsiddha-desk.sc.intel.com>
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Nikunj A. Dadhania" <nikunj@linux.vnet.ibm.com>
+On Thu, 2012-04-12 at 00:04 +0800, Feng Tang wrote:
+> Thanks for the explaination, I understand the root cause now.
+> 
+> And regarding the original commit 77b0d60c5
+>     clockevents: Leave the broadcast device in shutdown mode when not needed
+> 
+> @@ -575,11 +575,15 @@ void tick_broadcast_switch_to_oneshot(void)
+>  	unsigned long flags;
+>  
+>  	raw_spin_lock_irqsave(&tick_broadcast_lock, flags);
+> +	if (cpumask_empty(tick_get_broadcast_mask()))
+> +		goto end;
+> 
+>   	tick_broadcast_device.mode = TICKDEV_MODE_ONESHOT;
+>  	bc = tick_broadcast_device.evtdev;
+>  	if (bc)
+>  		tick_broadcast_setup_oneshot(bc);
+> +
+> +end:
+>  	raw_spin_unlock_irqrestore(&tick_broadcast_lock, flags);
+>  }
+>  
+> The tick_broadcast_switch_to_oneshot() get called mostly at boot time or
+> during cpu hotplug. And when it is called at boot time, the tick_broadcast_mask
+> is alwasys 0 at the point,
 
-Running 'perf kvm --host --guest --guestmount /tmp/guestmount record -a -g -- sleep 2'
+On the correctly working platforms, that is the case. But there are
+cases where APIC timer calibration fails, in which case APIC is marked
+as CLOCK_EVT_FEAT_DUMMY and in this scenario, broadcast mask will be
+non-zero.
 
-Was resulting in a segfault. For event type PERF_RECORD_MMAP,
-event->ip.pid is being used in perf_session__find_machine_for_cpumode,
-which is not correct.
+>  thus this check is always true and skip the
+> following oneshot setting up for broadcast device, 
 
-The event->ip.pid field happens to be 0 in this case and results in
-returning a NULL machine object. Finally, access to self->pid in
-machine__mmap_name, results in a segfault later.
+On most platforms yes, but there are some buggy exceptions which the
+code is trying to handle.
 
-For PERF_RECORD_MMAP type, pass event->mmap.pid.
-
-Signed-off-by: Nikunj A. Dadhania <nikunj@linux.vnet.ibm.com>
-Reviewed-by: David Ahern <dsahern@gmail.com>
-Tested-by: David Ahern <dsahern@gmail.com>
-Cc: David Ahern <dsahern@gmail.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@redhat.com>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Stephane Eranian <eranian@google.com>
-Cc: Nikunj A. Dadhania <nikunj@linux.vnet.ibm.com>
-Link: http://lkml.kernel.org/r/20120409081835.10576.22018.stgit@abhimanyu.in.ibm.com
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
----
- tools/perf/util/session.c |   12 ++++++++++--
- 1 file changed, 10 insertions(+), 2 deletions(-)
-
-diff --git a/tools/perf/util/session.c b/tools/perf/util/session.c
-index 9412e3b..00923cd 100644
---- a/tools/perf/util/session.c
-+++ b/tools/perf/util/session.c
-@@ -826,8 +826,16 @@ static struct machine *
- {
- 	const u8 cpumode = event->header.misc & PERF_RECORD_MISC_CPUMODE_MASK;
- 
--	if (cpumode == PERF_RECORD_MISC_GUEST_KERNEL && perf_guest)
--		return perf_session__find_machine(session, event->ip.pid);
-+	if (cpumode == PERF_RECORD_MISC_GUEST_KERNEL && perf_guest) {
-+		u32 pid;
-+
-+		if (event->header.type == PERF_RECORD_MMAP)
-+			pid = event->mmap.pid;
-+		else
-+			pid = event->ip.pid;
-+
-+		return perf_session__find_machine(session, pid);
-+	}
- 
- 	return perf_session__find_host_machine(session);
- }
--- 
-1.7.9.2.358.g22243
+thanks,
+suresh
 
