@@ -1,79 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932737Ab2DKRU6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Apr 2012 13:20:58 -0400
-Received: from e39.co.us.ibm.com ([32.97.110.160]:44828 "EHLO
-	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932715Ab2DKRUz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Apr 2012 13:20:55 -0400
-Date: Wed, 11 Apr 2012 22:42:25 +0530
-From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-To: Arnaldo Carvalho de Melo <acme@infradead.org>
-Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
-        LKML <linux-kernel@vger.kernel.org>, Linux-mm <linux-mm@kvack.org>,
-        Oleg Nesterov <oleg@redhat.com>, Andi Kleen <andi@firstfloor.org>,
-        Christoph Hellwig <hch@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Anton Arapov <anton@redhat.com>
-Subject: Re: [PATCH] perf/probe: Provide perf interface for uprobes
-Message-ID: <20120411170343.GB29831@linux.vnet.ibm.com>
-Reply-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-References: <20120411135742.29198.45061.sendpatchset@srdronam.in.ibm.com>
- <20120411144918.GD16257@infradead.org>
+	id S1760801Ab2DKRXf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Apr 2012 13:23:35 -0400
+Received: from sabe.cs.wisc.edu ([128.105.6.20]:45004 "EHLO sabe.cs.wisc.edu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1760711Ab2DKRXc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Apr 2012 13:23:32 -0400
+Message-ID: <4F85BD2F.80905@cs.wisc.edu>
+Date: Wed, 11 Apr 2012 12:19:43 -0500
+From: Mike Christie <michaelc@cs.wisc.edu>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120329 Thunderbird/11.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-In-Reply-To: <20120411144918.GD16257@infradead.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12041117-4242-0000-0000-0000015010FE
+To: Michael Tokarev <mjt@tls.msk.ru>
+CC: Jan Kara <jack@suse.cz>, Dave Chinner <david@fromorbit.com>,
+        Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        SCSI Mailing List <linux-scsi@vger.kernel.org>
+Subject: Re: dramatic I/O slowdown after upgrading 2.6.38->3.0+
+References: <4F75E46E.2000503@msgid.tls.msk.ru> <20120405232913.GA6640@quack.suse.cz> <4F7E74F4.90604@msgid.tls.msk.ru> <20120410022628.GN18323@dastard> <4F83CC86.2010805@msgid.tls.msk.ru> <20120410151326.GA4936@quack.suse.cz> <4F855173.40902@msgid.tls.msk.ru>
+In-Reply-To: <4F855173.40902@msgid.tls.msk.ru>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Arnaldo Carvalho de Melo <acme@infradead.org> [2012-04-11 11:49:18]:
+On 04/11/2012 04:40 AM, Michael Tokarev wrote:
+> On 10.04.2012 19:13, Jan Kara wrote:
+>> > On Tue 10-04-12 10:00:38, Michael Tokarev wrote:
+> []
+>>> >>   2.6.38:
+>>> >>   # dd if=/dev/sdb of=/dev/null bs=1M iflag=direct count=100
+>>> >>   100+0 records in
+>>> >>   100+0 records out
+>>> >>   104857600 bytes (105 MB) copied, 1.73126 s, 60.6 MB/s
+>>> >>
+>>> >>   3.0:
+>>> >>   # dd if=/dev/sdb of=/dev/null bs=1M iflag=direct count=100
+>>> >>   100+0 records in
+>>> >>   100+0 records out
+>>> >>   104857600 bytes (105 MB) copied, 29.4508 s, 3.6 MB/s
+>>> >>
+>>> >> That's about 20 times difference on direct read from the
+>>> >> same - idle - device!!
+>> >   Huh, that's a huge difference for such a trivial load. So we can rule out
+>> > filesystems, writeback, mm. I also wouldn't think it's IO scheduler but
+>> > you can always check by comparing dd numbers after
+>> >   echo none >/sys/block/sdb/queue/scheduler
 
-> Em Wed, Apr 11, 2012 at 07:27:42PM +0530, Srikar Dronamraju escreveu:
-> > From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-> > 
-> > - Enhances perf to probe user space executables and libraries.
-> > - Enhances -F/--funcs option of "perf probe" to list possible probe points in
-> >   an executable file or library.
-> > - Documents userspace probing support in perf.
-> > 
-> > [ Probing a function in the executable using function name  ]
-> > perf probe -x /bin/zsh zfree
-> > 
-> > [ Probing a library function using function name ]
-> > perf probe -x /lib64/libc.so.6 malloc
-> > 
-> > [ list probe-able functions in an executable ]
-> > perf probe -F -x /bin/zsh
-> > 
-> > [ list probe-able functions in an library]
-> > perf probe -F -x /lib/libc.so.6
-> 
-> Can we avoid the need for -x? I.e. we could figure out it is userspace
-> and act accordingly.
-> 
+Did you try newer 3.X kernels or just 3.0?
 
-To list the functions in the module ipv6, we use "perf probe -F -m ipv6"
-So I used the same logic to use -x for specifying executables.
+We were hitting a similar problem with iscsi. Same workload and it
+started with 2.6.38. I think it turned out to be this issue:
 
+// thread with issue like what we hit:
+http://thread.gmane.org/gmane.linux.kernel/1244680
 
-This is in agreement with probepoint addition where without any
-additional options would mean kernel probepoint; m option would mean
-module and x option would mean user space executable. 
+// Patch that I think fixed issue:
+commit 3deaa7190a8da38453c4fabd9dec7f66d17fff67
+Author: Shaohua Li <shaohua.li@intel.com>
+Date:   Fri Feb 3 15:37:17 2012 -0800
 
-However if you still think we should change, do let me know.
-
--- 
-Thanks and Regards
-Srikar
-
+    readahead: fix pipeline break caused by block plug
