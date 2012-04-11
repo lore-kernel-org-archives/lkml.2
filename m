@@ -1,46 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760166Ab2DKWnV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Apr 2012 18:43:21 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:51627 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756227Ab2DKWnU (ORCPT
+	id S1760000Ab2DKWob (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Apr 2012 18:44:31 -0400
+Received: from nick.hrz.tu-chemnitz.de ([134.109.228.11]:45545 "EHLO
+	nick.hrz.tu-chemnitz.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754928Ab2DKWoa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Apr 2012 18:43:20 -0400
-Message-ID: <4F860905.4090106@gmail.com>
-Date: Wed, 11 Apr 2012 15:43:17 -0700
-From: David Daney <ddaney.cavm@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.15) Gecko/20101027 Fedora/3.0.10-1.fc12 Thunderbird/3.0.10
+	Wed, 11 Apr 2012 18:44:30 -0400
+Message-ID: <4F86094C.1060700@hrz.tu-chemnitz.de>
+Date: Thu, 12 Apr 2012 00:44:28 +0200
+From: Markus Franke <markus.franke@s2002.tu-chemnitz.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120329 Thunderbird/11.0.1
 MIME-Version: 1.0
-To: "Robert P. J. Day" <rpjday@crashcourse.ca>
-CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: almost time to run my kernel source cleaning scripts again?
-References: <alpine.DEB.2.02.1204111700170.4733@oneiric>
-In-Reply-To: <alpine.DEB.2.02.1204111700170.4733@oneiric>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: Greg KH <gregkh@linuxfoundation.org>
+CC: linux-kernel@vger.kernel.org, Evgeniy Polyakov <zbr@ioremap.net>
+Subject: Re: [PATCH 1/2] w1: Add 1-wire slave device driver for DS28E04-100
+References: <4F63AF9E.2090000@hrz.tu-chemnitz.de> <20120409220847.GA13124@kroah.com>
+In-Reply-To: <20120409220847.GA13124@kroah.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
+X-Scan-AV: nick.hrz.tu-chemnitz.de;2012-04-12 00:44:29;b2e4aa71d5cc986c83c065c2a1263934
+X-Scan-SA: nick.hrz.tu-chemnitz.de;2012-04-12 00:44:29;042a857642c8090e5aca22f1db68377e
+X-Spam-Score: -1.0 (-)
+X-Spam-Report: --- Textanalyse SpamAssassin 3.3.1 (-1.0 Punkte)
+ Fragen an/questions to:  Postmaster TU Chemnitz <postmaster@tu-chemnitz.de>
+ * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
+ --- Ende Textanalyse
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/11/2012 02:07 PM, Robert P. J. Day wrote:
->
->    it's been a while so i was thinking of firing up my scripts to
-> peruse the source tree looking for oddities/inconsistencies/whatever
-> (unless someone else is already doing that).
->
->    one example is looking for preprocessor tests of symbols that aren't
-> defined in any Kconfig file, and i can focus on any part of the source
-> tree.  for example, if i run that script against drivers/mmc, i get:
-[...]
->
->>>>>> CAVIUM_OCTEON_NUM_PACKET_BUFFERS
-> drivers/staging/octeon/ethernet-defines.h:36: *  CONFIG_CAVIUM_OCTEON_NUM_PACKET_BUFFERS
-> drivers/staging/octeon/ethernet.c:56:#if defined(CONFIG_CAVIUM_OCTEON_NUM_PACKET_BUFFERS) \
-> drivers/staging/octeon/ethernet.c:57:	&&  CONFIG_CAVIUM_OCTEON_NUM_PACKET_BUFFERS
-> drivers/staging/octeon/ethernet.c:58:int num_packet_buffers = CONFIG_CAVIUM_OCTEON_NUM_PACKET_BUFFERS;
+Am 10.04.2012 00:08, schrieb Greg KH:
 
-I am aware of these and am working on fixing them.
+> On Fri, Mar 16, 2012 at 10:24:46PM +0100, Markus Franke wrote:
+>> This patch adds a 1-wire slave device driver for the DS28E04-100.
+>>
+>> It applies to the current linux kernel git tree.
+> 
+> It's corrupted somehow and doesn't apply at all :(
+> 
+> Care to redo this one, and your 2/2 patch, against the 3.4-rc2 release
+> and resend it, with Evgeniy's acks, so that I can apply it?  Please
+> ensure that your email client doesn't mess it up again (hint, it is
+> adding spaces at the front of the line of some parts of the diff.)
 
-Thanks,
-David Daney
+
+Used Thunderbird with external editor (vi) now, sent the patches to
+myself and applied successfully. Hope it is in a shape which can be
+accepted now.
+
+Best regards,
+Markus
