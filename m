@@ -1,52 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760835Ab2DKR6g (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Apr 2012 13:58:36 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:59371 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759508Ab2DKR6f (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Apr 2012 13:58:35 -0400
-Message-ID: <4F85C640.3060608@zytor.com>
-Date: Wed, 11 Apr 2012 10:58:24 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120329 Thunderbird/11.0.1
+	id S932808Ab2DKR6z (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Apr 2012 13:58:55 -0400
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:61455 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932747Ab2DKR6x convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Apr 2012 13:58:53 -0400
 MIME-Version: 1.0
-To: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
-CC: Alexey Dobriyan <adobriyan@gmail.com>, akpm@linux-foundation.org,
-        viro@zeniv.linux.org.uk, torvalds@linux-foundation.org,
-        drepper@gmail.com, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org
-Subject: Re: [PATCH] nextfd(2)
-References: <20120401125741.GA7484@p183.telecom.by> <4F78D0BA.9040709@zytor.com> <CACVxJT_WJYjecpZMGkyUrbE5gNROX1tOfFAcD84-hoPsypxcFQ@mail.gmail.com> <4F7F1864.8090606@zytor.com> <CAHGf_=rsJ8o8Fnd2z5Z8jHGc=cz370ay0_t3bhkiYRCBh3puVw@mail.gmail.com>
-In-Reply-To: <CAHGf_=rsJ8o8Fnd2z5Z8jHGc=cz370ay0_t3bhkiYRCBh3puVw@mail.gmail.com>
-X-Enigmail-Version: 1.4
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20120411162519.GA27562@core.coreip.homeip.net>
+References: <1334061766-20577-1-git-send-email-tom_lin@emc.com.tw>
+	<20120411071212.GB6894@core.coreip.homeip.net>
+	<4F85583F.6050008@emc.com.tw>
+	<20120411162519.GA27562@core.coreip.homeip.net>
+Date: Wed, 11 Apr 2012 10:58:52 -0700
+Message-ID: <CAF8JNhLft4_z5kcnakq-oAg4USc1UKvY3RYOmnjnFLxA+inKJg@mail.gmail.com>
+Subject: Re: [PATCH v3] Input: Elan HID-I2C device driver
+From: Ping Cheng <pinglinux@gmail.com>
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Cc: =?Big5?B?qkyr26b2?= <tom_lin@emc.com.tw>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org, djkurtz@chromium.org,
+        Jiri Kosina <jkosina@suse.cz>
+Content-Type: text/plain; charset=Big5
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/10/2012 05:09 PM, KOSAKI Motohiro wrote:
-> 
-> I know the reason. fcntl(F_NEXT) is one of a proposal of next SUS enhancement.
-> 
->   http://austingroupbugs.net/view.php?id=149
-> 
-> nextfd() has a semantics of F_NEXT.
-> 
-> Next, why shoundn't we implement fcntl(F_NEXT) in our kernel? I think
-> we have two reason.
-> 
-> 1) As linus pointed out, linux specific "flags" argument may be useful.
-> 2) The name of F_NEXT is not fixed yet. another url of the austin says
-> it is FD_NEXT.
->      So, we can't choose right name yet. Moreover, A meanings of 3rd
-> argument of F_NEXT
->      haven't been fixed.
-> 
+On Wed, Apr 11, 2012 at 9:25 AM, Dmitry Torokhov
+<dmitry.torokhov@gmail.com> wrote:
+> On Wednesday, April 11, 2012 06:09:03 PM ªL«Û¦ö wrote:
+>> Hi Daniel
+>>
+>> On 04/11/2012 03:12 PM, Dmitry Torokhov wrote:
+>> > Hi Tom,
+>> >
+>> > On Tue, Apr 10, 2012 at 08:42:46PM +0800, Tom Lin wrote:
+>> >> This patch adds driver for Elan I2C touchpad. These protocol of HID-I2C
+>> >> was
+>> >> defined by Microsoft. The kernel driver would use the multi-touch
+>> >> protocol
+>> >> format B.
+>> >
+>> > If this device truly supports HID protocol shouldn't we define i2c-hid
+>> > transport, similar to usbhid?
+>>
+>> I merely follow defined by Microsoft.
+>> It was called "HID OVER I2C" by Microsoft.
+>> (http://msdn.microsoft.com/en-us/library/windows/hardware/hh825917(v=vs.85).
+>> aspx) But I agree to change from hid i2c to i2chid.
+>> Do you have any better opinions?
+>
+> I am not sure we are talking about same thing... I do not really care
+> whether it is named "hid i2c" or "i2chid". What I meant if the device
+> really speaks HID protocol, except that the transport is not USB or
+> bluetooth but I2C, then instead of writing a custom driver for this
+> particular part we need to add a new HID transport into
+> drivers/hid/i2c-hid that is similar to drivers/hid/usbhid/
 
-But it still has the same braindamage: one system call per loop
-invocation, and we can do better.  I would much rather see fdwalk() in SUS.
+I fully agree with Dmitry's suggestion. The new i2chid driver would
+cover all hid-compliant i2c devices.
 
-	-hpa
+Ping
 
+> and reuse the rest of HID framework along with hid- multitouch.c which handles
+> HID-compliant multitouch devices.
+>
+> I am CCing Jiri (HID maintainer) for additional input.
+>
+> Thanks.
+>
+> --
+> Dmitry
