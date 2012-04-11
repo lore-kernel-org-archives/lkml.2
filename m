@@ -1,56 +1,144 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760142Ab2DKM2O (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Apr 2012 08:28:14 -0400
-Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:36740 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752717Ab2DKM2N (ORCPT
+	id S1760154Ab2DKM25 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Apr 2012 08:28:57 -0400
+Received: from e37.co.us.ibm.com ([32.97.110.158]:50904 "EHLO
+	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753122Ab2DKM24 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Apr 2012 08:28:13 -0400
-Date: Wed, 11 Apr 2012 13:30:35 +0100
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Jonathan Cameron <jic23@cam.ac.uk>
-Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>, mingo@elte.hu,
-        linux-kernel@vger.kernel.org, Jonathan Cameron <jic23@kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: Re: [PATCH RESEND] x86, intel_mid: ADC management
-Message-ID: <20120411133035.25fa00b0@pyramind.ukuu.org.uk>
-In-Reply-To: <4F8568A8.5060206@cam.ac.uk>
-References: <20120410131206.GB31551@sirena.org.uk>
-	<20120410142501.6045c6c0@pyramind.ukuu.org.uk>
-	<20120410133339.GK7499@opensource.wolfsonmicro.com>
-	<20120410144235.1e05efd4@pyramind.ukuu.org.uk>
-	<20120410140749.GL7499@opensource.wolfsonmicro.com>
-	<20120410151529.5bcc5ce6@pyramind.ukuu.org.uk>
-	<20120410151943.GM7499@opensource.wolfsonmicro.com>
-	<20120410175632.5c11c36e@pyramind.ukuu.org.uk>
-	<20120410175846.GQ7499@opensource.wolfsonmicro.com>
-	<20120411112411.11825eec@pyramind.ukuu.org.uk>
-	<20120411103827.GH3163@opensource.wolfsonmicro.com>
-	<4F856173.8000901@cam.ac.uk>
-	<20120411121309.4b8f8e40@pyramind.ukuu.org.uk>
-	<4F8568A8.5060206@cam.ac.uk>
-X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Wed, 11 Apr 2012 08:28:56 -0400
+Date: Wed, 11 Apr 2012 05:27:27 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Lai Jiangshan <laijs@cn.fujitsu.com>
+Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, dipankar@in.ibm.com,
+        akpm@linux-foundation.org, mathieu.desnoyers@polymtl.ca,
+        josh@joshtriplett.org, niv@us.ibm.com, tglx@linutronix.de,
+        peterz@infradead.org, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
+        dhowells@redhat.com, eric.dumazet@gmail.com, darren@dvhart.com,
+        fweisbec@gmail.com, patches@linaro.org
+Subject: Re: [PATCH 3/4 V2] implement per-domain single-thread state machine
+ call_srcu()
+Message-ID: <20120411122727.GA9583@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <1332144734-9375-1-git-send-email-laijs@cn.fujitsu.com>
+ <1332144734-9375-4-git-send-email-laijs@cn.fujitsu.com>
+ <20120410231858.GJ2428@linux.vnet.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120410231858.GJ2428@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12041112-7408-0000-0000-0000041D7EDA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> needs to be abstracted as well.  Consumers might not care that the gain 
-> just doubled because someone else requested it, but I suspect many of them will.
+On Tue, Apr 10, 2012 at 04:18:58PM -0700, Paul E. McKenney wrote:
+> On Mon, Mar 19, 2012 at 04:12:13PM +0800, Lai Jiangshan wrote:
+> > o	state machine is light way and single-threaded, it is preemptible when checking.
+> > 
+> > o	state machine is a work_struct. So, there is no thread occupied
+> > 	by SRCU when the srcu is not actived(no callback). And it does
+> > 	not sleep(avoid to occupy a thread when sleep).
+> > 
+> > o	state machine is the only thread can flip/check/write(*) the srcu_struct,
+> > 	so we don't need any mutex.
+> > 	(write(*): except ->per_cpu_ref, ->running, ->batch_queue)
+> > 
+> > o	synchronize_srcu() will take the processing ownership when no other
+> > 	state-machine is running.(the task of synchronize_srcu() becomes
+> > 	the state-machine-thread). This fast patch can avoid scheduling.
+> > 	When the fast path fails, it falls back to "call_srcu() + wait".
+> > 
+> > o	callback is probably called in the same CPU when it is queued.
+> > 
+> > The trip of a callback:
+> > 	1) ->batch_queue when call_srcu()
+> > 
+> > 	2) ->batch_check0 when try to do check_zero
+> > 
+> > 	3) ->batch_check1 after finish its first check_zero and the flip
+> > 
+> > 	4) ->batch_done after finish its second check_zero
+> > 
+> > The current requirement of the callbacks:
+> > 	The callback will be called inside process context.
+> > 	The callback should be fast without any sleeping path.
+> 
+> The basic algorithm looks safe, but I have some questions on liveness
+> and expeditedness below.
 
-At the bottom layer I'd expect a second consumer of the same data to get
--EBUSY, but you are then going to tell me there are ADCs with one gain
-control for several channels no doubt 8)
+[ . . . ]
 
+> > +static void srcu_reschedule(struct srcu_struct *sp)
+> > +{
+> > +	bool pending = true;
+> > +
+> > +	if (rcu_batch_empty(&sp->batch_done) &&
+> > +	    rcu_batch_empty(&sp->batch_check1) &&
+> > +	    rcu_batch_empty(&sp->batch_check0) &&
+> > +	    rcu_batch_empty(&sp->batch_queue)) {
+> > +		spin_lock_irq(&sp->queue_lock);
+> > +		if (rcu_batch_empty(&sp->batch_queue)) {
+> > +			sp->running = false;
+> > +			pending = false;
+> > +		}
+> > +		spin_unlock_irq(&sp->queue_lock);
+> 
+> Hmmm...  What happens given the following sequence of events?
+> 
+> o	SRCU has just finished executing the last callback, so that
+> 	all callback queues are empty.
+> 
+> o	srcu_reschedule() executes the condition of its "if" statement,
+> 	but does not yet acquire the spinlock.  (If I read the code
+> 	correctly, preemption could legitimately occur at this point.)
+> 
+> o	call_srcu() initializes the callback, acquires the spinlock,
+> 	queues the callback, and invokes queue_delayed_work().
 
-> end up with most of IIO.  That's effectively what we did...   It's big 
-> because there are
-> actually not that many 'simple' adc's out there.
+Never mind!  The ->running is still set, so call_srcu() is not going
+to invoke queue_delayed_work().
 
-Fair enough - you would be the expert there.
+							Thanx, Paul
 
-Alan
+> o	The delayed work starts executing process_srcu(), which
+> 	calls srcu_collect_new(), which moves the callback to
+> 	->batch_check0.
+> 
+> o	srcu_reschedule continues executing, acquires the spinlock,
+> 	sees that ->batch_queue is empty, and therefore sets
+> 	->running to false, thus setting the stage for two CPUs
+> 	mucking with the queues concurrently without protection.
+> 
+> I believe that you need to recheck all the queues under the lock,
+> not just ->batch_queue (and I did update the patch in this manner).
+> 
+> Or am I missing something subtle?
+> 
+> > +	}
+> > +
+> > +	if (pending)
+> > +		queue_delayed_work(system_nrt_wq, &sp->work, SRCU_INTERVAL);
+> 
+> Here, we carefully invoke queue_delayed_work() outside of the lock,
+> while in call_srcu() we invoke it under the lock.  Why the difference?
+> 
+> > +}
+> > +
+> > +static void process_srcu(struct work_struct *work)
+> > +{
+> > +	struct srcu_struct *sp;
+> > +
+> > +	sp = container_of(work, struct srcu_struct, work.work);
+> > +
+> > +	srcu_collect_new(sp);
+> > +	srcu_advance_batches(sp, 1);
+> > +	srcu_invoke_callbacks(sp);
+> > +	srcu_reschedule(sp);
+> > +}
+> > -- 
+> > 1.7.4.4
+> > 
+
