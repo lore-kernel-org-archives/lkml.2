@@ -1,22 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965304Ab2DKXXY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Apr 2012 19:23:24 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:58738 "EHLO
+	id S965354Ab2DKXXl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Apr 2012 19:23:41 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:41234 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965288Ab2DKXXT (ORCPT
+	with ESMTP id S965337Ab2DKXXh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Apr 2012 19:23:19 -0400
-Message-Id: <20120411231041.945905670@linuxfoundation.org>
+	Wed, 11 Apr 2012 19:23:37 -0400
+Message-Id: <20120411231042.946594604@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Wed, 11 Apr 2012 16:11:13 -0700
+Date: Wed, 11 Apr 2012 16:11:19 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Jeff Layton <jlayton@redhat.com>,
-        Pavel Shilovsky <piastry@etersoft.ru>,
-        Steve French <sfrench@us.ibm.com>
-Subject: [ 38/59] CIFS: Fix VFS lock usage for oplocked files
+        alan@lxorguk.ukuu.org.uk, Phillip Lougher <plougher@redhat.com>,
+        Kees Cook <keescook@chromium.org>,
+        Serge Hallyn <serge.hallyn@canonical.com>,
+        Richard Weinberger <richard@nod.at>,
+        James Morris <james.l.morris@oracle.com>
+Subject: [ 44/59] sysctl: fix write access to dmesg_restrict/kptr_restrict
 In-Reply-To: <20120411231213.GA13124@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,93 +28,69 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Pavel Shilovsky <piastry@etersoft.ru>
+From: Kees Cook <keescook@chromium.org>
 
-commit 66189be74ff5f9f3fd6444315b85be210d07cef2 upstream.
+commit 620f6e8e855d6d447688a5f67a4e176944a084e8 upstream.
 
-We can deadlock if we have a write oplock and two processes
-use the same file handle. In this case the first process can't
-unlock its lock if the second process blocked on the lock in the
-same time.
+Commit bfdc0b4 adds code to restrict access to dmesg_restrict,
+however, it incorrectly alters kptr_restrict rather than
+dmesg_restrict.
 
-Fix it by using posix_lock_file rather than posix_lock_file_wait
-under cinode->lock_mutex. If we request a blocking lock and
-posix_lock_file indicates that there is another lock that prevents
-us, wait untill that lock is released and restart our call.
+The original patch from Richard Weinberger
+(https://lkml.org/lkml/2011/3/14/362) alters dmesg_restrict as
+expected, and so the patch seems to have been misapplied.
 
-Acked-by: Jeff Layton <jlayton@redhat.com>
-Signed-off-by: Pavel Shilovsky <piastry@etersoft.ru>
-Signed-off-by: Steve French <sfrench@us.ibm.com>
+This adds the CAP_SYS_ADMIN check to both dmesg_restrict and
+kptr_restrict, since both are sensitive.
+
+Reported-by: Phillip Lougher <plougher@redhat.com>
+Signed-off-by: Kees Cook <keescook@chromium.org>
+Acked-by: Serge Hallyn <serge.hallyn@canonical.com>
+Acked-by: Richard Weinberger <richard@nod.at>
+Signed-off-by: James Morris <james.l.morris@oracle.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/cifs/file.c     |   10 +++++++++-
- fs/locks.c         |    3 ++-
- include/linux/fs.h |    5 +++++
- 3 files changed, 16 insertions(+), 2 deletions(-)
+ kernel/sysctl.c |    8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
 
---- a/fs/cifs/file.c
-+++ b/fs/cifs/file.c
-@@ -835,13 +835,21 @@ cifs_posix_lock_set(struct file *file, s
- 	if ((flock->fl_flags & FL_POSIX) == 0)
- 		return rc;
+--- a/kernel/sysctl.c
++++ b/kernel/sysctl.c
+@@ -166,7 +166,7 @@ static int proc_taint(struct ctl_table *
+ #endif
  
-+try_again:
- 	mutex_lock(&cinode->lock_mutex);
- 	if (!cinode->can_cache_brlcks) {
- 		mutex_unlock(&cinode->lock_mutex);
- 		return rc;
- 	}
--	rc = posix_lock_file_wait(file, flock);
-+
-+	rc = posix_lock_file(file, flock, NULL);
- 	mutex_unlock(&cinode->lock_mutex);
-+	if (rc == FILE_LOCK_DEFERRED) {
-+		rc = wait_event_interruptible(flock->fl_wait, !flock->fl_next);
-+		if (!rc)
-+			goto try_again;
-+		locks_delete_block(flock);
-+	}
- 	return rc;
+ #ifdef CONFIG_PRINTK
+-static int proc_dmesg_restrict(struct ctl_table *table, int write,
++static int proc_dointvec_minmax_sysadmin(struct ctl_table *table, int write,
+ 				void __user *buffer, size_t *lenp, loff_t *ppos);
+ #endif
+ 
+@@ -713,7 +713,7 @@ static struct ctl_table kern_table[] = {
+ 		.data		= &dmesg_restrict,
+ 		.maxlen		= sizeof(int),
+ 		.mode		= 0644,
+-		.proc_handler	= proc_dointvec_minmax,
++		.proc_handler	= proc_dointvec_minmax_sysadmin,
+ 		.extra1		= &zero,
+ 		.extra2		= &one,
+ 	},
+@@ -722,7 +722,7 @@ static struct ctl_table kern_table[] = {
+ 		.data		= &kptr_restrict,
+ 		.maxlen		= sizeof(int),
+ 		.mode		= 0644,
+-		.proc_handler	= proc_dmesg_restrict,
++		.proc_handler	= proc_dointvec_minmax_sysadmin,
+ 		.extra1		= &zero,
+ 		.extra2		= &two,
+ 	},
+@@ -2422,7 +2422,7 @@ static int proc_taint(struct ctl_table *
  }
  
---- a/fs/locks.c
-+++ b/fs/locks.c
-@@ -510,12 +510,13 @@ static void __locks_delete_block(struct
- 
- /*
-  */
--static void locks_delete_block(struct file_lock *waiter)
-+void locks_delete_block(struct file_lock *waiter)
+ #ifdef CONFIG_PRINTK
+-static int proc_dmesg_restrict(struct ctl_table *table, int write,
++static int proc_dointvec_minmax_sysadmin(struct ctl_table *table, int write,
+ 				void __user *buffer, size_t *lenp, loff_t *ppos)
  {
- 	lock_flocks();
- 	__locks_delete_block(waiter);
- 	unlock_flocks();
- }
-+EXPORT_SYMBOL(locks_delete_block);
- 
- /* Insert waiter into blocker's block list.
-  * We use a circular list so that processes can be easily woken up in
---- a/include/linux/fs.h
-+++ b/include/linux/fs.h
-@@ -1203,6 +1203,7 @@ extern int vfs_setlease(struct file *, l
- extern int lease_modify(struct file_lock **, int);
- extern int lock_may_read(struct inode *, loff_t start, unsigned long count);
- extern int lock_may_write(struct inode *, loff_t start, unsigned long count);
-+extern void locks_delete_block(struct file_lock *waiter);
- extern void lock_flocks(void);
- extern void unlock_flocks(void);
- #else /* !CONFIG_FILE_LOCKING */
-@@ -1347,6 +1348,10 @@ static inline int lock_may_write(struct
- 	return 1;
- }
- 
-+static inline void locks_delete_block(struct file_lock *waiter)
-+{
-+}
-+
- static inline void lock_flocks(void)
- {
- }
+ 	if (write && !capable(CAP_SYS_ADMIN))
 
 
