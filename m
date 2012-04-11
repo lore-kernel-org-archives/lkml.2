@@ -1,22 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933893Ab2DKXQc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Apr 2012 19:16:32 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:44096 "EHLO
+	id S933875Ab2DKXQ0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Apr 2012 19:16:26 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:35695 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933825Ab2DKXQ1 (ORCPT
+	with ESMTP id S933825Ab2DKXQV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Apr 2012 19:16:27 -0400
-Message-Id: <20120411231023.856915738@linuxfoundation.org>
+	Wed, 11 Apr 2012 19:16:21 -0400
+Message-Id: <20120411231023.489450259@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Wed, 11 Apr 2012 16:10:51 -0700
+Date: Wed, 11 Apr 2012 16:10:49 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Alex Deucher <alexander.deucher@amd.com>,
-        =?UTF-8?q?Michel=20D=C3=A4nzer?= <michel.daenzer@amd.com>,
-        Dave Airlie <airlied@redhat.com>
-Subject: [ 33/78] drm/radeon/kms: fix fans after resume
+        alan@lxorguk.ukuu.org.uk, Paul Stewart <pstew@google.com>,
+        Gary Morain <gmorain@google.com>,
+        Madhan Jaganathan <madhanj@qca.qualcomm.com>,
+        Rajkumar Manoharan <rmanohar@qca.qualcomm.com>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [ 31/78] ath9k: fix max noise floor threshold
 In-Reply-To: <20120411231102.GA6404@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,68 +28,52 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alex Deucher <alexander.deucher@amd.com>
+From: Rajkumar Manoharan <rmanohar@qca.qualcomm.com>
 
-commit 402976fe51b2d1a58a29ba06fa1ca5ace3a4cdcd upstream.
+commit 2ee0a07028d2cde6e131b73f029dae2b93c50f3a upstream.
 
-On pre-R600 asics, the SpeedFanControl table is not
-executed as part of ASIC_Init as it is on newer asics.
+Currently the maximum noise floor limit is set as too high (-60dB). The
+assumption of having a higher threshold limit is that it would help
+de-sensitize the receiver (reduce phy errors) from continuous
+interference. But when we have a bursty interference where there are
+collisions and then free air time and if the receiver is desensitized too
+much, it will miss the normal packets too. Lets make use of chips
+specific min, nom and max limits always. This patch helps to improve the
+connection stability in congested networks.
 
-Fixes:
-https://bugzilla.kernel.org/show_bug.cgi?id=29412
-
-Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
-Reviewed-by: Michel Dänzer <michel.daenzer@amd.com>
-Signed-off-by: Dave Airlie <airlied@redhat.com>
+Cc: Paul Stewart <pstew@google.com>
+Tested-by: Gary Morain <gmorain@google.com>
+Signed-off-by: Madhan Jaganathan <madhanj@qca.qualcomm.com>
+Signed-off-by: Rajkumar Manoharan <rmanohar@qca.qualcomm.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/radeon/atom.c |   15 ++++++++++++++-
- drivers/gpu/drm/radeon/atom.h |    1 +
- 2 files changed, 15 insertions(+), 1 deletion(-)
+ drivers/net/wireless/ath/ath9k/calib.c |    5 ++---
+ 1 file changed, 2 insertions(+), 3 deletions(-)
 
---- a/drivers/gpu/drm/radeon/atom.c
-+++ b/drivers/gpu/drm/radeon/atom.c
-@@ -1306,8 +1306,11 @@ struct atom_context *atom_parse(struct c
+--- a/drivers/net/wireless/ath/ath9k/calib.c
++++ b/drivers/net/wireless/ath/ath9k/calib.c
+@@ -20,7 +20,6 @@
  
- int atom_asic_init(struct atom_context *ctx)
+ /* Common calibration code */
+ 
+-#define ATH9K_NF_TOO_HIGH	-60
+ 
+ static int16_t ath9k_hw_get_nf_hist_mid(int16_t *nfCalBuffer)
  {
-+	struct radeon_device *rdev = ctx->card->dev->dev_private;
- 	int hwi = CU16(ctx->data_table + ATOM_DATA_FWI_PTR);
- 	uint32_t ps[16];
-+	int ret;
-+
- 	memset(ps, 0, 64);
+@@ -346,10 +345,10 @@ static void ath9k_hw_nf_sanitize(struct
+ 			"NF calibrated [%s] [chain %d] is %d\n",
+ 			(i >= 3 ? "ext" : "ctl"), i % 3, nf[i]);
  
- 	ps[0] = cpu_to_le32(CU32(hwi + ATOM_FWI_DEFSCLK_PTR));
-@@ -1317,7 +1320,17 @@ int atom_asic_init(struct atom_context *
- 
- 	if (!CU16(ctx->cmd_table + 4 + 2 * ATOM_CMD_INIT))
- 		return 1;
--	return atom_execute_table(ctx, ATOM_CMD_INIT, ps);
-+	ret = atom_execute_table(ctx, ATOM_CMD_INIT, ps);
-+	if (ret)
-+		return ret;
-+
-+	memset(ps, 0, 64);
-+
-+	if (rdev->family < CHIP_R600) {
-+		if (CU16(ctx->cmd_table + 4 + 2 * ATOM_CMD_SPDFANCNTL))
-+			atom_execute_table(ctx, ATOM_CMD_SPDFANCNTL, ps);
-+	}
-+	return ret;
- }
- 
- void atom_destroy(struct atom_context *ctx)
---- a/drivers/gpu/drm/radeon/atom.h
-+++ b/drivers/gpu/drm/radeon/atom.h
-@@ -44,6 +44,7 @@
- #define ATOM_CMD_SETSCLK	0x0A
- #define ATOM_CMD_SETMCLK	0x0B
- #define ATOM_CMD_SETPCLK	0x0C
-+#define ATOM_CMD_SPDFANCNTL	0x39
- 
- #define ATOM_DATA_FWI_PTR	0xC
- #define ATOM_DATA_IIO_PTR	0x32
+-		if (nf[i] > ATH9K_NF_TOO_HIGH) {
++		if (nf[i] > limit->max) {
+ 			ath_dbg(common, CALIBRATE,
+ 				"NF[%d] (%d) > MAX (%d), correcting to MAX\n",
+-				i, nf[i], ATH9K_NF_TOO_HIGH);
++				i, nf[i], limit->max);
+ 			nf[i] = limit->max;
+ 		} else if (nf[i] < limit->min) {
+ 			ath_dbg(common, CALIBRATE,
 
 
