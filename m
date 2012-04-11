@@ -1,75 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932678Ab2DKRFu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Apr 2012 13:05:50 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:47656 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756020Ab2DKRFr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Apr 2012 13:05:47 -0400
-Date: Wed, 11 Apr 2012 19:05:42 +0200
-From: Jan Kara <jack@suse.cz>
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: Jan Kara <jack@suse.cz>, Tejun Heo <tj@kernel.org>,
-        Fengguang Wu <fengguang.wu@intel.com>, Jens Axboe <axboe@kernel.dk>,
-        linux-mm@kvack.org, sjayaraman@suse.com, andrea@betterlinux.com,
-        jmoyer@redhat.com, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, kamezawa.hiroyu@jp.fujitsu.com,
-        lizefan@huawei.com, containers@lists.linux-foundation.org,
-        cgroups@vger.kernel.org, ctalbott@google.com, rni@google.com,
-        lsf@lists.linux-foundation.org
-Subject: Re: [RFC] writeback and cgroup
-Message-ID: <20120411170542.GB16008@quack.suse.cz>
-References: <20120403183655.GA23106@dhcp-172-17-108-109.mtv.corp.google.com>
- <20120404145134.GC12676@redhat.com>
- <20120407080027.GA2584@quack.suse.cz>
- <20120410180653.GJ21801@redhat.com>
- <20120410210505.GE4936@quack.suse.cz>
- <20120410212041.GP21801@redhat.com>
- <20120410222425.GF4936@quack.suse.cz>
- <20120411154005.GD16692@redhat.com>
- <20120411154531.GE16692@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120411154531.GE16692@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1760762Ab2DKRGS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Apr 2012 13:06:18 -0400
+Received: from www84.your-server.de ([213.133.104.84]:47729 "EHLO
+	www84.your-server.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756020Ab2DKRGR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Apr 2012 13:06:17 -0400
+X-Greylist: delayed 1037 seconds by postgrey-1.27 at vger.kernel.org; Wed, 11 Apr 2012 13:06:16 EDT
+Message-ID: <1334162939.16577.2.camel@wall-e>
+Subject: Re: [PATCH 3.3.0] kernel:kfifo: export __kfifo_max_r symbol.
+From: Stefani Seibold <stefani@seibold.net>
+To: Srinivas KANDAGATLA <srinivas.kandagatla@st.com>
+Cc: mchehab@infradead.org, linux-kernel@vger.kernel.org, sfr@canb.auug.org.au
+Date: Wed, 11 Apr 2012 18:48:59 +0200
+In-Reply-To: <1334131316-7992-1-git-send-email-srinivas.kandagatla@st.com>
+References: <1334131316-7992-1-git-send-email-srinivas.kandagatla@st.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.2.3 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
+X-Authenticated-Sender: stefani@seibold.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed 11-04-12 11:45:31, Vivek Goyal wrote:
-> On Wed, Apr 11, 2012 at 11:40:05AM -0400, Vivek Goyal wrote:
-> > On Wed, Apr 11, 2012 at 12:24:25AM +0200, Jan Kara wrote:
-> > 
-> > [..]
-> > > > I have implemented and posted patches for per bdi per cgroup congestion
-> > > > flag. The only problem I see with that is that a group might be congested
-> > > > for a long time because of lots of other IO happening (say direct IO) and
-> > > > if you keep on backing off and never submit the metadata IO (transaction),
-> > > > you get starved. And if you go ahead and submit IO in a congested group,
-> > > > we are back to serialization issue.
-> > >   Clearly, we mustn't throttle metadata IO once it gets to the block layer.
-> > > That's why we discuss throttling of processes at transaction start after
-> > > all. But I agree starvation is an issue - I originally thought blk-throttle
-> > > throttles synchronously which wouldn't have starvation issues.
-> 
-> Current bio throttling is asynchrounous. Process can submit the bio
-> and go back and wait for bio to finish. That bio will be queued at device
-> queue in a per cgroup queue and will be dispatched to device according
-> to configured IO rate for cgroup.
-> 
-> The additional feature for buffered throttle (which never went upstream),
-> was synchronous in nature. That is we were actively putting writer to
-> sleep on a per cgroup wait queue in the request queue and wake it up when
-> it can do further IO based on cgroup limits.
-  Hmm, but then there would be similar starvation issues as with my simple
-scheme because async IO could always use the whole available bandwidth.
-Mixing of sync & async throttling is really problematic... I'm wondering
-how useful the async throttling is. Because we will block on request
-allocation once there are more than nr_requests pending requests so at that
-point throttling becomes sync anyway.
+Locks okay to me.
 
-								Honza
--- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+Acked-by: Stefani Seibold <stefani@seibold.net>
+
+Am Mittwoch, den 11.04.2012, 09:01 +0100 schrieb Srinivas KANDAGATLA:
+> From: Srinivas Kandagatla <srinivas.kandagatla@st.com>
+> 
+> kfifo_avail expands to __kfifo_max_r which is not an exported symbol.
+> Any kernel module using kfifo_avail will result in build failures
+> because of this.
+> This patch just exports __kfifo_max_r symbol to fix such problems in
+> future.
+> 
+> This bug was orignially reported by Stephen Rothwell <sfr@canb.auug.org.au> 
+> during v4l-dvb tree integration into linux-next.
+> 
+> Signed-off-by: Srinivas Kandagatla <srinivas.kandagatla@st.com>
+> ---
+> Hi All, 
+> A bulid failure during v4l-dvb tree integration into linux-next shows that __kfifo_max_r symbol is not exported.
+> All the __kifo_* functions declared in kfifo.h are already exported symbols.
+> I see no reason why __kfifo_max_r should not be exported too.
+> 
+> comments?
+> 
+> --srini
+> 
+>  kernel/kfifo.c |    1 +
+>  1 files changed, 1 insertions(+), 0 deletions(-)
+> 
+> diff --git a/kernel/kfifo.c b/kernel/kfifo.c
+> index c744b88..59dcf5b 100644
+> --- a/kernel/kfifo.c
+> +++ b/kernel/kfifo.c
+> @@ -402,6 +402,7 @@ unsigned int __kfifo_max_r(unsigned int len, size_t recsize)
+>  		return max;
+>  	return len;
+>  }
+> +EXPORT_SYMBOL(__kfifo_max_r);
+>  
+>  #define	__KFIFO_PEEK(data, out, mask) \
+>  	((data)[(out) & (mask)])
+
+
