@@ -1,109 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756423Ab2DKKUr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Apr 2012 06:20:47 -0400
-Received: from relay.parallels.com ([195.214.232.42]:40909 "EHLO
-	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756027Ab2DKKUp convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1756361Ab2DKKUp (ORCPT <rfc822;w@1wt.eu>);
 	Wed, 11 Apr 2012 06:20:45 -0400
-X-Greylist: delayed 725 seconds by postgrey-1.27 at vger.kernel.org; Wed, 11 Apr 2012 06:20:44 EDT
-Message-ID: <4F855811.8080909@parallels.com>
-Date: Wed, 11 Apr 2012 14:08:17 +0400
-From: Stanislav Kinsbursky <skinsbursky@parallels.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.28) Gecko/20120313 Lightning/1.0b2 Thunderbird/3.1.20
+Received: from mail2.gnudd.com ([213.203.150.91]:62241 "EHLO mail.gnudd.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755212Ab2DKKUn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Apr 2012 06:20:43 -0400
+Date: Wed, 11 Apr 2012 12:19:47 +0200
+From: Alessandro Rubini <rubini@gnudd.com>
+To: mingo@elte.hu
+Cc: akpm@linux-foundation.org, jbarnes@virtuousgeek.org,
+        fujita.tomonori@lab.ntt.co.jp, linux-kernel@vger.kernel.org,
+        tglx@linutronix.de, hpa@zytor.com, x86@kernel.org,
+        giancarlo.asnaghi@st.com, alan@linux.intel.com
+Subject: Re: [PATCH V4 1/3] x86: introduce CONFIG_X86_DEV_DMA_OPS
+Message-ID: <20120411101947.GA14244@mail.gnudd.com>
 MIME-Version: 1.0
-To: Jeff Layton <jlayton@redhat.com>
-CC: "bfields@fieldses.org" <bfields@fieldses.org>,
-        "Myklebust, Trond" <Trond.Myklebust@netapp.com>,
-        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: Grace period
-References: <4F82F16C.7030303@parallels.com>	<20120409112739.6a823d6f@corrin.poochiereds.net>	<4F830999.5000504@parallels.com>	<20120409161114.GB6482@fieldses.org>	<1333988226.2688.76.camel@lade.trondhjem.org>	<20120409162107.GC6482@fieldses.org>	<1333989216.2688.87.camel@lade.trondhjem.org>	<4F8314CF.70302@parallels.com>	<20120409181138.GA9581@fieldses.org>	<4F8411CC.2070105@parallels.com>	<20120410133913.GF18465@fieldses.org>	<4F84537A.40100@parallels.com> <20120410142853.7e749ba2@corrin.poochiereds.net>
-In-Reply-To: <20120410142853.7e749ba2@corrin.poochiereds.net>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Organization: GnuDD, Device Drivers, Embedded Systems, Courses
+In-Reply-To: <20120314065614.GB27480@elte.hu>
+References: <20120314065614.GB27480@elte.hu>
+  <cover.1331622735.git.rubini@gnudd.com>
+  <5965c5b1f828732b3599131fb21070aba6f1a386.1331622735.git.rubini@gnudd.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-10.04.2012 22:28, Jeff Layton пишет:
-> On Tue, 10 Apr 2012 19:36:26 +0400
-> Stanislav Kinsbursky<skinsbursky@parallels.com>  wrote:
->
->> 10.04.2012 17:39, bfields@fieldses.org пишет:
->>> On Tue, Apr 10, 2012 at 02:56:12PM +0400, Stanislav Kinsbursky wrote:
->>>> 09.04.2012 22:11, bfields@fieldses.org пишет:
->>>>> Since NFSv4 doesn't have a separate MOUNT protocol, clients need to be
->>>>> able to do readdir's and lookups to get to exported filesystems.  We
->>>>> support this in the Linux server by exporting all the filesystems from
->>>>> "/" on down that must be traversed to reach a given filesystem.  These
->>>>> exports are very restricted (e.g. only parents of exports are visible).
->>>>>
->>>>
->>>> Ok, thanks for explanation.
->>>> So, this pseudoroot looks like a part of NFS server internal
->>>> implementation, but not a part of a standard. That's good.
->>>>
->>>>>> Why does it prevents implementing of check for "superblock-network
->>>>>> namespace" pair on NFS server start and forbid (?) it in case of
->>>>>> this pair is shared already in other namespace? I.e. maybe this
->>>>>> pseudoroot can be an exclusion from this rule?
->>>>>
->>>>> That might work.  It's read-only and consists only of directories, so
->>>>> the grace period doesn't affect it.
->>>>>
->>>>
->>>> I've just realized, that this per-sb grace period won't work.
->>>> I.e., it's a valid situation, when two or more containers located on
->>>> the same filesystem, but shares different parts of it. And there is
->>>> not conflict here at all.
->>>
->>> Well, there may be some conflict in that a file could be hardlinked into
->>> both subtrees, and that file could be locked from users of either
->>> export.
->>>
->>
->> Is this case handled if both links or visible in the same export?
->> But anyway, this is not that bad. I.e it doesn't make things unpredictable.
->> Probably, there are some more issues like this one (bind-mounting, for example).
->> But I think, that it's root responsibility to handle such problems.
->>
->
-> Well, it's a problem and one that you'll probably have to address to
-> some degree. In truth, the fact that you're exporting different
-> subtrees in different containers is immaterial since they're both on
-> the same fs and filehandles don't carry any info about the path in and
-> of themselves...
->
-> Suppose for instance that we have a hardlinked file that's available
-> from two different exports in two different containers. The grace
-> period ends in container #1, so that nfsd starts servicing normal lock
-> requests. An application takes a lock on that hardlinked file. In the
-> meantime, a client of container #2 attempts to reclaim the lock that he
-> previously held on that same inode and gets denied.
->
+Alessandro Rubini:
+>> 32-bit x86 systems may need their own DMA operations, so add a 
+>> new config option, which is turned on for 64-bit systems. This 
+>> patch has no functional effect but it paves the way for 
+>> supporting the STA2x11 I/O Hub and possibly other chips.
+>> 
+>> Signed-off-by: Alessandro Rubini <rubini@gnudd.com>
+>> Acked-by: Giancarlo Asnaghi <giancarlo.asnaghi@st.com>
+>> Cc: Alan Cox <alan@linux.intel.com>
+>> ---
+>>  arch/x86/Kconfig                   |    5 +++++
+>>  arch/x86/include/asm/device.h      |    4 ++--
+>>  arch/x86/include/asm/dma-mapping.h |    2 +-
+>>  3 files changed, 8 insertions(+), 3 deletions(-)
 
-> That's just one example. The scarier case is that the client of
-> container #1 takes the lock, alters the file and then drops it again
-> with the client of container #2 none the wiser. Now the file got
-> altered while client #2 thought he held a lock on it. That won't be fun
-> to track down...
->
-> This sort of thing is one of the reasons I've been saying that the
-> grace period is really a property of the underlying filesystem and not
-> of nfsd itself. Of course, we do have to come up with a way to handle
-> the grace period that doesn't involve altering every exportable fs.
->
+Ingo Molnar:
+> Ok, the whole series looks pretty clean, modulo a few mostly 
+> cosmetic details in the driver itself.
+> 
+> Andrew, you are typically merging dma-mapping.h patches, would 
+> you like to do these, or can we do it in tip:x86/platform?
+> 
+> It would also be nice if the gents on Cc: would voice objections 
+> or approval, if any.
 
-I see.
-But, frankly speaking, looks like the problem you are talking about is another 
-task (comparing to containerization).
-I.e. making NFSd work per network namespace is somewhat different comparing to 
-these "shared file system" issues (which are actually a part of mount namespace).
+Any news? My next version (V5) I sent on Apr 4th is still working with
+today's next, but I got no ack nor nack.
 
-
-
--- 
-Best regards,
-Stanislav Kinsbursky
+thanks
+/alessandro
