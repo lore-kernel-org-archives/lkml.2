@@ -1,40 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933517Ab2DKWQl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Apr 2012 18:16:41 -0400
-Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:47143 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933457Ab2DKWQk (ORCPT
+	id S1761371Ab2DKWUI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Apr 2012 18:20:08 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:49156 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756337Ab2DKWUF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Apr 2012 18:16:40 -0400
-Date: Wed, 11 Apr 2012 23:18:46 +0100
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Jesper Juhl <jj@chaosbits.net>
-Cc: linux-kernel@vger.kernel.org, Jackie Li <yaodong.li@intel.com>,
-        jim liu <jim.liu@intel.com>, trivial@kernel.org,
-        dri-devel@lists.freedesktop.org, Dave Airlie <airlied@redhat.com>,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Alan Cox <alan@linux.intel.com>
-Subject: Re: [PATCH] gma500: Don't needlessly include version.h in
- mdfld_dsi_output.h
-Message-ID: <20120411231846.29747a08@pyramind.ukuu.org.uk>
-In-Reply-To: <alpine.LNX.2.00.1204120002390.2137@swampdragon.chaosbits.net>
-References: <alpine.LNX.2.00.1204120002390.2137@swampdragon.chaosbits.net>
-X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Wed, 11 Apr 2012 18:20:05 -0400
+Date: Wed, 11 Apr 2012 15:20:02 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Chris Wilson <chris@chris-wilson.co.uk>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Linux PM list <linux-pm@vger.kernel.org>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>
+Subject: Re: [Regression + patch] i915 / PM: System resume broken on 945GM
+Message-ID: <20120411222002.GA27568@kroah.com>
+References: <201204120012.46826.rjw@sisk.pl>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201204120012.46826.rjw@sisk.pl>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 12 Apr 2012 00:05:29 +0200 (CEST)
-Jesper Juhl <jj@chaosbits.net> wrote:
-
-> drivers/gpu/drm/gma500/mdfld_dsi_output.h does not need to
-> '#include <linux/version.h>' - so don't.
+On Thu, Apr 12, 2012 at 12:12:46AM +0200, Rafael J. Wysocki wrote:
+> Hi Chris,
 > 
-> Signed-off-by: Jesper Juhl <jj@chaosbits.net>
+> Unfortunately, your commit
+> 
+> commit 7dd4906586274f3945f2aeaaa5a33b451c3b4bba
+> Author: Chris Wilson <chris@chris-wilson.co.uk>
+> Date:   Wed Mar 21 10:48:18 2012 +0000
+> 
+>     drm/i915: Mark untiled BLT commands as fenced on gen2/3
+> 
+> breaks system resume on my Toshiba Portege R500 (945GM) which hangs hard
+> during or right after returning to X.
 
-Acked-by: Alan Cox <alan@linux.intel.com>
+Luckily this patch didn't apply properly to the 3.3-stable tree :)
+
+greg k-h
