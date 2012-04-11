@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760727Ab2DKQgz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Apr 2012 12:36:55 -0400
-Received: from s15943758.onlinehome-server.info ([217.160.130.188]:44356 "EHLO
+	id S1760713Ab2DKQhP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Apr 2012 12:37:15 -0400
+Received: from s15943758.onlinehome-server.info ([217.160.130.188]:44346 "EHLO
 	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760682Ab2DKQge (ORCPT
+	with ESMTP id S1760670Ab2DKQgd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Apr 2012 12:36:34 -0400
+	Wed, 11 Apr 2012 12:36:33 -0400
 From: Borislav Petkov <bp@amd64.org>
 To: Ingo Molnar <mingo@kernel.org>,
         Arnaldo Carvalho de Melo <acme@infradead.org>,
         Michal Marek <mmarek@suse.cz>, Sam Ravnborg <sam@ravnborg.org>
 Cc: LKML <linux-kernel@vger.kernel.org>,
         Borislav Petkov <borislav.petkov@amd.com>
-Subject: [PATCH v5 5/5] tools: Connect to the kernel build system
-Date: Wed, 11 Apr 2012 18:36:18 +0200
-Message-Id: <1334162178-17152-6-git-send-email-bp@amd64.org>
+Subject: [PATCH v5 4/5] tools: Add a help target
+Date: Wed, 11 Apr 2012 18:36:17 +0200
+Message-Id: <1334162178-17152-5-git-send-email-bp@amd64.org>
 X-Mailer: git-send-email 1.7.9.3.362.g71319
 In-Reply-To: <1334162178-17152-1-git-send-email-bp@amd64.org>
 References: <1334162178-17152-1-git-send-email-bp@amd64.org>
@@ -25,80 +25,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Borislav Petkov <borislav.petkov@amd.com>
 
-Now you can do
+... and make it the default one so that calling 'make' without arguments
+in the tools/ directory gives you the possible targets to build along
+with a short description of what they are.
 
-$ make tools/<toolname>
-
-from the toplevel kernel directory and have the respective tool built.
-
-If you want to build and install it, do
-
-$ make tools/<toolname>_install
-
-$ make tools/<toolname>_clean
-
-should clean the respective tool directories.
-
-If you want to clean all in tools, simply do
-
-$ make tools/clean
-
-Also, if you want to get what the possible targets are, simply calling
-
-$ make tools/
-
-should give you the short help.
-
-$ make tools/install
-
-installs all tools, of course. Doh.
-
-Cc: Sam Ravnborg <sam@ravnborg.org>
 Signed-off-by: Borislav Petkov <borislav.petkov@amd.com>
 ---
- Makefile       |    7 +++++++
- tools/Makefile |   10 ++++++++++
- 2 files changed, 17 insertions(+)
+ tools/Makefile |   20 ++++++++++++++++++++
+ 1 file changed, 20 insertions(+)
 
-diff --git a/Makefile b/Makefile
-index 0df3d003a079..f7f738117128 100644
---- a/Makefile
-+++ b/Makefile
-@@ -1468,6 +1468,13 @@ kernelrelease:
- kernelversion:
- 	@echo $(KERNELVERSION)
- 
-+# Clear a bunch of variables before executing the submake
-+tools/: FORCE
-+	$(Q)$(MAKE) LDFLAGS= MAKEFLAGS= -C $(src)/tools/
-+
-+tools/%: FORCE
-+	$(Q)$(MAKE) LDFLAGS= MAKEFLAGS= -C $(src)/tools/ $*
-+
- # Single targets
- # ---------------------------------------------------------------------------
- # Single targets are compatible with:
 diff --git a/tools/Makefile b/tools/Makefile
-index f87c0ec63e6c..3ae43947a171 100644
+index feadfdd6da55..f87c0ec63e6c 100644
 --- a/tools/Makefile
 +++ b/tools/Makefile
-@@ -14,6 +14,16 @@ help:
- 	@echo '  vm         - misc vm tools'
- 	@echo '  x86_energy_perf_policy - Intel energy policy tool'
- 	@echo ''
-+	@echo 'You can do:'
-+	@echo ' $$ make -C tools/<tool>_install'
+@@ -1,5 +1,25 @@
+ include scripts/Makefile.include
+ 
++help:
++	@echo 'Possible targets:'
 +	@echo ''
-+	@echo '  from the kernel command line to build and install one of'
-+	@echo '  the tools above'
++	@echo '  cpupower   - a tool for all things x86 CPU power'
++	@echo '  firewire   - the userspace part of nosy, an IEEE-1394 traffic sniffer'
++	@echo '  lguest     - a minimal 32-bit x86 hypervisor'
++	@echo '  perf       - Linux performance measurement and analysis tool'
++	@echo '  selftests  - various kernel selftests'
++	@echo '  turbostat  - Intel CPU idle stats and freq reporting tool'
++	@echo '  usb        - USB testing tools'
++	@echo '  virtio     - vhost test module'
++	@echo '  vm         - misc vm tools'
++	@echo '  x86_energy_perf_policy - Intel energy policy tool'
 +	@echo ''
-+	@echo '  $$ make tools/install'
++	@echo 'Cleaning targets:'
 +	@echo ''
-+	@echo '  installs all tools.'
-+	@echo ''
- 	@echo 'Cleaning targets:'
- 	@echo ''
- 	@echo '  all of the above with the "_clean" string appended cleans'
++	@echo '  all of the above with the "_clean" string appended cleans'
++	@echo '    the respective build directory.'
++	@echo '  clean: a summary clean target to clean _all_ folders'
++
+ cpupower: FORCE
+ 	$(QUIET_SUBDIR0)power/$@/ $(QUIET_SUBDIR1)
+ 
 -- 
 1.7.9.3.362.g71319
 
