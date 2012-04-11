@@ -1,70 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932999Ab2DKTU6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Apr 2012 15:20:58 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:55663 "EHLO mx2.suse.de"
+	id S933018Ab2DKTWS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Apr 2012 15:22:18 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:60047 "EHLO mail.zytor.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756034Ab2DKTU4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Apr 2012 15:20:56 -0400
-Date: Wed, 11 Apr 2012 21:20:52 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Glauber Costa <glommer@parallels.com>, linux-kernel@vger.kernel.org,
-        devel@openvz.org, linux-mm@kvack.org, cgroups@vger.kernel.org,
-        Johannes Weiner <hannes@cmpxchg.org>, kamezawa.hiroyu@jp.fujitsu.com,
-        Greg Thelen <gthelen@google.com>,
-        Suleiman Souhlal <suleiman@google.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH] remove BUG() in possible but rare condition
-Message-ID: <20120411192052.GB24831@tiehlicka.suse.cz>
-References: <1334167824-19142-1-git-send-email-glommer@parallels.com>
- <20120411184845.GA24831@tiehlicka.suse.cz>
- <CA+55aFx1GMWGgh0sTAzvvVSzPQsQ_4NKeaNv1zpKrP4fg1dG+Q@mail.gmail.com>
+	id S932981Ab2DKTWR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Apr 2012 15:22:17 -0400
+Message-ID: <4F85D9E0.3070604@zytor.com>
+Date: Wed, 11 Apr 2012 12:22:08 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120329 Thunderbird/11.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CA+55aFx1GMWGgh0sTAzvvVSzPQsQ_4NKeaNv1zpKrP4fg1dG+Q@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
+CC: Alexey Dobriyan <adobriyan@gmail.com>, akpm@linux-foundation.org,
+        viro@zeniv.linux.org.uk, torvalds@linux-foundation.org,
+        drepper@gmail.com, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org
+Subject: Re: [PATCH] nextfd(2)
+References: <20120401125741.GA7484@p183.telecom.by> <4F78D0BA.9040709@zytor.com> <CACVxJT_WJYjecpZMGkyUrbE5gNROX1tOfFAcD84-hoPsypxcFQ@mail.gmail.com> <4F7F1864.8090606@zytor.com> <CAHGf_=rsJ8o8Fnd2z5Z8jHGc=cz370ay0_t3bhkiYRCBh3puVw@mail.gmail.com> <4F85C6D5.6080904@zytor.com> <CAHGf_=ro=TwrYw4UoUMaHjb08rVbz-KjovZfND608J26w=n4HQ@mail.gmail.com>
+In-Reply-To: <CAHGf_=ro=TwrYw4UoUMaHjb08rVbz-KjovZfND608J26w=n4HQ@mail.gmail.com>
+X-Enigmail-Version: 1.4
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed 11-04-12 11:57:56, Linus Torvalds wrote:
-> On Wed, Apr 11, 2012 at 11:48 AM, Michal Hocko <mhocko@suse.cz> wrote:
-> >
-> > I am not familiar with the code much but a trivial call chain walk up to
-> > write_dev_supers (in btrfs) shows that we do not check for the return value
-> > from __getblk so we would nullptr and there might be more.
-> > I guess these need some treat before the BUG might be removed, right?
+On 04/11/2012 12:20 PM, KOSAKI Motohiro wrote:
 > 
-> Well, realistically, isn't BUG() as bad as a NULL pointer dereference?
+> If I understand correctly, above URL says, latest satatus is
 > 
-> Do you care about the exact message on the screen when your machine dies?
-
-I personally do not care as I do not allow anything to map at that area.
-
-It just seems that there are some callers who do not expect that the
-allocation fails. BUG at the allocation failure which dates back when it
-replaced buffer_error might have let to some assumptions (not good of
-course but we should better fix them.
-
-That being said I am not against the patch. BUG on an allocation failure
-just doesn't feel right...
-
+>   Resolution: Accepted As Marked
 > 
->                      Linus
-> 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Fight unfair telecom internet charges in Canada: sign http://stopthemeter.ca/
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+> Please see toppest issue summary. Or if I am missing something, can you please
+> point out which line are you seeing?
 
--- 
-Michal Hocko
-SUSE Labs
-SUSE LINUX s.r.o.
-Lihovarska 1060/12
-190 00 Praha 9    
-Czech Republic
+You need to read through the entire set of notes for it to make sense.
+
+	-hpa
+
