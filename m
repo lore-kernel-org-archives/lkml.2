@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934011Ab2DKXvK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Apr 2012 19:51:10 -0400
-Received: from mail-pz0-f52.google.com ([209.85.210.52]:40940 "EHLO
-	mail-pz0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964951Ab2DKXSK (ORCPT
+	id S964964Ab2DKXSG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Apr 2012 19:18:06 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:35695 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S964948Ab2DKXR6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Apr 2012 19:18:10 -0400
-Message-Id: <20120411231028.048008627@linuxfoundation.org>
+	Wed, 11 Apr 2012 19:17:58 -0400
+Message-Id: <20120411231029.021552568@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Wed, 11 Apr 2012 16:11:15 -0700
+Date: Wed, 11 Apr 2012 16:11:21 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Mark Rustad <mark.d.rustad@intel.com>,
-        Kiran Patil <Kiran.patil@intel.com>,
-        Nicholas Bellinger <nab@linux-iscsi.org>
-Subject: [ 57/78] tcm_fc: Add abort flag for gracefully handling exchange timeout
+        alan@lxorguk.ukuu.org.uk, Werner Landgraf <w.landgraf@ru.ru>,
+        David Rientjes <rientjes@google.com>, Colin Cross <ccross@android.com>
+Subject: [ 63/78] android, lowmemorykiller: remove task handoff notifier
 In-Reply-To: <20120411231102.GA6404@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,95 +25,138 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mark Rustad <mark.d.rustad@intel.com>
+From: David Rientjes <rientjes@google.com>
 
-commit e1c4038282c7586c3544542b37872c434669d3ac upstream.
+commit 83dbbdbb38666e20a75fad2294cf1df77c52f121 upstream.
 
-Add abort flag and use it to terminate processing when an exchange
-is timed out or is reset. The abort flag is used in place of the
-transport_generic_free_cmd function call in the reset and timeout
-cases, because calling that function in that context would free
-memory that was in use. The aborted flag allows the lifetime to
-be managed in a more normal way, while truncating the processing.
+The task handoff notifier leaks task_struct since it never gets freed
+after the callback returns NOTIFY_OK, which means it is responsible for
+doing so.
 
-This change eliminates a source of memory corruption which
-manifested in a variety of ugly ways.
+It turns out the lowmemorykiller actually doesn't need this notifier at
+all.  It's used to prevent unnecessary killing by waiting for a thread
+to exit as a result of lowmem_shrink(), however, it's possible to do
+this in the same way the kernel oom killer works by setting TIF_MEMDIE
+and avoid killing if we're still waiting for it to exit.
 
-(nab: Drop unused struct fc_exch *ep in ft_recv_seq)
+The kernel oom killer will already automatically set TIF_MEMDIE for
+threads that are attempting to allocate memory that have a fatal signal.
+The thread selected by lowmem_shrink() will have such a signal after the
+lowmemorykiller sends it a SIGKILL, so this won't result in an
+unnecessary use of memory reserves for the thread to exit.
 
-Signed-off-by: Mark Rustad <mark.d.rustad@intel.com>
-Acked-by: Kiran Patil <Kiran.patil@intel.com>
-Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
+This has the added benefit that we don't have to rely on
+CONFIG_PROFILING to prevent needlessly killing tasks.
+
+Reported-by: Werner Landgraf <w.landgraf@ru.ru>
+Signed-off-by: David Rientjes <rientjes@google.com>
+Acked-by: Colin Cross <ccross@android.com>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/target/tcm_fc/tcm_fc.h  |    1 +
- drivers/target/tcm_fc/tfc_cmd.c |   10 ++++++++--
- drivers/target/tcm_fc/tfc_io.c  |    2 ++
- 3 files changed, 11 insertions(+), 2 deletions(-)
+ drivers/staging/android/lowmemorykiller.c |   47 +++---------------------------
+ 1 file changed, 6 insertions(+), 41 deletions(-)
 
---- a/drivers/target/tcm_fc/tcm_fc.h
-+++ b/drivers/target/tcm_fc/tcm_fc.h
-@@ -124,6 +124,7 @@ struct ft_cmd {
- 	/* Local sense buffer */
- 	unsigned char ft_sense_buffer[TRANSPORT_SENSE_BUFFER];
- 	u32 was_ddp_setup:1;		/* Set only if ddp is setup */
-+	u32 aborted:1;			/* Set if aborted by reset or timeout */
- 	struct scatterlist *sg;		/* Set only if DDP is setup */
- 	u32 sg_cnt;			/* No. of item in scatterlist */
+--- a/drivers/staging/android/lowmemorykiller.c
++++ b/drivers/staging/android/lowmemorykiller.c
+@@ -53,7 +53,6 @@ static size_t lowmem_minfree[6] = {
  };
---- a/drivers/target/tcm_fc/tfc_cmd.c
-+++ b/drivers/target/tcm_fc/tfc_cmd.c
-@@ -126,6 +126,8 @@ int ft_queue_status(struct se_cmd *se_cm
- 	struct fc_exch *ep;
- 	size_t len;
+ static int lowmem_minfree_size = 4;
  
-+	if (cmd->aborted)
-+		return 0;
- 	ft_dump_cmd(cmd, __func__);
- 	ep = fc_seq_exch(cmd->seq);
- 	lport = ep->lp;
-@@ -192,6 +194,8 @@ int ft_write_pending(struct se_cmd *se_c
+-static struct task_struct *lowmem_deathpending;
+ static unsigned long lowmem_deathpending_timeout;
  
- 	ft_dump_cmd(cmd, __func__);
+ #define lowmem_print(level, x...)			\
+@@ -62,24 +61,6 @@ static unsigned long lowmem_deathpending
+ 			printk(x);			\
+ 	} while (0)
  
-+	if (cmd->aborted)
-+		return 0;
- 	ep = fc_seq_exch(cmd->seq);
- 	lport = ep->lp;
- 	fp = fc_frame_alloc(lport, sizeof(*txrdy));
-@@ -262,10 +266,10 @@ static void ft_recv_seq(struct fc_seq *s
- 	struct ft_cmd *cmd = arg;
- 	struct fc_frame_header *fh;
+-static int
+-task_notify_func(struct notifier_block *self, unsigned long val, void *data);
+-
+-static struct notifier_block task_nb = {
+-	.notifier_call	= task_notify_func,
+-};
+-
+-static int
+-task_notify_func(struct notifier_block *self, unsigned long val, void *data)
+-{
+-	struct task_struct *task = data;
+-
+-	if (task == lowmem_deathpending)
+-		lowmem_deathpending = NULL;
+-
+-	return NOTIFY_OK;
+-}
+-
+ static int lowmem_shrink(struct shrinker *s, struct shrink_control *sc)
+ {
+ 	struct task_struct *p;
+@@ -95,19 +76,6 @@ static int lowmem_shrink(struct shrinker
+ 	int other_file = global_page_state(NR_FILE_PAGES) -
+ 						global_page_state(NR_SHMEM);
  
--	if (IS_ERR(fp)) {
-+	if (unlikely(IS_ERR(fp))) {
- 		/* XXX need to find cmd if queued */
- 		cmd->seq = NULL;
--		transport_generic_free_cmd(&cmd->se_cmd, 0);
-+		cmd->aborted = true;
- 		return;
+-	/*
+-	 * If we already have a death outstanding, then
+-	 * bail out right away; indicating to vmscan
+-	 * that we have nothing further to offer on
+-	 * this pass.
+-	 *
+-	 * Note: Currently you need CONFIG_PROFILING
+-	 * for this to work correctly.
+-	 */
+-	if (lowmem_deathpending &&
+-	    time_before_eq(jiffies, lowmem_deathpending_timeout))
+-		return 0;
+-
+ 	if (lowmem_adj_size < array_size)
+ 		array_size = lowmem_adj_size;
+ 	if (lowmem_minfree_size < array_size)
+@@ -140,6 +108,11 @@ static int lowmem_shrink(struct shrinker
+ 		struct signal_struct *sig;
+ 		int oom_adj;
+ 
++		if (test_tsk_thread_flag(p, TIF_MEMDIE) &&
++		    time_before_eq(jiffies, lowmem_deathpending_timeout)) {
++			read_unlock(&tasklist_lock);
++			return 0;
++		}
+ 		task_lock(p);
+ 		mm = p->mm;
+ 		sig = p->signal;
+@@ -173,15 +146,9 @@ static int lowmem_shrink(struct shrinker
+ 		lowmem_print(1, "send sigkill to %d (%s), adj %d, size %d\n",
+ 			     selected->pid, selected->comm,
+ 			     selected_oom_adj, selected_tasksize);
+-		/*
+-		 * If CONFIG_PROFILING is off, then we don't want to stall
+-		 * the killer by setting lowmem_deathpending.
+-		 */
+-#ifdef CONFIG_PROFILING
+-		lowmem_deathpending = selected;
+ 		lowmem_deathpending_timeout = jiffies + HZ;
+-#endif
+ 		force_sig(SIGKILL, selected);
++		set_tsk_thread_flag(selected, TIF_MEMDIE);
+ 		rem -= selected_tasksize;
  	}
+ 	lowmem_print(4, "lowmem_shrink %lu, %x, return %d\n",
+@@ -197,7 +164,6 @@ static struct shrinker lowmem_shrinker =
  
-@@ -447,6 +451,8 @@ int ft_queue_tm_resp(struct se_cmd *se_c
- 	struct se_tmr_req *tmr = se_cmd->se_tmr_req;
- 	enum fcp_resp_rsp_codes code;
+ static int __init lowmem_init(void)
+ {
+-	task_handoff_register(&task_nb);
+ 	register_shrinker(&lowmem_shrinker);
+ 	return 0;
+ }
+@@ -205,7 +171,6 @@ static int __init lowmem_init(void)
+ static void __exit lowmem_exit(void)
+ {
+ 	unregister_shrinker(&lowmem_shrinker);
+-	task_handoff_unregister(&task_nb);
+ }
  
-+	if (cmd->aborted)
-+		return 0;
- 	switch (tmr->response) {
- 	case TMR_FUNCTION_COMPLETE:
- 		code = FCP_TMF_CMPL;
---- a/drivers/target/tcm_fc/tfc_io.c
-+++ b/drivers/target/tcm_fc/tfc_io.c
-@@ -81,6 +81,8 @@ int ft_queue_data_in(struct se_cmd *se_c
- 	void *from;
- 	void *to = NULL;
- 
-+	if (cmd->aborted)
-+		return 0;
- 	ep = fc_seq_exch(cmd->seq);
- 	lport = ep->lp;
- 	cmd->seq = lport->tt.seq_start_next(cmd->seq);
+ module_param_named(cost, lowmem_shrinker.seeks, int, S_IRUGO | S_IWUSR);
 
 
