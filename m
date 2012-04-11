@@ -1,72 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761309Ab2DKVMs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Apr 2012 17:12:48 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60821 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753625Ab2DKVMq (ORCPT
+	id S933323Ab2DKVNg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Apr 2012 17:13:36 -0400
+Received: from www.linutronix.de ([62.245.132.108]:33108 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753625Ab2DKVNf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Apr 2012 17:12:46 -0400
-Date: Wed, 11 Apr 2012 14:12:44 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Glauber Costa <glommer@parallels.com>
-Cc: <linux-kernel@vger.kernel.org>, <devel@openvz.org>, <linux-mm@kvack.org>,
-        <cgroups@vger.kernel.org>, Michal Hocko <mhocko@suse.cz>,
-        Johannes Weiner <hannes@cmpxchg.org>, <kamezawa.hiroyu@jp.fujitsu.com>,
-        Greg Thelen <gthelen@google.com>,
-        Suleiman Souhlal <suleiman@google.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [PATCH] remove BUG() in possible but rare condition
-Message-Id: <20120411141244.2839d9a8.akpm@linux-foundation.org>
-In-Reply-To: <4F85EEED.1090906@parallels.com>
-References: <1334167824-19142-1-git-send-email-glommer@parallels.com>
-	<20120411132635.bfddc6bd.akpm@linux-foundation.org>
-	<4F85EEED.1090906@parallels.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Wed, 11 Apr 2012 17:13:35 -0400
+Date: Wed, 11 Apr 2012 23:13:05 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Michael Witten <mfwitten@gmail.com>
+cc: Arjan van de Ven <arjanvandeven@gmail.com>,
+        Arjan van de Ven <arjan@infradead.org>,
+        John Stultz <johnstul@us.ibm.com>, Len Brown <lenb@kernel.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] clocksource: Load the ACPI PM clocksource
+ asynchronously
+In-Reply-To: <041683e0088341c2b6d78e97f05948eb-mfwitten@gmail.com>
+Message-ID: <alpine.LFD.2.02.1204112303270.2542@ionos>
+References: <20120130205120.652aa64f@infradead.org>            <717f591b21b34ebea5793c6206b8a2b8-mfwitten@gmail.com>            <CADyApD2UZebJd_nSJHAWkjz=PT4_DZfnSr38geqUb1kvJzKi-g@mail.gmail.com> <041683e0088341c2b6d78e97f05948eb-mfwitten@gmail.com>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 11 Apr 2012 17:51:57 -0300
-Glauber Costa <glommer@parallels.com> wrote:
-
-> On 04/11/2012 05:26 PM, Andrew Morton wrote:
+On Wed, 11 Apr 2012, Michael Witten wrote:
+> On Sun, 8 Apr 2012 19:20:22 -0700, Arjan van de Ven wrote:
+> 
+> >> to which I bisected as the culprit for very strange load balance
+> >> behavior on my machine.
 > >>
-> >> >    failed:
-> >> >  -	BUG();
-> >> >    	unlock_page(page);
-> >> >    	page_cache_release(page);
-> >> >    	return NULL;
-> > Cute.
-> >
-> > AFAICT what happened was that in my April 2002 rewrite of this code I
-> > put a non-fatal buffer_error() warning in that case to tell us that
-> > something bad happened.
-> >
-> > Years later we removed the temporary buffer_error() and mistakenly
-> > replaced that warning with a BUG().  Only it*can*  happen.
-> >
-> > We can remove the BUG() and fix up callers, or we can pass retry=1 into
-> > alloc_page_buffers(), so grow_dev_page() "cannot fail".  Immortal
-> > functions are a silly fiction, so we should remove the BUG() and fix up
-> > callers.
-> >
-> Any particular caller you are concerned with ?
+> >> With this patch in place, my CPU is constantly being pegged at 100%
+> >> (and my CPU monitor sometimes registers NaN%), regardless of the
+> >> active governor and under conditions when my computer would normally
+> >> be idling quite placidly.
+> >>
+> >> Reverting this commit does indeed remove the problem from previously
+> >> problematic builds.
+> >>
+> >>
+> > any chance of a dmesg? (or even better, a diff of the dmesg from
+> > abefore and fter)
+> 
+> Doh! I should have thought of that.
+> 
+> The dmesg output for a kernel built from your patch's commit yields
+> this interesting line:
+> 
+>   PM-Timer running at invalid rate: 113% of normal - aborting.
 
-Didn't someone see a buggy caller in btrfs?
+Duh. The original code does this with interrupts disabled and not from
+the context of some random worker thread.
 
-I'm thinking that we should retain some sort of assertion (a WARN_ON)
-if the try_to_free_buffers() failed.  This is a weird case which I
-assume handles the situation where a blockdev's blocksize has changed. 
-The code tries to throw away the old wrongly-sized buffer_heads and to
-then add new correctly-sized ones.  If that discarding of buffers
-fails then the kernel is in rather a mess.
+Aside of that, this will blow up if something else touches the CTC
+channel 2, which is possible as this code runs async to other init
+stuff.
 
-It's quite possible that this code is never executed - we _should_ have
-invalidated all the pagecache for that device when changing blocksize. 
-Or maybe it *is* executed, I dunno.  It's one of those things which has
-hung around for decades as code in other places has vastly changed.
+Arjan, did you ever verify that patch extensivly on hardware which
+relies on the PM-Timer? I doubt it. :(
 
+There is no other choice than reverting it.
+
+Thanks,
+
+	tglx
