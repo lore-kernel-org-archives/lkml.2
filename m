@@ -1,154 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759118Ab2DKPiR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Apr 2012 11:38:17 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:11951 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758091Ab2DKPiN (ORCPT
+	id S1759365Ab2DKPia (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Apr 2012 11:38:30 -0400
+Received: from mail-pz0-f52.google.com ([209.85.210.52]:46013 "EHLO
+	mail-pz0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758973Ab2DKPiP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Apr 2012 11:38:13 -0400
-X-Authority-Analysis: v=2.0 cv=NYRkJh/4 c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=XQbtiDEiEegA:10 a=_FBgzLvS3gEA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=20KFwNOVAAAA:8 a=vPnSQqfOyXTFX1iqDCwA:9 a=gYJ8DOujBvRdHmj3DFwA:7 a=PUjeQqilurYA:10 a=jEp0ucaQiEUA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.80.29
-Message-ID: <1334158690.23924.252.camel@gandalf.stny.rr.com>
-Subject: Re: [PATCH 02/15] tools/events: Add files to create libtraceevent.a
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Arnaldo Carvalho de Melo <acme@infradead.org>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Steven Rostedt <srostedt@redhat.com>, Ingo Molnar <mingo@kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Peter Zijlstra <peterz@infradead.org>, Borislav Petkov <bp@alien8.de>,
-        Jiri Olsa <jolsa@redhat.com>, Arun Sharma <asharma@fb.com>,
-        Namhyung Kim <namhyung.kim@lge.com>
-Date: Wed, 11 Apr 2012 11:38:10 -0400
-In-Reply-To: <20120411152059.GE16257@infradead.org>
-References: <1333666086-6517-1-git-send-email-fweisbec@gmail.com>
-	 <1333666086-6517-3-git-send-email-fweisbec@gmail.com>
-	 <20120411152059.GE16257@infradead.org>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.2.2-1 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Wed, 11 Apr 2012 11:38:15 -0400
+Date: Wed, 11 Apr 2012 08:38:11 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Jonathan Cameron <jic23@cam.ac.uk>
+Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>, mingo@elte.hu,
+        linux-kernel@vger.kernel.org, Jonathan Cameron <jic23@kernel.org>,
+        "linux-iio@vger.kernel.org" <linux-iio@vger.kernel.org>
+Subject: Re: [PATCH RESEND] x86, intel_mid: ADC management
+Message-ID: <20120411153811.GA28101@kroah.com>
+References: <20120410133339.GK7499@opensource.wolfsonmicro.com>
+ <20120410144235.1e05efd4@pyramind.ukuu.org.uk>
+ <20120410140749.GL7499@opensource.wolfsonmicro.com>
+ <20120410151529.5bcc5ce6@pyramind.ukuu.org.uk>
+ <20120410151943.GM7499@opensource.wolfsonmicro.com>
+ <20120410175632.5c11c36e@pyramind.ukuu.org.uk>
+ <20120410175846.GQ7499@opensource.wolfsonmicro.com>
+ <4F848C7C.5040703@cam.ac.uk>
+ <20120410223722.GY7499@opensource.wolfsonmicro.com>
+ <e65fbfb8-1169-46dc-aad9-1dc9dbb91e8f@email.android.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <e65fbfb8-1169-46dc-aad9-1dc9dbb91e8f@email.android.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-04-11 at 12:20 -0300, Arnaldo Carvalho de Melo wrote:
-> Em Fri, Apr 06, 2012 at 12:47:53AM +0200, Frederic Weisbecker escreveu:
-> > From: Steven Rostedt <srostedt@redhat.com>
-> > +struct cmdline {
-> > +	char *comm;
-> > +	int pid;
-> > +};
+On Wed, Apr 11, 2012 at 07:19:01AM +0100, Jonathan Cameron wrote:
 > 
-> In perf we have 'struct thread' for that and some more stuff, they are
-> kept in an rb_tree located in a 'struct machine', 'machine's exist to
-> support KVM.
 > 
-> At some point would be good to avoid this, but then it would make this
-> code need parts of perf, that would have to then be moved to
-> tools/libsymbol/ or some other more suitable name.
-
-Agreed, this can be broken out too. Lets see if we can get the code in
-first, and then start fixing it. As said, this would be the smoothest
-transition of getting trace-cmd libary into perf. As it has been tested
-quit intensively. Note, perf already has an older version built in. And
-does most of this nastiness already.
- 
+> Mark Brown <broonie@opensource.wolfsonmicro.com> wrote:
 > 
-> > +static int cmdline_cmp(const void *a, const void *b)
-> > +{
-> > +	const struct cmdline *ca = a;
-> > +	const struct cmdline *cb = b;
-> > +
-> > +	if (ca->pid < cb->pid)
-> > +		return -1;
-> > +	if (ca->pid > cb->pid)
-> > +		return 1;
-> > +
-> > +	return 0;
-> > +}
-> > +
-> > +struct cmdline_list {
-> > +	struct cmdline_list	*next;
-> > +	char			*comm;
-> > +	int			pid;
-> > +};
-> > +
-> > +static int cmdline_init(struct pevent *pevent)
-> > +{
-> > +	struct cmdline_list *cmdlist = pevent->cmdlist;
-> > +	struct cmdline_list *item;
-> > +	struct cmdline *cmdlines;
-> > +	int i;
-> > +
-> > +	cmdlines = malloc_or_die(sizeof(*cmdlines) * pevent->cmdline_count);
-> 
-> My biggest pet peeve, looks like this is New Hampshire code, all these
-> "do foo or die" strikes a nerve in me :-(
-> 
-> Die calls in library code should just... die.
+> >On Tue, Apr 10, 2012 at 08:39:40PM +0100, Jonathan Cameron wrote:
+> >
+> >> 1)  Review of code.  This is crucial. If people have a little time
+> >> ripping holes in the core IIO code is what we need.  Arnd did a good
+> >job
+> >> of this a while back. Others have done bits of it since.
+> >
+> >> 2) Getting the push code tidied up and pushed out.  I'll post it as
+> >an
+> >> updated rfc to linux-iio shortly.  All I had left that definitely
+> >> wanted doing here was cleaning up the example iio to input bridge
+> >> driver.  That can happen later.
+> >
+> >For these two can we refactor in place?  That's pretty much what seems
+> >to have been happening anyway...
+> >
+> I guess it comes down to whether Linus will pull.  2 should be there
+> within a week or so anyway depending mostly on analog testing I
+> haven't broken any of their drivers.
 
-I also agree :-) We can keep this for now, and then nuke it in the next
-patch. But to do so, would require an audit of this code. I could do the
-work in trace-cmd, and then we could port it. Or we can port this as is,
-and then update it.
+Hm, shouldn't I be the one that moves this out of staging?  :)
 
-The one thing I really wish C had, was the try/catch of C++. That would
-solve the error code issue. But for now we need to do it with goto's and
-such.
+Anyway, all I care about to get this code out of staging is that you
+feel your userspace api is "sane" and not going to change.  Your
+in-kernel stuff can radically change every kernel release with no
+objection from me at all.
 
-> 
-> Only tools can die, libraries just can't, IMHO.
-> 
-> > +struct func_map {
-> > +	unsigned long long		addr;
-> > +	char				*func;
-> > +	char				*mod;
-> > +};
-> > +
-> > +struct func_list {
-> > +	struct func_list	*next;
-> > +	unsigned long long	addr;
-> > +	char			*func;
-> > +	char			*mod;
-> > +};
-> 
-> For this we have tools/perf/utils/symbol.c, that supports userland as
-> well as java JIT maps, etc. The perf.data file doesn't have to carry a
-> copy of kallsyms, etc, build-id support is there to make sure we don't
-> misresolve symbols using the right DSO found in a cache or in -debuginfo
-> packages, etc.
+And from what I can tell, your userspace stuff looks pretty stable now,
+right?  So, I don't mind moving this all out of staging for 3.5 as-is.
 
-This could be cleaned up too. Currently perf uses this code for the sw
-events (aka tracepoints) of the kernel. The func_map and friends are
-already used in perf.
+If so, I'll be glad to make the change to my repo so it starts to show
+up in linux-next in the "correct" place whenever you want me to.
 
-> 
-> > +int pevent_register_function(struct pevent *pevent, char *func,
-> > +			     unsigned long long addr, char *mod)
-> > +{
-> > +	struct func_list *item;
-> > +
-> > +	item = malloc_or_die(sizeof(*item));
-> > +
-> > +	item->next = pevent->funclist;
-> > +	item->func = strdup(func);
-> > +	if (mod)
-> > +		item->mod = strdup(mod);
-> > +	else
-> > +		item->mod = NULL;
-> 
-> strdup can fail, and no, we shouldn't die if that happens :-)
+thanks,
 
-Again, this all needs to be audited. But this isn't much different than
-what perf already does with the tools/perf/util/trace-event-parse.c
-
-Thus, getting the code out can be the first step. Cleaning it up into a
-nice library the second.
-
--- Steve
-
-
-
+greg k-h
