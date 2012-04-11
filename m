@@ -1,62 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933467Ab2DKWIR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Apr 2012 18:08:17 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:37153 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756100Ab2DKWIP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Apr 2012 18:08:15 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Chris Wilson <chris@chris-wilson.co.uk>
-Subject: [Regression + patch] i915 / PM: System resume broken on 945GM
-Date: Thu, 12 Apr 2012 00:12:46 +0200
-User-Agent: KMail/1.13.6 (Linux/3.4.0-rc2+; KDE/4.6.0; x86_64; ; )
-Cc: Daniel Vetter <daniel.vetter@ffwll.ch>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>,
-        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>
+	id S933483Ab2DKWMg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Apr 2012 18:12:36 -0400
+Received: from astoria.ccjclearline.com ([64.235.106.9]:44097 "EHLO
+	astoria.ccjclearline.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933454Ab2DKWMf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Apr 2012 18:12:35 -0400
+Date: Wed, 11 Apr 2012 18:12:29 -0400 (EDT)
+From: "Robert P. J. Day" <rpjday@crashcourse.ca>
+X-X-Sender: rpjday@oneiric
+To: Jesper Juhl <jj@chaosbits.net>
+cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: almost time to run my kernel source cleaning scripts again?
+In-Reply-To: <alpine.LNX.2.00.1204112350590.2137@swampdragon.chaosbits.net>
+Message-ID: <alpine.DEB.2.02.1204111805020.10690@oneiric>
+References: <alpine.DEB.2.02.1204111700170.4733@oneiric> <alpine.LNX.2.00.1204112350590.2137@swampdragon.chaosbits.net>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201204120012.46826.rjw@sisk.pl>
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - astoria.ccjclearline.com
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - crashcourse.ca
+X-Source: 
+X-Source-Args: 
+X-Source-Dir: 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Chris,
+On Wed, 11 Apr 2012, Jesper Juhl wrote:
 
-Unfortunately, your commit
+> On Wed, 11 Apr 2012, Robert P. J. Day wrote:
+>
+> >
+> >   it's been a while so i was thinking of firing up my scripts to
+> > peruse the source tree looking for oddities/inconsistencies/whatever
+> > (unless someone else is already doing that).
+> >
+> >   one example is looking for preprocessor tests of symbols that aren't
+> > defined in any Kconfig file, and i can focus on any part of the source
+> > tree.  for example, if i run that script against drivers/mmc, i get:
+> >
+> > >>>>> MMC_MSM7X00A_RESUME_IN_WQ
+> > drivers/mmc/host/msm_sdcc.c:1408:#ifdef CONFIG_MMC_MSM7X00A_RESUME_IN_WQ
+> >
+> > telling me that a source file is testing a CONFIG variable that
+> > doesn't exist.
+> >
+> >   the scripts are available online
+>
+> I'd be interrested in taking a look at those. Got a URL where I can grab
+> them?
 
-commit 7dd4906586274f3945f2aeaaa5a33b451c3b4bba
-Author: Chris Wilson <chris@chris-wilson.co.uk>
-Date:   Wed Mar 21 10:48:18 2012 +0000
+  as long as you promise not to snicker at them, here are my most
+"popular" ones:
 
-    drm/i915: Mark untiled BLT commands as fenced on gen2/3
+http://www.crashcourse.ca/wiki/index.php/Kernel_cleanup_scripts
 
-breaks system resume on my Toshiba Portege R500 (945GM) which hangs hard
-during or right after returning to X.
+  i typically used the word "unused" to refer to variables defined in
+Kconfig files that simply aren't referenced anymore -- not fatal in
+any sense, just leftover detritus when people removed code but forgot
+to take out the corresponding Kconfig entry.
 
-The appended patch fixes the issue for me, FWIW.
+  i use the word "badref" for instances where a CONFIG_ variable *is*
+tested in a source file, but doesn't exist in a Kconfig file -- that's
+typically more serious.  or sometimes, it's just a typo.
 
-Thanks,
-Rafael
+  just now, i ran the "find_badref_configs" script against the entire
+drivers/ directory -- first few lines of output were:
 
----
- drivers/gpu/drm/i915/i915_gem_execbuffer.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+>>>>> ACORNSCSI_CONSTANTS
+drivers/scsi/arm/acornscsi.c:106:#undef CONFIG_ACORNSCSI_CONSTANTS
+drivers/scsi/arm/acornscsi.c:413:#ifdef CONFIG_ACORNSCSI_CONSTANTS
+drivers/scsi/arm/acornscsi.c:491:#ifdef CONFIG_ACORNSCSI_CONSTANTS
+... snip ...
 
-Index: linux/drivers/gpu/drm/i915/i915_gem_execbuffer.c
-===================================================================
---- linux.orig/drivers/gpu/drm/i915/i915_gem_execbuffer.c
-+++ linux/drivers/gpu/drm/i915/i915_gem_execbuffer.c
-@@ -498,7 +498,7 @@ pin_and_fence_object(struct drm_i915_gem
- 				if (ret)
- 					goto err_unpin;
- 			}
--			obj->pending_fenced_gpu_access = true;
-+			obj->pending_fenced_gpu_access = need_fence;
- 		}
- 	}
- 
+which i recognize by now since that's been there, like, *forever*.
+
+  anyway, feel free to play; i might do some tweaking on those over
+the next few days.
+
+rday
+
+-- 
+
+========================================================================
+Robert P. J. Day                                 Ottawa, Ontario, CANADA
+                        http://crashcourse.ca
+
+Twitter:                                       http://twitter.com/rpjday
+LinkedIn:                               http://ca.linkedin.com/in/rpjday
+========================================================================
