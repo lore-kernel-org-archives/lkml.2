@@ -1,78 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932549Ab2DKQVl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Apr 2012 12:21:41 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:22626 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932410Ab2DKQVk (ORCPT
+	id S932578Ab2DKQWK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Apr 2012 12:22:10 -0400
+Received: from ch1ehsobe006.messaging.microsoft.com ([216.32.181.186]:7621
+	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932418Ab2DKQWH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Apr 2012 12:21:40 -0400
-X-Authority-Analysis: v=2.0 cv=Z8Fu7QtA c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=XQbtiDEiEegA:10 a=TWBfIqSxIMQA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=Q_vRj5AnrVouVOA9BZsA:9 a=6c1vHMHYU-MpCEzpB5oA:7 a=PUjeQqilurYA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.80.29
-Message-ID: <1334161298.23924.263.camel@gandalf.stny.rr.com>
-Subject: Re: [PATCH 06/16] sched: SCHED_DEADLINE push and pull logic
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Juri Lelli <juri.lelli@gmail.com>
-Cc: peterz@infradead.org, tglx@linutronix.de, mingo@redhat.com,
-        oleg@redhat.com, fweisbec@gmail.com, darren@dvhart.com,
-        johan.eker@ericsson.com, p.faure@akatech.ch,
-        linux-kernel@vger.kernel.org, claudio@evidence.eu.com,
-        michael@amarulasolutions.com, fchecconi@gmail.com,
-        tommaso.cucinotta@sssup.it, nicola.manica@disi.unitn.it,
-        luca.abeni@unitn.it, dhaval.giani@gmail.com, hgu1972@gmail.com,
-        paulmck@linux.vnet.ibm.com, raistlin@linux.it, insop.song@ericsson.com,
-        liming.wang@windriver.com
-Date: Wed, 11 Apr 2012 12:21:38 -0400
-In-Reply-To: <1333696481-3433-7-git-send-email-juri.lelli@gmail.com>
-References: <1333696481-3433-1-git-send-email-juri.lelli@gmail.com>
-	 <1333696481-3433-7-git-send-email-juri.lelli@gmail.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.2.2-1 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Wed, 11 Apr 2012 12:22:07 -0400
+X-SpamScore: -24
+X-BigFish: VPS-24(z6c9Mz1432N98dKzz1202hzz15d4Rz2dh668h839h944hd25h)
+X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
+X-WSS-ID: 0M2BPGM-02-6W9-02
+X-M-MSG: 
+Date: Wed, 11 Apr 2012 18:21:36 +0200
+From: Joerg Roedel <joerg.roedel@amd.com>
+To: Greg KH <gregkh@linuxfoundation.org>
+CC: Ben Hutchings <ben@decadent.org.uk>, <linux-kernel@vger.kernel.org>,
+        <stable@vger.kernel.org>, <torvalds@linux-foundation.org>,
+        <akpm@linux-foundation.org>, <alan@lxorguk.ukuu.org.uk>
+Subject: Re: [ 117/175] iommu/amd: Make sure IOMMU interrupts are re-enabled
+ on resume
+Message-ID: <20120411162136.GI2428@amd.com>
+References: <20120330194849.232840068@linuxfoundation.org>
+ <1333423686.443.37.camel@deadeye>
+ <20120411154522.GH2428@amd.com>
+ <20120411160039.GB31288@kroah.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <20120411160039.GB31288@kroah.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2012-04-06 at 09:14 +0200, Juri Lelli wrote:
+On Wed, Apr 11, 2012 at 09:00:39AM -0700, Greg KH wrote:
+> On Wed, Apr 11, 2012 at 05:45:22PM +0200, Joerg Roedel wrote:
+> > Right, this fix is also required for 3.2 and 3.0.
+> 
+> Wait, what?
+> 
+> Can someone send me the needed fix, in a new thread as I seem to have
+> lost this one :(
 
->  /*
->   * Only called when both the current and waking task are -deadline
->   * tasks.
-> @@ -487,8 +819,20 @@ static void yield_task_dl(struct rq *rq)
->  static void check_preempt_curr_dl(struct rq *rq, struct task_struct *p,
->  				  int flags)
->  {
-> -	if (dl_time_before(p->dl.deadline, rq->curr->dl.deadline))
-> +	if (dl_time_before(p->dl.deadline, rq->curr->dl.deadline)) {
->  		resched_task(rq->curr);
-> +		return;
-> +	}
-> +
-> +#ifdef CONFIG_SMP
-> +	/*
-> +	 * In the unlikely case current and p have the same deadline
-> +	 * let us try to decide what's the best thing to do...
-> +	 */
-> +	if ((s64)(p->dl.deadline - rq->curr->dl.deadline) == 0 &&
-> +	    !need_resched())
+No problem. I send you the backported fix for 3.2 and 3.0.
 
-OK, maybe I'm thick. But how is:
+-- 
+AMD Operating System Research Center
 
-  (s64)(p->dl.deadline - rq->curr->dl.deadline) == 0
-
-Better than:
-
-  p->dl.deadline == rq->curr->dl.deadline
-
-?
-
--- Steve
-
-> +		check_preempt_equal_dl(rq, p);
-> +#endif /* CONFIG_SMP */
->  }
->  
-
+Advanced Micro Devices GmbH Einsteinring 24 85609 Dornach
+General Managers: Alberto Bozzo
+Registration: Dornach, Landkr. Muenchen; Registerger. Muenchen, HRB Nr. 43632
 
