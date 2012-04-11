@@ -1,80 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757477Ab2DKWmr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Apr 2012 18:42:47 -0400
-Received: from ironport-out.teksavvy.com ([206.248.143.162]:43885 "EHLO
-	ironport-out.teksavvy.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754855Ab2DKWmp (ORCPT
+	id S1760166Ab2DKWnV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Apr 2012 18:43:21 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:51627 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756227Ab2DKWnU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Apr 2012 18:42:45 -0400
-X-Greylist: delayed 580 seconds by postgrey-1.27 at vger.kernel.org; Wed, 11 Apr 2012 18:42:45 EDT
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AgIFACxOgk8YNOMa/2dsb2JhbABDhXOhe5FEgQiCCQEBBSMEERYIBhwBEAsLCQQCAgUWCwICCQMCAQIBEQ4IHgYIBQEFAgIFFASHXgENAQusD06HCAoZgQuBFIEviW6EJYEYBIp3inWBEYRhhUqEeoMDgTg
-X-IronPort-AV: E=Sophos;i="4.75,391,1330923600"; 
-   d="scan'208";a="173516118"
-Message-ID: <4F8606B6.8010306@gmail.com>
-Date: Wed, 11 Apr 2012 18:33:26 -0400
-From: Woody Suwalski <terraluna977@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:11.0) Gecko/20120312 Firefox/11.0 SeaMonkey/2.8
+	Wed, 11 Apr 2012 18:43:20 -0400
+Message-ID: <4F860905.4090106@gmail.com>
+Date: Wed, 11 Apr 2012 15:43:17 -0700
+From: David Daney <ddaney.cavm@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.15) Gecko/20101027 Fedora/3.0.10-1.fc12 Thunderbird/3.0.10
 MIME-Version: 1.0
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-CC: Chris Wilson <chris@chris-wilson.co.uk>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: Re: [Regression + patch] i915 / PM: System resume broken on 945GM
-References: <201204120012.46826.rjw@sisk.pl>
-In-Reply-To: <201204120012.46826.rjw@sisk.pl>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+To: "Robert P. J. Day" <rpjday@crashcourse.ca>
+CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: almost time to run my kernel source cleaning scripts again?
+References: <alpine.DEB.2.02.1204111700170.4733@oneiric>
+In-Reply-To: <alpine.DEB.2.02.1204111700170.4733@oneiric>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Rafael J. Wysocki wrote:
-> Hi Chris,
+On 04/11/2012 02:07 PM, Robert P. J. Day wrote:
 >
-> Unfortunately, your commit
+>    it's been a while so i was thinking of firing up my scripts to
+> peruse the source tree looking for oddities/inconsistencies/whatever
+> (unless someone else is already doing that).
 >
-> commit 7dd4906586274f3945f2aeaaa5a33b451c3b4bba
-> Author: Chris Wilson<chris@chris-wilson.co.uk>
-> Date:   Wed Mar 21 10:48:18 2012 +0000
+>    one example is looking for preprocessor tests of symbols that aren't
+> defined in any Kconfig file, and i can focus on any part of the source
+> tree.  for example, if i run that script against drivers/mmc, i get:
+[...]
 >
->      drm/i915: Mark untiled BLT commands as fenced on gen2/3
->
-> breaks system resume on my Toshiba Portege R500 (945GM) which hangs hard
-> during or right after returning to X.
->
-> The appended patch fixes the issue for me, FWIW.
->
-> Thanks,
-> Rafael
->
-> ---
->   drivers/gpu/drm/i915/i915_gem_execbuffer.c |    2 +-
->   1 file changed, 1 insertion(+), 1 deletion(-)
->
-> Index: linux/drivers/gpu/drm/i915/i915_gem_execbuffer.c
-> ===================================================================
-> --- linux.orig/drivers/gpu/drm/i915/i915_gem_execbuffer.c
-> +++ linux/drivers/gpu/drm/i915/i915_gem_execbuffer.c
-> @@ -498,7 +498,7 @@ pin_and_fence_object(struct drm_i915_gem
->   				if (ret)
->   					goto err_unpin;
->   			}
-> -			obj->pending_fenced_gpu_access = true;
-> +			obj->pending_fenced_gpu_access = need_fence;
->   		}
->   	}
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-Helps on Eeepc as well...
+>>>>>> CAVIUM_OCTEON_NUM_PACKET_BUFFERS
+> drivers/staging/octeon/ethernet-defines.h:36: *  CONFIG_CAVIUM_OCTEON_NUM_PACKET_BUFFERS
+> drivers/staging/octeon/ethernet.c:56:#if defined(CONFIG_CAVIUM_OCTEON_NUM_PACKET_BUFFERS) \
+> drivers/staging/octeon/ethernet.c:57:	&&  CONFIG_CAVIUM_OCTEON_NUM_PACKET_BUFFERS
+> drivers/staging/octeon/ethernet.c:58:int num_packet_buffers = CONFIG_CAVIUM_OCTEON_NUM_PACKET_BUFFERS;
 
-Thanks, Woody
+I am aware of these and am working on fixing them.
 
+Thanks,
+David Daney
