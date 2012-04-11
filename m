@@ -1,71 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965587Ab2DKXi1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Apr 2012 19:38:27 -0400
-Received: from smtp.fireflyinternet.com ([109.228.6.236]:51429 "EHLO
-	fireflyinternet.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S965230Ab2DKXiX (ORCPT
+	id S965560Ab2DKXit (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Apr 2012 19:38:49 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:38577 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965410Ab2DKX2C (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Apr 2012 19:38:23 -0400
-X-Default-Received-SPF: pass (skip=forwardok (res=PASS)) x-ip-name=78.156.66.37;
-From: Chris Wilson <chris@chris-wilson.co.uk>
-Subject: Re: [Intel-gfx] [PATCH] drm/i915: clear fencing tracking state when retiring request
-To: Daniel Vetter <daniel.vetter@ffwll.ch>,
-        Intel Graphics Development <intel-gfx@lists.freedesktop.org>
-Cc: Daniel Vetter <daniel.vetter@ffwll.ch>, Jiri Slaby <jslaby@suse.cz>,
-        LKML <linux-kernel@vger.kernel.org>,
-        DRI Development <dri-devel@lists.freedesktop.org>
-In-Reply-To: <1334186877-6299-1-git-send-email-daniel.vetter@ffwll.ch>
-References: <1334186877-6299-1-git-send-email-daniel.vetter@ffwll.ch>
-Date: Thu, 12 Apr 2012 00:38:09 +0100
-X-Originating-IP: 78.156.66.37
-Message-ID: <1334187495_375289@CP5-2952>
+	Wed, 11 Apr 2012 19:28:02 -0400
+Message-Id: <20120411231308.840732376@linuxfoundation.org>
+User-Agent: quilt/0.60-19.1
+Date: Wed, 11 Apr 2012 16:13:16 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        alan@lxorguk.ukuu.org.uk, Yinghai Lu <yinghai@kernel.org>,
+        Len Brown <len.brown@intel.com>
+Subject: [ 09/42] PNPACPI: Fix device ref leaking in acpi_pnp_match
+In-Reply-To: <20120411231443.GA808@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 12 Apr 2012 01:27:57 +0200, Daniel Vetter <daniel.vetter@ffwll.ch> wrote:
-> This fixes a regression introduce in
-s/introduce/introduced/
+3.0-stable review patch.  If anyone has any objections, please let me know.
+
+------------------
+
+From: Yinghai Lu <yinghai@kernel.org>
+
+commit 89e96ada572fb216e582dbe3f64e1a6939a37f74 upstream.
+
+During testing pci root bus removal, found some root bus bridge is not freed.
+If booting with pnpacpi=off, those hostbridge could be freed without problem.
+It turns out that some devices reference are not released during acpi_pnp_match.
+that match should not hold one device ref during every calling.
+Add pu_device calling before returning.
+
+Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+Signed-off-by: Len Brown <len.brown@intel.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ drivers/pnp/pnpacpi/core.c |    7 ++++++-
+ 1 file changed, 6 insertions(+), 1 deletion(-)
+
+--- a/drivers/pnp/pnpacpi/core.c
++++ b/drivers/pnp/pnpacpi/core.c
+@@ -320,9 +320,14 @@ static int __init acpi_pnp_match(struct
+ {
+ 	struct acpi_device *acpi = to_acpi_device(dev);
+ 	struct pnp_dev *pnp = _pnp;
++	struct device *physical_device;
++
++	physical_device = acpi_get_physical_device(acpi->handle);
++	if (physical_device)
++		put_device(physical_device);
  
-> commit 7dd4906586274f3945f2aeaaa5a33b451c3b4bba
-> Author: Chris Wilson <chris@chris-wilson.co.uk>
-> Date:   Wed Mar 21 10:48:18 2012 +0000
-> 
->     drm/i915: Mark untiled BLT commands as fenced on gen2/3
-> 
-> which fixed fencing tracking for untiled blt commands.
-> 
-> A side effect of that patch was that now also untiled objects have a
-> non-zero obj->last_fenced_seqno to track when a fence can be set up
-> after a pipelined tiling change. Unfortunately this was only cleared
-> by the fence setup and teardown code, resulting in tons of untiled but
-> inactive objects with non-zero last_fenced_seqno.
-> 
-> Now after resume we completely reset the seqno tracking, both on the
-> driver side (by setting dev_priv->next_seqno = 1) and on the hw side
-> (by allocating a new hws page, which contains the seqnos). Hilarity
-> and indefinite waits ensued from the stale seqnos in
-> obj->last_fenced_seqno from before the suspend.
-> 
-> The fix is to properly clear the fencing tracking state like we
-> already do for the normal gpu rendering while moving objects off the
-> active list.
-> 
-> Reported-and-tested-by: "Rafael J. Wysocki" <rjw@sisk.pl>
-> Cc: Jiri Slaby <jslaby@suse.cz>
-> Signed-Off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+ 	/* true means it matched */
+-	return !acpi_get_physical_device(acpi->handle)
++	return !physical_device
+ 	    && compare_pnp_id(pnp->id, acpi_device_hid(acpi));
+ }
+ 
 
-I spent sometime discussing whether or not we could hit a similar bug
-with a well placed change of tiling after resume, and the outcome is
-that as the fences are reset during freeze then all tiled objects that
-had been used for rendering would have been flushed (and their
-last_fenced_seqno set to 0).
 
-So this is a new regression caused by the aforementioned patch and this
-is the cleanest fix,
-Reviewed-by: Chris Wilson <chris@chris-wilson.co.uk>
--Chris
-
--- 
-Chris Wilson, Intel Open Source Technology Centre
