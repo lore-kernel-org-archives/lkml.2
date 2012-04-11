@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761473Ab2DKXUT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Apr 2012 19:20:19 -0400
+	id S965022Ab2DKXSV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Apr 2012 19:18:21 -0400
 Received: from mail-pb0-f46.google.com ([209.85.160.46]:35695 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964976Ab2DKXSW (ORCPT
+	with ESMTP id S964976Ab2DKXSN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Apr 2012 19:18:22 -0400
-Message-Id: <20120411231031.466772052@linuxfoundation.org>
+	Wed, 11 Apr 2012 19:18:13 -0400
+Message-Id: <20120411231030.885120576@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Wed, 11 Apr 2012 16:11:35 -0700
+Date: Wed, 11 Apr 2012 16:11:32 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Simon Arlott <simon@fire.lp0.eu>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>
-Subject: [ 77/78] media: dvb-core: fix DVBFE_ALGO_HW retune bug
+        alan@lxorguk.ukuu.org.uk,
+        Kuninori Morimoto <kuninori.morimoto.gx@renesas.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Subject: [ 74/78] ASoC: ak4642: fixup: mute needs +1 step
 In-Reply-To: <20120411231102.GA6404@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,65 +26,32 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Simon Arlott <simon@fire.lp0.eu>
+From: Kuninori Morimoto <kuninori.morimoto.gx@renesas.com>
 
-commit 45145b67f5895ff92207cffd74e65460a87920b2 upstream.
+commit 1f99e44cf059d2ed43c5a0724fa738b83800f725 upstream.
 
-Commit 7e07222 breaks DVBFE_ALGO_HW tuning after a retune is requested,
-which causes bad tuning on my TBS 6920.
+ak4642 out_tlv is +12.0dB to -115.0 dB, and it supports mute.
+But current settings didn't care +1 step for mute.
+This patch adds it
 
-[    0.769091] pci 0000:06:00.0: [14f1:8852] type 0 class 0x000400
-[   19.733530] CORE cx23885[0]: subsystem: 6920:8888, board: TurboSight TBS 6920 [card=14,autodetected]
-[  762.824912] cx24116_load_firmware: FW version 1.23.86.1
-
-7e0722215a510921cbb73ab4c37477d4dcb91bf8 [media] dvb-core: Don't pass DVBv3 parameters on tune() fops
-
-Although re_tune is set to true when FESTATE_RETUNE occurs, it is never
-set back to false which the old code used to do when !FESTATE_RETUNE.
-
-This patch sets re_tune to false if !(state & FESTATE_RETUNE).
-
-$ szap-s2 -a 2 "Channel 5"
-reading channels from file '/home/simon/.szap/channels.conf'
-zapping to 247 'Channel 5':
-delivery DVB-S, modulation QPSK
-sat 0, frequency 10964 MHz H, symbolrate 22000000, coderate 5/6, rolloff 0.35
-vpid 0x092a, apid 0x092b, sid 0x092d
-using '/dev/dvb/adapter2/frontend0' and '/dev/dvb/adapter2/demux0'
-status 1f | signal cf40 | snr 0000 | ber 00000000 | unc 00000000 | FE_HAS_LOCK
-status 1f | signal cf40 | snr eccd | ber 00000000 | unc 00000000 | FE_HAS_LOCK
-status 1f | signal cf40 | snr 0000 | ber 00000000 | unc 00000000 | FE_HAS_LOCK
-status 1f | signal cf40 | snr 0000 | ber 00000000 | unc 00000000 | FE_HAS_LOCK
-status 1f | signal cf40 | snr eccd | ber 00000000 | unc 00000000 | FE_HAS_LOCK
-status 1f | signal cf40 | snr 0000 | ber 00000000 | unc 00000000 | FE_HAS_LOCK
-status 1f | signal cf40 | snr 0000 | ber 00000000 | unc 00000000 | FE_HAS_LOCK
-status 1f | signal cf40 | snr eb33 | ber 00000000 | unc 00000000 | FE_HAS_LOCK
-status 1f | signal cf40 | snr eccd | ber 00000000 | unc 00000000 | FE_HAS_LOCK
-status 1f | signal cf40 | snr eccd | ber 00000000 | unc 00000000 | FE_HAS_LOCK
-status 1f | signal cf40 | snr 0000 | ber 00000000 | unc 00000000 | FE_HAS_LOCK
-status 1f | signal cf40 | snr eccd | ber 00000000 | unc 00000000 | FE_HAS_LOCK
-status 1f | signal cf40 | snr eccd | ber 00000000 | unc 00000000 | FE_HAS_LOCK
-status 1f | signal cf40 | snr 0000 | ber 00000000 | unc 00000000 | FE_HAS_LOCK
-status 1f | signal cec0 | snr eccd | ber 00000000 | unc 00000000 | FE_HAS_LOCK
-status 1f | signal cec0 | snr 0000 | ber 00000000 | unc 00000000 | FE_HAS_LOCK
-
-Signed-off-by: Simon Arlott <simon@fire.lp0.eu>
-Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
+Signed-off-by: Kuninori Morimoto <kuninori.morimoto.gx@renesas.com>
+Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/media/dvb/dvb-core/dvb_frontend.c |    2 ++
- 1 file changed, 2 insertions(+)
+ sound/soc/codecs/ak4642.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/media/dvb/dvb-core/dvb_frontend.c
-+++ b/drivers/media/dvb/dvb-core/dvb_frontend.c
-@@ -657,6 +657,8 @@ restart:
- 					dprintk("%s: Retune requested, FESTATE_RETUNE\n", __func__);
- 					re_tune = true;
- 					fepriv->state = FESTATE_TUNED;
-+				} else {
-+					re_tune = false;
- 				}
+--- a/sound/soc/codecs/ak4642.c
++++ b/sound/soc/codecs/ak4642.c
+@@ -140,7 +140,7 @@
+  * min : 0xFE : -115.0 dB
+  * mute: 0xFF
+  */
+-static const DECLARE_TLV_DB_SCALE(out_tlv, -11500, 50, 1);
++static const DECLARE_TLV_DB_SCALE(out_tlv, -11550, 50, 1);
  
- 				if (fe->ops.tune)
+ static const struct snd_kcontrol_new ak4642_snd_controls[] = {
+ 
 
 
