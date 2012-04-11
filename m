@@ -1,103 +1,194 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760739Ab2DKQqq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Apr 2012 12:46:46 -0400
-Received: from va3ehsobe010.messaging.microsoft.com ([216.32.180.30]:39430
-	"EHLO va3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1760685Ab2DKQqo (ORCPT
+	id S932658Ab2DKQuK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Apr 2012 12:50:10 -0400
+Received: from exchange.solarflare.com ([216.237.3.220]:10883 "EHLO
+	ocex02.SolarFlarecom.com" rhost-flags-OK-FAIL-OK-FAIL)
+	by vger.kernel.org with ESMTP id S932594Ab2DKQuG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Apr 2012 12:46:44 -0400
-X-SpamScore: -5
-X-BigFish: VPS-5(z6c9Mzzz1202hzz8275bhz2dh668h839hd24h)
-X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
-X-WSS-ID: 0M2BQLO-01-3CT-02
-X-M-MSG: 
-From: Joerg Roedel <joerg.roedel@amd.com>
-To: Greg KH <gregkh@linuxfoundation.org>
-CC: <linux-kernel@vger.kernel.org>, Joerg Roedel <joerg.roedel@amd.com>,
-        Ben Hutchings <ben@decadent.org.uk>
-Subject: [PATCH v3.0-stable] iommu/amd: Make sure IOMMU interrupts are re-enabled on resume
-Date: Wed, 11 Apr 2012 18:45:52 +0200
-Message-ID: <1334162752-18625-1-git-send-email-joerg.roedel@amd.com>
-X-Mailer: git-send-email 1.7.5.4
+	Wed, 11 Apr 2012 12:50:06 -0400
+Message-ID: <4F85B639.5090900@solarflare.com>
+Date: Wed, 11 Apr 2012 17:50:01 +0100
+From: Stuart Hodgson <smhodgson@solarflare.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:10.0.1) Gecko/20120216 Thunderbird/10.0.1
 MIME-Version: 1.0
-Content-Type: text/plain
-X-OriginatorOrg: amd.com
+To: Ben Hutchings <bhutchings@solarflare.com>
+CC: <netdev@vger.kernel.org>, <bruce.w.allan@intel.com>,
+        <mirq-linux@rere.qmqm.pl>, <decot@google.com>,
+        <amit.salecha@qlogic.com>, <alexander.h.duyck@intel.com>,
+        <davem@davemloft.net>, <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC PATCH 1/2] net: ethtool: Add capability to retrieve plug-in
+ module EEPROM
+References: <4F71FE0A.3060203@solarflare.com> <1333389160.2623.30.camel@bwh-desktop.uk.solarflarecom.com>
+In-Reply-To: <1333389160.2623.30.camel@bwh-desktop.uk.solarflarecom.com>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.17.20.173]
+X-TM-AS-Product-Ver: SMEX-10.0.0.1412-6.800.1017-18830.005
+X-TM-AS-Result: No--16.480700-0.000000-31
+X-TM-AS-User-Approved-Sender: Yes
+X-TM-AS-User-Blocked-Sender: No
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-commit 9ddd592a191b32f2ee6c4b6ed2bd52665c3a49f5 upstream.
+On 02/04/12 18:52, Ben Hutchings wrote:
+> We previously discussed the need for this in person, so I'm going to
+> review this as a submission rather than an RFC.
+>
+> On Tue, 2012-03-27 at 18:51 +0100, Stuart Hodgson wrote:
+>> Added extensions to the ethtool API to obtain plugin module eeprom data
+>> This is useful for end users to be able to determine what the capabilities
+>> of the in use module are.
+>>
+>> The first provides a new struct ethtool_modinfo that will return the
+>> type and size of plug-in module eeprom (such as SFP+) for parsing
+>> by userland program.
+>>
+>> The second provides the API to get the raw eeprom information
+>> using the existing ethtool_eeprom structture to return the data
+>>
+>> Signed-off-by: Stuart Hodgson<smhodgson@solarflare.com>
+>> ---
+>>    include/linux/ethtool.h |   20 ++++++++++++
+>>    net/core/ethtool.c      |   79
+>> +++++++++++++++++++++++++++++++++++++++++++++++
+>>    2 files changed, 99 insertions(+), 0 deletions(-)
+>
+> This is line-wrapped; you'll need to take care to avoid that when
+> submitting the patch for real.  Tabs have been converted to spaces,
+> which you also need to avoid.  See Documentation/email-clients.txt.
+>
+>> diff --git a/include/linux/ethtool.h b/include/linux/ethtool.h
+>> index da5b2de..50eaf35 100644
+>> --- a/include/linux/ethtool.h
+>> +++ b/include/linux/ethtool.h
+>> @@ -117,6 +117,14 @@ struct ethtool_eeprom {
+>>        __u8    data[0];
+>>    };
+>>
+>> +/* for passing plug-in module information */
+>> +struct ethtool_modinfo {
+>> +    __u32   cmd;
+>> +    __u32   type;
+>> +    __u32   eeprom_len;
+>> +    __u32   reserved[8];
+>> +};
+>> +
+>
+> This needs a proper kernel-doc comment with a description of each of the
+> fields (except reserved).
+>
+>>    /**
+>>     * struct ethtool_coalesce - coalescing parameters for IRQs and stats
+>> updates
+>>     * @cmd: ETHTOOL_{G,S}COALESCE
+>> @@ -936,6 +944,10 @@ struct ethtool_ops {
+>>        int    (*get_dump_data)(struct net_device *,
+>>                     struct ethtool_dump *, void *);
+>>        int    (*set_dump)(struct net_device *, struct ethtool_dump *);
+>> +    int    (*get_module_info)(struct net_device *,
+>> +                   struct ethtool_modinfo *);
+>> +    int    (*get_module_eeprom)(struct net_device *,
+>> +                     struct ethtool_eeprom *, u8 *);
+>
+> These need to be described in the kernel-doc comment for this structure.
+>
+>>    };
+>>    #endif /* __KERNEL__ */
+>> @@ -1010,6 +1022,8 @@ struct ethtool_ops {
+>>    #define ETHTOOL_SET_DUMP    0x0000003e /* Set dump settings */
+>>    #define ETHTOOL_GET_DUMP_FLAG    0x0000003f /* Get dump settings */
+>>    #define ETHTOOL_GET_DUMP_DATA    0x00000040 /* Get dump data */
+>> +#define ETHTOOL_GMODULEINFO    0x00000041 /* Get plug-in module
+>> information */
+>> +#define ETHTOOL_GMODULEEEPROM    0x00000042 /* Get plug-in module eeprom */
+>>
+>>    /* compatibility with older code */
+>>    #define SPARC_ETH_GSET        ETHTOOL_GSET
+>> @@ -1159,6 +1173,12 @@ struct ethtool_ops {
+>>    #define RX_CLS_LOC_FIRST    0xfffffffe
+>>    #define RX_CLS_LOC_LAST        0xfffffffd
+>>
+>> +/* EEPROM Standards for plug in modules */
+>> +#define SFF_8079        0x1
+>> +#define SFF_8079_LEN        256
+>> +#define SFF_8472        0x2
+>> +#define SFF_8472_LEN        512
+>> +
+>
+> I think it's best to include a prefix of 'ethtool_' 'ETHTOOL_' or 'ETH_'
+> in new definitions in ethtool.h.  Since these are specific to modules I
+> would suggest a prefix of 'ETH_MODULE_'.
+>
+>>    /* Reset flags */
+>>    /* The reset() operation must clear the flags for the components which
+>>     * were actually reset.  On successful return, the flags indicate the
+>> diff --git a/net/core/ethtool.c b/net/core/ethtool.c
+>> index 3f79db1..1e86bd9 100644
+>> --- a/net/core/ethtool.c
+>> +++ b/net/core/ethtool.c
+> [...]
+>> +static int ethtool_get_module_eeprom(struct net_device *dev,
+>> +        void __user *useraddr)
+>> +{
+>> +    int ret;
+>> +    struct ethtool_eeprom eeprom;
+>> +    struct ethtool_modinfo modinfo;
+>> +    const struct ethtool_ops *ops = dev->ethtool_ops;
+>> +    void __user *userbuf = useraddr + sizeof(eeprom);
+>> +    u8 *data;
+>> +
+>> +    if (!ops->get_module_info || !ops->get_module_eeprom)
+>> +        return -EOPNOTSUPP;
+>> +
+>> +    if (copy_from_user(&eeprom, useraddr, sizeof(eeprom)))
+>> +        return -EFAULT;
+>> +
+>> +    /* Check for wrap and zero */
+>> +    if (eeprom.offset + eeprom.len<= eeprom.offset)
+>> +        return -EINVAL;
+>> +
+>> +    /* Get the modinfo to get the length */
+>> +    ret = ops->get_module_info(dev,&modinfo);
+>> +    if (ret)
+>> +        return ret;
+>> +
+>> +    if (eeprom.offset + eeprom.len>  modinfo.eeprom_len)
+>> +        return -EINVAL;
+>> +
+>> +    data = kmalloc(PAGE_SIZE, GFP_USER);
+>> +    if (!data)
+>> +        return -ENOMEM;
+>
+> What if some device has a larger EEPROM?  Surely this length should be
+> eeprom.len.
+>
 
-Unfortunatly the interrupts for the event log and the
-peripheral page-faults are only enabled at boot but not
-re-enabled at resume. Fix that.
+Do you mean what if the eeprom length in te device is larger than
+PAGE_SIZE? If so then it should really use modinfo.eeprom_len since
+this the size of the data. eeprom.len could be arbitary.
 
-Signed-off-by: Joerg Roedel <joerg.roedel@amd.com>
-[bwh: Backport to 3.0:
- - Drop change to PPR log which was added in 3.3
-  - Source is under arch/x86/kernel]
-Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
----
- arch/x86/kernel/amd_iommu_init.c |   24 +++++++++++++++++-------
- 1 files changed, 17 insertions(+), 7 deletions(-)
+>> +    ret = ops->get_module_eeprom(dev,&eeprom, data);
+>> +    if (ret)
+>> +        goto out;
+>> +
+>> +
+>> +    if (copy_to_user(userbuf, data, eeprom.len)) {
+>> +        ret = -EFAULT;
+>> +        goto out;
+>> +    }
+>> +
+>> +    if (copy_to_user(useraddr,&eeprom, sizeof(eeprom)))
+>> +        ret = -EFAULT;
+> [...]
+>
+> I think you can drop this last copy as there's no information to return
+> in the eeprom structure itself.
+>
+> Ben.
+>
 
-diff --git a/arch/x86/kernel/amd_iommu_init.c b/arch/x86/kernel/amd_iommu_init.c
-index bfc8453..33df6e8 100644
---- a/arch/x86/kernel/amd_iommu_init.c
-+++ b/arch/x86/kernel/amd_iommu_init.c
-@@ -1031,8 +1031,9 @@ static int iommu_setup_msi(struct amd_iommu *iommu)
- {
- 	int r;
- 
--	if (pci_enable_msi(iommu->dev))
--		return 1;
-+	r = pci_enable_msi(iommu->dev);
-+	if (r)
-+		return r;
- 
- 	r = request_threaded_irq(iommu->dev->irq,
- 				 amd_iommu_int_handler,
-@@ -1042,24 +1043,33 @@ static int iommu_setup_msi(struct amd_iommu *iommu)
- 
- 	if (r) {
- 		pci_disable_msi(iommu->dev);
--		return 1;
-+		return r;
- 	}
- 
- 	iommu->int_enabled = true;
--	iommu_feature_enable(iommu, CONTROL_EVT_INT_EN);
- 
- 	return 0;
- }
- 
- static int iommu_init_msi(struct amd_iommu *iommu)
- {
-+	int ret;
-+
- 	if (iommu->int_enabled)
--		return 0;
-+		goto enable_faults;
- 
- 	if (pci_find_capability(iommu->dev, PCI_CAP_ID_MSI))
--		return iommu_setup_msi(iommu);
-+		ret = iommu_setup_msi(iommu);
-+	else
-+		ret = -ENODEV;
- 
--	return 1;
-+	if (ret)
-+		return ret;
-+
-+enable_faults:
-+	iommu_feature_enable(iommu, CONTROL_EVT_INT_EN);
-+
-+	return 0;
- }
- 
- /****************************************************************************
--- 
-1.7.5.4
+Other comments have been addressed and will be re-submitted.
 
-
+Stu
