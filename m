@@ -1,85 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757030Ab2DKLJG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Apr 2012 07:09:06 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:12890 "EHLO mx1.redhat.com"
+	id S1756940Ab2DKLKg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Apr 2012 07:10:36 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:1862 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756429Ab2DKLJE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Apr 2012 07:09:04 -0400
-Message-ID: <4F85664C.3020508@redhat.com>
-Date: Wed, 11 Apr 2012 08:09:00 -0300
-From: Mauro Carvalho Chehab <mchehab@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120329 Thunderbird/11.0.1
-MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: Andrew Morton <akpm@linux-foundation.org>,
-        Linux Media Mailing List <linux-media@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: [GIT PULL for v3.4-rc3] media fixes
-X-Enigmail-Version: 1.4
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1754856Ab2DKLKe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Apr 2012 07:10:34 -0400
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+	Kingdom.
+	Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+In-Reply-To: <20120410194625.GB7196@redhat.com>
+References: <20120410194625.GB7196@redhat.com> <20120410194554.GA7196@redhat.com>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: dhowells@redhat.com, Andrew Morton <akpm@linux-foundation.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/1] creds: kill __task_cred()->task_is_dead() validation
+Date: Wed, 11 Apr 2012 11:41:34 +0100
+Message-ID: <13911.1334140894@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+Oleg Nesterov <oleg@redhat.com> wrote:
 
-Please pull from:
-  git://git.kernel.org/pub/scm/linux/kernel/git/mchehab/linux-media v4l_for_linus
+> commit 8f92054e:
+> 
+>     add the following validation condition:
+> 
+>         task->exit_state >= 0
+> 
+>     to permit the access if the target task is dead and therefore
+>     unable to change its own credentials.
+> 
+> OK, but afaics currently this can only help wait_task_zombie() which
+> calls __task_cred() without rcu lock.
+> 
+> Remove this validation and change wait_task_zombie() to use task_uid()
+> instead. This means we do rcu_read_lock() only to shut up the lockdep,
+> but we already do the same in, say, wait_task_stopped().
+> 
+> task_is_dead() should die, task->exit_state != 0 means that this task
+> has passed exit_notify(), only do_wait-like code paths should use this.
+> 
+> Unfortunately, we can't kill task_is_dead() right now, it has already
+> found the bugy users in drivers/staging/, the fix already exists.
+>
+> Signed-off-by: Oleg Nesterov <oleg@redhat.com>
 
-For some fixes for the media drivers:
-
-- dvb core: there is a regression found when used with xine. For whatever unknown
-  reason, xine (and xine-lib clients) wants that the frontend to tell what frequency
-  he is using even before the PLL lock (or at least, it expects a non-zero frequency).
-  On DVB, the frequency is only actually known after a frequency zig-zag seek, done by
-  the DVB core. Anyway, the fix was trivial. That solves Fedora BZ#808871.
-
-- ivtv: fix a regression when selecting the language channel;
-
-- uvc: fix a race-related crash;
-
-- it913x: fixes firmware loading;
-
-- two few trivial patches (a dependency issue at a radio driver at sound Kconfig,
-  and a warning fix on dvb).
-
-Regards,
-Mauro
-
--
-
-Latest commit at the branch: 
-ed0ee0ce0a3224dab5caa088a5f8b6df25924276 [media] uvcvideo: Fix race-related crash in uvc_video_clock_update()
-The following changes since commit 7483d45f0aee3afc0646d185cabd4af9f6cab58c:
-
-  Merge branch 'staging/for_v3.4' into v4l_for_linus (2012-03-23 08:06:43 -0300)
-
-are available in the git repository at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/mchehab/linux-media v4l_for_linus
-
-Chris Rankin (1):
-      [media] dvb_frontend: regression fix: userspace ABI broken for xine
-
-Hans Petter Selasky (1):
-      [media] dvb_frontend: fix compiler warning
-
-Hans Verkuil (2):
-      [media] ivtv: Fix AUDIO_(BILINGUAL_)CHANNEL_SELECT regression
-      [media] Drivers/media/radio: Fix build error
-
-Laurent Pinchart (1):
-      [media] uvcvideo: Fix race-related crash in uvc_video_clock_update()
-
-Malcolm Priestley (1):
-      [media] it913x: fix firmware loading errors
-
- drivers/media/dvb/dvb-core/dvb_frontend.c |   12 ++++++-
- drivers/media/dvb/dvb-usb/it913x.c        |   54 +++++++++++++++++++++-------
- drivers/media/video/ivtv/ivtv-ioctl.c     |    4 +-
- drivers/media/video/uvc/uvc_video.c       |   50 +++++++++++++++++---------
- sound/pci/Kconfig                         |    4 +-
- 5 files changed, 87 insertions(+), 37 deletions(-)
-
+Acked-by: David Howells <dhowells@redhat.com>
