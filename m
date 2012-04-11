@@ -1,64 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932589Ab2DKQZY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Apr 2012 12:25:24 -0400
-Received: from acsinet15.oracle.com ([141.146.126.227]:30693 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932471Ab2DKQZX (ORCPT
+	id S932609Ab2DKQZ2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Apr 2012 12:25:28 -0400
+Received: from mail-pz0-f52.google.com ([209.85.210.52]:47876 "EHLO
+	mail-pz0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932471Ab2DKQZ0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Apr 2012 12:25:23 -0400
-To: Mike Snitzer <snitzer@redhat.com>
-Cc: Vivek Goyal <vgoyal@redhat.com>, Jens Axboe <axboe@kernel.dk>,
-        linux kernel mailing list <linux-kernel@vger.kernel.org>,
-        martin.petersen@oracle.com
-Subject: Re: [RFC PATCH] block: Change default IO scheduler to deadline except SATA
-From: "Martin K. Petersen" <martin.petersen@oracle.com>
-Organization: Oracle
-References: <20120410133708.GE21801@redhat.com> <4F843C17.5050004@kernel.dk>
-	<20120410142148.GG21801@redhat.com>
-	<20120410151042.GH21801@redhat.com>
-	<CAMM=eLf5qi_PL8vFh_b5V_nq_mxg0CN0asE8E9XYJn48J4mdPA@mail.gmail.com>
-Date: Wed, 11 Apr 2012 12:25:15 -0400
-In-Reply-To: <CAMM=eLf5qi_PL8vFh_b5V_nq_mxg0CN0asE8E9XYJn48J4mdPA@mail.gmail.com>
-	(Mike Snitzer's message of "Tue, 10 Apr 2012 12:13:07 -0400")
-Message-ID: <yq14nsqck2c.fsf@sermon.lab.mkp.net>
-User-Agent: Gnus/5.110017 (No Gnus v0.17) Emacs/23.2 (gnu/linux)
+	Wed, 11 Apr 2012 12:25:26 -0400
+Date: Wed, 11 Apr 2012 09:25:19 -0700
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: =?utf-8?B?5p6X5b2l5L2R?= <tom_lin@emc.com.tw>
+Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
+        djkurtz@chromium.org, Jiri Kosina <jkosina@suse.cz>
+Subject: Re: [PATCH v3] Input: Elan HID-I2C device driver
+Message-ID: <20120411162519.GA27562@core.coreip.homeip.net>
+References: <1334061766-20577-1-git-send-email-tom_lin@emc.com.tw>
+ <20120411071212.GB6894@core.coreip.homeip.net>
+ <4F85583F.6050008@emc.com.tw>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
-X-CT-RefId: str=0001.0A090206.4F85B06F.0024,ss=1,re=0.000,fgs=0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <4F85583F.6050008@emc.com.tw>
+X-KMail-SignatureActionEnabled: false
+X-KMail-EncryptActionEnabled: false
+X-KMail-CryptoMessageFormat: 15
+X-KMail-Identity: 579597780
+X-KMail-Transport: 2086860242
+X-KMail-Fcc: 11
+X-KMail-Drafts: 19
+X-KMail-Templates: 38
+X-KMail-Link-Message: 603189
+X-KMail-Link-Type: reply
+User-Agent: KMail/4.8.1 (Linux/3.3.1-3.fc16.x86_64; KDE/4.8.1; x86_64; ; )
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>>>> "Mike" == Mike Snitzer <snitzer@redhat.com> writes:
+On Wednesday, April 11, 2012 06:09:03 PM 林彥佑 wrote:
+> Hi Daniel
+> 
+> On 04/11/2012 03:12 PM, Dmitry Torokhov wrote:
+> > Hi Tom,
+> > 
+> > On Tue, Apr 10, 2012 at 08:42:46PM +0800, Tom Lin wrote:
+> >> This patch adds driver for Elan I2C touchpad. These protocol of HID-I2C
+> >> was
+> >> defined by Microsoft. The kernel driver would use the multi-touch
+> >> protocol
+> >> format B.
+> > 
+> > If this device truly supports HID protocol shouldn't we define i2c-hid
+> > transport, similar to usbhid?
+> 
+> I merely follow defined by Microsoft.
+> It was called "HID OVER I2C" by Microsoft.
+> (http://msdn.microsoft.com/en-us/library/windows/hardware/hh825917(v=vs.85).
+> aspx) But I agree to change from hid i2c to i2chid.
+> Do you have any better opinions?
 
-Mike> I'm not aware of any discrete attribute (comparable to
-Mike> 'rotational' flag) that SCSI devices will advertise that indicates
-Mike> "I'm a raid array".
+I am not sure we are talking about same thing... I do not really care
+whether it is named "hid i2c" or "i2chid". What I meant if the device
+really speaks HID protocol, except that the transport is not USB or
+bluetooth but I2C, then instead of writing a custom driver for this
+particular part we need to add a new HID transport into
+drivers/hid/i2c-hid that is similar to drivers/hid/usbhid/ and reuse the
+rest of HID framework along with hid- multitouch.c which handles
+HID-compliant multitouch devices.
 
-Sadly, no.
+I am CCing Jiri (HID maintainer) for additional input.
 
-
-Mike> That said, we can have a _very_ good hint that a SCSI device is a
-Mike> raid array if:
-
-Mike> 1) optimal_io_size is not zero, minimum_io_size is not equal to
-Mike> optimal_io_size, and optimal_io_size is a multiple of
-Mike> minimum_io_size
-
-Unfortunately there are still a lot of arrays out there that don't
-export the relevant VPDs.
-
-I know there's a lot of resistance to doing stuff in the kernel that can
-be done in udev. But with my distro hat on we update the kernel much,
-much more frequently than we update udev rules. For a multitude of
-reasons.
-
-Also, when it comes to disk arrays we already have a significant portion
-of them hardwired in the kernel anyway (quirks, LUN discovery, device
-handlers). So I'd personally be fine with having a BLIST_ARRAY flag that
-we could trigger off of.
+Thanks.
 
 -- 
-Martin K. Petersen	Oracle Linux Engineering
+Dmitry
