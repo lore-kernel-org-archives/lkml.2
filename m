@@ -1,21 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965458Ab2DKX03 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Apr 2012 19:26:29 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:58738 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965378Ab2DKXYE (ORCPT
+	id S965495Ab2DKX0n (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Apr 2012 19:26:43 -0400
+Received: from mail-pz0-f52.google.com ([209.85.210.52]:51056 "EHLO
+	mail-pz0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965400Ab2DKXYB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Apr 2012 19:24:04 -0400
-Message-Id: <20120411231044.477248579@linuxfoundation.org>
+	Wed, 11 Apr 2012 19:24:01 -0400
+Message-Id: <20120411231044.299794032@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Wed, 11 Apr 2012 16:11:28 -0700
+Date: Wed, 11 Apr 2012 16:11:27 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Nishanth Menon <nm@ti.com>, Samuel Ortiz <sameo@linux.intel.com>
-Subject: [ 53/59] mfd: Clear twl6030 IRQ status register only once
+        alan@lxorguk.ukuu.org.uk, Salman Qazi <sqazi@google.com>,
+        John Stultz <john.stultz@linaro.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Turner <pjt@google.com>,
+        john stultz <johnstul@us.ibm.com>, Ingo Molnar <mingo@elte.hu>,
+        Mike Galbraith <efault@gmx.de>
+Subject: [ 52/59] sched/x86: Fix overflow in cyc2ns_offset
 In-Reply-To: <20120411231213.GA13124@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,56 +28,93 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Nishanth Menon <nm@ti.com>
+From: Salman Qazi <sqazi@google.com>
 
-commit 3f8349e6e98ba0455437724589072523865eae5e upstream.
+commit 9993bc635d01a6ee7f6b833b4ee65ce7c06350b1 upstream.
 
-TWL6030 family of PMIC use a shadow interrupt status register
-while kernel processes the current interrupt event.
-However, any write(0 or 1) to register INT_STS_A, INT_STS_B or
-INT_STS_C clears all 3 interrupt status registers.
+When a machine boots up, the TSC generally gets reset.  However,
+when kexec is used to boot into a kernel, the TSC value would be
+carried over from the previous kernel.  The computation of
+cycns_offset in set_cyc2ns_scale is prone to an overflow, if the
+machine has been up more than 208 days prior to the kexec.  The
+overflow happens when we multiply *scale, even though there is
+enough room to store the final answer.
 
-Since clear of the interrupt is done on 32k clk, depending on I2C
-bus speed, we could in-adverently clear the status of a interrupt
-status pending on shadow register in the current implementation.
-This is due to the fact that multi-byte i2c write operation into
-three seperate status register could result in multiple load
-and clear of status and result in lost interrupts.
+We fix this issue by decomposing tsc_now into the quotient and
+remainder of division by CYC2NS_SCALE_FACTOR and then performing
+the multiplication separately on the two components.
 
-Instead, doing a single byte write to INT_STS_A register with 0x0
-will clear all three interrupt status registers without the related
-risk.
+Refactor code to share the calculation with the previous
+fix in __cycles_2_ns().
 
-Acked-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
-Signed-off-by: Nishanth Menon <nm@ti.com>
-Signed-off-by: Samuel Ortiz <sameo@linux.intel.com>
+Signed-off-by: Salman Qazi <sqazi@google.com>
+Acked-by: John Stultz <john.stultz@linaro.org>
+Acked-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Paul Turner <pjt@google.com>
+Cc: john stultz <johnstul@us.ibm.com>
+Link: http://lkml.kernel.org/r/20120310004027.19291.88460.stgit@dungbeetle.mtv.corp.google.com
+Signed-off-by: Ingo Molnar <mingo@elte.hu>
+Cc: Mike Galbraith <efault@gmx.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/mfd/twl6030-irq.c |   13 +++++++++++--
- 1 file changed, 11 insertions(+), 2 deletions(-)
+ arch/x86/include/asm/timer.h |    8 ++------
+ arch/x86/kernel/tsc.c        |    3 ++-
+ include/linux/kernel.h       |   13 +++++++++++++
+ 3 files changed, 17 insertions(+), 7 deletions(-)
 
---- a/drivers/mfd/twl6030-irq.c
-+++ b/drivers/mfd/twl6030-irq.c
-@@ -187,8 +187,17 @@ static int twl6030_irq_thread(void *data
- 			}
- 		local_irq_enable();
- 		}
--		ret = twl_i2c_write(TWL_MODULE_PIH, sts.bytes,
--				REG_INT_STS_A, 3); /* clear INT_STS_A */
+--- a/arch/x86/include/asm/timer.h
++++ b/arch/x86/include/asm/timer.h
+@@ -57,14 +57,10 @@ DECLARE_PER_CPU(unsigned long long, cyc2
+ 
+ static inline unsigned long long __cycles_2_ns(unsigned long long cyc)
+ {
+-	unsigned long long quot;
+-	unsigned long long rem;
+ 	int cpu = smp_processor_id();
+ 	unsigned long long ns = per_cpu(cyc2ns_offset, cpu);
+-	quot = (cyc >> CYC2NS_SCALE_FACTOR);
+-	rem = cyc & ((1ULL << CYC2NS_SCALE_FACTOR) - 1);
+-	ns += quot * per_cpu(cyc2ns, cpu) +
+-		((rem * per_cpu(cyc2ns, cpu)) >> CYC2NS_SCALE_FACTOR);
++	ns += mult_frac(cyc, per_cpu(cyc2ns, cpu),
++			(1UL << CYC2NS_SCALE_FACTOR));
+ 	return ns;
+ }
+ 
+--- a/arch/x86/kernel/tsc.c
++++ b/arch/x86/kernel/tsc.c
+@@ -622,7 +622,8 @@ static void set_cyc2ns_scale(unsigned lo
+ 
+ 	if (cpu_khz) {
+ 		*scale = (NSEC_PER_MSEC << CYC2NS_SCALE_FACTOR)/cpu_khz;
+-		*offset = ns_now - (tsc_now * *scale >> CYC2NS_SCALE_FACTOR);
++		*offset = ns_now - mult_frac(tsc_now, *scale,
++					     (1UL << CYC2NS_SCALE_FACTOR));
+ 	}
+ 
+ 	sched_clock_idle_wakeup_event(0);
+--- a/include/linux/kernel.h
++++ b/include/linux/kernel.h
+@@ -85,6 +85,19 @@
+ }							\
+ )
+ 
++/*
++ * Multiplies an integer by a fraction, while avoiding unnecessary
++ * overflow or loss of precision.
++ */
++#define mult_frac(x, numer, denom)(			\
++{							\
++	typeof(x) quot = (x) / (denom);			\
++	typeof(x) rem  = (x) % (denom);			\
++	(quot * (numer)) + ((rem * (numer)) / (denom));	\
++}							\
++)
 +
-+		/*
-+		 * NOTE:
-+		 * Simulation confirms that documentation is wrong w.r.t the
-+		 * interrupt status clear operation. A single *byte* write to
-+		 * any one of STS_A to STS_C register results in all three
-+		 * STS registers being reset. Since it does not matter which
-+		 * value is written, all three registers are cleared on a
-+		 * single byte write, so we just use 0x0 to clear.
-+		 */
-+		ret = twl_i2c_write_u8(TWL_MODULE_PIH, 0x00, REG_INT_STS_A);
- 		if (ret)
- 			pr_warning("twl6030: I2C error in clearing PIH ISR\n");
++
+ #define _RET_IP_		(unsigned long)__builtin_return_address(0)
+ #define _THIS_IP_  ({ __label__ __here; __here: (unsigned long)&&__here; })
  
 
 
