@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965472Ab2DKXZI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Apr 2012 19:25:08 -0400
+	id S965447Ab2DKXYV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Apr 2012 19:24:21 -0400
 Received: from mail-pb0-f46.google.com ([209.85.160.46]:58738 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965435Ab2DKXYW (ORCPT
+	with ESMTP id S965435Ab2DKXYN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Apr 2012 19:24:22 -0400
-Message-Id: <20120411231044.125167538@linuxfoundation.org>
+	Wed, 11 Apr 2012 19:24:13 -0400
+Message-Id: <20120411231044.997477266@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Wed, 11 Apr 2012 16:11:26 -0700
+Date: Wed, 11 Apr 2012 16:11:31 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Sachin Prabhu <sprabhu@redhat.com>,
-        Trond Myklebust <Trond.Myklebust@netapp.com>,
-        Josh Boyer <jwboyer@redhat.com>
-Subject: [ 51/59] Fix length of buffer copied in __nfs4_get_acl_uncached
+        alan@lxorguk.ukuu.org.uk,
+        Kuninori Morimoto <kuninori.morimoto.gx@renesas.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Subject: [ 56/59] ASoC: ak4642: fixup: mute needs +1 step
 In-Reply-To: <20120411231213.GA13124@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,34 +26,32 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sachin Prabhu <sprabhu@redhat.com>
+From: Kuninori Morimoto <kuninori.morimoto.gx@renesas.com>
 
-commit 20e0fa98b751facf9a1101edaefbc19c82616a68 upstream.
+commit 1f99e44cf059d2ed43c5a0724fa738b83800f725 upstream.
 
-_copy_from_pages() used to copy data from the temporary buffer to the
-user passed buffer is passed the wrong size parameter when copying
-data. res.acl_len contains both the bitmap and acl lenghts while
-acl_len contains the acl length after adjusting for the bitmap size.
+ak4642 out_tlv is +12.0dB to -115.0 dB, and it supports mute.
+But current settings didn't care +1 step for mute.
+This patch adds it
 
-Signed-off-by: Sachin Prabhu <sprabhu@redhat.com>
-Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
-Cc: Josh Boyer <jwboyer@redhat.com>
+Signed-off-by: Kuninori Morimoto <kuninori.morimoto.gx@renesas.com>
+Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/nfs/nfs4proc.c |    2 +-
+ sound/soc/codecs/ak4642.c |    2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/fs/nfs/nfs4proc.c
-+++ b/fs/nfs/nfs4proc.c
-@@ -3618,7 +3618,7 @@ static ssize_t __nfs4_get_acl_uncached(s
- 		if (acl_len > buflen)
- 			goto out_free;
- 		_copy_from_pages(buf, pages, res.acl_data_offset,
--				res.acl_len);
-+				acl_len);
- 	}
- 	ret = acl_len;
- out_free:
+--- a/sound/soc/codecs/ak4642.c
++++ b/sound/soc/codecs/ak4642.c
+@@ -144,7 +144,7 @@
+  * min : 0xFE : -115.0 dB
+  * mute: 0xFF
+  */
+-static const DECLARE_TLV_DB_SCALE(out_tlv, -11500, 50, 1);
++static const DECLARE_TLV_DB_SCALE(out_tlv, -11550, 50, 1);
+ 
+ static const struct snd_kcontrol_new ak4642_snd_controls[] = {
+ 
 
 
