@@ -1,180 +1,144 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757671Ab2DKLT0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Apr 2012 07:19:26 -0400
-Received: from mailhub.sw.ru ([195.214.232.25]:5162 "EHLO relay.sw.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756469Ab2DKLTZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Apr 2012 07:19:25 -0400
-Subject: [PATCH] nfsd: remove hard-coded dereferences to name-to-id and
- id-to-name caches
-To: bfields@fieldses.org
-From: Stanislav Kinsbursky <skinsbursky@parallels.com>
-Cc: linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org, devel@openvz.org
-Date: Wed, 11 Apr 2012 15:18:58 +0400
-Message-ID: <20120411111844.14534.39808.stgit@localhost6.localdomain6>
-User-Agent: StGit/0.15
+	id S1756706Ab2DKLfa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Apr 2012 07:35:30 -0400
+Received: from out01.mta.xmission.com ([166.70.13.231]:39087 "EHLO
+	out01.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751849Ab2DKLf0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Apr 2012 07:35:26 -0400
+From: ebiederm@xmission.com (Eric W. Biederman)
+To: Kay Sievers <kay@vrfy.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, Greg Kroah-Hartmann <greg@kroah.com>
+References: <1333569554.864.3.camel@mop>
+	<CA+55aFyMO=xx0xNvggR-1fs-jKi_zaayNfgCa3HCNkvH0yA16g@mail.gmail.com>
+	<1333655231.725.27.camel@mop>
+Date: Wed, 11 Apr 2012 04:39:16 -0700
+In-Reply-To: <1333655231.725.27.camel@mop> (Kay Sievers's message of "Thu, 05
+	Apr 2012 21:47:11 +0200")
+Message-ID: <m1k41mebvf.fsf@fess.ebiederm.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+X-XM-SPF: eid=;;;mid=;;;hst=in02.mta.xmission.com;;;ip=98.207.153.68;;;frm=ebiederm@xmission.com;;;spf=neutral
+X-XM-AID: U2FsdGVkX1+k0063ys0CQ18tUJwH20WARTzHzcbrLP8=
+X-SA-Exim-Connect-IP: 98.207.153.68
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-Spam-Report: *  0.1 XMSubLong Long Subject
+	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
+	* -0.5 BAYES_05 BODY: Bayes spam probability is 1 to 5%
+	*      [score: 0.0123]
+	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
+	*      [sa03 1397; Body=1 Fuz1=1 Fuz2=1]
+	*  1.0 XM_Sft_Co_L33T XM_Sft_Co_L33T
+	*  0.4 UNTRUSTED_Relay Comes from a non-trusted relay
+X-Spam-DCC: XMission; sa03 1397; Body=1 Fuz1=1 Fuz2=1 
+X-Spam-Combo: *;Kay Sievers <kay@vrfy.org>
+X-Spam-Relay-Country: **
+Subject: Re: [PATCH] printk: support structured and multi-facility log messages
+X-Spam-Flag: No
+X-SA-Exim-Version: 4.2.1 (built Fri, 06 Aug 2010 16:31:04 -0600)
+X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-These dereferences to global static caches are redundant. They also prevents
-converting these caches into per-net ones. So this patch is cleanup + precursor
-of patch set, which will make them per-net.
+Kay Sievers <kay@vrfy.org> writes:
 
-Signed-off-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
+> On Thu, 2012-04-05 at 10:09 -0700, Linus Torvalds wrote:
+>> On Wed, Apr 4, 2012 at 12:59 PM, Kay Sievers <kay@vrfy.org> wrote:
+>> > From: Kay Sievers <kay@vrfy.org>
+>> > Subject: printk: support structured and multi-facility log messages
+>
+>> Other than this issue, I actually don't have any problems with the
+>> code. Most of it seems fairly reasonable. But this one just made me go
+>> "wtf, how can something so reasonable then be so completely crazy in
+>> this regard".
+>
+> Binary support is just what we are required to support in userspace
+> logging. We can surely live without that in the kernel.
+>
+> What we are looking for is mainly the 'context' of the message, and not
+> possible binary data; and that will still be provided the same way with
+> the now simpler and more line-based output.
+>
+> Better?
+>
+>   [root@mop ~]# cat /dev/kmsg
+>   5,0,0;Linux version 3.4.0-rc1+ (kay@mop) (gcc version 4.7.0 20120315 ...
+>   6,1,0;Command line: root=/dev/sda1 console=tty0 console=ttyS0
+>   6,2,0;BIOS-provided physical RAM map:
+>   6,3,0; BIOS-e820: 0000000000000000 - 000000000009f400 (usable)
+>   6,4,0; BIOS-e820: 000000000009f400 - 00000000000a0000 (reserved)
+>   6,5,0; BIOS-e820: 00000000000f0000 - 0000000000100000 (reserved)
+>   6,6,0; BIOS-e820: 0000000000100000 - 000000001fffd000 (usable)
+>   6 ,7,0; BIOS-e820: 000000001fffd000 - 0000000020000000 (reserved)
+>   6,8,0; BIOS-e820: 00000000feffc000 - 00000000ff000000 (reserved)
+>   6,9,0; BIOS-e820: 00000000fffc0000 - 0000000100000000 (reserved)
+>   6,10,0;NX (Execute Disable) protection: active
+>   6,11,0;DMI 2.4 present.
+>   [...]
+>   4,382,6189353;sr0: scsi3-mmc drive: 4x/4x cd/rw xa/form2 tray
+>   6,383,6190667;cdrom: Uniform CD-ROM driver Revision: 3.20
+>   7,384,6193747;sr 1:0:0:0: Attached scsi CD-ROM sr0
+>    SUBSYSTEM=scsi
+>    DEVICE=+scsi:1:0:0:0
 
----
- fs/nfsd/nfs4idmap.c |   50 ++++++++++++++++++++++++--------------------------
- 1 files changed, 24 insertions(+), 26 deletions(-)
+These aren't shell variables we are creating so why put the keys in
+uppercase?  All that shouting hurts my eyes.
 
-diff --git a/fs/nfsd/nfs4idmap.c b/fs/nfsd/nfs4idmap.c
-index 322d11c..2ff4470 100644
---- a/fs/nfsd/nfs4idmap.c
-+++ b/fs/nfsd/nfs4idmap.c
-@@ -183,8 +183,9 @@ warn_no_idmapd(struct cache_detail *detail, int has_died)
- 
- 
- static int         idtoname_parse(struct cache_detail *, char *, int);
--static struct ent *idtoname_lookup(struct ent *);
--static struct ent *idtoname_update(struct ent *, struct ent *);
-+static struct ent *idtoname_lookup(struct cache_detail *, struct ent *);
-+static struct ent *idtoname_update(struct cache_detail *, struct ent *,
-+				   struct ent *);
- 
- static struct cache_detail idtoname_cache = {
- 	.owner		= THIS_MODULE,
-@@ -244,7 +245,7 @@ idtoname_parse(struct cache_detail *cd, char *buf, int buflen)
- 		goto out;
- 
- 	error = -ENOMEM;
--	res = idtoname_lookup(&ent);
-+	res = idtoname_lookup(cd, &ent);
- 	if (!res)
- 		goto out;
- 
-@@ -260,11 +261,11 @@ idtoname_parse(struct cache_detail *cd, char *buf, int buflen)
- 	else
- 		memcpy(ent.name, buf1, sizeof(ent.name));
- 	error = -ENOMEM;
--	res = idtoname_update(&ent, res);
-+	res = idtoname_update(cd, &ent, res);
- 	if (res == NULL)
- 		goto out;
- 
--	cache_put(&res->h, &idtoname_cache);
-+	cache_put(&res->h, cd);
- 
- 	error = 0;
- out:
-@@ -275,10 +276,9 @@ out:
- 
- 
- static struct ent *
--idtoname_lookup(struct ent *item)
-+idtoname_lookup(struct cache_detail *cd, struct ent *item)
- {
--	struct cache_head *ch = sunrpc_cache_lookup(&idtoname_cache,
--						    &item->h,
-+	struct cache_head *ch = sunrpc_cache_lookup(cd, &item->h,
- 						    idtoname_hash(item));
- 	if (ch)
- 		return container_of(ch, struct ent, h);
-@@ -287,10 +287,9 @@ idtoname_lookup(struct ent *item)
- }
- 
- static struct ent *
--idtoname_update(struct ent *new, struct ent *old)
-+idtoname_update(struct cache_detail *cd, struct ent *new, struct ent *old)
- {
--	struct cache_head *ch = sunrpc_cache_update(&idtoname_cache,
--						    &new->h, &old->h,
-+	struct cache_head *ch = sunrpc_cache_update(cd, &new->h, &old->h,
- 						    idtoname_hash(new));
- 	if (ch)
- 		return container_of(ch, struct ent, h);
-@@ -359,8 +358,9 @@ nametoid_show(struct seq_file *m, struct cache_detail *cd, struct cache_head *h)
- 	return 0;
- }
- 
--static struct ent *nametoid_lookup(struct ent *);
--static struct ent *nametoid_update(struct ent *, struct ent *);
-+static struct ent *nametoid_lookup(struct cache_detail *, struct ent *);
-+static struct ent *nametoid_update(struct cache_detail *, struct ent *,
-+				   struct ent *);
- static int         nametoid_parse(struct cache_detail *, char *, int);
- 
- static struct cache_detail nametoid_cache = {
-@@ -426,14 +426,14 @@ nametoid_parse(struct cache_detail *cd, char *buf, int buflen)
- 		set_bit(CACHE_NEGATIVE, &ent.h.flags);
- 
- 	error = -ENOMEM;
--	res = nametoid_lookup(&ent);
-+	res = nametoid_lookup(cd, &ent);
- 	if (res == NULL)
- 		goto out;
--	res = nametoid_update(&ent, res);
-+	res = nametoid_update(cd, &ent, res);
- 	if (res == NULL)
- 		goto out;
- 
--	cache_put(&res->h, &nametoid_cache);
-+	cache_put(&res->h, cd);
- 	error = 0;
- out:
- 	kfree(buf1);
-@@ -443,10 +443,9 @@ out:
- 
- 
- static struct ent *
--nametoid_lookup(struct ent *item)
-+nametoid_lookup(struct cache_detail *cd, struct ent *item)
- {
--	struct cache_head *ch = sunrpc_cache_lookup(&nametoid_cache,
--						    &item->h,
-+	struct cache_head *ch = sunrpc_cache_lookup(cd, &item->h,
- 						    nametoid_hash(item));
- 	if (ch)
- 		return container_of(ch, struct ent, h);
-@@ -455,10 +454,9 @@ nametoid_lookup(struct ent *item)
- }
- 
- static struct ent *
--nametoid_update(struct ent *new, struct ent *old)
-+nametoid_update(struct cache_detail *cd, struct ent *new, struct ent *old)
- {
--	struct cache_head *ch = sunrpc_cache_update(&nametoid_cache,
--						    &new->h, &old->h,
-+	struct cache_head *ch = sunrpc_cache_update(cd, &new->h, &old->h,
- 						    nametoid_hash(new));
- 	if (ch)
- 		return container_of(ch, struct ent, h);
-@@ -493,12 +491,12 @@ nfsd_idmap_shutdown(void)
- 
- static int
- idmap_lookup(struct svc_rqst *rqstp,
--		struct ent *(*lookup_fn)(struct ent *), struct ent *key,
--		struct cache_detail *detail, struct ent **item)
-+		struct ent *(*lookup_fn)(struct cache_detail *, struct ent *),
-+		struct ent *key, struct cache_detail *detail, struct ent **item)
- {
- 	int ret;
- 
--	*item = lookup_fn(key);
-+	*item = lookup_fn(detail, key);
- 	if (!*item)
- 		return -ENOMEM;
-  retry:
-@@ -506,7 +504,7 @@ idmap_lookup(struct svc_rqst *rqstp,
- 
- 	if (ret == -ETIMEDOUT) {
- 		struct ent *prev_item = *item;
--		*item = lookup_fn(key);
-+		*item = lookup_fn(detail, key);
- 		if (*item != prev_item)
- 			goto retry;
- 		cache_put(&(*item)->h, detail);
+>   6,385,9202973;EXT4-fs (sda1): re-mounted. Opts: (null)
+>   6,386,10929285;Bluetooth: Core ver 2.16
+>   6,387,10930852;NET: Registered protocol family 31
+>   6,388,10932686;Bluetooth: HCI device and connection manager initialized
+>   6,389,10935723;Bluetooth: HCI socket layer initialized
+>   6,390,10937847;Bluetooth: L2CAP socket layer initialized
+>   ...
+
+So I look at this output I look at how much more bloated my screen feels
+as single lines turn into multiple lines and I ask.  Is there any reason
+for not encoding structured syslog data the way structured data is
+encoded in the syslog rfc RFC5424?  Especially as recently my screens
+like to get shorter and wider.
+
+Aka preceding the message with a string like:
+[dev subsys="name" dev="major:minor]
+
+aka
+[dev subsys="scsi" dev_name="1:0:0:0"] sr 1:0:0:0: Attached scsi CD-ROM sr0
+
+I can see arguments for going different ways but having multiple
+sections for different kinds of values seems like a life saver for
+long term maintenance.
+
+Wrapping key/value pairs in [] seems compatible with what we are doing
+with timestamps already.  So it feels more evolutionary.
+
+Making the printk buffer record oriented might be totally reasonable,
+however I have to point out that you can move to RFC5424 style
+structured output in printks like dev_printk without changes to
+printk at all.
+
+Maybe I am wrong.  Maybe this is all good cleanup.  But it certainly
+looks like doing everything the hard way.
+
+>  #ifdef CONFIG_KEXEC
+>  /*
+> @@ -165,9 +622,9 @@ static int saved_console_loglevel = -1;
+>  void log_buf_kexec_setup(void)
+>  {
+>  	VMCOREINFO_SYMBOL(log_buf);
+> -	VMCOREINFO_SYMBOL(log_end);
+>  	VMCOREINFO_SYMBOL(log_buf_len);
+> -	VMCOREINFO_SYMBOL(logged_chars);
+> +	VMCOREINFO_SYMBOL(log_first_idx);
+> +	VMCOREINFO_SYMBOL(log_next_idx);
+>  }
+>  #endif
+
+Is their an accompanying patch to update everyone's crash dump analysis
+tools to extract the new format of the syslog ring buffer?
+
+Eric
 
