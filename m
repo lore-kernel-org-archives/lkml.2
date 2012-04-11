@@ -1,56 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756558Ab2DKKVv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Apr 2012 06:21:51 -0400
-Received: from am1ehsobe003.messaging.microsoft.com ([213.199.154.206]:59115
-	"EHLO am1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756474Ab2DKKVt (ORCPT
+	id S1756397Ab2DKKZU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Apr 2012 06:25:20 -0400
+Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:34230 "EHLO
+	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754898Ab2DKKZS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Apr 2012 06:21:49 -0400
-X-SpamScore: -13
-X-BigFish: VPS-13(zz98dKzz1202hzz15d4Rz2dh668h839h944hd25h)
-X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
-X-WSS-ID: 0M2B8S5-01-20B-02
-X-M-MSG: 
-Date: Wed, 11 Apr 2012 12:21:37 +0200
-From: Joerg Roedel <joerg.roedel@amd.com>
-To: zhangyanfei <zhangyanfei@cn.fujitsu.com>
-CC: <avi@redhat.com>, <mtosatti@redhat.com>, <ebiederm@xmission.com>,
-        <luto@mit.edu>, <dzickus@redhat.com>, <paul.gortmaker@windriver.com>,
-        <gregkh@suse.de>, <ludwig.nussel@suse.de>,
-        <linux-kernel@vger.kernel.org>, <kvm@vger.kernel.org>,
-        <kexec@lists.infradead.org>
-Subject: Re: [PATCH 0/4] Export offsets of VMCS fields as note information
- for kdump
-Message-ID: <20120411102136.GG2428@amd.com>
-References: <4F84E0DF.8040206@cn.fujitsu.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <4F84E0DF.8040206@cn.fujitsu.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginatorOrg: amd.com
+	Wed, 11 Apr 2012 06:25:18 -0400
+Date: Wed, 11 Apr 2012 11:24:11 +0100
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: mingo@elte.hu, linux-kernel@vger.kernel.org,
+        Jonathan Cameron <jic23@kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: Re: [PATCH RESEND] x86, intel_mid: ADC management
+Message-ID: <20120411112411.11825eec@pyramind.ukuu.org.uk>
+In-Reply-To: <20120410175846.GQ7499@opensource.wolfsonmicro.com>
+References: <20120410131930.28186.85370.stgit@bob.linux.org.uk>
+	<20120410131206.GB31551@sirena.org.uk>
+	<20120410142501.6045c6c0@pyramind.ukuu.org.uk>
+	<20120410133339.GK7499@opensource.wolfsonmicro.com>
+	<20120410144235.1e05efd4@pyramind.ukuu.org.uk>
+	<20120410140749.GL7499@opensource.wolfsonmicro.com>
+	<20120410151529.5bcc5ce6@pyramind.ukuu.org.uk>
+	<20120410151943.GM7499@opensource.wolfsonmicro.com>
+	<20120410175632.5c11c36e@pyramind.ukuu.org.uk>
+	<20120410175846.GQ7499@opensource.wolfsonmicro.com>
+X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+> > Non-staging code cannot depend upon staging code. That is the rule GregKH
+> > laid down. The Intel drivers involved are established non staging drivers
+> > and the gpadc layer is basically cleaning up the fact they all do this
+> > themselves in private right now without any central co-ordination or
+> > abstraction.
+> 
+> So, that's a bit different and not at all obvious from your e-mail - the
+> diffstat shows only the code you're adding, not the code you've factored
+> out of the existing mainline drivers.  The diffstat you posted was:
+> 
+> | arch/x86/include/asm/intel_mid_gpadc.h   |   13 +
+> | arch/x86/platform/mrst/Makefile          |    1
+> | arch/x86/platform/mrst/intel_mid_gpadc.c |  645 ++++++++++++++++++++++++++++++
+> | arch/x86/platform/mrst/mrst.c            |    6
+> | 4 files changed, 665 insertions(+), 0 deletions(-)
+> 
+> which is a pure addition of code and I'm not seeing anything in the
+> changelog about this either.
 
-On Wed, Apr 11, 2012 at 09:39:43AM +0800, zhangyanfei wrote:
-> The problem is that VMCS internal is hidden by Intel in its
-> specification. So, we reverse engineering it in the way implemented in
-> this patch set.
+True.. the code factoring out stuff is supposed to follow once this is
+sorted.
 
-Have you made sure this layout is the same on all uarchitectures that
-implment VMX?
+> We do have to be careful about this sort of "this is a little bit of low
+> level code" thing - it (along with "our hardware is unique") comes up
+> rather a lot and it's often missing a good chunk of the picture.
 
+Yes. But it also helps - there is no user space API here so the only bit
+of IIO that needs importing is small, and if the API in kernel changes
+nothing userspace will break.
 
-	Joerg
+I don't btw think that layer should depend upon IIO though - IIO should
+depend upon that layer. There's no need to drag all the rest of IIO in
+for this, just as it can depend upon the gpio layer etc.
 
--- 
-AMD Operating System Research Center
+If that code gets pulled out of IIO dumped into drivers/adc and has a bit
+of a different API to the gpadc code then no problem, gpadc can follow it
+happily enough. IIO can use it from staging and IIO can migrate whenever.
 
-Advanced Micro Devices GmbH Einsteinring 24 85609 Dornach
-General Managers: Alberto Bozzo
-Registration: Dornach, Landkr. Muenchen; Registerger. Muenchen, HRB Nr. 43632
+It does make sense to think hard about userspace APIs for IIO but for
+kernel APIs its really being too conservative - we break kernel APIs
+every release. They are not set into stone.
 
+Alan
