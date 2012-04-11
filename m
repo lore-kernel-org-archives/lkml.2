@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964848Ab2DKXRZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Apr 2012 19:17:25 -0400
+	id S964835Ab2DKXRU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Apr 2012 19:17:20 -0400
 Received: from mail-pb0-f46.google.com ([209.85.160.46]:44096 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964838Ab2DKXRW (ORCPT
+	with ESMTP id S933980Ab2DKXRP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Apr 2012 19:17:22 -0400
-Message-Id: <20120411231025.387614571@linuxfoundation.org>
+	Wed, 11 Apr 2012 19:17:15 -0400
+Message-Id: <20120411231026.805296288@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Wed, 11 Apr 2012 16:11:00 -0700
+Date: Wed, 11 Apr 2012 16:11:08 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Alan Stern <stern@rowland.harvard.edu>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>
-Subject: [ 42/78] PM / Runtime: dont forget to wake up waitqueue on failure
+        alan@lxorguk.ukuu.org.uk, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Jason Wessel <jason.wessel@windriver.com>
+Subject: [ 50/78] x86,kgdb: Fix DEBUG_RODATA limitation using text_poke()
 In-Reply-To: <20120411231102.GA6404@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,46 +26,159 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alan Stern <stern@rowland.harvard.edu>
+From: Jason Wessel <jason.wessel@windriver.com>
 
-commit f2791d733a2f06997b573d1a3cfde21e6f529826 upstream.
+commit 3751d3e85cf693e10e2c47c03c8caa65e171099b upstream.
 
-This patch (as1535) fixes a bug in the runtime PM core.  When a
-runtime suspend attempt completes, whether successfully or not, the
-device's power.wait_queue is supposed to be signalled.  But this
-doesn't happen in the failure pathway of rpm_suspend() when another
-autosuspend attempt is rescheduled.  As a result, a task can get stuck
-indefinitely on the wait queue (I have seen this happen in testing).
+There has long been a limitation using software breakpoints with a
+kernel compiled with CONFIG_DEBUG_RODATA going back to 2.6.26. For
+this particular patch, it will apply cleanly and has been tested all
+the way back to 2.6.36.
 
-The patch fixes the problem by moving the wake_up_all() call up near
-the start of the failure code.
+The kprobes code uses the text_poke() function which accommodates
+writing a breakpoint into a read-only page.  The x86 kgdb code can
+solve the problem similarly by overriding the default breakpoint
+set/remove routines and using text_poke() directly.
 
-Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
-Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
+The x86 kgdb code will first attempt to use the traditional
+probe_kernel_write(), and next try using a the text_poke() function.
+The break point install method is tracked such that the correct break
+point removal routine will get called later on.
+
+Cc: x86@kernel.org
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Ingo Molnar <mingo@redhat.com>
+Cc: H. Peter Anvin <hpa@zytor.com>
+Inspried-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Signed-off-by: Jason Wessel <jason.wessel@windriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/base/power/runtime.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ arch/x86/kernel/kgdb.c |   60 +++++++++++++++++++++++++++++++++++++++++++++++++
+ drivers/misc/kgdbts.c  |   17 -------------
+ include/linux/kgdb.h   |    3 +-
+ 3 files changed, 62 insertions(+), 18 deletions(-)
 
---- a/drivers/base/power/runtime.c
-+++ b/drivers/base/power/runtime.c
-@@ -532,6 +532,8 @@ static int rpm_suspend(struct device *de
- 	dev->power.suspend_time = ktime_set(0, 0);
- 	dev->power.max_time_suspended_ns = -1;
- 	dev->power.deferred_resume = false;
-+	wake_up_all(&dev->power.wait_queue);
-+
- 	if (retval == -EAGAIN || retval == -EBUSY) {
- 		dev->power.runtime_error = 0;
+--- a/arch/x86/kernel/kgdb.c
++++ b/arch/x86/kernel/kgdb.c
+@@ -43,6 +43,8 @@
+ #include <linux/smp.h>
+ #include <linux/nmi.h>
+ #include <linux/hw_breakpoint.h>
++#include <linux/uaccess.h>
++#include <linux/memory.h>
  
-@@ -547,7 +549,6 @@ static int rpm_suspend(struct device *de
- 	} else {
- 		pm_runtime_cancel_pending(dev);
- 	}
--	wake_up_all(&dev->power.wait_queue);
- 	goto out;
+ #include <asm/debugreg.h>
+ #include <asm/apicdef.h>
+@@ -740,6 +742,64 @@ void kgdb_arch_set_pc(struct pt_regs *re
+ 	regs->ip = ip;
  }
  
++int kgdb_arch_set_breakpoint(struct kgdb_bkpt *bpt)
++{
++	int err;
++	char opc[BREAK_INSTR_SIZE];
++
++	bpt->type = BP_BREAKPOINT;
++	err = probe_kernel_read(bpt->saved_instr, (char *)bpt->bpt_addr,
++				BREAK_INSTR_SIZE);
++	if (err)
++		return err;
++	err = probe_kernel_write((char *)bpt->bpt_addr,
++				 arch_kgdb_ops.gdb_bpt_instr, BREAK_INSTR_SIZE);
++#ifdef CONFIG_DEBUG_RODATA
++	if (!err)
++		return err;
++	/*
++	 * It is safe to call text_poke() because normal kernel execution
++	 * is stopped on all cores, so long as the text_mutex is not locked.
++	 */
++	if (mutex_is_locked(&text_mutex))
++		return -EBUSY;
++	text_poke((void *)bpt->bpt_addr, arch_kgdb_ops.gdb_bpt_instr,
++		  BREAK_INSTR_SIZE);
++	err = probe_kernel_read(opc, (char *)bpt->bpt_addr, BREAK_INSTR_SIZE);
++	if (err)
++		return err;
++	if (memcmp(opc, arch_kgdb_ops.gdb_bpt_instr, BREAK_INSTR_SIZE))
++		return -EINVAL;
++	bpt->type = BP_POKE_BREAKPOINT;
++#endif /* CONFIG_DEBUG_RODATA */
++	return err;
++}
++
++int kgdb_arch_remove_breakpoint(struct kgdb_bkpt *bpt)
++{
++#ifdef CONFIG_DEBUG_RODATA
++	int err;
++	char opc[BREAK_INSTR_SIZE];
++
++	if (bpt->type != BP_POKE_BREAKPOINT)
++		goto knl_write;
++	/*
++	 * It is safe to call text_poke() because normal kernel execution
++	 * is stopped on all cores, so long as the text_mutex is not locked.
++	 */
++	if (mutex_is_locked(&text_mutex))
++		goto knl_write;
++	text_poke((void *)bpt->bpt_addr, bpt->saved_instr, BREAK_INSTR_SIZE);
++	err = probe_kernel_read(opc, (char *)bpt->bpt_addr, BREAK_INSTR_SIZE);
++	if (err || memcmp(opc, bpt->saved_instr, BREAK_INSTR_SIZE))
++		goto knl_write;
++	return err;
++knl_write:
++#endif /* CONFIG_DEBUG_RODATA */
++	return probe_kernel_write((char *)bpt->bpt_addr,
++				  (char *)bpt->saved_instr, BREAK_INSTR_SIZE);
++}
++
+ struct kgdb_arch arch_kgdb_ops = {
+ 	/* Breakpoint instruction: */
+ 	.gdb_bpt_instr		= { 0xcc },
+--- a/drivers/misc/kgdbts.c
++++ b/drivers/misc/kgdbts.c
+@@ -968,22 +968,6 @@ static void run_singlestep_break_test(vo
+ 	kgdbts_break_test();
+ }
+ 
+-static void test_debug_rodata(void)
+-{
+-#ifdef CONFIG_DEBUG_RODATA
+-	/* Until there is an api to write to read-only text segments, use
+-	 * HW breakpoints for the remainder of any tests, else print a
+-	 * failure message if hw breakpoints do not work.
+-	 */
+-	if (!(arch_kgdb_ops.flags & KGDB_HW_BREAKPOINT && hwbreaks_ok)) {
+-		eprintk("kgdbts: HW breakpoints BROKEN, ending tests\n");
+-		return;
+-	}
+-	force_hwbrks = 1;
+-	v1printk("kgdbts:Using HW breakpoints for SW breakpoint tests\n");
+-#endif /* CONFIG_DEBUG_RODATA */
+-}
+-
+ static void kgdbts_run_tests(void)
+ {
+ 	char *ptr;
+@@ -1016,7 +1000,6 @@ static void kgdbts_run_tests(void)
+ 		v1printk("kgdbts:RUN access write breakpoint test\n");
+ 		run_hw_break_test(0);
+ 	}
+-	test_debug_rodata();
+ 
+ 	/* required internal KGDB tests */
+ 	v1printk("kgdbts:RUN plant and detach test\n");
+--- a/include/linux/kgdb.h
++++ b/include/linux/kgdb.h
+@@ -63,7 +63,8 @@ enum kgdb_bptype {
+ 	BP_HARDWARE_BREAKPOINT,
+ 	BP_WRITE_WATCHPOINT,
+ 	BP_READ_WATCHPOINT,
+-	BP_ACCESS_WATCHPOINT
++	BP_ACCESS_WATCHPOINT,
++	BP_POKE_BREAKPOINT,
+ };
+ 
+ enum kgdb_bpstate {
 
 
