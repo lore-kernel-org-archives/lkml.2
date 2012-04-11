@@ -1,131 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933178Ab2DKURf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Apr 2012 16:17:35 -0400
-Received: from mail.tomasu.net ([64.85.170.232]:47355 "EHLO mail.tomasu.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756277Ab2DKURd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Apr 2012 16:17:33 -0400
-From: Thomas Fjellstrom <thomas@fjellstrom.ca>
-Reply-To: thomas@fjellstrom.ca
-To: adam radford <aradford@gmail.com>
-Subject: Re: stuck in megaraid_sas.c megasas_adp_reset_gen2
-Date: Wed, 11 Apr 2012 14:17:28 -0600
-User-Agent: KMail/1.13.7 (Linux/3.2.0-1-amd64; KDE/4.7.4; x86_64; ; )
-Cc: lkml <linux-kernel@vger.kernel.org>, linux-scsi@vger.kernel.org
-References: <201203211716.45418.thomas@fjellstrom.ca> <CAHtARFGL0ibTZ=ADOL+x4akVvF-d1LjWoqW-WAv8_AeX+O3RdA@mail.gmail.com> <201203211752.05576.thomas@fjellstrom.ca>
-In-Reply-To: <201203211752.05576.thomas@fjellstrom.ca>
+	id S933188Ab2DKUT1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Apr 2012 16:19:27 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:54756 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933047Ab2DKUT0 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Apr 2012 16:19:26 -0400
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201204111417.28893.thomas@fjellstrom.ca>
+In-Reply-To: <alpine.LNX.2.00.1204112209040.2137@swampdragon.chaosbits.net>
+References: <alpine.LNX.2.00.1204112209040.2137@swampdragon.chaosbits.net>
+Date: Wed, 11 Apr 2012 13:19:24 -0700
+X-Google-Sender-Auth: U4xEHqWw00JHHFIqnDNGQCJdx2w
+Message-ID: <CAMbhsRQiT7oFu=B1_+Ygy+kX1sSs6GijwBv1ArHUO=0BMMDOaQ@mail.gmail.com>
+Subject: Re: [PATCH] staging: android: fix mem leaks in __persistent_ram_init()
+From: Colin Cross <ccross@android.com>
+To: Jesper Juhl <jj@chaosbits.net>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org,
+        John Stultz <john.stultz@linaro.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed Mar 21, 2012, you wrote:
-> On Wed Mar 21, 2012, adam radford wrote:
-> > On Wed, Mar 21, 2012 at 4:16 PM, Thomas Fjellstrom <thomas@fjellstrom.ca>
-> 
-> wrote:
-> > > I recently got an IBM M1015 (MegaRaid 9240-8i) card, and after getting
-> > > a new motherboard, the system now boots, but the megaraid_sas driver
-> > > seems to be getting stuck when trying to initialize the card.
-> > > 
-> > > Looking through the source, it seems to be stuck in the
-> > > megasas_adp_reset_gen2 function, in the while loop at the end. Now,
-> > > according to the code it can't actually get stuck there permanently,
-> > > but it does take quite a while for the loop to finish, and the udev
-> > > timeout messages to stop.
-> > > 
-> > > I've looked around quite a bit, but haven't found any solutions thus
-> > > far. If anyone could point me in the right direction I'd appreciate
-> > > it.
-> > 
-> > If you are getting controller resets during driver load, you must not
-> > be getting interrupts or firmware is not responding to the inquiry
-> > roll-call.  Make sure you have the latest firmware.
-> 
-> I updated to the latest on LSI's site today before emailing. It changes the
-> behavior slightly. With the older firmware, it would not print any of the
-> initial reset messages, but would once udev decides to start killing
-> modprobe. With the new firmware, I get a:
-> 
-> ADP_RESET_GEN2: HostDiag=a0
-> 
-> followed by a bunch of:
-> 
-> RESET_GEN2: retry=%x, hostdiag=a4
-> 
-> Now I'm not sure the hostdiag should be different between the two. if this
-> aN identifier is similar to the aN identifiers in the MegaCli tool, then
-> it would mean its trying to reset a device that doesn't exist? I only have
-> a single M1015 card installed.
-> 
-> > The code at the end of megasas_adp_reset_gen2() just looks for
-> > DIAG_RESET_ADAPTER flag to clear on the host diag register when
-> > issuing a controller reset... that should happen almost immediately
-> > unless there is a hardware or firmware issue.
-> > 
-> > Are you sure your 'new' motherboard is actually good ?
-> 
-> It boots and runs fine without the sas card installed. I haven't run any
-> heavy load tests, but it seems ok.
+On Wed, Apr 11, 2012 at 1:10 PM, Jesper Juhl <jj@chaosbits.net> wrote:
+> If, in __persistent_ram_init(), the call to
+> persistent_ram_buffer_init() fails or the call to
+> persistent_ram_init_ecc() fails then we fail to free the memory we
+> allocated to 'prz' with kzalloc() - thus leaking it.
+>
+> To prevent the leaks I consolidated all error exits from the function
+> at a 'err:' label at the end and made all error cases jump to that
+> label where we can then make sure we always free 'prz'. This is safe
+> since all the situations where the code bails out happen before 'prz'
+> has been stored anywhere and although we'll do a redundant kfree(NULL)
+> call in the case of kzalloc() itself failing that's OK since kfree()
+> deals gracefully with NULL pointers and I felt it was more important
+> to keep all error exits at a single location than to avoid that one
+> harmless/redundant kfree() on a error path.
+>
+> Signed-off-by: Jesper Juhl <jj@chaosbits.net>
+> ---
+>  drivers/staging/android/persistent_ram.c |   11 +++++++----
+>  1 file changed, 7 insertions(+), 4 deletions(-)
+>
+> diff --git a/drivers/staging/android/persistent_ram.c b/drivers/staging/android/persistent_ram.c
+> index e08f257..8d8c1e3 100644
+> --- a/drivers/staging/android/persistent_ram.c
+> +++ b/drivers/staging/android/persistent_ram.c
+> @@ -399,12 +399,12 @@ static  __init
+>  struct persistent_ram_zone *__persistent_ram_init(struct device *dev, bool ecc)
+>  {
+>        struct persistent_ram_zone *prz;
+> -       int ret;
+> +       int ret = -ENOMEM;
+>
+>        prz = kzalloc(sizeof(struct persistent_ram_zone), GFP_KERNEL);
+>        if (!prz) {
+>                pr_err("persistent_ram: failed to allocate persistent ram zone\n");
+> -               return ERR_PTR(-ENOMEM);
+> +               goto err;
+>        }
+>
+>        INIT_LIST_HEAD(&prz->node);
+> @@ -412,13 +412,13 @@ struct persistent_ram_zone *__persistent_ram_init(struct device *dev, bool ecc)
+>        ret = persistent_ram_buffer_init(dev_name(dev), prz);
+This adds virtual mappings, which should get unmapped on error.
 
-Machine has been solid as a rock (sans 9240-8i) for the past month with mild 
-to half load. It runs several virtual machines, a nfs share, my firewall, a 
-minecraft server, and some other miscellaneous stuff. Not a single hiccup.
+>        if (ret) {
+>                pr_err("persistent_ram: failed to initialize buffer\n");
+> -               return ERR_PTR(ret);
+> +               goto err;
+>        }
+>
+>        prz->ecc = ecc;
+>        ret = persistent_ram_init_ecc(prz, prz->buffer_size);
+>        if (ret)
+> -               return ERR_PTR(ret);
+> +               goto err;
+>
+>        if (prz->buffer->sig == PERSISTENT_RAM_SIG) {
+>                if (buffer_size(prz) > prz->buffer_size ||
+> @@ -442,6 +442,9 @@ struct persistent_ram_zone *__persistent_ram_init(struct device *dev, bool ecc)
+>        atomic_set(&prz->buffer->size, 0);
+>
+>        return prz;
+> +err:
+> +       kfree(prz);
+> +       return ERR_PTR(ret);
+>  }
+>
+>  struct persistent_ram_zone * __init
+> --
+> 1.7.10
+>
+>
+> --
+> Jesper Juhl <jj@chaosbits.net>       http://www.chaosbits.net/
+> Don't top-post http://www.catb.org/jargon/html/T/top-post.html
+> Plain text mails only, please.
+>
 
-> > Can you move your megaraid 9240-8i into a 'known working' system and
-> > re-test ?
-> 
-> Nope. This is the furthest I've gotten it to get with this card installed.
-> The old system would fail to boot into grub properly, let alone linux.
-> These cards seem to be /very/ picky about what motherboard you install
-> them in.
-> 
-> > -Adam
-
-I just got a second M1015 card in today and gave it a go. Similar issues, 
-different log messages. (hand typed from picture taken of screens)
-
-Lots of:
-
-megasas: Waiting for 1 commands to complete
-
-for quite a while (5-10 minutes), along with udevd trying to kill modprobe. 
-Then:
-
-megasas: moving cmd[0]:hexstringherewithcolons queue as internal
-megaraid_sas: FW detected to be in fault state, restarting it...
-ADP_RESET_GEN2: HostDiag=a0
-megaraid_sas: FW restarted successfully,initializing next stage...
-megaraid_sas: HBA recovery state machine,state 1 starting...
-(sits here for a while)
-megasas: Waiting for FW to come to ready state
-megasas: FW now in ready state
-megaraid_sas: command hexstringhere, hexstringhere detected (something?) while 
-HBA reset
-megasas: command hexstring scsi cmd [12]detected on the internal (something?) 
-again
-megasas: reset successful
-scsi:0:0:0:0: megasas: RESET cmd=12 retries=0
-megaraid_sas: no pending cmds after reset
-megasas: reset successful
-scsi:0:0:0:0: megasas: RESET cmd=12 retries=0
-megaraid_sas: no pending cmds after reset
-megasas: reset successful
-scsi:0:0:0:0: Device offlined - not ready after error recovery
-(other scsi devices are detected)
-(bootup hangs here)
-
-Eventually theres some "hung task" timeout backtraces. This is where I tried 
-to kill udevd, CTRL+C didn't stop it from trying to kill modprobe, and 
-ALT+SYSRQ+K caused a silent oops (keyboard leds blinking, no backtrace or OOPS 
-text). If its similar to last time, eventually the kernel will outright OOPS 
-without any intervention.
-
--- 
-Thomas Fjellstrom
-thomas@fjellstrom.ca
+Acked-by: Colin Cross <ccross@android.com>
