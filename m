@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965433Ab2DKXYM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Apr 2012 19:24:12 -0400
+	id S965461Ab2DKXYZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Apr 2012 19:24:25 -0400
 Received: from mail-pz0-f52.google.com ([209.85.210.52]:51056 "EHLO
 	mail-pz0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965383Ab2DKXYI (ORCPT
+	with ESMTP id S965384Ab2DKXYR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Apr 2012 19:24:08 -0400
-Message-Id: <20120411231044.648668392@linuxfoundation.org>
+	Wed, 11 Apr 2012 19:24:17 -0400
+Message-Id: <20120411231045.178060175@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Wed, 11 Apr 2012 16:11:29 -0700
+Date: Wed, 11 Apr 2012 16:11:32 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Guan Xin <guanx.bac@gmail.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 54/59] USB: Add Motorola Rokr E6 Id to the USBNet driver "zaurus"
+        alan@lxorguk.ukuu.org.uk, Oleg Nesterov <oleg@redhat.com>,
+        David Howells <dhowells@redhat.com>
+Subject: [ 57/59] cred: copy_process() should clear child->replacement_session_keyring
 In-Reply-To: <20120411231213.GA13124@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,34 +25,41 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Guan Xin <guanx.bac@gmail.com>
+From: Oleg Nesterov <oleg@redhat.com>
 
-commit a2daf263107ba3eb6db33931881731fa51c95045 upstream.
+commit 79549c6dfda0603dba9a70a53467ce62d9335c33 upstream.
 
-Added Vendor/Device Id of Motorola Rokr E6 (22b8:6027) so it can be
-recognized by the "zaurus" USBNet driver.
-Applies to Linux 3.2.13 and 2.6.39.4.
-Signed-off-by: Guan Xin <guanx.bac@gmail.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+keyctl_session_to_parent(task) sets ->replacement_session_keyring,
+it should be processed and cleared by key_replace_session_keyring().
+
+However, this task can fork before it notices TIF_NOTIFY_RESUME and
+the new child gets the bogus ->replacement_session_keyring copied by
+dup_task_struct(). This is obviously wrong and, if nothing else, this
+leads to put_cred(already_freed_cred).
+
+change copy_creds() to clear this member. If copy_process() fails
+before this point the wrong ->replacement_session_keyring doesn't
+matter, exit_creds() won't be called.
+
+Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+Acked-by: David Howells <dhowells@redhat.com>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/usb/zaurus.c |    5 +++++
- 1 file changed, 5 insertions(+)
+ kernel/cred.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
---- a/drivers/net/usb/zaurus.c
-+++ b/drivers/net/usb/zaurus.c
-@@ -332,6 +332,11 @@ static const struct usb_device_id	produc
- 	.driver_info = ZAURUS_PXA_INFO,
- },
- {
-+	/* Motorola Rokr E6 */
-+	USB_DEVICE_AND_INTERFACE_INFO(0x22b8, 0x6027, USB_CLASS_COMM,
-+			USB_CDC_SUBCLASS_MDLM, USB_CDC_PROTO_NONE),
-+	.driver_info = (unsigned long) &bogus_mdlm_info,
-+}, {
- 	/* Motorola MOTOMAGX phones */
- 	USB_DEVICE_AND_INTERFACE_INFO(0x22b8, 0x6425, USB_CLASS_COMM,
- 			USB_CDC_SUBCLASS_MDLM, USB_CDC_PROTO_NONE),
+--- a/kernel/cred.c
++++ b/kernel/cred.c
+@@ -385,6 +385,8 @@ int copy_creds(struct task_struct *p, un
+ 	struct cred *new;
+ 	int ret;
+ 
++	p->replacement_session_keyring = NULL;
++
+ 	if (
+ #ifdef CONFIG_KEYS
+ 		!p->cred->thread_keyring &&
 
 
