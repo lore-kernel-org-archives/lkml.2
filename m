@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965652Ab2DKXfw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Apr 2012 19:35:52 -0400
-Received: from mail-pz0-f52.google.com ([209.85.210.52]:57856 "EHLO
-	mail-pz0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965618Ab2DKX2c (ORCPT
+	id S965521Ab2DKXgM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Apr 2012 19:36:12 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:45547 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965603Ab2DKX2X (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Apr 2012 19:28:32 -0400
-Message-Id: <20120411231310.555462637@linuxfoundation.org>
+	Wed, 11 Apr 2012 19:28:23 -0400
+Message-Id: <20120411231310.067496018@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Wed, 11 Apr 2012 16:13:26 -0700
+Date: Wed, 11 Apr 2012 16:13:23 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
         alan@lxorguk.ukuu.org.uk, Chris Wilson <chris@chris-wilson.co.uk>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>
-Subject: [ 19/42] drm/i915: Sanitize BIOS debugging bits from PIPECONF
+        Daniel Vetter <daniel.vetter@ffwll.ch>,
+        Dave Airlie <airlied@redhat.com>
+Subject: [ 16/42] drm: Validate requested virtual size against allocated fb size
 In-Reply-To: <20120411231443.GA808@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,56 +28,43 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Chris Wilson <chris@chris-wilson.co.uk>
 
-commit f47166d2b0001fcb752b40c5a2d4db986dfbea68 upstream.
+commit 62fb376e214d3c1bfdf6fbb77dac162f6da04d7e upstream.
 
-Quoting the BSpec from time immemorial:
+mplayer -vo fbdev tries to create a screen that is twice as tall as the
+allocated framebuffer for "doublebuffering". By default, and all in-tree
+users, only sufficient memory is allocated and mapped to satisfy the
+smallest framebuffer and the virtual size is no larger than the actual.
+For these users, we should therefore reject any userspace request to
+create a screen that requires a buffer larger than the framebuffer
+originally allocated.
 
-  PIPEACONF, bits 28:27: Frame Start Delay (Debug)
-
-  Used to delay the frame start signal that is sent to the display planes.
-  Care must be taken to insure that there are enough lines during VBLANK
-  to support this setting.
-
-An instance of the BIOS leaving these bits set was found in the wild,
-where it caused our modesetting to go all squiffy and skewiff.
-
-Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=47271
-Reported-and-tested-by: Eva Wang <evawang@linpus.com>
-Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=43012
-Reported-and-tested-by: Carl Richell <carl@system76.com>
+References: https://bugs.freedesktop.org/show_bug.cgi?id=38138
 Signed-off-by: Chris Wilson <chris@chris-wilson.co.uk>
-Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+Reviewed-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+Signed-off-by: Dave Airlie <airlied@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/i915/i915_reg.h      |    1 +
- drivers/gpu/drm/i915/intel_display.c |    6 ++++++
- 2 files changed, 7 insertions(+)
+ drivers/gpu/drm/drm_fb_helper.c |    8 ++++++--
+ 1 file changed, 6 insertions(+), 2 deletions(-)
 
---- a/drivers/gpu/drm/i915/i915_reg.h
-+++ b/drivers/gpu/drm/i915/i915_reg.h
-@@ -2274,6 +2274,7 @@
- #define   PIPECONF_DISABLE	0
- #define   PIPECONF_DOUBLE_WIDE	(1<<30)
- #define   I965_PIPECONF_ACTIVE	(1<<30)
-+#define   PIPECONF_FRAME_START_DELAY_MASK (3<<27)
- #define   PIPECONF_SINGLE_WIDE	0
- #define   PIPECONF_PIPE_UNLOCKED 0
- #define   PIPECONF_PIPE_LOCKED	(1<<25)
---- a/drivers/gpu/drm/i915/intel_display.c
-+++ b/drivers/gpu/drm/i915/intel_display.c
-@@ -6580,6 +6580,12 @@ static void intel_sanitize_modesetting(s
- 	struct drm_i915_private *dev_priv = dev->dev_private;
- 	u32 reg, val;
+--- a/drivers/gpu/drm/drm_fb_helper.c
++++ b/drivers/gpu/drm/drm_fb_helper.c
+@@ -610,9 +610,13 @@ int drm_fb_helper_check_var(struct fb_va
+ 		return -EINVAL;
  
-+	/* Clear any frame start delays used for debugging left by the BIOS */
-+	for_each_pipe(pipe) {
-+		reg = PIPECONF(pipe);
-+		I915_WRITE(reg, I915_READ(reg) & ~PIPECONF_FRAME_START_DELAY_MASK);
-+	}
-+
- 	if (HAS_PCH_SPLIT(dev))
- 		return;
- 
+ 	/* Need to resize the fb object !!! */
+-	if (var->bits_per_pixel > fb->bits_per_pixel || var->xres > fb->width || var->yres > fb->height) {
++	if (var->bits_per_pixel > fb->bits_per_pixel ||
++	    var->xres > fb->width || var->yres > fb->height ||
++	    var->xres_virtual > fb->width || var->yres_virtual > fb->height) {
+ 		DRM_DEBUG("fb userspace requested width/height/bpp is greater than current fb "
+-			  "object %dx%d-%d > %dx%d-%d\n", var->xres, var->yres, var->bits_per_pixel,
++			  "request %dx%d-%d (virtual %dx%d) > %dx%d-%d\n",
++			  var->xres, var->yres, var->bits_per_pixel,
++			  var->xres_virtual, var->yres_virtual,
+ 			  fb->width, fb->height, fb->bits_per_pixel);
+ 		return -EINVAL;
+ 	}
 
 
