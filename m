@@ -1,90 +1,260 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760509Ab2DKOWF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Apr 2012 10:22:05 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:53196 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760495Ab2DKOWB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Apr 2012 10:22:01 -0400
-Message-ID: <4F85936A.6060509@redhat.com>
-Date: Wed, 11 Apr 2012 17:21:30 +0300
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120316 Thunderbird/11.0
-MIME-Version: 1.0
-To: Takuya Yoshikawa <takuya.yoshikawa@gmail.com>
-CC: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>,
-        Marcelo Tosatti <mtosatti@redhat.com>,
-        Xiao Guangrong <xiaoguangrong.eric@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>, KVM <kvm@vger.kernel.org>
-Subject: Re: [PATCH 00/13] KVM: MMU: fast page fault
-References: <4F742951.7080003@linux.vnet.ibm.com> <4F82E04E.6000900@redhat.com> <20120409175829.GB21894@amt.cnet> <4F8329D3.7000605@gmail.com> <20120409194614.GB23053@amt.cnet> <4F840DD2.3090101@redhat.com> <20120410204031.ffb5b976225ac9fe6dae474e@gmail.com> <4F842074.1050108@linux.vnet.ibm.com> <20120411211514.35db29c11460516e604059b6@gmail.com> <4F857B61.9080602@linux.vnet.ibm.com> <20120411231441.9d0984672dd252b806f99128@gmail.com>
-In-Reply-To: <20120411231441.9d0984672dd252b806f99128@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1760415Ab2DKOV2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Apr 2012 10:21:28 -0400
+Received: from kamaji.grokhost.net ([87.117.218.43]:54920 "EHLO
+	kamaji.grokhost.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760377Ab2DKOVX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Apr 2012 10:21:23 -0400
+From: Chris Boot <bootc@bootc.net>
+To: linux1394-devel@lists.sourceforge.net, target-devel@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, agrover@redhat.com, clemens@ladisch.de,
+        nab@linux-iscsi.org, stefanr@s5r6.in-berlin.de,
+        Chris Boot <bootc@bootc.net>
+Subject: [PATCH 04/11] firewire-sbp-target: Add sbp_base.h header
+Date: Wed, 11 Apr 2012 15:20:36 +0100
+Message-Id: <1334154043-69076-5-git-send-email-bootc@bootc.net>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1334154043-69076-1-git-send-email-bootc@bootc.net>
+References: <1329317248-94128-1-git-send-email-bootc@bootc.net>
+ <1334154043-69076-1-git-send-email-bootc@bootc.net>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/11/2012 05:14 PM, Takuya Yoshikawa wrote:
-> On Wed, 11 Apr 2012 20:38:57 +0800
-> Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com> wrote:
->
-> > Well, my point is that live migration is so very useful that it is worth
-> > to be improved, the description of your also proves this point.
-> > 
-> > What is your really want to say but i missed?
->
-> How to improve and what we should pay for that.
->
-> Note that I am not objecting to O(1) itself.
->
-> Do you remember that when we discussed O(1) issue last year, with Avi,
-> the agreement was that we should take more time and look carefully
-> with more measurements to confirm if it's really worthwhile.
->
-> The point is whether we should do O(1) now, including near future.
->
-> My opinion is that we should do what we can do now and wait for feedback
-> from real users.
->
-> Before making the current code stable, I do not want to see it replaced
-> so dramatically.  Otherwise when can we use live migration with enough
-> confidence?  There may be another subtle bugs we should fix now.
->
-> In addition, XBRZLE and post-copy is now being developed in QEMU.
->
->
-> What do you think about this Avi, Marcelo?
+This header contains defines and structures that are common to many of
+the modules of the target code. This includes SBP-2 protocol structures
+and constants as well as a few structs for setting up the target, LUN
+login information and session setup.
 
-Currently the main performance bottleneck for migration is qemu, which
-is single threaded and generally inefficient.  However I am sure that
-once the qemu bottlenecks will be removed we'll encounter kvm problems,
-particularly with wide (many vcpus) and large (lots of memory) guests. 
-So it's a good idea to improve in this area.  I agree we'll need to
-measure each change, perhaps with a test program until qemu catches up.
+Signed-off-by: Chris Boot <bootc@bootc.net>
+Cc: Andy Grover <agrover@redhat.com>
+Cc: Clemens Ladisch <clemens@ladisch.de>
+Cc: Nicholas A. Bellinger <nab@linux-iscsi.org>
+Cc: Stefan Richter <stefanr@s5r6.in-berlin.de>
+---
+ drivers/target/sbp/sbp_base.h |  211 +++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 211 insertions(+)
+ create mode 100644 drivers/target/sbp/sbp_base.h
 
-> I am testing the current live migration to see when and for what it can
-> be used.  I really want to see it become stable and usable for real
-> services.
-
-Well, it's used in production now.
-
-> > Okay, let us to compare the performance number after O(1) implemented.
->
-> From my experience, I want to say that live migration is very difficult
-> to say about performance.  That is the problem I am now struggling with.
->
-> I developed dirty-log-perf unit-test for that but that was not enough.
->
-> Needless to say, checking the correctness is harder.
->
->
-> So I really do not want to see drastic change now without any real need
-> or feedback from real users -- this is my point.
->
-
-It's a good point, we should avoid change for its own sake.
-
+diff --git a/drivers/target/sbp/sbp_base.h b/drivers/target/sbp/sbp_base.h
+new file mode 100644
+index 0000000..fa6a39b
+--- /dev/null
++++ b/drivers/target/sbp/sbp_base.h
+@@ -0,0 +1,211 @@
++#ifndef _SBP_BASE_H
++#define _SBP_BASE_H
++
++#include <linux/firewire.h>
++#include <linux/spinlock.h>
++#include <linux/types.h>
++#include <linux/workqueue.h>
++#include <target/target_core_base.h>
++
++#define SBP_VERSION  "v0.1"
++#define SBP_NAMELEN 32
++
++#define SBP_ORB_FETCH_SIZE	8
++
++#define MANAGEMENT_AGENT_STATE_IDLE	0
++#define MANAGEMENT_AGENT_STATE_BUSY	1
++
++#define ORB_NOTIFY(v)			(((v) >> 31) & 0x01)
++#define ORB_REQUEST_FORMAT(v)		(((v) >> 29) & 0x03)
++
++#define MANAGEMENT_ORB_FUNCTION(v)	(((v) >> 16) & 0x0f)
++
++#define MANAGEMENT_ORB_FUNCTION_LOGIN			0x0
++#define MANAGEMENT_ORB_FUNCTION_QUERY_LOGINS		0x1
++#define MANAGEMENT_ORB_FUNCTION_RECONNECT		0x3
++#define MANAGEMENT_ORB_FUNCTION_SET_PASSWORD		0x4
++#define MANAGEMENT_ORB_FUNCTION_LOGOUT			0x7
++#define MANAGEMENT_ORB_FUNCTION_ABORT_TASK		0xb
++#define MANAGEMENT_ORB_FUNCTION_ABORT_TASK_SET		0xc
++#define MANAGEMENT_ORB_FUNCTION_LOGICAL_UNIT_RESET	0xe
++#define MANAGEMENT_ORB_FUNCTION_TARGET_RESET		0xf
++
++#define LOGIN_ORB_EXCLUSIVE(v)		(((v) >> 28) &   0x01)
++#define LOGIN_ORB_RESERVED(v)		(((v) >> 24) &   0x0f)
++#define LOGIN_ORB_RECONNECT(v)		(((v) >> 20) &   0x0f)
++#define LOGIN_ORB_LUN(v)		(((v) >>  0) & 0xffff)
++#define LOGIN_ORB_PASSWORD_LENGTH(v)	(((v) >> 16) & 0xffff)
++#define LOGIN_ORB_RESPONSE_LENGTH(v)	(((v) >>  0) & 0xffff)
++
++#define RECONNECT_ORB_LOGIN_ID(v)	(((v) >>  0) & 0xffff)
++#define LOGOUT_ORB_LOGIN_ID(v)		(((v) >>  0) & 0xffff)
++
++#define CMDBLK_ORB_DIRECTION(v)		(((v) >> 27) &   0x01)
++#define CMDBLK_ORB_SPEED(v)		(((v) >> 24) &   0x07)
++#define CMDBLK_ORB_MAX_PAYLOAD(v)	(((v) >> 20) &   0x0f)
++#define CMDBLK_ORB_PG_TBL_PRESENT(v)	(((v) >> 19) &   0x01)
++#define CMDBLK_ORB_PG_SIZE(v)		(((v) >> 16) &   0x07)
++#define CMDBLK_ORB_DATA_SIZE(v)		(((v) >>  0) & 0xffff)
++
++#define STATUS_BLOCK_SRC(v)		(((v) &   0x03) << 30)
++#define STATUS_BLOCK_RESP(v)		(((v) &   0x03) << 28)
++#define STATUS_BLOCK_DEAD(v)		(((v) ? 1 : 0)  << 27)
++#define STATUS_BLOCK_LEN(v)		(((v) &   0x07) << 24)
++#define STATUS_BLOCK_SBP_STATUS(v)	(((v) &   0xff) << 16)
++#define STATUS_BLOCK_ORB_OFFSET_HIGH(v)	(((v) & 0xffff) <<  0)
++
++#define STATUS_SRC_ORB_CONTINUING	0
++#define STATUS_SRC_ORB_FINISHED		1
++#define STATUS_SRC_UNSOLICITED		2
++
++#define STATUS_RESP_REQUEST_COMPLETE	0
++#define STATUS_RESP_TRANSPORT_FAILURE	1
++#define STATUS_RESP_ILLEGAL_REQUEST	2
++#define STATUS_RESP_VENDOR_DEPENDENT	3
++
++#define SBP_STATUS_OK			0
++#define SBP_STATUS_REQ_TYPE_NOTSUPP	1
++#define SBP_STATUS_SPEED_NOTSUPP	2
++#define SBP_STATUS_PAGE_SIZE_NOTSUPP	3
++#define SBP_STATUS_ACCESS_DENIED	4
++#define SBP_STATUS_LUN_NOTSUPP		5
++#define SBP_STATUS_PAYLOAD_TOO_SMALL	6
++/* 7 is reserved */
++#define SBP_STATUS_RESOURCES_UNAVAIL	8
++#define SBP_STATUS_FUNCTION_REJECTED	9
++#define SBP_STATUS_LOGIN_ID_UNKNOWN	10
++#define SBP_STATUS_DUMMY_ORB_COMPLETE	11
++#define SBP_STATUS_REQUEST_ABORTED	12
++#define SBP_STATUS_UNSPECIFIED_ERROR	0xff
++
++#define AGENT_STATE_RESET	0
++#define AGENT_STATE_ACTIVE	1
++#define AGENT_STATE_SUSPENDED	2
++#define AGENT_STATE_DEAD	3
++
++struct sbp2_pointer {
++	__be32 high;
++	__be32 low;
++};
++
++struct sbp_command_block_orb {
++	struct sbp2_pointer next_orb;
++	struct sbp2_pointer data_descriptor;
++	__be32 misc;
++	u8 command_block[12];
++};
++
++struct sbp_page_table_entry {
++	__be16 segment_length;
++	__be16 segment_base_hi;
++	__be32 segment_base_lo;
++};
++
++struct sbp_management_orb {
++	struct sbp2_pointer ptr1;
++	struct sbp2_pointer ptr2;
++	__be32 misc;
++	__be32 length;
++	struct sbp2_pointer status_fifo;
++};
++
++struct sbp_status_block {
++	__be32 status;
++	__be32 orb_low;
++	u8 data[24];
++};
++
++struct sbp_login_response_block {
++	__be32 misc;
++	struct sbp2_pointer command_block_agent;
++	__be32 reconnect_hold;
++};
++
++struct sbp_login_descriptor {
++	struct sbp_session *sess;
++	struct list_head link;
++
++	struct se_lun *lun;
++
++	u64 status_fifo_addr;
++	int exclusive;
++	u16 login_id;
++
++	struct sbp_target_agent *tgt_agt;
++};
++
++struct sbp_session {
++	spinlock_t lock;
++	struct se_session *se_sess;
++	struct list_head login_list;
++	struct delayed_work maint_work;
++
++	u64 guid; /* login_owner_EUI_64 */
++	int node_id; /* login_owner_ID */
++
++	struct fw_card *card;
++	int generation;
++	int speed;
++
++	int reconnect_hold;
++	u64 reconnect_expires;
++};
++
++struct sbp_nacl {
++	/* Initiator EUI-64 */
++	u64 guid;
++	/* ASCII formatted GUID for SBP Initiator port */
++	char iport_name[SBP_NAMELEN];
++	/* Returned by sbp_make_nodeacl() */
++	struct se_node_acl se_node_acl;
++};
++
++struct sbp_tpg {
++	/* Target portal group tag for TCM */
++	u16 tport_tpgt;
++	/* Pointer back to sbp_tport */
++	struct sbp_tport *tport;
++	/* Returned by sbp_make_tpg() */
++	struct se_portal_group se_tpg;
++};
++
++struct sbp_tport {
++	/* Target Unit Identifier (EUI-64) */
++	u64 guid;
++	/* Target port name */
++	char tport_name[SBP_NAMELEN];
++	/* Returned by sbp_make_tport() */
++	struct se_wwn tport_wwn;
++
++	struct sbp_tpg *tpg;
++
++	/* FireWire unit directory */
++	struct fw_descriptor unit_directory;
++
++	/* SBP Management Agent */
++	struct sbp_management_agent *mgt_agt;
++
++	/* Parameters */
++	int enable;
++	s32 directory_id;
++	int mgt_orb_timeout;
++	int max_reconnect_timeout;
++	int max_logins_per_lun;
++};
++
++extern struct target_fabric_configfs *sbp_fabric_configfs;
++extern const struct fw_address_region sbp_register_region;
++
++static inline u64 sbp2_pointer_to_addr(const struct sbp2_pointer *ptr)
++{
++	return (u64)(be32_to_cpu(ptr->high) & 0x0000ffff) << 32 |
++		(be32_to_cpu(ptr->low) & 0xfffffffc);
++}
++
++static inline void addr_to_sbp2_pointer(u64 addr, struct sbp2_pointer *ptr)
++{
++	ptr->high = cpu_to_be32(addr >> 32);
++	ptr->low = cpu_to_be32(addr);
++}
++
++#endif
 -- 
-error compiling committee.c: too many arguments to function
+1.7.9.5
 
