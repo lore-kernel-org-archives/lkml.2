@@ -1,71 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760762Ab2DKRGS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Apr 2012 13:06:18 -0400
-Received: from www84.your-server.de ([213.133.104.84]:47729 "EHLO
-	www84.your-server.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756020Ab2DKRGR (ORCPT
+	id S932692Ab2DKRGo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Apr 2012 13:06:44 -0400
+Received: from mail-qa0-f53.google.com ([209.85.216.53]:42331 "EHLO
+	mail-qa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756020Ab2DKRGm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Apr 2012 13:06:17 -0400
-X-Greylist: delayed 1037 seconds by postgrey-1.27 at vger.kernel.org; Wed, 11 Apr 2012 13:06:16 EDT
-Message-ID: <1334162939.16577.2.camel@wall-e>
-Subject: Re: [PATCH 3.3.0] kernel:kfifo: export __kfifo_max_r symbol.
-From: Stefani Seibold <stefani@seibold.net>
-To: Srinivas KANDAGATLA <srinivas.kandagatla@st.com>
-Cc: mchehab@infradead.org, linux-kernel@vger.kernel.org, sfr@canb.auug.org.au
-Date: Wed, 11 Apr 2012 18:48:59 +0200
-In-Reply-To: <1334131316-7992-1-git-send-email-srinivas.kandagatla@st.com>
-References: <1334131316-7992-1-git-send-email-srinivas.kandagatla@st.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.2.3 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
-X-Authenticated-Sender: stefani@seibold.net
+	Wed, 11 Apr 2012 13:06:42 -0400
+MIME-Version: 1.0
+In-Reply-To: <20120411163849.GE4794@alberich.amd.com>
+References: <20120411163849.GE4794@alberich.amd.com>
+From: Kay Sievers <kay@vrfy.org>
+Date: Wed, 11 Apr 2012 19:06:21 +0200
+Message-ID: <CAPXgP11mjyK7vJoQtsSf3kD-SYn6d_Y9feobY9KiiSYcFqOwwA@mail.gmail.com>
+Subject: Re: x86, microcode: Conversion from sysdev class caused regression
+To: Andreas Herrmann <andreas.herrmann3@amd.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "Petkov, Borislav" <Borislav.Petkov@amd.com>,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Locks okay to me.
+On Wed, Apr 11, 2012 at 18:38, Andreas Herrmann
+<andreas.herrmann3@amd.com> wrote:
 
-Acked-by: Stefani Seibold <stefani@seibold.net>
+> The reason for the error is that subsys_interface_register() doesn't
+> handle the return value of sif->add_dev (and there's also no unwinding
+> of the interface registration). Instead subsys_interface_register
+> always returns 0.
 
-Am Mittwoch, den 11.04.2012, 09:01 +0100 schrieb Srinivas KANDAGATLA:
-> From: Srinivas Kandagatla <srinivas.kandagatla@st.com>
-> 
-> kfifo_avail expands to __kfifo_max_r which is not an exported symbol.
-> Any kernel module using kfifo_avail will result in build failures
-> because of this.
-> This patch just exports __kfifo_max_r symbol to fix such problems in
-> future.
-> 
-> This bug was orignially reported by Stephen Rothwell <sfr@canb.auug.org.au> 
-> during v4l-dvb tree integration into linux-next.
-> 
-> Signed-off-by: Srinivas Kandagatla <srinivas.kandagatla@st.com>
-> ---
-> Hi All, 
-> A bulid failure during v4l-dvb tree integration into linux-next shows that __kfifo_max_r symbol is not exported.
-> All the __kifo_* functions declared in kfifo.h are already exported symbols.
-> I see no reason why __kfifo_max_r should not be exported too.
-> 
-> comments?
-> 
-> --srini
-> 
->  kernel/kfifo.c |    1 +
->  1 files changed, 1 insertions(+), 0 deletions(-)
-> 
-> diff --git a/kernel/kfifo.c b/kernel/kfifo.c
-> index c744b88..59dcf5b 100644
-> --- a/kernel/kfifo.c
-> +++ b/kernel/kfifo.c
-> @@ -402,6 +402,7 @@ unsigned int __kfifo_max_r(unsigned int len, size_t recsize)
->  		return max;
->  	return len;
->  }
-> +EXPORT_SYMBOL(__kfifo_max_r);
->  
->  #define	__KFIFO_PEEK(data, out, mask) \
->  	((data)[(out) & (mask)])
+Which is the intended behaviour of 'subsystem interfaces' from the
+driver-core perspective. It should not matter if one of a bunch of
+devices do not 'like' this 'interface'. It is the same model as a
+'driver', we do not cancel the link-in of a driver if one device does
+not like the driver.
 
+> This is different to what we had for
+> sysdev_driver_register(). The latter properly handled return codes of
+> drv->add() functions.
 
+A 'subsystem interface' is a global instance per subsystem, not
+something _all_ devices must agree on, to be registered. We can load
+almost all drivers in the kernel, without even having a device around;
+the 'interfaces' should not be that different in their model.
+
+> See Boris' commit f4203e3032e5ae74c3e89df85a5a6d96022d0c49 (sysdev: Do
+> not register with sysdev when erroring on add).
+
+It seems to paper over a bug of the microcode driver, we should not do
+that, or make such assumptions.
+
+> I don't know whether the microcode driver is the only driver that
+> is affected.
+
+All interfaces with the same assumption of the microcode driver might,
+but see below.
+
+> What's your suggestion for a fix? Should subsys_interface_register()
+> be fixed or should each affected driver be adapted?
+
+All the drivers, if there are any more, who are as naive as the
+microcode driver. :)
+
+"Subsystem interfaces' users must not assume that they can blindly
+unwind their own stuff, which they have never registered.
+mc_device_remove() just goes ahead without any check and calls
+sysfs_remove_group(), while it should check its own state of this
+specific CPU it acts on.
+
+I think a quick return in the microcode driver, for a device which has
+no active interface state is the best solution here.
+
+Thanks,
+Kay
