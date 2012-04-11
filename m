@@ -1,21 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964932Ab2DKXRz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Apr 2012 19:17:55 -0400
+	id S964916Ab2DKXRu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Apr 2012 19:17:50 -0400
 Received: from mail-pb0-f46.google.com ([209.85.160.46]:44096 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964919Ab2DKXRw (ORCPT
+	with ESMTP id S964867Ab2DKXRq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Apr 2012 19:17:52 -0400
-Message-Id: <20120411231028.693991808@linuxfoundation.org>
+	Wed, 11 Apr 2012 19:17:46 -0400
+Message-Id: <20120411231028.363424427@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Wed, 11 Apr 2012 16:11:19 -0700
+Date: Wed, 11 Apr 2012 16:11:17 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Frank Rowand <frank.rowand@am.sony.com>,
-        Alessio Igor Bogani <abogani@kernel.org>
-Subject: [ 61/78] modpost: Fix modpost license checking of vmlinux.o
+        alan@lxorguk.ukuu.org.uk, Phillip Lougher <plougher@redhat.com>,
+        Kees Cook <keescook@chromium.org>,
+        Serge Hallyn <serge.hallyn@canonical.com>,
+        Richard Weinberger <richard@nod.at>,
+        James Morris <james.l.morris@oracle.com>
+Subject: [ 59/78] sysctl: fix write access to dmesg_restrict/kptr_restrict
 In-Reply-To: <20120411231102.GA6404@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,70 +28,69 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Frank Rowand <frank.rowand@am.sony.com>
+From: Kees Cook <keescook@chromium.org>
 
-commit 258f742635360175564e9470eb060ff4d4b984e7 upstream.
+commit 620f6e8e855d6d447688a5f67a4e176944a084e8 upstream.
 
-Commit f02e8a6596b7 ("module: Sort exported symbols") sorts symbols
-placing each of them in its own elf section.  This sorting and merging
-into the canonical sections are done by the linker.
+Commit bfdc0b4 adds code to restrict access to dmesg_restrict,
+however, it incorrectly alters kptr_restrict rather than
+dmesg_restrict.
 
-Unfortunately modpost to generate Module.symvers file parses vmlinux.o
-(which is not linked yet) and all modules object files (which aren't
-linked yet).  These aren't sanitized by the linker yet.  That breaks
-modpost that can't detect license properly for modules.
+The original patch from Richard Weinberger
+(https://lkml.org/lkml/2011/3/14/362) alters dmesg_restrict as
+expected, and so the patch seems to have been misapplied.
 
-This patch makes modpost aware of the new exported symbols structure.
+This adds the CAP_SYS_ADMIN check to both dmesg_restrict and
+kptr_restrict, since both are sensitive.
 
-[ This above is a slightly corrected version of the explanation of the
-  problem, copied from commit 62a2635610db ("modpost: Fix modpost's
-  license checking V3").  That commit fixed the problem for module
-  object files, but not for vmlinux.o.  This patch fixes modpost for
-  vmlinux.o. ]
-
-Signed-off-by: Frank Rowand <frank.rowand@am.sony.com>
-Signed-off-by: Alessio Igor Bogani <abogani@kernel.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Reported-by: Phillip Lougher <plougher@redhat.com>
+Signed-off-by: Kees Cook <keescook@chromium.org>
+Acked-by: Serge Hallyn <serge.hallyn@canonical.com>
+Acked-by: Richard Weinberger <richard@nod.at>
+Signed-off-by: James Morris <james.l.morris@oracle.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- scripts/mod/modpost.c |    7 +++++--
- scripts/mod/modpost.h |    1 +
- 2 files changed, 6 insertions(+), 2 deletions(-)
+ kernel/sysctl.c |    8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
 
---- a/scripts/mod/modpost.c
-+++ b/scripts/mod/modpost.c
-@@ -132,8 +132,10 @@ static struct module *new_module(char *m
- 	/* strip trailing .o */
- 	s = strrchr(p, '.');
- 	if (s != NULL)
--		if (strcmp(s, ".o") == 0)
-+		if (strcmp(s, ".o") == 0) {
- 			*s = '\0';
-+			mod->is_dot_o = 1;
-+		}
+--- a/kernel/sysctl.c
++++ b/kernel/sysctl.c
+@@ -166,7 +166,7 @@ static int proc_taint(struct ctl_table *
+ #endif
  
- 	/* add to list */
- 	mod->name = p;
-@@ -587,7 +589,8 @@ static void handle_modversions(struct mo
- 	unsigned int crc;
- 	enum export export;
+ #ifdef CONFIG_PRINTK
+-static int proc_dmesg_restrict(struct ctl_table *table, int write,
++static int proc_dointvec_minmax_sysadmin(struct ctl_table *table, int write,
+ 				void __user *buffer, size_t *lenp, loff_t *ppos);
+ #endif
  
--	if (!is_vmlinux(mod->name) && strncmp(symname, "__ksymtab", 9) == 0)
-+	if ((!is_vmlinux(mod->name) || mod->is_dot_o) &&
-+	    strncmp(symname, "__ksymtab", 9) == 0)
- 		export = export_from_secname(info, get_secindex(info, sym));
- 	else
- 		export = export_from_sec(info, get_secindex(info, sym));
---- a/scripts/mod/modpost.h
-+++ b/scripts/mod/modpost.h
-@@ -113,6 +113,7 @@ struct module {
- 	int has_cleanup;
- 	struct buffer dev_table_buf;
- 	char	     srcversion[25];
-+	int is_dot_o;
- };
+@@ -713,7 +713,7 @@ static struct ctl_table kern_table[] = {
+ 		.data		= &dmesg_restrict,
+ 		.maxlen		= sizeof(int),
+ 		.mode		= 0644,
+-		.proc_handler	= proc_dointvec_minmax,
++		.proc_handler	= proc_dointvec_minmax_sysadmin,
+ 		.extra1		= &zero,
+ 		.extra2		= &one,
+ 	},
+@@ -722,7 +722,7 @@ static struct ctl_table kern_table[] = {
+ 		.data		= &kptr_restrict,
+ 		.maxlen		= sizeof(int),
+ 		.mode		= 0644,
+-		.proc_handler	= proc_dmesg_restrict,
++		.proc_handler	= proc_dointvec_minmax_sysadmin,
+ 		.extra1		= &zero,
+ 		.extra2		= &two,
+ 	},
+@@ -2431,7 +2431,7 @@ static int proc_taint(struct ctl_table *
+ }
  
- struct elf_info {
+ #ifdef CONFIG_PRINTK
+-static int proc_dmesg_restrict(struct ctl_table *table, int write,
++static int proc_dointvec_minmax_sysadmin(struct ctl_table *table, int write,
+ 				void __user *buffer, size_t *lenp, loff_t *ppos)
+ {
+ 	if (write && !capable(CAP_SYS_ADMIN))
 
 
