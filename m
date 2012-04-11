@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965613Ab2DKX20 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Apr 2012 19:28:26 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:38577 "EHLO
+	id S965646Ab2DKX2g (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Apr 2012 19:28:36 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:45547 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965599Ab2DKX2U (ORCPT
+	with ESMTP id S965616Ab2DKX20 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Apr 2012 19:28:20 -0400
-Message-Id: <20120411231309.894025817@linuxfoundation.org>
+	Wed, 11 Apr 2012 19:28:26 -0400
+Message-Id: <20120411231310.208997752@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Wed, 11 Apr 2012 16:13:22 -0700
+Date: Wed, 11 Apr 2012 16:13:24 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, "jan p. springer" <jsd@igroup.org>,
-        Stanislaw Gruszka <sgruszka@redhat.com>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [ 15/42] mac80211: fix possible tid_rx->reorder_timer use after free
+        alan@lxorguk.ukuu.org.uk, Alex Deucher <alexander.deucher@amd.com>,
+        =?UTF-8?q?Michel=20D=C3=A4nzer?= <michel.daenzer@amd.com>,
+        Dave Airlie <airlied@redhat.com>
+Subject: [ 17/42] drm/radeon/kms: fix fans after resume
 In-Reply-To: <20120411231443.GA808@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,49 +26,68 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Stanislaw Gruszka <sgruszka@redhat.com>
+From: Alex Deucher <alexander.deucher@amd.com>
 
-commit d72308bff5c2fa207949a5925b020bce74495e33 upstream.
+commit 402976fe51b2d1a58a29ba06fa1ca5ace3a4cdcd upstream.
 
-Is possible that we will arm the tid_rx->reorder_timer after
-del_timer_sync() in ___ieee80211_stop_rx_ba_session(). We need to stop
-timer after RCU grace period finish, so move it to
-ieee80211_free_tid_rx(). Timer will not be armed again, as
-rcu_dereference(sta->ampdu_mlme.tid_rx[tid]) will return NULL.
+On pre-R600 asics, the SpeedFanControl table is not
+executed as part of ASIC_Init as it is on newer asics.
 
-Debug object detected problem with the following warning:
-ODEBUG: free active (active state 0) object type: timer_list hint: sta_rx_agg_reorder_timer_expired+0x0/0xf0 [mac80211]
+Fixes:
+https://bugzilla.kernel.org/show_bug.cgi?id=29412
 
-Bug report (with all warning messages):
-https://bugzilla.redhat.com/show_bug.cgi?id=804007
-
-Reported-by: "jan p. springer" <jsd@igroup.org>
-Signed-off-by: Stanislaw Gruszka <sgruszka@redhat.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
+Reviewed-by: Michel Dänzer <michel.daenzer@amd.com>
+Signed-off-by: Dave Airlie <airlied@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- net/mac80211/agg-rx.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ drivers/gpu/drm/radeon/atom.c |   15 ++++++++++++++-
+ drivers/gpu/drm/radeon/atom.h |    1 +
+ 2 files changed, 15 insertions(+), 1 deletion(-)
 
---- a/net/mac80211/agg-rx.c
-+++ b/net/mac80211/agg-rx.c
-@@ -48,6 +48,8 @@ static void ieee80211_free_tid_rx(struct
- 		container_of(h, struct tid_ampdu_rx, rcu_head);
- 	int i;
+--- a/drivers/gpu/drm/radeon/atom.c
++++ b/drivers/gpu/drm/radeon/atom.c
+@@ -1301,8 +1301,11 @@ struct atom_context *atom_parse(struct c
  
-+	del_timer_sync(&tid_rx->reorder_timer);
+ int atom_asic_init(struct atom_context *ctx)
+ {
++	struct radeon_device *rdev = ctx->card->dev->dev_private;
+ 	int hwi = CU16(ctx->data_table + ATOM_DATA_FWI_PTR);
+ 	uint32_t ps[16];
++	int ret;
 +
- 	for (i = 0; i < tid_rx->buf_size; i++)
- 		dev_kfree_skb(tid_rx->reorder_buf[i]);
- 	kfree(tid_rx->reorder_buf);
-@@ -87,7 +89,6 @@ void ___ieee80211_stop_rx_ba_session(str
- 				     tid, 0, reason);
+ 	memset(ps, 0, 64);
  
- 	del_timer_sync(&tid_rx->session_timer);
--	del_timer_sync(&tid_rx->reorder_timer);
+ 	ps[0] = cpu_to_le32(CU32(hwi + ATOM_FWI_DEFSCLK_PTR));
+@@ -1312,7 +1315,17 @@ int atom_asic_init(struct atom_context *
  
- 	call_rcu(&tid_rx->rcu_head, ieee80211_free_tid_rx);
+ 	if (!CU16(ctx->cmd_table + 4 + 2 * ATOM_CMD_INIT))
+ 		return 1;
+-	return atom_execute_table(ctx, ATOM_CMD_INIT, ps);
++	ret = atom_execute_table(ctx, ATOM_CMD_INIT, ps);
++	if (ret)
++		return ret;
++
++	memset(ps, 0, 64);
++
++	if (rdev->family < CHIP_R600) {
++		if (CU16(ctx->cmd_table + 4 + 2 * ATOM_CMD_SPDFANCNTL))
++			atom_execute_table(ctx, ATOM_CMD_SPDFANCNTL, ps);
++	}
++	return ret;
  }
+ 
+ void atom_destroy(struct atom_context *ctx)
+--- a/drivers/gpu/drm/radeon/atom.h
++++ b/drivers/gpu/drm/radeon/atom.h
+@@ -44,6 +44,7 @@
+ #define ATOM_CMD_SETSCLK	0x0A
+ #define ATOM_CMD_SETMCLK	0x0B
+ #define ATOM_CMD_SETPCLK	0x0C
++#define ATOM_CMD_SPDFANCNTL	0x39
+ 
+ #define ATOM_DATA_FWI_PTR	0xC
+ #define ATOM_DATA_IIO_PTR	0x32
 
 
