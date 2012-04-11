@@ -1,83 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760964Ab2DKTbp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Apr 2012 15:31:45 -0400
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:62502 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754383Ab2DKTbk convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Apr 2012 15:31:40 -0400
+	id S933107Ab2DKTc0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Apr 2012 15:32:26 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:60174 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933081Ab2DKTcZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Apr 2012 15:32:25 -0400
+Message-ID: <4F85DC41.9050702@zytor.com>
+Date: Wed, 11 Apr 2012 12:32:17 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120329 Thunderbird/11.0.1
 MIME-Version: 1.0
-Reply-To: mtk.manpages@gmail.com
-In-Reply-To: <20120406142824.61d8ca3b@lwn.net>
-References: <1333051320-30872-1-git-send-email-wad@chromium.org>
- <1333051320-30872-2-git-send-email-wad@chromium.org> <20120406125517.77133b4e.akpm@linux-foundation.org>
- <CAObL_7EYb62o=a0ekzcDx=0TuN55A7aTYhLJbMNu2r8F0V77EA@mail.gmail.com> <20120406142824.61d8ca3b@lwn.net>
-From: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
-Date: Thu, 12 Apr 2012 07:31:16 +1200
-Message-ID: <CAKgNAkhhnC1+vdh7vTYKkngzxHccDwHH_aKF5wCNhga33BGhyQ@mail.gmail.com>
-Subject: Re: [PATCH v17 01/15] Add PR_{GET,SET}_NO_NEW_PRIVS to prevent execve
- from granting privs
-To: Jonathan Corbet <corbet@lwn.net>
-Cc: Andrew Lutomirski <luto@mit.edu>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Will Drewry <wad@chromium.org>, linux-kernel@vger.kernel.org,
-        linux-security-module@vger.kernel.org, linux-arch@vger.kernel.org,
-        linux-doc@vger.kernel.org, kernel-hardening@lists.openwall.com,
-        netdev@vger.kernel.org, x86@kernel.org, arnd@arndb.de,
-        davem@davemloft.net, hpa@zytor.com, mingo@redhat.com, oleg@redhat.com,
-        peterz@infradead.org, rdunlap@xenotime.net, mcgrathr@chromium.org,
-        tglx@linutronix.de, eparis@redhat.com, serge.hallyn@canonical.com,
-        djm@mindrot.org, scarybeasts@gmail.com, indan@nul.nu,
-        pmoore@redhat.com, eric.dumazet@gmail.com, markus@chromium.org,
-        coreyb@linux.vnet.ibm.com, keescook@chromium.org, jmorris@namei.org,
-        Andy Lutomirski <luto@amacapital.net>, linux-man@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+To: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
+CC: Alexey Dobriyan <adobriyan@gmail.com>, akpm@linux-foundation.org,
+        viro@zeniv.linux.org.uk, torvalds@linux-foundation.org,
+        drepper@gmail.com, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org
+Subject: Re: [PATCH] nextfd(2)
+References: <20120401125741.GA7484@p183.telecom.by> <4F78D0BA.9040709@zytor.com> <CACVxJT_WJYjecpZMGkyUrbE5gNROX1tOfFAcD84-hoPsypxcFQ@mail.gmail.com> <4F7F1864.8090606@zytor.com> <CAHGf_=rsJ8o8Fnd2z5Z8jHGc=cz370ay0_t3bhkiYRCBh3puVw@mail.gmail.com> <4F85C6D5.6080904@zytor.com> <CAHGf_=ro=TwrYw4UoUMaHjb08rVbz-KjovZfND608J26w=n4HQ@mail.gmail.com> <4F85D9E0.3070604@zytor.com> <CAHGf_=qgbP91fmkjxxcbt3SrNRSiDNOczK9A8JF5x_iqmqN7TQ@mail.gmail.com> <4F85DB72.6070703@zytor.com> <CAHGf_=pX8JSmO=Ny=us6F5MuZ4_Xr9FMZ-yhD7kCdJKwAB7+yQ@mail.gmail.com>
+In-Reply-To: <CAHGf_=pX8JSmO=Ny=us6F5MuZ4_Xr9FMZ-yhD7kCdJKwAB7+yQ@mail.gmail.com>
+X-Enigmail-Version: 1.4
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Apr 7, 2012 at 8:28 AM, Jonathan Corbet <corbet@lwn.net> wrote:
-> On Fri, 6 Apr 2012 13:01:17 -0700
-> Andrew Lutomirski <luto@mit.edu> wrote:
->
->> This has been bugging me for awhile.  Is there any interest in moving
->> the manpages into the kernel source tree?  Then there could be a
->> general requirement that new APIs get documented when they're written.
->
-> Man page (or other documentation) requirements for patch acceptance are a
-> regular kernel summit feature.  People seem to think it's a good idea, but
-> actual enforcement of such requirements always seems to be lacking.  Lots
-> of people have kind of given up trying.  I don't really see that adding
-> the man pages to the tree would help, but I could be wrong...
+On 04/11/2012 12:31 PM, KOSAKI Motohiro wrote:
+> On Wed, Apr 11, 2012 at 3:28 PM, H. Peter Anvin <hpa@zytor.com> wrote:
+>> On 04/11/2012 12:26 PM, KOSAKI Motohiro wrote:
+>>> The note described several downsides. but I have no seen a rejection.
+>>
+>> The Aardvark resolution "Accept as Marked" means "make the changes in
+>> the markup."  The markup doesn't include any new interfaces, but just a
+>> set of warnings.
+> 
+> Hm. Now are you saying "make the changes in the markup" mean rejection?
+> I'm sorry I haven't caught your point.
+> 
 
-I largely consider this (moving man pages to kernel.org) a technical
-solution to what is fundamentally a social problem (developers
-reluctant to write documentation), and doubt that the technical
-solution would make much difference. I'd love to be proved wrong, but
-the experiment would require significant start-up effort. (My
-collected thoughts on this can be found here:
-http://www.kernel.org/doc/man-pages/todo.html#migrate_to_kernel_source.
-Note the alternative idea of patch tags mentioned at the end of that
-text.)
+You have to look at what the markup is.
 
-Unless, or until there's a paid maintainer, I don't expect things to
-get significantly better than what they currently are. The quite
-significant improvements in man-pages since 2004, when I became
-maintainer were in small part due to the fact that I was for a short
-period paid to do the work, but in much larger part due to a huge
-private effort over those years which over the last couple of years is
-no longer unsustainable for me (man-pages is in competition with
-requirements for my attention from family, working life, and
-(seriously!) seismic events),
+	-hpa
 
-Cheers,
-
-Michael
-
-
--- 
-Michael Kerrisk
-Linux man-pages maintainer; http://www.kernel.org/doc/man-pages/
-Author of "The Linux Programming Interface"; http://man7.org/tlpi/
