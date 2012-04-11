@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965521Ab2DKXgM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Apr 2012 19:36:12 -0400
+	id S965622Ab2DKXgf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Apr 2012 19:36:35 -0400
 Received: from mail-pb0-f46.google.com ([209.85.160.46]:45547 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965603Ab2DKX2X (ORCPT
+	with ESMTP id S965591Ab2DKX2R (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Apr 2012 19:28:23 -0400
-Message-Id: <20120411231310.067496018@linuxfoundation.org>
+	Wed, 11 Apr 2012 19:28:17 -0400
+Message-Id: <20120411231309.665578998@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Wed, 11 Apr 2012 16:13:23 -0700
+Date: Wed, 11 Apr 2012 16:13:21 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Chris Wilson <chris@chris-wilson.co.uk>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>,
-        Dave Airlie <airlied@redhat.com>
-Subject: [ 16/42] drm: Validate requested virtual size against allocated fb size
+        alan@lxorguk.ukuu.org.uk, Geert Uytterhoeven <geert@linux-m68k.org>
+Subject: [ 14/42] m68k/mac: Add missing platform check before registering platform devices
 In-Reply-To: <20120411231443.GA808@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,45 +24,31 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Chris Wilson <chris@chris-wilson.co.uk>
+From: Geert Uytterhoeven <geert@linux-m68k.org>
 
-commit 62fb376e214d3c1bfdf6fbb77dac162f6da04d7e upstream.
+commit 6cfeba53911d6d2f17ebbd1246893557d5ff5aeb upstream.
 
-mplayer -vo fbdev tries to create a screen that is twice as tall as the
-allocated framebuffer for "doublebuffering". By default, and all in-tree
-users, only sufficient memory is allocated and mapped to satisfy the
-smallest framebuffer and the virtual size is no larger than the actual.
-For these users, we should therefore reject any userspace request to
-create a screen that requires a buffer larger than the framebuffer
-originally allocated.
+On multi-platform kernels, the Mac platform devices should be registered
+when running on Mac only. Else it may crash later.
 
-References: https://bugs.freedesktop.org/show_bug.cgi?id=38138
-Signed-off-by: Chris Wilson <chris@chris-wilson.co.uk>
-Reviewed-by: Daniel Vetter <daniel.vetter@ffwll.ch>
-Signed-off-by: Dave Airlie <airlied@redhat.com>
+Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/drm_fb_helper.c |    8 ++++++--
- 1 file changed, 6 insertions(+), 2 deletions(-)
+ arch/m68k/mac/config.c |    3 +++
+ 1 file changed, 3 insertions(+)
 
---- a/drivers/gpu/drm/drm_fb_helper.c
-+++ b/drivers/gpu/drm/drm_fb_helper.c
-@@ -610,9 +610,13 @@ int drm_fb_helper_check_var(struct fb_va
- 		return -EINVAL;
+--- a/arch/m68k/mac/config.c
++++ b/arch/m68k/mac/config.c
+@@ -950,6 +950,9 @@ int __init mac_platform_init(void)
+ {
+ 	u8 *swim_base;
  
- 	/* Need to resize the fb object !!! */
--	if (var->bits_per_pixel > fb->bits_per_pixel || var->xres > fb->width || var->yres > fb->height) {
-+	if (var->bits_per_pixel > fb->bits_per_pixel ||
-+	    var->xres > fb->width || var->yres > fb->height ||
-+	    var->xres_virtual > fb->width || var->yres_virtual > fb->height) {
- 		DRM_DEBUG("fb userspace requested width/height/bpp is greater than current fb "
--			  "object %dx%d-%d > %dx%d-%d\n", var->xres, var->yres, var->bits_per_pixel,
-+			  "request %dx%d-%d (virtual %dx%d) > %dx%d-%d\n",
-+			  var->xres, var->yres, var->bits_per_pixel,
-+			  var->xres_virtual, var->yres_virtual,
- 			  fb->width, fb->height, fb->bits_per_pixel);
- 		return -EINVAL;
- 	}
++	if (!MACH_IS_MAC)
++		return -ENODEV;
++
+ 	/*
+ 	 * Serial devices
+ 	 */
 
 
