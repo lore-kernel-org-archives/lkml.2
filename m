@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965321Ab2DKXmo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Apr 2012 19:42:44 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:41234 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965265Ab2DKXXP (ORCPT
+	id S965267Ab2DKXnX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Apr 2012 19:43:23 -0400
+Received: from mail-pz0-f52.google.com ([209.85.210.52]:51056 "EHLO
+	mail-pz0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965231Ab2DKXXD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Apr 2012 19:23:15 -0400
-Message-Id: <20120411231041.754815775@linuxfoundation.org>
+	Wed, 11 Apr 2012 19:23:03 -0400
+Message-Id: <20120411231041.036876772@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Wed, 11 Apr 2012 16:11:12 -0700
+Date: Wed, 11 Apr 2012 16:11:08 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Jason Wessel <jason.wessel@windriver.com>
-Subject: [ 37/59] x86,kgdb: Fix DEBUG_RODATA limitation using text_poke()
+        alan@lxorguk.ukuu.org.uk, Jason Wessel <jason.wessel@windriver.com>
+Subject: [ 33/59] kgdb,debug_core: pass the breakpoint struct instead of address and memory
 In-Reply-To: <20120411231213.GA13124@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -28,157 +26,173 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Jason Wessel <jason.wessel@windriver.com>
 
-commit 3751d3e85cf693e10e2c47c03c8caa65e171099b upstream.
+commit 98b54aa1a2241b59372468bd1e9c2d207bdba54b upstream.
 
-There has long been a limitation using software breakpoints with a
-kernel compiled with CONFIG_DEBUG_RODATA going back to 2.6.26. For
-this particular patch, it will apply cleanly and has been tested all
-the way back to 2.6.36.
+There is extra state information that needs to be exposed in the
+kgdb_bpt structure for tracking how a breakpoint was installed.  The
+debug_core only uses the the probe_kernel_write() to install
+breakpoints, but this is not enough for all the archs.  Some arch such
+as x86 need to use text_poke() in order to install a breakpoint into a
+read only page.
 
-The kprobes code uses the text_poke() function which accommodates
-writing a breakpoint into a read-only page.  The x86 kgdb code can
-solve the problem similarly by overriding the default breakpoint
-set/remove routines and using text_poke() directly.
+Passing the kgdb_bpt structure to kgdb_arch_set_breakpoint() and
+kgdb_arch_remove_breakpoint() allows other archs to set the type
+variable which indicates how the breakpoint was installed.
 
-The x86 kgdb code will first attempt to use the traditional
-probe_kernel_write(), and next try using a the text_poke() function.
-The break point install method is tracked such that the correct break
-point removal routine will get called later on.
-
-Cc: x86@kernel.org
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Ingo Molnar <mingo@redhat.com>
-Cc: H. Peter Anvin <hpa@zytor.com>
-Inspried-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
 Signed-off-by: Jason Wessel <jason.wessel@windriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/x86/kernel/kgdb.c |   60 +++++++++++++++++++++++++++++++++++++++++++++++++
- drivers/misc/kgdbts.c  |   17 -------------
- include/linux/kgdb.h   |    3 +-
- 3 files changed, 62 insertions(+), 18 deletions(-)
+ include/linux/kgdb.h      |    4 +--
+ kernel/debug/debug_core.c |   53 ++++++++++++++++++++--------------------------
+ 2 files changed, 26 insertions(+), 31 deletions(-)
 
---- a/arch/x86/kernel/kgdb.c
-+++ b/arch/x86/kernel/kgdb.c
-@@ -43,6 +43,8 @@
- #include <linux/smp.h>
- #include <linux/nmi.h>
- #include <linux/hw_breakpoint.h>
-+#include <linux/uaccess.h>
-+#include <linux/memory.h>
- 
- #include <asm/debugreg.h>
- #include <asm/apicdef.h>
-@@ -740,6 +742,64 @@ void kgdb_arch_set_pc(struct pt_regs *re
- 	regs->ip = ip;
- }
- 
-+int kgdb_arch_set_breakpoint(struct kgdb_bkpt *bpt)
-+{
-+	int err;
-+	char opc[BREAK_INSTR_SIZE];
-+
-+	bpt->type = BP_BREAKPOINT;
-+	err = probe_kernel_read(bpt->saved_instr, (char *)bpt->bpt_addr,
-+				BREAK_INSTR_SIZE);
-+	if (err)
-+		return err;
-+	err = probe_kernel_write((char *)bpt->bpt_addr,
-+				 arch_kgdb_ops.gdb_bpt_instr, BREAK_INSTR_SIZE);
-+#ifdef CONFIG_DEBUG_RODATA
-+	if (!err)
-+		return err;
-+	/*
-+	 * It is safe to call text_poke() because normal kernel execution
-+	 * is stopped on all cores, so long as the text_mutex is not locked.
-+	 */
-+	if (mutex_is_locked(&text_mutex))
-+		return -EBUSY;
-+	text_poke((void *)bpt->bpt_addr, arch_kgdb_ops.gdb_bpt_instr,
-+		  BREAK_INSTR_SIZE);
-+	err = probe_kernel_read(opc, (char *)bpt->bpt_addr, BREAK_INSTR_SIZE);
-+	if (err)
-+		return err;
-+	if (memcmp(opc, arch_kgdb_ops.gdb_bpt_instr, BREAK_INSTR_SIZE))
-+		return -EINVAL;
-+	bpt->type = BP_POKE_BREAKPOINT;
-+#endif /* CONFIG_DEBUG_RODATA */
-+	return err;
-+}
-+
-+int kgdb_arch_remove_breakpoint(struct kgdb_bkpt *bpt)
-+{
-+#ifdef CONFIG_DEBUG_RODATA
-+	int err;
-+	char opc[BREAK_INSTR_SIZE];
-+
-+	if (bpt->type != BP_POKE_BREAKPOINT)
-+		goto knl_write;
-+	/*
-+	 * It is safe to call text_poke() because normal kernel execution
-+	 * is stopped on all cores, so long as the text_mutex is not locked.
-+	 */
-+	if (mutex_is_locked(&text_mutex))
-+		goto knl_write;
-+	text_poke((void *)bpt->bpt_addr, bpt->saved_instr, BREAK_INSTR_SIZE);
-+	err = probe_kernel_read(opc, (char *)bpt->bpt_addr, BREAK_INSTR_SIZE);
-+	if (err || memcmp(opc, bpt->saved_instr, BREAK_INSTR_SIZE))
-+		goto knl_write;
-+	return err;
-+knl_write:
-+#endif /* CONFIG_DEBUG_RODATA */
-+	return probe_kernel_write((char *)bpt->bpt_addr,
-+				  (char *)bpt->saved_instr, BREAK_INSTR_SIZE);
-+}
-+
- struct kgdb_arch arch_kgdb_ops = {
- 	/* Breakpoint instruction: */
- 	.gdb_bpt_instr		= { 0xcc },
---- a/drivers/misc/kgdbts.c
-+++ b/drivers/misc/kgdbts.c
-@@ -968,22 +968,6 @@ static void run_singlestep_break_test(vo
- 	kgdbts_break_test();
- }
- 
--static void test_debug_rodata(void)
--{
--#ifdef CONFIG_DEBUG_RODATA
--	/* Until there is an api to write to read-only text segments, use
--	 * HW breakpoints for the remainder of any tests, else print a
--	 * failure message if hw breakpoints do not work.
--	 */
--	if (!(arch_kgdb_ops.flags & KGDB_HW_BREAKPOINT && hwbreaks_ok)) {
--		eprintk("kgdbts: HW breakpoints BROKEN, ending tests\n");
--		return;
--	}
--	force_hwbrks = 1;
--	v1printk("kgdbts:Using HW breakpoints for SW breakpoint tests\n");
--#endif /* CONFIG_DEBUG_RODATA */
--}
--
- static void kgdbts_run_tests(void)
- {
- 	char *ptr;
-@@ -1016,7 +1000,6 @@ static void kgdbts_run_tests(void)
- 		v1printk("kgdbts:RUN access write breakpoint test\n");
- 		run_hw_break_test(0);
- 	}
--	test_debug_rodata();
- 
- 	/* required internal KGDB tests */
- 	v1printk("kgdbts:RUN plant and detach test\n");
 --- a/include/linux/kgdb.h
 +++ b/include/linux/kgdb.h
-@@ -63,7 +63,8 @@ enum kgdb_bptype {
- 	BP_HARDWARE_BREAKPOINT,
- 	BP_WRITE_WATCHPOINT,
- 	BP_READ_WATCHPOINT,
--	BP_ACCESS_WATCHPOINT
-+	BP_ACCESS_WATCHPOINT,
-+	BP_POKE_BREAKPOINT,
- };
+@@ -207,8 +207,8 @@ extern void kgdb_arch_set_pc(struct pt_r
  
- enum kgdb_bpstate {
+ /* Optional functions. */
+ extern int kgdb_validate_break_address(unsigned long addr);
+-extern int kgdb_arch_set_breakpoint(unsigned long addr, char *saved_instr);
+-extern int kgdb_arch_remove_breakpoint(unsigned long addr, char *bundle);
++extern int kgdb_arch_set_breakpoint(struct kgdb_bkpt *bpt);
++extern int kgdb_arch_remove_breakpoint(struct kgdb_bkpt *bpt);
+ 
+ /**
+  *	kgdb_arch_late - Perform any architecture specific initalization.
+--- a/kernel/debug/debug_core.c
++++ b/kernel/debug/debug_core.c
+@@ -157,37 +157,39 @@ early_param("nokgdbroundup", opt_nokgdbr
+  * Weak aliases for breakpoint management,
+  * can be overriden by architectures when needed:
+  */
+-int __weak kgdb_arch_set_breakpoint(unsigned long addr, char *saved_instr)
++int __weak kgdb_arch_set_breakpoint(struct kgdb_bkpt *bpt)
+ {
+ 	int err;
+ 
+-	err = probe_kernel_read(saved_instr, (char *)addr, BREAK_INSTR_SIZE);
++	err = probe_kernel_read(bpt->saved_instr, (char *)bpt->bpt_addr,
++				BREAK_INSTR_SIZE);
+ 	if (err)
+ 		return err;
+-
+-	return probe_kernel_write((char *)addr, arch_kgdb_ops.gdb_bpt_instr,
+-				  BREAK_INSTR_SIZE);
++	err = probe_kernel_write((char *)bpt->bpt_addr,
++				 arch_kgdb_ops.gdb_bpt_instr, BREAK_INSTR_SIZE);
++	return err;
+ }
+ 
+-int __weak kgdb_arch_remove_breakpoint(unsigned long addr, char *bundle)
++int __weak kgdb_arch_remove_breakpoint(struct kgdb_bkpt *bpt)
+ {
+-	return probe_kernel_write((char *)addr,
+-				  (char *)bundle, BREAK_INSTR_SIZE);
++	return probe_kernel_write((char *)bpt->bpt_addr,
++				  (char *)bpt->saved_instr, BREAK_INSTR_SIZE);
+ }
+ 
+ int __weak kgdb_validate_break_address(unsigned long addr)
+ {
+-	char tmp_variable[BREAK_INSTR_SIZE];
++	struct kgdb_bkpt tmp;
+ 	int err;
+-	/* Validate setting the breakpoint and then removing it.  In the
++	/* Validate setting the breakpoint and then removing it.  If the
+ 	 * remove fails, the kernel needs to emit a bad message because we
+ 	 * are deep trouble not being able to put things back the way we
+ 	 * found them.
+ 	 */
+-	err = kgdb_arch_set_breakpoint(addr, tmp_variable);
++	tmp.bpt_addr = addr;
++	err = kgdb_arch_set_breakpoint(&tmp);
+ 	if (err)
+ 		return err;
+-	err = kgdb_arch_remove_breakpoint(addr, tmp_variable);
++	err = kgdb_arch_remove_breakpoint(&tmp);
+ 	if (err)
+ 		printk(KERN_ERR "KGDB: Critical breakpoint error, kernel "
+ 		   "memory destroyed at: %lx", addr);
+@@ -231,7 +233,6 @@ static void kgdb_flush_swbreak_addr(unsi
+  */
+ int dbg_activate_sw_breakpoints(void)
+ {
+-	unsigned long addr;
+ 	int error;
+ 	int ret = 0;
+ 	int i;
+@@ -240,16 +241,15 @@ int dbg_activate_sw_breakpoints(void)
+ 		if (kgdb_break[i].state != BP_SET)
+ 			continue;
+ 
+-		addr = kgdb_break[i].bpt_addr;
+-		error = kgdb_arch_set_breakpoint(addr,
+-				kgdb_break[i].saved_instr);
++		error = kgdb_arch_set_breakpoint(&kgdb_break[i]);
+ 		if (error) {
+ 			ret = error;
+-			printk(KERN_INFO "KGDB: BP install failed: %lx", addr);
++			printk(KERN_INFO "KGDB: BP install failed: %lx",
++			       kgdb_break[i].bpt_addr);
+ 			continue;
+ 		}
+ 
+-		kgdb_flush_swbreak_addr(addr);
++		kgdb_flush_swbreak_addr(kgdb_break[i].bpt_addr);
+ 		kgdb_break[i].state = BP_ACTIVE;
+ 	}
+ 	return ret;
+@@ -298,7 +298,6 @@ int dbg_set_sw_break(unsigned long addr)
+ 
+ int dbg_deactivate_sw_breakpoints(void)
+ {
+-	unsigned long addr;
+ 	int error;
+ 	int ret = 0;
+ 	int i;
+@@ -306,15 +305,14 @@ int dbg_deactivate_sw_breakpoints(void)
+ 	for (i = 0; i < KGDB_MAX_BREAKPOINTS; i++) {
+ 		if (kgdb_break[i].state != BP_ACTIVE)
+ 			continue;
+-		addr = kgdb_break[i].bpt_addr;
+-		error = kgdb_arch_remove_breakpoint(addr,
+-					kgdb_break[i].saved_instr);
++		error = kgdb_arch_remove_breakpoint(&kgdb_break[i]);
+ 		if (error) {
+-			printk(KERN_INFO "KGDB: BP remove failed: %lx\n", addr);
++			printk(KERN_INFO "KGDB: BP remove failed: %lx\n",
++			       kgdb_break[i].bpt_addr);
+ 			ret = error;
+ 		}
+ 
+-		kgdb_flush_swbreak_addr(addr);
++		kgdb_flush_swbreak_addr(kgdb_break[i].bpt_addr);
+ 		kgdb_break[i].state = BP_SET;
+ 	}
+ 	return ret;
+@@ -348,7 +346,6 @@ int kgdb_isremovedbreak(unsigned long ad
+ 
+ int dbg_remove_all_break(void)
+ {
+-	unsigned long addr;
+ 	int error;
+ 	int i;
+ 
+@@ -356,12 +353,10 @@ int dbg_remove_all_break(void)
+ 	for (i = 0; i < KGDB_MAX_BREAKPOINTS; i++) {
+ 		if (kgdb_break[i].state != BP_ACTIVE)
+ 			goto setundefined;
+-		addr = kgdb_break[i].bpt_addr;
+-		error = kgdb_arch_remove_breakpoint(addr,
+-				kgdb_break[i].saved_instr);
++		error = kgdb_arch_remove_breakpoint(&kgdb_break[i]);
+ 		if (error)
+ 			printk(KERN_ERR "KGDB: breakpoint remove failed: %lx\n",
+-			   addr);
++			       kgdb_break[i].bpt_addr);
+ setundefined:
+ 		kgdb_break[i].state = BP_UNDEFINED;
+ 	}
 
 
