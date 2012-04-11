@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965200Ab2DKXWt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Apr 2012 19:22:49 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:41234 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965186Ab2DKXWo (ORCPT
+	id S965244Ab2DKXXG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Apr 2012 19:23:06 -0400
+Received: from mail-pz0-f52.google.com ([209.85.210.52]:51056 "EHLO
+	mail-pz0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965208Ab2DKXWy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Apr 2012 19:22:44 -0400
-Message-Id: <20120411231040.010516003@linuxfoundation.org>
+	Wed, 11 Apr 2012 19:22:54 -0400
+Message-Id: <20120411231040.518443893@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Wed, 11 Apr 2012 16:11:02 -0700
+Date: Wed, 11 Apr 2012 16:11:05 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Anisse Astier <anisse@astier.eu>,
+        alan@lxorguk.ukuu.org.uk, Markus Heinz <markus.heinz@uni-dortmund.de>,
         Chris Wilson <chris@chris-wilson.co.uk>,
+        Rodrigo Vivi <rodrigo.vivi@gmail.com>,
         Daniel Vetter <daniel.vetter@ffwll.ch>
-Subject: [ 27/59] drm/i915: no-lvds quirk on MSI DC500
+Subject: [ 30/59] drm/i915: quirk away broken OpRegion VBT
 In-Reply-To: <20120411231213.GA13124@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,38 +27,69 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Anisse Astier <anisse@astier.eu>
+From: Daniel Vetter <daniel.vetter@ffwll.ch>
 
-commit 97effadb65ed08809e1720c8d3ee80b73a93665c upstream.
+commit 25e341cfc33d94435472983825163e97fe370a6c upstream.
 
-This hardware doesn't have an LVDS, it's a desktop box. Fix incorrect
-LVDS detection.
+Somehow the BIOS manages to screw things up when copying the VBT
+around, because the one we scrap from the VBIOS rom actually works.
 
-Signed-off-by: Anisse Astier <anisse@astier.eu>
+Tested-by: Markus Heinz <markus.heinz@uni-dortmund.de>
 Acked-by: Chris Wilson <chris@chris-wilson.co.uk>
-Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+Reviewed-by: Rodrigo Vivi <rodrigo.vivi@gmail.com>
+Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=28812
+Signed-Off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/i915/intel_lvds.c |    8 ++++++++
- 1 file changed, 8 insertions(+)
+ drivers/gpu/drm/i915/intel_bios.c |   23 ++++++++++++++++++++++-
+ 1 file changed, 22 insertions(+), 1 deletion(-)
 
---- a/drivers/gpu/drm/i915/intel_lvds.c
-+++ b/drivers/gpu/drm/i915/intel_lvds.c
-@@ -731,6 +731,14 @@ static const struct dmi_system_id intel_
- 			DMI_MATCH(DMI_BOARD_NAME, "AT5NM10T-I"),
- 		},
- 	},
+--- a/drivers/gpu/drm/i915/intel_bios.c
++++ b/drivers/gpu/drm/i915/intel_bios.c
+@@ -24,6 +24,7 @@
+  *    Eric Anholt <eric@anholt.net>
+  *
+  */
++#include <linux/dmi.h>
+ #include <drm/drm_dp_helper.h>
+ #include "drmP.h"
+ #include "drm.h"
+@@ -621,6 +622,26 @@ init_vbt_defaults(struct drm_i915_privat
+ 	dev_priv->edp.bpp = 18;
+ }
+ 
++static int __init intel_no_opregion_vbt_callback(const struct dmi_system_id *id)
++{
++	DRM_DEBUG_KMS("Falling back to manually reading VBT from "
++		      "VBIOS ROM for %s\n",
++		      id->ident);
++	return 1;
++}
++
++static const struct dmi_system_id intel_no_opregion_vbt[] = {
 +	{
-+		.callback = intel_no_lvds_dmi_callback,
-+		.ident = "MSI Wind Box DC500",
++		.callback = intel_no_opregion_vbt_callback,
++		.ident = "ThinkCentre A57",
 +		.matches = {
-+			DMI_MATCH(DMI_BOARD_VENDOR, "MICRO-STAR INTERNATIONAL CO., LTD"),
-+			DMI_MATCH(DMI_BOARD_NAME, "MS-7469"),
++			DMI_MATCH(DMI_SYS_VENDOR, "LENOVO"),
++			DMI_MATCH(DMI_PRODUCT_NAME, "97027RG"),
 +		},
 +	},
++	{ }
++};
++
+ /**
+  * intel_parse_bios - find VBT and initialize settings from the BIOS
+  * @dev: DRM device
+@@ -641,7 +662,7 @@ intel_parse_bios(struct drm_device *dev)
+ 	init_vbt_defaults(dev_priv);
  
- 	{ }	/* terminating entry */
- };
+ 	/* XXX Should this validation be moved to intel_opregion.c? */
+-	if (dev_priv->opregion.vbt) {
++	if (!dmi_check_system(intel_no_opregion_vbt) && dev_priv->opregion.vbt) {
+ 		struct vbt_header *vbt = dev_priv->opregion.vbt;
+ 		if (memcmp(vbt->signature, "$VBT", 4) == 0) {
+ 			DRM_DEBUG_KMS("Using VBT from OpRegion: %20s\n",
 
 
