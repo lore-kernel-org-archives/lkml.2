@@ -1,68 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965848Ab2DKXaF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Apr 2012 19:30:05 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:45547 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965715Ab2DKX3w (ORCPT
+	id S965853Ab2DKXac (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Apr 2012 19:30:32 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:61093 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965636Ab2DKXa0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Apr 2012 19:29:52 -0400
-Date: Wed, 11 Apr 2012 16:27:20 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Jesper Juhl <jj@chaosbits.net>
-Cc: Xi Wang <xi.wang@gmail.com>, linux-kernel@vger.kernel.org,
-        devel@driverdev.osuosl.org, Joe Perches <joe@perches.com>,
-        Dan Carpenter <dan.carpenter@oracle.com>,
-        Forest Bond <forest@alittletooquiet.net>
-Subject: Re: [PATCH] staging: vt6656: Don't leak memory in
- drivers/staging/vt6656/ioctl.c::private_ioctl()
-Message-ID: <20120411232720.GA32500@kroah.com>
-References: <alpine.LNX.2.00.1204120032050.2137@swampdragon.chaosbits.net>
- <D26D474A-E696-447C-8B54-15295135368E@gmail.com>
- <20120411224920.GA1612@kroah.com>
- <alpine.LNX.2.00.1204120106280.2137@swampdragon.chaosbits.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LNX.2.00.1204120106280.2137@swampdragon.chaosbits.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 11 Apr 2012 19:30:26 -0400
+From: Daniel Vetter <daniel.vetter@ffwll.ch>
+To: Intel Graphics Development <intel-gfx@lists.freedesktop.org>
+Cc: DRI Development <dri-devel@lists.freedesktop.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>, Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH] drm/i915: clear fencing tracking state when retiring requests
+Date: Thu, 12 Apr 2012 01:31:15 +0200
+Message-Id: <1334187075-6388-1-git-send-email-daniel.vetter@ffwll.ch>
+X-Mailer: git-send-email 1.7.9.1
+In-Reply-To: <1334186877-6299-1-git-send-email-daniel.vetter@ffwll.ch>
+References: <1334186877-6299-1-git-send-email-daniel.vetter@ffwll.ch>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 12, 2012 at 01:17:52AM +0200, Jesper Juhl wrote:
-> On Wed, 11 Apr 2012, Greg Kroah-Hartman wrote:
-> 
-> > On Wed, Apr 11, 2012 at 06:46:33PM -0400, Xi Wang wrote:
-> > > On Apr 11, 2012, at 6:35 PM, Jesper Juhl wrote:
-> > > 
-> > > > -		pNodeList = (PSNodeList)kmalloc(sizeof(SNodeList) + (sNodeList.uItem * sizeof(SNodeItem)), (int)GFP_ATOMIC);
-> > > > +		pNodeList = kmalloc(sizeof(SNodeList) + (sNodeList.uItem * sizeof(SNodeItem)), (int)GFP_ATOMIC);
-> > > 
-> > > Can you also remove casts like "(int)GFP_ATOMIC"?
-> > > 
-> > > The parentheses "(sNodeList.uItem * sizeof(SNodeItem))" are also
-> > > pointless..
-> > 
-> > One thing at a time, odds are this is an "automated" patch, right
-> > Jesper?
-> > 
-> 
-> I'm not quite sure what you mean by "automated patch" Greg. Manually 
-> editing the file in emacs, then running "git format-patch", followed by 
-> importing the patch file into alpine and sending it off surely didn't 
-> feel "automated" ;-)
+This fixes a regression uncovered by
 
-Sorry, I thought this was scripted, my apologies.
+commit 7dd4906586274f3945f2aeaaa5a33b451c3b4bba
+Author: Chris Wilson <chris@chris-wilson.co.uk>
+Date:   Wed Mar 21 10:48:18 2012 +0000
 
-> The only reason I even included the change of the return value cast was 
-> that it was the variable I was focusing on with regards to fixing the 
-> leak, so it felt "sufficiently related" to include in the same patch.
-> I certainly was not on a mission to clean up the file in general - just 
-> fixing the leak was all that was really on the agenda.
-> I don't *mind* fixing up other issues in the file - sure, I can do that, 
-> but that's an entirely different set of patches then...
+    drm/i915: Mark untiled BLT commands as fenced on gen2/3
 
-I agree, this patch is fine as-is, thanks.
+which fixed fencing tracking for untiled blt commands.
 
-greg k-h
+A side effect of that patch was that now also untiled objects have a
+non-zero obj->last_fenced_seqno to track when a fence can be set up
+after a pipelined tiling change. Unfortunately this was only cleared
+by the fence setup and teardown code, resulting in tons of untiled but
+inactive objects with non-zero last_fenced_seqno.
+
+Now after resume we completely reset the seqno tracking, both on the
+driver side (by setting dev_priv->next_seqno = 1) and on the hw side
+(by allocating a new hws page, which contains the seqnos). Hilarity
+and indefinite waits ensued from the stale seqnos in
+obj->last_fenced_seqno from before the suspend.
+
+The fix is to properly clear the fencing tracking state like we
+already do for the normal gpu rendering while moving objects off the
+active list.
+
+Reported-and-tested-by: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Jiri Slaby <jslaby@suse.cz>
+Signed-Off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+---
+ drivers/gpu/drm/i915/i915_gem.c |    2 ++
+ 1 files changed, 2 insertions(+), 0 deletions(-)
+
+diff --git a/drivers/gpu/drm/i915/i915_gem.c b/drivers/gpu/drm/i915/i915_gem.c
+index 71934dd..cf50fbc 100644
+--- a/drivers/gpu/drm/i915/i915_gem.c
++++ b/drivers/gpu/drm/i915/i915_gem.c
+@@ -1415,6 +1415,7 @@ i915_gem_object_move_off_active(struct drm_i915_gem_object *obj)
+ {
+ 	list_del_init(&obj->ring_list);
+ 	obj->last_rendering_seqno = 0;
++	obj->last_fenced_seqno = 0;
+ }
+ 
+ static void
+@@ -1443,6 +1444,7 @@ i915_gem_object_move_to_inactive(struct drm_i915_gem_object *obj)
+ 	BUG_ON(!list_empty(&obj->gpu_write_list));
+ 	BUG_ON(!obj->active);
+ 	obj->ring = NULL;
++	obj->last_fenced_ring = NULL;
+ 
+ 	i915_gem_object_move_off_active(obj);
+ 	obj->fenced_gpu_access = false;
+-- 
+1.7.9.1
+
