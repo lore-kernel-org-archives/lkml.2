@@ -1,42 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760004Ab2DKCvH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Apr 2012 22:51:07 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:52781 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756109Ab2DKCvG convert rfc822-to-8bit (ORCPT
+	id S1759991Ab2DKCzM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Apr 2012 22:55:12 -0400
+Received: from shards.monkeyblade.net ([198.137.202.13]:50112 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755965Ab2DKCzK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Apr 2012 22:51:06 -0400
-MIME-Version: 1.0
-In-Reply-To: <20120410224543.GA11433@windriver.com>
-References: <20120410224543.GA11433@windriver.com>
-From: Mike Frysinger <vapier.adi@gmail.com>
-Date: Tue, 10 Apr 2012 22:50:44 -0400
-Message-ID: <CAMjpGUetfGQxqTKVfLBtOdthxFtFv-knuXSWoNx0BKxJd=829Q@mail.gmail.com>
-Subject: Re: linux-next: triage for April 10, 2012
-To: Paul Gortmaker <paul.gortmaker@windriver.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Tue, 10 Apr 2012 22:55:10 -0400
+Date: Tue, 10 Apr 2012 22:54:51 -0400 (EDT)
+Message-Id: <20120410.225451.92022308007980352.davem@davemloft.net>
+To: preining@logic.at
+Cc: egrumbach@gmail.com, linux-wireless@vger.kernel.org,
+        linux-kernel@vger.kernel.org, ipw3945-devel@lists.sourceforge.net,
+        ilw@linux.intel.com
+Subject: Re: 3.4-rc2, ilwagn still most of the time completely unusable
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <20120411023747.GA10126@gamma.logic.tuwien.ac.at>
+References: <20120330011734.GH6277@gamma.logic.tuwien.ac.at>
+	<20120411023747.GA10126@gamma.logic.tuwien.ac.at>
+X-Mailer: Mew version 6.4 on Emacs 23.3 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Tue, 10 Apr 2012 19:54:55 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 10, 2012 at 18:45, Paul Gortmaker
-<paul.gortmaker@windriver.com> wrote:
-> bfin: 50% of builds
->        when:   Mar 31
->        why:    "Error: pcrel too far BFD_RELOC_BFIN_10" from kernel/time/timekeeping.c
->        status: unknown, binutils issue?
->        fix:
->        ref:    http://kisskb.ellerman.id.au/kisskb/buildresult/5981475/
+From: Norbert Preining <preining@logic.at>
+Date: Wed, 11 Apr 2012 11:37:47 +0900
 
-that log file doesn't say anything about "BFD_RELOC_BFIN_10"
+> Well, hope that in another 20 kernel revisions that might get fixed,
+> we are not talking about a brand new wlan adapter anymore ... that
+> was some years ago ... especially the regression from 2.6.38 where it
+> was working without any problem to the current very sad state of affair
+> is frustrating.
 
-it does show the old L1 data overflow though ...
+In those 20 kernel revisions you, or a party interested in helping
+you, could have GIT bisected the guilty change which introduced
+the problem.
 
-on a side note, the warning:
-arch/blackfin/mm/init.c:79:9: warning: array subscript is above array
-bounds [-Warray-bounds]
-is a bad thing, but i've just pushed a fix for that ...
--mike
+Then we'd have something concrete to go on, and use to work towards a
+fix.
+
+Right now there isn't nearly enough information to fix the problem.
