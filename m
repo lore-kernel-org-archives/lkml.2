@@ -1,163 +1,211 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760272Ab2DKNvK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Apr 2012 09:51:10 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:42083 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754057Ab2DKNvJ convert rfc822-to-8bit (ORCPT
+	id S1760284Ab2DKNxr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Apr 2012 09:53:47 -0400
+Received: from andromeda.dapyr.net ([206.212.254.10]:39717 "EHLO
+	andromeda.dapyr.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760176Ab2DKNxq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Apr 2012 09:51:09 -0400
-MIME-Version: 1.0
-In-Reply-To: <CAOtvUMdgu8zbVgGP-HxRTv=AT3Lry=Xd0P5_rFuo9VBGsdwcrw@mail.gmail.com>
-References: <CAG3n4CQYZEtYfCjQ_n=iWhwFoaW4x-ovXZh3bNiwbGVtgq+jVg@mail.gmail.com>
- <CAOtvUMdgu8zbVgGP-HxRTv=AT3Lry=Xd0P5_rFuo9VBGsdwcrw@mail.gmail.com>
-From: Tomer Margalit <tomermargalit@gmail.com>
-Date: Wed, 11 Apr 2012 16:50:47 +0300
-Message-ID: <CAG3n4CS9jDmXLA1=wEMG=HNSsMESpVJucBoO=a110pOau5DSrw@mail.gmail.com>
-Subject: Re: Synchronizing userspace and kernel using mmaped memory
-To: Gilad Ben-Yossef <gilad@benyossef.com>
-Cc: linux-kernel@vger.kernel.org, scipioenterprises@yahoo.com,
-        Nezer Zaidenberg <nzaidenberg@mac.com>,
-        "Zaidenberg, Nezer" <Nezer.Zaidenberg@edfenergy.com>,
-        Amir Averbuch <amir@math.tau.ac.il>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Wed, 11 Apr 2012 09:53:46 -0400
+Date: Wed, 11 Apr 2012 09:53:04 -0400
+From: Konrad Rzeszutek Wilk <konrad@darnok.org>
+To: Lin Ming <mlin@ss.pku.edu.cn>
+Cc: linux-kernel@vger.kernel.org, xen-devel@lists.xensource.com,
+        Ingo Molnar <mingo@redhat.com>, x86@kernel.org,
+        Xiantao Zhang <xiantao.zhang@intel.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Subject: Re: [Xen-devel] [RFC PATCH] xen: get correct nr_irqs_gsi value from hypervisor
+Message-ID: <20120411135304.GC21703@andromeda.dapyr.net>
+References: <1334069838.5865.130.camel@hp6530s>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1334069838.5865.130.camel@hp6530s>
+User-Agent: Mutt/1.5.9i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 11, 2012 at 2:36 PM, Gilad Ben-Yossef <gilad@benyossef.com> wrote:
-> On Wed, Apr 11, 2012 at 1:30 PM, Tomer Margalit <tomermargalit@gmail.com> wrote:
->>
->> Hi All,
->>
->> I was wondering whether it is possible to use an mmaped byte to
->> synchronize userspace and kernel.
->
->
-> Possible? yes (hint: 'git grep drivers/ mmap"). Smart? probably not :-)
-
-Can you refer me to any specific driver that does it? I have searched
-the net, but only found a simple example by someone, that is unrelated
-to the kernel.
-I haven't been able to find any example of such a thing in the kernel,
-and I would appreciate it if you could refer me to one.
->
->>
->> To elaborate, I have a line of buffers that need to be transfered from
->> a kernel driver into a userspace daemon, so they can be sent to the
->> internet.
->> My current communication scheme is to use a series of mmaped buffers,
->> copy the data to them, and then when done, set a bit (in that same
->> memory mapped region), that indicates the page was filled and is ready
->> for transmission.
->
->
-> If you copy the data to the buffers, just drop the mmap buffers and
-> have the user daemon
-> supply the buffers via a readv() system call and let the kernel copy
-> the data to that.
->
-> All synchronization work already done and debugged for a long time.
-
-I want to do as little copying as I can. That is the reason for using
-the mmaped memory. I am aware of the read/write mechanism, and have
-considered it, but it will probably have me doing many useless copies.
->
->
->>
->>
->> I have implemented this scheme in two ways - one is to change the bit
->> both from kernel and userspace (set the bit when a page is filled and
->> clear it when emptied).
->> The other is to only change the bit from kernel, and only read the bit
->> from userspace (when the page is to be cleared, a custom ioctl is
->> used).
->>
->
-> So you are spinning in user space waiting for the kernel to makr the bit clean?
-> How wasteful.
-I'm not sure what you want. A daemon is meant to wait for data from
-the kernel (which in turn waits for data from the user). Daemons that
-are data consumers usually "spin" until they get data. Obviously I
-don't spin - more like wait (as in wait_event).
-
->
->>
->> The problem is that this only works 99% of time. I.e. once in every
->> million pages, there is a page that the kernel says it has filled
->> (according to logs), but userspace sees as cleared.
->> My initial instinct was that this is a bug, and I have tried debugging
->> it for a long time - with no results.
->> Figuring it was some kind of "illegal" memory access, I put guard
->> bytes around the problematic byte - but after checking, they remain
->> untouched.
->>
->> So, before I continue debugging, I thought to ask whether this is a
->> good approach?
->> Specifically, when writing/reading a memory mapped page from kernel
->> (or userspace for that matter) - is there any action that needs to be
->> taken to flush the data or protect it?
->
->
-> I can think of several things that can go wrong, but since you didn't give us
-> any details (architecture, kernel version, SMP, source code for your driver and
-> user daemon) we can't really know:
-arch is x86_64
-kernel is 3.3.1 (although I tried many more 2.6.29-3.3.1).
-the source code is thousands of lines. If you'd like it, I can refer
-you to the sourceforge repository.
-
->
-> 1. You might have forgotten a compiler memory barrier around reading
-> the communication byte (or used a volatile pointer, although that is
-> painfully inefficient)
-I have ruled out this problem by only writing to the byte from the
-kernel. When I do that, I lock a mutex before writing to the byte
-(which implies memory barriers).
-There can only be a problem if userspace changes the byte even though
-it is not asked to (a thing which I am not eliminating).
-In the other version, I use an smp_mb() before and after any access to
-the byte (read/write).
-Unfortunately in usersapce however, there is no way to do memory barriers.
-> 2. You might be running an SMP system and expect the writing of the
-> byte and the buffers to happen in a certain order but didn't use a
-> memory barrier.
-> 3. You might be running on an architecture that uses VIVT data caches,
-> in which case you might be suffering from cache in coherency between
-> user and kernel space since they are using different virtual addresses
-> to get to the same physical page.
-
-I'm not sure about this one. Can you clarify?
-
->
-> Best of luck,
-> Gilad
->
->>
->>
->> Thanks,
->>  Tomer
->> --
->> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
->> the body of a message to majordomo@vger.kernel.org
->> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->> Please read the FAQ at  http://www.tux.org/lkml/
->
->
->
->
+On Tue, Apr 10, 2012 at 10:57:18PM +0800, Lin Ming wrote:
+> nr_irqs_gsi is set in probe_nr_irqs_gsi()
+> 	nr_irqs_gsi = gsi_top + NR_IRQS_LEGACY;
+> 
+> gsi_top is set in mp_register_ioapic()
+> 	gsi_top = gsi_cfg->gsi_end + 1;
+> 
+> mp_register_ioapic() calls io_apic_read, which don't have a Xen specific
+> version. Actually, io_apic_read() always return -1 on Xen Dom0 kernel.
+> 
+> So currently, nr_irqs_gsi is always wrong on Xen Dom0 kernel.
+> 
+> This patch gets the correct nr_irqs_gsi value from Xen hypervisor with a
+> hypercall.
+> 
+> Signed-off-by: Lin Ming <mlin@ss.pku.edu.cn>
 > --
-> Gilad Ben-Yossef
-> Chief Coffee Drinker
-> gilad@benyossef.com
-> Israel Cell: +972-52-8260388
-> US Cell: +1-973-8260388
-> http://benyossef.com
->
-> "If you take a class in large-scale robotics, can you end up in a
-> situation where the homework eats your dog?"
->  -- Jean-Baptiste Queru
+>  arch/x86/include/asm/io_apic.h  |    2 ++
+>  arch/x86/kernel/apic/io_apic.c  |    2 +-
+>  arch/x86/xen/setup.c            |    9 +++++++++
+>  include/xen/interface/physdev.h |    6 ++++++
+>  4 files changed, 18 insertions(+), 1 deletions(-)
+> 
+> (I will send xen hypervisor patch in another mail)
+> 
+> Here comes the detail story.
+> 
+> Xen Dom0 kernel panics with 3.4-rc1. I took the panics picture at
+> http://www.sendspace.com/file/12ob33
+> 
+> Bisected to below commit.
 
-Thanks,
-  Tomer
+It is a bummer you went through all this trouble when I had
+patches for this (and a workaround) since about three weeks ago.
+
+The v3.4-rc2 should work fine for right now, with a work-around
+against Suresh's patch.
+
+Long-term, the two patches in my stable/for-ingo-3.4.v2 would
+fix it, and if we use the existing IOAPIc hypercalls we can get
+the exact count of GSI.
+
+
+> 
+> commit 73d63d038ee9f769f5e5b46792d227fe20e442c5
+> Author: Suresh Siddha <suresh.b.siddha@intel.com>
+> Date:   Mon Mar 12 11:36:33 2012 -0700
+> 
+>     x86/ioapic: Add register level checks to detect bogus io-apic entries
+> 
+> But this commit itself has no problem.
+> This commit just triggers the panic.
+> 
+> The panic happens at xen_irq_init(..)
+> 
+> pci_enable_device
+> __pci_enable_device_flags
+> do_pci_enable_device
+> pcibios_enable_device
+> acpi_pci_irq_enable
+> acpi_register_gsi
+> acpi_register_gsi_xen
+> xen_register_gsi
+> xen_register_pirq
+> xen_bind_pirq_gsi_to_irq
+> xen_allocate_irq_gsi:
+>         irq = irq_alloc_desc_at(gsi, -1);
+>         xen_irq_init(irq);
+> 
+> On my machine, when enable PCI root port, gsi 16 is passed into
+> irq_alloc_desc_at, but it returns -17(-EEXIST) because irq 16 was
+> already took by xen timer(see below). Then negative value -17 is passed
+> into xen_irq_init --> irq_to_desc --> radix_tree_lookup, which causes
+> the panic.
+> 
+> xen timer allocates the irq number "nr_irqs_gsi"
+> nr_irqs_gsi is set in probe_nr_irqs_gsi()
+> 	nr_irqs_gsi = gsi_top + NR_IRQS_LEGACY
+> gsi_top is set in mp_register_ioapic()
+> 	gsi_top = gsi_cfg->gsi_end + 1;
+> 
+> In 3.4-rc1 kernel:
+> 
+> mp_register_ioapic
+>   bad_ioapic_register (added in 3.4-rc1)
+>     <always return true(bad) on Xen Dom0 kernel>
+> 
+> So mp_register_ioapic exist and gsi_top was not set up. It is left as
+> the initialized value(zero). So nr_irqs_gsi is 16(NR_IRQS_LEGACY).
+> That's why Xen timer allocated irq 16.
+> 
+> 
+> Actually, gsi_top was never setup correctly in mp_register_ioapic on Xen
+> Dom0 kernel. Because mp_register_ioapic calls io_apic_read, which is not
+> implemented with hypercall in Linux kernel. So io_apic_read() always
+> return -1 on Xen Dom0 kernel.
+> 
+> For 3.3 kernel in Xen Dom0, the dmesg shows
+> 
+> IOAPIC[0]: apic_id 2, version 255, address 0xfec00000, GSI 0-255
+> ......
+> nr_irqs_gsi: 272
+> 
+> This is obviously wrong, "255" is actually -1(0xFFFF).
+> 
+> 
+> diff --git a/arch/x86/include/asm/io_apic.h b/arch/x86/include/asm/io_apic.h
+> index 2c4943d..a8bf3b2 100644
+> --- a/arch/x86/include/asm/io_apic.h
+> +++ b/arch/x86/include/asm/io_apic.h
+> @@ -115,6 +115,8 @@ struct IR_IO_APIC_route_entry {
+>   */
+>  extern int nr_ioapics;
+>  
+> +extern int nr_irqs_gsi;
+> +
+>  extern int mpc_ioapic_id(int ioapic);
+>  extern unsigned int mpc_ioapic_addr(int ioapic);
+>  extern struct mp_ioapic_gsi *mp_ioapic_gsi_routing(int ioapic);
+> diff --git a/arch/x86/kernel/apic/io_apic.c b/arch/x86/kernel/apic/io_apic.c
+> index e88300d..8bff292 100644
+> --- a/arch/x86/kernel/apic/io_apic.c
+> +++ b/arch/x86/kernel/apic/io_apic.c
+> @@ -140,7 +140,7 @@ struct mpc_intsrc mp_irqs[MAX_IRQ_SOURCES];
+>  int mp_irq_entries;
+>  
+>  /* GSI interrupts */
+> -static int nr_irqs_gsi = NR_IRQS_LEGACY;
+> +int nr_irqs_gsi = NR_IRQS_LEGACY;
+>  
+>  #if defined (CONFIG_MCA) || defined (CONFIG_EISA)
+>  int mp_bus_id_to_type[MAX_MP_BUSSES];
+> diff --git a/arch/x86/xen/setup.c b/arch/x86/xen/setup.c
+> index 1ba8dff..9ce82bc 100644
+> --- a/arch/x86/xen/setup.c
+> +++ b/arch/x86/xen/setup.c
+> @@ -389,6 +389,9 @@ void __cpuinit xen_enable_syscall(void)
+>  
+>  void __init xen_arch_setup(void)
+>  {
+> +	struct physdev_nr_irqs_gsi irqs_gsi;
+> +	int rc;
+> +
+>  	xen_panic_handler_init();
+>  
+>  	HYPERVISOR_vm_assist(VMASST_CMD_enable, VMASST_TYPE_4gb_segments);
+> @@ -424,4 +427,10 @@ void __init xen_arch_setup(void)
+>  	disable_cpufreq();
+>  	WARN_ON(set_pm_idle_to_default());
+>  	fiddle_vdso();
+> +
+> +	rc = HYPERVISOR_physdev_op(PHYSDEVOP_nr_irqs_gsi, &irqs_gsi);
+> +	if (rc)
+> +		printk(KERN_ERR "Failed to init nr_irqs_gsi, err_code:%d\n", rc);
+> +	else
+> +		nr_irqs_gsi = irqs_gsi.nr_irqs_gsi;
+>  }
+> diff --git a/include/xen/interface/physdev.h b/include/xen/interface/physdev.h
+> index 9ce788d..180a0a3 100644
+> --- a/include/xen/interface/physdev.h
+> +++ b/include/xen/interface/physdev.h
+> @@ -258,6 +258,12 @@ struct physdev_pci_device {
+>      uint8_t devfn;
+>  };
+>  
+> +#define PHYSDEVOP_nr_irqs_gsi           29
+> +struct physdev_nr_irqs_gsi {
+> +    /* OUT */
+> +    uint32_t nr_irqs_gsi;
+> +};
+> +
+>  /*
+>   * Notify that some PIRQ-bound event channels have been unmasked.
+>   * ** This command is obsolete since interface version 0x00030202 and is **
+> 
+> 
+> 
+> 
+> 
+> _______________________________________________
+> Xen-devel mailing list
+> Xen-devel@lists.xen.org
+> http://lists.xen.org/xen-devel
