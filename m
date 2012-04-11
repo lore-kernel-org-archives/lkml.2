@@ -1,86 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760596Ab2DKQGX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Apr 2012 12:06:23 -0400
-Received: from mga09.intel.com ([134.134.136.24]:12419 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759744Ab2DKQGW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Apr 2012 12:06:22 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
-   d="scan'208";a="131243450"
-Date: Thu, 12 Apr 2012 00:04:02 +0800
-From: Feng Tang <feng.tang@intel.com>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: suresh.b.siddha@intel.com, santosh.shilimkar@ti.com,
-        linux-kernel@vger.kernel.org, johnstul@us.ibm.com
-Subject: Re: [PATCH] clockevents: Leave broadcast device shtudown only if
- the current device is always running.
-Message-ID: <20120411160402.GA27044@feng-i7>
-References: <1333951423-27621-1-git-send-email-santosh.shilimkar@ti.com>
- <1334011304.12400.81.camel@sbsiddha-desk.sc.intel.com>
- <CA++bM2th5XW1gxrHbcHwDK=qBBaNc3ut0ydbNNStfNa-Xa-9tA@mail.gmail.com>
- <20120411063452.GA25399@feng-i7>
- <alpine.LFD.2.02.1204111208070.2542@ionos>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LFD.2.02.1204111208070.2542@ionos>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S932383Ab2DKQH1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Apr 2012 12:07:27 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:21637 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756764Ab2DKQHZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Apr 2012 12:07:25 -0400
+X-Authority-Analysis: v=2.0 cv=Z8Fu7QtA c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=XQbtiDEiEegA:10 a=TWBfIqSxIMQA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=u5gnqKLQQImpMZ8m11gA:9 a=PUjeQqilurYA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.80.29
+Message-ID: <1334160442.23924.257.camel@gandalf.stny.rr.com>
+Subject: Re: [PATCH 06/16] sched: SCHED_DEADLINE push and pull logic
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Juri Lelli <juri.lelli@gmail.com>
+Cc: peterz@infradead.org, tglx@linutronix.de, mingo@redhat.com,
+        oleg@redhat.com, fweisbec@gmail.com, darren@dvhart.com,
+        johan.eker@ericsson.com, p.faure@akatech.ch,
+        linux-kernel@vger.kernel.org, claudio@evidence.eu.com,
+        michael@amarulasolutions.com, fchecconi@gmail.com,
+        tommaso.cucinotta@sssup.it, nicola.manica@disi.unitn.it,
+        luca.abeni@unitn.it, dhaval.giani@gmail.com, hgu1972@gmail.com,
+        paulmck@linux.vnet.ibm.com, raistlin@linux.it, insop.song@ericsson.com,
+        liming.wang@windriver.com
+Date: Wed, 11 Apr 2012 12:07:22 -0400
+In-Reply-To: <1333696481-3433-7-git-send-email-juri.lelli@gmail.com>
+References: <1333696481-3433-1-git-send-email-juri.lelli@gmail.com>
+	 <1333696481-3433-7-git-send-email-juri.lelli@gmail.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.2.2-1 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Thomas,
+On Fri, 2012-04-06 at 09:14 +0200, Juri Lelli wrote:
 
-On Wed, Apr 11, 2012 at 12:10:59PM +0200, Thomas Gleixner wrote:
-> On Wed, 11 Apr 2012, Feng Tang wrote:
-> > > Problem you encountered is not related to leaving the broadcast device
-> > > in shutdown mode. Problem is that we didn't track the mode change to
-> > > oneshot and later during idle entry/exit, when we request the broadcast
-> > > device services using CLOCK_EVT_NOTIFY_BROADCAST_ENTER etc,
-> > > tick_broadcast_oneshot_control() returns with out doing much as it
-> > > thinks broadcast device is in periodic mode.
-> > 
-> > Just curious, IIUC, the tick_broadcast_switch_to_oneshot() is only called
-> > during CPU init process in boot time or bring a offlined cpu back on. Why
-> > is it related to the deep idle?
-> 
-> Because a deep idle state might require the broadcast device and w/o
-> Suresh's patch it can't use it because it's in the wrong state.
->
+> +static void check_preempt_equal_dl(struct rq *rq, struct task_struct *p)
+> +{
+> +	/*
+> +	 * Current can't be migrated, useles to reschedule,
 
-Thanks for the explaination, I understand the root cause now.
+ s/useles/useless/
 
-And regarding the original commit 77b0d60c5
-    clockevents: Leave the broadcast device in shutdown mode when not needed
+I feel so useles by only adding typo fixes ;-)
 
-@@ -575,11 +575,15 @@ void tick_broadcast_switch_to_oneshot(void)
- 	unsigned long flags;
- 
- 	raw_spin_lock_irqsave(&tick_broadcast_lock, flags);
-+	if (cpumask_empty(tick_get_broadcast_mask()))
-+		goto end;
+-- Steve
 
-  	tick_broadcast_device.mode = TICKDEV_MODE_ONESHOT;
- 	bc = tick_broadcast_device.evtdev;
- 	if (bc)
- 		tick_broadcast_setup_oneshot(bc);
-+
-+end:
- 	raw_spin_unlock_irqrestore(&tick_broadcast_lock, flags);
- }
- 
-The tick_broadcast_switch_to_oneshot() get called mostly at boot time or
-during cpu hotplug. And when it is called at boot time, the tick_broadcast_mask
-is alwasys 0 at the point, thus this check is always true and skip the
-following oneshot setting up for broadcast device, which sounds a little
-buggy.
+> +	 * let's hope p can move out.
+> +	 */
+> +	if (rq->curr->dl.nr_cpus_allowed == 1 ||
+> +	    latest_cpu_find(rq->rd->span, rq->curr, NULL) == -1)
+> +		return;
+> +
+> +	/*
+> +	 * p is migratable, so let's not schedule it and
+> +	 * see if it is pushed or pulled somewhere else.
+> +	 */
+> +	if (p->dl.nr_cpus_allowed != 1 &&
+> +	    latest_cpu_find(rq->rd->span, p, NULL) != -1)
+> +		return;
+> +
+> +	resched_task(rq->curr);
+> +}
+> +
+> +#endif /* CONFIG_SMP */
+> +
 
-Thanks,
-Feng
-
-> 
-> Thanks,
-> 
-> 	tglx
