@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965859Ab2DKXbK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Apr 2012 19:31:10 -0400
+	id S934068Ab2DKXbf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Apr 2012 19:31:35 -0400
 Received: from mail-pz0-f52.google.com ([209.85.210.52]:53150 "EHLO
 	mail-pz0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965816Ab2DKX3s (ORCPT
+	with ESMTP id S965784Ab2DKX3g (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Apr 2012 19:29:48 -0400
-Message-Id: <20120411231314.238910369@linuxfoundation.org>
+	Wed, 11 Apr 2012 19:29:36 -0400
+Message-Id: <20120411231312.565020816@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Wed, 11 Apr 2012 16:13:46 -0700
+Date: Wed, 11 Apr 2012 16:13:37 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Oleg Nesterov <oleg@redhat.com>,
-        David Howells <dhowells@redhat.com>
-Subject: [ 39/42] cred: copy_process() should clear child->replacement_session_keyring
+        alan@lxorguk.ukuu.org.uk, Frank Rowand <frank.rowand@am.sony.com>,
+        Alessio Igor Bogani <abogani@kernel.org>
+Subject: [ 30/42] modpost: Fix modpost license checking of vmlinux.o
 In-Reply-To: <20120411231443.GA808@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,41 +25,70 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Oleg Nesterov <oleg@redhat.com>
+From: Frank Rowand <frank.rowand@am.sony.com>
 
-commit 79549c6dfda0603dba9a70a53467ce62d9335c33 upstream.
+commit 258f742635360175564e9470eb060ff4d4b984e7 upstream.
 
-keyctl_session_to_parent(task) sets ->replacement_session_keyring,
-it should be processed and cleared by key_replace_session_keyring().
+Commit f02e8a6596b7 ("module: Sort exported symbols") sorts symbols
+placing each of them in its own elf section.  This sorting and merging
+into the canonical sections are done by the linker.
 
-However, this task can fork before it notices TIF_NOTIFY_RESUME and
-the new child gets the bogus ->replacement_session_keyring copied by
-dup_task_struct(). This is obviously wrong and, if nothing else, this
-leads to put_cred(already_freed_cred).
+Unfortunately modpost to generate Module.symvers file parses vmlinux.o
+(which is not linked yet) and all modules object files (which aren't
+linked yet).  These aren't sanitized by the linker yet.  That breaks
+modpost that can't detect license properly for modules.
 
-change copy_creds() to clear this member. If copy_process() fails
-before this point the wrong ->replacement_session_keyring doesn't
-matter, exit_creds() won't be called.
+This patch makes modpost aware of the new exported symbols structure.
 
-Signed-off-by: Oleg Nesterov <oleg@redhat.com>
-Acked-by: David Howells <dhowells@redhat.com>
+[ This above is a slightly corrected version of the explanation of the
+  problem, copied from commit 62a2635610db ("modpost: Fix modpost's
+  license checking V3").  That commit fixed the problem for module
+  object files, but not for vmlinux.o.  This patch fixes modpost for
+  vmlinux.o. ]
+
+Signed-off-by: Frank Rowand <frank.rowand@am.sony.com>
+Signed-off-by: Alessio Igor Bogani <abogani@kernel.org>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- kernel/cred.c |    2 ++
- 1 file changed, 2 insertions(+)
+ scripts/mod/modpost.c |    7 +++++--
+ scripts/mod/modpost.h |    1 +
+ 2 files changed, 6 insertions(+), 2 deletions(-)
 
---- a/kernel/cred.c
-+++ b/kernel/cred.c
-@@ -385,6 +385,8 @@ int copy_creds(struct task_struct *p, un
- 	struct cred *new;
- 	int ret;
+--- a/scripts/mod/modpost.c
++++ b/scripts/mod/modpost.c
+@@ -132,8 +132,10 @@ static struct module *new_module(char *m
+ 	/* strip trailing .o */
+ 	s = strrchr(p, '.');
+ 	if (s != NULL)
+-		if (strcmp(s, ".o") == 0)
++		if (strcmp(s, ".o") == 0) {
+ 			*s = '\0';
++			mod->is_dot_o = 1;
++		}
  
-+	p->replacement_session_keyring = NULL;
-+
- 	if (
- #ifdef CONFIG_KEYS
- 		!p->cred->thread_keyring &&
+ 	/* add to list */
+ 	mod->name = p;
+@@ -587,7 +589,8 @@ static void handle_modversions(struct mo
+ 	unsigned int crc;
+ 	enum export export;
+ 
+-	if (!is_vmlinux(mod->name) && strncmp(symname, "__ksymtab", 9) == 0)
++	if ((!is_vmlinux(mod->name) || mod->is_dot_o) &&
++	    strncmp(symname, "__ksymtab", 9) == 0)
+ 		export = export_from_secname(info, get_secindex(info, sym));
+ 	else
+ 		export = export_from_sec(info, get_secindex(info, sym));
+--- a/scripts/mod/modpost.h
++++ b/scripts/mod/modpost.h
+@@ -113,6 +113,7 @@ struct module {
+ 	int has_cleanup;
+ 	struct buffer dev_table_buf;
+ 	char	     srcversion[25];
++	int is_dot_o;
+ };
+ 
+ struct elf_info {
 
 
