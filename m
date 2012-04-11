@@ -1,74 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753023Ab2DKG3k (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Apr 2012 02:29:40 -0400
-Received: from darkcity.gna.ch ([195.226.6.51]:33921 "EHLO mail.gna.ch"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1750744Ab2DKG3j convert rfc822-to-8bit (ORCPT
+	id S1753353Ab2DKGdQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Apr 2012 02:33:16 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:47296 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750819Ab2DKGdP convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Apr 2012 02:29:39 -0400
-Message-ID: <1334125762.31776.4.camel@thor.local>
-Subject: Re: i915_driver_irq_handler: irq 42: nobody cared
-From: Michel =?ISO-8859-1?Q?D=E4nzer?= <michel@daenzer.net>
-To: Jesse Barnes <jbarnes@virtuousgeek.org>
-Cc: Jiri Slaby <jslaby@suse.cz>, LKML <linux-kernel@vger.kernel.org>,
-        Jiri Slaby <jirislaby@gmail.com>, dri-devel@lists.freedesktop.org
-Date: Wed, 11 Apr 2012 08:29:22 +0200
-In-Reply-To: <20120410113448.540e4c1d@jbarnes-desktop>
-References: <4F717CE3.4040206@suse.cz> <4F717D80.9040207@suse.cz>
-	 <4F758400.3080907@suse.cz> <1333104359_155028@CP5-2952>
-	 <20120409101119.47e770b2@jbarnes-desktop> <4F83F3B5.8080704@suse.cz>
-	 <20120410092619.26a15165@jbarnes-desktop> <4F8477D1.4080102@suse.cz>
-	 <20120410113448.540e4c1d@jbarnes-desktop>
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAAXNSR0IArs4c6QAAADBQTFRFDg4OHh4eLCwsOzs7S0tLWlpaa2treXl5hISEjY2NmJiYqKiotLS0xsbG1dXV/Pz81CO0SQAAArtJREFUOMtd1M9P01AcAHCI/4AtGq/QDfDHRfraEX8eaNeJFw1rO/DCYet7mxc1ZG0x3sStHQkmZpqtHDwAi+tMiFEzbZdwNWEJR48cjPG4g5HhELUbrHvjpYe2n7zvt++977cD/7rjsCry8uNG93Gge9OKUyAAgLB1AlpTZICmAzR15QTEiQAPAKADYLMPfhNnEJR4HvD0tT5YI2KGUcyqihQN7mDwZ3hMN4q2N4ol+gEGTSLWhorrjYXrGPwc0jTDOoKP4xi8G0W6adl2Gz6zGDwag5p5PMON7vZgJuSB976+3U6y2QdeKNet1+uum9/qwVQHvEjtKesY0EIb7CNYe+7DIRXCID/vQ4tksVAY7JFBD7yvqrWTL93xoUmOQsPIddbnuk8v+bBPsigB2KRlFxS4nL/owwEpKBSg2MU3UcDf+nATyyHEQwrHzJZFNpXeuOHDC0qW4sMhEHESFGOUrvgQpWUYFVNQdjQxca8abnSB55CmehdcLSxa1ifoQ4JBpmGYWbhsly3X0fxQ7xmkW3Y5CztLcXI+fAu2oWho3nbV6s5rH35xSC/aBR2tOpVa/Utv25tcTDPL6aT21kG17WrvaFtMBJmFhJCsVF4uu9VG76DWBaRnEiNs7pU659pYlfwtQSRy9GCYlwR7C6/dPQgBw3MsTPNWA4d9SeMDDC9JYdnqq/amdF+diGnVhXFztQ/2lJSWjulOxjRX+uC7EkOqhLRk2ejrqHVBEqCqJLO5cmEXgx8TrBiWVQh1u2DhzQlPsyIveU2YLGorGBxODoR5notlpcUieoLB1/NEmGc4AalGJpLe8WF/8txMWASAkVVViQjzP
- jycPrvgA
-	R1goSzOnkp14YCYHsp7QJHAS5QcXDqG1jBxdSITVgBNkBTFloj88Q/gMkFcuItYiQPUCBGc2xh5drsD/wGZrgsgDOE4ZAAAAABJRU5ErkJggg==
-Content-Type: text/plain; charset="UTF-8"
+	Wed, 11 Apr 2012 02:33:15 -0400
+MIME-Version: 1.0
+In-Reply-To: <CAGXu5jLEn-+hnyz5DHxw9uMfN6Uo-=0mXsrhuvJ3WwQKki1nYg@mail.gmail.com>
+References: <20120117235852.GA4877@www.outflux.net>
+	<20120118140603.0fc22302.akpm@linux-foundation.org>
+	<CAGXu5jKiPaChjvjA7r12mSH2W0r-X4EdFpQMMMaBOL+C=3UftA@mail.gmail.com>
+	<5C4C569E8A4B9B42A84A977CF070A35B2DA7A7F226@USINDEVS01.corp.hds.com>
+	<4F1A7854.7010808@gmail.com>
+	<1333399194.6431.3.camel@lorien2>
+	<CAGXu5jL-QP6LUqc_JY-JevNbrsRUpiP337pfUH4m1CA-+jm_RQ@mail.gmail.com>
+	<20120409143345.a7a8c257.akpm@linux-foundation.org>
+	<3908561D78D1C84285E8C5FCA982C28F170D020E@ORSMSX104.amr.corp.intel.com>
+	<4F83F08E.6070304@gmail.com>
+	<CAGXu5jLEn-+hnyz5DHxw9uMfN6Uo-=0mXsrhuvJ3WwQKki1nYg@mail.gmail.com>
+Date: Wed, 11 Apr 2012 08:33:15 +0200
+Message-ID: <CANGUGtAtHLe_5riSr-pMRyez9cTM6aUA5hir+-qr0zQLLjnGpg@mail.gmail.com>
+Subject: Re: [PATCH v5] ramoops: use pstore interface
+From: Marco Stornelli <marco.stornelli@gmail.com>
+To: Kees Cook <keescook@chromium.org>
+Cc: "Luck, Tony" <tony.luck@intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "shuahkhan@gmail.com" <shuahkhan@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
-X-Mailer: Evolution 3.2.2-1.0 
-Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Die, 2012-04-10 at 11:34 -0700, Jesse Barnes wrote: 
-> On Tue, 10 Apr 2012 20:11:29 +0200
-> Jiri Slaby <jslaby@suse.cz> wrote:
-> 
-> > On 04/10/2012 06:26 PM, Jesse Barnes wrote:
-> > > So port hotplug is always reporting that port C has a hotplug
-> > > interrupt though...  If you write 0x3 back to it does the interrupt
-> > > stop?
-> > 
-> > I'm not sure I got it right. This doesn't help:
-> > --- a/drivers/gpu/drm/i915/i915_irq.c
-> > +++ b/drivers/gpu/drm/i915/i915_irq.c
-> > @@ -1416,6 +1416,17 @@ static irqreturn_t
-> > i915_driver_irq_handler(DRM_IRQ_ARGS)
-> >                 iir = new_iir;
-> >         }
-> > 
-> > +       if (ret == IRQ_NONE) {
-> > +               u32 hp = I915_READ(PORT_HOTPLUG_STAT);
-> > +               if (hp) {
-> > +                       I915_WRITE(PORT_HOTPLUG_STAT, hp);
-> > +                       I915_READ(PORT_HOTPLUG_STAT);
-> > +               }
-> > +
-> > +               if (printk_ratelimit())
-> > +                       printk(KERN_DEBUG "%s: %.8x\n", __func__, hp);
-> > +
-> > +       }
-> > 
-> >         return ret;
-> >  }
-> 
-> Yeah that looks right, you still get 0x300?
+2012/4/10 Kees Cook <keescook@chromium.org>:
+> On Tue, Apr 10, 2012 at 1:34 AM, Marco Stornelli
+> <marco.stornelli@gmail.com> wrote:
+>> Il 09/04/2012 23:42, Luck, Tony ha scritto:
+>>
+>>>> The patch breaks ramoops module unloading.  Tony says there's "no
+>>>> credible end-user case" for this and Marco promptly provided one,
+>>>> which was ignored.
+>>>
+>>>
+>>> I'm not sure that I understood Marco's use case. He said:
+>>>
+>>>> First of all ramoops was born mainly for debug purpose and
+>>>> to help the maintainability of a product. I used it in systems
+>>>> where the uptime (so no reboot) was important. So it can be
+>>>> very useful for me load the module, gather logs and unload it
+>>>> for example. A kernel panic is not recoverable so the reboot
+>>>> is needed but it's not always true for a kernel oops.
+>>>
+>>>
+>>> In the non-crashed oops case ... aren't all the logs you need
+>>> in /var/log/messages?
+>>>
+>>> -Tony
+>>
+>>
+>> Maybe you right, but it could be useful to have a "single log point"
+>> especially for automatic/semi-automatic log gathering. I'm not sure we can
+>> *always* read from messages in case of non-crashed oops. Sure, it will be
+>> possible after a reboot, but if /var was mounted with tmpfs (on embedded
+>> systems it's possible :)) we have no log.
+>>
+>> PS: It's only a brainstorming on all the possible situation :)
+>
+> Do you feel that this lack of unloading is still a sufficient reason
+> to NAK the ramoops patch?
+>
+> -Kees
+>
+> --
+> Kees Cook
+> ChromeOS Security
 
-You said 'If you write 0x3 back' above, but this code writes 0x300.
-Which is right?
+I don't want to use a "veto" about this patch. If nobody see problem
+to apply it, then even ok for me. As I said I'm guessing possible
+situations where an unload features is useful.
 
+Andrew what do you think?
 
--- 
-Earthling Michel DÃ¤nzer           |                   http://www.amd.com
-Libre software enthusiast         |          Debian, X and DRI developer
+Marco
