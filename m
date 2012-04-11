@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965538Ab2DKX14 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Apr 2012 19:27:56 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:45547 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965394Ab2DKX1y (ORCPT
+	id S965550Ab2DKX2G (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Apr 2012 19:28:06 -0400
+Received: from mail-pz0-f52.google.com ([209.85.210.52]:53150 "EHLO
+	mail-pz0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965394Ab2DKX17 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Apr 2012 19:27:54 -0400
-Message-Id: <20120411231308.383047518@linuxfoundation.org>
+	Wed, 11 Apr 2012 19:27:59 -0400
+Message-Id: <20120411231308.693049669@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Wed, 11 Apr 2012 16:13:13 -0700
+Date: Wed, 11 Apr 2012 16:13:15 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk,
-        Artem Bityutskiy <artem.bityutskiy@linux.intel.com>,
-        David Woodhouse <David.Woodhouse@intel.com>
-Subject: [ 06/42] mtd: lart: initialize writebufsize
+        alan@lxorguk.ukuu.org.uk, Andi Kleen <ak@linux.intel.com>,
+        Len Brown <len.brown@intel.com>
+Subject: [ 08/42] ACPI: Do cpufreq clamping for throttling per package v2
 In-Reply-To: <20120411231443.GA808@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,35 +25,129 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
+From: Andi Kleen <andi@firstfloor.org>
 
-commit fcc44a07dae0af16e84e93425fc8afe642ddc603 upstream.
+commit 2815ab92ba3ab27556212cc306288dc95692824b upstream.
 
-The writebufsize concept was introduce by commit
-"0e4ca7e mtd: add writebufsize field to mtd_info struct" and it represents
-the maximum amount of data the device writes to the media at a time. This is
-an important parameter for UBIFS which is used during recovery and which
-basically defines how big a corruption caused by a power cut can be.
+On Intel CPUs the processor typically uses the highest frequency
+set by any logical CPU. When the system overheats
+Linux first forces the frequency to the lowest available one
+to lower the temperature.
 
-Set writebufsize to 4 because this drivers writes at max 4 bytes at a time.
+However this was done only per logical CPU, which means all
+logical CPUs in a package would need to go through this before
+the frequency is actually lowered.
 
-Signed-off-by: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
-Signed-off-by: David Woodhouse <David.Woodhouse@intel.com>
+Worse this delay actually prevents real throttling, because
+the real throttle code only proceeds when the lowest frequency
+is already reached.
+
+So when a throttle event happens force the lowest frequency
+for all CPUs in the package where it happened. The per CPU
+state is now kept per package, not per logical CPU. An alternative
+would be to do it per cpufreq unit, but since we want to bring
+down the temperature of the complete chip it's better
+to do it for all.
+
+In principle it may even make sense to do it for all CPUs,
+but I kept it on the package for now.
+
+With this change the frequency is actually lowered, which
+in terms also allows real throttling to proceed.
+
+I also removed an unnecessary per cpu variable initialization.
+
+v2: Fix package mapping
+
+Signed-off-by: Andi Kleen <ak@linux.intel.com>
+Signed-off-by: Len Brown <len.brown@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/mtd/devices/lart.c |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/acpi/processor_thermal.c |   45 ++++++++++++++++++++++++++++++++-------
+ 1 file changed, 37 insertions(+), 8 deletions(-)
 
---- a/drivers/mtd/devices/lart.c
-+++ b/drivers/mtd/devices/lart.c
-@@ -636,6 +636,7 @@ static int __init lart_flash_init (void)
-    mtd.name = module_name;
-    mtd.type = MTD_NORFLASH;
-    mtd.writesize = 1;
-+   mtd.writebufsize = 4;
-    mtd.flags = MTD_CAP_NORFLASH;
-    mtd.size = FLASH_BLOCKSIZE_PARAM * FLASH_NUMBLOCKS_16m_PARAM + FLASH_BLOCKSIZE_MAIN * FLASH_NUMBLOCKS_16m_MAIN;
-    mtd.erasesize = FLASH_BLOCKSIZE_MAIN;
+--- a/drivers/acpi/processor_thermal.c
++++ b/drivers/acpi/processor_thermal.c
+@@ -58,6 +58,27 @@ ACPI_MODULE_NAME("processor_thermal");
+ static DEFINE_PER_CPU(unsigned int, cpufreq_thermal_reduction_pctg);
+ static unsigned int acpi_thermal_cpufreq_is_init = 0;
+ 
++#define reduction_pctg(cpu) \
++	per_cpu(cpufreq_thermal_reduction_pctg, phys_package_first_cpu(cpu))
++
++/*
++ * Emulate "per package data" using per cpu data (which should really be
++ * provided elsewhere)
++ *
++ * Note we can lose a CPU on cpu hotunplug, in this case we forget the state
++ * temporarily. Fortunately that's not a big issue here (I hope)
++ */
++static int phys_package_first_cpu(int cpu)
++{
++	int i;
++	int id = topology_physical_package_id(cpu);
++
++	for_each_online_cpu(i)
++		if (topology_physical_package_id(i) == id)
++			return i;
++	return 0;
++}
++
+ static int cpu_has_cpufreq(unsigned int cpu)
+ {
+ 	struct cpufreq_policy policy;
+@@ -77,7 +98,7 @@ static int acpi_thermal_cpufreq_notifier
+ 
+ 	max_freq = (
+ 	    policy->cpuinfo.max_freq *
+-	    (100 - per_cpu(cpufreq_thermal_reduction_pctg, policy->cpu) * 20)
++	    (100 - reduction_pctg(policy->cpu) * 20)
+ 	) / 100;
+ 
+ 	cpufreq_verify_within_limits(policy, 0, max_freq);
+@@ -103,16 +124,28 @@ static int cpufreq_get_cur_state(unsigne
+ 	if (!cpu_has_cpufreq(cpu))
+ 		return 0;
+ 
+-	return per_cpu(cpufreq_thermal_reduction_pctg, cpu);
++	return reduction_pctg(cpu);
+ }
+ 
+ static int cpufreq_set_cur_state(unsigned int cpu, int state)
+ {
++	int i;
++
+ 	if (!cpu_has_cpufreq(cpu))
+ 		return 0;
+ 
+-	per_cpu(cpufreq_thermal_reduction_pctg, cpu) = state;
+-	cpufreq_update_policy(cpu);
++	reduction_pctg(cpu) = state;
++
++	/*
++	 * Update all the CPUs in the same package because they all
++	 * contribute to the temperature and often share the same
++	 * frequency.
++	 */
++	for_each_online_cpu(i) {
++		if (topology_physical_package_id(i) ==
++		    topology_physical_package_id(cpu))
++			cpufreq_update_policy(i);
++	}
+ 	return 0;
+ }
+ 
+@@ -120,10 +153,6 @@ void acpi_thermal_cpufreq_init(void)
+ {
+ 	int i;
+ 
+-	for (i = 0; i < nr_cpu_ids; i++)
+-		if (cpu_present(i))
+-			per_cpu(cpufreq_thermal_reduction_pctg, i) = 0;
+-
+ 	i = cpufreq_register_notifier(&acpi_thermal_cpufreq_notifier_block,
+ 				      CPUFREQ_POLICY_NOTIFIER);
+ 	if (!i)
 
 
