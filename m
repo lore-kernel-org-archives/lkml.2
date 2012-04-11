@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934003Ab2DKXWD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Apr 2012 19:22:03 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:41234 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933779Ab2DKXV6 (ORCPT
+	id S965131Ab2DKXsu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Apr 2012 19:48:50 -0400
+Received: from mail-pz0-f52.google.com ([209.85.210.52]:51056 "EHLO
+	mail-pz0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933995Ab2DKXWB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Apr 2012 19:21:58 -0400
-Message-Id: <20120411231037.511064316@linuxfoundation.org>
+	Wed, 11 Apr 2012 19:22:01 -0400
+Message-Id: <20120411231037.677080741@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Wed, 11 Apr 2012 16:10:47 -0700
+Date: Wed, 11 Apr 2012 16:10:48 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
         alan@lxorguk.ukuu.org.uk,
         Artem Bityutskiy <artem.bityutskiy@linux.intel.com>,
-        Joern Engel <joern@lazybastard.org>,
         David Woodhouse <David.Woodhouse@intel.com>
-Subject: [ 12/59] mtd: block2mtd: initialize writebufsize
+Subject: [ 13/59] mtd: lart: initialize writebufsize
 In-Reply-To: <20120411231213.GA13124@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -29,7 +28,7 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
 
-commit b604387411ec6a072e95910099262616edd2bd2f upstream.
+commit fcc44a07dae0af16e84e93425fc8afe642ddc603 upstream.
 
 The writebufsize concept was introduce by commit
 "0e4ca7e mtd: add writebufsize field to mtd_info struct" and it represents
@@ -37,27 +36,25 @@ the maximum amount of data the device writes to the media at a time. This is
 an important parameter for UBIFS which is used during recovery and which
 basically defines how big a corruption caused by a power cut can be.
 
-However, we forgot to set this parameter for block2mtd. Set it to PAGE_SIZE
-because this is actually the amount of data we write at a time.
+Set writebufsize to 4 because this drivers writes at max 4 bytes at a time.
 
 Signed-off-by: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
-Acked-by: Joern Engel <joern@lazybastard.org>
 Signed-off-by: David Woodhouse <David.Woodhouse@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/mtd/devices/block2mtd.c |    1 +
+ drivers/mtd/devices/lart.c |    1 +
  1 file changed, 1 insertion(+)
 
---- a/drivers/mtd/devices/block2mtd.c
-+++ b/drivers/mtd/devices/block2mtd.c
-@@ -284,6 +284,7 @@ static struct block2mtd_dev *add_device(
- 	dev->mtd.size = dev->blkdev->bd_inode->i_size & PAGE_MASK;
- 	dev->mtd.erasesize = erase_size;
- 	dev->mtd.writesize = 1;
-+	dev->mtd.writebufsize = PAGE_SIZE;
- 	dev->mtd.type = MTD_RAM;
- 	dev->mtd.flags = MTD_CAP_RAM;
- 	dev->mtd.erase = block2mtd_erase;
+--- a/drivers/mtd/devices/lart.c
++++ b/drivers/mtd/devices/lart.c
+@@ -630,6 +630,7 @@ static int __init lart_flash_init (void)
+    mtd.name = module_name;
+    mtd.type = MTD_NORFLASH;
+    mtd.writesize = 1;
++   mtd.writebufsize = 4;
+    mtd.flags = MTD_CAP_NORFLASH;
+    mtd.size = FLASH_BLOCKSIZE_PARAM * FLASH_NUMBLOCKS_16m_PARAM + FLASH_BLOCKSIZE_MAIN * FLASH_NUMBLOCKS_16m_MAIN;
+    mtd.erasesize = FLASH_BLOCKSIZE_MAIN;
 
 
