@@ -1,56 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965012Ab2DKXST (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Apr 2012 19:18:19 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:39063 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964999Ab2DKXSQ (ORCPT
+	id S1761489Ab2DKXV2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Apr 2012 19:21:28 -0400
+Received: from mail-pz0-f52.google.com ([209.85.210.52]:51108 "EHLO
+	mail-pz0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1761431Ab2DKXV0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Apr 2012 19:18:16 -0400
-Message-Id: <20120411231031.091500541@linuxfoundation.org>
+	Wed, 11 Apr 2012 19:21:26 -0400
+Message-Id: <20120411231035.890328958@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Wed, 11 Apr 2012 16:11:33 -0700
+Date: Wed, 11 Apr 2012 16:10:37 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Stephen Warren <swarren@nvidia.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-Subject: [ 75/78] ASoC: tegra: fix i2s compilation when !CONFIG_DEBUG_FS
-In-Reply-To: <20120411231102.GA6404@kroah.com>
+        alan@lxorguk.ukuu.org.uk, Matt Carlson <mcarlson@broadcom.com>,
+        Michael Chan <mchan@broadcom.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [ 02/59] tg3: Fix 5717 serdes powerdown problem
+In-Reply-To: <20120411231213.GA13124@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.3-stable review patch.  If anyone has any objections, please let me know.
+3.2-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Stephen Warren <swarren@nvidia.com>
 
-commit 8abe05c6eb358967f16bce8a02c88d57c82cfbd6 upstream.
+From: Matt Carlson <mcarlson@broadcom.com>
 
-Commit d4a2eca "ASoC: Tegra I2S: Remove dependency on pdev->id" changed
-the prototype of tegra_i2s_debug_add, but didn't update the dummy inline
-used when !CONFIG_DEBUG_FS. Fix that.
+[ Upstream commit 085f1afc56619bda424941412fdeaff1e32c21dc ]
 
-Signed-off-by: Stephen Warren <swarren@nvidia.com>
-Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+If port 0 of a 5717 serdes device powers down, it hides the phy from
+port 1.  This patch works around the problem by keeping port 0's phy
+powered up.
+
+Signed-off-by: Matt Carlson <mcarlson@broadcom.com>
+Signed-off-by: Michael Chan <mchan@broadcom.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- sound/soc/tegra/tegra_i2s.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/net/ethernet/broadcom/tg3.c |    4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
---- a/sound/soc/tegra/tegra_i2s.c
-+++ b/sound/soc/tegra/tegra_i2s.c
-@@ -112,7 +112,7 @@ static void tegra_i2s_debug_remove(struc
- 		debugfs_remove(i2s->debug);
- }
- #else
--static inline void tegra_i2s_debug_add(struct tegra_i2s *i2s, int id)
-+static inline void tegra_i2s_debug_add(struct tegra_i2s *i2s)
- {
- }
+--- a/drivers/net/ethernet/broadcom/tg3.c
++++ b/drivers/net/ethernet/broadcom/tg3.c
+@@ -2794,7 +2794,9 @@ static void tg3_power_down_phy(struct tg
+ 	if (GET_ASIC_REV(tp->pci_chip_rev_id) == ASIC_REV_5700 ||
+ 	    GET_ASIC_REV(tp->pci_chip_rev_id) == ASIC_REV_5704 ||
+ 	    (GET_ASIC_REV(tp->pci_chip_rev_id) == ASIC_REV_5780 &&
+-	     (tp->phy_flags & TG3_PHYFLG_MII_SERDES)))
++	     (tp->phy_flags & TG3_PHYFLG_MII_SERDES)) ||
++	    (GET_ASIC_REV(tp->pci_chip_rev_id) == ASIC_REV_5717 &&
++	     !tp->pci_fn))
+ 		return;
  
+ 	if (GET_CHIP_REV(tp->pci_chip_rev_id) == CHIPREV_5784_AX ||
 
 
