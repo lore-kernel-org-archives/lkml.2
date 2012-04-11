@@ -1,88 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751647Ab2DKEsR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Apr 2012 00:48:17 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:60148 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750929Ab2DKEsQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Apr 2012 00:48:16 -0400
-Date: Wed, 11 Apr 2012 14:48:06 +1000
-From: NeilBrown <neilb@suse.de>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Jim Kukunas <james.t.kukunas@linux.intel.com>,
-        "H. Peter Anvin" <hpa@zytor.com>
-Subject: Re: linux-next: build failure after merge of the md tree
-Message-ID: <20120411144806.7664d38b@notabene.brown>
-In-Reply-To: <20120411134259.61f755a90055b23a6876687b@canb.auug.org.au>
-References: <20120411134259.61f755a90055b23a6876687b@canb.auug.org.au>
-X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.7; x86_64-suse-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; micalg=PGP-SHA1;
- boundary="Sig_//zSAz9FQY5pWkpGQyz.Abta"; protocol="application/pgp-signature"
+	id S1751756Ab2DKEto (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Apr 2012 00:49:44 -0400
+Received: from [124.207.24.138] ([124.207.24.138]:42470 "EHLO
+	mail.ss.pku.edu.cn" rhost-flags-FAIL-FAIL-OK-OK) by vger.kernel.org
+	with ESMTP id S1750871Ab2DKEtn convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Apr 2012 00:49:43 -0400
+MIME-Version: 1.0
+In-Reply-To: <1332956242-5352-3-git-send-email-konrad.wilk@oracle.com>
+References: <20120328092358.GD22885@gmail.com>
+	<1332956242-5352-1-git-send-email-konrad.wilk@oracle.com>
+	<1332956242-5352-3-git-send-email-konrad.wilk@oracle.com>
+Date: Wed, 11 Apr 2012 12:49:02 +0800
+Message-ID: <CAF1ivSagwO9PLQwwbLmTZik8xpfDncY=aXdhugT5Rivuu14K9g@mail.gmail.com>
+Subject: Re: [PATCH 2/2] xen/x86: Implement x86_apic_ops
+From: Lin Ming <mlin@ss.pku.edu.cn>
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Cc: mingo@elte.hu, suresh.b.siddha@intel.com, jwboyer@redhat.com,
+        hpa@zytor.com, yinghai@kernel.org, linux-kernel@vger.kernel.org,
+        xiantao.zhang@intel.com
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_//zSAz9FQY5pWkpGQyz.Abta
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+On Thu, Mar 29, 2012 at 1:37 AM, Konrad Rzeszutek Wilk
+<konrad.wilk@oracle.com> wrote:
+> Or rather just implement one different function as opposed
+> to the native one : the read function.
+>
+> We synthesize the values.
+>
+> Acked-by:  Suresh Siddha <suresh.b.siddha@intel.com>
+> [v1: Rebased on top of tip/x86/urgent]
+> Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+> ---
+>  arch/x86/xen/Makefile    |    2 +-
+>  arch/x86/xen/apic.c      |   17 +++++++++++++++++
+>  arch/x86/xen/enlighten.c |    2 ++
+>  arch/x86/xen/xen-ops.h   |    4 ++++
+>  4 files changed, 24 insertions(+), 1 deletions(-)
+>  create mode 100644 arch/x86/xen/apic.c
+>
+> diff --git a/arch/x86/xen/Makefile b/arch/x86/xen/Makefile
+> index add2c2d..96ab2c0 100644
+> --- a/arch/x86/xen/Makefile
+> +++ b/arch/x86/xen/Makefile
+> @@ -20,5 +20,5 @@ obj-$(CONFIG_EVENT_TRACING) += trace.o
+>  obj-$(CONFIG_SMP)              += smp.o
+>  obj-$(CONFIG_PARAVIRT_SPINLOCKS)+= spinlock.o
+>  obj-$(CONFIG_XEN_DEBUG_FS)     += debugfs.o
+> -obj-$(CONFIG_XEN_DOM0)         += vga.o
+> +obj-$(CONFIG_XEN_DOM0)         += apic.o vga.o
+>  obj-$(CONFIG_SWIOTLB_XEN)      += pci-swiotlb-xen.o
+> diff --git a/arch/x86/xen/apic.c b/arch/x86/xen/apic.c
+> new file mode 100644
+> index 0000000..aee16ab
+> --- /dev/null
+> +++ b/arch/x86/xen/apic.c
+> @@ -0,0 +1,17 @@
+> +#include <linux/init.h>
+> +#include <asm/x86_init.h>
+> +
+> +unsigned int xen_io_apic_read(unsigned apic, unsigned reg)
+> +{
+> +       if (reg == 0x1)
+> +               return 0x00170020;
+> +       else if (reg == 0x0)
+> +               return apic << 24;
 
-On Wed, 11 Apr 2012 13:42:59 +1000 Stephen Rothwell <sfr@canb.auug.org.au>
-wrote:
+Why is fixed value returned?
 
-> Hi Neil,
->=20
-> After merging the md tree, today's linux-next build (powerpc
-> ppc64_defconfig) failed like this:
->=20
-> lib/raid6/recov.c: In function 'raid6_has_ssse3':
-> lib/raid6/recov.c:27:2: error: implicit declaration of function 'boot_cpu=
-_has' [-Werror=3Dimplicit-function-declaration]
-> lib/raid6/recov.c:27:22: error: 'X86_FEATURE_XMM' undeclared (first use i=
-n this function)
-> lib/raid6/recov.c:27:22: note: each undeclared identifier is reported onl=
-y once for each function it appears in
-> lib/raid6/recov.c:28:16: error: 'X86_FEATURE_XMM2' undeclared (first use =
-in this function)
-> lib/raid6/recov.c:29:16: error: 'X86_FEATURE_SSSE3' undeclared (first use=
- in this function)
-> lib/raid6/recov.c: At top level:
-> lib/raid6/recov.c:25:12: warning: 'raid6_has_ssse3' defined but not used =
-[-Wunused-function]
->=20
-> Caused by commit 56d3ac7ef905 ("lib/raid6: Add SSSE3 optimized recovery
-> functions").  All the world is not X86 :-)
->=20
-> I have used the md tree from next-20120410 for today.
+Can't we implement it with hypercall(PHYSDEVOP_apic_read)?
 
-Thanks Stephen,
-I've removed that set of patches from my for-next pending further review and
-revision.
+Lin Ming
 
-Thanks,
-NeilBrown
-
---Sig_//zSAz9FQY5pWkpGQyz.Abta
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.18 (GNU/Linux)
-
-iQIVAwUBT4UNBjnsnt1WYoG5AQIu5Q//fozzyiSS+Uo0qcUU664Ux0igMWbMQ0JA
-p7q5U8r6If2Hwbid4JaV33uyu3Fs9sd1QYydlDNu7V+u8oKoxORZQeuom15J1aww
-cTlR/NbMtD390Dt6m1isfrhd706b5CwuLV19NXtQpo8o4Nxzw5QTEs+GfU2qn4lx
-NrLoaWVRE+PxJ1Ohml+rUnpBmXV+vMcvPQBkarYWjoO3+f3//WqgVWtdoo4Rr8dM
-ZgLT8wWpONExrbrpsFgKvDKa7UQH8pNxdIohy8ZZyUDwHb5X520ReBfNDCX2NbXX
-wV3q4mn3KuBdX1pDDc6vVAYFmGldUiVNtAvt1Tk+JLG8ZceQwfesc1a16sDs/F93
-tJ1VVnltUvnOtWJA8H1IyDbnjtdndIt0r9VRxiiItKu9roOzWAccOMCgzi4ujkHX
-3nOEFA/e56/UzfyaLKXaKNEk0nKk1GNBQMZ5akrfPzw4pmIN6tSeZrdotl4Gng7c
-YQifa/EjyFAxnyNRXfZtKdg9cCbKQOxTcNU4VtC4cwtx38wCXz8SBDpDhExHVVmA
-bYILMjOdXhrDpnB5wBj5HgZUdamEJT63N5d0JU7gz2YNwc84U0ZMg9Isab5iPq0f
-9NsF+l1HIyr4vo4PRSNSVEnoIgYBx+rIrJUuKQWDm/eYV8YLie8f6hPKyFwzBTjQ
-oQp1DZyNNkc=
-=o7yP
------END PGP SIGNATURE-----
-
---Sig_//zSAz9FQY5pWkpGQyz.Abta--
+> +
+> +       return 0xff;
+> +}
+> +
+> +void __init xen_init_apic(void)
+> +{
+> +       x86_io_apic_ops.read = xen_io_apic_read;
+> +}
+> diff --git a/arch/x86/xen/enlighten.c b/arch/x86/xen/enlighten.c
+> index 4172af8..a7df080 100644
+> --- a/arch/x86/xen/enlighten.c
+> +++ b/arch/x86/xen/enlighten.c
+> @@ -1271,6 +1271,8 @@ asmlinkage void __init xen_start_kernel(void)
+>                xen_start_info->console.domU.mfn = 0;
+>                xen_start_info->console.domU.evtchn = 0;
+>
+> +               xen_init_apic();
+> +
+>                /* Make sure ACS will be enabled */
+>                pci_request_acs();
+>        }
+> diff --git a/arch/x86/xen/xen-ops.h b/arch/x86/xen/xen-ops.h
+> index b095739..45c0c06 100644
+> --- a/arch/x86/xen/xen-ops.h
+> +++ b/arch/x86/xen/xen-ops.h
+> @@ -92,11 +92,15 @@ struct dom0_vga_console_info;
+>
+>  #ifdef CONFIG_XEN_DOM0
+>  void __init xen_init_vga(const struct dom0_vga_console_info *, size_t size);
+> +void __init xen_init_apic(void);
+>  #else
+>  static inline void __init xen_init_vga(const struct dom0_vga_console_info *info,
+>                                       size_t size)
+>  {
+>  }
+> +static inline void __init xen_init_apic(void)
+> +{
+> +}
+>  #endif
+>
+>  /* Declare an asm function, along with symbols needed to make it
+> --
+> 1.7.7.5
