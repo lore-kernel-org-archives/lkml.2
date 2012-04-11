@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965646Ab2DKX2g (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Apr 2012 19:28:36 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:45547 "EHLO
+	id S965661Ab2DKX2n (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Apr 2012 19:28:43 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:38577 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965616Ab2DKX20 (ORCPT
+	with ESMTP id S965522Ab2DKX2i (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Apr 2012 19:28:26 -0400
-Message-Id: <20120411231310.208997752@linuxfoundation.org>
+	Wed, 11 Apr 2012 19:28:38 -0400
+Message-Id: <20120411231309.320578569@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Wed, 11 Apr 2012 16:13:24 -0700
+Date: Wed, 11 Apr 2012 16:13:19 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Alex Deucher <alexander.deucher@amd.com>,
-        =?UTF-8?q?Michel=20D=C3=A4nzer?= <michel.daenzer@amd.com>,
-        Dave Airlie <airlied@redhat.com>
-Subject: [ 17/42] drm/radeon/kms: fix fans after resume
+        alan@lxorguk.ukuu.org.uk, Jiang Liu <jiang.liu@huawei.com>,
+        Jiang Liu <liuj97@gmail.com>, Keping Chen <chenkeping@huawei.com>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: [ 12/42] genirq: Adjust irq thread affinity on IRQ_SET_MASK_OK_NOCOPY return value
 In-Reply-To: <20120411231443.GA808@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,68 +26,52 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alex Deucher <alexander.deucher@amd.com>
+From: Jiang Liu <liuj97@gmail.com>
 
-commit 402976fe51b2d1a58a29ba06fa1ca5ace3a4cdcd upstream.
+commit f5cb92ac82d06cb583c1f66666314c5c0a4d7913 upstream.
 
-On pre-R600 asics, the SpeedFanControl table is not
-executed as part of ASIC_Init as it is on newer asics.
+irq_move_masked_irq() checks the return code of
+chip->irq_set_affinity() only for 0, but IRQ_SET_MASK_OK_NOCOPY is
+also a valid return code, which is there to avoid a redundant copy of
+the cpumask. But in case of IRQ_SET_MASK_OK_NOCOPY we not only avoid
+the redundant copy, we also fail to adjust the thread affinity of an
+eventually threaded interrupt handler.
 
-Fixes:
-https://bugzilla.kernel.org/show_bug.cgi?id=29412
+Handle IRQ_SET_MASK_OK (==0) and IRQ_SET_MASK_OK_NOCOPY(==1) return
+values correctly by checking the valid return values seperately.
 
-Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
-Reviewed-by: Michel Dänzer <michel.daenzer@amd.com>
-Signed-off-by: Dave Airlie <airlied@redhat.com>
+Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
+Cc: Jiang Liu <liuj97@gmail.com>
+Cc: Keping Chen <chenkeping@huawei.com>
+Link: http://lkml.kernel.org/r/1333120296-13563-2-git-send-email-jiang.liu@huawei.com
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/radeon/atom.c |   15 ++++++++++++++-
- drivers/gpu/drm/radeon/atom.h |    1 +
- 2 files changed, 15 insertions(+), 1 deletion(-)
+ kernel/irq/migration.c |   10 +++++++---
+ 1 file changed, 7 insertions(+), 3 deletions(-)
 
---- a/drivers/gpu/drm/radeon/atom.c
-+++ b/drivers/gpu/drm/radeon/atom.c
-@@ -1301,8 +1301,11 @@ struct atom_context *atom_parse(struct c
- 
- int atom_asic_init(struct atom_context *ctx)
- {
-+	struct radeon_device *rdev = ctx->card->dev->dev_private;
- 	int hwi = CU16(ctx->data_table + ATOM_DATA_FWI_PTR);
- 	uint32_t ps[16];
-+	int ret;
-+
- 	memset(ps, 0, 64);
- 
- 	ps[0] = cpu_to_le32(CU32(hwi + ATOM_FWI_DEFSCLK_PTR));
-@@ -1312,7 +1315,17 @@ int atom_asic_init(struct atom_context *
- 
- 	if (!CU16(ctx->cmd_table + 4 + 2 * ATOM_CMD_INIT))
- 		return 1;
--	return atom_execute_table(ctx, ATOM_CMD_INIT, ps);
-+	ret = atom_execute_table(ctx, ATOM_CMD_INIT, ps);
-+	if (ret)
-+		return ret;
-+
-+	memset(ps, 0, 64);
-+
-+	if (rdev->family < CHIP_R600) {
-+		if (CU16(ctx->cmd_table + 4 + 2 * ATOM_CMD_SPDFANCNTL))
-+			atom_execute_table(ctx, ATOM_CMD_SPDFANCNTL, ps);
+--- a/kernel/irq/migration.c
++++ b/kernel/irq/migration.c
+@@ -43,12 +43,16 @@ void irq_move_masked_irq(struct irq_data
+ 	 * masking the irqs.
+ 	 */
+ 	if (likely(cpumask_any_and(desc->pending_mask, cpu_online_mask)
+-		   < nr_cpu_ids))
+-		if (!chip->irq_set_affinity(&desc->irq_data,
+-					    desc->pending_mask, false)) {
++		   < nr_cpu_ids)) {
++		int ret = chip->irq_set_affinity(&desc->irq_data,
++						 desc->pending_mask, false);
++		switch (ret) {
++		case IRQ_SET_MASK_OK:
+ 			cpumask_copy(desc->irq_data.affinity, desc->pending_mask);
++		case IRQ_SET_MASK_OK_NOCOPY:
+ 			irq_set_thread_affinity(desc);
+ 		}
 +	}
-+	return ret;
+ 
+ 	cpumask_clear(desc->pending_mask);
  }
- 
- void atom_destroy(struct atom_context *ctx)
---- a/drivers/gpu/drm/radeon/atom.h
-+++ b/drivers/gpu/drm/radeon/atom.h
-@@ -44,6 +44,7 @@
- #define ATOM_CMD_SETSCLK	0x0A
- #define ATOM_CMD_SETMCLK	0x0B
- #define ATOM_CMD_SETPCLK	0x0C
-+#define ATOM_CMD_SPDFANCNTL	0x39
- 
- #define ATOM_DATA_FWI_PTR	0xC
- #define ATOM_DATA_IIO_PTR	0x32
 
 
