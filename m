@@ -1,88 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760302Ab2DKOOs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Apr 2012 10:14:48 -0400
-Received: from mail-pz0-f52.google.com ([209.85.210.52]:56697 "EHLO
-	mail-pz0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754164Ab2DKOOr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Apr 2012 10:14:47 -0400
-Date: Wed, 11 Apr 2012 23:14:41 +0900
-From: Takuya Yoshikawa <takuya.yoshikawa@gmail.com>
-To: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-Cc: Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
-        Xiao Guangrong <xiaoguangrong.eric@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>, KVM <kvm@vger.kernel.org>
-Subject: Re: [PATCH 00/13] KVM: MMU: fast page fault
-Message-Id: <20120411231441.9d0984672dd252b806f99128@gmail.com>
-In-Reply-To: <4F857B61.9080602@linux.vnet.ibm.com>
-References: <4F742951.7080003@linux.vnet.ibm.com>
-	<4F82E04E.6000900@redhat.com>
-	<20120409175829.GB21894@amt.cnet>
-	<4F8329D3.7000605@gmail.com>
-	<20120409194614.GB23053@amt.cnet>
-	<4F840DD2.3090101@redhat.com>
-	<20120410204031.ffb5b976225ac9fe6dae474e@gmail.com>
-	<4F842074.1050108@linux.vnet.ibm.com>
-	<20120411211514.35db29c11460516e604059b6@gmail.com>
-	<4F857B61.9080602@linux.vnet.ibm.com>
-X-Mailer: Sylpheed 3.2.0beta3 (GTK+ 2.24.6; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S932501Ab2DKOQQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Apr 2012 10:16:16 -0400
+Received: from fieldses.org ([174.143.236.118]:59637 "EHLO fieldses.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1760225Ab2DKOQP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Apr 2012 10:16:15 -0400
+Date: Wed, 11 Apr 2012 10:16:14 -0400
+From: "J. Bruce Fields" <bfields@fieldses.org>
+To: Stanislav Kinsbursky <skinsbursky@parallels.com>
+Cc: linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org, devel@openvz.org
+Subject: Re: [PATCH 4/8] nfsd: use exp_put() for svc_export_cache put
+Message-ID: <20120411141614.GB27751@fieldses.org>
+References: <20120328150152.2646.33607.stgit@localhost6.localdomain6>
+ <20120328150921.2646.46229.stgit@localhost6.localdomain6>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120328150921.2646.46229.stgit@localhost6.localdomain6>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 11 Apr 2012 20:38:57 +0800
-Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com> wrote:
+On Wed, Mar 28, 2012 at 07:09:22PM +0400, Stanislav Kinsbursky wrote:
+> This patch replaces cache_put() call for svc_export_cache by exp_put() call.
 
-> Well, my point is that live migration is so very useful that it is worth
-> to be improved, the description of your also proves this point.
+Patch looks fine.  Minor peeve: the changelog doesn't tell me anything I
+couldn't figure out immediately from reading the patch.  Tell me *why*
+we're doing this ("Removing another hard-coded svc_export_cache will
+simplify adding per-export caches later"), or if it's really totally
+obvious I'd rather have an empty changelog than a useless one....
+
+--b.
+
 > 
-> What is your really want to say but i missed?
-
-How to improve and what we should pay for that.
-
-Note that I am not objecting to O(1) itself.
-
-Do you remember that when we discussed O(1) issue last year, with Avi,
-the agreement was that we should take more time and look carefully
-with more measurements to confirm if it's really worthwhile.
-
-The point is whether we should do O(1) now, including near future.
-
-My opinion is that we should do what we can do now and wait for feedback
-from real users.
-
-Before making the current code stable, I do not want to see it replaced
-so dramatically.  Otherwise when can we use live migration with enough
-confidence?  There may be another subtle bugs we should fix now.
-
-In addition, XBRZLE and post-copy is now being developed in QEMU.
-
-
-What do you think about this Avi, Marcelo?
-
-
-I am testing the current live migration to see when and for what it can
-be used.  I really want to see it become stable and usable for real
-services.
-
-
-> Okay, let us to compare the performance number after O(1) implemented.
-
->From my experience, I want to say that live migration is very difficult
-to say about performance.  That is the problem I am now struggling with.
-
-I developed dirty-log-perf unit-test for that but that was not enough.
-
-Needless to say, checking the correctness is harder.
-
-
-So I really do not want to see drastic change now without any real need
-or feedback from real users -- this is my point.
-
-
-Thanks,
-	Takuya
+> Signed-off-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
+> 
+> Signed-off-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
+> 
+> ---
+>  fs/nfsd/export.c |    2 +-
+>  fs/nfsd/nfsfh.c  |    2 +-
+>  2 files changed, 2 insertions(+), 2 deletions(-)
+> 
+> diff --git a/fs/nfsd/export.c b/fs/nfsd/export.c
+> index 99ea4c0..c20a405 100644
+> --- a/fs/nfsd/export.c
+> +++ b/fs/nfsd/export.c
+> @@ -1205,7 +1205,7 @@ static int e_show(struct seq_file *m, void *p)
+>  	cache_get(&exp->h);
+>  	if (cache_check(&svc_export_cache, &exp->h, NULL))
+>  		return 0;
+> -	cache_put(&exp->h, &svc_export_cache);
+> +	exp_put(exp);
+>  	return svc_export_show(m, &svc_export_cache, cp);
+>  }
+>  
+> diff --git a/fs/nfsd/nfsfh.c b/fs/nfsd/nfsfh.c
+> index 68454e7..cc79300 100644
+> --- a/fs/nfsd/nfsfh.c
+> +++ b/fs/nfsd/nfsfh.c
+> @@ -636,7 +636,7 @@ fh_put(struct svc_fh *fhp)
+>  #endif
+>  	}
+>  	if (exp) {
+> -		cache_put(&exp->h, &svc_export_cache);
+> +		exp_put(exp);
+>  		fhp->fh_export = NULL;
+>  	}
+>  	return;
+> 
