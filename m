@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964873Ab2DKXRf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Apr 2012 19:17:35 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:39063 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964843Ab2DKXRZ (ORCPT
+	id S964885Ab2DKXRl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Apr 2012 19:17:41 -0400
+Received: from mail-pz0-f52.google.com ([209.85.210.52]:40940 "EHLO
+	mail-pz0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933984Ab2DKXRh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Apr 2012 19:17:25 -0400
-Message-Id: <20120411231029.668464614@linuxfoundation.org>
+	Wed, 11 Apr 2012 19:17:37 -0400
+Message-Id: <20120411231030.392265149@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Wed, 11 Apr 2012 16:11:25 -0700
+Date: Wed, 11 Apr 2012 16:11:29 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Carlos Corbacho <carlos@strangeworlds.co.uk>,
-        Matthew Garrett <mjg@redhat.com>, Mattia Dongili <malattia@linux.it>,
-        Dimitris N <ddarlac@gmail.com>, "Lee, Chun-Yi" <jlee@suse.com>
-Subject: [ 67/78] acer-wmi: No wifi rfkill on Sony machines
+        alan@lxorguk.ukuu.org.uk, Guan Xin <guanx.bac@gmail.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [ 71/78] USB: Add Motorola Rokr E6 Id to the USBNet driver "zaurus"
 In-Reply-To: <20120411231102.GA6404@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,37 +25,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Lee, Chun-Yi" <joeyli.kernel@gmail.com>
+From: Guan Xin <guanx.bac@gmail.com>
 
-commit 5719b81988f3c24ff694dc3a37e35b35630a3966 upstream.
+commit a2daf263107ba3eb6db33931881731fa51c95045 upstream.
 
-The wireless rfkill should charged by sony-laptop but not acer-wmi.
-So, add Sony's SNY5001 acpi device to blacklist in acer-wmi.
-
-Tested on Sony Vaio
-
-Cc: Carlos Corbacho <carlos@strangeworlds.co.uk>
-Cc: Matthew Garrett <mjg@redhat.com>
-Cc: Mattia Dongili <malattia@linux.it>
-Cc: Dimitris N <ddarlac@gmail.com>
-Tested-by: Dimitris N <ddarlac@gmail.com>
-Signed-off-by: Lee, Chun-Yi <jlee@suse.com>
-Signed-off-by: Matthew Garrett <mjg@redhat.com>
+Added Vendor/Device Id of Motorola Rokr E6 (22b8:6027) so it can be
+recognized by the "zaurus" USBNet driver.
+Applies to Linux 3.2.13 and 2.6.39.4.
+Signed-off-by: Guan Xin <guanx.bac@gmail.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/platform/x86/acer-wmi.c |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/net/usb/zaurus.c |    5 +++++
+ 1 file changed, 5 insertions(+)
 
---- a/drivers/platform/x86/acer-wmi.c
-+++ b/drivers/platform/x86/acer-wmi.c
-@@ -692,6 +692,7 @@ static const struct acpi_device_id norfk
- 	{ "VPC2004", 0},
- 	{ "IBM0068", 0},
- 	{ "LEN0068", 0},
-+	{ "SNY5001", 0},	/* sony-laptop in charge */
- 	{ "", 0},
- };
- 
+--- a/drivers/net/usb/zaurus.c
++++ b/drivers/net/usb/zaurus.c
+@@ -337,6 +337,11 @@ static const struct usb_device_id	produc
+ 	.driver_info = ZAURUS_PXA_INFO,
+ },
+ {
++	/* Motorola Rokr E6 */
++	USB_DEVICE_AND_INTERFACE_INFO(0x22b8, 0x6027, USB_CLASS_COMM,
++			USB_CDC_SUBCLASS_MDLM, USB_CDC_PROTO_NONE),
++	.driver_info = (unsigned long) &bogus_mdlm_info,
++}, {
+ 	/* Motorola MOTOMAGX phones */
+ 	USB_DEVICE_AND_INTERFACE_INFO(0x22b8, 0x6425, USB_CLASS_COMM,
+ 			USB_CDC_SUBCLASS_MDLM, USB_CDC_PROTO_NONE),
 
 
