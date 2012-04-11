@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965468Ab2DKXZq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Apr 2012 19:25:46 -0400
-Received: from mail-pz0-f52.google.com ([209.85.210.52]:51056 "EHLO
-	mail-pz0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965310Ab2DKXYT (ORCPT
+	id S965456Ab2DKX0C (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Apr 2012 19:26:02 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:58738 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965423Ab2DKXYK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Apr 2012 19:24:19 -0400
-Message-Id: <20120411231045.314749405@linuxfoundation.org>
+	Wed, 11 Apr 2012 19:24:10 -0400
+Message-Id: <20120411231044.837385150@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Wed, 11 Apr 2012 16:11:33 -0700
+Date: Wed, 11 Apr 2012 16:11:30 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Joerg Roedel <joerg.roedel@amd.com>
-Subject: [ 58/59] iommu/amd: Make sure IOMMU interrupts are re-enabled on resume
+        alan@lxorguk.ukuu.org.uk, Jonathan Nieder <jrnieder@gmail.com>,
+        William Dauchy <wdauchy@gmail.com>, Dave Jiang <dave.jiang@intel.com>,
+        Dan Williams <dan.j.williams@intel.com>
+Subject: [ 55/59] ioat: fix size of completion for Xen
 In-Reply-To: <20120411231213.GA13124@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -24,72 +26,201 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Joerg Roedel <joerg.roedel@amd.com>
+From: Dan Williams <dan.j.williams@intel.com>
 
-commit 9ddd592a191b32f2ee6c4b6ed2bd52665c3a49f5 upstream
+commit 275029353953c2117941ade84f02a2303912fad1 upstream.
 
-Unfortunatly the interrupts for the event log and the
-peripheral page-faults are only enabled at boot but not
-re-enabled at resume. Fix that for 3.2.
+Starting with v3.2 Jonathan reports that Xen crashes loading the ioatdma
+driver.  A debug run shows:
 
-Cc: stable@vger.kernel.org
-Signed-off-by: Joerg Roedel <joerg.roedel@amd.com>
+  ioatdma 0000:00:16.4: desc[0]: (0x300cc7000->0x300cc7040) cookie: 0 flags: 0x2 ctl: 0x29 (op: 0 int_en: 1 compl: 1)
+  ...
+  ioatdma 0000:00:16.4: ioat_get_current_completion: phys_complete: 0xcc7000
+
+...which shows that in this environment GFP_KERNEL memory may be backed
+by a 64-bit dma address.  This breaks the driver's assumption that an
+unsigned long should be able to contain the physical address for
+descriptor memory.  Switch to dma_addr_t which beyond being the right
+size, is the true type for the data i.e. an io-virtual address
+inidicating the engine's last processed descriptor.
+
+Reported-by: Jonathan Nieder <jrnieder@gmail.com>
+Reported-by: William Dauchy <wdauchy@gmail.com>
+Tested-by: William Dauchy <wdauchy@gmail.com>
+Tested-by: Dave Jiang <dave.jiang@intel.com>
+Signed-off-by: Dan Williams <dan.j.williams@intel.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
 ---
- drivers/iommu/amd_iommu_init.c |   24 +++++++++++++++++-------
- 1 file changed, 17 insertions(+), 7 deletions(-)
+ drivers/dma/ioat/dma.c    |   16 ++++++++--------
+ drivers/dma/ioat/dma.h    |    6 +++---
+ drivers/dma/ioat/dma_v2.c |    8 ++++----
+ drivers/dma/ioat/dma_v3.c |    8 ++++----
+ 4 files changed, 19 insertions(+), 19 deletions(-)
 
---- a/drivers/iommu/amd_iommu_init.c
-+++ b/drivers/iommu/amd_iommu_init.c
-@@ -1033,8 +1033,9 @@ static int iommu_setup_msi(struct amd_io
- {
- 	int r;
- 
--	if (pci_enable_msi(iommu->dev))
--		return 1;
-+	r = pci_enable_msi(iommu->dev);
-+	if (r)
-+		return r;
- 
- 	r = request_threaded_irq(iommu->dev->irq,
- 				 amd_iommu_int_handler,
-@@ -1044,24 +1045,33 @@ static int iommu_setup_msi(struct amd_io
- 
- 	if (r) {
- 		pci_disable_msi(iommu->dev);
--		return 1;
-+		return r;
- 	}
- 
- 	iommu->int_enabled = true;
--	iommu_feature_enable(iommu, CONTROL_EVT_INT_EN);
- 
- 	return 0;
+--- a/drivers/dma/ioat/dma.c
++++ b/drivers/dma/ioat/dma.c
+@@ -548,9 +548,9 @@ void ioat_dma_unmap(struct ioat_chan_com
+ 			   PCI_DMA_TODEVICE, flags, 0);
  }
  
- static int iommu_init_msi(struct amd_iommu *iommu)
+-unsigned long ioat_get_current_completion(struct ioat_chan_common *chan)
++dma_addr_t ioat_get_current_completion(struct ioat_chan_common *chan)
  {
-+	int ret;
-+
- 	if (iommu->int_enabled)
--		return 0;
-+		goto enable_faults;
+-	unsigned long phys_complete;
++	dma_addr_t phys_complete;
+ 	u64 completion;
  
- 	if (pci_find_capability(iommu->dev, PCI_CAP_ID_MSI))
--		return iommu_setup_msi(iommu);
-+		ret = iommu_setup_msi(iommu);
-+	else
-+		ret = -ENODEV;
-+
-+	if (ret)
-+		return ret;
- 
--	return 1;
-+enable_faults:
-+	iommu_feature_enable(iommu, CONTROL_EVT_INT_EN);
-+
-+	return 0;
+ 	completion = *chan->completion;
+@@ -571,7 +571,7 @@ unsigned long ioat_get_current_completio
  }
  
- /****************************************************************************
+ bool ioat_cleanup_preamble(struct ioat_chan_common *chan,
+-			   unsigned long *phys_complete)
++			   dma_addr_t *phys_complete)
+ {
+ 	*phys_complete = ioat_get_current_completion(chan);
+ 	if (*phys_complete == chan->last_completion)
+@@ -582,14 +582,14 @@ bool ioat_cleanup_preamble(struct ioat_c
+ 	return true;
+ }
+ 
+-static void __cleanup(struct ioat_dma_chan *ioat, unsigned long phys_complete)
++static void __cleanup(struct ioat_dma_chan *ioat, dma_addr_t phys_complete)
+ {
+ 	struct ioat_chan_common *chan = &ioat->base;
+ 	struct list_head *_desc, *n;
+ 	struct dma_async_tx_descriptor *tx;
+ 
+-	dev_dbg(to_dev(chan), "%s: phys_complete: %lx\n",
+-		 __func__, phys_complete);
++	dev_dbg(to_dev(chan), "%s: phys_complete: %llx\n",
++		 __func__, (unsigned long long) phys_complete);
+ 	list_for_each_safe(_desc, n, &ioat->used_desc) {
+ 		struct ioat_desc_sw *desc;
+ 
+@@ -655,7 +655,7 @@ static void __cleanup(struct ioat_dma_ch
+ static void ioat1_cleanup(struct ioat_dma_chan *ioat)
+ {
+ 	struct ioat_chan_common *chan = &ioat->base;
+-	unsigned long phys_complete;
++	dma_addr_t phys_complete;
+ 
+ 	prefetch(chan->completion);
+ 
+@@ -701,7 +701,7 @@ static void ioat1_timer_event(unsigned l
+ 		mod_timer(&chan->timer, jiffies + COMPLETION_TIMEOUT);
+ 		spin_unlock_bh(&ioat->desc_lock);
+ 	} else if (test_bit(IOAT_COMPLETION_PENDING, &chan->state)) {
+-		unsigned long phys_complete;
++		dma_addr_t phys_complete;
+ 
+ 		spin_lock_bh(&ioat->desc_lock);
+ 		/* if we haven't made progress and we have already
+--- a/drivers/dma/ioat/dma.h
++++ b/drivers/dma/ioat/dma.h
+@@ -88,7 +88,7 @@ struct ioatdma_device {
+ struct ioat_chan_common {
+ 	struct dma_chan common;
+ 	void __iomem *reg_base;
+-	unsigned long last_completion;
++	dma_addr_t last_completion;
+ 	spinlock_t cleanup_lock;
+ 	dma_cookie_t completed_cookie;
+ 	unsigned long state;
+@@ -333,7 +333,7 @@ int __devinit ioat_dma_self_test(struct
+ void __devexit ioat_dma_remove(struct ioatdma_device *device);
+ struct dca_provider * __devinit ioat_dca_init(struct pci_dev *pdev,
+ 					      void __iomem *iobase);
+-unsigned long ioat_get_current_completion(struct ioat_chan_common *chan);
++dma_addr_t ioat_get_current_completion(struct ioat_chan_common *chan);
+ void ioat_init_channel(struct ioatdma_device *device,
+ 		       struct ioat_chan_common *chan, int idx);
+ enum dma_status ioat_dma_tx_status(struct dma_chan *c, dma_cookie_t cookie,
+@@ -341,7 +341,7 @@ enum dma_status ioat_dma_tx_status(struc
+ void ioat_dma_unmap(struct ioat_chan_common *chan, enum dma_ctrl_flags flags,
+ 		    size_t len, struct ioat_dma_descriptor *hw);
+ bool ioat_cleanup_preamble(struct ioat_chan_common *chan,
+-			   unsigned long *phys_complete);
++			   dma_addr_t *phys_complete);
+ void ioat_kobject_add(struct ioatdma_device *device, struct kobj_type *type);
+ void ioat_kobject_del(struct ioatdma_device *device);
+ extern const struct sysfs_ops ioat_sysfs_ops;
+--- a/drivers/dma/ioat/dma_v2.c
++++ b/drivers/dma/ioat/dma_v2.c
+@@ -126,7 +126,7 @@ static void ioat2_start_null_desc(struct
+ 	spin_unlock_bh(&ioat->prep_lock);
+ }
+ 
+-static void __cleanup(struct ioat2_dma_chan *ioat, unsigned long phys_complete)
++static void __cleanup(struct ioat2_dma_chan *ioat, dma_addr_t phys_complete)
+ {
+ 	struct ioat_chan_common *chan = &ioat->base;
+ 	struct dma_async_tx_descriptor *tx;
+@@ -178,7 +178,7 @@ static void __cleanup(struct ioat2_dma_c
+ static void ioat2_cleanup(struct ioat2_dma_chan *ioat)
+ {
+ 	struct ioat_chan_common *chan = &ioat->base;
+-	unsigned long phys_complete;
++	dma_addr_t phys_complete;
+ 
+ 	spin_lock_bh(&chan->cleanup_lock);
+ 	if (ioat_cleanup_preamble(chan, &phys_complete))
+@@ -259,7 +259,7 @@ int ioat2_reset_sync(struct ioat_chan_co
+ static void ioat2_restart_channel(struct ioat2_dma_chan *ioat)
+ {
+ 	struct ioat_chan_common *chan = &ioat->base;
+-	unsigned long phys_complete;
++	dma_addr_t phys_complete;
+ 
+ 	ioat2_quiesce(chan, 0);
+ 	if (ioat_cleanup_preamble(chan, &phys_complete))
+@@ -274,7 +274,7 @@ void ioat2_timer_event(unsigned long dat
+ 	struct ioat_chan_common *chan = &ioat->base;
+ 
+ 	if (test_bit(IOAT_COMPLETION_PENDING, &chan->state)) {
+-		unsigned long phys_complete;
++		dma_addr_t phys_complete;
+ 		u64 status;
+ 
+ 		status = ioat_chansts(chan);
+--- a/drivers/dma/ioat/dma_v3.c
++++ b/drivers/dma/ioat/dma_v3.c
+@@ -256,7 +256,7 @@ static bool desc_has_ext(struct ioat_rin
+  * The difference from the dma_v2.c __cleanup() is that this routine
+  * handles extended descriptors and dma-unmapping raid operations.
+  */
+-static void __cleanup(struct ioat2_dma_chan *ioat, unsigned long phys_complete)
++static void __cleanup(struct ioat2_dma_chan *ioat, dma_addr_t phys_complete)
+ {
+ 	struct ioat_chan_common *chan = &ioat->base;
+ 	struct ioat_ring_ent *desc;
+@@ -314,7 +314,7 @@ static void __cleanup(struct ioat2_dma_c
+ static void ioat3_cleanup(struct ioat2_dma_chan *ioat)
+ {
+ 	struct ioat_chan_common *chan = &ioat->base;
+-	unsigned long phys_complete;
++	dma_addr_t phys_complete;
+ 
+ 	spin_lock_bh(&chan->cleanup_lock);
+ 	if (ioat_cleanup_preamble(chan, &phys_complete))
+@@ -333,7 +333,7 @@ static void ioat3_cleanup_event(unsigned
+ static void ioat3_restart_channel(struct ioat2_dma_chan *ioat)
+ {
+ 	struct ioat_chan_common *chan = &ioat->base;
+-	unsigned long phys_complete;
++	dma_addr_t phys_complete;
+ 
+ 	ioat2_quiesce(chan, 0);
+ 	if (ioat_cleanup_preamble(chan, &phys_complete))
+@@ -348,7 +348,7 @@ static void ioat3_timer_event(unsigned l
+ 	struct ioat_chan_common *chan = &ioat->base;
+ 
+ 	if (test_bit(IOAT_COMPLETION_PENDING, &chan->state)) {
+-		unsigned long phys_complete;
++		dma_addr_t phys_complete;
+ 		u64 status;
+ 
+ 		status = ioat_chansts(chan);
 
 
