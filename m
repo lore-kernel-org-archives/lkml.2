@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964998Ab2DKXV5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Apr 2012 19:21:57 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:41234 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965073Ab2DKXVw (ORCPT
+	id S934017Ab2DKXWI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Apr 2012 19:22:08 -0400
+Received: from mail-pz0-f52.google.com ([209.85.210.52]:51108 "EHLO
+	mail-pz0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933880Ab2DKXWF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Apr 2012 19:21:52 -0400
-Message-Id: <20120411231037.184092927@linuxfoundation.org>
+	Wed, 11 Apr 2012 19:22:05 -0400
+Message-Id: <20120411231037.825666309@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Wed, 11 Apr 2012 16:10:45 -0700
+Date: Wed, 11 Apr 2012 16:10:49 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Wolfram Sang <w.sang@pengutronix.de>,
-        Huang Shijie <b32955@freescale.com>,
+        alan@lxorguk.ukuu.org.uk, Brian Norris <computersforpeace@gmail.com>,
         Artem Bityutskiy <artem.bityutskiy@linux.intel.com>,
         David Woodhouse <David.Woodhouse@intel.com>
-Subject: [ 10/59] mtd: nand: gpmi: use correct member for checking NAND_BBT_USE_FLASH
+Subject: [ 14/59] mtd: m25p80: set writebufsize
 In-Reply-To: <20120411231213.GA13124@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,39 +26,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Wolfram Sang <w.sang@pengutronix.de>
+From: Brian Norris <computersforpeace@gmail.com>
 
-commit 5289966ea576a062b80319975b31b661c196ff9d upstream.
+commit b54f47c8bcfc5f766bf13ec31bd7dd1d4726d33b upstream.
 
-This has been moved from .options to .bbt_options meanwhile. So, it
-currently checks for something totally different (NAND_OWN_BUFFERS) and
-decides according to that.
+Using UBI on m25p80 can give messages like:
 
-Artem Bityutskiy: the options were moved in
-a40f734 mtd: nand: consolidate redundant flash-based BBT flags
+    UBI error: io_init: bad write buffer size 0 for 1 min. I/O unit
 
-Artem Bityutskiy: CCing -stable
+We need to initialize writebufsize; I think "page_size" is the correct
+"bufsize", although I'm not sure. Comments?
 
-Signed-off-by: Wolfram Sang <w.sang@pengutronix.de>
-Acked-by: Huang Shijie <b32955@freescale.com>
+Signed-off-by: Brian Norris <computersforpeace@gmail.com>
 Signed-off-by: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
 Signed-off-by: David Woodhouse <David.Woodhouse@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/mtd/nand/gpmi-nand/gpmi-nand.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/mtd/devices/m25p80.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/drivers/mtd/nand/gpmi-nand/gpmi-nand.c
-+++ b/drivers/mtd/nand/gpmi-nand/gpmi-nand.c
-@@ -1124,7 +1124,7 @@ static int gpmi_block_markbad(struct mtd
- 		chip->bbt[block >> 2] |= 0x01 << ((block & 0x03) << 1);
+--- a/drivers/mtd/devices/m25p80.c
++++ b/drivers/mtd/devices/m25p80.c
+@@ -932,6 +932,7 @@ static int __devinit m25p_probe(struct s
+ 	ppdata.of_node = spi->dev.of_node;
+ 	flash->mtd.dev.parent = &spi->dev;
+ 	flash->page_size = info->page_size;
++	flash->mtd.writebufsize = flash->page_size;
  
- 	/* Do we have a flash based bad block table ? */
--	if (chip->options & NAND_BBT_USE_FLASH)
-+	if (chip->bbt_options & NAND_BBT_USE_FLASH)
- 		ret = nand_update_bbt(mtd, ofs);
- 	else {
- 		chipnr = (int)(ofs >> chip->chip_shift);
+ 	if (info->addr_width)
+ 		flash->addr_width = info->addr_width;
 
 
