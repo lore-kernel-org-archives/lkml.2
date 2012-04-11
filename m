@@ -1,107 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760302Ab2DKPIe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Apr 2012 11:08:34 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:52515 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754996Ab2DKPId (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Apr 2012 11:08:33 -0400
-Message-ID: <1334156907.4819.3.camel@phoenix>
-Subject: [PATCH 3/3] regulator: max8660: Use devm_kzalloc()
-From: Axel Lin <axel.lin@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Wolfram Sang <w.sang@pengutronix.de>, Liam Girdwood <lrg@ti.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-Date: Wed, 11 Apr 2012 23:08:27 +0800
-In-Reply-To: <1334156749.4819.0.camel@phoenix>
-References: <1334156749.4819.0.camel@phoenix>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2- 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1760571Ab2DKPI6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Apr 2012 11:08:58 -0400
+Received: from smtp2.it.da.ut.ee ([193.40.5.67]:51102 "EHLO smtp2.it.da.ut.ee"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755152Ab2DKPI5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Apr 2012 11:08:57 -0400
+Date: Wed, 11 Apr 2012 18:08:53 +0300 (EEST)
+From: Meelis Roos <mroos@linux.ee>
+To: David Miller <davem@davemloft.net>
+cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org
+Subject: Re: suspicious RCU usage warnings in 3.3.0
+In-Reply-To: <20120328.174559.650861844028495880.davem@davemloft.net>
+Message-ID: <alpine.SOC.1.00.1204111807420.26884@math.ut.ee>
+References: <alpine.SOC.1.00.1203281134090.13691@math.ut.ee> <20120328.174559.650861844028495880.davem@davemloft.net>
+User-Agent: Alpine 1.00 (SOC 882 2007-12-20)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Axel Lin <axel.lin@gmail.com>
----
- drivers/regulator/max8660.c |   20 +++++++-------------
- 1 files changed, 7 insertions(+), 13 deletions(-)
+> > Is this the same RCU problem that was fixed after 3.3 (fix a potential 
+> > rcu_read_lock() imbalance in rt6_fill_node())? My problem does not seem 
+> > to be ipv6-only, most traces are from IPv6 but some for ip.
+> 
+> It's hard to say because the ipv6 RCU problem causes the warning to
+> trigger somewhere away from the ipv6 code that had the RCU locking
+> bug.
 
-diff --git a/drivers/regulator/max8660.c b/drivers/regulator/max8660.c
-index 88f678e..9997cfb 100644
---- a/drivers/regulator/max8660.c
-+++ b/drivers/regulator/max8660.c
-@@ -367,16 +367,14 @@ static int __devinit max8660_probe(struct i2c_client *client,
- 
- 	if (pdata->num_subdevs > MAX8660_V_END) {
- 		dev_err(&client->dev, "Too many regulators found!\n");
--		goto out;
-+		return -EINVAL;
- 	}
- 
- 	max8660 = kzalloc(sizeof(struct max8660) +
- 			sizeof(struct regulator_dev *) * MAX8660_V_END,
- 			GFP_KERNEL);
--	if (!max8660) {
--		ret = -ENOMEM;
--		goto out;
--	}
-+	if (!max8660)
-+		return -ENOMEM;
- 
- 	max8660->client = client;
- 	rdev = max8660->rdev;
-@@ -405,7 +403,7 @@ static int __devinit max8660_probe(struct i2c_client *client,
- 	for (i = 0; i < pdata->num_subdevs; i++) {
- 
- 		if (!pdata->subdevs[i].platform_data)
--			goto err_free;
-+			goto err_out;
- 
- 		boot_on = pdata->subdevs[i].platform_data->constraints.boot_on;
- 
-@@ -431,7 +429,7 @@ static int __devinit max8660_probe(struct i2c_client *client,
- 		case MAX8660_V7:
- 			if (!strcmp(i2c_id->name, "max8661")) {
- 				dev_err(&client->dev, "Regulator not on this chip!\n");
--				goto err_free;
-+				goto err_out;
- 			}
- 
- 			if (boot_on)
-@@ -441,7 +439,7 @@ static int __devinit max8660_probe(struct i2c_client *client,
- 		default:
- 			dev_err(&client->dev, "invalid regulator %s\n",
- 				 pdata->subdevs[i].name);
--			goto err_free;
-+			goto err_out;
- 		}
- 	}
- 
-@@ -469,9 +467,7 @@ static int __devinit max8660_probe(struct i2c_client *client,
- err_unregister:
- 	while (--i >= 0)
- 		regulator_unregister(rdev[i]);
--err_free:
--	kfree(max8660);
--out:
-+err_out:
- 	return ret;
- }
- 
-@@ -483,8 +479,6 @@ static int __devexit max8660_remove(struct i2c_client *client)
- 	for (i = 0; i < MAX8660_V_END; i++)
- 		if (max8660->rdev[i])
- 			regulator_unregister(max8660->rdev[i]);
--	kfree(max8660);
--
- 	return 0;
- }
- 
+Tested todays 3.4.0-rc2-00016-ga9e1e53 on the same with flood ping and 
+still got RCU warning:
+
+[36456.693191] 
+[36456.712658] ===============================
+[36456.767614] [ INFO: suspicious RCU usage. ]
+[36456.822588] 3.4.0-rc2-00016-ga9e1e53 #36 Not tainted
+[36456.887835] -------------------------------
+[36456.942804] include/linux/netpoll.h:70 suspicious rcu_dereference_check() usage!
+[36457.040083] 
+[36457.040089] other info that might help us debug this:
+[36457.040098] 
+[36457.145306] 
+[36457.145312] RCU used illegally from idle CPU!
+[36457.145320] rcu_scheduler_active = 1, debug_locks = 0
+[36457.288293] RCU used illegally from extended quiescent state!
+[36457.363834] no locks held by swapper/0.
+[36457.414221] 
+[36457.414227] stack backtrace:
+[36457.471471] Call Trace:
+[36457.503600]  [0000000000489834] lockdep_rcu_suspicious+0xd4/0x100
+[36457.583727]  [00000000006755a8] __netif_receive_skb+0x368/0xa80
+[36457.661536]  [0000000000675e6c] netif_receive_skb+0x4c/0x60
+[36457.734787]  [000000000063fd74] tulip_poll+0x3b4/0x6a0
+[36457.802327]  [00000000006794d8] net_rx_action+0x118/0x1e0
+[36457.873299]  [00000000004560fc] __do_softirq+0x9c/0x140
+[36457.941984]  [000000000042b1c4] do_softirq+0x84/0xc0
+[36458.007229]  [0000000000404a40] __handle_softirq+0x0/0x10
+[36458.078199]  [000000000042b688] cpu_idle+0x48/0x100
+[36458.142314]  [0000000000722db8] rest_init+0x160/0x188
+[36458.208711]  [00000000008c87b0] start_kernel+0x32c/0x33c
+[36458.278530]  [0000000000722c50] tlb_fixup_done+0x88/0x90
+[36458.348346]  [0000000000000000]           (null)
+
+
 -- 
-1.7.5.4
-
-
-
+Meelis Roos (mroos@linux.ee)
