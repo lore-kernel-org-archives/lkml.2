@@ -1,68 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933060Ab2DKTte (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Apr 2012 15:49:34 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:60331 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1761063Ab2DKTtd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Apr 2012 15:49:33 -0400
-Message-ID: <4F85E045.9070706@zytor.com>
-Date: Wed, 11 Apr 2012 12:49:25 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120329 Thunderbird/11.0.1
+	id S933103Ab2DKTtz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Apr 2012 15:49:55 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:49801 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933046Ab2DKTty convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Apr 2012 15:49:54 -0400
+Content-Type: text/plain; charset=utf-8; format=flowed; delsp=yes
+To: "Felipe Balbi" <balbi@ti.com>,
+        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>
+Cc: "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] usb: gadget: f_mass_storage: remove deprecated fsg_add()
+References: <1ad5f25435fc5d2cd094ae1c68d7831b8b2737ca.1331896818.git.mina86@mina86.com> <op.wa9go4093l0zgt@mpn-glaptop> <20120411094112.GK12064@arwen.pp.htv.fi> <20120411152528.GA27947@kroah.com>
+Date: Wed, 11 Apr 2012 21:49:49 +0200
 MIME-Version: 1.0
-To: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
-CC: Linus Torvalds <torvalds@linux-foundation.org>,
-        Alexey Dobriyan <adobriyan@gmail.com>, akpm@linux-foundation.org,
-        viro@zeniv.linux.org.uk, drepper@gmail.com,
-        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
-Subject: Re: [PATCH] nextfd(2)
-References: <20120401125741.GA7484@p183.telecom.by> <4F78D0BA.9040709@zytor.com> <CACVxJT_WJYjecpZMGkyUrbE5gNROX1tOfFAcD84-hoPsypxcFQ@mail.gmail.com> <4F7F1864.8090606@zytor.com> <CAHGf_=rsJ8o8Fnd2z5Z8jHGc=cz370ay0_t3bhkiYRCBh3puVw@mail.gmail.com> <4F85C640.3060608@zytor.com> <CA+55aFzT1OomhJkDx+crnqRmH-kowAM4w8SRqsmPVMyh8gEwZQ@mail.gmail.com> <4F85C96B.2070803@zytor.com> <CAHGf_=qBY1uVqWiDoOQY5UrxqK8G47+J_o=HQAbutGZNdhX5Ug@mail.gmail.com>
-In-Reply-To: <CAHGf_=qBY1uVqWiDoOQY5UrxqK8G47+J_o=HQAbutGZNdhX5Ug@mail.gmail.com>
-X-Enigmail-Version: 1.4
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8BIT
+From: "Michal Nazarewicz" <mina86@mina86.com>
+Message-ID: <op.wcl9dbyh3l0zgt@mpn-glaptop>
+In-Reply-To: <20120411152528.GA27947@kroah.com>
+User-Agent: Opera Mail/11.62 (Linux)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/11/2012 12:46 PM, KOSAKI Motohiro wrote:
->>
->> a) inherently racy in a multithreaded environment;
-> 
-> I would say two things. 1) I know and I agree we _can_ misuse the interface.
-> but many already existed interface also can be misused. 2) As I
-> already explained
-> this can be used correctly.
-> 
-> So, I have a question. Why do you bother a possibility of misuse? Of
-> if you didn't point out misuse, can you please point out a real world
-> use case of multi threads + fd interation?
-> 
+>> On Fri, Mar 16, 2012 at 12:25:42PM +0100, Michal Nazarewicz wrote:
+>>> From: Michal Nazarewicz <mina86@mina86.com>
+>>>
+>>> There are no in-tree fsg_add() users and it has been deprecated
+>>> since 2.6.35 [1dc90985d1: fsg_add() renamed to fsg_bind_config()] so
+>>> out-of-tree users had more then enough time to convert.  Removing.
 
-This were brought up in the POSIX discussion as part of why these
-interfaces were considered undesirable.
+> On Wed, Apr 11, 2012 at 12:41:13PM +0300, Felipe Balbi wrote:
+>> applied, thanks. Also added your SOB, next time be more careful.
 
-> 
->> b) unsafe because there might be file descriptors used by libc itself.
-> 
-> I agree this. Even though almost developer don't use libc message catalogue and
-> we can avoid such issue by using nextfd() + fcntl(O_CLOEXEC).
-> 
+On Wed, 11 Apr 2012 17:25:28 +0200, Greg Kroah-Hartman <gregkh@linuxfoundation.org> wrote
+> Um, wait, you can't just "add" a SOB, that's not allowed at all, sorry.
+>
+> Michal, do you sign-off on this patch?  If so, please do so.
 
-No, that's exactly the point that we cannot.
+Sorry, yes, of course.
 
-> 
-> Yeah, I don't think fdwalk() is problematic. It's an option if I
-> understand Alexey's mail
-> correctly. but I disagree almost all developers should fix a design
-> and rewrite their
-> applications. In theory, they can avoid glibc or they can rewrite all
-> of their code or
-> avoid linux. but there is one problem. unrealistic.
-> 
-
-The problem -- as was brought up in the POSIX discussion -- is that you
-actually end up breaking *properly functioning programs*.
-
-	-hpa
+-- 
+Best regards,                                         _     _
+.o. | Liege of Serenely Enlightened Majesty of      o' \,=./ `o
+..o | Computer Science,  Michał “mina86” Nazarewicz    (o o)
+ooo +----<email/xmpp: mpn@google.com>--------------ooO--(_)--Ooo--
