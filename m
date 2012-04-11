@@ -1,120 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932879Ab2DKSEk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Apr 2012 14:04:40 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:58430 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932777Ab2DKSEi (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Apr 2012 14:04:38 -0400
-Date: Wed, 11 Apr 2012 15:04:34 -0300
-From: Arnaldo Carvalho de Melo <acme@infradead.org>
-To: Borislav Petkov <bp@amd64.org>
-Cc: Ingo Molnar <mingo@kernel.org>, Michal Marek <mmarek@suse.cz>,
-        Sam Ravnborg <sam@ravnborg.org>, LKML <linux-kernel@vger.kernel.org>,
-        Borislav Petkov <borislav.petkov@amd.com>
-Subject: Re: [PATCH v5 5/5] tools: Connect to the kernel build system
-Message-ID: <20120411180434.GH16257@infradead.org>
-References: <1334162178-17152-1-git-send-email-bp@amd64.org>
- <1334162178-17152-6-git-send-email-bp@amd64.org>
+	id S932870Ab2DKSF0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Apr 2012 14:05:26 -0400
+Received: from li9-11.members.linode.com ([67.18.176.11]:56828 "EHLO
+	test.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932777Ab2DKSFZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Apr 2012 14:05:25 -0400
+Date: Wed, 11 Apr 2012 14:05:20 -0400
+From: "Ted Ts'o" <tytso@mit.edu>
+To: Markus Trippelsdorf <markus@trippelsdorf.de>
+Cc: linux-kernel@vger.kernel.org, hjl.tools@gmail.com
+Subject: Re: Trying to make a working kernel with the gold linker
+Message-ID: <20120411180520.GE12044@thunk.org>
+Mail-Followup-To: Ted Ts'o <tytso@mit.edu>,
+	Markus Trippelsdorf <markus@trippelsdorf.de>,
+	linux-kernel@vger.kernel.org, hjl.tools@gmail.com
+References: <E1SHnDZ-0006Za-Kh@tytso-glaptop.cam.corp.google.com>
+ <20120411045107.GA324@x4>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1334162178-17152-6-git-send-email-bp@amd64.org>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by canuck.infradead.org
-	See http://www.infradead.org/rpr.html
+In-Reply-To: <20120411045107.GA324@x4>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on test.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Wed, Apr 11, 2012 at 06:36:18PM +0200, Borislav Petkov escreveu:
-> From: Borislav Petkov <borislav.petkov@amd.com>
+On Wed, Apr 11, 2012 at 06:51:07AM +0200, Markus Trippelsdorf wrote:
 > 
-> Now you can do
-> 
-> $ make tools/<toolname>
-> 
-> from the toplevel kernel directory and have the respective tool built.
-> 
-> If you want to build and install it, do
-> 
-> $ make tools/<toolname>_install
+> Yes. I use it regularly. The last problems were fixed two years ago.
+> Please try a more recent version.
 
-[acme@sandy linux]$ make -j8 O=/home/git/build/perf tools/perf_install
-[acme@sandy linux]$ ls -la tools/perf/*.o | wc -l
-22
+Thanks, I'll give that a try.  Next stupid question; for a variety of
+reasons, the Corporate I/T folks require that I stay stuck on Ubuntu
+10.04.  Are there any incompatibility problems with using the most
+recently released binutils-gold and gcc 4.4.3-4ubuntu5.1?  Basically,
+can I just compile a new version of binutils, or do I need to upgrade
+my entire compiler toolchain?
 
-It should have honoured O=
+Thanks,
 
-Can you fix this one please? :)
-
-- Arnaldo
- 
-> $ make tools/<toolname>_clean
-> 
-> should clean the respective tool directories.
-> 
-> If you want to clean all in tools, simply do
-> 
-> $ make tools/clean
-> 
-> Also, if you want to get what the possible targets are, simply calling
-> 
-> $ make tools/
-> 
-> should give you the short help.
-> 
-> $ make tools/install
-> 
-> installs all tools, of course. Doh.
-> 
-> Cc: Sam Ravnborg <sam@ravnborg.org>
-> Signed-off-by: Borislav Petkov <borislav.petkov@amd.com>
-> ---
->  Makefile       |    7 +++++++
->  tools/Makefile |   10 ++++++++++
->  2 files changed, 17 insertions(+)
-> 
-> diff --git a/Makefile b/Makefile
-> index 0df3d003a079..f7f738117128 100644
-> --- a/Makefile
-> +++ b/Makefile
-> @@ -1468,6 +1468,13 @@ kernelrelease:
->  kernelversion:
->  	@echo $(KERNELVERSION)
->  
-> +# Clear a bunch of variables before executing the submake
-> +tools/: FORCE
-> +	$(Q)$(MAKE) LDFLAGS= MAKEFLAGS= -C $(src)/tools/
-> +
-> +tools/%: FORCE
-> +	$(Q)$(MAKE) LDFLAGS= MAKEFLAGS= -C $(src)/tools/ $*
-> +
->  # Single targets
->  # ---------------------------------------------------------------------------
->  # Single targets are compatible with:
-> diff --git a/tools/Makefile b/tools/Makefile
-> index f87c0ec63e6c..3ae43947a171 100644
-> --- a/tools/Makefile
-> +++ b/tools/Makefile
-> @@ -14,6 +14,16 @@ help:
->  	@echo '  vm         - misc vm tools'
->  	@echo '  x86_energy_perf_policy - Intel energy policy tool'
->  	@echo ''
-> +	@echo 'You can do:'
-> +	@echo ' $$ make -C tools/<tool>_install'
-> +	@echo ''
-> +	@echo '  from the kernel command line to build and install one of'
-> +	@echo '  the tools above'
-> +	@echo ''
-> +	@echo '  $$ make tools/install'
-> +	@echo ''
-> +	@echo '  installs all tools.'
-> +	@echo ''
->  	@echo 'Cleaning targets:'
->  	@echo ''
->  	@echo '  all of the above with the "_clean" string appended cleans'
-> -- 
-> 1.7.9.3.362.g71319
+						- Ted
