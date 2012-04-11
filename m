@@ -1,58 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933439Ab2DKVnc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Apr 2012 17:43:32 -0400
-Received: from swampdragon.chaosbits.net ([90.184.90.115]:17728 "EHLO
-	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755972Ab2DKVnb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Apr 2012 17:43:31 -0400
-Date: Wed, 11 Apr 2012 23:43:29 +0200 (CEST)
-From: Jesper Juhl <jj@chaosbits.net>
-To: linux-kernel@vger.kernel.org
-cc: linux-rdma@vger.kernel.org, "David S. Miller" <davem@davemloft.net>,
-        Jack Morgenstein <jackm@dev.mellanox.co.il>,
-        Roland Dreier <roland@kernel.org>,
-        Hal Rosenstock <hal.rosenstock@gmail.com>,
-        Sean Hefty <sean.hefty@intel.com>, Or Gerlitz <ogerlitz@mellanox.com>
-Subject: [PATCH] IB: mlx4: Fix mem leaks in ib_link_query_port()
-Message-ID: <alpine.LNX.2.00.1204112340360.2137@swampdragon.chaosbits.net>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1761318Ab2DKVoc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Apr 2012 17:44:32 -0400
+Received: from mail.tomasu.net ([64.85.170.232]:47283 "EHLO mail.tomasu.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755972Ab2DKVob (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Apr 2012 17:44:31 -0400
+From: Thomas Fjellstrom <thomas@fjellstrom.ca>
+Reply-To: thomas@fjellstrom.ca
+To: adam radford <aradford@gmail.com>
+Subject: Re: stuck in megaraid_sas.c megasas_adp_reset_gen2
+Date: Wed, 11 Apr 2012 15:44:27 -0600
+User-Agent: KMail/1.13.7 (Linux/3.2.0-1-amd64; KDE/4.7.4; x86_64; ; )
+Cc: lkml <linux-kernel@vger.kernel.org>, linux-scsi@vger.kernel.org
+References: <201203211716.45418.thomas@fjellstrom.ca> <201204111417.28893.thomas@fjellstrom.ca> <CAHtARFERLPA345Qsp=-_+5BGAdOrLaJ+HLGzqENBFNRXNJMDhg@mail.gmail.com>
+In-Reply-To: <CAHtARFERLPA345Qsp=-_+5BGAdOrLaJ+HLGzqENBFNRXNJMDhg@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201204111544.27866.thomas@fjellstrom.ca>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If, in ib_link_query_port(), the call to mlx4_MAD_IFC() fails we will
-currently do 'return err;' which will leak 'in_mad' and 'out_mad' that
-we previously allocated. I believe we should instead do 'goto out;'
-where we'll properly free the memory we previously allocated.
+On Wed Apr 11, 2012, adam radford wrote:
+> On Wed, Apr 11, 2012 at 1:17 PM, Thomas Fjellstrom <thomas@fjellstrom.ca> 
+wrote:
+> >> ADP_RESET_GEN2: HostDiag=a0
+> >> 
+> >> followed by a bunch of:
+> >> 
+> >> RESET_GEN2: retry=%x, hostdiag=a4
+> >> 
+> >> Now I'm not sure the hostdiag should be different between the two. if
+> >> this aN identifier is similar to the aN identifiers in the MegaCli
+> >> tool, then it would mean its trying to reset a device that doesn't
+> >> exist? I only have a single M1015 card installed.
+> 
+> host diag register output a0 or a4 has absolutely nothing to do with
+> MegaCli -aN command line argument for specifying adapter number.
+> 
+> > I just got a second M1015 card in today and gave it a go. Similar issues,
+> > different log messages. (hand typed from picture taken of screens)
+> > 
+> > Lots of:
+> > 
+> > megasas: Waiting for 1 commands to complete
+> 
+> Can you try booting with kernel command line argument pcie_aspm=off
 
-Signed-off-by: Jesper Juhl <jj@chaosbits.net>
----
- drivers/infiniband/hw/mlx4/main.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+No problem.
 
-diff --git a/drivers/infiniband/hw/mlx4/main.c b/drivers/infiniband/hw/mlx4/main.c
-index 75d3056..cc88c9c 100644
---- a/drivers/infiniband/hw/mlx4/main.c
-+++ b/drivers/infiniband/hw/mlx4/main.c
-@@ -247,7 +247,7 @@ static int ib_link_query_port(struct ib_device *ibdev, u8 port,
- 		err = mlx4_MAD_IFC(to_mdev(ibdev), 1, 1, port,
- 				   NULL, NULL, in_mad, out_mad);
- 		if (err)
--			return err;
-+			goto out;
- 
- 		/* Checking LinkSpeedActive for FDR-10 */
- 		if (out_mad->data[15] & 0x1)
+Things are quite similar. Startup goes like:
+
+<detected a onboard sata ports>
+scsi: waiting for bus probes to complete...
+Refined TSC...
+Switched to clocksource tsc
+<pause here>
+udevd[...]: timeout: killing '/sbin/modprobe -b ...' (lots of these, so much 
+that I hit scroll lock so I can see the kernel messages as they come up)
+scsi 0:0:0:0: megasas: RESET cmd=12 retries=0
+megasas: [ 0] waiting for 1 commands to complete
+(many more waiting messages)
+<hung task kworker/u:4>
+Call Trace:
+  [<ffffffff810641d0>] ? async_synchronize_cookie_domain+0xb2/...c
+  [<ffffffff8105f583>] ? add_wait_queue+0x3c/0x3c
+  ....
+megasas: [55] waiting for 1 commands to complete
+....
+megasas: [175] waiting for 1 commands to complete
+megasas: moving cmd[0]:ffff880234bcb940:0:ffff88002339beec0 the defer queue as 
+internal
+megaraid_sas: FW detected to be in faultstate, restarting it...
+ADP_RESET_GEN2: HostDiag=a0
+(10s wait)
+megaraid_sas: FW restarted successfully,initializing next stage...
+megaraid_sas: HBA recovery state machine,state 2 starting...
+(30s wait)
+megasas: Waiting for FW to come to ready state
+megasas: FW now in ready state
+megaraid_sas: command ffff880234bcb940, ffff8802339beec0:0detected to be pending 
+while HBA reset
+megasas: ffff880234bcb940 scsi cmd [12]detected on the internal queue, issue 
+again.
+megasas: reset successful
+scsi: 0:0:0:0: megasas: RESET cmd=12 retries 0
+megaraid_sas: no pending cmds after reset
+megasas: reset successful
+(20s wait)
+(device offlined message here, missed it this time)
+(detected all sata devices)
+
+And it stalled there.
+
+> -Adam
+
+
 -- 
-1.7.10
-
-
--- 
-Jesper Juhl <jj@chaosbits.net>       http://www.chaosbits.net/
-Don't top-post http://www.catb.org/jargon/html/T/top-post.html
-Plain text mails only, please.
-
+Thomas Fjellstrom
+thomas@fjellstrom.ca
