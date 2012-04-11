@@ -1,43 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760626Ab2DKQRL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Apr 2012 12:17:11 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:3042 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759825Ab2DKQRJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Apr 2012 12:17:09 -0400
-Message-ID: <1334161024.3799.463.camel@bling.home>
-Subject: Re: [PATCH v2 0/2] kvm: iommu unmap fixes
-From: Alex Williamson <alex.williamson@redhat.com>
-To: Greg KH <greg@kroah.com>
-Cc: kvm@vger.kernel.org, stable@vger.kernel.org, linux-kernel@vger.kernel.org,
-        avi@redhat.com, jan.kiszka@siemens.com, mtosatti@redhat.com
-Date: Wed, 11 Apr 2012 10:17:04 -0600
-In-Reply-To: <20120411155957.GA31288@kroah.com>
-References: <20120411154536.13227.10413.stgit@bling.home>
-	 <20120411155957.GA31288@kroah.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S932501Ab2DKQTe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Apr 2012 12:19:34 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:55575 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932364Ab2DKQTd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Apr 2012 12:19:33 -0400
+Date: Wed, 11 Apr 2012 09:19:28 -0700
+From: Tejun Heo <tj@kernel.org>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Stephen Boyd <sboyd@codeaurora.org>, linux-kernel@vger.kernel.org,
+        David Woodhouse <dwmw2@infradead.org>
+Subject: Re: [RFC/PATCH] trace: Remove unused workqueue tracer
+Message-ID: <20120411161928.GB12887@google.com>
+References: <1333994425-30379-1-git-send-email-sboyd@codeaurora.org>
+ <20120409181152.GC7522@google.com>
+ <CAFTL4hyrkCd7=AMY2ah-ynCekfYEN=wy55Xb9xngRwOP+mGNgg@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CAFTL4hyrkCd7=AMY2ah-ynCekfYEN=wy55Xb9xngRwOP+mGNgg@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-04-11 at 08:59 -0700, Greg KH wrote:
-> On Wed, Apr 11, 2012 at 09:51:43AM -0600, Alex Williamson wrote:
-> > This is a documentation change only from the previous version.
-> > After discussing it, there is a potential page leak as noted
-> > in the updated changelog for the first patch.  Thanks,
+On Mon, Apr 09, 2012 at 08:20:37PM +0200, Frederic Weisbecker wrote:
+> 2012/4/9 Tejun Heo <tj@kernel.org>:
+> > On Mon, Apr 09, 2012 at 11:00:25AM -0700, Stephen Boyd wrote:
+> >> This tracer was temporarily removed in 6416669 (workqueue:
+> >> temporarily remove workqueue tracing, 2010-06-29) but never
+> >> reinstated after concurrency managed workqueues were completed.
+> >> For almost two years it hasn't been compilable so it seems nobody
+> >> is using it. Delete it.
+> >>
+> >> Cc: Frederic Weisbecker <fweisbec@gmail.com>
+> >> Cc: Tejun Heo <tj@kernel.org>
+> >> Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
+> >
+> > Yeah, I feel somewhat guilty about this.  The plan was to make it work
+> > again once cmwq is stable but I never got around to it.  That said, if
+> > nobody is using it, shedding code is always nice.  If nobody objects,
+> > I'll push this patch through wq/for-3.5.  We can revive it later if
+> > necessary.
 > 
-> <formletter>
+> No problem for me.
 > 
-> This is not the correct way to submit patches for inclusion in the
-> stable kernel tree.  Please read Documentation/stable_kernel_rules.txt
-> for how to do this properly.
-> 
-> </formletter>
+> Acked-by: Frederic Weisbecker <fweisbec@gmail.com>
 
-Sorry, Greg.  Thanks,
+Applied to wq/for-3.5. Thanks.
 
-Alex
-
+-- 
+tejun
