@@ -1,20 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965703Ab2DKX3B (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Apr 2012 19:29:01 -0400
-Received: from mail-pz0-f52.google.com ([209.85.210.52]:57856 "EHLO
+	id S965718Ab2DKX3H (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Apr 2012 19:29:07 -0400
+Received: from mail-pz0-f52.google.com ([209.85.210.52]:53150 "EHLO
 	mail-pz0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965671Ab2DKX2s (ORCPT
+	with ESMTP id S965702Ab2DKX3B (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Apr 2012 19:28:48 -0400
-Message-Id: <20120411231311.456875585@linuxfoundation.org>
+	Wed, 11 Apr 2012 19:29:01 -0400
+Message-Id: <20120411231312.198081129@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Wed, 11 Apr 2012 16:13:31 -0700
+Date: Wed, 11 Apr 2012 16:13:35 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Jason Wessel <jason.wessel@windriver.com>
-Subject: [ 24/42] kgdbts: (1 of 2) fix single step awareness to work correctly with SMP
+        alan@lxorguk.ukuu.org.uk, Phillip Lougher <plougher@redhat.com>,
+        Kees Cook <keescook@chromium.org>,
+        Serge Hallyn <serge.hallyn@canonical.com>,
+        Richard Weinberger <richard@nod.at>,
+        James Morris <james.l.morris@oracle.com>
+Subject: [ 28/42] sysctl: fix write access to dmesg_restrict/kptr_restrict
 In-Reply-To: <20120411231443.GA808@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -24,209 +28,69 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jason Wessel <jason.wessel@windriver.com>
+From: Kees Cook <keescook@chromium.org>
 
-commit 486c5987a00a89d56c2c04c506417ef8f823ca2e upstream.
+commit 620f6e8e855d6d447688a5f67a4e176944a084e8 upstream.
 
-The do_fork and sys_open tests have never worked properly on anything
-other than a UP configuration with the kgdb test suite.  This is
-because the test suite did not fully implement the behavior of a real
-debugger.  A real debugger tracks the state of what thread it asked to
-single step and can correctly continue other threads of execution or
-conditionally stop while waiting for the original thread single step
-request to return.
+Commit bfdc0b4 adds code to restrict access to dmesg_restrict,
+however, it incorrectly alters kptr_restrict rather than
+dmesg_restrict.
 
-Below is a simple method to cause a fatal kernel oops with the kgdb
-test suite on a 4 processor x86 system:
+The original patch from Richard Weinberger
+(https://lkml.org/lkml/2011/3/14/362) alters dmesg_restrict as
+expected, and so the patch seems to have been misapplied.
 
-while [ 1 ] ; do ls > /dev/null 2> /dev/null; done&
-while [ 1 ] ; do ls > /dev/null 2> /dev/null; done&
-while [ 1 ] ; do ls > /dev/null 2> /dev/null; done&
-while [ 1 ] ; do ls > /dev/null 2> /dev/null; done&
-echo V1I1F1000 > /sys/module/kgdbts/parameters/kgdbts
+This adds the CAP_SYS_ADMIN check to both dmesg_restrict and
+kptr_restrict, since both are sensitive.
 
-Very soon after starting the test the kernel will oops with a message like:
-
-kgdbts: BP mismatch 3b7da66480 expected ffffffff8106a590
-WARNING: at drivers/misc/kgdbts.c:303 check_and_rewind_pc+0xe0/0x100()
-Call Trace:
- [<ffffffff812994a0>] check_and_rewind_pc+0xe0/0x100
- [<ffffffff81298945>] validate_simple_test+0x25/0xc0
- [<ffffffff81298f77>] run_simple_test+0x107/0x2c0
- [<ffffffff81298a18>] kgdbts_put_char+0x18/0x20
-
-The warn will turn to a hard kernel crash shortly after that because
-the pc will not get properly rewound to the right value after hitting
-a breakpoint leading to a hard lockup.
-
-This change is broken up into 2 pieces because archs that have hw
-single stepping (2.6.26 and up) need different changes than archs that
-do not have hw single stepping (3.0 and up).  This change implements
-the correct behavior for an arch that supports hw single stepping.
-
-A minor defect was fixed where sys_open should be do_sys_open
-for the sys_open break point test.  This solves the problem of running
-a 64 bit with a 32 bit user space.  The sys_open() never gets called
-when using the 32 bit file system for the kgdb testsuite because the
-32 bit binaries invoke the compat_sys_open() call leading to the test
-never completing.
-
-In order to mimic a real debugger, the kgdb test suite now tracks the
-most recent thread that was continued (cont_thread_id), with the
-intent to single step just this thread.  When the response to the
-single step request stops in a different thread that hit the original
-break point that thread will now get continued, while the debugger
-waits for the thread with the single step pending.  Here is a high
-level description of the sequence of events.
-
-   cont_instead_of_sstep = 0;
-
-1) set breakpoint at do_fork
-2) continue
-3)   Save the thread id where we stop to cont_thread_id
-4) Remove breakpoint at do_fork
-5) Reset the PC if needed depending on kernel exception type
-6) if (cont_instead_of_sstep) { continue } else { single step }
-7)   Check where we stopped
-       if current thread != cont_thread_id {
-           cont_instead_of_sstep = 1;
-           goto step 5
-       } else {
-           cont_instead_of_sstep = 0;
-       }
-8) clean up and run test again if needed
-
-Signed-off-by: Jason Wessel <jason.wessel@windriver.com>
+Reported-by: Phillip Lougher <plougher@redhat.com>
+Signed-off-by: Kees Cook <keescook@chromium.org>
+Acked-by: Serge Hallyn <serge.hallyn@canonical.com>
+Acked-by: Richard Weinberger <richard@nod.at>
+Signed-off-by: James Morris <james.l.morris@oracle.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/misc/kgdbts.c |   54 +++++++++++++++++++++++++++++++++++++++-----------
- 1 file changed, 43 insertions(+), 11 deletions(-)
+ kernel/sysctl.c |    8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
 
---- a/drivers/misc/kgdbts.c
-+++ b/drivers/misc/kgdbts.c
-@@ -133,6 +133,9 @@ static int force_hwbrks;
- static int hwbreaks_ok;
- static int hw_break_val;
- static int hw_break_val2;
-+static int cont_instead_of_sstep;
-+static unsigned long cont_thread_id;
-+static unsigned long sstep_thread_id;
- #if defined(CONFIG_ARM) || defined(CONFIG_MIPS) || defined(CONFIG_SPARC)
- static int arch_needs_sstep_emulation = 1;
- #else
-@@ -210,7 +213,7 @@ static unsigned long lookup_addr(char *a
- 	if (!strcmp(arg, "kgdbts_break_test"))
- 		addr = (unsigned long)kgdbts_break_test;
- 	else if (!strcmp(arg, "sys_open"))
--		addr = (unsigned long)sys_open;
-+		addr = (unsigned long)do_sys_open;
- 	else if (!strcmp(arg, "do_fork"))
- 		addr = (unsigned long)do_fork;
- 	else if (!strcmp(arg, "hw_break_val"))
-@@ -282,6 +285,16 @@ static void hw_break_val_write(void)
- 	hw_break_val++;
+--- a/kernel/sysctl.c
++++ b/kernel/sysctl.c
+@@ -172,7 +172,7 @@ static int proc_taint(struct ctl_table *
+ #endif
+ 
+ #ifdef CONFIG_PRINTK
+-static int proc_dmesg_restrict(struct ctl_table *table, int write,
++static int proc_dointvec_minmax_sysadmin(struct ctl_table *table, int write,
+ 				void __user *buffer, size_t *lenp, loff_t *ppos);
+ #endif
+ 
+@@ -709,7 +709,7 @@ static struct ctl_table kern_table[] = {
+ 		.data		= &dmesg_restrict,
+ 		.maxlen		= sizeof(int),
+ 		.mode		= 0644,
+-		.proc_handler	= proc_dointvec_minmax,
++		.proc_handler	= proc_dointvec_minmax_sysadmin,
+ 		.extra1		= &zero,
+ 		.extra2		= &one,
+ 	},
+@@ -718,7 +718,7 @@ static struct ctl_table kern_table[] = {
+ 		.data		= &kptr_restrict,
+ 		.maxlen		= sizeof(int),
+ 		.mode		= 0644,
+-		.proc_handler	= proc_dmesg_restrict,
++		.proc_handler	= proc_dointvec_minmax_sysadmin,
+ 		.extra1		= &zero,
+ 		.extra2		= &two,
+ 	},
+@@ -2416,7 +2416,7 @@ static int proc_taint(struct ctl_table *
  }
  
-+static int get_thread_id_continue(char *put_str, char *arg)
-+{
-+	char *ptr = &put_str[11];
-+
-+	if (put_str[1] != 'T' || put_str[2] != '0')
-+		return 1;
-+	kgdb_hex2long(&ptr, &cont_thread_id);
-+	return 0;
-+}
-+
- static int check_and_rewind_pc(char *put_str, char *arg)
+ #ifdef CONFIG_PRINTK
+-static int proc_dmesg_restrict(struct ctl_table *table, int write,
++static int proc_dointvec_minmax_sysadmin(struct ctl_table *table, int write,
+ 				void __user *buffer, size_t *lenp, loff_t *ppos)
  {
- 	unsigned long addr = lookup_addr(arg);
-@@ -323,6 +336,18 @@ static int check_single_step(char *put_s
- 	gdb_regs_to_pt_regs(kgdbts_gdb_regs, &kgdbts_regs);
- 	v2printk("Singlestep stopped at IP: %lx\n",
- 		   instruction_pointer(&kgdbts_regs));
-+
-+	if (sstep_thread_id != cont_thread_id && !arch_needs_sstep_emulation) {
-+		/*
-+		 * Ensure we stopped in the same thread id as before, else the
-+		 * debugger should continue until the original thread that was
-+		 * single stepped is scheduled again, emulating gdb's behavior.
-+		 */
-+		v2printk("ThrID does not match: %lx\n", cont_thread_id);
-+		cont_instead_of_sstep = 1;
-+		ts.idx -= 4;
-+		return 0;
-+	}
- 	if (instruction_pointer(&kgdbts_regs) == addr) {
- 		eprintk("kgdbts: SingleStep failed at %lx\n",
- 			   instruction_pointer(&kgdbts_regs));
-@@ -367,7 +392,12 @@ static int got_break(char *put_str, char
- static void emul_sstep_get(char *arg)
- {
- 	if (!arch_needs_sstep_emulation) {
--		fill_get_buf(arg);
-+		if (cont_instead_of_sstep) {
-+			cont_instead_of_sstep = 0;
-+			fill_get_buf("c");
-+		} else {
-+			fill_get_buf(arg);
-+		}
- 		return;
- 	}
- 	switch (sstep_state) {
-@@ -397,9 +427,11 @@ static void emul_sstep_get(char *arg)
- static int emul_sstep_put(char *put_str, char *arg)
- {
- 	if (!arch_needs_sstep_emulation) {
--		if (!strncmp(put_str+1, arg, 2))
--			return 0;
--		return 1;
-+		char *ptr = &put_str[11];
-+		if (put_str[1] != 'T' || put_str[2] != '0')
-+			return 1;
-+		kgdb_hex2long(&ptr, &sstep_thread_id);
-+		return 0;
- 	}
- 	switch (sstep_state) {
- 	case 1:
-@@ -501,10 +533,10 @@ static struct test_struct bad_read_test[
- static struct test_struct singlestep_break_test[] = {
- 	{ "?", "S0*" }, /* Clear break points */
- 	{ "kgdbts_break_test", "OK", sw_break, }, /* set sw breakpoint */
--	{ "c", "T0*", }, /* Continue */
-+	{ "c", "T0*", NULL, get_thread_id_continue }, /* Continue */
-+	{ "kgdbts_break_test", "OK", sw_rem_break }, /*remove breakpoint */
- 	{ "g", "kgdbts_break_test", NULL, check_and_rewind_pc },
- 	{ "write", "OK", write_regs }, /* Write registers */
--	{ "kgdbts_break_test", "OK", sw_rem_break }, /*remove breakpoint */
- 	{ "s", "T0*", emul_sstep_get, emul_sstep_put }, /* Single step */
- 	{ "g", "kgdbts_break_test", NULL, check_single_step },
- 	{ "kgdbts_break_test", "OK", sw_break, }, /* set sw breakpoint */
-@@ -522,10 +554,10 @@ static struct test_struct singlestep_bre
- static struct test_struct do_fork_test[] = {
- 	{ "?", "S0*" }, /* Clear break points */
- 	{ "do_fork", "OK", sw_break, }, /* set sw breakpoint */
--	{ "c", "T0*", }, /* Continue */
-+	{ "c", "T0*", NULL, get_thread_id_continue }, /* Continue */
-+	{ "do_fork", "OK", sw_rem_break }, /*remove breakpoint */
- 	{ "g", "do_fork", NULL, check_and_rewind_pc }, /* check location */
- 	{ "write", "OK", write_regs }, /* Write registers */
--	{ "do_fork", "OK", sw_rem_break }, /*remove breakpoint */
- 	{ "s", "T0*", emul_sstep_get, emul_sstep_put }, /* Single step */
- 	{ "g", "do_fork", NULL, check_single_step },
- 	{ "do_fork", "OK", sw_break, }, /* set sw breakpoint */
-@@ -540,10 +572,10 @@ static struct test_struct do_fork_test[]
- static struct test_struct sys_open_test[] = {
- 	{ "?", "S0*" }, /* Clear break points */
- 	{ "sys_open", "OK", sw_break, }, /* set sw breakpoint */
--	{ "c", "T0*", }, /* Continue */
-+	{ "c", "T0*", NULL, get_thread_id_continue }, /* Continue */
-+	{ "sys_open", "OK", sw_rem_break }, /*remove breakpoint */
- 	{ "g", "sys_open", NULL, check_and_rewind_pc }, /* check location */
- 	{ "write", "OK", write_regs }, /* Write registers */
--	{ "sys_open", "OK", sw_rem_break }, /*remove breakpoint */
- 	{ "s", "T0*", emul_sstep_get, emul_sstep_put }, /* Single step */
- 	{ "g", "sys_open", NULL, check_single_step },
- 	{ "sys_open", "OK", sw_break, }, /* set sw breakpoint */
+ 	if (write && !capable(CAP_SYS_ADMIN))
 
 
