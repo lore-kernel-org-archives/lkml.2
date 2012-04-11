@@ -1,155 +1,184 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965335Ab2DKXmT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Apr 2012 19:42:19 -0400
-Received: from mail.solarflare.com ([216.237.3.220]:58643 "EHLO
-	ocex02.SolarFlarecom.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S965286Ab2DKXmQ (ORCPT
+	id S965321Ab2DKXmo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Apr 2012 19:42:44 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:41234 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965265Ab2DKXXP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Apr 2012 19:42:16 -0400
-Message-ID: <1334187728.2552.7.camel@bwh-desktop.uk.solarflarecom.com>
-Subject: Re: [RFC PATCH 1/2] net: ethtool: Add capability to retrieve
- plug-in module EEPROM
-From: Ben Hutchings <bhutchings@solarflare.com>
-To: Stuart Hodgson <smhodgson@solarflare.com>
-CC: <netdev@vger.kernel.org>, <bruce.w.allan@intel.com>,
-        <mirq-linux@rere.qmqm.pl>, <decot@google.com>,
-        <amit.salecha@qlogic.com>, <alexander.h.duyck@intel.com>,
-        <davem@davemloft.net>, <linux-kernel@vger.kernel.org>
-Date: Thu, 12 Apr 2012 00:42:08 +0100
-In-Reply-To: <1334168217.2552.5.camel@bwh-desktop.uk.solarflarecom.com>
-References: <4F71FE0A.3060203@solarflare.com>
-	 <1333389160.2623.30.camel@bwh-desktop.uk.solarflarecom.com>
-	 <4F85B639.5090900@solarflare.com>
-	 <1334168217.2552.5.camel@bwh-desktop.uk.solarflarecom.com>
-Organization: Solarflare Communications
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 (3.2.3-1.fc16) 
-Content-Transfer-Encoding: 7bit
-MIME-Version: 1.0
-X-Originating-IP: [10.17.20.137]
-X-TM-AS-Product-Ver: SMEX-10.0.0.1412-6.800.1017-18830.005
-X-TM-AS-Result: No--25.127600-0.000000-31
-X-TM-AS-User-Approved-Sender: Yes
-X-TM-AS-User-Blocked-Sender: No
+	Wed, 11 Apr 2012 19:23:15 -0400
+Message-Id: <20120411231041.754815775@linuxfoundation.org>
+User-Agent: quilt/0.60-19.1
+Date: Wed, 11 Apr 2012 16:11:12 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        alan@lxorguk.ukuu.org.uk, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Jason Wessel <jason.wessel@windriver.com>
+Subject: [ 37/59] x86,kgdb: Fix DEBUG_RODATA limitation using text_poke()
+In-Reply-To: <20120411231213.GA13124@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-04-11 at 19:16 +0100, Ben Hutchings wrote:
-> On Wed, 2012-04-11 at 17:50 +0100, Stuart Hodgson wrote:
-> > On 02/04/12 18:52, Ben Hutchings wrote:
-> [...]
-> > >> --- a/net/core/ethtool.c
-> > >> +++ b/net/core/ethtool.c
-> [...]
-> > >> +    if (eeprom.offset + eeprom.len>  modinfo.eeprom_len)
-> > >> +        return -EINVAL;
-> > >> +
-> > >> +    data = kmalloc(PAGE_SIZE, GFP_USER);
-> > >> +    if (!data)
-> > >> +        return -ENOMEM;
-> > >
-> > > What if some device has a larger EEPROM?  Surely this length should be
-> > > eeprom.len.
-> > >
-> > 
-> > Do you mean what if the eeprom length in te device is larger than
-> > PAGE_SIZE?
-> 
-> Yes.
-> 
-> > If so then it should really use modinfo.eeprom_len since
-> > this the size of the data. eeprom.len could be arbitary.
-> 
-> No, eeprom.len is the size of the data and we've already validated it at
-> this point.
+3.2-stable review patch.  If anyone has any objections, please let me know.
 
-Maybe we should start by refactoring ethtool_get_eeprom() so we can
-reuse most of its code in ethtool_get_module_eeprom(), rather than
-having to worry about what the maximum size of a module EEPROM might be
-and whether we need a loop:
+------------------
 
-Subject: ethtool: Split ethtool_get_eeprom() to allow for additional EEPROM accessors
+From: Jason Wessel <jason.wessel@windriver.com>
 
-We want to support reading module (SFP+, XFP, ...) EEPROMs as well as
-NIC EEPROMs.  They will need a different command number and driver
-operation, but the structure and arguments will be the same and so we
-can share most of the code here.
+commit 3751d3e85cf693e10e2c47c03c8caa65e171099b upstream.
 
-Signed-off-by: Ben Hutchings <bhutchings@solarflare.com>
+There has long been a limitation using software breakpoints with a
+kernel compiled with CONFIG_DEBUG_RODATA going back to 2.6.26. For
+this particular patch, it will apply cleanly and has been tested all
+the way back to 2.6.36.
+
+The kprobes code uses the text_poke() function which accommodates
+writing a breakpoint into a read-only page.  The x86 kgdb code can
+solve the problem similarly by overriding the default breakpoint
+set/remove routines and using text_poke() directly.
+
+The x86 kgdb code will first attempt to use the traditional
+probe_kernel_write(), and next try using a the text_poke() function.
+The break point install method is tracked such that the correct break
+point removal routine will get called later on.
+
+Cc: x86@kernel.org
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Ingo Molnar <mingo@redhat.com>
+Cc: H. Peter Anvin <hpa@zytor.com>
+Inspried-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Signed-off-by: Jason Wessel <jason.wessel@windriver.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
 ---
- net/core/ethtool.c |   24 +++++++++++++++++-------
- 1 files changed, 17 insertions(+), 7 deletions(-)
+ arch/x86/kernel/kgdb.c |   60 +++++++++++++++++++++++++++++++++++++++++++++++++
+ drivers/misc/kgdbts.c  |   17 -------------
+ include/linux/kgdb.h   |    3 +-
+ 3 files changed, 62 insertions(+), 18 deletions(-)
 
-diff --git a/net/core/ethtool.c b/net/core/ethtool.c
-index beacdd9..ca7698f 100644
---- a/net/core/ethtool.c
-+++ b/net/core/ethtool.c
-@@ -751,18 +751,17 @@ static int ethtool_get_link(struct net_device *dev, char __user *useraddr)
- 	return 0;
+--- a/arch/x86/kernel/kgdb.c
++++ b/arch/x86/kernel/kgdb.c
+@@ -43,6 +43,8 @@
+ #include <linux/smp.h>
+ #include <linux/nmi.h>
+ #include <linux/hw_breakpoint.h>
++#include <linux/uaccess.h>
++#include <linux/memory.h>
+ 
+ #include <asm/debugreg.h>
+ #include <asm/apicdef.h>
+@@ -740,6 +742,64 @@ void kgdb_arch_set_pc(struct pt_regs *re
+ 	regs->ip = ip;
  }
  
--static int ethtool_get_eeprom(struct net_device *dev, void __user *useraddr)
-+static int ethtool_get_any_eeprom(struct net_device *dev, void __user *useraddr,
-+				  int (*getter)(struct net_device *,
-+						struct ethtool_eeprom *, u8 *),
-+				  u32 total_len)
- {
- 	struct ethtool_eeprom eeprom;
--	const struct ethtool_ops *ops = dev->ethtool_ops;
- 	void __user *userbuf = useraddr + sizeof(eeprom);
- 	u32 bytes_remaining;
- 	u8 *data;
- 	int ret = 0;
- 
--	if (!ops->get_eeprom || !ops->get_eeprom_len)
--		return -EOPNOTSUPP;
--
- 	if (copy_from_user(&eeprom, useraddr, sizeof(eeprom)))
- 		return -EFAULT;
- 
-@@ -771,7 +770,7 @@ static int ethtool_get_eeprom(struct net_device *dev, void __user *useraddr)
- 		return -EINVAL;
- 
- 	/* Check for exceeding total eeprom len */
--	if (eeprom.offset + eeprom.len > ops->get_eeprom_len(dev))
-+	if (eeprom.offset + eeprom.len > total_len)
- 		return -EINVAL;
- 
- 	data = kmalloc(PAGE_SIZE, GFP_USER);
-@@ -782,7 +781,7 @@ static int ethtool_get_eeprom(struct net_device *dev, void __user *useraddr)
- 	while (bytes_remaining > 0) {
- 		eeprom.len = min(bytes_remaining, (u32)PAGE_SIZE);
- 
--		ret = ops->get_eeprom(dev, &eeprom, data);
-+		ret = getter(dev, &eeprom, data);
- 		if (ret)
- 			break;
- 		if (copy_to_user(userbuf, data, eeprom.len)) {
-@@ -803,6 +802,17 @@ static int ethtool_get_eeprom(struct net_device *dev, void __user *useraddr)
- 	return ret;
- }
- 
-+static int ethtool_get_eeprom(struct net_device *dev, void __user *useraddr)
++int kgdb_arch_set_breakpoint(struct kgdb_bkpt *bpt)
 +{
-+	const struct ethtool_ops *ops = dev->ethtool_ops;
++	int err;
++	char opc[BREAK_INSTR_SIZE];
 +
-+	if (!ops->get_eeprom || !ops->get_eeprom_len)
-+		return -EOPNOTSUPP;
-+
-+	return ethtool_get_any_eeprom(dev, useraddr, ops->get_eeprom,
-+				      ops->get_eeprom_len(dev));
++	bpt->type = BP_BREAKPOINT;
++	err = probe_kernel_read(bpt->saved_instr, (char *)bpt->bpt_addr,
++				BREAK_INSTR_SIZE);
++	if (err)
++		return err;
++	err = probe_kernel_write((char *)bpt->bpt_addr,
++				 arch_kgdb_ops.gdb_bpt_instr, BREAK_INSTR_SIZE);
++#ifdef CONFIG_DEBUG_RODATA
++	if (!err)
++		return err;
++	/*
++	 * It is safe to call text_poke() because normal kernel execution
++	 * is stopped on all cores, so long as the text_mutex is not locked.
++	 */
++	if (mutex_is_locked(&text_mutex))
++		return -EBUSY;
++	text_poke((void *)bpt->bpt_addr, arch_kgdb_ops.gdb_bpt_instr,
++		  BREAK_INSTR_SIZE);
++	err = probe_kernel_read(opc, (char *)bpt->bpt_addr, BREAK_INSTR_SIZE);
++	if (err)
++		return err;
++	if (memcmp(opc, arch_kgdb_ops.gdb_bpt_instr, BREAK_INSTR_SIZE))
++		return -EINVAL;
++	bpt->type = BP_POKE_BREAKPOINT;
++#endif /* CONFIG_DEBUG_RODATA */
++	return err;
 +}
 +
- static int ethtool_set_eeprom(struct net_device *dev, void __user *useraddr)
++int kgdb_arch_remove_breakpoint(struct kgdb_bkpt *bpt)
++{
++#ifdef CONFIG_DEBUG_RODATA
++	int err;
++	char opc[BREAK_INSTR_SIZE];
++
++	if (bpt->type != BP_POKE_BREAKPOINT)
++		goto knl_write;
++	/*
++	 * It is safe to call text_poke() because normal kernel execution
++	 * is stopped on all cores, so long as the text_mutex is not locked.
++	 */
++	if (mutex_is_locked(&text_mutex))
++		goto knl_write;
++	text_poke((void *)bpt->bpt_addr, bpt->saved_instr, BREAK_INSTR_SIZE);
++	err = probe_kernel_read(opc, (char *)bpt->bpt_addr, BREAK_INSTR_SIZE);
++	if (err || memcmp(opc, bpt->saved_instr, BREAK_INSTR_SIZE))
++		goto knl_write;
++	return err;
++knl_write:
++#endif /* CONFIG_DEBUG_RODATA */
++	return probe_kernel_write((char *)bpt->bpt_addr,
++				  (char *)bpt->saved_instr, BREAK_INSTR_SIZE);
++}
++
+ struct kgdb_arch arch_kgdb_ops = {
+ 	/* Breakpoint instruction: */
+ 	.gdb_bpt_instr		= { 0xcc },
+--- a/drivers/misc/kgdbts.c
++++ b/drivers/misc/kgdbts.c
+@@ -968,22 +968,6 @@ static void run_singlestep_break_test(vo
+ 	kgdbts_break_test();
+ }
+ 
+-static void test_debug_rodata(void)
+-{
+-#ifdef CONFIG_DEBUG_RODATA
+-	/* Until there is an api to write to read-only text segments, use
+-	 * HW breakpoints for the remainder of any tests, else print a
+-	 * failure message if hw breakpoints do not work.
+-	 */
+-	if (!(arch_kgdb_ops.flags & KGDB_HW_BREAKPOINT && hwbreaks_ok)) {
+-		eprintk("kgdbts: HW breakpoints BROKEN, ending tests\n");
+-		return;
+-	}
+-	force_hwbrks = 1;
+-	v1printk("kgdbts:Using HW breakpoints for SW breakpoint tests\n");
+-#endif /* CONFIG_DEBUG_RODATA */
+-}
+-
+ static void kgdbts_run_tests(void)
  {
- 	struct ethtool_eeprom eeprom;
--- 
-1.7.7.6
+ 	char *ptr;
+@@ -1016,7 +1000,6 @@ static void kgdbts_run_tests(void)
+ 		v1printk("kgdbts:RUN access write breakpoint test\n");
+ 		run_hw_break_test(0);
+ 	}
+-	test_debug_rodata();
+ 
+ 	/* required internal KGDB tests */
+ 	v1printk("kgdbts:RUN plant and detach test\n");
+--- a/include/linux/kgdb.h
++++ b/include/linux/kgdb.h
+@@ -63,7 +63,8 @@ enum kgdb_bptype {
+ 	BP_HARDWARE_BREAKPOINT,
+ 	BP_WRITE_WATCHPOINT,
+ 	BP_READ_WATCHPOINT,
+-	BP_ACCESS_WATCHPOINT
++	BP_ACCESS_WATCHPOINT,
++	BP_POKE_BREAKPOINT,
+ };
+ 
+ enum kgdb_bpstate {
 
--- 
-Ben Hutchings, Staff Engineer, Solarflare
-Not speaking for my employer; that's the marketing department's job.
-They asked us to note that Solarflare product names are trademarked.
 
