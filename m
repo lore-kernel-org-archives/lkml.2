@@ -1,46 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932900Ab2DKSIx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Apr 2012 14:08:53 -0400
-Received: from mail.meprolight.com ([194.90.149.17]:29833 "EHLO meprolight.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S932832Ab2DKSIv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Apr 2012 14:08:51 -0400
-From: Alex Gershgorin <alexg@meprolight.com>
-To: Sascha Hauer <s.hauer@pengutronix.de>
-CC: <g.liakhovetski@gmx.de>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-kernel@vger.kernel.org>, Alex Gershgorin <alexg@meprolight.com>
-Subject: [PATCH] ARM: i.mx35 increase dma consistent region size
-Date: Wed, 11 Apr 2012 21:01:14 +0300
-Message-ID: <1334167274-29524-1-git-send-email-alexg@meprolight.com>
-X-Mailer: git-send-email 1.7.0.4
+	id S1760831Ab2DKSJs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Apr 2012 14:09:48 -0400
+Received: from fifo99.com ([67.223.236.141]:57298 "EHLO fifo99.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756869Ab2DKSJr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Apr 2012 14:09:47 -0400
+Date: Wed, 11 Apr 2012 11:09:44 -0700
+From: Daniel Walker <dwalker@fifo99.com>
+To: David Brown <davidb@codeaurora.org>
+Cc: Bryan Huntsman <bryanh@codeaurora.org>,
+        Russell King <linux@arm.linux.org.uk>, linux-kernel@vger.kernel.org,
+        linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH] ARM: msm: remove unused MSM boards
+Message-ID: <20120411180944.GE8114@fifo99.com>
+References: <1334165870-12487-1-git-send-email-davidb@codeaurora.org>
+ <20120411175550.GB8114@fifo99.com>
+ <20120411180408.GA12930@codeaurora.org>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120411180408.GA12930@codeaurora.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The default size of the consistent DMA region is 2MB
-without this patch, attempt to allocate more than 2MB
-is causing allocation failure
+On Wed, Apr 11, 2012 at 11:04:09AM -0700, David Brown wrote:
+> On Wed, Apr 11, 2012 at 10:55:50AM -0700, Daniel Walker wrote:
+> > On Wed, Apr 11, 2012 at 10:37:50AM -0700, David Brown wrote:
+> > > The "mahimahi" and "sapphire" were never finished, and have never been
+> > > built.
+> > > 
+> > > The "halibut" target was a dev board that hasn't ever been widely
+> > > available (MSM7201 "SURF").
+> > 
+> > I don't mind if you remove halibut, but the others are just incomplete
+> > phone support which someone may want to add to.. I'd prefer to fix those
+> > two..
+> 
+> Why, though?  It's obvious that nobody is using them, since they've
+> never worked.
 
-Signed-off-by: Alex Gershgorin <alexg@meprolight.com>
----
- arch/arm/mach-imx/mm-imx3.c |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
-
-diff --git a/arch/arm/mach-imx/mm-imx3.c b/arch/arm/mach-imx/mm-imx3.c
-index 7412738..a2c0c7d 100644
---- a/arch/arm/mach-imx/mm-imx3.c
-+++ b/arch/arm/mach-imx/mm-imx3.c
-@@ -201,6 +201,7 @@ static struct map_desc mx35_io_desc[] __initdata = {
- void __init mx35_map_io(void)
- {
- 	iotable_init(mx35_io_desc, ARRAY_SIZE(mx35_io_desc));
-+	init_consistent_dma_size(SZ_8M);
- }
- 
- void __init imx35_init_early(void)
--- 
-1.7.0.4
-
+https://lkml.org/lkml/2011/1/20/367
