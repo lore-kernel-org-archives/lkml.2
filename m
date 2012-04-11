@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933921Ab2DKXQk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Apr 2012 19:16:40 -0400
+	id S933953Ab2DKXQv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Apr 2012 19:16:51 -0400
 Received: from mail-pb0-f46.google.com ([209.85.160.46]:44096 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933881Ab2DKXQg (ORCPT
+	with ESMTP id S933883Ab2DKXQs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Apr 2012 19:16:36 -0400
-Message-Id: <20120411231022.627653657@linuxfoundation.org>
+	Wed, 11 Apr 2012 19:16:48 -0400
+Message-Id: <20120411231027.702626463@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Wed, 11 Apr 2012 16:10:44 -0700
+Date: Wed, 11 Apr 2012 16:11:13 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
         alan@lxorguk.ukuu.org.uk,
-        Wolfgang Mauerer <wolfgang.mauerer@siemens.com>,
-        Steven Rostedt <rostedt@goodmis.org>
-Subject: [ 26/78] tracing: Fix ftrace stack trace entries
+        =?UTF-8?q?Alf=20H=C3=B8gemark?= <alf@i100.no>,
+        Chris Ball <cjb@laptop.org>
+Subject: [ 55/78] mmc: sdhci-dove: Fix compile error by including module.h
 In-Reply-To: <20120411231102.GA6404@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,73 +26,30 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Wolfgang Mauerer <wolfgang.mauerer@siemens.com>
+From: Alf Høgemark <alf@i100.no>
 
-commit 01de982abf8c9e10fc3089e10585cd2cc914bdab upstream.
+commit 8c2fc8e413ecc2c96b696e28d4eb1bc6cee8dc84 upstream.
 
-8 hex characters tell only half the tale for 64 bit CPUs,
-so use the appropriate length.
+This patch fixes a compile error in drivers/mmc/host/sdhci-dove.c
+by including the linux/module.h file.
 
-Link: http://lkml.kernel.org/r/1332411501-8059-2-git-send-email-wolfgang.mauerer@siemens.com
-
-Signed-off-by: Wolfgang Mauerer <wolfgang.mauerer@siemens.com>
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+Signed-off-by: Alf Høgemark <alf@i100.no>
+Signed-off-by: Chris Ball <cjb@laptop.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- kernel/trace/trace_entries.h |   16 ++++++++++++----
- kernel/trace/trace_export.c  |    2 +-
- 2 files changed, 13 insertions(+), 5 deletions(-)
+ drivers/mmc/host/sdhci-dove.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/kernel/trace/trace_entries.h
-+++ b/kernel/trace/trace_entries.h
-@@ -156,6 +156,12 @@ FTRACE_ENTRY_DUP(wakeup, ctx_switch_entr
+--- a/drivers/mmc/host/sdhci-dove.c
++++ b/drivers/mmc/host/sdhci-dove.c
+@@ -20,6 +20,7 @@
+  */
  
- #define FTRACE_STACK_ENTRIES	8
+ #include <linux/io.h>
++#include <linux/module.h>
+ #include <linux/mmc/host.h>
  
-+#ifndef CONFIG_64BIT
-+# define IP_FMT "%08lx"
-+#else
-+# define IP_FMT "%016lx"
-+#endif
-+
- FTRACE_ENTRY(kernel_stack, stack_entry,
- 
- 	TRACE_STACK,
-@@ -165,8 +171,9 @@ FTRACE_ENTRY(kernel_stack, stack_entry,
- 		__dynamic_array(unsigned long,	caller	)
- 	),
- 
--	F_printk("\t=> (%08lx)\n\t=> (%08lx)\n\t=> (%08lx)\n\t=> (%08lx)\n"
--		 "\t=> (%08lx)\n\t=> (%08lx)\n\t=> (%08lx)\n\t=> (%08lx)\n",
-+	F_printk("\t=> (" IP_FMT ")\n\t=> (" IP_FMT ")\n\t=> (" IP_FMT ")\n"
-+		 "\t=> (" IP_FMT ")\n\t=> (" IP_FMT ")\n\t=> (" IP_FMT ")\n"
-+		 "\t=> (" IP_FMT ")\n\t=> (" IP_FMT ")\n",
- 		 __entry->caller[0], __entry->caller[1], __entry->caller[2],
- 		 __entry->caller[3], __entry->caller[4], __entry->caller[5],
- 		 __entry->caller[6], __entry->caller[7])
-@@ -181,8 +188,9 @@ FTRACE_ENTRY(user_stack, userstack_entry
- 		__array(	unsigned long,	caller, FTRACE_STACK_ENTRIES	)
- 	),
- 
--	F_printk("\t=> (%08lx)\n\t=> (%08lx)\n\t=> (%08lx)\n\t=> (%08lx)\n"
--		 "\t=> (%08lx)\n\t=> (%08lx)\n\t=> (%08lx)\n\t=> (%08lx)\n",
-+	F_printk("\t=> (" IP_FMT ")\n\t=> (" IP_FMT ")\n\t=> (" IP_FMT ")\n"
-+		 "\t=> (" IP_FMT ")\n\t=> (" IP_FMT ")\n\t=> (" IP_FMT ")\n"
-+		 "\t=> (" IP_FMT ")\n\t=> (" IP_FMT ")\n",
- 		 __entry->caller[0], __entry->caller[1], __entry->caller[2],
- 		 __entry->caller[3], __entry->caller[4], __entry->caller[5],
- 		 __entry->caller[6], __entry->caller[7])
---- a/kernel/trace/trace_export.c
-+++ b/kernel/trace/trace_export.c
-@@ -150,7 +150,7 @@ ftrace_define_fields_##name(struct ftrac
- #define __dynamic_array(type, item)
- 
- #undef F_printk
--#define F_printk(fmt, args...) #fmt ", "  __stringify(args)
-+#define F_printk(fmt, args...) __stringify(fmt) ", "  __stringify(args)
- 
- #undef FTRACE_ENTRY
- #define FTRACE_ENTRY(call, struct_name, etype, tstruct, print)		\
+ #include "sdhci-pltfm.h"
 
 
