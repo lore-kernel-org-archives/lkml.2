@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965244Ab2DKXXG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Apr 2012 19:23:06 -0400
-Received: from mail-pz0-f52.google.com ([209.85.210.52]:51056 "EHLO
-	mail-pz0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965208Ab2DKXWy (ORCPT
+	id S965262Ab2DKXXK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Apr 2012 19:23:10 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:58738 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965247Ab2DKXXG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Apr 2012 19:22:54 -0400
-Message-Id: <20120411231040.518443893@linuxfoundation.org>
+	Wed, 11 Apr 2012 19:23:06 -0400
+Message-Id: <20120411231039.825903178@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Wed, 11 Apr 2012 16:11:05 -0700
+Date: Wed, 11 Apr 2012 16:11:01 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Markus Heinz <markus.heinz@uni-dortmund.de>,
-        Chris Wilson <chris@chris-wilson.co.uk>,
-        Rodrigo Vivi <rodrigo.vivi@gmail.com>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>
-Subject: [ 30/59] drm/i915: quirk away broken OpRegion VBT
+        alan@lxorguk.ukuu.org.uk, Alex Deucher <alexander.deucher@amd.com>,
+        =?UTF-8?q?Michel=20D=C3=A4nzer?= <michel.daenzer@amd.com>,
+        Dave Airlie <airlied@redhat.com>
+Subject: [ 26/59] drm/radeon/kms: fix fans after resume
 In-Reply-To: <20120411231213.GA13124@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,69 +26,68 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Daniel Vetter <daniel.vetter@ffwll.ch>
+From: Alex Deucher <alexander.deucher@amd.com>
 
-commit 25e341cfc33d94435472983825163e97fe370a6c upstream.
+commit 402976fe51b2d1a58a29ba06fa1ca5ace3a4cdcd upstream.
 
-Somehow the BIOS manages to screw things up when copying the VBT
-around, because the one we scrap from the VBIOS rom actually works.
+On pre-R600 asics, the SpeedFanControl table is not
+executed as part of ASIC_Init as it is on newer asics.
 
-Tested-by: Markus Heinz <markus.heinz@uni-dortmund.de>
-Acked-by: Chris Wilson <chris@chris-wilson.co.uk>
-Reviewed-by: Rodrigo Vivi <rodrigo.vivi@gmail.com>
-Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=28812
-Signed-Off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+Fixes:
+https://bugzilla.kernel.org/show_bug.cgi?id=29412
+
+Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
+Reviewed-by: Michel Dänzer <michel.daenzer@amd.com>
+Signed-off-by: Dave Airlie <airlied@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/i915/intel_bios.c |   23 ++++++++++++++++++++++-
- 1 file changed, 22 insertions(+), 1 deletion(-)
+ drivers/gpu/drm/radeon/atom.c |   15 ++++++++++++++-
+ drivers/gpu/drm/radeon/atom.h |    1 +
+ 2 files changed, 15 insertions(+), 1 deletion(-)
 
---- a/drivers/gpu/drm/i915/intel_bios.c
-+++ b/drivers/gpu/drm/i915/intel_bios.c
-@@ -24,6 +24,7 @@
-  *    Eric Anholt <eric@anholt.net>
-  *
-  */
-+#include <linux/dmi.h>
- #include <drm/drm_dp_helper.h>
- #include "drmP.h"
- #include "drm.h"
-@@ -621,6 +622,26 @@ init_vbt_defaults(struct drm_i915_privat
- 	dev_priv->edp.bpp = 18;
+--- a/drivers/gpu/drm/radeon/atom.c
++++ b/drivers/gpu/drm/radeon/atom.c
+@@ -1304,8 +1304,11 @@ struct atom_context *atom_parse(struct c
+ 
+ int atom_asic_init(struct atom_context *ctx)
+ {
++	struct radeon_device *rdev = ctx->card->dev->dev_private;
+ 	int hwi = CU16(ctx->data_table + ATOM_DATA_FWI_PTR);
+ 	uint32_t ps[16];
++	int ret;
++
+ 	memset(ps, 0, 64);
+ 
+ 	ps[0] = cpu_to_le32(CU32(hwi + ATOM_FWI_DEFSCLK_PTR));
+@@ -1315,7 +1318,17 @@ int atom_asic_init(struct atom_context *
+ 
+ 	if (!CU16(ctx->cmd_table + 4 + 2 * ATOM_CMD_INIT))
+ 		return 1;
+-	return atom_execute_table(ctx, ATOM_CMD_INIT, ps);
++	ret = atom_execute_table(ctx, ATOM_CMD_INIT, ps);
++	if (ret)
++		return ret;
++
++	memset(ps, 0, 64);
++
++	if (rdev->family < CHIP_R600) {
++		if (CU16(ctx->cmd_table + 4 + 2 * ATOM_CMD_SPDFANCNTL))
++			atom_execute_table(ctx, ATOM_CMD_SPDFANCNTL, ps);
++	}
++	return ret;
  }
  
-+static int __init intel_no_opregion_vbt_callback(const struct dmi_system_id *id)
-+{
-+	DRM_DEBUG_KMS("Falling back to manually reading VBT from "
-+		      "VBIOS ROM for %s\n",
-+		      id->ident);
-+	return 1;
-+}
-+
-+static const struct dmi_system_id intel_no_opregion_vbt[] = {
-+	{
-+		.callback = intel_no_opregion_vbt_callback,
-+		.ident = "ThinkCentre A57",
-+		.matches = {
-+			DMI_MATCH(DMI_SYS_VENDOR, "LENOVO"),
-+			DMI_MATCH(DMI_PRODUCT_NAME, "97027RG"),
-+		},
-+	},
-+	{ }
-+};
-+
- /**
-  * intel_parse_bios - find VBT and initialize settings from the BIOS
-  * @dev: DRM device
-@@ -641,7 +662,7 @@ intel_parse_bios(struct drm_device *dev)
- 	init_vbt_defaults(dev_priv);
+ void atom_destroy(struct atom_context *ctx)
+--- a/drivers/gpu/drm/radeon/atom.h
++++ b/drivers/gpu/drm/radeon/atom.h
+@@ -44,6 +44,7 @@
+ #define ATOM_CMD_SETSCLK	0x0A
+ #define ATOM_CMD_SETMCLK	0x0B
+ #define ATOM_CMD_SETPCLK	0x0C
++#define ATOM_CMD_SPDFANCNTL	0x39
  
- 	/* XXX Should this validation be moved to intel_opregion.c? */
--	if (dev_priv->opregion.vbt) {
-+	if (!dmi_check_system(intel_no_opregion_vbt) && dev_priv->opregion.vbt) {
- 		struct vbt_header *vbt = dev_priv->opregion.vbt;
- 		if (memcmp(vbt->signature, "$VBT", 4) == 0) {
- 			DRM_DEBUG_KMS("Using VBT from OpRegion: %20s\n",
+ #define ATOM_DATA_FWI_PTR	0xC
+ #define ATOM_DATA_IIO_PTR	0x32
 
 
