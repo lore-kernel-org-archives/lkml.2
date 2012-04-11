@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965124Ab2DKXW0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Apr 2012 19:22:26 -0400
-Received: from mail-pz0-f52.google.com ([209.85.210.52]:51056 "EHLO
-	mail-pz0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934037Ab2DKXWX (ORCPT
+	id S965156Ab2DKXWf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Apr 2012 19:22:35 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:41234 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965140Ab2DKXWb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Apr 2012 19:22:23 -0400
-Message-Id: <20120411231038.831980779@linuxfoundation.org>
+	Wed, 11 Apr 2012 19:22:31 -0400
+Message-Id: <20120411231039.295588847@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Wed, 11 Apr 2012 16:10:55 -0700
+Date: Wed, 11 Apr 2012 16:10:58 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk,
-        Wolfgang Mauerer <wolfgang.mauerer@siemens.com>,
-        Steven Rostedt <rostedt@goodmis.org>
-Subject: [ 20/59] tracing: Fix ftrace stack trace entries
+        alan@lxorguk.ukuu.org.uk, "jan p. springer" <jsd@igroup.org>,
+        Stanislaw Gruszka <sgruszka@redhat.com>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [ 23/59] mac80211: fix possible tid_rx->reorder_timer use after free
 In-Reply-To: <20120411231213.GA13124@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,73 +26,49 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Wolfgang Mauerer <wolfgang.mauerer@siemens.com>
+From: Stanislaw Gruszka <sgruszka@redhat.com>
 
-commit 01de982abf8c9e10fc3089e10585cd2cc914bdab upstream.
+commit d72308bff5c2fa207949a5925b020bce74495e33 upstream.
 
-8 hex characters tell only half the tale for 64 bit CPUs,
-so use the appropriate length.
+Is possible that we will arm the tid_rx->reorder_timer after
+del_timer_sync() in ___ieee80211_stop_rx_ba_session(). We need to stop
+timer after RCU grace period finish, so move it to
+ieee80211_free_tid_rx(). Timer will not be armed again, as
+rcu_dereference(sta->ampdu_mlme.tid_rx[tid]) will return NULL.
 
-Link: http://lkml.kernel.org/r/1332411501-8059-2-git-send-email-wolfgang.mauerer@siemens.com
+Debug object detected problem with the following warning:
+ODEBUG: free active (active state 0) object type: timer_list hint: sta_rx_agg_reorder_timer_expired+0x0/0xf0 [mac80211]
 
-Signed-off-by: Wolfgang Mauerer <wolfgang.mauerer@siemens.com>
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+Bug report (with all warning messages):
+https://bugzilla.redhat.com/show_bug.cgi?id=804007
+
+Reported-by: "jan p. springer" <jsd@igroup.org>
+Signed-off-by: Stanislaw Gruszka <sgruszka@redhat.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- kernel/trace/trace_entries.h |   16 ++++++++++++----
- kernel/trace/trace_export.c  |    2 +-
- 2 files changed, 13 insertions(+), 5 deletions(-)
+ net/mac80211/agg-rx.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/kernel/trace/trace_entries.h
-+++ b/kernel/trace/trace_entries.h
-@@ -156,6 +156,12 @@ FTRACE_ENTRY_DUP(wakeup, ctx_switch_entr
+--- a/net/mac80211/agg-rx.c
++++ b/net/mac80211/agg-rx.c
+@@ -49,6 +49,8 @@ static void ieee80211_free_tid_rx(struct
+ 		container_of(h, struct tid_ampdu_rx, rcu_head);
+ 	int i;
  
- #define FTRACE_STACK_ENTRIES	8
- 
-+#ifndef CONFIG_64BIT
-+# define IP_FMT "%08lx"
-+#else
-+# define IP_FMT "%016lx"
-+#endif
++	del_timer_sync(&tid_rx->reorder_timer);
 +
- FTRACE_ENTRY(kernel_stack, stack_entry,
+ 	for (i = 0; i < tid_rx->buf_size; i++)
+ 		dev_kfree_skb(tid_rx->reorder_buf[i]);
+ 	kfree(tid_rx->reorder_buf);
+@@ -88,7 +90,6 @@ void ___ieee80211_stop_rx_ba_session(str
+ 				     tid, 0, reason);
  
- 	TRACE_STACK,
-@@ -165,8 +171,9 @@ FTRACE_ENTRY(kernel_stack, stack_entry,
- 		__dynamic_array(unsigned long,	caller	)
- 	),
+ 	del_timer_sync(&tid_rx->session_timer);
+-	del_timer_sync(&tid_rx->reorder_timer);
  
--	F_printk("\t=> (%08lx)\n\t=> (%08lx)\n\t=> (%08lx)\n\t=> (%08lx)\n"
--		 "\t=> (%08lx)\n\t=> (%08lx)\n\t=> (%08lx)\n\t=> (%08lx)\n",
-+	F_printk("\t=> (" IP_FMT ")\n\t=> (" IP_FMT ")\n\t=> (" IP_FMT ")\n"
-+		 "\t=> (" IP_FMT ")\n\t=> (" IP_FMT ")\n\t=> (" IP_FMT ")\n"
-+		 "\t=> (" IP_FMT ")\n\t=> (" IP_FMT ")\n",
- 		 __entry->caller[0], __entry->caller[1], __entry->caller[2],
- 		 __entry->caller[3], __entry->caller[4], __entry->caller[5],
- 		 __entry->caller[6], __entry->caller[7])
-@@ -181,8 +188,9 @@ FTRACE_ENTRY(user_stack, userstack_entry
- 		__array(	unsigned long,	caller, FTRACE_STACK_ENTRIES	)
- 	),
- 
--	F_printk("\t=> (%08lx)\n\t=> (%08lx)\n\t=> (%08lx)\n\t=> (%08lx)\n"
--		 "\t=> (%08lx)\n\t=> (%08lx)\n\t=> (%08lx)\n\t=> (%08lx)\n",
-+	F_printk("\t=> (" IP_FMT ")\n\t=> (" IP_FMT ")\n\t=> (" IP_FMT ")\n"
-+		 "\t=> (" IP_FMT ")\n\t=> (" IP_FMT ")\n\t=> (" IP_FMT ")\n"
-+		 "\t=> (" IP_FMT ")\n\t=> (" IP_FMT ")\n",
- 		 __entry->caller[0], __entry->caller[1], __entry->caller[2],
- 		 __entry->caller[3], __entry->caller[4], __entry->caller[5],
- 		 __entry->caller[6], __entry->caller[7])
---- a/kernel/trace/trace_export.c
-+++ b/kernel/trace/trace_export.c
-@@ -150,7 +150,7 @@ ftrace_define_fields_##name(struct ftrac
- #define __dynamic_array(type, item)
- 
- #undef F_printk
--#define F_printk(fmt, args...) #fmt ", "  __stringify(args)
-+#define F_printk(fmt, args...) __stringify(fmt) ", "  __stringify(args)
- 
- #undef FTRACE_ENTRY
- #define FTRACE_ENTRY(call, struct_name, etype, tstruct, print)		\
+ 	call_rcu(&tid_rx->rcu_head, ieee80211_free_tid_rx);
+ }
 
 
