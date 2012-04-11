@@ -1,111 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965102Ab2DKXTI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Apr 2012 19:19:08 -0400
-Received: from mail-pz0-f52.google.com ([209.85.210.52]:40940 "EHLO
-	mail-pz0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965031Ab2DKXS6 (ORCPT
+	id S1761455Ab2DKXTq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Apr 2012 19:19:46 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:56408 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751552Ab2DKXTn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Apr 2012 19:18:58 -0400
-From: Grant Likely <grant.likely@secretlab.ca>
-To: linux-kernel@vger.kernel.org
-Cc: Grant Likely <grant.likely@secretlab.ca>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Milton Miller <miltonm@bga.com>,
-        Olof Johansson <olof@lixom.net>
-Subject: [PATCH 1/3] irq_domain: remove "hint" when allocating irq numbers
-Date: Wed, 11 Apr 2012 17:18:44 -0600
-Message-Id: <1334186326-22649-2-git-send-email-grant.likely@secretlab.ca>
-X-Mailer: git-send-email 1.7.9.1
-In-Reply-To: <1334186326-22649-1-git-send-email-grant.likely@secretlab.ca>
-References: <1334186326-22649-1-git-send-email-grant.likely@secretlab.ca>
+	Wed, 11 Apr 2012 19:19:43 -0400
+Date: Wed, 11 Apr 2012 16:14:43 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        alan@lxorguk.ukuu.org.uk
+Subject: [ 00/42] 3.0.28-stable review
+Message-ID: <20120411231443.GA808@kroah.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The 'hint' used to try and line up irq numbers with hw irq numbers is
-rather a hack and not very useful.  It also had some value when irq
-reverse mapping was lazy, and not done right at map time.  However, the
-lazy mapping is to be removed, so keeping around 'hint' isn't helpful
-anymore.  This patch removes it.
+This is the start of the stable review cycle for the 3.0.28 release.
+There are 42 patches in this series, all will be posted as a response
+to this one.  If anyone has any issues with these being applied, please
+let me know.
 
-v2: Rebase onto v3.4-rc2
+Responses should be made by Fri Apr 13 23:13:06 UTC 2012.
+Anything received after that time might be too late.
 
-Signed-off-by: Grant Likely <grant.likely@secretlab.ca>
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Milton Miller <miltonm@bga.com>
-Cc: Olof Johansson <olof@lixom.net>
----
- kernel/irq/irqdomain.c |   23 ++++++-----------------
- 1 files changed, 6 insertions(+), 17 deletions(-)
+The whole patch series can be found in one patch at:
+	kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.0.28-rc1.gz
+and the diffstat can be found below.
 
-diff --git a/kernel/irq/irqdomain.c b/kernel/irq/irqdomain.c
-index eb05e40..041710d 100644
---- a/kernel/irq/irqdomain.c
-+++ b/kernel/irq/irqdomain.c
-@@ -4,6 +4,7 @@
- #include <linux/irq.h>
- #include <linux/irqdesc.h>
- #include <linux/irqdomain.h>
-+#include <linux/irqnr.h>
- #include <linux/module.h>
- #include <linux/mutex.h>
- #include <linux/of.h>
-@@ -350,7 +351,6 @@ unsigned int irq_create_direct_mapping(struct irq_domain *domain)
- unsigned int irq_create_mapping(struct irq_domain *domain,
- 				irq_hw_number_t hwirq)
- {
--	unsigned int hint;
- 	int virq;
- 
- 	pr_debug("irq: irq_create_mapping(0x%p, 0x%lx)\n", domain, hwirq);
-@@ -378,14 +378,9 @@ unsigned int irq_create_mapping(struct irq_domain *domain,
- 		return irq_domain_legacy_revmap(domain, hwirq);
- 
- 	/* Allocate a virtual interrupt number */
--	hint = hwirq % irq_virq_count;
--	if (hint == 0)
--		hint++;
--	virq = irq_alloc_desc_from(hint, 0);
--	if (virq <= 0)
--		virq = irq_alloc_desc_from(1, 0);
-+	virq = irq_alloc_desc_from(1, 0);
- 	if (virq <= 0) {
--		pr_debug("irq: -> virq allocation failed\n");
-+		pr_debug("irq: irq_desc allocation failed\n");
- 		return 0;
- 	}
- 
-@@ -516,7 +511,7 @@ unsigned int irq_find_mapping(struct irq_domain *domain,
- 			      irq_hw_number_t hwirq)
- {
- 	unsigned int i;
--	unsigned int hint = hwirq % irq_virq_count;
-+	struct irq_desc *desc;
- 
- 	/* Look for default domain if nececssary */
- 	if (domain == NULL)
-@@ -529,17 +524,11 @@ unsigned int irq_find_mapping(struct irq_domain *domain,
- 		return irq_domain_legacy_revmap(domain, hwirq);
- 
- 	/* Slow path does a linear search of the map */
--	if (hint == 0)
--		hint = 1;
--	i = hint;
--	do {
-+	for_each_irq_desc(i, desc)  {
- 		struct irq_data *data = irq_get_irq_data(i);
- 		if (data && (data->domain == domain) && (data->hwirq == hwirq))
- 			return i;
--		i++;
--		if (i >= irq_virq_count)
--			i = 1;
--	} while(i != hint);
-+	}
- 	return 0;
- }
- EXPORT_SYMBOL_GPL(irq_find_mapping);
--- 
-1.7.9.1
+thanks,
+
+greg k-h
+
+-------------
+ Makefile                             |    4 +-
+ arch/m68k/mac/config.c               |    3 +
+ arch/x86/include/asm/timer.h         |    8 +-
+ arch/x86/kernel/amd_iommu_init.c     |   24 +++--
+ arch/x86/kernel/apic/io_apic.c       |   40 ++-------
+ arch/x86/kernel/kgdb.c               |   60 +++++++++++++
+ arch/x86/kernel/tsc.c                |    3 +-
+ arch/x86/net/bpf_jit_comp.c          |    2 +-
+ arch/x86/pci/acpi.c                  |   10 +++
+ drivers/acpi/acpica/tbfadt.c         |    8 +-
+ drivers/acpi/processor_thermal.c     |   45 ++++++++--
+ drivers/gpu/drm/drm_fb_helper.c      |    8 +-
+ drivers/gpu/drm/i915/i915_drv.c      |    2 +
+ drivers/gpu/drm/i915/i915_reg.h      |    1 +
+ drivers/gpu/drm/i915/intel_bios.c    |   23 ++++-
+ drivers/gpu/drm/i915/intel_display.c |    6 ++
+ drivers/gpu/drm/i915/intel_lvds.c    |    8 ++
+ drivers/gpu/drm/radeon/atom.c        |   15 +++-
+ drivers/gpu/drm/radeon/atom.h        |    1 +
+ drivers/mfd/twl6030-irq.c            |   13 ++-
+ drivers/misc/kgdbts.c                |  160 ++++++++++++++++++++++++----------
+ drivers/mmc/host/atmel-mci.c         |    9 +-
+ drivers/mtd/devices/block2mtd.c      |    1 +
+ drivers/mtd/devices/lart.c           |    1 +
+ drivers/mtd/devices/m25p80.c         |    1 +
+ drivers/mtd/devices/sst25l.c         |    1 +
+ drivers/net/usb/cdc_eem.c            |    1 +
+ drivers/net/usb/zaurus.c             |    5 ++
+ drivers/platform/x86/acer-wmi.c      |    1 +
+ drivers/pnp/pnpacpi/core.c           |    7 +-
+ include/linux/kernel.h               |   13 +++
+ include/linux/kgdb.h                 |    7 +-
+ kernel/cred.c                        |    2 +
+ kernel/debug/debug_core.c            |   53 +++++------
+ kernel/irq/migration.c               |   10 ++-
+ kernel/sysctl.c                      |    8 +-
+ kernel/trace/trace_entries.h         |   16 +++-
+ kernel/trace/trace_export.c          |    2 +-
+ net/bluetooth/hci_conn.c             |    4 +
+ net/mac80211/agg-rx.c                |    3 +-
+ net/rose/rose_dev.c                  |    4 +-
+ scripts/mod/modpost.c                |   36 +++++++-
+ scripts/mod/modpost.h                |    1 +
+ security/tomoyo/mount.c              |   38 ++++----
+ sound/soc/codecs/ak4642.c            |    2 +-
+ 45 files changed, 487 insertions(+), 183 deletions(-)
 
