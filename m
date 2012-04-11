@@ -1,46 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760894Ab2DKS3A (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Apr 2012 14:29:00 -0400
-Received: from ud10.udmedia.de ([194.117.254.50]:56076 "EHLO
-	mail.ud10.udmedia.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753695Ab2DKS27 (ORCPT
+	id S1760890Ab2DKScF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Apr 2012 14:32:05 -0400
+Received: from mail.solarflare.com ([216.237.3.220]:27900 "EHLO
+	ocex02.SolarFlarecom.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753695Ab2DKScD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Apr 2012 14:28:59 -0400
-Date: Wed, 11 Apr 2012 20:28:56 +0200
-From: Markus Trippelsdorf <markus@trippelsdorf.de>
-To: "Ted Ts'o" <tytso@mit.edu>, linux-kernel@vger.kernel.org,
-        hjl.tools@gmail.com
-Subject: Re: Trying to make a working kernel with the gold linker
-Message-ID: <20120411182856.GA327@x4>
-References: <E1SHnDZ-0006Za-Kh@tytso-glaptop.cam.corp.google.com>
- <20120411045107.GA324@x4>
- <20120411180520.GE12044@thunk.org>
+	Wed, 11 Apr 2012 14:32:03 -0400
+Message-ID: <1334169119.2552.17.camel@bwh-desktop.uk.solarflarecom.com>
+Subject: Re: [RFC PATCH 2/2] net: ethtool: Add capability to retrieve
+ plug-in module EEPROM
+From: Ben Hutchings <bhutchings@solarflare.com>
+To: Stuart Hodgson <smhodgson@solarflare.com>
+CC: <netdev@vger.kernel.org>, <davem@davemloft.net>,
+        <linux-kernel@vger.kernel.org>
+Date: Wed, 11 Apr 2012 19:31:59 +0100
+In-Reply-To: <4F85C22C.30707@solarflare.com>
+References: <4F71FE15.7060708@solarflare.com>
+	 <1333390698.2623.47.camel@bwh-desktop.uk.solarflarecom.com>
+	 <4F85C22C.30707@solarflare.com>
+Organization: Solarflare Communications
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 (3.2.3-1.fc16) 
+Content-Transfer-Encoding: 7bit
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120411180520.GE12044@thunk.org>
+X-Originating-IP: [10.17.20.137]
+X-TM-AS-Product-Ver: SMEX-10.0.0.1412-6.800.1017-18830.005
+X-TM-AS-Result: No--22.605900-0.000000-31
+X-TM-AS-User-Approved-Sender: Yes
+X-TM-AS-User-Blocked-Sender: No
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2012.04.11 at 14:05 -0400, Ted Ts'o wrote:
-> On Wed, Apr 11, 2012 at 06:51:07AM +0200, Markus Trippelsdorf wrote:
-> > 
-> > Yes. I use it regularly. The last problems were fixed two years ago.
-> > Please try a more recent version.
+On Wed, 2012-04-11 at 18:41 +0100, Stuart Hodgson wrote:
+> On 02/04/12 19:18, Ben Hutchings wrote:
+> > On Tue, 2012-03-27 at 18:51 +0100, Stuart Hodgson wrote:
+[...]
+> >> --- a/drivers/net/ethernet/sfc/ethtool.c
+> >> +++ b/drivers/net/ethernet/sfc/ethtool.c
+[...]
+> >> +        payload_len = MCDI_DWORD(outbuf,
+> >> +                     GET_PHY_MEDIA_INFO_OUT_DATALEN);
+> >> +
+> >> +        to_copy = (space_remaining<  payload_len) ?
+> >> +                space_remaining : payload_len;
+> >> +
+> >> +        to_copy -= page_off;
+> >
+> > page_off is the number of bytes we need to discard from payload_len, but
+> > we don't want do discard that from space_remaining.  I think the last
+> > two statements should be changed to:
+> >
+> > 	payload_len -= page_off;
+> > 	to_copy = (space_remaining<  payload_len) ?
+> > 		space_remaining : payload_len;
+> >
 > 
-> Thanks, I'll give that a try.  Next stupid question; for a variety of
-> reasons, the Corporate I/T folks require that I stay stuck on Ubuntu
-> 10.04.  Are there any incompatibility problems with using the most
-> recently released binutils-gold and gcc 4.4.3-4ubuntu5.1?  Basically,
-> can I just compile a new version of binutils, or do I need to upgrade
-> my entire compiler toolchain?
+> I am pretty sure that these two pieces of code are the same
 
-Just compiling and installing a new binutils version should work fine.
+Suppose we start with ee->offset = 64, ee->len = 32.  After the MCDI
+request returns and we assign payload_len from that, I believe we will
+have page_off = 64, payload_len = 128, space_remaining = 32.
 
-(But you should nonetheless consider to also upgrade gcc, because
-gcc-4.4 is ancient and not even officially maintained anymore...)
+Work through the calculations from there and you'll see the problem.
+
+[...]
+> >> +    phy_cfg = efx->phy_data;
+> >> +    modinfo->eeprom_len = mcdi_to_module_eeprom_len(phy_cfg->media);
+> >> +    modinfo->type = SFF_8079;
+> > [...]
+> >
+> > I don't think this makes sense.  If we're fixing the type as SFF_8079
+> > then why are we calling a function to get the length?
+> >
+> > Ben.
+> >
+> 
+> What about adding an mcdi_to_module_eeprom_type in the same manner
+> as mcdi_to_module_eeprom_len and the other mapping functions?
+
+Could do, but I don't see the point of breaking this out into separate
+functions that are only used once.  It's actually going to increase code
+duplication because you'll have to put the same PHY type checks in both
+of them.
+
+Ben.
 
 -- 
-Markus
+Ben Hutchings, Staff Engineer, Solarflare
+Not speaking for my employer; that's the marketing department's job.
+They asked us to note that Solarflare product names are trademarked.
+
