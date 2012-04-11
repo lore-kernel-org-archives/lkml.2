@@ -1,104 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761318Ab2DKVoc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Apr 2012 17:44:32 -0400
-Received: from mail.tomasu.net ([64.85.170.232]:47283 "EHLO mail.tomasu.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755972Ab2DKVob (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Apr 2012 17:44:31 -0400
-From: Thomas Fjellstrom <thomas@fjellstrom.ca>
-Reply-To: thomas@fjellstrom.ca
-To: adam radford <aradford@gmail.com>
-Subject: Re: stuck in megaraid_sas.c megasas_adp_reset_gen2
-Date: Wed, 11 Apr 2012 15:44:27 -0600
-User-Agent: KMail/1.13.7 (Linux/3.2.0-1-amd64; KDE/4.7.4; x86_64; ; )
-Cc: lkml <linux-kernel@vger.kernel.org>, linux-scsi@vger.kernel.org
-References: <201203211716.45418.thomas@fjellstrom.ca> <201204111417.28893.thomas@fjellstrom.ca> <CAHtARFERLPA345Qsp=-_+5BGAdOrLaJ+HLGzqENBFNRXNJMDhg@mail.gmail.com>
-In-Reply-To: <CAHtARFERLPA345Qsp=-_+5BGAdOrLaJ+HLGzqENBFNRXNJMDhg@mail.gmail.com>
+	id S1761330Ab2DKVrc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Apr 2012 17:47:32 -0400
+Received: from www.linutronix.de ([62.245.132.108]:33344 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756217Ab2DKVra (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Apr 2012 17:47:30 -0400
+Date: Wed, 11 Apr 2012 23:47:25 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+cc: Grant Likely <grant.likely@secretlab.ca>,
+        Andreas Schwab <schwab@linux-m68k.org>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
+        Rob Herring <rob.herring@calxeda.com>, Milton Miller <miltonm@bga.com>,
+        linuxppc-dev@lists.ozlabs.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH v5 06/27] irq_domain/powerpc: eliminate irq_map; use
+ irq_alloc_desc() instead
+In-Reply-To: <1334180248.2984.39.camel@pasglop>
+Message-ID: <alpine.LFD.2.02.1204112347040.2542@ionos>
+References: <1329383368-12122-1-git-send-email-grant.likely@secretlab.ca>  <1329383368-12122-7-git-send-email-grant.likely@secretlab.ca>  <m2iphj3zxr.fsf@igel.home> <m2hax2qeqs.fsf@igel.home>  <20120402202848.1EB833E02A7@localhost> 
+ <20120402215524.GM24211@n2100.arm.linux.org.uk>  <1333406005.30734.61.camel@pasglop>  <20120402225223.GN24211@n2100.arm.linux.org.uk>  <1333409927.30734.62.camel@pasglop> <m24nsx9iz1.fsf@igel.home>  <1333755470.3040.38.camel@pasglop> <m2aa2n7mmw.fsf@igel.home>
+  <1334106834.2984.17.camel@pasglop> <1334107996.2984.20.camel@pasglop>  <1334122182.2984.33.camel@pasglop> <20120411205707.68AC13E08B6@localhost> <1334180248.2984.39.camel@pasglop>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201204111544.27866.thomas@fjellstrom.ca>
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed Apr 11, 2012, adam radford wrote:
-> On Wed, Apr 11, 2012 at 1:17 PM, Thomas Fjellstrom <thomas@fjellstrom.ca> 
-wrote:
-> >> ADP_RESET_GEN2: HostDiag=a0
-> >> 
-> >> followed by a bunch of:
-> >> 
-> >> RESET_GEN2: retry=%x, hostdiag=a4
-> >> 
-> >> Now I'm not sure the hostdiag should be different between the two. if
-> >> this aN identifier is similar to the aN identifiers in the MegaCli
-> >> tool, then it would mean its trying to reset a device that doesn't
-> >> exist? I only have a single M1015 card installed.
-> 
-> host diag register output a0 or a4 has absolutely nothing to do with
-> MegaCli -aN command line argument for specifying adapter number.
-> 
-> > I just got a second M1015 card in today and gave it a go. Similar issues,
-> > different log messages. (hand typed from picture taken of screens)
+
+On Thu, 12 Apr 2012, Benjamin Herrenschmidt wrote:
+
+> On Wed, 2012-04-11 at 14:57 -0600, Grant Likely wrote:
 > > 
-> > Lots of:
+> > Yeah, I've got a different way to fix it though.  There is exactly one
+> > user of irq_virq_count in-tree right now: PS3.  Also, irq_virq_count
+> > is only useful for the NOMAP mapping.  So, instead of having a single
+> > global irq_virq_count values, I've dropped it entirely and added a
+> > max_irq argument to irq_domain_add_nomap().  That makes it a property
+> > of an individual nomap irq domain instead of a global system settting.
 > > 
-> > megasas: Waiting for 1 commands to complete
+> > Hopefully I'll have a draft patch ready today. 
 > 
-> Can you try booting with kernel command line argument pcie_aspm=off
+> That works for me. I'll send patches for cleanup MPIC as well.
+> 
+> One thing tho (Thomas, Russell) is that I like using set_irq_trigger to
+> establish the "defaults" in mpic, ie, it does the descriptor locking
+> etc... for me, I'd rather avoid open coding all of that. What I need is
+> a "variant" that doesn't actually change the trigger but instead
+> initializes the irq_desc with whatever settings the HW currently has
+> (ie, I need to make sure things are properly in sync) though other
+> implementations may want to use that for defaults.
+> 
+> Any objection to defining something like IRQ_TYPE_DEFAULT ?
+> 
+> I was thinking about making it equal to IRQ_TYPE_SENSE_MASK since that
+> can obviously not be a valid trigger value and is distinct from
+> IRQ_TYPE_NONE.
 
-No problem.
-
-Things are quite similar. Startup goes like:
-
-<detected a onboard sata ports>
-scsi: waiting for bus probes to complete...
-Refined TSC...
-Switched to clocksource tsc
-<pause here>
-udevd[...]: timeout: killing '/sbin/modprobe -b ...' (lots of these, so much 
-that I hit scroll lock so I can see the kernel messages as they come up)
-scsi 0:0:0:0: megasas: RESET cmd=12 retries=0
-megasas: [ 0] waiting for 1 commands to complete
-(many more waiting messages)
-<hung task kworker/u:4>
-Call Trace:
-  [<ffffffff810641d0>] ? async_synchronize_cookie_domain+0xb2/...c
-  [<ffffffff8105f583>] ? add_wait_queue+0x3c/0x3c
-  ....
-megasas: [55] waiting for 1 commands to complete
-....
-megasas: [175] waiting for 1 commands to complete
-megasas: moving cmd[0]:ffff880234bcb940:0:ffff88002339beec0 the defer queue as 
-internal
-megaraid_sas: FW detected to be in faultstate, restarting it...
-ADP_RESET_GEN2: HostDiag=a0
-(10s wait)
-megaraid_sas: FW restarted successfully,initializing next stage...
-megaraid_sas: HBA recovery state machine,state 2 starting...
-(30s wait)
-megasas: Waiting for FW to come to ready state
-megasas: FW now in ready state
-megaraid_sas: command ffff880234bcb940, ffff8802339beec0:0detected to be pending 
-while HBA reset
-megasas: ffff880234bcb940 scsi cmd [12]detected on the internal queue, issue 
-again.
-megasas: reset successful
-scsi: 0:0:0:0: megasas: RESET cmd=12 retries 0
-megaraid_sas: no pending cmds after reset
-megasas: reset successful
-(20s wait)
-(device offlined message here, missed it this time)
-(detected all sata devices)
-
-And it stalled there.
-
-> -Adam
-
-
--- 
-Thomas Fjellstrom
-thomas@fjellstrom.ca
+No objections.
