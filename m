@@ -1,120 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964920Ab2DKXz6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Apr 2012 19:55:58 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:44096 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964851Ab2DKXRb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Apr 2012 19:17:31 -0400
-Message-Id: <20120411231030.013385799@linuxfoundation.org>
-User-Agent: quilt/0.60-19.1
-Date: Wed, 11 Apr 2012 16:11:27 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Salman Qazi <sqazi@google.com>,
-        John Stultz <john.stultz@linaro.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Turner <pjt@google.com>,
-        john stultz <johnstul@us.ibm.com>, Ingo Molnar <mingo@elte.hu>,
-        Mike Galbraith <efault@gmx.de>
-Subject: [ 69/78] sched/x86: Fix overflow in cyc2ns_offset
-In-Reply-To: <20120411231102.GA6404@kroah.com>
+	id S964942Ab2DKX4H (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Apr 2012 19:56:07 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:33900 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S964817Ab2DKX4C (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Apr 2012 19:56:02 -0400
+Message-ID: <4F8619FD.1080402@zytor.com>
+Date: Wed, 11 Apr 2012 16:55:41 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120329 Thunderbird/11.0.1
+MIME-Version: 1.0
+To: Greg Kroah-Hartman <gregkh@linux-foundation.org>
+CC: Kay Sievers <kay@vrfy.org>, "Ted Ts'o" <tytso@mit.edu>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        Konstantin Khlebnikov <khlebnikov@openvz.org>,
+        Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
+Subject: Re: RFC: deprecating/removing the legacy mode of devpts
+References: <4F80892A.7050104@zytor.com> <20120407202056.472d8ad9@pyramind.ukuu.org.uk> <da8cd76d-6116-44a9-a7b3-7a501cb3a8a9@email.android.com> <20120407212705.GD11295@thunk.org> <4F80B9AC.2010103@zytor.com> <CAPXgP12Zp7aHev8Sh=3W0zHA-vZoR9TpTW8c7ep9vTQQQScBPg@mail.gmail.com> <4F81D254.9090000@zytor.com> <CAPXgP10-_kS7VtdWonBhOxKJD2KatB9SznZ_xUUaxBz7-boT2A@mail.gmail.com> <20120411235311.GA11310@kroah.com>
+In-Reply-To: <20120411235311.GA11310@kroah.com>
+X-Enigmail-Version: 1.4
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.3-stable review patch.  If anyone has any objections, please let me know.
+On 04/11/2012 04:53 PM, Greg Kroah-Hartman wrote:
+> 
+> That all seems pretty simple.
+> 
+>>   - get rid of the (rather broken) idea of 'legacy' vs 'non-legacy mode'
+>>     mount options in the default setup; I don't think userspace should
+>>     ever be required to fiddle with such stuff
+> 
+> Hm, but if we get rid of them, what about tools that expect them to be
+> there?  Just silently ignore them?
+> 
 
-------------------
+Drop the newinstance mount option on the floor; keep recognizing the
+ptmxmode mount option but change the default.
 
-From: Salman Qazi <sqazi@google.com>
-
-commit 9993bc635d01a6ee7f6b833b4ee65ce7c06350b1 upstream.
-
-When a machine boots up, the TSC generally gets reset.  However,
-when kexec is used to boot into a kernel, the TSC value would be
-carried over from the previous kernel.  The computation of
-cycns_offset in set_cyc2ns_scale is prone to an overflow, if the
-machine has been up more than 208 days prior to the kexec.  The
-overflow happens when we multiply *scale, even though there is
-enough room to store the final answer.
-
-We fix this issue by decomposing tsc_now into the quotient and
-remainder of division by CYC2NS_SCALE_FACTOR and then performing
-the multiplication separately on the two components.
-
-Refactor code to share the calculation with the previous
-fix in __cycles_2_ns().
-
-Signed-off-by: Salman Qazi <sqazi@google.com>
-Acked-by: John Stultz <john.stultz@linaro.org>
-Acked-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Paul Turner <pjt@google.com>
-Cc: john stultz <johnstul@us.ibm.com>
-Link: http://lkml.kernel.org/r/20120310004027.19291.88460.stgit@dungbeetle.mtv.corp.google.com
-Signed-off-by: Ingo Molnar <mingo@elte.hu>
-Cc: Mike Galbraith <efault@gmx.de>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- arch/x86/include/asm/timer.h |    8 ++------
- arch/x86/kernel/tsc.c        |    3 ++-
- include/linux/kernel.h       |   13 +++++++++++++
- 3 files changed, 17 insertions(+), 7 deletions(-)
-
---- a/arch/x86/include/asm/timer.h
-+++ b/arch/x86/include/asm/timer.h
-@@ -57,14 +57,10 @@ DECLARE_PER_CPU(unsigned long long, cyc2
- 
- static inline unsigned long long __cycles_2_ns(unsigned long long cyc)
- {
--	unsigned long long quot;
--	unsigned long long rem;
- 	int cpu = smp_processor_id();
- 	unsigned long long ns = per_cpu(cyc2ns_offset, cpu);
--	quot = (cyc >> CYC2NS_SCALE_FACTOR);
--	rem = cyc & ((1ULL << CYC2NS_SCALE_FACTOR) - 1);
--	ns += quot * per_cpu(cyc2ns, cpu) +
--		((rem * per_cpu(cyc2ns, cpu)) >> CYC2NS_SCALE_FACTOR);
-+	ns += mult_frac(cyc, per_cpu(cyc2ns, cpu),
-+			(1UL << CYC2NS_SCALE_FACTOR));
- 	return ns;
- }
- 
---- a/arch/x86/kernel/tsc.c
-+++ b/arch/x86/kernel/tsc.c
-@@ -620,7 +620,8 @@ static void set_cyc2ns_scale(unsigned lo
- 
- 	if (cpu_khz) {
- 		*scale = (NSEC_PER_MSEC << CYC2NS_SCALE_FACTOR)/cpu_khz;
--		*offset = ns_now - (tsc_now * *scale >> CYC2NS_SCALE_FACTOR);
-+		*offset = ns_now - mult_frac(tsc_now, *scale,
-+					     (1UL << CYC2NS_SCALE_FACTOR));
- 	}
- 
- 	sched_clock_idle_wakeup_event(0);
---- a/include/linux/kernel.h
-+++ b/include/linux/kernel.h
-@@ -85,6 +85,19 @@
- }							\
- )
- 
-+/*
-+ * Multiplies an integer by a fraction, while avoiding unnecessary
-+ * overflow or loss of precision.
-+ */
-+#define mult_frac(x, numer, denom)(			\
-+{							\
-+	typeof(x) quot = (x) / (denom);			\
-+	typeof(x) rem  = (x) % (denom);			\
-+	(quot * (numer)) + ((rem * (numer)) / (denom));	\
-+}							\
-+)
-+
-+
- #define _RET_IP_		(unsigned long)__builtin_return_address(0)
- #define _THIS_IP_  ({ __label__ __here; __here: (unsigned long)&&__here; })
- 
-
+	-hpa
 
