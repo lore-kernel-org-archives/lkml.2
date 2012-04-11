@@ -1,55 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932137Ab2DKLIc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Apr 2012 07:08:32 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:57964 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751238Ab2DKLIa (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Apr 2012 07:08:30 -0400
-Date: Wed, 11 Apr 2012 13:08:26 +0200
-From: Johan Hovold <jhovold@gmail.com>
-To: Donald <donald@asix.com.tw>
-Cc: "'Greg KH'" <gregkh@linuxfoundation.org>,
-        "'open list:USB SUBSYSTEM'" <linux-usb@vger.kernel.org>,
-        "'open list'" <linux-kernel@vger.kernel.org>
-Subject: Re: Patch "USB: serial: mos7840: Supported MCS7810 device"
-Message-ID: <20120411110826.GA22200@localhost>
-References: <009c01cd00ee$924eb2e0$b6ec18a0$@com.tw>
- <20120313160951.GA18810@kroah.com>
- <005a01cd0db0$8ec89e50$ac59daf0$@com.tw>
- <20120329151343.GA32474@kroah.com>
- <006401cd17c6$157ba2c0$4072e840$@com.tw>
+	id S1757030Ab2DKLJG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Apr 2012 07:09:06 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:12890 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756429Ab2DKLJE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Apr 2012 07:09:04 -0400
+Message-ID: <4F85664C.3020508@redhat.com>
+Date: Wed, 11 Apr 2012 08:09:00 -0300
+From: Mauro Carvalho Chehab <mchehab@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120329 Thunderbird/11.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <006401cd17c6$157ba2c0$4072e840$@com.tw>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: Andrew Morton <akpm@linux-foundation.org>,
+        Linux Media Mailing List <linux-media@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: [GIT PULL for v3.4-rc3] media fixes
+X-Enigmail-Version: 1.4
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 11, 2012 at 05:32:53PM +0800, Donald wrote:
-> Hi Greg,
-> 
-> I am re-submitting this patch that supports MCS7810 device for the mos7840
-> driver. This patch was created against 3.4-rc1 and has been verified on
-> 3.4-rc1 also. If you see any problem regarding this patch, please let me
-> know at any time. Thank you for your help.
-> 
-> Besides, I found two things regarding 3.4-rc, firstly, it added a macro to
-> replace module_init() and module_exit(); secondly, the system will crash if
-> I remove module before unplug the dongle; while this issue doesn't happen on
-> Linux kernel 3.2.9. I had been tested mcs7840 and prolific-pl2303, both
-> drivers have the same scenario. I am not sure if this issue is relating to
-> the macro added in 3.4-rc and would like to know if you have any comment on
-> this issue.
+Hi Linus,
 
-This is a known issue which has been fixed by the following patch:
+Please pull from:
+  git://git.kernel.org/pub/scm/linux/kernel/git/mchehab/linux-media v4l_for_linus
 
-	http://marc.info/?l=linux-usb&m=133296552518354&w=2
+For some fixes for the media drivers:
 
-It should show up in 3.4-rc shortly.
+- dvb core: there is a regression found when used with xine. For whatever unknown
+  reason, xine (and xine-lib clients) wants that the frontend to tell what frequency
+  he is using even before the PLL lock (or at least, it expects a non-zero frequency).
+  On DVB, the frequency is only actually known after a frequency zig-zag seek, done by
+  the DVB core. Anyway, the fix was trivial. That solves Fedora BZ#808871.
 
-Thanks,
-Johan
+- ivtv: fix a regression when selecting the language channel;
+
+- uvc: fix a race-related crash;
+
+- it913x: fixes firmware loading;
+
+- two few trivial patches (a dependency issue at a radio driver at sound Kconfig,
+  and a warning fix on dvb).
+
+Regards,
+Mauro
+
+-
+
+Latest commit at the branch: 
+ed0ee0ce0a3224dab5caa088a5f8b6df25924276 [media] uvcvideo: Fix race-related crash in uvc_video_clock_update()
+The following changes since commit 7483d45f0aee3afc0646d185cabd4af9f6cab58c:
+
+  Merge branch 'staging/for_v3.4' into v4l_for_linus (2012-03-23 08:06:43 -0300)
+
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/mchehab/linux-media v4l_for_linus
+
+Chris Rankin (1):
+      [media] dvb_frontend: regression fix: userspace ABI broken for xine
+
+Hans Petter Selasky (1):
+      [media] dvb_frontend: fix compiler warning
+
+Hans Verkuil (2):
+      [media] ivtv: Fix AUDIO_(BILINGUAL_)CHANNEL_SELECT regression
+      [media] Drivers/media/radio: Fix build error
+
+Laurent Pinchart (1):
+      [media] uvcvideo: Fix race-related crash in uvc_video_clock_update()
+
+Malcolm Priestley (1):
+      [media] it913x: fix firmware loading errors
+
+ drivers/media/dvb/dvb-core/dvb_frontend.c |   12 ++++++-
+ drivers/media/dvb/dvb-usb/it913x.c        |   54 +++++++++++++++++++++-------
+ drivers/media/video/ivtv/ivtv-ioctl.c     |    4 +-
+ drivers/media/video/uvc/uvc_video.c       |   50 +++++++++++++++++---------
+ sound/pci/Kconfig                         |    4 +-
+ 5 files changed, 87 insertions(+), 37 deletions(-)
+
