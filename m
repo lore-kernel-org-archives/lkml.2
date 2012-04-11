@@ -1,56 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754659Ab2DKJHB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Apr 2012 05:07:01 -0400
-Received: from rcsinet15.oracle.com ([148.87.113.117]:31792 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752552Ab2DKJHA (ORCPT
+	id S1755022Ab2DKJHL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Apr 2012 05:07:11 -0400
+Received: from mail-out.m-online.net ([212.18.0.9]:54468 "EHLO
+	mail-out.m-online.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754789Ab2DKJHI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Apr 2012 05:07:00 -0400
-Date: Wed, 11 Apr 2012 12:06:49 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: broonie@opensource.wolfsonmicro.com
-Cc: linux-kernel@vger.kernel.org
-Subject: re: regulator: core: Use a struct to pass in regulator runtime
- configuration
-Message-ID: <20120411090649.GA32589@elgon.mountain>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
-X-CT-RefId: str=0001.0A090208.4F8549B1.00D9,ss=1,re=0.000,fgs=0
+	Wed, 11 Apr 2012 05:07:08 -0400
+Date: Wed, 11 Apr 2012 11:06:57 +0200
+From: Anatolij Gustschin <agust@denx.de>
+To: Richard Weinberger <richard@nod.at>
+Cc: linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org,
+        paulus@samba.org, benh@kernel.crashing.org
+Subject: Re: [PATCH] powerpc: 512x: Fix mpc5121_clk_get()
+Message-ID: <20120411110657.1deaad93@wker>
+In-Reply-To: <1332788489-27435-1-git-send-email-richard@nod.at>
+References: <1332788489-27435-1-git-send-email-richard@nod.at>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.22.0; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Mark Brown,
+On Mon, 26 Mar 2012 21:01:29 +0200
+Richard Weinberger <richard@nod.at> wrote:
 
-This is a semi-automatic email about new static checker warnings.
+> If try_module_get() fails, mpc5121_clk_get() might return
+> a wrong clock.
+> 
+> Signed-off-by: Richard Weinberger <richard@nod.at>
+> ---
+>  arch/powerpc/platforms/512x/clock.c |    6 ++++--
+>  1 files changed, 4 insertions(+), 2 deletions(-)
 
-The patch c172708d38a4: "regulator: core: Use a struct to pass in
-regulator runtime configuration" from Apr 4, 2012, leads to the
-following Smatch complaint:
+Applied, thanks.
 
-drivers/regulator/core.c:2860 regulator_register()
-	 warn: variable dereferenced before check 'config' (see line 2856)
-
-drivers/regulator/core.c
-  2855		struct regulator_dev *rdev;
-  2856		struct device *dev = config->dev;
-                                     ^^^^^^^^^^^
-New dereference.
-
-  2857		int ret, i;
-  2858		const char *supply = NULL;
-  2859	
-  2860		if (regulator_desc == NULL || config == NULL)
-                                              ^^^^^^^^^^^^^^
-New check.
-
-  2861			return ERR_PTR(-EINVAL);
-  2862	
-
-regards,
-dan carpenter
-
+Anatolij
