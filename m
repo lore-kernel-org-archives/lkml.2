@@ -1,162 +1,212 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965066Ab2DKXSh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Apr 2012 19:18:37 -0400
-Received: from mail-pz0-f52.google.com ([209.85.210.52]:40940 "EHLO
-	mail-pz0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965054Ab2DKXSf (ORCPT
+	id S965089Ab2DKXTG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Apr 2012 19:19:06 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:51033 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965069Ab2DKXS6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Apr 2012 19:18:35 -0400
-Message-Id: <20120411231030.729016281@linuxfoundation.org>
-User-Agent: quilt/0.60-19.1
-Date: Wed, 11 Apr 2012 16:11:31 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>
-Subject: [ 73/78] [media] uvcvideo: Fix race-related crash in uvc_video_clock_update()
-In-Reply-To: <20120411231102.GA6404@kroah.com>
+	Wed, 11 Apr 2012 19:18:58 -0400
+From: Grant Likely <grant.likely@secretlab.ca>
+To: linux-kernel@vger.kernel.org
+Cc: Grant Likely <grant.likely@secretlab.ca>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Milton Miller <miltonm@bga.com>
+Subject: [PATCH 3/3] irq_domain: Move irq_virq_count into NOMAP revmap
+Date: Wed, 11 Apr 2012 17:18:46 -0600
+Message-Id: <1334186326-22649-4-git-send-email-grant.likely@secretlab.ca>
+X-Mailer: git-send-email 1.7.9.1
+In-Reply-To: <1334186326-22649-1-git-send-email-grant.likely@secretlab.ca>
+References: <1334186326-22649-1-git-send-email-grant.likely@secretlab.ca>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.3-stable review patch.  If anyone has any objections, please let me know.
+This patch replaces the old global setting of irq_virq_count that is only
+used by the NOMAP mapping and instead uses a revmap_data property so that
+the maximum NOMAP allocation can be set per NOMAP irq_domain.
 
-------------------
+There is exactly one user of irq_virq_count in-tree right now: PS3.
+Also, irq_virq_count is only useful for the NOMAP mapping.  So,
+instead of having a single global irq_virq_count values, this change
+drops it entirely and added a max_irq argument to irq_domain_add_nomap().
+That makes it a property of an individual nomap irq domain instead of
+a global system settting.
 
-From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-
-commit ed0ee0ce0a3224dab5caa088a5f8b6df25924276 upstream.
-
-The driver frees the clock samples buffer before stopping the video
-buffers queue. If a DQBUF call arrives in-between,
-uvc_video_clock_update() will be called with a NULL clock samples
-buffer, leading to a crash. This occurs very frequently when using the
-webcam with the flash browser plugin.
-
-Move clock initialization/cleanup to uvc_video_enable() in order to free
-the clock samples buffer after the queue is stopped. Make sure the clock
-is reset at resume time to avoid miscalculating timestamps.
-
-Signed-off-by: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
+Signed-off-by: Grant Likely <grant.likely@secretlab.ca>
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Milton Miller <miltonm@bga.com>
 ---
- drivers/media/video/uvc/uvc_video.c |   50 +++++++++++++++++++++++-------------
- 1 file changed, 32 insertions(+), 18 deletions(-)
+ arch/powerpc/platforms/cell/axon_msi.c       |    2 +-
+ arch/powerpc/platforms/cell/beat_interrupt.c |    2 +-
+ arch/powerpc/platforms/powermac/smp.c        |    2 +-
+ arch/powerpc/platforms/ps3/interrupt.c       |    3 +-
+ include/linux/irqdomain.h                    |    6 +++-
+ kernel/irq/irqdomain.c                       |   27 +++++--------------------
+ 6 files changed, 14 insertions(+), 28 deletions(-)
 
---- a/drivers/media/video/uvc/uvc_video.c
-+++ b/drivers/media/video/uvc/uvc_video.c
-@@ -468,22 +468,30 @@ uvc_video_clock_decode(struct uvc_stream
- 	spin_unlock_irqrestore(&stream->clock.lock, flags);
- }
+diff --git a/arch/powerpc/platforms/cell/axon_msi.c b/arch/powerpc/platforms/cell/axon_msi.c
+index db360fc..d09f3e8 100644
+--- a/arch/powerpc/platforms/cell/axon_msi.c
++++ b/arch/powerpc/platforms/cell/axon_msi.c
+@@ -392,7 +392,7 @@ static int axon_msi_probe(struct platform_device *device)
+ 	}
+ 	memset(msic->fifo_virt, 0xff, MSIC_FIFO_SIZE_BYTES);
  
--static int uvc_video_clock_init(struct uvc_streaming *stream)
-+static void uvc_video_clock_reset(struct uvc_streaming *stream)
+-	msic->irq_domain = irq_domain_add_nomap(dn, &msic_host_ops, msic);
++	msic->irq_domain = irq_domain_add_nomap(dn, 0, &msic_host_ops, msic);
+ 	if (!msic->irq_domain) {
+ 		printk(KERN_ERR "axon_msi: couldn't allocate irq_domain for %s\n",
+ 		       dn->full_name);
+diff --git a/arch/powerpc/platforms/cell/beat_interrupt.c b/arch/powerpc/platforms/cell/beat_interrupt.c
+index e5c3a2c..f9a48af 100644
+--- a/arch/powerpc/platforms/cell/beat_interrupt.c
++++ b/arch/powerpc/platforms/cell/beat_interrupt.c
+@@ -239,7 +239,7 @@ void __init beatic_init_IRQ(void)
+ 	ppc_md.get_irq = beatic_get_irq;
+ 
+ 	/* Allocate an irq host */
+-	beatic_host = irq_domain_add_nomap(NULL, &beatic_pic_host_ops, NULL);
++	beatic_host = irq_domain_add_nomap(NULL, 0, &beatic_pic_host_ops, NULL);
+ 	BUG_ON(beatic_host == NULL);
+ 	irq_set_default_host(beatic_host);
+ }
+diff --git a/arch/powerpc/platforms/powermac/smp.c b/arch/powerpc/platforms/powermac/smp.c
+index a81e5a8..b4ddaa3 100644
+--- a/arch/powerpc/platforms/powermac/smp.c
++++ b/arch/powerpc/platforms/powermac/smp.c
+@@ -192,7 +192,7 @@ static int psurge_secondary_ipi_init(void)
  {
- 	struct uvc_clock *clock = &stream->clock;
+ 	int rc = -ENOMEM;
  
--	spin_lock_init(&clock->lock);
- 	clock->head = 0;
- 	clock->count = 0;
--	clock->size = 32;
- 	clock->last_sof = -1;
- 	clock->sof_offset = -1;
-+}
-+
-+static int uvc_video_clock_init(struct uvc_streaming *stream)
-+{
-+	struct uvc_clock *clock = &stream->clock;
-+
-+	spin_lock_init(&clock->lock);
-+	clock->size = 32;
+-	psurge_host = irq_domain_add_nomap(NULL, &psurge_host_ops, NULL);
++	psurge_host = irq_domain_add_nomap(NULL, 0, &psurge_host_ops, NULL);
  
- 	clock->samples = kmalloc(clock->size * sizeof(*clock->samples),
- 				 GFP_KERNEL);
- 	if (clock->samples == NULL)
- 		return -ENOMEM;
+ 	if (psurge_host)
+ 		psurge_secondary_virq = irq_create_direct_mapping(psurge_host);
+diff --git a/arch/powerpc/platforms/ps3/interrupt.c b/arch/powerpc/platforms/ps3/interrupt.c
+index 2a4ff86..5f3b232 100644
+--- a/arch/powerpc/platforms/ps3/interrupt.c
++++ b/arch/powerpc/platforms/ps3/interrupt.c
+@@ -753,9 +753,8 @@ void __init ps3_init_IRQ(void)
+ 	unsigned cpu;
+ 	struct irq_domain *host;
  
-+	uvc_video_clock_reset(stream);
-+
- 	return 0;
+-	host = irq_domain_add_nomap(NULL, &ps3_host_ops, NULL);
++	host = irq_domain_add_nomap(NULL, PS3_PLUG_MAX + 1, &ps3_host_ops, NULL);
+ 	irq_set_default_host(host);
+-	irq_set_virq_count(PS3_PLUG_MAX + 1);
+ 
+ 	for_each_possible_cpu(cpu) {
+ 		struct ps3_private *pd = &per_cpu(ps3_private, cpu);
+diff --git a/include/linux/irqdomain.h b/include/linux/irqdomain.h
+index 7a7af17..d0995bd 100644
+--- a/include/linux/irqdomain.h
++++ b/include/linux/irqdomain.h
+@@ -98,6 +98,9 @@ struct irq_domain {
+ 			unsigned int size;
+ 			unsigned int *revmap;
+ 		} linear;
++		struct {
++			unsigned int max_irq;
++		} nomap;
+ 		struct radix_tree_root tree;
+ 	} revmap_data;
+ 	const struct irq_domain_ops *ops;
+@@ -120,6 +123,7 @@ struct irq_domain *irq_domain_add_linear(struct device_node *of_node,
+ 					 const struct irq_domain_ops *ops,
+ 					 void *host_data);
+ struct irq_domain *irq_domain_add_nomap(struct device_node *of_node,
++					 unsigned int max_irq,
+ 					 const struct irq_domain_ops *ops,
+ 					 void *host_data);
+ struct irq_domain *irq_domain_add_tree(struct device_node *of_node,
+@@ -128,7 +132,6 @@ struct irq_domain *irq_domain_add_tree(struct device_node *of_node,
+ 
+ extern struct irq_domain *irq_find_host(struct device_node *node);
+ extern void irq_set_default_host(struct irq_domain *host);
+-extern void irq_set_virq_count(unsigned int count);
+ 
+ static inline struct irq_domain *irq_domain_add_legacy_isa(
+ 				struct device_node *of_node,
+@@ -140,7 +143,6 @@ static inline struct irq_domain *irq_domain_add_legacy_isa(
+ }
+ extern struct irq_domain *irq_find_host(struct device_node *node);
+ extern void irq_set_default_host(struct irq_domain *host);
+-extern void irq_set_virq_count(unsigned int count);
+ 
+ 
+ extern unsigned int irq_create_mapping(struct irq_domain *host,
+diff --git a/kernel/irq/irqdomain.c b/kernel/irq/irqdomain.c
+index df92a34..49d20d4 100644
+--- a/kernel/irq/irqdomain.c
++++ b/kernel/irq/irqdomain.c
+@@ -24,7 +24,6 @@ static LIST_HEAD(irq_domain_list);
+ static DEFINE_MUTEX(irq_domain_mutex);
+ 
+ static DEFINE_MUTEX(revmap_trees_mutex);
+-static unsigned int irq_virq_count = NR_IRQS;
+ static struct irq_domain *irq_default_domain;
+ 
+ /**
+@@ -185,13 +184,16 @@ struct irq_domain *irq_domain_add_linear(struct device_node *of_node,
  }
  
-@@ -1424,8 +1432,6 @@ static void uvc_uninit_video(struct uvc_
- 
- 	if (free_buffers)
- 		uvc_free_urb_buffers(stream);
--
--	uvc_video_clock_cleanup(stream);
+ struct irq_domain *irq_domain_add_nomap(struct device_node *of_node,
++					 unsigned int max_irq,
+ 					 const struct irq_domain_ops *ops,
+ 					 void *host_data)
+ {
+ 	struct irq_domain *domain = irq_domain_alloc(of_node,
+ 					IRQ_DOMAIN_MAP_NOMAP, ops, host_data);
+-	if (domain)
++	if (domain) {
++		domain->revmap_data.nomap.max_irq = max_irq ? max_irq : ~0;
+ 		irq_domain_add(domain);
++	}
+ 	return domain;
  }
  
- /*
-@@ -1555,10 +1561,6 @@ static int uvc_init_video(struct uvc_str
+@@ -263,22 +265,6 @@ void irq_set_default_host(struct irq_domain *domain)
+ 	irq_default_domain = domain;
+ }
  
- 	uvc_video_stats_start(stream);
- 
--	ret = uvc_video_clock_init(stream);
--	if (ret < 0)
--		return ret;
+-/**
+- * irq_set_virq_count() - Set the maximum number of linux irqs
+- * @count: number of linux irqs, capped with NR_IRQS
+- *
+- * This is mainly for use by platforms like iSeries who want to program
+- * the virtual irq number in the controller to avoid the reverse mapping
+- */
+-void irq_set_virq_count(unsigned int count)
+-{
+-	pr_debug("irq: Trying to set virq count to %d\n", count);
 -
- 	if (intf->num_altsetting > 1) {
- 		struct usb_host_endpoint *best_ep = NULL;
- 		unsigned int best_psize = 3 * 1024;
-@@ -1683,6 +1685,8 @@ int uvc_video_resume(struct uvc_streamin
- 
- 	stream->frozen = 0;
- 
-+	uvc_video_clock_reset(stream);
-+
- 	ret = uvc_commit_video(stream, &stream->ctrl);
- 	if (ret < 0) {
- 		uvc_queue_enable(&stream->queue, 0);
-@@ -1819,25 +1823,35 @@ int uvc_video_enable(struct uvc_streamin
- 		uvc_uninit_video(stream, 1);
- 		usb_set_interface(stream->dev->udev, stream->intfnum, 0);
- 		uvc_queue_enable(&stream->queue, 0);
-+		uvc_video_clock_cleanup(stream);
+-	BUG_ON(count < NUM_ISA_INTERRUPTS);
+-	if (count < NR_IRQS)
+-		irq_virq_count = count;
+-}
+-
+ static int irq_setup_virq(struct irq_domain *domain, unsigned int virq,
+ 			    irq_hw_number_t hwirq)
+ {
+@@ -322,13 +308,12 @@ unsigned int irq_create_direct_mapping(struct irq_domain *domain)
+ 		pr_debug("irq: create_direct virq allocation failed\n");
  		return 0;
  	}
+-	if (virq >= irq_virq_count) {
++	if (virq >= domain->revmap_data.nomap.max_irq) {
+ 		pr_err("ERROR: no free irqs available below %i maximum\n",
+-			irq_virq_count);
++			domain->revmap_data.nomap.max_irq);
+ 		irq_free_desc(virq);
+ 		return 0;
+ 	}
+-
+ 	pr_debug("irq: create_direct obtained virq %d\n", virq);
  
--	ret = uvc_queue_enable(&stream->queue, 1);
-+	ret = uvc_video_clock_init(stream);
- 	if (ret < 0)
- 		return ret;
- 
-+	ret = uvc_queue_enable(&stream->queue, 1);
-+	if (ret < 0)
-+		goto error_queue;
-+
- 	/* Commit the streaming parameters. */
- 	ret = uvc_commit_video(stream, &stream->ctrl);
--	if (ret < 0) {
--		uvc_queue_enable(&stream->queue, 0);
--		return ret;
--	}
-+	if (ret < 0)
-+		goto error_commit;
- 
- 	ret = uvc_init_video(stream, GFP_KERNEL);
--	if (ret < 0) {
--		usb_set_interface(stream->dev->udev, stream->intfnum, 0);
--		uvc_queue_enable(&stream->queue, 0);
--	}
-+	if (ret < 0)
-+		goto error_video;
-+
-+	return 0;
-+
-+error_video:
-+	usb_set_interface(stream->dev->udev, stream->intfnum, 0);
-+error_commit:
-+	uvc_queue_enable(&stream->queue, 0);
-+error_queue:
-+	uvc_video_clock_cleanup(stream);
- 
- 	return ret;
- }
-
+ 	if (irq_setup_virq(domain, virq, virq)) {
+-- 
+1.7.9.1
 
