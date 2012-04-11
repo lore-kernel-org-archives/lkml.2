@@ -1,60 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757455Ab2DKKnE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Apr 2012 06:43:04 -0400
-Received: from e28smtp02.in.ibm.com ([122.248.162.2]:42139 "EHLO
-	e28smtp02.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757167Ab2DKKnC (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Apr 2012 06:43:02 -0400
-From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-To: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
-        LKML <linux-kernel@vger.kernel.org>, Linux-mm <linux-mm@kvack.org>,
-        Oleg Nesterov <oleg@redhat.com>, Andi Kleen <andi@firstfloor.org>,
-        Christoph Hellwig <hch@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Anton Arapov <anton@redhat.com>
-Date: Wed, 11 Apr 2012 16:05:16 +0530
-Message-Id: <20120411103516.23245.2700.sendpatchset@srdronam.in.ibm.com>
-Subject: [PATCH 1/2] uprobes/core: Make background page replacement logic account for rss_stat counters
-x-cbid: 12041110-5816-0000-0000-000002183271
+	id S1755984Ab2DKKr4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Apr 2012 06:47:56 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:11602 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754394Ab2DKKrz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Apr 2012 06:47:55 -0400
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+	Kingdom.
+	Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+In-Reply-To: <20120409190350.GA14716@redhat.com>
+References: <20120409190350.GA14716@redhat.com> <20120409190323.GA14712@redhat.com>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: dhowells@redhat.com, Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Subject: Re: [PATCH 1/1] cred: copy_process() should clear child->replacement_session_keyring
+Date: Wed, 11 Apr 2012 11:47:49 +0100
+Message-ID: <14057.1334141269@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+Oleg Nesterov <oleg@redhat.com> wrote:
 
-Background page replacement logic adds a new anonymous page instead of a
-filebacked(while inserting a breakpoint) / anonymous page(while removing a
-breakpoint). Hence logic should take care to update the rss_stat counters
-accordingly. This bug became apparent courtesy commit c3f0327f8e9d7
+> keyctl_session_to_parent(task) sets ->replacement_session_keyring,
+> it should be processed and cleared by key_replace_session_keyring().
+> 
+> However, this task can fork before it notices TIF_NOTIFY_RESUME and
+> the new child gets the bogus ->replacement_session_keyring copied by
+> dup_task_struct(). This is obviously wrong and, if nothing else, this
+> leads to put_cred(already_freed_cred).
+> 
+> change copy_creds() to clear this member. If copy_process() fails
+> before this point the wrong ->replacement_session_keyring doesn't
+> matter, exit_creds() won't be called.
+> 
+> Cc: <stable@vger.kernel.org>
+> Signed-off-by: Oleg Nesterov <oleg@redhat.com>
 
-Signed-off-by: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
----
- kernel/events/uprobes.c |    5 +++++
- 1 files changed, 5 insertions(+), 0 deletions(-)
-
-diff --git a/kernel/events/uprobes.c b/kernel/events/uprobes.c
-index 29e881b..c5caeec 100644
---- a/kernel/events/uprobes.c
-+++ b/kernel/events/uprobes.c
-@@ -160,6 +160,11 @@ static int __replace_page(struct vm_area_struct *vma, struct page *page, struct 
- 	get_page(kpage);
- 	page_add_new_anon_rmap(kpage, vma, addr);
- 
-+	if (!PageAnon(page)) {
-+		dec_mm_counter(mm, MM_FILEPAGES);
-+		inc_mm_counter(mm, MM_ANONPAGES);
-+	}
-+
- 	flush_cache_page(vma, addr, pte_pfn(*ptep));
- 	ptep_clear_flush(vma, addr, ptep);
- 	set_pte_at_notify(mm, addr, ptep, mk_pte(kpage, vma->vm_page_prot));
-
-
+Acked-by: David Howells <dhowells@redhat.com>
