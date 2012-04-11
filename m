@@ -1,46 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754161Ab2DKHbh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Apr 2012 03:31:37 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:43470 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752814Ab2DKHbg (ORCPT
+	id S1752874Ab2DKHgJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Apr 2012 03:36:09 -0400
+Received: from eu1sys200aog113.obsmtp.com ([207.126.144.135]:39936 "EHLO
+	eu1sys200aog113.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750854Ab2DKHgH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Apr 2012 03:31:36 -0400
+	Wed, 11 Apr 2012 03:36:07 -0400
+Message-ID: <4F85337C.7080806@st.com>
+Date: Wed, 11 Apr 2012 08:32:12 +0100
+From: Srinivas KANDAGATLA <srinivas.kandagatla@st.com>
+Reply-To: srinivas.kandagatla@st.com
+Organization: STMicroelectronics
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.28) Gecko/20120313 Thunderbird/3.1.20
 MIME-Version: 1.0
-In-Reply-To: <1333616843-3607-1-git-send-email-b29396@freescale.com>
-References: <1333616843-3607-1-git-send-email-b29396@freescale.com>
-Date: Wed, 11 Apr 2012 09:31:35 +0200
-Message-ID: <CACRpkdbWm8DbN33FT2YONNYcq2M4KrK5VSf3Yo2p3YJXucoZ=Q@mail.gmail.com>
-Subject: Re: [PATCH 1/1] pinctrl: fix compile error if not select PINMUX support
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Dong Aisheng <b29396@freescale.com>
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linus.walleij@stericsson.com, swarren@wwwdotorg.org
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: Mauro Carvalho Chehab <mchehab@infradead.org>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, stable@kernel.org
+Subject: Re: linux-next: build failure after merge of the v4l-dvb tree
+References: <20120411121058.088008039d669521e9afdfeb@canb.auug.org.au>
+In-Reply-To: <20120411121058.088008039d669521e9afdfeb@canb.auug.org.au>
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 5, 2012 at 11:07 AM, Dong Aisheng <b29396@freescale.com> wrote:
+I see no reason why __kfifo_max_r should not be exported to modules.
+All the __kfifo_* functions in kfifo.h are already exported except this one.
+Am happy to generate a patch.
 
-> From: Dong Aisheng <dong.aisheng@linaro.org>
+On 11/04/12 03:10, Stephen Rothwell wrote:
+> Hi Mauro,
 >
-> The pinctrl_register_mappings is defined in core.c, so change the dependent
-> macro from CONFIG_MUX to CONFIG_PINCTRL.
+> After merging the v4l-dvb tree, today's linux-next build (x86_64
+> allmodconfig) failed like this:
 >
-> The compile error message is:
-> drivers/pinctrl/core.c:886: error: redefinition of 'pinctrl_register_mappings'
-> include/linux/pinctrl/machine.h:160: note: previous definition of 'pinctrl_register_mappings' was here
-> make[2]: *** [drivers/pinctrl/core.o] Error 1
-> make[1]: *** [drivers/pinctrl] Error 2
-> make: *** [drivers] Error 2
+> ERROR: "__kfifo_max_r" [drivers/media/rc/rc-core.ko] undefined!
 >
-> Signed-off-by: Dong Aisheng <dong.aisheng@linaro.org>
+> Caused by commit 24a19bcbceda ("[media] ir-raw: Check available elements
+> in kfifo before adding").  kfifo_avail expands to a call to __kfifo_max_r
+> which is not exported to modules.
+>
+> I have used the v4l-dvb tree from next-20120410 for today.
 
-Thanks, applied.
-
-(Catching up with the patch queue...)
-
-Yours,
-Linus Walleij
