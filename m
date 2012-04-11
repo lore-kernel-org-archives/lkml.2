@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933937Ab2DKXQq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Apr 2012 19:16:46 -0400
-Received: from mail-pz0-f52.google.com ([209.85.210.52]:63303 "EHLO
-	mail-pz0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933883Ab2DKXQm (ORCPT
+	id S964793Ab2DKXRE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Apr 2012 19:17:04 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:44096 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S964778Ab2DKXQ5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Apr 2012 19:16:42 -0400
-Message-Id: <20120411231027.327921349@linuxfoundation.org>
+	Wed, 11 Apr 2012 19:16:57 -0400
+Message-Id: <20120411231025.678269926@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Wed, 11 Apr 2012 16:11:11 -0700
+Date: Wed, 11 Apr 2012 16:11:02 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
-Subject: [ 53/78] ARM: at91/USB host: specify and handle properly vbus_pin_active_low
+        alan@lxorguk.ukuu.org.uk, "Rafael J. Wysocki" <rjw@sisk.pl>
+Subject: [ 44/78] PM / Sleep: Move disabling of usermode helpers to the freezer
 In-Reply-To: <20120411231102.GA6404@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,77 +24,179 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Nicolas Ferre <nicolas.ferre@atmel.com>
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
 
-commit cca0355a09b1bfe9f8985285199a346e13cacf39 upstream.
+commit 1e73203cd1157a03facc41ffb54050f5b28e55bd upstream.
 
-Due to an error while handling vbus_pin_active_low in ohci-at91 driver,
-the specification of this property was not good in devices/board files.
+The core suspend/hibernation code calls usermodehelper_disable() to
+avoid race conditions between the freezer and the starting of
+usermode helpers and each code path has to do that on its own.
+However, it is always called right before freeze_processes()
+and usermodehelper_enable() is always called right after
+thaw_processes().  For this reason, to avoid code duplication and
+to make the connection between usermodehelper_disable() and the
+freezer more visible, make freeze_processes() call it and remove the
+direct usermodehelper_disable() and usermodehelper_enable() calls
+from all suspend/hibernation code paths.
 
-Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
-Acked-by: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
+Acked-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/arm/mach-at91/at91sam9263_devices.c |    3 ++-
- arch/arm/mach-at91/at91sam9g45_devices.c |    6 ++++--
- arch/arm/mach-at91/board-sam9263ek.c     |    1 +
- arch/arm/mach-at91/board-sam9m10g45ek.c  |    1 +
- 4 files changed, 8 insertions(+), 3 deletions(-)
+ kernel/power/hibernate.c |   11 -----------
+ kernel/power/process.c   |    7 +++++++
+ kernel/power/suspend.c   |    7 -------
+ kernel/power/user.c      |   10 +---------
+ 4 files changed, 8 insertions(+), 27 deletions(-)
 
---- a/arch/arm/mach-at91/at91sam9263_devices.c
-+++ b/arch/arm/mach-at91/at91sam9263_devices.c
-@@ -71,7 +71,8 @@ void __init at91_add_device_usbh(struct
- 	/* Enable VBus control for UHP ports */
- 	for (i = 0; i < data->ports; i++) {
- 		if (gpio_is_valid(data->vbus_pin[i]))
--			at91_set_gpio_output(data->vbus_pin[i], 0);
-+			at91_set_gpio_output(data->vbus_pin[i],
-+					     data->vbus_pin_active_low[i]);
- 	}
+--- a/kernel/power/hibernate.c
++++ b/kernel/power/hibernate.c
+@@ -16,7 +16,6 @@
+ #include <linux/string.h>
+ #include <linux/device.h>
+ #include <linux/async.h>
+-#include <linux/kmod.h>
+ #include <linux/delay.h>
+ #include <linux/fs.h>
+ #include <linux/mount.h>
+@@ -618,10 +617,6 @@ int hibernate(void)
+ 	sys_sync();
+ 	printk("done.\n");
  
- 	/* Enable overcurrent notification */
---- a/arch/arm/mach-at91/at91sam9g45_devices.c
-+++ b/arch/arm/mach-at91/at91sam9g45_devices.c
-@@ -122,7 +122,8 @@ void __init at91_add_device_usbh_ohci(st
- 	/* Enable VBus control for UHP ports */
- 	for (i = 0; i < data->ports; i++) {
- 		if (gpio_is_valid(data->vbus_pin[i]))
--			at91_set_gpio_output(data->vbus_pin[i], 0);
-+			at91_set_gpio_output(data->vbus_pin[i],
-+					     data->vbus_pin_active_low[i]);
- 	}
+-	error = usermodehelper_disable();
+-	if (error)
+-		goto Exit;
+-
+ 	error = freeze_processes();
+ 	if (error)
+ 		goto Free_bitmaps;
+@@ -658,7 +653,6 @@ int hibernate(void)
+  Thaw:
+ 	thaw_processes();
+  Free_bitmaps:
+-	usermodehelper_enable();
+ 	free_basic_memory_bitmaps();
+  Exit:
+ 	pm_notifier_call_chain(PM_POST_HIBERNATION);
+@@ -778,10 +772,6 @@ static int software_resume(void)
+ 	if (error)
+ 		goto close_finish;
  
- 	/* Enable overcurrent notification */
-@@ -183,7 +184,8 @@ void __init at91_add_device_usbh_ehci(st
- 	/* Enable VBus control for UHP ports */
- 	for (i = 0; i < data->ports; i++) {
- 		if (gpio_is_valid(data->vbus_pin[i]))
--			at91_set_gpio_output(data->vbus_pin[i], 0);
-+			at91_set_gpio_output(data->vbus_pin[i],
-+					     data->vbus_pin_active_low[i]);
- 	}
+-	error = usermodehelper_disable();
+-	if (error)
+-		goto close_finish;
+-
+ 	pr_debug("PM: Preparing processes for restore.\n");
+ 	error = freeze_processes();
+ 	if (error) {
+@@ -800,7 +790,6 @@ static int software_resume(void)
+ 	swsusp_free();
+ 	thaw_processes();
+  Done:
+-	usermodehelper_enable();
+ 	free_basic_memory_bitmaps();
+  Finish:
+ 	pm_notifier_call_chain(PM_POST_RESTORE);
+--- a/kernel/power/process.c
++++ b/kernel/power/process.c
+@@ -16,6 +16,7 @@
+ #include <linux/freezer.h>
+ #include <linux/delay.h>
+ #include <linux/workqueue.h>
++#include <linux/kmod.h>
  
- 	usbh_ehci_data = *data;
---- a/arch/arm/mach-at91/board-sam9263ek.c
-+++ b/arch/arm/mach-at91/board-sam9263ek.c
-@@ -74,6 +74,7 @@ static void __init ek_init_early(void)
- static struct at91_usbh_data __initdata ek_usbh_data = {
- 	.ports		= 2,
- 	.vbus_pin	= { AT91_PIN_PA24, AT91_PIN_PA21 },
-+	.vbus_pin_active_low = {1, 1},
- 	.overcurrent_pin= {-EINVAL, -EINVAL},
- };
+ /* 
+  * Timeout for stopping processes
+@@ -122,6 +123,10 @@ int freeze_processes(void)
+ {
+ 	int error;
  
---- a/arch/arm/mach-at91/board-sam9m10g45ek.c
-+++ b/arch/arm/mach-at91/board-sam9m10g45ek.c
-@@ -69,6 +69,7 @@ static void __init ek_init_early(void)
- static struct at91_usbh_data __initdata ek_usbh_hs_data = {
- 	.ports		= 2,
- 	.vbus_pin	= {AT91_PIN_PD1, AT91_PIN_PD3},
-+	.vbus_pin_active_low = {1, 1},
- 	.overcurrent_pin= {-EINVAL, -EINVAL},
- };
++	error = usermodehelper_disable();
++	if (error)
++		return error;
++
+ 	if (!pm_freezing)
+ 		atomic_inc(&system_freezing_cnt);
+ 
+@@ -187,6 +192,8 @@ void thaw_processes(void)
+ 	} while_each_thread(g, p);
+ 	read_unlock(&tasklist_lock);
+ 
++	usermodehelper_enable();
++
+ 	schedule();
+ 	printk("done.\n");
+ }
+--- a/kernel/power/suspend.c
++++ b/kernel/power/suspend.c
+@@ -12,7 +12,6 @@
+ #include <linux/delay.h>
+ #include <linux/errno.h>
+ #include <linux/init.h>
+-#include <linux/kmod.h>
+ #include <linux/console.h>
+ #include <linux/cpu.h>
+ #include <linux/syscalls.h>
+@@ -101,17 +100,12 @@ static int suspend_prepare(void)
+ 	if (error)
+ 		goto Finish;
+ 
+-	error = usermodehelper_disable();
+-	if (error)
+-		goto Finish;
+-
+ 	error = suspend_freeze_processes();
+ 	if (!error)
+ 		return 0;
+ 
+ 	suspend_stats.failed_freeze++;
+ 	dpm_save_failed_step(SUSPEND_FREEZE);
+-	usermodehelper_enable();
+  Finish:
+ 	pm_notifier_call_chain(PM_POST_SUSPEND);
+ 	pm_restore_console();
+@@ -259,7 +253,6 @@ int suspend_devices_and_enter(suspend_st
+ static void suspend_finish(void)
+ {
+ 	suspend_thaw_processes();
+-	usermodehelper_enable();
+ 	pm_notifier_call_chain(PM_POST_SUSPEND);
+ 	pm_restore_console();
+ }
+--- a/kernel/power/user.c
++++ b/kernel/power/user.c
+@@ -12,7 +12,6 @@
+ #include <linux/suspend.h>
+ #include <linux/syscalls.h>
+ #include <linux/reboot.h>
+-#include <linux/kmod.h>
+ #include <linux/string.h>
+ #include <linux/device.h>
+ #include <linux/miscdevice.h>
+@@ -222,14 +221,8 @@ static long snapshot_ioctl(struct file *
+ 		sys_sync();
+ 		printk("done.\n");
+ 
+-		error = usermodehelper_disable();
+-		if (error)
+-			break;
+-
+ 		error = freeze_processes();
+-		if (error)
+-			usermodehelper_enable();
+-		else
++		if (!error)
+ 			data->frozen = 1;
+ 		break;
+ 
+@@ -238,7 +231,6 @@ static long snapshot_ioctl(struct file *
+ 			break;
+ 		pm_restore_gfp_mask();
+ 		thaw_processes();
+-		usermodehelper_enable();
+ 		data->frozen = 0;
+ 		break;
  
 
 
