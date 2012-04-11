@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753130Ab2DKGAd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Apr 2012 02:00:33 -0400
+	id S1753345Ab2DKGAs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Apr 2012 02:00:48 -0400
 Received: from mail-pb0-f46.google.com ([209.85.160.46]:48331 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752759Ab2DKGAc (ORCPT
+	with ESMTP id S1753293Ab2DKGAq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Apr 2012 02:00:32 -0400
+	Wed, 11 Apr 2012 02:00:46 -0400
 From: Cong Wang <xiyou.wangcong@gmail.com>
 To: linux-kernel@vger.kernel.org
 Cc: Andrew Morton <akpm@linux-foundation.org>,
@@ -15,140 +15,165 @@ Cc: Andrew Morton <akpm@linux-foundation.org>,
         Al Viro <viro@zeniv.linux.org.uk>,
         Vasiliy Kulikov <segoon@openwall.com>,
         David Rientjes <rientjes@google.com>
-Subject: [PATCH 1/6 v3] proc: clean up /proc/<pid>/environ handling
-Date: Wed, 11 Apr 2012 13:59:22 +0800
-Message-Id: <1334123976-11681-1-git-send-email-xiyou.wangcong@gmail.com>
+Subject: [PATCH 2/6] proc: unify ptrace_may_access locking code
+Date: Wed, 11 Apr 2012 13:59:23 +0800
+Message-Id: <1334123976-11681-2-git-send-email-xiyou.wangcong@gmail.com>
 X-Mailer: git-send-email 1.7.7.6
+In-Reply-To: <1334123976-11681-1-git-send-email-xiyou.wangcong@gmail.com>
+References: <1334123976-11681-1-git-send-email-xiyou.wangcong@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-V3: Unify environ_open with mem_open(), and mem_release() too
-V2: Add similar fix with 6d08f2c7139790c268820a2e590795cb8333181a
-"proc: make sure mem_open() doesn't pin the target's memory",
-suggested by Oleg.
-
-Similar to e268337dfe2 ("proc: clean up and fix /proc/<pid>/mem
-handling"), move the check of permission to open(), this will simplify
-read() code.
+Unify mutex_lock+ptrace_may_access code and rename lock_trace()
+to task_access_lock(), which better describes what it does.
 
 Cc: Oleg Nesterov <oleg@redhat.com>
 Cc: Alexey Dobriyan <adobriyan@gmail.com>
 Signed-off-by: Cong Wang <xiyou.wangcong@gmail.com>
 ---
- fs/proc/base.c |   45 ++++++++++++++++++++++++---------------------
- 1 files changed, 24 insertions(+), 21 deletions(-)
+ fs/proc/base.c |   36 +++++++++++++++---------------------
+ 1 files changed, 15 insertions(+), 21 deletions(-)
 
 diff --git a/fs/proc/base.c b/fs/proc/base.c
-index 1c8b280..f3c4887 100644
+index f3c4887..919d14c 100644
 --- a/fs/proc/base.c
 +++ b/fs/proc/base.c
-@@ -677,7 +677,7 @@ static const struct file_operations proc_single_file_operations = {
- 	.release	= single_release,
- };
+@@ -281,19 +281,19 @@ static int proc_pid_wchan(struct task_struct *task, char *buffer)
+ }
+ #endif /* CONFIG_KALLSYMS */
  
--static int mem_open(struct inode* inode, struct file* file)
-+static int __mem_open(struct inode* inode, struct file* file, unsigned int mode)
+-static int lock_trace(struct task_struct *task)
++static int task_access_lock(struct task_struct *task, unsigned int mode)
  {
- 	struct task_struct *task = get_proc_task(file->f_path.dentry->d_inode);
- 	struct mm_struct *mm;
-@@ -685,7 +685,7 @@ static int mem_open(struct inode* inode, struct file* file)
- 	if (!task)
- 		return -ESRCH;
- 
--	mm = mm_access(task, PTRACE_MODE_ATTACH);
-+	mm = mm_access(task, mode);
- 	put_task_struct(task);
- 
- 	if (IS_ERR(mm))
-@@ -705,6 +705,11 @@ static int mem_open(struct inode* inode, struct file* file)
+ 	int err = mutex_lock_killable(&task->signal->cred_guard_mutex);
+ 	if (err)
+ 		return err;
+-	if (!ptrace_may_access(task, PTRACE_MODE_ATTACH)) {
++	if (!ptrace_may_access(task, mode)) {
+ 		mutex_unlock(&task->signal->cred_guard_mutex);
+ 		return -EPERM;
+ 	}
  	return 0;
  }
  
-+static int mem_open(struct inode* inode, struct file* file)
-+{
-+	return __mem_open(inode, file, PTRACE_MODE_ATTACH);
-+}
-+
- static ssize_t mem_rw(struct file *file, char __user *buf,
- 			size_t count, loff_t *ppos, int write)
+-static void unlock_trace(struct task_struct *task)
++static void task_access_unlock(struct task_struct *task)
  {
-@@ -801,30 +806,29 @@ static const struct file_operations proc_mem_operations = {
- 	.release	= mem_release,
- };
+ 	mutex_unlock(&task->signal->cred_guard_mutex);
+ }
+@@ -319,7 +319,7 @@ static int proc_pid_stack(struct seq_file *m, struct pid_namespace *ns,
+ 	trace.entries		= entries;
+ 	trace.skip		= 0;
  
-+static int environ_open(struct inode* inode, struct file* file)
-+{
-+	return __mem_open(inode, file, PTRACE_MODE_READ);
-+}
-+
- static ssize_t environ_read(struct file *file, char __user *buf,
- 			size_t count, loff_t *ppos)
+-	err = lock_trace(task);
++	err = task_access_lock(task, PTRACE_MODE_ATTACH);
+ 	if (!err) {
+ 		save_stack_trace_tsk(task, &trace);
+ 
+@@ -327,7 +327,7 @@ static int proc_pid_stack(struct seq_file *m, struct pid_namespace *ns,
+ 			seq_printf(m, "[<%pK>] %pS\n",
+ 				   (void *)entries[i], (void *)entries[i]);
+ 		}
+-		unlock_trace(task);
++		task_access_unlock(task);
+ 	}
+ 	kfree(entries);
+ 
+@@ -494,7 +494,7 @@ static int proc_pid_syscall(struct task_struct *task, char *buffer)
  {
--	struct task_struct *task = get_proc_task(file->f_dentry->d_inode);
- 	char *page;
- 	unsigned long src = *ppos;
--	int ret = -ESRCH;
--	struct mm_struct *mm;
-+	int ret = 0;
-+	struct mm_struct *mm = file->private_data;
+ 	long nr;
+ 	unsigned long args[6], sp, pc;
+-	int res = lock_trace(task);
++	int res = task_access_lock(task, PTRACE_MODE_ATTACH);
+ 	if (res)
+ 		return res;
  
--	if (!task)
--		goto out_no_task;
-+	if (!mm)
-+		return 0;
+@@ -508,7 +508,7 @@ static int proc_pid_syscall(struct task_struct *task, char *buffer)
+ 		       nr,
+ 		       args[0], args[1], args[2], args[3], args[4], args[5],
+ 		       sp, pc);
+-	unlock_trace(task);
++	task_access_unlock(task);
+ 	return res;
+ }
+ #endif /* CONFIG_HAVE_ARCH_TRACEHOOK */
+@@ -2180,7 +2180,7 @@ static struct dentry *proc_map_files_lookup(struct inode *dir,
+ 		goto out;
  
--	ret = -ENOMEM;
- 	page = (char *)__get_free_page(GFP_TEMPORARY);
- 	if (!page)
--		goto out;
--
--
--	mm = mm_for_maps(task);
--	ret = PTR_ERR(mm);
--	if (!mm || IS_ERR(mm))
--		goto out_free;
-+		return -ENOMEM;
+ 	result = ERR_PTR(-EACCES);
+-	if (lock_trace(task))
++	if (task_access_lock(task, PTRACE_MODE_ATTACH))
+ 		goto out_put_task;
+ 
+ 	result = ERR_PTR(-ENOENT);
+@@ -2202,7 +2202,7 @@ out_no_vma:
+ 	up_read(&mm->mmap_sem);
+ 	mmput(mm);
+ out_unlock:
+-	unlock_trace(task);
++	task_access_unlock(task);
+ out_put_task:
+ 	put_task_struct(task);
+ out:
+@@ -2236,7 +2236,7 @@ proc_map_files_readdir(struct file *filp, void *dirent, filldir_t filldir)
+ 		goto out;
+ 
+ 	ret = -EACCES;
+-	if (lock_trace(task))
++	if (task_access_lock(task, PTRACE_MODE_ATTACH))
+ 		goto out_put_task;
  
  	ret = 0;
-+	if (!atomic_inc_not_zero(&mm->mm_users))
-+		goto free;
- 	while (count > 0) {
- 		int this_len, retval, max_len;
- 
-@@ -836,7 +840,7 @@ static ssize_t environ_read(struct file *file, char __user *buf,
- 		max_len = (count > PAGE_SIZE) ? PAGE_SIZE : count;
- 		this_len = (this_len > max_len) ? max_len : this_len;
- 
--		retval = access_process_vm(task, (mm->env_start + src),
-+		retval = access_remote_vm(mm, (mm->env_start + src),
- 			page, this_len, 0);
- 
- 		if (retval <= 0) {
-@@ -855,19 +859,18 @@ static ssize_t environ_read(struct file *file, char __user *buf,
- 		count -= retval;
+@@ -2336,7 +2336,7 @@ proc_map_files_readdir(struct file *filp, void *dirent, filldir_t filldir)
  	}
- 	*ppos = src;
+ 
+ out_unlock:
+-	unlock_trace(task);
++	task_access_unlock(task);
+ out_put_task:
+ 	put_task_struct(task);
+ out:
+@@ -2897,15 +2897,10 @@ static int do_io_accounting(struct task_struct *task, char *buffer, int whole)
+ 	unsigned long flags;
+ 	int result;
+ 
+-	result = mutex_lock_killable(&task->signal->cred_guard_mutex);
++	result = task_access_lock(task, PTRACE_MODE_READ);
+ 	if (result)
+ 		return result;
+ 
+-	if (!ptrace_may_access(task, PTRACE_MODE_READ)) {
+-		result = -EACCES;
+-		goto out_unlock;
+-	}
 -
- 	mmput(mm);
--out_free:
-+
-+free:
- 	free_page((unsigned long) page);
--out:
--	put_task_struct(task);
--out_no_task:
- 	return ret;
+ 	if (whole && lock_task_sighand(task, &flags)) {
+ 		struct task_struct *t = task;
+ 
+@@ -2930,8 +2925,7 @@ static int do_io_accounting(struct task_struct *task, char *buffer, int whole)
+ 			(unsigned long long)acct.read_bytes,
+ 			(unsigned long long)acct.write_bytes,
+ 			(unsigned long long)acct.cancelled_write_bytes);
+-out_unlock:
+-	mutex_unlock(&task->signal->cred_guard_mutex);
++	task_access_unlock(task);
+ 	return result;
  }
  
- static const struct file_operations proc_environ_operations = {
-+	.open		= environ_open,
- 	.read		= environ_read,
- 	.llseek		= generic_file_llseek,
-+	.release	= mem_release,
- };
- 
- static ssize_t oom_adjust_read(struct file *file, char __user *buf,
+@@ -2949,10 +2943,10 @@ static int proc_tgid_io_accounting(struct task_struct *task, char *buffer)
+ static int proc_pid_personality(struct seq_file *m, struct pid_namespace *ns,
+ 				struct pid *pid, struct task_struct *task)
+ {
+-	int err = lock_trace(task);
++	int err = task_access_lock(task, PTRACE_MODE_ATTACH);
+ 	if (!err) {
+ 		seq_printf(m, "%08x\n", task->personality);
+-		unlock_trace(task);
++		task_access_unlock(task);
+ 	}
+ 	return err;
+ }
 -- 
 1.7.7.6
 
