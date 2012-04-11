@@ -1,26 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754196Ab2DKIOz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Apr 2012 04:14:55 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:38506 "EHLO
+	id S1754244Ab2DKIRQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Apr 2012 04:17:16 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:44097 "EHLO
 	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753718Ab2DKIOx (ORCPT
+	by vger.kernel.org with ESMTP id S1753718Ab2DKIRO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Apr 2012 04:14:53 -0400
-Date: Wed, 11 Apr 2012 09:14:49 +0100
+	Wed, 11 Apr 2012 04:17:14 -0400
+Date: Wed, 11 Apr 2012 09:17:11 +0100
 From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Fabio Estevam <festevam@gmail.com>
-Cc: linux-kernel@vger.kernel.org, gregkh@linuxfoundation.org,
-        Fabio Estevam <fabio.estevam@freescale.com>
-Subject: Re: [PATCH] regmap: Fix build by removing extra parameter from
- regmap_debugfs_init()
-Message-ID: <20120411081449.GA3163@opensource.wolfsonmicro.com>
-References: <1334100546-2534-1-git-send-email-festevam@gmail.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Stephen Warren <swarren@nvidia.com>
+Subject: Re: linux-next: build failure after merge of the regmap tree
+Message-ID: <20120411081711.GB3163@opensource.wolfsonmicro.com>
+References: <20120411141346.3c4dd8e481d052b583ac95b6@canb.auug.org.au>
 MIME-Version: 1.0
 Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="OgqxwSJOaUobr8KG"
+	protocol="application/pgp-signature"; boundary="jho1yZJdad60DJr+"
 Content-Disposition: inline
-In-Reply-To: <1334100546-2534-1-git-send-email-festevam@gmail.com>
+In-Reply-To: <20120411141346.3c4dd8e481d052b583ac95b6@canb.auug.org.au>
 X-Cookie: Reply hazy, ask again later.
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
@@ -28,37 +27,37 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---OgqxwSJOaUobr8KG
+--jho1yZJdad60DJr+
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
 
-On Tue, Apr 10, 2012 at 08:29:06PM -0300, Fabio Estevam wrote:
-> commit b4eb511 (Merge branches 'regmap-mmio', 'regmap-naming' and 'regmap-linus' into regmap-next)
-> added an extra paramter to the prototype of regmap_debugfs_init() in the case of !CONFIG_DEBUG_FS.
+On Wed, Apr 11, 2012 at 02:13:46PM +1000, Stephen Rothwell wrote:
 
-No it doesn't.  Some commit on one of the branches that got merged adds
-the parameter, and this was already fixed on that branch.
+> Caused by commit f01ee60fffa4 ("regmap: implement register striding").
+> Please build test ...
 
---OgqxwSJOaUobr8KG
+Mainline *still* doesn't build with the .configs I routinely use.
+
+--jho1yZJdad60DJr+
 Content-Type: application/pgp-signature; name="signature.asc"
 Content-Description: Digital signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.11 (GNU/Linux)
 
-iQIcBAEBAgAGBQJPhT1wAAoJEBus8iNuMP3dEmoP/1KgysLfGuGjba7baxd4dBKL
-2/q8+RQ1Lfd7qvGyMSQxFXtqSI/0NlqgM7/49/uItf+mJs9YvaL/5tqLuAJM16VP
-qajqDQPizYUV1mCFkDffBSZubvX+PC6mtvK8Qvq/ip/myZYBBSkC0d0GZw8mt+lA
-XfocEKUP21Wtse5DfpIz/reoscXQ9igBOv5hUGI5XhMnJVzzgCURPcyn5Eusc3tt
-WjJMy8iv0RaezsxG9Mz0yF+SVTA8K54fTqIGAFyxSwtaWHVAeOdB2MQxWbAaGvaA
-J2wwVKQGoszm5S5pFIdZeT9BCoxtuNOKtZeEpV3ncIWoywgS+eOo0yLYuSNOWvII
-BcmOHJz0afgMYkZbmjb1ih1WEZt79HmOCRjp08ocQkpTngV9C4RdT2AwmXwvsVWd
-1Ibce/O9tziF41wAZNZIku7x7aFj4hOIFZ9aPutPryhYoKWJPZLbwPqNI4aHavI6
-o3Ulnvwe8q5dRwVpSg2CjN1qIa4kn+V06WpLhWUVH7Z+nNp9+BpQikpcwSXdkd31
-i7nTTGxOSQrOXup49507haRslfC1YaiRuJAGbLj67tPGrySYtsIvlrQcl1t5BWCI
-p3fIcp8yYT+nrO7BnqHwL/633Ck9oFoJGC2rpMB+0BnPkvWIIPrzlJuaZ/MfKyjF
-nZu9uQEfVU0Ygf6HbYIP
-=gNCt
+iQIcBAEBAgAGBQJPhT3dAAoJEBus8iNuMP3dG4MQAIK4i+3zfcZkpnWYiGEVaB8e
+X6GgmJGF5GSEEzCKzgss51Xm76YKjR6zpamGam55VRR3if95MP98d4ReLjnBTNES
+g5Uiyja4alom6Uax+rQCmdfgYqgVPacXRgiu7IkYNV456KK2SzC3msbZbyeyc8XS
+sGDHqSZCoRVnS4g+eaR3Bbk0HE1dcwVzJlzieuseZ0pWWAozEDpTOyxbK6m+MKEL
+eG1r5E6VdELi2ZgvkGU637No+b1grUXbREqzCF2t9O23u7LLF0PRhiLHEM5d9+QV
+9aoJ2/K4Mql6KWEw+QkFQhcCJEtqZjCyPlFD/Fzj4CqRaP3ZpTBkl/eDufNx4pry
+Hvmht6gjU6XyR/jtXUmv42FIjeKE3/CMwYY3Xk6PBhPSkydmPVuoWyP9o6WYDOFh
+DZ2RUEgeJAnLf6bpjKEB6sIhwpSWy1EAp8OQ0OC372vfSQ/8BqjItGCm+LxO95wN
+3Y3MaBWoYUyu5rP5hlVjiBSuLCQtE+qvkWDLIcKXEyywz+FscJUsBmqgMAhuKkC6
+jPIfBmH9CaVYoB1xLPyXkv16djHQJWCrxwOMz6mY/+zm3n2w/iGrENIFm6XHB2oP
+ian1EkwERXz8tvNtQXWD9vNfmNEwWannMD3ajq7BXIx+x6bLekQqNxCEivfIDyvw
+bXKkt85vxmfSl/lYUbFl
+=7luu
 -----END PGP SIGNATURE-----
 
---OgqxwSJOaUobr8KG--
+--jho1yZJdad60DJr+--
