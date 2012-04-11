@@ -1,45 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760599Ab2DKPZe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Apr 2012 11:25:34 -0400
-Received: from mail-pz0-f52.google.com ([209.85.210.52]:41642 "EHLO
-	mail-pz0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760562Ab2DKPZc (ORCPT
+	id S1758434Ab2DKP0u (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Apr 2012 11:26:50 -0400
+Received: from va3ehsobe010.messaging.microsoft.com ([216.32.180.30]:9563 "EHLO
+	va3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753657Ab2DKP0s (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Apr 2012 11:25:32 -0400
-Date: Wed, 11 Apr 2012 08:25:28 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Felipe Balbi <balbi@ti.com>
-Cc: Michal Nazarewicz <mina86@mina86.com>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] usb: gadget: f_mass_storage: remove deprecated fsg_add()
-Message-ID: <20120411152528.GA27947@kroah.com>
-References: <1ad5f25435fc5d2cd094ae1c68d7831b8b2737ca.1331896818.git.mina86@mina86.com>
- <op.wa9go4093l0zgt@mpn-glaptop>
- <20120411094112.GK12064@arwen.pp.htv.fi>
+	Wed, 11 Apr 2012 11:26:48 -0400
+X-SpamScore: 0
+X-BigFish: VPS0(zzzz1202hzz8275bh8275dhz2dh668h839h93fhd25h)
+X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
+X-WSS-ID: 0M2BMWF-02-1RC-02
+X-M-MSG: 
+Date: Wed, 11 Apr 2012 17:26:40 +0200
+From: Andreas Herrmann <andreas.herrmann3@amd.com>
+To: Ingo Molnar <mingo@kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
+        Thomas Gleixner <tglx@linutronix.de>
+CC: <linux-kernel@vger.kernel.org>
+Subject: [PATCH] x86, amd: Re-enable CPU topology extensions in case BIOS has
+ disabled it
+Message-ID: <20120411152640.GC4794@alberich.amd.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset="utf-8"
 Content-Disposition: inline
-In-Reply-To: <20120411094112.GK12064@arwen.pp.htv.fi>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 11, 2012 at 12:41:13PM +0300, Felipe Balbi wrote:
-> On Fri, Mar 16, 2012 at 12:25:42PM +0100, Michal Nazarewicz wrote:
-> > From: Michal Nazarewicz <mina86@mina86.com>
-> > 
-> > There are no in-tree fsg_add() users and it has been deprecated
-> > since 2.6.35 [1dc90985d1: fsg_add() renamed to fsg_bind_config()] so
-> > out-of-tree users had more then enough time to convert.  Removing.
-> > ---
-> 
-> applied, thanks. Also added your SOB, next time be more careful.
 
-Um, wait, you can't just "add" a SOB, that's not allowed at all, sorry.
+For detection of thread siblings we are relying on the topology
+extension CPUID leafs. Thus we have to re-enable it in case BIOS tries
+to hide the correpsonding CPUID feature flag.
 
-Michal, do you sign-off on this patch?  If so, please do so.
+Cc: stable@vger.kernel.org
+Signed-off-by: Andreas Herrmann <andreas.herrmann3@amd.com>
+---
+ arch/x86/kernel/cpu/amd.c |   18 ++++++++++++++++++
+ 1 files changed, 18 insertions(+), 0 deletions(-)
 
-greg k-h
+diff --git a/arch/x86/kernel/cpu/amd.c b/arch/x86/kernel/cpu/amd.c
+index 0a44b90..56a694b 100644
+--- a/arch/x86/kernel/cpu/amd.c
++++ b/arch/x86/kernel/cpu/amd.c
+@@ -579,6 +579,24 @@ static void __cpuinit init_amd(struct cpuinfo_x86 *c)
+ 		}
+ 	}
+ 
++	/* re-enable TopologyExtensions if switched off by BIOS */
++	if ((c->x86 == 0x15) &&
++	    (c->x86_model >= 0x10) && (c->x86_model <= 0x1f) &&
++	    !cpu_has(c, X86_FEATURE_TOPOEXT)) {
++		u64 val;
++
++		if (!rdmsrl_amd_safe(0xc0011005, &val)) {
++			val |= 1ULL << 54;
++			wrmsrl_amd_safe(0xc0011005, val);
++			rdmsrl(0xc0011005, val);
++			if (val & (1ULL << 54)) {
++				set_cpu_cap(c, X86_FEATURE_TOPOEXT);
++				printk(KERN_INFO FW_INFO "CPU: Re-enabling "
++				  "disabled Topology Extensions Support\n");
++			}
++		}
++	}
++
+ 	cpu_detect_cache_sizes(c);
+ 
+ 	/* Multi core CPU? */
+-- 
+1.7.5.rc3
+
+
+
