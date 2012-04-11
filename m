@@ -1,88 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932564Ab2DKNdd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Apr 2012 09:33:33 -0400
-Received: from mailhub.sw.ru ([195.214.232.25]:45116 "EHLO relay.sw.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932499Ab2DKNdb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Apr 2012 09:33:31 -0400
-Subject: [PATCH 4/4] nfsd: allocate id-to-name and name-to-id caches in
- per-net operations.
-To: bfields@fieldses.org
-From: Stanislav Kinsbursky <skinsbursky@parallels.com>
-Cc: linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org, devel@openvz.org
-Date: Wed, 11 Apr 2012 17:33:05 +0400
-Message-ID: <20120411133305.26953.77258.stgit@localhost6.localdomain6>
-In-Reply-To: <20120411133139.26953.85254.stgit@localhost6.localdomain6>
-References: <20120411133139.26953.85254.stgit@localhost6.localdomain6>
-User-Agent: StGit/0.15
-MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
+	id S1760244Ab2DKNhx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Apr 2012 09:37:53 -0400
+Received: from shards.monkeyblade.net ([198.137.202.13]:54129 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755111Ab2DKNhv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Apr 2012 09:37:51 -0400
+Date: Wed, 11 Apr 2012 09:35:40 -0400 (EDT)
+Message-Id: <20120411.093540.1313049193929998.davem@davemloft.net>
+To: sfr@canb.auug.org.au
+Cc: grant.likely@secretlab.ca, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, thomas.abraham@linaro.org
+Subject: Re: linux-next: build failure after merge of the final tree
+ (devicetree tree related)
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <20120411151155.b1a614f174442a592d1c1561@canb.auug.org.au>
+References: <20120411151155.b1a614f174442a592d1c1561@canb.auug.org.au>
+X-Mailer: Mew version 6.4 on Emacs 23.3 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Wed, 11 Apr 2012 06:35:44 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+Date: Wed, 11 Apr 2012 15:11:55 +1000
 
----
- fs/nfsd/nfsctl.c |   14 +++++++-------
- 1 files changed, 7 insertions(+), 7 deletions(-)
+> Hi all,
+> 
+> After merging the final tree, today's linux-next build (sparc64 defconfig)
+> failed like this:
+> 
+> drivers/of/of_mdio.c: In function 'of_mdiobus_register':
+> drivers/of/of_mdio.c:75:4: error: implicit declaration of function 'irq_of_parse_and_map' [-Werror=implicit-function-declaration]
+> 
+> Caused by commit e46c11b94787 ("of/irq: add empty irq_of_parse_and_map()
+> for non-dt builds").  SPARC has CONFIG_OF but not CONFIG_OF_IRQ ...
 
-diff --git a/fs/nfsd/nfsctl.c b/fs/nfsd/nfsctl.c
-index d6e8b85..7269988 100644
---- a/fs/nfsd/nfsctl.c
-+++ b/fs/nfsd/nfsctl.c
-@@ -1145,14 +1145,20 @@ static __net_init int nfsd_init_net(struct net *net)
- 	retval = nfsd_export_init(net);
- 	if (retval)
- 		goto out_export_error;
-+	retval = nfsd_idmap_init(net);
-+	if (retval)
-+		goto out_idmap_error;
- 	return 0;
- 
-+out_idmap_error:
-+	nfsd_export_shutdown(net);
- out_export_error:
- 	return retval;
- }
- 
- static __net_exit void nfsd_exit_net(struct net *net)
- {
-+	nfsd_idmap_shutdown(net);
- 	nfsd_export_shutdown(net);
- }
- 
-@@ -1186,12 +1192,9 @@ static int __init init_nfsd(void)
- 	if (retval)
- 		goto out_free_stat;
- 	nfsd_lockd_init();	/* lockd->nfsd callbacks */
--	retval = nfsd_idmap_init(&init_net);
--	if (retval)
--		goto out_free_lockd;
- 	retval = create_proc_exports_entry();
- 	if (retval)
--		goto out_free_idmap;
-+		goto out_free_lockd;
- 	retval = register_filesystem(&nfsd_fs_type);
- 	if (retval)
- 		goto out_free_all;
-@@ -1199,8 +1202,6 @@ static int __init init_nfsd(void)
- out_free_all:
- 	remove_proc_entry("fs/nfs/exports", NULL);
- 	remove_proc_entry("fs/nfs", NULL);
--out_free_idmap:
--	nfsd_idmap_shutdown(&init_net);
- out_free_lockd:
- 	nfsd_lockd_shutdown();
- 	nfsd_reply_cache_shutdown();
-@@ -1223,7 +1224,6 @@ static void __exit exit_nfsd(void)
- 	remove_proc_entry("fs/nfs", NULL);
- 	nfsd_stat_shutdown();
- 	nfsd_lockd_shutdown();
--	nfsd_idmap_shutdown(&init_net);
- 	nfsd4_free_slabs();
- 	nfsd_fault_inject_cleanup();
- 	unregister_filesystem(&nfsd_fs_type);
-
+If I had a nickel for every time an implicit dependency on CONFIG_OF_IRQ
+was added to the tree... :-)
