@@ -1,59 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760119Ab2DKMPV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Apr 2012 08:15:21 -0400
-Received: from mail-pz0-f52.google.com ([209.85.210.52]:65005 "EHLO
-	mail-pz0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757268Ab2DKMPT (ORCPT
+	id S932143Ab2DKMRJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Apr 2012 08:17:09 -0400
+Received: from smtp3.em.euronet.nl ([194.134.4.234]:57322 "EHLO
+	smtp3.em.euronet.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757466Ab2DKMRH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Apr 2012 08:15:19 -0400
-Date: Wed, 11 Apr 2012 21:15:14 +0900
-From: Takuya Yoshikawa <takuya.yoshikawa@gmail.com>
-To: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-Cc: Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
-        Xiao Guangrong <xiaoguangrong.eric@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>, KVM <kvm@vger.kernel.org>
-Subject: Re: [PATCH 00/13] KVM: MMU: fast page fault
-Message-Id: <20120411211514.35db29c11460516e604059b6@gmail.com>
-In-Reply-To: <4F842074.1050108@linux.vnet.ibm.com>
-References: <4F742951.7080003@linux.vnet.ibm.com>
-	<4F82E04E.6000900@redhat.com>
-	<20120409175829.GB21894@amt.cnet>
-	<4F8329D3.7000605@gmail.com>
-	<20120409194614.GB23053@amt.cnet>
-	<4F840DD2.3090101@redhat.com>
-	<20120410204031.ffb5b976225ac9fe6dae474e@gmail.com>
-	<4F842074.1050108@linux.vnet.ibm.com>
-X-Mailer: Sylpheed 3.2.0beta3 (GTK+ 2.24.6; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Wed, 11 Apr 2012 08:17:07 -0400
+X-Greylist: delayed 424 seconds by postgrey-1.27 at vger.kernel.org; Wed, 11 Apr 2012 08:17:07 EDT
+From: Rini van Zetten <rini@arvoo.nl>
+Cc: galak@kernel.crashing.org, linux-kernel@vger.kernel.org,
+        Rini van Zetten <rini@arvoo.nl>
+Subject: [PATCH 1/1] fix crash when no irq_eoi function is available
+Date: Wed, 11 Apr 2012 14:09:45 +0200
+Message-Id: <1334146185-11910-1-git-send-email-rini@arvoo.nl>
+X-Mailer: git-send-email 1.7.4.1
+X-ARVOO-MailScanner-ID: 10BD2714A7.B7E24
+X-ARVOO-MailScanner: Found to be clean
+X-ARVOO-MailScanner-SpamCheck: not spam, SpamAssassin (not cached,
+	score=-2.9, required 5, autolearn=not spam, ALL_TRUSTED -1.00,
+	BAYES_00 -1.90)
+X-ARVOO-MailScanner-From: rini@arvoo.nl
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 10 Apr 2012 19:58:44 +0800
-Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com> wrote:
 
-> No, i do not really agree with that.
-> 
-> We really can get great benefit from O(1) especially if lockless write-protect
-> is introduced for O(1), live migration is very useful for cloud computing
-> architecture to balance the overload on all nodes.
+Signed-off-by: Rini van Zetten <rini@arvoo.nl>
+---
+ drivers/gpio/gpio-mpc8xxx.c |    3 ++-
+ 1 files changed, 2 insertions(+), 1 deletions(-)
 
-Recently, you said to me that you were not familiar with live migration.
-Actually you did not know the basics of pre-copy live migration.
+diff --git a/drivers/gpio/gpio-mpc8xxx.c b/drivers/gpio/gpio-mpc8xxx.c
+index 5cd04b6..edcffd6 100644
+--- a/drivers/gpio/gpio-mpc8xxx.c
++++ b/drivers/gpio/gpio-mpc8xxx.c
+@@ -163,7 +163,8 @@ static void mpc8xxx_gpio_irq_cascade(unsigned int irq, struct irq_desc *desc)
+ 	if (mask)
+ 		generic_handle_irq(irq_linear_revmap(mpc8xxx_gc->irq,
+ 						     32 - ffs(mask)));
+-	chip->irq_eoi(&desc->irq_data);
++	if (chip->irq_eoi)
++		chip->irq_eoi(&desc->irq_data);
+ }
+ 
+ static void mpc8xxx_irq_unmask(struct irq_data *d)
+-- 
+1.7.4.1
 
-I know live migration better than you because NTT has Kemari and it uses
-live migration infrastructure.  My work is originated from the data
-I got during profiling Kemari.
-
-SRCU-less dirty logging was also motivated by the pressures from scheduler
-developers.  Everything was really needed.
-
-
-Have you ever used live migration for real service?
-
-I cannot say whether O(1) is OK with me without any real background.
-
-	Takuya
