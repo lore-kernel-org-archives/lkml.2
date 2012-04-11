@@ -1,93 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932178Ab2DKMSy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Apr 2012 08:18:54 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:9697 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752826Ab2DKMSx (ORCPT
+	id S932449Ab2DKMVD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Apr 2012 08:21:03 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:63074 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760124Ab2DKMVA convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Apr 2012 08:18:53 -0400
-X-Authority-Analysis: v=2.0 cv=Z8Fu7QtA c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=XQbtiDEiEegA:10 a=GQe9zCMQTfAA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=gu6fZOg2AAAA:8 a=D19gQVrFAAAA:8 a=wggVRkVUAAAA:8 a=DYwG_jj1po8db-oJkAsA:9 a=PUjeQqilurYA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.80.29
-Message-ID: <1334146730.23924.238.camel@gandalf.stny.rr.com>
-Subject: Re: [PATCH] trace: Fix build breakage without CONFIG_PERF_EVENTS
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@redhat.com>,
-        Jiri Olsa <jolsa@redhat.com>, linux-kernel@vger.kernel.org
-Date: Wed, 11 Apr 2012 08:18:50 -0400
-In-Reply-To: <1334132429-6091-1-git-send-email-broonie@opensource.wolfsonmicro.com>
-References: <1334132429-6091-1-git-send-email-broonie@opensource.wolfsonmicro.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.2.2-1 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Wed, 11 Apr 2012 08:21:00 -0400
+MIME-Version: 1.0
+In-Reply-To: <201204070906.HHC13855.QOSFVOMtFFLJOH@I-love.SAKURA.ne.jp>
+References: <201204011221.GAG51016.JQFSFFOtLOMVHO@I-love.SAKURA.ne.jp>
+ <CA+1xoqe+T=iUtUeFdeqmRvMZ7TMCgkLs_1QYv-4YNtn-jCoMCQ@mail.gmail.com>
+ <201204052329.EBH52139.FFOLQMOJSVHOFt@I-love.SAKURA.ne.jp>
+ <201204062044.EJE13062.OLMQtSVFHOFOJF@I-love.SAKURA.ne.jp>
+ <20120406180905.GA10835@llnl.gov> <201204070906.HHC13855.QOSFVOMtFFLJOH@I-love.SAKURA.ne.jp>
+From: Sasha Levin <levinsasha928@gmail.com>
+Date: Wed, 11 Apr 2012 14:20:40 +0200
+Message-ID: <CA+1xoqd0JJ-Z+hmwgdZkBiu1anEh6iz1jJboULPp-drUzO37Ew@mail.gmail.com>
+Subject: Re: ipv6: tunnel: hang when destroying ipv6 tunnel
+To: Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>
+Cc: garlick@llnl.gov, ericvh@gmail.com, oleg@redhat.com,
+        eric.dumazet@gmail.com, davem@davemloft.net, kuznet@ms2.inr.ac.ru,
+        jmorris@namei.org, yoshfuji@linux-ipv6.org, kaber@trash.net,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org, davej@redhat.com
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Mark,
+>> Yes but in the unlikely event that this happens, the effect is a small
+>> memory leak for the duration of the mount.  On the other hand if the
+>> fid is destroyed without successfully informing the server, then
+>> subsequent operations that involve new file references will fail
+>> when that fid number is reused, and the mount becomes unusable.
+>
+> I don't know whether Sasha's problem is caused by this patch or not.
+> But p9_client_clunk() is called from many functions in fs/9p/ directory.
+> They are assuming that p9_client_clunk() will call p9_fid_destroy() but
+> this patch is breaking that assumption. I think this is the cause of hang which
+> Sasha is experiencing because Sasha's trace shows that call_usermodehelper() is
+> blocked by functions in fs/9p/ directory. Seems inconsistency state problem.
 
-Please change your subject when you submit a new patch. I've ignored
-your last one because I thought I already applied it.
+I'd be happy to try out any other patches or help debugging this issue.
 
-Your first patch:
-
-  http://marc.info/?l=linux-kernel&m=133042701226637
-
-Which was applied:
-
-  https://lkml.org/lkml/2012/3/14/304
-
-
-Your second patch:
-
-  https://lkml.org/lkml/2012/3/26/164
-
-As with this one, has the same subject. I only noticed it as I was about
-to tell you that it was already applied.
-
-Thanks,
-
--- Steve
-
-
-On Wed, 2012-04-11 at 09:20 +0100, Mark Brown wrote:
-> Today's -next fails to link for me:
-> 
-> kernel/built-in.o:(.data+0x178e50): undefined reference to `perf_ftrace_event_register'
-> 
-> It looks like multiple fixes have been merged for the issue fixed by
-> commit fa73dc9 (tracing: Fix build breakage without CONFIG_PERF_EVENTS)
-> though I can't identify the other changes that have gone in at the
-> minute, it's possible that the changes which caused the breakage fixed
-> by the previous commit got dropped but the fix made it in.
-> 
-> Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
-> ---
->  kernel/trace/trace.h |    4 ++++
->  1 files changed, 4 insertions(+), 0 deletions(-)
-> 
-> diff --git a/kernel/trace/trace.h b/kernel/trace/trace.h
-> index 95059f0..ff639ca 100644
-> --- a/kernel/trace/trace.h
-> +++ b/kernel/trace/trace.h
-> @@ -836,11 +836,15 @@ extern const char *__stop___trace_bprintk_fmt[];
->  		     filter)
->  #include "trace_entries.h"
->  
-> +#ifdef CONFIG_PERF_EVENTS
->  #ifdef CONFIG_FUNCTION_TRACER
->  int perf_ftrace_event_register(struct ftrace_event_call *call,
->  			       enum trace_reg type, void *data);
->  #else
->  #define perf_ftrace_event_register NULL
->  #endif /* CONFIG_FUNCTION_TRACER */
-> +#else
-> +#define perf_ftrace_event_register NULL
-> +#endif /* CONFIG_PERF_EVENTS */
->  
->  #endif /* _LINUX_KERNEL_TRACE_H */
-
-
+Which behavior did this patch fix exactly? can I just revert it and
+try running without it?
