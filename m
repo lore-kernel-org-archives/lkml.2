@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933905Ab2DKXQf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Apr 2012 19:16:35 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:35695 "EHLO
+	id S933921Ab2DKXQk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Apr 2012 19:16:40 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:44096 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933881Ab2DKXQa (ORCPT
+	with ESMTP id S933881Ab2DKXQg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Apr 2012 19:16:30 -0400
-Message-Id: <20120411231024.082989628@linuxfoundation.org>
+	Wed, 11 Apr 2012 19:16:36 -0400
+Message-Id: <20120411231022.627653657@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Wed, 11 Apr 2012 16:10:52 -0700
+Date: Wed, 11 Apr 2012 16:10:44 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Anisse Astier <anisse@astier.eu>,
-        Chris Wilson <chris@chris-wilson.co.uk>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>
-Subject: [ 34/78] drm/i915: no-lvds quirk on MSI DC500
+        alan@lxorguk.ukuu.org.uk,
+        Wolfgang Mauerer <wolfgang.mauerer@siemens.com>,
+        Steven Rostedt <rostedt@goodmis.org>
+Subject: [ 26/78] tracing: Fix ftrace stack trace entries
 In-Reply-To: <20120411231102.GA6404@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,38 +26,73 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Anisse Astier <anisse@astier.eu>
+From: Wolfgang Mauerer <wolfgang.mauerer@siemens.com>
 
-commit 97effadb65ed08809e1720c8d3ee80b73a93665c upstream.
+commit 01de982abf8c9e10fc3089e10585cd2cc914bdab upstream.
 
-This hardware doesn't have an LVDS, it's a desktop box. Fix incorrect
-LVDS detection.
+8 hex characters tell only half the tale for 64 bit CPUs,
+so use the appropriate length.
 
-Signed-off-by: Anisse Astier <anisse@astier.eu>
-Acked-by: Chris Wilson <chris@chris-wilson.co.uk>
-Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+Link: http://lkml.kernel.org/r/1332411501-8059-2-git-send-email-wolfgang.mauerer@siemens.com
+
+Signed-off-by: Wolfgang Mauerer <wolfgang.mauerer@siemens.com>
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/i915/intel_lvds.c |    8 ++++++++
- 1 file changed, 8 insertions(+)
+ kernel/trace/trace_entries.h |   16 ++++++++++++----
+ kernel/trace/trace_export.c  |    2 +-
+ 2 files changed, 13 insertions(+), 5 deletions(-)
 
---- a/drivers/gpu/drm/i915/intel_lvds.c
-+++ b/drivers/gpu/drm/i915/intel_lvds.c
-@@ -739,6 +739,14 @@ static const struct dmi_system_id intel_
- 			DMI_MATCH(DMI_BOARD_NAME, "AT5NM10T-I"),
- 		},
- 	},
-+	{
-+		.callback = intel_no_lvds_dmi_callback,
-+		.ident = "MSI Wind Box DC500",
-+		.matches = {
-+			DMI_MATCH(DMI_BOARD_VENDOR, "MICRO-STAR INTERNATIONAL CO., LTD"),
-+			DMI_MATCH(DMI_BOARD_NAME, "MS-7469"),
-+		},
-+	},
+--- a/kernel/trace/trace_entries.h
++++ b/kernel/trace/trace_entries.h
+@@ -156,6 +156,12 @@ FTRACE_ENTRY_DUP(wakeup, ctx_switch_entr
  
- 	{ }	/* terminating entry */
- };
+ #define FTRACE_STACK_ENTRIES	8
+ 
++#ifndef CONFIG_64BIT
++# define IP_FMT "%08lx"
++#else
++# define IP_FMT "%016lx"
++#endif
++
+ FTRACE_ENTRY(kernel_stack, stack_entry,
+ 
+ 	TRACE_STACK,
+@@ -165,8 +171,9 @@ FTRACE_ENTRY(kernel_stack, stack_entry,
+ 		__dynamic_array(unsigned long,	caller	)
+ 	),
+ 
+-	F_printk("\t=> (%08lx)\n\t=> (%08lx)\n\t=> (%08lx)\n\t=> (%08lx)\n"
+-		 "\t=> (%08lx)\n\t=> (%08lx)\n\t=> (%08lx)\n\t=> (%08lx)\n",
++	F_printk("\t=> (" IP_FMT ")\n\t=> (" IP_FMT ")\n\t=> (" IP_FMT ")\n"
++		 "\t=> (" IP_FMT ")\n\t=> (" IP_FMT ")\n\t=> (" IP_FMT ")\n"
++		 "\t=> (" IP_FMT ")\n\t=> (" IP_FMT ")\n",
+ 		 __entry->caller[0], __entry->caller[1], __entry->caller[2],
+ 		 __entry->caller[3], __entry->caller[4], __entry->caller[5],
+ 		 __entry->caller[6], __entry->caller[7])
+@@ -181,8 +188,9 @@ FTRACE_ENTRY(user_stack, userstack_entry
+ 		__array(	unsigned long,	caller, FTRACE_STACK_ENTRIES	)
+ 	),
+ 
+-	F_printk("\t=> (%08lx)\n\t=> (%08lx)\n\t=> (%08lx)\n\t=> (%08lx)\n"
+-		 "\t=> (%08lx)\n\t=> (%08lx)\n\t=> (%08lx)\n\t=> (%08lx)\n",
++	F_printk("\t=> (" IP_FMT ")\n\t=> (" IP_FMT ")\n\t=> (" IP_FMT ")\n"
++		 "\t=> (" IP_FMT ")\n\t=> (" IP_FMT ")\n\t=> (" IP_FMT ")\n"
++		 "\t=> (" IP_FMT ")\n\t=> (" IP_FMT ")\n",
+ 		 __entry->caller[0], __entry->caller[1], __entry->caller[2],
+ 		 __entry->caller[3], __entry->caller[4], __entry->caller[5],
+ 		 __entry->caller[6], __entry->caller[7])
+--- a/kernel/trace/trace_export.c
++++ b/kernel/trace/trace_export.c
+@@ -150,7 +150,7 @@ ftrace_define_fields_##name(struct ftrac
+ #define __dynamic_array(type, item)
+ 
+ #undef F_printk
+-#define F_printk(fmt, args...) #fmt ", "  __stringify(args)
++#define F_printk(fmt, args...) __stringify(fmt) ", "  __stringify(args)
+ 
+ #undef FTRACE_ENTRY
+ #define FTRACE_ENTRY(call, struct_name, etype, tstruct, print)		\
 
 
