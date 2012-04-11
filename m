@@ -1,148 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933503Ab2DKWQT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Apr 2012 18:16:19 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:33121 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933457Ab2DKWQR (ORCPT
+	id S933517Ab2DKWQl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Apr 2012 18:16:41 -0400
+Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:47143 "EHLO
+	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933457Ab2DKWQk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Apr 2012 18:16:17 -0400
-Date: Wed, 11 Apr 2012 15:15:51 -0700
-From: tip-bot for Thomas Gleixner <tglx@linutronix.de>
-Message-ID: <tip-d48fc63f6f3f485ed5aa9cf019d8e8e3a7d10263@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, arjanvandeven@gmail.com, hpa@zytor.com,
-        mingo@kernel.org, johnstul@us.ibm.com, arjan@infradead.org,
-        mfwitten@gmail.com, lenb@kernel.org, tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, arjanvandeven@gmail.com,
-        linux-kernel@vger.kernel.org, johnstul@us.ibm.com, arjan@infradead.org,
-        mfwitten@gmail.com, lenb@kernel.org, tglx@linutronix.de
-In-Reply-To: <alpine.LFD.2.02.1204112303270.2542@ionos>
-References: <alpine.LFD.2.02.1204112303270.2542@ionos>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:timers/urgent] Revert "clocksource:
-  Load the ACPI PM clocksource asynchronously"
-Git-Commit-ID: d48fc63f6f3f485ed5aa9cf019d8e8e3a7d10263
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
-MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Wed, 11 Apr 2012 15:15:57 -0700 (PDT)
+	Wed, 11 Apr 2012 18:16:40 -0400
+Date: Wed, 11 Apr 2012 23:18:46 +0100
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Jesper Juhl <jj@chaosbits.net>
+Cc: linux-kernel@vger.kernel.org, Jackie Li <yaodong.li@intel.com>,
+        jim liu <jim.liu@intel.com>, trivial@kernel.org,
+        dri-devel@lists.freedesktop.org, Dave Airlie <airlied@redhat.com>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Alan Cox <alan@linux.intel.com>
+Subject: Re: [PATCH] gma500: Don't needlessly include version.h in
+ mdfld_dsi_output.h
+Message-ID: <20120411231846.29747a08@pyramind.ukuu.org.uk>
+In-Reply-To: <alpine.LNX.2.00.1204120002390.2137@swampdragon.chaosbits.net>
+References: <alpine.LNX.2.00.1204120002390.2137@swampdragon.chaosbits.net>
+X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  d48fc63f6f3f485ed5aa9cf019d8e8e3a7d10263
-Gitweb:     http://git.kernel.org/tip/d48fc63f6f3f485ed5aa9cf019d8e8e3a7d10263
-Author:     Thomas Gleixner <tglx@linutronix.de>
-AuthorDate: Wed, 11 Apr 2012 23:49:16 +0200
-Committer:  Thomas Gleixner <tglx@linutronix.de>
-CommitDate: Thu, 12 Apr 2012 00:05:05 +0200
+On Thu, 12 Apr 2012 00:05:29 +0200 (CEST)
+Jesper Juhl <jj@chaosbits.net> wrote:
 
-Revert "clocksource: Load the ACPI PM clocksource asynchronously"
+> drivers/gpu/drm/gma500/mdfld_dsi_output.h does not need to
+> '#include <linux/version.h>' - so don't.
+> 
+> Signed-off-by: Jesper Juhl <jj@chaosbits.net>
 
-This reverts commit b519508298e0292e1771eecf14aaf67755adc39d.
-
-The reason for this revert is that making the frequency verification
-preemptible and interruptible is not working reliably. Michaels
-machine failed to use PM-timer with the message:
-
-  PM-Timer running at invalid rate: 113% of normal - aborting.
-
-That's not a surprise as the frequency verification does rely on
-interrupts being disabled. With a async scheduled thread there is no
-guarantee to achieve the same result. Also some driver might fiddle
-with the CTC channel 2 during the verification period, which makes the
-result even more random and unpredictable.
-
-This can be solved by using the same mechanism as we use in the
-deferred TSC validation code, but that only will work if we verified a
-working HPET _BEFORE_ trying to do the PM-Timer lazy validation.
-
-So for now reverting is the safe option.
-
-Bisected-by: Michael Witten <mfwitten@gmail.com>
-Cc: Arjan van de Ven <arjanvandeven@gmail.com>
-Cc: Arjan van de Ven <arjan@infradead.org>
-Cc: John Stultz <johnstul@us.ibm.com>
-Cc: Len Brown <lenb@kernel.org>
-LKML-Reference: <alpine.LFD.2.02.1204112303270.2542@ionos>
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
----
- drivers/clocksource/acpi_pm.c |   24 ++++++++----------------
- 1 files changed, 8 insertions(+), 16 deletions(-)
-
-diff --git a/drivers/clocksource/acpi_pm.c b/drivers/clocksource/acpi_pm.c
-index 82e8820..6b5cf02 100644
---- a/drivers/clocksource/acpi_pm.c
-+++ b/drivers/clocksource/acpi_pm.c
-@@ -23,7 +23,6 @@
- #include <linux/init.h>
- #include <linux/pci.h>
- #include <linux/delay.h>
--#include <linux/async.h>
- #include <asm/io.h>
- 
- /*
-@@ -180,15 +179,17 @@ static int verify_pmtmr_rate(void)
- /* Number of reads we try to get two different values */
- #define ACPI_PM_READ_CHECKS 10000
- 
--static void __init acpi_pm_clocksource_async(void *unused, async_cookie_t cookie)
-+static int __init init_acpi_pm_clocksource(void)
- {
- 	cycle_t value1, value2;
- 	unsigned int i, j = 0;
- 
-+	if (!pmtmr_ioport)
-+		return -ENODEV;
- 
- 	/* "verify" this timing source: */
- 	for (j = 0; j < ACPI_PM_MONOTONICITY_CHECKS; j++) {
--		usleep_range(100 * j, 100 * j + 100);
-+		udelay(100 * j);
- 		value1 = clocksource_acpi_pm.read(&clocksource_acpi_pm);
- 		for (i = 0; i < ACPI_PM_READ_CHECKS; i++) {
- 			value2 = clocksource_acpi_pm.read(&clocksource_acpi_pm);
-@@ -202,34 +203,25 @@ static void __init acpi_pm_clocksource_async(void *unused, async_cookie_t cookie
- 			       " 0x%#llx, 0x%#llx - aborting.\n",
- 			       value1, value2);
- 			pmtmr_ioport = 0;
--			return;
-+			return -EINVAL;
- 		}
- 		if (i == ACPI_PM_READ_CHECKS) {
- 			printk(KERN_INFO "PM-Timer failed consistency check "
- 			       " (0x%#llx) - aborting.\n", value1);
- 			pmtmr_ioport = 0;
--			return;
-+			return -ENODEV;
- 		}
- 	}
- 
- 	if (verify_pmtmr_rate() != 0){
- 		pmtmr_ioport = 0;
--		return;
-+		return -ENODEV;
- 	}
- 
--	clocksource_register_hz(&clocksource_acpi_pm,
-+	return clocksource_register_hz(&clocksource_acpi_pm,
- 						PMTMR_TICKS_PER_SEC);
- }
- 
--static int __init init_acpi_pm_clocksource(void)
--{
--	if (!pmtmr_ioport)
--		return -ENODEV;
--
--	async_schedule(acpi_pm_clocksource_async, NULL);
--	return 0;
--}
--
- /* We use fs_initcall because we want the PCI fixups to have run
-  * but we still need to load before device_initcall
-  */
+Acked-by: Alan Cox <alan@linux.intel.com>
