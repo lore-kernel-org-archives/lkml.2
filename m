@@ -1,89 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756393Ab2DKKVf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Apr 2012 06:21:35 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:36237 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754898Ab2DKKVe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Apr 2012 06:21:34 -0400
-Subject: GFS2: Pull request (fixes)
-From: Steven Whitehouse <swhiteho@redhat.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: cluster-devel@redhat.com, linux-kernel@vger.kernel.org
-Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature"; boundary="=-RmCYZL6QoUoX025nrna8"
-Organization: Red Hat UK Ltd
-Date: Wed, 11 Apr 2012 11:21:36 +0100
-Message-ID: <1334139696.2713.18.camel@menhir>
-Mime-Version: 1.0
+	id S1756558Ab2DKKVv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Apr 2012 06:21:51 -0400
+Received: from am1ehsobe003.messaging.microsoft.com ([213.199.154.206]:59115
+	"EHLO am1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756474Ab2DKKVt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Apr 2012 06:21:49 -0400
+X-SpamScore: -13
+X-BigFish: VPS-13(zz98dKzz1202hzz15d4Rz2dh668h839h944hd25h)
+X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
+X-WSS-ID: 0M2B8S5-01-20B-02
+X-M-MSG: 
+Date: Wed, 11 Apr 2012 12:21:37 +0200
+From: Joerg Roedel <joerg.roedel@amd.com>
+To: zhangyanfei <zhangyanfei@cn.fujitsu.com>
+CC: <avi@redhat.com>, <mtosatti@redhat.com>, <ebiederm@xmission.com>,
+        <luto@mit.edu>, <dzickus@redhat.com>, <paul.gortmaker@windriver.com>,
+        <gregkh@suse.de>, <ludwig.nussel@suse.de>,
+        <linux-kernel@vger.kernel.org>, <kvm@vger.kernel.org>,
+        <kexec@lists.infradead.org>
+Subject: Re: [PATCH 0/4] Export offsets of VMCS fields as note information
+ for kdump
+Message-ID: <20120411102136.GG2428@amd.com>
+References: <4F84E0DF.8040206@cn.fujitsu.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <4F84E0DF.8040206@cn.fujitsu.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
---=-RmCYZL6QoUoX025nrna8
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
-
-[Apologies - I don't think the first message got signed as
- it should have. Here is a second attempt...]
-
 Hi,
 
-Please consider pulling the following patches,
+On Wed, Apr 11, 2012 at 09:39:43AM +0800, zhangyanfei wrote:
+> The problem is that VMCS internal is hidden by Intel in its
+> specification. So, we reverse engineering it in the way implemented in
+> this patch set.
 
-Steve.
-
----------------------------------------------------------------------------=
----
-The following changes since commit dd775ae2549217d3ae09363e3edb305d0fa19928=
-:
-
-  Linux 3.4-rc1 (2012-03-31 16:24:09 -0700)
-
-are available in the git repository at:
-  git://git.kernel.org/pub/scm/linux/kernel/git/steve/gfs2-3.0-fixes.git ma=
-ster
-
-Benjamin Poirier (1):
-      GFS2: use depends instead of select in kconfig
-
-Bob Peterson (3):
-      GFS2: put glock reference in error patch of read_rindex_entry
-      GFS2: Make sure rindex is uptodate before starting transactions
-      GFS2: Allow caching of rindex glock
-
- fs/gfs2/Kconfig |    7 ++-----
- fs/gfs2/aops.c  |    4 ++--
- fs/gfs2/bmap.c  |    6 +++++-
- fs/gfs2/dir.c   |    4 ++++
- fs/gfs2/inode.c |   13 +++++++++++--
- fs/gfs2/rgrp.c  |    8 +++++---
- fs/gfs2/xattr.c |   12 ++++++++++++
- 7 files changed, 41 insertions(+), 13 deletions(-)
+Have you made sure this layout is the same on all uarchitectures that
+implment VMX?
 
 
+	Joerg
 
---=-RmCYZL6QoUoX025nrna8
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
+-- 
+AMD Operating System Research Center
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAABAgAGBQJPhVssAAoJEMrg3m4a/8jSwzEQAIpTuWJXFi02Qoek2aByzjvp
-F1ZelDEpETeBKJU59GzVQokTn4CXi1EPnq62TWjORxTk7cRWUuCVvFeE8JE3FlQc
-IaOOfZ8qM8u2pqzXZ+eegZcjYYPsO7jJInQOAswehteFCOZ8Uex3MYbGUQ2KNQA6
-0gTZNot2CW071l4IddnIh6ieGAA6zOKePpzlbuxpy1IEGTc2uWqa7GPHvy9L53oU
-IND05TMFXGRNARJYQh0dPGIjNfOcm4oxObBBsFAPC9j2Fi5Nv3Q1HwSnZ8Ogg8+o
-WE3RW08My0t0U7OgIBo93xdvIS8OTIesiOXCNsEWmD5yrTPDB4F4c/Rk76G5zfPc
-+Zi/d+70uAvL9zTZaCF+SB7wa3fM2JSZknahpBK/ZTSMvwbdI5sT7hmpPnxn2eDG
-TxIu0L6xw416auKn8hjg8C9gmIKKH2GiBesDYmapcdlKZHRIoGHXbSa+j83Thmd5
-CnjU6WUZTYMTRCmwuWSBylhuA6dO02GhImFntM17RvbiseOJUucFsuqfJgxaRtVd
-BM/9lS6JA79fj2f5C59jphJ9VnhrxVzBF/iDcXBhAjXMWqBqXUjI/lO4hXngpEIe
-WnNqhC38oZ/KE+OPQZqaDN0T/kJ3BJjQyjOdYBLZjee/RKMlCB9en6WK07iiMESa
-tW5ws0zWuT490KNBdwCB
-=qaPF
------END PGP SIGNATURE-----
-
---=-RmCYZL6QoUoX025nrna8--
+Advanced Micro Devices GmbH Einsteinring 24 85609 Dornach
+General Managers: Alberto Bozzo
+Registration: Dornach, Landkr. Muenchen; Registerger. Muenchen, HRB Nr. 43632
 
