@@ -1,51 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933042Ab2DKTX0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Apr 2012 15:23:26 -0400
-Received: from mx2.parallels.com ([64.131.90.16]:40651 "EHLO mx2.parallels.com"
+	id S933036Ab2DKTZ6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Apr 2012 15:25:58 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:55983 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932977Ab2DKTXX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Apr 2012 15:23:23 -0400
-Message-ID: <4F85D9C6.5000202@parallels.com>
-Date: Wed, 11 Apr 2012 16:21:42 -0300
-From: Glauber Costa <glommer@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120216 Thunderbird/10.0.1
+	id S1760945Ab2DKTZ4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Apr 2012 15:25:56 -0400
+Date: Wed, 11 Apr 2012 21:25:54 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: Glauber Costa <glommer@parallels.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, devel@openvz.org, linux-mm@kvack.org,
+        cgroups@vger.kernel.org, Johannes Weiner <hannes@cmpxchg.org>,
+        kamezawa.hiroyu@jp.fujitsu.com, Greg Thelen <gthelen@google.com>,
+        Suleiman Souhlal <suleiman@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH] remove BUG() in possible but rare condition
+Message-ID: <20120411192554.GC24831@tiehlicka.suse.cz>
+References: <1334167824-19142-1-git-send-email-glommer@parallels.com>
+ <20120411184845.GA24831@tiehlicka.suse.cz>
+ <CA+55aFx1GMWGgh0sTAzvvVSzPQsQ_4NKeaNv1zpKrP4fg1dG+Q@mail.gmail.com>
+ <4F85D53B.1070806@parallels.com>
 MIME-Version: 1.0
-To: Frederic Weisbecker <fweisbec@gmail.com>
-CC: Hugh Dickins <hughd@google.com>, Johannes Weiner <hannes@cmpxchg.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Tejun Heo <tj@kernel.org>, Daniel Walsh <dwalsh@redhat.com>,
-        "Daniel P. Berrange" <berrange@redhat.com>,
-        Li Zefan <lizf@cn.fujitsu.com>, LKML <linux-kernel@vger.kernel.org>,
-        Cgroups <cgroups@vger.kernel.org>,
-        Containers <containers@lists.linux-foundation.org>
-Subject: Re: [RFD] Merge task counter into memcg
-References: <20120411185715.GA4317@somewhere.redhat.com>
-In-Reply-To: <20120411185715.GA4317@somewhere.redhat.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [201.82.19.44]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4F85D53B.1070806@parallels.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/11/2012 03:57 PM, Frederic Weisbecker wrote:
-> So if we choose the second solution, this overhead will be added unconditionally
-> to memcg.
-> But I don't expect every users of memcg will need the task counter. So perhaps
-> the overhead should be kept in its own separate subsystem.
+On Wed 11-04-12 16:02:19, Glauber Costa wrote:
+> On 04/11/2012 03:57 PM, Linus Torvalds wrote:
+> >On Wed, Apr 11, 2012 at 11:48 AM, Michal Hocko<mhocko@suse.cz>  wrote:
+> >>
+> >>I am not familiar with the code much but a trivial call chain walk up to
+> >>write_dev_supers (in btrfs) shows that we do not check for the return value
+> >>from __getblk so we would nullptr and there might be more.
+> >>I guess these need some treat before the BUG might be removed, right?
+> >
+> >Well, realistically, isn't BUG() as bad as a NULL pointer dereference?
+> >
+> >Do you care about the exact message on the screen when your machine dies?
+> Not particular, but I don't see why (I might be wrong) it would
+> necessarily lead to a NULL pointer dereference.
 
-What we're usually doing with kmem paths, like the upcoming slab 
-tracking, is do not account if it is not limited. So if you are not
-limited in a particular cgroup, you jut don't bother with accounting.
+Ahh, OK scratch that. I have misread __getblk_slow which returns NULL
+only if grow_buffers returned with < 0 which doesn't happen for the
+allocation failure.
 
-If this suits your need, you can probably do the same, and then
-pay the price just for the users that are interested on it.
-
-Now, whether or not this should be considered memory, is a different 
-story. You can say it is memory yes, but I bet you can very well find a 
-bunch of arguments to consider it "cpu" as well.
-
-Against the memcg, consider this: Your counter would probably be the 
-first non-page based data in memcg. At least raises a flag.
+Sorry about noise
+-- 
+Michal Hocko
+SUSE Labs
+SUSE LINUX s.r.o.
+Lihovarska 1060/12
+190 00 Praha 9    
+Czech Republic
