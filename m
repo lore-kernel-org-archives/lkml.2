@@ -1,83 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752635Ab2DKFhi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Apr 2012 01:37:38 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:60505 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752120Ab2DKFhg (ORCPT
+	id S1752682Ab2DKFrc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Apr 2012 01:47:32 -0400
+Received: from mail-pz0-f52.google.com ([209.85.210.52]:37733 "EHLO
+	mail-pz0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752120Ab2DKFrb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Apr 2012 01:37:36 -0400
-From: Stephen Warren <swarren@wwwdotorg.org>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: linux-kernel@vger.kernel.org, linux-next@vger.kernel.org,
-        Stephen Warren <swarren@nvidia.com>
-Subject: [PATCH] regmap: fix compile errors in regmap-irq.c due to stride changes
-Date: Tue, 10 Apr 2012 23:37:22 -0600
-Message-Id: <1334122642-14864-1-git-send-email-swarren@wwwdotorg.org>
-X-Mailer: git-send-email 1.7.0.4
-X-NVConfidentiality: public
+	Wed, 11 Apr 2012 01:47:31 -0400
+From: Grant Likely <grant.likely@secretlab.ca>
+Subject: Re: [PATCH 2/2] irq_domain: fix formatting of chip data pointer in virq_debug_show()
+To: Mika Westerberg <mika.westerberg@linux.intel.com>,
+        linux-kernel@vger.kernel.org
+Cc: tglx@linutronix.de, benh@kernel.crashing.org,
+        Mika Westerberg <mika.westerberg@linux.intel.com>
+In-Reply-To: <20120410232708.CAC3D3E079B@localhost>
+References: <1334060743-7901-1-git-send-email-mika.westerberg@linux.intel.com> <1334060743-7901-2-git-send-email-mika.westerberg@linux.intel.com> <20120410232708.CAC3D3E079B@localhost>
+Date: Tue, 10 Apr 2012 23:47:28 -0600
+Message-Id: <20120411054728.A6C093E081E@localhost>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Stephen Warren <swarren@nvidia.com>
+On Tue, 10 Apr 2012 17:27:08 -0600, Grant Likely <grant.likely@secretlab.ca> wrote:
+> On Tue, 10 Apr 2012 15:25:43 +0300, Mika Westerberg <mika.westerberg@linux.intel.com> wrote:
+> > On 32-bit machines reading the /sys/kernel/debug/irq_domain_mapping file
+> > outputs following:
+> > 
+> > virq   hwirq    chip name        chip data           domain name
+> >     9  0x00000  IO-APIC          0x        c175a0f8  none
+> >    10  0x00000  IO-APIC          0x        c175a108  none
+> >    11  0x00000  IO-APIC          0x        c175a118  none
+> > ...
+> > 
+> > which looks a bit funny. Fix that with filling the gap with zeroes instead
+> > of spaces.
+> > 
+> > Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
+> 
+> Applied, thanks.
 
-Commit f01ee60fffa4 ("regmap: implement register striding") caused the
-compile errors below. Fix them.
+I've dropped this one again.  There is actually an easier way to
+achieve the same result.  By dropping the precision entirely from the
+format string the output will always get 0 extended.  I'll post an
+alternate patch soon.
 
-drivers/base/regmap/regmap-irq.c: In function 'regmap_irq_sync_unlock':
-drivers/base/regmap/regmap-irq.c:62:12: error: 'map' undeclared (first use in this function)
-drivers/base/regmap/regmap-irq.c:62:12: note: each undeclared identifier is reported only once for each function it appears in
-drivers/base/regmap/regmap-irq.c: In function 'regmap_irq_enable':
-drivers/base/regmap/regmap-irq.c:77:37: error: 'map' undeclared (first use in this function)
-drivers/base/regmap/regmap-irq.c: In function 'regmap_irq_disable':
-drivers/base/regmap/regmap-irq.c:85:37: error: 'map' undeclared (first use in this function)
-
-Signed-off-by: Stephen Warren <swarren@nvidia.com>
----
-I apologize for the lame patches. I didn't notice that regmap-irq.c had a
-separate config option that wasn't enabled.
-
- drivers/base/regmap/regmap-irq.c |    5 ++++-
- 1 files changed, 4 insertions(+), 1 deletions(-)
-
-diff --git a/drivers/base/regmap/regmap-irq.c b/drivers/base/regmap/regmap-irq.c
-index 56b8136..fc69d29 100644
---- a/drivers/base/regmap/regmap-irq.c
-+++ b/drivers/base/regmap/regmap-irq.c
-@@ -50,6 +50,7 @@ static void regmap_irq_lock(struct irq_data *data)
- static void regmap_irq_sync_unlock(struct irq_data *data)
- {
- 	struct regmap_irq_chip_data *d = irq_data_get_irq_chip_data(data);
-+	struct regmap *map = d->map;
- 	int i, ret;
- 
- 	/*
-@@ -59,7 +60,7 @@ static void regmap_irq_sync_unlock(struct irq_data *data)
- 	 */
- 	for (i = 0; i < d->chip->num_regs; i++) {
- 		ret = regmap_update_bits(d->map, d->chip->mask_base +
--						(i * map->map->reg_stride),
-+						(i * map->reg_stride),
- 					 d->mask_buf_def[i], d->mask_buf[i]);
- 		if (ret != 0)
- 			dev_err(d->map->dev, "Failed to sync masks in %x\n",
-@@ -72,6 +73,7 @@ static void regmap_irq_sync_unlock(struct irq_data *data)
- static void regmap_irq_enable(struct irq_data *data)
- {
- 	struct regmap_irq_chip_data *d = irq_data_get_irq_chip_data(data);
-+	struct regmap *map = d->map;
- 	const struct regmap_irq *irq_data = irq_to_regmap_irq(d, data->irq);
- 
- 	d->mask_buf[irq_data->reg_offset / map->reg_stride] &= ~irq_data->mask;
-@@ -80,6 +82,7 @@ static void regmap_irq_enable(struct irq_data *data)
- static void regmap_irq_disable(struct irq_data *data)
- {
- 	struct regmap_irq_chip_data *d = irq_data_get_irq_chip_data(data);
-+	struct regmap *map = d->map;
- 	const struct regmap_irq *irq_data = irq_to_regmap_irq(d, data->irq);
- 
- 	d->mask_buf[irq_data->reg_offset / map->reg_stride] |= irq_data->mask;
--- 
-1.7.0.4
+g.
 
