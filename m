@@ -1,78 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760877Ab2DKS21 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Apr 2012 14:28:27 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:52363 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751520Ab2DKS20 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Apr 2012 14:28:26 -0400
-Date: Wed, 11 Apr 2012 20:28:22 +0200
-From: Jan Kara <jack@suse.cz>
-To: Mike Christie <michaelc@cs.wisc.edu>
-Cc: Michael Tokarev <mjt@tls.msk.ru>, Jan Kara <jack@suse.cz>,
-        Dave Chinner <david@fromorbit.com>,
-        Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        SCSI Mailing List <linux-scsi@vger.kernel.org>
-Subject: Re: dramatic I/O slowdown after upgrading 2.6.38->3.0+
-Message-ID: <20120411182822.GD16008@quack.suse.cz>
-References: <4F75E46E.2000503@msgid.tls.msk.ru>
- <20120405232913.GA6640@quack.suse.cz>
- <4F7E74F4.90604@msgid.tls.msk.ru>
- <20120410022628.GN18323@dastard>
- <4F83CC86.2010805@msgid.tls.msk.ru>
- <20120410151326.GA4936@quack.suse.cz>
- <4F855173.40902@msgid.tls.msk.ru>
- <4F85BD2F.80905@cs.wisc.edu>
+	id S1760894Ab2DKS3A (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Apr 2012 14:29:00 -0400
+Received: from ud10.udmedia.de ([194.117.254.50]:56076 "EHLO
+	mail.ud10.udmedia.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753695Ab2DKS27 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Apr 2012 14:28:59 -0400
+Date: Wed, 11 Apr 2012 20:28:56 +0200
+From: Markus Trippelsdorf <markus@trippelsdorf.de>
+To: "Ted Ts'o" <tytso@mit.edu>, linux-kernel@vger.kernel.org,
+        hjl.tools@gmail.com
+Subject: Re: Trying to make a working kernel with the gold linker
+Message-ID: <20120411182856.GA327@x4>
+References: <E1SHnDZ-0006Za-Kh@tytso-glaptop.cam.corp.google.com>
+ <20120411045107.GA324@x4>
+ <20120411180520.GE12044@thunk.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4F85BD2F.80905@cs.wisc.edu>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20120411180520.GE12044@thunk.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed 11-04-12 12:19:43, Mike Christie wrote:
-> On 04/11/2012 04:40 AM, Michael Tokarev wrote:
-> > On 10.04.2012 19:13, Jan Kara wrote:
-> >> > On Tue 10-04-12 10:00:38, Michael Tokarev wrote:
-> > []
-> >>> >>   2.6.38:
-> >>> >>   # dd if=/dev/sdb of=/dev/null bs=1M iflag=direct count=100
-> >>> >>   100+0 records in
-> >>> >>   100+0 records out
-> >>> >>   104857600 bytes (105 MB) copied, 1.73126 s, 60.6 MB/s
-> >>> >>
-> >>> >>   3.0:
-> >>> >>   # dd if=/dev/sdb of=/dev/null bs=1M iflag=direct count=100
-> >>> >>   100+0 records in
-> >>> >>   100+0 records out
-> >>> >>   104857600 bytes (105 MB) copied, 29.4508 s, 3.6 MB/s
-> >>> >>
-> >>> >> That's about 20 times difference on direct read from the
-> >>> >> same - idle - device!!
-> >> >   Huh, that's a huge difference for such a trivial load. So we can rule out
-> >> > filesystems, writeback, mm. I also wouldn't think it's IO scheduler but
-> >> > you can always check by comparing dd numbers after
-> >> >   echo none >/sys/block/sdb/queue/scheduler
+On 2012.04.11 at 14:05 -0400, Ted Ts'o wrote:
+> On Wed, Apr 11, 2012 at 06:51:07AM +0200, Markus Trippelsdorf wrote:
+> > 
+> > Yes. I use it regularly. The last problems were fixed two years ago.
+> > Please try a more recent version.
 > 
-> Did you try newer 3.X kernels or just 3.0?
-> 
-> We were hitting a similar problem with iscsi. Same workload and it
-> started with 2.6.38. I think it turned out to be this issue:
-> 
-> // thread with issue like what we hit:
-> http://thread.gmane.org/gmane.linux.kernel/1244680
-> 
-> // Patch that I think fixed issue:
-> commit 3deaa7190a8da38453c4fabd9dec7f66d17fff67
-> Author: Shaohua Li <shaohua.li@intel.com>
-> Date:   Fri Feb 3 15:37:17 2012 -0800
-> 
->     readahead: fix pipeline break caused by block plug
-  I already asked about this but that doesn't seem to be the cause.
+> Thanks, I'll give that a try.  Next stupid question; for a variety of
+> reasons, the Corporate I/T folks require that I stay stuck on Ubuntu
+> 10.04.  Are there any incompatibility problems with using the most
+> recently released binutils-gold and gcc 4.4.3-4ubuntu5.1?  Basically,
+> can I just compile a new version of binutils, or do I need to upgrade
+> my entire compiler toolchain?
 
-								Honza
+Just compiling and installing a new binutils version should work fine.
+
+(But you should nonetheless consider to also upgrade gcc, because
+gcc-4.4 is ancient and not even officially maintained anymore...)
+
 -- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+Markus
