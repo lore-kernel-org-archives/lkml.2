@@ -1,58 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759851Ab2DKAMk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Apr 2012 20:12:40 -0400
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:35423 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755835Ab2DKAMi convert rfc822-to-8bit (ORCPT
+	id S1759877Ab2DKAVD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Apr 2012 20:21:03 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:54592 "EHLO
+	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753136Ab2DKAVC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Apr 2012 20:12:38 -0400
+	Tue, 10 Apr 2012 20:21:02 -0400
+X-Sasl-enc: RpWxERs5WTbyWmDZmW0gd5/xCRaipd+X2SaCAuOJuKGT 1334103660
+Date: Tue, 10 Apr 2012 21:20:57 -0300
+From: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
+To: Jan Kara <jack@suse.cz>
+Cc: Michael Tokarev <mjt@tls.msk.ru>, Dave Chinner <david@fromorbit.com>,
+        Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: dramatic I/O slowdown after upgrading 2.6.38->3.0+
+Message-ID: <20120411002057.GC7792@khazad-dum.debian.net>
+References: <4F75E46E.2000503@msgid.tls.msk.ru>
+ <20120405232913.GA6640@quack.suse.cz>
+ <4F7E74F4.90604@msgid.tls.msk.ru>
+ <20120410022628.GN18323@dastard>
+ <4F83CC86.2010805@msgid.tls.msk.ru>
+ <20120410151326.GA4936@quack.suse.cz>
 MIME-Version: 1.0
-In-Reply-To: <87r4vzjl0r.fsf@blp.benpfaff.org>
-References: <20120401125741.GA7484@p183.telecom.by> <4F78D0BA.9040709@zytor.com>
- <CACVxJT_WJYjecpZMGkyUrbE5gNROX1tOfFAcD84-hoPsypxcFQ@mail.gmail.com>
- <4F7F1864.8090606@zytor.com> <87r4vzjl0r.fsf@blp.benpfaff.org>
-From: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
-Date: Tue, 10 Apr 2012 20:12:17 -0400
-Message-ID: <CAHGf_=qkdUBYVTGzqpmmviCsn93gPFEKeS8eZR2fNN-d0NdYpQ@mail.gmail.com>
-Subject: Re: [PATCH] nextfd(2)
-To: Ben Pfaff <blp@cs.stanford.edu>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, Alexey Dobriyan <adobriyan@gmail.com>,
-        akpm@linux-foundation.org, viro@zeniv.linux.org.uk,
-        torvalds@linux-foundation.org, drepper@gmail.com,
-        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120410151326.GA4936@quack.suse.cz>
+X-GPG-Fingerprint: 1024D/1CDB0FE3 5422 5C61 F6B7 06FB 7E04  3738 EE25 DE3F
+ 1CDB 0FE3
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Apr 7, 2012 at 5:21 PM, Ben Pfaff <blp@cs.stanford.edu> wrote:
-> "H. Peter Anvin" <hpa@zytor.com> writes:
->
->> On 04/06/2012 02:54 AM, Alexey Dobriyan wrote:
->>>
->>> Without proc knowledge about fdtable is gathered linearly and still unreliable.
->>> With nextfd(2), even procful environments could lose several failure branches.
->>> And they can keep old dumb fd++ or smart /proc/self/fd loops for a change.
->>>
->>
->> Incidentally, if we were to create a system call for this -- which I so
->> far see no reason for -- I would make it return a select-style bitmask
->> of file descriptors in use, not a "next fd" which would require a system
->> call per iteration.
->
-> It's already possible to do something a little like that with the
-> existing "poll" system call:
->
-> #include <stdio.h>
-> #include <sys/poll.h>
->
-> int
-> main(void)
-> {
->  enum { N_FDS = 1024 };
->  struct pollfd fds[N_FDS];
+On Tue, 10 Apr 2012, Jan Kara wrote:
+> >   2.6.38:
+> >   # dd if=/dev/sdb of=/dev/null bs=1M iflag=direct count=100
+> >   100+0 records in
+> >   100+0 records out
+> >   104857600 bytes (105 MB) copied, 1.73126 s, 60.6 MB/s
+> > 
+> >   3.0:
+> >   # dd if=/dev/sdb of=/dev/null bs=1M iflag=direct count=100
+> >   100+0 records in
+> >   100+0 records out
+> >   104857600 bytes (105 MB) copied, 29.4508 s, 3.6 MB/s
+> > 
+> > That's about 20 times difference on direct read from the
+> > same - idle - device!!
 
-Your code has a muximum fd assumption here. that is one of that we
-really want to avoid.
+You might want to investigate the cpu-idle stuff (especially intel-idle if
+it is an Intel box with a recent processor: force the box to use acpi-idle
+instead) and the cpufreq stuff (try the test with the box with the
+"performance" governor).
+
+> Anyway, the most likely cause seems to be some driver issue (which would
+> also explain why you can see it only on one machine). I'd also compare very
+> closely config files of the two kernels if there isn't some unexpected
+> difference...
+
+Indeed.  But that's such a massive performance drop, I'd also be comparing
+the boot log messages of both kernels with diff, and also the lspci -vvv
+output...  just in case :-)
+
+-- 
+  "One disk to rule them all, One disk to find them. One disk to bring
+  them all and in the darkness grind them. In the Land of Redmond
+  where the shadows lie." -- The Silicon Valley Tarot
+  Henrique Holschuh
