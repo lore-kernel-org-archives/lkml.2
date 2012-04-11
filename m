@@ -1,40 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755022Ab2DKJHL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Apr 2012 05:07:11 -0400
-Received: from mail-out.m-online.net ([212.18.0.9]:54468 "EHLO
-	mail-out.m-online.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754789Ab2DKJHI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Apr 2012 05:07:08 -0400
-Date: Wed, 11 Apr 2012 11:06:57 +0200
-From: Anatolij Gustschin <agust@denx.de>
-To: Richard Weinberger <richard@nod.at>
-Cc: linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org,
-        paulus@samba.org, benh@kernel.crashing.org
-Subject: Re: [PATCH] powerpc: 512x: Fix mpc5121_clk_get()
-Message-ID: <20120411110657.1deaad93@wker>
-In-Reply-To: <1332788489-27435-1-git-send-email-richard@nod.at>
-References: <1332788489-27435-1-git-send-email-richard@nod.at>
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.22.0; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1755098Ab2DKJJW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Apr 2012 05:09:22 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:59851 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1751844Ab2DKJJU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Apr 2012 05:09:20 -0400
+X-IronPort-AV: E=Sophos;i="4.75,405,1330876800"; 
+   d="scan'208";a="4730184"
+Message-ID: <4F854A60.7010704@cn.fujitsu.com>
+Date: Wed, 11 Apr 2012 17:09:52 +0800
+From: Ren Mingxin <renmx@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20110412 CentOS/3.1.3-1.el6.centos Thunderbird/3.1.3
+MIME-Version: 1.0
+To: "Michael S. Tsirkin" <mst@redhat.com>
+CC: Rusty Russell <rusty@rustcorp.com.au>, Kay Sievers <kay.sievers@vrfy.org>,
+        Tokunaga Kei <tokunaga.keiich@jp.fujitsu.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        UDEV <linux-hotplug@vger.kernel.org>
+Subject: Re: [RFC PATCH] virtio_blk: Checking "private_data"  to avoid kernel
+ panic when hotplugging
+References: <4F728831.2090406@cn.fujitsu.com> <20120409075318.GB27771@redhat.com> <4F84F7BC.102@cn.fujitsu.com> <20120411083608.GC8562@redhat.com>
+In-Reply-To: <20120411083608.GC8562@redhat.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/04/11 17:08:41,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/04/11 17:08:43,
+	Serialize complete at 2012/04/11 17:08:43
 Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 26 Mar 2012 21:01:29 +0200
-Richard Weinberger <richard@nod.at> wrote:
+  On 04/11/2012 04:36 PM, Michael S. Tsirkin wrote:
+> On Wed, Apr 11, 2012 at 11:17:16AM +0800, Ren Mingxin wrote:
+>>   On 04/09/2012 03:53 PM, Michael S. Tsirkin wrote:
+>>
+>>> There's a chance you are hitting a race fixed by
+>>> 4678d6f970c2f7c0cbfefc0cc666432d153b321b.
+>>>
+>>> If it's still not fixed it might make sense to enable slab debugging -
+>>> we might have a use after free here.
+>>>
+>> I don't think the below commit has fixed this panic issue, for it is
+>> included
+>> in my last test environment(3.3-rc7).
+>> 4678d6f970c2f7c0cbfefc0cc666432d153b321b
+>>
+>> Now, I'd find which commit makes sense.
+> Great, thanks very much. I do suggest slab debugging if
+> the race reproduces for you with it enabled - reducing
+> the chance random struct rearrangements hide the bug.
+>
 
-> If try_module_get() fails, mpc5121_clk_get() might return
-> a wrong clock.
-> 
-> Signed-off-by: Richard Weinberger <richard@nod.at>
-> ---
->  arch/powerpc/platforms/512x/clock.c |    6 ++++--
->  1 files changed, 4 insertions(+), 2 deletions(-)
+Much appreciated for suggesting :-)
+I'll try it to locate the commit and backport it into rhel.
 
-Applied, thanks.
+-- 
+Thanks,
+Ren
 
-Anatolij
