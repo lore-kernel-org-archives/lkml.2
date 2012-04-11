@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965560Ab2DKXit (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Apr 2012 19:38:49 -0400
+	id S965530Ab2DKX1x (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Apr 2012 19:27:53 -0400
 Received: from mail-pb0-f46.google.com ([209.85.160.46]:38577 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965410Ab2DKX2C (ORCPT
+	with ESMTP id S965504Ab2DKX1r (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Apr 2012 19:28:02 -0400
-Message-Id: <20120411231308.840732376@linuxfoundation.org>
+	Wed, 11 Apr 2012 19:27:47 -0400
+Message-Id: <20120411231308.001697000@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Wed, 11 Apr 2012 16:13:16 -0700
+Date: Wed, 11 Apr 2012 16:13:11 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Yinghai Lu <yinghai@kernel.org>,
-        Len Brown <len.brown@intel.com>
-Subject: [ 09/42] PNPACPI: Fix device ref leaking in acpi_pnp_match
+        alan@lxorguk.ukuu.org.uk,
+        Artem Bityutskiy <artem.bityutskiy@linux.intel.com>,
+        David Woodhouse <David.Woodhouse@intel.com>
+Subject: [ 04/42] mtd: sst25l: initialize writebufsize
 In-Reply-To: <20120411231443.GA808@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,41 +26,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Yinghai Lu <yinghai@kernel.org>
+From: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
 
-commit 89e96ada572fb216e582dbe3f64e1a6939a37f74 upstream.
+commit c4cc625ea5958d065c21cc0fcea29e9ed8f3d2bc upstream.
 
-During testing pci root bus removal, found some root bus bridge is not freed.
-If booting with pnpacpi=off, those hostbridge could be freed without problem.
-It turns out that some devices reference are not released during acpi_pnp_match.
-that match should not hold one device ref during every calling.
-Add pu_device calling before returning.
+The writebufsize concept was introduce by commit
+"0e4ca7e mtd: add writebufsize field to mtd_info struct" and it represents
+the maximum amount of data the device writes to the media at a time. This is
+an important parameter for UBIFS which is used during recovery and which
+basically defines how big a corruption caused by a power cut can be.
 
-Signed-off-by: Yinghai Lu <yinghai@kernel.org>
-Signed-off-by: Len Brown <len.brown@intel.com>
+Set writebufsize to the flash page size because it is the maximum amount of
+data it writes at a time.
+
+Signed-off-by: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
+Signed-off-by: David Woodhouse <David.Woodhouse@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/pnp/pnpacpi/core.c |    7 ++++++-
- 1 file changed, 6 insertions(+), 1 deletion(-)
+ drivers/mtd/devices/sst25l.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/drivers/pnp/pnpacpi/core.c
-+++ b/drivers/pnp/pnpacpi/core.c
-@@ -320,9 +320,14 @@ static int __init acpi_pnp_match(struct
- {
- 	struct acpi_device *acpi = to_acpi_device(dev);
- 	struct pnp_dev *pnp = _pnp;
-+	struct device *physical_device;
-+
-+	physical_device = acpi_get_physical_device(acpi->handle);
-+	if (physical_device)
-+		put_device(physical_device);
- 
- 	/* true means it matched */
--	return !acpi_get_physical_device(acpi->handle)
-+	return !physical_device
- 	    && compare_pnp_id(pnp->id, acpi_device_hid(acpi));
- }
- 
+--- a/drivers/mtd/devices/sst25l.c
++++ b/drivers/mtd/devices/sst25l.c
+@@ -406,6 +406,7 @@ static int __devinit sst25l_probe(struct
+ 	flash->mtd.flags	= MTD_CAP_NORFLASH;
+ 	flash->mtd.erasesize	= flash_info->erase_size;
+ 	flash->mtd.writesize	= flash_info->page_size;
++	flash->mtd.writebufsize	= flash_info->page_size;
+ 	flash->mtd.size		= flash_info->page_size * flash_info->nr_pages;
+ 	flash->mtd.erase	= sst25l_erase;
+ 	flash->mtd.read		= sst25l_read;
 
 
