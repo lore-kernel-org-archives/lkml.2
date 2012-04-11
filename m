@@ -1,66 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760061Ab2DKDGf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Apr 2012 23:06:35 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:20349 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756018Ab2DKDGe (ORCPT
+	id S1760067Ab2DKDHY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Apr 2012 23:07:24 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:36056 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760012Ab2DKDHX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Apr 2012 23:06:34 -0400
-X-Authority-Analysis: v=2.0 cv=NYRkJh/4 c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=XQbtiDEiEegA:10 a=unLN5eZtZcEA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=tsEaMpVCi5LZAc7MKDgA:9 a=LlAuucVxmTia-B0gBl4A:7 a=PUjeQqilurYA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.80.29
-Message-ID: <1334113588.23924.234.camel@gandalf.stny.rr.com>
-Subject: Re: [PATCH 05/16] sched: SCHED_DEADLINE policy implementation.
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Juri Lelli <juri.lelli@gmail.com>
-Cc: peterz@infradead.org, tglx@linutronix.de, mingo@redhat.com,
-        cfriesen@nortel.com, oleg@redhat.com, fweisbec@gmail.com,
-        darren@dvhart.com, johan.eker@ericsson.com, p.faure@akatech.ch,
-        linux-kernel@vger.kernel.org, claudio@evidence.eu.com,
-        michael@amarulasolutions.com, fchecconi@gmail.com,
-        tommaso.cucinotta@sssup.it, nicola.manica@disi.unitn.it,
-        luca.abeni@unitn.it, dhaval.giani@gmail.com, hgu1972@gmail.com,
-        paulmck@linux.vnet.ibm.com, raistlin@linux.it, insop.song@ericsson.com,
-        liming.wang@windriver.com
-Date: Tue, 10 Apr 2012 23:06:28 -0400
-In-Reply-To: <1333696481-3433-6-git-send-email-juri.lelli@gmail.com>
-References: <1333696481-3433-1-git-send-email-juri.lelli@gmail.com>
-	 <1333696481-3433-6-git-send-email-juri.lelli@gmail.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.2.2-1 
+	Tue, 10 Apr 2012 23:07:23 -0400
+Message-ID: <1334113637.7919.3.camel@phoenix>
+Subject: [PATCH 2/2] regulator: twl-regulator: Use twlreg_grp helper function
+From: Axel Lin <axel.lin@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Peter Ujfalusi <peter.ujfalusi@ti.com>, Rajendra Nayak <rnayak@ti.com>,
+        Tero Kristo <t-kristo@ti.com>, Liam Girdwood <lrg@ti.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Date: Wed, 11 Apr 2012 11:07:17 +0800
+In-Reply-To: <1334113557.7919.2.camel@phoenix>
+References: <1334113557.7919.2.camel@phoenix>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2- 
 Content-Transfer-Encoding: 7bit
 Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2012-04-06 at 09:14 +0200, Juri Lelli wrote:
+Since the twlreg_grp helper function is there, use it.
 
-> +/*
-> + * Pure Earliest Deadline First (EDF) scheduling does not deal with the
-> + * possibility of a entity lasting more than what it declared, and thus
-> + * exhausting its runtime.
-> + *
-> + * Here we are interested in making runtime overrun possible, but we do
-> + * not want a entity which is misbehaving to affect the scheduling of all
-> + * other entities.
-> + * Therefore, a budgeting strategy called Constant Bandwidth Server (CBS)
-> + * is used, in order to confine each entity within its own bandwidth.
-> + *
-> + * This function deals exactly with that, and ensures that when the runtime
-> + * of a entity is replenished, its deadline is also postponed. That ensures
-> + * the overrunning entity can't interfere with other entity in the system and
-> + * can't make them miss their deadlines. Reasons why this kind of overruns
-> + * could happen are, typically, a entity voluntarily trying to overcume its
+Signed-off-by: Axel Lin <axel.lin@gmail.com>
+---
+ drivers/regulator/twl-regulator.c |   21 ++++++++++-----------
+ 1 files changed, 10 insertions(+), 11 deletions(-)
 
-s/overcume/overcome/
+diff --git a/drivers/regulator/twl-regulator.c b/drivers/regulator/twl-regulator.c
+index d9ba4c4..7385b27 100644
+--- a/drivers/regulator/twl-regulator.c
++++ b/drivers/regulator/twl-regulator.c
+@@ -175,15 +175,14 @@ static int twl6030reg_is_enabled(struct regulator_dev *rdev)
+ 	struct twlreg_info	*info = rdev_get_drvdata(rdev);
+ 	int			grp = 0, val;
+ 
+-	if (!(twl_class_is_6030() && (info->features & TWL6025_SUBCLASS)))
+-		grp = twlreg_read(info, TWL_MODULE_PM_RECEIVER, VREG_GRP);
+-	if (grp < 0)
+-		return grp;
+-
+-	if (!(twl_class_is_6030() && (info->features & TWL6025_SUBCLASS)))
++	if (!(twl_class_is_6030() && (info->features & TWL6025_SUBCLASS))) {
++		grp = twlreg_grp(rdev);
++		if (grp < 0)
++			return grp;
+ 		grp &= P1_GRP_6030;
+-	else
++	} else {
+ 		grp = 1;
++	}
+ 
+ 	val = twlreg_read(info, TWL_MODULE_PM_RECEIVER, VREG_STATE);
+ 	val = TWL6030_CFG_STATE_APP(val);
+@@ -197,7 +196,7 @@ static int twl4030reg_enable(struct regulator_dev *rdev)
+ 	int			grp;
+ 	int			ret;
+ 
+-	grp = twlreg_read(info, TWL_MODULE_PM_RECEIVER, VREG_GRP);
++	grp = twlreg_grp(rdev);
+ 	if (grp < 0)
+ 		return grp;
+ 
+@@ -215,7 +214,7 @@ static int twl6030reg_enable(struct regulator_dev *rdev)
+ 	int			ret;
+ 
+ 	if (!(twl_class_is_6030() && (info->features & TWL6025_SUBCLASS)))
+-		grp = twlreg_read(info, TWL_MODULE_PM_RECEIVER, VREG_GRP);
++		grp = twlreg_grp(rdev);
+ 	if (grp < 0)
+ 		return grp;
+ 
+@@ -245,7 +244,7 @@ static int twl4030reg_disable(struct regulator_dev *rdev)
+ 	int			grp;
+ 	int			ret;
+ 
+-	grp = twlreg_read(info, TWL_MODULE_PM_RECEIVER, VREG_GRP);
++	grp = twlreg_grp(rdev);
+ 	if (grp < 0)
+ 		return grp;
+ 
+@@ -357,7 +356,7 @@ static int twl6030reg_set_mode(struct regulator_dev *rdev, unsigned mode)
+ 	int val;
+ 
+ 	if (!(twl_class_is_6030() && (info->features & TWL6025_SUBCLASS)))
+-		grp = twlreg_read(info, TWL_MODULE_PM_RECEIVER, VREG_GRP);
++		grp = twlreg_grp(rdev);
+ 
+ 	if (grp < 0)
+ 		return grp;
+-- 
+1.7.5.4
 
--- Steve
 
-> + * runtime, or it just underestimated it during sched_setscheduler_ex().
-> + */
-> +static void replenish_dl_entity(struct sched_dl_entity *dl_se)
-> +{
-> +
 
