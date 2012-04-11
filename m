@@ -1,47 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760667Ab2DKQaW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Apr 2012 12:30:22 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:43898 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760638Ab2DKQaV (ORCPT
+	id S1760678Ab2DKQbH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Apr 2012 12:31:07 -0400
+Received: from ppsw-41.csi.cam.ac.uk ([131.111.8.141]:57338 "EHLO
+	ppsw-41.csi.cam.ac.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760638Ab2DKQbF convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Apr 2012 12:30:21 -0400
-Date: Wed, 11 Apr 2012 09:30:16 -0700
-From: Tejun Heo <tj@kernel.org>
-To: Sam Ravnborg <sam@ravnborg.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, lkml <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] x86: drop obsolete ARCH_BOOTMEM support
-Message-ID: <20120411163016.GC12887@google.com>
-References: <20120406124735.GA6920@merkur.ravnborg.org>
+	Wed, 11 Apr 2012 12:31:05 -0400
+X-Cam-AntiVirus: no malware found
+X-Cam-SpamDetails: not scanned
+X-Cam-ScannerInfo: http://www.cam.ac.uk/cs/email/scanner/
+References: <20120410133339.GK7499@opensource.wolfsonmicro.com> <20120410144235.1e05efd4@pyramind.ukuu.org.uk> <20120410140749.GL7499@opensource.wolfsonmicro.com> <20120410151529.5bcc5ce6@pyramind.ukuu.org.uk> <20120410151943.GM7499@opensource.wolfsonmicro.com> <20120410175632.5c11c36e@pyramind.ukuu.org.uk> <20120410175846.GQ7499@opensource.wolfsonmicro.com> <4F848C7C.5040703@cam.ac.uk> <20120410223722.GY7499@opensource.wolfsonmicro.com> <e65fbfb8-1169-46dc-aad9-1dc9dbb91e8f@email.android.com> <20120411153811.GA28101@kroah.com>
+User-Agent: K-9 Mail for Android
+In-Reply-To: <20120411153811.GA28101@kroah.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120406124735.GA6920@merkur.ravnborg.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain;
+ charset=UTF-8
+Subject: Re: [PATCH RESEND] x86, intel_mid: ADC management
+From: Jonathan Cameron <jic23@cam.ac.uk>
+Date: Wed, 11 Apr 2012 17:30:47 +0100
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+CC: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>, mingo@elte.hu,
+        linux-kernel@vger.kernel.org, Jonathan Cameron <jic23@kernel.org>,
+        "linux-iio@vger.kernel.org" <linux-iio@vger.kernel.org>
+Message-ID: <43cfe506-e7ca-44f6-8225-1476e7a88003@email.android.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 06, 2012 at 02:47:35PM +0200, Sam Ravnborg wrote:
-> From ae6cdc767f973f39cb205af4b80ff13f35a1b66e Mon Sep 17 00:00:00 2001
-> From: Sam Ravnborg <sam@ravnborg.org>
-> Date: Fri, 6 Apr 2012 13:37:08 +0200
-> Subject: [PATCH] x86: drop obsolete ARCH_BOOTMEM support
-> 
-> x86 unconditionally uses NO_BOOTMEM so there is no use
-> of the HAVE_ARCH_BOOTMEM support as mm/bootmem.c is the
-> only file referencing this symbol.
-> 
-> bootmem_arch_preferred_node() is the function referred
-> in the mm/bootmem.c code and can thuis be dropped too.
-> 
-> x86 was the sole user of HAVE_ARCH_BOOTMEM - so there is
-> an opportunity to clean up a little in mm/bootmem.c too
-> if we do not expect other users to emerge.
 
-avr32 seems to have it too?
+
+Greg Kroah-Hartman <gregkh@linuxfoundation.org> wrote:
+
+>On Wed, Apr 11, 2012 at 07:19:01AM +0100, Jonathan Cameron wrote:
+>> 
+>> 
+>> Mark Brown <broonie@opensource.wolfsonmicro.com> wrote:
+>> 
+>> >On Tue, Apr 10, 2012 at 08:39:40PM +0100, Jonathan Cameron wrote:
+>> >
+>> >> 1)  Review of code.  This is crucial. If people have a little time
+>> >> ripping holes in the core IIO code is what we need.  Arnd did a
+>good
+>> >job
+>> >> of this a while back. Others have done bits of it since.
+>> >
+>> >> 2) Getting the push code tidied up and pushed out.  I'll post it
+>as
+>> >an
+>> >> updated rfc to linux-iio shortly.  All I had left that definitely
+>> >> wanted doing here was cleaning up the example iio to input bridge
+>> >> driver.  That can happen later.
+>> >
+>> >For these two can we refactor in place?  That's pretty much what
+>seems
+>> >to have been happening anyway...
+>> >
+>> I guess it comes down to whether Linus will pull.  2 should be there
+>> within a week or so anyway depending mostly on analog testing I
+>> haven't broken any of their drivers.
+>
+>Hm, shouldn't I be the one that moves this out of staging?  :)
+
+Sorry. Still in mind set of last try where we a parrallel version planned..
+
+>Anyway, all I care about to get this code out of staging is that you
+>feel your userspace api is "sane" and not going to change.  Your
+>in-kernel stuff can radically change every kernel release with no
+>objection from me at all.
+>
+>And from what I can tell, your userspace stuff looks pretty stable now,
+>right?  So, I don't mind moving this all out of staging for 3.5 as-is.
+
+There are corners of the userspace abi that aren't but they aren't related to the core so we can break the abi docs in two and just move the good stuff... 
+
+
+>
+>If so, I'll be glad to make the change to my repo so it starts to show
+>up in linux-next in the "correct" place whenever you want me to.
+
+Will clear current queue under review then that would be great.
+
+Note we will need to leave a lot of drivers in staging for now so move may require a few sed scripts to link up headers etc...  quite a lot of drivers are way off.
+
+Lets start a fresh thread on the move to make sure everyone agrees on what is ready!  
+
+Thanks as ever for all your hard work!
+
+>thanks,
+>
+>greg k-h
 
 -- 
-tejun
+Sent from my Android phone with K-9 Mail. Please excuse my brevity.
