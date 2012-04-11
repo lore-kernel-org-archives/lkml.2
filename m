@@ -1,69 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757069Ab2DKXy0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Apr 2012 19:54:26 -0400
-Received: from mail-pz0-f52.google.com ([209.85.210.52]:63303 "EHLO
-	mail-pz0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964903Ab2DKXRt (ORCPT
+	id S1761533Ab2DKXym (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Apr 2012 19:54:42 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:39355 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1761510Ab2DKXyj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Apr 2012 19:17:49 -0400
-Message-Id: <20120411231028.538774815@linuxfoundation.org>
-User-Agent: quilt/0.60-19.1
-Date: Wed, 11 Apr 2012 16:11:18 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Stephen Warren <swarren@nvidia.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-Subject: [ 60/78] regmap: prevent division by zero in rbtree_show
-In-Reply-To: <20120411231102.GA6404@kroah.com>
+	Wed, 11 Apr 2012 19:54:39 -0400
+Date: Wed, 11 Apr 2012 16:54:18 -0700 (PDT)
+From: Hugh Dickins <hughd@google.com>
+X-X-Sender: hugh@eggly.anvils
+To: Mel Gorman <mgorman@suse.de>
+cc: Andrew Morton <akpm@linux-foundation.org>, Rik van Riel <riel@redhat.com>,
+        Konstantin Khlebnikov <khlebnikov@openvz.org>,
+        Ying Han <yinghan@google.com>, Linux-MM <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 0/3] Removal of lumpy reclaim V2
+In-Reply-To: <1334162298-18942-1-git-send-email-mgorman@suse.de>
+Message-ID: <alpine.LSU.2.00.1204111651290.26528@eggly.anvils>
+References: <1334162298-18942-1-git-send-email-mgorman@suse.de>
+User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.3-stable review patch.  If anyone has any objections, please let me know.
+On Wed, 11 Apr 2012, Mel Gorman wrote:
+> 
+> Removing lumpy reclaim saves almost 900K of text where as the full series
+> removes 1200K of text.
 
-------------------
+Impressive...
 
-From: Stephen Warren <swarren@nvidia.com>
+> 
+>    text	   data	    bss	    dec	    hex	filename
+> 6740375	1927944	2260992	10929311	 a6c49f	vmlinux-3.4.0-rc2-vanilla
+> 6739479	1927944	2260992	10928415	 a6c11f	vmlinux-3.4.0-rc2-lumpyremove-v2
+> 6739159	1927944	2260992	10928095	 a6bfdf	vmlinux-3.4.0-rc2-nosync-v2
 
-commit c04c1b9ee8f30c7a3a25e20e406247003f634ebe upstream.
+... but I fear you meant " bytes" instead of "K" ;)
 
-If there are no nodes in the cache, nodes will be 0, so calculating
-"registers / nodes" will cause division by zero.
-
-Signed-off-by: Stephen Warren <swarren@nvidia.com>
-Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- drivers/base/regmap/regcache-rbtree.c |    8 +++++++-
- 1 file changed, 7 insertions(+), 1 deletion(-)
-
---- a/drivers/base/regmap/regcache-rbtree.c
-+++ b/drivers/base/regmap/regcache-rbtree.c
-@@ -137,6 +137,7 @@ static int rbtree_show(struct seq_file *
- 	unsigned int base, top;
- 	int nodes = 0;
- 	int registers = 0;
-+	int average;
- 
- 	mutex_lock(&map->lock);
- 
-@@ -151,8 +152,13 @@ static int rbtree_show(struct seq_file *
- 		registers += top - base + 1;
- 	}
- 
-+	if (nodes)
-+		average = registers / nodes;
-+	else
-+		average = 0;
-+
- 	seq_printf(s, "%d nodes, %d registers, average %d registers\n",
--		   nodes, registers, registers / nodes);
-+		   nodes, registers, average);
- 
- 	mutex_unlock(&map->lock);
- 
-
-
+Hugh
