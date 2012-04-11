@@ -1,21 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964946Ab2DKXR6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Apr 2012 19:17:58 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:39063 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964933Ab2DKXRz (ORCPT
+	id S964994Ab2DKXSN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Apr 2012 19:18:13 -0400
+Received: from mail-pz0-f52.google.com ([209.85.210.52]:63303 "EHLO
+	mail-pz0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S964976Ab2DKXSI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Apr 2012 19:17:55 -0400
-Message-Id: <20120411231028.849418300@linuxfoundation.org>
+	Wed, 11 Apr 2012 19:18:08 -0400
+Message-Id: <20120411231029.492939631@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Wed, 11 Apr 2012 16:11:20 -0700
+Date: Wed, 11 Apr 2012 16:11:24 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Axel Lin <axel.lin@gmail.com>,
-        Samuel Ortiz <sameo@linux.intel.com>
-Subject: [ 62/78] mfd: Fix section mismatch warning for da9052-spi
+        alan@lxorguk.ukuu.org.uk,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Jon Dufresne <jon@jondufresne.org>,
+        Suresh Siddha <suresh.b.siddha@intel.com>, <yinghai@kernel.org>,
+        Josh Boyer <jwboyer@redhat.com>, Ingo Molnar <mingo@elte.hu>,
+        Teck Choon Giam <giamteckchoon@gmail.com>, Ben Guthro <ben@guthro.net>
+Subject: [ 66/78] Revert "x86/ioapic: Add register level checks to detect bogus io-apic entries"
 In-Reply-To: <20120411231102.GA6404@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,48 +29,95 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Axel Lin <axel.lin@gmail.com>
+This reverts commit a998dc2fa76f496d2944f0602b920d1d10d7467d
+[73d63d038ee9f769f5e5b46792d227fe20e442c5 upstream]
 
-commit e536b62095301271d974983044a011c29fcb2ea2 upstream.
+It causes problems, so needs to be reverted from 3.2-stable for now.
 
-Add __devinit annotation for da9052_spi_probe to fix below build warning:
-
-WARNING: drivers/built-in.o(.text+0x349b4): Section mismatch in reference from the function da9052_spi_probe() to the function .devinit.text:da9052_device_init()
-The function da9052_spi_probe() references
-the function __devinit da9052_device_init().
-This is often because da9052_spi_probe lacks a __devinit
-annotation or the annotation of da9052_device_init is wrong.
-
-Also add __devexit annotation for da9052_spi_remove because we have
-__devexit_p around it in the remove callback.
-
-Signed-off-by: Axel Lin <axel.lin@gmail.com>
-Signed-off-by: Samuel Ortiz <sameo@linux.intel.com>
+Reported-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Cc: Jon Dufresne <jon@jondufresne.org>
+Cc: Suresh Siddha <suresh.b.siddha@intel.com>
+Cc: <yinghai@kernel.org>
+Cc: Josh Boyer <jwboyer@redhat.com>
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: Teck Choon Giam <giamteckchoon@gmail.com>
+Cc: Ben Guthro <ben@guthro.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/mfd/da9052-spi.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ arch/x86/kernel/apic/io_apic.c |   40 ++++++++--------------------------------
+ 1 file changed, 8 insertions(+), 32 deletions(-)
 
---- a/drivers/mfd/da9052-spi.c
-+++ b/drivers/mfd/da9052-spi.c
-@@ -21,7 +21,7 @@
- 
- #include <linux/mfd/da9052/da9052.h>
- 
--static int da9052_spi_probe(struct spi_device *spi)
-+static int __devinit da9052_spi_probe(struct spi_device *spi)
+--- a/arch/x86/kernel/apic/io_apic.c
++++ b/arch/x86/kernel/apic/io_apic.c
+@@ -3967,36 +3967,18 @@ int mp_find_ioapic_pin(int ioapic, u32 g
+ static __init int bad_ioapic(unsigned long address)
  {
- 	int ret;
- 	const struct spi_device_id *id = spi_get_device_id(spi);
-@@ -61,7 +61,7 @@ err:
- 	return ret;
+ 	if (nr_ioapics >= MAX_IO_APICS) {
+-		pr_warn("WARNING: Max # of I/O APICs (%d) exceeded (found %d), skipping\n",
+-			MAX_IO_APICS, nr_ioapics);
++		printk(KERN_WARNING "WARNING: Max # of I/O APICs (%d) exceeded "
++		       "(found %d), skipping\n", MAX_IO_APICS, nr_ioapics);
+ 		return 1;
+ 	}
+ 	if (!address) {
+-		pr_warn("WARNING: Bogus (zero) I/O APIC address found in table, skipping!\n");
++		printk(KERN_WARNING "WARNING: Bogus (zero) I/O APIC address"
++		       " found in table, skipping!\n");
+ 		return 1;
+ 	}
+ 	return 0;
  }
  
--static int da9052_spi_remove(struct spi_device *spi)
-+static int __devexit da9052_spi_remove(struct spi_device *spi)
+-static __init int bad_ioapic_register(int idx)
+-{
+-	union IO_APIC_reg_00 reg_00;
+-	union IO_APIC_reg_01 reg_01;
+-	union IO_APIC_reg_02 reg_02;
+-
+-	reg_00.raw = io_apic_read(idx, 0);
+-	reg_01.raw = io_apic_read(idx, 1);
+-	reg_02.raw = io_apic_read(idx, 2);
+-
+-	if (reg_00.raw == -1 && reg_01.raw == -1 && reg_02.raw == -1) {
+-		pr_warn("I/O APIC 0x%x registers return all ones, skipping!\n",
+-			mpc_ioapic_addr(idx));
+-		return 1;
+-	}
+-
+-	return 0;
+-}
+-
+ void __init mp_register_ioapic(int id, u32 address, u32 gsi_base)
  {
- 	struct da9052 *da9052 = dev_get_drvdata(&spi->dev);
+ 	int idx = 0;
+@@ -4013,12 +3995,6 @@ void __init mp_register_ioapic(int id, u
+ 	ioapics[idx].mp_config.apicaddr = address;
  
+ 	set_fixmap_nocache(FIX_IO_APIC_BASE_0 + idx, address);
+-
+-	if (bad_ioapic_register(idx)) {
+-		clear_fixmap(FIX_IO_APIC_BASE_0 + idx);
+-		return;
+-	}
+-
+ 	ioapics[idx].mp_config.apicid = io_apic_unique_id(id);
+ 	ioapics[idx].mp_config.apicver = io_apic_get_version(idx);
+ 
+@@ -4039,10 +4015,10 @@ void __init mp_register_ioapic(int id, u
+ 	if (gsi_cfg->gsi_end >= gsi_top)
+ 		gsi_top = gsi_cfg->gsi_end + 1;
+ 
+-	pr_info("IOAPIC[%d]: apic_id %d, version %d, address 0x%x, GSI %d-%d\n",
+-		idx, mpc_ioapic_id(idx),
+-		mpc_ioapic_ver(idx), mpc_ioapic_addr(idx),
+-		gsi_cfg->gsi_base, gsi_cfg->gsi_end);
++	printk(KERN_INFO "IOAPIC[%d]: apic_id %d, version %d, address 0x%x, "
++	       "GSI %d-%d\n", idx, mpc_ioapic_id(idx),
++	       mpc_ioapic_ver(idx), mpc_ioapic_addr(idx),
++	       gsi_cfg->gsi_base, gsi_cfg->gsi_end);
+ 
+ 	nr_ioapics++;
+ }
 
 
