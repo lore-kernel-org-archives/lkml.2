@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965778Ab2DKX3c (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Apr 2012 19:29:32 -0400
+	id S965812Ab2DKX3m (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Apr 2012 19:29:42 -0400
 Received: from mail-pb0-f46.google.com ([209.85.160.46]:38577 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965748Ab2DKX3U (ORCPT
+	with ESMTP id S965799Ab2DKX3i (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Apr 2012 19:29:20 -0400
-Message-Id: <20120411231313.390977748@linuxfoundation.org>
+	Wed, 11 Apr 2012 19:29:38 -0400
+Message-Id: <20120411231314.419000079@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Wed, 11 Apr 2012 16:13:41 -0700
+Date: Wed, 11 Apr 2012 16:13:47 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Carlos Corbacho <carlos@strangeworlds.co.uk>,
-        Matthew Garrett <mjg@redhat.com>, Mattia Dongili <malattia@linux.it>,
-        Dimitris N <ddarlac@gmail.com>, "Lee, Chun-Yi" <jlee@suse.com>
-Subject: [ 34/42] acer-wmi: No wifi rfkill on Sony machines
+        alan@lxorguk.ukuu.org.uk, Joerg Roedel <joerg.roedel@amd.com>,
+        Ben Hutchings <ben@decadent.org.uk>
+Subject: [ 40/42] iommu/amd: Make sure IOMMU interrupts are re-enabled on resume
 In-Reply-To: <20120411231443.GA808@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,37 +25,77 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Lee, Chun-Yi" <joeyli.kernel@gmail.com>
+From: Joerg Roedel <joerg.roedel@amd.com>
 
-commit 5719b81988f3c24ff694dc3a37e35b35630a3966 upstream.
+commit 9ddd592a191b32f2ee6c4b6ed2bd52665c3a49f5 upstream.
 
-The wireless rfkill should charged by sony-laptop but not acer-wmi.
-So, add Sony's SNY5001 acpi device to blacklist in acer-wmi.
+Unfortunatly the interrupts for the event log and the
+peripheral page-faults are only enabled at boot but not
+re-enabled at resume. Fix that.
 
-Tested on Sony Vaio
-
-Cc: Carlos Corbacho <carlos@strangeworlds.co.uk>
-Cc: Matthew Garrett <mjg@redhat.com>
-Cc: Mattia Dongili <malattia@linux.it>
-Cc: Dimitris N <ddarlac@gmail.com>
-Tested-by: Dimitris N <ddarlac@gmail.com>
-Signed-off-by: Lee, Chun-Yi <jlee@suse.com>
-Signed-off-by: Matthew Garrett <mjg@redhat.com>
+Signed-off-by: Joerg Roedel <joerg.roedel@amd.com>
+[bwh: Backport to 3.0:
+ - Drop change to PPR log which was added in 3.3
+  - Source is under arch/x86/kernel]
+Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/platform/x86/acer-wmi.c |    1 +
- 1 file changed, 1 insertion(+)
+ arch/x86/kernel/amd_iommu_init.c |   24 +++++++++++++++++-------
+ 1 file changed, 17 insertions(+), 7 deletions(-)
 
---- a/drivers/platform/x86/acer-wmi.c
-+++ b/drivers/platform/x86/acer-wmi.c
-@@ -689,6 +689,7 @@ static const struct acpi_device_id norfk
- 	{ "VPC2004", 0},
- 	{ "IBM0068", 0},
- 	{ "LEN0068", 0},
-+	{ "SNY5001", 0},	/* sony-laptop in charge */
- 	{ "", 0},
- };
+--- a/arch/x86/kernel/amd_iommu_init.c
++++ b/arch/x86/kernel/amd_iommu_init.c
+@@ -1031,8 +1031,9 @@ static int iommu_setup_msi(struct amd_io
+ {
+ 	int r;
  
+-	if (pci_enable_msi(iommu->dev))
+-		return 1;
++	r = pci_enable_msi(iommu->dev);
++	if (r)
++		return r;
+ 
+ 	r = request_threaded_irq(iommu->dev->irq,
+ 				 amd_iommu_int_handler,
+@@ -1042,24 +1043,33 @@ static int iommu_setup_msi(struct amd_io
+ 
+ 	if (r) {
+ 		pci_disable_msi(iommu->dev);
+-		return 1;
++		return r;
+ 	}
+ 
+ 	iommu->int_enabled = true;
+-	iommu_feature_enable(iommu, CONTROL_EVT_INT_EN);
+ 
+ 	return 0;
+ }
+ 
+ static int iommu_init_msi(struct amd_iommu *iommu)
+ {
++	int ret;
++
+ 	if (iommu->int_enabled)
+-		return 0;
++		goto enable_faults;
+ 
+ 	if (pci_find_capability(iommu->dev, PCI_CAP_ID_MSI))
+-		return iommu_setup_msi(iommu);
++		ret = iommu_setup_msi(iommu);
++	else
++		ret = -ENODEV;
++
++	if (ret)
++		return ret;
+ 
+-	return 1;
++enable_faults:
++	iommu_feature_enable(iommu, CONTROL_EVT_INT_EN);
++
++	return 0;
+ }
+ 
+ /****************************************************************************
 
 
