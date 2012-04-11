@@ -1,74 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760328Ab2DKOSq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Apr 2012 10:18:46 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:64859 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760280Ab2DKOSo convert rfc822-to-8bit (ORCPT
+	id S1760344Ab2DKOVK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Apr 2012 10:21:10 -0400
+Received: from kamaji.grokhost.net ([87.117.218.43]:54883 "EHLO
+	kamaji.grokhost.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755389Ab2DKOVI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Apr 2012 10:18:44 -0400
-MIME-Version: 1.0
-In-Reply-To: <1334148270-13139-1-git-send-email-otavio@ossystems.com.br>
-References: <1334148270-13139-1-git-send-email-otavio@ossystems.com.br>
-Date: Wed, 11 Apr 2012 10:18:44 -0400
-Message-ID: <CADkTA4OEioYy6QW251KZ7EkJ+oUaDA=CtTXkb+kUWwwtE95Neg@mail.gmail.com>
-Subject: Re: [PATCH] perf: do not prefix flex and bison calls with
- CROSS_COMPILE prefix
-From: Bruce Ashfield <bruce.ashfield@gmail.com>
-To: Otavio Salvador <otavio@ossystems.com.br>
-Cc: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Wed, 11 Apr 2012 10:21:08 -0400
+From: Chris Boot <bootc@bootc.net>
+To: linux1394-devel@lists.sourceforge.net, target-devel@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, agrover@redhat.com, clemens@ladisch.de,
+        nab@linux-iscsi.org, stefanr@s5r6.in-berlin.de
+Subject: [PATCH v3 00/11] firewire-sbp-target: FireWire SBP-2 SCSI target
+Date: Wed, 11 Apr 2012 15:20:32 +0100
+Message-Id: <1334154043-69076-1-git-send-email-bootc@bootc.net>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1329317248-94128-1-git-send-email-bootc@bootc.net>
+References: <1329317248-94128-1-git-send-email-bootc@bootc.net>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 11, 2012 at 8:44 AM, Otavio Salvador
-<otavio@ossystems.com.br> wrote:
-> Other parts of kernel calls bison and flex but do not use the
-> CROSS_COMPILE prefix so this ought to be done in same way.
+The FireWire SBP-2 Target is a driver for using an IEEE-1394 connection
+as a SCSI transport. This module uses the SCSI Target framework to
+expose LUNs to other machines attached to a FireWire bus, in effect
+acting as a FireWire hard disk similar to FireWire Target Disk mode on
+many Apple computers.
 
-FWIW. I have the same fix here that I'm using with 3.4-rc2, but hadn't
-gotten around to sending it out yet.
+Sorry this latest revision has been a long time coming. I was trying to
+chase down a crashing bug (but haven't been able to replicate it), changed
+my mind about a large portion of the code twice, and life got in the way as
+well!
 
-So that's a count of two without a cross prefixed flex and bison :)
+Changes in v3:
+* Updates for target framework API changes
+* Attempt to make headers self-contained
+* Remove bad use of atomics and memory barriers
+* Rework use of locking
+* Use system workqueues
+* Wrap fw_run_transaction() to retry failed transactions
+* Coding style fixes
+* Fix a few bugs
+* Overhaul sbp_rw_data()
+* Overhaul target fetch agent
 
-Cheers,
+Changes in v2:
+* Fixed some copy & paste issues
+* Updated Kconfig (wording, depends, 'default n')
+* Removed some unnecessary EXPORT_SYMBOL()s
+* Merged sbp_util.{c,h} into sbp_configfs.c and sbp_base.h
+* Merged sbp_proto.{c,h} into sbp_fabric.{c,h}
+* Cleaned up comments and several printks
+* Fixed a few minor bugs
+* Create & use our own workqueue instead of using fw_workqueue
+* Dropped the unused TFO->new_cmd_map and sbp_new_cmd()
+* Overhauled and simplified tgt_agent_fetch_work()
+* Removed some redundant members of struct sbp_target_request
+* Removed struct sbp_lun and code to maintain redundant LUN list
+* Added spinlock to struct sbp_session and use locking throughout
+* Moved fw_card_{get,put,release}() into linux/firewire.h
 
-Bruce
-
->
-> Signed-off-by: Otavio Salvador <otavio@ossystems.com.br>
-> ---
->  tools/perf/Makefile |    4 ++--
->  1 file changed, 2 insertions(+), 2 deletions(-)
->
-> diff --git a/tools/perf/Makefile b/tools/perf/Makefile
-> index 820371f..0ae8165 100644
-> --- a/tools/perf/Makefile
-> +++ b/tools/perf/Makefile
-> @@ -234,8 +234,8 @@ endif
->
->  export PERL_PATH
->
-> -FLEX = $(CROSS_COMPILE)flex
-> -BISON= $(CROSS_COMPILE)bison
-> +FLEX = flex
-> +BISON= bison
->
->  event-parser:
->        $(QUIET_BISON)$(BISON) -v util/parse-events.y -d -o $(OUTPUT)util/parse-events-bison.c
-> --
-> 1.7.9.5
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-
-
-
--- 
-"Thou shalt not follow the NULL pointer, for chaos and madness await
-thee at its end"
