@@ -1,107 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753824Ab2DKIek (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Apr 2012 04:34:40 -0400
-Received: from eu1sys200aog104.obsmtp.com ([207.126.144.117]:53626 "EHLO
-	eu1sys200aog104.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752479Ab2DKIeh (ORCPT
+	id S1754341Ab2DKIfi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Apr 2012 04:35:38 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:43027 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752861Ab2DKIff convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Apr 2012 04:34:37 -0400
-From: Linus Walleij <linus.walleij@stericsson.com>
-To: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>
-Cc: Stephen Warren <swarren@nvidia.com>, Shawn Guo <shawn.guo@freescale.com>,
+	Wed, 11 Apr 2012 04:35:35 -0400
+MIME-Version: 1.0
+In-Reply-To: <4F84537A.2020300@wwwdotorg.org>
+References: <1334045048-15566-1-git-send-email-linus.walleij@stericsson.com>
+	<4F84537A.2020300@wwwdotorg.org>
+Date: Wed, 11 Apr 2012 10:35:34 +0200
+Message-ID: <CACRpkdYc3fbwX6oPKm8JAZLG-51vDXhihGqk=HAoS9Xz+BnF=A@mail.gmail.com>
+Subject: Re: [PATCH] pinctrl: implement pinctrl deferred probing
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Stephen Warren <swarren@wwwdotorg.org>
+Cc: Linus Walleij <linus.walleij@stericsson.com>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        Shawn Guo <shawn.guo@freescale.com>,
         Thomas Abraham <thomas.abraham@linaro.org>,
         Dong Aisheng <dong.aisheng@linaro.org>,
         Rajendra Nayak <rajendra.nayak@linaro.org>,
         Haojian Zhuang <haojian.zhuang@marvell.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
         Mark Brown <broonie@opensource.wolfsonmicro.com>,
         Arnd Bergmann <arnd@arndb.de>
-Subject: [PATCH v2] pinctrl: implement pinctrl deferred probing
-Date: Wed, 11 Apr 2012 10:34:08 +0200
-Message-ID: <1334133248-1452-1-git-send-email-linus.walleij@stericsson.com>
-X-Mailer: git-send-email 1.7.9.2
-MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Linus Walleij <linus.walleij@linaro.org>
+On Tue, Apr 10, 2012 at 5:36 PM, Stephen Warren <swarren@wwwdotorg.org> wrote:
 
-If drivers try to obtain pinctrl handles for a pin controller that
-has not yet registered to the subsystem, we need to be able to
-back out and retry with deferred probing. So let's return
--EPROBE_DEFER whenever this location fails. Also downgrade the
-errors to info, maybe we will even set them to debug once the
-deferred probing is commonplace.
+>> @@ -521,8 +521,11 @@ static int add_setting(struct pinctrl *p, struct pinctrl_map const *map)
+>>               dev_err(p->dev, "unknown pinctrl device %s in map entry",
+>>                       map->ctrl_dev_name);
+>
+> Perhaps this dev_err (and the one in the other hunk) should be
+> downgraded to warn/info/debug?
 
-Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: Arnd Bergmann <arnd@arndb.de>
-Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
----
- Documentation/pinctrl.txt    |    5 +++++
- drivers/pinctrl/core.c       |    9 ++++++---
- drivers/pinctrl/devicetree.c |    6 +++---
- 3 files changed, 14 insertions(+), 6 deletions(-)
+I've downgraded to dev_info() for now (see v2), I suspect people may have some
+problems with deferred probing ATM so better log something for them. Later we
+may set it to dev_dbg() if it looks too noisy...
 
-diff --git a/Documentation/pinctrl.txt b/Documentation/pinctrl.txt
-index eb46b1c..4431c3e7 100644
---- a/Documentation/pinctrl.txt
-+++ b/Documentation/pinctrl.txt
-@@ -1043,6 +1043,11 @@ quickly poking some registers.
- The pins are allocated for your device when you issue the pinctrl_get() call,
- after this you should be able to see this in the debugfs listing of all pins.
- 
-+NOTE: the pinctrl system will return -EPROBE_DEFER if it cannot find the
-+requested pinctrl handles, for example if the pinctrl driver has not yet
-+registered. Thus make sure that the error path in your driver gracefully
-+cleans up and is ready to retry the probing later in the startup process.
-+
- 
- System pin control hogging
- ==========================
-diff --git a/drivers/pinctrl/core.c b/drivers/pinctrl/core.c
-index 7ff8690..59027ab 100644
---- a/drivers/pinctrl/core.c
-+++ b/drivers/pinctrl/core.c
-@@ -518,11 +518,14 @@ static int add_setting(struct pinctrl *p, struct pinctrl_map const *map)
- 
- 	setting->pctldev = get_pinctrl_dev_from_devname(map->ctrl_dev_name);
- 	if (setting->pctldev == NULL) {
--		dev_err(p->dev, "unknown pinctrl device %s in map entry",
-+		dev_info(p->dev, "unknown pinctrl device %s in map entry, deferring probe",
- 			map->ctrl_dev_name);
- 		kfree(setting);
--		/* Eventually, this should trigger deferred probe */
--		return -ENODEV;
-+		/*
-+		 * OK let us guess that the driver is not there yet, and
-+		 * let's defer obtaining this pinctrl handle to later...
-+		 */
-+		return -EPROBE_DEFER;
- 	}
- 
- 	switch (map->type) {
-diff --git a/drivers/pinctrl/devicetree.c b/drivers/pinctrl/devicetree.c
-index 5ef2feb..fcb1de4 100644
---- a/drivers/pinctrl/devicetree.c
-+++ b/drivers/pinctrl/devicetree.c
-@@ -121,11 +121,11 @@ static int dt_to_map_one_config(struct pinctrl *p, const char *statename,
- 	for (;;) {
- 		np_pctldev = of_get_next_parent(np_pctldev);
- 		if (!np_pctldev || of_node_is_root(np_pctldev)) {
--			dev_err(p->dev, "could not find pctldev for node %s\n",
-+			dev_info(p->dev, "could not find pctldev for node %s, deferring probe\n",
- 				np_config->full_name);
- 			of_node_put(np_pctldev);
--			/* FIXME: This should trigger deferrered probe */
--			return -ENODEV;
-+			/* OK let's just assume this will appear later then */
-+			return -EPROBE_DEFER;
- 		}
- 		pctldev = find_pinctrl_by_of_node(np_pctldev);
- 		if (pctldev)
--- 
-1.7.9.2
-
+Thanks,
+Linus Walleij
