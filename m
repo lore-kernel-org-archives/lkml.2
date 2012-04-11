@@ -1,48 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760747Ab2DKRCs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Apr 2012 13:02:48 -0400
-Received: from usmamail.tilera.com ([206.83.70.75]:18058 "EHLO
-	USMAMAIL.TILERA.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756012Ab2DKRCr (ORCPT
+	id S1760755Ab2DKRDw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Apr 2012 13:03:52 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:63984 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756350Ab2DKRDv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Apr 2012 13:02:47 -0400
-Message-ID: <4F85B933.9080302@tilera.com>
-Date: Wed, 11 Apr 2012 13:02:43 -0400
-From: Chris Metcalf <cmetcalf@tilera.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:11.0) Gecko/20120327 Thunderbird/11.0.1
+	Wed, 11 Apr 2012 13:03:51 -0400
 MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: [GIT PULL] arch/tile bug fixes for v3.4-rc3
-X-Enigmail-Version: 1.4
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20120411163016.GC12887@google.com>
+References: <20120406124735.GA6920@merkur.ravnborg.org>
+	<20120411163016.GC12887@google.com>
+Date: Wed, 11 Apr 2012 10:03:50 -0700
+X-Google-Sender-Auth: e0kQk76YwyrlHG4shuycS3yHtqo
+Message-ID: <CAE9FiQVmyTSUGKmusrVvj-38URhRFzvjv7w-2ch928kEiJPOhg@mail.gmail.com>
+Subject: Re: [PATCH] x86: drop obsolete ARCH_BOOTMEM support
+From: Yinghai Lu <yinghai@kernel.org>
+To: Tejun Heo <tj@kernel.org>
+Cc: Sam Ravnborg <sam@ravnborg.org>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        lkml <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus,
+On Wed, Apr 11, 2012 at 9:30 AM, Tejun Heo <tj@kernel.org> wrote:
+> On Fri, Apr 06, 2012 at 02:47:35PM +0200, Sam Ravnborg wrote:
+>> From ae6cdc767f973f39cb205af4b80ff13f35a1b66e Mon Sep 17 00:00:00 2001
+>> From: Sam Ravnborg <sam@ravnborg.org>
+>> Date: Fri, 6 Apr 2012 13:37:08 +0200
+>> Subject: [PATCH] x86: drop obsolete ARCH_BOOTMEM support
+>>
+>> x86 unconditionally uses NO_BOOTMEM so there is no use
+>> of the HAVE_ARCH_BOOTMEM support as mm/bootmem.c is the
+>> only file referencing this symbol.
+>>
+>> bootmem_arch_preferred_node() is the function referred
+>> in the mm/bootmem.c code and can thuis be dropped too.
+>>
+>> x86 was the sole user of HAVE_ARCH_BOOTMEM - so there is
+>> an opportunity to clean up a little in mm/bootmem.c too
+>> if we do not expect other users to emerge.
+>
+> avr32 seems to have it too?
 
-Please pull the following changes for 3.4-rc2 from:
+avr32 is:
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/cmetcalf/linux-tile.git stable
+config HAVE_ARCH_BOOTMEM
+        def_bool n
 
-This is one important change from Srivatsa Bhat that got dropped when I
-put together my pull request for -rc2, plus a trivial change to remove a compiler
-warning.
+so that is not used with avr32
 
-Chris Metcalf (1):
-      arch/tile: avoid unused variable warning in proc.c for tilegx
-
-Srivatsa S. Bhat (1):
-      tile/CPU hotplug: Add missing call to notify_cpu_starting()
-
- arch/tile/kernel/proc.c    |    4 +---
- arch/tile/kernel/smpboot.c |    2 ++
- 2 files changed, 3 insertions(+), 3 deletions(-)
-
--- 
-Chris Metcalf, Tilera Corp.
-http://www.tilera.com
-
+Yinghai
