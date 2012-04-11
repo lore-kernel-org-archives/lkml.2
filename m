@@ -1,48 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753945Ab2DKIBi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Apr 2012 04:01:38 -0400
-Received: from eu1sys200aog117.obsmtp.com ([207.126.144.143]:39013 "EHLO
-	eu1sys200aog117.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752387Ab2DKIBh (ORCPT
+	id S1754138Ab2DKIFh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Apr 2012 04:05:37 -0400
+Received: from eu1sys200aog109.obsmtp.com ([207.126.144.127]:36387 "EHLO
+	eu1sys200aog109.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753364Ab2DKIFe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Apr 2012 04:01:37 -0400
-Message-ID: <4F8539FC.4030503@st.com>
-Date: Wed, 11 Apr 2012 13:29:56 +0530
-From: Viresh Kumar <viresh.kumar@st.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:6.0) Gecko/20110812 Thunderbird/6.0
-MIME-Version: 1.0
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: Vinod Koul <vinod.koul@intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Dan Williams <dan.j.williams@intel.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Alim Akhtar <alim.akhtar@gmail.com>
-Subject: Re: [PATCH 2/2] dma/amba-pl08x: add support for the Nomadik variant
-References: <1334004816-20219-1-git-send-email-linus.walleij@linaro.org> <4F83AC55.3070900@st.com> <CACRpkdaz9g7cRc1rAMHUzRbLcrYtB-kPCB6bFEMYZxxmWfLNSg@mail.gmail.com>
-In-Reply-To: <CACRpkdaz9g7cRc1rAMHUzRbLcrYtB-kPCB6bFEMYZxxmWfLNSg@mail.gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+	Wed, 11 Apr 2012 04:05:34 -0400
+From: Srinivas KANDAGATLA <srinivas.kandagatla@st.com>
+To: stefani@seibold.net
+Cc: srinivas.kandagatla@st.com, mchehab@infradead.org,
+        linux-kernel@vger.kernel.org, sfr@canb.auug.org.au
+Subject: [PATCH 3.3.0] kernel:kfifo: export __kfifo_max_r symbol.
+Date: Wed, 11 Apr 2012 09:01:56 +0100
+Message-Id: <1334131316-7992-1-git-send-email-srinivas.kandagatla@st.com>
+X-Mailer: git-send-email 1.7.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 4/11/2012 1:29 PM, Linus Walleij wrote:
->>> >> +                             ch->locked = true;
->>> >> +                     } else
->>> >> +                             ch->locked = false;
->>> >> +             }
->>> >> +
->> >
->> > Memory for ch is allocated with kmalloc and so its default value is garbage.
->> > So we must set locked to false in else part here.
-> Hm maybe better to kzalloc() the channel structs?
-> 
+From: Srinivas Kandagatla <srinivas.kandagatla@st.com>
 
-Then, you can remove code which makes its field zero explicitly, as it is already
-zero.
+kfifo_avail expands to __kfifo_max_r which is not an exported symbol.
+Any kernel module using kfifo_avail will result in build failures
+because of this.
+This patch just exports __kfifo_max_r symbol to fix such problems in
+future.
 
+This bug was orignially reported by Stephen Rothwell <sfr@canb.auug.org.au> 
+during v4l-dvb tree integration into linux-next.
+
+Signed-off-by: Srinivas Kandagatla <srinivas.kandagatla@st.com>
+---
+Hi All, 
+A bulid failure during v4l-dvb tree integration into linux-next shows that __kfifo_max_r symbol is not exported.
+All the __kifo_* functions declared in kfifo.h are already exported symbols.
+I see no reason why __kfifo_max_r should not be exported too.
+
+comments?
+
+--srini
+
+ kernel/kfifo.c |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
+
+diff --git a/kernel/kfifo.c b/kernel/kfifo.c
+index c744b88..59dcf5b 100644
+--- a/kernel/kfifo.c
++++ b/kernel/kfifo.c
+@@ -402,6 +402,7 @@ unsigned int __kfifo_max_r(unsigned int len, size_t recsize)
+ 		return max;
+ 	return len;
+ }
++EXPORT_SYMBOL(__kfifo_max_r);
+ 
+ #define	__KFIFO_PEEK(data, out, mask) \
+ 	((data)[(out) & (mask)])
 -- 
-viresh
+1.7.0.4
+
