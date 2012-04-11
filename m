@@ -1,52 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932684Ab2DKQ65 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Apr 2012 12:58:57 -0400
-Received: from void.printf.net ([89.145.121.20]:35916 "EHLO void.printf.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756012Ab2DKQ64 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Apr 2012 12:58:56 -0400
-From: Chris Ball <cjb@laptop.org>
-To: Sascha Hauer <s.hauer@pengutronix.de>
-Cc: Dmitry Artamonow <mad_soft@inbox.ru>, linux-mmc@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Wolfram Sang <w.sang@pengutronix.de>
-Subject: Re: [PATCH] mmc: remove linux/blkdev.h include from host drivers
-References: <1334084783-3572-1-git-send-email-mad_soft@inbox.ru>
-	<87ty0qs2fz.fsf@laptop.org> <20120411165223.GP3852@pengutronix.de>
-Date: Wed, 11 Apr 2012 12:58:58 -0400
-In-Reply-To: <20120411165223.GP3852@pengutronix.de> (Sascha Hauer's message of
-	"Wed, 11 Apr 2012 18:52:23 +0200")
-Message-ID: <87pqberyr1.fsf@laptop.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
+	id S1760747Ab2DKRCs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Apr 2012 13:02:48 -0400
+Received: from usmamail.tilera.com ([206.83.70.75]:18058 "EHLO
+	USMAMAIL.TILERA.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756012Ab2DKRCr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Apr 2012 13:02:47 -0400
+Message-ID: <4F85B933.9080302@tilera.com>
+Date: Wed, 11 Apr 2012 13:02:43 -0400
+From: Chris Metcalf <cmetcalf@tilera.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:11.0) Gecko/20120327 Thunderbird/11.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: [GIT PULL] arch/tile bug fixes for v3.4-rc3
+X-Enigmail-Version: 1.4
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Linus,
 
-On Wed, Apr 11 2012, Sascha Hauer wrote:
->> Should imxmmc simply be removed from drivers/mmc/host?  Do any of the
->> more current i.MX MMC drivers support the same hardware?
->
-> It has long been on my todo list to remove this driver. The more recent
-> i.MX use the mxcmmc driver which is basically the same hardware but
-> without a bunch of bugs which made the older imxmmc driver unusable on
-> newer hardware. I can send a patch if you like.
+Please pull the following changes for 3.4-rc2 from:
 
-Thanks, let's do it.
+  git://git.kernel.org/pub/scm/linux/kernel/git/cmetcalf/linux-tile.git stable
 
-It would be nice to have a story for how MX1 users can use their
-hardware with modern kernels, even if it's just "It should be possible
-to modify the mxcmmc driver to support this older hardware, and the sort
-of changes that need to be made are <..>".
+This is one important change from Srivatsa Bhat that got dropped when I
+put together my pull request for -rc2, plus a trivial change to remove a compiler
+warning.
 
-(Dmitry, your patch is fine -- I can remove the imxmmc hunk from it when
-applying.)
+Chris Metcalf (1):
+      arch/tile: avoid unused variable warning in proc.c for tilegx
 
-- Chris.
+Srivatsa S. Bhat (1):
+      tile/CPU hotplug: Add missing call to notify_cpu_starting()
+
+ arch/tile/kernel/proc.c    |    4 +---
+ arch/tile/kernel/smpboot.c |    2 ++
+ 2 files changed, 3 insertions(+), 3 deletions(-)
+
 -- 
-Chris Ball   <cjb@laptop.org>   <http://printf.net/>
-One Laptop Per Child
+Chris Metcalf, Tilera Corp.
+http://www.tilera.com
+
