@@ -1,76 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760051Ab2DKDK0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Apr 2012 23:10:26 -0400
-Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:35594 "EHLO
+	id S1760076Ab2DKDOA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Apr 2012 23:14:00 -0400
+Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:43277 "EHLO
 	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756018Ab2DKDKY convert rfc822-to-8bit
+	by vger.kernel.org with ESMTP id S1756018Ab2DKDN5 convert rfc822-to-8bit
 	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Apr 2012 23:10:24 -0400
+	Tue, 10 Apr 2012 23:13:57 -0400
 MIME-Version: 1.0
-In-Reply-To: <CAMjpGUetfGQxqTKVfLBtOdthxFtFv-knuXSWoNx0BKxJd=829Q@mail.gmail.com>
-References: <20120410224543.GA11433@windriver.com> <CAMjpGUetfGQxqTKVfLBtOdthxFtFv-knuXSWoNx0BKxJd=829Q@mail.gmail.com>
-From: Paul Gortmaker <paul.gortmaker@windriver.com>
-Date: Tue, 10 Apr 2012 23:09:51 -0400
-X-Google-Sender-Auth: SpEpRNGYEHWZkng8GrSHRFWNIIM
-Message-ID: <CAP=VYLrzvXCTD4J3sdhMCjnsPKvf-tobkE0G6OgTvc4mnEiw7A@mail.gmail.com>
-Subject: Re: linux-next: triage for April 10, 2012
-To: Mike Frysinger <vapier.adi@gmail.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
+In-Reply-To: <4F6F7362.6030402@zytor.com>
+References: <1331781125-15658-1-git-send-email-wad@chromium.org>
+	<1331781125-15658-5-git-send-email-wad@chromium.org>
+	<4F6F7362.6030402@zytor.com>
+Date: Tue, 10 Apr 2012 22:13:52 -0500
+Message-ID: <CABqD9hZgnrKFY_Wei-ysU=Dy7Og2iEemnqPvcQ14M0+vL65gHQ@mail.gmail.com>
+Subject: Re: [PATCH v15 04/13] arch/x86: add syscall_get_arch to syscall.h
+From: Will Drewry <wad@chromium.org>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
+        linux-doc@vger.kernel.org, kernel-hardening@lists.openwall.com,
+        netdev@vger.kernel.org, x86@kernel.org, arnd@arndb.de,
+        davem@davemloft.net, mingo@redhat.com, oleg@redhat.com,
+        peterz@infradead.org, rdunlap@xenotime.net, mcgrathr@chromium.org,
+        tglx@linutronix.de, luto@mit.edu, eparis@redhat.com,
+        serge.hallyn@canonical.com, djm@mindrot.org, scarybeasts@gmail.com,
+        indan@nul.nu, pmoore@redhat.com, akpm@linux-foundation.org,
+        corbet@lwn.net, eric.dumazet@gmail.com, markus@chromium.org,
+        coreyb@linux.vnet.ibm.com, keescook@chromium.org
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 10, 2012 at 10:50 PM, Mike Frysinger <vapier.adi@gmail.com> wrote:
-> On Tue, Apr 10, 2012 at 18:45, Paul Gortmaker
-> <paul.gortmaker@windriver.com> wrote:
->> bfin: 50% of builds
->>        when:   Mar 31
->>        why:    "Error: pcrel too far BFD_RELOC_BFIN_10" from kernel/time/timekeeping.c
->>        status: unknown, binutils issue?
->>        fix:
->>        ref:    http://kisskb.ellerman.id.au/kisskb/buildresult/5981475/
+On Sun, Mar 25, 2012 at 2:34 PM, H. Peter Anvin <hpa@zytor.com> wrote:
+> On 03/14/2012 08:11 PM, Will Drewry wrote:
+>>
+>> +static inline int syscall_get_arch(struct task_struct *task,
+>> +                                struct pt_regs *regs)
+>> +{
+>> +#ifdef CONFIG_IA32_EMULATION
+>> +     /*
+>> +      * TS_COMPAT is set for 32-bit syscall entries and then
+>> +      * remains set until we return to user mode.
+>> +      *
+>> +      * TIF_IA32 tasks should always have TS_COMPAT set at
+>> +      * system call time.
+>> +      */
+>> +     if (task_thread_info(task)->status & TS_COMPAT)
+>> +             return AUDIT_ARCH_I386;
+>> +#endif
+>> +     return AUDIT_ARCH_X86_64;
+>> +}
+>>  #endif       /* CONFIG_X86_32 */
+>>
+>>  #endif       /* _ASM_X86_SYSCALL_H */
 >
-> that log file doesn't say anything about "BFD_RELOC_BFIN_10"
+> Just one FYI on this: after the x32 changes are upstream this can be
+> implemented in terms of is_ia32_task().
 
-Thanks Mike, I'll fix the stale link.  Here is a RELOC_BFIN_10 fail:
+Now that I've seen is_ia32_task(), it appears to be exactly the same as above:
+(1)  If we're x86_32, it's ia32
+(2)  If we're x86_64, ia32 == !!(status & TS_COMPAT)
+(3)  Otherwise, it's x86_64, including x32
 
-http://kisskb.ellerman.id.au/kisskb/buildresult/6087324/
+Am I missing something? Should is_ia32_task(void) take a task_struct?
+Right now, I don't see any reason to change the code, as posted, but
+maybe I am mis-reading?
 
-Looks like I should go over the bfin fails and check each one, since
-they are somewhat unique -- e.g.
-
-arch/blackfin/mach-bf537/boards/dnp5370.c:392:17: error:
-'bfin_spi_board_info' undeclared (first use in this function)
-
-in DNP5370_defconfig
-
-and
-
-arch/blackfin/mach-bf533/boards/ip0x.c:299:26: error:
-'bfin_spi_board_info' undeclared (first use in this function)
-
-in IP0X_defconfig
-
-http://kisskb.ellerman.id.au/kisskb/buildresult/6087345/
-
-are not related to the RELOC_BFIN_10
-
-Paul.
---
-
->
-> it does show the old L1 data overflow though ...
->
-> on a side note, the warning:
-> arch/blackfin/mm/init.c:79:9: warning: array subscript is above array
-> bounds [-Warray-bounds]
-> is a bad thing, but i've just pushed a fix for that ...
-> -mike
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+thanks!
+will
