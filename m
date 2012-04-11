@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964829Ab2DKX5V (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Apr 2012 19:57:21 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:35695 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964805Ab2DKXRM (ORCPT
+	id S964826Ab2DKX5r (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Apr 2012 19:57:47 -0400
+Received: from mail-pz0-f52.google.com ([209.85.210.52]:40940 "EHLO
+	mail-pz0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S964788Ab2DKXRD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Apr 2012 19:17:12 -0400
-Message-Id: <20120411231026.634254325@linuxfoundation.org>
+	Wed, 11 Apr 2012 19:17:03 -0400
+Message-Id: <20120411231026.059050794@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Wed, 11 Apr 2012 16:11:07 -0700
+Date: Wed, 11 Apr 2012 16:11:04 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
         alan@lxorguk.ukuu.org.uk, Jason Wessel <jason.wessel@windriver.com>
-Subject: [ 49/78] kgdbts: (2 of 2) fix single step awareness to work correctly with SMP
+Subject: [ 46/78] kgdb,debug_core: pass the breakpoint struct instead of address and memory
 In-Reply-To: <20120411231102.GA6404@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,261 +26,173 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Jason Wessel <jason.wessel@windriver.com>
 
-commit 23bbd8e346f1ef3fc1219c79cea53d8d52b207d8 upstream.
+commit 98b54aa1a2241b59372468bd1e9c2d207bdba54b upstream.
 
-The do_fork and sys_open tests have never worked properly on anything
-other than a UP configuration with the kgdb test suite.  This is
-because the test suite did not fully implement the behavior of a real
-debugger.  A real debugger tracks the state of what thread it asked to
-single step and can correctly continue other threads of execution or
-conditionally stop while waiting for the original thread single step
-request to return.
+There is extra state information that needs to be exposed in the
+kgdb_bpt structure for tracking how a breakpoint was installed.  The
+debug_core only uses the the probe_kernel_write() to install
+breakpoints, but this is not enough for all the archs.  Some arch such
+as x86 need to use text_poke() in order to install a breakpoint into a
+read only page.
 
-Below is a simple method to cause a fatal kernel oops with the kgdb
-test suite on a 2 processor ARM system:
-
-while [ 1 ] ; do ls > /dev/null 2> /dev/null; done&
-while [ 1 ] ; do ls > /dev/null 2> /dev/null; done&
-echo V1I1F100 > /sys/module/kgdbts/parameters/kgdbts
-
-Very soon after starting the test the kernel will start warning with
-messages like:
-
-kgdbts: BP mismatch c002487c expected c0024878
-------------[ cut here ]------------
-WARNING: at drivers/misc/kgdbts.c:317 check_and_rewind_pc+0x9c/0xc4()
-[<c01f6520>] (check_and_rewind_pc+0x9c/0xc4)
-[<c01f595c>] (validate_simple_test+0x3c/0xc4)
-[<c01f60d4>] (run_simple_test+0x1e8/0x274)
-
-The kernel will eventually recovers, but the test suite has completely
-failed to test anything useful.
-
-This patch implements behavior similar to a real debugger that does
-not rely on hardware single stepping by using only software planted
-breakpoints.
-
-In order to mimic a real debugger, the kgdb test suite now tracks the
-most recent thread that was continued (cont_thread_id), with the
-intent to single step just this thread.  When the response to the
-single step request stops in a different thread that hit the original
-break point that thread will now get continued, while the debugger
-waits for the thread with the single step pending.  Here is a high
-level description of the sequence of events.
-
-   cont_instead_of_sstep = 0;
-
-1) set breakpoint at do_fork
-2) continue
-3)   Save the thread id where we stop to cont_thread_id
-4) Remove breakpoint at do_fork
-5) Reset the PC if needed depending on kernel exception type
-6) soft single step
-7)   Check where we stopped
-       if current thread != cont_thread_id {
-           if (here for more than 2 times for the same thead) {
-              ### must be a really busy system, start test again ###
-	      goto step 1
-           }
-           goto step 5
-       } else {
-           cont_instead_of_sstep = 0;
-       }
-8) clean up and run test again if needed
-9) Clear out any threads that were waiting on a break point at the
-   point in time the test is ended with get_cont_catch().  This
-   happens sometimes because breakpoints are used in place of single
-   stepping and some threads could have been in the debugger exception
-   handling queue because breakpoints were hit concurrently on
-   different CPUs.  This also means we wait at least one second before
-   unplumbing the debugger connection at the very end, so as respond
-   to any debug threads waiting to be serviced.
+Passing the kgdb_bpt structure to kgdb_arch_set_breakpoint() and
+kgdb_arch_remove_breakpoint() allows other archs to set the type
+variable which indicates how the breakpoint was installed.
 
 Signed-off-by: Jason Wessel <jason.wessel@windriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/misc/kgdbts.c |   73 ++++++++++++++++++++++++++++++++++++++++++--------
- 1 file changed, 62 insertions(+), 11 deletions(-)
+ include/linux/kgdb.h      |    4 +--
+ kernel/debug/debug_core.c |   53 ++++++++++++++++++++--------------------------
+ 2 files changed, 26 insertions(+), 31 deletions(-)
 
---- a/drivers/misc/kgdbts.c
-+++ b/drivers/misc/kgdbts.c
-@@ -142,7 +142,9 @@ static int arch_needs_sstep_emulation =
- #else
- static int arch_needs_sstep_emulation;
- #endif
-+static unsigned long cont_addr;
- static unsigned long sstep_addr;
-+static int restart_from_top_after_write;
- static int sstep_state;
+--- a/include/linux/kgdb.h
++++ b/include/linux/kgdb.h
+@@ -207,8 +207,8 @@ extern void kgdb_arch_set_pc(struct pt_r
  
- /* Storage for the registers, in GDB format. */
-@@ -190,7 +192,8 @@ static int kgdbts_unreg_thread(void *ptr
- 	 */
- 	while (!final_ack)
- 		msleep_interruptible(1500);
--
-+	/* Pause for any other threads to exit after final ack. */
-+	msleep_interruptible(1000);
- 	if (configured)
- 		kgdb_unregister_io_module(&kgdbts_io_ops);
- 	configured = 0;
-@@ -312,13 +315,21 @@ static int check_and_rewind_pc(char *put
- 	if (addr + BREAK_INSTR_SIZE == ip)
- 		offset = -BREAK_INSTR_SIZE;
- #endif
--	if (strcmp(arg, "silent") && ip + offset != addr) {
-+
-+	if (arch_needs_sstep_emulation && sstep_addr &&
-+	    ip + offset == sstep_addr &&
-+	    ((!strcmp(arg, "sys_open") || !strcmp(arg, "do_fork")))) {
-+		/* This is special case for emulated single step */
-+		v2printk("Emul: rewind hit single step bp\n");
-+		restart_from_top_after_write = 1;
-+	} else if (strcmp(arg, "silent") && ip + offset != addr) {
- 		eprintk("kgdbts: BP mismatch %lx expected %lx\n",
- 			   ip + offset, addr);
- 		return 1;
- 	}
- 	/* Readjust the instruction pointer if needed */
- 	ip += offset;
-+	cont_addr = ip;
- #ifdef GDB_ADJUSTS_BREAK_OFFSET
- 	instruction_pointer_set(&kgdbts_regs, ip);
- #endif
-@@ -328,6 +339,8 @@ static int check_and_rewind_pc(char *put
- static int check_single_step(char *put_str, char *arg)
+ /* Optional functions. */
+ extern int kgdb_validate_break_address(unsigned long addr);
+-extern int kgdb_arch_set_breakpoint(unsigned long addr, char *saved_instr);
+-extern int kgdb_arch_remove_breakpoint(unsigned long addr, char *bundle);
++extern int kgdb_arch_set_breakpoint(struct kgdb_bkpt *bpt);
++extern int kgdb_arch_remove_breakpoint(struct kgdb_bkpt *bpt);
+ 
+ /**
+  *	kgdb_arch_late - Perform any architecture specific initalization.
+--- a/kernel/debug/debug_core.c
++++ b/kernel/debug/debug_core.c
+@@ -157,37 +157,39 @@ early_param("nokgdbroundup", opt_nokgdbr
+  * Weak aliases for breakpoint management,
+  * can be overriden by architectures when needed:
+  */
+-int __weak kgdb_arch_set_breakpoint(unsigned long addr, char *saved_instr)
++int __weak kgdb_arch_set_breakpoint(struct kgdb_bkpt *bpt)
  {
- 	unsigned long addr = lookup_addr(arg);
-+	static int matched_id;
-+
- 	/*
- 	 * From an arch indepent point of view the instruction pointer
- 	 * should be on a different instruction
-@@ -338,17 +351,28 @@ static int check_single_step(char *put_s
- 	v2printk("Singlestep stopped at IP: %lx\n",
- 		   instruction_pointer(&kgdbts_regs));
+ 	int err;
  
--	if (sstep_thread_id != cont_thread_id && !arch_needs_sstep_emulation) {
-+	if (sstep_thread_id != cont_thread_id) {
- 		/*
- 		 * Ensure we stopped in the same thread id as before, else the
- 		 * debugger should continue until the original thread that was
- 		 * single stepped is scheduled again, emulating gdb's behavior.
- 		 */
- 		v2printk("ThrID does not match: %lx\n", cont_thread_id);
-+		if (arch_needs_sstep_emulation) {
-+			if (matched_id &&
-+			    instruction_pointer(&kgdbts_regs) != addr)
-+				goto continue_test;
-+			matched_id++;
-+			ts.idx -= 2;
-+			sstep_state = 0;
-+			return 0;
-+		}
- 		cont_instead_of_sstep = 1;
- 		ts.idx -= 4;
- 		return 0;
- 	}
-+continue_test:
-+	matched_id = 0;
- 	if (instruction_pointer(&kgdbts_regs) == addr) {
- 		eprintk("kgdbts: SingleStep failed at %lx\n",
- 			   instruction_pointer(&kgdbts_regs));
-@@ -390,6 +414,31 @@ static int got_break(char *put_str, char
- 	return 1;
+-	err = probe_kernel_read(saved_instr, (char *)addr, BREAK_INSTR_SIZE);
++	err = probe_kernel_read(bpt->saved_instr, (char *)bpt->bpt_addr,
++				BREAK_INSTR_SIZE);
+ 	if (err)
+ 		return err;
+-
+-	return probe_kernel_write((char *)addr, arch_kgdb_ops.gdb_bpt_instr,
+-				  BREAK_INSTR_SIZE);
++	err = probe_kernel_write((char *)bpt->bpt_addr,
++				 arch_kgdb_ops.gdb_bpt_instr, BREAK_INSTR_SIZE);
++	return err;
  }
  
-+static void get_cont_catch(char *arg)
-+{
-+	/* Always send detach because the test is completed at this point */
-+	fill_get_buf("D");
-+}
-+
-+static int put_cont_catch(char *put_str, char *arg)
-+{
-+	/* This is at the end of the test and we catch any and all input */
-+	v2printk("kgdbts: cleanup task: %lx\n", sstep_thread_id);
-+	ts.idx--;
-+	return 0;
-+}
-+
-+static int emul_reset(char *put_str, char *arg)
-+{
-+	if (strncmp(put_str, "$OK", 3))
-+		return 1;
-+	if (restart_from_top_after_write) {
-+		restart_from_top_after_write = 0;
-+		ts.idx = -1;
-+	}
-+	return 0;
-+}
-+
- static void emul_sstep_get(char *arg)
+-int __weak kgdb_arch_remove_breakpoint(unsigned long addr, char *bundle)
++int __weak kgdb_arch_remove_breakpoint(struct kgdb_bkpt *bpt)
  {
- 	if (!arch_needs_sstep_emulation) {
-@@ -443,8 +492,7 @@ static int emul_sstep_put(char *put_str,
- 		v2printk("Stopped at IP: %lx\n",
- 			 instruction_pointer(&kgdbts_regs));
- 		/* Want to stop at IP + break instruction size by default */
--		sstep_addr = instruction_pointer(&kgdbts_regs) +
--			BREAK_INSTR_SIZE;
-+		sstep_addr = cont_addr + BREAK_INSTR_SIZE;
- 		break;
- 	case 2:
- 		if (strncmp(put_str, "$OK", 3)) {
-@@ -456,6 +504,9 @@ static int emul_sstep_put(char *put_str,
- 		if (strncmp(put_str, "$T0", 3)) {
- 			eprintk("kgdbts: failed continue sstep\n");
- 			return 1;
-+		} else {
-+			char *ptr = &put_str[11];
-+			kgdb_hex2long(&ptr, &sstep_thread_id);
- 		}
- 		break;
- 	case 4:
-@@ -558,13 +609,13 @@ static struct test_struct do_fork_test[]
- 	{ "c", "T0*", NULL, get_thread_id_continue }, /* Continue */
- 	{ "do_fork", "OK", sw_rem_break }, /*remove breakpoint */
- 	{ "g", "do_fork", NULL, check_and_rewind_pc }, /* check location */
--	{ "write", "OK", write_regs }, /* Write registers */
-+	{ "write", "OK", write_regs, emul_reset }, /* Write registers */
- 	{ "s", "T0*", emul_sstep_get, emul_sstep_put }, /* Single step */
- 	{ "g", "do_fork", NULL, check_single_step },
- 	{ "do_fork", "OK", sw_break, }, /* set sw breakpoint */
- 	{ "7", "T0*", skip_back_repeat_test }, /* Loop based on repeat_test */
- 	{ "D", "OK", NULL, final_ack_set }, /* detach and unregister I/O */
--	{ "", "" },
-+	{ "", "", get_cont_catch, put_cont_catch },
- };
+-	return probe_kernel_write((char *)addr,
+-				  (char *)bundle, BREAK_INSTR_SIZE);
++	return probe_kernel_write((char *)bpt->bpt_addr,
++				  (char *)bpt->saved_instr, BREAK_INSTR_SIZE);
+ }
  
- /* Test for hitting a breakpoint at sys_open for what ever the number
-@@ -576,13 +627,13 @@ static struct test_struct sys_open_test[
- 	{ "c", "T0*", NULL, get_thread_id_continue }, /* Continue */
- 	{ "sys_open", "OK", sw_rem_break }, /*remove breakpoint */
- 	{ "g", "sys_open", NULL, check_and_rewind_pc }, /* check location */
--	{ "write", "OK", write_regs }, /* Write registers */
-+	{ "write", "OK", write_regs, emul_reset }, /* Write registers */
- 	{ "s", "T0*", emul_sstep_get, emul_sstep_put }, /* Single step */
- 	{ "g", "sys_open", NULL, check_single_step },
- 	{ "sys_open", "OK", sw_break, }, /* set sw breakpoint */
- 	{ "7", "T0*", skip_back_repeat_test }, /* Loop based on repeat_test */
- 	{ "D", "OK", NULL, final_ack_set }, /* detach and unregister I/O */
--	{ "", "" },
-+	{ "", "", get_cont_catch, put_cont_catch },
- };
- 
- /*
-@@ -725,8 +776,8 @@ static int run_simple_test(int is_get_ch
- 	/* This callback is a put char which is when kgdb sends data to
- 	 * this I/O module.
+ int __weak kgdb_validate_break_address(unsigned long addr)
+ {
+-	char tmp_variable[BREAK_INSTR_SIZE];
++	struct kgdb_bkpt tmp;
+ 	int err;
+-	/* Validate setting the breakpoint and then removing it.  In the
++	/* Validate setting the breakpoint and then removing it.  If the
+ 	 * remove fails, the kernel needs to emit a bad message because we
+ 	 * are deep trouble not being able to put things back the way we
+ 	 * found them.
  	 */
--	if (ts.tst[ts.idx].get[0] == '\0' &&
--		ts.tst[ts.idx].put[0] == '\0') {
-+	if (ts.tst[ts.idx].get[0] == '\0' && ts.tst[ts.idx].put[0] == '\0' &&
-+	    !ts.tst[ts.idx].get_handler) {
- 		eprintk("kgdbts: ERROR: beyond end of test on"
- 			   " '%s' line %i\n", ts.name, ts.idx);
- 		return 0;
+-	err = kgdb_arch_set_breakpoint(addr, tmp_variable);
++	tmp.bpt_addr = addr;
++	err = kgdb_arch_set_breakpoint(&tmp);
+ 	if (err)
+ 		return err;
+-	err = kgdb_arch_remove_breakpoint(addr, tmp_variable);
++	err = kgdb_arch_remove_breakpoint(&tmp);
+ 	if (err)
+ 		printk(KERN_ERR "KGDB: Critical breakpoint error, kernel "
+ 		   "memory destroyed at: %lx", addr);
+@@ -231,7 +233,6 @@ static void kgdb_flush_swbreak_addr(unsi
+  */
+ int dbg_activate_sw_breakpoints(void)
+ {
+-	unsigned long addr;
+ 	int error;
+ 	int ret = 0;
+ 	int i;
+@@ -240,16 +241,15 @@ int dbg_activate_sw_breakpoints(void)
+ 		if (kgdb_break[i].state != BP_SET)
+ 			continue;
+ 
+-		addr = kgdb_break[i].bpt_addr;
+-		error = kgdb_arch_set_breakpoint(addr,
+-				kgdb_break[i].saved_instr);
++		error = kgdb_arch_set_breakpoint(&kgdb_break[i]);
+ 		if (error) {
+ 			ret = error;
+-			printk(KERN_INFO "KGDB: BP install failed: %lx", addr);
++			printk(KERN_INFO "KGDB: BP install failed: %lx",
++			       kgdb_break[i].bpt_addr);
+ 			continue;
+ 		}
+ 
+-		kgdb_flush_swbreak_addr(addr);
++		kgdb_flush_swbreak_addr(kgdb_break[i].bpt_addr);
+ 		kgdb_break[i].state = BP_ACTIVE;
+ 	}
+ 	return ret;
+@@ -298,7 +298,6 @@ int dbg_set_sw_break(unsigned long addr)
+ 
+ int dbg_deactivate_sw_breakpoints(void)
+ {
+-	unsigned long addr;
+ 	int error;
+ 	int ret = 0;
+ 	int i;
+@@ -306,15 +305,14 @@ int dbg_deactivate_sw_breakpoints(void)
+ 	for (i = 0; i < KGDB_MAX_BREAKPOINTS; i++) {
+ 		if (kgdb_break[i].state != BP_ACTIVE)
+ 			continue;
+-		addr = kgdb_break[i].bpt_addr;
+-		error = kgdb_arch_remove_breakpoint(addr,
+-					kgdb_break[i].saved_instr);
++		error = kgdb_arch_remove_breakpoint(&kgdb_break[i]);
+ 		if (error) {
+-			printk(KERN_INFO "KGDB: BP remove failed: %lx\n", addr);
++			printk(KERN_INFO "KGDB: BP remove failed: %lx\n",
++			       kgdb_break[i].bpt_addr);
+ 			ret = error;
+ 		}
+ 
+-		kgdb_flush_swbreak_addr(addr);
++		kgdb_flush_swbreak_addr(kgdb_break[i].bpt_addr);
+ 		kgdb_break[i].state = BP_SET;
+ 	}
+ 	return ret;
+@@ -348,7 +346,6 @@ int kgdb_isremovedbreak(unsigned long ad
+ 
+ int dbg_remove_all_break(void)
+ {
+-	unsigned long addr;
+ 	int error;
+ 	int i;
+ 
+@@ -356,12 +353,10 @@ int dbg_remove_all_break(void)
+ 	for (i = 0; i < KGDB_MAX_BREAKPOINTS; i++) {
+ 		if (kgdb_break[i].state != BP_ACTIVE)
+ 			goto setundefined;
+-		addr = kgdb_break[i].bpt_addr;
+-		error = kgdb_arch_remove_breakpoint(addr,
+-				kgdb_break[i].saved_instr);
++		error = kgdb_arch_remove_breakpoint(&kgdb_break[i]);
+ 		if (error)
+ 			printk(KERN_ERR "KGDB: breakpoint remove failed: %lx\n",
+-			   addr);
++			       kgdb_break[i].bpt_addr);
+ setundefined:
+ 		kgdb_break[i].state = BP_UNDEFINED;
+ 	}
 
 
