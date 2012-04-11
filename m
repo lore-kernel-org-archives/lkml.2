@@ -1,397 +1,537 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755014Ab2DKJdH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Apr 2012 05:33:07 -0400
-Received: from asix.com.tw ([113.196.140.82]:58234 "EHLO asix.com.tw"
+	id S1755509Ab2DKJkK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Apr 2012 05:40:10 -0400
+Received: from isrv.corpit.ru ([86.62.121.231]:33116 "EHLO isrv.corpit.ru"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753882Ab2DKJdF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Apr 2012 05:33:05 -0400
-From: "Donald" <donald@asix.com.tw>
-To: "'Greg KH'" <gregkh@linuxfoundation.org>
-Cc: "'open list:USB SUBSYSTEM'" <linux-usb@vger.kernel.org>,
-        "'open list'" <linux-kernel@vger.kernel.org>
-References: <009c01cd00ee$924eb2e0$b6ec18a0$@com.tw> <20120313160951.GA18810@kroah.com> <005a01cd0db0$8ec89e50$ac59daf0$@com.tw> <20120329151343.GA32474@kroah.com> 
-In-Reply-To: 
-Subject: Patch "USB: serial: mos7840: Supported MCS7810 device"
-Date: Wed, 11 Apr 2012 17:32:53 +0800
-Message-ID: <006401cd17c6$157ba2c0$4072e840$@com.tw>
+	id S1754856Ab2DKJkH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Apr 2012 05:40:07 -0400
+Message-ID: <4F855173.40902@msgid.tls.msk.ru>
+Date: Wed, 11 Apr 2012 13:40:03 +0400
+From: Michael Tokarev <mjt@tls.msk.ru>
+Organization: Telecom Service, JSC
+User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:8.0) Gecko/20120216 Icedove/8.0
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="us-ascii"
+To: Jan Kara <jack@suse.cz>
+CC: Dave Chinner <david@fromorbit.com>,
+        Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        SCSI Mailing List <linux-scsi@vger.kernel.org>
+Subject: Re: dramatic I/O slowdown after upgrading 2.6.38->3.0+
+References: <4F75E46E.2000503@msgid.tls.msk.ru> <20120405232913.GA6640@quack.suse.cz> <4F7E74F4.90604@msgid.tls.msk.ru> <20120410022628.GN18323@dastard> <4F83CC86.2010805@msgid.tls.msk.ru> <20120410151326.GA4936@quack.suse.cz>
+In-Reply-To: <20120410151326.GA4936@quack.suse.cz>
+X-Enigmail-Version: 1.3.4
+OpenPGP: id=804465C5
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-Mailer: Microsoft Office Outlook 12.0
-Thread-Index: Ac0NvqNnI32HMqVjSZa0GVUAiv0SUgAXIgPgAmYpvPA=
-Content-Language: zh-tw
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Greg,
+On 10.04.2012 19:13, Jan Kara wrote:
+> On Tue 10-04-12 10:00:38, Michael Tokarev wrote:
+[]
+>>   2.6.38:
+>>   # dd if=/dev/sdb of=/dev/null bs=1M iflag=direct count=100
+>>   100+0 records in
+>>   100+0 records out
+>>   104857600 bytes (105 MB) copied, 1.73126 s, 60.6 MB/s
+>>
+>>   3.0:
+>>   # dd if=/dev/sdb of=/dev/null bs=1M iflag=direct count=100
+>>   100+0 records in
+>>   100+0 records out
+>>   104857600 bytes (105 MB) copied, 29.4508 s, 3.6 MB/s
+>>
+>> That's about 20 times difference on direct read from the
+>> same - idle - device!!
 
-I am re-submitting this patch that supports MCS7810 device for the mos7840
-driver. This patch was created against 3.4-rc1 and has been verified on
-3.4-rc1 also. If you see any problem regarding this patch, please let me
-know at any time. Thank you for your help.
+>   Huh, that's a huge difference for such a trivial load. So we can rule out
+> filesystems, writeback, mm. I also wouldn't think it's IO scheduler but
+> you can always check by comparing dd numbers after
+>   echo none >/sys/block/sdb/queue/scheduler
 
-Besides, I found two things regarding 3.4-rc, firstly, it added a macro to
-replace module_init() and module_exit(); secondly, the system will crash if
-I remove module before unplug the dongle; while this issue doesn't happen on
-Linux kernel 3.2.9. I had been tested mcs7840 and prolific-pl2303, both
-drivers have the same scenario. I am not sure if this issue is relating to
-the macro added in 3.4-rc and would like to know if you have any comment on
-this issue.  
+The scheduler makes very little difference.
 
-Regards,
-Donald
+> Anyway, the most likely cause seems to be some driver issue (which would
+> also explain why you can see it only on one machine). I'd also compare very
 
-Patch Description:
-This patch added the support of MCS7810 device for the mos7840 driver. The
-MCS7810 device supports single USB2.0-to-Serial port with a LED indicator
-for reflecting transmission or reception activity.
+Yes, it appears to be mptspi driver (CCing linux-scsi@).
 
-Signed-off-by: Donald Lee <donald@asix.com.tw>
----
- drivers/usb/serial/mos7840.c |  215
-++++++++++++++++++++++++++++++++++++++++--
- 1 files changed, 208 insertions(+), 7 deletions(-)
+Another problem we've hit while trying various kernels/options
+(and which makes whole experiment very dangerous for us) -- after
+loading 3.0+ kernel, the machine does not always boot back to
+older kernel, often freezing while mptspi is initializing or
+starting doing something, so that only hard reset helps.  And
+since this is a remote production server, the fact that it can
+freeze any time we do some experiments makes the whole issue
+quite difficult.  It appears that 3.0+ driver does something
+with the controller which makes at least 2.6.32 kernel/driver
+misbehave, at least sometimes.
 
-diff --git a/drivers/usb/serial/mos7840.c b/drivers/usb/serial/mos7840.c
-index c526550..1c85654 100644
---- a/drivers/usb/serial/mos7840.c
-+++ b/drivers/usb/serial/mos7840.c
-@@ -114,6 +114,7 @@
- #define USB_VENDOR_ID_MOSCHIP           0x9710
- #define MOSCHIP_DEVICE_ID_7840          0x7840
- #define MOSCHIP_DEVICE_ID_7820          0x7820
-+#define MOSCHIP_DEVICE_ID_7810          0x7810
- /* The native component can have its vendor/device id's overridden
-  * in vendor-specific implementations.  Such devices can be handled
-  * by making a change here, in moschip_port_id_table, and in
-@@ -184,10 +185,17 @@
- #define NUM_URBS                        16	/* URB Count */
- #define URB_TRANSFER_BUFFER_SIZE        32	/* URB Size  */
- 
-+/* MCS7810 LED support */
-+#define MCS7810_HAS_LED
-+
-+/* MCS7810 LED on/off milliseconds*/
-+#define MCS7810_LED_ON_MS	500
-+#define MCS7810_LED_OFF_MS	500
- 
- static const struct usb_device_id moschip_port_id_table[] = {
- 	{USB_DEVICE(USB_VENDOR_ID_MOSCHIP, MOSCHIP_DEVICE_ID_7840)},
- 	{USB_DEVICE(USB_VENDOR_ID_MOSCHIP, MOSCHIP_DEVICE_ID_7820)},
-+	{USB_DEVICE(USB_VENDOR_ID_MOSCHIP, MOSCHIP_DEVICE_ID_7810)},
- 	{USB_DEVICE(USB_VENDOR_ID_BANDB, BANDB_DEVICE_ID_USO9ML2_2)},
- 	{USB_DEVICE(USB_VENDOR_ID_BANDB, BANDB_DEVICE_ID_USO9ML2_2P)},
- 	{USB_DEVICE(USB_VENDOR_ID_BANDB, BANDB_DEVICE_ID_USO9ML2_4)},
-@@ -209,6 +217,7 @@ static const struct usb_device_id
-moschip_port_id_table[] = {
- static const struct usb_device_id moschip_id_table_combined[]
-__devinitconst = {
- 	{USB_DEVICE(USB_VENDOR_ID_MOSCHIP, MOSCHIP_DEVICE_ID_7840)},
- 	{USB_DEVICE(USB_VENDOR_ID_MOSCHIP, MOSCHIP_DEVICE_ID_7820)},
-+	{USB_DEVICE(USB_VENDOR_ID_MOSCHIP, MOSCHIP_DEVICE_ID_7810)},
- 	{USB_DEVICE(USB_VENDOR_ID_BANDB, BANDB_DEVICE_ID_USO9ML2_2)},
- 	{USB_DEVICE(USB_VENDOR_ID_BANDB, BANDB_DEVICE_ID_USO9ML2_2P)},
- 	{USB_DEVICE(USB_VENDOR_ID_BANDB, BANDB_DEVICE_ID_USO9ML2_4)},
-@@ -261,6 +270,13 @@ struct moschip_port {
- 	struct urb *write_urb_pool[NUM_URBS];
- 	char busy[NUM_URBS];
- 	bool read_urb_busy;
-+
-+#ifdef MCS7810_HAS_LED
-+	/* For MCS7810 LED */
-+	int mos7810_led_flag;
-+	struct timer_list mos7810_led_timer1;	/* Timer for LED on */
-+	struct timer_list mos7810_led_timer2;	/* Timer for LED off */
-+#endif
- };
- 
- 
-@@ -572,6 +588,71 @@ static int mos7840_get_reg(struct moschip_port *mcs,
-__u16 Wval, __u16 reg,
- 	return ret;
- }
- 
-+#ifdef MCS7810_HAS_LED
-+static void mos7810_control_callback(struct urb *urb)
-+{
-+	switch (urb->status) {
-+	case 0:
-+		/* Success */
-+		break;
-+	case -ECONNRESET:
-+	case -ENOENT:
-+	case -ESHUTDOWN:
-+		/* This urb is terminated, clean up */
-+		dbg("%s - urb shutting down with status: %d", __func__,
-+			urb->status);
-+		break;
-+	default:
-+		dbg("%s - nonzero urb status received: %d", __func__,
-+			urb->status);
-+	}
-+}
-+
-+static void mos7810_set_led_async(struct moschip_port *mcs, __u16 wval,
-+				__u16 reg)
-+{
-+	struct usb_device *dev = mcs->port->serial->dev;
-+	struct usb_ctrlrequest *dr = mcs->dr;
-+
-+	dr->bRequestType = MCS_WR_RTYPE;
-+	dr->bRequest = MCS_WRREQ;
-+	dr->wValue = cpu_to_le16(wval);
-+	dr->wIndex = cpu_to_le16(reg);
-+	dr->wLength = cpu_to_le16(0);
-+
-+	usb_fill_control_urb(mcs->control_urb, dev, usb_sndctrlpipe(dev, 0),
-+		(unsigned char *)dr, NULL, 0, mos7810_control_callback,
-NULL);
-+
-+	usb_submit_urb(mcs->control_urb, GFP_ATOMIC);
-+}
-+
-+static void mos7810_set_led_sync(struct usb_serial_port *port, __u16 reg,
-+				__u16 val)
-+{
-+	struct usb_device *dev = port->serial->dev;
-+
-+	usb_control_msg(dev, usb_sndctrlpipe(dev, 0), MCS_WRREQ,
-MCS_WR_RTYPE,
-+			val, reg, NULL, 0, MOS_WDR_TIMEOUT);
-+}
-+
-+static void mos7810_led_off(unsigned long arg)
-+{
-+	struct moschip_port *mcs = (struct moschip_port *) arg;
-+
-+	/* Turn off MCS7810 LED */
-+	mos7810_set_led_async(mcs, 0x0300, MODEM_CONTROL_REGISTER);
-+	mod_timer(&mcs->mos7810_led_timer2,
-+				jiffies +
-msecs_to_jiffies(MCS7810_LED_OFF_MS));
-+}
-+
-+static void mos7810_led_flag_off(unsigned long arg)
-+{
-+	struct moschip_port *mcs = (struct moschip_port *) arg;
-+
-+	mcs->mos7810_led_flag = 0;
-+}
-+#endif
-+
- 
-/***************************************************************************
-**
-  * mos7840_interrupt_callback
-  *	this is the callback function for when we have received data on the
-@@ -792,6 +873,16 @@ static void mos7840_bulk_in_callback(struct urb *urb)
- 		return;
- 	}
- 
-+#ifdef MCS7810_HAS_LED
-+	/* Turn on MCS7810 LED */
-+	if (serial->num_ports == 1 && mos7840_port->mos7810_led_flag == 0) {
-+		mos7840_port->mos7810_led_flag = 1;
-+		mos7810_set_led_async(mos7840_port, 0x0301,
-+					MODEM_CONTROL_REGISTER);
-+		mod_timer(&mos7840_port->mos7810_led_timer1,
-+				jiffies +
-msecs_to_jiffies(MCS7810_LED_ON_MS));
-+	}
-+#endif
- 
- 	mos7840_port->read_urb_busy = true;
- 	retval = usb_submit_urb(mos7840_port->read_urb, GFP_ATOMIC);
-@@ -1554,6 +1645,16 @@ static int mos7840_write(struct tty_struct *tty,
-struct usb_serial_port *port,
- 	data1 = urb->transfer_buffer;
- 	dbg("bulkout endpoint is %d", port->bulk_out_endpointAddress);
- 
-+#ifdef MCS7810_HAS_LED
-+	/* Turn on MCS7810 LED */
-+	if (serial->num_ports == 1 && mos7840_port->mos7810_led_flag == 0) {
-+		mos7840_port->mos7810_led_flag = 1;
-+		mos7810_set_led_sync(port, MODEM_CONTROL_REGISTER, 0x0301);
-+		mod_timer(&mos7840_port->mos7810_led_timer1,
-+				jiffies +
-msecs_to_jiffies(MCS7810_LED_ON_MS));
-+	}
-+#endif
-+
- 	/* send it down the pipe */
- 	status = usb_submit_urb(urb, GFP_ATOMIC);
- 
-@@ -2327,26 +2428,86 @@ static int mos7840_ioctl(struct tty_struct *tty,
- 	return -ENOIOCTLCMD;
- }
- 
-+static int mos7810_check(struct usb_serial *serial)
-+{
-+	int i, pass_count = 0;
-+	__u16 data = 0, mcr_data = 0;
-+	__u16 test_pattern = 0x55AA;
-+
-+	/* Store MCR setting */
-+	usb_control_msg(serial->dev, usb_rcvctrlpipe(serial->dev, 0),
-+		MCS_RDREQ, MCS_RD_RTYPE, 0x0300, MODEM_CONTROL_REGISTER,
-+		&mcr_data, VENDOR_READ_LENGTH, MOS_WDR_TIMEOUT);
-+
-+	for (i = 0; i < 16; i++) {
-+		/* Send the 1-bit test pattern out to MCS7810 test pin */
-+		usb_control_msg(serial->dev, usb_sndctrlpipe(serial->dev,
-0),
-+			MCS_WRREQ, MCS_WR_RTYPE,
-+			(0x0300 | (((test_pattern >> i) & 0x0001) << 1)),
-+			MODEM_CONTROL_REGISTER, NULL, 0, MOS_WDR_TIMEOUT);
-+
-+		/* Read the test pattern back */
-+		usb_control_msg(serial->dev, usb_rcvctrlpipe(serial->dev,
-0),
-+			MCS_RDREQ, MCS_RD_RTYPE, 0, GPIO_REGISTER, &data,
-+			VENDOR_READ_LENGTH, MOS_WDR_TIMEOUT);
-+
-+		/* If this is a MCS7810 device, both test patterns must
-match */
-+		if (((test_pattern >> i) ^ (~data >> 1)) & 0x0001)
-+			break;
-+
-+		pass_count++;
-+	}
-+
-+	/* Restore MCR setting */
-+	usb_control_msg(serial->dev, usb_sndctrlpipe(serial->dev, 0),
-MCS_WRREQ,
-+		MCS_WR_RTYPE, 0x0300 | mcr_data, MODEM_CONTROL_REGISTER,
-NULL,
-+		0, MOS_WDR_TIMEOUT);
-+
-+	if (pass_count == 16)
-+		return 1;
-+
-+	return 0;
-+}
-+
- static int mos7840_calc_num_ports(struct usb_serial *serial)
- {
--	__u16 Data = 0x00;
-+	__u16 data = 0x00;
- 	int ret = 0;
- 	int mos7840_num_ports;
- 
- 	ret = usb_control_msg(serial->dev, usb_rcvctrlpipe(serial->dev, 0),
--		MCS_RDREQ, MCS_RD_RTYPE, 0, GPIO_REGISTER, &Data,
-+		MCS_RDREQ, MCS_RD_RTYPE, 0, GPIO_REGISTER, &data,
- 		VENDOR_READ_LENGTH, MOS_WDR_TIMEOUT);
- 
--	if ((Data & 0x01) == 0) {
-+	if (serial->dev->descriptor.idProduct == MOSCHIP_DEVICE_ID_7810) {
-+		mos7840_num_ports = 1;
-+		serial->num_bulk_in = 1;
-+		serial->num_bulk_out = 1;
-+		serial->num_ports = 1;
-+	} else if (serial->dev->descriptor.idProduct ==
-+						MOSCHIP_DEVICE_ID_7820) {
- 		mos7840_num_ports = 2;
- 		serial->num_bulk_in = 2;
- 		serial->num_bulk_out = 2;
- 		serial->num_ports = 2;
- 	} else {
--		mos7840_num_ports = 4;
--		serial->num_bulk_in = 4;
--		serial->num_bulk_out = 4;
--		serial->num_ports = 4;
-+		/* For a MCS7840 device GPIO0 must be set to 1*/
-+		if ((data & 0x01) == 1) {
-+			mos7840_num_ports = 4;
-+			serial->num_bulk_in = 4;
-+			serial->num_bulk_out = 4;
-+			serial->num_ports = 4;
-+		} else if (mos7810_check(serial)) {
-+			mos7840_num_ports = 1;
-+			serial->num_bulk_in = 1;
-+			serial->num_bulk_out = 1;
-+			serial->num_ports = 1;
-+		} else {
-+			mos7840_num_ports = 2;
-+			serial->num_bulk_in = 2;
-+			serial->num_bulk_out = 2;
-+			serial->num_ports = 2;
-+		}
- 	}
- 
- 	return mos7840_num_ports;
-@@ -2563,6 +2724,33 @@ static int mos7840_startup(struct usb_serial *serial)
- 			status = -ENOMEM;
- 			goto error;
- 		}
-+
-+#ifdef MCS7810_HAS_LED
-+		/* Initialize MCS7810 LED timers */
-+		if (serial->num_ports == 1) {
-+			init_timer(&mos7840_port->mos7810_led_timer1);
-+			mos7840_port->mos7810_led_timer1.function =
-+							mos7810_led_off;
-+			mos7840_port->mos7810_led_timer1.expires =
-+				jiffies +
-msecs_to_jiffies(MCS7810_LED_ON_MS);
-+			mos7840_port->mos7810_led_timer1.data =
-+						(unsigned long)mos7840_port;
-+
-+			init_timer(&mos7840_port->mos7810_led_timer2);
-+			mos7840_port->mos7810_led_timer2.function =
-+
-mos7810_led_flag_off;
-+			mos7840_port->mos7810_led_timer2.expires =
-+				jiffies +
-msecs_to_jiffies(MCS7810_LED_OFF_MS);
-+			mos7840_port->mos7810_led_timer2.data =
-+						(unsigned long)mos7840_port;
-+
-+			mos7840_port->mos7810_led_flag = 0;
-+
-+			/* Turn off MCS7810 LED */
-+			mos7810_set_led_sync(serial->port[i],
-+						MODEM_CONTROL_REGISTER,
-0x0300);
-+		}
-+#endif
- 	}
- 	dbg ("mos7840_startup: all ports configured...........");
- 
-@@ -2638,6 +2826,7 @@ static void mos7840_release(struct usb_serial *serial)
- {
- 	int i;
- 	struct moschip_port *mos7840_port;
-+
- 	dbg("%s", " release :entering..........");
- 
- 	if (!serial) {
-@@ -2654,6 +2843,18 @@ static void mos7840_release(struct usb_serial
-*serial)
- 		mos7840_port = mos7840_get_port_private(serial->port[i]);
- 		dbg("mos7840_port %d = %p", i, mos7840_port);
- 		if (mos7840_port) {
-+#ifdef MCS7810_HAS_LED
-+			if (serial->num_ports == 1) {
-+				/* Turn off MCS7810 LED */
-+				mos7810_set_led_sync(mos7840_port->port,
-+						MODEM_CONTROL_REGISTER,
-0x0300);
-+
-+				del_timer_sync(&mos7840_port->
-+							mos7810_led_timer1);
-+				del_timer_sync(&mos7840_port->
-+							mos7810_led_timer2);
-+			}
-+#endif
- 			kfree(mos7840_port->ctrl_buf);
- 			kfree(mos7840_port->dr);
- 			kfree(mos7840_port);
--- 
-1.7.7.6
+> closely config files of the two kernels if there isn't some unexpected
+> difference...
 
+There's one difference between my 2.6.38 and 3.0 configs --
+in 3.0+ I enabled CONFIG_SCSI_SCAN_ASYNC.  But due to the
+above I'm not sure I want to experiment right now again,
+as I need some remote hands to bring the machine back if
+it'll stuck again.
 
+And there's at least two quite significant (I think)
+differences in dmesg output.
 
+3.0 kernel:
+[    2.807983] Fusion MPT base driver 3.04.19
+[    2.808064] Copyright (c) 1999-2008 LSI Corporation
+[    2.809826] Fusion MPT SPI Host driver 3.04.19
+[    2.810003] mptspi 0000:08:07.0: PCI INT A -> GSI 27 (level, low) -> IRQ 27
+[    2.810347] mptbase: ioc0: Initiating bringup
+[    3.223351] ioc0: LSI53C1030 B2: Capabilities={Initiator}
+[    4.113981] scsi4 : ioc0: LSI53C1030 B2, FwRev=01000e00h, Ports=1, MaxQ=222, IRQ=27
+[    4.482468] mptspi 0000:08:07.1: PCI INT B -> GSI 28 (level, low) -> IRQ 28
+[    4.482674] mptbase: ioc1: Initiating bringup
+
+the extra warning and 15-sec delay:
+[   19.480030] mptbase: ioc0: WARNING - Issuing Reset from mpt_config!!, doorbell=0x24000000
+[   20.120020] mptbase: ioc0: Attempting Retry Config request type 0x4, page 0x1, action 2
+[   20.120173] mptbase: ioc0: Retry completed ret=0x0 timeleft=4500
+
+[   20.121075] scsi 4:0:0:0: Direct-Access     IBM-ESXS DTN073C3UCDY10FN S25J PQ: 0 ANSI: 3
+[   20.121186] scsi target4:0:0: Beginning Domain Validation
+[   20.131738] scsi target4:0:0: Ending Domain Validation
+[   20.131865] scsi target4:0:0: FAST-160 WIDE SCSI 320.0 MB/s DT IU QAS HMCS (6.25 ns, offset 127)
+[   20.133037] scsi 4:0:1:0: Direct-Access     IBM-ESXS DTN073C3UCDY10FN S27M PQ: 0 ANSI: 3
+[   20.133136] scsi target4:0:1: Beginning Domain Validation
+[   20.145040] scsi target4:0:1: Ending Domain Validation
+[   20.145169] scsi target4:0:1: FAST-160 WIDE SCSI 320.0 MB/s DT IU QAS HMCS (6.25 ns, offset 127)
+[   20.146368] scsi 4:0:2:0: Direct-Access     IBM-ESXS DTN073C3UCDY10FN S27M PQ: 0 ANSI: 3
+[   20.146470] scsi target4:0:2: Beginning Domain Validation
+[   20.156885] scsi target4:0:2: Ending Domain Validation
+[   20.157013] scsi target4:0:2: FAST-160 WIDE SCSI 320.0 MB/s DT IU QAS HMCS (6.25 ns, offset 127)
+[   20.158196] scsi 4:0:3:0: Direct-Access     IBM-ESXS DTN073C3UCDY10FN S27M PQ: 0 ANSI: 3
+[   20.158297] scsi target4:0:3: Beginning Domain Validation
+[   20.168737] scsi target4:0:3: Ending Domain Validation
+[   20.168868] scsi target4:0:3: FAST-160 WIDE SCSI 320.0 MB/s DT IU QAS HMCS (6.25 ns, offset 127)
+[   20.172797] scsi 4:0:4:0: Direct-Access     IBM-ESXS MAW3073NC     FN C206 PQ: 0 ANSI: 4
+[   20.172898] scsi target4:0:4: Beginning Domain Validation
+[   20.192801] scsi target4:0:4: Ending Domain Validation
+[   20.192934] scsi target4:0:4: FAST-160 WIDE SCSI 320.0 MB/s DT IU HMCS (6.25 ns, offset 127)
+[   20.753704] scsi 4:0:8:0: Processor         IBM      32P0032a S320  1 1    PQ: 0 ANSI: 2
+[   20.753810] scsi target4:0:8: Beginning Domain Validation
+[   20.754545] scsi target4:0:8: Ending Domain Validation
+[   20.754671] scsi target4:0:8: asynchronous
+[   23.572044] sd 4:0:0:0: [sdb] 143374000 512-byte logical blocks: (73.4 GB/68.3 GiB)
+[   23.573106] sd 4:0:0:0: [sdb] Write Protect is off
+[   23.573204] sd 4:0:0:0: [sdb] Mode Sense: cb 00 00 08
+[   23.574437] sd 4:0:0:0: [sdb] Write cache: disabled, read cache: enabled, doesn't support DPO or FUA
+[   23.577515] sd 4:0:1:0: [sdc] 143374000 512-byte logical blocks: (73.4 GB/68.3 GiB)
+[   23.578569] sd 4:0:1:0: [sdc] Write Protect is off
+[   23.578676] sd 4:0:1:0: [sdc] Mode Sense: cb 00 00 08
+[   23.579773] sd 4:0:1:0: [sdc] Write cache: disabled, read cache: enabled, doesn't support DPO or FUA
+[   23.582656] sd 4:0:2:0: [sdd] 143374000 512-byte logical blocks: (73.4 GB/68.3 GiB)
+[   23.583718] sd 4:0:2:0: [sdd] Write Protect is off
+[   23.583813] sd 4:0:2:0: [sdd] Mode Sense: cb 00 00 08
+[   23.585126] sd 4:0:2:0: [sdd] Write cache: disabled, read cache: enabled, doesn't support DPO or FUA
+[   23.589278] sd 4:0:3:0: [sde] 143374000 512-byte logical blocks: (73.4 GB/68.3 GiB)
+[   23.590356] sd 4:0:3:0: [sde] Write Protect is off
+[   23.590456] sd 4:0:3:0: [sde] Mode Sense: cb 00 00 08
+[   23.591613] sd 4:0:3:0: [sde] Write cache: disabled, read cache: enabled, doesn't support DPO or FUA
+[   23.595105] sd 4:0:4:0: [sdf] 143374000 512-byte logical blocks: (73.4 GB/68.3 GiB)
+[   23.597872] sd 4:0:4:0: [sdf] Write Protect is off
+[   23.597980] sd 4:0:4:0: [sdf] Mode Sense: cf 00 00 08
+[   23.599393] sd 4:0:4:0: [sdf] Write cache: disabled, read cache: enabled, doesn't support DPO or FUA
+[   23.605403]  sdb: sdb1 sdb2 sdb3 sdb4 < sdb5 sdb6 sdb7 >
+[   23.608453]  sdc: sdc1 sdc2 sdc3 sdc4 < sdc5 sdc6 sdc7 >
+[   23.619822]  sde: sde1 sde2 sde3 sde4 < sde5 sde6 sde7 >
+[   23.620675]  sdd: sdd1 sdd2 sdd3 sdd4 < sdd5 sdd6 sdd7 >
+[   23.622831] sd 4:0:0:0: [sdb] Attached SCSI disk
+[   23.624151]  sdf: sdf1 sdf2 sdf3 sdf4 < sdf5 sdf6 sdf7 >
+[   23.705272] sd 4:0:1:0: [sdc] Attached SCSI disk
+[   23.740272] sd 4:0:2:0: [sdd] Attached SCSI disk
+[   23.743111] sd 4:0:4:0: [sdf] Attached SCSI disk
+[   23.743997] sd 4:0:3:0: [sde] Attached SCSI disk
+[   34.480015] mptbase: ioc1: ERROR - Wait IOC_READY state (0x20000000) timeout(15)!
+[   38.870012] ioc1: LSI53C1030 B2: Capabilities={Initiator}
+[   39.270011] ioc0: LSI53C1030 B2: Capabilities={Initiator}
+[   40.553990] scsi5 : ioc1: LSI53C1030 B2, FwRev=01000e00h, Ports=1, MaxQ=222, IRQ=28
+
+And 2.6.32 (without dmesg timestamps compiled in):
+
+Fusion MPT base driver 3.04.12
+Copyright (c) 1999-2008 LSI Corporation
+Fusion MPT SPI Host driver 3.04.12
+mptspi 0000:08:07.0: PCI INT A -> GSI 27 (level, low) -> IRQ 27
+mptbase: ioc0: Initiating bringup
+ioc0: LSI53C1030 B2: Capabilities={Initiator}
+scsi4 : ioc0: LSI53C1030 B2, FwRev=01000e00h, Ports=1, MaxQ=222, IRQ=27
+scsi 4:0:0:0: Direct-Access     IBM-ESXS DTN073C3UCDY10FN S25J PQ: 0 ANSI: 3
+scsi target4:0:0: Beginning Domain Validation
+scsi target4:0:0: Ending Domain Validation
+scsi target4:0:0: FAST-160 WIDE SCSI 320.0 MB/s DT IU QAS HMCS (6.25 ns, offset 127)
+sd 4:0:0:0: [sda] 143374000 512-byte logical blocks: (73.4 GB/68.3 GiB)
+scsi 4:0:1:0: Direct-Access     IBM-ESXS DTN073C3UCDY10FN S27M PQ: 0 ANSI: 3
+sd 4:0:0:0: [sda] Write Protect is off
+scsi target4:0:1: Beginning Domain Validation
+sd 4:0:0:0: [sda] Mode Sense: cb 00 00 08
+sd 4:0:0:0: [sda] Write cache: disabled, read cache: enabled, doesn't support DPO or FUA
+ sda:
+scsi target4:0:1: Ending Domain Validation
+scsi target4:0:1: FAST-160 WIDE SCSI 320.0 MB/s DT IU QAS HMCS (6.25 ns, offset 127)
+ sda1 sda2 sda3 sda4 <
+sd 4:0:1:0: [sdb] 143374000 512-byte logical blocks: (73.4 GB/68.3 GiB)
+scsi 4:0:2:0: Direct-Access     IBM-ESXS DTN073C3UCDY10FN S27M PQ: 0 ANSI: 3
+scsi target4:0:2: Beginning Domain Validation
+sd 4:0:1:0: [sdb] Write Protect is off
+sd 4:0:1:0: [sdb] Mode Sense: cb 00 00 08
+sd 4:0:1:0: [sdb] Write cache: disabled, read cache: enabled, doesn't support DPO or FUA
+ sda5
+ sdb: sda6
+scsi target4:0:2: Ending Domain Validation
+scsi target4:0:2: FAST-160 WIDE SCSI 320.0 MB/s DT IU QAS HMCS (6.25 ns, offset 127)
+ sda7 >
+sd 4:0:2:0: [sdc] 143374000 512-byte logical blocks: (73.4 GB/68.3 GiB)
+scsi 4:0:3:0: Direct-Access     IBM-ESXS DTN073C3UCDY10FN S27M PQ: 0 ANSI: 3
+scsi target4:0:3: Beginning Domain Validation
+sd 4:0:2:0: [sdc] Write Protect is off
+sd 4:0:2:0: [sdc] Mode Sense: cb 00 00 08
+ sdb1 sdb2 sdb3 sdb4 <
+sd 4:0:2:0: [sdc] Write cache: disabled, read cache: enabled, doesn't support DPO or FUA
+ sdb5
+ sdc: sdb6
+scsi target4:0:3: Ending Domain Validation
+sd 4:0:0:0: [sda] Attached SCSI disk
+scsi target4:0:3: FAST-160 WIDE SCSI 320.0 MB/s DT IU QAS HMCS (6.25 ns, offset 127)
+ sdb7 >
+ sdc1 sdc2 sdc3 sdc4 < sdc5
+------------[ cut here ]------------
+WARNING: at fs/fs-writeback.c:1122 __mark_inode_dirty+0xd4/0x130()
+Hardware name: eserver xSeries 345 -[867052G]-
+Modules linked in: mptspi(+) mptscsih mptbase scsi_transport_spi usb_storage e1000 ohci_hcd pata_serverworks libata usbhid hid usbcore nls_base sd_mod scsi_mod
+Pid: 215, comm: blkid Not tainted 2.6.32-i686 #2.6.32.50
+Call Trace:
+ [<c103e83e>] ? warn_slowpath_common+0x6e/0xb0
+ [<c10ef314>] ? __mark_inode_dirty+0xd4/0x130
+ [<c103e893>] ? warn_slowpath_null+0x13/0x20
+ [<c10ef314>] ? __mark_inode_dirty+0xd4/0x130
+ [<c10e5b0a>] ? touch_atime+0xea/0x130
+ [<c10a23ee>] ? generic_file_aio_read+0x41e/0x6f0
+ [<c10d3370>] ? do_sync_read+0x0/0x110
+ [<c10d3446>] ? do_sync_read+0xd6/0x110
+ [<c1057a30>] ? autoremove_wake_function+0x0/0x40
+ [<c1024ca8>] ? kunmap_atomic+0x58/0x70
+ [<c10ba9b5>] ? handle_mm_fault+0x2e5/0x9c0
+ [<c10f9c94>] ? block_llseek+0xb4/0xe0
+ [<c10d3c5f>] ? vfs_read+0x8f/0x190
+ [<c10d31b8>] ? vfs_llseek+0x38/0x50
+ [<c10d3d9c>] ? sys_read+0x3c/0x70
+ [<c1002d38>] ? sysenter_do_call+0x12/0x2c
+---[ end trace 440816db81b818c5 ]---
+bdi-block not registered
+ sdc6
+sd 4:0:3:0: [sdd] 143374000 512-byte logical blocks: (73.4 GB/68.3 GiB)
+sd 4:0:3:0: [sdd] Write Protect is off
+sd 4:0:3:0: [sdd] Mode Sense: cb 00 00 08
+ sdc7 >
+sd 4:0:3:0: [sdd] Write cache: disabled, read cache: enabled, doesn't support DPO or FUA
+------------[ cut here ]------------
+WARNING: at fs/fs-writeback.c:1122 __mark_inode_dirty+0xd4/0x130()
+Hardware name: eserver xSeries 345 -[867052G]-
+Modules linked in: mptspi(+) mptscsih mptbase scsi_transport_spi usb_storage e1000 ohci_hcd pata_serverworks libata usbhid hid usbcore nls_base sd_mod scsi_mod
+Pid: 215, comm: blkid Tainted: G        W  2.6.32-i686 #2.6.32.50
+Call Trace:
+ [<c103e83e>] ? warn_slowpath_common+0x6e/0xb0
+ [<c10ef314>] ? __mark_inode_dirty+0xd4/0x130
+ [<c103e893>] ? warn_slowpath_null+0x13/0x20
+ [<c10ef314>] ? __mark_inode_dirty+0xd4/0x130
+ [<c10e5b0a>] ? touch_atime+0xea/0x130
+ [<c10a23ee>] ? generic_file_aio_read+0x41e/0x6f0
+ [<c10d3370>] ? do_sync_read+0x0/0x110
+ [<c10d3446>] ? do_sync_read+0xd6/0x110
+ [<c1057a30>] ? autoremove_wake_function+0x0/0x40
+ [<c10e0ffc>] ? do_vfs_ioctl+0x6c/0x550
+ [<c10f9c94>] ? block_llseek+0xb4/0xe0
+ [<c10d3c5f>] ? vfs_read+0x8f/0x190
+ [<c10d31b8>] ? vfs_llseek+0x38/0x50
+ [<c10d3d9c>] ? sys_read+0x3c/0x70
+ [<c1002d38>] ? sysenter_do_call+0x12/0x2c
+---[ end trace 440816db81b818c6 ]---
+bdi-block not registered
+ sdd: sdd1
+------------[ cut here ]------------
+WARNING: at fs/fs-writeback.c:1122 __mark_inode_dirty+0xd4/0x130()
+Hardware name: eserver xSeries 345 -[867052G]-
+Modules linked in: mptspi(+) mptscsih mptbase scsi_transport_spi usb_storage e1000 ohci_hcd pata_serverworks libata usbhid hid usbcore nls_base sd_mod scsi_mod
+Pid: 261, comm: mdev Tainted: G        W  2.6.32-i686 #2.6.32.50
+Call Trace:
+ [<c103e83e>] ? warn_slowpath_common+0x6e/0xb0
+ [<c10ef314>] ? __mark_inode_dirty+0xd4/0x130
+ [<c103e893>] ? warn_slowpath_null+0x13/0x20
+ [<c10ef314>] ? __mark_inode_dirty+0xd4/0x130
+ [<c10e753b>] ? inode_setattr+0xab/0x170
+ [<c10e73a8>] ? inode_change_ok+0xa8/0x190
+ [<c10e77c0>] ? notify_change+0x1c0/0x330
+ [<c10d2c09>] ? sys_fchmodat+0xb9/0xe0
+ [<c10d2c50>] ? sys_chmod+0x20/0x30
+ [<c1002d38>] ? sysenter_do_call+0x12/0x2c
+---[ end trace 440816db81b818c7 ]---
+bdi-block not registered
+ sdd2 sdd3 sdd4 <
+scsi 4:0:4:0: Direct-Access     IBM-ESXS MAW3073NC     FN C206 PQ: 0 ANSI: 4
+scsi target4:0:4: Beginning Domain Validation
+ sdd5 sdd6
+sd 4:0:1:0: [sdb] Attached SCSI disk
+ sdd7 >
+------------[ cut here ]------------
+WARNING: at fs/fs-writeback.c:1122 __mark_inode_dirty+0xd4/0x130()
+Hardware name: eserver xSeries 345 -[867052G]-
+Modules linked in:
+scsi target4:0:4: Ending Domain Validation
+scsi target4:0:4: FAST-160 WIDE SCSI 320.0 MB/s DT IU HMCS (6.25 ns, offset 127)
+ mptspi(+) mptscsih mptbase scsi_transport_spi usb_storage e1000 ohci_hcd pata_serverworks libata usbhid hid usbcore nls_base sd_mod scsi_mod
+Pid: 283, comm: blkid Tainted: G        W  2.6.32-i686 #2.6.32.50
+Call Trace:
+ [<c103e83e>] ? warn_slowpath_common+0x6e/0xb0
+ [<c10ef314>] ? __mark_inode_dirty+0xd4/0x130
+ [<c103e893>] ? warn_slowpath_null+0x13/0x20
+ [<c10ef314>] ? __mark_inode_dirty+0xd4/0x130
+ [<c10e5b0a>] ? touch_atime+0xea/0x130
+ [<c10a23ee>] ? generic_file_aio_read+0x41e/0x6f0
+ [<c10d3370>] ? do_sync_read+0x0/0x110
+ [<c10d3446>] ? do_sync_read+0xd6/0x110
+ [<c1057a30>] ? autoremove_wake_function+0x0/0x40
+ [<c1024ca8>] ? kunmap_atomic+0x58/0x70
+ [<c10ba9b5>] ? handle_mm_fault+0x2e5/0x9c0
+ [<c10f9c94>] ? block_llseek+0xb4/0xe0
+ [<c10d3c5f>] ? vfs_read+0x8f/0x190
+ [<c10d31b8>] ? vfs_llseek+0x38/0x50
+ [<c10d3d9c>] ? sys_read+0x3c/0x70
+ [<c1002d38>] ? sysenter_do_call+0x12/0x2c
+---[ end trace 440816db81b818c8 ]---
+bdi-block not registered
+sd 4:0:2:0: [sdc] Attached SCSI disk
+------------[ cut here ]------------
+WARNING: at fs/fs-writeback.c:1122 __mark_inode_dirty+0xd4/0x130()
+Hardware name: eserver xSeries 345 -[867052G]-
+Modules linked in: mptspi(+) mptscsih mptbase scsi_transport_spi usb_storage e1000 ohci_hcd pata_serverworks libata usbhid hid usbcore nls_base sd_mod scsi_mod
+Pid: 283, comm: blkid Tainted: G        W  2.6.32-i686 #2.6.32.50
+Call Trace:
+ [<c103e83e>] ? warn_slowpath_common+0x6e/0xb0
+ [<c10ef314>] ? __mark_inode_dirty+0xd4/0x130
+ [<c103e893>] ? warn_slowpath_null+0x13/0x20
+ [<c10ef314>] ? __mark_inode_dirty+0xd4/0x130
+ [<c10e5b0a>] ? touch_atime+0xea/0x130
+ [<c10a23ee>] ? generic_file_aio_read+0x41e/0x6f0
+ [<c10d3370>] ? do_sync_read+0x0/0x110
+ [<c10d3446>] ? do_sync_read+0xd6/0x110
+ [<c1057a30>] ? autoremove_wake_function+0x0/0x40
+ [<c10e0ffc>] ? do_vfs_ioctl+0x6c/0x550
+ [<c10f9c94>] ? block_llseek+0xb4/0xe0
+ [<c10d3c5f>] ? vfs_read+0x8f/0x190
+ [<c10d31b8>] ? vfs_llseek+0x38/0x50
+ [<c10d3d9c>] ? sys_read+0x3c/0x70
+ [<c1002d38>] ? sysenter_do_call+0x12/0x2c
+---[ end trace 440816db81b818c9 ]---
+bdi-block not registered
+------------[ cut here ]------------
+WARNING: at fs/fs-writeback.c:1122 __mark_inode_dirty+0xd4/0x130()
+Hardware name: eserver xSeries 345 -[867052G]-
+Modules linked in: mptspi(+) mptscsih mptbase scsi_transport_spi usb_storage e1000 ohci_hcd pata_serverworks libata usbhid hid usbcore nls_base sd_mod scsi_mod
+Pid: 283, comm: blkid Tainted: G        W  2.6.32-i686 #2.6.32.50
+Call Trace:
+ [<c103e83e>] ? warn_slowpath_common+0x6e/0xb0
+ [<c10ef314>] ? __mark_inode_dirty+0xd4/0x130
+ [<c103e893>] ? warn_slowpath_null+0x13/0x20
+ [<c10ef314>] ? __mark_inode_dirty+0xd4/0x130
+ [<c10e5b0a>] ? touch_atime+0xea/0x130
+ [<c10a23ee>] ? generic_file_aio_read+0x41e/0x6f0
+ [<c10d3370>] ? do_sync_read+0x0/0x110
+ [<c10d3446>] ? do_sync_read+0xd6/0x110
+ [<c1057a30>] ? autoremove_wake_function+0x0/0x40
+ [<c10e0ffc>] ? do_vfs_ioctl+0x6c/0x550
+ [<c10f9c94>] ? block_llseek+0xb4/0xe0
+ [<c10d3c5f>] ? vfs_read+0x8f/0x190
+ [<c10d31b8>] ? vfs_llseek+0x38/0x50
+ [<c10d3d9c>] ? sys_read+0x3c/0x70
+ [<c1002d38>] ? sysenter_do_call+0x12/0x2c
+---[ end trace 440816db81b818ca ]---
+bdi-block not registered
+sd 4:0:4:0: [sde] 143374000 512-byte logical blocks: (73.4 GB/68.3 GiB)
+sd 4:0:4:0: [sde] Write Protect is off
+sd 4:0:4:0: [sde] Mode Sense: cf 00 00 08
+sd 4:0:4:0: [sde] Write cache: disabled, read cache: enabled, doesn't support DPO or FUA
+------------[ cut here ]------------
+WARNING: at fs/fs-writeback.c:1122 __mark_inode_dirty+0xd4/0x130()
+Hardware name: eserver xSeries 345 -[867052G]-
+Modules linked in: mptspi(+) mptscsih mptbase scsi_transport_spi usb_storage e1000 ohci_hcd pata_serverworks libata usbhid hid usbcore nls_base sd_mod scsi_mod
+Pid: 329, comm: mdev Tainted: G        W  2.6.32-i686 #2.6.32.50
+Call Trace:
+ [<c103e83e>] ? warn_slowpath_common+0x6e/0xb0
+ [<c10ef314>] ? __mark_inode_dirty+0xd4/0x130
+ [<c103e893>] ? warn_slowpath_null+0x13/0x20
+ [<c10ef314>] ? __mark_inode_dirty+0xd4/0x130
+ [<c10e753b>] ? inode_setattr+0xab/0x170
+ [<c10e73a8>] ? inode_change_ok+0xa8/0x190
+ [<c10e77c0>] ? notify_change+0x1c0/0x330
+ [<c10d2c09>] ? sys_fchmodat+0xb9/0xe0
+ [<c10d2c50>] ? sys_chmod+0x20/0x30
+ [<c1002d38>] ? sysenter_do_call+0x12/0x2c
+---[ end trace 440816db81b818cb ]---
+bdi-block not registered
+ sde: sde1 sde2 sde3 sde4 < sde5 sde6
+scsi 4:0:8:0: Processor         IBM      32P0032a S320  1 1    PQ: 0 ANSI: 2
+scsi target4:0:8: Beginning Domain Validation
+scsi target4:0:8: Ending Domain Validation
+scsi target4:0:8: asynchronous
+ sde7 >
+------------[ cut here ]------------
+WARNING: at fs/fs-writeback.c:1122 __mark_inode_dirty+0xd4/0x130()
+Hardware name: eserver xSeries 345 -[867052G]-
+Modules linked in: mptspi(+) mptscsih mptbase scsi_transport_spi usb_storage e1000 ohci_hcd pata_serverworks libata usbhid hid usbcore nls_base sd_mod scsi_mod
+Pid: 369, comm: mdev Tainted: G        W  2.6.32-i686 #2.6.32.50
+Call Trace:
+ [<c103e83e>] ? warn_slowpath_common+0x6e/0xb0
+ [<c10ef314>] ? __mark_inode_dirty+0xd4/0x130
+ [<c103e893>] ? warn_slowpath_null+0x13/0x20
+ [<c10ef314>] ? __mark_inode_dirty+0xd4/0x130
+ [<c10e753b>] ? inode_setattr+0xab/0x170
+ [<c10e73a8>] ? inode_change_ok+0xa8/0x190
+ [<c10e77c0>] ? notify_change+0x1c0/0x330
+ [<c10d2c09>] ? sys_fchmodat+0xb9/0xe0
+ [<c10d2c50>] ? sys_chmod+0x20/0x30
+ [<c1002d38>] ? sysenter_do_call+0x12/0x2c
+---[ end trace 440816db81b818cc ]---
+bdi-block not registered
+sd 4:0:3:0: [sdd] Attached SCSI disk
+mptspi 0000:08:07.1: PCI INT B -> GSI 28 (level, low) -> IRQ 28
+mptbase: ioc1: Initiating bringup
+ioc1: LSI53C1030 B2: Capabilities={Initiator}
+sd 4:0:4:0: [sde] Attached SCSI disk
+
+These warnings is what prompted me to try a more
+recent kernel actually, plus the fact that 2.6.32
+is reaching its end of line (so to say).  These
+warnings aren't always shown, sometimes it boots
+fine.
+
+Here's a dmesg from 2.6.38 kernel, which shows no
+issues whatsoever:
+
+[    2.910215] Fusion MPT base driver 3.04.18
+[    2.910299] Copyright (c) 1999-2008 LSI Corporation
+[    2.922747] Fusion MPT SPI Host driver 3.04.18
+[    2.922912] mptspi 0000:08:07.0: PCI INT A -> GSI 27 (level, low) -> IRQ 27
+[    2.923145] mptbase: ioc0: Initiating bringup
+[    3.340016] ioc0: LSI53C1030 B2: Capabilities={Initiator}
+[    4.230644] scsi4 : ioc0: LSI53C1030 B2, FwRev=01000e00h, Ports=1, MaxQ=222, IRQ=27
+[    4.601148] scsi 4:0:0:0: Direct-Access     IBM-ESXS DTN073C3UCDY10FN S25J PQ: 0 ANSI: 3
+[    4.601257] scsi target4:0:0: Beginning Domain Validation
+[    4.612026] scsi target4:0:0: Ending Domain Validation
+[    4.612155] scsi target4:0:0: FAST-160 WIDE SCSI 320.0 MB/s DT IU QAS HMCS (6.25 ns, offset 127)
+[    4.614638] sd 4:0:0:0: [sdb] 143374000 512-byte logical blocks: (73.4 GB/68.3 GiB)
+[    4.616258] sd 4:0:0:0: [sdb] Write Protect is off
+[    4.616341] sd 4:0:0:0: [sdb] Mode Sense: cb 00 00 08
+[    4.616524] scsi 4:0:1:0: Direct-Access     IBM-ESXS DTN073C3UCDY10FN S27M PQ: 0 ANSI: 3
+[    4.616653] scsi target4:0:1: Beginning Domain Validation
+[    4.618073] sd 4:0:0:0: [sdb] Write cache: disabled, read cache: enabled, doesn't support DPO or FUA
+[    4.627985] scsi target4:0:1: Ending Domain Validation
+[    4.628122] scsi target4:0:1: FAST-160 WIDE SCSI 320.0 MB/s DT IU QAS HMCS (6.25 ns, offset 127)
+[    4.630165] sd 4:0:1:0: [sdc] 143374000 512-byte logical blocks: (73.4 GB/68.3 GiB)
+[    4.631535] sd 4:0:1:0: [sdc] Write Protect is off
+[    4.631626] sd 4:0:1:0: [sdc] Mode Sense: cb 00 00 08
+[    4.632327] scsi 4:0:2:0: Direct-Access     IBM-ESXS DTN073C3UCDY10FN S27M PQ: 0 ANSI: 3
+[    4.632524] scsi target4:0:2: Beginning Domain Validation
+[    4.633594] sd 4:0:1:0: [sdc] Write cache: disabled, read cache: enabled, doesn't support DPO or FUA
+[    4.644183] scsi target4:0:2: Ending Domain Validation
+[    4.645739] scsi target4:0:2: FAST-160 WIDE SCSI 320.0 MB/s DT IU QAS HMCS (6.25 ns, offset 127)
+[    4.648020] sd 4:0:2:0: [sdd] 143374000 512-byte logical blocks: (73.4 GB/68.3 GiB)
+[    4.649041] sd 4:0:2:0: [sdd] Write Protect is off
+[    4.649133] sd 4:0:2:0: [sdd] Mode Sense: cb 00 00 08
+[    4.650478] scsi 4:0:3:0: Direct-Access     IBM-ESXS DTN073C3UCDY10FN S27M PQ: 0 ANSI: 3
+[    4.650618]  sdb: sdb1 sdb2 sdb3 sdb4 < sdb5 sdb6 sdb7 >
+[    4.650650] scsi target4:0:3: Beginning Domain Validation
+[    4.651796] sd 4:0:2:0: [sdd] Write cache: disabled, read cache: enabled, doesn't support DPO or FUA
+[    4.661785]  sdc: sdc1 sdc2 sdc3 sdc4 < sdc5 sdc6 sdc7 >
+[    4.663819] scsi target4:0:3: Ending Domain Validation
+[    4.664108] scsi target4:0:3: FAST-160 WIDE SCSI 320.0 MB/s DT IU QAS HMCS (6.25 ns, offset 127)
+[    4.665724] sd 4:0:0:0: [sdb] Attached SCSI disk
+[    4.684535] sd 4:0:3:0: [sde] 143374000 512-byte logical blocks: (73.4 GB/68.3 GiB)
+[    4.685537] sd 4:0:3:0: [sde] Write Protect is off
+[    4.685649] sd 4:0:3:0: [sde] Mode Sense: cb 00 00 08
+[    4.686944] sd 4:0:3:0: [sde] Write cache: disabled, read cache: enabled, doesn't support DPO or FUA
+[    4.687854]  sdd: sdd1 sdd2 sdd3 sdd4 < sdd5 sdd6 sdd7 >
+[    4.702237] scsi 4:0:4:0: Direct-Access     IBM-ESXS MAW3073NC     FN C206 PQ: 0 ANSI: 4
+[    4.702392] scsi target4:0:4: Beginning Domain Validation
+[    4.716211] sd 4:0:1:0: [sdc] Attached SCSI disk
+[    4.724526]  sde: sde1 sde2 sde3 sde4 < sde5 sde6 sde7 >
+[    4.727350] scsi target4:0:4: Ending Domain Validation
+[    4.727559] scsi target4:0:4: FAST-160 WIDE SCSI 320.0 MB/s DT IU HMCS (6.25 ns, offset 127)
+[    4.737932] sd 4:0:2:0: [sdd] Attached SCSI disk
+[    4.746930] sd 4:0:4:0: [sdf] 143374000 512-byte logical blocks: (73.4 GB/68.3 GiB)
+[    4.749646] sd 4:0:4:0: [sdf] Write Protect is off
+[    4.749743] sd 4:0:4:0: [sdf] Mode Sense: cf 00 00 08
+[    4.751182] sd 4:0:4:0: [sdf] Write cache: disabled, read cache: enabled, doesn't support DPO or FUA
+[    5.255072] scsi 4:0:8:0: Processor         IBM      32P0032a S320  1 1    PQ: 0 ANSI: 2
+[    5.255205] scsi target4:0:8: Beginning Domain Validation
+[    5.255937] scsi target4:0:8: Ending Domain Validation
+[    5.256065] scsi target4:0:8: asynchronous
+[    6.261554]  sdf: sdf1 sdf2 sdf3 sdf4 < sdf5 sdf6 sdf7 >
+[    7.015879] mptspi 0000:08:07.1: PCI INT B -> GSI 28 (level, low) -> IRQ 28
+[    7.016573] mptbase: ioc1: Initiating bringup
+[    7.423346] ioc1: LSI53C1030 B2: Capabilities={Initiator}
+[    8.340889] sd 4:0:3:0: [sde] Attached SCSI disk
+[    8.344413] scsi5 : ioc1: LSI53C1030 B2, FwRev=01000e00h, Ports=1, MaxQ=222, IRQ=28
+[    8.351396] sd 4:0:4:0: [sdf] Attached SCSI disk
+
+The warnings shown in 2.6.32 dmesg above aren't always
+shown, sometimes (more often than not) it boots without
+any warnings, like this 2.6.38 dmesg.
+
+Here's the controller in question, from lspci:
+
+08:07.0 SCSI storage controller: LSI Logic / Symbios Logic 53c1030 PCI-X Fusion-MPT Dual Ultra320 SCSI (rev 07)
+	Subsystem: IBM Device 026c
+	Control: I/O+ Mem+ BusMaster+ SpecCycle- MemWINV+ VGASnoop- ParErr+ Stepping- SERR+ FastB2B- DisINTx-
+	Status: Cap+ 66MHz+ UDF- FastB2B- ParErr- DEVSEL=medium >TAbort- <TAbort- <MAbort- >SERR- <PERR- INTx-
+	Latency: 72 (4250ns min, 4500ns max), Cache Line Size: 32 bytes
+	Interrupt: pin A routed to IRQ 27
+	Region 0: I/O ports at 2600 [size=256]
+	Region 1: Memory at f9ff0000 (64-bit, non-prefetchable) [size=64K]
+	Region 3: Memory at f9fe0000 (64-bit, non-prefetchable) [size=64K]
+	[virtual] Expansion ROM at a0100000 [disabled] [size=1M]
+	Capabilities: [50] Power Management version 2
+		Flags: PMEClk- DSI- D1+ D2+ AuxCurrent=0mA PME(D0-,D1-,D2-,D3hot-,D3cold-)
+		Status: D0 NoSoftRst- PME-Enable- DSel=0 DScale=0 PME-
+	Capabilities: [58] MSI: Enable- Count=1/1 Maskable- 64bit+
+		Address: 0000000000000000  Data: 0000
+	Capabilities: [68] PCI-X non-bridge device
+		Command: DPERE- ERO- RBC=512 OST=1
+		Status: Dev=08:07.0 64bit+ 133MHz+ SCD- USC- DC=simple DMMRBC=2048 DMOST=8 DMCRS=16 RSCEM- 266MHz- 533MHz-
+	Kernel driver in use: mptspi
+
+08:07.1 SCSI storage controller: LSI Logic / Symbios Logic 53c1030 PCI-X Fusion-MPT Dual Ultra320 SCSI (rev 07)
+	Subsystem: IBM Device 026c
+	Control: I/O+ Mem+ BusMaster+ SpecCycle- MemWINV+ VGASnoop- ParErr+ Stepping- SERR+ FastB2B- DisINTx-
+	Status: Cap+ 66MHz+ UDF- FastB2B- ParErr- DEVSEL=medium >TAbort- <TAbort- <MAbort- >SERR- <PERR- INTx-
+	Latency: 72 (4250ns min, 4500ns max), Cache Line Size: 32 bytes
+	Interrupt: pin B routed to IRQ 28
+	Region 0: I/O ports at 2700 [size=256]
+	Region 1: Memory at f9fd0000 (64-bit, non-prefetchable) [size=64K]
+	Region 3: Memory at f9fc0000 (64-bit, non-prefetchable) [size=64K]
+	[virtual] Expansion ROM at a0200000 [disabled] [size=1M]
+	Capabilities: [50] Power Management version 2
+		Flags: PMEClk- DSI- D1+ D2+ AuxCurrent=0mA PME(D0-,D1-,D2-,D3hot-,D3cold-)
+		Status: D0 NoSoftRst- PME-Enable- DSel=0 DScale=0 PME-
+	Capabilities: [58] MSI: Enable- Count=1/1 Maskable- 64bit+
+		Address: 0000000000000000  Data: 0000
+	Capabilities: [68] PCI-X non-bridge device
+		Command: DPERE- ERO- RBC=512 OST=1
+		Status: Dev=08:07.1 64bit+ 133MHz+ SCD- USC- DC=simple DMMRBC=2048 DMOST=8 DMCRS=16 RSCEM- 266MHz- 533MHz-
+	Kernel driver in use: mptspi
+
+(Only one port from the two is in use).
+
+Are there any other guesses about all this?
+
+Thank you!
+
+/mjt
