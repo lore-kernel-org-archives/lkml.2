@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964839Ab2DKX6B (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Apr 2012 19:58:01 -0400
-Received: from mail-pz0-f52.google.com ([209.85.210.52]:40940 "EHLO
-	mail-pz0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964783Ab2DKXRB (ORCPT
+	id S964777Ab2DKXQ5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Apr 2012 19:16:57 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:39063 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933969Ab2DKXQy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Apr 2012 19:17:01 -0400
-Message-Id: <20120411231025.844363877@linuxfoundation.org>
+	Wed, 11 Apr 2012 19:16:54 -0400
+Message-Id: <20120411231025.528830088@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Wed, 11 Apr 2012 16:11:03 -0700
+Date: Wed, 11 Apr 2012 16:11:01 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Stephen Boyd <sboyd@codeaurora.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>
-Subject: [ 45/78] PM / Sleep: Mitigate race between the freezer and request_firmware()
+        alan@lxorguk.ukuu.org.uk, "Rafael J. Wysocki" <rjw@sisk.pl>
+Subject: [ 43/78] PM / Hibernate: Disable usermode helpers right before freezing tasks
 In-Reply-To: <20120411231102.GA6404@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,198 +26,89 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "Rafael J. Wysocki" <rjw@sisk.pl>
 
-commit 247bc03742545fec2f79939a3b9f738392a0f7b4 upstream.
+commit 7b5179ac14dbad945647ac9e76bbbf14ed9e0dbe upstream.
 
-There is a race condition between the freezer and request_firmware()
-such that if request_firmware() is run on one CPU and
-freeze_processes() is run on another CPU and usermodehelper_disable()
-called by it succeeds to grab umhelper_sem for writing before
-usermodehelper_read_trylock() called from request_firmware()
-acquires it for reading, the request_firmware() will fail and
-trigger a WARN_ON() complaining that it was called at a wrong time.
-However, in fact, it wasn't called at a wrong time and
-freeze_processes() simply happened to be executed simultaneously.
+There is no reason to call usermodehelper_disable() before creating
+memory bitmaps in hibernate() and software_resume(), so call it right
+before freeze_processes(), in accordance with the other suspend and
+hibernation code.  Consequently, call usermodehelper_enable() right
+after the thawing of tasks rather than after freeing the memory
+bitmaps.
 
-To avoid this race, at least in some cases, modify
-usermodehelper_read_trylock() so that it doesn't fail if the
-freezing of tasks has just started and hasn't been completed yet.
-Instead, during the freezing of tasks, it will try to freeze the
-task that has called it so that it can wait until user space is
-thawed without triggering the scary warning.
-
-For this purpose, change usermodehelper_disabled so that it can
-take three different values, UMH_ENABLED (0), UMH_FREEZING and
-UMH_DISABLED.  The first one means that usermode helpers are
-enabled, the last one means "hard disable" (i.e. the system is not
-ready for usermode helpers to be used) and the second one
-is reserved for the freezer.  Namely, when freeze_processes() is
-started, it sets usermodehelper_disabled to UMH_FREEZING which
-tells usermodehelper_read_trylock() that it shouldn't fail just
-yet and should call try_to_freeze() if woken up and cannot
-return immediately.  This way all freezable tasks that happen
-to call request_firmware() right before freeze_processes() is
-started and lose the race for umhelper_sem with it will be
-frozen and will sleep until thaw_processes() unsets
-usermodehelper_disabled.  [For the non-freezable callers of
-request_firmware() the race for umhelper_sem against
-freeze_processes() is unfortunately unavoidable.]
-
-Reported-by: Stephen Boyd <sboyd@codeaurora.org>
 Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
 Acked-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- include/linux/kmod.h   |   21 +++++++++++++++++++--
- kernel/kmod.c          |   47 +++++++++++++++++++++++++++++++++++++----------
- kernel/power/process.c |    3 ++-
- 3 files changed, 58 insertions(+), 13 deletions(-)
+ kernel/power/hibernate.c |   23 ++++++++++-------------
+ 1 file changed, 10 insertions(+), 13 deletions(-)
 
---- a/include/linux/kmod.h
-+++ b/include/linux/kmod.h
-@@ -112,10 +112,27 @@ call_usermodehelper(char *path, char **a
- 
- extern struct ctl_table usermodehelper_table[];
- 
-+enum umh_disable_depth {
-+	UMH_ENABLED = 0,
-+	UMH_FREEZING,
-+	UMH_DISABLED,
-+};
-+
- extern void usermodehelper_init(void);
- 
--extern int usermodehelper_disable(void);
--extern void usermodehelper_enable(void);
-+extern int __usermodehelper_disable(enum umh_disable_depth depth);
-+extern void __usermodehelper_set_disable_depth(enum umh_disable_depth depth);
-+
-+static inline int usermodehelper_disable(void)
-+{
-+	return __usermodehelper_disable(UMH_DISABLED);
-+}
-+
-+static inline void usermodehelper_enable(void)
-+{
-+	__usermodehelper_set_disable_depth(UMH_ENABLED);
-+}
-+
- extern int usermodehelper_read_trylock(void);
- extern long usermodehelper_read_lock_wait(long timeout);
- extern void usermodehelper_read_unlock(void);
---- a/kernel/kmod.c
-+++ b/kernel/kmod.c
-@@ -279,7 +279,7 @@ static void __call_usermodehelper(struct
-  * land has been frozen during a system-wide hibernation or suspend operation).
-  * Should always be manipulated under umhelper_sem acquired for write.
-  */
--static int usermodehelper_disabled = 1;
-+static enum umh_disable_depth usermodehelper_disabled = UMH_DISABLED;
- 
- /* Number of helpers running */
- static atomic_t running_helpers = ATOMIC_INIT(0);
-@@ -304,13 +304,30 @@ static DECLARE_WAIT_QUEUE_HEAD(usermodeh
- 
- int usermodehelper_read_trylock(void)
- {
-+	DEFINE_WAIT(wait);
- 	int ret = 0;
- 
- 	down_read(&umhelper_sem);
--	if (usermodehelper_disabled) {
-+	for (;;) {
-+		prepare_to_wait(&usermodehelper_disabled_waitq, &wait,
-+				TASK_INTERRUPTIBLE);
-+		if (!usermodehelper_disabled)
-+			break;
-+
-+		if (usermodehelper_disabled == UMH_DISABLED)
-+			ret = -EAGAIN;
-+
- 		up_read(&umhelper_sem);
--		ret = -EAGAIN;
-+
-+		if (ret)
-+			break;
-+
-+		schedule();
-+		try_to_freeze();
-+
-+		down_read(&umhelper_sem);
- 	}
-+	finish_wait(&usermodehelper_disabled_waitq, &wait);
- 	return ret;
- }
- EXPORT_SYMBOL_GPL(usermodehelper_read_trylock);
-@@ -349,25 +366,35 @@ void usermodehelper_read_unlock(void)
- EXPORT_SYMBOL_GPL(usermodehelper_read_unlock);
- 
- /**
-- * usermodehelper_enable - allow new helpers to be started again
-+ * __usermodehelper_set_disable_depth - Modify usermodehelper_disabled.
-+ * depth: New value to assign to usermodehelper_disabled.
-+ *
-+ * Change the value of usermodehelper_disabled (under umhelper_sem locked for
-+ * writing) and wakeup tasks waiting for it to change.
-  */
--void usermodehelper_enable(void)
-+void __usermodehelper_set_disable_depth(enum umh_disable_depth depth)
- {
- 	down_write(&umhelper_sem);
--	usermodehelper_disabled = 0;
-+	usermodehelper_disabled = depth;
- 	wake_up(&usermodehelper_disabled_waitq);
- 	up_write(&umhelper_sem);
- }
- 
- /**
-- * usermodehelper_disable - prevent new helpers from being started
-+ * __usermodehelper_disable - Prevent new helpers from being started.
-+ * @depth: New value to assign to usermodehelper_disabled.
-+ *
-+ * Set usermodehelper_disabled to @depth and wait for running helpers to exit.
-  */
--int usermodehelper_disable(void)
-+int __usermodehelper_disable(enum umh_disable_depth depth)
- {
- 	long retval;
- 
-+	if (!depth)
-+		return -EINVAL;
-+
- 	down_write(&umhelper_sem);
--	usermodehelper_disabled = 1;
-+	usermodehelper_disabled = depth;
- 	up_write(&umhelper_sem);
- 
- 	/*
-@@ -382,7 +409,7 @@ int usermodehelper_disable(void)
- 	if (retval)
- 		return 0;
- 
--	usermodehelper_enable();
-+	__usermodehelper_set_disable_depth(UMH_ENABLED);
- 	return -EAGAIN;
- }
- 
---- a/kernel/power/process.c
-+++ b/kernel/power/process.c
-@@ -123,7 +123,7 @@ int freeze_processes(void)
- {
- 	int error;
+--- a/kernel/power/hibernate.c
++++ b/kernel/power/hibernate.c
+@@ -609,19 +609,19 @@ int hibernate(void)
+ 	if (error)
+ 		goto Exit;
  
 -	error = usermodehelper_disable();
-+	error = __usermodehelper_disable(UMH_FREEZING);
+-	if (error)
+-		goto Exit;
+-
+ 	/* Allocate memory management structures */
+ 	error = create_basic_memory_bitmaps();
  	if (error)
- 		return error;
+-		goto Enable_umh;
++		goto Exit;
  
-@@ -135,6 +135,7 @@ int freeze_processes(void)
- 	error = try_to_freeze_tasks(true);
- 	if (!error) {
- 		printk("done.");
-+		__usermodehelper_set_disable_depth(UMH_DISABLED);
- 		oom_killer_disable();
- 	}
- 	printk("\n");
+ 	printk(KERN_INFO "PM: Syncing filesystems ... ");
+ 	sys_sync();
+ 	printk("done.\n");
+ 
++	error = usermodehelper_disable();
++	if (error)
++		goto Exit;
++
+ 	error = freeze_processes();
+ 	if (error)
+ 		goto Free_bitmaps;
+@@ -658,9 +658,8 @@ int hibernate(void)
+  Thaw:
+ 	thaw_processes();
+  Free_bitmaps:
+-	free_basic_memory_bitmaps();
+- Enable_umh:
+ 	usermodehelper_enable();
++	free_basic_memory_bitmaps();
+  Exit:
+ 	pm_notifier_call_chain(PM_POST_HIBERNATION);
+ 	pm_restore_console();
+@@ -775,15 +774,13 @@ static int software_resume(void)
+ 	if (error)
+ 		goto close_finish;
+ 
+-	error = usermodehelper_disable();
++	error = create_basic_memory_bitmaps();
+ 	if (error)
+ 		goto close_finish;
+ 
+-	error = create_basic_memory_bitmaps();
+-	if (error) {
+-		usermodehelper_enable();
++	error = usermodehelper_disable();
++	if (error)
+ 		goto close_finish;
+-	}
+ 
+ 	pr_debug("PM: Preparing processes for restore.\n");
+ 	error = freeze_processes();
+@@ -803,8 +800,8 @@ static int software_resume(void)
+ 	swsusp_free();
+ 	thaw_processes();
+  Done:
+-	free_basic_memory_bitmaps();
+ 	usermodehelper_enable();
++	free_basic_memory_bitmaps();
+  Finish:
+ 	pm_notifier_call_chain(PM_POST_RESTORE);
+ 	pm_restore_console();
 
 
