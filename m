@@ -1,152 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759428Ab2DKPr2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Apr 2012 11:47:28 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:50084 "EHLO bear.ext.ti.com"
+	id S1759410Ab2DKPtt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Apr 2012 11:49:49 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:46668 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755318Ab2DKPr0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Apr 2012 11:47:26 -0400
-Message-ID: <4F85A77E.30203@ti.com>
-Date: Wed, 11 Apr 2012 10:47:10 -0500
-From: Jon Hunter <jon-hunter@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120329 Thunderbird/11.0.1
+	id S1754545Ab2DKPtr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Apr 2012 11:49:47 -0400
+Date: Wed, 11 Apr 2012 18:49:55 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: kvm@vger.kernel.org
+Cc: Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] kvm: dont clear TMR on EOI
+Message-ID: <20120411154953.GA24008@redhat.com>
 MIME-Version: 1.0
-To: "Mohammed, Afzal" <afzal@ti.com>
-CC: "tony@atomide.com" <tony@atomide.com>, "Hilman, Kevin" <khilman@ti.com>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        "dwmw2@infradead.org" <dwmw2@infradead.org>,
-        "sameo@linux.intel.com" <sameo@linux.intel.com>,
-        "grinberg@compulab.co.il" <grinberg@compulab.co.il>,
-        "mike@compulab.co.il" <mike@compulab.co.il>,
-        "Menon, Nishanth" <nm@ti.com>,
-        "artem.bityutskiy@linux.intel.com" <artem.bityutskiy@linux.intel.com>,
-        "vimal.newwork@gmail.com" <vimal.newwork@gmail.com>,
-        "dbaryshkov@gmail.com" <dbaryshkov@gmail.com>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Hiremath, Vaibhav" <hvaibhav@ti.com>
-Subject: Re: [PATCH v3 1/9] ARM: OMAP2+: gpmc: driver conversion
-References: <cover.1333640054.git.afzal@ti.com> <cefbe934da40f0a169b1e3a75c46451e5546a8bd.1333640054.git.afzal@ti.com> <4F7DFED5.4030000@ti.com> <C8443D0743D26F4388EA172BF4E2A7A9317C5E58@DBDE01.ent.ti.com> <4F833D8D.8000802@ti.com> <C8443D0743D26F4388EA172BF4E2A7A9317C693C@DBDE01.ent.ti.com> <4F8488A2.7030602@ti.com> <C8443D0743D26F4388EA172BF4E2A7A9317C6F4B@DBDE01.ent.ti.com>
-In-Reply-To: <C8443D0743D26F4388EA172BF4E2A7A9317C6F4B@DBDE01.ent.ti.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [172.24.16.237]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Afzal,
+Intel spec says that TMR needs to be set/cleared
+when IRR is set, but kvm also clears it on  EOI.
 
-On 04/11/2012 12:11 AM, Mohammed, Afzal wrote:
-> Hi Jon,
-> 
-> On Wed, Apr 11, 2012 at 00:53:14, Hunter, Jon wrote:
->> I agree with your argument but I was thinking today only OMAP uses the 
->> GPMC so we could not worry about this. Ok, leave as-is, but can we 
->> modify the code as follows as the "else if" is not really needed...
->>
->> if (gpmc->num_irq < GPMC_NR_IRQ) {
->> 	dev_warn(gpmc->dev, "Insufficient interrupts for device\n");
->> 	return -EINVAL;
->> }
->>
->> gpmc->num_irq = GPMC_NR_IRQ;
-> 
-> Yes, it is better
-> 
->>
->>>>
->>>> Furthermore, GPMC_NR_IRQ is defined as 6 which is correct for OMAP2/3
->>>> but not for OMAP4/5, it is 5. Therefore, we need to detect whether we
->>>> are using an OMAP2/3 or OMAP4+ and set num_irqs based upon this. This
->>>> could be done in the probe and we can avoid passing this.
->>>
->>> Is it dependent on OMAPX or GPMC IP version? if it is IP version, then driver
->>> can be enhanced to handle it, if not, platform has to pass this information.
->>
->> Here are the GPMC IP revisions ...
->>
->> OMAP5430 = 0x00000060
->> OMAP4430 = 0x00000060
->> OMAP3630 = 0x00000050
->> OMAP3430 = 0x00000050
->>
->> So this should work for OMAP. We should check OMAP2 as well. What about 
->> the AMxxx devices?
-> 
-> 
-> I badly needed this information, thanks.
-> 
-> AM3359 = 0x00000060, it has only 2 waitpin interrupts
+I did some tests on a real (AMD based) system,
+and I see same TMR values both before
+and after EOI, so I think it's a minor bug in kvm.
 
-Great so this is consistent!
+This patch fixes TMR to be set/cleared on IRR set
+only as per spec.
 
->>>>>>> +	res = platform_get_resource(pdev, IORESOURCE_IRQ, 0);
->>>>>>> +	if (res == NULL)
->>>>>>> +		dev_warn(gpmc->dev, "Failed to get resource: irq\n");
->>>>>>> +	else
->>>>>>> +		gpmc->master_irq = res->start;
->>>>>>
->>>>>> Why not return an error if the IRQ is not found? We don't know if anyone
->>>>>> will be trying to use them.
->>>>>
->>>>> Why do you want to do that ?
->>>>
->>>> Because this indicates a BUG :-)
->>>
->>> I disagree, this need not be considered a bug always,
->>> for eg. If gpmc irq is not connected to intc
->>
->> Ok, so for devices existing today this indicates a bug ;-)
-> 
-> I do not want to consider that case to be bug enough for probe
-> to fail, there are other drivers which does similar enhancing
-> its use cases,
-> 
-> eg. 1e351a9 mfd: Make TPS65910 usable without interrupts
+And now that we don't clear TMR, we can save
+an atomic read of TMR on EOI that's not propagated
+to ioapic, by checking whether ioapic needs
+a specific vector first and calculating
+the mode afterwards.
 
-Ok, fine.
+Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+---
+ arch/x86/kvm/lapic.c |   19 +++++++++++++------
+ virt/kvm/ioapic.c    |   10 +++++++---
+ virt/kvm/ioapic.h    |    1 +
+ 3 files changed, 21 insertions(+), 9 deletions(-)
 
->>
->> At a minimum you need to improve the error handing here. If the 
->> platform_get_resource fails you are still calling "gpmc_setup_irq()" 
->> which appears to be pointless. It would be better if the gpmc irq chip 
->> is not initialised in this case so that drivers attempting to request 
->> these irqs failed.
-> 
-> Please see gpmc_setup_irq, if irq is not present, it returns in the
-> beginning, and gpmc_irq_chip is not initialized in that case.
-
-Yes you are right.
-
->>>>>>> +	for (gdq = gp->device_pdata, gd = gpmc->device; *gdq; gdq++, i++) {
->>>>>>> +		ret = gpmc_setup_device(*gdq, gd, gpmc);
->>>>>>> +		if (IS_ERR_VALUE(ret))
->>>>>>> +			dev_err(gpmc->dev, "gpmc setup on %s failed\n",
->>>>>>> +								(*gdq)->name);
->>>>>>> +		else
->>>>>>> +			gd++;
->>>>>>> +	}
->>>>>>
->>>>>> Would a while loop be simpler?
->>>>>
->>>>> My preference is to go with "for"
->>>>
->>>> Ok, just wondering if this could be cleaned up a little.
->>>
->>> For travelling through array of pointers, for looks natural to me, if you
->>> have a better way, please send it, it can be folded in next version.
->>
->> Could you have num_devices to indicate how many platform devices there 
->> are and then a simple for-loop of 0 to num_devices?
-> 
-> This will cause coding to be done by platform to be less simple, and my
-> preference is not to use another variable
-
-Hehe, I wondered if that would make life a little more difficult. Ok
-lets leave it for now.
-
-Jon
+diff --git a/arch/x86/kvm/lapic.c b/arch/x86/kvm/lapic.c
+index 8584322..992b4ea 100644
+--- a/arch/x86/kvm/lapic.c
++++ b/arch/x86/kvm/lapic.c
+@@ -92,6 +92,11 @@ static inline int apic_test_and_clear_vector(int vec, void *bitmap)
+ 	return test_and_clear_bit(VEC_POS(vec), (bitmap) + REG_POS(vec));
+ }
+ 
++static inline int apic_test_vector(int vec, void *bitmap)
++{
++	return test_bit(VEC_POS(vec), (bitmap) + REG_POS(vec));
++}
++
+ static inline void apic_set_vector(int vec, void *bitmap)
+ {
+ 	set_bit(VEC_POS(vec), (bitmap) + REG_POS(vec));
+@@ -480,7 +485,6 @@ int kvm_apic_compare_prio(struct kvm_vcpu *vcpu1, struct kvm_vcpu *vcpu2)
+ static void apic_set_eoi(struct kvm_lapic *apic)
+ {
+ 	int vector = apic_find_highest_isr(apic);
+-	int trigger_mode;
+ 	/*
+ 	 * Not every write EOI will has corresponding ISR,
+ 	 * one example is when Kernel check timer on setup_IO_APIC
+@@ -491,12 +495,15 @@ static void apic_set_eoi(struct kvm_lapic *apic)
+ 	apic_clear_vector(vector, apic->regs + APIC_ISR);
+ 	apic_update_ppr(apic);
+ 
+-	if (apic_test_and_clear_vector(vector, apic->regs + APIC_TMR))
+-		trigger_mode = IOAPIC_LEVEL_TRIG;
+-	else
+-		trigger_mode = IOAPIC_EDGE_TRIG;
+-	if (!(apic_get_reg(apic, APIC_SPIV) & APIC_SPIV_DIRECTED_EOI))
++	if (!(apic_get_reg(apic, APIC_SPIV) & APIC_SPIV_DIRECTED_EOI) &&
++	    kvm_ioapic_handles_vector(apic->vcpu->kvm, vector)) {
++		int trigger_mode;
++		if (apic_test_vector(vector, apic->regs + APIC_TMR))
++			trigger_mode = IOAPIC_LEVEL_TRIG;
++		else
++			trigger_mode = IOAPIC_EDGE_TRIG;
+ 		kvm_ioapic_update_eoi(apic->vcpu->kvm, vector, trigger_mode);
++	}
+ 	kvm_make_request(KVM_REQ_EVENT, apic->vcpu);
+ }
+ 
+diff --git a/virt/kvm/ioapic.c b/virt/kvm/ioapic.c
+index dcaf272c26..26fd54d 100644
+--- a/virt/kvm/ioapic.c
++++ b/virt/kvm/ioapic.c
+@@ -254,13 +254,17 @@ static void __kvm_ioapic_update_eoi(struct kvm_ioapic *ioapic, int vector,
+ 	}
+ }
+ 
++bool kvm_ioapic_handles_vector(struct kvm *kvm, int vector)
++{
++	struct kvm_ioapic *ioapic = kvm->arch.vioapic;
++	smp_rmb();
++	return test_bit(vector, ioapic->handled_vectors);
++}
++
+ void kvm_ioapic_update_eoi(struct kvm *kvm, int vector, int trigger_mode)
+ {
+ 	struct kvm_ioapic *ioapic = kvm->arch.vioapic;
+ 
+-	smp_rmb();
+-	if (!test_bit(vector, ioapic->handled_vectors))
+-		return;
+ 	spin_lock(&ioapic->lock);
+ 	__kvm_ioapic_update_eoi(ioapic, vector, trigger_mode);
+ 	spin_unlock(&ioapic->lock);
+diff --git a/virt/kvm/ioapic.h b/virt/kvm/ioapic.h
+index 0b190c3..32872a0 100644
+--- a/virt/kvm/ioapic.h
++++ b/virt/kvm/ioapic.h
+@@ -71,6 +71,7 @@ int kvm_apic_match_dest(struct kvm_vcpu *vcpu, struct kvm_lapic *source,
+ 		int short_hand, int dest, int dest_mode);
+ int kvm_apic_compare_prio(struct kvm_vcpu *vcpu1, struct kvm_vcpu *vcpu2);
+ void kvm_ioapic_update_eoi(struct kvm *kvm, int vector, int trigger_mode);
++bool kvm_ioapic_handles_vector(struct kvm *kvm, int vector);
+ int kvm_ioapic_init(struct kvm *kvm);
+ void kvm_ioapic_destroy(struct kvm *kvm);
+ int kvm_ioapic_set_irq(struct kvm_ioapic *ioapic, int irq, int level);
+-- 
+1.7.9.111.gf3fb0
