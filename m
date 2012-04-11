@@ -1,101 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934122Ab2DKXxQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Apr 2012 19:53:16 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:46381 "EHLO
-	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S934063Ab2DKXxN (ORCPT
+	id S1761444Ab2DKXx7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Apr 2012 19:53:59 -0400
+Received: from swampdragon.chaosbits.net ([90.184.90.115]:18695 "EHLO
+	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S964920Ab2DKXRx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Apr 2012 19:53:13 -0400
-X-Sasl-enc: Dnwc0oOZgJgvbH3wzk7bgEtSI+IKejzXkfcnRkyGL319 1334188392
-Date: Wed, 11 Apr 2012 16:53:11 -0700
-From: Greg Kroah-Hartman <gregkh@linux-foundation.org>
-To: Kay Sievers <kay@vrfy.org>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, "Ted Ts'o" <tytso@mit.edu>,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        Konstantin Khlebnikov <khlebnikov@openvz.org>,
-        Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
-Subject: Re: RFC: deprecating/removing the legacy mode of devpts
-Message-ID: <20120411235311.GA11310@kroah.com>
-References: <4F80892A.7050104@zytor.com>
- <20120407202056.472d8ad9@pyramind.ukuu.org.uk>
- <da8cd76d-6116-44a9-a7b3-7a501cb3a8a9@email.android.com>
- <20120407212705.GD11295@thunk.org>
- <4F80B9AC.2010103@zytor.com>
- <CAPXgP12Zp7aHev8Sh=3W0zHA-vZoR9TpTW8c7ep9vTQQQScBPg@mail.gmail.com>
- <4F81D254.9090000@zytor.com>
- <CAPXgP10-_kS7VtdWonBhOxKJD2KatB9SznZ_xUUaxBz7-boT2A@mail.gmail.com>
+	Wed, 11 Apr 2012 19:17:53 -0400
+Date: Thu, 12 Apr 2012 01:17:52 +0200 (CEST)
+From: Jesper Juhl <jj@chaosbits.net>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+cc: Xi Wang <xi.wang@gmail.com>, linux-kernel@vger.kernel.org,
+        devel@driverdev.osuosl.org, Joe Perches <joe@perches.com>,
+        Dan Carpenter <dan.carpenter@oracle.com>,
+        Forest Bond <forest@alittletooquiet.net>
+Subject: Re: [PATCH] staging: vt6656: Don't leak memory in
+ drivers/staging/vt6656/ioctl.c::private_ioctl()
+In-Reply-To: <20120411224920.GA1612@kroah.com>
+Message-ID: <alpine.LNX.2.00.1204120106280.2137@swampdragon.chaosbits.net>
+References: <alpine.LNX.2.00.1204120032050.2137@swampdragon.chaosbits.net> <D26D474A-E696-447C-8B54-15295135368E@gmail.com> <20120411224920.GA1612@kroah.com>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAPXgP10-_kS7VtdWonBhOxKJD2KatB9SznZ_xUUaxBz7-boT2A@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Apr 08, 2012 at 09:16:22PM +0200, Kay Sievers wrote:
-> On Sun, Apr 8, 2012 at 20:00, H. Peter Anvin <hpa@zytor.com> wrote:
-> > On 04/08/2012 12:30 AM, Kay Sievers wrote:
-> >>
-> >> I don't think it has much to do with udev, it follows 100%
-> >> instructions from the kernel, and it does not create the device node
-> >> that is in the way here.
-> >>
-> >> Udev does not name any device in the system since a long time. Since
-> >> quite a while it has not even the code to do mknod() and requires
-> >> devtmpfs. The device node part of udev these day is limited to manage
-> >> device node permissions and creating additional symlinks. All device
-> >> node creation happens inside the kernel itself - where it belongs -
-> >> and not in userspace.
-> >>
-> >> If the default behaviour of /dev/pts/* should be changed, the kernel
-> >> should be changed to support the multi-instance mode right away
-> >> without involving userspace. We better do not require userspace to
-> >> gain any knowledge about such stuff. I'm confident, that we should not
-> >> add more, or require to support multiple alternative ways of handling
-> >> kernel internals in userspace.
-> >>
-> >> So, I think we either remove the '/sys/class/tty/ptmx' device from the
-> >> system, and let the devpts code create the symlink in the 'devtmpfs'
-> >> filesystem, or alternatively the '/sys/class/tty/ptmx' device supports
-> >> the multi-instance mode itself, instead of requiring a symlink. Such
-> >> stuff belongs entirely into the kernel these day. Anything else seems
-> >> to just ask for trouble.
-> >>
-> >
-> > OK, this seems very reasonable, and something that could (and probably
-> > *has to*) be done as an atomic change... maybe.
-> >
-> > There is no way for /dev/ptmx to support the multiinstance mode since it
-> > is located outside any devpts filesystem; it *has* to be inside the
-> > devpts filesystem in order to function... if that wasn't the case this
-> > whole thing would have been trivial from the get-go.
+On Wed, 11 Apr 2012, Greg Kroah-Hartman wrote:
+
+> On Wed, Apr 11, 2012 at 06:46:33PM -0400, Xi Wang wrote:
+> > On Apr 11, 2012, at 6:35 PM, Jesper Juhl wrote:
+> > 
+> > > -		pNodeList = (PSNodeList)kmalloc(sizeof(SNodeList) + (sNodeList.uItem * sizeof(SNodeItem)), (int)GFP_ATOMIC);
+> > > +		pNodeList = kmalloc(sizeof(SNodeList) + (sNodeList.uItem * sizeof(SNodeItem)), (int)GFP_ATOMIC);
+> > 
+> > Can you also remove casts like "(int)GFP_ATOMIC"?
+> > 
+> > The parentheses "(sNodeList.uItem * sizeof(SNodeItem))" are also
+> > pointless..
 > 
-> In theory the open() could possibly find out to which namespace it
-> belongs, but I guess the other alternative is much simpler and cleaner
-> anyway.
+> One thing at a time, odds are this is an "automated" patch, right
+> Jesper?
 > 
-> > Greg, do you have any insights in what would have to be necessary
-> > mechanics to make this.
-> 
-> I guess the following:
->   - remove the 'ptmx' cdev from drivers/tty/pty.c
->   - add a new devtmpfs_create_link() to drivers/base/devtmpfs.c
->   - call devtmpfs_create_link() from _init in fs/devpts/inode.c
->   - change the default of ptxmode=0 to a sane default = 0666
 
-That all seems pretty simple.
+I'm not quite sure what you mean by "automated patch" Greg. Manually 
+editing the file in emacs, then running "git format-patch", followed by 
+importing the patch file into alpine and sending it off surely didn't 
+feel "automated" ;-)
 
->   - get rid of the (rather broken) idea of 'legacy' vs 'non-legacy mode'
->     mount options in the default setup; I don't think userspace should
->     ever be required to fiddle with such stuff
+The only reason I even included the change of the return value cast was 
+that it was the variable I was focusing on with regards to fixing the 
+leak, so it felt "sufficiently related" to include in the same patch.
+I certainly was not on a mission to clean up the file in general - just 
+fixing the leak was all that was really on the agenda.
+I don't *mind* fixing up other issues in the file - sure, I can do that, 
+but that's an entirely different set of patches then...
 
-Hm, but if we get rid of them, what about tools that expect them to be
-there?  Just silently ignore them?
 
-I'll see if I can knock something up next week...
+-- 
+Jesper Juhl <jj@chaosbits.net>       http://www.chaosbits.net/
+Don't top-post http://www.catb.org/jargon/html/T/top-post.html
+Plain text mails only, please.
 
-greg k-h
