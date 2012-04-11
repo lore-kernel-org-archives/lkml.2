@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965045Ab2DKXVp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Apr 2012 19:21:45 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:58738 "EHLO
+	id S964998Ab2DKXV5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Apr 2012 19:21:57 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:41234 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965019Ab2DKXVl (ORCPT
+	with ESMTP id S965073Ab2DKXVw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Apr 2012 19:21:41 -0400
-Message-Id: <20120411231035.709633816@linuxfoundation.org>
+	Wed, 11 Apr 2012 19:21:52 -0400
+Message-Id: <20120411231037.184092927@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Wed, 11 Apr 2012 16:10:36 -0700
+Date: Wed, 11 Apr 2012 16:10:45 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Feiran Zhuang <zhuangfeiran@ict.ac.cn>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 01/59] x86 bpf_jit: fix a bug in emitting the 16-bit immediate operand of AND
+        alan@lxorguk.ukuu.org.uk, Wolfram Sang <w.sang@pengutronix.de>,
+        Huang Shijie <b32955@freescale.com>,
+        Artem Bityutskiy <artem.bityutskiy@linux.intel.com>,
+        David Woodhouse <David.Woodhouse@intel.com>
+Subject: [ 10/59] mtd: nand: gpmi: use correct member for checking NAND_BBT_USE_FLASH
 In-Reply-To: <20120411231213.GA13124@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,33 +27,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
+From: Wolfram Sang <w.sang@pengutronix.de>
 
-From: "zhuangfeiran@ict.ac.cn" <zhuangfeiran@ict.ac.cn>
+commit 5289966ea576a062b80319975b31b661c196ff9d upstream.
 
-[ Upstream commit 1d24fb3684f347226747c6b11ea426b7b992694e ]
+This has been moved from .options to .bbt_options meanwhile. So, it
+currently checks for something totally different (NAND_OWN_BUFFERS) and
+decides according to that.
 
-When K >= 0xFFFF0000, AND needs the two least significant bytes of K as
-its operand, but EMIT2() gives it the least significant byte of K and
-0x2. EMIT() should be used here to replace EMIT2().
+Artem Bityutskiy: the options were moved in
+a40f734 mtd: nand: consolidate redundant flash-based BBT flags
 
-Signed-off-by: Feiran Zhuang  <zhuangfeiran@ict.ac.cn>
-Acked-by: Eric Dumazet <eric.dumazet@gmail.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Artem Bityutskiy: CCing -stable
+
+Signed-off-by: Wolfram Sang <w.sang@pengutronix.de>
+Acked-by: Huang Shijie <b32955@freescale.com>
+Signed-off-by: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
+Signed-off-by: David Woodhouse <David.Woodhouse@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
 ---
- arch/x86/net/bpf_jit_comp.c |    2 +-
+ drivers/mtd/nand/gpmi-nand/gpmi-nand.c |    2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/arch/x86/net/bpf_jit_comp.c
-+++ b/arch/x86/net/bpf_jit_comp.c
-@@ -289,7 +289,7 @@ void bpf_jit_compile(struct sk_filter *f
- 					EMIT2(0x24, K & 0xFF); /* and imm8,%al */
- 				} else if (K >= 0xFFFF0000) {
- 					EMIT2(0x66, 0x25);	/* and imm16,%ax */
--					EMIT2(K, 2);
-+					EMIT(K, 2);
- 				} else {
- 					EMIT1_off32(0x25, K);	/* and imm32,%eax */
- 				}
+--- a/drivers/mtd/nand/gpmi-nand/gpmi-nand.c
++++ b/drivers/mtd/nand/gpmi-nand/gpmi-nand.c
+@@ -1124,7 +1124,7 @@ static int gpmi_block_markbad(struct mtd
+ 		chip->bbt[block >> 2] |= 0x01 << ((block & 0x03) << 1);
+ 
+ 	/* Do we have a flash based bad block table ? */
+-	if (chip->options & NAND_BBT_USE_FLASH)
++	if (chip->bbt_options & NAND_BBT_USE_FLASH)
+ 		ret = nand_update_bbt(mtd, ofs);
+ 	else {
+ 		chipnr = (int)(ofs >> chip->chip_shift);
 
 
