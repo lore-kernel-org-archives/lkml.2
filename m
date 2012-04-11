@@ -1,89 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751844Ab2DKFEQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Apr 2012 01:04:16 -0400
-Received: from ch1ehsobe005.messaging.microsoft.com ([216.32.181.185]:42327
-	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750929Ab2DKFEP convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Apr 2012 01:04:15 -0400
-X-SpamScore: -16
-X-BigFish: VPS-16(zz9371I179dN1432N98dKzz1202hzz8275bhz2dh668h839h944hd25h)
-X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
-X-WSS-ID: 0M2AU2V-02-1AD-02
-X-M-MSG: 
-From: "Chen, Dennis (SRDC SW)" <Dennis1.Chen@amd.com>
-To: "paulmck@linux.vnet.ibm.com" <paulmck@linux.vnet.ibm.com>
-CC: Clemens Ladisch <clemens@ladisch.de>, Ingo Molnar <mingo@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: semaphore and mutex in current Linux kernel (3.2.2)
-Thread-Topic: semaphore and mutex in current Linux kernel (3.2.2)
-Thread-Index: Ac0P7b5dm37XnMCsR726LS+rxvQKd///odaAgANgVTOAA464hf/+uc3QgAIOroCABc15Wv/9yK4Q
-Date: Wed, 11 Apr 2012 05:04:03 +0000
-Message-ID: <491D6B4EAD0A714894D8AD22F4BDE043A33A9E@SCYBEXDAG02.amd.com>
-References: <491D6B4EAD0A714894D8AD22F4BDE0439F94AB@SCYBEXDAG02.amd.com>
- <20120401121943.GA11893@gmail.com>
- <491D6B4EAD0A714894D8AD22F4BDE0439F9560@SCYBEXDAG02.amd.com>
- <20120403075245.GD26826@gmail.com> <4F7DA8FD.1020909@ladisch.de>
- <491D6B4EAD0A714894D8AD22F4BDE0439F9E45@SCYBEXDAG02.amd.com>
- <4F7EC111.4010608@ladisch.de>
- <491D6B4EAD0A714894D8AD22F4BDE0439F9ED2@SCYBEXDAG02.amd.com>
- <20120409184538.GE2430@linux.vnet.ibm.com>
-In-Reply-To: <20120409184538.GE2430@linux.vnet.ibm.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.237.74.102]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1751958Ab2DKFGJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Apr 2012 01:06:09 -0400
+Received: from forward9.mail.yandex.net ([77.88.61.48]:51166 "EHLO
+	forward9.mail.yandex.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751453Ab2DKFGH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Apr 2012 01:06:07 -0400
+From: Kirill Tkhai <tkhai@yandex.ru>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>
+In-Reply-To: <1334073127.23924.213.camel@gandalf.stny.rr.com>
+References: <1322774765.8386.2.camel@hp>
+	 <20120213172316.GA24145@home.goodmis.org> <944171329661049@web81.yandex.ru> <1334073127.23924.213.camel@gandalf.stny.rr.com>
+Subject: Re: [PATCH]sched_rt.c: Avoid unnecessary dequeue and enqueue of pushable tasks in set_cpus_allowed_rt()
 MIME-Version: 1.0
-X-OriginatorOrg: amd.com
+Message-Id: <273741334120764@web83.yandex.ru>
+Date: Wed, 11 Apr 2012 09:06:04 +0400
+X-Mailer: Yamail [ http://yandex.ru ] 5.0
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 10, 2012 at 2:45 AM, Paul E. McKenney <paulmck@linux.vnet.ibm.com> wrote:
-> On Fri, Apr 06, 2012 at 05:47:28PM +0000, Chen, Dennis (SRDC SW) wrote:
->> On Fri, Apr 6, 2012 at 6:10 PM, Clemens Ladisch <clemens@ladisch.de> wrote:
->> > Chen, Dennis (SRDC SW) wrote:
->> >
->> > "On the internet, nobody can hear you being subtle."
->> >
->> > If some other process wants to run on the same CPU, needs_resched() is set.
->> > (This might happen to make the cursor blink, for keyboard input, or when
->> > somebody starts a rogue process like ps.)
->> >
->>
->> Hmm, I forget that in each timer interrupt, __rcu_pending() will be called, it will call
->> set_need_resched() to set the TIF_NEED_RESCHED in some condition...
->> The optimization of mutex work closely with rcu, so fantastic!
->
-> I must confess that you all lost me on this one.
->
-> There is a call to set_need_resched() in __rcu_pending(), which is
-> invoked when the current CPU has not yet responded to a non-preemptible
-> RCU grace period for some time.  However, in the common case where the
-> CPUs all respond in reasonable time, __rcu_pending() will never call
-> set_need_resched().
->
-> However, we really do not want to call set_need_resched() on every call
-> to __rcu_pending().  There is almost certainly a better solution to any
-> problem that might be solved by a per-jiffy call to set_need_resched().
->
-> So, what are you really trying to do?
->
->                                                        Thanx, Paul
+Migration status depends on a difference of weight from 0 and 1.
+If weight > 1 (<= 1) and old weight <= 1 (> 1) then task becomes
+pushable (or not pushable). We are not insterested in its exact
+values, is it 3 or 4, for example.
+Now if we are changing affinity from a set of 3 cpus to a set of 4, the-
+task will be dequeued and enqueued sequentially without important
+difference in comparison with initial state. The only difference is in
+internal representation of plist queue of pushable tasks and the fact
+that the task may won't be the first in a sequence of the same priority
+tasks. But it seems to me it gives nothing.
 
-Paul, I must confess that maybe you're right, I've realized the misunderstanding in the previous email.
-But I don't want to pretend that I have a full understanding for your " There is almost certainly a 
-better solution to any problem that might be solved by a per-jiffy call to set_need_resched()", because
-this is related with your last question.
-
-I just want to measure the performance between semaphore and mutex, before that I looked at the mutex 
-optimization code, and the focus is on the mutex_spin_on_owner() function, I don't know how long it will
-take before some components in the kernel call set_need_resched() to break the while loop. If it's on
-jiffies level, given the time of a process switch possibly in microsecond level, that means current 
-process must spin for several jiffies before it got the mutex lock or go to sleep finally, I can't
-see the benefit here... 
-
+Signed-off-by: Tkhai Kirill <tkhai@yandex.ru>
+---
+ kernel/sched/rt.c |   56 ++++++++++++++++++++++++----------------------------
+ 1 files changed, 26 insertions(+), 30 deletions(-)
+diff --git a/kernel/sched/rt.c b/kernel/sched/rt.c
+index 44af55e..c5565c3 100644
+--- a/kernel/sched/rt.c
++++ b/kernel/sched/rt.c
+@@ -1803,44 +1803,40 @@ static void task_woken_rt(struct rq *rq, struct task_struct *p)
+ static void set_cpus_allowed_rt(struct task_struct *p,
+ 				const struct cpumask *new_mask)
+ {
+-	int weight = cpumask_weight(new_mask);
++	struct rq *rq;
++	int weight;
+ 
+ 	BUG_ON(!rt_task(p));
+ 
+-	/*
+-	 * Update the migration status of the RQ if we have an RT task
+-	 * which is running AND changing its weight value.
+-	 */
+-	if (p->on_rq && (weight != p->rt.nr_cpus_allowed)) {
+-		struct rq *rq = task_rq(p);
+-
+-		if (!task_current(rq, p)) {
+-			/*
+-			 * Make sure we dequeue this task from the pushable list
+-			 * before going further.  It will either remain off of
+-			 * the list because we are no longer pushable, or it
+-			 * will be requeued.
+-			 */
+-			if (p->rt.nr_cpus_allowed > 1)
+-				dequeue_pushable_task(rq, p);
++	if (!p->on_rq)
++		return;
+ 
+-			/*
+-			 * Requeue if our weight is changing and still > 1
+-			 */
+-			if (weight > 1)
+-				enqueue_pushable_task(rq, p);
++	weight = cpumask_weight(new_mask);
+ 
+-		}
++	/*
++	 * Only update if the process changes its state from whether it
++	 * can migrate or not.
++	 */
++	if ((p->rt.nr_cpus_allowed > 1) == (weight > 1))
++		return;
+ 
+-		if ((p->rt.nr_cpus_allowed <= 1) && (weight > 1)) {
+-			rq->rt.rt_nr_migratory++;
+-		} else if ((p->rt.nr_cpus_allowed > 1) && (weight <= 1)) {
+-			BUG_ON(!rq->rt.rt_nr_migratory);
+-			rq->rt.rt_nr_migratory--;
+-		}
++	rq = task_rq(p);
+ 
+-		update_rt_migration(&rq->rt);
++	/*
++	 * The process used to be able to migrate OR it can now migrate
++	 */
++	if (weight <= 1) {
++		if (!task_current(rq, p))
++			dequeue_pushable_task(rq, p);
++		BUG_ON(!rq->rt.rt_nr_migratory);
++		rq->rt.rt_nr_migratory--;
++	} else {
++		if (!task_current(rq, p))
++			enqueue_pushable_task(rq, p);
++		rq->rt.rt_nr_migratory++;
+ 	}
++
++	update_rt_migration(&rq->rt);
+ }
+ 
+ /* Assumes rq->lock is held */
