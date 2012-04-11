@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965402Ab2DKXYC (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Apr 2012 19:24:02 -0400
-Received: from mail-pz0-f52.google.com ([209.85.210.52]:51108 "EHLO
-	mail-pz0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965215Ab2DKXXz (ORCPT
+	id S965458Ab2DKX03 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Apr 2012 19:26:29 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:58738 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965378Ab2DKXYE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Apr 2012 19:23:55 -0400
-Message-Id: <20120411231043.973442120@linuxfoundation.org>
+	Wed, 11 Apr 2012 19:24:04 -0400
+Message-Id: <20120411231044.477248579@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Wed, 11 Apr 2012 16:11:25 -0700
+Date: Wed, 11 Apr 2012 16:11:28 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Carlos Corbacho <carlos@strangeworlds.co.uk>,
-        Matthew Garrett <mjg@redhat.com>, Mattia Dongili <malattia@linux.it>,
-        Dimitris N <ddarlac@gmail.com>, "Lee, Chun-Yi" <jlee@suse.com>
-Subject: [ 50/59] acer-wmi: No wifi rfkill on Sony machines
+        alan@lxorguk.ukuu.org.uk, Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Nishanth Menon <nm@ti.com>, Samuel Ortiz <sameo@linux.intel.com>
+Subject: [ 53/59] mfd: Clear twl6030 IRQ status register only once
 In-Reply-To: <20120411231213.GA13124@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,37 +25,56 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Lee, Chun-Yi" <joeyli.kernel@gmail.com>
+From: Nishanth Menon <nm@ti.com>
 
-commit 5719b81988f3c24ff694dc3a37e35b35630a3966 upstream.
+commit 3f8349e6e98ba0455437724589072523865eae5e upstream.
 
-The wireless rfkill should charged by sony-laptop but not acer-wmi.
-So, add Sony's SNY5001 acpi device to blacklist in acer-wmi.
+TWL6030 family of PMIC use a shadow interrupt status register
+while kernel processes the current interrupt event.
+However, any write(0 or 1) to register INT_STS_A, INT_STS_B or
+INT_STS_C clears all 3 interrupt status registers.
 
-Tested on Sony Vaio
+Since clear of the interrupt is done on 32k clk, depending on I2C
+bus speed, we could in-adverently clear the status of a interrupt
+status pending on shadow register in the current implementation.
+This is due to the fact that multi-byte i2c write operation into
+three seperate status register could result in multiple load
+and clear of status and result in lost interrupts.
 
-Cc: Carlos Corbacho <carlos@strangeworlds.co.uk>
-Cc: Matthew Garrett <mjg@redhat.com>
-Cc: Mattia Dongili <malattia@linux.it>
-Cc: Dimitris N <ddarlac@gmail.com>
-Tested-by: Dimitris N <ddarlac@gmail.com>
-Signed-off-by: Lee, Chun-Yi <jlee@suse.com>
-Signed-off-by: Matthew Garrett <mjg@redhat.com>
+Instead, doing a single byte write to INT_STS_A register with 0x0
+will clear all three interrupt status registers without the related
+risk.
+
+Acked-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
+Signed-off-by: Nishanth Menon <nm@ti.com>
+Signed-off-by: Samuel Ortiz <sameo@linux.intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/platform/x86/acer-wmi.c |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/mfd/twl6030-irq.c |   13 +++++++++++--
+ 1 file changed, 11 insertions(+), 2 deletions(-)
 
---- a/drivers/platform/x86/acer-wmi.c
-+++ b/drivers/platform/x86/acer-wmi.c
-@@ -692,6 +692,7 @@ static const struct acpi_device_id norfk
- 	{ "VPC2004", 0},
- 	{ "IBM0068", 0},
- 	{ "LEN0068", 0},
-+	{ "SNY5001", 0},	/* sony-laptop in charge */
- 	{ "", 0},
- };
+--- a/drivers/mfd/twl6030-irq.c
++++ b/drivers/mfd/twl6030-irq.c
+@@ -187,8 +187,17 @@ static int twl6030_irq_thread(void *data
+ 			}
+ 		local_irq_enable();
+ 		}
+-		ret = twl_i2c_write(TWL_MODULE_PIH, sts.bytes,
+-				REG_INT_STS_A, 3); /* clear INT_STS_A */
++
++		/*
++		 * NOTE:
++		 * Simulation confirms that documentation is wrong w.r.t the
++		 * interrupt status clear operation. A single *byte* write to
++		 * any one of STS_A to STS_C register results in all three
++		 * STS registers being reset. Since it does not matter which
++		 * value is written, all three registers are cleared on a
++		 * single byte write, so we just use 0x0 to clear.
++		 */
++		ret = twl_i2c_write_u8(TWL_MODULE_PIH, 0x00, REG_INT_STS_A);
+ 		if (ret)
+ 			pr_warning("twl6030: I2C error in clearing PIH ISR\n");
  
 
 
