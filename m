@@ -1,97 +1,180 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754834Ab2DKLTK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Apr 2012 07:19:10 -0400
-Received: from ppsw-51.csi.cam.ac.uk ([131.111.8.151]:40258 "EHLO
-	ppsw-51.csi.cam.ac.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751238Ab2DKLTI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Apr 2012 07:19:08 -0400
-X-Cam-AntiVirus: no malware found
-X-Cam-SpamDetails: not scanned
-X-Cam-ScannerInfo: http://www.cam.ac.uk/cs/email/scanner/
-Message-ID: <4F8568A8.5060206@cam.ac.uk>
-Date: Wed, 11 Apr 2012 12:19:04 +0100
-From: Jonathan Cameron <jic23@cam.ac.uk>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:11.0) Gecko/20120327 Thunderbird/11.0.1
+	id S1757671Ab2DKLT0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Apr 2012 07:19:26 -0400
+Received: from mailhub.sw.ru ([195.214.232.25]:5162 "EHLO relay.sw.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756469Ab2DKLTZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Apr 2012 07:19:25 -0400
+Subject: [PATCH] nfsd: remove hard-coded dereferences to name-to-id and
+ id-to-name caches
+To: bfields@fieldses.org
+From: Stanislav Kinsbursky <skinsbursky@parallels.com>
+Cc: linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org, devel@openvz.org
+Date: Wed, 11 Apr 2012 15:18:58 +0400
+Message-ID: <20120411111844.14534.39808.stgit@localhost6.localdomain6>
+User-Agent: StGit/0.15
 MIME-Version: 1.0
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-CC: Mark Brown <broonie@opensource.wolfsonmicro.com>, mingo@elte.hu,
-        linux-kernel@vger.kernel.org, Jonathan Cameron <jic23@kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: Re: [PATCH RESEND] x86, intel_mid: ADC management
-References: <20120410131206.GB31551@sirena.org.uk> <20120410142501.6045c6c0@pyramind.ukuu.org.uk> <20120410133339.GK7499@opensource.wolfsonmicro.com> <20120410144235.1e05efd4@pyramind.ukuu.org.uk> <20120410140749.GL7499@opensource.wolfsonmicro.com> <20120410151529.5bcc5ce6@pyramind.ukuu.org.uk> <20120410151943.GM7499@opensource.wolfsonmicro.com> <20120410175632.5c11c36e@pyramind.ukuu.org.uk> <20120410175846.GQ7499@opensource.wolfsonmicro.com> <20120411112411.11825eec@pyramind.ukuu.org.uk> <20120411103827.GH3163@opensource.wolfsonmicro.com> <4F856173.8000901@cam.ac.uk> <20120411121309.4b8f8e40@pyramind.ukuu.org.uk>
-In-Reply-To: <20120411121309.4b8f8e40@pyramind.ukuu.org.uk>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 4/11/2012 12:13 PM, Alan Cox wrote:
->>>> happily enough. IIO can use it from staging and IIO can migrate whenever.
->> IIO is about a heck of a lot other than ADCs.  Keep that in mind. They
->> are a substantial
->> corner but we handle a lot of output devices and other input devices
->> (though these
->> might be adc's inside, that's not what your average users think of them as).
->> We 'have' to ensure anything we do works for the other device types as well.
-> At the IIO layer, but an ADC layer itself needs very very little indeed.
->
-> You've got
-> 	allocate
-> 	deallocate
-> 	read_samples (block/nonblock)
-> 	setup
-> 	->samples() callback
+These dereferences to global static caches are redundant. They also prevents
+converting these caches into per-net ones. So this patch is cleanup + precursor
+of patch set, which will make them per-net.
 
-To add a few more things that are common (there are others).
+Signed-off-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
 
-Read scale, read offset.
-Hardware event interrupts,
-Triggering control.
-Filtering control.
+---
+ fs/nfsd/nfs4idmap.c |   50 ++++++++++++++++++++++++--------------------------
+ 1 files changed, 24 insertions(+), 26 deletions(-)
 
-Some adcs may only need what you specify, others need a whole lot more.
-You might term these setup I suppose, but the consumer of the data often
-needs to know about them.
->
-> and devices are either polled, IRQ driven or DMA.
->
-> Now setup is a lot of different things but those can be abstracted and
-> added as needed (and much probably taken from the IIO bits).
->
-> A pure ADC abstraction ought to be a very very thin layer of code.
-Except that you then end up with simple_adc abstraction and a whole host 
-of more
-complex abstractions on top.
->
->> I  know it's not ideal, but at the end of the day IIO had a rather
->> different target when
->> we wrote it from SoC ADCs. That target of consistent userspace
->> interfaces and
->> brute force data capture still has to be met without introducing major
->> regressions.
-> I don't see the two conflicting. At one level we have a need for a simple
-> abstraction for low level ADC access within devices (akin to gpio). At the
-> level above we have a need for a consistent, sensible interface to
-> userspace with a stable API.
-We have that simple abstraction.  Dumb polled or irq driven adc stuff 
-can be done cleanly
-in minimal code.
-What I disagree on is that the bit you have grouped into setup is 
-actually separate.  That
-needs to be abstracted as well.  Consumers might not care that the gain 
-just doubled
-because someone else requested it, but I suspect many of them will.
->
-> Your simple IIO examples would just use the ADC abstraction, your complex
-> IIO examples would use the ADC abstraction *and* layer it with IIO level
-> code that is mixing it with all the other needed work.
-I suspect you'll end up adding more and more to your adc abstraction 
-till you actually
-end up with most of IIO.  That's effectively what we did...   It's big 
-because there are
-actually not that many 'simple' adc's out there.
+diff --git a/fs/nfsd/nfs4idmap.c b/fs/nfsd/nfs4idmap.c
+index 322d11c..2ff4470 100644
+--- a/fs/nfsd/nfs4idmap.c
++++ b/fs/nfsd/nfs4idmap.c
+@@ -183,8 +183,9 @@ warn_no_idmapd(struct cache_detail *detail, int has_died)
+ 
+ 
+ static int         idtoname_parse(struct cache_detail *, char *, int);
+-static struct ent *idtoname_lookup(struct ent *);
+-static struct ent *idtoname_update(struct ent *, struct ent *);
++static struct ent *idtoname_lookup(struct cache_detail *, struct ent *);
++static struct ent *idtoname_update(struct cache_detail *, struct ent *,
++				   struct ent *);
+ 
+ static struct cache_detail idtoname_cache = {
+ 	.owner		= THIS_MODULE,
+@@ -244,7 +245,7 @@ idtoname_parse(struct cache_detail *cd, char *buf, int buflen)
+ 		goto out;
+ 
+ 	error = -ENOMEM;
+-	res = idtoname_lookup(&ent);
++	res = idtoname_lookup(cd, &ent);
+ 	if (!res)
+ 		goto out;
+ 
+@@ -260,11 +261,11 @@ idtoname_parse(struct cache_detail *cd, char *buf, int buflen)
+ 	else
+ 		memcpy(ent.name, buf1, sizeof(ent.name));
+ 	error = -ENOMEM;
+-	res = idtoname_update(&ent, res);
++	res = idtoname_update(cd, &ent, res);
+ 	if (res == NULL)
+ 		goto out;
+ 
+-	cache_put(&res->h, &idtoname_cache);
++	cache_put(&res->h, cd);
+ 
+ 	error = 0;
+ out:
+@@ -275,10 +276,9 @@ out:
+ 
+ 
+ static struct ent *
+-idtoname_lookup(struct ent *item)
++idtoname_lookup(struct cache_detail *cd, struct ent *item)
+ {
+-	struct cache_head *ch = sunrpc_cache_lookup(&idtoname_cache,
+-						    &item->h,
++	struct cache_head *ch = sunrpc_cache_lookup(cd, &item->h,
+ 						    idtoname_hash(item));
+ 	if (ch)
+ 		return container_of(ch, struct ent, h);
+@@ -287,10 +287,9 @@ idtoname_lookup(struct ent *item)
+ }
+ 
+ static struct ent *
+-idtoname_update(struct ent *new, struct ent *old)
++idtoname_update(struct cache_detail *cd, struct ent *new, struct ent *old)
+ {
+-	struct cache_head *ch = sunrpc_cache_update(&idtoname_cache,
+-						    &new->h, &old->h,
++	struct cache_head *ch = sunrpc_cache_update(cd, &new->h, &old->h,
+ 						    idtoname_hash(new));
+ 	if (ch)
+ 		return container_of(ch, struct ent, h);
+@@ -359,8 +358,9 @@ nametoid_show(struct seq_file *m, struct cache_detail *cd, struct cache_head *h)
+ 	return 0;
+ }
+ 
+-static struct ent *nametoid_lookup(struct ent *);
+-static struct ent *nametoid_update(struct ent *, struct ent *);
++static struct ent *nametoid_lookup(struct cache_detail *, struct ent *);
++static struct ent *nametoid_update(struct cache_detail *, struct ent *,
++				   struct ent *);
+ static int         nametoid_parse(struct cache_detail *, char *, int);
+ 
+ static struct cache_detail nametoid_cache = {
+@@ -426,14 +426,14 @@ nametoid_parse(struct cache_detail *cd, char *buf, int buflen)
+ 		set_bit(CACHE_NEGATIVE, &ent.h.flags);
+ 
+ 	error = -ENOMEM;
+-	res = nametoid_lookup(&ent);
++	res = nametoid_lookup(cd, &ent);
+ 	if (res == NULL)
+ 		goto out;
+-	res = nametoid_update(&ent, res);
++	res = nametoid_update(cd, &ent, res);
+ 	if (res == NULL)
+ 		goto out;
+ 
+-	cache_put(&res->h, &nametoid_cache);
++	cache_put(&res->h, cd);
+ 	error = 0;
+ out:
+ 	kfree(buf1);
+@@ -443,10 +443,9 @@ out:
+ 
+ 
+ static struct ent *
+-nametoid_lookup(struct ent *item)
++nametoid_lookup(struct cache_detail *cd, struct ent *item)
+ {
+-	struct cache_head *ch = sunrpc_cache_lookup(&nametoid_cache,
+-						    &item->h,
++	struct cache_head *ch = sunrpc_cache_lookup(cd, &item->h,
+ 						    nametoid_hash(item));
+ 	if (ch)
+ 		return container_of(ch, struct ent, h);
+@@ -455,10 +454,9 @@ nametoid_lookup(struct ent *item)
+ }
+ 
+ static struct ent *
+-nametoid_update(struct ent *new, struct ent *old)
++nametoid_update(struct cache_detail *cd, struct ent *new, struct ent *old)
+ {
+-	struct cache_head *ch = sunrpc_cache_update(&nametoid_cache,
+-						    &new->h, &old->h,
++	struct cache_head *ch = sunrpc_cache_update(cd, &new->h, &old->h,
+ 						    nametoid_hash(new));
+ 	if (ch)
+ 		return container_of(ch, struct ent, h);
+@@ -493,12 +491,12 @@ nfsd_idmap_shutdown(void)
+ 
+ static int
+ idmap_lookup(struct svc_rqst *rqstp,
+-		struct ent *(*lookup_fn)(struct ent *), struct ent *key,
+-		struct cache_detail *detail, struct ent **item)
++		struct ent *(*lookup_fn)(struct cache_detail *, struct ent *),
++		struct ent *key, struct cache_detail *detail, struct ent **item)
+ {
+ 	int ret;
+ 
+-	*item = lookup_fn(key);
++	*item = lookup_fn(detail, key);
+ 	if (!*item)
+ 		return -ENOMEM;
+  retry:
+@@ -506,7 +504,7 @@ idmap_lookup(struct svc_rqst *rqstp,
+ 
+ 	if (ret == -ETIMEDOUT) {
+ 		struct ent *prev_item = *item;
+-		*item = lookup_fn(key);
++		*item = lookup_fn(detail, key);
+ 		if (*item != prev_item)
+ 			goto retry;
+ 		cache_put(&(*item)->h, detail);
 
-Jonathan
