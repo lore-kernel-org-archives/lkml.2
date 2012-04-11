@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934035Ab2DKXWW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Apr 2012 19:22:22 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:41234 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965108Ab2DKXWQ (ORCPT
+	id S965124Ab2DKXW0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Apr 2012 19:22:26 -0400
+Received: from mail-pz0-f52.google.com ([209.85.210.52]:51056 "EHLO
+	mail-pz0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934037Ab2DKXWX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Apr 2012 19:22:16 -0400
-Message-Id: <20120411231038.523936477@linuxfoundation.org>
+	Wed, 11 Apr 2012 19:22:23 -0400
+Message-Id: <20120411231038.831980779@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Wed, 11 Apr 2012 16:10:53 -0700
+Date: Wed, 11 Apr 2012 16:10:55 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Jan Beulich <jbeulich@suse.com>,
-        Michal Marek <mmarek@suse.cz>
-Subject: [ 18/59] modpost: fix ALL_INIT_DATA_SECTIONS
+        alan@lxorguk.ukuu.org.uk,
+        Wolfgang Mauerer <wolfgang.mauerer@siemens.com>,
+        Steven Rostedt <rostedt@goodmis.org>
+Subject: [ 20/59] tracing: Fix ftrace stack trace entries
 In-Reply-To: <20120411231213.GA13124@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,30 +26,73 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jan Beulich <JBeulich@suse.com>
+From: Wolfgang Mauerer <wolfgang.mauerer@siemens.com>
 
-commit 9aaf440f8fabcebf9ea79a62ccf4c212e6544b49 upstream.
+commit 01de982abf8c9e10fc3089e10585cd2cc914bdab upstream.
 
-This was lacking a comma between two supposed to be separate strings.
+8 hex characters tell only half the tale for 64 bit CPUs,
+so use the appropriate length.
 
-Signed-off-by: Jan Beulich <jbeulich@suse.com>
-Signed-off-by: Michal Marek <mmarek@suse.cz>
+Link: http://lkml.kernel.org/r/1332411501-8059-2-git-send-email-wolfgang.mauerer@siemens.com
+
+Signed-off-by: Wolfgang Mauerer <wolfgang.mauerer@siemens.com>
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- scripts/mod/modpost.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ kernel/trace/trace_entries.h |   16 ++++++++++++----
+ kernel/trace/trace_export.c  |    2 +-
+ 2 files changed, 13 insertions(+), 5 deletions(-)
 
---- a/scripts/mod/modpost.c
-+++ b/scripts/mod/modpost.c
-@@ -849,7 +849,7 @@ static void check_section(const char *mo
+--- a/kernel/trace/trace_entries.h
++++ b/kernel/trace/trace_entries.h
+@@ -156,6 +156,12 @@ FTRACE_ENTRY_DUP(wakeup, ctx_switch_entr
  
- #define ALL_INIT_DATA_SECTIONS \
- 	".init.setup$", ".init.rodata$", \
--	".devinit.rodata$", ".cpuinit.rodata$", ".meminit.rodata$" \
-+	".devinit.rodata$", ".cpuinit.rodata$", ".meminit.rodata$", \
- 	".init.data$", ".devinit.data$", ".cpuinit.data$", ".meminit.data$"
- #define ALL_EXIT_DATA_SECTIONS \
- 	".exit.data$", ".devexit.data$", ".cpuexit.data$", ".memexit.data$"
+ #define FTRACE_STACK_ENTRIES	8
+ 
++#ifndef CONFIG_64BIT
++# define IP_FMT "%08lx"
++#else
++# define IP_FMT "%016lx"
++#endif
++
+ FTRACE_ENTRY(kernel_stack, stack_entry,
+ 
+ 	TRACE_STACK,
+@@ -165,8 +171,9 @@ FTRACE_ENTRY(kernel_stack, stack_entry,
+ 		__dynamic_array(unsigned long,	caller	)
+ 	),
+ 
+-	F_printk("\t=> (%08lx)\n\t=> (%08lx)\n\t=> (%08lx)\n\t=> (%08lx)\n"
+-		 "\t=> (%08lx)\n\t=> (%08lx)\n\t=> (%08lx)\n\t=> (%08lx)\n",
++	F_printk("\t=> (" IP_FMT ")\n\t=> (" IP_FMT ")\n\t=> (" IP_FMT ")\n"
++		 "\t=> (" IP_FMT ")\n\t=> (" IP_FMT ")\n\t=> (" IP_FMT ")\n"
++		 "\t=> (" IP_FMT ")\n\t=> (" IP_FMT ")\n",
+ 		 __entry->caller[0], __entry->caller[1], __entry->caller[2],
+ 		 __entry->caller[3], __entry->caller[4], __entry->caller[5],
+ 		 __entry->caller[6], __entry->caller[7])
+@@ -181,8 +188,9 @@ FTRACE_ENTRY(user_stack, userstack_entry
+ 		__array(	unsigned long,	caller, FTRACE_STACK_ENTRIES	)
+ 	),
+ 
+-	F_printk("\t=> (%08lx)\n\t=> (%08lx)\n\t=> (%08lx)\n\t=> (%08lx)\n"
+-		 "\t=> (%08lx)\n\t=> (%08lx)\n\t=> (%08lx)\n\t=> (%08lx)\n",
++	F_printk("\t=> (" IP_FMT ")\n\t=> (" IP_FMT ")\n\t=> (" IP_FMT ")\n"
++		 "\t=> (" IP_FMT ")\n\t=> (" IP_FMT ")\n\t=> (" IP_FMT ")\n"
++		 "\t=> (" IP_FMT ")\n\t=> (" IP_FMT ")\n",
+ 		 __entry->caller[0], __entry->caller[1], __entry->caller[2],
+ 		 __entry->caller[3], __entry->caller[4], __entry->caller[5],
+ 		 __entry->caller[6], __entry->caller[7])
+--- a/kernel/trace/trace_export.c
++++ b/kernel/trace/trace_export.c
+@@ -150,7 +150,7 @@ ftrace_define_fields_##name(struct ftrac
+ #define __dynamic_array(type, item)
+ 
+ #undef F_printk
+-#define F_printk(fmt, args...) #fmt ", "  __stringify(args)
++#define F_printk(fmt, args...) __stringify(fmt) ", "  __stringify(args)
+ 
+ #undef FTRACE_ENTRY
+ #define FTRACE_ENTRY(call, struct_name, etype, tstruct, print)		\
 
 
