@@ -1,43 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964845Ab2DKX60 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Apr 2012 19:58:26 -0400
-Received: from shards.monkeyblade.net ([198.137.202.13]:59955 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933969Ab2DKX6W (ORCPT
+	id S933966Ab2DKXQx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Apr 2012 19:16:53 -0400
+Received: from mail-pz0-f52.google.com ([209.85.210.52]:63303 "EHLO
+	mail-pz0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933933Ab2DKXQp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Apr 2012 19:58:22 -0400
-Date: Wed, 11 Apr 2012 19:54:44 -0400 (EDT)
-Message-Id: <20120411.195444.540814653660043985.davem@davemloft.net>
-To: paul.gortmaker@windriver.com
-Cc: linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org,
-        torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        tony@bakeyournoodle.com, mmarek@suse.cz, lacombar@gmail.com
-Subject: Re: [PATCH 3/5] drivers/net: remove IS_ENABLED usage from wiznet
- drivers
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1334188257-3449-4-git-send-email-paul.gortmaker@windriver.com>
-References: <1334188257-3449-1-git-send-email-paul.gortmaker@windriver.com>
-	<1334188257-3449-4-git-send-email-paul.gortmaker@windriver.com>
-X-Mailer: Mew version 6.4 on Emacs 23.3 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Wed, 11 Apr 2012 16:54:49 -0700 (PDT)
+	Wed, 11 Apr 2012 19:16:45 -0400
+Message-Id: <20120411231027.518643416@linuxfoundation.org>
+User-Agent: quilt/0.60-19.1
+Date: Wed, 11 Apr 2012 16:11:12 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        alan@lxorguk.ukuu.org.uk, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Chris Ball <cjb@laptop.org>
+Subject: [ 54/78] mmc: sdio: Use empty system suspend/resume callbacks at the bus level
+In-Reply-To: <20120411231102.GA6404@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Paul Gortmaker <paul.gortmaker@windriver.com>
-Date: Wed, 11 Apr 2012 19:50:55 -0400
+3.3-stable review patch.  If anyone has any objections, please let me know.
 
-> The use of IS_ENABLED in C code (vs just in CPP #if directives)
-> causes us to carry the burden of a huge autoconf.h file.  It is
-> also misleading in that a casual inspection of the code would
-> leave one thinking that the if statements were evaluated at
-> runtime, when TX_FLOW is a Kconfig bool and hence evaluated
-> at configure time as an either/or.
-> 
-> Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
+------------------
 
-Want me to toss this into net-next?
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+
+commit e841a7c69b708eeaf784fd517978006e8319b03a upstream.
+
+Neil Brown reports that commit 35cd133c
+
+   PM: Run the driver callback directly if the subsystem one is not there
+
+breaks suspend for his libertas wifi, because SDIO has a protocol
+where the suspend method can return -ENOSYS and this means "There is
+no point in suspending, just turn me off".  Moreover, the suspend
+methods provided by SDIO drivers are not supposed to be called by
+the PM core or bus-level suspend routines (which aren't presend for
+SDIO).  Instead, when the SDIO core gets to suspend the device's
+ancestor, it calls the device driver's suspend function, catches the
+ENOSYS, and turns the device off.
+
+The commit above breaks the SDIO core's assumption that the device
+drivers' callbacks won't be executed if it doesn't provide any
+bus-level callbacks.  If fact, however, this assumption has never
+been really satisfied, because device class or device type suspend
+might very well use the driver's callback even without that commit.
+
+The simplest way to address this problem is to make the SDIO core
+tell the PM core to ignore driver callbacks, for example by providing
+no-operation suspend/resume callbacks at the bus level for it,
+which is implemented by this change.
+
+Reported-and-tested-by: Neil Brown <neilb@suse.de>
+Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
+Signed-off-by: Chris Ball <cjb@laptop.org>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ drivers/mmc/core/sdio_bus.c |   12 +++++++++---
+ 1 file changed, 9 insertions(+), 3 deletions(-)
+
+--- a/drivers/mmc/core/sdio_bus.c
++++ b/drivers/mmc/core/sdio_bus.c
+@@ -192,9 +192,15 @@ static int sdio_bus_remove(struct device
+ 	return ret;
+ }
+ 
+-#ifdef CONFIG_PM_RUNTIME
++#ifdef CONFIG_PM
++
++static int pm_no_operation(struct device *dev)
++{
++	return 0;
++}
+ 
+ static const struct dev_pm_ops sdio_bus_pm_ops = {
++	SET_SYSTEM_SLEEP_PM_OPS(pm_no_operation, pm_no_operation)
+ 	SET_RUNTIME_PM_OPS(
+ 		pm_generic_runtime_suspend,
+ 		pm_generic_runtime_resume,
+@@ -204,11 +210,11 @@ static const struct dev_pm_ops sdio_bus_
+ 
+ #define SDIO_PM_OPS_PTR	(&sdio_bus_pm_ops)
+ 
+-#else /* !CONFIG_PM_RUNTIME */
++#else /* !CONFIG_PM */
+ 
+ #define SDIO_PM_OPS_PTR	NULL
+ 
+-#endif /* !CONFIG_PM_RUNTIME */
++#endif /* !CONFIG_PM */
+ 
+ static struct bus_type sdio_bus_type = {
+ 	.name		= "sdio",
+
+
