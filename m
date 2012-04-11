@@ -1,60 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756215Ab2DKJVf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Apr 2012 05:21:35 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:8882 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756097Ab2DKJVd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Apr 2012 05:21:33 -0400
-From: Steven Whitehouse <swhiteho@redhat.com>
-To: linux-kernel@vger.kernel.org, cluster-devel@redhat.com
-Cc: Benjamin Poirier <bpoirier@suse.de>,
-        Steven Whitehouse <swhiteho@redhat.com>
-Subject: [PATCH 2/4] GFS2: use depends instead of select in kconfig
-Date: Wed, 11 Apr 2012 09:56:52 +0100
-Message-Id: <1334134614-19805-3-git-send-email-swhiteho@redhat.com>
-In-Reply-To: <1334134614-19805-1-git-send-email-swhiteho@redhat.com>
-References: <1334134614-19805-1-git-send-email-swhiteho@redhat.com>
+	id S1754328Ab2DKJZ4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Apr 2012 05:25:56 -0400
+Received: from www.linutronix.de ([62.245.132.108]:57697 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751756Ab2DKJZz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Apr 2012 05:25:55 -0400
+Date: Wed, 11 Apr 2012 11:25:52 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Frank Rowand <frank.rowand@am.sony.com>
+cc: LKML <linux-kernel@vger.kernel.org>,
+        linux-rt-users <linux-rt-users@vger.kernel.org>
+Subject: Re: [ANNOUNCE] 3.4-rc2-rt1
+In-Reply-To: <4F84C779.4080208@am.sony.com>
+Message-ID: <alpine.LFD.2.02.1204111124560.2542@ionos>
+References: <alpine.LFD.2.02.1204101642050.2542@ionos> <4F84C690.1010509@am.sony.com> <4F84C779.4080208@am.sony.com>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Benjamin Poirier <bpoirier@suse.de>
+On Tue, 10 Apr 2012, Frank Rowand wrote:
+> [    0.253845]        CPU0                    CPU1
+> [    0.253845]        ----                    ----
+> [    0.253845]   lock(wakeupgen_lock.lock.wait_lock);
 
-Avoids having to duplicate the dependencies of what is 'select'ed (and on
-down...)
+wakeupgen_lock wants to be raw. I'll fix it for -rt2
 
-Those dependencies are currently incomplete, leading to broken builds with
-GFS2_FS_LOCKING_DLM=y and IP_SCTP=n.
+Thanks,
 
-Signed-off-by: Benjamin Poirier <bpoirier@suse.de>
-Signed-off-by: Steven Whitehouse <swhiteho@redhat.com>
-
-diff --git a/fs/gfs2/Kconfig b/fs/gfs2/Kconfig
-index c465ae0..eb08c9e 100644
---- a/fs/gfs2/Kconfig
-+++ b/fs/gfs2/Kconfig
-@@ -1,10 +1,6 @@
- config GFS2_FS
- 	tristate "GFS2 file system support"
- 	depends on (64BIT || LBDAF)
--	select DLM if GFS2_FS_LOCKING_DLM
--	select CONFIGFS_FS if GFS2_FS_LOCKING_DLM
--	select SYSFS if GFS2_FS_LOCKING_DLM
--	select IP_SCTP if DLM_SCTP
- 	select FS_POSIX_ACL
- 	select CRC32
- 	select QUOTACTL
-@@ -29,7 +25,8 @@ config GFS2_FS
- 
- config GFS2_FS_LOCKING_DLM
- 	bool "GFS2 DLM locking"
--	depends on (GFS2_FS!=n) && NET && INET && (IPV6 || IPV6=n) && HOTPLUG
-+	depends on (GFS2_FS!=n) && NET && INET && (IPV6 || IPV6=n) && \
-+		HOTPLUG && DLM && CONFIGFS_FS && SYSFS
- 	help
- 	  Multiple node locking module for GFS2
- 
--- 
-1.7.4
-
+	tglx
