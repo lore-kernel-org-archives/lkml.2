@@ -1,68 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760858Ab2DKSRE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Apr 2012 14:17:04 -0400
-Received: from exchange.solarflare.com ([216.237.3.220]:51535 "EHLO
-	ocex02.SolarFlarecom.com" rhost-flags-OK-FAIL-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1755908Ab2DKSRB (ORCPT
+	id S1760870Ab2DKSRJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Apr 2012 14:17:09 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:39602 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755908Ab2DKSRG convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Apr 2012 14:17:01 -0400
-Message-ID: <1334168217.2552.5.camel@bwh-desktop.uk.solarflarecom.com>
-Subject: Re: [RFC PATCH 1/2] net: ethtool: Add capability to retrieve
- plug-in module EEPROM
-From: Ben Hutchings <bhutchings@solarflare.com>
-To: Stuart Hodgson <smhodgson@solarflare.com>
-CC: <netdev@vger.kernel.org>, <bruce.w.allan@intel.com>,
-        <mirq-linux@rere.qmqm.pl>, <decot@google.com>,
-        <amit.salecha@qlogic.com>, <alexander.h.duyck@intel.com>,
-        <davem@davemloft.net>, <linux-kernel@vger.kernel.org>
-Date: Wed, 11 Apr 2012 19:16:57 +0100
-In-Reply-To: <4F85B639.5090900@solarflare.com>
-References: <4F71FE0A.3060203@solarflare.com>
-	 <1333389160.2623.30.camel@bwh-desktop.uk.solarflarecom.com>
-	 <4F85B639.5090900@solarflare.com>
-Organization: Solarflare Communications
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 (3.2.3-1.fc16) 
-Content-Transfer-Encoding: 7bit
+	Wed, 11 Apr 2012 14:17:06 -0400
 MIME-Version: 1.0
-X-Originating-IP: [10.17.20.137]
-X-TM-AS-Product-Ver: SMEX-10.0.0.1412-6.800.1017-18830.005
-X-TM-AS-Result: No--15.154200-0.000000-31
-X-TM-AS-User-Approved-Sender: Yes
-X-TM-AS-User-Blocked-Sender: No
+In-Reply-To: <20120410150304.GJ4115@phenom.ffwll.local>
+References: <1333108003-6341-1-git-send-email-djkurtz@chromium.org>
+ <1333108003-6341-5-git-send-email-djkurtz@chromium.org> <20120410103746.GH4115@phenom.ffwll.local>
+ <20120410104147.GI4115@phenom.ffwll.local> <CAGS+omAjDPxs1qR-EwzKhjE9c5J26fZinv6+5RFz1RyAsfStmw@mail.gmail.com>
+ <20120410150304.GJ4115@phenom.ffwll.local>
+From: Daniel Kurtz <djkurtz@chromium.org>
+Date: Thu, 12 Apr 2012 02:16:45 +0800
+X-Google-Sender-Auth: 92BpItjyT30adXDCj5fVvSYQmUQ
+Message-ID: <CAGS+omD9dTTK4gRERy406nLFEMfqC=hw6ZFe3_V9yacSR2r9Sw@mail.gmail.com>
+Subject: Re: [PATCH 4/8 v7] drm/i915/intel_i2c: use WAIT cycle, not STOP
+To: Daniel Kurtz <djkurtz@chromium.org>, Keith Packard <keithp@keithp.com>,
+        David Airlie <airlied@linux.ie>, dri-devel@lists.freedesktop.org,
+        linux-kernel@vger.kernel.org, Chris Wilson <chris@chris-wilson.co.uk>,
+        Benson Leung <bleung@chromium.org>, Yufeng Shen <miletus@chromium.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-04-11 at 17:50 +0100, Stuart Hodgson wrote:
-> On 02/04/12 18:52, Ben Hutchings wrote:
-[...]
-> >> --- a/net/core/ethtool.c
-> >> +++ b/net/core/ethtool.c
-[...]
-> >> +    if (eeprom.offset + eeprom.len>  modinfo.eeprom_len)
-> >> +        return -EINVAL;
-> >> +
-> >> +    data = kmalloc(PAGE_SIZE, GFP_USER);
-> >> +    if (!data)
-> >> +        return -ENOMEM;
-> >
-> > What if some device has a larger EEPROM?  Surely this length should be
-> > eeprom.len.
-> >
-> 
-> Do you mean what if the eeprom length in te device is larger than
-> PAGE_SIZE?
+On Tue, Apr 10, 2012 at 11:03 PM, Daniel Vetter <daniel@ffwll.ch> wrote:
+> On Tue, Apr 10, 2012 at 06:56:15PM +0800, Daniel Kurtz wrote:
+>> On Tue, Apr 10, 2012 at 6:41 PM, Daniel Vetter <daniel@ffwll.ch> wrote:
+>> > On Tue, Apr 10, 2012 at 12:37:46PM +0200, Daniel Vetter wrote:
+>> >> On Fri, Mar 30, 2012 at 07:46:39PM +0800, Daniel Kurtz wrote:
+>> >> > The i915 is only able to generate a STOP cycle (i.e. finalize an i2c
+>> >> > transaction) during a DATA or WAIT phase.  In other words, the
+>> >> > controller rejects a STOP requested as part of the first transaction in a
+>> >> > sequence.
+>> >> >
+>> >> > Thus, for the first transaction we must always use a WAIT cycle, detect
+>> >> > when the device has finished (and is in a WAIT phase), and then either
+>> >> > start the next transaction, or, if there are no more transactions,
+>> >> > generate a STOP cycle.
+>> >> >
+>> >> > Note: Theoretically, the last transaction of a multi-transaction sequence
+>> >> > could initiate a STOP cycle.  However, this slight optimization is left
+>> >> > for another patch.  We return -ETIMEDOUT if the hardware doesn't
+>> >> > deactivate after the STOP cycle.
+>> >> >
+>> >> > Signed-off-by: Daniel Kurtz <djkurtz@chromium.org>
+>> >>
+>> >> I've re-read gmbus register spec and STOP seems to be allowed even in the
+>> >> first cycle. Does this patch solve an issue for you? If not, I prefer we
+>> >> just drop it.
+>>
+>> STOP does not work in the first cycle, hence the patch.
+>
+> Ok, I've picked this patch up and extended the comment a bit to that
+> effect. Just to avoid anyone else trying to 'fix' things because bspec
+> sounds like it should work.
+>
+> I've also picked up the other patches safe for the last one, thanks a lot
+> for digging through the gmbus code and fixing it all up.
+>
+> Now can I volunteer you for a (hopefully) last set of gmbus patches?
+> Afaics there are a few small things left to fix:
+> - zero-length reads can blow up the kernel, like zero-length writes could.
+>  See: https://bugs.freedesktop.org/show_bug.cgi?id=48269
 
-Yes.
+Got it.  Will Fix.
 
-> If so then it should really use modinfo.eeprom_len since
-> this the size of the data. eeprom.len could be arbitary.
+> - Chris Wilson suggested on irc that we should wait for HW_READY even for
+>  zero-length writes (and also reads), currently we don't.
 
-No, eeprom.len is the size of the data and we've already validated it at
-this point.
+I don't think so.  We just need to wait for (GMBUS_SATOER |
+GMBUS_HW_WAIT_PHASE).
+Why would we wait for HW_READY, too?
 
-Ben.
+> - atm the debug output is too noisy. I think we can leave the fallback to
+>  gpio bitbanging at info (or maybe error) level, but all the other
+>  messages should be tuned down to DRM_DEBUG_KMS - these can easily be hit
+>  when userspace tries to probe the i2c with nothing connected or if the
+>  driver code tries to do the same. See:
+>  https://bugs.freedesktop.org/show_bug.cgi?id=48248
 
+OK...  we can change the logging level.
+However, the log in the bug to which you link seems to indicate a more
+serious issue in this case.  It says to me that something on his
+system is trying to talk to the disabled dpc i2c port 5 times every 10
+seconds.  Each time it fails due with a time out, and each timeout
+takes 50ms.  I would argue that the INFO message here is pointing out
+that the hotplug code might want to check the corresponding
+PORT_ENABLED bit before attempting a read over a particular DP/HDMI
+gmbus port.  Perhaps I am mistaken, but if there was really nothing on
+the bus, shouldn't that be a NAK, not a timeout?
 
+>
+> Chris, anything you want to add to the wishlist?
+>
+> Thanks, Daniel
+> --
+> Daniel Vetter
+> Mail: daniel@ffwll.ch
+> Mobile: +41 (0)79 365 57 48
