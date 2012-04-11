@@ -1,88 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932247Ab2DKNzh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Apr 2012 09:55:37 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:50515 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751508Ab2DKNzg (ORCPT
+	id S1760290Ab2DKODI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Apr 2012 10:03:08 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:36532 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760158Ab2DKODG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Apr 2012 09:55:36 -0400
-Message-ID: <4F858D53.5020402@gmail.com>
-Date: Wed, 11 Apr 2012 15:55:31 +0200
-From: Juri Lelli <juri.lelli@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120329 Thunderbird/11.0.1
+	Wed, 11 Apr 2012 10:03:06 -0400
+Date: Wed, 11 Apr 2012 07:03:01 -0700
+From: "'Greg KH'" <gregkh@linuxfoundation.org>
+To: Donald <donald@asix.com.tw>
+Cc: "'open list:USB SUBSYSTEM'" <linux-usb@vger.kernel.org>,
+        "'open list'" <linux-kernel@vger.kernel.org>
+Subject: Re: Patch "USB: serial: mos7840: Supported MCS7810 device"
+Message-ID: <20120411140301.GA18787@kroah.com>
+References: <009c01cd00ee$924eb2e0$b6ec18a0$@com.tw>
+ <20120313160951.GA18810@kroah.com>
+ <005a01cd0db0$8ec89e50$ac59daf0$@com.tw>
+ <20120329151343.GA32474@kroah.com>
+ <006401cd17c6$157ba2c0$4072e840$@com.tw>
 MIME-Version: 1.0
-To: Steven Rostedt <rostedt@goodmis.org>
-CC: peterz@infradead.org, tglx@linutronix.de, mingo@redhat.com,
-        cfriesen@nortel.com, oleg@redhat.com, fweisbec@gmail.com,
-        darren@dvhart.com, johan.eker@ericsson.com, p.faure@akatech.ch,
-        linux-kernel@vger.kernel.org, claudio@evidence.eu.com,
-        michael@amarulasolutions.com, fchecconi@gmail.com,
-        tommaso.cucinotta@sssup.it, nicola.manica@disi.unitn.it,
-        luca.abeni@unitn.it, dhaval.giani@gmail.com, hgu1972@gmail.com,
-        paulmck@linux.vnet.ibm.com, raistlin@linux.it, insop.song@ericsson.com,
-        liming.wang@windriver.com
-Subject: Re: [PATCH 05/16] sched: SCHED_DEADLINE policy implementation.
-References: <1333696481-3433-1-git-send-email-juri.lelli@gmail.com>  <1333696481-3433-6-git-send-email-juri.lelli@gmail.com> <1334151662.23924.240.camel@gandalf.stny.rr.com>
-In-Reply-To: <1334151662.23924.240.camel@gandalf.stny.rr.com>
-Content-Type: text/plain; charset=ISO-8859-15; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <006401cd17c6$157ba2c0$4072e840$@com.tw>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/11/2012 03:41 PM, Steven Rostedt wrote:
-> On Fri, 2012-04-06 at 09:14 +0200, Juri Lelli wrote:
->
->> +static void replenish_dl_entity(struct sched_dl_entity *dl_se)
->> +{
->> +	struct dl_rq *dl_rq = dl_rq_of_se(dl_se);
->> +	struct rq *rq = rq_of_dl_rq(dl_rq);
->> +
->> +	/*
->> +	 * We Keep moving the deadline away until we get some
->
-> s/Keep/keep/
->
->> +	 * available runtime for the entity. This ensures correct
->> +	 * handling of situations where the runtime overrun is
->> +	 * arbitrary large.
->> +	 */
->> +	while (dl_se->runtime<= 0) {
->> +		dl_se->deadline += dl_se->dl_deadline;
->> +		dl_se->runtime += dl_se->dl_runtime;
->> +	}
->> +
->> +	/*
->> +	 * At this point, the deadline really should be "in
->> +	 * the future" with respect to rq->clock. If it's
->> +	 * not, we are, for some reason, lagging too much!
->> +	 * Anyway, after having warn userspace abut that,
->> +	 * we still try to keep the things running by
->> +	 * resetting the deadline and the budget of the
->> +	 * entity.
->> +	 */
->> +	if (dl_time_before(dl_se->deadline, rq->clock)) {
->> +		WARN_ON_ONCE(1);
->> +		dl_se->deadline = rq->clock + dl_se->dl_deadline;
->> +		dl_se->runtime = dl_se->dl_runtime;
->> +	}
->> +}
->> +
->
-> I just finished reviewing patches 1-5, and have yet to find anything
-> wrong with them (except for these typos). I'll continue my review, and
-> then I'll start testing them.
->
-> Good work (so far ;-)
->
-> -- Steve
->
->
+On Wed, Apr 11, 2012 at 05:32:53PM +0800, Donald wrote:
+> Hi Greg,
+> 
+> I am re-submitting this patch that supports MCS7810 device for the mos7840
+> driver. This patch was created against 3.4-rc1 and has been verified on
+> 3.4-rc1 also. If you see any problem regarding this patch, please let me
+> know at any time. Thank you for your help.
 
-Well, I tried my best to not spoil to much the work made by
-Dario & Co. :-).
+The patch is line-wrapped and can not be applied :(
 
-Anyway, thanks!
+Care to fix your email client (read the file
+Documentation/email_clients.txt for some hints) and try it again?
 
-- Juri
+thanks,
+
+greg k-h
