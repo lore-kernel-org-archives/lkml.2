@@ -1,216 +1,200 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965215Ab2DLXQ0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Apr 2012 19:16:26 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:1029 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757330Ab2DLXQY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Apr 2012 19:16:24 -0400
-Date: Fri, 13 Apr 2012 01:15:20 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: David Howells <dhowells@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Alexander Gordeev <agordeev@redhat.com>,
-        Chris Zankel <chris@zankel.net>, David Smith <dsmith@redhat.com>,
-        "Frank Ch. Eigler" <fche@redhat.com>,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        Larry Woodman <lwoodman@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>, Tejun Heo <tj@kernel.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v3 1/3] task_work_queue: add generic process-context
-	callbacks
-Message-ID: <20120412231520.GA1656@redhat.com>
-References: <20120412211146.GA30448@redhat.com> <20120412211208.GA30456@redhat.com> <20120412152246.2eb4211b.akpm@linux-foundation.org>
+	id S934981Ab2DLXXS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Apr 2012 19:23:18 -0400
+Received: from usmamail.tilera.com ([206.83.70.75]:6974 "EHLO
+	USMAMAIL.TILERA.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934959Ab2DLXXQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Apr 2012 19:23:16 -0400
+Message-ID: <4F8763E1.1020605@tilera.com>
+Date: Thu, 12 Apr 2012 19:23:13 -0400
+From: Chris Metcalf <cmetcalf@tilera.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:11.0) Gecko/20120327 Thunderbird/11.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120412152246.2eb4211b.akpm@linux-foundation.org>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: Arnd Bergmann <arnd@arndb.de>
+CC: <linux-kernel@vger.kernel.org>, <netdev@vger.kernel.org>
+Subject: Re: [PATCH 6/6] tilegx network driver: initial support
+References: <201204062059.q36KxjEO011317@farm-0027.internal.tilera.com> <201204091349.54484.arnd@arndb.de> <4F835510.4060100@tilera.com> <201204101042.39877.arnd@arndb.de>
+In-Reply-To: <201204101042.39877.arnd@arndb.de>
+X-Enigmail-Version: 1.4
+Content-Type: text/plain; charset="ISO-8859-15"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/12, Andrew Morton wrote:
->
-> <pays some attention this time>
+On 4/10/2012 6:42 AM, Arnd Bergmann wrote:
+> On Monday 09 April 2012, Chris Metcalf wrote:
+>> On 4/9/2012 9:49 AM, Arnd Bergmann wrote:
+>>> On Friday 06 April 2012, Chris Metcalf wrote:
+>>>> This change adds support for the tilegx network driver based on the
+>>>> GXIO IORPC support in the tilegx software stack, using the on-chip
+>>>> mPIPE packet processing engine.
+>>>>
+>>>> Signed-off-by: Chris Metcalf <cmetcalf@tilera.com>
+>>>> ---
+>>>>  drivers/net/ethernet/tile/Kconfig  |    1 +
+>>>>  drivers/net/ethernet/tile/Makefile |    4 +-
+>>>>  drivers/net/ethernet/tile/tilegx.c | 2045 ++++++++++++++++++++++++++++++++++++
+>>>>  3 files changed, 2048 insertions(+), 2 deletions(-)
+>>>>  create mode 100644 drivers/net/ethernet/tile/tilegx.c
+>>>
+>> The actual author would rather not publish his name (I just double-checked
+>> with him). 
+> Hmm, it doesn't look all that bad actually, the comments I had are just for
+> small details.
 
-Thanks!
+FWIW, the author's preference doesn't have to do with the code quality, but
+for his own reasons.
 
-> On Thu, 12 Apr 2012 23:12:08 +0200
-> Oleg Nesterov <oleg@redhat.com> wrote:
->
-> > Provide a simple mechanism that allows running code in the
-> > (nonatomic) context of the arbitrary task.
-> >
-> > The caller does task_work_queue(task, task_work) and this task
-> > executes task_work->func() either from do_notify_resume() or
-> > from do_exit(). The callback can rely on PF_EXITING to detect
-> > the latter case.
-> >
-> > "struct task_work" can be embedded in another struct, still it
-> > has "void *data" to handle the most common/simple case.
->
-> So if the task-work was kmalloced, it is the callback function's
-> responsibility to kfree it?
-
-Yes,
-
-> task_work_run() appears to handle that OK,
-> without any use-after-free.
-
-I hope ;)
-
-> > This allows us to kill the ->replacement_session_keyring hack,
-> > and potentially this can have more users.
->
-> I'm not seeing anything in the changelogs which explains what was wrong
-> with ->replacement_session_keyring, so the motivation for this patchset
-> eludes me.
-
-->replacement_session_keyring in fact implements the notifier too,
-just it is very limited. task_work simply tries to generalize and
-cleanup the logic we already have. And at the same cost.
-
-Besides, the current code is racy. And it is not convenient to fix
-all users in arch/.
-
-> The immediate reaction is "what's wrong with include/linux/notifier.h".
-> Presumably this has been discussed on some mailing list somewhere ;)
-
-Ah, please no. Imho we do not want _notifier_head in task_struct,
-plus I'd certainly like to avoid the new locks in
-do_exit()->exit_task_work() path.
-
-> I was wondering if taskstats_exit() could use this.
-
-Unlikely, I think. taskstats is "global", every task should report
-if there are listeners.
-
-> But the call
-> happens from the wrong place.  And therein lies a problem with the
-> proposal: the callback site will be in the wrong place for many
-> potential users.  I suspect this new code won't be as useful as we hope
-> - perhaps we should stick with the current scheme of open-coded callouts
-> to subsystem-specific sites from within do_exit().
-
-May be we can add more task_work_run's later, but right now I do
-not think this is needed. And I do not expect it will find a lot
-of new users.
-
-> > --- a/include/linux/tracehook.h
-> > +++ b/include/linux/tracehook.h
-> > @@ -46,7 +46,7 @@
-> >  #ifndef _LINUX_TRACEHOOK_H
-> >  #define _LINUX_TRACEHOOK_H	1
-> >
-> > -#include <linux/sched.h>
-> > +#include <linux/task_work.h>
->
-> ick.  So tracehook.h gains a secret dependency upon task_work.h
-> including sched.h.
-
-Hmm. I thought that it is alway fine to remove the unnecessary include.
-I can put it back, but we are going to kill tracehook.h altogether.
-
-> > --- /dev/null
-> > +++ b/kernel/task_work.c
-> > @@ -0,0 +1,81 @@
-> > +#include <linux/tracehook.h>
->
-> This file also doesn't come close to including the headers which it
-> requires.  This practice is fragile and frequently results in sad
-> little patches months later.  Often to fix the alpha build, for unknown
-> reasons.
-
-OK, I'll add "include linix/task_work.h".
-
-> > +int
-> > +task_work_queue(struct task_struct *task, struct task_work *twork, bool notify)
->
-> hm, I see.  The "queue" in "task_work_queue" is "the action of
-> queueing", not "a queue".  Noun-vs-verb.
-
-Cough. Peter, do you read this? I stole the naming and the first
-line of the changelog from kernel/irq_work.c!
-
-> Perhaps task_work_add() would
-> be clearer.
-
-OK, I'll rename.
-
-> > +	unsigned long flags;
-> > +	int err = -ESRCH;
-> > +
-> > +#ifndef TIF_NOTIFY_RESUME
-> > +	if (notify)
-> > +		return -ENOTSUPP;
-> > +#endif
-> > +	/*
-> > +	 * We must not insert the new work if the task has already passed
-> > +	 * exit_task_work(). We rely on do_exit()->raw_spin_unlock_wait()
-> > +	 * and check PF_EXITING under pi_lock.
-> > +	 */
-> > +	raw_spin_lock_irqsave(&task->pi_lock, flags);
->
-> It's unobvious (to this little reader) why the code uses raw_ locking.
-> The raw_spin_unlock_wait() thing prevents us from using
-> spin_lock_irqsave()?  Add a nice comment?
-
-Well, but ->pi_lock is raw_spinlock_t ?
-
-> > +struct task_work *
-> > +task_work_cancel(struct task_struct *task, task_work_func_t func)
-> > +{
-> > +	unsigned long flags;
-> > +	struct task_work *twork;
-> > +	struct hlist_node *pos;
-> > +
-> > +	raw_spin_lock_irqsave(&task->pi_lock, flags);
-> > +	hlist_for_each_entry(twork, pos, &task->task_works, hlist) {
-> > +		if (twork->func == func) {
-> > +			hlist_del(&twork->hlist);
-> > +			goto found;
-> > +		}
-> > +	}
->
-> I trust we won't be giving userspace a way of controlling the queue
-> length!
-
-Exactly. From 2/3:
-
-	Note that we do task_work_cancel() before task_work_queue() to
-	ensure that only one work can be pending at any time. This is
-	important, we must not allow user-space to abuse the parent's
-	->task_works list.
+>>>> +/* The actual devices. */
+>>>> +static struct net_device *tile_net_devs[TILE_NET_DEVS];
+>>>> +
+>>>> +/* The device for a given channel.  HACK: We use "32", not
+>>>> + * TILE_NET_CHANNELS, because it is fairly subtle that the 5 bit
+>>>> + * "idesc.channel" field never exceeds TILE_NET_CHANNELS.
+>>>> + */
+>>>> +static struct net_device *tile_net_devs_for_channel[32];
+>>> When you need to keep a list or array of device structures in a driver, you're
+>>> usually doing something very wrong. The convention is to just pass the pointer
+>>> around to where you need it.
+>> We need "tile_net_devs_for_channel" because we share a single hardware
+>> queue for all devices, and each packet's metadata contains a "channel"
+>> value which indicates the device.
+>  
+> Ok, but please remove tile_net_devs then.
+> I think a better abstraction for tile_net_devs_for_channel would be
+> some interface that lets you add private data to a channel so when
+> you get data from a channel, you can extract that pointer from the driver
+> using the channel.
 
 
-> > +void task_work_run(struct task_struct *task)
-> > +{
-> > +	struct hlist_head task_works;
-> > +	struct hlist_node *pos;
-> > +
-> > +	raw_spin_lock_irq(&task->pi_lock);
-> > +	hlist_move_list(&task->task_works, &task_works);
-> > +	raw_spin_unlock_irq(&task->pi_lock);
-> > +
-> > +	if (unlikely(hlist_empty(&task_works)))
-> > +		return;
-> > +	/*
-> > +	 * We use hlist to save the space in task_struct, but we want fifo.
->
-> hm.  How does the reader of this code work out why the author wanted fifo?
-> Perhaps because keyctl_session_to_parent() or exit_irq_thread() needed this.
+I think what would be clearer is to document how and why we are using this
+additional data structure.  We do access via both arrays where it is
+efficient to do so, so getting rid of either of them doesn't seem right. 
+Let's keep the "normal" tile_net_devs[] as is, indexed by devno, and make
+the tile_net_devs_for_channel[] more abstracted by using the following code:
 
-Argh.
+/*
+ * Provide support for efficiently mapping a channel to the device
+ * that is using that channel, or NULL if none.  The pointers in this
+ * array are only non-NULL when pointing to active tilegx net_device
+ * structures, and they are cleared before the struture itself is
+ * released.
+ *
+ * HACK: We use "32", not TILE_NET_CHANNELS, because it is fairly
+ * subtle that the 5 bit "idesc.channel" field never exceeds
+ * TILE_NET_CHANNELS.
+ */
+static struct net_device *channel_to_dev[32];
 
-No, keyctl_session_to_parent() and exit_irq_thread() do not care,
-they can't add more than one work.
+static void bychannel_add(struct net_device *dev)
+{
+	struct tile_net_priv *priv = netdev_priv(dev);
+	BUG_ON(channel_to_dev[priv->channel] != NULL);
+	channel_to_dev[priv->channel] = dev;
+}
 
-Just I think that fifo makes more sense in general. Just for example,
-suppose that keyctl_session_to_parent() didn't cancel the pending
-request(s). In this case fifo would be needed for correctness.
+static void bychannel_delete(struct net_device *dev)
+{
+	struct tile_net_priv *priv = netdev_priv(dev);
+	channel_to_dev[priv->channel] = NULL;
+}
 
-Oleg.
+static inline struct net_device *bychannel_lookup(int channel)
+{
+	return channel_to_dev[channel];
+}
+
+
+We then call bychannel_add() in the open method, and bychannel_delete() in
+the close method, so it's clear that the pointers have appropriate lifetimes.
+
+> Don't you already have a per-channel data structure?
+
+Nope.
+
+>> /*
+>>  * The on-chip I/O hardware on tilegx is configured with VA=PA for the
+>>  * kernel's PA range.  The low-level APIs and field names use "va" and
+>>  * "void *" nomenclature, to be consistent with the general notion
+>>  * that the addresses in question are virtualizable, but in the kernel
+>>  * context we are actually manipulating PA values.  To allow readers
+>>  * of the code to understand what's happening, we direct their
+>>  * attention to this comment by using the following two no-op functions.
+>>  */
+>> static inline unsigned long pa_to_tile_io_addr(phys_addr_t pa)
+>> {
+>>         BUILD_BUG_ON(sizeof(phys_addr_t) != sizeof(unsigned long));
+>>         return pa;
+>> }
+>> static inline phys_addr_t tile_io_addr_to_pa(unsigned long tile_io_addr)
+>> {
+>>         return tile_io_addr;
+>> }
+>>
+>> Then the individual uses in the network driver are just things like
+>> "edesc_head.va = pa_to_tile_io_addr(__pa(va))" or "va =
+>> __va(tile_io_addr_to_pa((unsigned long)gxio_mpipe_idesc_get_va(idesc)))"
+>> which I think is a little clearer.
+> Yes, although I would probably add a typedef for tile_io_addr and pass
+> the virtual address in and out these helper functions.
+
+Good ideas, done.
+
+> For added clarity, you could make the interface look like dma_map_single(),
+> which requires adding an empty unmap() function as well -- that would
+> make it obvious where that data is actually used. Why do you require
+> the reverse map anyway? Normally you only need to pass a bus address to
+> the device but don't need to translate that back into a virtual address
+> because you already had that in the beginning.
+
+We need the reverse map since the hardware hands us an "idesc" which has
+just the tile_io_addr value in it, so we need to map it back to a va to
+deal with it.
+
+I don't think the map/unmap abstraction is too helpful here, since we're
+assuming that memory is all fully-mapped, as it always is on GX.
+
+>>>> +		/* Compute the "ip checksum". */
+>>>> +		jsum = isum_hack + htons(s_len - eh_len) + htons(id);
+>>>> +		jsum = __insn_v2sadu(jsum, 0);
+>>>> +		jsum = __insn_v2sadu(jsum, 0);
+>>>> +		jsum = (0xFFFF ^ jsum);
+>>>> +		jh->check = jsum;
+>>>> +
+>>>> +		/* Update the tcp "seq". */
+>>>> +		uh->seq = htonl(seq);
+>>>> +
+>>>> +		/* Update some flags. */
+>>>> +		if (!final)
+>>>> +			uh->fin = uh->psh = 0;
+>>>> +
+>>>> +		/* Compute the tcp pseudo-header checksum. */
+>>>> +		usum = tsum_hack + htons(s_len);
+>>>> +		usum = __insn_v2sadu(usum, 0);
+>>>> +		usum = __insn_v2sadu(usum, 0);
+>>>> +		uh->check = usum;
+>>> Why to you open-code the ip checksum functions here? Normally the stack takes
+>>> care of this by calling the functions you already provide in
+>>> arch/tile/lib/checksum.c
+>> If there is a way to do TSO without this, we'd be happy to hear it, but
+>> it's not clear how it would be possible.  We are only computing a PARTIAL
+>> checksum here, and letting the hardware compute the "full" checksum.
+> Sounds like you're looking for csum_partial() ;-)
+
+Well, that's a pretty heavy-weight operation on memory.  Here we're just
+updating from a few values held in registers, more or less.  csum_partial()
+didn't seem like a good fit.  What I've done is move the longto16() routine
+from checksum.c to <asm/checksum.h> and rename it csum_long(), then use it
+like this, e.g. for the "usum" block above:
+
+		/* Compute the tcp pseudo-header checksum. */
+		uh->check = csum_long(tsum_hack + htons(s_len));
+
+
+-- 
+Chris Metcalf, Tilera Corp.
+http://www.tilera.com
 
