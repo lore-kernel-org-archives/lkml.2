@@ -1,51 +1,143 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933456Ab2DLBIV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Apr 2012 21:08:21 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:45756 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932409Ab2DLBIT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Apr 2012 21:08:19 -0400
-Date: Thu, 12 Apr 2012 02:08:04 +0100
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Kay Sievers <kay@vrfy.org>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, "Ted Ts'o" <tytso@mit.edu>,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Konstantin Khlebnikov <khlebnikov@openvz.org>,
-        Greg Kroah-Hartman <gregkh@linux-foundation.org>,
-        Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
-Subject: Re: RFC: deprecating/removing the legacy mode of devpts
-Message-ID: <20120412010804.GI6589@ZenIV.linux.org.uk>
-References: <4F80892A.7050104@zytor.com>
- <20120407202056.472d8ad9@pyramind.ukuu.org.uk>
- <da8cd76d-6116-44a9-a7b3-7a501cb3a8a9@email.android.com>
- <20120407212705.GD11295@thunk.org>
- <4F80B9AC.2010103@zytor.com>
- <CAPXgP12Zp7aHev8Sh=3W0zHA-vZoR9TpTW8c7ep9vTQQQScBPg@mail.gmail.com>
- <4F81D254.9090000@zytor.com>
- <CAPXgP10-_kS7VtdWonBhOxKJD2KatB9SznZ_xUUaxBz7-boT2A@mail.gmail.com>
+	id S933554Ab2DLBI0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Apr 2012 21:08:26 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:55525 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932409Ab2DLBIX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Apr 2012 21:08:23 -0400
+From: Mike Turquette <mturquette@linaro.org>
+To: <arnd.bergmann@linaro.org>
+CC: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <linaro-dev@lists.linaro.org>, <patches@linaro.org>,
+        Shawn Guo <shawn.guo@linaro.org>,
+        Mike Turquette <mturquette@linaro.org>,
+        Olof Johansson <olof@lixom.net>, Russell King <linux@arm.linux.org.uk>,
+        Sascha Hauer <s.hauer@pengutronix.de>,
+        Richard Zhao <richard.zhao@linaro.org>,
+        Saravana Kannan <skannan@codeaurora.org>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Andrew Lunn <andrew@lunn.ch>, Rajendra Nayak <rnayak@ti.com>,
+        Viresh Kumar <viresh.kumar@st.com>
+Subject: [PATCH 08/13] clk: declare clk_ops of basic clks in clk-provider.h
+Date: Wed, 11 Apr 2012 18:02:46 -0700
+Message-ID: <1334192572-12499-9-git-send-email-mturquette@linaro.org>
+X-Mailer: git-send-email 1.7.5.4
+In-Reply-To: <1334192572-12499-1-git-send-email-mturquette@linaro.org>
+References: <1334192572-12499-1-git-send-email-mturquette@linaro.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAPXgP10-_kS7VtdWonBhOxKJD2KatB9SznZ_xUUaxBz7-boT2A@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Apr 08, 2012 at 09:16:22PM +0200, Kay Sievers wrote:
+From: Shawn Guo <shawn.guo@linaro.org>
 
-> I guess the following:
->   - remove the 'ptmx' cdev from drivers/tty/pty.c
->   - add a new devtmpfs_create_link() to drivers/base/devtmpfs.c
->   - call devtmpfs_create_link() from _init in fs/devpts/inode.c
->   - change the default of ptxmode=0 to a sane default = 0666
->   - get rid of the (rather broken) idea of 'legacy' vs 'non-legacy mode'
->     mount options in the default setup; I don't think userspace should
->     ever be required to fiddle with such stuff
+Besides the static initialization, the clk_ops of basic clks could
+also be used by particular clk type being subclass of the basic clks.
 
-You do realize that there are people with _static_ /dev out there, don't
-you?  As well as those of us who are not using your latest and greatest
-udev and not enabling devtmpfs at all.  Not all world is Fedora...
+For example, clk_busy_divider has the same clk_ops as clk_divider,
+except it has to wait for a busy bit before return success with
+.set_rate.  clk_busy_divider will somehow reuse clk_ops of clk_divider.
+
+Since clk-provider.h is included by clk-private.h, it's safe to move
+those clk_ops declaration of basic clks form  clk-private.h into
+clk-provider.h, so that implementation of clks like clk_busy_divider
+above do not need to include clk-private.h to access those clk_ops.
+
+Signed-off-by: Shawn Guo <shawn.guo@linaro.org>
+Signed-off-by: Mike Turquette <mturquette@linaro.org>
+Cc: Arnd Bergman <arnd.bergmann@linaro.org>
+Cc: Olof Johansson <olof@lixom.net>
+Cc: Russell King <linux@arm.linux.org.uk>
+Cc: Sascha Hauer <s.hauer@pengutronix.de>
+Cc: Richard Zhao <richard.zhao@linaro.org>
+Cc: Saravana Kannan <skannan@codeaurora.org>
+Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: Andrew Lunn <andrew@lunn.ch>
+Cc: Rajendra Nayak <rnayak@ti.com>
+Cc: Viresh Kumar <viresh.kumar@st.com>
+---
+ include/linux/clk-private.h  |    8 --------
+ include/linux/clk-provider.h |    4 ++++
+ 2 files changed, 4 insertions(+), 8 deletions(-)
+
+diff --git a/include/linux/clk-private.h b/include/linux/clk-private.h
+index 5f4ccd7..f19fee0 100644
+--- a/include/linux/clk-private.h
++++ b/include/linux/clk-private.h
+@@ -55,8 +55,6 @@ struct clk {
+  * alternative macro for static initialization
+  */
+ 
+-extern const struct clk_ops clk_fixed_rate_ops;
+-
+ #define DEFINE_CLK_FIXED_RATE(_name, _flags, _rate,		\
+ 				_fixed_rate_flags)		\
+ 	static struct clk _name;				\
+@@ -78,8 +76,6 @@ extern const struct clk_ops clk_fixed_rate_ops;
+ 		.flags = _flags,				\
+ 	};
+ 
+-extern const struct clk_ops clk_gate_ops;
+-
+ #define DEFINE_CLK_GATE(_name, _parent_name, _parent_ptr,	\
+ 				_flags, _reg, _bit_idx,		\
+ 				_gate_flags, _lock)		\
+@@ -110,8 +106,6 @@ extern const struct clk_ops clk_gate_ops;
+ 		.flags = _flags,				\
+ 	};
+ 
+-extern const struct clk_ops clk_divider_ops;
+-
+ #define DEFINE_CLK_DIVIDER(_name, _parent_name, _parent_ptr,	\
+ 				_flags, _reg, _shift, _width,	\
+ 				_divider_flags, _lock)		\
+@@ -143,8 +137,6 @@ extern const struct clk_ops clk_divider_ops;
+ 		.flags = _flags,				\
+ 	};
+ 
+-extern const struct clk_ops clk_mux_ops;
+-
+ #define DEFINE_CLK_MUX(_name, _parent_names, _parents, _flags,	\
+ 				_reg, _shift, _width,		\
+ 				_mux_flags, _lock)		\
+diff --git a/include/linux/clk-provider.h b/include/linux/clk-provider.h
+index 5508897..6eb8e5d 100644
+--- a/include/linux/clk-provider.h
++++ b/include/linux/clk-provider.h
+@@ -149,6 +149,7 @@ struct clk_fixed_rate {
+ 	u8		flags;
+ };
+ 
++extern const struct clk_ops clk_fixed_rate_ops;
+ struct clk *clk_register_fixed_rate(struct device *dev, const char *name,
+ 		const char *parent_name, unsigned long flags,
+ 		unsigned long fixed_rate);
+@@ -180,6 +181,7 @@ struct clk_gate {
+ 
+ #define CLK_GATE_SET_TO_DISABLE		BIT(0)
+ 
++extern const struct clk_ops clk_gate_ops;
+ struct clk *clk_register_gate(struct device *dev, const char *name,
+ 		const char *parent_name, unsigned long flags,
+ 		void __iomem *reg, u8 bit_idx,
+@@ -218,6 +220,7 @@ struct clk_divider {
+ #define CLK_DIVIDER_ONE_BASED		BIT(0)
+ #define CLK_DIVIDER_POWER_OF_TWO	BIT(1)
+ 
++extern const struct clk_ops clk_divider_ops;
+ struct clk *clk_register_divider(struct device *dev, const char *name,
+ 		const char *parent_name, unsigned long flags,
+ 		void __iomem *reg, u8 shift, u8 width,
+@@ -252,6 +255,7 @@ struct clk_mux {
+ #define CLK_MUX_INDEX_ONE		BIT(0)
+ #define CLK_MUX_INDEX_BIT		BIT(1)
+ 
++extern const struct clk_ops clk_mux_ops;
+ struct clk *clk_register_mux(struct device *dev, const char *name,
+ 		char **parent_names, u8 num_parents, unsigned long flags,
+ 		void __iomem *reg, u8 shift, u8 width,
+-- 
+1.7.5.4
+
