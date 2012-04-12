@@ -1,172 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934735Ab2DLVPP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Apr 2012 17:15:15 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:57875 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756939Ab2DLVOl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Apr 2012 17:14:41 -0400
-From: David Daney <ddaney.cavm@gmail.com>
-To: Grant Likely <grant.likely@secretlab.ca>,
-        devicetree-discuss@lists.ozlabs.org,
-        "Jean Delvare (PC drivers core)" <khali@linux-fr.org>,
-        "Ben Dooks (embedded platforms)" <ben-linux@fluff.org>,
-        "Wolfram Sang (embedded platforms)" <w.sang@pengutronix.de>,
-        Peter Korsgaard <peter.korsgaard@barco.com>,
-        Guenter Roeck <guenter.roeck@ericsson.com>, linux-i2c@vger.kernel.org,
-        Rob Herring <rob.herring@calxeda.com>
-Cc: linux-kernel@vger.kernel.org, David Daney <david.daney@cavium.com>,
-        Lars-Peter Clausen <lars@metafoo.de>
-Subject: [PATCH v3 2/2] i2c/of: Automatically populate i2c mux busses from device tree data.
-Date: Thu, 12 Apr 2012 14:14:23 -0700
-Message-Id: <1334265263-13549-3-git-send-email-ddaney.cavm@gmail.com>
-X-Mailer: git-send-email 1.7.2.3
-In-Reply-To: <1334265263-13549-1-git-send-email-ddaney.cavm@gmail.com>
-References: <1334265263-13549-1-git-send-email-ddaney.cavm@gmail.com>
+	id S934740Ab2DLVRs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Apr 2012 17:17:48 -0400
+Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:62528 "EHLO
+	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S934710Ab2DLVRr convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Apr 2012 17:17:47 -0400
+MIME-Version: 1.0
+In-Reply-To: <20120412183351.GQ16257@infradead.org>
+References: <1334162178-17152-1-git-send-email-bp@amd64.org>
+ <1334162178-17152-6-git-send-email-bp@amd64.org> <20120411180434.GH16257@infradead.org>
+ <20120411180837.GJ16257@infradead.org> <20120412152256.GH24549@aftab>
+ <20120412155734.GA30170@merkur.ravnborg.org> <20120412183351.GQ16257@infradead.org>
+From: Alex Riesen <raa.lkml@gmail.com>
+Date: Thu, 12 Apr 2012 23:17:25 +0200
+Message-ID: <CALxABCb6W9mqZvUoxLmThOuXJebY-q83hkrjnU3ZLAdZ5b=65Q@mail.gmail.com>
+Subject: Re: [PATCH v5 5/5] tools: Connect to the kernel build system
+To: Arnaldo Carvalho de Melo <acme@infradead.org>
+Cc: Sam Ravnborg <sam@ravnborg.org>, Borislav Petkov <bp@amd64.org>,
+        Ingo Molnar <mingo@kernel.org>, Michal Marek <mmarek@suse.cz>,
+        LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: David Daney <david.daney@cavium.com>
+On Thu, Apr 12, 2012 at 20:33, Arnaldo Carvalho de Melo
+<acme@infradead.org> wrote:
+> Em Thu, Apr 12, 2012 at 05:57:34PM +0200, Sam Ravnborg escreveu:
+>> >
+>> > -QUIET_SUBDIR0  = +$(MAKE) -C # space to separate -C and subdir
+>> > -QUIET_SUBDIR1  =
+>>
+>> Who-ever came up with the names "QUIET_SUBDIR" must have had a bad day...
+>
+> Came from the git sources, where it still lives on:
+>
+> [acme@sandy git]$ git show b7774343
+> commit b777434383bd2f365be6896d8c89be6c1b62a135
+> Author: Alex Riesen <raa.lkml@gmail.com>
+> Date:   Wed Mar 7 00:44:49 2007 +0100
+>
+>    Support of "make -s": do not output anything of the build itself
+>
+>    Signed-off-by: Junio C Hamano <junkio@cox.net>
+>
 
-For 'normal' i2c bus drivers, we can call of_i2c_register_devices()
-and have the device tree framework automatically populate the bus with
-the devices specified in the device tree.
+Looked like a good idea at the time.
 
-This patch adds a common code to the i2c mux framework to have the mux
-sub-busses be populated by the of_i2c_register_devices() too.  If the
-mux device has an of_node, we populate the sub-bus' of_node so that
-the subsequent call to of_i2c_register_devices() will find the
-corresponding devices.
+http://www.merriam-webster.com/dictionary/quiet
 
-It seemed better to put this logic in i2c_add_mux_adapter() rather
-than the individual mux drivers, as they will all probably want to do
-the same thing.
+  qui·et
+  verb \ˈkwī-ət\
 
-Signed-off-by: David Daney <david.daney@cavium.com>
-Cc: Lars-Peter Clausen <lars@metafoo.de>
----
- Documentation/devicetree/bindings/i2c/mux.txt |   60 +++++++++++++++++++++++++
- drivers/i2c/i2c-mux.c                         |   24 ++++++++++
- 2 files changed, 84 insertions(+), 0 deletions(-)
- create mode 100644 Documentation/devicetree/bindings/i2c/mux.txt
-
-diff --git a/Documentation/devicetree/bindings/i2c/mux.txt b/Documentation/devicetree/bindings/i2c/mux.txt
-new file mode 100644
-index 0000000..af84cce
---- /dev/null
-+++ b/Documentation/devicetree/bindings/i2c/mux.txt
-@@ -0,0 +1,60 @@
-+Common i2c bus multiplexer/switch properties.
-+
-+An i2c bus multiplexer/switch will have several child busses that are
-+numbered uniquely in a device dependent manner.  The nodes for an i2c bus
-+multiplexer/switch will have one child node for each child
-+bus.
-+
-+Required properties:
-+- #address-cells = <1>;
-+- #size-cells = <0>;
-+
-+Required properties for child nodes:
-+- #address-cells = <1>;
-+- #size-cells = <0>;
-+- reg : The sub-bus number.
-+
-+Optional properties for child nodes:
-+- Other properties specific to the multiplexer/switch hardware.
-+- Child nodes conforming to i2c bus binding
-+
-+
-+Example :
-+
-+	/*
-+	   An NXP pca9548 8 channel I2C multiplexer at address 0x70
-+	   with two NXP pca8574 GPIO expanders attached, one each to
-+	   ports 3 and 4.
-+	 */
-+
-+	mux@70 {
-+		compatible = "nxp,pca9548";
-+		reg = <0x70>;
-+		#address-cells = <1>;
-+		#size-cells = <0>;
-+
-+		i2c@3 {
-+			#address-cells = <1>;
-+			#size-cells = <0>;
-+			reg = <3>;
-+
-+			gpio1: gpio@38 {
-+				compatible = "nxp,pca8574";
-+				reg = <0x38>;
-+				#gpio-cells = <2>;
-+				gpio-controller;
-+			};
-+		};
-+		i2c@4 {
-+			#address-cells = <1>;
-+			#size-cells = <0>;
-+			reg = <4>;
-+
-+			gpio2: gpio@38 {
-+				compatible = "nxp,pca8574";
-+				reg = <0x38>;
-+				#gpio-cells = <2>;
-+				gpio-controller;
-+			};
-+		};
-+	};
-diff --git a/drivers/i2c/i2c-mux.c b/drivers/i2c/i2c-mux.c
-index 26ab31d..609794b 100644
---- a/drivers/i2c/i2c-mux.c
-+++ b/drivers/i2c/i2c-mux.c
-@@ -24,6 +24,8 @@
- #include <linux/slab.h>
- #include <linux/i2c.h>
- #include <linux/i2c-mux.h>
-+#include <linux/of.h>
-+#include <linux/of_i2c.h>
- 
- /* multiplexer per channel data */
- struct i2c_mux_priv {
-@@ -125,6 +127,26 @@ struct i2c_adapter *i2c_add_mux_adapter(struct i2c_adapter *parent,
- 	priv->adap.algo_data = priv;
- 	priv->adap.dev.parent = &parent->dev;
- 
-+	/*
-+	 * Try to get populate the mux adapter's of_node, expands to
-+	 * nothing if !CONFIG_OF.
-+	 */
-+	if (mux_dev->of_node) {
-+		struct device_node *child;
-+		u32 reg;
-+		int ret;
-+
-+		for_each_child_of_node(mux_dev->of_node, child) {
-+			ret = of_property_read_u32(child, "reg", &reg);
-+			if (ret)
-+				continue;
-+			if (chan_id == reg) {
-+				priv->adap.dev.of_node = child;
-+				break;
-+			}
-+		}
-+	}
-+
- 	if (force_nr) {
- 		priv->adap.nr = force_nr;
- 		ret = i2c_add_numbered_adapter(&priv->adap);
-@@ -142,6 +164,8 @@ struct i2c_adapter *i2c_add_mux_adapter(struct i2c_adapter *parent,
- 	dev_info(&parent->dev, "Added multiplexed i2c bus %d\n",
- 		 i2c_adapter_id(&priv->adap));
- 
-+	of_i2c_register_devices(&priv->adap);
-+
- 	return &priv->adap;
- }
- EXPORT_SYMBOL_GPL(i2c_add_mux_adapter);
--- 
-1.7.2.3
-
+  Definition of QUIET
+  transitive verb
+  1: to cause to be quiet : calm
