@@ -1,61 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762933Ab2DLWjq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Apr 2012 18:39:46 -0400
-Received: from www.linutronix.de ([62.245.132.108]:39020 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757790Ab2DLWjp (ORCPT
+	id S1762941Ab2DLWkx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Apr 2012 18:40:53 -0400
+Received: from mail160.messagelabs.com ([216.82.253.99]:36696 "EHLO
+	mail160.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757869Ab2DLWkw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Apr 2012 18:39:45 -0400
-Date: Fri, 13 Apr 2012 00:39:34 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-cc: Sasikantha Babu <sasikanth.v19@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>
-Subject: Re: [GIT pull] timer fixes for 3.4
-In-Reply-To: <CA+55aFzP-DmGUqGcnxj2mq-mvmOXA7k-zgOrdDRY3WA9N5dmBg@mail.gmail.com>
-Message-ID: <alpine.LFD.2.02.1204130037060.2542@ionos>
-References: <alpine.LFD.2.02.1204130004080.2542@ionos> <CA+55aFxg0rzpL-xCqdScxPKPMupbvteoXD1cPT-fWYpyMXoSGg@mail.gmail.com> <alpine.LFD.2.02.1204130022520.2542@ionos> <CA+55aFzP-DmGUqGcnxj2mq-mvmOXA7k-zgOrdDRY3WA9N5dmBg@mail.gmail.com>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+	Thu, 12 Apr 2012 18:40:52 -0400
+X-Env-Sender: hartleys@visionengravers.com
+X-Msg-Ref: server-8.tower-160.messagelabs.com!1334270443!3697232!4
+X-Originating-IP: [216.166.12.31]
+X-StarScan-Version: 6.5.7; banners=-,-,-
+X-VirusChecked: Checked
+From: H Hartley Sweeten <hartleys@visionengravers.com>
+To: Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: [PATCH] ata: libata-eh.c: local functions should not be exposed globally
+Date: Thu, 12 Apr 2012 15:40:37 -0700
+User-Agent: KMail/1.9.9
+CC: <linux-ide@vger.kernel.org>, <jgarzik@pobox.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
+Message-ID: <201204121540.37253.hartleys@visionengravers.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 12 Apr 2012, Linus Torvalds wrote:
+The function ata_ering_clear_cb is only referenced in this file and
+should be marked static to prevent it from being exposed globally.
 
-> On Thu, Apr 12, 2012 at 3:26 PM, Thomas Gleixner <tglx@linutronix.de> wrote:
-> >
-> > I ran it through all the various (outdated) distros I have handy and
-> > the printk didn't show once.
-> >
-> > I tried to figure out the reason for this NULL pointer thing, but
-> > there is no trace of it on the intarwebs at all.
-> 
-> Ok. If we don't see any reports of messages, we can certainly remove it.
-> 
-> That said, would people actually *report* those messages?
-> 
-> In general, for things like this, it's probably better to just make
-> the change (especially if you have several distros you can test), and
-> then add a printk_once() for the case that changed. Then, if people
+This quiets the sparse warning:
 
-I changed it to a printk_once() already.
+warning: symbol 'ata_ering_clear_cb' was not declared. Should it be static?
 
-> actually report it as some program stopping to work, the dmesg
-> hopefully clues us in about the reason for the program not working.
-> But that would have needed to happen during the merge window, it's too
-> late now.
+Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
+Cc: Jeff Garzik <jgarzik@pobox.com>
 
-Yeah, sorry. I queued it and missed to send it along in time, then
-queued other real fixes on top of it. Feel free to revert it and i put
-it up for 3.5
+---
 
-Thanks,
-
-	tglx
+diff --git a/drivers/ata/libata-eh.c b/drivers/ata/libata-eh.c
+index b02748b..1ae0417 100644
+--- a/drivers/ata/libata-eh.c
++++ b/drivers/ata/libata-eh.c
+@@ -419,7 +419,7 @@ int ata_ering_map(struct ata_ering *ering,
+ 	return rc;
+ }
+ 
+-int ata_ering_clear_cb(struct ata_ering_entry *ent, void *void_arg)
++static int ata_ering_clear_cb(struct ata_ering_entry *ent, void *void_arg)
+ {
+ 	ent->eflags |= ATA_EFLAG_OLD_ER;
+ 	return 0;
