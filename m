@@ -1,62 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762127Ab2DLShs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Apr 2012 14:37:48 -0400
-Received: from shards.monkeyblade.net ([198.137.202.13]:40248 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754996Ab2DLShr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Apr 2012 14:37:47 -0400
-Date: Thu, 12 Apr 2012 14:37:30 -0400 (EDT)
-Message-Id: <20120412.143730.258982831585270742.davem@davemloft.net>
-To: linux-kernel@vger.kernel.org
-CC: sam@ravnborg.org
-Subject: [PATCH] Fix modpost failures in fedora 17
-From: David Miller <davem@davemloft.net>
-X-Mailer: Mew version 6.4 on Emacs 24.0.95 / Mule 6.0 (HANACHIRUSATO)
+	id S933262Ab2DLSle (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Apr 2012 14:41:34 -0400
+Received: from 1wt.eu ([62.212.114.60]:65062 "EHLO 1wt.eu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757772Ab2DLSld (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Apr 2012 14:41:33 -0400
+Date: Thu, 12 Apr 2012 20:40:58 +0200
+From: Willy Tarreau <w@1wt.eu>
+To: Felipe Contreras <felipe.contreras@gmail.com>
+Cc: Greg KH <gregkh@linuxfoundation.org>, Sergio Correia <lists@uece.net>,
+        linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        alan@lxorguk.ukuu.org.uk,
+        linux-wireless Mailing List <linux-wireless@vger.kernel.org>,
+        Sujith Manoharan <c_manoha@qca.qualcomm.com>,
+        "ath9k-devel@lists.ath9k.org" <ath9k-devel@venema.h4ckr.net>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: Re: [ 00/78] 3.3.2-stable review
+Message-ID: <20120412184058.GO8203@1wt.eu>
+References: <20120411231102.GA6404@kroah.com> <CAJyhjX2KrfSJW64PJMTHou9zSojsfA1iNT-WahinfMBce_B=BA@mail.gmail.com> <20120412002927.GA23167@kroah.com> <CAMP44s3Jh-t07A+i82qbAMQyEN0oWTmKk5BJcst942gFdD0=VA@mail.gmail.com> <20120412011313.GA23764@kroah.com> <CAMP44s2q+bQE3-zsX4bs=sQDt4jf8eE5bwZ8V88UjodjRyAjog@mail.gmail.com> <20120412144626.GA14868@kroah.com> <CAMP44s1T4EVwpzDuV_vV0Zh-5WcPCwdw9eeOfL17Geqp_UFN-Q@mail.gmail.com>
 Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Thu, 12 Apr 2012 11:37:34 -0700 (PDT)
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CAMP44s1T4EVwpzDuV_vV0Zh-5WcPCwdw9eeOfL17Geqp_UFN-Q@mail.gmail.com>
+User-Agent: Mutt/1.4.2.3i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, Apr 12, 2012 at 07:49:34PM +0300, Felipe Contreras wrote:
+> On Thu, Apr 12, 2012 at 5:46 PM, Greg KH <gregkh@linuxfoundation.org> wrote:
+> > A revert is the same as a patch.  It needs to be in Linus's tree before
+> > I can add it to the stable releases.
+> 
+> Right, because otherwise people's systems would actually work.
+> 
+> But hey, as I said, following rules is more important, regardless of
+> what the rules are, and why they are there. The rules that actually
+> triggered this issue in v3.3.1, as this is not in v3.3.
+> 
+> You could just accept that the patch should have never landed in
+> v3.3.1 in the first place, but it's much easier to arbitrarily keep
+> stacking patches without thinking too much about them.
+> 
+> I guess I'll better use Linus's releases for now and go to v3.3.
 
-The symbol table on x86-64 starts to have entries that have names
-like:
+Felipe, you're unfair to Greg. You're saying this because you don't know
+what it's like to be on the side of the guy who has to decide whether
+to apply a patch or not, which basically means whether to risk breaking
+systems or to leave broken systems as they are.
 
-_GLOBAL__sub_I_65535_0___mod_x86cpu_device_table
+Most stable users will switch from a stable version to another one
+in a next release, and these users do not want any regression. This
+means that we absolutely don't want to risk that a stable version
+has a fix that is missing from a newer version. Yes this is a crappy
+and annoying process but it's the only way to ensure that fixes don't
+get lost during an upgrade.
 
-They are of type STT_FUNCTION and this one had a length of 18.  This
-matched the device ID validation logic and it barfed because the
-length did not meet the device type's criteria.
+BTW, it works because if we're discussing this here, it's because
+this final fix or revert appears to be missing from mainline. After
+the discussion I'm sure it will be there.
 
---------------------
-FATAL: arch/x86/crypto/aesni-intel: sizeof(struct x86cpu_device_id)=16 is not a modulo of the size of section __mod_x86cpu_device_table=18.
-Fix definition of struct x86cpu_device_id in mod_devicetable.h
---------------------
+Last point is that stable maintainers are not your slaves. If you know
+how to patch your mainline kernel to apply a stable patch, you also
+know how to apply the patch you're pointing to. It's quite easy and
+many of us do that. *All* the kernels I'm using are stable + a few
+local patches and I don't see where the problem is. So please be a bit
+more constructive. Make your job by ensuring that the fix you want is
+in mainline then pass the commit ID to Greg so that he can merge it in
+next release. You'll feel relieved and everyone will be glad to benefit
+from this fix.
 
-These are some kind of compiler tool internal stuff being emitted and
-not something we want to inspect in modpost's device ID table
-validation code.
+Willy
 
-So skip the symbol if it is not of type STT_OBJECT.
-
-Signed-off-by: David S. Miller <davem@davemloft.net>
-
-diff --git a/scripts/mod/file2alias.c b/scripts/mod/file2alias.c
-index 8e730cc..44ddaa5 100644
---- a/scripts/mod/file2alias.c
-+++ b/scripts/mod/file2alias.c
-@@ -1100,6 +1100,10 @@ void handle_moddevtable(struct module *mod, struct elf_info *info,
- 	if (!sym->st_shndx || get_secindex(info, sym) >= info->num_sections)
- 		return;
- 
-+	/* We're looking for an object */
-+	if (ELF_ST_TYPE(sym->st_info) != STT_OBJECT)
-+		return;
-+
- 	/* All our symbols are of form <prefix>__mod_XXX_device_table. */
- 	name = strstr(symname, "__mod_");
- 	if (!name)
