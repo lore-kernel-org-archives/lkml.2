@@ -1,40 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933306Ab2DLAKJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Apr 2012 20:10:09 -0400
-Received: from mail.vyatta.com ([76.74.103.46]:54572 "EHLO mail.vyatta.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756173Ab2DLAKH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Apr 2012 20:10:07 -0400
-Date: Wed, 11 Apr 2012 17:10:04 -0700
-From: Stephen Hemminger <shemminger@vyatta.com>
-To: paulmck@linux.vnet.ibm.com
-Cc: Meelis Roos <mroos@linux.ee>, David Miller <davem@davemloft.net>,
-        linux-kernel@vger.kernel.org, netdev@vger.kernel.org
-Subject: Re: suspicious RCU usage warnings in 3.3.0
-Message-ID: <20120411171004.016ddd95@nehalam.linuxnetplumber.net>
-In-Reply-To: <20120411230837.GC2473@linux.vnet.ibm.com>
-References: <alpine.SOC.1.00.1203281134090.13691@math.ut.ee>
-	<20120328.174559.650861844028495880.davem@davemloft.net>
-	<alpine.SOC.1.00.1204111807420.26884@math.ut.ee>
-	<20120411230837.GC2473@linux.vnet.ibm.com>
-Organization: Vyatta
-X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S933265Ab2DLALe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Apr 2012 20:11:34 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:35050 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756173Ab2DLALc convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Apr 2012 20:11:32 -0400
+MIME-Version: 1.0
+In-Reply-To: <1334187888.2984.50.camel@pasglop>
+References: <1334186326-22649-1-git-send-email-grant.likely@secretlab.ca>
+ <1334186326-22649-2-git-send-email-grant.likely@secretlab.ca> <1334187888.2984.50.camel@pasglop>
+From: Grant Likely <grant.likely@secretlab.ca>
+Date: Wed, 11 Apr 2012 18:11:11 -0600
+X-Google-Sender-Auth: U24i1QyTBBu5tA1xrPvikbV9JlI
+Message-ID: <CACxGe6tAu8ZR7S4qqWGWaKjRQ-vZemwXoso8T=noRstkuXmgXg@mail.gmail.com>
+Subject: Re: [PATCH 1/3] irq_domain: remove "hint" when allocating irq numbers
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Cc: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
+        Milton Miller <miltonm@bga.com>, Olof Johansson <olof@lixom.net>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 11 Apr 2012 16:08:37 -0700
-"Paul E. McKenney" <paulmck@linux.vnet.ibm.com> wrote:
+On Wed, Apr 11, 2012 at 5:44 PM, Benjamin Herrenschmidt
+<benh@kernel.crashing.org> wrote:
+> On Wed, 2012-04-11 at 17:18 -0600, Grant Likely wrote:
+>> The 'hint' used to try and line up irq numbers with hw irq numbers is
+>> rather a hack and not very useful.  It also had some value when irq
+>> reverse mapping was lazy, and not done right at map time.  However, the
+>> lazy mapping is to be removed, so keeping around 'hint' isn't helpful
+>> anymore.  This patch removes it.
+>
+> Please document that this also removes the support for irq_virq_count,
+> which breaks PS3, to be "fixed" by your patch 3/3 (you may want to
+> re-order the patches here) and that fixes an actual bug with mapping of
+> interrupts above NR_IRQS
 
-> Hmmm...  What CPU family is this running on?  From the look of the
-> stack, it is sneaking out of idle into softirq without telling RCU.
-> This would cause RCU to complain bitterly about being invoked from
-> the idle loop -- and RCU ignores CPUs in the idle loop.
-> 
-> 							Thanx, Paul
+Yes, I'll either fix this patch or reorder before merging.
 
-Sun4... Ping David.
+g.
