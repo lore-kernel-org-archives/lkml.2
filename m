@@ -1,27 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933956Ab2DLBJq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Apr 2012 21:09:46 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:47237 "EHLO arroyo.ext.ti.com"
+	id S933973Ab2DLBKD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Apr 2012 21:10:03 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:55556 "EHLO bear.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933252Ab2DLBI4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Apr 2012 21:08:56 -0400
+	id S933625Ab2DLBIt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Apr 2012 21:08:49 -0400
 From: Mike Turquette <mturquette@linaro.org>
 To: <arnd.bergmann@linaro.org>
 CC: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
         <linaro-dev@lists.linaro.org>, <patches@linaro.org>,
-        Mike Turquette <mturquette@linaro.org>,
+        Rajendra Nayak <rnayak@ti.com>, Mike Turquette <mturquette@linaro.org>,
         Olof Johansson <olof@lixom.net>, Russell King <linux@arm.linux.org.uk>,
         Sascha Hauer <s.hauer@pengutronix.de>,
         Shawn Guo <shawn.guo@freescale.com>,
         Richard Zhao <richard.zhao@linaro.org>,
         Saravana Kannan <skannan@codeaurora.org>,
         Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Andrew Lunn <andrew@lunn.ch>, Rajendra Nayak <rnayak@ti.com>,
-        Viresh Kumar <viresh.kumar@st.com>
-Subject: [PATCH 01/13] clk: core: correct clk_set_rate kerneldoc
-Date: Wed, 11 Apr 2012 18:02:39 -0700
-Message-ID: <1334192572-12499-2-git-send-email-mturquette@linaro.org>
+        Andrew Lunn <andrew@lunn.ch>, Viresh Kumar <viresh.kumar@st.com>
+Subject: [PATCH 09/13] clk: Make clk_get_rate() return 0 on error
+Date: Wed, 11 Apr 2012 18:02:47 -0700
+Message-ID: <1334192572-12499-10-git-send-email-mturquette@linaro.org>
 X-Mailer: git-send-email 1.7.5.4
 In-Reply-To: <1334192572-12499-1-git-send-email-mturquette@linaro.org>
 References: <1334192572-12499-1-git-send-email-mturquette@linaro.org>
@@ -31,10 +30,17 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Remove old and misleading documentation from the previous clk_set_rate
-implementaion.
+From: Rajendra Nayak <rnayak@ti.com>
 
-Reported-by: Shawn Guo <shawn.guo@linaro.org>
+Most users of clk_get_rate() actually assume a non zero
+return value as a valid rate returned. Returing -EINVAL
+might confuse such users, so make it instead return zero
+on error.
+
+Besides the return value of clk_get_rate seems to be
+'unsigned long'.
+
+Signed-off-by: Rajendra nayak <rnayak@ti.com>
 Signed-off-by: Mike Turquette <mturquette@linaro.org>
 Cc: Arnd Bergman <arnd.bergmann@linaro.org>
 Cc: Olof Johansson <olof@lixom.net>
@@ -45,66 +51,42 @@ Cc: Richard Zhao <richard.zhao@linaro.org>
 Cc: Saravana Kannan <skannan@codeaurora.org>
 Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>
 Cc: Andrew Lunn <andrew@lunn.ch>
-Cc: Rajendra Nayak <rnayak@ti.com>
 Cc: Viresh Kumar <viresh.kumar@st.com>
 ---
- drivers/clk/clk.c |   41 +++++++++++------------------------------
- 1 files changed, 11 insertions(+), 30 deletions(-)
+ drivers/clk/clk.c |    6 +++---
+ 1 files changed, 3 insertions(+), 3 deletions(-)
 
 diff --git a/drivers/clk/clk.c b/drivers/clk/clk.c
-index 9cf6f59..3ed36d3 100644
+index 9924aec..a24b121 100644
 --- a/drivers/clk/clk.c
 +++ b/drivers/clk/clk.c
-@@ -859,38 +859,19 @@ static void clk_change_rate(struct clk *clk)
-  * @clk: the clk whose rate is being changed
-  * @rate: the new rate for clk
+@@ -285,7 +285,7 @@ unsigned long __clk_get_rate(struct clk *clk)
+ 	unsigned long ret;
+ 
+ 	if (!clk) {
+-		ret = -EINVAL;
++		ret = 0;
+ 		goto out;
+ 	}
+ 
+@@ -295,7 +295,7 @@ unsigned long __clk_get_rate(struct clk *clk)
+ 		goto out;
+ 
+ 	if (!clk->parent)
+-		ret = -ENODEV;
++		ret = 0;
+ 
+ out:
+ 	return ret;
+@@ -560,7 +560,7 @@ EXPORT_SYMBOL_GPL(clk_enable);
+  * @clk: the clk whose rate is being returned
   *
-- * In the simplest case clk_set_rate will only change the rate of clk.
-+ * In the simplest case clk_set_rate will only adjust the rate of clk.
-  *
-- * If clk has the CLK_SET_RATE_GATE flag set and it is enabled this call
-- * will fail; only when the clk is disabled will it be able to change
-- * its rate.
-+ * Setting the CLK_SET_RATE_PARENT flag allows the rate change operation to
-+ * propagate up to clk's parent; whether or not this happens depends on the
-+ * outcome of clk's .round_rate implementation.  If *parent_rate is unchanged
-+ * after calling .round_rate then upstream parent propagation is ignored.  If
-+ * *parent_rate comes back with a new rate for clk's parent then we propagate
-+ * up to clk's parent and set it's rate.  Upward propagation will continue
-+ * until either a clk does not support the CLK_SET_RATE_PARENT flag or
-+ * .round_rate stops requesting changes to clk's parent_rate.
-  *
-- * Setting the CLK_SET_RATE_PARENT flag allows clk_set_rate to
-- * recursively propagate up to clk's parent; whether or not this happens
-- * depends on the outcome of clk's .round_rate implementation.  If
-- * *parent_rate is 0 after calling .round_rate then upstream parent
-- * propagation is ignored.  If *parent_rate comes back with a new rate
-- * for clk's parent then we propagate up to clk's parent and set it's
-- * rate.  Upward propagation will continue until either a clk does not
-- * support the CLK_SET_RATE_PARENT flag or .round_rate stops requesting
-- * changes to clk's parent_rate.  If there is a failure during upstream
-- * propagation then clk_set_rate will unwind and restore each clk's rate
-- * that had been successfully changed.  Afterwards a rate change abort
-- * notification will be propagated downstream, starting from the clk
-- * that failed.
-- *
-- * At the end of all of the rate setting, clk_set_rate internally calls
-- * __clk_recalc_rates and propagates the rate changes downstream,
-- * starting from the highest clk whose rate was changed.  This has the
-- * added benefit of propagating post-rate change notifiers.
-- *
-- * Note that while post-rate change and rate change abort notifications
-- * are guaranteed to be sent to a clk only once per call to
-- * clk_set_rate, pre-change notifications will be sent for every clk
-- * whose rate is changed.  Stacking pre-change notifications is noisy
-- * for the drivers subscribed to them, but this allows drivers to react
-- * to intermediate clk rate changes up until the point where the final
-- * rate is achieved at the end of upstream propagation.
-+ * Rate changes are accomplished via tree traversal that also recalculates the
-+ * rates for the clocks and fires off POST_RATE_CHANGE notifiers.
-  *
-  * Returns 0 on success, -EERROR otherwise.
+  * Simply returns the cached rate of the clk.  Does not query the hardware.  If
+- * clk is NULL then returns -EINVAL.
++ * clk is NULL then returns 0.
   */
+ unsigned long clk_get_rate(struct clk *clk)
+ {
 -- 
 1.7.5.4
 
