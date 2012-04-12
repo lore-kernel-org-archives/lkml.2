@@ -1,47 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933640Ab2DLMWn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Apr 2012 08:22:43 -0400
-Received: from gse-mta-21-tx.emailfiltering.com ([194.116.198.155]:41737 "EHLO
-	ixe-mta-21.emailfiltering.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S933137Ab2DLMWl convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Apr 2012 08:22:41 -0400
-X-Greylist: delayed 381 seconds by postgrey-1.27 at vger.kernel.org; Thu, 12 Apr 2012 08:22:41 EDT
-X-MimeOLE: Produced By Microsoft Exchange V6.5
-Content-class: urn:content-classes:message
+	id S933509Ab2DLM21 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Apr 2012 08:28:27 -0400
+Received: from mail-vb0-f46.google.com ([209.85.212.46]:56202 "EHLO
+	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933051Ab2DLM20 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Apr 2012 08:28:26 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-Subject: Please Give This Proposal Every Considerations(on behalf of Mr.Wong Cheng)
-Date: Thu, 12 Apr 2012 12:52:17 +0100
-Message-ID: <802C9192E4519D46BA14E828288F4BA90A938160@c15500.chelt.local>
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-Thread-Topic: Please Give This Proposal Every Considerations(on behalf of Mr.Wong Cheng)
-Thread-Index: Ac0YorT003jHWEvgSzutAuvdz52mFA==
-From: "OULTON, Chris" <coulton@glos.ac.uk>
-To: unlisted-recipients:; (no To-header on input)
+In-Reply-To: <1334153450.23924.243.camel@gandalf.stny.rr.com>
+References: <1333696481-3433-1-git-send-email-juri.lelli@gmail.com>
+	<1333696481-3433-7-git-send-email-juri.lelli@gmail.com>
+	<CAJd=RBBm8yDBrZFj48tP_5WsG=z0Rsv_=j=kArV1Mj6yJvQjVA@mail.gmail.com>
+	<1334153450.23924.243.camel@gandalf.stny.rr.com>
+Date: Thu, 12 Apr 2012 20:28:24 +0800
+Message-ID: <CAJd=RBDqsr8aBNxokrb5Rc90RNu41ZRLEJJDdXibf238k2c6oQ@mail.gmail.com>
+Subject: Re: [PATCH 06/16] sched: SCHED_DEADLINE push and pull logic
+From: Hillf Danton <dhillf@gmail.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Juri Lelli <juri.lelli@gmail.com>, peterz@infradead.org,
+        tglx@linutronix.de, mingo@redhat.com, cfriesen@nortel.com,
+        oleg@redhat.com, fweisbec@gmail.com, darren@dvhart.com,
+        johan.eker@ericsson.com, p.faure@akatech.ch,
+        linux-kernel@vger.kernel.org, claudio@evidence.eu.com,
+        michael@amarulasolutions.com, fcheccon@jasper.es
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
- 
-My name is Wong Cheng,a staff of Private Banking Services at the Bank of
-Japan, I read your profile on Multinational Journal of trade and Investment.i
-was really impressed. can we work together on my Business Proposal please?
-reply via Chongwei-hkk@hotmail.com for more details
-'In the top three in the People and Planet green league table; committed to sustainability'
+On Wed, Apr 11, 2012 at 10:10 PM, Steven Rostedt <rostedt@goodmis.org> wrote:
+> On Fri, 2012-04-06 at 21:39 +0800, Hillf Danton wrote:
+>
+>> > +static void inc_dl_migration(struct sched_dl_entity *dl_se, struct dl_rq *dl_rq)
+>> > +{
+>> > +       dl_rq = &rq_of_dl_rq(dl_rq)->dl;
+>> > +
+>> > +       dl_rq->dl_nr_total++;
+>> > +       if (dl_se->nr_cpus_allowed > 1)
+>> > +               dl_rq->dl_nr_migratory++;
+>> > +
+>> > +       update_dl_migration(dl_rq);
+>>
+>>       if (dl_se->nr_cpus_allowed > 1) {
+>>               dl_rq->dl_nr_migratory++;
+>>               /* No change in migratory, no update of migration */
+>
+> This is not true. As dl_nr_total changed. If there was only one dl task
+> queued that can migrate, and then another dl task is queued but this
+> task can not migrate, the update_dl_migration still needs to be called.
+> As dl_nr_migratory would be 1, but now dl_nr_total > 1. This means we
+> are now overloaded.
+>
+	if (2 == dl_nr_migratory + dl_nr_total)
+		rq was not overloaded;
 
+	after enqueuing a deadline task that is not migratory,
 
+	if (current task is not preempted)
+		rq remains not overloaded;
 
-This email is confidential to the intended recipient. If you have received it in error please notify the sender and delete it from your computer.
+	else if (current task is not pushed out) {
+		if (rq is not overloaded)
+			maintenance of overloaded is __corrupted__;
+	}
 
-
-
-The University of Gloucestershire is a company limited by guarantee registered in England and Wales. Registered number: 06023243 Registered office: The Park, Cheltenham, GL50 2RH
-
-
-
-Please consider the environment before printing this email.
-
+btw, same behavior in RTS?
