@@ -1,131 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757789Ab2DLQuu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Apr 2012 12:50:50 -0400
-Received: from acsinet15.oracle.com ([141.146.126.227]:22010 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751839Ab2DLQus convert rfc822-to-8bit (ORCPT
+	id S1762055Ab2DLQwR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Apr 2012 12:52:17 -0400
+Received: from shards.monkeyblade.net ([198.137.202.13]:39309 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757876Ab2DLQwP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Apr 2012 12:50:48 -0400
-MIME-Version: 1.0
-Message-ID: <8f7aee45-fc5c-43b2-97cc-30c142927dc3@default>
-Date: Thu, 12 Apr 2012 09:50:38 -0700 (PDT)
-From: Dan Magenheimer <dan.magenheimer@oracle.com>
-To: "Justin P. Mattock" <justinmattock@gmail.com>
-Cc: linux-kernel@vger.kernel.org, gregkh@linuxfoundation.org
-Subject: RE: [PATCH]NEXT:drivers:staging:ramster Fix typos and remove
- CONFIG_BROKEN in staging:ramster
-References: <<1333982937-12929-1-git-send-email-user@Ideapad-Z560>>
-In-Reply-To: <<1333982937-12929-1-git-send-email-user@Ideapad-Z560>>
-X-Priority: 3
-X-Mailer: Oracle Beehive Extensions for Outlook 2.0.1.6  (510070) [OL
- 12.0.6607.1000 (x86)]
-Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 8BIT
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
-X-CT-RefId: str=0001.0A090202.4F8707E6.0054,ss=1,re=0.000,fgs=0
+	Thu, 12 Apr 2012 12:52:15 -0400
+Date: Thu, 12 Apr 2012 12:51:06 -0400 (EDT)
+Message-Id: <20120412.125106.1852994075956058784.davem@davemloft.net>
+To: linville@tuxdriver.com
+Cc: linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: pull request: wireless 2012-04-12
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <20120412142859.GB21495@tuxdriver.com>
+References: <20120412142859.GB21495@tuxdriver.com>
+X-Mailer: Mew version 6.4 on Emacs 23.3 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Thu, 12 Apr 2012 09:51:07 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> From: Justin P. Mattock [mailto:justinmattock@gmail.com]
-> Sent: Monday, April 09, 2012 8:49 AM
-> To: dan.magenheimer@oracle.com
-> Cc: linux-kernel@vger.kernel.org; gregkh@linuxfoundation.org; Justin P. Mattock
-> Subject: [PATCH]NEXT:drivers:staging:ramster Fix typos and remove CONFIG_BROKEN in staging:ramster
+From: "John W. Linville" <linville@tuxdriver.com>
+Date: Thu, 12 Apr 2012 10:28:59 -0400
+
+> This is a flurry of fixes intended for 3.4...
 > 
-> From: "Justin P. Mattock" <justinmattock@gmail.com>
+> Many of these are Bluetooth fixes.  Gustavo says:
 > 
-> The below patch fixes some typos that I found while reading. And also removes
-> CONFIG_BROKEN since it is no longer used.
+> "This is a batch of fixes for 3.4. We have added support to 3 new
+> devices, fixes some NULL-pointer dereferences, memory leaks, memory
+> corruption and endian bugs. There was also a userspace compatibility
+> fix reported by Keith Packard on lkml. The fixes are all simple."
 > 
-> Signed-off-by: Justin P. Mattock <justinmattock@gmail.com>
+> On top of the Bluetooths bits, we have a number of wireless fixes.
+> One is an rt2x00 fix from Chien-Chia Chen which fixes the rfkill
+> registration so that it still works even if the box is booted with the
+> device already blocked.  Johannes Berg gives us a pair of fixes, one
+> that corrects a macro parameter when setting a beacon wait timeout, and
+> another that ensures that the proper interface state is used throughout
+> nl80211 so as to avoid warnings and unintended driver behavior.
+> Julia Lawall gives us a fix for a memory leak in an error handling
+> case.  Larry Finger is the star performer for this round, giving us a
+> fix for firmware initialization in rtl8192de, a mac80211 fix to quiet
+> some log spam, a fix to avoid a NULL pointer dereference in rtlwifi, an
+> rtlwifi fix to avoid a "sleeping function called from invalid context"
+> BUG, and another rtlwifi fix to avoid "Out of SW-IOMMU space" errors.
+> Paul Gortmaker gives us a fix to avoid bcma build breakage on MIPS.
+> Samuel Ortiz fixes a loop in NFC's LLCP Tx frame fragmentation loop.
+> And finally, Sujith Manoharan reverts an earlier patch in order to
+> fix a regression reported by a number of ath9k users.
 
-Hi Justin --
-
-Thanks for your interest and for the patch!
-
-The removal of CONFIG_BROKEN is already in GregKH's staging tree(s)
-and in linux-next, and will hopefully be in -rc3.
-
-The comment typos do need to be fixed but I'm not sure if they should
-go through the staging tree or through trivial, but in either case
-consider them:
-
-Acked-by: Dan Magenheimer <dan.magenheimer@oracle.com>
-
-
-> ---
->  drivers/staging/ramster/Kconfig       |    6 +-----
->  drivers/staging/ramster/cluster/tcp.c |    4 ++--
->  drivers/staging/ramster/xvmalloc.c    |    2 +-
->  drivers/staging/ramster/zcache-main.c |    2 +-
->  4 files changed, 5 insertions(+), 9 deletions(-)
-> 
-> diff --git a/drivers/staging/ramster/Kconfig b/drivers/staging/ramster/Kconfig
-> index 8b57b87..2932c65 100644
-> --- a/drivers/staging/ramster/Kconfig
-> +++ b/drivers/staging/ramster/Kconfig
-> @@ -1,10 +1,6 @@
-> -# Dependency on CONFIG_BROKEN is because there is a commit dependency
-> -# on a cleancache naming change to be submitted by Konrad Wilk
-> -# a39c00ded70339603ffe1b0ffdf3ade85bcf009a "Merge branch 'stable/cleancache.v13'
-> -# into linux-next.  Once this commit is present, BROKEN can be removed
->  config RAMSTER
->  	bool "Cross-machine RAM capacity sharing, aka peer-to-peer tmem"
-> -	depends on (CLEANCACHE || FRONTSWAP) && CONFIGFS_FS=y && !ZCACHE && !XVMALLOC && !HIGHMEM &&
-> BROKEN
-> +	depends on (CLEANCACHE || FRONTSWAP) && CONFIGFS_FS=y && !ZCACHE && !XVMALLOC && !HIGHMEM
->  	select LZO_COMPRESS
->  	select LZO_DECOMPRESS
->  	default n
-> diff --git a/drivers/staging/ramster/cluster/tcp.c b/drivers/staging/ramster/cluster/tcp.c
-> index 3af1b2c..3490192 100644
-> --- a/drivers/staging/ramster/cluster/tcp.c
-> +++ b/drivers/staging/ramster/cluster/tcp.c
-> @@ -111,7 +111,7 @@ static struct socket *r2net_listen_sock;
->   * r2net_wq.  teardown detaches the callbacks before destroying the workqueue.
->   * quorum work is queued as sock containers are shutdown.. stop_listening
->   * tears down all the node's sock containers, preventing future shutdowns
-> - * and queued quroum work, before canceling delayed quorum work and
-> + * and queued quorum work, before canceling delayed quorum work and
->   * destroying the work queue.
->   */
->  static struct workqueue_struct *r2net_wq;
-> @@ -660,7 +660,7 @@ out:
-> 
->  /*
->   * we register callbacks so we can queue work on events before calling
-> - * the original callbacks.  our callbacks our careful to test user_data
-> + * the original callbacks.  our callbacks are careful to test user_data
->   * to discover when they've reaced with r2net_unregister_callbacks().
->   */
->  static void r2net_register_callbacks(struct sock *sk,
-> diff --git a/drivers/staging/ramster/xvmalloc.c b/drivers/staging/ramster/xvmalloc.c
-> index 93ba8e9..44ceb0b 100644
-> --- a/drivers/staging/ramster/xvmalloc.c
-> +++ b/drivers/staging/ramster/xvmalloc.c
-> @@ -132,7 +132,7 @@ static u32 find_block(struct xv_pool *pool, u32 size,
->  	if (!pool->flbitmap)
->  		return 0;
-> 
-> -	/* Get freelist index correspoding to this size */
-> +	/* Get freelist index corresponding to this size */
->  	slindex = get_index(size);
->  	slbitmap = pool->slbitmap[slindex / BITS_PER_LONG];
->  	slbitstart = slindex % BITS_PER_LONG;
-> diff --git a/drivers/staging/ramster/zcache-main.c b/drivers/staging/ramster/zcache-main.c
-> index 36d53ed..de082cc 100644
-> --- a/drivers/staging/ramster/zcache-main.c
-> +++ b/drivers/staging/ramster/zcache-main.c
-> @@ -2095,7 +2095,7 @@ out:
->  /*
->   * Called on a remote persistent tmem_get to attempt to preallocate
->   * local storage for the data contained in the remote persistent page.
-> - * If succesfully preallocated, returns the pampd, marked as remote and
-> + * If successfully preallocated, returns the pampd, marked as remote and
->   * in_transit.  Else returns NULL.  Note that the appropriate tmem data
->   * structure must be locked.
->   */
-> --
-> 1.7.5.4
+Pulled, thanks John.
