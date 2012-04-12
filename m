@@ -1,83 +1,197 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762032Ab2DLHAZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Apr 2012 03:00:25 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:33653 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752792Ab2DLHAX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Apr 2012 03:00:23 -0400
-Date: Thu, 12 Apr 2012 09:01:15 +0200
-From: Daniel Vetter <daniel@ffwll.ch>
-To: Chris Wilson <chris@chris-wilson.co.uk>
-Cc: Daniel Vetter <daniel.vetter@ffwll.ch>,
-        Intel Graphics Development <intel-gfx@lists.freedesktop.org>,
-        Jiri Slaby <jslaby@suse.cz>, LKML <linux-kernel@vger.kernel.org>,
-        DRI Development <dri-devel@lists.freedesktop.org>
-Subject: Re: [Intel-gfx] [PATCH] drm/i915: clear fencing tracking state when
- retiring request
-Message-ID: <20120412070115.GB3705@phenom.ffwll.local>
-Mail-Followup-To: Chris Wilson <chris@chris-wilson.co.uk>,
-	Intel Graphics Development <intel-gfx@lists.freedesktop.org>,
-	Jiri Slaby <jslaby@suse.cz>, LKML <linux-kernel@vger.kernel.org>,
-	DRI Development <dri-devel@lists.freedesktop.org>
-References: <1334186877-6299-1-git-send-email-daniel.vetter@ffwll.ch>
- <1334187495_375289@CP5-2952>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1334187495_375289@CP5-2952>
-X-Operating-System: Linux phenom 3.2.0-1-amd64
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1762047Ab2DLHCA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Apr 2012 03:02:00 -0400
+Received: from mail.df.lth.se ([194.47.250.12]:35297 "EHLO mail.df.lth.se"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756945Ab2DLHB7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Apr 2012 03:01:59 -0400
+From: "Linus Walleij" <linus.walleij@linaro.org>
+To: Vinod Koul <vinod.koul@intel.com>, linux-kernel@vger.kernel.org
+Cc: Dan Williams <dan.j.williams@intel.com>,
+        linux-arm-kernel@lists.infradead.org,
+        Viresh Kumar <viresh.kumar@st.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Alim Akhtar <alim.akhtar@gmail.com>,
+        Alessandro Rubini <rubini@gnudd.com>
+Subject: [PATCH 2/2 v3] dma/amba-pl08x: add support for the Nomadik variant
+Date: Thu, 12 Apr 2012 09:01:49 +0200
+Message-Id: <1334214109-15644-1-git-send-email-linus.walleij@linaro.org>
+X-Mailer: git-send-email 1.7.7.6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 12, 2012 at 12:38:09AM +0100, Chris Wilson wrote:
-> On Thu, 12 Apr 2012 01:27:57 +0200, Daniel Vetter <daniel.vetter@ffwll.ch> wrote:
-> > This fixes a regression introduce in
-> s/introduce/introduced/
->  
-> > commit 7dd4906586274f3945f2aeaaa5a33b451c3b4bba
-> > Author: Chris Wilson <chris@chris-wilson.co.uk>
-> > Date:   Wed Mar 21 10:48:18 2012 +0000
-> > 
-> >     drm/i915: Mark untiled BLT commands as fenced on gen2/3
-> > 
-> > which fixed fencing tracking for untiled blt commands.
-> > 
-> > A side effect of that patch was that now also untiled objects have a
-> > non-zero obj->last_fenced_seqno to track when a fence can be set up
-> > after a pipelined tiling change. Unfortunately this was only cleared
-> > by the fence setup and teardown code, resulting in tons of untiled but
-> > inactive objects with non-zero last_fenced_seqno.
-> > 
-> > Now after resume we completely reset the seqno tracking, both on the
-> > driver side (by setting dev_priv->next_seqno = 1) and on the hw side
-> > (by allocating a new hws page, which contains the seqnos). Hilarity
-> > and indefinite waits ensued from the stale seqnos in
-> > obj->last_fenced_seqno from before the suspend.
-> > 
-> > The fix is to properly clear the fencing tracking state like we
-> > already do for the normal gpu rendering while moving objects off the
-> > active list.
-> > 
-> > Reported-and-tested-by: "Rafael J. Wysocki" <rjw@sisk.pl>
-> > Cc: Jiri Slaby <jslaby@suse.cz>
-> > Signed-Off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
-> 
-> I spent sometime discussing whether or not we could hit a similar bug
-> with a well placed change of tiling after resume, and the outcome is
-> that as the fences are reset during freeze then all tiled objects that
-> had been used for rendering would have been flushed (and their
-> last_fenced_seqno set to 0).
-> 
-> So this is a new regression caused by the aforementioned patch and this
-> is the cleanest fix,
-> Reviewed-by: Chris Wilson <chris@chris-wilson.co.uk>
-Picked up for -fixes, thanks for the review.
--Daniel
+The Nomadik PL080 variant has some extra protection bits that
+may be set, so we need to check these bits to see if the
+channels are actually available for the DMAengine to use.
+
+Cc: Russell King <linux@arm.linux.org.uk>
+Cc: Alim Akhtar <alim.akhtar@gmail.com>
+Cc: Alessandro Rubini <rubini@gnudd.com>
+Reviewed-by: Viresh Kumar <viresh.kumar@st.com>
+Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
+---
+ChangeLog v1->v2:
+- Fixed these review comments from Viresh Kumar
+- Use kzalloc to allocate the physical channel structs so
+  we don't have to assign values to everything and can assume
+  booleans are default false
+- unbreak long error message.
+ChangeLog v2->v3:
+- Remove an extraneous NULL assignment now that we have
+  kzalloc for the physical channel info.
+---
+ arch/arm/include/asm/hardware/pl080.h |    2 +
+ drivers/dma/amba-pl08x.c              |   44 +++++++++++++++++++++++++++-----
+ include/linux/amba/pl08x.h            |    3 ++
+ 3 files changed, 42 insertions(+), 7 deletions(-)
+
+diff --git a/arch/arm/include/asm/hardware/pl080.h b/arch/arm/include/asm/hardware/pl080.h
+index 33c78d7..4eea210 100644
+--- a/arch/arm/include/asm/hardware/pl080.h
++++ b/arch/arm/include/asm/hardware/pl080.h
+@@ -102,6 +102,8 @@
+ #define PL080_WIDTH_16BIT			(0x1)
+ #define PL080_WIDTH_32BIT			(0x2)
+ 
++#define PL080N_CONFIG_ITPROT			(1 << 20)
++#define PL080N_CONFIG_SECPROT			(1 << 19)
+ #define PL080_CONFIG_HALT			(1 << 18)
+ #define PL080_CONFIG_ACTIVE			(1 << 17)  /* RO */
+ #define PL080_CONFIG_LOCK			(1 << 16)
+diff --git a/drivers/dma/amba-pl08x.c b/drivers/dma/amba-pl08x.c
+index 08589c6..629250e 100644
+--- a/drivers/dma/amba-pl08x.c
++++ b/drivers/dma/amba-pl08x.c
+@@ -95,10 +95,14 @@ static struct amba_driver pl08x_amba_driver;
+  * struct vendor_data - vendor-specific config parameters for PL08x derivatives
+  * @channels: the number of channels available in this variant
+  * @dualmaster: whether this version supports dual AHB masters or not.
++ * @nomadik: whether the channels have Nomadik security extension bits
++ *	that need to be checked for permission before use and some registers are
++ *	missing
+  */
+ struct vendor_data {
+ 	u8 channels;
+ 	bool dualmaster;
++	bool nomadik;
+ };
+ 
+ /*
+@@ -385,7 +389,7 @@ pl08x_get_phy_channel(struct pl08x_driver_data *pl08x,
+ 
+ 		spin_lock_irqsave(&ch->lock, flags);
+ 
+-		if (!ch->serving) {
++		if (!ch->locked && !ch->serving) {
+ 			ch->serving = virt_chan;
+ 			ch->signal = -1;
+ 			spin_unlock_irqrestore(&ch->lock, flags);
+@@ -1483,6 +1487,9 @@ bool pl08x_filter_id(struct dma_chan *chan, void *chan_id)
+  */
+ static void pl08x_ensure_on(struct pl08x_driver_data *pl08x)
+ {
++	/* The Nomadik variant does not have the config register */
++	if (pl08x->vd->nomadik)
++		return;
+ 	writel(PL080_CONFIG_ENABLE, pl08x->base + PL080_CONFIG);
+ }
+ 
+@@ -1772,8 +1779,10 @@ static int pl08x_debugfs_show(struct seq_file *s, void *data)
+ 		spin_lock_irqsave(&ch->lock, flags);
+ 		virt_chan = ch->serving;
+ 
+-		seq_printf(s, "%d\t\t%s\n",
+-			   ch->id, virt_chan ? virt_chan->name : "(none)");
++		seq_printf(s, "%d\t\t%s%s\n",
++			   ch->id,
++			   virt_chan ? virt_chan->name : "(none)",
++			   ch->locked ? " LOCKED" : "");
+ 
+ 		spin_unlock_irqrestore(&ch->lock, flags);
+ 	}
+@@ -1917,7 +1926,7 @@ static int pl08x_probe(struct amba_device *adev, const struct amba_id *id)
+ 	}
+ 
+ 	/* Initialize physical channels */
+-	pl08x->phy_chans = kmalloc((vd->channels * sizeof(*pl08x->phy_chans)),
++	pl08x->phy_chans = kzalloc((vd->channels * sizeof(*pl08x->phy_chans)),
+ 			GFP_KERNEL);
+ 	if (!pl08x->phy_chans) {
+ 		dev_err(&adev->dev, "%s failed to allocate "
+@@ -1932,8 +1941,23 @@ static int pl08x_probe(struct amba_device *adev, const struct amba_id *id)
+ 		ch->id = i;
+ 		ch->base = pl08x->base + PL080_Cx_BASE(i);
+ 		spin_lock_init(&ch->lock);
+-		ch->serving = NULL;
+ 		ch->signal = -1;
++
++		/*
++		 * Nomadik variants can have channels that are locked
++		 * down for the secure world only. Lock up these channels
++		 * by perpetually serving a dummy virtual channel.
++		 */
++		if (vd->nomadik) {
++			u32 val;
++
++			val = readl(ch->base + PL080_CH_CONFIG);
++			if (val & (PL080N_CONFIG_ITPROT | PL080N_CONFIG_SECPROT)) {
++				dev_info(&adev->dev, "physical channel %d reserved for secure access only\n", i);
++				ch->locked = true;
++			}
++		}
++
+ 		dev_dbg(&adev->dev, "physical channel %d is %s\n",
+ 			i, pl08x_phy_channel_busy(ch) ? "BUSY" : "FREE");
+ 	}
+@@ -2016,6 +2040,12 @@ static struct vendor_data vendor_pl080 = {
+ 	.dualmaster = true,
+ };
+ 
++static struct vendor_data vendor_nomadik = {
++	.channels = 8,
++	.dualmaster = true,
++	.nomadik = true,
++};
++
+ static struct vendor_data vendor_pl081 = {
+ 	.channels = 2,
+ 	.dualmaster = false,
+@@ -2036,9 +2066,9 @@ static struct amba_id pl08x_ids[] = {
+ 	},
+ 	/* Nomadik 8815 PL080 variant */
+ 	{
+-		.id	= 0x00280880,
++		.id	= 0x00280080,
+ 		.mask	= 0x00ffffff,
+-		.data	= &vendor_pl080,
++		.data	= &vendor_nomadik,
+ 	},
+ 	{ 0, 0 },
+ };
+diff --git a/include/linux/amba/pl08x.h b/include/linux/amba/pl08x.h
+index e64ce2c..0254901 100644
+--- a/include/linux/amba/pl08x.h
++++ b/include/linux/amba/pl08x.h
+@@ -92,6 +92,8 @@ struct pl08x_bus_data {
+  * right now
+  * @serving: the virtual channel currently being served by this physical
+  * channel
++ * @locked: channel unavailable for the system, e.g. dedicated to secure
++ * world
+  */
+ struct pl08x_phy_chan {
+ 	unsigned int id;
+@@ -99,6 +101,7 @@ struct pl08x_phy_chan {
+ 	spinlock_t lock;
+ 	int signal;
+ 	struct pl08x_dma_chan *serving;
++	bool locked;
+ };
+ 
+ /**
 -- 
-Daniel Vetter
-Mail: daniel@ffwll.ch
-Mobile: +41 (0)79 365 57 48
+1.7.7.6
+
