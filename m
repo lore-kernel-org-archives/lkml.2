@@ -1,66 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760941Ab2DLRWz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Apr 2012 13:22:55 -0400
-Received: from mx.scalarmail.ca ([98.158.95.75]:63905 "EHLO
-	ironport-01.sms.scalar.ca" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751419Ab2DLRWy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Apr 2012 13:22:54 -0400
-Date: Thu, 12 Apr 2012 13:22:45 -0400
-From: Nick Bowler <nbowler@elliptictech.com>
-To: =?iso-8859-1?Q?R=E9mi?= Denis-Courmont <remi@remlab.net>
-Cc: Mauro Carvalho Chehab <mchehab@redhat.com>, mchehab@infradead.org,
-        linux-media@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>, Hans Verkuil <hverkuil@xs4all.nl>
-Subject: Re: [RFC] [PATCH] v4l2: use unsigned rather than enums in ioctl()
- structs
-Message-ID: <20120412172245.GA1721@elliptictech.com>
-References: <1333648371-24812-1-git-send-email-remi@remlab.net>
- <201204112147.55348.remi@remlab.net>
- <4F85E133.4030404@redhat.com>
- <201204112332.24353.remi@remlab.net>
+	id S932573Ab2DLRXf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Apr 2012 13:23:35 -0400
+Received: from zene.cmpxchg.org ([85.214.230.12]:50222 "EHLO zene.cmpxchg.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754782Ab2DLRXe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Apr 2012 13:23:34 -0400
+Date: Thu, 12 Apr 2012 19:23:09 +0200
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: Tejun Heo <tj@kernel.org>
+Cc: Glauber Costa <glommer@parallels.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Hugh Dickins <hughd@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Daniel Walsh <dwalsh@redhat.com>,
+        "Daniel P. Berrange" <berrange@redhat.com>,
+        Li Zefan <lizf@cn.fujitsu.com>, LKML <linux-kernel@vger.kernel.org>,
+        Cgroups <cgroups@vger.kernel.org>,
+        Containers <containers@lists.linux-foundation.org>
+Subject: Re: [RFD] Merge task counter into memcg
+Message-ID: <20120412172309.GM1787@cmpxchg.org>
+References: <20120411185715.GA4317@somewhere.redhat.com>
+ <4F862851.3040208@jp.fujitsu.com>
+ <20120412113217.GB11455@somewhere.redhat.com>
+ <4F86BFC6.2050400@parallels.com>
+ <20120412123256.GI1787@cmpxchg.org>
+ <4F86D4BD.1040305@parallels.com>
+ <20120412153055.GL1787@cmpxchg.org>
+ <20120412163825.GB13069@google.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <201204112332.24353.remi@remlab.net>
-Organization: Elliptic Technologies Inc.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20120412163825.GB13069@google.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2012-04-11 23:32 +0300, Rémi Denis-Courmont wrote:
-> From the perspective of the compiler, this is a feature not a bug. In
-> C and C++, loading or storing a value in an enumerated variable
-> whereby the value is not a member of the enumeration is undefined.
+On Thu, Apr 12, 2012 at 09:38:25AM -0700, Tejun Heo wrote:
+> Hello, Johannes.
+> 
+> On Thu, Apr 12, 2012 at 05:30:55PM +0200, Johannes Weiner wrote:
+> > To reraise a point from my other email that was ignored: do users
+> > actually really care about the number of tasks when they want to
+> > prevent forkbombs?  If a task would use neither CPU nor memory, you
+> > would not be interested in limiting the number of tasks.
+> > 
+> > Because the number of tasks is not a resource.  CPU and memory are.
+> >
+> > So again, if we would include the memory impact of tasks properly
+> > (structures, kernel stack pages) in the kernel memory counters which
+> > we allow to limit, shouldn't this solve our problem?
+> 
+> The task counter is trying to control the *number* of tasks, which is
+> purely memory overhead.  Translating #tasks into the actual amount of
+> memory isn't too trivial tho - the task stack isn't the only
+> allocation and the numbers should somehow make sense to the userland
+> in consistent way.
 
-I'm afraid that this is not the case in C, although it may be in C++
-(enums are very different in C++ than they are in C).  In C, enum types
-are required to be compatible with some integer type capable of storing
-the values of all the enum members (see C11§6.7.2.2#4).  Compatibility
-is a very strong condition, and implies that the two types are
-interchangable without affecting the meaning of the program (see
-C11§6.2.7).  Integer types have a number of specific requirements, one
-thing that's relevant here is that they do not have "holes" in their
-representable values: there is a minimum and maximum representable
-value, and all integers between them are representable (C11§6.2.6.2#1).
+But why would you ever even care about that number, though?  It has no
+intrinsic value.  We used it in a past because we had no other control
+over kernel memory and CPU usage.
 
-Thus, while the choice of integer type used may depend on the values of
-the corresponding enum constants, storing any value (regardless of
-whether or not its a member of the enumeration) is subject to the same
-rules as the implementation-defined compatbile integer type.  This is
-always well-defined for values within the range of the type.
-(C11§6.3.1.3#1 and C11§6.3.1.4#1).
+Even if we start out accounting just the kernel stack (which should be
+the biggest chunk), it won't be less accurate than limiting numbers of
+tasks.  It's just a different unit, but one which we can account and
+limit with less extra code, and even improve as we go along.
 
-> In other words, the compiler can assume that this does not happen, and
-> optimize it away.
+[ You could have tuned your task counter limit perfectly to one kernel
+  version, the next version will have changed the memory required per
+  task, file, random object, and suddenly your working setup runs out
+  of memory.  So it's not like starting with kernel stack and adding
+  more stuff later would be any less predictable. ]
 
-No, a conforming C compiler cannot assume such assignments do not
-happen, for the reasons outlined above.
+I don't think anyone wants to come back in a few months and discuss
+where the nr-of-open-files counter subsystem should live.
 
-Cheers,
--- 
-Nick Bowler, Elliptic Technologies (http://www.elliptictech.com/)
+> Also, I'm not sure whether this particular limit should live in its
+> silo or should be summed up together as part of kmem (kmem itself is
+> in its own silo after all apart from user memory, right?).
 
+There is k and u+k.  I don't see a technical problem with adding a
+separate stat for it later, but also not a particular reason to treat
+it differently, because it's nothing special.  It's just kernel
+memory.  Do you care if your cgroup has 2M tasks with one open socket
+each or one task with 2M sockets, as long as the group plays along
+nicely with the others?
