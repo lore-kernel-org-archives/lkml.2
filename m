@@ -1,63 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933933Ab2DLMsE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Apr 2012 08:48:04 -0400
-Received: from mail9.hitachi.co.jp ([133.145.228.44]:34361 "EHLO
-	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757591Ab2DLMsC (ORCPT
+	id S933992Ab2DLMt6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Apr 2012 08:49:58 -0400
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:6823 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755274Ab2DLMt5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Apr 2012 08:48:02 -0400
-X-AuditID: b753bd60-96f90ba000007b1b-d3-4f86cefe2ba8
-X-AuditID: b753bd60-96f90ba000007b1b-d3-4f86cefe2ba8
-Message-ID: <4F86CEF7.3090306@hitachi.com>
-Date: Thu, 12 Apr 2012 21:47:51 +0900
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Organization: Hitachi, Ltd., Japan
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:11.0) Gecko/20120327 Thunderbird/11.0.1
-MIME-Version: 1.0
-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
-        LKML <linux-kernel@vger.kernel.org>, Linux-mm <linux-mm@kvack.org>,
-        Oleg Nesterov <oleg@redhat.com>, Andi Kleen <andi@firstfloor.org>,
-        Christoph Hellwig <hch@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Anton Arapov <anton@redhat.com>
-Subject: Re: [PATCH 2/3] tracing: Extract out common code for kprobes/uprobes
- trace events
-References: <20120409091133.8343.65289.sendpatchset@srdronam.in.ibm.com> <20120409091144.8343.76218.sendpatchset@srdronam.in.ibm.com>
-In-Reply-To: <20120409091144.8343.76218.sendpatchset@srdronam.in.ibm.com>
-Content-Type: text/plain; charset=ISO-2022-JP
-Content-Transfer-Encoding: 7bit
-X-Brightmail-Tracker: AAAAAA==
+	Thu, 12 Apr 2012 08:49:57 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp06.nvidia.com on Thu, 12 Apr 2012 05:49:51 -0700
+From: Laxman Dewangan <ldewangan@nvidia.com>
+To: jic23@cam.ac.uk, gregkh@linuxfoundation.org, grant.likely@secretlab.ca,
+        rob.herring@calxeda.com, jbrenner@taosinc.com, rklein@nvidia.com,
+        max@stro.at
+Cc: linux-iio@vger.kernel.org, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
+        Laxman Dewangan <ldewangan@nvidia.com>
+Subject: [PATCH V3 0/2] staging: iio: add isl29028 driver
+Date: Thu, 12 Apr 2012 18:08:06 +0530
+Message-Id: <1334234288-25037-1-git-send-email-ldewangan@nvidia.com>
+X-Mailer: git-send-email 1.7.1.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2012/04/09 18:11), Srikar Dronamraju wrote:
-> From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-> 
-> Move parts of trace_kprobe.c that can be shared with upcoming
-> trace_uprobe.c. Common code to kernel/trace/trace_probe.h and
-> kernel/trace/trace_probe.c. There are no functional changes.
+ISL29028 is concurrent Ambient light and proximity sensor
+from intersil.
+Adding driver for supporting this device.
 
-Note: No functional change, means it does cosmetic changes. :)
-I've checked that all those cosmetic changes are acceptable.
+Changes from V1:
+- Taken care of cleanups comments.
 
-
-> Signed-off-by: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-
-Acked-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-
-Thank you,
+Changes from V2:
+- Implement the sampling frequency selection per channel wise.
+- Remove documentation change as it is already there.
+- Use the channel info for selecting proximity sampling rather than
+  exposing new sysfs from driver.
 
 
--- 
-Masami HIRAMATSU
-Software Platform Research Dept. Linux Technology Center
-Hitachi, Ltd., Yokohama Research Laboratory
-E-mail: masami.hiramatsu.pt@hitachi.com
+Laxman Dewangan (2):
+  staging: iio: add channel info for sampling frequency
+  staging: iio: add driver for isl29028
+
+ drivers/staging/iio/iio.h               |    5 +
+ drivers/staging/iio/industrialio-core.c |    1 +
+ drivers/staging/iio/light/Kconfig       |   10 +
+ drivers/staging/iio/light/Makefile      |    1 +
+ drivers/staging/iio/light/isl29028.c    |  574 +++++++++++++++++++++++++++++++
+ 5 files changed, 591 insertions(+), 0 deletions(-)
+ create mode 100644 drivers/staging/iio/light/isl29028.c
+
