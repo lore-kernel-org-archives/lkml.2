@@ -1,66 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966167Ab2DLW3u (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Apr 2012 18:29:50 -0400
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:35413 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S966124Ab2DLW3s (ORCPT
+	id S966185Ab2DLWbw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Apr 2012 18:31:52 -0400
+Received: from mail-wi0-f178.google.com ([209.85.212.178]:54058 "EHLO
+	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934122Ab2DLWbu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Apr 2012 18:29:48 -0400
+	Thu, 12 Apr 2012 18:31:50 -0400
 MIME-Version: 1.0
-In-Reply-To: <CA+55aFwaOGbD6S_7So34ZuANG-6fZXZhEah8G0X7McDGhionSg@mail.gmail.com>
-References: <20120411231102.GA6404@kroah.com>
-	<CAJyhjX2KrfSJW64PJMTHou9zSojsfA1iNT-WahinfMBce_B=BA@mail.gmail.com>
-	<20120412002927.GA23167@kroah.com>
-	<CAMP44s3Jh-t07A+i82qbAMQyEN0oWTmKk5BJcst942gFdD0=VA@mail.gmail.com>
-	<20120412011313.GA23764@kroah.com>
-	<CAMP44s2q+bQE3-zsX4bs=sQDt4jf8eE5bwZ8V88UjodjRyAjog@mail.gmail.com>
-	<20120412144626.GA14868@kroah.com>
-	<CAMP44s1T4EVwpzDuV_vV0Zh-5WcPCwdw9eeOfL17Geqp_UFN-Q@mail.gmail.com>
-	<CA+55aFwKYYgZcBX=L-q_6UdvkvFai+yjzgVxq7cA+HLL-Zojhw@mail.gmail.com>
-	<CAMP44s14SQont1wyMeOuWcXUT3U5Tgnoj9mbbgOdVXY_hN0+-w@mail.gmail.com>
-	<CA+55aFyLEJsz1yvu4bYe+RHdhLd-XXEScxtAgje=fyuUM+1XxA@mail.gmail.com>
-	<CAMP44s0yPPqFUO4963MhNb8+c_A=xJi4-eFPJ3s+a1TJ8ZfTtQ@mail.gmail.com>
-	<CA+55aFwaOGbD6S_7So34ZuANG-6fZXZhEah8G0X7McDGhionSg@mail.gmail.com>
-Date: Fri, 13 Apr 2012 01:29:46 +0300
-Message-ID: <CAMP44s06jrPBzf5Lt86-GDxD_PxqcaeJgmYS4tJhcvDdf=J5zA@mail.gmail.com>
-Subject: Re: [ 00/78] 3.3.2-stable review
-From: Felipe Contreras <felipe.contreras@gmail.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Greg KH <gregkh@linuxfoundation.org>, Sergio Correia <lists@uece.net>,
-        linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        linux-wireless Mailing List <linux-wireless@vger.kernel.org>,
-        Sujith Manoharan <c_manoha@qca.qualcomm.com>,
-        "ath9k-devel@lists.ath9k.org" <ath9k-devel@venema.h4ckr.net>,
-        "John W. Linville" <linville@tuxdriver.com>
-Content-Type: text/plain; charset=UTF-8
+In-Reply-To: <alpine.LFD.2.02.1204130022520.2542@ionos>
+References: <alpine.LFD.2.02.1204130004080.2542@ionos> <CA+55aFxg0rzpL-xCqdScxPKPMupbvteoXD1cPT-fWYpyMXoSGg@mail.gmail.com>
+ <alpine.LFD.2.02.1204130022520.2542@ionos>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Thu, 12 Apr 2012 15:31:29 -0700
+X-Google-Sender-Auth: IIyHrGvlpZRhZXlhda-V_A9AhMg
+Message-ID: <CA+55aFzP-DmGUqGcnxj2mq-mvmOXA7k-zgOrdDRY3WA9N5dmBg@mail.gmail.com>
+Subject: Re: [GIT pull] timer fixes for 3.4
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: Sasikantha Babu <sasikanth.v19@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 13, 2012 at 1:07 AM, Linus Torvalds
-<torvalds@linux-foundation.org> wrote:
-> On Thu, Apr 12, 2012 at 3:04 PM, Felipe Contreras
-> <felipe.contreras@gmail.com> wrote:
->>
->> Sure, but removing that patch from the stable tree is not going the
->> change that information; we already know the patch is wrong.
+On Thu, Apr 12, 2012 at 3:26 PM, Thomas Gleixner <tglx@linutronix.de> wrote:
 >
-> .. and we wait until it has been fixed in mainline so that we *know*
-> that information doesn't get lost.
+> I ran it through all the various (outdated) distros I have handy and
+> the printk didn't show once.
+>
+> I tried to figure out the reason for this NULL pointer thing, but
+> there is no trace of it on the intarwebs at all.
 
-So why don't we pick potentially dangerous patches that might benefit
-from some testing, put them in 'stable', and if there are problems,
-make sure they get fixed in upstream first? Or for that matter totally
-broken patches we want to make sure they get fixed in upstream.
+Ok. If we don't see any reports of messages, we can certainly remove it.
 
-Because the priority of the 'stable' tree is *stability*. Is it not?
+That said, would people actually *report* those messages?
 
-But what you are saying is: *before* the final review, even a hint
-that the patch might cause problems is reason enough to drop it from
-stable, but *after* the review, if we know the patch is totally
-broken, then it's the opposite; we really want it in.
+In general, for things like this, it's probably better to just make
+the change (especially if you have several distros you can test), and
+then add a printk_once() for the case that changed. Then, if people
+actually report it as some program stopping to work, the dmesg
+hopefully clues us in about the reason for the program not working.
+But that would have needed to happen during the merge window, it's too
+late now.
 
--- 
-Felipe Contreras
+Whatever. We'll see if somebody reports the message.
+
+                     Linus
