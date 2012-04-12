@@ -1,133 +1,254 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934916Ab2DLVz3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Apr 2012 17:55:29 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:35805 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756645Ab2DLVsm (ORCPT
+	id S966217Ab2DLV7d (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Apr 2012 17:59:33 -0400
+Received: from beauty.rexursive.com ([150.101.121.179]:51115 "EHLO
+	beauty.rexursive.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S966079Ab2DLV7b (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Apr 2012 17:48:42 -0400
-From: Will Drewry <wad@chromium.org>
-To: linux-kernel@vger.kernel.org
-Cc: linux-man@vger.kernel.org, linux-security-module@vger.kernel.org,
-        linux-arch@vger.kernel.org, linux-doc@vger.kernel.org,
-        kernel-hardening@lists.openwall.com, netdev@vger.kernel.org,
-        x86@kernel.org, arnd@arndb.de, davem@davemloft.net, hpa@zytor.com,
-        mingo@redhat.com, oleg@redhat.com, peterz@infradead.org,
-        rdunlap@xenotime.net, mcgrathr@chromium.org, tglx@linutronix.de,
-        luto@mit.edu, eparis@redhat.com, serge.hallyn@canonical.com,
-        djm@mindrot.org, scarybeasts@gmail.com, indan@nul.nu,
-        pmoore@redhat.com, akpm@linux-foundation.org, corbet@lwn.net,
-        eric.dumazet@gmail.com, markus@chromium.org, coreyb@linux.vnet.ibm.com,
-        keescook@chromium.org, jmorris@namei.org,
-        John Johansen <john.johansen@canonical.com>,
-        Will Drewry <wad@chromium.org>, Andy Lutomirski <luto@amacapital.net>
-Subject: [PATCH v18 02/15] Fix execve behavior apparmor for PR_{GET,SET}_NO_NEW_PRIVS
-Date: Thu, 12 Apr 2012 16:47:51 -0500
-Message-Id: <1334267284-19166-2-git-send-email-wad@chromium.org>
-X-Mailer: git-send-email 1.7.5.4
-In-Reply-To: <1334267284-19166-1-git-send-email-wad@chromium.org>
-References: <1334267284-19166-1-git-send-email-wad@chromium.org>
+	Thu, 12 Apr 2012 17:59:31 -0400
+Message-ID: <1334267969.2573.14.camel@shrek.rexursive.com>
+Subject: [PATCH v11]: Hibernation: fix the number of pages used for
+ hibernate/thaw buffering
+From: Bojan Smojver <bojan@rexursive.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: linux-kernel@vger.kernel.org, Per Olofsson <pelle@debian.org>
+Date: Fri, 13 Apr 2012 07:59:29 +1000
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 (3.2.3-2.fc16) 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: John Johansen <john.johansen@canonical.com>
+Hi Rafael,
 
-Add support for AppArmor to explicitly fail requested domain transitions
-if NO_NEW_PRIVS is set and the task is not unconfined.
+Yes, I know - it is getting a bit ridiculous. Such a simple problem, so
+many patches. Anyhow...
 
-Transitions from unconfined are still allowed because this always results
-in a reduction of privileges.
+Here we also fix the calculation of pages for read buffering. Not really
+very significant, but may become important in some really tight memory
+scenarios. And after thinking more about low_free_pages() inline
+function, Per was right - it is better to call an already existing
+function, rather than roll our own. Keeps kernel smaller and there is no
+significant performance gain otherwise.
 
-Acked-by: Eric Paris <eparis@redhat.com>
-Signed-off-by: Will Drewry <wad@chromium.org>
-Signed-off-by: John Johansen <john.johansen@canonical.com>
-Signed-off-by: Andy Lutomirski <luto@amacapital.net>
+Per,
 
-v18: new acked-by, new description
+Feel free to reply with your signed-off.
+
+---------------------------------------
+Hibernation/thaw fixes/improvements:
+
+1. Calculate the number of required free pages based on non-high memory
+pages only, because that is where the buffers will come from.
+
+2. Do not allocate memory for buffers from emergency pools, unless
+absolutely required. Do not warn about and do not retry non-essential
+failed allocations.
+
+3. Do not check the amount of free pages left on every single page
+write, but wait until one map is completely populated and then check.
+
+4. Set maximum number of pages for read buffering consistently, instead
+of inadvertently depending on the size of the sector type.
+
+5. Fix copyright line, which I missed when I submitted the hibernation
+threading patch.
+
+6. Dispense with bit shifting arithmetic to improve readability.
+
+Signed-off-by: Bojan Smojver <bojan@rexursive.com>
 ---
- security/apparmor/domain.c |   39 +++++++++++++++++++++++++++++++++++----
- 1 files changed, 35 insertions(+), 4 deletions(-)
+ kernel/power/swap.c |   84 +++++++++++++++++++++++++++++++++++----------------
+ 1 files changed, 58 insertions(+), 26 deletions(-)
 
-diff --git a/security/apparmor/domain.c b/security/apparmor/domain.c
-index 18c88d0..b81ea10 100644
---- a/security/apparmor/domain.c
-+++ b/security/apparmor/domain.c
-@@ -360,10 +360,6 @@ int apparmor_bprm_set_creds(struct linux_binprm *bprm)
- 	if (bprm->cred_prepared)
- 		return 0;
+diff --git a/kernel/power/swap.c b/kernel/power/swap.c
+index 8742fd0..11e22c0 100644
+--- a/kernel/power/swap.c
++++ b/kernel/power/swap.c
+@@ -6,7 +6,7 @@
+  *
+  * Copyright (C) 1998,2001-2005 Pavel Machek <pavel@ucw.cz>
+  * Copyright (C) 2006 Rafael J. Wysocki <rjw@sisk.pl>
+- * Copyright (C) 2010 Bojan Smojver <bojan@rexursive.com>
++ * Copyright (C) 2010-2012 Bojan Smojver <bojan@rexursive.com>
+  *
+  * This file is released under the GPLv2.
+  *
+@@ -51,6 +51,23 @@
  
--	/* XXX: no_new_privs is not usable with AppArmor yet */
--	if (bprm->unsafe & LSM_UNSAFE_NO_NEW_PRIVS)
--		return -EPERM;
--
- 	cxt = bprm->cred->security;
- 	BUG_ON(!cxt);
+ #define MAP_PAGE_ENTRIES	(PAGE_SIZE / sizeof(sector_t) - 1)
  
-@@ -398,6 +394,11 @@ int apparmor_bprm_set_creds(struct linux_binprm *bprm)
- 			new_profile = find_attach(ns, &ns->base.profiles, name);
- 		if (!new_profile)
- 			goto cleanup;
-+		/*
-+		 * NOTE: Domain transitions from unconfined are allowed
-+		 * even when no_new_privs is set because this aways results
-+		 * in a further reduction of permissions.
-+		 */
- 		goto apply;
++/*
++ * Number of free pages that are not high.
++ */
++static inline unsigned long low_free_pages(void)
++{
++	return nr_free_pages() - nr_free_highpages();
++}
++
++/*
++ * Number of pages required to be kept free while writing the image. Always
++ * half of all available low pages before the writing starts.
++ */
++static inline unsigned long reqd_free_pages(void)
++{
++	return low_free_pages() / 2;
++}
++
+ struct swap_map_page {
+ 	sector_t entries[MAP_PAGE_ENTRIES];
+ 	sector_t next_swap;
+@@ -72,7 +89,7 @@ struct swap_map_handle {
+ 	sector_t cur_swap;
+ 	sector_t first_sector;
+ 	unsigned int k;
+-	unsigned long nr_free_pages, written;
++	unsigned long reqd_free_pages;
+ 	u32 crc32;
+ };
+ 
+@@ -265,14 +282,17 @@ static int write_page(void *buf, sector_t offset, struct bio **bio_chain)
+ 		return -ENOSPC;
+ 
+ 	if (bio_chain) {
+-		src = (void *)__get_free_page(__GFP_WAIT | __GFP_HIGH);
++		src = (void *)__get_free_page(__GFP_WAIT | __GFP_NOWARN |
++		                              __GFP_NORETRY);
+ 		if (src) {
+ 			copy_page(src, buf);
+ 		} else {
+ 			ret = hib_wait_on_bio_chain(bio_chain); /* Free pages */
+ 			if (ret)
+ 				return ret;
+-			src = (void *)__get_free_page(__GFP_WAIT | __GFP_HIGH);
++			src = (void *)__get_free_page(__GFP_WAIT |
++			                              __GFP_NOWARN |
++			                              __GFP_NORETRY);
+ 			if (src) {
+ 				copy_page(src, buf);
+ 			} else {
+@@ -316,8 +336,7 @@ static int get_swap_writer(struct swap_map_handle *handle)
+ 		goto err_rel;
+ 	}
+ 	handle->k = 0;
+-	handle->nr_free_pages = nr_free_pages() >> 1;
+-	handle->written = 0;
++	handle->reqd_free_pages = reqd_free_pages();
+ 	handle->first_sector = handle->cur_swap;
+ 	return 0;
+ err_rel:
+@@ -351,12 +370,17 @@ static int swap_write_page(struct swap_map_handle *handle, void *buf,
+ 		clear_page(handle->cur);
+ 		handle->cur_swap = offset;
+ 		handle->k = 0;
+-	}
+-	if (bio_chain && ++handle->written > handle->nr_free_pages) {
+-		error = hib_wait_on_bio_chain(bio_chain);
+-		if (error)
+-			goto out;
+-		handle->written = 0;
++
++		if (bio_chain && low_free_pages() <= handle->reqd_free_pages) {
++			error = hib_wait_on_bio_chain(bio_chain);
++			if (error)
++				goto out;
++			/*
++			 * Recalculate the number of required free pages, to
++			 * make sure we never take more than half.
++			 */
++			handle->reqd_free_pages = reqd_free_pages();
++		}
+ 	}
+  out:
+ 	return error;
+@@ -403,8 +427,9 @@ static int swap_writer_finish(struct swap_map_handle *handle,
+ /* Maximum number of threads for compression/decompression. */
+ #define LZO_THREADS	3
+ 
+-/* Maximum number of pages for read buffering. */
+-#define LZO_READ_PAGES	(MAP_PAGE_ENTRIES * 8)
++/* Minimum/maximum number of pages for read buffering. */
++#define LZO_MIN_RD_PAGES	1024
++#define LZO_MAX_RD_PAGES	8192
+ 
+ 
+ /**
+@@ -615,12 +640,6 @@ static int save_image_lzo(struct swap_map_handle *handle,
  	}
  
-@@ -459,6 +460,16 @@ int apparmor_bprm_set_creds(struct linux_binprm *bprm)
- 		/* fail exec */
- 		error = -EACCES;
+ 	/*
+-	 * Adjust number of free pages after all allocations have been done.
+-	 * We don't want to run out of pages when writing.
+-	 */
+-	handle->nr_free_pages = nr_free_pages() >> 1;
+-
+-	/*
+ 	 * Start the CRC32 thread.
+ 	 */
+ 	init_waitqueue_head(&crc->go);
+@@ -641,6 +660,12 @@ static int save_image_lzo(struct swap_map_handle *handle,
+ 		goto out_clean;
+ 	}
  
 +	/*
-+	 * Policy has specified a domain transition, if no_new_privs then
-+	 * fail the exec.
++	 * Adjust the number of required free pages after all allocations have
++	 * been done. We don't want to run out of pages when writing.
 +	 */
-+	if (bprm->unsafe & LSM_UNSAFE_NO_NEW_PRIVS) {
-+		aa_put_profile(new_profile);
-+		error = -EPERM;
-+		goto cleanup;
-+	}
++	handle->reqd_free_pages = reqd_free_pages();
 +
- 	if (!new_profile)
- 		goto audit;
+ 	printk(KERN_INFO
+ 		"PM: Using %u thread(s) for compression.\n"
+ 		"PM: Compressing and saving image data (%u pages) ...     ",
+@@ -1051,7 +1076,7 @@ static int load_image_lzo(struct swap_map_handle *handle,
+ 	unsigned i, thr, run_threads, nr_threads;
+ 	unsigned ring = 0, pg = 0, ring_size = 0,
+ 	         have = 0, want, need, asked = 0;
+-	unsigned long read_pages;
++	unsigned long read_pages = 0;
+ 	unsigned char **page = NULL;
+ 	struct dec_data *data = NULL;
+ 	struct crc_data *crc = NULL;
+@@ -1063,7 +1088,7 @@ static int load_image_lzo(struct swap_map_handle *handle,
+ 	nr_threads = num_online_cpus() - 1;
+ 	nr_threads = clamp_val(nr_threads, 1, LZO_THREADS);
  
-@@ -613,6 +624,14 @@ int aa_change_hat(const char *hats[], int count, u64 token, bool permtest)
- 	const char *target = NULL, *info = NULL;
- 	int error = 0;
+-	page = vmalloc(sizeof(*page) * LZO_READ_PAGES);
++	page = vmalloc(sizeof(*page) * LZO_MAX_RD_PAGES);
+ 	if (!page) {
+ 		printk(KERN_ERR "PM: Failed to allocate LZO page\n");
+ 		ret = -ENOMEM;
+@@ -1128,15 +1153,22 @@ static int load_image_lzo(struct swap_map_handle *handle,
+ 	}
  
-+	/*
-+	 * Fail explicitly requested domain transitions if no_new_privs.
-+	 * There is no exception for unconfined as change_hat is not
-+	 * available.
-+	 */
-+	if (current->no_new_privs)
-+		return -EPERM;
+ 	/*
+-	 * Adjust number of pages for read buffering, in case we are short.
++	 * Set the number of pages for read buffering.
++	 * This is complete guesswork, because we'll only know the real
++	 * picture once prepare_image() is called, which is much later on
++	 * during the image load phase. We'll assume the worst case and
++	 * say that none of the image pages are from high memory.
+ 	 */
+-	read_pages = (nr_free_pages() - snapshot_get_image_size()) >> 1;
+-	read_pages = clamp_val(read_pages, LZO_CMP_PAGES, LZO_READ_PAGES);
++	if (low_free_pages() > snapshot_get_image_size())
++		read_pages = (low_free_pages() - snapshot_get_image_size()) / 2;
++	read_pages = clamp_val(read_pages, LZO_MIN_RD_PAGES, LZO_MAX_RD_PAGES);
+ 
+ 	for (i = 0; i < read_pages; i++) {
+ 		page[i] = (void *)__get_free_page(i < LZO_CMP_PAGES ?
+ 		                                  __GFP_WAIT | __GFP_HIGH :
+-		                                  __GFP_WAIT);
++		                                  __GFP_WAIT | __GFP_NOWARN |
++		                                  __GFP_NORETRY);
 +
- 	/* released below */
- 	cred = get_current_cred();
- 	cxt = cred->security;
-@@ -754,6 +773,18 @@ int aa_change_profile(const char *ns_name, const char *hname, bool onexec,
- 	cxt = cred->security;
- 	profile = aa_cred_profile(cred);
- 
-+	/*
-+	 * Fail explicitly requested domain transitions if no_new_privs
-+	 * and not unconfined.
-+	 * Domain transitions from unconfined are allowed even when
-+	 * no_new_privs is set because this aways results in a reduction
-+	 * of permissions.
-+	 */
-+	if (current->no_new_privs && !unconfined(profile)) {
-+		put_cred(cred);
-+		return -EPERM;
-+	}
-+
- 	if (ns_name) {
- 		/* released below */
- 		ns = aa_find_namespace(profile->ns, ns_name);
+ 		if (!page[i]) {
+ 			if (i < LZO_CMP_PAGES) {
+ 				ring_size = i;
+---------------------------------------
+
 -- 
-1.7.5.4
+Bojan
 
