@@ -1,104 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761962Ab2DLNOP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Apr 2012 09:14:15 -0400
-Received: from mx2.parallels.com ([64.131.90.16]:49447 "EHLO mx2.parallels.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757557Ab2DLNON (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Apr 2012 09:14:13 -0400
-Message-ID: <4F86D4BD.1040305@parallels.com>
-Date: Thu, 12 Apr 2012 10:12:29 -0300
-From: Glauber Costa <glommer@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120216 Thunderbird/10.0.1
-MIME-Version: 1.0
-To: Johannes Weiner <hannes@cmpxchg.org>
-CC: Frederic Weisbecker <fweisbec@gmail.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Hugh Dickins <hughd@google.com>,
-        Andrew Morton <akpm@linux-foundation.org>, Tejun Heo <tj@kernel.org>,
-        Daniel Walsh <dwalsh@redhat.com>,
-        "Daniel P. Berrange" <berrange@redhat.com>,
-        Li Zefan <lizf@cn.fujitsu.com>, LKML <linux-kernel@vger.kernel.org>,
-        Cgroups <cgroups@vger.kernel.org>,
-        Containers <containers@lists.linux-foundation.org>
-Subject: Re: [RFD] Merge task counter into memcg
-References: <20120411185715.GA4317@somewhere.redhat.com> <4F862851.3040208@jp.fujitsu.com> <20120412113217.GB11455@somewhere.redhat.com> <4F86BFC6.2050400@parallels.com> <20120412123256.GI1787@cmpxchg.org>
-In-Reply-To: <20120412123256.GI1787@cmpxchg.org>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+	id S934181Ab2DLNOV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Apr 2012 09:14:21 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:8437 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1761978Ab2DLNOS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Apr 2012 09:14:18 -0400
+X-Authority-Analysis: v=2.0 cv=P4S4d18u c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=XQbtiDEiEegA:10 a=dQM_NurO7VcA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=VnNF1IyMAAAA:8 a=meVymXHHAAAA:8 a=ehThHtbymvL64uL__w0A:9 a=TbP7U5tlfNMV3n8f7vwA:7 a=PUjeQqilurYA:10 a=jeBq3FmKZ4MA:10 a=OPBHYVnBsX_q0tdu:21 a=hiX4-xERMbCNfjXD:21 a=ZycB6UtQUfgMyuk2+PxD7w==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.80.29
+Message-ID: <1334236456.23924.333.camel@gandalf.stny.rr.com>
+Subject: Re: [PATCH UPDATED 3/3] tracing: Provide trace events interface for
+ uprobes
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
+        LKML <linux-kernel@vger.kernel.org>, Linux-mm <linux-mm@kvack.org>,
+        Oleg Nesterov <oleg@redhat.com>, Andi Kleen <andi@firstfloor.org>,
+        Christoph Hellwig <hch@infradead.org>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Anton Arapov <anton@redhat.com>
+Date: Thu, 12 Apr 2012 09:14:16 -0400
+In-Reply-To: <20120411103043.GB29437@linux.vnet.ibm.com>
+References: <20120409091133.8343.65289.sendpatchset@srdronam.in.ibm.com>
+	 <20120409091154.8343.50489.sendpatchset@srdronam.in.ibm.com>
+	 <20120411103043.GB29437@linux.vnet.ibm.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.2.2-1 
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [201.82.19.44]
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/12/2012 09:32 AM, Johannes Weiner wrote:
-> On Thu, Apr 12, 2012 at 08:43:02AM -0300, Glauber Costa wrote:
->> On 04/12/2012 08:32 AM, Frederic Weisbecker wrote:
->>>> But I think increasing number of subsystem is not very good....
->>> If the result is a better granularity on the overhead, I believe this
->>> can be a good thing.
->>
->> But again, since there is quite number of people trying to merge
->> those stuff together, you are just swimming against the tide.
->
-> I don't see where merging unrelated controllers together is being
-> discussed, do you have a reference?
+On Wed, 2012-04-11 at 16:00 +0530, Srikar Dronamraju wrote:
+> From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+> 
+> Implements trace_event support for uprobes. In its current form it can
+> be used to put probes at a specified offset in a file and dump the
+> required registers when the code flow reaches the probed address.
+> 
+> The following example shows how to dump the instruction pointer and %ax
+> a register at the probed text address.  Here we are trying to probe
+> zfree in /bin/zsh
+> 
+> # cd /sys/kernel/debug/tracing/
+> # cat /proc/`pgrep  zsh`/maps | grep /bin/zsh | grep r-xp
+> 00400000-0048a000 r-xp 00000000 08:03 130904 /bin/zsh
+> # objdump -T /bin/zsh | grep -w zfree
+> 0000000000446420 g    DF .text  0000000000000012  Base        zfree
+> # echo 'p /bin/zsh:0x46420 %ip %ax' > uprobe_events
+> # cat uprobe_events
+> p:uprobes/p_zsh_0x46420 /bin/zsh:0x0000000000046420
+> # echo 1 > events/uprobes/enable
+> # sleep 20
+> # echo 0 > events/uprobes/enable
+> # cat trace
+> # tracer: nop
+> #
+> #           TASK-PID    CPU#    TIMESTAMP  FUNCTION
+> #              | |       |          |         |
+>              zsh-24842 [006] 258544.995456: p_zsh_0x46420: (0x446420) arg1=446421 arg2=79
+>              zsh-24842 [007] 258545.000270: p_zsh_0x46420: (0x446420) arg1=446421 arg2=79
+>              zsh-24842 [002] 258545.043929: p_zsh_0x46420: (0x446420) arg1=446421 arg2=79
+>              zsh-24842 [004] 258547.046129: p_zsh_0x46420: (0x446420) arg1=446421 arg2=79
+> 
+> Signed-off-by: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
 
-https://lkml.org/lkml/2012/2/21/379
+I'm fine with what I see here (still need to fix what Masami suggested).
 
-But also, I believe this has been widely discussed in person by people, 
-in separate groups. Maybe Tejun can do a small writeup of where we stand?
+Acked-by: Steven Rostedt <rostedt@goodmis.org>
 
-I would also point out that this is exactly what it is (IMHO): an 
-ongoing discussion. You are more than welcome to chime in.
+-- Steve
 
->> If this gets really integrated, out of a sudden the overhead will
->> appear. So better care about it now.
->
-> Forcing people that want to account/limit one resource to take the hit
-> for something else they are not interested in requires justification.
 
-Agree. Even people aiming for unified hierarchies are okay with an 
-opt-in/out system, I believe. So the controllers need not to be active 
-at all times. One way of doing this is what I suggested to Frederic: If 
-you don't limit, don't account.
 
-> You can optimize only so much, in the end, the hierarchical accounting
-> is just expensive and unacceptable if you don't care about a certain
-> resource.  For that reason, I think controllers should stay opt-in.
 
-see above.
-
-> Btw, can we please have a discussion where raised concerns are
-> supported by more than gut feeling?  "I think X is not very good" is
-> hardly an argument.  Where is the technical problem in increasing the
-> number of available controllers?
-
-Kame said that, not me. But FWIW, I don't disagree. And this is hardly 
-gut feeling.
-
-A big number of controllers creates complexity. When coding, we can 
-assume a lot less things about their relationships, and more 
-importantly: at some point people get confused. Fuck, sometimes *we* get 
-confused about which controller do what, where its responsibility end 
-and where the other's begin. And we're the ones writing it! Avoiding 
-complexity is an engineering principle, not a gut feeling.
-
-Now, of course, we should aim to make things as simple as possible, but 
-not simpler: So you can argue that in Frederic's specific case, it is 
-justified. And I'd be fine with that 100 %. If I agreed...
-
-There are two natural points for inclusion here:
-
-1) every cgroup has a task counter by itself. If we're putting the tasks 
-there anyway, this provides a natural point of accounting.
-
-2) The cpu cgroup, in the end, is the realm of the scheduler. We 
-determine which % of the cpu the process will get, bandwidth, time spent 
-by tasks, and all that. It is also more natural for that, because it is 
-task based.
-
-Don't get me wrong: I actually love the feature Frederic is working on.
-I just don't believe a different controller is justified. Nor do I 
-believe memcg is the place for that (specially now that I thought it 
-overnight)
