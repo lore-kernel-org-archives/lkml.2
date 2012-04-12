@@ -1,77 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934873Ab2DLWRJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Apr 2012 18:17:09 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:64893 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1762825Ab2DLWRG convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Apr 2012 18:17:06 -0400
+	id S934944Ab2DLWRe (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Apr 2012 18:17:34 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:10071 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S934784Ab2DLWRd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Apr 2012 18:17:33 -0400
+Date: Fri, 13 Apr 2012 00:17:05 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: David Howells <dhowells@redhat.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] cred: remove task_is_dead() from __task_cred() validation
+Message-ID: <20120412221705.GA853@redhat.com>
 MIME-Version: 1.0
-In-Reply-To: <1334267284-19166-1-git-send-email-wad@chromium.org>
-References: <1334267284-19166-1-git-send-email-wad@chromium.org>
-Date: Thu, 12 Apr 2012 15:17:01 -0700
-X-Google-Sender-Auth: gsmFIfJHOfl3oxL8IAcpNrI2chs
-Message-ID: <CAGXu5jJgjcEGUW2SyDsVbTtthYByg8_y1h+tbnNdSn5qjEu+NQ@mail.gmail.com>
-Subject: Re: [PATCH v18 01/15] Add PR_{GET,SET}_NO_NEW_PRIVS to prevent execve
- from granting privs
-From: Kees Cook <keescook@chromium.org>
-To: Will Drewry <wad@chromium.org>
-Cc: linux-kernel@vger.kernel.org, linux-man@vger.kernel.org,
-        linux-security-module@vger.kernel.org, linux-arch@vger.kernel.org,
-        linux-doc@vger.kernel.org, kernel-hardening@lists.openwall.com,
-        netdev@vger.kernel.org, x86@kernel.org, arnd@arndb.de,
-        davem@davemloft.net, hpa@zytor.com, mingo@redhat.com, oleg@redhat.com,
-        peterz@infradead.org, rdunlap@xenotime.net, mcgrathr@chromium.org,
-        tglx@linutronix.de, luto@mit.edu, eparis@redhat.com,
-        serge.hallyn@canonical.com, djm@mindrot.org, scarybeasts@gmail.com,
-        indan@nul.nu, pmoore@redhat.com, akpm@linux-foundation.org,
-        corbet@lwn.net, eric.dumazet@gmail.com, markus@chromium.org,
-        coreyb@linux.vnet.ibm.com, jmorris@namei.org,
-        Andy Lutomirski <luto@amacapital.net>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 12, 2012 at 2:47 PM, Will Drewry <wad@chromium.org> wrote:
-> From: Andy Lutomirski <luto@amacapital.net>
->
-> With this change, calling
->  prctl(PR_SET_NO_NEW_PRIVS, 1, 0, 0, 0)
-> disables privilege granting operations at execve-time.  For example, a
-> process will not be able to execute a setuid binary to change their uid
-> or gid if this bit is set.  The same is true for file capabilities.
->
-> Additionally, LSM_UNSAFE_NO_NEW_PRIVS is defined to ensure that
-> LSMs respect the requested behavior.
->
-> To determine if the NO_NEW_PRIVS bit is set, a task may call
->  prctl(PR_GET_NO_NEW_PRIVS, 0, 0, 0, 0);
-> It returns 1 if set and 0 if it is not set. If any of the arguments are
-> non-zero, it will return -1 and set errno to -EINVAL.
-> (PR_SET_NO_NEW_PRIVS behaves similarly.)
->
-> This functionality is desired for the proposed seccomp filter patch
-> series.  By using PR_SET_NO_NEW_PRIVS, it allows a task to modify the
-> system call behavior for itself and its child tasks without being
-> able to impact the behavior of a more privileged task.
->
-> Another potential use is making certain privileged operations
-> unprivileged.  For example, chroot may be considered "safe" if it cannot
-> affect privileged tasks.
->
-> Note, this patch causes execve to fail when PR_SET_NO_NEW_PRIVS is
-> set and AppArmor is in use.  It is fixed in a subsequent patch.
->
-> Signed-off-by: Andy Lutomirski <luto@amacapital.net>
-> Signed-off-by: Will Drewry <wad@chromium.org>
-> Acked-by: Eric Paris <eparis@redhat.com>
+commit 8f92054e:
 
-Acked-by: Kees Cook <keescook@chromium.org>
+    add the following validation condition:
 
+        task->exit_state >= 0
+
+    to permit the access if the target task is dead and therefore
+    unable to change its own credentials.
+
+OK, but afaics currently this can only help wait_task_zombie() which
+calls __task_cred() without rcu lock.
+
+Remove this validation and change wait_task_zombie() to use task_uid()
+instead. This means we do rcu_read_lock() only to shut up the lockdep,
+but we already do the same in, say, wait_task_stopped().
+
+task_is_dead() should die, task->exit_state != 0 means that this task
+has passed exit_notify(), only do_wait-like code paths should use this.
+
+Unfortunately, we can't kill task_is_dead() right now, it has already
+acquired buggy users in drivers/staging. The fix already exists.
+
+Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+Reviewed-by: "Eric W. Biederman" <ebiederm@xmission.com>
+Acked-by: David Howells <dhowells@redhat.com>
+---
+ include/linux/cred.h |   10 +++-------
+ kernel/exit.c        |    2 +-
+ 2 files changed, 4 insertions(+), 8 deletions(-)
+
+diff --git a/include/linux/cred.h b/include/linux/cred.h
+index adadf71..1b64c72 100644
+--- a/include/linux/cred.h
++++ b/include/linux/cred.h
+@@ -276,17 +276,13 @@ static inline void put_cred(const struct cred *_cred)
+  * @task: The task to query
+  *
+  * Access the objective credentials of a task.  The caller must hold the RCU
+- * readlock or the task must be dead and unable to change its own credentials.
++ * readlock.
+  *
+  * The result of this function should not be passed directly to get_cred();
+  * rather get_task_cred() should be used instead.
+  */
+-#define __task_cred(task)						\
+-	({								\
+-		const struct task_struct *__t = (task);			\
+-		rcu_dereference_check(__t->real_cred,			\
+-				      task_is_dead(__t));		\
+-	})
++#define __task_cred(task)	\
++	rcu_dereference((task)->real_cred)
+ 
+ /**
+  * get_current_cred - Get the current task's subjective credentials
+diff --git a/kernel/exit.c b/kernel/exit.c
+index 4b4042f..7b36288 100644
+--- a/kernel/exit.c
++++ b/kernel/exit.c
+@@ -1214,7 +1213,7 @@ static int wait_task_zombie(struct wait_opts *wo, struct task_struct *p)
+ 	unsigned long state;
+ 	int retval, status, traced;
+ 	pid_t pid = task_pid_vnr(p);
+-	uid_t uid = __task_cred(p)->uid;
++	uid_t uid = task_uid(p);
+ 	struct siginfo __user *infop;
+ 
+ 	if (!likely(wo->wo_flags & WEXITED))
 -- 
-Kees Cook
-ChromeOS Security
+1.5.5.1
+
+
