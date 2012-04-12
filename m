@@ -1,98 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934838Ab2DLWEK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Apr 2012 18:04:10 -0400
-Received: from www.linutronix.de ([62.245.132.108]:38848 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965115Ab2DLWEI (ORCPT
+	id S934886Ab2DLWEq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Apr 2012 18:04:46 -0400
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:51825 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934783Ab2DLWEo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Apr 2012 18:04:08 -0400
-Date: Fri, 13 Apr 2012 00:04:03 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-cc: Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>, x86@kernel.org
-Subject: [GIT pull] x86 fixes for 3.4
-Message-ID: <alpine.LFD.2.02.1204130000590.2542@ionos>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+	Thu, 12 Apr 2012 18:04:44 -0400
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+In-Reply-To: <CA+55aFyLEJsz1yvu4bYe+RHdhLd-XXEScxtAgje=fyuUM+1XxA@mail.gmail.com>
+References: <20120411231102.GA6404@kroah.com>
+	<CAJyhjX2KrfSJW64PJMTHou9zSojsfA1iNT-WahinfMBce_B=BA@mail.gmail.com>
+	<20120412002927.GA23167@kroah.com>
+	<CAMP44s3Jh-t07A+i82qbAMQyEN0oWTmKk5BJcst942gFdD0=VA@mail.gmail.com>
+	<20120412011313.GA23764@kroah.com>
+	<CAMP44s2q+bQE3-zsX4bs=sQDt4jf8eE5bwZ8V88UjodjRyAjog@mail.gmail.com>
+	<20120412144626.GA14868@kroah.com>
+	<CAMP44s1T4EVwpzDuV_vV0Zh-5WcPCwdw9eeOfL17Geqp_UFN-Q@mail.gmail.com>
+	<CA+55aFwKYYgZcBX=L-q_6UdvkvFai+yjzgVxq7cA+HLL-Zojhw@mail.gmail.com>
+	<CAMP44s14SQont1wyMeOuWcXUT3U5Tgnoj9mbbgOdVXY_hN0+-w@mail.gmail.com>
+	<CA+55aFyLEJsz1yvu4bYe+RHdhLd-XXEScxtAgje=fyuUM+1XxA@mail.gmail.com>
+Date: Fri, 13 Apr 2012 01:04:42 +0300
+Message-ID: <CAMP44s0yPPqFUO4963MhNb8+c_A=xJi4-eFPJ3s+a1TJ8ZfTtQ@mail.gmail.com>
+Subject: Re: [ 00/78] 3.3.2-stable review
+From: Felipe Contreras <felipe.contreras@gmail.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Greg KH <gregkh@linuxfoundation.org>, Sergio Correia <lists@uece.net>,
+        linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+        linux-wireless Mailing List <linux-wireless@vger.kernel.org>,
+        Sujith Manoharan <c_manoha@qca.qualcomm.com>,
+        "ath9k-devel@lists.ath9k.org" <ath9k-devel@venema.h4ckr.net>,
+        "John W. Linville" <linville@tuxdriver.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus,
+On Fri, Apr 13, 2012 at 12:34 AM, Linus Torvalds
+<torvalds@linux-foundation.org> wrote:
+> On Thu, Apr 12, 2012 at 2:20 PM, Felipe Contreras
+> <felipe.contreras@gmail.com> wrote:
+>>
+>> I could argue in favor of exceptions, but I don't think you realize
+>> the fact that this change does not affect your tree *at all*. Adding
+>> and removing a patch in the stable tree is a no-op.
+>
+> You're a fucking moron.
+>
+> It's not a no-op at all, and you don't seem to understand it.
+>
+> It's *information*.
+>
+> It's "that patch didn't work". That's not a no-op. That's actual
+> useful and worthwhile knowledge.
 
-please pull the latest x86-urgent-for-linus git tree from:
+Sure, but removing that patch from the stable tree is not going the
+change that information; we already know the patch is wrong.
 
-   git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git x86-urgent-for-linus
+Let's say somebody finds something wrong with one of the patches
+proposed for 3.3.2 today, which is still a possibility. The patch
+would be dropped, even though it's already in upstream (as all stable
+patches are), and development in upstream will continue as usual, and
+a proper fix will come later--there's lots of stuff broken there,
+which is why not all the patches make it to 3.3.2.
 
-Thanks,
+But if somebody finds a problem on Saturday, after the 3.3.2 release,
+well, it's too late now, the patch has been tagged and cannot be
+removed for 3.3.3, now we have to wait to see what upstream does.
 
-	tglx
+Wrong is wrong, before or after the 3.3.1 tag, this patch is not
+'stable' material, and removing it does not affect upstream at all.
 
------------------->
-Emil Goode (1):
-      x86: vsyscall: Use NULL instead 0 for a pointer argument
-
-H. Peter Anvin (1):
-      x86: Use correct byte-sized register constraint in __add()
-
-Jeremy Fitzhardinge (1):
-      x86: Use correct byte-sized register constraint in __xchg_op()
-
-
- arch/x86/include/asm/cmpxchg.h |    4 ++--
- arch/x86/kernel/vsyscall_64.c  |    6 +++---
- 2 files changed, 5 insertions(+), 5 deletions(-)
-
-diff --git a/arch/x86/include/asm/cmpxchg.h b/arch/x86/include/asm/cmpxchg.h
-index b3b7332..99480e5 100644
---- a/arch/x86/include/asm/cmpxchg.h
-+++ b/arch/x86/include/asm/cmpxchg.h
-@@ -43,7 +43,7 @@ extern void __add_wrong_size(void)
- 		switch (sizeof(*(ptr))) {				\
- 		case __X86_CASE_B:					\
- 			asm volatile (lock #op "b %b0, %1\n"		\
--				      : "+r" (__ret), "+m" (*(ptr))	\
-+				      : "+q" (__ret), "+m" (*(ptr))	\
- 				      : : "memory", "cc");		\
- 			break;						\
- 		case __X86_CASE_W:					\
-@@ -173,7 +173,7 @@ extern void __add_wrong_size(void)
- 		switch (sizeof(*(ptr))) {				\
- 		case __X86_CASE_B:					\
- 			asm volatile (lock "addb %b1, %0\n"		\
--				      : "+m" (*(ptr)) : "ri" (inc)	\
-+				      : "+m" (*(ptr)) : "qi" (inc)	\
- 				      : "memory", "cc");		\
- 			break;						\
- 		case __X86_CASE_W:					\
-diff --git a/arch/x86/kernel/vsyscall_64.c b/arch/x86/kernel/vsyscall_64.c
-index f386dc4..7515cf0 100644
---- a/arch/x86/kernel/vsyscall_64.c
-+++ b/arch/x86/kernel/vsyscall_64.c
-@@ -216,9 +216,9 @@ bool emulate_vsyscall(struct pt_regs *regs, unsigned long address)
- 	current_thread_info()->sig_on_uaccess_error = 1;
- 
- 	/*
--	 * 0 is a valid user pointer (in the access_ok sense) on 32-bit and
-+	 * NULL is a valid user pointer (in the access_ok sense) on 32-bit and
- 	 * 64-bit, so we don't need to special-case it here.  For all the
--	 * vsyscalls, 0 means "don't write anything" not "write it at
-+	 * vsyscalls, NULL means "don't write anything" not "write it at
- 	 * address 0".
- 	 */
- 	ret = -EFAULT;
-@@ -247,7 +247,7 @@ bool emulate_vsyscall(struct pt_regs *regs, unsigned long address)
- 
- 		ret = sys_getcpu((unsigned __user *)regs->di,
- 				 (unsigned __user *)regs->si,
--				 0);
-+				 NULL);
- 		break;
- 	}
- 
+-- 
+Felipe Contreras
