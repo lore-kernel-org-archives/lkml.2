@@ -1,200 +1,151 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934981Ab2DLXXS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Apr 2012 19:23:18 -0400
-Received: from usmamail.tilera.com ([206.83.70.75]:6974 "EHLO
-	USMAMAIL.TILERA.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934959Ab2DLXXQ (ORCPT
+	id S965094Ab2DLX3x (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Apr 2012 19:29:53 -0400
+Received: from mail-pz0-f52.google.com ([209.85.210.52]:63216 "EHLO
+	mail-pz0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934994Ab2DLX3s (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Apr 2012 19:23:16 -0400
-Message-ID: <4F8763E1.1020605@tilera.com>
-Date: Thu, 12 Apr 2012 19:23:13 -0400
-From: Chris Metcalf <cmetcalf@tilera.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:11.0) Gecko/20120327 Thunderbird/11.0.1
-MIME-Version: 1.0
-To: Arnd Bergmann <arnd@arndb.de>
-CC: <linux-kernel@vger.kernel.org>, <netdev@vger.kernel.org>
-Subject: Re: [PATCH 6/6] tilegx network driver: initial support
-References: <201204062059.q36KxjEO011317@farm-0027.internal.tilera.com> <201204091349.54484.arnd@arndb.de> <4F835510.4060100@tilera.com> <201204101042.39877.arnd@arndb.de>
-In-Reply-To: <201204101042.39877.arnd@arndb.de>
-X-Enigmail-Version: 1.4
-Content-Type: text/plain; charset="ISO-8859-15"
-Content-Transfer-Encoding: 7bit
+	Thu, 12 Apr 2012 19:29:48 -0400
+From: Tejun Heo <tj@kernel.org>
+To: axboe@kernel.dk
+Cc: vgoyal@redhat.com, ctalbott@google.com, rni@google.com,
+        linux-kernel@vger.kernel.org, cgroups@vger.kernel.org,
+        containers@lists.linux-foundation.org, Tejun Heo <tj@kernel.org>
+Subject: [PATCH 1/8] blkcg: kill blkio_list and replace blkio_list_lock with a mutex
+Date: Thu, 12 Apr 2012 16:29:33 -0700
+Message-Id: <1334273380-30233-2-git-send-email-tj@kernel.org>
+X-Mailer: git-send-email 1.7.7.3
+In-Reply-To: <1334273380-30233-1-git-send-email-tj@kernel.org>
+References: <1334273380-30233-1-git-send-email-tj@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 4/10/2012 6:42 AM, Arnd Bergmann wrote:
-> On Monday 09 April 2012, Chris Metcalf wrote:
->> On 4/9/2012 9:49 AM, Arnd Bergmann wrote:
->>> On Friday 06 April 2012, Chris Metcalf wrote:
->>>> This change adds support for the tilegx network driver based on the
->>>> GXIO IORPC support in the tilegx software stack, using the on-chip
->>>> mPIPE packet processing engine.
->>>>
->>>> Signed-off-by: Chris Metcalf <cmetcalf@tilera.com>
->>>> ---
->>>>  drivers/net/ethernet/tile/Kconfig  |    1 +
->>>>  drivers/net/ethernet/tile/Makefile |    4 +-
->>>>  drivers/net/ethernet/tile/tilegx.c | 2045 ++++++++++++++++++++++++++++++++++++
->>>>  3 files changed, 2048 insertions(+), 2 deletions(-)
->>>>  create mode 100644 drivers/net/ethernet/tile/tilegx.c
->>>
->> The actual author would rather not publish his name (I just double-checked
->> with him). 
-> Hmm, it doesn't look all that bad actually, the comments I had are just for
-> small details.
+With blkio_policy[], blkio_list is redundant and hinders with
+per-queue policy activation.  Remove it.  Also, replace
+blkio_list_lock with a mutex blkcg_pol_mutex and let it protect the
+whole [un]registration.
 
-FWIW, the author's preference doesn't have to do with the code quality, but
-for his own reasons.
+This is to prepare for per-queue policy activation and doesn't cause
+any functional difference.
 
->>>> +/* The actual devices. */
->>>> +static struct net_device *tile_net_devs[TILE_NET_DEVS];
->>>> +
->>>> +/* The device for a given channel.  HACK: We use "32", not
->>>> + * TILE_NET_CHANNELS, because it is fairly subtle that the 5 bit
->>>> + * "idesc.channel" field never exceeds TILE_NET_CHANNELS.
->>>> + */
->>>> +static struct net_device *tile_net_devs_for_channel[32];
->>> When you need to keep a list or array of device structures in a driver, you're
->>> usually doing something very wrong. The convention is to just pass the pointer
->>> around to where you need it.
->> We need "tile_net_devs_for_channel" because we share a single hardware
->> queue for all devices, and each packet's metadata contains a "channel"
->> value which indicates the device.
->  
-> Ok, but please remove tile_net_devs then.
-> I think a better abstraction for tile_net_devs_for_channel would be
-> some interface that lets you add private data to a channel so when
-> you get data from a channel, you can extract that pointer from the driver
-> using the channel.
+Signed-off-by: Tejun Heo <tj@kernel.org>
+Cc: Vivek Goyal <vgoyal@redhat.com>
+---
+ block/blk-cgroup.c |   32 +++++++++++++++++---------------
+ block/blk-cgroup.h |    1 -
+ 2 files changed, 17 insertions(+), 16 deletions(-)
 
-
-I think what would be clearer is to document how and why we are using this
-additional data structure.  We do access via both arrays where it is
-efficient to do so, so getting rid of either of them doesn't seem right. 
-Let's keep the "normal" tile_net_devs[] as is, indexed by devno, and make
-the tile_net_devs_for_channel[] more abstracted by using the following code:
-
-/*
- * Provide support for efficiently mapping a channel to the device
- * that is using that channel, or NULL if none.  The pointers in this
- * array are only non-NULL when pointing to active tilegx net_device
- * structures, and they are cleared before the struture itself is
- * released.
- *
- * HACK: We use "32", not TILE_NET_CHANNELS, because it is fairly
- * subtle that the 5 bit "idesc.channel" field never exceeds
- * TILE_NET_CHANNELS.
- */
-static struct net_device *channel_to_dev[32];
-
-static void bychannel_add(struct net_device *dev)
-{
-	struct tile_net_priv *priv = netdev_priv(dev);
-	BUG_ON(channel_to_dev[priv->channel] != NULL);
-	channel_to_dev[priv->channel] = dev;
-}
-
-static void bychannel_delete(struct net_device *dev)
-{
-	struct tile_net_priv *priv = netdev_priv(dev);
-	channel_to_dev[priv->channel] = NULL;
-}
-
-static inline struct net_device *bychannel_lookup(int channel)
-{
-	return channel_to_dev[channel];
-}
-
-
-We then call bychannel_add() in the open method, and bychannel_delete() in
-the close method, so it's clear that the pointers have appropriate lifetimes.
-
-> Don't you already have a per-channel data structure?
-
-Nope.
-
->> /*
->>  * The on-chip I/O hardware on tilegx is configured with VA=PA for the
->>  * kernel's PA range.  The low-level APIs and field names use "va" and
->>  * "void *" nomenclature, to be consistent with the general notion
->>  * that the addresses in question are virtualizable, but in the kernel
->>  * context we are actually manipulating PA values.  To allow readers
->>  * of the code to understand what's happening, we direct their
->>  * attention to this comment by using the following two no-op functions.
->>  */
->> static inline unsigned long pa_to_tile_io_addr(phys_addr_t pa)
->> {
->>         BUILD_BUG_ON(sizeof(phys_addr_t) != sizeof(unsigned long));
->>         return pa;
->> }
->> static inline phys_addr_t tile_io_addr_to_pa(unsigned long tile_io_addr)
->> {
->>         return tile_io_addr;
->> }
->>
->> Then the individual uses in the network driver are just things like
->> "edesc_head.va = pa_to_tile_io_addr(__pa(va))" or "va =
->> __va(tile_io_addr_to_pa((unsigned long)gxio_mpipe_idesc_get_va(idesc)))"
->> which I think is a little clearer.
-> Yes, although I would probably add a typedef for tile_io_addr and pass
-> the virtual address in and out these helper functions.
-
-Good ideas, done.
-
-> For added clarity, you could make the interface look like dma_map_single(),
-> which requires adding an empty unmap() function as well -- that would
-> make it obvious where that data is actually used. Why do you require
-> the reverse map anyway? Normally you only need to pass a bus address to
-> the device but don't need to translate that back into a virtual address
-> because you already had that in the beginning.
-
-We need the reverse map since the hardware hands us an "idesc" which has
-just the tile_io_addr value in it, so we need to map it back to a va to
-deal with it.
-
-I don't think the map/unmap abstraction is too helpful here, since we're
-assuming that memory is all fully-mapped, as it always is on GX.
-
->>>> +		/* Compute the "ip checksum". */
->>>> +		jsum = isum_hack + htons(s_len - eh_len) + htons(id);
->>>> +		jsum = __insn_v2sadu(jsum, 0);
->>>> +		jsum = __insn_v2sadu(jsum, 0);
->>>> +		jsum = (0xFFFF ^ jsum);
->>>> +		jh->check = jsum;
->>>> +
->>>> +		/* Update the tcp "seq". */
->>>> +		uh->seq = htonl(seq);
->>>> +
->>>> +		/* Update some flags. */
->>>> +		if (!final)
->>>> +			uh->fin = uh->psh = 0;
->>>> +
->>>> +		/* Compute the tcp pseudo-header checksum. */
->>>> +		usum = tsum_hack + htons(s_len);
->>>> +		usum = __insn_v2sadu(usum, 0);
->>>> +		usum = __insn_v2sadu(usum, 0);
->>>> +		uh->check = usum;
->>> Why to you open-code the ip checksum functions here? Normally the stack takes
->>> care of this by calling the functions you already provide in
->>> arch/tile/lib/checksum.c
->> If there is a way to do TSO without this, we'd be happy to hear it, but
->> it's not clear how it would be possible.  We are only computing a PARTIAL
->> checksum here, and letting the hardware compute the "full" checksum.
-> Sounds like you're looking for csum_partial() ;-)
-
-Well, that's a pretty heavy-weight operation on memory.  Here we're just
-updating from a few values held in registers, more or less.  csum_partial()
-didn't seem like a good fit.  What I've done is move the longto16() routine
-from checksum.c to <asm/checksum.h> and rename it csum_long(), then use it
-like this, e.g. for the "usum" block above:
-
-		/* Compute the tcp pseudo-header checksum. */
-		uh->check = csum_long(tsum_hack + htons(s_len));
-
-
+diff --git a/block/blk-cgroup.c b/block/blk-cgroup.c
+index 9449c38..af665fe 100644
+--- a/block/blk-cgroup.c
++++ b/block/blk-cgroup.c
+@@ -24,9 +24,7 @@
+ 
+ #define MAX_KEY_LEN 100
+ 
+-static DEFINE_SPINLOCK(blkio_list_lock);
+-static LIST_HEAD(blkio_list);
+-
++static DEFINE_MUTEX(blkcg_pol_mutex);
+ static DEFINE_MUTEX(all_q_mutex);
+ static LIST_HEAD(all_q_list);
+ 
+@@ -311,8 +309,9 @@ blkiocg_reset_stats(struct cgroup *cgroup, struct cftype *cftype, u64 val)
+ 	struct blkio_cgroup *blkcg = cgroup_to_blkio_cgroup(cgroup);
+ 	struct blkio_group *blkg;
+ 	struct hlist_node *n;
++	int i;
+ 
+-	spin_lock(&blkio_list_lock);
++	mutex_lock(&blkcg_pol_mutex);
+ 	spin_lock_irq(&blkcg->lock);
+ 
+ 	/*
+@@ -321,15 +320,16 @@ blkiocg_reset_stats(struct cgroup *cgroup, struct cftype *cftype, u64 val)
+ 	 * anyway.  If you get hit by a race, retry.
+ 	 */
+ 	hlist_for_each_entry(blkg, n, &blkcg->blkg_list, blkcg_node) {
+-		struct blkio_policy_type *pol;
++		for (i = 0; i < BLKIO_NR_POLICIES; i++) {
++			struct blkio_policy_type *pol = blkio_policy[i];
+ 
+-		list_for_each_entry(pol, &blkio_list, list)
+-			if (pol->ops.blkio_reset_group_stats_fn)
++			if (pol && pol->ops.blkio_reset_group_stats_fn)
+ 				pol->ops.blkio_reset_group_stats_fn(blkg);
++		}
+ 	}
+ 
+ 	spin_unlock_irq(&blkcg->lock);
+-	spin_unlock(&blkio_list_lock);
++	mutex_unlock(&blkcg_pol_mutex);
+ 	return 0;
+ }
+ 
+@@ -732,20 +732,21 @@ void blkio_policy_register(struct blkio_policy_type *blkiop)
+ {
+ 	struct request_queue *q;
+ 
++	mutex_lock(&blkcg_pol_mutex);
++
+ 	blkcg_bypass_start();
+-	spin_lock(&blkio_list_lock);
+ 
+ 	BUG_ON(blkio_policy[blkiop->plid]);
+ 	blkio_policy[blkiop->plid] = blkiop;
+-	list_add_tail(&blkiop->list, &blkio_list);
+-
+-	spin_unlock(&blkio_list_lock);
+ 	list_for_each_entry(q, &all_q_list, all_q_node)
+ 		update_root_blkg_pd(q, blkiop->plid);
++
+ 	blkcg_bypass_end();
+ 
+ 	if (blkiop->cftypes)
+ 		WARN_ON(cgroup_add_cftypes(&blkio_subsys, blkiop->cftypes));
++
++	mutex_unlock(&blkcg_pol_mutex);
+ }
+ EXPORT_SYMBOL_GPL(blkio_policy_register);
+ 
+@@ -753,19 +754,20 @@ void blkio_policy_unregister(struct blkio_policy_type *blkiop)
+ {
+ 	struct request_queue *q;
+ 
++	mutex_lock(&blkcg_pol_mutex);
++
+ 	if (blkiop->cftypes)
+ 		cgroup_rm_cftypes(&blkio_subsys, blkiop->cftypes);
+ 
+ 	blkcg_bypass_start();
+-	spin_lock(&blkio_list_lock);
+ 
+ 	BUG_ON(blkio_policy[blkiop->plid] != blkiop);
+ 	blkio_policy[blkiop->plid] = NULL;
+-	list_del_init(&blkiop->list);
+ 
+-	spin_unlock(&blkio_list_lock);
+ 	list_for_each_entry(q, &all_q_list, all_q_node)
+ 		update_root_blkg_pd(q, blkiop->plid);
+ 	blkcg_bypass_end();
++
++	mutex_unlock(&blkcg_pol_mutex);
+ }
+ EXPORT_SYMBOL_GPL(blkio_policy_unregister);
+diff --git a/block/blk-cgroup.h b/block/blk-cgroup.h
+index ca0ff7c..f2ede76 100644
+--- a/block/blk-cgroup.h
++++ b/block/blk-cgroup.h
+@@ -102,7 +102,6 @@ struct blkio_policy_ops {
+ };
+ 
+ struct blkio_policy_type {
+-	struct list_head list;
+ 	struct blkio_policy_ops ops;
+ 	enum blkio_policy_id plid;
+ 	size_t pdata_size;		/* policy specific private data size */
 -- 
-Chris Metcalf, Tilera Corp.
-http://www.tilera.com
+1.7.7.3
 
