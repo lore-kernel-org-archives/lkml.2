@@ -1,75 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933164Ab2DLBHd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Apr 2012 21:07:33 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:40036 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1761666Ab2DLBHc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Apr 2012 21:07:32 -0400
-From: Mike Turquette <mturquette@linaro.org>
-To: <arnd.bergmann@linaro.org>
-CC: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <linaro-dev@lists.linaro.org>, <patches@linaro.org>,
-        Mike Turquette <mturquette@linaro.org>
-Subject: [PATCH 00/13] common clk framework misc fixes
-Date: Wed, 11 Apr 2012 18:02:38 -0700
-Message-ID: <1334192572-12499-1-git-send-email-mturquette@linaro.org>
-X-Mailer: git-send-email 1.7.5.4
+	id S933381Ab2DLBIH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Apr 2012 21:08:07 -0400
+Received: from zene.cmpxchg.org ([85.214.230.12]:49631 "EHLO zene.cmpxchg.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932855Ab2DLBIF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Apr 2012 21:08:05 -0400
+Date: Thu, 12 Apr 2012 03:07:45 +0200
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Hugh Dickins <hughd@google.com>, Andrew Morton <akpm@linux-foundation.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Glauber Costa <glommer@parallels.com>, Tejun Heo <tj@kernel.org>,
+        Daniel Walsh <dwalsh@redhat.com>,
+        "Daniel P. Berrange" <berrange@redhat.com>,
+        Li Zefan <lizf@cn.fujitsu.com>, LKML <linux-kernel@vger.kernel.org>,
+        Cgroups <cgroups@vger.kernel.org>,
+        Containers <containers@lists.linux-foundation.org>
+Subject: Re: [RFD] Merge task counter into memcg
+Message-ID: <20120412010745.GE1787@cmpxchg.org>
+References: <20120411185715.GA4317@somewhere.redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120411185715.GA4317@somewhere.redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This series collects many of the fixes posted for the recently merged
-common clock framework as well as some general clean-up.  Most of the
-code classifies as a clean-up moreso than a bug fix; hopefully this is
-not a problem since the common clk framework is new code pulled for 3.4.
+On Wed, Apr 11, 2012 at 08:57:20PM +0200, Frederic Weisbecker wrote:
+> Hi,
+> 
+> While talking with Tejun about targetting the cgroup task counter subsystem
+> for the next merge window, he suggested to check if this could be merged into
+> the memcg subsystem rather than creating a new one cgroup subsystem just
+> for task count limit purpose.
+> 
+> So I'm pinging you guys to seek your insight.
 
-Patches are based on v3.4-rc2 and can be pulled from:
-git://git.linaro.org/people/mturquette/linux.git v3.4-rc2-clk-fixes
+I'm sorry you are given a runaround like this with that code.
 
-Please let me know I missed any critical fixes that were posted to the
-list already.
+> I assume not everybody in the Cc list knows what the task counter subsystem
+> is all about. So here is a summary: this is a cgroup subsystem (latest version
+> in https://lwn.net/Articles/478631/) that keeps track of the number of tasks
+> present in a cgroup. Hooks are set in task fork/exit and cgroup migration to
+> maintain this accounting visible to a special tasks.usage file. The user can
+> set a limit on the number of tasks by writing on the tasks.limit file.
+> Further forks or cgroup migration are then rejected if the limit is exceeded.
+> 
+> This feature is especially useful to protect against forkbombs in containers.
+> Or more generally to limit the resources on the number of tasks on a cgroup
+> as it involves some kernel memory allocation.
 
-Arnd & Olof, if there are no objections to these changes can this get
-pulled through the arm-soc tree?
+You could also twist this around and argue the same for cpu usage and
+make it part of the cpu cgroup, but it doesn't really fit in either
+subsystem, IMO.
 
-Thanks,
-Mike
+> Now the dilemna is how to implement it?
+> 
+> 1) As a standalone subsystem, as it stands currently (https://lwn.net/Articles/478631/)
 
-Mark Brown (2):
-  clk: Remove comment for end of CONFIG_COMMON_CLK section
-  clk: Constify parent name arrays
+What was wrong with that again?
 
-Mike Turquette (6):
-  clk: core: correct clk_set_rate kerneldoc
-  clk: core: remove dead code paths
-  clk: core: clk_calc_new_rates handles NULL parents
-  clk: core: enforce clk_ops consistency
-  clk: core: copy parent_names & return error codes
-  clk: basic: improve parent_names & return errors
+> 2) As a feature in memcg, part of the memory.kmem.* files. This makes sense
+> because this is about kernel memory allocation limitation. We could have a
+> memory.kmem.tasks.count
+> 
+> My personal opinion is that the task counter brings some overhead: a charge
+> across the whole hierarchy at every fork, and the mirrored uncharge on task exit.
+> And this overhead happens even in the off-case (when the task counter susbsystem
+> is mounted but the limit is the default: ULLONG_MAX).
 
-Rajendra Nayak (1):
-  clk: Make clk_get_rate() return 0 on error
+3) Make it an integral part of cgroups, because keeping track of tasks
+in them already is, so it would be a more natural approach than
+bolting it onto the memory controller.
 
-Shawn Guo (4):
-  clk: use kzalloc in clk_register_mux
-  clk: remove unnecessary EXPORT_SYMBOL_GPL
-  clk: add "const" for clk_ops of basic clks
-  clk: declare clk_ops of basic clks in clk-provider.h
+But this has the same overhead.  And even if this would end up being a
+better idea, we could still do this after merging it as a separate
+controller as long as we maintain the interface.
 
- drivers/clk/clk-divider.c    |   51 +++++++++----
- drivers/clk/clk-fixed-rate.c |   57 +++++++++------
- drivers/clk/clk-gate.c       |   53 ++++++++++-----
- drivers/clk/clk-mux.c        |   16 +++--
- drivers/clk/clk.c            |  159 ++++++++++++++++++++++++++---------------
- include/linux/clk-private.h  |   14 +---
- include/linux/clk-provider.h |   13 ++--
- include/linux/clk.h          |    2 +-
- 8 files changed, 230 insertions(+), 135 deletions(-)
+> So if we choose the second solution, this overhead will be added unconditionally
+> to memcg.
+> But I don't expect every users of memcg will need the task counter. So perhaps
+> the overhead should be kept in its own separate subsystem.
+> 
+> OTOH memory.kmem.* interface would have be a good fit.
+> 
+> What do you think?
 
--- 
-1.7.5.4
+Instead of integrating it task-wise, could the problem be solved by
+accounting the kernel stack to kmem?  And then have a kmem limit,
+which we already want anway?
 
+After all, we would only restrict the number of tasks for the
+resources they require, not to only allow an arbitrary number of tasks
+(unless one wants to sell Windows 7 Starter style containers, in which
+case one can go play with oneself out of tree as far as I'm concerned)
