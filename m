@@ -1,66 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761922Ab2DLNMO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Apr 2012 09:12:14 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:57295 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752380Ab2DLNMN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Apr 2012 09:12:13 -0400
-Date: Thu, 12 Apr 2012 21:11:59 +0800
-From: Shawn Guo <shawn.guo@linaro.org>
-To: Arnd Bergmann <arnd.bergmann@linaro.org>
-Cc: Mike Turquette <mturquette@linaro.org>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linaro-dev@lists.linaro.org,
-        patches@linaro.org
-Subject: Re: [PATCH 00/13] common clk framework misc fixes
-Message-ID: <20120412131155.GI2445@S2101-09.ap.freescale.net>
-References: <1334192572-12499-1-git-send-email-mturquette@linaro.org>
- <201204121114.38825.arnd.bergmann@linaro.org>
+	id S1761962Ab2DLNOP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Apr 2012 09:14:15 -0400
+Received: from mx2.parallels.com ([64.131.90.16]:49447 "EHLO mx2.parallels.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757557Ab2DLNON (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Apr 2012 09:14:13 -0400
+Message-ID: <4F86D4BD.1040305@parallels.com>
+Date: Thu, 12 Apr 2012 10:12:29 -0300
+From: Glauber Costa <glommer@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120216 Thunderbird/10.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201204121114.38825.arnd.bergmann@linaro.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Johannes Weiner <hannes@cmpxchg.org>
+CC: Frederic Weisbecker <fweisbec@gmail.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Hugh Dickins <hughd@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>, Tejun Heo <tj@kernel.org>,
+        Daniel Walsh <dwalsh@redhat.com>,
+        "Daniel P. Berrange" <berrange@redhat.com>,
+        Li Zefan <lizf@cn.fujitsu.com>, LKML <linux-kernel@vger.kernel.org>,
+        Cgroups <cgroups@vger.kernel.org>,
+        Containers <containers@lists.linux-foundation.org>
+Subject: Re: [RFD] Merge task counter into memcg
+References: <20120411185715.GA4317@somewhere.redhat.com> <4F862851.3040208@jp.fujitsu.com> <20120412113217.GB11455@somewhere.redhat.com> <4F86BFC6.2050400@parallels.com> <20120412123256.GI1787@cmpxchg.org>
+In-Reply-To: <20120412123256.GI1787@cmpxchg.org>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [201.82.19.44]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 12, 2012 at 11:14:38AM +0000, Arnd Bergmann wrote:
-> On Thursday 12 April 2012, Mike Turquette wrote:
-> > This series collects many of the fixes posted for the recently merged
-> > common clock framework as well as some general clean-up.  Most of the
-> > code classifies as a clean-up moreso than a bug fix; hopefully this is
-> > not a problem since the common clk framework is new code pulled for 3.4.
-> > 
-> > Patches are based on v3.4-rc2 and can be pulled from:
-> > git://git.linaro.org/people/mturquette/linux.git v3.4-rc2-clk-fixes
-> > 
-> > Please let me know I missed any critical fixes that were posted to the
-> > list already.
-> > 
-> > Arnd & Olof, if there are no objections to these changes can this get
-> > pulled through the arm-soc tree?
-> 
-> I think pulling it in through the arm-soc tree is still ok, but it's
-> borderline because of the size and patch 13 is probably too big,
-> in addition to the comments that were made there.
-> 
-> Let's pull patches 1 through 12 in to a separate series that we don't
-> mix with the other bug fixes. Mike, please send a pull request with the
-> Acks added in.
-> 
-I just appended 3 more patches to the series.  Patches #1 and #2 change
-the interface between clk core and clk drivers - clk_ops a little bit,
-(this is something Mike acked a couple of weeks ago, but missed from
-the series) and patch #3 is a critical bug fix.  So unless we can send
-the whole series for -rc, I'd vote we send none of them for -rc.
-Instead, we can stabilize it somewhere and ask all the clk driver
-porting base on that.
+On 04/12/2012 09:32 AM, Johannes Weiner wrote:
+> On Thu, Apr 12, 2012 at 08:43:02AM -0300, Glauber Costa wrote:
+>> On 04/12/2012 08:32 AM, Frederic Weisbecker wrote:
+>>>> But I think increasing number of subsystem is not very good....
+>>> If the result is a better granularity on the overhead, I believe this
+>>> can be a good thing.
+>>
+>> But again, since there is quite number of people trying to merge
+>> those stuff together, you are just swimming against the tide.
+>
+> I don't see where merging unrelated controllers together is being
+> discussed, do you have a reference?
 
-Sending part of the cleanup/fixup and leaving the other that could
-require changes on clk drivers out is a bad idea to me.
+https://lkml.org/lkml/2012/2/21/379
 
--- 
-Regards,
-Shawn
+But also, I believe this has been widely discussed in person by people, 
+in separate groups. Maybe Tejun can do a small writeup of where we stand?
+
+I would also point out that this is exactly what it is (IMHO): an 
+ongoing discussion. You are more than welcome to chime in.
+
+>> If this gets really integrated, out of a sudden the overhead will
+>> appear. So better care about it now.
+>
+> Forcing people that want to account/limit one resource to take the hit
+> for something else they are not interested in requires justification.
+
+Agree. Even people aiming for unified hierarchies are okay with an 
+opt-in/out system, I believe. So the controllers need not to be active 
+at all times. One way of doing this is what I suggested to Frederic: If 
+you don't limit, don't account.
+
+> You can optimize only so much, in the end, the hierarchical accounting
+> is just expensive and unacceptable if you don't care about a certain
+> resource.  For that reason, I think controllers should stay opt-in.
+
+see above.
+
+> Btw, can we please have a discussion where raised concerns are
+> supported by more than gut feeling?  "I think X is not very good" is
+> hardly an argument.  Where is the technical problem in increasing the
+> number of available controllers?
+
+Kame said that, not me. But FWIW, I don't disagree. And this is hardly 
+gut feeling.
+
+A big number of controllers creates complexity. When coding, we can 
+assume a lot less things about their relationships, and more 
+importantly: at some point people get confused. Fuck, sometimes *we* get 
+confused about which controller do what, where its responsibility end 
+and where the other's begin. And we're the ones writing it! Avoiding 
+complexity is an engineering principle, not a gut feeling.
+
+Now, of course, we should aim to make things as simple as possible, but 
+not simpler: So you can argue that in Frederic's specific case, it is 
+justified. And I'd be fine with that 100 %. If I agreed...
+
+There are two natural points for inclusion here:
+
+1) every cgroup has a task counter by itself. If we're putting the tasks 
+there anyway, this provides a natural point of accounting.
+
+2) The cpu cgroup, in the end, is the realm of the scheduler. We 
+determine which % of the cpu the process will get, bandwidth, time spent 
+by tasks, and all that. It is also more natural for that, because it is 
+task based.
+
+Don't get me wrong: I actually love the feature Frederic is working on.
+I just don't believe a different controller is justified. Nor do I 
+believe memcg is the place for that (specially now that I thought it 
+overnight)
