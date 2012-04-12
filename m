@@ -1,100 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762287Ab2DLJYW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Apr 2012 05:24:22 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:42057 "EHLO mx2.suse.de"
+	id S1762309Ab2DLJ1H (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Apr 2012 05:27:07 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:42528 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754955Ab2DLJYU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Apr 2012 05:24:20 -0400
-Date: Thu, 12 Apr 2012 11:24:15 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Glauber Costa <glommer@parallels.com>
-Cc: linux-kernel@vger.kernel.org, devel@openvz.org, linux-mm@kvack.org,
-        cgroups@vger.kernel.org, Johannes Weiner <hannes@cmpxchg.org>,
-        kamezawa.hiroyu@jp.fujitsu.com, Greg Thelen <gthelen@google.com>,
-        Suleiman Souhlal <suleiman@google.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH] remove BUG() in possible but rare condition
-Message-ID: <20120412092415.GB32489@tiehlicka.suse.cz>
-References: <1334167824-19142-1-git-send-email-glommer@parallels.com>
+	id S1754955Ab2DLJ1F (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Apr 2012 05:27:05 -0400
+Message-ID: <4F869FE6.6060400@suse.cz>
+Date: Thu, 12 Apr 2012 11:27:02 +0200
+From: Michal Marek <mmarek@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110929 Thunderbird/7.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1334167824-19142-1-git-send-email-glommer@parallels.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Paul Gortmaker <paul.gortmaker@windriver.com>,
+        linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org,
+        akpm@linux-foundation.org, davem@davemloft.net,
+        tony@bakeyournoodle.com, lacombar@gmail.com
+Subject: Re: [PATCH 0/5] RFC: strip 15,000 lines from a typical autoconf.h
+References: <1334188257-3449-1-git-send-email-paul.gortmaker@windriver.com> <CA+55aFy-CeLXstbceP7+co3AXrEWtifKF+8NWzhC7B-A8xBd-w@mail.gmail.com> <CA+55aFx6V_TpbghsG7xqoBree8ALAKWMA+qLeGg-8DNAno+peg@mail.gmail.com>
+In-Reply-To: <CA+55aFx6V_TpbghsG7xqoBree8ALAKWMA+qLeGg-8DNAno+peg@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed 11-04-12 15:10:24, Glauber Costa wrote:
-> While stressing the kernel with with failing allocations today,
-> I hit the following chain of events:
-> 
-> alloc_page_buffers():
-> 
-> 	bh = alloc_buffer_head(GFP_NOFS);
-> 	if (!bh)
-> 		goto no_grow; <= path taken
-> 
-> grow_dev_page():
->         bh = alloc_page_buffers(page, size, 0);
->         if (!bh)
->                 goto failed;  <= taken, consequence of the above
-> 
-> and then the failed path BUG()s the kernel.
-> 
-> The failure is inserted a litte bit artificially, but even then,
-> I see no reason why it should be deemed impossible in a real box.
-> 
-> Even though this is not a condition that we expect to see
-> around every time, failed allocations are expected to be handled,
-> and BUG() sounds just too much. As a matter of fact, grow_dev_page()
-> can return NULL just fine in other circumstances, so I propose we just
-> remove it, then.
+On 12.4.2012 03:19, Linus Torvalds wrote:
+> On Wed, Apr 11, 2012 at 4:58 PM, Linus Torvalds
+> <torvalds@linux-foundation.org> wrote:
+>>
+>> I think we can easily drop IS_ENABLED() if it has been causing
+>> problems. And it clearly is.
 
-I had to be blind yesterday. I have double checked the call chain and
-this is safe already because __getblk_slow tries to free some memory and
-then retry the allocation if it gets allocation failure from
-grow_buffers (grow_dev_page).
+What is really causing problems is that kconfig has no view of the
+entire kernel configuration.
 
+
+>> And I had never even looked at that generated file. It's disgusting.
+>> We need to stop doing that. It must be driving compile-times up too -
+>> just parsing that monster is RealWork(tm).
+
+You forgot that it also contributes to global warming.
+
+
+> Oh, but I have a sick and twisted mind. And I'm incredibly smart and
+> photogenic too.
 > 
-> Signed-off-by: Glauber Costa <glommer@parallels.com>
-> CC: Linus Torvalds <torvalds@linux-foundation.org>
-> CC: Andrew Morton <akpm@linux-foundation.org>
-
-Reviewed-by: Michal Hocko <mhocko@suse.cz>
-
-> ---
->  fs/buffer.c |    1 -
->  1 files changed, 0 insertions(+), 1 deletions(-)
+> Here's an implementation of IS_ENABLED() that works in C. Well,
+> "gcc-C". It depends on the optimizer DTRT, but gcc really does seem to
+> do it.
 > 
-> diff --git a/fs/buffer.c b/fs/buffer.c
-> index 36d6665..351e18e 100644
-> --- a/fs/buffer.c
-> +++ b/fs/buffer.c
-> @@ -985,7 +985,6 @@ grow_dev_page(struct block_device *bdev, sector_t block,
->  	return page;
->  
->  failed:
-> -	BUG();
->  	unlock_page(page);
->  	page_cache_release(page);
->  	return NULL;
-> -- 
-> 1.7.7.6
+> Ready? You *will* go blind - blinded by the pure beauty and intellect
+> in this thing:
 > 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Fight unfair telecom internet charges in Canada: sign http://stopthemeter.ca/
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+>     #define IS_DEFINED(x) (__stringify(CONFIG_##x)[0]=='1')
 
--- 
-Michal Hocko
-SUSE Labs
-SUSE LINUX s.r.o.
-Lihovarska 1060/12
-190 00 Praha 9    
-Czech Republic
+Nice. Maybe we could make it simply
+
+#define IS_DEFINED(x) (__stringify(x)[0]=='1')
+
+so that the users are easily grepable and it is obvious that a config
+option is being tested, like in the current implementation. The only
+thing we lose is the check if 'x' is really a boolean or tristate
+option. But it turns out that even now this does not work in all cases.
+
+Michal
