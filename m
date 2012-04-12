@@ -1,78 +1,225 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965478Ab2DLPqz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Apr 2012 11:46:55 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:55488 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756677Ab2DLPqy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Apr 2012 11:46:54 -0400
-Date: Thu, 12 Apr 2012 16:46:50 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Stephen Warren <swarren@nvidia.com>
-Subject: Re: mainline build failure (Was: Re: linux-next: build failure after
- merge of the regmap tree)
-Message-ID: <20120412154649.GA3195@opensource.wolfsonmicro.com>
-References: <20120411141346.3c4dd8e481d052b583ac95b6@canb.auug.org.au>
- <20120411081711.GB3163@opensource.wolfsonmicro.com>
- <20120412080714.1b9fe574b18adebcc8af0ff1@canb.auug.org.au>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="XsQoSWH+UP9D9v3l"
-Content-Disposition: inline
-In-Reply-To: <20120412080714.1b9fe574b18adebcc8af0ff1@canb.auug.org.au>
-X-Cookie: Never give an inch!
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1757786Ab2DLPtC (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Apr 2012 11:49:02 -0400
+Received: from e7.ny.us.ibm.com ([32.97.182.137]:55646 "EHLO e7.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756677Ab2DLPtA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Apr 2012 11:49:00 -0400
+Message-ID: <1334244704.18090.23.camel@key-ThinkPad-W510>
+Subject: [PATCH v3 09/17] powerpc: crypto: AES-CTR mode routines for nx
+ encryption
+From: Kent Yoder <key@linux.vnet.ibm.com>
+To: linux-kernel@vger.kernel.org
+Cc: linux-crypto@vger.kernel.org, rcj@linux.vnet.ibm.com,
+        key@linux.vnet.ibm.com, benh@kernel.crashing.org,
+        linuxppc-dev@lists.ozlabs.org
+Date: Thu, 12 Apr 2012 10:31:44 -0500
+In-Reply-To: <1334242825.18090.4.camel@key-ThinkPad-W510>
+References: <1334242825.18090.4.camel@key-ThinkPad-W510>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2- 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12041215-5806-0000-0000-00001436A697
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+These routines add support for AES in CTR mode on the Power7+ CPU's
+in-Nest accelerator driver.
 
---XsQoSWH+UP9D9v3l
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Signed-off-by: Kent Yoder <key@linux.vnet.ibm.com>
+---
+ drivers/crypto/nx/nx-aes-ctr.c |  177 ++++++++++++++++++++++++++++++++++++++++
+ 1 files changed, 177 insertions(+), 0 deletions(-)
+ create mode 100644 drivers/crypto/nx/nx-aes-ctr.c
 
-On Thu, Apr 12, 2012 at 08:07:14AM +1000, Stephen Rothwell wrote:
+diff --git a/drivers/crypto/nx/nx-aes-ctr.c b/drivers/crypto/nx/nx-aes-ctr.c
+new file mode 100644
+index 0000000..141079c
+--- /dev/null
++++ b/drivers/crypto/nx/nx-aes-ctr.c
+@@ -0,0 +1,177 @@
++/**
++ * AES CTR routines supporting the Power 7+ Nest Accelerators driver
++ *
++ * Copyright (C) 2011-2012 International Business Machines Inc.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; version 2 only.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
++ *
++ * Author: Kent Yoder <yoder1@us.ibm.com>
++ */
++
++#include <crypto/aes.h>
++#include <crypto/ctr.h>
++#include <crypto/algapi.h>
++#include <linux/module.h>
++#include <linux/types.h>
++#include <linux/crypto.h>
++#include <asm/vio.h>
++
++#include "nx_csbcpb.h"
++#include "nx.h"
++
++
++static int ctr_aes_nx_set_key(struct crypto_tfm *tfm,
++			      const u8          *in_key,
++			      unsigned int       key_len)
++{
++	struct nx_crypto_ctx *nx_ctx = crypto_tfm_ctx(tfm);
++	struct nx_csbcpb *csbcpb = nx_ctx->csbcpb;
++
++	nx_ctx_init(nx_ctx, HCOP_FC_AES);
++
++	switch (key_len) {
++	case AES_KEYSIZE_128:
++		NX_CPB_SET_KEY_SIZE(csbcpb, NX_KS_AES_128);
++		nx_ctx->ap = &nx_ctx->props[NX_PROPS_AES_128];
++		break;
++	case AES_KEYSIZE_192:
++		NX_CPB_SET_KEY_SIZE(csbcpb, NX_KS_AES_192);
++		nx_ctx->ap = &nx_ctx->props[NX_PROPS_AES_192];
++		break;
++	case AES_KEYSIZE_256:
++		NX_CPB_SET_KEY_SIZE(csbcpb, NX_KS_AES_256);
++		nx_ctx->ap = &nx_ctx->props[NX_PROPS_AES_256];
++		break;
++	default:
++		return -EINVAL;
++	}
++
++	csbcpb->cpb.hdr.mode = NX_MODE_AES_CTR;
++	memcpy(csbcpb->cpb.aes_ctr.key, in_key, key_len);
++
++	return 0;
++}
++
++static int ctr3686_aes_nx_set_key(struct crypto_tfm *tfm,
++				  const u8          *in_key,
++				  unsigned int       key_len)
++{
++	struct nx_crypto_ctx *nx_ctx = crypto_tfm_ctx(tfm);
++
++	if (key_len < CTR_RFC3686_NONCE_SIZE)
++		return -EINVAL;
++
++	memcpy(nx_ctx->priv.ctr.iv,
++	       in_key + key_len - CTR_RFC3686_NONCE_SIZE,
++	       CTR_RFC3686_NONCE_SIZE);
++
++	key_len -= CTR_RFC3686_NONCE_SIZE;
++
++	return ctr_aes_nx_set_key(tfm, in_key, key_len);
++}
++
++static int ctr_aes_nx_crypt(struct blkcipher_desc *desc,
++			    struct scatterlist    *dst,
++			    struct scatterlist    *src,
++			    unsigned int           nbytes)
++{
++	struct nx_crypto_ctx *nx_ctx = crypto_blkcipher_ctx(desc->tfm);
++	struct nx_csbcpb *csbcpb = nx_ctx->csbcpb;
++	int rc;
++
++	if (nbytes > nx_ctx->ap->databytelen)
++		return -EINVAL;
++
++	rc = nx_build_sg_lists(nx_ctx, desc, dst, src, nbytes,
++			       csbcpb->cpb.aes_ctr.iv);
++	if (rc)
++		goto out;
++
++	if (!nx_ctx->op.inlen || !nx_ctx->op.outlen) {
++		rc = -EINVAL;
++		goto out;
++	}
++
++	rc = nx_hcall_sync(nx_ctx, &nx_ctx->op);
++	if (rc)
++		goto out;
++
++	atomic_inc(&(nx_ctx->stats->aes_ops));
++	atomic64_add(csbcpb->csb.processed_byte_count,
++		     &(nx_ctx->stats->aes_bytes));
++out:
++	return rc;
++}
++
++static int ctr3686_aes_nx_crypt(struct blkcipher_desc *desc,
++				struct scatterlist    *dst,
++				struct scatterlist    *src,
++				unsigned int           nbytes)
++{
++	struct nx_crypto_ctx *nx_ctx = crypto_blkcipher_ctx(desc->tfm);
++	u8 *iv = nx_ctx->priv.ctr.iv;
++
++	memcpy(iv + CTR_RFC3686_NONCE_SIZE,
++	       desc->info, CTR_RFC3686_IV_SIZE);
++	iv[15] = 1;
++
++	desc->info = nx_ctx->priv.ctr.iv;
++
++	return ctr_aes_nx_crypt(desc, dst, src, nbytes);
++}
++
++struct crypto_alg nx_ctr_aes_alg = {
++	.cra_name        = "ctr(aes)",
++	.cra_driver_name = "ctr-aes-nx",
++	.cra_priority    = 300,
++	.cra_flags       = CRYPTO_ALG_TYPE_BLKCIPHER,
++	.cra_blocksize   = 1,
++	.cra_ctxsize     = sizeof(struct nx_crypto_ctx),
++	.cra_type        = &crypto_blkcipher_type,
++	.cra_module      = THIS_MODULE,
++	.cra_list        = LIST_HEAD_INIT(nx_ctr_aes_alg.cra_list),
++	.cra_init        = nx_crypto_ctx_aes_ctr_init,
++	.cra_exit        = nx_crypto_ctx_exit,
++	.cra_blkcipher = {
++		.min_keysize = AES_MIN_KEY_SIZE,
++		.max_keysize = AES_MAX_KEY_SIZE,
++		.ivsize      = AES_BLOCK_SIZE,
++		.setkey      = ctr_aes_nx_set_key,
++		.encrypt     = ctr_aes_nx_crypt,
++		.decrypt     = ctr_aes_nx_crypt,
++	}
++};
++
++struct crypto_alg nx_ctr3686_aes_alg = {
++	.cra_name        = "rfc3686(ctr(aes))",
++	.cra_driver_name = "rfc3686-ctr-aes-nx",
++	.cra_priority    = 300,
++	.cra_flags       = CRYPTO_ALG_TYPE_BLKCIPHER,
++	.cra_blocksize   = 1,
++	.cra_ctxsize     = sizeof(struct nx_crypto_ctx),
++	.cra_type        = &crypto_blkcipher_type,
++	.cra_module      = THIS_MODULE,
++	.cra_list        = LIST_HEAD_INIT(nx_ctr3686_aes_alg.cra_list),
++	.cra_init        = nx_crypto_ctx_aes_ctr_init,
++	.cra_exit        = nx_crypto_ctx_exit,
++	.cra_blkcipher = {
++		.min_keysize = AES_MIN_KEY_SIZE + CTR_RFC3686_NONCE_SIZE,
++		.max_keysize = AES_MAX_KEY_SIZE + CTR_RFC3686_NONCE_SIZE,
++		.ivsize      = CTR_RFC3686_IV_SIZE,
++		.geniv       = "seqiv",
++		.setkey      = ctr3686_aes_nx_set_key,
++		.encrypt     = ctr3686_aes_nx_crypt,
++		.decrypt     = ctr3686_aes_nx_crypt,
++	}
++};
+-- 
+1.7.1
 
-> So, what is this failure and what configs do you build?  And has a fix
-> been submitted?
 
-It's a build failure in the trace subsystem when perf isn't enabled; I
-submitted a patch as soon as I noticed the issue which was either during
-the merge window or just after -rc1 came out and resubmitted it again
-this week.  In response to the reposting Steven Rostedt said he'd pick
-the fix up but I'm not sure when that'll happen or how long it'll take
-to propagate to mainline, this appears to be one of those areas where
-things get processed in batch mode.
-
-I mainly build an ARM config that I can run usefully on my development
-boards which is mostly built in and a modular x86 config since x86 seems
-to have lots of issues with modular stuff.  I should be able to adjust
-the ARM config to build, I didn't yet mostly because I wasn't expecting
-the issue to be ignored for so long.
-
---XsQoSWH+UP9D9v3l
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAEBAgAGBQJPhvilAAoJEBus8iNuMP3dXV8P/AnGkqfNAAa518rqX/cYxpLK
-y33EA5J2MrkvzTdtj18nBxKSEr5ZsH6S9TE9Q4BLjHP72DiW9bOkwDd3aAYu/he1
-L/ZzX/whiwXKFdsCNbT+BdI0fTNXpDfYQQ7CJGHdop10NgjpBn63QTmdvjt0J8eE
-Ex9Ug4uLNgpSlqoXChIzJ3vdGiCrQhLUNkZ/dzLuQRFQxfmnM70u8lO7XqX9027f
-V26vO896LfyyeFXSqPw8MqPQrQIV/ptcpJBst9Bfq3Al1xIeTQAlf9zrg4MQI5yS
-q+sgmwb9tbu19Ri8sEjbx5gUg5Y8tRjH6LqQgJBSHTPBhe/KX3bzsIhY6AvkJQis
-VdMTzj1qm03gF/TnAChAWQLmtxOyo4jeNDOQ31Y+F7uYpV4lms3zffibyvsl0GFi
-sqz0FIYNjZA/F0YNjiIqZnL3nIWsYDYQgq13naZxOWaLEsZJRMRo2XAaZ4jD8pCr
-7xfIogNnBlTJ7FQtq674037gDaUBBR9orJqFatiQ0AlTqk5Z7xQzmgQWxdsHWrc5
-xoAk96LSgAdtY5/ybgKqiiQcOv62O2TJnaFl0iZcrlRNhL745LQl8ZBryyU46inj
-25Svc+rwWZnJQ6V3PhZng0zc9KmPZHLrNAudfxWLty6GWl1OD7IRGhT8yr9xP3FH
-4OLl27HdCPa100VcTbWy
-=ls7p
------END PGP SIGNATURE-----
-
---XsQoSWH+UP9D9v3l--
