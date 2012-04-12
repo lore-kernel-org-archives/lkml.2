@@ -1,120 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761783Ab2DLCmi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Apr 2012 22:42:38 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:27792 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756439Ab2DLCmh (ORCPT
+	id S1761839Ab2DLCoL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Apr 2012 22:44:11 -0400
+Received: from mail4.comsite.net ([205.238.176.238]:4950 "EHLO
+	mail4.comsite.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756682Ab2DLCoJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Apr 2012 22:42:37 -0400
-X-Authority-Analysis: v=2.0 cv=Z8Fu7QtA c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=XQbtiDEiEegA:10 a=uR5o-f0lB1AA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=pGLkceISAAAA:8 a=7ejkBxnCMz3taH452PoA:9 a=PUjeQqilurYA:10 a=MSl-tDqOz04A:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.80.29
-Message-ID: <1334198553.23924.329.camel@gandalf.stny.rr.com>
-Subject: Re: [PATCH 13/16] sched: drafted deadline inheritance logic.
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Juri Lelli <juri.lelli@gmail.com>
-Cc: peterz@infradead.org, tglx@linutronix.de, mingo@redhat.com,
-        cfriesen@nortel.com, oleg@redhat.com, fweisbec@gmail.com,
-        darren@dvhart.com, johan.eker@ericsson.com, p.faure@akatech.ch,
-        linux-kernel@vger.kernel.org, claudio@evidence.eu.com,
-        michael@amarulasolutions.com, fchecconi@gmail.com,
-        tommaso.cucinotta@sssup.it, nicola.manica@disi.unitn.it,
-        luca.abeni@unitn.it, dhaval.giani@gmail.com, hgu1972@gmail.com,
-        paulmck@linux.vnet.ibm.com, raistlin@linux.it, insop.song@ericsson.com,
-        liming.wang@windriver.com
-Date: Wed, 11 Apr 2012 22:42:33 -0400
-In-Reply-To: <1333696481-3433-14-git-send-email-juri.lelli@gmail.com>
-References: <1333696481-3433-1-git-send-email-juri.lelli@gmail.com>
-	 <1333696481-3433-14-git-send-email-juri.lelli@gmail.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.2.2-1 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Wed, 11 Apr 2012 22:44:09 -0400
+X-Default-Received-SPF: pass (skip=forwardok (res=PASS)) x-ip-name=71.22.127.106;
+From: Milton Miller <miltonm@bga.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: ppc-dev <linuxppc-dev@lists.ozlabs.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: linux-next: boot failures with next-20120411
+Message-Id: <next-20120411-oops@mdm.bga.com>
+In-Reply-To: <20120411165835.415e546374a54ea94669b0c6@canb.auug.org.au>
+References: <20120411165835.415e546374a54ea94669b0c6@canb.auug.org.au>
+Date: Wed, 11 Apr 2012 21:44:08 -0500
+X-Originating-IP: 71.22.127.106
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2012-04-06 at 09:14 +0200, Juri Lelli wrote:
-> From: Dario Faggioli <raistlin@linux.it>
+On Wed, 11 Apr 2012 about 16:58:35 +1000, Stephen Rothwell wrote:
+> Hi all,
 > 
-> Some method to deal with rt-mutexes and make sched_dl interact with
-> the current PI-coded is needed, raising all but trivial issues, that
-> needs (according to us) to be solved with some restructuring of
-> the pi-code (i.e., going toward a proxy execution-ish implementation).
-
-I also would like to point out that this is probably only for -rt? Or is
-this for PI futexes as well?
-
-Note, non-proxy version of this code may be an issue. Could a process
-force more bandwidth than was allowed by rlimit if the process used PI
-futexes forced a behavior that PI waiters were waiting on another
-process while it held the PI futex? The process that held the futex may
-get more bandwidth if it never lets go of the futex, right?
-
+> Some (not all) of my PowerPC boot tests have failed like this after
+> getting into user mode (this one was just after udev started, but others
+> are after other processes getting going):
 > 
-> This is under development, in the meanwhile, as a temporary solution,
-> what this commits does is:
->  - ensure a pi-lock owner with waiters is never throttled down. Instead,
->    when it runs out of runtime, it immediately gets replenished and it's
->    deadline is postponed;
->  - the scheduling parameters (relative deadline and default runtime)
->    used for that replenishments --during the whole period it holds the
->    pi-lock-- are the ones of the waiting task with earliest deadline.
+> Unable to handle kernel paging request for data at address 0xc0000003f9d550
+> Faulting instruction address: 0xc0000000001b7f40
+> Oops: Kernel access of bad area, sig: 11 [#1]
+> SMP NR_CPUS=32 NUMA pSeries
+> Modules linked in: ehea
+> NIP: c0000000001b7f40 LR: c0000000001b7f14 CTR: c0000000000e04f0
+> REGS: c0000003f68bf6b0 TRAP: 0300   Not tainted  (3.4.0-rc2-autokern1)
+> MSR: 800000000280b032 <SF,VEC,VSX,EE,FP,ME,IR,DR,RI>  CR: 24422424  XER: 20000001
+> SOFTE: 1
+> CFAR: 000000000000562c
+> DAR: 00c0000003f9d550, DSISR: 40000000
+> TASK = c0000003f8818000[3192] 'kdump' THREAD: c0000003f68bc000 CPU: 5
+> GPR00: 0000000000000000 c0000003f68bf930 c000000000ce1d40 c0000003fe00ec00 
+> GPR04: 00000000000002d0 0000000000000038 c0000003f8f935e8 c000000000e55280 
+> GPR08: 0000000000000011 c000000000bcb280 c000000000bcb1e8 000000000028a000 
+> GPR12: 0000000024422424 c00000000f33bc80 00000fffdd90a770 0000000000081000 
+> GPR16: c0000003f846c000 000000000de4f7a0 f00000000de4f7a0 0000000000000000 
+> GPR20: c0000003f8365408 c0000003f8365480 c0000003f8e5d110 0000000000000000 
+> GPR24: 0000000000000100 c0000003f8365400 c0000000001e5424 00000000000002d0 
+> GPR28: 0000000000000800 00c0000003f9d550 c000000000c5b718 c0000003fe00ec00 
+> NIP [c0000000001b7f40] .__kmalloc+0x70/0x230
+> LR [c0000000001b7f14] .__kmalloc+0x44/0x230
+> Call Trace:
+> [c0000003f68bf930] [c0000003f68bf9b0] 0xc0000003f68bf9b0 (unreliable)
+> [c0000003f68bf9e0] [c0000000001e5424] .alloc_fdmem+0x24/0x70
+> [c0000003f68bfa60] [c0000000001e54f8] .alloc_fdtable+0x88/0x130
+> [c0000003f68bfaf0] [c0000000001e5924] .dup_fd+0x384/0x450
+> [c0000003f68bfbd0] [c00000000009a310] .copy_process+0x880/0x11d0
+> [c0000003f68bfcd0] [c00000000009aee0] .do_fork+0x70/0x400
+> [c0000003f68bfdc0] [c0000000000141c4] .sys_clone+0x54/0x70
+> [c0000003f68bfe30] [c000000000009aa0] .ppc_clone+0x8/0xc
+> Instruction dump:
+> 4bff9281 2ba30010 7c7f1b78 40dd00f4 e96d0040 e93f0000 7ce95a14 e9070008 
+> 7fa9582a 2fbd0000 41de0054 e81f0022 <7f3d002a> 38000000 886d01f2 980d01f2 
+> ---[ end trace 366fe6c7ced3bfb0 ]---
+> This did not happen yesterday.  Just wondering if anyone can think of
+> anything obvious.  Full console log at
+> http://ozlabs.org/~sfr/next-20120411.log.bz2
 
-This sounds similar to what I implemented for a company back in 2005.
+Hi Steven.
 
-> 
-> Acting this way, we provide some kind of boosting to the lock-owner,
-> still by using the existing (actually, slightly modified by the previous
-> commit) pi-architecture.
-> 
-> We would stress the fact that this is only a surely needed, all but
-> clean solution to the problem. In the end it's only a way to re-start
-> discussion within the community. So, as always, comments, ideas, rants,
-> etc.. are welcome! :-)
-> 
-> Signed-off-by: Dario Faggioli <raistlin@linux.it>
-> Signed-off-by: Juri Lelli <juri.lelli@gmail.com>
-> ---
->  include/linux/sched.h |    9 +++++-
->  kernel/fork.c         |    1 +
->  kernel/rtmutex.c      |   13 +++++++-
->  kernel/sched.c        |   34 ++++++++++++++++++---
->  kernel/sched_dl.c     |   77 +++++++++++++++++++++++++++++++++---------------
->  5 files changed, 102 insertions(+), 32 deletions(-)
-> 
-> diff --git a/include/linux/sched.h b/include/linux/sched.h
-> index 5ef7bb6..ca45db4 100644
-> --- a/include/linux/sched.h
-> +++ b/include/linux/sched.h
-> @@ -1309,8 +1309,12 @@ struct sched_dl_entity {
->  	 * @dl_new tells if a new instance arrived. If so we must
->  	 * start executing it with full runtime and reset its absolute
->  	 * deadline;
-> +	 *
-> +	 * @dl_boosted tells if we are boosted due to DI. If so we are
+The DAR print of the faulting address points out that the address
+appears to be shifted right 8 bits.  Or more likely the address used
+to load the register was decremented by one somewhere (Big Endian).
 
- DI?
+Although all the registers are multiples of 4 in the first dump,
+looking at the later oops in the log would seem to confirm the
+address being decremented, eg put_files struct dar of 
+c0000003f9d547ff in oops #2, and dar 00000000ffffffff in #9, #12,
+#14, and #16.
 
--- Steve
+No idea if this is caused by a bad save/restore somewhere or a
+decrement of a 32bit number in memory.
 
+Anyone else with a wild -1 on a int, u32 or s32?
 
-> +	 * outside bandwidth enforcement mechanism (but only until we
-> +	 * exit the critical section).
->  	 */
-> -	int dl_throttled, dl_new;
-> +	int dl_throttled, dl_new, dl_boosted;
->  
->  	/*
->  	 * Bandwidth enforcement timer. Each -deadline task has its
-> @@ -1556,6 +1560,8 @@ struct task_struct {
->  	struct rb_node *pi_waiters_leftmost;
->  	/* Deadlock detection and priority inheritance handling */
->  	struct rt_mutex_waiter *pi_blocked_on;
-> +	/* Top pi_waiters task */
-> +	struct task_struct *pi_top_task;
->  #endif
->  
-
-
+milton
