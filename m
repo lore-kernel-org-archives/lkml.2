@@ -1,107 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754639Ab2DLEqI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Apr 2012 00:46:08 -0400
-Received: from szxga01-in.huawei.com ([58.251.152.64]:44104 "EHLO
-	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752660Ab2DLEqF (ORCPT
+	id S1754987Ab2DLEyg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Apr 2012 00:54:36 -0400
+Received: from e34.co.us.ibm.com ([32.97.110.152]:47167 "EHLO
+	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754705Ab2DLEye (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Apr 2012 00:46:05 -0400
-Date: Thu, 12 Apr 2012 11:26:13 +0800
-From: Li Zefan <lizefan@huawei.com>
-Subject: Re: [RFD] Merge task counter into memcg
-In-reply-to: <20120412010745.GE1787@cmpxchg.org>
-X-Originating-IP: [10.166.88.147]
-To: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>, Hugh Dickins <hughd@google.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Glauber Costa <glommer@parallels.com>, Tejun Heo <tj@kernel.org>,
-        Daniel Walsh <dwalsh@redhat.com>,
-        "Daniel P. Berrange" <berrange@redhat.com>,
-        Li Zefan <lizf@cn.fujitsu.com>, LKML <linux-kernel@vger.kernel.org>,
-        Cgroups <cgroups@vger.kernel.org>,
-        Containers <containers@lists.linux-foundation.org>
-Message-id: <4F864B55.10906@huawei.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=ISO-8859-1
-Content-transfer-encoding: 7BIT
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:11.0) Gecko/20120312
- Thunderbird/11.0
-X-CFilter-Loop: Reflected
-References: <20120411185715.GA4317@somewhere.redhat.com>
- <20120412010745.GE1787@cmpxchg.org>
+	Thu, 12 Apr 2012 00:54:34 -0400
+Date: Wed, 11 Apr 2012 21:54:28 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: David Miller <davem@davemloft.net>
+Cc: shemminger@vyatta.com, mroos@linux.ee, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org
+Subject: Re: suspicious RCU usage warnings in 3.3.0
+Message-ID: <20120412045428.GB2497@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20120411171004.016ddd95@nehalam.linuxnetplumber.net>
+ <20120411.201854.1070083308359208025.davem@davemloft.net>
+ <20120412004507.GF2473@linux.vnet.ibm.com>
+ <20120411.210843.716144028821174908.davem@davemloft.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120411.210843.716144028821174908.davem@davemloft.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12041204-1780-0000-0000-000004B1DDF1
+X-IBM-ISS-SpamDetectors: 
+X-IBM-ISS-DetailInfo: BY=3.00000266; HX=3.00000187; KW=3.00000007;
+ PH=3.00000001; SC=3.00000001; SDB=6.00130134; UDB=6.00030735; UTC=2012-04-12
+ 04:54:32
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Johannes Weiner wrote:
-
-> On Wed, Apr 11, 2012 at 08:57:20PM +0200, Frederic Weisbecker wrote:
->> Hi,
->>
->> While talking with Tejun about targetting the cgroup task counter subsystem
->> for the next merge window, he suggested to check if this could be merged into
->> the memcg subsystem rather than creating a new one cgroup subsystem just
->> for task count limit purpose.
->>
->> So I'm pinging you guys to seek your insight.
+On Wed, Apr 11, 2012 at 09:08:43PM -0400, David Miller wrote:
+> From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+> Date: Wed, 11 Apr 2012 17:45:07 -0700
 > 
-> I'm sorry you are given a runaround like this with that code.
+> > If I am confused about the simple function call, and if control is really
+> > passing via an interrupt or exception, then rcu_irq_enter() should be
+> > called on entry to the interrupt or exception and rcu_irq_exit() should
+> > be called on exit.
 > 
-
-
-I don't like the idea of putting this stuff into memcg either.
-
->> I assume not everybody in the Cc list knows what the task counter subsystem
->> is all about. So here is a summary: this is a cgroup subsystem (latest version
->> in https://lwn.net/Articles/478631/) that keeps track of the number of tasks
->> present in a cgroup. Hooks are set in task fork/exit and cgroup migration to
->> maintain this accounting visible to a special tasks.usage file. The user can
->> set a limit on the number of tasks by writing on the tasks.limit file.
->> Further forks or cgroup migration are then rejected if the limit is exceeded.
->>
->> This feature is especially useful to protect against forkbombs in containers.
->> Or more generally to limit the resources on the number of tasks on a cgroup
->> as it involves some kernel memory allocation.
+> Hmm, it seems the convention changed such that platforms aren't
+> supposed to invoke do_softirq() from their trap return trap any more.
+> It's handled completely by irq_exit().
 > 
-> You could also twist this around and argue the same for cpu usage and
-> make it part of the cpu cgroup, but it doesn't really fit in either
-> subsystem, IMO.
-> 
->> Now the dilemna is how to implement it?
->>
->> 1) As a standalone subsystem, as it stands currently (https://lwn.net/Articles/478631/)
-> 
-> What was wrong with that again?
-> 
->> 2) As a feature in memcg, part of the memory.kmem.* files. This makes sense
->> because this is about kernel memory allocation limitation. We could have a
->> memory.kmem.tasks.count
->>
->> My personal opinion is that the task counter brings some overhead: a charge
->> across the whole hierarchy at every fork, and the mirrored uncharge on task exit.
->> And this overhead happens even in the off-case (when the task counter susbsystem
->> is mounted but the limit is the default: ULLONG_MAX).
-> 
-> 3) Make it an integral part of cgroups, because keeping track of tasks
-> in them already is, so it would be a more natural approach than
-> bolting it onto the memory controller.
-> 
+> When did that start happening? :-)
 
-> But this has the same overhead.
+Heh!  It appears that git doesn't go back far enough for me to find the
+answer to that question.  ;-)
 
-This makes the most sense to me. Task counting and limiting sounds part of
-cgroups in nature.
+> Anyways I bet that's the problem, sparc64 invokes do_softirq() in it's
+> trap return path if softirqs are pending, and that doesn't do any
+> of the RCU frobbing you mention.
 
-It has overhead, but what makes it worse than that in the single hierarchy
-that we are aiming at?
+The following untested patch that probably does not even build is offered
+up for your amusement.  I don't know enough about SPARC's needs for
+alignment, handling of branch-delay slots, and so on for this to have
+any chance of working, but hey!  ;-)
 
-> And even if this would end up being a
+							Thanx, Paul
 
-> better idea, we could still do this after merging it as a separate
-> controller as long as we maintain the interface.
-> 
+------------------------------------------------------------------------
 
+sparc64: Eliminate obsolete __handle_softirq() function
 
-That would add some tricky messy code, so better no.
+The invocation of softirq is now handled by irq_exit(), so there is no
+need for sparc64 to invoke it on the trap-return path.  In fact, doing so
+is a bug because if the trap occurred in the idle loop, this invocation
+can result in lockdep-RCU failures.  The problem is that RCU ignores idle
+CPUs, and the sparc64 trap-return path to the softirq handlers fails to
+tell RCU that the CPU must be considered non-idle while those handlers
+are executing.  This means that RCU is ignoring any RCU read-side critical
+sections in those handlers, which in turn means that RCU-protected data
+can be yanked out from under those read-side critical sections.
+
+The shiny new lockdep-RCU ability to detect RCU read-side critical sections
+that RCU is ignoring located this problem.
+
+The fix is straightforward: Make sparc64 stop manually invoking the
+softirq handlers.
+
+Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+---
+
+ rtrap_64.S |    7 -------
+ 1 file changed, 7 deletions(-)
+
+diff --git a/arch/sparc/kernel/rtrap_64.S b/arch/sparc/kernel/rtrap_64.S
+index 77f1b95..9171fc2 100644
+--- a/arch/sparc/kernel/rtrap_64.S
++++ b/arch/sparc/kernel/rtrap_64.S
+@@ -20,11 +20,6 @@
+ 
+ 		.text
+ 		.align			32
+-__handle_softirq:
+-		call			do_softirq
+-		 nop
+-		ba,a,pt			%xcc, __handle_softirq_continue
+-		 nop
+ __handle_preemption:
+ 		call			schedule
+ 		 wrpr			%g0, RTRAP_PSTATE, %pstate
+@@ -89,9 +84,7 @@ rtrap:
+ 		cmp			%l1, 0
+ 
+ 		/* mm/ultra.S:xcall_report_regs KNOWS about this load. */
+-		bne,pn			%icc, __handle_softirq
+ 		 ldx			[%sp + PTREGS_OFF + PT_V9_TSTATE], %l1
+-__handle_softirq_continue:
+ rtrap_xcall:
+ 		sethi			%hi(0xf << 20), %l4
+ 		and			%l1, %l4, %l4
+
