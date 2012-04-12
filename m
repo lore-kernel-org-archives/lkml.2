@@ -1,26 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933973Ab2DLBKD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Apr 2012 21:10:03 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:55556 "EHLO bear.ext.ti.com"
+	id S933888Ab2DLBKh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Apr 2012 21:10:37 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:47216 "EHLO arroyo.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933625Ab2DLBIt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Apr 2012 21:08:49 -0400
+	id S933584Ab2DLBIl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Apr 2012 21:08:41 -0400
 From: Mike Turquette <mturquette@linaro.org>
 To: <arnd.bergmann@linaro.org>
 CC: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
         <linaro-dev@lists.linaro.org>, <patches@linaro.org>,
-        Rajendra Nayak <rnayak@ti.com>, Mike Turquette <mturquette@linaro.org>,
+        Shawn Guo <shawn.guo@linaro.org>,
+        Mike Turquette <mturquette@linaro.org>,
         Olof Johansson <olof@lixom.net>, Russell King <linux@arm.linux.org.uk>,
         Sascha Hauer <s.hauer@pengutronix.de>,
-        Shawn Guo <shawn.guo@freescale.com>,
         Richard Zhao <richard.zhao@linaro.org>,
         Saravana Kannan <skannan@codeaurora.org>,
         Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Andrew Lunn <andrew@lunn.ch>, Viresh Kumar <viresh.kumar@st.com>
-Subject: [PATCH 09/13] clk: Make clk_get_rate() return 0 on error
-Date: Wed, 11 Apr 2012 18:02:47 -0700
-Message-ID: <1334192572-12499-10-git-send-email-mturquette@linaro.org>
+        Andrew Lunn <andrew@lunn.ch>, Rajendra Nayak <rnayak@ti.com>,
+        Viresh Kumar <viresh.kumar@st.com>
+Subject: [PATCH 05/13] clk: use kzalloc in clk_register_mux
+Date: Wed, 11 Apr 2012 18:02:43 -0700
+Message-ID: <1334192572-12499-6-git-send-email-mturquette@linaro.org>
 X-Mailer: git-send-email 1.7.5.4
 In-Reply-To: <1334192572-12499-1-git-send-email-mturquette@linaro.org>
 References: <1334192572-12499-1-git-send-email-mturquette@linaro.org>
@@ -30,63 +31,40 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Rajendra Nayak <rnayak@ti.com>
+From: Shawn Guo <shawn.guo@linaro.org>
 
-Most users of clk_get_rate() actually assume a non zero
-return value as a valid rate returned. Returing -EINVAL
-might confuse such users, so make it instead return zero
-on error.
+Change clk_register_mux to use kzalloc, just like what all other basic
+clk registration functions do.
 
-Besides the return value of clk_get_rate seems to be
-'unsigned long'.
-
-Signed-off-by: Rajendra nayak <rnayak@ti.com>
+Signed-off-by: Shawn Guo <shawn.guo@linaro.org>
 Signed-off-by: Mike Turquette <mturquette@linaro.org>
 Cc: Arnd Bergman <arnd.bergmann@linaro.org>
 Cc: Olof Johansson <olof@lixom.net>
 Cc: Russell King <linux@arm.linux.org.uk>
 Cc: Sascha Hauer <s.hauer@pengutronix.de>
-Cc: Shawn Guo <shawn.guo@freescale.com>
 Cc: Richard Zhao <richard.zhao@linaro.org>
 Cc: Saravana Kannan <skannan@codeaurora.org>
 Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>
 Cc: Andrew Lunn <andrew@lunn.ch>
+Cc: Rajendra Nayak <rnayak@ti.com>
 Cc: Viresh Kumar <viresh.kumar@st.com>
 ---
- drivers/clk/clk.c |    6 +++---
- 1 files changed, 3 insertions(+), 3 deletions(-)
+ drivers/clk/clk-mux.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/drivers/clk/clk.c b/drivers/clk/clk.c
-index 9924aec..a24b121 100644
---- a/drivers/clk/clk.c
-+++ b/drivers/clk/clk.c
-@@ -285,7 +285,7 @@ unsigned long __clk_get_rate(struct clk *clk)
- 	unsigned long ret;
- 
- 	if (!clk) {
--		ret = -EINVAL;
-+		ret = 0;
- 		goto out;
- 	}
- 
-@@ -295,7 +295,7 @@ unsigned long __clk_get_rate(struct clk *clk)
- 		goto out;
- 
- 	if (!clk->parent)
--		ret = -ENODEV;
-+		ret = 0;
- 
- out:
- 	return ret;
-@@ -560,7 +560,7 @@ EXPORT_SYMBOL_GPL(clk_enable);
-  * @clk: the clk whose rate is being returned
-  *
-  * Simply returns the cached rate of the clk.  Does not query the hardware.  If
-- * clk is NULL then returns -EINVAL.
-+ * clk is NULL then returns 0.
-  */
- unsigned long clk_get_rate(struct clk *clk)
+diff --git a/drivers/clk/clk-mux.c b/drivers/clk/clk-mux.c
+index c71ad1f..50e0595 100644
+--- a/drivers/clk/clk-mux.c
++++ b/drivers/clk/clk-mux.c
+@@ -97,7 +97,7 @@ struct clk *clk_register_mux(struct device *dev, const char *name,
  {
+ 	struct clk_mux *mux;
+ 
+-	mux = kmalloc(sizeof(struct clk_mux), GFP_KERNEL);
++	mux = kzalloc(sizeof(struct clk_mux), GFP_KERNEL);
+ 
+ 	if (!mux) {
+ 		pr_err("%s: could not allocate mux clk\n", __func__);
 -- 
 1.7.5.4
 
