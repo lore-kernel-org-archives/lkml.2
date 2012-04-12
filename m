@@ -1,70 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933888Ab2DLBKh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Apr 2012 21:10:37 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:47216 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933584Ab2DLBIl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Apr 2012 21:08:41 -0400
-From: Mike Turquette <mturquette@linaro.org>
-To: <arnd.bergmann@linaro.org>
-CC: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <linaro-dev@lists.linaro.org>, <patches@linaro.org>,
-        Shawn Guo <shawn.guo@linaro.org>,
-        Mike Turquette <mturquette@linaro.org>,
-        Olof Johansson <olof@lixom.net>, Russell King <linux@arm.linux.org.uk>,
-        Sascha Hauer <s.hauer@pengutronix.de>,
-        Richard Zhao <richard.zhao@linaro.org>,
-        Saravana Kannan <skannan@codeaurora.org>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Andrew Lunn <andrew@lunn.ch>, Rajendra Nayak <rnayak@ti.com>,
-        Viresh Kumar <viresh.kumar@st.com>
-Subject: [PATCH 05/13] clk: use kzalloc in clk_register_mux
-Date: Wed, 11 Apr 2012 18:02:43 -0700
-Message-ID: <1334192572-12499-6-git-send-email-mturquette@linaro.org>
-X-Mailer: git-send-email 1.7.5.4
-In-Reply-To: <1334192572-12499-1-git-send-email-mturquette@linaro.org>
-References: <1334192572-12499-1-git-send-email-mturquette@linaro.org>
-MIME-Version: 1.0
-Content-Type: text/plain
+	id S933290Ab2DLBK5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Apr 2012 21:10:57 -0400
+Received: from shards.monkeyblade.net ([198.137.202.13]:60544 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1761758Ab2DLBIg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Apr 2012 21:08:36 -0400
+Date: Wed, 11 Apr 2012 21:03:19 -0400 (EDT)
+Message-Id: <20120411.210319.370705937753558953.davem@davemloft.net>
+To: paulmck@linux.vnet.ibm.com
+Cc: shemminger@vyatta.com, mroos@linux.ee, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org
+Subject: Re: suspicious RCU usage warnings in 3.3.0
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <20120412004507.GF2473@linux.vnet.ibm.com>
+References: <20120411171004.016ddd95@nehalam.linuxnetplumber.net>
+	<20120411.201854.1070083308359208025.davem@davemloft.net>
+	<20120412004507.GF2473@linux.vnet.ibm.com>
+X-Mailer: Mew version 6.4 on Emacs 23.3 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Wed, 11 Apr 2012 18:03:23 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Shawn Guo <shawn.guo@linaro.org>
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Date: Wed, 11 Apr 2012 17:45:07 -0700
 
-Change clk_register_mux to use kzalloc, just like what all other basic
-clk registration functions do.
+> On Wed, Apr 11, 2012 at 08:18:54PM -0400, David Miller wrote:
+>> From: Stephen Hemminger <shemminger@vyatta.com>
+>> Date: Wed, 11 Apr 2012 17:10:04 -0700
+>> 
+>> > On Wed, 11 Apr 2012 16:08:37 -0700
+>> > "Paul E. McKenney" <paulmck@linux.vnet.ibm.com> wrote:
+>> > 
+>> >> Hmmm...  What CPU family is this running on?  From the look of the
+>> >> stack, it is sneaking out of idle into softirq without telling RCU.
+>> >> This would cause RCU to complain bitterly about being invoked from
+>> >> the idle loop -- and RCU ignores CPUs in the idle loop.
+>> >> 
+>> >> 							Thanx, Paul
+>> > 
+>> > Sun4... Ping David.
+>> 
+>> So is there anything specific I need to do in the sparc64
+>> idle loop?
+> 
+> Hmmm...  I must confess that I don't immediately see how control
+> is passing from cpu_idle() in arch/sparc/kernel/process_64.c to
+> __handle_softirq().
+> 
+> But it looks like a simple function call in the call trace:
 
-Signed-off-by: Shawn Guo <shawn.guo@linaro.org>
-Signed-off-by: Mike Turquette <mturquette@linaro.org>
-Cc: Arnd Bergman <arnd.bergmann@linaro.org>
-Cc: Olof Johansson <olof@lixom.net>
-Cc: Russell King <linux@arm.linux.org.uk>
-Cc: Sascha Hauer <s.hauer@pengutronix.de>
-Cc: Richard Zhao <richard.zhao@linaro.org>
-Cc: Saravana Kannan <skannan@codeaurora.org>
-Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: Andrew Lunn <andrew@lunn.ch>
-Cc: Rajendra Nayak <rnayak@ti.com>
-Cc: Viresh Kumar <viresh.kumar@st.com>
----
- drivers/clk/clk-mux.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
-
-diff --git a/drivers/clk/clk-mux.c b/drivers/clk/clk-mux.c
-index c71ad1f..50e0595 100644
---- a/drivers/clk/clk-mux.c
-+++ b/drivers/clk/clk-mux.c
-@@ -97,7 +97,7 @@ struct clk *clk_register_mux(struct device *dev, const char *name,
- {
- 	struct clk_mux *mux;
- 
--	mux = kmalloc(sizeof(struct clk_mux), GFP_KERNEL);
-+	mux = kzalloc(sizeof(struct clk_mux), GFP_KERNEL);
- 
- 	if (!mux) {
- 		pr_err("%s: could not allocate mux clk\n", __func__);
--- 
-1.7.5.4
-
+It's coming from the trap return code path at the end of hardware
+interrupt processing, on the IRQ stack.
