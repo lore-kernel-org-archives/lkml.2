@@ -1,85 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934522Ab2DLQR5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Apr 2012 12:17:57 -0400
-Received: from e37.co.us.ibm.com ([32.97.110.158]:46687 "EHLO
-	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933018Ab2DLQR4 (ORCPT
+	id S965644Ab2DLQYT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Apr 2012 12:24:19 -0400
+Received: from am1ehsobe006.messaging.microsoft.com ([213.199.154.209]:28904
+	"EHLO am1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932196Ab2DLQYS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Apr 2012 12:17:56 -0400
-Message-ID: <1334243041.18090.6.camel@key-ThinkPad-W510>
-Subject: [PATCH v3 01/17] powerpc: Add new hvcall constants to support PFO
-From: Kent Yoder <key@linux.vnet.ibm.com>
-To: linux-kernel@vger.kernel.org
-Cc: linux-crypto@vger.kernel.org, rcj@linux.vnet.ibm.com,
-        key@linux.vnet.ibm.com, benh@kernel.crashing.org,
-        linuxppc-dev@lists.ozlabs.org
-Date: Thu, 12 Apr 2012 10:04:01 -0500
-In-Reply-To: <1334242825.18090.4.camel@key-ThinkPad-W510>
-References: <1334242825.18090.4.camel@key-ThinkPad-W510>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2- 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12041216-7408-0000-0000-000004270E6E
+	Thu, 12 Apr 2012 12:24:18 -0400
+X-SpamScore: -3
+X-BigFish: VPS-3(zz98dKzz1202hzzz2dh668h839h944hd25hd2bh)
+X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
+X-WSS-ID: 0M2DK89-01-BW9-02
+X-M-MSG: 
+Date: Thu, 12 Apr 2012 18:23:51 +0200
+From: Borislav Petkov <borislav.petkov@amd.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+CC: Andreas Herrmann <andreas.herrmann3@amd.com>,
+        Kay Sievers <kay.sievers@vrfy.org>, Dave Jones <davej@redhat.com>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: x86, microcode: Conversion from sysdev class caused regression
+Message-ID: <20120412162351.GJ24549@aftab>
+References: <20120411163849.GE4794@alberich.amd.com>
+ <20120411200601.GC12288@kroah.com>
+ <20120411201053.GF18114@aftab>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <20120411201053.GF18114@aftab>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The Platform Facilities Option (PFO) adds several new h_calls and
-more return codes.
+On Wed, Apr 11, 2012 at 10:10:54PM +0200, Borislav Petkov wrote:
+> Yeah, we'll send you a fix probably tomorrow.
 
-Signed-off-by: Robert Jennings <rcj@linux.vnet.ibm.com>
-Signed-off-by: Kent Yoder <key@linux.vnet.ibm.com>
----
- arch/powerpc/include/asm/hvcall.h |   25 +++++++++++++++++++++++--
- 1 files changed, 23 insertions(+), 2 deletions(-)
+Ok, we ended up doing two patches, I'm sending them as a reply to this
+note. Will send them to Ingo if there are no complaints.
 
-diff --git a/arch/powerpc/include/asm/hvcall.h b/arch/powerpc/include/asm/hvcall.h
-index 1c324ff..6122523 100644
---- a/arch/powerpc/include/asm/hvcall.h
-+++ b/arch/powerpc/include/asm/hvcall.h
-@@ -77,8 +77,27 @@
- #define H_MR_CONDITION  -43
- #define H_NOT_ENOUGH_RESOURCES -44
- #define H_R_STATE       -45
--#define H_RESCINDEND    -46
--#define H_MULTI_THREADS_ACTIVE -9005
-+#define H_RESCINDED     -46
-+#define H_P2		-55
-+#define H_P3		-56
-+#define H_P4		-57
-+#define H_P5		-58
-+#define H_P6		-59
-+#define H_P7		-60
-+#define H_P8		-61
-+#define H_P9		-62
-+#define H_TOO_BIG	-64
-+#define H_OVERLAP	-68
-+#define H_INTERRUPT	-69
-+#define H_BAD_DATA	-70
-+#define H_NOT_ACTIVE	-71
-+#define H_SG_LIST	-72
-+#define H_OP_MODE	-73
-+#define H_COP_HW	-74
-+#define H_UNSUPPORTED_FLAG_START	-256
-+#define H_UNSUPPORTED_FLAG_END		-511
-+#define H_MULTI_THREADS_ACTIVE	-9005
-+#define H_OUTSTANDING_COP_OPS	-9006
- 
+Thanks.
 
- /* Long Busy is a condition that can be returned by the firmware
-@@ -240,6 +259,8 @@
- #define H_GET_MPP		0x2D4
- #define H_HOME_NODE_ASSOCIATIVITY 0x2EC
- #define H_BEST_ENERGY		0x2F4
-+#define H_RANDOM		0x300
-+#define H_COP			0x304
- #define H_GET_MPP_X		0x314
- #define MAX_HCALL_OPCODE	H_GET_MPP_X
- 
 -- 
-1.7.1
+Regards/Gruss,
+Boris.
 
+Advanced Micro Devices GmbH
+Einsteinring 24, 85609 Dornach
+GM: Alberto Bozzo
+Reg: Dornach, Landkreis Muenchen
+HRB Nr. 43632 WEEE Registernr: 129 19551
 
