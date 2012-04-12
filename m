@@ -1,52 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762777Ab2DLUug (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Apr 2012 16:50:36 -0400
-Received: from mail160.messagelabs.com ([216.82.253.99]:60859 "EHLO
-	mail160.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754615Ab2DLUuf (ORCPT
+	id S1762785Ab2DLUv5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Apr 2012 16:51:57 -0400
+Received: from mail-pz0-f52.google.com ([209.85.210.52]:59308 "EHLO
+	mail-pz0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753510Ab2DLUvz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Apr 2012 16:50:35 -0400
-X-Env-Sender: hartleys@visionengravers.com
-X-Msg-Ref: server-12.tower-160.messagelabs.com!1334263824!3692459!16
-X-Originating-IP: [216.166.12.32]
-X-StarScan-Version: 6.5.7; banners=-,-,-
-X-VirusChecked: Checked
-From: H Hartley Sweeten <hartleys@visionengravers.com>
-To: Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: [PATCH] kernel: resource.c: local functions should not be exposed globally
-Date: Thu, 12 Apr 2012 13:50:24 -0700
-User-Agent: KMail/1.9.9
+	Thu, 12 Apr 2012 16:51:55 -0400
+Date: Thu, 12 Apr 2012 13:51:48 -0700
+From: Tejun Heo <tj@kernel.org>
+To: Vivek Goyal <vgoyal@redhat.com>
+Cc: Jan Kara <jack@suse.cz>, Fengguang Wu <fengguang.wu@intel.com>,
+        Jens Axboe <axboe@kernel.dk>, linux-mm@kvack.org, sjayaraman@suse.com,
+        andrea@betterlinux.com, jmoyer@redhat.com,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        kamezawa.hiroyu@jp.fujitsu.com, lizefan@huawei.com,
+        containers@lists.linux-foundation.org, cgroups@vger.kernel.org,
+        ctalbott@google.com, rni@google.com, lsf@lists.linux-foundation.org
+Subject: Re: [RFC] writeback and cgroup
+Message-ID: <20120412205148.GA24056@google.com>
+References: <20120403183655.GA23106@dhcp-172-17-108-109.mtv.corp.google.com>
+ <20120404145134.GC12676@redhat.com>
+ <20120407080027.GA2584@quack.suse.cz>
+ <20120410180653.GJ21801@redhat.com>
+ <20120410210505.GE4936@quack.suse.cz>
+ <20120410212041.GP21801@redhat.com>
+ <20120410222425.GF4936@quack.suse.cz>
+ <20120411154005.GD16692@redhat.com>
+ <20120411192231.GF16008@quack.suse.cz>
+ <20120412203719.GL2207@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Message-ID: <201204121350.24335.hartleys@visionengravers.com>
+In-Reply-To: <20120412203719.GL2207@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The function reallocate_resource is only referenced in this file and
-should be marked static to prevent it from being exposed globally.
+Hello, Vivek.
 
-This quiets the sparse warning:
+On Thu, Apr 12, 2012 at 04:37:19PM -0400, Vivek Goyal wrote:
+> I mean how are we supposed to put cgroup throttling rules using cgroup
+> interface for network filesystems and for btrfs global bdi. Using "dev_t"
+> associated with bdi? I see that all the bdi's are showing up in
+> /sys/class/bdi, but how do I know which one I am intereste in or which
+> one belongs to filesystem I am interestd in putting throttling rule on.
+> 
+> For block devices, we simply use "major:min limit" format to write to
+> a cgroup file and this configuration will sit in one of the per queue
+> per cgroup data structure.
+> 
+> I am assuming that when you say throttling should happen at bdi, you
+> are thinking of maintaining per cgroup per bdi data structures and user
+> is somehow supposed to pass "bdi_maj:bdi_min  limit" through cgroup files?
+> If yes, how does one map a filesystem's bdi we want to put rules on?
 
-warning: symbol 'reallocate_resource' was not declared. Should it be static?
+I think you're worrying way too much.  One of the biggest reasons we
+have layers and abstractions is to avoid worrying about everything
+from everywhere.  Let block device implement per-device limits.  Let
+writeback work from the backpressure it gets from the relevant IO
+channel, bdi-cgroup combination in this case.
 
-Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
+For stacked or combined devices, let the combining layer deal with
+piping the congestion information.  If it's per-file split, the
+combined bdi can simply forward information from the matching
+underlying device.  If the file is striped / duplicated somehow, the
+*only* layer which knows what to do is and should be the layer
+performing the striping and duplication.  There's no need to worry
+about it from blkcg and if you get the layering correct it isn't
+difficult to slice such logic inbetween.  In fact, most of it
+(backpressure propagation) would just happen as part of the usual
+buffering between layers.
 
----
+Thanks.
 
-diff --git a/kernel/resource.c b/kernel/resource.c
-index 7e8ea66..1e3031e 100644
---- a/kernel/resource.c
-+++ b/kernel/resource.c
-@@ -470,7 +470,7 @@ static int find_resource(struct resource *root, struct resource *new,
-  * @newsize: new size of the resource descriptor
-  * @constraint: the size and alignment constraints to be met.
-  */
--int reallocate_resource(struct resource *root, struct resource *old,
-+static int reallocate_resource(struct resource *root, struct resource *old,
- 			resource_size_t newsize,
- 			struct resource_constraint  *constraint)
- {
+-- 
+tejun
