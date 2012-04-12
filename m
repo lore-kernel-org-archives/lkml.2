@@ -1,514 +1,162 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965348Ab2DLPao (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Apr 2012 11:30:44 -0400
-Received: from e39.co.us.ibm.com ([32.97.110.160]:45719 "EHLO
-	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753835Ab2DLPan (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Apr 2012 11:30:43 -0400
-Message-ID: <1334244482.18090.21.camel@key-ThinkPad-W510>
-Subject: [PATCH v3 08/17] powerpc: crypto: AES-CCM mode routines for nx
- encryption
-From: Kent Yoder <key@linux.vnet.ibm.com>
-To: linux-kernel@vger.kernel.org
-Cc: linux-crypto@vger.kernel.org, rcj@linux.vnet.ibm.com,
-        key@linux.vnet.ibm.com, benh@kernel.crashing.org,
-        linuxppc-dev@lists.ozlabs.org
-Date: Thu, 12 Apr 2012 10:28:02 -0500
-In-Reply-To: <1334242825.18090.4.camel@key-ThinkPad-W510>
-References: <1334242825.18090.4.camel@key-ThinkPad-W510>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2- 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12041215-4242-0000-0000-0000015301B2
+	id S965514Ab2DLPbP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Apr 2012 11:31:15 -0400
+Received: from zene.cmpxchg.org ([85.214.230.12]:50150 "EHLO zene.cmpxchg.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S965273Ab2DLPbO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Apr 2012 11:31:14 -0400
+Date: Thu, 12 Apr 2012 17:30:55 +0200
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: Glauber Costa <glommer@parallels.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Hugh Dickins <hughd@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>, Tejun Heo <tj@kernel.org>,
+        Daniel Walsh <dwalsh@redhat.com>,
+        "Daniel P. Berrange" <berrange@redhat.com>,
+        Li Zefan <lizf@cn.fujitsu.com>, LKML <linux-kernel@vger.kernel.org>,
+        Cgroups <cgroups@vger.kernel.org>,
+        Containers <containers@lists.linux-foundation.org>
+Subject: Re: [RFD] Merge task counter into memcg
+Message-ID: <20120412153055.GL1787@cmpxchg.org>
+References: <20120411185715.GA4317@somewhere.redhat.com>
+ <4F862851.3040208@jp.fujitsu.com>
+ <20120412113217.GB11455@somewhere.redhat.com>
+ <4F86BFC6.2050400@parallels.com>
+ <20120412123256.GI1787@cmpxchg.org>
+ <4F86D4BD.1040305@parallels.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4F86D4BD.1040305@parallels.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-These routines add support for AES in CCM mode on the Power7+ CPU's
-in-Nest accelerator driver.
+On Thu, Apr 12, 2012 at 10:12:29AM -0300, Glauber Costa wrote:
+> On 04/12/2012 09:32 AM, Johannes Weiner wrote:
+> >On Thu, Apr 12, 2012 at 08:43:02AM -0300, Glauber Costa wrote:
+> >>On 04/12/2012 08:32 AM, Frederic Weisbecker wrote:
+> >>>>But I think increasing number of subsystem is not very good....
+> >>>If the result is a better granularity on the overhead, I believe this
+> >>>can be a good thing.
+> >>
+> >>But again, since there is quite number of people trying to merge
+> >>those stuff together, you are just swimming against the tide.
+> >
+> >I don't see where merging unrelated controllers together is being
+> >discussed, do you have a reference?
+> 
+> https://lkml.org/lkml/2012/2/21/379
+> 
+> But also, I believe this has been widely discussed in person by
+> people, in separate groups. Maybe Tejun can do a small writeup of
+> where we stand?
+> 
+> I would also point out that this is exactly what it is (IMHO): an
+> ongoing discussion. You are more than welcome to chime in.
 
-Signed-off-by: Kent Yoder <key@linux.vnet.ibm.com>
----
- drivers/crypto/nx/nx-aes-ccm.c |  465 ++++++++++++++++++++++++++++++++++++++++
- 1 files changed, 465 insertions(+), 0 deletions(-)
- create mode 100644 drivers/crypto/nx/nx-aes-ccm.c
+I thought the conclusion was that nobody really had any sane use case
+for multiple hierarchies.  So while nobody wanted to just disable them
+in fear of breaking someones usecase, individual controllers still can
+only be active in a single hierarchy.  I don't see why the task
+controller should now as a precedence support a level of flexibility
+that is very doubtful in the first place.
 
-diff --git a/drivers/crypto/nx/nx-aes-ccm.c b/drivers/crypto/nx/nx-aes-ccm.c
-new file mode 100644
-index 0000000..e418bef
---- /dev/null
-+++ b/drivers/crypto/nx/nx-aes-ccm.c
-@@ -0,0 +1,465 @@
-+/**
-+ * AES CCM routines supporting the Power 7+ Nest Accelerators driver
-+ *
-+ * Copyright (C) 2012 International Business Machines Inc.
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation; version 2 only.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program; if not, write to the Free Software
-+ * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
-+ *
-+ * Author: Kent Yoder <yoder1@us.ibm.com>
-+ */
-+
-+#include <crypto/internal/aead.h>
-+#include <crypto/aes.h>
-+#include <crypto/algapi.h>
-+#include <crypto/scatterwalk.h>
-+#include <linux/module.h>
-+#include <linux/types.h>
-+#include <linux/crypto.h>
-+#include <asm/vio.h>
-+
-+#include "nx_csbcpb.h"
-+#include "nx.h"
-+
-+
-+static int ccm_aes_nx_set_key(struct crypto_aead *tfm,
-+			      const u8           *in_key,
-+			      unsigned int        key_len)
-+{
-+	struct nx_crypto_ctx *nx_ctx = crypto_tfm_ctx(&tfm->base);
-+	struct nx_csbcpb *csbcpb = nx_ctx->csbcpb;
-+	struct nx_csbcpb *csbcpb_aead = nx_ctx->csbcpb_aead;
-+
-+	nx_ctx_init(nx_ctx, HCOP_FC_AES);
-+
-+	switch (key_len) {
-+	case AES_KEYSIZE_128:
-+		NX_CPB_SET_KEY_SIZE(csbcpb, NX_KS_AES_128);
-+		NX_CPB_SET_KEY_SIZE(csbcpb_aead, NX_KS_AES_128);
-+		nx_ctx->ap = &nx_ctx->props[NX_PROPS_AES_128];
-+		break;
-+	default:
-+		return -EINVAL;
-+	}
-+
-+	csbcpb->cpb.hdr.mode = NX_MODE_AES_CCM;
-+	memcpy(csbcpb->cpb.aes_ccm.key, in_key, key_len);
-+
-+	csbcpb_aead->cpb.hdr.mode = NX_MODE_AES_CCA;
-+	memcpy(csbcpb_aead->cpb.aes_cca.key, in_key, key_len);
-+
-+	return 0;
-+
-+}
-+
-+static int ccm4309_aes_nx_set_key(struct crypto_aead *tfm,
-+				  const u8           *in_key,
-+				  unsigned int        key_len)
-+{
-+	struct nx_crypto_ctx *nx_ctx = crypto_tfm_ctx(&tfm->base);
-+
-+	if (key_len < 3)
-+		return -EINVAL;
-+
-+	key_len -= 3;
-+
-+	memcpy(nx_ctx->priv.ccm.nonce, in_key + key_len, 3);
-+
-+	return ccm_aes_nx_set_key(tfm, in_key, key_len);
-+}
-+
-+static int ccm_aes_nx_setauthsize(struct crypto_aead *tfm,
-+				  unsigned int authsize)
-+{
-+	switch (authsize) {
-+	case 4:
-+	case 6:
-+	case 8:
-+	case 10:
-+	case 12:
-+	case 14:
-+	case 16:
-+		break;
-+	default:
-+		return -EINVAL;
-+	}
-+
-+	crypto_aead_crt(tfm)->authsize = authsize;
-+
-+	return 0;
-+}
-+
-+static int ccm4309_aes_nx_setauthsize(struct crypto_aead *tfm,
-+				      unsigned int authsize)
-+{
-+	switch (authsize) {
-+	case 8:
-+	case 12:
-+	case 16:
-+		break;
-+	default:
-+		return -EINVAL;
-+	}
-+
-+	crypto_aead_crt(tfm)->authsize = authsize;
-+
-+	return 0;
-+}
-+
-+/* taken from crypto/ccm.c */
-+static int set_msg_len(u8 *block, unsigned int msglen, int csize)
-+{
-+	__be32 data;
-+
-+	memset(block, 0, csize);
-+	block += csize;
-+
-+	if (csize >= 4)
-+		csize = 4;
-+	else if (msglen > (unsigned int)(1 << (8 * csize)))
-+		return -EOVERFLOW;
-+
-+	data = cpu_to_be32(msglen);
-+	memcpy(block - csize, (u8 *)&data + 4 - csize, csize);
-+
-+	return 0;
-+}
-+
-+/* taken from crypto/ccm.c */
-+static inline int crypto_ccm_check_iv(const u8 *iv)
-+{
-+	/* 2 <= L <= 8, so 1 <= L' <= 7. */
-+	if (1 > iv[0] || iv[0] > 7)
-+		return -EINVAL;
-+
-+	return 0;
-+}
-+
-+/* based on code from crypto/ccm.c */
-+static int generate_b0(u8 *iv, unsigned int assoclen, unsigned int authsize,
-+		       unsigned int cryptlen, u8 *b0)
-+{
-+	unsigned int l, lp, m = authsize;
-+	int rc;
-+
-+	memcpy(b0, iv, 16);
-+
-+	lp = b0[0];
-+	l = lp + 1;
-+
-+	/* set m, bits 3-5 */
-+	*b0 |= (8 * ((m - 2) / 2));
-+
-+	/* set adata, bit 6, if associated data is used */
-+	if (assoclen)
-+		*b0 |= 64;
-+
-+	rc = set_msg_len(b0 + 16 - l, cryptlen, l);
-+
-+	return rc;
-+}
-+
-+static int generate_pat(u8                   *iv,
-+			struct aead_request  *req,
-+			struct nx_crypto_ctx *nx_ctx,
-+			unsigned int          authsize,
-+			unsigned int          nbytes,
-+			u8                   *out)
-+{
-+	struct nx_sg *nx_insg = nx_ctx->in_sg;
-+	struct nx_sg *nx_outsg = nx_ctx->out_sg;
-+	unsigned int iauth_len = 0;
-+	struct vio_pfo_op *op = NULL;
-+	u8 tmp[16], *b1 = NULL, *b0 = NULL, *result = NULL;
-+	int rc;
-+
-+	/* zero the ctr value */
-+	memset(iv + 15 - iv[0], 0, iv[0] + 1);
-+
-+	if (!req->assoclen) {
-+		b0 = nx_ctx->csbcpb->cpb.aes_ccm.in_pat_or_b0;
-+	} else if (req->assoclen <= 14) {
-+		/* if associated data is 14 bytes or less, we do 1 GCM
-+		 * operation on 2 AES blocks, B0 (stored in the csbcpb) and B1,
-+		 * which is fed in through the source buffers here */
-+		b0 = nx_ctx->csbcpb->cpb.aes_ccm.in_pat_or_b0;
-+		b1 = nx_ctx->priv.ccm.iauth_tag;
-+		iauth_len = req->assoclen;
-+
-+		nx_insg = nx_build_sg_list(nx_insg, b1, 16, nx_ctx->ap->sglen);
-+		nx_outsg = nx_build_sg_list(nx_outsg, tmp, 16,
-+					    nx_ctx->ap->sglen);
-+
-+		/* inlen should be negative, indicating to phyp that its a
-+		 * pointer to an sg list */
-+		nx_ctx->op.inlen = (nx_ctx->in_sg - nx_insg) *
-+					sizeof(struct nx_sg);
-+		nx_ctx->op.outlen = (nx_ctx->out_sg - nx_outsg) *
-+					sizeof(struct nx_sg);
-+
-+		NX_CPB_FDM(nx_ctx->csbcpb) |= NX_FDM_ENDE_ENCRYPT;
-+		NX_CPB_FDM(nx_ctx->csbcpb) |= NX_FDM_INTERMEDIATE;
-+
-+		op = &nx_ctx->op;
-+		result = nx_ctx->csbcpb->cpb.aes_ccm.out_pat_or_mac;
-+	} else if (req->assoclen <= 65280) {
-+		/* if associated data is less than (2^16 - 2^8), we construct
-+		 * B1 differently and feed in the associated data to a CCA
-+		 * operation */
-+		b0 = nx_ctx->csbcpb_aead->cpb.aes_cca.b0;
-+		b1 = nx_ctx->csbcpb_aead->cpb.aes_cca.b1;
-+		iauth_len = 14;
-+
-+		/* remaining assoc data must have scatterlist built for it */
-+		nx_insg = nx_walk_and_build(nx_insg, nx_ctx->ap->sglen,
-+					    req->assoc, iauth_len,
-+					    req->assoclen - iauth_len);
-+		nx_ctx->op_aead.inlen = (nx_ctx->in_sg - nx_insg) *
-+						sizeof(struct nx_sg);
-+
-+		op = &nx_ctx->op_aead;
-+		result = nx_ctx->csbcpb_aead->cpb.aes_cca.out_pat_or_b0;
-+	} else {
-+		/* if associated data is less than (2^32), we construct B1
-+		 * differently yet again and feed in the associated data to a
-+		 * CCA operation */
-+		pr_err("associated data len is %u bytes (returning -EINVAL)\n",
-+		       req->assoclen);
-+		rc = -EINVAL;
-+	}
-+
-+	rc = generate_b0(iv, req->assoclen, authsize, nbytes, b0);
-+	if (rc)
-+		goto done;
-+
-+	if (b1) {
-+		memset(b1, 0, 16);
-+		*(u16 *)b1 = (u16)req->assoclen;
-+
-+		scatterwalk_map_and_copy(b1 + 2, req->assoc, 0,
-+					 iauth_len, SCATTERWALK_FROM_SG);
-+
-+		rc = nx_hcall_sync(nx_ctx, op);
-+		if (rc)
-+			goto done;
-+
-+		atomic_inc(&(nx_ctx->stats->aes_ops));
-+		atomic64_add(req->assoclen, &(nx_ctx->stats->aes_bytes));
-+
-+		memcpy(out, result, AES_BLOCK_SIZE);
-+	}
-+done:
-+	return rc;
-+}
-+
-+static int ccm_nx_decrypt(struct aead_request   *req,
-+			  struct blkcipher_desc *desc)
-+{
-+	struct nx_crypto_ctx *nx_ctx = crypto_tfm_ctx(req->base.tfm);
-+	struct nx_csbcpb *csbcpb = nx_ctx->csbcpb;
-+	unsigned int nbytes = req->cryptlen;
-+	unsigned int authsize = crypto_aead_authsize(crypto_aead_reqtfm(req));
-+	struct nx_ccm_priv *priv = &nx_ctx->priv.ccm;
-+	int rc = -1;
-+
-+	if (nbytes > nx_ctx->ap->databytelen)
-+		return -EINVAL;
-+
-+	nbytes -= authsize;
-+
-+	/* copy out the auth tag to compare with later */
-+	scatterwalk_map_and_copy(priv->oauth_tag,
-+				 req->src, nbytes, authsize,
-+				 SCATTERWALK_FROM_SG);
-+
-+	rc = generate_pat(desc->info, req, nx_ctx, authsize, nbytes,
-+			  csbcpb->cpb.aes_ccm.in_pat_or_b0);
-+	if (rc)
-+		goto out;
-+
-+	rc = nx_build_sg_lists(nx_ctx, desc, req->dst, req->src, nbytes,
-+			       csbcpb->cpb.aes_ccm.iv_or_ctr);
-+	if (rc)
-+		goto out;
-+
-+	NX_CPB_FDM(nx_ctx->csbcpb) &= ~NX_FDM_ENDE_ENCRYPT;
-+	NX_CPB_FDM(nx_ctx->csbcpb) &= ~NX_FDM_INTERMEDIATE;
-+
-+	rc = nx_hcall_sync(nx_ctx, &nx_ctx->op);
-+	if (rc)
-+		goto out;
-+
-+	atomic_inc(&(nx_ctx->stats->aes_ops));
-+	atomic64_add(csbcpb->csb.processed_byte_count,
-+		     &(nx_ctx->stats->aes_bytes));
-+
-+	rc = memcmp(csbcpb->cpb.aes_ccm.out_pat_or_mac, priv->oauth_tag,
-+		    authsize) ? -EBADMSG : 0;
-+out:
-+	return rc;
-+}
-+
-+static int ccm_nx_encrypt(struct aead_request   *req,
-+			  struct blkcipher_desc *desc)
-+{
-+	struct nx_crypto_ctx *nx_ctx = crypto_tfm_ctx(req->base.tfm);
-+	struct nx_csbcpb *csbcpb = nx_ctx->csbcpb;
-+	unsigned int nbytes = req->cryptlen;
-+	unsigned int authsize = crypto_aead_authsize(crypto_aead_reqtfm(req));
-+	int rc = -1;
-+
-+	if (nbytes > nx_ctx->ap->databytelen)
-+		return -EINVAL;
-+
-+	rc = generate_pat(desc->info, req, nx_ctx, authsize, nbytes,
-+			  csbcpb->cpb.aes_ccm.in_pat_or_b0);
-+	if (rc)
-+		goto out;
-+
-+	rc = nx_build_sg_lists(nx_ctx, desc, req->dst, req->src, nbytes,
-+			       csbcpb->cpb.aes_ccm.iv_or_ctr);
-+	if (rc)
-+		goto out;
-+
-+	NX_CPB_FDM(csbcpb) |= NX_FDM_ENDE_ENCRYPT;
-+	NX_CPB_FDM(csbcpb) &= ~NX_FDM_INTERMEDIATE;
-+
-+	rc = nx_hcall_sync(nx_ctx, &nx_ctx->op);
-+	if (rc)
-+		goto out;
-+
-+	atomic_inc(&(nx_ctx->stats->aes_ops));
-+	atomic64_add(csbcpb->csb.processed_byte_count,
-+		     &(nx_ctx->stats->aes_bytes));
-+
-+	/* copy out the auth tag */
-+	scatterwalk_map_and_copy(csbcpb->cpb.aes_ccm.out_pat_or_mac,
-+				 req->dst, nbytes, authsize,
-+				 SCATTERWALK_TO_SG);
-+out:
-+	return rc;
-+}
-+
-+static int ccm4309_aes_nx_encrypt(struct aead_request *req)
-+{
-+	struct nx_crypto_ctx *nx_ctx = crypto_tfm_ctx(req->base.tfm);
-+	struct blkcipher_desc desc;
-+	u8 *iv = nx_ctx->priv.ccm.iv;
-+
-+	iv[0] = 3;
-+	memcpy(iv + 1, nx_ctx->priv.ccm.nonce, 3);
-+	memcpy(iv + 4, req->iv, 8);
-+
-+	desc.info = iv;
-+	desc.tfm = (struct crypto_blkcipher *)req->base.tfm;
-+
-+	return ccm_nx_encrypt(req, &desc);
-+}
-+
-+static int ccm_aes_nx_encrypt(struct aead_request *req)
-+{
-+	struct blkcipher_desc desc;
-+	int rc;
-+
-+	desc.info = req->iv;
-+	desc.tfm = (struct crypto_blkcipher *)req->base.tfm;
-+
-+	rc = crypto_ccm_check_iv(desc.info);
-+	if (rc)
-+		return rc;
-+
-+	return ccm_nx_encrypt(req, &desc);
-+}
-+
-+static int ccm4309_aes_nx_decrypt(struct aead_request *req)
-+{
-+	struct nx_crypto_ctx *nx_ctx = crypto_tfm_ctx(req->base.tfm);
-+	struct blkcipher_desc desc;
-+	u8 *iv = nx_ctx->priv.ccm.iv;
-+
-+	iv[0] = 3;
-+	memcpy(iv + 1, nx_ctx->priv.ccm.nonce, 3);
-+	memcpy(iv + 4, req->iv, 8);
-+
-+	desc.info = iv;
-+	desc.tfm = (struct crypto_blkcipher *)req->base.tfm;
-+
-+	return ccm_nx_decrypt(req, &desc);
-+}
-+
-+static int ccm_aes_nx_decrypt(struct aead_request *req)
-+{
-+	struct blkcipher_desc desc;
-+	int rc;
-+
-+	desc.info = req->iv;
-+	desc.tfm = (struct crypto_blkcipher *)req->base.tfm;
-+
-+	rc = crypto_ccm_check_iv(desc.info);
-+	if (rc)
-+		return rc;
-+
-+	return ccm_nx_decrypt(req, &desc);
-+}
-+
-+/* tell the block cipher walk routines that this is a stream cipher by
-+ * setting cra_blocksize to 1. Even using blkcipher_walk_virt_block
-+ * during encrypt/decrypt doesn't solve this problem, because it calls
-+ * blkcipher_walk_done under the covers, which doesn't use walk->blocksize,
-+ * but instead uses this tfm->blocksize. */
-+struct crypto_alg nx_ccm_aes_alg = {
-+	.cra_name        = "ccm(aes)",
-+	.cra_driver_name = "ccm-aes-nx",
-+	.cra_priority    = 300,
-+	.cra_flags       = CRYPTO_ALG_TYPE_AEAD |
-+			   CRYPTO_ALG_NEED_FALLBACK,
-+	.cra_blocksize   = 1,
-+	.cra_ctxsize     = sizeof(struct nx_crypto_ctx),
-+	.cra_type        = &crypto_aead_type,
-+	.cra_module      = THIS_MODULE,
-+	.cra_list        = LIST_HEAD_INIT(nx_ccm_aes_alg.cra_list),
-+	.cra_init        = nx_crypto_ctx_aes_ccm_init,
-+	.cra_exit        = nx_crypto_ctx_exit,
-+	.cra_aead = {
-+		.ivsize      = AES_BLOCK_SIZE,
-+		.maxauthsize = AES_BLOCK_SIZE,
-+		.setkey      = ccm_aes_nx_set_key,
-+		.setauthsize = ccm_aes_nx_setauthsize,
-+		.encrypt     = ccm_aes_nx_encrypt,
-+		.decrypt     = ccm_aes_nx_decrypt,
-+	}
-+};
-+
-+struct crypto_alg nx_ccm4309_aes_alg = {
-+	.cra_name        = "rfc4309(ccm(aes))",
-+	.cra_driver_name = "rfc4309-ccm-aes-nx",
-+	.cra_priority    = 300,
-+	.cra_flags       = CRYPTO_ALG_TYPE_AEAD |
-+			   CRYPTO_ALG_NEED_FALLBACK,
-+	.cra_blocksize   = 1,
-+	.cra_ctxsize     = sizeof(struct nx_crypto_ctx),
-+	.cra_type        = &crypto_nivaead_type,
-+	.cra_module      = THIS_MODULE,
-+	.cra_list        = LIST_HEAD_INIT(nx_ccm4309_aes_alg.cra_list),
-+	.cra_init        = nx_crypto_ctx_aes_ccm_init,
-+	.cra_exit        = nx_crypto_ctx_exit,
-+	.cra_aead = {
-+		.ivsize      = 8,
-+		.maxauthsize = AES_BLOCK_SIZE,
-+		.setkey      = ccm4309_aes_nx_set_key,
-+		.setauthsize = ccm4309_aes_nx_setauthsize,
-+		.encrypt     = ccm4309_aes_nx_encrypt,
-+		.decrypt     = ccm4309_aes_nx_decrypt,
-+		.geniv       = "seqiv",
-+	}
-+};
--- 
-1.7.1
+> >>If this gets really integrated, out of a sudden the overhead will
+> >>appear. So better care about it now.
+> >
+> >Forcing people that want to account/limit one resource to take the hit
+> >for something else they are not interested in requires justification.
+> 
+> Agree. Even people aiming for unified hierarchies are okay with an
+> opt-in/out system, I believe. So the controllers need not to be
+> active at all times. One way of doing this is what I suggested to
+> Frederic: If you don't limit, don't account.
 
+I don't agree, it's a valid usecase to monitor a workload without
+limiting it in any way.  I do it all the time.
 
+> >You can optimize only so much, in the end, the hierarchical accounting
+> >is just expensive and unacceptable if you don't care about a certain
+> >resource.  For that reason, I think controllers should stay opt-in.
+> 
+> see above.
+> 
+> >Btw, can we please have a discussion where raised concerns are
+> >supported by more than gut feeling?  "I think X is not very good" is
+> >hardly an argument.  Where is the technical problem in increasing the
+> >number of available controllers?
+> 
+> Kame said that, not me. But FWIW, I don't disagree. And this is
+> hardly gut feeling.
+> 
+> A big number of controllers creates complexity. When coding, we can
+> assume a lot less things about their relationships, and more
+> importantly: at some point people get confused. Fuck, sometimes *we*
+> get confused about which controller do what, where its
+> responsibility end and where the other's begin. And we're the ones
+> writing it! Avoiding complexity is an engineering principle, not a
+> gut feeling.
+
+And that's why I have a horrible feeling about extending the cgroup
+core to do hierarchical accounting and limiting.  See below.
+
+> Now, of course, we should aim to make things as simple as possible,
+> but not simpler: So you can argue that in Frederic's specific case,
+> it is justified. And I'd be fine with that 100 %. If I agreed...
+> 
+> There are two natural points for inclusion here:
+> 
+> 1) every cgroup has a task counter by itself. If we're putting the
+> tasks there anyway, this provides a natural point of accounting.
+
+I do think there is a big difference between having a list of tasks
+per individual cgroup to manage basic task-cgroup relationship on one
+hand, and accounting and limiting the number of allowed tasks over
+multi-level group hierarchies on the other.  It may seem natural on
+the face of it, but it really isn't, IMO.  One is basic plumbing, the
+other is applying actual semantics to a hierarchy of groups, which has
+always been the domain of controllers.  It's simply a layering
+violation in my eyes.
+
+> 2) The cpu cgroup, in the end, is the realm of the scheduler. We
+> determine which % of the cpu the process will get, bandwidth, time
+> spent by tasks, and all that. It is also more natural for that,
+> because it is task based.
+> 
+> Don't get me wrong: I actually love the feature Frederic is working on.
+> I just don't believe a different controller is justified. Nor do I
+> believe memcg is the place for that (specially now that I thought it
+> overnight)
+
+To reraise a point from my other email that was ignored: do users
+actually really care about the number of tasks when they want to
+prevent forkbombs?  If a task would use neither CPU nor memory, you
+would not be interested in limiting the number of tasks.
+
+Because the number of tasks is not a resource.  CPU and memory are.
+
+So again, if we would include the memory impact of tasks properly
+(structures, kernel stack pages) in the kernel memory counters which
+we allow to limit, shouldn't this solve our problem?
+
+You said in private email that you didn't like the idea because
+administrators wouldn't know how big the kernel stack was and that the
+number of tasks would be a more natural thing to limit.  But I think
+that is actually an argument in favor of the kmem approach: the user
+has no idea how much impact a task actually has resource-wise!  On the
+other hand, he knows exactly how much memory and CPU his machine has
+and how he wants to distribute these resources.  So why provide him
+with an interface to control some number in an unknowwn unit?
+
+You don't propose we allow limiting the number of dcache entries,
+either, but rather the memory they use.
+
+The historical limiting of number of tasks through rlimit is anything
+but scientific or natural.  You essentially set it to a random value
+between allowing most users to do their job and preventing things from
+taking down the machine.  With proper resource accounting, which we
+want to have anyway, we can do much better than that, so why shouldn't
+we?
