@@ -1,79 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762630Ab2DLUIK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Apr 2012 16:08:10 -0400
-Received: from mail-pz0-f52.google.com ([209.85.210.52]:54531 "EHLO
-	mail-pz0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965957Ab2DLUIE (ORCPT
+	id S1762653Ab2DLUJ2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Apr 2012 16:09:28 -0400
+Received: from shards.monkeyblade.net ([198.137.202.13]:41147 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754068Ab2DLUJ0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Apr 2012 16:08:04 -0400
-Date: Thu, 12 Apr 2012 13:07:59 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Felipe Contreras <felipe.contreras@gmail.com>
-Cc: Adrian Chadd <adrian@freebsd.org>, Sergio Correia <lists@uece.net>,
-        linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk,
-        linux-wireless Mailing List <linux-wireless@vger.kernel.org>,
-        Sujith Manoharan <c_manoha@qca.qualcomm.com>,
-        "ath9k-devel@lists.ath9k.org" <ath9k-devel@venema.h4ckr.net>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: Re: [ 00/78] 3.3.2-stable review
-Message-ID: <20120412200759.GB23764@kroah.com>
-References: <20120411231102.GA6404@kroah.com>
- <CAJyhjX2KrfSJW64PJMTHou9zSojsfA1iNT-WahinfMBce_B=BA@mail.gmail.com>
- <20120412002927.GA23167@kroah.com>
- <CAMP44s3Jh-t07A+i82qbAMQyEN0oWTmKk5BJcst942gFdD0=VA@mail.gmail.com>
- <20120412011313.GA23764@kroah.com>
- <CAMP44s2q+bQE3-zsX4bs=sQDt4jf8eE5bwZ8V88UjodjRyAjog@mail.gmail.com>
- <20120412144626.GA14868@kroah.com>
- <CAMP44s1T4EVwpzDuV_vV0Zh-5WcPCwdw9eeOfL17Geqp_UFN-Q@mail.gmail.com>
- <CAJ-VmonhwvnXPKa=LNOR4W0ZTXZqWmzw4UrsKLoE0YN_Bu0FzQ@mail.gmail.com>
- <CAMP44s2JPvhEB6Eb049Z_bToAFncHKMEheuyaxyhC=bnh2GJVg@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CAMP44s2JPvhEB6Eb049Z_bToAFncHKMEheuyaxyhC=bnh2GJVg@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 12 Apr 2012 16:09:26 -0400
+Date: Thu, 12 Apr 2012 16:09:24 -0400 (EDT)
+Message-Id: <20120412.160924.1955339981542902073.davem@davemloft.net>
+To: shuahkhan@gmail.com
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] net/core: simple_strtoul cleanup
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1334258893.3022.7.camel@lorien2>
+References: <1334258893.3022.7.camel@lorien2>
+X-Mailer: Mew version 6.4 on Emacs 24.0.95 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Thu, 12 Apr 2012 13:09:25 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 12, 2012 at 09:43:33PM +0300, Felipe Contreras wrote:
-> On Thu, Apr 12, 2012 at 8:24 PM, Adrian Chadd <adrian@freebsd.org> wrote:
-> > On 12 April 2012 09:49, Felipe Contreras <felipe.contreras@gmail.com> wrote:
-> >
-> >>>
-> >>> A revert is the same as a patch.  It needs to be in Linus's tree before
-> >>> I can add it to the stable releases.
-> >>
-> >> Right, because otherwise people's systems would actually work.
-> >>
-> >> But hey, as I said, following rules is more important, regardless of
-> >> what the rules are, and why they are there. The rules that actually
-> >> triggered this issue in v3.3.1, as this is not in v3.3.
-> >>
-> >> You could just accept that the patch should have never landed in
-> >> v3.3.1 in the first place, but it's much easier to arbitrarily keep
-> >> stacking patches without thinking too much about them.
-> >
-> > Greg is doing the right thing here. We face the same deal in FreeBSD -
-> > people want fixes to go into a release branch first, but if you do
-> > that you break the development flow - which is "stuff goes into -HEAD
-> > and is then backported to the release branches."
-> >
-> > If you don't do this, you risk having people do (more, all)
-> > development and testing on a release branch and never test -HEAD (or
-> > "upstream linux" here). Once you open that particular flood gate, it's
-> > hard to close.
+From: Shuah Khan <shuahkhan@gmail.com>
+Date: Thu, 12 Apr 2012 13:28:13 -0600
+
+> Changed net/core/net-sysfs.c: netdev_store() to use kstrtoul() 
+> instead of obsolete simple_strtoul().
 > 
-> But this is exactly the opposite; the patch that broke things is in
-> the 'release branch' (3.3.1); it's not in upstream (3.3). Sure, it's
-> also on a later upstream, which is also broken.
+>>From 84371b0ed8b277ec8005fd0efbc73165a8bd72b9 Mon Sep 17 00:00:00 2001
+> From: Shuah Khan <shuahkhan@gmail.com>
+> Date: Thu, 12 Apr 2012 10:36:10 -0600
+> Subject: [PATCH] net/core: simple_strtoul cleanup
+> 
+> 
+> Signed-off-by: Shuah Khan <shuahkhan@gmail.com>
 
-What is the git commit id of the patch in 3.3.1 that caused this to
-break?  This is the first time I have heard that 3.3 worked and 3.3.1
-did not work.  Someone needs to tell me these things...
-
-greg k-h
+Applied, thanks.
