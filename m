@@ -1,73 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934461Ab2DLRzE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Apr 2012 13:55:04 -0400
-Received: from mx2.parallels.com ([64.131.90.16]:33310 "EHLO mx2.parallels.com"
+	id S934529Ab2DLRzu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Apr 2012 13:55:50 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:52642 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932108Ab2DLRzD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Apr 2012 13:55:03 -0400
-Message-ID: <4F87168F.3060405@parallels.com>
-Date: Thu, 12 Apr 2012 14:53:19 -0300
-From: Glauber Costa <glommer@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120216 Thunderbird/10.0.1
+	id S932108Ab2DLRzs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Apr 2012 13:55:48 -0400
+Date: Thu, 12 Apr 2012 13:55:36 -0400
+From: Josh Boyer <jwboyer@redhat.com>
+To: Takashi Iwai <tiwai@suse.de>
+Cc: alsa-devel@alsa-project.org, Gabriel Somlo <somlo@cmu.edu>,
+        linux-kernel@vger.kernel.org, kernel-team@fedoraproject.org
+Subject: [PATCH] ALSA: hda/realtek - Add quirk for Mac Pro 5,1 machines
+Message-ID: <20120412175536.GB25425@zod.bos.redhat.com>
 MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: Johannes Weiner <hannes@cmpxchg.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Hugh Dickins <hughd@google.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Daniel Walsh <dwalsh@redhat.com>,
-        "Daniel P. Berrange" <berrange@redhat.com>,
-        Li Zefan <lizf@cn.fujitsu.com>, LKML <linux-kernel@vger.kernel.org>,
-        Cgroups <cgroups@vger.kernel.org>,
-        Containers <containers@lists.linux-foundation.org>
-Subject: Re: [RFD] Merge task counter into memcg
-References: <20120411185715.GA4317@somewhere.redhat.com> <4F862851.3040208@jp.fujitsu.com> <20120412113217.GB11455@somewhere.redhat.com> <4F86BFC6.2050400@parallels.com> <20120412123256.GI1787@cmpxchg.org> <4F86D4BD.1040305@parallels.com> <20120412153055.GL1787@cmpxchg.org> <20120412163825.GB13069@google.com> <20120412172309.GM1787@cmpxchg.org> <20120412174155.GC13069@google.com>
-In-Reply-To: <20120412174155.GC13069@google.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [201.82.19.44]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/12/2012 02:41 PM, Tejun Heo wrote:
-> I'm still split on the issue.
->
-> * #tasks as unit of accounting / limiting is well understood (or at
->    least known).  I think this holds the same to #open files, to a
->    lesser extent.  It means there are and will continue to be people
->    wanting them.  So, they have some value in familiarity - "but... I
->    want to limit the resources consumed by tasks cuz that's what I
->    know!" factor.
->
-> * People could want counting and limiting #tasks or #open files
->    without the overhead of tracking all memory resources.  This stems
->    from the same reason #tasks was used for this sort of things in the
->    first place.  Counting tasks or open files tends to be easier and
->    cheaper than tracking all memory allocations.
->
-> So, there's spectrum of solutions between merging task counter and
-> just directing everyone to kmem without distinguishing task resource
-> at all, and at the moment voices in my head are succeeding at making
-> cases for both directions.  What do you guys think about the above two
-> issues?
->
+A user reported that setting model=imac24 used to allow sound to work on their
+Mac Pro 5,1 machine.  Commit 5671087ffa "Move ALC885 macpro and imac24 models
+to auto-parser" removed this model option.  All Mac machines are now explicitly
+handled with a quirk and the auto-parser.  This adds a quirk for the device
+found on the Mac Pro 5,1 machines.
 
-About each of your points:
+This (partially) fixes https://bugzilla.redhat.com/show_bug.cgi?id=808559
 
-1) Quite honestly, if we were implementing what people say they want...
-We'd have a lisp interpreter in the kernel by now.
-At the very best, it is an issue of getting the communication right.
-I really don't think this is of any concern.
+Reported-by: Gabriel Somlo <somlo@cmu.edu>
+Signed-off-by: Josh Boyer <jwboyer@redhat.com>
 
-2) It is dependent on the previous question/answer. Do people really 
-want to account and limit that? Or do they just think they want?
+diff --git a/sound/pci/hda/patch_realtek.c b/sound/pci/hda/patch_realtek.c
+index 9917e55..1e0eea8 100644
+--- a/sound/pci/hda/patch_realtek.c
++++ b/sound/pci/hda/patch_realtek.c
+@@ -5371,6 +5371,7 @@ static const struct snd_pci_quirk alc882_fixup_tbl[] = {
+ 	SND_PCI_QUIRK(0x106b, 0x00a1, "Macbook", ALC889_FIXUP_MBP_VREF),
+ 	SND_PCI_QUIRK(0x106b, 0x00a4, "MacbookPro 4,1", ALC889_FIXUP_MBP_VREF),
+ 	SND_PCI_QUIRK(0x106b, 0x0c00, "Mac Pro", ALC885_FIXUP_MACPRO_GPIO),
++	SND_PCI_QUIRK(0x106b, 0x4200,  "Mac Pro 5,1", ALC885_FIXUP_MACPRO_GPIO),
+ 	SND_PCI_QUIRK(0x106b, 0x1000, "iMac 24", ALC885_FIXUP_MACPRO_GPIO),
+ 	SND_PCI_QUIRK(0x106b, 0x2800, "AppleTV", ALC885_FIXUP_MACPRO_GPIO),
+ 	SND_PCI_QUIRK(0x106b, 0x2c00, "MacbookPro rev3", ALC889_FIXUP_MBP_VREF),
+-- 
+1.7.7.6
 
-Also note that we need to make memcg cheaper anyway... And right not it 
-is not *that* expensive if you are not doing deep hierarchy.
-
-user pages get cached through the stock mechanism, slab pages are not 
-very frequently allocated (because first you need to exhaust the objects 
-on the slab, etc)
