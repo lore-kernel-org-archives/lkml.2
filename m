@@ -1,46 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761193Ab2DLAYY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Apr 2012 20:24:24 -0400
-Received: from shards.monkeyblade.net ([198.137.202.13]:60254 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752475Ab2DLAYW (ORCPT
+	id S1761390Ab2DLA3d (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Apr 2012 20:29:33 -0400
+Received: from mail-pz0-f52.google.com ([209.85.210.52]:50085 "EHLO
+	mail-pz0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756374Ab2DLA3b (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Apr 2012 20:24:22 -0400
-Date: Wed, 11 Apr 2012 20:18:54 -0400 (EDT)
-Message-Id: <20120411.201854.1070083308359208025.davem@davemloft.net>
-To: shemminger@vyatta.com
-Cc: paulmck@linux.vnet.ibm.com, mroos@linux.ee, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org
-Subject: Re: suspicious RCU usage warnings in 3.3.0
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <20120411171004.016ddd95@nehalam.linuxnetplumber.net>
-References: <alpine.SOC.1.00.1204111807420.26884@math.ut.ee>
-	<20120411230837.GC2473@linux.vnet.ibm.com>
-	<20120411171004.016ddd95@nehalam.linuxnetplumber.net>
-X-Mailer: Mew version 6.4 on Emacs 23.3 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Wed, 11 Apr 2012 17:18:57 -0700 (PDT)
+	Wed, 11 Apr 2012 20:29:31 -0400
+Date: Wed, 11 Apr 2012 17:29:27 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Sergio Correia <lists@uece.net>
+Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        alan@lxorguk.ukuu.org.uk,
+        linux-wireless Mailing List <linux-wireless@vger.kernel.org>,
+        Sujith Manoharan <c_manoha@qca.qualcomm.com>,
+        "ath9k-devel@lists.ath9k.org" <ath9k-devel@venema.h4ckr.net>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: Re: [ 00/78] 3.3.2-stable review
+Message-ID: <20120412002927.GA23167@kroah.com>
+References: <20120411231102.GA6404@kroah.com>
+ <CAJyhjX2KrfSJW64PJMTHou9zSojsfA1iNT-WahinfMBce_B=BA@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CAJyhjX2KrfSJW64PJMTHou9zSojsfA1iNT-WahinfMBce_B=BA@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Stephen Hemminger <shemminger@vyatta.com>
-Date: Wed, 11 Apr 2012 17:10:04 -0700
-
-> On Wed, 11 Apr 2012 16:08:37 -0700
-> "Paul E. McKenney" <paulmck@linux.vnet.ibm.com> wrote:
+On Wed, Apr 11, 2012 at 07:59:14PM -0400, Sergio Correia wrote:
+> Hello Greg,
 > 
->> Hmmm...  What CPU family is this running on?  From the look of the
->> stack, it is sneaking out of idle into softirq without telling RCU.
->> This would cause RCU to complain bitterly about being invoked from
->> the idle loop -- and RCU ignores CPUs in the idle loop.
->> 
->> 							Thanx, Paul
 > 
-> Sun4... Ping David.
+> On Wed, Apr 11, 2012 at 7:11 PM, Greg KH <gregkh@linuxfoundation.org> wrote:
+> > This is the start of the stable review cycle for the 3.3.2 release.
+> > There are 78 patches in this series, all will be posted as a response
+> > to this one.  If anyone has any issues with these being applied, please
+> > let me know.
+> >
+> > Responses should be made by Fri Apr 13 23:10:16 UTC 2012.
+> > Anything received after that time might be too late.
+> >
+> 
+> is there any chance for this one to be included in this review cycle?
+> 
+> http://www.spinics.net/lists/linux-wireless/msg87999.html
 
-So is there anything specific I need to do in the sparc64
-idle loop?
+Have you read Documentation/stable_kernel_rules.txt?  Based on that, I
+don't think it can, yet, right?
+
+thanks,
+
+greg k-h
