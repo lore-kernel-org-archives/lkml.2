@@ -1,42 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761761Ab2DLBwy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Apr 2012 21:52:54 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:32972 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757077Ab2DLBwx (ORCPT
+	id S964817Ab2DLBxs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Apr 2012 21:53:48 -0400
+Received: from e31.co.us.ibm.com ([32.97.110.149]:40313 "EHLO
+	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757188Ab2DLBxq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Apr 2012 21:52:53 -0400
-From: Chen Baozi <baozich@gmail.com>
-To: xfs@oss.sgi.com, linux-kernel@vger.kernel.org
-Cc: Chen Baozi <baozich@gmail.com>
-Subject: [PATCH] fs/xfs/xfs_dinode.h: fix comments of xfs_dinode_t.
-Date: Thu, 12 Apr 2012 01:52:35 +0800
-Message-Id: <1334166755-32052-1-git-send-email-baozich@gmail.com>
-X-Mailer: git-send-email 1.7.1
+	Wed, 11 Apr 2012 21:53:46 -0400
+Date: Wed, 11 Apr 2012 18:53:41 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: David Miller <davem@davemloft.net>
+Cc: shemminger@vyatta.com, mroos@linux.ee, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org
+Subject: Re: suspicious RCU usage warnings in 3.3.0
+Message-ID: <20120412015341.GA2497@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20120411171004.016ddd95@nehalam.linuxnetplumber.net>
+ <20120411.201854.1070083308359208025.davem@davemloft.net>
+ <20120412004507.GF2473@linux.vnet.ibm.com>
+ <20120411.210319.370705937753558953.davem@davemloft.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120411.210319.370705937753558953.davem@davemloft.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12041201-7282-0000-0000-0000081E0E1F
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, Apr 11, 2012 at 09:03:19PM -0400, David Miller wrote:
+> From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+> Date: Wed, 11 Apr 2012 17:45:07 -0700
+> 
+> > On Wed, Apr 11, 2012 at 08:18:54PM -0400, David Miller wrote:
+> >> From: Stephen Hemminger <shemminger@vyatta.com>
+> >> Date: Wed, 11 Apr 2012 17:10:04 -0700
+> >> 
+> >> > On Wed, 11 Apr 2012 16:08:37 -0700
+> >> > "Paul E. McKenney" <paulmck@linux.vnet.ibm.com> wrote:
+> >> > 
+> >> >> Hmmm...  What CPU family is this running on?  From the look of the
+> >> >> stack, it is sneaking out of idle into softirq without telling RCU.
+> >> >> This would cause RCU to complain bitterly about being invoked from
+> >> >> the idle loop -- and RCU ignores CPUs in the idle loop.
+> >> >> 
+> >> >> 							Thanx, Paul
+> >> > 
+> >> > Sun4... Ping David.
+> >> 
+> >> So is there anything specific I need to do in the sparc64
+> >> idle loop?
+> > 
+> > Hmmm...  I must confess that I don't immediately see how control
+> > is passing from cpu_idle() in arch/sparc/kernel/process_64.c to
+> > __handle_softirq().
+> > 
+> > But it looks like a simple function call in the call trace:
+> 
+> It's coming from the trap return code path at the end of hardware
+> interrupt processing, on the IRQ stack.
 
-Signed-off-by: Chen Baozi <baozich@gmail.com>
----
- fs/xfs/xfs_dinode.h |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+Ah!  I should have guessed something like that was happening given
+that __handle_softirq() is written in assembly.
 
-diff --git a/fs/xfs/xfs_dinode.h b/fs/xfs/xfs_dinode.h
-index a372163..1d9643b 100644
---- a/fs/xfs/xfs_dinode.h
-+++ b/fs/xfs/xfs_dinode.h
-@@ -33,7 +33,7 @@ typedef struct xfs_timestamp {
-  * variable size the leftover area split into a data and an attribute fork.
-  * The format of the data and attribute fork depends on the format of the
-  * inode as indicated by di_format and di_aformat.  To access the data and
-- * attribute use the XFS_DFORK_PTR, XFS_DFORK_DPTR, and XFS_DFORK_PTR macros
-+ * attribute use the XFS_DFORK_DPTR, XFS_DFORK_APTR, and XFS_DFORK_PTR macros
-  * below.
-  *
-  * There is a very similar struct icdinode in xfs_inode which matches the
--- 
-1.7.1
+							Thanx, Paul
 
