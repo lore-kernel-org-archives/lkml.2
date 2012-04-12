@@ -1,67 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761265Ab2DLSCB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Apr 2012 14:02:01 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:41540 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752612Ab2DLSCA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Apr 2012 14:02:00 -0400
-Message-ID: <4F87186B.9010303@zytor.com>
-Date: Thu, 12 Apr 2012 11:01:15 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120329 Thunderbird/11.0.1
+	id S934269Ab2DLSEM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Apr 2012 14:04:12 -0400
+Received: from mail-qa0-f53.google.com ([209.85.216.53]:63207 "EHLO
+	mail-qa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757926Ab2DLSEJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Apr 2012 14:04:09 -0400
+Message-ID: <4F871916.9080705@pobox.com>
+Date: Thu, 12 Apr 2012 14:04:06 -0400
+From: Jeff Garzik <jgarzik@pobox.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120316 Thunderbird/11.0
 MIME-Version: 1.0
-To: Ingo Molnar <mingo@elte.hu>
-CC: Andrew Morton <akpm@linux-foundation.org>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>,
-        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
-        linux-kernel@vger.kernel.org, tglx@linutronix.de, mingo@redhat.com,
-        x86@kernel.org, Giancarlo Asnaghi <giancarlo.asnaghi@st.com>,
-        Alan Cox <alan@linux.intel.com>, Alessandro Rubini <rubini@gnudd.com>
-Subject: Re: [PATCH V4 1/3] x86: introduce CONFIG_X86_DEV_DMA_OPS
-References: <cover.1331622735.git.rubini@gnudd.com> <5965c5b1f828732b3599131fb21070aba6f1a386.1331622735.git.rubini@gnudd.com> <20120314065614.GB27480@elte.hu>
-In-Reply-To: <20120314065614.GB27480@elte.hu>
-X-Enigmail-Version: 1.4
-Content-Type: text/plain; charset=ISO-8859-1
+To: Lin Ming <ming.m.lin@intel.com>
+CC: linux-ide@vger.kernel.org, lkml <linux-kernel@vger.kernel.org>,
+        jslaby@suse.cz, cwillu@cwillu.com, jackdachef@gmail.com,
+        Sergei Shtylyov <sshtylyov@mvista.com>
+Subject: Re: [RESEND PATCH v2] libata: disable runtime pm for hotpluggable
+ port
+References: <1334210174.11188.110.camel@minggr>
+In-Reply-To: <1334210174.11188.110.camel@minggr>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/13/2012 11:56 PM, Ingo Molnar wrote:
-> 
-> * Alessandro Rubini <rubini@gnudd.com> wrote:
-> 
->> 32-bit x86 systems may need their own DMA operations, so add a 
->> new config option, which is turned on for 64-bit systems. This 
->> patch has no functional effect but it paves the way for 
->> supporting the STA2x11 I/O Hub and possibly other chips.
->>
->> Signed-off-by: Alessandro Rubini <rubini@gnudd.com>
->> Acked-by: Giancarlo Asnaghi <giancarlo.asnaghi@st.com>
->> Cc: Alan Cox <alan@linux.intel.com>
->> ---
->>  arch/x86/Kconfig                   |    5 +++++
->>  arch/x86/include/asm/device.h      |    4 ++--
->>  arch/x86/include/asm/dma-mapping.h |    2 +-
->>  3 files changed, 8 insertions(+), 3 deletions(-)
-> 
-> Ok, the whole series looks pretty clean, modulo a few mostly 
-> cosmetic details in the driver itself.
-> 
-> Andrew, you are typically merging dma-mapping.h patches, would 
-> you like to do these, or can we do it in tip:x86/platform?
-> 
-> It would also be nice if the gents on Cc: would voice objections 
-> or approval, if any.
-> 
+On 04/12/2012 01:56 AM, Lin Ming wrote:
+> Currently, hotplug doesn't work if port is already runtime suspended.
+> For now, we simply disable runtime pm for hotpluggable port.
+> Later, we should add runtime pm support for hotpluggable port too.
+>
+> Bug report:
+> https://lkml.org/lkml/2012/2/19/70
+>
+> v2:
+> - Use bit 2 and 3 for flags ATA_FLAG_EXTERNAL and ATA_FLAG_PLUGGABLE.
+>
+> TODO: add similar hotpluggable port check for controllers other than
+> AHCI.
+>
+> Reported-and-tested-by: Jiri Slaby<jslaby@suse.cz>
+> Reported-and-tested-by: cwillu@cwillu.com
+> Reported-and-tested-by: jackdachef@gmail.com
+> Signed-off-by: Lin Ming<ming.m.lin@intel.com>
+> ---
+>   drivers/ata/ahci.c             |    3 +++
+>   drivers/ata/ahci.h             |    3 +++
+>   drivers/ata/libahci.c          |   20 ++++++++++++++++++++
+>   drivers/ata/libata-transport.c |    6 ++++--
+>   include/linux/libata.h         |    2 ++
+>   5 files changed, 32 insertions(+), 2 deletions(-)
 
-I looked over it, and at least this bit seems okay to me.
-
-Acked-by: H. Peter Anvin <hpa@zytor.com>
-
-Andrew, I guess the question is still open?
-
-I have to express some concern about where this device may be going, though.
-
-	-hpa
+The fundamental problem with this patch is that all SATA ports are 
+hotpluggable... even the ones the firmware/silicon failed to mark as 
+hotpluggable via AHCI's PORT_CMD_MPSP | PORT_CMD_HPCP
