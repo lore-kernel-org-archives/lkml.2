@@ -1,107 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756474Ab2DLQtj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Apr 2012 12:49:39 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:61821 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750990Ab2DLQtg convert rfc822-to-8bit (ORCPT
+	id S1757789Ab2DLQuu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Apr 2012 12:50:50 -0400
+Received: from acsinet15.oracle.com ([141.146.126.227]:22010 "EHLO
+	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751839Ab2DLQus convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Apr 2012 12:49:36 -0400
+	Thu, 12 Apr 2012 12:50:48 -0400
 MIME-Version: 1.0
-In-Reply-To: <20120412144626.GA14868@kroah.com>
-References: <20120411231102.GA6404@kroah.com>
-	<CAJyhjX2KrfSJW64PJMTHou9zSojsfA1iNT-WahinfMBce_B=BA@mail.gmail.com>
-	<20120412002927.GA23167@kroah.com>
-	<CAMP44s3Jh-t07A+i82qbAMQyEN0oWTmKk5BJcst942gFdD0=VA@mail.gmail.com>
-	<20120412011313.GA23764@kroah.com>
-	<CAMP44s2q+bQE3-zsX4bs=sQDt4jf8eE5bwZ8V88UjodjRyAjog@mail.gmail.com>
-	<20120412144626.GA14868@kroah.com>
-Date: Thu, 12 Apr 2012 19:49:34 +0300
-Message-ID: <CAMP44s1T4EVwpzDuV_vV0Zh-5WcPCwdw9eeOfL17Geqp_UFN-Q@mail.gmail.com>
-Subject: Re: [ 00/78] 3.3.2-stable review
-From: Felipe Contreras <felipe.contreras@gmail.com>
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: Sergio Correia <lists@uece.net>, linux-kernel@vger.kernel.org,
-        stable@vger.kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        linux-wireless Mailing List <linux-wireless@vger.kernel.org>,
-        Sujith Manoharan <c_manoha@qca.qualcomm.com>,
-        "ath9k-devel@lists.ath9k.org" <ath9k-devel@venema.h4ckr.net>,
-        "John W. Linville" <linville@tuxdriver.com>
-Content-Type: text/plain; charset=UTF-8
+Message-ID: <8f7aee45-fc5c-43b2-97cc-30c142927dc3@default>
+Date: Thu, 12 Apr 2012 09:50:38 -0700 (PDT)
+From: Dan Magenheimer <dan.magenheimer@oracle.com>
+To: "Justin P. Mattock" <justinmattock@gmail.com>
+Cc: linux-kernel@vger.kernel.org, gregkh@linuxfoundation.org
+Subject: RE: [PATCH]NEXT:drivers:staging:ramster Fix typos and remove
+ CONFIG_BROKEN in staging:ramster
+References: <<1333982937-12929-1-git-send-email-user@Ideapad-Z560>>
+In-Reply-To: <<1333982937-12929-1-git-send-email-user@Ideapad-Z560>>
+X-Priority: 3
+X-Mailer: Oracle Beehive Extensions for Outlook 2.0.1.6  (510070) [OL
+ 12.0.6607.1000 (x86)]
+Content-Type: text/plain; charset=us-ascii
 Content-Transfer-Encoding: 8BIT
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+X-CT-RefId: str=0001.0A090202.4F8707E6.0054,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 12, 2012 at 5:46 PM, Greg KH <gregkh@linuxfoundation.org> wrote:
-> On Thu, Apr 12, 2012 at 04:32:40PM +0300, Felipe Contreras wrote:
->> On Thu, Apr 12, 2012 at 4:13 AM, Greg KH <gregkh@linuxfoundation.org> wrote:
->> > On Thu, Apr 12, 2012 at 04:03:59AM +0300, Felipe Contreras wrote:
->> >> On Thu, Apr 12, 2012 at 3:29 AM, Greg KH <gregkh@linuxfoundation.org> wrote:
->> >> > On Wed, Apr 11, 2012 at 07:59:14PM -0400, Sergio Correia wrote:
->> >> >> Hello Greg,
->> >> >>
->> >> >>
->> >> >> On Wed, Apr 11, 2012 at 7:11 PM, Greg KH <gregkh@linuxfoundation.org> wrote:
->> >> >> > This is the start of the stable review cycle for the 3.3.2 release.
->> >> >> > There are 78 patches in this series, all will be posted as a response
->> >> >> > to this one.  If anyone has any issues with these being applied, please
->> >> >> > let me know.
->> >> >> >
->> >> >> > Responses should be made by Fri Apr 13 23:10:16 UTC 2012.
->> >> >> > Anything received after that time might be too late.
->> >> >> >
->> >> >>
->> >> >> is there any chance for this one to be included in this review cycle?
->> >> >>
->> >> >> http://www.spinics.net/lists/linux-wireless/msg87999.html
->> >>
->> >> I was going to ask for exactly the same thing. My system is completely
->> >> unusable without this patch; not only does the network doesn't work,
->> >> but quite often the kernel is stuck consuming 100% of the CPU.
->> >>
->> >> > Have you read Documentation/stable_kernel_rules.txt?  Based on that, I
->> >> > don't think it can, yet, right?
->> >>
->> >> Why not? This patch makes the code go back to a previous state, it is
->> >> obviously more stable than the current state, and the code already
->> >> exists in Linus's tree (in previous releases).
->> >
->> > It does?  What is the git commit id of the patch?  Based in the email
->> > above, I assumed it had not made it to Linus's tree already.
->>
->> It's a revert of c1afdaff90538ef085b756454f12b29575411214, so so just
->> take a look at the code in c1afdaff90538ef085b756454f12b29575411214^.
->>
->> >> But hey, I guess it's OK that 3.3.x is stuck in and endless loop right
->> >> after booting, because rules are more important than fixing obvious
->> >> breakage.
->> >
->> > What rule did you think I was saying this was not acceptable for?
->>
->> The fact that the patch as not been applied/reviewed/accepted upstream.
->>
->> Personally I don't see what is the problem with reverts; we already
->> know the previous code was working. Sure, in theory it might behave
->> different due to other changes, but that doesn't seem to be the case
->> here, plus, it can't be worst than the current situation of staying in
->> an endless loop.
->
-> A revert is the same as a patch.  It needs to be in Linus's tree before
-> I can add it to the stable releases.
+> From: Justin P. Mattock [mailto:justinmattock@gmail.com]
+> Sent: Monday, April 09, 2012 8:49 AM
+> To: dan.magenheimer@oracle.com
+> Cc: linux-kernel@vger.kernel.org; gregkh@linuxfoundation.org; Justin P. Mattock
+> Subject: [PATCH]NEXT:drivers:staging:ramster Fix typos and remove CONFIG_BROKEN in staging:ramster
+> 
+> From: "Justin P. Mattock" <justinmattock@gmail.com>
+> 
+> The below patch fixes some typos that I found while reading. And also removes
+> CONFIG_BROKEN since it is no longer used.
+> 
+> Signed-off-by: Justin P. Mattock <justinmattock@gmail.com>
 
-Right, because otherwise people's systems would actually work.
+Hi Justin --
 
-But hey, as I said, following rules is more important, regardless of
-what the rules are, and why they are there. The rules that actually
-triggered this issue in v3.3.1, as this is not in v3.3.
+Thanks for your interest and for the patch!
 
-You could just accept that the patch should have never landed in
-v3.3.1 in the first place, but it's much easier to arbitrarily keep
-stacking patches without thinking too much about them.
+The removal of CONFIG_BROKEN is already in GregKH's staging tree(s)
+and in linux-next, and will hopefully be in -rc3.
 
-I guess I'll better use Linus's releases for now and go to v3.3.
+The comment typos do need to be fixed but I'm not sure if they should
+go through the staging tree or through trivial, but in either case
+consider them:
 
--- 
-Felipe Contreras
+Acked-by: Dan Magenheimer <dan.magenheimer@oracle.com>
+
+
+> ---
+>  drivers/staging/ramster/Kconfig       |    6 +-----
+>  drivers/staging/ramster/cluster/tcp.c |    4 ++--
+>  drivers/staging/ramster/xvmalloc.c    |    2 +-
+>  drivers/staging/ramster/zcache-main.c |    2 +-
+>  4 files changed, 5 insertions(+), 9 deletions(-)
+> 
+> diff --git a/drivers/staging/ramster/Kconfig b/drivers/staging/ramster/Kconfig
+> index 8b57b87..2932c65 100644
+> --- a/drivers/staging/ramster/Kconfig
+> +++ b/drivers/staging/ramster/Kconfig
+> @@ -1,10 +1,6 @@
+> -# Dependency on CONFIG_BROKEN is because there is a commit dependency
+> -# on a cleancache naming change to be submitted by Konrad Wilk
+> -# a39c00ded70339603ffe1b0ffdf3ade85bcf009a "Merge branch 'stable/cleancache.v13'
+> -# into linux-next.  Once this commit is present, BROKEN can be removed
+>  config RAMSTER
+>  	bool "Cross-machine RAM capacity sharing, aka peer-to-peer tmem"
+> -	depends on (CLEANCACHE || FRONTSWAP) && CONFIGFS_FS=y && !ZCACHE && !XVMALLOC && !HIGHMEM &&
+> BROKEN
+> +	depends on (CLEANCACHE || FRONTSWAP) && CONFIGFS_FS=y && !ZCACHE && !XVMALLOC && !HIGHMEM
+>  	select LZO_COMPRESS
+>  	select LZO_DECOMPRESS
+>  	default n
+> diff --git a/drivers/staging/ramster/cluster/tcp.c b/drivers/staging/ramster/cluster/tcp.c
+> index 3af1b2c..3490192 100644
+> --- a/drivers/staging/ramster/cluster/tcp.c
+> +++ b/drivers/staging/ramster/cluster/tcp.c
+> @@ -111,7 +111,7 @@ static struct socket *r2net_listen_sock;
+>   * r2net_wq.  teardown detaches the callbacks before destroying the workqueue.
+>   * quorum work is queued as sock containers are shutdown.. stop_listening
+>   * tears down all the node's sock containers, preventing future shutdowns
+> - * and queued quroum work, before canceling delayed quorum work and
+> + * and queued quorum work, before canceling delayed quorum work and
+>   * destroying the work queue.
+>   */
+>  static struct workqueue_struct *r2net_wq;
+> @@ -660,7 +660,7 @@ out:
+> 
+>  /*
+>   * we register callbacks so we can queue work on events before calling
+> - * the original callbacks.  our callbacks our careful to test user_data
+> + * the original callbacks.  our callbacks are careful to test user_data
+>   * to discover when they've reaced with r2net_unregister_callbacks().
+>   */
+>  static void r2net_register_callbacks(struct sock *sk,
+> diff --git a/drivers/staging/ramster/xvmalloc.c b/drivers/staging/ramster/xvmalloc.c
+> index 93ba8e9..44ceb0b 100644
+> --- a/drivers/staging/ramster/xvmalloc.c
+> +++ b/drivers/staging/ramster/xvmalloc.c
+> @@ -132,7 +132,7 @@ static u32 find_block(struct xv_pool *pool, u32 size,
+>  	if (!pool->flbitmap)
+>  		return 0;
+> 
+> -	/* Get freelist index correspoding to this size */
+> +	/* Get freelist index corresponding to this size */
+>  	slindex = get_index(size);
+>  	slbitmap = pool->slbitmap[slindex / BITS_PER_LONG];
+>  	slbitstart = slindex % BITS_PER_LONG;
+> diff --git a/drivers/staging/ramster/zcache-main.c b/drivers/staging/ramster/zcache-main.c
+> index 36d53ed..de082cc 100644
+> --- a/drivers/staging/ramster/zcache-main.c
+> +++ b/drivers/staging/ramster/zcache-main.c
+> @@ -2095,7 +2095,7 @@ out:
+>  /*
+>   * Called on a remote persistent tmem_get to attempt to preallocate
+>   * local storage for the data contained in the remote persistent page.
+> - * If succesfully preallocated, returns the pampd, marked as remote and
+> + * If successfully preallocated, returns the pampd, marked as remote and
+>   * in_transit.  Else returns NULL.  Note that the appropriate tmem data
+>   * structure must be locked.
+>   */
+> --
+> 1.7.5.4
