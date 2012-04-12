@@ -1,77 +1,196 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932795Ab2DLRY6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Apr 2012 13:24:58 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:43257 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751306Ab2DLRY4 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Apr 2012 13:24:56 -0400
+	id S1758701Ab2DLRe6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Apr 2012 13:34:58 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:1538 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756704Ab2DLRe4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Apr 2012 13:34:56 -0400
+Date: Thu, 12 Apr 2012 19:34:03 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: David Howells <dhowells@redhat.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        David Smith <dsmith@redhat.com>, "Frank Ch. Eigler" <fche@redhat.com>,
+        Larry Woodman <lwoodman@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>, Tejun Heo <tj@kernel.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 2/2] cred: change keyctl_session_to_parent() to use
+	task_work_queue()
+Message-ID: <20120412173403.GA24541@redhat.com>
+References: <20120412024825.GB17984@redhat.com> <20120412024751.GA17561@redhat.com> <9202.1334222995@redhat.com>
 MIME-Version: 1.0
-In-Reply-To: <CAMP44s1T4EVwpzDuV_vV0Zh-5WcPCwdw9eeOfL17Geqp_UFN-Q@mail.gmail.com>
-References: <20120411231102.GA6404@kroah.com>
-	<CAJyhjX2KrfSJW64PJMTHou9zSojsfA1iNT-WahinfMBce_B=BA@mail.gmail.com>
-	<20120412002927.GA23167@kroah.com>
-	<CAMP44s3Jh-t07A+i82qbAMQyEN0oWTmKk5BJcst942gFdD0=VA@mail.gmail.com>
-	<20120412011313.GA23764@kroah.com>
-	<CAMP44s2q+bQE3-zsX4bs=sQDt4jf8eE5bwZ8V88UjodjRyAjog@mail.gmail.com>
-	<20120412144626.GA14868@kroah.com>
-	<CAMP44s1T4EVwpzDuV_vV0Zh-5WcPCwdw9eeOfL17Geqp_UFN-Q@mail.gmail.com>
-Date: Thu, 12 Apr 2012 10:24:55 -0700
-X-Google-Sender-Auth: Onc3zftnEIGyrjPuN5exBaB26Sk
-Message-ID: <CAJ-VmonhwvnXPKa=LNOR4W0ZTXZqWmzw4UrsKLoE0YN_Bu0FzQ@mail.gmail.com>
-Subject: Re: [ 00/78] 3.3.2-stable review
-From: Adrian Chadd <adrian@freebsd.org>
-To: Felipe Contreras <felipe.contreras@gmail.com>
-Cc: Greg KH <gregkh@linuxfoundation.org>, Sergio Correia <lists@uece.net>,
-        linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk,
-        linux-wireless Mailing List <linux-wireless@vger.kernel.org>,
-        Sujith Manoharan <c_manoha@qca.qualcomm.com>,
-        "ath9k-devel@lists.ath9k.org" <ath9k-devel@venema.h4ckr.net>,
-        "John W. Linville" <linville@tuxdriver.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <9202.1334222995@redhat.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12 April 2012 09:49, Felipe Contreras <felipe.contreras@gmail.com> wrote:
-
->>
->> A revert is the same as a patch.  It needs to be in Linus's tree before
->> I can add it to the stable releases.
+On 04/12, David Howells wrote:
 >
-> Right, because otherwise people's systems would actually work.
+> Oleg Nesterov <oleg@redhat.com> wrote:
 >
-> But hey, as I said, following rules is more important, regardless of
-> what the rules are, and why they are there. The rules that actually
-> triggered this issue in v3.3.1, as this is not in v3.3.
+> > Change keyctl_session_to_parent() to use task_work_queue() and
+> > move key_replace_session_keyring() logic into task_work->func().
 >
-> You could just accept that the patch should have never landed in
-> v3.3.1 in the first place, but it's much easier to arbitrarily keep
-> stacking patches without thinking too much about them.
+> I'm generally okay with this, but there are a couple of issues with the patch.
 
-Greg is doing the right thing here. We face the same deal in FreeBSD -
-people want fixes to go into a release branch first, but if you do
-that you break the development flow - which is "stuff goes into -HEAD
-and is then backported to the release branches."
+Great, thanks.
 
-If you don't do this, you risk having people do (more, all)
-development and testing on a release branch and never test -HEAD (or
-"upstream linux" here). Once you open that particular flood gate, it's
-hard to close.
+I'll send v3 soon. I'll also update 1/2 a little bit and add the
+3rd patch with the new user of task_work.
 
-We had this problem with Squid. People ran and developed on Squid-2.4.
-The head version of Squid-2 was stable, but that isn't what people ran
-in production. They wanted features and bugfixes against Squid-2.2,
-squid-2.4, and not Squid-2.STABLE (which at the time was
-Squid-2.6/Sqiud-2.7.) That .. didn't work. Things diverged quite
-quickly and it got very ugly.
+> > +static void replace_session_keyring(struct task_work *twork)
+>
+> Can you keep this in process_keys.c please?  Then everything that actually
+> updates a process's keyrings is done there.  Admittedly, on that basis, you
+> can argue that I should move a chunk of keyctl_session_to_parent() there too.
 
-So I applaud Greg for sticking to correct stable release engineering
-here. We over in the BSD world know just how painful that is. :)
+Sure. But then I need to export it in internal.h.
+
+> And, also, can you please keep the "key_" on the front of the name?
+
+Oh, yes, just I do not know how to name it.
+
+The obviously good name is the old name, but until we remove the
+->replacement_session_keyring code from arch/* we can't use it.
+
+OK, how about key_change_session_keyring() ?
+
+> >  long keyctl_session_to_parent(void)
+> >  {
+> > -#ifdef TIF_NOTIFY_RESUME
+>
+> Unless TIF_NOTIFY_RESUME is defined, this operation cannot be performed and
+> should generate an error.  I don't see how this happens now.
+
+Yes, see below. I forgot about -EOPNOTSUPP.
+
+> > +	if (!task_work_queue(parent, newwork))
+>
+> I hate this type of construct.  "if not function()" indicating the function
+> succeeded.  Can you make it "== 0" instead?
+
+Agreed. Even better, we can rename "int ret" to "int err" and do
+
+	err = task_work_queue();
+	if (!err)
+		...;
+
+this also allows us to kill already_same/not_permitted error paths.
+
+> Also, shouldn't we tell the user
+> that it failed?
+
+>From the changelog:
+
+	We do not report the error if we race with the exiting parent
+	and task_work_queue() fails, this matches the current behaviour.
+
+Yes. task_work_queue() can only fail if it races with the exiting
+parent. The window before it calls exit_notify() is small, and this
+doesn't differ from the case when the parent does do_exit() right
+after we queue the work.
+
+But! As you pointed out, I forgot about TIF_NOTIFY_RESUME problems,
+so lets report the error.
+
+Thanks. Before I re-check and send v3, perhaps you can look at the
+updated keyctl_session_to_parent() below.
+
+Oleg.
 
 
-Adrian
+long keyctl_session_to_parent(void)
+{
+	struct task_struct *me, *parent;
+	const struct cred *mycred, *pcred;
+	struct task_work *newwork, *oldwork;
+	key_ref_t keyring_r;
+	struct cred *cred;
+	int err;
+
+	keyring_r = lookup_user_key(KEY_SPEC_SESSION_KEYRING, 0, KEY_LINK);
+	if (IS_ERR(keyring_r))
+		return PTR_ERR(keyring_r);
+
+	err = -ENOMEM;
+	newwork = kmalloc(sizeof(struct task_work), GFP_KERNEL);
+	if (!newwork)
+		goto error_keyring;
+
+	/* our parent is going to need a new cred struct, a new tgcred struct
+	 * and new security data, so we allocate them here to prevent ENOMEM in
+	 * our parent */
+	cred = cred_alloc_blank();
+	if (!cred)
+		goto error_keyring;
+
+	cred->tgcred->session_keyring = key_ref_to_ptr(keyring_r);
+	init_task_work(newwork, replace_session_keyring, cred);
+
+	me = current;
+	rcu_read_lock();
+	write_lock_irq(&tasklist_lock);
+
+	err = -EPERM;
+	oldwork = NULL;
+	parent = me->real_parent;
+
+	/* the parent mustn't be init and mustn't be a kernel thread */
+	if (parent->pid <= 1 || !parent->mm)
+		goto unlock;
+
+	/* the parent must be single threaded */
+	if (!thread_group_empty(parent))
+		goto unlock;
+
+	/* the parent and the child must have different session keyrings or
+	 * there's no point */
+	mycred = current_cred();
+	pcred = __task_cred(parent);
+	if (mycred == pcred ||
+	    mycred->tgcred->session_keyring == pcred->tgcred->session_keyring) {
+	    	err = 0;
+		goto unlock;
+	}
+
+	/* the parent must have the same effective ownership and mustn't be
+	 * SUID/SGID */
+	if (pcred->uid	!= mycred->euid	||
+	    pcred->euid	!= mycred->euid	||
+	    pcred->suid	!= mycred->euid	||
+	    pcred->gid	!= mycred->egid	||
+	    pcred->egid	!= mycred->egid	||
+	    pcred->sgid	!= mycred->egid)
+		goto unlock;
+
+	/* the keyrings must have the same UID */
+	if ((pcred->tgcred->session_keyring &&
+	     pcred->tgcred->session_keyring->uid != mycred->euid) ||
+	    mycred->tgcred->session_keyring->uid != mycred->euid)
+		goto unlock;
+
+	/* cancel an already pending keyring replacement */
+	oldwork = task_work_cancel(parent, replace_session_keyring);
+
+	/* the replacement session keyring is applied just prior to userspace
+	 * restarting */
+	err = task_work_queue(parent, newwork);
+	if (!err)
+		newwork = NULL;
+ unlock:
+	write_unlock_irq(&tasklist_lock);
+	rcu_read_unlock();
+	free_cred_work(oldwork);
+	free_cred_work(newwork);
+	return err;
+
+error_keyring:
+	kfree(newwork);
+	key_ref_put(keyring_r);
+	return err;
+}
+
