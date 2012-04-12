@@ -1,47 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762958Ab2DLWpe (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Apr 2012 18:45:34 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:47020 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757790Ab2DLWpc (ORCPT
+	id S1762950Ab2DLWq6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Apr 2012 18:46:58 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:33702 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757869Ab2DLWq4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Apr 2012 18:45:32 -0400
-Date: Thu, 12 Apr 2012 15:45:27 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Borislav Petkov <borislav.petkov@amd.com>
-Cc: Andreas Herrmann <andreas.herrmann3@amd.com>,
-        Kay Sievers <kay.sievers@vrfy.org>, Dave Jones <davej@redhat.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/2] x86, microcode: Ensure that module is only loaded for
-Message-ID: <20120412224527.GB22089@kroah.com>
-References: <20120411163849.GE4794@alberich.amd.com>
- <20120411200601.GC12288@kroah.com>
- <20120411201053.GF18114@aftab>
- <20120412162351.GJ24549@aftab>
- <20120412163422.GM24549@aftab>
+	Thu, 12 Apr 2012 18:46:56 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120412163422.GM24549@aftab>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <alpine.LFD.2.02.1204130037060.2542@ionos>
+References: <alpine.LFD.2.02.1204130004080.2542@ionos> <CA+55aFxg0rzpL-xCqdScxPKPMupbvteoXD1cPT-fWYpyMXoSGg@mail.gmail.com>
+ <alpine.LFD.2.02.1204130022520.2542@ionos> <CA+55aFzP-DmGUqGcnxj2mq-mvmOXA7k-zgOrdDRY3WA9N5dmBg@mail.gmail.com>
+ <alpine.LFD.2.02.1204130037060.2542@ionos>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Thu, 12 Apr 2012 15:46:34 -0700
+X-Google-Sender-Auth: BNrx5tK7vPkj53hIaDhcbrEbW6E
+Message-ID: <CA+55aFyLYxQgdevFwjwzVrU_B87n5a6P_=9pcWzjKZ0C6RtU5g@mail.gmail.com>
+Subject: Re: [GIT pull] timer fixes for 3.4
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: Sasikantha Babu <sasikanth.v19@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 12, 2012 at 06:34:22PM +0200, Borislav Petkov wrote:
-> From: Andreas Herrmann <andreas.herrmann3@amd.com>
-> Date: Thu, 12 Apr 2012 16:51:57 +0200
-> Subject: [PATCH 2/2] x86, microcode: Ensure that module is only loaded for supported AMD CPUs
-> 
-> Exit early when there's no support for a particular CPU family. Also,
-> fixup the "no support for this CPU vendor" to be issued only when the
-> driver is attempted to be loaded on an unsupported vendor.
-> 
-> Cc: stable@vger.kernel.org
-> Cc: Tigran Aivazian <tigran@aivazian.fsnet.co.uk>
-> Cc: Borislav Petkov <borislav.petkov@amd.com>
-> [Boris: added a commit msg because Andreas is lazy]
-> Signed-off-by: Andreas Herrmann <andreas.herrmann3@amd.com>
+On Thu, Apr 12, 2012 at 3:39 PM, Thomas Gleixner <tglx@linutronix.de> wrote:
+>>
+>> That said, would people actually *report* those messages?
+>>
+>> In general, for things like this, it's probably better to just make
+>> the change (especially if you have several distros you can test), and
+>> then add a printk_once() for the case that changed. Then, if people
+>
+> I changed it to a printk_once() already.
 
-Acked-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+No, I meant that the whole message should probably have been added
+when actually changing the semantics.
+
+If you have good reason to believe that some ABI change (a) does not
+actually have any reason to break anything and (b) worth doing, then I
+think it should just have been done (but during the merge window only,
+of course).
+
+And if (a) or (b) aren't true, then we're not going to change the ABI
+at all, so the whole point is moot.
+
+The printk_once (or, for that case WARN_ON_ONCE() may even be
+worthwhile) would then just be a "oops, we were wrong" kind of
+message, and would just mean that the commit would be reverted.
+
+I think the whole "let's deprecate this six months into the future" is
+unnecessary. Yes, it may well be worth doing for something with bigger
+consequences, but I think that for something like this, it's just
+overthinking the issue.
+
+If it really is something we want to fix, I think it's much better to
+just say "let's fix it, and if somebody notices, we'll have to go
+back". The printk_once or WARN_ON is then just a polite way to avoid
+having people have to bisect to it etc if it's subtle (and then we
+would plan to remove *that* later).
+
+                            Linus
