@@ -1,109 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762037Ab2DLGpq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Apr 2012 02:45:46 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:37488 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757473Ab2DLGpo convert rfc822-to-8bit (ORCPT
+	id S1762041Ab2DLGr7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Apr 2012 02:47:59 -0400
+Received: from na3sys009aog115.obsmtp.com ([74.125.149.238]:49618 "EHLO
+	na3sys009aog115.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1762005Ab2DLGr5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Apr 2012 02:45:44 -0400
+	Thu, 12 Apr 2012 02:47:57 -0400
+Message-ID: <4F867A95.9030104@ti.com>
+Date: Thu, 12 Apr 2012 12:17:49 +0530
+From: Santosh Shilimkar <santosh.shilimkar@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120329 Thunderbird/11.0.1
 MIME-Version: 1.0
-In-Reply-To: <20120105181535.GB26382@thunk.org>
-References: <217150909.20120105113759@eikelenboom.it>
-	<197607646.20120105142107@eikelenboom.it>
-	<6FC155DD-80C1-4088-B745-6B74D9D5AA48@mit.edu>
-	<4910694144.20120105171428@eikelenboom.it>
-	<20120105181535.GB26382@thunk.org>
-Date: Thu, 12 Apr 2012 08:45:42 +0200
-Message-ID: <CAD1=SREuquUehvTz_9L-62s6Cd8xxsxi3GZLfPvLG3V8bQkDwA@mail.gmail.com>
-Subject: Re: can't recover ext4 on lvm from ext4_mb_generate_buddy:739: group
- 1687, 32254 clusters in bitmap, 32258 in gd
-From: Landry Minoza <landry.minoza@gmail.com>
-To: "Ted Ts'o" <tytso@mit.edu>, Sander Eikelenboom <linux@eikelenboom.it>,
-        linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org,
-        dm-devel@redhat.com
+To: Greg KH <greg@kroah.com>
+CC: Paul Walmsley <paul@pwsan.com>, Aneesh V <aneesh@ti.com>,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-omap@vger.kernel.org, mgreer@animalcreek.com, msalter@redhat.com
+Subject: Re: [PATCH v4 0/7] Add TI EMIF SDRAM controller driver
+References: <1331934707-29487-1-git-send-email-aneesh@ti.com> <alpine.DEB.2.00.1204112042070.29473@utopia.booyaka.com> <20120412030044.GA26236@kroah.com>
+In-Reply-To: <20120412030044.GA26236@kroah.com>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 5, 2012 at 7:15 PM, Ted Ts'o <tytso@mit.edu> wrote:
-> On Thu, Jan 05, 2012 at 05:14:28PM +0100, Sander Eikelenboom wrote:
+On Thursday 12 April 2012 08:30 AM, Greg KH wrote:
+> On Wed, Apr 11, 2012 at 08:44:39PM -0600, Paul Walmsley wrote:
+>> Cc Mark Greer, Mark Salter
 >>
->> OK spoke too soon, i have been able to trigger it again:
->> - copying files from LV to the same LV without the snapshot went OK
->> - copying from the RO snapshot of a LV to the same LV gave the error while copying the file again:
+>> Hi Greg, Aneesh,
+>>
+>> On Sat, 17 Mar 2012, Aneesh V wrote:
+>>
+>>> Add a driver for the EMIF SDRAM controller used in TI SoCs
+>>>
+>>> EMIF is an SDRAM controller that supports, based on its revision,
+>>> one or more of LPDDR2/DDR2/DDR3 protocols.This driver adds support
+>>> for LPDDR2.
+>>
+>> Just checking to see what the current state of this series is.  Greg, are 
+>> you considering this for merging, or are there remaining issues?  Aneesh, 
+>> do you have any remaining issues to resolve with this set?
+> 
+> What about the review comment about devfreq?
 >
-> OK.  Originally, you said you did this:
->
-> 1) fsck -v -p -f the filesystem
-> 2) mount the filesystem
-> 3) Try to copy a file
-> 4) filesystem will be mounted RO on error  (see below)
-> 5) fsck again, journal will be recovered, no other errors
-> 6) start at 1)
->
-> Was this with with a read-only snapshot always being in existence
-> through all of these five steps?  When was the RO snapshot created?
->
-> If a RO snapshot has to be there in order for this to happen, then
-> this is almost certainly a device-mapper regression.  (dm-devel folks,
-> this is a problem which apparently occurred when the user went from
-> v3.1.5 to v3.2, so this looks likes 3.2 regression.)
->
+Devfreq is not suitable for this driver. I already replied on this
+thread [1]
 
-If it can help, I add the exactly same behaviour: filesystem remounted
-read-only with the same messages in dmesg and had to fsck it with a
-3.1 kernel when I resized my ext4/lvm root fs.
+Acting on frequency change is just one function of the controller
+driver and that too need not bed to attached with devfreq. The driver
+has features like temperature handling as per JDEC specs, active power
+managements modes, system wide suspend power management like self
+refresh and also configuration which can help memory hotplug for
+power savings and initialising the DDR timings to avoid boot-loader
+defaults.The controller IP works in conjunction with PRCM (OMAP Power
+IP) block to achieve some of this functionality.
 
-I used kernel 3.3-rc6 from debian experimental amd64.
-root fs remounted read-only with the same errors in dmesg after:
-lvresize -L +5G /dev/mapper/perceval_vg1-root
-resize2fs /dev/mapper/perceval_vg1-root
+I was hoping that we will have some thing like drivers/memory/*
+but since it doesn't exist, we used drivers/misc.
 
-Rebooting on 3.3 or 3.2 kernel doesn't helped. Also tried to boot on
-3.0 and 2.6.x from rescue CDs without success (fsck ok, mounting
-without problem but fs remounted ro as soon as I boot on 3.2 or 3.3
-kernel).
-I had to install a 3.1 kernel boot on it to be able to finaly reboot on 3.3.
+Regards
+Santosh
+[1] https://lkml.org/lkml/2012/3/19/178
 
-I use a single harddrive without any sort of raid and with one lvm pv
-and one vg:
-sudo fdisk -l /dev/sda
+>> This is useful not only for OMAP4 and AM3517/3505, but also will probably 
+>> be useful for the C6x chips that Mark Salter is working on.
+> 
+> It's still in my "to-review" queue, that I'm slowly making my way
+> through.  So it's not lost, but I would like to get the devfreq
+> interface question cleared up first.
+> 
+Let us know if you need more clarification on devfreq part.
+Thanks for looking into it.
 
-Disk /dev/sda: 500.1 GB, 500107862016 bytes
-255 heads, 63 sectors/track, 60801 cylinders, total 976773168 sectors
-Units = sectors of 1 * 512 = 512 bytes
-Sector size (logical/physical): 512 bytes / 512 bytes
-I/O size (minimum/optimal): 512 bytes / 512 bytes
-Disk identifier: 0xb0000000
-
-   Device Boot      Start         End      Blocks   Id  System
-/dev/sda1              63      273104      136521   de  Dell Utility
-/dev/sda2       205073105   205265884       96390   83  Linux
-/dev/sda3   *      273105   205073104   102400000    7  HPFS/NTFS/exFAT
-/dev/sda4       205265885   976773167   385753641+  8e  Linux LVM
-
-Partition table entries are not in disk order
-
-sudo pvs
-  PV         VG           Fmt  Attr PSize   PFree
-  /dev/sda4  perceval_vg1 lvm2 a--  367,88g 187,35g
-
-sudo vgs
-  VG           #PV #LV #SN Attr   VSize   VFree
-  perceval_vg1   1   3   0 wz--n- 367,88g 187,35g
-
-sudo lvs
-  LV   VG           Attr   LSize   Origin Snap%  Move Log Copy%  Convert
-  home perceval_vg1 -wi-ao 151,75g
-  root perceval_vg1 -wi-ao  24,97g
-  swap perceval_vg1 -wi-ao   3,82g
-
-
-Can post other informations if it can help
-
--- 
-Landry MINOZA
-landry.minoza@gmail.com
+Regards
+Santosh
