@@ -1,15 +1,16 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934588Ab2DLSr6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Apr 2012 14:47:58 -0400
+	id S965748Ab2DLSsf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Apr 2012 14:48:35 -0400
 Received: from mailout1.w1.samsung.com ([210.118.77.11]:43812 "EHLO
 	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934402Ab2DLSpX (ORCPT
+	with ESMTP id S932317Ab2DLSpW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Apr 2012 14:45:23 -0400
-Date: Thu, 12 Apr 2012 20:45:29 +0200
+	Thu, 12 Apr 2012 14:45:22 -0400
+Date: Thu, 12 Apr 2012 20:45:28 +0200
 From: Karol Lewandowski <k.lewandowsk@samsung.com>
-Subject: [PATCH 10/13] s5p-tv: Add DT-support for HDMI driver
+Subject: [PATCH 09/13] s5p-tv: Move HDMIPHY and MHL subdev probing to dedicated
+ function
 In-reply-to: <1334256332-29867-1-git-send-email-k.lewandowsk@samsung.com>
 To: linux-samsung-soc@vger.kernel.org
 Cc: devicetree-discuss@lists.ozlabs.org, thomas.abraham@linaro.org,
@@ -17,7 +18,7 @@ Cc: devicetree-discuss@lists.ozlabs.org, thomas.abraham@linaro.org,
         linux-kernel@vger.kernel.org, olof@lixom.net, kgene.kim@samsung.com,
         Karol Lewandowski <k.lewandowsk@samsung.com>,
         Tomasz Stanislawski <t.stanislaws@samsung.com>
-Message-id: <1334256332-29867-11-git-send-email-k.lewandowsk@samsung.com>
+Message-id: <1334256332-29867-10-git-send-email-k.lewandowsk@samsung.com>
 MIME-version: 1.0
 X-Mailer: git-send-email 1.7.9.1
 Content-type: TEXT/PLAIN
@@ -27,129 +28,129 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Includes v4l2/dt helper function (hdmi_of_get_i2c_subdev() that probably
-should be implemented in v4l2 core itself.
-
 Signed-off-by: Karol Lewandowski <k.lewandowsk@samsung.com>
 Cc: Tomasz Stanislawski <t.stanislaws@samsung.com>
 ---
- drivers/media/video/s5p-tv/hdmi_drv.c |   68 ++++++++++++++++++++++++++++++++-
- 1 files changed, 67 insertions(+), 1 deletions(-)
+ drivers/media/video/s5p-tv/hdmi_drv.c |   90 ++++++++++++++++++---------------
+ 1 files changed, 49 insertions(+), 41 deletions(-)
 
 diff --git a/drivers/media/video/s5p-tv/hdmi_drv.c b/drivers/media/video/s5p-tv/hdmi_drv.c
-index fff3cab..a402e8f 100644
+index 4865d25..fff3cab 100644
 --- a/drivers/media/video/s5p-tv/hdmi_drv.c
 +++ b/drivers/media/video/s5p-tv/hdmi_drv.c
-@@ -29,6 +29,8 @@
- #include <linux/pm_runtime.h>
- #include <linux/clk.h>
- #include <linux/regulator/consumer.h>
-+#include <linux/of.h>
-+#include <linux/of_i2c.h>
- 
- #include <media/s5p_hdmi.h>
- #include <media/v4l2-common.h>
-@@ -712,6 +714,56 @@ static int hdmi_enum_dv_presets(struct v4l2_subdev *sd,
- 	return v4l_fill_dv_preset_info(hdmi_conf[preset->index].preset, preset);
+@@ -865,11 +865,47 @@ fail:
+ 	return -ENODEV;
  }
  
-+#ifdef CONFIG_OF
-+/* Heavily based[1] on v4l2_i2c_new_subdev_board()
-+ *
-+ * [1] Copy-pasted, that is
-+ */
-+struct v4l2_subdev *hdmi_of_get_i2c_subdev(struct v4l2_device *v4l2_dev,
-+	struct device_node *np, const char *propname)
++static struct v4l2_subdev *hdmi_get_subdev(
++	struct hdmi_device *hdmi_dev,
++	struct i2c_board_info *bdinfo,
++	int bus,
++	const char *propname)
 +{
 +	struct v4l2_subdev *sd = NULL;
-+	struct i2c_client *client;
-+	struct device_node *cnp;
++	struct i2c_adapter *adapter;
++	struct device *dev = hdmi_dev->dev;
 +
-+	BUG_ON(!v4l2_dev);
-+
-+	cnp = of_parse_phandle(np, propname, 0);
-+	if (!cnp) {
-+		dev_err(v4l2_dev->dev, "Can't find subdev %s\n", propname);
-+		goto err;
-+	}
-+
-+	client = of_find_i2c_device_by_node(cnp);
-+	if (!client) {
-+		dev_err(v4l2_dev->dev, "subdev %s doesn't reference correct node\n",
++	if (!bdinfo) {
++		dev_err(dev, "%s info is missing in platform data\n",
 +			propname);
-+		goto err;
++		return ERR_PTR(-ENXIO);
 +	}
 +
-+	if (client == NULL || client->driver == NULL)
-+		goto err;
-+
-+	/* Lock the module so we can safely get the v4l2_subdev pointer */
-+	if (!try_module_get(client->driver->driver.owner))
-+		goto err;
-+	sd = i2c_get_clientdata(client);
-+
-+	/* Register with the v4l2_device which increases the module's
-+	   use count as well. */
-+	if (v4l2_device_register_subdev(v4l2_dev, sd)) {
-+		printk(KERN_ERR "%s: failed to register subdev\n", __func__);
-+		sd = NULL;
++	adapter = i2c_get_adapter(bus);
++	if (adapter == NULL) {
++		dev_err(dev, "%s adapter request failed, name\n",
++			propname);
++		return ERR_PTR(-ENXIO);
 +	}
-+	/* Decrease the module use count to match the first try_module_get. */
-+	module_put(client->driver->driver.owner);
-+err:
-+	of_node_put(cnp);
++
++	sd = v4l2_i2c_new_subdev_board(&hdmi_dev->v4l2_dev,
++				       adapter, bdinfo, NULL);
++
++	/* on failure or not adapter is no longer useful */
++	i2c_put_adapter(adapter);
++
++	if (sd == NULL) {
++		dev_err(dev, "missing subdev for %s\n", propname);
++		return ERR_PTR(-ENODEV);
++	}
 +
 +	return sd;
 +}
-+#endif
 +
- static const struct v4l2_subdev_core_ops hdmi_sd_core_ops = {
- 	.s_power = hdmi_s_power,
- };
-@@ -875,6 +927,12 @@ static struct v4l2_subdev *hdmi_get_subdev(
- 	struct i2c_adapter *adapter;
- 	struct device *dev = hdmi_dev->dev;
- 
-+#ifdef CONFIG_OF
-+	if (dev->of_node)
-+		return hdmi_of_get_i2c_subdev(&hdmi_dev->v4l2_dev,
-+					   dev->of_node, propname);
-+#endif
-+
- 	if (!bdinfo) {
- 		dev_err(dev, "%s info is missing in platform data\n",
- 			propname);
-@@ -913,7 +971,7 @@ static int __devinit hdmi_probe(struct platform_device *pdev)
- 
- 	dev_dbg(dev, "probe start\n");
- 
--	if (!pdata) {
-+	if (!pdata && !dev->of_node) {
- 		dev_err(dev, "platform data is missing\n");
- 		ret = -ENODEV;
- 		goto fail;
-@@ -1037,6 +1095,13 @@ static int __devexit hdmi_remove(struct platform_device *pdev)
- 	return 0;
- }
- 
-+#ifdef CONFIG_OF
-+static struct of_device_id hdmi_dt_match[] = {
-+	{ .compatible = "samsung,s5pv210-hdmi" },
-+	{ },
-+};
-+#endif
-+
- static struct platform_driver hdmi_driver __refdata = {
- 	.probe = hdmi_probe,
- 	.remove = __devexit_p(hdmi_remove),
-@@ -1045,6 +1110,7 @@ static struct platform_driver hdmi_driver __refdata = {
- 		.name = "s5p-hdmi",
- 		.owner = THIS_MODULE,
- 		.pm = &hdmi_pm_ops,
-+		.of_match_table = of_match_ptr(hdmi_dt_match),
+ static int __devinit hdmi_probe(struct platform_device *pdev)
+ {
+ 	struct device *dev = &pdev->dev;
+ 	struct resource *res;
+-	struct i2c_adapter *adapter;
+ 	struct v4l2_subdev *sd;
+ 	struct hdmi_device *hdmi_dev = NULL;
+ 	struct s5p_hdmi_platform_data *pdata = dev->platform_data;
+@@ -937,51 +973,23 @@ static int __devinit hdmi_probe(struct platform_device *pdev)
+ 		goto fail_init;
  	}
- };
  
+-	/* testing if hdmiphy info is present */
+-	if (!pdata->hdmiphy_info) {
+-		dev_err(dev, "hdmiphy info is missing in platform data\n");
+-		ret = -ENXIO;
++	hdmi_dev->phy_sd = hdmi_get_subdev(hdmi_dev,
++					   pdata ? pdata->hdmiphy_info : NULL,
++					   pdata ? pdata->hdmiphy_bus : -1,
++					   "phy");
++	if (IS_ERR_OR_NULL(hdmi_dev->phy_sd)) {
++		ret = PTR_ERR(hdmi_dev->phy_sd);
+ 		goto fail_vdev;
+ 	}
+-
+-	adapter = i2c_get_adapter(pdata->hdmiphy_bus);
+-	if (adapter == NULL) {
+-		dev_err(dev, "hdmiphy adapter request failed\n");
+-		ret = -ENXIO;
++	hdmi_dev->mhl_sd = hdmi_get_subdev(hdmi_dev,
++					   pdata ? pdata->mhl_info : NULL ,
++					   pdata ? pdata->mhl_bus : -1,
++					   "mhl");
++	if (IS_ERR_OR_NULL(hdmi_dev->mhl_sd)) {
++		ret = PTR_ERR(hdmi_dev->mhl_sd);
+ 		goto fail_vdev;
+ 	}
+ 
+-	hdmi_dev->phy_sd = v4l2_i2c_new_subdev_board(&hdmi_dev->v4l2_dev,
+-		adapter, pdata->hdmiphy_info, NULL);
+-	/* on failure or not adapter is no longer useful */
+-	i2c_put_adapter(adapter);
+-	if (hdmi_dev->phy_sd == NULL) {
+-		dev_err(dev, "missing subdev for hdmiphy\n");
+-		ret = -ENODEV;
+-		goto fail_vdev;
+-	}
+-
+-	/* initialization of MHL interface if present */
+-	if (pdata->mhl_info) {
+-		adapter = i2c_get_adapter(pdata->mhl_bus);
+-		if (adapter == NULL) {
+-			dev_err(dev, "MHL adapter request failed\n");
+-			ret = -ENXIO;
+-			goto fail_vdev;
+-		}
+-
+-		hdmi_dev->mhl_sd = v4l2_i2c_new_subdev_board(
+-			&hdmi_dev->v4l2_dev, adapter,
+-			pdata->mhl_info, NULL);
+-		/* on failure or not adapter is no longer useful */
+-		i2c_put_adapter(adapter);
+-		if (hdmi_dev->mhl_sd == NULL) {
+-			dev_err(dev, "missing subdev for MHL\n");
+-			ret = -ENODEV;
+-			goto fail_vdev;
+-		}
+-	}
+-
+ 	clk_enable(hdmi_dev->res.hdmi);
+ 
+ 	pm_runtime_enable(dev);
 -- 
 1.7.9.1
 
