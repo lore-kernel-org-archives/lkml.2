@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966253Ab2DLXbS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Apr 2012 19:31:18 -0400
-Received: from mail-pz0-f52.google.com ([209.85.210.52]:63216 "EHLO
-	mail-pz0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757683Ab2DLX34 (ORCPT
+	id S966268Ab2DLXbh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Apr 2012 19:31:37 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:33833 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S964953Ab2DLX3w (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Apr 2012 19:29:56 -0400
+	Thu, 12 Apr 2012 19:29:52 -0400
 From: Tejun Heo <tj@kernel.org>
 To: axboe@kernel.dk
 Cc: vgoyal@redhat.com, ctalbott@google.com, rni@google.com,
         linux-kernel@vger.kernel.org, cgroups@vger.kernel.org,
         containers@lists.linux-foundation.org, Tejun Heo <tj@kernel.org>
-Subject: [PATCH 5/8] blkcg: make sure blkg_lookup() returns %NULL if @q is bypassing
-Date: Thu, 12 Apr 2012 16:29:37 -0700
-Message-Id: <1334273380-30233-6-git-send-email-tj@kernel.org>
+Subject: [PATCH 3/8] blkcg: remove static policy ID enums
+Date: Thu, 12 Apr 2012 16:29:35 -0700
+Message-Id: <1334273380-30233-4-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 1.7.7.3
 In-Reply-To: <1334273380-30233-1-git-send-email-tj@kernel.org>
 References: <1334273380-30233-1-git-send-email-tj@kernel.org>
@@ -22,123 +22,313 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently, blkg_lookup() doesn't check @q bypass state.  This patch
-updates blk_queue_bypass_start() to do synchronize_rcu() before
-returning and updates blkg_lookup() to check blk_queue_bypass() and
-return %NULL if bypassing.  This ensures blkg_lookup() returns %NULL
-if @q is bypassing.
+Remove BLKIO_POLICY_* enums and let blkio_policy_register() allocate
+@pol->plid dynamically on registration.  The maximum number of blkcg
+policies which can be registered at the same time is defined by
+BLKCG_MAX_POLS constant added to include/linux/blkdev.h.
 
-This is to guarantee that nobody is accessing policy data while @q is
-bypassing, which is necessary to allow replacing blkio_cgroup->pd[] in
-place on policy [de]activation.
+Note that blkio_policy_register() now may fail.  Policy init functions
+updated accordingly and unnecessary ifdefs removed from cfq_init().
 
 Signed-off-by: Tejun Heo <tj@kernel.org>
 Cc: Vivek Goyal <vgoyal@redhat.com>
 ---
- block/blk-cgroup.c |   50 +++++++++++++++++++++++++++++++++-----------------
- block/blk-core.c   |    4 +++-
- 2 files changed, 36 insertions(+), 18 deletions(-)
+ block/blk-cgroup.c     |   59 +++++++++++++++++++++++++++++++++++------------
+ block/blk-cgroup.h     |   15 +++---------
+ block/blk-throttle.c   |    4 +--
+ block/cfq-iosched.c    |   25 +++++++++++---------
+ include/linux/blkdev.h |    7 +++++-
+ 5 files changed, 69 insertions(+), 41 deletions(-)
 
 diff --git a/block/blk-cgroup.c b/block/blk-cgroup.c
-index f6581a0..fa19412 100644
+index b123152..2d4d7d6 100644
 --- a/block/blk-cgroup.c
 +++ b/block/blk-cgroup.c
-@@ -137,6 +137,38 @@ static struct blkio_group *blkg_alloc(struct blkio_cgroup *blkcg,
- 	return blkg;
- }
+@@ -31,7 +31,7 @@ static LIST_HEAD(all_q_list);
+ struct blkio_cgroup blkio_root_cgroup = { .cfq_weight = 2 * CFQ_WEIGHT_DEFAULT };
+ EXPORT_SYMBOL_GPL(blkio_root_cgroup);
  
-+static struct blkio_group *__blkg_lookup(struct blkio_cgroup *blkcg,
-+					 struct request_queue *q)
-+{
-+	struct blkio_group *blkg;
-+	struct hlist_node *n;
-+
-+	hlist_for_each_entry_rcu(blkg, n, &blkcg->blkg_list, blkcg_node)
-+		if (blkg->q == q)
-+			return blkg;
-+	return NULL;
-+}
-+
-+/**
-+ * blkg_lookup - lookup blkg for the specified blkcg - q pair
-+ * @blkcg: blkcg of interest
-+ * @q: request_queue of interest
-+ *
-+ * Lookup blkg for the @blkcg - @q pair.  This function should be called
-+ * under RCU read lock and is guaranteed to return %NULL if @q is
-+ * bypassing.
-+ */
-+struct blkio_group *blkg_lookup(struct blkio_cgroup *blkcg,
-+				struct request_queue *q)
-+{
-+	WARN_ON_ONCE(!rcu_read_lock_held());
-+
-+	if (unlikely(blk_queue_bypass(q)))
-+		return NULL;
-+	return __blkg_lookup(blkcg, q);
-+}
-+EXPORT_SYMBOL_GPL(blkg_lookup);
-+
- struct blkio_group *blkg_lookup_create(struct blkio_cgroup *blkcg,
- 				       struct request_queue *q,
- 				       bool for_root)
-@@ -150,13 +182,11 @@ struct blkio_group *blkg_lookup_create(struct blkio_cgroup *blkcg,
- 	/*
- 	 * This could be the first entry point of blkcg implementation and
- 	 * we shouldn't allow anything to go through for a bypassing queue.
--	 * The following can be removed if blkg lookup is guaranteed to
--	 * fail on a bypassing queue.
+-static struct blkio_policy_type *blkio_policy[BLKIO_NR_POLICIES];
++static struct blkio_policy_type *blkio_policy[BLKCG_MAX_POLS];
+ 
+ struct blkio_cgroup *cgroup_to_blkio_cgroup(struct cgroup *cgroup)
+ {
+@@ -67,7 +67,7 @@ static void blkg_free(struct blkio_group *blkg)
+ 	if (!blkg)
+ 		return;
+ 
+-	for (i = 0; i < BLKIO_NR_POLICIES; i++) {
++	for (i = 0; i < BLKCG_MAX_POLS; i++) {
+ 		struct blkio_policy_type *pol = blkio_policy[i];
+ 		struct blkg_policy_data *pd = blkg->pd[i];
+ 
+@@ -107,7 +107,7 @@ static struct blkio_group *blkg_alloc(struct blkio_cgroup *blkcg,
+ 	blkg->refcnt = 1;
+ 	cgroup_path(blkcg->css.cgroup, blkg->path, sizeof(blkg->path));
+ 
+-	for (i = 0; i < BLKIO_NR_POLICIES; i++) {
++	for (i = 0; i < BLKCG_MAX_POLS; i++) {
+ 		struct blkio_policy_type *pol = blkio_policy[i];
+ 		struct blkg_policy_data *pd;
+ 
+@@ -127,7 +127,7 @@ static struct blkio_group *blkg_alloc(struct blkio_cgroup *blkcg,
+ 	}
+ 
+ 	/* invoke per-policy init */
+-	for (i = 0; i < BLKIO_NR_POLICIES; i++) {
++	for (i = 0; i < BLKCG_MAX_POLS; i++) {
+ 		struct blkio_policy_type *pol = blkio_policy[i];
+ 
+ 		if (pol)
+@@ -320,7 +320,7 @@ blkiocg_reset_stats(struct cgroup *cgroup, struct cftype *cftype, u64 val)
+ 	 * anyway.  If you get hit by a race, retry.
  	 */
- 	if (unlikely(blk_queue_bypass(q)) && !for_root)
- 		return ERR_PTR(blk_queue_dead(q) ? -EINVAL : -EBUSY);
+ 	hlist_for_each_entry(blkg, n, &blkcg->blkg_list, blkcg_node) {
+-		for (i = 0; i < BLKIO_NR_POLICIES; i++) {
++		for (i = 0; i < BLKCG_MAX_POLS; i++) {
+ 			struct blkio_policy_type *pol = blkio_policy[i];
  
--	blkg = blkg_lookup(blkcg, q);
-+	blkg = __blkg_lookup(blkcg, q);
- 	if (blkg)
- 		return blkg;
+ 			if (pol && pol->ops.blkio_reset_group_stats_fn)
+@@ -729,46 +729,75 @@ struct cgroup_subsys blkio_subsys = {
+ };
+ EXPORT_SYMBOL_GPL(blkio_subsys);
  
-@@ -185,20 +215,6 @@ out:
- }
- EXPORT_SYMBOL_GPL(blkg_lookup_create);
- 
--/* called under rcu_read_lock(). */
--struct blkio_group *blkg_lookup(struct blkio_cgroup *blkcg,
--				struct request_queue *q)
--{
--	struct blkio_group *blkg;
--	struct hlist_node *n;
--
--	hlist_for_each_entry_rcu(blkg, n, &blkcg->blkg_list, blkcg_node)
--		if (blkg->q == q)
--			return blkg;
--	return NULL;
--}
--EXPORT_SYMBOL_GPL(blkg_lookup);
--
- static void blkg_destroy(struct blkio_group *blkg)
+-void blkio_policy_register(struct blkio_policy_type *blkiop)
++/**
++ * blkio_policy_register - register a blkcg policy
++ * @blkiop: blkcg policy to register
++ *
++ * Register @blkiop with blkcg core.  Might sleep and @blkiop may be
++ * modified on successful registration.  Returns 0 on success and -errno on
++ * failure.
++ */
++int blkio_policy_register(struct blkio_policy_type *blkiop)
  {
- 	struct request_queue *q = blkg->q;
-diff --git a/block/blk-core.c b/block/blk-core.c
-index 991c1d6..8b3d073 100644
---- a/block/blk-core.c
-+++ b/block/blk-core.c
-@@ -416,7 +416,8 @@ void blk_drain_queue(struct request_queue *q, bool drain_all)
-  * In bypass mode, only the dispatch FIFO queue of @q is used.  This
-  * function makes @q enter bypass mode and drains all requests which were
-  * throttled or issued before.  On return, it's guaranteed that no request
-- * is being throttled or has ELVPRIV set.
-+ * is being throttled or has ELVPRIV set and blk_queue_bypass() is %true
-+ * inside queue or RCU read lock.
-  */
- void blk_queue_bypass_start(struct request_queue *q)
- {
-@@ -426,6 +427,7 @@ void blk_queue_bypass_start(struct request_queue *q)
- 	spin_unlock_irq(q->queue_lock);
+ 	struct request_queue *q;
++	int i, ret;
  
- 	blk_drain_queue(q, false);
-+	synchronize_rcu();
+ 	mutex_lock(&blkcg_pol_mutex);
+ 
+-	blkcg_bypass_start();
++	/* find an empty slot */
++	ret = -ENOSPC;
++	for (i = 0; i < BLKCG_MAX_POLS; i++)
++		if (!blkio_policy[i])
++			break;
++	if (i >= BLKCG_MAX_POLS)
++		goto out_unlock;
+ 
+-	BUG_ON(blkio_policy[blkiop->plid]);
+-	blkio_policy[blkiop->plid] = blkiop;
++	/* register and update blkgs */
++	blkiop->plid = i;
++	blkio_policy[i] = blkiop;
++
++	blkcg_bypass_start();
+ 	list_for_each_entry(q, &all_q_list, all_q_node)
+ 		update_root_blkg_pd(q, blkiop);
+-
+ 	blkcg_bypass_end();
+ 
++	/* everything is in place, add intf files for the new policy */
+ 	if (blkiop->cftypes)
+ 		WARN_ON(cgroup_add_cftypes(&blkio_subsys, blkiop->cftypes));
+-
++	ret = 0;
++out_unlock:
+ 	mutex_unlock(&blkcg_pol_mutex);
++	return ret;
  }
- EXPORT_SYMBOL_GPL(blk_queue_bypass_start);
+ EXPORT_SYMBOL_GPL(blkio_policy_register);
+ 
++/**
++ * blkiop_policy_unregister - unregister a blkcg policy
++ * @blkiop: blkcg policy to unregister
++ *
++ * Undo blkio_policy_register(@blkiop).  Might sleep.
++ */
+ void blkio_policy_unregister(struct blkio_policy_type *blkiop)
+ {
+ 	struct request_queue *q;
+ 
+ 	mutex_lock(&blkcg_pol_mutex);
+ 
++	if (WARN_ON(blkio_policy[blkiop->plid] != blkiop))
++		goto out_unlock;
++
++	/* kill the intf files first */
+ 	if (blkiop->cftypes)
+ 		cgroup_rm_cftypes(&blkio_subsys, blkiop->cftypes);
+ 
+-	blkcg_bypass_start();
+-
+-	BUG_ON(blkio_policy[blkiop->plid] != blkiop);
++	/* unregister and update blkgs */
+ 	blkio_policy[blkiop->plid] = NULL;
+ 
++	blkcg_bypass_start();
+ 	list_for_each_entry(q, &all_q_list, all_q_node)
+ 		update_root_blkg_pd(q, blkiop);
+ 	blkcg_bypass_end();
+-
++out_unlock:
+ 	mutex_unlock(&blkcg_pol_mutex);
+ }
+ EXPORT_SYMBOL_GPL(blkio_policy_unregister);
+diff --git a/block/blk-cgroup.h b/block/blk-cgroup.h
+index 49116d3..cacdcaea 100644
+--- a/block/blk-cgroup.h
++++ b/block/blk-cgroup.h
+@@ -17,13 +17,6 @@
+ #include <linux/u64_stats_sync.h>
+ #include <linux/seq_file.h>
+ 
+-enum blkio_policy_id {
+-	BLKIO_POLICY_PROP = 0,		/* Proportional Bandwidth division */
+-	BLKIO_POLICY_THROTL,		/* Throttling */
+-
+-	BLKIO_NR_POLICIES,
+-};
+-
+ /* Max limits for throttle policy */
+ #define THROTL_IOPS_MAX		UINT_MAX
+ 
+@@ -86,7 +79,7 @@ struct blkio_group {
+ 	/* reference count */
+ 	int refcnt;
+ 
+-	struct blkg_policy_data *pd[BLKIO_NR_POLICIES];
++	struct blkg_policy_data *pd[BLKCG_MAX_POLS];
+ 
+ 	struct rcu_head rcu_head;
+ };
+@@ -103,7 +96,7 @@ struct blkio_policy_ops {
+ 
+ struct blkio_policy_type {
+ 	struct blkio_policy_ops ops;
+-	enum blkio_policy_id plid;
++	int plid;
+ 	size_t pdata_size;		/* policy specific private data size */
+ 	struct cftype *cftypes;		/* cgroup files for the policy */
+ };
+@@ -113,7 +106,7 @@ extern void blkcg_drain_queue(struct request_queue *q);
+ extern void blkcg_exit_queue(struct request_queue *q);
+ 
+ /* Blkio controller policy registration */
+-extern void blkio_policy_register(struct blkio_policy_type *);
++extern int blkio_policy_register(struct blkio_policy_type *);
+ extern void blkio_policy_unregister(struct blkio_policy_type *);
+ extern void blkg_destroy_all(struct request_queue *q, bool destroy_root);
+ extern void update_root_blkg_pd(struct request_queue *q,
+@@ -329,7 +322,7 @@ struct blkio_policy_type {
+ static inline int blkcg_init_queue(struct request_queue *q) { return 0; }
+ static inline void blkcg_drain_queue(struct request_queue *q) { }
+ static inline void blkcg_exit_queue(struct request_queue *q) { }
+-static inline void blkio_policy_register(struct blkio_policy_type *blkiop) { }
++static inline int blkio_policy_register(struct blkio_policy_type *blkiop) { return 0; }
+ static inline void blkio_policy_unregister(struct blkio_policy_type *blkiop) { }
+ static inline void blkg_destroy_all(struct request_queue *q,
+ 				    bool destory_root) { }
+diff --git a/block/blk-throttle.c b/block/blk-throttle.c
+index 07c17c2..0dc4645 100644
+--- a/block/blk-throttle.c
++++ b/block/blk-throttle.c
+@@ -1089,7 +1089,6 @@ static struct blkio_policy_type blkio_policy_throtl = {
+ 		.blkio_exit_group_fn = throtl_exit_blkio_group,
+ 		.blkio_reset_group_stats_fn = throtl_reset_group_stats,
+ 	},
+-	.plid = BLKIO_POLICY_THROTL,
+ 	.pdata_size = sizeof(struct throtl_grp),
+ 	.cftypes = throtl_files,
+ };
+@@ -1271,8 +1270,7 @@ static int __init throtl_init(void)
+ 	if (!kthrotld_workqueue)
+ 		panic("Failed to create kthrotld\n");
+ 
+-	blkio_policy_register(&blkio_policy_throtl);
+-	return 0;
++	return blkio_policy_register(&blkio_policy_throtl);
+ }
+ 
+ module_init(throtl_init);
+diff --git a/block/cfq-iosched.c b/block/cfq-iosched.c
+index 7980173..a0fbc51 100644
+--- a/block/cfq-iosched.c
++++ b/block/cfq-iosched.c
+@@ -4158,7 +4158,6 @@ static struct blkio_policy_type blkio_policy_cfq = {
+ 		.blkio_init_group_fn =		cfq_init_blkio_group,
+ 		.blkio_reset_group_stats_fn =	cfqg_stats_reset,
+ 	},
+-	.plid = BLKIO_POLICY_PROP,
+ 	.pdata_size = sizeof(struct cfq_group),
+ 	.cftypes = cfq_blkcg_files,
+ };
+@@ -4182,27 +4181,31 @@ static int __init cfq_init(void)
+ #else
+ 		cfq_group_idle = 0;
+ #endif
++
++	ret = blkio_policy_register(&blkio_policy_cfq);
++	if (ret)
++		return ret;
++
+ 	cfq_pool = KMEM_CACHE(cfq_queue, 0);
+ 	if (!cfq_pool)
+-		return -ENOMEM;
++		goto err_pol_unreg;
+ 
+ 	ret = elv_register(&iosched_cfq);
+-	if (ret) {
+-		kmem_cache_destroy(cfq_pool);
+-		return ret;
+-	}
++	if (ret)
++		goto err_free_pool;
+ 
+-#ifdef CONFIG_CFQ_GROUP_IOSCHED
+-	blkio_policy_register(&blkio_policy_cfq);
+-#endif
+ 	return 0;
++
++err_free_pool:
++	kmem_cache_destroy(cfq_pool);
++err_pol_unreg:
++	blkio_policy_unregister(&blkio_policy_cfq);
++	return ret;
+ }
+ 
+ static void __exit cfq_exit(void)
+ {
+-#ifdef CONFIG_CFQ_GROUP_IOSCHED
+ 	blkio_policy_unregister(&blkio_policy_cfq);
+-#endif
+ 	elv_unregister(&iosched_cfq);
+ 	kmem_cache_destroy(cfq_pool);
+ }
+diff --git a/include/linux/blkdev.h b/include/linux/blkdev.h
+index 33f1b29..d2c69f8 100644
+--- a/include/linux/blkdev.h
++++ b/include/linux/blkdev.h
+@@ -35,6 +35,12 @@ struct bsg_job;
+ #define BLKDEV_MIN_RQ	4
+ #define BLKDEV_MAX_RQ	128	/* Default maximum */
+ 
++/*
++ * Maximum number of blkcg policies allowed to be registered concurrently.
++ * Defined here to simplify include dependency.
++ */
++#define BLKCG_MAX_POLS		2
++
+ struct request;
+ typedef void (rq_end_io_fn)(struct request *, int);
+ 
+@@ -363,7 +369,6 @@ struct request_queue {
+ 
+ 	struct list_head	icq_list;
+ #ifdef CONFIG_BLK_CGROUP
+-	/* XXX: array size hardcoded to avoid include dependency (temporary) */
+ 	struct list_head	blkg_list;
+ #endif
  
 -- 
 1.7.7.3
