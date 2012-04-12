@@ -1,91 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762252Ab2DLJIs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Apr 2012 05:08:48 -0400
-Received: from hosting.visp.net.lb ([194.146.153.11]:58930 "EHLO
-	hosting.visp.net.lb" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754870Ab2DLJIp (ORCPT
+	id S1762261Ab2DLJKn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Apr 2012 05:10:43 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:49688 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754870Ab2DLJKl convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Apr 2012 05:08:45 -0400
-X-Greylist: delayed 510 seconds by postgrey-1.27 at vger.kernel.org; Thu, 12 Apr 2012 05:08:45 EDT
+	Thu, 12 Apr 2012 05:10:41 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8;
- format=flowed
-Content-Transfer-Encoding: 7bit
-Date: Thu, 12 Apr 2012 12:00:03 +0300
-From: Denys Fedoryshchenko <denys@visp.net.lb>
-To: Pablo Neira Ayuso <pablo@netfilter.org>
-Cc: Patrick McHardy <kaber@trash.net>, "David S. Miller" <davem@davemloft.net>,
-        <netfilter-devel@vger.kernel.org>, <netfilter@vger.kernel.org>,
-        <coreteam@netfilter.org>, <linux-kernel@vger.kernel.org>,
-        <netdev@vger.kernel.org>
-Subject: Re: [PATCH 1/1] netfilter: =?UTF-8?Q?xt=5Frecent=3A=20Add=20optio?=
- =?UTF-8?Q?nal=20mask=20option=20for=20xt=5Frecent?=
-In-Reply-To: <20120411231421.GA7038@1984>
-References: <1331033084-23803-1-git-send-email-denys@visp.net.lb>
- <20120411231421.GA7038@1984>
-Message-ID: <d8de90a8f08a092730109e72827264fe@visp.net.lb>
-User-Agent: VISP Webmail/0.7.1
+In-Reply-To: <4F8631C8.1090705@emc.com.tw>
+References: <1334061766-20577-1-git-send-email-tom_lin@emc.com.tw>
+	<20120411071212.GB6894@core.coreip.homeip.net>
+	<4F85583F.6050008@emc.com.tw>
+	<20120411162519.GA27562@core.coreip.homeip.net>
+	<4F8631C8.1090705@emc.com.tw>
+Date: Thu, 12 Apr 2012 11:10:40 +0200
+Message-ID: <CAN+gG=EQ-B8_brthJnrq0pw1HYGo15Q6unaEQAbu-e2x10z0XA@mail.gmail.com>
+Subject: Re: [PATCH v3] Input: Elan HID-I2C device driver
+From: Benjamin Tissoires <benjamin.tissoires@gmail.com>
+To: =?Big5?B?qkyr26b2?= <tom_lin@emc.com.tw>
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org, djkurtz@chromium.org,
+        Jiri Kosina <jkosina@suse.cz>
+Content-Type: text/plain; charset=Big5
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Pablo
+Hi Tom,
 
-On 2012-04-12 02:14, Pablo Neira Ayuso wrote:
-> Hi Denys,
+I read Microsoft's things about HID over I2C few days ago. And from
+what I understood, the report descriptors and the enumeration of the
+devices are stored in the ACPI table and not in the device itself. Can
+you confirm this?
+
+I was thinking about making hid-multitouch independent from the usb
+stack and was thinking about doing the i2c-hid bridge. However, I did
+not start writing a line yet ;-)
+
+Cheers,
+Benjamin
+
+On Thu, Apr 12, 2012 at 03:37, ªL«Û¦ö <tom_lin@emc.com.tw> wrote:
+> Hi Dmitry
 >
-> On Tue, Mar 06, 2012 at 01:24:44PM +0200, Denys Fedoryshchenko wrote:
->> Use case for this feature:
->> 1)In some occasions if you need to allow,block,match specific 
->> subnet.
->> 2)I can use recent as a trigger when netfilter rule matches, with 
->> mask 0.0.0.0
+>
+> On 04/12/2012 12:25 AM, Dmitry Torokhov wrote:
 >>
->> Example:
+>> On Wednesday, April 11, 2012 06:09:03 PM ªL«Û¦ö wrote:
+>>>
+>>> Hi Daniel
+>>>
+>>> On 04/11/2012 03:12 PM, Dmitry Torokhov wrote:
+>>>>
+>>>> Hi Tom,
+>>>>
+>>>> On Tue, Apr 10, 2012 at 08:42:46PM +0800, Tom Lin wrote:
+>>>>>
+>>>>> This patch adds driver for Elan I2C touchpad. These protocol of HID-I2C
+>>>>> was
+>>>>> defined by Microsoft. The kernel driver would use the multi-touch
+>>>>> protocol
+>>>>> format B.
+>>>>
+>>>>
+>>>> If this device truly supports HID protocol shouldn't we define i2c-hid
+>>>> transport, similar to usbhid?
+>>>
+>>>
+>>> I merely follow defined by Microsoft.
+>>> It was called "HID OVER I2C" by Microsoft.
+>>>
+>>> (http://msdn.microsoft.com/en-us/library/windows/hardware/hh825917(v=vs.85).
+>>> aspx) But I agree to change from hid i2c to i2chid.
+>>> Do you have any better opinions?
 >>
->> If you ping 8.8.8.8, after that you can't ping 2.2.2.10
+>>
+>> I am not sure we are talking about same thing... I do not really care
+>> whether it is named "hid i2c" or "i2chid". What I meant if the device
+>> really speaks HID protocol, except that the transport is not USB or
+>> bluetooth but I2C, then instead of writing a custom driver for this
+>> particular part we need to add a new HID transport into
+>> drivers/hid/i2c-hid that is similar to drivers/hid/usbhid/ and reuse the
+>> rest of HID framework along with hid- multitouch.c which handles
+>> HID-compliant multitouch devices.
+>>
+>> I am CCing Jiri (HID maintainer) for additional input.
 >
-> Could you provide an useful example for this new feature?
+> Sorry! I misunderstood what you mean.
+> I fully agree with your suggestion. The I2CHID device will be more and more
+> in the future. Need the new i2chid-driver that would cover all hid-compliant
+> i2c-devices.
+> Thank you
 >
-> I also think you can make this with hashlimit, that allows you to
-> set the network mask.
-
-Yes, technically hashlimit can do a lot, but not everything. Especially 
-because xt_recent can be "fine-grained" in steps, depends on timeline of 
-event, and can be updated accordingly to time of reoccurred event. It is 
-generally not related to mask option, but mask gives power to block 
-subnets.
-Why for example /24? Well, it is minimal mask for BGP announce :) It is 
-very often, that requesting ip has more ip's in same subnet 
-(load-balancing, or multiple ip's on dedicated server), and mask will be 
-highly useful for that, to reduce number of entries and to tighten weak 
-points (usually after ip blocked, they try from neighbor ip to check, if 
-destination just blocked single ip). Plus rttl and hitcount another 
-sweet things that are available in xt_recent, but aren't in hashlimit.
-
-iptables -t mangle -N SIP
-# If someone abuse our SIP, block him completely at least for 10 
-seconds, if he try again, update and block for new 120 seconds
-iptables -t mangle -A SIP -m recent --name X --update --seconds 10 
---mask 255.255.255.0 -j MARK --set-mark 0x1
-# 120 - 600 seconds handle him over special relay (that will log his 
-query, but wont pass him to real SIP server)
-iptables -t mangle -A SIP -m recent --name X --rcheck --seconds 600 
---mask 255.255.255.0 -j MARK --set-mark 0x2
-
-In this case i will log only invalid queries, but for example some DDoS 
-or scanners that flood servers by packets will be silently ignored. 
-Maybe if hitcount really bad, i will add them to ipset, and block 
-permanently, by -m set --add-set.
-
-For me personally it is useful, because i have around 140 NAS servers, 
-and i give each of them /24 "gray" subnets, and in some cases i need to 
-handle bad users, that are changing dynamic ip and attacking from new ip 
-each time. I just block non-critical service for whole subnet then, till 
-technician on duty will solve issue completely. And sure if attack are 
-stopped, subnet will be unblocked "automagically".
-
-Sure this feature not critical, or "a must", and if code are not good, 
-it is up to you, if it should be added or not.
-
+> Tom-
+>>
+>>
+>> Thanks.
+>>
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-input" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
