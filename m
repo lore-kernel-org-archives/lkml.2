@@ -1,38 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933909Ab2DLMki (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Apr 2012 08:40:38 -0400
-Received: from [163.23.69.202] ([163.23.69.202]:52638 "EHLO
-	mail.psjh.chc.edu.tw" rhost-flags-FAIL-FAIL-OK-OK) by vger.kernel.org
-	with ESMTP id S933796Ab2DLMk2 (ORCPT
+	id S933870Ab2DLMmZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Apr 2012 08:42:25 -0400
+Received: from mail7.hitachi.co.jp ([133.145.228.42]:54076 "EHLO
+	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933717Ab2DLMmY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Apr 2012 08:40:28 -0400
-Reply-To: <ming_yang008@yahoo.com.hk>
-From: "Yang Ming" <gold@mail.psjh.chc.edu.tw>
-Subject: Hello,
-Date: Wed, 11 Apr 2012 18:14:35 +0200
+	Thu, 12 Apr 2012 08:42:24 -0400
+X-AuditID: b753bd60-9aba9ba000002f45-89-4f86cdac3001
+X-AuditID: b753bd60-9aba9ba000002f45-89-4f86cdac3001
+Message-ID: <4F86CDA3.3000302@hitachi.com>
+Date: Thu, 12 Apr 2012 21:42:11 +0900
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Organization: Hitachi, Ltd., Japan
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:11.0) Gecko/20120327 Thunderbird/11.0.1
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="Windows-1251"
+To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
+        LKML <linux-kernel@vger.kernel.org>, Linux-mm <linux-mm@kvack.org>,
+        Oleg Nesterov <oleg@redhat.com>, Andi Kleen <andi@firstfloor.org>,
+        Christoph Hellwig <hch@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Anton Arapov <anton@redhat.com>
+Subject: Re: [PATCH 1/3] tracing: Modify is_delete, is_return from int
+ to bool
+References: <20120409091133.8343.65289.sendpatchset@srdronam.in.ibm.com>
+In-Reply-To: <20120409091133.8343.65289.sendpatchset@srdronam.in.ibm.com>
+Content-Type: text/plain; charset=ISO-2022-JP
 Content-Transfer-Encoding: 7bit
-X-Priority: 3
-X-MSMail-Priority: Normal
-X-Mailer: Microsoft Outlook Express 6.00.2600.0000
-X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2600.0000
-X-Antivirus: avast! (VPS 120411-0, 11/04/2012), Outbound message
-X-Antivirus-Status: Clean
-Message-Id: <20120411172810.B2DB625E5B64@mail.psjh.chc.edu.tw>
-To: undisclosed-recipients:;
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+(2012/04/09 18:11), Srikar Dronamraju wrote:
+> From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+> 
+> is_delete and is_return can take utmost 2 values and are better of
+> being a boolean than a int. There are no functional changes.
+> 
+> Acked-by: Steven Rostedt <rostedt@goodmis.org>
+> Signed-off-by: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
 
-I am Mr. Ming Yang, Director of Operations of the Hang Seng Bank Ltd, Sai Wan Ho Branch, Hong Kong, I am seeking your assistance in helping me receive a large amount of money and in giving a clear research and feasibility study on areas I could invest on.
+OK, this should be changed.
 
-Kindly indicate your interest by responding to my private email address which is as follows:ming_yang008@yahoo.com.hk 
-Regards.
+Acked-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
 
-Ming Yang
+Thank you,
 
+-- 
+Masami HIRAMATSU
+Software Platform Research Dept. Linux Technology Center
+Hitachi, Ltd., Yokohama Research Laboratory
+E-mail: masami.hiramatsu.pt@hitachi.com
