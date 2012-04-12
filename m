@@ -1,63 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965222Ab2DLOsj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Apr 2012 10:48:39 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:36177 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S964991Ab2DLOsi (ORCPT
+	id S965296Ab2DLOt6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Apr 2012 10:49:58 -0400
+Received: from e38.co.us.ibm.com ([32.97.110.159]:39780 "EHLO
+	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S964991Ab2DLOtz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Apr 2012 10:48:38 -0400
-Date: Thu, 12 Apr 2012 15:48:33 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Axel Lin <axel.lin@gmail.com>
-Cc: linux-kernel@vger.kernel.org, Dan Carpenter <dan.carpenter@oracle.com>,
-        Liam Girdwood <lrg@ti.com>
-Subject: Re: regulator: core: Don't dereference config->dev before NULL
- checking for config
-Message-ID: <20120412144830.GA3181@opensource.wolfsonmicro.com>
-References: <1334208502.15182.0.camel@phoenix>
+	Thu, 12 Apr 2012 10:49:55 -0400
+Date: Thu, 12 Apr 2012 20:11:48 +0530
+From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+To: Arnaldo Carvalho de Melo <acme@infradead.org>
+Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
+        LKML <linux-kernel@vger.kernel.org>, Linux-mm <linux-mm@kvack.org>,
+        Oleg Nesterov <oleg@redhat.com>, Andi Kleen <andi@firstfloor.org>,
+        Christoph Hellwig <hch@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Anton Arapov <anton@redhat.com>
+Subject: Re: Re: [PATCH] perf/probe: Provide perf interface for uprobes
+Message-ID: <20120412144148.GA21587@linux.vnet.ibm.com>
+Reply-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+References: <20120411135742.29198.45061.sendpatchset@srdronam.in.ibm.com>
+ <20120411144918.GD16257@infradead.org>
+ <20120411170343.GB29831@linux.vnet.ibm.com>
+ <20120411181727.GK16257@infradead.org>
+ <4F864BB3.3090405@hitachi.com>
+ <20120412140751.GM16257@infradead.org>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="EeQfGwPcQSOJBaQU"
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <1334208502.15182.0.camel@phoenix>
-X-Cookie: Your present plans will be successful.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20120412140751.GM16257@infradead.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12041214-5518-0000-0000-0000039E3C47
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+* Arnaldo Carvalho de Melo <acme@infradead.org> [2012-04-12 11:07:51]:
 
---EeQfGwPcQSOJBaQU
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+> Em Thu, Apr 12, 2012 at 12:27:47PM +0900, Masami Hiramatsu escreveu:
+> > > * Arnaldo Carvalho de Melo <acme@infradead.org> [2012-04-11 11:49:18]:
+> > > Yeah, if one needs to disambiguate, sure, use these keywords, but for
+> > > things like:
+> > > 
+> > > $ perf probe /lib/libc.so.6 malloc
+> > > 
+> > > I think it is easy to figure out it is userspace. I.e. some regex would
+> > > figure it out.
+> > 
+> > That's interessting to me too. Maybe it is also useful syntax for
+> > module specifying too.
+> > 
+> > e.g.
+> >   perf probe -m kvm kvm_timer_fn
+> > 
+> > can be
+> > 
+> >   perf probe kvm.ko kvm_timer_fn
+> > 
+> > (.ko is required) or if unloaded
+> > 
+> >   perf probe /lib/modules/XXX/kernel/virt/kvm.ko kvm_timer_fn
+> 
+> 	It may not even be required, since we can check in /proc/modules
+> if "kvm" is there and as well if it has a function named "kvm_timer_fn".
+> 
+> 	Also probably there is no library or binary on the current
+> directory with such a name :-)
+> 
 
-On Thu, Apr 12, 2012 at 01:28:22PM +0800, Axel Lin wrote:
-> Reported-by: Dan Carpenter <dan.carpenter@oracle.com>
-> Signed-off-by: Axel Lin <axel.lin@gmail.com>
+> 	Likewise, if we do:
+> 
+>  $ perf probe libc-2.12.so malloc
+> 
+> 	It should just figure out it is the /lib64/libc-2.12.so
+> 
+> 	Heck, even:
+> 
+>  $ perf probe libc malloc
+> 
+> 	Makes it even easier to use.
+> 
+> 	Its just when one asks for something that has ambiguities that
+> the tool should ask the user to be a bit more precise to remove such
+> ambiguity.
+> 
+> 	After all...
+> 
 
-Already fixed.
+I do understand/agree that the short form looks better. However each
+user in the system might have different library /executable paths (and
+different ordering of paths. The session in which perf is called may
+find just one unique library or executable. But the used binary maynot
+be the one that is being traced.
 
---EeQfGwPcQSOJBaQU
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+For example: I may have my perf in /home/srikar/bin/perf which may be
+picked up. But when I use "perf probe perf cmd_probe" as a root user,
+the root may only see /usr/bin/perf. It might look intuitive for us.
+However it may not look so for ordinary users and system admins. 
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
+The other choice would be to probe all executables/libraries by the give
+name. Here also getting a exhaustive list is debatable.
 
-iQIcBAEBAgAGBQJPhusQAAoJEBus8iNuMP3dOjgQAIjnavwo7oKfb8gcNJfN2HIQ
-CUT2liSwmd5kHDD9HxB0UwEEerUDNbqxttowpd8Slmeocn3dOdUGdAn5b5Bfiloi
-z4hkPQD8fQMAVRyK7iwNOibkiYriZ5SorqKtSIrtrAPvHn0ZMArKy2jGe94MXzGt
-NQOqdONHHfOob3KOJHi+/8uLWavwyq5M7fVzExAHfe+tduISXYqwUyDMchlKGnNG
-v5cAGCDfyJgntPjE+SsL2u1YgtA35hmOYVS27lzWEvLGclr1w8NryTjAZe1Gr3Oe
-ikXKIkWEiEk+m3YLVlADFaKHKTVWDIFOZ/3ohxvlfp+DSJWUN/F8A9yP6mA4pCJH
-lD8L3fNCT8v4dA9MbIJolxZTJdhjlajH/Q4A9s5VPHB21LyHwPYotPdG+SEhwCqR
-G9/VT6yn8FdVIsxzh7PdsqolYk9yr6I5uOaElzw7TlmfO2Kgru0s2GVgzmwRl4jT
-foqRXjEBOY5rLGOSX/NGsh7G7lp6ixY+4feCciv4GG+E29PZcB9idrmYYrO+cr3D
-RF1/96tXwltZRLUrTnzb6WknEo81z99GemFUrsmwScczeE3hr1A94+96lakJfY+U
-pn1LCwP1/W/SkigTyC+VK98bydiWdIs+nnlvzL8FT+JWj8l4Tp8tkXg2n8AoknPy
-LXgw5s6jsw3p+/GUZdUQ
-=TV6j
------END PGP SIGNATURE-----
+So I think its okay for people to type a bit more than allow perf to guess
+and make a wrong choice. After all we have bash history and tab
+completion, command alias to lessen the typing.
 
---EeQfGwPcQSOJBaQU--
+
+> [acme@sandy linux]$ locate libc-2.12.so
+> /home/acme/.debug/lib64/libc-2.12.so
+> /home/acme/.debug/lib64/libc-2.12.so/293f8b6f5e6cea240d1bb0b47ec269ee91f31673
+> /home/acme/.debug/lib64/libc-2.12.so/5a7fad9dfcbb67af098a258bc2a20137cc954424
+> /lib64/libc-2.12.so
+> /usr/lib/debug/lib64/libc-2.12.so.debug
+> [acme@sandy linux]$
+> 
+> 	Only /lib64/libc-2.12.so is on the ld library path :-)
+> 
+> 	And after people really start depending on this tool for day to
+> day use, they may do like me:
+
+But what if the /lib/libc.so.6 is around on the same machine to cater for 32
+bit apps and the user only wanted to trace 32 bit apps.
+
+As you pointed out earlier, some user might have a text file by name
+libc in the current directory which he inadvertently could have given
+execute permissions. 
+
+-- 
+Thanks and Regards
+Srikar
+
