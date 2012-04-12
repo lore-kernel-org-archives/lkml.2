@@ -1,62 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965640Ab2DLSpZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Apr 2012 14:45:25 -0400
-Received: from mailout4.w1.samsung.com ([210.118.77.14]:50961 "EHLO
-	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1761550Ab2DLSpT (ORCPT
+	id S965932Ab2DLSrI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Apr 2012 14:47:08 -0400
+Received: from mailout1.w1.samsung.com ([210.118.77.11]:43812 "EHLO
+	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S964845Ab2DLSpZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Apr 2012 14:45:19 -0400
-MIME-version: 1.0
-Content-transfer-encoding: 7BIT
-Content-type: TEXT/PLAIN
-Date: Thu, 12 Apr 2012 20:45:21 +0200
+	Thu, 12 Apr 2012 14:45:25 -0400
+Date: Thu, 12 Apr 2012 20:45:31 +0200
 From: Karol Lewandowski <k.lewandowsk@samsung.com>
-Subject: [PATCH 02/13] ARM: Add document to list devices with trivial DT
- description
+Subject: [PATCH 12/13] ARM: Exynos4: Add few more i2c OF compat definitions
 In-reply-to: <1334256332-29867-1-git-send-email-k.lewandowsk@samsung.com>
 To: linux-samsung-soc@vger.kernel.org
 Cc: devicetree-discuss@lists.ozlabs.org, thomas.abraham@linaro.org,
         m.szyprowski@samsung.com, kyungmin.park@samsung.com,
         linux-kernel@vger.kernel.org, olof@lixom.net, kgene.kim@samsung.com,
-        Karol Lewandowski <k.lewandowsk@samsung.com>,
-        Grant Likely <grant.likely@secretlab.ca>
-Message-id: <1334256332-29867-3-git-send-email-k.lewandowsk@samsung.com>
+        Karol Lewandowski <k.lewandowsk@samsung.com>
+Message-id: <1334256332-29867-13-git-send-email-k.lewandowsk@samsung.com>
+MIME-version: 1.0
 X-Mailer: git-send-email 1.7.9.1
+Content-type: TEXT/PLAIN
+Content-transfer-encoding: 7BIT
 References: <1334256332-29867-1-git-send-email-k.lewandowsk@samsung.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add arm/trivial-devices.txt to enumerate devices for which only
-basic resources are provided (compat, address and irq line).
-
-This is based on i2c's trivial-devices.txt by Olof Johansson.
+These are needed for clk_get() to work properly in respective
+drivers.
 
 Signed-off-by: Karol Lewandowski <k.lewandowsk@samsung.com>
 Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
-Cc: Grant Likely <grant.likely@secretlab.ca>
+Cc: Thomas Abraham <thomas.abraham@linaro.org>
 ---
- .../devicetree/bindings/arm/trivial-devices.txt    |   10 ++++++++++
+ arch/arm/mach-exynos/mach-exynos4-dt.c |   10 ++++++++++
  1 files changed, 10 insertions(+), 0 deletions(-)
- create mode 100644 Documentation/devicetree/bindings/arm/trivial-devices.txt
 
-diff --git a/Documentation/devicetree/bindings/arm/trivial-devices.txt b/Documentation/devicetree/bindings/arm/trivial-devices.txt
-new file mode 100644
-index 0000000..443814a
---- /dev/null
-+++ b/Documentation/devicetree/bindings/arm/trivial-devices.txt
-@@ -0,0 +1,10 @@
-+This is a list of trivial devices that have simple device tree
-+bindings, consisting only of a compatible field, an address and
-+possibly an interrupt line.
-+
-+If a device needs more specific bindings, such as properties to
-+describe some aspect of it, there needs to be a specific binding
-+document for it just like any other devices.
-+
-+Compatible                      Vendor / Chip
-+========================        =============
+diff --git a/arch/arm/mach-exynos/mach-exynos4-dt.c b/arch/arm/mach-exynos/mach-exynos4-dt.c
+index 8245f1c..989b35a 100644
+--- a/arch/arm/mach-exynos/mach-exynos4-dt.c
++++ b/arch/arm/mach-exynos/mach-exynos4-dt.c
+@@ -55,6 +55,16 @@ static const struct of_dev_auxdata exynos4210_auxdata_lookup[] __initconst = {
+ 				"exynos4-sdhci.3", NULL),
+ 	OF_DEV_AUXDATA("samsung,s3c2440-i2c", EXYNOS4_PA_IIC(0),
+ 				"s3c2440-i2c.0", NULL),
++	OF_DEV_AUXDATA("samsung,s3c2440-i2c", EXYNOS4_PA_IIC(3),
++				"s3c2440-i2c.3", NULL),
++	OF_DEV_AUXDATA("samsung,s3c2440-i2c", EXYNOS4_PA_IIC(5),
++				"s3c2440-i2c.5", NULL),
++	OF_DEV_AUXDATA("samsung,s3c2440-i2c", EXYNOS4_PA_IIC(6),
++				"s3c2440-i2c.6", NULL),
++	OF_DEV_AUXDATA("samsung,s3c2440-i2c", EXYNOS4_PA_IIC_HDMIPHY,
++				"s3c2440-hdmiphy-i2c", NULL),
++	OF_DEV_AUXDATA("samsung,s5pv210-hdmi", S5P_PA_HDMI, "exynos4-hdmi", NULL),
++	OF_DEV_AUXDATA("samsung,s5pv210-tvmixer", S5P_PA_MIXER, "s5p-mixer", NULL),
+ 	OF_DEV_AUXDATA("arm,pl330", EXYNOS4_PA_PDMA0, "dma-pl330.0", NULL),
+ 	OF_DEV_AUXDATA("arm,pl330", EXYNOS4_PA_PDMA1, "dma-pl330.1", NULL),
+ 	{},
 -- 
 1.7.9.1
 
