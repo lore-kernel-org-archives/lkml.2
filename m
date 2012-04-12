@@ -1,85 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762471Ab2DLKBK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Apr 2012 06:01:10 -0400
-Received: from ppsw-52.csi.cam.ac.uk ([131.111.8.152]:39363 "EHLO
-	ppsw-52.csi.cam.ac.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755687Ab2DLKBI (ORCPT
+	id S1762485Ab2DLKBn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Apr 2012 06:01:43 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:56975 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756178Ab2DLKBm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Apr 2012 06:01:08 -0400
-X-Cam-AntiVirus: no malware found
-X-Cam-SpamDetails: not scanned
-X-Cam-ScannerInfo: http://www.cam.ac.uk/cs/email/scanner/
-Message-ID: <4F86A7DE.5040203@cam.ac.uk>
-Date: Thu, 12 Apr 2012 11:01:02 +0100
-From: Jonathan Cameron <jic23@cam.ac.uk>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:11.0) Gecko/20120327 Thunderbird/11.0.1
-MIME-Version: 1.0
-To: Laxman Dewangan <ldewangan@nvidia.com>
-CC: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        "jbrenner@taosinc.com" <jbrenner@taosinc.com>,
-        Rhyland Klein <rklein@nvidia.com>, "max@stro.at" <max@stro.at>,
-        "linux-iio@vger.kernel.org" <linux-iio@vger.kernel.org>,
-        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>
-Subject: Re: [PATCH V2 2/2] staging: Documentation: add proximity_sampling_period
- as sysfs details
-References: <1334214492-23044-1-git-send-email-ldewangan@nvidia.com> <1334214492-23044-3-git-send-email-ldewangan@nvidia.com> <4F86A26B.1090209@cam.ac.uk> <4F86A4EB.4040202@nvidia.com>
-In-Reply-To: <4F86A4EB.4040202@nvidia.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	Thu, 12 Apr 2012 06:01:42 -0400
+From: handai.szj@gmail.com
+To: linux-kernel@vger.kernel.org
+Cc: davidel@xmailserver.org, akpm@linux-foundation.org,
+        Sha Zhengju <handai.szj@taobao.com>
+Subject: [PATCH] eventfd: change int to __u64 in eventfd_signal()
+Date: Thu, 12 Apr 2012 18:01:20 +0800
+Message-Id: <4f86a805.473f440a.2915.0cf3@mx.google.com>
+X-Mailer: git-send-email 1.7.4.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 4/12/2012 10:48 AM, Laxman Dewangan wrote:
-> On Thursday 12 April 2012 03:07 PM, Jonathan Cameron wrote:
->> On 4/12/2012 8:08 AM, Laxman Dewangan wrote:
->>> +What:        /sys/bus/iio/devices/device[n]/proximity_sampling_period
->>> +KernelVersion:    3.5
->>> +Contact:    linux-iio@vger.kernel.org
->>> +Description:
->>> +        Hardware dependent mode for proximity sensor device to set/get
->>> +        the sampling rate of proximity sensing and conversion.
->> Ah, that explains what it is.  Sorry, use
->> in_proximitiy0_sampling_frequency to provide equivalent
->> control please.  Might be a pain here, but this interface will just
->> provide the same info as the existing
->> one in a different form.  Note that sampling_frequency is documented as
->> a general one, but can
->> be extended to individual channels.
->>
->
-> Ooop, I did not realize that it is there as part of sysfs.h. I was 
-> looking for other header to get
-> support for this. I can use this for proximity only but I think I 
-> should go with you other
-> suggestion to implement this on channel basis. This will help also in 
-> future for other
-> drivers to have different sampling on different channel.
-Great!
->> Actually add it to the iio-core as an element in the info_mask as I
->> doubt this will be the last time
->> we see this control. This will need to be a precursor patch to the
->> driver obviously.
->>
->> IIO_CHAN_INFO_SAMP_FREQ and the relevant shared and separate macros need
->> to go in
->> iio.h + the text entry in industrialio-core.c
->>
->> If you like I can do this but it'll be quicker if you do :)
->
-> I will send the patch for implementing this first and then modified 
-> version of my driver which actually uses this one.
-Cool
->
->
-> -- 
-> To unsubscribe from this list: send the line "unsubscribe linux-iio" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+From: Sha Zhengju <handai.szj@taobao.com>
+
+From: Sha Zhengju <handai.szj@taobao.com>
+
+eventfd_ctx->count is an __u64 counter which is allowed to reach ULLONG_MAX.
+Now eventfd_write() add an __u64 value to "count", but kernel side 
+eventfd_signal() only add an int value to it. So make them consistent here.  
+
+Signed-off-by: Sha Zhengju <handai.szj@taobao.com>
+
+---
+ fs/eventfd.c            |    4 ++--
+ include/linux/eventfd.h |    2 +-
+ 2 files changed, 3 insertions(+), 3 deletions(-)
+
+diff --git a/fs/eventfd.c b/fs/eventfd.c
+index dba15fe..9e63e42 100644
+--- a/fs/eventfd.c
++++ b/fs/eventfd.c
+@@ -51,7 +51,7 @@ struct eventfd_ctx {
+  *
+  * -EINVAL    : The value of @n is negative.
+  */
+-int eventfd_signal(struct eventfd_ctx *ctx, int n)
++__u64 eventfd_signal(struct eventfd_ctx *ctx, __u64 n)
+ {
+ 	unsigned long flags;
+ 
+@@ -59,7 +59,7 @@ int eventfd_signal(struct eventfd_ctx *ctx, int n)
+ 		return -EINVAL;
+ 	spin_lock_irqsave(&ctx->wqh.lock, flags);
+ 	if (ULLONG_MAX - ctx->count < n)
+-		n = (int) (ULLONG_MAX - ctx->count);
++		n = ULLONG_MAX - ctx->count;
+ 	ctx->count += n;
+ 	if (waitqueue_active(&ctx->wqh))
+ 		wake_up_locked_poll(&ctx->wqh, POLLIN);
+diff --git a/include/linux/eventfd.h b/include/linux/eventfd.h
+index 91bb4f2..3c3ef19 100644
+--- a/include/linux/eventfd.h
++++ b/include/linux/eventfd.h
+@@ -34,7 +34,7 @@ void eventfd_ctx_put(struct eventfd_ctx *ctx);
+ struct file *eventfd_fget(int fd);
+ struct eventfd_ctx *eventfd_ctx_fdget(int fd);
+ struct eventfd_ctx *eventfd_ctx_fileget(struct file *file);
+-int eventfd_signal(struct eventfd_ctx *ctx, int n);
++__u64 eventfd_signal(struct eventfd_ctx *ctx, __u64 n);
+ ssize_t eventfd_ctx_read(struct eventfd_ctx *ctx, int no_wait, __u64 *cnt);
+ int eventfd_ctx_remove_wait_queue(struct eventfd_ctx *ctx, wait_queue_t *wait,
+ 				  __u64 *cnt);
+-- 
+1.7.4.1
 
