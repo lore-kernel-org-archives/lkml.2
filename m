@@ -1,59 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965897Ab2DLTbw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Apr 2012 15:31:52 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:49085 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934514Ab2DLTbt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Apr 2012 15:31:49 -0400
-Date: Thu, 12 Apr 2012 12:31:47 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Hugh Dickins <hughd@google.com>
-Cc: KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        Alexey Dobriyan <adobriyan@gmail.com>,
-        Cong Wang <xiyou.wangcong@gmail.com>, linux-kernel@vger.kernel.org,
-        Oleg Nesterov <oleg@redhat.com>, Al Viro <viro@zeniv.linux.org.uk>,
-        Vasiliy Kulikov <segoon@openwall.com>,
-        David Rientjes <rientjes@google.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
-        Siddhesh Poyarekar <siddhesh.poyarekar@gmail.com>
-Subject: Re: [PATCH 6/6] proc: use IS_ERR_OR_NULL()
-Message-Id: <20120412123147.1ac34ae0.akpm@linux-foundation.org>
-In-Reply-To: <alpine.LSU.2.00.1204121221420.2379@eggly.anvils>
-References: <1334123976-11681-1-git-send-email-xiyou.wangcong@gmail.com>
-	<1334123976-11681-6-git-send-email-xiyou.wangcong@gmail.com>
-	<CACVxJT_o-mR5u2XgDbECDM-SSR18j+wDY8pd7=Jb+FGCz4SSTQ@mail.gmail.com>
-	<4F872322.8040909@gmail.com>
-	<alpine.LSU.2.00.1204121221420.2379@eggly.anvils>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1762567Ab2DLThP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Apr 2012 15:37:15 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:42357 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754355Ab2DLThO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Apr 2012 15:37:14 -0400
+Message-ID: <4F872ED8.1060608@kernel.org>
+Date: Thu, 12 Apr 2012 12:36:56 -0700
+From: "H. Peter Anvin" <hpa@kernel.org>
+Organization: Linux Kernel Organization, Inc.
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120209 Thunderbird/10.0.1
+MIME-Version: 1.0
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+CC: Andi Kleen <andi@firstfloor.org>, linux-kernel@vger.kernel.org,
+        linux-kbuild@vger.kernel.org, x86@kernel.org,
+        Andi Kleen <ak@linux.intel.com>
+Subject: Re: [PATCH 2/2] Add CONFIG_READABLE_ASM
+References: <1332960678-11879-1-git-send-email-andi@firstfloor.org> <1332960678-11879-2-git-send-email-andi@firstfloor.org> <CAMuHMdVX28zeebzN6277B5p2b=9s-Q06i01o5AHPyXAuKMigGQ@mail.gmail.com>
+In-Reply-To: <CAMuHMdVX28zeebzN6277B5p2b=9s-Q06i01o5AHPyXAuKMigGQ@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 12 Apr 2012 12:26:51 -0700 (PDT)
-Hugh Dickins <hughd@google.com> wrote:
-
-> On Thu, 12 Apr 2012, KOSAKI Motohiro wrote:
-> > (4/12/12 9:23 AM), Alexey Dobriyan wrote:
-> > > On Wed, Apr 11, 2012 at 8:59 AM, Cong Wang<xiyou.wangcong@gmail.com>
-> > > wrote:
-> > > > -       if (mm&&  !IS_ERR(mm)) {
-> > > > +       if (!IS_ERR_OR_NULL(mm)) {
-> > > 
-> > > I personally find original code way more readable.
-> > 
-> > personally, me too. but new one is also acceptable to me.
+On 04/12/2012 12:08 PM, Geert Uytterhoeven wrote:
+> Hi Andi,
 > 
-> That now makes 4 votes that it's not an improvement, with no dissent
-> (unless akpm's + proc-use-is_err_or_null.patch added to -mm tree
-> should be counted as dissent): let's drop this patch.
+> On Wed, Mar 28, 2012 at 20:51, Andi Kleen <andi@firstfloor.org> wrote:
+>> +ifdef CONFIG_READABLE_ASM
+>> +# Disable optimizations that make assembler listings hard to read.
+>> +# reorder blocks reorders the control in the function
+>> +# ipa clone creates specialized cloned functions
+>> +# partial inlining inlines only parts of functions
+>> +KBUILD_CFLAGS += $(call cc-option,-fno-reorder-blocks,) \
+>> +                 $(call cc-option,-fno-ipa-cp-clone,) \
+>> +                 $(call cc-option,-fno-partial-inlining)
+>> +endif
+> 
+> This (now in linux-next) causes m68k/allmodconfig to fail for me:
+> 
+>   CHK     include/linux/version.h
+>   CHK     include/generated/utsrelease.h
+>   CC      kernel/bounds.s
+> cc1: error: unrecognized command line option "-fno-ipa-cp-clone"
+> 
+> Somehow, "$(call cc-option,-fno-ipa-cp-clone,)" doesn't detect that my
+> toolchain (gcc version 4.1.2 20061115 (prerelease) (Ubuntu 4.1.1-21))
+> doesn't support this option.
+> 
+> I tried playing with the trailing comma (why do the first 2 tests have it,
+> and the 3rd one doesn't?), but that didn't make a difference.
+> 
+> linux-next builds (using a newer toolchain) don't show this.
+> 
 
-I think it's OK.  IS_ERR_OR_NULL encapsulates the concept "something
-went wrong".
+Sounds like the fundamental action item is to find out what makes
+cc-option not work.
 
-Not that I'm particularly passionate about it.
+	-hpa
