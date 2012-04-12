@@ -1,62 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933769Ab2DLAE4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Apr 2012 20:04:56 -0400
-Received: from mail-pz0-f52.google.com ([209.85.210.52]:63303 "EHLO
-	mail-pz0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933711Ab2DKXP3 (ORCPT
+	id S933788Ab2DLAFM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Apr 2012 20:05:12 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:63662 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933676Ab2DLAFH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Apr 2012 19:15:29 -0400
-Message-Id: <20120411231020.601054645@linuxfoundation.org>
-User-Agent: quilt/0.60-19.1
-Date: Wed, 11 Apr 2012 16:10:32 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk,
-        Artem Bityutskiy <artem.bityutskiy@linux.intel.com>,
-        David Woodhouse <David.Woodhouse@intel.com>
-Subject: [ 14/78] mtd: doc2001plus: initialize writebufsize
-In-Reply-To: <20120411231102.GA6404@kroah.com>
+	Wed, 11 Apr 2012 20:05:07 -0400
+MIME-Version: 1.0
+In-Reply-To: <1334188257-3449-6-git-send-email-paul.gortmaker@windriver.com>
+References: <1334188257-3449-1-git-send-email-paul.gortmaker@windriver.com> <1334188257-3449-6-git-send-email-paul.gortmaker@windriver.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Wed, 11 Apr 2012 17:04:45 -0700
+X-Google-Sender-Auth: woCwlFzcZ4VjMO6911gs10lp7x0
+Message-ID: <CA+55aFxmpotS+Yw0niuYRq4eqpYjx6=TAvoz8v=NxD3N_7u7qg@mail.gmail.com>
+Subject: Re: [PATCH 5/5] kconfig: limit IS_ENABLED & similar to CPP usage
+To: Paul Gortmaker <paul.gortmaker@windriver.com>
+Cc: linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org,
+        akpm@linux-foundation.org, davem@davemloft.net,
+        tony@bakeyournoodle.com, mmarek@suse.cz, lacombar@gmail.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.3-stable review patch.  If anyone has any objections, please let me know.
+On Wed, Apr 11, 2012 at 4:50 PM, Paul Gortmaker
+<paul.gortmaker@windriver.com> wrote:
+> Using IS_ENABLED() within C (vs. within CPP #if statements) requires
+> us to actually define every possible bool/tristate Kconfig option
+> twice (__enabled_* and __enabled_*_MODULE variants).
 
-------------------
+Why do you keep the __enabled_*[_MODULE] things alive at all?
 
-From: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
+Why can't you just check the CONFIG_xyz[_MODULE] #defines directly?
 
-commit 71f60fbebf0f18dd4e855335a009efda251b1697 upstream.
+IOW, why isn't IS_ENABLED() just
 
-The writebufsize concept was introduce by commit
-"0e4ca7e mtd: add writebufsize field to mtd_info struct" and it represents
-the maximum amount of data the device writes to the media at a time. This is
-an important parameter for UBIFS which is used during recovery and which
-basically defines how big a corruption caused by a power cut can be.
+  #define IS_ENABLED(option) \
+    (defined(CONFIG_##option) || defined(CONFIG_##option##_MODULE))
 
-Set it to be equivalent to mtd->writesize because this is the maximum amount
-of data the driver writes at a time.
+  #define IS_BUILTIN(option) \
+    (defined(CONFIG_##option))
 
-Signed-off-by: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
-Signed-off-by: David Woodhouse <David.Woodhouse@intel.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+and we're done with it all? What's the advantage of the __enabled_
+thing again, when you depend on the preprocessor anyway?
 
----
- drivers/mtd/devices/doc2001plus.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
---- a/drivers/mtd/devices/doc2001plus.c
-+++ b/drivers/mtd/devices/doc2001plus.c
-@@ -467,7 +467,7 @@ void DoCMilPlus_init(struct mtd_info *mt
- 
- 	mtd->type = MTD_NANDFLASH;
- 	mtd->flags = MTD_CAP_NANDFLASH;
--	mtd->writesize = 512;
-+	mtd->writebufsize = mtd->writesize = 512;
- 	mtd->oobsize = 16;
- 	mtd->owner = THIS_MODULE;
- 	mtd->erase = doc_erase;
-
-
+                      Linus
