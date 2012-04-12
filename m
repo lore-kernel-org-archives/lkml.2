@@ -1,66 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761623Ab2DLTIj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Apr 2012 15:08:39 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:61623 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752032Ab2DLTIi convert rfc822-to-8bit (ORCPT
+	id S1755880Ab2DLTNI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Apr 2012 15:13:08 -0400
+Received: from smtp.snhosting.dk ([87.238.248.203]:46471 "EHLO
+	smtp.domainteam.dk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752737Ab2DLTNH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Apr 2012 15:08:38 -0400
+	Thu, 12 Apr 2012 15:13:07 -0400
+Date: Thu, 12 Apr 2012 21:13:04 +0200
+From: Sam Ravnborg <sam@ravnborg.org>
+To: David Miller <davem@davemloft.net>, Michal Marek <mmarek@suse.cz>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Fix modpost failures in fedora 17
+Message-ID: <20120412191304.GA30472@merkur.ravnborg.org>
+References: <20120412.143730.258982831585270742.davem@davemloft.net>
 MIME-Version: 1.0
-In-Reply-To: <1332960678-11879-2-git-send-email-andi@firstfloor.org>
-References: <1332960678-11879-1-git-send-email-andi@firstfloor.org>
-	<1332960678-11879-2-git-send-email-andi@firstfloor.org>
-Date: Thu, 12 Apr 2012 21:08:36 +0200
-X-Google-Sender-Auth: VP7JRfOOvbLnyN3pY1L8vWCbIug
-Message-ID: <CAMuHMdVX28zeebzN6277B5p2b=9s-Q06i01o5AHPyXAuKMigGQ@mail.gmail.com>
-Subject: Re: [PATCH 2/2] Add CONFIG_READABLE_ASM
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: linux-kernel@vger.kernel.org, linux-kbuild@vger.kernel.org, x86@kernel.org,
-        Andi Kleen <ak@linux.intel.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120412.143730.258982831585270742.davem@davemloft.net>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Andi,
+On Thu, Apr 12, 2012 at 02:37:30PM -0400, David Miller wrote:
+> 
+> The symbol table on x86-64 starts to have entries that have names
+> like:
+> 
+> _GLOBAL__sub_I_65535_0___mod_x86cpu_device_table
+> 
+> They are of type STT_FUNCTION and this one had a length of 18.  This
+> matched the device ID validation logic and it barfed because the
+> length did not meet the device type's criteria.
+> 
+> --------------------
+> FATAL: arch/x86/crypto/aesni-intel: sizeof(struct x86cpu_device_id)=16 is not a modulo of the size of section __mod_x86cpu_device_table=18.
+> Fix definition of struct x86cpu_device_id in mod_devicetable.h
+> --------------------
+> 
+> These are some kind of compiler tool internal stuff being emitted and
+> not something we want to inspect in modpost's device ID table
+> validation code.
+> 
+> So skip the symbol if it is not of type STT_OBJECT.
+> 
+> Signed-off-by: David S. Miller <davem@davemloft.net>
+Acked-by: Sam Ravnborg <sam@ravnborg.org>
 
-On Wed, Mar 28, 2012 at 20:51, Andi Kleen <andi@firstfloor.org> wrote:
-> +ifdef CONFIG_READABLE_ASM
-> +# Disable optimizations that make assembler listings hard to read.
-> +# reorder blocks reorders the control in the function
-> +# ipa clone creates specialized cloned functions
-> +# partial inlining inlines only parts of functions
-> +KBUILD_CFLAGS += $(call cc-option,-fno-reorder-blocks,) \
-> +                 $(call cc-option,-fno-ipa-cp-clone,) \
-> +                 $(call cc-option,-fno-partial-inlining)
-> +endif
+I assume this is stable material too?
+In other words we should add:
+Cc: stable@vger.kernel.org
 
-This (now in linux-next) causes m68k/allmodconfig to fail for me:
+Michal - I assume you take this.
 
-  CHK     include/linux/version.h
-  CHK     include/generated/utsrelease.h
-  CC      kernel/bounds.s
-cc1: error: unrecognized command line option "-fno-ipa-cp-clone"
-
-Somehow, "$(call cc-option,-fno-ipa-cp-clone,)" doesn't detect that my
-toolchain (gcc version 4.1.2 20061115 (prerelease) (Ubuntu 4.1.1-21))
-doesn't support this option.
-
-I tried playing with the trailing comma (why do the first 2 tests have it,
-and the 3rd one doesn't?), but that didn't make a difference.
-
-linux-next builds (using a newer toolchain) don't show this.
-
-Gr{oetje,eeting}s,
-
-                        Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
+	Sam
