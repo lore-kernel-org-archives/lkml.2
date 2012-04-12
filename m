@@ -1,63 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965915Ab2DLTyi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Apr 2012 15:54:38 -0400
-Received: from swampdragon.chaosbits.net ([90.184.90.115]:11506 "EHLO
-	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754784Ab2DLTyg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Apr 2012 15:54:36 -0400
-Date: Thu, 12 Apr 2012 21:54:34 +0200 (CEST)
-From: Jesper Juhl <jj@chaosbits.net>
-To: linux-kernel@vger.kernel.org
-cc: alsa-devel@alsa-project.org, Vinod Koul <vinod.koul@linux.intel.com>,
-        Lars-Peter Clausen <lars@metafoo.de>,
-        Brian Austin <brian.austin@cirrus.com>, Axel Lin <axel.lin@gmail.com>,
-        Takashi Iwai <tiwai@suse.de>, Jaroslav Kysela <perex@perex.cz>,
-        Liam Girdwood <lrg@ti.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>, joe@nucleusys.com,
-        brian.austin@cirrus.com
-Subject: [PATCH] ASoC: cs42l73: don't use negative array index
-Message-ID: <alpine.LNX.2.00.1204122152340.7553@swampdragon.chaosbits.net>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1762643Ab2DLT57 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Apr 2012 15:57:59 -0400
+Received: from mga09.intel.com ([134.134.136.24]:56596 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753142Ab2DLT56 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Apr 2012 15:57:58 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
+   d="scan'208";a="128586029"
+Message-ID: <4F8733C5.5080609@linux.intel.com>
+Date: Thu, 12 Apr 2012 12:57:57 -0700
+From: Andi Kleen <ak@linux.intel.com>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 6.1; en-US; rv:1.9.2.15) Gecko/20110303 Thunderbird/3.1.9
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+CC: Sam Ravnborg <sam@ravnborg.org>, Andi Kleen <andi@firstfloor.org>,
+        linux-kernel@vger.kernel.org, linux-kbuild@vger.kernel.org,
+        x86@kernel.org
+Subject: Re: [PATCH 2/2] Add CONFIG_READABLE_ASM
+References: <1332960678-11879-1-git-send-email-andi@firstfloor.org>	<1332960678-11879-2-git-send-email-andi@firstfloor.org>	<CAMuHMdVX28zeebzN6277B5p2b=9s-Q06i01o5AHPyXAuKMigGQ@mail.gmail.com>	<20120412194016.GA30558@merkur.ravnborg.org> <CAMuHMdXfpvprGD18_YYyctfrAk6iRJonWFGFRf9oSaH0u0zfhw@mail.gmail.com>
+In-Reply-To: <CAMuHMdXfpvprGD18_YYyctfrAk6iRJonWFGFRf9oSaH0u0zfhw@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If cs42l73_get_mclkx_coeff() returns < 0 (which it can) in
-sound/soc/codecs/cs42l73.c::cs42l73_set_mclk(), then we'll be using
-the (negative) return value as array index on the very next line of
-code - that's bad.
 
-Catch the negative return value and propagate it to the caller (which
-checks for it) and things are a bit more sane :-)
+>> You should try cc-diasable-warning like this:
+>>
+>> KBUILD_CFLAGS += $(call cc-disable-warning, ipa-cp-clone)
+> That works, thanks!
+> Andi, does it still work as expected for you?
 
-Signed-off-by: Jesper Juhl <jj@chaosbits.net>
----
- sound/soc/codecs/cs42l73.c |    2 ++
- 1 file changed, 2 insertions(+)
+No, unfortunately it doesn't enable the flag with my compiler.
+Also BTW ipa-cp-clone is not a warning, it's an optimization pass.
 
-diff --git a/sound/soc/codecs/cs42l73.c b/sound/soc/codecs/cs42l73.c
-index 78979b3..07c44b7 100644
---- a/sound/soc/codecs/cs42l73.c
-+++ b/sound/soc/codecs/cs42l73.c
-@@ -929,6 +929,8 @@ static int cs42l73_set_mclk(struct snd_soc_dai *dai, unsigned int freq)
- 
- 	/* MCLKX -> MCLK */
- 	mclkx_coeff = cs42l73_get_mclkx_coeff(freq);
-+	if (mclkx_coeff < 0)
-+		return mclkx_coeff;
- 
- 	mclk = cs42l73_mclkx_coeffs[mclkx_coeff].mclkx /
- 		cs42l73_mclkx_coeffs[mclkx_coeff].ratio;
--- 
-1.7.10
+Sam any other ideas?
 
-
--- 
-Jesper Juhl <jj@chaosbits.net>       http://www.chaosbits.net/
-Don't top-post http://www.catb.org/jargon/html/T/top-post.html
-Plain text mails only, please.
+-Andi
 
