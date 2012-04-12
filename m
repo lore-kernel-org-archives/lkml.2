@@ -1,39 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757545Ab2DLKMv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Apr 2012 06:12:51 -0400
-Received: from mga14.intel.com ([143.182.124.37]:62296 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754930Ab2DLKMu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Apr 2012 06:12:50 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="130020148"
-Date: Thu, 12 Apr 2012 13:14:04 +0300
-From: Mika Westerberg <mika.westerberg@linux.intel.com>
-To: Pasi Savanainen <ext-pasi.m.savanainen@nokia.com>
-Cc: linux-kernel@vger.kernel.org, Samuel Ortiz <sameo@linux.intel.com>
-Subject: Re: [PATCH] mfd: Convert Intel MSIC driver to use devm_* interfaces.
-Message-ID: <20120412101404.GD2258@intel.com>
-References: <1334223637-16965-1-git-send-email-ext-pasi.m.savanainen@nokia.com>
+	id S1762495Ab2DLKNg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Apr 2012 06:13:36 -0400
+Received: from mail-wi0-f172.google.com ([209.85.212.172]:43887 "EHLO
+	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756169Ab2DLKNe convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Apr 2012 06:13:34 -0400
+Content-Type: text/plain; charset=utf-8; format=flowed; delsp=yes
+To: "Felipe Balbi" <balbi@ti.com>, "Michal Nazarewicz" <mpn@google.com>
+Cc: "Greg Kroah-Hartman" <gregkh@suse.de>, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] usb: gadget: f_mass_storage: remove deprecated fsg_add()
+References: <1ad5f25435fc5d2cd094ae1c68d7831b8b2737ca.1331896818.git.mina86@mina86.com>
+Date: Thu, 12 Apr 2012 12:13:32 +0200
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1334223637-16965-1-git-send-email-ext-pasi.m.savanainen@nokia.com>
-Organization: Intel Finland Oy - BIC 0357606-4 - PL 281, 00181 Helsinki
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 8BIT
+From: "Michal Nazarewicz" <mina86@mina86.com>
+Message-ID: <op.wcndcuqd3l0zgt@mpn-glaptop>
+In-Reply-To: <1ad5f25435fc5d2cd094ae1c68d7831b8b2737ca.1331896818.git.mina86@mina86.com>
+User-Agent: Opera Mail/11.62 (Linux)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 12, 2012 at 12:40:37PM +0300, Pasi Savanainen wrote:
-> The devm_* functions eliminate the need for manual resource releasing
-> and simplify error handling. Resources allocated by devm_* are freed
-> automatically on driver detach.
-> 
-> Signed-off-by: Pasi Savanainen <ext-pasi.m.savanainen@gmail.com>
-> Cc: Mika Westerberg <mika.westerberg@linux.intel.com>
+On Fri, 16 Mar 2012 12:21:15 +0100, Michal Nazarewicz <mpn@google.com> wrote:
+> From: Michal Nazarewicz <mina86@mina86.com>
+>
+> There are no in-tree fsg_add() users and it has been deprecated
+> since 2.6.35 [1dc90985d1: fsg_add() renamed to fsg_bind_config()] so
+> out-of-tree users had more then enough time to convert.  Removing.
 
-Looks good to me.
+Signed-off-by: Michal Nazarewicz <mina86@mina86.com>
 
-Acked-by: Mika Westerberg <mika.westerberg@linux.intel.com>
+> ---
+>  drivers/usb/gadget/f_mass_storage.c |    7 -------
+>  1 file changed, 7 deletions(-)
+>
+> diff --git a/drivers/usb/gadget/f_mass_storage.c b/drivers/usb/gadget/f_mass_storage.c
+> index a371e96..47383f4 100644
+> --- a/drivers/usb/gadget/f_mass_storage.c
+> +++ b/drivers/usb/gadget/f_mass_storage.c
+> @@ -3110,13 +3110,6 @@ static int fsg_bind_config(struct usb_composite_dev *cdev,
+>  	return rc;
+>  }
+>-static inline int __deprecated __maybe_unused
+> -fsg_add(struct usb_composite_dev *cdev, struct usb_configuration *c,
+> -	struct fsg_common *common)
+> -{
+> -	return fsg_bind_config(cdev, c, common);
+> -}
+> -
+> /************************* Module parameters *************************/
+>
+
+-- 
+Best regards,                                         _     _
+.o. | Liege of Serenely Enlightened Majesty of      o' \,=./ `o
+..o | Computer Science,  Michał “mina86” Nazarewicz    (o o)
+ooo +----<email/xmpp: mpn@google.com>--------------ooO--(_)--Ooo--
