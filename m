@@ -1,64 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934497Ab2DLPmL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Apr 2012 11:42:11 -0400
-Received: from e35.co.us.ibm.com ([32.97.110.153]:47666 "EHLO
-	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934475Ab2DLPmJ (ORCPT
+	id S965478Ab2DLPqz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Apr 2012 11:46:55 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:55488 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756677Ab2DLPqy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Apr 2012 11:42:09 -0400
-Message-ID: <1334245175.18090.40.camel@key-ThinkPad-W510>
-Subject: [PATCH v3 17/17] powerpc: crypto: enable the PFO-based encryption
- device
-From: Kent Yoder <key@linux.vnet.ibm.com>
-To: linux-kernel@vger.kernel.org
-Cc: linux-crypto@vger.kernel.org, rcj@linux.vnet.ibm.com,
-        key@linux.vnet.ibm.com, benh@kernel.crashing.org,
-        linuxppc-dev@lists.ozlabs.org
-Date: Thu, 12 Apr 2012 10:39:35 -0500
-In-Reply-To: <1334242825.18090.4.camel@key-ThinkPad-W510>
-References: <1334242825.18090.4.camel@key-ThinkPad-W510>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2- 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12041215-6148-0000-0000-000004FDE780
+	Thu, 12 Apr 2012 11:46:54 -0400
+Date: Thu, 12 Apr 2012 16:46:50 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Stephen Warren <swarren@nvidia.com>
+Subject: Re: mainline build failure (Was: Re: linux-next: build failure after
+ merge of the regmap tree)
+Message-ID: <20120412154649.GA3195@opensource.wolfsonmicro.com>
+References: <20120411141346.3c4dd8e481d052b583ac95b6@canb.auug.org.au>
+ <20120411081711.GB3163@opensource.wolfsonmicro.com>
+ <20120412080714.1b9fe574b18adebcc8af0ff1@canb.auug.org.au>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="XsQoSWH+UP9D9v3l"
+Content-Disposition: inline
+In-Reply-To: <20120412080714.1b9fe574b18adebcc8af0ff1@canb.auug.org.au>
+X-Cookie: Never give an inch!
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds the cas bits to advertise support for the Platform
-Facilities Option (PFO) based encryption accelerator device. The nx
-device driver provides support for this hardware feature.
 
-Signed-off-by: Kent Yoder <key@linux.vnet.ibm.com>
----
- arch/powerpc/kernel/prom_init.c |    3 ++-
- 1 files changed, 2 insertions(+), 1 deletions(-)
+--XsQoSWH+UP9D9v3l
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-diff --git a/arch/powerpc/kernel/prom_init.c b/arch/powerpc/kernel/prom_init.c
-index 26f6317..604b4c4 100644
---- a/arch/powerpc/kernel/prom_init.c
-+++ b/arch/powerpc/kernel/prom_init.c
-@@ -702,6 +702,7 @@ static void __init early_cmdline_parse(void)
- #endif
- #define OV5_TYPE1_AFFINITY	0x80	/* Type 1 NUMA affinity */
- #define OV5_PFO_HW_RNG		0x80	/* PFO Random Number Generator */
-+#define OV5_PFO_HW_ENCR		0x20	/* PFO Encryption Accelerator */
- 
- /* Option Vector 6: IBM PAPR hints */
- #define OV6_LINUX		0x02	/* Linux is our OS */
-@@ -769,7 +770,7 @@ static unsigned char ibm_architecture_vec[] = {
- 	0,
- 	0,
- 	0,
--	OV5_PFO_HW_RNG,
-+	OV5_PFO_HW_RNG | OV5_PFO_HW_ENCR,
- 
- 	/* option vector 6: IBM PAPR hints */
- 	4 - 2,				/* length */
--- 
-1.7.1
+On Thu, Apr 12, 2012 at 08:07:14AM +1000, Stephen Rothwell wrote:
 
+> So, what is this failure and what configs do you build?  And has a fix
+> been submitted?
 
+It's a build failure in the trace subsystem when perf isn't enabled; I
+submitted a patch as soon as I noticed the issue which was either during
+the merge window or just after -rc1 came out and resubmitted it again
+this week.  In response to the reposting Steven Rostedt said he'd pick
+the fix up but I'm not sure when that'll happen or how long it'll take
+to propagate to mainline, this appears to be one of those areas where
+things get processed in batch mode.
+
+I mainly build an ARM config that I can run usefully on my development
+boards which is mostly built in and a modular x86 config since x86 seems
+to have lots of issues with modular stuff.  I should be able to adjust
+the ARM config to build, I didn't yet mostly because I wasn't expecting
+the issue to be ignored for so long.
+
+--XsQoSWH+UP9D9v3l
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIcBAEBAgAGBQJPhvilAAoJEBus8iNuMP3dXV8P/AnGkqfNAAa518rqX/cYxpLK
+y33EA5J2MrkvzTdtj18nBxKSEr5ZsH6S9TE9Q4BLjHP72DiW9bOkwDd3aAYu/he1
+L/ZzX/whiwXKFdsCNbT+BdI0fTNXpDfYQQ7CJGHdop10NgjpBn63QTmdvjt0J8eE
+Ex9Ug4uLNgpSlqoXChIzJ3vdGiCrQhLUNkZ/dzLuQRFQxfmnM70u8lO7XqX9027f
+V26vO896LfyyeFXSqPw8MqPQrQIV/ptcpJBst9Bfq3Al1xIeTQAlf9zrg4MQI5yS
+q+sgmwb9tbu19Ri8sEjbx5gUg5Y8tRjH6LqQgJBSHTPBhe/KX3bzsIhY6AvkJQis
+VdMTzj1qm03gF/TnAChAWQLmtxOyo4jeNDOQ31Y+F7uYpV4lms3zffibyvsl0GFi
+sqz0FIYNjZA/F0YNjiIqZnL3nIWsYDYQgq13naZxOWaLEsZJRMRo2XAaZ4jD8pCr
+7xfIogNnBlTJ7FQtq674037gDaUBBR9orJqFatiQ0AlTqk5Z7xQzmgQWxdsHWrc5
+xoAk96LSgAdtY5/ybgKqiiQcOv62O2TJnaFl0iZcrlRNhL745LQl8ZBryyU46inj
+25Svc+rwWZnJQ6V3PhZng0zc9KmPZHLrNAudfxWLty6GWl1OD7IRGhT8yr9xP3FH
+4OLl27HdCPa100VcTbWy
+=ls7p
+-----END PGP SIGNATURE-----
+
+--XsQoSWH+UP9D9v3l--
