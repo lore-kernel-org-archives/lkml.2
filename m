@@ -1,76 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933761Ab2DLXBw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Apr 2012 19:01:52 -0400
-Received: from www.linutronix.de ([62.245.132.108]:39057 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932792Ab2DLXBv (ORCPT
+	id S934063Ab2DLXJQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Apr 2012 19:09:16 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:51820 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932792Ab2DLXJO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Apr 2012 19:01:51 -0400
-Date: Fri, 13 Apr 2012 01:01:46 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-cc: Sasikantha Babu <sasikanth.v19@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>
-Subject: Re: [GIT pull] timer fixes for 3.4
-In-Reply-To: <CA+55aFyLYxQgdevFwjwzVrU_B87n5a6P_=9pcWzjKZ0C6RtU5g@mail.gmail.com>
-Message-ID: <alpine.LFD.2.02.1204130058370.2542@ionos>
-References: <alpine.LFD.2.02.1204130004080.2542@ionos> <CA+55aFxg0rzpL-xCqdScxPKPMupbvteoXD1cPT-fWYpyMXoSGg@mail.gmail.com> <alpine.LFD.2.02.1204130022520.2542@ionos> <CA+55aFzP-DmGUqGcnxj2mq-mvmOXA7k-zgOrdDRY3WA9N5dmBg@mail.gmail.com>
- <alpine.LFD.2.02.1204130037060.2542@ionos> <CA+55aFyLYxQgdevFwjwzVrU_B87n5a6P_=9pcWzjKZ0C6RtU5g@mail.gmail.com>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+	Thu, 12 Apr 2012 19:09:14 -0400
+Date: Thu, 12 Apr 2012 16:09:12 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: handai.szj@gmail.com
+Cc: linux-kernel@vger.kernel.org, davidel@xmailserver.org,
+        Sha Zhengju <handai.szj@taobao.com>
+Subject: Re: [PATCH] eventfd: change int to __u64 in eventfd_signal()
+Message-Id: <20120412160912.ee326702.akpm@linux-foundation.org>
+In-Reply-To: <4f86a805.473f440a.2915.0cf3@mx.google.com>
+References: <4f86a805.473f440a.2915.0cf3@mx.google.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 12 Apr 2012, Linus Torvalds wrote:
+On Thu, 12 Apr 2012 18:01:20 +0800
+handai.szj@gmail.com wrote:
 
-> On Thu, Apr 12, 2012 at 3:39 PM, Thomas Gleixner <tglx@linutronix.de> wrote:
-> >>
-> >> That said, would people actually *report* those messages?
-> >>
-> >> In general, for things like this, it's probably better to just make
-> >> the change (especially if you have several distros you can test), and
-> >> then add a printk_once() for the case that changed. Then, if people
-> >
-> > I changed it to a printk_once() already.
+> From: Sha Zhengju <handai.szj@taobao.com>
 > 
-> No, I meant that the whole message should probably have been added
-> when actually changing the semantics.
+> From: Sha Zhengju <handai.szj@taobao.com>
 > 
-> If you have good reason to believe that some ABI change (a) does not
-> actually have any reason to break anything and (b) worth doing, then I
-> think it should just have been done (but during the merge window only,
-> of course).
+> eventfd_ctx->count is an __u64 counter which is allowed to reach ULLONG_MAX.
+> Now eventfd_write() add an __u64 value to "count", but kernel side 
+> eventfd_signal() only add an int value to it. So make them consistent here.  
 > 
-> And if (a) or (b) aren't true, then we're not going to change the ABI
-> at all, so the whole point is moot.
-> 
-> The printk_once (or, for that case WARN_ON_ONCE() may even be
-> worthwhile) would then just be a "oops, we were wrong" kind of
-> message, and would just mean that the commit would be reverted.
-> 
-> I think the whole "let's deprecate this six months into the future" is
-> unnecessary. Yes, it may well be worth doing for something with bigger
-> consequences, but I think that for something like this, it's just
-> overthinking the issue.
-> 
-> If it really is something we want to fix, I think it's much better to
-> just say "let's fix it, and if somebody notices, we'll have to go
-> back". The printk_once or WARN_ON is then just a polite way to avoid
-> having people have to bisect to it etc if it's subtle (and then we
-> would plan to remove *that* later).
+> ...
+>
+> --- a/fs/eventfd.c
+> +++ b/fs/eventfd.c
+> @@ -51,7 +51,7 @@ struct eventfd_ctx {
+>   *
+>   * -EINVAL    : The value of @n is negative.
+>   */
+> -int eventfd_signal(struct eventfd_ctx *ctx, int n)
+> +__u64 eventfd_signal(struct eventfd_ctx *ctx, __u64 n)
+>  {
+>  	unsigned long flags;
+>  
+> @@ -59,7 +59,7 @@ int eventfd_signal(struct eventfd_ctx *ctx, int n)
+>  		return -EINVAL;
+>  	spin_lock_irqsave(&ctx->wqh.lock, flags);
+>  	if (ULLONG_MAX - ctx->count < n)
+> -		n = (int) (ULLONG_MAX - ctx->count);
+> +		n = ULLONG_MAX - ctx->count;
+>  	ctx->count += n;
+>  	if (waitqueue_active(&ctx->wqh))
+>  		wake_up_locked_poll(&ctx->wqh, POLLIN);
 
-Fair enough.
+Changing `n' to an unsigned type makes the "if (n < 0)" test a no-op.
 
-Though last time I tried to do that (IIRC, it was a sanity check on a
-timespec) I was forced to go the deprecation way ....
+Every in-kernel caller of eventfd_signal() passes n=1.  All of them. 
+Perhaps we can just remove that argument and hard-wire the +1
+assumption into eventfd_signal().
 
-Times are changing :)
-
-      tglx
