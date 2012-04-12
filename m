@@ -1,68 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761710Ab2DLBEE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Apr 2012 21:04:04 -0400
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:47872 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757126Ab2DLBEB convert rfc822-to-8bit (ORCPT
+	id S933164Ab2DLBHd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Apr 2012 21:07:33 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:40036 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1761666Ab2DLBHc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Apr 2012 21:04:01 -0400
+	Wed, 11 Apr 2012 21:07:32 -0400
+From: Mike Turquette <mturquette@linaro.org>
+To: <arnd.bergmann@linaro.org>
+CC: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <linaro-dev@lists.linaro.org>, <patches@linaro.org>,
+        Mike Turquette <mturquette@linaro.org>
+Subject: [PATCH 00/13] common clk framework misc fixes
+Date: Wed, 11 Apr 2012 18:02:38 -0700
+Message-ID: <1334192572-12499-1-git-send-email-mturquette@linaro.org>
+X-Mailer: git-send-email 1.7.5.4
 MIME-Version: 1.0
-In-Reply-To: <20120412002927.GA23167@kroah.com>
-References: <20120411231102.GA6404@kroah.com>
-	<CAJyhjX2KrfSJW64PJMTHou9zSojsfA1iNT-WahinfMBce_B=BA@mail.gmail.com>
-	<20120412002927.GA23167@kroah.com>
-Date: Thu, 12 Apr 2012 04:03:59 +0300
-Message-ID: <CAMP44s3Jh-t07A+i82qbAMQyEN0oWTmKk5BJcst942gFdD0=VA@mail.gmail.com>
-Subject: Re: [ 00/78] 3.3.2-stable review
-From: Felipe Contreras <felipe.contreras@gmail.com>
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: Sergio Correia <lists@uece.net>, linux-kernel@vger.kernel.org,
-        stable@vger.kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        linux-wireless Mailing List <linux-wireless@vger.kernel.org>,
-        Sujith Manoharan <c_manoha@qca.qualcomm.com>,
-        "ath9k-devel@lists.ath9k.org" <ath9k-devel@venema.h4ckr.net>,
-        "John W. Linville" <linville@tuxdriver.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 12, 2012 at 3:29 AM, Greg KH <gregkh@linuxfoundation.org> wrote:
-> On Wed, Apr 11, 2012 at 07:59:14PM -0400, Sergio Correia wrote:
->> Hello Greg,
->>
->>
->> On Wed, Apr 11, 2012 at 7:11 PM, Greg KH <gregkh@linuxfoundation.org> wrote:
->> > This is the start of the stable review cycle for the 3.3.2 release.
->> > There are 78 patches in this series, all will be posted as a response
->> > to this one.  If anyone has any issues with these being applied, please
->> > let me know.
->> >
->> > Responses should be made by Fri Apr 13 23:10:16 UTC 2012.
->> > Anything received after that time might be too late.
->> >
->>
->> is there any chance for this one to be included in this review cycle?
->>
->> http://www.spinics.net/lists/linux-wireless/msg87999.html
+This series collects many of the fixes posted for the recently merged
+common clock framework as well as some general clean-up.  Most of the
+code classifies as a clean-up moreso than a bug fix; hopefully this is
+not a problem since the common clk framework is new code pulled for 3.4.
 
-I was going to ask for exactly the same thing. My system is completely
-unusable without this patch; not only does the network doesn't work,
-but quite often the kernel is stuck consuming 100% of the CPU.
+Patches are based on v3.4-rc2 and can be pulled from:
+git://git.linaro.org/people/mturquette/linux.git v3.4-rc2-clk-fixes
 
-> Have you read Documentation/stable_kernel_rules.txt?  Based on that, I
-> don't think it can, yet, right?
+Please let me know I missed any critical fixes that were posted to the
+list already.
 
-Why not? This patch makes the code go back to a previous state, it is
-obviously more stable than the current state, and the code already
-exists in Linus's tree (in previous releases).
+Arnd & Olof, if there are no objections to these changes can this get
+pulled through the arm-soc tree?
 
-But hey, I guess it's OK that 3.3.x is stuck in and endless loop right
-after booting, because rules are more important than fixing obvious
-breakage.
+Thanks,
+Mike
+
+Mark Brown (2):
+  clk: Remove comment for end of CONFIG_COMMON_CLK section
+  clk: Constify parent name arrays
+
+Mike Turquette (6):
+  clk: core: correct clk_set_rate kerneldoc
+  clk: core: remove dead code paths
+  clk: core: clk_calc_new_rates handles NULL parents
+  clk: core: enforce clk_ops consistency
+  clk: core: copy parent_names & return error codes
+  clk: basic: improve parent_names & return errors
+
+Rajendra Nayak (1):
+  clk: Make clk_get_rate() return 0 on error
+
+Shawn Guo (4):
+  clk: use kzalloc in clk_register_mux
+  clk: remove unnecessary EXPORT_SYMBOL_GPL
+  clk: add "const" for clk_ops of basic clks
+  clk: declare clk_ops of basic clks in clk-provider.h
+
+ drivers/clk/clk-divider.c    |   51 +++++++++----
+ drivers/clk/clk-fixed-rate.c |   57 +++++++++------
+ drivers/clk/clk-gate.c       |   53 ++++++++++-----
+ drivers/clk/clk-mux.c        |   16 +++--
+ drivers/clk/clk.c            |  159 ++++++++++++++++++++++++++---------------
+ include/linux/clk-private.h  |   14 +---
+ include/linux/clk-provider.h |   13 ++--
+ include/linux/clk.h          |    2 +-
+ 8 files changed, 230 insertions(+), 135 deletions(-)
 
 -- 
-Felipe Contreras
+1.7.5.4
+
