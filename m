@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762185Ab2DLIKA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Apr 2012 04:10:00 -0400
+	id S1762172Ab2DLIJ6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Apr 2012 04:09:58 -0400
 Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:44101 "EHLO
 	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756515Ab2DLIJ4 (ORCPT
+	by vger.kernel.org with ESMTP id S1762156Ab2DLIJx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Apr 2012 04:09:56 -0400
-Subject: [PATCH 2/2] mm: call complete_vfork_done() after clearing child_tid
- and flushing rss-counters
+	Thu, 12 Apr 2012 04:09:53 -0400
+Subject: [PATCH 1/2] mm: set task exit code before complete_vfork_done()
 To: Andrew Morton <akpm@linux-foundation.org>
 From: Konstantin Khlebnikov <khlebnikov@openvz.org>
 Cc: Hugh Dickins <hughd@google.com>, Oleg Nesterov <oleg@redhat.com>,
         linux-kernel@vger.kernel.org, linux-mm@kvack.org,
         Markus Trippelsdorf <markus@trippelsdorf.de>,
         KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Date: Thu, 12 Apr 2012 12:09:53 +0400
-Message-ID: <20120412080952.26401.2025.stgit@zurg>
+Date: Thu, 12 Apr 2012 12:09:48 +0400
+Message-ID: <20120412080948.26401.23572.stgit@zurg>
 In-Reply-To: <20120409200336.8368.63793.stgit@zurg>
 References: <20120409200336.8368.63793.stgit@zurg>
 User-Agent: StGit/0.15
@@ -27,42 +26,37 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Child should wake ups parent from vfork() only after finishing all operations with
-shared mm. There is no sense to use CLONE_CHILD_CLEARTID together with CLONE_VFORK,
-but it looks more accurate now.
+kthread_stop() uses task->vfork_done for synchronization. The exiting kthread
+shouldn't do complete_vfork_done() until it sets ->exit_code.
+
+fix for mm-correctly-synchronize-rss-counters-at-exit-exec.patch
 
 Signed-off-by: Konstantin Khlebnikov <khlebnikov@openvz.org>
 Cc: Oleg Nesterov <oleg@redhat.com>
 ---
- kernel/fork.c |   10 +++++++---
- 1 file changed, 7 insertions(+), 3 deletions(-)
+ kernel/exit.c |    4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
-diff --git a/kernel/fork.c b/kernel/fork.c
-index 326bb5b..f10ac1d 100644
---- a/kernel/fork.c
-+++ b/kernel/fork.c
-@@ -728,9 +728,6 @@ void mm_release(struct task_struct *tsk, struct mm_struct *mm)
- 	/* Get rid of any cached register state */
- 	deactivate_mm(tsk, mm);
+diff --git a/kernel/exit.c b/kernel/exit.c
+index eb12719..70875a6 100644
+--- a/kernel/exit.c
++++ b/kernel/exit.c
+@@ -960,6 +960,9 @@ void do_exit(long code)
  
--	if (tsk->vfork_done)
--		complete_vfork_done(tsk);
--
- 	/*
- 	 * If we're exiting normally, clear a user-space tid field if
- 	 * requested.  We leave this alone when dying by signal, to leave
-@@ -759,6 +756,13 @@ void mm_release(struct task_struct *tsk, struct mm_struct *mm)
- 	 */
- 	if (mm)
- 		sync_mm_rss(mm);
+ 	acct_update_integrals(tsk);
+ 
++	/* Set exit_code before complete_vfork_done() in mm_release() */
++	tsk->exit_code = code;
 +
-+	/*
-+	 * All done, finally we can wake up parent and return this mm to him.
-+	 * Also kthread_stop() uses this completion for synchronization.
-+	 */
-+	if (tsk->vfork_done)
-+		complete_vfork_done(tsk);
- }
+ 	/* Release mm and sync mm's RSS info before statistics gathering */
+ 	mm_release(tsk, tsk->mm);
  
- /*
+@@ -975,7 +978,6 @@ void do_exit(long code)
+ 		tty_audit_exit();
+ 	audit_free(tsk);
+ 
+-	tsk->exit_code = code;
+ 	taskstats_exit(tsk, group_dead);
+ 
+ 	exit_mm(tsk);
 
