@@ -1,80 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934252Ab2DLNfB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Apr 2012 09:35:01 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:56682 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933154Ab2DLNfA convert rfc822-to-8bit (ORCPT
+	id S934272Ab2DLNfl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Apr 2012 09:35:41 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:13432 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934248Ab2DLNfk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Apr 2012 09:35:00 -0400
-From: "Mohammed, Afzal" <afzal@ti.com>
-To: Greg KH <greg@kroah.com>, "Shilimkar, Santosh" <santosh.shilimkar@ti.com>
-CC: Paul Walmsley <paul@pwsan.com>, "V, Aneesh" <aneesh@ti.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        "mgreer@animalcreek.com" <mgreer@animalcreek.com>,
-        "msalter@redhat.com" <msalter@redhat.com>
-Subject: RE: [PATCH v4 0/7] Add TI EMIF SDRAM controller driver
-Thread-Topic: [PATCH v4 0/7] Add TI EMIF SDRAM controller driver
-Thread-Index: AQHNA78a9lhevdYvxk2HV7vF+jKLg5aWSLeAgAAEfgCAAD9ygIAAQRWAgACIIFA=
-Date: Thu, 12 Apr 2012 13:34:15 +0000
-Message-ID: <C8443D0743D26F4388EA172BF4E2A7A93E95947E@DQHE04.ent.ti.com>
-References: <1331934707-29487-1-git-send-email-aneesh@ti.com>
- <alpine.DEB.2.00.1204112042070.29473@utopia.booyaka.com>
- <20120412030044.GA26236@kroah.com> <4F867A95.9030104@ti.com>
- <20120412131045.GB31384@kroah.com>
-In-Reply-To: <20120412131045.GB31384@kroah.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [172.24.170.142]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	Thu, 12 Apr 2012 09:35:40 -0400
+X-Authority-Analysis: v=2.0 cv=NYRkJh/4 c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=XQbtiDEiEegA:10 a=TWBfIqSxIMQA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=uom53cjYOqZcOOW5bbsA:9 a=PUjeQqilurYA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.80.29
+Message-ID: <1334237738.23924.334.camel@gandalf.stny.rr.com>
+Subject: Re: [PATCH 06/16] sched: SCHED_DEADLINE push and pull logic
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Hillf Danton <dhillf@gmail.com>
+Cc: Juri Lelli <juri.lelli@gmail.com>, peterz@infradead.org,
+        tglx@linutronix.de, mingo@redhat.com, cfriesen@nortel.com,
+        oleg@redhat.com, fweisbec@gmail.com, darren@dvhart.com,
+        johan.eker@ericsson.com, p.faure@akatech.ch,
+        linux-kernel@vger.kernel.org, claudio@evidence.eu.com,
+        michael@amarulasolutions.com, fcheccon@jasper.es
+Date: Thu, 12 Apr 2012 09:35:38 -0400
+In-Reply-To: <CAJd=RBB1_USDhxgHojaQ27xVREz_jV8u-sCzwgmv8W-khtNZNQ@mail.gmail.com>
+References: <1333696481-3433-1-git-send-email-juri.lelli@gmail.com>
+	 <1333696481-3433-7-git-send-email-juri.lelli@gmail.com>
+	 <CAJd=RBBm8yDBrZFj48tP_5WsG=z0Rsv_=j=kArV1Mj6yJvQjVA@mail.gmail.com>
+	 <1334153450.23924.243.camel@gandalf.stny.rr.com>
+	 <CAJd=RBDqsr8aBNxokrb5Rc90RNu41ZRLEJJDdXibf238k2c6oQ@mail.gmail.com>
+	 <1334235109.23924.332.camel@gandalf.stny.rr.com>
+	 <CAJd=RBB1_USDhxgHojaQ27xVREz_jV8u-sCzwgmv8W-khtNZNQ@mail.gmail.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.2.2-1 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Greg,
+On Thu, 2012-04-12 at 20:56 +0800, Hillf Danton wrote:
 
-On Thu, Apr 12, 2012 at 18:40:45, Greg KH wrote:
-> On Thu, Apr 12, 2012 at 12:17:49PM +0530, Santosh Shilimkar wrote:
-> > I was hoping that we will have some thing like drivers/memory/*
-> > but since it doesn't exist, we used drivers/misc.
+> >>       if (2 == dl_nr_migratory + dl_nr_total)
+> >>               rq was not overloaded;
+> >>
+> >>       after enqueuing a deadline task that is not migratory,
+> >
+> > Now rq would be overloaded because:
+> >
+> >        dl_nr_migratory + dl_nr_total == 3
+> >
 > 
-> Why not create it?  I have no objection to that, it makes it more
-> obvious as to what this really is.
+> Which is the current task, and where?
 
-There is another memory controller used in a few TI SoCs,
-namely GPMC [1], do you prefer having it too there.
+More riddles?
 
-As of now it is not a driver, platform code handles GPMC, a patch
-series for converting it into a driver (but still residing in
-platform folder) was sent a few days back [2,3].
+The current task is the one executing on the CPU.
 
+-- Steve
 
-Regards
-Afzal
-
-[1]
-GPMC (General Purpose Memory Controller) in brief:
-GPMC is an unified memory controller dedicated to interfacing external
-memory devices like
- Asynchronous SRAM like memories and application specific integrated circuit devices.
- Asynchronous, synchronous, and page mode burst NOR flash devices NAND flash
- Pseudo-SRAM devices
-
-GPMC has to be configured as required by timings of the connected
-peripheral. It needs to be configured only initially. Once it is
-configured it can be used to handle different protocols like NAND,
-NOR. Various kinds of devices like ethernet, uart, usb, fpga etc
-can work using GPMC interface. GPMC has a seperate additional
-functionality of NAND handling
-
-[2] https://lkml.org/lkml/2012/4/5/210
-[3] https://lkml.org/lkml/2012/4/5/212
+> 
+> >
+> >>
+> >>       if (current task is not preempted)
+> >>               rq remains not overloaded;
+> >
+> > s/not//
+> >
+> >>
+> >>       else if (current task is not pushed out) {
+> >>               if (rq is not overloaded)
+> >>                       maintenance of overloaded is __corrupted__;
+> >>       }
+> >>
+> >> btw, same behavior in RTS?
+> >
+> > I still don't understand what you are saying.
+> >
+> > I can see your scenario happening with the change you are suggesting
+> > though.
+> >
+> > -- Steve
+> >
+> >
 
 
