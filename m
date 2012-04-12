@@ -1,79 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762785Ab2DLUv5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Apr 2012 16:51:57 -0400
-Received: from mail-pz0-f52.google.com ([209.85.210.52]:59308 "EHLO
-	mail-pz0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753510Ab2DLUvz (ORCPT
+	id S1762792Ab2DLUwn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Apr 2012 16:52:43 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:50948 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753510Ab2DLUwl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Apr 2012 16:51:55 -0400
-Date: Thu, 12 Apr 2012 13:51:48 -0700
-From: Tejun Heo <tj@kernel.org>
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: Jan Kara <jack@suse.cz>, Fengguang Wu <fengguang.wu@intel.com>,
-        Jens Axboe <axboe@kernel.dk>, linux-mm@kvack.org, sjayaraman@suse.com,
-        andrea@betterlinux.com, jmoyer@redhat.com,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        kamezawa.hiroyu@jp.fujitsu.com, lizefan@huawei.com,
-        containers@lists.linux-foundation.org, cgroups@vger.kernel.org,
-        ctalbott@google.com, rni@google.com, lsf@lists.linux-foundation.org
-Subject: Re: [RFC] writeback and cgroup
-Message-ID: <20120412205148.GA24056@google.com>
-References: <20120403183655.GA23106@dhcp-172-17-108-109.mtv.corp.google.com>
- <20120404145134.GC12676@redhat.com>
- <20120407080027.GA2584@quack.suse.cz>
- <20120410180653.GJ21801@redhat.com>
- <20120410210505.GE4936@quack.suse.cz>
- <20120410212041.GP21801@redhat.com>
- <20120410222425.GF4936@quack.suse.cz>
- <20120411154005.GD16692@redhat.com>
- <20120411192231.GF16008@quack.suse.cz>
- <20120412203719.GL2207@redhat.com>
+	Thu, 12 Apr 2012 16:52:41 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120412203719.GL2207@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <CAN628AH-h=G3e7U8-Tmcok0dtAQd1+GBfvTP72ecB5J17vuXcg@mail.gmail.com>
+References: <CAN628AH-h=G3e7U8-Tmcok0dtAQd1+GBfvTP72ecB5J17vuXcg@mail.gmail.com>
+Date: Thu, 12 Apr 2012 21:52:41 +0100
+Message-ID: <CAN628AGOe7V77bqLTXUTExbNGzkWHQ=X01pQLPGvAwKpf33fXg@mail.gmail.com>
+Subject: Re: [PATCH] Add VMUFAT file system support (v2)
+From: Adrian McMenamin <lkmladrian@gmail.com>
+To: viro@zeniv.linux.org.uk, LKML <linux-kernel@vger.kernel.org>,
+        linux-fsdevel@vger.kernel.org
+Cc: Linux-sh <linux-sh@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Vivek.
+On 24 March 2012 16:55, Adrian McMenamin <lkmladrian@gmail.com> wrote:
+> Sega Dreamcasts come with a "visual memory unit" (VMU) with 128KB of
+> flash memory in a FAT type filesystem. This patch adds support for
+> this filesystem to the Linux kernel.
+>
+> Signed-off-by: Adrian McMenamin <adrianmcmenamin@gmail.com>
+> ---
+>
 
-On Thu, Apr 12, 2012 at 04:37:19PM -0400, Vivek Goyal wrote:
-> I mean how are we supposed to put cgroup throttling rules using cgroup
-> interface for network filesystems and for btrfs global bdi. Using "dev_t"
-> associated with bdi? I see that all the bdi's are showing up in
-> /sys/class/bdi, but how do I know which one I am intereste in or which
-> one belongs to filesystem I am interestd in putting throttling rule on.
-> 
-> For block devices, we simply use "major:min limit" format to write to
-> a cgroup file and this configuration will sit in one of the per queue
-> per cgroup data structure.
-> 
-> I am assuming that when you say throttling should happen at bdi, you
-> are thinking of maintaining per cgroup per bdi data structures and user
-> is somehow supposed to pass "bdi_maj:bdi_min  limit" through cgroup files?
-> If yes, how does one map a filesystem's bdi we want to put rules on?
+Thought I should give this a bump as nobody has responded. Any
+comments gratefully received.
 
-I think you're worrying way too much.  One of the biggest reasons we
-have layers and abstractions is to avoid worrying about everything
-from everywhere.  Let block device implement per-device limits.  Let
-writeback work from the backpressure it gets from the relevant IO
-channel, bdi-cgroup combination in this case.
-
-For stacked or combined devices, let the combining layer deal with
-piping the congestion information.  If it's per-file split, the
-combined bdi can simply forward information from the matching
-underlying device.  If the file is striped / duplicated somehow, the
-*only* layer which knows what to do is and should be the layer
-performing the striping and duplication.  There's no need to worry
-about it from blkcg and if you get the layering correct it isn't
-difficult to slice such logic inbetween.  In fact, most of it
-(backpressure propagation) would just happen as part of the usual
-buffering between layers.
-
-Thanks.
-
--- 
-tejun
+Adrian
