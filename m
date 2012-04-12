@@ -1,95 +1,421 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750953Ab2DLEA1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Apr 2012 00:00:27 -0400
-Received: from mailout1.w1.samsung.com ([210.118.77.11]:29787 "EHLO
-	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750699Ab2DLEAY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Apr 2012 00:00:24 -0400
-Date: Thu, 12 Apr 2012 08:00:19 +0400
-From: Alexander Nikiforov <a.nikiforov@samsung.com>
-Subject: Re: [RFD] Merge task counter into memcg
-In-reply-to: <20120411185715.GA4317@somewhere.redhat.com>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Hugh Dickins <hughd@google.com>, Johannes Weiner <hannes@cmpxchg.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Glauber Costa <glommer@parallels.com>, Tejun Heo <tj@kernel.org>,
-        Daniel Walsh <dwalsh@redhat.com>,
-        "Daniel P. Berrange" <berrange@redhat.com>,
-        Li Zefan <lizf@cn.fujitsu.com>, LKML <linux-kernel@vger.kernel.org>,
-        Cgroups <cgroups@vger.kernel.org>,
-        Containers <containers@lists.linux-foundation.org>
-Message-id: <4F865353.8080106@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=ISO-8859-1; format=flowed
-Content-transfer-encoding: 7BIT
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:11.0) Gecko/20120329
- Thunderbird/11.0.1
-References: <20120411185715.GA4317@somewhere.redhat.com>
+	id S1751052Ab2DLEBw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Apr 2012 00:01:52 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:53843 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750710Ab2DLEBu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Apr 2012 00:01:50 -0400
+Date: Thu, 12 Apr 2012 06:00:59 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Andrew Morton <akpm@linux-foundation.org>,
+        David Howells <dhowells@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Cc: David Smith <dsmith@redhat.com>, "Frank Ch. Eigler" <fche@redhat.com>,
+        Larry Woodman <lwoodman@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>, Tejun Heo <tj@kernel.org>,
+        linux-kernel@vger.kernel.org
+Subject: hlist_for_each_entry && pos (Was: task_work_queue)
+Message-ID: <20120412040059.GA20462@redhat.com>
+References: <20120412024751.GA17561@redhat.com> <20120412024810.GA17984@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120412024810.GA17984@redhat.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/11/2012 10:57 PM, Frederic Weisbecker wrote:
-> Hi,
+On 04/12, Oleg Nesterov wrote:
 >
-> While talking with Tejun about targetting the cgroup task counter subsystem
-> for the next merge window, he suggested to check if this could be merged into
-> the memcg subsystem rather than creating a new one cgroup subsystem just
-> for task count limit purpose.
->
-> So I'm pinging you guys to seek your insight.
->
-> I assume not everybody in the Cc list knows what the task counter subsystem
-> is all about. So here is a summary: this is a cgroup subsystem (latest version
-> in https://lwn.net/Articles/478631/) that keeps track of the number of tasks
-> present in a cgroup. Hooks are set in task fork/exit and cgroup migration to
-> maintain this accounting visible to a special tasks.usage file. The user can
-> set a limit on the number of tasks by writing on the tasks.limit file.
-> Further forks or cgroup migration are then rejected if the limit is exceeded.
->
-> This feature is especially useful to protect against forkbombs in containers.
-> Or more generally to limit the resources on the number of tasks on a cgroup
-> as it involves some kernel memory allocation.
->
-> Now the dilemna is how to implement it?
->
-> 1) As a standalone subsystem, as it stands currently (https://lwn.net/Articles/478631/)
->
-> 2) As a feature in memcg, part of the memory.kmem.* files. This makes sense
-> because this is about kernel memory allocation limitation. We could have a
-> memory.kmem.tasks.count
->
-> My personal opinion is that the task counter brings some overhead: a charge
-> across the whole hierarchy at every fork, and the mirrored uncharge on task exit.
-> And this overhead happens even in the off-case (when the task counter susbsystem
-> is mounted but the limit is the default: ULLONG_MAX).
->
-> So if we choose the second solution, this overhead will be added unconditionally
-> to memcg.
-> But I don't expect every users of memcg will need the task counter. So perhaps
-> the overhead should be kept in its own separate subsystem.
->
-> OTOH memory.kmem.* interface would have be a good fit.
->
-> What do you think?
-> --
-> To unsubscribe from this list: send the line "unsubscribe cgroups" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->
+> +	hlist_for_each_entry(twork, pos, &task->task_works, hlist) {
 
-Hi,
+This reminds me.
 
-I'm agree that this is memory related thing, but I prefer this as a 
-separate subsystem.
-Yes it has some impact on a system, but on the other hand we will have 
-some very useful tool to track tasks state.
-As I wrote before
+hlist_for_each_entry_*() do not need "pos", it can be
 
-http://comments.gmane.org/gmane.linux.kernel.cgroups/1448
+	#define hlist_for_each_entry(pos, head, member)					\
+		for (pos = (void*)(head)->first;					\
+		pos && ({ pos = hlist_entry((void*)pos, typeof(*pos), member); 1; });	\
+		pos = (void*)(pos)->member.next)
 
-it'll very useful to have event in the userspace about fork/exit about 
-group of the processes.
+The only problem, is there any possibility to change the callers
+somehow??? I even wrote the script which converts them all, but the
+patch is huge.
+
+Please see the old (2008-04-21) message I sent to lkml below, today
+the diffstat is even "worse":
+
+	152 files changed, 611 insertions(+), 906 deletions(-)
+
+and the patch size is 242k.
+
+No? we can't?
+
+-------------------------------------------------------------------------------
+[PATCH 0.01/1] hlist_for_each_entry_xxx: kill the "pos" argument
+
+(The actual patch is huge, 116K, I'll send it offline. This email contains
+ the chunk for list.h only).
+
+COMPILE TESTED ONLY (make allyesconfig).
+
+All hlist_for_each_entry_xxx() macros require the "pos" argument, which is not
+actually needed and can be removed. See the changes in include/linux/list.h
+(note that hlist_for_each_entry_safe() now does prefetch() too).
+
+Now we should convert the callers somehow. Unfortunately, this is not always
+easy. Consider this code for example:
+
+	{
+		struct hlist_node *tmp1, *tmp2;
+
+		hlist_for_each_entry(pos, tmp1, head,mem)
+			do_something(pos);
+
+		hlist_for_each_entry(pos, tmp2, head,mem)
+			use(tmp2);
+	}
+
+The first hlist_for_each_entry is easy, but the second can't be converted
+automatically because "tmp2" is used.
+
+So, this patch
+
+	- copies these macros to "obsolete" __hlist_for_each_entry_xxx()
+
+	- changes hlist_for_each_entry_xxxx() to avoid the "struct hlist_nod*"
+
+	- converts the rest of the kernel to use either new or old macros
+
+For example, the patch for the code above is
+
+	 {
+	-	struct hlist_node *tmp1, *tmp2;
+	+	struct hlist_node *tmp2;
+	 
+	-	hlist_for_each_entry(pos, tmp1, head,mem)
+	+	hlist_for_each_entry(pos, head,mem)
+			do_something(pos);
+	 
+	-	hlist_for_each_entry(pos, tmp2, head,mem)
+	+	__hlist_for_each_entry(pos, tmp2, head,mem)
+			use(tmp2);
+	 }
+
+I believe it is very easy to convert the users of the obsolete macros, but
+this needs separate patches.
+
+Except for changes in include/linux/list.h the patch was generated by this
+script:
+
+	#!/usr/bin/perl -w
+	use strict;
+
+	my ($N_CNT, $O_CNT, @SRC, $CTXT, @CTXT);
+
+	sub say { printf STDERR "%4d: %s.\n", $., "@_" }
+
+	sub var { return $_->{$_[0]} || next for @CTXT }
+
+	sub parse_line
+	{
+		if (ord == ord '{') {
+			unshift @CTXT, $CTXT = {
+				-v_list => \@{$CTXT->{-v_list}},
+				-v_rexp =>    $CTXT->{-v_rexp},
+			};
+		}
+		elsif (ord == ord '}') {
+			say "WARN! unmatched '}'" unless $CTXT;
+
+			while (my ($v, $c) = each %$CTXT) {
+				my $trim = ord $v != ord '-' &&
+					!$c->{used} && $c->{trim} || next;
+
+				for my $tr (@$trim) {
+					substr($_, $tr->[1], 2, ''),
+					substr($_, $tr->[2], $tr->[3], '')
+						for $SRC[$tr->[0]];
+					$N_CNT++;
+				}
+
+				for ($SRC[$c->{decl}]) {
+					s/\* \s* $v \b (?: \s* , \s*)?//x || die;
+					s/,\s*(?=;)//; s/\bstruct\s+hlist_node\s*;//;
+					$_ = '' if /^\s*\\?\s*$/;
+				}
+			}
+			shift @CTXT; $CTXT = $CTXT[0];
+		}
+		elsif ($CTXT && /\b struct \s+ hlist_node \b ([^;]+)/x) {
+			my $v_list = $CTXT->{-v_list};
+			for (split /,/, $1) {
+				/^\s* \* (\w+) \s* \z/x or next;
+				$CTXT->{$1} = { decl => 0+@SRC };
+				push @$v_list, $1;
+			}
+			$CTXT->{-v_rexp} = qr/\b(@{[join '|', @$v_list]})\b/
+				if @$v_list;
+		}
+		elsif (/\b hlist_for_each_entry (?:_continue|_from|_safe|_rcu)? \b/xg) {
+			my $u = length $`;
+			if (/\G \s* \( .+? (, \s* (\w+) \s*)/x) {
+				my $tr = [0+@SRC, $u, $-[1], length $1];
+				if (my $v = var $2) { push @{$v->{trim}}, $tr; }
+			} else {
+				say "suspicious usage of hlist_for_each_entry_xxx()";
+			}
+			substr $_, $u, 0, '__';
+			$O_CNT++;
+		}
+		elsif (my $re = $CTXT && $CTXT->{-v_rexp}) {
+			var($1)->{used}++ while /$re/g;
+		}
+
+		push @SRC, $_;
+	}
+
+	sub diff_file
+	{
+		my $file = $_;
+		warn "====> $file ...\n";
+		($N_CNT, $O_CNT, @SRC, $CTXT, @CTXT) = 0;
+
+		open my $fd, '<', $file or die;
+		while (<$fd>) {
+			my $comm = s/(\/\*.*)//s && $1;
+			parse_line for split /([{}])/, $_, -1;
+			while ($comm) {
+				push @SRC, $comm;
+				$comm = $comm !~ /\*\// && <$fd>;
+			}
+		}
+
+		warn "WARN! unmatched '{'\n" if $CTXT;
+		return warn "WARN! not changed\n" unless $O_CNT;
+		warn "stat: $N_CNT from $O_CNT\n";
+
+		open my $diff, "|diff -up --label a/$file $file --label b/$file -";
+		print $diff @SRC;
+	}
+
+
+	@ARGV || die "usage: $0 path_to_kernel || list_of_files\n";
+
+	if (-d $ARGV[0]) {
+		chdir $ARGV[0] || die "ERR!! can't cd to $ARGV[0]\n";
+		warn "grep ...\n";
+		@ARGV = sort grep {
+			chomp; s/^\.\///; $_ ne 'include/linux/list.h';
+		} qx{grep --include='*.[ch]' -rle '\\bhlist_for_each_entry' .};
+	}
+
+	diff_file for @ARGV;
+
+(it open files readonly, so can be used safely)
+
+Signed-off-by: Oleg Nesterov <oleg@tv-sign.ru>
+
+ arch/arm/kernel/kprobes.c            |    6 +--
+ arch/ia64/kernel/kprobes.c           |    8 ++--
+ arch/powerpc/kernel/kprobes.c        |    6 +--
+ arch/s390/kernel/kprobes.c           |    6 +--
+ arch/sparc64/kernel/kprobes.c        |    6 +--
+ arch/sparc64/kernel/ldc.c            |    3 -
+ arch/x86/kernel/kprobes.c            |    6 +--
+ arch/x86/kvm/mmu.c                   |   20 ++++------
+ block/cfq-iosched.c                  |    3 -
+ block/elevator.c                     |    4 +-
+ crypto/algapi.c                      |    6 +--
+ drivers/infiniband/core/cma.c        |    3 -
+ drivers/infiniband/core/fmr_pool.c   |    3 -
+ drivers/md/raid5.c                   |    6 +--
+ drivers/net/macvlan.c                |    6 +--
+ drivers/net/pppol2tp.c               |    6 +--
+ drivers/net/sunvnet.c                |    3 -
+ drivers/net/wireless/zd1201.c        |    7 +--
+ fs/dcache.c                          |    3 -
+ fs/ecryptfs/messaging.c              |    5 +-
+ fs/fat/inode.c                       |    3 -
+ fs/gfs2/glock.c                      |    6 +--
+ fs/lockd/host.c                      |   17 +++------
+ fs/lockd/svcsubs.c                   |    7 +--
+ fs/nfsd/nfscache.c                   |    3 -
+ fs/ocfs2/dlm/dlmdebug.c              |    3 -
+ fs/ocfs2/dlm/dlmrecovery.c           |    6 +--
+ fs/xfs/xfs_inode.c                   |    3 -
+ include/linux/pci.h                  |    3 -
+ include/linux/pid.h                  |    3 -
+ include/net/ax25.h                   |    4 +-
+ include/net/inet_hashtables.h        |    2 -
+ include/net/inet_timewait_sock.h     |    6 +--
+ include/net/netrom.h                 |    8 ++--
+ include/net/sctp/sctp.h              |    2 -
+ include/net/sock.h                   |   10 ++---
+ kernel/kprobes.c                     |   36 ++++++++-----------
+ kernel/marker.c                      |   15 ++------
+ kernel/pid.c                         |    3 -
+ kernel/sched.c                       |    6 +--
+ kernel/user.c                        |    3 -
+ net/8021q/vlan.c                     |    3 -
+ net/9p/error.c                       |    2 -
+ net/atm/lec.c                        |   64 +++++++++++++++--------------------
+ net/ax25/ax25_iface.c                |    3 -
+ net/bridge/br_fdb.c                  |   17 +++------
+ net/can/af_can.c                     |   21 +++++------
+ net/can/proc.c                       |    6 +--
+ net/decnet/dn_table.c                |   13 ++-----
+ net/ipv4/fib_frontend.c              |   11 ++----
+ net/ipv4/fib_hash.c                  |   30 ++++++----------
+ net/ipv4/fib_semantics.c             |   23 ++++--------
+ net/ipv4/fib_trie.c                  |   25 ++++---------
+ net/ipv4/inet_fragment.c             |   10 ++---
+ net/ipv4/netfilter/nf_nat_core.c     |    3 -
+ net/ipv6/addrlabel.c                 |   14 +++----
+ net/ipv6/ip6_fib.c                   |    9 +---
+ net/ipv6/xfrm6_tunnel.c              |   12 ++----
+ net/netfilter/nf_conntrack_core.c    |   18 +++------
+ net/netfilter/nf_conntrack_expect.c  |   12 ++----
+ net/netfilter/nf_conntrack_helper.c  |   14 +++----
+ net/netfilter/nf_conntrack_netlink.c |   12 ++----
+ net/netfilter/nfnetlink_log.c        |    7 +--
+ net/netfilter/nfnetlink_queue.c      |   10 ++---
+ net/netfilter/xt_RATEEST.c           |    3 -
+ net/netfilter/xt_hashlimit.c         |   13 ++-----
+ net/sched/sch_htb.c                  |    9 +---
+ net/sunrpc/auth.c                    |    5 +-
+ net/sunrpc/svcauth.c                 |    3 -
+ net/tipc/name_table.c                |    8 +---
+ net/xfrm/xfrm_policy.c               |   53 ++++++++++++----------------
+ net/xfrm/xfrm_state.c                |   43 ++++++++---------------
+ 72 files changed, 302 insertions(+), 439 deletions(-)
+
+--- HL/include/linux/list.h~HLIST	2007-10-25 16:22:12.000000000 +0400
++++ HL/include/linux/list.h	2008-04-21 17:17:44.000000000 +0400
+@@ -926,58 +926,54 @@ static inline void hlist_add_after_rcu(s
+ 
+ /**
+  * hlist_for_each_entry	- iterate over list of given type
+- * @tpos:	the type * to use as a loop cursor.
+- * @pos:	the &struct hlist_node to use as a loop cursor.
++ * @pos:	the type * to use as a loop cursor.
+  * @head:	the head for your list.
+  * @member:	the name of the hlist_node within the struct.
+  */
+-#define hlist_for_each_entry(tpos, pos, head, member)			 \
+-	for (pos = (head)->first;					 \
+-	     pos && ({ prefetch(pos->next); 1;}) &&			 \
+-		({ tpos = hlist_entry(pos, typeof(*tpos), member); 1;}); \
+-	     pos = pos->next)
++#define hlist_for_each_entry(pos, head, member)				\
++	for (pos = (void*)(head)->first; pos && ({			\
++		prefetch(((struct hlist_node*)pos)->next);		\
++		pos = hlist_entry((void*)pos, typeof(*pos), member); 1;	\
++	     }); pos = (void*)(pos)->member.next)
+ 
+ /**
+  * hlist_for_each_entry_continue - iterate over a hlist continuing after current point
+- * @tpos:	the type * to use as a loop cursor.
+- * @pos:	the &struct hlist_node to use as a loop cursor.
++ * @pos:	the type * to use as a loop cursor.
+  * @member:	the name of the hlist_node within the struct.
+  */
+-#define hlist_for_each_entry_continue(tpos, pos, member)		 \
+-	for (pos = (pos)->next;						 \
+-	     pos && ({ prefetch(pos->next); 1;}) &&			 \
+-		({ tpos = hlist_entry(pos, typeof(*tpos), member); 1;}); \
+-	     pos = pos->next)
++#define hlist_for_each_entry_continue(pos, member)			\
++	for (; (pos = (void*)(pos)->member.next) && ({			\
++		prefetch(((struct hlist_node*)pos)->next);		\
++		pos = hlist_entry((void*)pos, typeof(*pos), member); 1;	\
++	     }); )
+ 
+ /**
+  * hlist_for_each_entry_from - iterate over a hlist continuing from current point
+- * @tpos:	the type * to use as a loop cursor.
+- * @pos:	the &struct hlist_node to use as a loop cursor.
++ * @pos:	the type * to use as a loop cursor.
+  * @member:	the name of the hlist_node within the struct.
+  */
+-#define hlist_for_each_entry_from(tpos, pos, member)			 \
+-	for (; pos && ({ prefetch(pos->next); 1;}) &&			 \
+-		({ tpos = hlist_entry(pos, typeof(*tpos), member); 1;}); \
+-	     pos = pos->next)
++#define hlist_for_each_entry_from(pos, member)				\
++	for (pos = pos ? (void*)&(pos)->member.next : pos; pos && ({	\
++		prefetch(((struct hlist_node*)pos)->next);		\
++		pos = hlist_entry((void*)pos, typeof(*pos), member); 1;	\
++	     }); pos = (void*)(pos)->member.next)
+ 
+ /**
+  * hlist_for_each_entry_safe - iterate over list of given type safe against removal of list entry
+- * @tpos:	the type * to use as a loop cursor.
+- * @pos:	the &struct hlist_node to use as a loop cursor.
++ * @pos:	the type * to use as a loop cursor.
+  * @n:		another &struct hlist_node to use as temporary storage
+  * @head:	the head for your list.
+  * @member:	the name of the hlist_node within the struct.
+  */
+-#define hlist_for_each_entry_safe(tpos, pos, n, head, member) 		 \
+-	for (pos = (head)->first;					 \
+-	     pos && ({ n = pos->next; 1; }) && 				 \
+-		({ tpos = hlist_entry(pos, typeof(*tpos), member); 1;}); \
+-	     pos = n)
++#define hlist_for_each_entry_safe(pos, n, head, member)			\
++	for (pos = (void*)(head)->first; pos && ({			\
++		n = ((struct hlist_node*)pos)->next; prefetch(n);	\
++		pos = hlist_entry((void*)pos, typeof(*pos), member); 1;	\
++	     }); pos = (void*)n)
+ 
+ /**
+  * hlist_for_each_entry_rcu - iterate over rcu list of given type
+- * @tpos:	the type * to use as a loop cursor.
+- * @pos:	the &struct hlist_node to use as a loop cursor.
++ * @pos:	the type * to use as a loop cursor.
+  * @head:	the head for your list.
+  * @member:	the name of the hlist_node within the struct.
+  *
+@@ -985,7 +981,38 @@ static inline void hlist_add_after_rcu(s
+  * the _rcu list-mutation primitives such as hlist_add_head_rcu()
+  * as long as the traversal is guarded by rcu_read_lock().
+  */
+-#define hlist_for_each_entry_rcu(tpos, pos, head, member)		 \
++#define hlist_for_each_entry_rcu(pos, head, member)			\
++	for (pos = (void*)(head)->first; rcu_dereference(pos) && ({	\
++		prefetch(((struct hlist_node*)pos)->next);		\
++		pos = hlist_entry((void*)pos, typeof(*pos), member); 1;	\
++	     }); pos = (void*)(pos)->member.next)
++
++/* -------- Obsolete, to be removed soon, do not use -------- */
++
++#define __hlist_for_each_entry(tpos, pos, head, member)			 \
++	for (pos = (head)->first;					 \
++	     pos && ({ prefetch(pos->next); 1;}) &&			 \
++		({ tpos = hlist_entry(pos, typeof(*tpos), member); 1;}); \
++	     pos = pos->next)
++
++#define __hlist_for_each_entry_continue(tpos, pos, member)		 \
++	for (pos = (pos)->next;						 \
++	     pos && ({ prefetch(pos->next); 1;}) &&			 \
++		({ tpos = hlist_entry(pos, typeof(*tpos), member); 1;}); \
++	     pos = pos->next)
++
++#define __hlist_for_each_entry_from(tpos, pos, member)			 \
++	for (; pos && ({ prefetch(pos->next); 1;}) &&			 \
++		({ tpos = hlist_entry(pos, typeof(*tpos), member); 1;}); \
++	     pos = pos->next)
++
++#define __hlist_for_each_entry_safe(tpos, pos, n, head, member) 	 \
++	for (pos = (head)->first;					 \
++	     pos && ({ n = pos->next; 1; }) && 				 \
++		({ tpos = hlist_entry(pos, typeof(*tpos), member); 1;}); \
++	     pos = n)
++
++#define __hlist_for_each_entry_rcu(tpos, pos, head, member)		 \
+ 	for (pos = (head)->first;					 \
+ 	     rcu_dereference(pos) && ({ prefetch(pos->next); 1;}) &&	 \
+ 		({ tpos = hlist_entry(pos, typeof(*tpos), member); 1;}); \
+
