@@ -1,125 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761528Ab2DLRnX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Apr 2012 13:43:23 -0400
-Received: from gir.skynet.ie ([193.1.99.77]:50400 "EHLO gir.skynet.ie"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756704Ab2DLRnW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Apr 2012 13:43:22 -0400
-Date: Thu, 12 Apr 2012 18:43:20 +0100 (IST)
-From: Dave Airlie <airlied@linux.ie>
-X-X-Sender: airlied@skynet.skynet.ie
-To: torvalds@linux-foundation.org
-cc: DRI mailing list <dri-devel@lists.freedesktop.org>,
-        linux-kernel@vger.kernel.org
-Subject: [git pull] drm fixes
-Message-ID: <alpine.DEB.2.00.1204121803130.3905@skynet.skynet.ie>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	id S933351Ab2DLRrH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Apr 2012 13:47:07 -0400
+Received: from mail1.windriver.com ([147.11.146.13]:47398 "EHLO
+	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757847Ab2DLRrF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Apr 2012 13:47:05 -0400
+Message-ID: <4F8714F5.1050605@windriver.com>
+Date: Thu, 12 Apr 2012 13:46:29 -0400
+From: Paul Gortmaker <paul.gortmaker@windriver.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.28) Gecko/20120313 Thunderbird/3.1.20
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: <linux-kbuild@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <akpm@linux-foundation.org>, <davem@davemloft.net>,
+        <tony@bakeyournoodle.com>, <mmarek@suse.cz>, <lacombar@gmail.com>
+Subject: Re: [PATCH 5/5] kconfig: limit IS_ENABLED & similar to CPP usage
+References: <1334188257-3449-1-git-send-email-paul.gortmaker@windriver.com> <1334188257-3449-6-git-send-email-paul.gortmaker@windriver.com> <CA+55aFxmpotS+Yw0niuYRq4eqpYjx6=TAvoz8v=NxD3N_7u7qg@mail.gmail.com>
+In-Reply-To: <CA+55aFxmpotS+Yw0niuYRq4eqpYjx6=TAvoz8v=NxD3N_7u7qg@mail.gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [128.224.146.65]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 12-04-11 08:04 PM, Linus Torvalds wrote:
+> On Wed, Apr 11, 2012 at 4:50 PM, Paul Gortmaker
+> <paul.gortmaker@windriver.com> wrote:
+>> Using IS_ENABLED() within C (vs. within CPP #if statements) requires
+>> us to actually define every possible bool/tristate Kconfig option
+>> twice (__enabled_* and __enabled_*_MODULE variants).
+> 
+> Why do you keep the __enabled_*[_MODULE] things alive at all?
 
-Hi Linus,
+Good point.  Clearly I wasn't aggressive enough in my shitectomy.
+Testing with no __enabled_* stuff now.  That reduces the line
+count even more, which is nice.
 
-mostly exynos and intel,
+I've not auto-prefixed the CONFIG_ though, since that seems to break
+the grep use case.
 
-intel has 3 regression fixers (more info in intel merge commit), along 
-with some other make hw work fixes,
-exynos has some cleanups and an ioctl fix
+P.
 
-couple of radeon fixes, couple of build fixes, and a savage userspace 
-interface possible overflow fix.
-
-Dave.
-
-The following changes since commit 258f742635360175564e9470eb060ff4d4b984e7:
-
-  modpost: Fix modpost license checking of vmlinux.o (2012-04-09 20:52:56 -0700)
-
-are available in the git repository at:
-  git://people.freedesktop.org/~airlied/linux drm-fixes
-
-Alex Deucher (2):
-      drm/radeon/kms: fix DVO setup on some r4xx chips
-      drm/radeon: only add the mm i2c bus if the hw_i2c module param is set
-
-Arnd Bergmann (1):
-      drm/radeon: replace udelay with mdelay for long timeouts
-
-Chris Wilson (2):
-      drm/i915: Finish any pending operations on the framebuffer before disabling
-      drm/i915/ringbuffer: Exclude last 2 cachlines of ring on 845g
-
-Daniel Vetter (4):
-      drm/i915: properly compute dp dithering for user-created modes
-      Revert "drm/i915: reenable gmbus on gen3+ again"
-      drm/i915: implement ColorBlt w/a
-      drm/i915: clear fencing tracking state when retiring requests
-
-Dave Airlie (2):
-      Merge branch 'drm-intel-fixes' of git://people.freedesktop.org/~danvet/drm-intel into drm-intel-fixes
-      Merge branch 'exynos-drm-fixes' of git://git.infradead.org/users/kmpark/linux-samsung into drm-intel-fixes
-
-Inki Dae (3):
-      drm/exynos: fixed page align and code clean.
-      drm/exynos: fixed duplicated page allocation bug.
-      drm/exynos: fixed exynos broken ioctl
-
-Jesse Barnes (1):
-      drm/i915: make rc6 module parameter read-only
-
-Joonyoung Shim (6):
-      drm/exynos: remove unnecessary type conversion of hdmi and mixer
-      drm/exynos: remove unused codes in hdmi and mixer
-      drm/exynos: rename s/HDMI_OVERLAY_NUMBER/MIXER_WIN_NR
-      drm/exynos: use define instead of default_win member in struct mixer_context
-      drm/exynos: fix struct for operation callback functions to driver name
-      drm/exynos: fix to pointer manager member of struct exynos_drm_subdrv
-
-Randy Dunlap (1):
-      vgaarb.h: fix build warnings
-
-Seung-Woo Kim (1):
-      drm/exynos: add format list of plane
-
-Xi Wang (1):
-      drm/savage: fix integer overflows in savage_bci_cmdbuf()
-
-acreese (1):
-      drm/i915: Removed IVB forced enable of sprite dest key.
-
- drivers/gpu/drm/exynos/exynos_drm_buf.c         |   47 +++-------
- drivers/gpu/drm/exynos/exynos_drm_core.c        |   14 ++--
- drivers/gpu/drm/exynos/exynos_drm_drv.h         |   10 +-
- drivers/gpu/drm/exynos/exynos_drm_fimd.c        |   20 +++--
- drivers/gpu/drm/exynos/exynos_drm_gem.c         |   45 ++++++++--
- drivers/gpu/drm/exynos/exynos_drm_gem.h         |    2 +
- drivers/gpu/drm/exynos/exynos_drm_hdmi.c        |  107 ++++++++++-------------
- drivers/gpu/drm/exynos/exynos_drm_hdmi.h        |   23 ++---
- drivers/gpu/drm/exynos/exynos_drm_plane.c       |    4 +
- drivers/gpu/drm/exynos/exynos_drm_vidi.c        |   20 +++--
- drivers/gpu/drm/exynos/exynos_hdmi.c            |   42 ++++-----
- drivers/gpu/drm/exynos/exynos_mixer.c           |   40 ++++-----
- drivers/gpu/drm/i915/i915_drv.c                 |    2 +-
- drivers/gpu/drm/i915/i915_gem.c                 |    2 +
- drivers/gpu/drm/i915/i915_reg.h                 |    3 +
- drivers/gpu/drm/i915/intel_display.c            |   69 +++++++++++----
- drivers/gpu/drm/i915/intel_dp.c                 |   49 ++++++++---
- drivers/gpu/drm/i915/intel_i2c.c                |    2 +-
- drivers/gpu/drm/i915/intel_ringbuffer.c         |    2 +-
- drivers/gpu/drm/i915/intel_sprite.c             |    1 -
- drivers/gpu/drm/radeon/atombios_encoders.c      |    4 +
- drivers/gpu/drm/radeon/r100.c                   |    2 +-
- drivers/gpu/drm/radeon/r600.c                   |    2 +-
- drivers/gpu/drm/radeon/r600_cp.c                |    6 +-
- drivers/gpu/drm/radeon/radeon_clocks.c          |   24 +++---
- drivers/gpu/drm/radeon/radeon_combios.c         |    8 +-
- drivers/gpu/drm/radeon/radeon_i2c.c             |    4 +
- drivers/gpu/drm/radeon/radeon_legacy_encoders.c |   12 ++--
- drivers/gpu/drm/savage/savage_state.c           |    6 +-
- include/drm/exynos_drm.h                        |    5 +-
- include/linux/vgaarb.h                          |    2 +
- 31 files changed, 325 insertions(+), 254 deletions(-)
+> 
+> Why can't you just check the CONFIG_xyz[_MODULE] #defines directly?
+> 
+> IOW, why isn't IS_ENABLED() just
+> 
+>   #define IS_ENABLED(option) \
+>     (defined(CONFIG_##option) || defined(CONFIG_##option##_MODULE))
+> 
+>   #define IS_BUILTIN(option) \
+>     (defined(CONFIG_##option))
+> 
+> and we're done with it all? What's the advantage of the __enabled_
+> thing again, when you depend on the preprocessor anyway?
+> 
+>                       Linus
