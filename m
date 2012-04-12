@@ -1,183 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757146Ab2DLNCg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Apr 2012 09:02:36 -0400
-Received: from mail9.hitachi.co.jp ([133.145.228.44]:35206 "EHLO
-	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753178Ab2DLNCf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Apr 2012 09:02:35 -0400
-X-AuditID: b753bd60-9bfabba000002f45-4d-4f86d26724b6
-X-AuditID: b753bd60-9bfabba000002f45-4d-4f86d26724b6
-Message-ID: <4F86D264.9020004@hitachi.com>
-Date: Thu, 12 Apr 2012 22:02:28 +0900
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Organization: Hitachi, Ltd., Japan
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:11.0) Gecko/20120327 Thunderbird/11.0.1
+	id S934103Ab2DLND3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Apr 2012 09:03:29 -0400
+Received: from mail.mev.co.uk ([62.49.15.74]:41507 "EHLO mail.mev.co.uk"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756590Ab2DLND2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Apr 2012 09:03:28 -0400
+Message-ID: <4F86D294.3050108@mev.co.uk>
+Date: Thu, 12 Apr 2012 14:03:16 +0100
+From: Ian Abbott <abbotti@mev.co.uk>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120330 Thunderbird/11.0.1
 MIME-Version: 1.0
-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
-        LKML <linux-kernel@vger.kernel.org>, Linux-mm <linux-mm@kvack.org>,
-        Oleg Nesterov <oleg@redhat.com>, Andi Kleen <andi@firstfloor.org>,
-        Christoph Hellwig <hch@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Anton Arapov <anton@redhat.com>
-Subject: Re: [PATCH UPDATED 3/3] tracing: Provide trace events interface
- for uprobes
-References: <20120409091133.8343.65289.sendpatchset@srdronam.in.ibm.com> <20120409091154.8343.50489.sendpatchset@srdronam.in.ibm.com> <20120411103043.GB29437@linux.vnet.ibm.com>
-In-Reply-To: <20120411103043.GB29437@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Greg KH <gregkh@linuxfoundation.org>
+CC: Ian Abbott <ian.abbott@mev.co.uk>,
+        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
+        Gerard Snitselaar <dev@snitselaar.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "fmhess@users.sourceforge.net" <fmhess@users.sourceforge.net>
+Subject: Re: [PATCH v2] staging: comedi: resolve section mismatch in s626
+References: <1332123921-14347-1-git-send-email-dev@snitselaar.org> <20120319030925.GB22956@perelman.Home> <20120319163103.GC3694@kroah.com> <20120319164325.GA31833@perelman.Home> <20120319224649.GA7679@perelman.Home> <20120319232656.GB6386@kroah.com> <4F798416.8040709@mev.co.uk> <20120410182438.GB2052@kroah.com>
+In-Reply-To: <20120410182438.GB2052@kroah.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
 Content-Transfer-Encoding: 7bit
-X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2012/04/11 19:30), Srikar Dronamraju wrote:
-> From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-> 
-> Implements trace_event support for uprobes. In its current form it can
-> be used to put probes at a specified offset in a file and dump the
-> required registers when the code flow reaches the probed address.
-> 
-> The following example shows how to dump the instruction pointer and %ax
-> a register at the probed text address.  Here we are trying to probe
-> zfree in /bin/zsh
-> 
-> # cd /sys/kernel/debug/tracing/
-> # cat /proc/`pgrep  zsh`/maps | grep /bin/zsh | grep r-xp
-> 00400000-0048a000 r-xp 00000000 08:03 130904 /bin/zsh
-> # objdump -T /bin/zsh | grep -w zfree
-> 0000000000446420 g    DF .text  0000000000000012  Base        zfree
-> # echo 'p /bin/zsh:0x46420 %ip %ax' > uprobe_events
-> # cat uprobe_events
-> p:uprobes/p_zsh_0x46420 /bin/zsh:0x0000000000046420
-> # echo 1 > events/uprobes/enable
-> # sleep 20
-> # echo 0 > events/uprobes/enable
-> # cat trace
-> # tracer: nop
-> #
-> #           TASK-PID    CPU#    TIMESTAMP  FUNCTION
-> #              | |       |          |         |
->              zsh-24842 [006] 258544.995456: p_zsh_0x46420: (0x446420) arg1=446421 arg2=79
->              zsh-24842 [007] 258545.000270: p_zsh_0x46420: (0x446420) arg1=446421 arg2=79
->              zsh-24842 [002] 258545.043929: p_zsh_0x46420: (0x446420) arg1=446421 arg2=79
->              zsh-24842 [004] 258547.046129: p_zsh_0x46420: (0x446420) arg1=446421 arg2=79
-> 
-> Signed-off-by: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-> ---
-> 
-> Changelog (since v9)
-> - Handle comments from Steven Rostedt about uprobe tracer documentation.
-> - Disable preemption while in perf handler as suggested by Jiri Olsa.
-> 
-> Changelog (since v5)
-> - Added uprobe tracer documentation to this patch.
-> 
->  Documentation/trace/uprobetracer.txt |   95 ++++
->  arch/Kconfig                         |    2 
->  kernel/trace/Kconfig                 |   16 +
->  kernel/trace/Makefile                |    1 
->  kernel/trace/trace.h                 |    5 
->  kernel/trace/trace_kprobe.c          |    2 
->  kernel/trace/trace_probe.c           |   14 -
->  kernel/trace/trace_probe.h           |    3 
->  kernel/trace/trace_uprobe.c          |  788 ++++++++++++++++++++++++++++++++++
->  9 files changed, 919 insertions(+), 7 deletions(-)
->  create mode 100644 Documentation/trace/uprobetracer.txt
->  create mode 100644 kernel/trace/trace_uprobe.c
-> 
-> diff --git a/Documentation/trace/uprobetracer.txt b/Documentation/trace/uprobetracer.txt
-> new file mode 100644
-> index 0000000..eae40a0
-> --- /dev/null
-> +++ b/Documentation/trace/uprobetracer.txt
-> @@ -0,0 +1,95 @@
-> +		Uprobe-tracer: Uprobe-based Event Tracing
-> +		=========================================
-> +                 Documentation written by Srikar Dronamraju
-> +
-> +Overview
-> +--------
-> +Uprobe based trace events are similar to kprobe based trace events.
-> +To enable this feature, build your kernel with CONFIG_UPROBE_EVENTS=y.
-> +
-> +Similar to the kprobe-event tracer, this doesn't need to be activated via
-> +current_tracer. Instead of that, add probe points via
-> +/sys/kernel/debug/tracing/uprobe_events, and enable it via
-> +/sys/kernel/debug/tracing/events/uprobes/<EVENT>/enabled.
-> +
-> +However unlike kprobe-event tracer, the uprobe event interface expects the
-> +user to calculate the offset of the probepoint in the object
-> +
-> +Synopsis of uprobe_tracer
-> +-------------------------
-> +  p[:[GRP/]EVENT] PATH:SYMBOL[+offs] [FETCHARGS]	: Set a probe
-> +
-> + GRP		: Group name. If omitted, use "uprobes" for it.
-> + EVENT		: Event name. If omitted, the event name is generated
-> +		  based on SYMBOL+offs.
-> + PATH		: path to an executable or a library.
-> + SYMBOL[+offs]	: Symbol+offset where the probe is inserted.
-> +
-> + FETCHARGS	: Arguments. Each probe can have up to 128 args.
-> +  %REG		: Fetch register REG
-> +
-> +Event Profiling
-> +---------------
-> + You can check the total number of probe hits and probe miss-hits via
-> +/sys/kernel/debug/tracing/uprobe_profile.
-> + The first column is event name, the second is the number of probe hits,
-> +the third is the number of probe miss-hits.
-> +
-> +Usage examples
-> +--------------
-> +To add a probe as a new event, write a new definition to uprobe_events
-> +as below.
-> +
-> +  echo 'p: /bin/bash:0x4245c0' > /sys/kernel/debug/tracing/uprobe_events
-> +
-> + This sets a uprobe at an offset of 0x4245c0 in the executable /bin/bash
-> +
-> +  echo > /sys/kernel/debug/tracing/uprobe_events
-> +
-> + This clears all probe points.
-> +
-> +The following example shows how to dump the instruction pointer and %ax
-> +a register at the probed text address.  Here we are trying to probe
-> +function zfree in /bin/zsh
-> +
-> +    # cd /sys/kernel/debug/tracing/
-> +    # cat /proc/`pgrep  zsh`/maps | grep /bin/zsh | grep r-xp
-> +    00400000-0048a000 r-xp 00000000 08:03 130904 /bin/zsh
-> +    # objdump -T /bin/zsh | grep -w zfree
-> +    0000000000446420 g    DF .text  0000000000000012  Base        zfree
-> +
-> +0x46420 is the offset of zfree in object /bin/zsh that is loaded at
-> +0x00400000. Hence the command to probe would be :
-> +
-> +    # echo 'p /bin/zsh:0x46420 %ip %ax' > uprobe_events
-> +
-> +Please note: User has to explicitly calculate the offset of the probepoint
-> +in the object. We can see the events that are registered by looking at the
-> +uprobe_events file.
-> +
-> +    # cat uprobe_events
-> +    p:uprobes/p_zsh_0x46420 /bin/zsh:0x0000000000046420
+On 2012/04/10 07:24 PM, Greg KH wrote:
+> On Mon, Apr 02, 2012 at 11:48:54AM +0100, Ian Abbott wrote:
+>> On 2012-03-19 23:26, Greg KH wrote:
+>>> On Mon, Mar 19, 2012 at 03:46:49PM -0700, Gerard Snitselaar wrote:
+>>>> I looked at this a bit more. It looks like they lose visibility to the
+>>>> pci_dev structure.
+>>>>
+>>>> *_probe()
+>>>>    comedi_pci_auto_config()     pci_dev
+>>>>       comedi_auto_config()      pci_dev->dev
+>>>>          comedi_device_attach() ??
+>>>>             driv->attach()      ??<= iterate through pci devices.
+>>>>
+>>>> Most of the examples I have looked at so far use for_each_pci_dev() to
+>>>> find the device, and s626 shortcuts it a bit by directly making calls
+>>>> to pci_get_subsys() with specific ids. They all verify they have the
+>>>> right device by checking the bus and slot that are grabbed from the
+>>>> pci_dev in comedi_pci_auto_config() and passed down.
+>>>
+>>> Ugh, surely there's a way to keep the pci dev through the
+>>> comedi_device_attach() call, right?
+>>
+>> comedi_device_attach() is also called for the COMEDI_DEVCONFIG ioctl
+>> for "manually" configuring a comedi device, and that has no idea
+>> about struct pci_dev, etc.
+>>
+>> I recently posted a series of patches that allows lower-level comedi
+>> drivers to supply separate hooks for auto-configuring PCI devices or
+>> USB devices without abusing the old "manual configuration" code
+>> paths, see <http://driverdev.linuxdriverproject.org/pipermail/devel/2012-March/025331.html>.
+>>
+>> The old loop that searches the PCI bus is still needed for the
+>> "manual configuration" code path.
+>
+> So, now that I've applied your patches, this patch isn't needed anymore,
+> right?  Or should it be reworked to use the new interfaces?
 
-Doesn't uprobe_events show the arguments of existing events?
-And also, could you add an event format of above event here?
+I think it's still needed as that the comedi_driver->attach() hook is 
+still needed to support manual configuration by the COMEDI_DEVCONFIG 
+ioctl, and the existing code really shouldn't be looking in 
+s626_pci_table[] as it's tagged __devinitconst.
 
-Thank you,
+I never saw any mismatched section warnings when I compiled a linux-next 
+kernel on my system with a full set of comedi drivers, even with 
+CONFIG_DEBUG_SECTION_MISMATCH configured.  I'm not sure why not, unless 
+it has something to do with me building the kernel with a separate build 
+directory.
+
+The new comedi_driver->attach_pci() hook should be implemented for this
+driver as well, and it's on my "todo" list (in my head!).
 
 -- 
-Masami HIRAMATSU
-Software Platform Research Dept. Linux Technology Center
-Hitachi, Ltd., Yokohama Research Laboratory
-E-mail: masami.hiramatsu.pt@hitachi.com
+-=( Ian Abbott @ MEV Ltd.    E-mail: <abbotti@mev.co.uk>             )=-
+-=( Tel: +44 (0)161 477 1898   FAX: +44 (0)161 718 3587              )=-
