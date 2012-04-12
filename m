@@ -1,42 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756496Ab2DLFZc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Apr 2012 01:25:32 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:51000 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755869Ab2DLFZb (ORCPT
+	id S1756526Ab2DLF2b (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Apr 2012 01:28:31 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:47375 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756194Ab2DLF2a (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Apr 2012 01:25:31 -0400
-Date: Thu, 12 Apr 2012 07:25:20 +0200
-From: Richard Cochran <richardcochran@gmail.com>
-To: Marc Kleine-Budde <mkl@blackshift.org>
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Imre Kaloz <kaloz@openwrt.org>, Krzysztof Halasa <khc@pm.waw.pl>,
-        Marc Kleine-Budde <mkl@pengutronix.de>,
-        Russell King <linux@arm.linux.org.uk>
-Subject: Re: [PATCH 1/2] ARM: ixp4xx: fix compilation, add gpiolib support
-Message-ID: <20120412052518.GA3260@netboy.at.omicron.at>
-References: <1328729069-21308-1-git-send-email-mkl@blackshift.org>
- <1328729069-21308-2-git-send-email-mkl@blackshift.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1328729069-21308-2-git-send-email-mkl@blackshift.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Thu, 12 Apr 2012 01:28:30 -0400
+Message-ID: <1334208502.15182.0.camel@phoenix>
+Subject: regulator: core: Don't dereference config->dev before NULL checking
+ for config
+From: Axel Lin <axel.lin@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Dan Carpenter <dan.carpenter@oracle.com>, Liam Girdwood <lrg@ti.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Date: Thu, 12 Apr 2012 13:28:22 +0800
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2- 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 08, 2012 at 08:24:28PM +0100, Marc Kleine-Budde wrote:
-> From: Imre Kaloz <kaloz@openwrt.org>
-> 
-> The problem was introduced with commit:
-> "eb9ae7f gpio: fix build error in include/asm-generic/gpio.h"
-> 
-> This patch adds gpiolib support for the IXP4xx platform, which fixes the
-> compilation of several ixp4xx platforms, e.g.:
+Reported-by: Dan Carpenter <dan.carpenter@oracle.com>
+Signed-off-by: Axel Lin <axel.lin@gmail.com>
+---
+ drivers/regulator/core.c |    3 ++-
+ 1 files changed, 2 insertions(+), 1 deletions(-)
 
-Sorry to nag, but is someone going to take this patch?
+diff --git a/drivers/regulator/core.c b/drivers/regulator/core.c
+index 1bd71a8..bf46034 100644
+--- a/drivers/regulator/core.c
++++ b/drivers/regulator/core.c
+@@ -2853,7 +2853,7 @@ regulator_register(const struct regulator_desc *regulator_desc,
+ 	const struct regulator_init_data *init_data;
+ 	static atomic_t regulator_no = ATOMIC_INIT(0);
+ 	struct regulator_dev *rdev;
+-	struct device *dev = config->dev;
++	struct device *dev;
+ 	int ret, i;
+ 	const char *supply = NULL;
+ 
+@@ -2883,6 +2883,7 @@ regulator_register(const struct regulator_desc *regulator_desc,
+ 		return ERR_PTR(-EINVAL);
+ 	}
+ 
++	dev = config->dev;
+ 	init_data = config->init_data;
+ 
+ 	rdev = kzalloc(sizeof(struct regulator_dev), GFP_KERNEL);
+-- 
+1.7.5.4
 
-Thanks,
-Richard
+
+
