@@ -1,98 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966035Ab2DLVde (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Apr 2012 17:33:34 -0400
-Received: from moutng.kundenserver.de ([212.227.126.186]:62150 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1762860Ab2DLVdb (ORCPT
+	id S1762868Ab2DLVee (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Apr 2012 17:34:34 -0400
+Received: from mail-wg0-f42.google.com ([74.125.82.42]:50225 "EHLO
+	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751049Ab2DLVec (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Apr 2012 17:33:31 -0400
-Date: Thu, 12 Apr 2012 23:33:28 +0200 (CEST)
-From: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
-X-X-Sender: lyakh@axis700.grange
-To: Linus Walleij <linus.walleij@linaro.org>
-cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Vinod Koul <vinod.koul@intel.com>, linux-kernel@vger.kernel.org,
-        Jassi Brar <jassisinghbrar@gmail.com>,
-        Magnus Damm <magnus.damm@gmail.com>, Paul Mundt <lethal@linux-sh.org>
-Subject: Re: [PATCH/RFC] dmaengine: add a slave parameter to __dma_request_channel()
-In-Reply-To: <CACRpkdbjNqsWvv_0roFLGm_uzVFCOfeaek65=bxiUhU3XQXwKA@mail.gmail.com>
-Message-ID: <Pine.LNX.4.64.1204122325580.15801@axis700.grange>
-References: <Pine.LNX.4.64.1203091022200.7852@axis700.grange>
- <1331285959.4657.76.camel@vkoul-udesk3> <Pine.LNX.4.64.1203091049060.7852@axis700.grange>
- <1331520476.4657.79.camel@vkoul-udesk3> <Pine.LNX.4.64.1203161029490.13465@axis700.grange>
- <CACRpkdYiuERV08=UhBRnj2AjC_RxF+EY+zHAtEp6KYf2W10C_Q@mail.gmail.com>
- <Pine.LNX.4.64.1203161128120.13465@axis700.grange>
- <CACRpkdY7ApBc-gbSdf+=7PLtKSMvzYuBi7RNnVgi=vjcd-KvhQ@mail.gmail.com>
- <Pine.LNX.4.64.1203161522570.13465@axis700.grange>
- <CACRpkdbp3EfF-4z2uuy+gLdXvHqUqj+Zmp-GZxhaHv_RxxRKHQ@mail.gmail.com>
- <20120330103828.GC22981@n2100.arm.linux.org.uk>
- <CACRpkdbjNqsWvv_0roFLGm_uzVFCOfeaek65=bxiUhU3XQXwKA@mail.gmail.com>
+	Thu, 12 Apr 2012 17:34:32 -0400
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Provags-ID: V02:K0:SJ6L9C53VGUZ+Iz4OoUY1uSp+LhWjtJDHgALQ2yr5T8
- S6NjBry0OmTjn4PRvvool5Y8GH1a/KPXYWiXc5cUYKdjNDPEDl
- RvXz9FdmM7Z7AcaFFRaWJIYfqTV7APVLmSZoVpkdES/ggN+THv
- JRmqWfENn5BCT/MPQpcz3g2tRncmrbTLveLol30ejiLk34vG/N
- 3rfl7QRsxx69gys5XGpyDQ/57yLd1sN8jTLfpZ1rimocYHVfRJ
- TkqF9XevzA+6w3eKEDhtw62QucwEUkHfMVu6sAaU8vntkNb/Qy
- nLI/SjNAjDnRW+Y17s3F6t7eIPcUcVZ3huFiTD9FD2jM0kN4hK
- mRizo0Sulnh1Al65SFp9O5tU7IP6AYi7uvhihFMiiamNWhngrb
- GGMlBL1NNJoXw==
+In-Reply-To: <CAMP44s14SQont1wyMeOuWcXUT3U5Tgnoj9mbbgOdVXY_hN0+-w@mail.gmail.com>
+References: <20120411231102.GA6404@kroah.com> <CAJyhjX2KrfSJW64PJMTHou9zSojsfA1iNT-WahinfMBce_B=BA@mail.gmail.com>
+ <20120412002927.GA23167@kroah.com> <CAMP44s3Jh-t07A+i82qbAMQyEN0oWTmKk5BJcst942gFdD0=VA@mail.gmail.com>
+ <20120412011313.GA23764@kroah.com> <CAMP44s2q+bQE3-zsX4bs=sQDt4jf8eE5bwZ8V88UjodjRyAjog@mail.gmail.com>
+ <20120412144626.GA14868@kroah.com> <CAMP44s1T4EVwpzDuV_vV0Zh-5WcPCwdw9eeOfL17Geqp_UFN-Q@mail.gmail.com>
+ <CA+55aFwKYYgZcBX=L-q_6UdvkvFai+yjzgVxq7cA+HLL-Zojhw@mail.gmail.com> <CAMP44s14SQont1wyMeOuWcXUT3U5Tgnoj9mbbgOdVXY_hN0+-w@mail.gmail.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Thu, 12 Apr 2012 14:34:10 -0700
+X-Google-Sender-Auth: qvgIErl_t7u2M18ITuiDFXafp6A
+Message-ID: <CA+55aFyLEJsz1yvu4bYe+RHdhLd-XXEScxtAgje=fyuUM+1XxA@mail.gmail.com>
+Subject: Re: [ 00/78] 3.3.2-stable review
+To: Felipe Contreras <felipe.contreras@gmail.com>
+Cc: Greg KH <gregkh@linuxfoundation.org>, Sergio Correia <lists@uece.net>,
+        linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+        linux-wireless Mailing List <linux-wireless@vger.kernel.org>,
+        Sujith Manoharan <c_manoha@qca.qualcomm.com>,
+        "ath9k-devel@lists.ath9k.org" <ath9k-devel@venema.h4ckr.net>,
+        "John W. Linville" <linville@tuxdriver.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 3 Apr 2012, Linus Walleij wrote:
+On Thu, Apr 12, 2012 at 2:20 PM, Felipe Contreras
+<felipe.contreras@gmail.com> wrote:
+>
+> I could argue in favor of exceptions, but I don't think you realize
+> the fact that this change does not affect your tree *at all*. Adding
+> and removing a patch in the stable tree is a no-op.
 
-> On Fri, Mar 30, 2012 at 12:38 PM, Russell King - ARM Linux
-> <linux@arm.linux.org.uk> wrote:
-> 
-> > Actually, I think that's the key thing: the handshake lines should be
-> > the data involved in channel selection and nothing else - though as I've
-> > pointed out already, there's the complication for external MUXing between
-> > the DMA engine and the peripheral which makes that non-trivial.
-> 
-> I think you're onto something here, and it sounds it could be made
-> elegant to me.
+You're a fucking moron.
 
-Now, how do we proceed from here? Do I understand it right, that Russell 
-would like to implement his ideas? Any idea when this is likely to happen? 
-If not too soon, maybe we could / should work out an intermediate 
-solution? How about, for example: I resubmit my patch, but don't claim it 
-for general use, rather keep it sh-own (even though the generic part will 
-have no hardware-specific code in it). Then we can implement both sh 
-driver on top of that. Of course, the dubious use of the struct 
-dma_chan::private field will remain. But it is there now anyway, so, this 
-will not introduce any new uses of .private or extend the existing one. 
-And once we have a generic way to request specific DMA channels, we'll 
-switch the shdma driver(s) to it too.
+It's not a no-op at all, and you don't seem to understand it.
 
-Thanks
-Guennadi
+It's *information*.
 
-> 
-> As for muxed request signals, we would need to hook in some
-> cascading framework if we want it all generic.
-> 
-> On the Nomadik 8815 (which I now have up and running)
-> the system has two PL080 instances, each with 16 channels.
-> However the same request lines are *partly* routed to *both*
-> PL080 instances. This would be one of the things we could
-> solve with a line-oriented approach, say we have this set
-> of DMA lines, and then defined a group of lines per
-> DMAC instance, then by stating that this device has this
-> request line we can infer the suitable DMA slave engines
-> and select one with a free channel to run the transfer.
-> 
-> It does require some upfront code, but I'm sure it can be
-> made to work.
-> 
-> Yours,
-> Linus Walleij
-> 
+It's "that patch didn't work". That's not a no-op. That's actual
+useful and worthwhile knowledge.
 
----
-Guennadi Liakhovetski, Ph.D.
-Freelance Open-Source Software Developer
-http://www.open-technology.de/
+To quote Thomas Edison: "I have not failed. I've just found 10,000
+ways that won't work."
+
+So just reverting it from stable, *WITHOUT LEARNING THE LESSON*, is
+not a no-op at all, it's a sign of being a f*cking moron.
+
+I'm stupider for just reading your email. Go away.
+
+                    Linus
