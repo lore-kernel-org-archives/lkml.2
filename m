@@ -1,161 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762881Ab2DLVwZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Apr 2012 17:52:25 -0400
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:60198 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1762880Ab2DLVtA (ORCPT
+	id S966184Ab2DLVws (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Apr 2012 17:52:48 -0400
+Received: from cpsmtpb-ews03.kpnxchange.com ([213.75.39.6]:4049 "EHLO
+	cpsmtpb-ews03.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S966119Ab2DLVwX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Apr 2012 17:49:00 -0400
-From: Will Drewry <wad@chromium.org>
-To: linux-kernel@vger.kernel.org
-Cc: linux-man@vger.kernel.org, linux-security-module@vger.kernel.org,
-        linux-arch@vger.kernel.org, linux-doc@vger.kernel.org,
-        kernel-hardening@lists.openwall.com, netdev@vger.kernel.org,
-        x86@kernel.org, arnd@arndb.de, davem@davemloft.net, hpa@zytor.com,
-        mingo@redhat.com, oleg@redhat.com, peterz@infradead.org,
-        rdunlap@xenotime.net, mcgrathr@chromium.org, tglx@linutronix.de,
-        luto@mit.edu, eparis@redhat.com, serge.hallyn@canonical.com,
-        djm@mindrot.org, scarybeasts@gmail.com, indan@nul.nu,
-        pmoore@redhat.com, akpm@linux-foundation.org, corbet@lwn.net,
-        eric.dumazet@gmail.com, markus@chromium.org, coreyb@linux.vnet.ibm.com,
-        keescook@chromium.org, jmorris@namei.org,
-        Will Drewry <wad@chromium.org>
-Subject: [PATCH v18 09/15] seccomp: remove duplicated failure logging
-Date: Thu, 12 Apr 2012 16:47:58 -0500
-Message-Id: <1334267284-19166-9-git-send-email-wad@chromium.org>
-X-Mailer: git-send-email 1.7.5.4
-In-Reply-To: <1334267284-19166-1-git-send-email-wad@chromium.org>
-References: <1334267284-19166-1-git-send-email-wad@chromium.org>
+	Thu, 12 Apr 2012 17:52:23 -0400
+Message-ID: <1334267535.11580.1.camel@x61.thuisdomein>
+Subject: Re: [v3.4-rc1] ACPI regression bisected
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: =?ISO-8859-1?Q?J=F6rg?= Otte <jrg.otte@googlemail.com>,
+        Andi Kleen <ak@linux.intel.com>, linux-kernel@vger.kernel.org,
+        Len Brown <lenb@kernel.org>
+Date: Thu, 12 Apr 2012 23:52:15 +0200
+In-Reply-To: <alpine.LFD.2.02.1204121904550.2542@ionos>
+References: <CADDKRnBpGr=yzDftChA3xiaK9gK4D4UDV6HJiw8hcMo6159+Cw@mail.gmail.com>
+	  <20120402235412.GD16303@tassilo.jf.intel.com>
+	  <alpine.LFD.2.02.1204031001510.2542@ionos>
+	  <CADDKRnAOqfxTjrCp4E5eKFJvVTu6s0xF3Ca3jRJavFkyGpYLmQ@mail.gmail.com>
+	  <alpine.LFD.2.02.1204121055200.2542@ionos>
+	 <1334230976.1913.9.camel@x61.thuisdomein>
+	 <alpine.LFD.2.02.1204121904550.2542@ionos>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 (3.2.3-2.fc16) 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
+X-OriginalArrivalTime: 12 Apr 2012 21:52:16.0164 (UTC) FILETIME=[86872E40:01CD18F6]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Kees Cook <keescook@chromium.org>
+On Thu, 2012-04-12 at 19:06 +0200, Thomas Gleixner wrote:
+> Does the test patch I sent solve the problem for you as well?
+> 
+> See: https://lkml.org/lkml/2012/4/3/88
 
-This consolidates the seccomp filter error logging path and adds more
-details to the audit log.
+Yes, it also solves the problem on my laptop.
 
-Signed-off-by: Will Drewry <wad@chromium.org>
-Signed-off-by: Kees Cook <keescook@chromium.org>
-Acked-by: Eric Paris <eparis@redhat.com>
 
-v18: make compat= permanent in the record
-v15: added a return code to the audit_seccomp path by wad@chromium.org
-     (suggested by eparis@redhat.com)
-v*: original by keescook@chromium.org
----
- include/linux/audit.h |    8 ++++----
- kernel/auditsc.c      |    8 ++++++--
- kernel/seccomp.c      |   15 +--------------
- 3 files changed, 11 insertions(+), 20 deletions(-)
-
-diff --git a/include/linux/audit.h b/include/linux/audit.h
-index ed3ef19..22f292a 100644
---- a/include/linux/audit.h
-+++ b/include/linux/audit.h
-@@ -463,7 +463,7 @@ extern void audit_putname(const char *name);
- extern void __audit_inode(const char *name, const struct dentry *dentry);
- extern void __audit_inode_child(const struct dentry *dentry,
- 				const struct inode *parent);
--extern void __audit_seccomp(unsigned long syscall);
-+extern void __audit_seccomp(unsigned long syscall, long signr, int code);
- extern void __audit_ptrace(struct task_struct *t);
- 
- static inline int audit_dummy_context(void)
-@@ -508,10 +508,10 @@ static inline void audit_inode_child(const struct dentry *dentry,
- }
- void audit_core_dumps(long signr);
- 
--static inline void audit_seccomp(unsigned long syscall)
-+static inline void audit_seccomp(unsigned long syscall, long signr, int code)
- {
- 	if (unlikely(!audit_dummy_context()))
--		__audit_seccomp(syscall);
-+		__audit_seccomp(syscall, signr, code);
- }
- 
- static inline void audit_ptrace(struct task_struct *t)
-@@ -634,7 +634,7 @@ extern int audit_signals;
- #define audit_inode(n,d) do { (void)(d); } while (0)
- #define audit_inode_child(i,p) do { ; } while (0)
- #define audit_core_dumps(i) do { ; } while (0)
--#define audit_seccomp(i) do { ; } while (0)
-+#define audit_seccomp(i,s,c) do { ; } while (0)
- #define auditsc_get_stamp(c,t,s) (0)
- #define audit_get_loginuid(t) (-1)
- #define audit_get_sessionid(t) (-1)
-diff --git a/kernel/auditsc.c b/kernel/auditsc.c
-index af1de0f..4b96415 100644
---- a/kernel/auditsc.c
-+++ b/kernel/auditsc.c
-@@ -67,6 +67,7 @@
- #include <linux/syscalls.h>
- #include <linux/capability.h>
- #include <linux/fs_struct.h>
-+#include <linux/compat.h>
- 
- #include "audit.h"
- 
-@@ -2710,13 +2711,16 @@ void audit_core_dumps(long signr)
- 	audit_log_end(ab);
- }
- 
--void __audit_seccomp(unsigned long syscall)
-+void __audit_seccomp(unsigned long syscall, long signr, int code)
- {
- 	struct audit_buffer *ab;
- 
- 	ab = audit_log_start(NULL, GFP_KERNEL, AUDIT_ANOM_ABEND);
--	audit_log_abend(ab, "seccomp", SIGKILL);
-+	audit_log_abend(ab, "seccomp", signr);
- 	audit_log_format(ab, " syscall=%ld", syscall);
-+	audit_log_format(ab, " compat=%d", is_compat_task());
-+	audit_log_format(ab, " ip=0x%lx", KSTK_EIP(current));
-+	audit_log_format(ab, " code=0x%x", code);
- 	audit_log_end(ab);
- }
- 
-diff --git a/kernel/seccomp.c b/kernel/seccomp.c
-index 0aeec19..0f7c709 100644
---- a/kernel/seccomp.c
-+++ b/kernel/seccomp.c
-@@ -60,18 +60,6 @@ struct seccomp_filter {
- /* Limit any path through the tree to 256KB worth of instructions. */
- #define MAX_INSNS_PER_PATH ((1 << 18) / sizeof(struct sock_filter))
- 
--static void seccomp_filter_log_failure(int syscall)
--{
--	int compat = 0;
--#ifdef CONFIG_COMPAT
--	compat = is_compat_task();
--#endif
--	pr_info("%s[%d]: %ssystem call %d blocked at 0x%lx\n",
--		current->comm, task_pid_nr(current),
--		(compat ? "compat " : ""),
--		syscall, KSTK_EIP(current));
--}
--
- /**
-  * get_u32 - returns a u32 offset into data
-  * @data: a unsigned 64 bit value
-@@ -381,7 +369,6 @@ void __secure_computing(int this_syscall)
- 	case SECCOMP_MODE_FILTER:
- 		if (seccomp_run_filters(this_syscall) == SECCOMP_RET_ALLOW)
- 			return;
--		seccomp_filter_log_failure(this_syscall);
- 		exit_sig = SIGSYS;
- 		break;
- #endif
-@@ -392,7 +379,7 @@ void __secure_computing(int this_syscall)
- #ifdef SECCOMP_DEBUG
- 	dump_stack();
- #endif
--	audit_seccomp(this_syscall);
-+	audit_seccomp(this_syscall, exit_code, SECCOMP_RET_KILL);
- 	do_exit(exit_sig);
- }
- 
--- 
-1.7.5.4
+Paul Bolle
 
