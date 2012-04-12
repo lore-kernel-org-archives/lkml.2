@@ -1,61 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756750Ab2DLFhq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Apr 2012 01:37:46 -0400
-Received: from ozlabs.org ([203.10.76.45]:41083 "EHLO ozlabs.org"
+	id S1756757Ab2DLFot (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Apr 2012 01:44:49 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:49267 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756539Ab2DLFgs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Apr 2012 01:36:48 -0400
-From: David Gibson <david@gibson.dropbear.id.au>
-To: rusty@rustcorp.com.au, mst@redhat.com
-Cc: virtualization@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
-        paulus@samba.org, qemu-devel@nongnu.org,
-        David Gibson <david@gibson.dropbear.id.au>
-Subject: [PATCH 2/3] virtio_balloon: Fix endian bug
-Date: Thu, 12 Apr 2012 15:36:34 +1000
-Message-Id: <1334208995-29985-3-git-send-email-david@gibson.dropbear.id.au>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1334208995-29985-1-git-send-email-david@gibson.dropbear.id.au>
-References: <1334208995-29985-1-git-send-email-david@gibson.dropbear.id.au>
+	id S1756588Ab2DLFos (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Apr 2012 01:44:48 -0400
+Date: Thu, 12 Apr 2012 06:44:44 +0100
+From: Mel Gorman <mgorman@suse.de>
+To: Hugh Dickins <hughd@google.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Rik van Riel <riel@redhat.com>,
+        Konstantin Khlebnikov <khlebnikov@openvz.org>,
+        Ying Han <yinghan@google.com>, Linux-MM <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 0/3] Removal of lumpy reclaim V2
+Message-ID: <20120412054443.GK3789@suse.de>
+References: <1334162298-18942-1-git-send-email-mgorman@suse.de>
+ <alpine.LSU.2.00.1204111651290.26528@eggly.anvils>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <alpine.LSU.2.00.1204111651290.26528@eggly.anvils>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Although virtio config space fields are usually in guest-native endian,
-the spec for the virtio balloon device explicitly states that both fields
-in its config space are little-endian.
+On Wed, Apr 11, 2012 at 04:54:18PM -0700, Hugh Dickins wrote:
+> On Wed, 11 Apr 2012, Mel Gorman wrote:
+> > 
+> > Removing lumpy reclaim saves almost 900K of text where as the full series
+> > removes 1200K of text.
+> 
+> Impressive...
+> 
+> > 
+> >    text	   data	    bss	    dec	    hex	filename
+> > 6740375	1927944	2260992	10929311	 a6c49f	vmlinux-3.4.0-rc2-vanilla
+> > 6739479	1927944	2260992	10928415	 a6c11f	vmlinux-3.4.0-rc2-lumpyremove-v2
+> > 6739159	1927944	2260992	10928095	 a6bfdf	vmlinux-3.4.0-rc2-nosync-v2
+> 
+> ... but I fear you meant " bytes" instead of "K" ;)
+> 
 
-However, the current virtio_balloon driver does not have a suitable endian
-swap for the 'num_pages' field, although it does have one for the 'actual'
-field.  This patch corrects the bug, adding sparse annotation while we're
-at it.
+Whoops, I do :)
 
-Signed-off-by: David Gibson <david@gibson.dropbear.id.au>
----
- drivers/virtio/virtio_balloon.c |    7 +++++--
- 1 file changed, 5 insertions(+), 2 deletions(-)
-
-diff --git a/drivers/virtio/virtio_balloon.c b/drivers/virtio/virtio_balloon.c
-index 6c07793..553cc1f 100644
---- a/drivers/virtio/virtio_balloon.c
-+++ b/drivers/virtio/virtio_balloon.c
-@@ -238,11 +238,14 @@ static void virtballoon_changed(struct virtio_device *vdev)
- 
- static inline s64 towards_target(struct virtio_balloon *vb)
- {
--	u32 v;
-+	__le32 v;
-+	s64 target;
-+
- 	vb->vdev->config->get(vb->vdev,
- 			      offsetof(struct virtio_balloon_config, num_pages),
- 			      &v, sizeof(v));
--	return (s64)v - vb->num_pages;
-+	target = le32_to_cpu(v);
-+	return target - vb->num_pages;
- }
- 
- static void update_balloon_size(struct virtio_balloon *vb)
 -- 
-1.7.9.5
-
+Mel Gorman
+SUSE Labs
