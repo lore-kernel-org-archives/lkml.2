@@ -1,80 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934824Ab2DLWDS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Apr 2012 18:03:18 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:55683 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934713Ab2DLWDP (ORCPT
+	id S934838Ab2DLWEK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Apr 2012 18:04:10 -0400
+Received: from www.linutronix.de ([62.245.132.108]:38848 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965115Ab2DLWEI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Apr 2012 18:03:15 -0400
-MIME-Version: 1.0
-In-Reply-To: <CA+55aFwa_wgBT85_Giy-23V5WpzRFrw9oCnFpTqVVam3DeG-7A@mail.gmail.com>
-References: <20120411231102.GA6404@kroah.com> <CAJyhjX2KrfSJW64PJMTHou9zSojsfA1iNT-WahinfMBce_B=BA@mail.gmail.com>
- <20120412002927.GA23167@kroah.com> <CAMP44s3Jh-t07A+i82qbAMQyEN0oWTmKk5BJcst942gFdD0=VA@mail.gmail.com>
- <20120412011313.GA23764@kroah.com> <CAMP44s2q+bQE3-zsX4bs=sQDt4jf8eE5bwZ8V88UjodjRyAjog@mail.gmail.com>
- <20120412144626.GA14868@kroah.com> <CAMP44s1T4EVwpzDuV_vV0Zh-5WcPCwdw9eeOfL17Geqp_UFN-Q@mail.gmail.com>
- <CA+55aFwKYYgZcBX=L-q_6UdvkvFai+yjzgVxq7cA+HLL-Zojhw@mail.gmail.com>
- <CAMP44s14SQont1wyMeOuWcXUT3U5Tgnoj9mbbgOdVXY_hN0+-w@mail.gmail.com>
- <CA+55aFyLEJsz1yvu4bYe+RHdhLd-XXEScxtAgje=fyuUM+1XxA@mail.gmail.com> <CA+55aFwa_wgBT85_Giy-23V5WpzRFrw9oCnFpTqVVam3DeG-7A@mail.gmail.com>
-From: "Luis R. Rodriguez" <mcgrof@frijolero.org>
-Date: Thu, 12 Apr 2012 15:02:54 -0700
-X-Google-Sender-Auth: NMOzh-nYp8wLqVePIYkdLLSHjno
-Message-ID: <CAB=NE6XTF1e07n_rmx2ZP85xbAoeKb8binQWmdvw8MujFey2ug@mail.gmail.com>
-Subject: Re: [ath9k-devel] [ 00/78] 3.3.2-stable review
+	Thu, 12 Apr 2012 18:04:08 -0400
+Date: Fri, 13 Apr 2012 00:04:03 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
 To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Felipe Contreras <felipe.contreras@gmail.com>,
-        "ath9k-devel@lists.ath9k.org" <ath9k-devel@venema.h4ckr.net>,
-        Greg KH <gregkh@linuxfoundation.org>,
-        linux-wireless Mailing List <linux-wireless@vger.kernel.org>,
-        linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        "John W. Linville" <linville@tuxdriver.com>, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk
-Content-Type: text/plain; charset=UTF-8
+cc: Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>, x86@kernel.org
+Subject: [GIT pull] x86 fixes for 3.4
+Message-ID: <alpine.LFD.2.02.1204130000590.2542@ionos>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 12, 2012 at 2:44 PM, Linus Torvalds
-<torvalds@linux-foundation.org> wrote:
-> On Thu, Apr 12, 2012 at 2:34 PM, Linus Torvalds
-> <torvalds@linux-foundation.org> wrote:
->>
->> So just reverting it from stable, *WITHOUT LEARNING THE LESSON*, is
->> not a no-op at all, it's a sign of being a f*cking moron.
->
-> Btw, the revert is now in my tree (commit 011afa1ed8c4), and marked
-> for stable. So *now* Greg can revert it from stable too.
->
-> But the important lesson to everybody should be that "we don't lose
-> fixes from -stable". If a problem was found in stable, it needs to be
-> fixed upstream. In fact, quite often people *do* find problems in
-> stable, because it tends to have more users more quickly than
-> mainline. That makes it really really important to make sure that
-> those problems get fixed upstream, and not hidden in stable due to
-> some kind of dieseased "it's a no-op to revert it" thinking.
->
-> End of story.
+Linus,
 
-FWIW if people want stable fixes propagated faster (before Linus sucks
-it in or Greg sucks it in after Linus) things like compat-wireless (to
-be renamed to compat-drivers) allows us to get these out, but we label
-them properly [0]. We in fact have a place holder for even other type
-of non-upstream patches that any PHB may come up with as required but
--- the key is to
+please pull the latest x86-urgent-for-linus git tree from:
 
-1) help categorize these properly
-2) keep metrics of them
-3) prioritize upstream first
+   git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git x86-urgent-for-linus
 
-The pending-stable/ patches get patches out to the community faster
-than Linus / Greg can apply them or before we even get the community
-to test them. We get these sucked out by looking for the Cc:
-stable@vger.kernel.org The linux-next-cherry-pick/ allows you suck out
-non-stable patches and I gladly accept such patches so long as they
-are in linux-next and I can suck them out automatically if you Cc:
-stable@orbit-lab.org. There are similar tricks for the other types of
-patches.
+Thanks,
 
-[0] http://wireless.kernel.org/en/users/Download/stable/#Additional_patches_to_stable_releases
+	tglx
 
-  Luis
+------------------>
+Emil Goode (1):
+      x86: vsyscall: Use NULL instead 0 for a pointer argument
+
+H. Peter Anvin (1):
+      x86: Use correct byte-sized register constraint in __add()
+
+Jeremy Fitzhardinge (1):
+      x86: Use correct byte-sized register constraint in __xchg_op()
+
+
+ arch/x86/include/asm/cmpxchg.h |    4 ++--
+ arch/x86/kernel/vsyscall_64.c  |    6 +++---
+ 2 files changed, 5 insertions(+), 5 deletions(-)
+
+diff --git a/arch/x86/include/asm/cmpxchg.h b/arch/x86/include/asm/cmpxchg.h
+index b3b7332..99480e5 100644
+--- a/arch/x86/include/asm/cmpxchg.h
++++ b/arch/x86/include/asm/cmpxchg.h
+@@ -43,7 +43,7 @@ extern void __add_wrong_size(void)
+ 		switch (sizeof(*(ptr))) {				\
+ 		case __X86_CASE_B:					\
+ 			asm volatile (lock #op "b %b0, %1\n"		\
+-				      : "+r" (__ret), "+m" (*(ptr))	\
++				      : "+q" (__ret), "+m" (*(ptr))	\
+ 				      : : "memory", "cc");		\
+ 			break;						\
+ 		case __X86_CASE_W:					\
+@@ -173,7 +173,7 @@ extern void __add_wrong_size(void)
+ 		switch (sizeof(*(ptr))) {				\
+ 		case __X86_CASE_B:					\
+ 			asm volatile (lock "addb %b1, %0\n"		\
+-				      : "+m" (*(ptr)) : "ri" (inc)	\
++				      : "+m" (*(ptr)) : "qi" (inc)	\
+ 				      : "memory", "cc");		\
+ 			break;						\
+ 		case __X86_CASE_W:					\
+diff --git a/arch/x86/kernel/vsyscall_64.c b/arch/x86/kernel/vsyscall_64.c
+index f386dc4..7515cf0 100644
+--- a/arch/x86/kernel/vsyscall_64.c
++++ b/arch/x86/kernel/vsyscall_64.c
+@@ -216,9 +216,9 @@ bool emulate_vsyscall(struct pt_regs *regs, unsigned long address)
+ 	current_thread_info()->sig_on_uaccess_error = 1;
+ 
+ 	/*
+-	 * 0 is a valid user pointer (in the access_ok sense) on 32-bit and
++	 * NULL is a valid user pointer (in the access_ok sense) on 32-bit and
+ 	 * 64-bit, so we don't need to special-case it here.  For all the
+-	 * vsyscalls, 0 means "don't write anything" not "write it at
++	 * vsyscalls, NULL means "don't write anything" not "write it at
+ 	 * address 0".
+ 	 */
+ 	ret = -EFAULT;
+@@ -247,7 +247,7 @@ bool emulate_vsyscall(struct pt_regs *regs, unsigned long address)
+ 
+ 		ret = sys_getcpu((unsigned __user *)regs->di,
+ 				 (unsigned __user *)regs->si,
+-				 0);
++				 NULL);
+ 		break;
+ 	}
+ 
