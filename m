@@ -1,63 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762840Ab2DLVaO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Apr 2012 17:30:14 -0400
-Received: from beauty.rexursive.com ([150.101.121.179]:43855 "EHLO
-	beauty.rexursive.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754124Ab2DLVaN (ORCPT
+	id S934766Ab2DLVbt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Apr 2012 17:31:49 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:64577 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753531Ab2DLVbs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Apr 2012 17:30:13 -0400
-Message-ID: <1334266210.2573.8.camel@shrek.rexursive.com>
-Subject: Re: [PATCH v10]: Hibernation: fix the number of pages used for
- hibernate/thaw buffering
-From: Bojan Smojver <bojan@rexursive.com>
-To: Per Olofsson <pelle@debian.org>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, linux-kernel@vger.kernel.org
-Date: Fri, 13 Apr 2012 07:30:10 +1000
-In-Reply-To: <4F870317.1030408@debian.org>
-References: <1334052489.2178.9.camel@shrek.rexursive.com>
-	 <b84d15d8-f35b-4296-927b-86a722541072@email.android.com>
-	 <4F870317.1030408@debian.org>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 (3.2.3-2.fc16) 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Thu, 12 Apr 2012 17:31:48 -0400
+MIME-Version: 1.0
+In-Reply-To: <20120412.160040.1086391259430365718.davem@davemloft.net>
+References: <CABe5r8Kygjg0O21Y5z-F=RRQCqT7ReNya+EohAJU1jauaK536Q@mail.gmail.com>
+	<1333811774-3219-1-git-send-email-eldad@fogrefinery.com>
+	<20120412.160040.1086391259430365718.davem@davemloft.net>
+Date: Thu, 12 Apr 2012 23:31:47 +0200
+Message-ID: <CABe5r8JJPuhq3r=JnfLA=_U46-SFmK+g3XqC3MaRdLxwVXx9Qw@mail.gmail.com>
+Subject: Re: [PATCH] net/ipv6/exthdrs.c et al: Optional strict PadN option checking
+From: Eldad Zack <eldad@fogrefinery.com>
+To: David Miller <davem@davemloft.net>
+Cc: kuznet@ms2.inr.ac.ru, jmorris@namei.org, yoshfuji@linux-ipv6.org,
+        kaber@trash.net, netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-04-12 at 18:30 +0200, Per Olofsson wrote:
-> Indeed. I think what you want is:
-> 
-> read_pages = min(low_free_pages(),
->                  nr_free_pages() - snapshot_get_image_size()) / 2; 
+On 12 April 2012 22:00, David Miller <davem@davemloft.net> wrote:
+>> Added strict checking of PadN. PadN can be used to increase header
+>> size and thus push the protocol header into the 2nd fragment.
+>>
+>> PadN is used to align the options within the Hop-by-Hop or
+>> Destination Options header to 64-bit boundaries. The maximum valid
+>> size is thus 7 bytes.
+>> RFC 4942 recommends to actively check the "payload" itself and
+>> ensure that it contains only zeroes.
+> I think you should do away with the sysctl and always perform these
+> checks.
+>
+> At the very leat, the optlen > 7 check should always be performed.
+> And frankly the pad byte being zero check makes sense to do all the
+> time as far as I can tell too.
 
-I was thinking more like this:
-----------------------
-unsigned long read_pages = 0;
+That's the way I see it, as was my initial intent. Then I got
+concerned with the possibility that a communication with
+slightly-broken stack implementation (e.g., unsanitized buffers) would
+fail without the user being able to control it at runtime.
+Do you consider this a non-issue?
 
-[...]
+If not, please apply the (soon to be sent) patch.
 
-if (low_free_pages() > snapshot_get_image_size())
-       read_pages = (low_free_pages() - snapshot_get_image_size()) / 2;
-read_pages = clamp_val(read_pages, LZO_MIN_RD_PAGES, LZO_MAX_RD_PAGES);
-----------------------
-
-Where LZO_MIN_RD_PAGES and LZO_MAX_RD_PAGES are set to 1024 and 8192,
-respectively (this was picked empirically).
-
-Because we don't really know how many highmem pages are in the image
-(this is figured out by prepare_image() function, half way through
-reading the image - so way after this calculation is done), we assume
-the worst case scenario. And that is that there are no highmem pages in
-the image.
-
-Given that we cannot use pages from highmem for buffers anyway, the
-above should be careful enough. Of course, there is still some
-possibility of running out of pages, but the kernel is usually in a
-pretty good shape memory-wise on image load, so we should be able to
-squeeze a few MBs out of it, at least.
-
--- 
-Bojan
-
+Thanks,
+Eldad
