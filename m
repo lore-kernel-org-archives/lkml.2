@@ -1,27 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933554Ab2DLBI0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Apr 2012 21:08:26 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:55525 "EHLO bear.ext.ti.com"
+	id S1761756Ab2DLBIf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Apr 2012 21:08:35 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:43191 "EHLO comal.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932409Ab2DLBIX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Apr 2012 21:08:23 -0400
+	id S1761732Ab2DLBIb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Apr 2012 21:08:31 -0400
 From: Mike Turquette <mturquette@linaro.org>
 To: <arnd.bergmann@linaro.org>
 CC: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
         <linaro-dev@lists.linaro.org>, <patches@linaro.org>,
-        Shawn Guo <shawn.guo@linaro.org>,
         Mike Turquette <mturquette@linaro.org>,
         Olof Johansson <olof@lixom.net>, Russell King <linux@arm.linux.org.uk>,
         Sascha Hauer <s.hauer@pengutronix.de>,
+        Shawn Guo <shawn.guo@freescale.com>,
         Richard Zhao <richard.zhao@linaro.org>,
         Saravana Kannan <skannan@codeaurora.org>,
         Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Andrew Lunn <andrew@lunn.ch>, Rajendra Nayak <rnayak@ti.com>,
-        Viresh Kumar <viresh.kumar@st.com>
-Subject: [PATCH 08/13] clk: declare clk_ops of basic clks in clk-provider.h
-Date: Wed, 11 Apr 2012 18:02:46 -0700
-Message-ID: <1334192572-12499-9-git-send-email-mturquette@linaro.org>
+        Andrew Lunn <andrew@lunn.ch>, Viresh Kumar <viresh.kumar@st.com>
+Subject: [PATCH 03/13] clk: core: clk_calc_new_rates handles NULL parents
+Date: Wed, 11 Apr 2012 18:02:41 -0700
+Message-ID: <1334192572-12499-4-git-send-email-mturquette@linaro.org>
 X-Mailer: git-send-email 1.7.5.4
 In-Reply-To: <1334192572-12499-1-git-send-email-mturquette@linaro.org>
 References: <1334192572-12499-1-git-send-email-mturquette@linaro.org>
@@ -31,113 +30,78 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Shawn Guo <shawn.guo@linaro.org>
+It is possible to call clk_set_rate on a clock with a NULL parent.  One
+such example is an adjustable-rate root clock.  Ensure that
+clk_calc_new_rates does not dereference parent without checking first
+and also handle the corner cases gracefully.
 
-Besides the static initialization, the clk_ops of basic clks could
-also be used by particular clk type being subclass of the basic clks.
-
-For example, clk_busy_divider has the same clk_ops as clk_divider,
-except it has to wait for a busy bit before return success with
-.set_rate.  clk_busy_divider will somehow reuse clk_ops of clk_divider.
-
-Since clk-provider.h is included by clk-private.h, it's safe to move
-those clk_ops declaration of basic clks form  clk-private.h into
-clk-provider.h, so that implementation of clks like clk_busy_divider
-above do not need to include clk-private.h to access those clk_ops.
-
-Signed-off-by: Shawn Guo <shawn.guo@linaro.org>
+Reported-by: Rajendra Nayak <rnayak@ti.com>
 Signed-off-by: Mike Turquette <mturquette@linaro.org>
 Cc: Arnd Bergman <arnd.bergmann@linaro.org>
 Cc: Olof Johansson <olof@lixom.net>
 Cc: Russell King <linux@arm.linux.org.uk>
 Cc: Sascha Hauer <s.hauer@pengutronix.de>
+Cc: Shawn Guo <shawn.guo@freescale.com>
 Cc: Richard Zhao <richard.zhao@linaro.org>
 Cc: Saravana Kannan <skannan@codeaurora.org>
 Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>
 Cc: Andrew Lunn <andrew@lunn.ch>
-Cc: Rajendra Nayak <rnayak@ti.com>
 Cc: Viresh Kumar <viresh.kumar@st.com>
 ---
- include/linux/clk-private.h  |    8 --------
- include/linux/clk-provider.h |    4 ++++
- 2 files changed, 4 insertions(+), 8 deletions(-)
+ drivers/clk/clk.c |   29 +++++++++++++++++++++--------
+ 1 files changed, 21 insertions(+), 8 deletions(-)
 
-diff --git a/include/linux/clk-private.h b/include/linux/clk-private.h
-index 5f4ccd7..f19fee0 100644
---- a/include/linux/clk-private.h
-+++ b/include/linux/clk-private.h
-@@ -55,8 +55,6 @@ struct clk {
-  * alternative macro for static initialization
-  */
+diff --git a/drivers/clk/clk.c b/drivers/clk/clk.c
+index 4daacf5..d83a9e0 100644
+--- a/drivers/clk/clk.c
++++ b/drivers/clk/clk.c
+@@ -763,25 +763,38 @@ static void clk_calc_subtree(struct clk *clk, unsigned long new_rate)
+ static struct clk *clk_calc_new_rates(struct clk *clk, unsigned long rate)
+ {
+ 	struct clk *top = clk;
+-	unsigned long best_parent_rate = clk->parent->rate;
++	unsigned long best_parent_rate;
+ 	unsigned long new_rate;
  
--extern const struct clk_ops clk_fixed_rate_ops;
--
- #define DEFINE_CLK_FIXED_RATE(_name, _flags, _rate,		\
- 				_fixed_rate_flags)		\
- 	static struct clk _name;				\
-@@ -78,8 +76,6 @@ extern const struct clk_ops clk_fixed_rate_ops;
- 		.flags = _flags,				\
- 	};
+-	if (!clk->ops->round_rate && !(clk->flags & CLK_SET_RATE_PARENT)) {
+-		clk->new_rate = clk->rate;
++	/* sanity */
++	if (IS_ERR_OR_NULL(clk))
++		return NULL;
++
++	/* never propagate up to the parent */
++	if (!(clk->flags & CLK_SET_RATE_PARENT)) {
++		if (!clk->ops->round_rate) {
++			clk->new_rate = clk->rate;
++			return NULL;
++		} else {
++			new_rate = clk->ops->round_rate(clk->hw, rate, NULL);
++			goto out;
++		}
++	}
++
++	/* need clk->parent from here on out */
++	if (!clk->parent) {
++		pr_debug("%s: %s has NULL parent\n", __func__, clk->name);
+ 		return NULL;
+ 	}
  
--extern const struct clk_ops clk_gate_ops;
--
- #define DEFINE_CLK_GATE(_name, _parent_name, _parent_ptr,	\
- 				_flags, _reg, _bit_idx,		\
- 				_gate_flags, _lock)		\
-@@ -110,8 +106,6 @@ extern const struct clk_ops clk_gate_ops;
- 		.flags = _flags,				\
- 	};
+-	if (!clk->ops->round_rate && (clk->flags & CLK_SET_RATE_PARENT)) {
++	if (!clk->ops->round_rate) {
+ 		top = clk_calc_new_rates(clk->parent, rate);
+ 		new_rate = clk->new_rate = clk->parent->new_rate;
  
--extern const struct clk_ops clk_divider_ops;
--
- #define DEFINE_CLK_DIVIDER(_name, _parent_name, _parent_ptr,	\
- 				_flags, _reg, _shift, _width,	\
- 				_divider_flags, _lock)		\
-@@ -143,8 +137,6 @@ extern const struct clk_ops clk_divider_ops;
- 		.flags = _flags,				\
- 	};
+ 		goto out;
+ 	}
  
--extern const struct clk_ops clk_mux_ops;
--
- #define DEFINE_CLK_MUX(_name, _parent_names, _parents, _flags,	\
- 				_reg, _shift, _width,		\
- 				_mux_flags, _lock)		\
-diff --git a/include/linux/clk-provider.h b/include/linux/clk-provider.h
-index 5508897..6eb8e5d 100644
---- a/include/linux/clk-provider.h
-+++ b/include/linux/clk-provider.h
-@@ -149,6 +149,7 @@ struct clk_fixed_rate {
- 	u8		flags;
- };
+-	if (clk->flags & CLK_SET_RATE_PARENT)
+-		new_rate = clk->ops->round_rate(clk->hw, rate, &best_parent_rate);
+-	else
+-		new_rate = clk->ops->round_rate(clk->hw, rate, NULL);
++	new_rate = clk->ops->round_rate(clk->hw, rate, &best_parent_rate);
  
-+extern const struct clk_ops clk_fixed_rate_ops;
- struct clk *clk_register_fixed_rate(struct device *dev, const char *name,
- 		const char *parent_name, unsigned long flags,
- 		unsigned long fixed_rate);
-@@ -180,6 +181,7 @@ struct clk_gate {
- 
- #define CLK_GATE_SET_TO_DISABLE		BIT(0)
- 
-+extern const struct clk_ops clk_gate_ops;
- struct clk *clk_register_gate(struct device *dev, const char *name,
- 		const char *parent_name, unsigned long flags,
- 		void __iomem *reg, u8 bit_idx,
-@@ -218,6 +220,7 @@ struct clk_divider {
- #define CLK_DIVIDER_ONE_BASED		BIT(0)
- #define CLK_DIVIDER_POWER_OF_TWO	BIT(1)
- 
-+extern const struct clk_ops clk_divider_ops;
- struct clk *clk_register_divider(struct device *dev, const char *name,
- 		const char *parent_name, unsigned long flags,
- 		void __iomem *reg, u8 shift, u8 width,
-@@ -252,6 +255,7 @@ struct clk_mux {
- #define CLK_MUX_INDEX_ONE		BIT(0)
- #define CLK_MUX_INDEX_BIT		BIT(1)
- 
-+extern const struct clk_ops clk_mux_ops;
- struct clk *clk_register_mux(struct device *dev, const char *name,
- 		char **parent_names, u8 num_parents, unsigned long flags,
- 		void __iomem *reg, u8 shift, u8 width,
+ 	if (best_parent_rate != clk->parent->rate) {
+ 		top = clk_calc_new_rates(clk->parent, best_parent_rate);
 -- 
 1.7.5.4
 
