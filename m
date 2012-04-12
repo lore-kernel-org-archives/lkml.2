@@ -1,72 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760089Ab2DLQ7g (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Apr 2012 12:59:36 -0400
-Received: from mail-qc0-f174.google.com ([209.85.216.174]:47009 "EHLO
-	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756322Ab2DLQ7e (ORCPT
+	id S1760607Ab2DLRAQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Apr 2012 13:00:16 -0400
+Received: from utopia.booyaka.com ([72.9.107.138]:53122 "EHLO
+	utopia.booyaka.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754962Ab2DLRAN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Apr 2012 12:59:34 -0400
-Date: Thu, 12 Apr 2012 18:59:27 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Glauber Costa <glommer@parallels.com>
-Cc: Johannes Weiner <hannes@cmpxchg.org>, Hugh Dickins <hughd@google.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Tejun Heo <tj@kernel.org>, Daniel Walsh <dwalsh@redhat.com>,
-        "Daniel P. Berrange" <berrange@redhat.com>,
-        Li Zefan <lizf@cn.fujitsu.com>, LKML <linux-kernel@vger.kernel.org>,
-        Cgroups <cgroups@vger.kernel.org>,
-        Containers <containers@lists.linux-foundation.org>
-Subject: Re: [RFD] Merge task counter into memcg
-Message-ID: <20120412165922.GA12484@somewhere.redhat.com>
-References: <20120411185715.GA4317@somewhere.redhat.com>
- <20120412010745.GE1787@cmpxchg.org>
- <20120412145507.GC11455@somewhere.redhat.com>
- <4F87042A.2000902@parallels.com>
+	Thu, 12 Apr 2012 13:00:13 -0400
+Date: Thu, 12 Apr 2012 11:00:12 -0600 (MDT)
+From: Paul Walmsley <paul@pwsan.com>
+To: "Mohammed, Afzal" <afzal@ti.com>
+cc: Greg KH <greg@kroah.com>, "Shilimkar, Santosh" <santosh.shilimkar@ti.com>,
+        "V, Aneesh" <aneesh@ti.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        "mgreer@animalcreek.com" <mgreer@animalcreek.com>,
+        "msalter@redhat.com" <msalter@redhat.com>
+Subject: RE: [PATCH v4 0/7] Add TI EMIF SDRAM controller driver
+In-Reply-To: <C8443D0743D26F4388EA172BF4E2A7A93E95947E@DQHE04.ent.ti.com>
+Message-ID: <alpine.DEB.2.00.1204121053570.29473@utopia.booyaka.com>
+References: <1331934707-29487-1-git-send-email-aneesh@ti.com> <alpine.DEB.2.00.1204112042070.29473@utopia.booyaka.com> <20120412030044.GA26236@kroah.com> <4F867A95.9030104@ti.com> <20120412131045.GB31384@kroah.com>
+ <C8443D0743D26F4388EA172BF4E2A7A93E95947E@DQHE04.ent.ti.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4F87042A.2000902@parallels.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 12, 2012 at 01:34:50PM -0300, Glauber Costa wrote:
-> On 04/12/2012 11:55 AM, Frederic Weisbecker wrote:
-> >I don't know how the kernel stack is allocated for tasks. Do you mean
-> >that we allocate a chunck of it for each new task and we could rely
-> >on that?
-> >
-> More than this: amount of kernel stack is really, really something
-> indirect if what you want to track is # of processes. Now, Hannes
-> made a fair point in his other e-mail about what is a resource and
-> what is not.
+Hi
 
-I start to consider this option, are there other people interested
-in accounting/limiting kernel stack as well?
+On Thu, 12 Apr 2012, Mohammed, Afzal wrote:
 
+> On Thu, Apr 12, 2012 at 18:40:45, Greg KH wrote:
+> > On Thu, Apr 12, 2012 at 12:17:49PM +0530, Santosh Shilimkar wrote:
+> > > I was hoping that we will have some thing like drivers/memory/*
+> > > but since it doesn't exist, we used drivers/misc.
+> > 
+> > Why not create it?  I have no objection to that, it makes it more
+> > obvious as to what this really is.
 > 
-> >>>  After all, we would only restrict the number of tasks for the
-> >>>  resources they require
-> >It depends if the kernel stack can have other kind of "consumer".
-> >
-> It also depends on what you really want to achieve.
-> If you want to prevent fork bombs, limiting kernel stack will do just fine.
-
-I want:
-
-a) to prevent the forkbomb from going far enough to DDOS the machine
-b) to be able to kill that forkbomb once detected, in one go without race
-against concurrent forks.
-
-I think a) can work just fine with kernel stack limiting. I also need
-to be notified about the fact we reached the limit. And b) should
-be feasible with the help of the cgroup freezer. 
-
+> There is another memory controller used in a few TI SoCs,
+> namely GPMC [1], do you prefer having it too there.
 > 
-> Is there anything for which you need to know exactly the number of
-> processes?
+> As of now it is not a driver, platform code handles GPMC, a patch
+> series for converting it into a driver (but still residing in
+> platform folder) was sent a few days back [2,3].
 
-No that's really about prevent/kill forkbomb as far as I'm concerned.
+Probably the GPMC driver should go into a slightly different place than 
+SDRC/EMIF.  
+
+GPMC is actually a general-purpose parallel bus driver.  It's used to 
+interface Ethernet controllers, UARTs, FPGAs, NAND/NOR flash, SRAM, etc.  
+It cannot be used to control DRAM, at least not without a separate DRAM 
+controller chip.
+
+SDRC/EMIF are both DRAM controllers.  That's all they do.  They can't be 
+used to control anything else.  They implement DRAM refresh, etc.
+
+So perhaps something like drivers/memory/dram/ for the SDRAM controllers, 
+and maybe drivers/memory/ for the GPMC?
+
+
+- Paul
