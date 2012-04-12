@@ -1,46 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934140Ab2DLBzf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Apr 2012 21:55:35 -0400
-Received: from mail-wi0-f170.google.com ([209.85.212.170]:40080 "EHLO
-	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933584Ab2DLBzd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Apr 2012 21:55:33 -0400
+	id S934145Ab2DLB4s (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Apr 2012 21:56:48 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:35086 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933584Ab2DLB4r (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Apr 2012 21:56:47 -0400
+References: <4F80892A.7050104@zytor.com> <20120407202056.472d8ad9@pyramind.ukuu.org.uk> <da8cd76d-6116-44a9-a7b3-7a501cb3a8a9@email.android.com> <20120407212705.GD11295@thunk.org> <4F80B9AC.2010103@zytor.com> <CAPXgP12Zp7aHev8Sh=3W0zHA-vZoR9TpTW8c7ep9vTQQQScBPg@mail.gmail.com> <4F81D254.9090000@zytor.com> <CAPXgP10-_kS7VtdWonBhOxKJD2KatB9SznZ_xUUaxBz7-boT2A@mail.gmail.com> <20120412010804.GI6589@ZenIV.linux.org.uk>
+User-Agent: K-9 Mail for Android
+In-Reply-To: <20120412010804.GI6589@ZenIV.linux.org.uk>
 MIME-Version: 1.0
-In-Reply-To: <20120411184538.ec21844a.akpm@linux-foundation.org>
-References: <1334188257-3449-1-git-send-email-paul.gortmaker@windriver.com>
- <CA+55aFy-CeLXstbceP7+co3AXrEWtifKF+8NWzhC7B-A8xBd-w@mail.gmail.com>
- <CA+55aFx6V_TpbghsG7xqoBree8ALAKWMA+qLeGg-8DNAno+peg@mail.gmail.com> <20120411184538.ec21844a.akpm@linux-foundation.org>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Wed, 11 Apr 2012 18:55:10 -0700
-X-Google-Sender-Auth: Ju8JbKu4_yW5pvgR2H6boTDjVyo
-Message-ID: <CA+55aFx9WXtF7LT9rHv0=e0jqAq+b1cDPcRzSGDKvy7+XjxxtA@mail.gmail.com>
-Subject: Re: [PATCH 0/5] RFC: strip 15,000 lines from a typical autoconf.h
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Paul Gortmaker <paul.gortmaker@windriver.com>,
-        linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org,
-        davem@davemloft.net, tony@bakeyournoodle.com, mmarek@suse.cz,
-        lacombar@gmail.com
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain;
+ charset=UTF-8
+Content-Transfer-Encoding: 8bit
+Subject: Re: RFC: deprecating/removing the legacy mode of devpts
+From: "H. Peter Anvin" <hpa@zytor.com>
+Date: Wed, 11 Apr 2012 18:56:10 -0700
+To: Al Viro <viro@ZenIV.linux.org.uk>, Kay Sievers <kay@vrfy.org>
+CC: "Ted Ts'o" <tytso@mit.edu>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Konstantin Khlebnikov <khlebnikov@openvz.org>,
+        Greg Kroah-Hartman <gregkh@linux-foundation.org>,
+        Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
+Message-ID: <1ec3667a-e6f4-4032-a94b-89a6957c6252@email.android.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 11, 2012 at 6:45 PM, Andrew Morton
-<akpm@linux-foundation.org> wrote:
+Just replace /dev/ptmx with a pts/ptmx symlink... something that works already.
+
+Al Viro <viro@ZenIV.linux.org.uk> wrote:
+
+>On Sun, Apr 08, 2012 at 09:16:22PM +0200, Kay Sievers wrote:
 >
-> So we shouldn't call it IS_DEFINED() - that would cause confusion with
-> the old version.
+>> I guess the following:
+>>   - remove the 'ptmx' cdev from drivers/tty/pty.c
+>>   - add a new devtmpfs_create_link() to drivers/base/devtmpfs.c
+>>   - call devtmpfs_create_link() from _init in fs/devpts/inode.c
+>>   - change the default of ptxmode=0 to a sane default = 0666
+>>   - get rid of the (rather broken) idea of 'legacy' vs 'non-legacy
+>mode'
+>>     mount options in the default setup; I don't think userspace
+>should
+>>     ever be required to fiddle with such stuff
+>
+>You do realize that there are people with _static_ /dev out there,
+>don't
+>you?  As well as those of us who are not using your latest and greatest
+>udev and not enabling devtmpfs at all.  Not all world is Fedora...
 
-Yeah. Maybe we should call it "config_enabled()" - the lower-case
-hopefully makes it clear that it acts as a C function, not a
-preprocessor one.
-
-Code like "if (config_enabled(IPV6))" looks reasonably readable to me.
-
-I asked G+ if they can come up with a better trick. They did well on
-the whole bitmask calculations, maybe somebody can figure out how to
-make the same macro work for both preprocessor and C code...
-
-                       Linus
+-- 
+Sent from my mobile phone. Please excuse brevity and lack of formatting.
