@@ -1,23 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762357Ab2DLStA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Apr 2012 14:49:00 -0400
+	id S934624Ab2DLStX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Apr 2012 14:49:23 -0400
 Received: from mailout2.w1.samsung.com ([210.118.77.12]:44852 "EHLO
 	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932289Ab2DLSpW (ORCPT
+	with ESMTP id S1762221Ab2DLSpU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Apr 2012 14:45:22 -0400
-Date: Thu, 12 Apr 2012 20:45:25 +0200
+	Thu, 12 Apr 2012 14:45:20 -0400
+Date: Thu, 12 Apr 2012 20:45:24 +0200
 From: Karol Lewandowski <k.lewandowsk@samsung.com>
-Subject: [PATCH 06/13] s5p-tv: Add initial DT-support for SiI9234
+Subject: [PATCH 05/13] i2c: Dynamically assign adapter id if it wasn't
+ explictly specified
 In-reply-to: <1334256332-29867-1-git-send-email-k.lewandowsk@samsung.com>
 To: linux-samsung-soc@vger.kernel.org
 Cc: devicetree-discuss@lists.ozlabs.org, thomas.abraham@linaro.org,
         m.szyprowski@samsung.com, kyungmin.park@samsung.com,
         linux-kernel@vger.kernel.org, olof@lixom.net, kgene.kim@samsung.com,
         Karol Lewandowski <k.lewandowsk@samsung.com>,
-        Tomasz Stanislawski <t.stanislaws@samsung.com>
-Message-id: <1334256332-29867-7-git-send-email-k.lewandowsk@samsung.com>
+        Wolfram Sang <w.sang@pengutronix.de>
+Message-id: <1334256332-29867-6-git-send-email-k.lewandowsk@samsung.com>
 MIME-version: 1.0
 X-Mailer: git-send-email 1.7.9.1
 Content-type: TEXT/PLAIN
@@ -27,91 +28,76 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Make it possible to instantiate SiI9234, Mobile HD Link driver (MHL),
-from regular device tree description.
+Commit 488bf314b ("i2c: Allow i2c_add_numbered_adapter() to assign a
+bus id") reworked i2c_add_numbered_adapter() to call i2c_add_adapter()
+if requested bus was -1.
+
+This allows to simplify driver's initialization procedure by using
+just one function for static and dynamic adapter id registration.
+
+This patch updates few more drivers (missed out in original patch)
+to use this functionality.
 
 Signed-off-by: Karol Lewandowski <k.lewandowsk@samsung.com>
 Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
-Cc: Tomasz Stanislawski <t.stanislaws@samsung.com>
+Cc: Wolfram Sang <w.sang@pengutronix.de>
 ---
- .../devicetree/bindings/i2c/sil-mhl9234.txt        |   14 +++++++++++++
- drivers/media/video/s5p-tv/sii9234_drv.c           |   21 +++++++++++++++++++-
- 2 files changed, 34 insertions(+), 1 deletions(-)
- create mode 100644 Documentation/devicetree/bindings/i2c/sil-mhl9234.txt
+ drivers/i2c/busses/i2c-gpio.c         |    7 +------
+ drivers/i2c/busses/i2c-pca-platform.c |    2 +-
+ drivers/i2c/busses/i2c-versatile.c    |    9 ++-------
+ 3 files changed, 4 insertions(+), 14 deletions(-)
 
-diff --git a/Documentation/devicetree/bindings/i2c/sil-mhl9234.txt b/Documentation/devicetree/bindings/i2c/sil-mhl9234.txt
-new file mode 100644
-index 0000000..b5d92ea
---- /dev/null
-+++ b/Documentation/devicetree/bindings/i2c/sil-mhl9234.txt
-@@ -0,0 +1,14 @@
-+* Silicon Image Mobile HD Link (MHL) 9234
-+
-+Required properties :
-+ - compatible : "sil,mhl-9234"
-+ - reg        : i2c device address
-+ - gpio-reset : gpio line used to reset IC
-+
-+Example:
-+
-+	mhl@39 {
-+		compatible = "sil,mhl-9234";
-+		reg = <0x39>;
-+		gpio-reset = <&gpf3 4 0 0 0>;
-+	};
-diff --git a/drivers/media/video/s5p-tv/sii9234_drv.c b/drivers/media/video/s5p-tv/sii9234_drv.c
-index 0f31ecc..05df5e8 100644
---- a/drivers/media/video/s5p-tv/sii9234_drv.c
-+++ b/drivers/media/video/s5p-tv/sii9234_drv.c
-@@ -22,6 +22,8 @@
- #include <linux/pm_runtime.h>
- #include <linux/regulator/machine.h>
- #include <linux/slab.h>
-+#include <linux/of.h>
-+#include <linux/of_gpio.h>
+diff --git a/drivers/i2c/busses/i2c-gpio.c b/drivers/i2c/busses/i2c-gpio.c
+index c0330a4..e62d2d9 100644
+--- a/drivers/i2c/busses/i2c-gpio.c
++++ b/drivers/i2c/busses/i2c-gpio.c
+@@ -190,12 +190,7 @@ static int __devinit i2c_gpio_probe(struct platform_device *pdev)
+ 	adap->dev.parent = &pdev->dev;
+ 	adap->dev.of_node = pdev->dev.of_node;
  
- #include <mach/gpio.h>
- #include <plat/gpio-cfg.h>
-@@ -338,7 +340,16 @@ static int __devinit sii9234_probe(struct i2c_client *client,
- 		goto fail_ctx;
- 	}
+-	/*
+-	 * If "dev->id" is negative we consider it as zero.
+-	 * The reason to do so is to avoid sysfs names that only make
+-	 * sense when there are multiple adapters.
+-	 */
+-	adap->nr = (pdev->id != -1) ? pdev->id : 0;
++	adap->nr = pdev->id;
+ 	ret = i2c_bit_add_numbered_bus(adap);
+ 	if (ret)
+ 		goto err_add_bus;
+diff --git a/drivers/i2c/busses/i2c-pca-platform.c b/drivers/i2c/busses/i2c-pca-platform.c
+index 2adbf1a..675878f 100644
+--- a/drivers/i2c/busses/i2c-pca-platform.c
++++ b/drivers/i2c/busses/i2c-pca-platform.c
+@@ -171,7 +171,7 @@ static int __devinit i2c_pca_pf_probe(struct platform_device *pdev)
+ 	i2c->io_size = resource_size(res);
+ 	i2c->irq = irq;
  
--	ctx->gpio_n_reset = pdata->gpio_n_reset;
-+	if (dev->of_node) {
-+		ctx->gpio_n_reset = of_get_named_gpio(dev->of_node, "gpio-reset", 0);
-+		if (!gpio_is_valid(ctx->gpio_n_reset)) {
-+			ret = -ENODEV;
-+			goto fail_power;
-+		}
-+	} else {
-+		ctx->gpio_n_reset = pdata->gpio_n_reset;
-+	}
-+
- 	ret = gpio_request(ctx->gpio_n_reset, "MHL_RST");
- 	if (ret) {
- 		dev_err(dev, "failed to acquire MHL_RST gpio\n");
-@@ -401,6 +412,13 @@ static int __devexit sii9234_remove(struct i2c_client *client)
- 	return 0;
- }
+-	i2c->adap.nr = pdev->id >= 0 ? pdev->id : 0;
++	i2c->adap.nr = pdev->id;
+ 	i2c->adap.owner = THIS_MODULE;
+ 	snprintf(i2c->adap.name, sizeof(i2c->adap.name),
+ 		 "PCA9564/PCA9665 at 0x%08lx",
+diff --git a/drivers/i2c/busses/i2c-versatile.c b/drivers/i2c/busses/i2c-versatile.c
+index f585aea..eec20db 100644
+--- a/drivers/i2c/busses/i2c-versatile.c
++++ b/drivers/i2c/busses/i2c-versatile.c
+@@ -104,13 +104,8 @@ static int i2c_versatile_probe(struct platform_device *dev)
+ 	i2c->algo = i2c_versatile_algo;
+ 	i2c->algo.data = i2c;
  
-+#ifdef CONFIG_OF
-+static const struct of_device_id sii9234_dt_match[] = {
-+	{ .compatible = "sil,mhl-9234" },
-+	{ },
-+};
-+MODULE_DEVICE_TABLE(of, sii9234_dt_match);
-+#endif
- 
- static const struct i2c_device_id sii9234_id[] = {
- 	{ "SII9234", 0 },
-@@ -413,6 +431,7 @@ static struct i2c_driver sii9234_driver = {
- 		.name	= "sii9234",
- 		.owner	= THIS_MODULE,
- 		.pm = &sii9234_pm_ops,
-+		.of_match_table = of_match_ptr(sii9234_dt_match),
- 	},
- 	.probe		= sii9234_probe,
- 	.remove		= __devexit_p(sii9234_remove),
+-	if (dev->id >= 0) {
+-		/* static bus numbering */
+-		i2c->adap.nr = dev->id;
+-		ret = i2c_bit_add_numbered_bus(&i2c->adap);
+-	} else
+-		/* dynamic bus numbering */
+-		ret = i2c_bit_add_bus(&i2c->adap);
++	i2c->adap.nr = dev->id;
++	ret = i2c_bit_add_numbered_bus(&i2c->adap);
+ 	if (ret >= 0) {
+ 		platform_set_drvdata(dev, i2c);
+ 		of_i2c_register_devices(&i2c->adap);
 -- 
 1.7.9.1
 
