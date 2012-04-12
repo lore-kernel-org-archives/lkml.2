@@ -1,63 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761681Ab2DLA5i (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Apr 2012 20:57:38 -0400
-Received: from mail-vb0-f46.google.com ([209.85.212.46]:38084 "EHLO
-	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757126Ab2DLA5g convert rfc822-to-8bit (ORCPT
+	id S1761722Ab2DLA6o (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Apr 2012 20:58:44 -0400
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:49533 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760688Ab2DLA6n (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Apr 2012 20:57:36 -0400
+	Wed, 11 Apr 2012 20:58:43 -0400
+X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
+Message-ID: <4F862851.3040208@jp.fujitsu.com>
+Date: Thu, 12 Apr 2012 09:56:49 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.0; rv:11.0) Gecko/20120327 Thunderbird/11.0.1
 MIME-Version: 1.0
-X-Originating-IP: [69.196.158.137]
-In-Reply-To: <20120412002927.GA23167@kroah.com>
-References: <20120411231102.GA6404@kroah.com> <CAJyhjX2KrfSJW64PJMTHou9zSojsfA1iNT-WahinfMBce_B=BA@mail.gmail.com>
- <20120412002927.GA23167@kroah.com>
-From: Sergio Correia <lists@uece.net>
-Date: Wed, 11 Apr 2012 20:57:15 -0400
-Message-ID: <CAJyhjX3a=1w4sPKrFeRhQmm7xOLmJ7XnEY9n1ycC4V3yOBb+LA@mail.gmail.com>
-Subject: Re: [ 00/78] 3.3.2-stable review
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk,
-        linux-wireless Mailing List <linux-wireless@vger.kernel.org>,
-        Sujith Manoharan <c_manoha@qca.qualcomm.com>,
-        "ath9k-devel@lists.ath9k.org" <ath9k-devel@venema.h4ckr.net>,
-        "John W. Linville" <linville@tuxdriver.com>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+CC: Hugh Dickins <hughd@google.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Glauber Costa <glommer@parallels.com>, Tejun Heo <tj@kernel.org>,
+        Daniel Walsh <dwalsh@redhat.com>,
+        "Daniel P. Berrange" <berrange@redhat.com>,
+        Li Zefan <lizf@cn.fujitsu.com>, LKML <linux-kernel@vger.kernel.org>,
+        Cgroups <cgroups@vger.kernel.org>,
+        Containers <containers@lists.linux-foundation.org>
+Subject: Re: [RFD] Merge task counter into memcg
+References: <20120411185715.GA4317@somewhere.redhat.com>
+In-Reply-To: <20120411185715.GA4317@somewhere.redhat.com>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 11, 2012 at 8:29 PM, Greg KH <gregkh@linuxfoundation.org> wrote:
-> On Wed, Apr 11, 2012 at 07:59:14PM -0400, Sergio Correia wrote:
->> Hello Greg,
->>
->>
->> On Wed, Apr 11, 2012 at 7:11 PM, Greg KH <gregkh@linuxfoundation.org> wrote:
->> > This is the start of the stable review cycle for the 3.3.2 release.
->> > There are 78 patches in this series, all will be posted as a response
->> > to this one.  If anyone has any issues with these being applied, please
->> > let me know.
->> >
->> > Responses should be made by Fri Apr 13 23:10:16 UTC 2012.
->> > Anything received after that time might be too late.
->> >
->>
->> is there any chance for this one to be included in this review cycle?
->>
->> http://www.spinics.net/lists/linux-wireless/msg87999.html
->
-> Have you read Documentation/stable_kernel_rules.txt?  Based on that, I
-> don't think it can, yet, right?
->
+(2012/04/12 3:57), Frederic Weisbecker wrote:
 
-I hadn't, but I have now, thanks for the pointer. And yes, you are right.
+> Hi,
+> 
+> While talking with Tejun about targetting the cgroup task counter subsystem
+> for the next merge window, he suggested to check if this could be merged into
+> the memcg subsystem rather than creating a new one cgroup subsystem just
+> for task count limit purpose.
+> 
+> So I'm pinging you guys to seek your insight.
+> 
+> I assume not everybody in the Cc list knows what the task counter subsystem
+> is all about. So here is a summary: this is a cgroup subsystem (latest version
+> in https://lwn.net/Articles/478631/) that keeps track of the number of tasks
+> present in a cgroup. Hooks are set in task fork/exit and cgroup migration to
+> maintain this accounting visible to a special tasks.usage file. The user can
+> set a limit on the number of tasks by writing on the tasks.limit file.
+> Further forks or cgroup migration are then rejected if the limit is exceeded.
+> 
+> This feature is especially useful to protect against forkbombs in containers.
+> Or more generally to limit the resources on the number of tasks on a cgroup
+> as it involves some kernel memory allocation.
+> 
+> Now the dilemna is how to implement it?
+> 
+> 1) As a standalone subsystem, as it stands currently (https://lwn.net/Articles/478631/)
+> 
+> 2) As a feature in memcg, part of the memory.kmem.* files. This makes sense
+> because this is about kernel memory allocation limitation. We could have a
+> memory.kmem.tasks.count
+> 
+> My personal opinion is that the task counter brings some overhead: a charge
+> across the whole hierarchy at every fork, and the mirrored uncharge on task exit.
+> And this overhead happens even in the off-case (when the task counter susbsystem
+> is mounted but the limit is the default: ULLONG_MAX).
+> 
+> So if we choose the second solution, this overhead will be added unconditionally
+> to memcg.
+> But I don't expect every users of memcg will need the task counter. So perhaps
+> the overhead should be kept in its own separate subsystem.
+> 
+> OTOH memory.kmem.* interface would have be a good fit.
+> 
+> What do you think?
 
-thanks,
-sergio
 
-> thanks,
->
-> greg k-h
+Sounds interesting to me. Hm, does your 'overhead' of task accounting is
+enough large to be visible to users ? How performance regression is big ?
+
+BTW, now, all memcg's limit interfaces use 'bytes' as an unit of accounting.
+It's a small concern to me to have mixture of bytes and numbers of objects
+for accounting. But I think increasing number of subsystem is not very good....
+ 
+Regards,
+-Kame
+
+
+
+
