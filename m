@@ -1,95 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756539Ab2DLRSb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Apr 2012 13:18:31 -0400
-Received: from mtaout01-winn.ispmail.ntl.com ([81.103.221.47]:63083 "EHLO
-	mtaout01-winn.ispmail.ntl.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751419Ab2DLRS3 (ORCPT
+	id S1760941Ab2DLRWz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Apr 2012 13:22:55 -0400
+Received: from mx.scalarmail.ca ([98.158.95.75]:63905 "EHLO
+	ironport-01.sms.scalar.ca" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751419Ab2DLRWy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Apr 2012 13:18:29 -0400
-From: Daniel Drake <dsd@laptop.org>
-To: x86@kernel.org, tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com
-Cc: linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
-        linux-input@vger.kernel.org, dilinger@queued.net, pgf@laptop.org
-Subject: [PATCH] x86, olpc-xo1-sci: Produce wakeup events for buttons and switches
-Message-Id: <20120412171824.D14C49D401E@zog.reactivated.net>
-Date: Thu, 12 Apr 2012 18:18:24 +0100 (BST)
-X-Cloudmark-Analysis: v=1.1 cv=JvdXmxIgLJv2/GthKqHpGJEEHukvLcvELVXUanXFreg= c=1 sm=0 a=gwIB5jAOEEQA:10 a=vJ1w_8FsMGIA:10 a=Op-mwl0xAAAA:8 a=4mTk9UXv_ITk2oZpGjEA:9 a=k3ooy2haN7zSfsvdTHgA:7 a=d4CUUju0HPYA:10 a=HpAAvcLHHh0Zw7uRqdWCyQ==:117
+	Thu, 12 Apr 2012 13:22:54 -0400
+Date: Thu, 12 Apr 2012 13:22:45 -0400
+From: Nick Bowler <nbowler@elliptictech.com>
+To: =?iso-8859-1?Q?R=E9mi?= Denis-Courmont <remi@remlab.net>
+Cc: Mauro Carvalho Chehab <mchehab@redhat.com>, mchehab@infradead.org,
+        linux-media@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>, Hans Verkuil <hverkuil@xs4all.nl>
+Subject: Re: [RFC] [PATCH] v4l2: use unsigned rather than enums in ioctl()
+ structs
+Message-ID: <20120412172245.GA1721@elliptictech.com>
+References: <1333648371-24812-1-git-send-email-remi@remlab.net>
+ <201204112147.55348.remi@remlab.net>
+ <4F85E133.4030404@redhat.com>
+ <201204112332.24353.remi@remlab.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <201204112332.24353.remi@remlab.net>
+Organization: Elliptic Technologies Inc.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Produce wakeup events for the XO-1's power button, lid switch and
-ebook switch, taking care to only produce events when the states
-have changed.
+On 2012-04-11 23:32 +0300, Rémi Denis-Courmont wrote:
+> From the perspective of the compiler, this is a feature not a bug. In
+> C and C++, loading or storing a value in an enumerated variable
+> whereby the value is not a member of the enumeration is undefined.
 
-Signed-off-by: Daniel Drake <dsd@laptop.org>
----
- arch/x86/platform/olpc/olpc-xo1-sci.c |   26 +++++++++++++++++++++-----
- 1 files changed, 21 insertions(+), 5 deletions(-)
+I'm afraid that this is not the case in C, although it may be in C++
+(enums are very different in C++ than they are in C).  In C, enum types
+are required to be compatible with some integer type capable of storing
+the values of all the enum members (see C11§6.7.2.2#4).  Compatibility
+is a very strong condition, and implies that the two types are
+interchangable without affecting the meaning of the program (see
+C11§6.2.7).  Integer types have a number of specific requirements, one
+thing that's relevant here is that they do not have "holes" in their
+representable values: there is a minimum and maximum representable
+value, and all integers between them are representable (C11§6.2.6.2#1).
 
-diff --git a/arch/x86/platform/olpc/olpc-xo1-sci.c b/arch/x86/platform/olpc/olpc-xo1-sci.c
-index 1d4c783..4b93ff4 100644
---- a/arch/x86/platform/olpc/olpc-xo1-sci.c
-+++ b/arch/x86/platform/olpc/olpc-xo1-sci.c
-@@ -18,6 +18,7 @@
- #include <linux/interrupt.h>
- #include <linux/platform_device.h>
- #include <linux/pm.h>
-+#include <linux/pm_wakeup.h>
- #include <linux/mfd/core.h>
- #include <linux/power_supply.h>
- #include <linux/suspend.h>
-@@ -83,8 +84,12 @@ static void send_ebook_state(void)
- 		return;
- 	}
- 
-+	if (!!test_bit(SW_TABLET_MODE, ebook_switch_idev->sw) == state)
-+		return; /* Nothing new to report. */
-+
- 	input_report_switch(ebook_switch_idev, SW_TABLET_MODE, state);
- 	input_sync(ebook_switch_idev);
-+	pm_wakeup_event(&ebook_switch_idev->dev, 0);
- }
- 
- static void flip_lid_inverter(void)
-@@ -123,8 +128,12 @@ static void detect_lid_state(void)
- /* Report current lid switch state through input layer */
- static void send_lid_state(void)
- {
-+	if (!!test_bit(SW_LID, lid_switch_idev->sw) == !lid_open)
-+		return; /* Nothing new to report. */
-+
- 	input_report_switch(lid_switch_idev, SW_LID, !lid_open);
- 	input_sync(lid_switch_idev);
-+	pm_wakeup_event(&lid_switch_idev->dev, 0);
- }
- 
- static ssize_t lid_wake_mode_show(struct device *dev,
-@@ -213,11 +222,18 @@ static irqreturn_t xo1_sci_intr(int irq, void *dev_id)
- 
- 	dev_dbg(&pdev->dev, "sts %x gpe %x\n", sts, gpe);
- 
--	if (sts & CS5536_PWRBTN_FLAG && !(sts & CS5536_WAK_FLAG)) {
--		input_report_key(power_button_idev, KEY_POWER, 1);
--		input_sync(power_button_idev);
--		input_report_key(power_button_idev, KEY_POWER, 0);
--		input_sync(power_button_idev);
-+	if (sts & CS5536_PWRBTN_FLAG) {
-+		if (!(sts & CS5536_WAK_FLAG)) {
-+			/* Only report power button input when it was pressed
-+			 * during regular operation (as opposed to when it
-+			 * was used to wake the system). */
-+			input_report_key(power_button_idev, KEY_POWER, 1);
-+			input_sync(power_button_idev);
-+			input_report_key(power_button_idev, KEY_POWER, 0);
-+			input_sync(power_button_idev);
-+		}
-+		/* Report the wakeup event in all cases. */
-+		pm_wakeup_event(&power_button_idev->dev, 0);
- 	}
- 
- 	if (gpe & CS5536_GPIOM7_PME_FLAG) { /* EC GPIO */
+Thus, while the choice of integer type used may depend on the values of
+the corresponding enum constants, storing any value (regardless of
+whether or not its a member of the enumeration) is subject to the same
+rules as the implementation-defined compatbile integer type.  This is
+always well-defined for values within the range of the type.
+(C11§6.3.1.3#1 and C11§6.3.1.4#1).
+
+> In other words, the compiler can assume that this does not happen, and
+> optimize it away.
+
+No, a conforming C compiler cannot assume such assignments do not
+happen, for the reasons outlined above.
+
+Cheers,
 -- 
-1.7.7.6
+Nick Bowler, Elliptic Technologies (http://www.elliptictech.com/)
 
