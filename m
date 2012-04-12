@@ -1,53 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934145Ab2DLB4s (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Apr 2012 21:56:48 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:35086 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933584Ab2DLB4r (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Apr 2012 21:56:47 -0400
-References: <4F80892A.7050104@zytor.com> <20120407202056.472d8ad9@pyramind.ukuu.org.uk> <da8cd76d-6116-44a9-a7b3-7a501cb3a8a9@email.android.com> <20120407212705.GD11295@thunk.org> <4F80B9AC.2010103@zytor.com> <CAPXgP12Zp7aHev8Sh=3W0zHA-vZoR9TpTW8c7ep9vTQQQScBPg@mail.gmail.com> <4F81D254.9090000@zytor.com> <CAPXgP10-_kS7VtdWonBhOxKJD2KatB9SznZ_xUUaxBz7-boT2A@mail.gmail.com> <20120412010804.GI6589@ZenIV.linux.org.uk>
-User-Agent: K-9 Mail for Android
-In-Reply-To: <20120412010804.GI6589@ZenIV.linux.org.uk>
-MIME-Version: 1.0
-Content-Type: text/plain;
- charset=UTF-8
-Content-Transfer-Encoding: 8bit
-Subject: Re: RFC: deprecating/removing the legacy mode of devpts
-From: "H. Peter Anvin" <hpa@zytor.com>
-Date: Wed, 11 Apr 2012 18:56:10 -0700
-To: Al Viro <viro@ZenIV.linux.org.uk>, Kay Sievers <kay@vrfy.org>
-CC: "Ted Ts'o" <tytso@mit.edu>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Konstantin Khlebnikov <khlebnikov@openvz.org>,
-        Greg Kroah-Hartman <gregkh@linux-foundation.org>,
-        Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
-Message-ID: <1ec3667a-e6f4-4032-a94b-89a6957c6252@email.android.com>
+	id S934153Ab2DLCBo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Apr 2012 22:01:44 -0400
+Received: from e23smtp04.au.ibm.com ([202.81.31.146]:44276 "EHLO
+	e23smtp04.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933584Ab2DLCBn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Apr 2012 22:01:43 -0400
+Message-ID: <1334196082.782.44.camel@ThinkPad-T420>
+Subject: [PATCH scsi]  add NULL checking for pointer rq_disk
+From: Li Zhong <zhong@linux.vnet.ibm.com>
+To: linux-kernel@vger.kernel.org
+Cc: JBottomley@parallels.com, linux-scsi@vger.kernel.org,
+        paulmck@linux.vnet.ibm.com, linuxram@linux.vnet.ibm.com,
+        rockorequin@hotmail.com
+Date: Wed, 11 Apr 2012 22:01:22 -0400
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2- 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
+x-cbid: 12041115-9264-0000-0000-0000013CD106
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Just replace /dev/ptmx with a pts/ptmx symlink... something that works already.
+This patch tries to fix following oops during machine booting: 
 
-Al Viro <viro@ZenIV.linux.org.uk> wrote:
+[    0.770359] Unable to handle kernel paging request for data at address 0x00000278
+[    0.770368] Faulting instruction address: 0xc0000000003fa800
+[    0.770377] Oops: Kernel access of bad area, sig: 11 [#1]
+[    0.770383] PREEMPT SMP NR_CPUS=8 NUMA pSeries
+[    0.770395] Modules linked in:
+[    0.770402] NIP: c0000000003fa800 LR: c0000000003fa7e4 CTR: c00000000004d994
+[    0.785467] REGS: c00000004ecf3990 TRAP: 0300   Not tainted  (3.4.0-rc2)
+[    0.785474] MSR: 8000000000009032 <SF,EE,ME,IR,DR,RI>  CR: 28000082  XER: 0000000c
+[    0.785499] SOFTE: 1
+[    0.785503] CFAR: 0000000000004ffc
+[    0.785509] DAR: 0000000000000278, DSISR: 40000000
+[    0.785516] TASK = c00000004ed7af30[1016] 'scsi_eh_0' THREAD: c00000004ecf0000 CPU: 1
+[    0.785526] GPR00: c0000000003fa7e4 c00000004ecf3c10 c000000000a7de08 c00000004ecf3c80 
+[    0.785543] GPR04: 0000000000000000 0000000000000020 0000000000000000 ffffffffffffffff 
+[    0.785560] GPR08: 0000000000000001 0000000000000000 c000000000aa3e70 c00000004ecf0000 
+[    0.785577] GPR12: 0000000000000002 c000000007578280 0000000002080000 c000000000814f00 
+[    0.785595] GPR16: c000000000811470 0000000000000000 000000000023e000 00000000029aa1c8 
+[    0.785612] GPR20: c000000000929f58 00000000029a9f58 0000000001b5f8f0 0000000000000000 
+[    0.785629] GPR24: 0000000000000000 c000000000814448 00000000000009c4 00000000ffffffff 
+[    0.802565] GPR28: c00000004ecf3c80 c00000008e80e800 c000000000a0e438 c00000004e54fa00 
+[    0.802588] NIP [c0000000003fa800] .scsi_send_eh_cmnd+0x80/0x318
+[    0.802596] LR [c0000000003fa7e4] .scsi_send_eh_cmnd+0x64/0x318
+[    0.802603] Call Trace:
+[    0.802610] [c00000004ecf3c10] [c0000000003fa7e4] .scsi_send_eh_cmnd+0x64/0x318 (unreliable)
+[    0.802624] [c00000004ecf3d60] [c0000000003fb318] .scsi_eh_get_sense+0x70/0xf0
+[    0.802635] [c00000004ecf3e00] [c0000000003fb920] .scsi_error_handler+0x130/0x434
+[    0.802648] [c00000004ecf3ed0] [c000000000087be8] .kthread+0xb4/0xc0
+[    0.802659] [c00000004ecf3f90] [c00000000001da04] .kernel_thread+0x54/0x70
+[    0.802669] Instruction dump:
+[    0.802675] e87e8078 3b810070 ebbf0000 e8c500b8 4bc64c39 60000000 e93f0080 38800000 
+[    0.802697] 38a00020 7f83e378 ebbd0000 e92900b8 <e9290278> eb290000 4bc3c725 60000000 
+[    0.802725] ---[ end trace baf2215814af1bc0 ]---
 
->On Sun, Apr 08, 2012 at 09:16:22PM +0200, Kay Sievers wrote:
->
->> I guess the following:
->>   - remove the 'ptmx' cdev from drivers/tty/pty.c
->>   - add a new devtmpfs_create_link() to drivers/base/devtmpfs.c
->>   - call devtmpfs_create_link() from _init in fs/devpts/inode.c
->>   - change the default of ptxmode=0 to a sane default = 0666
->>   - get rid of the (rather broken) idea of 'legacy' vs 'non-legacy
->mode'
->>     mount options in the default setup; I don't think userspace
->should
->>     ever be required to fiddle with such stuff
->
->You do realize that there are people with _static_ /dev out there,
->don't
->you?  As well as those of us who are not using your latest and greatest
->udev and not enabling devtmpfs at all.  Not all world is Fedora...
+The reason is that the scsi_cmd_to_driver() is trying to dereferencing a
+NULL rq_disk pointer. 
 
+This patch lets scsi_cmd_to_driver() return NULL if rq_disk is NULL, and
+also changes the users of this function to check the return value.
+
+Then I also saw it reported here in bugzilla, where rocko described his
+solution, which is almost the same as this patch:
+https://bugzilla.kernel.org/show_bug.cgi?id=43085
+
+Reported-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+Reported-by: <rockorequin@hotmail.com>
+Signed-off-by: Li Zhong <zhong@linux.vnet.ibm.com>
+---
+ drivers/scsi/scsi.c       |    2 +-
+ drivers/scsi/scsi_error.c |    2 +-
+ include/scsi/scsi_cmnd.h  |    2 ++
+ 3 files changed, 4 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/scsi/scsi.c b/drivers/scsi/scsi.c
+index 07322ec..24e7583 100644
+--- a/drivers/scsi/scsi.c
++++ b/drivers/scsi/scsi.c
+@@ -827,7 +827,7 @@ void scsi_finish_command(struct scsi_cmnd *cmd)
+         if (cmd->request->cmd_type != REQ_TYPE_BLOCK_PC) {
+ 		int old_good_bytes = good_bytes;
+ 		drv = scsi_cmd_to_driver(cmd);
+-		if (drv->done)
++		if (drv && drv->done)
+ 			good_bytes = drv->done(cmd);
+ 		/*
+ 		 * USB may not give sense identifying bad sector and
+diff --git a/drivers/scsi/scsi_error.c b/drivers/scsi/scsi_error.c
+index 2cfcbff..386f0c5 100644
+--- a/drivers/scsi/scsi_error.c
++++ b/drivers/scsi/scsi_error.c
+@@ -835,7 +835,7 @@ static int scsi_send_eh_cmnd(struct scsi_cmnd *scmd, unsigned char *cmnd,
+ 
+ 	scsi_eh_restore_cmnd(scmd, &ses);
+ 
+-	if (sdrv->eh_action)
++	if (sdrv && sdrv->eh_action)
+ 		rtn = sdrv->eh_action(scmd, cmnd, cmnd_size, rtn);
+ 
+ 	return rtn;
+diff --git a/include/scsi/scsi_cmnd.h b/include/scsi/scsi_cmnd.h
+index 377df4a..063175d 100644
+--- a/include/scsi/scsi_cmnd.h
++++ b/include/scsi/scsi_cmnd.h
+@@ -134,6 +134,8 @@ struct scsi_cmnd {
+ 
+ static inline struct scsi_driver *scsi_cmd_to_driver(struct scsi_cmnd *cmd)
+ {
++	if (!(cmd->request->rq_disk))
++		return NULL;
+ 	return *(struct scsi_driver **)cmd->request->rq_disk->private_data;
+ }
+ 
 -- 
-Sent from my mobile phone. Please excuse brevity and lack of formatting.
+1.7.1
+
