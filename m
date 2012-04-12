@@ -1,283 +1,199 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934376Ab2DLPjd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Apr 2012 11:39:33 -0400
-Received: from e33.co.us.ibm.com ([32.97.110.151]:49113 "EHLO
-	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757367Ab2DLPja (ORCPT
+	id S934478Ab2DLPkG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Apr 2012 11:40:06 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:41188 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934404Ab2DLPkD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Apr 2012 11:39:30 -0400
-Message-ID: <1334245093.18090.30.camel@key-ThinkPad-W510>
-Subject: [PATCH v3 12/17] powerpc: crypto: AES-XCBC mode routines for nx
- encryption
-From: Kent Yoder <key@linux.vnet.ibm.com>
-To: linux-kernel@vger.kernel.org
-Cc: linux-crypto@vger.kernel.org, rcj@linux.vnet.ibm.com,
-        key@linux.vnet.ibm.com, benh@kernel.crashing.org,
-        linuxppc-dev@lists.ozlabs.org
-Date: Thu, 12 Apr 2012 10:38:13 -0500
-In-Reply-To: <1334242825.18090.4.camel@key-ThinkPad-W510>
-References: <1334242825.18090.4.camel@key-ThinkPad-W510>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2- 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12041215-2398-0000-0000-000005C4519D
+	Thu, 12 Apr 2012 11:40:03 -0400
+From: "Ying-Chun Liu (PaulLiu)" <paul.liu@linaro.org>
+To: linux-arm-kernel@lists.infradead.org
+Cc: linux-kernel@vger.kernel.org, linaro-dev@lists.linaro.org,
+        patches@linaro.org, broonie@opensource.wolfsonmicro.com,
+        "Ying-Chun Liu (PaulLiu)" <paul.liu@linaro.org>,
+        Samuel Ortiz <sameo@linux.intel.com>, Shawn Guo <shawn.guo@linaro.org>,
+        Ashish Jangam <ashish.jangam@kpitcummins.com>
+Subject: [PATCH 1/2] mfd: da9052: add device-tree support for i2c driver
+Date: Thu, 12 Apr 2012 23:39:41 +0800
+Message-Id: <1334245182-31725-1-git-send-email-paul.liu@linaro.org>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-These routines add support for AES in XCBC mode on the Power7+ CPU's
-in-Nest accelerator driver.
+From: "Ying-Chun Liu (PaulLiu)" <paul.liu@linaro.org>
 
-Signed-off-by: Kent Yoder <key@linux.vnet.ibm.com>
+This patch adds device-tree support for dialog MFD and the binding
+documentations.
+
+Signed-off-by: Ying-Chun Liu (PaulLiu) <paul.liu@linaro.org>
+Cc: Samuel Ortiz <sameo@linux.intel.com>
+Cc: Shawn Guo <shawn.guo@linaro.org>
+Cc: Ashish Jangam <ashish.jangam@kpitcummins.com>
 ---
- drivers/crypto/nx/nx-aes-xcbc.c |  234 +++++++++++++++++++++++++++++++++++++++
- 1 files changed, 234 insertions(+), 0 deletions(-)
- create mode 100644 drivers/crypto/nx/nx-aes-xcbc.c
+ .../devicetree/bindings/mfd/da9052-i2c.txt         |   58 ++++++++++++++++++++
+ drivers/mfd/da9052-i2c.c                           |   54 +++++++++++++++---
+ 2 files changed, 104 insertions(+), 8 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/mfd/da9052-i2c.txt
 
-diff --git a/drivers/crypto/nx/nx-aes-xcbc.c b/drivers/crypto/nx/nx-aes-xcbc.c
+diff --git a/Documentation/devicetree/bindings/mfd/da9052-i2c.txt b/Documentation/devicetree/bindings/mfd/da9052-i2c.txt
 new file mode 100644
-index 0000000..f0eadb1
+index 0000000..042d042
 --- /dev/null
-+++ b/drivers/crypto/nx/nx-aes-xcbc.c
-@@ -0,0 +1,234 @@
-+/**
-+ * AES XCBC routines supporting the Power 7+ Nest Accelerators driver
-+ *
-+ * Copyright (C) 2011-2012 International Business Machines Inc.
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation; version 2 only.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program; if not, write to the Free Software
-+ * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
-+ *
-+ * Author: Kent Yoder <yoder1@us.ibm.com>
-+ */
++++ b/Documentation/devicetree/bindings/mfd/da9052-i2c.txt
+@@ -0,0 +1,58 @@
++* Dialog DA9052/53 Power Management Integrated Circuit (PMIC)
 +
-+#include <crypto/internal/hash.h>
-+#include <crypto/aes.h>
-+#include <crypto/algapi.h>
-+#include <linux/module.h>
-+#include <linux/types.h>
-+#include <linux/crypto.h>
-+#include <asm/vio.h>
++Required properties:
++- compatible : Should be "dialog,da9052", "dialog,da9053-aa",
++			 "dialog,da9053-ab", or "dialog,da9053-bb"
 +
-+#include "nx_csbcpb.h"
-+#include "nx.h"
++Sub-nodes:
++- regulators : Contain the regulator nodes.  The DA9052 regulators are
++  sorted as following:
 +
++    buck_core : regulator BUCK_CORE (id: 0 )
++    buck_pro  : regulator BUCK_PRO  (id: 1 )
++    buck_mem  : regulator BUCK_MEM  (id: 2 )
++    buck_peri : regulator BUCK_PERI (id: 3 )
++    ldo1      : regulator LDO1	    (id: 4 )
++    ldo2      : regulator LDO2	    (id: 5 )
++    ldo3      : regulator LDO3	    (id: 6 )
++    ldo4      : regulator LDO4	    (id: 7 )
++    ldo5      : regulator LDO5	    (id: 8 )
++    ldo6      : regulator LDO6	    (id: 9 )
++    ldo7      : regulator LDO7	    (id: 10)
++    ldo8      : regulator LDO8	    (id: 11)
++    ldo9      : regulator LDO9	    (id: 12)
++    ldo10     : regulator LDO10     (id: 13)
 +
-+struct xcbc_state {
-+	u8 state[AES_BLOCK_SIZE];
-+	unsigned int count;
-+	u8 buffer[AES_BLOCK_SIZE];
++  The bindings details of individual regulator device can be found in:
++  Documentation/devicetree/bindings/regulator/regulator.txt
++
++Examples:
++
++i2c@63fc8000 { /* I2C1 */
++	status = "okay";
++
++	pmic: dialog@48 {
++		compatible = "dialog,da9053-aa";
++		reg = <0x48>;
++
++		regulators {
++			regulator-buck0 {
++				regulator-name = "DA9052_BUCK_CORE";
++				regulator-min-microvolt = <500000>;
++				regulator-max-microvolt = <2075000>;
++			};
++
++			regulator-buck1 {
++				regulator-name = "DA9052_BUCK_PRO";
++				regulator-min-microvolt = <500000>;
++				regulator-max-microvolt = <2075000>;
++			};
++
++			regulator-buck2 {
++				regulator-name = "DA9052_BUCK_MEM";
++				regulator-min-microvolt = <925000>;
++				regulator-max-microvolt = <2500000>;
++			};
++		};
++	};
++};
+diff --git a/drivers/mfd/da9052-i2c.c b/drivers/mfd/da9052-i2c.c
+index 36b88e3..e07bcfa 100644
+--- a/drivers/mfd/da9052-i2c.c
++++ b/drivers/mfd/da9052-i2c.c
+@@ -22,6 +22,11 @@
+ #include <linux/mfd/da9052/da9052.h>
+ #include <linux/mfd/da9052/reg.h>
+ 
++#ifdef CONFIG_OF
++#include <linux/of.h>
++#include <linux/of_device.h>
++#endif
++
+ static int da9052_i2c_enable_multiwrite(struct da9052 *da9052)
+ {
+ 	int reg_val, ret;
+@@ -41,6 +46,24 @@ static int da9052_i2c_enable_multiwrite(struct da9052 *da9052)
+ 	return 0;
+ }
+ 
++static struct i2c_device_id da9052_i2c_id[] = {
++	{"da9052", DA9052},
++	{"da9053-aa", DA9053_AA},
++	{"da9053-ba", DA9053_BA},
++	{"da9053-bb", DA9053_BB},
++	{}
 +};
 +
-+static int nx_xcbc_set_key(struct crypto_shash *desc,
-+			   const u8            *in_key,
-+			   unsigned int         key_len)
-+{
-+	struct nx_crypto_ctx *nx_ctx = crypto_shash_ctx(desc);
-+
-+	switch (key_len) {
-+	case AES_KEYSIZE_128:
-+		nx_ctx->ap = &nx_ctx->props[NX_PROPS_AES_128];
-+		break;
-+	default:
-+		return -EINVAL;
-+	}
-+
-+	memcpy(nx_ctx->priv.xcbc.key, in_key, key_len);
-+
-+	return 0;
-+}
-+
-+static int nx_xcbc_init(struct shash_desc *desc)
-+{
-+	struct xcbc_state *sctx = shash_desc_ctx(desc);
-+	struct nx_crypto_ctx *nx_ctx = crypto_tfm_ctx(&desc->tfm->base);
-+	struct nx_csbcpb *csbcpb = nx_ctx->csbcpb;
-+	struct nx_sg *out_sg;
-+
-+	nx_ctx_init(nx_ctx, HCOP_FC_AES);
-+
-+	memset(sctx, 0, sizeof *sctx);
-+
-+	NX_CPB_SET_KEY_SIZE(csbcpb, NX_KS_AES_128);
-+	csbcpb->cpb.hdr.mode = NX_MODE_AES_XCBC_MAC;
-+
-+	memcpy(csbcpb->cpb.aes_xcbc.key, nx_ctx->priv.xcbc.key, AES_BLOCK_SIZE);
-+	memset(nx_ctx->priv.xcbc.key, 0, sizeof *nx_ctx->priv.xcbc.key);
-+
-+	out_sg = nx_build_sg_list(nx_ctx->out_sg, (u8 *)sctx->state,
-+				  AES_BLOCK_SIZE, nx_ctx->ap->sglen);
-+	nx_ctx->op.outlen = (nx_ctx->out_sg - out_sg) * sizeof(struct nx_sg);
-+
-+	return 0;
-+}
-+
-+static int nx_xcbc_update(struct shash_desc *desc,
-+			  const u8          *data,
-+			  unsigned int       len)
-+{
-+	struct xcbc_state *sctx = shash_desc_ctx(desc);
-+	struct nx_crypto_ctx *nx_ctx = crypto_tfm_ctx(&desc->tfm->base);
-+	struct nx_csbcpb *csbcpb = nx_ctx->csbcpb;
-+	struct nx_sg *in_sg;
-+	u32 to_process, leftover;
-+	int rc = 0;
-+
-+	if (NX_CPB_FDM(csbcpb) & NX_FDM_CONTINUATION) {
-+		/* we've hit the nx chip previously and we're updating again,
-+		 * so copy over the partial digest */
-+		memcpy(csbcpb->cpb.aes_xcbc.cv,
-+		       csbcpb->cpb.aes_xcbc.out_cv_mac, AES_BLOCK_SIZE);
-+	}
-+
-+	/* 2 cases for total data len:
-+	 *  1: <= AES_BLOCK_SIZE: copy into state, return 0
-+	 *  2: > AES_BLOCK_SIZE: process X blocks, copy in leftover
-+	 */
-+	if (len + sctx->count <= AES_BLOCK_SIZE) {
-+		memcpy(sctx->buffer + sctx->count, data, len);
-+		sctx->count += len;
-+		goto out;
-+	}
-+
-+	/* to_process: the AES_BLOCK_SIZE data chunk to process in this
-+	 * update */
-+	to_process = (sctx->count + len) & ~(AES_BLOCK_SIZE - 1);
-+	leftover = (sctx->count + len) & (AES_BLOCK_SIZE - 1);
-+
-+	/* the hardware will not accept a 0 byte operation for this algorithm
-+	 * and the operation MUST be finalized to be correct. So if we happen
-+	 * to get an update that falls on a block sized boundary, we must
-+	 * save off the last block to finalize with later. */
-+	if (!leftover) {
-+		to_process -= AES_BLOCK_SIZE;
-+		leftover = AES_BLOCK_SIZE;
-+	}
-+
-+	if (sctx->count) {
-+		in_sg = nx_build_sg_list(nx_ctx->in_sg, sctx->buffer,
-+					 sctx->count, nx_ctx->ap->sglen);
-+		in_sg = nx_build_sg_list(in_sg, (u8 *)data,
-+					 to_process - sctx->count,
-+					 nx_ctx->ap->sglen);
-+		nx_ctx->op.inlen = (nx_ctx->in_sg - in_sg) *
-+					sizeof(struct nx_sg);
-+	} else {
-+		in_sg = nx_build_sg_list(nx_ctx->in_sg, (u8 *)data, to_process,
-+					 nx_ctx->ap->sglen);
-+		nx_ctx->op.inlen = (nx_ctx->in_sg - in_sg) *
-+					sizeof(struct nx_sg);
-+	}
-+
-+	NX_CPB_FDM(csbcpb) |= NX_FDM_INTERMEDIATE;
-+
-+	if (!nx_ctx->op.inlen || !nx_ctx->op.outlen) {
-+		rc = -EINVAL;
-+		goto out;
-+	}
-+
-+	rc = nx_hcall_sync(nx_ctx, &nx_ctx->op);
-+	if (rc)
-+		goto out;
-+
-+	atomic_inc(&(nx_ctx->stats->aes_ops));
-+
-+	/* copy the leftover back into the state struct */
-+	memcpy(sctx->buffer, data + len - leftover, leftover);
-+	sctx->count = leftover;
-+
-+	/* everything after the first update is continuation */
-+	NX_CPB_FDM(csbcpb) |= NX_FDM_CONTINUATION;
-+out:
-+	return rc;
-+}
-+
-+static int nx_xcbc_final(struct shash_desc *desc, u8 *out)
-+{
-+	struct xcbc_state *sctx = shash_desc_ctx(desc);
-+	struct nx_crypto_ctx *nx_ctx = crypto_tfm_ctx(&desc->tfm->base);
-+	struct nx_csbcpb *csbcpb = nx_ctx->csbcpb;
-+	struct nx_sg *in_sg, *out_sg;
-+	int rc = 0;
-+
-+	if (NX_CPB_FDM(csbcpb) & NX_FDM_CONTINUATION) {
-+		/* we've hit the nx chip previously, now we're finalizing,
-+		 * so copy over the partial digest */
-+		memcpy(csbcpb->cpb.aes_xcbc.cv,
-+		       csbcpb->cpb.aes_xcbc.out_cv_mac, AES_BLOCK_SIZE);
-+	} else if (sctx->count == 0) {
-+		/* we've never seen an update, so this is a 0 byte op. The
-+		 * hardware cannot handle a 0 byte op, so just copy out the
-+		 * known 0 byte result. This is cheaper than allocating a
-+		 * software context to do a 0 byte op */
-+		u8 data[] = { 0x75, 0xf0, 0x25, 0x1d, 0x52, 0x8a, 0xc0, 0x1c,
-+			      0x45, 0x73, 0xdf, 0xd5, 0x84, 0xd7, 0x9f, 0x29 };
-+		memcpy(out, data, sizeof(data));
-+		goto out;
-+	}
-+
-+	/* final is represented by continuing the operation and indicating that
-+	 * this is not an intermediate operation */
-+	NX_CPB_FDM(csbcpb) &= ~NX_FDM_INTERMEDIATE;
-+
-+	in_sg = nx_build_sg_list(nx_ctx->in_sg, (u8 *)sctx->buffer,
-+				 sctx->count, nx_ctx->ap->sglen);
-+	out_sg = nx_build_sg_list(nx_ctx->out_sg, out, AES_BLOCK_SIZE,
-+				  nx_ctx->ap->sglen);
-+
-+	nx_ctx->op.inlen = (nx_ctx->in_sg - in_sg) * sizeof(struct nx_sg);
-+	nx_ctx->op.outlen = (nx_ctx->out_sg - out_sg) * sizeof(struct nx_sg);
-+
-+	if (!nx_ctx->op.outlen) {
-+		rc = -EINVAL;
-+		goto out;
-+	}
-+
-+	rc = nx_hcall_sync(nx_ctx, &nx_ctx->op);
-+	if (rc)
-+		goto out;
-+
-+	atomic_inc(&(nx_ctx->stats->aes_ops));
-+
-+	memcpy(out, csbcpb->cpb.aes_xcbc.out_cv_mac, AES_BLOCK_SIZE);
-+out:
-+	return rc;
-+}
-+
-+struct shash_alg nx_shash_aes_xcbc_alg = {
-+	.digestsize = AES_BLOCK_SIZE,
-+	.init       = nx_xcbc_init,
-+	.update     = nx_xcbc_update,
-+	.final      = nx_xcbc_final,
-+	.setkey     = nx_xcbc_set_key,
-+	.descsize   = sizeof(struct xcbc_state),
-+	.statesize  = sizeof(struct xcbc_state),
-+	.base       = {
-+		.cra_name        = "xcbc(aes)",
-+		.cra_driver_name = "xcbc-aes-nx",
-+		.cra_priority    = 300,
-+		.cra_flags       = CRYPTO_ALG_TYPE_SHASH,
-+		.cra_blocksize   = AES_BLOCK_SIZE,
-+		.cra_module      = THIS_MODULE,
-+		.cra_ctxsize     = sizeof(struct nx_crypto_ctx),
-+		.cra_init        = nx_crypto_ctx_aes_xcbc_init,
-+		.cra_exit        = nx_crypto_ctx_exit,
-+	}
++#ifdef CONFIG_OF
++static const struct of_device_id dialog_dt_ids[] = {
++	{ .compatible = "dialog,da9052" },
++	{ .compatible = "dialog,da9053-aa" },
++	{ .compatible = "dialog,da9053-ab" },
++	{ .compatible = "dialog,da9053-bb" },
++	{ /* sentinel */ }
 +};
++#endif
++
+ static int __devinit da9052_i2c_probe(struct i2c_client *client,
+ 				       const struct i2c_device_id *id)
+ {
+@@ -76,6 +99,26 @@ static int __devinit da9052_i2c_probe(struct i2c_client *client,
+ 	if (ret < 0)
+ 		goto err_regmap;
+ 
++#ifdef CONFIG_OF
++	if (!id) {
++		int i;
++		struct device_node *np = client->dev.of_node;
++
++		for (i = 0;
++		     i < sizeof(dialog_dt_ids)/sizeof(dialog_dt_ids[0]);
++		     i++)
++			if (of_device_is_compatible(np,
++						dialog_dt_ids[i].compatible))
++				id = &da9052_i2c_id[i];
++	}
++#endif
++
++	if (!id) {
++		ret = -ENODEV;
++		dev_err(&client->dev, "id is null.\n");
++		goto err_regmap;
++	}
++
+ 	ret = da9052_device_init(da9052, id->driver_data);
+ 	if (ret != 0)
+ 		goto err_regmap;
+@@ -100,14 +143,6 @@ static int __devexit da9052_i2c_remove(struct i2c_client *client)
+ 	return 0;
+ }
+ 
+-static struct i2c_device_id da9052_i2c_id[] = {
+-	{"da9052", DA9052},
+-	{"da9053-aa", DA9053_AA},
+-	{"da9053-ba", DA9053_BA},
+-	{"da9053-bb", DA9053_BB},
+-	{}
+-};
+-
+ static struct i2c_driver da9052_i2c_driver = {
+ 	.probe = da9052_i2c_probe,
+ 	.remove = __devexit_p(da9052_i2c_remove),
+@@ -115,6 +150,9 @@ static struct i2c_driver da9052_i2c_driver = {
+ 	.driver = {
+ 		.name = "da9052",
+ 		.owner = THIS_MODULE,
++#ifdef CONFIG_OF
++		.of_match_table = dialog_dt_ids,
++#endif
+ 	},
+ };
+ 
 -- 
-1.7.1
-
+1.7.9.5
 
