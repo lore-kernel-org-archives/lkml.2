@@ -1,65 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762220Ab2DLI5y (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Apr 2012 04:57:54 -0400
-Received: from www.linutronix.de ([62.245.132.108]:35911 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754010Ab2DLI5v (ORCPT
+	id S1762252Ab2DLJIs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Apr 2012 05:08:48 -0400
+Received: from hosting.visp.net.lb ([194.146.153.11]:58930 "EHLO
+	hosting.visp.net.lb" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754870Ab2DLJIp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Apr 2012 04:57:51 -0400
-Date: Thu, 12 Apr 2012 10:57:45 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: =?ISO-8859-15?Q?J=F6rg_Otte?= <jrg.otte@googlemail.com>
-cc: Andi Kleen <ak@linux.intel.com>, linux-kernel@vger.kernel.org,
-        Len Brown <lenb@kernel.org>
-Subject: Re: [v3.4-rc1] ACPI regression bisected
-In-Reply-To: <CADDKRnAOqfxTjrCp4E5eKFJvVTu6s0xF3Ca3jRJavFkyGpYLmQ@mail.gmail.com>
-Message-ID: <alpine.LFD.2.02.1204121055200.2542@ionos>
-References: <CADDKRnBpGr=yzDftChA3xiaK9gK4D4UDV6HJiw8hcMo6159+Cw@mail.gmail.com> <20120402235412.GD16303@tassilo.jf.intel.com> <alpine.LFD.2.02.1204031001510.2542@ionos> <CADDKRnAOqfxTjrCp4E5eKFJvVTu6s0xF3Ca3jRJavFkyGpYLmQ@mail.gmail.com>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+	Thu, 12 Apr 2012 05:08:45 -0400
+X-Greylist: delayed 510 seconds by postgrey-1.27 at vger.kernel.org; Thu, 12 Apr 2012 05:08:45 EDT
 MIME-Version: 1.0
-Content-Type: MULTIPART/MIXED; BOUNDARY="8323328-572836832-1334221066=:2542"
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+Content-Type: text/plain; charset=UTF-8;
+ format=flowed
+Content-Transfer-Encoding: 7bit
+Date: Thu, 12 Apr 2012 12:00:03 +0300
+From: Denys Fedoryshchenko <denys@visp.net.lb>
+To: Pablo Neira Ayuso <pablo@netfilter.org>
+Cc: Patrick McHardy <kaber@trash.net>, "David S. Miller" <davem@davemloft.net>,
+        <netfilter-devel@vger.kernel.org>, <netfilter@vger.kernel.org>,
+        <coreteam@netfilter.org>, <linux-kernel@vger.kernel.org>,
+        <netdev@vger.kernel.org>
+Subject: Re: [PATCH 1/1] netfilter: =?UTF-8?Q?xt=5Frecent=3A=20Add=20optio?=
+ =?UTF-8?Q?nal=20mask=20option=20for=20xt=5Frecent?=
+In-Reply-To: <20120411231421.GA7038@1984>
+References: <1331033084-23803-1-git-send-email-denys@visp.net.lb>
+ <20120411231421.GA7038@1984>
+Message-ID: <d8de90a8f08a092730109e72827264fe@visp.net.lb>
+User-Agent: VISP Webmail/0.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  This message is in MIME format.  The first part should be readable text,
-  while the remaining parts are likely unreadable without MIME-aware tools.
+Hi Pablo
 
---8323328-572836832-1334221066=:2542
-Content-Type: TEXT/PLAIN; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+On 2012-04-12 02:14, Pablo Neira Ayuso wrote:
+> Hi Denys,
+>
+> On Tue, Mar 06, 2012 at 01:24:44PM +0200, Denys Fedoryshchenko wrote:
+>> Use case for this feature:
+>> 1)In some occasions if you need to allow,block,match specific 
+>> subnet.
+>> 2)I can use recent as a trigger when netfilter rule matches, with 
+>> mask 0.0.0.0
+>>
+>> Example:
+>>
+>> If you ping 8.8.8.8, after that you can't ping 2.2.2.10
+>
+> Could you provide an useful example for this new feature?
+>
+> I also think you can make this with hashlimit, that allows you to
+> set the network mask.
 
-On Thu, 12 Apr 2012, Jörg Otte wrote:
+Yes, technically hashlimit can do a lot, but not everything. Especially 
+because xt_recent can be "fine-grained" in steps, depends on timeline of 
+event, and can be updated accordingly to time of reoccurred event. It is 
+generally not related to mask option, but mask gives power to block 
+subnets.
+Why for example /24? Well, it is minimal mask for BGP announce :) It is 
+very often, that requesting ip has more ip's in same subnet 
+(load-balancing, or multiple ip's on dedicated server), and mask will be 
+highly useful for that, to reduce number of entries and to tighten weak 
+points (usually after ip blocked, they try from neighbor ip to check, if 
+destination just blocked single ip). Plus rttl and hitcount another 
+sweet things that are available in xt_recent, but aren't in hashlimit.
 
-> I tried that patch, for me it works.
+iptables -t mangle -N SIP
+# If someone abuse our SIP, block him completely at least for 10 
+seconds, if he try again, update and block for new 120 seconds
+iptables -t mangle -A SIP -m recent --name X --update --seconds 10 
+--mask 255.255.255.0 -j MARK --set-mark 0x1
+# 120 - 600 seconds handle him over special relay (that will log his 
+query, but wont pass him to real SIP server)
+iptables -t mangle -A SIP -m recent --name X --rcheck --seconds 600 
+--mask 255.255.255.0 -j MARK --set-mark 0x2
 
-> > --- a/drivers/acpi/osl.c
-> > +++ b/drivers/acpi/osl.c
-> > @@ -607,7 +607,8 @@ acpi_os_install_interrupt_handler(u32 gsi, acpi_osd_handler handler,
-> >
-> >        acpi_irq_handler = handler;
-> >        acpi_irq_context = context;
-> > -       if (request_threaded_irq(irq, NULL, acpi_irq, IRQF_SHARED, "acpi",
-> > +       if (request_threaded_irq(irq, NULL, acpi_irq,
-> > +                                IRQF_SHARED | IRQF_ONESHOT, "acpi",
-> >                                 acpi_irq)) {
-> >                printk(KERN_ERR PREFIX "SCI (IRQ%d) allocation failed\n", irq);
-> >                acpi_irq_handler = NULL;
+In this case i will log only invalid queries, but for example some DDoS 
+or scanners that flood servers by packets will be silently ignored. 
+Maybe if hitcount really bad, i will add them to ipset, and block 
+permanently, by -m set --add-set.
 
-OK, so now the question is whether the ACPI interrupt can end up being
-shared or not.
+For me personally it is useful, because i have around 140 NAS servers, 
+and i give each of them /24 "gray" subnets, and in some cases i need to 
+handle bad users, that are changing dynamic ip and attacking from new ip 
+each time. I just block non-critical service for whole subnet then, till 
+technician on duty will solve issue completely. And sure if attack are 
+stopped, subnet will be unblocked "automagically".
 
-If it can be shared, then we need a proper primary handler which
-silences the interrupt at the device level and the threaded handler
-needs to reenable it after finishing the processing.
+Sure this feature not critical, or "a must", and if code are not good, 
+it is up to you, if it should be added or not.
 
-Len, Andi ???
-
-Thanks,
-
-	tglx
---8323328-572836832-1334221066=:2542--
