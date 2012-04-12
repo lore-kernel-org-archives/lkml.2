@@ -1,74 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762398Ab2DLJhx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Apr 2012 05:37:53 -0400
-Received: from ppsw-52.csi.cam.ac.uk ([131.111.8.152]:38306 "EHLO
-	ppsw-52.csi.cam.ac.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1762323Ab2DLJhv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Apr 2012 05:37:51 -0400
-X-Cam-AntiVirus: no malware found
-X-Cam-SpamDetails: not scanned
-X-Cam-ScannerInfo: http://www.cam.ac.uk/cs/email/scanner/
-Message-ID: <4F86A26B.1090209@cam.ac.uk>
-Date: Thu, 12 Apr 2012 10:37:47 +0100
-From: Jonathan Cameron <jic23@cam.ac.uk>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:11.0) Gecko/20120327 Thunderbird/11.0.1
-MIME-Version: 1.0
-To: Laxman Dewangan <ldewangan@nvidia.com>
-CC: gregkh@linuxfoundation.org, grant.likely@secretlab.ca,
-        rob.herring@calxeda.com, jbrenner@taosinc.com, rklein@nvidia.com,
-        max@stro.at, linux-iio@vger.kernel.org, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org, devicetree-discuss@lists.ozlabs.org
-Subject: Re: [PATCH V2 2/2] staging: Documentation: add proximity_sampling_period
- as sysfs details
-References: <1334214492-23044-1-git-send-email-ldewangan@nvidia.com> <1334214492-23044-3-git-send-email-ldewangan@nvidia.com>
-In-Reply-To: <1334214492-23044-3-git-send-email-ldewangan@nvidia.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1762395Ab2DLJko (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Apr 2012 05:40:44 -0400
+Received: from smtp.nokia.com ([147.243.128.24]:17026 "EHLO mgw-da01.nokia.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756233Ab2DLJkn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Apr 2012 05:40:43 -0400
+From: Pasi Savanainen <ext-pasi.m.savanainen@nokia.com>
+To: linux-kernel@vger.kernel.org
+Cc: Samuel Ortiz <sameo@linux.intel.com>,
+        Mika Westerberg <mika.westerberg@linux.intel.com>
+Subject: [PATCH] mfd: Convert Intel MSIC driver to use devm_* interfaces.
+Date: Thu, 12 Apr 2012 12:40:37 +0300
+Message-Id: <1334223637-16965-1-git-send-email-ext-pasi.m.savanainen@nokia.com>
+X-Mailer: git-send-email 1.7.5.4
+Content-Type: text/plain; charset="us-ascii"
+X-Nokia-AV: Clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 4/12/2012 8:08 AM, Laxman Dewangan wrote:
-> Add the sysfs proximity_sampling_period for sampling period of
-> proximity sensing.
->
-> Signed-off-by: Laxman Dewangan<ldewangan@nvidia.com>
-> ---
->   .../staging/iio/Documentation/sysfs-bus-iio-light  |    7 +++++++
->   1 files changed, 7 insertions(+), 0 deletions(-)
->
-> diff --git a/drivers/staging/iio/Documentation/sysfs-bus-iio-light b/drivers/staging/iio/Documentation/sysfs-bus-iio-light
-> index edbf470..9d6108b 100644
-> --- a/drivers/staging/iio/Documentation/sysfs-bus-iio-light
-> +++ b/drivers/staging/iio/Documentation/sysfs-bus-iio-light
-> @@ -83,3 +83,10 @@ Description:
->   		Hardware or software applied calibration scale factor assumed
->   		to account for attenuation due to industrial design (glass
->   		filters or aperture holes).
-> +
-> +What:		/sys/bus/iio/devices/device[n]/proximity_sampling_period
-> +KernelVersion:	3.5
-> +Contact:	linux-iio@vger.kernel.org
-> +Description:
-> +		Hardware dependent mode for proximity sensor device to set/get
-> +		the sampling rate of proximity sensing and conversion.
-Ah, that explains what it is.  Sorry, use 
-in_proximitiy0_sampling_frequency to provide equivalent
-control please.  Might be a pain here, but this interface will just 
-provide the same info as the existing
-one in a different form.  Note that sampling_frequency is documented as 
-a general one, but can
-be extended to individual channels.
+The devm_* functions eliminate the need for manual resource releasing
+and simplify error handling. Resources allocated by devm_* are freed
+automatically on driver detach.
 
-Actually add it to the iio-core as an element in the info_mask as I 
-doubt this will be the last time
-we see this control. This will need to be a precursor patch to the 
-driver obviously.
+Signed-off-by: Pasi Savanainen <ext-pasi.m.savanainen@gmail.com>
+Cc: Mika Westerberg <mika.westerberg@linux.intel.com>
+---
+ drivers/mfd/intel_msic.c |   31 +++++--------------------------
+ 1 files changed, 5 insertions(+), 26 deletions(-)
 
-IIO_CHAN_INFO_SAMP_FREQ and the relevant shared and separate macros need 
-to go in
-iio.h + the text entry in industrialio-core.c
+diff --git a/drivers/mfd/intel_msic.c b/drivers/mfd/intel_msic.c
+index b76657e..59df558 100644
+--- a/drivers/mfd/intel_msic.c
++++ b/drivers/mfd/intel_msic.c
+@@ -406,7 +406,7 @@ static int __devinit intel_msic_probe(struct platform_device *pdev)
+ 		return -ENXIO;
+ 	}
+ 
+-	msic = kzalloc(sizeof(*msic), GFP_KERNEL);
++	msic = devm_kzalloc(&pdev->dev, sizeof(*msic), GFP_KERNEL);
+ 	if (!msic)
+ 		return -ENOMEM;
+ 
+@@ -421,21 +421,13 @@ static int __devinit intel_msic_probe(struct platform_device *pdev)
+ 	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+ 	if (!res) {
+ 		dev_err(&pdev->dev, "failed to get SRAM iomem resource\n");
+-		ret = -ENODEV;
+-		goto fail_free_msic;
++		return -ENODEV;
+ 	}
+ 
+-	res = request_mem_region(res->start, resource_size(res), pdev->name);
+-	if (!res) {
+-		ret = -EBUSY;
+-		goto fail_free_msic;
+-	}
+-
+-	msic->irq_base = ioremap_nocache(res->start, resource_size(res));
++	msic->irq_base = devm_request_and_ioremap(&pdev->dev, res);
+ 	if (!msic->irq_base) {
+ 		dev_err(&pdev->dev, "failed to map SRAM memory\n");
+-		ret = -ENOMEM;
+-		goto fail_release_region;
++		return -ENOMEM;
+ 	}
+ 
+ 	platform_set_drvdata(pdev, msic);
+@@ -443,7 +435,7 @@ static int __devinit intel_msic_probe(struct platform_device *pdev)
+ 	ret = intel_msic_init_devices(msic);
+ 	if (ret) {
+ 		dev_err(&pdev->dev, "failed to initialize MSIC devices\n");
+-		goto fail_unmap_mem;
++		return ret;
+ 	}
+ 
+ 	dev_info(&pdev->dev, "Intel MSIC version %c%d (vendor %#x)\n",
+@@ -451,27 +443,14 @@ static int __devinit intel_msic_probe(struct platform_device *pdev)
+ 		 msic->vendor);
+ 
+ 	return 0;
+-
+-fail_unmap_mem:
+-	iounmap(msic->irq_base);
+-fail_release_region:
+-	release_mem_region(res->start, resource_size(res));
+-fail_free_msic:
+-	kfree(msic);
+-
+-	return ret;
+ }
+ 
+ static int __devexit intel_msic_remove(struct platform_device *pdev)
+ {
+ 	struct intel_msic *msic = platform_get_drvdata(pdev);
+-	struct resource *res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+ 
+ 	intel_msic_remove_devices(msic);
+ 	platform_set_drvdata(pdev, NULL);
+-	iounmap(msic->irq_base);
+-	release_mem_region(res->start, resource_size(res));
+-	kfree(msic);
+ 
+ 	return 0;
+ }
+-- 
+1.7.5.4
 
-If you like I can do this but it'll be quicker if you do :)
