@@ -1,44 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762609Ab2DLTre (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Apr 2012 15:47:34 -0400
-Received: from shards.monkeyblade.net ([198.137.202.13]:40838 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934668Ab2DLTrb (ORCPT
+	id S1762640Ab2DLTsa (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Apr 2012 15:48:30 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:41518 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755144Ab2DLTs1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Apr 2012 15:47:31 -0400
-Date: Thu, 12 Apr 2012 15:46:24 -0400 (EDT)
-Message-Id: <20120412.154624.736628097737735623.davem@davemloft.net>
-To: geert@linux-m68k.org
-Cc: msink@permonline.ru, paul.gortmaker@windriver.com, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] wiznet: Add missing #include <linux/irq.h>
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1334258363-17617-1-git-send-email-geert@linux-m68k.org>
-References: <1334258363-17617-1-git-send-email-geert@linux-m68k.org>
-X-Mailer: Mew version 6.4 on Emacs 24.0.95 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=iso-8859-7
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Thu, 12 Apr 2012 12:46:25 -0700 (PDT)
+	Thu, 12 Apr 2012 15:48:27 -0400
+From: Marek Belisko <marek.belisko@open-nandra.com>
+To: jic23@cam.ac.uk
+Cc: gregkh@linuxfoundation.org, linux-iio@vger.kernel.org,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        Marek Belisko <marek.belisko@open-nandra.com>, stable@vger.kernel.org
+Subject: [PATCH] staging: iio: hmc5843: Fix crash in probe function.
+Date: Thu, 12 Apr 2012 21:48:03 +0200
+Message-Id: <1334260083-23479-1-git-send-email-marek.belisko@open-nandra.com>
+X-Mailer: git-send-email 1.7.5.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id q3CJlfbu012199
 
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-Date: Thu, 12 Apr 2012 21:19:23 +0200
+Fix crash after issuing:
+	echo hmc5843 0x1e > /sys/class/i2c-dev/i2c-2/device/new_device
 
-> m68k/allmodconfig:
-> 
-> drivers/net/ethernet/wiznet/w5100.c: In function ¡w5100_hw_probe¢:
-> drivers/net/ethernet/wiznet/w5100.c:680: error: ¡IRQ_TYPE_LEVEL_LOW¢ undeclared (first use in this function)
-> drivers/net/ethernet/wiznet/w5300.c: In function ¡w5300_hw_probe¢:
-> drivers/net/ethernet/wiznet/w5300.c:594: error: ¡IRQ_TYPE_LEVEL_LOW¢ undeclared (first use in this function)
-> 
-> Include <linux/irq.h>, which provides the declaration for IRQ_TYPE_LEVEL_LOW.
-> 
-> Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
+	[   37.180999] device: '2-001e': device_add
+	[   37.188293] bus: 'i2c': add device 2-001e
+	[   37.194549] PM: Adding info for i2c:2-001e
+	[   37.200958] bus: 'i2c': driver_probe_device: matched device 2-001e with driver hmc5843
+	[   37.210815] bus: 'i2c': really_probe: probing driver hmc5843 with device 2-001e
+	[   37.224884] HMC5843 initialized
+	[   37.228759] ------------[ cut here ]------------
+	[   37.233612] kernel BUG at mm/slab.c:505!
+	[   37.237701] Internal error: Oops - BUG: 0 [#1] PREEMPT
+	[   37.243103] Modules linked in:
+	[   37.246337] CPU: 0    Not tainted  (3.3.1-gta04+ #28)
+	[   37.251647] PC is at kfree+0x84/0x144
+	[   37.255493] LR is at kfree+0x20/0x144
+	[   37.259338] pc : [<c00b408c>]    lr : [<c00b4028>]    psr: 40000093
+	[   37.259368] sp : de249cd8  ip : 0000000c  fp : 00000090
+	[   37.271362] r10: 0000000a  r9 : de229eac  r8 : c0236274
+	[   37.276855] r7 : c09d6490  r6 : a0000013  r5 : de229c00  r4 : de229c10
+	[   37.283691] r3 : c0f00218  r2 : 00000400  r1 : c0eea000  r0 : c00b4028
+	[   37.290527] Flags: nZcv  IRQs off  FIQs on  Mode SVC_32  ISA ARM  Segment user
+	[   37.298095] Control: 10c5387d  Table: 9e1d0019  DAC: 00000015
+	[   37.304107] Process sh (pid: 91, stack limit = 0xde2482f0)
+	[   37.309844] Stack: (0xde249cd8 to 0xde24a000)
+	[   37.314422] 9cc0:                                                       de229c10 de229c00
+	[   37.322998] 9ce0: de229c10 ffffffea 00000005 c0236274 de140a80 c00b4798 dec00080 de140a80
+	[   37.331573] 9d00: c032f37c dec00080 000080d0 00000001 de229c00 de229c10 c048d578 00000005
+	[   37.340148] 9d20: de229eac 0000000a 00000090 c032fa40 00000001 00000000 00000001 de229c10
+	[   37.348724] 9d40: de229eac 00000029 c075b558 00000001 00000003 00000004 de229c10 c048d594
+	[   37.357299] 9d60: 00000000 60000013 00000018 205b0007 37332020 3432322e 5d343838 c0060020
+	[   37.365905] 9d80: de251600 00000001 00000000 de251600 00000001 c0065a84 de229c00 de229c48
+	[   37.374481] 9da0: 00000006 0048d62c de229c38 de229c00 de229c00 de1f6c00 de1f6c20 00000001
+	[   37.383056] 9dc0: 00000000 c048d62c 00000000 de229c00 de229c00 de1f6c00 de1f6c20 00000001
+	[   37.391632] 9de0: 00000000 c048d62c 00000000 c0330164 00000000 de1f6c20 c048d62c de1f6c00
+	[   37.400207] 9e00: c0330078 de1f6c04 c078d714 de189b58 00000000 c02ccfd8 de1f6c20 c0795f40
+	[   37.408782] 9e20: c0238330 00000000 00000000 c02381a8 de1b9fc0 de1f6c20 de1f6c20 de249e48
+	[   37.417358] 9e40: c0238330 c0236bb0 decdbed8 de7d0f14 de1f6c20 de1f6c20 de1f6c54 de1f6c20
+	[   37.425933] 9e60: 00000000 c0238030 de1f6c20 c078d7bc de1f6c20 c02377ec de1f6c20 de1f6c28
+	[   37.434509] 9e80: dee64cb0 c0236138 c047c554 de189b58 00000000 c004b45c de1f6c20 de1f6cd8
+	[   37.443084] 9ea0: c0edfa6c de1f6c00 dee64c68 de1f6c04 de1f6c20 dee64cb8 c047c554 de189b58
+	[   37.451690] 9ec0: 00000000 c02cd634 dee64c68 de249ef4 de23b008 dee64cb0 0000000d de23b000
+	[   37.460266] 9ee0: de23b007 c02cd78c 00000002 00000000 00000000 35636d68 00333438 00000000
+	[   37.468841] 9f00: 00000000 00000000 001e0000 00000000 00000000 00000000 00000000 0a10cec0
+	[   37.477416] 9f20: 00000002 de249f80 0000000d dee62990 de189b40 c0234d88 0000000d c010c354
+	[   37.485992] 9f40: 0000000d de210f28 000acc88 de249f80 0000000d de248000 00000000 c00b7bf8
+	[   37.494567] 9f60: de210f28 000acc88 de210f28 000acc88 00000000 00000000 0000000d c00b7ed8
+	[   37.503143] 9f80: 00000000 00000000 0000000d 00000000 0007fa28 0000000d 000acc88 00000004
+	[   37.511718] 9fa0: c000e544 c000e380 0007fa28 0000000d 00000001 000acc88 0000000d 00000000
+	[   37.520294] 9fc0: 0007fa28 0000000d 000acc88 00000004 00000001 00000020 00000002 00000000
+	[   37.528869] 9fe0: 00000000 beab8624 0000ea05 b6eaebac 600d0010 00000001 00000000 00000000
+	[   37.537475] [<c00b408c>] (kfree+0x84/0x144) from [<c0236274>] (device_add+0x530/0x57c)
+	[   37.545806] [<c0236274>] (device_add+0x530/0x57c) from [<c032fa40>] (iio_device_register+0x8c8/0x990)
+	[   37.555480] [<c032fa40>] (iio_device_register+0x8c8/0x990) from [<c0330164>] (hmc5843_probe+0xec/0x114)
+	[   37.565338] [<c0330164>] (hmc5843_probe+0xec/0x114) from [<c02ccfd8>] (i2c_device_probe+0xc4/0xf8)
+	[   37.574737] [<c02ccfd8>] (i2c_device_probe+0xc4/0xf8) from [<c02381a8>] (driver_probe_device+0x118/0x218)
+	[   37.584777] [<c02381a8>] (driver_probe_device+0x118/0x218) from [<c0236bb0>] (bus_for_each_drv+0x4c/0x84)
+	[   37.594818] [<c0236bb0>] (bus_for_each_drv+0x4c/0x84) from [<c0238030>] (device_attach+0x78/0xa4)
+	[   37.604125] [<c0238030>] (device_attach+0x78/0xa4) from [<c02377ec>] (bus_probe_device+0x28/0x9c)
+	[   37.613433] [<c02377ec>] (bus_probe_device+0x28/0x9c) from [<c0236138>] (device_add+0x3f4/0x57c)
+	[   37.622650] [<c0236138>] (device_add+0x3f4/0x57c) from [<c02cd634>] (i2c_new_device+0xf8/0x19c)
+	[   37.631805] [<c02cd634>] (i2c_new_device+0xf8/0x19c) from [<c02cd78c>] (i2c_sysfs_new_device+0xb4/0x130)
+	[   37.641754] [<c02cd78c>] (i2c_sysfs_new_device+0xb4/0x130) from [<c0234d88>] (dev_attr_store+0x18/0x24)
+	[   37.651611] [<c0234d88>] (dev_attr_store+0x18/0x24) from [<c010c354>] (sysfs_write_file+0x10c/0x140)
+	[   37.661193] [<c010c354>] (sysfs_write_file+0x10c/0x140) from [<c00b7bf8>] (vfs_write+0xb0/0x178)
+	[   37.670410] [<c00b7bf8>] (vfs_write+0xb0/0x178) from [<c00b7ed8>] (sys_write+0x3c/0x68)
+	[   37.678833] [<c00b7ed8>] (sys_write+0x3c/0x68) from [<c000e380>] (ret_fast_syscall+0x0/0x3c)
+	[   37.687683] Code: 1593301c e5932000 e3120080 1a000000 (e7f001f2)
+	[   37.700775] ---[ end trace aaf805debdb69390 ]---
 
-Applied.
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éÝ¶¥Šwÿº{.nÇ+‰·¥Š{±þG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŽŠÝ¢j"ú¶m§ÿÿ¾«þG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+Client data was assigned to iio_dev structure in probe but in
+hmc5843_init_client function casted to private driver data structure which
+is wrong. Possibly calling mutex_init(&data->lock); corrupt data
+which the lead to above crash.
+
+Signed-off-by: Marek Belisko <marek.belisko@open-nandra.com>
+Cc: stable@vger.kernel.org
+---
+ drivers/staging/iio/magnetometer/hmc5843.c |    4 +++-
+ 1 files changed, 3 insertions(+), 1 deletions(-)
+
+diff --git a/drivers/staging/iio/magnetometer/hmc5843.c b/drivers/staging/iio/magnetometer/hmc5843.c
+index 91dd3da..e00b416 100644
+--- a/drivers/staging/iio/magnetometer/hmc5843.c
++++ b/drivers/staging/iio/magnetometer/hmc5843.c
+@@ -521,7 +521,9 @@ static int hmc5843_detect(struct i2c_client *client,
+ /* Called when we have found a new HMC5843. */
+ static void hmc5843_init_client(struct i2c_client *client)
+ {
+-	struct hmc5843_data *data = i2c_get_clientdata(client);
++	struct iio_dev *indio_dev = i2c_get_clientdata(client);
++	struct hmc5843_data *data = iio_priv(indio_dev);
++
+ 	hmc5843_set_meas_conf(client, data->meas_conf);
+ 	hmc5843_set_rate(client, data->rate);
+ 	hmc5843_configure(client, data->operating_mode);
+-- 
+1.7.5.4
+
