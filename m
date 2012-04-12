@@ -1,67 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762672Ab2DLT7A (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Apr 2012 15:59:00 -0400
-Received: from na3sys009aog122.obsmtp.com ([74.125.149.147]:47607 "EHLO
-	na3sys009aog122.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1762660Ab2DLT65 convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Apr 2012 15:58:57 -0400
-MIME-Version: 1.0
-In-Reply-To: <20120412030044.GA26236@kroah.com>
-References: <1331934707-29487-1-git-send-email-aneesh@ti.com>
-	<alpine.DEB.2.00.1204112042070.29473@utopia.booyaka.com>
-	<20120412030044.GA26236@kroah.com>
-Date: Thu, 12 Apr 2012 12:58:55 -0700
-Message-ID: <CAM=4YEQ6_+7xPwi2jucks1P9p8tO3cSG7S0s=VVJVrueb4fB=g@mail.gmail.com>
-Subject: Re: [PATCH v4 0/7] Add TI EMIF SDRAM controller driver
-From: "V, Aneesh" <aneesh@ti.com>
-To: Greg KH <greg@kroah.com>
-Cc: Paul Walmsley <paul@pwsan.com>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-omap@vger.kernel.org,
-        mgreer@animalcreek.com, msalter@redhat.com
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	id S965936Ab2DLUDf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Apr 2012 16:03:35 -0400
+Received: from shards.monkeyblade.net ([198.137.202.13]:41068 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753142Ab2DLUDe (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Apr 2012 16:03:34 -0400
+Date: Thu, 12 Apr 2012 16:00:40 -0400 (EDT)
+Message-Id: <20120412.160040.1086391259430365718.davem@davemloft.net>
+To: eldad@fogrefinery.com
+Cc: kuznet@ms2.inr.ac.ru, jmorris@namei.org, yoshfuji@linux-ipv6.org,
+        kaber@trash.net, netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] net/ipv6/exthdrs.c et al: Optional strict PadN option
+ checking
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1333811774-3219-1-git-send-email-eldad@fogrefinery.com>
+References: <CABe5r8Kygjg0O21Y5z-F=RRQCqT7ReNya+EohAJU1jauaK536Q@mail.gmail.com>
+	<1333811774-3219-1-git-send-email-eldad@fogrefinery.com>
+X-Mailer: Mew version 6.4 on Emacs 24.0.95 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Thu, 12 Apr 2012 13:00:45 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Greg,
+From: Eldad Zack <eldad@fogrefinery.com>
+Date: Sat,  7 Apr 2012 17:16:14 +0200
 
-On Wed, Apr 11, 2012 at 8:00 PM, Greg KH <greg@kroah.com> wrote:
-> On Wed, Apr 11, 2012 at 08:44:39PM -0600, Paul Walmsley wrote:
->> Cc Mark Greer, Mark Salter
->>
->> Hi Greg, Aneesh,
->>
->> On Sat, 17 Mar 2012, Aneesh V wrote:
->>
->> > Add a driver for the EMIF SDRAM controller used in TI SoCs
->> >
->> > EMIF is an SDRAM controller that supports, based on its revision,
->> > one or more of LPDDR2/DDR2/DDR3 protocols.This driver adds support
->> > for LPDDR2.
->>
->> Just checking to see what the current state of this series is.  Greg, are
->> you considering this for merging, or are there remaining issues?  Aneesh,
->> do you have any remaining issues to resolve with this set?
->
-> What about the review comment about devfreq?
+> Added strict checking of PadN. PadN can be used to increase header
+> size and thus push the protocol header into the 2nd fragment.
+> 
+> PadN is used to align the options within the Hop-by-Hop or
+> Destination Options header to 64-bit boundaries. The maximum valid
+> size is thus 7 bytes.
+> RFC 4942 recommends to actively check the "payload" itself and
+> ensure that it contains only zeroes.
+> 
+> See also RFC 4942 section 2.1.9.5.
+> 
+> Signed-off-by: Eldad Zack <eldad@fogrefinery.com>
 
-I see that Santosh has already commented on this.
-My views are similar, that frequency update is only one of the
-many functions of the driver.
+I think you should do away with the sysctl and always perform these
+checks.
 
->
->> This is useful not only for OMAP4 and AM3517/3505, but also will probably
->> be useful for the C6x chips that Mark Salter is working on.
->
-> It's still in my "to-review" queue, that I'm slowly making my way
-> through.  So it's not lost, but I would like to get the devfreq
-> interface question cleared up first.
-
-Thanks. I will wait for your review then. Once I have your comments
-I will re-work and submit in the new directory structure proposed.
-
-thanks,
-Aneesh
+At the very leat, the optlen > 7 check should always be performed.
+And frankly the pad byte being zero check makes sense to do all the
+time as far as I can tell too.
