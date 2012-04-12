@@ -1,70 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762449Ab2DLJug (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Apr 2012 05:50:36 -0400
-Received: from cpsmtpb-ews07.kpnxchange.com ([213.75.39.10]:4102 "EHLO
-	cpsmtpb-ews07.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1762359Ab2DLJue (ORCPT
+	id S1762459Ab2DLKAH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Apr 2012 06:00:07 -0400
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:8574 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755420Ab2DLKAF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Apr 2012 05:50:34 -0400
-X-Greylist: delayed 372 seconds by postgrey-1.27 at vger.kernel.org; Thu, 12 Apr 2012 05:50:34 EDT
-Message-ID: <1334223857.2439.5.camel@x61.thuisdomein>
-Subject: [PATCH] [RFC] TPM: be silent if disabled or deactivated
-From: Paul Bolle <pebolle@tiscali.nl>
-To: Debora Velarde <debora@linux.vnet.ibm.com>,
-        Rajiv Andrade <srajiv@linux.vnet.ibm.com>,
-        Marcel Selhorst <m.selhorst@sirrix.com>
-Cc: tpmdd-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org
-Date: Thu, 12 Apr 2012 11:44:17 +0200
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 (3.2.3-2.fc16) 
+	Thu, 12 Apr 2012 06:00:05 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Thu, 12 Apr 2012 02:59:56 -0700
+Message-ID: <4F86A4EB.4040202@nvidia.com>
+Date: Thu, 12 Apr 2012 15:18:27 +0530
+From: Laxman Dewangan <ldewangan@nvidia.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101208 Thunderbird/3.1.7
+MIME-Version: 1.0
+To: Jonathan Cameron <jic23@cam.ac.uk>
+CC: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        "jbrenner@taosinc.com" <jbrenner@taosinc.com>,
+        Rhyland Klein <rklein@nvidia.com>, "max@stro.at" <max@stro.at>,
+        "linux-iio@vger.kernel.org" <linux-iio@vger.kernel.org>,
+        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>
+Subject: Re: [PATCH V2 2/2] staging: Documentation: add proximity_sampling_period
+ as sysfs details
+References: <1334214492-23044-1-git-send-email-ldewangan@nvidia.com> <1334214492-23044-3-git-send-email-ldewangan@nvidia.com> <4F86A26B.1090209@cam.ac.uk>
+In-Reply-To: <4F86A26B.1090209@cam.ac.uk>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
-X-OriginalArrivalTime: 12 Apr 2012 09:44:17.0123 (UTC) FILETIME=[D3CA7330:01CD1890]
-X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Since v3.3 the TPM security chip on a laptop I use prints two messages
-at every boot and every resume:
-    tpm_tis 00:0a: A TPM error (6) occurred attempting to read a pcr value
-    tpm_tis 00:0a: TPM is disabled/deactivated (0x6)
+On Thursday 12 April 2012 03:07 PM, Jonathan Cameron wrote:
+> On 4/12/2012 8:08 AM, Laxman Dewangan wrote:
+>> +What:		/sys/bus/iio/devices/device[n]/proximity_sampling_period
+>> +KernelVersion:	3.5
+>> +Contact:	linux-iio@vger.kernel.org
+>> +Description:
+>> +		Hardware dependent mode for proximity sensor device to set/get
+>> +		the sampling rate of proximity sensing and conversion.
+> Ah, that explains what it is.  Sorry, use
+> in_proximitiy0_sampling_frequency to provide equivalent
+> control please.  Might be a pain here, but this interface will just
+> provide the same info as the existing
+> one in a different form.  Note that sampling_frequency is documented as
+> a general one, but can
+> be extended to individual channels.
+>
 
-The second message is just an informational message, indicating that
-this chip is deactivated (0x6 is TPM_ERR_DEACTIVATED). That doesn't
-bother me. The first message is printed at KERN_ERR level. To me it
-seems that it is not an error if a security chip is deactivated or
-disabled. So suppress that error message in those two cases.
+Ooop, I did not realize that it is there as part of sysfs.h. I was 
+looking for other header to get support for this. I can use this for 
+proximity only but I think I should go with you other suggestion to 
+implement this on channel basis. This will help also in future for other 
+drivers to have different sampling on different channel.
+> Actually add it to the iio-core as an element in the info_mask as I
+> doubt this will be the last time
+> we see this control. This will need to be a precursor patch to the
+> driver obviously.
+>
+> IIO_CHAN_INFO_SAMP_FREQ and the relevant shared and separate macros need
+> to go in
+> iio.h + the text entry in industrialio-core.c
+>
+> If you like I can do this but it'll be quicker if you do :)
 
-Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
----
-0) Tested against v3.3. (This laptop is currently tracking the Fedora 16
-kernel, which is now v3.3 based.) Applies cleanly to v3.4-rc2.
+I will send the patch for implementing this first and then modified 
+version of my driver which actually uses this one.
 
-1) Sent as an RFC because I don't actually use any TPM functionality.
-(At least, that's what I think. I'm entirely unfamiliar with TPM.)
-Moreover, there are a number of code paths that hit this messages, and
-for some of those this patch might hide this error where people still
-would like to see it. But my usage probably doesn't trigger those code
-paths.
-
- drivers/char/tpm/tpm.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
-
-diff --git a/drivers/char/tpm/tpm.c b/drivers/char/tpm/tpm.c
-index 32362cf..40a09b5 100644
---- a/drivers/char/tpm/tpm.c
-+++ b/drivers/char/tpm/tpm.c
-@@ -473,7 +473,7 @@ static ssize_t transmit_cmd(struct tpm_chip *chip, struct tpm_cmd_t *cmd,
- 		return -EFAULT;
- 
- 	err = be32_to_cpu(cmd->header.out.return_code);
--	if (err != 0)
-+	if (err != 0 && err != TPM_ERR_DISABLED && err != TPM_ERR_DEACTIVATED)
- 		dev_err(chip->dev, "A TPM error (%d) occurred %s\n", err, desc);
- 
- 	return err;
--- 
-1.7.7.6
 
