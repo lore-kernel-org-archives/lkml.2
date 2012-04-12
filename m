@@ -1,72 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762963Ab2DLW6O (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Apr 2012 18:58:14 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:43461 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758056Ab2DLW6M (ORCPT
+	id S1758107Ab2DLXBF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Apr 2012 19:01:05 -0400
+Received: from mail-pz0-f52.google.com ([209.85.210.52]:64548 "EHLO
+	mail-pz0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757038Ab2DLXBD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Apr 2012 18:58:12 -0400
+	Thu, 12 Apr 2012 19:01:03 -0400
+Date: Thu, 12 Apr 2012 16:00:58 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: zhangyanfei <zhangyanfei@cn.fujitsu.com>
+Cc: avi@redhat.com, mtosatti@redhat.com, ebiederm@xmission.com, luto@mit.edu,
+        joerg.roedel@amd.com, dzickus@redhat.com, paul.gortmaker@windriver.com,
+        gregkh@suse.de, ludwig.nussel@suse.de, linux-kernel@vger.kernel.org,
+        kvm@vger.kernel.org, kexec@lists.infradead.org
+Subject: Re: [PATCH 3/4] ksysfs: export VMCSINFO via sysfs
+Message-ID: <20120412230058.GA23292@kroah.com>
+References: <4F84E0DF.8040206@cn.fujitsu.com>
+ <4F84E50E.2090008@cn.fujitsu.com>
 MIME-Version: 1.0
-In-Reply-To: <20120412.181256.1267592727086214582.davem@davemloft.net>
-References: <CAMP44s14SQont1wyMeOuWcXUT3U5Tgnoj9mbbgOdVXY_hN0+-w@mail.gmail.com>
-	<CA+55aFyLEJsz1yvu4bYe+RHdhLd-XXEScxtAgje=fyuUM+1XxA@mail.gmail.com>
-	<CAMP44s0yPPqFUO4963MhNb8+c_A=xJi4-eFPJ3s+a1TJ8ZfTtQ@mail.gmail.com>
-	<20120412.181256.1267592727086214582.davem@davemloft.net>
-Date: Fri, 13 Apr 2012 01:58:10 +0300
-Message-ID: <CAMP44s26eJ6mFHt=C+_AJCkGiDAcMq1O1HsCXPZd5-FRYkZoXQ@mail.gmail.com>
-Subject: Re: [ 00/78] 3.3.2-stable review
-From: Felipe Contreras <felipe.contreras@gmail.com>
-To: David Miller <davem@davemloft.net>
-Cc: torvalds@linux-foundation.org, gregkh@linuxfoundation.org, lists@uece.net,
-        linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        linux-wireless@vger.kernel.org, c_manoha@qca.qualcomm.com,
-        ath9k-devel@venema.h4ckr.net, linville@tuxdriver.com
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4F84E50E.2090008@cn.fujitsu.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 13, 2012 at 1:12 AM, David Miller <davem@davemloft.net> wrote:
-> From: Felipe Contreras <felipe.contreras@gmail.com>
-> Date: Fri, 13 Apr 2012 01:04:42 +0300
->
->> Wrong is wrong, before or after the 3.3.1 tag, this patch is not
->> 'stable' material, and removing it does not affect upstream at all.
->
-> What you don't understand is that bug fixes will get lost if you only
-> fix them in -stable, it doesn't matter HOW THEY GOT into -stable.
+On Wed, Apr 11, 2012 at 09:57:34AM +0800, zhangyanfei wrote:
+> This patch creates sysfs file to export where VMCSINFO is allocated,
+> as below:
+>         $ cat /sys/kernel/vmcsinfo
+>         1cb88a0 2000
+> number on the left-hand side is the physical address of VMCSINFO,
+> while the one on the right-hand side is the max size of VMCSINFO.
 
-Let's suppose that c1afdaf was never back-ported from v3.4-rc1, how
-would you have fond out there was an issue with it? There's 10000
-patches in v3.4-rc2, how do you expect to find issues in them?
+Ick, why do you have 2 values in one sysfs file, that's not nice, or
+good.
 
-People found out this issue on v3.4-rc1, so the fix would not have
-been lost, but lets assume it would, v3.3.1 had the issue, the patch
-as reverted in v3.3.2, and v3.4 still had the issue. So what? There's
-already 10000 patches that would never make it to 3.3.x, and many will
-have issues, which is why there would be v3.4.x.
+What's wrong with 2 different files?
 
-> In fact IT HAS FUCKING HAPPENED that we didn't fix something upstream
-> that got fixed in -stable a time long ago when we didn't have the
-> policy we're using now which you're going so unreasonably ape-shit
-> about.
+Also, any new sysfs file you add needs to also have a Documentation/ABI
+entry added as well.
 
-I see how a *fix* on stable could get lost, but this is not a fix.
+But we can't accept this as-is, sorry, please split it up into 2 files.
 
-A lost fix would be like:
-
-v3.3 (bad), v3.3.1 (good), v3.4 (bad)
-
-But the worst-case scenario here would be:
-
-v3.3 (good), v3.3.1 (bad), v3.3.2 (good), v3.4 (bad)
-
-You said this has happened in the past, I challenge you to find a
-single instance of this case: a patch is applied and reverted in
-'stable', and the issue triggered by the patches was not fixed in the
-next version.
-
--- 
-Felipe Contreras
+greg k-h
