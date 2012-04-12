@@ -1,55 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964967Ab2DLOQA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Apr 2012 10:16:00 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:53181 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933556Ab2DLOP6 convert rfc822-to-8bit (ORCPT
+	id S965007Ab2DLOTR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Apr 2012 10:19:17 -0400
+Received: from g1t0026.austin.hp.com ([15.216.28.33]:2280 "EHLO
+	g1t0026.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S964814Ab2DLOTQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Apr 2012 10:15:58 -0400
-From: "Mohammed, Afzal" <afzal@ti.com>
-To: Greg KH <greg@kroah.com>
-CC: "Shilimkar, Santosh" <santosh.shilimkar@ti.com>,
-        Paul Walmsley <paul@pwsan.com>, "V, Aneesh" <aneesh@ti.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        "mgreer@animalcreek.com" <mgreer@animalcreek.com>,
-        "msalter@redhat.com" <msalter@redhat.com>
-Subject: RE: [PATCH v4 0/7] Add TI EMIF SDRAM controller driver
-Thread-Topic: [PATCH v4 0/7] Add TI EMIF SDRAM controller driver
-Thread-Index: AQHNA78a9lhevdYvxk2HV7vF+jKLg5aWSLeAgAAEfgCAAD9ygIAAQRWAgACIIFD//4iqAIAAhkPw
-Date: Thu, 12 Apr 2012 14:15:17 +0000
-Message-ID: <C8443D0743D26F4388EA172BF4E2A7A93E95B4EB@DQHE04.ent.ti.com>
-References: <1331934707-29487-1-git-send-email-aneesh@ti.com>
- <alpine.DEB.2.00.1204112042070.29473@utopia.booyaka.com>
- <20120412030044.GA26236@kroah.com> <4F867A95.9030104@ti.com>
- <20120412131045.GB31384@kroah.com>
- <C8443D0743D26F4388EA172BF4E2A7A93E95947E@DQHE04.ent.ti.com>
- <20120412141050.GA31968@kroah.com>
-In-Reply-To: <20120412141050.GA31968@kroah.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [172.24.170.142]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	Thu, 12 Apr 2012 10:19:16 -0400
+Message-ID: <1334240353.2222.3.camel@lorien2>
+Subject: Re: [PATCH 0/5] ACPI: Add _OST support for ACPI hotplug
+From: Shuah Khan <shuahkhan@gmail.com>
+Reply-To: shuahkhan@gmail.com
+To: Toshi Kani <toshi.kani@hp.com>
+Cc: shuahkhan@gmail.com, lenb@kernel.org, linux-acpi@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Date: Thu, 12 Apr 2012 08:19:13 -0600
+In-Reply-To: <1334170247.20190.34.camel@misato.fc.hp.com>
+References: <1334096510-17319-1-git-send-email-toshi.kani@hp.com>
+	 <1334161991.2226.18.camel@lorien2>
+	 <1334170247.20190.34.camel@misato.fc.hp.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2- 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Greg,
 
-On Thu, Apr 12, 2012 at 19:40:50, Greg KH wrote:
-> > There is another memory controller used in a few TI SoCs,
-> > namely GPMC [1], do you prefer having it too there.
+> Hi Shuah,
 > 
-> Sure, why not?
+> The fake _OST methods print arguments to verify successful execution of
+> the methods.  Since the purpose of _OST is firmware-internal
+> communication, there is no difference in testing on real firmware from
+> the OS perspective.  Overriding DSDT with fake ACPI methods is a
+> well-established and widely used testing method as well.
 
-Thanks a lot, we were struggling to find a suitable location for the driver.
+Toshi,
 
-Regards
-Afzal 
+This patch hasn't gone through sufficient new functionality testing as
+the only testing that was done was exercising it with stubbed out
+firmware calls. I am not clear on how much regression testing this patch
+has undergone. Sorry, it doesn't give me the warm and fuzzies.
+
+-- Shuah
+
+
