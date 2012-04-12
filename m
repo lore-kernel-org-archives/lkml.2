@@ -1,102 +1,362 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751179Ab2DLEC1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Apr 2012 00:02:27 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:56937 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750812Ab2DLECZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Apr 2012 00:02:25 -0400
-Date: Thu, 12 Apr 2012 14:02:06 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>,
-        <linux-arm-kernel@lists.infradead.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Chris Ball <cjb@laptop.org>, Sascha Hauer <s.hauer@pengutronix.de>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>
-Subject: linux-next: manual merge of the arm-soc tree with the mmc tree
-Message-Id: <20120412140206.704731281bf2ee7d93d582bf@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0beta6 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Thu__12_Apr_2012_14_02_06_+1000_IEfsyftxLM7A2z8R"
+	id S1751262Ab2DLEEN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Apr 2012 00:04:13 -0400
+Received: from fifo99.com ([67.223.236.141]:53407 "EHLO fifo99.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750812Ab2DLEEL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Apr 2012 00:04:11 -0400
+From: Daniel Walker <dwalker@fifo99.com>
+To: David Brown <davidb@codeaurora.org>
+Cc: Bryan Huntsman <bryanh@codeaurora.org>,
+        Russell King <linux@arm.linux.org.uk>, linux-kernel@vger.kernel.org,
+        Daniel Walker <dwalker@fifo99.com>
+Subject: [PATCH 1/2] arm: msm: fix up very basic HTC Sapphire support
+Date: Wed, 11 Apr 2012 21:04:01 -0700
+Message-Id: <1334203443-30011-1-git-send-email-dwalker@fifo99.com>
+X-Mailer: git-send-email 1.7.10.130.g36e6c
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Thu__12_Apr_2012_14_02_06_+1000_IEfsyftxLM7A2z8R
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Adds sapphire into the make file, and fixes all the code problems that
+prevented it from building (including adding board-sapphire.h)
 
-Hi all,
+Signed-off-by: Daniel Walker <dwalker@fifo99.com>
+---
+ arch/arm/mach-msm/Kconfig          |   10 +-
+ arch/arm/mach-msm/Makefile         |    1 +
+ arch/arm/mach-msm/board-sapphire.c |   18 +--
+ arch/arm/mach-msm/board-sapphire.h |  224 ++++++++++++++++++++++++++++++++++++
+ 4 files changed, 235 insertions(+), 18 deletions(-)
+ create mode 100644 arch/arm/mach-msm/board-sapphire.h
 
-Today's linux-next merge of the arm-soc tree got a conflict in
-drivers/mmc/host/Kconfig between commit a334b9550294 ("mmc: remove imxmmc
-driver") from the mmc tree and commits a21a92c0c787 ("mmc: Kconfig: remove
-choice between at91_mci and atmel-mci") and 62080f06de6b ("mmc:
-atmel-mci: remove the need for CONFIG_MMC_ATMELMCI_DMA") from the arm-soc
-tree.
+diff --git a/arch/arm/mach-msm/Kconfig b/arch/arm/mach-msm/Kconfig
+index 1cd40ad..04f3b8e 100644
+--- a/arch/arm/mach-msm/Kconfig
++++ b/arch/arm/mach-msm/Kconfig
+@@ -6,7 +6,6 @@ choice
+ 
+ config ARCH_MSM7X00A
+ 	bool "MSM7x00A / MSM7x01A"
+-	select MACH_TROUT if !MACH_HALIBUT
+ 	select ARCH_MSM_ARM11
+ 	select MSM_SMD
+ 	select MSM_SMD_PKG3
+@@ -80,6 +79,7 @@ config  MSM_VIC
+ menu "Qualcomm MSM Board Type"
+ 
+ config MACH_HALIBUT
++	select MACH_TROUT if !MACH_SAPPHIRE && !MACH_HALIBUT
+ 	depends on ARCH_MSM
+ 	depends on ARCH_MSM7X00A
+ 	bool "Halibut Board (QCT SURF7201A)"
+@@ -93,6 +93,14 @@ config MACH_TROUT
+ 	help
+ 	  Support for the HTC Dream, T-Mobile G1, Android ADP1 devices.
+ 
++config MACH_SAPPHIRE
++	select MACH_TROUT if !MACH_HALIBUT && !MACH_SAPPHIRE
++	depends on ARCH_MSM
++	depends on ARCH_MSM7X00A
++	bool "HTC Sapphire"
++	help
++	  Support for the HTC Sapphire.
++
+ config MACH_MSM7X30_SURF
+ 	depends on ARCH_MSM7X30
+ 	bool "MSM7x30 SURF"
+diff --git a/arch/arm/mach-msm/Makefile b/arch/arm/mach-msm/Makefile
+index 4ad3969..aff4e5c 100644
+--- a/arch/arm/mach-msm/Makefile
++++ b/arch/arm/mach-msm/Makefile
+@@ -20,6 +20,7 @@ CFLAGS_scm.o :=$(call as-instr,.arch_extension sec,-DREQUIRES_SEC=1)
+ obj-$(CONFIG_HOTPLUG_CPU) += hotplug.o
+ obj-$(CONFIG_SMP) += headsmp.o platsmp.o
+ 
++obj-$(CONFIG_MACH_SAPPHIRE) += board-sapphire.o devices-msm7x00.o
+ obj-$(CONFIG_MACH_TROUT) += board-trout.o board-trout-gpio.o board-trout-mmc.o devices-msm7x00.o
+ obj-$(CONFIG_MACH_TROUT) += board-trout.o board-trout-gpio.o board-trout-mmc.o board-trout-panel.o devices-msm7x00.o
+ obj-$(CONFIG_MACH_HALIBUT) += board-halibut.o devices-msm7x00.o
+diff --git a/arch/arm/mach-msm/board-sapphire.c b/arch/arm/mach-msm/board-sapphire.c
+index 4a8ea0d..e9e7969 100644
+--- a/arch/arm/mach-msm/board-sapphire.c
++++ b/arch/arm/mach-msm/board-sapphire.c
+@@ -38,7 +38,6 @@
+ #include <linux/mtd/nand.h>
+ #include <linux/mtd/partitions.h>
+ 
+-#include "gpio_chip.h"
+ #include "board-sapphire.h"
+ #include "proc_comm.h"
+ #include "devices.h"
+@@ -48,7 +47,6 @@ void msm_init_gpio(void);
+ 
+ static struct platform_device *devices[] __initdata = {
+ 	&msm_device_smd,
+-	&msm_device_dmov,
+ 	&msm_device_nand,
+ 	&msm_device_uart1,
+ 	&msm_device_uart3,
+@@ -78,27 +76,13 @@ static struct map_desc sapphire_io_desc[] __initdata = {
+ static void __init sapphire_fixup(struct tag *tags, char **cmdline,
+ 				  struct meminfo *mi)
+ {
+-	int smi_sz = parse_tag_smi((const struct tag *)tags);
+-
+-	mi->nr_banks = 1;
+-	mi->bank[0].start = PHYS_OFFSET;
+-	mi->bank[0].node = PHYS_TO_NID(PHYS_OFFSET);
+-	if (smi_sz == 32) {
+-		mi->bank[0].size = (84*1024*1024);
+-	} else if (smi_sz == 64) {
+-		mi->bank[0].size = (101*1024*1024);
+-	} else {
+-		/* Give a default value when not get smi size */
+-		smi_sz = 64;
+-		mi->bank[0].size = (101*1024*1024);
+-	}
+ }
+ 
+ static void __init sapphire_map_io(void)
+ {
+ 	msm_map_common_io();
+ 	iotable_init(sapphire_io_desc, ARRAY_SIZE(sapphire_io_desc));
+-	msm_clock_init();
++	msm_clock_init(msm_clocks_7x01a, msm_num_clocks_7x01a);
+ }
+ 
+ MACHINE_START(SAPPHIRE, "sapphire")
+diff --git a/arch/arm/mach-msm/board-sapphire.h b/arch/arm/mach-msm/board-sapphire.h
+new file mode 100644
+index 0000000..70f925e
+--- /dev/null
++++ b/arch/arm/mach-msm/board-sapphire.h
+@@ -0,0 +1,224 @@
++/* linux/arch/arm/mach-msm/board-sapphire.h
++ * Copyright (C) 2007-2009 HTC Corporation.
++ * Author: Thomas Tsai <thomas_tsai@htc.com>
++ *
++ * This software is licensed under the terms of the GNU General Public
++ * License version 2, as published by the Free Software Foundation, and
++ * may be copied, distributed, and modified under those terms.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++*/
++#ifndef __ARCH_ARM_MACH_MSM_BOARD_SAPPHIRE_H
++#define __ARCH_ARM_MACH_MSM_BOARD_SAPPHIRE_H
++
++#include <mach/board.h>
++
++#define MSM_SMI_BASE		0x00000000
++#define MSM_SMI_SIZE		0x00800000
++
++#define MSM_EBI_BASE		0x10000000
++#define MSM_EBI_SIZE		0x07100000
++
++#define MSM_PMEM_GPU0_BASE	0x00000000
++#define MSM_PMEM_GPU0_SIZE	0x00700000
++
++#define SMI64_MSM_PMEM_MDP_BASE	0x15900000
++#define SMI64_MSM_PMEM_MDP_SIZE	0x00800000
++
++#define SMI64_MSM_PMEM_ADSP_BASE	0x16100000
++#define SMI64_MSM_PMEM_ADSP_SIZE	0x00800000
++
++#define SMI64_MSM_PMEM_CAMERA_BASE	0x15400000
++#define SMI64_MSM_PMEM_CAMERA_SIZE	0x00500000
++
++#define SMI64_MSM_FB_BASE		0x00700000
++#define SMI64_MSM_FB_SIZE		0x00100000
++
++#define SMI64_MSM_LINUX_BASE		MSM_EBI_BASE
++#define SMI64_MSM_LINUX_SIZE		0x068e0000
++
++#define SMI64_MSM_LINUX_BASE_1		0x02000000
++#define SMI64_MSM_LINUX_SIZE_1		0x02000000
++
++#define SMI64_MSM_LINUX_BASE_2		MSM_EBI_BASE
++#define SMI64_MSM_LINUX_SIZE_2		0x05400000
++
++#define SMI32_MSM_LINUX_BASE		MSM_EBI_BASE
++#define SMI32_MSM_LINUX_SIZE		0x5400000
++
++#define SMI32_MSM_PMEM_MDP_BASE	(SMI32_MSM_LINUX_BASE + SMI32_MSM_LINUX_SIZE)
++#define SMI32_MSM_PMEM_MDP_SIZE	0x800000
++
++#define SMI32_MSM_PMEM_ADSP_BASE	(SMI32_MSM_PMEM_MDP_BASE + SMI32_MSM_PMEM_MDP_SIZE)
++#define SMI32_MSM_PMEM_ADSP_SIZE	0x800000
++
++#define SMI32_MSM_FB_BASE		(SMI32_MSM_PMEM_ADSP_BASE + SMI32_MSM_PMEM_ADSP_SIZE)
++#define SMI32_MSM_FB_SIZE		0x9b000
++
++
++#define MSM_PMEM_GPU1_SIZE	0x800000
++#define MSM_PMEM_GPU1_BASE     (MSM_RAM_CONSOLE_BASE + MSM_RAM_CONSOLE_SIZE)
++
++#define MSM_RAM_CONSOLE_BASE	0x169E0000
++#define MSM_RAM_CONSOLE_SIZE	(128 * SZ_1K)
++
++#if (SMI32_MSM_FB_BASE + SMI32_MSM_FB_SIZE) >= (MSM_PMEM_GPU1_BASE)
++#error invalid memory map
++#endif
++
++#if (SMI64_MSM_FB_BASE + SMI64_MSM_FB_SIZE) >= (MSM_PMEM_GPU1_BASE)
++#error invalid memory map
++#endif
++
++#define DECLARE_MSM_IOMAP
++#include <mach/msm_iomap.h>
++
++/*
++** SOC GPIO
++*/
++#define SAPPHIRE_BALL_UP_0     94
++#define SAPPHIRE_BALL_LEFT_0   18
++#define SAPPHIRE_BALL_DOWN_0   49
++#define SAPPHIRE_BALL_RIGHT_0  19
++
++#define SAPPHIRE_POWER_KEY     20
++#define SAPPHIRE_VOLUME_UP     36
++#define SAPPHIRE_VOLUME_DOWN   39
++
++#define SAPPHIRE_GPIO_PS_HOLD   (25)
++#define SAPPHIRE_MDDI_1V5_EN	(28)
++#define SAPPHIRE_BL_PWM			(27)
++#define SAPPHIRE_TP_LS_E	(1)
++#define SAPPHIRE20_TP_LS_EN			(88)
++
++/* H2W */
++#define SAPPHIRE_GPIO_CABLE_IN1		(83)
++#define SAPPHIRE_GPIO_CABLE_IN2		(37)
++#define SAPPHIRE_GPIO_UART3_RX		(86)
++#define SAPPHIRE_GPIO_UART3_TX		(87)
++#define SAPPHIRE_GPIO_H2W_DATA		(86)
++#define SAPPHIRE_GPIO_H2W_CLK		(87)
++
++#define SAPPHIRE_GPIO_UART1_RTS		(43)
++#define SAPPHIRE_GPIO_UART1_CTS		(44)
++
++/*
++** CPLD GPIO
++**
++** Sapphire Altera CPLD can keep the registers value and
++** doesn't need a shadow to backup.
++**/
++#define SAPPHIRE_CPLD_BASE   0xFA000000	/* VA */
++#define SAPPHIRE_CPLD_START  0x98000000	/* PA */
++#define SAPPHIRE_CPLD_SIZE   SZ_4K
++
++#define SAPPHIRE_GPIO_START (128)			/* Pseudo GPIO number */
++
++/* Sapphire has one INT BANK only. */
++#define SAPPHIRE_GPIO_INT_B0_MASK_REG           (0x0c)	/*INT3 MASK*/
++#define SAPPHIRE_GPIO_INT_B0_STAT_REG           (0x0e)	/*INT1 STATUS*/
++
++/* LED control register */
++#define SAPPHIRE_CPLD_LED_BASE			(SAPPHIRE_CPLD_BASE + 0x10)	/* VA */
++#define SAPPHIRE_CPLD_LED_START			(SAPPHIRE_CPLD_START + 0x10)	/* PA */
++#define SAPPHIRE_CPLD_LED_SIZE			0x08
++
++/* MISCn: GPO pin to Enable/Disable some functions. */
++#define SAPPHIRE_GPIO_MISC1_BASE		(SAPPHIRE_GPIO_START + 0x00)
++#define SAPPHIRE_GPIO_MISC2_BASE		(SAPPHIRE_GPIO_START + 0x08)
++#define SAPPHIRE_GPIO_MISC3_BASE		(SAPPHIRE_GPIO_START + 0x10)
++#define SAPPHIRE_GPIO_MISC4_BASE		(SAPPHIRE_GPIO_START + 0x18)
++#define SAPPHIRE_GPIO_MISC5_BASE		(SAPPHIRE_GPIO_START + 0x20)
++
++/* INT BANK0: INT1: int status, INT2: int level, INT3: int Mask */
++#define SAPPHIRE_GPIO_INT_B0_BASE		(SAPPHIRE_GPIO_START + 0x28)
++
++/* MISCn GPIO: */
++#define SAPPHIRE_GPIO_CPLD128_VER_0		(SAPPHIRE_GPIO_MISC1_BASE + 4)
++#define SAPPHIRE_GPIO_CPLD128_VER_1		(SAPPHIRE_GPIO_MISC1_BASE + 5)
++#define SAPPHIRE_GPIO_CPLD128_VER_2		(SAPPHIRE_GPIO_MISC1_BASE + 6)
++#define SAPPHIRE_GPIO_CPLD128_VER_3		(SAPPHIRE_GPIO_MISC1_BASE + 7)
++
++#define SAPPHIRE_GPIO_H2W_DAT_DIR		(SAPPHIRE_GPIO_MISC2_BASE + 2)
++#define SAPPHIRE_GPIO_H2W_CLK_DIR		(SAPPHIRE_GPIO_MISC2_BASE + 3)
++#define SAPPHIRE_GPIO_H2W_SEL0	  		(SAPPHIRE_GPIO_MISC2_BASE + 6)
++#define SAPPHIRE_GPIO_H2W_SEL1			(SAPPHIRE_GPIO_MISC2_BASE + 7)
++
++#define SAPPHIRE_GPIO_I2C_PULL			(SAPPHIRE_GPIO_MISC3_BASE + 2)
++#define SAPPHIRE_GPIO_TP_EN			(SAPPHIRE_GPIO_MISC3_BASE + 4)
++#define SAPPHIRE_GPIO_JOG_EN			(SAPPHIRE_GPIO_MISC3_BASE + 5)
++#define SAPPHIRE_GPIO_JOG_LED_EN		(SAPPHIRE_GPIO_MISC3_BASE + 6)
++#define SAPPHIRE_GPIO_APKEY_LED_EN		(SAPPHIRE_GPIO_MISC3_BASE + 7)
++
++#define SAPPHIRE_GPIO_VCM_PWDN			(SAPPHIRE_GPIO_MISC4_BASE + 0)
++#define SAPPHIRE_GPIO_USB_H2W_SW		(SAPPHIRE_GPIO_MISC4_BASE + 1)
++#define SAPPHIRE_GPIO_COMPASS_RST_N		(SAPPHIRE_GPIO_MISC4_BASE + 2)
++#define SAPPHIRE_GPIO_USB_PHY_RST_N		(SAPPHIRE_GPIO_MISC4_BASE + 5)
++#define SAPPHIRE_GPIO_WIFI_PA_RESETX		(SAPPHIRE_GPIO_MISC4_BASE + 6)
++#define SAPPHIRE_GPIO_WIFI_EN			(SAPPHIRE_GPIO_MISC4_BASE + 7)
++
++#define SAPPHIRE_GPIO_BT_32K_EN			(SAPPHIRE_GPIO_MISC5_BASE + 0)
++#define SAPPHIRE_GPIO_MAC_32K_EN		(SAPPHIRE_GPIO_MISC5_BASE + 1)
++#define SAPPHIRE_GPIO_MDDI_32K_EN		(SAPPHIRE_GPIO_MISC5_BASE + 2)
++#define SAPPHIRE_GPIO_COMPASS_32K_EN		(SAPPHIRE_GPIO_MISC5_BASE + 3)
++
++/* INT STATUS/LEVEL/MASK : INT GPIO should be the last. */
++#define SAPPHIRE_GPIO_NAVI_ACT_N		(SAPPHIRE_GPIO_INT_B0_BASE + 0)
++#define SAPPHIRE_GPIO_COMPASS_IRQ		(SAPPHIRE_GPIO_INT_B0_BASE + 1)
++#define SAPPHIRE_GPIO_SEARCH_ACT_N		(SAPPHIRE_GPIO_INT_B0_BASE + 2)
++#define SAPPHIRE_GPIO_AUD_HSMIC_DET_N		(SAPPHIRE_GPIO_INT_B0_BASE + 3)
++#define SAPPHIRE_GPIO_SDMC_CD_N			(SAPPHIRE_GPIO_INT_B0_BASE + 4)
++#define SAPPHIRE_GPIO_CAM_BTN_STEP1_N		(SAPPHIRE_GPIO_INT_B0_BASE + 5)
++#define SAPPHIRE_GPIO_CAM_BTN_STEP2_N		(SAPPHIRE_GPIO_INT_B0_BASE + 6)
++#define SAPPHIRE_GPIO_TP_ATT_N			(SAPPHIRE_GPIO_INT_B0_BASE + 7)
++
++#define	SAPPHIRE_GPIO_END			SAPPHIRE_GPIO_TP_ATT_N
++#define	SAPPHIRE_GPIO_LAST_INT			(SAPPHIRE_GPIO_TP_ATT_N)
++
++/* Bit position in the CPLD MISCn by the CPLD GPIOn: only bit0-7 is used. */
++#define	CPLD_GPIO_BIT_POS_MASK(n)	(1U << ((n) & 7))
++#define	CPLD_GPIO_REG_OFFSET(n)		_g_CPLD_MISCn_Offset[((n)-SAPPHIRE_GPIO_START) >> 3]
++#define	CPLD_GPIO_REG(n)		(CPLD_GPIO_REG_OFFSET(n) + SAPPHIRE_CPLD_BASE)
++
++/*
++** CPLD INT Start
++*/
++#define SAPPHIRE_INT_START 					(NR_MSM_IRQS + NR_GPIO_IRQS)	/* pseudo number for CPLD INT */
++/* Using INT status/Bank0 for GPIO to INT */
++#define	SAPPHIRE_GPIO_TO_INT(n)				((n-SAPPHIRE_GPIO_INT_B0_BASE) + SAPPHIRE_INT_START)
++#define SAPPHIRE_INT_END 					(SAPPHIRE_GPIO_TO_INT(SAPPHIRE_GPIO_END))
++
++/* get the INT reg by GPIO number */
++#define	CPLD_INT_GPIO_TO_BANK(n)			(((n)-SAPPHIRE_GPIO_INT_B0_BASE) >> 3)
++#define	CPLD_INT_STATUS_REG_OFFSET_G(n)		_g_INT_BANK_Offset[CPLD_INT_GPIO_TO_BANK(n)][0]
++#define	CPLD_INT_LEVEL_REG_OFFSET_G(n)		_g_INT_BANK_Offset[CPLD_INT_GPIO_TO_BANK(n)][1]
++#define	CPLD_INT_MASK_REG_OFFSET_G(n)		_g_INT_BANK_Offset[CPLD_INT_GPIO_TO_BANK(n)][2]
++#define	CPLD_INT_STATUS_REG_G(n)			(SAPPHIRE_CPLD_BASE + CPLD_INT_STATUS_REG_OFFSET_G(n))
++#define	CPLD_INT_LEVEL_REG_G(n)				(SAPPHIRE_CPLD_BASE + CPLD_INT_LEVEL_REG_OFFSET_G(n))
++#define	CPLD_INT_MASK_REG_G(n)				(SAPPHIRE_CPLD_BASE + CPLD_INT_MASK_REG_OFFSET_G(n))
++
++/* get the INT reg by INT number */
++#define	CPLD_INT_TO_BANK(i)					((i-SAPPHIRE_INT_START) >> 3)
++#define	CPLD_INT_STATUS_REG_OFFSET(i)		_g_INT_BANK_Offset[CPLD_INT_TO_BANK(i)][0]
++#define	CPLD_INT_LEVEL_REG_OFFSET(i)		_g_INT_BANK_Offset[CPLD_INT_TO_BANK(i)][1]
++#define	CPLD_INT_MASK_REG_OFFSET(i)			_g_INT_BANK_Offset[CPLD_INT_TO_BANK(i)][2]
++#define	CPLD_INT_STATUS_REG(i)				(SAPPHIRE_CPLD_BASE + CPLD_INT_STATUS_REG_OFFSET(i))
++#define	CPLD_INT_LEVEL_REG(i)				(SAPPHIRE_CPLD_BASE + CPLD_INT_LEVEL_REG_OFFSET(i))
++#define	CPLD_INT_MASK_REG(i)				(SAPPHIRE_CPLD_BASE + CPLD_INT_MASK_REG_OFFSET(i))
++
++/* return the bit mask by INT number */
++#define SAPPHIRE_INT_BIT_MASK(i) 			(1U << ((i - SAPPHIRE_INT_START) & 7))
++
++void config_sapphire_camera_on_gpios(void);
++void config_sapphire_camera_off_gpios(void);
++int sapphire_get_smi_size(void);
++unsigned int sapphire_get_hwid(void);
++unsigned int sapphire_get_skuid(void);
++unsigned int is_12pin_camera(void);
++int sapphire_is_5M_camera(void);
++int sapphire_gpio_write(struct gpio_chip *chip, unsigned n, unsigned on);
++
++#endif /* GUARD */
+-- 
+1.7.10.130.g36e6c
 
-I fixed it up (see below) and can carry the fix as necessary.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
-diff --cc drivers/mmc/host/Kconfig
-index 9f1f5e2,4d15dff..0000000
---- a/drivers/mmc/host/Kconfig
-+++ b/drivers/mmc/host/Kconfig
-@@@ -295,18 -288,16 +288,6 @@@ config MMC_ATMELMC
- =20
-  	  If unsure, say N.
- =20
-- endchoice
--=20
-- config MMC_ATMELMCI_DMA
-- 	bool "Atmel MCI DMA support"
-- 	depends on MMC_ATMELMCI && (AVR32 || ARCH_AT91SAM9G45) && DMA_ENGINE
-- 	help
-- 	  Say Y here to have the Atmel MCI driver use a DMA engine to
-- 	  do data transfers and thus increase the throughput and
-- 	  reduce the CPU utilization.
--=20
-- 	  If unsure, say N.
--=20
- -config MMC_IMX
- -	tristate "Motorola i.MX Multimedia Card Interface support"
- -	depends on ARCH_MX1
- -	help
- -	  This selects the Motorola i.MX Multimedia card Interface.
- -	  If you have a i.MX platform with a Multimedia Card slot,
- -	  say Y or M here.
- -
- -	  If unsure, say N.
- -
-  config MMC_MSM
-  	tristate "Qualcomm SDCC Controller Support"
-  	depends on MMC && ARCH_MSM
-
---Signature=_Thu__12_Apr_2012_14_02_06_+1000_IEfsyftxLM7A2z8R
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJPhlO+AAoJEECxmPOUX5FEkogQAIwzdu2ZnmLycpnFwyXTy09q
-bEwrFwdTKnvlN9Oq6/PaWgau640/IWtosG0Hx1g5J+tFpRLAOB1YLXxRTkpkaZOm
-DHF1Vrp9DQXw4wEY8w+LDa0S1Wq1a0cal+w6Zd6BOti629GVSSPQvMffFIHogFhd
-Er94AuCSaDLU9bSjmdH3/jt3wV9p62nPGn2BNKdPntn8K972Lyw1/srHV7vF3GJP
-7+8urryjDyQ23Uj4eYcIfDORQLT9RwL1igb+Q5EMzy99boRsLQC+Q0IIIBbhAoT/
-IWyjz3+JoNC38OkaEg/2ej/De6hFXBHWNKQ9s6L+I3BgJ5Vi6mzHqjgpGWKBrggJ
-v1i13rEYZ9QQJfAFc9mBXajwwUz8NbDM2rBM0ua9hZqYpuqu125RaRnmvmpd7kMv
-6nN0sYPQT0g6LMWSSegMWo5wgCv3ZuT1d0cMYXkz2s1hTBmeREAPJXap16tMI+do
-PYwVFtR8SQOxNLqiO30xckJLEpQdigvViJhgjcT1fpA1d7FfdcWKq+Py7C02AwqO
-hBSds8bCfXphYQtruNhkttLeZ45k1DaPuVyOOnygy/864AYURaitbOnDkXzftWfw
-vL+pLtELojMFC0v0vhGfe3ENFPs/ViKWOi1fHep99Jn86CPu+YndmvVqRRHqPPUb
-eehmg9ilmPHeJ/x2q3Gg
-=jSNa
------END PGP SIGNATURE-----
-
---Signature=_Thu__12_Apr_2012_14_02_06_+1000_IEfsyftxLM7A2z8R--
