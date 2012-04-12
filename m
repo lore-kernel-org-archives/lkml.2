@@ -1,73 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760792Ab2DLXjw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Apr 2012 19:39:52 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:34863 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757900Ab2DLXjv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Apr 2012 19:39:51 -0400
-Date: Thu, 12 Apr 2012 20:08:28 -0300
-From: Marcelo Tosatti <mtosatti@redhat.com>
-To: Xiao Guangrong <xiaoguangrong.eric@gmail.com>
-Cc: Avi Kivity <avi@redhat.com>,
-        Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>,
-        LKML <linux-kernel@vger.kernel.org>, KVM <kvm@vger.kernel.org>
-Subject: Re: [PATCH 08/13] KVM: MMU: fask check whether page is writable
-Message-ID: <20120412230828.GA20207@amt.cnet>
-References: <4F742951.7080003@linux.vnet.ibm.com>
- <4F742A74.1050304@linux.vnet.ibm.com>
- <4F7879A1.2020301@redhat.com>
- <4F7DDC6C.90304@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4F7DDC6C.90304@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S966272Ab2DLXj5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Apr 2012 19:39:57 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:53642 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S966243Ab2DLXjz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Apr 2012 19:39:55 -0400
+Date: Thu, 12 Apr 2012 16:39:53 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Konstantin Khlebnikov <khlebnikov@openvz.org>
+Cc: Hugh Dickins <hughd@google.com>, Oleg Nesterov <oleg@redhat.com>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Markus Trippelsdorf <markus@trippelsdorf.de>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Subject: Re: [PATCH 2/2] mm: call complete_vfork_done() after clearing
+ child_tid and flushing rss-counters
+Message-Id: <20120412163953.4cd2314d.akpm@linux-foundation.org>
+In-Reply-To: <20120412080952.26401.2025.stgit@zurg>
+References: <20120409200336.8368.63793.stgit@zurg>
+	<20120412080952.26401.2025.stgit@zurg>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 06, 2012 at 01:54:52AM +0800, Xiao Guangrong wrote:
-> Hi Avi,
-> 
-> Thanks very much for your review!
-> 
-> Sorry for the delay reply since i was on vacation.
-> 
-> On 04/01/2012 11:52 PM, Avi Kivity wrote:
-> 
-> > On 03/29/2012 11:25 AM, Xiao Guangrong wrote:
-> >> Using PTE_LIST_WRITE_PROTECT bit in rmap store the write-protect status to
-> >> avoid unnecessary shadow page walking
-> >>
-> >> Also if no shadow page is indirect, the page is write-free
-> >>
-> >>
-> >> @@ -2262,6 +2291,9 @@ static int mmu_need_write_protect(struct kvm_vcpu *vcpu, gfn_t gfn,
-> >>  	}
-> >>  	if (need_unsync)
-> >>  		kvm_unsync_pages(vcpu, gfn);
-> >> +
-> >> +	*rmap &= ~PTE_LIST_WRITE_PROTECT;
-> >> +
-> >>
-> > 
-> > So what are the rules for PTE_LIST_WRITE_PROTECT?  Is is a cache for the
-> > mmu_need_write_protect?
-> > 
-> > I'd like to understand it, I guess it can be set while write protection
-> > is unneeded, and cleared on the next check?
-> > 
-> 
-> 
-> Yes, it is used as a cache for mmu_need_write_protect.
-> 
-> When the gfn is protected by sync sp or read-only host page we set this bit,
-> and it is be cleared when the sp become unsync or host page becomes writable.
+On Thu, 12 Apr 2012 12:09:53 +0400
+Konstantin Khlebnikov <khlebnikov@openvz.org> wrote:
 
-Wouldnt dropping support for shadow entirely make it much simpler? 
+> Child should wake ups parent from vfork() only after finishing all operations with
+> shared mm. There is no sense to use CLONE_CHILD_CLEARTID together with CLONE_VFORK,
+> but it looks more accurate now.
+> 
+> ...
+>
+> --- a/kernel/fork.c
+> +++ b/kernel/fork.c
+> @@ -728,9 +728,6 @@ void mm_release(struct task_struct *tsk, struct mm_struct *mm)
+>  	/* Get rid of any cached register state */
+>  	deactivate_mm(tsk, mm);
+>  
+> -	if (tsk->vfork_done)
+> -		complete_vfork_done(tsk);
+> -
+>  	/*
+>  	 * If we're exiting normally, clear a user-space tid field if
+>  	 * requested.  We leave this alone when dying by signal, to leave
+> @@ -759,6 +756,13 @@ void mm_release(struct task_struct *tsk, struct mm_struct *mm)
+>  	 */
+>  	if (mm)
+>  		sync_mm_rss(mm);
+> +
+> +	/*
+> +	 * All done, finally we can wake up parent and return this mm to him.
+> +	 * Also kthread_stop() uses this completion for synchronization.
+> +	 */
+> +	if (tsk->vfork_done)
+> +		complete_vfork_done(tsk);
+>  }
 
-The idea to handle RO->RW without mmu_lock is very neat, but the
-complexity with shadow is horrible.
+That does look a bit racy.
 
+But are we really sure that the patch really does fix something? 
+Because it does increase vfork() latency a tiny bit.
 
+I'm going to call this a patch against the fork subsystem, not the mm
+subsystem.
+
+I believe that this patch is unrelated to "mm: set task exit code
+before complete_vfork_done()", yes?
