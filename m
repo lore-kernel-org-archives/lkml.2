@@ -1,121 +1,154 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757379Ab2DLGUg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Apr 2012 02:20:36 -0400
-Received: from mga06.intel.com ([134.134.136.21]:33551 "EHLO
-	orsmga101.jf.intel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1756921Ab2DLGUe convert rfc822-to-8bit (ORCPT
+	id S1759057Ab2DLGUo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Apr 2012 02:20:44 -0400
+Received: from eu1sys200aog113.obsmtp.com ([207.126.144.135]:42886 "EHLO
+	eu1sys200aog113.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757396Ab2DLGUm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Apr 2012 02:20:34 -0400
+	Thu, 12 Apr 2012 02:20:42 -0400
+Message-ID: <4F8673C6.1010301@st.com>
+Date: Thu, 12 Apr 2012 11:48:46 +0530
+From: Viresh Kumar <viresh.kumar@st.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:6.0) Gecko/20110812 Thunderbird/6.0
 MIME-Version: 1.0
-In-Reply-To: <alpine.LNX.2.00.1204120030130.2137@swampdragon.chaosbits.net>
-References: <alpine.LNX.2.00.1202062104440.20117@swampdragon.chaosbits.net>
-	<alpine.LNX.2.00.1203012232480.19443@swampdragon.chaosbits.net>
-	<CALLzPKbAGKL-o66UmWJ4uGSmA1TymdCQA0CfBajHLVYzt_60UA@mail.gmail.com>
-	<alpine.LNX.2.00.1204120030130.2137@swampdragon.chaosbits.net>
-Date: Thu, 12 Apr 2012 09:20:33 +0300
-Message-ID: <CALLzPKY0Jd26gJTgcm5aXLZtzHJKqKVGXipBYtnzsisumnTR5A@mail.gmail.com>
-Subject: Re: [PATCH] mpi: Avoid using freed pointer in mpi_lshift_limbs()
-From: "Kasatkin, Dmitry" <dmitry.kasatkin@intel.com>
-To: Jesper Juhl <jj@chaosbits.net>, James Morris <jmorris@namei.org>
-Cc: linux-kernel@vger.kernel.org, "David S. Miller" <davem@davemloft.net>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+To: Mike Turquette <mturquette@linaro.org>
+Cc: "arnd.bergmann@linaro.org" <arnd.bergmann@linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linaro-dev@lists.linaro.org" <linaro-dev@lists.linaro.org>,
+        "patches@linaro.org" <patches@linaro.org>,
+        Shawn Guo <shawn.guo@linaro.org>, Olof Johansson <olof@lixom.net>,
+        Russell King <linux@arm.linux.org.uk>,
+        Sascha Hauer <s.hauer@pengutronix.de>,
+        Richard Zhao <richard.zhao@linaro.org>,
+        Saravana Kannan <skannan@codeaurora.org>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Andrew Lunn <andrew@lunn.ch>, Rajendra Nayak <rnayak@ti.com>
+Subject: Re: [PATCH 06/13] clk: remove unnecessary EXPORT_SYMBOL_GPL
+References: <1334192572-12499-1-git-send-email-mturquette@linaro.org> <1334192572-12499-7-git-send-email-mturquette@linaro.org>
+In-Reply-To: <1334192572-12499-7-git-send-email-mturquette@linaro.org>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 12, 2012 at 1:31 AM, Jesper Juhl <jj@chaosbits.net> wrote:
-> On Tue, 13 Mar 2012, Kasatkin, Dmitry wrote:
->
->> On Thu, Mar 1, 2012 at 11:33 PM, Jesper Juhl <jj@chaosbits.net> wrote:
->> >
->> > Ping?
->> >
->> > On Mon, 6 Feb 2012, Jesper Juhl wrote:
->> >
->> >> At the start of the function we assign 'a->d' to 'ap'. Then we use the
->> >> RESIZE_IF_NEEDED macro on 'a' - this may free 'a->d' and replace it
->> >> with newly allocaetd storage. In that case, we'll be operating on
->> >> freed memory further down in the function when we index into 'ap[]'.
->> >> Since we don't actually need 'ap' until after the use of the
->> >> RESIZE_IF_NEEDED macro we can just delay the assignment to it until
->> >> after we've potentially resized, thus avoiding the issue.
->> >>
->> >> While I was there anyway I also changed the integer variable 'n' to be
->> >> const. It might as well be since we only assign to it once and use it
->> >> as a constant, and then the compiler will tell us if we ever assign to
->> >> it in the future.
->> >>
->> >> Signed-off-by: Jesper Juhl <jj@chaosbits.net>
->> >> ---
->> >>  lib/mpi/mpi-bit.c |    5 +++--
->> >>  1 files changed, 3 insertions(+), 2 deletions(-)
->> >>
->> >>  only compile tested.
->> >>
->> >> diff --git a/lib/mpi/mpi-bit.c b/lib/mpi/mpi-bit.c
->> >> index 2f52662..0c50536 100644
->> >> --- a/lib/mpi/mpi-bit.c
->> >> +++ b/lib/mpi/mpi-bit.c
->> >> @@ -177,8 +177,8 @@ int mpi_rshift(MPI x, MPI a, unsigned n)
->> >>   */
->> >>  int mpi_lshift_limbs(MPI a, unsigned int count)
->> >>  {
->> >> -     mpi_ptr_t ap = a->d;
->> >> -     int n = a->nlimbs;
->> >> +     const int n = a->nlimbs;
->> >> +     mpi_ptr_t ap;
->> >>       int i;
->> >>
->> >>       if (!count || !n)
->> >> @@ -187,6 +187,7 @@ int mpi_lshift_limbs(MPI a, unsigned int count)
->> >>       if (RESIZE_IF_NEEDED(a, n + count) < 0)
->> >>               return -ENOMEM;
->> >>
->> >> +     ap = a->d;
->> >>       for (i = n - 1; i >= 0; i--)
->> >>               ap[i + count] = ap[i];
->> >>       for (i = 0; i < count; i++)
->> >>
->> >
->> > --
->> > Jesper Juhl <jj@chaosbits.net>       http://www.chaosbits.net/
->> > Don't top-post http://www.catb.org/jargon/html/T/top-post.html
->> > Plain text mails only, please.
->> >
->> > --
->> > To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
->> > the body of a message to majordomo@vger.kernel.org
->> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
->> > Please read the FAQ at  http://www.tux.org/lkml/
->>
->> Hello,
->>
->> I was travelling last week.
->> I will review the patch now..
->>
->
-> Hi.
->
-> Did you get a chance to review the patch?  Did you find it acceptable or
-> flawed?
->
-> If it is OK, what do I need to from this point forward to get it merged?
->
->
+On 4/12/2012 6:32 AM, Mike Turquette wrote:
+> From: Shawn Guo <shawn.guo@linaro.org>
+> 
+> It makes no sense to have EXPORT_SYMBOL_GPL on static functions.
+> 
+> Signed-off-by: Shawn Guo <shawn.guo@linaro.org>
+> Signed-off-by: Mike Turquette <mturquette@linaro.org>
+> Cc: Arnd Bergman <arnd.bergmann@linaro.org>
+> Cc: Olof Johansson <olof@lixom.net>
+> Cc: Russell King <linux@arm.linux.org.uk>
+> Cc: Sascha Hauer <s.hauer@pengutronix.de>
+> Cc: Richard Zhao <richard.zhao@linaro.org>
+> Cc: Saravana Kannan <skannan@codeaurora.org>
+> Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>
+> Cc: Andrew Lunn <andrew@lunn.ch>
+> Cc: Rajendra Nayak <rnayak@ti.com>
+> Cc: Viresh Kumar <viresh.kumar@st.com>
+> ---
+>  drivers/clk/clk-divider.c    |    3 ---
+>  drivers/clk/clk-fixed-rate.c |    1 -
+>  drivers/clk/clk-gate.c       |    3 ---
+>  drivers/clk/clk-mux.c        |    2 --
+>  4 files changed, 0 insertions(+), 9 deletions(-)
+> 
+> diff --git a/drivers/clk/clk-divider.c b/drivers/clk/clk-divider.c
+> index d5ac6a7..231cd6e 100644
+> --- a/drivers/clk/clk-divider.c
+> +++ b/drivers/clk/clk-divider.c
+> @@ -45,7 +45,6 @@ static unsigned long clk_divider_recalc_rate(struct clk_hw *hw,
+>  
+>  	return parent_rate / div;
+>  }
+> -EXPORT_SYMBOL_GPL(clk_divider_recalc_rate);
+>  
+>  /*
+>   * The reverse of DIV_ROUND_UP: The maximum number which
+> @@ -117,7 +116,6 @@ static long clk_divider_round_rate(struct clk_hw *hw, unsigned long rate,
+>  		return r / div;
+>  	}
+>  }
+> -EXPORT_SYMBOL_GPL(clk_divider_round_rate);
+>  
+>  static int clk_divider_set_rate(struct clk_hw *hw, unsigned long rate)
+>  {
+> @@ -147,7 +145,6 @@ static int clk_divider_set_rate(struct clk_hw *hw, unsigned long rate)
+>  
+>  	return 0;
+>  }
+> -EXPORT_SYMBOL_GPL(clk_divider_set_rate);
+>  
+>  struct clk_ops clk_divider_ops = {
+>  	.recalc_rate = clk_divider_recalc_rate,
+> diff --git a/drivers/clk/clk-fixed-rate.c b/drivers/clk/clk-fixed-rate.c
+> index 90c79fb..651b06f 100644
+> --- a/drivers/clk/clk-fixed-rate.c
+> +++ b/drivers/clk/clk-fixed-rate.c
+> @@ -32,7 +32,6 @@ static unsigned long clk_fixed_rate_recalc_rate(struct clk_hw *hw,
+>  {
+>  	return to_clk_fixed_rate(hw)->fixed_rate;
+>  }
+> -EXPORT_SYMBOL_GPL(clk_fixed_rate_recalc_rate);
+>  
+>  struct clk_ops clk_fixed_rate_ops = {
+>  	.recalc_rate = clk_fixed_rate_recalc_rate,
+> diff --git a/drivers/clk/clk-gate.c b/drivers/clk/clk-gate.c
+> index b5902e2..b688f47 100644
+> --- a/drivers/clk/clk-gate.c
+> +++ b/drivers/clk/clk-gate.c
+> @@ -71,7 +71,6 @@ static int clk_gate_enable(struct clk_hw *hw)
+>  
+>  	return 0;
+>  }
+> -EXPORT_SYMBOL_GPL(clk_gate_enable);
+>  
+>  static void clk_gate_disable(struct clk_hw *hw)
+>  {
+> @@ -82,7 +81,6 @@ static void clk_gate_disable(struct clk_hw *hw)
+>  	else
+>  		clk_gate_clear_bit(gate);
+>  }
+> -EXPORT_SYMBOL_GPL(clk_gate_disable);
+>  
+>  static int clk_gate_is_enabled(struct clk_hw *hw)
+>  {
+> @@ -99,7 +97,6 @@ static int clk_gate_is_enabled(struct clk_hw *hw)
+>  
+>  	return reg ? 1 : 0;
+>  }
+> -EXPORT_SYMBOL_GPL(clk_gate_is_enabled);
+>  
+>  struct clk_ops clk_gate_ops = {
+>  	.enable = clk_gate_enable,
+> diff --git a/drivers/clk/clk-mux.c b/drivers/clk/clk-mux.c
+> index 50e0595..45cad61 100644
+> --- a/drivers/clk/clk-mux.c
+> +++ b/drivers/clk/clk-mux.c
+> @@ -55,7 +55,6 @@ static u8 clk_mux_get_parent(struct clk_hw *hw)
+>  
+>  	return val;
+>  }
+> -EXPORT_SYMBOL_GPL(clk_mux_get_parent);
+>  
+>  static int clk_mux_set_parent(struct clk_hw *hw, u8 index)
+>  {
+> @@ -82,7 +81,6 @@ static int clk_mux_set_parent(struct clk_hw *hw, u8 index)
+>  
+>  	return 0;
+>  }
+> -EXPORT_SYMBOL_GPL(clk_mux_set_parent);
+>  
+>  struct clk_ops clk_mux_ops = {
+>  	.get_parent = clk_mux_get_parent,
 
-Hello Jesper & James,
+Reviewed-by: Viresh Kumar <viresh.kumar@st.com>
 
-That is of course correct.
-
-James, can you please apply this patch to security fixes?
-
- Acked-by: Dmitry Kasatkin <dmitry.kasatkin@intel.com>
-
-- Dmitry
-
-> --
-> Jesper Juhl <jj@chaosbits.net>       http://www.chaosbits.net/
-> Don't top-post http://www.catb.org/jargon/html/T/top-post.html
-> Plain text mails only, please.
+-- 
+viresh
