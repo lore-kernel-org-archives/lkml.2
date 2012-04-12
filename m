@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966319Ab2DLXrk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Apr 2012 19:47:40 -0400
-Received: from mail.windriver.com ([147.11.1.11]:60697 "EHLO
+	id S966306Ab2DLXrj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Apr 2012 19:47:39 -0400
+Received: from mail.windriver.com ([147.11.1.11]:60696 "EHLO
 	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S966261Ab2DLXrg (ORCPT
+	with ESMTP id S966259Ab2DLXrg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 12 Apr 2012 19:47:36 -0400
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
@@ -13,107 +13,79 @@ Cc: linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, davem@davemloft.net,
         tony@bakeyournoodle.com, mmarek@suse.cz, lacombar@gmail.com,
         sfr@canb.auug.org.au, Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [PATCH 2/3] Revert "kconfig: fix __enabled_ macros definition for invisible and un-selected symbols"
-Date: Thu, 12 Apr 2012 19:46:33 -0400
-Message-Id: <1334274394-13466-3-git-send-email-paul.gortmaker@windriver.com>
+Subject: [PATCH 0/3] RFC v2: strip 15,000 lines from a typical autoconf.h
+Date: Thu, 12 Apr 2012 19:46:31 -0400
+Message-Id: <1334274394-13466-1-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.7.9.1
-In-Reply-To: <1334274394-13466-1-git-send-email-paul.gortmaker@windriver.com>
+In-Reply-To: <CA+55aFx15+eHNA4LobwiFhe4k94XPTVTLdiBmuR4hDKR5HpWPg@mail.gmail.com>
 References: <CA+55aFx15+eHNA4LobwiFhe4k94XPTVTLdiBmuR4hDKR5HpWPg@mail.gmail.com>
- <1334274394-13466-1-git-send-email-paul.gortmaker@windriver.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This reverts commit 953742c8fe8ac45be453fee959d7be40cd89f920.
+[Re: [PATCH 0/5] RFC: strip 15,000 lines from a typical autoconf.h] On 12/04/2012 (Thu 12:29) Linus Torvalds wrote:
 
-Dumping two lines into autoconf.h for all existing Kconfig
-options results in a giant file (~16k lines) we have to process
-each time we compile something.  We've weaned IS_ENABLED()
-and similar off of requiring the __enabled_ definitions so
-now we can revert the change which caused all the extra lines.
+> On Wed, Apr 11, 2012 at 8:10 PM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+> >
+> > Can we leave the CONFIG_ part in the caller, so they are still grepable, please?
+> >
+> > So:
+> >
+> >	#define config_enabled(x)	(__stringify(x)[0] == '1')
+> 
+> Sure. Except G+ came through, and we now have an even better hack for
+> this, that works entirely in the preprocessor.
+> 
+> That also means that you can use it for static initializers etc, so you can do
+> 
+>    int some_value = config_enabled(CONFIG_ENABLE_XYZ_BY_DEFAULT);
+> 
+> Paul, do you want to write the patch to change IS_ENABLED() to use this trick?
 
-Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
----
- scripts/kconfig/confdata.c |   49 +++++++++++--------------------------------
- 1 files changed, 13 insertions(+), 36 deletions(-)
+Sure -- I've done this in patch #1 of the (now) three patches.
 
-diff --git a/scripts/kconfig/confdata.c b/scripts/kconfig/confdata.c
-index 0586085..9d06744 100644
---- a/scripts/kconfig/confdata.c
-+++ b/scripts/kconfig/confdata.c
-@@ -489,6 +489,17 @@ header_print_symbol(FILE *fp, struct symbol *sym, const char *value, void *arg)
- 			fprintf(fp, "#define %s%s%s 1\n",
- 			    CONFIG_, sym->name, suffix);
- 		}
-+		/*
-+		 * Generate the __enabled_CONFIG_* and
-+		 * __enabled_CONFIG_*_MODULE macros for use by the
-+		 * IS_{ENABLED,BUILTIN,MODULE} macros. The _MODULE variant is
-+		 * generated even for booleans so that the IS_ENABLED() macro
-+		 * works.
-+		 */
-+		fprintf(fp, "#define __enabled_" CONFIG_ "%s %d\n",
-+				sym->name, (*value == 'y'));
-+		fprintf(fp, "#define __enabled_" CONFIG_ "%s_MODULE %d\n",
-+				sym->name, (*value == 'm'));
- 		break;
- 	}
- 	case S_HEX: {
-@@ -540,35 +551,6 @@ static struct conf_printer header_printer_cb =
- };
- 
- /*
-- * Generate the __enabled_CONFIG_* and __enabled_CONFIG_*_MODULE macros for
-- * use by the IS_{ENABLED,BUILTIN,MODULE} macros. The _MODULE variant is
-- * generated even for booleans so that the IS_ENABLED() macro works.
-- */
--static void
--header_print__enabled_symbol(FILE *fp, struct symbol *sym, const char *value, void *arg)
--{
--
--	switch (sym->type) {
--	case S_BOOLEAN:
--	case S_TRISTATE: {
--		fprintf(fp, "#define __enabled_" CONFIG_ "%s %d\n",
--		    sym->name, (*value == 'y'));
--		fprintf(fp, "#define __enabled_" CONFIG_ "%s_MODULE %d\n",
--		    sym->name, (*value == 'm'));
--		break;
--	}
--	default:
--		break;
--	}
--}
--
--static struct conf_printer header__enabled_printer_cb =
--{
--	.print_symbol = header_print__enabled_symbol,
--	.print_comment = header_print_comment,
--};
--
--/*
-  * Tristate printer
-  *
-  * This printer is used when generating the `include/config/tristate.conf' file.
-@@ -949,16 +931,11 @@ int conf_write_autoconf(void)
- 	conf_write_heading(out_h, &header_printer_cb, NULL);
- 
- 	for_all_symbols(i, sym) {
--		if (!sym->name)
--			continue;
--
- 		sym_calc_value(sym);
--
--		conf_write_symbol(out_h, sym, &header__enabled_printer_cb, NULL);
--
--		if (!(sym->flags & SYMBOL_WRITE))
-+		if (!(sym->flags & SYMBOL_WRITE) || !sym->name)
- 			continue;
- 
-+		/* write symbol to auto.conf, tristate and header files */
- 		conf_write_symbol(out, sym, &kconfig_printer_cb, (void *)1);
- 
- 		conf_write_symbol(tristate, sym, &tristate_printer_cb, (void *)1);
+I've dropped all the patches relating to phasing out the users
+of IS_ENABLED within C code, since now they should just work.
+
+> 
+> Trick courtesy of "comex ." on G+ (please do give him credit even if
+> he doesn't seem to use his real name):
+> 
+>   #define is_set(macro) is_set_(macro)
+>   #define macrotest_1 ,
+>   #define is_set_(value) is_set__(macrotest_##value)
+>   #define is_set__(comma) is_set___(comma 1, 0)
+>   #define is_set___(_, v, ...) v
+> 
+> and now "is_set(CONFIG_xyzzy)" works, and gives either 1 or 0 directly
+> in the preprocessor.
+> 
+> Obviously the names have to be changed here (let's not use
+> "macrotest_1" - make it something more internal), but the concept is
+> solid, and I would actually suggest having this as a generic "is this
+> macro set to 1" helper first, and then implement IS_ENABLED() in terms
+> of that.
+
+Hopefully the names I've chosen are OK.  Please have a look.
+
+Thanks,
+Paul.
+
+> 
+> My likee.
+> 
+>                        Linus
+
+Paul Gortmaker (3):
+  kconfig: fix IS_ENABLED to not require all options to be defined
+  Revert "kconfig: fix __enabled_ macros definition for invisible and
+    un-selected symbols"
+  kconfig: delete last traces of __enabled_ from autoconf.h
+
+ include/linux/kconfig.h    |   22 ++++++++++++++++++----
+ scripts/kconfig/confdata.c |   38 ++------------------------------------
+ 2 files changed, 20 insertions(+), 40 deletions(-)
+
 -- 
 1.7.9.1
 
