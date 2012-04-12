@@ -1,84 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934181Ab2DLNOV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Apr 2012 09:14:21 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:8437 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1761978Ab2DLNOS (ORCPT
+	id S964791Ab2DLNPW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Apr 2012 09:15:22 -0400
+Received: from ppsw-41.csi.cam.ac.uk ([131.111.8.141]:33244 "EHLO
+	ppsw-41.csi.cam.ac.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757557Ab2DLNPV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Apr 2012 09:14:18 -0400
-X-Authority-Analysis: v=2.0 cv=P4S4d18u c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=XQbtiDEiEegA:10 a=dQM_NurO7VcA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=VnNF1IyMAAAA:8 a=meVymXHHAAAA:8 a=ehThHtbymvL64uL__w0A:9 a=TbP7U5tlfNMV3n8f7vwA:7 a=PUjeQqilurYA:10 a=jeBq3FmKZ4MA:10 a=OPBHYVnBsX_q0tdu:21 a=hiX4-xERMbCNfjXD:21 a=ZycB6UtQUfgMyuk2+PxD7w==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.80.29
-Message-ID: <1334236456.23924.333.camel@gandalf.stny.rr.com>
-Subject: Re: [PATCH UPDATED 3/3] tracing: Provide trace events interface for
- uprobes
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
-        LKML <linux-kernel@vger.kernel.org>, Linux-mm <linux-mm@kvack.org>,
-        Oleg Nesterov <oleg@redhat.com>, Andi Kleen <andi@firstfloor.org>,
-        Christoph Hellwig <hch@infradead.org>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Anton Arapov <anton@redhat.com>
-Date: Thu, 12 Apr 2012 09:14:16 -0400
-In-Reply-To: <20120411103043.GB29437@linux.vnet.ibm.com>
-References: <20120409091133.8343.65289.sendpatchset@srdronam.in.ibm.com>
-	 <20120409091154.8343.50489.sendpatchset@srdronam.in.ibm.com>
-	 <20120411103043.GB29437@linux.vnet.ibm.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.2.2-1 
+	Thu, 12 Apr 2012 09:15:21 -0400
+X-Cam-AntiVirus: no malware found
+X-Cam-SpamDetails: not scanned
+X-Cam-ScannerInfo: http://www.cam.ac.uk/cs/email/scanner/
+Message-ID: <4F86D55F.2030808@cam.ac.uk>
+Date: Thu, 12 Apr 2012 14:15:11 +0100
+From: Jonathan Cameron <jic23@cam.ac.uk>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:11.0) Gecko/20120327 Thunderbird/11.0.1
+MIME-Version: 1.0
+To: Laxman Dewangan <ldewangan@nvidia.com>
+CC: gregkh@linuxfoundation.org, grant.likely@secretlab.ca,
+        rob.herring@calxeda.com, jbrenner@taosinc.com, rklein@nvidia.com,
+        max@stro.at, linux-iio@vger.kernel.org, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org, devicetree-discuss@lists.ozlabs.org
+Subject: Re: [PATCH V3 1/2] staging: iio: add channel info for sampling frequency
+References: <1334234288-25037-1-git-send-email-ldewangan@nvidia.com> <1334234288-25037-2-git-send-email-ldewangan@nvidia.com>
+In-Reply-To: <1334234288-25037-2-git-send-email-ldewangan@nvidia.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-04-11 at 16:00 +0530, Srikar Dronamraju wrote:
-> From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-> 
-> Implements trace_event support for uprobes. In its current form it can
-> be used to put probes at a specified offset in a file and dump the
-> required registers when the code flow reaches the probed address.
-> 
-> The following example shows how to dump the instruction pointer and %ax
-> a register at the probed text address.  Here we are trying to probe
-> zfree in /bin/zsh
-> 
-> # cd /sys/kernel/debug/tracing/
-> # cat /proc/`pgrep  zsh`/maps | grep /bin/zsh | grep r-xp
-> 00400000-0048a000 r-xp 00000000 08:03 130904 /bin/zsh
-> # objdump -T /bin/zsh | grep -w zfree
-> 0000000000446420 g    DF .text  0000000000000012  Base        zfree
-> # echo 'p /bin/zsh:0x46420 %ip %ax' > uprobe_events
-> # cat uprobe_events
-> p:uprobes/p_zsh_0x46420 /bin/zsh:0x0000000000046420
-> # echo 1 > events/uprobes/enable
-> # sleep 20
-> # echo 0 > events/uprobes/enable
-> # cat trace
-> # tracer: nop
-> #
-> #           TASK-PID    CPU#    TIMESTAMP  FUNCTION
-> #              | |       |          |         |
->              zsh-24842 [006] 258544.995456: p_zsh_0x46420: (0x446420) arg1=446421 arg2=79
->              zsh-24842 [007] 258545.000270: p_zsh_0x46420: (0x446420) arg1=446421 arg2=79
->              zsh-24842 [002] 258545.043929: p_zsh_0x46420: (0x446420) arg1=446421 arg2=79
->              zsh-24842 [004] 258547.046129: p_zsh_0x46420: (0x446420) arg1=446421 arg2=79
-> 
-> Signed-off-by: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+On 4/12/2012 1:38 PM, Laxman Dewangan wrote:
+> Adding channel info IIO_CHAN_INFO_SAMP_FREQ to select
+> different sampling frequency per channel wise.
+>
+> Signed-off-by: Laxman Dewangan<ldewangan@nvidia.com>
+> ---
+> As per discussion on previous patch, adding channel info
+> for selecting sampling freqeuncy.
+To match with the existing devices can we not use the abrieviation
+for the attribute naming.
 
-I'm fine with what I see here (still need to fix what Masami suggested).
-
-Acked-by: Steven Rostedt <rostedt@goodmis.org>
-
--- Steve
-
-
-
+Other than that, all good.
+>   drivers/staging/iio/iio.h               |    5 +++++
+>   drivers/staging/iio/industrialio-core.c |    1 +
+>   2 files changed, 6 insertions(+), 0 deletions(-)
+>
+> diff --git a/drivers/staging/iio/iio.h b/drivers/staging/iio/iio.h
+> index b9cd454..9aa0dd5 100644
+> --- a/drivers/staging/iio/iio.h
+> +++ b/drivers/staging/iio/iio.h
+> @@ -36,6 +36,7 @@ enum iio_chan_info_enum {
+>   	IIO_CHAN_INFO_QUADRATURE_CORRECTION_RAW,
+>   	IIO_CHAN_INFO_AVERAGE_RAW,
+>   	IIO_CHAN_INFO_LOW_PASS_FILTER_3DB_FREQUENCY,
+> +	IIO_CHAN_INFO_SAMP_FREQ,
+>   };
+>
+>   #define IIO_CHAN_INFO_SHARED_BIT(type) BIT(type*2)
+> @@ -81,6 +82,10 @@ enum iio_chan_info_enum {
+>   #define IIO_CHAN_INFO_LOW_PASS_FILTER_3DB_FREQUENCY_SEPARATE_BIT \
+>   	IIO_CHAN_INFO_SEPARATE_BIT(			       \
+>   		IIO_CHAN_INFO_LOW_PASS_FILTER_3DB_FREQUENCY)
+> +#define IIO_CHAN_INFO_SAMP_FREQ_SEPARATE_BIT		\
+> +	IIO_CHAN_INFO_SEPARATE_BIT(IIO_CHAN_INFO_SAMP_FREQ)
+> +#define IIO_CHAN_INFO_SAMP_FREQ_SHARED_BIT			\
+> +	IIO_CHAN_INFO_SHARED_BIT(IIO_CHAN_INFO_SAMP_FREQ)
+>
+>   enum iio_endian {
+>   	IIO_CPU,
+> diff --git a/drivers/staging/iio/industrialio-core.c b/drivers/staging/iio/industrialio-core.c
+> index d303bfb..14ce6ce 100644
+> --- a/drivers/staging/iio/industrialio-core.c
+> +++ b/drivers/staging/iio/industrialio-core.c
+> @@ -90,6 +90,7 @@ static const char * const iio_chan_info_postfix[] = {
+>   	[IIO_CHAN_INFO_AVERAGE_RAW] = "mean_raw",
+>   	[IIO_CHAN_INFO_LOW_PASS_FILTER_3DB_FREQUENCY]
+>   	= "filter_low_pass_3db_frequency",
+> +	[IIO_CHAN_INFO_SAMP_FREQ] = "samp_freq",
+"sampling_frequency"
+>   };
+>
+>   const struct iio_chan_spec
 
