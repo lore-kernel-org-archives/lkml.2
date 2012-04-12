@@ -1,97 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759283Ab2DLM4H (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Apr 2012 08:56:07 -0400
-Received: from mail-vb0-f46.google.com ([209.85.212.46]:62086 "EHLO
-	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757496Ab2DLM4F convert rfc822-to-8bit (ORCPT
+	id S1761851Ab2DLNB6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Apr 2012 09:01:58 -0400
+Received: from mail9.hitachi.co.jp ([133.145.228.44]:35153 "EHLO
+	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753176Ab2DLNB5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Apr 2012 08:56:05 -0400
+	Thu, 12 Apr 2012 09:01:57 -0400
+X-AuditID: b753bd60-9518dba000007b1b-fb-4f86d242c2de
+X-AuditID: b753bd60-9518dba000007b1b-fb-4f86d242c2de
+Message-ID: <4F86D241.1030609@hitachi.com>
+Date: Thu, 12 Apr 2012 22:01:53 +0900
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Organization: Hitachi, Ltd., Japan
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:11.0) Gecko/20120327 Thunderbird/11.0.1
 MIME-Version: 1.0
-In-Reply-To: <1334235109.23924.332.camel@gandalf.stny.rr.com>
-References: <1333696481-3433-1-git-send-email-juri.lelli@gmail.com>
-	<1333696481-3433-7-git-send-email-juri.lelli@gmail.com>
-	<CAJd=RBBm8yDBrZFj48tP_5WsG=z0Rsv_=j=kArV1Mj6yJvQjVA@mail.gmail.com>
-	<1334153450.23924.243.camel@gandalf.stny.rr.com>
-	<CAJd=RBDqsr8aBNxokrb5Rc90RNu41ZRLEJJDdXibf238k2c6oQ@mail.gmail.com>
-	<1334235109.23924.332.camel@gandalf.stny.rr.com>
-Date: Thu, 12 Apr 2012 20:56:04 +0800
-Message-ID: <CAJd=RBB1_USDhxgHojaQ27xVREz_jV8u-sCzwgmv8W-khtNZNQ@mail.gmail.com>
-Subject: Re: [PATCH 06/16] sched: SCHED_DEADLINE push and pull logic
-From: Hillf Danton <dhillf@gmail.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Juri Lelli <juri.lelli@gmail.com>, peterz@infradead.org,
-        tglx@linutronix.de, mingo@redhat.com, cfriesen@nortel.com,
-        oleg@redhat.com, fweisbec@gmail.com, darren@dvhart.com,
-        johan.eker@ericsson.com, p.faure@akatech.ch,
-        linux-kernel@vger.kernel.org, claudio@evidence.eu.com,
-        michael@amarulasolutions.com, fcheccon@jasper.es
+To: Prashanth Nageshappa <prashanth@linux.vnet.ibm.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
+        LKML <linux-kernel@vger.kernel.org>, Linux-mm <linux-mm@kvack.org>,
+        Oleg Nesterov <oleg@redhat.com>, Andi Kleen <andi@firstfloor.org>,
+        Christoph Hellwig <hch@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Anton Arapov <anton@redhat.com>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+Subject: Re: [PATCH 1/2] perf/probe: verify instruction/offset in perf before
+ adding a uprobe
+References: <20120412085748.23484.53789.stgit@nprashan.in.ibm.com> <4F86A060.1010604@linux.vnet.ibm.com>
+In-Reply-To: <4F86A060.1010604@linux.vnet.ibm.com>
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Transfer-Encoding: 7bit
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 12, 2012 at 8:51 PM, Steven Rostedt <rostedt@goodmis.org> wrote:
-> On Thu, 2012-04-12 at 20:28 +0800, Hillf Danton wrote:
->> On Wed, Apr 11, 2012 at 10:10 PM, Steven Rostedt <rostedt@goodmis.org> wrote:
->> > On Fri, 2012-04-06 at 21:39 +0800, Hillf Danton wrote:
->> >
->> >> > +static void inc_dl_migration(struct sched_dl_entity *dl_se, struct dl_rq *dl_rq)
->> >> > +{
->> >> > +       dl_rq = &rq_of_dl_rq(dl_rq)->dl;
->> >> > +
->> >> > +       dl_rq->dl_nr_total++;
->> >> > +       if (dl_se->nr_cpus_allowed > 1)
->> >> > +               dl_rq->dl_nr_migratory++;
->> >> > +
->> >> > +       update_dl_migration(dl_rq);
->> >>
->> >>       if (dl_se->nr_cpus_allowed > 1) {
->> >>               dl_rq->dl_nr_migratory++;
->> >>               /* No change in migratory, no update of migration */
->> >
->> > This is not true. As dl_nr_total changed. If there was only one dl task
->> > queued that can migrate, and then another dl task is queued but this
->> > task can not migrate, the update_dl_migration still needs to be called.
->> > As dl_nr_migratory would be 1, but now dl_nr_total > 1. This means we
->> > are now overloaded.
->> >
->
-> You're speaking in riddles.
->
->>       if (2 == dl_nr_migratory + dl_nr_total)
->>               rq was not overloaded;
->>
->>       after enqueuing a deadline task that is not migratory,
->
-> Now rq would be overloaded because:
->
->        dl_nr_migratory + dl_nr_total == 3
->
+(2012/04/12 18:29), Prashanth Nageshappa wrote:
+> To verify instruction/offset in perf, before adding a uprobe we
+> need to use arc/x86/lib/insn.c from perf code. Since perf Makefile
+> enables -Wswitch-default flag it causes build warnings/failures. This
+> patch is to address the build warnings in insn.c.
 
-Which is the current task, and where?
+Hmm, I see the reason why we need this. However, I think it should have
+more correct error checking... I'll try that.
 
->
->>
->>       if (current task is not preempted)
->>               rq remains not overloaded;
->
-> s/not//
->
->>
->>       else if (current task is not pushed out) {
->>               if (rq is not overloaded)
->>                       maintenance of overloaded is __corrupted__;
->>       }
->>
->> btw, same behavior in RTS?
->
-> I still don't understand what you are saying.
->
-> I can see your scenario happening with the change you are suggesting
-> though.
->
-> -- Steve
->
->
+Thank you,
+
+-- 
+Masami HIRAMATSU
+Software Platform Research Dept. Linux Technology Center
+Hitachi, Ltd., Yokohama Research Laboratory
+E-mail: masami.hiramatsu.pt@hitachi.com
