@@ -1,63 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965887Ab2DLTZN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Apr 2012 15:25:13 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:44046 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933969Ab2DLTZL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Apr 2012 15:25:11 -0400
-Message-ID: <4F872BED.7000703@ti.com>
-Date: Thu, 12 Apr 2012 21:24:29 +0200
-From: "Cousson, Benoit" <b-cousson@ti.com>
-Organization: Texas Instruments
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:11.0) Gecko/20120327 Thunderbird/11.0.1
+	id S1762479Ab2DLT0x (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Apr 2012 15:26:53 -0400
+Received: from mga09.intel.com ([134.134.136.24]:37639 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754132Ab2DLT0w (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Apr 2012 15:26:52 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
+   d="scan'208";a="131769960"
+Message-ID: <4F872C7B.6000106@linux.intel.com>
+Date: Thu, 12 Apr 2012 12:26:51 -0700
+From: Andi Kleen <ak@linux.intel.com>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 6.1; en-US; rv:1.9.2.15) Gecko/20110303 Thunderbird/3.1.9
 MIME-Version: 1.0
-To: Paul Walmsley <paul@pwsan.com>
-CC: "Balbi, Felipe" <balbi@ti.com>, "Mohammed, Afzal" <afzal@ti.com>,
-        Greg KH <greg@kroah.com>,
-        "Shilimkar, Santosh" <santosh.shilimkar@ti.com>,
-        "V, Aneesh" <aneesh@ti.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        "mgreer@animalcreek.com" <mgreer@animalcreek.com>,
-        "msalter@redhat.com" <msalter@redhat.com>
-Subject: Re: [PATCH v4 0/7] Add TI EMIF SDRAM controller driver
-References: <1331934707-29487-1-git-send-email-aneesh@ti.com> <alpine.DEB.2.00.1204112042070.29473@utopia.booyaka.com> <20120412030044.GA26236@kroah.com> <4F867A95.9030104@ti.com> <20120412131045.GB31384@kroah.com> <C8443D0743D26F4388EA172BF4E2A7A93E95947E@DQHE04.ent.ti.com> <alpine.DEB.2.00.1204121053570.29473@utopia.booyaka.com> <4F87240F.6060902@ti.com> <alpine.DEB.2.00.1204121304050.29473@utopia.booyaka.com>
-In-Reply-To: <alpine.DEB.2.00.1204121304050.29473@utopia.booyaka.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 8bit
+To: Thomas Gleixner <tglx@linutronix.de>
+CC: Matthew Garrett <mjg59@srcf.ucam.org>,
+        =?ISO-8859-1?Q?J=F6rg_Otte?= <jrg.otte@googlemail.com>,
+        linux-kernel@vger.kernel.org, Len Brown <lenb@kernel.org>
+Subject: Re: [v3.4-rc1] ACPI regression bisected
+References: <CADDKRnBpGr=yzDftChA3xiaK9gK4D4UDV6HJiw8hcMo6159+Cw@mail.gmail.com> <20120402235412.GD16303@tassilo.jf.intel.com> <alpine.LFD.2.02.1204031001510.2542@ionos> <CADDKRnAOqfxTjrCp4E5eKFJvVTu6s0xF3Ca3jRJavFkyGpYLmQ@mail.gmail.com> <alpine.LFD.2.02.1204121055200.2542@ionos> <20120412142904.GA4130@srcf.ucam.org> <alpine.LFD.2.02.1204121903250.2542@ionos> <alpine.LFD.2.02.1204121907330.2542@ionos>
+In-Reply-To: <alpine.LFD.2.02.1204121907330.2542@ionos>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 4/12/2012 9:15 PM, Paul Walmsley wrote:
-> Hi Benoît,
->
-> On Thu, 12 Apr 2012, Cousson, Benoit wrote:
->
->> The LPDDR2 spec does consider as well NVM (Non Volatile Memory), so I think we
->> should stick to driver/memory for EMIF.
->
-> Hmm good point!
->
->>> So perhaps something like drivers/memory/dram/ for the SDRAM controllers,
->>> and maybe drivers/memory/ for the GPMC?
->>
->> In fact Felipe was considering something else for that kind of general purpose
->> bus driver like GMPC, C2C and LLI...
->>
->> ... But I do not remember the name :-)
->
-> It would be nice if we could separate IP blocks that can drive an Ethernet
-> controller or modem chip from the DRAM controllers; they are quite
-> different beasts from a common API standpoint.
 
-Yep, fully agree. In fact Felipe's suggestion was something like 
-drivers/ocd for off-chip devices, but maybe something like drivers/gpbus 
-will highlight a little bit more the bus controller aspect of such driver.
+>> I feared that. So now is the question whether there is a way to mask
+>> the interrupt at the "device" level.
 
-Regards,
-Benoit
+Probably not. Len?
+
+> If not, I could be persuaded to provide a mechanism to force thread
+> all interrupts which are on that line, if there's a good argument to
+> do so.
+
+Hmm, we could probably just use a work queue for this instead. I guess i 
+drank the threaded
+interrupt kool aid too much when I did the patch :-)
+
+I'll switch over to a workqueue.
+
+Meanwhile the patch can be just reverted. The patch that needed it 
+(delays in EC access to
+work around buggy Acer EC) was not merged by  Len so far, so there's 
+nothing in tree right
+now that relies on the thread.
+
+For 3.4 I think reverting is the right approach.
+
+-Andi
+
