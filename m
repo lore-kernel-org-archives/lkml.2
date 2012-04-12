@@ -1,69 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964817Ab2DLBxs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Apr 2012 21:53:48 -0400
-Received: from e31.co.us.ibm.com ([32.97.110.149]:40313 "EHLO
-	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757188Ab2DLBxq (ORCPT
+	id S934140Ab2DLBzf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Apr 2012 21:55:35 -0400
+Received: from mail-wi0-f170.google.com ([209.85.212.170]:40080 "EHLO
+	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933584Ab2DLBzd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Apr 2012 21:53:46 -0400
-Date: Wed, 11 Apr 2012 18:53:41 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: David Miller <davem@davemloft.net>
-Cc: shemminger@vyatta.com, mroos@linux.ee, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org
-Subject: Re: suspicious RCU usage warnings in 3.3.0
-Message-ID: <20120412015341.GA2497@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20120411171004.016ddd95@nehalam.linuxnetplumber.net>
- <20120411.201854.1070083308359208025.davem@davemloft.net>
- <20120412004507.GF2473@linux.vnet.ibm.com>
- <20120411.210319.370705937753558953.davem@davemloft.net>
+	Wed, 11 Apr 2012 21:55:33 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120411.210319.370705937753558953.davem@davemloft.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12041201-7282-0000-0000-0000081E0E1F
+In-Reply-To: <20120411184538.ec21844a.akpm@linux-foundation.org>
+References: <1334188257-3449-1-git-send-email-paul.gortmaker@windriver.com>
+ <CA+55aFy-CeLXstbceP7+co3AXrEWtifKF+8NWzhC7B-A8xBd-w@mail.gmail.com>
+ <CA+55aFx6V_TpbghsG7xqoBree8ALAKWMA+qLeGg-8DNAno+peg@mail.gmail.com> <20120411184538.ec21844a.akpm@linux-foundation.org>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Wed, 11 Apr 2012 18:55:10 -0700
+X-Google-Sender-Auth: Ju8JbKu4_yW5pvgR2H6boTDjVyo
+Message-ID: <CA+55aFx9WXtF7LT9rHv0=e0jqAq+b1cDPcRzSGDKvy7+XjxxtA@mail.gmail.com>
+Subject: Re: [PATCH 0/5] RFC: strip 15,000 lines from a typical autoconf.h
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Paul Gortmaker <paul.gortmaker@windriver.com>,
+        linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org,
+        davem@davemloft.net, tony@bakeyournoodle.com, mmarek@suse.cz,
+        lacombar@gmail.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 11, 2012 at 09:03:19PM -0400, David Miller wrote:
-> From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-> Date: Wed, 11 Apr 2012 17:45:07 -0700
-> 
-> > On Wed, Apr 11, 2012 at 08:18:54PM -0400, David Miller wrote:
-> >> From: Stephen Hemminger <shemminger@vyatta.com>
-> >> Date: Wed, 11 Apr 2012 17:10:04 -0700
-> >> 
-> >> > On Wed, 11 Apr 2012 16:08:37 -0700
-> >> > "Paul E. McKenney" <paulmck@linux.vnet.ibm.com> wrote:
-> >> > 
-> >> >> Hmmm...  What CPU family is this running on?  From the look of the
-> >> >> stack, it is sneaking out of idle into softirq without telling RCU.
-> >> >> This would cause RCU to complain bitterly about being invoked from
-> >> >> the idle loop -- and RCU ignores CPUs in the idle loop.
-> >> >> 
-> >> >> 							Thanx, Paul
-> >> > 
-> >> > Sun4... Ping David.
-> >> 
-> >> So is there anything specific I need to do in the sparc64
-> >> idle loop?
-> > 
-> > Hmmm...  I must confess that I don't immediately see how control
-> > is passing from cpu_idle() in arch/sparc/kernel/process_64.c to
-> > __handle_softirq().
-> > 
-> > But it looks like a simple function call in the call trace:
-> 
-> It's coming from the trap return code path at the end of hardware
-> interrupt processing, on the IRQ stack.
+On Wed, Apr 11, 2012 at 6:45 PM, Andrew Morton
+<akpm@linux-foundation.org> wrote:
+>
+> So we shouldn't call it IS_DEFINED() - that would cause confusion with
+> the old version.
 
-Ah!  I should have guessed something like that was happening given
-that __handle_softirq() is written in assembly.
+Yeah. Maybe we should call it "config_enabled()" - the lower-case
+hopefully makes it clear that it acts as a C function, not a
+preprocessor one.
 
-							Thanx, Paul
+Code like "if (config_enabled(IPV6))" looks reasonably readable to me.
 
+I asked G+ if they can come up with a better trick. They did well on
+the whole bitmask calculations, maybe somebody can figure out how to
+make the same macro work for both preprocessor and C code...
+
+                       Linus
