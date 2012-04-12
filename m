@@ -1,60 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759374Ab2DLDoO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Apr 2012 23:44:14 -0400
-Received: from eu1sys200aog109.obsmtp.com ([207.126.144.127]:46234 "EHLO
-	eu1sys200aog109.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753716Ab2DLDoN (ORCPT
+	id S1750953Ab2DLEA1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Apr 2012 00:00:27 -0400
+Received: from mailout1.w1.samsung.com ([210.118.77.11]:29787 "EHLO
+	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750699Ab2DLEAY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Apr 2012 23:44:13 -0400
-Message-ID: <4F864F1E.8030708@st.com>
-Date: Thu, 12 Apr 2012 09:12:22 +0530
-From: Viresh Kumar <viresh.kumar@st.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:6.0) Gecko/20110812 Thunderbird/6.0
-MIME-Version: 1.0
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: Vinod Koul <vinod.koul@intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Dan Williams <dan.j.williams@intel.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Alim Akhtar <alim.akhtar@gmail.com>,
-        Alessandro Rubini <rubini@gnudd.com>
-Subject: Re: [PATCH 2/2 v2] dma/amba-pl08x: add support for the Nomadik variant
-References: <1334185214-27250-1-git-send-email-linus.walleij@linaro.org>
-In-Reply-To: <1334185214-27250-1-git-send-email-linus.walleij@linaro.org>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+	Thu, 12 Apr 2012 00:00:24 -0400
+Date: Thu, 12 Apr 2012 08:00:19 +0400
+From: Alexander Nikiforov <a.nikiforov@samsung.com>
+Subject: Re: [RFD] Merge task counter into memcg
+In-reply-to: <20120411185715.GA4317@somewhere.redhat.com>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Hugh Dickins <hughd@google.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Glauber Costa <glommer@parallels.com>, Tejun Heo <tj@kernel.org>,
+        Daniel Walsh <dwalsh@redhat.com>,
+        "Daniel P. Berrange" <berrange@redhat.com>,
+        Li Zefan <lizf@cn.fujitsu.com>, LKML <linux-kernel@vger.kernel.org>,
+        Cgroups <cgroups@vger.kernel.org>,
+        Containers <containers@lists.linux-foundation.org>
+Message-id: <4F865353.8080106@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=ISO-8859-1; format=flowed
+Content-transfer-encoding: 7BIT
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:11.0) Gecko/20120329
+ Thunderbird/11.0.1
+References: <20120411185715.GA4317@somewhere.redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 4/12/2012 4:30 AM, Linus Walleij wrote:
-> The Nomadik PL080 variant has some extra protection bits that
-> may be set, so we need to check these bits to see if the
-> channels are actually available for the DMAengine to use.
-> 
-> Cc: Russell King <linux@arm.linux.org.uk>
-> Cc: Viresh Kumar <viresh.kumar@st.com>
-> Cc: Alim Akhtar <alim.akhtar@gmail.com>
-> Cc: Alessandro Rubini <rubini@gnudd.com>
-> Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
+On 04/11/2012 10:57 PM, Frederic Weisbecker wrote:
+> Hi,
+>
+> While talking with Tejun about targetting the cgroup task counter subsystem
+> for the next merge window, he suggested to check if this could be merged into
+> the memcg subsystem rather than creating a new one cgroup subsystem just
+> for task count limit purpose.
+>
+> So I'm pinging you guys to seek your insight.
+>
+> I assume not everybody in the Cc list knows what the task counter subsystem
+> is all about. So here is a summary: this is a cgroup subsystem (latest version
+> in https://lwn.net/Articles/478631/) that keeps track of the number of tasks
+> present in a cgroup. Hooks are set in task fork/exit and cgroup migration to
+> maintain this accounting visible to a special tasks.usage file. The user can
+> set a limit on the number of tasks by writing on the tasks.limit file.
+> Further forks or cgroup migration are then rejected if the limit is exceeded.
+>
+> This feature is especially useful to protect against forkbombs in containers.
+> Or more generally to limit the resources on the number of tasks on a cgroup
+> as it involves some kernel memory allocation.
+>
+> Now the dilemna is how to implement it?
+>
+> 1) As a standalone subsystem, as it stands currently (https://lwn.net/Articles/478631/)
+>
+> 2) As a feature in memcg, part of the memory.kmem.* files. This makes sense
+> because this is about kernel memory allocation limitation. We could have a
+> memory.kmem.tasks.count
+>
+> My personal opinion is that the task counter brings some overhead: a charge
+> across the whole hierarchy at every fork, and the mirrored uncharge on task exit.
+> And this overhead happens even in the off-case (when the task counter susbsystem
+> is mounted but the limit is the default: ULLONG_MAX).
+>
+> So if we choose the second solution, this overhead will be added unconditionally
+> to memcg.
+> But I don't expect every users of memcg will need the task counter. So perhaps
+> the overhead should be kept in its own separate subsystem.
+>
+> OTOH memory.kmem.* interface would have be a good fit.
+>
+> What do you think?
+> --
+> To unsubscribe from this list: send the line "unsubscribe cgroups" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>
 
-> diff --git a/drivers/dma/amba-pl08x.c b/drivers/dma/amba-pl08x.c
-> @@ -1917,7 +1926,7 @@ static int pl08x_probe(struct amba_device *adev, const struct amba_id *id)
->  	}
->  
->  	/* Initialize physical channels */
-> -	pl08x->phy_chans = kmalloc((vd->channels * sizeof(*pl08x->phy_chans)),
-> +	pl08x->phy_chans = kzalloc((vd->channels * sizeof(*pl08x->phy_chans)),
->  			GFP_KERNEL);
->  	if (!pl08x->phy_chans) {
->  		dev_err(&adev->dev, "%s failed to allocate "
-> @@ -1934,6 +1943,22 @@ static int pl08x_probe(struct amba_device *adev, const struct amba_id *id)
->  		spin_lock_init(&ch->lock);
->  		ch->serving = NULL;
+Hi,
 
-I meant removing this one too. :)
+I'm agree that this is memory related thing, but I prefer this as a 
+separate subsystem.
+Yes it has some impact on a system, but on the other hand we will have 
+some very useful tool to track tasks state.
+As I wrote before
 
-Reviewed-by: Viresh Kumar <viresh.kumar@st.com>
+http://comments.gmane.org/gmane.linux.kernel.cgroups/1448
+
+it'll very useful to have event in the userspace about fork/exit about 
+group of the processes.
