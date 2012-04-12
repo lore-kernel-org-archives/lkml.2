@@ -1,69 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933509Ab2DLM21 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Apr 2012 08:28:27 -0400
-Received: from mail-vb0-f46.google.com ([209.85.212.46]:56202 "EHLO
-	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933051Ab2DLM20 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Apr 2012 08:28:26 -0400
+	id S933616Ab2DLMdU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Apr 2012 08:33:20 -0400
+Received: from zene.cmpxchg.org ([85.214.230.12]:50032 "EHLO zene.cmpxchg.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757494Ab2DLMdS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Apr 2012 08:33:18 -0400
+Date: Thu, 12 Apr 2012 14:32:56 +0200
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: Glauber Costa <glommer@parallels.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Hugh Dickins <hughd@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>, Tejun Heo <tj@kernel.org>,
+        Daniel Walsh <dwalsh@redhat.com>,
+        "Daniel P. Berrange" <berrange@redhat.com>,
+        Li Zefan <lizf@cn.fujitsu.com>, LKML <linux-kernel@vger.kernel.org>,
+        Cgroups <cgroups@vger.kernel.org>,
+        Containers <containers@lists.linux-foundation.org>
+Subject: Re: [RFD] Merge task counter into memcg
+Message-ID: <20120412123256.GI1787@cmpxchg.org>
+References: <20120411185715.GA4317@somewhere.redhat.com>
+ <4F862851.3040208@jp.fujitsu.com>
+ <20120412113217.GB11455@somewhere.redhat.com>
+ <4F86BFC6.2050400@parallels.com>
 MIME-Version: 1.0
-In-Reply-To: <1334153450.23924.243.camel@gandalf.stny.rr.com>
-References: <1333696481-3433-1-git-send-email-juri.lelli@gmail.com>
-	<1333696481-3433-7-git-send-email-juri.lelli@gmail.com>
-	<CAJd=RBBm8yDBrZFj48tP_5WsG=z0Rsv_=j=kArV1Mj6yJvQjVA@mail.gmail.com>
-	<1334153450.23924.243.camel@gandalf.stny.rr.com>
-Date: Thu, 12 Apr 2012 20:28:24 +0800
-Message-ID: <CAJd=RBDqsr8aBNxokrb5Rc90RNu41ZRLEJJDdXibf238k2c6oQ@mail.gmail.com>
-Subject: Re: [PATCH 06/16] sched: SCHED_DEADLINE push and pull logic
-From: Hillf Danton <dhillf@gmail.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Juri Lelli <juri.lelli@gmail.com>, peterz@infradead.org,
-        tglx@linutronix.de, mingo@redhat.com, cfriesen@nortel.com,
-        oleg@redhat.com, fweisbec@gmail.com, darren@dvhart.com,
-        johan.eker@ericsson.com, p.faure@akatech.ch,
-        linux-kernel@vger.kernel.org, claudio@evidence.eu.com,
-        michael@amarulasolutions.com, fcheccon@jasper.es
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4F86BFC6.2050400@parallels.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 11, 2012 at 10:10 PM, Steven Rostedt <rostedt@goodmis.org> wrote:
-> On Fri, 2012-04-06 at 21:39 +0800, Hillf Danton wrote:
->
->> > +static void inc_dl_migration(struct sched_dl_entity *dl_se, struct dl_rq *dl_rq)
->> > +{
->> > +       dl_rq = &rq_of_dl_rq(dl_rq)->dl;
->> > +
->> > +       dl_rq->dl_nr_total++;
->> > +       if (dl_se->nr_cpus_allowed > 1)
->> > +               dl_rq->dl_nr_migratory++;
->> > +
->> > +       update_dl_migration(dl_rq);
->>
->>       if (dl_se->nr_cpus_allowed > 1) {
->>               dl_rq->dl_nr_migratory++;
->>               /* No change in migratory, no update of migration */
->
-> This is not true. As dl_nr_total changed. If there was only one dl task
-> queued that can migrate, and then another dl task is queued but this
-> task can not migrate, the update_dl_migration still needs to be called.
-> As dl_nr_migratory would be 1, but now dl_nr_total > 1. This means we
-> are now overloaded.
->
-	if (2 == dl_nr_migratory + dl_nr_total)
-		rq was not overloaded;
+On Thu, Apr 12, 2012 at 08:43:02AM -0300, Glauber Costa wrote:
+> On 04/12/2012 08:32 AM, Frederic Weisbecker wrote:
+> >>But I think increasing number of subsystem is not very good....
+> >If the result is a better granularity on the overhead, I believe this
+> >can be a good thing.
+> 
+> But again, since there is quite number of people trying to merge
+> those stuff together, you are just swimming against the tide.
 
-	after enqueuing a deadline task that is not migratory,
+I don't see where merging unrelated controllers together is being
+discussed, do you have a reference?
 
-	if (current task is not preempted)
-		rq remains not overloaded;
+> If this gets really integrated, out of a sudden the overhead will
+> appear. So better care about it now.
 
-	else if (current task is not pushed out) {
-		if (rq is not overloaded)
-			maintenance of overloaded is __corrupted__;
-	}
+Forcing people that want to account/limit one resource to take the hit
+for something else they are not interested in requires justification.
+You can optimize only so much, in the end, the hierarchical accounting
+is just expensive and unacceptable if you don't care about a certain
+resource.  For that reason, I think controllers should stay opt-in.
 
-btw, same behavior in RTS?
+Btw, can we please have a discussion where raised concerns are
+supported by more than gut feeling?  "I think X is not very good" is
+hardly an argument.  Where is the technical problem in increasing the
+number of available controllers?
