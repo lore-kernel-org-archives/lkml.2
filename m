@@ -1,67 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762309Ab2DLJ1H (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Apr 2012 05:27:07 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:42528 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754955Ab2DLJ1F (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Apr 2012 05:27:05 -0400
-Message-ID: <4F869FE6.6060400@suse.cz>
-Date: Thu, 12 Apr 2012 11:27:02 +0200
-From: Michal Marek <mmarek@suse.cz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110929 Thunderbird/7.0.1
+	id S1762327Ab2DLJ3J (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Apr 2012 05:29:09 -0400
+Received: from e34.co.us.ibm.com ([32.97.110.152]:44717 "EHLO
+	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754955Ab2DLJ3G (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Apr 2012 05:29:06 -0400
+Message-ID: <4F86A03A.1080203@linux.vnet.ibm.com>
+Date: Thu, 12 Apr 2012 14:58:26 +0530
+From: Prashanth Nageshappa <prashanth@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120329 Thunderbird/11.0.1
 MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Paul Gortmaker <paul.gortmaker@windriver.com>,
-        linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org,
-        akpm@linux-foundation.org, davem@davemloft.net,
-        tony@bakeyournoodle.com, lacombar@gmail.com
-Subject: Re: [PATCH 0/5] RFC: strip 15,000 lines from a typical autoconf.h
-References: <1334188257-3449-1-git-send-email-paul.gortmaker@windriver.com> <CA+55aFy-CeLXstbceP7+co3AXrEWtifKF+8NWzhC7B-A8xBd-w@mail.gmail.com> <CA+55aFx6V_TpbghsG7xqoBree8ALAKWMA+qLeGg-8DNAno+peg@mail.gmail.com>
-In-Reply-To: <CA+55aFx6V_TpbghsG7xqoBree8ALAKWMA+qLeGg-8DNAno+peg@mail.gmail.com>
+To: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>
+CC: Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
+        LKML <linux-kernel@vger.kernel.org>, Linux-mm <linux-mm@kvack.org>,
+        Oleg Nesterov <oleg@redhat.com>, Andi Kleen <andi@firstfloor.org>,
+        Christoph Hellwig <hch@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Anton Arapov <anton@redhat.com>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+Subject: [PATCH 0/2] perf/probe: verify instruction/offset in perf before
+ adding a uprobe
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12041209-1780-0000-0000-000004B2DDDE
+X-IBM-ISS-SpamDetectors: 
+X-IBM-ISS-DetailInfo: BY=3.00000266; HX=3.00000187; KW=3.00000007;
+ PH=3.00000001; SC=3.00000001; SDB=6.00130189; UDB=6.00030744; UTC=2012-04-12
+ 09:29:05
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12.4.2012 03:19, Linus Torvalds wrote:
-> On Wed, Apr 11, 2012 at 4:58 PM, Linus Torvalds
-> <torvalds@linux-foundation.org> wrote:
->>
->> I think we can easily drop IS_ENABLED() if it has been causing
->> problems. And it clearly is.
+This patch series is to augment Srikar's perf support for uprobes patch
+(https://lkml.org/lkml/2012/4/11/191) with the following features:
 
-What is really causing problems is that kconfig has no view of the
-entire kernel configuration.
+a. Instruction verification for user space tracing
+b. Function boundary validation support to uprobes as its kernel
+counterpart (Commit-ID: 1c1bc922).
 
-
->> And I had never even looked at that generated file. It's disgusting.
->> We need to stop doing that. It must be driving compile-times up too -
->> just parsing that monster is RealWork(tm).
-
-You forgot that it also contributes to global warming.
+This will help in ensuring uprobe is placed at right location inside
+the intended function.
 
 
-> Oh, but I have a sick and twisted mind. And I'm incredibly smart and
-> photogenic too.
-> 
-> Here's an implementation of IS_ENABLED() that works in C. Well,
-> "gcc-C". It depends on the optimizer DTRT, but gcc really does seem to
-> do it.
-> 
-> Ready? You *will* go blind - blinded by the pure beauty and intellect
-> in this thing:
-> 
->     #define IS_DEFINED(x) (__stringify(CONFIG_##x)[0]=='1')
+--
+ Prashanth Nageshappa (1):
+      address build warnings/errors in insn.c
+      changes to perf code to verify instruction/offset before adding uprobe
 
-Nice. Maybe we could make it simply
 
-#define IS_DEFINED(x) (__stringify(x)[0]=='1')
+ arch/x86/lib/insn.c                    |    8 +++
+ tools/perf/arch/x86/Makefile           |    4 ++
+ tools/perf/arch/x86/util/probe-event.c |   83 ++++++++++++++++++++++++++++++++
+ tools/perf/util/include/linux/string.h |    1 
+ tools/perf/util/probe-event.c          |   22 ++++++++
+ tools/perf/util/probe-event.h          |    2 +
+ tools/perf/util/symbol.c               |    2 +
+ tools/perf/util/symbol.h               |    1 
+ 8 files changed, 122 insertions(+), 1 deletions(-)
+ create mode 100644 tools/perf/arch/x86/util/probe-event.c
 
-so that the users are easily grepable and it is obvious that a config
-option is being tested, like in the current implementation. The only
-thing we lose is the check if 'x' is really a boolean or tristate
-option. But it turns out that even now this does not work in all cases.
-
-Michal
