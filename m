@@ -1,84 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761688Ab2DLAua (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Apr 2012 20:50:30 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:49862 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757382Ab2DLAu1 convert rfc822-to-8bit (ORCPT
+	id S1761681Ab2DLA5i (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Apr 2012 20:57:38 -0400
+Received: from mail-vb0-f46.google.com ([209.85.212.46]:38084 "EHLO
+	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757126Ab2DLA5g convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Apr 2012 20:50:27 -0400
+	Wed, 11 Apr 2012 20:57:36 -0400
 MIME-Version: 1.0
-In-Reply-To: <CAKgNAkhhnC1+vdh7vTYKkngzxHccDwHH_aKF5wCNhga33BGhyQ@mail.gmail.com>
-References: <1333051320-30872-1-git-send-email-wad@chromium.org>
- <1333051320-30872-2-git-send-email-wad@chromium.org> <20120406125517.77133b4e.akpm@linux-foundation.org>
- <CAObL_7EYb62o=a0ekzcDx=0TuN55A7aTYhLJbMNu2r8F0V77EA@mail.gmail.com>
- <20120406142824.61d8ca3b@lwn.net> <CAKgNAkhhnC1+vdh7vTYKkngzxHccDwHH_aKF5wCNhga33BGhyQ@mail.gmail.com>
-From: Andrew Lutomirski <luto@mit.edu>
-Date: Wed, 11 Apr 2012 17:50:04 -0700
-X-Google-Sender-Auth: oUtumn3thur0nqBLy1gZmJZJ9mk
-Message-ID: <CAObL_7HdaNwttY4Tqz_iysGnaB8rKrA07te-P5Mkq3kSayt0qg@mail.gmail.com>
-Subject: Re: [PATCH v17 01/15] Add PR_{GET,SET}_NO_NEW_PRIVS to prevent execve
- from granting privs
-To: mtk.manpages@gmail.com
-Cc: Jonathan Corbet <corbet@lwn.net>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Will Drewry <wad@chromium.org>, linux-kernel@vger.kernel.org,
-        linux-security-module@vger.kernel.org, linux-arch@vger.kernel.org,
-        linux-doc@vger.kernel.org, kernel-hardening@lists.openwall.com,
-        netdev@vger.kernel.org, x86@kernel.org, arnd@arndb.de,
-        davem@davemloft.net, hpa@zytor.com, mingo@redhat.com, oleg@redhat.com,
-        peterz@infradead.org, rdunlap@xenotime.net, mcgrathr@chromium.org,
-        tglx@linutronix.de, eparis@redhat.com, serge.hallyn@canonical.com,
-        djm@mindrot.org, scarybeasts@gmail.com, indan@nul.nu,
-        pmoore@redhat.com, eric.dumazet@gmail.com, markus@chromium.org,
-        coreyb@linux.vnet.ibm.com, keescook@chromium.org, jmorris@namei.org,
-        Andy Lutomirski <luto@amacapital.net>, linux-man@vger.kernel.org
+X-Originating-IP: [69.196.158.137]
+In-Reply-To: <20120412002927.GA23167@kroah.com>
+References: <20120411231102.GA6404@kroah.com> <CAJyhjX2KrfSJW64PJMTHou9zSojsfA1iNT-WahinfMBce_B=BA@mail.gmail.com>
+ <20120412002927.GA23167@kroah.com>
+From: Sergio Correia <lists@uece.net>
+Date: Wed, 11 Apr 2012 20:57:15 -0400
+Message-ID: <CAJyhjX3a=1w4sPKrFeRhQmm7xOLmJ7XnEY9n1ycC4V3yOBb+LA@mail.gmail.com>
+Subject: Re: [ 00/78] 3.3.2-stable review
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        alan@lxorguk.ukuu.org.uk,
+        linux-wireless Mailing List <linux-wireless@vger.kernel.org>,
+        Sujith Manoharan <c_manoha@qca.qualcomm.com>,
+        "ath9k-devel@lists.ath9k.org" <ath9k-devel@venema.h4ckr.net>,
+        "John W. Linville" <linville@tuxdriver.com>
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 11, 2012 at 12:31 PM, Michael Kerrisk (man-pages)
-<mtk.manpages@gmail.com> wrote:
-> On Sat, Apr 7, 2012 at 8:28 AM, Jonathan Corbet <corbet@lwn.net> wrote:
->> On Fri, 6 Apr 2012 13:01:17 -0700
->> Andrew Lutomirski <luto@mit.edu> wrote:
+On Wed, Apr 11, 2012 at 8:29 PM, Greg KH <gregkh@linuxfoundation.org> wrote:
+> On Wed, Apr 11, 2012 at 07:59:14PM -0400, Sergio Correia wrote:
+>> Hello Greg,
 >>
->>> This has been bugging me for awhile.  Is there any interest in moving
->>> the manpages into the kernel source tree?  Then there could be a
->>> general requirement that new APIs get documented when they're written.
 >>
->> Man page (or other documentation) requirements for patch acceptance are a
->> regular kernel summit feature.  People seem to think it's a good idea, but
->> actual enforcement of such requirements always seems to be lacking.  Lots
->> of people have kind of given up trying.  I don't really see that adding
->> the man pages to the tree would help, but I could be wrong...
+>> On Wed, Apr 11, 2012 at 7:11 PM, Greg KH <gregkh@linuxfoundation.org> wrote:
+>> > This is the start of the stable review cycle for the 3.3.2 release.
+>> > There are 78 patches in this series, all will be posted as a response
+>> > to this one.  If anyone has any issues with these being applied, please
+>> > let me know.
+>> >
+>> > Responses should be made by Fri Apr 13 23:10:16 UTC 2012.
+>> > Anything received after that time might be too late.
+>> >
+>>
+>> is there any chance for this one to be included in this review cycle?
+>>
+>> http://www.spinics.net/lists/linux-wireless/msg87999.html
 >
-> I largely consider this (moving man pages to kernel.org) a technical
-> solution to what is fundamentally a social problem (developers
-> reluctant to write documentation), and doubt that the technical
-> solution would make much difference. I'd love to be proved wrong, but
-> the experiment would require significant start-up effort. (My
-> collected thoughts on this can be found here:
-> http://www.kernel.org/doc/man-pages/todo.html#migrate_to_kernel_source.
-> Note the alternative idea of patch tags mentioned at the end of that
-> text.)
+> Have you read Documentation/stable_kernel_rules.txt?  Based on that, I
+> don't think it can, yet, right?
 >
-> Unless, or until there's a paid maintainer, I don't expect things to
-> get significantly better than what they currently are. The quite
-> significant improvements in man-pages since 2004, when I became
-> maintainer were in small part due to the fact that I was for a short
-> period paid to do the work, but in much larger part due to a huge
-> private effort over those years which over the last couple of years is
-> no longer unsustainable for me (man-pages is in competition with
-> requirements for my attention from family, working life, and
-> (seriously!) seismic events),
 
-Hrm.  Maybe someone could convince Andrew and Linus not to pull new
-syscalls or major ABI features unless the patchset includes full docs.
+I hadn't, but I have now, thanks for the pointer. And yes, you are right.
 
-Anyway, I'll write up a detailed description of PR_SET_NO_NEW_PRIVS,
-stick it in the changelog, and cc linux-doc.
+thanks,
+sergio
 
---Andy
+> thanks,
+>
+> greg k-h
