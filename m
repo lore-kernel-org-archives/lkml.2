@@ -1,27 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933976Ab2DLBJM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Apr 2012 21:09:12 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:40152 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932294Ab2DLBJF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Apr 2012 21:09:05 -0400
+	id S933924Ab2DLBJJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Apr 2012 21:09:09 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:47244 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933595Ab2DLBJG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Apr 2012 21:09:06 -0400
 From: Mike Turquette <mturquette@linaro.org>
 To: <arnd.bergmann@linaro.org>
 CC: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
         <linaro-dev@lists.linaro.org>, <patches@linaro.org>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
         Mike Turquette <mturquette@linaro.org>,
         Olof Johansson <olof@lixom.net>, Russell King <linux@arm.linux.org.uk>,
         Sascha Hauer <s.hauer@pengutronix.de>,
         Shawn Guo <shawn.guo@freescale.com>,
         Richard Zhao <richard.zhao@linaro.org>,
-        Saravana Kannan <skannan@codeaurora.org>, Andrew Lunn <andrew@lunn.ch>,
-        Rajendra Nayak <rnayak@ti.com>, Viresh Kumar <viresh.kumar@st.com>
-Subject: [PATCH 10/13] clk: Remove comment for end of CONFIG_COMMON_CLK section
-Date: Wed, 11 Apr 2012 18:02:48 -0700
-Message-ID: <1334192572-12499-11-git-send-email-mturquette@linaro.org>
+        Saravana Kannan <skannan@codeaurora.org>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Andrew Lunn <andrew@lunn.ch>, Rajendra Nayak <rnayak@ti.com>,
+        Viresh Kumar <viresh.kumar@st.com>
+Subject: [PATCH 04/13] clk: core: enforce clk_ops consistency
+Date: Wed, 11 Apr 2012 18:02:42 -0700
+Message-ID: <1334192572-12499-5-git-send-email-mturquette@linaro.org>
 X-Mailer: git-send-email 1.7.5.4
 In-Reply-To: <1334192572-12499-1-git-send-email-mturquette@linaro.org>
 References: <1334192572-12499-1-git-send-email-mturquette@linaro.org>
@@ -31,13 +31,10 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Documentation/clk.txt has some handsome ASCII art outlining which
+clk_ops are mandatory for a given clock, given the capability of the
+hardware.  Enforce those mandates with sanity checks in __clk_init.
 
-The comment is inaccurate (it actually ends the CONFIG_COMMON_CLK
-section, there's no else) and given that we've just got a single level
-of ifdef isn't really needed anyway.
-
-Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
 Signed-off-by: Mike Turquette <mturquette@linaro.org>
 Cc: Arnd Bergman <arnd.bergmann@linaro.org>
 Cc: Olof Johansson <olof@lixom.net>
@@ -46,26 +43,39 @@ Cc: Sascha Hauer <s.hauer@pengutronix.de>
 Cc: Shawn Guo <shawn.guo@freescale.com>
 Cc: Richard Zhao <richard.zhao@linaro.org>
 Cc: Saravana Kannan <skannan@codeaurora.org>
+Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>
 Cc: Andrew Lunn <andrew@lunn.ch>
 Cc: Rajendra Nayak <rnayak@ti.com>
 Cc: Viresh Kumar <viresh.kumar@st.com>
 ---
- include/linux/clk.h |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+ drivers/clk/clk.c |   14 ++++++++++++++
+ 1 files changed, 14 insertions(+), 0 deletions(-)
 
-diff --git a/include/linux/clk.h b/include/linux/clk.h
-index b025272..c9547d9 100644
---- a/include/linux/clk.h
-+++ b/include/linux/clk.h
-@@ -81,7 +81,7 @@ int clk_notifier_register(struct clk *clk, struct notifier_block *nb);
+diff --git a/drivers/clk/clk.c b/drivers/clk/clk.c
+index d83a9e0..9924aec 100644
+--- a/drivers/clk/clk.c
++++ b/drivers/clk/clk.c
+@@ -1202,6 +1202,20 @@ void __clk_init(struct device *dev, struct clk *clk)
+ 	if (__clk_lookup(clk->name))
+ 		goto out;
  
- int clk_notifier_unregister(struct clk *clk, struct notifier_block *nb);
- 
--#endif /* !CONFIG_COMMON_CLK */
-+#endif
- 
- /**
-  * clk_get - lookup and obtain a reference to a clock producer.
++	/* check that clk_ops are sane.  See Documentation/clk.txt */
++	if (clk->ops->set_rate &&
++			!(clk->ops->round_rate && clk->ops->recalc_rate)) {
++		pr_warning("%s: %s must implement .round_rate & .recalc_rate\n",
++				__func__, clk->name);
++		goto out;
++	}
++
++	if (clk->ops->set_parent && !clk->ops->get_parent) {
++		pr_warning("%s: %s must implement .get_parent & .set_parent\n",
++				__func__, clk->name);
++		goto out;
++	}
++
+ 	/* throw a WARN if any entries in parent_names are NULL */
+ 	for (i = 0; i < clk->num_parents; i++)
+ 		WARN(!clk->parent_names[i],
 -- 
 1.7.5.4
 
