@@ -1,66 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761623Ab2DLAiv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Apr 2012 20:38:51 -0400
-Received: from mail-qa0-f42.google.com ([209.85.216.42]:50970 "EHLO
-	mail-qa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1761479Ab2DLAiu convert rfc822-to-8bit (ORCPT
+	id S1761635Ab2DLAjO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Apr 2012 20:39:14 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:37896 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754779Ab2DLAjM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Apr 2012 20:38:50 -0400
-MIME-Version: 1.0
-In-Reply-To: <20120412003014.GB23167@kroah.com>
-References: <4F80892A.7050104@zytor.com> <20120407202056.472d8ad9@pyramind.ukuu.org.uk>
- <da8cd76d-6116-44a9-a7b3-7a501cb3a8a9@email.android.com> <20120407212705.GD11295@thunk.org>
- <4F80B9AC.2010103@zytor.com> <CAPXgP12Zp7aHev8Sh=3W0zHA-vZoR9TpTW8c7ep9vTQQQScBPg@mail.gmail.com>
- <4F81D254.9090000@zytor.com> <CAPXgP10-_kS7VtdWonBhOxKJD2KatB9SznZ_xUUaxBz7-boT2A@mail.gmail.com>
- <20120411235311.GA11310@kroah.com> <4F8619FD.1080402@zytor.com> <20120412003014.GB23167@kroah.com>
-From: Kay Sievers <kay@vrfy.org>
-Date: Thu, 12 Apr 2012 02:38:29 +0200
-Message-ID: <CAPXgP12iMFrsk2pq54sBuQL4jk_vGJS2AxW0HjkU5wjhv1Wskw@mail.gmail.com>
-Subject: Re: RFC: deprecating/removing the legacy mode of devpts
-To: Greg Kroah-Hartman <gregkh@linux-foundation.org>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, "Ted Ts'o" <tytso@mit.edu>,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+	Wed, 11 Apr 2012 20:39:12 -0400
+Date: Wed, 11 Apr 2012 17:38:50 -0700 (PDT)
+From: Hugh Dickins <hughd@google.com>
+X-X-Sender: hugh@eggly.anvils
+To: Cong Wang <xiyou.wangcong@gmail.com>
+cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        Oleg Nesterov <oleg@redhat.com>, Alexey Dobriyan <adobriyan@gmail.com>,
         Al Viro <viro@zeniv.linux.org.uk>,
-        Konstantin Khlebnikov <khlebnikov@openvz.org>,
-        Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+        Vasiliy Kulikov <segoon@openwall.com>,
+        David Rientjes <rientjes@google.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Stephen Wilson <wilsons@start.ca>,
+        Siddhesh Poyarekar <siddhesh.poyarekar@gmail.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+Subject: Re: [PATCH 3/6] proc: remove mm_for_maps()
+In-Reply-To: <1334123976-11681-3-git-send-email-xiyou.wangcong@gmail.com>
+Message-ID: <alpine.LSU.2.00.1204111737300.26607@eggly.anvils>
+References: <1334123976-11681-1-git-send-email-xiyou.wangcong@gmail.com> <1334123976-11681-3-git-send-email-xiyou.wangcong@gmail.com>
+User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 12, 2012 at 02:30, Greg Kroah-Hartman
-<gregkh@linux-foundation.org> wrote:
-> On Wed, Apr 11, 2012 at 04:55:41PM -0700, H. Peter Anvin wrote:
->> On 04/11/2012 04:53 PM, Greg Kroah-Hartman wrote:
->> >
->> > That all seems pretty simple.
->> >
->> >>   - get rid of the (rather broken) idea of 'legacy' vs 'non-legacy mode'
->> >>     mount options in the default setup; I don't think userspace should
->> >>     ever be required to fiddle with such stuff
->> >
->> > Hm, but if we get rid of them, what about tools that expect them to be
->> > there?  Just silently ignore them?
->> >
->>
->> Drop the newinstance mount option on the floor; keep recognizing the
->> ptmxmode mount option but change the default.
->
-> Wait, change the default to what?
+On Wed, 11 Apr 2012, Cong Wang wrote:
 
-Of the devpts fs mount option. The 'newinstance' one, which should not
-have existed in the first place.
+> mm_for_maps() is a simple wrapper for mm_access(),
+> and the name is misleading, so just remove it and use
+> mm_access() directly.
+> 
+> Cc: Oleg Nesterov <oleg@redhat.com>
+> Cc: Alexey Dobriyan <adobriyan@gmail.com>
+> Signed-off-by: Cong Wang <xiyou.wangcong@gmail.com>
 
-> I think this is going to require a lot of testing :)
+Yes, this is an improvement in my eyes.
 
-In the example patch I posted and which I ran here, I just removed the
-entire option. This was just to show that userspace does not want to
-be taught dirty tricks that need updating of early-boot tools. All
-such pretty self-contained stuff should be in the kernel itself.
-Userspace wants to be dumb here, and that worked fine so far with that
-patch. :)
+Acked-by: Hugh Dickins <hughd@google.com>
 
-Kay
+> ---
+>  fs/proc/base.c       |    7 +------
+>  fs/proc/internal.h   |    2 --
+>  fs/proc/task_mmu.c   |    4 ++--
+>  fs/proc/task_nommu.c |    2 +-
+>  4 files changed, 4 insertions(+), 11 deletions(-)
+> 
+> diff --git a/fs/proc/base.c b/fs/proc/base.c
+> index 919d14c..8608a4d 100644
+> --- a/fs/proc/base.c
+> +++ b/fs/proc/base.c
+> @@ -198,11 +198,6 @@ static int proc_root_link(struct dentry *dentry, struct path *path)
+>  	return result;
+>  }
+>  
+> -struct mm_struct *mm_for_maps(struct task_struct *task)
+> -{
+> -	return mm_access(task, PTRACE_MODE_READ);
+> -}
+> -
+>  static int proc_pid_cmdline(struct task_struct *task, char * buffer)
+>  {
+>  	int res = 0;
+> @@ -242,7 +237,7 @@ out:
+>  
+>  static int proc_pid_auxv(struct task_struct *task, char *buffer)
+>  {
+> -	struct mm_struct *mm = mm_for_maps(task);
+> +	struct mm_struct *mm = mm_access(task, PTRACE_MODE_READ);
+>  	int res = PTR_ERR(mm);
+>  	if (mm && !IS_ERR(mm)) {
+>  		unsigned int nwords = 0;
+> diff --git a/fs/proc/internal.h b/fs/proc/internal.h
+> index 5f79bb8..a306437 100644
+> --- a/fs/proc/internal.h
+> +++ b/fs/proc/internal.h
+> @@ -31,8 +31,6 @@ struct vmalloc_info {
+>  	unsigned long	largest_chunk;
+>  };
+>  
+> -extern struct mm_struct *mm_for_maps(struct task_struct *);
+> -
+>  #ifdef CONFIG_MMU
+>  #define VMALLOC_TOTAL (VMALLOC_END - VMALLOC_START)
+>  extern void get_vmalloc_info(struct vmalloc_info *vmi);
+> diff --git a/fs/proc/task_mmu.c b/fs/proc/task_mmu.c
+> index 2b9a760..03360a1 100644
+> --- a/fs/proc/task_mmu.c
+> +++ b/fs/proc/task_mmu.c
+> @@ -125,7 +125,7 @@ static void *m_start(struct seq_file *m, loff_t *pos)
+>  	if (!priv->task)
+>  		return ERR_PTR(-ESRCH);
+>  
+> -	mm = mm_for_maps(priv->task);
+> +	mm = mm_access(priv->task, PTRACE_MODE_READ);
+>  	if (!mm || IS_ERR(mm))
+>  		return mm;
+>  	down_read(&mm->mmap_sem);
+> @@ -914,7 +914,7 @@ static ssize_t pagemap_read(struct file *file, char __user *buf,
+>  	if (!pm.buffer)
+>  		goto out_task;
+>  
+> -	mm = mm_for_maps(task);
+> +	mm = mm_access(task, PTRACE_MODE_READ);
+>  	ret = PTR_ERR(mm);
+>  	if (!mm || IS_ERR(mm))
+>  		goto out_free;
+> diff --git a/fs/proc/task_nommu.c b/fs/proc/task_nommu.c
+> index 74fe164..1ccfa53 100644
+> --- a/fs/proc/task_nommu.c
+> +++ b/fs/proc/task_nommu.c
+> @@ -223,7 +223,7 @@ static void *m_start(struct seq_file *m, loff_t *pos)
+>  	if (!priv->task)
+>  		return ERR_PTR(-ESRCH);
+>  
+> -	mm = mm_for_maps(priv->task);
+> +	mm = mm_access(priv->task, PTRACE_MODE_READ);
+>  	if (!mm || IS_ERR(mm)) {
+>  		put_task_struct(priv->task);
+>  		priv->task = NULL;
+> -- 
+> 1.7.7.6
+> 
+> 
