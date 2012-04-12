@@ -1,97 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934944Ab2DLWRe (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Apr 2012 18:17:34 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:10071 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934784Ab2DLWRd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Apr 2012 18:17:33 -0400
-Date: Fri, 13 Apr 2012 00:17:05 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: David Howells <dhowells@redhat.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] cred: remove task_is_dead() from __task_cred() validation
-Message-ID: <20120412221705.GA853@redhat.com>
+	id S934954Ab2DLWSm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Apr 2012 18:18:42 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:36111 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934863Ab2DLWSj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Apr 2012 18:18:39 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <1334267284-19166-7-git-send-email-wad@chromium.org>
+References: <1334267284-19166-1-git-send-email-wad@chromium.org>
+	<1334267284-19166-7-git-send-email-wad@chromium.org>
+Date: Thu, 12 Apr 2012 15:18:34 -0700
+X-Google-Sender-Auth: Jq6zqv9lyNo4bRQ-lqAitUebGvA
+Message-ID: <CAGXu5j+8eyZTUUaWPPOy0s6s1PFjfpT3HjNODWdDear9ALfROg@mail.gmail.com>
+Subject: Re: [PATCH v18 07/15] arch/x86: add syscall_get_arch to syscall.h
+From: Kees Cook <keescook@chromium.org>
+To: Will Drewry <wad@chromium.org>
+Cc: linux-kernel@vger.kernel.org, linux-man@vger.kernel.org,
+        linux-security-module@vger.kernel.org, linux-arch@vger.kernel.org,
+        linux-doc@vger.kernel.org, kernel-hardening@lists.openwall.com,
+        netdev@vger.kernel.org, x86@kernel.org, arnd@arndb.de,
+        davem@davemloft.net, hpa@zytor.com, mingo@redhat.com, oleg@redhat.com,
+        peterz@infradead.org, rdunlap@xenotime.net, mcgrathr@chromium.org,
+        tglx@linutronix.de, luto@mit.edu, eparis@redhat.com,
+        serge.hallyn@canonical.com, djm@mindrot.org, scarybeasts@gmail.com,
+        indan@nul.nu, pmoore@redhat.com, akpm@linux-foundation.org,
+        corbet@lwn.net, eric.dumazet@gmail.com, markus@chromium.org,
+        coreyb@linux.vnet.ibm.com, jmorris@namei.org
+Content-Type: text/plain; charset=ISO-8859-1
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-commit 8f92054e:
+On Thu, Apr 12, 2012 at 2:47 PM, Will Drewry <wad@chromium.org> wrote:
+> Add syscall_get_arch() to export the current AUDIT_ARCH_* based on system call
+> entry path.
+>
+> Signed-off-by: Will Drewry <wad@chromium.org>
+> Acked-by: Serge Hallyn <serge.hallyn@canonical.com>
+> Reviewed-by: H. Peter Anvin <hpa@zytor.com>
+> Acked-by: Eric Paris <eparis@redhat.com>
 
-    add the following validation condition:
+Reviewed-by: Kees Cook <keescook@chromium.org>
 
-        task->exit_state >= 0
-
-    to permit the access if the target task is dead and therefore
-    unable to change its own credentials.
-
-OK, but afaics currently this can only help wait_task_zombie() which
-calls __task_cred() without rcu lock.
-
-Remove this validation and change wait_task_zombie() to use task_uid()
-instead. This means we do rcu_read_lock() only to shut up the lockdep,
-but we already do the same in, say, wait_task_stopped().
-
-task_is_dead() should die, task->exit_state != 0 means that this task
-has passed exit_notify(), only do_wait-like code paths should use this.
-
-Unfortunately, we can't kill task_is_dead() right now, it has already
-acquired buggy users in drivers/staging. The fix already exists.
-
-Signed-off-by: Oleg Nesterov <oleg@redhat.com>
-Reviewed-by: "Eric W. Biederman" <ebiederm@xmission.com>
-Acked-by: David Howells <dhowells@redhat.com>
----
- include/linux/cred.h |   10 +++-------
- kernel/exit.c        |    2 +-
- 2 files changed, 4 insertions(+), 8 deletions(-)
-
-diff --git a/include/linux/cred.h b/include/linux/cred.h
-index adadf71..1b64c72 100644
---- a/include/linux/cred.h
-+++ b/include/linux/cred.h
-@@ -276,17 +276,13 @@ static inline void put_cred(const struct cred *_cred)
-  * @task: The task to query
-  *
-  * Access the objective credentials of a task.  The caller must hold the RCU
-- * readlock or the task must be dead and unable to change its own credentials.
-+ * readlock.
-  *
-  * The result of this function should not be passed directly to get_cred();
-  * rather get_task_cred() should be used instead.
-  */
--#define __task_cred(task)						\
--	({								\
--		const struct task_struct *__t = (task);			\
--		rcu_dereference_check(__t->real_cred,			\
--				      task_is_dead(__t));		\
--	})
-+#define __task_cred(task)	\
-+	rcu_dereference((task)->real_cred)
- 
- /**
-  * get_current_cred - Get the current task's subjective credentials
-diff --git a/kernel/exit.c b/kernel/exit.c
-index 4b4042f..7b36288 100644
---- a/kernel/exit.c
-+++ b/kernel/exit.c
-@@ -1214,7 +1213,7 @@ static int wait_task_zombie(struct wait_opts *wo, struct task_struct *p)
- 	unsigned long state;
- 	int retval, status, traced;
- 	pid_t pid = task_pid_vnr(p);
--	uid_t uid = __task_cred(p)->uid;
-+	uid_t uid = task_uid(p);
- 	struct siginfo __user *infop;
- 
- 	if (!likely(wo->wo_flags & WEXITED))
 -- 
-1.5.5.1
-
-
+Kees Cook
+ChromeOS Security
