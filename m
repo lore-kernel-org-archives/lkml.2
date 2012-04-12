@@ -1,59 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755729Ab2DLFCx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Apr 2012 01:02:53 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:49970 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754785Ab2DLFCw (ORCPT
+	id S1755922Ab2DLFIl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Apr 2012 01:08:41 -0400
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:7913 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755160Ab2DLFIj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Apr 2012 01:02:52 -0400
-Date: Thu, 12 Apr 2012 06:02:45 +0100
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Oleg Nesterov <oleg@redhat.com>, Andrew Morton <akpm@linux-foundation.org>,
-        David Howells <dhowells@redhat.com>, David Smith <dsmith@redhat.com>,
-        "Frank Ch. Eigler" <fche@redhat.com>,
-        Larry Woodman <lwoodman@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>, Tejun Heo <tj@kernel.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: hlist_for_each_entry && pos (Was: task_work_queue)
-Message-ID: <20120412050245.GM6589@ZenIV.linux.org.uk>
-References: <20120412024751.GA17561@redhat.com>
- <20120412024810.GA17984@redhat.com>
- <20120412040059.GA20462@redhat.com>
- <CA+55aFyGsA5YPqrymJ8wwoS86SEeJh+X-dvfBTfo3gOTm73JNA@mail.gmail.com>
- <20120412042850.GA22354@redhat.com>
- <CA+55aFzs=DuYibWYMUFiU_R1aJHAr-8hpQhWLew8R5q4nCDraQ@mail.gmail.com>
+	Thu, 12 Apr 2012 01:08:39 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6677"; a="180927733"
+X-IronPort-AV: E=Sophos;i="4.75,409,1330934400"; 
+   d="scan'208";a="302328437"
+From: Sujith Manoharan <c_manoha@qca.qualcomm.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CA+55aFzs=DuYibWYMUFiU_R1aJHAr-8hpQhWLew8R5q4nCDraQ@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 7bit
+Message-ID: <20358.25376.230264.236893@gargle.gargle.HOWL>
+Date: Thu, 12 Apr 2012 10:37:44 +0530
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: Heinz Diehl <htd@fancy-poultry.org>, <linux-kernel@vger.kernel.org>,
+        Greg KH <gregkh@linuxfoundation.org>, <akpm@linux-foundation.org>,
+        <alan@lxorguk.ukuu.org.uk>,
+        "linux-wireless Mailing List" <linux-wireless@vger.kernel.org>,
+        "ath9k-devel@lists.ath9k.org" <ath9k-devel@venema.h4ckr.net>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        David Miller <davem@davemloft.net>,
+        Network Development <netdev@vger.kernel.org>
+Subject: Regression due to "ath9k: fix going to full-sleep on PS idle"
+In-Reply-To: <CA+55aFxWD1bE0oiR4GpLP19MCm2CzwuApuYhcE_NF7bC+tFYjg@mail.gmail.com>
+References: <CA+55aFxWD1bE0oiR4GpLP19MCm2CzwuApuYhcE_NF7bC+tFYjg@mail.gmail.com>
+X-Mailer: VM 8.2.0a under 23.4.1 (x86_64-unknown-linux-gnu)
+X-Originating-IP: [172.30.39.5]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 11, 2012 at 09:39:29PM -0700, Linus Torvalds wrote:
-
-> The sad part is that if we allow that, we also get that *other* insane
-> C99 variable thing - mixing variables and code.
+Linus Torvalds wrote:
+> You guys need to fix the subject line (like this), and make sure that
+> the right people are cc'd. This is not a "stable" issue - stable
+> cannot revert stuff that hasn't been reverted upstream.
 > 
-> I *like* getting warnings for confused people who start introducing
-> variables in the middle of blocks of code. That's not well-contained
-> like the loop variable.
+> So instead of stable and Greg, it should be netdev and Davem.
 > 
-> That said, most of the stuff in C99 are extensions that we used long
-> before C99, so I guess we might as well just add the stupid flag. And
-> discourage people from mixing declarations and code other ways (sparse
-> etc).
+> David/John: multiple people are complaining about that commit. It
+> really should be reverted, or a fix found. It's broken.
+> 
+> I can do the revert, but it would be better coming from the networking people.
 
-	Yes, but... -std=gnu99 will break one of your pet extensions -
-(struct foo){0,1,2} will cease to be accepted in initializers of
-static storage duration objects (and -std=c99 will break a *lot* more
-than that).  I wouldn't mind going for that (it's not a terribly large
-patch, at least it wasn't about a year ago when I've looked at that),
-but IIRC you really insisted on using that one...  It mostly boiled
-down to things like
--       .lock           = __SPIN_LOCK_UNLOCKED(init_fs.lock),
-+       .lock           = __SPIN_LOCK_INITIALIZER(init_fs.lock),
-etc.
+John has already reverted the commit:
+http://git.kernel.org/?p=linux/kernel/git/linville/wireless.git;a=commit;h=011afa1ed8c408d694957d2474d89dc81a60b70c
+
+Sujith
