@@ -1,87 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762066Ab2DLHI4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Apr 2012 03:08:56 -0400
-Received: from mga03.intel.com ([143.182.124.21]:40944 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756945Ab2DLHIz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Apr 2012 03:08:55 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="asc'?scan'208";a="129966989"
-Message-ID: <1334214713.13842.34.camel@sauron.fi.intel.com>
-Subject: Re: [PATCH v3] Add security.* XATTR support for the UBIFS
-From: Artem Bityutskiy <dedekind1@gmail.com>
-Reply-To: dedekind1@gmail.com
-To: subodh.nijsure@gmail.com
-Cc: linux-mtd@lists.infradead.org, Adrian Hunter <adrian.hunter@intel.com>,
-        linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
-        Subodh Nijsure <snijsure@grid-net.com>
-Date: Thu, 12 Apr 2012 10:11:53 +0300
-In-Reply-To: <1334179707-31754-1-git-send-email-snijsure@grid-net.com>
-References: <1334179707-31754-1-git-send-email-snijsure@grid-net.com>
-Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
-	boundary="=-2T522Pv7TlN/cXvWOuqW"
-X-Mailer: Evolution 3.2.3 (3.2.3-2.fc16) 
-Mime-Version: 1.0
+	id S1762086Ab2DLHQo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Apr 2012 03:16:44 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:55585 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757468Ab2DLHQn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Apr 2012 03:16:43 -0400
+Message-ID: <4F868156.30708@gmail.com>
+Date: Thu, 12 Apr 2012 09:16:38 +0200
+From: Juri Lelli <juri.lelli@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120329 Thunderbird/11.0.1
+MIME-Version: 1.0
+To: Steven Rostedt <rostedt@goodmis.org>
+CC: peterz@infradead.org, tglx@linutronix.de, mingo@redhat.com,
+        cfriesen@nortel.com, oleg@redhat.com, fweisbec@gmail.com,
+        darren@dvhart.com, johan.eker@ericsson.com, p.faure@akatech.ch,
+        linux-kernel@vger.kernel.org, claudio@evidence.eu.com,
+        michael@amarulasolutions.com, fchecconi@gmail.com,
+        tommaso.cucinotta@sssup.it, nicola.manica@disi.unitn.it,
+        luca.abeni@unitn.it, dhaval.giani@gmail.com, hgu1972@gmail.com,
+        paulmck@linux.vnet.ibm.com, raistlin@linux.it, insop.song@ericsson.com,
+        liming.wang@windriver.com
+Subject: Re: [PATCH 11/16] sched: add latency tracing for -deadline tasks.
+References: <1333696481-3433-1-git-send-email-juri.lelli@gmail.com>  <1333696481-3433-12-git-send-email-juri.lelli@gmail.com> <1334178222.23924.304.camel@gandalf.stny.rr.com>
+In-Reply-To: <1334178222.23924.304.camel@gandalf.stny.rr.com>
+Content-Type: text/plain; charset=ISO-8859-15; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 04/11/2012 11:03 PM, Steven Rostedt wrote:
+> On Fri, 2012-04-06 at 09:14 +0200, Juri Lelli wrote:
+>> From: Dario Faggioli<raistlin@linux.it>
+>>
+>> It is very likely that systems that wants/needs to use the new
+>> SCHED_DEADLINE policy also want to have the scheduling latency of
+>> the -deadline tasks under control.
+>>
+>> For this reason a new version of the scheduling wakeup latency,
+>> called "wakeup_dl", is introduced.
+>>
+>> As a consequence of applying this patch there will be three wakeup
+>> latency tracer:
+>>   * "wakeup", that deals with all tasks in the system;
+>>   * "wakeup_rt", that deals with -rt and -deadline tasks only;
+>>   * "wakeup_dl", that deals with -deadline tasks only.
+>>
+>> Signed-off-by: Dario Faggioli<raistlin@linux.it>
+>> Signed-off-by: Juri Lelli<juri.lelli@gmail.com>
+>> ---
+>>   kernel/trace/trace_sched_wakeup.c |   41 ++++++++++++++++++++++++++++++++++++-
+>>   kernel/trace/trace_selftest.c     |   30 ++++++++++++++++----------
+>>   2 files changed, 58 insertions(+), 13 deletions(-)
+>>
+>> diff --git a/kernel/trace/trace_sched_wakeup.c b/kernel/trace/trace_sched_wakeup.c
+>> index e4a70c0..9c9b1be 100644
+>> --- a/kernel/trace/trace_sched_wakeup.c
+>> +++ b/kernel/trace/trace_sched_wakeup.c
+>> @@ -27,6 +27,7 @@ static int			wakeup_cpu;
+>>   static int			wakeup_current_cpu;
+>>   static unsigned			wakeup_prio = -1;
+>>   static int			wakeup_rt;
+>> +static int			wakeup_dl;
+>>
+>>   static arch_spinlock_t wakeup_lock =
+>>   	(arch_spinlock_t)__ARCH_SPIN_LOCK_UNLOCKED;
+>> @@ -420,6 +421,17 @@ probe_wakeup(void *ignore, struct task_struct *p, int success)
+>>   	if ((wakeup_rt&&  !rt_task(p)) ||
+>>   			p->prio>= wakeup_prio ||
+>>   			p->prio>= current->prio)
+>
+> I don't think you meant to keep both if statements. Look above and
+> below ;-)
+>
 
---=-2T522Pv7TlN/cXvWOuqW
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+Ouch! Forgot to cut something! :-(
+  
+>> +	/*
+>> +	 * Semantic is like this:
+>> +	 *  - wakeup tracer handles all tasks in the system, independently
+>> +	 *    from their scheduling class;
+>> +	 *  - wakeup_rt tracer handles tasks belonging to sched_dl and
+>> +	 *    sched_rt class;
+>> +	 *  - wakeup_dl handles tasks belonging to sched_dl class only.
+>> +	 */
+>> +	if ((wakeup_dl&&  !dl_task(p)) ||
+>> +	    (wakeup_rt&&  !dl_task(p)&&  !rt_task(p)) ||
+>> +	    (p->prio>= wakeup_prio || p->prio>= current->prio))
+>>   		return;
+>
+> Anyway, perhaps this should be broken up, as we don't want the double
+> test, that is, wakeup_rt and wakeup_dl are both checked. Perhaps do:
+>
+> 	if (wakeup_dl&&  !dl_task(p))
+> 		return;
+> 	else if (wakeup_rt&&  !dl_task(p)&&  !rt_task(p))
+> 		return;
+>
+> 	if (p->prio>= wakeup_prio || p->prio>= current->prio)
+> 		return;
 
-On Wed, 2012-04-11 at 14:28 -0700, subodh.nijsure@gmail.com wrote:
-> +#ifdef CONFIG_UBIFS_FS_XATTR
-> +
-> +	err =3D ubifs_init_security(dir, inode, &dentry->d_name);
-> +	if (err) {
-> +		ubifs_err("cannot initialize extended attribute, error %d",
-> +			  err);
-> +		goto out_cancel;
-> +	}
-> +
-> +#endif
-
-Suboodh,
-
-would you please first create a preparational patch which removes
-the CONFIG_UBIFS_FS_XATTR completely and makes xattr support to be
-always present.
-
-And then you could add the security stuff on top of this without the
-#ifdef churn.
+Yes, way better.
 
 Thanks!
 
---=20
-Best Regards,
-Artem Bityutskiy
+- Juri
 
---=-2T522Pv7TlN/cXvWOuqW
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-Content-Transfer-Encoding: 7bit
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAABAgAGBQJPhoA5AAoJECmIfjd9wqK0I1UP/1k4rgvfhMlwtsMtWeSIyfgf
-qk1bQ3psE8wj4zKt/9FhkGdVuGF3Bz0x2BqYJDGzQbUfVTpCwS/VQ+0DljKoawe9
-VpbhUau0H8D8A/Fo+6ajZ9AxdA5nAkW+q04lYbGULOWDQD/sY+cj7VO+y4Hj1bFz
-fx58ZqxEkwhJx0DN0VbuoN6g+9BA1fwjCNtc6WUrPdQY44Km8WlXy9TAwCxJWB9o
-zTLzC+/XBZVteD8eBgt79kCTEdU5nQkLCssu+WuSJvreLqaWRGY37pJgMePOproF
-c+XMu04gKnkxlvdyiRorkdYrbeJKpqTkyzpErGeopFACK5A9JE6xu6gHEQwfwr0J
-EVg0pxfWrLzR2RSD2B11LORnyJsfgOYe96eDSlqMfvT+1HJ5L1V8wITtOnuvN/zM
-C+LxfIFaFEFuiCqTLk9cCnDCFVSKs1N7BVUYKLiHNiqamMaXRox8KXBZybWgnUFg
-bYpbtxdtx83kF4M0imhpUGWTv2Fbu8lzQZ1hAFFFVdAwOROGDw7jaOgKCSQ75hST
-bYSOP4S7hpVBeHIqhmJiTP9FO0zG070RtejsuOTTzSlpd5A6mD7uNMVeXw6UnE/i
-eHhDpd2LA6ZKcJ2N3CartCAz7W3TuL+bHKv6+SkoNqPtgFP1fRiNMgLJMyvxDICI
-7NzLhQB9VqbcIfSQ9Ork
-=5TAZ
------END PGP SIGNATURE-----
-
---=-2T522Pv7TlN/cXvWOuqW--
-
+>>
+>>   	pc = preempt_count();
+>> @@ -431,7 +443,7 @@ probe_wakeup(void *ignore, struct task_struct *p, int success)
+>>   	arch_spin_lock(&wakeup_lock);
+>>
+>>   	/* check for races. */
+>> -	if (!tracer_enabled || p->prio>= wakeup_prio)
+>> +	if (!tracer_enabled || (!dl_task(p)&&  p->prio>= wakeup_prio))
+>>   		goto out_locked;
+>>
+>>   	/* reset the trace */
+>> @@ -539,16 +551,25 @@ static int __wakeup_tracer_init(struct trace_array *tr)
+>>
+>
+>
