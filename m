@@ -1,51 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761608Ab2DLAf5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Apr 2012 20:35:57 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:34588 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755277Ab2DLAfz convert rfc822-to-8bit (ORCPT
+	id S1761620Ab2DLAgw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Apr 2012 20:36:52 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:52195 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754779Ab2DLAgu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Apr 2012 20:35:55 -0400
+	Wed, 11 Apr 2012 20:36:50 -0400
+Date: Wed, 11 Apr 2012 17:36:46 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Asai Thambi S P <asamymuthupa@micron.com>
+Cc: Jens Axboe <axboe@kernel.dk>, Sam Bradshaw <sbradshaw@micron.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] block: mtip32xx: remove HOTPLUG_PCI_PCIE dependancy
+Message-ID: <20120412003646.GA23447@kroah.com>
+References: <20120411183457.GA19379@kroah.com>
+ <4F85E217.8060406@kernel.dk>
+ <4F85EAA3.7010807@micron.com>
+ <20120411204041.GA14375@kroah.com>
+ <4F860440.60808@micron.com>
+ <20120411223718.GA24665@kroah.com>
+ <4F86228F.50705@micron.com>
 MIME-Version: 1.0
-In-Reply-To: <20120412103157.70669ff82b81d5d926c36d4d@canb.auug.org.au>
-References: <20120411151155.b1a614f174442a592d1c1561@canb.auug.org.au> <20120412103157.70669ff82b81d5d926c36d4d@canb.auug.org.au>
-From: Grant Likely <grant.likely@secretlab.ca>
-Date: Wed, 11 Apr 2012 18:35:34 -0600
-X-Google-Sender-Auth: 1hbgekkPSguwYb2PdvBWfzRsExM
-Message-ID: <CACxGe6tDa+AzK0O=E+EPZ90Ek_C-rM-G4fHSnsdL0S+fNcmzmw@mail.gmail.com>
-Subject: Re: linux-next: build failure after merge of the final tree
- (devicetree tree related)
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Thomas Abraham <thomas.abraham@linaro.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4F86228F.50705@micron.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 11, 2012 at 6:31 PM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
-> Hi Grant,
->
-> On Wed, 11 Apr 2012 15:11:55 +1000 Stephen Rothwell <sfr@canb.auug.org.au> wrote:
->>
->> After merging the final tree, today's linux-next build (sparc64 defconfig)
->> failed like this:
->>
->> drivers/of/of_mdio.c: In function 'of_mdiobus_register':
->> drivers/of/of_mdio.c:75:4: error: implicit declaration of function 'irq_of_parse_and_map' [-Werror=implicit-function-declaration]
->>
->> Caused by commit e46c11b94787 ("of/irq: add empty irq_of_parse_and_map()
->> for non-dt builds").  SPARC has CONFIG_OF but not CONFIG_OF_IRQ ...
->>
->> I have reverted that commit for today.
->
-> That commit is actually in the devicetree-current tree.
+On Wed, Apr 11, 2012 at 05:32:15PM -0700, Asai Thambi S P wrote:
+> On 4/11/2012 3:37 PM, Greg KH wrote:
+> 
+> > On Wed, Apr 11, 2012 at 03:22:56PM -0700, Asai Thambi S P wrote:
+> >> On 4/11/2012 1:40 PM, Greg KH wrote:
+> >>
+> >>> On Wed, Apr 11, 2012 at 01:33:39PM -0700, Asai Thambi S P wrote:
+> >>>> On 4/11/2012 12:57 PM, Jens Axboe wrote:
+> >>>>
+> >>>>> On 2012-04-11 20:34, Greg KH wrote:
+> >>>>>> This removes the HOTPLUG_PCI_PCIE dependency on the driver and makes it
+> >>>>>> depend on PCI.
+> >>>>>
+> >>>>> I think it's an old dependency. I've built and run it here without as
+> >>>>> well, and no functional issues either.
+> >>>>>
+> >>>>> Sam/Asai?
+> >>>>>
+> >>>>
+> >>>>
+> >>>> Both driver and device will work fine without PCIe hotplug dependency. This
+> >>>> dependency is required for supporting surprise removal and surprise insertion
+> >>>> of the device on systems with PCIe hotplug controller.
+> >>>
+> >>> But that's not a driver-specific thing at all.  All PCI drivers need to
+> >>> be able to handle this (I like how you constantly check the pci id,
+> >>> that's cute.)
+> >>>
+> >>> So I think a basic dependancy on PCI should be fine here.
+> >>
+> >> The P320 is different from existing PCIe devices supporting surprise removal
+> >> and surprise insertion (SRSI) capability (aka hotplug). We equate the hotplug
+> >> functionality enabled by PCIe hotplug controllers to that of any other storage
+> >> endpoint (SAS, SATA, FC, etc). For those devices, hotplug functionality is
+> >> enabled by the transport layer and propagated up to host storage stack for
+> >> handling.
+> > 
+> > Huh?  No, hotplug on Linux happens on the PCI level, and has done so for
+> > over 10 years.
+> 
+> Just to clarify, I was referring to hotplug of SAS/SATA/FC storage devices,
+> not HBA.
 
-Yes, drop that tree or revert that commit.  There's nothing else in
-there and I didn't have time to pull it back today before you started
-linux-next for the day.  The change is bogus and I'll spin a proper
-fixup for tomorrow.
+Ah, ok, yes, you are right, but as you aren't using the SCSI layer here
+(odd, but ok), you can only handle hotplug at the PCI layer.
 
-g.
+thanks,
+
+greg k-h
