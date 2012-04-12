@@ -1,63 +1,143 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934284Ab2DLNf4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Apr 2012 09:35:56 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:57306 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934229Ab2DLNfy convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Apr 2012 09:35:54 -0400
+	id S934293Ab2DLNgj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Apr 2012 09:36:39 -0400
+Received: from tundra.namei.org ([65.99.196.166]:34106 "EHLO tundra.namei.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S934228Ab2DLNgh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Apr 2012 09:36:37 -0400
+Date: Thu, 12 Apr 2012 23:36:08 +1000 (EST)
+From: James Morris <jmorris@namei.org>
+To: linux-security-module@vger.kernel.org
+cc: linux-kernel@vger.kernel.org, lwn@lwn.net, fedora-selinux-list@redhat.com,
+        selinux@tycho.nsa.gov, ubuntu-hardened@lists.ubuntu.com,
+        tomoyo-users-en@lists.sourceforge.jp, netfilter-devel@vger.kernel.org,
+        linux-crypto@vger.kernel.org, Audit-ML <linux-audit@redhat.com>,
+        Linux Security Summit Program Committee 
+	<lss-pc@ext.namei.org>,
+        gentoo-hardened@gentoo.org, David Howells <dhowells@redhat.com>
+Subject: [ANN] Linux Security Summit 2012 - Announcement and CFP
+In-Reply-To: <alpine.LRH.2.00.1104041833360.354@tundra.namei.org>
+Message-ID: <alpine.LRH.2.02.1204122333400.17266@tundra.namei.org>
+References: <alpine.LRH.2.00.1104041833360.354@tundra.namei.org>
+User-Agent: Alpine 2.02 (LRH 1266 2009-07-14)
 MIME-Version: 1.0
-In-Reply-To: <20120412121124.64aee2f6@pyramind.ukuu.org.uk>
-References: <20120401125741.GA7484@p183.telecom.by>
-	<4F78D0BA.9040709@zytor.com>
-	<CACVxJT_WJYjecpZMGkyUrbE5gNROX1tOfFAcD84-hoPsypxcFQ@mail.gmail.com>
-	<4F7F1659.5090305@zytor.com>
-	<20120406201601.GA3310@p183.telecom.by>
-	<4F7F59E1.2040009@zytor.com>
-	<CACVxJT_RRfW7HknkbA4+41L9hNMBHZNezKs1ifbv_qFx5eB0-w@mail.gmail.com>
-	<20120412121124.64aee2f6@pyramind.ukuu.org.uk>
-Date: Thu, 12 Apr 2012 16:35:53 +0300
-Message-ID: <CACVxJT-Yff7nw2Qd3WX8AbQ2259OgN_fgQ7TvgNMv8A=ysg2JA@mail.gmail.com>
-Subject: Re: [PATCH] nextfd(2)
-From: Alexey Dobriyan <adobriyan@gmail.com>
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, akpm@linux-foundation.org,
-        viro@zeniv.linux.org.uk, torvalds@linux-foundation.org,
-        drepper@gmail.com, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 12, 2012 at 2:11 PM, Alan Cox <alan@lxorguk.ukuu.org.uk> wrote:
-> On Thu, 12 Apr 2012 13:54:25 +0300
-> Alexey Dobriyan <adobriyan@gmail.com> wrote:
->
->> On Sat, Apr 7, 2012 at 12:02 AM, H. Peter Anvin <hpa@zytor.com> wrote:
->> > On 04/06/2012 01:16 PM, Alexey Dobriyan wrote:
->> >>
->> >> closefrom(3) written via nextfd(2) loop is reliable and doesn't fail.
->> >> closefrom(3) written via /proc/self/fd is reliable and can fail (including ENOMEM).
->> >> closefrom(3) written via close(fd++) is unreliable.
->> >>
->> >
->> > I call shenanigans on this.  There is no reason to ENOMEM on the second
->> > written using the fdwalk() implementation I already posted, for example.
->>
->> open("/proc/self/fd") can fail with ENOMEM.
->
-> Any syscall can fail with a process kill due to a stack extend on out of
-> memory in most configurations. That includes your nextfd stuff
->
-> This whole thing is getting stupid. "Perfection is the enemy of
-> success".
->
-> Your code will also fail when the cat pees on the computer, when the
-> power fails and when disk dies. I suspect that other than the cat these
-> are all more likely real world cases than your ENOMEM.
+==========================================================================
+                 ANNOUNCEMENT AND CALL FOR PARTICIPATION
 
-You can't see I'm talking about difference only, can you?
-Have you read what hpa wrote exactly and what exactly I was answering to?
+                       LINUX SECURITY SUMMIT 2012
+                           SAN DIEGO, CA, USA
+==========================================================================
+
+
+DESCRIPTION
+
+  The Linux Security Summit (LSS) is a technical forum for collaboration
+  between Linux developers, researchers, and end users.  Its primary aim
+  is to foster community efforts in analyzing and solving Linux security
+  challenges.
+
+  The format of the summit will be:
+  
+    * Refereed presentations
+    * Short talks
+    * Roundtable discussions
+    * Breakout development sessions 
+
+
+WEB SITE
+
+  http://kernsec.org/wiki/index.php/Linux_Security_Summit_2012
+
+
+DATES / LOCATION
+
+  The Linux Security Summit for 2012 will be held across 30 and 31 August
+  in San Diego, CA, USA.  It will be co-located with LinuxCon[1], as well
+  as Linux Plumbers and the Kernel Summit.
+ 
+  Note that Linux Security Summit attendees and speakers must be registered
+  to attend LinuxCon.  See the LinuxCon site for details on registration,
+  travel, and accommodation:
+  
+    https://events.linuxfoundation.org/events/linuxcon
+
+  The Linux Security Summit CFP is now open, and will close on 23rd of May.
+  
+  Accepted speakers will be notified by 1st of June.
+
+
+WHO SHOULD ATTEND
+
+  The event is open to all registered LinuxCon attendees.
+  
+  You do not have to be a "security person" to attend -- we're seeking a
+  diverse range of attendees, and welcome the participation of general
+  developers, researchers, operations, and end-users.
+
+
+CALL FOR PARTICIPATION
+
+  The program committee currently seeks proposals for:
+
+  * Refereed Presentations:
+      45 minutes in length, including at least 10 minutes of discussion.
+      Papers are encouraged.
+  
+  * Short Talks:
+      30 minutes in length, discussion-oriented.  Slides should be minimal.
+
+  * Roundtable Discussion Topics
+
+   
+  Topic areas include, but are not limited to:
+  
+    * System hardening
+    * Access control
+    * Cryptography
+    * Integrity control
+    * Hardware security
+    * Networking
+    * Storage
+    * Virtualization
+    * Desktop
+    * Tools
+    * Management
+    * Case studies
+    * Emerging technologies, threats & techniques 
+    
+  Proposals should be submitted in plain text via email to the program
+  committee at:  lss-pc (_at_) ext.namei.org
+
+  Abstracts should be approximately 150 words in total.
+
+
+PROGRAM COMMITTEE
+
+  The Linux Security Summit for 2012 is organized by:
+
+    * James Morris, Oracle
+    * Serge Hallyn, Canonical
+    * Paul Moore, Red Hat
+    * Stephen Smalley, NSA
+    * Joshua Brindle, Tresys
+    * Tetsuo Handa, NTT Data
+    * Herbert Xu, Red Hat
+    * John Johansen, Canonical
+    * Kees Cook, Google
+    * Casey Schaufler, Intel
+
+  The program committee may be contacted as a group via email:
+
+     lss-pc (_at_) ext.namei.org
+   
+
+REFERENCES  
+
+  [1] https://events.linuxfoundation.org/events/linuxcon
+
