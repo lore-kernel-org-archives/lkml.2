@@ -1,80 +1,157 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934393Ab2DLPVj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Apr 2012 11:21:39 -0400
-Received: from e34.co.us.ibm.com ([32.97.110.152]:37610 "EHLO
-	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934353Ab2DLPVh (ORCPT
+	id S934398Ab2DLPXL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Apr 2012 11:23:11 -0400
+Received: from s15943758.onlinehome-server.info ([217.160.130.188]:50127 "EHLO
+	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933900Ab2DLPXJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Apr 2012 11:21:37 -0400
-Message-ID: <1334243871.18090.15.camel@key-ThinkPad-W510>
-Subject: [PATCH v3 05/17] pseries: Enabled the PFO-based RNG accelerator
-From: Kent Yoder <key@linux.vnet.ibm.com>
-To: linux-kernel@vger.kernel.org
-Cc: linux-crypto@vger.kernel.org, rcj@linux.vnet.ibm.com,
-        key@linux.vnet.ibm.com, benh@kernel.crashing.org,
-        linuxppc-dev@lists.ozlabs.org
-Date: Thu, 12 Apr 2012 10:17:51 -0500
-In-Reply-To: <1334242825.18090.4.camel@key-ThinkPad-W510>
-References: <1334242825.18090.4.camel@key-ThinkPad-W510>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2- 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12041215-1780-0000-0000-000004B53E9C
-X-IBM-ISS-SpamDetectors: 
-X-IBM-ISS-DetailInfo: BY=3.00000266; HX=3.00000187; KW=3.00000007;
- PH=3.00000001; SC=3.00000001; SDB=6.00130260; UDB=6.00030755; UTC=2012-04-12
- 15:21:34
+	Thu, 12 Apr 2012 11:23:09 -0400
+Date: Thu, 12 Apr 2012 17:22:56 +0200
+From: Borislav Petkov <bp@amd64.org>
+To: Arnaldo Carvalho de Melo <acme@infradead.org>
+Cc: Borislav Petkov <bp@amd64.org>, Ingo Molnar <mingo@kernel.org>,
+        Michal Marek <mmarek@suse.cz>, Sam Ravnborg <sam@ravnborg.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v5 5/5] tools: Connect to the kernel build system
+Message-ID: <20120412152256.GH24549@aftab>
+References: <1334162178-17152-1-git-send-email-bp@amd64.org>
+ <1334162178-17152-6-git-send-email-bp@amd64.org>
+ <20120411180434.GH16257@infradead.org>
+ <20120411180837.GJ16257@infradead.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120411180837.GJ16257@infradead.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds the cas bits to advertise support for the Platform
-Facilities Option (PFO) based random number generator accerator.
-The pseries-rng driver provides support for this hardware feature.
+On Wed, Apr 11, 2012 at 03:08:37PM -0300, Arnaldo Carvalho de Melo wrote:
+> Em Wed, Apr 11, 2012 at 03:04:34PM -0300, Arnaldo Carvalho de Melo escreveu:
+> > Em Wed, Apr 11, 2012 at 06:36:18PM +0200, Borislav Petkov escreveu:
+> > > From: Borislav Petkov <borislav.petkov@amd.com>
+> > > 
+> > > Now you can do
+> > > 
+> > > $ make tools/<toolname>
+> > > 
+> > > from the toplevel kernel directory and have the respective tool built.
+> > > 
+> > > If you want to build and install it, do
+> > > 
+> > > $ make tools/<toolname>_install
+> > 
+> > [acme@sandy linux]$ make -j8 O=/home/git/build/perf tools/perf_install
+> > [acme@sandy linux]$ ls -la tools/perf/*.o | wc -l
+> > 22
+> > 
+> > It should have honoured O=
+> > 
+> > Can you fix this one please? :)
+> 
+> But that can be on top of this series as the way I use it:
 
-Signed-off-by: Robert Jennings <rcj@linux.vnet.ibm.com>
-Signed-off-by: Kent Yoder <key@linux.vnet.ibm.com>
+How about the patch below? Sam, it touches the toplevel Makefile because
+it needs to not set KBUILD_OUTPUT when we're building tools/* targets.
+Pls, let me know if this is ok?
+
+Thanks.
+
+--
+From: Borislav Petkov <borislav.petkov@amd.com>
+Date: Thu, 12 Apr 2012 17:18:10 +0200
+Subject: [PATCH] tools, Makefile: Fix O= building
+
+Make sure
+
+$ make O=/tmp/somedir tools/perf
+
+works with the current toplevel Makefile integration.
+
+Signed-off-by: Borislav Petkov <borislav.petkov@amd.com>
 ---
- arch/powerpc/kernel/prom_init.c |    8 +++++++-
- 1 files changed, 7 insertions(+), 1 deletions(-)
+ Makefile                       |    9 +++++++--
+ tools/scripts/Makefile.include |   18 +++++++++++++++---
+ 2 files changed, 22 insertions(+), 5 deletions(-)
 
-diff --git a/arch/powerpc/kernel/prom_init.c b/arch/powerpc/kernel/prom_init.c
-index 9986027..26f6317 100644
---- a/arch/powerpc/kernel/prom_init.c
-+++ b/arch/powerpc/kernel/prom_init.c
-@@ -701,6 +701,7 @@ static void __init early_cmdline_parse(void)
- #define OV5_XCMO			0x00
- #endif
- #define OV5_TYPE1_AFFINITY	0x80	/* Type 1 NUMA affinity */
-+#define OV5_PFO_HW_RNG		0x80	/* PFO Random Number Generator */
+diff --git a/Makefile b/Makefile
+index 23b9ce5a2c2c..2cb2ee2dc6ae 100644
+--- a/Makefile
++++ b/Makefile
+@@ -98,8 +98,13 @@ ifeq ($(KBUILD_SRC),)
  
- /* Option Vector 6: IBM PAPR hints */
- #define OV6_LINUX		0x02	/* Linux is our OS */
-@@ -748,7 +749,7 @@ static unsigned char ibm_architecture_vec[] = {
- 	0,				/* don't halt */
+ # OK, Make called in directory where kernel src resides
+ # Do we want to locate output files in a separate directory?
++#
++# Also, we don't want to set KBUILD_OUTPUT if we're building stuff
++# in tools/
+ ifeq ("$(origin O)", "command line")
+-  KBUILD_OUTPUT := $(O)
++  ifneq ($(findstring tools/,$(MAKECMDGOALS)),tools/)
++    KBUILD_OUTPUT := $(O)
++  endif
+ endif
  
- 	/* option vector 5: PAPR/OF options */
--	13 - 2,				/* length */
-+	18 - 2,				/* length */
- 	0,				/* don't ignore, don't halt */
- 	OV5_LPAR | OV5_SPLPAR | OV5_LARGE_PAGES | OV5_DRCONF_MEMORY |
- 	OV5_DONATE_DEDICATE_CPU | OV5_MSI,
-@@ -764,6 +765,11 @@ static unsigned char ibm_architecture_vec[] = {
- 	 */
- #define IBM_ARCH_VEC_NRCORES_OFFSET	100
- 	W(NR_CPUS),			/* number of cores supported */
-+	0,
-+	0,
-+	0,
-+	0,
-+	OV5_PFO_HW_RNG,
+ ifeq ("$(origin W)", "command line")
+@@ -1473,7 +1478,7 @@ tools/: FORCE
+ 	$(Q)$(MAKE) LDFLAGS= MAKEFLAGS= -C $(src)/tools/
  
- 	/* option vector 6: IBM PAPR hints */
- 	4 - 2,				/* length */
+ tools/%: FORCE
+-	$(Q)$(MAKE) LDFLAGS= MAKEFLAGS= -C $(src)/tools/ $*
++	$(Q)$(MAKE) LDFLAGS= MAKEFLAGS= O=$(O) -C $(src)/tools/ $*
+ 
+ # Single targets
+ # ---------------------------------------------------------------------------
+diff --git a/tools/scripts/Makefile.include b/tools/scripts/Makefile.include
+index 87b55a729a5f..297b51d8e4be 100644
+--- a/tools/scripts/Makefile.include
++++ b/tools/scripts/Makefile.include
+@@ -38,11 +38,18 @@ else
+ NO_SUBDIR = :
+ endif
+ 
+-QUIET_SUBDIR0  = +$(MAKE) -C # space to separate -C and subdir
+-QUIET_SUBDIR1  =
+ 
+ ifneq ($(findstring $(MAKEFLAGS),s),s)
+-ifndef V
++ifdef V
++	QUIET_SUBDIR0  = +$(MAKE)
++	QUIET_SUBDIR1  =
++
++	ifdef O
++	  QUIET_SUBDIR0 += O=$(O)
++	endif
++
++	QUIET_SUBDIR0 += -C # space to separate -C and subdir
++else
+ 	QUIET_CC       = @echo '   ' CC $@;
+ 	QUIET_AR       = @echo '   ' AR $@;
+ 	QUIET_LINK     = @echo '   ' LINK $@;
+@@ -51,6 +58,11 @@ ifndef V
+ 	QUIET_SUBDIR0  = +@subdir=
+ 	QUIET_SUBDIR1  = ;$(NO_SUBDIR) echo '   ' SUBDIR $$subdir; \
+ 			 $(MAKE) $(PRINT_DIR) -C $$subdir
++
++	ifdef O
++	  QUIET_SUBDIR1 += O=$(O)
++	endif
++
+ 	QUIET_FLEX     = @echo '   ' FLEX $@;
+ 	QUIET_BISON    = @echo '   ' BISON $@;
+ endif
 -- 
-1.7.1
+1.7.9.3.362.g71319
 
 
+-- 
+Regards/Gruss,
+Boris.
+
+Advanced Micro Devices GmbH
+Einsteinring 24, 85609 Dornach
+GM: Alberto Bozzo
+Reg: Dornach, Landkreis Muenchen
+HRB Nr. 43632 WEEE Registernr: 129 19551
