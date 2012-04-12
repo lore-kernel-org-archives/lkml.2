@@ -1,84 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965057Ab2DLOVb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Apr 2012 10:21:31 -0400
-Received: from na3sys009aog105.obsmtp.com ([74.125.149.75]:44659 "EHLO
-	na3sys009aog105.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S934322Ab2DLOV3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Apr 2012 10:21:29 -0400
-From: Kevin Hilman <khilman@ti.com>
-To: "Mohammed\, Afzal" <afzal@ti.com>
-Cc: Greg KH <greg@kroah.com>, "Shilimkar\, Santosh" <santosh.shilimkar@ti.com>,
-        Paul Walmsley <paul@pwsan.com>, "V\, Aneesh" <aneesh@ti.com>,
-        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel\@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-omap\@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        "mgreer\@animalcreek.com" <mgreer@animalcreek.com>,
-        "msalter\@redhat.com" <msalter@redhat.com>
-Subject: Re: [PATCH v4 0/7] Add TI EMIF SDRAM controller driver
-Organization: Texas Instruments, Inc.
-References: <1331934707-29487-1-git-send-email-aneesh@ti.com>
-	<alpine.DEB.2.00.1204112042070.29473@utopia.booyaka.com>
-	<20120412030044.GA26236@kroah.com> <4F867A95.9030104@ti.com>
-	<20120412131045.GB31384@kroah.com>
-	<C8443D0743D26F4388EA172BF4E2A7A93E95947E@DQHE04.ent.ti.com>
-Date: Thu, 12 Apr 2012 07:21:18 -0700
-In-Reply-To: <C8443D0743D26F4388EA172BF4E2A7A93E95947E@DQHE04.ent.ti.com>
-	(Afzal Mohammed's message of "Thu, 12 Apr 2012 13:34:15 +0000")
-Message-ID: <871untjajl.fsf@ti.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
+	id S1757602Ab2DLO0j (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Apr 2012 10:26:39 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:37173 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753221Ab2DLO0h (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Apr 2012 10:26:37 -0400
+Date: Thu, 12 Apr 2012 16:26:34 +0200
+From: Jan Kara <jack@suse.cz>
+To: Fengguang Wu <fengguang.wu@intel.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Jeff Moyer <jmoyer@redhat.com>,
+        Jens Axboe <axboe@kernel.dk>, linux-fsdevel@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>,
+        Dave Chinner <david@fromorbit.com>,
+        Christoph Hellwig <hch@infradead.org>, Jan Kara <jack@suse.cz>,
+        Chris Mason <chris.mason@oracle.com>, Shaohua Li <shli@fusionio.com>
+Subject: Re: [RESEND][PATCH v2] block: remove plugging at buffered write
+ time
+Message-ID: <20120412142634.GA16559@quack.suse.cz>
+References: <20120408010600.GA31377@localhost>
+ <x494nst7z3v.fsf@segfault.boston.devel.redhat.com>
+ <20120411161344.309f12ef.akpm@linux-foundation.org>
+ <20120412013224.GA5859@localhost>
+ <20120412022040.GA6800@localhost>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120412022040.GA6800@localhost>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-"Mohammed, Afzal" <afzal@ti.com> writes:
+  Hi Fengguang,
 
-> Hi Greg,
->
-> On Thu, Apr 12, 2012 at 18:40:45, Greg KH wrote:
->> On Thu, Apr 12, 2012 at 12:17:49PM +0530, Santosh Shilimkar wrote:
->> > I was hoping that we will have some thing like drivers/memory/*
->> > but since it doesn't exist, we used drivers/misc.
->> 
->> Why not create it?  I have no objection to that, it makes it more
->> obvious as to what this really is.
->
-> There is another memory controller used in a few TI SoCs,
-> namely GPMC [1], do you prefer having it too there.
->
-> As of now it is not a driver, platform code handles GPMC, a patch
-> series for converting it into a driver (but still residing in
-> platform folder) was sent a few days back [2,3].
+On Thu 12-04-12 10:20:40, Wu Fengguang wrote:
+> > > > > Note that plugging for O_SYNC writes is also removed. The user may pass
+> > > > > arbitrary @size arguments, which may be much larger than the preferable
+> > > > > I/O size, or may cross extent/device boundaries. Let the lower layers
+> > > > > handle the plugging. Otherwise the plugging code here will turn the
+> > > > > low level plugging into no-ops.
+> > > > 
+> > > > I assume you have some numbers to back this up, right?  Care to share
+> > > > those?
+> > > 
+> > > Yes please.
+> > > 
+> > > We've broken this stuff a few times recently - we should review and
+> > > test carefully.
+> > 
+> > Yes sure. Last time I posted the patch, I did some tests and found no
+> > performance changes. Now for 3.3, the tests started days ago have not
+> > finished now (partly because it is stalled for quite long time due to
+> > unknown reason). The now-available numbers for bs=4k dd's look fine.
+> > The pending tests are for bs=1M dd's and some random fio workloads.
+> > 
+> 
+> The changes are basically small enough to be considered noises.
+> But anyway here are some interpretations:
+> 
+> - application visible data write performance (write_bw) is almost the same
+> - it slightly reduces the real IOs that hit disk (io_wkB_s, io_rkB_s)
+> - disk utilization slightly increased
+> - CPU time is slightly reduced
+> 
+  Well, two of the throughput numbers stand out (in both directions
+actually) although they seem to be more extreme configurations so maybe it
+is a noise. But maybe it would deserve further check:
 
-IMO, wherever EMIF ends up, GPMC should as well.
+> $ ./compare-io bay/*/*-{3.3.0,3.3.0-plug+}
+>                    3.3.0               3.3.0-plug+
+> ------------------------  ------------------------
+...
+>                     2.60        +7.1%         2.78  bay/thresh=1M/btrfs-10dd-1-3.3.0
+>                     3.72       -12.5%         3.25  bay/thresh=1M/btrfs-1dd-1-3.3.0
+...
+  I looked at other iostat numbers as well, but seeing quite some changes
+in both directions I'd say that those iostat numbers are too noisy to draw
+serious conclusion from them.
 
-Kevin
+								Honza
 
-
-> [1]
-> GPMC (General Purpose Memory Controller) in brief:
-> GPMC is an unified memory controller dedicated to interfacing external
-> memory devices like
->  Asynchronous SRAM like memories and application specific integrated circuit devices.
->  Asynchronous, synchronous, and page mode burst NOR flash devices NAND flash
->  Pseudo-SRAM devices
->
-> GPMC has to be configured as required by timings of the connected
-> peripheral. It needs to be configured only initially. Once it is
-> configured it can be used to handle different protocols like NAND,
-> NOR. Various kinds of devices like ethernet, uart, usb, fpga etc
-> can work using GPMC interface. GPMC has a seperate additional
-> functionality of NAND handling
->
-> [2] https://lkml.org/lkml/2012/4/5/210
-> [3] https://lkml.org/lkml/2012/4/5/212
->
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-omap" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+-- 
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
