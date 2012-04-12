@@ -1,67 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760607Ab2DLRAQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Apr 2012 13:00:16 -0400
-Received: from utopia.booyaka.com ([72.9.107.138]:53122 "EHLO
-	utopia.booyaka.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754962Ab2DLRAN (ORCPT
+	id S1760638Ab2DLRAr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Apr 2012 13:00:47 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:63445 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755795Ab2DLRAq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Apr 2012 13:00:13 -0400
-Date: Thu, 12 Apr 2012 11:00:12 -0600 (MDT)
-From: Paul Walmsley <paul@pwsan.com>
-To: "Mohammed, Afzal" <afzal@ti.com>
-cc: Greg KH <greg@kroah.com>, "Shilimkar, Santosh" <santosh.shilimkar@ti.com>,
-        "V, Aneesh" <aneesh@ti.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        "mgreer@animalcreek.com" <mgreer@animalcreek.com>,
-        "msalter@redhat.com" <msalter@redhat.com>
-Subject: RE: [PATCH v4 0/7] Add TI EMIF SDRAM controller driver
-In-Reply-To: <C8443D0743D26F4388EA172BF4E2A7A93E95947E@DQHE04.ent.ti.com>
-Message-ID: <alpine.DEB.2.00.1204121053570.29473@utopia.booyaka.com>
-References: <1331934707-29487-1-git-send-email-aneesh@ti.com> <alpine.DEB.2.00.1204112042070.29473@utopia.booyaka.com> <20120412030044.GA26236@kroah.com> <4F867A95.9030104@ti.com> <20120412131045.GB31384@kroah.com>
- <C8443D0743D26F4388EA172BF4E2A7A93E95947E@DQHE04.ent.ti.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Thu, 12 Apr 2012 13:00:46 -0400
+From: Will Deacon <will.deacon@arm.com>
+To: hughd@google.com
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Will Deacon <will.deacon@arm.com>, Nicolas Pitre <nico@linaro.org>
+Subject: [PATCH] Revert "proc: clear_refs: do not clear reserved pages"
+Date: Thu, 12 Apr 2012 18:00:34 +0100
+Message-Id: <1334250034-29866-1-git-send-email-will.deacon@arm.com>
+X-Mailer: git-send-email 1.7.4.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi
+This reverts commit 85e72aa5384b1a614563ad63257ded0e91d1a620, which was
+a quick fix suitable for -stable until ARM had been moved over to the
+gate_vma mechanism:
 
-On Thu, 12 Apr 2012, Mohammed, Afzal wrote:
+https://lkml.org/lkml/2012/1/14/55
 
-> On Thu, Apr 12, 2012 at 18:40:45, Greg KH wrote:
-> > On Thu, Apr 12, 2012 at 12:17:49PM +0530, Santosh Shilimkar wrote:
-> > > I was hoping that we will have some thing like drivers/memory/*
-> > > but since it doesn't exist, we used drivers/misc.
-> > 
-> > Why not create it?  I have no objection to that, it makes it more
-> > obvious as to what this really is.
-> 
-> There is another memory controller used in a few TI SoCs,
-> namely GPMC [1], do you prefer having it too there.
-> 
-> As of now it is not a driver, platform code handles GPMC, a patch
-> series for converting it into a driver (but still residing in
-> platform folder) was sent a few days back [2,3].
+With commit f9d4861f ("ARM: 7294/1: vectors: use gate_vma for vectors user
+mapping"), ARM does now use the gate_vma, so the PageReserved check can
+be removed from the proc code.
 
-Probably the GPMC driver should go into a slightly different place than 
-SDRC/EMIF.  
+Cc: Nicolas Pitre <nico@linaro.org>
+Signed-off-by: Will Deacon <will.deacon@arm.com>
+---
+ fs/proc/task_mmu.c |    3 ---
+ 1 files changed, 0 insertions(+), 3 deletions(-)
 
-GPMC is actually a general-purpose parallel bus driver.  It's used to 
-interface Ethernet controllers, UARTs, FPGAs, NAND/NOR flash, SRAM, etc.  
-It cannot be used to control DRAM, at least not without a separate DRAM 
-controller chip.
+diff --git a/fs/proc/task_mmu.c b/fs/proc/task_mmu.c
+index 2b9a760..2d60492 100644
+--- a/fs/proc/task_mmu.c
++++ b/fs/proc/task_mmu.c
+@@ -597,9 +597,6 @@ static int clear_refs_pte_range(pmd_t *pmd, unsigned long addr,
+ 		if (!page)
+ 			continue;
+ 
+-		if (PageReserved(page))
+-			continue;
+-
+ 		/* Clear accessed and referenced bits. */
+ 		ptep_test_and_clear_young(vma, addr, pte);
+ 		ClearPageReferenced(page);
+-- 
+1.7.4.1
 
-SDRC/EMIF are both DRAM controllers.  That's all they do.  They can't be 
-used to control anything else.  They implement DRAM refresh, etc.
-
-So perhaps something like drivers/memory/dram/ for the SDRAM controllers, 
-and maybe drivers/memory/ for the GPMC?
-
-
-- Paul
