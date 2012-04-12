@@ -1,119 +1,292 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965806Ab2DLQie (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Apr 2012 12:38:34 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:56697 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1762098Ab2DLQia (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Apr 2012 12:38:30 -0400
-Date: Thu, 12 Apr 2012 09:38:25 -0700
-From: Tejun Heo <tj@kernel.org>
-To: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Glauber Costa <glommer@parallels.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Hugh Dickins <hughd@google.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Daniel Walsh <dwalsh@redhat.com>,
-        "Daniel P. Berrange" <berrange@redhat.com>,
-        Li Zefan <lizf@cn.fujitsu.com>, LKML <linux-kernel@vger.kernel.org>,
-        Cgroups <cgroups@vger.kernel.org>,
-        Containers <containers@lists.linux-foundation.org>
-Subject: Re: [RFD] Merge task counter into memcg
-Message-ID: <20120412163825.GB13069@google.com>
-References: <20120411185715.GA4317@somewhere.redhat.com>
- <4F862851.3040208@jp.fujitsu.com>
- <20120412113217.GB11455@somewhere.redhat.com>
- <4F86BFC6.2050400@parallels.com>
- <20120412123256.GI1787@cmpxchg.org>
- <4F86D4BD.1040305@parallels.com>
- <20120412153055.GL1787@cmpxchg.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120412153055.GL1787@cmpxchg.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1762180Ab2DLQnJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Apr 2012 12:43:09 -0400
+Received: from e9.ny.us.ibm.com ([32.97.182.139]:50303 "EHLO e9.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757840Ab2DLQnF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Apr 2012 12:43:05 -0400
+Message-ID: <1334245107.18090.32.camel@key-ThinkPad-W510>
+Subject: [PATCH v3 13/17] powerpc: crypto: SHA256 hash routines for nx
+ encryption
+From: Kent Yoder <key@linux.vnet.ibm.com>
+To: linux-kernel@vger.kernel.org
+Cc: linux-crypto@vger.kernel.org, rcj@linux.vnet.ibm.com,
+        key@linux.vnet.ibm.com, benh@kernel.crashing.org,
+        linuxppc-dev@lists.ozlabs.org
+Date: Thu, 12 Apr 2012 10:38:27 -0500
+In-Reply-To: <1334242825.18090.4.camel@key-ThinkPad-W510>
+References: <1334242825.18090.4.camel@key-ThinkPad-W510>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2- 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12041216-7182-0000-0000-000001409100
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Johannes.
+These routines add support for SHA-256 hashing on the Power7+ CPU's
+in-Nest accelerator driver.
 
-On Thu, Apr 12, 2012 at 05:30:55PM +0200, Johannes Weiner wrote:
-> > But also, I believe this has been widely discussed in person by
-> > people, in separate groups. Maybe Tejun can do a small writeup of
-> > where we stand?
+Signed-off-by: Kent Yoder <key@linux.vnet.ibm.com>
+---
+ drivers/crypto/nx/nx-sha256.c |  244 +++++++++++++++++++++++++++++++++++++++++
+ 1 files changed, 244 insertions(+), 0 deletions(-)
+ create mode 100644 drivers/crypto/nx/nx-sha256.c
 
-I'm still mulling over it.  What I want is single hierarchy with more
-unified rules regarding how different controllers handle the hierarchy
-in such way that different controllers may interact - ie. memcg and
-blkio can share the same page tags, or cgroup-freezer can provide
-freezing service to other controllers.  I want if a task belongs to
-cgroup, it belongs to _the_ cgroup and you can figure out all cgroup
-related stuff from there.
-
-I also want to move away from this notion that any random userland
-application can modify and access the cgroupfs hierarhcies directly.
-It's way too low level and cgroup doesn't have nearly enough
-multiplexing capability to support such usage.  We end up where
-everyone is wading through fog hoping not to step on someone else's
-toe, and the interface is a bit too integrated with internal
-mechanisms to be exposed directly to random userland application
-without another layer of abstraction / indirection / control.
-
-> > I would also point out that this is exactly what it is (IMHO): an
-> > ongoing discussion. You are more than welcome to chime in.
-> 
-> I thought the conclusion was that nobody really had any sane use case
-> for multiple hierarchies.  So while nobody wanted to just disable them
-> in fear of breaking someones usecase, individual controllers still can
-> only be active in a single hierarchy.  I don't see why the task
-> controller should now as a precedence support a level of flexibility
-> that is very doubtful in the first place.
-
-The reason why I asked Frederic whether it would make more sense as
-part of memcg wasn't about flexibility but mostly about the type of
-the resource.  I'll continue below.
-
-> > Agree. Even people aiming for unified hierarchies are okay with an
-> > opt-in/out system, I believe. So the controllers need not to be
-> > active at all times. One way of doing this is what I suggested to
-> > Frederic: If you don't limit, don't account.
-> 
-> I don't agree, it's a valid usecase to monitor a workload without
-> limiting it in any way.  I do it all the time.
-
-AFAICS, this seems to be the most valid use case for different
-controllers seeing different part of the hierarchy, even if the
-hierarchies aren't completely separate.  Accounting and control being
-in separate controllers is pretty sucky too as it ends up accounting
-things multiple times.  Maybe all controllers should learn how to do
-accounting w/o applying limits?  Not sure yet.
-
-> To reraise a point from my other email that was ignored: do users
-> actually really care about the number of tasks when they want to
-> prevent forkbombs?  If a task would use neither CPU nor memory, you
-> would not be interested in limiting the number of tasks.
-> 
-> Because the number of tasks is not a resource.  CPU and memory are.
->
-> So again, if we would include the memory impact of tasks properly
-> (structures, kernel stack pages) in the kernel memory counters which
-> we allow to limit, shouldn't this solve our problem?
-
-The task counter is trying to control the *number* of tasks, which is
-purely memory overhead.  Translating #tasks into the actual amount of
-memory isn't too trivial tho - the task stack isn't the only
-allocation and the numbers should somehow make sense to the userland
-in consistent way.  Also, I'm not sure whether this particular limit
-should live in its silo or should be summed up together as part of
-kmem (kmem itself is in its own silo after all apart from user memory,
-right?).  So, if those can be settled, I think protecting against fork
-bombs could fit memcg better in the sense that the whole thing makes
-more sense.
-
-Thanks.
-
+diff --git a/drivers/crypto/nx/nx-sha256.c b/drivers/crypto/nx/nx-sha256.c
+new file mode 100644
+index 0000000..239cc3b
+--- /dev/null
++++ b/drivers/crypto/nx/nx-sha256.c
+@@ -0,0 +1,244 @@
++/**
++ * SHA-256 routines supporting the Power 7+ Nest Accelerators driver
++ *
++ * Copyright (C) 2011-2012 International Business Machines Inc.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; version 2 only.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
++ *
++ * Author: Kent Yoder <yoder1@us.ibm.com>
++ */
++
++#include <crypto/internal/hash.h>
++#include <crypto/sha.h>
++#include <linux/module.h>
++#include <asm/vio.h>
++
++#include "nx_csbcpb.h"
++#include "nx.h"
++
++
++static int nx_sha256_init(struct shash_desc *desc)
++{
++	struct sha256_state *sctx = shash_desc_ctx(desc);
++	struct nx_crypto_ctx *nx_ctx = crypto_tfm_ctx(&desc->tfm->base);
++	struct nx_sg *out_sg;
++
++	nx_ctx_init(nx_ctx, HCOP_FC_SHA);
++
++	memset(sctx, 0, sizeof *sctx);
++
++	nx_ctx->ap = &nx_ctx->props[NX_PROPS_SHA256];
++
++	NX_CPB_SET_DIGEST_SIZE(nx_ctx->csbcpb, NX_DS_SHA256);
++	out_sg = nx_build_sg_list(nx_ctx->out_sg, (u8 *)sctx->state,
++				  SHA256_DIGEST_SIZE, nx_ctx->ap->sglen);
++	nx_ctx->op.outlen = (nx_ctx->out_sg - out_sg) * sizeof(struct nx_sg);
++
++	return 0;
++}
++
++static int nx_sha256_update(struct shash_desc *desc, const u8 *data,
++			    unsigned int len)
++{
++	struct sha256_state *sctx = shash_desc_ctx(desc);
++	struct nx_crypto_ctx *nx_ctx = crypto_tfm_ctx(&desc->tfm->base);
++	struct nx_csbcpb *csbcpb = (struct nx_csbcpb *)nx_ctx->csbcpb;
++	struct nx_sg *in_sg;
++	u64 to_process, leftover;
++	int rc = 0;
++
++	if (NX_CPB_FDM(csbcpb) & NX_FDM_CONTINUATION) {
++		/* we've hit the nx chip previously and we're updating again,
++		 * so copy over the partial digest */
++		memcpy(csbcpb->cpb.sha256.input_partial_digest,
++		       csbcpb->cpb.sha256.message_digest, SHA256_DIGEST_SIZE);
++	}
++
++	/* 2 cases for total data len:
++	 *  1: <= SHA256_BLOCK_SIZE: copy into state, return 0
++	 *  2: > SHA256_BLOCK_SIZE: process X blocks, copy in leftover
++	 */
++	if (len + sctx->count <= SHA256_BLOCK_SIZE) {
++		memcpy(sctx->buf + sctx->count, data, len);
++		sctx->count += len;
++		goto out;
++	}
++
++	/* to_process: the SHA256_BLOCK_SIZE data chunk to process in this
++	 * update */
++	to_process = (sctx->count + len) & ~(SHA256_BLOCK_SIZE - 1);
++	leftover = (sctx->count + len) & (SHA256_BLOCK_SIZE - 1);
++
++	if (sctx->count) {
++		in_sg = nx_build_sg_list(nx_ctx->in_sg, (u8 *)sctx->buf,
++					 sctx->count, nx_ctx->ap->sglen);
++		in_sg = nx_build_sg_list(in_sg, (u8 *)data,
++					 to_process - sctx->count,
++					 nx_ctx->ap->sglen);
++		nx_ctx->op.inlen = (nx_ctx->in_sg - in_sg) *
++					sizeof(struct nx_sg);
++	} else {
++		in_sg = nx_build_sg_list(nx_ctx->in_sg, (u8 *)data,
++					 to_process, nx_ctx->ap->sglen);
++		nx_ctx->op.inlen = (nx_ctx->in_sg - in_sg) *
++					sizeof(struct nx_sg);
++	}
++
++	NX_CPB_FDM(csbcpb) |= NX_FDM_INTERMEDIATE;
++
++	if (!nx_ctx->op.inlen || !nx_ctx->op.outlen) {
++		rc = -EINVAL;
++		goto out;
++	}
++
++	rc = nx_hcall_sync(nx_ctx, &nx_ctx->op);
++	if (rc)
++		goto out;
++
++	atomic_inc(&(nx_ctx->stats->sha256_ops));
++
++	/* copy the leftover back into the state struct */
++	memcpy(sctx->buf, data + len - leftover, leftover);
++	sctx->count = leftover;
++
++	csbcpb->cpb.sha256.message_bit_length += (u64)
++		(csbcpb->cpb.sha256.spbc * 8);
++
++	/* everything after the first update is continuation */
++	NX_CPB_FDM(csbcpb) |= NX_FDM_CONTINUATION;
++out:
++	return rc;
++}
++
++static int nx_sha256_final(struct shash_desc *desc, u8 *out)
++{
++	struct sha256_state *sctx = shash_desc_ctx(desc);
++	struct nx_crypto_ctx *nx_ctx = crypto_tfm_ctx(&desc->tfm->base);
++	struct nx_csbcpb *csbcpb = (struct nx_csbcpb *)nx_ctx->csbcpb;
++	struct nx_sg *in_sg, *out_sg;
++	int rc;
++
++	if (NX_CPB_FDM(csbcpb) & NX_FDM_CONTINUATION) {
++		/* we've hit the nx chip previously, now we're finalizing,
++		 * so copy over the partial digest */
++		memcpy(csbcpb->cpb.sha256.input_partial_digest,
++		       csbcpb->cpb.sha256.message_digest, SHA256_DIGEST_SIZE);
++	}
++
++	/* final is represented by continuing the operation and indicating that
++	 * this is not an intermediate operation */
++	NX_CPB_FDM(csbcpb) &= ~NX_FDM_INTERMEDIATE;
++
++	csbcpb->cpb.sha256.message_bit_length += (u64)(sctx->count * 8);
++
++	in_sg = nx_build_sg_list(nx_ctx->in_sg, (u8 *)sctx->buf,
++				 sctx->count, nx_ctx->ap->sglen);
++	out_sg = nx_build_sg_list(nx_ctx->out_sg, out, SHA256_DIGEST_SIZE,
++				  nx_ctx->ap->sglen);
++	nx_ctx->op.inlen = (nx_ctx->in_sg - in_sg) * sizeof(struct nx_sg);
++	nx_ctx->op.outlen = (nx_ctx->out_sg - out_sg) * sizeof(struct nx_sg);
++
++	if (!nx_ctx->op.outlen) {
++		rc = -EINVAL;
++		goto out;
++	}
++
++	rc = nx_hcall_sync(nx_ctx, &nx_ctx->op);
++	if (rc)
++		goto out;
++
++	atomic_inc(&(nx_ctx->stats->sha256_ops));
++
++	atomic64_add(csbcpb->cpb.sha256.message_bit_length,
++		     &(nx_ctx->stats->sha256_bytes));
++	memcpy(out, csbcpb->cpb.sha256.message_digest, SHA256_DIGEST_SIZE);
++out:
++	return rc;
++}
++
++static int nx_sha256_export(struct shash_desc *desc, void *out)
++{
++	struct sha256_state *sctx = shash_desc_ctx(desc);
++	struct nx_crypto_ctx *nx_ctx = crypto_tfm_ctx(&desc->tfm->base);
++	struct nx_csbcpb *csbcpb = (struct nx_csbcpb *)nx_ctx->csbcpb;
++	struct sha256_state *octx = out;
++
++	octx->count = sctx->count +
++		      (csbcpb->cpb.sha256.message_bit_length / 8);
++	memcpy(octx->buf, sctx->buf, sizeof(octx->buf));
++
++	/* if no data has been processed yet, we need to export SHA256's
++	 * initial data, in case this context gets imported into a software
++	 * context */
++	if (csbcpb->cpb.sha256.message_bit_length)
++		memcpy(octx->state, csbcpb->cpb.sha256.message_digest,
++		       SHA256_DIGEST_SIZE);
++	else {
++		octx->state[0] = SHA256_H0;
++		octx->state[1] = SHA256_H1;
++		octx->state[2] = SHA256_H2;
++		octx->state[3] = SHA256_H3;
++		octx->state[4] = SHA256_H4;
++		octx->state[5] = SHA256_H5;
++		octx->state[6] = SHA256_H6;
++		octx->state[7] = SHA256_H7;
++	}
++
++	return 0;
++}
++
++static int nx_sha256_import(struct shash_desc *desc, const void *in)
++{
++	struct sha256_state *sctx = shash_desc_ctx(desc);
++	struct nx_crypto_ctx *nx_ctx = crypto_tfm_ctx(&desc->tfm->base);
++	struct nx_csbcpb *csbcpb = (struct nx_csbcpb *)nx_ctx->csbcpb;
++	const struct sha256_state *ictx = in;
++
++	memcpy(sctx->buf, ictx->buf, sizeof(ictx->buf));
++
++	sctx->count = ictx->count & 0x3f;
++	csbcpb->cpb.sha256.message_bit_length = (ictx->count & ~0x3f) * 8;
++
++	if (csbcpb->cpb.sha256.message_bit_length) {
++		memcpy(csbcpb->cpb.sha256.message_digest, ictx->state,
++		       SHA256_DIGEST_SIZE);
++
++		NX_CPB_FDM(csbcpb) |= NX_FDM_CONTINUATION;
++		NX_CPB_FDM(csbcpb) |= NX_FDM_INTERMEDIATE;
++	}
++
++	return 0;
++}
++
++struct shash_alg nx_shash_sha256_alg = {
++	.digestsize = SHA256_DIGEST_SIZE,
++	.init       = nx_sha256_init,
++	.update     = nx_sha256_update,
++	.final      = nx_sha256_final,
++	.export     = nx_sha256_export,
++	.import     = nx_sha256_import,
++	.descsize   = sizeof(struct sha256_state),
++	.statesize  = sizeof(struct sha256_state),
++	.base       = {
++		.cra_name        = "sha256",
++		.cra_driver_name = "sha256-nx",
++		.cra_priority    = 300,
++		.cra_flags       = CRYPTO_ALG_TYPE_SHASH,
++		.cra_blocksize   = SHA256_BLOCK_SIZE,
++		.cra_module      = THIS_MODULE,
++		.cra_ctxsize     = sizeof(struct nx_crypto_ctx),
++		.cra_init        = nx_crypto_ctx_sha_init,
++		.cra_exit        = nx_crypto_ctx_exit,
++	}
++};
 -- 
-tejun
+1.7.1
+
+
