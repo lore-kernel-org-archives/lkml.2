@@ -1,292 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762180Ab2DLQnJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Apr 2012 12:43:09 -0400
-Received: from e9.ny.us.ibm.com ([32.97.182.139]:50303 "EHLO e9.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757840Ab2DLQnF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Apr 2012 12:43:05 -0400
-Message-ID: <1334245107.18090.32.camel@key-ThinkPad-W510>
-Subject: [PATCH v3 13/17] powerpc: crypto: SHA256 hash routines for nx
- encryption
-From: Kent Yoder <key@linux.vnet.ibm.com>
-To: linux-kernel@vger.kernel.org
-Cc: linux-crypto@vger.kernel.org, rcj@linux.vnet.ibm.com,
-        key@linux.vnet.ibm.com, benh@kernel.crashing.org,
-        linuxppc-dev@lists.ozlabs.org
-Date: Thu, 12 Apr 2012 10:38:27 -0500
-In-Reply-To: <1334242825.18090.4.camel@key-ThinkPad-W510>
-References: <1334242825.18090.4.camel@key-ThinkPad-W510>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2- 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12041216-7182-0000-0000-000001409100
+	id S1756474Ab2DLQtj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Apr 2012 12:49:39 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:61821 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750990Ab2DLQtg convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Apr 2012 12:49:36 -0400
+MIME-Version: 1.0
+In-Reply-To: <20120412144626.GA14868@kroah.com>
+References: <20120411231102.GA6404@kroah.com>
+	<CAJyhjX2KrfSJW64PJMTHou9zSojsfA1iNT-WahinfMBce_B=BA@mail.gmail.com>
+	<20120412002927.GA23167@kroah.com>
+	<CAMP44s3Jh-t07A+i82qbAMQyEN0oWTmKk5BJcst942gFdD0=VA@mail.gmail.com>
+	<20120412011313.GA23764@kroah.com>
+	<CAMP44s2q+bQE3-zsX4bs=sQDt4jf8eE5bwZ8V88UjodjRyAjog@mail.gmail.com>
+	<20120412144626.GA14868@kroah.com>
+Date: Thu, 12 Apr 2012 19:49:34 +0300
+Message-ID: <CAMP44s1T4EVwpzDuV_vV0Zh-5WcPCwdw9eeOfL17Geqp_UFN-Q@mail.gmail.com>
+Subject: Re: [ 00/78] 3.3.2-stable review
+From: Felipe Contreras <felipe.contreras@gmail.com>
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: Sergio Correia <lists@uece.net>, linux-kernel@vger.kernel.org,
+        stable@vger.kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+        linux-wireless Mailing List <linux-wireless@vger.kernel.org>,
+        Sujith Manoharan <c_manoha@qca.qualcomm.com>,
+        "ath9k-devel@lists.ath9k.org" <ath9k-devel@venema.h4ckr.net>,
+        "John W. Linville" <linville@tuxdriver.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-These routines add support for SHA-256 hashing on the Power7+ CPU's
-in-Nest accelerator driver.
+On Thu, Apr 12, 2012 at 5:46 PM, Greg KH <gregkh@linuxfoundation.org> wrote:
+> On Thu, Apr 12, 2012 at 04:32:40PM +0300, Felipe Contreras wrote:
+>> On Thu, Apr 12, 2012 at 4:13 AM, Greg KH <gregkh@linuxfoundation.org> wrote:
+>> > On Thu, Apr 12, 2012 at 04:03:59AM +0300, Felipe Contreras wrote:
+>> >> On Thu, Apr 12, 2012 at 3:29 AM, Greg KH <gregkh@linuxfoundation.org> wrote:
+>> >> > On Wed, Apr 11, 2012 at 07:59:14PM -0400, Sergio Correia wrote:
+>> >> >> Hello Greg,
+>> >> >>
+>> >> >>
+>> >> >> On Wed, Apr 11, 2012 at 7:11 PM, Greg KH <gregkh@linuxfoundation.org> wrote:
+>> >> >> > This is the start of the stable review cycle for the 3.3.2 release.
+>> >> >> > There are 78 patches in this series, all will be posted as a response
+>> >> >> > to this one.  If anyone has any issues with these being applied, please
+>> >> >> > let me know.
+>> >> >> >
+>> >> >> > Responses should be made by Fri Apr 13 23:10:16 UTC 2012.
+>> >> >> > Anything received after that time might be too late.
+>> >> >> >
+>> >> >>
+>> >> >> is there any chance for this one to be included in this review cycle?
+>> >> >>
+>> >> >> http://www.spinics.net/lists/linux-wireless/msg87999.html
+>> >>
+>> >> I was going to ask for exactly the same thing. My system is completely
+>> >> unusable without this patch; not only does the network doesn't work,
+>> >> but quite often the kernel is stuck consuming 100% of the CPU.
+>> >>
+>> >> > Have you read Documentation/stable_kernel_rules.txt?  Based on that, I
+>> >> > don't think it can, yet, right?
+>> >>
+>> >> Why not? This patch makes the code go back to a previous state, it is
+>> >> obviously more stable than the current state, and the code already
+>> >> exists in Linus's tree (in previous releases).
+>> >
+>> > It does?  What is the git commit id of the patch?  Based in the email
+>> > above, I assumed it had not made it to Linus's tree already.
+>>
+>> It's a revert of c1afdaff90538ef085b756454f12b29575411214, so so just
+>> take a look at the code in c1afdaff90538ef085b756454f12b29575411214^.
+>>
+>> >> But hey, I guess it's OK that 3.3.x is stuck in and endless loop right
+>> >> after booting, because rules are more important than fixing obvious
+>> >> breakage.
+>> >
+>> > What rule did you think I was saying this was not acceptable for?
+>>
+>> The fact that the patch as not been applied/reviewed/accepted upstream.
+>>
+>> Personally I don't see what is the problem with reverts; we already
+>> know the previous code was working. Sure, in theory it might behave
+>> different due to other changes, but that doesn't seem to be the case
+>> here, plus, it can't be worst than the current situation of staying in
+>> an endless loop.
+>
+> A revert is the same as a patch.  It needs to be in Linus's tree before
+> I can add it to the stable releases.
 
-Signed-off-by: Kent Yoder <key@linux.vnet.ibm.com>
----
- drivers/crypto/nx/nx-sha256.c |  244 +++++++++++++++++++++++++++++++++++++++++
- 1 files changed, 244 insertions(+), 0 deletions(-)
- create mode 100644 drivers/crypto/nx/nx-sha256.c
+Right, because otherwise people's systems would actually work.
 
-diff --git a/drivers/crypto/nx/nx-sha256.c b/drivers/crypto/nx/nx-sha256.c
-new file mode 100644
-index 0000000..239cc3b
---- /dev/null
-+++ b/drivers/crypto/nx/nx-sha256.c
-@@ -0,0 +1,244 @@
-+/**
-+ * SHA-256 routines supporting the Power 7+ Nest Accelerators driver
-+ *
-+ * Copyright (C) 2011-2012 International Business Machines Inc.
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation; version 2 only.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program; if not, write to the Free Software
-+ * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
-+ *
-+ * Author: Kent Yoder <yoder1@us.ibm.com>
-+ */
-+
-+#include <crypto/internal/hash.h>
-+#include <crypto/sha.h>
-+#include <linux/module.h>
-+#include <asm/vio.h>
-+
-+#include "nx_csbcpb.h"
-+#include "nx.h"
-+
-+
-+static int nx_sha256_init(struct shash_desc *desc)
-+{
-+	struct sha256_state *sctx = shash_desc_ctx(desc);
-+	struct nx_crypto_ctx *nx_ctx = crypto_tfm_ctx(&desc->tfm->base);
-+	struct nx_sg *out_sg;
-+
-+	nx_ctx_init(nx_ctx, HCOP_FC_SHA);
-+
-+	memset(sctx, 0, sizeof *sctx);
-+
-+	nx_ctx->ap = &nx_ctx->props[NX_PROPS_SHA256];
-+
-+	NX_CPB_SET_DIGEST_SIZE(nx_ctx->csbcpb, NX_DS_SHA256);
-+	out_sg = nx_build_sg_list(nx_ctx->out_sg, (u8 *)sctx->state,
-+				  SHA256_DIGEST_SIZE, nx_ctx->ap->sglen);
-+	nx_ctx->op.outlen = (nx_ctx->out_sg - out_sg) * sizeof(struct nx_sg);
-+
-+	return 0;
-+}
-+
-+static int nx_sha256_update(struct shash_desc *desc, const u8 *data,
-+			    unsigned int len)
-+{
-+	struct sha256_state *sctx = shash_desc_ctx(desc);
-+	struct nx_crypto_ctx *nx_ctx = crypto_tfm_ctx(&desc->tfm->base);
-+	struct nx_csbcpb *csbcpb = (struct nx_csbcpb *)nx_ctx->csbcpb;
-+	struct nx_sg *in_sg;
-+	u64 to_process, leftover;
-+	int rc = 0;
-+
-+	if (NX_CPB_FDM(csbcpb) & NX_FDM_CONTINUATION) {
-+		/* we've hit the nx chip previously and we're updating again,
-+		 * so copy over the partial digest */
-+		memcpy(csbcpb->cpb.sha256.input_partial_digest,
-+		       csbcpb->cpb.sha256.message_digest, SHA256_DIGEST_SIZE);
-+	}
-+
-+	/* 2 cases for total data len:
-+	 *  1: <= SHA256_BLOCK_SIZE: copy into state, return 0
-+	 *  2: > SHA256_BLOCK_SIZE: process X blocks, copy in leftover
-+	 */
-+	if (len + sctx->count <= SHA256_BLOCK_SIZE) {
-+		memcpy(sctx->buf + sctx->count, data, len);
-+		sctx->count += len;
-+		goto out;
-+	}
-+
-+	/* to_process: the SHA256_BLOCK_SIZE data chunk to process in this
-+	 * update */
-+	to_process = (sctx->count + len) & ~(SHA256_BLOCK_SIZE - 1);
-+	leftover = (sctx->count + len) & (SHA256_BLOCK_SIZE - 1);
-+
-+	if (sctx->count) {
-+		in_sg = nx_build_sg_list(nx_ctx->in_sg, (u8 *)sctx->buf,
-+					 sctx->count, nx_ctx->ap->sglen);
-+		in_sg = nx_build_sg_list(in_sg, (u8 *)data,
-+					 to_process - sctx->count,
-+					 nx_ctx->ap->sglen);
-+		nx_ctx->op.inlen = (nx_ctx->in_sg - in_sg) *
-+					sizeof(struct nx_sg);
-+	} else {
-+		in_sg = nx_build_sg_list(nx_ctx->in_sg, (u8 *)data,
-+					 to_process, nx_ctx->ap->sglen);
-+		nx_ctx->op.inlen = (nx_ctx->in_sg - in_sg) *
-+					sizeof(struct nx_sg);
-+	}
-+
-+	NX_CPB_FDM(csbcpb) |= NX_FDM_INTERMEDIATE;
-+
-+	if (!nx_ctx->op.inlen || !nx_ctx->op.outlen) {
-+		rc = -EINVAL;
-+		goto out;
-+	}
-+
-+	rc = nx_hcall_sync(nx_ctx, &nx_ctx->op);
-+	if (rc)
-+		goto out;
-+
-+	atomic_inc(&(nx_ctx->stats->sha256_ops));
-+
-+	/* copy the leftover back into the state struct */
-+	memcpy(sctx->buf, data + len - leftover, leftover);
-+	sctx->count = leftover;
-+
-+	csbcpb->cpb.sha256.message_bit_length += (u64)
-+		(csbcpb->cpb.sha256.spbc * 8);
-+
-+	/* everything after the first update is continuation */
-+	NX_CPB_FDM(csbcpb) |= NX_FDM_CONTINUATION;
-+out:
-+	return rc;
-+}
-+
-+static int nx_sha256_final(struct shash_desc *desc, u8 *out)
-+{
-+	struct sha256_state *sctx = shash_desc_ctx(desc);
-+	struct nx_crypto_ctx *nx_ctx = crypto_tfm_ctx(&desc->tfm->base);
-+	struct nx_csbcpb *csbcpb = (struct nx_csbcpb *)nx_ctx->csbcpb;
-+	struct nx_sg *in_sg, *out_sg;
-+	int rc;
-+
-+	if (NX_CPB_FDM(csbcpb) & NX_FDM_CONTINUATION) {
-+		/* we've hit the nx chip previously, now we're finalizing,
-+		 * so copy over the partial digest */
-+		memcpy(csbcpb->cpb.sha256.input_partial_digest,
-+		       csbcpb->cpb.sha256.message_digest, SHA256_DIGEST_SIZE);
-+	}
-+
-+	/* final is represented by continuing the operation and indicating that
-+	 * this is not an intermediate operation */
-+	NX_CPB_FDM(csbcpb) &= ~NX_FDM_INTERMEDIATE;
-+
-+	csbcpb->cpb.sha256.message_bit_length += (u64)(sctx->count * 8);
-+
-+	in_sg = nx_build_sg_list(nx_ctx->in_sg, (u8 *)sctx->buf,
-+				 sctx->count, nx_ctx->ap->sglen);
-+	out_sg = nx_build_sg_list(nx_ctx->out_sg, out, SHA256_DIGEST_SIZE,
-+				  nx_ctx->ap->sglen);
-+	nx_ctx->op.inlen = (nx_ctx->in_sg - in_sg) * sizeof(struct nx_sg);
-+	nx_ctx->op.outlen = (nx_ctx->out_sg - out_sg) * sizeof(struct nx_sg);
-+
-+	if (!nx_ctx->op.outlen) {
-+		rc = -EINVAL;
-+		goto out;
-+	}
-+
-+	rc = nx_hcall_sync(nx_ctx, &nx_ctx->op);
-+	if (rc)
-+		goto out;
-+
-+	atomic_inc(&(nx_ctx->stats->sha256_ops));
-+
-+	atomic64_add(csbcpb->cpb.sha256.message_bit_length,
-+		     &(nx_ctx->stats->sha256_bytes));
-+	memcpy(out, csbcpb->cpb.sha256.message_digest, SHA256_DIGEST_SIZE);
-+out:
-+	return rc;
-+}
-+
-+static int nx_sha256_export(struct shash_desc *desc, void *out)
-+{
-+	struct sha256_state *sctx = shash_desc_ctx(desc);
-+	struct nx_crypto_ctx *nx_ctx = crypto_tfm_ctx(&desc->tfm->base);
-+	struct nx_csbcpb *csbcpb = (struct nx_csbcpb *)nx_ctx->csbcpb;
-+	struct sha256_state *octx = out;
-+
-+	octx->count = sctx->count +
-+		      (csbcpb->cpb.sha256.message_bit_length / 8);
-+	memcpy(octx->buf, sctx->buf, sizeof(octx->buf));
-+
-+	/* if no data has been processed yet, we need to export SHA256's
-+	 * initial data, in case this context gets imported into a software
-+	 * context */
-+	if (csbcpb->cpb.sha256.message_bit_length)
-+		memcpy(octx->state, csbcpb->cpb.sha256.message_digest,
-+		       SHA256_DIGEST_SIZE);
-+	else {
-+		octx->state[0] = SHA256_H0;
-+		octx->state[1] = SHA256_H1;
-+		octx->state[2] = SHA256_H2;
-+		octx->state[3] = SHA256_H3;
-+		octx->state[4] = SHA256_H4;
-+		octx->state[5] = SHA256_H5;
-+		octx->state[6] = SHA256_H6;
-+		octx->state[7] = SHA256_H7;
-+	}
-+
-+	return 0;
-+}
-+
-+static int nx_sha256_import(struct shash_desc *desc, const void *in)
-+{
-+	struct sha256_state *sctx = shash_desc_ctx(desc);
-+	struct nx_crypto_ctx *nx_ctx = crypto_tfm_ctx(&desc->tfm->base);
-+	struct nx_csbcpb *csbcpb = (struct nx_csbcpb *)nx_ctx->csbcpb;
-+	const struct sha256_state *ictx = in;
-+
-+	memcpy(sctx->buf, ictx->buf, sizeof(ictx->buf));
-+
-+	sctx->count = ictx->count & 0x3f;
-+	csbcpb->cpb.sha256.message_bit_length = (ictx->count & ~0x3f) * 8;
-+
-+	if (csbcpb->cpb.sha256.message_bit_length) {
-+		memcpy(csbcpb->cpb.sha256.message_digest, ictx->state,
-+		       SHA256_DIGEST_SIZE);
-+
-+		NX_CPB_FDM(csbcpb) |= NX_FDM_CONTINUATION;
-+		NX_CPB_FDM(csbcpb) |= NX_FDM_INTERMEDIATE;
-+	}
-+
-+	return 0;
-+}
-+
-+struct shash_alg nx_shash_sha256_alg = {
-+	.digestsize = SHA256_DIGEST_SIZE,
-+	.init       = nx_sha256_init,
-+	.update     = nx_sha256_update,
-+	.final      = nx_sha256_final,
-+	.export     = nx_sha256_export,
-+	.import     = nx_sha256_import,
-+	.descsize   = sizeof(struct sha256_state),
-+	.statesize  = sizeof(struct sha256_state),
-+	.base       = {
-+		.cra_name        = "sha256",
-+		.cra_driver_name = "sha256-nx",
-+		.cra_priority    = 300,
-+		.cra_flags       = CRYPTO_ALG_TYPE_SHASH,
-+		.cra_blocksize   = SHA256_BLOCK_SIZE,
-+		.cra_module      = THIS_MODULE,
-+		.cra_ctxsize     = sizeof(struct nx_crypto_ctx),
-+		.cra_init        = nx_crypto_ctx_sha_init,
-+		.cra_exit        = nx_crypto_ctx_exit,
-+	}
-+};
+But hey, as I said, following rules is more important, regardless of
+what the rules are, and why they are there. The rules that actually
+triggered this issue in v3.3.1, as this is not in v3.3.
+
+You could just accept that the patch should have never landed in
+v3.3.1 in the first place, but it's much easier to arbitrarily keep
+stacking patches without thinking too much about them.
+
+I guess I'll better use Linus's releases for now and go to v3.3.
+
 -- 
-1.7.1
-
-
+Felipe Contreras
