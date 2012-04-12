@@ -1,52 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934673Ab2DLT6O (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Apr 2012 15:58:14 -0400
-Received: from h1446028.stratoserver.net ([85.214.92.142]:33927 "EHLO
-	mail.ahsoftware.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753142Ab2DLT6L (ORCPT
+	id S1762656Ab2DLT6e (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Apr 2012 15:58:34 -0400
+Received: from mail-qc0-f174.google.com ([209.85.216.174]:60825 "EHLO
+	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753142Ab2DLT6c (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Apr 2012 15:58:11 -0400
-Message-ID: <4F8733C1.7020305@ahsoftware.de>
-Date: Thu, 12 Apr 2012 21:57:53 +0200
-From: Alexander Holler <holler@ahsoftware.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120329 Thunderbird/11.0.1
+	Thu, 12 Apr 2012 15:58:32 -0400
+Message-ID: <4F8733E5.7010403@pobox.com>
+Date: Thu, 12 Apr 2012 15:58:29 -0400
+From: Jeff Garzik <jgarzik@pobox.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120316 Thunderbird/11.0
 MIME-Version: 1.0
-To: Greg KH <gregkh@linuxfoundation.org>
-CC: Sergio Correia <lists@uece.net>, linux-kernel@vger.kernel.org,
-        stable@vger.kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        linux-wireless Mailing List <linux-wireless@vger.kernel.org>,
-        Sujith Manoharan <c_manoha@qca.qualcomm.com>,
-        "ath9k-devel@lists.ath9k.org" <ath9k-devel@venema.h4ckr.net>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: Re: [ 00/78] 3.3.2-stable review
-References: <20120411231102.GA6404@kroah.com> <CAJyhjX2KrfSJW64PJMTHou9zSojsfA1iNT-WahinfMBce_B=BA@mail.gmail.com> <20120412002927.GA23167@kroah.com>
-In-Reply-To: <20120412002927.GA23167@kroah.com>
-Content-Type: text/plain; charset=iso-8859-1; format=flowed
+To: Seth Heasley <seth.heasley@intel.com>
+CC: --cc@maroon.pobox.com, linux-ide@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        James Ralston <james.d.ralston@intel.com>
+Subject: Re: [PATCH 1/1] ata_piix: IDE-mode SATA patch for Intel DH89xxCC
+ DeviceIDs
+References: <1329849926-7235-1-git-send-email-seth.heasley@intel.com>
+In-Reply-To: <1329849926-7235-1-git-send-email-seth.heasley@intel.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
-
-Am 12.04.2012 02:29, schrieb Greg KH:
-
->> is there any chance for this one to be included in this review cycle?
->>
->> http://www.spinics.net/lists/linux-wireless/msg87999.html
+On 02/21/2012 01:45 PM, Seth Heasley wrote:
+> This patch adds the IDE-mode SATA DeviceIDs for the Intel DH89xxCC PCH.
 >
-> Have you read Documentation/stable_kernel_rules.txt?  Based on that, I
-> don't think it can, yet, right?
+> Signed-off-by: Seth Heasley<seth.heasley@intel.com>
+> ---
+>   drivers/ata/ata_piix.c |    2 ++
+>   1 files changed, 2 insertions(+), 0 deletions(-)
+>
+> diff --git a/drivers/ata/ata_piix.c b/drivers/ata/ata_piix.c
+> index fdf27b9..d0a9599 100644
+> --- a/drivers/ata/ata_piix.c
+> +++ b/drivers/ata/ata_piix.c
+> @@ -321,6 +321,8 @@ static const struct pci_device_id piix_pci_tbl[] = {
+>   	{ 0x8086, 0x1e08, PCI_ANY_ID, PCI_ANY_ID, 0, 0, ich8_2port_sata },
+>   	/* SATA Controller IDE (Panther Point) */
+>   	{ 0x8086, 0x1e09, PCI_ANY_ID, PCI_ANY_ID, 0, 0, ich8_2port_sata },
+> +	/* SATA Controller IDE (DH89xxCC) */
+> +	{ 0x8086, 0x2326, PCI_ANY_ID, PCI_ANY_ID, 0, 0, ich8_2port_sata },
 
-Hmm, after reading that, I think the text could need an update about how 
-to submit patches written by others (which can already be found in the 
-upstream tree).
+applied
 
-At least for me the text reads like only the authors can request 
-inclusion of a patch into the stable tree.
 
-Regards,
 
-Alexander
