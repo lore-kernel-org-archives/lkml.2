@@ -1,78 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761580Ab2DLAcN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Apr 2012 20:32:13 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:44165 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756374Ab2DLAcM (ORCPT
+	id S1761595Ab2DLAcz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Apr 2012 20:32:55 -0400
+Received: from masquerade.micron.com ([137.201.242.130]:18951 "EHLO
+	masquerade.micron.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756290Ab2DLAcy convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Apr 2012 20:32:12 -0400
-Date: Thu, 12 Apr 2012 10:31:57 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Grant Likely <grant.likely@secretlab.ca>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Thomas Abraham <thomas.abraham@linaro.org>
-Subject: Re: linux-next: build failure after merge of the final tree
- (devicetree tree related)
-Message-Id: <20120412103157.70669ff82b81d5d926c36d4d@canb.auug.org.au>
-In-Reply-To: <20120411151155.b1a614f174442a592d1c1561@canb.auug.org.au>
-References: <20120411151155.b1a614f174442a592d1c1561@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0beta6 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Thu__12_Apr_2012_10_31_57_+1000_YJCNiWmem=5aN819"
+	Wed, 11 Apr 2012 20:32:54 -0400
+Message-ID: <4F86228F.50705@micron.com>
+Date: Wed, 11 Apr 2012 17:32:15 -0700
+From: Asai Thambi S P <asamymuthupa@micron.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:11.0) Gecko/20120327 Thunderbird/11.0.1
+MIME-Version: 1.0
+To: Greg KH <gregkh@linuxfoundation.org>
+CC: Jens Axboe <axboe@kernel.dk>, Sam Bradshaw <sbradshaw@micron.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] block: mtip32xx: remove HOTPLUG_PCI_PCIE dependancy
+References: <20120411183457.GA19379@kroah.com> <4F85E217.8060406@kernel.dk> <4F85EAA3.7010807@micron.com> <20120411204041.GA14375@kroah.com> <4F860440.60808@micron.com> <20120411223718.GA24665@kroah.com>
+In-Reply-To: <20120411223718.GA24665@kroah.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+X-TM-AS-Product-Ver: SMEX-10.0.0.4152-6.000.1038-18810.005
+X-TM-AS-Result: No--12.219500-0.000000-31
+X-TM-AS-User-Approved-Sender: Yes
+X-TM-AS-User-Blocked-Sender: No
+X-MT-CheckInternalSenderRule: True
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Thu__12_Apr_2012_10_31_57_+1000_YJCNiWmem=5aN819
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On 4/11/2012 3:37 PM, Greg KH wrote:
 
-Hi Grant,
+> On Wed, Apr 11, 2012 at 03:22:56PM -0700, Asai Thambi S P wrote:
+>> On 4/11/2012 1:40 PM, Greg KH wrote:
+>>
+>>> On Wed, Apr 11, 2012 at 01:33:39PM -0700, Asai Thambi S P wrote:
+>>>> On 4/11/2012 12:57 PM, Jens Axboe wrote:
+>>>>
+>>>>> On 2012-04-11 20:34, Greg KH wrote:
+>>>>>> This removes the HOTPLUG_PCI_PCIE dependency on the driver and makes it
+>>>>>> depend on PCI.
+>>>>>
+>>>>> I think it's an old dependency. I've built and run it here without as
+>>>>> well, and no functional issues either.
+>>>>>
+>>>>> Sam/Asai?
+>>>>>
+>>>>
+>>>>
+>>>> Both driver and device will work fine without PCIe hotplug dependency. This
+>>>> dependency is required for supporting surprise removal and surprise insertion
+>>>> of the device on systems with PCIe hotplug controller.
+>>>
+>>> But that's not a driver-specific thing at all.  All PCI drivers need to
+>>> be able to handle this (I like how you constantly check the pci id,
+>>> that's cute.)
+>>>
+>>> So I think a basic dependancy on PCI should be fine here.
+>>
+>> The P320 is different from existing PCIe devices supporting surprise removal
+>> and surprise insertion (SRSI) capability (aka hotplug). We equate the hotplug
+>> functionality enabled by PCIe hotplug controllers to that of any other storage
+>> endpoint (SAS, SATA, FC, etc). For those devices, hotplug functionality is
+>> enabled by the transport layer and propagated up to host storage stack for
+>> handling.
+> 
+> Huh?  No, hotplug on Linux happens on the PCI level, and has done so for
+> over 10 years.
 
-On Wed, 11 Apr 2012 15:11:55 +1000 Stephen Rothwell <sfr@canb.auug.org.au> =
-wrote:
->
-> After merging the final tree, today's linux-next build (sparc64 defconfig)
-> failed like this:
->=20
-> drivers/of/of_mdio.c: In function 'of_mdiobus_register':
-> drivers/of/of_mdio.c:75:4: error: implicit declaration of function 'irq_o=
-f_parse_and_map' [-Werror=3Dimplicit-function-declaration]
->=20
-> Caused by commit e46c11b94787 ("of/irq: add empty irq_of_parse_and_map()
-> for non-dt builds").  SPARC has CONFIG_OF but not CONFIG_OF_IRQ ...
->=20
-> I have reverted that commit for today.
+Just to clarify, I was referring to hotplug of SAS/SATA/FC storage devices,
+not HBA.
 
-That commit is actually in the devicetree-current tree.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
+> 
+>> There are two types of users for P320 device – 1) those with systems that have
+>> PCIe hotplug controllers and intend to use hotplug and 2) those who do not
+>> need or intend to use hotplug. The HOTPLUG_PCI_PCIE dependency enables users
+>> in the first bucket to use the device’s capability without affecting those in
+>> the second bucket.
+> 
+> No, it prevents the users in the second group from ever using this
+> driver as it will not be built at all.
+> 
+> I have such a system right here, and I want to use the device, yet could
+> not as I do not have HOTPLUG_PCI_PCIE enabled in my kernel because I do
+> not have that type of PCI Hotplug controller.
+> 
+>> While there aren’t many systems today that have PCIe
+>> hotplug controllers, you will begin to see such systems very soon.
+> 
+> Manufacturers have been telling me that for over 10 years ago, when I
+> got the first PCI Hotplug driver merged into the kernel tree :)
+> 
+>> The mtip32xx driver depends on remove() being called for graceful handling of
+>> surprise removal events.
+> 
+> As it should, nothing new there, that's how PCI hotplug works.
+> 
+>> Such cleanup is necessary to enable clean surprise
+>> insertion of the same/different device in the same slot. We do check the PCI
+>> id in non-fast path code to detect the surprise removal and fail any
+>> outstanding I/Os with -ENODEV, but the driver still depends on the pci core
+>> with help from the pcie hotplug module to call remove() for cleanup, hence the
+>> HOTPLUG_PCI_PCIE dependency.
+> 
+> No, that's not a valid dependency at all, sorry.
+> 
+> All you should depend on is CONFIG_PCI and CONFIG_BLOCK.  Your driver
+> doesn't know, or care, if the system is a PCI hotplug one, as that is
+> how we architected the PCI hotplug layer.  Otherwise all PCI drivers
+> would have to have this type of logic in it, and that would be a lot of
+> extra work for no good reason.
+> 
+> So, I still think this dependency should be removed, the fact that I'm
+> typing this from a system running on this card at the moment, without
+> PCIE hotplug capabilities, kind of proves it :)
 
---Signature=_Thu__12_Apr_2012_10_31_57_+1000_YJCNiWmem=5aN819
-Content-Type: application/pgp-signature
+Agree to remove the dependency. I will reply to Jens email too.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJPhiJ9AAoJEECxmPOUX5FEmJsQAI5pN5/0Nf+lfXJVdP3eZILZ
-/T5lBJRLe5Lwf0JX4qzIarIZUdb+jCscqUCkHnlerk1kRk0jLHOATYsTR1r10xu5
-JJPHQ3+LboV9qC2RYPoPbttS/zmwTbHjyG7xqcvmLIbZLv1xw6AjsL5ydMDcFnT/
-bPQzlUZ3aDxWmgm/vmsFq/sQDC9j0WuRpVbBfZzyuaSOv/9P1vKz9LEbX4fkiNzG
-hWc4SldFWxhP72piwOa+vUTUC87LtnWAWWeTeWIz+3aiWHXgvaX2o4/UsoCnh/3Z
-eJe1pQuiZEJ2GsN9LcvwYQrdwgkRAuTV8uOOYXaPWM6ecF7WZ+vbNYMrcLfPDMlK
-TiFtPoJdFs9STfoulsy131fFuMLiJkXmehi0ZHSA0VdBAm4oFkZYzvTl5eZ4tl4n
-NiHqPLj/W//3TxnEytsNLqwfSNTlMB3VqDTYXfiitUYOFGPYfZlayzAt4/+uT3RN
-z6I+ZCg5ffdBddYw66+8/V7A0yTcdwSLbeJmVVEltAy4Ycv9ZCzmUWUlK2JUyyqP
-kyNogX2Pmsedkf9oSATRix1RfuevdvQwCF0pxZSkGyBgAvQqLM6wJfcxarZ6P7ES
-jZw4zj4ZruiPREleU+elZREHBl3HA3Zc7qIosY43ilyMjryNdq8AgmRPF0pQx8Fc
-EWck9uo1LqmQIk8iPhLS
-=xlSJ
------END PGP SIGNATURE-----
-
---Signature=_Thu__12_Apr_2012_10_31_57_+1000_YJCNiWmem=5aN819--
+--
+Regards,
+Asai Thambi
