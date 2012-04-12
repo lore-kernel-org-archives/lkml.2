@@ -1,106 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762261Ab2DLJKn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Apr 2012 05:10:43 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:49688 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754870Ab2DLJKl convert rfc822-to-8bit (ORCPT
+	id S1762291Ab2DLJLQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Apr 2012 05:11:16 -0400
+Received: from 124-248-200-76.sunnyvision.com ([124.248.200.76]:49320 "EHLO
+	teamb03.edmhongkong.com" rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org
+	with ESMTP id S1762255Ab2DLJLN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Apr 2012 05:10:41 -0400
-MIME-Version: 1.0
-In-Reply-To: <4F8631C8.1090705@emc.com.tw>
-References: <1334061766-20577-1-git-send-email-tom_lin@emc.com.tw>
-	<20120411071212.GB6894@core.coreip.homeip.net>
-	<4F85583F.6050008@emc.com.tw>
-	<20120411162519.GA27562@core.coreip.homeip.net>
-	<4F8631C8.1090705@emc.com.tw>
-Date: Thu, 12 Apr 2012 11:10:40 +0200
-Message-ID: <CAN+gG=EQ-B8_brthJnrq0pw1HYGo15Q6unaEQAbu-e2x10z0XA@mail.gmail.com>
-Subject: Re: [PATCH v3] Input: Elan HID-I2C device driver
-From: Benjamin Tissoires <benjamin.tissoires@gmail.com>
-To: =?Big5?B?qkyr26b2?= <tom_lin@emc.com.tw>
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org, djkurtz@chromium.org,
-        Jiri Kosina <jkosina@suse.cz>
-Content-Type: text/plain; charset=Big5
-Content-Transfer-Encoding: 8BIT
+	Thu, 12 Apr 2012 05:11:13 -0400
+X-DKIM: OpenDKIM Filter v2.4.1 teamb03.edmhongkong.com 939AF50D44
+X-DKIM: OpenDKIM Filter v2.4.1 smtp1.edmhongkong.com 4B4ED4FB27
+Message-ID: <AYydG2aVAJiUI@ksmail.seed.net.tw>
+From: boris@dedicatedserver.com.hk
+Subject: Server Rental Service in HK
+X-Mailer: WzHxOyEgTse4NshzkN0izM
+Content-Type: text/plain;
+X-Priority: 3
+X-MSMail-Priority: Normal
+Date: Thu, 12 Apr 2012 16:41:27 +0800 (HKT)
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from Quoted-Printable to 8bit by nfs id q3C9BQM4008665
 
-Hi Tom,
+Dear All,
 
-I read Microsoft's things about HID over I2C few days ago. And from
-what I understood, the report descriptors and the enumeration of the
-devices are stored in the ACPI table and not in the device itself. Can
-you confirm this?
+We have our own datacenter in Hong Kong & provide email/application/web rental service to clients.We are APNIC member & provide clean IP to clients.
 
-I was thinking about making hid-multitouch independent from the usb
-stack and was thinking about doing the i2c-hid bridge. However, I did
-not start writing a line yet ;-)
+Dell? PowerEdge? EnterpriseRack Mount Server
+-Intel(R) Xeon(R) E3-1240 Processor (3.3GHz, 8M Cache, Turbo, 4C/8T, 80W)
+-8GB RAM, 2x4GB, 1333MHz, DDR-3, Dual Ranked UDIMMs
+-500GB, 3.5", 6Gbps SAS x 2
+-Raid 1 Mirroring Protection
+-Remote KVM (iDRAC6 Enterprise)
 
-Cheers,
-Benjamin
+Dell(TM) PowerEdge(TM) R410 Rack Mount Server
+-Intel(R) Quad Core E5606 Xeon(R) CPU, 2.13GHz, 4M Cache, 4.86 GT/s QPI
+-4GB Memory (2x2GB), 1333MHz Dual Ranked RDIMMs Fully-Buffered
+-500GB 7.2K RPM SATAII 3.5" Hard Drive x 2
+-iDRAC6 Enterprise or Express (Remote KVM Management)
 
-On Thu, Apr 12, 2012 at 03:37, ªL«Û¦ö <tom_lin@emc.com.tw> wrote:
-> Hi Dmitry
->
->
-> On 04/12/2012 12:25 AM, Dmitry Torokhov wrote:
->>
->> On Wednesday, April 11, 2012 06:09:03 PM ªL«Û¦ö wrote:
->>>
->>> Hi Daniel
->>>
->>> On 04/11/2012 03:12 PM, Dmitry Torokhov wrote:
->>>>
->>>> Hi Tom,
->>>>
->>>> On Tue, Apr 10, 2012 at 08:42:46PM +0800, Tom Lin wrote:
->>>>>
->>>>> This patch adds driver for Elan I2C touchpad. These protocol of HID-I2C
->>>>> was
->>>>> defined by Microsoft. The kernel driver would use the multi-touch
->>>>> protocol
->>>>> format B.
->>>>
->>>>
->>>> If this device truly supports HID protocol shouldn't we define i2c-hid
->>>> transport, similar to usbhid?
->>>
->>>
->>> I merely follow defined by Microsoft.
->>> It was called "HID OVER I2C" by Microsoft.
->>>
->>> (http://msdn.microsoft.com/en-us/library/windows/hardware/hh825917(v=vs.85).
->>> aspx) But I agree to change from hid i2c to i2chid.
->>> Do you have any better opinions?
->>
->>
->> I am not sure we are talking about same thing... I do not really care
->> whether it is named "hid i2c" or "i2chid". What I meant if the device
->> really speaks HID protocol, except that the transport is not USB or
->> bluetooth but I2C, then instead of writing a custom driver for this
->> particular part we need to add a new HID transport into
->> drivers/hid/i2c-hid that is similar to drivers/hid/usbhid/ and reuse the
->> rest of HID framework along with hid- multitouch.c which handles
->> HID-compliant multitouch devices.
->>
->> I am CCing Jiri (HID maintainer) for additional input.
->
-> Sorry! I misunderstood what you mean.
-> I fully agree with your suggestion. The I2CHID device will be more and more
-> in the future. Need the new i2chid-driver that would cover all hid-compliant
-> i2c-devices.
-> Thank you
->
-> Tom-
->>
->>
->> Thanks.
->>
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-input" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+Every Dedicated Server Hosting Solution Also Includes: 
+ 
+Software Specification 
+- CentOS / Fedora / Debian / FreeBSD / Ubuntu / Redhat Linux 
+- Full root-level access 
+- Data Center Facilities 
+- Shared Local & International Bandwidth 
+- 2 IP Addresses Allocation 
+- Un-interruptible Power Supply (UPS) backed up by private diesel generator 
+- FM200¡§based fire suppression system 
+- 24x7 CRAC Air Conditioning and Humidity Control 
+- 24x7 Security Control 
+- 24x7 Remote Hand Service 
+
+Pls send us email for further information.Thanks,
+
+Boris 
+boris@cloudluca.com
+
+If you do not wish to further receive this event message, email "borislamsv2@gmail.com" to unsubscribe this message or remove your email from the list.
+
+
