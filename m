@@ -1,115 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965430Ab2DLO7l (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Apr 2012 10:59:41 -0400
-Received: from e9.ny.us.ibm.com ([32.97.182.139]:53208 "EHLO e9.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S965169Ab2DLO7j (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Apr 2012 10:59:39 -0400
-Message-ID: <1334242825.18090.4.camel@key-ThinkPad-W510>
-Subject: [PATCH v3 00/17] Platform Facilities Option and crypto accelerators
-From: Kent Yoder <key@linux.vnet.ibm.com>
-To: linux-kernel@vger.kernel.org
-Cc: linux-crypto@vger.kernel.org, rcj@linux.vnet.ibm.com,
-        key@linux.vnet.ibm.com, benh@kernel.crashing.org,
-        linuxppc-dev@lists.ozlabs.org
-Date: Thu, 12 Apr 2012 10:00:25 -0500
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2- 
-Content-Transfer-Encoding: 7bit
+	id S934350Ab2DLPCV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Apr 2012 11:02:21 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:38040 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932093Ab2DLPCU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Apr 2012 11:02:20 -0400
+Message-ID: <1334242922.7150.387.camel@deadeye>
+Subject: Re: [ 06/59] Fix non TBI PHY access; a bad merge undid bug fix in a
+ previous commit.
+From: Ben Hutchings <ben@decadent.org.uk>
+To: Kenth Eriksson <kenth.eriksson@transmode.com>
+Cc: akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+        "David S. Miller" <davem@davemloft.net>,
+        Greg KH <gregkh@linuxfoundation.org>, linux-kernel@vger.kernel.org,
+        stable@vger.kernel.org, torvalds@linux-foundation.org
+Date: Thu, 12 Apr 2012 16:02:02 +0100
+In-Reply-To: <OFFBE17A27.42E05B7A-ONC12579DE.00262282-C12579DE.0026AD98@transmode.se>
+References: <20120411231036.581670888@linuxfoundation.org>
+	 <1334206506.7150.386.camel@deadeye>
+	 <OFFBE17A27.42E05B7A-ONC12579DE.00262282-C12579DE.0026AD98@transmode.se>
+Content-Type: multipart/signed; micalg="pgp-sha512";
+	protocol="application/pgp-signature"; boundary="=-Vu2M7kSFm+g8uhqvIPpE"
+X-Mailer: Evolution 3.2.2-1 
 Mime-Version: 1.0
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12041214-7182-0000-0000-0000013F4014
+X-SA-Exim-Connect-IP: 192.168.4.185
+X-SA-Exim-Mail-From: ben@decadent.org.uk
+X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch series adds support for a new device type, the Platform
-Facilities Option (PFO).  PFO resources are a set of accelerators that
-share some system resources managed by the VIO bus.  This patchset
-includes the basic support for the devices in the VIO bus code along
-with drivers for the random number generator and the cryptographic
-accelerators.
 
-Thanks,
-Kent
+--=-Vu2M7kSFm+g8uhqvIPpE
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-ChangeLog for v3:
-- reorder patches putting nx driver first (Dave Miller)
+On Thu, 2012-04-12 at 09:02 +0200, Kenth Eriksson wrote:
+> Ben Hutchings <ben@decadent.org.uk> wrote on 2012/04/12 06:55:06:
+>=20
+> > From: Ben Hutchings <ben@decadent.org.uk>=20
+> > To: Greg KH <gregkh@linuxfoundation.org>=20
+> > Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+> torvalds@linux-
+> > foundation.org, akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+> Kenth=20
+> > Eriksson <kenth.eriksson@transmode.com>, "David S. Miller"
+> <davem@davemloft.net>=20
+> > Date: 2012/04/12 06:55=20
+> > Subject: Re: [ 06/59] Fix non TBI PHY access; a bad merge undid bug
+> fix in a=20
+> > previous commit.=20
+> >=20
+> > On Wed, 2012-04-11 at 16:10 -0700, Greg KH wrote:
+> > > 3.2-stable review patch.  If anyone has any objections, please let
+> me know.
+> > >=20
+> > > ------------------
+> > >=20
+> > >=20
+> > > From: Kenth Eriksson <kenth.eriksson@transmode.com>
+> > >=20
+> > > [ Upstream commit 464b57da56910c8737ede75ad820b9a7afc46b3e ]
+> > >=20
+> > > The merge done in commit b26e478f undid bug fix in commit c3e072f8
+> > > ("net: fsl_pq_mdio: fix non tbi phy access"), with the result that
+> non
+> > > TBI (e.g. MDIO) PHYs cannot be accessed.
+> > [...]
+> >=20
+> > This doesn't look relevant to 3.2.
+> >=20
+> > $ git describe --contains b26e478f
+> > v3.3-rc1~182^2~207
+> > $ git describe --contains c3e072f8
+> > v3.3-rc1~182^2~598
+> > $ git show c3e072f8 | head -8
+> > commit c3e072f8a6c5625028531c40ec65f7e301531be2
+> > Author: Baruch Siach <baruch@tkos.co.il>
+> > Date:   Mon Nov 14 08:21:30 2011 +0200
+> >=20
+> >     net: fsl_pq_mdio: fix non tbi phy access
+> >    =20
+> >     Since 952c5ca1 (fsl_pq_mdio: Clean up tbi address
+> configuration) .probe returns
+> >     -EBUSY when the "tbi-phy" node is missing. Fix this.
+> > $ git describe --contains 952c5ca1
+> > v3.3-rc1~182^2~603
+> > $ git rev-list v3.2..v3.2.14
+> drivers/net/ethernet/freescale/fsl_pq_mdio.c
+> > $
+> >=20
+>=20
+> The error is present in 3.2 as well, but the patch may not apply. 3.3
+> contains both a fix for the error:=20
+>=20
+> http://git.kernel.org/?p=3Dlinux/kernel/git/stable/linux-stable.git;a=3Dc=
+ommit;h=3Dc3e072f8a6c5625028531c40ec65f7e301531be2=20
+>=20
+> and a bad merge.=20
 
-ChangeLog for v2:
-- move crypto driver sysfs stuff to debugfs (Greg K-H)
-- Remove CONFIG_ dependencies for the CMO bits (Anton Blanchard)
-- move nx driver code to drivers/crypto (Kumar Gala)
-- Add inline comment for nx_build_sg_list (Rob Jennings)
-- make sure kmalloc'd pointers are aligned (Rob Jennings)
-- get rid of bitfields in nx_csbcpb.h (Rob Jennings)
-- Compile against Ben Herrenschmidt's ppc device naming patch
-- Rebase against latest upstream
+So it wasn't actually introduced by 952c5ca1?
 
-Kent Yoder (12):
-  powerpc: crypto: nx driver code supporting nx encryption
-  powerpc: crypto: AES-CBC mode routines for nx encryption
-  powerpc: crypto: AES-CCM mode routines for nx encryption
-  powerpc: crypto: AES-CTR mode routines for nx encryption
-  powerpc: crypto: AES-ECB mode routines for nx encryption
-  powerpc: crypto: AES-GCM mode routines for nx encryption
-  powerpc: crypto: AES-XCBC mode routines for nx encryption
-  powerpc: crypto: SHA256 hash routines for nx encryption
-  powerpc: crypto: SHA512 hash routines for nx encryption
-  powerpc: crypto: debugfs routines and docs for the nx device driver
-  powerpc: crypto: Build files for the nx device driver
-  powerpc: crypto: enable the PFO-based encryption device
+Ben.
 
-Michael Neuling (1):
-  hwrng: pseries - PFO-based hwrng driver
+--=20
+Ben Hutchings
+It is easier to change the specification to fit the program than vice versa=
+.
 
-Robert Jennings (4):
-  powerpc: Add new hvcall constants to support PFO
-  powerpc: Add pseries update notifier for OFDT prop changes
-  powerpc: Add PFO support to the VIO bus
-  pseries: Enabled the PFO-based RNG accelerator
+--=-Vu2M7kSFm+g8uhqvIPpE
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
 
- Documentation/ABI/testing/debugfs-pfo-nx-crypto |   45 ++
- arch/powerpc/Makefile                           |    1 +
- arch/powerpc/include/asm/hvcall.h               |   25 +-
- arch/powerpc/include/asm/pSeries_reconfig.h     |   12 +
- arch/powerpc/include/asm/vio.h                  |   46 ++
- arch/powerpc/kernel/prom_init.c                 |    9 +-
- arch/powerpc/kernel/vio.c                       |  273 ++++++++--
- arch/powerpc/platforms/pseries/reconfig.c       |    7 +
- drivers/char/hw_random/Kconfig                  |   13 +
- drivers/char/hw_random/Makefile                 |    1 +
- drivers/char/hw_random/pseries-rng.c            |   96 +++
- drivers/crypto/Kconfig                          |   17 +
- drivers/crypto/nx/Makefile                      |   11 +
- drivers/crypto/nx/nx-aes-cbc.c                  |  140 +++++
- drivers/crypto/nx/nx-aes-ccm.c                  |  465 +++++++++++++++
- drivers/crypto/nx/nx-aes-ctr.c                  |  177 ++++++
- drivers/crypto/nx/nx-aes-ecb.c                  |  138 +++++
- drivers/crypto/nx/nx-aes-gcm.c                  |  353 +++++++++++
- drivers/crypto/nx/nx-aes-xcbc.c                 |  234 ++++++++
- drivers/crypto/nx/nx-sha256.c                   |  244 ++++++++
- drivers/crypto/nx/nx-sha512.c                   |  263 +++++++++
- drivers/crypto/nx/nx.c                          |  711 +++++++++++++++++++++++
- drivers/crypto/nx/nx.h                          |  192 ++++++
- drivers/crypto/nx/nx_csbcpb.h                   |  205 +++++++
- drivers/crypto/nx/nx_debugfs.c                  |  103 ++++
- 25 files changed, 3739 insertions(+), 42 deletions(-)
- create mode 100644 Documentation/ABI/testing/debugfs-pfo-nx-crypto
- create mode 100644 drivers/char/hw_random/pseries-rng.c
- create mode 100644 drivers/crypto/nx/Makefile
- create mode 100644 drivers/crypto/nx/nx-aes-cbc.c
- create mode 100644 drivers/crypto/nx/nx-aes-ccm.c
- create mode 100644 drivers/crypto/nx/nx-aes-ctr.c
- create mode 100644 drivers/crypto/nx/nx-aes-ecb.c
- create mode 100644 drivers/crypto/nx/nx-aes-gcm.c
- create mode 100644 drivers/crypto/nx/nx-aes-xcbc.c
- create mode 100644 drivers/crypto/nx/nx-sha256.c
- create mode 100644 drivers/crypto/nx/nx-sha512.c
- create mode 100644 drivers/crypto/nx/nx.c
- create mode 100644 drivers/crypto/nx/nx.h
- create mode 100644 drivers/crypto/nx/nx_csbcpb.h
- create mode 100644 drivers/crypto/nx/nx_debugfs.c
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
+iQIVAwUAT4buaue/yOyVhhEJAQok2w//QcL5MyUhxpyLitBW1g1Ox+2ayK0Eb/Ov
+Vg32zGyHqwnMwEwLrPK7XdSnTYn0QxGTp+kMSe3S8xmWhhl4AoeA5ZW84YhPjzDX
+lj2wTbzoBd6O1xW/kygN71IOlMfw5aR1CpTETAY50nit7X3MmQbXKureYEU3QVl8
+Zgx5/9ieN7P3UZt04SydquhIxd25JQ3Cfgzi+vsf2BKYlon9AhZuq7yIavWXM6IB
+MbxL89yra69WQXSZDT9dQmeGzyPNhZbhlx6xwGGjT0hnzY8m6HpGKraf0kKYnoi1
+XupTkPdJrkGKBd5EZRxsqcVIvxtiAyPMkQyYswJpDf6VdW5/rER/l6noPNJOMgUg
+T/2KG07w+mV3+y7F5g7eSODUmeWPHUbmDUO7xDMEUXlJtsTuDlcNEmZCEGu6z83s
+DAb1MfiPV+2JZX+KCakcjmU6JW1Awrl40m79CcD0pMQuY7Mv7KhvdE+/QjbxcNwO
+YLCjOBEjW/t/FroS7z67qs70tGbD+21pyN2YW1xf7bJfNV6c4ptuml/Rv2xPUw8o
+rK+ZJH3sjKIzeeU4/KFV9H25VKnJkEA2dCKw3r75EQjnvXwcmODY0mjA/ttlDXu/
+XLewkYm1z6rvFkedVAkagSFkKqnfqhlz1cYbpXXzhV26hIAb4mvLoxljocYRB0h6
+5jHvb6l2dJE=
+=WH3m
+-----END PGP SIGNATURE-----
 
+--=-Vu2M7kSFm+g8uhqvIPpE--
