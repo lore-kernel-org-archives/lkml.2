@@ -1,50 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752555Ab2DLEJM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Apr 2012 00:09:12 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:37582 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751137Ab2DLEJJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Apr 2012 00:09:09 -0400
-Date: Wed, 11 Apr 2012 22:15:42 -0300
-From: Marcelo Tosatti <mtosatti@redhat.com>
-To: Josh Triplett <josh@joshtriplett.org>
-Cc: Avi Kivity <avi@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        x86@kernel.org, kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Kay Sievers <kay.sievers@vrfy.org>
-Subject: Re: [PATCH] kvm-amd: Auto-load on CPUs with SVM.
-Message-ID: <20120412011542.GA2211@amt.cnet>
-References: <20120321063350.GA3468@leaf>
- <4F72F549.6060407@redhat.com>
- <20120328183228.GA24889@leaf>
+	id S1752312Ab2DLEMm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Apr 2012 00:12:42 -0400
+Received: from mail-wi0-f172.google.com ([209.85.212.172]:48302 "EHLO
+	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751319Ab2DLEMk convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Apr 2012 00:12:40 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120328183228.GA24889@leaf>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20120412040059.GA20462@redhat.com>
+References: <20120412024751.GA17561@redhat.com> <20120412024810.GA17984@redhat.com>
+ <20120412040059.GA20462@redhat.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Wed, 11 Apr 2012 21:12:19 -0700
+X-Google-Sender-Auth: 3dYVr_c506rkMRJUgAdn66nnjfQ
+Message-ID: <CA+55aFyGsA5YPqrymJ8wwoS86SEeJh+X-dvfBTfo3gOTm73JNA@mail.gmail.com>
+Subject: Re: hlist_for_each_entry && pos (Was: task_work_queue)
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        David Howells <dhowells@redhat.com>, David Smith <dsmith@redhat.com>,
+        "Frank Ch. Eigler" <fche@redhat.com>,
+        Larry Woodman <lwoodman@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>, Tejun Heo <tj@kernel.org>,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 28, 2012 at 11:32:28AM -0700, Josh Triplett wrote:
-> Enable x86 feature-based autoloading for the kvm-amd module on CPUs
-> with X86_FEATURE_SVM.
-> 
-> Signed-off-by: Josh Triplett <josh@joshtriplett.org>
-> ---
-> 
-> On Wed, Mar 28, 2012 at 01:26:01PM +0200, Avi Kivity wrote:
-> > On 03/21/2012 08:33 AM, Josh Triplett wrote:
-> > > Enable x86 feature-based autoloading for the kvm-intel module on CPUs
-> > > with X86_FEATURE_VMX.
-> > 
-> > Thanks, applied.
-> 
-> As promised, the corresponding patch for kvm-amd.
-> 
->  arch/x86/kvm/svm.c |    7 +++++++
->  1 files changed, 7 insertions(+), 0 deletions(-)
+On Wed, Apr 11, 2012 at 9:00 PM, Oleg Nesterov <oleg@redhat.com> wrote:
+>
+> This reminds me.
+>
+> hlist_for_each_entry_*() do not need "pos", it can be
+>
+>        #define hlist_for_each_entry(pos, head, member)                                 \
+>                for (pos = (void*)(head)->first;                                        \
+>                pos && ({ pos = hlist_entry((void*)pos, typeof(*pos), member); 1; });   \
+>                pos = (void*)(pos)->member.next)
 
-Applied, thanks.
+Ugh. I'm not sure that is any better, with the extra casts to hide the
+fact that you use the wrong type pointers for it.
 
+Are there any code generation improvements?
+
+Because quite frankly, if there aren't, I think the code churn just
+isn't worth it - especially with how ugly the macro is.
+
+This is one of those things where the C99 features would actually be
+nice: one of the few features from C++ that I actually liked is the
+ability to declare the induction variable. So
+
+  #define hlist_for_each_entry(pos, head, member) \
+    for (void *__pos = (head)->first; \
+        __pos && ({ pos = hlist_entry(__pos, typeof(*pos), member); 1; });   \
+        __pos = __pos->next)
+
+would actually be prettier. That said, "pretty macro" isn't very high
+on the list of things to worry about. Not nearly as high as the pain
+changing the interface would cause for things that *should* be trivial
+(like backporting patches etc).
+
+So I'd really want to see some more tangible advantage.
+
+                 Linus
