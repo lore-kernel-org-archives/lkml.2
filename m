@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966226Ab2DLX35 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Apr 2012 19:29:57 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:33833 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S966135Ab2DLX3y (ORCPT
+	id S935031Ab2DLXaO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Apr 2012 19:30:14 -0400
+Received: from mail-pz0-f52.google.com ([209.85.210.52]:63216 "EHLO
+	mail-pz0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S966243Ab2DLXaB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Apr 2012 19:29:54 -0400
+	Thu, 12 Apr 2012 19:30:01 -0400
 From: Tejun Heo <tj@kernel.org>
 To: axboe@kernel.dk
 Cc: vgoyal@redhat.com, ctalbott@google.com, rni@google.com,
         linux-kernel@vger.kernel.org, cgroups@vger.kernel.org,
         containers@lists.linux-foundation.org, Tejun Heo <tj@kernel.org>
-Subject: [PATCH 4/8] blkcg: make blkg_conf_prep() take @pol and return with queue lock held
-Date: Thu, 12 Apr 2012 16:29:36 -0700
-Message-Id: <1334273380-30233-5-git-send-email-tj@kernel.org>
+Subject: [PATCH 8/8] blkcg: drop stuff unused after per-queue policy activation update
+Date: Thu, 12 Apr 2012 16:29:40 -0700
+Message-Id: <1334273380-30233-9-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 1.7.7.3
 In-Reply-To: <1334273380-30233-1-git-send-email-tj@kernel.org>
 References: <1334273380-30233-1-git-send-email-tj@kernel.org>
@@ -22,118 +22,228 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add @pol to blkg_conf_prep() and let it return with queue lock held
-(to be released by blkg_conf_finish()).  Note that @pol isn't used
-yet.
+* All_q_list is unused.  Drop all_q_{mutex|list}.
 
-This is to prepare for per-queue policy activation and doesn't cause
-any visible difference.
+* @for_root of blkg_lookup_create() is always %false when called from
+  outside blk-cgroup.c proper.  Factor out __blkg_lookup_create() so
+  that it doesn't check whether @q is bypassing and use the
+  underscored version for the @for_root callsite.
+
+* blkg_destroy_all() is used only from blkcg proper and @destroy_root
+  is always %true.  Make it static and drop @destroy_root.
 
 Signed-off-by: Tejun Heo <tj@kernel.org>
 Cc: Vivek Goyal <vgoyal@redhat.com>
 ---
- block/blk-cgroup.c   |   17 ++++++++++-------
- block/blk-cgroup.h   |    3 ++-
+ block/blk-cgroup.c   |   61 ++++++++++++++++---------------------------------
+ block/blk-cgroup.h   |    6 +----
  block/blk-throttle.c |    2 +-
  block/cfq-iosched.c  |    2 +-
- 4 files changed, 14 insertions(+), 10 deletions(-)
+ 4 files changed, 23 insertions(+), 48 deletions(-)
 
 diff --git a/block/blk-cgroup.c b/block/blk-cgroup.c
-index 2d4d7d6..f6581a0 100644
+index a92eaf9..be72e20 100644
 --- a/block/blk-cgroup.c
 +++ b/block/blk-cgroup.c
-@@ -464,17 +464,19 @@ EXPORT_SYMBOL_GPL(blkg_prfill_rwstat);
- /**
-  * blkg_conf_prep - parse and prepare for per-blkg config update
-  * @blkcg: target block cgroup
-+ * @pol: target policy
-  * @input: input string
-  * @ctx: blkg_conf_ctx to be filled
-  *
-  * Parse per-blkg config update from @input and initialize @ctx with the
-  * result.  @ctx->blkg points to the blkg to be updated and @ctx->v the new
-- * value.  This function returns with RCU read locked and must be paired
-- * with blkg_conf_finish().
-+ * value.  This function returns with RCU read lock and queue lock held and
-+ * must be paired with blkg_conf_finish().
-  */
--int blkg_conf_prep(struct blkio_cgroup *blkcg, const char *input,
-+int blkg_conf_prep(struct blkio_cgroup *blkcg,
-+		   const struct blkio_policy_type *pol, const char *input,
- 		   struct blkg_conf_ctx *ctx)
--	__acquires(rcu)
-+	__acquires(rcu) __acquires(disk->queue->queue_lock)
+@@ -25,8 +25,6 @@
+ #define MAX_KEY_LEN 100
+ 
+ static DEFINE_MUTEX(blkcg_pol_mutex);
+-static DEFINE_MUTEX(all_q_mutex);
+-static LIST_HEAD(all_q_list);
+ 
+ struct blkio_cgroup blkio_root_cgroup = { .cfq_weight = 2 * CFQ_WEIGHT_DEFAULT };
+ EXPORT_SYMBOL_GPL(blkio_root_cgroup);
+@@ -179,9 +177,8 @@ struct blkio_group *blkg_lookup(struct blkio_cgroup *blkcg,
+ }
+ EXPORT_SYMBOL_GPL(blkg_lookup);
+ 
+-struct blkio_group *blkg_lookup_create(struct blkio_cgroup *blkcg,
+-				       struct request_queue *q,
+-				       bool for_root)
++static struct blkio_group *__blkg_lookup_create(struct blkio_cgroup *blkcg,
++						struct request_queue *q)
+ 	__releases(q->queue_lock) __acquires(q->queue_lock)
  {
- 	struct gendisk *disk;
  	struct blkio_group *blkg;
-@@ -490,14 +492,14 @@ int blkg_conf_prep(struct blkio_cgroup *blkcg, const char *input,
- 		return -EINVAL;
+@@ -189,13 +186,6 @@ struct blkio_group *blkg_lookup_create(struct blkio_cgroup *blkcg,
+ 	WARN_ON_ONCE(!rcu_read_lock_held());
+ 	lockdep_assert_held(q->queue_lock);
+ 
+-	/*
+-	 * This could be the first entry point of blkcg implementation and
+-	 * we shouldn't allow anything to go through for a bypassing queue.
+-	 */
+-	if (unlikely(blk_queue_bypass(q)) && !for_root)
+-		return ERR_PTR(blk_queue_dead(q) ? -EINVAL : -EBUSY);
+-
+ 	blkg = __blkg_lookup(blkcg, q);
+ 	if (blkg)
+ 		return blkg;
+@@ -223,6 +213,18 @@ struct blkio_group *blkg_lookup_create(struct blkio_cgroup *blkcg,
+ out:
+ 	return blkg;
+ }
++
++struct blkio_group *blkg_lookup_create(struct blkio_cgroup *blkcg,
++				       struct request_queue *q)
++{
++	/*
++	 * This could be the first entry point of blkcg implementation and
++	 * we shouldn't allow anything to go through for a bypassing queue.
++	 */
++	if (unlikely(blk_queue_bypass(q)))
++		return ERR_PTR(blk_queue_dead(q) ? -EINVAL : -EBUSY);
++	return __blkg_lookup_create(blkcg, q);
++}
+ EXPORT_SYMBOL_GPL(blkg_lookup_create);
+ 
+ static void blkg_destroy(struct blkio_group *blkg)
+@@ -249,12 +251,10 @@ static void blkg_destroy(struct blkio_group *blkg)
+ /**
+  * blkg_destroy_all - destroy all blkgs associated with a request_queue
+  * @q: request_queue of interest
+- * @destroy_root: whether to destroy root blkg or not
+  *
+- * Destroy blkgs associated with @q.  If @destroy_root is %true, all are
+- * destroyed; otherwise, root blkg is left alone.
++ * Destroy all blkgs associated with @q.
+  */
+-void blkg_destroy_all(struct request_queue *q, bool destroy_root)
++static void blkg_destroy_all(struct request_queue *q)
+ {
+ 	struct blkio_group *blkg, *n;
+ 
+@@ -263,10 +263,6 @@ void blkg_destroy_all(struct request_queue *q, bool destroy_root)
+ 	list_for_each_entry_safe(blkg, n, &q->blkg_list, q_node) {
+ 		struct blkio_cgroup *blkcg = blkg->blkcg;
+ 
+-		/* skip root? */
+-		if (!destroy_root && blkg->blkcg == &blkio_root_cgroup)
+-			continue;
+-
+ 		spin_lock(&blkcg->lock);
+ 		blkg_destroy(blkg);
+ 		spin_unlock(&blkcg->lock);
+@@ -274,7 +270,6 @@ void blkg_destroy_all(struct request_queue *q, bool destroy_root)
+ 
+ 	spin_unlock_irq(q->queue_lock);
+ }
+-EXPORT_SYMBOL_GPL(blkg_destroy_all);
+ 
+ static void blkg_rcu_free(struct rcu_head *rcu_head)
+ {
+@@ -492,7 +487,7 @@ int blkg_conf_prep(struct blkio_cgroup *blkcg,
+ 	spin_lock_irq(disk->queue->queue_lock);
+ 
+ 	if (blkcg_policy_enabled(disk->queue, pol))
+-		blkg = blkg_lookup_create(blkcg, disk->queue, false);
++		blkg = blkg_lookup_create(blkcg, disk->queue);
+ 	else
+ 		blkg = ERR_PTR(-EINVAL);
+ 
+@@ -625,20 +620,9 @@ done:
+  */
+ int blkcg_init_queue(struct request_queue *q)
+ {
+-	int ret;
+-
+ 	might_sleep();
+ 
+-	ret = blk_throtl_init(q);
+-	if (ret)
+-		return ret;
+-
+-	mutex_lock(&all_q_mutex);
+-	INIT_LIST_HEAD(&q->all_q_node);
+-	list_add_tail(&q->all_q_node, &all_q_list);
+-	mutex_unlock(&all_q_mutex);
+-
+-	return 0;
++	return blk_throtl_init(q);
+ }
+ 
+ /**
+@@ -662,12 +646,7 @@ void blkcg_drain_queue(struct request_queue *q)
+  */
+ void blkcg_exit_queue(struct request_queue *q)
+ {
+-	mutex_lock(&all_q_mutex);
+-	list_del_init(&q->all_q_node);
+-	mutex_unlock(&all_q_mutex);
+-
+-	blkg_destroy_all(q, true);
+-
++	blkg_destroy_all(q);
+ 	blk_throtl_exit(q);
+ }
+ 
+@@ -741,7 +720,7 @@ int blkcg_activate_policy(struct request_queue *q,
+ 	spin_lock_irq(q->queue_lock);
  
  	rcu_read_lock();
--
- 	spin_lock_irq(disk->queue->queue_lock);
-+
- 	blkg = blkg_lookup_create(blkcg, disk->queue, false);
--	spin_unlock_irq(disk->queue->queue_lock);
+-	blkg = blkg_lookup_create(&blkio_root_cgroup, q, true);
++	blkg = __blkg_lookup_create(&blkio_root_cgroup, q);
+ 	rcu_read_unlock();
  
  	if (IS_ERR(blkg)) {
- 		ret = PTR_ERR(blkg);
- 		rcu_read_unlock();
-+		spin_unlock_irq(disk->queue->queue_lock);
- 		put_disk(disk);
- 		/*
- 		 * If queue was bypassing, we should retry.  Do so after a
-@@ -527,8 +529,9 @@ EXPORT_SYMBOL_GPL(blkg_conf_prep);
-  * with blkg_conf_prep().
-  */
- void blkg_conf_finish(struct blkg_conf_ctx *ctx)
--	__releases(rcu)
-+	__releases(ctx->disk->queue->queue_lock) __releases(rcu)
- {
-+	spin_unlock_irq(ctx->disk->queue->queue_lock);
- 	rcu_read_unlock();
- 	put_disk(ctx->disk);
- }
 diff --git a/block/blk-cgroup.h b/block/blk-cgroup.h
-index cacdcaea..44dd11d 100644
+index 519dc6b..1f5ebee 100644
 --- a/block/blk-cgroup.h
 +++ b/block/blk-cgroup.h
-@@ -128,7 +128,8 @@ struct blkg_conf_ctx {
- 	u64			v;
- };
+@@ -115,7 +115,6 @@ extern int blkcg_activate_policy(struct request_queue *q,
+ 				 const struct blkio_policy_type *pol);
+ extern void blkcg_deactivate_policy(struct request_queue *q,
+ 				    const struct blkio_policy_type *pol);
+-extern void blkg_destroy_all(struct request_queue *q, bool destroy_root);
  
--int blkg_conf_prep(struct blkio_cgroup *blkcg, const char *input,
-+int blkg_conf_prep(struct blkio_cgroup *blkcg,
-+		   const struct blkio_policy_type *pol, const char *input,
- 		   struct blkg_conf_ctx *ctx);
- void blkg_conf_finish(struct blkg_conf_ctx *ctx);
+ void blkcg_print_blkgs(struct seq_file *sf, struct blkio_cgroup *blkcg,
+ 		       u64 (*prfill)(struct seq_file *, void *, int),
+@@ -334,8 +333,6 @@ static inline int blkcg_activate_policy(struct request_queue *q,
+ 					const struct blkio_policy_type *pol) { return 0; }
+ static inline void blkcg_deactivate_policy(struct request_queue *q,
+ 					   const struct blkio_policy_type *pol) { }
+-static inline void blkg_destroy_all(struct request_queue *q,
+-				    bool destory_root) { }
  
+ static inline void *blkg_to_pdata(struct blkio_group *blkg,
+ 				struct blkio_policy_type *pol) { return NULL; }
+@@ -354,8 +351,7 @@ extern struct blkio_cgroup *bio_blkio_cgroup(struct bio *bio);
+ extern struct blkio_group *blkg_lookup(struct blkio_cgroup *blkcg,
+ 				       struct request_queue *q);
+ struct blkio_group *blkg_lookup_create(struct blkio_cgroup *blkcg,
+-				       struct request_queue *q,
+-				       bool for_root);
++				       struct request_queue *q);
+ #else
+ struct cgroup;
+ static inline struct blkio_cgroup *
 diff --git a/block/blk-throttle.c b/block/blk-throttle.c
-index 0dc4645..6f1bfdf 100644
+index 2fc964e..e2aaf27 100644
 --- a/block/blk-throttle.c
 +++ b/block/blk-throttle.c
-@@ -993,7 +993,7 @@ static int tg_set_conf(struct cgroup *cgrp, struct cftype *cft, const char *buf,
- 	struct throtl_grp *tg;
- 	int ret;
+@@ -285,7 +285,7 @@ static struct throtl_grp *throtl_lookup_create_tg(struct throtl_data *td,
+ 	} else {
+ 		struct blkio_group *blkg;
  
--	ret = blkg_conf_prep(blkcg, buf, &ctx);
-+	ret = blkg_conf_prep(blkcg, &blkio_policy_throtl, buf, &ctx);
- 	if (ret)
- 		return ret;
+-		blkg = blkg_lookup_create(blkcg, q, false);
++		blkg = blkg_lookup_create(blkcg, q);
  
+ 		/* if %NULL and @q is alive, fall back to root_tg */
+ 		if (!IS_ERR(blkg))
 diff --git a/block/cfq-iosched.c b/block/cfq-iosched.c
-index a0fbc51..761a376 100644
+index 947db5f..79987fb 100644
 --- a/block/cfq-iosched.c
 +++ b/block/cfq-iosched.c
-@@ -1401,7 +1401,7 @@ static int cfqg_set_weight_device(struct cgroup *cgrp, struct cftype *cft,
- 	struct cfq_group *cfqg;
- 	int ret;
+@@ -1349,7 +1349,7 @@ static struct cfq_group *cfq_lookup_create_cfqg(struct cfq_data *cfqd,
+ 	} else {
+ 		struct blkio_group *blkg;
  
--	ret = blkg_conf_prep(blkcg, buf, &ctx);
-+	ret = blkg_conf_prep(blkcg, &blkio_policy_cfq, buf, &ctx);
- 	if (ret)
- 		return ret;
- 
+-		blkg = blkg_lookup_create(blkcg, q, false);
++		blkg = blkg_lookup_create(blkcg, q);
+ 		if (!IS_ERR(blkg))
+ 			cfqg = blkg_to_cfqg(blkg);
+ 	}
 -- 
 1.7.7.3
 
