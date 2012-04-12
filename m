@@ -1,87 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965881Ab2DLSpc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Apr 2012 14:45:32 -0400
-Received: from mailout1.w1.samsung.com ([210.118.77.11]:43812 "EHLO
-	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932239Ab2DLSpV (ORCPT
+	id S965902Ab2DLSpp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Apr 2012 14:45:45 -0400
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:1893 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965885Ab2DLSpm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Apr 2012 14:45:21 -0400
-Date: Thu, 12 Apr 2012 20:45:27 +0200
-From: Karol Lewandowski <k.lewandowsk@samsung.com>
-Subject: [PATCH 08/13] s5p-tv: Add initial DT-support for HDMIPHY
-In-reply-to: <1334256332-29867-1-git-send-email-k.lewandowsk@samsung.com>
-To: linux-samsung-soc@vger.kernel.org
-Cc: devicetree-discuss@lists.ozlabs.org, thomas.abraham@linaro.org,
-        m.szyprowski@samsung.com, kyungmin.park@samsung.com,
-        linux-kernel@vger.kernel.org, olof@lixom.net, kgene.kim@samsung.com,
-        Karol Lewandowski <k.lewandowsk@samsung.com>,
-        Tomasz Stanislawski <t.stanislaws@samsung.com>
-Message-id: <1334256332-29867-9-git-send-email-k.lewandowsk@samsung.com>
-MIME-version: 1.0
-X-Mailer: git-send-email 1.7.9.1
-Content-type: TEXT/PLAIN
-Content-transfer-encoding: 7BIT
-References: <1334256332-29867-1-git-send-email-k.lewandowsk@samsung.com>
+	Thu, 12 Apr 2012 14:45:42 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6678"; a="181149089"
+From: David Brown <davidb@codeaurora.org>
+To: David Brown <davidb@codeaurora.org>, Daniel Walker <dwalker@fifo99.com>,
+        Bryan Huntsman <bryanh@codeaurora.org>,
+        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
+Cc: linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-fbdev@vger.kernel.org
+Subject: [PATCH 1/2] video: msm: Fix section mismatches in mddi.c
+Date: Thu, 12 Apr 2012 11:45:33 -0700
+Message-Id: <1334256334-8234-1-git-send-email-davidb@codeaurora.org>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Make it possible to instantiate driver from device tree description.
+The change
+    commit 461cbe77d0a4f887c33a3a95ea68a7daf23b4302
+    Author: Gregory Bean <gbean@codeaurora.org>
+    Date:   Wed Jul 28 10:22:13 2010 -0700
 
-Signed-off-by: Karol Lewandowski <k.lewandowsk@samsung.com>
-Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
-Reviewed-by: Thomas Abraham <thomas.abraham@linaro.org>
-Cc: Tomasz Stanislawski <t.stanislaws@samsung.com>
+        video: msm: Fix section mismatch in mddi.c.
+
+fixes a section mismatch between the board file and the driver's probe
+function, however, it misses the additional mismatches between the
+probe function and some routines it calls.  Fix these up as well.
+
+Signed-off-by: David Brown <davidb@codeaurora.org>
 ---
- .../devicetree/bindings/i2c/trivial-devices.txt    |    1 +
- drivers/media/video/s5p-tv/hdmiphy_drv.c           |   10 ++++++++++
- 2 files changed, 11 insertions(+), 0 deletions(-)
+ drivers/video/msm/mddi.c |    8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
 
-diff --git a/Documentation/devicetree/bindings/i2c/trivial-devices.txt b/Documentation/devicetree/bindings/i2c/trivial-devices.txt
-index 1a85f98..3087bc4 100644
---- a/Documentation/devicetree/bindings/i2c/trivial-devices.txt
-+++ b/Documentation/devicetree/bindings/i2c/trivial-devices.txt
-@@ -51,6 +51,7 @@ plx,pex8648		48-Lane, 12-Port PCI Express Gen 2 (5.0 GT/s) Switch
- ramtron,24c64		i2c serial eeprom  (24cxx)
- ricoh,rs5c372a		I2C bus SERIAL INTERFACE REAL-TIME CLOCK IC
- samsung,24ad0xd1	S524AD0XF1 (128K/256K-bit Serial EEPROM for Low Power)
-+samsung,s5pv210-hdmiphy PLL-based clock generator for HDMI PHY found on s5pv210+ SoCs
- st-micro,24c256		i2c serial eeprom  (24cxx)
- stm,m41t00		Serial Access TIMEKEEPER
- stm,m41t62		Serial real-time clock (RTC) with alarm
-diff --git a/drivers/media/video/s5p-tv/hdmiphy_drv.c b/drivers/media/video/s5p-tv/hdmiphy_drv.c
-index 0afef77..3fcac4f 100644
---- a/drivers/media/video/s5p-tv/hdmiphy_drv.c
-+++ b/drivers/media/video/s5p-tv/hdmiphy_drv.c
-@@ -18,6 +18,7 @@
- #include <linux/interrupt.h>
- #include <linux/irq.h>
- #include <linux/err.h>
-+#include <linux/of.h>
+diff --git a/drivers/video/msm/mddi.c b/drivers/video/msm/mddi.c
+index 4527cbf..b061d70 100644
+--- a/drivers/video/msm/mddi.c
++++ b/drivers/video/msm/mddi.c
+@@ -420,7 +420,7 @@ static void mddi_resume(struct msm_mddi_client_data *cdata)
+ 	mddi_set_auto_hibernate(&mddi->client_data, 1);
+ }
  
- #include <media/v4l2-subdev.h>
+-static int __init mddi_get_client_caps(struct mddi_info *mddi)
++static int __devinit mddi_get_client_caps(struct mddi_info *mddi)
+ {
+ 	int i, j;
  
-@@ -165,10 +166,19 @@ static const struct i2c_device_id hdmiphy_id[] = {
- };
- MODULE_DEVICE_TABLE(i2c, hdmiphy_id);
+@@ -622,9 +622,9 @@ uint32_t mddi_remote_read(struct msm_mddi_client_data *cdata, uint32_t reg)
  
-+#ifdef CONFIG_OF
-+static struct of_device_id hdmiphy_dt_match[] = {
-+	{ .compatible = "samsung,s5pv210-hdmiphy" },
-+	{ },
-+};
-+MODULE_DEVICE_TABLE(of, hdmiphy_dt_match);
-+#endif
-+
- static struct i2c_driver hdmiphy_driver = {
- 	.driver = {
- 		.name	= "s5p-hdmiphy",
- 		.owner	= THIS_MODULE,
-+		.of_match_table = of_match_ptr(hdmiphy_dt_match),
- 	},
- 	.probe		= hdmiphy_probe,
- 	.remove		= __devexit_p(hdmiphy_remove),
+ static struct mddi_info mddi_info[2];
+ 
+-static int __init mddi_clk_setup(struct platform_device *pdev,
+-				 struct mddi_info *mddi,
+-				 unsigned long clk_rate)
++static int __devinit mddi_clk_setup(struct platform_device *pdev,
++				    struct mddi_info *mddi,
++				    unsigned long clk_rate)
+ {
+ 	int ret;
+ 
 -- 
-1.7.9.1
+Sent by an employee of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
 
