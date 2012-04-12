@@ -1,94 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762158Ab2DLIfh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Apr 2012 04:35:37 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:60773 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753904Ab2DLIfb convert rfc822-to-8bit (ORCPT
+	id S1762182Ab2DLIlK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Apr 2012 04:41:10 -0400
+Received: from mail09.linbit.com ([212.69.161.110]:60570 "EHLO
+	mail09.linbit.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753849Ab2DLIlB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Apr 2012 04:35:31 -0400
+	Thu, 12 Apr 2012 04:41:01 -0400
+X-Greylist: delayed 462 seconds by postgrey-1.27 at vger.kernel.org; Thu, 12 Apr 2012 04:41:01 EDT
+Date: Thu, 12 Apr 2012 10:33:16 +0200
+From: Lars Ellenberg <lars.ellenberg@linbit.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Cong Wang <xiyou.wangcong@gmail.com>, linux-kernel@vger.kernel.org,
+        Lars Ellenberg <drbd-dev@lists.linbit.com>
+Subject: Re: [Drbd-dev] [Patch] drbd: check MODULE for THIS_MODULE
+Message-ID: <20120412083316.GK9163@barkeeper1-xen.linbit>
+Mail-Followup-To: Andrew Morton <akpm@linux-foundation.org>,
+	Cong Wang <xiyou.wangcong@gmail.com>, linux-kernel@vger.kernel.org,
+	Lars Ellenberg <drbd-dev@lists.linbit.com>
+References: <1333433616-8315-1-git-send-email-xiyou.wangcong@gmail.com>
+ <20120409161427.1decc2c1.akpm@linux-foundation.org>
 MIME-Version: 1.0
-In-Reply-To: <alpine.LFD.2.02.1204031001510.2542@ionos>
-References: <CADDKRnBpGr=yzDftChA3xiaK9gK4D4UDV6HJiw8hcMo6159+Cw@mail.gmail.com>
-	<20120402235412.GD16303@tassilo.jf.intel.com>
-	<alpine.LFD.2.02.1204031001510.2542@ionos>
-Date: Thu, 12 Apr 2012 10:35:30 +0200
-Message-ID: <CADDKRnAOqfxTjrCp4E5eKFJvVTu6s0xF3Ca3jRJavFkyGpYLmQ@mail.gmail.com>
-Subject: Re: [v3.4-rc1] ACPI regression bisected
-From: =?ISO-8859-1?Q?J=F6rg_Otte?= <jrg.otte@googlemail.com>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: Andi Kleen <ak@linux.intel.com>, linux-kernel@vger.kernel.org,
-        Len Brown <lenb@kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120409161427.1decc2c1.akpm@linux-foundation.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I tried that patch, for me it works.
+On Mon, Apr 09, 2012 at 04:14:27PM -0700, Andrew Morton wrote:
+> On Tue,  3 Apr 2012 14:13:36 +0800
+> Cong Wang <xiyou.wangcong@gmail.com> wrote:
+> 
+> > THIS_MODULE is NULL only when drbd is compiled as built-in,
+> > so the #ifdef CONFIG_MODULES should be #ifdef MODULE instead.
+> > 
+> > This fixes the warning:
+> > 
+> > drivers/block/drbd/drbd_main.c: In function ___drbd_buildtag___:
+> > drivers/block/drbd/drbd_main.c:4187:24: warning: the comparison will always evaluate as ___true___ for the address of _____this_module___ will never be NULL [-Waddress]
+> > 
+> > Cc: Lars Ellenberg <drbd-dev@lists.linbit.com>
+> > Signed-off-by: WANG Cong <xiyou.wangcong@gmail.com>
+> > 
+> > ---
+> > diff --git a/drivers/block/drbd/drbd_main.c b/drivers/block/drbd/drbd_main.c
+> > index 211fc44..96c432f 100644
+> > --- a/drivers/block/drbd/drbd_main.c
+> > +++ b/drivers/block/drbd/drbd_main.c
+> > @@ -4183,12 +4183,11 @@ const char *drbd_buildtag(void)
+> >  	static char buildtag[38] = "\0uilt-in";
+> >  
+> >  	if (buildtag[0] == 0) {
+> > -#ifdef CONFIG_MODULES
+> > -		if (THIS_MODULE != NULL)
+> > -			sprintf(buildtag, "srcversion: %-24s", THIS_MODULE->srcversion);
+> > -		else
+> > +#ifdef MODULE
+> > +		sprintf(buildtag, "srcversion: %-24s", THIS_MODULE->srcversion);
+> > +#else
+> > +		buildtag[0] = 'b';
+> >  #endif
+> > -			buildtag[0] = 'b';
+> >  	}
+> >  
+> >  	return buildtag;
+> 
+> If the MODULE_SRCVERSION_ALL help in init/Kconfig is to be believed,
+> this should depend on CONFIG_MODULE_SRCVERSION_ALL?
+> 
+> But drbd is the only driver in all of Linux which plays with
+> srcversion.  Can we just delete this code?
 
-Thanks, Joerg
+Technically we sure can.
 
+cat /proc/drbd is the first thing we ask for in problem reports, and it
+sure helps and saves a few roundtrips knowing which exact version of
+in-tree or out-of-tree drbd version is in use.
+For an out-of-tree build, we print the exact git-hash there.
+For an in-tree build, the srcversion was the "obvious" substitute.
+If it is not too much trouble, I'd like to keep that info.
 
-Am 3. April 2012 10:11 schrieb Thomas Gleixner <tglx@linutronix.de>:
-> On Mon, 2 Apr 2012, Andi Kleen wrote:
->
->> >  ACPI: Added _OSI(Processor Aggregator Device)
->> >  ACPI: EC: EC description table is found, configuring boot EC
->> >
->> > Comparing this with the displays of kernel v3.3 the next expected
->> > outputs would be:
->> >
->> >  ACPI: Interpreter enabled
->> >  ACPI: (supports S0 S5)
->> >
->> >
->> > I bisected the problem to commit:
->> > 6fe0d0628245fdcd6fad8b837c81e8f7ebc3364d  "ACPI: Make ACPI interrupt threaded"
->>
->> Hmm, that's odd. It should not really change any semantics. I assume you double
->> checked you hit the right commit?
->
-> Well it does change the semantics depending on the type of the
-> interrupt. The above commit does:
->
-> -       if (request_irq(irq, acpi_irq, IRQF_SHARED, "acpi", acpi_irq)) {
-> +       if (request_threaded_irq(irq, NULL, acpi_irq, IRQF_SHARED, "acpi",
-> +                                acpi_irq)) {
->
-> which creates a threaded handler and the primary handler is the
-> default core one which merily returns IRQ_WAKE_THREAD. Though that
-> leaves the interrupt line unmasked and for level type interrupts this
-> is not working. So you either need a primary handler which masks the
-> irq at the device level or you can add IRQF_ONESHOT to let the core
-> code deal with the mask/unmask business. See patch below.
->
-> Now the problem with this approach is that if this is really a shared
-> interrupt the core code will either reject this request or the one of
-> the other device which shares that interrupt line, depending which one
-> request first. The reason is that we require all devices to agree on
-> that flag - otherwise a long running/waiting/sleeping threaded handler
-> might block out the other device for a long time.
->
-> If it's never shared, nothing to worry about. Otherwise you need to
-> provide a primary handler which silences the interrupt at the device
-> level and unmask it when your threaded handler is done.
->
-> Thanks,
->
->        tglx
->
-> diff --git a/drivers/acpi/osl.c b/drivers/acpi/osl.c
-> index ba14fb9..1b81bc9 100644
-> --- a/drivers/acpi/osl.c
-> +++ b/drivers/acpi/osl.c
-> @@ -607,7 +607,8 @@ acpi_os_install_interrupt_handler(u32 gsi, acpi_osd_handler handler,
->
->        acpi_irq_handler = handler;
->        acpi_irq_context = context;
-> -       if (request_threaded_irq(irq, NULL, acpi_irq, IRQF_SHARED, "acpi",
-> +       if (request_threaded_irq(irq, NULL, acpi_irq,
-> +                                IRQF_SHARED | IRQF_ONESHOT, "acpi",
->                                 acpi_irq)) {
->                printk(KERN_ERR PREFIX "SCI (IRQ%d) allocation failed\n", irq);
->                acpi_irq_handler = NULL;
+	Lars
