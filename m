@@ -1,61 +1,153 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756791Ab2DLFt1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Apr 2012 01:49:27 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:49600 "EHLO mx2.suse.de"
+	id S1756880Ab2DLF4S (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Apr 2012 01:56:18 -0400
+Received: from mga14.intel.com ([143.182.124.37]:5183 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756616Ab2DLFt0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Apr 2012 01:49:26 -0400
-Date: Thu, 12 Apr 2012 06:49:23 +0100
-From: Mel Gorman <mgorman@suse.de>
-To: Ying Han <yinghan@google.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Rik van Riel <riel@redhat.com>,
-        Konstantin Khlebnikov <khlebnikov@openvz.org>,
-        Hugh Dickins <hughd@google.com>, Linux-MM <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 0/3] Removal of lumpy reclaim V2
-Message-ID: <20120412054923.GL3789@suse.de>
-References: <1334162298-18942-1-git-send-email-mgorman@suse.de>
- <CALWz4iyt94KdRXTwr07+s5TPYtcwBX7xScQcqUvwVCnDMLH_TA@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CALWz4iyt94KdRXTwr07+s5TPYtcwBX7xScQcqUvwVCnDMLH_TA@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1756812Ab2DLF4Q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Apr 2012 01:56:16 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="129945775"
+Subject: [RESEND PATCH v2] libata: disable runtime pm for hotpluggable port
+From: Lin Ming <ming.m.lin@intel.com>
+To: Jeff Garzik <jgarzik@pobox.com>
+Cc: linux-ide@vger.kernel.org, lkml <linux-kernel@vger.kernel.org>,
+        jslaby@suse.cz, cwillu@cwillu.com, jackdachef@gmail.com,
+        Sergei Shtylyov <sshtylyov@mvista.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 12 Apr 2012 13:56:14 +0800
+Message-ID: <1334210174.11188.110.camel@minggr>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 11, 2012 at 04:37:00PM -0700, Ying Han wrote:
-> > In 3.2, kswapd was doing a bunch of async writes of pages but
-> > reclaim/compaction was never reaching a point where it was doing sync
-> > IO. This does not guarantee that reclaim/compaction was not calling
-> > wait_on_page_writeback() but I would consider it unlikely. It indicates
-> > that merging patches 2 and 3 to stop reclaim/compaction calling
-> > wait_on_page_writeback() should be safe.
-> >
-> >  include/trace/events/vmscan.h |   40 ++-----
-> >  mm/vmscan.c                   |  263 ++++-------------------------------------
-> >  2 files changed, 37 insertions(+), 266 deletions(-)
-> >
-> > --
-> > 1.7.9.2
-> >
-> 
-> It might be a naive question, what we do w/ users with the following
-> in the .config file?
-> 
-> # CONFIG_COMPACTION is not set
-> 
+Currently, hotplug doesn't work if port is already runtime suspended.
+For now, we simply disable runtime pm for hotpluggable port.
+Later, we should add runtime pm support for hotpluggable port too.
 
-After lumpy reclaim is removed page reclaim will be reclaiming at order-0
-randomly to see if that frees up a high-order page randomly. It remains to
-be seen how many users really depended on lumpy reclaim like this and as
-to why they were not using compaction. Two configurations that may care are
-NOMMU and SLUB. NOMMU may not notice as they were already unable to handle
-anonymous pages in lumpy reclaim. SLUB will fallback to using order-0 pages.
+Bug report:
+https://lkml.org/lkml/2012/2/19/70
 
+v2:
+- Use bit 2 and 3 for flags ATA_FLAG_EXTERNAL and ATA_FLAG_PLUGGABLE.
+
+TODO: add similar hotpluggable port check for controllers other than
+AHCI.
+
+Reported-and-tested-by: Jiri Slaby <jslaby@suse.cz>
+Reported-and-tested-by: cwillu@cwillu.com
+Reported-and-tested-by: jackdachef@gmail.com
+Signed-off-by: Lin Ming <ming.m.lin@intel.com>
+---
+ drivers/ata/ahci.c             |    3 +++
+ drivers/ata/ahci.h             |    3 +++
+ drivers/ata/libahci.c          |   20 ++++++++++++++++++++
+ drivers/ata/libata-transport.c |    6 ++++--
+ include/linux/libata.h         |    2 ++
+ 5 files changed, 32 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/ata/ahci.c b/drivers/ata/ahci.c
+index d07bf03..02e93ff 100644
+--- a/drivers/ata/ahci.c
++++ b/drivers/ata/ahci.c
+@@ -1145,6 +1145,9 @@ static int ahci_init_one(struct pci_dev *pdev, const struct pci_device_id *ent)
+ 	if (hpriv->cap & HOST_CAP_PMP)
+ 		pi.flags |= ATA_FLAG_PMP;
+ 
++	if (hpriv->cap & HOST_CAP_SXS)
++		pi.flags |= ATA_FLAG_EXTERNAL;
++
+ 	ahci_set_em_messages(hpriv, &pi);
+ 
+ 	if (ahci_broken_system_poweroff(pdev)) {
+diff --git a/drivers/ata/ahci.h b/drivers/ata/ahci.h
+index b175000..92f7172 100644
+--- a/drivers/ata/ahci.h
++++ b/drivers/ata/ahci.h
+@@ -172,6 +172,9 @@ enum {
+ 	PORT_CMD_ALPE		= (1 << 26), /* Aggressive Link PM enable */
+ 	PORT_CMD_ATAPI		= (1 << 24), /* Device is ATAPI */
+ 	PORT_CMD_FBSCP		= (1 << 22), /* FBS Capable Port */
++	PORT_CMD_ESP		= (1 << 21), /* External SATA Port */
++	PORT_CMD_MPSP		= (1 << 19), /* Mechanical Presence Switch Attached to Port */
++	PORT_CMD_HPCP		= (1 << 18), /* Hot Plug Capable Port */
+ 	PORT_CMD_PMP		= (1 << 17), /* PMP attached */
+ 	PORT_CMD_LIST_ON	= (1 << 15), /* cmd list DMA engine running */
+ 	PORT_CMD_FIS_ON		= (1 << 14), /* FIS DMA engine running */
+diff --git a/drivers/ata/libahci.c b/drivers/ata/libahci.c
+index a72bfd0..7d72d3c 100644
+--- a/drivers/ata/libahci.c
++++ b/drivers/ata/libahci.c
+@@ -1097,6 +1097,23 @@ static void ahci_port_init(struct device *dev, struct ata_port *ap,
+ 	writel(1 << port_no, mmio + HOST_IRQ_STAT);
+ }
+ 
++static bool ahci_port_pluggable(struct ata_port *ap)
++{
++	void __iomem *port_mmio = ahci_port_base(ap);
++	u32 cmd;
++
++	cmd = readl(port_mmio + PORT_CMD);
++
++	if ((ap->flags & ATA_FLAG_EXTERNAL) &&
++	    (cmd & PORT_CMD_ESP))
++		return true;
++
++	if (cmd & (PORT_CMD_MPSP | PORT_CMD_HPCP))
++		return true;
++
++	return false;
++}
++
+ void ahci_init_controller(struct ata_host *host)
+ {
+ 	struct ahci_host_priv *hpriv = host->private_data;
+@@ -1112,6 +1129,9 @@ void ahci_init_controller(struct ata_host *host)
+ 		if (ata_port_is_dummy(ap))
+ 			continue;
+ 
++		if (ahci_port_pluggable(ap))
++			ap->flags |= ATA_FLAG_PLUGGABLE;
++
+ 		ahci_port_init(host->dev, ap, i, mmio, port_mmio);
+ 	}
+ 
+diff --git a/drivers/ata/libata-transport.c b/drivers/ata/libata-transport.c
+index 74aaee3..a7166b9 100644
+--- a/drivers/ata/libata-transport.c
++++ b/drivers/ata/libata-transport.c
+@@ -292,8 +292,10 @@ int ata_tport_add(struct device *parent,
+ 	}
+ 
+ 	device_enable_async_suspend(dev);
+-	pm_runtime_set_active(dev);
+-	pm_runtime_enable(dev);
++	if (!(ap->flags & ATA_FLAG_PLUGGABLE)) {
++		pm_runtime_set_active(dev);
++		pm_runtime_enable(dev);
++	}
+ 
+ 	transport_add_device(dev);
+ 	transport_configure_device(dev);
+diff --git a/include/linux/libata.h b/include/linux/libata.h
+index cafc09a..f46961d 100644
+--- a/include/linux/libata.h
++++ b/include/linux/libata.h
+@@ -187,6 +187,8 @@ enum {
+ 	ATA_FLAG_SLAVE_POSS	= (1 << 0), /* host supports slave dev */
+ 					    /* (doesn't imply presence) */
+ 	ATA_FLAG_SATA		= (1 << 1),
++	ATA_FLAG_EXTERNAL	= (1 << 2), /* Controller supports external SATA */
++	ATA_FLAG_PLUGGABLE	= (1 << 3), /* Port is hotpluggable */
+ 	ATA_FLAG_NO_ATAPI	= (1 << 6), /* No ATAPI support */
+ 	ATA_FLAG_PIO_DMA	= (1 << 7), /* PIO cmds via DMA */
+ 	ATA_FLAG_PIO_LBA48	= (1 << 8), /* Host DMA engine is LBA28 only */
 -- 
-Mel Gorman
-SUSE Labs
+1.7.2.5
+
+
+
