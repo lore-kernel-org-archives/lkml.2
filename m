@@ -1,56 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966040Ab2DLVja (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Apr 2012 17:39:30 -0400
-Received: from 1wt.eu ([62.212.114.60]:65077 "EHLO 1wt.eu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934773Ab2DLVj2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Apr 2012 17:39:28 -0400
-Date: Thu, 12 Apr 2012 23:39:02 +0200
-From: Willy Tarreau <w@1wt.eu>
-To: Felipe Contreras <felipe.contreras@gmail.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Greg KH <gregkh@linuxfoundation.org>, Sergio Correia <lists@uece.net>,
-        linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        linux-wireless Mailing List <linux-wireless@vger.kernel.org>,
-        Sujith Manoharan <c_manoha@qca.qualcomm.com>,
-        "ath9k-devel@lists.ath9k.org" <ath9k-devel@venema.h4ckr.net>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: Re: [ 00/78] 3.3.2-stable review
-Message-ID: <20120412213902.GA12807@1wt.eu>
-References: <20120411231102.GA6404@kroah.com> <CAJyhjX2KrfSJW64PJMTHou9zSojsfA1iNT-WahinfMBce_B=BA@mail.gmail.com> <20120412002927.GA23167@kroah.com> <CAMP44s3Jh-t07A+i82qbAMQyEN0oWTmKk5BJcst942gFdD0=VA@mail.gmail.com> <20120412011313.GA23764@kroah.com> <CAMP44s2q+bQE3-zsX4bs=sQDt4jf8eE5bwZ8V88UjodjRyAjog@mail.gmail.com> <20120412144626.GA14868@kroah.com> <CAMP44s1T4EVwpzDuV_vV0Zh-5WcPCwdw9eeOfL17Geqp_UFN-Q@mail.gmail.com> <CA+55aFwKYYgZcBX=L-q_6UdvkvFai+yjzgVxq7cA+HLL-Zojhw@mail.gmail.com> <CAMP44s14SQont1wyMeOuWcXUT3U5Tgnoj9mbbgOdVXY_hN0+-w@mail.gmail.com>
+	id S966060Ab2DLVjo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Apr 2012 17:39:44 -0400
+Received: from shards.monkeyblade.net ([198.137.202.13]:41932 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S966044Ab2DLVjn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Apr 2012 17:39:43 -0400
+Date: Thu, 12 Apr 2012 17:37:07 -0400 (EDT)
+Message-Id: <20120412.173707.2114402833197161386.davem@davemloft.net>
+To: eldad@fogrefinery.com
+Cc: kuznet@ms2.inr.ac.ru, jmorris@namei.org, yoshfuji@linux-ipv6.org,
+        kaber@trash.net, netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] net/ipv6/exthdrs.c: Strict PadN option checking
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1334266320-12297-1-git-send-email-eldad@fogrefinery.com>
+References: <1334266320-12297-1-git-send-email-eldad@fogrefinery.com>
+X-Mailer: Mew version 6.4 on Emacs 24.0.95 / Mule 6.0 (HANACHIRUSATO)
 Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAMP44s14SQont1wyMeOuWcXUT3U5Tgnoj9mbbgOdVXY_hN0+-w@mail.gmail.com>
-User-Agent: Mutt/1.4.2.3i
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Thu, 12 Apr 2012 14:37:09 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 13, 2012 at 12:20:20AM +0300, Felipe Contreras wrote:
-> The relevant patch, like the thousands of patches in v3.4-rc*, did not
-> exist in v3.3, so if you add one on v3.3.1, and remove it on v3.3.2
-> would be *exactly* the same as if you had not added it at all to the
-> stable series.
+From: Eldad Zack <eldad@fogrefinery.com>
+Date: Thu, 12 Apr 2012 23:31:59 +0200
 
-Except that thanks to its addition in 3.3.1 we know it has broken some
-setups. Now we know they're broken, there is a good reason to *ensure*
-it is removed in 3.4-rc too. If you revert it from 3.3.2 and forget about
-3.4-rc, you'll end up with the faulty patch present again in 3.4. It is
-*very* important that -stable reflects what next should look like.
+> Added strict checking of PadN, as PadN can be used to increase header
+> size and thus push the protocol header into the 2nd fragment.
+> 
+> PadN is used to align the options within the Hop-by-Hop or
+> Destination Options header to 64-bit boundaries. The maximum valid
+> size is thus 7 bytes.
+> RFC 4942 recommends to actively check the "payload" itself and
+> ensure that it contains only zeroes.
+> 
+> See also RFC 4942 section 2.1.9.5.
+> 
+> Signed-off-by: Eldad Zack <eldad@fogrefinery.com>
 
-The only frustration from you that I can understand comes from the
-multi-hop that the patch has to pass through before hitting Linus,
-but for the same reason you want every intermediary maintainer to
-ensure that his own tree is fixed so that the patch is not reintroduced
-in a future batch.
+Applied after fixing up the comment formatting.
 
-Again, why don't you apply it into your tree ? Better, fork 3.3-stable
-and announce 3.3.2-fc which has this patch. It will help other users too.
-Let's just see how long you keep up with out-of-sync fixes.
-
-Regards,
-Willy
-
+Thanks.
