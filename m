@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762815Ab2DLVOn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Apr 2012 17:14:43 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:37927 "EHLO
+	id S934735Ab2DLVPP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Apr 2012 17:15:15 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:57875 "EHLO
 	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755849Ab2DLVOk (ORCPT
+	with ESMTP id S1756939Ab2DLVOl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Apr 2012 17:14:40 -0400
+	Thu, 12 Apr 2012 17:14:41 -0400
 From: David Daney <ddaney.cavm@gmail.com>
 To: Grant Likely <grant.likely@secretlab.ca>,
         devicetree-discuss@lists.ozlabs.org,
@@ -18,48 +18,155 @@ To: Grant Likely <grant.likely@secretlab.ca>,
         Rob Herring <rob.herring@calxeda.com>
 Cc: linux-kernel@vger.kernel.org, David Daney <david.daney@cavium.com>,
         Lars-Peter Clausen <lars@metafoo.de>
-Subject: [PATCH v3 0/2] i2c/of: Populate multiplexed i2c busses from the device tree.
-Date: Thu, 12 Apr 2012 14:14:21 -0700
-Message-Id: <1334265263-13549-1-git-send-email-ddaney.cavm@gmail.com>
+Subject: [PATCH v3 2/2] i2c/of: Automatically populate i2c mux busses from device tree data.
+Date: Thu, 12 Apr 2012 14:14:23 -0700
+Message-Id: <1334265263-13549-3-git-send-email-ddaney.cavm@gmail.com>
 X-Mailer: git-send-email 1.7.2.3
+In-Reply-To: <1334265263-13549-1-git-send-email-ddaney.cavm@gmail.com>
+References: <1334265263-13549-1-git-send-email-ddaney.cavm@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: David Daney <david.daney@cavium.com>
 
-v3: Integrate changes from Lars-Peter Clausen to make better use of
-    the of_*() infrastructure.  Get rid of ugly #ifdefs.
+For 'normal' i2c bus drivers, we can call of_i2c_register_devices()
+and have the device tree framework automatically populate the bus with
+the devices specified in the device tree.
 
-v2: Update bindings to use "reg" insutead of "cell-index"
+This patch adds a common code to the i2c mux framework to have the mux
+sub-busses be populated by the of_i2c_register_devices() too.  If the
+mux device has an of_node, we populate the sub-bus' of_node so that
+the subsequent call to of_i2c_register_devices() will find the
+corresponding devices.
 
-v1: Unchanged from the original RFC where I said:
+It seemed better to put this logic in i2c_add_mux_adapter() rather
+than the individual mux drivers, as they will all probably want to do
+the same thing.
 
-  We need to populate our I2C devices from the device tree, but some
-  of our systems have multiplexers which currently break this process.
-
-  The basic idea is to have the generic i2c-mux framework propagate
-  the device_node for the child bus into the corresponding
-  i2c_adapter, and then call of_i2c_register_devices().  This means
-  that the device tree bindings for *all* i2c muxes must have some
-  common properties.  I try to document these in mux.txt.
-
-This is now tested against 3.4-rc2 and is still working well.
-
-David Daney (2):
-  i2c: Add a struct device * parameter to i2c_add_mux_adapter()
-  i2c/of: Automatically populate i2c mux busses from device tree data.
-
+Signed-off-by: David Daney <david.daney@cavium.com>
+Cc: Lars-Peter Clausen <lars@metafoo.de>
+---
  Documentation/devicetree/bindings/i2c/mux.txt |   60 +++++++++++++++++++++++++
- drivers/i2c/i2c-mux.c                         |   43 ++++++++++++++----
- drivers/i2c/muxes/gpio-i2cmux.c               |    3 +-
- drivers/i2c/muxes/pca9541.c                   |    3 +-
- drivers/i2c/muxes/pca954x.c                   |    2 +-
- include/linux/i2c-mux.h                       |    3 +-
- 6 files changed, 101 insertions(+), 13 deletions(-)
+ drivers/i2c/i2c-mux.c                         |   24 ++++++++++
+ 2 files changed, 84 insertions(+), 0 deletions(-)
  create mode 100644 Documentation/devicetree/bindings/i2c/mux.txt
 
-Cc: Lars-Peter Clausen <lars@metafoo.de>
+diff --git a/Documentation/devicetree/bindings/i2c/mux.txt b/Documentation/devicetree/bindings/i2c/mux.txt
+new file mode 100644
+index 0000000..af84cce
+--- /dev/null
++++ b/Documentation/devicetree/bindings/i2c/mux.txt
+@@ -0,0 +1,60 @@
++Common i2c bus multiplexer/switch properties.
++
++An i2c bus multiplexer/switch will have several child busses that are
++numbered uniquely in a device dependent manner.  The nodes for an i2c bus
++multiplexer/switch will have one child node for each child
++bus.
++
++Required properties:
++- #address-cells = <1>;
++- #size-cells = <0>;
++
++Required properties for child nodes:
++- #address-cells = <1>;
++- #size-cells = <0>;
++- reg : The sub-bus number.
++
++Optional properties for child nodes:
++- Other properties specific to the multiplexer/switch hardware.
++- Child nodes conforming to i2c bus binding
++
++
++Example :
++
++	/*
++	   An NXP pca9548 8 channel I2C multiplexer at address 0x70
++	   with two NXP pca8574 GPIO expanders attached, one each to
++	   ports 3 and 4.
++	 */
++
++	mux@70 {
++		compatible = "nxp,pca9548";
++		reg = <0x70>;
++		#address-cells = <1>;
++		#size-cells = <0>;
++
++		i2c@3 {
++			#address-cells = <1>;
++			#size-cells = <0>;
++			reg = <3>;
++
++			gpio1: gpio@38 {
++				compatible = "nxp,pca8574";
++				reg = <0x38>;
++				#gpio-cells = <2>;
++				gpio-controller;
++			};
++		};
++		i2c@4 {
++			#address-cells = <1>;
++			#size-cells = <0>;
++			reg = <4>;
++
++			gpio2: gpio@38 {
++				compatible = "nxp,pca8574";
++				reg = <0x38>;
++				#gpio-cells = <2>;
++				gpio-controller;
++			};
++		};
++	};
+diff --git a/drivers/i2c/i2c-mux.c b/drivers/i2c/i2c-mux.c
+index 26ab31d..609794b 100644
+--- a/drivers/i2c/i2c-mux.c
++++ b/drivers/i2c/i2c-mux.c
+@@ -24,6 +24,8 @@
+ #include <linux/slab.h>
+ #include <linux/i2c.h>
+ #include <linux/i2c-mux.h>
++#include <linux/of.h>
++#include <linux/of_i2c.h>
+ 
+ /* multiplexer per channel data */
+ struct i2c_mux_priv {
+@@ -125,6 +127,26 @@ struct i2c_adapter *i2c_add_mux_adapter(struct i2c_adapter *parent,
+ 	priv->adap.algo_data = priv;
+ 	priv->adap.dev.parent = &parent->dev;
+ 
++	/*
++	 * Try to get populate the mux adapter's of_node, expands to
++	 * nothing if !CONFIG_OF.
++	 */
++	if (mux_dev->of_node) {
++		struct device_node *child;
++		u32 reg;
++		int ret;
++
++		for_each_child_of_node(mux_dev->of_node, child) {
++			ret = of_property_read_u32(child, "reg", &reg);
++			if (ret)
++				continue;
++			if (chan_id == reg) {
++				priv->adap.dev.of_node = child;
++				break;
++			}
++		}
++	}
++
+ 	if (force_nr) {
+ 		priv->adap.nr = force_nr;
+ 		ret = i2c_add_numbered_adapter(&priv->adap);
+@@ -142,6 +164,8 @@ struct i2c_adapter *i2c_add_mux_adapter(struct i2c_adapter *parent,
+ 	dev_info(&parent->dev, "Added multiplexed i2c bus %d\n",
+ 		 i2c_adapter_id(&priv->adap));
+ 
++	of_i2c_register_devices(&priv->adap);
++
+ 	return &priv->adap;
+ }
+ EXPORT_SYMBOL_GPL(i2c_add_mux_adapter);
 -- 
 1.7.2.3
 
