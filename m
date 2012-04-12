@@ -1,43 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934844Ab2DLVyw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Apr 2012 17:54:52 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:62519 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934842Ab2DLVyj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Apr 2012 17:54:39 -0400
-Date: Thu, 12 Apr 2012 23:54:10 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Christopher Yeoh <cyeoh@au1.ibm.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org
-Subject: Re: [RESEND][PATCH] Cleanup of rw_copy_check_uvector and
-	compat_rw_copy_check_uvector
-Message-ID: <20120412215410.GB31852@redhat.com>
-References: <20120411210604.26d04483@Gantu>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120411210604.26d04483@Gantu>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S934916Ab2DLVz3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Apr 2012 17:55:29 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:35805 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756645Ab2DLVsm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Apr 2012 17:48:42 -0400
+From: Will Drewry <wad@chromium.org>
+To: linux-kernel@vger.kernel.org
+Cc: linux-man@vger.kernel.org, linux-security-module@vger.kernel.org,
+        linux-arch@vger.kernel.org, linux-doc@vger.kernel.org,
+        kernel-hardening@lists.openwall.com, netdev@vger.kernel.org,
+        x86@kernel.org, arnd@arndb.de, davem@davemloft.net, hpa@zytor.com,
+        mingo@redhat.com, oleg@redhat.com, peterz@infradead.org,
+        rdunlap@xenotime.net, mcgrathr@chromium.org, tglx@linutronix.de,
+        luto@mit.edu, eparis@redhat.com, serge.hallyn@canonical.com,
+        djm@mindrot.org, scarybeasts@gmail.com, indan@nul.nu,
+        pmoore@redhat.com, akpm@linux-foundation.org, corbet@lwn.net,
+        eric.dumazet@gmail.com, markus@chromium.org, coreyb@linux.vnet.ibm.com,
+        keescook@chromium.org, jmorris@namei.org,
+        John Johansen <john.johansen@canonical.com>,
+        Will Drewry <wad@chromium.org>, Andy Lutomirski <luto@amacapital.net>
+Subject: [PATCH v18 02/15] Fix execve behavior apparmor for PR_{GET,SET}_NO_NEW_PRIVS
+Date: Thu, 12 Apr 2012 16:47:51 -0500
+Message-Id: <1334267284-19166-2-git-send-email-wad@chromium.org>
+X-Mailer: git-send-email 1.7.5.4
+In-Reply-To: <1334267284-19166-1-git-send-email-wad@chromium.org>
+References: <1334267284-19166-1-git-send-email-wad@chromium.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/11, Christopher Yeoh wrote:
->
-> Resending this patch which I first sent a couple of months ago and
-> didn't notice it didn't go in at the time.
->
-> This is the cleanup of rw_copy_check_uvector and
-> compat_rw_copy_check_uvector after changes made to support CMA in an
-> earlier patch. Rather than having an additional check_access parameter
-> to these functions, the first paramater type is overloaded to allow the
-> caller to specify CHECK_IOVEC_ONLY which means check that the contents
-> of the iovec are valid, but do not check the memory that they point to.
-> This is used by process_vm_readv/writev where we need to validate that a
-> iovec passed to the syscall is valid but do not want to check the
-> memory that it points to at this point because it refers to an address
-> space in another process.
+From: John Johansen <john.johansen@canonical.com>
 
-Reviewed-by: Oleg Nesterov <oleg@redhat.com>
+Add support for AppArmor to explicitly fail requested domain transitions
+if NO_NEW_PRIVS is set and the task is not unconfined.
+
+Transitions from unconfined are still allowed because this always results
+in a reduction of privileges.
+
+Acked-by: Eric Paris <eparis@redhat.com>
+Signed-off-by: Will Drewry <wad@chromium.org>
+Signed-off-by: John Johansen <john.johansen@canonical.com>
+Signed-off-by: Andy Lutomirski <luto@amacapital.net>
+
+v18: new acked-by, new description
+---
+ security/apparmor/domain.c |   39 +++++++++++++++++++++++++++++++++++----
+ 1 files changed, 35 insertions(+), 4 deletions(-)
+
+diff --git a/security/apparmor/domain.c b/security/apparmor/domain.c
+index 18c88d0..b81ea10 100644
+--- a/security/apparmor/domain.c
++++ b/security/apparmor/domain.c
+@@ -360,10 +360,6 @@ int apparmor_bprm_set_creds(struct linux_binprm *bprm)
+ 	if (bprm->cred_prepared)
+ 		return 0;
+ 
+-	/* XXX: no_new_privs is not usable with AppArmor yet */
+-	if (bprm->unsafe & LSM_UNSAFE_NO_NEW_PRIVS)
+-		return -EPERM;
+-
+ 	cxt = bprm->cred->security;
+ 	BUG_ON(!cxt);
+ 
+@@ -398,6 +394,11 @@ int apparmor_bprm_set_creds(struct linux_binprm *bprm)
+ 			new_profile = find_attach(ns, &ns->base.profiles, name);
+ 		if (!new_profile)
+ 			goto cleanup;
++		/*
++		 * NOTE: Domain transitions from unconfined are allowed
++		 * even when no_new_privs is set because this aways results
++		 * in a further reduction of permissions.
++		 */
+ 		goto apply;
+ 	}
+ 
+@@ -459,6 +460,16 @@ int apparmor_bprm_set_creds(struct linux_binprm *bprm)
+ 		/* fail exec */
+ 		error = -EACCES;
+ 
++	/*
++	 * Policy has specified a domain transition, if no_new_privs then
++	 * fail the exec.
++	 */
++	if (bprm->unsafe & LSM_UNSAFE_NO_NEW_PRIVS) {
++		aa_put_profile(new_profile);
++		error = -EPERM;
++		goto cleanup;
++	}
++
+ 	if (!new_profile)
+ 		goto audit;
+ 
+@@ -613,6 +624,14 @@ int aa_change_hat(const char *hats[], int count, u64 token, bool permtest)
+ 	const char *target = NULL, *info = NULL;
+ 	int error = 0;
+ 
++	/*
++	 * Fail explicitly requested domain transitions if no_new_privs.
++	 * There is no exception for unconfined as change_hat is not
++	 * available.
++	 */
++	if (current->no_new_privs)
++		return -EPERM;
++
+ 	/* released below */
+ 	cred = get_current_cred();
+ 	cxt = cred->security;
+@@ -754,6 +773,18 @@ int aa_change_profile(const char *ns_name, const char *hname, bool onexec,
+ 	cxt = cred->security;
+ 	profile = aa_cred_profile(cred);
+ 
++	/*
++	 * Fail explicitly requested domain transitions if no_new_privs
++	 * and not unconfined.
++	 * Domain transitions from unconfined are allowed even when
++	 * no_new_privs is set because this aways results in a reduction
++	 * of permissions.
++	 */
++	if (current->no_new_privs && !unconfined(profile)) {
++		put_cred(cred);
++		return -EPERM;
++	}
++
+ 	if (ns_name) {
+ 		/* released below */
+ 		ns = aa_find_namespace(profile->ns, ns_name);
+-- 
+1.7.5.4
 
