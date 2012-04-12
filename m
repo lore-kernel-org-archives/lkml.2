@@ -1,45 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933788Ab2DLS1O (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Apr 2012 14:27:14 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:35866 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756503Ab2DLS1M (ORCPT
+	id S1760966Ab2DLSdz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Apr 2012 14:33:55 -0400
+Received: from casper.infradead.org ([85.118.1.10]:34103 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754211Ab2DLSdy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Apr 2012 14:27:12 -0400
-Message-ID: <4F871E7D.5020404@wwwdotorg.org>
-Date: Thu, 12 Apr 2012 12:27:09 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.28) Gecko/20120313 Thunderbird/3.1.20
+	Thu, 12 Apr 2012 14:33:54 -0400
+Date: Thu, 12 Apr 2012 15:33:51 -0300
+From: Arnaldo Carvalho de Melo <acme@infradead.org>
+To: Sam Ravnborg <sam@ravnborg.org>
+Cc: Borislav Petkov <bp@amd64.org>, Ingo Molnar <mingo@kernel.org>,
+        Michal Marek <mmarek@suse.cz>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v5 5/5] tools: Connect to the kernel build system
+Message-ID: <20120412183351.GQ16257@infradead.org>
+References: <1334162178-17152-1-git-send-email-bp@amd64.org>
+ <1334162178-17152-6-git-send-email-bp@amd64.org>
+ <20120411180434.GH16257@infradead.org>
+ <20120411180837.GJ16257@infradead.org>
+ <20120412152256.GH24549@aftab>
+ <20120412155734.GA30170@merkur.ravnborg.org>
 MIME-Version: 1.0
-To: Linus Walleij <linus.walleij@stericsson.com>
-CC: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Stephen Warren <swarren@nvidia.com>,
-        Shawn Guo <shawn.guo@freescale.com>,
-        Thomas Abraham <thomas.abraham@linaro.org>,
-        Dong Aisheng <dong.aisheng@linaro.org>,
-        Rajendra Nayak <rajendra.nayak@linaro.org>,
-        Haojian Zhuang <haojian.zhuang@marvell.com>,
-        Linus Walleij <linus.walleij@linaro.org>
-Subject: Re: [PATCH] pinctrl: mark non-EXPERIMENTAL
-References: <1334253104-30527-1-git-send-email-linus.walleij@stericsson.com>
-In-Reply-To: <1334253104-30527-1-git-send-email-linus.walleij@stericsson.com>
-X-Enigmail-Version: 1.1.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120412155734.GA30170@merkur.ravnborg.org>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by casper.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/12/2012 11:51 AM, Linus Walleij wrote:
-> From: Linus Walleij <linus.walleij@linaro.org>
+Em Thu, Apr 12, 2012 at 05:57:34PM +0200, Sam Ravnborg escreveu:
+> > diff --git a/tools/scripts/Makefile.include b/tools/scripts/Makefile.include
+> > index 87b55a729a5f..297b51d8e4be 100644
+> > --- a/tools/scripts/Makefile.include
+> > +++ b/tools/scripts/Makefile.include
+> > @@ -38,11 +38,18 @@ else
+> >  NO_SUBDIR = :
+> >  endif
+> >  
+> > -QUIET_SUBDIR0  = +$(MAKE) -C # space to separate -C and subdir
+> > -QUIET_SUBDIR1  =
 > 
-> With the finalization of the external driver API and the device
-> tree support, this subsystem is now mature and can be promoted to
-> non-experimental status.
-> 
-> Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
+> Who-ever came up with the names "QUIET_SUBDIR" must have had a bad day...
 
-Acked-by: Stephen Warren <swarren@wwwdotorg.org>
+Came from the git sources, where it still lives on:
 
-It certainly works great for me:-)
+[acme@sandy git]$ git show b7774343
+commit b777434383bd2f365be6896d8c89be6c1b62a135
+Author: Alex Riesen <raa.lkml@gmail.com>
+Date:   Wed Mar 7 00:44:49 2007 +0100
+
+    Support of "make -s": do not output anything of the build itself
+    
+    Signed-off-by: Junio C Hamano <junkio@cox.net>
+
+- Arnaldo
