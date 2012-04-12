@@ -1,41 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965131Ab2DLOkn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Apr 2012 10:40:43 -0400
-Received: from mail-pz0-f52.google.com ([209.85.210.52]:32801 "EHLO
-	mail-pz0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934280Ab2DLOkm (ORCPT
+	id S965190Ab2DLOqd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Apr 2012 10:46:33 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:59300 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757375Ab2DLOqa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Apr 2012 10:40:42 -0400
-Message-ID: <4F86E965.4010506@gmail.com>
-Date: Thu, 12 Apr 2012 08:40:37 -0600
-From: David Ahern <dsahern@gmail.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:11.0) Gecko/20120327 Thunderbird/11.0.1
+	Thu, 12 Apr 2012 10:46:30 -0400
+Date: Thu, 12 Apr 2012 07:46:26 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Felipe Contreras <felipe.contreras@gmail.com>
+Cc: Sergio Correia <lists@uece.net>, linux-kernel@vger.kernel.org,
+        stable@vger.kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+        linux-wireless Mailing List <linux-wireless@vger.kernel.org>,
+        Sujith Manoharan <c_manoha@qca.qualcomm.com>,
+        "ath9k-devel@lists.ath9k.org" <ath9k-devel@venema.h4ckr.net>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: Re: [ 00/78] 3.3.2-stable review
+Message-ID: <20120412144626.GA14868@kroah.com>
+References: <20120411231102.GA6404@kroah.com>
+ <CAJyhjX2KrfSJW64PJMTHou9zSojsfA1iNT-WahinfMBce_B=BA@mail.gmail.com>
+ <20120412002927.GA23167@kroah.com>
+ <CAMP44s3Jh-t07A+i82qbAMQyEN0oWTmKk5BJcst942gFdD0=VA@mail.gmail.com>
+ <20120412011313.GA23764@kroah.com>
+ <CAMP44s2q+bQE3-zsX4bs=sQDt4jf8eE5bwZ8V88UjodjRyAjog@mail.gmail.com>
 MIME-Version: 1.0
-To: Jiri Olsa <jolsa@redhat.com>
-CC: acme@redhat.com, a.p.zijlstra@chello.nl, mingo@elte.hu, paulus@samba.org,
-        cjashfor@linux.vnet.ibm.com, fweisbec@gmail.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/3] perf, tool: Force guest machine definition option
-References: <1334233262-5679-1-git-send-email-jolsa@redhat.com> <1334233262-5679-2-git-send-email-jolsa@redhat.com>
-In-Reply-To: <1334233262-5679-2-git-send-email-jolsa@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CAMP44s2q+bQE3-zsX4bs=sQDt4jf8eE5bwZ8V88UjodjRyAjog@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 4/12/12 6:21 AM, Jiri Olsa wrote:
-> Running 'perf kvm record' without any of following options:
->    --guestmount
->    --guestvmlinux
->    --guestkallsyms
->    --guestmodules
->
-> is causing the guest machine to be ommited from the data file,
-> and all guest samples are counted in nr_unprocessable_samples.
+On Thu, Apr 12, 2012 at 04:32:40PM +0300, Felipe Contreras wrote:
+> On Thu, Apr 12, 2012 at 4:13 AM, Greg KH <gregkh@linuxfoundation.org> wrote:
+> > On Thu, Apr 12, 2012 at 04:03:59AM +0300, Felipe Contreras wrote:
+> >> On Thu, Apr 12, 2012 at 3:29 AM, Greg KH <gregkh@linuxfoundation.org> wrote:
+> >> > On Wed, Apr 11, 2012 at 07:59:14PM -0400, Sergio Correia wrote:
+> >> >> Hello Greg,
+> >> >>
+> >> >>
+> >> >> On Wed, Apr 11, 2012 at 7:11 PM, Greg KH <gregkh@linuxfoundation.org> wrote:
+> >> >> > This is the start of the stable review cycle for the 3.3.2 release.
+> >> >> > There are 78 patches in this series, all will be posted as a response
+> >> >> > to this one.  If anyone has any issues with these being applied, please
+> >> >> > let me know.
+> >> >> >
+> >> >> > Responses should be made by Fri Apr 13 23:10:16 UTC 2012.
+> >> >> > Anything received after that time might be too late.
+> >> >> >
+> >> >>
+> >> >> is there any chance for this one to be included in this review cycle?
+> >> >>
+> >> >> http://www.spinics.net/lists/linux-wireless/msg87999.html
+> >>
+> >> I was going to ask for exactly the same thing. My system is completely
+> >> unusable without this patch; not only does the network doesn't work,
+> >> but quite often the kernel is stuck consuming 100% of the CPU.
+> >>
+> >> > Have you read Documentation/stable_kernel_rules.txt?  Based on that, I
+> >> > don't think it can, yet, right?
+> >>
+> >> Why not? This patch makes the code go back to a previous state, it is
+> >> obviously more stable than the current state, and the code already
+> >> exists in Linus's tree (in previous releases).
+> >
+> > It does?  What is the git commit id of the patch?  Based in the email
+> > above, I assumed it had not made it to Linus's tree already.
+> 
+> It's a revert of c1afdaff90538ef085b756454f12b29575411214, so so just
+> take a look at the code in c1afdaff90538ef085b756454f12b29575411214^.
+> 
+> >> But hey, I guess it's OK that 3.3.x is stuck in and endless loop right
+> >> after booting, because rules are more important than fixing obvious
+> >> breakage.
+> >
+> > What rule did you think I was saying this was not acceptable for?
+> 
+> The fact that the patch as not been applied/reviewed/accepted upstream.
+> 
+> Personally I don't see what is the problem with reverts; we already
+> know the previous code was working. Sure, in theory it might behave
+> different due to other changes, but that doesn't seem to be the case
+> here, plus, it can't be worst than the current situation of staying in
+> an endless loop.
 
-Even with guestmount specified you can hit this path -- e.g., no 
-pid-based directory under guestmount for a VM.
+A revert is the same as a patch.  It needs to be in Linus's tree before
+I can add it to the stable releases.
 
-David
+greg k-h
