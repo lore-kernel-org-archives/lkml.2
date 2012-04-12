@@ -1,85 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762057Ab2DLGtj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Apr 2012 02:49:39 -0400
-Received: from mail-pz0-f52.google.com ([209.85.210.52]:44613 "EHLO
-	mail-pz0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1762026Ab2DLGth (ORCPT
+	id S932116Ab2DLG4P (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Apr 2012 02:56:15 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:43409 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756945Ab2DLG4O convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Apr 2012 02:49:37 -0400
-Date: Thu, 12 Apr 2012 14:49:23 +0800
-From: Shawn Guo <shawn.guo@linaro.org>
-To: Mike Turquette <mturquette@linaro.org>
-Cc: arnd.bergmann@linaro.org, Andrew Lunn <andrew@lunn.ch>,
-        Viresh Kumar <viresh.kumar@st.com>, Rajendra Nayak <rnayak@ti.com>,
-        patches@linaro.org, Sascha Hauer <s.hauer@pengutronix.de>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        linux-kernel@vger.kernel.org, Russell King <linux@arm.linux.org.uk>,
-        Saravana Kannan <skannan@codeaurora.org>,
-        Olof Johansson <olof@lixom.net>, linaro-dev@lists.linaro.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 13/13] clk: basic: improve parent_names & return errors
-Message-ID: <20120412064920.GH2445@S2101-09.ap.freescale.net>
-References: <1334192572-12499-1-git-send-email-mturquette@linaro.org>
- <1334192572-12499-14-git-send-email-mturquette@linaro.org>
+	Thu, 12 Apr 2012 02:56:14 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1334192572-12499-14-git-send-email-mturquette@linaro.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <4F864F1E.8030708@st.com>
+References: <1334185214-27250-1-git-send-email-linus.walleij@linaro.org>
+	<4F864F1E.8030708@st.com>
+Date: Thu, 12 Apr 2012 08:56:13 +0200
+Message-ID: <CACRpkdYVGTYVzZKjmK13w-oW0S=McTB2Ux7DmZCC_DRRGsogpg@mail.gmail.com>
+Subject: Re: [PATCH 2/2 v2] dma/amba-pl08x: add support for the Nomadik variant
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Viresh Kumar <viresh.kumar@st.com>
+Cc: Vinod Koul <vinod.koul@intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Dan Williams <dan.j.williams@intel.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Alim Akhtar <alim.akhtar@gmail.com>,
+        Alessandro Rubini <rubini@gnudd.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 11, 2012 at 06:02:51PM -0700, Mike Turquette wrote:
-...
-> @@ -175,23 +188,32 @@ struct clk *clk_register_divider(struct device *dev, const char *name,
->  	div->flags = clk_divider_flags;
->  	div->lock = lock;
->  
-> +	/* allocate the temporary parent_names */
->  	if (parent_name) {
-> -		div->parent[0] = kstrdup(parent_name, GFP_KERNEL);
-> -		if (!div->parent[0])
-> -			goto out;
-> +		parent_names[0] = kstrdup(parent_name, GFP_KERNEL);
-> +		if (!parent_names[0]) {
-> +			pr_err("%s: could not allocate parent_names\n",
-> +					__func__);
-> +			goto fail_parent_names;
-> +		}
->  	}
+On Thu, Apr 12, 2012 at 5:42 AM, Viresh Kumar <viresh.kumar@st.com> wrote:
 
-Why do we need to copy the parent_names here at all?  clk_register()
-has done that for each basic clk.
+>>               ch->serving = NULL;
+>
+> I meant removing this one too. :)
 
-Regards,
-Shawn
+Argh! I'll spin a V3 with that removed and your review tag.
 
->  
-> +	/* register the clock */
->  	clk = clk_register(dev, name,
->  			&clk_divider_ops, &div->hw,
-> -			div->parent,
-> +			(parent_name ? parent_names: NULL),
->  			(parent_name ? 1 : 0),
->  			flags);
-> -	if (clk)
-> -		return clk;
->  
-> -out:
-> -	kfree(div->parent[0]);
-> -	kfree(div);
-> +	/* free the temporary parent_names */
-> +	if (parent_name)
-> +		kfree(parent_names[0]);
-> +
-> +	if (!IS_ERR(clk))
-> +		goto out;
->  
-> -	return NULL;
-> +fail_parent_names:
-> +	kfree(div);
-> +out:
-> +	return clk;
->  }
+> Reviewed-by: Viresh Kumar <viresh.kumar@st.com>
+
+Thanks!
+Linus Walleij
