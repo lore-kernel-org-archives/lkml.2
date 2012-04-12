@@ -1,72 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761671Ab2DLAqr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Apr 2012 20:46:47 -0400
-Received: from astoria.ccjclearline.com ([64.235.106.9]:47234 "EHLO
-	astoria.ccjclearline.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1761658Ab2DLAqo (ORCPT
+	id S1761688Ab2DLAua (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Apr 2012 20:50:30 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:49862 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757382Ab2DLAu1 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Apr 2012 20:46:44 -0400
-Date: Wed, 11 Apr 2012 20:46:38 -0400 (EDT)
-From: "Robert P. J. Day" <rpjday@crashcourse.ca>
-X-X-Sender: rpjday@oneiric
-To: David Daney <ddaney.cavm@gmail.com>
-cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: almost time to run my kernel source cleaning scripts again?
-In-Reply-To: <4F860905.4090106@gmail.com>
-Message-ID: <alpine.DEB.2.02.1204112046080.3300@oneiric>
-References: <alpine.DEB.2.02.1204111700170.4733@oneiric> <4F860905.4090106@gmail.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Wed, 11 Apr 2012 20:50:27 -0400
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - astoria.ccjclearline.com
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - crashcourse.ca
-X-Source: 
-X-Source-Args: 
-X-Source-Dir: 
+In-Reply-To: <CAKgNAkhhnC1+vdh7vTYKkngzxHccDwHH_aKF5wCNhga33BGhyQ@mail.gmail.com>
+References: <1333051320-30872-1-git-send-email-wad@chromium.org>
+ <1333051320-30872-2-git-send-email-wad@chromium.org> <20120406125517.77133b4e.akpm@linux-foundation.org>
+ <CAObL_7EYb62o=a0ekzcDx=0TuN55A7aTYhLJbMNu2r8F0V77EA@mail.gmail.com>
+ <20120406142824.61d8ca3b@lwn.net> <CAKgNAkhhnC1+vdh7vTYKkngzxHccDwHH_aKF5wCNhga33BGhyQ@mail.gmail.com>
+From: Andrew Lutomirski <luto@mit.edu>
+Date: Wed, 11 Apr 2012 17:50:04 -0700
+X-Google-Sender-Auth: oUtumn3thur0nqBLy1gZmJZJ9mk
+Message-ID: <CAObL_7HdaNwttY4Tqz_iysGnaB8rKrA07te-P5Mkq3kSayt0qg@mail.gmail.com>
+Subject: Re: [PATCH v17 01/15] Add PR_{GET,SET}_NO_NEW_PRIVS to prevent execve
+ from granting privs
+To: mtk.manpages@gmail.com
+Cc: Jonathan Corbet <corbet@lwn.net>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Will Drewry <wad@chromium.org>, linux-kernel@vger.kernel.org,
+        linux-security-module@vger.kernel.org, linux-arch@vger.kernel.org,
+        linux-doc@vger.kernel.org, kernel-hardening@lists.openwall.com,
+        netdev@vger.kernel.org, x86@kernel.org, arnd@arndb.de,
+        davem@davemloft.net, hpa@zytor.com, mingo@redhat.com, oleg@redhat.com,
+        peterz@infradead.org, rdunlap@xenotime.net, mcgrathr@chromium.org,
+        tglx@linutronix.de, eparis@redhat.com, serge.hallyn@canonical.com,
+        djm@mindrot.org, scarybeasts@gmail.com, indan@nul.nu,
+        pmoore@redhat.com, eric.dumazet@gmail.com, markus@chromium.org,
+        coreyb@linux.vnet.ibm.com, keescook@chromium.org, jmorris@namei.org,
+        Andy Lutomirski <luto@amacapital.net>, linux-man@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 11 Apr 2012, David Daney wrote:
-
-> On 04/11/2012 02:07 PM, Robert P. J. Day wrote:
-> >
-> >    it's been a while so i was thinking of firing up my scripts to
-> > peruse the source tree looking for oddities/inconsistencies/whatever
-> > (unless someone else is already doing that).
-> >
-> >    one example is looking for preprocessor tests of symbols that aren't
-> > defined in any Kconfig file, and i can focus on any part of the source
-> > tree.  for example, if i run that script against drivers/mmc, i get:
-> [...]
-> >
-> > > > > > > CAVIUM_OCTEON_NUM_PACKET_BUFFERS
-> > drivers/staging/octeon/ethernet-defines.h:36: *
-> > CONFIG_CAVIUM_OCTEON_NUM_PACKET_BUFFERS
-> > drivers/staging/octeon/ethernet.c:56:#if
-> > defined(CONFIG_CAVIUM_OCTEON_NUM_PACKET_BUFFERS) \
-> > drivers/staging/octeon/ethernet.c:57:	&&
-> > CONFIG_CAVIUM_OCTEON_NUM_PACKET_BUFFERS
-> > drivers/staging/octeon/ethernet.c:58:int num_packet_buffers =
-> > CONFIG_CAVIUM_OCTEON_NUM_PACKET_BUFFERS;
+On Wed, Apr 11, 2012 at 12:31 PM, Michael Kerrisk (man-pages)
+<mtk.manpages@gmail.com> wrote:
+> On Sat, Apr 7, 2012 at 8:28 AM, Jonathan Corbet <corbet@lwn.net> wrote:
+>> On Fri, 6 Apr 2012 13:01:17 -0700
+>> Andrew Lutomirski <luto@mit.edu> wrote:
+>>
+>>> This has been bugging me for awhile.  Is there any interest in moving
+>>> the manpages into the kernel source tree?  Then there could be a
+>>> general requirement that new APIs get documented when they're written.
+>>
+>> Man page (or other documentation) requirements for patch acceptance are a
+>> regular kernel summit feature.  People seem to think it's a good idea, but
+>> actual enforcement of such requirements always seems to be lacking.  Lots
+>> of people have kind of given up trying.  I don't really see that adding
+>> the man pages to the tree would help, but I could be wrong...
 >
-> I am aware of these and am working on fixing them.
+> I largely consider this (moving man pages to kernel.org) a technical
+> solution to what is fundamentally a social problem (developers
+> reluctant to write documentation), and doubt that the technical
+> solution would make much difference. I'd love to be proved wrong, but
+> the experiment would require significant start-up effort. (My
+> collected thoughts on this can be found here:
+> http://www.kernel.org/doc/man-pages/todo.html#migrate_to_kernel_source.
+> Note the alternative idea of patch tags mentioned at the end of that
+> text.)
+>
+> Unless, or until there's a paid maintainer, I don't expect things to
+> get significantly better than what they currently are. The quite
+> significant improvements in man-pages since 2004, when I became
+> maintainer were in small part due to the fact that I was for a short
+> period paid to do the work, but in much larger part due to a huge
+> private effort over those years which over the last couple of years is
+> no longer unsustainable for me (man-pages is in competition with
+> requirements for my attention from family, working life, and
+> (seriously!) seismic events),
 
-  sorry, i wasn't trying to pick on anyone, it was just a random
-example.
+Hrm.  Maybe someone could convince Andrew and Linus not to pull new
+syscalls or major ABI features unless the patchset includes full docs.
 
-rday
+Anyway, I'll write up a detailed description of PR_SET_NO_NEW_PRIVS,
+stick it in the changelog, and cc linux-doc.
 
--- 
-
-========================================================================
-Robert P. J. Day                                 Ottawa, Ontario, CANADA
-                        http://crashcourse.ca
-
-Twitter:                                       http://twitter.com/rpjday
-LinkedIn:                               http://ca.linkedin.com/in/rpjday
-========================================================================
+--Andy
