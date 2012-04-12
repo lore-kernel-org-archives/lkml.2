@@ -1,91 +1,493 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933649Ab2DLAIa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Apr 2012 20:08:30 -0400
-Received: from mail-pz0-f52.google.com ([209.85.210.52]:63303 "EHLO
-	mail-pz0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933537Ab2DKXOv (ORCPT
+	id S933699Ab2DLAIi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Apr 2012 20:08:38 -0400
+Received: from e34.co.us.ibm.com ([32.97.110.152]:50127 "EHLO
+	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933537Ab2DLAIc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Apr 2012 19:14:51 -0400
-Message-Id: <20120411231019.558439340@linuxfoundation.org>
-User-Agent: quilt/0.60-19.1
-Date: Wed, 11 Apr 2012 16:10:26 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Takashi Iwai <tiwai@suse.de>
-Subject: [ 08/78] ALSA: hda/realtek - Fix ADC assignment with a shared HP/Mic pin
-In-Reply-To: <20120411231102.GA6404@kroah.com>
+	Wed, 11 Apr 2012 20:08:32 -0400
+Subject: Re: [PATCH v3] Add security.* XATTR support for the UBIFS
+From: Mimi Zohar <zohar@linux.vnet.ibm.com>
+To: Subodh Nijsure <subodh.nijsure@gmail.com>
+Cc: linux-mtd@lists.infradead.org, Artem Bityutskiy <dedekind1@gmail.com>,
+        Adrian Hunter <adrian.hunter@intel.com>, linux-kernel@vger.kernel.org,
+        linux-security-module@vger.kernel.org,
+        Subodh Nijsure <snijsure@grid-net.com>
+Date: Wed, 11 Apr 2012 20:08:23 -0400
+In-Reply-To: <CALr9Q3aNxe6bE5HzM6dSJctKPKiOC+=1nZmYGWL5-Mye2yk8wQ@mail.gmail.com>
+References: <1334179707-31754-1-git-send-email-snijsure@grid-net.com>
+	 <1334186854.2153.12.camel@falcor>
+	 <CALr9Q3aNxe6bE5HzM6dSJctKPKiOC+=1nZmYGWL5-Mye2yk8wQ@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.0.3 (3.0.3-1.fc15) 
+Content-Transfer-Encoding: 7bit
+Message-ID: <1334189304.2153.21.camel@falcor>
+Mime-Version: 1.0
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12041200-1780-0000-0000-000004B0F205
+X-IBM-ISS-SpamDetectors: 
+X-IBM-ISS-DetailInfo: BY=3.00000266; HX=3.00000187; KW=3.00000007;
+ PH=3.00000001; SC=3.00000001; SDB=6.00130077; UDB=6.00030725; UTC=2012-04-12
+ 00:08:31
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.3-stable review patch.  If anyone has any objections, please let me know.
+On Wed, 2012-04-11 at 16:45 -0700, Subodh Nijsure wrote:
+> On Wed, Apr 11, 2012 at 4:27 PM, Mimi Zohar <zohar@linux.vnet.ibm.com> wrote:
+> > On Wed, 2012-04-11 at 14:28 -0700, subodh.nijsure@gmail.com wrote:
+> >> From: Subodh Nijsure <snijsure@grid-net.com>
+> >>
+> >> Also fix couple of bugs in UBIFS extended attribute length calculation.
+> >>
+> >> Changes in v3:
+> >>          Invoke ubifs_init_security only if CONFIG_UBIFS_FS_XATTR is defined.
+> >>          Invoke it before d_instantiate and check ubifs_init_security return
+> >>          code.
+> >
+> >> Changes in v2:
+> >>          Instead of just handling security.selinux extended attribute handle
+> >>          all security.* attributes.
+> >>
+> >> TESTING: Tested on  MX28 based platforms using Micron MT29F2G08ABAEAH4 NAND
+> >>          With these change we are able to label UBIFS filesystem with
+> >>          security.selinux and run system with selinux enabled.
+> >>          This change also allows one to set other security.* extended
+> >>          attributes, such as security.smack security.evm, security.ima
+> >>          Ran integck test on UBI filesystem.
+> >>
+> >> Signed-off-by: Subodh Nijsure <snijsure@grid-net.com>
+> >> ---
+> >>  fs/ubifs/dir.c     |   47 +++++++++++++++++
+> >>  fs/ubifs/file.c    |    6 ++
+> >>  fs/ubifs/journal.c |   12 +++-
+> >>  fs/ubifs/super.c   |    3 +
+> >>  fs/ubifs/ubifs.h   |    9 +++
+> >>  fs/ubifs/xattr.c   |  147 ++++++++++++++++++++++++++++++++++++++++++++++++----
+> >>  6 files changed, 210 insertions(+), 14 deletions(-)
+> >>
+> >> diff --git a/fs/ubifs/dir.c b/fs/ubifs/dir.c
+> >> index ec9f187..422bcec 100644
+> >> --- a/fs/ubifs/dir.c
+> >> +++ b/fs/ubifs/dir.c
+> >> @@ -292,6 +292,18 @@ static int ubifs_create(struct inode *dir, struct dentry *dentry, umode_t mode,
+> >>
+> >>       ubifs_release_budget(c, &req);
+> >>       insert_inode_hash(inode);
+> >> +
+> >> +#ifdef CONFIG_UBIFS_FS_XATTR
+> >> +
+> >> +     err = ubifs_init_security(dir, inode, &dentry->d_name);
+> >> +     if (err) {
+> >> +             ubifs_err("cannot initialize extended attribute, error %d",
+> >> +                       err);
+> >> +             goto out_cancel;
+> >> +     }
+> >> +
+> >> +#endif
+> >> +
+> >
+> > The preferred method for including code based on CONFIG options is to
+> > define a stub function in an include file.  #ifdef's in C code is
+> > frowned upon (refer to section 2.2 of Documentation/SubmittingPatches).
+> >
+> > thanks,
+> >
+> > Mimi
+> 
+> I can certainly change the code to follow that guideline, sorry I missed it...
+> 
+> There is other code in ubifs that uses #ifdef
+> CONFIG_UBIFS_FS_XATTR/#endif should I be changing that or expectation
+> is not to introduce new  #ifdef/#endif? And if its the prior should
+> that change come in as separate patch set?
+> 
+> BTW, would very much appreciate if someone can actually test this
+> patch with UBIFS on their hardware. I have posted a patch to
+> mtd-utils/integck  test program on linux-mtd mailing list.
+> 
+> Regards,
+> -Subodh
 
-------------------
+Definitely keep your patch separate from any other cleanup.   Most, if
+not all other filesystems, put the xattr code in a separate file.  The
+Makefile includes the file based on the CONFIG option.  Refer to
+fs/ext3|ext4/Makefile for an example.
 
-From: Takashi Iwai <tiwai@suse.de>
+thanks,
 
-commit 26acaf08556a3c64ebf8ea3654b51e6acbb0a26c upstream.
+Mimi
 
-The recent Realtek driver tries to assign an extra input via the
-headphone plug when only a single input source is found.  The code
-worked on Samsung Q1, but it broke ASUS 1015 where the mic is a
-digital-mic and only a specific ADC works.
-
-This patch fixes the assignment of ADC in the shared mic/hp case.
-Instead of assuming the single ADC at first, reduce the ADCs after
-trying to assign both mic and HP pins.
-
-Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=42973
-
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- sound/pci/hda/patch_realtek.c |   11 +++++++----
- 1 file changed, 7 insertions(+), 4 deletions(-)
-
---- a/sound/pci/hda/patch_realtek.c
-+++ b/sound/pci/hda/patch_realtek.c
-@@ -2709,9 +2709,6 @@ static int alc_auto_fill_adc_caps(struct
- 	int max_nums = ARRAY_SIZE(spec->private_adc_nids);
- 	int i, nums = 0;
- 
--	if (spec->shared_mic_hp)
--		max_nums = 1; /* no multi streams with the shared HP/mic */
--
- 	nid = codec->start_nid;
- 	for (i = 0; i < codec->num_nodes; i++, nid++) {
- 		hda_nid_t src;
-@@ -3723,6 +3720,7 @@ static void alc_remove_invalid_adc_nids(
- 	if (spec->dyn_adc_switch)
- 		return;
- 
-+ again:
- 	nums = 0;
- 	for (n = 0; n < spec->num_adc_nids; n++) {
- 		hda_nid_t cap = spec->private_capsrc_nids[n];
-@@ -3743,6 +3741,11 @@ static void alc_remove_invalid_adc_nids(
- 	if (!nums) {
- 		/* check whether ADC-switch is possible */
- 		if (!alc_check_dyn_adc_switch(codec)) {
-+			if (spec->shared_mic_hp) {
-+				spec->shared_mic_hp = 0;
-+				spec->private_imux[0].num_items = 1;
-+				goto again;
-+			}
- 			printk(KERN_WARNING "hda_codec: %s: no valid ADC found;"
- 			       " using fallback 0x%x\n",
- 			       codec->chip_name, spec->private_adc_nids[0]);
-@@ -3760,7 +3763,7 @@ static void alc_remove_invalid_adc_nids(
- 
- 	if (spec->auto_mic)
- 		alc_auto_mic_check_imux(codec); /* check auto-mic setups */
--	else if (spec->input_mux->num_items == 1)
-+	else if (spec->input_mux->num_items == 1 || spec->shared_mic_hp)
- 		spec->num_adc_nids = 1; /* reduce to a single ADC */
- }
- 
+> >>       d_instantiate(dentry, inode);
+> >>       return 0;
+> >>
+> >> @@ -753,6 +765,17 @@ static int ubifs_mkdir(struct inode *dir, struct dentry *dentry, umode_t mode)
+> >>       mutex_unlock(&dir_ui->ui_mutex);
+> >>
+> >>       ubifs_release_budget(c, &req);
+> >> +
+> >> +#ifdef CONFIG_UBIFS_FS_XATTR
+> >> +
+> >> +     err = ubifs_init_security(dir, inode, &dentry->d_name);
+> >> +     if (err) {
+> >> +             ubifs_err("cannot initialize extended attribute, error %d",
+> >> +                       err);
+> >> +             goto out_cancel;
+> >> +     }
+> >> +
+> >> +#endif
+> >>       d_instantiate(dentry, inode);
+> >>       return 0;
+> >>
+> >> @@ -830,6 +853,18 @@ static int ubifs_mknod(struct inode *dir, struct dentry *dentry,
+> >>
+> >>       ubifs_release_budget(c, &req);
+> >>       insert_inode_hash(inode);
+> >> +
+> >> +#ifdef CONFIG_UBIFS_FS_XATTR
+> >> +
+> >> +     err = ubifs_init_security(dir, inode, &dentry->d_name);
+> >> +     if (err) {
+> >> +             ubifs_err("cannot initialize extended attribute, error %d",
+> >> +                       err);
+> >> +             goto out_cancel;
+> >> +     }
+> >> +
+> >> +#endif
+> >> +
+> >>       d_instantiate(dentry, inode);
+> >>       return 0;
+> >>
+> >> @@ -906,6 +941,18 @@ static int ubifs_symlink(struct inode *dir, struct dentry *dentry,
+> >>
+> >>       ubifs_release_budget(c, &req);
+> >>       insert_inode_hash(inode);
+> >> +
+> >> +#ifdef CONFIG_UBIFS_FS_XATTR
+> >> +
+> >> +     err = ubifs_init_security(dir, inode, &dentry->d_name);
+> >> +     if (err) {
+> >> +             ubifs_err("cannot initialize extended attribute, error %d",
+> >> +                       err);
+> >> +             goto out_cancel;
+> >> +     }
+> >> +
+> >> +#endif
+> >> +
+> >>       d_instantiate(dentry, inode);
+> >>       return 0;
+> >>
+> >> diff --git a/fs/ubifs/file.c b/fs/ubifs/file.c
+> >> index 5c8f6dc..b8e9d66 100644
+> >> --- a/fs/ubifs/file.c
+> >> +++ b/fs/ubifs/file.c
+> >> @@ -1575,6 +1575,12 @@ const struct inode_operations ubifs_symlink_inode_operations = {
+> >>       .follow_link = ubifs_follow_link,
+> >>       .setattr     = ubifs_setattr,
+> >>       .getattr     = ubifs_getattr,
+> >> +#ifdef CONFIG_UBIFS_FS_XATTR
+> >> +     .setxattr    = ubifs_symlink_setxattr,
+> >> +     .getxattr    = ubifs_symlink_getxattr,
+> >> +     .listxattr   = ubifs_listxattr,
+> >> +     .removexattr = ubifs_removexattr,
+> >> +#endif
+> >>  };
+> >>
+> >>  const struct file_operations ubifs_file_operations = {
+> >> diff --git a/fs/ubifs/journal.c b/fs/ubifs/journal.c
+> >> index 2f438ab..725dc17 100644
+> >> --- a/fs/ubifs/journal.c
+> >> +++ b/fs/ubifs/journal.c
+> >> @@ -553,7 +553,8 @@ int ubifs_jnl_update(struct ubifs_info *c, const struct inode *dir,
+> >>
+> >>       dbg_jnl("ino %lu, dent '%.*s', data len %d in dir ino %lu",
+> >>               inode->i_ino, nm->len, nm->name, ui->data_len, dir->i_ino);
+> >> -     ubifs_assert(dir_ui->data_len == 0);
+> >> +     if (!xent)
+> >> +             ubifs_assert(dir_ui->data_len == 0);
+> >>       ubifs_assert(mutex_is_locked(&dir_ui->ui_mutex));
+> >>
+> >>       dlen = UBIFS_DENT_NODE_SZ + nm->len + 1;
+> >> @@ -572,7 +573,11 @@ int ubifs_jnl_update(struct ubifs_info *c, const struct inode *dir,
+> >>
+> >>       aligned_dlen = ALIGN(dlen, 8);
+> >>       aligned_ilen = ALIGN(ilen, 8);
+> >> -     len = aligned_dlen + aligned_ilen + UBIFS_INO_NODE_SZ;
+> >> +     /* Make sure to account for dir_ui+data_len in length calculation
+> >> +      * in case there is extended attribute.
+> >> +      */
+> >> +     len = aligned_dlen + aligned_ilen +
+> >> +           UBIFS_INO_NODE_SZ + dir_ui->data_len;
+> >>       dent = kmalloc(len, GFP_NOFS);
+> >>       if (!dent)
+> >>               return -ENOMEM;
+> >> @@ -649,7 +654,8 @@ int ubifs_jnl_update(struct ubifs_info *c, const struct inode *dir,
+> >>
+> >>       ino_key_init(c, &ino_key, dir->i_ino);
+> >>       ino_offs += aligned_ilen;
+> >> -     err = ubifs_tnc_add(c, &ino_key, lnum, ino_offs, UBIFS_INO_NODE_SZ);
+> >> +     err = ubifs_tnc_add(c, &ino_key, lnum, ino_offs,
+> >> +                         UBIFS_INO_NODE_SZ + dir_ui->data_len);
+> >>       if (err)
+> >>               goto out_ro;
+> >>
+> >> diff --git a/fs/ubifs/super.c b/fs/ubifs/super.c
+> >> index 76e4e05..c28ac04 100644
+> >> --- a/fs/ubifs/super.c
+> >> +++ b/fs/ubifs/super.c
+> >> @@ -2061,6 +2061,9 @@ static int ubifs_fill_super(struct super_block *sb, void *data, int silent)
+> >>       if (c->max_inode_sz > MAX_LFS_FILESIZE)
+> >>               sb->s_maxbytes = c->max_inode_sz = MAX_LFS_FILESIZE;
+> >>       sb->s_op = &ubifs_super_operations;
+> >> +#ifdef CONFIG_UBIFS_FS_XATTR
+> >> +     sb->s_xattr = ubifs_xattr_handlers;
+> >> +#endif
+> >>
+> >>       mutex_lock(&c->umount_mutex);
+> >>       err = mount_ubifs(c);
+> >> diff --git a/fs/ubifs/ubifs.h b/fs/ubifs/ubifs.h
+> >> index 93d59ac..60b57f7 100644
+> >> --- a/fs/ubifs/ubifs.h
+> >> +++ b/fs/ubifs/ubifs.h
+> >> @@ -36,6 +36,7 @@
+> >>  #include <linux/mtd/ubi.h>
+> >>  #include <linux/pagemap.h>
+> >>  #include <linux/backing-dev.h>
+> >> +#include <linux/security.h>
+> >>  #include "ubifs-media.h"
+> >>
+> >>  /* Version of this UBIFS implementation */
+> >> @@ -1454,6 +1455,7 @@ extern spinlock_t ubifs_infos_lock;
+> >>  extern atomic_long_t ubifs_clean_zn_cnt;
+> >>  extern struct kmem_cache *ubifs_inode_slab;
+> >>  extern const struct super_operations ubifs_super_operations;
+> >> +extern const struct xattr_handler *ubifs_xattr_handlers[];
+> >>  extern const struct address_space_operations ubifs_file_address_operations;
+> >>  extern const struct file_operations ubifs_file_operations;
+> >>  extern const struct inode_operations ubifs_file_inode_operations;
+> >> @@ -1736,10 +1738,17 @@ int ubifs_getattr(struct vfsmount *mnt, struct dentry *dentry,
+> >>                 struct kstat *stat);
+> >>
+> >>  /* xattr.c */
+> >> +
+> >>  int ubifs_setxattr(struct dentry *dentry, const char *name,
+> >>                  const void *value, size_t size, int flags);
+> >> +int ubifs_init_security(struct inode *dentry, struct inode *inode,
+> >> +                     const struct qstr *qstr);
+> >> +int ubifs_symlink_setxattr(struct dentry *dentry, const char *name,
+> >> +                        const void *value, size_t size, int flags);
+> >>  ssize_t ubifs_getxattr(struct dentry *dentry, const char *name, void *buf,
+> >>                      size_t size);
+> >> +ssize_t ubifs_symlink_getxattr(struct dentry *dentry, const char *name,
+> >> +                            void *buf, size_t size);
+> >>  ssize_t ubifs_listxattr(struct dentry *dentry, char *buffer, size_t size);
+> >>  int ubifs_removexattr(struct dentry *dentry, const char *name);
+> >>
+> >> diff --git a/fs/ubifs/xattr.c b/fs/ubifs/xattr.c
+> >> index 85b2722..c8be7cd 100644
+> >> --- a/fs/ubifs/xattr.c
+> >> +++ b/fs/ubifs/xattr.c
+> >> @@ -209,11 +209,11 @@ static int change_xattr(struct ubifs_info *c, struct inode *host,
+> >>               goto out_free;
+> >>       }
+> >>       inode->i_size = ui->ui_size = size;
+> >> -     ui->data_len = size;
+> >>
+> >>       mutex_lock(&host_ui->ui_mutex);
+> >>       host->i_ctime = ubifs_current_time(host);
+> >>       host_ui->xattr_size -= CALC_XATTR_BYTES(ui->data_len);
+> >> +     ui->data_len = size;
+> >>       host_ui->xattr_size += CALC_XATTR_BYTES(size);
+> >>
+> >>       /*
+> >> @@ -293,18 +293,16 @@ static struct inode *iget_xattr(struct ubifs_info *c, ino_t inum)
+> >>       return ERR_PTR(-EINVAL);
+> >>  }
+> >>
+> >> -int ubifs_setxattr(struct dentry *dentry, const char *name,
+> >> -                const void *value, size_t size, int flags)
+> >> +static int __ubifs_setxattr(struct inode *host, const char *name,
+> >> +                         const void *value, size_t size, int flags)
+> >>  {
+> >> -     struct inode *inode, *host = dentry->d_inode;
+> >> +     struct inode *inode;
+> >>       struct ubifs_info *c = host->i_sb->s_fs_info;
+> >>       struct qstr nm = { .name = name, .len = strlen(name) };
+> >>       struct ubifs_dent_node *xent;
+> >>       union ubifs_key key;
+> >>       int err, type;
+> >>
+> >> -     dbg_gen("xattr '%s', host ino %lu ('%.*s'), size %zd", name,
+> >> -             host->i_ino, dentry->d_name.len, dentry->d_name.name, size);
+> >>       ubifs_assert(mutex_is_locked(&host->i_mutex));
+> >>
+> >>       if (size > UBIFS_MAX_INO_DATA)
+> >> @@ -356,10 +354,29 @@ out_free:
+> >>       return err;
+> >>  }
+> >>
+> >> -ssize_t ubifs_getxattr(struct dentry *dentry, const char *name, void *buf,
+> >> -                    size_t size)
+> >> +int ubifs_symlink_setxattr(struct dentry *dentry, const char *name,
+> >> +                        const void *value, size_t size, int flags)
+> >>  {
+> >> -     struct inode *inode, *host = dentry->d_inode;
+> >> +     struct inode *host = dentry->d_inode;
+> >> +     dbg_gen("xattr '%s', host ino %lu ('%.*s'), size %zd", name,
+> >> +             host->i_ino, dentry->d_name.len, dentry->d_name.name, size);
+> >> +     return __ubifs_setxattr(host, name, value, size, flags);
+> >> +}
+> >> +
+> >> +int ubifs_setxattr(struct dentry *dentry, const char *name,
+> >> +                const void *value, size_t size, int flags)
+> >> +{
+> >> +     struct inode *host = dentry->d_inode;
+> >> +     dbg_gen("xattr '%s', host ino %lu ('%.*s'), size %zd", name,
+> >> +             host->i_ino, dentry->d_name.len, dentry->d_name.name, size);
+> >> +     return __ubifs_setxattr(host, name, value, size, flags);
+> >> +}
+> >> +
+> >> +static
+> >> +ssize_t __ubifs_getxattr(struct inode *host, const char *name, void *buf,
+> >> +                      size_t size)
+> >> +{
+> >> +     struct inode *inode;
+> >>       struct ubifs_info *c = host->i_sb->s_fs_info;
+> >>       struct qstr nm = { .name = name, .len = strlen(name) };
+> >>       struct ubifs_inode *ui;
+> >> @@ -367,8 +384,8 @@ ssize_t ubifs_getxattr(struct dentry *dentry, const char *name, void *buf,
+> >>       union ubifs_key key;
+> >>       int err;
+> >>
+> >> -     dbg_gen("xattr '%s', ino %lu ('%.*s'), buf size %zd", name,
+> >> -             host->i_ino, dentry->d_name.len, dentry->d_name.name, size);
+> >> +     dbg_gen("xattr '%s', ino %lu  buf size %zd", name,
+> >> +             host->i_ino, size);
+> >>
+> >>       err = check_namespace(&nm);
+> >>       if (err < 0)
+> >> @@ -416,6 +433,25 @@ out_unlock:
+> >>       return err;
+> >>  }
+> >>
+> >> +ssize_t ubifs_symlink_getxattr(struct dentry *dentry, const char *name,
+> >> +                            void *buf, size_t size)
+> >> +{
+> >> +     struct inode *host = dentry->d_inode;
+> >> +     dbg_gen("xattr '%s', ino %lu ('%.*s'), buf size %zd", name,
+> >> +             host->i_ino, dentry->d_name.len, dentry->d_name.name, size);
+> >> +     return __ubifs_getxattr(host, name, buf, size);
+> >> +}
+> >> +
+> >> +ssize_t ubifs_getxattr(struct dentry *dentry, const char *name, void *buf,
+> >> +                    size_t size)
+> >> +{
+> >> +     struct inode *host = dentry->d_inode;
+> >> +     dbg_gen("xattr '%s', ino %lu ('%.*s'), buf size %zd", name,
+> >> +             host->i_ino, dentry->d_name.len, dentry->d_name.name, size);
+> >> +     return __ubifs_getxattr(host, name, buf, size);
+> >> +}
+> >> +
+> >> +
+> >>  ssize_t ubifs_listxattr(struct dentry *dentry, char *buffer, size_t size)
+> >>  {
+> >>       union ubifs_key key;
+> >> @@ -568,3 +604,92 @@ out_free:
+> >>       kfree(xent);
+> >>       return err;
+> >>  }
+> >> +
+> >> +size_t
+> >> +ubifs_security_listxattr(struct dentry *d, char *list, size_t list_size,
+> >> +                      const char *name, size_t name_len, int flags)
+> >> +{
+> >> +     const int prefix_len = XATTR_SECURITY_PREFIX_LEN;
+> >> +     const size_t total_len = prefix_len + name_len + 1;
+> >> +     if (list && total_len <= list_size) {
+> >> +             memcpy(list, XATTR_SECURITY_PREFIX, prefix_len);
+> >> +             memcpy(list+prefix_len, name, name_len);
+> >> +             list[prefix_len + name_len] = '\0';
+> >> +     }
+> >> +     return total_len;
+> >> +}
+> >> +
+> >> +
+> >> +int ubifs_security_getxattr(struct dentry *d, const char *name,
+> >> +                         void *buffer, size_t size, int flags)
+> >> +{
+> >> +     if (strcmp(name, "") == 0)
+> >> +             return -EINVAL;
+> >> +     return __ubifs_getxattr(d->d_inode, name, buffer, size);
+> >> +}
+> >> +
+> >> +
+> >> +int ubifs_security_setxattr(struct dentry *d, const char *name,
+> >> +                         const void *value, size_t size,
+> >> +                         int flags, int handler_flags)
+> >> +{
+> >> +     if (strcmp(name, "") == 0)
+> >> +             return -EINVAL;
+> >> +     return __ubifs_setxattr(d->d_inode, name, value,
+> >> +                             size, flags);
+> >> +}
+> >> +
+> >> +struct xattr_handler ubifs_xattr_security_handler = {
+> >> +     .prefix = XATTR_SECURITY_PREFIX,
+> >> +     .list   = ubifs_security_listxattr,
+> >> +     .get    = ubifs_security_getxattr,
+> >> +     .set    = ubifs_security_setxattr,
+> >> +};
+> >> +
+> >> +const struct xattr_handler *ubifs_xattr_handlers[] = {
+> >> +     &ubifs_xattr_security_handler,
+> >> +     NULL
+> >> +};
+> >> +
+> >> +static int ubifs_initxattrs(struct inode *inode,
+> >> +                         const struct xattr *xattr_array, void *fs_info)
+> >> +{
+> >> +     const struct xattr *xattr;
+> >> +     char *name;
+> >> +     int err = 0;
+> >> +
+> >> +     for (xattr = xattr_array; xattr->name != NULL; xattr++) {
+> >> +             name = kmalloc(XATTR_SECURITY_PREFIX_LEN +
+> >> +                            strlen(xattr->name) + 1, GFP_NOFS);
+> >> +             if (!name) {
+> >> +                     err = -ENOMEM;
+> >> +                     break;
+> >> +             }
+> >> +             strcpy(name, XATTR_SECURITY_PREFIX);
+> >> +             strcpy(name + XATTR_SECURITY_PREFIX_LEN, xattr->name);
+> >> +
+> >> +             err = __ubifs_setxattr(inode, xattr->name, xattr->value,
+> >> +                            xattr->value_len, 0);
+> >> +             kfree(name);
+> >> +             if (err < 0)
+> >> +                     break;
+> >> +     }
+> >> +     return err;
+> >> +}
+> >> +
+> >> +int
+> >> +ubifs_init_security(struct inode *dentry, struct inode *inode,
+> >> +                const struct qstr *qstr)
+> >> +{
+> >> +     struct ubifs_inode *dir_ui = ubifs_inode(inode);
+> >> +     int err = 0;
+> >> +
+> >> +     mutex_lock(&dir_ui->ui_mutex);
+> >> +     mutex_lock(&inode->i_mutex);
+> >> +
+> >> +     err = security_inode_init_security(inode, dentry, qstr,
+> >> +                                        &ubifs_initxattrs, 0);
+> >> +     mutex_unlock(&inode->i_mutex);
+> >> +     mutex_unlock(&dir_ui->ui_mutex);
+> >> +     return err;
+> >> +}
+> >
+> >
+> 
 
 
