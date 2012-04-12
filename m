@@ -1,69 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932375Ab2DLLdn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Apr 2012 07:33:43 -0400
-Received: from smtp8.mail.ru ([94.100.176.53]:38848 "EHLO smtp8.mail.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752083Ab2DLLdm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Apr 2012 07:33:42 -0400
-From: Dmitry Artamonow <mad_soft@inbox.ru>
-To: Samuel Ortiz <sameo@linux.intel.com>
-Cc: Dmitry Artamonow <mad_soft@inbox.ru>,
-        Paul Parsons <lost.distance@yahoo.com>,
-        Philipp Zabel <philipp.zabel@gmail.com>, linux-kernel@vger.kernel.org
-Subject: [PATCH] mfd: asic3: fix asic3_gpio_to_irq
-Date: Thu, 12 Apr 2012 15:33:34 +0400
-Message-Id: <1334230414-1768-1-git-send-email-mad_soft@inbox.ru>
-X-Mailer: git-send-email 1.7.5.1.300.gc565c
-X-Spam: Not detected
-X-Mras: Ok
+	id S932743Ab2DLLff (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Apr 2012 07:35:35 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:65535 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754221Ab2DLLfe (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Apr 2012 07:35:34 -0400
+MIME-Version: 1.0
+In-Reply-To: <4F69EC88.2070006@redhat.com>
+References: <CA+pWcCZ28ByXuOu72FAAAQAPny3O0WDvd+vv1TryXw+9DMKwiA@mail.gmail.com>
+	<4F69EC88.2070006@redhat.com>
+Date: Thu, 12 Apr 2012 13:35:33 +0200
+Message-ID: <CA+pWcCaExwnth+KtFEyJhqODWbPsMA5O+toooF+mjueDg3GxuA@mail.gmail.com>
+Subject: Re: extreme system load [kswapd]
+From: =?ISO-8859-2?Q?Karol_=A9ebesta?= <sebesta.karol@gmail.com>
+To: Rik van Riel <riel@redhat.com>, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Assumption that irq numbers of asic3 gpios start at
-IRQ_BOARD_START is certainly wrong - driver may as well
-use any other base for its irqs (consider for example
-the imaginary case of two ASIC3 chips onboard)
+Hello Rik,
 
-Furthermore, some platforms even don't have IRQ_BOARD_START
-defined, so driver will fail to build on them:
--------------------------------------------------------
-drivers/mfd/asic3.c: In function 'asic3_gpio_to_irq':
-drivers/mfd/asic3.c:530: error: 'IRQ_BOARD_START' undeclared (first use in this function)
-drivers/mfd/asic3.c:530: error: (Each undeclared identifier is reported only once
-drivers/mfd/asic3.c:530: error: for each function it appears in.)
--------------------------------------------------------
+Thank you for answer, but now we are facing to another interesting
+issue on our redhat 5.6 server.
 
-Fix it by using irq_base from driver data.
+It seems that linux dropped almost all disk cache and now it trying to
+gain disk cache space by swapping. That is the reason why kswapd
+process loads the system.
 
-Signed-off-by: Dmitry Artamonow <mad_soft@inbox.ru>
----
- drivers/mfd/asic3.c |    4 +++-
- 1 files changed, 3 insertions(+), 1 deletions(-)
+### as you can see almost all RAM is free ( that is bad ) - some time
+ago there was all RAM cached in disk cache
 
-For reference: the build failure above can be reproduced
-for example when building kernel for some StrongARM
-machine, say:
- make h3600_defconfig
- make menuconfig  #enable CONFIG_MFD_ASIC3
- make
+[root@dusu0216 ~]# free -m
+             total       used       free     shared    buffers     cached
+Mem:        128861      29814      99047          0        108      20186
+-/+ buffers/cache:       9519     119342
+Swap:        81919      16614      65305
+[root@dusu0216 ~]#
 
-diff --git a/drivers/mfd/asic3.c b/drivers/mfd/asic3.c
-index 1895cf9..1582c3d 100644
---- a/drivers/mfd/asic3.c
-+++ b/drivers/mfd/asic3.c
-@@ -527,7 +527,9 @@ static void asic3_gpio_set(struct gpio_chip *chip,
- 
- static int asic3_gpio_to_irq(struct gpio_chip *chip, unsigned offset)
- {
--	return (offset < ASIC3_NUM_GPIOS) ? IRQ_BOARD_START + offset : -ENXIO;
-+	struct asic3 *asic = container_of(chip, struct asic3, gpio);
-+
-+	return (offset < ASIC3_NUM_GPIOS) ? asic->irq_base + offset : -ENXIO;
- }
- 
- static __init int asic3_gpio_probe(struct platform_device *pdev,
--- 
-1.7.5.1.300.gc565c
 
+Do you think that can be a problem with NUMA nodes or what can be the
+reason that Linux itself dropped almost all disk cache?
+
+Thank you.
+
+Regards,
+
+Karol Sebesta
