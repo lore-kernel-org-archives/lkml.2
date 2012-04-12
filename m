@@ -1,421 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751052Ab2DLEBw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Apr 2012 00:01:52 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:53843 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750710Ab2DLEBu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Apr 2012 00:01:50 -0400
-Date: Thu, 12 Apr 2012 06:00:59 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Andrew Morton <akpm@linux-foundation.org>,
-        David Howells <dhowells@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Cc: David Smith <dsmith@redhat.com>, "Frank Ch. Eigler" <fche@redhat.com>,
-        Larry Woodman <lwoodman@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>, Tejun Heo <tj@kernel.org>,
-        linux-kernel@vger.kernel.org
-Subject: hlist_for_each_entry && pos (Was: task_work_queue)
-Message-ID: <20120412040059.GA20462@redhat.com>
-References: <20120412024751.GA17561@redhat.com> <20120412024810.GA17984@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120412024810.GA17984@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1751179Ab2DLEC1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Apr 2012 00:02:27 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:56937 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750812Ab2DLECZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Apr 2012 00:02:25 -0400
+Date: Thu, 12 Apr 2012 14:02:06 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>,
+        <linux-arm-kernel@lists.infradead.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Chris Ball <cjb@laptop.org>, Sascha Hauer <s.hauer@pengutronix.de>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>
+Subject: linux-next: manual merge of the arm-soc tree with the mmc tree
+Message-Id: <20120412140206.704731281bf2ee7d93d582bf@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0beta6 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Thu__12_Apr_2012_14_02_06_+1000_IEfsyftxLM7A2z8R"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/12, Oleg Nesterov wrote:
->
-> +	hlist_for_each_entry(twork, pos, &task->task_works, hlist) {
+--Signature=_Thu__12_Apr_2012_14_02_06_+1000_IEfsyftxLM7A2z8R
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-This reminds me.
+Hi all,
 
-hlist_for_each_entry_*() do not need "pos", it can be
+Today's linux-next merge of the arm-soc tree got a conflict in
+drivers/mmc/host/Kconfig between commit a334b9550294 ("mmc: remove imxmmc
+driver") from the mmc tree and commits a21a92c0c787 ("mmc: Kconfig: remove
+choice between at91_mci and atmel-mci") and 62080f06de6b ("mmc:
+atmel-mci: remove the need for CONFIG_MMC_ATMELMCI_DMA") from the arm-soc
+tree.
 
-	#define hlist_for_each_entry(pos, head, member)					\
-		for (pos = (void*)(head)->first;					\
-		pos && ({ pos = hlist_entry((void*)pos, typeof(*pos), member); 1; });	\
-		pos = (void*)(pos)->member.next)
+I fixed it up (see below) and can carry the fix as necessary.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-The only problem, is there any possibility to change the callers
-somehow??? I even wrote the script which converts them all, but the
-patch is huge.
+diff --cc drivers/mmc/host/Kconfig
+index 9f1f5e2,4d15dff..0000000
+--- a/drivers/mmc/host/Kconfig
++++ b/drivers/mmc/host/Kconfig
+@@@ -295,18 -288,16 +288,6 @@@ config MMC_ATMELMC
+ =20
+  	  If unsure, say N.
+ =20
+- endchoice
+-=20
+- config MMC_ATMELMCI_DMA
+- 	bool "Atmel MCI DMA support"
+- 	depends on MMC_ATMELMCI && (AVR32 || ARCH_AT91SAM9G45) && DMA_ENGINE
+- 	help
+- 	  Say Y here to have the Atmel MCI driver use a DMA engine to
+- 	  do data transfers and thus increase the throughput and
+- 	  reduce the CPU utilization.
+-=20
+- 	  If unsure, say N.
+-=20
+ -config MMC_IMX
+ -	tristate "Motorola i.MX Multimedia Card Interface support"
+ -	depends on ARCH_MX1
+ -	help
+ -	  This selects the Motorola i.MX Multimedia card Interface.
+ -	  If you have a i.MX platform with a Multimedia Card slot,
+ -	  say Y or M here.
+ -
+ -	  If unsure, say N.
+ -
+  config MMC_MSM
+  	tristate "Qualcomm SDCC Controller Support"
+  	depends on MMC && ARCH_MSM
 
-Please see the old (2008-04-21) message I sent to lkml below, today
-the diffstat is even "worse":
+--Signature=_Thu__12_Apr_2012_14_02_06_+1000_IEfsyftxLM7A2z8R
+Content-Type: application/pgp-signature
 
-	152 files changed, 611 insertions(+), 906 deletions(-)
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
-and the patch size is 242k.
+iQIcBAEBCAAGBQJPhlO+AAoJEECxmPOUX5FEkogQAIwzdu2ZnmLycpnFwyXTy09q
+bEwrFwdTKnvlN9Oq6/PaWgau640/IWtosG0Hx1g5J+tFpRLAOB1YLXxRTkpkaZOm
+DHF1Vrp9DQXw4wEY8w+LDa0S1Wq1a0cal+w6Zd6BOti629GVSSPQvMffFIHogFhd
+Er94AuCSaDLU9bSjmdH3/jt3wV9p62nPGn2BNKdPntn8K972Lyw1/srHV7vF3GJP
+7+8urryjDyQ23Uj4eYcIfDORQLT9RwL1igb+Q5EMzy99boRsLQC+Q0IIIBbhAoT/
+IWyjz3+JoNC38OkaEg/2ej/De6hFXBHWNKQ9s6L+I3BgJ5Vi6mzHqjgpGWKBrggJ
+v1i13rEYZ9QQJfAFc9mBXajwwUz8NbDM2rBM0ua9hZqYpuqu125RaRnmvmpd7kMv
+6nN0sYPQT0g6LMWSSegMWo5wgCv3ZuT1d0cMYXkz2s1hTBmeREAPJXap16tMI+do
+PYwVFtR8SQOxNLqiO30xckJLEpQdigvViJhgjcT1fpA1d7FfdcWKq+Py7C02AwqO
+hBSds8bCfXphYQtruNhkttLeZ45k1DaPuVyOOnygy/864AYURaitbOnDkXzftWfw
+vL+pLtELojMFC0v0vhGfe3ENFPs/ViKWOi1fHep99Jn86CPu+YndmvVqRRHqPPUb
+eehmg9ilmPHeJ/x2q3Gg
+=jSNa
+-----END PGP SIGNATURE-----
 
-No? we can't?
-
--------------------------------------------------------------------------------
-[PATCH 0.01/1] hlist_for_each_entry_xxx: kill the "pos" argument
-
-(The actual patch is huge, 116K, I'll send it offline. This email contains
- the chunk for list.h only).
-
-COMPILE TESTED ONLY (make allyesconfig).
-
-All hlist_for_each_entry_xxx() macros require the "pos" argument, which is not
-actually needed and can be removed. See the changes in include/linux/list.h
-(note that hlist_for_each_entry_safe() now does prefetch() too).
-
-Now we should convert the callers somehow. Unfortunately, this is not always
-easy. Consider this code for example:
-
-	{
-		struct hlist_node *tmp1, *tmp2;
-
-		hlist_for_each_entry(pos, tmp1, head,mem)
-			do_something(pos);
-
-		hlist_for_each_entry(pos, tmp2, head,mem)
-			use(tmp2);
-	}
-
-The first hlist_for_each_entry is easy, but the second can't be converted
-automatically because "tmp2" is used.
-
-So, this patch
-
-	- copies these macros to "obsolete" __hlist_for_each_entry_xxx()
-
-	- changes hlist_for_each_entry_xxxx() to avoid the "struct hlist_nod*"
-
-	- converts the rest of the kernel to use either new or old macros
-
-For example, the patch for the code above is
-
-	 {
-	-	struct hlist_node *tmp1, *tmp2;
-	+	struct hlist_node *tmp2;
-	 
-	-	hlist_for_each_entry(pos, tmp1, head,mem)
-	+	hlist_for_each_entry(pos, head,mem)
-			do_something(pos);
-	 
-	-	hlist_for_each_entry(pos, tmp2, head,mem)
-	+	__hlist_for_each_entry(pos, tmp2, head,mem)
-			use(tmp2);
-	 }
-
-I believe it is very easy to convert the users of the obsolete macros, but
-this needs separate patches.
-
-Except for changes in include/linux/list.h the patch was generated by this
-script:
-
-	#!/usr/bin/perl -w
-	use strict;
-
-	my ($N_CNT, $O_CNT, @SRC, $CTXT, @CTXT);
-
-	sub say { printf STDERR "%4d: %s.\n", $., "@_" }
-
-	sub var { return $_->{$_[0]} || next for @CTXT }
-
-	sub parse_line
-	{
-		if (ord == ord '{') {
-			unshift @CTXT, $CTXT = {
-				-v_list => \@{$CTXT->{-v_list}},
-				-v_rexp =>    $CTXT->{-v_rexp},
-			};
-		}
-		elsif (ord == ord '}') {
-			say "WARN! unmatched '}'" unless $CTXT;
-
-			while (my ($v, $c) = each %$CTXT) {
-				my $trim = ord $v != ord '-' &&
-					!$c->{used} && $c->{trim} || next;
-
-				for my $tr (@$trim) {
-					substr($_, $tr->[1], 2, ''),
-					substr($_, $tr->[2], $tr->[3], '')
-						for $SRC[$tr->[0]];
-					$N_CNT++;
-				}
-
-				for ($SRC[$c->{decl}]) {
-					s/\* \s* $v \b (?: \s* , \s*)?//x || die;
-					s/,\s*(?=;)//; s/\bstruct\s+hlist_node\s*;//;
-					$_ = '' if /^\s*\\?\s*$/;
-				}
-			}
-			shift @CTXT; $CTXT = $CTXT[0];
-		}
-		elsif ($CTXT && /\b struct \s+ hlist_node \b ([^;]+)/x) {
-			my $v_list = $CTXT->{-v_list};
-			for (split /,/, $1) {
-				/^\s* \* (\w+) \s* \z/x or next;
-				$CTXT->{$1} = { decl => 0+@SRC };
-				push @$v_list, $1;
-			}
-			$CTXT->{-v_rexp} = qr/\b(@{[join '|', @$v_list]})\b/
-				if @$v_list;
-		}
-		elsif (/\b hlist_for_each_entry (?:_continue|_from|_safe|_rcu)? \b/xg) {
-			my $u = length $`;
-			if (/\G \s* \( .+? (, \s* (\w+) \s*)/x) {
-				my $tr = [0+@SRC, $u, $-[1], length $1];
-				if (my $v = var $2) { push @{$v->{trim}}, $tr; }
-			} else {
-				say "suspicious usage of hlist_for_each_entry_xxx()";
-			}
-			substr $_, $u, 0, '__';
-			$O_CNT++;
-		}
-		elsif (my $re = $CTXT && $CTXT->{-v_rexp}) {
-			var($1)->{used}++ while /$re/g;
-		}
-
-		push @SRC, $_;
-	}
-
-	sub diff_file
-	{
-		my $file = $_;
-		warn "====> $file ...\n";
-		($N_CNT, $O_CNT, @SRC, $CTXT, @CTXT) = 0;
-
-		open my $fd, '<', $file or die;
-		while (<$fd>) {
-			my $comm = s/(\/\*.*)//s && $1;
-			parse_line for split /([{}])/, $_, -1;
-			while ($comm) {
-				push @SRC, $comm;
-				$comm = $comm !~ /\*\// && <$fd>;
-			}
-		}
-
-		warn "WARN! unmatched '{'\n" if $CTXT;
-		return warn "WARN! not changed\n" unless $O_CNT;
-		warn "stat: $N_CNT from $O_CNT\n";
-
-		open my $diff, "|diff -up --label a/$file $file --label b/$file -";
-		print $diff @SRC;
-	}
-
-
-	@ARGV || die "usage: $0 path_to_kernel || list_of_files\n";
-
-	if (-d $ARGV[0]) {
-		chdir $ARGV[0] || die "ERR!! can't cd to $ARGV[0]\n";
-		warn "grep ...\n";
-		@ARGV = sort grep {
-			chomp; s/^\.\///; $_ ne 'include/linux/list.h';
-		} qx{grep --include='*.[ch]' -rle '\\bhlist_for_each_entry' .};
-	}
-
-	diff_file for @ARGV;
-
-(it open files readonly, so can be used safely)
-
-Signed-off-by: Oleg Nesterov <oleg@tv-sign.ru>
-
- arch/arm/kernel/kprobes.c            |    6 +--
- arch/ia64/kernel/kprobes.c           |    8 ++--
- arch/powerpc/kernel/kprobes.c        |    6 +--
- arch/s390/kernel/kprobes.c           |    6 +--
- arch/sparc64/kernel/kprobes.c        |    6 +--
- arch/sparc64/kernel/ldc.c            |    3 -
- arch/x86/kernel/kprobes.c            |    6 +--
- arch/x86/kvm/mmu.c                   |   20 ++++------
- block/cfq-iosched.c                  |    3 -
- block/elevator.c                     |    4 +-
- crypto/algapi.c                      |    6 +--
- drivers/infiniband/core/cma.c        |    3 -
- drivers/infiniband/core/fmr_pool.c   |    3 -
- drivers/md/raid5.c                   |    6 +--
- drivers/net/macvlan.c                |    6 +--
- drivers/net/pppol2tp.c               |    6 +--
- drivers/net/sunvnet.c                |    3 -
- drivers/net/wireless/zd1201.c        |    7 +--
- fs/dcache.c                          |    3 -
- fs/ecryptfs/messaging.c              |    5 +-
- fs/fat/inode.c                       |    3 -
- fs/gfs2/glock.c                      |    6 +--
- fs/lockd/host.c                      |   17 +++------
- fs/lockd/svcsubs.c                   |    7 +--
- fs/nfsd/nfscache.c                   |    3 -
- fs/ocfs2/dlm/dlmdebug.c              |    3 -
- fs/ocfs2/dlm/dlmrecovery.c           |    6 +--
- fs/xfs/xfs_inode.c                   |    3 -
- include/linux/pci.h                  |    3 -
- include/linux/pid.h                  |    3 -
- include/net/ax25.h                   |    4 +-
- include/net/inet_hashtables.h        |    2 -
- include/net/inet_timewait_sock.h     |    6 +--
- include/net/netrom.h                 |    8 ++--
- include/net/sctp/sctp.h              |    2 -
- include/net/sock.h                   |   10 ++---
- kernel/kprobes.c                     |   36 ++++++++-----------
- kernel/marker.c                      |   15 ++------
- kernel/pid.c                         |    3 -
- kernel/sched.c                       |    6 +--
- kernel/user.c                        |    3 -
- net/8021q/vlan.c                     |    3 -
- net/9p/error.c                       |    2 -
- net/atm/lec.c                        |   64 +++++++++++++++--------------------
- net/ax25/ax25_iface.c                |    3 -
- net/bridge/br_fdb.c                  |   17 +++------
- net/can/af_can.c                     |   21 +++++------
- net/can/proc.c                       |    6 +--
- net/decnet/dn_table.c                |   13 ++-----
- net/ipv4/fib_frontend.c              |   11 ++----
- net/ipv4/fib_hash.c                  |   30 ++++++----------
- net/ipv4/fib_semantics.c             |   23 ++++--------
- net/ipv4/fib_trie.c                  |   25 ++++---------
- net/ipv4/inet_fragment.c             |   10 ++---
- net/ipv4/netfilter/nf_nat_core.c     |    3 -
- net/ipv6/addrlabel.c                 |   14 +++----
- net/ipv6/ip6_fib.c                   |    9 +---
- net/ipv6/xfrm6_tunnel.c              |   12 ++----
- net/netfilter/nf_conntrack_core.c    |   18 +++------
- net/netfilter/nf_conntrack_expect.c  |   12 ++----
- net/netfilter/nf_conntrack_helper.c  |   14 +++----
- net/netfilter/nf_conntrack_netlink.c |   12 ++----
- net/netfilter/nfnetlink_log.c        |    7 +--
- net/netfilter/nfnetlink_queue.c      |   10 ++---
- net/netfilter/xt_RATEEST.c           |    3 -
- net/netfilter/xt_hashlimit.c         |   13 ++-----
- net/sched/sch_htb.c                  |    9 +---
- net/sunrpc/auth.c                    |    5 +-
- net/sunrpc/svcauth.c                 |    3 -
- net/tipc/name_table.c                |    8 +---
- net/xfrm/xfrm_policy.c               |   53 ++++++++++++----------------
- net/xfrm/xfrm_state.c                |   43 ++++++++---------------
- 72 files changed, 302 insertions(+), 439 deletions(-)
-
---- HL/include/linux/list.h~HLIST	2007-10-25 16:22:12.000000000 +0400
-+++ HL/include/linux/list.h	2008-04-21 17:17:44.000000000 +0400
-@@ -926,58 +926,54 @@ static inline void hlist_add_after_rcu(s
- 
- /**
-  * hlist_for_each_entry	- iterate over list of given type
-- * @tpos:	the type * to use as a loop cursor.
-- * @pos:	the &struct hlist_node to use as a loop cursor.
-+ * @pos:	the type * to use as a loop cursor.
-  * @head:	the head for your list.
-  * @member:	the name of the hlist_node within the struct.
-  */
--#define hlist_for_each_entry(tpos, pos, head, member)			 \
--	for (pos = (head)->first;					 \
--	     pos && ({ prefetch(pos->next); 1;}) &&			 \
--		({ tpos = hlist_entry(pos, typeof(*tpos), member); 1;}); \
--	     pos = pos->next)
-+#define hlist_for_each_entry(pos, head, member)				\
-+	for (pos = (void*)(head)->first; pos && ({			\
-+		prefetch(((struct hlist_node*)pos)->next);		\
-+		pos = hlist_entry((void*)pos, typeof(*pos), member); 1;	\
-+	     }); pos = (void*)(pos)->member.next)
- 
- /**
-  * hlist_for_each_entry_continue - iterate over a hlist continuing after current point
-- * @tpos:	the type * to use as a loop cursor.
-- * @pos:	the &struct hlist_node to use as a loop cursor.
-+ * @pos:	the type * to use as a loop cursor.
-  * @member:	the name of the hlist_node within the struct.
-  */
--#define hlist_for_each_entry_continue(tpos, pos, member)		 \
--	for (pos = (pos)->next;						 \
--	     pos && ({ prefetch(pos->next); 1;}) &&			 \
--		({ tpos = hlist_entry(pos, typeof(*tpos), member); 1;}); \
--	     pos = pos->next)
-+#define hlist_for_each_entry_continue(pos, member)			\
-+	for (; (pos = (void*)(pos)->member.next) && ({			\
-+		prefetch(((struct hlist_node*)pos)->next);		\
-+		pos = hlist_entry((void*)pos, typeof(*pos), member); 1;	\
-+	     }); )
- 
- /**
-  * hlist_for_each_entry_from - iterate over a hlist continuing from current point
-- * @tpos:	the type * to use as a loop cursor.
-- * @pos:	the &struct hlist_node to use as a loop cursor.
-+ * @pos:	the type * to use as a loop cursor.
-  * @member:	the name of the hlist_node within the struct.
-  */
--#define hlist_for_each_entry_from(tpos, pos, member)			 \
--	for (; pos && ({ prefetch(pos->next); 1;}) &&			 \
--		({ tpos = hlist_entry(pos, typeof(*tpos), member); 1;}); \
--	     pos = pos->next)
-+#define hlist_for_each_entry_from(pos, member)				\
-+	for (pos = pos ? (void*)&(pos)->member.next : pos; pos && ({	\
-+		prefetch(((struct hlist_node*)pos)->next);		\
-+		pos = hlist_entry((void*)pos, typeof(*pos), member); 1;	\
-+	     }); pos = (void*)(pos)->member.next)
- 
- /**
-  * hlist_for_each_entry_safe - iterate over list of given type safe against removal of list entry
-- * @tpos:	the type * to use as a loop cursor.
-- * @pos:	the &struct hlist_node to use as a loop cursor.
-+ * @pos:	the type * to use as a loop cursor.
-  * @n:		another &struct hlist_node to use as temporary storage
-  * @head:	the head for your list.
-  * @member:	the name of the hlist_node within the struct.
-  */
--#define hlist_for_each_entry_safe(tpos, pos, n, head, member) 		 \
--	for (pos = (head)->first;					 \
--	     pos && ({ n = pos->next; 1; }) && 				 \
--		({ tpos = hlist_entry(pos, typeof(*tpos), member); 1;}); \
--	     pos = n)
-+#define hlist_for_each_entry_safe(pos, n, head, member)			\
-+	for (pos = (void*)(head)->first; pos && ({			\
-+		n = ((struct hlist_node*)pos)->next; prefetch(n);	\
-+		pos = hlist_entry((void*)pos, typeof(*pos), member); 1;	\
-+	     }); pos = (void*)n)
- 
- /**
-  * hlist_for_each_entry_rcu - iterate over rcu list of given type
-- * @tpos:	the type * to use as a loop cursor.
-- * @pos:	the &struct hlist_node to use as a loop cursor.
-+ * @pos:	the type * to use as a loop cursor.
-  * @head:	the head for your list.
-  * @member:	the name of the hlist_node within the struct.
-  *
-@@ -985,7 +981,38 @@ static inline void hlist_add_after_rcu(s
-  * the _rcu list-mutation primitives such as hlist_add_head_rcu()
-  * as long as the traversal is guarded by rcu_read_lock().
-  */
--#define hlist_for_each_entry_rcu(tpos, pos, head, member)		 \
-+#define hlist_for_each_entry_rcu(pos, head, member)			\
-+	for (pos = (void*)(head)->first; rcu_dereference(pos) && ({	\
-+		prefetch(((struct hlist_node*)pos)->next);		\
-+		pos = hlist_entry((void*)pos, typeof(*pos), member); 1;	\
-+	     }); pos = (void*)(pos)->member.next)
-+
-+/* -------- Obsolete, to be removed soon, do not use -------- */
-+
-+#define __hlist_for_each_entry(tpos, pos, head, member)			 \
-+	for (pos = (head)->first;					 \
-+	     pos && ({ prefetch(pos->next); 1;}) &&			 \
-+		({ tpos = hlist_entry(pos, typeof(*tpos), member); 1;}); \
-+	     pos = pos->next)
-+
-+#define __hlist_for_each_entry_continue(tpos, pos, member)		 \
-+	for (pos = (pos)->next;						 \
-+	     pos && ({ prefetch(pos->next); 1;}) &&			 \
-+		({ tpos = hlist_entry(pos, typeof(*tpos), member); 1;}); \
-+	     pos = pos->next)
-+
-+#define __hlist_for_each_entry_from(tpos, pos, member)			 \
-+	for (; pos && ({ prefetch(pos->next); 1;}) &&			 \
-+		({ tpos = hlist_entry(pos, typeof(*tpos), member); 1;}); \
-+	     pos = pos->next)
-+
-+#define __hlist_for_each_entry_safe(tpos, pos, n, head, member) 	 \
-+	for (pos = (head)->first;					 \
-+	     pos && ({ n = pos->next; 1; }) && 				 \
-+		({ tpos = hlist_entry(pos, typeof(*tpos), member); 1;}); \
-+	     pos = n)
-+
-+#define __hlist_for_each_entry_rcu(tpos, pos, head, member)		 \
- 	for (pos = (head)->first;					 \
- 	     rcu_dereference(pos) && ({ prefetch(pos->next); 1;}) &&	 \
- 		({ tpos = hlist_entry(pos, typeof(*tpos), member); 1;}); \
-
+--Signature=_Thu__12_Apr_2012_14_02_06_+1000_IEfsyftxLM7A2z8R--
