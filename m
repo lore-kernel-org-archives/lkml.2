@@ -1,147 +1,170 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965375Ab2DLOzW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Apr 2012 10:55:22 -0400
-Received: from mail-qa0-f42.google.com ([209.85.216.42]:51452 "EHLO
-	mail-qa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965169Ab2DLOzU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Apr 2012 10:55:20 -0400
-Date: Thu, 12 Apr 2012 16:55:13 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Hugh Dickins <hughd@google.com>, Andrew Morton <akpm@linux-foundation.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Glauber Costa <glommer@parallels.com>, Tejun Heo <tj@kernel.org>,
-        Daniel Walsh <dwalsh@redhat.com>,
-        "Daniel P. Berrange" <berrange@redhat.com>,
-        Li Zefan <lizf@cn.fujitsu.com>, LKML <linux-kernel@vger.kernel.org>,
-        Cgroups <cgroups@vger.kernel.org>,
-        Containers <containers@lists.linux-foundation.org>
-Subject: Re: [RFD] Merge task counter into memcg
-Message-ID: <20120412145507.GC11455@somewhere.redhat.com>
-References: <20120411185715.GA4317@somewhere.redhat.com>
- <20120412010745.GE1787@cmpxchg.org>
+	id S965423Ab2DLOze (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Apr 2012 10:55:34 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:34399 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S965169Ab2DLOzc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Apr 2012 10:55:32 -0400
+Message-ID: <4F86ECD0.6060708@redhat.com>
+Date: Thu, 12 Apr 2012 11:55:12 -0300
+From: Mauro Carvalho Chehab <mchehab@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120329 Thunderbird/11.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120412010745.GE1787@cmpxchg.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: James Courtier-Dutton <james.dutton@gmail.com>
+CC: =?UTF-8?B?UsOpbWkgRGVuaXMtQ291cm1vbnQ=?= <remi@remlab.net>,
+        mchehab@infradead.org, linux-media@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Alan Cox <alan@lxorguk.ukuu.org.uk>
+Subject: Re: [RFC] [PATCH] v4l2: use unsigned rather than enums in ioctl()
+ structs
+References: <1333648371-24812-1-git-send-email-remi@remlab.net> <4F85B908.4070404@redhat.com> <201204112147.55348.remi@remlab.net> <CAAMvbhHviuwC0ik2ZY91ZgN4hZyqUbuk=qVcAOH0VYMhva4LeA@mail.gmail.com>
+In-Reply-To: <CAAMvbhHviuwC0ik2ZY91ZgN4hZyqUbuk=qVcAOH0VYMhva4LeA@mail.gmail.com>
+X-Enigmail-Version: 1.4
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 12, 2012 at 03:07:45AM +0200, Johannes Weiner wrote:
-> On Wed, Apr 11, 2012 at 08:57:20PM +0200, Frederic Weisbecker wrote:
-> > Hi,
-> > 
-> > While talking with Tejun about targetting the cgroup task counter subsystem
-> > for the next merge window, he suggested to check if this could be merged into
-> > the memcg subsystem rather than creating a new one cgroup subsystem just
-> > for task count limit purpose.
-> > 
-> > So I'm pinging you guys to seek your insight.
+Em 12-04-2012 05:04, James Courtier-Dutton escreveu:
+> 2012/4/11 Rémi Denis-Courmont <remi@remlab.net>:
+>>        Hello,
+>>
+>> Le mercredi 11 avril 2012 20:02:00 Mauro Carvalho Chehab, vous avez écrit :
+>>> Using unsigned instead of enum is not a good idea, from API POV, as
+>>> unsigned has different sizes on 32 bits and 64 bits.
+>>
+>> Fair enough. But then we can do that instead:
+>> typedef XXX __enum_t;
+>> where XXX is the unsigned integer with the right number of bits. Since Linux
+>> does not use short enums, this ought to work fine.
+>>
+>>> Yet, using enum was really a very bad idea, and, on all new stuff,
+>>> we're not accepting any new enum field.
+>>
+>> That is unfortunately not true. You do follow that rule for new fields to
+>> existing V4L2 structure. But you have been royally ignoring that rule when it
+>> comes to extending existing enumerations:
+>>
+>> linux-media does regularly add new enum values to existing enums. That is new
+>> stuff too, and every single time you do that, you do BREAK THE USERSPACE ABI.
+>> This is entirely unacceptable and against established kernel development
+>> policies.
+>>
+>> For instance, in Linux 3.1, V4L2_CTRL_TYPE_BITMASK was added. This broke
+>> userspace. And there are some pending patches adding more of the same thing...
+>> And V4L2_MEMORY_DMABUF will similarly break the user-to-kernel interface,
+>> which is yet worse.
+>>
 > 
-> I'm sorry you are given a runaround like this with that code.
+> I agree that breaking user-to-kernel interface is not advised.
+> We came across a similar problem some years ago with the ALSA sound
+> kernel drivers.
+> The solution we used was:
+> 1) If a change is likely to change the user-to-kernel API, add a new
+> IOCTL for it.
+> Then old userland software can use the old IOCTL, and new userland
+> software can use the new IOCTL.
 
-Nevermind, as long as I end up with something with most people are fine
-with.
+V4L2 API has about 80 ioctl's. Add compat code for most of them (as most have
+enum's) is not fun.
 
-> 
-> > I assume not everybody in the Cc list knows what the task counter subsystem
-> > is all about. So here is a summary: this is a cgroup subsystem (latest version
-> > in https://lwn.net/Articles/478631/) that keeps track of the number of tasks
-> > present in a cgroup. Hooks are set in task fork/exit and cgroup migration to
-> > maintain this accounting visible to a special tasks.usage file. The user can
-> > set a limit on the number of tasks by writing on the tasks.limit file.
-> > Further forks or cgroup migration are then rejected if the limit is exceeded.
-> > 
-> > This feature is especially useful to protect against forkbombs in containers.
-> > Or more generally to limit the resources on the number of tasks on a cgroup
-> > as it involves some kernel memory allocation.
-> 
-> You could also twist this around and argue the same for cpu usage and
-> make it part of the cpu cgroup, but it doesn't really fit in either
-> subsystem, IMO.
+Also, the issue is not that trivial. Just to give you one example:
 
-Ok.
+struct v4l2_pix_format {
+        __u32                   width;
+       	__u32                   height;
+        __u32                   pixelformat;
+        enum v4l2_field         field;
+        __u32                   bytesperline;   /* for padding, zero if unused */
+        __u32                   sizeimage;
+        enum v4l2_colorspace    colorspace;
+       	__u32                   priv;           /* private data, depends on pixelformat */
+};
 
-> 
-> > Now the dilemna is how to implement it?
-> > 
-> > 1) As a standalone subsystem, as it stands currently (https://lwn.net/Articles/478631/)
-> 
-> What was wrong with that again?
 
-Nothing. Tejun and I just wanted to do a last check to see if we are not
-missing an existing interface/subsys where it would potentially fit.
+This struct has 2 enums, and it is used by a couple structs, like this one:
 
-> 
-> > 2) As a feature in memcg, part of the memory.kmem.* files. This makes sense
-> > because this is about kernel memory allocation limitation. We could have a
-> > memory.kmem.tasks.count
-> > 
-> > My personal opinion is that the task counter brings some overhead: a charge
-> > across the whole hierarchy at every fork, and the mirrored uncharge on task exit.
-> > And this overhead happens even in the off-case (when the task counter susbsystem
-> > is mounted but the limit is the default: ULLONG_MAX).
-> 
-> 3) Make it an integral part of cgroups, because keeping track of tasks
-> in them already is, so it would be a more natural approach than
-> bolting it onto the memory controller.
+struct v4l2_framebuffer {
+        __u32                   capability;
+       	__u32                   flags;
+        void                    *base;
+       	struct v4l2_pix_format  fmt;
+};
 
-(Adding Kosaki in Cc because he proposed me the same at the collab
-summit).
+This struct is used by a couple ioctls:
 
-Yeah. But keeping track of tasks is not unconditional in cgroups. It
-triggers only after the first call to cgroup_iter_start(). It seems
-we've tried hard to keep the check for this lockless. The end result
-is that we account new tasks in cgroup_post_fork(): after the task is
-added on the tasklist.
+#define VIDIOC_G_FBUF            _IOR('V', 10, struct v4l2_framebuffer)
+#define VIDIOC_S_FBUF            _IOW('V', 11, struct v4l2_framebuffer)
 
-If we want to use the task tracking for counting purpose on top of
-which we can cancel a fork, we need to move it before the task is added
-to the tasklist. Because afterward it can't be cancelled anymore.
+The better is to really replace "enum" by an integer (__u32?) at the structs,
+but this will break existing apps.
 
-Doing this means that we can't do the task tracking conditionally
-anymore.
+One alternative would be to fork this header and add a compat layer
+that would print a WARN_ONCE message, if ever reached, asking the user
+to re-compile the application against the new header. 
 
-That said, this lockless off-case is an issue on some other areas.
-Like this race in the cgroup freezer: https://lkml.org/lkml/2012/3/8/69
+We did that strategy in the past, appending _OLD to the legacy api ioctl's.
 
-So for now doing this in the cgroup core involves a real overhead even
-in the off-case.
+> 2) Add an version IOCTL that returns the current API level, so that
+> the app can be written to support more than one API interface,
+> depending on which kernel it is running on. The version IOCTL simply
+> returns an u32 value. This is a consistent part of the user-kernel API
+> that will never change.
 
-> 
-> But this has the same overhead.  And even if this would end up being a
-> better idea, we could still do this after merging it as a separate
-> controller as long as we maintain the interface.
+There's one ioctl that already provides the API level, plus other info.
+This ioctl doesn't contain any enum, so it is backward compatible.
 
-Yeah indeed.
+> 3) Add "depreciated" compiler warnings to all the old API IOCTL calls,
+> so app developers know they should be working to update their apps.
 
-> 
-> > So if we choose the second solution, this overhead will be added unconditionally
-> > to memcg.
-> > But I don't expect every users of memcg will need the task counter. So perhaps
-> > the overhead should be kept in its own separate subsystem.
-> > 
-> > OTOH memory.kmem.* interface would have be a good fit.
-> > 
-> > What do you think?
-> 
-> Instead of integrating it task-wise, could the problem be solved by
-> accounting the kernel stack to kmem?  And then have a kmem limit,
-> which we already want anway?
+The issue here is with binaries compiled against the old headers. So, this
+won't work.
 
-I don't know how the kernel stack is allocated for tasks. Do you mean
-that we allocate a chunck of it for each new task and we could rely
-on that?
+> 4) After a few years, remove the old IOCTLs.
+> 5) Use "uint32_t" and "uint64_t" types for all IOCTL calls, and not
+> "unsigned int" or "unsigned long int".
 
-> After all, we would only restrict the number of tasks for the
-> resources they require
+No ioctls (well, except for 2 deprecated ones VIDIOC_G_JPEGCOMP/VIDIOC_S_JPEGCOMP)
+are using __u8/__u32/__u64 for integers. The only issue there is with enum's.
 
-It depends if the kernel stack can have other kind of "consumer".
+> I.e. All structures passed in IOCTLs use fixed bit sized parameters
+> for everything except of course pointers. Pointers depend on
+> architecture.
+> 6) Add a #if #endif around the old API, so a user compiling their own
+> kernel can decide if the old API exists or not. User might want to do
+> this for security reasons.
 
->, not to only allow an arbitrary number of tasks
-> (unless one wants to sell Windows 7 Starter style containers, in which
-> case one can go play with oneself out of tree as far as I'm concerned)
+Add an #if block there will make the header very hard to deal with, as this
+is already complex enough without it. The V4L2 API header has 2420 lines.
+Such #if blocks will almost duplicate the header size.
+
+I can see only two viable fixes for it:
+
+1) add a typedef for the enum, using the sizeof(enum) in order to select the
+size of the used integer.
+
+Pros:
+	- Patch is easy to write/easy to review;
+	- Won't change the struct size, so applications compiled without
+	  strong gcc optimization won't break;
+Cons:
+	- It will add a typedef, with is ugly;
+	- struct size on 32 bits will be different thant he size on 64 bits
+	  (not really an issue, as v4l2-compat32 will handle that;
+	- v4l2-compat32 code may require changes.
+
+2) just replace it by a 32 bits integer.
+
+Pros:
+	- no typedefs;
+	- struct size won't change between 32/64 bits (except when they also
+	  have pointers);
+Cons:
+	- will break ABI. So, a compat code is required;
+	- will require a "videodev2.h" fork for the legacy API with the enum's;
+	- will require a compat code to convert from enum into integer and
+	  vice-versa.
+
+Comments/Votes?
+Mauro
