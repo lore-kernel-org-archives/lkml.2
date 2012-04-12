@@ -1,94 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965190Ab2DLOqd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Apr 2012 10:46:33 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:59300 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757375Ab2DLOqa (ORCPT
+	id S965222Ab2DLOsj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Apr 2012 10:48:39 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:36177 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S964991Ab2DLOsi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Apr 2012 10:46:30 -0400
-Date: Thu, 12 Apr 2012 07:46:26 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Felipe Contreras <felipe.contreras@gmail.com>
-Cc: Sergio Correia <lists@uece.net>, linux-kernel@vger.kernel.org,
-        stable@vger.kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        linux-wireless Mailing List <linux-wireless@vger.kernel.org>,
-        Sujith Manoharan <c_manoha@qca.qualcomm.com>,
-        "ath9k-devel@lists.ath9k.org" <ath9k-devel@venema.h4ckr.net>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: Re: [ 00/78] 3.3.2-stable review
-Message-ID: <20120412144626.GA14868@kroah.com>
-References: <20120411231102.GA6404@kroah.com>
- <CAJyhjX2KrfSJW64PJMTHou9zSojsfA1iNT-WahinfMBce_B=BA@mail.gmail.com>
- <20120412002927.GA23167@kroah.com>
- <CAMP44s3Jh-t07A+i82qbAMQyEN0oWTmKk5BJcst942gFdD0=VA@mail.gmail.com>
- <20120412011313.GA23764@kroah.com>
- <CAMP44s2q+bQE3-zsX4bs=sQDt4jf8eE5bwZ8V88UjodjRyAjog@mail.gmail.com>
+	Thu, 12 Apr 2012 10:48:38 -0400
+Date: Thu, 12 Apr 2012 15:48:33 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Axel Lin <axel.lin@gmail.com>
+Cc: linux-kernel@vger.kernel.org, Dan Carpenter <dan.carpenter@oracle.com>,
+        Liam Girdwood <lrg@ti.com>
+Subject: Re: regulator: core: Don't dereference config->dev before NULL
+ checking for config
+Message-ID: <20120412144830.GA3181@opensource.wolfsonmicro.com>
+References: <1334208502.15182.0.camel@phoenix>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="EeQfGwPcQSOJBaQU"
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CAMP44s2q+bQE3-zsX4bs=sQDt4jf8eE5bwZ8V88UjodjRyAjog@mail.gmail.com>
+In-Reply-To: <1334208502.15182.0.camel@phoenix>
+X-Cookie: Your present plans will be successful.
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 12, 2012 at 04:32:40PM +0300, Felipe Contreras wrote:
-> On Thu, Apr 12, 2012 at 4:13 AM, Greg KH <gregkh@linuxfoundation.org> wrote:
-> > On Thu, Apr 12, 2012 at 04:03:59AM +0300, Felipe Contreras wrote:
-> >> On Thu, Apr 12, 2012 at 3:29 AM, Greg KH <gregkh@linuxfoundation.org> wrote:
-> >> > On Wed, Apr 11, 2012 at 07:59:14PM -0400, Sergio Correia wrote:
-> >> >> Hello Greg,
-> >> >>
-> >> >>
-> >> >> On Wed, Apr 11, 2012 at 7:11 PM, Greg KH <gregkh@linuxfoundation.org> wrote:
-> >> >> > This is the start of the stable review cycle for the 3.3.2 release.
-> >> >> > There are 78 patches in this series, all will be posted as a response
-> >> >> > to this one.  If anyone has any issues with these being applied, please
-> >> >> > let me know.
-> >> >> >
-> >> >> > Responses should be made by Fri Apr 13 23:10:16 UTC 2012.
-> >> >> > Anything received after that time might be too late.
-> >> >> >
-> >> >>
-> >> >> is there any chance for this one to be included in this review cycle?
-> >> >>
-> >> >> http://www.spinics.net/lists/linux-wireless/msg87999.html
-> >>
-> >> I was going to ask for exactly the same thing. My system is completely
-> >> unusable without this patch; not only does the network doesn't work,
-> >> but quite often the kernel is stuck consuming 100% of the CPU.
-> >>
-> >> > Have you read Documentation/stable_kernel_rules.txt?  Based on that, I
-> >> > don't think it can, yet, right?
-> >>
-> >> Why not? This patch makes the code go back to a previous state, it is
-> >> obviously more stable than the current state, and the code already
-> >> exists in Linus's tree (in previous releases).
-> >
-> > It does?  What is the git commit id of the patch?  Based in the email
-> > above, I assumed it had not made it to Linus's tree already.
-> 
-> It's a revert of c1afdaff90538ef085b756454f12b29575411214, so so just
-> take a look at the code in c1afdaff90538ef085b756454f12b29575411214^.
-> 
-> >> But hey, I guess it's OK that 3.3.x is stuck in and endless loop right
-> >> after booting, because rules are more important than fixing obvious
-> >> breakage.
-> >
-> > What rule did you think I was saying this was not acceptable for?
-> 
-> The fact that the patch as not been applied/reviewed/accepted upstream.
-> 
-> Personally I don't see what is the problem with reverts; we already
-> know the previous code was working. Sure, in theory it might behave
-> different due to other changes, but that doesn't seem to be the case
-> here, plus, it can't be worst than the current situation of staying in
-> an endless loop.
 
-A revert is the same as a patch.  It needs to be in Linus's tree before
-I can add it to the stable releases.
+--EeQfGwPcQSOJBaQU
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-greg k-h
+On Thu, Apr 12, 2012 at 01:28:22PM +0800, Axel Lin wrote:
+> Reported-by: Dan Carpenter <dan.carpenter@oracle.com>
+> Signed-off-by: Axel Lin <axel.lin@gmail.com>
+
+Already fixed.
+
+--EeQfGwPcQSOJBaQU
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIcBAEBAgAGBQJPhusQAAoJEBus8iNuMP3dOjgQAIjnavwo7oKfb8gcNJfN2HIQ
+CUT2liSwmd5kHDD9HxB0UwEEerUDNbqxttowpd8Slmeocn3dOdUGdAn5b5Bfiloi
+z4hkPQD8fQMAVRyK7iwNOibkiYriZ5SorqKtSIrtrAPvHn0ZMArKy2jGe94MXzGt
+NQOqdONHHfOob3KOJHi+/8uLWavwyq5M7fVzExAHfe+tduISXYqwUyDMchlKGnNG
+v5cAGCDfyJgntPjE+SsL2u1YgtA35hmOYVS27lzWEvLGclr1w8NryTjAZe1Gr3Oe
+ikXKIkWEiEk+m3YLVlADFaKHKTVWDIFOZ/3ohxvlfp+DSJWUN/F8A9yP6mA4pCJH
+lD8L3fNCT8v4dA9MbIJolxZTJdhjlajH/Q4A9s5VPHB21LyHwPYotPdG+SEhwCqR
+G9/VT6yn8FdVIsxzh7PdsqolYk9yr6I5uOaElzw7TlmfO2Kgru0s2GVgzmwRl4jT
+foqRXjEBOY5rLGOSX/NGsh7G7lp6ixY+4feCciv4GG+E29PZcB9idrmYYrO+cr3D
+RF1/96tXwltZRLUrTnzb6WknEo81z99GemFUrsmwScczeE3hr1A94+96lakJfY+U
+pn1LCwP1/W/SkigTyC+VK98bydiWdIs+nnlvzL8FT+JWj8l4Tp8tkXg2n8AoknPy
+LXgw5s6jsw3p+/GUZdUQ
+=TV6j
+-----END PGP SIGNATURE-----
+
+--EeQfGwPcQSOJBaQU--
