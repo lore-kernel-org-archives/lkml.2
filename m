@@ -1,103 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761993Ab2DLGkt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Apr 2012 02:40:49 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:40079 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757409Ab2DLGks (ORCPT
+	id S1762008Ab2DLGn1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Apr 2012 02:43:27 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:58420 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1761996Ab2DLGnZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Apr 2012 02:40:48 -0400
-Date: Wed, 11 Apr 2012 23:40:26 -0700 (PDT)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hugh@eggly.anvils
-To: Richard Weinberger <richard@nod.at>
-cc: Konstantin Khlebnikov <khlebnikov@openvz.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "paul.gortmaker@windriver.com" <paul.gortmaker@windriver.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: swapoff() runs forever
-In-Reply-To: <4F860F17.2090400@nod.at>
-Message-ID: <alpine.LSU.2.00.1204112241510.28009@eggly.anvils>
-References: <4F81F564.3020904@nod.at> <4F82752A.6020206@openvz.org> <4F82B6ED.2010500@nod.at> <alpine.LSU.2.00.1204091123380.1430@eggly.anvils> <4F860F17.2090400@nod.at>
-User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
+	Thu, 12 Apr 2012 02:43:25 -0400
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+From: Grant Likely <grant.likely@secretlab.ca>
+Date: Thu, 12 Apr 2012 00:43:04 -0600
+X-Google-Sender-Auth: NMqEv92GbhFqpiV-udS9qFznJyM
+Message-ID: <CACxGe6uNFv3djyvZCKsPG4Ret=FWPKQ2QivZbUVYM9g6vLvg2A@mail.gmail.com>
+Subject: [GIT PULL] irq_domain bug fixes against v3.4-rc2
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linuxppc-dev@lists.ozlabs.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 12 Apr 2012, Richard Weinberger wrote:
-> Am 09.04.2012 20:40, schrieb Hugh Dickins:
-> > I've not seen any such issue in recent months (or years), but
-> > I've not been using UML either.  The most likely cause that springs
-> > to mind would be corruption of the vmalloc'ed swap map: that would
-> > be very likely to cause such a hang.
-> 
-> It does not look like a swap map corruption.
-> If I restart most user space processes swapoff() terminates fine.
+Hi Linus,
 
-Right, thanks, that's very useful info.
+Here are the irq_domain bug fixes that need to be merged into v3.4.
+This branch fixes PowerPC and MIPS boot failures.  Please pull.
 
-> Maybe it is a refcounting problem?
+g.
 
-You may prove to be correct; but since killing and restarting
-processes fixes it up without (I presume) issuing warnings,
-it doesn't sound like a refcounting problem to me.
+The following changes since commit 0034102808e0dbbf3a2394b82b1bb40b5778de9e:
 
-> 
-> > You say "recent Linux kernels": I wonder what "recent" means.
-> > Is this something you can reproduce quickly and reliably enough
-> > to do a bisection upon?
-> > 
-> 
-> I can reproduce the issue on any UML kernel.
-> The oldest I've tested was 2.6.20.
-> Therefore, bug was not introduced by me. B-)
+  Linux 3.4-rc2 (2012-04-07 18:30:41 -0700)
 
-More useful info, thank you.
+are available in the git repository at:
 
-I think I've spotted two problems in the UML swp_entry_t handling;
-but checking if I'm right, and if they're relevant, and how to fix them,
-I'll leave to you - it's years since I tried UML and I remember 0.
+  git://git.secretlab.ca/git/linux-2.6 tags/irqdomain-for-linus
 
-One, likely to be your problem.  Take a look at unuse_pte_range() in
-mm/swapfile.c, where it searches the page table for the swp_pte it's
-trying to "unuse".  And take a look at set_pte() in
-arch/um/include/asm/pgtable.h, which appears to add a mysterious
-_PAGE_NEWPAGE bit into the page table entry.  And UML doesn't provide
-an alternative to generic pte_same() in include/asm-genric/pgtable.h.
+for you to fetch changes up to 6fa6c8e25e95bdc73e92e4c96b8e3299169b616e:
 
-My guess is that the _NEWPAGE bit prevents swapoff from matching pte
-against swap entry in all or some cases (I didn't look to see if
-_NEWPAGE is sometimes cleared later).
+  irq_domain: Move irq_virq_count into NOMAP revmap (2012-04-12 00:37:48 -0600)
 
-Probably a good fix to try would be providing a UML pte_same() which
-takes that into account; but I don't know what conditionals it should
-contain, and whether it would become too inefficient.  Or, if _NEWPAGE
-is always set in a swap pte, then swp_entry_to_pte() needs to set it.
+----------------------------------------------------------------
+irqdomain bug fixes for v3.4-rc3
 
-(A word of warning if you're unfamiliar with swap entries: there's the
-kernel's internal representation swp_entry_t, which has offset in the
-low-order and type in the high-order, for efficient use with radix_tree
-- see include/linux/swapops.h; and then there's the arch-dependent
-representation as a page table entry, which rearranges the bits so
-as not to be confused with a good present page table entry, and
-traditionally has type on the lower side of offset.)
+This branch fixes a bug in irq_create_mapping() where an error return
+from irq_alloc_desc_from() gets ignored.  It also removes irq_virq_count
+to fix a bug on powerpc where the irqdomain code does not find irqs
+allocated above the CONFIG_NR_IRQS boundary.  The remaining patches get
+rid of an completely pointless export and fix some minor bugs in the
+irqdomain debug output.
 
-The other thing I noticed first, probably not relevant to the bug you're
-seeing since I think you'd have mentioned if you had two swapfiles; but
-the two or more swapfile case looks very broken to me.  _PAGE_PROTNONE is
-0x010 but __swp_type(x) is (((x).val >> 4) & 0x3f): unless I'm confused,
-a swap entry of type 1 will look just like a PROT_NONE pte.
+----------------------------------------------------------------
+David Daney (1):
+      irq/irq_domain: Quit ignoring error returns from irq_alloc_desc_from().
 
-Or maybe that's resolved by the _PAGE_NEWPAGE and _PAGE_NEWPROT bits,
-I didn't spend time working out what they're up to.
+Grant Likely (3):
+      irq: Kill pointless irqd_to_hw export
+      irqdomain: Fix debugfs formatting
+      irq_domain: Move irq_virq_count into NOMAP revmap
 
-include/linux/swap.h does not allow MAX_SWAPFILES to exceed 32,
-so you can easily change __swp_type(x) to use 5 and 0x1f instead
-(with 5 instead of 4 in __swp_entry too of course).  Though it doesn't
-cause error, I wonder where the 11 in __swp_offset and __swp_entry
-comes from: I think you can support larger swap by making it 10.
+Mika Westerberg (1):
+      irq_domain: correct the debugfs file name
 
-Hugh
+ arch/c6x/include/asm/irq.h                   |    4 --
+ arch/c6x/kernel/irq.c                        |   13 -------
+ arch/powerpc/include/asm/irq.h               |    2 -
+ arch/powerpc/kernel/irq.c                    |    6 ---
+ arch/powerpc/platforms/cell/axon_msi.c       |    2 +-
+ arch/powerpc/platforms/cell/beat_interrupt.c |    2 +-
+ arch/powerpc/platforms/powermac/smp.c        |    2 +-
+ arch/powerpc/platforms/ps3/interrupt.c       |    3 +-
+ include/linux/irq.h                          |    5 +++
+ include/linux/irqdomain.h                    |   12 ++----
+ include/linux/types.h                        |    6 +++
+ kernel/irq/Kconfig                           |    2 +-
+ kernel/irq/irqdomain.c                       |   46 +++++++++-----------------
+ 13 files changed, 36 insertions(+), 69 deletions(-)
+
+
+-- 
+Grant Likely, B.Sc., P.Eng.
+Secret Lab Technologies Ltd.
