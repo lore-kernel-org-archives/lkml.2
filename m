@@ -1,37 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758048Ab2DLILk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Apr 2012 04:11:40 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:32784 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751357Ab2DLILd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Apr 2012 04:11:33 -0400
+	id S1758434Ab2DLIPy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Apr 2012 04:15:54 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:62691 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753487Ab2DLIPt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Apr 2012 04:15:49 -0400
+Subject: [PATCH] 8139cp: set intr mask after its handler is registered
+To: netdev@vger.kernel.org, davem@davemloft.net, linux-kernel@vger.kernel.org
+From: Jason Wang <jasowang@redhat.com>
+Date: Thu, 12 Apr 2012 16:10:54 +0800
+Message-ID: <20120412081053.25774.41676.stgit@amd-6168-8-1.englab.nay.redhat.com>
+User-Agent: StGit/0.16-1-g60c4
 MIME-Version: 1.0
-In-Reply-To: <201204111544.27866.thomas@fjellstrom.ca>
-References: <201203211716.45418.thomas@fjellstrom.ca>
-	<201204111417.28893.thomas@fjellstrom.ca>
-	<CAHtARFERLPA345Qsp=-_+5BGAdOrLaJ+HLGzqENBFNRXNJMDhg@mail.gmail.com>
-	<201204111544.27866.thomas@fjellstrom.ca>
-Date: Thu, 12 Apr 2012 01:11:32 -0700
-Message-ID: <CAHtARFHayv68BASrfCLYHQ0zZ1R8fvzfB-_fkBeG8H4g3OBZvg@mail.gmail.com>
-Subject: Re: stuck in megaraid_sas.c megasas_adp_reset_gen2
-From: adam radford <aradford@gmail.com>
-To: thomas@fjellstrom.ca
-Cc: lkml <linux-kernel@vger.kernel.org>, linux-scsi@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 11, 2012 at 2:44 PM, Thomas Fjellstrom <thomas@fjellstrom.ca> wrote:
-> megasas: [55] waiting for 1 commands to complete
-> ....
-> megasas: [175] waiting for 1 commands to complete
+We set intr mask before its handler is registered, this does not work well when
+8139cp is sharing irq line with other devices. As the irq could be enabled by
+the device before 8139cp's hander is registered which may lead unhandled
+irq. Fix this by introducing an helper cp_irq_enable() and call it after
+request_irq().
 
-You still aren't getting interrupts from the card.  Can you re-try
-with megaraid_sas module parameter msix_disable ?
-If that doesn't work, contact LSI support and tell them which
-motherboard, any PCIe bridges, risers, etc you have.
+Signed-off-by: Jason Wang <jasowang@redhat.com>
+---
+ drivers/net/ethernet/realtek/8139cp.c |   10 ++++++++--
+ 1 files changed, 8 insertions(+), 2 deletions(-)
 
--Adam
+diff --git a/drivers/net/ethernet/realtek/8139cp.c b/drivers/net/ethernet/realtek/8139cp.c
+index abc7907..b3287c0 100644
+--- a/drivers/net/ethernet/realtek/8139cp.c
++++ b/drivers/net/ethernet/realtek/8139cp.c
+@@ -958,6 +958,11 @@ static inline void cp_start_hw (struct cp_private *cp)
+ 	cpw8(Cmd, RxOn | TxOn);
+ }
+ 
++static void cp_enable_irq(struct cp_private *cp)
++{
++	cpw16_f(IntrMask, cp_intr_mask);
++}
++
+ static void cp_init_hw (struct cp_private *cp)
+ {
+ 	struct net_device *dev = cp->dev;
+@@ -997,8 +1002,6 @@ static void cp_init_hw (struct cp_private *cp)
+ 
+ 	cpw16(MultiIntr, 0);
+ 
+-	cpw16_f(IntrMask, cp_intr_mask);
+-
+ 	cpw8_f(Cfg9346, Cfg9346_Lock);
+ }
+ 
+@@ -1130,6 +1133,8 @@ static int cp_open (struct net_device *dev)
+ 	if (rc)
+ 		goto err_out_hw;
+ 
++	cp_enable_irq(cp);
++
+ 	netif_carrier_off(dev);
+ 	mii_check_media(&cp->mii_if, netif_msg_link(cp), true);
+ 	netif_start_queue(dev);
+@@ -2031,6 +2036,7 @@ static int cp_resume (struct pci_dev *pdev)
+ 	/* FIXME: sh*t may happen if the Rx ring buffer is depleted */
+ 	cp_init_rings_index (cp);
+ 	cp_init_hw (cp);
++	cp_enable_irq(cp);
+ 	netif_start_queue (dev);
+ 
+ 	spin_lock_irqsave (&cp->lock, flags);
+
