@@ -1,96 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934665Ab2DLTrW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Apr 2012 15:47:22 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:54510 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755384Ab2DLTrV convert rfc822-to-8bit (ORCPT
+	id S1762609Ab2DLTre (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Apr 2012 15:47:34 -0400
+Received: from shards.monkeyblade.net ([198.137.202.13]:40838 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934668Ab2DLTrb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Apr 2012 15:47:21 -0400
-MIME-Version: 1.0
-In-Reply-To: <20120412194016.GA30558@merkur.ravnborg.org>
-References: <1332960678-11879-1-git-send-email-andi@firstfloor.org>
-	<1332960678-11879-2-git-send-email-andi@firstfloor.org>
-	<CAMuHMdVX28zeebzN6277B5p2b=9s-Q06i01o5AHPyXAuKMigGQ@mail.gmail.com>
-	<20120412194016.GA30558@merkur.ravnborg.org>
-Date: Thu, 12 Apr 2012 21:47:19 +0200
-X-Google-Sender-Auth: oaXgR1SeLGrJdxKVhEI50OPXOqE
-Message-ID: <CAMuHMdXfpvprGD18_YYyctfrAk6iRJonWFGFRf9oSaH0u0zfhw@mail.gmail.com>
-Subject: Re: [PATCH 2/2] Add CONFIG_READABLE_ASM
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Sam Ravnborg <sam@ravnborg.org>
-Cc: Andi Kleen <andi@firstfloor.org>, linux-kernel@vger.kernel.org,
-        linux-kbuild@vger.kernel.org, x86@kernel.org,
-        Andi Kleen <ak@linux.intel.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Thu, 12 Apr 2012 15:47:31 -0400
+Date: Thu, 12 Apr 2012 15:46:24 -0400 (EDT)
+Message-Id: <20120412.154624.736628097737735623.davem@davemloft.net>
+To: geert@linux-m68k.org
+Cc: msink@permonline.ru, paul.gortmaker@windriver.com, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] wiznet: Add missing #include <linux/irq.h>
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1334258363-17617-1-git-send-email-geert@linux-m68k.org>
+References: <1334258363-17617-1-git-send-email-geert@linux-m68k.org>
+X-Mailer: Mew version 6.4 on Emacs 24.0.95 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=iso-8859-7
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Thu, 12 Apr 2012 12:46:25 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by nfs id q3CJlfbu012199
 
-Hi Sam,
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+Date: Thu, 12 Apr 2012 21:19:23 +0200
 
-On Thu, Apr 12, 2012 at 21:40, Sam Ravnborg <sam@ravnborg.org> wrote:
-> On Thu, Apr 12, 2012 at 09:08:36PM +0200, Geert Uytterhoeven wrote:
->> On Wed, Mar 28, 2012 at 20:51, Andi Kleen <andi@firstfloor.org> wrote:
->> > +ifdef CONFIG_READABLE_ASM
->> > +# Disable optimizations that make assembler listings hard to read.
->> > +# reorder blocks reorders the control in the function
->> > +# ipa clone creates specialized cloned functions
->> > +# partial inlining inlines only parts of functions
->> > +KBUILD_CFLAGS += $(call cc-option,-fno-reorder-blocks,) \
->> > + Â  Â  Â  Â  Â  Â  Â  Â  $(call cc-option,-fno-ipa-cp-clone,) \
->> > + Â  Â  Â  Â  Â  Â  Â  Â  $(call cc-option,-fno-partial-inlining)
->> > +endif
->
-> Could people move to this century and drop these ugly "\" line-continuations please...
-> People seems to get along in C without but think they should be used in Makefiles..
+> m68k/allmodconfig:
+> 
+> drivers/net/ethernet/wiznet/w5100.c: In function ¡w5100_hw_probe¢:
+> drivers/net/ethernet/wiznet/w5100.c:680: error: ¡IRQ_TYPE_LEVEL_LOW¢ undeclared (first use in this function)
+> drivers/net/ethernet/wiznet/w5300.c: In function ¡w5300_hw_probe¢:
+> drivers/net/ethernet/wiznet/w5300.c:594: error: ¡IRQ_TYPE_LEVEL_LOW¢ undeclared (first use in this function)
+> 
+> Include <linux/irq.h>, which provides the declaration for IRQ_TYPE_LEVEL_LOW.
+> 
+> Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
 
-Not without an additional patch for make:
-
-Makefile:575: *** missing separator (did you mean TAB instead of 8
-spaces?).  Stop.
-
->> cc1: error: unrecognized command line option "-fno-ipa-cp-clone"
->>
->> Somehow, "$(call cc-option,-fno-ipa-cp-clone,)" doesn't detect that my
->> toolchain (gcc version 4.1.2 20061115 (prerelease) (Ubuntu 4.1.1-21))
->> doesn't support this option.
-
-> You should try cc-diasable-warning like this:
->
-> KBUILD_CFLAGS += $(call cc-disable-warning, ipa-cp-clone)
-
-That works, thanks!
-Andi, does it still work as expected for you?
-
-> from Documentation/kbuild/makefiles.txt:
->
-> Â  Â cc-disable-warning
-> Â  Â  Â  Â cc-disable-warning checks if gcc supports a given warning and returns
-> Â  Â  Â  Â the commandline switch to disable it. This special function is needed,
-> Â  Â  Â  Â because gcc 4.4 and later accept any unknown -Wno-* option and only
-> Â  Â  Â  Â warn about it if there is another warning in the source file.
->
-> Â  Â  Â  Â Example:
-> Â  Â  Â  Â  Â  Â  Â  Â KBUILD_CFLAGS += $(call cc-disable-warning, unused-but-set-variable)
->
-> Â  Â  Â  Â In the above example, -Wno-unused-but-set-variable will be added to
-> Â  Â  Â  Â KBUILD_CFLAGS only if gcc really accepts it.
->
->
-> The documentation refer to gcc 4.4 - but maybe the older gcc you have
-> has the same behaviour.
-
-Seems to be that case. Thx!
-
-Gr{oetje,eeting}s,
-
-Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â Â  Â Â  -- Linus Torvalds
+Applied.
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
