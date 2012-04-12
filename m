@@ -1,113 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762313Ab2DLJUx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Apr 2012 05:20:53 -0400
-Received: from mail.solarflare.com ([216.237.3.220]:16369 "EHLO
-	ocex02.SolarFlarecom.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754955Ab2DLJUw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Apr 2012 05:20:52 -0400
-Message-ID: <4F869E71.2020102@solarflare.com>
-Date: Thu, 12 Apr 2012 10:20:49 +0100
-From: Stuart Hodgson <smhodgson@solarflare.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:10.0.1) Gecko/20120216 Thunderbird/10.0.1
+	id S1762287Ab2DLJYW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Apr 2012 05:24:22 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:42057 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754955Ab2DLJYU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Apr 2012 05:24:20 -0400
+Date: Thu, 12 Apr 2012 11:24:15 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: Glauber Costa <glommer@parallels.com>
+Cc: linux-kernel@vger.kernel.org, devel@openvz.org, linux-mm@kvack.org,
+        cgroups@vger.kernel.org, Johannes Weiner <hannes@cmpxchg.org>,
+        kamezawa.hiroyu@jp.fujitsu.com, Greg Thelen <gthelen@google.com>,
+        Suleiman Souhlal <suleiman@google.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH] remove BUG() in possible but rare condition
+Message-ID: <20120412092415.GB32489@tiehlicka.suse.cz>
+References: <1334167824-19142-1-git-send-email-glommer@parallels.com>
 MIME-Version: 1.0
-To: Ben Hutchings <bhutchings@solarflare.com>
-CC: <netdev@vger.kernel.org>, <davem@davemloft.net>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC PATCH 2/2] net: ethtool: Add capability to retrieve plug-in
- module EEPROM
-References: <4F71FE15.7060708@solarflare.com>  <1333390698.2623.47.camel@bwh-desktop.uk.solarflarecom.com>  <4F85C22C.30707@solarflare.com> <1334169119.2552.17.camel@bwh-desktop.uk.solarflarecom.com>
-In-Reply-To: <1334169119.2552.17.camel@bwh-desktop.uk.solarflarecom.com>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.17.20.173]
-X-TM-AS-Product-Ver: SMEX-10.0.0.1412-6.800.1017-18832.004
-X-TM-AS-Result: No--12.914800-0.000000-31
-X-TM-AS-User-Approved-Sender: Yes
-X-TM-AS-User-Blocked-Sender: No
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1334167824-19142-1-git-send-email-glommer@parallels.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/04/12 19:31, Ben Hutchings wrote:
-> On Wed, 2012-04-11 at 18:41 +0100, Stuart Hodgson wrote:
->> On 02/04/12 19:18, Ben Hutchings wrote:
->>> On Tue, 2012-03-27 at 18:51 +0100, Stuart Hodgson wrote:
-> [...]
->>>> --- a/drivers/net/ethernet/sfc/ethtool.c
->>>> +++ b/drivers/net/ethernet/sfc/ethtool.c
-> [...]
->>>> +        payload_len = MCDI_DWORD(outbuf,
->>>> +                     GET_PHY_MEDIA_INFO_OUT_DATALEN);
->>>> +
->>>> +        to_copy = (space_remaining<   payload_len) ?
->>>> +                space_remaining : payload_len;
->>>> +
->>>> +        to_copy -= page_off;
->>>
->>> page_off is the number of bytes we need to discard from payload_len, but
->>> we don't want do discard that from space_remaining.  I think the last
->>> two statements should be changed to:
->>>
->>> 	payload_len -= page_off;
->>> 	to_copy = (space_remaining<   payload_len) ?
->>> 		space_remaining : payload_len;
->>>
->>
->> I am pretty sure that these two pieces of code are the same
->
-> Suppose we start with ee->offset = 64, ee->len = 32.  After the MCDI
-> request returns and we assign payload_len from that, I believe we will
-> have page_off = 64, payload_len = 128, space_remaining = 32.
->
-> Work through the calculations from there and you'll see the problem.
->
-> [...]
+On Wed 11-04-12 15:10:24, Glauber Costa wrote:
+> While stressing the kernel with with failing allocations today,
+> I hit the following chain of events:
+> 
+> alloc_page_buffers():
+> 
+> 	bh = alloc_buffer_head(GFP_NOFS);
+> 	if (!bh)
+> 		goto no_grow; <= path taken
+> 
+> grow_dev_page():
+>         bh = alloc_page_buffers(page, size, 0);
+>         if (!bh)
+>                 goto failed;  <= taken, consequence of the above
+> 
+> and then the failed path BUG()s the kernel.
+> 
+> The failure is inserted a litte bit artificially, but even then,
+> I see no reason why it should be deemed impossible in a real box.
+> 
+> Even though this is not a condition that we expect to see
+> around every time, failed allocations are expected to be handled,
+> and BUG() sounds just too much. As a matter of fact, grow_dev_page()
+> can return NULL just fine in other circumstances, so I propose we just
+> remove it, then.
 
-Yep, I go negative if len is shorter than offset.
+I had to be blind yesterday. I have double checked the call chain and
+this is safe already because __getblk_slow tries to free some memory and
+then retry the allocation if it gets allocation failure from
+grow_buffers (grow_dev_page).
 
->>>> +    phy_cfg = efx->phy_data;
->>>> +    modinfo->eeprom_len = mcdi_to_module_eeprom_len(phy_cfg->media);
->>>> +    modinfo->type = SFF_8079;
->>> [...]
->>>
->>> I don't think this makes sense.  If we're fixing the type as SFF_8079
->>> then why are we calling a function to get the length?
->>>
->>> Ben.
->>>
->>
->> What about adding an mcdi_to_module_eeprom_type in the same manner
->> as mcdi_to_module_eeprom_len and the other mapping functions?
->
-> Could do, but I don't see the point of breaking this out into separate
-> functions that are only used once.  It's actually going to increase code
-> duplication because you'll have to put the same PHY type checks in both
-> of them.
->
-> Ben.
->
+> 
+> Signed-off-by: Glauber Costa <glommer@parallels.com>
+> CC: Linus Torvalds <torvalds@linux-foundation.org>
+> CC: Andrew Morton <akpm@linux-foundation.org>
 
-I simply followed the precedent of mcdi_to_ethtool_media. I could 
-combine these functions into the module_info function such as
-	
+Reviewed-by: Michal Hocko <mhocko@suse.cz>
 
-	...
-         struct efx_mcdi_phy_data *phy_cfg;
+> ---
+>  fs/buffer.c |    1 -
+>  1 files changed, 0 insertions(+), 1 deletions(-)
+> 
+> diff --git a/fs/buffer.c b/fs/buffer.c
+> index 36d6665..351e18e 100644
+> --- a/fs/buffer.c
+> +++ b/fs/buffer.c
+> @@ -985,7 +985,6 @@ grow_dev_page(struct block_device *bdev, sector_t block,
+>  	return page;
+>  
+>  failed:
+> -	BUG();
+>  	unlock_page(page);
+>  	page_cache_release(page);
+>  	return NULL;
+> -- 
+> 1.7.7.6
+> 
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Fight unfair telecom internet charges in Canada: sign http://stopthemeter.ca/
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
 
-         phy_cfg = efx->phy_data;
-         modinfo->eeprom_len = 0;
-         modinfo->type = 0;
-
-         switch (phy_cfg->media) {
-         case MC_CMD_MEDIA_SFP_PLUS:
-                 modinfo->type = ETH_MODULE_SFF_8079;
-                 modinfo->eeprom_len = ETH_MODULE_SFF_8079_LEN;
-                 break;
-         default:
-                 break;
-         }
-	...
-
-Stu
+-- 
+Michal Hocko
+SUSE Labs
+SUSE LINUX s.r.o.
+Lihovarska 1060/12
+190 00 Praha 9    
+Czech Republic
