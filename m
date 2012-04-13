@@ -1,79 +1,229 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755201Ab2DMQIg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Apr 2012 12:08:36 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:58972 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755120Ab2DMQIa (ORCPT
+	id S1754928Ab2DMQQf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Apr 2012 12:16:35 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:49045 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751756Ab2DMQQd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Apr 2012 12:08:30 -0400
-Date: Fri, 13 Apr 2012 11:08:18 -0500 (CDT)
-From: Manoj Iyer <manoj.iyer@canonical.com>
-X-X-Sender: manjo@lazy
-To: Johan Hedberg <johan.hedberg@gmail.com>
-cc: Manoj Iyer <manoj.iyer@canonical.com>, linux-kernel@vger.kernel.org,
-        linux-bluetooth@vger.kernel.org, Marcel Holtmann <marcel@holtmann.org>
-Subject: Re: [PATCH] Bluetooth: btusb: Add vendor specific ID (0489 e042)
- for BCM20702A0
-In-Reply-To: <20120413092312.GA10780@x220.ger.corp.intel.com>
-Message-ID: <alpine.DEB.2.02.1204131106150.3180@lazy>
-References: <1333981348-3720-1-git-send-email-manoj.iyer@canonical.com> <1333981348-3720-2-git-send-email-manoj.iyer@canonical.com> <20120413092312.GA10780@x220.ger.corp.intel.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Fri, 13 Apr 2012 12:16:33 -0400
+Message-ID: <4F88515A.2020805@linaro.org>
+Date: Sat, 14 Apr 2012 00:16:26 +0800
+From: "Ying-Chun Liu (PaulLiu)" <paul.liu@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:10.0.3) Gecko/20120329 Icedove/10.0.3
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
+To: Shawn Guo <shawn.guo@linaro.org>
+CC: rtc-linux@googlegroups.com, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, linaro-dev@lists.linaro.org,
+        patches@linaro.org, Anish Trivedi <anish@freescale.com>,
+        Eric Miao <eric.miao@linaro.org>, Anson Huang <b20788@freescale.com>,
+        Alessandro Zummo <a.zummo@towertech.it>
+Subject: Re: [PATCH] rtc: add support for Freescale SNVS RTC
+References: <1332162269-16789-1-git-send-email-paul.liu@linaro.org> <20120322151156.GF2213@S2101-09.ap.freescale.net>
+In-Reply-To: <20120322151156.GF2213@S2101-09.ap.freescale.net>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+(2012年03月22日 23:11), Shawn Guo wrote:
+> On Mon, Mar 19, 2012 at 09:04:29PM +0800, Ying-Chun Liu (PaulLiu) wrote:
+>> +
+>> +#define RTC_READ_TIME_47BIT	_IOR('p', 0x20, unsigned long long)
+>> +/* blocks until LPSCMR is set, returns difference */
+>> +#define RTC_WAIT_TIME_SET	_IOR('p', 0x21, int64_t)
+>> +
+> 
+> What are these local ioctl number exactly for?  How can user space
+> use these driver private numbers?
+> 
+>> +
+>> +	rtc_write_sync_lp(ioaddr);
+>> +
+>> +	new_time_47bit = (((u64) (readl(ioaddr + SNVS_LPSRTCMR) &
+>> +		((0x1 << CNTR_TO_SECS_SH) - 1)) << 32) |
+>> +		((u64) readl(ioaddr + SNVS_LPSRTCLR)));
+>> +
+>> +	time_diff = new_time_47bit - old_time_47bit;
+>> +
+>> +	/* signal all waiting threads that time changed */
+>> +	complete_all(&snvs_completion);
+>> +
+>> +	/* allow signalled threads to handle the time change notification */
+>> +	schedule();
+>> +
+>> +	/* reinitialize completion variable */
+>> +	INIT_COMPLETION(snvs_completion);
+>> +
+> 
+> Are you sure all these sync need to get done in driver?
+> 
+>> +			return -EINVAL;
+>> +		}
+>> +	}
+>> +
+>> +	spin_lock_irqsave(&rtc_lock, lock_flags);
+>> +
+>> +	ret = rtc_update_alarm(dev, &alrm->time);
+>> +	if (ret)
+>> +		goto out;
+>> +
+>> +	lp_cr = readl(ioaddr + SNVS_LPCR);
+>> +
+>> +	if (alrm->enabled)
+>> +		lp_cr |= (SNVS_LPCR_LPTA_EN | SNVS_LPCR_LPWUI_EN);
+>> +	else
+>> +		lp_cr &= ~(SNVS_LPCR_LPTA_EN | SNVS_LPCR_LPWUI_EN);
+>> +
+>> +	if (lp_cr & SNVS_LPCR_ALL_INT_EN) {
+>> +		if (!pdata->irq_enable) {
+>> +			enable_irq(pdata->irq);
+>> +			pdata->irq_enable = true;
+>> +		}
+>> +	} else {
+>> +		if (pdata->irq_enable) {
+>> +			disable_irq(pdata->irq);
+>> +			pdata->irq_enable = false;
+>> +		}
+>> +	}
+>> +
+>> +	writel(lp_cr, ioaddr + SNVS_LPCR);
+>> +
+>> +out:
+>> +	rtc_write_sync_lp(ioaddr);
+>> +	spin_unlock_irqrestore(&rtc_lock, lock_flags);
+>> +
+>> +	return ret;
+>> +}
+>> +
+>> +/*!
+>> + * This function is used to provide the content for the /proc/driver/rtc
+>> + * file.
+>> + *
+>> + * @param  seq  buffer to hold the information that the driver wants to write
+>> + *
+>> + * @return  The number of bytes written into the rtc file.
+>> + */
+>> +static int snvs_rtc_proc(struct device *dev, struct seq_file *seq)
+>> +{
+>> +	struct rtc_drv_data *pdata = dev_get_drvdata(dev);
+>> +	void __iomem *ioaddr = pdata->ioaddr;
+>> +
+>> +	seq_printf(seq, "alarm_IRQ\t: %s\n",
+>> +		   (((readl(ioaddr + SNVS_LPCR)) & SNVS_LPCR_LPTA_EN) !=
+>> +		    0) ? "yes" : "no");
+>> +
+>> +	return 0;
+>> +}
+>> +
+>> +static int snvs_rtc_alarm_irq_enable(struct device *dev, unsigned int enable)
+>> +{
+>> +	struct rtc_drv_data *pdata = dev_get_drvdata(dev);
+>> +	void __iomem *ioaddr = pdata->ioaddr;
+>> +	u32 lp_cr;
+>> +	unsigned long lock_flags = 0;
+>> +
+>> +	spin_lock_irqsave(&rtc_lock, lock_flags);
+>> +
+>> +	if (enable) {
+>> +		if (!pdata->irq_enable) {
+>> +			enable_irq(pdata->irq);
+>> +			pdata->irq_enable = true;
+>> +		}
+>> +		lp_cr = readl(ioaddr + SNVS_LPCR);
+>> +		lp_cr |= (SNVS_LPCR_LPTA_EN | SNVS_LPCR_LPWUI_EN);
+>> +		writel(lp_cr, ioaddr + SNVS_LPCR);
+>> +	} else {
+>> +		lp_cr = readl(ioaddr + SNVS_LPCR);
+>> +		lp_cr &= ~(SNVS_LPCR_LPTA_EN | SNVS_LPCR_LPWUI_EN);
+>> +		if (((lp_cr & SNVS_LPCR_ALL_INT_EN) == 0)
+>> +		    && (pdata->irq_enable)) {
+>> +			disable_irq(pdata->irq);
+>> +			pdata->irq_enable = false;
+>> +		}
+>> +		writel(lp_cr, ioaddr + SNVS_LPCR);
+>> +	}
+>> +
+>> +	rtc_write_sync_lp(ioaddr);
+>> +	spin_unlock_irqrestore(&rtc_lock, lock_flags);
+>> +
+>> +	return 0;
+>> +}
+>> +
+>> +/*!
+>> + * This function is used to support some ioctl calls directly.
+>> + * Other ioctl calls are supported indirectly through the
+>> + * arm/common/rtctime.c file.
+>> + *
+>> + * @param  cmd          ioctl command as defined in include/linux/rtc.h
+>> + * @param  arg          value for the ioctl command
+>> + *
+>> + * @return  0 if successful or negative value otherwise.
+>> + */
+>> +static int snvs_rtc_ioctl(struct device *dev, unsigned int cmd,
+>> +			 unsigned long arg)
+>> +{
+>> +	struct rtc_drv_data *pdata = dev_get_drvdata(dev);
+>> +	void __iomem *ioaddr = pdata->ioaddr;
+>> +	u64 time_47bit;
+>> +	int retVal;
+>> +
+>> +	switch (cmd) {
+>> +	case RTC_READ_TIME_47BIT:
+>> +		time_47bit = (((u64) (readl(ioaddr + SNVS_LPSRTCMR) &
+>> +			((0x1 << CNTR_TO_SECS_SH) - 1)) << 32) |
+>> +			((u64) readl(ioaddr + SNVS_LPSRTCLR)));
+>> +
+>> +		if (arg && copy_to_user((u64 *) arg, &time_47bit, sizeof(u64)))
+>> +			return -EFAULT;
+>> +
+>> +		return 0;
+>> +
+>> +	/* This IOCTL to be used by processes to be notified of time changes */
+>> +	case RTC_WAIT_TIME_SET:
+>> +		/* don't block without releasing mutex first */
+>> +		mutex_unlock(&pdata->rtc->ops_lock);
+>> +
+>> +		/* sleep till awakened by SRTC driver when LPSCMR is changed */
+>> +		wait_for_completion(&snvs_completion);
+>> +
+>> +		/* relock mutex because rtc_dev_ioctl will unlock again */
+>> +		retVal = mutex_lock_interruptible(&pdata->rtc->ops_lock);
+>> +
+>> +		/* copy the new time difference = new time - previous time
+>> +		 * to the user param. The difference is a signed value */
+>> +		if (arg && copy_to_user((int64_t *) arg, &time_diff,
+>> +			sizeof(int64_t)))
+>> +			return -EFAULT;
+>> +
+>> +		return retVal;
+>> +
+>> +	}
+>> +
+>> +	return -ENOIOCTLCMD;
+>> +}
+> 
+> I haven't completely understood this, and will need more study.
+> 
 
-Johan,
+Hi Shawn,
 
-I also sent another patch following this one with
+About the above ioctl() related blocks. I think it is used by some user
+space libs that requires accurate time (47BIT TIME). And it have to be
+sure that the time continuously flowing so the apps wants to be notified
+that the rtc is changed dramatically by the set command.
 
-Subject	[PATCH] Bluetooth: btusb: Add vendor specific ID (0a5c:21f4) 
-BCM20702A0
-Date	Wed, 11 Apr 2012 13:39:23 -0500
+I'm guessing that it might be related to the Multimedia binary libs. A/V
+sync or something like that. But I don't have those source code. Please
+make sure those libs are not using it.
 
-https://lkml.org/lkml/2012/4/11/358
+I also see other Freescale RTC driver implement the same function. For
+example:
+http://tinyurl.com/cnp93jv
+So I guess it might be a common ioctl that Freescale uses somewhere.
 
-Just thought I will mention it to you coz both the subject lines look 
-similar except for the IDs, sorry about that, the 2nd one was reported 
-right after I submitted the 1st patch. Can you please review that as well?
+So my plan is to split the IOR to a header file. And keep the rest as is.
 
--- manoj
-
-On Fri, 13 Apr 2012, Johan Hedberg wrote:
-
-> Hi Manoj,
->
-> On Mon, Apr 09, 2012, Manoj Iyer wrote:
->> T: Bus=02 Lev=02 Prnt=02 Port=04 Cnt=01 Dev#= 3 Spd=12 MxCh= 0
->> D: Ver= 2.00 Cls=ff(vend.) Sub=01 Prot=01 MxPS=64 #Cfgs= 1
->> P: Vendor=0489 ProdID=e042 Rev=01.12
->> S: Manufacturer=Broadcom Corp
->> S: Product=BCM20702A0
->> S: SerialNumber=E4D53DCA61B5
->> C: #Ifs= 4 Cfg#= 1 Atr=e0 MxPwr=0mA
->> I: If#= 0 Alt= 0 #EPs= 3 Cls=ff(vend.) Sub=01 Prot=01 Driver=(none)
->> I: If#= 1 Alt= 0 #EPs= 2 Cls=ff(vend.) Sub=01 Prot=01 Driver=(none)
->> I: If#= 2 Alt= 0 #EPs= 2 Cls=ff(vend.) Sub=ff Prot=ff Driver=(none)
->> I: If#= 3 Alt= 0 #EPs= 0 Cls=fe(app. ) Sub=01 Prot=01 Driver=(none)
->>
->> Reported-by: Dennis Chua <dennis.chua@canonical.com>
->> Signed-off-by: Manoj Iyer <manoj.iyer@canonical.com>
->> ---
->>  drivers/bluetooth/btusb.c |    1 +
->>  1 files changed, 1 insertions(+), 0 deletions(-)
->
-> Applied to both bluetooth.git and bluetooth-next.git. Thanks.
->
-> Johan
->
->
-
---
-====================
-Manoj Iyer
-Ubuntu/Canonical
-Hardware Enablement
-====================
+Yours Sincerely,
+Paul
