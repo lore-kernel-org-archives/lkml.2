@@ -1,31 +1,30 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932368Ab2DMINQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Apr 2012 04:13:16 -0400
-Received: from mx1.fusionio.com ([66.114.96.30]:35030 "EHLO mx1.fusionio.com"
+	id S1757394Ab2DMIPr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Apr 2012 04:15:47 -0400
+Received: from mx1.fusionio.com ([66.114.96.30]:59593 "EHLO mx1.fusionio.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757296Ab2DMING (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Apr 2012 04:13:06 -0400
-X-Greylist: delayed 733 seconds by postgrey-1.27 at vger.kernel.org; Fri, 13 Apr 2012 04:13:06 EDT
-X-ASG-Debug-ID: 1334304050-03d6a54a8017c8f0001-xx1T2L
+	id S1754643Ab2DMIPo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 Apr 2012 04:15:44 -0400
+X-ASG-Debug-ID: 1334304942-03d6a54a8017ca50001-xx1T2L
 X-Barracuda-Envelope-From: JAxboe@fusionio.com
-Message-ID: <4F87DD2D.4030507@fusionio.com>
-Date: Fri, 13 Apr 2012 10:00:45 +0200
+Message-ID: <4F87E0A9.4040608@fusionio.com>
+Date: Fri, 13 Apr 2012 10:15:37 +0200
 From: Jens Axboe <jaxboe@fusionio.com>
 MIME-Version: 1.0
 To: Linus Torvalds <torvalds@linux-foundation.org>
 CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: [GIT PULL] block core bits for 3.4
+Subject: [GIT PULL] block driver bits for 3.4
 Content-Type: text/plain; charset="ISO-8859-1"
-X-ASG-Orig-Subj: [GIT PULL] block core bits for 3.4
+X-ASG-Orig-Subj: [GIT PULL] block driver bits for 3.4
 Content-Transfer-Encoding: 7bit
 X-Barracuda-Connect: mail1.int.fusionio.com[10.101.1.21]
-X-Barracuda-Start-Time: 1334304050
+X-Barracuda-Start-Time: 1334304942
 X-Barracuda-Encrypted: AES128-SHA
 X-Barracuda-URL: http://10.101.1.180:8000/cgi-mod/mark.cgi
-X-Barracuda-Bayes: INNOCENT GLOBAL 0.0038 1.0000 -1.9964
-X-Barracuda-Spam-Score: -2.00
-X-Barracuda-Spam-Status: No, SCORE=-2.00 using per-user scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=9.0 tests=
+X-Barracuda-Bayes: INNOCENT GLOBAL 0.0017 1.0000 -2.0097
+X-Barracuda-Spam-Score: -2.01
+X-Barracuda-Spam-Status: No, SCORE=-2.01 using per-user scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=9.0 tests=
 X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.2.93982
 	Rule breakdown below
 	 pts rule name              description
@@ -36,42 +35,78 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Hi Linus,
 
-It's a nice and quiet round this time, since most of the
-tricky stuff has been pushed to 3.5 to give it more time
-to mature. After a few hectic block IO core changes for
-3.3 and 3.2, I'm quite happy with a slow round.
+On top of the core bits, but this time nothing in the drivers
+branch depends on any core changes.
 
-Really minor stuff in here, the only real functional change is making
-the auto-unplug threshold a per-queue entity. The threshold is set so
-that it's low enough that we don't hold off IO for too long, but still
-big enough to get a nice benefit from the batched insert (and hence
-queue lock cost reduction). For raid configurations, this currently
-breaks down.
+- A series of fixes for mtip32xx. Most from Asai at Micron, but also one
+  from Greg, getting rid of the dependency on PCIE_HOTPLUG.
+
+- A few bug fixes for xen-blkfront, and blkback.
+
+- A virtio-blk fix for Vivek, making resize actually work.
+
+- Two fixes from Stephen, making larger transfers possible on cciss.
+  This is needed for tape drive support.
 
 Please pull.
 
-  git://git.kernel.dk/linux-block.git for-3.4/core
+  git://git.kernel.dk/linux-block.git for-3.4/drivers
 
-Andi Kleen (1):
-      block: use lockdep_assert_held for queue locking
+Akinobu Mita (1):
+      xen-blkfront: use bitmap_set() and bitmap_clear()
 
-Dan Carpenter (1):
-      block: blk_alloc_queue_node(): use caller's GFP flags instead of GFP_KERNEL
+Andrew Jones (1):
+      xen/blkfront: don't put bdev right after getting it
 
-Shaohua Li (1):
-      block: make auto block plug flush threshold per-disk based
+Asai Thambi S P (8):
+      mtip32xx: fix incorrect value set for drv_cleanup_done, and re-initialize and start port in mtip_restart_port()
+      mtip32xx: Add new bitwise flag 'dd_flag'
+      mtip32xx: make setting comp_time as common
+      mtip32xx: Add new sysfs entry 'status'
+      mtip32xx: misc changes
+      mtip32xx: Shorten macro names
+      mtip32xx: fix handling of commands in various scenarios
+      mtip32xx: dump tagmap on failure
 
-Tao Ma (2):
-      block: Make cfq_target_latency tunable through sysfs.
-      Documentation: Add sysfs ABI change for cfq's target latency.
+Daniel De Graaf (2):
+      xen/blkback: use grant-table.c hypercall wrappers
+      xen/blkback: Enable blkback on HVM guests
 
- Documentation/ABI/testing/sysfs-cfq-target-latency |    8 ++++++++
- block/blk-core.c                                   |    5 +++--
- block/blk-throttle.c                               |    2 +-
- block/cfq-iosched.c                                |   10 ++++++++--
- include/linux/blkdev.h                             |   18 +++++++-----------
- 5 files changed, 27 insertions(+), 16 deletions(-)
- create mode 100644 Documentation/ABI/testing/sysfs-cfq-target-latency
+Greg Kroah-Hartman (1):
+      block: mtip32xx: remove HOTPLUG_PCI_PCIE dependancy
+
+Jens Axboe (1):
+      Merge branch 'stable/for-jens-3.4-bugfixes' of git://git.kernel.org/.../konrad/xen into for-3.4/drivers
+
+Konrad Rzeszutek Wilk (2):
+      xen/blkback: Squash the discard support for 'file' and 'phy' type.
+      xen/blkback: Make optional features be really optional.
+
+Ryosuke Saito (1):
+      mtip32xx: fix error handling in mtip_init()
+
+Stephen M. Cameron (2):
+      cciss: Initialize scsi host max_sectors for tape drive support
+      cciss: Fix scsi tape io with more than 255 scatter gather elements
+
+Steven Noonan (1):
+      xen-blkfront: make blkif_io_lock spinlock per-device
+
+Vivek Goyal (1):
+      virtio-blk: Call revalidate_disk() upon online disk resize
+
+ Documentation/ABI/testing/sysfs-block-rssd |   18 +
+ drivers/block/cciss_scsi.c                 |    3 +-
+ drivers/block/mtip32xx/Kconfig             |    2 +-
+ drivers/block/mtip32xx/mtip32xx.c          |  860 +++++++++++++++++++++-------
+ drivers/block/mtip32xx/mtip32xx.h          |   58 +-
+ drivers/block/virtio_blk.c                 |    1 +
+ drivers/block/xen-blkback/blkback.c        |   50 +-
+ drivers/block/xen-blkback/common.h         |    6 -
+ drivers/block/xen-blkback/xenbus.c         |   89 ++-
+ drivers/block/xen-blkfront.c               |   41 +-
+ 10 files changed, 796 insertions(+), 332 deletions(-)
+ create mode 100644 Documentation/ABI/testing/sysfs-block-rssd
 
 -- 
 Jens Axboe
