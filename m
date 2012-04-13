@@ -1,85 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752812Ab2DMRYW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Apr 2012 13:24:22 -0400
-Received: from mail.vyatta.com ([76.74.103.46]:43015 "EHLO mail.vyatta.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752307Ab2DMRYR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Apr 2012 13:24:17 -0400
-Date: Fri, 13 Apr 2012 10:24:13 -0700
-From: Stephen Hemminger <shemminger@vyatta.com>
-To: David Miller <davem@davemloft.net>
-Cc: LinoSanfilippo@gmx.de, mlindner@marvell.com, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: sky2: in free_buffers() do proper checks before call of
- rx_clean()
-Message-ID: <20120413102413.41c0d053@nehalam.linuxnetplumber.net>
-In-Reply-To: <20120413.125954.1123124134206162716.davem@davemloft.net>
-References: <20120403001327.GB10227@Neptun>
-	<20120413.125954.1123124134206162716.davem@davemloft.net>
-Organization: Vyatta
-X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1752546Ab2DMR2s (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Apr 2012 13:28:48 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:46545 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751358Ab2DMR2r (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 Apr 2012 13:28:47 -0400
+Date: Fri, 13 Apr 2012 10:28:41 -0700
+From: Tejun Heo <tj@kernel.org>
+To: Vivek Goyal <vgoyal@redhat.com>
+Cc: axboe@kernel.dk, ctalbott@google.com, rni@google.com,
+        linux-kernel@vger.kernel.org, cgroups@vger.kernel.org,
+        containers@lists.linux-foundation.org
+Subject: Re: [PATCH 5/8] blkcg: make sure blkg_lookup() returns %NULL if @q
+ is bypassing
+Message-ID: <20120413172841.GC12233@google.com>
+References: <1334273380-30233-1-git-send-email-tj@kernel.org>
+ <1334273380-30233-6-git-send-email-tj@kernel.org>
+ <20120413160053.GE26383@redhat.com>
+ <20120413170334.GB12233@google.com>
+ <20120413172336.GF26383@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120413172336.GF26383@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-How about this instead? It moves the rx_clean out of free_buffers and
-into the proper place in the unwind code.
+On Fri, Apr 13, 2012 at 01:23:36PM -0400, Vivek Goyal wrote:
+> I think now synchronize_rcu() has become part of cfq_init_queue()
+> effectively and that will slow down boot. In the past I had to remove
+> it.
 
+Eh... crap.  You're right.  Forgot about that.  Maybe we need to
+special case initial queue setup.  I'll look into it.
 
---- a/drivers/net/ethernet/marvell/sky2.c	2012-04-12 08:07:11.572640522 -0700
-+++ b/drivers/net/ethernet/marvell/sky2.c	2012-04-13 10:19:39.466839378 -0700
-@@ -1630,7 +1630,8 @@ static int sky2_alloc_buffers(struct sky
- 	if (!sky2->rx_ring)
- 		goto nomem;
- 
--	return sky2_alloc_rx_skbs(sky2);
-+	return 0;
-+
- nomem:
- 	return -ENOMEM;
- }
-@@ -1639,8 +1640,6 @@ static void sky2_free_buffers(struct sky
- {
- 	struct sky2_hw *hw = sky2->hw;
- 
--	sky2_rx_clean(sky2);
--
- 	if (sky2->rx_le) {
- 		pci_free_consistent(hw->pdev, RX_LE_BYTES,
- 				    sky2->rx_le, sky2->rx_le_map);
-@@ -1761,9 +1760,13 @@ static int sky2_open(struct net_device *
- 	if (err)
- 		goto err_out;
- 
-+	err = sky2_alloc_rx_skbs(sky2);
-+	if (err)
-+		goto err_clean;
-+
- 	/* With single port, IRQ is setup when device is brought up */
- 	if (hw->ports == 1 && (err = sky2_setup_irq(hw, dev->name)))
--		goto err_out;
-+		goto err_clean;
- 
- 	sky2_hw_up(sky2);
- 
-@@ -1783,6 +1786,8 @@ static int sky2_open(struct net_device *
- 
- 	return 0;
- 
-+err_clean:
-+	sky2_rx_clean(sky2);
- err_out:
- 	sky2_free_buffers(sky2);
- 	return err;
-@@ -2158,6 +2163,7 @@ static int sky2_close(struct net_device
- 
- 	sky2_hw_down(sky2);
- 
-+	sky2_rx_clean(sky2);
- 	sky2_free_buffers(sky2);
- 
- 	return 0;
+Thanks.
+
+-- 
+tejun
