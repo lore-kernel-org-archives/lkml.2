@@ -1,43 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752863Ab2DMQV0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Apr 2012 12:21:26 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:51901 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751002Ab2DMQVZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Apr 2012 12:21:25 -0400
-Date: Fri, 13 Apr 2012 18:21:23 +0200 (CEST)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Josenivaldo Benito Junior <jrbenito@benito.qsl.br>
-Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Franco Catrin <fcatrin@gmail.com>
-Subject: Re: [PATCH 0/3] RESEND Aureal special HID driver
-In-Reply-To: <1334096946-18788-1-git-send-email-jrbenito@benito.qsl.br>
-Message-ID: <alpine.LNX.2.00.1204131818130.16373@pobox.suse.cz>
-References: <alpine.LNX.2.00.1204090207090.24006@pobox.suse.cz> <1334096946-18788-1-git-send-email-jrbenito@benito.qsl.br>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1753488Ab2DMQdv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Apr 2012 12:33:51 -0400
+Received: from e33.co.us.ibm.com ([32.97.110.151]:34666 "EHLO
+	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751204Ab2DMQdu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 Apr 2012 12:33:50 -0400
+Date: Fri, 13 Apr 2012 09:30:34 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: David Miller <davem@davemloft.net>
+Cc: mroos@linux.ee, shemminger@vyatta.com, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org
+Subject: Re: suspicious RCU usage warnings in 3.3.0
+Message-ID: <20120413163029.GA2402@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20120412045428.GB2497@linux.vnet.ibm.com>
+ <alpine.SOC.1.00.1204131444150.2736@math.ut.ee>
+ <20120413133513.GB2457@linux.vnet.ibm.com>
+ <20120413.105556.73360716787161031.davem@davemloft.net>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120413.105556.73360716787161031.davem@davemloft.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12041316-2398-0000-0000-000005CC49DE
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 10 Apr 2012, Josenivaldo Benito Junior wrote:
-
-> This patch is a RESEND of hid-aureal patch with Jiri´s suggestions applied.
-> It applies over linux-next-20120410 tag of linux-next tree.
+On Fri, Apr 13, 2012 at 10:55:56AM -0400, David Miller wrote:
+> From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+> Date: Fri, 13 Apr 2012 06:35:13 -0700
 > 
-> Hid-aureal special HID driver is intend to correct a bogus HID descritor 
-> reported by Aureal IR based remote controllers.
+> DANGER WILL ROBINSON, McKenney is hacking sparc64 assembler!
+> :-))))
+
+;-) ;-) ;-)
+
+> > My main concern about my patch is my removal of this line:
+> > 
+> > 	bne,pn			%icc, __handle_softirq
+> > 
+> > It is quite possible that this should instead change to look as follows:
+> > 
+> > 	bne,pn			%icc, __handle_preemption
+> > 
 > 
-> Josenivaldo Benito Junior (3):
->   Aureal Remote Control Device Driver
->   HID: hid-core: Adding hid-aureal special driver
->   HID: hid-aureal: Removing excessive dmesg information
+> I would say it should not, because the __handle_softirq code path,
+> if taken, unconditionally branches to the very next instruction
+> after this branch and it's delay slot.
 
-Folded into one patch and applied, thanks.
+Beginners luck beats skill.  Now I just have to be very careful to
+avoid ever submitting a second sparc64 assembler patch.  ;-)
 
--- 
-Jiri Kosina
-SUSE Labs
+> > Anyway, patch with updated changelog below.
+> 
+> Great work, I'll apply this after I test it out a bit myself.
+
+Cool!!!
+
+							Thanx, Paul
+
+> Thanks a lot Paul!
+> 
+
