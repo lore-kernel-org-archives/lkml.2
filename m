@@ -1,429 +1,254 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935100Ab2DMKMu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Apr 2012 06:12:50 -0400
-Received: from e23smtp06.au.ibm.com ([202.81.31.148]:52377 "EHLO
-	e23smtp06.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934930Ab2DMKMt (ORCPT
+	id S935112Ab2DMKNU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Apr 2012 06:13:20 -0400
+Received: from e23smtp08.au.ibm.com ([202.81.31.141]:51343 "EHLO
+	e23smtp08.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934716Ab2DMKNS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Apr 2012 06:12:49 -0400
-Message-ID: <4F87FC19.8080404@linux.vnet.ibm.com>
-Date: Fri, 13 Apr 2012 18:12:41 +0800
+	Fri, 13 Apr 2012 06:13:18 -0400
+Message-ID: <4F87FC36.20307@linux.vnet.ibm.com>
+Date: Fri, 13 Apr 2012 18:13:10 +0800
 From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120216 Thunderbird/10.0.1
 MIME-Version: 1.0
 To: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
 CC: Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
         LKML <linux-kernel@vger.kernel.org>, KVM <kvm@vger.kernel.org>
-Subject: [PATCH v2 07/16] KVM: MMU: introduce for_each_pte_list_spte
+Subject: [PATCH v2 08/16] KVM: MMU: store more bits in rmap
 References: <4F87FA69.5060106@linux.vnet.ibm.com>
 In-Reply-To: <4F87FA69.5060106@linux.vnet.ibm.com>
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
-x-cbid: 12041300-7014-0000-0000-000000E5DB8D
+x-cbid: 12041300-5140-0000-0000-0000010FAD00
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It is used to walk all the sptes of the specified pte_list, after
-this, the code of pte_list_walk can be removed
-
-And it can restart the walking automatically if the spte is zapped
+In current code, only one bit (bit 0) is used in rmap, this patch
+export more bits from rmap, during spte add/remove, only bit 0 is
+touched and other bits are keeped
 
 Signed-off-by: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
 ---
- arch/x86/kvm/mmu.c       |  233 +++++++++++++++++++++++-----------------------
- arch/x86/kvm/mmu_audit.c |    6 +-
- 2 files changed, 118 insertions(+), 121 deletions(-)
+ arch/x86/kvm/mmu.c |  138 ++++++++++++++++++++++++++++++++--------------------
+ 1 files changed, 85 insertions(+), 53 deletions(-)
 
 diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
-index a1c3628..4e91e94 100644
+index 4e91e94..53e92de 100644
 --- a/arch/x86/kvm/mmu.c
 +++ b/arch/x86/kvm/mmu.c
-@@ -900,26 +900,110 @@ static void pte_list_remove(u64 *spte, unsigned long *pte_list)
- 	}
+@@ -796,13 +796,24 @@ static int mapping_level(struct kvm_vcpu *vcpu, gfn_t large_gfn)
+ 	return level - 1;
  }
 
--typedef void (*pte_list_walk_fn) (u64 *spte);
--static void pte_list_walk(unsigned long *pte_list, pte_list_walk_fn fn)
--{
-+/*
-+ * Used by the following functions to iterate through the sptes linked by a
-+ * pte_list. All fields are private and not assumed to be used outside.
-+ */
-+struct spte_iterator {
-+	/* private fields */
-+	unsigned long *pte_list;
-+	/* holds the sptep if not NULL */
++#define PTE_LIST_DESC		(0x1ull)
++#define PTE_LIST_FLAG_MASK	(0x3ull)
++
++static void
++pte_list_decode(const unsigned long *pte_list, unsigned long *map,
++		unsigned long *flags)
++{
++	*map = *pte_list & (~PTE_LIST_FLAG_MASK);
++	*flags = *pte_list & PTE_LIST_FLAG_MASK;
++}
++
+ /*
+  * Pte mapping structures:
+  *
+- * If pte_list bit zero is zero, then pte_list point to the spte.
++ * If PTE_LIST_DESC bit is zero, then pte_list point to the spte.
+  *
+- * If pte_list bit zero is one, (then pte_list & ~1) points to a struct
+- * pte_list_desc containing more mappings.
++ * If PTE_LIST_DESC bit is one, (then pte_list & ~PTE_LIST_FLAG_MASK) points
++ * to a struct pte_list_desc containing more mappings.
+  *
+  * Returns the number of pte entries before the spte was added or zero if
+  * the spte was not added.
+@@ -812,39 +823,52 @@ static int pte_list_add(struct kvm_vcpu *vcpu, u64 *spte,
+ 			unsigned long *pte_list)
+ {
  	struct pte_list_desc *desc;
--	int i;
-+	/* index of the sptep, -1 means the walking does not start. */
-+	int pos;
-+};
++	unsigned long map, flags;
+ 	int i, count = 0;
 
--	if (!*pte_list)
--		return;
-+static void pte_list_walk_init(struct spte_iterator *iter,
-+			       unsigned long *pte_list)
-+{
-+	iter->pte_list = pte_list;
-+	iter->pos = -1;
-+}
+-	if (!*pte_list) {
++	pte_list_decode(pte_list, &map, &flags);
 +
-+static void pte_list_walk_check_restart(struct spte_iterator *iter, u64 *spte)
-+{
-+	/*
-+	 * If the spte is zapped, we should set 'iter->pos = -1' to restart
-+	 * the walk.
-+	 */
-+	if (!is_shadow_present_pte(*spte))
-+		iter->pos = -1;
-+}
++	if (!map) {
+ 		rmap_printk("pte_list_add: %p %llx 0->1\n", spte, *spte);
+-		*pte_list = (unsigned long)spte;
+-	} else if (!(*pte_list & 1)) {
++		WARN_ON(flags & PTE_LIST_DESC);
++		*pte_list = (unsigned long)spte | flags;
 +
-+static u64 *pte_list_first(struct spte_iterator *iter)
-+{
-+	unsigned long pte_list = *iter->pte_list;
-+	u64 *sptep;
-+
-+	if (!pte_list)
-+		return NULL;
-+
-+	if (!(pte_list & 1)) {
-+		iter->desc = NULL;
-+		iter->pos = 0;
-+		sptep = (u64 *)pte_list;
-+
-+		goto exit;
++		 return 0;
 +	}
 +
-+	iter->desc = (struct pte_list_desc *)(pte_list & ~1ul);
-+	iter->pos = 0;
-+	sptep = iter->desc->sptes[iter->pos];
++	if (!(flags & PTE_LIST_DESC)) {
+ 		rmap_printk("pte_list_add: %p %llx 1->many\n", spte, *spte);
+ 		desc = mmu_alloc_pte_list_desc(vcpu);
+-		desc->sptes[0] = (u64 *)*pte_list;
++		desc->sptes[0] = (u64 *)map;
+ 		desc->sptes[1] = spte;
+-		*pte_list = (unsigned long)desc | 1;
+-		++count;
+-	} else {
+-		rmap_printk("pte_list_add: %p %llx many->many\n", spte, *spte);
+-		desc = (struct pte_list_desc *)(*pte_list & ~1ul);
+-		while (desc->sptes[PTE_LIST_EXT-1] && desc->more) {
+-			desc = desc->more;
+-			count += PTE_LIST_EXT;
+-		}
+-		if (desc->sptes[PTE_LIST_EXT-1]) {
+-			desc->more = mmu_alloc_pte_list_desc(vcpu);
+-			desc = desc->more;
+-		}
+-		for (i = 0; desc->sptes[i]; ++i)
+-			++count;
+-		desc->sptes[i] = spte;
++		*pte_list = (unsigned long)desc | flags | PTE_LIST_DESC;
 +
-+exit:
-+	WARN_ON(sptep && !is_shadow_present_pte(*sptep));
-+	return sptep;
-+}
-
--	if (!(*pte_list & 1))
--		return fn((u64 *)*pte_list);
-+static u64 *pte_list_next(struct spte_iterator *iter)
-+{
-+	u64 *sptep = NULL;
-
--	desc = (struct pte_list_desc *)(*pte_list & ~1ul);
--	while (desc) {
--		for (i = 0; i < PTE_LIST_EXT && desc->sptes[i]; ++i)
--			fn(desc->sptes[i]);
--		desc = desc->more;
-+	if (iter->pos < 0)
-+		return pte_list_first(iter);
++		return 1;
++	}
 +
-+	if (iter->desc) {
-+		if (iter->pos < PTE_LIST_EXT - 1) {
-+			++iter->pos;
-+			sptep = iter->desc->sptes[iter->pos];
-+			if (sptep)
-+				goto exit;
-+		}
-+
-+		iter->desc = iter->desc->more;
-+
-+		if (iter->desc) {
-+			iter->pos = 0;
-+			/* desc->sptes[0] cannot be NULL */
-+			sptep = iter->desc->sptes[iter->pos];
-+			goto exit;
-+		}
++	rmap_printk("pte_list_add: %p %llx many->many\n", spte, *spte);
++	desc = (struct pte_list_desc *)map;
++	while (desc->sptes[PTE_LIST_EXT - 1] && desc->more) {
++		desc = desc->more;
++		count += PTE_LIST_EXT;
  	}
 +
-+exit:
-+	WARN_ON(sptep && !is_shadow_present_pte(*sptep));
-+	return sptep;
- }
-
++	if (desc->sptes[PTE_LIST_EXT - 1]) {
++		desc->more = mmu_alloc_pte_list_desc(vcpu);
++		desc = desc->more;
++	}
 +
-+#define for_each_pte_list_spte(pte_list, iter, spte)	\
-+	for (pte_list_walk_init(iter, pte_list);	\
-+	      (spte = pte_list_next(iter)) != NULL;	\
-+		pte_list_walk_check_restart(iter, spte))
++	for (i = 0; desc->sptes[i]; ++i)
++		++count;
++	desc->sptes[i] = spte;
 +
-+typedef void (*pte_list_walk_fn) (u64 *spte);
-+static void pte_list_walk(unsigned long *pte_list, pte_list_walk_fn fn)
-+{
-+	struct spte_iterator iter;
-+	u64 *spte;
-+
-+	for_each_pte_list_spte(pte_list, &iter, spte)
-+		fn(spte);
-+}
-+
-+#define for_each_rmap_spte(rmap, iter, spte)	\
-+		for_each_pte_list_spte(rmap, iter, spte)
-+
- static unsigned long *__gfn_to_rmap(gfn_t gfn, int level,
- 				    struct kvm_memory_slot *slot)
- {
-@@ -974,92 +1058,19 @@ static void rmap_remove(struct kvm *kvm, u64 *spte)
- 	pte_list_remove(spte, rmapp);
+ 	return count;
  }
 
--/*
-- * Used by the following functions to iterate through the sptes linked by a
-- * rmap.  All fields are private and not assumed to be used outside.
-- */
--struct rmap_iterator {
--	/* private fields */
--	struct pte_list_desc *desc;	/* holds the sptep if not NULL */
--	int pos;			/* index of the sptep */
--};
--
--/*
-- * Iteration must be started by this function.  This should also be used after
-- * removing/dropping sptes from the rmap link because in such cases the
-- * information in the itererator may not be valid.
-- *
-- * Returns sptep if found, NULL otherwise.
-- */
--static u64 *rmap_get_first(unsigned long rmap, struct rmap_iterator *iter)
--{
--	u64 *sptep;
--
--	if (!rmap)
--		return NULL;
--
--	if (!(rmap & 1)) {
--		iter->desc = NULL;
--		sptep = (u64 *)rmap;
--
--		goto exit;
--	}
--
--	iter->desc = (struct pte_list_desc *)(rmap & ~1ul);
--	iter->pos = 0;
--	sptep = iter->desc->sptes[iter->pos];
--
--exit:
--	WARN_ON(sptep && !is_shadow_present_pte(*sptep));
--	return sptep;
--}
--
--/*
-- * Must be used with a valid iterator: e.g. after rmap_get_first().
-- *
-- * Returns sptep if found, NULL otherwise.
-- */
--static u64 *rmap_get_next(struct rmap_iterator *iter)
--{
--	u64 *sptep = NULL;
--
--	if (iter->desc) {
--		if (iter->pos < PTE_LIST_EXT - 1) {
--			++iter->pos;
--			sptep = iter->desc->sptes[iter->pos];
--			if (sptep)
--				goto exit;
--		}
--
--		iter->desc = iter->desc->more;
--
--		if (iter->desc) {
--			iter->pos = 0;
--			/* desc->sptes[0] cannot be NULL */
--			sptep = iter->desc->sptes[iter->pos];
--			goto exit;
--		}
--	}
--
--exit:
--	WARN_ON(sptep && !is_shadow_present_pte(*sptep));
--	return sptep;
--}
--
- static void drop_spte(struct kvm *kvm, u64 *sptep)
+ static void
+ pte_list_desc_remove_entry(unsigned long *pte_list, struct pte_list_desc *desc,
+-			   int i, struct pte_list_desc *prev_desc)
++			   int i, struct pte_list_desc *prev_desc,
++			   unsigned long flags)
  {
- 	if (mmu_spte_clear_track_bits(sptep))
- 		rmap_remove(kvm, sptep);
- }
+ 	int j;
 
--/* Return true if the spte is dropped. */
--static bool spte_write_protect(struct kvm *kvm, u64 *sptep, bool large,
-+static void spte_write_protect(struct kvm *kvm, u64 *sptep, bool large,
- 			       bool *flush)
- {
- 	u64 spte = *sptep;
-
- 	if (!is_writable_pte(spte))
--		return false;
-+		return;
-
- 	*flush |= true;
-
-@@ -1070,32 +1081,24 @@ static bool spte_write_protect(struct kvm *kvm, u64 *sptep, bool large,
-
- 		drop_spte(kvm, sptep);
- 		--kvm->stat.lpages;
--		return true;
-+		return;
- 	}
-
- 	rmap_printk("rmap_write_protect: spte %p %llx\n", spte, *spte);
- 	spte = spte & ~PT_WRITABLE_MASK;
- 	mmu_spte_update(sptep, spte);
--
--	return false;
- }
-
- static bool
- __rmap_write_protect(struct kvm *kvm, unsigned long *rmapp, int level)
- {
- 	u64 *sptep;
--	struct rmap_iterator iter;
-+	struct spte_iterator iter;
- 	bool write_protected = false;
-
--	for (sptep = rmap_get_first(*rmapp, &iter); sptep;) {
--		if (spte_write_protect(kvm, sptep, level > PT_PAGE_TABLE_LEVEL,
--			  &write_protected)) {
--			sptep = rmap_get_first(*rmapp, &iter);
--			continue;
--		}
--
--		sptep = rmap_get_next(&iter);
--	}
-+	for_each_rmap_spte(rmapp, &iter, sptep)
-+		spte_write_protect(kvm, sptep, level > PT_PAGE_TABLE_LEVEL,
-+			  &write_protected);
-
- 	return write_protected;
- }
-@@ -1147,10 +1150,10 @@ static int kvm_unmap_rmapp(struct kvm *kvm, unsigned long *rmapp,
- 			   unsigned long data)
- {
- 	u64 *sptep;
--	struct rmap_iterator iter;
-+	struct spte_iterator iter;
- 	int need_tlb_flush = 0;
-
--	while ((sptep = rmap_get_first(*rmapp, &iter))) {
-+	for_each_rmap_spte(rmapp, &iter, sptep) {
- 		rmap_printk("kvm_rmap_unmap_hva: spte %p %llx\n", sptep, *sptep);
-
- 		drop_spte(kvm, sptep);
-@@ -1164,7 +1167,7 @@ static int kvm_set_pte_rmapp(struct kvm *kvm, unsigned long *rmapp,
- 			     unsigned long data)
- {
- 	u64 *sptep;
--	struct rmap_iterator iter;
-+	struct spte_iterator iter;
- 	int need_flush = 0;
- 	u64 new_spte;
- 	pte_t *ptep = (pte_t *)data;
-@@ -1173,15 +1176,14 @@ static int kvm_set_pte_rmapp(struct kvm *kvm, unsigned long *rmapp,
- 	WARN_ON(pte_huge(*ptep));
- 	new_pfn = pte_pfn(*ptep);
-
--	for (sptep = rmap_get_first(*rmapp, &iter); sptep;) {
-+	for_each_rmap_spte(rmapp, &iter, sptep) {
- 		rmap_printk("kvm_set_pte_rmapp: spte %p %llx\n", sptep, *sptep);
-
- 		need_flush = 1;
-
--		if (pte_write(*ptep)) {
-+		if (pte_write(*ptep))
- 			drop_spte(kvm, sptep);
--			sptep = rmap_get_first(*rmapp, &iter);
--		} else {
-+		else {
- 			new_spte = *sptep & ~PT64_BASE_ADDR_MASK;
- 			new_spte |= (u64)new_pfn << PAGE_SHIFT;
-
-@@ -1191,7 +1193,6 @@ static int kvm_set_pte_rmapp(struct kvm *kvm, unsigned long *rmapp,
-
- 			mmu_spte_clear_track_bits(sptep);
- 			mmu_spte_set(sptep, new_spte);
--			sptep = rmap_get_next(&iter);
- 		}
- 	}
-
-@@ -1254,7 +1255,7 @@ static int kvm_age_rmapp(struct kvm *kvm, unsigned long *rmapp,
- 			 unsigned long data)
- {
- 	u64 *sptep;
--	struct rmap_iterator iter;
-+	struct spte_iterator iter;
- 	int young = 0;
-
- 	/*
-@@ -1267,8 +1268,7 @@ static int kvm_age_rmapp(struct kvm *kvm, unsigned long *rmapp,
- 	if (!shadow_accessed_mask)
- 		return kvm_unmap_rmapp(kvm, rmapp, data);
-
--	for (sptep = rmap_get_first(*rmapp, &iter); sptep;
--	     sptep = rmap_get_next(&iter))
-+	for_each_rmap_spte(rmapp, &iter, sptep)
- 		if (*sptep & PT_ACCESSED_MASK) {
- 			young = 1;
- 			clear_bit(PT_ACCESSED_SHIFT, (unsigned long *)sptep);
-@@ -1281,7 +1281,7 @@ static int kvm_test_age_rmapp(struct kvm *kvm, unsigned long *rmapp,
- 			      unsigned long data)
- {
- 	u64 *sptep;
--	struct rmap_iterator iter;
-+	struct spte_iterator iter;
- 	int young = 0;
-
- 	/*
-@@ -1292,8 +1292,7 @@ static int kvm_test_age_rmapp(struct kvm *kvm, unsigned long *rmapp,
- 	if (!shadow_accessed_mask)
- 		goto out;
-
--	for (sptep = rmap_get_first(*rmapp, &iter); sptep;
--	     sptep = rmap_get_next(&iter))
-+	for_each_rmap_spte(rmapp, &iter, sptep)
- 		if (*sptep & PT_ACCESSED_MASK) {
- 			young = 1;
- 			break;
-@@ -1955,9 +1954,9 @@ static void kvm_mmu_page_unlink_children(struct kvm *kvm,
- static void kvm_mmu_unlink_parents(struct kvm *kvm, struct kvm_mmu_page *sp)
- {
- 	u64 *sptep;
--	struct rmap_iterator iter;
-+	struct spte_iterator iter;
-
--	while ((sptep = rmap_get_first(sp->parent_ptes, &iter)))
-+	for_each_pte_list_spte(&sp->parent_ptes, &iter, sptep)
- 		drop_parent_pte(sp, sptep);
- }
-
-diff --git a/arch/x86/kvm/mmu_audit.c b/arch/x86/kvm/mmu_audit.c
-index 7d7d0b9..a42bd85 100644
---- a/arch/x86/kvm/mmu_audit.c
-+++ b/arch/x86/kvm/mmu_audit.c
-@@ -193,7 +193,7 @@ static void audit_write_protection(struct kvm *kvm, struct kvm_mmu_page *sp)
- 	struct kvm_memory_slot *slot;
- 	unsigned long *rmapp;
- 	u64 *sptep;
--	struct rmap_iterator iter;
-+	struct spte_iterator iter;
-
- 	if (sp->role.direct || sp->unsync || sp->role.invalid)
+@@ -855,12 +879,13 @@ pte_list_desc_remove_entry(unsigned long *pte_list, struct pte_list_desc *desc,
+ 	if (j != 0)
  		return;
-@@ -201,13 +201,11 @@ static void audit_write_protection(struct kvm *kvm, struct kvm_mmu_page *sp)
- 	slot = gfn_to_memslot(kvm, sp->gfn);
- 	rmapp = &slot->rmap[sp->gfn - slot->base_gfn];
-
--	for (sptep = rmap_get_first(*rmapp, &iter); sptep;
--	     sptep = rmap_get_next(&iter)) {
-+	for_each_rmap_spte(rmapp, &iter, sptep)
- 		if (is_writable_pte(*sptep))
- 			audit_printk(kvm, "shadow page has writable "
- 				     "mappings: gfn %llx role %x\n",
- 				     sp->gfn, sp->role.word);
--	}
+ 	if (!prev_desc && !desc->more)
+-		*pte_list = (unsigned long)desc->sptes[0];
++		*pte_list = (unsigned long)desc->sptes[0] |
++					(flags & (~PTE_LIST_DESC)) ;
+ 	else
+ 		if (prev_desc)
+ 			prev_desc->more = desc->more;
+ 		else
+-			*pte_list = (unsigned long)desc->more | 1;
++			*pte_list = (unsigned long)desc->more | flags;
+ 	mmu_free_pte_list_desc(desc);
  }
 
- static void audit_sp(struct kvm *kvm, struct kvm_mmu_page *sp)
+@@ -868,36 +893,42 @@ static void pte_list_remove(u64 *spte, unsigned long *pte_list)
+ {
+ 	struct pte_list_desc *desc;
+ 	struct pte_list_desc *prev_desc;
++	unsigned long map, flags;
+ 	int i;
+
+-	if (!*pte_list) {
++	pte_list_decode(pte_list, &map, &flags);
++
++	if (!map) {
+ 		printk(KERN_ERR "pte_list_remove: %p 0->BUG\n", spte);
+ 		BUG();
+-	} else if (!(*pte_list & 1)) {
++		return;
++	}
++
++	if (!(flags & PTE_LIST_DESC)) {
+ 		rmap_printk("pte_list_remove:  %p 1->0\n", spte);
+-		if ((u64 *)*pte_list != spte) {
++		if ((u64 *)map != spte) {
+ 			printk(KERN_ERR "pte_list_remove:  %p 1->BUG\n", spte);
+ 			BUG();
+ 		}
+-		*pte_list = 0;
+-	} else {
+-		rmap_printk("pte_list_remove:  %p many->many\n", spte);
+-		desc = (struct pte_list_desc *)(*pte_list & ~1ul);
+-		prev_desc = NULL;
+-		while (desc) {
+-			for (i = 0; i < PTE_LIST_EXT && desc->sptes[i]; ++i)
+-				if (desc->sptes[i] == spte) {
+-					pte_list_desc_remove_entry(pte_list,
+-							       desc, i,
+-							       prev_desc);
+-					return;
+-				}
+-			prev_desc = desc;
+-			desc = desc->more;
+-		}
+-		pr_err("pte_list_remove: %p many->many\n", spte);
+-		BUG();
++		*pte_list = flags;
++		return;
++	}
++
++	rmap_printk("pte_list_remove:  %p many->many\n", spte);
++	desc = (struct pte_list_desc *)map;
++	prev_desc = NULL;
++	while (desc) {
++		for (i = 0; i < PTE_LIST_EXT && desc->sptes[i]; ++i)
++			if (desc->sptes[i] == spte) {
++				pte_list_desc_remove_entry(pte_list,
++						desc, i, prev_desc, flags);
++				return;
++			}
++		prev_desc = desc;
++		desc = desc->more;
+ 	}
++	pr_err("pte_list_remove: %p many->many\n", spte);
++	BUG();
+ }
+
+ /*
+@@ -932,21 +963,22 @@ static void pte_list_walk_check_restart(struct spte_iterator *iter, u64 *spte)
+
+ static u64 *pte_list_first(struct spte_iterator *iter)
+ {
+-	unsigned long pte_list = *iter->pte_list;
++	unsigned long map, flags;
+ 	u64 *sptep;
+
+-	if (!pte_list)
++	pte_list_decode(iter->pte_list, &map, &flags);
++
++	if (!map)
+ 		return NULL;
+
+-	if (!(pte_list & 1)) {
++	if (!(flags & PTE_LIST_DESC)) {
+ 		iter->desc = NULL;
+ 		iter->pos = 0;
+-		sptep = (u64 *)pte_list;
+-
++		sptep = (u64 *)map;
+ 		goto exit;
+ 	}
+
+-	iter->desc = (struct pte_list_desc *)(pte_list & ~1ul);
++	iter->desc = (struct pte_list_desc *)map;
+ 	iter->pos = 0;
+ 	sptep = iter->desc->sptes[iter->pos];
+
 -- 
 1.7.7.6
 
