@@ -1,106 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755861Ab2DMS0N (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Apr 2012 14:26:13 -0400
-Received: from mail-wi0-f172.google.com ([209.85.212.172]:56691 "EHLO
-	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752345Ab2DMS0M convert rfc822-to-8bit (ORCPT
+	id S1755870Ab2DMS14 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Apr 2012 14:27:56 -0400
+Received: from senator.holtmann.net ([87.106.208.187]:44838 "EHLO
+	mail.holtmann.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753422Ab2DMS1z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Apr 2012 14:26:12 -0400
-MIME-Version: 1.0
-In-Reply-To: <tip-4zpgimmz8xv7b5c920el7s45@git.kernel.org>
-References: <tip-4zpgimmz8xv7b5c920el7s45@git.kernel.org>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Fri, 13 Apr 2012 11:25:50 -0700
-X-Google-Sender-Auth: yTwi59rwP0i3_TRG5_WoJUvRIFw
-Message-ID: <CA+55aFxnv5Wrix=uREQsEg+tSBE8SFvy0v_76csv3hrnmPYG2A@mail.gmail.com>
-Subject: Re: [tip:perf/core] perf ui annotate browser: Allow toggling addr
- offset view
-To: mingo@kernel.org, hpa@zytor.com, acme@redhat.com, paulus@samba.org,
-        eranian@google.com, linux-kernel@vger.kernel.org,
-        torvalds@linux-foundation.org, efault@gmx.de, peterz@infradead.org,
-        namhyung@gmail.com, fweisbec@gmail.com, dsahern@gmail.com,
-        tglx@linutronix.de
-Cc: linux-tip-commits@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Fri, 13 Apr 2012 14:27:55 -0400
+Message-ID: <1334341645.16897.146.camel@aeonflux>
+Subject: Re: [PATCH 1/1] Add bluetooth support for Foxconn - Hon Hai
+ bluetooth usb present in Acer TimelineX AS4830TG-6808
+From: Marcel Holtmann <marcel@holtmann.org>
+To: Steven Harms <sjharms@gmail.com>
+Cc: Gustavo Padovan <gustavo@padovan.org>,
+        Johan Hedberg <johan.hedberg@gmail.com>,
+        linux-bluetooth@vger.kernel.org, linux-kernel@vger.kernel.org
+Date: Fri, 13 Apr 2012 20:27:25 +0200
+In-Reply-To: <1334324827-6017-1-git-send-email-sjharms@gmail.com>
+References: <1334324827-6017-1-git-send-email-sjharms@gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 (3.2.3-2.fc16) 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 13, 2012 at 11:07 AM, tip-bot for Arnaldo Carvalho de Melo
-<acme@redhat.com> wrote:
->
-> The offset view will be the default as soon as operations that deal with
-> offsets in a function are handled accodringly, i.e. in offset view the
-> above will become:
->
->     2f:       jne    __list_del_entry+0x84
-> <SNIP>
->     84:       mov    %rdi,%rcx
+Hi Steven,
 
-Oh, please please please make this happen.
+> Signed-off-by: Steven Harms <sjharms@gmail.com>
+> ---
+>  drivers/bluetooth/btusb.c |    3 +++
+>  1 file changed, 3 insertions(+)
 
-Also, if at all possible, please mark offsets that are referenced by a
-branch some way. I do think that the "size of instruction" can be a
-very valid piece of information when looking at instruction-level
-profiles, but quite frankly, I'm also 100% sure that the fact that an
-instruction is a branch target is *more* important.
+break the subject line into something shorter and add a proper commit
+messages that includes /sys/kernel/debug/usb/devices details for this
+device.
 
-Now, fancy arrows etc might be too hard to do (especially without
-cluttering things up too much), but marking just the targets would
-already be lovely. IOW, turn this mess:
+Regards
+
+Marcel
 
 
-         :        ffffffff810d7e80 <kmem_cache_free>:
-    1.91 :        ffffffff810d7e80:       push   %rbp
-    0.05 :        ffffffff810d7e81:       mov    %rsp,%rbp
-    2.02 :        ffffffff810d7e84:       push   %r12
-    0.00 :        ffffffff810d7e86:       mov    %rdi,%r12
-    0.55 :        ffffffff810d7e89:       push   %rbx
-    0.00 :        ffffffff810d7e8a:       mov    %rsi,%rdi
-    1.20 :        ffffffff810d7e8d:       mov    %rsi,%rbx
-    1.64 :        ffffffff810d7e90:       callq  ffffffff8102a730 <__phys_addr>
-    0.05 :        ffffffff810d7e95:       movabs $0xffffea0000000000,%rdi
-    0.22 :        ffffffff810d7e9f:       shr    $0xc,%rax
-    0.11 :        ffffffff810d7ea3:       shl    $0x6,%rax
-    1.64 :        ffffffff810d7ea7:       lea    (%rax,%rdi,1),%rdi
-   42.80 :        ffffffff810d7eab:       mov    (%rdi),%rax
-    2.02 :        ffffffff810d7eae:       test   $0x80,%ah
-    0.00 :        ffffffff810d7eb1:       jne    ffffffff810d7ef6
-<kmem_cache_free+0x76>
-    0.22 :        ffffffff810d7eb3:       mov    0x8(%rbp),%r9
-    7.14 :        ffffffff810d7eb7:       mov    (%r12),%rax
-    0.65 :        ffffffff810d7ebb:       add    %gs:0xcb88,%rax
-    4.58 :        ffffffff810d7ec4:       mov    0x8(%rax),%rdx
-
-(which has tons of unnecessary white-space too - shades of G+) into
-
-<kmem_cache_free>:
-    1.91 :          push   %rbp
-    0.05 :          mov    %rsp,%rbp
-    2.02 :          push   %r12
-    0.00 :          mov    %rdi,%r12
-    0.55 :          push   %rbx
-    0.00 :          mov    %rsi,%rdi
-    1.20 :          mov    %rsi,%rbx
-    1.64 :          callq  ffffffff8102a730 <__phys_addr>
-    0.05 :          movabs $0xffffea0000000000,%rdi
-    0.22 :          shr    $0xc,%rax
-    0.11 :          shl    $0x6,%rax
-    1.64 :          lea    (%rax,%rdi,1),%rdi
-   42.80 :          mov    (%rdi),%rax
-    2.02 :          test   $0x80,%ah
-    0.00 :          jne    kmem_cache_free+0x76
-    0.22 : 0x33:    mov    0x8(%rbp),%r9
-    7.14 : 0x37:    mov    (%r12),%rax
-    0.65 :          add    %gs:0xcb88,%rax
-    4.58 :          mov    0x8(%rax),%rdx
-   ....
-
-or something. I think the "callq  ffffffff8102a730 <__phys_addr>"
-could also be prettified with *zero* downside.
-
-Sure, leave some magic keycombination to get the "full information", but ..
-
-                      Linus
