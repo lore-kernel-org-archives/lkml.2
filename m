@@ -1,117 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757055Ab2DMWET (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Apr 2012 18:04:19 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:40305 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752615Ab2DMWER (ORCPT
+	id S1752665Ab2DMWRY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Apr 2012 18:17:24 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:51333 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751714Ab2DMWRX convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Apr 2012 18:04:17 -0400
-Message-ID: <4F88A355.2060303@gmail.com>
-Date: Sat, 14 Apr 2012 08:06:13 +1000
-From: Ryan Mallon <rmallon@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.28) Gecko/20120313 Thunderbird/3.1.20
+	Fri, 13 Apr 2012 18:17:23 -0400
 MIME-Version: 1.0
-To: Hubert Feurstein <h.feurstein@gmail.com>
-CC: Nikolaus Voss <n.voss@weinmann.de>, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, linux-i2c@vger.kernel.org,
-        nicolas.ferre@atmel.com, ben-linux@fluff.org, balbi@ti.com
-Subject: Re: [PATCH] i2c-at91: fix data-loss issue
-References: <20120413103937.GH7154@arwen.pp.htv.fi> <1334317476-10044-1-git-send-email-h.feurstein@gmail.com>
-In-Reply-To: <1334317476-10044-1-git-send-email-h.feurstein@gmail.com>
+In-Reply-To: <1334101538-19127-1-git-send-email-gurligebis@gentoo.org>
+References: <1334101538-19127-1-git-send-email-gurligebis@gentoo.org>
+Date: Sat, 14 Apr 2012 00:17:22 +0200
+X-Google-Sender-Auth: eImcYbfUX-DE5va0IJE1Dvy35uc
+Message-ID: <CACPM=kUwXocWWMQUKyakydeH72d7FHj-Rxw3bzqc0qDeyWP-yg@mail.gmail.com>
+Subject: Re: [PATCH] NET5501: Change active_low to 0 for LED driver.
+From: Bjarke Istrup Pedersen <gurligebis@gentoo.org>
+To: linux-kernel@vger.kernel.org
+Cc: philipp@redfish-solutions.com
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 13/04/12 21:44, Hubert Feurstein wrote:
-
-> In the interrupt handler both status-flags (TXCOMP and RXRDY) might be
-> pending at the same time. In this case TXCOMP is handled but NOT RXRDY
-> which causes a data-loss on the current transfer. As a consequence also the
-> next transfer will be corrupt, because old data is pending in RHR.
-> 
-> To make sure that we do not start with old data in any case, SR and RHR is
-> read empty before initiating a new transfer.
-> 
-> Signed-off-by: Hubert Feurstein <h.feurstein@gmail.com>
-
-
-Couple of very minor comments below.
-
-~Ryan
-
+11. apr. 2012 01.45 skrev Bjarke Istrup Pedersen <gurligebis@gentoo.org>:
+> It seems that there was an error with the active_low = 1 for the
+> LED, since it should be set to 0 (meaning that active is high,
+> since 0 is false, hence the confusion.
+>
+> The wiki article about it confuses it, since it contradicts
+> itself, regarding what turns on the LED.
+>
+> I have tested 3.4-rc2 on my net5501 with this patch, and it
+> makes the LED behave correctly, where "none" turns it off, and
+> "default-on" turns it on, when echoed onto the trigger "file"
+> in /sys/class/leds.
+>
+> Signed-off-by: Bjarke Istrup Pedersen <gurligebis@gentoo.org>
 > ---
->  This patch applies on top of [PATCH v9 3/4] drivers/i2c/busses/i2c-at91.c: add new driver
-> 
->  drivers/i2c/busses/i2c-at91.c |   23 ++++++++++++++++-------
->  1 files changed, 16 insertions(+), 7 deletions(-)
-> 
-> diff --git a/drivers/i2c/busses/i2c-at91.c b/drivers/i2c/busses/i2c-at91.c
-> index 40c39a2..295835f 100644
-> --- a/drivers/i2c/busses/i2c-at91.c
-> +++ b/drivers/i2c/busses/i2c-at91.c
-> @@ -161,18 +161,22 @@ static irqreturn_t atmel_twi_interrupt(int irq, void *dev_id)
->  {
->  	struct at91_twi_dev *dev = dev_id;
->  	const unsigned status = at91_twi_read(dev, AT91_TWI_SR);
-> -	const unsigned irqstatus = status & at91_twi_read(dev, AT91_TWI_IMR);
-> +	unsigned irqstatus = status & at91_twi_read(dev, AT91_TWI_IMR);
-> +
-> +	irqstatus &= (AT91_TWI_RXRDY | AT91_TWI_TXRDY | AT91_TWI_TXCOMP);
+>  arch/x86/platform/geode/net5501.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+>
+> diff --git a/arch/x86/platform/geode/net5501.c b/arch/x86/platform/geode/net5501.c
+> index 66d377e..646e3b5 100644
+> --- a/arch/x86/platform/geode/net5501.c
+> +++ b/arch/x86/platform/geode/net5501.c
+> @@ -63,7 +63,7 @@ static struct gpio_led net5501_leds[] = {
+>                .name = "net5501:1",
+>                .gpio = 6,
+>                .default_trigger = "default-on",
+> -               .active_low = 1,
+> +               .active_low = 0,
+>        },
+>  };
+>
+> --
+> 1.7.8.5
+>
 
-> +	if (!irqstatus)
-> +		return IRQ_NONE;
-> +
-> +	if (irqstatus & AT91_TWI_RXRDY)
-> +		at91_twi_read_next_byte(dev);
-> +
-> +	if (irqstatus & AT91_TWI_TXRDY)
-> +		at91_twi_write_next_byte(dev);
->  
->  	if (irqstatus & AT91_TWI_TXCOMP) {
->  		at91_disable_twi_interrupts(dev);
->  		dev->transfer_status = status;
->  		complete(&dev->cmd_complete);
-> -	} else if (irqstatus & AT91_TWI_RXRDY) {
-> -		at91_twi_read_next_byte(dev);
-> -	} else if (irqstatus & AT91_TWI_TXRDY) {
-> -		at91_twi_write_next_byte(dev);
-> -	} else {
-> -		return IRQ_NONE;
->  	}
->  
->  	return IRQ_HANDLED;
-> @@ -189,6 +193,10 @@ static int at91_do_twi_transfer(struct at91_twi_dev *dev)
->  	if (dev->msg->flags & I2C_M_RD) {
->  		unsigned start_flags = AT91_TWI_START;
->  
-> +		/* clear any pending data */
-> +		(void)at91_twi_read(dev, AT91_TWI_SR);
-> +		(void)at91_twi_read(dev, AT91_TWI_RHR);
+I have tried sending it to linux-geode, but the list seems to reject
+mails from me for some reason.
+Anyone able to forward it to the right people for inclusion in 3.4-rcX ?
 
-
-Drop the void cast.
-
-> +
->  		/* if only one byte is to be read, immediately stop transfer */
->  		if (dev->buf_len <= 1 && !(dev->msg->flags & I2C_M_RECV_LEN))
->  			start_flags |= AT91_TWI_STOP;
-> @@ -259,6 +267,7 @@ static int at91_twi_xfer(struct i2c_adapter *adap, struct i2c_msg *msg, int num)
->  			internal_address |= addr << (8 * i);
->  			int_addr_flag += AT91_TWI_IADRSZ_1;
->  		}
-> +
-
-
-Please don't make unrelated whitespace changes.
-
->  		at91_twi_write(dev, AT91_TWI_IADR, internal_address);
->  	}
->  
-
-
-With those fixed, please add:
-
-Reviewed-by: Ryan Mallon <rmallon@gmail.com>
+Thanks in advance,
+Bjarke
