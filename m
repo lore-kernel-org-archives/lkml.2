@@ -1,53 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753460Ab2DMOko (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Apr 2012 10:40:44 -0400
-Received: from acsinet15.oracle.com ([141.146.126.227]:37729 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753138Ab2DMOkm (ORCPT
+	id S1751322Ab2DMO4I (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Apr 2012 10:56:08 -0400
+Received: from shards.monkeyblade.net ([198.137.202.13]:49505 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750871Ab2DMO4G (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Apr 2012 10:40:42 -0400
-Date: Fri, 13 Apr 2012 17:35:25 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Matt Renzelmann <mjr@cs.wisc.edu>
-Subject: [RFC] workqueue: do a sanity check on new work
-Message-ID: <20120413143524.GA3668@elgon.mountain>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
-X-CT-RefId: str=0001.0A090202.4F8839B4.0113,ss=1,re=0.000,fgs=0
+	Fri, 13 Apr 2012 10:56:06 -0400
+Date: Fri, 13 Apr 2012 10:55:56 -0400 (EDT)
+Message-Id: <20120413.105556.73360716787161031.davem@davemloft.net>
+To: paulmck@linux.vnet.ibm.com
+Cc: mroos@linux.ee, shemminger@vyatta.com, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org
+Subject: Re: suspicious RCU usage warnings in 3.3.0
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <20120413133513.GB2457@linux.vnet.ibm.com>
+References: <20120412045428.GB2497@linux.vnet.ibm.com>
+	<alpine.SOC.1.00.1204131444150.2736@math.ut.ee>
+	<20120413133513.GB2457@linux.vnet.ibm.com>
+X-Mailer: Mew version 6.4 on Emacs 23.3 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Fri, 13 Apr 2012 07:55:59 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There may be a better way to do this.  If someone tries to call
-shedule_work() on a work_struck before doing an INIT_WORK() then we
-hit the BUG_ON(!list_empty(&work->entry)) in __queue_work() and hang.
-Instead of that, we could just print a stack dump and return.
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Date: Fri, 13 Apr 2012 06:35:13 -0700
 
-It only works if the work->func is NULL at the start but a lot of these
-things get initialized with kzalloc() so it probably catches most of
-them.
+DANGER WILL ROBINSON, McKenney is hacking sparc64 assembler!
+:-))))
 
-Reported-by: Matt Renzelmann <mjr@cs.wisc.edu>
-Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+> My main concern about my patch is my removal of this line:
+> 
+> 	bne,pn			%icc, __handle_softirq
+> 
+> It is quite possible that this should instead change to look as follows:
+> 
+> 	bne,pn			%icc, __handle_preemption
+> 
 
-diff --git a/kernel/workqueue.c b/kernel/workqueue.c
-index 5abf42f..45be34f 100644
---- a/kernel/workqueue.c
-+++ b/kernel/workqueue.c
-@@ -1088,6 +1088,11 @@ queue_work_on(int cpu, struct workqueue_struct *wq, struct work_struct *work)
- {
- 	int ret = 0;
- 
-+	if (!work->func) {
-+		WARN_ON(1);
-+		return 1;
-+	}
-+
- 	if (!test_and_set_bit(WORK_STRUCT_PENDING_BIT, work_data_bits(work))) {
- 		__queue_work(cpu, wq, work);
- 		ret = 1;
+I would say it should not, because the __handle_softirq code path,
+if taken, unconditionally branches to the very next instruction
+after this branch and it's delay slot.
+
+> Anyway, patch with updated changelog below.
+
+Great work, I'll apply this after I test it out a bit myself.
+
+Thanks a lot Paul!
