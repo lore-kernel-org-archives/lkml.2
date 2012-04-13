@@ -1,51 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756345Ab2DMNfQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Apr 2012 09:35:16 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:52548 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753957Ab2DMNfO (ORCPT
+	id S932516Ab2DMNgs (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Apr 2012 09:36:48 -0400
+Received: from e32.co.us.ibm.com ([32.97.110.150]:51325 "EHLO
+	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753957Ab2DMNgq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Apr 2012 09:35:14 -0400
-Message-ID: <1334324105.2732.2.camel@phoenix>
-Subject: [PATCH] regulator: core: Fix getting input_uV when supplied by
- another regulator
-From: Axel Lin <axel.lin@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Liam Girdwood <lrg@ti.com>
-Date: Fri, 13 Apr 2012 21:35:05 +0800
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2- 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Fri, 13 Apr 2012 09:36:46 -0400
+Date: Fri, 13 Apr 2012 06:35:13 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: mroos@linux.ee
+Cc: David Miller <davem@davemloft.net>, shemminger@vyatta.com,
+        Linux Kernel list <linux-kernel@vger.kernel.org>,
+        netdev@vger.kernel.org
+Subject: Re: suspicious RCU usage warnings in 3.3.0
+Message-ID: <20120413133513.GB2457@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20120411171004.016ddd95@nehalam.linuxnetplumber.net>
+ <20120411.201854.1070083308359208025.davem@davemloft.net>
+ <20120412004507.GF2473@linux.vnet.ibm.com>
+ <20120411.210843.716144028821174908.davem@davemloft.net>
+ <20120412045428.GB2497@linux.vnet.ibm.com>
+ <alpine.SOC.1.00.1204131444150.2736@math.ut.ee>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.SOC.1.00.1204131444150.2736@math.ut.ee>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12041313-3270-0000-0000-000005870EED
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When supplied by another regulator, returns the supply regulator's output
-voltage for inpu_uV.
+On Fri, Apr 13, 2012 at 02:55:12PM +0300, mroos@linux.ee wrote:
+> > sparc64: Eliminate obsolete __handle_softirq() function
+> > 
+> > The invocation of softirq is now handled by irq_exit(), so there is no
+> > need for sparc64 to invoke it on the trap-return path.  In fact, doing so
+> > is a bug because if the trap occurred in the idle loop, this invocation
+> > can result in lockdep-RCU failures.  The problem is that RCU ignores idle
+> > CPUs, and the sparc64 trap-return path to the softirq handlers fails to
+> > tell RCU that the CPU must be considered non-idle while those handlers
+> > are executing.  This means that RCU is ignoring any RCU read-side critical
+> > sections in those handlers, which in turn means that RCU-protected data
+> > can be yanked out from under those read-side critical sections.
+> > 
+> > The shiny new lockdep-RCU ability to detect RCU read-side critical sections
+> > that RCU is ignoring located this problem.
+> > 
+> > The fix is straightforward: Make sparc64 stop manually invoking the
+> > softirq handlers.
+> > 
+> > Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+> 
+> It works for me on Sun Fire V100 - no more RCU warnings under ping 
+> flood.
+> 
+> Tested-by: Meelis Roos <mroos@linux.ee>
 
-Signed-off-by: Axel Lin <axel.lin@gmail.com>
----
- drivers/regulator/core.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+OK, if this thing is going to actually work, I guess I need to update
+the changelog to give credit where it is due, please see below.
 
-diff --git a/drivers/regulator/core.c b/drivers/regulator/core.c
-index 4e34cd3..a8d4360 100644
---- a/drivers/regulator/core.c
-+++ b/drivers/regulator/core.c
-@@ -649,7 +649,7 @@ static void drms_uA_update(struct regulator_dev *rdev)
- 	/* get input voltage */
- 	input_uV = 0;
- 	if (rdev->supply)
--		input_uV = _regulator_get_voltage(rdev);
-+		input_uV = regulator_get_voltage(rdev->supply);
- 	if (input_uV <= 0)
- 		input_uV = rdev->constraints->input_uV;
- 	if (input_uV <= 0)
--- 
-1.7.5.4
+My main concern about my patch is my removal of this line:
 
+	bne,pn			%icc, __handle_softirq
 
+It is quite possible that this should instead change to look as follows:
+
+	bne,pn			%icc, __handle_preemption
+
+This code is under #ifndef CONFIG_SMP, so Meelis's testing would not
+reach it.
+
+Anyway, patch with updated changelog below.
+
+							Thanx, Paul
+
+------------------------------------------------------------------------
+
+sparc64: Eliminate obsolete __handle_softirq() function
+
+The invocation of softirq is now handled by irq_exit(), so there is no
+need for sparc64 to invoke it on the trap-return path.  In fact, doing so
+is a bug because if the trap occurred in the idle loop, this invocation
+can result in lockdep-RCU failures.  The problem is that RCU ignores idle
+CPUs, and the sparc64 trap-return path to the softirq handlers fails to
+tell RCU that the CPU must be considered non-idle while those handlers
+are executing.  This means that RCU is ignoring any RCU read-side critical
+sections in those handlers, which in turn means that RCU-protected data
+can be yanked out from under those read-side critical sections.
+
+The shiny new lockdep-RCU ability to detect RCU read-side critical sections
+that RCU is ignoring located this problem.
+
+The fix is straightforward: Make sparc64 stop manually invoking the
+softirq handlers.
+
+Reported-by: Meelis Roos <mroos@linux.ee>
+Suggested-by: David Miller <davem@davemloft.net>
+Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+Tested-by: Meelis Roos <mroos@linux.ee>
+
+diff --git a/arch/sparc/kernel/rtrap_64.S b/arch/sparc/kernel/rtrap_64.S
+index 77f1b95..9171fc2 100644
+--- a/arch/sparc/kernel/rtrap_64.S
++++ b/arch/sparc/kernel/rtrap_64.S
+@@ -20,11 +20,6 @@
+ 
+ 		.text
+ 		.align			32
+-__handle_softirq:
+-		call			do_softirq
+-		 nop
+-		ba,a,pt			%xcc, __handle_softirq_continue
+-		 nop
+ __handle_preemption:
+ 		call			schedule
+ 		 wrpr			%g0, RTRAP_PSTATE, %pstate
+@@ -89,9 +84,7 @@ rtrap:
+ 		cmp			%l1, 0
+ 
+ 		/* mm/ultra.S:xcall_report_regs KNOWS about this load. */
+-		bne,pn			%icc, __handle_softirq
+ 		 ldx			[%sp + PTREGS_OFF + PT_V9_TSTATE], %l1
+-__handle_softirq_continue:
+ rtrap_xcall:
+ 		sethi			%hi(0xf << 20), %l4
+ 		and			%l1, %l4, %l4
 
