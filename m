@@ -1,54 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756766Ab2DMUcP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Apr 2012 16:32:15 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:7775 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753013Ab2DMUcO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Apr 2012 16:32:14 -0400
-Date: Fri, 13 Apr 2012 16:32:05 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Tejun Heo <tj@kernel.org>
+	id S1756763Ab2DMUhc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Apr 2012 16:37:32 -0400
+Received: from mail-pz0-f52.google.com ([209.85.210.52]:35676 "EHLO
+	mail-pz0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753013Ab2DMUha (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 Apr 2012 16:37:30 -0400
+Date: Fri, 13 Apr 2012 13:37:26 -0700
+From: Tejun Heo <tj@kernel.org>
+To: Vivek Goyal <vgoyal@redhat.com>
 Cc: axboe@kernel.dk, ctalbott@google.com, rni@google.com,
         linux-kernel@vger.kernel.org, cgroups@vger.kernel.org,
         containers@lists.linux-foundation.org
 Subject: Re: [PATCH 07/11] blkcg: make request_queue bypassing on allocation
-Message-ID: <20120413203205.GI26383@redhat.com>
+Message-ID: <20120413203726.GE12233@google.com>
 References: <1334347895-6268-1-git-send-email-tj@kernel.org>
  <1334347895-6268-8-git-send-email-tj@kernel.org>
+ <20120413203205.GI26383@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1334347895-6268-8-git-send-email-tj@kernel.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20120413203205.GI26383@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 13, 2012 at 01:11:31PM -0700, Tejun Heo wrote:
-> With the previous change to guarantee bypass visiblity for RCU read
-> lock regions, entering bypass mode involves non-trivial overhead and
-> future changes are scheduled to make use of bypass mode during init
-> path.  Combined it may end up adding noticeable delay during boot.
+On Fri, Apr 13, 2012 at 04:32:05PM -0400, Vivek Goyal wrote:
+> On Fri, Apr 13, 2012 at 01:11:31PM -0700, Tejun Heo wrote:
+> > With the previous change to guarantee bypass visiblity for RCU read
+> > lock regions, entering bypass mode involves non-trivial overhead and
+> > future changes are scheduled to make use of bypass mode during init
+> > path.  Combined it may end up adding noticeable delay during boot.
+> > 
+> > This patch makes request_queue start its life in bypass mode, which is
+> > ended on queue init completion at the end of
+> > blk_init_allocated_queue(), and updates blk_queue_bypass_start() such
+> > that draining and RCU synchronization are performed only when the
+> > queue actually enters bypass mode.
+> > 
+> > This avoids unnecessarily switching in and out of bypass mode during
+> > init avoiding the overhead and any nasty surprises which may step from
+> > leaving bypass mode on half-initialized queues.
 > 
-> This patch makes request_queue start its life in bypass mode, which is
-> ended on queue init completion at the end of
-> blk_init_allocated_queue(), and updates blk_queue_bypass_start() such
-> that draining and RCU synchronization are performed only when the
-> queue actually enters bypass mode.
+> Tejun, I am not sure that this will fix the problem completely. I think
+> we will still face the overhead of synchronize_rcu() in
+> blkcg_deactivate_policy() as it will be called from cfq_exit_queue() for
+> initialized queues.
 > 
-> This avoids unnecessarily switching in and out of bypass mode during
-> init avoiding the overhead and any nasty surprises which may step from
-> leaving bypass mode on half-initialized queues.
+> In the past I had I had used synchronize_rcu() in cfq_exit_queue() and
+> noticed the overhead. Looks like driver was creating fully initialized
+> queues and tearing these apart soon.
 
-Tejun, I am not sure that this will fix the problem completely. I think
-we will still face the overhead of synchronize_rcu() in
-blkcg_deactivate_policy() as it will be called from cfq_exit_queue() for
-initialized queues.
+blk_cleanup_queue() doesn't use blk_queue_bypass_start() to enter
+bypass mode.
 
-In the past I had I had used synchronize_rcu() in cfq_exit_queue() and
-noticed the overhead. Looks like driver was creating fully initialized
-queues and tearing these apart soon.
+Thanks.
 
-Thanks
-Vivek
+-- 
+tejun
