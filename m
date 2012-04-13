@@ -1,264 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758315Ab2DMJ6X (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Apr 2012 05:58:23 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:47934 "EHLO
+	id S1758367Ab2DMJ7J (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Apr 2012 05:59:09 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:53039 "EHLO
 	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754050Ab2DMJ6W (ORCPT
+	with ESMTP id S934357Ab2DMJ7F (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Apr 2012 05:58:22 -0400
-Message-ID: <4F87F868.1080804@openwrt.org>
-Date: Fri, 13 Apr 2012 11:56:56 +0200
-From: Florian Fainelli <florian@openwrt.org>
-Organization: OpenWrt
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120329 Thunderbird/11.0.1
-MIME-Version: 1.0
-To: David Daney <ddaney.cavm@gmail.com>
-CC: Grant Likely <grant.likely@secretlab.ca>, ralf@linux-mips.org,
-        linux-mips@linux-mips.org,
-        Linus Walleij <linus.walleij@stericsson.com>,
-        Rob Herring <rob.herring@calxeda.com>,
-        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
-        David Daney <david.daney@cavium.com>
-Subject: Re: [PATCH 2/2] gpio/MIPS/OCTEON: Add a driver for OCTEON's on-chip
- GPIO pins.
-References: <1334275820-7791-1-git-send-email-ddaney.cavm@gmail.com> <1334275820-7791-3-git-send-email-ddaney.cavm@gmail.com>
-In-Reply-To: <1334275820-7791-3-git-send-email-ddaney.cavm@gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+	Fri, 13 Apr 2012 05:59:05 -0400
+From: Sasha Levin <levinsasha928@gmail.com>
+To: cl@linux.com, akpm@linux-foundation.org
+Cc: hughd@google.com, dave@linux.vnet.ibm.com, ebiederm@xmission.com,
+        davej@redhat.com, linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Sasha Levin <levinsasha928@gmail.com>
+Subject: [PATCH 2/2] mm: fix NULL ptr dereference in move_pages
+Date: Fri, 13 Apr 2012 08:58:22 -0400
+Message-Id: <1334321902-7143-2-git-send-email-levinsasha928@gmail.com>
+X-Mailer: git-send-email 1.7.8.5
+In-Reply-To: <1334321902-7143-1-git-send-email-levinsasha928@gmail.com>
+References: <1334321902-7143-1-git-send-email-levinsasha928@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi David,
+Commit 3268c63 ("mm: fix move/migrate_pages() race on task struct") has added
+an odd construct where 'mm' is checked for being NULL, and if it is, it would
+get dereferenced anyways by mput()ing it.
 
-Le 04/13/12 02:10, David Daney a écrit :
-> From: David Daney<david.daney@cavium.com>
->
-> The SOCs in the OCTEON family have 16 (or in some cases 20) on-chip
-> GPIO pins, this driver handles them all.  Configuring the pins as
-> interrupt sources is handled elsewhere (OCTEON's irq handling code).
->
-> Signed-off-by: David Daney<david.daney@cavium.com>
-> ---
->   drivers/gpio/Kconfig       |    8 ++
->   drivers/gpio/Makefile      |    1 +
->   drivers/gpio/gpio-octeon.c |  166 ++++++++++++++++++++++++++++++++++++++++++++
->   3 files changed, 175 insertions(+), 0 deletions(-)
->   create mode 100644 drivers/gpio/gpio-octeon.c
->
-> diff --git a/drivers/gpio/Kconfig b/drivers/gpio/Kconfig
-> index edadbda..d9d924c 100644
-> --- a/drivers/gpio/Kconfig
-> +++ b/drivers/gpio/Kconfig
-> @@ -136,6 +136,14 @@ config GPIO_MXS
->   	select GPIO_GENERIC
->   	select GENERIC_IRQ_CHIP
->
-> +config GPIO_OCTEON
-> +	tristate "Cavium OCTEON GPIO"
-> +	depends on GPIOLIB&&  CPU_CAVIUM_OCTEON
-> +	default y
-> +	help
-> +	  Say yes here to support the on-chip GPIO lines on the OCTEON
-> +	  family of SOCs.
-> +
->   config GPIO_PL061
->   	bool "PrimeCell PL061 GPIO support"
->   	depends on ARM_AMBA
-> diff --git a/drivers/gpio/Makefile b/drivers/gpio/Makefile
-> index 007f54b..ce0348c 100644
-> --- a/drivers/gpio/Makefile
-> +++ b/drivers/gpio/Makefile
-> @@ -37,6 +37,7 @@ obj-$(CONFIG_GPIO_MSM_V2)	+= gpio-msm-v2.o
->   obj-$(CONFIG_GPIO_MXC)		+= gpio-mxc.o
->   obj-$(CONFIG_GPIO_MXS)		+= gpio-mxs.o
->   obj-$(CONFIG_PLAT_NOMADIK)	+= gpio-nomadik.o
-> +obj-$(CONFIG_GPIO_OCTEON)	+= gpio-octeon.o
->   obj-$(CONFIG_ARCH_OMAP)		+= gpio-omap.o
->   obj-$(CONFIG_GPIO_PCA953X)	+= gpio-pca953x.o
->   obj-$(CONFIG_GPIO_PCF857X)	+= gpio-pcf857x.o
-> diff --git a/drivers/gpio/gpio-octeon.c b/drivers/gpio/gpio-octeon.c
-> new file mode 100644
-> index 0000000..e679b44
-> --- /dev/null
-> +++ b/drivers/gpio/gpio-octeon.c
-> @@ -0,0 +1,166 @@
-> +/*
-> + * This file is subject to the terms and conditions of the GNU General Public
-> + * License.  See the file "COPYING" in the main directory of this archive
-> + * for more details.
-> + *
-> + * Copyright (C) 2011,2012 Cavium Inc.
-> + */
-> +
-> +#include<linux/platform_device.h>
-> +#include<linux/kernel.h>
-> +#include<linux/module.h>
-> +#include<linux/gpio.h>
-> +#include<linux/io.h>
-> +
-> +#include<asm/octeon/octeon.h>
-> +#include<asm/octeon/cvmx-gpio-defs.h>
-> +
-> +#define DRV_VERSION "1.0"
-> +#define DRV_DESCRIPTION "Cavium Inc. OCTEON GPIO Driver"
-> +
-> +#define RX_DAT 0x80
-> +#define TX_SET 0x88
-> +#define TX_CLEAR 0x90
-> +/*
-> + * The address offset of the GPIO configuration register for a given
-> + * line.
-> + */
-> +static unsigned int bit_cfg_reg(unsigned int gpio)
-> +{
-> +	if (gpio<  16)
-> +		return 8 * gpio;
-> +	else
-> +		return 8 * (gpio - 16) + 0x100;
-> +}
+Signed-off-by: Sasha Levin <levinsasha928@gmail.com>
+---
+ mm/migrate.c |   16 ++++++++--------
+ 1 files changed, 8 insertions(+), 8 deletions(-)
 
-You could explicitely inline this one, though the compiler will 
-certainly do it by itself.
+diff --git a/mm/migrate.c b/mm/migrate.c
+index 51c08a0..1107238 100644
+--- a/mm/migrate.c
++++ b/mm/migrate.c
+@@ -1388,14 +1388,14 @@ SYSCALL_DEFINE6(move_pages, pid_t, pid, unsigned long, nr_pages,
+ 	mm = get_task_mm(task);
+ 	put_task_struct(task);
+ 
+-	if (mm) {
+-		if (nodes)
+-			err = do_pages_move(mm, task_nodes, nr_pages, pages,
+-					    nodes, status, flags);
+-		else
+-			err = do_pages_stat(mm, nr_pages, pages, status);
+-	} else
+-		err = -EINVAL;
++	if (!mm)
++		return -EINVAL;
++
++	if (nodes)
++		err = do_pages_move(mm, task_nodes, nr_pages, pages,
++				    nodes, status, flags);
++	else
++		err = do_pages_stat(mm, nr_pages, pages, status);
+ 
+ 	mmput(mm);
+ 	return err;
+-- 
+1.7.8.5
 
-> +
-> +struct octeon_gpio {
-> +	struct gpio_chip chip;
-> +	u64 register_base;
-> +};
-> +
-> +static int octeon_gpio_dir_in(struct gpio_chip *chip, unsigned offset)
-> +{
-> +	struct octeon_gpio *gpio = container_of(chip, struct octeon_gpio, chip);
-> +
-> +	cvmx_write_csr(gpio->register_base + bit_cfg_reg(offset), 0);
-> +	return 0;
-> +}
-> +
-> +static void octeon_gpio_set(struct gpio_chip *chip, unsigned offset, int value)
-> +{
-> +	struct octeon_gpio *gpio = container_of(chip, struct octeon_gpio, chip);
-> +	u64 mask = 1ull<<  offset;
-> +	u64 reg = gpio->register_base + (value ? TX_SET : TX_CLEAR);
-> +	cvmx_write_csr(reg, mask);
-> +}
-> +
-> +static int octeon_gpio_dir_out(struct gpio_chip *chip, unsigned offset,
-> +			       int value)
-> +{
-> +	struct octeon_gpio *gpio = container_of(chip, struct octeon_gpio, chip);
-> +	union cvmx_gpio_bit_cfgx cfgx;
-> +
-> +
-> +	octeon_gpio_set(chip, offset, value);
-> +
-> +	cfgx.u64 = 0;
-> +	cfgx.s.tx_oe = 1;
-> +
-> +	cvmx_write_csr(gpio->register_base + bit_cfg_reg(offset), cfgx.u64);
-> +	return 0;
-> +}
-> +
-> +static int octeon_gpio_get(struct gpio_chip *chip, unsigned offset)
-> +{
-> +	struct octeon_gpio *gpio = container_of(chip, struct octeon_gpio, chip);
-> +	u64 read_bits = cvmx_read_csr(gpio->register_base + RX_DAT);
-> +
-> +	return ((1ull<<  offset)&  read_bits) != 0;
-> +}
-> +
-> +static int __init octeon_gpio_probe(struct platform_device *pdev)
-> +{
-> +	struct octeon_gpio *gpio;
-> +	struct gpio_chip *chip;
-> +	struct resource *res_mem;
-> +	int err = 0;
-> +
-> +	gpio = devm_kzalloc(&pdev->dev, sizeof(*gpio), GFP_KERNEL);
-> +	if (!gpio)
-> +		return -ENOMEM;
-> +	chip =&gpio->chip;
-> +
-> +	res_mem = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-> +	if (res_mem == NULL) {
-> +		dev_err(&pdev->dev, "found no memory resource\n");
-> +		err = -ENXIO;
-> +		goto out;
-> +	}
-> +	if (!devm_request_mem_region(&pdev->dev, res_mem->start,
-> +					resource_size(res_mem),
-> +				     res_mem->name)) {
-> +		dev_err(&pdev->dev, "request_mem_region failed\n");
-> +		err = -ENXIO;
-> +		goto out;
-> +	}
-> +	gpio->register_base = (u64)devm_ioremap(&pdev->dev, res_mem->start,
-> +						resource_size(res_mem));
-> +
-> +
-> +	pdev->dev.platform_data = chip;
-> +	chip->label = "octeon-gpio";
-> +	chip->dev =&pdev->dev;
-> +	chip->owner = THIS_MODULE;
-> +	chip->base = 0;
-> +	chip->can_sleep = 0;
-> +
-> +	if (OCTEON_IS_MODEL(OCTEON_CN66XX) ||
-> +	    OCTEON_IS_MODEL(OCTEON_CN61XX) ||
-> +	    OCTEON_IS_MODEL(OCTEON_CNF71XX))
-> +		chip->ngpio = 20;
-> +	else
-> +		chip->ngpio = 16;
-
-What about getting the number of gpios from platform_data and/or device 
-tree?
-
-> +
-> +	chip->direction_input = octeon_gpio_dir_in;
-> +	chip->get = octeon_gpio_get;
-> +	chip->direction_output = octeon_gpio_dir_out;
-> +	chip->set = octeon_gpio_set;
-> +	err = gpiochip_add(chip);
-> +	if (err)
-> +		goto out;
-> +
-> +	dev_info(&pdev->dev, "version: " DRV_VERSION "\n");
-> +out:
-> +	return err;
-> +}
-> +
-> +static int __exit octeon_gpio_remove(struct platform_device *pdev)
-> +{
-> +	struct gpio_chip *chip = pdev->dev.platform_data;
-> +	return gpiochip_remove(chip);
-> +}
-> +
-> +static struct of_device_id octeon_gpio_match[] = {
-> +	{
-> +		.compatible = "cavium,octeon-3860-gpio",
-> +	},
-> +	{},
-> +};
-> +MODULE_DEVICE_TABLE(of, octeon_mgmt_match);
-
-You are using linux/of.h definitions here but you did not include it. 
-Also, there is a typo, you want octeon_gpio_match instead.
-
-> +
-> +static struct platform_driver octeon_gpio_driver = {
-> +	.driver = {
-> +		.name		= "octeon_gpio",
-> +		.owner		= THIS_MODULE,
-> +		.of_match_table = octeon_gpio_match,
-> +	},
-> +	.probe		= octeon_gpio_probe,
-> +	.remove		= __exit_p(octeon_gpio_remove),
-> +};
-> +
-> +module_platform_driver(octeon_gpio_driver);
-> +
-> +MODULE_DESCRIPTION(DRV_DESCRIPTION);
-> +MODULE_AUTHOR("David Daney");
-> +MODULE_LICENSE("GPL");
-> +MODULE_VERSION(DRV_VERSION);
