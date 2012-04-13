@@ -1,89 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932595Ab2DMNRF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Apr 2012 09:17:05 -0400
-Received: from kamaji.grokhost.net ([87.117.218.43]:38046 "EHLO
-	kamaji.grokhost.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756664Ab2DMNRB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Apr 2012 09:17:01 -0400
-Message-ID: <4F882745.4080301@bootc.net>
-Date: Fri, 13 Apr 2012 14:16:53 +0100
-From: Chris Boot <bootc@bootc.net>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:12.0) Gecko/20120410 Thunderbird/12.0
+	id S1756687Ab2DMNYF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Apr 2012 09:24:05 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:52603 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755002Ab2DMNYC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 Apr 2012 09:24:02 -0400
+Date: Fri, 13 Apr 2012 09:23:52 -0400
+From: Josh Boyer <jwboyer@redhat.com>
+To: Takashi Iwai <tiwai@suse.de>
+Cc: Jaroslav Kysela <perex@perex.cz>, alsa-devel@alsa-project.org,
+        linux-kernel@vger.kernel.org, kernel-team@fedoraproject.org
+Subject: Re: Thinkpad hda regression in 3.3
+Message-ID: <20120413132352.GD25425@zod.bos.redhat.com>
+References: <20120413124306.GC25425@zod.bos.redhat.com>
+ <s5hpqbbvkzo.wl%tiwai@suse.de>
 MIME-Version: 1.0
-To: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-CC: linux1394-devel@lists.sourceforge.net, target-devel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, agrover@redhat.com, clemens@ladisch.de,
-        stefanr@s5r6.in-berlin.de, Christoph Hellwig <hch@lst.de>
-Subject: Re: [PATCH v3 00/11] firewire-sbp-target: FireWire SBP-2 SCSI target
-References: <1329317248-94128-1-git-send-email-bootc@bootc.net>  <1334154043-69076-1-git-send-email-bootc@bootc.net> <1334286222.3137.4877.camel@haakon2.linux-iscsi.org>
-In-Reply-To: <1334286222.3137.4877.camel@haakon2.linux-iscsi.org>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <s5hpqbbvkzo.wl%tiwai@suse.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 13/04/2012 04:03, Nicholas A. Bellinger wrote:
-> On Wed, 2012-04-11 at 15:20 +0100, Chris Boot wrote:
->> The FireWire SBP-2 Target is a driver for using an IEEE-1394 connection
->> as a SCSI transport. This module uses the SCSI Target framework to
->> expose LUNs to other machines attached to a FireWire bus, in effect
->> acting as a FireWire hard disk similar to FireWire Target Disk mode on
->> many Apple computers.
->>
->> Sorry this latest revision has been a long time coming. I was trying to
->> chase down a crashing bug (but haven't been able to replicate it), changed
->> my mind about a large portion of the code twice, and life got in the way as
->> well!
->>
-> Some very nice work to make this all go Chris..  8-)
->
-> Thanks again btw for your target_core_mod patches along the way to v3!
+On Fri, Apr 13, 2012 at 03:07:07PM +0200, Takashi Iwai wrote:
+> At Fri, 13 Apr 2012 08:43:06 -0400,
+> Josh Boyer wrote:
+> > 
+> > Hi Takashi and Jaroslav,
+> > 
+> > We've had a number of bugs reported about sound not working correctly on
+> > various models of Thinkpad machines in the 3.3 kernel.  I've listed them
+> > below.
+> > 
+> > I looked through the commits and found:
+> > 
+> >     commit 29c5fbbcfefba5225a6783683c46c39e10877703:
+> > 
+> >     ALSA: HDA: Use model=auto for Thinkpad T510
+> > 
+> >     The user reports that model=auto works fine for him. Using
+> >     model=auto bring in new features such as jack detection notification
+> >     to userspace.
+> > 
+> > I did a local build here with that comment reverted and so far most of
+> > the people reported their sound to be working again.  The trivial revert
+> > patch is below in case you want it.
+> 
+> Could you get alsa-info.sh output on the non-working T510?
+> If it's really about the built-in speaker or headphone jack, I doubt
+> it's rahter the muted output in mixer.  I see only "me too" in the bug
+> report, which doesn't help much to diagnose the problem.
 
-No problem, it's been a very useful learning experience and I'm really 
-glad I did it! :-)
+OK, I've asked for that.
 
->> Changes in v3:
->> * Updates for target framework API changes
->> * Attempt to make headers self-contained
->> * Remove bad use of atomics and memory barriers
->> * Rework use of locking
->> * Use system workqueues
->> * Wrap fw_run_transaction() to retry failed transactions
->> * Coding style fixes
->> * Fix a few bugs
->> * Overhaul sbp_rw_data()
->> * Overhaul target fetch agent
->>
-> So I've merged a squashed version this series from:
->
->    https://github.com/bootc/Linux-SBP-2-Target.git patch-v3
->
-> into lio-core/master, and have now pushed to k.o upstream
+> I've got a few positive feedbacks of T410 and T510, so basically the
+> driver should work.  But I know the problem of docking-station (see
+> below).
+> 
+> 
+> > It seems there are multiple models that have PCI ID 17aa:215e and using
+> > model=auto does not work for them all.  It particularly messes with
+> > machines using a docking station for some reason.
+> > 
+> > Aside from just reverting the above commit, do you have other thoughts
+> > on how to fix this?
+> 
+> The problem regarding the docking station is basically a BIOS issue.
+> ThinkPad BIOS doesn't expose the pins for docking stations at all.
+> We have already a workaround for X200, and similar others would be
+> needed for T410, T420, etc.
+> 
+> For testing, you don't need even patch the driver.  When the driver is
+> built with CONFIG_SND_HDA_PATCH_LOADER=y, create a file containing the
+> below as /lib/firmware/alsa-tp-dock:
+> 
+> ================================================================
+> [codec]
+> 0x14f15069 0x17aa21a4 0
+> 
+> [pincfg]
+> 0x1a 0x21a11000
+> 0x1c 0x23014250
+> ================================================================
 
-Thanks!
+The above is for the X200 docking station, correct?  So it should work
+with an x201 thinkpad in an x200 dock.
 
-> This looks to me like a reasonable candidate for a v3.5 mainline merge,
-> so we need to go ahead and get this into target-pending..  Also, thanks
-> for getting Stefan's ACK's here on the drivers/firmware/ specific
-> changes..
->
-> So for new fabric drivers (as discused with Sebastian and usb-gadget
-> recently) that the target team has been enforcing that new fabric
-> modules convert to use a single source / header file for readability and
-> maintainability purposes.
->
-> It would be great if you can publish one more branch (no need to re-post
-> the full diff) that takes your patch-v3 down to a single .c/.h file.
-> Otherwise, I'm fine to take the 15 minutes to do this conversion ahead
-> of dropping into target-pending for the sunday night linux-next build.
+> then pass the module option patch="alsa-tp-dock" to snd-hda-intel,
+> e.g. create a file containing below in /etc/modprobe.d/*
+> 
+> 	options snd-hda-intel patch="alsa-tp-dock"
+> 
+> This will override the pin-default values of 0x1a and 0x1c, which
+> corresponds to the docking-station mic and docking-station output.
+> This will set dock-out as the line-out so that the built-in headphone
+> is preferred over it.
+> 
+> Note that after applying this, the new mixer elements will appear, so
+> you'd need to adjust the values manually once.
+> 
+> Similarly, for T420, create a file with the contents below instead:
+> 
+> ================================================================
+> [codec]
+> 0x14f1506e 0x17aa21d2 0
+> 
+> [pincfg]
+> 0x19 0x0421104f
+> 0x1a 0x21a19050
+> 0x1c 0x2121401f
+> ================================================================
+> 
+> The rest procedure is same.
+> 
+> If the above seem work (again, make sure that you adjust the mixer
+> mutes and levels), I'll make kernel patches to add these fixups
+> statically in the driver so that it works without extra patching.
 
-I'll get onto it over the weekend, I hope. I assume in this case I just 
-stick it all in drivers/target/ instead of having a sbp/ directory 
-underneath that?
+OK.  I'll have the reporters test this out.
 
-Cheers,
-Chris
-
+josh
