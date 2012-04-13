@@ -1,26 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755660Ab2DMSTa (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Apr 2012 14:19:30 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:51706 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753311Ab2DMST2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1753391Ab2DMST2 (ORCPT <rfc822;w@1wt.eu>);
 	Fri, 13 Apr 2012 14:19:28 -0400
-Date: Fri, 13 Apr 2012 11:17:12 -0700
-From: tip-bot for Borislav Petkov <borislav.petkov@amd.com>
-Message-ID: <tip-d5dd8afb569cdf89bd2b322d10f80a23bd3d2cfd@git.kernel.org>
-Cc: acme@redhat.com, linux-kernel@vger.kernel.org, hpa@zytor.com,
-        mingo@kernel.org, sam@ravnborg.org, mmarek@suse.cz, tglx@linutronix.de,
-        borislav.petkov@amd.com
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        acme@redhat.com, sam@ravnborg.org, tglx@linutronix.de, mmarek@suse.cz,
-        borislav.petkov@amd.com
-In-Reply-To: <1334162178-17152-5-git-send-email-bp@amd64.org>
-References: <1334162178-17152-5-git-send-email-bp@amd64.org>
+Received: from terminus.zytor.com ([198.137.202.10]:51705 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751581Ab2DMST0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 Apr 2012 14:19:26 -0400
+Date: Fri, 13 Apr 2012 11:18:50 -0700
+From: tip-bot for Jiri Olsa <jolsa@redhat.com>
+Message-ID: <tip-024e6c9747bb274c9d744ad52a987a0ebec528a6@git.kernel.org>
+Cc: acme@redhat.com, linux-kernel@vger.kernel.org, paulus@samba.org,
+        hpa@zytor.com, mingo@kernel.org, a.p.zijlstra@chello.nl,
+        jolsa@redhat.com, fweisbec@gmail.com, tglx@linutronix.de,
+        cjashfor@linux.vnet.ibm.com, mingo@elte.hu
+Reply-To: mingo@kernel.org, hpa@zytor.com, paulus@samba.org,
+        linux-kernel@vger.kernel.org, acme@redhat.com, a.p.zijlstra@chello.nl,
+        jolsa@redhat.com, fweisbec@gmail.com, tglx@linutronix.de,
+        cjashfor@linux.vnet.ibm.com, mingo@elte.hu
+In-Reply-To: <1334140791-3024-1-git-send-email-jolsa@redhat.com>
+References: <1334140791-3024-1-git-send-email-jolsa@redhat.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] tools: Add a help target
-Git-Commit-ID: d5dd8afb569cdf89bd2b322d10f80a23bd3d2cfd
+Subject: [tip:perf/core] perf tools: Fix parsers' rules to dependencies
+Git-Commit-ID: 024e6c9747bb274c9d744ad52a987a0ebec528a6
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -29,61 +31,83 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Fri, 13 Apr 2012 11:17:17 -0700 (PDT)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Fri, 13 Apr 2012 11:18:56 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  d5dd8afb569cdf89bd2b322d10f80a23bd3d2cfd
-Gitweb:     http://git.kernel.org/tip/d5dd8afb569cdf89bd2b322d10f80a23bd3d2cfd
-Author:     Borislav Petkov <borislav.petkov@amd.com>
-AuthorDate: Wed, 11 Apr 2012 18:36:17 +0200
+Commit-ID:  024e6c9747bb274c9d744ad52a987a0ebec528a6
+Gitweb:     http://git.kernel.org/tip/024e6c9747bb274c9d744ad52a987a0ebec528a6
+Author:     Jiri Olsa <jolsa@redhat.com>
+AuthorDate: Wed, 11 Apr 2012 12:39:51 +0200
 Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Wed, 11 Apr 2012 14:59:00 -0300
+CommitDate: Wed, 11 Apr 2012 16:57:09 -0300
 
-tools: Add a help target
+perf tools: Fix parsers' rules to dependencies
 
-... and make it the default one so that calling 'make' without arguments
-in the tools/ directory gives you the possible targets to build along
-with a short description of what they are.
+Currently the parsers objects (bison/flex related) are each time perf
+is built. No matter the generated files are already in place, the
+parser generation is executed every time.
 
-Signed-off-by: Borislav Petkov <borislav.petkov@amd.com>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Michal Marek <mmarek@suse.cz>
-Cc: Sam Ravnborg <sam@ravnborg.org>
-Link: http://lkml.kernel.org/r/1334162178-17152-5-git-send-email-bp@amd64.org
+Changing the rules to have proper flex/bison objects generation
+dependencies.
+
+The parsers code is not rebuilt until the flex/bison source files
+are touched. Also when flex/bison source is changed, only dependent
+objects are rebuilt.
+
+Signed-off-by: Jiri Olsa <jolsa@redhat.com>
+Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Link: http://lkml.kernel.org/r/1334140791-3024-1-git-send-email-jolsa@redhat.com
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/Makefile |   20 ++++++++++++++++++++
- 1 files changed, 20 insertions(+), 0 deletions(-)
+ tools/perf/Makefile |   19 ++++++++-----------
+ 1 files changed, 8 insertions(+), 11 deletions(-)
 
-diff --git a/tools/Makefile b/tools/Makefile
-index feadfdd..f87c0ec 100644
---- a/tools/Makefile
-+++ b/tools/Makefile
-@@ -1,5 +1,25 @@
- include scripts/Makefile.include
+diff --git a/tools/perf/Makefile b/tools/perf/Makefile
+index 4ca77cc..b28b610 100644
+--- a/tools/perf/Makefile
++++ b/tools/perf/Makefile
+@@ -204,21 +204,20 @@ export PERL_PATH
+ FLEX = $(CROSS_COMPILE)flex
+ BISON= $(CROSS_COMPILE)bison
  
-+help:
-+	@echo 'Possible targets:'
-+	@echo ''
-+	@echo '  cpupower   - a tool for all things x86 CPU power'
-+	@echo '  firewire   - the userspace part of nosy, an IEEE-1394 traffic sniffer'
-+	@echo '  lguest     - a minimal 32-bit x86 hypervisor'
-+	@echo '  perf       - Linux performance measurement and analysis tool'
-+	@echo '  selftests  - various kernel selftests'
-+	@echo '  turbostat  - Intel CPU idle stats and freq reporting tool'
-+	@echo '  usb        - USB testing tools'
-+	@echo '  virtio     - vhost test module'
-+	@echo '  vm         - misc vm tools'
-+	@echo '  x86_energy_perf_policy - Intel energy policy tool'
-+	@echo ''
-+	@echo 'Cleaning targets:'
-+	@echo ''
-+	@echo '  all of the above with the "_clean" string appended cleans'
-+	@echo '    the respective build directory.'
-+	@echo '  clean: a summary clean target to clean _all_ folders'
-+
- cpupower: FORCE
- 	$(QUIET_SUBDIR0)power/$@/ $(QUIET_SUBDIR1)
+-event-parser:
+-	$(QUIET_BISON)$(BISON) -v util/parse-events.y -d -o $(OUTPUT)util/parse-events-bison.c
++$(OUTPUT)util/parse-events-flex.c: util/parse-events.l
+ 	$(QUIET_FLEX)$(FLEX) --header-file=$(OUTPUT)util/parse-events-flex.h -t util/parse-events.l > $(OUTPUT)util/parse-events-flex.c
  
+-$(OUTPUT)util/parse-events-flex.c: event-parser
+-$(OUTPUT)util/parse-events-bison.c: event-parser
++$(OUTPUT)util/parse-events-bison.c: util/parse-events.y
++	$(QUIET_BISON)$(BISON) -v util/parse-events.y -d -o $(OUTPUT)util/parse-events-bison.c
+ 
+-pmu-parser:
+-	$(QUIET_BISON)$(BISON) -v util/pmu.y -d -o $(OUTPUT)util/pmu-bison.c
++$(OUTPUT)util/pmu-flex.c: util/pmu.l
+ 	$(QUIET_FLEX)$(FLEX) --header-file=$(OUTPUT)util/pmu-flex.h -t util/pmu.l > $(OUTPUT)util/pmu-flex.c
+ 
+-$(OUTPUT)util/pmu-flex.c: pmu-parser
+-$(OUTPUT)util/pmu-bison.c: pmu-parser
++$(OUTPUT)util/pmu-bison.c: util/pmu.y
++	$(QUIET_BISON)$(BISON) -v util/pmu.y -d -o $(OUTPUT)util/pmu-bison.c
+ 
+-$(OUTPUT)util/parse-events.o: event-parser pmu-parser
++$(OUTPUT)util/parse-events.o: $(OUTPUT)util/parse-events-flex.c $(OUTPUT)util/parse-events-bison.c
++$(OUTPUT)util/pmu.o: $(OUTPUT)util/pmu-flex.c $(OUTPUT)util/pmu-bison.c
+ 
+ LIB_FILE=$(OUTPUT)libperf.a
+ 
+@@ -807,8 +806,6 @@ help:
+ 	@echo '  html		- make html documentation'
+ 	@echo '  info		- make GNU info documentation (access with info <foo>)'
+ 	@echo '  pdf		- make pdf documentation'
+-	@echo '  event-parser	- make event parser code'
+-	@echo '  pmu-parser	- make pmu format parser code'
+ 	@echo '  TAGS		- use etags to make tag information for source browsing'
+ 	@echo '  tags		- use ctags to make tag information for source browsing'
+ 	@echo '  cscope	- use cscope to make interactive browsing database'
