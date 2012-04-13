@@ -1,99 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755842Ab2DMSZB (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Apr 2012 14:25:01 -0400
-Received: from gwu.lbox.cz ([62.245.111.132]:36917 "EHLO gwu.lbox.cz"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752345Ab2DMSY7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Apr 2012 14:24:59 -0400
-Date: Fri, 13 Apr 2012 20:18:56 +0200
-From: Nikola Ciprich <nikola.ciprich@linuxbox.cz>
-To: stable@kernel.org, linux-kernel@vger.kernel.org
-Cc: nikola.ciprich@linuxbox.cz
-Subject: suspected regression in 3.0.28 - applications having problems
- binding to ports
-Message-ID: <20120413181856.GA2286@nik-comp.lan>
+	id S1755861Ab2DMS0N (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Apr 2012 14:26:13 -0400
+Received: from mail-wi0-f172.google.com ([209.85.212.172]:56691 "EHLO
+	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752345Ab2DMS0M convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 Apr 2012 14:26:12 -0400
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="0OAP2g/MAC+5xKAE"
-Content-Disposition: inline
-"X-PGP-Key: http://nik.lbox.cz/downloads/nikola.ciprich.asc"
-User-Agent: Mutt/1.5.21 (2011-07-01)
-X-Antivirus: on lbxovapx by Kaspersky antivirus, 7416020 records (last update: 20120413)
-X-Spam-Score: N/A (trusted relay)
+In-Reply-To: <tip-4zpgimmz8xv7b5c920el7s45@git.kernel.org>
+References: <tip-4zpgimmz8xv7b5c920el7s45@git.kernel.org>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Fri, 13 Apr 2012 11:25:50 -0700
+X-Google-Sender-Auth: yTwi59rwP0i3_TRG5_WoJUvRIFw
+Message-ID: <CA+55aFxnv5Wrix=uREQsEg+tSBE8SFvy0v_76csv3hrnmPYG2A@mail.gmail.com>
+Subject: Re: [tip:perf/core] perf ui annotate browser: Allow toggling addr
+ offset view
+To: mingo@kernel.org, hpa@zytor.com, acme@redhat.com, paulus@samba.org,
+        eranian@google.com, linux-kernel@vger.kernel.org,
+        torvalds@linux-foundation.org, efault@gmx.de, peterz@infradead.org,
+        namhyung@gmail.com, fweisbec@gmail.com, dsahern@gmail.com,
+        tglx@linutronix.de
+Cc: linux-tip-commits@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, Apr 13, 2012 at 11:07 AM, tip-bot for Arnaldo Carvalho de Melo
+<acme@redhat.com> wrote:
+>
+> The offset view will be the default as soon as operations that deal with
+> offsets in a function are handled accodringly, i.e. in offset view the
+> above will become:
+>
+>     2f:       jne    __list_del_entry+0x84
+> <SNIP>
+>     84:       mov    %rdi,%rcx
 
---0OAP2g/MAC+5xKAE
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Oh, please please please make this happen.
 
-Hi,
+Also, if at all possible, please mark offsets that are referenced by a
+branch some way. I do think that the "size of instruction" can be a
+very valid piece of information when looking at instruction-level
+profiles, but quite frankly, I'm also 100% sure that the fact that an
+instruction is a branch target is *more* important.
 
-I'd like to report following suspicious behaviour of 3.0.27 kernel.
-
-On one of our production boxes, after upgrading from 3.0.26 to 3.0.27,
-applications started to behave weird after ~1 day uptime.
-Squid started reporting problems binding to port, nagios misbehaved, etc.
-I was forced to revert to 3.0.26. We tried to reproduce the problem but wer=
-e unsuccessful.
-After ~1 week without problems with 3.0.26, I tried upgrading this producti=
-on box to 3.0.27
-again to see what happens and the problem appeared again after about one da=
-y.
-
-imap started reporting problems:
-EMAIL DELIVERY CRITICAL - imap failed: IMAP RECEIVE CRITICAL - Could not co=
-nnect to A.B.C.D port 993: IO::Socket::INET6 configuration
-
-same for squid:
-commBind: Cannot bind socket FD 21 to 0.0.0.0: (98) Address already in use
-
-nagios processes went totally nuts.
-
-There was no other change except for the kernel upgrade.
-The box is x86_64 quad CPU 4GB machine, what might be important, we're using
-IPv6 as well.
-I don't see any suspicious (at least to me) patch between 3.0.26 and 3.0.27.
-Since it seems to take quite a long to reproduce, I haven't tried bisect ye=
-t, first
-wanted to ask - hasn't anyone experienced similar problems?
-
-thanks a lot in advance!
-
-with best regards
-
-nik
+Now, fancy arrows etc might be too hard to do (especially without
+cluttering things up too much), but marking just the targets would
+already be lovely. IOW, turn this mess:
 
 
---=20
--------------------------------------
-Ing. Nikola CIPRICH
-LinuxBox.cz, s.r.o.
-28. rijna 168, 709 01 Ostrava
+         :        ffffffff810d7e80 <kmem_cache_free>:
+    1.91 :        ffffffff810d7e80:       push   %rbp
+    0.05 :        ffffffff810d7e81:       mov    %rsp,%rbp
+    2.02 :        ffffffff810d7e84:       push   %r12
+    0.00 :        ffffffff810d7e86:       mov    %rdi,%r12
+    0.55 :        ffffffff810d7e89:       push   %rbx
+    0.00 :        ffffffff810d7e8a:       mov    %rsi,%rdi
+    1.20 :        ffffffff810d7e8d:       mov    %rsi,%rbx
+    1.64 :        ffffffff810d7e90:       callq  ffffffff8102a730 <__phys_addr>
+    0.05 :        ffffffff810d7e95:       movabs $0xffffea0000000000,%rdi
+    0.22 :        ffffffff810d7e9f:       shr    $0xc,%rax
+    0.11 :        ffffffff810d7ea3:       shl    $0x6,%rax
+    1.64 :        ffffffff810d7ea7:       lea    (%rax,%rdi,1),%rdi
+   42.80 :        ffffffff810d7eab:       mov    (%rdi),%rax
+    2.02 :        ffffffff810d7eae:       test   $0x80,%ah
+    0.00 :        ffffffff810d7eb1:       jne    ffffffff810d7ef6
+<kmem_cache_free+0x76>
+    0.22 :        ffffffff810d7eb3:       mov    0x8(%rbp),%r9
+    7.14 :        ffffffff810d7eb7:       mov    (%r12),%rax
+    0.65 :        ffffffff810d7ebb:       add    %gs:0xcb88,%rax
+    4.58 :        ffffffff810d7ec4:       mov    0x8(%rax),%rdx
 
-tel.:   +420 596 603 142
-fax:    +420 596 621 273
-mobil:  +420 777 093 799
+(which has tons of unnecessary white-space too - shades of G+) into
 
-www.linuxbox.cz
+<kmem_cache_free>:
+    1.91 :          push   %rbp
+    0.05 :          mov    %rsp,%rbp
+    2.02 :          push   %r12
+    0.00 :          mov    %rdi,%r12
+    0.55 :          push   %rbx
+    0.00 :          mov    %rsi,%rdi
+    1.20 :          mov    %rsi,%rbx
+    1.64 :          callq  ffffffff8102a730 <__phys_addr>
+    0.05 :          movabs $0xffffea0000000000,%rdi
+    0.22 :          shr    $0xc,%rax
+    0.11 :          shl    $0x6,%rax
+    1.64 :          lea    (%rax,%rdi,1),%rdi
+   42.80 :          mov    (%rdi),%rax
+    2.02 :          test   $0x80,%ah
+    0.00 :          jne    kmem_cache_free+0x76
+    0.22 : 0x33:    mov    0x8(%rbp),%r9
+    7.14 : 0x37:    mov    (%r12),%rax
+    0.65 :          add    %gs:0xcb88,%rax
+    4.58 :          mov    0x8(%rax),%rdx
+   ....
 
-mobil servis: +420 737 238 656
-email servis: servis@linuxbox.cz
--------------------------------------
+or something. I think the "callq  ffffffff8102a730 <__phys_addr>"
+could also be prettified with *zero* downside.
 
---0OAP2g/MAC+5xKAE
-Content-Type: application/pgp-signature
+Sure, leave some magic keycombination to get the "full information", but ..
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iEYEARECAAYFAk+IbhAACgkQ3xdJJrLygV4KYQCgv2Z0pNFTP0+DLz0MCoQ6DEmJ
-gBUAn2NIvdHQjvkHrK98L1yHOYwjlvwD
-=/guM
------END PGP SIGNATURE-----
-
---0OAP2g/MAC+5xKAE--
+                      Linus
