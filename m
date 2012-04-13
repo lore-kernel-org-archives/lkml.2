@@ -1,71 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755454Ab2DMSMt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Apr 2012 14:12:49 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:51584 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753907Ab2DMSMr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Apr 2012 14:12:47 -0400
-Date: Fri, 13 Apr 2012 11:12:28 -0700
-From: tip-bot for Namhyung Kim <namhyung.kim@lge.com>
-Message-ID: <tip-2381da7a11ef5fcfbad1f1ca2f6ddaa7a153694f@git.kernel.org>
-Cc: acme@redhat.com, linux-kernel@vger.kernel.org, paulus@samba.org,
-        mingo@redhat.com, hpa@zytor.com, mingo@kernel.org,
-        a.p.zijlstra@chello.nl, namhyung.kim@lge.com, namhyung@gmail.com,
-        tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, mingo@redhat.com, paulus@samba.org,
-        linux-kernel@vger.kernel.org, acme@redhat.com, a.p.zijlstra@chello.nl,
-        namhyung.kim@lge.com, tglx@linutronix.de, namhyung@gmail.com
-In-Reply-To: <1333948274-20043-1-git-send-email-namhyung.kim@lge.com>
-References: <1333948274-20043-1-git-send-email-namhyung.kim@lge.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf tools: Ignore auto-generated bison/flex files
-Git-Commit-ID: 2381da7a11ef5fcfbad1f1ca2f6ddaa7a153694f
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	id S1754013Ab2DMSNI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Apr 2012 14:13:08 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:12136 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750966Ab2DMSNE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 Apr 2012 14:13:04 -0400
+Date: Fri, 13 Apr 2012 14:12:57 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: axboe@kernel.dk, ctalbott@google.com, rni@google.com,
+        linux-kernel@vger.kernel.org, cgroups@vger.kernel.org,
+        containers@lists.linux-foundation.org
+Subject: Re: [PATCH 7/8] blkcg: implement per-queue policy activation
+Message-ID: <20120413181257.GG26383@redhat.com>
+References: <1334273380-30233-1-git-send-email-tj@kernel.org>
+ <1334273380-30233-8-git-send-email-tj@kernel.org>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Fri, 13 Apr 2012 11:12:35 -0700 (PDT)
+In-Reply-To: <1334273380-30233-8-git-send-email-tj@kernel.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  2381da7a11ef5fcfbad1f1ca2f6ddaa7a153694f
-Gitweb:     http://git.kernel.org/tip/2381da7a11ef5fcfbad1f1ca2f6ddaa7a153694f
-Author:     Namhyung Kim <namhyung.kim@lge.com>
-AuthorDate: Mon, 9 Apr 2012 14:11:14 +0900
-Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Wed, 11 Apr 2012 11:41:27 -0300
+On Thu, Apr 12, 2012 at 04:29:39PM -0700, Tejun Heo wrote:
 
-perf tools: Ignore auto-generated bison/flex files
+[..]
+> diff --git a/block/elevator.c b/block/elevator.c
+> index be3ab6d..6a55d41 100644
+> --- a/block/elevator.c
+> +++ b/block/elevator.c
+> @@ -896,8 +896,6 @@ static int elevator_switch(struct request_queue *q, struct elevator_type *new_e)
+>  	ioc_clear_queue(q);
+>  	spin_unlock_irq(q->queue_lock);
+>  
+> -	blkg_destroy_all(q, false);
+> -
 
-The commit 65f3e56e0c81 ("perf tools: Remove auto-generated bison/flex
-files") removed those files from git, so they'll be listed on untracked
-files after building perf. Fix it.
+So now groups don't reclaimed until either cgroup is deleted or queue
+exits. So if BLK_DEV_THROTTLE=n and cfq is switched out, blkg created
+by CFQ policy will not be reclaimed (despite the fact nobody is using
+them).
 
-Signed-off-by: Namhyung Kim <namhyung.kim@lge.com>
-Cc: Ingo Molnar <mingo@redhat.com>
-Cc: Namhyung Kim <namhyung@gmail.com>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/1333948274-20043-1-git-send-email-namhyung.kim@lge.com
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
----
- tools/perf/.gitignore |    2 ++
- 1 files changed, 2 insertions(+), 0 deletions(-)
+This is not necessarily bad, just thought of clarifying that it is the
+design intent.
 
-diff --git a/tools/perf/.gitignore b/tools/perf/.gitignore
-index 416684b..26b823b 100644
---- a/tools/perf/.gitignore
-+++ b/tools/perf/.gitignore
-@@ -19,3 +19,5 @@ TAGS
- cscope*
- config.mak
- config.mak.autogen
-+*-bison.*
-+*-flex.*
+Thanks
+Vivek
