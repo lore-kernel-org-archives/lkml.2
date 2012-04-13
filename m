@@ -1,78 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935189Ab2DMKRm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Apr 2012 06:17:42 -0400
-Received: from e28smtp01.in.ibm.com ([122.248.162.1]:43848 "EHLO
-	e28smtp01.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935123Ab2DMKRk (ORCPT
+	id S935203Ab2DMKSE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Apr 2012 06:18:04 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:41880 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934916Ab2DMKSA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Apr 2012 06:17:40 -0400
-Message-ID: <4F87FD3C.2080403@linux.vnet.ibm.com>
-Date: Fri, 13 Apr 2012 18:17:32 +0800
-From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120216 Thunderbird/10.0.1
+	Fri, 13 Apr 2012 06:18:00 -0400
 MIME-Version: 1.0
-To: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-CC: Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
-        LKML <linux-kernel@vger.kernel.org>, KVM <kvm@vger.kernel.org>
-Subject: [PATCH v2 16/16] KVM: MMU: fix kvm_mmu_pagetable_walk tracepoint
-References: <4F87FA69.5060106@linux.vnet.ibm.com>
-In-Reply-To: <4F87FA69.5060106@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-x-cbid: 12041310-4790-0000-0000-0000022C4E79
+In-Reply-To: <201203191534.q2JFYl1b012744@gatekeeper.vosshq.de>
+References: <cover.1322479017a.git.n.voss@weinmann.de>
+	<201203191534.q2JFYl1b012744@gatekeeper.vosshq.de>
+Date: Fri, 13 Apr 2012 12:17:59 +0200
+Message-ID: <CAFfN3gWCu5RnKb6dK4YMCAhpkfLncYdk1Cwqxb3wxMVznSiSFQ@mail.gmail.com>
+Subject: Re: [PATCH v9 3/4] drivers/i2c/busses/i2c-at91.c: add new driver
+From: Hubert Feurstein <h.feurstein@gmail.com>
+To: Nikolaus Voss <n.voss@weinmann.de>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux-i2c@vger.kernel.org, nicolas.ferre@atmel.com,
+        ben-linux@fluff.org, balbi@ti.com, rmallon@gmail.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-P bit of page fault error code is missed in this tracepoint, fix it by
-passing the full error code
+Hi Niko,
 
-Signed-off-by: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
----
- arch/x86/kvm/mmutrace.h    |    7 +++----
- arch/x86/kvm/paging_tmpl.h |    3 +--
- 2 files changed, 4 insertions(+), 6 deletions(-)
+I'm using this driver since a while a now in my system
+(soc:at91sam9m10; kernel:v3.2.14) and it works quite well. But
+occasionally it happens that wrong data is read from my devices. I've
+traced down the issue to the way how you do the interrupt handling. In
+your code you do not consider that both status-flags (TXCOMP and
+RXRDY) may be pending at the same time. So you handle the TXCOMP but
+NOT the RXRDY which will cause a data-loss on the current transfer. As
+a consequence also the next transfer will be corrupt, because you
+start with old data in RHR. So I would suggest the following changes:
 
-diff --git a/arch/x86/kvm/mmutrace.h b/arch/x86/kvm/mmutrace.h
-index 84da94f..e762d35 100644
---- a/arch/x86/kvm/mmutrace.h
-+++ b/arch/x86/kvm/mmutrace.h
-@@ -54,8 +54,8 @@
-  */
- TRACE_EVENT(
- 	kvm_mmu_pagetable_walk,
--	TP_PROTO(u64 addr, int write_fault, int user_fault, int fetch_fault),
--	TP_ARGS(addr, write_fault, user_fault, fetch_fault),
-+	TP_PROTO(u64 addr, u32 pferr),
-+	TP_ARGS(addr, pferr),
+static irqreturn_t atmel_twi_interrupt(int irq, void *dev_id)
+{
+	struct at91_twi_dev *dev = dev_id;
+	const unsigned status = at91_twi_read(dev, AT91_TWI_SR);
+	unsigned irqstatus = status & at91_twi_read(dev, AT91_TWI_IMR);
 
- 	TP_STRUCT__entry(
- 		__field(__u64, addr)
-@@ -64,8 +64,7 @@ TRACE_EVENT(
+	if (irqstatus & AT91_TWI_RXRDY) {
+		at91_twi_read_next_byte(dev);
+		irqstatus &= ~AT91_TWI_RXRDY;
+	}
 
- 	TP_fast_assign(
- 		__entry->addr = addr;
--		__entry->pferr = (!!write_fault << 1) | (!!user_fault << 2)
--		                 | (!!fetch_fault << 4);
-+		__entry->pferr = pferr;
- 	),
+	if (irqstatus & AT91_TWI_TXRDY) {
+		at91_twi_write_next_byte(dev);
+		irqstatus &= ~AT91_TWI_TXRDY;
+	}
 
- 	TP_printk("addr %llx pferr %x %s", __entry->addr, __entry->pferr,
-diff --git a/arch/x86/kvm/paging_tmpl.h b/arch/x86/kvm/paging_tmpl.h
-index c85dbbe..ff85616 100644
---- a/arch/x86/kvm/paging_tmpl.h
-+++ b/arch/x86/kvm/paging_tmpl.h
-@@ -154,8 +154,7 @@ static int FNAME(walk_addr_generic)(struct guest_walker *walker,
- 	const int fetch_fault = access & PFERR_FETCH_MASK;
- 	u16 errcode = 0;
+	if (irqstatus & AT91_TWI_TXCOMP) {
+		at91_disable_twi_interrupts(dev);
+		dev->transfer_status = status;
+		complete(&dev->cmd_complete);
+		irqstatus &= ~AT91_TWI_TXCOMP;
+	}
+	
+	if (irqstatus) {
+		/* There should be no pending interrupt anymore. *)
+		return IRQ_NONE;
+	}
 
--	trace_kvm_mmu_pagetable_walk(addr, write_fault, user_fault,
--				     fetch_fault);
-+	trace_kvm_mmu_pagetable_walk(addr, access);
- retry_walk:
- 	eperm = false;
- 	walker->level = mmu->root_level;
--- 
-1.7.7.6
+	return IRQ_HANDLED;
+}
 
+To make sure that we do not start with old data in any case, I would
+suggest to read SR and RHR before initiating a new transfer.
+
+static int at91_do_twi_transfer(struct at91_twi_dev *dev)
+{
+	int ret;
+
+	dev_dbg(dev->dev, "transfer: %s %d bytes.\n",
+		(dev->msg->flags & I2C_M_RD) ? "read" : "write", dev->buf_len);
+
+	INIT_COMPLETION(dev->cmd_complete);
+	if (dev->msg->flags & I2C_M_RD) {
+		unsigned start_flags = AT91_TWI_START;
+
+		/* clear any pending data */
+		(void)at91_twi_read(dev, AT91_TWI_SR);
+		(void)at91_twi_read(dev, AT91_TWI_RHR);
+		
+		/* if only one byte is to be read, immediately stop transfer */
+		if (dev->buf_len <= 1 && !(dev->msg->flags & I2C_M_RECV_LEN))
+			start_flags |= AT91_TWI_STOP;
+		at91_twi_write(dev, AT91_TWI_CR, start_flags);
+
+		[snip]
+}
+
+
+Hubert
