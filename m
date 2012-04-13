@@ -1,76 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756939Ab2DMVi6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Apr 2012 17:38:58 -0400
-Received: from mail-pz0-f52.google.com ([209.85.210.52]:40876 "EHLO
-	mail-pz0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753078Ab2DMVi5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Apr 2012 17:38:57 -0400
-Date: Fri, 13 Apr 2012 14:38:52 -0700
-From: Tejun Heo <tj@kernel.org>
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: axboe@kernel.dk, ctalbott@google.com, rni@google.com,
-        linux-kernel@vger.kernel.org, cgroups@vger.kernel.org,
-        containers@lists.linux-foundation.org
-Subject: Re: [PATCH 07/11] blkcg: make request_queue bypassing on allocation
-Message-ID: <20120413213852.GJ12233@google.com>
-References: <1334347895-6268-1-git-send-email-tj@kernel.org>
- <1334347895-6268-8-git-send-email-tj@kernel.org>
- <20120413203205.GI26383@redhat.com>
- <20120413203726.GE12233@google.com>
- <20120413204446.GK26383@redhat.com>
- <20120413204710.GF12233@google.com>
- <20120413205501.GL26383@redhat.com>
- <20120413210548.GG12233@google.com>
- <20120413213344.GA1825@redhat.com>
+	id S932084Ab2DMVrA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Apr 2012 17:47:00 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:36061 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753426Ab2DMVq7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 Apr 2012 17:46:59 -0400
+From: Lubos Lunak <l.lunak@suse.cz>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [PATCH][RESEND] do not redefine userspace's NULL #define
+Date: Fri, 13 Apr 2012 23:46:56 +0200
+User-Agent: KMail/1.9.10
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+        Arnd Bergmann <arnd@arndb.de>
+References: <201204132124.21294.l.lunak@suse.cz> <CA+55aFxCrVtwCd9bjHLt82Uwisp8OtKP9c+raPYMqCTXqVfxGw@mail.gmail.com>
+In-Reply-To: <CA+55aFxCrVtwCd9bjHLt82Uwisp8OtKP9c+raPYMqCTXqVfxGw@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
 Content-Disposition: inline
-In-Reply-To: <20120413213344.GA1825@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Message-Id: <201204132346.57019.l.lunak@suse.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 13, 2012 at 05:33:44PM -0400, Vivek Goyal wrote:
-> On Fri, Apr 13, 2012 at 02:05:48PM -0700, Tejun Heo wrote:
-> > On Fri, Apr 13, 2012 at 04:55:01PM -0400, Vivek Goyal wrote:
-> > > But neither seems to be the case here. So to make sure that blkg_lookup()
-> > > under rcu will see the updated value of queue flag (bypass), are we
-> > > relying on the fact that caller should see the DEAD flag and not go
-> > > ahead with blkg_lookup()?  If yes, atleast it is not obivious.
-> > 
-> > We're relying on the fact that it doesn't matter anymore because all
-> > blkgs will be shoot down in queue cleanup path which goes through rcu
-> > free, which is different from deactivating individual policies.  It
-> > indeed is subtle.  Umm... this is starting to get ridiculous.  Why the
-> > hell was megaraid messing with so many queues anyways?
-> 
-> Well, blkcg_deactivate_policy() frees the policy data in a non-rcu
-> manner. So group is around but policy data is gone. So technically if some
-> IO submitter does not see the queue bypass flag, he might still try to
-> access blkg->pd[pol->plid] after being freed.
+On Friday 13 of April 2012, Linus Torvalds wrote:
+> On Fri, Apr 13, 2012 at 12:24 PM, Lubos Lunak <l.lunak@suse.cz> wrote:
+> > GCC's NULL is actually __null, which allows detecting some questionable
+> > NULL usage and warn about it. Moreover each platform/compiler should have
+> > its own stddef.h anyway (which is different from linux/stddef.h).
+> > So there's no good reason to override what the compiler provides.
+> > Keep the #define conditionally, in order to keep the headers
+> > self-contained.
+>
+> There's no way user should ever include the linux internal stddef.h.
 
-No, we always go through blkg_destroy_all() and each blkg along with
-any attached policy_data will go through RCU grace period before
-getting destroyed.  It is stupid subtle but nevertheless correct.
+ If that were the case, one of the earlier versions of the patch would have 
+been correct then, but as Arnd has pointed out, user applications do include 
+the header. It's even as simple as:
 
-> Having said that, in this case we are probably fine as blk_release_queue()
-> is executed after last reference to queue is dropped and no more IO can
-> come. May be a 2 line comment will help.
+#include <signal.h>
 
-Yeah, we're guaranteed that by the time blk_release_queue() executes
-nobody is traversing the queue.  Hmmm... right, this is much easier to
-wrap one's head around.  I'll use this explanation in the comment.
+( -> bits/sigcontext.h -> asm/sigcontext.h -> linux/types.h -> 
+linux/posix_types.h -> linux/stddef.h ).
 
-> BTW, looks like blkio_exit_group_fn() probably is not a good name anymore
-> as it is not even called when policy is being deactivated. It should
-> probably be now .blkio_exit_policy_data_fn() or something like that.
+> And quite frankly, kernel-external definitions of NULL have
+> traditionally been pure sh*t (ie plain "0" without the cast to a
+> pointer), so I'm not entirely convinced about this patch.
 
-Heh, I'm brewing mass blkcg API rename patch as we speak.
+ Quite frankly, I do not care what happens with it in kernel builds. I just 
+don't want the suboptimal definition to leak to userspace. If you instead 
+make sure linux/stddef.h is never used by userspace, that's fine with me.
 
-Thanks.
+> So what is the *actual* thing this helps with?
+
+ Random example:
+
+/home/tinderbox/clang-master-build/vcl/unx/gtk/fpicker/SalGtkFilePicker.cxx:216:66: 
+warning: missing sentinel in function call [-Wsentinel]
+            GTK_CELL_LAYOUT (m_pLists[i]), pCell, "text", 0, NULL);
+                                                                 ^
+                                                                 , NULL
+
+ I used the Clang compiler for the more detailed error output (and the in this 
+context somewhat amusing fix-it hint), but it's of course the same with GCC.
+
+ And from 'man gcc' (4.6):
+
+       -Wstrict-null-sentinel (C++ and Objective-C++ only)
+           Warn also about the use of an uncasted "NULL" as sentinel.  When 
+compiling only with GCC this is a valid sentinel, as "NULL" is defined 
+to "__null".  Although it is a null pointer constant not a null pointer, it 
+is guaranteed to be of the same size as a pointer.  But this use is not 
+portable across different compilers.
 
 -- 
-tejun
+ Lubos Lunak
+ l.lunak@suse.cz
