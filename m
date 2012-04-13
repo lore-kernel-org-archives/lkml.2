@@ -1,53 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751322Ab2DMO4I (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Apr 2012 10:56:08 -0400
-Received: from shards.monkeyblade.net ([198.137.202.13]:49505 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750871Ab2DMO4G (ORCPT
+	id S1752017Ab2DMO4j (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Apr 2012 10:56:39 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:48973 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751173Ab2DMO4i (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Apr 2012 10:56:06 -0400
-Date: Fri, 13 Apr 2012 10:55:56 -0400 (EDT)
-Message-Id: <20120413.105556.73360716787161031.davem@davemloft.net>
-To: paulmck@linux.vnet.ibm.com
-Cc: mroos@linux.ee, shemminger@vyatta.com, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org
-Subject: Re: suspicious RCU usage warnings in 3.3.0
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <20120413133513.GB2457@linux.vnet.ibm.com>
-References: <20120412045428.GB2497@linux.vnet.ibm.com>
-	<alpine.SOC.1.00.1204131444150.2736@math.ut.ee>
-	<20120413133513.GB2457@linux.vnet.ibm.com>
-X-Mailer: Mew version 6.4 on Emacs 23.3 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Fri, 13 Apr 2012 07:55:59 -0700 (PDT)
+	Fri, 13 Apr 2012 10:56:38 -0400
+Date: Fri, 13 Apr 2012 15:56:34 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: "Ying-Chun Liu (PaulLiu)" <paul.liu@linaro.org>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linaro-dev@lists.linaro.org, patches@linaro.org,
+        Liam Girdwood <lrg@ti.com>, Samuel Ortiz <sameo@linux.intel.com>,
+        Shawn Guo <shawn.guo@linaro.org>,
+        Ashish Jangam <ashish.jangam@kpitcummins.com>
+Subject: Re: [PATCH v2 2/2] regulator: da9052: add device tree support
+Message-ID: <20120413145633.GX3168@opensource.wolfsonmicro.com>
+References: <1334324261-5476-1-git-send-email-paul.liu@linaro.org>
+ <1334324261-5476-2-git-send-email-paul.liu@linaro.org>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="mu6rDKe19l+MneQx"
+Content-Disposition: inline
+In-Reply-To: <1334324261-5476-2-git-send-email-paul.liu@linaro.org>
+X-Cookie: A is for Apple.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Date: Fri, 13 Apr 2012 06:35:13 -0700
 
-DANGER WILL ROBINSON, McKenney is hacking sparc64 assembler!
-:-))))
+--mu6rDKe19l+MneQx
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> My main concern about my patch is my removal of this line:
-> 
-> 	bne,pn			%icc, __handle_softirq
-> 
-> It is quite possible that this should instead change to look as follows:
-> 
-> 	bne,pn			%icc, __handle_preemption
-> 
+On Fri, Apr 13, 2012 at 09:37:41PM +0800, Ying-Chun Liu (PaulLiu) wrote:
+> From: "Ying-Chun Liu (PaulLiu)" <paul.liu@linaro.org>
+>=20
+> This patch adds device tree support for dialog regulators
 
-I would say it should not, because the __handle_softirq code path,
-if taken, unconditionally branches to the very next instruction
-after this branch and it's delay slot.
+Applied, thanks.  It'd be good to correct the documentation in patch 1
+but there should be no code dependency on the core changes so it seems
+safe for them to go in separately.
 
-> Anyway, patch with updated changelog below.
+--mu6rDKe19l+MneQx
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-Great work, I'll apply this after I test it out a bit myself.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
 
-Thanks a lot Paul!
+iQIcBAEBAgAGBQJPiD6YAAoJEBus8iNuMP3dmBgP/2+1sfJ3z/qHe1MRnIxmFQ5H
+BdJFzPnqNWyAkAdoU8B99zX+NXZ1Hz14F721UMcbDLtOyy1eKm1gl/DFAGbOPeuK
+MFqx4UqjTA4jt4amPw813Vmm+XSlIRXLQJFbTgUhn7oe5H84iK0ctIyuQGULPoB5
+OeeNNOhvbN/2c99yLhDIFCueVti9ctVn1qZn9NytxQyDTFQi3fyW1GRHzNQEOtv9
+yvwCS9d6zFFIlU6RRhBSxoZOFvqgMJ0TX5jC5mLE7h+AEG9f6txh1gd08ETTNJ3O
++mluOPV8Ruq9/G0flpL/B8l0nwkJIsKIwDRmkR5PyWeFMANr3THygoCsiAYsIZwp
+slppjgn3eXsp+tJo0wj46luesPlJoA48WlZGTMx5J2hscVQ+esroXjc3PCZUqNmA
+LTA5IcG/1hs6EvE8Uj4rmcYqZ4m9SDkdsqzQ+KmiI3kCsr2rogCE9ursTGz2Rx3q
+EYz3dKWGzWrvfdweAEQ7S/++d2MD8mL4+b1Ia8MQa3mnP4vnhJ99k86QUZy33Ngj
+4j8V/jTvxlH0wbZCH02YeGmDBKXvQqs/S0DnFpvJPmu5aHp0Z9wenIcwmwVLLL7X
+/+d1QrDeEKo6Mnb2tRBSQO1R+OQQAhfxtmJUdnoG4/gQ4fDpedSfEgfZdM/bVqvx
+cPhy6cf6wqMAROqPuc4f
+=0+jW
+-----END PGP SIGNATURE-----
+
+--mu6rDKe19l+MneQx--
