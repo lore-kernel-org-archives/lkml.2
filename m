@@ -1,317 +1,312 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755135Ab2DMQss (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Apr 2012 12:48:48 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:50351 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752948Ab2DMQsq (ORCPT
+	id S1755214Ab2DMQtJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Apr 2012 12:49:09 -0400
+Received: from mail-pz0-f52.google.com ([209.85.210.52]:47051 "EHLO
+	mail-pz0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753928Ab2DMQtF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Apr 2012 12:48:46 -0400
-From: Stephen Warren <swarren@wwwdotorg.org>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: linux-kernel@vger.kernel.org, Stephen Warren <swarren@nvidia.com>
-Subject: [PATCH V2] pinctrl: implement devm_pinctrl_get()/put()
-Date: Fri, 13 Apr 2012 10:48:40 -0600
-Message-Id: <1334335720-3309-1-git-send-email-swarren@wwwdotorg.org>
-X-Mailer: git-send-email 1.7.0.4
-X-NVConfidentiality: public
+	Fri, 13 Apr 2012 12:49:05 -0400
+Date: Fri, 13 Apr 2012 09:48:01 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        torvalds@linux-foundation.org, stable@vger.kernel.org
+Cc: lwn@lwn.net
+Subject: Linux 3.2.15
+Message-ID: <20120413164801.GA27991@kroah.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="r5Pyd7+fXNt84Ff3"
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Stephen Warren <swarren@nvidia.com>
 
-These functions allow the driver core to automatically clean up any
-allocations made by drivers, thus leading to simplified drivers.
+--r5Pyd7+fXNt84Ff3
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Signed-off-by: Stephen Warren <swarren@nvidia.com>
----
-v2:
-* Updated documentation to describe and recommend using devm_* functions.
-* Added devm_pinctrl_get_select() and devm_pinctrl_get_select_default() to
-  consumer.h
----
- Documentation/pinctrl.txt        |   48 +++++++++++++++++++-------------
- drivers/pinctrl/core.c           |   56 ++++++++++++++++++++++++++++++++++++++
- include/linux/pinctrl/consumer.h |   44 +++++++++++++++++++++++++++++
- 3 files changed, 129 insertions(+), 19 deletions(-)
+I'm announcing the release of the 3.2.15 kernel.
 
-diff --git a/Documentation/pinctrl.txt b/Documentation/pinctrl.txt
-index 4431c3e..e40f4b4 100644
---- a/Documentation/pinctrl.txt
-+++ b/Documentation/pinctrl.txt
-@@ -945,13 +945,13 @@ case), we define a mapping like this:
- The result of grabbing this mapping from the device with something like
- this (see next paragraph):
- 
--	p = pinctrl_get(dev);
-+	p = devm_pinctrl_get(dev);
- 	s = pinctrl_lookup_state(p, "8bit");
- 	ret = pinctrl_select_state(p, s);
- 
- or more simply:
- 
--	p = pinctrl_get_select(dev, "8bit");
-+	p = devm_pinctrl_get_select(dev, "8bit");
- 
- Will be that you activate all the three bottom records in the mapping at
- once. Since they share the same name, pin controller device, function and
-@@ -985,7 +985,7 @@ foo_probe()
- 	/* Allocate a state holder named "foo" etc */
- 	struct foo_state *foo = ...;
- 
--	foo->p = pinctrl_get(&device);
-+	foo->p = devm_pinctrl_get(&device);
- 	if (IS_ERR(foo->p)) {
- 		/* FIXME: clean up "foo" here */
- 		return PTR_ERR(foo->p);
-@@ -993,24 +993,17 @@ foo_probe()
- 
- 	foo->s = pinctrl_lookup_state(foo->p, PINCTRL_STATE_DEFAULT);
- 	if (IS_ERR(foo->s)) {
--		pinctrl_put(foo->p);
- 		/* FIXME: clean up "foo" here */
- 		return PTR_ERR(s);
- 	}
- 
- 	ret = pinctrl_select_state(foo->s);
- 	if (ret < 0) {
--		pinctrl_put(foo->p);
- 		/* FIXME: clean up "foo" here */
- 		return ret;
- 	}
- }
- 
--foo_remove()
--{
--	pinctrl_put(state->p);
--}
--
- This get/lookup/select/put sequence can just as well be handled by bus drivers
- if you don't want each and every driver to handle it and you know the
- arrangement on your bus.
-@@ -1022,6 +1015,11 @@ The semantics of the pinctrl APIs are:
-   kernel memory to hold the pinmux state. All mapping table parsing or similar
-   slow operations take place within this API.
- 
-+- devm_pinctrl_get() is a variant of pinctrl_get() that causes pinctrl_put()
-+  to be called automatically on the retrieved pointer when the associated
-+  device is removed. It is recommended to use this function over plain
-+  pinctrl_get().
-+
- - pinctrl_lookup_state() is called in process context to obtain a handle to a
-   specific state for a the client device. This operation may be slow too.
- 
-@@ -1034,14 +1032,25 @@ The semantics of the pinctrl APIs are:
- 
- - pinctrl_put() frees all information associated with a pinctrl handle.
- 
-+- devm_pinctrl_put() is a variant of pinctrl_put() that may be used to
-+  explicitly destroy a pinctrl object returned by devm_pinctrl_get().
-+  However, use of this function will be rare, due to the automatic cleanup
-+  that will occur even without calling it.
-+
-+  pinctrl_get() must be paired with a plain pinctrl_put().
-+  pinctrl_get() may not be paired with devm_pinctrl_put().
-+  devm_pinctrl_get() can optionally be paired with devm_pinctrl_put().
-+  devm_pinctrl_get() may not be paired with plain pinctrl_put().
-+
- Usually the pin control core handled the get/put pair and call out to the
- device drivers bookkeeping operations, like checking available functions and
- the associated pins, whereas the enable/disable pass on to the pin controller
- driver which takes care of activating and/or deactivating the mux setting by
- quickly poking some registers.
- 
--The pins are allocated for your device when you issue the pinctrl_get() call,
--after this you should be able to see this in the debugfs listing of all pins.
-+The pins are allocated for your device when you issue the devm_pinctrl_get()
-+call, after this you should be able to see this in the debugfs listing of all
-+pins.
- 
- NOTE: the pinctrl system will return -EPROBE_DEFER if it cannot find the
- requested pinctrl handles, for example if the pinctrl driver has not yet
-@@ -1092,13 +1101,13 @@ it, disables and releases it, and muxes it in on the pins defined by group B:
- 
- #include <linux/pinctrl/consumer.h>
- 
--foo_switch()
--{
--	struct pinctrl *p;
--	struct pinctrl_state *s1, *s2;
-+struct pinctrl *p;
-+struct pinctrl_state *s1, *s2;
- 
-+foo_probe()
-+{
- 	/* Setup */
--	p = pinctrl_get(&device);
-+	p = devm_pinctrl_get(&device);
- 	if (IS_ERR(p))
- 		...
- 
-@@ -1109,7 +1118,10 @@ foo_switch()
- 	s2 = pinctrl_lookup_state(foo->p, "pos-B");
- 	if (IS_ERR(s2))
- 		...
-+}
- 
-+foo_switch()
-+{
- 	/* Enable on position A */
- 	ret = pinctrl_select_state(s1);
- 	if (ret < 0)
-@@ -1123,8 +1135,6 @@ foo_switch()
- 	    ...
- 
- 	...
--
--	pinctrl_put(p);
- }
- 
- The above has to be done from process context.
-diff --git a/drivers/pinctrl/core.c b/drivers/pinctrl/core.c
-index 59027ab..2eaa187 100644
---- a/drivers/pinctrl/core.c
-+++ b/drivers/pinctrl/core.c
-@@ -23,6 +23,7 @@
- #include <linux/sysfs.h>
- #include <linux/debugfs.h>
- #include <linux/seq_file.h>
-+#include <linux/pinctrl/consumer.h>
- #include <linux/pinctrl/pinctrl.h>
- #include <linux/pinctrl/machine.h>
- #include "core.h"
-@@ -801,6 +802,61 @@ int pinctrl_select_state(struct pinctrl *p, struct pinctrl_state *state)
- }
- EXPORT_SYMBOL_GPL(pinctrl_select_state);
- 
-+static void devm_pinctrl_release(struct device *dev, void *res)
-+{
-+	pinctrl_put(*(struct pinctrl **)res);
-+}
-+
-+/**
-+ * struct devm_pinctrl_get() - Resource managed pinctrl_get()
-+ * @dev: the device to obtain the handle for
-+ *
-+ * If there is a need to explicitly destroy the returned struct pinctrl,
-+ * devm_pinctrl_put() should be used, rather than plain pinctrl_put().
-+ */
-+struct pinctrl *devm_pinctrl_get(struct device *dev)
-+{
-+	struct pinctrl **ptr, *p;
-+
-+	ptr = devres_alloc(devm_pinctrl_release, sizeof(*ptr), GFP_KERNEL);
-+	if (!ptr)
-+		return ERR_PTR(-ENOMEM);
-+
-+	p = pinctrl_get(dev);
-+	if (!IS_ERR(p)) {
-+		*ptr = p;
-+		devres_add(dev, ptr);
-+	} else {
-+		devres_free(ptr);
-+	}
-+
-+	return p;
-+}
-+EXPORT_SYMBOL_GPL(devm_pinctrl_get);
-+
-+static int devm_pinctrl_match(struct device *dev, void *res, void *data)
-+{
-+	struct pinctrl **p = res;
-+
-+	return *p == data;
-+}
-+
-+/**
-+ * devm_pinctrl_put() - Resource managed pinctrl_put()
-+ * @p: the pinctrl handle to release
-+ *
-+ * Deallocate a struct pinctrl obtained via devm_pinctrl_get(). Normally
-+ * this function will not need to be called and the resource management
-+ * code will ensure that the resource is freed.
-+ */
-+void devm_pinctrl_put(struct pinctrl *p)
-+{
-+	WARN_ON(devres_destroy(p->dev, devm_pinctrl_release,
-+			       devm_pinctrl_match, p));
-+	pinctrl_put(p);
-+}
-+EXPORT_SYMBOL_GPL(devm_pinctrl_put);
-+
- int pinctrl_register_map(struct pinctrl_map const *maps, unsigned num_maps,
- 			 bool dup, bool locked)
- {
-diff --git a/include/linux/pinctrl/consumer.h b/include/linux/pinctrl/consumer.h
-index 191e726..6dd96fb 100644
---- a/include/linux/pinctrl/consumer.h
-+++ b/include/linux/pinctrl/consumer.h
-@@ -36,6 +36,9 @@ extern struct pinctrl_state * __must_check pinctrl_lookup_state(
- 							const char *name);
- extern int pinctrl_select_state(struct pinctrl *p, struct pinctrl_state *s);
- 
-+extern struct pinctrl * __must_check devm_pinctrl_get(struct device *dev);
-+extern void devm_pinctrl_put(struct pinctrl *p);
-+
- #else /* !CONFIG_PINCTRL */
- 
- static inline int pinctrl_request_gpio(unsigned gpio)
-@@ -79,6 +82,15 @@ static inline int pinctrl_select_state(struct pinctrl *p,
- 	return 0;
- }
- 
-+static inline struct pinctrl * __must_check devm_pinctrl_get(struct device *dev)
-+{
-+	return NULL;
-+}
-+
-+static inline void devm_pinctrl_put(struct pinctrl *p)
-+{
-+}
-+
- #endif /* CONFIG_PINCTRL */
- 
- static inline struct pinctrl * __must_check pinctrl_get_select(
-@@ -113,6 +125,38 @@ static inline struct pinctrl * __must_check pinctrl_get_select_default(
- 	return pinctrl_get_select(dev, PINCTRL_STATE_DEFAULT);
- }
- 
-+static inline struct pinctrl * __must_check devm_pinctrl_get_select(
-+					struct device *dev, const char *name)
-+{
-+	struct pinctrl *p;
-+	struct pinctrl_state *s;
-+	int ret;
-+
-+	p = devm_pinctrl_get(dev);
-+	if (IS_ERR(p))
-+		return p;
-+
-+	s = pinctrl_lookup_state(p, name);
-+	if (IS_ERR(s)) {
-+		devm_pinctrl_put(p);
-+		return ERR_PTR(PTR_ERR(s));
-+	}
-+
-+	ret = pinctrl_select_state(p, s);
-+	if (ret < 0) {
-+		devm_pinctrl_put(p);
-+		return ERR_PTR(ret);
-+	}
-+
-+	return p;
-+}
-+
-+static inline struct pinctrl * __must_check devm_pinctrl_get_select_default(
-+					struct device *dev)
-+{
-+	return devm_pinctrl_get_select(dev, PINCTRL_STATE_DEFAULT);
-+}
-+
- #ifdef CONFIG_PINCONF
- 
- extern int pin_config_get(const char *dev_name, const char *name,
--- 
-1.7.0.4
+All users of the 3.2 kernel series must upgrade.
 
+The updated 3.2.y git tree can be found at:
+        git://git.kernel.org/pub/scm/linux/kernel/git/stable/linux-stable.g=
+it linux-3.2.y
+and can be browsed at the normal kernel.org git web browser:
+        http://git.kernel.org/?p=3Dlinux/kernel/git/stable/linux-stable.git=
+;a=3Dsummary
+
+thanks,
+
+greg k-h
+
+------------
+
+ Makefile                                           |    2=20
+ arch/arm/mach-tegra/Kconfig                        |    5=20
+ arch/m68k/mac/config.c                             |    3=20
+ arch/x86/include/asm/timer.h                       |    8 -
+ arch/x86/kernel/apic/io_apic.c                     |   40 +----
+ arch/x86/kernel/kgdb.c                             |   60 +++++++
+ arch/x86/kernel/tsc.c                              |    3=20
+ arch/x86/net/bpf_jit_comp.c                        |    2=20
+ arch/x86/pci/acpi.c                                |   10 +
+ drivers/acpi/acpica/tbfadt.c                       |    8 -
+ drivers/acpi/processor_thermal.c                   |   45 ++++-
+ drivers/dma/ioat/dma.c                             |   16 +-
+ drivers/dma/ioat/dma.h                             |    6=20
+ drivers/dma/ioat/dma_v2.c                          |    8 -
+ drivers/dma/ioat/dma_v3.c                          |    8 -
+ drivers/gpu/drm/drm_fb_helper.c                    |    8 -
+ drivers/gpu/drm/i915/i915_drv.c                    |    2=20
+ drivers/gpu/drm/i915/i915_reg.h                    |    1=20
+ drivers/gpu/drm/i915/intel_bios.c                  |   23 ++-
+ drivers/gpu/drm/i915/intel_display.c               |    6=20
+ drivers/gpu/drm/i915/intel_lvds.c                  |    8 +
+ drivers/gpu/drm/radeon/atom.c                      |   15 +
+ drivers/gpu/drm/radeon/atom.h                      |    1=20
+ drivers/iommu/amd_iommu_init.c                     |   24 ++-
+ drivers/mfd/twl6030-irq.c                          |   13 +
+ drivers/misc/kgdbts.c                              |  160 +++++++++++++++-=
+-----
+ drivers/mmc/host/atmel-mci.c                       |    9 +
+ drivers/mmc/host/sdhci-dove.c                      |    1=20
+ drivers/mtd/devices/block2mtd.c                    |    1=20
+ drivers/mtd/devices/lart.c                         |    1=20
+ drivers/mtd/devices/m25p80.c                       |    1=20
+ drivers/mtd/devices/sst25l.c                       |    1=20
+ drivers/mtd/maps/ixp4xx.c                          |    5=20
+ drivers/mtd/maps/lantiq-flash.c                    |    3=20
+ drivers/mtd/nand/gpmi-nand/gpmi-nand.c             |    2=20
+ drivers/net/ethernet/broadcom/tg3.c                |    4=20
+ drivers/net/ethernet/freescale/fsl_pq_mdio.c       |   13 -
+ drivers/net/ethernet/marvell/sky2.c                |    5=20
+ drivers/net/ethernet/realtek/r8169.c               |    5=20
+ drivers/net/usb/cdc_eem.c                          |    1=20
+ drivers/net/usb/zaurus.c                           |    5=20
+ drivers/net/wireless/rtlwifi/rtl8192c/phy_common.c |    2=20
+ drivers/net/wireless/rtlwifi/rtl8192de/phy.c       |    2=20
+ drivers/platform/x86/acer-wmi.c                    |    1=20
+ drivers/pnp/pnpacpi/core.c                         |    7=20
+ drivers/target/target_core_transport.c             |    6=20
+ drivers/target/tcm_fc/tcm_fc.h                     |    1=20
+ drivers/target/tcm_fc/tfc_cmd.c                    |   10 +
+ drivers/target/tcm_fc/tfc_conf.c                   |   13 +
+ drivers/target/tcm_fc/tfc_io.c                     |    2=20
+ fs/cifs/file.c                                     |   10 +
+ fs/locks.c                                         |    3=20
+ fs/nfs/nfs4proc.c                                  |    2=20
+ include/linux/fs.h                                 |    5=20
+ include/linux/kernel.h                             |   13 +
+ include/linux/kgdb.h                               |    7=20
+ kernel/cred.c                                      |    2=20
+ kernel/debug/debug_core.c                          |   53 +++---
+ kernel/irq/migration.c                             |   10 -
+ kernel/sysctl.c                                    |    8 -
+ kernel/trace/trace.c                               |    4=20
+ kernel/trace/trace_entries.h                       |   16 +-
+ kernel/trace/trace_export.c                        |    2=20
+ net/bluetooth/hci_conn.c                           |    4=20
+ net/mac80211/agg-rx.c                              |    3=20
+ net/rose/rose_dev.c                                |    4=20
+ scripts/mod/modpost.c                              |    9 -
+ scripts/mod/modpost.h                              |    1=20
+ security/tomoyo/mount.c                            |   38 ++--
+ sound/soc/codecs/ak4642.c                          |    2=20
+ sound/soc/codecs/wm8994.c                          |    2=20
+ 71 files changed, 549 insertions(+), 235 deletions(-)
+
+Alex Deucher (1):
+      drm/radeon/kms: fix fans after resume
+
+Alf H=F8gemark (1):
+      mmc: sdhci-dove: Fix compile error by including module.h
+
+Andi Kleen (1):
+      ACPI: Do cpufreq clamping for throttling per package v2
+
+Anisse Astier (1):
+      drm/i915: no-lvds quirk on MSI DC500
+
+Artem Bityutskiy (3):
+      mtd: sst25l: initialize writebufsize
+      mtd: block2mtd: initialize writebufsize
+      mtd: lart: initialize writebufsize
+
+Brian Norris (1):
+      mtd: m25p80: set writebufsize
+
+Chris Wilson (2):
+      drm: Validate requested virtual size against allocated fb size
+      drm/i915: Sanitize BIOS debugging bits from PIPECONF
+
+Dan Williams (1):
+      ioat: fix size of 'completion' for Xen
+
+Daniel Schwierzeck (1):
+      mtd: mips: lantiq: reintroduce support for cmdline partitions
+
+Daniel Vetter (1):
+      drm/i915: quirk away broken OpRegion VBT
+
+Frank Rowand (1):
+      modpost: Fix modpost license checking of vmlinux.o
+
+Geert Uytterhoeven (1):
+      m68k/mac: Add missing platform check before registering platform devi=
+ces
+
+Greg Kroah-Hartman (2):
+      Revert "x86/ioapic: Add register level checks to detect bogus io-apic=
+ entries"
+      Linux 3.2.15
+
+Guan Xin (1):
+      USB: Add Motorola Rokr E6 Id to the USBNet driver "zaurus"
+
+Jan Beulich (1):
+      modpost: fix ALL_INIT_DATA_SECTIONS
+
+Jason Wessel (5):
+      kgdb,debug_core: pass the breakpoint struct instead of address and me=
+mory
+      kgdbts: Fix kernel oops with CONFIG_DEBUG_RODATA
+      kgdbts: (1 of 2) fix single step awareness to work correctly with SMP
+      kgdbts: (2 of 2) fix single step awareness to work correctly with SMP
+      x86,kgdb: Fix DEBUG_RODATA limitation using text_poke()
+
+Jiang Liu (1):
+      genirq: Adjust irq thread affinity on IRQ_SET_MASK_OK_NOCOPY return v=
+alue
+
+Joerg Roedel (1):
+      iommu/amd: Make sure IOMMU interrupts are re-enabled on resume
+
+Jonathan Nieder (2):
+      x86/PCI: use host bridge _CRS info on MSI MS-7253
+      x86/PCI: do not tie MSI MS-7253 use_crs quirk to BIOS version
+
+Julian Anastasov (1):
+      ACPICA: Fix regression in FADT revision checks
+
+Kees Cook (1):
+      sysctl: fix write access to dmesg_restrict/kptr_restrict
+
+Kenth Eriksson (1):
+      Fix non TBI PHY access; a bad merge undid bug fix in a previous commi=
+t.
+
+Kuninori Morimoto (1):
+      ASoC: ak4642: fixup: mute needs +1 step
+
+Larry Finger (1):
+      rtlwifi: rtl8192ce: rtl8192cu: rtl8192de: Fix low-gain setting when s=
+canning
+
+Lee, Chun-Yi (1):
+      acer-wmi: No wifi rfkill on Sony machines
+
+Lino Sanfilippo (1):
+      sky2: dont overwrite settings for PHY Quick link
+
+Ludovic Desroches (1):
+      mmc: atmel-mci: correct data timeout computation
+
+Marc Kleine-Budde (1):
+      mtd: ixp4xx: oops in ixp4xx_flash_probe
+
+Mark Brown (1):
+      ASoC: wm8994: Update WM8994 DCS calibration
+
+Mark Rustad (2):
+      tcm_fc: Add abort flag for gracefully handling exchange timeout
+      tcm_fc: Do not free tpg structure during wq allocation failure
+
+Martin Svec (1):
+      target: Fix unsupported WRITE_SAME sense payload
+
+Matt Carlson (1):
+      tg3: Fix 5717 serdes powerdown problem
+
+Nishanth Menon (1):
+      mfd: Clear twl6030 IRQ status register only once
+
+Oleg Nesterov (1):
+      cred: copy_process() should clear child->replacement_session_keyring
+
+Pavel Shilovsky (1):
+      CIFS: Fix VFS lock usage for oplocked files
+
+Peter Hurley (1):
+      Bluetooth: Fix l2cap conn failures for ssp devices
+
+Rabin Vincent (1):
+      net: usb: cdc_eem: fix mtu
+
+Sachin Prabhu (1):
+      Fix length of buffer copied in __nfs4_get_acl_uncached
+
+Salman Qazi (1):
+      sched/x86: Fix overflow in cyc2ns_offset
+
+Sean Paul (1):
+      drm/i915: Add lock on drm_helper_resume_force_mode
+
+Stanislaw Gruszka (1):
+      mac80211: fix possible tid_rx->reorder_timer use after free
+
+Stephen Warren (1):
+      ARM: tegra: remove Tegra30 errata from MACH_TEGRA_DT
+
+Steven Rostedt (1):
+      tracing: Fix ent_size in trace output
+
+Tetsuo Handa (1):
+      TOMOYO: Fix mount flags checking order.
+
+Wolfgang Mauerer (1):
+      tracing: Fix ftrace stack trace entries
+
+Wolfram Sang (1):
+      mtd: nand: gpmi: use correct member for checking NAND_BBT_USE_FLASH
+
+Yinghai Lu (1):
+      PNPACPI: Fix device ref leaking in acpi_pnp_match
+
+danborkmann@iogearbox.net (1):
+      rose_dev: fix memcpy-bug in rose_set_mac_address
+
+fran=E7ois romieu (1):
+      r8169: runtime resume before shutdown.
+
+zhuangfeiran@ict.ac.cn (1):
+      x86 bpf_jit: fix a bug in emitting the 16-bit immediate operand of AND
+
+
+--r5Pyd7+fXNt84Ff3
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.19 (GNU/Linux)
+
+iQIcBAEBAgAGBQJPiFjBAAoJEDjbvchgkmk+iH4P+gNlma5du/VgmdtvEuNuJvVj
+0zpWCm4oX4zWDKO6nLXGBiMZDLpOoyvE6MB5BTVvyt9H87oTtJx7d7YfaW95rd9c
+EYudhEDWk7SHGdnvPbrhPiq3OwUOMD7uoljKo4PknqsM6zJi6aX5miZkplmkaj7N
+98PgHXchpzzg0EYNER/j0tGGbTuCyotC6oiBaJbiP67nnbkrxPJXIkD8O24/xPIg
+aHekZ7ducLKQ8rSL+4gHA/E5vUWKQC4K7LpTN3hA3vEc6WJqzOs5AItra/eVTHU+
+nZU+5coES4auWvjdegOHN03kX7UkKW9EUa5m3QN5uWLodsd8boW0jHvywGVDhoDQ
+t5dgnrWXkFuKVF/tmi+yVQIrhAKzHFWyLqR9DuPsaOR4pejrqFaco/b4jzoZf7Ud
+PYVHol58ALWe4WNV3xfdkkqerA7Rz5nHVmQCFsgXN+f+Ykyu/hJ/Mzp0P+HC/+T9
+bB9ZrkQUhNg96E6TCGLuTKRcqSSde9yI1LZTVx9IxIm7Utgb+0FnXjpwRK7qFI7R
+A0r/RwvUWQy2FqRuH7AVYYE0W370BzvORkQ+U55dZ7tWVUpeCWTYqfO2COhaN9cJ
+cgUYFjoRPOEJmubKtOdt8TL99OpUvg/Qj0LE4kEQaeXfCxvMRnz0sAS8S76lscD2
+XIzN+FWDrgalup1xmY9+
+=yfZf
+-----END PGP SIGNATURE-----
+
+--r5Pyd7+fXNt84Ff3--
