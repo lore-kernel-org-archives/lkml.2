@@ -1,44 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752546Ab2DMR2s (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Apr 2012 13:28:48 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:46545 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751358Ab2DMR2r (ORCPT
+	id S1753631Ab2DMRgI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Apr 2012 13:36:08 -0400
+Received: from shards.monkeyblade.net ([198.137.202.13]:51004 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751677Ab2DMRgG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Apr 2012 13:28:47 -0400
-Date: Fri, 13 Apr 2012 10:28:41 -0700
-From: Tejun Heo <tj@kernel.org>
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: axboe@kernel.dk, ctalbott@google.com, rni@google.com,
-        linux-kernel@vger.kernel.org, cgroups@vger.kernel.org,
-        containers@lists.linux-foundation.org
-Subject: Re: [PATCH 5/8] blkcg: make sure blkg_lookup() returns %NULL if @q
- is bypassing
-Message-ID: <20120413172841.GC12233@google.com>
-References: <1334273380-30233-1-git-send-email-tj@kernel.org>
- <1334273380-30233-6-git-send-email-tj@kernel.org>
- <20120413160053.GE26383@redhat.com>
- <20120413170334.GB12233@google.com>
- <20120413172336.GF26383@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120413172336.GF26383@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Fri, 13 Apr 2012 13:36:06 -0400
+Date: Fri, 13 Apr 2012 13:35:33 -0400 (EDT)
+Message-Id: <20120413.133533.212991624580049561.davem@davemloft.net>
+To: jslaby@suse.cz
+Cc: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
+        jirislaby@gmail.com, alan@linux.intel.com, andrea@persephoneslair.org
+Subject: Re: [PATCH 1/3] NET: pc300, move to staging as it is broken
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1334135699-30180-1-git-send-email-jslaby@suse.cz>
+References: <1334135699-30180-1-git-send-email-jslaby@suse.cz>
+X-Mailer: Mew version 6.4 on Emacs 23.3 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Fri, 13 Apr 2012 10:35:36 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 13, 2012 at 01:23:36PM -0400, Vivek Goyal wrote:
-> I think now synchronize_rcu() has become part of cfq_init_queue()
-> effectively and that will slow down boot. In the past I had to remove
-> it.
+From: Jiri Slaby <jslaby@suse.cz>
+Date: Wed, 11 Apr 2012 11:14:57 +0200
 
-Eh... crap.  You're right.  Forgot about that.  Maybe we need to
-special case initial queue setup.  I'll look into it.
+> It was marked as BROKEN back in 2008. It is because the tty handling
+> in the driver is really broken.
+> 
+> There was some activity in January 2012 to fix the driver, but the
+> patch was commented to be bogus:
+>   https://lkml.org/lkml/2012/1/29/160
+> and we have not heard back from the author since then:
+>   https://lkml.org/lkml/2012/3/28/412
+> 
+> So since nobody stepped in and rewrote the driver, it is time to move
+> it out of line now. And drop it some time later if nobody comes up
+> with patches to fix the driver in staging.
+> 
+> Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 
-Thanks.
+No objections, I'll let the staging guy handle this :-)
 
--- 
-tejun
+Acked-by: David S. Miller <davem@davemloft.net>
