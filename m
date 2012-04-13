@@ -1,75 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755555Ab2DMRDN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Apr 2012 13:03:13 -0400
-Received: from mailout-de.gmx.net ([213.165.64.23]:52765 "HELO
-	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1755486Ab2DMRDK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1755527Ab2DMRDK (ORCPT <rfc822;w@1wt.eu>);
 	Fri, 13 Apr 2012 13:03:10 -0400
-X-Authenticated: #10250065
-X-Provags-ID: V01U2FsdGVkX1/TFg9j5nzTlgeKOuIQPxMeSXu5xwisJAiTV+yrSt
-	Fd55upDQdV6wI/
-Message-ID: <4F885C42.2000405@gmx.de>
-Date: Fri, 13 Apr 2012 17:02:58 +0000
-From: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20120317 Icedove/3.0.11
-MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: LKML <linux-kernel@vger.kernel.org>,
-        "linux-fbdev@vger.kernel.org" <linux-fbdev@vger.kernel.org>
-Subject: [GIT PULL] fbdev fixes for 3.4
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Y-GMX-Trusted: 0
+Received: from mga02.intel.com ([134.134.136.20]:51428 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754265Ab2DMRDH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 Apr 2012 13:03:07 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
+   d="asc'?scan'208";a="129166898"
+Message-ID: <1334336766.13160.20.camel@sauron.fi.intel.com>
+Subject: Re: [PATCH] mtd: use module_pci_driver
+From: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
+Reply-To: artem.bityutskiy@linux.intel.com
+To: Axel Lin <axel.lin@gmail.com>
+Cc: linux-kernel@vger.kernel.org, Andy Lowe <alowe@mvista.com>,
+        Russell King <rmk@arm.linux.org.uk>, Tim Hockin <thockin@sun.com>,
+        Maxim Levitsky <maximlevitsky@gmail.com>,
+        David Woodhouse <dwmw2@infradead.org>,
+        Jamie Iles <jamie@jamieiles.com>,
+        Brian Norris <computersforpeace@gmail.com>,
+        linux-mtd@lists.infradead.org
+Date: Fri, 13 Apr 2012 20:06:06 +0300
+In-Reply-To: <1333418384.18133.6.camel@phoenix>
+References: <1333418384.18133.6.camel@phoenix>
+Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
+	boundary="=-HDei6lBdvNSrXC/OZxEb"
+X-Mailer: Evolution 3.2.3 (3.2.3-2.fc16) 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
 
-please pull the fixes below. The fix for kyrofb is a bit large but it's just
-replacing "unsigned long" by "u32" for 64 bit compatibility.
+--=-HDei6lBdvNSrXC/OZxEb
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
+On Tue, 2012-04-03 at 09:59 +0800, Axel Lin wrote:
+> This patch converts the drivers in drivers/mtd/* to use module_pci_driver=
+()
+> macro which makes the code smaller and a bit simpler.
+>=20
+> Signed-off-by: Axel Lin <axel.lin@gmail.com>
 
-Thanks,
+Pushed to l2-mtd.git, thanks!
 
-Florian Tobias Schandinat
+--=20
+Best Regards,
+Artem Bityutskiy
 
+--=-HDei6lBdvNSrXC/OZxEb
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+Content-Transfer-Encoding: 7bit
 
-The following changes since commit 0034102808e0dbbf3a2394b82b1bb40b5778de9e:
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
-  Linux 3.4-rc2 (2012-04-07 18:30:41 -0700)
+iQIcBAABAgAGBQJPiFz+AAoJECmIfjd9wqK0vZ4P/0X3tlh/tLfEnE2FsIXJVWfN
+q1ydiQUoQ+QW8AZSDJIUx/3A8T3j8ANks9ZZVi6idcKHR6xvE3lGYTC+HyFZwx//
+ztBRJqu3whnwUzIJIjWrzSGcZ/sRFgJtsWd+T5LuEgIkYUhW5DiSELTvie0HjnLq
+7n/Femya0eiuYsqeoYnQq0tJMf5vrlgboOpFNaxydeNNw6MkJitHMt+KeDXLJQcb
+bpMYHDVuYwxKGQ3sQkQcRRQxO/yIzEnTInUPjjFA2hKQHlRjkv+ywE8jOOEQh+jW
+MyaqgdcbU0NE7E0pM9rA7/4+UXcfq4wPbToMjJID0/HGvQ37QXV7oNU2N1T4AK0w
+6T222IMZXKKkJDYaCpr7LnJfhEFxMXs+24Rjsq0qa9gRDbsFUsTsKzuwu3NsI+vg
+LxlV2Tt/bwZggeqPVmQJUFYuGZ1WAVpuyASxDhrk17v6ZjVQI0LRg73xtnehG/fq
+WIkrXtzCuyhYofBOf9PcGZkmkDelLtwPVGAKuYLw5Yrvw8wH8ux/rbzn+ni3/C3K
+jvC1fUcCLa+x2DEoUSeiWZ1wQHOoxIIGs+d2mipdwMptKE0sWkZUDoAZax/HqlZt
+WfkXH0hUxNjMcu2emcZIKpo51SE3/NoNyPej1yplDV8EcMsxkaW85xK/jrY7feDB
+Or1Fz7c3x3IK1WJDgJPp
+=Djej
+-----END PGP SIGNATURE-----
 
-are available in the git repository at:
+--=-HDei6lBdvNSrXC/OZxEb--
 
-  git://github.com/schandinat/linux-2.6.git fbdev-fixes-for-3.4-1
-
-for you to fetch changes up to b78f29ca0516266431688c5eb42d39ce42ec039a:
-
-  video:uvesafb: Fix oops that uvesafb try to execute NX-protected page
-(2012-04-09 16:05:57 +0000)
-
-----------------------------------------------------------------
-fbdev fixes for 3.4
-
-It includes:
-- a compile fix for au1*fb
-- a fix to make kyrofb usable on x86_64
-- a fix for uvesafb to prevent an oops due to NX-protection
-
-----------------------------------------------------------------
-Manuel Lauss (1):
-      fbdev: fix au1*fb builds
-
-Ondrej Zary (1):
-      kyrofb: fix on x86_64
-
-Wang YanQing (1):
-      video:uvesafb: Fix oops that uvesafb try to execute NX-protected page
-
- drivers/video/au1100fb.c        |    5 +-
- drivers/video/au1200fb.c        |    2 +-
- drivers/video/kyro/STG4000Reg.h |  376 +++++++++++++++++++-------------------
- drivers/video/uvesafb.c         |   11 +-
- 4 files changed, 201 insertions(+), 193 deletions(-)
