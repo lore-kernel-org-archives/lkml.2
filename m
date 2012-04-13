@@ -1,53 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756014Ab2DMMrA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Apr 2012 08:47:00 -0400
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:46884 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752958Ab2DMMq6 (ORCPT
+	id S1756157Ab2DMMro (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Apr 2012 08:47:44 -0400
+Received: from newsmtp5.atmel.com ([204.2.163.5]:12430 "EHLO
+	sjogate2.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752972Ab2DMMrm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Apr 2012 08:46:58 -0400
+	Fri, 13 Apr 2012 08:47:42 -0400
+Message-ID: <4F882043.1090006@atmel.com>
+Date: Fri, 13 Apr 2012 14:46:59 +0200
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
+Organization: atmel
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120329 Thunderbird/11.0.1
 MIME-Version: 1.0
-In-Reply-To: <1334184439-16428-1-git-send-email-swarren@wwwdotorg.org>
-References: <1334184439-16428-1-git-send-email-swarren@wwwdotorg.org>
-Date: Fri, 13 Apr 2012 14:46:58 +0200
-Message-ID: <CACRpkdYiWTNQ7hVM4NczyemxOcHWNcK639-yoh2iWc-5_WQB2Q@mail.gmail.com>
-Subject: Re: [PATCH] pinctrl: tegra: debugfs enhancements
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Stephen Warren <swarren@wwwdotorg.org>
-Cc: Olof Johansson <olof@lixom.net>, Colin Cross <ccross@android.com>,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-tegra@vger.kernel.org, Stephen Warren <swarren@nvidia.com>
+To: Chris Ball <cjb@laptop.org>, Olof Johansson <olof@lixom.net>,
+        Arnd Bergmann <arnd@arndb.de>
+CC: Stephen Rothwell <sfr@canb.auug.org.au>,
+        linux-arm-kernel@lists.infradead.org, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Sascha Hauer <s.hauer@pengutronix.de>
+Subject: Re: linux-next: manual merge of the arm-soc tree with the mmc tree
+References: <20120412140206.704731281bf2ee7d93d582bf@canb.auug.org.au> <87pqbdr1md.fsf@laptop.org>
+In-Reply-To: <87pqbdr1md.fsf@laptop.org>
+X-Enigmail-Version: 1.4
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 12, 2012 at 12:47 AM, Stephen Warren <swarren@wwwdotorg.org> wrote:
+On 04/12/2012 06:54 AM, Chris Ball :
+> Hi,
+> 
+> On Thu, Apr 12 2012, Stephen Rothwell wrote:
+>> Today's linux-next merge of the arm-soc tree got a conflict in
+>> drivers/mmc/host/Kconfig between commit a334b9550294 ("mmc: remove imxmmc
+>> driver") from the mmc tree and commits a21a92c0c787 ("mmc: Kconfig: remove
+>> choice between at91_mci and atmel-mci") and 62080f06de6b ("mmc:
+>> atmel-mci: remove the need for CONFIG_MMC_ATMELMCI_DMA") from the arm-soc
+>> tree.
+>>
+>> I fixed it up (see below) and can carry the fix as necessary.
+> 
+> Thanks, Stephen.
+> 
+> Nicolas and Arnd, these MMC Kconfig patches weren't sent to me or
+> linux-mmc@ for review, so I haven't seen them before.  They look
+> fine, but I'd like to be in the loop directly to avoid surprises.
 
-> From: Stephen Warren <swarren@nvidia.com>
->
-> * Only provide debugfs-relates ops when CONFIG_DEBUG_FS is enabled.
-> * Implement pin_config_group_dbg_show op.
-> * Implement pin_config_config_dbg_show op.
->
-> Signed-off-by: Stephen Warren <swarren@nvidia.com>
-> ---
-> Linus, this too would be best to take through the Tegra tree. It depends
-> on the other two patches I just posted, but to satisfy that, I'll just
-> base my branch off of pinctrl once you've applied those branches and its
-> stable.
+Yes Chris, my fault here, it is true that I should have send those
+patches to you and linux-mmc.
 
-OK that means you need that other patch adding the debug callback to
-be in some stable branch so you can pull it into the Tegra
-tree I guess?
+> Do these MMC patches have any dependency on other work?  It doesn't
+> look like it.  If that's so, I'd rather carry them in the MMC tree
+> to save Stephen and Linus from dealing with the merge conflict.
 
-Can we conclude base stabilization from this and say that the series
-of patches upto debugfs enhancements v2 (with the kerneldoc fix)
-is the stable merge base, and I'll push some tag for that.
+Indeed, and in the meantime, it seems that these Kconfig modifications
+are not as harmless as the others in the series.
 
-And once that settles:
-Acked-by: Linus Walleij <linus.walleij@linaro.org>
+I propose to redo a pull request without those two patches. We will
+resend them directly through the MMC subsystem together with other
+mmc-related fixes. Moreover, all this will probably make more sense as
+3.5 modifications...
 
-Yours,
-Linus Walleij
+Best regards,
+-- 
+Nicolas Ferre
