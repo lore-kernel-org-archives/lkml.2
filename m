@@ -1,68 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753488Ab2DMQdv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Apr 2012 12:33:51 -0400
-Received: from e33.co.us.ibm.com ([32.97.110.151]:34666 "EHLO
-	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751204Ab2DMQdu (ORCPT
+	id S1754733Ab2DMQeL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Apr 2012 12:34:11 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:58466 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752380Ab2DMQeH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Apr 2012 12:33:50 -0400
-Date: Fri, 13 Apr 2012 09:30:34 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: David Miller <davem@davemloft.net>
-Cc: mroos@linux.ee, shemminger@vyatta.com, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org
-Subject: Re: suspicious RCU usage warnings in 3.3.0
-Message-ID: <20120413163029.GA2402@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20120412045428.GB2497@linux.vnet.ibm.com>
- <alpine.SOC.1.00.1204131444150.2736@math.ut.ee>
- <20120413133513.GB2457@linux.vnet.ibm.com>
- <20120413.105556.73360716787161031.davem@davemloft.net>
+	Fri, 13 Apr 2012 12:34:07 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120413.105556.73360716787161031.davem@davemloft.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12041316-2398-0000-0000-000005CC49DE
+In-Reply-To: <5e419c41c8e3bcbeac341aa9457a9c93bc4c8309.1334219874.git.rubini@gnudd.com>
+References: <cover.1334219873.git.rubini@gnudd.com>
+	<5e419c41c8e3bcbeac341aa9457a9c93bc4c8309.1334219874.git.rubini@gnudd.com>
+Date: Fri, 13 Apr 2012 18:34:06 +0200
+Message-ID: <CACRpkdahP=t_JPBKrtR2KhMYNqVxCJMoySXCaQobx=LrpLvSOw@mail.gmail.com>
+Subject: Re: [PATCH V3 2/2] gpio: add STA2X11 GPIO block
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Alessandro Rubini <rubini@gnudd.com>,
+        Grant Likely <grant.likely@secretlab.ca>
+Cc: linux-kernel@vger.kernel.org, Giancarlo Asnaghi <giancarlo.asnaghi@st.com>,
+        Alan Cox <alan@linux.intel.com>, sameo@linux.intel.com,
+        linus.walleij@stericsson.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 13, 2012 at 10:55:56AM -0400, David Miller wrote:
-> From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-> Date: Fri, 13 Apr 2012 06:35:13 -0700
-> 
-> DANGER WILL ROBINSON, McKenney is hacking sparc64 assembler!
-> :-))))
+On Thu, Apr 12, 2012 at 10:48 AM, Alessandro Rubini <rubini@gnudd.com> wrote:
 
-;-) ;-) ;-)
+> This introduces 128 gpio bits (for each PCI device installed) with
+> working interrupt support.
+>
+> Signed-off-by: Alessandro Rubini <rubini@gnudd.com>
+> Acked-by: Giancarlo Asnaghi <giancarlo.asnaghi@st.com>
+> Cc: Alan Cox <alan@linux.intel.com>
 
-> > My main concern about my patch is my removal of this line:
-> > 
-> > 	bne,pn			%icc, __handle_softirq
-> > 
-> > It is quite possible that this should instead change to look as follows:
-> > 
-> > 	bne,pn			%icc, __handle_preemption
-> > 
-> 
-> I would say it should not, because the __handle_softirq code path,
-> if taken, unconditionally branches to the very next instruction
-> after this branch and it's delay slot.
+Grant, I prefer that you make a decision on this driver since I have
+a conflict of interest (it's written for ST).
 
-Beginners luck beats skill.  Now I just have to be very careful to
-avoid ever submitting a second sparc64 assembler patch.  ;-)
-
-> > Anyway, patch with updated changelog below.
-> 
-> Great work, I'll apply this after I test it out a bit myself.
-
-Cool!!!
-
-							Thanx, Paul
-
-> Thanks a lot Paul!
-> 
-
+Yours,
+Linus Walleij
