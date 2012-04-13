@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966477Ab2DMAQo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Apr 2012 20:16:44 -0400
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:7108 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S966361Ab2DMAQj (ORCPT
+	id S966494Ab2DMAQw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Apr 2012 20:16:52 -0400
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:30072 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S966352Ab2DMAQr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Apr 2012 20:16:39 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6678"; a="181249791"
-X-IronPort-AV: E=Sophos;i="4.75,414,1330934400"; 
-   d="scan'208";a="158583714"
+	Thu, 12 Apr 2012 20:16:47 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6678"; a="178949742"
+X-IronPort-AV: E=Sophos;i="4.75,411,1330934400"; 
+   d="scan'208";a="234901574"
 From: xiong <xiong@qca.qualcomm.com>
 To: <davem@davemloft.net>, <netdev@vger.kernel.org>,
         <linux-kernel@vger.kernel.org>
 CC: <qca-linux-team@qualcomm.com>, <nic-devel@qualcomm.com>,
         xiong <xiong@qca.qualcomm.com>
-Subject: [PATCH 10/37] atl1c: remove dmaw_block
-Date: Fri, 13 Apr 2012 08:14:35 +0800
-Message-ID: <1334276102-15866-11-git-send-email-xiong@qca.qualcomm.com>
+Subject: [PATCH 11/37] atl1c: using fixed TXQ configuration for l2cb and l1c
+Date: Fri, 13 Apr 2012 08:14:36 +0800
+Message-ID: <1334276102-15866-12-git-send-email-xiong@qca.qualcomm.com>
 X-Mailer: git-send-email 1.7.7
 In-Reply-To: <1334276102-15866-1-git-send-email-xiong@qca.qualcomm.com>
 References: <1334276102-15866-1-git-send-email-xiong@qca.qualcomm.com>
@@ -28,49 +28,93 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-dmaw_block is never used in the driver, remove it.
+using fixed TXQ config for l2cb and l1c regardless dmar_block
+to make tx-DMA more stable.
+register REG_TXQ_CTRL is refined as well.
 
 Signed-off-by: xiong <xiong@qca.qualcomm.com>
 Tested-by: Liu David <dwliu@qca.qualcomm.com>
 ---
- drivers/net/ethernet/atheros/atl1c/atl1c.h      |    1 -
- drivers/net/ethernet/atheros/atl1c/atl1c_main.c |    4 ----
- 2 files changed, 0 insertions(+), 5 deletions(-)
+ drivers/net/ethernet/atheros/atl1c/atl1c_hw.h   |   34 +++++++++++++++++------
+ drivers/net/ethernet/atheros/atl1c/atl1c_main.c |   13 ++-------
+ 2 files changed, 28 insertions(+), 19 deletions(-)
 
-diff --git a/drivers/net/ethernet/atheros/atl1c/atl1c.h b/drivers/net/ethernet/atheros/atl1c/atl1c.h
-index 16a5c7a..6e5ae89 100644
---- a/drivers/net/ethernet/atheros/atl1c/atl1c.h
-+++ b/drivers/net/ethernet/atheros/atl1c/atl1c.h
-@@ -374,7 +374,6 @@ struct atl1c_hw {
- 	enum atl1c_dma_order dma_order;
- 	enum atl1c_dma_rcb   rcb_value;
- 	enum atl1c_dma_req_block dmar_block;
--	enum atl1c_dma_req_block dmaw_block;
+diff --git a/drivers/net/ethernet/atheros/atl1c/atl1c_hw.h b/drivers/net/ethernet/atheros/atl1c/atl1c_hw.h
+index f502b4d..a0b56ef 100644
+--- a/drivers/net/ethernet/atheros/atl1c/atl1c_hw.h
++++ b/drivers/net/ethernet/atheros/atl1c/atl1c_hw.h
+@@ -467,15 +467,31 @@ int atl1c_phy_power_saving(struct atl1c_hw *hw);
+ #define TPD_RING_SIZE_MASK		0xFFFF
  
- 	u16 device_id;
- 	u16 vendor_id;
+ /* TXQ Control Register */
+-#define REG_TXQ_CTRL                	0x1590
+-#define	TXQ_NUM_TPD_BURST_MASK     	0xF
+-#define TXQ_NUM_TPD_BURST_SHIFT    	0
+-#define TXQ_CTRL_IP_OPTION_EN		0x10
+-#define TXQ_CTRL_EN                     0x20
+-#define TXQ_CTRL_ENH_MODE               0x40
+-#define TXQ_CTRL_LS_8023_EN		0x80
+-#define TXQ_TXF_BURST_NUM_SHIFT    	16
+-#define TXQ_TXF_BURST_NUM_MASK     	0xFFFF
++#define REG_TXQ_CTRL			0x1590
++#define TXQ_TXF_BURST_NUM_MASK          0xFFFFUL
++#define TXQ_TXF_BURST_NUM_SHIFT		16
++#define L1C_TXQ_TXF_BURST_PREF          0x200
++#define L2CB_TXQ_TXF_BURST_PREF         0x40
++#define TXQ_CTRL_PEDING_CLR             BIT(8)
++#define TXQ_CTRL_LS_8023_EN             BIT(7)
++#define TXQ_CTRL_ENH_MODE               BIT(6)
++#define TXQ_CTRL_EN                     BIT(5)
++#define TXQ_CTRL_IP_OPTION_EN           BIT(4)
++#define TXQ_NUM_TPD_BURST_MASK          0xFUL
++#define TXQ_NUM_TPD_BURST_SHIFT         0
++#define TXQ_NUM_TPD_BURST_DEF           5
++#define TXQ_CFGV			(\
++	FIELDX(TXQ_NUM_TPD_BURST, TXQ_NUM_TPD_BURST_DEF) |\
++	TXQ_CTRL_ENH_MODE |\
++	TXQ_CTRL_LS_8023_EN |\
++	TXQ_CTRL_IP_OPTION_EN)
++#define L1C_TXQ_CFGV			(\
++	TXQ_CFGV |\
++	FIELDX(TXQ_TXF_BURST_NUM, L1C_TXQ_TXF_BURST_PREF))
++#define L2CB_TXQ_CFGV			(\
++	TXQ_CFGV |\
++	FIELDX(TXQ_TXF_BURST_NUM, L2CB_TXQ_TXF_BURST_PREF))
++
+ 
+ /* Jumbo packet Threshold for task offload */
+ #define REG_TX_TSO_OFFLOAD_THRESH	0x1594 /* In 8-bytes */
 diff --git a/drivers/net/ethernet/atheros/atl1c/atl1c_main.c b/drivers/net/ethernet/atheros/atl1c/atl1c_main.c
-index 1ce48d0..d6ebaa4 100644
+index d6ebaa4..8e737a5 100644
 --- a/drivers/net/ethernet/atheros/atl1c/atl1c_main.c
 +++ b/drivers/net/ethernet/atheros/atl1c/atl1c_main.c
-@@ -740,7 +740,6 @@ static int __devinit atl1c_sw_init(struct atl1c_adapter *adapter)
- 	hw->rfd_burst = 8;
- 	hw->dma_order = atl1c_dma_ord_out;
- 	hw->dmar_block = atl1c_dma_req_1024;
--	hw->dmaw_block = atl1c_dma_req_1024;
- 	hw->dmar_dly_cnt = 15;
- 	hw->dmaw_dly_cnt = 4;
+@@ -1049,7 +1049,6 @@ static void atl1c_configure_tx(struct atl1c_adapter *adapter)
+ 	u32 max_pay_load;
+ 	u16 tx_offload_thresh;
+ 	u32 txq_ctrl_data;
+-	u32 max_pay_load_data;
  
-@@ -1056,9 +1055,6 @@ static void atl1c_configure_tx(struct atl1c_adapter *adapter)
+ 	tx_offload_thresh = MAX_TX_OFFLOAD_THRESH;
  	AT_WRITE_REG(hw, REG_TX_TSO_OFFLOAD_THRESH,
- 		(tx_offload_thresh >> 3) & TX_TSO_OFFLOAD_THRESH_MASK);
- 	AT_READ_REG(hw, REG_DEVICE_CTRL, &dev_ctrl_data);
--	max_pay_load  = (dev_ctrl_data >> DEVICE_CTRL_MAX_PAYLOAD_SHIFT) &
--			DEVICE_CTRL_MAX_PAYLOAD_MASK;
--	hw->dmaw_block = min_t(u32, max_pay_load, hw->dmaw_block);
- 	max_pay_load  = (dev_ctrl_data >> DEVICE_CTRL_MAX_RREQ_SZ_SHIFT) &
+@@ -1059,15 +1058,9 @@ static void atl1c_configure_tx(struct atl1c_adapter *adapter)
  			DEVICE_CTRL_MAX_RREQ_SZ_MASK;
  	hw->dmar_block = min_t(u32, max_pay_load, hw->dmar_block);
+ 
+-	txq_ctrl_data = (hw->tpd_burst & TXQ_NUM_TPD_BURST_MASK) <<
+-			TXQ_NUM_TPD_BURST_SHIFT;
+-	if (hw->ctrl_flags & ATL1C_TXQ_MODE_ENHANCE)
+-		txq_ctrl_data |= TXQ_CTRL_ENH_MODE;
+-	max_pay_load_data = (atl1c_pay_load_size[hw->dmar_block] &
+-			TXQ_TXF_BURST_NUM_MASK) << TXQ_TXF_BURST_NUM_SHIFT;
+-	if (hw->nic_type == athr_l2c_b || hw->nic_type == athr_l2c_b2)
+-		max_pay_load_data >>= 1;
+-	txq_ctrl_data |= max_pay_load_data;
++	txq_ctrl_data =
++		hw->nic_type == athr_l2c_b || hw->nic_type == athr_l2c_b2 ?
++		L2CB_TXQ_CFGV : L1C_TXQ_CFGV;
+ 
+ 	AT_WRITE_REG(hw, REG_TXQ_CTRL, txq_ctrl_data);
+ }
 -- 
 1.7.7
 
