@@ -1,103 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935251Ab2DMLAS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Apr 2012 07:00:18 -0400
-Received: from na3sys009aog127.obsmtp.com ([74.125.149.107]:50102 "EHLO
-	na3sys009aog127.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758521Ab2DMLAQ (ORCPT
+	id S935257Ab2DMLBU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Apr 2012 07:01:20 -0400
+Received: from smtp.ctxuk.citrix.com ([62.200.22.115]:56153 "EHLO
+	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751488Ab2DMLBT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Apr 2012 07:00:16 -0400
-Date: Fri, 13 Apr 2012 13:59:23 +0300
-From: Felipe Balbi <balbi@ti.com>
-To: Bhupesh SHARMA <bhupesh.sharma@st.com>
-Cc: "balbi@ti.com" <balbi@ti.com>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+	Fri, 13 Apr 2012 07:01:19 -0400
+X-IronPort-AV: E=Sophos;i="4.75,417,1330905600"; 
+   d="scan'208";a="11923192"
+Date: Fri, 13 Apr 2012 12:05:14 +0100
+From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+X-X-Sender: sstabellini@kaball-desktop
+To: Samuel Thibault <samuel.thibault@ens-lyon.org>
+CC: Jesper Juhl <jj@chaosbits.net>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "stern@rowland.harvard.edu" <stern@rowland.harvard.edu>
-Subject: Re: Enabling multiple gadgets on top of composite driver
-Message-ID: <20120413105921.GM7154@arwen.pp.htv.fi>
-Reply-To: balbi@ti.com
-References: <D5ECB3C7A6F99444980976A8C6D896384FA30FA942@EAPEX1MAIL1.st.com>
+        Gerd Hoffmann <kraxel@suse.de>, Alan Cox <alan@linux.intel.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: Re: tty, hvc, xen: leak? dead code? everything is fine?
+In-Reply-To: <20120412220048.GM4245@type.famille.thibault.fr>
+Message-ID: <alpine.DEB.2.00.1204131200330.15151@kaball-desktop>
+References: <alpine.LNX.2.00.1204122318480.7553@swampdragon.chaosbits.net> <20120412220048.GM4245@type.famille.thibault.fr>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="6CiRFyVmOOJ3DkBX"
-Content-Disposition: inline
-In-Reply-To: <D5ECB3C7A6F99444980976A8C6D896384FA30FA942@EAPEX1MAIL1.st.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: multipart/mixed;
+	boundary="8323329-1190695860-1334314854=:15151"
+Content-ID: <alpine.DEB.2.00.1204131201340.15151@kaball-desktop>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+--8323329-1190695860-1334314854=:15151
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Content-ID: <alpine.DEB.2.00.1204131201341.15151@kaball-desktop>
 
---6CiRFyVmOOJ3DkBX
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Thu, 12 Apr 2012, Samuel Thibault wrote:
+> Jesper Juhl, le Thu 12 Apr 2012 23:33:20 +0200, a écrit :
+> > Or *if* there's actually no way 'info->intfw' can actually be anything but 
+> > NULL in this case,
+> 
+> There is no way that it's both non-NULL and the if was entered above: if
+> the if was entered, the content of info is zeroes (kzalloc).
+ 
+Yep. Thanks Samuel for the quick answer.
+ 
+In more details: if the console has already been configured info->intf
+is not NULL.
+On the other hand if the console hasn't been configured yet info->intf
+is NULL.
 
-On Fri, Apr 13, 2012 at 06:51:26PM +0800, Bhupesh SHARMA wrote:
-> Hi,
->=20
-> I have a query regarding enabling multiple gadgets (like g_webcam, g_zero=
- etc..)
-> on top of the Composite driver.
->=20
-> My use case is very simple:
-> 	- I want to expose a USB composite device to a standard USB host, where
-> 	  the Composite device supports a webcam gadget + zero gadget + some oth=
-er gadget..
-
-look at how nokia.c does it.
-
-> On the older kernels like 2.6.27, this was easily possible, but the latest
-> gadget code doesn't seem to support the same:
-> 	- I can see that first a 'choicemenu' is provided which allows selection=
- of only
-> 	  one gadget at a time.
-
-Answer M instead of Y to "USB Gadget Drivers"
-
-> 	- The "common" stuff like "composite.c", "epautoconfig.c" have been incl=
-uded in
-> 	  each f_* function driver (for e.g. f_uvc.c, f_sourcesink.c, etc..), so=
- even if
-> 	  I somehow tweak the 'choicemenu' stuff, I get redeclaration errors.
-
-yeah, that still needs to be cleaned up. The story behind that is very
-long.
-
-> What is the best way to enable multiple gadgets (like g_webcam, g_zero
-> etc..) on top of the Composite driver or am I missing something here?
-
-Either you want multiple gadgets or you want a composite gadget, what is
-it ? If you want a composite gadget, you need to write a small C file
-which combines multiple functions together (see nokia.c), if you want
-multiple gadget drivers, just make them all modules. I always compile
-all gadget drivers as modules and can use any one of them at any time.
-
---=20
-balbi
-
---6CiRFyVmOOJ3DkBX
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJPiAcJAAoJEIaOsuA1yqRER4sQAKnUzUNYe/O1hz1sbYBOyWFX
-sjspqrtV2JeTJyf7LO7drtipQ1nfoOzKIfbfPqUer0+1V57Qy6Icy3BOhlnV5cK6
-kqICJBRR4NCLjt93YUFAO6sZvIfjMADgjs7jNj0IJ6Ka8ss+7Ww8XfY/XWN5aPg6
-Izndly8RJkYvJz1nzX/qEpfn+SoCJDS0QMY+Ja7w+iOGB6A868SvS/c+9rQ+/lJr
-ynE9b1QcLiEaM9b3kGe1Y0ihYbSheKqOSfymywkHFgT1Nj2Bny5iTX9vFmXSpgf2
-mcS0ieUC7NJdmzbKm7HyCJjcqMKR42kbqVxeBJ67/GlVCZrcX5ijeDb2BbMsYDxS
-GbaYmCvVaQOF4IprR//Zoaa8iArOp4t4/AAjwFOtoVlj2RVb5MGPmcsF7bm55nTG
-Vy3j0y2Ez21+ZP2U/6ughKKG8bT8KKz//DMc1Njstqmr4poQJ/CoONYPD7pXUquK
-SvVsYmiISLfWDug7+bgWMu/WwERziOc1B6q/cFr6OacXzKsStGWXsYmdxJ01kgbc
-kCsIrFUF1QVdJyq68K0229K65WfWm5duyJKOHDhdit+Jk0EBjx0+Xc32xzI4l1o6
-+HCsNnqOJHOeQ1RCKrRq8ckpDdFWofvbj0kkBoscw8pD4AAdp7WZeFaPKrS4gNpf
-G5bg9/OWPCVQqN2Jl9MB
-=cdhS
------END PGP SIGNATURE-----
-
---6CiRFyVmOOJ3DkBX--
+If the console has just been allocated by the kzalloc then obviously
+it hasn't been configured and in fact info->intf is NULL.
+--8323329-1190695860-1334314854=:15151--
