@@ -1,23 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755338Ab2DMSLO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Apr 2012 14:11:14 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:51546 "EHLO
+	id S1754576Ab2DMSMZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Apr 2012 14:12:25 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:51572 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753919Ab2DMSLM (ORCPT
+	with ESMTP id S1753526Ab2DMSMX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Apr 2012 14:11:12 -0400
-Date: Fri, 13 Apr 2012 11:10:49 -0700
-From: tip-bot for Ashay Rane <ashay.rane@tacc.utexas.edu>
-Message-ID: <tip-h4nfjm8msedlk8gxkzivfh5y@git.kernel.org>
-Cc: acme@redhat.com, linux-kernel@vger.kernel.org, hpa@zytor.com,
-        mingo@kernel.org, ashay.rane@tacc.utexas.edu, tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        acme@redhat.com, tglx@linutronix.de, ashay.rane@tacc.utexas.edu
+	Fri, 13 Apr 2012 14:12:23 -0400
+Date: Fri, 13 Apr 2012 11:11:40 -0700
+From: tip-bot for Arnaldo Carvalho de Melo <acme@redhat.com>
+Message-ID: <tip-rv30xj2i258n0gwkzlu0c0bc@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, eranian@google.com, paulus@samba.org,
+        acme@redhat.com, hpa@zytor.com, mingo@kernel.org, andi@firstfloor.org,
+        peterz@infradead.org, efault@gmx.de, namhyung@gmail.com,
+        fweisbec@gmail.com, dsahern@gmail.com, tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, acme@redhat.com, paulus@samba.org,
+        eranian@google.com, linux-kernel@vger.kernel.org, andi@firstfloor.org,
+        efault@gmx.de, peterz@infradead.org, namhyung@gmail.com,
+        fweisbec@gmail.com, dsahern@gmail.com, tglx@linutronix.de
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf report:
-  Correct display of samples and events in header
-Git-Commit-ID: cc68628096b813010f30f69fcf7d1832d18fa767
+Subject: [tip:perf/core] perf annotate browser: string search: /?n
+Git-Commit-ID: d3d1f61acf62204bb7b2b4509329247bffaedd7c
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -26,86 +29,235 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Fri, 13 Apr 2012 11:10:57 -0700 (PDT)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Fri, 13 Apr 2012 11:11:46 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  cc68628096b813010f30f69fcf7d1832d18fa767
-Gitweb:     http://git.kernel.org/tip/cc68628096b813010f30f69fcf7d1832d18fa767
-Author:     Ashay Rane <ashay.rane@tacc.utexas.edu>
-AuthorDate: Thu, 5 Apr 2012 21:01:01 -0500
+Commit-ID:  d3d1f61acf62204bb7b2b4509329247bffaedd7c
+Gitweb:     http://git.kernel.org/tip/d3d1f61acf62204bb7b2b4509329247bffaedd7c
+Author:     Arnaldo Carvalho de Melo <acme@redhat.com>
+AuthorDate: Sat, 7 Apr 2012 17:10:30 -0300
 Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Sat, 7 Apr 2012 17:29:41 -0300
+CommitDate: Sat, 7 Apr 2012 17:37:22 -0300
 
-perf report: Correct display of samples and events in header
+perf annotate browser: string search: /?n
 
-This patch prints the number of samples and the count of performance
-events separately.
+Using the same keystrokes as vim:
 
-This allows comparing performance of different applications with each
-other.
+/ = search forward
+n = search next forward/backwards
+? = search backwards
 
-Previously, the sample count was displayed against an 'Events:' heading.
-With this patch, the header now reads (for example):
+Still needs to continue from start/end when not found, use HOME + / or
+END + ? for now.
 
-Samples: 5K of event 'instructions'
-Event count (approx.): 2993026545
+At some point we need a keybindings file to support ones favourite mode,
+erm, like EMACS, etc.
 
-The patch covers both the stdio and the browser interface.
+Also we now need a 'h' window with all these keybindings.
 
-Signed-off-by: Ashay Rane <ashay.rane@tacc.utexas.edu>
-[ committer note: Fixed wrt e7f01d1 ]
-Link: http://lkml.kernel.org/n/tip-h4nfjm8msedlk8gxkzivfh5y@git.kernel.org
+Requested-by: Andi Kleen <andi@firstfloor.org>
+Cc: Andi Kleen <andi@firstfloor.org>
+Cc: David Ahern <dsahern@gmail.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Mike Galbraith <efault@gmx.de>
+Cc: Namhyung Kim <namhyung@gmail.com>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Stephane Eranian <eranian@google.com>
+Link: http://lkml.kernel.org/n/tip-rv30xj2i258n0gwkzlu0c0bc@git.kernel.org
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/builtin-report.c         |   11 +++++++----
- tools/perf/util/ui/browsers/hists.c |   10 +++++++---
- 2 files changed, 14 insertions(+), 7 deletions(-)
+ tools/perf/util/ui/browsers/annotate.c |  149 +++++++++++++++++++++++++++++++-
+ 1 files changed, 148 insertions(+), 1 deletions(-)
 
-diff --git a/tools/perf/builtin-report.c b/tools/perf/builtin-report.c
-index 2e31743..cec2b8c 100644
---- a/tools/perf/builtin-report.c
-+++ b/tools/perf/builtin-report.c
-@@ -296,12 +296,15 @@ static size_t hists__fprintf_nr_sample_events(struct hists *self,
- {
- 	size_t ret;
- 	char unit;
--	unsigned long nr_events = self->stats.nr_events[PERF_RECORD_SAMPLE];
-+	unsigned long nr_samples = self->stats.nr_events[PERF_RECORD_SAMPLE];
-+	u64 nr_events = self->stats.total_period;
+diff --git a/tools/perf/util/ui/browsers/annotate.c b/tools/perf/util/ui/browsers/annotate.c
+index 752d8d0..c2cfeed 100644
+--- a/tools/perf/util/ui/browsers/annotate.c
++++ b/tools/perf/util/ui/browsers/annotate.c
+@@ -21,6 +21,8 @@ struct annotate_browser {
+ 	int		    nr_entries;
+ 	bool		    hide_src_code;
+ 	bool		    use_offset;
++	bool		    searching_backwards;
++	char		    search_bf[128];
+ };
  
--	nr_events = convert_unit(nr_events, &unit);
--	ret = fprintf(fp, "# Events: %lu%c", nr_events, unit);
-+	nr_samples = convert_unit(nr_samples, &unit);
-+	ret = fprintf(fp, "# Samples: %lu%c", nr_samples, unit);
- 	if (evname != NULL)
--		ret += fprintf(fp, " %s", evname);
-+		ret += fprintf(fp, " of event '%s'", evname);
-+
-+	ret += fprintf(fp, "\n# Event count (approx.): %lu", nr_events);
- 	return ret + fprintf(fp, "\n#\n");
+ struct objdump_line_rb_node {
+@@ -176,6 +178,7 @@ static void annotate_browser__set_top(struct annotate_browser *self,
+ 	}
+ 
+ 	self->b.top = pos;
++	self->b.navkeypressed = true;
  }
  
-diff --git a/tools/perf/util/ui/browsers/hists.c b/tools/perf/util/ui/browsers/hists.c
-index 2f83e5d..1b820ed 100644
---- a/tools/perf/util/ui/browsers/hists.c
-+++ b/tools/perf/util/ui/browsers/hists.c
-@@ -840,10 +840,14 @@ static int hists__browser_title(struct hists *self, char *bf, size_t size,
- 	int printed;
- 	const struct dso *dso = self->dso_filter;
- 	const struct thread *thread = self->thread_filter;
--	unsigned long nr_events = self->stats.nr_events[PERF_RECORD_SAMPLE];
-+	unsigned long nr_samples = self->stats.nr_events[PERF_RECORD_SAMPLE];
-+	u64 nr_events = self->stats.total_period;
+ static void annotate_browser__set_rb_top(struct annotate_browser *browser,
+@@ -354,6 +357,132 @@ static bool annotate_browser__jump(struct annotate_browser *browser)
+ 	return true;
+ }
+ 
++static struct objdump_line *
++	annotate_browser__find_string(struct annotate_browser *browser,
++				      char *s, s64 *idx)
++{
++	struct map_symbol *ms = browser->b.priv;
++	struct symbol *sym = ms->sym;
++	struct annotation *notes = symbol__annotation(sym);
++	struct objdump_line *pos = browser->selection;
 +
-+	nr_samples = convert_unit(nr_samples, &unit);
-+	printed = scnprintf(bf, size,
-+			   "Samples: %lu%c of event '%s', Event count (approx.): %lu",
-+			   nr_samples, unit, ev_name, nr_events);
++	*idx = browser->b.index;
++	list_for_each_entry_continue(pos, &notes->src->source, node) {
++		if (objdump_line__filter(&browser->b, &pos->node))
++			continue;
++
++		++*idx;
++
++		if (pos->line && strstr(pos->line, s) != NULL)
++			return pos;
++	}
++
++	return NULL;
++}
++
++static bool __annotate_browser__search(struct annotate_browser *browser)
++{
++	struct objdump_line *line;
++	s64 idx;
++
++	line = annotate_browser__find_string(browser, browser->search_bf, &idx);
++	if (line == NULL) {
++		ui_helpline__puts("String not found!");
++		return false;
++	}
++
++	annotate_browser__set_top(browser, line, idx);
++	browser->searching_backwards = false;
++	return true;
++}
++
++static struct objdump_line *
++	annotate_browser__find_string_reverse(struct annotate_browser *browser,
++					      char *s, s64 *idx)
++{
++	struct map_symbol *ms = browser->b.priv;
++	struct symbol *sym = ms->sym;
++	struct annotation *notes = symbol__annotation(sym);
++	struct objdump_line *pos = browser->selection;
++
++	*idx = browser->b.index;
++	list_for_each_entry_continue_reverse(pos, &notes->src->source, node) {
++		if (objdump_line__filter(&browser->b, &pos->node))
++			continue;
++
++		--*idx;
++
++		if (pos->line && strstr(pos->line, s) != NULL)
++			return pos;
++	}
++
++	return NULL;
++}
++
++static bool __annotate_browser__search_reverse(struct annotate_browser *browser)
++{
++	struct objdump_line *line;
++	s64 idx;
++
++	line = annotate_browser__find_string_reverse(browser, browser->search_bf, &idx);
++	if (line == NULL) {
++		ui_helpline__puts("String not found!");
++		return false;
++	}
++
++	annotate_browser__set_top(browser, line, idx);
++	browser->searching_backwards = true;
++	return true;
++}
++
++static bool annotate_browser__search_window(struct annotate_browser *browser,
++					    int delay_secs)
++{
++	if (ui_browser__input_window("Search", "String: ", browser->search_bf,
++				     "ENTER: OK, ESC: Cancel",
++				     delay_secs * 2) != K_ENTER ||
++	    !*browser->search_bf)
++		return false;
++
++	return true;
++}
++
++static bool annotate_browser__search(struct annotate_browser *browser, int delay_secs)
++{
++	if (annotate_browser__search_window(browser, delay_secs))
++		return __annotate_browser__search(browser);
++
++	return false;
++}
++
++static bool annotate_browser__continue_search(struct annotate_browser *browser,
++					      int delay_secs)
++{
++	if (!*browser->search_bf)
++		return annotate_browser__search(browser, delay_secs);
++
++	return __annotate_browser__search(browser);
++}
++
++static bool annotate_browser__search_reverse(struct annotate_browser *browser,
++					   int delay_secs)
++{
++	if (annotate_browser__search_window(browser, delay_secs))
++		return __annotate_browser__search_reverse(browser);
++
++	return false;
++}
++
++static
++bool annotate_browser__continue_search_reverse(struct annotate_browser *browser,
++					       int delay_secs)
++{
++	if (!*browser->search_bf)
++		return annotate_browser__search_reverse(browser, delay_secs);
++
++	return __annotate_browser__search_reverse(browser);
++}
++
+ static int annotate_browser__run(struct annotate_browser *self, int evidx,
+ 				 void(*timer)(void *arg),
+ 				 void *arg, int delay_secs)
+@@ -372,8 +501,10 @@ static int annotate_browser__run(struct annotate_browser *self, int evidx,
  
--	nr_events = convert_unit(nr_events, &unit);
--	printed = scnprintf(bf, size, "Events: %lu%c %s", nr_events, unit, ev_name);
+ 	annotate_browser__calc_percent(self, evidx);
  
- 	if (self->uid_filter_str)
- 		printed += snprintf(bf + printed, size - printed,
+-	if (self->curr_hot)
++	if (self->curr_hot) {
+ 		annotate_browser__set_rb_top(self, self->curr_hot);
++		self->b.navkeypressed = false;
++	}
+ 
+ 	nd = self->curr_hot;
+ 
+@@ -428,6 +559,22 @@ static int annotate_browser__run(struct annotate_browser *self, int evidx,
+ 		case 'o':
+ 			self->use_offset = !self->use_offset;
+ 			continue;
++		case '/':
++			if (annotate_browser__search(self, delay_secs)) {
++show_help:
++				ui_helpline__puts(help);
++			}
++			continue;
++		case 'n':
++			if (self->searching_backwards ?
++			    annotate_browser__continue_search_reverse(self, delay_secs) :
++			    annotate_browser__continue_search(self, delay_secs))
++				goto show_help;
++			continue;
++		case '?':
++			if (annotate_browser__search_reverse(self, delay_secs))
++				goto show_help;
++			continue;
+ 		case K_ENTER:
+ 		case K_RIGHT:
+ 			if (self->selection == NULL)
