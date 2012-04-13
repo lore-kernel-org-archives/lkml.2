@@ -1,96 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934588Ab2DMCaQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Apr 2012 22:30:16 -0400
-Received: from ozlabs.org ([203.10.76.45]:48863 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755880Ab2DMCaO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Apr 2012 22:30:14 -0400
-From: Michael Neuling <mikey@neuling.org>
-To: Stephen Rothwell <sfr@canb.auug.org.au>, Jiri Slaby <jslaby@suse.cz>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-cc: LKML <linux-kernel@vger.kernel.org>,
-        ppc-dev <linuxppc-dev@lists.ozlabs.org>, linux-next@vger.kernel.org
-Subject: Re: linux-next: boot failures with next-20120411
-In-reply-to: <20120411165835.415e546374a54ea94669b0c6@canb.auug.org.au>
-References: <20120411165835.415e546374a54ea94669b0c6@canb.auug.org.au>
-Comments: In-reply-to Stephen Rothwell <sfr@canb.auug.org.au>
-   message dated "Wed, 11 Apr 2012 16:58:35 +1000."
-X-Mailer: MH-E 8.2; nmh 1.3; GNU Emacs 23.3.1
-Date: Fri, 13 Apr 2012 12:30:11 +1000
-Message-ID: <16710.1334284211@neuling.org>
+	id S935022Ab2DMCbL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Apr 2012 22:31:11 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:44070 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756958Ab2DMCbJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Apr 2012 22:31:09 -0400
+Date: Fri, 13 Apr 2012 12:30:55 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: "John W. Linville" <linville@tuxdriver.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Johannes Berg <johannes.berg@intel.com>,
+        David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>,
+        Meenakshi Venkataraman <meenakshi.venkataraman@intel.com>
+Subject: linux-next: manual merge of the wireless-next tree with the
+ net-next tree
+Message-Id: <20120413123055.8d25d96b3d3c055b726b8519@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0beta6 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Fri__13_Apr_2012_12_30_55_+1000_wu5wiKKbJkMT8jEM"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+--Signature=_Fri__13_Apr_2012_12_30_55_+1000_wu5wiKKbJkMT8jEM
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> Hi all,
-> 
-> Some (not all) of my PowerPC boot tests have failed like this after
-> getting into user mode (this one was just after udev started, but others
-> are after other processes getting going):
-> 
-> Unable to handle kernel paging request for data at address 0xc0000003f9d550
-> Faulting instruction address: 0xc0000000001b7f40
-> Oops: Kernel access of bad area, sig: 11 [#1]
-> SMP NR_CPUS=32 NUMA pSeries
-> Modules linked in: ehea
-> NIP: c0000000001b7f40 LR: c0000000001b7f14 CTR: c0000000000e04f0
-> REGS: c0000003f68bf6b0 TRAP: 0300   Not tainted  (3.4.0-rc2-autokern1)
-> MSR: 800000000280b032 <SF,VEC,VSX,EE,FP,ME,IR,DR,RI>  CR: 24422424  XER: 20000001
-> SOFTE: 1
-> CFAR: 000000000000562c
-> DAR: 00c0000003f9d550, DSISR: 40000000
-> TASK = c0000003f8818000[3192] 'kdump' THREAD: c0000003f68bc000 CPU: 5
-> GPR00: 0000000000000000 c0000003f68bf930 c000000000ce1d40 c0000003fe00ec00 
-> GPR04: 00000000000002d0 0000000000000038 c0000003f8f935e8 c000000000e55280 
-> GPR08: 0000000000000011 c000000000bcb280 c000000000bcb1e8 000000000028a000 
-> GPR12: 0000000024422424 c00000000f33bc80 00000fffdd90a770 0000000000081000 
-> GPR16: c0000003f846c000 000000000de4f7a0 f00000000de4f7a0 0000000000000000 
-> GPR20: c0000003f8365408 c0000003f8365480 c0000003f8e5d110 0000000000000000 
-> GPR24: 0000000000000100 c0000003f8365400 c0000000001e5424 00000000000002d0 
-> GPR28: 0000000000000800 00c0000003f9d550 c000000000c5b718 c0000003fe00ec00 
-> NIP [c0000000001b7f40] .__kmalloc+0x70/0x230
-> LR [c0000000001b7f14] .__kmalloc+0x44/0x230
-> Call Trace:
-> [c0000003f68bf930] [c0000003f68bf9b0] 0xc0000003f68bf9b0 (unreliable)
-> [c0000003f68bf9e0] [c0000000001e5424] .alloc_fdmem+0x24/0x70
-> [c0000003f68bfa60] [c0000000001e54f8] .alloc_fdtable+0x88/0x130
-> [c0000003f68bfaf0] [c0000000001e5924] .dup_fd+0x384/0x450
-> [c0000003f68bfbd0] [c00000000009a310] .copy_process+0x880/0x11d0
-> [c0000003f68bfcd0] [c00000000009aee0] .do_fork+0x70/0x400
-> [c0000003f68bfdc0] [c0000000000141c4] .sys_clone+0x54/0x70
-> [c0000003f68bfe30] [c000000000009aa0] .ppc_clone+0x8/0xc
-> Instruction dump:
-> 4bff9281 2ba30010 7c7f1b78 40dd00f4 e96d0040 e93f0000 7ce95a14 e9070008 
-> 7fa9582a 2fbd0000 41de0054 e81f0022 <7f3d002a> 38000000 886d01f2 980d01f2 
-> ---[ end trace 366fe6c7ced3bfb0 ]---
-> 
-> This did not happen yesterday.  Just wondering if anyone can think of
-> anything obvious.  Full console log at
-> http://ozlabs.org/~sfr/next-20120411.log.bz2
+Hi John,
 
-I managed to bisect this down using pseries_defconfig with next-20120412
-to this patch:
+Today's linux-next merge of the wireless-next tree got a conflict in
+drivers/net/wireless/iwlwifi/iwl-testmode.c between commit d33e152e1edd
+("iwlwifi: Stop using NLA_PUT*()") from the net-next tree and commits
+11483b5c2296 ("iwlwifi: move eeprom into priv") and a42506eb27aa
+("iwlwifi: move ucode_type from shared to op_mode") from the
+wireless-next tree.
 
-  commit 85bbc003b24335e253a392f6a9874103b77abb36
-  Author: Jiri Slaby <jslaby@suse.cz>
-  Date:   Mon Apr 2 13:54:22 2012 +0200
+I fixed it up (see below) and can carry the fix as necessary.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-      TTY: HVC, use tty from tty_port
+diff --cc drivers/net/wireless/iwlwifi/iwl-testmode.c
+index a54e20e,c8e89ca..0000000
+--- a/drivers/net/wireless/iwlwifi/iwl-testmode.c
++++ b/drivers/net/wireless/iwlwifi/iwl-testmode.c
+@@@ -540,12 -539,11 +543,12 @@@ static int iwl_testmode_driver(struct i
+  				IWL_ERR(priv, "Memory allocation fail\n");
+  				return -ENOMEM;
+  			}
+ -			NLA_PUT_U32(skb, IWL_TM_ATTR_COMMAND,
+ -				IWL_TM_CMD_DEV2APP_EEPROM_RSP);
+ -			NLA_PUT(skb, IWL_TM_ATTR_EEPROM,
+ -				cfg(priv)->base_params->eeprom_size,
+ -				priv->eeprom);
+ +			if (nla_put_u32(skb, IWL_TM_ATTR_COMMAND,
+ +					IWL_TM_CMD_DEV2APP_EEPROM_RSP) ||
+ +			    nla_put(skb, IWL_TM_ATTR_EEPROM,
+ +				    cfg(priv)->base_params->eeprom_size,
+- 				    priv->shrd->eeprom))
+++				    priv->eeprom))
+ +				goto nla_put_failure;
+  			status =3D cfg80211_testmode_reply(skb);
+  			if (status < 0)
+  				IWL_ERR(priv, "Error sending msg : %d\n",
+@@@ -609,10 -605,9 +612,10 @@@
+  			inst_size =3D img->sec[IWL_UCODE_SECTION_INST].len;
+  			data_size =3D img->sec[IWL_UCODE_SECTION_DATA].len;
+  		}
+- 		if (nla_put_u32(skb, IWL_TM_ATTR_FW_TYPE, priv->shrd->ucode_type) ||
+ -		NLA_PUT_U32(skb, IWL_TM_ATTR_FW_TYPE, priv->cur_ucode);
+ -		NLA_PUT_U32(skb, IWL_TM_ATTR_FW_INST_SIZE, inst_size);
+ -		NLA_PUT_U32(skb, IWL_TM_ATTR_FW_DATA_SIZE, data_size);
+++		if (nla_put_u32(skb, IWL_TM_ATTR_FW_TYPE, priv->ucode_type) ||
+ +		    nla_put_u32(skb, IWL_TM_ATTR_FW_INST_SIZE, inst_size) ||
+ +		    nla_put_u32(skb, IWL_TM_ATTR_FW_DATA_SIZE, data_size))
+ +			goto nla_put_failure;
+  		status =3D cfg80211_testmode_reply(skb);
+  		if (status < 0)
+  			IWL_ERR(priv, "Error sending msg : %d\n", status);
 
-      The driver already used refcounting. So we just switch it to tty_port
-      helpers. And switch to tty_port->lock for tty.
+--Signature=_Fri__13_Apr_2012_12_30_55_+1000_wu5wiKKbJkMT8jEM
+Content-Type: application/pgp-signature
 
-      Signed-off-by: Jiri Slaby <jslaby@suse.cz>
-      Cc: linuxppc-dev@lists.ozlabs.org
-      Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
-Reverting this commit (and 0146b6939074ebe14ece3604fd00e7be128a3812
-otherwise git barfs) fixes the problem on next-20120412.  
+iQIcBAEBCAAGBQJPh4/fAAoJEECxmPOUX5FEUvQQAJFr7VzYhyvKZv4Q2eIAtcpB
+sfHnVIbJuih4+XLrjaX2p7zUNHP45C3IWRY+x/9QFSiPZ8AZGMtMopFbL9GF/h+m
+6YkolhWdcMYqi8C10E57IGxii1zRFMJzTm6zr4Rpw91CuYc3/AWz5mVV67uCvGqC
+hr1C2Dcsyo4z5ttnSNBKmQRF0nyP1/Kcwdll1iDbC3H8r1pDHpBUn22hL930Y9qM
+5MuG5kOETsOJWz+4Kfi1D7+qqg317kIUA/nEgHGf7FgCGdkxZFmqpMAi9zWlKLRr
+GbcEtDY2P3LpqurBxqZf0JYkYQZyLbKFTbEZDPu0apjNh5XEAu3QQAfWo2guTEDX
+KWQ3HnqN5hlF+7jxWRe4NF7RqbH5fxPPk/rptQ1aZwOMnWq9qcsScj+ke0YuaDU+
+srg13z5hvhS7/4JIH4PFede98jqL0JiqnE98G70KVuE2wkdMxq8sUPCFRo+pOtLl
+bgdfsg56SrH22u3Dpgu/WyBW+oZ2m//91xR/c3Y7EBz11lx/mKWkNKdpdm3dVMr1
+GicMRJsetMTDM/xftXocEul5A++eaSOzqi7SKAFL3myPuWXtwzlOlShX92citx0L
+Aja83VKfqCVpgSRxyxqhFEwERWmyi01BYrg7W000oKja+2AMP0YK9ejVxgCSkHGp
+TwbMUuxoBW1iGYYZ8iMy
+=YV3d
+-----END PGP SIGNATURE-----
 
-I'm assuming we got the ref count changes wrong somewhere in the patch
-but the tty code is beyond me.  Jiri, can you take a look?
-
-Mikey
+--Signature=_Fri__13_Apr_2012_12_30_55_+1000_wu5wiKKbJkMT8jEM--
