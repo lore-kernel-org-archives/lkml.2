@@ -1,84 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934735Ab2DMJ7Z (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Apr 2012 05:59:25 -0400
-Received: from nm6.bullet.mail.bf1.yahoo.com ([98.139.212.165]:35130 "HELO
-	nm6.bullet.mail.bf1.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S932087Ab2DMJ7X convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Apr 2012 05:59:23 -0400
-X-Greylist: delayed 408 seconds by postgrey-1.27 at vger.kernel.org; Fri, 13 Apr 2012 05:59:23 EDT
-X-Yahoo-Newman-Property: ymail-3
-X-Yahoo-Newman-Id: 942263.2025.bm@omp1066.mail.bf1.yahoo.com
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
-  s=s1024; d=yahoo.com;
-  h=X-YMail-OSG:Received:X-Mailer:Message-ID:Date:From:Reply-To:Subject:To:Cc:MIME-Version:Content-Type:Content-Transfer-Encoding;
-  b=O/xoAsHZwX3awqLzYePgNTiYBIEARp0NCG8shkru0DtxFu9XN6USt+IuD++NNLDB9ccNjuQH7AYVqaED+xsEGM7S7qhk/BPH3VUz09KNDdVxqqFruOBTCNEUdKXGAdnDRlv/En4AG2bGd5WuO9DPdBP4S76syExnGzqx+Bpz9xk=;
-X-YMail-OSG: cgCUUSYVM1ncL.5Ocg3zyy6WSnK3PtJoS4CqRhVpt4s4Ajv
- IQZcmWT7GEdK_r9qnTh47Uj7bPSWFGratp6whSB.6nmUEzxwFT.tmujiensf
- JgP1_MJ6_qn8nB.s3AMPdReSoWqn4jJhnhy5tyNs7G5O2vvs2esJfl1zVLl2
- p8rEUd_ehTstefIrZAhS3IodpGgCU.GIP_Slgw1uciWDO646UhTpo_2O2C7t
- OUs.mB1Y_aSsI7ODoc5FRGQnxcdz0GdicGFw87xxA6EEMEGDogpmXmJ5850j
- JuFANZowmyoRmnh5A9Jannj.W1lG6oXMuz8WJRuhttCcoDj.dNL8n6iiUIZD
- U.DV_9b.D7xTy_R37wYSRWOTWVmdBU704acoZy3fo.eR_kqLinrOF4Meh4Ia
- u5Gue0qE5IglspyXAiZO5xx.P6HNNrczm_Y.kjPJbNDY3nGm0lf7Sbvvjena
- Puw9z2jQ6xo4Ht4H6Kj.kSlx8aCBq5zy3Dve.r9F6aKdcrhDwemzVGycTpot
- R1sW2a_eS_b4d8_3P8BnTcI4nB9PeY5xJhrT6yOsOuGTrct3J33jWw7kqTQ-
- -
-X-Mailer: YahooMailWebService/0.8.117.340979
-Message-ID: <1334310754.17013.YahooMailNeo@web161804.mail.bf1.yahoo.com>
-Date: Fri, 13 Apr 2012 02:52:34 -0700 (PDT)
-From: Mikko Vinni <mmvinni@yahoo.com>
-Reply-To: Mikko Vinni <mmvinni@yahoo.com>
-Subject: "i8042: Can't reactivate AUX port" after s2ram on 3.4-rc2
-To: "linux-pm@lists.linux-foundation.org" 
-	<linux-pm@lists.linux-foundation.org>,
-        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Cc: Jean Guyader <jean.guyader@eu.citrix.com>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>,
-        Allen Kay <allen.m.kay@intel.com>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Transfer-Encoding: 8BIT
+	id S1758302Ab2DMJ7H (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Apr 2012 05:59:07 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:63076 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932606Ab2DMJ7D (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 Apr 2012 05:59:03 -0400
+From: Sasha Levin <levinsasha928@gmail.com>
+To: cl@linux.com, akpm@linux-foundation.org
+Cc: hughd@google.com, dave@linux.vnet.ibm.com, ebiederm@xmission.com,
+        davej@redhat.com, linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Sasha Levin <levinsasha928@gmail.com>
+Subject: [PATCH 1/2] mm: fix NULL ptr dereference in migrate_pages
+Date: Fri, 13 Apr 2012 08:58:21 -0400
+Message-Id: <1334321902-7143-1-git-send-email-levinsasha928@gmail.com>
+X-Mailer: git-send-email 1.7.8.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Bug report:
-    https://bugzilla.kernel.org/show_bug.cgi?id=43099
+Commit 3268c63 ("mm: fix move/migrate_pages() race on task struct") has added
+an odd construct where 'mm' is checked for being NULL, and if it is, it would
+get dereferenced anyways by mput()ing it.
 
-Briefly:
+This would lead to the following NULL ptr deref and BUG() when calling
+migrate_pages() with a pid that has no mm struct:
 
-After s2ram the touchpad on a HP dv5 laptop doesn't work anymore.
+[25904.193704] BUG: unable to handle kernel NULL pointer dereference at 0000000000000050
+[25904.194235] IP: [<ffffffff810b0de7>] mmput+0x27/0xf0
+[25904.194235] PGD 773e6067 PUD 77da0067 PMD 0
+[25904.194235] Oops: 0002 [#1] PREEMPT SMP
+[25904.194235] CPU 2
+[25904.194235] Pid: 31608, comm: trinity Tainted: G        W    3.4.0-rc2-next-20120412-sasha #69
+[25904.194235] RIP: 0010:[<ffffffff810b0de7>]  [<ffffffff810b0de7>] mmput+0x27/0xf0
+[25904.194235] RSP: 0018:ffff880077d49e08  EFLAGS: 00010202
+[25904.194235] RAX: 0000000000000286 RBX: 0000000000000000 RCX: 0000000000000000
+[25904.194235] RDX: ffff880075ef8000 RSI: 000000000000023d RDI: 0000000000000286
+[25904.194235] RBP: ffff880077d49e18 R08: 0000000000000001 R09: 0000000000000001
+[25904.194235] R10: 0000000000000000 R11: 0000000000000000 R12: 0000000000000000
+[25904.194235] R13: 00000000ffffffea R14: ffff880034287740 R15: ffff8800218d3010
+[25904.194235] FS:  00007fc8b244c700(0000) GS:ffff880029800000(0000) knlGS:0000000000000000
+[25904.194235] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+[25904.194235] CR2: 0000000000000050 CR3: 00000000767c6000 CR4: 00000000000406e0
+[25904.194235] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+[25904.194235] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+[25904.194235] Process trinity (pid: 31608, threadinfo ffff880077d48000, task ffff880075ef8000)
+[25904.194235] Stack:
+[25904.194235]  ffff8800342876c0 0000000000000000 ffff880077d49f78 ffffffff811b8020
+[25904.194235]  ffffffff811b7d91 ffff880075ef8000 ffff88002256d200 0000000000000000
+[25904.194235]  00000000000003ff 0000000000000000 0000000000000000 0000000000000000
+[25904.194235] Call Trace:
+[25904.194235]  [<ffffffff811b8020>] sys_migrate_pages+0x340/0x3a0
+[25904.194235]  [<ffffffff811b7d91>] ? sys_migrate_pages+0xb1/0x3a0
+[25904.194235]  [<ffffffff8266cbb9>] system_call_fastpath+0x16/0x1b
+[25904.194235] Code: c9 c3 66 90 55 31 d2 48 89 e5 be 3d 02 00 00 48 83 ec 10 48 89 1c 24 4c 89 64 24 08 48 89 fb 48 c7 c7 cf 0e e1 82 e8 69 18 03 00 <f0> ff 4b 50 0f 94 c0 84 c0 0f 84 aa 00 00 00 48 89 df e8 72 f1
+[25904.194235] RIP  [<ffffffff810b0de7>] mmput+0x27/0xf0
+[25904.194235]  RSP <ffff880077d49e08>
+[25904.194235] CR2: 0000000000000050
+[25904.348999] ---[ end trace a307b3ed40206b4b ]---
 
-dmesg contains this about the touchpad
-Apr 11 18:00:05 koni kernel: i8042: Can't write CTR while closing AUX port
-Apr 11 18:00:08 koni kernel: i8042: Can't reactivate AUX port
+Signed-off-by: Sasha Levin <levinsasha928@gmail.com>
+---
+ mm/mempolicy.c |   11 +++++++----
+ 1 files changed, 7 insertions(+), 4 deletions(-)
 
-
-Full log in bugzilla with PCI and i8042 debug turned on.
-
-Bisected to:
-
-commit 26f41062f28de65e11d3cf353e52d0be73442be1
-Author: Kay, Allen M <allen.m.kay@intel.com>
-Date:   Thu Jan 26 10:25:53 2012 -0800
-
-    PCI: check for pci bar restore completion and retry
-    
-    On some OEM systems, pci_restore_state() is called while FLR has not yet
-    completed.  As a result, PCI BAR register restore is not successful.  This fix
-    reads back the restored value and compares it with saved value and re-tries 10
-    times before giving up.
-
-
-I will try to update the BIOS on this laptop next week, hoping that it might
-fix some of the s2ram issues, but other than that, maybe somebody has an idea?
-
-
-Thanks,
-
-Mikko
+diff --git a/mm/mempolicy.c b/mm/mempolicy.c
+index 4c0b8d5..417c363 100644
+--- a/mm/mempolicy.c
++++ b/mm/mempolicy.c
+@@ -1361,11 +1361,14 @@ SYSCALL_DEFINE4(migrate_pages, pid_t, pid, unsigned long, maxnode,
+ 
+ 	mm = get_task_mm(task);
+ 	put_task_struct(task);
+-	if (mm)
+-		err = do_migrate_pages(mm, old, new,
+-			capable(CAP_SYS_NICE) ? MPOL_MF_MOVE_ALL : MPOL_MF_MOVE);
+-	else
++
++	if (!mm) {
+ 		err = -EINVAL;
++		goto out;
++	}
++
++	err = do_migrate_pages(mm, old, new,
++		capable(CAP_SYS_NICE) ? MPOL_MF_MOVE_ALL : MPOL_MF_MOVE);
+ 
+ 	mmput(mm);
+ out:
+-- 
+1.7.8.5
 
