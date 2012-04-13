@@ -1,75 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932307Ab2DMUOy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Apr 2012 16:14:54 -0400
-Received: from mail-qc0-f174.google.com ([209.85.216.174]:52762 "EHLO
-	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756690Ab2DMUOt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Apr 2012 16:14:49 -0400
-From: Paul Moore <paul@paul-moore.com>
-To: Will Drewry <wad@chromium.org>
-Cc: Kees Cook <keescook@chromium.org>,
-        libseccomp-discuss@lists.sourceforge.net, linux-kernel@vger.kernel.org,
-        linux-security-module@vger.kernel.org
-Subject: Re: ANN: libseccomp
-Date: Fri, 13 Apr 2012 16:14:43 -0400
-Message-ID: <9270063.OgsgoBpmh0@sifl>
-User-Agent: KMail/4.8.2 (Linux/3.3.1-gentoo; KDE/4.8.2; x86_64; ; )
-In-Reply-To: <5076094.qra9nCCzS0@sifl>
-References: <1540670.AFBi1SpGoi@sifl> <CABqD9haXLBDxEkC3+3AN4d4PDVYE-JrqH4P6iTJ95mqYxoR=yA@mail.gmail.com> <5076094.qra9nCCzS0@sifl>
+	id S932387Ab2DMUPG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Apr 2012 16:15:06 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:42052 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756669Ab2DMUOw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 Apr 2012 16:14:52 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Mikko Vinni <mmvinni@yahoo.com>, Bjorn Helgaas <bhelgaas@google.com>
+Subject: Re: [linux-pm] "i8042: Can't reactivate AUX port" after s2ram on 3.4-rc2
+Date: Fri, 13 Apr 2012 22:19:22 +0200
+User-Agent: KMail/1.13.6 (Linux/3.4.0-rc2+; KDE/4.6.0; x86_64; ; )
+Cc: "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Allen Kay <allen.m.kay@intel.com>,
+        Jean Guyader <jean.guyader@eu.citrix.com>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>
+References: <1334310754.17013.YahooMailNeo@web161804.mail.bf1.yahoo.com> <201204132118.22074.rjw@sisk.pl> <1334346546.93033.YahooMailNeo@web161806.mail.bf1.yahoo.com>
+In-Reply-To: <1334346546.93033.YahooMailNeo@web161806.mail.bf1.yahoo.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201204132219.23106.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday, April 09, 2012 06:46:02 PM Paul Moore wrote:
-> On Monday, April 09, 2012 04:51:30 PM Will Drewry wrote:
-> > On Mon, Apr 9, 2012 at 4:32 PM, Paul Moore <paul@paul-moore.com> wrote:
-> > > On Monday, April 09, 2012 12:16:30 PM Kees Cook wrote:
-> > >> On Mon, Apr 9, 2012 at 11:58 AM, Paul Moore wrote:
-> > >> I see that the arch check happens during _gen_bpf_build_bpf(), which
-> > >> is excellent. Do you have any thoughts about including a call to
-> > >> prctl(PR_SET_NO_NEW_PRIVS, 1, 0, 0, 0) by default as well?
-> > > 
-> > > That is a good question, and I guess it comes down to another question
-> > > of if anyone would want to use seccomp without NO_NEW_PRIVS.  If the
-> > > answer is no then I'm comfortable adding it into the seccomp_load()
-> > > function; however, if the answer is yes we might want to do something
-> > > different.
-> > > 
-> > > I haven't given much thought to this yet, so if you or anyone else feels
-> > > strongly about the issue - either pro or con - I'd appreciate hearing
-> > > the argument.
-> > 
-> > I guess the question is if there is an expectation that this library
-> > be used with something like lxc, where a whole, functional system with
-> > suid/fcaps binaries is contained.  In that world, it may not be
-> > desirable to set the nnp bit.   The same is true if, for some reason,
-> > the init task was to set a system-wide filter.
-> > 
-> > Most likely, default use of nnp is probably "the right thing", but
-> > it'd be nice to be able to annotate when you really want to allow
-> > privileged contexts to set filters without nnp.
+On Friday, April 13, 2012, Mikko Vinni wrote:
+> From: Rafael J. Wysocki:
 > 
-> Okay, that seems reasonable: default to NO_NEW_PRIVS, but provide an
-> override mechanism.
+> > On Friday, April 13, 2012, Mikko Vinni wrote:
+> >>  Bug report:
+> >>     https://bugzilla.kernel.org/show_bug.cgi?id=43099
+> >> 
+> >>  Briefly:
+> >> 
+> >>  After s2ram the touchpad on a HP dv5 laptop doesn't work anymore.
+> >> 
+> >>  dmesg contains this about the touchpad
+> >>  Apr 11 18:00:05 koni kernel: i8042: Can't write CTR while closing AUX 
+> > port
+> >>  Apr 11 18:00:08 koni kernel: i8042: Can't reactivate AUX port
+> >> 
+> >> 
+> >>  Full log in bugzilla with PCI and i8042 debug turned on.
+> >> 
+> >>  Bisected to:
+> >> 
+> >>  commit 26f41062f28de65e11d3cf353e52d0be73442be1
+> >>  Author: Kay, Allen M <allen.m.kay@intel.com>
+> >>  Date:   Thu Jan 26 10:25:53 2012 -0800
+> >> 
+> >>      PCI: check for pci bar restore completion and retry
+> >>     
+> >>      On some OEM systems, pci_restore_state() is called while FLR has not 
+> > yet
+> >>      completed.  As a result, PCI BAR register restore is not successful.  
+> > This fix
+> >>      reads back the restored value and compares it with saved value and 
+> > re-tries 10
+> >>      times before giving up.
+> > 
+> > Does reverting the above commit on top of the current Linus' tree fix the
+> > problem for you?
 > 
-> I've been wanting a mechanism/API for tweaking some of the default library
-> parameters for the past few weeks, this is likely the last bit of motivation
-> I need to start working on this.  I'll look into it once the license issue
-> is sorted.
+> 
+> It does (at least with the tree from yesterday, 4166fb64593514ad920b7dbd290e0a934b37d24a).
 
-A quick update - I just added support for setting NO_NEW_PRIVS when loading 
-the seccomp filter into the kernel.  By default libseccomp attempts to set 
-NO_NEW_PRIVS but does not fail if prctl(NO_NEW_PRIVS) returns with an error; 
-however, both the attempt to set NO_NEW_PRIVS and the fact that libseccomp 
-does not fail on error are configurable via the application if you don't like 
-the defaults for your particular use case.
+OK, thanks.
 
--- 
-paul moore
-www.paul-moore.com
+Please change that dev_dbg() in pci_restore_state() into dev_info()
+and see how many times it gets printed with the commit applied (not reverted).
 
+[Margin note: I think it would make more sense to read the value from
+the register _after_ and not before the waiting and I'm not exactly sure why
+msleep() is not used.]
+
+Thanks,
+Rafael
