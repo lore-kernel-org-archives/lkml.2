@@ -1,97 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756652Ab2DMTzE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Apr 2012 15:55:04 -0400
-Received: from nm33-vm5.bullet.mail.bf1.yahoo.com ([72.30.239.205]:45656 "HELO
-	nm33-vm5.bullet.mail.bf1.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1755746Ab2DMTzD convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Apr 2012 15:55:03 -0400
-X-Greylist: delayed 355 seconds by postgrey-1.27 at vger.kernel.org; Fri, 13 Apr 2012 15:55:02 EDT
-X-Yahoo-Newman-Property: ymail-3
-X-Yahoo-Newman-Id: 932965.66374.bm@omp1045.mail.bf1.yahoo.com
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
-  s=s1024; d=yahoo.com;
-  h=X-YMail-OSG:Received:X-Mailer:References:Message-ID:Date:From:Reply-To:Subject:To:Cc:In-Reply-To:MIME-Version:Content-Type:Content-Transfer-Encoding;
-  b=rYipjUTcHRucB0qaEiiymUG8o8TIKU8ur9AlAgwvV7CGsjJnunmldm12T6VZNrAexBusC1gkkLOfdz70f0xCP/fD06cxf1lqKIshJz68/LtAZl0iPyDQuDLQKKqLgzuSWDtoL5zeMSreLFD+CIJt+zD1PopQQ6SG+LOjvJ6tVxo=;
-X-YMail-OSG: mJqD8FIVM1ln.YYxugLoZrOWWG.Y4L_k8zrED4SLNIroey0
- 6oGODVgmqEqDdtGUyUM3Su1iK3f4N6lY2BJxqh_WIxZdXDecvRHHr8j6XsLe
- YSf6WOOYst0GQeCRYpf5kIiSKrMxWfiyZl1btOa6bwUP_c8muAfdmAHpliWN
- FpaEf9WyG.Ek90qyYDwo1kUVbbfUF381CkZdjcYRm2lSrdUPYmdLGJjdagxs
- Dz0WPlmFwSx0GeXQVGgELyY5WtUEtO9BPjsmjXVGgJfdCex1OV3A2eemBzMj
- 2NCLetCPVzeTVUNry5RVGRqryYgYzvlNgF_TyTXCJH5jw1gE_3nNzqQ_4J7y
- SgrjpcgYqhfulARojwxdjiA3yLpo71IJW2pZz90ugdDuNLWS.RCCAkk514Sr
- rzRe1QfcQmbu2iiyxhZymvwKIn9nKY8xcbLVnUOMLg850NmK97qoHwsJ8zAr
- ScynSUmNZ3Q5wjzY83AWlOdpp59OpM3zZrWATHxOM4e.ZK_uYZkbObzGGo_1
- qq9cbnmr4k9DlgrVSxXje.z.2WGPlNeFLeyTEkrIpU030.WLFnFouu1KT12D
- D.2j1s3I2nqvZqp7XuRHqTFQ-
-X-Mailer: YahooMailWebService/0.8.117.340979
-References: <1334310754.17013.YahooMailNeo@web161804.mail.bf1.yahoo.com> <201204132118.22074.rjw@sisk.pl>
-Message-ID: <1334346546.93033.YahooMailNeo@web161806.mail.bf1.yahoo.com>
-Date: Fri, 13 Apr 2012 12:49:06 -0700 (PDT)
-From: Mikko Vinni <mmvinni@yahoo.com>
-Reply-To: Mikko Vinni <mmvinni@yahoo.com>
-Subject: Re: [linux-pm] "i8042: Can't reactivate AUX port" after s2ram on 3.4-rc2
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Allen Kay <allen.m.kay@intel.com>,
-        Jean Guyader <jean.guyader@eu.citrix.com>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>
-In-Reply-To: <201204132118.22074.rjw@sisk.pl>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Transfer-Encoding: 8BIT
+	id S1756675Ab2DMTz0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Apr 2012 15:55:26 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:25994 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755746Ab2DMTzY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 Apr 2012 15:55:24 -0400
+X-Authority-Analysis: v=2.0 cv=P4S4d18u c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=XQbtiDEiEegA:10 a=VcnaFJ16KZsA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=VwQbUJbxAAAA:8 a=JfrnYn6hAAAA:8 a=meVymXHHAAAA:8 a=Vby4-OV0FW7ekriZ1IsA:9 a=QUOCoDCMEC9p25I3-yIA:7 a=PUjeQqilurYA:10 a=3Rfx1nUSh_UA:10 a=jeBq3FmKZ4MA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.80.29
+Message-ID: <1334346922.23924.370.camel@gandalf.stny.rr.com>
+Subject: [PATCH][GIT PULL][v3.5] sched_rt: Avoid unnecessary dequeue and
+ enqueue of pushable tasks in set_cpus_allowed_rt()
+From: Steven Rostedt <rostedt@goodmis.org>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Tkhai Kirill <tkhai@yandex.ru>
+Date: Fri, 13 Apr 2012 15:55:22 -0400
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.2.2-1 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Rafael J. Wysocki:
 
-> On Friday, April 13, 2012, Mikko Vinni wrote:
->>  Bug report:
->>     https://bugzilla.kernel.org/show_bug.cgi?id=43099
->> 
->>  Briefly:
->> 
->>  After s2ram the touchpad on a HP dv5 laptop doesn't work anymore.
->> 
->>  dmesg contains this about the touchpad
->>  Apr 11 18:00:05 koni kernel: i8042: Can't write CTR while closing AUX 
-> port
->>  Apr 11 18:00:08 koni kernel: i8042: Can't reactivate AUX port
->> 
->> 
->>  Full log in bugzilla with PCI and i8042 debug turned on.
->> 
->>  Bisected to:
->> 
->>  commit 26f41062f28de65e11d3cf353e52d0be73442be1
->>  Author: Kay, Allen M <allen.m.kay@intel.com>
->>  Date:   Thu Jan 26 10:25:53 2012 -0800
->> 
->>      PCI: check for pci bar restore completion and retry
->>     
->>      On some OEM systems, pci_restore_state() is called while FLR has not 
-> yet
->>      completed.  As a result, PCI BAR register restore is not successful.  
-> This fix
->>      reads back the restored value and compares it with saved value and 
-> re-tries 10
->>      times before giving up.
-> 
-> Does reverting the above commit on top of the current Linus' tree fix the
-> problem for you?
+Ingo,
+
+Please pull the latest tip/sched/core tree, which can be found at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/rostedt/linux-trace.git
+tip/sched/core
+
+Head SHA1: 8d3d5ada56a692d36a9d55858881147ec10cfeb6
 
 
-It does (at least with the tree from yesterday, 4166fb64593514ad920b7dbd290e0a934b37d24a).
+Kirill Tkhai (1):
+      sched_rt: Avoid unnecessary dequeue and enqueue of pushable tasks in set_cpus_allowed_rt()
+
+----
+ kernel/sched/rt.c |   56 ++++++++++++++++++++++++----------------------------
+ 1 files changed, 26 insertions(+), 30 deletions(-)
+---------------------------
+commit 8d3d5ada56a692d36a9d55858881147ec10cfeb6
+Author: Kirill Tkhai <tkhai@yandex.ru>
+Date:   Wed Apr 11 09:06:04 2012 +0400
+
+    sched_rt: Avoid unnecessary dequeue and enqueue of pushable tasks in set_cpus_allowed_rt()
+    
+    Migration status depends on a difference of weight from 0 and 1.
+    If weight > 1 (<= 1) and old weight <= 1 (> 1) then task becomes
+    pushable (or not pushable). We are not insterested in its exact
+    values, is it 3 or 4, for example.
+    Now if we are changing affinity from a set of 3 cpus to a set of 4, the-
+    task will be dequeued and enqueued sequentially without important
+    difference in comparison with initial state. The only difference is in
+    internal representation of plist queue of pushable tasks and the fact
+    that the task may won't be the first in a sequence of the same priority
+    tasks. But it seems to me it gives nothing.
+    
+    Link: http://lkml.kernel.org/r/273741334120764@web83.yandex.ru
+    
+    Cc: Ingo Molnar <mingo@elte.hu>
+    Cc: Peter Zijlstra <peterz@infradead.org>
+    Signed-off-by: Tkhai Kirill <tkhai@yandex.ru>
+    Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+
+diff --git a/kernel/sched/rt.c b/kernel/sched/rt.c
+index b60dad7..90607a9 100644
+--- a/kernel/sched/rt.c
++++ b/kernel/sched/rt.c
+@@ -1803,44 +1803,40 @@ static void task_woken_rt(struct rq *rq, struct task_struct *p)
+ static void set_cpus_allowed_rt(struct task_struct *p,
+ 				const struct cpumask *new_mask)
+ {
+-	int weight = cpumask_weight(new_mask);
++	struct rq *rq;
++	int weight;
+ 
+ 	BUG_ON(!rt_task(p));
+ 
+-	/*
+-	 * Update the migration status of the RQ if we have an RT task
+-	 * which is running AND changing its weight value.
+-	 */
+-	if (p->on_rq && (weight != p->rt.nr_cpus_allowed)) {
+-		struct rq *rq = task_rq(p);
+-
+-		if (!task_current(rq, p)) {
+-			/*
+-			 * Make sure we dequeue this task from the pushable list
+-			 * before going further.  It will either remain off of
+-			 * the list because we are no longer pushable, or it
+-			 * will be requeued.
+-			 */
+-			if (p->rt.nr_cpus_allowed > 1)
+-				dequeue_pushable_task(rq, p);
++	if (!p->on_rq)
++		return;
+ 
+-			/*
+-			 * Requeue if our weight is changing and still > 1
+-			 */
+-			if (weight > 1)
+-				enqueue_pushable_task(rq, p);
++	weight = cpumask_weight(new_mask);
+ 
+-		}
++	/*
++	 * Only update if the process changes its state from whether it
++	 * can migrate or not.
++	 */
++	if ((p->rt.nr_cpus_allowed > 1) == (weight > 1))
++		return;
+ 
+-		if ((p->rt.nr_cpus_allowed <= 1) && (weight > 1)) {
+-			rq->rt.rt_nr_migratory++;
+-		} else if ((p->rt.nr_cpus_allowed > 1) && (weight <= 1)) {
+-			BUG_ON(!rq->rt.rt_nr_migratory);
+-			rq->rt.rt_nr_migratory--;
+-		}
++	rq = task_rq(p);
+ 
+-		update_rt_migration(&rq->rt);
++	/*
++	 * The process used to be able to migrate OR it can now migrate
++	 */
++	if (weight <= 1) {
++		if (!task_current(rq, p))
++			dequeue_pushable_task(rq, p);
++		BUG_ON(!rq->rt.rt_nr_migratory);
++		rq->rt.rt_nr_migratory--;
++	} else {
++		if (!task_current(rq, p))
++			enqueue_pushable_task(rq, p);
++		rq->rt.rt_nr_migratory++;
+ 	}
++
++	update_rt_migration(&rq->rt);
+ }
+ 
+ /* Assumes rq->lock is held */
 
 
-Mikko
-
-> 
-> Rafael
-> 
