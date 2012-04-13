@@ -1,47 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755012Ab2DMMV5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Apr 2012 08:21:57 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:51113 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753917Ab2DMMV4 (ORCPT
+	id S1755367Ab2DMMZv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Apr 2012 08:25:51 -0400
+Received: from smtp.fireflyinternet.com ([109.228.6.236]:65254 "EHLO
+	fireflyinternet.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753535Ab2DMMZu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Apr 2012 08:21:56 -0400
-Message-ID: <4F881A62.8060109@gmail.com>
-Date: Fri, 13 Apr 2012 06:21:54 -0600
-From: David Ahern <dsahern@gmail.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:11.0) Gecko/20120327 Thunderbird/11.0.1
-MIME-Version: 1.0
-To: Jiri Olsa <jolsa@redhat.com>
-CC: acme@redhat.com, a.p.zijlstra@chello.nl, mingo@elte.hu, paulus@samba.org,
-        cjashfor@linux.vnet.ibm.com, fweisbec@gmail.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/3] perf, tool: Force guest machine definition option
-References: <1334233262-5679-1-git-send-email-jolsa@redhat.com> <1334233262-5679-2-git-send-email-jolsa@redhat.com> <4F86E965.4010506@gmail.com> <20120413113207.GB3384@m.brq.redhat.com>
-In-Reply-To: <20120413113207.GB3384@m.brq.redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	Fri, 13 Apr 2012 08:25:50 -0400
+X-Default-Received-SPF: pass (skip=forwardok (res=PASS)) x-ip-name=78.156.66.37;
+From: Chris Wilson <chris@chris-wilson.co.uk>
+Subject: Re: [PATCH 1/2] drm/i915/intel_i2c: handle zero-length reads
+To: Daniel Kurtz <djkurtz@chromium.org>, Keith Packard <keithp@keithp.com>,
+        David Airlie <airlied@linux.ie>, dri-devel@lists.freedesktop.org,
+        linux-kernel@vger.kernel.org, Daniel Vetter <daniel@ffwll.ch>
+Cc: Daniel Kurtz <djkurtz@chromium.org>
+In-Reply-To: <1334317674-32450-1-git-send-email-djkurtz@chromium.org>
+References: <1334317674-32450-1-git-send-email-djkurtz@chromium.org>
+Date: Fri, 13 Apr 2012 13:25:33 +0100
+X-Originating-IP: 78.156.66.37
+Message-ID: <1334319941_407751@CP5-2952>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 4/13/12 5:32 AM, Jiri Olsa wrote:
->> Even with guestmount specified you can hit this path -- e.g., no
->> pid-based directory under guestmount for a VM.
->
-> hm, something's wrong anyway..
->
-> [root@dhcp-26-214 perf]# ./perf kvm --guest --guestkallsyms=./kallsyms record -p 1791
-> ^C[ perf record: Woken up 1 times to write data ]
-> [ perf record: Captured and wrote 0.013 MB perf.data.guest (~576 samples) ]
-> [root@dhcp-26-214 perf]# ./perf kvm --guest --guestkallsyms=./kallsyms report --stdio
-> Segmentation fault (core dumped)
->
-> it segfaults on guest mmap (attached bt) having NULL machine,
-> since no guest kernel buildid/dso was stored&loaded..
-> the host/guest machines code seems too 'complex' ;)
+On Fri, 13 Apr 2012 19:47:53 +0800, Daniel Kurtz <djkurtz@chromium.org> wrote:
+> A common method of probing an i2c bus is trying to do a zero-length read.
+> Handle this case by checking the length first waiting for data to be read.
+> 
+> This is actually important, since attempting a zero-length read is one
+> of the ways that i2cdetect and i2c_new_probed_device detect whether
+> there is device present on the bus with a given address.
+> 
+> Signed-off-by: Daniel Kurtz <djkurtz@chromium.org>
 
-That was fixed on Monday I believe. Patch is in Arnaldo's urgent queue.
+You earlier assuaged my fears that setting SW_READY without waiting
+would anger the hw, so
 
+Reviewed-by: Chris Wilson <chris@chris-wilson.co.uk>
+-Chris
 
-David
+-- 
+Chris Wilson, Intel Open Source Technology Centre
