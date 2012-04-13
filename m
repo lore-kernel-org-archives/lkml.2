@@ -1,171 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753359Ab2DMGmx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Apr 2012 02:42:53 -0400
-Received: from mailout4.w1.samsung.com ([210.118.77.14]:18801 "EHLO
-	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751225Ab2DMGmw (ORCPT
+	id S1755973Ab2DMGnS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Apr 2012 02:43:18 -0400
+Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:34306 "EHLO
+	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755018Ab2DMGnQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Apr 2012 02:42:52 -0400
-MIME-version: 1.0
-Content-transfer-encoding: 7BIT
-Content-type: text/plain; charset=ISO-8859-1
-Date: Fri, 13 Apr 2012 08:42:44 +0200
-From: Tomasz Stanislawski <t.stanislaws@samsung.com>
-Subject: Re: [PATCH 09/13] s5p-tv: Move HDMIPHY and MHL subdev probing to
- dedicated function
-In-reply-to: <1334256332-29867-10-git-send-email-k.lewandowsk@samsung.com>
-To: Karol Lewandowski <k.lewandowsk@samsung.com>
-Cc: linux-samsung-soc@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
-        thomas.abraham@linaro.org, m.szyprowski@samsung.com,
-        kyungmin.park@samsung.com, linux-kernel@vger.kernel.org,
-        olof@lixom.net, kgene.kim@samsung.com
-Message-id: <4F87CAE4.80305@samsung.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120310
- Thunderbird/11.0
-References: <1334256332-29867-1-git-send-email-k.lewandowsk@samsung.com>
- <1334256332-29867-10-git-send-email-k.lewandowsk@samsung.com>
+	Fri, 13 Apr 2012 02:43:16 -0400
+Message-ID: <4F87CAFF.2010407@openvz.org>
+Date: Fri, 13 Apr 2012 10:43:11 +0400
+From: Konstantin Khlebnikov <khlebnikov@openvz.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.2) Gecko/20120217 Firefox/10.0.2 Iceape/2.7.2
+MIME-Version: 1.0
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: Hugh Dickins <hughd@google.com>, Oleg Nesterov <oleg@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        Markus Trippelsdorf <markus@trippelsdorf.de>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Subject: Re: [PATCH 2/2] mm: call complete_vfork_done() after clearing child_tid
+ and flushing rss-counters
+References: <20120409200336.8368.63793.stgit@zurg> <20120412080952.26401.2025.stgit@zurg> <20120412163953.4cd2314d.akpm@linux-foundation.org>
+In-Reply-To: <20120412163953.4cd2314d.akpm@linux-foundation.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Karol,
-Thank you for the patch.
+Andrew Morton wrote:
+> On Thu, 12 Apr 2012 12:09:53 +0400
+> Konstantin Khlebnikov<khlebnikov@openvz.org>  wrote:
+>
+>> Child should wake ups parent from vfork() only after finishing all operations with
+>> shared mm. There is no sense to use CLONE_CHILD_CLEARTID together with CLONE_VFORK,
+>> but it looks more accurate now.
+>>
+>> ...
+>>
+>> --- a/kernel/fork.c
+>> +++ b/kernel/fork.c
+>> @@ -728,9 +728,6 @@ void mm_release(struct task_struct *tsk, struct mm_struct *mm)
+>>   	/* Get rid of any cached register state */
+>>   	deactivate_mm(tsk, mm);
+>>
+>> -	if (tsk->vfork_done)
+>> -		complete_vfork_done(tsk);
+>> -
+>>   	/*
+>>   	 * If we're exiting normally, clear a user-space tid field if
+>>   	 * requested.  We leave this alone when dying by signal, to leave
+>> @@ -759,6 +756,13 @@ void mm_release(struct task_struct *tsk, struct mm_struct *mm)
+>>   	 */
+>>   	if (mm)
+>>   		sync_mm_rss(mm);
+>> +
+>> +	/*
+>> +	 * All done, finally we can wake up parent and return this mm to him.
+>> +	 * Also kthread_stop() uses this completion for synchronization.
+>> +	 */
+>> +	if (tsk->vfork_done)
+>> +		complete_vfork_done(tsk);
+>>   }
+>
+> That does look a bit racy.
+>
+> But are we really sure that the patch really does fix something?
+> Because it does increase vfork() latency a tiny bit.
+>
+> I'm going to call this a patch against the fork subsystem, not the mm
+> subsystem.
+>
+> I believe that this patch is unrelated to "mm: set task exit code
+> before complete_vfork_done()", yes?
 
-On 04/12/2012 08:45 PM, Karol Lewandowski wrote:
-> Signed-off-by: Karol Lewandowski <k.lewandowsk@samsung.com>
-> Cc: Tomasz Stanislawski <t.stanislaws@samsung.com>
-> ---
->  drivers/media/video/s5p-tv/hdmi_drv.c |   90 ++++++++++++++++++---------------
->  1 files changed, 49 insertions(+), 41 deletions(-)
-> 
-> diff --git a/drivers/media/video/s5p-tv/hdmi_drv.c b/drivers/media/video/s5p-tv/hdmi_drv.c
-> index 4865d25..fff3cab 100644
-> --- a/drivers/media/video/s5p-tv/hdmi_drv.c
-> +++ b/drivers/media/video/s5p-tv/hdmi_drv.c
-> @@ -865,11 +865,47 @@ fail:
->  	return -ENODEV;
->  }
->  
-> +static struct v4l2_subdev *hdmi_get_subdev(
-> +	struct hdmi_device *hdmi_dev,
-> +	struct i2c_board_info *bdinfo,
-> +	int bus,
-> +	const char *propname)
-> +{
-> +	struct v4l2_subdev *sd = NULL;
-> +	struct i2c_adapter *adapter;
-> +	struct device *dev = hdmi_dev->dev;
-> +
-> +	if (!bdinfo) {
-> +		dev_err(dev, "%s info is missing in platform data\n",
-> +			propname);
-> +		return ERR_PTR(-ENXIO);
-> +	}
-> +
-> +	adapter = i2c_get_adapter(bus);
-> +	if (adapter == NULL) {
-> +		dev_err(dev, "%s adapter request failed, name\n",
-> +			propname);
-> +		return ERR_PTR(-ENXIO);
-> +	}
-> +
-> +	sd = v4l2_i2c_new_subdev_board(&hdmi_dev->v4l2_dev,
-> +				       adapter, bdinfo, NULL);
-> +
-> +	/* on failure or not adapter is no longer useful */
-> +	i2c_put_adapter(adapter);
-> +
-> +	if (sd == NULL) {
-> +		dev_err(dev, "missing subdev for %s\n", propname);
-> +		return ERR_PTR(-ENODEV);
-> +	}
-> +
-> +	return sd;
-> +}
-> +
->  static int __devinit hdmi_probe(struct platform_device *pdev)
->  {
->  	struct device *dev = &pdev->dev;
->  	struct resource *res;
-> -	struct i2c_adapter *adapter;
->  	struct v4l2_subdev *sd;
->  	struct hdmi_device *hdmi_dev = NULL;
->  	struct s5p_hdmi_platform_data *pdata = dev->platform_data;
-> @@ -937,51 +973,23 @@ static int __devinit hdmi_probe(struct platform_device *pdev)
->  		goto fail_init;
->  	}
->  
-> -	/* testing if hdmiphy info is present */
-> -	if (!pdata->hdmiphy_info) {
-> -		dev_err(dev, "hdmiphy info is missing in platform data\n");
-> -		ret = -ENXIO;
-> +	hdmi_dev->phy_sd = hdmi_get_subdev(hdmi_dev,
-
-If we know that plat data is missing so what is the purpose of calling
-hdmi_get_subdev while we know that this function is going to fail?
-
-> +					   pdata ? pdata->hdmiphy_info : NULL,
-> +					   pdata ? pdata->hdmiphy_bus : -1,
-> +					   "phy");
-> +	if (IS_ERR_OR_NULL(hdmi_dev->phy_sd)) {
-> +		ret = PTR_ERR(hdmi_dev->phy_sd);
->  		goto fail_vdev;
->  	}
-> -
-> -	adapter = i2c_get_adapter(pdata->hdmiphy_bus);
-> -	if (adapter == NULL) {
-> -		dev_err(dev, "hdmiphy adapter request failed\n");
-> -		ret = -ENXIO;
-> +	hdmi_dev->mhl_sd = hdmi_get_subdev(hdmi_dev,
-> +					   pdata ? pdata->mhl_info : NULL ,
-> +					   pdata ? pdata->mhl_bus : -1,
-> +					   "mhl");
-> +	if (IS_ERR_OR_NULL(hdmi_dev->mhl_sd)) {
-> +		ret = PTR_ERR(hdmi_dev->mhl_sd)
-
-The MHL is an optional subdev. There are platforms that support HDMI but does
-not have MHL "on board" like Universal C210. Failing due to a lack of
-MHL plat data will break HDMI support on Universal.
-
-;
->  		goto fail_vdev;
->  	}
->  
-> -	hdmi_dev->phy_sd = v4l2_i2c_new_subdev_board(&hdmi_dev->v4l2_dev,
-> -		adapter, pdata->hdmiphy_info, NULL);
-> -	/* on failure or not adapter is no longer useful */
-> -	i2c_put_adapter(adapter);
-> -	if (hdmi_dev->phy_sd == NULL) {
-> -		dev_err(dev, "missing subdev for hdmiphy\n");
-> -		ret = -ENODEV;
-> -		goto fail_vdev;
-> -	}
-> -
-> -	/* initialization of MHL interface if present */
-> -	if (pdata->mhl_info) {
-> -		adapter = i2c_get_adapter(pdata->mhl_bus);
-> -		if (adapter == NULL) {
-> -			dev_err(dev, "MHL adapter request failed\n");
-> -			ret = -ENXIO;
-> -			goto fail_vdev;
-> -		}
-> -
-> -		hdmi_dev->mhl_sd = v4l2_i2c_new_subdev_board(
-> -			&hdmi_dev->v4l2_dev, adapter,
-> -			pdata->mhl_info, NULL);
-> -		/* on failure or not adapter is no longer useful */
-> -		i2c_put_adapter(adapter);
-> -		if (hdmi_dev->mhl_sd == NULL) {
-> -			dev_err(dev, "missing subdev for MHL\n");
-> -			ret = -ENODEV;
-> -			goto fail_vdev;
-> -		}
-> -	}
-> -
->  	clk_enable(hdmi_dev->res.hdmi);
->  
->  	pm_runtime_enable(dev);
-
-Regards,
-Tomasz Stanislawski
+Yes, unrelated.
