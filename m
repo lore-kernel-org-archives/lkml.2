@@ -1,250 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755914Ab2DMThb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Apr 2012 15:37:31 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:41981 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751765Ab2DMTh1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Apr 2012 15:37:27 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: "Yan, Zheng" <zheng.z.yan@intel.com>
-Subject: Re: [RFC PATCH] PCIe: Add PCIe runtime D3cold support
-Date: Fri, 13 Apr 2012 21:41:57 +0200
-User-Agent: KMail/1.13.6 (Linux/3.4.0-rc2+; KDE/4.6.0; x86_64; ; )
-Cc: bhelgaas@google.com, linux-kernel@vger.kernel.org,
-        linux-pci@vger.kernel.org, linux-pm@vger.kernel.org,
-        Lin Ming <ming.m.lin@intel.com>, Zhang Rui <rui.zhang@intel.com>,
-        huang ying <huang.ying.caritas@gmail.com>,
-        ACPI Devel Mailing List <linux-acpi@vger.kernel.org>
-References: <4F8790F6.5080408@intel.com>
-In-Reply-To: <4F8790F6.5080408@intel.com>
+	id S1756059Ab2DMTjO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Apr 2012 15:39:14 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:36094 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751765Ab2DMTjM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 Apr 2012 15:39:12 -0400
+Date: Fri, 13 Apr 2012 14:39:05 -0500
+From: Jonathan Nieder <jrnieder@gmail.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: x86@kernel.org, linux-kernel@vger.kernel.org,
+        Ben Hutchings <ben@decadent.org.uk>,
+        Andreas Herrmann <andreas.herrmann3@amd.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>
+Subject: [PATCH resend] x86: memtest: WARN if bad RAM found
+Message-ID: <20120413193905.GD2387@burratino>
+References: <20120402150522.GA4980@burratino>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="windows-1252"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201204132141.58063.rjw@sisk.pl>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120402150522.GA4980@burratino>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+From: Ben Hutchings <ben@decadent.org.uk>
+Date: Mon, 5 Dec 2011 04:00:58 +0000
 
-On Friday, April 13, 2012, Yan, Zheng wrote:
-> Hi all,
-> 
-> This patch adds PCIe runtime D3cold support, namely cut power supply for functions
-> beneath a PCIe port when they all have entered D3. A device in D3cold can only
-> generate wake event through the WAKE# pin. Because we can not access to a device's
-> configure space while it's in D3cold, pme_poll is disabled for devices in D3cold.
-> 
-> Any comment will be appreciated.
-> 
-> Signed-off-by: Zheng Yan <zheng.z.yan@intel.com>
-> ---
-> diff --git a/drivers/pci/pci-acpi.c b/drivers/pci/pci-acpi.c
-> index 0f150f2..e210e8cb 100644
-> --- a/drivers/pci/pci-acpi.c
-> +++ b/drivers/pci/pci-acpi.c
-> @@ -224,7 +224,7 @@ static int acpi_pci_set_power_state(struct pci_dev *dev, pci_power_t state)
->  		[PCI_D1] = ACPI_STATE_D1,
->  		[PCI_D2] = ACPI_STATE_D2,
->  		[PCI_D3hot] = ACPI_STATE_D3,
-> -		[PCI_D3cold] = ACPI_STATE_D3
-> +		[PCI_D3cold] = ACPI_STATE_D3_COLD
->  	};
->  	int error = -EINVAL;
->  
+Since this is not a particularly thorough test, if we find any bad
+bits of RAM then there is a fair chance that there are other bad bits
+we fail to detect.
 
-Please don't use that ACPI_STATE_D3_COLD thing, it's not defined correctly.
+Warn so the TAINT_WARNING flag shows up in panic traces and other bug
+reports from users that enabled memtest and found bad RAM during
+bootup, to help people debugging to see that problems are potentially
+due to unreliable RAM.  The warning text gives advice that can be used
+to make the warning go away using a more thorough test:
 
-We should define ACPI_STATE_D3_COLD == ACPI_STATE_D3 and add ACPI_STATE_D3_HOT
-instead.  I'll prepare a patch for that over the weekend if no one has done
-that already.
+	Bad RAM detected. Use memtest86+ to perform a thorough test
+	and the memmap= parameter to reserve the bad areas.
 
-> @@ -296,7 +296,8 @@ static void acpi_pci_propagate_run_wake(struct pci_bus *bus, bool enable)
->  
->  static int acpi_pci_run_wake(struct pci_dev *dev, bool enable)
->  {
-> -	if (dev->pme_interrupt)
-> +	/* PME interrupt isn't available in the D3cold case */
-> +	if (dev->pme_interrupt && !dev->runtime_d3cold)
+In this way, this patch should make the lives of people helping to
+analyze bug reports from builds with CONFIG_MEMTEST enabled easier.
 
-This whole thing is wrong.  First off, I don't think that the runtime_d3cold
-flag makes any sense.  We already cover that in dev->pme_support.
+[jn: more explanation of impact]
+Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+Signed-off-by: Jonathan Nieder <jrnieder@gmail.com>
+---
+Hi again,
 
-Second, pme_interrupt means that the _root_ _port_, not the device itself will
-trigger an interrupt whenever the device sends the PME message to it (which
-very well may happen for a device in D3_cold woken up by an external signal).
+The patch below last visited this list on 2 April, about a week and a
+half ago.  No reply.
 
->  		return 0;
->  
->  	if (!acpi_pm_device_run_wake(&dev->dev, enable))
-> diff --git a/drivers/pci/pci.c b/drivers/pci/pci.c
-> index 8156744..bc16869 100644
-> --- a/drivers/pci/pci.c
-> +++ b/drivers/pci/pci.c
-> @@ -731,8 +731,8 @@ int pci_set_power_state(struct pci_dev *dev, pci_power_t state)
->  	int error;
->  
-
-Guys, please.  Never, _ever_, touch pci_set_power_state() without discussing
-your ideas with someone who knows how it works and _why_ it works this way.
-
-The problem here is that you can't program a PCI device into D3_cold, so it
-doesn't even make sense to have a helper for that.
-
->  	/* bound the state we're entering */
-> -	if (state > PCI_D3hot)
-> -		state = PCI_D3hot;
-> +	if (state > PCI_D3cold)
-> +		state = PCI_D3cold;
->  	else if (state < PCI_D0)
->  		state = PCI_D0;
->  	else if ((state == PCI_D1 || state == PCI_D2) && pci_no_d1d2(dev))
-> @@ -750,7 +750,8 @@ int pci_set_power_state(struct pci_dev *dev, pci_power_t state)
->  	if (state == PCI_D3hot && (dev->dev_flags & PCI_DEV_FLAGS_NO_D3))
->  		return 0;
->  
-> -	error = pci_raw_set_power_state(dev, state);
-> +	error = pci_raw_set_power_state(dev, state > PCI_D3hot ?
-> +					PCI_D3hot : state);
->  
->  	if (!__pci_complete_power_transition(dev, state))
->  		error = 0;
-> @@ -1482,6 +1483,17 @@ bool pci_pme_capable(struct pci_dev *dev, pci_power_t state)
->  	return !!(dev->pme_support & (1 << state));
->  }
->  
-> +static void pci_pme_poll_wakeup(struct pci_dev *dev)
-> +{
-> +	struct pci_dev *bridge = dev->bus->self;
-> +
-> +	/* don't poll the pme bit if parent is in low power state */
-> +	if (bridge && bridge->current_state != PCI_D0)
-> +		return;
-> +
-> +	pci_pme_wakeup(dev, NULL);
-> +}
-
-This one actually makes some sense, although it might be better to put the
-test into pci_pme_wakeup() itself.
-
-> +
->  static void pci_pme_list_scan(struct work_struct *work)
->  {
->  	struct pci_pme_device *pme_dev, *n;
-> @@ -1490,7 +1502,7 @@ static void pci_pme_list_scan(struct work_struct *work)
->  	if (!list_empty(&pci_pme_list)) {
->  		list_for_each_entry_safe(pme_dev, n, &pci_pme_list, list) {
->  			if (pme_dev->dev->pme_poll) {
-> -				pci_pme_wakeup(pme_dev->dev, NULL);
-> +				pci_pme_poll_wakeup(pme_dev->dev);
->  			} else {
->  				list_del(&pme_dev->list);
->  				kfree(pme_dev);
-> @@ -1608,6 +1620,10 @@ int __pci_enable_wake(struct pci_dev *dev, pci_power_t state,
->  	if (enable) {
->  		int error;
->  
-> +		if (runtime && state >= PCI_D3cold)
-> +			dev->runtime_d3cold = true;
-> +		else
-> +			dev->runtime_d3cold = false;
->  		if (pci_pme_capable(dev, state))
->  			pci_pme_active(dev, true);
->  		else
-> diff --git a/drivers/pci/pcie/portdrv_pci.c b/drivers/pci/pcie/portdrv_pci.c
-> index e0610bd..d66b7e9 100644
-> --- a/drivers/pci/pcie/portdrv_pci.c
-> +++ b/drivers/pci/pcie/portdrv_pci.c
-> @@ -11,11 +11,13 @@
->  #include <linux/kernel.h>
->  #include <linux/errno.h>
->  #include <linux/pm.h>
-> +#include <linux/pm_runtime.h>
->  #include <linux/init.h>
->  #include <linux/pcieport_if.h>
->  #include <linux/aer.h>
->  #include <linux/dmi.h>
->  #include <linux/pci-aspm.h>
-> +#include <linux/delay.h>
->  
->  #include "portdrv.h"
->  #include "aer/aerdrv.h"
-> @@ -99,6 +101,25 @@ static int pcie_port_resume_noirq(struct device *dev)
->  	return 0;
->  }
->  
-> +static int pcie_port_runtime_suspend(struct device *dev)
-> +{
-> +	struct pci_dev *pdev = to_pci_dev(dev);
-> +
-> +	pci_save_state(pdev);
-
-Are you sure this is sufficient?
-
-> +	return 0;
-> +}
-> +
-> +static int pcie_port_runtime_resume(struct device *dev)
-> +{
-> +	struct pci_dev *pdev = to_pci_dev(dev);
-> +
-> +	pci_restore_state(pdev);
-> +	if (pdev->runtime_d3cold)
-> +		msleep(100);
-
-What's _that_ supposed to do?
-
-> +
-> +	return 0;
-> +}
-> +
->  static const struct dev_pm_ops pcie_portdrv_pm_ops = {
->  	.suspend	= pcie_port_device_suspend,
->  	.resume		= pcie_port_device_resume,
-> @@ -107,6 +128,8 @@ static const struct dev_pm_ops pcie_portdrv_pm_ops = {
->  	.poweroff	= pcie_port_device_suspend,
->  	.restore	= pcie_port_device_resume,
->  	.resume_noirq	= pcie_port_resume_noirq,
-> +	.runtime_suspend = pcie_port_runtime_suspend,
-> +	.runtime_resume = pcie_port_runtime_resume,
->  };
->  
->  #define PCIE_PORTDRV_PM_OPS	(&pcie_portdrv_pm_ops)
-> @@ -144,12 +167,14 @@ static int __devinit pcie_portdrv_probe(struct pci_dev *dev,
->  		return status;
->  
->  	pci_save_state(dev);
-> +	pm_runtime_put_noidle(&dev->dev);
-
-What's the purpose of this?
-
->  	return 0;
->  }
->  
->  static void pcie_portdrv_remove(struct pci_dev *dev)
->  {
-> +	pm_runtime_get_noresume(&dev->dev);
->  	pcie_port_device_remove(dev);
->  	pci_disable_device(dev);
->  }
-> diff --git a/include/linux/pci.h b/include/linux/pci.h
-> index e444f5b..b41d9a1 100644
-> --- a/include/linux/pci.h
-> +++ b/include/linux/pci.h
-> @@ -281,6 +281,7 @@ struct pci_dev {
->  	unsigned int	no_d1d2:1;	/* Only allow D0 and D3 */
->  	unsigned int	mmio_always_on:1;	/* disallow turning off io/mem
->  						   decoding during bar sizing */
-> +	unsigned int	runtime_d3cold:1;
->  	unsigned int	wakeup_prepared:1;
->  	unsigned int	d3_delay;	/* D3->D0 transition time in ms */
-
-OK
-
-So now please tell me what exactly you want to achieve and why you want to do
-that in the first place.
+The patch has been in Debian since last December.  I like it.  The
+patch is targetted at v3.5, so I would like to see it in linux-next so
+it can get more exposure.  Comments?
 
 Thanks,
-Rafael
+Jonathan
+
+ arch/x86/mm/memtest.c |    2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/arch/x86/mm/memtest.c b/arch/x86/mm/memtest.c
+index c80b9fb95734..38caeb44a218 100644
+--- a/arch/x86/mm/memtest.c
++++ b/arch/x86/mm/memtest.c
+@@ -30,6 +30,8 @@ static u64 patterns[] __initdata = {
+ 
+ static void __init reserve_bad_mem(u64 pattern, u64 start_bad, u64 end_bad)
+ {
++	WARN_ONCE(1, "Bad RAM detected. Use memtest86+ to perform a thorough test\n"
++		  "and the memmap= parameter to reserve the bad areas.");
+ 	printk(KERN_INFO "  %016llx bad mem addr %010llx - %010llx reserved\n",
+ 	       (unsigned long long) pattern,
+ 	       (unsigned long long) start_bad,
+-- 
+1.7.10
+
