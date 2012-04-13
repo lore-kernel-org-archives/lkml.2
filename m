@@ -1,202 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756838Ab2DMUq6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Apr 2012 16:46:58 -0400
-Received: from mail.savoirfairelinux.com ([209.172.62.77]:33793 "EHLO
-	mail.savoirfairelinux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755981Ab2DMUq4 (ORCPT
+	id S1756871Ab2DMUrR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Apr 2012 16:47:17 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:45592 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755981Ab2DMUrP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Apr 2012 16:46:56 -0400
-Message-ID: <1334350010.9278.15.camel@linux-c7gq.mtl.sfl>
-Subject: Re: [PATCH v6 2/3] x86/platform: TS-5500 basic platform support
-From: Vivien Didelot <vivien.didelot@savoirfairelinux.com>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: x86@kernel.org, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, linux-kernel@vger.kernel.org,
-        lm-sensors@lm-sensors.org, Guenter Roeck <guenter.roeck@ericsson.com>,
-        Jean Delvare <khali@linux-fr.org>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Linus Walleij <linus.walleij@stericsson.com>
-Date: Fri, 13 Apr 2012 16:46:50 -0400
-In-Reply-To: <alpine.LFD.2.02.1204131155580.2542@ionos>
-References: <1334276935-11258-1-git-send-email-vivien.didelot@savoirfairelinux.com>
-	 <1334276935-11258-3-git-send-email-vivien.didelot@savoirfairelinux.com>
-	 <alpine.LFD.2.02.1204131155580.2542@ionos>
-Organization: Savoir-faire Linux Inc.
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.1 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Fri, 13 Apr 2012 16:47:15 -0400
+Date: Fri, 13 Apr 2012 13:47:10 -0700
+From: Tejun Heo <tj@kernel.org>
+To: Vivek Goyal <vgoyal@redhat.com>
+Cc: axboe@kernel.dk, ctalbott@google.com, rni@google.com,
+        linux-kernel@vger.kernel.org, cgroups@vger.kernel.org,
+        containers@lists.linux-foundation.org
+Subject: Re: [PATCH 07/11] blkcg: make request_queue bypassing on allocation
+Message-ID: <20120413204710.GF12233@google.com>
+References: <1334347895-6268-1-git-send-email-tj@kernel.org>
+ <1334347895-6268-8-git-send-email-tj@kernel.org>
+ <20120413203205.GI26383@redhat.com>
+ <20120413203726.GE12233@google.com>
+ <20120413204446.GK26383@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120413204446.GK26383@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Fri, Apr 13, 2012 at 04:44:46PM -0400, Vivek Goyal wrote:
+> On Fri, Apr 13, 2012 at 01:37:26PM -0700, Tejun Heo wrote:
+> 
+> [..]
+> > blk_cleanup_queue() doesn't use blk_queue_bypass_start() to enter
+> > bypass mode.
+> 
+> Oh now elevator_exit() has been moved into blk_release_queue(). But
+> problem will still be there, isn't it? During driver init, most likely driver
+> is holding last reference of the queue and blk_release_queue() will be called
+> in the context of blk_cleanup_queue() causing the overhead?
 
-Thanks for the comments.
+Hmmm?  blk_cleanup_queue() will put the queue into bypassing mode
+without going through synchronize_rcu() and all the following
+bypassing operations just inc/decs bypass_depth without any draining
+operation.
 
-On Fri, 2012-04-13 at 12:37 +0200, Thomas Gleixner wrote:
-> On Thu, 12 Apr 2012, Vivien Didelot wrote:
-> > +/**
-> > + * struct ts5500_sbc - TS-5500 SBC main structure
-> > + * @lock:		Read/Write mutex.
-> 
-> What's the point of this mutex ?
-> 
-> AFAICT, it's only ever used in the init path which is serialized by
-> itself.
+Thanks.
 
-You're right, I'll remove it.
-> 
-> > + * @board_id:		Board name.
-> 
->   name in an integer ?
-> 
-> > + * @sram:		Check SRAM option.
-> > + * @rs485:		Check RS-485 option.
-> > + * @adc:		Check Analog/Digital converter option.
-> > + * @ereset:		Check External Reset option.
-> > + * @itr:		Check Industrial Temperature Range option.
-> > + * @jumpers:		States of jumpers 1-7.
-> > + */
-> > +struct ts5500_sbc {
-> > +	struct mutex	lock;
-> > +	int		board_id;
-> > +	bool		sram;
-> > +	bool		rs485;
-> > +	bool		adc;
-> > +	bool		ereset;
-> > +	bool		itr;
-> > +	u8		jumpers;
-> > +};
-> 
-> 
-> > +/**
-> > + * ts5500_bios_signature() - find board signature in BIOS shadow RAM.
-> > + */
-> > +static int __init ts5500_bios_signature(void)
-> > +{
-> > +	void __iomem *bios = ioremap(0xF0000, 0x10000);
-> > +	int i, ret = 0;
-> 
-> ioremaps can fail. 
-> 
-> > +	for (i = 0; i < ARRAY_SIZE(signatures); i++)
-> > +		if (check_signature(bios + signatures[i].offset,
-> +				    signatures[i].string,
-> > +				    strlen(signatures[i].string)))
-> > +			goto found;
-> > +		else
-> > +			pr_notice("Technologic Systems BIOS signature "
-> > +				  "'%s' not found at offset %zd\n",
-> > +				  signatures[i].string, signatures[i].offset);
-> > +	ret = -ENODEV;
-> > +found:
-> > +	iounmap(bios);
-> 
-> Uurg, this is convoluted. What's wrong with doing:
-> 
->   int ret = -ENODEV;
-> 
->   for (....) {
->       if (check_signature()) {
->       	 ret = 0;
-> 	 break;
->       }
->   }
-> 
-> That way the code becomes readable and we really do not need a
-> printout when the kernel is configured for multiple platforms and
-> runs on a !TS board. Also you would print out that nonsense if your
-> signature array has more than one entry for each non matching
-> one. Pretty pointless.
-
-Got it.
-
-> 
-> > +	tmp = inb(TS5500_PRODUCT_CODE_ADDR);
-> > +	if (tmp != TS5500_PRODUCT_CODE) {
-> > +		pr_err("This platform is not a TS-5500 (found ID 0x%x)\n", tmp);
-> > +		ret = -ENODEV;
-> > +		goto cleanup;
-> > +	}
-> > +	sbc->board_id = tmp;
-> 
-> So we store a constant value in a data structure and the sole purpose
-> is to display that constant value in sysfs file. Interesting feature.
-
-I plan to add support for a few variants of this board which differ at
-this register level.
-
-> 
-> > +static struct attribute *ts5500_attributes[] = {
-> > +	&dev_attr_id.attr,
-> > +	&dev_attr_sram.attr,
-> > +	&dev_attr_rs485.attr,
-> > +	&dev_attr_adc.attr,
-> > +	&dev_attr_ereset.attr,
-> > +	&dev_attr_itr.attr,
-> > +	&dev_attr_jp1.attr,
-> > +	&dev_attr_jp2.attr,
-> > +	&dev_attr_jp3.attr,
-> > +	&dev_attr_jp4.attr,
-> > +	&dev_attr_jp5.attr,
-> > +	&dev_attr_jp6.attr,
-> 
-> So you create 12 sysfs entries to export boolean features and a
-> constant value. I don't care much, but this looks like massive
-> overkill.
-
-Ok, I'll go for a simple "settings" sysfs attribute.
-
-> 
-> > +/* A/D Converter platform device */
-> > +
-> > +static int ts5500_adc_convert(u8 ctrl, u16 *raw)
-> > +{
-> > +	u8 lsb, msb;
-> > +
-> > +	/* Start convertion (ensure the 3 MSB are set to 0) */
-> > +	outb(ctrl & 0x1F, TS5500_ADC_CONV_INIT_LSB_ADDR);
-> > +
-> > +	udelay(TS5500_ADC_CONV_DELAY);
-> > +	if (inb(TS5500_ADC_CONV_BUSY_ADDR) & TS5500_ADC_CONV_BUSY)
-> > +		return -EBUSY;
-> 
-> Shouldn't you check the busy bit _BEFORE_ writing into the converter?
-> 
-> Also initiating the conversion and then bailing out if it did not
-> complete in some micro seconds is kinda strange. What's wrong with
-> that hardware? And how does it ever recover?
-
-The manufacturer has CPLD logic driving the actual A/D converter. The
-documentation says they guarantee it must complete within x microseconds
-otherwise you have to re-initiate a conversion.
-
-I'll add a proper comment explaining this.
-
-> 
-> > +static void ts5500_adc_release(struct device *dev)
-> > +{
-> > +	/* noop */
-> 
->   Very helpful comment.
-> 
-> > +}
-> > +
-> > +static struct platform_device ts5500_adc_pdev = {
-> > +	.name = "max197",
-> > +	.id = -1,
-> > +	.dev = {
-> > +		.platform_data = &ts5500_adc_pdata,
-> > +		.release = ts5500_adc_release,
-> 
-> What's the point of this empty release function ? The device is never
-> released.
-
-Ok.
-
-Thanks,
-
-	Vivien
-
+-- 
+tejun
