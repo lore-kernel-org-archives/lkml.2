@@ -1,63 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754866Ab2DMOYm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Apr 2012 10:24:42 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:57596 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754421Ab2DMOYk (ORCPT
+	id S1754665Ab2DMOZi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Apr 2012 10:25:38 -0400
+Received: from mail-pz0-f52.google.com ([209.85.210.52]:37797 "EHLO
+	mail-pz0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753607Ab2DMOZf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Apr 2012 10:24:40 -0400
-Message-ID: <4F88371D.7030305@gmail.com>
-Date: Fri, 13 Apr 2012 22:24:29 +0800
-From: Jiang Liu <liuj97@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120329 Thunderbird/11.0.1
-MIME-Version: 1.0
-To: shuahkhan@gmail.com
-CC: Toshi Kani <toshi.kani@hp.com>, lenb@kernel.org,
-        linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/5] ACPI: Add _OST support for ACPI hotplug
-References: <1334096510-17319-1-git-send-email-toshi.kani@hp.com>  <1334161991.2226.18.camel@lorien2>  <1334170247.20190.34.camel@misato.fc.hp.com> <1334240353.2222.3.camel@lorien2>
-In-Reply-To: <1334240353.2222.3.camel@lorien2>
-Content-Type: text/plain; charset=UTF-8
+	Fri, 13 Apr 2012 10:25:35 -0400
+Date: Fri, 13 Apr 2012 23:25:28 +0900
+From: Takuya Yoshikawa <takuya.yoshikawa@gmail.com>
+To: Takuya Yoshikawa <takuya.yoshikawa@gmail.com>
+Cc: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>,
+        Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
+        Xiao Guangrong <xiaoguangrong.eric@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>, KVM <kvm@vger.kernel.org>
+Subject: Re: [PATCH 00/13] KVM: MMU: fast page fault
+Message-Id: <20120413232528.c5ddbddb3cc0870d6e85a332@gmail.com>
+In-Reply-To: <20120411231441.9d0984672dd252b806f99128@gmail.com>
+References: <4F742951.7080003@linux.vnet.ibm.com>
+	<4F82E04E.6000900@redhat.com>
+	<20120409175829.GB21894@amt.cnet>
+	<4F8329D3.7000605@gmail.com>
+	<20120409194614.GB23053@amt.cnet>
+	<4F840DD2.3090101@redhat.com>
+	<20120410204031.ffb5b976225ac9fe6dae474e@gmail.com>
+	<4F842074.1050108@linux.vnet.ibm.com>
+	<20120411211514.35db29c11460516e604059b6@gmail.com>
+	<4F857B61.9080602@linux.vnet.ibm.com>
+	<20120411231441.9d0984672dd252b806f99128@gmail.com>
+X-Mailer: Sylpheed 3.2.0beta3 (GTK+ 2.24.6; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Shuah and Toshi,
-	As I can tell, _OST method has been defined in ACPI4.0 spec and
-there are some platforms already implemented the _OST method. For example,
-Quanta QSSC-S4R server implements _OST for hot-pluggable PCI slots, but 
-it's a little pity that it doesn't implement _OST for the memory board,
-so we can't test Toshi's patch on that platform.
-	According to my understanding, other than notifying BIOS about the
-event processing result, _OST could also be used to notify BIOS about the
-IN_PROGRESS state, so BIOS could track the event handling progress and avoid
-timeout. We have used _OST method to avoid timeout on one of our prototype
-platforms.
+Xiao,
 
-On 04/12/2012 10:19 PM, Shuah Khan wrote:
-> 
->> Hi Shuah,
->>
->> The fake _OST methods print arguments to verify successful execution of
->> the methods.  Since the purpose of _OST is firmware-internal
->> communication, there is no difference in testing on real firmware from
->> the OS perspective.  Overriding DSDT with fake ACPI methods is a
->> well-established and widely used testing method as well.
-> 
-> Toshi,
-> 
-> This patch hasn't gone through sufficient new functionality testing as
-> the only testing that was done was exercising it with stubbed out
-> firmware calls. I am not clear on how much regression testing this patch
-> has undergone. Sorry, it doesn't give me the warm and fuzzies.
-> 
-> -- Shuah
-> 
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-acpi" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+Takuya Yoshikawa <takuya.yoshikawa@gmail.com> wrote:
 
+> > What is your really want to say but i missed?
+> 
+> How to improve and what we should pay for that.
+> 
+> Note that I am not objecting to O(1) itself.
+> 
+
+I forgot to say one important thing -- I might give you wrong impression.
+
+I am perfectly fine with your lock-less work.  It is really nice!
+
+The reason I say much about O(1) is that O(1) and rmap based
+GET_DIRTY_LOG have fundamentally different characteristics.
+
+I am thinking really seriously how to make dirty page tracking work
+well with QEMU in the future.
+
+For example, I am thinking about multi-threaded and fine-grained
+GET_DIRTY_LOG.
+
+If we use rmap based GET_DIRTY_LOG, we can restrict write protection to
+only a selected area of one guest memory slot.
+
+So we may be able to make each thread process dirty pages independently
+from other threads by calling GET_DIRTY_LOG for its own area.
+
+But I know that O(1) has its own good point.
+So please wait a bit.  I will write up what I am thinking or send patches.
+
+Anyway, I am looking forward to your lock-less work!
+It will improve the current GET_DIRTY_LOG performance.
+
+Thanks,
+	Takuya
