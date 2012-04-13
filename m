@@ -1,53 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754014Ab2DMOGK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Apr 2012 10:06:10 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:1201 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752824Ab2DMOGF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1753651Ab2DMOGJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Apr 2012 10:06:09 -0400
+Received: from mailout1.w1.samsung.com ([210.118.77.11]:54511 "EHLO
+	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752450Ab2DMOGF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 13 Apr 2012 10:06:05 -0400
-Date: Fri, 13 Apr 2012 10:05:49 -0400
-From: Josh Boyer <jwboyer@redhat.com>
-To: Takashi Iwai <tiwai@suse.de>
-Cc: Jaroslav Kysela <perex@perex.cz>, alsa-devel@alsa-project.org,
-        linux-kernel@vger.kernel.org, kernel-team@fedoraproject.org
-Subject: Re: Thinkpad hda regression in 3.3
-Message-ID: <20120413140548.GF25425@zod.bos.redhat.com>
-References: <20120413124306.GC25425@zod.bos.redhat.com>
- <s5hpqbbvkzo.wl%tiwai@suse.de>
- <20120413132352.GD25425@zod.bos.redhat.com>
- <s5hk41jvjy2.wl%tiwai@suse.de>
- <20120413133721.GE25425@zod.bos.redhat.com>
- <s5hd37bvjdq.wl%tiwai@suse.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <s5hd37bvjdq.wl%tiwai@suse.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Date: Fri, 13 Apr 2012 16:05:46 +0200
+From: Marek Szyprowski <m.szyprowski@samsung.com>
+Subject: [PATCH 0/4] ARM: replace custom consistent dma region with vmalloc
+To: linux-arm-kernel@lists.infradead.org, linaro-mm-sig@lists.linaro.org,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Cc: Marek Szyprowski <m.szyprowski@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Arnd Bergmann <arnd@arndb.de>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Chunsang Jeong <chunsang.jeong@linaro.org>,
+        Krishna Reddy <vdumpa@nvidia.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Hiroshi Doyu <hdoyu@nvidia.com>, Subash Patel <subashrp@gmail.com>
+Message-id: <1334325950-7881-1-git-send-email-m.szyprowski@samsung.com>
+MIME-version: 1.0
+X-Mailer: git-send-email 1.7.9.1
+Content-type: TEXT/PLAIN
+Content-transfer-encoding: 7BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 13, 2012 at 03:41:53PM +0200, Takashi Iwai wrote:
-> At Fri, 13 Apr 2012 09:37:21 -0400,
-> Josh Boyer wrote:
-> Thanks.  As mentionted, the difference between two setups (sent in two
-> posts) is seen in the mixer setup.  I personally don't mind which
-> setup is taken; it's rather a choice of users.  So, let me know which
-> setup is preferred by testers.
+Hi!
 
-You're referring to the inclusion of pin 0x19 or not here, right?
+Recent changes to ioremap and unification of vmalloc regions on ARM
+significantly reduces the possible size of the consistent dma region and
+limited allowed dma coherent/writecombine allocations.
 
-> The reason behind such multiple setups is that the codec chip has only
-> two DACs while you want to access for three or more outputs (two
-> headphones, one speaker, etc).  Thus some outputs must share the same
-> DAC.
+This experimental patch series replaces custom consistent dma regions
+usage in dma-mapping framework in favour of generic vmalloc areas
+created on demand for each coherent and writecombine allocations.
 
-I'm guessing when someone undocks the pins are reconfigured back to the
-jacks on the laptop itself somehow?
+This patch is based on vanilla v3.4-rc2 release.
 
-I must admit, ALSA and it's multi-codec hda driver with lots of pin
-swizzling is somewhat intimidating at the moment.  If I ask stupid
-questions, please bear with me :).
+Best regards
+Marek Szyprowski
+Samsung Poland R&D Center
 
-josh
+
+Patch summary:
+
+Marek Szyprowski (4):
+  mm: vmalloc: use const void * for caller argument
+  mm: vmalloc: export find_vm_area() function
+  mm: vmalloc: add VM_DMA flag to indicate areas used by dma-mapping
+    framework
+  ARM: remove consistent dma region and use common vmalloc range for
+    dma allocations
+
+ arch/arm/include/asm/dma-mapping.h |    2 +-
+ arch/arm/mm/dma-mapping.c          |  220 +++++++-----------------------------
+ include/linux/vmalloc.h            |   10 +-
+ mm/vmalloc.c                       |   31 ++++--
+ 4 files changed, 67 insertions(+), 196 deletions(-)
+
+-- 
+1.7.1.569.g6f426
+
