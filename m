@@ -1,104 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752232Ab2DMRm1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Apr 2012 13:42:27 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:45798 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751234Ab2DMRmZ (ORCPT
+	id S1753366Ab2DMRms (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Apr 2012 13:42:48 -0400
+Received: from shards.monkeyblade.net ([198.137.202.13]:51076 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751234Ab2DMRmq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Apr 2012 13:42:25 -0400
-Date: Fri, 13 Apr 2012 10:42:19 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Anthony Foiani <tkil@scrye.com>
-Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Shengzhou Liu <Shengzhou.Liu@freescale.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Subject: Re: [ 011/108] powerpc/usb: fix bug of kernel hang when initializing
- usb
-Message-ID: <20120413174219.GA4078@kroah.com>
-References: <20120330195723.719813895@linuxfoundation.org>
- <gpqbc8avn.fsf@dworkin.scrye.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <gpqbc8avn.fsf@dworkin.scrye.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Fri, 13 Apr 2012 13:42:46 -0400
+Date: Fri, 13 Apr 2012 13:42:43 -0400 (EDT)
+Message-Id: <20120413.134243.2000744517368456334.davem@davemloft.net>
+To: fbl@redhat.com
+Cc: jasowang@redhat.com, netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] 8139cp: set intr mask after its handler is registered
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <20120412104529.27ece685@asterix.rh>
+References: <20120412081053.25774.41676.stgit@amd-6168-8-1.englab.nay.redhat.com>
+	<20120412104529.27ece685@asterix.rh>
+X-Mailer: Mew version 6.4 on Emacs 23.3 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Fri, 13 Apr 2012 10:42:45 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 12, 2012 at 11:21:48PM -0600, Anthony Foiani wrote:
-> Greg KH <gregkh@linuxfoundation.org> writes:
-> 
-> > 3.0-stable review patch.  If anyone has any objections, please let me know.
-> >
-> > ------------------
-> >
-> > From: Shengzhou Liu <Shengzhou.Liu@freescale.com>
-> >
-> > commit 28c56ea1431421dec51b7b229369e991481453df upstream.
-> >
-> > If USB UTMI PHY is not enable, writing to portsc register will lead to
-> > kernel hang during boot up.
-> 
-> I apologize for the late response, but I was encountering this same
-> hang (on an 8315) and applied this patch.  (For what it's worth, I'm
-> only seeing it after many warm boots; a cold boot / hard power cycle
-> solves the issue, but since this is eventually going to be locked up
-> in a box without a console...)
-> 
-> I encountered the hang again this evening, so this fix (plus the snoop
-> fix) is not sufficientl
-> 
-> Reading through the original thread, it seems that an additional delay
-> might be required:
-> 
->    http://article.gmane.org/gmane.linux.usb.general/58795
-> 
->    > First, the SDK kernel had a delay after setting that bit, I added
->    > that back in. This is not what fixed it but it looks like the
->    > right thing to do, though please, use msleep rather than udelay
->    > here if possible (not in atomic context).
-> 
-> However, I never saw a patch to that effect.  I'm assuming (hoping!)
-> it's something as simple as:
-> 
-> ------------------------------------------------------------------------
-> diff --git a/drivers/usb/host/ehci-fsl.c b/drivers/usb/host/ehci-fsl.c
-> index 09fd214..d58c1c6 100644
-> --- a/drivers/usb/host/ehci-fsl.c
-> +++ b/drivers/usb/host/ehci-fsl.c
-> @@ -236,6 +236,7 @@ static void ehci_fsl_setup_phy(struct ehci_hcd *ehci,
-> 	case FSL_USB2_PHY_UTMI:
-> 		/* enable UTMI PHY */
-> 		setbits32(non_ehci + FSL_SOC_USB_CTRL, CTRL_UTMI_PHY_EN);
-> +		msleep(5);
-> 		portsc |= PORT_PTS_UTMI;
-> 		break;
-> 	case FSL_USB2_PHY_NONE:
-> ------------------------------------------------------------------------
-> 
-> But confirmation would be nice.  Also, which SDK kernel was this
-> compared against?  I just downloaded the 8315ERDB BSP, and the kernel
-> there doesn't seem to have any of this in it.
-> 
-> There was also the follow-on patch that enabled snooping (to deal with
-> cache coherency?):
-> 
->    http://article.gmane.org/gmane.linux.usb.general/58798
-> 
-> (If there was a formal patch there, it looks like it got scrambled on
-> gmane, and I can't find another list archive.)
-> 
-> Is that also needed for consistent results here?  (Or are we wandering
-> astray from "-stable" material?)
+From: Flavio Leitner <fbl@redhat.com>
+Date: Thu, 12 Apr 2012 10:45:29 -0300
 
-Yes you are, any patch for the stable tree needs to be in Linus's tree
-already.  Please work with the original developers of this patch to
-resolve the issue, get the patch merged, and then I can take it for a
-stable release.
+> On Thu, 12 Apr 2012 16:10:54 +0800
+> Jason Wang <jasowang@redhat.com> wrote:
+> 
+>> We set intr mask before its handler is registered, this does not work well when
+>> 8139cp is sharing irq line with other devices. As the irq could be enabled by
+>> the device before 8139cp's hander is registered which may lead unhandled
+>> irq. Fix this by introducing an helper cp_irq_enable() and call it after
+>> request_irq().
+>> 
+>> Signed-off-by: Jason Wang <jasowang@redhat.com>
+> 
+> Reviewed-by: Flavio Leitner <fbl@redhat.com>
 
-thanks,
-
-greg k-h
+Applied, and queued up for -stable, thanks.
