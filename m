@@ -1,66 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753078Ab2DMLkI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Apr 2012 07:40:08 -0400
-Received: from mail.muniproviru.gob.pe ([190.41.214.62]:45778 "EHLO
-	mail.muniproviru.gob.pe" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751238Ab2DMLkG convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Apr 2012 07:40:06 -0400
-Date: Fri, 13 Apr 2012 06:44:15 -0500 (PET)
-From: Mr Jackson White <eotiniano@muniproviru.gob.pe>
-Reply-To: Mr Jackson White <whitejacksonh@gmail.com>
-Message-ID: <15699975.11870.1334317455430.JavaMail.root@mail.muniproviru.gob.pe>
-Subject: Mr.Jackson White
+	id S1752886Ab2DMLoU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Apr 2012 07:44:20 -0400
+Received: from mail2.gnudd.com ([213.203.150.91]:62108 "EHLO mail.gnudd.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751402Ab2DMLoT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 Apr 2012 07:44:19 -0400
+Date: Fri, 13 Apr 2012 13:44:02 +0200
+From: Alessandro Rubini <rubini@gnudd.com>
+To: linus.walleij@linaro.org
+Cc: linux-kernel@vger.kernel.org, giancarlo.asnaghi@st.com,
+        alan@linux.intel.com, sameo@linux.intel.com, grant.likely@secretlab.ca,
+        linus.walleij@stericsson.com
+Subject: Re: [PATCH V3 2/2] gpio: add STA2X11 GPIO block
+Message-ID: <20120413114402.GA4969@mail.gnudd.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
-X-Originating-IP: [82.128.21.210]
-X-Mailer: Zimbra 6.0.10_GA_2692 (zclient/6.0.10_GA_2692)
-To: undisclosed-recipients:;
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Organization: GnuDD, Device Drivers, Embedded Systems, Courses
+In-Reply-To: <CACRpkdZCY+tbTgPyt7MWaZw93O_m28tMgaB8SbDAtJS-0VuGtw@mail.gmail.com>
+References: <CACRpkdZCY+tbTgPyt7MWaZw93O_m28tMgaB8SbDAtJS-0VuGtw@mail.gmail.com>
+  <cover.1334219873.git.rubini@gnudd.com>
+  <5e419c41c8e3bcbeac341aa9457a9c93bc4c8309.1334219874.git.rubini@gnudd.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Mr.Jackson White 
-Moje prywatne numer: +447-035-902-902 
-Faks: +447-043-077-354 
+> I would still prefer to use the pinctrl subsystem for this from day
+> 1 instead of adding more custom stuff for later refactoring...
 
-Przyjąć moje szczere przeprosiny, jeśli mój email nie spełnia Twoje osobiste 
-etyka. 
+I see your point. I attacked pinctrl some time ago, but it is overly
+complex for this simple stuff. We have static configuration that is
+enacted at boot, and that's it.  Using pinctrl would mean much more
+code (and more bugs, as a side effect) for no real advantage.  I
+appreciate the flexibility of pinctrl, and I see it's really good to
+have a way to describe complex SoC hardware, but it just isn't always
+needed.
 
-Ja się przedstawię jak Mr.Jackson Harlsden White, Ja Virgin obywatel 
-Wyspy Brytyjskie zamieszkuje dyrektora London.A w zarządzaniu kont 
-sekcja, monitoring finansowy sieci tutaj w Wielkiej Brytanii. 
+Besides, it's still marked as experimental, which on one side is not
+reassuring about its stability, and on the other means my whole
+chipset should depend on experimental as a consequence.
 
-Jest to szczegół, co chcę Ci pomóc mi w doing.One z naszych 
-konta z równowagi kapitałowej dwudziestu milionów pięćset tysięcy funtów został uśpiony i nie ma 
-były eksploatowane w ciągu ostatnich dwunastu (12) lat. 
-
-Z moich badań i potwierdzenia, właściciel to 
-konto, cudzoziemiec po imieniu (Ost Bob) zmarł 31 stycznia 2000. 
-
-zobaczyć: http://aviation.crosswindlanding.com/accidents/alaska_261.htm 
-
-I od tego czasu nikt nie zrobił nic w odniesieniu do zastrzeżenia to 
-pieniądze, bo nie ma członków rodziny, którzy są świadomi istnienia 
-ani konto, ani funduszy. 
-
-Szukam Twojej zgody, aby zaprezentować Państwu jak najbliższych krewnych / Czy beneficjent do zmarłego tak, że wpływy z tego konta 
-o wartości dwudziestu milionów pięćset tysięcy funtów może być wypłacona (przelew) na konto w danym kraju. 
-
-To będzie wypłacane lub udostępniane w tych procentach, 60% dla mnie i 40% dla Ciebie. wszystkie niezbędne dokumenty prawne Popierając tę ​​funduszy wniosków możemy być zabezpieczone przez nas. 
-
-Proszę dostarczyć mi następujące, jak mamy 7 dni, aby go uruchomić poprzez. 
-Jest to bardzo PILNE PLEASE. 
-
-1. Pełne imię i nazwisko. 
-2. Twój bezpośredni numer telefonu komórkowego. 
-3. Twój adres kontaktowy. 
-4. Twój wiek. 
-5. Twój zawód. 
-
-Pozdrawiam, 
-Mr.Jackson White
-Moje prywatne numer: +447-035-902-902 
-Faks: +447-043-077-354
+thanks
+/alessandro
