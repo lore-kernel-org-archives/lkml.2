@@ -1,113 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757394Ab2DMIPr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Apr 2012 04:15:47 -0400
-Received: from mx1.fusionio.com ([66.114.96.30]:59593 "EHLO mx1.fusionio.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754643Ab2DMIPo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Apr 2012 04:15:44 -0400
-X-ASG-Debug-ID: 1334304942-03d6a54a8017ca50001-xx1T2L
-X-Barracuda-Envelope-From: JAxboe@fusionio.com
-Message-ID: <4F87E0A9.4040608@fusionio.com>
-Date: Fri, 13 Apr 2012 10:15:37 +0200
-From: Jens Axboe <jaxboe@fusionio.com>
+	id S1757774Ab2DMIQY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Apr 2012 04:16:24 -0400
+Received: from eu1sys200aog102.obsmtp.com ([207.126.144.113]:53666 "EHLO
+	eu1sys200aog102.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757360Ab2DMIQM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 Apr 2012 04:16:12 -0400
+From: Linus Walleij <linus.walleij@stericsson.com>
+To: Anton Vorontsov <anton.vorontsov@linaro.org>,
+        <linux-kernel@vger.kernel.org>
+Cc: Karl Komierowski <karl.komierowski@stericsson.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Arun Murthy <arun.murthy@stericsson.com>
+Subject: [PATCH 1/3] power/ab8500_charger: harden platform data check
+Date: Fri, 13 Apr 2012 10:15:49 +0200
+Message-ID: <1334304949-18301-1-git-send-email-linus.walleij@stericsson.com>
+X-Mailer: git-send-email 1.7.9.2
 MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: [GIT PULL] block driver bits for 3.4
-Content-Type: text/plain; charset="ISO-8859-1"
-X-ASG-Orig-Subj: [GIT PULL] block driver bits for 3.4
-Content-Transfer-Encoding: 7bit
-X-Barracuda-Connect: mail1.int.fusionio.com[10.101.1.21]
-X-Barracuda-Start-Time: 1334304942
-X-Barracuda-Encrypted: AES128-SHA
-X-Barracuda-URL: http://10.101.1.180:8000/cgi-mod/mark.cgi
-X-Barracuda-Bayes: INNOCENT GLOBAL 0.0017 1.0000 -2.0097
-X-Barracuda-Spam-Score: -2.01
-X-Barracuda-Spam-Status: No, SCORE=-2.01 using per-user scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=9.0 tests=
-X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.2.93982
-	Rule breakdown below
-	 pts rule name              description
-	---- ---------------------- --------------------------------------------------
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+From: Linus Walleij <linus.walleij@linaro.org>
 
-On top of the core bits, but this time nothing in the drivers
-branch depends on any core changes.
+If no platform data at all is supplied the driver crashes,
+extend the checks to be more careful so we can compile in the
+driver and boot also without platform data present.
 
-- A series of fixes for mtip32xx. Most from Asai at Micron, but also one
-  from Greg, getting rid of the dependency on PCIE_HOTPLUG.
+Cc: Arun Murthy <arun.murthy@stericsson.com>
+Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
+---
+ drivers/power/ab8500_charger.c |    5 ++---
+ 1 file changed, 2 insertions(+), 3 deletions(-)
 
-- A few bug fixes for xen-blkfront, and blkback.
-
-- A virtio-blk fix for Vivek, making resize actually work.
-
-- Two fixes from Stephen, making larger transfers possible on cciss.
-  This is needed for tape drive support.
-
-Please pull.
-
-  git://git.kernel.dk/linux-block.git for-3.4/drivers
-
-Akinobu Mita (1):
-      xen-blkfront: use bitmap_set() and bitmap_clear()
-
-Andrew Jones (1):
-      xen/blkfront: don't put bdev right after getting it
-
-Asai Thambi S P (8):
-      mtip32xx: fix incorrect value set for drv_cleanup_done, and re-initialize and start port in mtip_restart_port()
-      mtip32xx: Add new bitwise flag 'dd_flag'
-      mtip32xx: make setting comp_time as common
-      mtip32xx: Add new sysfs entry 'status'
-      mtip32xx: misc changes
-      mtip32xx: Shorten macro names
-      mtip32xx: fix handling of commands in various scenarios
-      mtip32xx: dump tagmap on failure
-
-Daniel De Graaf (2):
-      xen/blkback: use grant-table.c hypercall wrappers
-      xen/blkback: Enable blkback on HVM guests
-
-Greg Kroah-Hartman (1):
-      block: mtip32xx: remove HOTPLUG_PCI_PCIE dependancy
-
-Jens Axboe (1):
-      Merge branch 'stable/for-jens-3.4-bugfixes' of git://git.kernel.org/.../konrad/xen into for-3.4/drivers
-
-Konrad Rzeszutek Wilk (2):
-      xen/blkback: Squash the discard support for 'file' and 'phy' type.
-      xen/blkback: Make optional features be really optional.
-
-Ryosuke Saito (1):
-      mtip32xx: fix error handling in mtip_init()
-
-Stephen M. Cameron (2):
-      cciss: Initialize scsi host max_sectors for tape drive support
-      cciss: Fix scsi tape io with more than 255 scatter gather elements
-
-Steven Noonan (1):
-      xen-blkfront: make blkif_io_lock spinlock per-device
-
-Vivek Goyal (1):
-      virtio-blk: Call revalidate_disk() upon online disk resize
-
- Documentation/ABI/testing/sysfs-block-rssd |   18 +
- drivers/block/cciss_scsi.c                 |    3 +-
- drivers/block/mtip32xx/Kconfig             |    2 +-
- drivers/block/mtip32xx/mtip32xx.c          |  860 +++++++++++++++++++++-------
- drivers/block/mtip32xx/mtip32xx.h          |   58 +-
- drivers/block/virtio_blk.c                 |    1 +
- drivers/block/xen-blkback/blkback.c        |   50 +-
- drivers/block/xen-blkback/common.h         |    6 -
- drivers/block/xen-blkback/xenbus.c         |   89 ++-
- drivers/block/xen-blkfront.c               |   41 +-
- 10 files changed, 796 insertions(+), 332 deletions(-)
- create mode 100644 Documentation/ABI/testing/sysfs-block-rssd
-
+diff --git a/drivers/power/ab8500_charger.c b/drivers/power/ab8500_charger.c
+index e2b4acc..79dc584 100644
+--- a/drivers/power/ab8500_charger.c
++++ b/drivers/power/ab8500_charger.c
+@@ -2551,13 +2551,12 @@ static int __devinit ab8500_charger_probe(struct platform_device *pdev)
+ 
+ 	/* get charger specific platform data */
+ 	plat_data = pdev->dev.platform_data;
+-	di->pdata = plat_data->charger;
+-
+-	if (!di->pdata) {
++	if (!plat_data || !plat_data->charger) {
+ 		dev_err(di->dev, "no charger platform data supplied\n");
+ 		ret = -EINVAL;
+ 		goto free_device_info;
+ 	}
++	di->pdata = plat_data->charger;
+ 
+ 	/* get battery specific platform data */
+ 	di->bat = plat_data->battery;
 -- 
-Jens Axboe
+1.7.9.2
 
