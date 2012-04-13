@@ -1,45 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757292Ab2DMD0N (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Apr 2012 23:26:13 -0400
-Received: from e8.ny.us.ibm.com ([32.97.182.138]:37762 "EHLO e8.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756215Ab2DMD0L (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Apr 2012 23:26:11 -0400
-From: zwu.kernel@gmail.com
-To: linux-kernel@vger.kernel.org
-Cc: rusty@rustcorp.com.au, stefanha@linux.vnet.ibm.com,
-        Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
-Subject: [PATCH] virtio_ring: remove unused code in virtqueue_notify()
-Date: Fri, 13 Apr 2012 11:26:03 +0800
-Message-Id: <1334287563-8865-1-git-send-email-zwu.kernel@gmail.com>
-X-Mailer: git-send-email 1.7.6
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12041303-9360-0000-0000-0000056056AE
+	id S1757929Ab2DMD3t (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Apr 2012 23:29:49 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:33224 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756553Ab2DMD3s (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Apr 2012 23:29:48 -0400
+From: Grant Likely <grant.likely@secretlab.ca>
+Subject: Re: Device tree conversion of spi device vs. controller_data
+To: Roland Stigge <stigge@antcom.de>
+Cc: spi-devel-general@lists.sourceforge.net, linux-kernel@vger.kernel.org
+In-Reply-To: <4F816772.5000607@antcom.de>
+References: <4F816772.5000607@antcom.de>
+Date: Thu, 12 Apr 2012 21:29:44 -0600
+Message-Id: <20120413032945.0C76B3E07AC@localhost>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
+On Sun, 08 Apr 2012 12:24:50 +0200, Roland Stigge <stigge@antcom.de> wrote:
+> Hi,
+> 
+> upon DT conversion of LPC32xx, I came across the at25 spi eeprom which
+> needs .controller_data in struct spi_board_info for slave registration
+> via spi_register_board_info() (non-DT-case).
+> 
+> In the DT case, we need to eliminate this explicit registering call.
+> Therefore, I need to somehow replace the .controller_data passing in the
+> DT case to pass this data to the spi core. But I can't find such a
+> mechanism (v3.4-rc2). Is there already a concept or API that I
+> overlooked (please just point me to it) or what can I do to solve this?
+> (Looks like a general issue for spi slave registration via DT).
 
-Signed-off-by: Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
----
- drivers/virtio/virtio_ring.c |    2 --
- 1 files changed, 0 insertions(+), 2 deletions(-)
+Can you point me at specific code?
 
-diff --git a/drivers/virtio/virtio_ring.c b/drivers/virtio/virtio_ring.c
-index 5aa43c3..c6a54e6 100644
---- a/drivers/virtio/virtio_ring.c
-+++ b/drivers/virtio/virtio_ring.c
-@@ -343,8 +343,6 @@ EXPORT_SYMBOL_GPL(virtqueue_kick_prepare);
-  */
- void virtqueue_notify(struct virtqueue *_vq)
- {
--	struct vring_virtqueue *vq = to_vvq(_vq);
--
- 	/* Prod other side to tell it about changes. */
- 	vq->notify(_vq);
- }
+.controller_data is owned by the spi_master driver.  The eeprom driver
+shouldn't be accessing it directly at all; but I'll need to look at
+specific code to really understand what is going on.
+
+g.
+
 -- 
-1.7.6
-
+Grant Likely, B.Sc, P.Eng.
+Secret Lab Technologies,Ltd.
