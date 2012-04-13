@@ -1,181 +1,324 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753537Ab2DMOQ7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Apr 2012 10:16:59 -0400
-Received: from va3ehsobe010.messaging.microsoft.com ([216.32.180.30]:21235
-	"EHLO va3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752333Ab2DMOQ4 convert rfc822-to-8bit
+	id S1753822Ab2DMORK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Apr 2012 10:17:10 -0400
+Received: from am1ehsobe003.messaging.microsoft.com ([213.199.154.206]:54163
+	"EHLO am1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752339Ab2DMORC convert rfc822-to-8bit
 	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Apr 2012 10:16:56 -0400
-X-SpamScore: -11
-X-BigFish: VPS-11(zz9371I1432N98dK11fbIzz1202hzz8275bhz2dh668h839h944hd25h)
-X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
-X-WSS-ID: 0M2F8XQ-02-0Q1-02
-X-M-MSG: 
-From: "Chen, Dennis (SRDC SW)" <Dennis1.Chen@amd.com>
-To: "paulmck@linux.vnet.ibm.com" <paulmck@linux.vnet.ibm.com>
-CC: Clemens Ladisch <clemens@ladisch.de>, Ingo Molnar <mingo@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: semaphore and mutex in current Linux kernel (3.2.2)
-Thread-Topic: semaphore and mutex in current Linux kernel (3.2.2)
-Thread-Index: Ac0P7b5dm37XnMCsR726LS+rxvQKd///odaAgANgVTOAA464hf/+uc3QgAIOroCACN1x5v//GEGQgAHOfYD//gfXMA==
-Date: Fri, 13 Apr 2012 14:15:25 +0000
-Message-ID: <491D6B4EAD0A714894D8AD22F4BDE043A33FD3@SCYBEXDAG02.amd.com>
-References: <491D6B4EAD0A714894D8AD22F4BDE0439F9560@SCYBEXDAG02.amd.com>
- <20120403075245.GD26826@gmail.com> <4F7DA8FD.1020909@ladisch.de>
- <491D6B4EAD0A714894D8AD22F4BDE0439F9E45@SCYBEXDAG02.amd.com>
- <4F7EC111.4010608@ladisch.de>
- <491D6B4EAD0A714894D8AD22F4BDE0439F9ED2@SCYBEXDAG02.amd.com>
- <20120409184538.GE2430@linux.vnet.ibm.com>
- <491D6B4EAD0A714894D8AD22F4BDE043A33A9E@SCYBEXDAG02.amd.com>
- <20120411173006.GB2473@linux.vnet.ibm.com>
- <491D6B4EAD0A714894D8AD22F4BDE043A33D37@SCYBEXDAG02.amd.com>
- <20120412151854.GB2394@linux.vnet.ibm.com>
-In-Reply-To: <20120412151854.GB2394@linux.vnet.ibm.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.237.74.102]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Fri, 13 Apr 2012 10:17:02 -0400
+X-SpamScore: -9
+X-BigFish: VPS-9(zz1432N98dK4015Izz1202hzz8275bh8275dhz2ei2a8h668h839h944h)
+X-Forefront-Antispam-Report: CIP:198.70.193.64;KIP:(null);UIP:(null);IPV:NLI;H:avexcashub1.qlogic.com;RD:avexcashub2.qlogic.com;EFVD:NLI
+Date: Fri, 13 Apr 2012 10:16:49 -0400
+From: Chad Dupuis <chad.dupuis@qlogic.com>
+To: Masanari Iida <standby24x7@gmail.com>
+CC: Andrew Vasquez <andrew.vasquez@qlogic.com>,
+        Dept-Eng Linux Driver <Linux-Driver@qlogic.com>,
+        "trivial@kernel.org" <trivial@kernel.org>,
+        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] [trivial] qla2xxx: Fix typo in qla2xxx files
+In-Reply-To: <1334161860-7433-1-git-send-email-standby24x7@gmail.com>
+Message-ID: <alpine.WNT.2.00.1204131011560.6140@N5102REMCQXM4BS.qlogic.org>
+References: <1334161860-7433-1-git-send-email-standby24x7@gmail.com>
+User-Agent: Alpine 2.00 (WNT 1167 2008-08-23)
+X-X-Sender: cdupuis@qlm.qlogic.com
 MIME-Version: 1.0
-X-OriginatorOrg: amd.com
+Content-Type: text/plain; charset="US-ASCII"; format=flowed
+Content-Transfer-Encoding: 8BIT
+X-OriginatorOrg: qlogic.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 12, 2012 at 11:18 PM, Paul E. McKenney <paulmck@linux.vnet.ibm.com> wrote:
-> On Thu, Apr 12, 2012 at 09:42:36AM +0000, Chen, Dennis (SRDC SW) wrote:
->> I think mutex_lock is not the same as spin_lock, so it's not reasonable to add the time restriction
->> for the lock user...though maybe most owners of the lock release it very quickly in real life
->
-> Yep -- to do otherwise is usually bad for both performance and scalability.
->
->> The preemptive has been disabled at the beginning of the mutex lock slow path, so I guess above 2 and 3
->> are impossible...
->
-> Almost.  The guy in mutex_spin_on_owner() might be interrupted at just
-> the wrong times, which would have the same effect as being preempted.
-> But in both cases, the probability is really low, so it can still be
-> safely ignored.
->
->> I have a test to get the jiffies lasting when someone call set_need_resched() to break the loop:
->>     ...
->>     i0 = jiffies;
->>     rcu_read_lock();
->>     while(1){
->>         if (need_resched())
->>             break;
->>         cpu_relax();
->>     }
->>     rcu_read_unlock();
->>     i1 = jiffies;
->>     printk("i0 = %ld, i1 = %ld, HZ=%d\n", i0, i1, HZ);
->>     ...
->> The result is, in the case of HZ=1000, i1-i0 will be in [1,...,5] range randomly. So if we exit the while loop
->> on need_resched(), that means the optimization of mutex comparing semaphore doesn't success: mutex spins about
->> several jiffies before goto sleep or get the lock finally,right?
->
-> But this is quite different than mutex_spin_on_owner().  You are doing
-> "while(1)" and mutex_spin_on_owner() is doing "while (owner_running(...))".
-> This means that mutex_spin_on_owner() will typically stop spinning as
-> soon as the owner blocks or releases the mutex.  In contrast, the only
-> way your loop can exit is if need_resched() returns true.
->
-> Therefore, your results are irrelevant to mutex_spin_on_owner().  If you
-> want to show that mutex_spin_on_owner() has a problem, you should
-> instrument mutex_spin_on_owner() and run your instrumented version in
-> the kernel.
 
-I know that the test is different from mutex_spin_on_owner(), the reason I used while(1) not the actual code instead is
-that I want to know how many jiffies will be elapsed when break the loop on need_resched in case of owner running long enough.
-If you want to see the test result on mutex_spin_on_owner(), I have the following test case (based on my earlier message
-in this thread, you can check if for some background context...):
 
-1. <in a kernel module> in the xxx_read() function, I have the follow code pieces:
-    /* idle loop for 5s between the 1st App get the lock and release it
-     Unsigned long j = jiffies + 5 * HZ;
-    /* identify ourself in the mutex_spin_on_owner function to void tons of printk message
-     * The first App will get the mutex lock in fast path, it will not enter into slow path, so it's easy
-     * to identify the 2nd App by tricky pid
-     */
-    current->pid |= (1 << 31);
-    mutex_lock(&c_mutex);
-    while(time_before(jiffies, j)){
-        cpu_relax();
-    }
-    mutex_unlock(&c_mutex);
-    current->pid &= ~(1 << 31);
+On Wed, 11 Apr 2012, Masanari Iida wrote:
 
-2. <in the kernel source code> I make some changes in mutex_spin_on_owner as below:
-    int mutex_spin_on_owner(struct mutex *lock, struct task_struct *owner)
-{
-        unsigned long j0, j1; /*add*/
-        if (!sched_feat(OWNER_SPIN))
-                return 0;
-
-        rcu_read_lock();
-        j0 = jiffies; /*add*/
-        while (owner_running(lock, owner)) {
-                if (need_resched())
-                        break;
-
-                arch_mutex_cpu_relax();
-        }
-        j1 = jiffies;
-        rcu_read_unlock();
-        if(current->pid & (1 << 31))  /*add*/
-                printk("j1-j0=%ld\n", j1-j0); /*add*/
-        /*
-         * We break out the loop above on need_resched() and when the
-         * owner changed, which is a sign for heavy contention. Return
-         * success only when lock->owner is NULL.
-         */
-        return lock->owner == NULL;
-}
-
-3. run the Apps in 2 different CPUs (0 and 2):
-   #taskset 0x00000001 ./main
-   #taskset 0x00000004 ./main
-   
-  The App running on cpu0 will get the lock directly, and it will in idle loop state for 5s owning the lock,
-  So App on cpu2 will enter into slow path and call mutex_spin_on_owner(), thus we can get the delta jiffies
-  When the loop break on need_resched(). The test result as below(HZ=1000, I run the test about 6 rounds):
-  j1-j0=19    -- NO.1
-  j1-j0=512   -- NO.2
-  j1-j0=316   -- NO.3
-  j1-j0=538   -- NO.4
-  j1-j0=331   -- NO.5
-  j1-j0=996   -- NO.6
-
-obviously, the mutex will waste lots of CPU resource comparing semaphore in this case.
-I know the base rock of mutex performance optimization is "if the lock owner is running, it is likely to
-release the lock soon", I don't know if there are some statistics data to support this rational, in other words,
-what does make us get this conclusion?
-
->> If lucky enough, maybe in 99% case we break the loop by owner_running(lock, owner), meaning the lock owner release
->> the lock in a very quick speed (can't be measured by jiffies).
+> Correct spelling typo within qla2xxx files.
 >
-> That is in fact the intent of the design.
+> Signed-off-by: Masanari Iida <standby24x7@gmail.com>
+> ---
+> drivers/scsi/qla2xxx/qla_dbg.c     |    4 ++--
+> drivers/scsi/qla2xxx/qla_fw.h      |    4 ++--
+> drivers/scsi/qla2xxx/qla_iocb.c    |    2 +-
+> drivers/scsi/qla2xxx/qla_isr.c     |    2 +-
+> drivers/scsi/qla2xxx/qla_mbx.c     |    4 ++--
+> drivers/scsi/qla2xxx/qla_mid.c     |    2 +-
+> drivers/scsi/qla2xxx/qla_nx.c      |    4 ++--
+> drivers/scsi/qla2xxx/qla_os.c      |    6 +++---
+> drivers/scsi/qla2xxx/qla_target.c  |   12 ++++++------
+> drivers/scsi/qla2xxx/tcm_qla2xxx.c |    4 ++--
+> drivers/scsi/qla2xxx/tcm_qla2xxx.h |    2 +-
+> 11 files changed, 23 insertions(+), 23 deletions(-)
 >
-> In theory, possible problems with the current code include:
+> diff --git a/drivers/scsi/qla2xxx/qla_dbg.c b/drivers/scsi/qla2xxx/qla_dbg.c
+> index 0393915..a774f9c 100644
+> --- a/drivers/scsi/qla2xxx/qla_dbg.c
+> +++ b/drivers/scsi/qla2xxx/qla_dbg.c
+> @@ -2295,7 +2295,7 @@ ql_dbg(uint32_t level, scsi_qla_host_t *vha, int32_t id, const char *fmt, ...)
 >
-> 1.      Unnecessarily blocking lower-priority tasks.
+> /*
+>  * This function is for formatting and logging debug information.
+> - * It is to be used when vha is not available and pci is availble,
+> + * It is to be used when vha is not available and pci is available,
+>  * i.e., before host allocation. It formats the message and logs it
+>  * to the messages file.
+>  * parameters:
+> @@ -2390,7 +2390,7 @@ ql_log(uint32_t level, scsi_qla_host_t *vha, int32_t id, const char *fmt, ...)
 >
-> 2.      Consuming energy spinning when the CPU might otherwise
->        go idle and thus into a low-power state.
+> /*
+>  * This function is for formatting and logging log messages.
+> - * It is to be used when vha is not available and pci is availble,
+> + * It is to be used when vha is not available and pci is available,
+>  * i.e., before host allocation. It formats the message and logs
+>  * it to the messages file. All the messages are logged irrespective
+>  * of the value of ql2xextended_error_logging.
+> diff --git a/drivers/scsi/qla2xxx/qla_fw.h b/drivers/scsi/qla2xxx/qla_fw.h
+> index 6d7d775..980b5a7 100644
+> --- a/drivers/scsi/qla2xxx/qla_fw.h
+> +++ b/drivers/scsi/qla2xxx/qla_fw.h
+> @@ -1130,7 +1130,7 @@ struct mid_db_entry_24xx {
+> /*
+>  * Virtual Port Control IOCB
+>  */
+> -#define VP_CTRL_IOCB_TYPE      0x30    /* Vitual Port Control entry. */
+> +#define VP_CTRL_IOCB_TYPE      0x30    /* Virtual Port Control entry. */
+> struct vp_ctrl_entry_24xx {
+>        uint8_t entry_type;             /* Entry type. */
+>        uint8_t entry_count;            /* Entry count. */
+> @@ -1166,7 +1166,7 @@ struct vp_ctrl_entry_24xx {
+> /*
+>  * Modify Virtual Port Configuration IOCB
+>  */
+> -#define VP_CONFIG_IOCB_TYPE    0x31    /* Vitual Port Config entry. */
+> +#define VP_CONFIG_IOCB_TYPE    0x31    /* Virtual Port Config entry. */
+> struct vp_config_entry_24xx {
+>        uint8_t entry_type;             /* Entry type. */
+>        uint8_t entry_count;            /* Entry count. */
+> diff --git a/drivers/scsi/qla2xxx/qla_iocb.c b/drivers/scsi/qla2xxx/qla_iocb.c
+> index 88dd472..a075f46 100644
+> --- a/drivers/scsi/qla2xxx/qla_iocb.c
+> +++ b/drivers/scsi/qla2xxx/qla_iocb.c
+> @@ -1936,7 +1936,7 @@ qla2x00_alloc_iocbs(scsi_qla_host_t *vha, srb_t *sp)
+>        }
+>        if (index == MAX_OUTSTANDING_COMMANDS) {
+>                ql_log(ql_log_warn, vha, 0x700b,
+> -                   "No room on oustanding cmd array.\n");
+> +                   "No room on outstanding cmd array.\n");
+>                goto queuing_error;
+>        }
 >
-> But you need to measure the actual code running a realistic workload
-> to get a fair diagnosis of any problems that might be present.
+> diff --git a/drivers/scsi/qla2xxx/qla_isr.c b/drivers/scsi/qla2xxx/qla_isr.c
+> index 6656fda..a5ac4f7 100644
+> --- a/drivers/scsi/qla2xxx/qla_isr.c
+> +++ b/drivers/scsi/qla2xxx/qla_isr.c
+> @@ -1415,7 +1415,7 @@ qla2x00_handle_sense(srb_t *sp, uint8_t *sense_data, uint32_t par_sense_len,
+>
+> struct scsi_dif_tuple {
+>        __be16 guard;       /* Checksum */
+> -       __be16 app_tag;         /* APPL identifer */
+> +       __be16 app_tag;         /* APPL identifier */
+>        __be32 ref_tag;         /* Target LBA or indirect LBA */
+> };
+>
+> diff --git a/drivers/scsi/qla2xxx/qla_mbx.c b/drivers/scsi/qla2xxx/qla_mbx.c
+> index c0d7080..a2f74a5 100644
+> --- a/drivers/scsi/qla2xxx/qla_mbx.c
+> +++ b/drivers/scsi/qla2xxx/qla_mbx.c
+> @@ -321,7 +321,7 @@ qla2x00_mailbox_command(scsi_qla_host_t *vha, mbx_cmd_t *mcp)
+>                                            CRB_NIU_XG_PAUSE_CTL_P1);
+>                                }
+>                                ql_log(ql_log_info, base_vha, 0x101c,
+> -                                   "Mailbox cmd timeout occured, cmd=0x%x, "
+> +                                   "Mailbox cmd timeout occurred, cmd=0x%x, "
+>                                    "mb[0]=0x%x, eeh_busy=0x%x. Scheduling ISP "
+>                                    "abort.\n", command, mcp->mb[0],
+>                                    ha->flags.eeh_busy);
+> @@ -346,7 +346,7 @@ qla2x00_mailbox_command(scsi_qla_host_t *vha, mbx_cmd_t *mcp)
+>                                            CRB_NIU_XG_PAUSE_CTL_P1);
+>                                }
+>                                ql_log(ql_log_info, base_vha, 0x101e,
+> -                                   "Mailbox cmd timeout occured, cmd=0x%x, "
+> +                                   "Mailbox cmd timeout occurred, cmd=0x%x, "
+>                                    "mb[0]=0x%x. Scheduling ISP abort ",
+>                                    command, mcp->mb[0]);
+>                                set_bit(ABORT_ISP_ACTIVE, &vha->dpc_flags);
+> diff --git a/drivers/scsi/qla2xxx/qla_mid.c b/drivers/scsi/qla2xxx/qla_mid.c
+> index cdd2fdd..394f112 100644
+> --- a/drivers/scsi/qla2xxx/qla_mid.c
+> +++ b/drivers/scsi/qla2xxx/qla_mid.c
+> @@ -650,7 +650,7 @@ qla25xx_create_req_que(struct qla_hw_data *ha, uint16_t options,
+>                        &req->dma, GFP_KERNEL);
+>        if (req->ring == NULL) {
+>                ql_log(ql_log_fatal, base_vha, 0x00da,
+> -                   "Failed to allocte memory for request_ring.\n");
+> +                   "Failed to allocate memory for request_ring.\n");
+>                goto que_failed;
+>        }
+>
+> diff --git a/drivers/scsi/qla2xxx/qla_nx.c b/drivers/scsi/qla2xxx/qla_nx.c
+> index f052853..d281b47 100644
+> --- a/drivers/scsi/qla2xxx/qla_nx.c
+> +++ b/drivers/scsi/qla2xxx/qla_nx.c
+> @@ -2446,7 +2446,7 @@ qla82xx_load_fw(scsi_qla_host_t *vha)
+>
+>        if (qla82xx_fw_load_from_flash(ha) == QLA_SUCCESS) {
+>                ql_log(ql_log_info, vha, 0x00a1,
+> -                   "Firmware loaded successully from flash.\n");
+> +                   "Firmware loaded successfully from flash.\n");
+>                return QLA_SUCCESS;
+>        } else {
+>                ql_log(ql_log_warn, vha, 0x0108,
+> @@ -4005,7 +4005,7 @@ qla82xx_minidump_process_rdmem(scsi_qla_host_t *vha,
+>
+>        if (r_addr & 0xf) {
+>                ql_log(ql_log_warn, vha, 0xb033,
+> -                   "Read addr 0x%x not 16 bytes alligned\n", r_addr);
+> +                   "Read addr 0x%x not 16 bytes aligned\n", r_addr);
+>                return rval;
+>        }
+>
+> diff --git a/drivers/scsi/qla2xxx/qla_os.c b/drivers/scsi/qla2xxx/qla_os.c
+> index c49f39e..850364f 100644
+> --- a/drivers/scsi/qla2xxx/qla_os.c
+> +++ b/drivers/scsi/qla2xxx/qla_os.c
+> @@ -1103,7 +1103,7 @@ __qla2xxx_eh_generic_reset(char *name, enum nexus_wait_type type,
+>        if (qla2x00_eh_wait_for_pending_commands(vha, cmd->device->id,
+>            cmd->device->lun, type) != QLA_SUCCESS) {
+>                ql_log(ql_log_warn, vha, 0x800d,
+> -                   "wait for peding cmds failed for cmd=%p.\n", cmd);
+> +                   "wait for pending cmds failed for cmd=%p.\n", cmd);
+>                goto eh_reset_failed;
+>        }
+>
+> @@ -1202,7 +1202,7 @@ qla2xxx_eh_bus_reset(struct scsi_cmnd *cmd)
+> eh_bus_reset_done:
+>        ql_log(ql_log_warn, vha, 0x802b,
+>            "BUS RESET %s nexus=%ld:%d:%d.\n",
+> -           (ret == FAILED) ? "FAILED" : "SUCCEDED", vha->host_no, id, lun);
+> +           (ret == FAILED) ? "FAILED" : "SUCCEEDED", vha->host_no, id, lun);
+>
+>        return ret;
+> }
+> @@ -4529,7 +4529,7 @@ qla2x00_module_init(void)
+>                return ret;
+>        } else if (ret > 0) {
+>                /*
+> -                * If initiator mode is explictly disabled by qla_tgt_init(),
+> +                * If initiator mode is explicitly disabled by qla_tgt_init(),
+>                 * prevent scsi_transport_fc.c:fc_scsi_scan_rport() from
+>                 * performing scsi_scan_target() during LOOP UP event.
+>                 */
+> diff --git a/drivers/scsi/qla2xxx/qla_target.c b/drivers/scsi/qla2xxx/qla_target.c
+> index 7368fcb..e20bc5f 100644
+> --- a/drivers/scsi/qla2xxx/qla_target.c
+> +++ b/drivers/scsi/qla2xxx/qla_target.c
+> @@ -74,7 +74,7 @@ enum fcp_resp_rsp_codes {
+> #define FCP_PTA_SIMPLE      0   /* simple task attribute */
+> #define FCP_PTA_HEADQ       1   /* head of queue task attribute */
+> #define FCP_PTA_ORDERED     2   /* ordered task attribute */
+> -#define FCP_PTA_ACA         4   /* auto. contigent allegiance */
+> +#define FCP_PTA_ACA         4   /* auto. contingent allegiance */
+> #define FCP_PTA_MASK        7   /* mask for task attribute field */
+> #define FCP_PRI_SHIFT       3   /* priority field starts in bit 3 */
+> #define FCP_PRI_RESVD_MASK  0x80        /* reserved bits in priority field */
+> @@ -3814,12 +3814,12 @@ void qla_tgt_async_event(uint16_t code, struct scsi_qla_host *vha, uint16_t *mai
+>        case MBA_RSP_TRANSFER_ERR:      /* Response Transfer Error */
+>        case MBA_WAKEUP_THRES:          /* Request Queue Wake-up. */
+>                ql_dbg(ql_dbg_tgt_mgt, vha, 0xe141, "qla_target(%d): System error async event %#x "
+> -                       "occured", vha->vp_idx, code);
+> +                       "occurred", vha->vp_idx, code);
+>                break;
+>
+>        case MBA_LOOP_UP:
+>        {
+> -               ql_dbg(ql_dbg_tgt_mgt, vha, 0xe142, "qla_target(%d): Async LOOP_UP occured "
+> +               ql_dbg(ql_dbg_tgt_mgt, vha, 0xe142, "qla_target(%d): Async LOOP_UP occurred "
+>                        "(m[1]=%x, m[2]=%x, m[3]=%x, m[4]=%x)", vha->vp_idx,
+>                        le16_to_cpu(mailbox[1]), le16_to_cpu(mailbox[2]),
+>                        le16_to_cpu(mailbox[3]), le16_to_cpu(mailbox[4]));
+> @@ -3835,7 +3835,7 @@ void qla_tgt_async_event(uint16_t code, struct scsi_qla_host *vha, uint16_t *mai
+>        case MBA_LOOP_DOWN:
+>        case MBA_LIP_RESET:
+>        case MBA_RSCN_UPDATE:
+> -               ql_dbg(ql_dbg_tgt_mgt, vha, 0xe143, "qla_target(%d): Async event %#x occured "
+> +               ql_dbg(ql_dbg_tgt_mgt, vha, 0xe143, "qla_target(%d): Async event %#x occurred "
+>                        "(m[1]=%x, m[2]=%x, m[3]=%x, m[4]=%x)", vha->vp_idx,
+>                        code, le16_to_cpu(mailbox[1]), le16_to_cpu(mailbox[2]),
+>                        le16_to_cpu(mailbox[3]), le16_to_cpu(mailbox[4]));
+> @@ -3843,7 +3843,7 @@ void qla_tgt_async_event(uint16_t code, struct scsi_qla_host *vha, uint16_t *mai
+>
+>        case MBA_PORT_UPDATE:
+>                ql_dbg(ql_dbg_tgt_mgt, vha, 0xe144, "qla_target(%d): Port update async event %#x "
+> -                       "occured: updating the ports database (m[1]=%x, m[2]=%x, "
+> +                       "occurred: updating the ports database (m[1]=%x, m[2]=%x, "
+>                        "m[3]=%x, m[4]=%x)", vha->vp_idx, code,
+>                        le16_to_cpu(mailbox[1]), le16_to_cpu(mailbox[2]),
+>                        le16_to_cpu(mailbox[3]), le16_to_cpu(mailbox[4]));
+> @@ -3855,7 +3855,7 @@ void qla_tgt_async_event(uint16_t code, struct scsi_qla_host *vha, uint16_t *mai
+>                break;
+>
+>        default:
+> -               ql_dbg(ql_dbg_tgt_mgt, vha, 0xe147, "qla_target(%d): Async event %#x occured: "
+> +               ql_dbg(ql_dbg_tgt_mgt, vha, 0xe147, "qla_target(%d): Async event %#x occurred: "
+>                        "ignore (m[1]=%x, m[2]=%x, m[3]=%x, m[4]=%x)",
+>                        vha->vp_idx, code,
+>                        le16_to_cpu(mailbox[1]), le16_to_cpu(mailbox[2]),
+> diff --git a/drivers/scsi/qla2xxx/tcm_qla2xxx.c b/drivers/scsi/qla2xxx/tcm_qla2xxx.c
+> index 6dd8102..2a30c5a 100644
+> --- a/drivers/scsi/qla2xxx/tcm_qla2xxx.c
+> +++ b/drivers/scsi/qla2xxx/tcm_qla2xxx.c
+> @@ -363,7 +363,7 @@ struct se_node_acl *tcm_qla2xxx_alloc_fabric_acl(struct se_portal_group *se_tpg)
+>
+>        nacl = kzalloc(sizeof(struct tcm_qla2xxx_nacl), GFP_KERNEL);
+>        if (!nacl) {
+> -               pr_err("Unable to alocate struct tcm_qla2xxx_nacl\n");
+> +               pr_err("Unable to allocate struct tcm_qla2xxx_nacl\n");
+>                return NULL;
+>        }
+>
+> @@ -1511,7 +1511,7 @@ static int tcm_qla2xxx_check_initiator_node_acl(
+>                return PTR_ERR(se_sess);
+>        }
+>        /*
+> -        * Format the FCP Initiator port_name into colon seperated values to match
+> +        * Format the FCP Initiator port_name into colon separated values to match
+>         * the format by tcm_qla2xxx explict ConfigFS NodeACLs.
+>         */
+>        memset(&port_name, 0, 36);
+> diff --git a/drivers/scsi/qla2xxx/tcm_qla2xxx.h b/drivers/scsi/qla2xxx/tcm_qla2xxx.h
+> index 41730ed..3e9ee43 100644
+> --- a/drivers/scsi/qla2xxx/tcm_qla2xxx.h
+> +++ b/drivers/scsi/qla2xxx/tcm_qla2xxx.h
+> @@ -3,7 +3,7 @@
+> #define TCM_QLA2XXX_VERSION    "v0.1"
+> /* length of ASCII WWPNs including pad */
+> #define TCM_QLA2XXX_NAMELEN    32
+> -/* lenth of ASCII NPIV 'WWPN+WWNN' including pad */
+> +/* length of ASCII NPIV 'WWPN+WWNN' including pad */
+> #define TCM_QLA2XXX_NPIV_NAMELEN 66
+>
+> #include "qla_target.h"
+> --
+> 1.7.10.128.g7945c
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-scsi" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>
+>
 
-Actually, as I mentioned earlier in this thread, I have no intention to care about the code design itself, I am just curious
-about the PERFORMANCE OPTIMIZATION of mutex, not others. Now I am writing some simple benchmark code which used to measure 
-the real performance of the 2 primitives with realistic workload, hopefully I can finish it in this weekend, I am not familiar
-with the user space codes :-)
+Hi Masanari,
 
->
->                                                        Thanx, Paul
->
+There's a few parts of this patch that didn't apply since we had already
+fixed them in patches that we are going to submit in the future.  We will
+take the parts that apply correctly and submit with a future patch set.
 
+Thanks,
+Chad
+
+This message and any attached documents contain information from QLogic Corporation or its wholly-owned subsidiaries that may be confidential. If you are not the intended recipient, you may not read, copy, distribute, or use this information. If you have received this transmission in error, please notify the sender immediately by reply e-mail and then delete this message.
 
