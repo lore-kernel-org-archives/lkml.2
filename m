@@ -1,35 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935027Ab2DMBAW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Apr 2012 21:00:22 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:48030 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934989Ab2DMBAT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Apr 2012 21:00:19 -0400
-MIME-Version: 1.0
-In-Reply-To: <20120411234628.GA7253@1984>
-References: <1333668273-8873-1-git-send-email-levinsasha928@gmail.com>
- <20120411232243.GB7038@1984> <20120411234628.GA7253@1984>
-From: Sasha Levin <levinsasha928@gmail.com>
-Date: Fri, 13 Apr 2012 02:54:13 +0200
-Message-ID: <CA+1xoqcxggYxb_ha4VdQtCUW-iYeVbaB38mC_pwAzdCf=rS7mQ@mail.gmail.com>
-Subject: Re: [PATCH] netfilter: ipvs: Verify that IP_VS protocol has been registered
-To: Pablo Neira Ayuso <pablo@netfilter.org>
-Cc: wensong@linux-vs.org, horms@verge.net.au, ja@ssi.bg, kaber@trash.net,
-        davem@davemloft.net, davej@redhat.com, netdev@vger.kernel.org,
-        lvs-devel@vger.kernel.org, netfilter-devel@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	id S966280Ab2DMBYM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Apr 2012 21:24:12 -0400
+Received: from mga02.intel.com ([134.134.136.20]:59443 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751789Ab2DMBYK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Apr 2012 21:24:10 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
+   d="scan'208";a="131882476"
+Subject: Re: [RESEND PATCH v2] libata: disable runtime pm for hotpluggable
+ port
+From: Lin Ming <ming.m.lin@intel.com>
+To: Jeff Garzik <jgarzik@pobox.com>
+Cc: linux-ide@vger.kernel.org, lkml <linux-kernel@vger.kernel.org>,
+        jslaby@suse.cz, cwillu@cwillu.com, jackdachef@gmail.com,
+        Sergei Shtylyov <sshtylyov@mvista.com>
+In-Reply-To: <4F871916.9080705@pobox.com>
+References: <1334210174.11188.110.camel@minggr> <4F871916.9080705@pobox.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 13 Apr 2012 09:24:07 +0800
+Message-ID: <1334280247.11188.115.camel@minggr>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 12, 2012 at 1:46 AM, Pablo Neira Ayuso <pablo@netfilter.org> wrote:
->> If you return here, I think you'll leave things in inconsistent state,
->> ie. the tcp protocol is registered. You have to unregister it before
->> leaving.
+On Thu, 2012-04-12 at 14:04 -0400, Jeff Garzik wrote:
+> On 04/12/2012 01:56 AM, Lin Ming wrote:
+> > Currently, hotplug doesn't work if port is already runtime suspended.
+> > For now, we simply disable runtime pm for hotpluggable port.
+> > Later, we should add runtime pm support for hotpluggable port too.
+> >
+> > Bug report:
+> > https://lkml.org/lkml/2012/2/19/70
+> >
+> > v2:
+> > - Use bit 2 and 3 for flags ATA_FLAG_EXTERNAL and ATA_FLAG_PLUGGABLE.
+> >
+> > TODO: add similar hotpluggable port check for controllers other than
+> > AHCI.
+> >
+> > Reported-and-tested-by: Jiri Slaby<jslaby@suse.cz>
+> > Reported-and-tested-by: cwillu@cwillu.com
+> > Reported-and-tested-by: jackdachef@gmail.com
+> > Signed-off-by: Lin Ming<ming.m.lin@intel.com>
+> > ---
+> >   drivers/ata/ahci.c             |    3 +++
+> >   drivers/ata/ahci.h             |    3 +++
+> >   drivers/ata/libahci.c          |   20 ++++++++++++++++++++
+> >   drivers/ata/libata-transport.c |    6 ++++--
+> >   include/linux/libata.h         |    2 ++
+> >   5 files changed, 32 insertions(+), 2 deletions(-)
+> 
+> The fundamental problem with this patch is that all SATA ports are 
+> hotpluggable... even the ones the firmware/silicon failed to mark as 
+> hotpluggable via AHCI's PORT_CMD_MPSP | PORT_CMD_HPCP
 
-I thought that the cleanup callback is getting called for failed init
-calls, if that's not the case then we can probably call it ourselves
-if any of these failed.
+So the acceptable solution is to add runtime pm support for hotpluggable
+port.
+
+I'll send new patches.
+
+Thanks,
+Lin Ming
+
+
