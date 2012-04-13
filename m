@@ -1,55 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752335Ab2DMO5i (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Apr 2012 10:57:38 -0400
-Received: from bar.sig21.net ([80.81.252.164]:38339 "EHLO bar.sig21.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750952Ab2DMO5g (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Apr 2012 10:57:36 -0400
-Date: Fri, 13 Apr 2012 16:57:28 +0200
-From: Johannes Stezenbach <js@sig21.net>
-To: Alan Stern <stern@rowland.harvard.edu>
-Cc: Jason Baron <jbaron@redhat.com>, linux-kernel@vger.kernel.org,
-        linux-usb@vger.kernel.org
-Subject: Re: ehci dynamic debug problem
-Message-ID: <20120413145728.GA22240@sig21.net>
-References: <20120413085607.GA18024@sig21.net>
- <Pine.LNX.4.44L0.1204131019380.1185-100000@iolanthe.rowland.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <Pine.LNX.4.44L0.1204131019380.1185-100000@iolanthe.rowland.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Spam-21-Score: -2.9 (--)
-X-Spam-21-Report: No, score=-2.9 required=8.0 tests=ALL_TRUSTED=-1,BAYES_00=-1.9 autolearn=ham
+	id S1752120Ab2DMPFS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Apr 2012 11:05:18 -0400
+Received: from shards.monkeyblade.net ([198.137.202.13]:49581 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750871Ab2DMPFQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 Apr 2012 11:05:16 -0400
+Date: Fri, 13 Apr 2012 11:05:05 -0400 (EDT)
+Message-Id: <20120413.110505.1391379079973352104.davem@davemloft.net>
+To: ebiederm@xmission.com
+Cc: eric.dumazet@gmail.com, ericvh@gmail.com, davej@redhat.com,
+        linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+        levinsasha928@gmail.com, remi.denis-courmont@nokia.com
+Subject: Re: [PATCH 1/2] net: In unregister_netdevice_notifier unregister
+ the netdevices.
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <m1aa2otjf4.fsf_-_@fess.ebiederm.org>
+References: <CA+1xoqdi4QOhRJvBA64pxiN3EphhThjPkf4eLRkYM8jxcJjh=w@mail.gmail.com>
+	<m1mx6otk85.fsf@fess.ebiederm.org>
+	<m1aa2otjf4.fsf_-_@fess.ebiederm.org>
+X-Mailer: Mew version 6.4 on Emacs 23.3 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Fri, 13 Apr 2012 08:05:09 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 13, 2012 at 10:35:59AM -0400, Alan Stern wrote:
-> On Fri, 13 Apr 2012, Johannes Stezenbach wrote:
-> > 
-> > Does dynamic debug offer an "is the message two lines below enabled" test?
-> > Simply changing the "#ifdef DEBUG" for dbg_port_buf()
-> > to "#if defined(DEBUG) || defined(CONFIG_DYNAMIC_DEBUG)"
-> > is probably not acceptable due to the overhead of dbg_port_buf()?
-> 
-> I don't understand your question.  Doesn't dbg_port_buf need to be 
-> defined whenever dynamic debugging is enabled?
-> 
-> Alternatively, the definition of dbg_port_buf (and related routines) in 
-> the !defined(DEBUG) case could be changed; you could add
-> 
-> 	buf[0] = 0;
-> 
-> That way you wouldn't get garbage out, although you wouldn't get 
-> anything useful either.
+From: ebiederm@xmission.com (Eric W. Biederman)
+Date: Fri, 06 Apr 2012 18:33:35 -0700
 
-The ideal solution I'm looking for gives useful output
-when dynamic debugging is enabled for ehci, but does no
-useless string formatting when CONFIG_DYNAMIC_DEBUG is y
-but the dynamic debug for ehci is disabled.
+>>From a51fda849355b2ffb27cdb5d66fa1a96e7f47335 Mon Sep 17 00:00:00 2001
+> From: Eric W. Biederman <ebiederm@xmission.com>
+> Date: Sun, 25 Dec 2011 19:39:52 -0800
+> Subject: 
 
+Yikes, I had to edit this turd out :-)  Otherwise with this empty
+Subject, GIT uses the first line of your commit log body as the
+first line.
 
-Thanks,
-Johannes
+> We already synthesize events in register_netdevice_notifier and synthesizing
+> events in unregister_netdevice_notifier allows to us remove the need for
+> special case cleanup code.
+> 
+> This change should be safe as it adds no new cases for existing callers
+> of unregiser_netdevice_notifier to handle.
+> 
+> Signed-off-by: Eric W. Biederman <ebiederm@xmission.com>
+
+Applied.
