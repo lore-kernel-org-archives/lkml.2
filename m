@@ -1,67 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758044Ab2DMDid (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Apr 2012 23:38:33 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:42247 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756775Ab2DMDic (ORCPT
+	id S1751236Ab2DMEL4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Apr 2012 00:11:56 -0400
+Received: from kirsty.vergenet.net ([202.4.237.240]:56360 "EHLO
+	kirsty.vergenet.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750832Ab2DMELy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Apr 2012 23:38:32 -0400
-Date: Fri, 13 Apr 2012 13:38:17 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Dave Airlie <airlied@linux.ie>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Daniel Vetter <daniel.vetter@ffwll.ch>,
-        Daniel Kurtz <djkurtz@chromium.org>
-Subject: linux-next: manual merge of the drm tree with Linus' tree
-Message-Id: <20120413133817.f8bbf0f6d95ada9f86b93800@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0beta6 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Fri__13_Apr_2012_13_38_17_+1000_.Qf9olWIl5lG9kKp"
+	Fri, 13 Apr 2012 00:11:54 -0400
+Date: Fri, 13 Apr 2012 13:11:50 +0900
+From: Simon Horman <horms@verge.net.au>
+To: Sasha Levin <levinsasha928@gmail.com>
+Cc: Pablo Neira Ayuso <pablo@netfilter.org>, wensong@linux-vs.org, ja@ssi.bg,
+        kaber@trash.net, davem@davemloft.net, davej@redhat.com,
+        netdev@vger.kernel.org, lvs-devel@vger.kernel.org,
+        netfilter-devel@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] netfilter: ipvs: Verify that IP_VS protocol has been
+ registered
+Message-ID: <20120413041150.GA26149@verge.net.au>
+References: <1333668273-8873-1-git-send-email-levinsasha928@gmail.com>
+ <20120411232243.GB7038@1984>
+ <20120411234628.GA7253@1984>
+ <CA+1xoqcxggYxb_ha4VdQtCUW-iYeVbaB38mC_pwAzdCf=rS7mQ@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CA+1xoqcxggYxb_ha4VdQtCUW-iYeVbaB38mC_pwAzdCf=rS7mQ@mail.gmail.com>
+Organisation: Horms Solutions Ltd.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Fri__13_Apr_2012_13_38_17_+1000_.Qf9olWIl5lG9kKp
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Fri, Apr 13, 2012 at 02:54:13AM +0200, Sasha Levin wrote:
+> On Thu, Apr 12, 2012 at 1:46 AM, Pablo Neira Ayuso <pablo@netfilter.org> wrote:
+> >> If you return here, I think you'll leave things in inconsistent state,
+> >> ie. the tcp protocol is registered. You have to unregister it before
+> >> leaving.
+> 
+> I thought that the cleanup callback is getting called for failed init
+> calls, if that's not the case then we can probably call it ourselves
+> if any of these failed.
 
-Hi Dave,
+Good point. In any case, I think that I have found a new problem.
 
-Today's linux-next merge of the drm tree got a conflict in
-drivers/gpu/drm/i915/intel_i2c.c between commit 6a562e3daee2 ("Revert
-"drm/i915: reenable gmbus on gen3+ again"") from Linus' tree and commits
-0fb3f969c868 ("drm/i915: enable gmbus on gen2") and 2ed06c93a1fc
-("drm/i915/intel_i2c: gmbus disabled and reserved ports are invalid")
-from the drm tree.
+With your proposed patch in place I see a panic in ftp helper registration
+in the case where protocol registration fails. I have not had any
+luck resolving this so far. Perhaps ipvs->net needs to be reset to NULL
+if initialisation fails and that can be checked when modules register
+themselves?
 
-I just used the drm tree version.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+IPVS: Registered protocols (TCP, UDP, SCTP, AH, ESP)
+IPVS: Connection hash table configured (size=4096, memory=64Kbytes)
+IPVS: Each connection entry needs 264 bytes at least
+input: AT Translated Set 2 keyboard as /devices/platform/i8042/serio0/input/input1
+IPVS: [rr] scheduler registered.
+IPVS: [wrr] scheduler registered.
+IPVS: [lc] scheduler registered.
+IPVS: [wlc] scheduler registered.
+IPVS: [lblc] scheduler registered.
+IPVS: [lblcr] scheduler registered.
+IPVS: [dh] scheduler registered.
+IPVS: [sh] scheduler registered.
+IPVS: [sed] scheduler registered.
+IPVS: [nq] scheduler registered.
+general protection fault: 0000 [#1] SMP
+CPU 0
+Modules linked in:
 
---Signature=_Fri__13_Apr_2012_13_38_17_+1000_.Qf9olWIl5lG9kKp
-Content-Type: application/pgp-signature
+Pid: 1, comm: swapper/0 Not tainted 3.3.0-03812-gf51f739 #219 Bochs Bochs
+RIP: 0010:[<ffffffff811e21ba>]  [<ffffffff811e21ba>] register_ip_vs_app+0x3a/0x70
+RSP: 0018:ffff880002039df0  EFLAGS: 00010246
+RAX: 002a002900280027 RBX: ffff8800020ce680 RCX: 0000000000000000
+RDX: 0000000000000000 RSI: ffff8800020ce680 RDI: ffffffff8162ab80
+RBP: ffff880002039e00 R08: 0000000000000000 R09: 0000000000000000
+R10: 0000000000000000 R11: 0000000000000001 R12: ffff880003916800
+R13: 00000000fffffff4 R14: ffffffff816e5f00 R15: ffff880003916800
+FS:  0000000000000000(0000) GS:ffff880002600000(0000) knlGS:0000000000000000
+CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+CR2: 00000000004697e0 CR3: 0000000001605000 CR4: 00000000000006b0
+DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+Process swapper/0 (pid: 1, threadinfo ffff880002038000, task ffff8800020375a0)
+Stack:
+ ffff8800020ce680 0000000000000000 ffff880002039e50 ffffffff81675610
+ ffffffff81614060 00ffffff00000006 ffffffff8149dc9d ffffffff8162b8a0
+ 0000000000000000 ffffffff81675699 0000000000000000 0000000000000000
+Call Trace:
+ [<ffffffff81675610>] __ip_vs_ftp_init+0x6b/0xf4
+ [<ffffffff81675699>] ? __ip_vs_ftp_init+0xf4/0xf4
+ [<ffffffff811a6011>] ops_init.constprop.11+0x91/0x110
+ [<ffffffff81675699>] ? __ip_vs_ftp_init+0xf4/0xf4
+ [<ffffffff811a60fc>] register_pernet_operations.isra.8+0x6c/0xc0
+ [<ffffffff811a61e0>] register_pernet_subsys+0x20/0x40
+ [<ffffffff81675593>] ? ip_vs_sed_init+0x12/0x12
+ [<ffffffff816756a9>] ip_vs_ftp_init+0x10/0x12
+ [<ffffffff810001ca>] do_one_initcall+0x3a/0x160
+ [<ffffffff81654bae>] kernel_init+0x9b/0x115
+ [<ffffffff81298bf4>] kernel_thread_helper+0x4/0x10
+ [<ffffffff81654b13>] ? start_kernel+0x31d/0x31d
+ [<ffffffff81298bf0>] ? gs_change+0xb/0xb
+Code: f8 48 89 f3 4c 8b a7 40 09 00 00 e8 e1 a6 ff ff 48 c7 c7 80 ab 62 81 e8 25 30 0b 00 49 8b 84 24 08 01 00 00 48 c7 c7 80 ab 62 81 <48> 89 58 08 48 89 03 49 8d 84 24 08 01 00 00 48 89 43 08 49 89
+RIP  [<ffffffff811e21ba>] register_ip_vs_app+0x3a/0x70
+ RSP <ffff880002039df0>
+---[ end trace 3e5d9bede957f8b4 ]---
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJPh5+pAAoJEECxmPOUX5FEs2UQAIfOng81sp1HGdbxMYFcu+Ff
-x3MHCwZtx411zoIHcdcTaPWMyWPqX3L+vIuwy15/vVtsMiDZMGRWeBmn73aFyKsw
-ib3OnV8Q528vSal5mydSx+nLWLshgdAtUPeww1IGVOdpATkxSwfFEepw/CYB/gss
-rWnMmm4Spn4XtASFx7WC7gsUs4bmVxjXDWCMHtlq0enwqcglkGLpqmFHzZZNdSpN
-acbteBSwof69NOJwy0/5L+VMdtn1YplH4crmH7xEHwTVRUGk3diDbKMPgk/AeNdn
-6BQT+9W2sbERYXc5liHjdz2Kp9fzIbjUwEyO3sNK6GVERDDPpRhgZXT6SObpH2Dd
-9Shi/qm4ItT1l/5NDfAIEg14lyn4KnDvhGNlgDxBLFrkdLYLgFHyuuF6iuHr/mbx
-K5jNoBQlEjfGswjN0ZjyYgEpe5FCGkwzQ10k6KlwiqC0Eqb8GX84MEfCM7kxAVcS
-ZBkxnp7COLlADf1ae0oka1fK1mOecoqUlGqXPVwxSCI+vt1i9pLuwkxGtqCefiHk
-SaC9X5O40WmcSwr2+VI+zJMnuruJ746RsnxDzdbampdqAnPPDTwbIsUSYR31ZtFG
-1MLviR4ygVVugnRun9cAfDyld9M2o6n+BhCXg68Sv2KM5ZVIhrBBChQQNIqBiPul
-3cbZlUJ4RiDPM06tfyHP
-=Q3U8
------END PGP SIGNATURE-----
-
---Signature=_Fri__13_Apr_2012_13_38_17_+1000_.Qf9olWIl5lG9kKp--
