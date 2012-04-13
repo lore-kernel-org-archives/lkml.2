@@ -1,70 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966280Ab2DMBYM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Apr 2012 21:24:12 -0400
-Received: from mga02.intel.com ([134.134.136.20]:59443 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751789Ab2DMBYK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Apr 2012 21:24:10 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
-   d="scan'208";a="131882476"
-Subject: Re: [RESEND PATCH v2] libata: disable runtime pm for hotpluggable
- port
-From: Lin Ming <ming.m.lin@intel.com>
-To: Jeff Garzik <jgarzik@pobox.com>
-Cc: linux-ide@vger.kernel.org, lkml <linux-kernel@vger.kernel.org>,
-        jslaby@suse.cz, cwillu@cwillu.com, jackdachef@gmail.com,
-        Sergei Shtylyov <sshtylyov@mvista.com>
-In-Reply-To: <4F871916.9080705@pobox.com>
-References: <1334210174.11188.110.camel@minggr> <4F871916.9080705@pobox.com>
+	id S935008Ab2DMBaS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Apr 2012 21:30:18 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:62967 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754028Ab2DMBaQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Apr 2012 21:30:16 -0400
+Message-ID: <1334280605.6755.1.camel@phoenix>
+Subject: [PATCH] regulator: s5m8767: Use DIV_ROUND_UP to calculate selector
+From: Axel Lin <axel.lin@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Sangbeom Kim <sbkim73@samsung.com>, Liam Girdwood <lrg@ti.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Date: Fri, 13 Apr 2012 09:30:05 +0800
 Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 13 Apr 2012 09:24:07 +0800
-Message-ID: <1334280247.11188.115.camel@minggr>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+X-Mailer: Evolution 3.2.2- 
 Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-04-12 at 14:04 -0400, Jeff Garzik wrote:
-> On 04/12/2012 01:56 AM, Lin Ming wrote:
-> > Currently, hotplug doesn't work if port is already runtime suspended.
-> > For now, we simply disable runtime pm for hotpluggable port.
-> > Later, we should add runtime pm support for hotpluggable port too.
-> >
-> > Bug report:
-> > https://lkml.org/lkml/2012/2/19/70
-> >
-> > v2:
-> > - Use bit 2 and 3 for flags ATA_FLAG_EXTERNAL and ATA_FLAG_PLUGGABLE.
-> >
-> > TODO: add similar hotpluggable port check for controllers other than
-> > AHCI.
-> >
-> > Reported-and-tested-by: Jiri Slaby<jslaby@suse.cz>
-> > Reported-and-tested-by: cwillu@cwillu.com
-> > Reported-and-tested-by: jackdachef@gmail.com
-> > Signed-off-by: Lin Ming<ming.m.lin@intel.com>
-> > ---
-> >   drivers/ata/ahci.c             |    3 +++
-> >   drivers/ata/ahci.h             |    3 +++
-> >   drivers/ata/libahci.c          |   20 ++++++++++++++++++++
-> >   drivers/ata/libata-transport.c |    6 ++++--
-> >   include/linux/libata.h         |    2 ++
-> >   5 files changed, 32 insertions(+), 2 deletions(-)
-> 
-> The fundamental problem with this patch is that all SATA ports are 
-> hotpluggable... even the ones the firmware/silicon failed to mark as 
-> hotpluggable via AHCI's PORT_CMD_MPSP | PORT_CMD_HPCP
+Integer division may truncate the result.
+Use DIV_ROUND_UP to ensure new voltage setting falls within specified range.
 
-So the acceptable solution is to add runtime pm support for hotpluggable
-port.
+Also properly handle the case min_vol < desc->min to ensure we don't return
+negative value for selector.
 
-I'll send new patches.
+Signed-off-by: Axel Lin <axel.lin@gmail.com>
+---
+ drivers/regulator/s5m8767.c |    5 ++++-
+ 1 files changed, 4 insertions(+), 1 deletions(-)
 
-Thanks,
-Lin Ming
+diff --git a/drivers/regulator/s5m8767.c b/drivers/regulator/s5m8767.c
+index cb53187..ebe72d0 100644
+--- a/drivers/regulator/s5m8767.c
++++ b/drivers/regulator/s5m8767.c
+@@ -347,7 +347,10 @@ static int s5m8767_convert_voltage_to_sel(
+ 	if (max_vol < desc->min || min_vol > desc->max)
+ 		return -EINVAL;
+ 
+-	selector = (min_vol - desc->min) / desc->step;
++	if (min_vol < desc->min)
++		min_vol = desc->min;
++
++	selector = DIV_ROUND_UP(min_vol - desc->min, desc->step);
+ 
+ 	if (desc->min + desc->step * selector > max_vol)
+ 		return -EINVAL;
+-- 
+1.7.5.4
+
 
 
