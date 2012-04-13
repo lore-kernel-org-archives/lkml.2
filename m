@@ -1,57 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756041Ab2DMSuQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Apr 2012 14:50:16 -0400
-Received: from mail.tomasu.net ([64.85.170.232]:45499 "EHLO mail.tomasu.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755976Ab2DMSuO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Apr 2012 14:50:14 -0400
-From: Thomas Fjellstrom <thomas@fjellstrom.ca>
-Reply-To: thomas@fjellstrom.ca
-To: adam radford <aradford@gmail.com>
-Subject: Re: stuck in megaraid_sas.c megasas_adp_reset_gen2
-Date: Fri, 13 Apr 2012 12:50:05 -0600
-User-Agent: KMail/1.13.7 (Linux/3.2.0-1-amd64; KDE/4.7.4; x86_64; ; )
-Cc: lkml <linux-kernel@vger.kernel.org>, linux-scsi@vger.kernel.org
-References: <201203211716.45418.thomas@fjellstrom.ca> <CAHtARFHayv68BASrfCLYHQ0zZ1R8fvzfB-_fkBeG8H4g3OBZvg@mail.gmail.com> <201204121216.24519.thomas@fjellstrom.ca>
-In-Reply-To: <201204121216.24519.thomas@fjellstrom.ca>
+	id S1756181Ab2DMSy6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Apr 2012 14:54:58 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:44086 "EHLO
+	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755979Ab2DMSy5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 Apr 2012 14:54:57 -0400
+X-Sasl-enc: h05weHmMeYBOiyvmSH53bAASgJ6z96DHBdimupR5mNnx 1334343296
+Date: Fri, 13 Apr 2012 15:54:52 -0300
+From: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
+To: Nikola Ciprich <nikola.ciprich@linuxbox.cz>
+Cc: stable@kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: suspected regression in 3.0.28 - applications having problems
+ binding to ports
+Message-ID: <20120413185452.GA7172@khazad-dum.debian.net>
+References: <20120413181856.GA2286@nik-comp.lan>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201204131250.05970.thomas@fjellstrom.ca>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120413181856.GA2286@nik-comp.lan>
+X-GPG-Fingerprint: 1024D/1CDB0FE3 5422 5C61 F6B7 06FB 7E04  3738 EE25 DE3F
+ 1CDB 0FE3
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu Apr 12, 2012, Thomas Fjellstrom wrote:
-> On Thu Apr 12, 2012, adam radford wrote:
-> > On Wed, Apr 11, 2012 at 2:44 PM, Thomas Fjellstrom <thomas@fjellstrom.ca>
+On Fri, 13 Apr 2012, Nikola Ciprich wrote:
+> I'd like to report following suspicious behaviour of 3.0.27 kernel.
 > 
-> wrote:
-> > > megasas: [55] waiting for 1 commands to complete
-> > > ....
-> > > megasas: [175] waiting for 1 commands to complete
-> > 
-> > You still aren't getting interrupts from the card.  Can you re-try
-> > with megaraid_sas module parameter msix_disable ?
-> > If that doesn't work, contact LSI support and tell them which
-> > motherboard, any PCIe bridges, risers, etc you have.
+> On one of our production boxes, after upgrading from 3.0.26 to 3.0.27,
+> applications started to behave weird after ~1 day uptime.
+> Squid started reporting problems binding to port, nagios misbehaved, etc.
+> I was forced to revert to 3.0.26. We tried to reproduce the problem but were unsuccessful.
+> After ~1 week without problems with 3.0.26, I tried upgrading this production box to 3.0.27
+> again to see what happens and the problem appeared again after about one day.
 > 
-> No luck darn it. with either card.
+> imap started reporting problems:
+> EMAIL DELIVERY CRITICAL - imap failed: IMAP RECEIVE CRITICAL - Could not connect to A.B.C.D port 993: IO::Socket::INET6 configuration
+> 
+> same for squid:
+> commBind: Cannot bind socket FD 21 to 0.0.0.0: (98) Address already in use
+> 
+> nagios processes went totally nuts.
+> 
+> There was no other change except for the kernel upgrade.
+> The box is x86_64 quad CPU 4GB machine, what might be important, we're using
+> IPv6 as well.
+> I don't see any suspicious (at least to me) patch between 3.0.26 and 3.0.27.
+> Since it seems to take quite a long to reproduce, I haven't tried bisect yet, first
+> wanted to ask - hasn't anyone experienced similar problems?
 
-I've been talking to LSI support for the past few days. So far they are 
-unwilling to support my current use case, or fix their INT19 firmware bug (which 
-they have acknowledged).
-
-I just hope there aren't any more serious bugs like this in their firmware. 
-It's looking pretty scary. If they let this bug live for years, imagine what 
-other bugs might lurk. I may have to avoid LSI completely in the future, even 
-on real server systems.
-
-> > -Adam
-
+Did you test 3.0.28?  Your subject line mentions 3.0.28, which was released
+a few hours ago, but the body of the email only mentions a regression in
+3.0.27 when compared to 3.0.26...
 
 -- 
-Thomas Fjellstrom
-thomas@fjellstrom.ca
+  "One disk to rule them all, One disk to find them. One disk to bring
+  them all and in the darkness grind them. In the Land of Redmond
+  where the shadows lie." -- The Silicon Valley Tarot
+  Henrique Holschuh
