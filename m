@@ -1,70 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755834Ab2DMSYH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Apr 2012 14:24:07 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:51808 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753064Ab2DMSYF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Apr 2012 14:24:05 -0400
-Date: Fri, 13 Apr 2012 11:23:53 -0700
-From: tip-bot for Robert Richter <robert.richter@amd.com>
-Message-ID: <tip-5a7ed29c7572d00a75e8c4529e30c5ac2ef82271@git.kernel.org>
-Cc: acme@redhat.com, linux-kernel@vger.kernel.org, hpa@zytor.com,
-        mingo@kernel.org, robert.richter@amd.com, tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        acme@redhat.com, robert.richter@amd.com, tglx@linutronix.de
-In-Reply-To: <1333643188-26895-5-git-send-email-robert.richter@amd.com>
-References: <1333643188-26895-5-git-send-email-robert.richter@amd.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf record:
-  Use sw counter only if hw pmu is not detected
-Git-Commit-ID: 5a7ed29c7572d00a75e8c4529e30c5ac2ef82271
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	id S1755842Ab2DMSZB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Apr 2012 14:25:01 -0400
+Received: from gwu.lbox.cz ([62.245.111.132]:36917 "EHLO gwu.lbox.cz"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752345Ab2DMSY7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 Apr 2012 14:24:59 -0400
+Date: Fri, 13 Apr 2012 20:18:56 +0200
+From: Nikola Ciprich <nikola.ciprich@linuxbox.cz>
+To: stable@kernel.org, linux-kernel@vger.kernel.org
+Cc: nikola.ciprich@linuxbox.cz
+Subject: suspected regression in 3.0.28 - applications having problems
+ binding to ports
+Message-ID: <20120413181856.GA2286@nik-comp.lan>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="0OAP2g/MAC+5xKAE"
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Fri, 13 Apr 2012 11:23:58 -0700 (PDT)
+"X-PGP-Key: http://nik.lbox.cz/downloads/nikola.ciprich.asc"
+User-Agent: Mutt/1.5.21 (2011-07-01)
+X-Antivirus: on lbxovapx by Kaspersky antivirus, 7416020 records (last update: 20120413)
+X-Spam-Score: N/A (trusted relay)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  5a7ed29c7572d00a75e8c4529e30c5ac2ef82271
-Gitweb:     http://git.kernel.org/tip/5a7ed29c7572d00a75e8c4529e30c5ac2ef82271
-Author:     Robert Richter <robert.richter@amd.com>
-AuthorDate: Thu, 5 Apr 2012 18:26:28 +0200
-Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Wed, 11 Apr 2012 17:39:19 -0300
 
-perf record: Use sw counter only if hw pmu is not detected
+--0OAP2g/MAC+5xKAE
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Use cpu-clock-tick sw counter for cpu-cycles only if there is no hw
-pmu available. This is the case if the syscall reports ENOENT. In
-other cases (e.g. invalid attributes) we don't want the sw counter to
-be used.
+Hi,
 
-Cc: Ingo Molnar <mingo@kernel.org>
-Link: http://lkml.kernel.org/r/1333643188-26895-5-git-send-email-robert.richter@amd.com
-Signed-off-by: Robert Richter <robert.richter@amd.com>
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
----
- tools/perf/builtin-record.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+I'd like to report following suspicious behaviour of 3.0.27 kernel.
 
-diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
-index be4e1ee..10b1f1f 100644
---- a/tools/perf/builtin-record.c
-+++ b/tools/perf/builtin-record.c
-@@ -245,7 +245,7 @@ try_again:
- 			 * based cpu-clock-tick sw counter, which
- 			 * is always available even if no PMU support:
- 			 */
--			if (attr->type == PERF_TYPE_HARDWARE
-+			if (err == ENOENT && attr->type == PERF_TYPE_HARDWARE
- 					&& attr->config == PERF_COUNT_HW_CPU_CYCLES) {
- 
- 				if (verbose)
+On one of our production boxes, after upgrading from 3.0.26 to 3.0.27,
+applications started to behave weird after ~1 day uptime.
+Squid started reporting problems binding to port, nagios misbehaved, etc.
+I was forced to revert to 3.0.26. We tried to reproduce the problem but wer=
+e unsuccessful.
+After ~1 week without problems with 3.0.26, I tried upgrading this producti=
+on box to 3.0.27
+again to see what happens and the problem appeared again after about one da=
+y.
+
+imap started reporting problems:
+EMAIL DELIVERY CRITICAL - imap failed: IMAP RECEIVE CRITICAL - Could not co=
+nnect to A.B.C.D port 993: IO::Socket::INET6 configuration
+
+same for squid:
+commBind: Cannot bind socket FD 21 to 0.0.0.0: (98) Address already in use
+
+nagios processes went totally nuts.
+
+There was no other change except for the kernel upgrade.
+The box is x86_64 quad CPU 4GB machine, what might be important, we're using
+IPv6 as well.
+I don't see any suspicious (at least to me) patch between 3.0.26 and 3.0.27.
+Since it seems to take quite a long to reproduce, I haven't tried bisect ye=
+t, first
+wanted to ask - hasn't anyone experienced similar problems?
+
+thanks a lot in advance!
+
+with best regards
+
+nik
+
+
+--=20
+-------------------------------------
+Ing. Nikola CIPRICH
+LinuxBox.cz, s.r.o.
+28. rijna 168, 709 01 Ostrava
+
+tel.:   +420 596 603 142
+fax:    +420 596 621 273
+mobil:  +420 777 093 799
+
+www.linuxbox.cz
+
+mobil servis: +420 737 238 656
+email servis: servis@linuxbox.cz
+-------------------------------------
+
+--0OAP2g/MAC+5xKAE
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iEYEARECAAYFAk+IbhAACgkQ3xdJJrLygV4KYQCgv2Z0pNFTP0+DLz0MCoQ6DEmJ
+gBUAn2NIvdHQjvkHrK98L1yHOYwjlvwD
+=/guM
+-----END PGP SIGNATURE-----
+
+--0OAP2g/MAC+5xKAE--
