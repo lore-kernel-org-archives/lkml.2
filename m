@@ -1,236 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758094Ab2DMJEi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Apr 2012 05:04:38 -0400
-Received: from eu1sys200aog110.obsmtp.com ([207.126.144.129]:47424 "EHLO
-	eu1sys200aog110.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757864Ab2DMJEg (ORCPT
+	id S1758112Ab2DMJIu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Apr 2012 05:08:50 -0400
+Received: from na3sys009aog101.obsmtp.com ([74.125.149.67]:54297 "EHLO
+	na3sys009aog101.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757864Ab2DMJIs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Apr 2012 05:04:36 -0400
-Message-ID: <4F87EBFC.90000@stericsson.com>
-Date: Fri, 13 Apr 2012 11:03:56 +0200
-From: Ulf Hansson <ulf.hansson@stericsson.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.24) Gecko/20111108 Lightning/1.0b2 Thunderbird/3.1.16
-MIME-Version: 1.0
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: Russell King <linux@arm.linux.org.uk>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        "spi-devel-general@lists.sourceforge.net" 
-	<spi-devel-general@lists.sourceforge.net>,
+	Fri, 13 Apr 2012 05:08:48 -0400
+Date: Fri, 13 Apr 2012 12:07:52 +0300
+From: Felipe Balbi <balbi@ti.com>
+To: "Cousson, Benoit" <b-cousson@ti.com>
+Cc: Paul Walmsley <paul@pwsan.com>, "Balbi, Felipe" <balbi@ti.com>,
+        "Mohammed, Afzal" <afzal@ti.com>, Greg KH <greg@kroah.com>,
+        "Shilimkar, Santosh" <santosh.shilimkar@ti.com>,
+        "V, Aneesh" <aneesh@ti.com>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
         "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH/RFC v2] ARM: amba: Remove AMBA level regulator support
-References: <1333306720-28344-1-git-send-email-broonie@opensource.wolfsonmicro.com>
-In-Reply-To: <1333306720-28344-1-git-send-email-broonie@opensource.wolfsonmicro.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        "mgreer@animalcreek.com" <mgreer@animalcreek.com>,
+        "msalter@redhat.com" <msalter@redhat.com>
+Subject: Re: [PATCH v4 0/7] Add TI EMIF SDRAM controller driver
+Message-ID: <20120413090750.GM4343@arwen.pp.htv.fi>
+Reply-To: balbi@ti.com
+References: <1331934707-29487-1-git-send-email-aneesh@ti.com>
+ <alpine.DEB.2.00.1204112042070.29473@utopia.booyaka.com>
+ <20120412030044.GA26236@kroah.com>
+ <4F867A95.9030104@ti.com>
+ <20120412131045.GB31384@kroah.com>
+ <C8443D0743D26F4388EA172BF4E2A7A93E95947E@DQHE04.ent.ti.com>
+ <alpine.DEB.2.00.1204121053570.29473@utopia.booyaka.com>
+ <4F87240F.6060902@ti.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="x38akuY2VS0PywU3"
+Content-Disposition: inline
+In-Reply-To: <4F87240F.6060902@ti.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Mark,
 
-I realize what the intention is with this patch; but I am not sure we 
-have thought about all consequence it might have.
+--x38akuY2VS0PywU3
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-OK, so the power domain which implement runtime PM support, shall be 
-responsible for handling the vcore regualtor instead of the amba bus. 
-That should be fine.
+On Thu, Apr 12, 2012 at 08:50:55PM +0200, Cousson, Benoit wrote:
+> + Felipe,
+>=20
+> Hi Paul,
+>=20
+> On 4/12/2012 7:00 PM, Paul Walmsley wrote:
+> >Hi
+> >
+> >On Thu, 12 Apr 2012, Mohammed, Afzal wrote:
+> >
+> >>On Thu, Apr 12, 2012 at 18:40:45, Greg KH wrote:
+> >>>On Thu, Apr 12, 2012 at 12:17:49PM +0530, Santosh Shilimkar wrote:
+> >>>>I was hoping that we will have some thing like drivers/memory/*
+> >>>>but since it doesn't exist, we used drivers/misc.
+> >>>
+> >>>Why not create it?  I have no objection to that, it makes it more
+> >>>obvious as to what this really is.
+> >>
+> >>There is another memory controller used in a few TI SoCs,
+> >>namely GPMC [1], do you prefer having it too there.
+> >>
+> >>As of now it is not a driver, platform code handles GPMC, a patch
+> >>series for converting it into a driver (but still residing in
+> >>platform folder) was sent a few days back [2,3].
+> >
+> >Probably the GPMC driver should go into a slightly different place than
+> >SDRC/EMIF.
+> >
+> >GPMC is actually a general-purpose parallel bus driver.  It's used to
+> >interface Ethernet controllers, UARTs, FPGAs, NAND/NOR flash, SRAM, etc.
+> >It cannot be used to control DRAM, at least not without a separate DRAM
+> >controller chip.
+> >
+> >SDRC/EMIF are both DRAM controllers.  That's all they do.  They can't be
+> >used to control anything else.  They implement DRAM refresh, etc.
+>=20
+> The LPDDR2 spec does consider as well NVM (Non Volatile Memory), so I
+> think we should stick to driver/memory for EMIF.
+>=20
+> >So perhaps something like drivers/memory/dram/ for the SDRAM controllers,
+> >and maybe drivers/memory/ for the GPMC?
+>=20
+> In fact Felipe was considering something else for that kind of
+> general purpose bus driver like GMPC, C2C and LLI...
+>=20
+> ... But I do not remember the name :-)
 
-But, how should those amba drivers that implements runtime PM support be 
-able to switch of the vcore regulator during normal suspend? In normal 
-suspend case we can not use pm_runtime_put/pm_runtime_put_sync to 
-trigger the power domain runtime functions to switch of vcore. This is 
-kind of more generic problem when dealing with power domains, but as 
-said this patch will have consequences.
+the name matters very little :-) But the idea was to avoid writing yet
+another bus driver and just use the platform_bus instead. We would do
+all the channel/port setup before hand and far-end device driver
+wouldn't have to know if it's integrated into the SoC or plugged though
+LLI/C2C/GPMC.
 
-As far as I can see, the power domain must then implement a 
-suspend_noirq function to make sure same things is done as for the 
-runtime_suspend function. Do you agree with this as well or is there 
-another option?
+=46rom the driver's perspective it would look the same.
 
-Kind regards
-Ulf Hansson
+--=20
+balbi
 
-On 04/01/2012 08:58 PM, Mark Brown wrote:
-> The AMBA bus regulator support is being used to model on/off switches
-> for power domains which isn't terribly idiomatic for modern kernels with
-> the generic power domain code and creates integration problems on platforms
-> which don't use regulators for their power domains as it's hard to tell
-> the difference between a regulator that is needed but failed to be provided
-> and one that isn't supposed to be there (though DT does make that easier).
->
-> Platforms that wish to use the regulator API to manage their power domains
-> can indirect via the power domain interface.
->
-> This feature is only used with the vape supply of the db8500 PRCMU
-> driver which supplies the UARTs and MMC controllers, none of which have
-> support for managing vcore at runtime in mainline (only pl022 SPI
-> controller does).  Update that supply to have an always_on constraint
-> until the power domain support for the system is updated so that it is
-> enabled for these users, this is likely to have no impact on practical
-> systems as probably at least one of these devices will be active and
-> cause AMBA to hold the supply on anyway.
->
-> Signed-off-by: Mark Brown<broonie@opensource.wolfsonmicro.com>
-> ---
->
-> Updated to add the always_on constraint for db8500-prcmu as discussed in
-> the changelog.
->
->   drivers/amba/bus.c         |   42 +-----------------------------------------
->   drivers/mfd/db8500-prcmu.c |    1 +
->   drivers/spi/spi-pl022.c    |    2 --
->   include/linux/amba/bus.h   |    8 --------
->   4 files changed, 2 insertions(+), 51 deletions(-)
->
-> diff --git a/drivers/amba/bus.c b/drivers/amba/bus.c
-> index 01c2cf4..cc27322 100644
-> --- a/drivers/amba/bus.c
-> +++ b/drivers/amba/bus.c
-> @@ -247,8 +247,7 @@ static int amba_pm_restore(struct device *dev)
->   /*
->    * Hooks to provide runtime PM of the pclk (bus clock).  It is safe to
->    * enable/disable the bus clock at runtime PM suspend/resume as this
-> - * does not result in loss of context.  However, disabling vcore power
-> - * would do, so we leave that to the driver.
-> + * does not result in loss of context.
->    */
->   static int amba_pm_runtime_suspend(struct device *dev)
->   {
-> @@ -354,39 +353,6 @@ static void amba_put_disable_pclk(struct amba_device *pcdev)
->   	clk_put(pclk);
->   }
->
-> -static int amba_get_enable_vcore(struct amba_device *pcdev)
-> -{
-> -	struct regulator *vcore = regulator_get(&pcdev->dev, "vcore");
-> -	int ret;
-> -
-> -	pcdev->vcore = vcore;
-> -
-> -	if (IS_ERR(vcore)) {
-> -		/* It is OK not to supply a vcore regulator */
-> -		if (PTR_ERR(vcore) == -ENODEV)
-> -			return 0;
-> -		return PTR_ERR(vcore);
-> -	}
-> -
-> -	ret = regulator_enable(vcore);
-> -	if (ret) {
-> -		regulator_put(vcore);
-> -		pcdev->vcore = ERR_PTR(-ENODEV);
-> -	}
-> -
-> -	return ret;
-> -}
-> -
-> -static void amba_put_disable_vcore(struct amba_device *pcdev)
-> -{
-> -	struct regulator *vcore = pcdev->vcore;
-> -
-> -	if (!IS_ERR(vcore)) {
-> -		regulator_disable(vcore);
-> -		regulator_put(vcore);
-> -	}
-> -}
-> -
->   /*
->    * These are the device model conversion veneers; they convert the
->    * device model structures to our more specific structures.
-> @@ -399,10 +365,6 @@ static int amba_probe(struct device *dev)
->   	int ret;
->
->   	do {
-> -		ret = amba_get_enable_vcore(pcdev);
-> -		if (ret)
-> -			break;
-> -
->   		ret = amba_get_enable_pclk(pcdev);
->   		if (ret)
->   			break;
-> @@ -420,7 +382,6 @@ static int amba_probe(struct device *dev)
->   		pm_runtime_put_noidle(dev);
->
->   		amba_put_disable_pclk(pcdev);
-> -		amba_put_disable_vcore(pcdev);
->   	} while (0);
->
->   	return ret;
-> @@ -442,7 +403,6 @@ static int amba_remove(struct device *dev)
->   	pm_runtime_put_noidle(dev);
->
->   	amba_put_disable_pclk(pcdev);
-> -	amba_put_disable_vcore(pcdev);
->
->   	return ret;
->   }
-> diff --git a/drivers/mfd/db8500-prcmu.c b/drivers/mfd/db8500-prcmu.c
-> index ebc1e86..5be3248 100644
-> --- a/drivers/mfd/db8500-prcmu.c
-> +++ b/drivers/mfd/db8500-prcmu.c
-> @@ -2788,6 +2788,7 @@ static struct regulator_init_data db8500_regulators[DB8500_NUM_REGULATORS] = {
->   		.constraints = {
->   			.name = "db8500-vape",
->   			.valid_ops_mask = REGULATOR_CHANGE_STATUS,
-> +			.always_on = true,
->   		},
->   		.consumer_supplies = db8500_vape_consumers,
->   		.num_consumer_supplies = ARRAY_SIZE(db8500_vape_consumers),
-> diff --git a/drivers/spi/spi-pl022.c b/drivers/spi/spi-pl022.c
-> index 96f0da6..09c925a 100644
-> --- a/drivers/spi/spi-pl022.c
-> +++ b/drivers/spi/spi-pl022.c
-> @@ -2195,7 +2195,6 @@ static int pl022_runtime_suspend(struct device *dev)
->   	struct pl022 *pl022 = dev_get_drvdata(dev);
->
->   	clk_disable(pl022->clk);
-> -	amba_vcore_disable(pl022->adev);
->
->   	return 0;
->   }
-> @@ -2204,7 +2203,6 @@ static int pl022_runtime_resume(struct device *dev)
->   {
->   	struct pl022 *pl022 = dev_get_drvdata(dev);
->
-> -	amba_vcore_enable(pl022->adev);
->   	clk_enable(pl022->clk);
->
->   	return 0;
-> diff --git a/include/linux/amba/bus.h b/include/linux/amba/bus.h
-> index 7847e19..63a59ac 100644
-> --- a/include/linux/amba/bus.h
-> +++ b/include/linux/amba/bus.h
-> @@ -19,7 +19,6 @@
->   #include<linux/mod_devicetable.h>
->   #include<linux/err.h>
->   #include<linux/resource.h>
-> -#include<linux/regulator/consumer.h>
->
->   #define AMBA_NR_IRQS	2
->   #define AMBA_CID	0xb105f00d
-> @@ -30,7 +29,6 @@ struct amba_device {
->   	struct device		dev;
->   	struct resource		res;
->   	struct clk		*pclk;
-> -	struct regulator	*vcore;
->   	u64			dma_mask;
->   	unsigned int		periphid;
->   	unsigned int		irq[AMBA_NR_IRQS];
-> @@ -75,12 +73,6 @@ void amba_release_regions(struct amba_device *);
->   #define amba_pclk_disable(d)	\
->   	do { if (!IS_ERR((d)->pclk)) clk_disable((d)->pclk); } while (0)
->
-> -#define amba_vcore_enable(d)	\
-> -	(IS_ERR((d)->vcore) ? 0 : regulator_enable((d)->vcore))
-> -
-> -#define amba_vcore_disable(d)	\
-> -	do { if (!IS_ERR((d)->vcore)) regulator_disable((d)->vcore); } while (0)
-> -
->   /* Some drivers don't use the struct amba_device */
->   #define AMBA_CONFIG_BITS(a) (((a)>>  24)&  0xff)
->   #define AMBA_REV_BITS(a) (((a)>>  20)&  0x0f)
+--x38akuY2VS0PywU3
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJPh+zmAAoJEIaOsuA1yqREOy8P/2j0xBGDA5Maaws8NVYT0cOR
+vmyW249XqyNhYzOxi/l9wUAHtM5vxSwBG5J856DjWmiZHPHCdhD24fSM7rL7kpA7
+CG//baD2JJvDpfL/O7GGjlx9GxmohsmoDmyOGTkhhWrfkTHJ5vYJjpsUsTp1cdLP
+M1zzfBkJPbquY2itdF6ezKVJL1jxHDfjQwMghRHo5d86wyjvEnEicvwfojZU4QcS
+n5MCND/6Xu6jFF4atxsZSvkv8xadGm+ih3ToCs1WRBI7xn8lGQ0pm0QTO3bQRfKU
+ZbAF058Gcd5DfWtAzdBWwmp3IWNjfKuWk4YiVrzdoaLscZAnftGSK9HPdsdyy9kN
+U55/JIKOttOXazYqmxO36KHF1gLKmAzTwD/B2phDbrJXIK2ZdGgL2rMEHUtvBfDR
+iMTv2dxTGjtdlMGFwF461vd5FVUekUGFAI9vxP2TZMC5CCqQnktoUm2YKseXbxdt
+p5uiYDRP+KmpG7UqGtbIDGDLX6zocvpLi855zXlHn6NGFYQMCZGxYaiUuNsx/ljd
+wgQeiK/E/DYy9uOqwgFmr91Rne1d1aTJe4wwAFqCyeR8UHaWAA7ywGag4nM4fNdV
+ibJ7GE6mj4ojQY4nP4JUF8EwnpUm83Rc3kizTWxCbfyd02rhOJ/d7Y+06oSHBRoI
+0Et8Pbb+prFyqtQq8nmT
+=inf9
+-----END PGP SIGNATURE-----
+
+--x38akuY2VS0PywU3--
