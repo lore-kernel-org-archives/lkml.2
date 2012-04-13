@@ -1,108 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754063Ab2DMSID (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Apr 2012 14:08:03 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:58170 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751474Ab2DMSIA convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Apr 2012 14:08:00 -0400
+	id S1754784Ab2DMSI2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Apr 2012 14:08:28 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:36903 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751311Ab2DMSI0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 Apr 2012 14:08:26 -0400
+Date: Fri, 13 Apr 2012 14:08:14 -0400
+From: Josh Boyer <jwboyer@redhat.com>
+To: Takashi Iwai <tiwai@suse.de>
+Cc: Jaroslav Kysela <perex@perex.cz>, alsa-devel@alsa-project.org,
+        linux-kernel@vger.kernel.org, kernel-team@fedoraproject.org
+Subject: Re: Thinkpad hda regression in 3.3
+Message-ID: <20120413180814.GG25425@zod.bos.redhat.com>
+References: <20120413124306.GC25425@zod.bos.redhat.com>
+ <s5hpqbbvkzo.wl%tiwai@suse.de>
+ <s5hk41jty24.wl%tiwai@suse.de>
 MIME-Version: 1.0
-In-Reply-To: <4F381F6C.1030908@gmail.com>
-References: <1328980929-5423-1-git-send-email-dong.aisheng@linaro.org>
-	<4F381F6C.1030908@gmail.com>
-Date: Sat, 14 Apr 2012 02:07:59 +0800
-Message-ID: <CAA+hA=RpfLfUyupVqBpMHsRN1h5KG5eLD86DkDygZRk5nCUtqA@mail.gmail.com>
-Subject: Re: [PATCH V3 1/1] dt: add of_get_child_count helper function
-From: Dong Aisheng <dongas86@gmail.com>
-To: Rob Herring <robherring2@gmail.com>
-Cc: Dong Aisheng <dong.aisheng@linaro.org>,
-        devicetree-discuss@lists.ozlabs.org, grant.likely@secretlab.ca,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <s5hk41jty24.wl%tiwai@suse.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Rob,
+On Fri, Apr 13, 2012 at 06:07:47PM +0200, Takashi Iwai wrote:
+> At Fri, 13 Apr 2012 15:07:07 +0200,
+> Takashi Iwai wrote:
+> (snip)
+> > If the above seem work (again, make sure that you adjust the mixer
+> > mutes and levels), I'll make kernel patches to add these fixups
+> > statically in the driver so that it works without extra patching.
+> 
+> Looking through alsa-info.sh outputs from various ThinkPad models I've
+> gathered, it seems that we can use the same pin setups for all.
 
-On Mon, Feb 13, 2012 at 4:22 AM, Rob Herring <robherring2@gmail.com> wrote:
-> On 02/11/2012 11:22 AM, Dong Aisheng wrote:
->> Currently most code to get child count in kernel are almost same,
->> add a helper to implement this function for dt to use.
->>
->> Signed-off-by: Dong Aisheng <dong.aisheng@linaro.org>
->> Cc: Grant Likely <grant.likely@secretlab.ca>
->> Cc: Rob Herring <rob.herring@calxeda.com>
->>
->> ---
->> Hi Rob,
->>
->> Since my imx pinctrl driver series still depends on the pinctrl core dt
->> binding patch which is still not in mainline, i'd like this pure dt patch
->> go separately first in case others want to use.
->>
->
-> Applied for 3.4.
->
-I did not see this in 3.4 kernel.
-Anything i missed?
-My pinctrl-imx driver i just sent is using this.
+We had a user try the alsa-tp-dock patch on an X201 and it didn't seem
+to work for them.  See bug
+https://bugzilla.redhat.com/show_bug.cgi?id=806217
 
-Regards
-Dong Aisheng
+Perhaps the [codec] section isn't set properly for their configuration?
+The alsa-info for their machine is in comment #9 of the bug.
 
-> Rob
->
->> changes v2->v3:
->>  Addressed some people's comments:
->>  * do not use assignment as expression
->>  * return 0 for non-dt case
->>
->> Changes v1->v2:
->>  * change the name from of_get_child_number to of_get_child_count
->> ---
->>  include/linux/of.h |   16 ++++++++++++++++
->>  1 files changed, 16 insertions(+), 0 deletions(-)
->>
->> diff --git a/include/linux/of.h b/include/linux/of.h
->> index a75a831..ae242ef 100644
->> --- a/include/linux/of.h
->> +++ b/include/linux/of.h
->> @@ -195,6 +195,17 @@ extern struct device_node *of_get_next_child(const struct device_node *node,
->>       for (child = of_get_next_child(parent, NULL); child != NULL; \
->>            child = of_get_next_child(parent, child))
->>
->> +static inline int of_get_child_count(const struct device_node *np)
->> +{
->> +     struct device_node *child = NULL;
->> +     int num = 0;
->> +
->> +     while ((child = of_get_next_child(np, child)) != NULL)
->> +             num++;
->> +
->> +     return num;
->> +}
->> +
->>  extern struct device_node *of_find_node_with_property(
->>       struct device_node *from, const char *prop_name);
->>  #define for_each_node_with_property(dn, prop_name) \
->> @@ -268,6 +279,11 @@ static inline bool of_have_populated_dt(void)
->>  #define for_each_child_of_node(parent, child) \
->>       while (0)
->>
->> +static inline int of_get_child_count(const struct device_node *np)
->> +{
->> +     return 0;
->> +}
->> +
->>  static inline int of_device_is_compatible(const struct device_node *device,
->>                                         const char *name)
->>  {
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+> Below is a test patch for 3.3 kernel.  (Note that it'd give a merge
+> conflict for 3.4 kernel.)
+
+OK, I'll do a scratch build with this and get people to test.
+
+josh
