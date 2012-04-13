@@ -1,246 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762525Ab2DMAKu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Apr 2012 20:10:50 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:35193 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751968Ab2DMAKb (ORCPT
+	id S1757970Ab2DMANB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Apr 2012 20:13:01 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54052 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752729Ab2DMAM7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Apr 2012 20:10:31 -0400
-From: David Daney <ddaney.cavm@gmail.com>
-To: Grant Likely <grant.likely@secretlab.ca>, ralf@linux-mips.org,
-        linux-mips@linux-mips.org,
-        Linus Walleij <linus.walleij@stericsson.com>,
-        Rob Herring <rob.herring@calxeda.com>,
-        devicetree-discuss@lists.ozlabs.org
-Cc: linux-kernel@vger.kernel.org, David Daney <david.daney@cavium.com>
-Subject: [PATCH 2/2] gpio/MIPS/OCTEON: Add a driver for OCTEON's on-chip GPIO pins.
-Date: Thu, 12 Apr 2012 17:10:20 -0700
-Message-Id: <1334275820-7791-3-git-send-email-ddaney.cavm@gmail.com>
-X-Mailer: git-send-email 1.7.2.3
-In-Reply-To: <1334275820-7791-1-git-send-email-ddaney.cavm@gmail.com>
-References: <1334275820-7791-1-git-send-email-ddaney.cavm@gmail.com>
+	Thu, 12 Apr 2012 20:12:59 -0400
+Date: Thu, 12 Apr 2012 17:12:57 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Artem Bityutskiy <dedekind1@gmail.com>
+Cc: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>,
+        Linux Kernel Maling List <linux-kernel@vger.kernel.org>,
+        Linux FS Maling List <linux-fsdevel@vger.kernel.org>,
+        Jens Axboe <axboe@kernel.dk>
+Subject: Re: [PATCH v1 0/3] do not use s_dirt in FAT FS
+Message-Id: <20120412171257.a0fc35b4.akpm@linux-foundation.org>
+In-Reply-To: <1334144707-9729-1-git-send-email-dedekind1@gmail.com>
+References: <1334144707-9729-1-git-send-email-dedekind1@gmail.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: David Daney <david.daney@cavium.com>
+On Wed, 11 Apr 2012 14:45:04 +0300
+Artem Bityutskiy <dedekind1@gmail.com> wrote:
 
-The SOCs in the OCTEON family have 16 (or in some cases 20) on-chip
-GPIO pins, this driver handles them all.  Configuring the pins as
-interrupt sources is handled elsewhere (OCTEON's irq handling code).
+> The FAT file-system uses the VFS '->write_super()' method for writing out
+> the FSINFO block, which contains useful but not critical information like
+> the amount of free clusters.
+> 
+> This patch-set makes FAT FS use its own mechanisms for writing-out the FSINFO
+> block and stop using the '->write_super()' VFS method. Namely, the FAT FS now
+> submits a delayed work for writing out the FSINFO block once it becomes dirty.
+> 
+> The reason of this exercises is to get rid of the 'sync_supers()' kernel thread.
+> This kernel thread wakes up every 5 (by default) and calls '->write_super()'
+> for all mounted file-systems. And the bad thing is that this is done even if
+> all the superblocks are clean. Moreover, some file-systems do not even need this
+> end they do not register the '->write_super()' method at all (e.g., btrfs).
+> 
+> So 'sync_supers()' most often just generates useless wake-ups and wastes
+> power. I am trying to make all file-systems independent of '->write_super()'
+> and plan to remove 'sync_supers()' and '->write_super' completely once there
+> are no more users.
+> 
+> Tested with xfstests.
+> 
+> Note: in the past I was trying to upstream patches which optimized 'sync_super()',
+> but Al Viro wanted me to kill it completely instead, which I am trying to do now.
 
-Signed-off-by: David Daney <david.daney@cavium.com>
----
- drivers/gpio/Kconfig       |    8 ++
- drivers/gpio/Makefile      |    1 +
- drivers/gpio/gpio-octeon.c |  166 ++++++++++++++++++++++++++++++++++++++++++++
- 3 files changed, 175 insertions(+), 0 deletions(-)
- create mode 100644 drivers/gpio/gpio-octeon.c
+hm, I hadn't actually noticed the arrival of the sync_supers kernel
+thread.
 
-diff --git a/drivers/gpio/Kconfig b/drivers/gpio/Kconfig
-index edadbda..d9d924c 100644
---- a/drivers/gpio/Kconfig
-+++ b/drivers/gpio/Kconfig
-@@ -136,6 +136,14 @@ config GPIO_MXS
- 	select GPIO_GENERIC
- 	select GENERIC_IRQ_CHIP
- 
-+config GPIO_OCTEON
-+	tristate "Cavium OCTEON GPIO"
-+	depends on GPIOLIB && CPU_CAVIUM_OCTEON
-+	default y
-+	help
-+	  Say yes here to support the on-chip GPIO lines on the OCTEON
-+	  family of SOCs.
-+
- config GPIO_PL061
- 	bool "PrimeCell PL061 GPIO support"
- 	depends on ARM_AMBA
-diff --git a/drivers/gpio/Makefile b/drivers/gpio/Makefile
-index 007f54b..ce0348c 100644
---- a/drivers/gpio/Makefile
-+++ b/drivers/gpio/Makefile
-@@ -37,6 +37,7 @@ obj-$(CONFIG_GPIO_MSM_V2)	+= gpio-msm-v2.o
- obj-$(CONFIG_GPIO_MXC)		+= gpio-mxc.o
- obj-$(CONFIG_GPIO_MXS)		+= gpio-mxs.o
- obj-$(CONFIG_PLAT_NOMADIK)	+= gpio-nomadik.o
-+obj-$(CONFIG_GPIO_OCTEON)	+= gpio-octeon.o
- obj-$(CONFIG_ARCH_OMAP)		+= gpio-omap.o
- obj-$(CONFIG_GPIO_PCA953X)	+= gpio-pca953x.o
- obj-$(CONFIG_GPIO_PCF857X)	+= gpio-pcf857x.o
-diff --git a/drivers/gpio/gpio-octeon.c b/drivers/gpio/gpio-octeon.c
-new file mode 100644
-index 0000000..e679b44
---- /dev/null
-+++ b/drivers/gpio/gpio-octeon.c
-@@ -0,0 +1,166 @@
-+/*
-+ * This file is subject to the terms and conditions of the GNU General Public
-+ * License.  See the file "COPYING" in the main directory of this archive
-+ * for more details.
-+ *
-+ * Copyright (C) 2011,2012 Cavium Inc.
-+ */
-+
-+#include <linux/platform_device.h>
-+#include <linux/kernel.h>
-+#include <linux/module.h>
-+#include <linux/gpio.h>
-+#include <linux/io.h>
-+
-+#include <asm/octeon/octeon.h>
-+#include <asm/octeon/cvmx-gpio-defs.h>
-+
-+#define DRV_VERSION "1.0"
-+#define DRV_DESCRIPTION "Cavium Inc. OCTEON GPIO Driver"
-+
-+#define RX_DAT 0x80
-+#define TX_SET 0x88
-+#define TX_CLEAR 0x90
-+/*
-+ * The address offset of the GPIO configuration register for a given
-+ * line.
-+ */
-+static unsigned int bit_cfg_reg(unsigned int gpio)
-+{
-+	if (gpio < 16)
-+		return 8 * gpio;
-+	else
-+		return 8 * (gpio - 16) + 0x100;
-+}
-+
-+struct octeon_gpio {
-+	struct gpio_chip chip;
-+	u64 register_base;
-+};
-+
-+static int octeon_gpio_dir_in(struct gpio_chip *chip, unsigned offset)
-+{
-+	struct octeon_gpio *gpio = container_of(chip, struct octeon_gpio, chip);
-+
-+	cvmx_write_csr(gpio->register_base + bit_cfg_reg(offset), 0);
-+	return 0;
-+}
-+
-+static void octeon_gpio_set(struct gpio_chip *chip, unsigned offset, int value)
-+{
-+	struct octeon_gpio *gpio = container_of(chip, struct octeon_gpio, chip);
-+	u64 mask = 1ull << offset;
-+	u64 reg = gpio->register_base + (value ? TX_SET : TX_CLEAR);
-+	cvmx_write_csr(reg, mask);
-+}
-+
-+static int octeon_gpio_dir_out(struct gpio_chip *chip, unsigned offset,
-+			       int value)
-+{
-+	struct octeon_gpio *gpio = container_of(chip, struct octeon_gpio, chip);
-+	union cvmx_gpio_bit_cfgx cfgx;
-+
-+
-+	octeon_gpio_set(chip, offset, value);
-+
-+	cfgx.u64 = 0;
-+	cfgx.s.tx_oe = 1;
-+
-+	cvmx_write_csr(gpio->register_base + bit_cfg_reg(offset), cfgx.u64);
-+	return 0;
-+}
-+
-+static int octeon_gpio_get(struct gpio_chip *chip, unsigned offset)
-+{
-+	struct octeon_gpio *gpio = container_of(chip, struct octeon_gpio, chip);
-+	u64 read_bits = cvmx_read_csr(gpio->register_base + RX_DAT);
-+
-+	return ((1ull << offset) & read_bits) != 0;
-+}
-+
-+static int __init octeon_gpio_probe(struct platform_device *pdev)
-+{
-+	struct octeon_gpio *gpio;
-+	struct gpio_chip *chip;
-+	struct resource *res_mem;
-+	int err = 0;
-+
-+	gpio = devm_kzalloc(&pdev->dev, sizeof(*gpio), GFP_KERNEL);
-+	if (!gpio)
-+		return -ENOMEM;
-+	chip = &gpio->chip;
-+
-+	res_mem = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-+	if (res_mem == NULL) {
-+		dev_err(&pdev->dev, "found no memory resource\n");
-+		err = -ENXIO;
-+		goto out;
-+	}
-+	if (!devm_request_mem_region(&pdev->dev, res_mem->start,
-+					resource_size(res_mem),
-+				     res_mem->name)) {
-+		dev_err(&pdev->dev, "request_mem_region failed\n");
-+		err = -ENXIO;
-+		goto out;
-+	}
-+	gpio->register_base = (u64)devm_ioremap(&pdev->dev, res_mem->start,
-+						resource_size(res_mem));
-+
-+
-+	pdev->dev.platform_data = chip;
-+	chip->label = "octeon-gpio";
-+	chip->dev = &pdev->dev;
-+	chip->owner = THIS_MODULE;
-+	chip->base = 0;
-+	chip->can_sleep = 0;
-+
-+	if (OCTEON_IS_MODEL(OCTEON_CN66XX) ||
-+	    OCTEON_IS_MODEL(OCTEON_CN61XX) ||
-+	    OCTEON_IS_MODEL(OCTEON_CNF71XX))
-+		chip->ngpio = 20;
-+	else
-+		chip->ngpio = 16;
-+
-+	chip->direction_input = octeon_gpio_dir_in;
-+	chip->get = octeon_gpio_get;
-+	chip->direction_output = octeon_gpio_dir_out;
-+	chip->set = octeon_gpio_set;
-+	err = gpiochip_add(chip);
-+	if (err)
-+		goto out;
-+
-+	dev_info(&pdev->dev, "version: " DRV_VERSION "\n");
-+out:
-+	return err;
-+}
-+
-+static int __exit octeon_gpio_remove(struct platform_device *pdev)
-+{
-+	struct gpio_chip *chip = pdev->dev.platform_data;
-+	return gpiochip_remove(chip);
-+}
-+
-+static struct of_device_id octeon_gpio_match[] = {
-+	{
-+		.compatible = "cavium,octeon-3860-gpio",
-+	},
-+	{},
-+};
-+MODULE_DEVICE_TABLE(of, octeon_mgmt_match);
-+
-+static struct platform_driver octeon_gpio_driver = {
-+	.driver = {
-+		.name		= "octeon_gpio",
-+		.owner		= THIS_MODULE,
-+		.of_match_table = octeon_gpio_match,
-+	},
-+	.probe		= octeon_gpio_probe,
-+	.remove		= __exit_p(octeon_gpio_remove),
-+};
-+
-+module_platform_driver(octeon_gpio_driver);
-+
-+MODULE_DESCRIPTION(DRV_DESCRIPTION);
-+MODULE_AUTHOR("David Daney");
-+MODULE_LICENSE("GPL");
-+MODULE_VERSION(DRV_VERSION);
--- 
-1.7.2.3
+I don't think that the old scheme of calling sync_supers() via the
+writeback (kudate) code was really appropriate.  ->write_super() is
+mainly an fs-level function whose role is to push data from in-kernel
+data structures down into the buffer_head layer (typically).  That
+isn't a writeback function.
+
+> ======
+> Overall status:
+> 
+> 1. ext4: patches submitted, waiting for reply from Ted Ts'o:
+>    https://lkml.org/lkml/2012/4/2/111
+> 2. ext2: patches are in the ext2 tree maintained by Jan Kara:
+>    git://git.kernel.org/pub/scm/linux/kernel/git/jack/linux-fs.git for_next
+>    However, one patch is still not there:
+>    http://www.spinics.net/lists/linux-ext4/msg31492.html
+> 
+> TODO: affs, exofs, hfs, hfsplus, jffs2, reiserfs, sysv, udf, ufs
+
+That's a lot of work.
+
+I don't really like the implementation.  It implies that we'll be
+copying and pasting quite a lot of boilerplate delayed-work code into
+many different filesystems.  Surely there is a way of hoisting the
+common code up into the vfs library layer.
+
+That implies that we retain ->write_super, probably in a modified form.
+Modified to permit the VFS to determine whether the superblock needs
+treatment, if ->s_dirt doesn't suffice.
+
+The code as you've proposed it will cause more wakeups than needed - if
+multiple filesystems are mounted and active, their timers will get out
+of sync.  Which rather defeats the intent of the whole work!  This
+problem should be addressable via some new centralised way of managing
+things.
+
 
