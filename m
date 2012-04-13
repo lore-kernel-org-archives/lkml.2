@@ -1,51 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752229Ab2DMRlP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Apr 2012 13:41:15 -0400
-Received: from mail-pz0-f52.google.com ([209.85.210.52]:49512 "EHLO
-	mail-pz0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750773Ab2DMRlO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Apr 2012 13:41:14 -0400
-Date: Fri, 13 Apr 2012 10:41:09 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: David Miller <davem@davemloft.net>
-Cc: jslaby@suse.cz, linux-kernel@vger.kernel.org, jirislaby@gmail.com,
-        alan@linux.intel.com, andrea@persephoneslair.org
-Subject: Re: [PATCH 1/3] NET: pc300, move to staging as it is broken
-Message-ID: <20120413174109.GA32536@kroah.com>
-References: <1334135699-30180-1-git-send-email-jslaby@suse.cz>
- <20120413.133533.212991624580049561.davem@davemloft.net>
+	id S1753534Ab2DMRlY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Apr 2012 13:41:24 -0400
+Received: from bar.sig21.net ([80.81.252.164]:41654 "EHLO bar.sig21.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752780Ab2DMRlR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 Apr 2012 13:41:17 -0400
+Date: Fri, 13 Apr 2012 19:41:07 +0200
+From: Johannes Stezenbach <js@sig21.net>
+To: Alan Stern <stern@rowland.harvard.edu>
+Cc: Jason Baron <jbaron@redhat.com>, linux-kernel@vger.kernel.org,
+        linux-usb@vger.kernel.org
+Subject: Re: ehci dynamic debug problem
+Message-ID: <20120413174107.GA6021@sig21.net>
+References: <20120413145728.GA22240@sig21.net>
+ <Pine.LNX.4.44L0.1204131110250.1163-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120413.133533.212991624580049561.davem@davemloft.net>
+In-Reply-To: <Pine.LNX.4.44L0.1204131110250.1163-100000@iolanthe.rowland.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Spam-21-Score: -2.9 (--)
+X-Spam-21-Report: No, score=-2.9 required=8.0 tests=ALL_TRUSTED=-1,BAYES_00=-1.9 autolearn=ham
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 13, 2012 at 01:35:33PM -0400, David Miller wrote:
-> From: Jiri Slaby <jslaby@suse.cz>
-> Date: Wed, 11 Apr 2012 11:14:57 +0200
+On Fri, Apr 13, 2012 at 11:19:37AM -0400, Alan Stern wrote:
+> On Fri, 13 Apr 2012, Johannes Stezenbach wrote:
 > 
-> > It was marked as BROKEN back in 2008. It is because the tty handling
-> > in the driver is really broken.
+> > On Fri, Apr 13, 2012 at 10:35:59AM -0400, Alan Stern wrote:
+> > > On Fri, 13 Apr 2012, Johannes Stezenbach wrote:
+> > > > 
+> > > > Does dynamic debug offer an "is the message two lines below enabled" test?
+> > > > Simply changing the "#ifdef DEBUG" for dbg_port_buf()
+> > > > to "#if defined(DEBUG) || defined(CONFIG_DYNAMIC_DEBUG)"
+> > > > is probably not acceptable due to the overhead of dbg_port_buf()?
+> > > 
+> > > I don't understand your question.  Doesn't dbg_port_buf need to be 
+> > > defined whenever dynamic debugging is enabled?
+> > > 
+> > > Alternatively, the definition of dbg_port_buf (and related routines) in 
+> > > the !defined(DEBUG) case could be changed; you could add
+> > > 
+> > > 	buf[0] = 0;
+> > > 
+> > > That way you wouldn't get garbage out, although you wouldn't get 
+> > > anything useful either.
 > > 
-> > There was some activity in January 2012 to fix the driver, but the
-> > patch was commented to be bogus:
-> >   https://lkml.org/lkml/2012/1/29/160
-> > and we have not heard back from the author since then:
-> >   https://lkml.org/lkml/2012/3/28/412
-> > 
-> > So since nobody stepped in and rewrote the driver, it is time to move
-> > it out of line now. And drop it some time later if nobody comes up
-> > with patches to fix the driver in staging.
-> > 
-> > Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+> > The ideal solution I'm looking for gives useful output
+> > when dynamic debugging is enabled for ehci, but does no
+> > useless string formatting when CONFIG_DYNAMIC_DEBUG is y
+> > but the dynamic debug for ehci is disabled.
 > 
-> No objections, I'll let the staging guy handle this :-)
-> 
-> Acked-by: David S. Miller <davem@davemloft.net>
+> But there is no such thing as dynamic debug for ehci, is there?  
+> There's a separate dynamic debug setting for each dev_dbg statement.
+> So your ideal solution makes no sense.
 
-Thanks, I will :)
+When CONFIG_DYNAMIC_DEBUG=y but ehci debug is disabled
+in /sys/kernel/debug/dynamic_debug/control, then
+dbg_port() calls dbg_port_buf() which would
+format the string, then calls ehci_dbg() which
+calls dev_dbg() which discards it.
+
+Does it make sense now?
+
+
+Thanks,
+Johannes
