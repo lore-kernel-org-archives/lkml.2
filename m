@@ -1,66 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756442Ab2DMTYY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Apr 2012 15:24:24 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:58894 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755927Ab2DMTYX convert rfc822-to-8bit (ORCPT
+	id S1756517Ab2DMTYm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Apr 2012 15:24:42 -0400
+Received: from acsinet15.oracle.com ([141.146.126.227]:43309 "EHLO
+	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756476Ab2DMTYk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Apr 2012 15:24:23 -0400
-Subject: [PATCH][RESEND] do not redefine userspace's NULL #define
-From: Lubos Lunak <l.lunak@suse.cz>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
-        Arnd Bergmann <arnd@arndb.de>
-Date: Fri, 13 Apr 2012 21:24:20 +0200
+	Fri, 13 Apr 2012 15:24:40 -0400
+Date: Fri, 13 Apr 2012 22:24:24 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: Richard Purdie <rpurdie@rpsys.net>
+Cc: linux-kernel@vger.kernel.org
+Subject: [patch] leds-lp5523: BUG() in error handling in probe()
+Message-ID: <20120413192424.GB18505@elgon.mountain>
 MIME-Version: 1.0
-Content-Type: text/plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Message-Id: <201204132124.21294.l.lunak@suse.cz>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090205.4F887D6F.0087,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-GCC's NULL is actually __null, which allows detecting some questionable
-NULL usage and warn about it. Moreover each platform/compiler should have
-its own stddef.h anyway (which is different from linux/stddef.h).
-So there's no good reason to override what the compiler provides.
-Keep the #define conditionally, in order to keep the headers self-contained.
+Inside the error handling in lp5523_init_led(), there is a place that
+calls to led_classdev_unregister().  When we unregister the LED drivers,
+it tries to set the brightness to OFF.  In this driver setting the
+brightness is done through a work queue and the work queue hasn't been
+initialized yet.
 
-Signed-off-by: Luboš Luňák <l.lunak@suse.cz>
+The result is that we trigger a BUG_ON() in the __queue_work().
+
+The fix is to move the INIT_WORK() in front of the call to
+lp5523_init_led().
+
+Matt Renzelmann found this using a bug finding tool.
+
+Reported-by: Matt Renzelmann <mjr@cs.wisc.edu>
+Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
 ---
+I don't have this hardware, so I can't test it.
 
- There have been no further comments after this last version, and I do not see 
-how this change should affect anything in either kernel builds or userspace 
-builds, except for fixing the issue of overriding the proper NULL definition, 
-so I consider this the proper and safe fix.
-
- include/linux/stddef.h |    3 ++-
- 1 files changed, 2 insertions(+), 1 deletions(-)
-
-diff --git a/include/linux/stddef.h b/include/linux/stddef.h
-index 6a40c76..ce225a9 100644
---- a/include/linux/stddef.h
-+++ b/include/linux/stddef.h
-@@ -3,12 +3,13 @@
+diff --git a/drivers/leds/leds-lp5523.c b/drivers/leds/leds-lp5523.c
+index 857a3e1..e8a2712 100644
+--- a/drivers/leds/leds-lp5523.c
++++ b/drivers/leds/leds-lp5523.c
+@@ -943,6 +943,9 @@ static int __devinit lp5523_probe(struct i2c_client *client,
+ 		if (pdata->led_config[i].led_current == 0)
+ 			continue;
  
- #include <linux/compiler.h>
++		INIT_WORK(&chip->leds[led].brightness_work,
++			lp5523_led_brightness_work);
++
+ 		ret = lp5523_init_led(&chip->leds[led], &client->dev, i, pdata);
+ 		if (ret) {
+ 			dev_err(&client->dev, "error initializing leds\n");
+@@ -956,9 +959,6 @@ static int __devinit lp5523_probe(struct i2c_client *client,
+ 			  LP5523_REG_LED_CURRENT_BASE + chip->leds[led].chan_nr,
+ 			  chip->leds[led].led_current);
  
--#undef NULL
-+#ifndef NULL
- #if defined(__cplusplus)
- #define NULL 0
- #else
- #define NULL ((void *)0)
- #endif
-+#endif
+-		INIT_WORK(&(chip->leds[led].brightness_work),
+-			lp5523_led_brightness_work);
+-
+ 		led++;
+ 	}
  
- #ifdef __KERNEL__
- 
--- 
-1.7.7
--- 
- Lubos Lunak
- l.lunak@suse.cz
