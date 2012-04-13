@@ -1,52 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753786Ab2DMPdK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Apr 2012 11:33:10 -0400
-Received: from g1t0028.austin.hp.com ([15.216.28.35]:35842 "EHLO
-	g1t0028.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751520Ab2DMPdI (ORCPT
+	id S1754057Ab2DMPdl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Apr 2012 11:33:41 -0400
+Received: from mail-vx0-f174.google.com ([209.85.220.174]:64147 "EHLO
+	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753717Ab2DMPdj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Apr 2012 11:33:08 -0400
-X-Greylist: delayed 569 seconds by postgrey-1.27 at vger.kernel.org; Fri, 13 Apr 2012 11:33:08 EDT
-Message-ID: <1334330617.2250.4.camel@lorien2>
-Subject: Re: [PATCH 0/5] ACPI: Add _OST support for ACPI hotplug
-From: Shuah Khan <shuahkhan@gmail.com>
-Reply-To: shuahkhan@gmail.com
-To: Jiang Liu <liuj97@gmail.com>
-Cc: shuahkhan@gmail.com, Toshi Kani <toshi.kani@hp.com>, lenb@kernel.org,
-        linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Fri, 13 Apr 2012 09:23:37 -0600
-In-Reply-To: <4F88371D.7030305@gmail.com>
-References: <1334096510-17319-1-git-send-email-toshi.kani@hp.com>
-	 <1334161991.2226.18.camel@lorien2>
-	 <1334170247.20190.34.camel@misato.fc.hp.com>
-	 <1334240353.2222.3.camel@lorien2> <4F88371D.7030305@gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2- 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Fri, 13 Apr 2012 11:33:39 -0400
+MIME-Version: 1.0
+From: Christian Gmeiner <christian.gmeiner@gmail.com>
+Date: Fri, 13 Apr 2012 17:33:17 +0200
+Message-ID: <CAH9NwWeOt3bbcpP98Q6A2iKSZwqD628iHHAgr_Oe-UgKkE=G5A@mail.gmail.com>
+Subject: pata_cs5536: DMI detection of broken PCs
+To: linux-ide@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2012-04-13 at 22:24 +0800, Jiang Liu wrote:
-> Hi Shuah and Toshi,
-> 	As I can tell, _OST method has been defined in ACPI4.0 spec and
-> there are some platforms already implemented the _OST method. For example,
-> Quanta QSSC-S4R server implements _OST for hot-pluggable PCI slots, but 
-> it's a little pity that it doesn't implement _OST for the memory board,
-> so we can't test Toshi's patch on that platform.
-> 	According to my understanding, other than notifying BIOS about the
-> event processing result, _OST could also be used to notify BIOS about the
-> IN_PROGRESS state, so BIOS could track the event handling progress and avoid
-> timeout. We have used _OST method to avoid timeout on one of our prototype
-> platforms.
+Hi all,
 
-Thanks Jiang. This is good information about _OST method's timeout
-use-case. Alos good to know there are platforms out there that already
-implement it. Too bad you don't have any platforms to test Toshis's
-patch. Maybe there are others that have one available.
+I have here some devices, which are using pata_cs5536. The big problem
+is now that some of
+the eary hardware revision have a bug that makes it impossible to use
+UDMA with UDMA capable
+devices. This problem got fixed and the newest hardware revision has
+working UDMA support.
+The big problem is that there are devices sold - years ago - which
+suffer from this UDMA problem.
+Now it would be possible for the customer to switch from vxworks to
+linux but if the device hangs
+with UDMA capable devices the customer will not be very happy :)
 
--- Shuah
+Is there a way to backlist the old devices to not use UDMA at all? DMI
+would be a good idea for
+detecting old devices. Is something like this possible?
 
-
+---
+Christian Gmeiner, MSc
