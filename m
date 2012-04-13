@@ -1,226 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754037Ab2DMGCA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Apr 2012 02:02:00 -0400
-Received: from db3ehsobe006.messaging.microsoft.com ([213.199.154.144]:35526
-	"EHLO db3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752355Ab2DMGB6 (ORCPT
+	id S1754532Ab2DMGQy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Apr 2012 02:16:54 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:41831 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753919Ab2DMGQw convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Apr 2012 02:01:58 -0400
-X-SpamScore: -7
-X-BigFish: VPS-7(zcb8kz14ffI1432N98dKzz1202hzz8275bh8275dhz2dh668h839h944hd25h)
-X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
-X-WSS-ID: 0M2EM31-01-AUY-02
-X-M-MSG: 
-Date: Fri, 13 Apr 2012 14:06:26 +0800
-From: Alex He <alex.he@amd.com>
-To: "Yan, Zheng" <zheng.z.yan@intel.com>
-CC: <bhelgaas@google.com>, <rjw@sisk.pl>, <linux-kernel@vger.kernel.org>,
-        <linux-pci@vger.kernel.org>, <linux-pm@vger.kernel.org>
-Subject: Re: [RFC PATCH] PCIe: Add PCIe runtime D3cold support
-Message-ID: <20120413060626.GA7856@alex-p.amd.com>
-References: <4F8790F6.5080408@intel.com>
+	Fri, 13 Apr 2012 02:16:52 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <4F8790F6.5080408@intel.com>
-User-Agent: Mutt/1.5.20 (2009-12-10)
-X-OriginalArrivalTime: 13 Apr 2012 06:01:38.0805 (UTC) FILETIME=[E406A250:01CD193A]
-X-OriginatorOrg: amd.com
+In-Reply-To: <20120410225534.GA28480@electric-eye.fr.zoreil.com>
+References: <CACPM=kWa=UWuCMaYAtVMGJ7pzCy-PfyNRWBSuJnTZGtssU0W6g@mail.gmail.com>
+	<20120410204249.GA26627@electric-eye.fr.zoreil.com>
+	<CACPM=kWsU8QZOHqwEThTQCuSSvaTDoxO1d17EyoW=+kx8QG3vw@mail.gmail.com>
+	<20120410225534.GA28480@electric-eye.fr.zoreil.com>
+Date: Fri, 13 Apr 2012 08:16:51 +0200
+X-Google-Sender-Auth: Aw_vfF_QGM4UM6vxPUEnKP6Jk50
+Message-ID: <CACPM=kXGyxgfwzMxAhx-jUL1hYMAqWc7=9gfYcgV=xebAQ=+Og@mail.gmail.com>
+Subject: Re: via-rhine: Problem with lost link after a while
+From: Bjarke Istrup Pedersen <gurligebis@gentoo.org>
+To: Francois Romieu <romieu@fr.zoreil.com>
+Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+        =?ISO-8859-1?Q?Svenning_S=F8rensen?= <sss@secomea.com>,
+        Andreas Mohr <andi@lisas.de>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 13, 2012 at 10:35:34AM +0800, Yan, Zheng wrote:
-> Hi all,
-> 
-> This patch adds PCIe runtime D3cold support, namely cut power supply for functions
-> beneath a PCIe port when they all have entered D3. A device in D3cold can only
-> generate wake event through the WAKE# pin. Because we can not access to a device's
-> configure space while it's in D3cold, pme_poll is disabled for devices in D3cold.
-> 
-> Any comment will be appreciated.
-> 
-> Signed-off-by: Zheng Yan <zheng.z.yan@intel.com>
-> ---
-> diff --git a/drivers/pci/pci-acpi.c b/drivers/pci/pci-acpi.c
-> index 0f150f2..e210e8cb 100644
-> --- a/drivers/pci/pci-acpi.c
-> +++ b/drivers/pci/pci-acpi.c
-> @@ -224,7 +224,7 @@ static int acpi_pci_set_power_state(struct pci_dev *dev, pci_power_t state)
->  		[PCI_D1] = ACPI_STATE_D1,
->  		[PCI_D2] = ACPI_STATE_D2,
->  		[PCI_D3hot] = ACPI_STATE_D3,
-> -		[PCI_D3cold] = ACPI_STATE_D3
-> +		[PCI_D3cold] = ACPI_STATE_D3_COLD
->  	};
->  	int error = -EINVAL;
->  
-> @@ -296,7 +296,8 @@ static void acpi_pci_propagate_run_wake(struct pci_bus *bus, bool enable)
->  
->  static int acpi_pci_run_wake(struct pci_dev *dev, bool enable)
->  {
-> -	if (dev->pme_interrupt)
-> +	/* PME interrupt isn't available in the D3cold case */
-> +	if (dev->pme_interrupt && !dev->runtime_d3cold)
->  		return 0;
-PCI BUS PM Interface spec says that PMEs can be support for D3COLD.
-Please check section 3.2.4 , 5.4.2 and 5.4.3.
+11. apr. 2012 00.55 skrev Francois Romieu <romieu@fr.zoreil.com>:
+> Bjarke Istrup Pedersen <gurligebis@gentoo.org> :
+>> 10. apr. 2012 22.42 skrev Francois Romieu <romieu@fr.zoreil.com>:
+> [...]
+>> > http://git.kernel.org/?p=linux/kernel/git/torvalds/linux.git;h=3f8c91a7398b9266fbe7abcbe4bd5dffef907643
+> [...]
+>> Great, I'll try a 3.4-rc2 kernel, and see how it runs.
+>>
+>> The thread I was talking about earlier is here:
+>> http://lists.soekris.com/pipermail/soekris-tech/2012-April/018318.html
+>> Is there any of the changes he has there, that makes sense in the new
+>> driver you wrote ?
+>
+> (I did not write a new driver)
+>
+> Regarding Svenning's patch:
+> - the wmb in alloc_rbufs may help rhine_reset_task().
+> - one should probably add one in rhine_rx() as well.
+> - rhine_start_tx() is supposed to stop queueing when there is no room left.
+>  I'm curious to know if the "Tx descriptor busy" test triggered.
+> - the rmb() in rhine_tx() will not make a difference for a single core but
+>  it's a good reminder that I should not have forgotten to propagate the
+>  xmit / Tx completion fix back from the r8169 driver to the via-rhine one
+>  (sigh)
+>
+> mmiowb is probably missing. I doubt it hits hard right now.
+>
+> I have not checked if MMIO flushes are missing. Actually I need some sleep.
 
+I've been testing v3.4-rc2 with this patch applied for the past few
+days, with alot of trafic across, both incoming and outgoing, with VPN
+which is normally what can trigger problems, and it seems rock solid
+:o)
 
->  
->  	if (!acpi_pm_device_run_wake(&dev->dev, enable))
-> diff --git a/drivers/pci/pci.c b/drivers/pci/pci.c
-> index 8156744..bc16869 100644
-> --- a/drivers/pci/pci.c
-> +++ b/drivers/pci/pci.c
-> @@ -731,8 +731,8 @@ int pci_set_power_state(struct pci_dev *dev, pci_power_t state)
->  	int error;
->  
->  	/* bound the state we're entering */
-> -	if (state > PCI_D3hot)
-> -		state = PCI_D3hot;
-> +	if (state > PCI_D3cold)
-> +		state = PCI_D3cold;
->  	else if (state < PCI_D0)
->  		state = PCI_D0;
->  	else if ((state == PCI_D1 || state == PCI_D2) && pci_no_d1d2(dev))
-> @@ -750,7 +750,8 @@ int pci_set_power_state(struct pci_dev *dev, pci_power_t state)
->  	if (state == PCI_D3hot && (dev->dev_flags & PCI_DEV_FLAGS_NO_D3))
->  		return 0;
->  
-> -	error = pci_raw_set_power_state(dev, state);
-> +	error = pci_raw_set_power_state(dev, state > PCI_D3hot ?
-> +					PCI_D3hot : state);
-Do you want to set the pci device to D3hot if the state = D3Code through
-PMCSR register? I am agree if you realy want that but what is the meaninig
-to distingulish D3cold with D3hot in this patch. We can't put the PCI device
-through PMCSR register.
+Do you need me to do any specific testing of this patch?
 
->  
->  	if (!__pci_complete_power_transition(dev, state))
->  		error = 0;
-> @@ -1482,6 +1483,17 @@ bool pci_pme_capable(struct pci_dev *dev, pci_power_t state)
->  	return !!(dev->pme_support & (1 << state));
->  }
->  
-> +static void pci_pme_poll_wakeup(struct pci_dev *dev)
-> +{
-> +	struct pci_dev *bridge = dev->bus->self;
+/Bjarke
+
+> diff --git a/drivers/net/ethernet/via/via-rhine.c b/drivers/net/ethernet/via/via-rhine.c
+> index fcfa01f..dfa9fc0 100644
+> --- a/drivers/net/ethernet/via/via-rhine.c
+> +++ b/drivers/net/ethernet/via/via-rhine.c
+> @@ -1163,6 +1163,7 @@ static void alloc_rbufs(struct net_device *dev)
+>                                       PCI_DMA_FROMDEVICE);
+>
+>                rp->rx_ring[i].addr = cpu_to_le32(rp->rx_skbuff_dma[i]);
+> +               wmb();
+>                rp->rx_ring[i].rx_status = cpu_to_le32(DescOwn);
+>        }
+>        rp->dirty_rx = (unsigned int)(i - RX_RING_SIZE);
+> @@ -1709,8 +1710,13 @@ static netdev_tx_t rhine_start_tx(struct sk_buff *skb,
+>               ioaddr + ChipCmd1);
+>        IOSYNC;
+>
+> -       if (rp->cur_tx == rp->dirty_tx + TX_QUEUE_LEN)
+> +       if (rp->cur_tx == rp->dirty_tx + TX_QUEUE_LEN) {
+> +               smp_wmb();
+>                netif_stop_queue(dev);
+> +               smp_mb();
+> +               if (rp->cur_tx != rp->dirty_tx + TX_QUEUE_LEN)
+> +                       netif_wake_queue(dev);
+> +       }
+>
+>        netif_dbg(rp, tx_queued, dev, "Transmit frame #%d queued in slot %d\n",
+>                  rp->cur_tx - 1, entry);
+> @@ -1759,6 +1765,7 @@ static void rhine_tx(struct net_device *dev)
+>        struct rhine_private *rp = netdev_priv(dev);
+>        int txstatus = 0, entry = rp->dirty_tx % TX_RING_SIZE;
+>
+> +       smp_rmb();
+>        /* find and cleanup dirty tx descriptors */
+>        while (rp->dirty_tx != rp->cur_tx) {
+>                txstatus = le32_to_cpu(rp->tx_ring[entry].tx_status);
+> @@ -1806,8 +1813,12 @@ static void rhine_tx(struct net_device *dev)
+>                rp->tx_skbuff[entry] = NULL;
+>                entry = (++rp->dirty_tx) % TX_RING_SIZE;
+>        }
+> -       if ((rp->cur_tx - rp->dirty_tx) < TX_QUEUE_LEN - 4)
 > +
-> +	/* don't poll the pme bit if parent is in low power state */
-> +	if (bridge && bridge->current_state != PCI_D0)
-> +		return;
-> +
-> +	pci_pme_wakeup(dev, NULL);
-> +}
-> +
->  static void pci_pme_list_scan(struct work_struct *work)
->  {
->  	struct pci_pme_device *pme_dev, *n;
-> @@ -1490,7 +1502,7 @@ static void pci_pme_list_scan(struct work_struct *work)
->  	if (!list_empty(&pci_pme_list)) {
->  		list_for_each_entry_safe(pme_dev, n, &pci_pme_list, list) {
->  			if (pme_dev->dev->pme_poll) {
-> -				pci_pme_wakeup(pme_dev->dev, NULL);
-> +				pci_pme_poll_wakeup(pme_dev->dev);
->  			} else {
->  				list_del(&pme_dev->list);
->  				kfree(pme_dev);
-> @@ -1608,6 +1620,10 @@ int __pci_enable_wake(struct pci_dev *dev, pci_power_t state,
->  	if (enable) {
->  		int error;
->  
-> +		if (runtime && state >= PCI_D3cold)
-> +			dev->runtime_d3cold = true;
-> +		else
-> +			dev->runtime_d3cold = false;
->  		if (pci_pme_capable(dev, state))
->  			pci_pme_active(dev, true);
->  		else
-> diff --git a/drivers/pci/pcie/portdrv_pci.c b/drivers/pci/pcie/portdrv_pci.c
-> index e0610bd..d66b7e9 100644
-> --- a/drivers/pci/pcie/portdrv_pci.c
-> +++ b/drivers/pci/pcie/portdrv_pci.c
-> @@ -11,11 +11,13 @@
->  #include <linux/kernel.h>
->  #include <linux/errno.h>
->  #include <linux/pm.h>
-> +#include <linux/pm_runtime.h>
->  #include <linux/init.h>
->  #include <linux/pcieport_if.h>
->  #include <linux/aer.h>
->  #include <linux/dmi.h>
->  #include <linux/pci-aspm.h>
-> +#include <linux/delay.h>
->  
->  #include "portdrv.h"
->  #include "aer/aerdrv.h"
-> @@ -99,6 +101,25 @@ static int pcie_port_resume_noirq(struct device *dev)
->  	return 0;
->  }
->  
-> +static int pcie_port_runtime_suspend(struct device *dev)
-> +{
-> +	struct pci_dev *pdev = to_pci_dev(dev);
-> +
-> +	pci_save_state(pdev);
-> +	return 0;
-> +}
-> +
-> +static int pcie_port_runtime_resume(struct device *dev)
-> +{
-> +	struct pci_dev *pdev = to_pci_dev(dev);
-> +
-> +	pci_restore_state(pdev);
-> +	if (pdev->runtime_d3cold)
-> +		msleep(100);
-> +
-> +	return 0;
-> +}
-> +
->  static const struct dev_pm_ops pcie_portdrv_pm_ops = {
->  	.suspend	= pcie_port_device_suspend,
->  	.resume		= pcie_port_device_resume,
-> @@ -107,6 +128,8 @@ static const struct dev_pm_ops pcie_portdrv_pm_ops = {
->  	.poweroff	= pcie_port_device_suspend,
->  	.restore	= pcie_port_device_resume,
->  	.resume_noirq	= pcie_port_resume_noirq,
-> +	.runtime_suspend = pcie_port_runtime_suspend,
-> +	.runtime_resume = pcie_port_runtime_resume,
->  };
->  
->  #define PCIE_PORTDRV_PM_OPS	(&pcie_portdrv_pm_ops)
-> @@ -144,12 +167,14 @@ static int __devinit pcie_portdrv_probe(struct pci_dev *dev,
->  		return status;
->  
->  	pci_save_state(dev);
-> +	pm_runtime_put_noidle(&dev->dev);
->  
->  	return 0;
->  }
->  
->  static void pcie_portdrv_remove(struct pci_dev *dev)
->  {
-> +	pm_runtime_get_noresume(&dev->dev);
->  	pcie_port_device_remove(dev);
->  	pci_disable_device(dev);
->  }
-> diff --git a/include/linux/pci.h b/include/linux/pci.h
-> index e444f5b..b41d9a1 100644
-> --- a/include/linux/pci.h
-> +++ b/include/linux/pci.h
-> @@ -281,6 +281,7 @@ struct pci_dev {
->  	unsigned int	no_d1d2:1;	/* Only allow D0 and D3 */
->  	unsigned int	mmio_always_on:1;	/* disallow turning off io/mem
->  						   decoding during bar sizing */
-> +	unsigned int	runtime_d3cold:1;
->  	unsigned int	wakeup_prepared:1;
->  	unsigned int	d3_delay;	/* D3->D0 transition time in ms */
->  
+> +       smp_mb();
+> +       if (netif_queue_stopped(dev) &&
+> +           (rp->cur_tx - rp->dirty_tx) < TX_QUEUE_LEN - 4) {
+>                netif_wake_queue(dev);
+> +       }
+>  }
+>
+>  /**
+> @@ -1947,6 +1958,7 @@ static int rhine_rx(struct net_device *dev, int limit)
+>                                               PCI_DMA_FROMDEVICE);
+>                        rp->rx_ring[entry].addr = cpu_to_le32(rp->rx_skbuff_dma[entry]);
+>                }
+> +               wmb();
+>                rp->rx_ring[entry].rx_status = cpu_to_le32(DescOwn);
+>        }
+>
 > --
-> To unsubscribe from this list: send the line "unsubscribe linux-pm" in
+> Ueimor
+>
+> Will code drivers for food.
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
 > the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> 
-
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
