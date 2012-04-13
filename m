@@ -1,59 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755676Ab2DMSRO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Apr 2012 14:17:14 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:63983 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755275Ab2DMSRK (ORCPT
+	id S1753889Ab2DMSSl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Apr 2012 14:18:41 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:51683 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751899Ab2DMSSk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Apr 2012 14:17:10 -0400
-Date: Fri, 13 Apr 2012 11:17:05 -0700
-From: Tejun Heo <tj@kernel.org>
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: axboe@kernel.dk, ctalbott@google.com, rni@google.com,
-        linux-kernel@vger.kernel.org, cgroups@vger.kernel.org,
-        containers@lists.linux-foundation.org
-Subject: Re: [PATCH 7/8] blkcg: implement per-queue policy activation
-Message-ID: <20120413181705.GD12233@google.com>
-References: <1334273380-30233-1-git-send-email-tj@kernel.org>
- <1334273380-30233-8-git-send-email-tj@kernel.org>
- <20120413181257.GG26383@redhat.com>
+	Fri, 13 Apr 2012 14:18:40 -0400
+Date: Fri, 13 Apr 2012 11:16:23 -0700
+From: tip-bot for Borislav Petkov <borislav.petkov@amd.com>
+Message-ID: <tip-2363ecb17041d711fa2b3fb1b1ea2ebc47a0f974@git.kernel.org>
+Cc: acme@redhat.com, linux-kernel@vger.kernel.org, hpa@zytor.com,
+        mingo@kernel.org, sam@ravnborg.org, mmarek@suse.cz, tglx@linutronix.de,
+        borislav.petkov@amd.com
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        acme@redhat.com, sam@ravnborg.org, tglx@linutronix.de, mmarek@suse.cz,
+        borislav.petkov@amd.com
+In-Reply-To: <1334162178-17152-4-git-send-email-bp@amd64.org>
+References: <1334162178-17152-4-git-send-email-bp@amd64.org>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/core] tools: Add a toplevel Makefile
+Git-Commit-ID: 2363ecb17041d711fa2b3fb1b1ea2ebc47a0f974
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-In-Reply-To: <20120413181257.GG26383@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Fri, 13 Apr 2012 11:16:29 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+Commit-ID:  2363ecb17041d711fa2b3fb1b1ea2ebc47a0f974
+Gitweb:     http://git.kernel.org/tip/2363ecb17041d711fa2b3fb1b1ea2ebc47a0f974
+Author:     Borislav Petkov <borislav.petkov@amd.com>
+AuthorDate: Wed, 11 Apr 2012 18:36:16 +0200
+Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
+CommitDate: Wed, 11 Apr 2012 14:58:43 -0300
 
-On Fri, Apr 13, 2012 at 02:12:57PM -0400, Vivek Goyal wrote:
-> On Thu, Apr 12, 2012 at 04:29:39PM -0700, Tejun Heo wrote:
-> 
-> [..]
-> > diff --git a/block/elevator.c b/block/elevator.c
-> > index be3ab6d..6a55d41 100644
-> > --- a/block/elevator.c
-> > +++ b/block/elevator.c
-> > @@ -896,8 +896,6 @@ static int elevator_switch(struct request_queue *q, struct elevator_type *new_e)
-> >  	ioc_clear_queue(q);
-> >  	spin_unlock_irq(q->queue_lock);
-> >  
-> > -	blkg_destroy_all(q, false);
-> > -
-> 
-> So now groups don't reclaimed until either cgroup is deleted or queue
-> exits. So if BLK_DEV_THROTTLE=n and cfq is switched out, blkg created
-> by CFQ policy will not be reclaimed (despite the fact nobody is using
-> them).
+tools: Add a toplevel Makefile
 
-It's not difficult to change.  We can just trigger reclaim if no
-policy is enabled for the queue.  Hmmm... yeah, that's gonna be like
-five line change.  I'll add it.
+Add a Makefile with all the targets under tools/.
 
-Thanks.
+Signed-off-by: Borislav Petkov <borislav.petkov@amd.com>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Michal Marek <mmarek@suse.cz>
+Cc: Sam Ravnborg <sam@ravnborg.org>
+Link: http://lkml.kernel.org/r/1334162178-17152-4-git-send-email-bp@amd64.org
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+---
+ tools/Makefile |   47 +++++++++++++++++++++++++++++++++++++++++++++++
+ 1 files changed, 47 insertions(+), 0 deletions(-)
 
--- 
-tejun
+diff --git a/tools/Makefile b/tools/Makefile
+new file mode 100644
+index 0000000..feadfdd
+--- /dev/null
++++ b/tools/Makefile
+@@ -0,0 +1,47 @@
++include scripts/Makefile.include
++
++cpupower: FORCE
++	$(QUIET_SUBDIR0)power/$@/ $(QUIET_SUBDIR1)
++
++firewire lguest perf usb virtio vm: FORCE
++	$(QUIET_SUBDIR0)$@/ $(QUIET_SUBDIR1)
++
++selftests: FORCE
++	$(QUIET_SUBDIR0)testing/$@/ $(QUIET_SUBDIR1)
++
++turbostat x86_energy_perf_policy: FORCE
++	$(QUIET_SUBDIR0)power/x86/$@/ $(QUIET_SUBDIR1)
++
++cpupower_install:
++	$(QUIET_SUBDIR0)power/$(@:_install=)/ $(QUIET_SUBDIR1) install
++
++firewire_install lguest_install perf_install usb_install virtio_install vm_install:
++	$(QUIET_SUBDIR0)$(@:_install=)/ $(QUIET_SUBDIR1) install
++
++selftests_install:
++	$(QUIET_SUBDIR0)testing/$(@:_clean=)/ $(QUIET_SUBDIR1) install
++
++turbostat_install x86_energy_perf_policy_install:
++	$(QUIET_SUBDIR0)power/x86/$(@:_install=)/ $(QUIET_SUBDIR1) install
++
++install: cpupower_install firewire_install lguest_install perf_install \
++		selftests_install turbostat_install usb_install virtio_install \
++		vm_install x86_energy_perf_policy_install
++
++cpupower_clean:
++	$(QUIET_SUBDIR0)power/cpupower/ $(QUIET_SUBDIR1) clean
++
++firewire_clean lguest_clean perf_clean usb_clean virtio_clean vm_clean:
++	$(QUIET_SUBDIR0)$(@:_clean=)/ $(QUIET_SUBDIR1) clean
++
++selftests_clean:
++	$(QUIET_SUBDIR0)testing/$(@:_clean=)/ $(QUIET_SUBDIR1) clean
++
++turbostat_clean x86_energy_perf_policy_clean:
++	$(QUIET_SUBDIR0)power/x86/$(@:_clean=)/ $(QUIET_SUBDIR1) clean
++
++clean: cpupower_clean firewire_clean lguest_clean perf_clean selftests_clean \
++		turbostat_clean usb_clean virtio_clean vm_clean \
++		x86_energy_perf_policy_clean
++
++.PHONY: FORCE
