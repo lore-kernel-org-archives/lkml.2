@@ -1,48 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932616Ab2DMM7Y (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Apr 2012 08:59:24 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:41235 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932074Ab2DMM7W (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Apr 2012 08:59:22 -0400
-Date: Fri, 13 Apr 2012 14:59:20 +0200 (CEST)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Simon Wood <simon@mungewell.org>
-Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Michael Bauer <michael@m-bauer.org>,
-        Michal Maly <madcatxster@gmail.com>
-Subject: Re: [PATCH] HID: hid-lg4ff: Add support for G27 LEDs
-In-Reply-To: <1333987734-8217-1-git-send-email-simon@mungewell.org>
-Message-ID: <alpine.LNX.2.00.1204131458290.16373@pobox.suse.cz>
-References: <1649210.pcO5IpzBEF@qosmio-x300> <1333987734-8217-1-git-send-email-simon@mungewell.org>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1756326Ab2DMNDq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Apr 2012 09:03:46 -0400
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:59721 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752875Ab2DMNDo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 Apr 2012 09:03:44 -0400
+Date: Fri, 13 Apr 2012 15:04:37 +0200
+From: Daniel Vetter <daniel@ffwll.ch>
+To: Daniel Kurtz <djkurtz@chromium.org>
+Cc: Keith Packard <keithp@keithp.com>, David Airlie <airlied@linux.ie>,
+        dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org,
+        Daniel Vetter <daniel@ffwll.ch>,
+        Chris Wilson <chris@chris-wilson.co.uk>
+Subject: Re: [PATCH 2/2] drm/i915/intel_i2c: reduce verbosity of some messages
+Message-ID: <20120413130437.GF4525@phenom.ffwll.local>
+Mail-Followup-To: Daniel Kurtz <djkurtz@chromium.org>,
+	Keith Packard <keithp@keithp.com>, David Airlie <airlied@linux.ie>,
+	dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org,
+	Chris Wilson <chris@chris-wilson.co.uk>
+References: <1334317674-32450-1-git-send-email-djkurtz@chromium.org>
+ <1334317674-32450-2-git-send-email-djkurtz@chromium.org>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1334317674-32450-2-git-send-email-djkurtz@chromium.org>
+X-Operating-System: Linux phenom 3.2.0-1-amd64
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 9 Apr 2012, Simon Wood wrote:
-
-> This patch adds supports for controlling the LED 'tachometer' on
-> the G27 wheel, via the LED subsystem.
+On Fri, Apr 13, 2012 at 07:47:54PM +0800, Daniel Kurtz wrote:
+> Some of these messages can be hit when userspace tries to probe the i2c
+> with nothing connected or if the driver code tries to do the same. See:
+> https://bugs.freedesktop.org/show_bug.cgi?id=48248
 > 
-> The 5 LEDs are arranged from right (1=grn, 2=grn, 3=yel, 4=yel, 5=red)
-> and 'mirrored' to the left (10 LEDs in total).
-> 
-> Signed-off-by: Simon Wood <simon@mungewell.org>
-> ---
->  drivers/hid/hid-lg4ff.c |  149 ++++++++++++++++++++++++++++++++++++++++++++++-
->  1 files changed, 148 insertions(+), 1 deletions(-)
-
-This patch introduces a clear dependency of hid-lg4ff driver on 
-CONFIG_LEDS_CLASS, but the code doesn't reflect it.
-
-So either you have to put #ifdef into source to compile the leds part out 
-if leds subsystem is not enabled, or you have to introduce Kconfig rule to 
-cover this.
-
+> Signed-off-by: Daniel Kurtz <djkurtz@chromium.org>
+Both patches queued for -next, thanks a lot for all the work you've put
+into beating gmbus into shape.
+- Daniel
 -- 
-Jiri Kosina
-SUSE Labs
+Daniel Vetter
+Mail: daniel@ffwll.ch
+Mobile: +41 (0)79 365 57 48
