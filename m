@@ -1,41 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755521Ab2DMRJy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Apr 2012 13:09:54 -0400
-Received: from shards.monkeyblade.net ([198.137.202.13]:50744 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751197Ab2DMRJw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Apr 2012 13:09:52 -0400
-Date: Fri, 13 Apr 2012 13:09:40 -0400 (EDT)
-Message-Id: <20120413.130940.132638261191849442.davem@davemloft.net>
-To: mst@redhat.com
-Cc: linux-kernel@vger.kernel.org, kvm@vger.kernel.org,
-        virtualization@lists.linux-foundation.org, netdev@vger.kernel.org,
-        eric.dumazet@gmail.com, ian.campbell@citrix.com, xma@us.ibm.com,
-        shemminger@vyatta.com
-Subject: Re: [PATCH] skbuff: struct ubuf_info callback type safety
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <20120409102402.GA5255@redhat.com>
-References: <20120409102402.GA5255@redhat.com>
-X-Mailer: Mew version 6.4 on Emacs 23.3 / Mule 6.0 (HANACHIRUSATO)
+	id S1755603Ab2DMRKE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Apr 2012 13:10:04 -0400
+Received: from mail.vyatta.com ([76.74.103.46]:47326 "EHLO mail.vyatta.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755548Ab2DMRJ6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 Apr 2012 13:09:58 -0400
+Date: Fri, 13 Apr 2012 10:09:54 -0700
+From: Stephen Hemminger <shemminger@vyatta.com>
+To: Lino Sanfilippo <LinoSanfilippo@gmx.de>
+Cc: mlindner@marvell.com, davem@davemloft.net, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: sky2: in free_buffers() do proper checks before call of
+ rx_clean()
+Message-ID: <20120413100954.6fdc0f5c@nehalam.linuxnetplumber.net>
+In-Reply-To: <20120403001327.GB10227@Neptun>
+References: <20120403001327.GB10227@Neptun>
+Organization: Vyatta
+X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Fri, 13 Apr 2012 10:09:44 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Michael S. Tsirkin" <mst@redhat.com>
-Date: Mon, 9 Apr 2012 13:24:02 +0300
+On Tue, 3 Apr 2012 02:13:27 +0200
+Lino Sanfilippo <LinoSanfilippo@gmx.de> wrote:
 
-> The skb struct ubuf_info callback gets passed struct ubuf_info
-> itself, not the arg value as the field name and the function signature
-> seem to imply. Rename the arg field to ctx to match usage,
-> add documentation and change the callback argument type
-> to make usage clear and to have compiler check correctness.
+> In sky2_open() free_buffers() is called in case that alloc_buffers() failed.
+> Here we do the check for sky2->rx_le too late, since we already called
+> rx_clean() which accessed rx_le. Furthermore we lack a check for sky2->rx_ring
+> which is also accessed by rx_clean().
 > 
-> Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+> With this patch both sky2->rx_le and sky2->rx_ring are checked before
+> alloc_buffers() is called.
+> 
+> Signed-off-by: Lino Sanfilippo <LinoSanfilippo@gmx.de>
 
-Applied, thanks for fixing this Michael.
+Looking at sky2_alloc_buffers, it really needs to change to have
+proper unwind instead. If some portion of the memory required isn't available
+everything needs to be undone.
