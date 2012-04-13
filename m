@@ -1,24 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934795Ab2DMArN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Apr 2012 20:47:13 -0400
-Received: from mail.savoirfairelinux.com ([209.172.62.77]:52808 "EHLO
+	id S1763008Ab2DMAwM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Apr 2012 20:52:12 -0400
+Received: from mail.savoirfairelinux.com ([209.172.62.77]:49383 "EHLO
 	mail.savoirfairelinux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752303Ab2DMArJ (ORCPT
+	with ESMTP id S1754709Ab2DMAwJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Apr 2012 20:47:09 -0400
+	Thu, 12 Apr 2012 20:52:09 -0400
 From: Vivien Didelot <vivien.didelot@savoirfairelinux.com>
 To: x86@kernel.org
-Cc: Vivien Didelot <vivien.didelot@savoirfairelinux.com>,
+Cc: Jerome Oufella <jerome.oufella@savoirfairelinux.com>,
         Ingo Molnar <mingo@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
         "H. Peter Anvin" <hpa@zytor.com>, linux-kernel@vger.kernel.org,
         lm-sensors@lm-sensors.org, Guenter Roeck <guenter.roeck@ericsson.com>,
         Jean Delvare <khali@linux-fr.org>,
         Grant Likely <grant.likely@secretlab.ca>,
-        Linus Walleij <linus.walleij@stericsson.com>
-Subject: [PATCH v6 1/3] hwmon: Maxim MAX197 support
-Date: Thu, 12 Apr 2012 20:28:53 -0400
-Message-Id: <1334276935-11258-2-git-send-email-vivien.didelot@savoirfairelinux.com>
+        Linus Walleij <linus.walleij@stericsson.com>,
+        Vivien Didelot <vivien.didelot@savoirfairelinux.com>
+Subject: [PATCH v6 3/3] gpio: TS-5500 GPIO support
+Date: Thu, 12 Apr 2012 20:28:55 -0400
+Message-Id: <1334276935-11258-4-git-send-email-vivien.didelot@savoirfairelinux.com>
 X-Mailer: git-send-email 1.7.9.2
 In-Reply-To: <1334276935-11258-1-git-send-email-vivien.didelot@savoirfairelinux.com>
 References: <1334276935-11258-1-git-send-email-vivien.didelot@savoirfairelinux.com>
@@ -26,545 +27,484 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Jerome Oufella <jerome.oufella@savoirfairelinux.com>
+
+Signed-off-by: Jerome Oufella <jerome.oufella@savoirfairelinux.com>
 Signed-off-by: Vivien Didelot <vivien.didelot@savoirfairelinux.com>
 ---
- Documentation/hwmon/max197 |   59 +++++++
- drivers/hwmon/Kconfig      |    9 +
- drivers/hwmon/Makefile     |    1 +
- drivers/hwmon/max197.c     |  398 ++++++++++++++++++++++++++++++++++++++++++++
- include/linux/max197.h     |   20 +++
- 5 files changed, 487 insertions(+)
- create mode 100644 Documentation/hwmon/max197
- create mode 100644 drivers/hwmon/max197.c
- create mode 100644 include/linux/max197.h
+ MAINTAINERS                   |    2 +
+ arch/x86/include/asm/ts5500.h |   62 ++++++++
+ drivers/gpio/Kconfig          |    7 +
+ drivers/gpio/Makefile         |    1 +
+ drivers/gpio/gpio-ts5500.c    |  347 +++++++++++++++++++++++++++++++++++++++++
+ 5 files changed, 419 insertions(+)
+ create mode 100644 arch/x86/include/asm/ts5500.h
+ create mode 100644 drivers/gpio/gpio-ts5500.c
 
-diff --git a/Documentation/hwmon/max197 b/Documentation/hwmon/max197
+diff --git a/MAINTAINERS b/MAINTAINERS
+index b126129..b7b5d95 100644
+--- a/MAINTAINERS
++++ b/MAINTAINERS
+@@ -6624,6 +6624,8 @@ TECHNOLOGIC SYSTEMS TS-5500 MACHINE SUPPORT
+ M:	Savoir-faire Linux Inc. <kernel@savoirfairelinux.com>
+ S:	Maintained
+ F:	arch/x86/platform/ts5500/
++F:	arch/x86/include/asm/ts5500.h
++F:	drivers/gpio/gpio-ts5500.c
+ 
+ TEGRA SUPPORT
+ M:	Colin Cross <ccross@android.com>
+diff --git a/arch/x86/include/asm/ts5500.h b/arch/x86/include/asm/ts5500.h
 new file mode 100644
-index 0000000..318f6d1
+index 0000000..baf136c
 --- /dev/null
-+++ b/Documentation/hwmon/max197
-@@ -0,0 +1,59 @@
-+Maxim MAX197 driver
-+===================
-+
-+Author:
-+  * Vivien Didelot <vivien.didelot@savoirfairelinux.com>
-+
-+Supported chips:
-+  * Maxim MAX197
-+    Prefix: 'max197'
-+    Datasheet: http://datasheets.maxim-ic.com/en/ds/MAX197.pdf
-+
-+  * Maxim MAX199
-+    Prefix: 'max199'
-+    Datasheet: http://datasheets.maxim-ic.com/en/ds/MAX199.pdf
-+
-+Description
-+-----------
-+
-+The A/D converters MAX197 and MAX199 are both 8-Channel, Multi-Range, 5V,
-+12-Bit DAS with 8+4 Bus Interface and Fault Protection.
-+
-+The available ranges for the MAX197 are {0,-5V} to 5V, and {0,-10V} to 10V,
-+while they are {0,-2V} to 2V, and {0,-4V} to 4V on the MAX199.
-+
-+Platform data
-+-------------
-+
-+The MAX197 platform data (defined in linux/max197.h) should be filled with a
-+pointer to a conversion function, defined like:
-+
-+    int convert(u8 ctrl, u16 *raw);
-+
-+ctrl is the control byte to write to start a new conversion, and raw is a
-+pointer to the raw value read from the chip.
-+
-+Control byte format:
-+
-+Bit     Name       Description
-+7,6     PD1,PD0    Clock and Power-Down modes
-+5       ACQMOD     Internal or External Controlled Acquisition
-+4       RNG        Full-scale voltage magnitude at the input
-+3       BIP        Unipolar or Bipolar conversion mode
-+2,1,0   A2,A1,A0   Channel
-+
-+Sysfs interface
-+---------------
-+
-+* in[0-7]_input: The conversion value for the corresponding channel.
-+                 RO
-+
-+* in[0-7]_min:   The lower limit (in mV) for the corresponding channel.
-+                 For the MAX197, it will be adjusted to -10000, -5000, or 0.
-+                 For the MAX199, it will be adjusted to -4000, -2000, or 0.
-+                 RW
-+
-+* in[0-7]_max:   The higher limit (in mV) for the corresponding channel.
-+                 For the MAX197, it will be adjusted to 0, 5000, or 10000.
-+                 For the MAX199, it will be adjusted to 0, 2000, or 4000.
-+                 RW
-diff --git a/drivers/hwmon/Kconfig b/drivers/hwmon/Kconfig
-index 8deedc1..f5eefe6 100644
---- a/drivers/hwmon/Kconfig
-+++ b/drivers/hwmon/Kconfig
-@@ -1376,6 +1376,15 @@ config SENSORS_MC13783_ADC
-         help
-           Support for the A/D converter on MC13783 and MC13892 PMIC.
- 
-+config SENSORS_MAX197
-+	tristate "Maxim MAX197 and compatibles."
-+	help
-+	  If you say yes here you get support for the Maxim MAX197,
-+	  and MAX199 A/D converters.
-+
-+	  This driver can also be built as a module. If so, the module
-+	  will be called max197.
-+
- if ACPI
- 
- comment "ACPI drivers"
-diff --git a/drivers/hwmon/Makefile b/drivers/hwmon/Makefile
-index 6d3f11f..a69b8c6 100644
---- a/drivers/hwmon/Makefile
-+++ b/drivers/hwmon/Makefile
-@@ -126,6 +126,7 @@ obj-$(CONFIG_SENSORS_W83L785TS)	+= w83l785ts.o
- obj-$(CONFIG_SENSORS_W83L786NG)	+= w83l786ng.o
- obj-$(CONFIG_SENSORS_WM831X)	+= wm831x-hwmon.o
- obj-$(CONFIG_SENSORS_WM8350)	+= wm8350-hwmon.o
-+obj-$(CONFIG_SENSORS_MAX197)	+= max197.o
- 
- obj-$(CONFIG_PMBUS)		+= pmbus/
- 
-diff --git a/drivers/hwmon/max197.c b/drivers/hwmon/max197.c
-new file mode 100644
-index 0000000..e2317da
---- /dev/null
-+++ b/drivers/hwmon/max197.c
-@@ -0,0 +1,398 @@
++++ b/arch/x86/include/asm/ts5500.h
+@@ -0,0 +1,62 @@
 +/*
-+ * Maxim MAX197 A/D Converter Driver
++ * Technologic Systems TS-5500 GPIO (DIO) definitions
 + *
-+ * Copyright (c) 2012 Savoir-faire Linux Inc.
-+ *          Vivien Didelot <vivien.didelot@savoirfairelinux.com>
++ * Copyright (c) 2010-2012 Savoir-faire Linux Inc.
++ *	Jerome Oufella <jerome.oufella@savoirfairelinux.com>
 + *
 + * This program is free software; you can redistribute it and/or modify
 + * it under the terms of the GNU General Public License version 2 as
 + * published by the Free Software Foundation.
-+ *
-+ * For further information, see the Documentation/hwmon/max197 file.
 + */
 +
-+#include <linux/init.h>
++#ifndef _TS5500_H
++#define _TS5500_H
++
++#define TS5500_DIO1_0		0
++#define TS5500_DIO1_1		1
++#define TS5500_DIO1_2		2
++#define TS5500_DIO1_3		3
++#define TS5500_DIO1_4		4
++#define TS5500_DIO1_5		5
++#define TS5500_DIO1_6		6
++#define TS5500_DIO1_7		7
++#define TS5500_DIO1_8		8
++#define TS5500_DIO1_9		9
++#define TS5500_DIO1_10		10
++#define TS5500_DIO1_11		11
++#define TS5500_DIO1_12		12
++#define TS5500_DIO1_13		13
++
++#define TS5500_DIO2_0		14
++#define TS5500_DIO2_1		15
++#define TS5500_DIO2_2		16
++#define TS5500_DIO2_3		17
++#define TS5500_DIO2_4		18
++#define TS5500_DIO2_5		19
++#define TS5500_DIO2_6		20
++#define TS5500_DIO2_7		21
++#define TS5500_DIO2_8		22
++#define TS5500_DIO2_9		23
++#define TS5500_DIO2_10		24
++#define TS5500_DIO2_11		25
++/* #define TS5500_DIO2_12 - Keep commented out as it simply doesn't exist. */
++#define TS5500_DIO2_13		26
++
++#define TS5500_LCD_0		27
++#define TS5500_LCD_1		28
++#define TS5500_LCD_2		29
++#define TS5500_LCD_3		30
++#define TS5500_LCD_4		31
++#define TS5500_LCD_5		32
++#define TS5500_LCD_6		33
++#define TS5500_LCD_7		34
++#define TS5500_LCD_EN		35
++#define TS5500_LCD_RS		36
++#define TS5500_LCD_WR		37
++
++/* Lines that can trigger IRQs */
++#define TS5500_DIO1_13_IRQ	7
++#define TS5500_DIO2_13_IRQ	6
++#define TS5500_LCD_RS_IRQ	1
++
++#endif /* _TS5500_H */
+diff --git a/drivers/gpio/Kconfig b/drivers/gpio/Kconfig
+index edadbda..a19b0f3 100644
+--- a/drivers/gpio/Kconfig
++++ b/drivers/gpio/Kconfig
+@@ -319,6 +319,13 @@ config GPIO_TPS65912
+ 	help
+ 	  This driver supports TPS65912 gpio chip
+ 
++config GPIO_TS5500
++	tristate "TS-5500 GPIOs"
++	depends on TS5500
++	help
++	  This driver supports the DIO headers for GPIO usage on the Technologic
++	  Systems TS-5500 platform.
++
+ config GPIO_TWL4030
+ 	tristate "TWL4030, TWL5030, and TPS659x0 GPIOs"
+ 	depends on TWL4030_CORE
+diff --git a/drivers/gpio/Makefile b/drivers/gpio/Makefile
+index 007f54b..30cbd03 100644
+--- a/drivers/gpio/Makefile
++++ b/drivers/gpio/Makefile
+@@ -56,6 +56,7 @@ obj-$(CONFIG_GPIO_TIMBERDALE)	+= gpio-timberdale.o
+ obj-$(CONFIG_ARCH_DAVINCI_TNETV107X) += gpio-tnetv107x.o
+ obj-$(CONFIG_GPIO_TPS65910)	+= gpio-tps65910.o
+ obj-$(CONFIG_GPIO_TPS65912)	+= gpio-tps65912.o
++obj-$(CONFIG_GPIO_TS5500)	+= gpio-ts5500.o
+ obj-$(CONFIG_GPIO_TWL4030)	+= gpio-twl4030.o
+ obj-$(CONFIG_GPIO_UCB1400)	+= gpio-ucb1400.o
+ obj-$(CONFIG_GPIO_VR41XX)	+= gpio-vr41xx.o
+diff --git a/drivers/gpio/gpio-ts5500.c b/drivers/gpio/gpio-ts5500.c
+new file mode 100644
+index 0000000..01f34d8
+--- /dev/null
++++ b/drivers/gpio/gpio-ts5500.c
+@@ -0,0 +1,347 @@
++/*
++ * GPIO (DIO) driver for Technologic Systems TS-5500
++ *
++ * TS-5500 board has 38 GPIOs referred to as DIOs in the product's literature.
++ *
++ * Copyright (c) 2010-2012 Savoir-faire Linux Inc.
++ *	Jerome Oufella <jerome.oufella@savoirfairelinux.com>
++ *	Vivien Didelot <vivien.didelot@savoirfairelinux.com>
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ */
++
 +#include <linux/module.h>
-+#include <linux/kernel.h>
-+#include <linux/device.h>
-+#include <linux/delay.h>
-+#include <linux/platform_device.h>
-+#include <linux/err.h>
-+#include <linux/sysfs.h>
-+#include <linux/hwmon.h>
-+#include <linux/hwmon-sysfs.h>
-+#include <linux/mutex.h>
 +#include <linux/slab.h>
++#include <linux/gpio.h>
 +#include <linux/io.h>
-+#include <linux/max197.h>
++#include <linux/platform_device.h>
++#include <asm/ts5500.h>
 +
-+#define MAX199_LIMIT	4000	/* 4V */
-+#define MAX197_LIMIT	10000	/* 10V */
++static int dio1_irq = 1;
++module_param(dio1_irq, int, 0644);
++MODULE_PARM_DESC(dio1_irq, "Enable usage of IRQ7 for any DIO1 line"
++		 " (default 1)");
 +
-+#define MAX197_NUM_CH	8	/* 8 Analog Input Channels */
++static int dio2_irq;
++module_param(dio2_irq, int, 0644);
++MODULE_PARM_DESC(dio2_irq, "Enable usage of IRQ6 for any DIO2 line"
++		 " (default 0)");
 +
-+/* Control byte format */
-+#define MAX197_A0	0x01	/* Channel bit 0 */
-+#define MAX197_A1	0x02	/* Channel bit 1 */
-+#define MAX197_A2	0x04	/* Channel bit 2 */
-+#define MAX197_BIP	0x08	/* Bipolarity */
-+#define MAX197_RNG	0x10	/* Full range */
-+#define MAX197_ACQMOD	0x20	/* Internal/External controlled acquisition */
-+#define MAX197_PD0	0x40	/* Clock/Power-Down modes bit 1 */
-+#define MAX197_PD1	0x80	/* Clock/Power-Down modes bit 2 */
++static int lcd_irq;
++module_param(lcd_irq, int, 0644);
++MODULE_PARM_DESC(lcd_irq, "Enable usage of IRQ1 for any LCD line"
++		 " (default 0)");
 +
-+#define MAX197_SCALE	12207	/* Scale coefficient for raw data */
++static int use_lcdio;
++module_param(use_lcdio, int, 0644);
++MODULE_PARM_DESC(use_lcdio, "Enable usage of the LCD header for DIO operation"
++		 " (default 0)");
 +
-+/**
-+ * struct max197_chip - device instance specific data
-+ * @pdata:		Platform data.
-+ * @hwmon_dev:		The hwmon device.
-+ * @lock:		Read/Write mutex.
-+ * @limit:		Max range value (10V for MAX197, 4V for MAX199).
-+ * @scale:		Need to scale.
-+ * @ctrl_bytes:		Channels control byte.
-+ */
-+struct max197_chip {
-+	struct max197_platform_data *pdata;
-+	struct device *hwmon_dev;
-+	struct mutex lock;
-+	int limit;
-+	bool scale;
-+	u8 ctrl_bytes[MAX197_NUM_CH];
++static DEFINE_SPINLOCK(gpio_lock);
++
++static inline void port_bit_set(u8 addr, int bit)
++{
++	u8 var;
++
++	var = inb(addr);
++	var |= (1 << bit);
++	outb(var, addr);
++}
++
++static inline void port_bit_clear(u8 addr, int bit)
++{
++	u8 var;
++
++	var = inb(addr);
++	var &= ~(1 << bit);
++	outb(var, addr);
++}
++
++/* "DIO" line to IO port mapping table for line's value */
++static const unsigned long line_to_port_map[] = {
++	0x7B, 0x7B, 0x7B, 0x7B, 0x7B, 0x7B, 0x7B, 0x7B,	/* DIO1_[0-7] */
++	0x7C, 0x7C, 0x7C, 0x7C, 0x7C, 0x7C,		/* DIO1_[8-13] */
++	0x7E, 0x7E, 0x7E, 0x7E, 0x7E, 0x7E, 0x7E, 0x7E,	/* DIO2_[0-7] */
++	0x7F, 0x7F, 0x7F, 0x7F, 0x7F, 0x7F,		/* DIO2_[8-13] */
++	0x72, 0x72, 0x72, 0x72, 0x72, 0x72, 0x72, 0x72,	/* LCD_[0-7] */
++	0x73, 0x73, 0x73				/* LCD_{EN,RS,WR} */
 +};
 +
-+static inline void max197_set_unipolarity(struct max197_chip *chip, int channel)
-+{
-+	chip->ctrl_bytes[channel] &= ~MAX197_BIP;
-+}
-+
-+static inline void max197_set_bipolarity(struct max197_chip *chip, int channel)
-+{
-+	chip->ctrl_bytes[channel] |= MAX197_BIP;
-+}
-+
-+static inline void max197_set_half_range(struct max197_chip *chip, int channel)
-+{
-+	chip->ctrl_bytes[channel] &= ~MAX197_RNG;
-+}
-+
-+static inline void max197_set_full_range(struct max197_chip *chip, int channel)
-+{
-+	chip->ctrl_bytes[channel] |= MAX197_RNG;
-+}
-+
-+static inline bool max197_is_bipolar(struct max197_chip *chip, int channel)
-+{
-+	return chip->ctrl_bytes[channel] & MAX197_BIP;
-+}
-+
-+static inline bool max197_is_full_range(struct max197_chip *chip, int channel)
-+{
-+	return chip->ctrl_bytes[channel] & MAX197_RNG;
-+}
-+
-+/**
-+ * max197_show_range() - Display range on user output
-+ *
-+ * Function called on read access on in{0,1,2,3,4,5,6,7}_{min,max}
-+ */
-+static ssize_t max197_show_range(struct device *dev,
-+				 struct device_attribute *devattr, char *buf)
-+{
-+	struct max197_chip *chip = dev_get_drvdata(dev);
-+	struct sensor_device_attribute_2 *attr = to_sensor_dev_attr_2(devattr);
-+	int channel = attr->index;
-+	bool is_min = attr->nr;
-+	int range;
-+
-+	if (mutex_lock_interruptible(&chip->lock))
-+		return -ERESTARTSYS;
-+
-+	range = max197_is_full_range(chip, channel) ?
-+		chip->limit : chip->limit / 2;
-+	if (is_min) {
-+		if (max197_is_bipolar(chip, channel))
-+			range = -range;
-+		else
-+			range = 0;
-+	}
-+
-+	mutex_unlock(&chip->lock);
-+
-+	return sprintf(buf, "%d\n", range);
-+}
-+
-+/**
-+ * max197_store_range() - Write range from user input
-+ *
-+ * Function called on write access on in{0,1,2,3,4,5,6,7}_{min,max}
-+ */
-+static ssize_t max197_store_range(struct device *dev,
-+				  struct device_attribute *devattr,
-+				  const char *buf, size_t count)
-+{
-+	struct max197_chip *chip = dev_get_drvdata(dev);
-+	struct sensor_device_attribute_2 *attr = to_sensor_dev_attr_2(devattr);
-+	int channel = attr->index;
-+	bool is_min = attr->nr;
-+	long value;
-+	int half = chip->limit / 2;
-+	int full = chip->limit;
-+
-+	if (kstrtol(buf, 10, &value))
-+		return -EINVAL;
-+
-+	if (is_min) {
-+		if (value <= -full)
-+			value = -full;
-+		else if (value < 0)
-+			value = -half;
-+		else
-+			value = 0;
-+	} else {
-+		if (value >= full)
-+			value = full;
-+		else
-+			value = half;
-+	}
-+
-+	if (mutex_lock_interruptible(&chip->lock))
-+		return -ERESTARTSYS;
-+
-+	if (value == 0) {
-+		/* We can deduce only the polarity */
-+		max197_set_unipolarity(chip, channel);
-+	} else if (value == -half) {
-+		max197_set_bipolarity(chip, channel);
-+		max197_set_half_range(chip, channel);
-+	} else if (value == -full) {
-+		max197_set_bipolarity(chip, channel);
-+		max197_set_full_range(chip, channel);
-+	} else if (value == half) {
-+		/* We can deduce only the range */
-+		max197_set_half_range(chip, channel);
-+	} else if (value == full) {
-+		/* We can deduce only the range */
-+		max197_set_full_range(chip, channel);
-+	}
-+
-+	mutex_unlock(&chip->lock);
-+
-+	return count;
-+}
-+
-+/**
-+ * max197_show_input() - Show channel input
-+ *
-+ * Function called on read access on in{0,1,2,3,4,5,6,7}_input
-+ */
-+static ssize_t max197_show_input(struct device *dev,
-+				 struct device_attribute *devattr,
-+				 char *buf)
-+{
-+	struct max197_chip *chip = dev_get_drvdata(dev);
-+	struct sensor_device_attribute *attr = to_sensor_dev_attr(devattr);
-+	int channel = attr->index;
-+	u16 raw;
-+	s32 scaled;
-+	int ret;
-+
-+	if (mutex_lock_interruptible(&chip->lock))
-+		return -ERESTARTSYS;
-+
-+	ret = chip->pdata->convert(chip->ctrl_bytes[channel], &raw);
-+	if (ret) {
-+		dev_err(dev, "conversion failed\n");
-+		goto unlock;
-+	}
-+
-+	/*
-+	 * Coefficient to apply on raw value.
-+	 * See Table 1. Full Scale and Zero Scale in the MAX197 datasheet.
-+	 */
-+	scaled = raw;
-+	if (chip->scale) {
-+		scaled *= MAX197_SCALE;
-+		if (max197_is_full_range(chip, channel))
-+			scaled *= 2;
-+		scaled /= 10000;
-+	}
-+
-+	ret = sprintf(buf, "%d\n", scaled);
-+
-+unlock:
-+	mutex_unlock(&chip->lock);
-+	return ret;
-+}
-+
-+static ssize_t max197_show_name(struct device *dev,
-+				struct device_attribute *attr, char *buf)
-+{
-+	struct platform_device *pdev = to_platform_device(dev);
-+	return sprintf(buf, "%s\n", pdev->name);
-+}
-+
-+#define MAX197_SENSOR_DEVICE_ATTR_CH(chan)				\
-+	static SENSOR_DEVICE_ATTR(in##chan##_input, S_IRUGO,		\
-+				  max197_show_input, NULL, chan);	\
-+	static SENSOR_DEVICE_ATTR_2(in##chan##_min, S_IRUGO | S_IWUSR,	\
-+				    max197_show_range,			\
-+				    max197_store_range,			\
-+				    true, chan);			\
-+	static SENSOR_DEVICE_ATTR_2(in##chan##_max, S_IRUGO | S_IWUSR,	\
-+				    max197_show_range,			\
-+				    max197_store_range,			\
-+				    false, chan)
-+
-+#define MAX197_SENSOR_DEV_ATTR_IN(chan)					\
-+	&sensor_dev_attr_in##chan##_input.dev_attr.attr,		\
-+	&sensor_dev_attr_in##chan##_max.dev_attr.attr,			\
-+	&sensor_dev_attr_in##chan##_min.dev_attr.attr
-+
-+static DEVICE_ATTR(name, S_IRUGO, max197_show_name, NULL);
-+
-+MAX197_SENSOR_DEVICE_ATTR_CH(0);
-+MAX197_SENSOR_DEVICE_ATTR_CH(1);
-+MAX197_SENSOR_DEVICE_ATTR_CH(2);
-+MAX197_SENSOR_DEVICE_ATTR_CH(3);
-+MAX197_SENSOR_DEVICE_ATTR_CH(4);
-+MAX197_SENSOR_DEVICE_ATTR_CH(5);
-+MAX197_SENSOR_DEVICE_ATTR_CH(6);
-+MAX197_SENSOR_DEVICE_ATTR_CH(7);
-+
-+static const struct attribute_group max197_sysfs_group = {
-+	.attrs = (struct attribute *[]) {
-+		&dev_attr_name.attr,
-+		MAX197_SENSOR_DEV_ATTR_IN(0),
-+		MAX197_SENSOR_DEV_ATTR_IN(1),
-+		MAX197_SENSOR_DEV_ATTR_IN(2),
-+		MAX197_SENSOR_DEV_ATTR_IN(3),
-+		MAX197_SENSOR_DEV_ATTR_IN(4),
-+		MAX197_SENSOR_DEV_ATTR_IN(5),
-+		MAX197_SENSOR_DEV_ATTR_IN(6),
-+		MAX197_SENSOR_DEV_ATTR_IN(7),
-+		NULL
-+	}
++/* "DIO" line to IO port's bit map for line's value */
++static const int line_to_bit_map[] = {
++	0, 1, 2, 3, 4, 5, 6, 7,	/* DIO1_[0-7] */
++	0, 1, 2, 3, 4, 5,	/* DIO1_[8-13] */
++	0, 1, 2, 3, 4, 5, 6, 7,	/* DIO2_[0-7] */
++	0, 1, 2, 3, 4, 5,	/* DIO2_[8-13] */
++	0, 1, 2, 3, 4, 5, 6, 7,	/* LCD_[0-7] */
++	0, 7, 6			/* LCD_{EN,RS,WR} */
 +};
 +
-+static int __devinit max197_probe(struct platform_device *pdev)
++/* "DIO" line's direction control mapping table */
++static const unsigned long line_to_dir_map[] = {
++	0x7A, 0x7A, 0x7A, 0x7A, 0x7A, 0x7A, 0x7A, 0x7A,	/* DIO1_[0-7] */
++	0x7A, 0x7A, 0x7A, 0x7A, 0, 0,			/* DIO1_[8-13] */
++	0x7D, 0x7D, 0x7D, 0x7D, 0x7D, 0x7D, 0x7D, 0x7D,	/* DIO2_[0-7] */
++	0x7D, 0x7D, 0x7D, 0x7D, 0, 0,			/* DIO2_[8-13] */
++	0x7D, 0x7D, 0x7D, 0x7D, 0x7D, 0x7D, 0x7D, 0x7D,	/* LCD_[0-7] */
++	0, 0, 0						/* LCD_{EN,RS,WR} */
++};
++
++/* "DIO" line's direction control bit-mapping table */
++static const int line_to_dir_bit_map[] = {
++	0, 0, 0, 0, 1, 1, 1, 1,	/* DIO1_[0-7] */
++	5, 5, 5, 5, -1, -1,	/* DIO1_[8-13] */
++	0, 0, 0, 0, 1, 1, 1, 1,	/* DIO2_[0-7] */
++	5, 5, 5, 5, -1, -1,	/* DIO2_[8-13] */
++	2, 2, 2, 2, 3, 3, 3, 3,	/* LCD_[0-7] */
++	-1, -1, -1		/* LCD_{EN,RS,WR} */
++};
++
++static int ts5500_gpio_direction_input(struct gpio_chip *chip, unsigned offset)
 +{
-+	struct max197_chip *chip = kzalloc(sizeof *chip, GFP_KERNEL);
-+	int ch, ret;
++	unsigned long dir_reg, flags;
++	int dir_bit;
 +
-+	if (chip == NULL) {
-+		ret = -ENOMEM;
-+		goto error_ret;
-+	}
-+	platform_set_drvdata(pdev, chip);
++	/* Some lines cannot be configured as input */
++	if (offset == TS5500_LCD_EN)
++		return -ENXIO;
 +
-+	mutex_init(&chip->lock);
++	dir_reg = line_to_dir_map[offset];
++	dir_bit = line_to_dir_bit_map[offset];
 +
-+	if (pdev->dev.platform_data == NULL) {
-+		dev_err(&pdev->dev, "no platform data supplied\n");
-+		ret = -EINVAL;
-+		goto error_free_chip;
-+	}
-+	chip->pdata = pdev->dev.platform_data;
-+
-+	if (chip->pdata->convert == NULL) {
-+		dev_err(&pdev->dev, "no convert function supplied\n");
-+		ret = -EINVAL;
-+		goto error_free_chip;
-+	}
-+
-+	if (strcmp("max197", pdev->name) == 0) {
-+		chip->limit = MAX197_LIMIT;
-+		chip->scale = true;
-+	} else {
-+		chip->limit = MAX199_LIMIT;
-+		chip->scale = false;
-+	}
-+
-+	for (ch = 0; ch < MAX197_NUM_CH; ch++)
-+		chip->ctrl_bytes[ch] = (u8) ch;
-+
-+	ret = sysfs_create_group(&pdev->dev.kobj, &max197_sysfs_group);
-+	if (ret) {
-+		dev_err(&pdev->dev, "sysfs create group failed\n");
-+		goto error_free_chip;
-+	}
-+
-+	chip->hwmon_dev = hwmon_device_register(&pdev->dev);
-+	if (IS_ERR(chip->hwmon_dev)) {
-+		dev_err(&pdev->dev, "hwmon device register failed\n");
-+		ret = PTR_ERR(chip->hwmon_dev);
-+		goto error_release_sysfs_group;
-+	}
-+
-+	return 0;
-+
-+error_release_sysfs_group:
-+	sysfs_remove_group(&pdev->dev.kobj, &max197_sysfs_group);
-+error_free_chip:
-+	kfree(chip);
-+error_ret:
-+	return ret;
-+}
-+
-+static int __devexit max197_remove(struct platform_device *pdev)
-+{
-+	struct max197_chip *chip = platform_get_drvdata(pdev);
-+
-+	hwmon_device_unregister(chip->hwmon_dev);
-+	sysfs_remove_group(&pdev->dev.kobj, &max197_sysfs_group);
-+	kfree(chip);
++	spin_lock_irqsave(&gpio_lock, flags);
++	port_bit_clear(dir_reg, dir_bit);
++	spin_unlock_irqrestore(&gpio_lock, flags);
 +
 +	return 0;
 +}
 +
-+static struct platform_driver __refdata maxim_drivers[] = {
-+	{
-+		.driver = {
-+			.name = "max197",
-+			.owner = THIS_MODULE,
-+		},
-+		.probe = max197_probe,
-+		.remove = __devexit_p(max197_remove),
-+	}, {
-+		.driver = {
-+			.name = "max199",
-+			.owner = THIS_MODULE,
-+		},
-+		.probe = max197_probe,
-+		.remove = __devexit_p(max197_remove),
++static int ts5500_gpio_get(struct gpio_chip *chip, unsigned offset)
++{
++	unsigned long ioaddr;
++	int bitno;
++
++	ioaddr = line_to_port_map[offset];
++	bitno = line_to_bit_map[offset];
++
++	return (inb(ioaddr) >> bitno) & 0x1;
++}
++
++static int ts5500_gpio_direction_output(struct gpio_chip *chip, unsigned offset,
++					int val)
++{
++	unsigned long dir_reg, ioaddr, flags;
++	int dir_bit, bitno;
++
++	/* Some lines cannot be configured as output */
++	switch (offset) {
++	case TS5500_DIO1_12:
++	case TS5500_DIO1_13:
++	case TS5500_DIO2_13:
++	case TS5500_LCD_RS:
++	case TS5500_LCD_WR:
++		return -ENXIO;
++	default:
++		break;
 +	}
++
++	dir_reg = line_to_dir_map[offset];
++	dir_bit = line_to_dir_bit_map[offset];
++	ioaddr = line_to_port_map[offset];
++	bitno = line_to_bit_map[offset];
++
++	spin_lock_irqsave(&gpio_lock, flags);
++	port_bit_set(dir_reg, dir_bit);
++	if (val)
++		port_bit_set(ioaddr, bitno);
++	else
++		port_bit_clear(ioaddr, bitno);
++	spin_unlock_irqrestore(&gpio_lock, flags);
++
++	return 0;
++}
++
++static void ts5500_gpio_set(struct gpio_chip *chip, unsigned offset, int val)
++{
++	int bitno;
++	unsigned long ioaddr, flags;
++
++	ioaddr = line_to_port_map[offset];
++	bitno = line_to_bit_map[offset];
++
++	spin_lock_irqsave(&gpio_lock, flags);
++	if (val)
++		port_bit_set(ioaddr, bitno);
++	else
++		port_bit_clear(ioaddr, bitno);
++	spin_unlock_irqrestore(&gpio_lock, flags);
++}
++
++static int ts5500_gpio_to_irq(struct gpio_chip *chip, unsigned offset)
++{
++	/* Only a few lines are IRQ-capable */
++	if (offset == TS5500_DIO1_13)
++		return TS5500_DIO1_13_IRQ;
++	if (offset == TS5500_DIO2_13)
++		return TS5500_DIO2_13_IRQ;
++	if (offset == TS5500_LCD_RS)
++		return TS5500_LCD_RS_IRQ;
++
++	/* IRQ line may be bridged with another DIO line from the same header */
++	if (dio1_irq && offset >= TS5500_DIO1_0 && offset < TS5500_DIO1_13)
++		return TS5500_DIO1_13_IRQ;
++	if (dio2_irq && offset >= TS5500_DIO2_0 && offset < TS5500_DIO2_13)
++		return TS5500_DIO2_13_IRQ;
++	if (lcd_irq && offset >= TS5500_LCD_0 && offset <= TS5500_LCD_WR)
++		return TS5500_LCD_RS_IRQ;
++
++	return -ENXIO;
++}
++
++static struct gpio_chip ts5500_gpio_chip = {
++	.label = "ts5500-gpio",
++	.owner = THIS_MODULE,
++	.direction_input = ts5500_gpio_direction_input,
++	.get = ts5500_gpio_get,
++	.direction_output = ts5500_gpio_direction_output,
++	.set = ts5500_gpio_set,
++	.to_irq = ts5500_gpio_to_irq,
++	.base = TS5500_DIO1_0,
 +};
 +
-+static int __init max197_init(void)
++static void ts5500_gpio_release(struct device *dev)
++{
++	/* noop */
++}
++
++static struct platform_device ts5500_gpio_pdev = {
++	.name = "ts5500-gpio",
++	.id = -1,
++	.dev = {
++		.release = ts5500_gpio_release,
++	},
++};
++
++static int __devinit ts5500_gpio_probe(struct platform_device *pdev)
 +{
 +	int ret;
-+	int i;
++	unsigned long flags;
 +
-+	for (i = 0; i < ARRAY_SIZE(maxim_drivers); i++) {
-+		ret = platform_driver_register(&maxim_drivers[i]);
-+		if (ret)
-+			goto error_unregister;
++	if (pdev == NULL)
++		return -ENODEV;
++
++	if (!request_region(0x7A, 3, "ts5500-gpio-DIO1")) {
++		dev_err(&pdev->dev, "failed to request I/O port 0x7A-7C\n");
++		return -EBUSY;
 +	}
++
++	if (!request_region(0x7D, 3, "ts5500-gpio-DIO2")) {
++		dev_err(&pdev->dev, "failed to request I/O port 0x7D-7F\n");
++		ret = -EBUSY;
++		goto release_dio1;
++	}
++
++	if (use_lcdio && !request_region(0x72, 2, "ts5500-gpio-LCD")) {
++		dev_err(&pdev->dev, "failed to request I/O port 0x72-73\n");
++		ret = -EBUSY;
++		goto release_dio2;
++	}
++
++	if (use_lcdio)
++		ts5500_gpio_chip.ngpio = TS5500_LCD_WR + 1;
++	else
++		ts5500_gpio_chip.ngpio = TS5500_DIO2_13 + 1;
++
++	ret = gpiochip_add(&ts5500_gpio_chip);
++	if (ret) {
++		dev_err(&pdev->dev, "failed to register the gpio chip\n");
++		goto release_lcd;
++	}
++
++	/* Enable IRQ generation */
++	spin_lock_irqsave(&gpio_lock, flags);
++	port_bit_set(0x7A, 7); /* DIO1_13 on IRQ7 */
++	port_bit_set(0x7D, 7); /* DIO2_13 on IRQ6 */
++	if (use_lcdio) {
++		port_bit_clear(0x7D, 4); /* LCD header usage as DIO */
++		port_bit_set(0x7D, 6); /* LCD_RS on IRQ1 */
++	}
++	spin_unlock_irqrestore(&gpio_lock, flags);
 +
 +	return 0;
 +
-+error_unregister:
-+	while (--i >= 0)
-+		platform_driver_unregister(&maxim_drivers[i]);
++release_lcd:
++	if (use_lcdio)
++		release_region(0x72, 2);
++release_dio2:
++	release_region(0x7D, 3);
++release_dio1:
++	release_region(0x7A, 3);
 +
 +	return ret;
 +}
-+module_init(max197_init);
 +
-+static void __exit max197_exit(void)
++static int __devexit ts5500_gpio_remove(struct platform_device *pdev)
 +{
-+	int i;
-+	for (i = ARRAY_SIZE(maxim_drivers) - 1; i >= 0; i--)
-+		platform_driver_unregister(&maxim_drivers[i]);
++	int ret;
++	unsigned long flags;
++
++	/* Disable IRQ generation */
++	spin_lock_irqsave(&gpio_lock, flags);
++	port_bit_clear(0x7A, 7);
++	port_bit_clear(0x7D, 7);
++	if (use_lcdio)
++		port_bit_clear(0x7D, 6);
++	spin_unlock_irqrestore(&gpio_lock, flags);
++
++	release_region(0x7A, 3);
++	release_region(0x7D, 3);
++	if (use_lcdio)
++		release_region(0x72, 2);
++
++	ret = gpiochip_remove(&ts5500_gpio_chip);
++	if (ret)
++		dev_err(&pdev->dev, "failed to remove the gpio chip\n");
++
++	return ret;
 +}
-+module_exit(max197_exit);
++
++static struct platform_driver ts5500_gpio_driver = {
++	.driver = {
++		.name = "ts5500-gpio",
++		.owner = THIS_MODULE,
++	},
++	.probe = ts5500_gpio_probe,
++	.remove = __devexit_p(ts5500_gpio_remove),
++};
++
++static int __init ts5500_gpio_init(void)
++{
++	int ret;
++
++	ret = platform_driver_register(&ts5500_gpio_driver);
++	if (ret)
++		return ret;
++
++	ret = platform_device_register(&ts5500_gpio_pdev);
++	if (ret) {
++		platform_driver_unregister(&ts5500_gpio_driver);
++		return ret;
++	}
++
++	return 0;
++}
++module_init(ts5500_gpio_init);
++
++static void __exit ts5500_gpio_exit(void)
++{
++	platform_driver_unregister(&ts5500_gpio_driver);
++	platform_device_unregister(&ts5500_gpio_pdev);
++}
++module_exit(ts5500_gpio_exit);
 +
 +MODULE_LICENSE("GPL");
 +MODULE_AUTHOR("Savoir-faire Linux Inc. <kernel@savoirfairelinux.com>");
-+MODULE_DESCRIPTION("Maxim MAX197 ADC driver");
-diff --git a/include/linux/max197.h b/include/linux/max197.h
-new file mode 100644
-index 0000000..0ed5399
---- /dev/null
-+++ b/include/linux/max197.h
-@@ -0,0 +1,20 @@
-+/*
-+ * Maxim MAX197 A/D Converter Driver
-+ *
-+ * Copyright (c) 2012 Savoir-faire Linux Inc.
-+ *          Vivien Didelot <vivien.didelot@savoirfairelinux.com>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ *
-+ * For further information, see the Documentation/hwmon/max197 file.
-+ */
-+
-+/**
-+ * struct max197_platform_data - MAX197 connectivity info
-+ * @convert:	start a conversion, and read the raw data from the chip.
-+ */
-+struct max197_platform_data {
-+	int (*convert)(u8 ctrl, u16 *raw);
-+};
++MODULE_DESCRIPTION("Technologic Systems TS-5500, GPIO/DIO driver");
 -- 
 1.7.9.2
 
