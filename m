@@ -1,59 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755166Ab2DMQz0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Apr 2012 12:55:26 -0400
-Received: from mail-pz0-f52.google.com ([209.85.210.52]:42060 "EHLO
-	mail-pz0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752752Ab2DMQzY (ORCPT
+	id S1755248Ab2DMRAJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Apr 2012 13:00:09 -0400
+Received: from shards.monkeyblade.net ([198.137.202.13]:50638 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750822Ab2DMRAG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Apr 2012 12:55:24 -0400
-Date: Fri, 13 Apr 2012 09:55:19 -0700
-From: Tejun Heo <tj@kernel.org>
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: axboe@kernel.dk, ctalbott@google.com, rni@google.com,
-        linux-kernel@vger.kernel.org, cgroups@vger.kernel.org,
-        containers@lists.linux-foundation.org
-Subject: Re: [PATCH 1/8] blkcg: kill blkio_list and replace blkio_list_lock
- with a mutex
-Message-ID: <20120413165519.GA12233@google.com>
-References: <1334273380-30233-1-git-send-email-tj@kernel.org>
- <1334273380-30233-2-git-send-email-tj@kernel.org>
- <20120413133226.GB26383@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120413133226.GB26383@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Fri, 13 Apr 2012 13:00:06 -0400
+Date: Fri, 13 Apr 2012 12:59:54 -0400 (EDT)
+Message-Id: <20120413.125954.1123124134206162716.davem@davemloft.net>
+To: LinoSanfilippo@gmx.de
+Cc: shemminger@vyatta.com, mlindner@marvell.com, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: sky2: in free_buffers() do proper checks before call of
+ rx_clean()
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <20120403001327.GB10227@Neptun>
+References: <20120403001327.GB10227@Neptun>
+X-Mailer: Mew version 6.4 on Emacs 23.3 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Fri, 13 Apr 2012 09:59:57 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 13, 2012 at 09:32:26AM -0400, Vivek Goyal wrote:
-> On Thu, Apr 12, 2012 at 04:29:33PM -0700, Tejun Heo wrote:
-> 
-> Hi Tejun,
-> 
-> > @@ -732,20 +732,21 @@ void blkio_policy_register(struct blkio_policy_type *blkiop)
-> >  {
-> >  	struct request_queue *q;
-> >  
-> > +	mutex_lock(&blkcg_pol_mutex);
-> > +
-> >  	blkcg_bypass_start();
-> > -	spin_lock(&blkio_list_lock);
-> >  
-> >  	BUG_ON(blkio_policy[blkiop->plid]);
-> 
-> A minor nit. It might be a good idea to check that blkiop->plid is not
-> greater than BLKIO_NR_POLICIES for both registration and unresitration
-> functions to avoid touching memory beyond blkio_policy[] array.
+From: Lino Sanfilippo <LinoSanfilippo@gmx.de>
+Date: Tue, 3 Apr 2012 02:13:27 +0200
 
-I'm making ->plid to be dynamically allocated on registration anyway,
-so I don't think it really matters.  The updated unregistration
-function does BUG_ON(blkio_policy[pol->plid] != pol) which should
-catch stray plid.
+> In sky2_open() free_buffers() is called in case that alloc_buffers() failed.
+> Here we do the check for sky2->rx_le too late, since we already called
+> rx_clean() which accessed rx_le. Furthermore we lack a check for sky2->rx_ring
+> which is also accessed by rx_clean().
+> 
+> With this patch both sky2->rx_le and sky2->rx_ring are checked before
+> alloc_buffers() is called.
+> 
+> Signed-off-by: Lino Sanfilippo <LinoSanfilippo@gmx.de>
+
+Stephen, I'm still waiting on your review of this patch.
 
 Thanks.
-
--- 
-tejun
