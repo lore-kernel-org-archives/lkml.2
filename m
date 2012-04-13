@@ -1,297 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755752Ab2DMSVM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Apr 2012 14:21:12 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:51756 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755709Ab2DMSVG (ORCPT
+	id S1755741Ab2DMSV2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Apr 2012 14:21:28 -0400
+Received: from smtp.ctxuk.citrix.com ([62.200.22.115]:16570 "EHLO
+	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752515Ab2DMSVI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Apr 2012 14:21:06 -0400
-Date: Fri, 13 Apr 2012 11:20:38 -0700
-From: tip-bot for Namhyung Kim <namhyung@gmail.com>
-Message-ID: <tip-aca7a94d6a59d6bf2600768e752f971c6cc0ab57@git.kernel.org>
-Cc: acme@redhat.com, linux-kernel@vger.kernel.org, paulus@samba.org,
-        hpa@zytor.com, mingo@kernel.org, penberg@kernel.org,
-        acme@ghostprotocols.net, namhyung.kim@lge.com, namhyung@gmail.com,
-        tglx@linutronix.de, mingo@elte.hu
-Reply-To: mingo@kernel.org, hpa@zytor.com, paulus@samba.org,
-        linux-kernel@vger.kernel.org, acme@redhat.com, acme@ghostprotocols.net,
-        penberg@kernel.org, namhyung.kim@lge.com, tglx@linutronix.de,
-        namhyung@gmail.com, mingo@elte.hu
-In-Reply-To: <1333523666-12057-1-git-send-email-namhyung.kim@lge.com>
-References: <1333523666-12057-1-git-send-email-namhyung.kim@lge.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf tools: Move UI bits to tools/perf/
- ui directory
-Git-Commit-ID: aca7a94d6a59d6bf2600768e752f971c6cc0ab57
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Fri, 13 Apr 2012 14:21:08 -0400
+X-IronPort-AV: E=Sophos;i="4.75,418,1330905600"; 
+   d="scan'208";a="11932575"
+From: David Vrabel <david.vrabel@citrix.com>
+To: <xen-devel@lists.xensource.com>
+CC: David Vrabel <david.vrabel@citrix.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        <linux-kernel@vger.kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
+        Tim Deegan <tim@xen.org>, Jan Beulich <jbeulich@suse.com>,
+        Sheng Yang <sheng@yasker.org>
+Subject: [PATCH] xen: always set the sched clock as unstable
+Date: Fri, 13 Apr 2012 19:20:55 +0100
+Message-ID: <1334341255-11153-1-git-send-email-david.vrabel@citrix.com>
+X-Mailer: git-send-email 1.7.2.5
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Fri, 13 Apr 2012 11:20:45 -0700 (PDT)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  aca7a94d6a59d6bf2600768e752f971c6cc0ab57
-Gitweb:     http://git.kernel.org/tip/aca7a94d6a59d6bf2600768e752f971c6cc0ab57
-Author:     Namhyung Kim <namhyung@gmail.com>
-AuthorDate: Wed, 4 Apr 2012 00:14:26 -0700
-Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Wed, 11 Apr 2012 17:16:40 -0300
+From: David Vrabel <david.vrabel@citrix.com>
 
-perf tools: Move UI bits to tools/perf/ui directory
+The sched clock was considered stable based on the capabilities of the
+underlying hardware.  This does not make sense for Xen PV guests as:
+a) the hardware TSC is not used directly as the clock source; and b)
+guests may migrate to hosts with different hardware capabilities.
 
-Move those files to new directory in order to be prepared to further UI
-work. Makefile and header file pathes are adjusted accordingly.
+It is not clear to me whether the Xen clock source is supposed to be
+stable and whether it should be stable across migration.  For a clock
+source to be stable it must be: a) monotonic; c) synchronized across
+CPUs; and c) constant rate.
 
-Signed-off-by: Namhyung Kim <namhyung.kim@lge.com>
-Suggested-by: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Acked-by: Pekka Enberg <penberg@kernel.org>
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Namhyung Kim <namhyung.kim@lge.com>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Pekka Enberg <penberg@kernel.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl
-Link: http://lkml.kernel.org/r/1333523666-12057-1-git-send-email-namhyung.kim@lge.com
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+There have also been reports of systems with apparently unstable
+clocks where clearing sched_clock_stable has fixed problems with
+migrated VMs hanging.
+
+So, always set the sched clock as unstable when using the Xen clock
+source.
+
+Signed-off-by: David Vrabel <david.vrabel@citrix.com>
 ---
- tools/perf/Makefile                          |   40 +++++++++++++-------------
- tools/perf/{util => }/ui/browser.c           |    0
- tools/perf/{util => }/ui/browser.h           |    0
- tools/perf/{util => }/ui/browsers/annotate.c |   10 +++---
- tools/perf/{util => }/ui/browsers/hists.c    |   12 ++++----
- tools/perf/{util => }/ui/browsers/map.c      |    6 ++--
- tools/perf/{util => }/ui/browsers/map.h      |    0
- tools/perf/{util => }/ui/helpline.c          |    0
- tools/perf/{util => }/ui/helpline.h          |    0
- tools/perf/{util => }/ui/keysyms.h           |    0
- tools/perf/{util => }/ui/libslang.h          |    0
- tools/perf/{util => }/ui/progress.c          |    0
- tools/perf/{util => }/ui/progress.h          |    0
- tools/perf/{util => }/ui/setup.c             |    0
- tools/perf/{util => }/ui/ui.h                |    0
- tools/perf/{util => }/ui/util.c              |    0
- tools/perf/{util => }/ui/util.h              |    0
- tools/perf/util/debug.h                      |    2 +-
- tools/perf/util/hist.h                       |    2 +-
- 19 files changed, 36 insertions(+), 36 deletions(-)
+ arch/x86/xen/time.c |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
 
-diff --git a/tools/perf/Makefile b/tools/perf/Makefile
-index b28b610..af6ccf8 100644
---- a/tools/perf/Makefile
-+++ b/tools/perf/Makefile
-@@ -473,22 +473,22 @@ else
- 		# Fedora has /usr/include/slang/slang.h, but ubuntu /usr/include/slang.h
- 		BASIC_CFLAGS += -I/usr/include/slang
- 		EXTLIBS += -lnewt -lslang
--		LIB_OBJS += $(OUTPUT)util/ui/setup.o
--		LIB_OBJS += $(OUTPUT)util/ui/browser.o
--		LIB_OBJS += $(OUTPUT)util/ui/browsers/annotate.o
--		LIB_OBJS += $(OUTPUT)util/ui/browsers/hists.o
--		LIB_OBJS += $(OUTPUT)util/ui/browsers/map.o
--		LIB_OBJS += $(OUTPUT)util/ui/helpline.o
--		LIB_OBJS += $(OUTPUT)util/ui/progress.o
--		LIB_OBJS += $(OUTPUT)util/ui/util.o
--		LIB_H += util/ui/browser.h
--		LIB_H += util/ui/browsers/map.h
--		LIB_H += util/ui/helpline.h
--		LIB_H += util/ui/keysyms.h
--		LIB_H += util/ui/libslang.h
--		LIB_H += util/ui/progress.h
--		LIB_H += util/ui/util.h
--		LIB_H += util/ui/ui.h
-+		LIB_OBJS += $(OUTPUT)ui/setup.o
-+		LIB_OBJS += $(OUTPUT)ui/browser.o
-+		LIB_OBJS += $(OUTPUT)ui/browsers/annotate.o
-+		LIB_OBJS += $(OUTPUT)ui/browsers/hists.o
-+		LIB_OBJS += $(OUTPUT)ui/browsers/map.o
-+		LIB_OBJS += $(OUTPUT)ui/helpline.o
-+		LIB_OBJS += $(OUTPUT)ui/progress.o
-+		LIB_OBJS += $(OUTPUT)ui/util.o
-+		LIB_H += ui/browser.h
-+		LIB_H += ui/browsers/map.h
-+		LIB_H += ui/helpline.h
-+		LIB_H += ui/keysyms.h
-+		LIB_H += ui/libslang.h
-+		LIB_H += ui/progress.h
-+		LIB_H += ui/util.h
-+		LIB_H += ui/ui.h
- 	endif
- endif
+diff --git a/arch/x86/xen/time.c b/arch/x86/xen/time.c
+index 0296a95..8469b5a 100644
+--- a/arch/x86/xen/time.c
++++ b/arch/x86/xen/time.c
+@@ -473,6 +473,7 @@ static void __init xen_time_init(void)
+ 	do_settimeofday(&tp);
  
-@@ -755,16 +755,16 @@ $(OUTPUT)util/exec_cmd.o: util/exec_cmd.c $(OUTPUT)PERF-CFLAGS
- $(OUTPUT)util/config.o: util/config.c $(OUTPUT)PERF-CFLAGS
- 	$(QUIET_CC)$(CC) -o $@ -c $(ALL_CFLAGS) -DETC_PERFCONFIG='"$(ETC_PERFCONFIG_SQ)"' $<
+ 	setup_force_cpu_cap(X86_FEATURE_TSC);
++	sched_clock_stable = 0;
  
--$(OUTPUT)util/ui/browser.o: util/ui/browser.c $(OUTPUT)PERF-CFLAGS
-+$(OUTPUT)ui/browser.o: ui/browser.c $(OUTPUT)PERF-CFLAGS
- 	$(QUIET_CC)$(CC) -o $@ -c $(ALL_CFLAGS) -DENABLE_SLFUTURE_CONST $<
- 
--$(OUTPUT)util/ui/browsers/annotate.o: util/ui/browsers/annotate.c $(OUTPUT)PERF-CFLAGS
-+$(OUTPUT)ui/browsers/annotate.o: ui/browsers/annotate.c $(OUTPUT)PERF-CFLAGS
- 	$(QUIET_CC)$(CC) -o $@ -c $(ALL_CFLAGS) -DENABLE_SLFUTURE_CONST $<
- 
--$(OUTPUT)util/ui/browsers/hists.o: util/ui/browsers/hists.c $(OUTPUT)PERF-CFLAGS
-+$(OUTPUT)ui/browsers/hists.o: ui/browsers/hists.c $(OUTPUT)PERF-CFLAGS
- 	$(QUIET_CC)$(CC) -o $@ -c $(ALL_CFLAGS) -DENABLE_SLFUTURE_CONST $<
- 
--$(OUTPUT)util/ui/browsers/map.o: util/ui/browsers/map.c $(OUTPUT)PERF-CFLAGS
-+$(OUTPUT)ui/browsers/map.o: ui/browsers/map.c $(OUTPUT)PERF-CFLAGS
- 	$(QUIET_CC)$(CC) -o $@ -c $(ALL_CFLAGS) -DENABLE_SLFUTURE_CONST $<
- 
- $(OUTPUT)util/rbtree.o: ../../lib/rbtree.c $(OUTPUT)PERF-CFLAGS
-diff --git a/tools/perf/util/ui/browser.c b/tools/perf/ui/browser.c
-similarity index 100%
-rename from tools/perf/util/ui/browser.c
-rename to tools/perf/ui/browser.c
-diff --git a/tools/perf/util/ui/browser.h b/tools/perf/ui/browser.h
-similarity index 100%
-rename from tools/perf/util/ui/browser.h
-rename to tools/perf/ui/browser.h
-diff --git a/tools/perf/util/ui/browsers/annotate.c b/tools/perf/ui/browsers/annotate.c
-similarity index 99%
-rename from tools/perf/util/ui/browsers/annotate.c
-rename to tools/perf/ui/browsers/annotate.c
-index c2cfeed..4db5186 100644
---- a/tools/perf/util/ui/browsers/annotate.c
-+++ b/tools/perf/ui/browsers/annotate.c
-@@ -1,13 +1,13 @@
--#include "../../util.h"
-+#include "../../util/util.h"
- #include "../browser.h"
- #include "../helpline.h"
- #include "../libslang.h"
- #include "../ui.h"
- #include "../util.h"
--#include "../../annotate.h"
--#include "../../hist.h"
--#include "../../sort.h"
--#include "../../symbol.h"
-+#include "../../util/annotate.h"
-+#include "../../util/hist.h"
-+#include "../../util/sort.h"
-+#include "../../util/symbol.h"
- #include <pthread.h>
- #include <newt.h>
- 
-diff --git a/tools/perf/util/ui/browsers/hists.c b/tools/perf/ui/browsers/hists.c
-similarity index 99%
-rename from tools/perf/util/ui/browsers/hists.c
-rename to tools/perf/ui/browsers/hists.c
-index 1b820ed..466827e 100644
---- a/tools/perf/util/ui/browsers/hists.c
-+++ b/tools/perf/ui/browsers/hists.c
-@@ -5,12 +5,12 @@
- #include <newt.h>
- #include <linux/rbtree.h>
- 
--#include "../../evsel.h"
--#include "../../evlist.h"
--#include "../../hist.h"
--#include "../../pstack.h"
--#include "../../sort.h"
--#include "../../util.h"
-+#include "../../util/evsel.h"
-+#include "../../util/evlist.h"
-+#include "../../util/hist.h"
-+#include "../../util/pstack.h"
-+#include "../../util/sort.h"
-+#include "../../util/util.h"
- 
- #include "../browser.h"
- #include "../helpline.h"
-diff --git a/tools/perf/util/ui/browsers/map.c b/tools/perf/ui/browsers/map.c
-similarity index 97%
-rename from tools/perf/util/ui/browsers/map.c
-rename to tools/perf/ui/browsers/map.c
-index eca6575..98851d5 100644
---- a/tools/perf/util/ui/browsers/map.c
-+++ b/tools/perf/ui/browsers/map.c
-@@ -5,9 +5,9 @@
- #include <sys/ttydefaults.h>
- #include <string.h>
- #include <linux/bitops.h>
--#include "../../util.h"
--#include "../../debug.h"
--#include "../../symbol.h"
-+#include "../../util/util.h"
-+#include "../../util/debug.h"
-+#include "../../util/symbol.h"
- #include "../browser.h"
- #include "../helpline.h"
- #include "map.h"
-diff --git a/tools/perf/util/ui/browsers/map.h b/tools/perf/ui/browsers/map.h
-similarity index 100%
-rename from tools/perf/util/ui/browsers/map.h
-rename to tools/perf/ui/browsers/map.h
-diff --git a/tools/perf/util/ui/helpline.c b/tools/perf/ui/helpline.c
-similarity index 100%
-rename from tools/perf/util/ui/helpline.c
-rename to tools/perf/ui/helpline.c
-diff --git a/tools/perf/util/ui/helpline.h b/tools/perf/ui/helpline.h
-similarity index 100%
-rename from tools/perf/util/ui/helpline.h
-rename to tools/perf/ui/helpline.h
-diff --git a/tools/perf/util/ui/keysyms.h b/tools/perf/ui/keysyms.h
-similarity index 100%
-rename from tools/perf/util/ui/keysyms.h
-rename to tools/perf/ui/keysyms.h
-diff --git a/tools/perf/util/ui/libslang.h b/tools/perf/ui/libslang.h
-similarity index 100%
-rename from tools/perf/util/ui/libslang.h
-rename to tools/perf/ui/libslang.h
-diff --git a/tools/perf/util/ui/progress.c b/tools/perf/ui/progress.c
-similarity index 100%
-rename from tools/perf/util/ui/progress.c
-rename to tools/perf/ui/progress.c
-diff --git a/tools/perf/util/ui/progress.h b/tools/perf/ui/progress.h
-similarity index 100%
-rename from tools/perf/util/ui/progress.h
-rename to tools/perf/ui/progress.h
-diff --git a/tools/perf/util/ui/setup.c b/tools/perf/ui/setup.c
-similarity index 100%
-rename from tools/perf/util/ui/setup.c
-rename to tools/perf/ui/setup.c
-diff --git a/tools/perf/util/ui/ui.h b/tools/perf/ui/ui.h
-similarity index 100%
-rename from tools/perf/util/ui/ui.h
-rename to tools/perf/ui/ui.h
-diff --git a/tools/perf/util/ui/util.c b/tools/perf/ui/util.c
-similarity index 100%
-rename from tools/perf/util/ui/util.c
-rename to tools/perf/ui/util.c
-diff --git a/tools/perf/util/ui/util.h b/tools/perf/ui/util.h
-similarity index 100%
-rename from tools/perf/util/ui/util.h
-rename to tools/perf/ui/util.h
-diff --git a/tools/perf/util/debug.h b/tools/perf/util/debug.h
-index f2ce88d..6bebe7f 100644
---- a/tools/perf/util/debug.h
-+++ b/tools/perf/util/debug.h
-@@ -26,7 +26,7 @@ static inline void ui_progress__update(u64 curr __used, u64 total __used,
- #else
- extern char ui_helpline__last_msg[];
- int ui_helpline__show_help(const char *format, va_list ap);
--#include "ui/progress.h"
-+#include "../ui/progress.h"
- int ui__error(const char *format, ...) __attribute__((format(printf, 1, 2)));
- #endif
- 
-diff --git a/tools/perf/util/hist.h b/tools/perf/util/hist.h
-index 2cae9df..cfc64e2 100644
---- a/tools/perf/util/hist.h
-+++ b/tools/perf/util/hist.h
-@@ -138,7 +138,7 @@ static inline int hist_entry__tui_annotate(struct hist_entry *self __used,
- #define K_LEFT -1
- #define K_RIGHT -2
- #else
--#include "ui/keysyms.h"
-+#include "../ui/keysyms.h"
- int hist_entry__tui_annotate(struct hist_entry *he, int evidx,
- 			     void(*timer)(void *arg), void *arg, int delay_secs);
- 
+ 	xen_setup_runstate_info(cpu);
+ 	xen_setup_timer(cpu);
+-- 
+1.7.2.5
+
