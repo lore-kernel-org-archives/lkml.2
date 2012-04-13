@@ -1,79 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754454Ab2DMOGM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Apr 2012 10:06:12 -0400
-Received: from mailout2.w1.samsung.com ([210.118.77.12]:55579 "EHLO
-	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752497Ab2DMOGF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1754014Ab2DMOGK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Apr 2012 10:06:10 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:1201 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752824Ab2DMOGF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 13 Apr 2012 10:06:05 -0400
-Date: Fri, 13 Apr 2012 16:05:48 +0200
-From: Marek Szyprowski <m.szyprowski@samsung.com>
-Subject: [PATCH 2/4] mm: vmalloc: export find_vm_area() function
-In-reply-to: <1334325950-7881-1-git-send-email-m.szyprowski@samsung.com>
-To: linux-arm-kernel@lists.infradead.org, linaro-mm-sig@lists.linaro.org,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Cc: Marek Szyprowski <m.szyprowski@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Chunsang Jeong <chunsang.jeong@linaro.org>,
-        Krishna Reddy <vdumpa@nvidia.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Hiroshi Doyu <hdoyu@nvidia.com>, Subash Patel <subashrp@gmail.com>
-Message-id: <1334325950-7881-3-git-send-email-m.szyprowski@samsung.com>
-MIME-version: 1.0
-X-Mailer: git-send-email 1.7.9.1
-Content-type: TEXT/PLAIN
-Content-transfer-encoding: 7BIT
-References: <1334325950-7881-1-git-send-email-m.szyprowski@samsung.com>
+Date: Fri, 13 Apr 2012 10:05:49 -0400
+From: Josh Boyer <jwboyer@redhat.com>
+To: Takashi Iwai <tiwai@suse.de>
+Cc: Jaroslav Kysela <perex@perex.cz>, alsa-devel@alsa-project.org,
+        linux-kernel@vger.kernel.org, kernel-team@fedoraproject.org
+Subject: Re: Thinkpad hda regression in 3.3
+Message-ID: <20120413140548.GF25425@zod.bos.redhat.com>
+References: <20120413124306.GC25425@zod.bos.redhat.com>
+ <s5hpqbbvkzo.wl%tiwai@suse.de>
+ <20120413132352.GD25425@zod.bos.redhat.com>
+ <s5hk41jvjy2.wl%tiwai@suse.de>
+ <20120413133721.GE25425@zod.bos.redhat.com>
+ <s5hd37bvjdq.wl%tiwai@suse.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <s5hd37bvjdq.wl%tiwai@suse.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-find_vm_area() function is usefull for other core subsystems (like
-dma-mapping) to get access to vm_area internals.
+On Fri, Apr 13, 2012 at 03:41:53PM +0200, Takashi Iwai wrote:
+> At Fri, 13 Apr 2012 09:37:21 -0400,
+> Josh Boyer wrote:
+> Thanks.  As mentionted, the difference between two setups (sent in two
+> posts) is seen in the mixer setup.  I personally don't mind which
+> setup is taken; it's rather a choice of users.  So, let me know which
+> setup is preferred by testers.
 
-Signed-off-by: Marek Szyprowski <m.szyprowski@samsung.com>
-Reviewed-by: Kyungmin Park <kyungmin.park@samsung.com>
----
- include/linux/vmalloc.h |    1 +
- mm/vmalloc.c            |   10 +++++++++-
- 2 files changed, 10 insertions(+), 1 deletions(-)
+You're referring to the inclusion of pin 0x19 or not here, right?
 
-diff --git a/include/linux/vmalloc.h b/include/linux/vmalloc.h
-index 2e28f4d..6071e91 100644
---- a/include/linux/vmalloc.h
-+++ b/include/linux/vmalloc.h
-@@ -93,6 +93,7 @@ extern struct vm_struct *__get_vm_area_caller(unsigned long size,
- 					unsigned long start, unsigned long end,
- 					const void *caller);
- extern struct vm_struct *remove_vm_area(const void *addr);
-+extern struct vm_struct *find_vm_area(const void *addr);
- 
- extern int map_vm_area(struct vm_struct *area, pgprot_t prot,
- 			struct page ***pages);
-diff --git a/mm/vmalloc.c b/mm/vmalloc.c
-index 8bc7f3e..8cb7f22 100644
---- a/mm/vmalloc.c
-+++ b/mm/vmalloc.c
-@@ -1402,7 +1402,15 @@ struct vm_struct *get_vm_area_caller(unsigned long size, unsigned long flags,
- 						-1, GFP_KERNEL, caller);
- }
- 
--static struct vm_struct *find_vm_area(const void *addr)
-+/**
-+ *	find_vm_area  -  find a continuous kernel virtual area
-+ *	@addr:		base address
-+ *
-+ *	Search for the kernel VM area starting at @addr, and return it.
-+ *	It is up to the caller to do all required locking to keep the returned
-+ *	pointer valid.
-+ */
-+struct vm_struct *find_vm_area(const void *addr)
- {
- 	struct vmap_area *va;
- 
--- 
-1.7.1.569.g6f426
+> The reason behind such multiple setups is that the codec chip has only
+> two DACs while you want to access for three or more outputs (two
+> headphones, one speaker, etc).  Thus some outputs must share the same
+> DAC.
 
+I'm guessing when someone undocks the pins are reconfigured back to the
+jacks on the laptop itself somehow?
+
+I must admit, ALSA and it's multi-codec hda driver with lots of pin
+swizzling is somewhat intimidating at the moment.  If I ask stupid
+questions, please bear with me :).
+
+josh
