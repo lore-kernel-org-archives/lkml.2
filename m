@@ -1,79 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752924Ab2DMFXg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Apr 2012 01:23:36 -0400
-Received: from mail-vx0-f174.google.com ([209.85.220.174]:61418 "EHLO
-	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751570Ab2DMFXf convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Apr 2012 01:23:35 -0400
+	id S1753030Ab2DMFbH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Apr 2012 01:31:07 -0400
+Received: from scrye.com ([75.148.32.185]:36037 "EHLO mail.scrye.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751790Ab2DMFbE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 Apr 2012 01:31:04 -0400
+X-Greylist: delayed 553 seconds by postgrey-1.27 at vger.kernel.org; Fri, 13 Apr 2012 01:31:04 EDT
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        alan@lxorguk.ukuu.org.uk, Shengzhou Liu <Shengzhou.Liu@freescale.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Subject: Re: [ 011/108] powerpc/usb: fix bug of kernel hang when initializing usb
+From: Anthony Foiani <tkil@scrye.com>
+Reply-To: Anthony Foiani <tkil@scrye.com>
+X-Attribution: Tony
+References: <20120330195723.719813895@linuxfoundation.org>
+Date: Thu, 12 Apr 2012 23:21:48 -0600
+In-Reply-To: <20120330195723.719813895@linuxfoundation.org> (Greg KH's message of "Fri, 30 Mar 2012 12:57:33 -0700")
+Message-ID: <gpqbc8avn.fsf@dworkin.scrye.com>
+User-Agent: Gnus/5.1008 (Gnus v5.10.8) XEmacs/21.5-b31 (linux)
 MIME-Version: 1.0
-In-Reply-To: <1328741722-1254-1-git-send-email-robherring2@gmail.com>
-References: <1328308512-22594-1-git-send-email-robherring2@gmail.com>
-	<1328741722-1254-1-git-send-email-robherring2@gmail.com>
-Date: Fri, 13 Apr 2012 10:53:33 +0530
-Message-ID: <CAJuYYwQ+1_i6ZVvJp-a3vpmNuqC7WWCMS6sDAEaMBHOUVwYrrw@mail.gmail.com>
-Subject: Re: [PATCH v6] irq: add irq_domain support to generic-chip
-From: Thomas Abraham <thomas.abraham@linaro.org>
-To: Rob Herring <robherring2@gmail.com>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Shawn Guo <shawn.guo@linaro.org>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Thomas Gleixner <tglx@linutronix.de>, b-cousson@ti.com,
-        Rob Herring <rob.herring@calxeda.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Rob,
+Greg KH <gregkh@linuxfoundation.org> writes:
 
-On 9 February 2012 04:25, Rob Herring <robherring2@gmail.com> wrote:
-> From: Rob Herring <rob.herring@calxeda.com>
+> 3.0-stable review patch.  If anyone has any objections, please let me know.
 >
-> Add irq domain support to irq generic-chip. This enables users of
-> generic-chip to support dynamic irq assignment needed for DT interrupt
-> binding.
+> ------------------
 >
-> Thanks to Shawn Guo for fixes and testing.
+> From: Shengzhou Liu <Shengzhou.Liu@freescale.com>
 >
-> Signed-off-by: Rob Herring <rob.herring@calxeda.com>
-> Cc: Grant Likely <grant.likely@secretlab.ca>
-> Cc: Thomas Gleixner <tglx@linutronix.de>
-> ---
-> Here's the latest version. This has fixes from Shawn Guo, so should be
-> working. This version is also available here:
+> commit 28c56ea1431421dec51b7b229369e991481453df upstream.
 >
-> git://sources.calxeda.com/kernel/linux.git pl061-domain-v6.
->
->  include/linux/irq.h       |   15 +++++
->  kernel/irq/generic-chip.c |  152 ++++++++++++++++++++++++++++++++++++++-------
->  2 files changed, 145 insertions(+), 22 deletions(-)
->
+> If USB UTMI PHY is not enable, writing to portsc register will lead to
+> kernel hang during boot up.
 
-[...]
+I apologize for the late response, but I was encountering this same
+hang (on an 8315) and applied this patch.  (For what it's worth, I'm
+only seeing it after many warm boots; a cold boot / hard power cycle
+solves the issue, but since this is eventually going to be locked up
+in a box without a console...)
 
-> diff --git a/kernel/irq/generic-chip.c b/kernel/irq/generic-chip.c
-> index c89295a..3ac7fa1 100644
-> --- a/kernel/irq/generic-chip.c
-> +++ b/kernel/irq/generic-chip.c
+I encountered the hang again this evening, so this fix (plus the snoop
+fix) is not sufficientl
 
-[...]
+Reading through the original thread, it seems that an additional delay
+might be required:
 
-> +static const struct irq_domain_ops irq_gc_irq_domain_ops = {
-> +       .map = irq_gc_irq_domain_map,
-> +       .xlate = irq_domain_xlate_onetwocell,
-> +};
+   http://article.gmane.org/gmane.linux.usb.general/58795
 
-Is there anyway to use a custom xlate function instead of the fixed
-'irq_domain_xlate_onetwocell' xlate function. I am using this patchset
-with Exynos4 interrupt combiner controller whose interrupt specifier
-format is two cell but has different meaning. The first cell is the
-interrupt combiner number and the second cell is the interrupt number
-within that combiner.
+   > First, the SDK kernel had a delay after setting that bit, I added
+   > that back in. This is not what fixed it but it looks like the
+   > right thing to do, though please, use msleep rather than udelay
+   > here if possible (not in atomic context).
+
+However, I never saw a patch to that effect.  I'm assuming (hoping!)
+it's something as simple as:
+
+------------------------------------------------------------------------
+diff --git a/drivers/usb/host/ehci-fsl.c b/drivers/usb/host/ehci-fsl.c
+index 09fd214..d58c1c6 100644
+--- a/drivers/usb/host/ehci-fsl.c
++++ b/drivers/usb/host/ehci-fsl.c
+@@ -236,6 +236,7 @@ static void ehci_fsl_setup_phy(struct ehci_hcd *ehci,
+	case FSL_USB2_PHY_UTMI:
+		/* enable UTMI PHY */
+		setbits32(non_ehci + FSL_SOC_USB_CTRL, CTRL_UTMI_PHY_EN);
++		msleep(5);
+		portsc |= PORT_PTS_UTMI;
+		break;
+	case FSL_USB2_PHY_NONE:
+------------------------------------------------------------------------
+
+But confirmation would be nice.  Also, which SDK kernel was this
+compared against?  I just downloaded the 8315ERDB BSP, and the kernel
+there doesn't seem to have any of this in it.
+
+There was also the follow-on patch that enabled snooping (to deal with
+cache coherency?):
+
+   http://article.gmane.org/gmane.linux.usb.general/58798
+
+(If there was a formal patch there, it looks like it got scrambled on
+gmane, and I can't find another list archive.)
+
+Is that also needed for consistent results here?  (Or are we wandering
+astray from "-stable" material?)
 
 Thanks,
-Thomas.
-
-[...]
+Tony.
