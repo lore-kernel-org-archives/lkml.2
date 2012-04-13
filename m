@@ -1,73 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935066Ab2DMBkx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Apr 2012 21:40:53 -0400
-Received: from mx.logic.tuwien.ac.at ([128.130.175.19]:36907 "EHLO
-	mx.logic.tuwien.ac.at" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935044Ab2DMBkw (ORCPT
+	id S1759204Ab2DMBoZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Apr 2012 21:44:25 -0400
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:40551 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754028Ab2DMBoY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Apr 2012 21:40:52 -0400
-Date: Fri, 13 Apr 2012 10:40:47 +0900
-From: Norbert Preining <preining@logic.at>
-To: "Venkataraman, Meenakshi" <meenakshi.venkataraman@intel.com>
-Cc: Emmanuel Grumbach <egrumbach@gmail.com>,
-        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "ipw3945-devel@lists.sourceforge.net" 
-	<ipw3945-devel@lists.sourceforge.net>,
-        "ilw@linux.intel.com" <ilw@linux.intel.com>
-Subject: Re: 3.4-rc2, ilwagn still most of the time completely unusable
-Message-ID: <20120413014047.GB25681@gamma.logic.tuwien.ac.at>
-References: <20120330011734.GH6277@gamma.logic.tuwien.ac.at> <20120411023747.GA10126@gamma.logic.tuwien.ac.at> <4595B4D22AB93C4FABBA84AAD5AA37FD11DE3C@ORSMSX103.amr.corp.intel.com> <20120412000202.GA15286@gamma.logic.tuwien.ac.at> <4595B4D22AB93C4FABBA84AAD5AA37FD120BF8@ORSMSX103.amr.corp.intel.com>
+	Thu, 12 Apr 2012 21:44:24 -0400
+X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
+Message-ID: <4F878480.60505@jp.fujitsu.com>
+Date: Fri, 13 Apr 2012 10:42:24 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.0; rv:11.0) Gecko/20120327 Thunderbird/11.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4595B4D22AB93C4FABBA84AAD5AA37FD120BF8@ORSMSX103.amr.corp.intel.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: Tejun Heo <tj@kernel.org>
+CC: Johannes Weiner <hannes@cmpxchg.org>,
+        Glauber Costa <glommer@parallels.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Hugh Dickins <hughd@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Daniel Walsh <dwalsh@redhat.com>,
+        "Daniel P. Berrange" <berrange@redhat.com>,
+        Li Zefan <lizf@cn.fujitsu.com>, LKML <linux-kernel@vger.kernel.org>,
+        Cgroups <cgroups@vger.kernel.org>,
+        Containers <containers@lists.linux-foundation.org>
+Subject: Re: [RFD] Merge task counter into memcg
+References: <20120411185715.GA4317@somewhere.redhat.com> <4F862851.3040208@jp.fujitsu.com> <20120412113217.GB11455@somewhere.redhat.com> <4F86BFC6.2050400@parallels.com> <20120412123256.GI1787@cmpxchg.org> <4F86D4BD.1040305@parallels.com> <20120412153055.GL1787@cmpxchg.org> <20120412163825.GB13069@google.com> <20120412172309.GM1787@cmpxchg.org> <20120412174155.GC13069@google.com>
+In-Reply-To: <20120412174155.GC13069@google.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+(2012/04/13 2:41), Tejun Heo wrote:
 
-On Fr, 13 Apr 2012, Venkataraman, Meenakshi wrote:
-> [MV] Well...actually don't turn off this debugging yet.
+> Hello, Johannes.
 
-Ok, just compiled and rebooted with new git checkout, but will recompile
-with option again enabled.
+> I'm still split on the issue.
+> 
+> * #tasks as unit of accounting / limiting is well understood (or at
+>   least known).  I think this holds the same to #open files, to a
+>   lesser extent.  It means there are and will continue to be people
+>   wanting them.  So, they have some value in familiarity - "but... I
+>   want to limit the resources consumed by tasks cuz that's what I
+>   know!" factor.
+> 
+> * People could want counting and limiting #tasks or #open files
+>   without the overhead of tracking all memory resources.  This stems
+>   from the same reason #tasks was used for this sort of things in the
+>   first place.  Counting tasks or open files tends to be easier and
+>   cheaper than tracking all memory allocations.
+> 
+> So, there's spectrum of solutions between merging task counter and
+> just directing everyone to kmem without distinguishing task resource
+> at all, and at the moment voices in my head are succeeding at making
+> cases for both directions.  What do you guys think about the above two
+> issues?
+> 
 
-> In your logs I also see missed beacon notifications from the firmware ~every 500 milliseconds. My thought is that it is probably due to turning on power save. I'm not sure if it is affecting the performance of your system overall. Are you using the power save option? And if so, what is the behaviour when power save is turned off?
 
-I am not sure what you mean with power safe of the iwl driver. If I do
-	iwconfig wlan0
-I see
-	Power Management:off
-is this what you mean, and 
-	$ cat /sys/class/ieee80211/phy2/power/runtime_enabled
-	disabled
-Is it what you mean?
+To be honest, I doubt that task counter is unnecessary...memcg can catch
+oom situation well. I often test 'make -j' under memcg.
 
-> I don't see the invalid station activation error in the log you sent me, so I'm guessing it appears only on the other network. Do send us logs for that. 
+To the questions
+*   It sounds like a 'ulimit' cgroup. How about overwriting
+    ulimit values via cgroup ? (sounds joke?) Then, overhead will be small but
+    I'm not sure it can be hierarchical and doesn't break userland.
 
-Yes, that is on a differnet network. As soon as I can catch the log I 
-send it.
+    If people wants to limit the number of tasks, I think interface should provide it
+    in the unit of objects. Then, I'm ok to have other subsystem for counting something.
+    fork-bomb's memory overhead can be prevent by memcg. What memcg cannot handle
+    is ulimit. If forkbomb exhausts all ulimit/tasks, the user cannot login.
+    So, having task-limit cgroup subsys for a sandbox will make sense in some situation.
 
-> If you're up for it, I'd ask you to do one thing  (or three) -- open 3 separate bugs for the issues you're seeing at: bugzilla.intellinuxwireless.org so we can keep track of them separately. The issue of trying to activate an invalid station ID is definitely a new one, and likely due to a different cause than that related to aggregation or the troubles you're having even with 11n disabled. I could do this too, and add you to the CC list. I might need logs for these bugs, but not yet.
+In short, I don't think it's better to have task-counting and fd-counting in memcg.
+It's kmem, but it's more than that, I think.
+Please provide subsys like ulimit.
 
-Sure, will do that.
+Thanks,
+-Kame
 
-Best wishes
-
-Norbert
-------------------------------------------------------------------------
-Norbert Preining            preining@{jaist.ac.jp, logic.at, debian.org}
-JAIST, Japan                                 TeX Live & Debian Developer
-DSA: 0x09C5B094   fp: 14DF 2E6C 0307 BE6D AD76  A9C0 D2BF 4AA3 09C5 B094
-------------------------------------------------------------------------
-ESHER (n.)
-One of those push tapes installed in public washrooms enabling the
-user to wash their trousers without actually getting into the
-basin. The most powerful esher of recent years was 'damped down' by
-Red Adair after an incredible sixty-eight days' fight in Manchester's
-Piccadilly Station.
-			--- Douglas Adams, The Meaning of Liff
