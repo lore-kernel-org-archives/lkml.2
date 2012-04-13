@@ -1,109 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756133Ab2DMStC (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Apr 2012 14:49:02 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:61740 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755976Ab2DMStA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Apr 2012 14:49:00 -0400
-From: Sasha Levin <levinsasha928@gmail.com>
-To: davem@davemloft.net, ericvh@gmail.com, aneesh.kumar@linux.vnet.ibm.com,
-        jvrao@linux.vnet.ibm.com, rusty@rustcorp.com.au
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org, davej@redhat.com,
-        Sasha Levin <levinsasha928@gmail.com>
-Subject: [PATCH] 9p: disconnect channel when PCI device is removed
-Date: Fri, 13 Apr 2012 17:48:36 -0400
-Message-Id: <1334353716-19483-1-git-send-email-levinsasha928@gmail.com>
-X-Mailer: git-send-email 1.7.8.5
+	id S1756041Ab2DMSuQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Apr 2012 14:50:16 -0400
+Received: from mail.tomasu.net ([64.85.170.232]:45499 "EHLO mail.tomasu.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755976Ab2DMSuO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 Apr 2012 14:50:14 -0400
+From: Thomas Fjellstrom <thomas@fjellstrom.ca>
+Reply-To: thomas@fjellstrom.ca
+To: adam radford <aradford@gmail.com>
+Subject: Re: stuck in megaraid_sas.c megasas_adp_reset_gen2
+Date: Fri, 13 Apr 2012 12:50:05 -0600
+User-Agent: KMail/1.13.7 (Linux/3.2.0-1-amd64; KDE/4.7.4; x86_64; ; )
+Cc: lkml <linux-kernel@vger.kernel.org>, linux-scsi@vger.kernel.org
+References: <201203211716.45418.thomas@fjellstrom.ca> <CAHtARFHayv68BASrfCLYHQ0zZ1R8fvzfB-_fkBeG8H4g3OBZvg@mail.gmail.com> <201204121216.24519.thomas@fjellstrom.ca>
+In-Reply-To: <201204121216.24519.thomas@fjellstrom.ca>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201204131250.05970.thomas@fjellstrom.ca>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When a virtio_9p pci device is being removed, we should close down any
-active channels and free up resources, we're not supposed to BUG() if there's
-still an open channel since it's a valid case when removing the PCI device.
+On Thu Apr 12, 2012, Thomas Fjellstrom wrote:
+> On Thu Apr 12, 2012, adam radford wrote:
+> > On Wed, Apr 11, 2012 at 2:44 PM, Thomas Fjellstrom <thomas@fjellstrom.ca>
+> 
+> wrote:
+> > > megasas: [55] waiting for 1 commands to complete
+> > > ....
+> > > megasas: [175] waiting for 1 commands to complete
+> > 
+> > You still aren't getting interrupts from the card.  Can you re-try
+> > with megaraid_sas module parameter msix_disable ?
+> > If that doesn't work, contact LSI support and tell them which
+> > motherboard, any PCIe bridges, risers, etc you have.
+> 
+> No luck darn it. with either card.
 
-Otherwise, removing the PCI device with an open channel would cause the
-following BUG():
+I've been talking to LSI support for the past few days. So far they are 
+unwilling to support my current use case, or fix their INT19 firmware bug (which 
+they have acknowledged).
 
-[ 1184.671416] ------------[ cut here ]------------
-[ 1184.672057] kernel BUG at net/9p/trans_virtio.c:618!
-[ 1184.672057] invalid opcode: 0000 [#1] PREEMPT SMP
-[ 1184.672057] CPU 3
-[ 1184.672057] Pid: 5, comm: kworker/u:0 Tainted: G        W    3.4.0-rc2-next-20120413-sasha-dirty #76
-[ 1184.672057] RIP: 0010:[<ffffffff825c9116>]  [<ffffffff825c9116>] p9_virtio_remove+0x16/0x90
-[ 1184.672057] RSP: 0018:ffff88000d653ac0  EFLAGS: 00010202
-[ 1184.672057] RAX: ffffffff836bfb40 RBX: ffff88000c9b2148 RCX: ffff88000d658978
-[ 1184.672057] RDX: 0000000000000006 RSI: 0000000000000000 RDI: ffff880028868000
-[ 1184.672057] RBP: ffff88000d653ad0 R08: 0000000000000000 R09: 0000000000000000
-[ 1184.672057] R10: 0000000000000000 R11: 0000000000000001 R12: ffff880028868000
-[ 1184.672057] R13: ffffffff835aa7c0 R14: ffff880041630000 R15: ffff88000d653da0
-[ 1184.672057] FS:  0000000000000000(0000) GS:ffff880035a00000(0000) knlGS:0000000000000000
-[ 1184.672057] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
-[ 1184.672057] CR2: 0000000001181000 CR3: 000000000eba1000 CR4: 00000000000406e0
-[ 1184.672057] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-x000000000117a190 *[ 1184.672057] DR3: 00000000000000**
-00 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-[ 1184.672057] Process kworker/u:0 (pid: 5, threadinfo ffff88000d652000, task ffff88000d658000)
-[ 1184.672057] Stack:
-[ 1184.672057]  ffff880028868000 ffffffff836bfb40 ffff88000d653af0 ffffffff8193661b
-[ 1184.672057]  ffff880028868008 ffffffff836bfb40 ffff88000d653b10 ffffffff81af1c81
-[ 1184.672057]  ffff880028868068 ffff880028868008 ffff88000d653b30 ffffffff81af257a
-[ 1184.795301] Call Trace:
-[ 1184.795301]  [<ffffffff8193661b>] virtio_dev_remove+0x1b/0x60
-[ 1184.795301]  [<ffffffff81af1c81>] __device_release_driver+0x81/0xd0
-[ 1184.795301]  [<ffffffff81af257a>] device_release_driver+0x2a/0x40
-[ 1184.795301]  [<ffffffff81af0d48>] bus_remove_device+0x138/0x150
-[ 1184.795301]  [<ffffffff81aef08d>] device_del+0x14d/0x1b0
-[ 1184.795301]  [<ffffffff81aef138>] device_unregister+0x48/0x60
-[ 1184.795301]  [<ffffffff8193694d>] unregister_virtio_device+0xd/0x10
-[ 1184.795301]  [<ffffffff8265fc74>] virtio_pci_remove+0x2a/0x6c
-[ 1184.795301]  [<ffffffff818a95ad>] pci_device_remove+0x4d/0x110
-[ 1184.795301]  [<ffffffff81af1c81>] __device_release_driver+0x81/0xd0
-[ 1184.795301]  [<ffffffff81af257a>] device_release_driver+0x2a/0x40
-[ 1184.795301]  [<ffffffff81af0d48>] bus_remove_device+0x138/0x150
-[ 1184.795301]  [<ffffffff81aef08d>] device_del+0x14d/0x1b0
-[ 1184.795301]  [<ffffffff81aef138>] device_unregister+0x48/0x60
-[ 1184.795301]  [<ffffffff818a36fa>] pci_stop_bus_device+0x6a/0x90
-[ 1184.795301]  [<ffffffff818a3791>] pci_stop_and_remove_bus_device+0x11/0x20
-[ 1184.795301]  [<ffffffff818c21d9>] remove_callback+0x9/0x10
-[ 1184.795301]  [<ffffffff81252d91>] sysfs_schedule_callback_work+0x21/0x60
-[ 1184.795301]  [<ffffffff810cb1a1>] process_one_work+0x281/0x430
-[ 1184.795301]  [<ffffffff810cb140>] ? process_one_work+0x220/0x430
-[ 1184.795301]  [<ffffffff81252d70>] ? sysfs_read_file+0x1c0/0x1c0
-[ 1184.795301]  [<ffffffff810cc613>] worker_thread+0x1f3/0x320
-[ 1184.795301]  [<ffffffff810cc420>] ? manage_workers.clone.13+0x130/0x130
-[ 1184.795301]  [<ffffffff810d30b2>] kthread+0xb2/0xc0
-[ 1184.795301]  [<ffffffff826783f4>] kernel_thread_helper+0x4/0x10
-[ 1184.795301]  [<ffffffff810deb18>] ? finish_task_switch+0x78/0xf0
-[ 1184.795301]  [<ffffffff82676574>] ? retint_restore_args+0x13/0x13
-[ 1184.795301]  [<ffffffff810d3000>] ? kthread_flush_work_fn+0x10/0x10
-[ 1184.795301]  [<ffffffff826783f0>] ? gs_change+0x13/0x13
-[ 1184.795301] Code: c1 9e 0a 00 48 83 c4 08 5b c9 c3 66 2e 0f 1f 84 00 00 00 00 00 55 48 89 e5 41 54 49 89 fc 53 48 8b 9f a8 04 00 00 80 3b 00 74 0a <0f> 0b 0f 1f 84 00 00 00 00 00 48 8b 87 88 04 00 00 ff 50 30 31
-[ 1184.795301] RIP  [<ffffffff825c9116>] p9_virtio_remove+0x16/0x90
-[ 1184.795301]  RSP <ffff88000d653ac0>
-[ 1184.952618] ---[ end trace a307b3ed40206b4c ]---
+I just hope there aren't any more serious bugs like this in their firmware. 
+It's looking pretty scary. If they let this bug live for years, imagine what 
+other bugs might lurk. I may have to avoid LSI completely in the future, even 
+on real server systems.
 
-Signed-off-by: Sasha Levin <levinsasha928@gmail.com>
----
- net/9p/trans_virtio.c |    3 ++-
- 1 files changed, 2 insertions(+), 1 deletions(-)
+> > -Adam
 
-diff --git a/net/9p/trans_virtio.c b/net/9p/trans_virtio.c
-index 3d43206..5af18d1 100644
---- a/net/9p/trans_virtio.c
-+++ b/net/9p/trans_virtio.c
-@@ -615,7 +615,8 @@ static void p9_virtio_remove(struct virtio_device *vdev)
- {
- 	struct virtio_chan *chan = vdev->priv;
- 
--	BUG_ON(chan->inuse);
-+	if (chan->inuse)
-+		p9_virtio_close(chan->client);
- 	vdev->config->del_vqs(vdev);
- 
- 	mutex_lock(&virtio_9p_lock);
+
 -- 
-1.7.8.5
-
+Thomas Fjellstrom
+thomas@fjellstrom.ca
