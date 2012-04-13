@@ -1,77 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758209Ab2DMJWy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Apr 2012 05:22:54 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:42300 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757864Ab2DMJWx (ORCPT
+	id S1758244Ab2DMJX0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Apr 2012 05:23:26 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:60387 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757864Ab2DMJXY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Apr 2012 05:22:53 -0400
-Date: Fri, 13 Apr 2012 10:22:40 +0100
-From: Will Deacon <will.deacon@arm.com>
-To: Hugh Dickins <hughd@google.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        Nicolas Pitre <nico@linaro.org>, akpm@linux-foundation.org
-Subject: Re: [PATCH] Revert "proc: clear_refs: do not clear reserved pages"
-Message-ID: <20120413092240.GC394@mudshark.cambridge.arm.com>
-References: <1334250034-29866-1-git-send-email-will.deacon@arm.com>
- <alpine.LSU.2.00.1204121049120.2288@eggly.anvils>
+	Fri, 13 Apr 2012 05:23:24 -0400
+Date: Fri, 13 Apr 2012 12:23:12 +0300
+From: Johan Hedberg <johan.hedberg@gmail.com>
+To: Manoj Iyer <manoj.iyer@canonical.com>
+Cc: linux-kernel@vger.kernel.org, linux-bluetooth@vger.kernel.org,
+        Marcel Holtmann <marcel@holtmann.org>
+Subject: Re: [PATCH] Bluetooth: btusb: Add vendor specific ID (0489 e042) for
+ BCM20702A0
+Message-ID: <20120413092312.GA10780@x220.ger.corp.intel.com>
+Mail-Followup-To: Manoj Iyer <manoj.iyer@canonical.com>,
+	linux-kernel@vger.kernel.org, linux-bluetooth@vger.kernel.org,
+	Marcel Holtmann <marcel@holtmann.org>
+References: <1333981348-3720-1-git-send-email-manoj.iyer@canonical.com>
+ <1333981348-3720-2-git-send-email-manoj.iyer@canonical.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <alpine.LSU.2.00.1204121049120.2288@eggly.anvils>
+In-Reply-To: <1333981348-3720-2-git-send-email-manoj.iyer@canonical.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 12, 2012 at 06:51:10PM +0100, Hugh Dickins wrote:
-> On Thu, 12 Apr 2012, Will Deacon wrote:
-> 
-> > This reverts commit 85e72aa5384b1a614563ad63257ded0e91d1a620, which was
-> > a quick fix suitable for -stable until ARM had been moved over to the
-> > gate_vma mechanism:
-> > 
-> > https://lkml.org/lkml/2012/1/14/55
-> > 
-> > With commit f9d4861f ("ARM: 7294/1: vectors: use gate_vma for vectors user
-> > mapping"), ARM does now use the gate_vma, so the PageReserved check can
-> > be removed from the proc code.
-> > 
-> > Cc: Nicolas Pitre <nico@linaro.org>
-> > Signed-off-by: Will Deacon <will.deacon@arm.com>
-> 
-> Oh, great, I'm glad that worked out: thanks a lot for looking after it,
-> Will, and now cleaning up afterwards.
-> 
-> Acked-by: Hugh Dickins <hughd@google.com>
+Hi Manoj,
 
-Thanks, Hugh. I guess it's easiest if Andrew picks this one up as he took
-the original patch.
-
-Will
-
-> > ---
-> >  fs/proc/task_mmu.c |    3 ---
-> >  1 files changed, 0 insertions(+), 3 deletions(-)
-> > 
-> > diff --git a/fs/proc/task_mmu.c b/fs/proc/task_mmu.c
-> > index 2b9a760..2d60492 100644
-> > --- a/fs/proc/task_mmu.c
-> > +++ b/fs/proc/task_mmu.c
-> > @@ -597,9 +597,6 @@ static int clear_refs_pte_range(pmd_t *pmd, unsigned long addr,
-> >  		if (!page)
-> >  			continue;
-> >  
-> > -		if (PageReserved(page))
-> > -			continue;
-> > -
-> >  		/* Clear accessed and referenced bits. */
-> >  		ptep_test_and_clear_young(vma, addr, pte);
-> >  		ClearPageReferenced(page);
-> > -- 
-> > 1.7.4.1
-> > 
-> > 
+On Mon, Apr 09, 2012, Manoj Iyer wrote:
+> T: Bus=02 Lev=02 Prnt=02 Port=04 Cnt=01 Dev#= 3 Spd=12 MxCh= 0
+> D: Ver= 2.00 Cls=ff(vend.) Sub=01 Prot=01 MxPS=64 #Cfgs= 1
+> P: Vendor=0489 ProdID=e042 Rev=01.12
+> S: Manufacturer=Broadcom Corp
+> S: Product=BCM20702A0
+> S: SerialNumber=E4D53DCA61B5
+> C: #Ifs= 4 Cfg#= 1 Atr=e0 MxPwr=0mA
+> I: If#= 0 Alt= 0 #EPs= 3 Cls=ff(vend.) Sub=01 Prot=01 Driver=(none)
+> I: If#= 1 Alt= 0 #EPs= 2 Cls=ff(vend.) Sub=01 Prot=01 Driver=(none)
+> I: If#= 2 Alt= 0 #EPs= 2 Cls=ff(vend.) Sub=ff Prot=ff Driver=(none)
+> I: If#= 3 Alt= 0 #EPs= 0 Cls=fe(app. ) Sub=01 Prot=01 Driver=(none)
 > 
+> Reported-by: Dennis Chua <dennis.chua@canonical.com>
+> Signed-off-by: Manoj Iyer <manoj.iyer@canonical.com>
+> ---
+>  drivers/bluetooth/btusb.c |    1 +
+>  1 files changed, 1 insertions(+), 0 deletions(-)
+
+Applied to both bluetooth.git and bluetooth-next.git. Thanks.
+
+Johan
