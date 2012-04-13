@@ -1,202 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965748Ab2DMCfj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Apr 2012 22:35:39 -0400
-Received: from mga03.intel.com ([143.182.124.21]:51224 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756958Ab2DMCfh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Apr 2012 22:35:37 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="130376108"
-Message-ID: <4F8790F6.5080408@intel.com>
-Date: Fri, 13 Apr 2012 10:35:34 +0800
-From: "Yan, Zheng" <zheng.z.yan@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120329 Thunderbird/11.0.1
-MIME-Version: 1.0
-To: bhelgaas@google.com, rjw@sisk.pl, linux-kernel@vger.kernel.org,
-        linux-pci@vger.kernel.org, linux-pm@vger.kernel.org
-Subject: [RFC PATCH] PCIe: Add PCIe runtime D3cold support
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
+	id S935050Ab2DMClO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Apr 2012 22:41:14 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:54424 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752568Ab2DMClN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Apr 2012 22:41:13 -0400
+Date: Fri, 13 Apr 2012 12:41:03 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: "John W. Linville" <linville@tuxdriver.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>
+Subject: linux-next: manual merge of the wireless-next tree with the
+ net-next tree
+Message-Id: <20120413124103.5bc632a6425ea9da9c5c4aae@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0beta6 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Fri__13_Apr_2012_12_41_03_+1000_BP1i8x.ow4b2P.hi"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all,
+--Signature=_Fri__13_Apr_2012_12_41_03_+1000_BP1i8x.ow4b2P.hi
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-This patch adds PCIe runtime D3cold support, namely cut power supply for functions
-beneath a PCIe port when they all have entered D3. A device in D3cold can only
-generate wake event through the WAKE# pin. Because we can not access to a device's
-configure space while it's in D3cold, pme_poll is disabled for devices in D3cold.
+Hi John,
 
-Any comment will be appreciated.
+Today's linux-next merge of the wireless-next tree got a semantic
+conflict in net/nfc/netlink.c between commit b3fe91c53a0a ("netlink:
+Delete all NLA_PUT*() macros") from the net-next tree and commit
+8112a5c91d78 ("NFC: Add a target lost netlink event") from the
+wireless-next tree.
 
-Signed-off-by: Zheng Yan <zheng.z.yan@intel.com>
+I added the below merge fix patch.
+
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+Date: Fri, 13 Apr 2012 12:34:10 +1000
+Subject: [PATCH] NFC: fix up for NLA_PUT_ api changes
+
+Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
 ---
-diff --git a/drivers/pci/pci-acpi.c b/drivers/pci/pci-acpi.c
-index 0f150f2..e210e8cb 100644
---- a/drivers/pci/pci-acpi.c
-+++ b/drivers/pci/pci-acpi.c
-@@ -224,7 +224,7 @@ static int acpi_pci_set_power_state(struct pci_dev *dev, pci_power_t state)
- 		[PCI_D1] = ACPI_STATE_D1,
- 		[PCI_D2] = ACPI_STATE_D2,
- 		[PCI_D3hot] = ACPI_STATE_D3,
--		[PCI_D3cold] = ACPI_STATE_D3
-+		[PCI_D3cold] = ACPI_STATE_D3_COLD
- 	};
- 	int error = -EINVAL;
- 
-@@ -296,7 +296,8 @@ static void acpi_pci_propagate_run_wake(struct pci_bus *bus, bool enable)
- 
- static int acpi_pci_run_wake(struct pci_dev *dev, bool enable)
- {
--	if (dev->pme_interrupt)
-+	/* PME interrupt isn't available in the D3cold case */
-+	if (dev->pme_interrupt && !dev->runtime_d3cold)
- 		return 0;
- 
- 	if (!acpi_pm_device_run_wake(&dev->dev, enable))
-diff --git a/drivers/pci/pci.c b/drivers/pci/pci.c
-index 8156744..bc16869 100644
---- a/drivers/pci/pci.c
-+++ b/drivers/pci/pci.c
-@@ -731,8 +731,8 @@ int pci_set_power_state(struct pci_dev *dev, pci_power_t state)
- 	int error;
- 
- 	/* bound the state we're entering */
--	if (state > PCI_D3hot)
--		state = PCI_D3hot;
-+	if (state > PCI_D3cold)
-+		state = PCI_D3cold;
- 	else if (state < PCI_D0)
- 		state = PCI_D0;
- 	else if ((state == PCI_D1 || state == PCI_D2) && pci_no_d1d2(dev))
-@@ -750,7 +750,8 @@ int pci_set_power_state(struct pci_dev *dev, pci_power_t state)
- 	if (state == PCI_D3hot && (dev->dev_flags & PCI_DEV_FLAGS_NO_D3))
- 		return 0;
- 
--	error = pci_raw_set_power_state(dev, state);
-+	error = pci_raw_set_power_state(dev, state > PCI_D3hot ?
-+					PCI_D3hot : state);
- 
- 	if (!__pci_complete_power_transition(dev, state))
- 		error = 0;
-@@ -1482,6 +1483,17 @@ bool pci_pme_capable(struct pci_dev *dev, pci_power_t state)
- 	return !!(dev->pme_support & (1 << state));
- }
- 
-+static void pci_pme_poll_wakeup(struct pci_dev *dev)
-+{
-+	struct pci_dev *bridge = dev->bus->self;
-+
-+	/* don't poll the pme bit if parent is in low power state */
-+	if (bridge && bridge->current_state != PCI_D0)
-+		return;
-+
-+	pci_pme_wakeup(dev, NULL);
-+}
-+
- static void pci_pme_list_scan(struct work_struct *work)
- {
- 	struct pci_pme_device *pme_dev, *n;
-@@ -1490,7 +1502,7 @@ static void pci_pme_list_scan(struct work_struct *work)
- 	if (!list_empty(&pci_pme_list)) {
- 		list_for_each_entry_safe(pme_dev, n, &pci_pme_list, list) {
- 			if (pme_dev->dev->pme_poll) {
--				pci_pme_wakeup(pme_dev->dev, NULL);
-+				pci_pme_poll_wakeup(pme_dev->dev);
- 			} else {
- 				list_del(&pme_dev->list);
- 				kfree(pme_dev);
-@@ -1608,6 +1620,10 @@ int __pci_enable_wake(struct pci_dev *dev, pci_power_t state,
- 	if (enable) {
- 		int error;
- 
-+		if (runtime && state >= PCI_D3cold)
-+			dev->runtime_d3cold = true;
-+		else
-+			dev->runtime_d3cold = false;
- 		if (pci_pme_capable(dev, state))
- 			pci_pme_active(dev, true);
- 		else
-diff --git a/drivers/pci/pcie/portdrv_pci.c b/drivers/pci/pcie/portdrv_pci.c
-index e0610bd..d66b7e9 100644
---- a/drivers/pci/pcie/portdrv_pci.c
-+++ b/drivers/pci/pcie/portdrv_pci.c
-@@ -11,11 +11,13 @@
- #include <linux/kernel.h>
- #include <linux/errno.h>
- #include <linux/pm.h>
-+#include <linux/pm_runtime.h>
- #include <linux/init.h>
- #include <linux/pcieport_if.h>
- #include <linux/aer.h>
- #include <linux/dmi.h>
- #include <linux/pci-aspm.h>
-+#include <linux/delay.h>
- 
- #include "portdrv.h"
- #include "aer/aerdrv.h"
-@@ -99,6 +101,25 @@ static int pcie_port_resume_noirq(struct device *dev)
- 	return 0;
- }
- 
-+static int pcie_port_runtime_suspend(struct device *dev)
-+{
-+	struct pci_dev *pdev = to_pci_dev(dev);
-+
-+	pci_save_state(pdev);
-+	return 0;
-+}
-+
-+static int pcie_port_runtime_resume(struct device *dev)
-+{
-+	struct pci_dev *pdev = to_pci_dev(dev);
-+
-+	pci_restore_state(pdev);
-+	if (pdev->runtime_d3cold)
-+		msleep(100);
-+
-+	return 0;
-+}
-+
- static const struct dev_pm_ops pcie_portdrv_pm_ops = {
- 	.suspend	= pcie_port_device_suspend,
- 	.resume		= pcie_port_device_resume,
-@@ -107,6 +128,8 @@ static const struct dev_pm_ops pcie_portdrv_pm_ops = {
- 	.poweroff	= pcie_port_device_suspend,
- 	.restore	= pcie_port_device_resume,
- 	.resume_noirq	= pcie_port_resume_noirq,
-+	.runtime_suspend = pcie_port_runtime_suspend,
-+	.runtime_resume = pcie_port_runtime_resume,
- };
- 
- #define PCIE_PORTDRV_PM_OPS	(&pcie_portdrv_pm_ops)
-@@ -144,12 +167,14 @@ static int __devinit pcie_portdrv_probe(struct pci_dev *dev,
- 		return status;
- 
- 	pci_save_state(dev);
-+	pm_runtime_put_noidle(&dev->dev);
- 
- 	return 0;
- }
- 
- static void pcie_portdrv_remove(struct pci_dev *dev)
- {
-+	pm_runtime_get_noresume(&dev->dev);
- 	pcie_port_device_remove(dev);
- 	pci_disable_device(dev);
- }
-diff --git a/include/linux/pci.h b/include/linux/pci.h
-index e444f5b..b41d9a1 100644
---- a/include/linux/pci.h
-+++ b/include/linux/pci.h
-@@ -281,6 +281,7 @@ struct pci_dev {
- 	unsigned int	no_d1d2:1;	/* Only allow D0 and D3 */
- 	unsigned int	mmio_always_on:1;	/* disallow turning off io/mem
- 						   decoding during bar sizing */
-+	unsigned int	runtime_d3cold:1;
- 	unsigned int	wakeup_prepared:1;
- 	unsigned int	d3_delay;	/* D3->D0 transition time in ms */
- 
+ net/nfc/netlink.c |    6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
+
+diff --git a/net/nfc/netlink.c b/net/nfc/netlink.c
+index 539d041..24d8d12 100644
+--- a/net/nfc/netlink.c
++++ b/net/nfc/netlink.c
+@@ -202,8 +202,10 @@ int nfc_genl_target_lost(struct nfc_dev *dev, u32 targ=
+et_idx)
+ 	if (!hdr)
+ 		goto free_msg;
+=20
+-	NLA_PUT_STRING(msg, NFC_ATTR_DEVICE_NAME, nfc_device_name(dev));
+-	NLA_PUT_U32(msg, NFC_ATTR_TARGET_INDEX, target_idx);
++	if (nla_put_string(msg, NFC_ATTR_DEVICE_NAME, nfc_device_name(dev)))
++		goto nla_put_failure;
++	if (nla_put_u32((msg, NFC_ATTR_TARGET_INDEX, target_idx))
++		goto nla_put_failure;
+=20
+ 	genlmsg_end(msg, hdr);
+=20
+--=20
+1.7.10.rc3
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Signature=_Fri__13_Apr_2012_12_41_03_+1000_BP1i8x.ow4b2P.hi
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCAAGBQJPh5I/AAoJEECxmPOUX5FE1cEP/2HciOQkfSLYv/KQ8vbUA/6A
+mib/zxIj+1PNJuMfwXgg9ZMxFpCZoWfUWSVC4/aehM94gZO+o7pAvOOzK9z/10XN
+neu0+Hkoy6/dF418/epmTDk9RnyvqseJ91+6odHo7yr+EUGzQ/4nJtM5FoEDjMrU
+zvQuHiwoSJFRigK0kIrNd3X1YDH9gYKHXlW0zrnH3AHmEFBFpBUbuQEofyLzE7I9
+CAuVNdSl/yiv5VCGjkBYLR1KateC90lqFQ2E542xJv6QI48jiaVWmCR5eWn8BnNZ
+rXfE8AY0ZpZcoH89wEgpGPH0EacFDTnpcs3c9dXrshROJ/BfOx3rKWjyk9FuKkdm
+1T7h0hRvQ9JqUrI4rUcG+/vvRWpg1ZZeDNmQKnlTEg+oPe8qWqPulXTsXtQy9wM2
+5jcS9IU3MBkulJWfzRWYe6tBNAmIpwDbwq935Py5ArxQ42Wbklj9PGbRBwNUoFrk
+2+s+Ul+QghUdUXFkQhGASo243UgWEL7PQGW0KYXmF8FdDLGA3QgKB8vIZkaGfLzw
+tRZnXzzo/qarpvZLhBfKfEsJ0freF0SWM/oTeih6kGysG4tQttKfE9w8obKZuCmP
+OaaJ6kd0LRYch/DNBQ4EQ2B6H2f1EL9XPDmXKFVLP2DCptftDJpnCqv9bCMGL96x
+wrIzwUnKwAqDkG6nx6xK
+=fsnu
+-----END PGP SIGNATURE-----
+
+--Signature=_Fri__13_Apr_2012_12_41_03_+1000_BP1i8x.ow4b2P.hi--
