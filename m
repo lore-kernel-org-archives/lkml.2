@@ -1,96 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752692Ab2DMOhP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Apr 2012 10:37:15 -0400
-Received: from usindpps06.hds.com ([207.126.252.19]:38389 "EHLO
-	usindpps06.hds.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751538Ab2DMOhN convert rfc822-to-8bit (ORCPT
+	id S1752924Ab2DMOkf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Apr 2012 10:40:35 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:38976 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752133Ab2DMOke (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Apr 2012 10:37:13 -0400
-From: Seiji Aguchi <seiji.aguchi@hds.com>
-To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Luck, Tony (tony.luck@intel.com)" <tony.luck@intel.com>,
-        "Chen Gong (gong.chen@linux.intel.com)" <gong.chen@linux.intel.com>,
-        "Matthew Garrett (mjg@redhat.com)" <mjg@redhat.com>,
-        "dzickus@redhat.com" <dzickus@redhat.com>
-CC: "dle-develop@lists.sourceforge.net" 
-	<dle-develop@lists.sourceforge.net>,
-        Satoru Moriya <satoru.moriya@hds.com>
-Date: Fri, 13 Apr 2012 10:37:00 -0400
-Subject: RE: [PATCH] efi: Avoid sysfs spew on reboot and panic
-Thread-Topic: [PATCH] efi: Avoid sysfs spew on reboot and panic
-Thread-Index: Acz8tGq+4nNVR+eHR66m28fsQhx58Aczlnkg
-Message-ID: <5C4C569E8A4B9B42A84A977CF070A35B2E4BE64480@USINDEVS01.corp.hds.com>
-References: <32727E9A83EE9A42A1F0906295A3A77B2E598C0A91@USINDEVS01.corp.hds.com>
-In-Reply-To: <32727E9A83EE9A42A1F0906295A3A77B2E598C0A91@USINDEVS01.corp.hds.com>
-Accept-Language: ja-JP, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: ja-JP, en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Fri, 13 Apr 2012 10:40:34 -0400
+Date: Fri, 13 Apr 2012 16:40:29 +0200
+From: Sascha Hauer <s.hauer@pengutronix.de>
+To: Alex Gershgorin <alexg@meprolight.com>
+Cc: g.liakhovetski@gmx.de, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] ARM: i.mx35 increase dma consistent region size
+Message-ID: <20120413144029.GP3852@pengutronix.de>
+References: <1334167274-29524-1-git-send-email-alexg@meprolight.com>
 MIME-Version: 1.0
-X-Proofpoint-Spam-Details: rule=outbound_policy_notspam policy=outbound_policy score=0 spamscore=0
- ipscore=0 suspectscore=1 phishscore=0 bulkscore=0 adultscore=0
- classifier=spam adjust=0 reason=mlx scancount=1 engine=6.0.2-1203120001
- definitions=main-1204130132
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1334167274-29524-1-git-send-email-alexg@meprolight.com>
+X-Sent-From: Pengutronix Hildesheim
+X-URL: http://www.pengutronix.de/
+X-IRC: #ptxdist @freenode
+X-Accept-Language: de,en
+X-Accept-Content-Type: text/plain
+X-Uptime: 16:36:51 up 152 days, 22:23, 42 users,  load average: 0.00, 0.04,
+ 0.20
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
+X-SA-Exim-Mail-From: sha@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Matthew,
-
-Do you have any comment on this patch?
-
-Seiji
-
-> -----Original Message-----
-> From: Seiji Aguchi
-> Sent: Wednesday, March 07, 2012 5:50 PM
-> To: linux-kernel@vger.kernel.org; Luck, Tony (tony.luck@intel.com); Chen Gong (gong.chen@linux.intel.com); Matthew Garrett
-> (mjg@redhat.com); dzickus@redhat.com
-> Cc: dle-develop@lists.sourceforge.net; Satoru Moriya
-> Subject: [PATCH] efi: Avoid sysfs spew on reboot and panic
+On Wed, Apr 11, 2012 at 09:01:14PM +0300, Alex Gershgorin wrote:
+> The default size of the consistent DMA region is 2MB
+> without this patch, attempt to allocate more than 2MB
+> is causing allocation failure
 > 
-> Hi,
-> 
-> This patch just modified Matthew's patch which has not included in upstream to fit current upstream code.
-> 
-> https://lkml.org/lkml/2011/9/20/468
-> 
->  Right now all pstore accesses to efivars will delete or create new sysfs  nodes. This is less than ideal if we've panicked or rebooting for
-> following reasons.
->   - efi_pstore may not work if kernel panics in interrupt context, since
->     cpu can sleep while creating sysfs files.
->   - we don't need to create sysfs if we've panicked or rebooting, because
->     no one can access to it.
-> 
-> 
-> Signed-off-by: Seiji Aguchi <seiji.aguchi@hds.com>
-> Signed-off-by: Matthew Garrett <mjg@redhat.com>
+> Signed-off-by: Alex Gershgorin <alexg@meprolight.com>
 > ---
->  drivers/firmware/efivars.c |   10 ++++++++++
->  1 files changed, 10 insertions(+), 0 deletions(-)
+>  arch/arm/mach-imx/mm-imx3.c |    1 +
+>  1 files changed, 1 insertions(+), 0 deletions(-)
 > 
-> diff --git a/drivers/firmware/efivars.c b/drivers/firmware/efivars.c index d25599f..34c8890 100644
-> --- a/drivers/firmware/efivars.c
-> +++ b/drivers/firmware/efivars.c
-> @@ -550,6 +550,16 @@ static int efi_pstore_write(enum pstore_type_id type,
-> 
->  	spin_unlock(&efivars->lock);
-> 
-> +	/*
-> +	 * If it's more severe than KMSG_DUMP_OOPS then we're already dead.
-> +	 * Don't bother playing with sysfs.
-> +	 */
-> +
-> +	if (reason != KMSG_DUMP_OOPS) {
-> +		*id = part;
-> +		return ret;
-> +	}
-> +
->  	if (found)
->  		efivar_unregister(found);
-> 
-> -- 1.7.1
+> diff --git a/arch/arm/mach-imx/mm-imx3.c b/arch/arm/mach-imx/mm-imx3.c
+> index 7412738..a2c0c7d 100644
+> --- a/arch/arm/mach-imx/mm-imx3.c
+> +++ b/arch/arm/mach-imx/mm-imx3.c
+> @@ -201,6 +201,7 @@ static struct map_desc mx35_io_desc[] __initdata = {
+>  void __init mx35_map_io(void)
+>  {
+>  	iotable_init(mx35_io_desc, ARRAY_SIZE(mx35_io_desc));
+> +	init_consistent_dma_size(SZ_8M);
+
+I don't know what to think about this. You probably have a board with
+camera support and thus need bigger buffers, right? Nevertheless this
+patch affects all i.MX35 users, even the ones without camera support.
+
+Another possibility would be to make this board specific.
+
+Sascha
+
+-- 
+Pengutronix e.K.                           |                             |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
+Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
