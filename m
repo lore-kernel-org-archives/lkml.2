@@ -1,49 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753626Ab2DMVFz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Apr 2012 17:05:55 -0400
-Received: from mail-pz0-f52.google.com ([209.85.210.52]:55928 "EHLO
-	mail-pz0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751080Ab2DMVFx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Apr 2012 17:05:53 -0400
-Date: Fri, 13 Apr 2012 14:05:48 -0700
-From: Tejun Heo <tj@kernel.org>
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: axboe@kernel.dk, ctalbott@google.com, rni@google.com,
-        linux-kernel@vger.kernel.org, cgroups@vger.kernel.org,
-        containers@lists.linux-foundation.org
-Subject: Re: [PATCH 07/11] blkcg: make request_queue bypassing on allocation
-Message-ID: <20120413210548.GG12233@google.com>
-References: <1334347895-6268-1-git-send-email-tj@kernel.org>
- <1334347895-6268-8-git-send-email-tj@kernel.org>
- <20120413203205.GI26383@redhat.com>
- <20120413203726.GE12233@google.com>
- <20120413204446.GK26383@redhat.com>
- <20120413204710.GF12233@google.com>
- <20120413205501.GL26383@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120413205501.GL26383@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1755408Ab2DMVJU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Apr 2012 17:09:20 -0400
+Received: from mailhub.sw.ru ([195.214.232.25]:10967 "EHLO relay.sw.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752403Ab2DMVJT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 Apr 2012 17:09:19 -0400
+From: Glauber Costa <glommer@parallels.com>
+To: <linux-mm@kvack.org>
+Cc: Suleiman Souhlal <suleiman@google.com>, <devel@openvz.org>,
+        <linux-kernel@vger.kernel.org>, Glauber Costa <glommer@parallels.com>,
+        Christoph Lameter <cl@linux.com>,
+        Pekka Enberg <penberg@cs.helsinki.fi>
+Subject: [PATCH] slub: don't create a copy of the name string in kmem_cache_create
+Date: Fri, 13 Apr 2012 18:06:10 -0300
+Message-Id: <1334351170-26672-1-git-send-email-glommer@parallels.com>
+X-Mailer: git-send-email 1.7.7.6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 13, 2012 at 04:55:01PM -0400, Vivek Goyal wrote:
-> But neither seems to be the case here. So to make sure that blkg_lookup()
-> under rcu will see the updated value of queue flag (bypass), are we
-> relying on the fact that caller should see the DEAD flag and not go
-> ahead with blkg_lookup()?  If yes, atleast it is not obivious.
+When creating a cache, slub keeps a copy of the cache name through
+strdup. The slab however, doesn't do that. This means that everyone
+registering caches have to keep a copy themselves anyway, since code
+needs to work on all allocators.
 
-We're relying on the fact that it doesn't matter anymore because all
-blkgs will be shoot down in queue cleanup path which goes through rcu
-free, which is different from deactivating individual policies.  It
-indeed is subtle.  Umm... this is starting to get ridiculous.  Why the
-hell was megaraid messing with so many queues anyways?
+Having slab create a copy of it as well may very well be the right
+thing to do: but at this point, the callers are already there
 
-Thanks.
+My motivation for it comes from the kmem slab cache controller for
+memcg. Because we create duplicate caches, having a more consistent
+behavior here really helps.
 
+I am sending the patch, however, more to probe on your opinion about
+it. If you guys agree, but don't want to merge it - since it is not
+fixing anything, nor improving any situation etc, I am more than happy
+to carry it in my series until it gets merged (fingers crossed).
+
+Signed-off-by: Glauber Costa <glommer@parallels.com>
+CC: Christoph Lameter <cl@linux.com>
+CC: Pekka Enberg <penberg@cs.helsinki.fi>
+---
+ mm/slub.c |   14 ++------------
+ 1 files changed, 2 insertions(+), 12 deletions(-)
+
+diff --git a/mm/slub.c b/mm/slub.c
+index ffe13fd..af8cee9 100644
+--- a/mm/slub.c
++++ b/mm/slub.c
+@@ -3925,7 +3925,6 @@ struct kmem_cache *kmem_cache_create(const char *name, size_t size,
+ 		size_t align, unsigned long flags, void (*ctor)(void *))
+ {
+ 	struct kmem_cache *s;
+-	char *n;
+ 
+ 	if (WARN_ON(!name))
+ 		return NULL;
+@@ -3949,26 +3948,20 @@ struct kmem_cache *kmem_cache_create(const char *name, size_t size,
+ 		return s;
+ 	}
+ 
+-	n = kstrdup(name, GFP_KERNEL);
+-	if (!n)
+-		goto err;
+-
+ 	s = kmalloc(kmem_size, GFP_KERNEL);
+ 	if (s) {
+-		if (kmem_cache_open(s, n,
++		if (kmem_cache_open(s, name,
+ 				size, align, flags, ctor)) {
+ 			list_add(&s->list, &slab_caches);
+ 			up_write(&slub_lock);
+ 			if (sysfs_slab_add(s)) {
+ 				down_write(&slub_lock);
+ 				list_del(&s->list);
+-				kfree(n);
+ 				kfree(s);
+ 				goto err;
+ 			}
+ 			return s;
+ 		}
+-		kfree(n);
+ 		kfree(s);
+ 	}
+ err:
+@@ -5212,7 +5205,6 @@ static void kmem_cache_release(struct kobject *kobj)
+ {
+ 	struct kmem_cache *s = to_slab(kobj);
+ 
+-	kfree(s->name);
+ 	kfree(s);
+ }
+ 
+@@ -5318,11 +5310,9 @@ static int sysfs_slab_add(struct kmem_cache *s)
+ 		return err;
+ 	}
+ 	kobject_uevent(&s->kobj, KOBJ_ADD);
+-	if (!unmergeable) {
++	if (!unmergeable)
+ 		/* Setup first alias */
+ 		sysfs_slab_alias(s, s->name);
+-		kfree(name);
+-	}
+ 	return 0;
+ }
+ 
 -- 
-tejun
+1.7.7.6
+
