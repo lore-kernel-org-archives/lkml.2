@@ -1,29 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755823Ab2DMSVy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Apr 2012 14:21:54 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:51769 "EHLO
+	id S1752687Ab2DMSWa (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Apr 2012 14:22:30 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:51783 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753158Ab2DMSVv (ORCPT
+	with ESMTP id S1751929Ab2DMSW2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Apr 2012 14:21:51 -0400
-Date: Fri, 13 Apr 2012 11:21:27 -0700
-From: tip-bot for Namhyung Kim <namhyung@gmail.com>
-Message-ID: <tip-e7b3ba6d8b29904c336e3e6a018bb80d1f63b1f4@git.kernel.org>
-Cc: acme@redhat.com, linux-kernel@vger.kernel.org, paulus@samba.org,
-        hpa@zytor.com, mingo@kernel.org, penberg@kernel.org,
-        acme@ghostprotocols.net, namhyung.kim@lge.com, namhyung@gmail.com,
-        tglx@linutronix.de, mingo@elte.hu
-Reply-To: mingo@kernel.org, hpa@zytor.com, paulus@samba.org,
-        linux-kernel@vger.kernel.org, acme@redhat.com, acme@ghostprotocols.net,
-        penberg@kernel.org, namhyung.kim@lge.com, tglx@linutronix.de,
-        namhyung@gmail.com, mingo@elte.hu
-In-Reply-To: <1333523765-12092-1-git-send-email-namhyung.kim@lge.com>
-References: <1333523765-12092-1-git-send-email-namhyung.kim@lge.com>
+	Fri, 13 Apr 2012 14:22:28 -0400
+Date: Fri, 13 Apr 2012 11:22:15 -0700
+From: tip-bot for Robert Richter <robert.richter@amd.com>
+Message-ID: <tip-666e6d48c57921874008d97aac13f6ee3e24fd55@git.kernel.org>
+Cc: acme@redhat.com, linux-kernel@vger.kernel.org, hpa@zytor.com,
+        mingo@kernel.org, robert.richter@amd.com, tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        acme@redhat.com, robert.richter@amd.com, tglx@linutronix.de
+In-Reply-To: <1333643188-26895-4-git-send-email-robert.richter@amd.com>
+References: <1333643188-26895-4-git-send-email-robert.richter@amd.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf tools: Move GTK+ bits to tools/perf/ui/
- gtk directory
-Git-Commit-ID: e7b3ba6d8b29904c336e3e6a018bb80d1f63b1f4
+Subject: [tip:perf/core] perf stat: Declare some references static
+Git-Commit-ID: 666e6d48c57921874008d97aac13f6ee3e24fd55
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -32,67 +27,71 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Fri, 13 Apr 2012 11:21:32 -0700 (PDT)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Fri, 13 Apr 2012 11:22:21 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  e7b3ba6d8b29904c336e3e6a018bb80d1f63b1f4
-Gitweb:     http://git.kernel.org/tip/e7b3ba6d8b29904c336e3e6a018bb80d1f63b1f4
-Author:     Namhyung Kim <namhyung@gmail.com>
-AuthorDate: Wed, 4 Apr 2012 00:16:05 -0700
+Commit-ID:  666e6d48c57921874008d97aac13f6ee3e24fd55
+Gitweb:     http://git.kernel.org/tip/666e6d48c57921874008d97aac13f6ee3e24fd55
+Author:     Robert Richter <robert.richter@amd.com>
+AuthorDate: Thu, 5 Apr 2012 18:26:27 +0200
 Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Wed, 11 Apr 2012 17:18:31 -0300
+CommitDate: Wed, 11 Apr 2012 17:37:16 -0300
 
-perf tools: Move GTK+ bits to tools/perf/ui/gtk directory
+perf stat: Declare some references static
 
-Move those files to new directory in order to be prepared to
-further UI work. Makefile and header file pathes are adjusted
-accordingly. Also fix a build breakage if NO_GTK2=1 is given.
+This references are not exported, use static declaration.
 
-Signed-off-by: Namhyung Kim <namhyung.kim@lge.com>
-Suggested-by: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Acked-by: Pekka Enberg <penberg@kernel.org>
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Namhyung Kim <namhyung.kim@lge.com>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Pekka Enberg <penberg@kernel.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl
-Link: http://lkml.kernel.org/r/1333523765-12092-1-git-send-email-namhyung.kim@lge.com
+Signed-off-by: Robert Richter <robert.richter@amd.com>
+Cc: Ingo Molnar <mingo@kernel.org>
+Link: http://lkml.kernel.org/r/1333643188-26895-4-git-send-email-robert.richter@amd.com
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/Makefile                   |    4 ++--
- tools/perf/{util => ui}/gtk/browser.c |    0
- tools/perf/{util => ui}/gtk/gtk.h     |    0
- 3 files changed, 2 insertions(+), 2 deletions(-)
+ tools/perf/builtin-stat.c |   26 +++++++++++++-------------
+ 1 files changed, 13 insertions(+), 13 deletions(-)
 
-diff --git a/tools/perf/Makefile b/tools/perf/Makefile
-index af6ccf8..e98e14c 100644
---- a/tools/perf/Makefile
-+++ b/tools/perf/Makefile
-@@ -493,7 +493,7 @@ else
- endif
+diff --git a/tools/perf/builtin-stat.c b/tools/perf/builtin-stat.c
+index c941bb6..dde9e17 100644
+--- a/tools/perf/builtin-stat.c
++++ b/tools/perf/builtin-stat.c
+@@ -173,7 +173,7 @@ static struct perf_event_attr very_very_detailed_attrs[] = {
  
- ifdef NO_GTK2
--	BASIC_CFLAGS += -DNO_GTK2
-+	BASIC_CFLAGS += -DNO_GTK2_SUPPORT
- else
- 	FLAGS_GTK2=$(ALL_CFLAGS) $(ALL_LDFLAGS) $(EXTLIBS) $(shell pkg-config --libs --cflags gtk+-2.0)
- 	ifneq ($(call try-cc,$(SOURCE_GTK2),$(FLAGS_GTK2)),y)
-@@ -502,7 +502,7 @@ else
- 	else
- 		BASIC_CFLAGS += $(shell pkg-config --cflags gtk+-2.0)
- 		EXTLIBS += $(shell pkg-config --libs gtk+-2.0)
--		LIB_OBJS += $(OUTPUT)util/gtk/browser.o
-+		LIB_OBJS += $(OUTPUT)ui/gtk/browser.o
- 	endif
- endif
  
-diff --git a/tools/perf/util/gtk/browser.c b/tools/perf/ui/gtk/browser.c
-similarity index 100%
-rename from tools/perf/util/gtk/browser.c
-rename to tools/perf/ui/gtk/browser.c
-diff --git a/tools/perf/util/gtk/gtk.h b/tools/perf/ui/gtk/gtk.h
-similarity index 100%
-rename from tools/perf/util/gtk/gtk.h
-rename to tools/perf/ui/gtk/gtk.h
+ 
+-struct perf_evlist		*evsel_list;
++static struct perf_evlist	*evsel_list;
+ 
+ static bool			system_wide			=  false;
+ static int			run_idx				=  0;
+@@ -265,18 +265,18 @@ static double stddev_stats(struct stats *stats)
+ 	return sqrt(variance_mean);
+ }
+ 
+-struct stats			runtime_nsecs_stats[MAX_NR_CPUS];
+-struct stats			runtime_cycles_stats[MAX_NR_CPUS];
+-struct stats			runtime_stalled_cycles_front_stats[MAX_NR_CPUS];
+-struct stats			runtime_stalled_cycles_back_stats[MAX_NR_CPUS];
+-struct stats			runtime_branches_stats[MAX_NR_CPUS];
+-struct stats			runtime_cacherefs_stats[MAX_NR_CPUS];
+-struct stats			runtime_l1_dcache_stats[MAX_NR_CPUS];
+-struct stats			runtime_l1_icache_stats[MAX_NR_CPUS];
+-struct stats			runtime_ll_cache_stats[MAX_NR_CPUS];
+-struct stats			runtime_itlb_cache_stats[MAX_NR_CPUS];
+-struct stats			runtime_dtlb_cache_stats[MAX_NR_CPUS];
+-struct stats			walltime_nsecs_stats;
++static struct stats runtime_nsecs_stats[MAX_NR_CPUS];
++static struct stats runtime_cycles_stats[MAX_NR_CPUS];
++static struct stats runtime_stalled_cycles_front_stats[MAX_NR_CPUS];
++static struct stats runtime_stalled_cycles_back_stats[MAX_NR_CPUS];
++static struct stats runtime_branches_stats[MAX_NR_CPUS];
++static struct stats runtime_cacherefs_stats[MAX_NR_CPUS];
++static struct stats runtime_l1_dcache_stats[MAX_NR_CPUS];
++static struct stats runtime_l1_icache_stats[MAX_NR_CPUS];
++static struct stats runtime_ll_cache_stats[MAX_NR_CPUS];
++static struct stats runtime_itlb_cache_stats[MAX_NR_CPUS];
++static struct stats runtime_dtlb_cache_stats[MAX_NR_CPUS];
++static struct stats walltime_nsecs_stats;
+ 
+ static int create_perf_stat_counter(struct perf_evsel *evsel,
+ 				    struct perf_evsel *first)
