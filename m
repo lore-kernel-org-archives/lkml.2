@@ -1,78 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757025Ab2DMNmB (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Apr 2012 09:42:01 -0400
-Received: from emvm-gh1-uea08.nsa.gov ([63.239.67.9]:46431 "EHLO nsa.gov"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752101Ab2DMNl7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Apr 2012 09:41:59 -0400
-X-TM-IMSS-Message-ID: <ad3c849800036755@nsa.gov>
-Subject: Re: [PATCH v3] Add security.* XATTR support for the UBIFS
-From: Stephen Smalley <sds@tycho.nsa.gov>
-To: subodh.nijsure@gmail.com
-Cc: linux-mtd@lists.infradead.org, Artem Bityutskiy <dedekind1@gmail.com>,
-        Adrian Hunter <adrian.hunter@intel.com>, linux-kernel@vger.kernel.org,
-        linux-security-module@vger.kernel.org,
-        Subodh Nijsure <snijsure@grid-net.com>
-In-Reply-To: <1334179707-31754-1-git-send-email-snijsure@grid-net.com>
-References: <1334179707-31754-1-git-send-email-snijsure@grid-net.com>
-Content-Type: text/plain; charset="UTF-8"
-Organization: National Security Agency
-Date: Fri, 13 Apr 2012 09:41:52 -0400
-Message-ID: <1334324512.10274.21.camel@moss-pluto>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
-Content-Transfer-Encoding: 7bit
+	id S932880Ab2DMNme (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Apr 2012 09:42:34 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:35634 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932687Ab2DMNma convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 Apr 2012 09:42:30 -0400
+MIME-Version: 1.0
+In-Reply-To: <CA+55aFxdvzhGOyA6SN-TcSvuKGyTAUWuDXEiVkpGPEBAZ7uHsg@mail.gmail.com>
+References: <1333569554.864.3.camel@mop>
+	<CA+55aFyMO=xx0xNvggR-1fs-jKi_zaayNfgCa3HCNkvH0yA16g@mail.gmail.com>
+	<CA+55aFxdvzhGOyA6SN-TcSvuKGyTAUWuDXEiVkpGPEBAZ7uHsg@mail.gmail.com>
+Date: Fri, 13 Apr 2012 15:42:29 +0200
+Message-ID: <CAOY=C6FOSLLVLjVvEjht3vZ9=jvziHbxLVsD+Bf7ee19zmkVsg@mail.gmail.com>
+Subject: Re: [PATCH] printk: support structured and multi-facility log messages
+From: Stijn Devriendt <highguy@gmail.com>
+To: Kay Sievers <kay@vrfy.org>
+Cc: linux-kernel@vger.kernel.org, Greg Kroah-Hartmann <greg@kroah.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-04-11 at 14:28 -0700, subodh.nijsure@gmail.com wrote:
-> diff --git a/fs/ubifs/dir.c b/fs/ubifs/dir.c
-> index ec9f187..422bcec 100644
-> --- a/fs/ubifs/dir.c
-> +++ b/fs/ubifs/dir.c
-> @@ -292,6 +292,18 @@ static int ubifs_create(struct inode *dir, struct dentry *dentry, umode_t mode,
->  
->  	ubifs_release_budget(c, &req);
->  	insert_inode_hash(inode);
-> +
-> +#ifdef CONFIG_UBIFS_FS_XATTR
-> +
-> +	err = ubifs_init_security(dir, inode, &dentry->d_name);
-> +	if (err) {
-> +		ubifs_err("cannot initialize extended attribute, error %d",
-> +			  err);
-> +		goto out_cancel;
-> +	}
-> +
-> +#endif
-> +
->  	d_instantiate(dentry, inode);
->  	return 0;
+Now that we're talking vsnprintf helpers... Wouldn't it be nice if those
+key/value pairs could be used in the message?
 
-I don't know this code very well, but simply reusing the out_cancel
-error path when ubifs_init_security() fails looks wrong to me.  You'll
-end up calling ubifs_release_budget() a second time.  You could move the
-ubifs_init_security() call a bit earlier, prior to the
-ubifs_release_budget() call, so that it only happens once on the error
-path.  I also am unclear on what if anything you need to do about the
-prior ubifs_jnl_update() if ubifs_init_security() fails; it seems like
-you either need to update the journal again to reflect the inode
-deletion or you need to move ubifs_init_security() prior to
-ubifs_jnl_update() as well.
+const char* kvpairs = "key=value\n";
+printk_emit(..., kvpairs, ... "Something went wrong with %{key}s")
 
-I don't know if this would work, but I would be inclined to move the
-call to ubifs_init_security() immediately after the ubifs_new_inode()
-call, and introduce a new out_security: label just before the
-make_bad_inode() call to which you can jump on error.  However, that
-might produce a strange state in the journal, with the setxattr recorded
-before the inode creation.  Optimally they would both be part of the
-same journal transaction, as in ext4, and thus applied atomically or not
-at all (i.e. a file is either created with a security xattr or not at
-all).
+... with a saner choice of specifiers, of course.
 
--- 
-Stephen Smalley
-National Security Agency
+Stijn
 
+On Thu, Apr 5, 2012 at 7:53 PM, Linus Torvalds
+<torvalds@linux-foundation.org> wrote:
+> On Thu, Apr 5, 2012 at 10:09 AM, Linus Torvalds
+> <torvalds@linux-foundation.org> wrote:
+>>
+>> If you want to escape something, you escape NUL and special characters
+>> using the standard *text* escaping mechanisms, not using some random
+>> hodge-podge that you just made up.
+>
+> Btw, we could certainly add more support for escaping into vsnprintf() itself.
+>
+> For example, we already do all those nice helpers for converting
+> different forms of common binary data into ascii: "%pU" for uuid's,
+> '%pS' for symbol addresses etc.
+>
+> If there really are cases where people want small blobs of data and it
+> would make sense, we could easily do "%.*pQ" for "quoted blob" or
+> whatever, where the precision is obviously the size of the blob (so
+> "%.4pQ" would be a quoted four-byte entity.
+>
+> We could also extend on the current '%pm', which was really designed
+> for mac-addresses, but the format is actually just a hex sequence. We
+> could extend that too to just take the precision into account, and
+> just default to a six-byte mac address. But we could trivially make
+> "%.16pm" print out a 16-byte hex string instead.
+>
+> I would also be very open to having some auto-quoting support for
+> '%s': it might even be something we could enable by default. So that
+> if you print out strings that contain special characters (including
+> '\n' etc), we could make sure that vsnprintf() actually quotes them.
+> We don't have to follow the POSIX rules for things, after all.
+>
+> So I'm very open to making it easier to use ASCII.
+>
+> I'm *very* closed to making any kernel logging facility use binary
+> data. If you want binary data, go somewhere else. Seriously.
+>
+>                  Linus
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
