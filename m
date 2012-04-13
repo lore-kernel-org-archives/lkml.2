@@ -1,62 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757441Ab2DMCVU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Apr 2012 22:21:20 -0400
-Received: from asix.com.tw ([113.196.140.82]:62266 "EHLO asix.com.tw"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752316Ab2DMCVS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Apr 2012 22:21:18 -0400
-From: "Donald" <donald@asix.com.tw>
-To: "'Alan Cox'" <alan@lxorguk.ukuu.org.uk>
-Cc: "'Greg KH'" <gregkh@linuxfoundation.org>,
-        "'open list:USB SUBSYSTEM'" <linux-usb@vger.kernel.org>,
-        "'open list'" <linux-kernel@vger.kernel.org>
-References: <005301cd1871$87391a90$95ab4fb0$@com.tw> <20120412104936.65dd7683@pyramind.ukuu.org.uk>
-In-Reply-To: <20120412104936.65dd7683@pyramind.ukuu.org.uk>
-Subject: RE: Patch "USB: serial: mos7840: Supported MCS7810 device"
-Date: Fri, 13 Apr 2012 10:20:52 +0800
-Message-ID: <002701cd191c$1077d580$31678080$@com.tw>
+	id S1757941Ab2DMC3L (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Apr 2012 22:29:11 -0400
+Received: from mail7.hitachi.co.jp ([133.145.228.42]:55827 "EHLO
+	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755264Ab2DMC3J (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Apr 2012 22:29:09 -0400
+X-AuditID: b753bd60-a0885ba000000655-d2-4f878f71baaf
+X-AuditID: b753bd60-a0885ba000000655-d2-4f878f71baaf
+Message-ID: <4F878F61.4020105@hitachi.com>
+Date: Fri, 13 Apr 2012 11:28:49 +0900
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Organization: Hitachi, Ltd., Japan
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:11.0) Gecko/20120327 Thunderbird/11.0.1
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="us-ascii"
+To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
+        LKML <linux-kernel@vger.kernel.org>, Linux-mm <linux-mm@kvack.org>,
+        Oleg Nesterov <oleg@redhat.com>, Andi Kleen <andi@firstfloor.org>,
+        Christoph Hellwig <hch@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Anton Arapov <anton@redhat.com>
+Subject: Re: Re: [PATCH UPDATED 3/3] tracing: Provide trace events interface
+ for uprobes
+References: <20120409091133.8343.65289.sendpatchset@srdronam.in.ibm.com> <20120409091154.8343.50489.sendpatchset@srdronam.in.ibm.com> <20120411103043.GB29437@linux.vnet.ibm.com> <4F86D264.9020004@hitachi.com> <20120412144927.GB21587@linux.vnet.ibm.com>
+In-Reply-To: <20120412144927.GB21587@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-Mailer: Microsoft Office Outlook 12.0
-Thread-Index: Ac0YkVKsNPiNGd0bQw+CMxOQVJBEsAAiFXUw
-Content-Language: zh-tw
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Alan,
+(2012/04/12 23:49), Srikar Dronamraju wrote:
+>>> +
+>>> +    # echo 'p /bin/zsh:0x46420 %ip %ax' > uprobe_events
+>>> +
+>>> +Please note: User has to explicitly calculate the offset of the probepoint
+>>> +in the object. We can see the events that are registered by looking at the
+>>> +uprobe_events file.
+>>> +
+>>> +    # cat uprobe_events
+>>> +    p:uprobes/p_zsh_0x46420 /bin/zsh:0x0000000000046420
+>>
+>> Doesn't uprobe_events show the arguments of existing events?
+>> And also, could you add an event format of above event here?
+>>
+> 
+> [root@f14kvm tracing]#  cat uprobe_events 
+> [root@f14kvm tracing]# echo 'p /bin/zsh:0x46420 %ip %ax' > uprobe_events 
+> [root@f14kvm tracing]#  cat uprobe_events 
+> p:uprobes/p_zsh_0x46420 /bin/zsh:0x00046420 arg1=%ip arg2=%ax
+> [root@f14kvm tracing]#  cat events/uprobes/p_zsh_0x46420/format 
+> name: p_zsh_0x46420
+> ID: 922
+> format:
+>         field:unsigned short common_type;       offset:0;       size:2; signed:0;
+>         field:unsigned char common_flags;       offset:2;       size:1; signed:0;
+>         field:unsigned char common_preempt_count;       offset:3;       size:1; signed:0;
+>         field:int common_pid;   offset:4;       size:4; signed:1;
+>         field:int common_padding;       offset:8;       size:4; signed:1;
+> 
+>         field:unsigned long __probe_ip; offset:12;      size:4; signed:0;
+>         field:u32 arg1; offset:16;      size:4; signed:0;
+>         field:u32 arg2; offset:20;      size:4; signed:0;
+> 
+> print fmt: "(%lx) arg1=%lx arg2=%lx", REC->__probe_ip, REC->arg1, REC->arg2
+> [root@f14kvm tracing]# 
+> 
+> Will update the Documentation file  with correct output of "cat
+> uprobe_events". Do you want the format file to be added to the
+> Documentation?
 
-Thank you for your reply. As for your comment regarding the LED feature flag, the driver can provide a flag parameter for LED
-feature so that users will be able to set this LED feature at loading the driver, and by default, this flag is set false (LED
-feature is disabled). Could you let me know if this is what exactly matches your comment?
+Yes, I want, please :)
 
-Regards,
-Donald
-
------Original Message-----
-From: Alan Cox [mailto:alan@lxorguk.ukuu.org.uk] 
-Sent: Thursday, April 12, 2012 5:50 PM
-To: Donald
-Cc: 'Greg KH'; 'open list:USB SUBSYSTEM'; 'open list'
-Subject: Re: Patch "USB: serial: mos7840: Supported MCS7810 device"
-
-> +/* MCS7810 LED support */
-> +#define MCS7810_HAS_LED
-
-I would just enable this. Nobody is going to change it in their source code.
+Thank you!
 
 
-> +#ifdef MCS7810_HAS_LED
-> +	/* Turn on MCS7810 LED */
-> +	if (serial->num_ports == 1 && mos7840_port->mos7810_led_flag == 0) {
-
-Same comment as before about leds and flags to indicate features.
-
-All these if cases should be a feature flag of some kind
-
-Alan
-
-
+-- 
+Masami HIRAMATSU
+Software Platform Research Dept. Linux Technology Center
+Hitachi, Ltd., Yokohama Research Laboratory
+E-mail: masami.hiramatsu.pt@hitachi.com
