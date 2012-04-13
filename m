@@ -1,68 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753342Ab2DMPX4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Apr 2012 11:23:56 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:44359 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751308Ab2DMPXy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Apr 2012 11:23:54 -0400
-Date: Fri, 13 Apr 2012 11:23:50 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: axboe@kernel.dk, ctalbott@google.com, rni@google.com,
-        linux-kernel@vger.kernel.org, cgroups@vger.kernel.org,
-        containers@lists.linux-foundation.org
-Subject: Re: [PATCH 7/8] blkcg: implement per-queue policy activation
-Message-ID: <20120413152350.GD26383@redhat.com>
-References: <1334273380-30233-1-git-send-email-tj@kernel.org>
- <1334273380-30233-8-git-send-email-tj@kernel.org>
- <20120413152122.GC26383@redhat.com>
+	id S1753429Ab2DMPZ2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Apr 2012 11:25:28 -0400
+Received: from mail-pz0-f52.google.com ([209.85.210.52]:57905 "EHLO
+	mail-pz0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752028Ab2DMPZ0 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 Apr 2012 11:25:26 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120413152122.GC26383@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <4F8835B8.2060400@garzik.org>
+References: <20120413081104.GA4953@gmail.com>
+	<4F8835B8.2060400@garzik.org>
+Date: Fri, 13 Apr 2012 23:25:25 +0800
+Message-ID: <CANWLp01_fUhc72XUBcORGwh0s7r7g8CE5S7aqC+e2Sj4vf_DJA@mail.gmail.com>
+Subject: Re: [RFC] enable FUA support in libata
+From: Zheng Liu <gnehzuil.liu@gmail.com>
+Cc: linux-kernel@vger.kernel.org, linux-ide@vger.kernel.org,
+        linux-scsi@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 13, 2012 at 11:21:22AM -0400, Vivek Goyal wrote:
-> On Thu, Apr 12, 2012 at 04:29:39PM -0700, Tejun Heo wrote:
-> 
-> [..]
-> > @@ -111,12 +122,11 @@ static struct blkio_group *blkg_alloc(struct blkio_cgroup *blkcg,
-> >  		struct blkio_policy_type *pol = blkio_policy[i];
-> >  		struct blkg_policy_data *pd;
-> >  
-> > -		if (!pol)
-> > +		if (!blkcg_policy_enabled(q, pol))
-> >  			continue;
-> >  
-> >  		/* alloc per-policy data and attach it to blkg */
-> > -		pd = kzalloc_node(sizeof(*pd) + pol->pdata_size, GFP_ATOMIC,
-> > -				  q->node);
-> > +		pd = kzalloc_node(blkg_pd_size(pol), GFP_ATOMIC, q->node);
-> >  		if (!pd) {
-> >  			blkg_free(blkg);
-> >  			return NULL;
-> > @@ -130,7 +140,7 @@ static struct blkio_group *blkg_alloc(struct blkio_cgroup *blkcg,
-> >  	for (i = 0; i < BLKCG_MAX_POLS; i++) {
-> >  		struct blkio_policy_type *pol = blkio_policy[i];
-> >  
-> > -		if (pol)
-> > +		if (blkcg_policy_enabled(blkg->q, pol))
-> >  			pol->ops.blkio_init_group_fn(blkg);
-> >  	}
-> 
-> May be pol->ops.blkio_init_group_fn() can be called in the loop above
-> where you are allocating the group. So you don't end up looping through
-> policies twice and don't have to call blkcg_policy_enabled() twice.
+On Fri, Apr 13, 2012 at 10:18 PM, Jeff Garzik <jeff@garzik.org> wrote:
+> On 04/13/2012 04:11 AM, Zheng Liu wrote:
+>>
+>> Hi Jeff and list,
+>>
+>> Recently I met a problem about FUA support of SATA disk.  In my machine,
+>> it has a SATA disk that supports FUA feature.  But after system starts
+>> up, it displays that the disk cannot support FUA from dmesg.
+>>
+>> I notice this commit (c3c013a2).  It disables FUA support in all of SATA
+>> disk.  But the commit log is too simple to know why we should disable
+>> FUA support in libata.  Could you please explain it?  Thank you.
+>
+>
+> FUA support in the block layer wanted speed and guarantees that early FUA
+> drives were simply not providing.
 
-Oh..., I guess you did it because you did not want to call into individual
-policies till all the policy data allocations were successfully done.
-Otherwise you need to call into policies again to undo all initializations.
+Hi Jeff,
 
-So yes, it is fine as it is.
+Thank you for your reply.  I notice that this patch is merged in 2006.
+ I don't know whether we can enable it now by default or not.  I read
+some specifications of SATA disks.  They support FUA feature.
+Although libata_fua variable is a kernel module parameter and we can
+enable it when this module is loaded,  it is too complicated because
+it needs to be loaded before kernel is loaded.  Thus, we need to set
+libata_fua in initrd.  Maybe we can change it into a sysctl parameter.
+ Then we can enable it dynamically.  Do you have any suggestions?
+Thank you.
 
-Thanks
-Vivek
+Regards,
+Zheng
