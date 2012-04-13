@@ -1,71 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934555Ab2DMJaX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Apr 2012 05:30:23 -0400
-Received: from mailout2.w1.samsung.com ([210.118.77.12]:28513 "EHLO
-	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932720Ab2DMJaU (ORCPT
+	id S1758269Ab2DMJcM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Apr 2012 05:32:12 -0400
+Received: from smtprelay-b12.telenor.se ([62.127.194.21]:49685 "EHLO
+	smtprelay-b12.telenor.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758026Ab2DMJcK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Apr 2012 05:30:20 -0400
-Date: Fri, 13 Apr 2012 11:30:50 +0200
-From: Karol Lewandowski <k.lewandowsk@samsung.com>
-Subject: Re: [PATCH v3 0/3] i2c-s3c2410: Updates for exynos4210 and DT-based
- systems
-In-reply-to: <1332357113-2973-1-git-send-email-k.lewandowsk@samsung.com>
-To: Karol Lewandowski <k.lewandowsk@samsung.com>, w.sang@pengutronix.de
-Cc: ben-linux@fluff.org, m.szyprowski@samsung.com, thomas.abraham@linaro.org,
-        linux-kernel@vger.kernel.org, linux-i2c@vger.kernel.org,
-        devicetree-discuss@lists.ozlabs.org, linux-samsung-soc@vger.kernel.org,
-        t.stanislaws@samsung.com, kyungmin.park@samsung.com,
-        broonie@opensource.wolfsonmicro.com,
-        "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>
-Message-id: <4F87F24A.1040408@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=UTF-8
-Content-transfer-encoding: 7BIT
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111109 Icedove/8.0
-References: <1332357113-2973-1-git-send-email-k.lewandowsk@samsung.com>
+	Fri, 13 Apr 2012 05:32:10 -0400
+X-SENDER-IP: [85.230.169.225]
+X-LISTENER: [smtp.bredband.net]
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: ApxnAKrxh09V5qnhPGdsb2JhbABFiiisQwSBBBkBAQEBNzSCCQEBBAE6HCMQCAMOOBQlChqIHAm5bhOLSYUYYwSVa4YCg1WJSQ
+X-IronPort-AV: E=Sophos;i="4.75,416,1330902000"; 
+   d="scan'208";a="312664180"
+From: "Henrik Rydberg" <rydberg@euromail.se>
+Date: Fri, 13 Apr 2012 11:34:46 +0200
+To: Daniel Kurtz <djkurtz@chromium.org>
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Joonyoung Shim <jy0922.shim@samsung.com>,
+        Nick Dyer <nick.dyer@itdev.co.uk>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Benson Leung <bleung@chromium.org>,
+        Yufeng Shen <miletus@chromium.org>
+Subject: Re: [PATCH 11/16 v2] Input: atmel_mxt_ts - refactor reading object
+ table
+Message-ID: <20120413093446.GA4218@polaris.bitmath.org>
+References: <1333039766-8617-1-git-send-email-djkurtz@chromium.org>
+ <1333039766-8617-12-git-send-email-djkurtz@chromium.org>
+ <20120413091147.GA3923@polaris.bitmath.org>
+ <CAGS+omD5WxL4mrt8Czw7M3OAbuBH2CVO-EmFmhG3VucSNRuLCw@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAGS+omD5WxL4mrt8Czw7M3OAbuBH2CVO-EmFmhG3VucSNRuLCw@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 21.03.2012 20:11, Karol Lewandowski wrote:
+> > Putting this conversion in a function would be nice, it would also
+> > make it clear that the inverse, used for writing, is currently
+> > missing. Alternatively, how about making the object struct actually
+> > match the read data? To top it off, one could introduce a collection,
+> > prepending the buffer size, making the write operation trivial.
+> 
+> AFAIK, there is no corresponding "object table" write. The "object
+> table" (maybe more aptly named the "object descriptor table") is an
+> immutable blob read from firmware that describes some actual data
+> objects elsewhere in device memory.  It is those actual objects that
+> are writable.  When they are written, it is the actual size, location
+> and number of instances (not their raw '-1' values) that is useful.
 
-> Changes since v2:
->  - Merge device type and flags into flat bitmask named quirks -
->    Consequently, treat s3c24xx as baseline hardware platform and
->    support all hw variations via quirks [Suggested by Mark Brown]
-> 
-> Changes since v1:
->  - Move unrelated code fragment to separate patch (of_match_ptr())
->    [Suggested by Thomas Abraham]
->  - Move device-type handling to separate function and rework its
->    internals a bit [likewise]
-> 
-> This patchset reworks i2c-s3c2410 driver a bit to better handle
-> device tree-enabled platforms and adds two quirks required by
-> exynos4210-specific I2C controller used by s5p-hdmi driver.
-> 
-> This patchset is based on "i2c-bjdooks/for-34/i2c/i2c-samsung" branch
-> taken from:
-> 
->   git://git.fluff.org/bjdooks/linux.git
-> 
-> Karol Lewandowski (3):
->   i2c-s3c2410: Drop unused define
->   i2c-s3c2410: Rework device type handling
->   i2c-s3c2410: Add HDMIPHY quirk for S3C2440
-> 
->  .../devicetree/bindings/i2c/samsung-i2c.txt        |   11 ++-
->  drivers/i2c/busses/i2c-s3c2410.c                   |   86 +++++++++++++------
->  2 files changed, 68 insertions(+), 29 deletions(-)
+I am talking about the data that is being read here and written in
+mxt_check_reg_init(). By matching the struct with that data, all the
+copies you make would go away.
 
-
-Wolfram,
-
-Is there anything I can do to have these patches in -next
-(and, consequently, in 3.5-rc1)?
-
-Regards,
--- 
-Karol Lewandowski | Samsung Poland R&D Center | Linux/Platform
+Henrik
