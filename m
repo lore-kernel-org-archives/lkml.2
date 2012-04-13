@@ -1,90 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758405Ab2DMKLV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Apr 2012 06:11:21 -0400
-Received: from e23smtp09.au.ibm.com ([202.81.31.142]:60740 "EHLO
-	e23smtp09.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753938Ab2DMKLT (ORCPT
+	id S1758436Ab2DMKLz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Apr 2012 06:11:55 -0400
+Received: from e23smtp01.au.ibm.com ([202.81.31.143]:46251 "EHLO
+	e23smtp01.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754694Ab2DMKLw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Apr 2012 06:11:19 -0400
-Message-ID: <4F87FBC1.5010907@linux.vnet.ibm.com>
-Date: Fri, 13 Apr 2012 18:11:13 +0800
+	Fri, 13 Apr 2012 06:11:52 -0400
+Message-ID: <4F87FBE1.200@linux.vnet.ibm.com>
+Date: Fri, 13 Apr 2012 18:11:45 +0800
 From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120216 Thunderbird/10.0.1
 MIME-Version: 1.0
 To: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
 CC: Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
         LKML <linux-kernel@vger.kernel.org>, KVM <kvm@vger.kernel.org>
-Subject: [PATCH v2 04/16] KVM: MMU: return bool in __rmap_write_protect
+Subject: [PATCH v2 05/16] KVM: MMU: abstract spte write-protect
 References: <4F87FA69.5060106@linux.vnet.ibm.com>
 In-Reply-To: <4F87FA69.5060106@linux.vnet.ibm.com>
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
-x-cbid: 12041301-3568-0000-0000-00000187BC2C
+x-cbid: 12041300-1618-0000-0000-0000014CB1D3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The reture value of __rmap_write_protect is either 1 or 0, use
-true/false instead of these
+Introduce a common function to abstract spte write-protect to
+cleanup the code
 
 Signed-off-by: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
 ---
- arch/x86/kvm/mmu.c |   13 +++++++------
- 1 files changed, 7 insertions(+), 6 deletions(-)
+ arch/x86/kvm/mmu.c |   60 ++++++++++++++++++++++++++++++---------------------
+ 1 files changed, 35 insertions(+), 25 deletions(-)
 
 diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
-index 91518b6..7589e56 100644
+index 7589e56..a1c3628 100644
 --- a/arch/x86/kvm/mmu.c
 +++ b/arch/x86/kvm/mmu.c
-@@ -1052,11 +1052,12 @@ static void drop_spte(struct kvm *kvm, u64 *sptep)
+@@ -1052,6 +1052,34 @@ static void drop_spte(struct kvm *kvm, u64 *sptep)
  		rmap_remove(kvm, sptep);
  }
 
--static int __rmap_write_protect(struct kvm *kvm, unsigned long *rmapp, int level)
-+static bool
-+__rmap_write_protect(struct kvm *kvm, unsigned long *rmapp, int level)
++/* Return true if the spte is dropped. */
++static bool spte_write_protect(struct kvm *kvm, u64 *sptep, bool large,
++			       bool *flush)
++{
++	u64 spte = *sptep;
++
++	if (!is_writable_pte(spte))
++		return false;
++
++	*flush |= true;
++
++	if (large) {
++		pgprintk("rmap_write_protect(large): spte %p %llx\n",
++			 spte, *spte);
++		BUG_ON(!is_large_pte(spte));
++
++		drop_spte(kvm, sptep);
++		--kvm->stat.lpages;
++		return true;
++	}
++
++	rmap_printk("rmap_write_protect: spte %p %llx\n", spte, *spte);
++	spte = spte & ~PT_WRITABLE_MASK;
++	mmu_spte_update(sptep, spte);
++
++	return false;
++}
++
+ static bool
+ __rmap_write_protect(struct kvm *kvm, unsigned long *rmapp, int level)
  {
- 	u64 *sptep;
- 	struct rmap_iterator iter;
--	int write_protected = 0;
-+	bool write_protected = false;
+@@ -1060,24 +1088,13 @@ __rmap_write_protect(struct kvm *kvm, unsigned long *rmapp, int level)
+ 	bool write_protected = false;
 
  	for (sptep = rmap_get_first(*rmapp, &iter); sptep;) {
- 		rmap_printk("rmap_write_protect: spte %p %llx\n", sptep, *sptep);
-@@ -1076,7 +1077,7 @@ static int __rmap_write_protect(struct kvm *kvm, unsigned long *rmapp, int level
+-		rmap_printk("rmap_write_protect: spte %p %llx\n", sptep, *sptep);
+-
+-		if (!is_writable_pte(*sptep)) {
+-			sptep = rmap_get_next(&iter);
+-			continue;
+-		}
+-
+-		if (level == PT_PAGE_TABLE_LEVEL) {
+-			mmu_spte_update(sptep, *sptep & ~PT_WRITABLE_MASK);
+-			sptep = rmap_get_next(&iter);
+-		} else {
+-			BUG_ON(!is_large_pte(*sptep));
+-			drop_spte(kvm, sptep);
+-			--kvm->stat.lpages;
++		if (spte_write_protect(kvm, sptep, level > PT_PAGE_TABLE_LEVEL,
++			  &write_protected)) {
  			sptep = rmap_get_first(*rmapp, &iter);
++			continue;
  		}
 
--		write_protected = 1;
-+		write_protected = true;
+-		write_protected = true;
++		sptep = rmap_get_next(&iter);
  	}
 
  	return write_protected;
-@@ -1107,12 +1108,12 @@ void kvm_mmu_write_protect_pt_masked(struct kvm *kvm,
- 	}
- }
-
--static int rmap_write_protect(struct kvm *kvm, u64 gfn)
-+static bool rmap_write_protect(struct kvm *kvm, u64 gfn)
+@@ -3898,6 +3915,7 @@ int kvm_mmu_setup(struct kvm_vcpu *vcpu)
+ void kvm_mmu_slot_remove_write_access(struct kvm *kvm, int slot)
  {
- 	struct kvm_memory_slot *slot;
- 	unsigned long *rmapp;
- 	int i;
--	int write_protected = 0;
-+	bool write_protected = false;
+ 	struct kvm_mmu_page *sp;
++	bool flush = false;
 
- 	slot = gfn_to_memslot(kvm, gfn);
+ 	list_for_each_entry(sp, &kvm->arch.active_mmu_pages, link) {
+ 		int i;
+@@ -3912,16 +3930,8 @@ void kvm_mmu_slot_remove_write_access(struct kvm *kvm, int slot)
+ 			      !is_last_spte(pt[i], sp->role.level))
+ 				continue;
 
-@@ -1689,7 +1690,7 @@ static void mmu_sync_children(struct kvm_vcpu *vcpu,
-
- 	kvm_mmu_pages_init(parent, &parents, &pages);
- 	while (mmu_unsync_walk(parent, &pages)) {
--		int protected = 0;
-+		bool protected = false;
-
- 		for_each_sp(pages, sp, parents, i)
- 			protected |= rmap_write_protect(vcpu->kvm, sp->gfn);
+-			if (is_large_pte(pt[i])) {
+-				drop_spte(kvm, &pt[i]);
+-				--kvm->stat.lpages;
+-				continue;
+-			}
+-
+-			/* avoid RMW */
+-			if (is_writable_pte(pt[i]))
+-				mmu_spte_update(&pt[i],
+-						pt[i] & ~PT_WRITABLE_MASK);
++			spte_write_protect(kvm, &pt[i],
++					   is_large_pte(pt[i]), &flush);
+ 		}
+ 	}
+ 	kvm_flush_remote_tlbs(kvm);
 -- 
 1.7.7.6
 
