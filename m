@@ -1,84 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756108Ab2DMSqz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Apr 2012 14:46:55 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:56902 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755976Ab2DMSqx (ORCPT
+	id S1756133Ab2DMStC (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Apr 2012 14:49:02 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:61740 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755976Ab2DMStA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Apr 2012 14:46:53 -0400
-From: Steven Harms <sjharms@gmail.com>
-To: Steven Harms <sjharms@gmail.com>, Marcel Holtmann <marcel@holtmann.org>,
-        Gustavo Padovan <gustavo@padovan.org>,
-        Johan Hedberg <johan.hedberg@gmail.com>,
-        linux-bluetooth@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 1/1] Add Foxconn / Hon Hai IDs for btusb module
-Date: Fri, 13 Apr 2012 14:45:55 -0400
-Message-Id: <1334342755-7371-1-git-send-email-sjharms@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
+	Fri, 13 Apr 2012 14:49:00 -0400
+From: Sasha Levin <levinsasha928@gmail.com>
+To: davem@davemloft.net, ericvh@gmail.com, aneesh.kumar@linux.vnet.ibm.com,
+        jvrao@linux.vnet.ibm.com, rusty@rustcorp.com.au
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org, davej@redhat.com,
+        Sasha Levin <levinsasha928@gmail.com>
+Subject: [PATCH] 9p: disconnect channel when PCI device is removed
+Date: Fri, 13 Apr 2012 17:48:36 -0400
+Message-Id: <1334353716-19483-1-git-send-email-levinsasha928@gmail.com>
+X-Mailer: git-send-email 1.7.8.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This change adds 0x0489:0xe033 to the btusb module.
+When a virtio_9p pci device is being removed, we should close down any
+active channels and free up resources, we're not supposed to BUG() if there's
+still an open channel since it's a valid case when removing the PCI device.
 
-This bluetooth usb device is integrated in the Acer TimelineX AS4830TG-6808 notebook.
+Otherwise, removing the PCI device with an open channel would cause the
+following BUG():
 
-Output from /sys/kernel/debug/usb/devices:
+[ 1184.671416] ------------[ cut here ]------------
+[ 1184.672057] kernel BUG at net/9p/trans_virtio.c:618!
+[ 1184.672057] invalid opcode: 0000 [#1] PREEMPT SMP
+[ 1184.672057] CPU 3
+[ 1184.672057] Pid: 5, comm: kworker/u:0 Tainted: G        W    3.4.0-rc2-next-20120413-sasha-dirty #76
+[ 1184.672057] RIP: 0010:[<ffffffff825c9116>]  [<ffffffff825c9116>] p9_virtio_remove+0x16/0x90
+[ 1184.672057] RSP: 0018:ffff88000d653ac0  EFLAGS: 00010202
+[ 1184.672057] RAX: ffffffff836bfb40 RBX: ffff88000c9b2148 RCX: ffff88000d658978
+[ 1184.672057] RDX: 0000000000000006 RSI: 0000000000000000 RDI: ffff880028868000
+[ 1184.672057] RBP: ffff88000d653ad0 R08: 0000000000000000 R09: 0000000000000000
+[ 1184.672057] R10: 0000000000000000 R11: 0000000000000001 R12: ffff880028868000
+[ 1184.672057] R13: ffffffff835aa7c0 R14: ffff880041630000 R15: ffff88000d653da0
+[ 1184.672057] FS:  0000000000000000(0000) GS:ffff880035a00000(0000) knlGS:0000000000000000
+[ 1184.672057] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+[ 1184.672057] CR2: 0000000001181000 CR3: 000000000eba1000 CR4: 00000000000406e0
+[ 1184.672057] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+x000000000117a190 *[ 1184.672057] DR3: 00000000000000**
+00 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+[ 1184.672057] Process kworker/u:0 (pid: 5, threadinfo ffff88000d652000, task ffff88000d658000)
+[ 1184.672057] Stack:
+[ 1184.672057]  ffff880028868000 ffffffff836bfb40 ffff88000d653af0 ffffffff8193661b
+[ 1184.672057]  ffff880028868008 ffffffff836bfb40 ffff88000d653b10 ffffffff81af1c81
+[ 1184.672057]  ffff880028868068 ffff880028868008 ffff88000d653b30 ffffffff81af257a
+[ 1184.795301] Call Trace:
+[ 1184.795301]  [<ffffffff8193661b>] virtio_dev_remove+0x1b/0x60
+[ 1184.795301]  [<ffffffff81af1c81>] __device_release_driver+0x81/0xd0
+[ 1184.795301]  [<ffffffff81af257a>] device_release_driver+0x2a/0x40
+[ 1184.795301]  [<ffffffff81af0d48>] bus_remove_device+0x138/0x150
+[ 1184.795301]  [<ffffffff81aef08d>] device_del+0x14d/0x1b0
+[ 1184.795301]  [<ffffffff81aef138>] device_unregister+0x48/0x60
+[ 1184.795301]  [<ffffffff8193694d>] unregister_virtio_device+0xd/0x10
+[ 1184.795301]  [<ffffffff8265fc74>] virtio_pci_remove+0x2a/0x6c
+[ 1184.795301]  [<ffffffff818a95ad>] pci_device_remove+0x4d/0x110
+[ 1184.795301]  [<ffffffff81af1c81>] __device_release_driver+0x81/0xd0
+[ 1184.795301]  [<ffffffff81af257a>] device_release_driver+0x2a/0x40
+[ 1184.795301]  [<ffffffff81af0d48>] bus_remove_device+0x138/0x150
+[ 1184.795301]  [<ffffffff81aef08d>] device_del+0x14d/0x1b0
+[ 1184.795301]  [<ffffffff81aef138>] device_unregister+0x48/0x60
+[ 1184.795301]  [<ffffffff818a36fa>] pci_stop_bus_device+0x6a/0x90
+[ 1184.795301]  [<ffffffff818a3791>] pci_stop_and_remove_bus_device+0x11/0x20
+[ 1184.795301]  [<ffffffff818c21d9>] remove_callback+0x9/0x10
+[ 1184.795301]  [<ffffffff81252d91>] sysfs_schedule_callback_work+0x21/0x60
+[ 1184.795301]  [<ffffffff810cb1a1>] process_one_work+0x281/0x430
+[ 1184.795301]  [<ffffffff810cb140>] ? process_one_work+0x220/0x430
+[ 1184.795301]  [<ffffffff81252d70>] ? sysfs_read_file+0x1c0/0x1c0
+[ 1184.795301]  [<ffffffff810cc613>] worker_thread+0x1f3/0x320
+[ 1184.795301]  [<ffffffff810cc420>] ? manage_workers.clone.13+0x130/0x130
+[ 1184.795301]  [<ffffffff810d30b2>] kthread+0xb2/0xc0
+[ 1184.795301]  [<ffffffff826783f4>] kernel_thread_helper+0x4/0x10
+[ 1184.795301]  [<ffffffff810deb18>] ? finish_task_switch+0x78/0xf0
+[ 1184.795301]  [<ffffffff82676574>] ? retint_restore_args+0x13/0x13
+[ 1184.795301]  [<ffffffff810d3000>] ? kthread_flush_work_fn+0x10/0x10
+[ 1184.795301]  [<ffffffff826783f0>] ? gs_change+0x13/0x13
+[ 1184.795301] Code: c1 9e 0a 00 48 83 c4 08 5b c9 c3 66 2e 0f 1f 84 00 00 00 00 00 55 48 89 e5 41 54 49 89 fc 53 48 8b 9f a8 04 00 00 80 3b 00 74 0a <0f> 0b 0f 1f 84 00 00 00 00 00 48 8b 87 88 04 00 00 ff 50 30 31
+[ 1184.795301] RIP  [<ffffffff825c9116>] p9_virtio_remove+0x16/0x90
+[ 1184.795301]  RSP <ffff88000d653ac0>
+[ 1184.952618] ---[ end trace a307b3ed40206b4c ]---
 
-T:  Bus=01 Lev=02 Prnt=02 Port=05 Cnt=02 Dev#=  4 Spd=12   MxCh= 0
-D:  Ver= 2.00 Cls=ff(vend.) Sub=01 Prot=01 MxPS=64 #Cfgs=  1
-P:  Vendor=0489 ProdID=e033 Rev= 2.29
-S:  Manufacturer=Broadcom Corp
-S:  Product=Acer Module
-S:  SerialNumber=60D819F74101
-C:* #Ifs= 4 Cfg#= 1 Atr=e0 MxPwr=  0mA
-I:* If#= 0 Alt= 0 #EPs= 3 Cls=ff(vend.) Sub=01 Prot=01 Driver=btusb
-E:  Ad=81(I) Atr=03(Int.) MxPS=  16 Ivl=1ms
-E:  Ad=82(I) Atr=02(Bulk) MxPS=  64 Ivl=0ms
-E:  Ad=02(O) Atr=02(Bulk) MxPS=  64 Ivl=0ms
-I:* If#= 1 Alt= 0 #EPs= 2 Cls=ff(vend.) Sub=01 Prot=01 Driver=btusb
-E:  Ad=83(I) Atr=01(Isoc) MxPS=   0 Ivl=1ms
-E:  Ad=03(O) Atr=01(Isoc) MxPS=   0 Ivl=1ms
-I:  If#= 1 Alt= 1 #EPs= 2 Cls=ff(vend.) Sub=01 Prot=01 Driver=btusb
-E:  Ad=83(I) Atr=01(Isoc) MxPS=   9 Ivl=1ms
-E:  Ad=03(O) Atr=01(Isoc) MxPS=   9 Ivl=1ms
-I:  If#= 1 Alt= 2 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
-E:  Ad=83(I) Atr=01(Isoc) MxPS=  17 Ivl=1ms
-E:  Ad=03(O) Atr=01(Isoc) MxPS=  17 Ivl=1ms
-I:  If#= 1 Alt= 3 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
-E:  Ad=83(I) Atr=01(Isoc) MxPS=  32 Ivl=1ms
-E:  Ad=03(O) Atr=01(Isoc) MxPS=  32 Ivl=1ms
-I:  If#= 1 Alt= 4 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
-E:  Ad=83(I) Atr=01(Isoc) MxPS=  64 Ivl=1ms
-E:  Ad=03(O) Atr=01(Isoc) MxPS=  64 Ivl=1ms
-I:  If#= 1 Alt= 5 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
-E:  Ad=83(I) Atr=01(Isoc) MxPS=  64 Ivl=1ms
-E:  Ad=03(O) Atr=01(Isoc) MxPS=  64 Ivl=1ms
-I:* If#= 2 Alt= 0 #EPs= 2 Cls=ff(vend.) Sub=ff Prot=ff Driver=(none)
-E:  Ad=84(I) Atr=02(Bulk) MxPS=  32 Ivl=0ms
-E:  Ad=04(O) Atr=02(Bulk) MxPS=  32 Ivl=0ms
-I:* If#= 3 Alt= 0 #EPs= 0 Cls=fe(app. ) Sub=01 Prot=01 Driver=(none)
-
-Signed-off-by: Steven Harms <sjharms@gmail.com>
+Signed-off-by: Sasha Levin <levinsasha928@gmail.com>
 ---
- drivers/bluetooth/btusb.c |    3 +++
- 1 file changed, 3 insertions(+)
+ net/9p/trans_virtio.c |    3 ++-
+ 1 files changed, 2 insertions(+), 1 deletions(-)
 
-diff --git a/drivers/bluetooth/btusb.c b/drivers/bluetooth/btusb.c
-index 3311b81..7d7d614 100644
---- a/drivers/bluetooth/btusb.c
-+++ b/drivers/bluetooth/btusb.c
-@@ -107,6 +107,9 @@ static struct usb_device_id btusb_table[] = {
- 	{ USB_DEVICE(0x0a5c, 0x21f3) },
- 	{ USB_DEVICE(0x413c, 0x8197) },
+diff --git a/net/9p/trans_virtio.c b/net/9p/trans_virtio.c
+index 3d43206..5af18d1 100644
+--- a/net/9p/trans_virtio.c
++++ b/net/9p/trans_virtio.c
+@@ -615,7 +615,8 @@ static void p9_virtio_remove(struct virtio_device *vdev)
+ {
+ 	struct virtio_chan *chan = vdev->priv;
  
-+	/* Foxconn - Hon Hai */
-+	{ USB_DEVICE(0x0489, 0xe033) },
-+
- 	{ }	/* Terminating entry */
- };
+-	BUG_ON(chan->inuse);
++	if (chan->inuse)
++		p9_virtio_close(chan->client);
+ 	vdev->config->del_vqs(vdev);
  
+ 	mutex_lock(&virtio_9p_lock);
 -- 
-1.7.9.5
+1.7.8.5
 
