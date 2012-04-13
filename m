@@ -1,54 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756927Ab2DMUxb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Apr 2012 16:53:31 -0400
-Received: from tx2ehsobe004.messaging.microsoft.com ([65.55.88.14]:6873 "EHLO
-	tx2outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755981Ab2DMUxX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Apr 2012 16:53:23 -0400
-X-SpamScore: -9
-X-BigFish: VPS-9(zzbb2dI1432N98dKzz1202hzz8275eha1495iz2fh668h839hd25h)
-X-Forefront-Antispam-Report: CIP:160.33.98.74;KIP:(null);UIP:(null);IPV:NLI;H:mail7.fw-bc.sony.com;RD:mail7.fw-bc.sony.com;EFVD:NLI
-Message-ID: <4F889228.8050301@am.sony.com>
-Date: Fri, 13 Apr 2012 13:52:56 -0700
-From: Frank Rowand <frank.rowand@am.sony.com>
-Reply-To: <frank.rowand@am.sony.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc14 Thunderbird/3.1.10
+	id S932221Ab2DMUzL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Apr 2012 16:55:11 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:19922 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756242Ab2DMUzJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 Apr 2012 16:55:09 -0400
+Date: Fri, 13 Apr 2012 16:55:01 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: axboe@kernel.dk, ctalbott@google.com, rni@google.com,
+        linux-kernel@vger.kernel.org, cgroups@vger.kernel.org,
+        containers@lists.linux-foundation.org
+Subject: Re: [PATCH 07/11] blkcg: make request_queue bypassing on allocation
+Message-ID: <20120413205501.GL26383@redhat.com>
+References: <1334347895-6268-1-git-send-email-tj@kernel.org>
+ <1334347895-6268-8-git-send-email-tj@kernel.org>
+ <20120413203205.GI26383@redhat.com>
+ <20120413203726.GE12233@google.com>
+ <20120413204446.GK26383@redhat.com>
+ <20120413204710.GF12233@google.com>
 MIME-Version: 1.0
-To: Thomas Gleixner <tglx@linutronix.de>
-CC: LKML <linux-kernel@vger.kernel.org>,
-        linux-rt-users <linux-rt-users@vger.kernel.org>
-Subject: Re: [ANNOUNCE] 3.4-rc2-rt4
-References: <alpine.LFD.2.02.1204131033240.2542@ionos>
-In-Reply-To: <alpine.LFD.2.02.1204131033240.2542@ionos>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-OriginatorOrg: am.sony.com
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120413204710.GF12233@google.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/13/12 05:11, Thomas Gleixner wrote:
-> Dear RT Folks,
+On Fri, Apr 13, 2012 at 01:47:10PM -0700, Tejun Heo wrote:
+> On Fri, Apr 13, 2012 at 04:44:46PM -0400, Vivek Goyal wrote:
+> > On Fri, Apr 13, 2012 at 01:37:26PM -0700, Tejun Heo wrote:
+> > 
+> > [..]
+> > > blk_cleanup_queue() doesn't use blk_queue_bypass_start() to enter
+> > > bypass mode.
+> > 
+> > Oh now elevator_exit() has been moved into blk_release_queue(). But
+> > problem will still be there, isn't it? During driver init, most likely driver
+> > is holding last reference of the queue and blk_release_queue() will be called
+> > in the context of blk_cleanup_queue() causing the overhead?
 > 
-> I'm pleased to announce the 3.4-rc2-rt4 release.
+> Hmmm?  blk_cleanup_queue() will put the queue into bypassing mode
+> without going through synchronize_rcu() and all the following
+> bypassing operations just inc/decs bypass_depth without any draining
+> operation.
 
-< snip >
+Ok, this is non-obivirious part. The very reason you could do the
+optimzation of synchronize_rcu(), was the fact that either somebody
+has already called synchronize_rcu() (first caller of blk_bypass_start())
+or we know that it is not needed (as we are instanciating queue and no
+IO could be going on).
 
-3.4-rc2-rt4 builds and boots on some ARM boards (PandaBoard, Realview) for:
+But neither seems to be the case here. So to make sure that blkg_lookup()
+under rcu will see the updated value of queue flag (bypass), are we
+relying on the fact that caller should see the DEAD flag and not go
+ahead with blkg_lookup()?  If yes, atleast it is not obivious.
 
-  - SMP, PREEMPT_RT_FULL
-  - SMP, PREEMPT_NONE
-  - UP, PREEMPT_RT_FULL
-  - UP, PREEMPT_NONE
-
-
-A patch is required to resolve a mainline NULL pointer dereference on boot
-of Realview.  The patch is in linux-next and should make it to Linus by the
-end of this week.
-
-The patch is available at http://marc.info/?l=linux-serial&m=133235774423240&w=2
-
--Frank
-
+Thanks
+Vivek
