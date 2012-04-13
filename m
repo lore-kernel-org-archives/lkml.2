@@ -1,55 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753478Ab2DMWXk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Apr 2012 18:23:40 -0400
-Received: from na3sys009aog121.obsmtp.com ([74.125.149.145]:52972 "EHLO
-	na3sys009aog121.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751979Ab2DMWXi (ORCPT
+	id S1754146Ab2DMWY3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Apr 2012 18:24:29 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:61438 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752374Ab2DMWY1 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Apr 2012 18:23:38 -0400
+	Fri, 13 Apr 2012 18:24:27 -0400
 MIME-Version: 1.0
-In-Reply-To: <4F8659DA.4030305@st.com>
-References: <1334192572-12499-1-git-send-email-mturquette@linaro.org>
- <1334192572-12499-2-git-send-email-mturquette@linaro.org> <4F8659DA.4030305@st.com>
-From: "Turquette, Mike" <mturquette@ti.com>
-Date: Fri, 13 Apr 2012 15:23:16 -0700
-Message-ID: <CAJOA=zMHGO6N2q=StogU3envVBt23o-2Od70gtdRkQG_Ku7=CA@mail.gmail.com>
-Subject: Re: [PATCH 01/13] clk: core: correct clk_set_rate kerneldoc
-To: Viresh Kumar <viresh.kumar@st.com>
-Cc: Andrew Lunn <andrew@lunn.ch>, Rajendra Nayak <rnayak@ti.com>,
-        "linaro-dev@lists.linaro.org" <linaro-dev@lists.linaro.org>,
-        "patches@linaro.org" <patches@linaro.org>,
-        Sascha Hauer <s.hauer@pengutronix.de>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        spear-devel <spear-devel@list.st.com>,
-        Saravana Kannan <skannan@codeaurora.org>,
-        Shawn Guo <shawn.guo@freescale.com>, Olof Johansson <olof@lixom.net>,
-        Russell King <linux@arm.linux.org.uk>,
-        "arnd.bergmann@linaro.org" <arnd.bergmann@linaro.org>,
-        Richard Zhao <richard.zhao@linaro.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
+In-Reply-To: <20120413170151.20c7230e@wrlaptop>
+References: <201204132124.21294.l.lunak@suse.cz> <CA+55aFxCrVtwCd9bjHLt82Uwisp8OtKP9c+raPYMqCTXqVfxGw@mail.gmail.com>
+ <20120413170151.20c7230e@wrlaptop>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Fri, 13 Apr 2012 15:24:06 -0700
+X-Google-Sender-Auth: VTVL2Uf_XA_Ltogt_LI8Lbyes3c
+Message-ID: <CA+55aFz0c43QARhefvhdiB=H6buO7VpEOnNbuJTYEcUn8M+mKw@mail.gmail.com>
+Subject: Re: [PATCH][RESEND] do not redefine userspace's NULL #define
+To: Peter Seebach <peter.seebach@windriver.com>
+Cc: Lubos Lunak <l.lunak@suse.cz>, Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 11, 2012 at 9:28 PM, Viresh Kumar <viresh.kumar@st.com> wrote:
-> On 4/12/2012 6:32 AM, Mike Turquette wrote:
->> - * If clk has the CLK_SET_RATE_GATE flag set and it is enabled this call
->> - * will fail; only when the clk is disabled will it be able to change
->> - * its rate.
+On Fri, Apr 13, 2012 at 3:01 PM, Peter Seebach
+<peter.seebach@windriver.com> wrote:
 >
-> Why is CLK_SET_RATE_GATE removed? I already sent a patch to fix clk_set_rate()
-> for this. And i think it should be required.
+> I was going to dispute this, and point out that I'm pretty sure
+> the C++ standard specifically requires the plain-integer 0/0L
+> definition.  Then I realized this did not actually contradict
+> your description.
 
-I removed it from the documentation since it was not present in the
-code.  I was originally targeting this for an -rc and I was trying to
-limit the changes purely to fixes and cleanups, not new features.
+Yeah, the C++ definition i spure crap. Although I think even the worst
+C++ people realized that, and realized that they were wrong. So most
+of them seem to have figured out that defining NULL to 0 is insane and
+totally wrong.
 
-I haven't finished digging through all of the responses yet, so my
-goal for where these patches are headed might change.
+(IOW, if you don't get a warning for
 
-Regards,
-Mike
+   int i = NULL;
+
+or get a warning for passing NULL to a routine that takes "int", your
+language is pure and utter sh*t. Yes, K&R C made that mistake too, but
+it got fixed. The fact that the C++ people used to *codify* that
+insane braindamage is just sad).
+
+> Maybe the thing to do would be to ensure that NULL goes to __null,
+> then define that to be ((void *) 0) if the compiler doesn't provide
+> it?  The magic behavior of __null seems like it'd be preferable
+> where it is available.
+
+So if gcc guarantees that __null has the correct semantics, I could
+imagine replacing the kernel ((void *)0) with __null.
+
+But unless we *know* that the incoming NULL is good, there's no way I
+will let the kernel ever make the mistake of taking '0'.
+
+                   Linus
