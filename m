@@ -1,49 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756770Ab2DMNcf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Apr 2012 09:32:35 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:2308 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751473Ab2DMNcd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Apr 2012 09:32:33 -0400
-Date: Fri, 13 Apr 2012 09:32:26 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: axboe@kernel.dk, ctalbott@google.com, rni@google.com,
-        linux-kernel@vger.kernel.org, cgroups@vger.kernel.org,
-        containers@lists.linux-foundation.org
-Subject: Re: [PATCH 1/8] blkcg: kill blkio_list and replace blkio_list_lock
- with a mutex
-Message-ID: <20120413133226.GB26383@redhat.com>
-References: <1334273380-30233-1-git-send-email-tj@kernel.org>
- <1334273380-30233-2-git-send-email-tj@kernel.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1334273380-30233-2-git-send-email-tj@kernel.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1756345Ab2DMNfQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Apr 2012 09:35:16 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:52548 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753957Ab2DMNfO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 Apr 2012 09:35:14 -0400
+Message-ID: <1334324105.2732.2.camel@phoenix>
+Subject: [PATCH] regulator: core: Fix getting input_uV when supplied by
+ another regulator
+From: Axel Lin <axel.lin@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Liam Girdwood <lrg@ti.com>
+Date: Fri, 13 Apr 2012 21:35:05 +0800
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2- 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 12, 2012 at 04:29:33PM -0700, Tejun Heo wrote:
+When supplied by another regulator, returns the supply regulator's output
+voltage for inpu_uV.
 
-Hi Tejun,
+Signed-off-by: Axel Lin <axel.lin@gmail.com>
+---
+ drivers/regulator/core.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-> @@ -732,20 +732,21 @@ void blkio_policy_register(struct blkio_policy_type *blkiop)
->  {
->  	struct request_queue *q;
->  
-> +	mutex_lock(&blkcg_pol_mutex);
-> +
->  	blkcg_bypass_start();
-> -	spin_lock(&blkio_list_lock);
->  
->  	BUG_ON(blkio_policy[blkiop->plid]);
+diff --git a/drivers/regulator/core.c b/drivers/regulator/core.c
+index 4e34cd3..a8d4360 100644
+--- a/drivers/regulator/core.c
++++ b/drivers/regulator/core.c
+@@ -649,7 +649,7 @@ static void drms_uA_update(struct regulator_dev *rdev)
+ 	/* get input voltage */
+ 	input_uV = 0;
+ 	if (rdev->supply)
+-		input_uV = _regulator_get_voltage(rdev);
++		input_uV = regulator_get_voltage(rdev->supply);
+ 	if (input_uV <= 0)
+ 		input_uV = rdev->constraints->input_uV;
+ 	if (input_uV <= 0)
+-- 
+1.7.5.4
 
-A minor nit. It might be a good idea to check that blkiop->plid is not
-greater than BLKIO_NR_POLICIES for both registration and unresitration
-functions to avoid touching memory beyond blkio_policy[] array.
 
-Thanks
-Vivek
+
