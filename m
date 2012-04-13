@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966494Ab2DMAQw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Apr 2012 20:16:52 -0400
-Received: from wolverine02.qualcomm.com ([199.106.114.251]:30072 "EHLO
-	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S966352Ab2DMAQr (ORCPT
+	id S966523Ab2DMARI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Apr 2012 20:17:08 -0400
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:7154 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S966509Ab2DMARD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Apr 2012 20:16:47 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6678"; a="178949742"
+	Thu, 12 Apr 2012 20:17:03 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6678"; a="181249843"
 X-IronPort-AV: E=Sophos;i="4.75,411,1330934400"; 
-   d="scan'208";a="234901574"
+   d="scan'208";a="212892653"
 From: xiong <xiong@qca.qualcomm.com>
 To: <davem@davemloft.net>, <netdev@vger.kernel.org>,
         <linux-kernel@vger.kernel.org>
 CC: <qca-linux-team@qualcomm.com>, <nic-devel@qualcomm.com>,
         xiong <xiong@qca.qualcomm.com>
-Subject: [PATCH 11/37] atl1c: using fixed TXQ configuration for l2cb and l1c
-Date: Fri, 13 Apr 2012 08:14:36 +0800
-Message-ID: <1334276102-15866-12-git-send-email-xiong@qca.qualcomm.com>
+Subject: [PATCH 13/37] atl1c: threshold for ASPM is changed based on chip capability
+Date: Fri, 13 Apr 2012 08:14:38 +0800
+Message-ID: <1334276102-15866-14-git-send-email-xiong@qca.qualcomm.com>
 X-Mailer: git-send-email 1.7.7
 In-Reply-To: <1334276102-15866-1-git-send-email-xiong@qca.qualcomm.com>
 References: <1334276102-15866-1-git-send-email-xiong@qca.qualcomm.com>
@@ -28,92 +28,33 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-using fixed TXQ config for l2cb and l1c regardless dmar_block
-to make tx-DMA more stable.
-register REG_TXQ_CTRL is refined as well.
+threshold setting to control ASPM for diff chips are different.
+currently, all gigabit-capability chips have limited-ASPM under
+100M throughput.
 
 Signed-off-by: xiong <xiong@qca.qualcomm.com>
 Tested-by: Liu David <dwliu@qca.qualcomm.com>
 ---
- drivers/net/ethernet/atheros/atl1c/atl1c_hw.h   |   34 +++++++++++++++++------
- drivers/net/ethernet/atheros/atl1c/atl1c_main.c |   13 ++-------
- 2 files changed, 28 insertions(+), 19 deletions(-)
+ drivers/net/ethernet/atheros/atl1c/atl1c_main.c |    7 ++++---
+ 1 files changed, 4 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/net/ethernet/atheros/atl1c/atl1c_hw.h b/drivers/net/ethernet/atheros/atl1c/atl1c_hw.h
-index f502b4d..a0b56ef 100644
---- a/drivers/net/ethernet/atheros/atl1c/atl1c_hw.h
-+++ b/drivers/net/ethernet/atheros/atl1c/atl1c_hw.h
-@@ -467,15 +467,31 @@ int atl1c_phy_power_saving(struct atl1c_hw *hw);
- #define TPD_RING_SIZE_MASK		0xFFFF
- 
- /* TXQ Control Register */
--#define REG_TXQ_CTRL                	0x1590
--#define	TXQ_NUM_TPD_BURST_MASK     	0xF
--#define TXQ_NUM_TPD_BURST_SHIFT    	0
--#define TXQ_CTRL_IP_OPTION_EN		0x10
--#define TXQ_CTRL_EN                     0x20
--#define TXQ_CTRL_ENH_MODE               0x40
--#define TXQ_CTRL_LS_8023_EN		0x80
--#define TXQ_TXF_BURST_NUM_SHIFT    	16
--#define TXQ_TXF_BURST_NUM_MASK     	0xFFFF
-+#define REG_TXQ_CTRL			0x1590
-+#define TXQ_TXF_BURST_NUM_MASK          0xFFFFUL
-+#define TXQ_TXF_BURST_NUM_SHIFT		16
-+#define L1C_TXQ_TXF_BURST_PREF          0x200
-+#define L2CB_TXQ_TXF_BURST_PREF         0x40
-+#define TXQ_CTRL_PEDING_CLR             BIT(8)
-+#define TXQ_CTRL_LS_8023_EN             BIT(7)
-+#define TXQ_CTRL_ENH_MODE               BIT(6)
-+#define TXQ_CTRL_EN                     BIT(5)
-+#define TXQ_CTRL_IP_OPTION_EN           BIT(4)
-+#define TXQ_NUM_TPD_BURST_MASK          0xFUL
-+#define TXQ_NUM_TPD_BURST_SHIFT         0
-+#define TXQ_NUM_TPD_BURST_DEF           5
-+#define TXQ_CFGV			(\
-+	FIELDX(TXQ_NUM_TPD_BURST, TXQ_NUM_TPD_BURST_DEF) |\
-+	TXQ_CTRL_ENH_MODE |\
-+	TXQ_CTRL_LS_8023_EN |\
-+	TXQ_CTRL_IP_OPTION_EN)
-+#define L1C_TXQ_CFGV			(\
-+	TXQ_CFGV |\
-+	FIELDX(TXQ_TXF_BURST_NUM, L1C_TXQ_TXF_BURST_PREF))
-+#define L2CB_TXQ_CFGV			(\
-+	TXQ_CFGV |\
-+	FIELDX(TXQ_TXF_BURST_NUM, L2CB_TXQ_TXF_BURST_PREF))
-+
- 
- /* Jumbo packet Threshold for task offload */
- #define REG_TX_TSO_OFFLOAD_THRESH	0x1594 /* In 8-bytes */
 diff --git a/drivers/net/ethernet/atheros/atl1c/atl1c_main.c b/drivers/net/ethernet/atheros/atl1c/atl1c_main.c
-index d6ebaa4..8e737a5 100644
+index 18c91b6..8228aa7 100644
 --- a/drivers/net/ethernet/atheros/atl1c/atl1c_main.c
 +++ b/drivers/net/ethernet/atheros/atl1c/atl1c_main.c
-@@ -1049,7 +1049,6 @@ static void atl1c_configure_tx(struct atl1c_adapter *adapter)
- 	u32 max_pay_load;
- 	u16 tx_offload_thresh;
- 	u32 txq_ctrl_data;
--	u32 max_pay_load_data;
+@@ -1084,9 +1084,10 @@ static void atl1c_configure_rx(struct atl1c_adapter *adapter)
+ 	if (hw->ctrl_flags & ATL1C_RX_IPV6_CHKSUM)
+ 		rxq_ctrl_data |= IPV6_CHKSUM_CTRL_EN;
  
- 	tx_offload_thresh = MAX_TX_OFFLOAD_THRESH;
- 	AT_WRITE_REG(hw, REG_TX_TSO_OFFLOAD_THRESH,
-@@ -1059,15 +1058,9 @@ static void atl1c_configure_tx(struct atl1c_adapter *adapter)
- 			DEVICE_CTRL_MAX_RREQ_SZ_MASK;
- 	hw->dmar_block = min_t(u32, max_pay_load, hw->dmar_block);
+-	if (hw->ctrl_flags & ATL1C_ASPM_CTRL_MON)
+-		rxq_ctrl_data |= (ASPM_THRUPUT_LIMIT_1M &
+-			ASPM_THRUPUT_LIMIT_MASK) << ASPM_THRUPUT_LIMIT_SHIFT;
++	/* aspm for gigabit */
++	if (hw->nic_type != athr_l1d_2 && (hw->device_id & 1) != 0)
++		rxq_ctrl_data = FIELD_SETX(rxq_ctrl_data, ASPM_THRUPUT_LIMIT,
++			ASPM_THRUPUT_LIMIT_100M);
  
--	txq_ctrl_data = (hw->tpd_burst & TXQ_NUM_TPD_BURST_MASK) <<
--			TXQ_NUM_TPD_BURST_SHIFT;
--	if (hw->ctrl_flags & ATL1C_TXQ_MODE_ENHANCE)
--		txq_ctrl_data |= TXQ_CTRL_ENH_MODE;
--	max_pay_load_data = (atl1c_pay_load_size[hw->dmar_block] &
--			TXQ_TXF_BURST_NUM_MASK) << TXQ_TXF_BURST_NUM_SHIFT;
--	if (hw->nic_type == athr_l2c_b || hw->nic_type == athr_l2c_b2)
--		max_pay_load_data >>= 1;
--	txq_ctrl_data |= max_pay_load_data;
-+	txq_ctrl_data =
-+		hw->nic_type == athr_l2c_b || hw->nic_type == athr_l2c_b2 ?
-+		L2CB_TXQ_CFGV : L1C_TXQ_CFGV;
- 
- 	AT_WRITE_REG(hw, REG_TXQ_CTRL, txq_ctrl_data);
+ 	AT_WRITE_REG(hw, REG_RXQ_CTRL, rxq_ctrl_data);
  }
 -- 
 1.7.7
