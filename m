@@ -1,55 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756558Ab2DMTZA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Apr 2012 15:25:00 -0400
-Received: from shards.monkeyblade.net ([198.137.202.13]:52033 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756459Ab2DMTY6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Apr 2012 15:24:58 -0400
-Date: Fri, 13 Apr 2012 15:24:55 -0400 (EDT)
-Message-Id: <20120413.152455.900761231064979707.davem@davemloft.net>
-To: torvalds@linux-foundation.org
-CC: akpm@linux-foundation.org, sparclinux@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [GIT] Sparc
-From: David Miller <davem@davemloft.net>
-X-Mailer: Mew version 6.4 on Emacs 23.3 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Fri, 13 Apr 2012 12:24:57 -0700 (PDT)
+	id S1756488Ab2DMTZ0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Apr 2012 15:25:26 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:18471 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756421Ab2DMTZY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 Apr 2012 15:25:24 -0400
+Date: Fri, 13 Apr 2012 21:24:55 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Serge Hallyn <serge.hallyn@canonical.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Daniel Lezcano <daniel.lezcano@free.fr>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] pidns: reboot_pid_ns: use SEND_SIG_FORCED instead of
+	force_sig()
+Message-ID: <20120413192455.GA24464@redhat.com>
+References: <20120413004446.GA8376@redhat.com> <20120413182051.GA11149@sergelap>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120413182051.GA11149@sergelap>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Serge,
 
-Please pull to get these two sparc bug fixes.
+On 04/13, Serge Hallyn wrote:
+>
+> Quoting Oleg Nesterov (oleg@redhat.com):
+> > cf3f8921 "pidns: add reboot_pid_ns() to handle the reboot syscall"
+> > uses force_sig() to kill the SIGNAL_UNKILLABLE cinit, this was the
+> > only choice.
+> >
+> > After 629d362b we can use SEND_SIG_FORCED instead, force_sig() has
+> > the special semantics and should be avoided if possible.
+> >
+> > Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+>
+> Hi Oleg,
+>
+> I like the patch in theory, however after applying it containers are
+> no longer able to shutdown/reboot.  I can externally kill them with
+> lxc-stop, but internal shutdown fails.
 
-With special guest sparc64 assembler hacker, Paul E. McKenney.
+Oh, thanks a lot for testing.
 
-Thanks.
+Strange... I even tested this change, but only in the root namespace.
+OK, thanks, I'll investigate. I hope you verified your kernel has
+629d362b commit ;)
 
-The following changes since commit 4166fb64593514ad920b7dbd290e0a934b37d24a:
+Oleg.
 
-  Merge tag 'srpt-srq-type' of git://git.kernel.org/pub/scm/linux/kernel/git/roland/infiniband (2012-04-12 18:51:32 -0700)
-
-are available in the git repository at:
-
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/davem/sparc.git master
-
-for you to fetch changes up to 3d3eeb2ef26112a200785e5fca58ec58dd33bf1e:
-
-  sparc64: Eliminate obsolete __handle_softirq() function (2012-04-13 11:58:38 -0700)
-
-----------------------------------------------------------------
-David S. Miller (1):
-      sparc64: Fix bootup crash on sun4v.
-
-Paul E. McKenney (1):
-      sparc64: Eliminate obsolete __handle_softirq() function
-
- arch/sparc/kernel/ds.c       |    2 +-
- arch/sparc/kernel/rtrap_64.S |    7 -------
- 2 files changed, 1 insertion(+), 8 deletions(-)
