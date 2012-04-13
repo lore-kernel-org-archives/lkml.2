@@ -1,71 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753245Ab2DMSUV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Apr 2012 14:20:21 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:43791 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751581Ab2DMSUT (ORCPT
+	id S1755186Ab2DMSUk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Apr 2012 14:20:40 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:51741 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751542Ab2DMSUi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Apr 2012 14:20:19 -0400
+	Fri, 13 Apr 2012 14:20:38 -0400
+Date: Fri, 13 Apr 2012 11:19:38 -0700
+From: tip-bot for Namhyung Kim <namhyung@gmail.com>
+Message-ID: <tip-a31b7cc083b1d3d15bd475729fc4471685ebc5f6@git.kernel.org>
+Cc: acme@redhat.com, eranian@google.com, mingo@kernel.org,
+        peterz@infradead.org, efault@gmx.de, namhyung.kim@lge.com,
+        fweisbec@gmail.com, dsahern@gmail.com, tglx@linutronix.de,
+        hpa@zytor.com, paulus@samba.org, linux-kernel@vger.kernel.org,
+        andi@firstfloor.org, ashay.rane@tacc.utexas.edu, namhyung@gmail.com,
+        masami.hiramatsu.pt@hitachi.com
+Reply-To: mingo@kernel.org, eranian@google.com, acme@redhat.com, efault@gmx.de,
+        peterz@infradead.org, namhyung.kim@lge.com, fweisbec@gmail.com,
+        dsahern@gmail.com, tglx@linutronix.de, hpa@zytor.com, paulus@samba.org,
+        linux-kernel@vger.kernel.org, andi@firstfloor.org,
+        ashay.rane@tacc.utexas.edu, namhyung@gmail.com,
+        masami.hiramatsu.pt@hitachi.com
+In-Reply-To: <87ty0tlv4i.fsf@dasan.aot.lge.com>
+References: <87ty0tlv4i.fsf@dasan.aot.lge.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/core] perf annotate: Fix a build error
+Git-Commit-ID: a31b7cc083b1d3d15bd475729fc4471685ebc5f6
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-From: Grant Likely <grant.likely@secretlab.ca>
-Date: Fri, 13 Apr 2012 12:19:58 -0600
-X-Google-Sender-Auth: mULHwz5lODJdsurlFNr3-ndIayg
-Message-ID: <CACxGe6s+051iAVvbCoLHS8kCixqyRc1dnxNnEavH4MSke48dbg@mail.gmail.com>
-Subject: [GIT PULL] gpio bug fixes on top of v3.4-rc2
-To: Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Fri, 13 Apr 2012 11:19:46 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+Commit-ID:  a31b7cc083b1d3d15bd475729fc4471685ebc5f6
+Gitweb:     http://git.kernel.org/tip/a31b7cc083b1d3d15bd475729fc4471685ebc5f6
+Author:     Namhyung Kim <namhyung@gmail.com>
+AuthorDate: Wed, 11 Apr 2012 17:04:59 -0300
+Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
+CommitDate: Wed, 11 Apr 2012 17:07:18 -0300
 
-GPIO bug fixes.  Please pull.
+perf annotate: Fix a build error
 
-g.
+    CC util/annotate.o
+util/annotate.c: In function symbol__annotate:
+util/annotate.c:87:16: error: parsed_line may be used uninitialized in this function [-Werror=maybe-uninitialized]
+util/annotate.c:211:22: note: parsed_line was declared here
+cc1: all warnings being treated as errors
+make: *** [util/annotate.o] Error 1
+make: *** Waiting for unfinished jobs....
 
-The following changes since commit 0034102808e0dbbf3a2394b82b1bb40b5778de9e:
+Signed-off-by: Namhyung Kim <namhyung.kim@lge.com>
+Cc: Andi Kleen <andi@firstfloor.org>
+Cc: Ashay Rane <ashay.rane@tacc.utexas.edu>
+Cc: David Ahern <dsahern@gmail.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: Mike Galbraith <efault@gmx.de>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Stephane Eranian <eranian@google.com>
+Link: http://lkml.kernel.org/r/87ty0tlv4i.fsf@dasan.aot.lge.com
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+---
+ tools/perf/util/annotate.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
-  Linux 3.4-rc2 (2012-04-07 18:30:41 -0700)
-
-are available in the git repository at:
-
-  git://git.secretlab.ca/git/linux-2.6 tags/gpio-for-linus
-
-for you to fetch changes up to 9a5c7d6eb9b8cc9fa1c7169ecfd96c9e267c0452:
-
-  gpio/exynos: Fix compiler warning in gpio-samsung.c file (2012-04-10
-22:15:39 -0600)
-
-----------------------------------------------------------------
-GPIO bug fixes on top of v3.4-rc2
-
-Miscellaneous bug fixes to GPIO drivers and for a corner case in the
-gpio device tree parsing code.
-
-----------------------------------------------------------------
-Axel Lin (1):
-      gpio: Fix uninitialized variable bit in adp5588_irq_handler
-
-Grant Likely (1):
-      gpio/sodaville: Convert sodaville driver to new irqdomain API
-
-Roland Stigge (1):
-      gpio: Fix range check in of_gpio_simple_xlate()
-
-Sachin Kamat (1):
-      gpio/exynos: Fix compiler warning in gpio-samsung.c file
-
- drivers/gpio/Kconfig          |    2 +-
- drivers/gpio/gpio-adp5588.c   |    2 +-
- drivers/gpio/gpio-samsung.c   |   16 ++++++++--------
- drivers/gpio/gpio-sodaville.c |   23 ++++++++++-------------
- drivers/of/gpio.c             |    2 +-
- 5 files changed, 21 insertions(+), 24 deletions(-)
-
-
--- 
-Grant Likely, B.Sc., P.Eng.
-Secret Lab Technologies Ltd.
+diff --git a/tools/perf/util/annotate.c b/tools/perf/util/annotate.c
+index 9fc4126..1e7fd52 100644
+--- a/tools/perf/util/annotate.c
++++ b/tools/perf/util/annotate.c
+@@ -226,6 +226,7 @@ static int symbol__parse_objdump_line(struct symbol *sym, struct map *map,
+ 		*c = 0;
+ 
+ 	line_ip = -1;
++	parsed_line = line;
+ 
+ 	/*
+ 	 * Strip leading spaces:
+@@ -255,8 +256,7 @@ static int symbol__parse_objdump_line(struct symbol *sym, struct map *map,
+ 			offset = -1;
+ 		else
+ 			parsed_line = tmp2 + 1;
+-	} else
+-		parsed_line = line;
++	}
+ 
+ 	objdump_line = objdump_line__new(offset, parsed_line, privsize);
+ 	free(line);
