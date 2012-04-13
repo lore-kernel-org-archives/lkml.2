@@ -1,51 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754784Ab2DMSI2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Apr 2012 14:08:28 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:36903 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751311Ab2DMSI0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Apr 2012 14:08:26 -0400
-Date: Fri, 13 Apr 2012 14:08:14 -0400
-From: Josh Boyer <jwboyer@redhat.com>
-To: Takashi Iwai <tiwai@suse.de>
-Cc: Jaroslav Kysela <perex@perex.cz>, alsa-devel@alsa-project.org,
-        linux-kernel@vger.kernel.org, kernel-team@fedoraproject.org
-Subject: Re: Thinkpad hda regression in 3.3
-Message-ID: <20120413180814.GG25425@zod.bos.redhat.com>
-References: <20120413124306.GC25425@zod.bos.redhat.com>
- <s5hpqbbvkzo.wl%tiwai@suse.de>
- <s5hk41jty24.wl%tiwai@suse.de>
+	id S1754921Ab2DMSIp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Apr 2012 14:08:45 -0400
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:61015 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752927Ab2DMSIm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 Apr 2012 14:08:42 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6679"; a="179222188"
+Date: Fri, 13 Apr 2012 11:08:40 -0700
+From: David Brown <davidb@codeaurora.org>
+To: arm@kernel.org
+Cc: Arnd Bergmann <arnd@arndb.de>, Olof Johansson <olof@lixom.net>,
+        Nicolas Pitre <nicolas.pitre@linaro.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Russell King <rmk@arm.linux.org.uk>, linux-arm-msm@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Daniel Walker <dwalker@fifo99.com>
+Subject: [GIT PULL] msm fixes for 3.4rc
+Message-ID: <20120413180840.GA17558@codeaurora.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <s5hk41jty24.wl%tiwai@suse.de>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 13, 2012 at 06:07:47PM +0200, Takashi Iwai wrote:
-> At Fri, 13 Apr 2012 15:07:07 +0200,
-> Takashi Iwai wrote:
-> (snip)
-> > If the above seem work (again, make sure that you adjust the mixer
-> > mutes and levels), I'll make kernel patches to add these fixups
-> > statically in the driver so that it works without extra patching.
-> 
-> Looking through alsa-info.sh outputs from various ThinkPad models I've
-> gathered, it seems that we can use the same pin setups for all.
+Arnd/Olof.  Here are some fixes for msm that fix problems caused by
+the latest ARM code.  The ones from Daniel remove unneeded fixups that
+now cause compilation failures.  Mine fix section mismatches, that
+were incompletely fixed earlier.
 
-We had a user try the alsa-tp-dock patch on an X201 and it didn't seem
-to work for them.  See bug
-https://bugzilla.redhat.com/show_bug.cgi?id=806217
+Thanks,
+David
 
-Perhaps the [codec] section isn't set properly for their configuration?
-The alsa-info for their machine is in comment #9 of the bug.
+The following changes since commit 0034102808e0dbbf3a2394b82b1bb40b5778de9e:
 
-> Below is a test patch for 3.3 kernel.  (Note that it'd give a merge
-> conflict for 3.4 kernel.)
+  Linux 3.4-rc2 (2012-04-07 18:30:41 -0700)
 
-OK, I'll do a scratch build with this and get people to test.
+are available in the git repository at:
 
-josh
+  git://git.kernel.org/pub/scm/linux/kernel/git/davidb/linux-msm.git msm-fix
+
+for you to fetch changes up to af33eadc73e4a5d35a966c1c7ffe28a8424c9d96:
+
+  ARM: msm: Fix section mismatches in proc_comm.c (2012-04-13 10:23:17 -0700)
+
+----------------------------------------------------------------
+Daniel Walker (2):
+      arm: msm: halibut: remove unneeded fixup
+      arm: msm: trout: fix compile failure
+
+David Brown (2):
+      video: msm: Fix section mismatches in mddi.c
+      ARM: msm: Fix section mismatches in proc_comm.c
+
+ arch/arm/mach-msm/board-halibut.c     |    3 ---
+ arch/arm/mach-msm/board-trout-panel.c |    1 +
+ arch/arm/mach-msm/board-trout.c       |    1 +
+ arch/arm/mach-msm/proc_comm.c         |    2 +-
+ drivers/video/msm/mddi.c              |    8 ++++----
+ 5 files changed, 7 insertions(+), 8 deletions(-)
+
+-- 
+Sent by an employee of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
