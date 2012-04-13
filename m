@@ -1,103 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758159Ab2DMJRl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Apr 2012 05:17:41 -0400
-Received: from smtprelay-b21.telenor.se ([195.54.99.212]:44787 "EHLO
-	smtprelay-b21.telenor.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758026Ab2DMJRj (ORCPT
+	id S1758151Ab2DMJSe (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Apr 2012 05:18:34 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:59540 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753195Ab2DMJSd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Apr 2012 05:17:39 -0400
-X-SENDER-IP: [85.230.169.225]
-X-LISTENER: [smtp.bredband.net]
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AqBnAB7uh09V5qnhPGdsb2JhbABFiiisSgSBBBkBAQEBNzSCCQEBBAEnExwjBQsIAw44FCUKGhOICQm5cBOLSYUYYwSVa4YCg1WJSQ
-X-IronPort-AV: E=Sophos;i="4.75,416,1330902000"; 
-   d="scan'208";a="312655343"
-From: "Henrik Rydberg" <rydberg@euromail.se>
-Date: Fri, 13 Apr 2012 11:20:14 +0200
-To: Daniel Kurtz <djkurtz@chromium.org>
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Joonyoung Shim <jy0922.shim@samsung.com>,
-        Nick Dyer <nick.dyer@itdev.co.uk>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Benson Leung <bleung@chromium.org>,
-        Yufeng Shen <miletus@chromium.org>
-Subject: Re: [PATCH 15/16 v2] Input: atmel_mxt_ts - send all MT-B slots in
- one input report
-Message-ID: <20120413092014.GC3923@polaris.bitmath.org>
-References: <1333039766-8617-1-git-send-email-djkurtz@chromium.org>
- <1333039766-8617-16-git-send-email-djkurtz@chromium.org>
+	Fri, 13 Apr 2012 05:18:33 -0400
+Date: Fri, 13 Apr 2012 10:18:29 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Ulf Hansson <ulf.hansson@stericsson.com>
+Cc: Russell King <linux@arm.linux.org.uk>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        "spi-devel-general@lists.sourceforge.net" 
+	<spi-devel-general@lists.sourceforge.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH/RFC v2] ARM: amba: Remove AMBA level regulator support
+Message-ID: <20120413091828.GJ3168@opensource.wolfsonmicro.com>
+References: <1333306720-28344-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+ <4F87EBFC.90000@stericsson.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="bWEb1MG/o7IKOlQF"
 Content-Disposition: inline
-In-Reply-To: <1333039766-8617-16-git-send-email-djkurtz@chromium.org>
+In-Reply-To: <4F87EBFC.90000@stericsson.com>
+X-Cookie: A is for Apple.
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Daniel,
 
-> Each interrupt contains information for all contacts with changing
-> properties.  Process all of this information at once, and send it all in a
-> a single input report (ie input events ending in EV_SYN/SYN_REPORT).
-> 
-> This patch was tested using an MXT224E.
-> 
-> Signed-off-by: Daniel Kurtz <djkurtz@chromium.org>
-> ---
->  drivers/input/touchscreen/atmel_mxt_ts.c |   11 ++++++++---
->  1 files changed, 8 insertions(+), 3 deletions(-)
-> 
-> diff --git a/drivers/input/touchscreen/atmel_mxt_ts.c b/drivers/input/touchscreen/atmel_mxt_ts.c
-> index be1e2ec..d8b23ad 100644
-> --- a/drivers/input/touchscreen/atmel_mxt_ts.c
-> +++ b/drivers/input/touchscreen/atmel_mxt_ts.c
-> @@ -532,9 +532,6 @@ static void mxt_input_touch(struct mxt_data *data, struct mxt_message *message)
->  		input_report_abs(input_dev, ABS_MT_TOUCH_MAJOR, area);
->  		/* TODO: Use vector to report ORIENTATION & TOUCH_MINOR */
->  	}
-> -
-> -	input_mt_report_pointer_emulation(input_dev, false);
-> -	input_sync(input_dev);
->  }
->  
->  static irqreturn_t mxt_interrupt(int irq, void *dev_id)
-> @@ -542,7 +539,9 @@ static irqreturn_t mxt_interrupt(int irq, void *dev_id)
->  	struct mxt_data *data = dev_id;
->  	struct mxt_message message;
->  	struct device *dev = &data->client->dev;
-> +	bool update_input;
->  
-> +	update_input = false;
->  	do {
->  		if (mxt_read_message(data, &message)) {
->  			dev_err(dev, "Failed to read message\n");
-> @@ -552,11 +551,17 @@ static irqreturn_t mxt_interrupt(int irq, void *dev_id)
->  		if (message.reportid >= data->T9_reportid_min &&
->  		    message.reportid <= data->T9_reportid_max) {
->  			mxt_input_touch(data, &message);
-> +			update_input = true;
->  		} else {
->  			mxt_dump_message(dev, &message);
->  		}
->  	} while (message.reportid != 0xff);
->  
-> +	if (update_input) {
-> +		input_mt_report_pointer_emulation(data->input_dev, false);
-> +		input_sync(data->input_dev);
-> +	}
-> +
+--bWEb1MG/o7IKOlQF
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-Strictly speaking, the update_input variable is not needed either,
-although it will save some cycles. The input core will omit the sync
-when there is nothing to report.
+On Fri, Apr 13, 2012 at 11:03:56AM +0200, Ulf Hansson wrote:
 
->  end:
->  	return IRQ_HANDLED;
->  }
-> -- 
-> 1.7.7.3
-> 
+> But, how should those amba drivers that implements runtime PM
+> support be able to switch of the vcore regulator during normal
+> suspend? In normal suspend case we can not use
 
-Thanks,
-Henrik
+A generic AMBA driver should have no idea about the implementation of
+the particular SoC that it's integrated on to.  This applies even more
+to system suspend (where drivers can generally just assume that they
+will loose all power normally) than it does to runtime suspend.
+
+> pm_runtime_put/pm_runtime_put_sync to trigger the power domain
+> runtime functions to switch of vcore. This is kind of more generic
+> problem when dealing with power domains, but as said this patch will
+> have consequences.
+
+The power domain gets callbacks on the system suspend path too and can
+do whatever is sensible there.
+
+> As far as I can see, the power domain must then implement a
+> suspend_noirq function to make sure same things is done as for the
+> runtime_suspend function. Do you agree with this as well or is there
+> another option?
+
+Yes, the power domain should just be handling this transparently.
+
+--bWEb1MG/o7IKOlQF
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIcBAEBAgAGBQJPh+8MAAoJEBus8iNuMP3dDZwP/1qxctpI2J+iKn/IWKj5ThYw
+XHThdzr9JOjRHW0LE/q+aoLMnMGvxDUKxivGl+Tv7CcrX8kR8SVydGPPYg8zhYRH
+yQjGsidz7Fi9bm3/2RBOCh10YJKjaeDCGDt+h0lg27Ix5M6CgfWFOtB7GxScJugY
+jvu/uwDUaTDWI8UQtDfoOnz6V2XHweLq1z2ziV9u3MD7LixaSvtu624stvm1+2D5
+4aTyTlyAxAcG1qyZe7n98hR/3AcW9ecQ77n1TwUtt2ApfcYC2FkWIDwpIoNel+Y8
+JhqJlzrbuW0yRzG1ueAuTmQIql6y4LO2mDQNzk2zWU2+bp95BJpJctvJB4Zt3vJM
+IBLP0Q8rEYm1LiXIt9Lx6FwmbH/cmA76a1ok7cY5YrGzly//0T3mvLcdHklkdFKv
+cUr3ss/UdBjaxxj9DR0x3FvY2vJ30svMRoniqghXhWuMot2UHCO1S6Vw56sgj5Z4
+OztgmppoUy4QopU8PmHZUqgcFzVR0SgX2qkeh7YFUZ3QJYbF9sc8K675WntlV2uv
+DgLDbB/nRa3VF5vkMw+QF5Y9ylveWLN9/deFdLhzOaJ3dqsMEmqJ5T5k8LSApVhd
+zBxNTwisZGWC2Qjgz+UBxPQJWh39p4O+Bropti606B5zL98ulwZ65lSGZuF4c2OF
+6sqco3Y5FLjAkqIq0IMn
+=jBrg
+-----END PGP SIGNATURE-----
+
+--bWEb1MG/o7IKOlQF--
