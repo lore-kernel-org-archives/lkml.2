@@ -1,122 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755365Ab2DMQu1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Apr 2012 12:50:27 -0400
-Received: from mail-wi0-f178.google.com ([209.85.212.178]:51420 "EHLO
-	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754795Ab2DMQuY convert rfc822-to-8bit (ORCPT
+	id S1755166Ab2DMQz0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Apr 2012 12:55:26 -0400
+Received: from mail-pz0-f52.google.com ([209.85.210.52]:42060 "EHLO
+	mail-pz0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752752Ab2DMQzY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Apr 2012 12:50:24 -0400
+	Fri, 13 Apr 2012 12:55:24 -0400
+Date: Fri, 13 Apr 2012 09:55:19 -0700
+From: Tejun Heo <tj@kernel.org>
+To: Vivek Goyal <vgoyal@redhat.com>
+Cc: axboe@kernel.dk, ctalbott@google.com, rni@google.com,
+        linux-kernel@vger.kernel.org, cgroups@vger.kernel.org,
+        containers@lists.linux-foundation.org
+Subject: Re: [PATCH 1/8] blkcg: kill blkio_list and replace blkio_list_lock
+ with a mutex
+Message-ID: <20120413165519.GA12233@google.com>
+References: <1334273380-30233-1-git-send-email-tj@kernel.org>
+ <1334273380-30233-2-git-send-email-tj@kernel.org>
+ <20120413133226.GB26383@redhat.com>
 MIME-Version: 1.0
-In-Reply-To: <20120411072300.GA15759@core.coreip.homeip.net>
-References: <20120403202432.GA18564@core.coreip.homeip.net>
-	<20120411072300.GA15759@core.coreip.homeip.net>
-Date: Fri, 13 Apr 2012 18:50:22 +0200
-Message-ID: <CANq1E4TOG0wgzJ43px74204k9KgRWpDxRPJhC45BiAERTcwsxg@mail.gmail.com>
-Subject: Re: [PATCH] Input: serio_raw - ensure we don't block in non-blocking read
-From: David Herrmann <dh.herrmann@googlemail.com>
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Cc: linux-input@vger.kernel.org, Wanlong Gao <gaowanlong@cn.fujitsu.com>,
-        Che-Liang Chiou <clchiou@chromium.org>, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120413133226.GB26383@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Dmitry
+On Fri, Apr 13, 2012 at 09:32:26AM -0400, Vivek Goyal wrote:
+> On Thu, Apr 12, 2012 at 04:29:33PM -0700, Tejun Heo wrote:
+> 
+> Hi Tejun,
+> 
+> > @@ -732,20 +732,21 @@ void blkio_policy_register(struct blkio_policy_type *blkiop)
+> >  {
+> >  	struct request_queue *q;
+> >  
+> > +	mutex_lock(&blkcg_pol_mutex);
+> > +
+> >  	blkcg_bypass_start();
+> > -	spin_lock(&blkio_list_lock);
+> >  
+> >  	BUG_ON(blkio_policy[blkiop->plid]);
+> 
+> A minor nit. It might be a good idea to check that blkiop->plid is not
+> greater than BLKIO_NR_POLICIES for both registration and unresitration
+> functions to avoid touching memory beyond blkio_policy[] array.
 
-On Wed, Apr 11, 2012 at 9:23 AM, Dmitry Torokhov
-<dmitry.torokhov@gmail.com> wrote:
-> On Tue, Apr 03, 2012 at 01:24:33PM -0700, Dmitry Torokhov wrote:
->> Avoid calling wait_event_interruptible() if client requested non-blocking
->> read, since it is not guaranteed that another thread will not consume
->> event after we checked if serio_raw->head != serio_raw->tail.
->>
->> Also ensure we do not return 0 but keep waiting instead in blocking case,
->> when another thread steals "our" byte.
->>
->> Signed-off-by: Dmitry Torokhov <dtor@mail.ru>
->
-> Anyone? It would be nice if someone could review my patches as well,
-> otherwise we may end up with breakages...
+I'm making ->plid to be dynamically allocated on registration anyway,
+so I don't think it really matters.  The updated unregistration
+function does BUG_ON(blkio_policy[pol->plid] != pol) which should
+catch stray plid.
 
-I cannot test the driver as I don't have the devices, but I reviewed
-it and it looks fine.
+Thanks.
 
-> Thanks.
-
-Regards
-David
-
->> ---
->>  drivers/input/serio/serio_raw.c |   43 ++++++++++++++++++++++----------------
->>  1 files changed, 25 insertions(+), 18 deletions(-)
->>
->> diff --git a/drivers/input/serio/serio_raw.c b/drivers/input/serio/serio_raw.c
->> index 4494233..094d6fb 100644
->> --- a/drivers/input/serio/serio_raw.c
->> +++ b/drivers/input/serio/serio_raw.c
->> @@ -165,31 +165,38 @@ static ssize_t serio_raw_read(struct file *file, char __user *buffer,
->>       struct serio_raw *serio_raw = client->serio_raw;
->>       char uninitialized_var(c);
->>       ssize_t read = 0;
->> -     int retval;
->> +     int error = 0;
->>
->> -     if (serio_raw->dead)
->> -             return -ENODEV;
->> +     do {
->> +             if (serio_raw->dead)
->> +                     return -ENODEV;
->>
->> -     if (serio_raw->head == serio_raw->tail && (file->f_flags & O_NONBLOCK))
->> -             return -EAGAIN;
->> +             if (serio_raw->head == serio_raw->tail &&
->> +                 (file->f_flags & O_NONBLOCK))
->> +                     return -EAGAIN;
->>
->> -     retval = wait_event_interruptible(serio_raw->wait,
->> -                     serio_raw->head != serio_raw->tail || serio_raw->dead);
->> -     if (retval)
->> -             return retval;
->> +             if (count == 0)
->> +                     break;
->>
->> -     if (serio_raw->dead)
->> -             return -ENODEV;
->> +             while (read < count && serio_raw_fetch_byte(serio_raw, &c)) {
->> +                     if (put_user(c, buffer++)) {
->> +                             error = -EFAULT;
->> +                             goto out;
->> +                     }
->> +                     read++;
->> +             }
->>
->> -     while (read < count && serio_raw_fetch_byte(serio_raw, &c)) {
->> -             if (put_user(c, buffer++)) {
->> -                     retval = -EFAULT;
->> +             if (read)
->>                       break;
->> -             }
->> -             read++;
->> -     }
->>
->> -     return read ?: retval;
->> +             if (!(file->f_flags & O_NONBLOCK))
->> +                     error = wait_event_interruptible(serio_raw->wait,
->> +                                     serio_raw->head != serio_raw->tail ||
->> +                                     serio_raw->dead);
->> +     } while (!error);
->> +
->> +out:
->> +     return read ?: error;
->>  }
->>
->>  static ssize_t serio_raw_write(struct file *file, const char __user *buffer,
->> --
->> 1.7.7.6
->>
->
-> --
-> Dmitry
+-- 
+tejun
