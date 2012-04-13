@@ -1,124 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754726Ab2DMSJw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Apr 2012 14:09:52 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:51510 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752861Ab2DMSJu (ORCPT
+	id S1755150Ab2DMSKL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Apr 2012 14:10:11 -0400
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:46585 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754764Ab2DMSKJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Apr 2012 14:09:50 -0400
-Date: Fri, 13 Apr 2012 11:09:12 -0700
-From: tip-bot for Arnaldo Carvalho de Melo <acme@redhat.com>
-Message-ID: <tip-44a7kl2atf9jxlg9npmotzdg@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, eranian@google.com, paulus@samba.org,
-        acme@redhat.com, hpa@zytor.com, mingo@kernel.org, peterz@infradead.org,
-        efault@gmx.de, namhyung@gmail.com, fweisbec@gmail.com,
-        dsahern@gmail.com, tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, acme@redhat.com, paulus@samba.org,
-        eranian@google.com, linux-kernel@vger.kernel.org, efault@gmx.de,
-        peterz@infradead.org, namhyung@gmail.com, fweisbec@gmail.com,
-        dsahern@gmail.com, tglx@linutronix.de
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf ui annotate browser:
-  Add list based search for addr offset
-Git-Commit-ID: b0ffb2c48a924fdacb65a2320554ddc779a65eb2
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Fri, 13 Apr 2012 14:10:09 -0400
+Message-ID: <4F886BFD.7040007@lwfinger.net>
+Date: Fri, 13 Apr 2012 13:10:05 -0500
+From: Larry Finger <Larry.Finger@lwfinger.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120312 Thunderbird/11.0
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Fri, 13 Apr 2012 11:09:17 -0700 (PDT)
+To: LKML <linux-kernel@vger.kernel.org>,
+        "Eric W. Biederman" <ebiederm@xmission.com>
+Subject: 3.4-rc2: Possible memory leak in __register_sysctl_table()
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  b0ffb2c48a924fdacb65a2320554ddc779a65eb2
-Gitweb:     http://git.kernel.org/tip/b0ffb2c48a924fdacb65a2320554ddc779a65eb2
-Author:     Arnaldo Carvalho de Melo <acme@redhat.com>
-AuthorDate: Tue, 3 Apr 2012 15:32:45 -0300
-Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Sat, 7 Apr 2012 16:11:33 -0300
+I am seeing apparent memory leaks in 3.4-rcX. I do not think I saw these in 3.3.
 
-perf ui annotate browser: Add list based search for addr offset
+The kmemleak traceback is:
 
->From the hit sorted rb_tree, so that we can use it in the upcoming jump
-instruction support.
+unreferenced object 0xffff8800b7536180 (size 96):
+   comm "swapper/0", pid 1, jiffies 4294892617 (age 8756.084s)
+   hex dump (first 32 bytes):
+     20 c4 1c 82 ff ff ff ff 00 00 00 00 01 00 00 00   ...............
+     01 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
+   backtrace:
+     [<ffffffff81383401>] kmemleak_alloc+0x21/0x50
+     [<ffffffff81134153>] __kmalloc+0x123/0x2a0
+     [<ffffffff811a8ac2>] __register_sysctl_table+0x62/0x4d0
+     [<ffffffff811a907d>] register_leaf_sysctl_tables+0x14d/0x220
+     [<ffffffff811a90e4>] register_leaf_sysctl_tables+0x1b4/0x220
+     [<ffffffff811a92c9>] __register_sysctl_paths+0x159/0x1f0
+     [<ffffffff811a9376>] register_sysctl_paths+0x16/0x20
+     [<ffffffff816b5c41>] ip_static_sysctl_init+0x17/0x19
+     [<ffffffff816b68bc>] inet_init+0xb4/0x2b2
+     [<ffffffff810001ca>] do_one_initcall+0x3a/0x170
+     [<ffffffff81686c52>] kernel_init+0xf7/0x17b
+     [<ffffffff8139f154>] kernel_thread_helper+0x4/0x10
+     [<ffffffffffffffff>] 0xffffffffffffffff
 
-Cc: David Ahern <dsahern@gmail.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Mike Galbraith <efault@gmx.de>
-Cc: Namhyung Kim <namhyung@gmail.com>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/n/tip-44a7kl2atf9jxlg9npmotzdg@git.kernel.org
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
----
- tools/perf/util/ui/browsers/annotate.c |   25 ++++++++++++++++---------
- 1 files changed, 16 insertions(+), 9 deletions(-)
+Thanks,
 
-diff --git a/tools/perf/util/ui/browsers/annotate.c b/tools/perf/util/ui/browsers/annotate.c
-index dbf8d3f..c52543c 100644
---- a/tools/perf/util/ui/browsers/annotate.c
-+++ b/tools/perf/util/ui/browsers/annotate.c
-@@ -157,17 +157,13 @@ static void objdump__insert_line(struct rb_root *self,
- }
- 
- static void annotate_browser__set_top(struct annotate_browser *self,
--				      struct rb_node *nd)
-+				      struct objdump_line *pos, u32 idx)
- {
--	struct objdump_line_rb_node *rbpos;
--	struct objdump_line *pos;
- 	unsigned back;
- 
- 	ui_browser__refresh_dimensions(&self->b);
- 	back = self->b.height / 2;
--	rbpos = rb_entry(nd, struct objdump_line_rb_node, rb_node);
--	pos = ((struct objdump_line *)rbpos) - 1;
--	self->b.top_idx = self->b.index = rbpos->idx;
-+	self->b.top_idx = self->b.index = idx;
- 
- 	while (self->b.top_idx != 0 && back != 0) {
- 		pos = list_entry(pos->node.prev, struct objdump_line, node);
-@@ -177,7 +173,18 @@ static void annotate_browser__set_top(struct annotate_browser *self,
- 	}
- 
- 	self->b.top = pos;
--	self->curr_hot = nd;
-+}
-+
-+static void annotate_browser__set_rb_top(struct annotate_browser *browser,
-+					 struct rb_node *nd)
-+{
-+	struct objdump_line_rb_node *rbpos;
-+	struct objdump_line *pos;
-+
-+	rbpos = rb_entry(nd, struct objdump_line_rb_node, rb_node);
-+	pos = ((struct objdump_line *)rbpos) - 1;
-+	annotate_browser__set_top(browser, pos, rbpos->idx);
-+	browser->curr_hot = nd;
- }
- 
- static void annotate_browser__calc_percent(struct annotate_browser *browser,
-@@ -308,7 +315,7 @@ static int annotate_browser__run(struct annotate_browser *self, int evidx,
- 	annotate_browser__calc_percent(self, evidx);
- 
- 	if (self->curr_hot)
--		annotate_browser__set_top(self, self->curr_hot);
-+		annotate_browser__set_rb_top(self, self->curr_hot);
- 
- 	nd = self->curr_hot;
- 
-@@ -382,7 +389,7 @@ static int annotate_browser__run(struct annotate_browser *self, int evidx,
- 		}
- 
- 		if (nd != NULL)
--			annotate_browser__set_top(self, nd);
-+			annotate_browser__set_rb_top(self, nd);
- 	}
- out:
- 	ui_browser__hide(&self->b);
+Larry
