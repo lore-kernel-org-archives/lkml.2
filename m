@@ -1,79 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757604Ab2DMCvv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Apr 2012 22:51:51 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:47591 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751528Ab2DMCvu (ORCPT
+	id S1759606Ab2DMCwh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Apr 2012 22:52:37 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:45475 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756264Ab2DMCwf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Apr 2012 22:51:50 -0400
-Date: Fri, 13 Apr 2012 12:51:41 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: "John W. Linville" <linville@tuxdriver.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Johannes Berg <johannes.berg@intel.com>,
-        David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>,
-        Meenakshi Venkataraman <meenakshi.venkataraman@intel.com>
-Subject: Re: linux-next: manual merge of the wireless-next tree with the
- net-next tree
-Message-Id: <20120413125141.24b117ae125e95843bc3689d@canb.auug.org.au>
-In-Reply-To: <20120413123055.8d25d96b3d3c055b726b8519@canb.auug.org.au>
-References: <20120413123055.8d25d96b3d3c055b726b8519@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0beta6 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Fri__13_Apr_2012_12_51_41_+1000_sQ7O8j1tzP30ksbh"
+	Thu, 12 Apr 2012 22:52:35 -0400
+Message-ID: <4F8794F3.5050503@gmail.com>
+Date: Fri, 13 Apr 2012 10:52:35 +0800
+From: Sha Zhengju <handai.szj@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.23) Gecko/20110922 Thunderbird/3.1.15
+MIME-Version: 1.0
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: linux-kernel@vger.kernel.org, davidel@xmailserver.org,
+        Sha Zhengju <handai.szj@taobao.com>
+Subject: Re: [PATCH] eventfd: change int to __u64 in eventfd_signal()
+References: <4f86a805.473f440a.2915.0cf3@mx.google.com> <20120412160912.ee326702.akpm@linux-foundation.org>
+In-Reply-To: <20120412160912.ee326702.akpm@linux-foundation.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Fri__13_Apr_2012_12_51_41_+1000_sQ7O8j1tzP30ksbh
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
-
-Hi John,
-
-On Fri, 13 Apr 2012 12:30:55 +1000 Stephen Rothwell <sfr@canb.auug.org.au> =
-wrote:
+On 04/13/2012 07:09 AM, Andrew Morton wrote:
+> On Thu, 12 Apr 2012 18:01:20 +0800
+> handai.szj@gmail.com wrote:
 >
-> @@@ -609,10 -605,9 +612,10 @@@
->   			inst_size =3D img->sec[IWL_UCODE_SECTION_INST].len;
->   			data_size =3D img->sec[IWL_UCODE_SECTION_DATA].len;
->   		}
-> - 		if (nla_put_u32(skb, IWL_TM_ATTR_FW_TYPE, priv->shrd->ucode_type) ||
->  -		NLA_PUT_U32(skb, IWL_TM_ATTR_FW_TYPE, priv->cur_ucode);
->  -		NLA_PUT_U32(skb, IWL_TM_ATTR_FW_INST_SIZE, inst_size);
->  -		NLA_PUT_U32(skb, IWL_TM_ATTR_FW_DATA_SIZE, data_size);
-> ++		if (nla_put_u32(skb, IWL_TM_ATTR_FW_TYPE, priv->ucode_type) ||
-                                                                ^^^^^^^^^^
-That should have been "cur_ucode", of course :-(
+>> From: Sha Zhengju<handai.szj@taobao.com>
+>>
+>> From: Sha Zhengju<handai.szj@taobao.com>
+>>
+>> eventfd_ctx->count is an __u64 counter which is allowed to reach ULLONG_MAX.
+>> Now eventfd_write() add an __u64 value to "count", but kernel side
+>> eventfd_signal() only add an int value to it. So make them consistent here.
+>>
+>> ...
+>>
+>> --- a/fs/eventfd.c
+>> +++ b/fs/eventfd.c
+>> @@ -51,7 +51,7 @@ struct eventfd_ctx {
+>>    *
+>>    * -EINVAL    : The value of @n is negative.
+>>    */
+>> -int eventfd_signal(struct eventfd_ctx *ctx, int n)
+>> +__u64 eventfd_signal(struct eventfd_ctx *ctx, __u64 n)
+>>   {
+>>   	unsigned long flags;
+>>
+>> @@ -59,7 +59,7 @@ int eventfd_signal(struct eventfd_ctx *ctx, int n)
+>>   		return -EINVAL;
+>>   	spin_lock_irqsave(&ctx->wqh.lock, flags);
+>>   	if (ULLONG_MAX - ctx->count<  n)
+>> -		n = (int) (ULLONG_MAX - ctx->count);
+>> +		n = ULLONG_MAX - ctx->count;
+>>   	ctx->count += n;
+>>   	if (waitqueue_active(&ctx->wqh))
+>>   		wake_up_locked_poll(&ctx->wqh, POLLIN);
+> Changing `n' to an unsigned type makes the "if (n<  0)" test a no-op.
+>
+yeah, it's really not necessary. I slipped up..
+> Every in-kernel caller of eventfd_signal() passes n=1.  All of them.
+> Perhaps we can just remove that argument and hard-wire the +1
+> assumption into eventfd_signal().
+A userspace write(2) performing on an eventfd can pass an u64 value to
+"count" and issue a wakeup, I think the kernel side can just be in 
+accord with it.
+Though all the current in-kernel callers just pass 1 to eventfd_signal(), it
+doesn't mean there is no possibility of other usages in future. 
+Actually, we're
+considering to encode some usefully info to "count" and sent it to 
+userspace. :-)
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
-
---Signature=_Fri__13_Apr_2012_12_51_41_+1000_sQ7O8j1tzP30ksbh
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJPh5S9AAoJEECxmPOUX5FEQlYP+gM0Qi/qTJMF7dy2+egaA616
-DGSPJBZy+2Frt8jZlfLZDLEoAmBZ7tHZZbo8RBBMzpb8X+LrZHIKprw/u1puzjIs
-cdvSVJMG6lCmpLi6343CRCEuFFa1SNBazPZHRjOk9vC/wGT+zAydQz2DDwm4BrJU
-axq61GR47lV09LGV73YX3PaVfLbnpGfLKtmuzADQHmwssa/GZ0yzh2i7A5LWfrxx
-FnbsTGZTW6s/MXFTlmROjU6C6l3N4sjcp0PY3l8yWue4a/fPfRlbsaaxIcd4ps0t
-KE1WdiAonAwPlBTBVU0p3uuhV53/DMycWrJSz00NfeJi9uRU8ghWIlHVZXLYvSM6
-OhmLjJ8D5EMbdNGZFTpQcfYU6arG9u/bO8p/RPnaYDd0Syf2b4Ld7z7i/8uiTqCu
-kHqk6LF4agaxMmFlTgC2S2Gmqb/ASA3r95MwSzg5Jwjti0E8rCcI8AauiNub9C/G
-lsJJMhJnqqK1vbkTZ6vIxhkob92083MPCww7OBVYM8T7EP0sjwbnUbcWb/vad3Ks
-W7KGtqgzr89IumQjb8/XRvxcquGdNG3nl2QVhDU0I4fOr+CX+8UjAZ68W86B0Hpp
-oHDZbcwDzpBPibuS1p0vJqd4YBvmYmveuAKenRdTCsVa+F4WyY4KAZaZMGs1TLWn
-FALyPO+VbUPtRyPdGHK5
-=rC4Y
------END PGP SIGNATURE-----
-
---Signature=_Fri__13_Apr_2012_12_51_41_+1000_sQ7O8j1tzP30ksbh--
