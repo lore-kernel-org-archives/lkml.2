@@ -1,60 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935134Ab2DMKcE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Apr 2012 06:32:04 -0400
-Received: from 5350504D.static.ziggozakelijk.nl ([83.80.80.77]:24217 "EHLO
-	ns2.tasking.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932961Ab2DMKcB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Apr 2012 06:32:01 -0400
-To: linux-kernel@vger.kernel.org
-Mime-Version: 1.0
-X-Newsreader: knews 1.0b.1
-X-Face: "`*@3nW;mP[=Z(!`?W;}cn~3M5O_/vMjX&Pe!o7y?xi@;wnA&Tvx&kjv'N\P&&5Xqf{2CaT 9HXfUFg}Y/TT^?G1j26Qr[TZY%v-1A<3?zpTYD5E759Q?lEoR*U1oj[.9\yg_o.~O.$wj:t(B+Q_?D XX57?U,#b,iM$[zX'I(!'VCQM)N)x~knSj>M*@l}y9(tK\rYwdv%~+&*jV"epphm>|q~?ys:g:K#R" 2PuAzy-N9cKM<Ml/%yPQxpq"Ttm{GzBn-*:;619QM2HLuRX4]~361+,[uFp6f"JF5R`y
-References: <1334274394-13466-1-git-send-email-paul.gortmaker@windriver.com> <CA+55aFx15+eHNA4LobwiFhe4k94XPTVTLdiBmuR4hDKR5HpWPg@mail.gmail.com> <1334274394-13466-1-git-send-email-paul.gortmaker@windriver.com> <1334274394-13466-2-git-send-email-paul.gortmaker@windriver.com>
-Reply-To: dick@streefland.net (Dick Streefland)
-From: dick@streefland.net (Dick Streefland)
-Subject: Re: [PATCH 1/3] kconfig: fix IS_ENABLED to not require all options to be defined
-Content-Type: text/plain; charset=us-ascii
-NNTP-Posting-Host: 172.17.1.66
-Message-ID: <2e99.4f88009a.417f5@altium.nl>
-Date: Fri, 13 Apr 2012 10:31:54 -0000
+	id S935173Ab2DMKeS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Apr 2012 06:34:18 -0400
+Received: from moutng.kundenserver.de ([212.227.17.10]:53189 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932961Ab2DMKeR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 Apr 2012 06:34:17 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Chris Metcalf <cmetcalf@tilera.com>
+Subject: Re: [PATCH 6/6] tilegx network driver: initial support
+Date: Fri, 13 Apr 2012 10:34:03 +0000
+User-Agent: KMail/1.12.2 (Linux/3.3.0-rc1; KDE/4.3.2; x86_64; ; )
+Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org
+References: <201204062059.q36KxjEO011317@farm-0027.internal.tilera.com> <201204101042.39877.arnd@arndb.de> <4F8763E1.1020605@tilera.com>
+In-Reply-To: <4F8763E1.1020605@tilera.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201204131034.03544.arnd@arndb.de>
+X-Provags-ID: V02:K0:QLNw86h4GqyaF7z9GZmQlKFIYAS0X+ceh3/V4JQGUmE
+ GS1cG7Jf8bAzhzkg5C8KZRqcauDv1J1q0Wju0MlSd4SBrfiRmz
+ Htgx27r/uui45U7v2jFnLGh7YfkEFv2aKUeOHO0sL7K2OQnXj+
+ ZFP+wcKJshPGv/nWehsrEZ4AbceIycJAHldyjU/cqzfK7kqgUY
+ v0pRDKENVOvq6biLtqjPZLnMD9juT6ClXNGU3RjpEQIa2PIqzp
+ MCNcEb/cgbks+I6d3JsF4j3d1LZWDu8MAHCBvUMSLh14hRMFjd
+ kaxQqYSeR8sRFhhbIm3Fc1fVMcqIW07EzZdTV/zWIG7MzCG4MK
+ BQgzmEe0uOhHMDMQ3Q2w=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-| +#define __ARG_PLACEHOLDER_1 0,
-| +#define config_enabled(cfg) _config_enabled(cfg)
-| +#define _config_enabled(value) __config_enabled(__ARG_PLACEHOLDER_##value)
-| +#define __config_enabled(arg1_or_junk) ___config_enabled(arg1_or_junk 1, 0)
-| +#define ___config_enabled(__ignored, val, ...) val
+On Thursday 12 April 2012, Chris Metcalf wrote:
+> On 4/10/2012 6:42 AM, Arnd Bergmann wrote:
+> > Ok, but please remove tile_net_devs then.
+> > I think a better abstraction for tile_net_devs_for_channel would be
+> > some interface that lets you add private data to a channel so when
+> > you get data from a channel, you can extract that pointer from the driver
+> > using the channel.
 
-The ISO C99 standard requires that the variable argument macro
-___config_enabled() is expanded with at least three arguments. When
-a CONFIG_* macro is not defined, there are only two arguments, and
-gcc will issue a somewhat cryptic warning message when you compile
-with the -pedantic option:
+> I think what would be clearer is to document how and why we are using this
+> additional data structure.  We do access via both arrays where it is
+> efficient to do so, so getting rid of either of them doesn't seem right. 
+> Let's keep the "normal" tile_net_devs[] as is, indexed by devno, and make
+> the tile_net_devs_for_channel[] more abstracted by using the following code:
 
-  "warning: ISO C99 requires rest arguments to be used"
+The tile_net_devs still feels dirty. You basically only
+use it in tile_net_handle_egress_timer(), but there you don't
+actually take the mutex that protects addition and removal from
+the array, so it's racy in case of hotplug.
 
-Adding an additional dummy argument makes the code ISO C99 compliant,
-and eliminates the warning:
+A more conservative way to do this is to have the timer per
+device (or by channel, if you like), so it does not have to
+iterate the array.
 
-diff --git a/include/linux/kconfig.h b/include/linux/kconfig.h
-index be342b9..eac65da 100644
---- a/include/linux/kconfig.h
-+++ b/include/linux/kconfig.h
-@@ -19,7 +19,7 @@
- #define __ARG_PLACEHOLDER_1 0,
- #define config_enabled(cfg) _config_enabled(cfg)
- #define _config_enabled(value) __config_enabled(__ARG_PLACEHOLDER_##value)
--#define __config_enabled(arg1_or_junk) ___config_enabled(arg1_or_junk 1, 0)
-+#define __config_enabled(arg1_or_junk) ___config_enabled(arg1_or_junk 1, 0, 0)
- #define ___config_enabled(__ignored, val, ...) val
- 
- /*
+> /*
+>  * Provide support for efficiently mapping a channel to the device
+>  * that is using that channel, or NULL if none.  The pointers in this
+>  * array are only non-NULL when pointing to active tilegx net_device
+>  * structures, and they are cleared before the struture itself is
+>  * released.
+>  *
+>  * HACK: We use "32", not TILE_NET_CHANNELS, because it is fairly
+>  * subtle that the 5 bit "idesc.channel" field never exceeds
+>  * TILE_NET_CHANNELS.
+>  */
+> static struct net_device *channel_to_dev[32];
+> 
+> static void bychannel_add(struct net_device *dev)
+> {
+>         struct tile_net_priv *priv = netdev_priv(dev);
+>         BUG_ON(channel_to_dev[priv->channel] != NULL);
+>         channel_to_dev[priv->channel] = dev;
+> }
+> 
+> static void bychannel_delete(struct net_device *dev)
+> {
+>         struct tile_net_priv *priv = netdev_priv(dev);
+>         channel_to_dev[priv->channel] = NULL;
+> }
+> 
+> static inline struct net_device *bychannel_lookup(int channel)
+> {
+>         return channel_to_dev[channel];
+> }
+> 
+> 
+> We then call bychannel_add() in the open method, and bychannel_delete() in
+> the close method, so it's clear that the pointers have appropriate lifetimes.
 
-Signed-off-by: Dick Streefland <dick@streefland.net>
+Ok.
 
--- 
-Dick
-
+	Arnd
