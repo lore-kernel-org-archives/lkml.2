@@ -1,83 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755442Ab2DMRRy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Apr 2012 13:17:54 -0400
-Received: from mail.tpi.com ([70.99.223.143]:1369 "EHLO mail.tpi.com"
+	id S1751709Ab2DMRXo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Apr 2012 13:23:44 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:53186 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750734Ab2DMRRw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Apr 2012 13:17:52 -0400
-From: Tim Gardner <tim.gardner@canonical.com>
-To: kvalo@qca.qualcomm.com, linux-kernel@vger.kernel.org
-Cc: Tim Gardner <tim.gardner@canonical.com>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        linux-wireless@vger.kernel.org, netdev@vger.kernel.org
-Subject: [PATCH linux-next 1/1] ath6k: Normalize use of FW_DIR
-Date: Fri, 13 Apr 2012 11:17:27 -0600
-Message-Id: <1334337448-26270-2-git-send-email-tim.gardner@canonical.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1334337448-26270-1-git-send-email-tim.gardner@canonical.com>
-References: <1334337448-26270-1-git-send-email-tim.gardner@canonical.com>
+	id S1751033Ab2DMRXm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 Apr 2012 13:23:42 -0400
+Date: Fri, 13 Apr 2012 13:23:36 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: axboe@kernel.dk, ctalbott@google.com, rni@google.com,
+        linux-kernel@vger.kernel.org, cgroups@vger.kernel.org,
+        containers@lists.linux-foundation.org
+Subject: Re: [PATCH 5/8] blkcg: make sure blkg_lookup() returns %NULL if @q
+ is bypassing
+Message-ID: <20120413172336.GF26383@redhat.com>
+References: <1334273380-30233-1-git-send-email-tj@kernel.org>
+ <1334273380-30233-6-git-send-email-tj@kernel.org>
+ <20120413160053.GE26383@redhat.com>
+ <20120413170334.GB12233@google.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120413170334.GB12233@google.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Cc: Kalle Valo <kvalo@qca.qualcomm.com>
-Cc: "John W. Linville" <linville@tuxdriver.com>
-Cc: linux-wireless@vger.kernel.org
-Cc: netdev@vger.kernel.org
-Signed-off-by: Tim Gardner <tim.gardner@canonical.com>
----
- drivers/net/wireless/ath/ath6kl/core.h |   16 ++++++++--------
- 1 file changed, 8 insertions(+), 8 deletions(-)
+On Fri, Apr 13, 2012 at 10:03:34AM -0700, Tejun Heo wrote:
+> Hey,
+> 
+> On Fri, Apr 13, 2012 at 12:00:53PM -0400, Vivek Goyal wrote:
+> > On Thu, Apr 12, 2012 at 04:29:37PM -0700, Tejun Heo wrote:
+> > 
+> > [..]
+> > >   * In bypass mode, only the dispatch FIFO queue of @q is used.  This
+> > >   * function makes @q enter bypass mode and drains all requests which were
+> > >   * throttled or issued before.  On return, it's guaranteed that no request
+> > > - * is being throttled or has ELVPRIV set.
+> > > + * is being throttled or has ELVPRIV set and blk_queue_bypass() is %true
+> > > + * inside queue or RCU read lock.
+> > >   */
+> > >  void blk_queue_bypass_start(struct request_queue *q)
+> > >  {
+> > > @@ -426,6 +427,7 @@ void blk_queue_bypass_start(struct request_queue *q)
+> > >  	spin_unlock_irq(q->queue_lock);
+> > >  
+> > >  	blk_drain_queue(q, false);
+> > > +	synchronize_rcu();
+> > 
+> > I guess this synchronize_rcu() needs some comments here to make it clear
+> > what it meant for. IIUC, you are protecting against policy data (stats
+> > update) which happen under rcu in throttling code? You want to make sure
+> > all these updaters are done before you go ahead with
+> > activation/deactivation of a policy.
+> > 
+> > Well, I am wondering if CFQ is policy being activated/deactivated why
+> > should we try to drain other policie's requests. Can't one continue
+> > to work without draining all the throttled requests. We probably just
+> > need to make sure new groups are not created.
+> 
+> So, I think synchronization rules like this are something which the
+> core should define.  cfq may not use it but the sync rules should
+> still be the same for all policies.  In this case, what the core
+> provides is "blk_queue_bypass() is guaranteed to be seen as %true
+> inside RCU read lock section once this function returns", which in
+> turn will guarantee that RCU read-lock protected blkg_lookup() is
+> guaranteed to fail once the function returns.  This property makes RCU
+> protected blkg_lookup() safe against queue bypassing, which is what we
+> want.
 
-diff --git a/drivers/net/wireless/ath/ath6kl/core.h b/drivers/net/wireless/ath/ath6kl/core.h
-index 9d67964..ba81dc8 100644
---- a/drivers/net/wireless/ath/ath6kl/core.h
-+++ b/drivers/net/wireless/ath/ath6kl/core.h
-@@ -126,9 +126,9 @@ struct ath6kl_fw_ie {
- #define AR6003_HW_2_0_FIRMWARE_FILE		"athwlan.bin.z77"
- #define AR6003_HW_2_0_TCMD_FIRMWARE_FILE	"athtcmd_ram.bin"
- #define AR6003_HW_2_0_PATCH_FILE		"data.patch.bin"
--#define AR6003_HW_2_0_BOARD_DATA_FILE "ath6k/AR6003/hw2.0/bdata.bin"
-+#define AR6003_HW_2_0_BOARD_DATA_FILE AR6003_HW_2_0_FW_DIR "/bdata.bin"
- #define AR6003_HW_2_0_DEFAULT_BOARD_DATA_FILE \
--			"ath6k/AR6003/hw2.0/bdata.SD31.bin"
-+			AR6003_HW_2_0_FW_DIR "/bdata.SD31.bin"
- 
- /* AR6003 3.0 definitions */
- #define AR6003_HW_2_1_1_VERSION                 0x30000582
-@@ -139,25 +139,25 @@ struct ath6kl_fw_ie {
- #define AR6003_HW_2_1_1_UTF_FIRMWARE_FILE	"utf.bin"
- #define AR6003_HW_2_1_1_TESTSCRIPT_FILE	"nullTestFlow.bin"
- #define AR6003_HW_2_1_1_PATCH_FILE		"data.patch.bin"
--#define AR6003_HW_2_1_1_BOARD_DATA_FILE "ath6k/AR6003/hw2.1.1/bdata.bin"
-+#define AR6003_HW_2_1_1_BOARD_DATA_FILE AR6003_HW_2_1_1_FW_DIR "/bdata.bin"
- #define AR6003_HW_2_1_1_DEFAULT_BOARD_DATA_FILE	\
--			"ath6k/AR6003/hw2.1.1/bdata.SD31.bin"
-+			AR6003_HW_2_1_1_FW_DIR "/bdata.SD31.bin"
- 
- /* AR6004 1.0 definitions */
- #define AR6004_HW_1_0_VERSION                 0x30000623
- #define AR6004_HW_1_0_FW_DIR			"ath6k/AR6004/hw1.0"
- #define AR6004_HW_1_0_FIRMWARE_FILE		"fw.ram.bin"
--#define AR6004_HW_1_0_BOARD_DATA_FILE         "ath6k/AR6004/hw1.0/bdata.bin"
-+#define AR6004_HW_1_0_BOARD_DATA_FILE         AR6004_HW_1_0_FW_DIR "/bdata.bin"
- #define AR6004_HW_1_0_DEFAULT_BOARD_DATA_FILE \
--	"ath6k/AR6004/hw1.0/bdata.DB132.bin"
-+	AR6004_HW_1_0_FW_DIR "/bdata.DB132.bin"
- 
- /* AR6004 1.1 definitions */
- #define AR6004_HW_1_1_VERSION                 0x30000001
- #define AR6004_HW_1_1_FW_DIR			"ath6k/AR6004/hw1.1"
- #define AR6004_HW_1_1_FIRMWARE_FILE		"fw.ram.bin"
--#define AR6004_HW_1_1_BOARD_DATA_FILE         "ath6k/AR6004/hw1.1/bdata.bin"
-+#define AR6004_HW_1_1_BOARD_DATA_FILE         AR6004_HW_1_1_FW_DIR "/bdata.bin"
- #define AR6004_HW_1_1_DEFAULT_BOARD_DATA_FILE \
--	"ath6k/AR6004/hw1.1/bdata.DB132.bin"
-+	AR6004_HW_1_1_FW_DIR "/bdata.DB132.bin"
- 
- /* Per STA data, used in AP mode */
- #define STA_PS_AWAKE		BIT(0)
--- 
-1.7.9.5
+I think now synchronize_rcu() has become part of cfq_init_queue()
+effectively and that will slow down boot. In the past I had to remove
+it.
 
+Thanks
+Vivek
