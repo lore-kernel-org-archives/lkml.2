@@ -1,68 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756554Ab2DMNQY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Apr 2012 09:16:24 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:5776 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754001Ab2DMNQX (ORCPT
+	id S932595Ab2DMNRF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Apr 2012 09:17:05 -0400
+Received: from kamaji.grokhost.net ([87.117.218.43]:38046 "EHLO
+	kamaji.grokhost.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756664Ab2DMNRB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Apr 2012 09:16:23 -0400
-X-Authority-Analysis: v=2.0 cv=T5EOvo2Q c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=XQbtiDEiEegA:10 a=wom5GMh1gUkA:10 a=roI9hkIn2AAA:10 a=5SG0PmZfjMsA:10 a=kj9zAlcOel0A:10 a=vddSK0otzzMbXsTu-yAA:9 a=CjuIK1q_8ugA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.80.29
-Date: Fri, 13 Apr 2012 09:16:21 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Vishal Nandanwar <operational.people@gmail.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: Need help to understand and develop the device drivers
-Message-ID: <20120413131621.GA11036@home.goodmis.org>
-References: <CAKB833knAUDCk1UhmL64m17OzuM+NnHiZFNzzEtb9jdFwSzXPw@mail.gmail.com>
- <CAKB833mnQbJ-Q_mG3GeUn4dTZs+6PHKwcO=mGDmOJDArrChE7w@mail.gmail.com>
+	Fri, 13 Apr 2012 09:17:01 -0400
+Message-ID: <4F882745.4080301@bootc.net>
+Date: Fri, 13 Apr 2012 14:16:53 +0100
+From: Chris Boot <bootc@bootc.net>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:12.0) Gecko/20120410 Thunderbird/12.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAKB833mnQbJ-Q_mG3GeUn4dTZs+6PHKwcO=mGDmOJDArrChE7w@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+CC: linux1394-devel@lists.sourceforge.net, target-devel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, agrover@redhat.com, clemens@ladisch.de,
+        stefanr@s5r6.in-berlin.de, Christoph Hellwig <hch@lst.de>
+Subject: Re: [PATCH v3 00/11] firewire-sbp-target: FireWire SBP-2 SCSI target
+References: <1329317248-94128-1-git-send-email-bootc@bootc.net>  <1334154043-69076-1-git-send-email-bootc@bootc.net> <1334286222.3137.4877.camel@haakon2.linux-iscsi.org>
+In-Reply-To: <1334286222.3137.4877.camel@haakon2.linux-iscsi.org>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 13, 2012 at 02:41:29PM +0530, Vishal Nandanwar wrote:
-> Hi,
-> 
-> I am new in Linux device driver development. Currently I am learning
-> drivers from the book "Linux device drivers" by Rubini. This book is
-> quite big and quite boring. What are the ways to learn the drivers?
+On 13/04/2012 04:03, Nicholas A. Bellinger wrote:
+> On Wed, 2012-04-11 at 15:20 +0100, Chris Boot wrote:
+>> The FireWire SBP-2 Target is a driver for using an IEEE-1394 connection
+>> as a SCSI transport. This module uses the SCSI Target framework to
+>> expose LUNs to other machines attached to a FireWire bus, in effect
+>> acting as a FireWire hard disk similar to FireWire Target Disk mode on
+>> many Apple computers.
+>>
+>> Sorry this latest revision has been a long time coming. I was trying to
+>> chase down a crashing bug (but haven't been able to replicate it), changed
+>> my mind about a large portion of the code twice, and life got in the way as
+>> well!
+>>
+> Some very nice work to make this all go Chris..  8-)
+>
+> Thanks again btw for your target_core_mod patches along the way to v3!
 
-What are ways to learn the drivers? By reading really big and boring
-books!
+No problem, it's been a very useful learning experience and I'm really 
+glad I did it! :-)
 
-I read the "AMD64 Architecture Programmer's Manual Volume 2: System
-Programming" from cover to cover. Now *that* was a boring read. But it
-was required to be efficient at doing my job.
+>> Changes in v3:
+>> * Updates for target framework API changes
+>> * Attempt to make headers self-contained
+>> * Remove bad use of atomics and memory barriers
+>> * Rework use of locking
+>> * Use system workqueues
+>> * Wrap fw_run_transaction() to retry failed transactions
+>> * Coding style fixes
+>> * Fix a few bugs
+>> * Overhaul sbp_rw_data()
+>> * Overhaul target fetch agent
+>>
+> So I've merged a squashed version this series from:
+>
+>    https://github.com/bootc/Linux-SBP-2-Target.git patch-v3
+>
+> into lio-core/master, and have now pushed to k.o upstream
 
-> 
-> Do any one have any guide in video or PPT format or in any other format?
-> 
+Thanks!
 
-You are obviously clueless to what you are doing. Most people here do
-not even own Power Point, nor do they even run Windows (I don't). I'm
-happy that Windows developers are interested in learning how to work
-with Linux, but I'm disgusted at someone that doesn't want to put the
-effort in to learn how to do it the correct way.
+> This looks to me like a reasonable candidate for a v3.5 mainline merge,
+> so we need to go ahead and get this into target-pending..  Also, thanks
+> for getting Stefan's ACK's here on the drivers/firmware/ specific
+> changes..
+>
+> So for new fabric drivers (as discused with Sebastian and usb-gadget
+> recently) that the target team has been enforcing that new fabric
+> modules convert to use a single source / header file for readability and
+> maintainability purposes.
+>
+> It would be great if you can publish one more branch (no need to re-post
+> the full diff) that takes your patch-v3 down to a single .c/.h file.
+> Otherwise, I'm fine to take the 15 minutes to do this conversion ahead
+> of dropping into target-pending for the sunday night linux-next build.
 
-Kernel developing in not easy (this includes device drivers) and should
-not be taken lightly such that you can start developing after reading
-some silly PPT presentation.
+I'll get onto it over the weekend, I hope. I assume in this case I just 
+stick it all in drivers/target/ instead of having a sbp/ directory 
+underneath that?
 
-If you don't `want to put in the effort to read a "big boring book" to
-learn how to develop the correct way, we don't want you developing
-drivers for our kernel. Because I can guarantee that your code will be
-nothing more than shit.
-
--- Steve
-
-PS. I don't want to discourage you. If you decide that what you just
-asked was really silly, and you figure out that it does take an effort
-to do kernel developing, then I welcome you with open arms.
+Cheers,
+Chris
 
