@@ -1,86 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754857Ab2DMWcs (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Apr 2012 18:32:48 -0400
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:32821 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752594Ab2DMWcr (ORCPT
+	id S1755303Ab2DMWdg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Apr 2012 18:33:36 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:61422 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753110Ab2DMWdf convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Apr 2012 18:32:47 -0400
-Date: Fri, 13 Apr 2012 19:32:41 -0300
-From: Gustavo Padovan <gustavo@padovan.org>
-To: Steven Harms <sjharms@gmail.com>
-Cc: Marcel Holtmann <marcel@holtmann.org>,
-        Johan Hedberg <johan.hedberg@gmail.com>,
-        linux-bluetooth@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/1] Add Foxconn / Hon Hai IDs for btusb module
-Message-ID: <20120413223241.GJ1680@joana>
-Mail-Followup-To: Gustavo Padovan <gustavo@padovan.org>,
-	Steven Harms <sjharms@gmail.com>,
-	Marcel Holtmann <marcel@holtmann.org>,
-	Johan Hedberg <johan.hedberg@gmail.com>,
-	linux-bluetooth@vger.kernel.org, linux-kernel@vger.kernel.org
-References: <1334342755-7371-1-git-send-email-sjharms@gmail.com>
+	Fri, 13 Apr 2012 18:33:35 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1334342755-7371-1-git-send-email-sjharms@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <4F88A660.8040304@redfish-solutions.com>
+References: <1334101538-19127-1-git-send-email-gurligebis@gentoo.org>
+	<CACPM=kUwXocWWMQUKyakydeH72d7FHj-Rxw3bzqc0qDeyWP-yg@mail.gmail.com>
+	<4F88A660.8040304@redfish-solutions.com>
+Date: Sat, 14 Apr 2012 00:33:35 +0200
+X-Google-Sender-Auth: tsl1vnPdLscjaSY3n37zvYqkN2o
+Message-ID: <CACPM=kUWzzWQ-UVA-0A9X2CMc1D86oLRXiJqp3RmfbTMV6LXBg@mail.gmail.com>
+Subject: Re: [PATCH] NET5501: Change active_low to 0 for LED driver.
+From: Bjarke Istrup Pedersen <gurligebis@gentoo.org>
+To: Philip Prindeville <philipp_subx@redfish-solutions.com>
+Cc: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Steven,
+14. apr. 2012 00.19 skrev Philip Prindeville
+<philipp_subx@redfish-solutions.com>:
+> On 4/13/12 3:17 PM, Bjarke Istrup Pedersen wrote:
+>> 11. apr. 2012 01.45 skrev Bjarke Istrup Pedersen <gurligebis@gentoo.org>:
+>>> It seems that there was an error with the active_low = 1 for the
+>>> LED, since it should be set to 0 (meaning that active is high,
+>>> since 0 is false, hence the confusion.
+>>>
+>>> The wiki article about it confuses it, since it contradicts
+>>> itself, regarding what turns on the LED.
+>>>
+>>> I have tested 3.4-rc2 on my net5501 with this patch, and it
+>>> makes the LED behave correctly, where "none" turns it off, and
+>>> "default-on" turns it on, when echoed onto the trigger "file"
+>>> in /sys/class/leds.
+>>>
+>>> Signed-off-by: Bjarke Istrup Pedersen <gurligebis@gentoo.org>
+>>> ---
+>>>  arch/x86/platform/geode/net5501.c |    2 +-
+>>>  1 files changed, 1 insertions(+), 1 deletions(-)
+>>>
+>>> diff --git a/arch/x86/platform/geode/net5501.c b/arch/x86/platform/geode/net5501.c
+>>> index 66d377e..646e3b5 100644
+>>> --- a/arch/x86/platform/geode/net5501.c
+>>> +++ b/arch/x86/platform/geode/net5501.c
+>>> @@ -63,7 +63,7 @@ static struct gpio_led net5501_leds[] = {
+>>>                .name = "net5501:1",
+>>>                .gpio = 6,
+>>>                .default_trigger = "default-on",
+>>> -               .active_low = 1,
+>>> +               .active_low = 0,
+>>>        },
+>>>  };
+>>>
+>>> --
+>>> 1.7.8.5
+>>>
+>>
+>> I have tried sending it to linux-geode, but the list seems to reject
+>> mails from me for some reason.
+>> Anyone able to forward it to the right people for inclusion in 3.4-rcX ?
+>>
+>> Thanks in advance,
+>> Bjarke
+>
+> The linux-geode list is currently buggered and without an owner, as far as I know.
+>
+> -Philip
 
-* Steven Harms <sjharms@gmail.com> [2012-04-13 14:45:55 -0400]:
+That would explain it :)
 
-> This change adds 0x0489:0xe033 to the btusb module.
-> 
-> This bluetooth usb device is integrated in the Acer TimelineX AS4830TG-6808 notebook.
+Do you have a chance to push it upstream, like your changes? (Not sure
+who I should poke about it)
 
-You should break lines on column 80. I fixed this one for you.
+/Bjarke
 
-> Output from /sys/kernel/debug/usb/devices:
-> 
-> T:  Bus=01 Lev=02 Prnt=02 Port=05 Cnt=02 Dev#=  4 Spd=12   MxCh= 0
-> D:  Ver= 2.00 Cls=ff(vend.) Sub=01 Prot=01 MxPS=64 #Cfgs=  1
-> P:  Vendor=0489 ProdID=e033 Rev= 2.29
-> S:  Manufacturer=Broadcom Corp
-> S:  Product=Acer Module
-> S:  SerialNumber=60D819F74101
-> C:* #Ifs= 4 Cfg#= 1 Atr=e0 MxPwr=  0mA
-> I:* If#= 0 Alt= 0 #EPs= 3 Cls=ff(vend.) Sub=01 Prot=01 Driver=btusb
-> E:  Ad=81(I) Atr=03(Int.) MxPS=  16 Ivl=1ms
-> E:  Ad=82(I) Atr=02(Bulk) MxPS=  64 Ivl=0ms
-> E:  Ad=02(O) Atr=02(Bulk) MxPS=  64 Ivl=0ms
-> I:* If#= 1 Alt= 0 #EPs= 2 Cls=ff(vend.) Sub=01 Prot=01 Driver=btusb
-> E:  Ad=83(I) Atr=01(Isoc) MxPS=   0 Ivl=1ms
-> E:  Ad=03(O) Atr=01(Isoc) MxPS=   0 Ivl=1ms
-> I:  If#= 1 Alt= 1 #EPs= 2 Cls=ff(vend.) Sub=01 Prot=01 Driver=btusb
-> E:  Ad=83(I) Atr=01(Isoc) MxPS=   9 Ivl=1ms
-> E:  Ad=03(O) Atr=01(Isoc) MxPS=   9 Ivl=1ms
-> I:  If#= 1 Alt= 2 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
-> E:  Ad=83(I) Atr=01(Isoc) MxPS=  17 Ivl=1ms
-> E:  Ad=03(O) Atr=01(Isoc) MxPS=  17 Ivl=1ms
-> I:  If#= 1 Alt= 3 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
-> E:  Ad=83(I) Atr=01(Isoc) MxPS=  32 Ivl=1ms
-> E:  Ad=03(O) Atr=01(Isoc) MxPS=  32 Ivl=1ms
-> I:  If#= 1 Alt= 4 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
-> E:  Ad=83(I) Atr=01(Isoc) MxPS=  64 Ivl=1ms
-> E:  Ad=03(O) Atr=01(Isoc) MxPS=  64 Ivl=1ms
-> I:  If#= 1 Alt= 5 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
-> E:  Ad=83(I) Atr=01(Isoc) MxPS=  64 Ivl=1ms
-> E:  Ad=03(O) Atr=01(Isoc) MxPS=  64 Ivl=1ms
-> I:* If#= 2 Alt= 0 #EPs= 2 Cls=ff(vend.) Sub=ff Prot=ff Driver=(none)
-> E:  Ad=84(I) Atr=02(Bulk) MxPS=  32 Ivl=0ms
-> E:  Ad=04(O) Atr=02(Bulk) MxPS=  32 Ivl=0ms
-> I:* If#= 3 Alt= 0 #EPs= 0 Cls=fe(app. ) Sub=01 Prot=01 Driver=(none)
-> 
-> Signed-off-by: Steven Harms <sjharms@gmail.com>
-> ---
->  drivers/bluetooth/btusb.c |    3 +++
->  1 file changed, 3 insertions(+)
-
-Patch is applied to both bluetooth and bluetooth-next. Thanks.
-
-	Gustavo
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
