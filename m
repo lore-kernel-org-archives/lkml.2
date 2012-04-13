@@ -1,127 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752074Ab2DMRur (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Apr 2012 13:50:47 -0400
-Received: from mga09.intel.com ([134.134.136.24]:51535 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750789Ab2DMRuq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Apr 2012 13:50:46 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
-   d="scan'208";a="132170955"
-From: Ramakrishna Pallala <ramakrishna.pallala@intel.com>
-To: linux-kernel@vger.kernel.org
-Cc: Anton Vorontsov <cbouatmailru@gmail.com>,
-        Anton Vorontsov <anton.vorontsov@linaro.org>,
-        Ramakrishna Pallala <ramakrishna.pallala@intel.com>
-Subject: [PATCH] smb347_charger: Cleanup power supply registration code in probe
-Date: Fri, 13 Apr 2012 15:14:52 +0530
-Message-Id: <1334310292-22289-1-git-send-email-ramakrishna.pallala@intel.com>
-X-Mailer: git-send-email 1.7.0.4
+	id S1753379Ab2DMSCu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Apr 2012 14:02:50 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:51348 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753159Ab2DMSCs (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 Apr 2012 14:02:48 -0400
+Date: Fri, 13 Apr 2012 11:01:51 -0700
+From: tip-bot for Arnaldo Carvalho de Melo <acme@redhat.com>
+Message-ID: <tip-9nfecmgghgl5747rjxqpc28f@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, acme@redhat.com, hpa@zytor.com,
+        mingo@kernel.org, eric.dumazet@gmail.com, peterz@infradead.org,
+        efault@gmx.de, fweisbec@gmail.com, rostedt@goodmis.org,
+        tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, acme@redhat.com,
+        linux-kernel@vger.kernel.org, eric.dumazet@gmail.com, efault@gmx.de,
+        peterz@infradead.org, fweisbec@gmail.com, rostedt@goodmis.org,
+        tglx@linutronix.de
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/core] perf top: Add intel_idle to the skip list
+Git-Commit-ID: 4bea8b5cf8c6e875fa43e617cd52858a07ae8ea8
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
+MIME-Version: 1.0
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Fri, 13 Apr 2012 11:01:57 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch checks if the usb or mains charging is enabled by the
-platform before registering with the power supply class.
+Commit-ID:  4bea8b5cf8c6e875fa43e617cd52858a07ae8ea8
+Gitweb:     http://git.kernel.org/tip/4bea8b5cf8c6e875fa43e617cd52858a07ae8ea8
+Author:     Arnaldo Carvalho de Melo <acme@redhat.com>
+AuthorDate: Mon, 2 Apr 2012 11:16:24 -0300
+Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
+CommitDate: Thu, 5 Apr 2012 18:48:01 -0300
 
-Signed-off-by: Ramakrishna Pallala <ramakrishna.pallala@intel.com>
+perf top: Add intel_idle to the skip list
+
+TODO: Accrue the cycles in the skip_list to an idle total, and show this
+on the 'top' UI, as suggested by Steven.
+
+Cc: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Mike Galbraith <efault@gmx.de>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Steven Rostedt <rostedt@goodmis.org>
+Link: http://lkml.kernel.org/n/tip-9nfecmgghgl5747rjxqpc28f@git.kernel.org
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- drivers/power/smb347-charger.c |   64 ++++++++++++++++++++++-----------------
- 1 files changed, 36 insertions(+), 28 deletions(-)
+ tools/perf/builtin-top.c |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
 
-diff --git a/drivers/power/smb347-charger.c b/drivers/power/smb347-charger.c
-index ce1694d..1b5d2e2 100644
---- a/drivers/power/smb347-charger.c
-+++ b/drivers/power/smb347-charger.c
-@@ -1185,21 +1185,34 @@ static int smb347_probe(struct i2c_client *client,
- 	if (ret < 0)
- 		return ret;
+diff --git a/tools/perf/builtin-top.c b/tools/perf/builtin-top.c
+index e3c63ae..fab0a1c 100644
+--- a/tools/perf/builtin-top.c
++++ b/tools/perf/builtin-top.c
+@@ -615,6 +615,7 @@ process_hotkey:
  
--	smb->mains.name = "smb347-mains";
--	smb->mains.type = POWER_SUPPLY_TYPE_MAINS;
--	smb->mains.get_property = smb347_mains_get_property;
--	smb->mains.properties = smb347_mains_properties;
--	smb->mains.num_properties = ARRAY_SIZE(smb347_mains_properties);
--	smb->mains.supplied_to = battery;
--	smb->mains.num_supplicants = ARRAY_SIZE(battery);
--
--	smb->usb.name = "smb347-usb";
--	smb->usb.type = POWER_SUPPLY_TYPE_USB;
--	smb->usb.get_property = smb347_usb_get_property;
--	smb->usb.properties = smb347_usb_properties;
--	smb->usb.num_properties = ARRAY_SIZE(smb347_usb_properties);
--	smb->usb.supplied_to = battery;
--	smb->usb.num_supplicants = ARRAY_SIZE(battery);
-+	if (smb->pdata->use_mains) {
-+		smb->mains.name = "smb347-mains";
-+		smb->mains.type = POWER_SUPPLY_TYPE_MAINS;
-+		smb->mains.get_property = smb347_mains_get_property;
-+		smb->mains.properties = smb347_mains_properties;
-+		smb->mains.num_properties = ARRAY_SIZE(smb347_mains_properties);
-+		smb->mains.supplied_to = battery;
-+		smb->mains.num_supplicants = ARRAY_SIZE(battery);
-+		ret = power_supply_register(dev, &smb->mains);
-+		if (ret < 0)
-+			return ret;
-+	}
-+
-+	if (smb->pdata->use_usb) {
-+		smb->usb.name = "smb347-usb";
-+		smb->usb.type = POWER_SUPPLY_TYPE_USB;
-+		smb->usb.get_property = smb347_usb_get_property;
-+		smb->usb.properties = smb347_usb_properties;
-+		smb->usb.num_properties = ARRAY_SIZE(smb347_usb_properties);
-+		smb->usb.supplied_to = battery;
-+		smb->usb.num_supplicants = ARRAY_SIZE(battery);
-+		ret = power_supply_register(dev, &smb->usb);
-+		if (ret < 0) {
-+			if (smb->pdata->use_mains)
-+				power_supply_unregister(&smb->mains);
-+			return ret;
-+		}
-+	}
- 
- 	smb->battery.name = "smb347-battery";
- 	smb->battery.type = POWER_SUPPLY_TYPE_BATTERY;
-@@ -1207,20 +1220,13 @@ static int smb347_probe(struct i2c_client *client,
- 	smb->battery.properties = smb347_battery_properties;
- 	smb->battery.num_properties = ARRAY_SIZE(smb347_battery_properties);
- 
--	ret = power_supply_register(dev, &smb->mains);
--	if (ret < 0)
--		return ret;
--
--	ret = power_supply_register(dev, &smb->usb);
--	if (ret < 0) {
--		power_supply_unregister(&smb->mains);
--		return ret;
--	}
- 
- 	ret = power_supply_register(dev, &smb->battery);
- 	if (ret < 0) {
--		power_supply_unregister(&smb->usb);
--		power_supply_unregister(&smb->mains);
-+		if (smb->pdata->use_usb)
-+			power_supply_unregister(&smb->usb);
-+		if (smb->pdata->use_mains)
-+			power_supply_unregister(&smb->mains);
- 		return ret;
- 	}
- 
-@@ -1255,8 +1261,10 @@ static int smb347_remove(struct i2c_client *client)
- 	}
- 
- 	power_supply_unregister(&smb->battery);
--	power_supply_unregister(&smb->usb);
--	power_supply_unregister(&smb->mains);
-+	if (smb->pdata->use_usb)
-+		power_supply_unregister(&smb->usb);
-+	if (smb->pdata->use_mains)
-+		power_supply_unregister(&smb->mains);
- 	return 0;
- }
- 
--- 
-1.7.0.4
-
+ /* Tag samples to be skipped. */
+ static const char *skip_symbols[] = {
++	"intel_idle",
+ 	"default_idle",
+ 	"native_safe_halt",
+ 	"cpu_idle",
