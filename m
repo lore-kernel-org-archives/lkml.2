@@ -1,56 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754312Ab2DMW14 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Apr 2012 18:27:56 -0400
-Received: from na3sys009aog119.obsmtp.com ([74.125.149.246]:58682 "EHLO
-	na3sys009aog119.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752521Ab2DMW1z convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Apr 2012 18:27:55 -0400
+	id S1754857Ab2DMWcs (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Apr 2012 18:32:48 -0400
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:32821 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752594Ab2DMWcr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 Apr 2012 18:32:47 -0400
+Date: Fri, 13 Apr 2012 19:32:41 -0300
+From: Gustavo Padovan <gustavo@padovan.org>
+To: Steven Harms <sjharms@gmail.com>
+Cc: Marcel Holtmann <marcel@holtmann.org>,
+        Johan Hedberg <johan.hedberg@gmail.com>,
+        linux-bluetooth@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/1] Add Foxconn / Hon Hai IDs for btusb module
+Message-ID: <20120413223241.GJ1680@joana>
+Mail-Followup-To: Gustavo Padovan <gustavo@padovan.org>,
+	Steven Harms <sjharms@gmail.com>,
+	Marcel Holtmann <marcel@holtmann.org>,
+	Johan Hedberg <johan.hedberg@gmail.com>,
+	linux-bluetooth@vger.kernel.org, linux-kernel@vger.kernel.org
+References: <1334342755-7371-1-git-send-email-sjharms@gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <4F8672CC.2040500@st.com>
-References: <1334192572-12499-1-git-send-email-mturquette@linaro.org>
- <1334192572-12499-3-git-send-email-mturquette@linaro.org> <4F8672CC.2040500@st.com>
-From: "Turquette, Mike" <mturquette@ti.com>
-Date: Fri, 13 Apr 2012 15:27:32 -0700
-Message-ID: <CAJOA=zPfYTj=o1HKiBaL5J+aa4BsTFPFDYZ5FcBkNzRd7jTZXA@mail.gmail.com>
-Subject: Re: [PATCH 02/13] clk: core: remove dead code paths
-To: Viresh Kumar <viresh.kumar@st.com>
-Cc: Andrew Lunn <andrew@lunn.ch>, Rajendra Nayak <rnayak@ti.com>,
-        "linaro-dev@lists.linaro.org" <linaro-dev@lists.linaro.org>,
-        "patches@linaro.org" <patches@linaro.org>,
-        Sascha Hauer <s.hauer@pengutronix.de>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Saravana Kannan <skannan@codeaurora.org>,
-        Olof Johansson <olof@lixom.net>, Russell King <linux@arm.linux.org.uk>,
-        "arnd.bergmann@linaro.org" <arnd.bergmann@linaro.org>,
-        Richard Zhao <richard.zhao@linaro.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1334342755-7371-1-git-send-email-sjharms@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 11, 2012 at 11:14 PM, Viresh Kumar <viresh.kumar@st.com> wrote:
-> On 4/12/2012 6:32 AM, Mike Turquette wrote:
->> diff --git a/drivers/clk/clk.c b/drivers/clk/clk.c
->> index 3ed36d3..4daacf5 100644
->> --- a/drivers/clk/clk.c
->> +++ b/drivers/clk/clk.c
->> @@ -194,7 +194,7 @@ static int __init clk_debug_init(void)
->>  late_initcall(clk_debug_init);
->>  #else
->>  static inline int clk_debug_register(struct clk *clk) { return 0; }
->> -#endif /* CONFIG_COMMON_CLK_DEBUG */
->> +#endif
->
-> Why is this updated? Isn't this considered good practice anymore?
+Hi Steven,
 
-See comments in this thread:
-http://article.gmane.org/gmane.linux.kernel/1276102
+* Steven Harms <sjharms@gmail.com> [2012-04-13 14:45:55 -0400]:
 
-Regards,
-Mike
+> This change adds 0x0489:0xe033 to the btusb module.
+> 
+> This bluetooth usb device is integrated in the Acer TimelineX AS4830TG-6808 notebook.
+
+You should break lines on column 80. I fixed this one for you.
+
+> Output from /sys/kernel/debug/usb/devices:
+> 
+> T:  Bus=01 Lev=02 Prnt=02 Port=05 Cnt=02 Dev#=  4 Spd=12   MxCh= 0
+> D:  Ver= 2.00 Cls=ff(vend.) Sub=01 Prot=01 MxPS=64 #Cfgs=  1
+> P:  Vendor=0489 ProdID=e033 Rev= 2.29
+> S:  Manufacturer=Broadcom Corp
+> S:  Product=Acer Module
+> S:  SerialNumber=60D819F74101
+> C:* #Ifs= 4 Cfg#= 1 Atr=e0 MxPwr=  0mA
+> I:* If#= 0 Alt= 0 #EPs= 3 Cls=ff(vend.) Sub=01 Prot=01 Driver=btusb
+> E:  Ad=81(I) Atr=03(Int.) MxPS=  16 Ivl=1ms
+> E:  Ad=82(I) Atr=02(Bulk) MxPS=  64 Ivl=0ms
+> E:  Ad=02(O) Atr=02(Bulk) MxPS=  64 Ivl=0ms
+> I:* If#= 1 Alt= 0 #EPs= 2 Cls=ff(vend.) Sub=01 Prot=01 Driver=btusb
+> E:  Ad=83(I) Atr=01(Isoc) MxPS=   0 Ivl=1ms
+> E:  Ad=03(O) Atr=01(Isoc) MxPS=   0 Ivl=1ms
+> I:  If#= 1 Alt= 1 #EPs= 2 Cls=ff(vend.) Sub=01 Prot=01 Driver=btusb
+> E:  Ad=83(I) Atr=01(Isoc) MxPS=   9 Ivl=1ms
+> E:  Ad=03(O) Atr=01(Isoc) MxPS=   9 Ivl=1ms
+> I:  If#= 1 Alt= 2 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
+> E:  Ad=83(I) Atr=01(Isoc) MxPS=  17 Ivl=1ms
+> E:  Ad=03(O) Atr=01(Isoc) MxPS=  17 Ivl=1ms
+> I:  If#= 1 Alt= 3 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
+> E:  Ad=83(I) Atr=01(Isoc) MxPS=  32 Ivl=1ms
+> E:  Ad=03(O) Atr=01(Isoc) MxPS=  32 Ivl=1ms
+> I:  If#= 1 Alt= 4 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
+> E:  Ad=83(I) Atr=01(Isoc) MxPS=  64 Ivl=1ms
+> E:  Ad=03(O) Atr=01(Isoc) MxPS=  64 Ivl=1ms
+> I:  If#= 1 Alt= 5 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
+> E:  Ad=83(I) Atr=01(Isoc) MxPS=  64 Ivl=1ms
+> E:  Ad=03(O) Atr=01(Isoc) MxPS=  64 Ivl=1ms
+> I:* If#= 2 Alt= 0 #EPs= 2 Cls=ff(vend.) Sub=ff Prot=ff Driver=(none)
+> E:  Ad=84(I) Atr=02(Bulk) MxPS=  32 Ivl=0ms
+> E:  Ad=04(O) Atr=02(Bulk) MxPS=  32 Ivl=0ms
+> I:* If#= 3 Alt= 0 #EPs= 0 Cls=fe(app. ) Sub=01 Prot=01 Driver=(none)
+> 
+> Signed-off-by: Steven Harms <sjharms@gmail.com>
+> ---
+>  drivers/bluetooth/btusb.c |    3 +++
+>  1 file changed, 3 insertions(+)
+
+Patch is applied to both bluetooth and bluetooth-next. Thanks.
+
+	Gustavo
