@@ -1,29 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754816Ab2DMSKz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Apr 2012 14:10:55 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:51539 "EHLO
+	id S1755338Ab2DMSLO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Apr 2012 14:11:14 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:51546 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752861Ab2DMSKy (ORCPT
+	with ESMTP id S1753919Ab2DMSLM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Apr 2012 14:10:54 -0400
-Date: Fri, 13 Apr 2012 11:10:01 -0700
-From: tip-bot for Arnaldo Carvalho de Melo <acme@redhat.com>
-Message-ID: <tip-706qqe2xibeiocuabp39mby7@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, eranian@google.com, paulus@samba.org,
-        acme@redhat.com, hpa@zytor.com, mingo@kernel.org,
-        torvalds@linux-foundation.org, peterz@infradead.org, efault@gmx.de,
-        namhyung@gmail.com, fweisbec@gmail.com,
-        masami.hiramatsu.pt@hitachi.com, dsahern@gmail.com, tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, acme@redhat.com, paulus@samba.org,
-        eranian@google.com, linux-kernel@vger.kernel.org,
-        torvalds@linux-foundation.org, efault@gmx.de, peterz@infradead.org,
-        namhyung@gmail.com, masami.hiramatsu.pt@hitachi.com,
-        fweisbec@gmail.com, dsahern@gmail.com, tglx@linutronix.de
+	Fri, 13 Apr 2012 14:11:12 -0400
+Date: Fri, 13 Apr 2012 11:10:49 -0700
+From: tip-bot for Ashay Rane <ashay.rane@tacc.utexas.edu>
+Message-ID: <tip-h4nfjm8msedlk8gxkzivfh5y@git.kernel.org>
+Cc: acme@redhat.com, linux-kernel@vger.kernel.org, hpa@zytor.com,
+        mingo@kernel.org, ashay.rane@tacc.utexas.edu, tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        acme@redhat.com, tglx@linutronix.de, ashay.rane@tacc.utexas.edu
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf annotate browser:
-  Initial support for navigating jump instructions
-Git-Commit-ID: 08be4eeda40ea813fa326036fdaf8fa7667eb021
+Subject: [tip:perf/core] perf report:
+  Correct display of samples and events in header
+Git-Commit-ID: cc68628096b813010f30f69fcf7d1832d18fa767
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -32,128 +26,86 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Fri, 13 Apr 2012 11:10:06 -0700 (PDT)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Fri, 13 Apr 2012 11:10:57 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  08be4eeda40ea813fa326036fdaf8fa7667eb021
-Gitweb:     http://git.kernel.org/tip/08be4eeda40ea813fa326036fdaf8fa7667eb021
-Author:     Arnaldo Carvalho de Melo <acme@redhat.com>
-AuthorDate: Tue, 3 Apr 2012 21:35:35 -0300
+Commit-ID:  cc68628096b813010f30f69fcf7d1832d18fa767
+Gitweb:     http://git.kernel.org/tip/cc68628096b813010f30f69fcf7d1832d18fa767
+Author:     Ashay Rane <ashay.rane@tacc.utexas.edu>
+AuthorDate: Thu, 5 Apr 2012 21:01:01 -0500
 Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Sat, 7 Apr 2012 16:14:23 -0300
+CommitDate: Sat, 7 Apr 2012 17:29:41 -0300
 
-perf annotate browser: Initial support for navigating jump instructions
+perf report: Correct display of samples and events in header
 
-Now it is possible to press ENTER or -> (right arrow) on jump
-instructions to navigate to the offset it points to.
+This patch prints the number of samples and the count of performance
+events separately.
 
-More work needed to support <- to go back, i.e. a jump history.
+This allows comparing performance of different applications with each
+other.
 
-This is done just like the callq case, i.e. parsing objdump output
-lines, but should move to use Masami's disassembler at some point.
+Previously, the sample count was displayed against an 'Events:' heading.
+With this patch, the header now reads (for example):
 
-Suggested-by: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: David Ahern <dsahern@gmail.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: Mike Galbraith <efault@gmx.de>
-Cc: Namhyung Kim <namhyung@gmail.com>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/n/tip-706qqe2xibeiocuabp39mby7@git.kernel.org
+Samples: 5K of event 'instructions'
+Event count (approx.): 2993026545
+
+The patch covers both the stdio and the browser interface.
+
+Signed-off-by: Ashay Rane <ashay.rane@tacc.utexas.edu>
+[ committer note: Fixed wrt e7f01d1 ]
+Link: http://lkml.kernel.org/n/tip-h4nfjm8msedlk8gxkzivfh5y@git.kernel.org
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/util/ui/browsers/annotate.c |   63 +++++++++++++++++++++++++++++++-
- 1 files changed, 61 insertions(+), 2 deletions(-)
+ tools/perf/builtin-report.c         |   11 +++++++----
+ tools/perf/util/ui/browsers/hists.c |   10 +++++++---
+ 2 files changed, 14 insertions(+), 7 deletions(-)
 
-diff --git a/tools/perf/util/ui/browsers/annotate.c b/tools/perf/util/ui/browsers/annotate.c
-index c52543c..752d8d0 100644
---- a/tools/perf/util/ui/browsers/annotate.c
-+++ b/tools/perf/util/ui/browsers/annotate.c
-@@ -168,6 +168,9 @@ static void annotate_browser__set_top(struct annotate_browser *self,
- 	while (self->b.top_idx != 0 && back != 0) {
- 		pos = list_entry(pos->node.prev, struct objdump_line, node);
+diff --git a/tools/perf/builtin-report.c b/tools/perf/builtin-report.c
+index 2e31743..cec2b8c 100644
+--- a/tools/perf/builtin-report.c
++++ b/tools/perf/builtin-report.c
+@@ -296,12 +296,15 @@ static size_t hists__fprintf_nr_sample_events(struct hists *self,
+ {
+ 	size_t ret;
+ 	char unit;
+-	unsigned long nr_events = self->stats.nr_events[PERF_RECORD_SAMPLE];
++	unsigned long nr_samples = self->stats.nr_events[PERF_RECORD_SAMPLE];
++	u64 nr_events = self->stats.total_period;
  
-+		if (objdump_line__filter(&self->b, &pos->node))
-+			continue;
+-	nr_events = convert_unit(nr_events, &unit);
+-	ret = fprintf(fp, "# Events: %lu%c", nr_events, unit);
++	nr_samples = convert_unit(nr_samples, &unit);
++	ret = fprintf(fp, "# Samples: %lu%c", nr_samples, unit);
+ 	if (evname != NULL)
+-		ret += fprintf(fp, " %s", evname);
++		ret += fprintf(fp, " of event '%s'", evname);
 +
- 		--self->b.top_idx;
- 		--back;
- 	}
-@@ -296,6 +299,61 @@ static bool annotate_browser__callq(struct annotate_browser *browser,
- 	return true;
++	ret += fprintf(fp, "\n# Event count (approx.): %lu", nr_events);
+ 	return ret + fprintf(fp, "\n#\n");
  }
  
-+static struct objdump_line *
-+	annotate_browser__find_offset(struct annotate_browser *browser,
-+				      s64 offset, s64 *idx)
-+{
-+	struct map_symbol *ms = browser->b.priv;
-+	struct symbol *sym = ms->sym;
-+	struct annotation *notes = symbol__annotation(sym);
-+	struct objdump_line *pos;
+diff --git a/tools/perf/util/ui/browsers/hists.c b/tools/perf/util/ui/browsers/hists.c
+index 2f83e5d..1b820ed 100644
+--- a/tools/perf/util/ui/browsers/hists.c
++++ b/tools/perf/util/ui/browsers/hists.c
+@@ -840,10 +840,14 @@ static int hists__browser_title(struct hists *self, char *bf, size_t size,
+ 	int printed;
+ 	const struct dso *dso = self->dso_filter;
+ 	const struct thread *thread = self->thread_filter;
+-	unsigned long nr_events = self->stats.nr_events[PERF_RECORD_SAMPLE];
++	unsigned long nr_samples = self->stats.nr_events[PERF_RECORD_SAMPLE];
++	u64 nr_events = self->stats.total_period;
 +
-+	*idx = 0;
-+	list_for_each_entry(pos, &notes->src->source, node) {
-+		if (pos->offset == offset)
-+			return pos;
-+		if (!objdump_line__filter(&browser->b, &pos->node))
-+			++*idx;
-+	}
-+
-+	return NULL;
-+}
-+
-+static bool annotate_browser__jump(struct annotate_browser *browser)
-+{
-+	const char *jumps[] = { "je ", "jne ", "ja ", "jmpq ", "js ", "jmp ", NULL };
-+	struct objdump_line *line;
-+	s64 idx, offset;
-+	char *s = NULL;
-+	int i = 0;
-+
-+	while (jumps[i]) {
-+		s = strstr(browser->selection->line, jumps[i++]);
-+		if (s)
-+			break;
-+	}
-+
-+	if (s == NULL)
-+		return false;
-+
-+	s = strchr(s, '+');
-+	if (s++ == NULL) {
-+		ui_helpline__puts("Invallid jump instruction.");
-+		return true;
-+	}
-+
-+	offset = strtoll(s, NULL, 16);
-+	line = annotate_browser__find_offset(browser, offset, &idx);
-+	if (line == NULL) {
-+		ui_helpline__puts("Invallid jump offset");
-+		return true;
-+	}
-+
-+	annotate_browser__set_top(browser, line, idx);
-+	
-+	return true;
-+}
-+
- static int annotate_browser__run(struct annotate_browser *self, int evidx,
- 				 void(*timer)(void *arg),
- 				 void *arg, int delay_secs)
-@@ -376,8 +434,9 @@ static int annotate_browser__run(struct annotate_browser *self, int evidx,
- 				ui_helpline__puts("Huh? No selection. Report to linux-kernel@vger.kernel.org");
- 			else if (self->selection->offset == -1)
- 				ui_helpline__puts("Actions are only available for assembly lines.");
--			else if (!annotate_browser__callq(self, evidx, timer, arg, delay_secs))
--				ui_helpline__puts("Actions are only available for the 'callq' instruction.");
-+			else if (!(annotate_browser__jump(self) ||
-+				   annotate_browser__callq(self, evidx, timer, arg, delay_secs)))
-+				ui_helpline__puts("Actions are only available for the 'callq' and jump instructions.");
- 			continue;
- 		case K_LEFT:
- 		case K_ESC:
++	nr_samples = convert_unit(nr_samples, &unit);
++	printed = scnprintf(bf, size,
++			   "Samples: %lu%c of event '%s', Event count (approx.): %lu",
++			   nr_samples, unit, ev_name, nr_events);
+ 
+-	nr_events = convert_unit(nr_events, &unit);
+-	printed = scnprintf(bf, size, "Events: %lu%c %s", nr_events, unit, ev_name);
+ 
+ 	if (self->uid_filter_str)
+ 		printed += snprintf(bf + printed, size - printed,
