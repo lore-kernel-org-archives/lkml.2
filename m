@@ -1,76 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754665Ab2DMOZi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Apr 2012 10:25:38 -0400
-Received: from mail-pz0-f52.google.com ([209.85.210.52]:37797 "EHLO
-	mail-pz0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753607Ab2DMOZf (ORCPT
+	id S1751726Ab2DMOcs (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Apr 2012 10:32:48 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:42299 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751144Ab2DMOcr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Apr 2012 10:25:35 -0400
-Date: Fri, 13 Apr 2012 23:25:28 +0900
-From: Takuya Yoshikawa <takuya.yoshikawa@gmail.com>
-To: Takuya Yoshikawa <takuya.yoshikawa@gmail.com>
-Cc: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>,
-        Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
-        Xiao Guangrong <xiaoguangrong.eric@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>, KVM <kvm@vger.kernel.org>
-Subject: Re: [PATCH 00/13] KVM: MMU: fast page fault
-Message-Id: <20120413232528.c5ddbddb3cc0870d6e85a332@gmail.com>
-In-Reply-To: <20120411231441.9d0984672dd252b806f99128@gmail.com>
-References: <4F742951.7080003@linux.vnet.ibm.com>
-	<4F82E04E.6000900@redhat.com>
-	<20120409175829.GB21894@amt.cnet>
-	<4F8329D3.7000605@gmail.com>
-	<20120409194614.GB23053@amt.cnet>
-	<4F840DD2.3090101@redhat.com>
-	<20120410204031.ffb5b976225ac9fe6dae474e@gmail.com>
-	<4F842074.1050108@linux.vnet.ibm.com>
-	<20120411211514.35db29c11460516e604059b6@gmail.com>
-	<4F857B61.9080602@linux.vnet.ibm.com>
-	<20120411231441.9d0984672dd252b806f99128@gmail.com>
-X-Mailer: Sylpheed 3.2.0beta3 (GTK+ 2.24.6; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Fri, 13 Apr 2012 10:32:47 -0400
+Date: Fri, 13 Apr 2012 15:32:43 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: "Ying-Chun Liu (PaulLiu)" <paul.liu@linaro.org>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linaro-dev@lists.linaro.org, patches@linaro.org,
+        Samuel Ortiz <sameo@linux.intel.com>, Shawn Guo <shawn.guo@linaro.org>,
+        Ashish Jangam <ashish.jangam@kpitcummins.com>
+Subject: Re: [PATCH v2 1/2] mfd: da9052: add device-tree support for i2c
+ driver
+Message-ID: <20120413143243.GW3168@opensource.wolfsonmicro.com>
+References: <1334324261-5476-1-git-send-email-paul.liu@linaro.org>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="L0mHLbha4YKvhGtu"
+Content-Disposition: inline
+In-Reply-To: <1334324261-5476-1-git-send-email-paul.liu@linaro.org>
+X-Cookie: A is for Apple.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Xiao,
 
-Takuya Yoshikawa <takuya.yoshikawa@gmail.com> wrote:
+--L0mHLbha4YKvhGtu
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-> > What is your really want to say but i missed?
-> 
-> How to improve and what we should pay for that.
-> 
-> Note that I am not objecting to O(1) itself.
-> 
+On Fri, Apr 13, 2012 at 09:37:40PM +0800, Ying-Chun Liu (PaulLiu) wrote:
 
-I forgot to say one important thing -- I might give you wrong impression.
+> +		regulators {
+> +			buck0 {
+> +				regulator-name = "DA9052_BUCK_CORE";
+> +				regulator-min-microvolt = <500000>;
+> +				regulator-max-microvolt = <2075000>;
+> +			};
 
-I am perfectly fine with your lock-less work.  It is really nice!
+This is more of a nit but these names look like they aren't terribly
+idiomatic and could just be omitted - normally the name is used to tie
+the name to the supply on the schematic so the above might be "VCORE" or
+something.  If no name is provided then whatever the driver provides
+will be used.
 
-The reason I say much about O(1) is that O(1) and rmap based
-GET_DIRTY_LOG have fundamentally different characteristics.
+--L0mHLbha4YKvhGtu
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-I am thinking really seriously how to make dirty page tracking work
-well with QEMU in the future.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
 
-For example, I am thinking about multi-threaded and fine-grained
-GET_DIRTY_LOG.
+iQIcBAEBAgAGBQJPiDkFAAoJEBus8iNuMP3dmPsP/2dsHyQenKm02tknKXf3Ihnt
+hajwLHUZopKM+0u2nf5WbNSaMugVOR/OxZ5yVuGFkgkqgAsciQ1F9//6l2ZPQIbj
+A5CvGz6bdhkAgUh5sOhWT0s6pvGdJxbmJARExtCJ2iBAw/XagLTT4AGWcZtdnZuI
+UxvGAZwTb3anLW/YKOGJDgMLXUEllMyq2sagF5s4VlgjYMqKiW0UGNilMdYYB6q3
+thFhzd1xVkoXPWdWSBx0M2YJXqGn8q8Sv04Jq0SI3Dze6AmnoqOTWMVmTjs5VA0W
+8Nn1ZNRDqE43CS7cIgv+l2lZuW5ELl7sUtt8NNu1xbtxE6nYBLL/qU0vp8yu3ALT
+Tp/SOdrIymaonGsNv87+reNYZGOho9QqZjFqSfsOk8lovs2JPeSBOGZMeoPI9Kwj
+UCvNRsVMU6Vz4wlDIVn3AmSwYEZrL88XkyGEVicNuFcnNnvP+0y0SCM5ILRxii7e
+clsbDR+QTLlE7coniLh0Q6yNIQTcZeEQqccKNLeMn+189M0NcijgyJ/xx8TMhLa5
+aTT5lUbAMFBLs0hwWQk//DLPlqAO74gUdUOukhW227cQ+hK3LTWVgPO8GDk9AG42
+OWbSknWhJo5EnQ9fWvSsV6LHhknAK7By84psliywuOxus5bn4uZqhoU+6OY94Gz8
+OQVOtmyD/KKaH2cqJQqi
+=Bte1
+-----END PGP SIGNATURE-----
 
-If we use rmap based GET_DIRTY_LOG, we can restrict write protection to
-only a selected area of one guest memory slot.
-
-So we may be able to make each thread process dirty pages independently
-from other threads by calling GET_DIRTY_LOG for its own area.
-
-But I know that O(1) has its own good point.
-So please wait a bit.  I will write up what I am thinking or send patches.
-
-Anyway, I am looking forward to your lock-less work!
-It will improve the current GET_DIRTY_LOG performance.
-
-Thanks,
-	Takuya
+--L0mHLbha4YKvhGtu--
