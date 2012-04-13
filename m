@@ -1,147 +1,151 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756675Ab2DMTz0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Apr 2012 15:55:26 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:25994 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755746Ab2DMTzY (ORCPT
+	id S932075Ab2DMULr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Apr 2012 16:11:47 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:37922 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756243Ab2DMULp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Apr 2012 15:55:24 -0400
-X-Authority-Analysis: v=2.0 cv=P4S4d18u c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=XQbtiDEiEegA:10 a=VcnaFJ16KZsA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=VwQbUJbxAAAA:8 a=JfrnYn6hAAAA:8 a=meVymXHHAAAA:8 a=Vby4-OV0FW7ekriZ1IsA:9 a=QUOCoDCMEC9p25I3-yIA:7 a=PUjeQqilurYA:10 a=3Rfx1nUSh_UA:10 a=jeBq3FmKZ4MA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.80.29
-Message-ID: <1334346922.23924.370.camel@gandalf.stny.rr.com>
-Subject: [PATCH][GIT PULL][v3.5] sched_rt: Avoid unnecessary dequeue and
- enqueue of pushable tasks in set_cpus_allowed_rt()
-From: Steven Rostedt <rostedt@goodmis.org>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Tkhai Kirill <tkhai@yandex.ru>
-Date: Fri, 13 Apr 2012 15:55:22 -0400
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.2.2-1 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Fri, 13 Apr 2012 16:11:45 -0400
+From: Tejun Heo <tj@kernel.org>
+To: axboe@kernel.dk
+Cc: vgoyal@redhat.com, ctalbott@google.com, rni@google.com,
+        linux-kernel@vger.kernel.org, cgroups@vger.kernel.org,
+        containers@lists.linux-foundation.org, Tejun Heo <tj@kernel.org>
+Subject: [PATCH 02/11] blkcg: kill blkio_list and replace blkio_list_lock with a mutex
+Date: Fri, 13 Apr 2012 13:11:26 -0700
+Message-Id: <1334347895-6268-3-git-send-email-tj@kernel.org>
+X-Mailer: git-send-email 1.7.7.3
+In-Reply-To: <1334347895-6268-1-git-send-email-tj@kernel.org>
+References: <1334347895-6268-1-git-send-email-tj@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+With blkio_policy[], blkio_list is redundant and hinders with
+per-queue policy activation.  Remove it.  Also, replace
+blkio_list_lock with a mutex blkcg_pol_mutex and let it protect the
+whole [un]registration.
 
-Ingo,
+This is to prepare for per-queue policy activation and doesn't cause
+any functional difference.
 
-Please pull the latest tip/sched/core tree, which can be found at:
+Signed-off-by: Tejun Heo <tj@kernel.org>
+Cc: Vivek Goyal <vgoyal@redhat.com>
+---
+ block/blk-cgroup.c |   32 +++++++++++++++++---------------
+ block/blk-cgroup.h |    1 -
+ 2 files changed, 17 insertions(+), 16 deletions(-)
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/rostedt/linux-trace.git
-tip/sched/core
-
-Head SHA1: 8d3d5ada56a692d36a9d55858881147ec10cfeb6
-
-
-Kirill Tkhai (1):
-      sched_rt: Avoid unnecessary dequeue and enqueue of pushable tasks in set_cpus_allowed_rt()
-
-----
- kernel/sched/rt.c |   56 ++++++++++++++++++++++++----------------------------
- 1 files changed, 26 insertions(+), 30 deletions(-)
----------------------------
-commit 8d3d5ada56a692d36a9d55858881147ec10cfeb6
-Author: Kirill Tkhai <tkhai@yandex.ru>
-Date:   Wed Apr 11 09:06:04 2012 +0400
-
-    sched_rt: Avoid unnecessary dequeue and enqueue of pushable tasks in set_cpus_allowed_rt()
-    
-    Migration status depends on a difference of weight from 0 and 1.
-    If weight > 1 (<= 1) and old weight <= 1 (> 1) then task becomes
-    pushable (or not pushable). We are not insterested in its exact
-    values, is it 3 or 4, for example.
-    Now if we are changing affinity from a set of 3 cpus to a set of 4, the-
-    task will be dequeued and enqueued sequentially without important
-    difference in comparison with initial state. The only difference is in
-    internal representation of plist queue of pushable tasks and the fact
-    that the task may won't be the first in a sequence of the same priority
-    tasks. But it seems to me it gives nothing.
-    
-    Link: http://lkml.kernel.org/r/273741334120764@web83.yandex.ru
-    
-    Cc: Ingo Molnar <mingo@elte.hu>
-    Cc: Peter Zijlstra <peterz@infradead.org>
-    Signed-off-by: Tkhai Kirill <tkhai@yandex.ru>
-    Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
-
-diff --git a/kernel/sched/rt.c b/kernel/sched/rt.c
-index b60dad7..90607a9 100644
---- a/kernel/sched/rt.c
-+++ b/kernel/sched/rt.c
-@@ -1803,44 +1803,40 @@ static void task_woken_rt(struct rq *rq, struct task_struct *p)
- static void set_cpus_allowed_rt(struct task_struct *p,
- 				const struct cpumask *new_mask)
- {
--	int weight = cpumask_weight(new_mask);
-+	struct rq *rq;
-+	int weight;
+diff --git a/block/blk-cgroup.c b/block/blk-cgroup.c
+index 9449c38..af665fe 100644
+--- a/block/blk-cgroup.c
++++ b/block/blk-cgroup.c
+@@ -24,9 +24,7 @@
  
- 	BUG_ON(!rt_task(p));
+ #define MAX_KEY_LEN 100
  
--	/*
--	 * Update the migration status of the RQ if we have an RT task
--	 * which is running AND changing its weight value.
--	 */
--	if (p->on_rq && (weight != p->rt.nr_cpus_allowed)) {
--		struct rq *rq = task_rq(p);
+-static DEFINE_SPINLOCK(blkio_list_lock);
+-static LIST_HEAD(blkio_list);
 -
--		if (!task_current(rq, p)) {
--			/*
--			 * Make sure we dequeue this task from the pushable list
--			 * before going further.  It will either remain off of
--			 * the list because we are no longer pushable, or it
--			 * will be requeued.
--			 */
--			if (p->rt.nr_cpus_allowed > 1)
--				dequeue_pushable_task(rq, p);
-+	if (!p->on_rq)
-+		return;
++static DEFINE_MUTEX(blkcg_pol_mutex);
+ static DEFINE_MUTEX(all_q_mutex);
+ static LIST_HEAD(all_q_list);
  
--			/*
--			 * Requeue if our weight is changing and still > 1
--			 */
--			if (weight > 1)
--				enqueue_pushable_task(rq, p);
-+	weight = cpumask_weight(new_mask);
+@@ -311,8 +309,9 @@ blkiocg_reset_stats(struct cgroup *cgroup, struct cftype *cftype, u64 val)
+ 	struct blkio_cgroup *blkcg = cgroup_to_blkio_cgroup(cgroup);
+ 	struct blkio_group *blkg;
+ 	struct hlist_node *n;
++	int i;
  
--		}
-+	/*
-+	 * Only update if the process changes its state from whether it
-+	 * can migrate or not.
-+	 */
-+	if ((p->rt.nr_cpus_allowed > 1) == (weight > 1))
-+		return;
+-	spin_lock(&blkio_list_lock);
++	mutex_lock(&blkcg_pol_mutex);
+ 	spin_lock_irq(&blkcg->lock);
  
--		if ((p->rt.nr_cpus_allowed <= 1) && (weight > 1)) {
--			rq->rt.rt_nr_migratory++;
--		} else if ((p->rt.nr_cpus_allowed > 1) && (weight <= 1)) {
--			BUG_ON(!rq->rt.rt_nr_migratory);
--			rq->rt.rt_nr_migratory--;
--		}
-+	rq = task_rq(p);
+ 	/*
+@@ -321,15 +320,16 @@ blkiocg_reset_stats(struct cgroup *cgroup, struct cftype *cftype, u64 val)
+ 	 * anyway.  If you get hit by a race, retry.
+ 	 */
+ 	hlist_for_each_entry(blkg, n, &blkcg->blkg_list, blkcg_node) {
+-		struct blkio_policy_type *pol;
++		for (i = 0; i < BLKIO_NR_POLICIES; i++) {
++			struct blkio_policy_type *pol = blkio_policy[i];
  
--		update_rt_migration(&rq->rt);
-+	/*
-+	 * The process used to be able to migrate OR it can now migrate
-+	 */
-+	if (weight <= 1) {
-+		if (!task_current(rq, p))
-+			dequeue_pushable_task(rq, p);
-+		BUG_ON(!rq->rt.rt_nr_migratory);
-+		rq->rt.rt_nr_migratory--;
-+	} else {
-+		if (!task_current(rq, p))
-+			enqueue_pushable_task(rq, p);
-+		rq->rt.rt_nr_migratory++;
+-		list_for_each_entry(pol, &blkio_list, list)
+-			if (pol->ops.blkio_reset_group_stats_fn)
++			if (pol && pol->ops.blkio_reset_group_stats_fn)
+ 				pol->ops.blkio_reset_group_stats_fn(blkg);
++		}
  	}
-+
-+	update_rt_migration(&rq->rt);
+ 
+ 	spin_unlock_irq(&blkcg->lock);
+-	spin_unlock(&blkio_list_lock);
++	mutex_unlock(&blkcg_pol_mutex);
+ 	return 0;
  }
  
- /* Assumes rq->lock is held */
-
+@@ -732,20 +732,21 @@ void blkio_policy_register(struct blkio_policy_type *blkiop)
+ {
+ 	struct request_queue *q;
+ 
++	mutex_lock(&blkcg_pol_mutex);
++
+ 	blkcg_bypass_start();
+-	spin_lock(&blkio_list_lock);
+ 
+ 	BUG_ON(blkio_policy[blkiop->plid]);
+ 	blkio_policy[blkiop->plid] = blkiop;
+-	list_add_tail(&blkiop->list, &blkio_list);
+-
+-	spin_unlock(&blkio_list_lock);
+ 	list_for_each_entry(q, &all_q_list, all_q_node)
+ 		update_root_blkg_pd(q, blkiop->plid);
++
+ 	blkcg_bypass_end();
+ 
+ 	if (blkiop->cftypes)
+ 		WARN_ON(cgroup_add_cftypes(&blkio_subsys, blkiop->cftypes));
++
++	mutex_unlock(&blkcg_pol_mutex);
+ }
+ EXPORT_SYMBOL_GPL(blkio_policy_register);
+ 
+@@ -753,19 +754,20 @@ void blkio_policy_unregister(struct blkio_policy_type *blkiop)
+ {
+ 	struct request_queue *q;
+ 
++	mutex_lock(&blkcg_pol_mutex);
++
+ 	if (blkiop->cftypes)
+ 		cgroup_rm_cftypes(&blkio_subsys, blkiop->cftypes);
+ 
+ 	blkcg_bypass_start();
+-	spin_lock(&blkio_list_lock);
+ 
+ 	BUG_ON(blkio_policy[blkiop->plid] != blkiop);
+ 	blkio_policy[blkiop->plid] = NULL;
+-	list_del_init(&blkiop->list);
+ 
+-	spin_unlock(&blkio_list_lock);
+ 	list_for_each_entry(q, &all_q_list, all_q_node)
+ 		update_root_blkg_pd(q, blkiop->plid);
+ 	blkcg_bypass_end();
++
++	mutex_unlock(&blkcg_pol_mutex);
+ }
+ EXPORT_SYMBOL_GPL(blkio_policy_unregister);
+diff --git a/block/blk-cgroup.h b/block/blk-cgroup.h
+index 64392ac..c772581 100644
+--- a/block/blk-cgroup.h
++++ b/block/blk-cgroup.h
+@@ -102,7 +102,6 @@ struct blkio_policy_ops {
+ };
+ 
+ struct blkio_policy_type {
+-	struct list_head list;
+ 	struct blkio_policy_ops ops;
+ 	enum blkio_policy_id plid;
+ 	size_t pdata_size;		/* policy specific private data size */
+-- 
+1.7.7.3
 
