@@ -1,48 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753485Ab2DMRiP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Apr 2012 13:38:15 -0400
-Received: from shards.monkeyblade.net ([198.137.202.13]:51028 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751929Ab2DMRiO (ORCPT
+	id S1752229Ab2DMRlP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Apr 2012 13:41:15 -0400
+Received: from mail-pz0-f52.google.com ([209.85.210.52]:49512 "EHLO
+	mail-pz0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750773Ab2DMRlO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Apr 2012 13:38:14 -0400
-Date: Fri, 13 Apr 2012 13:38:04 -0400 (EDT)
-Message-Id: <20120413.133804.1504347944886702242.davem@davemloft.net>
-To: jasowang@redhat.com
-Cc: netdev@vger.kernel.org, rusty@rustcorp.com.au,
-        virtualization@lists.linux-foundation.org,
-        linux-kernel@vger.kernel.org, mst@redhat.com
-Subject: Re: [net-next V7 PATCH] virtio-net: send gratuitous packets when
- needed
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <20120412064351.23243.84912.stgit@amd-6168-8-1.englab.nay.redhat.com>
-References: <20120412064351.23243.84912.stgit@amd-6168-8-1.englab.nay.redhat.com>
-X-Mailer: Mew version 6.4 on Emacs 23.3 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Fri, 13 Apr 2012 10:38:09 -0700 (PDT)
+	Fri, 13 Apr 2012 13:41:14 -0400
+Date: Fri, 13 Apr 2012 10:41:09 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: David Miller <davem@davemloft.net>
+Cc: jslaby@suse.cz, linux-kernel@vger.kernel.org, jirislaby@gmail.com,
+        alan@linux.intel.com, andrea@persephoneslair.org
+Subject: Re: [PATCH 1/3] NET: pc300, move to staging as it is broken
+Message-ID: <20120413174109.GA32536@kroah.com>
+References: <1334135699-30180-1-git-send-email-jslaby@suse.cz>
+ <20120413.133533.212991624580049561.davem@davemloft.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120413.133533.212991624580049561.davem@davemloft.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jason Wang <jasowang@redhat.com>
-Date: Thu, 12 Apr 2012 14:43:52 +0800
+On Fri, Apr 13, 2012 at 01:35:33PM -0400, David Miller wrote:
+> From: Jiri Slaby <jslaby@suse.cz>
+> Date: Wed, 11 Apr 2012 11:14:57 +0200
+> 
+> > It was marked as BROKEN back in 2008. It is because the tty handling
+> > in the driver is really broken.
+> > 
+> > There was some activity in January 2012 to fix the driver, but the
+> > patch was commented to be bogus:
+> >   https://lkml.org/lkml/2012/1/29/160
+> > and we have not heard back from the author since then:
+> >   https://lkml.org/lkml/2012/3/28/412
+> > 
+> > So since nobody stepped in and rewrote the driver, it is time to move
+> > it out of line now. And drop it some time later if nobody comes up
+> > with patches to fix the driver in staging.
+> > 
+> > Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+> 
+> No objections, I'll let the staging guy handle this :-)
+> 
+> Acked-by: David S. Miller <davem@davemloft.net>
 
-> As hypervior does not have the knowledge of guest network configuration, it's
-> better to ask guest to send gratuitous packets when needed.
-> 
-> This patch implements VIRTIO_NET_F_GUEST_ANNOUNCE feature: hypervisor would
-> notice the guest when it thinks it's time for guest to announce the link
-> presnece. Guest tests VIRTIO_NET_S_ANNOUNCE bit during config change interrupt
-> and woule send gratuitous packets through netif_notify_peers() and ack the
-> notification through ctrl vq.
-> 
-> We need to make sure the atomicy of read and ack in guest otherwise we may ack
-> more times than being notified. This is done through handling the whole config
-> change interrupt in an non-reentrant workqueue.
-> 
-> Signed-off-by: Jason Wang <jasowang@redhat.com>
-
-Michael, Rusty, et al.?
+Thanks, I will :)
