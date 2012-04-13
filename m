@@ -1,25 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753007Ab2DMRRj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Apr 2012 13:17:39 -0400
-Received: from mail.tpi.com ([70.99.223.143]:1361 "EHLO mail.tpi.com"
+	id S1755442Ab2DMRRy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Apr 2012 13:17:54 -0400
+Received: from mail.tpi.com ([70.99.223.143]:1369 "EHLO mail.tpi.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750869Ab2DMRRi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Apr 2012 13:17:38 -0400
+	id S1750734Ab2DMRRw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 Apr 2012 13:17:52 -0400
 From: Tim Gardner <tim.gardner@canonical.com>
 To: kvalo@qca.qualcomm.com, linux-kernel@vger.kernel.org
-Subject: [PATCH linux-next 0/1] ath6k: Normalize use of FW_DIR
-Date: Fri, 13 Apr 2012 11:17:26 -0600
-Message-Id: <1334337448-26270-1-git-send-email-tim.gardner@canonical.com>
+Cc: Tim Gardner <tim.gardner@canonical.com>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        linux-wireless@vger.kernel.org, netdev@vger.kernel.org
+Subject: [PATCH linux-next 1/1] ath6k: Normalize use of FW_DIR
+Date: Fri, 13 Apr 2012 11:17:27 -0600
+Message-Id: <1334337448-26270-2-git-send-email-tim.gardner@canonical.com>
 X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1334337448-26270-1-git-send-email-tim.gardner@canonical.com>
+References: <1334337448-26270-1-git-send-email-tim.gardner@canonical.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Kalle - I've been cleaning out old firmware files in the Ubuntu linux-firmware
-package and noticed that there are a number of AR6004 firmware files referenced in
-the ath6k USB driver that do not exist in the upstream linux-firmware
-repository. Are y'all planning to submit them soon ?
+Cc: Kalle Valo <kvalo@qca.qualcomm.com>
+Cc: "John W. Linville" <linville@tuxdriver.com>
+Cc: linux-wireless@vger.kernel.org
+Cc: netdev@vger.kernel.org
+Signed-off-by: Tim Gardner <tim.gardner@canonical.com>
+---
+ drivers/net/wireless/ath/ath6kl/core.h |   16 ++++++++--------
+ 1 file changed, 8 insertions(+), 8 deletions(-)
 
-rtg
+diff --git a/drivers/net/wireless/ath/ath6kl/core.h b/drivers/net/wireless/ath/ath6kl/core.h
+index 9d67964..ba81dc8 100644
+--- a/drivers/net/wireless/ath/ath6kl/core.h
++++ b/drivers/net/wireless/ath/ath6kl/core.h
+@@ -126,9 +126,9 @@ struct ath6kl_fw_ie {
+ #define AR6003_HW_2_0_FIRMWARE_FILE		"athwlan.bin.z77"
+ #define AR6003_HW_2_0_TCMD_FIRMWARE_FILE	"athtcmd_ram.bin"
+ #define AR6003_HW_2_0_PATCH_FILE		"data.patch.bin"
+-#define AR6003_HW_2_0_BOARD_DATA_FILE "ath6k/AR6003/hw2.0/bdata.bin"
++#define AR6003_HW_2_0_BOARD_DATA_FILE AR6003_HW_2_0_FW_DIR "/bdata.bin"
+ #define AR6003_HW_2_0_DEFAULT_BOARD_DATA_FILE \
+-			"ath6k/AR6003/hw2.0/bdata.SD31.bin"
++			AR6003_HW_2_0_FW_DIR "/bdata.SD31.bin"
+ 
+ /* AR6003 3.0 definitions */
+ #define AR6003_HW_2_1_1_VERSION                 0x30000582
+@@ -139,25 +139,25 @@ struct ath6kl_fw_ie {
+ #define AR6003_HW_2_1_1_UTF_FIRMWARE_FILE	"utf.bin"
+ #define AR6003_HW_2_1_1_TESTSCRIPT_FILE	"nullTestFlow.bin"
+ #define AR6003_HW_2_1_1_PATCH_FILE		"data.patch.bin"
+-#define AR6003_HW_2_1_1_BOARD_DATA_FILE "ath6k/AR6003/hw2.1.1/bdata.bin"
++#define AR6003_HW_2_1_1_BOARD_DATA_FILE AR6003_HW_2_1_1_FW_DIR "/bdata.bin"
+ #define AR6003_HW_2_1_1_DEFAULT_BOARD_DATA_FILE	\
+-			"ath6k/AR6003/hw2.1.1/bdata.SD31.bin"
++			AR6003_HW_2_1_1_FW_DIR "/bdata.SD31.bin"
+ 
+ /* AR6004 1.0 definitions */
+ #define AR6004_HW_1_0_VERSION                 0x30000623
+ #define AR6004_HW_1_0_FW_DIR			"ath6k/AR6004/hw1.0"
+ #define AR6004_HW_1_0_FIRMWARE_FILE		"fw.ram.bin"
+-#define AR6004_HW_1_0_BOARD_DATA_FILE         "ath6k/AR6004/hw1.0/bdata.bin"
++#define AR6004_HW_1_0_BOARD_DATA_FILE         AR6004_HW_1_0_FW_DIR "/bdata.bin"
+ #define AR6004_HW_1_0_DEFAULT_BOARD_DATA_FILE \
+-	"ath6k/AR6004/hw1.0/bdata.DB132.bin"
++	AR6004_HW_1_0_FW_DIR "/bdata.DB132.bin"
+ 
+ /* AR6004 1.1 definitions */
+ #define AR6004_HW_1_1_VERSION                 0x30000001
+ #define AR6004_HW_1_1_FW_DIR			"ath6k/AR6004/hw1.1"
+ #define AR6004_HW_1_1_FIRMWARE_FILE		"fw.ram.bin"
+-#define AR6004_HW_1_1_BOARD_DATA_FILE         "ath6k/AR6004/hw1.1/bdata.bin"
++#define AR6004_HW_1_1_BOARD_DATA_FILE         AR6004_HW_1_1_FW_DIR "/bdata.bin"
+ #define AR6004_HW_1_1_DEFAULT_BOARD_DATA_FILE \
+-	"ath6k/AR6004/hw1.1/bdata.DB132.bin"
++	AR6004_HW_1_1_FW_DIR "/bdata.DB132.bin"
+ 
+ /* Per STA data, used in AP mode */
+ #define STA_PS_AWAKE		BIT(0)
+-- 
+1.7.9.5
 
