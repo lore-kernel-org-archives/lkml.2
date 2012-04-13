@@ -1,46 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757929Ab2DMD3t (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Apr 2012 23:29:49 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:33224 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756553Ab2DMD3s (ORCPT
+	id S1758044Ab2DMDid (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Apr 2012 23:38:33 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:42247 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756775Ab2DMDic (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Apr 2012 23:29:48 -0400
-From: Grant Likely <grant.likely@secretlab.ca>
-Subject: Re: Device tree conversion of spi device vs. controller_data
-To: Roland Stigge <stigge@antcom.de>
-Cc: spi-devel-general@lists.sourceforge.net, linux-kernel@vger.kernel.org
-In-Reply-To: <4F816772.5000607@antcom.de>
-References: <4F816772.5000607@antcom.de>
-Date: Thu, 12 Apr 2012 21:29:44 -0600
-Message-Id: <20120413032945.0C76B3E07AC@localhost>
+	Thu, 12 Apr 2012 23:38:32 -0400
+Date: Fri, 13 Apr 2012 13:38:17 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Dave Airlie <airlied@linux.ie>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Daniel Vetter <daniel.vetter@ffwll.ch>,
+        Daniel Kurtz <djkurtz@chromium.org>
+Subject: linux-next: manual merge of the drm tree with Linus' tree
+Message-Id: <20120413133817.f8bbf0f6d95ada9f86b93800@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0beta6 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Fri__13_Apr_2012_13_38_17_+1000_.Qf9olWIl5lG9kKp"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 08 Apr 2012 12:24:50 +0200, Roland Stigge <stigge@antcom.de> wrote:
-> Hi,
-> 
-> upon DT conversion of LPC32xx, I came across the at25 spi eeprom which
-> needs .controller_data in struct spi_board_info for slave registration
-> via spi_register_board_info() (non-DT-case).
-> 
-> In the DT case, we need to eliminate this explicit registering call.
-> Therefore, I need to somehow replace the .controller_data passing in the
-> DT case to pass this data to the spi core. But I can't find such a
-> mechanism (v3.4-rc2). Is there already a concept or API that I
-> overlooked (please just point me to it) or what can I do to solve this?
-> (Looks like a general issue for spi slave registration via DT).
+--Signature=_Fri__13_Apr_2012_13_38_17_+1000_.Qf9olWIl5lG9kKp
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Can you point me at specific code?
+Hi Dave,
 
-.controller_data is owned by the spi_master driver.  The eeprom driver
-shouldn't be accessing it directly at all; but I'll need to look at
-specific code to really understand what is going on.
+Today's linux-next merge of the drm tree got a conflict in
+drivers/gpu/drm/i915/intel_i2c.c between commit 6a562e3daee2 ("Revert
+"drm/i915: reenable gmbus on gen3+ again"") from Linus' tree and commits
+0fb3f969c868 ("drm/i915: enable gmbus on gen2") and 2ed06c93a1fc
+("drm/i915/intel_i2c: gmbus disabled and reserved ports are invalid")
+from the drm tree.
 
-g.
+I just used the drm tree version.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
--- 
-Grant Likely, B.Sc, P.Eng.
-Secret Lab Technologies,Ltd.
+--Signature=_Fri__13_Apr_2012_13_38_17_+1000_.Qf9olWIl5lG9kKp
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCAAGBQJPh5+pAAoJEECxmPOUX5FEs2UQAIfOng81sp1HGdbxMYFcu+Ff
+x3MHCwZtx411zoIHcdcTaPWMyWPqX3L+vIuwy15/vVtsMiDZMGRWeBmn73aFyKsw
+ib3OnV8Q528vSal5mydSx+nLWLshgdAtUPeww1IGVOdpATkxSwfFEepw/CYB/gss
+rWnMmm4Spn4XtASFx7WC7gsUs4bmVxjXDWCMHtlq0enwqcglkGLpqmFHzZZNdSpN
+acbteBSwof69NOJwy0/5L+VMdtn1YplH4crmH7xEHwTVRUGk3diDbKMPgk/AeNdn
+6BQT+9W2sbERYXc5liHjdz2Kp9fzIbjUwEyO3sNK6GVERDDPpRhgZXT6SObpH2Dd
+9Shi/qm4ItT1l/5NDfAIEg14lyn4KnDvhGNlgDxBLFrkdLYLgFHyuuF6iuHr/mbx
+K5jNoBQlEjfGswjN0ZjyYgEpe5FCGkwzQ10k6KlwiqC0Eqb8GX84MEfCM7kxAVcS
+ZBkxnp7COLlADf1ae0oka1fK1mOecoqUlGqXPVwxSCI+vt1i9pLuwkxGtqCefiHk
+SaC9X5O40WmcSwr2+VI+zJMnuruJ746RsnxDzdbampdqAnPPDTwbIsUSYR31ZtFG
+1MLviR4ygVVugnRun9cAfDyld9M2o6n+BhCXg68Sv2KM5ZVIhrBBChQQNIqBiPul
+3cbZlUJ4RiDPM06tfyHP
+=Q3U8
+-----END PGP SIGNATURE-----
+
+--Signature=_Fri__13_Apr_2012_13_38_17_+1000_.Qf9olWIl5lG9kKp--
