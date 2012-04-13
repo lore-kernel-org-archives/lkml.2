@@ -1,90 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757941Ab2DMC3L (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Apr 2012 22:29:11 -0400
-Received: from mail7.hitachi.co.jp ([133.145.228.42]:55827 "EHLO
-	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755264Ab2DMC3J (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Apr 2012 22:29:09 -0400
-X-AuditID: b753bd60-a0885ba000000655-d2-4f878f71baaf
-X-AuditID: b753bd60-a0885ba000000655-d2-4f878f71baaf
-Message-ID: <4F878F61.4020105@hitachi.com>
-Date: Fri, 13 Apr 2012 11:28:49 +0900
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Organization: Hitachi, Ltd., Japan
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:11.0) Gecko/20120327 Thunderbird/11.0.1
-MIME-Version: 1.0
-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
-        LKML <linux-kernel@vger.kernel.org>, Linux-mm <linux-mm@kvack.org>,
-        Oleg Nesterov <oleg@redhat.com>, Andi Kleen <andi@firstfloor.org>,
-        Christoph Hellwig <hch@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Anton Arapov <anton@redhat.com>
-Subject: Re: Re: [PATCH UPDATED 3/3] tracing: Provide trace events interface
- for uprobes
-References: <20120409091133.8343.65289.sendpatchset@srdronam.in.ibm.com> <20120409091154.8343.50489.sendpatchset@srdronam.in.ibm.com> <20120411103043.GB29437@linux.vnet.ibm.com> <4F86D264.9020004@hitachi.com> <20120412144927.GB21587@linux.vnet.ibm.com>
-In-Reply-To: <20120412144927.GB21587@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Brightmail-Tracker: AAAAAA==
+	id S934588Ab2DMCaQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Apr 2012 22:30:16 -0400
+Received: from ozlabs.org ([203.10.76.45]:48863 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755880Ab2DMCaO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Apr 2012 22:30:14 -0400
+From: Michael Neuling <mikey@neuling.org>
+To: Stephen Rothwell <sfr@canb.auug.org.au>, Jiri Slaby <jslaby@suse.cz>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+cc: LKML <linux-kernel@vger.kernel.org>,
+        ppc-dev <linuxppc-dev@lists.ozlabs.org>, linux-next@vger.kernel.org
+Subject: Re: linux-next: boot failures with next-20120411
+In-reply-to: <20120411165835.415e546374a54ea94669b0c6@canb.auug.org.au>
+References: <20120411165835.415e546374a54ea94669b0c6@canb.auug.org.au>
+Comments: In-reply-to Stephen Rothwell <sfr@canb.auug.org.au>
+   message dated "Wed, 11 Apr 2012 16:58:35 +1000."
+X-Mailer: MH-E 8.2; nmh 1.3; GNU Emacs 23.3.1
+Date: Fri, 13 Apr 2012 12:30:11 +1000
+Message-ID: <16710.1334284211@neuling.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2012/04/12 23:49), Srikar Dronamraju wrote:
->>> +
->>> +    # echo 'p /bin/zsh:0x46420 %ip %ax' > uprobe_events
->>> +
->>> +Please note: User has to explicitly calculate the offset of the probepoint
->>> +in the object. We can see the events that are registered by looking at the
->>> +uprobe_events file.
->>> +
->>> +    # cat uprobe_events
->>> +    p:uprobes/p_zsh_0x46420 /bin/zsh:0x0000000000046420
->>
->> Doesn't uprobe_events show the arguments of existing events?
->> And also, could you add an event format of above event here?
->>
-> 
-> [root@f14kvm tracing]#  cat uprobe_events 
-> [root@f14kvm tracing]# echo 'p /bin/zsh:0x46420 %ip %ax' > uprobe_events 
-> [root@f14kvm tracing]#  cat uprobe_events 
-> p:uprobes/p_zsh_0x46420 /bin/zsh:0x00046420 arg1=%ip arg2=%ax
-> [root@f14kvm tracing]#  cat events/uprobes/p_zsh_0x46420/format 
-> name: p_zsh_0x46420
-> ID: 922
-> format:
->         field:unsigned short common_type;       offset:0;       size:2; signed:0;
->         field:unsigned char common_flags;       offset:2;       size:1; signed:0;
->         field:unsigned char common_preempt_count;       offset:3;       size:1; signed:0;
->         field:int common_pid;   offset:4;       size:4; signed:1;
->         field:int common_padding;       offset:8;       size:4; signed:1;
-> 
->         field:unsigned long __probe_ip; offset:12;      size:4; signed:0;
->         field:u32 arg1; offset:16;      size:4; signed:0;
->         field:u32 arg2; offset:20;      size:4; signed:0;
-> 
-> print fmt: "(%lx) arg1=%lx arg2=%lx", REC->__probe_ip, REC->arg1, REC->arg2
-> [root@f14kvm tracing]# 
-> 
-> Will update the Documentation file  with correct output of "cat
-> uprobe_events". Do you want the format file to be added to the
-> Documentation?
+Stephen Rothwell <sfr@canb.auug.org.au> wrote:
 
-Yes, I want, please :)
+> Hi all,
+> 
+> Some (not all) of my PowerPC boot tests have failed like this after
+> getting into user mode (this one was just after udev started, but others
+> are after other processes getting going):
+> 
+> Unable to handle kernel paging request for data at address 0xc0000003f9d550
+> Faulting instruction address: 0xc0000000001b7f40
+> Oops: Kernel access of bad area, sig: 11 [#1]
+> SMP NR_CPUS=32 NUMA pSeries
+> Modules linked in: ehea
+> NIP: c0000000001b7f40 LR: c0000000001b7f14 CTR: c0000000000e04f0
+> REGS: c0000003f68bf6b0 TRAP: 0300   Not tainted  (3.4.0-rc2-autokern1)
+> MSR: 800000000280b032 <SF,VEC,VSX,EE,FP,ME,IR,DR,RI>  CR: 24422424  XER: 20000001
+> SOFTE: 1
+> CFAR: 000000000000562c
+> DAR: 00c0000003f9d550, DSISR: 40000000
+> TASK = c0000003f8818000[3192] 'kdump' THREAD: c0000003f68bc000 CPU: 5
+> GPR00: 0000000000000000 c0000003f68bf930 c000000000ce1d40 c0000003fe00ec00 
+> GPR04: 00000000000002d0 0000000000000038 c0000003f8f935e8 c000000000e55280 
+> GPR08: 0000000000000011 c000000000bcb280 c000000000bcb1e8 000000000028a000 
+> GPR12: 0000000024422424 c00000000f33bc80 00000fffdd90a770 0000000000081000 
+> GPR16: c0000003f846c000 000000000de4f7a0 f00000000de4f7a0 0000000000000000 
+> GPR20: c0000003f8365408 c0000003f8365480 c0000003f8e5d110 0000000000000000 
+> GPR24: 0000000000000100 c0000003f8365400 c0000000001e5424 00000000000002d0 
+> GPR28: 0000000000000800 00c0000003f9d550 c000000000c5b718 c0000003fe00ec00 
+> NIP [c0000000001b7f40] .__kmalloc+0x70/0x230
+> LR [c0000000001b7f14] .__kmalloc+0x44/0x230
+> Call Trace:
+> [c0000003f68bf930] [c0000003f68bf9b0] 0xc0000003f68bf9b0 (unreliable)
+> [c0000003f68bf9e0] [c0000000001e5424] .alloc_fdmem+0x24/0x70
+> [c0000003f68bfa60] [c0000000001e54f8] .alloc_fdtable+0x88/0x130
+> [c0000003f68bfaf0] [c0000000001e5924] .dup_fd+0x384/0x450
+> [c0000003f68bfbd0] [c00000000009a310] .copy_process+0x880/0x11d0
+> [c0000003f68bfcd0] [c00000000009aee0] .do_fork+0x70/0x400
+> [c0000003f68bfdc0] [c0000000000141c4] .sys_clone+0x54/0x70
+> [c0000003f68bfe30] [c000000000009aa0] .ppc_clone+0x8/0xc
+> Instruction dump:
+> 4bff9281 2ba30010 7c7f1b78 40dd00f4 e96d0040 e93f0000 7ce95a14 e9070008 
+> 7fa9582a 2fbd0000 41de0054 e81f0022 <7f3d002a> 38000000 886d01f2 980d01f2 
+> ---[ end trace 366fe6c7ced3bfb0 ]---
+> 
+> This did not happen yesterday.  Just wondering if anyone can think of
+> anything obvious.  Full console log at
+> http://ozlabs.org/~sfr/next-20120411.log.bz2
 
-Thank you!
+I managed to bisect this down using pseries_defconfig with next-20120412
+to this patch:
 
+  commit 85bbc003b24335e253a392f6a9874103b77abb36
+  Author: Jiri Slaby <jslaby@suse.cz>
+  Date:   Mon Apr 2 13:54:22 2012 +0200
 
--- 
-Masami HIRAMATSU
-Software Platform Research Dept. Linux Technology Center
-Hitachi, Ltd., Yokohama Research Laboratory
-E-mail: masami.hiramatsu.pt@hitachi.com
+      TTY: HVC, use tty from tty_port
+
+      The driver already used refcounting. So we just switch it to tty_port
+      helpers. And switch to tty_port->lock for tty.
+
+      Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+      Cc: linuxppc-dev@lists.ozlabs.org
+      Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+Reverting this commit (and 0146b6939074ebe14ece3604fd00e7be128a3812
+otherwise git barfs) fixes the problem on next-20120412.  
+
+I'm assuming we got the ref count changes wrong somewhere in the patch
+but the tty code is beyond me.  Jiri, can you take a look?
+
+Mikey
