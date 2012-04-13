@@ -1,79 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762987Ab2DMAwL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Apr 2012 20:52:11 -0400
-Received: from mail.savoirfairelinux.com ([209.172.62.77]:49384 "EHLO
-	mail.savoirfairelinux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756098Ab2DMAwJ (ORCPT
+	id S935027Ab2DMBAW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Apr 2012 21:00:22 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:48030 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934989Ab2DMBAT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Apr 2012 20:52:09 -0400
-From: Vivien Didelot <vivien.didelot@savoirfairelinux.com>
-To: x86@kernel.org
-Cc: Vivien Didelot <vivien.didelot@savoirfairelinux.com>,
-        Ingo Molnar <mingo@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
-        "H. Peter Anvin" <hpa@zytor.com>, linux-kernel@vger.kernel.org,
-        lm-sensors@lm-sensors.org, Guenter Roeck <guenter.roeck@ericsson.com>,
-        Jean Delvare <khali@linux-fr.org>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Linus Walleij <linus.walleij@stericsson.com>
-Subject: [PATCH v6 0/3] TS-5500 platform support
-Date: Thu, 12 Apr 2012 20:28:52 -0400
-Message-Id: <1334276935-11258-1-git-send-email-vivien.didelot@savoirfairelinux.com>
-X-Mailer: git-send-email 1.7.9.2
+	Thu, 12 Apr 2012 21:00:19 -0400
+MIME-Version: 1.0
+In-Reply-To: <20120411234628.GA7253@1984>
+References: <1333668273-8873-1-git-send-email-levinsasha928@gmail.com>
+ <20120411232243.GB7038@1984> <20120411234628.GA7253@1984>
+From: Sasha Levin <levinsasha928@gmail.com>
+Date: Fri, 13 Apr 2012 02:54:13 +0200
+Message-ID: <CA+1xoqcxggYxb_ha4VdQtCUW-iYeVbaB38mC_pwAzdCf=rS7mQ@mail.gmail.com>
+Subject: Re: [PATCH] netfilter: ipvs: Verify that IP_VS protocol has been registered
+To: Pablo Neira Ayuso <pablo@netfilter.org>
+Cc: wensong@linux-vs.org, horms@verge.net.au, ja@ssi.bg, kaber@trash.net,
+        davem@davemloft.net, davej@redhat.com, netdev@vger.kernel.org,
+        lvs-devel@vger.kernel.org, netfilter-devel@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, Apr 12, 2012 at 1:46 AM, Pablo Neira Ayuso <pablo@netfilter.org> wrote:
+>> If you return here, I think you'll leave things in inconsistent state,
+>> ie. the tcp protocol is registered. You have to unregister it before
+>> leaving.
 
-Hi,
-
-This patchset brings support for the Technologic Systems TS-5500 platform.
-The code is rebased on v3.4-rc2.
-
-The first patch adds support to hwmon for the Maxim MAX197 A/D converter,
-which is embedded on the TS-5500 platform, as suggested by Guenter Roeck.
-
-The second patch adds basic support for the platform.
-
-The third patch adds support for the board GPIO interface.
-According to comments from Alan Cox and Mark Brown, the driver has been
-reworked to use libgpio and moved to the GPIO subsystem.
-
-	-Vivien
-
-
-Jerome Oufella (1):
-  gpio: TS-5500 GPIO support
-
-Vivien Didelot (2):
-  hwmon: Maxim MAX197 support
-  x86/platform: TS-5500 basic platform support
-
- Documentation/ABI/testing/sysfs-platform-ts5500 |   46 +++
- Documentation/hwmon/max197                      |   59 ++++
- MAINTAINERS                                     |    7 +
- arch/x86/Kconfig                                |    8 +
- arch/x86/include/asm/ts5500.h                   |   62 ++++
- arch/x86/platform/Makefile                      |    1 +
- arch/x86/platform/ts5500/Makefile               |    1 +
- arch/x86/platform/ts5500/ts5500.c               |  400 +++++++++++++++++++++++
- drivers/gpio/Kconfig                            |    7 +
- drivers/gpio/Makefile                           |    1 +
- drivers/gpio/gpio-ts5500.c                      |  347 ++++++++++++++++++++
- drivers/hwmon/Kconfig                           |    9 +
- drivers/hwmon/Makefile                          |    1 +
- drivers/hwmon/max197.c                          |  398 ++++++++++++++++++++++
- include/linux/max197.h                          |   20 ++
- 15 files changed, 1367 insertions(+)
- create mode 100644 Documentation/ABI/testing/sysfs-platform-ts5500
- create mode 100644 Documentation/hwmon/max197
- create mode 100644 arch/x86/include/asm/ts5500.h
- create mode 100644 arch/x86/platform/ts5500/Makefile
- create mode 100644 arch/x86/platform/ts5500/ts5500.c
- create mode 100644 drivers/gpio/gpio-ts5500.c
- create mode 100644 drivers/hwmon/max197.c
- create mode 100644 include/linux/max197.h
-
--- 
-1.7.9.2
-
+I thought that the cleanup callback is getting called for failed init
+calls, if that's not the case then we can probably call it ourselves
+if any of these failed.
