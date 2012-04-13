@@ -1,64 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754876Ab2DMOUz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Apr 2012 10:20:55 -0400
-Received: from mail-qc0-f174.google.com ([209.85.216.174]:46933 "EHLO
-	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753464Ab2DMOUx (ORCPT
+	id S1754260Ab2DMOY0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Apr 2012 10:24:26 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:35765 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751535Ab2DMOYY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Apr 2012 10:20:53 -0400
-Message-ID: <4F883640.60103@pobox.com>
-Date: Fri, 13 Apr 2012 10:20:48 -0400
-From: Jeff Garzik <jgarzik@pobox.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120316 Thunderbird/11.0
+	Fri, 13 Apr 2012 10:24:24 -0400
+Date: Fri, 13 Apr 2012 07:24:20 -0700
+From: "'Greg KH'" <gregkh@linuxfoundation.org>
+To: Donald <donald@asix.com.tw>
+Cc: "'Alan Cox'" <alan@lxorguk.ukuu.org.uk>,
+        "'open list:USB SUBSYSTEM'" <linux-usb@vger.kernel.org>,
+        "'open list'" <linux-kernel@vger.kernel.org>
+Subject: Re: Patch "USB: serial: mos7840: Supported MCS7810 device"
+Message-ID: <20120413142420.GB3106@kroah.com>
+References: <005301cd1871$87391a90$95ab4fb0$@com.tw>
+ <20120412104936.65dd7683@pyramind.ukuu.org.uk>
+ <002701cd191c$1077d580$31678080$@com.tw>
 MIME-Version: 1.0
-To: Thang Nguyen <tqnguyen@apm.com>
-CC: Sergei Shtylyov <sshtylyov@mvista.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>, linuxppc-dev@lists.ozlabs.org,
-        linux-kernel@vger.kernel.org, linux-ide@vger.kernel.org,
-        devicetree-discuss@lists.ozlabs.org, Phong Vo <pvo@apm.com>
-Subject: Re: [PATCH 1/1] Add support 2 SATA ports for Maui and change filename
- from sata_dwc_460ex.c to sata_dwc_4xx.c
-References: <1333447938-16461-1-git-send-email-tqnguyen@apm.com> <4F7AE584.3050805@mvista.com> <4F873573.10406@pobox.com> <3445364d6d28c2b6ae19817fe6851452@mail.gmail.com>
-In-Reply-To: <3445364d6d28c2b6ae19817fe6851452@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <002701cd191c$1077d580$31678080$@com.tw>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/13/2012 03:18 AM, Thang Nguyen wrote:
-> Thanks Jeff and Sergei,
->
-> As your suggestion, I will separate the patch into smaller patches and
-> support more features on the SATA DWC driver. The patches I intend to do
-> on the SATA DWC are as below:
->   - Support hardreset: currently the hardreset is not supported. This
-> causes sometime the SATA driver does cause kernel crash because of
-> not-determined state.
->   - Let device tree specified DMA channel: currently only channel 0 is
-> supported (number of channel is set to 1). If device tree not specified
-> DMA channel, channel 0 will be used as default.
->   - Support ATAPI.
->   - Remove dma_interrupt_count. for each DMA transfer, we need 2 interrupts
-> for QC completion: transfer completion and DMA transfer completion
-> interrupt. The current code wait for both 2 interrupts occur before
-> calling qc_complete. This will make out-of-sync state when an interrupt
-> lost or when errors occur. The change will process DMA register when DMA
-> transfer complete interrupt occur and call qc_issue when command
-> completion interrupt occur.
->   - Fix NCQ issue and set .can_queue back to ATA_MAX_QUEUE.
->   - Support Port Multiplier.
->   - Support 2 SATA ports on Maui.
+On Fri, Apr 13, 2012 at 10:20:52AM +0800, Donald wrote:
+> Hi Alan,
+> 
+> Thank you for your reply. As for your comment regarding the LED
+> feature flag, the driver can provide a flag parameter for LED
+> feature so that users will be able to set this LED feature at loading
+> the driver, and by default, this flag is set false (LED
+> feature is disabled). Could you let me know if this is what exactly
+> matches your comment?
 
-Sounds good, thanks for splitting up the patch into smaller pieces.  The 
-main goal is that separate logical changes should go into separate patches.
+There should not be a "flag" a user has to set, the driver should handle
+this automatically, with no need for the user to choose anything.
 
-	Jeff
-
-
-
-
+greg k-h
