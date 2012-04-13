@@ -1,212 +1,273 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760966Ab2DMLZT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Apr 2012 07:25:19 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:43960 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752474Ab2DMLZR (ORCPT
+	id S1762525Ab2DML0h (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Apr 2012 07:26:37 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:57590 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753052Ab2DML0g (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Apr 2012 07:25:17 -0400
-From: Jeff Layton <jlayton@redhat.com>
-To: linux-fsdevel@vger.kernel.org, linux-nfs@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Cc: pstaubach@exagrid.com, miklos@szeredi.hu, viro@ZenIV.linux.org.uk,
-        hch@infradead.org, michael.brantley@deshaw.com
-Subject: [PATCH RFC] vfs: make fstatat retry on ESTALE errors from getattr call
-Date: Fri, 13 Apr 2012 07:25:11 -0400
-Message-Id: <1334316311-22331-1-git-send-email-jlayton@redhat.com>
-X-Mailer: git-send-email 1.7.7.6
+	Fri, 13 Apr 2012 07:26:36 -0400
+From: Bryan Wu <bryan.wu@canonical.com>
+To: linux@arm.linux.org.uk, rpurdie@rpsys.net,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linus.walleij@linaro.org, akpm@linux-foundation.org,
+        arnd.bergmann@linaro.org, nicolas.pitre@linaro.org
+Subject: [PATCH v6 00/18] Introduce a led trigger for CPU activity and consolidate LED driver in ARM
+Date: Fri, 13 Apr 2012 19:25:59 +0800
+Message-Id: <1334316377-23915-1-git-send-email-bryan.wu@canonical.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-ESTALE errors are a source of pain for many users of NFS. Often they
-occur when a lookup is satisfied out of the dcache, but the associated
-inode has been removed on the server. In the case where a file is
-renamed on top of another, the call would ordinarily have succeeded had
-we issued an on the wire lookup instead. There are also other situations
-that can lead to ESTALE errors, and the remedy is usually to retry the
-lookup and call. If this is handled correctly in the kernel, then
-userspace should only rarely see an ESTALE error.
+Based on Linus Walleij's ARM LED consolidation work, this patchset introduce a
+new generic led trigger for CPU not only for ARM but also for others.
 
-This is an RFC patch showing the general approach to addressing this
-problem that I'm suggesting. In order to solve this completely we'll
-need to fix most of the path-based syscalls in a similar way.
+For enabling CPU idle event, CPU arch code should call ledtrig_cpu() stub to
+trigger idle start or idle end event.
 
-This is not the first attempt at fixing this. Peter Staubach made a
-similar attempt several years ago:
+These patches convert old style LED driver in arch/arm to gpio_led or new led
+driver interface. Against linux-next 20120412 and build successfully for all the machines.
 
-    https://lkml.org/lkml/2008/3/10/267
+Test ledtrig-cpu driver on OMAP4 Panda board.
+--
+root@PandaBoard:~# uname -a
+Linux PandaBoard 3.4.0-rc2-next-20120412-00018-g48d39b4 #12 SMP Fri Apr 13 09:35:01 CST 2012 armv7l armv7l armv7l GNU/Linux
+root@PandaBoard:~# dmesg | grep LED
+[    2.104919] LED trigger cpu0 indicate activity on CPU 0
+[    2.110473] LED trigger cpu1 indicate activity on CPU 1
+root@PandaBoard:~# cat /sys/class/leds/pandaboard\:\:status1/trigger
+none nand-disk mmc0 mmc1 [heartbeat] cpu0 cpu1 
+root@PandaBoard:~# cat /sys/class/leds/pandaboard\:\:status2/trigger
+none nand-disk [mmc0] mmc1 heartbeat cpu0 cpu1 
+root@PandaBoard:~# echo cpu0 > /sys/class/leds/pandaboard\:\:status1/trigger
+root@PandaBoard:~# cat /sys/class/leds/pandaboard\:\:status1/trigger
+none nand-disk mmc0 mmc1 heartbeat [cpu0] cpu1 
+root@PandaBoard:~# echo cpu1 > /sys/class/leds/pandaboard\:\:status2/trigger                                                                                                                                 
+root@PandaBoard:~# cat /sys/class/leds/pandaboard\:\:status2/trigger
+none nand-disk mmc0 mmc1 heartbeat cpu0 [cpu1] 
 
-This patch attempts to address the problem by having the VFS retry
-the lookup (with LOOKUP_REVAL set) and the getattr call whenever the
-getattr returns ESTALE.
+Then try some heavy task like dd and use taskset to assign the task to a specific CPU,
+LED will turn on or off as expect
 
-A new fs flag is specified that allows filesystems to opt-in to
-this behavior. That should address many of the concerns about whether
-it's ok to retry indefinitely, but it does mean that we're only
-going to do retry the call when the lookup succeeds.
+root@PandaBoard:~# dd if=/dev/zero of=/dev/null &
+[1] 1211
+root@PandaBoard:~# taskset -pc 0 1211
+pid 1211's current affinity list: 0,1
+pid 1211's new affinity list: 0
+root@PandaBoard:~# taskset -pc 1 1211
+pid 1211's current affinity list: 0
+pid 1211's new affinity list: 1
 
-However, basing this on a flag does give us a bit of a discrepancy in
-retry behavior between the lookup and other operations. The path-walking
-code already will reattempt the lookup once on an ESTALE error. The
-proposed patch here however will make it retry indefinitely when the
-getattr call returns ESTALE.
-
-Since fixing this means touching a lot of code, it's pretty important
-that we get the semantics correct here. I'm quite open to suggestion
-about how we should make this behave as long as it resolves most of
-these sorts of problems.
-
-The main questions I have are:
-
-1) should we retry these calls on all filesystems, or attempt to have
-them "opt-in" in some fashion? This patch adds a flag for that, but
-we could just treat all filesystems the same way.
-
-2) How many times should we retry on an ESTALE error? Once?
-Indefinitely? Some amount in between? Retrying once would probably
-fix the bulk of the real world problems with this, but there will
-still be cases where that's not sufficient.
-
-3) Should we consider also changing the path-walking code to retry
-more than once on an ESTALE error?
-
-Once we nail down some acceptable semantics for this, I should be
-able to make a more comprehensive patch that fixes this for all
-path-based syscalls. I don't really want to dive into that work
-however until we've come to some agreement about it.
-
-Thanks to Michael Brantley for his initial work and patch for this
-problem.
-
-Reported-by: Michael Brantley <michael.brantley@deshaw.com>
-Signed-off-by: Jeff Layton <jlayton@redhat.com>
----
- fs/nfs/super.c     |   14 +++++++-------
- fs/stat.c          |    9 ++++++++-
- include/linux/fs.h |    3 +++
- 3 files changed, 18 insertions(+), 8 deletions(-)
-
-diff --git a/fs/nfs/super.c b/fs/nfs/super.c
-index 37412f7..b22aaba 100644
---- a/fs/nfs/super.c
-+++ b/fs/nfs/super.c
-@@ -296,7 +296,7 @@ static struct file_system_type nfs_fs_type = {
- 	.name		= "nfs",
- 	.mount		= nfs_fs_mount,
- 	.kill_sb	= nfs_kill_super,
--	.fs_flags	= FS_RENAME_DOES_D_MOVE|FS_REVAL_DOT|FS_BINARY_MOUNTDATA,
-+	.fs_flags	= FS_RENAME_DOES_D_MOVE|FS_REVAL_DOT|FS_BINARY_MOUNTDATA|FS_RETRY_ESTALE,
- };
+Try to hotplug on CPU 1
  
- struct file_system_type nfs_xdev_fs_type = {
-@@ -304,7 +304,7 @@ struct file_system_type nfs_xdev_fs_type = {
- 	.name		= "nfs",
- 	.mount		= nfs_xdev_mount,
- 	.kill_sb	= nfs_kill_super,
--	.fs_flags	= FS_RENAME_DOES_D_MOVE|FS_REVAL_DOT|FS_BINARY_MOUNTDATA,
-+	.fs_flags	= FS_RENAME_DOES_D_MOVE|FS_REVAL_DOT|FS_BINARY_MOUNTDATA|FS_RETRY_ESTALE,
- };
- 
- static const struct super_operations nfs_sops = {
-@@ -344,7 +344,7 @@ static struct file_system_type nfs4_fs_type = {
- 	.name		= "nfs4",
- 	.mount		= nfs4_mount,
- 	.kill_sb	= nfs4_kill_super,
--	.fs_flags	= FS_RENAME_DOES_D_MOVE|FS_REVAL_DOT|FS_BINARY_MOUNTDATA,
-+	.fs_flags	= FS_RENAME_DOES_D_MOVE|FS_REVAL_DOT|FS_BINARY_MOUNTDATA|FS_RETRY_ESTALE,
- };
- 
- static struct file_system_type nfs4_remote_fs_type = {
-@@ -352,7 +352,7 @@ static struct file_system_type nfs4_remote_fs_type = {
- 	.name		= "nfs4",
- 	.mount		= nfs4_remote_mount,
- 	.kill_sb	= nfs4_kill_super,
--	.fs_flags	= FS_RENAME_DOES_D_MOVE|FS_REVAL_DOT|FS_BINARY_MOUNTDATA,
-+	.fs_flags	= FS_RENAME_DOES_D_MOVE|FS_REVAL_DOT|FS_BINARY_MOUNTDATA|FS_RETRY_ESTALE,
- };
- 
- struct file_system_type nfs4_xdev_fs_type = {
-@@ -360,7 +360,7 @@ struct file_system_type nfs4_xdev_fs_type = {
- 	.name		= "nfs4",
- 	.mount		= nfs4_xdev_mount,
- 	.kill_sb	= nfs4_kill_super,
--	.fs_flags	= FS_RENAME_DOES_D_MOVE|FS_REVAL_DOT|FS_BINARY_MOUNTDATA,
-+	.fs_flags	= FS_RENAME_DOES_D_MOVE|FS_REVAL_DOT|FS_BINARY_MOUNTDATA|FS_RETRY_ESTALE,
- };
- 
- static struct file_system_type nfs4_remote_referral_fs_type = {
-@@ -368,7 +368,7 @@ static struct file_system_type nfs4_remote_referral_fs_type = {
- 	.name		= "nfs4",
- 	.mount		= nfs4_remote_referral_mount,
- 	.kill_sb	= nfs4_kill_super,
--	.fs_flags	= FS_RENAME_DOES_D_MOVE|FS_REVAL_DOT|FS_BINARY_MOUNTDATA,
-+	.fs_flags	= FS_RENAME_DOES_D_MOVE|FS_REVAL_DOT|FS_BINARY_MOUNTDATA|FS_RETRY_ESTALE,
- };
- 
- struct file_system_type nfs4_referral_fs_type = {
-@@ -376,7 +376,7 @@ struct file_system_type nfs4_referral_fs_type = {
- 	.name		= "nfs4",
- 	.mount		= nfs4_referral_mount,
- 	.kill_sb	= nfs4_kill_super,
--	.fs_flags	= FS_RENAME_DOES_D_MOVE|FS_REVAL_DOT|FS_BINARY_MOUNTDATA,
-+	.fs_flags	= FS_RENAME_DOES_D_MOVE|FS_REVAL_DOT|FS_BINARY_MOUNTDATA|FS_RETRY_ESTALE,
- };
- 
- static const struct super_operations nfs4_sops = {
-diff --git a/fs/stat.c b/fs/stat.c
-index c733dc5..02ce590 100644
---- a/fs/stat.c
-+++ b/fs/stat.c
-@@ -73,7 +73,8 @@ int vfs_fstatat(int dfd, const char __user *filename, struct kstat *stat,
- {
- 	struct path path;
- 	int error = -EINVAL;
--	int lookup_flags = 0;
-+	unsigned int lookup_flags = 0;
-+	bool should_retry;
- 
- 	if ((flag & ~(AT_SYMLINK_NOFOLLOW | AT_NO_AUTOMOUNT |
- 		      AT_EMPTY_PATH)) != 0)
-@@ -84,12 +85,18 @@ int vfs_fstatat(int dfd, const char __user *filename, struct kstat *stat,
- 	if (flag & AT_EMPTY_PATH)
- 		lookup_flags |= LOOKUP_EMPTY;
- 
-+retry:
- 	error = user_path_at(dfd, filename, lookup_flags, &path);
- 	if (error)
- 		goto out;
- 
- 	error = vfs_getattr(path.mnt, path.dentry, stat);
-+	should_retry = error == -ESTALE ? retry_estale(path.dentry) : false;
- 	path_put(&path);
-+	if (should_retry) {
-+		lookup_flags |= LOOKUP_REVAL;
-+		goto retry;
-+	}
- out:
- 	return error;
- }
-diff --git a/include/linux/fs.h b/include/linux/fs.h
-index 8de6755..36fd4fa 100644
---- a/include/linux/fs.h
-+++ b/include/linux/fs.h
-@@ -181,11 +181,14 @@ struct inodes_stat_t {
- #define FS_REQUIRES_DEV 1 
- #define FS_BINARY_MOUNTDATA 2
- #define FS_HAS_SUBTYPE 4
-+#define FS_RETRY_ESTALE 8	/* retry operation on ESTALE error */
- #define FS_REVAL_DOT	16384	/* Check the paths ".", ".." for staleness */
- #define FS_RENAME_DOES_D_MOVE	32768	/* FS will handle d_move()
- 					 * during rename() internally.
- 					 */
- 
-+#define retry_estale(dentry) (dentry->d_sb->s_type->fs_flags & FS_RETRY_ESTALE)
-+
- /*
-  * These are the fs-independent mount-flags: up to 32 flags are supported
-  */
+root@PandaBoard:~# echo 0 > /sys/devices/system/cpu/cpu1/online 
+root@PandaBoard:~# dmesg | tail
+[    6.361541] EXT4-fs (mmcblk0p2): recovery complete
+[    6.376495] EXT4-fs (mmcblk0p2): mounted filesystem with ordered data mode. Opts: (null)
+[    7.436614] init: ureadahead main process (763) terminated with status 5
+[    8.114776] udevd[816]: starting version 175
+[    8.507934] EXT4-fs (mmcblk0p2): re-mounted. Opts: errors=remount-ro
+[    9.777526] init: udev-fallback-graphics main process (1018) terminated with status 1
+[   11.773651] Adding 524232k swap on /SWAP.swap.  Priority:-1 extents:13 across:593912k SS
+[  129.723419] init: failsafe main process (1008) killed by TERM signal
+[ 6636.388580] [sched_delayed] process 1211 (dd) no longer affine to cpu1
+[ 6636.388854] CPU1: shutdown
+root@PandaBoard:~# echo 1 > /sys/devices/system/cpu/cpu1/online                                                                                                                                              
+[ 6656.075897] CPU1: Unknown IPI message 0x1
+root@PandaBoard:~# 
+--
+
+Please find these patches here:
+       git://kernel.ubuntu.com/roc/linux-2.6/.git leds
+
+v5 --> v6:
+ * replace  __get_cpu_var() to per_cpu()
+ * remove smp_processor_id() which is wrong with for_each_possible_cpu()
+ * test on real OMAP4 Panda board
+ * add comments about CPU hotplug in the CPU LED trigger driver 
+
+v4 --> v5:
+ * rebase all the patches on top of latest linux-next
+ * replace on_each_cpu() with for_each_possible_cpu()
+ * add some description of ledtrig_cpu() API
+ * remove old leds code from driver nwflash.c, which should use a new led trigger then
+ * this trigger driver can be built as module now
+
+v3 --> v4:
+ * fix a typo pointed by Jochen Friedrich
+ * fix some building errors
+ * add Reviewed-by and Tested-by into patch log
+
+v2 --> v3:
+ * almost rewrote the whole ledtrig-cpu driver, which is more simple
+ * every CPU will have a per-CPU trigger
+ * cpu trigger can be assigned to any leds
+ * fix a lockdep issue in led-trigger common code
+ * other fix according to review
+
+v1 --> v2:
+ * remove select operations in Kconfig of every machines
+ * add back supporting of led in core module of mach-integrator
+ * solidate name scheme in ledtrig-cpu.c
+ * add comments of CPU_LED_* cpu led events
+ * fold patches of RealView and Versatile together
+ * add machine_is_ check during assabet led driver init
+ * add some Acked-by in patch logs
+ * remove code for simpad machine in machine-sa11000, since Jochen Friedrich
+ introduced gpiolib and gpio-led driver for simpad
+ * on Assabet and Netwinder machine, LED operations is reversed like:
+ setting bit means turn off leds
+ clearing bit means turn on leds
+ * add a new function to read CM_CTRL register for led driver
+
+
+Bryan Wu (18):
+  led-triggers: create a trigger for CPU activity
+  ARM: at91: convert old leds drivers to gpio_led and led_trigger
+    drivers
+  ARM: mach-realview and mach-versatile: retire custom LED code
+  ARM: mach-ks8695: remove leds driver, since nobody use it
+  ARM: mach-shark: retire custom LED code
+  ARM: mach-orion5x: convert custom LED code to gpio_led and LED CPU
+    trigger
+  ARM: mach-integrator: move CM_CTRL to header file for accessing by
+    other functions
+  ARM: mach-integrator: retire custom LED code
+  ARM: mach-clps711x: retire custom LED code of P720T machine
+  ARM: mach-ebsa110: retire custom LED code
+  ARM: mach-footbridge: retire custom LED code
+  char: nwflash: remove old led event code
+  ARM: mach-pxa: retire custom LED code
+  ARM: plat-samsung: remove including old leds event API header file
+  ARM: mach-pnx4008: remove including old leds event API header file
+  ARM: mach-omap1: retire custom LED code
+  ARM: mach-sa1100: retire custom LED code
+  ARM: use new LEDS CPU trigger stub to replace old one
+
+ arch/arm/Kconfig                             |   53 -----
+ arch/arm/include/asm/leds.h                  |   50 -----
+ arch/arm/kernel/Makefile                     |    1 -
+ arch/arm/kernel/leds.c                       |  121 -----------
+ arch/arm/kernel/process.c                    |    6 +-
+ arch/arm/kernel/time.c                       |   17 --
+ arch/arm/mach-at91/board-csb337.c            |    3 -
+ arch/arm/mach-at91/board-ecbat91.c           |   18 +-
+ arch/arm/mach-at91/board-eco920.c            |   23 +-
+ arch/arm/mach-at91/board-kafa.c              |   17 +-
+ arch/arm/mach-at91/board-kb9202.c            |   23 +-
+ arch/arm/mach-at91/board-rm9200dk.c          |    3 -
+ arch/arm/mach-at91/board-rm9200ek.c          |    3 -
+ arch/arm/mach-at91/board-sam9-l9260.c        |   23 +-
+ arch/arm/mach-at91/board-sam9261ek.c         |    3 -
+ arch/arm/mach-at91/board-yl-9200.c           |    3 -
+ arch/arm/mach-at91/include/mach/board.h      |    1 -
+ arch/arm/mach-at91/leds.c                    |  105 ---------
+ arch/arm/mach-clps711x/Makefile              |    2 -
+ arch/arm/mach-clps711x/common.c              |    1 -
+ arch/arm/mach-clps711x/include/mach/time.h   |    2 -
+ arch/arm/mach-clps711x/p720t-leds.c          |   66 ------
+ arch/arm/mach-clps711x/p720t.c               |   59 ++++++
+ arch/arm/mach-ebsa110/Makefile               |    4 +-
+ arch/arm/mach-ebsa110/leds.c                 |   79 ++++---
+ arch/arm/mach-footbridge/Makefile            |    4 -
+ arch/arm/mach-footbridge/ebsa285-leds.c      |  138 ------------
+ arch/arm/mach-footbridge/ebsa285.c           |   79 +++++++
+ arch/arm/mach-footbridge/netwinder-hw.c      |  110 ++++++++--
+ arch/arm/mach-footbridge/netwinder-leds.c    |  138 ------------
+ arch/arm/mach-integrator/Makefile            |    3 +-
+ arch/arm/mach-integrator/core.c              |    3 -
+ arch/arm/mach-integrator/include/mach/cm.h   |    2 +
+ arch/arm/mach-integrator/leds.c              |  158 ++++++++------
+ arch/arm/mach-ks8695/Makefile                |    3 -
+ arch/arm/mach-ks8695/devices.c               |   21 --
+ arch/arm/mach-ks8695/include/mach/devices.h  |    5 -
+ arch/arm/mach-ks8695/leds.c                  |   92 --------
+ arch/arm/mach-omap1/Makefile                 |    8 -
+ arch/arm/mach-omap1/board-h2.c               |   32 +++
+ arch/arm/mach-omap1/board-h3.c               |   32 +++
+ arch/arm/mach-omap1/board-osk.c              |   33 +++
+ arch/arm/mach-omap1/leds-h2p2-debug.c        |  166 ---------------
+ arch/arm/mach-omap1/leds-innovator.c         |   98 ---------
+ arch/arm/mach-omap1/leds-osk.c               |  113 ----------
+ arch/arm/mach-omap1/leds.c                   |   69 ------
+ arch/arm/mach-omap1/leds.h                   |    3 -
+ arch/arm/mach-omap1/time.c                   |    1 -
+ arch/arm/mach-omap1/timer32k.c               |    1 -
+ arch/arm/mach-orion5x/rd88f5181l-fxo-setup.c |    1 -
+ arch/arm/mach-orion5x/rd88f5181l-ge-setup.c  |    1 -
+ arch/arm/mach-orion5x/rd88f5182-setup.c      |   72 ++-----
+ arch/arm/mach-orion5x/rd88f6183ap-ge-setup.c |    1 -
+ arch/arm/mach-pnx4008/time.c                 |    1 -
+ arch/arm/mach-pxa/Makefile                   |    8 -
+ arch/arm/mach-pxa/idp.c                      |   79 +++++++
+ arch/arm/mach-pxa/leds-idp.c                 |  115 ----------
+ arch/arm/mach-pxa/leds-lubbock.c             |  124 -----------
+ arch/arm/mach-pxa/leds-mainstone.c           |  119 -----------
+ arch/arm/mach-pxa/leds.c                     |   32 ---
+ arch/arm/mach-pxa/leds.h                     |   13 --
+ arch/arm/mach-pxa/lubbock.c                  |   93 ++++++++
+ arch/arm/mach-pxa/mainstone.c                |   92 ++++++++
+ arch/arm/mach-realview/core.c                |   39 ----
+ arch/arm/mach-realview/core.h                |    2 -
+ arch/arm/mach-realview/realview_eb.c         |    5 -
+ arch/arm/mach-realview/realview_pb1176.c     |    5 -
+ arch/arm/mach-realview/realview_pb11mp.c     |    5 -
+ arch/arm/mach-realview/realview_pba8.c       |    5 -
+ arch/arm/mach-realview/realview_pbx.c        |    5 -
+ arch/arm/mach-sa1100/Makefile                |    9 -
+ arch/arm/mach-sa1100/assabet.c               |   83 ++++++++
+ arch/arm/mach-sa1100/badge4.c                |   30 +++
+ arch/arm/mach-sa1100/cerf.c                  |   42 ++++
+ arch/arm/mach-sa1100/hackkit.c               |   32 +++
+ arch/arm/mach-sa1100/lart.c                  |   26 +++
+ arch/arm/mach-sa1100/leds-assabet.c          |  113 ----------
+ arch/arm/mach-sa1100/leds-badge4.c           |  110 ----------
+ arch/arm/mach-sa1100/leds-cerf.c             |  109 ----------
+ arch/arm/mach-sa1100/leds-hackkit.c          |  111 ----------
+ arch/arm/mach-sa1100/leds-lart.c             |  100 ---------
+ arch/arm/mach-sa1100/leds.c                  |   50 -----
+ arch/arm/mach-sa1100/leds.h                  |   13 --
+ arch/arm/mach-shark/Makefile                 |    4 +-
+ arch/arm/mach-shark/core.c                   |    1 -
+ arch/arm/mach-shark/leds.c                   |  226 ++++++++------------
+ arch/arm/mach-versatile/core.c               |    5 -
+ arch/arm/plat-omap/Kconfig                   |    3 +-
+ arch/arm/plat-omap/debug-leds.c              |  293 ++++++--------------------
+ arch/arm/plat-samsung/time.c                 |    1 -
+ arch/arm/plat-versatile/Kconfig              |    4 +-
+ arch/arm/plat-versatile/leds.c               |   13 +-
+ drivers/char/nwflash.c                       |   34 ---
+ drivers/leds/Kconfig                         |   10 +
+ drivers/leds/Makefile                        |    1 +
+ drivers/leds/ledtrig-cpu.c                   |  133 ++++++++++++
+ include/linux/leds.h                         |   23 ++
+ 97 files changed, 1405 insertions(+), 2989 deletions(-)
+ delete mode 100644 arch/arm/include/asm/leds.h
+ delete mode 100644 arch/arm/kernel/leds.c
+ delete mode 100644 arch/arm/mach-clps711x/p720t-leds.c
+ delete mode 100644 arch/arm/mach-footbridge/ebsa285-leds.c
+ delete mode 100644 arch/arm/mach-footbridge/netwinder-leds.c
+ delete mode 100644 arch/arm/mach-ks8695/leds.c
+ delete mode 100644 arch/arm/mach-omap1/leds-h2p2-debug.c
+ delete mode 100644 arch/arm/mach-omap1/leds-innovator.c
+ delete mode 100644 arch/arm/mach-omap1/leds-osk.c
+ delete mode 100644 arch/arm/mach-omap1/leds.c
+ delete mode 100644 arch/arm/mach-omap1/leds.h
+ delete mode 100644 arch/arm/mach-pxa/leds-idp.c
+ delete mode 100644 arch/arm/mach-pxa/leds-lubbock.c
+ delete mode 100644 arch/arm/mach-pxa/leds-mainstone.c
+ delete mode 100644 arch/arm/mach-pxa/leds.c
+ delete mode 100644 arch/arm/mach-pxa/leds.h
+ delete mode 100644 arch/arm/mach-sa1100/leds-assabet.c
+ delete mode 100644 arch/arm/mach-sa1100/leds-badge4.c
+ delete mode 100644 arch/arm/mach-sa1100/leds-cerf.c
+ delete mode 100644 arch/arm/mach-sa1100/leds-hackkit.c
+ delete mode 100644 arch/arm/mach-sa1100/leds-lart.c
+ delete mode 100644 arch/arm/mach-sa1100/leds.c
+ delete mode 100644 arch/arm/mach-sa1100/leds.h
+ create mode 100644 drivers/leds/ledtrig-cpu.c
+
 -- 
-1.7.7.6
+1.7.9.5
 
