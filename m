@@ -1,65 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752507Ab2DMEkm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Apr 2012 00:40:42 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:60414 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752098Ab2DMEki (ORCPT
+	id S1752450Ab2DMElr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Apr 2012 00:41:47 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:60406 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751442Ab2DMElq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Apr 2012 00:40:38 -0400
-MIME-Version: 1.0
-In-Reply-To: <alpine.LRH.2.02.1204131432430.22093@tundra.namei.org>
-References: <1334267284-19166-1-git-send-email-wad@chromium.org>
- <alpine.LRH.2.02.1204131414580.22039@tundra.namei.org> <CAObL_7ER32AesD6bHk591ss0hTFmp0bjVOKV9oEdhiFwCEVOBA@mail.gmail.com>
- <alpine.LRH.2.02.1204131432430.22093@tundra.namei.org>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Thu, 12 Apr 2012 21:40:13 -0700
-Message-ID: <CALCETrUciLZfC4W6CwSzrvCRUxGtamx6gMbrA18R0ZoUUyJZfg@mail.gmail.com>
-Subject: Re: [PATCH v18 01/15] Add PR_{GET,SET}_NO_NEW_PRIVS to prevent execve
- from granting privs
-To: James Morris <jmorris@namei.org>
-Cc: Andrew Lutomirski <luto@mit.edu>, Will Drewry <wad@chromium.org>,
-        linux-kernel@vger.kernel.org, linux-man@vger.kernel.org,
-        linux-security-module@vger.kernel.org, linux-arch@vger.kernel.org,
-        linux-doc@vger.kernel.org, kernel-hardening@lists.openwall.com,
-        netdev@vger.kernel.org, x86@kernel.org, arnd@arndb.de,
-        "David S. Miller" <davem@davemloft.net>, hpa@zytor.com,
-        mingo@redhat.com, Oleg Nesterov <oleg@redhat.com>,
-        peterz@infradead.org, rdunlap@xenotime.net, mcgrathr@chromium.org,
-        tglx@linutronix.de, Eric Paris <eparis@redhat.com>,
-        Serge Hallyn <serge.hallyn@canonical.com>, djm@mindrot.org,
-        scarybeasts@gmail.com, indan@nul.nu, pmoore@redhat.com,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Jonathan Corbet <corbet@lwn.net>, eric.dumazet@gmail.com,
-        markus@chromium.org, coreyb@linux.vnet.ibm.com,
-        Kees Cook <keescook@chromium.org>, Stephen Smalley <sds@tycho.nsa.gov>
-Content-Type: text/plain; charset=ISO-8859-1
+	Fri, 13 Apr 2012 00:41:46 -0400
+Message-ID: <1334292098.6122.1.camel@phoenix>
+Subject: [PATCH RFT 1/3] regulator: ab3100: Add dummy
+ set_suspend_[enable|disable] callbacks implementation
+From: Axel Lin <axel.lin@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Linus Walleij <linus.walleij@stericsson.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Liam Girdwood <lrg@ti.com>
+Date: Fri, 13 Apr 2012 12:41:38 +0800
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2- 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 12, 2012 at 9:34 PM, James Morris <jmorris@namei.org> wrote:
-> On Thu, 12 Apr 2012, Andrew Lutomirski wrote:
->
->> > What about dynamic transitions in SELinux ?
->> >
->>
->> What's a dynamic transition?
->
-> The security label can be changed without an exec:
->
-> See selinux_setprocattr(), for "current".
+Without the implementation of set_suspend_enable and set_suspend_disable callbacks,
+the regulator core won't call set_suspend_voltage.
 
-Ah.
+Thus add dummy implementation for set_suspend_[enable|disable] callbacks.
 
-I see nothing wrong with that, for the same reason I see nothing wrong
-with setuid (the system call) after PR_SET_NO_NEW_PRIVS.  The
-privileges granted by writing to /proc/self/attr/current were already
-available in the sense that you could have written to current whenever
-you wanted to.
+Signed-off-by: Axel Lin <axel.lin@gmail.com>
+---
+ drivers/regulator/ab3100.c |   16 +++++++++++++++-
+ 1 files changed, 15 insertions(+), 1 deletions(-)
 
-(FWIW, I think that selinux should have made that the only way to
-change contexts, full stop.  And I think that the setuid and setgid
-bits were mistakes.  Water under the bridge...)
+diff --git a/drivers/regulator/ab3100.c b/drivers/regulator/ab3100.c
+index ce61925..b08d92b 100644
+--- a/drivers/regulator/ab3100.c
++++ b/drivers/regulator/ab3100.c
+@@ -367,6 +367,17 @@ static int ab3100_set_voltage_regulator_sel(struct regulator_dev *reg,
+ 	return err;
+ }
+ 
++/* Dummy set_suspend_enable/set_suspend_disable callbacks implementation */
++static int ab3100_set_suspend_enable(struct regulator_dev *rdev)
++{
++	return 0;
++}
++
++static int ab3100_set_suspend_disable(struct regulator_dev *rdev)
++{
++	return 0;
++}
++
+ static int ab3100_set_suspend_voltage_regulator(struct regulator_dev *reg,
+ 						int uV)
+ {
+@@ -467,9 +478,12 @@ static struct regulator_ops regulator_ops_variable_sleepable = {
+ 	.is_enabled  = ab3100_is_enabled_regulator,
+ 	.get_voltage = ab3100_get_voltage_regulator,
+ 	.set_voltage_sel = ab3100_set_voltage_regulator_sel,
+-	.set_suspend_voltage = ab3100_set_suspend_voltage_regulator,
+ 	.list_voltage = ab3100_list_voltage_regulator,
+ 	.enable_time = ab3100_enable_time_regulator,
++
++	.set_suspend_enable = ab3100_set_suspend_enable,
++	.set_suspend_disable = ab3100_set_suspend_disable,
++	.set_suspend_voltage = ab3100_set_suspend_voltage_regulator,
+ };
+ 
+ /*
+-- 
+1.7.5.4
 
---Andy
+
+
