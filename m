@@ -1,55 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757170Ab2DMHcQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Apr 2012 03:32:16 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:38709 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756721Ab2DMHcO (ORCPT
+	id S1757209Ab2DMHhy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Apr 2012 03:37:54 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:56762 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754613Ab2DMHhw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Apr 2012 03:32:14 -0400
-Message-ID: <1334302325.2879.1.camel@phoenix>
-Subject: [PATCH] regulator: Update regulator_register() API signature in
- Documentation
-From: Axel Lin <axel.lin@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Liam Girdwood <lrg@ti.com>
-Date: Fri, 13 Apr 2012 15:32:05 +0800
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2- 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Fri, 13 Apr 2012 03:37:52 -0400
+Date: Fri, 13 Apr 2012 08:37:45 +0100
+From: Andy Whitcroft <apw@canonical.com>
+To: Jeff Garzik <jgarzik@pobox.com>
+Cc: linux-ide@vger.kernel.org, linux-kernel@vger.kernel.org,
+        "K. Y. Srinivasan" <kys@microsoft.com>,
+        Mike Sterling <Mike.Sterling@microsoft.com>
+Subject: Re: [PATCH 1/1] ata_piix: defer disks to the Hyper-V paravirtualised
+ drivers by default
+Message-ID: <20120413073745.GN3357@shadowen.org>
+References: <1333042130-9634-1-git-send-email-apw@canonical.com>
+ <4F87351E.9040905@pobox.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4F87351E.9040905@pobox.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-commit c172708 "regulator: core: Use a struct to pass in regulator runtime
-configuration" changed the regulator_register() API signature.
+On Thu, Apr 12, 2012 at 04:03:42PM -0400, Jeff Garzik wrote:
 
-Update the Documentation accordingly to reflect the change in the function
-signature.
+> Platform quirks should be handled in piix_init_one, not with this
+> haphazard read_id callback.  If prefer_ms_hyperv &&
+> hypervisor-detected, then set ATA_HOST_IGNORE_ATA flag or similar.
 
-Signed-off-by: Axel Lin <axel.lin@gmail.com>
----
- Documentation/power/regulator/regulator.txt |    3 +--
- 1 files changed, 1 insertions(+), 2 deletions(-)
+That does sound better.  I'll whip something up.
 
-diff --git a/Documentation/power/regulator/regulator.txt b/Documentation/power/regulator/regulator.txt
-index e272d99..1390277 100644
---- a/Documentation/power/regulator/regulator.txt
-+++ b/Documentation/power/regulator/regulator.txt
-@@ -11,8 +11,7 @@ Registration
- Drivers can register a regulator by calling :-
- 
- struct regulator_dev *regulator_register(struct regulator_desc *regulator_desc,
--	struct device *dev, struct regulator_init_data *init_data,
--	void *driver_data, struct device_node *of_node);
-+					 const struct regulator_config *config);
- 
- This will register the regulators capabilities and operations to the regulator
- core.
--- 
-1.7.5.4
-
-
-
+-apw
