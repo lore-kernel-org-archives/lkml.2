@@ -1,131 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932516Ab2DMNgs (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Apr 2012 09:36:48 -0400
-Received: from e32.co.us.ibm.com ([32.97.110.150]:51325 "EHLO
-	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753957Ab2DMNgq (ORCPT
+	id S932587Ab2DMNh1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Apr 2012 09:37:27 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:24346 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754969Ab2DMNh0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Apr 2012 09:36:46 -0400
-Date: Fri, 13 Apr 2012 06:35:13 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: mroos@linux.ee
-Cc: David Miller <davem@davemloft.net>, shemminger@vyatta.com,
-        Linux Kernel list <linux-kernel@vger.kernel.org>,
-        netdev@vger.kernel.org
-Subject: Re: suspicious RCU usage warnings in 3.3.0
-Message-ID: <20120413133513.GB2457@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20120411171004.016ddd95@nehalam.linuxnetplumber.net>
- <20120411.201854.1070083308359208025.davem@davemloft.net>
- <20120412004507.GF2473@linux.vnet.ibm.com>
- <20120411.210843.716144028821174908.davem@davemloft.net>
- <20120412045428.GB2497@linux.vnet.ibm.com>
- <alpine.SOC.1.00.1204131444150.2736@math.ut.ee>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.SOC.1.00.1204131444150.2736@math.ut.ee>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12041313-3270-0000-0000-000005870EED
+	Fri, 13 Apr 2012 09:37:26 -0400
+X-Authority-Analysis: v=2.0 cv=T5EOvo2Q c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=XQbtiDEiEegA:10 a=ASPqzAbYsGkA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=swNhhU6mUVexVLaUfhUA:9 a=PUjeQqilurYA:10 a=yFd4LeGOoOUA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.80.29
+Message-ID: <1334324244.23924.357.camel@gandalf.stny.rr.com>
+Subject: Re: [PATCH][GIT PULL][v3.4] tracing: Fix build breakage without
+ CONFIG_PERF_EVENTS (again)
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>
+Date: Fri, 13 Apr 2012 09:37:24 -0400
+In-Reply-To: <20120413085315.GC3168@opensource.wolfsonmicro.com>
+References: <1334262300.23924.348.camel@gandalf.stny.rr.com>
+	 <1334263193.23924.353.camel@gandalf.stny.rr.com>
+	 <20120413085315.GC3168@opensource.wolfsonmicro.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.2.2-1 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 13, 2012 at 02:55:12PM +0300, mroos@linux.ee wrote:
-> > sparc64: Eliminate obsolete __handle_softirq() function
-> > 
-> > The invocation of softirq is now handled by irq_exit(), so there is no
-> > need for sparc64 to invoke it on the trap-return path.  In fact, doing so
-> > is a bug because if the trap occurred in the idle loop, this invocation
-> > can result in lockdep-RCU failures.  The problem is that RCU ignores idle
-> > CPUs, and the sparc64 trap-return path to the softirq handlers fails to
-> > tell RCU that the CPU must be considered non-idle while those handlers
-> > are executing.  This means that RCU is ignoring any RCU read-side critical
-> > sections in those handlers, which in turn means that RCU-protected data
-> > can be yanked out from under those read-side critical sections.
-> > 
-> > The shiny new lockdep-RCU ability to detect RCU read-side critical sections
-> > that RCU is ignoring located this problem.
-> > 
-> > The fix is straightforward: Make sparc64 stop manually invoking the
-> > softirq handlers.
-> > 
-> > Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+On Fri, 2012-04-13 at 09:53 +0100, Mark Brown wrote:
+> On Thu, Apr 12, 2012 at 04:39:53PM -0400, Steven Rostedt wrote:
 > 
-> It works for me on Sun Fire V100 - no more RCU warnings under ping 
-> flood.
+> > Looking at this patch in more depth, it may be cleaner to do:
 > 
-> Tested-by: Meelis Roos <mroos@linux.ee>
+> > #if defined(CONFIG_PERF_EVENTS) && defined(CONFIG_FUNCTION_TRACER)
+> > int perf_ftrace_event_register(struct ftrace_event_call *call,
+> >   			       enum trace_reg type, void *data);
+> > #else
+> > # define perf_ftrace_event_register NULL
+> > #endif
+> 
+> > Mark, would you like to make the above update?
+> 
+> I've sent a revised version of the patch out.  I really don't care which
+> version gets merged or who writes the patch so long as we can get this
+> fixed.
 
-OK, if this thing is going to actually work, I guess I need to update
-the changelog to give credit where it is due, please see below.
+I know it's trivial, but people do get upset when one developer redoes
+the work of another. But thanks! I'm adding it to my tree now and
+testing it.
 
-My main concern about my patch is my removal of this line:
+-- Steve
 
-	bne,pn			%icc, __handle_softirq
-
-It is quite possible that this should instead change to look as follows:
-
-	bne,pn			%icc, __handle_preemption
-
-This code is under #ifndef CONFIG_SMP, so Meelis's testing would not
-reach it.
-
-Anyway, patch with updated changelog below.
-
-							Thanx, Paul
-
-------------------------------------------------------------------------
-
-sparc64: Eliminate obsolete __handle_softirq() function
-
-The invocation of softirq is now handled by irq_exit(), so there is no
-need for sparc64 to invoke it on the trap-return path.  In fact, doing so
-is a bug because if the trap occurred in the idle loop, this invocation
-can result in lockdep-RCU failures.  The problem is that RCU ignores idle
-CPUs, and the sparc64 trap-return path to the softirq handlers fails to
-tell RCU that the CPU must be considered non-idle while those handlers
-are executing.  This means that RCU is ignoring any RCU read-side critical
-sections in those handlers, which in turn means that RCU-protected data
-can be yanked out from under those read-side critical sections.
-
-The shiny new lockdep-RCU ability to detect RCU read-side critical sections
-that RCU is ignoring located this problem.
-
-The fix is straightforward: Make sparc64 stop manually invoking the
-softirq handlers.
-
-Reported-by: Meelis Roos <mroos@linux.ee>
-Suggested-by: David Miller <davem@davemloft.net>
-Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-Tested-by: Meelis Roos <mroos@linux.ee>
-
-diff --git a/arch/sparc/kernel/rtrap_64.S b/arch/sparc/kernel/rtrap_64.S
-index 77f1b95..9171fc2 100644
---- a/arch/sparc/kernel/rtrap_64.S
-+++ b/arch/sparc/kernel/rtrap_64.S
-@@ -20,11 +20,6 @@
- 
- 		.text
- 		.align			32
--__handle_softirq:
--		call			do_softirq
--		 nop
--		ba,a,pt			%xcc, __handle_softirq_continue
--		 nop
- __handle_preemption:
- 		call			schedule
- 		 wrpr			%g0, RTRAP_PSTATE, %pstate
-@@ -89,9 +84,7 @@ rtrap:
- 		cmp			%l1, 0
- 
- 		/* mm/ultra.S:xcall_report_regs KNOWS about this load. */
--		bne,pn			%icc, __handle_softirq
- 		 ldx			[%sp + PTREGS_OFF + PT_V9_TSTATE], %l1
--__handle_softirq_continue:
- rtrap_xcall:
- 		sethi			%hi(0xf << 20), %l4
- 		and			%l1, %l4, %l4
 
