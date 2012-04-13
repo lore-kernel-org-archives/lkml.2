@@ -1,84 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935229Ab2DMKy2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Apr 2012 06:54:28 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:64125 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751074Ab2DMKy0 (ORCPT
+	id S935251Ab2DMLAS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Apr 2012 07:00:18 -0400
+Received: from na3sys009aog127.obsmtp.com ([74.125.149.107]:50102 "EHLO
+	na3sys009aog127.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1758521Ab2DMLAQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Apr 2012 06:54:26 -0400
-From: John Kacur <jkacur@redhat.com>
-To: Thomas Gleixner <tglx@linutronix.de>,
-        Paul McKenney <paulmck@linux.vnet.ibm.com>
-Cc: lkml <linux-kernel@vger.kernel.org>,
-        rt-users <linux-rt-users@vger.kernel.org>,
-        John Kacur <jkacur@redhat.com>
-Subject: [PATCH RT] rcu: Fix build break
-Date: Fri, 13 Apr 2012 12:54:21 +0200
-Message-Id: <1334314461-8937-1-git-send-email-jkacur@redhat.com>
-X-Mailer: git-send-email 1.7.2.3
+	Fri, 13 Apr 2012 07:00:16 -0400
+Date: Fri, 13 Apr 2012 13:59:23 +0300
+From: Felipe Balbi <balbi@ti.com>
+To: Bhupesh SHARMA <bhupesh.sharma@st.com>
+Cc: "balbi@ti.com" <balbi@ti.com>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "stern@rowland.harvard.edu" <stern@rowland.harvard.edu>
+Subject: Re: Enabling multiple gadgets on top of composite driver
+Message-ID: <20120413105921.GM7154@arwen.pp.htv.fi>
+Reply-To: balbi@ti.com
+References: <D5ECB3C7A6F99444980976A8C6D896384FA30FA942@EAPEX1MAIL1.st.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="6CiRFyVmOOJ3DkBX"
+Content-Disposition: inline
+In-Reply-To: <D5ECB3C7A6F99444980976A8C6D896384FA30FA942@EAPEX1MAIL1.st.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-A build break can occur with the following config options enabled
 
-CONFIG_PREEMPT_RT_FULL
-CONFIG_RCU_FAST_NO_HZ
-CONFIG_RCU_CPU_STALL_INFO
+--6CiRFyVmOOJ3DkBX
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-This occurs because symbols in print_cpu_stall_fast_no_hz() such as
-rcu_idle_gp_timer are not accessible with CONFIG_PREEMPT_RT_FULL
-and results in the following type of build errors:
+On Fri, Apr 13, 2012 at 06:51:26PM +0800, Bhupesh SHARMA wrote:
+> Hi,
+>=20
+> I have a query regarding enabling multiple gadgets (like g_webcam, g_zero=
+ etc..)
+> on top of the Composite driver.
+>=20
+> My use case is very simple:
+> 	- I want to expose a USB composite device to a standard USB host, where
+> 	  the Composite device supports a webcam gadget + zero gadget + some oth=
+er gadget..
 
-kernel/rcutree_plugin.h: In function ‘print_cpu_stall_fast_no_hz’:
-kernel/rcutree_plugin.h:2195: error: ‘rcu_idle_gp_timer’ undeclared (first use in this function)
+look at how nokia.c does it.
 
-This patch fixes the build break by limiting the
-to the function rcu_needs_cpu() instead of to the entire
-!defined(CONFIG_RCU_FAST_NO_NZ) section
+> On the older kernels like 2.6.27, this was easily possible, but the latest
+> gadget code doesn't seem to support the same:
+> 	- I can see that first a 'choicemenu' is provided which allows selection=
+ of only
+> 	  one gadget at a time.
 
-as was intended in the original rcu: Make ksoftirqd do RCU quiescent states
-patch.
+Answer M instead of Y to "USB Gadget Drivers"
 
-Signed-off-by: John Kacur <jkacur@redhat.com>
----
- kernel/rcutree_plugin.h |    5 +++++
- 1 files changed, 5 insertions(+), 0 deletions(-)
+> 	- The "common" stuff like "composite.c", "epautoconfig.c" have been incl=
+uded in
+> 	  each f_* function driver (for e.g. f_uvc.c, f_sourcesink.c, etc..), so=
+ even if
+> 	  I somehow tweak the 'choicemenu' stuff, I get redeclaration errors.
 
-diff --git a/kernel/rcutree_plugin.h b/kernel/rcutree_plugin.h
-index 14acafc..2844d7d 100644
---- a/kernel/rcutree_plugin.h
-+++ b/kernel/rcutree_plugin.h
-@@ -1914,6 +1914,9 @@ int rcu_needs_cpu(int cpu)
- {
- 	return rcu_cpu_has_callbacks(cpu);
- }
-+#endif	/* !defined(CONFIG_RCU_FAST_NO_HZ) || defined(CONFIG_PREEMPT_RT_FULL) */
-+
-+#if !defined(CONFIG_RCU_FAST_NO_HZ)
- 
- /*
-  * Because we do not have RCU_FAST_NO_HZ, don't bother initializing for it.
-@@ -1984,6 +1987,7 @@ static DEFINE_PER_CPU(struct hrtimer, rcu_idle_gp_timer);
- static ktime_t rcu_idle_gp_wait;	/* If some non-lazy callbacks. */
- static ktime_t rcu_idle_lazy_gp_wait;	/* If only lazy callbacks. */
- 
-+#ifndef CONFIG_PREEMPT_RT_FULL
- /*
-  * Allow the CPU to enter dyntick-idle mode if either: (1) There are no
-  * callbacks on this CPU, (2) this CPU has not yet attempted to enter
-@@ -2001,6 +2005,7 @@ int rcu_needs_cpu(int cpu)
- 	/* Otherwise, RCU needs the CPU only if it recently tried and failed. */
- 	return per_cpu(rcu_dyntick_holdoff, cpu) == jiffies;
- }
-+#endif	/* #ifndef CONFIG_PREEMPT_RT_FULL */
- 
- /*
-  * Does the specified flavor of RCU have non-lazy callbacks pending on
--- 
-1.7.2.3
+yeah, that still needs to be cleaned up. The story behind that is very
+long.
 
+> What is the best way to enable multiple gadgets (like g_webcam, g_zero
+> etc..) on top of the Composite driver or am I missing something here?
+
+Either you want multiple gadgets or you want a composite gadget, what is
+it ? If you want a composite gadget, you need to write a small C file
+which combines multiple functions together (see nokia.c), if you want
+multiple gadget drivers, just make them all modules. I always compile
+all gadget drivers as modules and can use any one of them at any time.
+
+--=20
+balbi
+
+--6CiRFyVmOOJ3DkBX
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJPiAcJAAoJEIaOsuA1yqRER4sQAKnUzUNYe/O1hz1sbYBOyWFX
+sjspqrtV2JeTJyf7LO7drtipQ1nfoOzKIfbfPqUer0+1V57Qy6Icy3BOhlnV5cK6
+kqICJBRR4NCLjt93YUFAO6sZvIfjMADgjs7jNj0IJ6Ka8ss+7Ww8XfY/XWN5aPg6
+Izndly8RJkYvJz1nzX/qEpfn+SoCJDS0QMY+Ja7w+iOGB6A868SvS/c+9rQ+/lJr
+ynE9b1QcLiEaM9b3kGe1Y0ihYbSheKqOSfymywkHFgT1Nj2Bny5iTX9vFmXSpgf2
+mcS0ieUC7NJdmzbKm7HyCJjcqMKR42kbqVxeBJ67/GlVCZrcX5ijeDb2BbMsYDxS
+GbaYmCvVaQOF4IprR//Zoaa8iArOp4t4/AAjwFOtoVlj2RVb5MGPmcsF7bm55nTG
+Vy3j0y2Ez21+ZP2U/6ughKKG8bT8KKz//DMc1Njstqmr4poQJ/CoONYPD7pXUquK
+SvVsYmiISLfWDug7+bgWMu/WwERziOc1B6q/cFr6OacXzKsStGWXsYmdxJ01kgbc
+kCsIrFUF1QVdJyq68K0229K65WfWm5duyJKOHDhdit+Jk0EBjx0+Xc32xzI4l1o6
++HCsNnqOJHOeQ1RCKrRq8ckpDdFWofvbj0kkBoscw8pD4AAdp7WZeFaPKrS4gNpf
+G5bg9/OWPCVQqN2Jl9MB
+=cdhS
+-----END PGP SIGNATURE-----
+
+--6CiRFyVmOOJ3DkBX--
