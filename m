@@ -1,57 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752720Ab2DMPF4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Apr 2012 11:05:56 -0400
-Received: from shards.monkeyblade.net ([198.137.202.13]:49587 "EHLO
+	id S1753005Ab2DMPGM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Apr 2012 11:06:12 -0400
+Received: from shards.monkeyblade.net ([198.137.202.13]:49603 "EHLO
 	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750871Ab2DMPFb (ORCPT
+	with ESMTP id S1750871Ab2DMPGJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Apr 2012 11:05:31 -0400
-Date: Fri, 13 Apr 2012 11:05:21 -0400 (EDT)
-Message-Id: <20120413.110521.1849736588108683587.davem@davemloft.net>
-To: ebiederm@xmission.com
-Cc: eric.dumazet@gmail.com, ericvh@gmail.com, davej@redhat.com,
-        linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
-        levinsasha928@gmail.com, remi.denis-courmont@nokia.com
-Subject: Re: [PATCH 2/2] phonet: Sort out initiailziation and cleanup code.
+	Fri, 13 Apr 2012 11:06:09 -0400
+Date: Fri, 13 Apr 2012 11:05:52 -0400 (EDT)
+Message-Id: <20120413.110552.522790652681369943.davem@davemloft.net>
+To: just.for.lkml@googlemail.com
+Cc: rick.jones2@hp.com, netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH]Fix misplaces parenthesis in virtio_net.c
 From: David Miller <davem@davemloft.net>
-In-Reply-To: <m162dctjbo.fsf_-_@fess.ebiederm.org>
-References: <m1mx6otk85.fsf@fess.ebiederm.org>
-	<m1aa2otjf4.fsf_-_@fess.ebiederm.org>
-	<m162dctjbo.fsf_-_@fess.ebiederm.org>
+In-Reply-To: <20120409171415.4c49c96a@googlemail.com>
+References: <20120409171415.4c49c96a@googlemail.com>
 X-Mailer: Mew version 6.4 on Emacs 23.3 / Mule 6.0 (HANACHIRUSATO)
 Mime-Version: 1.0
 Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Fri, 13 Apr 2012 08:05:24 -0700 (PDT)
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Fri, 13 Apr 2012 08:05:54 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: ebiederm@xmission.com (Eric W. Biederman)
-Date: Fri, 06 Apr 2012 18:35:39 -0700
+From: Torsten Kaiser <just.for.lkml@googlemail.com>
+Date: Mon, 9 Apr 2012 17:14:15 +0200
 
+> Commit 2e57b79ccef1ff1422fdf45a9b28fe60f8f084f7 misplaced its
+> parenthesis and now tx_fifo_errors will only be incremented if an
+> ENOMEM error is not written to the syslog.
 > 
-> Recently an oops was reported in phonet if there was a failure during
-> network namespace creation.
- ...
-> After investigation it turns out there were two issues.
-> 1) Phonet was not implementing network devices but was using register_pernet_device
->    instead of register_pernet_subsys.
+> Correct the parenthesis and indentation to the original goal of
+> counting all non ENOMEM errors and ratelimiting only the messages.
 > 
->    This was allowing there to be cases when phonenet was not initialized and
->    the phonet net_generic was not set for a network namespace when network
->    device events were being reported on the netdevice_notifier for a network
->    namespace leading to the oops above.
-> 
-> 2) phonet_exit_net was implementing a confusing and special case of handling all
->    network devices from going away that it was hard to see was correct, and would
->    only occur when the phonet module was removed.
-> 
->    Now that unregister_netdevice_notifier has been modified to synthesize unregistration
->    events for the network devices that are extant when called this confusing special
->    case in phonet_exit_net is no longer needed.
-> 
-> Signed-off-by: Eric W. Biederman <ebiederm@xmission.com>
+> Signed-of-by: Torsten Kaiser <just.for.lkml@googlemail.com>
 
-Also applied, thanks Eric.
+Applied, thank you.
