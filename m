@@ -1,59 +1,149 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932445Ab2DMIRR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Apr 2012 04:17:17 -0400
-Received: from eu1sys200aog105.obsmtp.com ([207.126.144.119]:56450 "EHLO
-	eu1sys200aog105.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757329Ab2DMIQP (ORCPT
+	id S932473Ab2DMIS5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Apr 2012 04:18:57 -0400
+Received: from mailgw2.ericsson.se ([193.180.251.37]:47174 "EHLO
+	mailgw2.ericsson.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757073Ab2DMISu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Apr 2012 04:16:15 -0400
-From: Linus Walleij <linus.walleij@stericsson.com>
-To: Anton Vorontsov <anton.vorontsov@linaro.org>,
-        <linux-kernel@vger.kernel.org>
-Cc: Karl Komierowski <karl.komierowski@stericsson.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Arun Murthy <arun.murthy@stericsson.com>
-Subject: [PATCH 2/3] power/ab8500_btemp: harden platform data check
-Date: Fri, 13 Apr 2012 10:16:06 +0200
-Message-ID: <1334304966-18342-1-git-send-email-linus.walleij@stericsson.com>
-X-Mailer: git-send-email 1.7.9.2
+	Fri, 13 Apr 2012 04:18:50 -0400
+X-Greylist: delayed 901 seconds by postgrey-1.27 at vger.kernel.org; Fri, 13 Apr 2012 04:18:49 EDT
+X-AuditID: c1b4fb25-b7b18ae000000dce-b4-4f87dde20a78
+From: Hans Schillstrom <hans.schillstrom@ericsson.com>
+Organization: Ericsson AB
+To: Simon Horman <horms@verge.net.au>
+Subject: Re: [PATCH] netfilter: ipvs: Verify that IP_VS protocol has been registered
+Date: Fri, 13 Apr 2012 10:03:41 +0200
+User-Agent: KMail/1.10.3 (Linux/2.6.27.42-0.1-pae; KDE/4.1.3; i686; ; )
+CC: Sasha Levin <levinsasha928@gmail.com>,
+        Pablo Neira Ayuso <pablo@netfilter.org>,
+        "wensong@linux-vs.org" <wensong@linux-vs.org>, "ja@ssi.bg" <ja@ssi.bg>,
+        "kaber@trash.net" <kaber@trash.net>,
+        "davem@davemloft.net" <davem@davemloft.net>,
+        "davej@redhat.com" <davej@redhat.com>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "lvs-devel@vger.kernel.org" <lvs-devel@vger.kernel.org>,
+        "netfilter-devel@vger.kernel.org" <netfilter-devel@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+References: <1333668273-8873-1-git-send-email-levinsasha928@gmail.com> <CA+1xoqcxggYxb_ha4VdQtCUW-iYeVbaB38mC_pwAzdCf=rS7mQ@mail.gmail.com> <20120413041150.GA26149@verge.net.au>
+In-Reply-To: <20120413041150.GA26149@verge.net.au>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
+Message-ID: <201204131003.43742.hans.schillstrom@ericsson.com>
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Linus Walleij <linus.walleij@linaro.org>
+Hello Simon and Sasha
+Sorry for not helping been quite busy for a while
 
-If no platform data at all is supplied the driver crashes,
-extend the checks to be more careful so we can compile in the
-driver and boot also without platform data present.
+On Friday 13 April 2012 06:11:50 Simon Horman wrote:
+> On Fri, Apr 13, 2012 at 02:54:13AM +0200, Sasha Levin wrote:
+> > On Thu, Apr 12, 2012 at 1:46 AM, Pablo Neira Ayuso <pablo@netfilter.org> wrote:
+> > >> If you return here, I think you'll leave things in inconsistent state,
+> > >> ie. the tcp protocol is registered. You have to unregister it before
+> > >> leaving.
+> > 
+> > I thought that the cleanup callback is getting called for failed init
+> > calls, if that's not the case then we can probably call it ourselves
+> > if any of these failed.
+> 
+> Good point. In any case, I think that I have found a new problem.
+> 
+> With your proposed patch in place I see a panic in ftp helper registration
+> in the case where protocol registration fails. I have not had any
+> luck resolving this so far. Perhaps ipvs->net needs to be reset to NULL
+> if initialisation fails and that can be checked when modules register
+> themselves?
+I think Pablo was touching the root cause,
 
-Cc: Arun Murthy <arun.murthy@stericsson.com>
-Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
----
- drivers/power/ab8500_btemp.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+There is a generic fault in the patch, you must take care of un_register of the protocol
+i.e. my sugguestion is do like this:
 
-diff --git a/drivers/power/ab8500_btemp.c b/drivers/power/ab8500_btemp.c
-index d8bb993..e266f03 100644
---- a/drivers/power/ab8500_btemp.c
-+++ b/drivers/power/ab8500_btemp.c
-@@ -978,12 +978,12 @@ static int __devinit ab8500_btemp_probe(struct platform_device *pdev)
- 
- 	/* get btemp specific platform data */
- 	plat_data = pdev->dev.platform_data;
--	di->pdata = plat_data->btemp;
--	if (!di->pdata) {
-+	if (!plat_data || !plat_data->btemp) {
- 		dev_err(di->dev, "no btemp platform data supplied\n");
- 		ret = -EINVAL;
- 		goto free_device_info;
- 	}
-+	di->pdata = plat_data->btemp;
- 
- 	/* get battery specific platform data */
- 	di->bat = plat_data->battery;
+#ifdef CONFIG_IP_VS_PROTO_TCP
+	if (register_ip_vs_proto_netns(net, &ip_vs_protocol_tcp) < 0)
+		goto unreg;
+#endif
+#ifdef CONFIG_IP_VS_PROTO_UDP
+	if (register_ip_vs_proto_netns(net, &ip_vs_protocol_udp) < 0)
+		goto unreg;
+#endif
+...
+
+unreg:
+	ip_vs_protocol_net_cleanup(net);
+	return -ENOMEM;
+}
+
+and in register_ip_vs_proto_netns() kzalloc() could be changed to GFP_KERNEL 
+since this will allways be called from process context
+
+
+> 
+> IPVS: Registered protocols (TCP, UDP, SCTP, AH, ESP)
+> IPVS: Connection hash table configured (size=4096, memory=64Kbytes)
+> IPVS: Each connection entry needs 264 bytes at least
+> input: AT Translated Set 2 keyboard as /devices/platform/i8042/serio0/input/input1
+> IPVS: [rr] scheduler registered.
+> IPVS: [wrr] scheduler registered.
+> IPVS: [lc] scheduler registered.
+> IPVS: [wlc] scheduler registered.
+> IPVS: [lblc] scheduler registered.
+> IPVS: [lblcr] scheduler registered.
+> IPVS: [dh] scheduler registered.
+> IPVS: [sh] scheduler registered.
+> IPVS: [sed] scheduler registered.
+> IPVS: [nq] scheduler registered.
+> general protection fault: 0000 [#1] SMP
+> CPU 0
+> Modules linked in:
+> 
+> Pid: 1, comm: swapper/0 Not tainted 3.3.0-03812-gf51f739 #219 Bochs Bochs
+> RIP: 0010:[<ffffffff811e21ba>]  [<ffffffff811e21ba>] register_ip_vs_app+0x3a/0x70
+> RSP: 0018:ffff880002039df0  EFLAGS: 00010246
+> RAX: 002a002900280027 RBX: ffff8800020ce680 RCX: 0000000000000000
+> RDX: 0000000000000000 RSI: ffff8800020ce680 RDI: ffffffff8162ab80
+> RBP: ffff880002039e00 R08: 0000000000000000 R09: 0000000000000000
+> R10: 0000000000000000 R11: 0000000000000001 R12: ffff880003916800
+> R13: 00000000fffffff4 R14: ffffffff816e5f00 R15: ffff880003916800
+> FS:  0000000000000000(0000) GS:ffff880002600000(0000) knlGS:0000000000000000
+> CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+> CR2: 00000000004697e0 CR3: 0000000001605000 CR4: 00000000000006b0
+> DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+> DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+> Process swapper/0 (pid: 1, threadinfo ffff880002038000, task ffff8800020375a0)
+> Stack:
+>  ffff8800020ce680 0000000000000000 ffff880002039e50 ffffffff81675610
+>  ffffffff81614060 00ffffff00000006 ffffffff8149dc9d ffffffff8162b8a0
+>  0000000000000000 ffffffff81675699 0000000000000000 0000000000000000
+> Call Trace:
+>  [<ffffffff81675610>] __ip_vs_ftp_init+0x6b/0xf4
+>  [<ffffffff81675699>] ? __ip_vs_ftp_init+0xf4/0xf4
+>  [<ffffffff811a6011>] ops_init.constprop.11+0x91/0x110
+>  [<ffffffff81675699>] ? __ip_vs_ftp_init+0xf4/0xf4
+>  [<ffffffff811a60fc>] register_pernet_operations.isra.8+0x6c/0xc0
+>  [<ffffffff811a61e0>] register_pernet_subsys+0x20/0x40
+>  [<ffffffff81675593>] ? ip_vs_sed_init+0x12/0x12
+>  [<ffffffff816756a9>] ip_vs_ftp_init+0x10/0x12
+>  [<ffffffff810001ca>] do_one_initcall+0x3a/0x160
+>  [<ffffffff81654bae>] kernel_init+0x9b/0x115
+>  [<ffffffff81298bf4>] kernel_thread_helper+0x4/0x10
+>  [<ffffffff81654b13>] ? start_kernel+0x31d/0x31d
+>  [<ffffffff81298bf0>] ? gs_change+0xb/0xb
+> Code: f8 48 89 f3 4c 8b a7 40 09 00 00 e8 e1 a6 ff ff 48 c7 c7 80 ab 62 81 e8 25 30 0b 00 49 8b 84 24 08 01 00 00 48 c7 c7 80 ab 62 81 <48> 89 58 08 48 89 03 49 8d 84 24 08 01 00 00 48 89 43 08 49 89
+> RIP  [<ffffffff811e21ba>] register_ip_vs_app+0x3a/0x70
+>  RSP <ffff880002039df0>
+> ---[ end trace 3e5d9bede957f8b4 ]---
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe netdev" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> 
+
 -- 
-1.7.9.2
-
+Regards
+Hans Schillstrom <hans.schillstrom@ericsson.com>
