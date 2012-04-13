@@ -1,83 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756059Ab2DMTjO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Apr 2012 15:39:14 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:36094 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751765Ab2DMTjM (ORCPT
+	id S1756463Ab2DMTjn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Apr 2012 15:39:43 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:38670 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751765Ab2DMTjm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Apr 2012 15:39:12 -0400
-Date: Fri, 13 Apr 2012 14:39:05 -0500
-From: Jonathan Nieder <jrnieder@gmail.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: x86@kernel.org, linux-kernel@vger.kernel.org,
-        Ben Hutchings <ben@decadent.org.uk>,
-        Andreas Herrmann <andreas.herrmann3@amd.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>
-Subject: [PATCH resend] x86: memtest: WARN if bad RAM found
-Message-ID: <20120413193905.GD2387@burratino>
-References: <20120402150522.GA4980@burratino>
+	Fri, 13 Apr 2012 15:39:42 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120402150522.GA4980@burratino>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <201204132124.21294.l.lunak@suse.cz>
+References: <201204132124.21294.l.lunak@suse.cz>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Fri, 13 Apr 2012 12:39:20 -0700
+X-Google-Sender-Auth: aFnHTgu3fHplXqk7YvnGlEBM7Pk
+Message-ID: <CA+55aFxCrVtwCd9bjHLt82Uwisp8OtKP9c+raPYMqCTXqVfxGw@mail.gmail.com>
+Subject: Re: [PATCH][RESEND] do not redefine userspace's NULL #define
+To: Lubos Lunak <l.lunak@suse.cz>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+        Arnd Bergmann <arnd@arndb.de>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Ben Hutchings <ben@decadent.org.uk>
-Date: Mon, 5 Dec 2011 04:00:58 +0000
+On Fri, Apr 13, 2012 at 12:24 PM, Lubos Lunak <l.lunak@suse.cz> wrote:
+> GCC's NULL is actually __null, which allows detecting some questionable
+> NULL usage and warn about it. Moreover each platform/compiler should have
+> its own stddef.h anyway (which is different from linux/stddef.h).
+> So there's no good reason to override what the compiler provides.
+> Keep the #define conditionally, in order to keep the headers self-contained.
 
-Since this is not a particularly thorough test, if we find any bad
-bits of RAM then there is a fair chance that there are other bad bits
-we fail to detect.
+There's no way user should ever include the linux internal stddef.h.
 
-Warn so the TAINT_WARNING flag shows up in panic traces and other bug
-reports from users that enabled memtest and found bad RAM during
-bootup, to help people debugging to see that problems are potentially
-due to unreliable RAM.  The warning text gives advice that can be used
-to make the warning go away using a more thorough test:
+And quite frankly, kernel-external definitions of NULL have
+traditionally been pure sh*t (ie plain "0" without the cast to a
+pointer), so I'm not entirely convinced about this patch.
 
-	Bad RAM detected. Use memtest86+ to perform a thorough test
-	and the memmap= parameter to reserve the bad areas.
+So what is the *actual* thing this helps with?
 
-In this way, this patch should make the lives of people helping to
-analyze bug reports from builds with CONFIG_MEMTEST enabled easier.
-
-[jn: more explanation of impact]
-Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
-Signed-off-by: Jonathan Nieder <jrnieder@gmail.com>
----
-Hi again,
-
-The patch below last visited this list on 2 April, about a week and a
-half ago.  No reply.
-
-The patch has been in Debian since last December.  I like it.  The
-patch is targetted at v3.5, so I would like to see it in linux-next so
-it can get more exposure.  Comments?
-
-Thanks,
-Jonathan
-
- arch/x86/mm/memtest.c |    2 ++
- 1 file changed, 2 insertions(+)
-
-diff --git a/arch/x86/mm/memtest.c b/arch/x86/mm/memtest.c
-index c80b9fb95734..38caeb44a218 100644
---- a/arch/x86/mm/memtest.c
-+++ b/arch/x86/mm/memtest.c
-@@ -30,6 +30,8 @@ static u64 patterns[] __initdata = {
- 
- static void __init reserve_bad_mem(u64 pattern, u64 start_bad, u64 end_bad)
- {
-+	WARN_ONCE(1, "Bad RAM detected. Use memtest86+ to perform a thorough test\n"
-+		  "and the memmap= parameter to reserve the bad areas.");
- 	printk(KERN_INFO "  %016llx bad mem addr %010llx - %010llx reserved\n",
- 	       (unsigned long long) pattern,
- 	       (unsigned long long) start_bad,
--- 
-1.7.10
-
+                    Linus
