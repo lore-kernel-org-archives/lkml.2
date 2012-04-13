@@ -1,52 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756431Ab2DMTky (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Apr 2012 15:40:54 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:50944 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1755669Ab2DMTkx (ORCPT
+	id S1756607Ab2DMTq5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Apr 2012 15:46:57 -0400
+Received: from mail-wi0-f172.google.com ([209.85.212.172]:56090 "EHLO
+	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756025Ab2DMTq4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Apr 2012 15:40:53 -0400
-Date: Fri, 13 Apr 2012 15:40:52 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Johannes Stezenbach <js@sig21.net>
-cc: Jason Baron <jbaron@redhat.com>, <linux-kernel@vger.kernel.org>,
-        <linux-usb@vger.kernel.org>
-Subject: Re: ehci dynamic debug problem
-In-Reply-To: <20120413190311.GA6238@sig21.net>
-Message-ID: <Pine.LNX.4.44L0.1204131539280.1146-100000@iolanthe.rowland.org>
+	Fri, 13 Apr 2012 15:46:56 -0400
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <20120413.152455.900761231064979707.davem@davemloft.net>
+References: <20120413.152455.900761231064979707.davem@davemloft.net>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Fri, 13 Apr 2012 12:46:34 -0700
+X-Google-Sender-Auth: d9R54zfNbrZtyeCw5c17I7UZ38g
+Message-ID: <CA+55aFwYWRv6+ix+UjT52UAn1rQeDpUKmbWq5SdHjZ0qHR2Cbg@mail.gmail.com>
+Subject: Re: [GIT] Sparc
+To: David Miller <davem@davemloft.net>
+Cc: akpm@linux-foundation.org, sparclinux@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 13 Apr 2012, Johannes Stezenbach wrote:
+On Fri, Apr 13, 2012 at 12:24 PM, David Miller <davem@davemloft.net> wrote:
+>
+> With special guest sparc64 assembler hacker, Paul E. McKenney.
 
-> > > Does it make sense now?
-> > 
-> > No.  What happens if dynamic debug is enabled for one line that calls 
-> > dbg_port_buf() but not for another?  There's no way to avoid the string 
-> > formatting in both lines, even though one of them discards the result.
-> 
-> That's why I said in my initial mail:
-> 
->   Does dynamic debug offer an "is the message two lines below enabled" test?
-> 
-> What I meant is that dbg_port() could test if it
-> needs to call dbg_port_buf() for this call site.
+Oh christ.  You're teaching *more* people about sparc64?
 
-Oh.  As far as I know, that's not possible.
+Where will it end?
 
-> Anyway, maybe the dbg_*_buf() are not called often enough to worry?
+That said, Looking at the patch, it looks a bit dubious. Why does the
 
-Probably not.
+ 		cmp			%l1, 0
 
-> If you're OK with "#if defined(DEBUG) || defined(CONFIG_DYNAMIC_DEBUG)"
-> then maybe you should just do that?
+instruction remain, even if the conditional branch was deleted? I'm
+not seeing any subsequent uses of %icc, but hey, I'm no sparc expert
+(nor do I want to be).
 
-Yes, that sounds best.
-
-Alan Stern
-
+                      Linus
