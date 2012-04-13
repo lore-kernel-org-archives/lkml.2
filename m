@@ -1,115 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757150Ab2DMXAV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Apr 2012 19:00:21 -0400
-Received: from mga09.intel.com ([134.134.136.24]:61596 "EHLO mga09.intel.com"
+	id S932402Ab2DMXAl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Apr 2012 19:00:41 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:17264 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755015Ab2DMXAT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Apr 2012 19:00:19 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
-   d="scan'208";a="129287452"
-From: Andi Kleen <andi@firstfloor.org>
-To: linux-kernel@vger.kernel.org
-Cc: Andi Kleen <ak@linux.intel.com>, penberg@kernel.org
-Subject: [PATCH] slab/mempolicy: always use local policy from interrupt context
-Date: Fri, 13 Apr 2012 16:00:10 -0700
-Message-Id: <1334358010-17019-1-git-send-email-andi@firstfloor.org>
-X-Mailer: git-send-email 1.7.7.6
+	id S1756593Ab2DMXAj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 Apr 2012 19:00:39 -0400
+Date: Fri, 13 Apr 2012 19:00:24 -0400
+From: Jeff Layton <jlayton@redhat.com>
+To: Peter Staubach <pstaubach@exagrid.com>
+Cc: Steve Dickson <SteveD@redhat.com>, Malahal Naineni <malahal@us.ibm.com>,
+        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "miklos@szeredi.hu" <miklos@szeredi.hu>,
+        "viro@ZenIV.linux.org.uk" <viro@ZenIV.linux.org.uk>,
+        "hch@infradead.org" <hch@infradead.org>,
+        "michael.brantley@deshaw.com" <michael.brantley@deshaw.com>
+Subject: Re: [PATCH RFC] vfs: make fstatat retry on ESTALE errors from
+ getattr call
+Message-ID: <20120413190024.5095f9b1@tlielax.poochiereds.net>
+In-Reply-To: <2F609A9B-B44B-4CEA-BF35-D6BEDA729363@exagrid.com>
+References: <1334316311-22331-1-git-send-email-jlayton@redhat.com>
+	<20120413150518.GA1987@us.ibm.com>
+	<20120413114236.0e557e01@tlielax.poochiereds.net>
+	<4F884F32.7010402@RedHat.com>
+	<2F609A9B-B44B-4CEA-BF35-D6BEDA729363@exagrid.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Andi Kleen <ak@linux.intel.com>
+On Fri, 13 Apr 2012 13:34:51 -0400
+Peter Staubach <pstaubach@exagrid.com> wrote:
 
-slab_node() could access current->mempolicy from interrupt context.
-However there's a race condition during exit where the mempolicy
-is first freed and then the pointer zeroed.
+> I still think that returning ESTALE to the application is just exposing a short coming in the implementation.  From a path based system like stat(), the application should see either ENOENT or some sort valid return.
+> 
 
-Using this from interrupts seems bogus anyways. The interrupt
-will interrupt a random process and therefore get a random
-mempolicy. Many times idle's which noone can change.
+Agreed, but I'm willing to live with a solution that addresses most of
+these situations, even if we can't fix them all. If retrying
+indefinitely may be a problem for other filesystems then we can't
+just ignore that...
 
-Just disable this here and always use local for slab
-from interrupts. I also cleaned up the callers of slab_node a bit
-which always passed the same argument.
+> I also look at the looping from the other side.  While possible, of course, I'd like to see someone construct a situation where it really happens.  By this, I don't mean a thought experiment, but a real running situation.
+> 
+> We already have evidence, in the form of the Solaris NFS client, that infinite looping does not happen in nature.
+> 
 
-I believe the original mempolicy code did that in fact,
-so it's likely a regression.
+I'm fairly certainly that looping indefinitely would be just fine for
+NFS. My main concern is those FUSE fs' that Miklos alluded to when he
+reviewed your earlier set.
 
-Reported-by: Arun Sharma <asharma@fb.com>
-Cc: penberg@kernel.org
-Signed-off-by: Andi Kleen <ak@linux.intel.com>
----
- include/linux/mempolicy.h |    2 +-
- mm/mempolicy.c            |    3 ++-
- mm/slab.c                 |    4 ++--
- mm/slub.c                 |    2 +-
- 4 files changed, 6 insertions(+), 5 deletions(-)
+He said that some can return ESTALE indefinitely, and they don't
+necessarily respect signals. If limiting the number of retries helps
+prevent problems with those, then that's still better than the current
+situation.
 
-diff --git a/include/linux/mempolicy.h b/include/linux/mempolicy.h
-index 7c727a9..7106786 100644
---- a/include/linux/mempolicy.h
-+++ b/include/linux/mempolicy.h
-@@ -215,7 +215,7 @@ extern struct zonelist *huge_zonelist(struct vm_area_struct *vma,
- extern bool init_nodemask_of_mempolicy(nodemask_t *mask);
- extern bool mempolicy_nodemask_intersects(struct task_struct *tsk,
- 				const nodemask_t *mask);
--extern unsigned slab_node(struct mempolicy *policy);
-+extern unsigned slab_node(void);
- 
- extern enum zone_type policy_zone;
- 
-diff --git a/mm/mempolicy.c b/mm/mempolicy.c
-index cfb6c86..d0a9de0 100644
---- a/mm/mempolicy.c
-+++ b/mm/mempolicy.c
-@@ -1586,8 +1586,9 @@ static unsigned interleave_nodes(struct mempolicy *policy)
-  * task can change it's policy.  The system default policy requires no
-  * such protection.
-  */
--unsigned slab_node(struct mempolicy *policy)
-+unsigned slab_node(void)
- {
-+	struct mempolicy *policy = in_interrupt() ? current->policy : NULL;
- 	if (!policy || policy->flags & MPOL_F_LOCAL)
- 		return numa_node_id();
- 
-diff --git a/mm/slab.c b/mm/slab.c
-index e901a36..af3b405 100644
---- a/mm/slab.c
-+++ b/mm/slab.c
-@@ -3336,7 +3336,7 @@ static void *alternate_node_alloc(struct kmem_cache *cachep, gfp_t flags)
- 	if (cpuset_do_slab_mem_spread() && (cachep->flags & SLAB_MEM_SPREAD))
- 		nid_alloc = cpuset_slab_spread_node();
- 	else if (current->mempolicy)
--		nid_alloc = slab_node(current->mempolicy);
-+		nid_alloc = slab_node();
- 	if (nid_alloc != nid_here)
- 		return ____cache_alloc_node(cachep, flags, nid_alloc);
- 	return NULL;
-@@ -3368,7 +3368,7 @@ static void *fallback_alloc(struct kmem_cache *cache, gfp_t flags)
- 
- retry_cpuset:
- 	cpuset_mems_cookie = get_mems_allowed();
--	zonelist = node_zonelist(slab_node(current->mempolicy), flags);
-+	zonelist = node_zonelist(slab_node(), flags);
- 
- retry:
- 	/*
-diff --git a/mm/slub.c b/mm/slub.c
-index ffe13fd..ef936f3 100644
---- a/mm/slub.c
-+++ b/mm/slub.c
-@@ -1614,7 +1614,7 @@ static struct page *get_any_partial(struct kmem_cache *s, gfp_t flags,
- 
- 	do {
- 		cpuset_mems_cookie = get_mems_allowed();
--		zonelist = node_zonelist(slab_node(current->mempolicy), flags);
-+		zonelist = node_zonelist(slab_node(), flags);
- 		for_each_zone_zonelist(zone, z, zonelist, high_zoneidx) {
- 			struct kmem_cache_node *n;
- 
 -- 
-1.7.7.6
-
+Jeff Layton <jlayton@redhat.com>
