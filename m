@@ -1,68 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755325Ab2DNLcm (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 14 Apr 2012 07:32:42 -0400
-Received: from mail-wi0-f178.google.com ([209.85.212.178]:37611 "EHLO
-	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754835Ab2DNLcl (ORCPT
+	id S1755359Ab2DNLdn (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 14 Apr 2012 07:33:43 -0400
+Received: from einhorn.in-berlin.de ([192.109.42.8]:32996 "EHLO
+	einhorn.in-berlin.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754835Ab2DNLdm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 14 Apr 2012 07:32:41 -0400
-Date: Sat, 14 Apr 2012 13:32:35 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Borislav Petkov <borislav.petkov@amd.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Andreas Herrmann <andreas.herrmann3@amd.com>,
-        Kay Sievers <kay.sievers@vrfy.org>, Dave Jones <davej@redhat.com>,
-        linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
-        "H. Peter Anvin" <hpa@zytor.com>
-Subject: Re: [GIT PULL] x86 microcode fix for 3.4
-Message-ID: <20120414113235.GD24688@gmail.com>
-References: <20120413101021.GC27686@aftab>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120413101021.GC27686@aftab>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Sat, 14 Apr 2012 07:33:42 -0400
+X-Envelope-From: stefanr@s5r6.in-berlin.de
+Date: Sat, 14 Apr 2012 13:33:22 +0200
+From: Stefan Richter <stefanr@s5r6.in-berlin.de>
+To: Chris Boot <bootc@bootc.net>
+Cc: linux1394-devel@lists.sourceforge.net, target-devel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, agrover@redhat.com, clemens@ladisch.de,
+        nab@linux-iscsi.org
+Subject: Re: [PATCH 09/11] firewire-sbp-target: Add sbp_target_agent.{c,h}
+Message-ID: <20120414133322.6f601eb9@stein>
+In-Reply-To: <20120414124909.0615aa2a@stein>
+References: <1329317248-94128-1-git-send-email-bootc@bootc.net>
+	<1334154043-69076-1-git-send-email-bootc@bootc.net>
+	<1334154043-69076-10-git-send-email-bootc@bootc.net>
+	<20120414124909.0615aa2a@stein>
+X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.8; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Apr 14 Stefan Richter wrote:
+> On Apr 11 Chris Boot wrote:
+> > +static int tgt_agent_rw_agent_state(struct fw_card *card, int tcode, void *data,
+> > +		struct sbp_target_agent *agent)
+> > +{
+> > +	__be32 state;
+> > +
+> > +	switch (tcode) {
+> > +	case TCODE_READ_QUADLET_REQUEST:
+> > +		pr_debug("tgt_agent AGENT_STATE READ\n");
+> > +
+> > +		spin_lock_bh(&agent->lock);
+> > +		state = cpu_to_be32(agent->state);
+> > +		spin_unlock_bh(&agent->lock);
+> > +		memcpy(data, &state, sizeof(state));
+> > +
+> > +		return RCODE_COMPLETE;
+> > +
+> > +	case TCODE_WRITE_QUADLET_REQUEST:
+> > +		/* ignored */
+> > +		return RCODE_COMPLETE;
+> > +
+> > +	default:
+> > +		return RCODE_TYPE_ERROR;
+> > +	}
+> > +}
+> 
+> agent->state is an int; reading an int is atomic.  Hence the access on
+> its own does not benefit from lock acquisition.
 
-* Borislav Petkov <borislav.petkov@amd.com> wrote:
+Actually this is only true because all write accesses to agent->state are
+merely assignments (not increments or the like).  And I have to admit that
+I don't remember whether this is only how compilers work in practice or it
+is actually required by the C language specification.
 
-> Hi Ingo,
+> The memcpy can be simplified to
 > 
-> please pull the following fix for 3.4 from Andreas. This is seen by
-> people using 3.3 too thus the stable tagging.
+> 	*(__be32 *)data = cpu_to_be32(agent->state);
 > 
-> Thanks.
-> 
-> ---
-> The following changes since commit 0034102808e0dbbf3a2394b82b1bb40b5778de9e:
-> 
->   Linux 3.4-rc2 (2012-04-07 18:30:41 -0700)
-> 
-> are available in the git repository at:
-> 
->   git://git.kernel.org/pub/scm/linux/kernel/git/bp/bp.git tags/microcode-fix-for-3.4
-> 
-> for you to fetch changes up to 283c1f2558ef4a4411fe908364b15b73b6ab44cf:
-> 
->   x86, microcode: Ensure that module is only loaded on supported AMD CPUs (2012-04-13 11:51:05 +0200)
-> 
-> ----------------------------------------------------------------
-> A two-patch fix from Andreas taking care of a sysfs warning when the
-> microcode driver is loaded on unsupported platforms.
-> 
-> ----------------------------------------------------------------
-> Andreas Herrmann (2):
->       x86, microcode: Fix sysfs warning during module unload on unsupported CPUs
->       x86, microcode: Ensure that module is only loaded on supported AMD CPUs
-> 
->  arch/x86/kernel/microcode_amd.c  |   12 +++++++-----
->  arch/x86/kernel/microcode_core.c |   10 ++++------
->  2 files changed, 11 insertions(+), 11 deletions(-)
+> if data is always at least quadlet aligned.  Thy type cast is only to tell
+> code checkers like sparse that we know what we are doing.
 
-Pulled, thanks!
+So unless there is such an atomicity guarantee, leave the locking as is
+and prefer
 
-	Ingo
+	int state;
+
+	spin_lock_bh(&agent->lock);
+	state = agent->state;
+	spin_unlock_bh(&agent->lock);
+
+	*(__be32 *)data = cpu_to_be32(state);
+
+> If data may be
+> unaligned, you could use
+> 
+> 	put_unaligned_be32(agent->state, data);
+
+OK, I read further.  This is part of your handler.address_callback.
+data will point to quadlet aligned memory then.  It is no where written as
+an API specification, but you may rest assured that firewire-core will
+always align quadlet read or block read response buffers at least on
+quadlet boundary.  You can safely cast data into an u32 or __be32 pointer.
+-- 
+Stefan Richter
+-=====-===-- -=-- -===-
+http://arcgraph.de/sr/
