@@ -1,46 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755510Ab2DNDGj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Apr 2012 23:06:39 -0400
-Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:41720 "EHLO
-	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755009Ab2DNDGg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Apr 2012 23:06:36 -0400
+	id S1755409Ab2DND3V (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Apr 2012 23:29:21 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:10813 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755033Ab2DND3U (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 Apr 2012 23:29:20 -0400
+Date: Sat, 14 Apr 2012 05:28:14 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        David Howells <dhowells@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Alexander Gordeev <agordeev@redhat.com>,
+        Chris Zankel <chris@zankel.net>, David Smith <dsmith@redhat.com>,
+        "Frank Ch. Eigler" <fche@redhat.com>,
+        Geert Uytterhoeven <geert@linux-m68k.org>,
+        Larry Woodman <lwoodman@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>, Tejun Heo <tj@kernel.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v4 0/3] task_work_add (was: task_work_queue)
+Message-ID: <20120414032814.GA29002@redhat.com>
+References: <20120414021201.GA23385@redhat.com> <CA+55aFyDy6VHtZ=SmXfn-AHT0QU8LV69U5NECGLA9pXg4Q=aZw@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <alpine.LRH.2.02.1204141143001.29389@tundra.namei.org>
-References: <1334267284-19166-1-git-send-email-wad@chromium.org>
-	<alpine.LRH.2.02.1204141143001.29389@tundra.namei.org>
-Date: Fri, 13 Apr 2012 22:06:31 -0500
-Message-ID: <CABqD9hahg_KJHTFnRCDpUFaa4TZjy_2EvVOqtd89NvTnr8UkSw@mail.gmail.com>
-Subject: Re: [PATCH v18 01/15] Add PR_{GET,SET}_NO_NEW_PRIVS to prevent execve
- from granting privs
-From: Will Drewry <wad@chromium.org>
-To: James Morris <jmorris@namei.org>
-Cc: linux-kernel@vger.kernel.org, linux-man@vger.kernel.org,
-        linux-security-module@vger.kernel.org, linux-arch@vger.kernel.org,
-        linux-doc@vger.kernel.org, kernel-hardening@lists.openwall.com,
-        netdev@vger.kernel.org, x86@kernel.org, arnd@arndb.de,
-        davem@davemloft.net, hpa@zytor.com, mingo@redhat.com, oleg@redhat.com,
-        peterz@infradead.org, rdunlap@xenotime.net, mcgrathr@chromium.org,
-        tglx@linutronix.de, luto@mit.edu, eparis@redhat.com,
-        serge.hallyn@canonical.com, djm@mindrot.org, scarybeasts@gmail.com,
-        indan@nul.nu, pmoore@redhat.com, akpm@linux-foundation.org,
-        corbet@lwn.net, eric.dumazet@gmail.com, markus@chromium.org,
-        coreyb@linux.vnet.ibm.com, keescook@chromium.org,
-        Andy Lutomirski <luto@amacapital.net>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CA+55aFyDy6VHtZ=SmXfn-AHT0QU8LV69U5NECGLA9pXg4Q=aZw@mail.gmail.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 13, 2012 at 8:45 PM, James Morris <jmorris@namei.org> wrote:
-> I applied the patchset to:
-> git://git.kernel.org/pub/scm/linux/kernel/git/jmorris/linux-security.git next
+On 04/13, Linus Torvalds wrote:
 >
-> Please test, and make any further updates against that branch.
+> On Fri, Apr 13, 2012 at 7:12 PM, Oleg Nesterov <oleg@redhat.com> wrote:
+> >
+> > Changes based on review from Andrew:
+> >
+> >        - s/task_work_queue/task_work_add/
+> >
+> >        - don't create a secret dependency upon task_work.h
+> >          including sched.h in tracehook.h and keys/internal.h
+> >
+> >        - add more includes into task_work.[ch] to not rely
+> >          on "sched.h includes everything"
+>
+> I thought based on Andrew's comments that you were going to remove the
+> extra code to do FIFO for no obvious reason.
 
-Great! I will most certainly do that.
+No, I tried to defense fifo,
 
-Thanks!
-will
+> Apparently nothing
+> actually wanted/needed it,
+
+True, currently nothing. And most probably never will. task_work_add()
+should only be used for the "unlikely" events.
+
+> so why do it?
+
+I can remove it.
+
+But, unless you strongly object, personally I'd prefer to keep fifo.
+
+Once again. Imho of course, but fifo is simply "obviously better"
+from the common sense pov when it comes to submit-the-work-for-
+execution.
+
+For example. keyctl_session_to_parent() does _cancel only to protect
+from exploits doing keyctl(KEYCTL_SESSION_TO_PARENT) in an endless
+loop. It could simply do task_work_add(), but in this case we need
+fifo for correctness.
+
+But, again, again, I am not going to argue too much.
+
+Oleg.
+
