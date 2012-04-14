@@ -1,455 +1,193 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754916Ab2DNCo3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Apr 2012 22:44:29 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:58863 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753380Ab2DNCo1 (ORCPT
+	id S1755075Ab2DNCok (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Apr 2012 22:44:40 -0400
+Received: from mx.scalarmail.ca ([98.158.95.75]:58650 "EHLO
+	ironport-01.sms.scalar.ca" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1754972Ab2DNCog (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Apr 2012 22:44:27 -0400
-Date: Sat, 14 Apr 2012 11:44:22 +0900
-From: Takuya Yoshikawa <takuya.yoshikawa@gmail.com>
-To: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-Cc: Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
-        LKML <linux-kernel@vger.kernel.org>, KVM <kvm@vger.kernel.org>
-Subject: Re: [PATCH v2 07/16] KVM: MMU: introduce for_each_pte_list_spte
-Message-Id: <20120414114422.e3fe6e2abbfdcce61e6f69c8@gmail.com>
-In-Reply-To: <4F87FC19.8080404@linux.vnet.ibm.com>
-References: <4F87FA69.5060106@linux.vnet.ibm.com>
-	<4F87FC19.8080404@linux.vnet.ibm.com>
-X-Mailer: Sylpheed 3.2.0beta3 (GTK+ 2.24.6; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Fri, 13 Apr 2012 22:44:36 -0400
+Date: Fri, 13 Apr 2012 22:44:30 -0400
+From: Nick Bowler <nbowler@elliptictech.com>
+To: linux-kernel@vger.kernel.org, linux-wireless@vger.kernel.org
+Cc: Arend van Spriel <arend@broadcom.com>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        =?utf-8?B?UmFmYcWCIE1pxYJlY2tp?= <zajec5@gmail.com>
+Subject: Regression: bcma: early boot crash on BCM4716 w/ 3.4-rc2+ (bisected)
+Message-ID: <20120414024430.GA19782@elliptictech.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Organization: Elliptic Technologies Inc.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 13 Apr 2012 18:12:41 +0800b
-Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com> wrote:
+Hi folks,
 
-> It is used to walk all the sptes of the specified pte_list, after
-> this, the code of pte_list_walk can be removed
-> 
-> And it can restart the walking automatically if the spte is zapped
+Attemping to boot Linus' master on my Asus RT-N16 (Broadcom BCM4716 SoC)
+crashes early (before userspace is started).  Full boot log is appended.
+Linux 3.3 boots successfully, so I bisected to the following commit.
+Reverting the implicated commit on top of Linus' master corrects the
+issue.
 
-Well, I want to ask two questions:
+Please let me know if you need any more info,
 
-	- why do you prefer pte_list_* naming to rmap_*?
-	  (not a big issue but just curious)
-	- Are you sure the whole indirection by this patch will
-	  not introduce any regression?
-	  (not restricted to get_dirty)
+10d8493cd9efd38b1947b7a74276dbdc8311aa1a is the first bad commit
+commit 10d8493cd9efd38b1947b7a74276dbdc8311aa1a
+Author: Arend van Spriel <arend@broadcom.com>
+Date:   Tue Mar 6 15:50:48 2012 +0100
 
-As my previous patch showed, just a slight trivial change can introduce
-siginificant performance regression/improvement.
+    bcma: add support for on-chip OTP memory used for SPROM storage
+    
+    Wireless Broadcom chips can have either their SPROM data stored
+    on either external SPROM or on-chip OTP memory. Both are accessed
+    through the same register space. This patch adds support for the
+    on-chip OTP memory.
+    
+    Tested with:
+    BCM43224 OTP and SPROM
+    BCM4331 SPROM
+    BCM4313 OTP
+    
+    This patch is in response to linux-wireless thread [1].
+    
+    [1] http://article.gmane.org/gmane.linux.kernel.wireless.general/85426
+    
+    Tested-by: Saul St. John <saul.stjohn@gmail.com>
+    Tested-by: Rafal Milecki <zajec5@gmail.com>
+    Tested-by: Hauke Mehrtens <hauke@hauke-m.de>
+    Cc: Larry Finger <Larry.Finger@lwfinger.net>
+    Signed-off-by: Arend van Spriel <arend@broadcom.com>
+    Signed-off-by: John W. Linville <linville@tuxdriver.com>
 
-Thanks,
-	Takuya
+:040000 040000 761bdd36c36c49d9e96d53e6797186bc1cc8364a fe16356daf2cdc7a3552804b85c1d7deb5b82579 M	drivers
+:040000 040000 d1494dc9d5a89da0920aadb7f605386eb909acca e83a98ac9d8eebb1f367b1ce1bbac7da50ac0479 M	include
 
-> 
-> Signed-off-by: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-> ---
->  arch/x86/kvm/mmu.c       |  233 +++++++++++++++++++++++-----------------------
->  arch/x86/kvm/mmu_audit.c |    6 +-
->  2 files changed, 118 insertions(+), 121 deletions(-)
-> 
-> diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
-> index a1c3628..4e91e94 100644
-> --- a/arch/x86/kvm/mmu.c
-> +++ b/arch/x86/kvm/mmu.c
-> @@ -900,26 +900,110 @@ static void pte_list_remove(u64 *spte, unsigned long *pte_list)
->  	}
->  }
-> 
-> -typedef void (*pte_list_walk_fn) (u64 *spte);
-> -static void pte_list_walk(unsigned long *pte_list, pte_list_walk_fn fn)
-> -{
-> +/*
-> + * Used by the following functions to iterate through the sptes linked by a
-> + * pte_list. All fields are private and not assumed to be used outside.
-> + */
-> +struct spte_iterator {
-> +	/* private fields */
-> +	unsigned long *pte_list;
-> +	/* holds the sptep if not NULL */
->  	struct pte_list_desc *desc;
-> -	int i;
-> +	/* index of the sptep, -1 means the walking does not start. */
-> +	int pos;
-> +};
-> 
-> -	if (!*pte_list)
-> -		return;
-> +static void pte_list_walk_init(struct spte_iterator *iter,
-> +			       unsigned long *pte_list)
-> +{
-> +	iter->pte_list = pte_list;
-> +	iter->pos = -1;
-> +}
-> +
-> +static void pte_list_walk_check_restart(struct spte_iterator *iter, u64 *spte)
-> +{
-> +	/*
-> +	 * If the spte is zapped, we should set 'iter->pos = -1' to restart
-> +	 * the walk.
-> +	 */
-> +	if (!is_shadow_present_pte(*spte))
-> +		iter->pos = -1;
-> +}
-> +
-> +static u64 *pte_list_first(struct spte_iterator *iter)
-> +{
-> +	unsigned long pte_list = *iter->pte_list;
-> +	u64 *sptep;
-> +
-> +	if (!pte_list)
-> +		return NULL;
-> +
-> +	if (!(pte_list & 1)) {
-> +		iter->desc = NULL;
-> +		iter->pos = 0;
-> +		sptep = (u64 *)pte_list;
-> +
-> +		goto exit;
-> +	}
-> +
-> +	iter->desc = (struct pte_list_desc *)(pte_list & ~1ul);
-> +	iter->pos = 0;
-> +	sptep = iter->desc->sptes[iter->pos];
-> +
-> +exit:
-> +	WARN_ON(sptep && !is_shadow_present_pte(*sptep));
-> +	return sptep;
-> +}
-> 
-> -	if (!(*pte_list & 1))
-> -		return fn((u64 *)*pte_list);
-> +static u64 *pte_list_next(struct spte_iterator *iter)
-> +{
-> +	u64 *sptep = NULL;
-> 
-> -	desc = (struct pte_list_desc *)(*pte_list & ~1ul);
-> -	while (desc) {
-> -		for (i = 0; i < PTE_LIST_EXT && desc->sptes[i]; ++i)
-> -			fn(desc->sptes[i]);
-> -		desc = desc->more;
-> +	if (iter->pos < 0)
-> +		return pte_list_first(iter);
-> +
-> +	if (iter->desc) {
-> +		if (iter->pos < PTE_LIST_EXT - 1) {
-> +			++iter->pos;
-> +			sptep = iter->desc->sptes[iter->pos];
-> +			if (sptep)
-> +				goto exit;
-> +		}
-> +
-> +		iter->desc = iter->desc->more;
-> +
-> +		if (iter->desc) {
-> +			iter->pos = 0;
-> +			/* desc->sptes[0] cannot be NULL */
-> +			sptep = iter->desc->sptes[iter->pos];
-> +			goto exit;
-> +		}
->  	}
-> +
-> +exit:
-> +	WARN_ON(sptep && !is_shadow_present_pte(*sptep));
-> +	return sptep;
->  }
-> 
-> +
-> +#define for_each_pte_list_spte(pte_list, iter, spte)	\
-> +	for (pte_list_walk_init(iter, pte_list);	\
-> +	      (spte = pte_list_next(iter)) != NULL;	\
-> +		pte_list_walk_check_restart(iter, spte))
-> +
-> +typedef void (*pte_list_walk_fn) (u64 *spte);
-> +static void pte_list_walk(unsigned long *pte_list, pte_list_walk_fn fn)
-> +{
-> +	struct spte_iterator iter;
-> +	u64 *spte;
-> +
-> +	for_each_pte_list_spte(pte_list, &iter, spte)
-> +		fn(spte);
-> +}
-> +
-> +#define for_each_rmap_spte(rmap, iter, spte)	\
-> +		for_each_pte_list_spte(rmap, iter, spte)
-> +
->  static unsigned long *__gfn_to_rmap(gfn_t gfn, int level,
->  				    struct kvm_memory_slot *slot)
->  {
-> @@ -974,92 +1058,19 @@ static void rmap_remove(struct kvm *kvm, u64 *spte)
->  	pte_list_remove(spte, rmapp);
->  }
-> 
-> -/*
-> - * Used by the following functions to iterate through the sptes linked by a
-> - * rmap.  All fields are private and not assumed to be used outside.
-> - */
-> -struct rmap_iterator {
-> -	/* private fields */
-> -	struct pte_list_desc *desc;	/* holds the sptep if not NULL */
-> -	int pos;			/* index of the sptep */
-> -};
-> -
-> -/*
-> - * Iteration must be started by this function.  This should also be used after
-> - * removing/dropping sptes from the rmap link because in such cases the
-> - * information in the itererator may not be valid.
-> - *
-> - * Returns sptep if found, NULL otherwise.
-> - */
-> -static u64 *rmap_get_first(unsigned long rmap, struct rmap_iterator *iter)
-> -{
-> -	u64 *sptep;
-> -
-> -	if (!rmap)
-> -		return NULL;
-> -
-> -	if (!(rmap & 1)) {
-> -		iter->desc = NULL;
-> -		sptep = (u64 *)rmap;
-> -
-> -		goto exit;
-> -	}
-> -
-> -	iter->desc = (struct pte_list_desc *)(rmap & ~1ul);
-> -	iter->pos = 0;
-> -	sptep = iter->desc->sptes[iter->pos];
-> -
-> -exit:
-> -	WARN_ON(sptep && !is_shadow_present_pte(*sptep));
-> -	return sptep;
-> -}
-> -
-> -/*
-> - * Must be used with a valid iterator: e.g. after rmap_get_first().
-> - *
-> - * Returns sptep if found, NULL otherwise.
-> - */
-> -static u64 *rmap_get_next(struct rmap_iterator *iter)
-> -{
-> -	u64 *sptep = NULL;
-> -
-> -	if (iter->desc) {
-> -		if (iter->pos < PTE_LIST_EXT - 1) {
-> -			++iter->pos;
-> -			sptep = iter->desc->sptes[iter->pos];
-> -			if (sptep)
-> -				goto exit;
-> -		}
-> -
-> -		iter->desc = iter->desc->more;
-> -
-> -		if (iter->desc) {
-> -			iter->pos = 0;
-> -			/* desc->sptes[0] cannot be NULL */
-> -			sptep = iter->desc->sptes[iter->pos];
-> -			goto exit;
-> -		}
-> -	}
-> -
-> -exit:
-> -	WARN_ON(sptep && !is_shadow_present_pte(*sptep));
-> -	return sptep;
-> -}
-> -
->  static void drop_spte(struct kvm *kvm, u64 *sptep)
->  {
->  	if (mmu_spte_clear_track_bits(sptep))
->  		rmap_remove(kvm, sptep);
->  }
-> 
-> -/* Return true if the spte is dropped. */
-> -static bool spte_write_protect(struct kvm *kvm, u64 *sptep, bool large,
-> +static void spte_write_protect(struct kvm *kvm, u64 *sptep, bool large,
->  			       bool *flush)
->  {
->  	u64 spte = *sptep;
-> 
->  	if (!is_writable_pte(spte))
-> -		return false;
-> +		return;
-> 
->  	*flush |= true;
-> 
-> @@ -1070,32 +1081,24 @@ static bool spte_write_protect(struct kvm *kvm, u64 *sptep, bool large,
-> 
->  		drop_spte(kvm, sptep);
->  		--kvm->stat.lpages;
-> -		return true;
-> +		return;
->  	}
-> 
->  	rmap_printk("rmap_write_protect: spte %p %llx\n", spte, *spte);
->  	spte = spte & ~PT_WRITABLE_MASK;
->  	mmu_spte_update(sptep, spte);
-> -
-> -	return false;
->  }
-> 
->  static bool
->  __rmap_write_protect(struct kvm *kvm, unsigned long *rmapp, int level)
->  {
->  	u64 *sptep;
-> -	struct rmap_iterator iter;
-> +	struct spte_iterator iter;
->  	bool write_protected = false;
-> 
-> -	for (sptep = rmap_get_first(*rmapp, &iter); sptep;) {
-> -		if (spte_write_protect(kvm, sptep, level > PT_PAGE_TABLE_LEVEL,
-> -			  &write_protected)) {
-> -			sptep = rmap_get_first(*rmapp, &iter);
-> -			continue;
-> -		}
-> -
-> -		sptep = rmap_get_next(&iter);
-> -	}
-> +	for_each_rmap_spte(rmapp, &iter, sptep)
-> +		spte_write_protect(kvm, sptep, level > PT_PAGE_TABLE_LEVEL,
-> +			  &write_protected);
-> 
->  	return write_protected;
->  }
-> @@ -1147,10 +1150,10 @@ static int kvm_unmap_rmapp(struct kvm *kvm, unsigned long *rmapp,
->  			   unsigned long data)
->  {
->  	u64 *sptep;
-> -	struct rmap_iterator iter;
-> +	struct spte_iterator iter;
->  	int need_tlb_flush = 0;
-> 
-> -	while ((sptep = rmap_get_first(*rmapp, &iter))) {
-> +	for_each_rmap_spte(rmapp, &iter, sptep) {
->  		rmap_printk("kvm_rmap_unmap_hva: spte %p %llx\n", sptep, *sptep);
-> 
->  		drop_spte(kvm, sptep);
-> @@ -1164,7 +1167,7 @@ static int kvm_set_pte_rmapp(struct kvm *kvm, unsigned long *rmapp,
->  			     unsigned long data)
->  {
->  	u64 *sptep;
-> -	struct rmap_iterator iter;
-> +	struct spte_iterator iter;
->  	int need_flush = 0;
->  	u64 new_spte;
->  	pte_t *ptep = (pte_t *)data;
-> @@ -1173,15 +1176,14 @@ static int kvm_set_pte_rmapp(struct kvm *kvm, unsigned long *rmapp,
->  	WARN_ON(pte_huge(*ptep));
->  	new_pfn = pte_pfn(*ptep);
-> 
-> -	for (sptep = rmap_get_first(*rmapp, &iter); sptep;) {
-> +	for_each_rmap_spte(rmapp, &iter, sptep) {
->  		rmap_printk("kvm_set_pte_rmapp: spte %p %llx\n", sptep, *sptep);
-> 
->  		need_flush = 1;
-> 
-> -		if (pte_write(*ptep)) {
-> +		if (pte_write(*ptep))
->  			drop_spte(kvm, sptep);
-> -			sptep = rmap_get_first(*rmapp, &iter);
-> -		} else {
-> +		else {
->  			new_spte = *sptep & ~PT64_BASE_ADDR_MASK;
->  			new_spte |= (u64)new_pfn << PAGE_SHIFT;
-> 
-> @@ -1191,7 +1193,6 @@ static int kvm_set_pte_rmapp(struct kvm *kvm, unsigned long *rmapp,
-> 
->  			mmu_spte_clear_track_bits(sptep);
->  			mmu_spte_set(sptep, new_spte);
-> -			sptep = rmap_get_next(&iter);
->  		}
->  	}
-> 
-> @@ -1254,7 +1255,7 @@ static int kvm_age_rmapp(struct kvm *kvm, unsigned long *rmapp,
->  			 unsigned long data)
->  {
->  	u64 *sptep;
-> -	struct rmap_iterator iter;
-> +	struct spte_iterator iter;
->  	int young = 0;
-> 
->  	/*
-> @@ -1267,8 +1268,7 @@ static int kvm_age_rmapp(struct kvm *kvm, unsigned long *rmapp,
->  	if (!shadow_accessed_mask)
->  		return kvm_unmap_rmapp(kvm, rmapp, data);
-> 
-> -	for (sptep = rmap_get_first(*rmapp, &iter); sptep;
-> -	     sptep = rmap_get_next(&iter))
-> +	for_each_rmap_spte(rmapp, &iter, sptep)
->  		if (*sptep & PT_ACCESSED_MASK) {
->  			young = 1;
->  			clear_bit(PT_ACCESSED_SHIFT, (unsigned long *)sptep);
-> @@ -1281,7 +1281,7 @@ static int kvm_test_age_rmapp(struct kvm *kvm, unsigned long *rmapp,
->  			      unsigned long data)
->  {
->  	u64 *sptep;
-> -	struct rmap_iterator iter;
-> +	struct spte_iterator iter;
->  	int young = 0;
-> 
->  	/*
-> @@ -1292,8 +1292,7 @@ static int kvm_test_age_rmapp(struct kvm *kvm, unsigned long *rmapp,
->  	if (!shadow_accessed_mask)
->  		goto out;
-> 
-> -	for (sptep = rmap_get_first(*rmapp, &iter); sptep;
-> -	     sptep = rmap_get_next(&iter))
-> +	for_each_rmap_spte(rmapp, &iter, sptep)
->  		if (*sptep & PT_ACCESSED_MASK) {
->  			young = 1;
->  			break;
-> @@ -1955,9 +1954,9 @@ static void kvm_mmu_page_unlink_children(struct kvm *kvm,
->  static void kvm_mmu_unlink_parents(struct kvm *kvm, struct kvm_mmu_page *sp)
->  {
->  	u64 *sptep;
-> -	struct rmap_iterator iter;
-> +	struct spte_iterator iter;
-> 
-> -	while ((sptep = rmap_get_first(sp->parent_ptes, &iter)))
-> +	for_each_pte_list_spte(&sp->parent_ptes, &iter, sptep)
->  		drop_parent_pte(sp, sptep);
->  }
-> 
-> diff --git a/arch/x86/kvm/mmu_audit.c b/arch/x86/kvm/mmu_audit.c
-> index 7d7d0b9..a42bd85 100644
-> --- a/arch/x86/kvm/mmu_audit.c
-> +++ b/arch/x86/kvm/mmu_audit.c
-> @@ -193,7 +193,7 @@ static void audit_write_protection(struct kvm *kvm, struct kvm_mmu_page *sp)
->  	struct kvm_memory_slot *slot;
->  	unsigned long *rmapp;
->  	u64 *sptep;
-> -	struct rmap_iterator iter;
-> +	struct spte_iterator iter;
-> 
->  	if (sp->role.direct || sp->unsync || sp->role.invalid)
->  		return;
-> @@ -201,13 +201,11 @@ static void audit_write_protection(struct kvm *kvm, struct kvm_mmu_page *sp)
->  	slot = gfn_to_memslot(kvm, sp->gfn);
->  	rmapp = &slot->rmap[sp->gfn - slot->base_gfn];
-> 
-> -	for (sptep = rmap_get_first(*rmapp, &iter); sptep;
-> -	     sptep = rmap_get_next(&iter)) {
-> +	for_each_rmap_spte(rmapp, &iter, sptep)
->  		if (is_writable_pte(*sptep))
->  			audit_printk(kvm, "shadow page has writable "
->  				     "mappings: gfn %llx role %x\n",
->  				     sp->gfn, sp->role.word);
-> -	}
->  }
-> 
->  static void audit_sp(struct kvm *kvm, struct kvm_mmu_page *sp)
-> -- 
-> 1.7.7.6
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe kvm" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+Linux version 3.4.0-rc2-00288-g7d93101 (nick@amythaon) (gcc version 4.5.3 (Gentoo 4.5.3-r2 p1.1, pie-0.4.7) ) #0 PREEMPT Thu Apr 12 20:18:40 EDT 2012
+bootconsole [early0] enabled
+CPU revision is: 00019740 (MIPS 74Kc)
+bcm47xx: using bcma bus
+bcma: Found chip with id 0x4716, rev 0x01 and package 0x0A
+bcma: Core 0 found: ChipCommon (manuf 0x4BF, id 0x800, rev 0x1F, class 0x0)
+bcma: Core 3 found: UNKNOWN (manuf 0x4A7, id 0x82C, rev 0x01, class 0x0)
+bcma: PLL init unknown for device 0x4716
+bcma: PMU resource config unknown for device 0x4716
+bcma: PMU switch/regulators init unknown for device 0x4716
+bcma: Workarounds unknown for device 0x4716
+bcma: Initializing MIPS core...
+bcma: IRQ reconfiguration done
+bcma: core 0x0800, irq : 2(S)* 3  4  5  6  D  I 
+bcma: core 0x082c, irq : 2(S)* 3  4  5  6  D  I 
+bcma: found parallel flash.
+bcma: Early bus registered
+Determined physical RAM map:
+ memory: 08000000 @ 00000000 (usable)
+Initrd not found or empty - disabling initrd
+Zone PFN ranges:
+  Normal   0x00000000 -> 0x00008000
+Movable zone start PFN for each node
+Early memory PFN ranges
+    0: 0x00000000 -> 0x00008000
+Built 1 zonelists in Zone order, mobility grouping on.  Total pages: 32512
+Kernel command line:  console=ttyS0,115200 console=ttyS0,115200n8
+PID hash table entries: 512 (order: -1, 2048 bytes)
+Dentry cache hash table entries: 16384 (order: 4, 65536 bytes)
+Inode-cache hash table entries: 8192 (order: 3, 32768 bytes)
+Primary instruction cache 32kB, VIPT, 4-way, linesize 32 bytes.
+Primary data cache 32kB, 4-way, VIPT, cache aliases, linesize 32 bytes
+Writing ErrCtl register=00000000
+Readback ErrCtl register=00000000
+Memory: 126448k/131072k available (2304k kernel code, 4624k reserved, 599k data, 180k init, 0k highmem)
+SLUB: Genslabs=9, HWalign=32, Order=0-3, MinObjects=0, CPUs=1, Nodes=1
+NR_IRQS:128
+Calibrating delay loop... 238.59 BogoMIPS (lpj=119296)
+pid_max: default: 32768 minimum: 301
+Mount-cache hash table entries: 512
+NET: Registered protocol family 16
+bio: create slab <bio-0> at 0
+vgaarb: loaded
+SCSI subsystem initialized
+Switching to clocksource MIPS
+NET: Registered protocol family 2
+IP route cache hash table entries: 1024 (order: 0, 4096 bytes)
+TCP established hash table entries: 4096 (order: 3, 32768 bytes)
+TCP bind hash table entries: 4096 (order: 2, 16384 bytes)
+TCP: Hash tables configured (established 4096 bind 4096)
+TCP: reno registered
+UDP hash table entries: 256 (order: 0, 4096 bytes)
+UDP-Lite hash table entries: 256 (order: 0, 4096 bytes)
+NET: Registered protocol family 1
+bcma: Core 1 found: IEEE 802.11 (manuf 0x4BF, id 0x812, rev 0x11, class 0x0)
+bcma: Core 2 found: GBit MAC (manuf 0x4BF, id 0x82D, rev 0x00, class 0x0)
+bcma: Core 4 found: USB 2.0 Host (manuf 0x4BF, id 0x819, rev 0x04, class 0x0)
+bcma: Core 5 found: PCIe (manuf 0x4BF, id 0x820, rev 0x0E, class 0x0)
+bcma: Core 6 found: DDR1/DDR2 Memory Controller (manuf 0x4BF, id 0x82E, rev 0x01, class 0x0)
+bcma: Core 7 found: Internal Memory (manuf 0x4BF, id 0x80E, rev 0x07, class 0x0)
+bcma: Core 8 found: I2S (manuf 0x4BF, id 0x834, rev 0x00, class 0x0)
+bcma: Initializing MIPS core...
+bcma: set_irq: core 0x0812, irq 3 => 3
+bcma: set_irq: core 0x082d, irq 4 => 4
+bcma: set_irq: core 0x0819, irq 5 => 5
+bcma: IRQ reconfiguration done
+bcma: core 0x0800, irq : 2(S)* 3  4  5  6  D  I 
+bcma: core 0x082c, irq : 2(S)* 3  4  5  6  D  I 
+bcma: core 0x0812, irq : 2(S)  3* 4  5  6  D  I 
+bcma: core 0x082d, irq : 2(S)  3  4* 5  6  D  I 
+bcma: core 0x0819, irq : 2(S)  3  4  5* 6  D  I 
+bcma: core 0x0820, irq : 2(S)  3  4  5  6* D  I 
+bcma: core 0x082e, irq : 2(S)* 3  4  5  6  D  I 
+bcma: core 0x080e, irq : 2(S)* 3  4  5  6  D  I 
+bcma: core 0x0834, irq : 2(S)* 3  4  5  6  D  I 
+bcma: PCIEcore in host mode found
+PCI host bridge to bus 0000:00
+pci_bus 0000:00: root bus resource [mem 0x08000000-0x0bffffff]
+pci_bus 0000:00: root bus resource [io  0x0100-0x07ff]
+bcma: PCI: Fixing up bridge 0000:00:00.0
+bcma: PCI: Fixing up device 0000:00:00.0
+bcma: PCI: Fixing up bridge 0000:00:00.1
+bcma: PCI: Fixing up device 0000:00:00.1
+Data bus error, epc == 8019e308, ra == 8019b914
+Oops[#1]:
+Cpu 0
+$ 0   : 00000000 00000000 00000000 802c5aa0
+$ 4   : 8030d410 b8000900 00000001 00000001
+$ 8   : 80353bf4 00000003 00000001 8024e380
+$12   : ffffffff 00000000 00000000 ffffffff
+$16   : 87daca00 8030d150 00000902 87daca00
+$20   : 87dacb00 87dacbb8 802d709c 80300000
+$24   : 00000000 80171fa8                  
+$28   : 87c28000 87c29df8 00000020 8019b914
+Hi    : 00000000
+Lo    : 15846c40
+epc   : 8019e308 bcma_host_soc_read16+0x10/0x18
+    Not tainted
+ra    : 8019b914 bcma_sprom_get+0x244/0x670
+Status: 11008003    KERNEL EXL IE 
+Cause : 8080001c
+PrId  : 00019740 (MIPS 74Kc)
+Modules linked in:
+Process swapper (pid: 1, threadinfo=87c28000, task=87c24000, tls=00000000)
+Stack : 00000008 00000800 00000000 00000001 00000020 8023be2c 00000000 8030d150
+        802d0000 00000000 80300000 00000008 802b8954 8023bc60 802c5000 00000000
+        802c0000 00000100 802c0000 00000200 00000006 802d9824 00000000 80300000
+        00000008 802b8954 802d709c 80300000 00000020 802d9848 00000000 80300000
+        00000008 802b8954 802d709c 800015d0 00000000 800ffca8 00000001 00000006
+        ...
+Call Trace:
+[<8019e308>] bcma_host_soc_read16+0x10/0x18
+[<8019b914>] bcma_sprom_get+0x244/0x670
+[<8023bc60>] bcma_bus_register+0xe4/0x264
+[<802d9848>] bcm47xx_register_bus_complete+0x24/0x34
+[<800015d0>] do_one_initcall+0xfc/0x1dc
+[<802d7a48>] kernel_init+0x12c/0x1f8
+[<80006c94>] kernel_thread_helper+0x10/0x18
 
 
+Code: 30a5ffff  00452821  94a20000 <03e00008> 3042ffff  8c82015c  30a5ffff  00452821  8ca20000 
+---[ end trace e93713a9d40cd06c ]---
+Kernel panic - not syncing: Attempted to kill init! exitcode=0x0000000b
 -- 
-Takuya Yoshikawa <takuya.yoshikawa@gmail.com>
+Nick Bowler, Elliptic Technologies (http://www.elliptictech.com/)
+
