@@ -1,45 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752926Ab2DNJs5 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 14 Apr 2012 05:48:57 -0400
-Received: from mgw2.diku.dk ([130.225.96.92]:59024 "EHLO mgw2.diku.dk"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751834Ab2DNJs4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 14 Apr 2012 05:48:56 -0400
-From: Julia Lawall <Julia.Lawall@lip6.fr>
-To: Ian Kent <raven@themaw.net>
-Cc: kernel-janitors@vger.kernel.org, autofs@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] fs/autofs4/dev-ioctl.c: add missing free_dev_ioctl
-Date: Sat, 14 Apr 2012 11:48:48 +0200
-Message-Id: <1334396928-17537-1-git-send-email-Julia.Lawall@lip6.fr>
-X-Mailer: git-send-email 1.7.3.4
+	id S1752524Ab2DNJuP (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 14 Apr 2012 05:50:15 -0400
+Received: from mail.parknet.co.jp ([210.171.160.6]:48998 "EHLO
+	mail.parknet.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751011Ab2DNJuN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 14 Apr 2012 05:50:13 -0400
+X-Greylist: delayed 1953 seconds by postgrey-1.27 at vger.kernel.org; Sat, 14 Apr 2012 05:50:13 EDT
+From: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+To: Artem Bityutskiy <dedekind1@gmail.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Linux Kernel Maling List <linux-kernel@vger.kernel.org>,
+        Linux FS Maling List <linux-fsdevel@vger.kernel.org>,
+        Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
+Subject: Re: [PATCH v2 3/4] fat: mark superblock as dirty less often
+References: <1334326795-2446-1-git-send-email-dedekind1@gmail.com>
+	<1334326795-2446-4-git-send-email-dedekind1@gmail.com>
+Date: Sat, 14 Apr 2012 18:17:32 +0900
+In-Reply-To: <1334326795-2446-4-git-send-email-dedekind1@gmail.com> (Artem
+	Bityutskiy's message of "Fri, 13 Apr 2012 17:19:54 +0300")
+Message-ID: <87k41ihdub.fsf@devron.myhome.or.jp>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1.50 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Julia Lawall <Julia.Lawall@lip6.fr>
+Artem Bityutskiy <dedekind1@gmail.com> writes:
 
-Free param as done in the other error-handling code.
+> From: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
+>
+> This patch is a preparation for further changes. It touches few functions
+> in fatent.c and prevents them from marking the superblock as dirty
+> unnecessarily often. Namely, instead of marking it as dirty in the internal
+> tight loops - do it only once at the end of the functions. And instead of
+> marking it as dirty while holding the FAT table lock, do it outside the lock.
+>
+> The reason for this patch is that marking the superblock as dirty will soon
+> become a little bit heavier operation, so it is cleaner to do this only when it
+> is necessary.
 
-Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
+For it, please use local variable like,
 
----
- fs/autofs4/dev-ioctl.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
 
-diff --git a/fs/autofs4/dev-ioctl.c b/fs/autofs4/dev-ioctl.c
-index 9dacb85..f99c2ce 100644
---- a/fs/autofs4/dev-ioctl.c
-+++ b/fs/autofs4/dev-ioctl.c
-@@ -651,7 +651,8 @@ static int _autofs_dev_ioctl(unsigned int command, struct autofs_dev_ioctl __use
- 	fn = lookup_dev_ioctl(cmd);
- 	if (!fn) {
- 		AUTOFS_WARN("unknown command 0x%08x", command);
--		return -ENOTTY;
-+		err = -ENOTTY;
-+		goto out;
- 	}
- 
- 	fp = NULL;
+{
+       	int fsinfo_dirty = 0;
 
+	while (1) {
+        	change free_clusters
+                fsinfo_dirty = 1;
+        }
+
+        if (fsinfo_dirty)
+        	mark_fsinfo_dirty()
+}
+
+instead of dirty it always.
+-- 
+OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
