@@ -1,77 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755122Ab2DNDCA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Apr 2012 23:02:00 -0400
-Received: from mail-pz0-f52.google.com ([209.85.210.52]:40485 "EHLO
-	mail-pz0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753989Ab2DNDB6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Apr 2012 23:01:58 -0400
-Date: Sat, 14 Apr 2012 12:01:53 +0900
-From: Takuya Yoshikawa <takuya.yoshikawa@gmail.com>
-To: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-Cc: Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
-        LKML <linux-kernel@vger.kernel.org>, KVM <kvm@vger.kernel.org>
-Subject: Re: [PATCH v2 10/16] KVM: MMU: fask check whether page is writable
-Message-Id: <20120414120153.76c3afca3726c14d10581a6c@gmail.com>
-In-Reply-To: <4F87FC82.2050302@linux.vnet.ibm.com>
-References: <4F87FA69.5060106@linux.vnet.ibm.com>
-	<4F87FC82.2050302@linux.vnet.ibm.com>
-X-Mailer: Sylpheed 3.2.0beta3 (GTK+ 2.24.6; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1755265Ab2DNDGI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Apr 2012 23:06:08 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:6807 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753989Ab2DNDGG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 Apr 2012 23:06:06 -0400
+Date: Sat, 14 Apr 2012 05:05:07 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        David Howells <dhowells@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Alexander Gordeev <agordeev@redhat.com>,
+        Chris Zankel <chris@zankel.net>, David Smith <dsmith@redhat.com>,
+        "Frank Ch. Eigler" <fche@redhat.com>,
+        Geert Uytterhoeven <geert@linux-m68k.org>,
+        Larry Woodman <lwoodman@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>, Tejun Heo <tj@kernel.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v4 1/3] task_work_add: generic process-context callbacks
+Message-ID: <20120414030507.GA27579@redhat.com>
+References: <20120414021201.GA23385@redhat.com> <20120414021220.GA23393@redhat.com> <CA+55aFyxV8v2mOjb1Ly=1ttPyLvUt6RZO8wgjD_9owtO=VM0hw@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CA+55aFyxV8v2mOjb1Ly=1ttPyLvUt6RZO8wgjD_9owtO=VM0hw@mail.gmail.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 13 Apr 2012 18:14:26 +0800
-Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com> wrote:
+On 04/13, Linus Torvalds wrote:
+>
+> This is seriously buggy:
 
-> Using bit 1 (PTE_LIST_WP_BIT) in rmap store the write-protect status
-> to avoid unnecessary shadow page walking
-> 
-> Signed-off-by: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-> ---
->  arch/x86/kvm/mmu.c |   40 ++++++++++++++++++++++++++++++++++------
->  1 files changed, 34 insertions(+), 6 deletions(-)
-> 
-> diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
-> index 0c6e92d..8b71908 100644
-> --- a/arch/x86/kvm/mmu.c
-> +++ b/arch/x86/kvm/mmu.c
-> @@ -796,7 +796,9 @@ static int mapping_level(struct kvm_vcpu *vcpu, gfn_t large_gfn)
->  	return level - 1;
->  }
-> 
-> -#define PTE_LIST_DESC		(0x1ull)
-> +#define PTE_LIST_DESC_BIT	0
-> +#define PTE_LIST_WP_BIT	1
+I am already sleep. But,
 
-_BIT ?
+> On Fri, Apr 13, 2012 at 7:12 PM, Oleg Nesterov <oleg@redhat.com> wrote:
+> >
+> > +void task_work_run(struct task_struct *task)
+> > +{
+> > +       struct hlist_head task_works;
+> > +       struct hlist_node *pos;
+> > +
+> > +       raw_spin_lock_irq(&task->pi_lock);
+> > +       hlist_move_list(&task->task_works, &task_works);
+> > +       raw_spin_unlock_irq(&task->pi_lock);
+> > +
+> > +       if (unlikely(hlist_empty(&task_works)))
+> > +               return;
+> > +       /*
+> > +        * We use hlist to save the space in task_struct, but we want fifo.
+> > +        * Find the last entry, the list should be short, then process them
+> > +        * in reverse order.
+> > +        */
+> > +       for (pos = task_works.first; pos->next; pos = pos->next)
+> > +               ;
+> > +
+> > +       for (;;) {
+> > +               struct hlist_node **pprev = pos->pprev;
+> > +               struct task_work *twork = container_of(pos, struct task_work,
+> > +                                                       hlist);
+> > +               twork->func(twork);
+> > +
+> > +               if (pprev == &task_works.first)
+> > +                       break;
+> > +               pos = container_of(pprev, struct hlist_node, next);
+> > +       }
+> > +}
+>
+> No can do. You've removed the task-work from the process list, and you
+> no longer hold the spinlock that protects that list. That means that
+> you *cannot* access the task-work data structure any more, because it
+> may long be gone.
+>
+> Look at the users of this interface that you wrote yourself. They
+> allocate the task-work on the stack, and do a "task_work_cancel()"
+> before returning. That data structure is *gone*. You can't dereference
+> it any more.
 
-> +#define PTE_LIST_DESC		(1 << PTE_LIST_DESC_BIT)
->  #define PTE_LIST_FLAG_MASK	(0x3ull)
-> 
+tsk is always "current", probably this should be documented, I'll add
+the comment.
 
-Well, I think that rmap is losing its original meaning:
-Before, it held just the information needed to link spteps.
+So this can't race with irq_thread() which uses the task_work on stack.
 
-Now it has more roles, and getting kind of descriptor?
+> Basically, *any* access of 'twork' after it is removed from the list
+> and you have released the task spinlock is unsafe, as far as I can
+> tell.
 
-...
+I don't follow.
 
-> @@ -2291,9 +2310,15 @@ static int mmu_need_write_protect(struct kvm_vcpu *vcpu, gfn_t gfn,
->  {
->  	struct kvm_mmu_page *s;
->  	struct hlist_node *node;
-> +	unsigned long *rmap;
->  	bool need_unsync = false;
-> 
-> +	rmap = gfn_to_rmap(vcpu->kvm, gfn, PT_PAGE_TABLE_LEVEL);
+Once task_work_run() removes task_work from list (and drops the lock)
+nobody can use this twork. task_work_cancel obviously can't find it,
+it will return NULL.
 
-Please use consistent variable names.
+Oleg.
 
-In other parts of this patch, you are using rmapp for this.
-
-	Takuya
