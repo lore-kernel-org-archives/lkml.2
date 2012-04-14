@@ -1,60 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755034Ab2DNQC0 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 14 Apr 2012 12:02:26 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:44703 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754424Ab2DNQCY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 14 Apr 2012 12:02:24 -0400
-From: Daniel Vetter <daniel.vetter@ffwll.ch>
-To: Dave Airlie <airlied@gmail.com>
-Cc: DRI Development <dri-devel@lists.freedesktop.org>,
-        Intel Graphics Development <intel-gfx@lists.freedesktop.org>,
-        LKML <linux-kernel@vger.kernel.org>, Linux MM <linux-mm@kvack.org>,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>
-Subject: [PATCH] mm: fixup compilation error due to an asm write through a const pointer
-Date: Sat, 14 Apr 2012 18:03:10 +0200
-Message-Id: <1334419390-18961-1-git-send-email-daniel.vetter@ffwll.ch>
-X-Mailer: git-send-email 1.7.10
-In-Reply-To: <CAMuHMdXBEiDGyJQ+szoBKxo0pS=n3xKfpb=F+rNkMQUv4SdTQA@mail.gmail.com>
-References: <CAMuHMdXBEiDGyJQ+szoBKxo0pS=n3xKfpb=F+rNkMQUv4SdTQA@mail.gmail.com>
+	id S1755108Ab2DNQDI (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 14 Apr 2012 12:03:08 -0400
+Received: from 1wt.eu ([62.212.114.60]:65161 "EHLO 1wt.eu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754671Ab2DNQDH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 14 Apr 2012 12:03:07 -0400
+Date: Sat, 14 Apr 2012 18:02:42 +0200
+From: Willy Tarreau <w@1wt.eu>
+To: Felipe Contreras <felipe.contreras@gmail.com>
+Cc: Jonathan Nieder <jrnieder@gmail.com>,
+        Stefan Richter <stefanr@s5r6.in-berlin.de>,
+        Adrian Chadd <adrian@freebsd.org>,
+        Greg KH <gregkh@linuxfoundation.org>, Sergio Correia <lists@uece.net>,
+        linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        alan@lxorguk.ukuu.org.uk,
+        linux-wireless Mailing List <linux-wireless@vger.kernel.org>,
+        Sujith Manoharan <c_manoha@qca.qualcomm.com>,
+        "ath9k-devel@lists.ath9k.org" <ath9k-devel@venema.h4ckr.net>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: Re: [ 00/78] 3.3.2-stable review
+Message-ID: <20120414160242.GG19802@1wt.eu>
+References: <CAJ-VmonhwvnXPKa=LNOR4W0ZTXZqWmzw4UrsKLoE0YN_Bu0FzQ@mail.gmail.com> <CAMP44s2JPvhEB6Eb049Z_bToAFncHKMEheuyaxyhC=bnh2GJVg@mail.gmail.com> <20120413105746.10ffb120@stein> <CAMP44s0RohH9tPiM5qCDT57XBV=iO66PZkSjYVxA6Usg1qJPtw@mail.gmail.com> <20120413154216.476a02ac@stein> <CAMP44s10KVwL5pY=Q5hWfyUtU6CvvZZ4Bcg-fEY9dAhSL306aQ@mail.gmail.com> <20120413230525.GA13995@burratino> <CAMP44s0OdVBTwVtCoru-xvB=LVtO56jgku7X-0a7mUz1=iVCzw@mail.gmail.com> <20120414054401.GC19802@1wt.eu> <CAMP44s3uTTWSJCohLGf64vV6h6PgSPJ++UrmeRkRWebJWjvJ_A@mail.gmail.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAMP44s3uTTWSJCohLGf64vV6h6PgSPJ++UrmeRkRWebJWjvJ_A@mail.gmail.com>
+User-Agent: Mutt/1.4.2.3i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This regression has been introduced in
+On Sat, Apr 14, 2012 at 06:43:06PM +0300, Felipe Contreras wrote:
+> I understand you use 'stable' as guarantee, and I know it works, but
+> do you *need* this guarantee?
+> 
+> And before you go on why you need this guarantee to avoid fixes to be
+> lost, this is an *entirely different thing*; we are not talking about
+> fixes in 'stable' that don't exist in mainline--for which there is
+> evidence that those caused problems in the past, we are talking about
+> reverting patches from 'stable' that are not part of the upstream
+> release from where the 'stable' branch was forked--*nobody* has showed
+> any evidence that this has happened before and caused issues.
 
-commit f56f821feb7b36223f309e0ec05986bb137ce418
-Author: Daniel Vetter <daniel.vetter@ffwll.ch>
-Date:   Sun Mar 25 19:47:41 2012 +0200
+Why make a special case for the version from which stable was derived ?
+That doesn't make sense at all to me since by definition, *all* patches
+that are in stable were not in this version !
 
-    mm: extend prefault helpers to fault in more than PAGE_SIZE
+Take it simpler if you want : *all* patches in stable need an upstream
+commit ID, whether they're backports or reverts. You don't revert a
+patch from stable, you backport a revert from upstream.
 
-I have failed to notice this because x86 asm seems to happily compile
-things as-is.
-
-Reported-by: Geert Uytterhoeven <geert@linux-m68k.org
-Signed-Off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
----
- include/linux/pagemap.h |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/include/linux/pagemap.h b/include/linux/pagemap.h
-index c93a9a9..efa26b4 100644
---- a/include/linux/pagemap.h
-+++ b/include/linux/pagemap.h
-@@ -461,7 +461,7 @@ static inline int fault_in_pages_readable(const char __user *uaddr, int size)
- static inline int fault_in_multipages_writeable(char __user *uaddr, int size)
- {
- 	int ret;
--	const char __user *end = uaddr + size - 1;
-+	char __user *end = uaddr + size - 1;
- 
- 	if (unlikely(size == 0))
- 		return 0;
--- 
-1.7.10
+Willy
 
