@@ -1,53 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755613Ab2DNMJ4 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 14 Apr 2012 08:09:56 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:41740 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755365Ab2DNMJy (ORCPT
+	id S1755651Ab2DNMPw (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 14 Apr 2012 08:15:52 -0400
+Received: from casper.infradead.org ([85.118.1.10]:59796 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755480Ab2DNMPc convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 14 Apr 2012 08:09:54 -0400
-Message-ID: <4F896787.4050108@gmail.com>
-Date: Sat, 14 Apr 2012 14:03:19 +0200
-From: Marco Stornelli <marco.stornelli@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; it; rv:1.9.2.28) Gecko/20120306 SUSE/3.1.20 Thunderbird/3.1.20
-MIME-Version: 1.0
-To: Matthew Garrett <mjg@redhat.com>
-CC: hch@infradead.org, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] hfsplus: Fix bless ioctl when used with hardlinks
-References: <1334326014-15244-1-git-send-email-mjg@redhat.com>
-In-Reply-To: <1334326014-15244-1-git-send-email-mjg@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-15; format=flowed
-Content-Transfer-Encoding: 7bit
+	Sat, 14 Apr 2012 08:15:32 -0400
+Message-ID: <1334405716.2528.88.camel@twins>
+Subject: Re: [Lsf] [RFC] writeback and cgroup
+From: Peter Zijlstra <peterz@infradead.org>
+To: Steve French <smfrench@gmail.com>
+Cc: Tejun Heo <tj@kernel.org>, ctalbott@google.com, rni@google.com,
+        andrea@betterlinux.com, containers@lists.linux-foundation.org,
+        linux-kernel@vger.kernel.org, lsf@lists.linux-foundation.org,
+        linux-mm@kvack.org, jmoyer@redhat.com, lizefan@huawei.com,
+        linux-fsdevel@vger.kernel.org, cgroups@vger.kernel.org
+Date: Sat, 14 Apr 2012 14:15:16 +0200
+In-Reply-To: <CAH2r5mvP56D0y4mk5wKrJcj+=OZ0e0Q5No_L+9a8a=GMcEhRew@mail.gmail.com>
+References: <20120403183655.GA23106@dhcp-172-17-108-109.mtv.corp.google.com>
+	 <20120404145134.GC12676@redhat.com>
+	 <20120404184909.GB29686@dhcp-172-17-108-109.mtv.corp.google.com>
+	 <CAH2r5mvP56D0y4mk5wKrJcj+=OZ0e0Q5No_L+9a8a=GMcEhRew@mail.gmail.com>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Mailer: Evolution 3.2.2- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Il 13/04/2012 16:06, Matthew Garrett ha scritto:
-> HFS+ doesn't really implement hard links - instead, hardlinks are indicated
-> by a magic file type which refers to an indirect node in a hidden
-> directory. The spec indicates that stat() should return the inode number
-> of the indirect node, but it turns out that this doesn't satisfy the
-> firmware when it's looking for a bootloader - it wants the catalog ID of
-> the hardlink file instead. Fix up this case.
->
-> Signed-off-by: Matthew Garrett<mjg@redhat.com>
-> ---
->   fs/hfsplus/ioctl.c |    9 +++++++--
->   1 file changed, 7 insertions(+), 2 deletions(-)
->
-> diff --git a/fs/hfsplus/ioctl.c b/fs/hfsplus/ioctl.c
-> index c640ba5..5ee0681 100644
-> --- a/fs/hfsplus/ioctl.c
-> +++ b/fs/hfsplus/ioctl.c
-> @@ -31,6 +31,7 @@ static int hfsplus_ioctl_bless(struct file *file, int __user *user_flags)
->   	struct hfsplus_sb_info *sbi = HFSPLUS_SB(inode->i_sb);
->   	struct hfsplus_vh *vh = sbi->s_vhdr;
->   	struct hfsplus_vh *bvh = sbi->s_backup_vhdr;
-> +	int cnid = (u32)(unsigned long)dentry->d_fsdata;
->
+On Wed, 2012-04-04 at 14:23 -0500, Steve French wrote:
+> Current use of bdi is a little hard to understand since
+> there are 25+ fields in the structure.  
 
-Why a double cast?
+Filesystems only need a small fraction of those.
 
-Marco
+In particular,
+
+  backing_dev_info::name	-- string
+  backing_dev_info::ra_pages	-- number of read-ahead-pages
+  backing_dev_info::capability	-- see BDI_CAP_*
+  
+One should properly initialize/destroy the thing using:
+
+  bdi_init()/bdi_destroy()
+
+
+Furthermore, it has hooks into the regular page-writeback stuff:
+
+  test_{set,clear}_page_writeback()/bdi_writeout_inc()
+  set_page_dirty()/account_page_dirtied()
+  
+but also allows filesystems to do custom stuff, see FUSE for example.
+
+The only other bit is the pressure valve, aka.
+{set,clear}_bdi_congested(). Which really is rather broken and of
+dubious value.
+
+
