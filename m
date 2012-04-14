@@ -1,58 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753666Ab2DNKKY (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 14 Apr 2012 06:10:24 -0400
-Received: from violet.fr.zoreil.com ([92.243.8.30]:60350 "EHLO violet"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751751Ab2DNKKW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 14 Apr 2012 06:10:22 -0400
-Date: Sat, 14 Apr 2012 12:06:01 +0200
-From: Francois Romieu <romieu@fr.zoreil.com>
-To: Bjarke Istrup Pedersen <gurligebis@gentoo.org>
-Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
-        Svenning =?utf-8?B?U8O4cmVuc2Vu?= <sss@secomea.com>,
-        Andreas Mohr <andi@lisas.de>
-Subject: Re: via-rhine: Problem with lost link after a while
-Message-ID: <20120414100601.GA11698@electric-eye.fr.zoreil.com>
-References: <CACPM=kWa=UWuCMaYAtVMGJ7pzCy-PfyNRWBSuJnTZGtssU0W6g@mail.gmail.com> <20120410204249.GA26627@electric-eye.fr.zoreil.com> <CACPM=kWsU8QZOHqwEThTQCuSSvaTDoxO1d17EyoW=+kx8QG3vw@mail.gmail.com> <20120410225534.GA28480@electric-eye.fr.zoreil.com> <CACPM=kXGyxgfwzMxAhx-jUL1hYMAqWc7=9gfYcgV=xebAQ=+Og@mail.gmail.com>
+	id S1753771Ab2DNKML (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 14 Apr 2012 06:12:11 -0400
+Received: from www17.your-server.de ([213.133.104.17]:53253 "EHLO
+	www17.your-server.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751011Ab2DNKMJ convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 14 Apr 2012 06:12:09 -0400
+Message-ID: <1334398320.1431.31.camel@localhost.localdomain>
+Subject: Re: where can I find powertop sorces?
+From: Thomas Meyer <thomas@m3y3r.de>
+To: =?ISO-8859-1?Q?N=E9meth_M=E1rton?= <nm127@freemail.hu>
+Cc: Arjan van de Ven <arjan@linux.intel.com>, discuss <discuss@lesswatts.org>,
+        Powertop Mailing List <power@bughost.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Date: Sat, 14 Apr 2012 12:12:00 +0200
+In-Reply-To: <4F89304F.1070406@freemail.hu>
+References: <4F89304F.1070406@freemail.hu>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 (3.2.3-2.fc16) 
+Content-Transfer-Encoding: 8BIT
 Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CACPM=kXGyxgfwzMxAhx-jUL1hYMAqWc7=9gfYcgV=xebAQ=+Og@mail.gmail.com>
-User-Agent: Mutt/1.4.2.2i
-X-Organisation: Land of Sunshine Inc.
+X-Authenticated-Sender: thomas@m3y3r.de
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Bjarke Istrup Pedersen <gurligebis@gentoo.org> :
-[...]
-> I've been testing v3.4-rc2 with this patch applied for the past few
-> days, with alot of trafic across, both incoming and outgoing, with VPN
-> which is normally what can trigger problems, and it seems rock solid
-> :o)
+Am Samstag, den 14.04.2012, 10:07 +0200 schrieb Németh Márton:
+> Hi,
 
-Thanks.
+hi,
 
-> Do you need me to do any specific testing of this patch?
+> 
+> I'm having trouble to fetch powertop sources. I found the article
+> titled "Announcing the beta release of PowerTOP 2.0" from January 5 2011
+> at http://lwn.net/Articles/421733/ but it seems that the links are not
+> working anymore:
+> 
+> $ git clone git://git.kernel.org/pub/scm/status/powertop/powertop.git
+> Cloning into powertop...
+> warning: You appear to have cloned an empty repository.
+> $ wget http://www.kernel.org/pub/linux/status/powertop/powertop-1.97.tar.bz2
+> --2012-04-14 10:04:55--  http://www.kernel.org/pub/linux/status/powertop/powertop-1.97.tar.bz2
+> Resolving www.kernel.org... 149.20.20.133, 149.20.4.69
+> Connecting to www.kernel.org|149.20.20.133|:80... connected.
+> HTTP request sent, awaiting response... 403 Forbidden
+> 2012-04-14 10:04:56 ERROR 403: Forbidden.
 
-See below. 
+http://www.mail-archive.com/power@bughost.org/msg02155.html
 
-Changes of behavior should be reported for this patch over plain 3.4-rc2 or
-current 3.3-stable as both include Andreas's fix.
+The repository is at https://github.com/fenrus75/powertop or
+git://github.com/fenrus75/powertop.git
 
-Otherwise it can not be labelled it as a fix : it does not go into 3.4-rc
-nor 3.3-stable but proceeds through net-next where it will land into
-3.5-rc then -stable.
+with kind regards
+thomas
 
-One can not exercize the Tx xmit vs napi Tx completion race part of the
-patch with a single core. Afaiui non-Soekris users are needed here.
 
-Even if you don't experience change of behavior over 3.4-rc or 3.3-stable,
-some longterm use of this driver would be welcome. It may end as an effort
-for 3.5-rc though.
 
---
-Ueimor
-
-Will code drivers for food.
