@@ -1,74 +1,154 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752593Ab2DNMgU (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 14 Apr 2012 08:36:20 -0400
-Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:52076 "EHLO
-	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751114Ab2DNMgQ (ORCPT
+	id S1752302Ab2DNMmD (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 14 Apr 2012 08:42:03 -0400
+Received: from nm19-vm10.bullet.mail.sg3.yahoo.com ([106.10.149.121]:35046
+	"HELO nm19-vm10.bullet.mail.sg3.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1750734Ab2DNMmB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 14 Apr 2012 08:36:16 -0400
-Subject: Re: [PATCH v2 4/4] fat: switch to fsinfo_inode
-From: Artem Bityutskiy <dedekind1@gmail.com>
-Reply-To: dedekind1@gmail.com
-To: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Linux Kernel Maling List <linux-kernel@vger.kernel.org>,
-        Linux FS Maling List <linux-fsdevel@vger.kernel.org>,
-        Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
-Date: Sat, 14 Apr 2012 15:36:11 +0300
-In-Reply-To: <873986h6qa.fsf@devron.myhome.or.jp>
-References: <1334326795-2446-1-git-send-email-dedekind1@gmail.com>
-	 <1334326795-2446-5-git-send-email-dedekind1@gmail.com>
-	 <87fwc6hazv.fsf@devron.myhome.or.jp> <1334399379.2263.8.camel@koala>
-	 <87bomuha77.fsf@devron.myhome.or.jp> <1334401307.2263.24.camel@koala>
-	 <873986h6qa.fsf@devron.myhome.or.jp>
-Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
-	boundary="=-HOVxd7YuvWEH3CqN640b"
-X-Mailer: Evolution 3.0.3 (3.0.3-1.fc15) 
-Message-ID: <1334406974.2263.38.camel@koala>
-Mime-Version: 1.0
+	Sat, 14 Apr 2012 08:42:01 -0400
+X-Greylist: delayed 391 seconds by postgrey-1.27 at vger.kernel.org; Sat, 14 Apr 2012 08:42:00 EDT
+X-Yahoo-Newman-Id: 355505.43904.bm@smtp216.mail.sg3.yahoo.com
+X-Yahoo-Newman-Property: ymail-5
+X-YMail-OSG: t06hepsVM1myrgcNB2TLaIBzuN2FX1m9oxDQQ.ZT5muxddW
+ FOulAGE048igBweDGvrAseyZ7g6oOQhBA8_Iws_XC0QEsSKD_VSWu4aaGwa7
+ pnBc4l8aZz9oabW7yUpGvtEC8NqKEJqVN48us97sjqAnR_k2rbnfwJIX2zjp
+ SS.HBHJfKu4p4S1ujISncm_Qec4bff5yb9CUoFSsOdSYzS.na9aY7GgXKsHG
+ wHmh.8o4IFTQgUzKOC5i9zDKOihcAor8hnYQOau7qOvDFdIBtEEHudMZ9Owt
+ 5.3AXIqfV.ahAviqYsmTvcYV3xzyaBoe_VFvVW3cV9YFw8A0_5HpjB7JaGP5
+ v36rHbdOJzeluIfg0gp2GCkC8oLK99RsmZHUz8B4gQk25._nXbHLvRw5utbk
+ eGd48XlhvebMX90_stw--
+X-Yahoo-SMTP: QjpE7uaswBAuQ8YHwqWfacJuzCfKAagvl01_
+From: "Mbqt" <diazhzdonforio@yahoo.com>
+To: "linux-kernel" <linux-kernel@vger.kernel.org>
+Subject: linux-kernel@vger.kernel.orgyaoa
+Message-ID: <201204142035008122215@yahoo.com>
+Date: Sat, 14 Apr 2012 20:35:00 +0800
+X-Mailer: Foxmail 6, 10, 201, 20 [cn]
+MIME-Version: 1.0
+Content-Type: multipart/mixed; boundary="----=uvdmml970_5857_240218164.246017"
+X-Priority: 3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+This is a multi-part message in MIME format.
 
---=-HOVxd7YuvWEH3CqN640b
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+------=uvdmml970_5857_240218164.246017
+Content-Type: text/plain;
+	charset="GB2312"
+Content-Transfer-Encoding: base64
 
-On Sat, 2012-04-14 at 20:51 +0900, OGAWA Hirofumi wrote:
-> Yes, I still worry about order. About ->sync_fs(), you are looking the
-> following?
+bGludXgta2VybmVsQHZnZXIua2VybmVsLm9yZw0KvaG/tdfJ0a+joQ0KMjQwLjEwMi4yNS4xMDI=
 
-Hirofumi, you still did not explain why the order matters. If it
-matters, it should be easy to explain.
 
-But I will look at this and think about the ordering, thanks for
-feed-back. But if you could explain why writing out FSINFO before inodes
-is an issue, it'd be very helpful.
+------=uvdmml970_5857_240218164.246017
+Content-Type: image/gif;
+	name="Wwfiyul6208.gif"
+Content-Transfer-Encoding: base64
+Content-Disposition: attachment;
+	filename="Wwfiyul6208.gif"
 
-Thanks!
+R0lGODdhngF2AXcAACwAAAAAngF2AYcAAAAAADMAAGYAAJkAAMwAAP8AMwAAMzMAM2YAM5kAM8wA
+M/8AZgAAZjMAZmYAZpkAZswAZv8AmQAAmTMAmWYAmZkAmcwAmf8AzAAAzDMAzGYAzJkAzMwAzP8A
+/wAA/zMA/2YA/5kA/8wA//8zAAAzADMzAGYzAJkzAMwzAP8zMwAzMzMzM2YzM5kzM8wzM/8zZgAz
+ZjMzZmYzZpkzZswzZv8zmQAzmTMzmWYzmZkzmcwzmf8zzAAzzDMzzGYzzJkzzMwzzP8z/wAz/zMz
+/2Yz/5kz/8wz//9mAABmADNmAGZmAJlmAMxmAP9mMwBmMzNmM2ZmM5lmM8xmM/9mZgBmZjNmZmZm
+ZplmZsxmZv9mmQBmmTNmmWZmmZlmmcxmmf9mzABmzDNmzGZmzJlmzMxmzP9m/wBm/zNm/2Zm/5lm
+/8xm//+ZAACZADOZAGaZAJmZAMyZAP+ZMwCZMzOZM2aZM5mZM8yZM/+ZZgCZZjOZZmaZZpmZZsyZ
+Zv+ZmQCZmTOZmWaZmZmZmcyZmf+ZzACZzDOZzGaZzJmZzMyZzP+Z/wCZ/zOZ/2aZ/5mZ/8yZ///M
+AADMADPMAGbMAJnMAMzMAP/MMwDMMzPMM2bMM5nMM8zMM//MZgDMZjPMZmbMZpnMZszMZv/MmQDM
+mTPMmWbMmZnMmczMmf/MzADMzDPMzGbMzJnMzMzMzP/M/wDM/zPM/2bM/5nM/8zM////AAD/ADP/
+AGb/AJn/AMz/AP//MwD/MzP/M2b/M5n/M8z/M///ZgD/ZjP/Zmb/Zpn/Zsz/Zv//mQD/mTP/mWb/
+mZn/mcz/mf//zAD/zDP/zGb/zJn/zMz/zP///wD//zP//2b//5n//8z///8AAAAAAAAAAAAAAAAA
+AAAAAAAAAAAAAAAAAAAAAABQekEKDUFBQXdBTXpBWTJBazVBdzh6OC96QUF6TUR6WUd6a0p6d016
+OFB6QXd6TXp6WTJ6azV6dzh6OC96QWdqWgptWnpwWnpzWnp2WnpRbXpUbXpXbXpabXoI/wATCRxI
+sKDBgwgTKlzIsKHDhxAjSpyI8AvFixgzatzIsaPHjyBDihxJsmLJkyhTqlzJsqXLlxItwpxJs6ZN
+lgAA3NwpUibPn0CDFsx5MKdRnQSPIo1IVGHTpEclPoUaFaLSokuD+hTKtSvMqlDDCnw6lSFYrFkT
+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
 
---=20
-Best Regards,
-Artem Bityutskiy
-
---=-HOVxd7YuvWEH3CqN640b
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-Content-Transfer-Encoding: 7bit
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQEcBAABAgAGBQJPiW87AAoJEJtuLFy+q7fex2gH/3H7EVic7pZCdgMttWzxJ+zX
-GQBPiNZ3UcSmQ9evWYfg9kWFbDLWD5f0zhRkyC4TsT939bD9ZpFBDoOFCoXqVat1
-VYdYdnDOcwCUjgI+9Ql5RaQsEkpHD2ojzQYfzkRPQCQwKAfMztDc/KluOBCGQDTq
-e7LcWqpnM51QVw5dFePG0vHftF6HxbmytHlvb2XIKK7pBDEQr9tHf9OiEaYZ5TOa
-/+Lif2l59e9aFMPa1jqn8fE5/6QMs1j9AUivnv1nmu8lAgcQJyuvQcHA1euAywac
-cHaJBazYrjYwremUuEqbTg4Ukfp4UK1wWY0F90QoVgo+i00rLw+eVD6MeyvBcYE=
-=OoIl
------END PGP SIGNATURE-----
-
---=-HOVxd7YuvWEH3CqN640b--
-
+------=uvdmml970_5857_240218164.246017--
