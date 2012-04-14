@@ -1,90 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753386Ab2DNIqZ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 14 Apr 2012 04:46:25 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:43334 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753046Ab2DNIqW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 14 Apr 2012 04:46:22 -0400
-Date: Sat, 14 Apr 2012 10:46:16 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Arnaldo Carvalho de Melo <acme@redhat.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>, hpa@zytor.com,
-        paulus@samba.org, eranian@google.com, linux-kernel@vger.kernel.org,
-        efault@gmx.de, peterz@infradead.org, namhyung@gmail.com,
-        fweisbec@gmail.com, dsahern@gmail.com, tglx@linutronix.de,
-        linux-tip-commits@vger.kernel.org
-Subject: Re: [tip:perf/core] perf ui annotate browser: Allow toggling addr
- offset view
-Message-ID: <20120414084616.GA28505@gmail.com>
-References: <tip-4zpgimmz8xv7b5c920el7s45@git.kernel.org>
- <CA+55aFxnv5Wrix=uREQsEg+tSBE8SFvy0v_76csv3hrnmPYG2A@mail.gmail.com>
- <20120414005921.GA22114@infradead.org>
+	id S1751322Ab2DNIy2 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 14 Apr 2012 04:54:28 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:57243 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750734Ab2DNIy0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 14 Apr 2012 04:54:26 -0400
+From: Lubos Lunak <l.lunak@suse.cz>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [PATCH][RESEND] do not redefine userspace's NULL #define
+Date: Sat, 14 Apr 2012 10:54:23 +0200
+User-Agent: KMail/1.9.10
+Cc: Peter Seebach <peter.seebach@windriver.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>
+References: <201204132124.21294.l.lunak@suse.cz> <201204141021.28906.l.lunak@suse.cz> <CA+55aFwmZiWfqEF3-Lb_d1jHZQf2Od+oGQ_hfe0CYu8fBTU8nw@mail.gmail.com>
+In-Reply-To: <CA+55aFwmZiWfqEF3-Lb_d1jHZQf2Od+oGQ_hfe0CYu8fBTU8nw@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120414005921.GA22114@infradead.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: Multipart/Mixed;
+  boundary="Boundary-00=_/sTiPY5taHpi46e"
+Message-Id: <201204141054.23935.l.lunak@suse.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+--Boundary-00=_/sTiPY5taHpi46e
+Content-Type: text/plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: quoted-printable
+Content-Disposition: inline
 
-* Arnaldo Carvalho de Melo <acme@redhat.com> wrote:
+On Saturday 14 of April 2012, Linus Torvalds wrote:
+> On Sat, Apr 14, 2012 at 1:21 AM, Lubos Lunak <l.lunak@suse.cz> wrote:
+> > =A0How about the patch? Are there any *actual* problems with it or can =
+it
+> > please go in?
+>
+> If we're going to change that thing, I'd actually prefer to just move
+> it inside the #ifdef __KERNEL__ entirely, and get rid of the cplusplus
+> case.
+>
+> IOW, something like this (obviously white-space-mangled) patch:
+=2E..
+> which protects the kernel NULL definition along with the whole
+> offsetof and true/false ones too. And just gets rid of the insane C++
+> case entirely.
 
-> > Now, fancy arrows etc might be too hard to do (especially 
-> > without cluttering things up too much), but marking just the 
-> > targets would already be lovely. IOW, turn this mess:
-> > 
-> > 
-> >          :        ffffffff810d7e80 <kmem_cache_free>:
-> >     1.91 :        ffffffff810d7e80:       push   %rbp
-> >     0.05 :        ffffffff810d7e81:       mov    %rsp,%rbp
-> >     2.02 :        ffffffff810d7e84:       push   %r12
-> >     0.00 :        ffffffff810d7e86:       mov    %rdi,%r12
-> >     0.55 :        ffffffff810d7e89:       push   %rbx
-> >     0.00 :        ffffffff810d7e8a:       mov    %rsi,%rdi
-> >     1.20 :        ffffffff810d7e8d:       mov    %rsi,%rbx
-> >     1.64 :        ffffffff810d7e90:       callq  ffffffff8102a730 <__phys_addr>
-> >     0.05 :        ffffffff810d7e95:       movabs $0xffffea0000000000,%rdi
-> >     0.22 :        ffffffff810d7e9f:       shr    $0xc,%rax
-> >     0.11 :        ffffffff810d7ea3:       shl    $0x6,%rax
-> >     1.64 :        ffffffff810d7ea7:       lea    (%rax,%rdi,1),%rdi
-> >    42.80 :        ffffffff810d7eab:       mov    (%rdi),%rax
-> >     2.02 :        ffffffff810d7eae:       test   $0x80,%ah
-> >     0.00 :        ffffffff810d7eb1:       jne    ffffffff810d7ef6
-> > <kmem_cache_free+0x76>
-> >     0.22 :        ffffffff810d7eb3:       mov    0x8(%rbp),%r9
-> >     7.14 :        ffffffff810d7eb7:       mov    (%r12),%rax
-> >     0.65 :        ffffffff810d7ebb:       add    %gs:0xcb88,%rax
-> >     4.58 :        ffffffff810d7ec4:       mov    0x8(%rax),%rdx
-> > 
-> > (which has tons of unnecessary white-space too - shades of G+) into
-> 
-> Grin ;-)
-> 
-> Yeah, even the : column isn't needed I think.
+ That's what the original version of my patch did, but Arnd pointed out tha=
+t=20
+other exported headers might use NULL and thus not be self-contained in=20
+userspace after this change, breaking backwards source compatibility. But I=
+'d=20
+expect such breakages to be rather unlikely (stddef.h is probably pulled in=
+=20
+by pretty much everything), so if you're fine with it, I'm ok with this=20
+solution too.
 
-Such delineators are sometimes useful visually, it emulates a 
-vertical line and makes it easier for the brain to ignore the 
-left or right side. We'll fine-tune it.
+=2D-=20
+ Lubos Lunak
+ l.lunak@suse.cz
 
-The occasional color highlighting is useful too, as long as it 
-is used sparingly.
+--Boundary-00=_/sTiPY5taHpi46e
+Content-Type: message/rfc822;
+  name="forwarded message"
+Content-Transfer-Encoding: 7bit
+Content-Description: Lubos Lunak <l.lunak@suse.cz>: [PATCH] do not export kernel's NULL #define to userspace
+Content-Disposition: inline
 
-> > Sure, leave some magic keycombination to get the "full 
-> > information", but ..
-> 
-> Yeah, we have o to toggle offset view + s to toggle source 
-> code view, etc.
+Subject: [PATCH] do not export kernel's NULL #define to userspace
+From: Lubos Lunak <l.lunak@suse.cz>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+ linux-kernel@vger.kernel.org
+Date: Wed, 21 Mar 2012 14:08:24 +0100
+MIME-Version: 1.0
+Content-Type: text/plain;
+  charset="utf-8"
+Content-Transfer-Encoding: quoted-printable
+Content-Disposition: inline
+Message-Id: <201203211408.25040.l.lunak@suse.cz>
+X-Length: 1543
+X-UID: 26267
 
-I suspect the default view should be the 'most intelligent' mode 
-of assembly output we can offer - with easy toggles for the rare 
-cases where someone would like to do something special, plus 
-.perfconfig overrides for those with weird workflows and those 
-with a taste different from ours.
+GCC's NULL is actually __null, which allows detecting some questionable
+NULL usage and warn about it. Moreover each platform/compiler should have
+its own stddef.h anyway (which is different from linux/stddef.h).
+So there's no good reason to leak kernel's NULL to userspace and
+override what the compiler provides.
 
-Thanks,
+Signed-off-by: Lubo=C5=A1 Lu=C5=88=C3=A1k <l.lunak@suse.cz>
+=2D--
+ include/linux/stddef.h |    8 ++------
+ 1 files changed, 2 insertions(+), 6 deletions(-)
 
-	Ingo
+diff --git a/include/linux/stddef.h b/include/linux/stddef.h
+index 6a40c76..1747b67 100644
+=2D-- a/include/linux/stddef.h
++++ b/include/linux/stddef.h
+@@ -3,14 +3,10 @@
+=20
+ #include <linux/compiler.h>
+=20
++#ifdef __KERNEL__
++
+ #undef NULL
+=2D#if defined(__cplusplus)
+=2D#define NULL 0
+=2D#else
+ #define NULL ((void *)0)
+=2D#endif
+=2D
+=2D#ifdef __KERNEL__
+=20
+ enum {
+ 	false	=3D 0,
+=2D-=20
+1.7.3.4
+=2D-=20
+ Lubos Lunak
+ l.lunak@suse.cz
+
+--Boundary-00=_/sTiPY5taHpi46e--
