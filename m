@@ -1,51 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754647Ab2DNCdN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Apr 2012 22:33:13 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:53734 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752531Ab2DNCdM convert rfc822-to-8bit (ORCPT
+	id S1754794Ab2DNCeX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Apr 2012 22:34:23 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:37738 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753288Ab2DNCeW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Apr 2012 22:33:12 -0400
+	Fri, 13 Apr 2012 22:34:22 -0400
+Date: Sat, 14 Apr 2012 03:34:20 +0100
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Sage Weil <sage@newdream.net>
+Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
+Subject: osd_req_encode_op() breakage?
+Message-ID: <20120414023420.GQ6589@ZenIV.linux.org.uk>
 MIME-Version: 1.0
-In-Reply-To: <20120414021201.GA23385@redhat.com>
-References: <20120414021201.GA23385@redhat.com>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Fri, 13 Apr 2012 19:32:51 -0700
-X-Google-Sender-Auth: dwEHJK_UyQQ2vgHb4Cf1-weyPvs
-Message-ID: <CA+55aFyDy6VHtZ=SmXfn-AHT0QU8LV69U5NECGLA9pXg4Q=aZw@mail.gmail.com>
-Subject: Re: [PATCH v4 0/3] task_work_add (was: task_work_queue)
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        David Howells <dhowells@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Alexander Gordeev <agordeev@redhat.com>,
-        Chris Zankel <chris@zankel.net>, David Smith <dsmith@redhat.com>,
-        "Frank Ch. Eigler" <fche@redhat.com>,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        Larry Woodman <lwoodman@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>, Tejun Heo <tj@kernel.org>,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 13, 2012 at 7:12 PM, Oleg Nesterov <oleg@redhat.com> wrote:
->
-> Changes based on review from Andrew:
->
->        - s/task_work_queue/task_work_add/
->
->        - don't create a secret dependency upon task_work.h
->          including sched.h in tracehook.h and keys/internal.h
->
->        - add more includes into task_work.[ch] to not rely
->          on "sched.h includes everything"
+static void osd_req_encode_op(struct ceph_osd_request *req,
+                              struct ceph_osd_op *dst,
+                              struct ceph_osd_req_op *src)
+{
+        dst->op = cpu_to_le16(src->op);
 
-I thought based on Andrew's comments that you were going to remove the
-extra code to do FIFO for no obvious reason. Apparently nothing
-actually wanted/needed it, so why do it?
+        switch (dst->op) {
+        case CEPH_OSD_OP_READ:
+        case CEPH_OSD_OP_WRITE:
 
-                  Linus
+is an interesting thing to say, seeing that CEPH_OSD_OP_READ et.al. are
+all host-endian...  Should that be "switch (src->op)" instead?  AFAICS,
+that sucker had appeared in that form back in
+commit 68b4476b0bc13fef18266b4140309a30e86739d2
+Author: Yehuda Sadeh <yehuda@hq.newdream.net>
+Date:   Tue Apr 6 15:01:27 2010 -0700
+
+    ceph: messenger and osdc changes for rbd
+
+and it seems to be broken on big-endian hosts.  Doesn't look like a misspelled
+le16_to_cpu() either, since dst->op ends up going on the wire...
+
+I'm really mystified by that - it looks like it must've shown up immediately
+on big-endian hosts; it's not like it was an obscure codepath, after all...
+Comments?
