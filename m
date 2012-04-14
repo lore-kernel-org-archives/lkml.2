@@ -1,60 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756623Ab2DNXnJ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 14 Apr 2012 19:43:09 -0400
-Received: from mailout-de.gmx.net ([213.165.64.22]:41350 "HELO
-	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1755143Ab2DNXnH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 14 Apr 2012 19:43:07 -0400
-X-Authenticated: #12255092
-X-Provags-ID: V01U2FsdGVkX19+6akHBy9+5Xnzt1OP60P9hMc06cXcb2vn2j88md
-	/R23y4UiZhhzQs
-From: Peter Huewe <peterhuewe@gmx.de>
-To: Karsten Keil <isdn@linux-pingi.de>
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        kernel-janitors@vger.kernel.org, Peter Huewe <peterhuewe@gmx.de>
-Subject: [PATCH] isdn/hysdn:  Convert to kstrtoul_from_user
-Date: Sun, 15 Apr 2012 01:42:59 +0200
-Message-Id: <1334446979-1177-1-git-send-email-peterhuewe@gmx.de>
-X-Mailer: git-send-email 1.7.3.4
-X-Y-GMX-Trusted: 0
+	id S1756609Ab2DNXxJ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 14 Apr 2012 19:53:09 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:31596 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751672Ab2DNXxI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 14 Apr 2012 19:53:08 -0400
+Date: Sun, 15 Apr 2012 01:52:38 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: "H. Peter Anvin" <hpa@zytor.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Chuck Ebbert <chuckebbert.lk@gmail.com>,
+        Jan Kratochvil <jan.kratochvil@redhat.com>,
+        linux-kernel@vger.kernel.org
+Subject: ptrace && fpu_lazy_restore
+Message-ID: <20120414235238.GA11131@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch replaces the code for getting an number from a
-userspace buffer by a simple call to kstroul_from_user.
-This makes it easier to read and less error prone.
+Credits to Jan and Chuck, see
 
-Signed-off-by: Peter Huewe <peterhuewe@gmx.de>
----
- drivers/isdn/hysdn/hysdn_proclog.c |   10 +---------
- 1 files changed, 1 insertions(+), 9 deletions(-)
+	https://bugzilla.redhat.com/show_bug.cgi?id=810668
 
-diff --git a/drivers/isdn/hysdn/hysdn_proclog.c b/drivers/isdn/hysdn/hysdn_proclog.c
-index ba91333..88e4f0e 100644
---- a/drivers/isdn/hysdn/hysdn_proclog.c
-+++ b/drivers/isdn/hysdn/hysdn_proclog.c
-@@ -156,17 +156,9 @@ static ssize_t
- hysdn_log_write(struct file *file, const char __user *buf, size_t count, loff_t *off)
- {
- 	int rc;
--	unsigned char valbuf[128];
- 	hysdn_card *card = file->private_data;
+with reproducer:
+
+	https://bugzilla.redhat.com/attachment.cgi?id=577270
+
+But afaics the root of the problem is clear. Once PTRACE_SETFPREGS
+changes fpu.state->fxsave the task obviously needs restore_fpu_checking()
+on context switch.
+
+But I am not sure about the fix, and in any case I need more time
+to read this new code.
+
+Oleg.
+
+--- x/arch/x86/kernel/i387.c~	2012-04-09 20:12:12.000000000 +0200
++++ x/arch/x86/kernel/i387.c	2012-04-15 01:34:09.000000000 +0200
+@@ -301,6 +301,8 @@ int xfpregs_set(struct task_struct *targ
  
--	if (count > (sizeof(valbuf) - 1))
--		count = sizeof(valbuf) - 1;	/* limit length */
--	if (copy_from_user(valbuf, buf, count))
--		return (-EFAULT);	/* copy failed */
--
--	valbuf[count] = 0;	/* terminating 0 */
--
--	rc = kstrtoul(valbuf, 0, &card->debug_flags);
-+	rc = kstrtoul_from_user(buf, count, 0, &card->debug_flags);
- 	if (rc < 0)
- 		return rc;
- 	hysdn_addlog(card, "debug set to 0x%lx", card->debug_flags);
--- 
-1.7.3.4
+ 	sanitize_i387_state(target);
+ 
++	target->thread.fpu.last_cpu = ~0;
++
+ 	ret = user_regset_copyin(&pos, &count, &kbuf, &ubuf,
+ 				 &target->thread.fpu.state->fxsave, 0, -1);
+ 
+@@ -563,6 +565,8 @@ int fpregs_set(struct task_struct *targe
+ 
+ 	sanitize_i387_state(target);
+ 
++	target->thread.fpu.last_cpu = ~0;
++
+ 	if (!HAVE_HWFP)
+ 		return fpregs_soft_set(target, regset, pos, count, kbuf, ubuf);
+ 
 
