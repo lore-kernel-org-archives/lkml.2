@@ -1,45 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756416Ab2DNXMQ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 14 Apr 2012 19:12:16 -0400
-Received: from einhorn.in-berlin.de ([192.109.42.8]:38799 "EHLO
-	einhorn.in-berlin.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752360Ab2DNXMO (ORCPT
+	id S1756601Ab2DNXZO (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 14 Apr 2012 19:25:14 -0400
+Received: from mailout-de.gmx.net ([213.165.64.22]:33582 "HELO
+	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1754925Ab2DNXZM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 14 Apr 2012 19:12:14 -0400
-X-Envelope-From: stefanr@s5r6.in-berlin.de
-Date: Sun, 15 Apr 2012 01:11:51 +0200
-From: Stefan Richter <stefanr@s5r6.in-berlin.de>
-To: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-Cc: Chris Boot <bootc@bootc.net>, linux1394-devel@lists.sourceforge.net,
-        target-devel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        agrover@redhat.com, clemens@ladisch.de
-Subject: Re: [PATCH 0/2] sbp-target: cleanup after merge into single file
-Message-ID: <20120415011151.55d14826@stein>
-In-Reply-To: <1334439895.12540.65.camel@haakon2.linux-iscsi.org>
-References: <1334366583.12540.12.camel@haakon2.linux-iscsi.org>
-	<1334394746-31738-1-git-send-email-bootc@bootc.net>
-	<1334439895.12540.65.camel@haakon2.linux-iscsi.org>
-X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.8; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Sat, 14 Apr 2012 19:25:12 -0400
+X-Authenticated: #12255092
+X-Provags-ID: V01U2FsdGVkX1+DnCETjkmDVF+PtEK+o0kKwuAW2QAjWraLH5ibN5
+	ykL+jEEaefQcYH
+From: Peter Huewe <peterhuewe@gmx.de>
+To: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
+Cc: linux-fbdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        kernel-janitors@vger.kernel.org, Peter Huewe <peterhuewe@gmx.de>
+Subject: [PATCH] video/via: Convert to kstrtou8_from_user
+Date: Sun, 15 Apr 2012 01:24:46 +0200
+Message-Id: <1334445886-32448-1-git-send-email-peterhuewe@gmx.de>
+X-Mailer: git-send-email 1.7.3.4
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Apr 14 Nicholas A. Bellinger wrote:
-> Also, it looks like Stefan has a few more comments from the last round
-> of review..
+This patch replaces the code for getting an number from a
+userspace buffer by a simple call to kstrou8_from_user.
+This makes it easier to read and less error prone.
 
-Don't consider them blocking.  I would welcome it if the code gets merged
-soon, it looks very nice and maintainable.  The card state <-> session
-state interactions which I was wondering about will be more comfortable for
-me to investigate when it is in mainline; I believe there is no urgency
-for me to look into that.  Other obscure but simple things like making use
-of memory alignment guarantees from firewire-core are more effectively
-addressed if I can send patches rather than comments.
+Signed-off-by: Peter Huewe <peterhuewe@gmx.de>
+---
+ drivers/video/via/viafbdev.c |   26 ++++++++++----------------
+ 1 files changed, 10 insertions(+), 16 deletions(-)
+
+diff --git a/drivers/video/via/viafbdev.c b/drivers/video/via/viafbdev.c
+index 0c88375..5b0d524 100644
+--- a/drivers/video/via/viafbdev.c
++++ b/drivers/video/via/viafbdev.c
+@@ -1276,17 +1276,14 @@ static int viafb_dfph_proc_open(struct inode *inode, struct file *file)
+ static ssize_t viafb_dfph_proc_write(struct file *file,
+ 	const char __user *buffer, size_t count, loff_t *pos)
+ {
+-	char buf[20];
++	int err;
+ 	u8 reg_val = 0;
+-	unsigned long length;
+ 	if (count < 1)
+ 		return -EINVAL;
+-	length = count > 20 ? 20 : count;
+-	if (copy_from_user(&buf[0], buffer, length))
+-		return -EFAULT;
+-	buf[length - 1] = '\0';	/*Ensure end string */
+-	if (kstrtou8(buf, 0, &reg_val) < 0)
+-		return -EINVAL;
++	err = kstrtou8_from_user(buffer, count, 0, &reg_val);
++	if (err)
++		return err;
++
+ 	viafb_write_reg_mask(CR97, VIACR, reg_val, 0x0f);
+ 	return count;
+ }
+@@ -1316,17 +1313,14 @@ static int viafb_dfpl_proc_open(struct inode *inode, struct file *file)
+ static ssize_t viafb_dfpl_proc_write(struct file *file,
+ 	const char __user *buffer, size_t count, loff_t *pos)
+ {
+-	char buf[20];
++	int err;
+ 	u8 reg_val = 0;
+-	unsigned long length;
+ 	if (count < 1)
+ 		return -EINVAL;
+-	length = count > 20 ? 20 : count;
+-	if (copy_from_user(&buf[0], buffer, length))
+-		return -EFAULT;
+-	buf[length - 1] = '\0';	/*Ensure end string */
+-	if (kstrtou8(buf, 0, &reg_val) < 0)
+-		return -EINVAL;
++	err = kstrtou8_from_user(buffer, count, 0, &reg_val);
++	if (err)
++		return err;
++
+ 	viafb_write_reg_mask(CR99, VIACR, reg_val, 0x0f);
+ 	return count;
+ }
 -- 
-Stefan Richter
--=====-===-- -=-- -====
-http://arcgraph.de/sr/
+1.7.3.4
+
