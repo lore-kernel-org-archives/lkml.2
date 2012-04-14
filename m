@@ -1,164 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754032Ab2DNWxJ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 14 Apr 2012 18:53:09 -0400
-Received: from swampdragon.chaosbits.net ([90.184.90.115]:24930 "EHLO
-	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751453Ab2DNWxH (ORCPT
+	id S1755967Ab2DNW4h (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 14 Apr 2012 18:56:37 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:56580 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752916Ab2DNW4g (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 14 Apr 2012 18:53:07 -0400
-Date: Sun, 15 Apr 2012 00:53:04 +0200 (CEST)
-From: Jesper Juhl <jj@chaosbits.net>
-To: linux-kernel@vger.kernel.org
-cc: David Woodhouse <dwmw2@infradead.org>,
-        Andres Salomon <dilinger@queued.net>,
-        Jordan Crouse <jordan@cosmicpenguin.net>, Chris Ball <cjb@laptop.org>,
-        Jon Nettleton <jon.nettleton@gmail.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Valentin Rothberg <valentinrothberg@googlemail.com>,
-        Wolfram Sang <w.sang@pengutronix.de>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        devel@driverdev.osuosl.org
-Subject: [PATCH] staging: olpc_dcon.c: checkpatch.pl and style fixups
-Message-ID: <alpine.LNX.2.00.1204150049270.15578@swampdragon.chaosbits.net>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	Sat, 14 Apr 2012 18:56:36 -0400
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <20120415004714.4d729bef@stein>
+References: <20120411231102.GA6404@kroah.com>
+	<CAMP44s3Jh-t07A+i82qbAMQyEN0oWTmKk5BJcst942gFdD0=VA@mail.gmail.com>
+	<20120412011313.GA23764@kroah.com>
+	<CAMP44s2q+bQE3-zsX4bs=sQDt4jf8eE5bwZ8V88UjodjRyAjog@mail.gmail.com>
+	<20120412144626.GA14868@kroah.com>
+	<CAMP44s1T4EVwpzDuV_vV0Zh-5WcPCwdw9eeOfL17Geqp_UFN-Q@mail.gmail.com>
+	<CAJ-VmonhwvnXPKa=LNOR4W0ZTXZqWmzw4UrsKLoE0YN_Bu0FzQ@mail.gmail.com>
+	<CAMP44s2JPvhEB6Eb049Z_bToAFncHKMEheuyaxyhC=bnh2GJVg@mail.gmail.com>
+	<20120413105746.10ffb120@stein>
+	<CAMP44s0RohH9tPiM5qCDT57XBV=iO66PZkSjYVxA6Usg1qJPtw@mail.gmail.com>
+	<20120413154216.476a02ac@stein>
+	<CAMP44s10KVwL5pY=Q5hWfyUtU6CvvZZ4Bcg-fEY9dAhSL306aQ@mail.gmail.com>
+	<20120414094137.54a7f213@stein>
+	<CAMP44s2Un-M2OCmuRQGpGsHR21gH=S7oJKx4Ci8tvYVCCSitUw@mail.gmail.com>
+	<20120414195559.3d5ab944@stein>
+	<CAMP44s0ngzwkbQapTip=oW1b5m2uO5zCzbXHVqHXwT2+Wpgo_A@mail.gmail.com>
+	<20120414232124.1ffd7ac9@stein>
+	<CAMP44s05k3YkXSLGdYjJ42d+uEM+bLS9uZ+2ztUBWqcO6kyUtA@mail.gmail.com>
+	<20120415004714.4d729bef@stein>
+Date: Sun, 15 Apr 2012 01:56:34 +0300
+Message-ID: <CAMP44s1aVEDO7TKrVuXoMXP70qAUX-fT-mZOBU92yfn6h3fEQw@mail.gmail.com>
+Subject: Re: [ 00/78] 3.3.2-stable review
+From: Felipe Contreras <felipe.contreras@gmail.com>
+To: Stefan Richter <stefanr@s5r6.in-berlin.de>
+Cc: Adrian Chadd <adrian@freebsd.org>, Greg KH <gregkh@linuxfoundation.org>,
+        Sergio Correia <lists@uece.net>, linux-kernel@vger.kernel.org,
+        stable@vger.kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+        linux-wireless Mailing List <linux-wireless@vger.kernel.org>,
+        Sujith Manoharan <c_manoha@qca.qualcomm.com>,
+        "ath9k-devel@lists.ath9k.org" <ath9k-devel@venema.h4ckr.net>,
+        "John W. Linville" <linville@tuxdriver.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch removes the few checkpatch.pl issues that are currently
-reported for this file.
+On Sun, Apr 15, 2012 at 1:47 AM, Stefan Richter
+<stefanr@s5r6.in-berlin.de> wrote:
+> On Apr 15 Felipe Contreras wrote:
+>> The question that has not been answered is what makes them different,
+>
+> It was answered in the grandparent post and in posts before it.
 
-It makes these changes:
+Nope.
 
-1. Quoted strings that were broken over multiple lines are put on a
-   single line for easier grep'ability.
+>> I'm glad you see it's silly to put bad patches in the stable release
+>> just so they get properly tracked for mainline, but that's exactly
+>> what you arguing for.
+>
+> I am not arguing for anything remotely like that.
 
-2. Add missing level to a printk().
-
-3. A few casts have had their space between the cast and variable
-   removed.
-
-4. Two msleep() calls with times <= 20 have been changed to
-   usleep_range() calls instead since msleep(<=20) may sleep for 20ms
-   (on 100Hz kernels for instance).
-   Picking a value for the lower bound of the range was easy, that was
-   just the value passed to msleep(). As for picking the upper bound
-   of the sleep I just went with two times the lower bound, for no
-   other reason than the fact that in both cases that value was <=20ms
-   and the end result will in any case be closer to the intention than
-   a 20ms sleep.
-
-It all seemed trivial enough to just do as one patch, but I can split
-it if wanted.
-
-
-Signed-off-by: Jesper Juhl <jj@chaosbits.net>
----
- drivers/staging/olpc_dcon/olpc_dcon.c |   33 ++++++++++++++++-----------------
- 1 file changed, 16 insertions(+), 17 deletions(-)
-
-diff --git a/drivers/staging/olpc_dcon/olpc_dcon.c b/drivers/staging/olpc_dcon/olpc_dcon.c
-index 3d91993..80e8395 100644
---- a/drivers/staging/olpc_dcon/olpc_dcon.c
-+++ b/drivers/staging/olpc_dcon/olpc_dcon.c
-@@ -71,8 +71,8 @@ static int dcon_hw_init(struct dcon_priv *dcon, int is_init)
- 
- 	ver = dcon_read(dcon, DCON_REG_ID);
- 	if ((ver >> 8) != 0xDC) {
--		printk(KERN_ERR "olpc-dcon:  DCON ID not 0xDCxx: 0x%04x "
--				"instead.\n", ver);
-+		printk(KERN_ERR "olpc-dcon:  DCON ID not 0xDCxx: 0x%04x instead.\n",
-+				ver);
- 		rc = -ENXIO;
- 		goto err;
- 	}
-@@ -134,27 +134,26 @@ static int dcon_bus_stabilize(struct dcon_priv *dcon, int is_powered_down)
- power_up:
- 	if (is_powered_down) {
- 		x = 1;
--		x = olpc_ec_cmd(0x26, (unsigned char *) &x, 1, NULL, 0);
-+		x = olpc_ec_cmd(0x26, (unsigned char *)&x, 1, NULL, 0);
- 		if (x) {
--			printk(KERN_WARNING "olpc-dcon:  unable to force dcon "
--					"to power up: %d!\n", x);
-+			printk(KERN_WARNING "olpc-dcon:  unable to force dcon to power up: %d!\n",
-+					x);
- 			return x;
- 		}
--		msleep(10); /* we'll be conservative */
-+		usleep_range(10000, 20000); /* we'll be conservative */
- 	}
- 
- 	pdata->bus_stabilize_wiggle();
- 
- 	for (x = -1, timeout = 50; timeout && x < 0; timeout--) {
--		msleep(1);
-+		usleep_range(1000, 2000);
- 		x = dcon_read(dcon, DCON_REG_ID);
- 	}
- 	if (x < 0) {
--		printk(KERN_ERR "olpc-dcon:  unable to stabilize dcon's "
--				"smbus, reasserting power and praying.\n");
-+		printk(KERN_ERR "olpc-dcon:  unable to stabilize dcon's smbus, reasserting power and praying.\n");
- 		BUG_ON(olpc_board_at_least(olpc_board(0xc2)));
- 		x = 0;
--		olpc_ec_cmd(0x26, (unsigned char *) &x, 1, NULL, 0);
-+		olpc_ec_cmd(0x26, (unsigned char *)&x, 1, NULL, 0);
- 		msleep(100);
- 		is_powered_down = 1;
- 		goto power_up;	/* argh, stupid hardware.. */
-@@ -220,10 +219,10 @@ static void dcon_sleep(struct dcon_priv *dcon, bool sleep)
- 
- 	if (sleep) {
- 		x = 0;
--		x = olpc_ec_cmd(0x26, (unsigned char *) &x, 1, NULL, 0);
-+		x = olpc_ec_cmd(0x26, (unsigned char *)&x, 1, NULL, 0);
- 		if (x)
--			printk(KERN_WARNING "olpc-dcon:  unable to force dcon "
--					"to power down: %d!\n", x);
-+			printk(KERN_WARNING "olpc-dcon:  unable to force dcon to power down: %d!\n",
-+					x);
- 		else
- 			dcon->asleep = sleep;
- 	} else {
-@@ -232,8 +231,8 @@ static void dcon_sleep(struct dcon_priv *dcon, bool sleep)
- 			dcon->disp_mode |= MODE_BL_ENABLE;
- 		x = dcon_bus_stabilize(dcon, 1);
- 		if (x)
--			printk(KERN_WARNING "olpc-dcon:  unable to reinit dcon"
--					" hardware: %d!\n", x);
-+			printk(KERN_WARNING "olpc-dcon:  unable to reinit dcon hardware: %d!\n",
-+				x);
- 		else
- 			dcon->asleep = sleep;
- 
-@@ -304,7 +303,7 @@ static void dcon_source_switch(struct work_struct *work)
- 
- 	switch (source) {
- 	case DCON_SOURCE_CPU:
--		printk("dcon_source_switch to CPU\n");
-+		printk(KERN_INFO "dcon_source_switch to CPU\n");
- 		/* Enable the scanline interrupt bit */
- 		if (dcon_write(dcon, DCON_REG_MODE,
- 				dcon->disp_mode | MODE_SCAN_INT))
-@@ -599,7 +598,7 @@ static int dcon_fb_notifier(struct notifier_block *self,
- 	struct fb_event *evdata = data;
- 	struct dcon_priv *dcon = container_of(self, struct dcon_priv,
- 			fbevent_nb);
--	int *blank = (int *) evdata->data;
-+	int *blank = (int *)evdata->data;
- 	if (((event != FB_EVENT_BLANK) && (event != FB_EVENT_CONBLANK)) ||
- 			dcon->ignore_fb_events)
- 		return 0;
--- 
-1.7.10
-
+Please, do explain why that is silly then.
 
 -- 
-Jesper Juhl <jj@chaosbits.net>       http://www.chaosbits.net/
-Don't top-post http://www.catb.org/jargon/html/T/top-post.html
-Plain text mails only, please.
-
+Felipe Contreras
