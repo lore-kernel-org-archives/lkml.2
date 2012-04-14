@@ -1,58 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755441Ab2DNLlh (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 14 Apr 2012 07:41:37 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:60039 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754952Ab2DNLlf (ORCPT
+	id S1755464Ab2DNLvR (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 14 Apr 2012 07:51:17 -0400
+Received: from mail.parknet.co.jp ([210.171.160.6]:49056 "EHLO
+	mail.parknet.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754952Ab2DNLvO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 14 Apr 2012 07:41:35 -0400
-Date: Sat, 14 Apr 2012 13:41:29 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: hpa@zytor.com, paulus@samba.org, linux-kernel@vger.kernel.org,
-        acme@redhat.com, a.p.zijlstra@chello.nl, jolsa@redhat.com,
-        fweisbec@gmail.com, tglx@linutronix.de, cjashfor@linux.vnet.ibm.com,
-        mingo@elte.hu
-Cc: linux-tip-commits@vger.kernel.org
-Subject: Re: [tip:perf/core] perf tools: Fix parsers' rules to dependencies
-Message-ID: <20120414114129.GF24688@gmail.com>
-References: <1334140791-3024-1-git-send-email-jolsa@redhat.com>
- <tip-024e6c9747bb274c9d744ad52a987a0ebec528a6@git.kernel.org>
+	Sat, 14 Apr 2012 07:51:14 -0400
+From: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+To: dedekind1@gmail.com
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Linux Kernel Maling List <linux-kernel@vger.kernel.org>,
+        Linux FS Maling List <linux-fsdevel@vger.kernel.org>,
+        Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
+Subject: Re: [PATCH v2 4/4] fat: switch to fsinfo_inode
+References: <1334326795-2446-1-git-send-email-dedekind1@gmail.com>
+	<1334326795-2446-5-git-send-email-dedekind1@gmail.com>
+	<87fwc6hazv.fsf@devron.myhome.or.jp> <1334399379.2263.8.camel@koala>
+	<87bomuha77.fsf@devron.myhome.or.jp> <1334401307.2263.24.camel@koala>
+Date: Sat, 14 Apr 2012 20:51:09 +0900
+In-Reply-To: <1334401307.2263.24.camel@koala> (Artem Bityutskiy's message of
+	"Sat, 14 Apr 2012 14:01:45 +0300")
+Message-ID: <873986h6qa.fsf@devron.myhome.or.jp>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1.50 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <tip-024e6c9747bb274c9d744ad52a987a0ebec528a6@git.kernel.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Artem Bityutskiy <dedekind1@gmail.com> writes:
 
-* tip-bot for Jiri Olsa <jolsa@redhat.com> wrote:
+>> > Sorry, I do not see how this can be true. You have a just bunch of dirty
+>> > inodes, and it does not matter in which order you flush them. See
+>> > __fat_write_inode() - it does not change the FAT table and does not
+>> > affect the FSINFO block.
+>> >
+>> > Besides, the _current_ code first writes out FSINFO, because VFS calls
+>> > ->sync_fs() first, then it starts writing back, then VFS calls
+>> > ->sync_fs() for the second time.
+>
+> This is actually not exactly correct, but anyway, the first
+> ->sync_fs(sb, 0) may come to FAT FS while it is in the middle of writing
+> out the inodes.
+>
+> BTW, fat_clusters_flush() does not wait on the FSINFO block, which I
+> think is a bug. I mean, it should call 'sync_dirty_buffer()'. I can
+> submit a separate patch later.
 
-> Commit-ID:  024e6c9747bb274c9d744ad52a987a0ebec528a6
-> Gitweb:     http://git.kernel.org/tip/024e6c9747bb274c9d744ad52a987a0ebec528a6
-> Author:     Jiri Olsa <jolsa@redhat.com>
-> AuthorDate: Wed, 11 Apr 2012 12:39:51 +0200
-> Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-> CommitDate: Wed, 11 Apr 2012 16:57:09 -0300
-> 
-> perf tools: Fix parsers' rules to dependencies
-> 
-> Currently the parsers objects (bison/flex related) are each time perf
-> is built. No matter the generated files are already in place, the
-> parser generation is executed every time.
-> 
-> Changing the rules to have proper flex/bison objects generation
-> dependencies.
-> 
-> The parsers code is not rebuilt until the flex/bison source files
-> are touched. Also when flex/bison source is changed, only dependent
-> objects are rebuilt.
+write_super() is update and dirty buffer. Actual flush is via blockdev
+(by historical reason), right? So, I think we don't need to wait at
+sync_fs() in FATfs case.
 
-Hm, can I cherry-pick this over into perf/urgent? I see no good 
-reason why we should leave the v3.4 version half-broken.
+>> Common case is delayed allocation though, in the case of FATfs, it would
+>> be only truncate by last iput().
+>
+> Sorry, I do not understand what you mean. Do you still want me to take
+> care of the order or not? If yes, could you please explain why?
 
-Thanks,
+Yes, I still worry about order. About ->sync_fs(), you are looking the
+following?
 
-	Ingo
+__sync_filesystem(sb, 0)
+__sync_filesystem(sb, 1)
+
+Those are doing
+
+1) try flush dirty all data at first without blocking
+	__sync_filesystem(sb, 0)
+2) wait some data of (1), and complete inodes work
+	part of __sync_filesystem(sb, 1)
+3) write super block to buffer
+	->sync_fs() in __sync_filesystem(sb, 1)
+4) flush and wait all metadata on blockdev
+	__sync_blockdev() in __sync_filesystem(sb, 1)
+
+right?
+
+In your patch, we lose (3). (And I can't remember why I did it though,
+your patch lose write_super() in ->put_super() too.)
+-- 
+OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
