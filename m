@@ -1,123 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752687Ab2DNFox (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 14 Apr 2012 01:44:53 -0400
-Received: from 1wt.eu ([62.212.114.60]:65130 "EHLO 1wt.eu"
+	id S1751922Ab2DNGCX (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 14 Apr 2012 02:02:23 -0400
+Received: from 1wt.eu ([62.212.114.60]:65137 "EHLO 1wt.eu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751828Ab2DNFov (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 14 Apr 2012 01:44:51 -0400
-Date: Sat, 14 Apr 2012 07:44:01 +0200
+	id S1750734Ab2DNGCV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 14 Apr 2012 02:02:21 -0400
+Date: Sat, 14 Apr 2012 08:01:58 +0200
 From: Willy Tarreau <w@1wt.eu>
 To: Felipe Contreras <felipe.contreras@gmail.com>
-Cc: Jonathan Nieder <jrnieder@gmail.com>,
-        Stefan Richter <stefanr@s5r6.in-berlin.de>,
-        Adrian Chadd <adrian@freebsd.org>,
-        Greg KH <gregkh@linuxfoundation.org>, Sergio Correia <lists@uece.net>,
-        linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk,
-        linux-wireless Mailing List <linux-wireless@vger.kernel.org>,
-        Sujith Manoharan <c_manoha@qca.qualcomm.com>,
+Cc: Stefan Richter <stefanr@s5r6.in-berlin.de>,
         "ath9k-devel@lists.ath9k.org" <ath9k-devel@venema.h4ckr.net>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: Re: [ 00/78] 3.3.2-stable review
-Message-ID: <20120414054401.GC19802@1wt.eu>
-References: <20120412144626.GA14868@kroah.com> <CAMP44s1T4EVwpzDuV_vV0Zh-5WcPCwdw9eeOfL17Geqp_UFN-Q@mail.gmail.com> <CAJ-VmonhwvnXPKa=LNOR4W0ZTXZqWmzw4UrsKLoE0YN_Bu0FzQ@mail.gmail.com> <CAMP44s2JPvhEB6Eb049Z_bToAFncHKMEheuyaxyhC=bnh2GJVg@mail.gmail.com> <20120413105746.10ffb120@stein> <CAMP44s0RohH9tPiM5qCDT57XBV=iO66PZkSjYVxA6Usg1qJPtw@mail.gmail.com> <20120413154216.476a02ac@stein> <CAMP44s10KVwL5pY=Q5hWfyUtU6CvvZZ4Bcg-fEY9dAhSL306aQ@mail.gmail.com> <20120413230525.GA13995@burratino> <CAMP44s0OdVBTwVtCoru-xvB=LVtO56jgku7X-0a7mUz1=iVCzw@mail.gmail.com>
+        Greg KH <gregkh@linuxfoundation.org>,
+        linux-wireless Mailing List <linux-wireless@vger.kernel.org>,
+        linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        "John W. Linville" <linville@tuxdriver.com>, akpm@linux-foundation.org,
+        torvalds@linux-foundation.org, alan@lxorguk.ukuu.org.uk
+Subject: Re: [ath9k-devel] [ 00/78] 3.3.2-stable review
+Message-ID: <20120414060158.GD19802@1wt.eu>
+References: <20120412011313.GA23764@kroah.com> <CAMP44s2q+bQE3-zsX4bs=sQDt4jf8eE5bwZ8V88UjodjRyAjog@mail.gmail.com> <20120412144626.GA14868@kroah.com> <CAMP44s1T4EVwpzDuV_vV0Zh-5WcPCwdw9eeOfL17Geqp_UFN-Q@mail.gmail.com> <CAJ-VmonhwvnXPKa=LNOR4W0ZTXZqWmzw4UrsKLoE0YN_Bu0FzQ@mail.gmail.com> <CAMP44s2JPvhEB6Eb049Z_bToAFncHKMEheuyaxyhC=bnh2GJVg@mail.gmail.com> <20120413105746.10ffb120@stein> <CAMP44s0RohH9tPiM5qCDT57XBV=iO66PZkSjYVxA6Usg1qJPtw@mail.gmail.com> <20120413190819.9469.qmail@stuge.se> <CAMP44s02v_OhviaF12Y8LWBJygyVLZk00d3P69GVvKAeJwjiuw@mail.gmail.com>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CAMP44s0OdVBTwVtCoru-xvB=LVtO56jgku7X-0a7mUz1=iVCzw@mail.gmail.com>
+In-Reply-To: <CAMP44s02v_OhviaF12Y8LWBJygyVLZk00d3P69GVvKAeJwjiuw@mail.gmail.com>
 User-Agent: Mutt/1.4.2.3i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Apr 14, 2012 at 02:18:33AM +0300, Felipe Contreras wrote:
-> On Sat, Apr 14, 2012 at 2:05 AM, Jonathan Nieder <jrnieder@gmail.com> wrote:
-> > Felipe Contreras wrote:
-> >> On Fri, Apr 13, 2012 at 4:42 PM, Stefan Richter wrote:
-> >
-> >>> If you do not like to wait for Linus and Greg, you simply have to derive
-> >>> an own kernel which additionally contains your preferred fixes.
-> >>
-> >> Yes, because clearly everybody thinks the process is perfect, and
-> >> criticizing it is heresy.
-> >
-> > Close.  Not everyone.  For example, you do not think the process is
-> > perfect.
+On Sat, Apr 14, 2012 at 01:53:22AM +0300, Felipe Contreras wrote:
+> No, I don't want the latest fixes, I want the latest *stable* kernel.
+
+You have it, it's 3.3.2.
+
+> v3.3 is stable, v3.4-rcx are not.
+
+v3.3 *aims to be stable*. That's the big difference. A kernel starts
+unstable and converges to something more stable over the time. 2.4 was
+still experiencing minor issues that we didn't have in 2.6 when I did
+the last release. There were even some security issues we decided not
+to fix and to document instead. Still for its users it was considered
+much more stable than 2.6 or 3.x.
+
+> v3.4 would take months to cook,
+> there will be several release candidates, and it won't be released
+> until the known issues decrease to a reasonable level.
 > 
-> So you think the process is *perfect*? I would have expected
-> reasonable people to know that nothing is perfect, realize the
-> sarcasm, and meditate for a second. But it seems expecting somebody to
-> agree the process is not perfect is too much to ask.
+> v3.3.x on the other hand are *not* stable.
 
-Nobody has said it's perfect. Jonathan said it's "close" to perfect. I
-personally think it's the best tradeoff we could find between a perfectly
-stable branch and a perfect mainline. We manage to converge towards the
-best quality in both branches by accepting a small delay in -stable.
+Nobody said they *are* stable as per the definition of this word.
+"stable" is the name of the branch which defines the longterm goal
+which is achieved as releases are issued. It's the same with longterm
+kernels. They try to maintain even less bugs and try to to introduce
+new ones, eventhough this happens from time to time, development is
+not an exact science.
 
-The problem is that *you* don't accept to wait as soon as you know there's
-a bug, and *you* don't want to make the necessary efforts to make things
-move on. The process is clear and easy and has been explained to you several
-times. If *you* want a fix, *you* just have to ask the fix's author to push
-it to mainline and ask Greg to include it. There will always be a delay
-between the moment a fix is written and the moment it boots on your host
-anyway.
+> They contain patches
+> backported from v3.4, but nobody guarantees they will work. There was
+> no v3.3.1-rc1,
 
-How would you have acted with 2.6.32 when there was this bug preventing
-machines from living more than 208 days ? You think that just complaining
-loudly that it's unacceptable to have this bug would have made things go
-better ? Very few people were experiencing it and even fewer people were
-able to understand it. Fortunately some users deployed a lot of efforts in
-providing traces, configs, etc to narrow the bug down and it eventually got
-fixed something like one year after the first report, thanks to everyone's
-involvment. Linux is not only Linus or Greg's job, it's everyone's. You
-have to take your part when you feel concerned about something. If you
-don't want to participate, that's fine. Use a vendor's distro and file
-a bug report, they'll do this job themselves and in the mean time they'll
-probably provide you with the fix.
+Few people test rc, and not all bugs or regressions can be detected by
+just a build and a boot.
 
-> > I don't think Stefan meant the above as tongue-in-cheek, for what it's
-> > worth.  Another stable kernel with different rules really would be an
-> > interesting exercise, and would probably fulfill a need for a certain
-> > audience.
+> so the first time the patches compromising v3.3.1 were
+> generally tested together is in v3.3.1, at which point if somebody
+> finds issues, it's too late; bad patches are *not* going to be removed
+> in v3.3.2.
 
-BTW this has been done a lot in the 2.4 era, by Alan, Andrew, Andrea, MCP,
-myself. Yes it's interesting and useful. Experience shows that this ends
-at one point because it requires a lot of work. And at this time there were
-no such rules and it was very common to see that -ac or -aa kernels were
-more stable than mainline for some workloads, which was a bit problematic,
-especially when these kernels had to be rebased onto newer versions and
-some patches had to be dropped at the risk of losing some stability fixes.
+They would have been if the issue was specific to the backport, which it
+was not.
 
-> > It's not like nobody does that already, anyway.  For example, I hear
-> > Fedora has a kernel that they maintain well for a different audience,
-> > using different rules.
+> Once a tag is made, all the patches in it are dependent on
+> the pace of the development of mainline (v3.4-rcx), which is
+> definitely not stable, specially in the first release candidates.
 > 
-> Of course, although the difference with the stable kernel would be
-> very small if the only thing added is an extra rule for acceptance:
-> "It reverts an earlier patch to 'stable'."
+> IOW, the "stable" branch tries to be stable up to a point, then, it
+> becomes a testing ground for mainline, and a tracking device for
+> certain mainline issues.
 
-Reverting patches that were not appropriate for -stable happens from
-time to time, but only when the issue is specific to -stable (eg: build
-issues). Here what you don't seem to understand is that the bug was
-not specific to -stable but was present everywhere. So we had a bug
-in mainline that we put in -stable, and we want mainline to be fixed
-and we use -stable as a guarantee that mainline will be fixed. And it
-works and has never failed yet. That's not hard to understand I think.
+No it's the opposite, it tries to be stable past one point. It's well
+known that first stable releases still have a number of bugs, and it's
+the reason why Greg takes time to maintain multiple branches in parallel.
+Please stop playing the fool, everybody understands this and you make it
+appear like bugs are put in stable on purpose, your reasoning really does
+not make sense.
 
-> But "we do this, and if you don't like it you can do whatever you
-> want" is not a valid argument in favor of the status quo, even though
-> it's used a lot in open source, and it's true, and there's nothing
-> wrong with that... I yet have to see an answer to my arguments, and
-> not a regurgitated answer for something nobody is proposing.
-
-You've had many answers but you seem to selectively filter them. What you're
-doing looks to me like "grep agree-with-me /dev/urandom && echo I was right".
-Can take some time but it will eventually succeed. But please if you don't
-want to listen to what people explain to you, at least stop polluting their
-mailboxes with your looping arguments.
+Please fork the kernel and maintain your own "morestable" branch, it will
+be useful, really, because it will mean that whatever you have in your
+branch that is not in stable has to be fixed in mainline, so it will hold
+the information Linus wants not to lose. This is a lot of work but you'll
+get it done without asking anyone else to do it. I'm not kidding, I'd
+probably use it if it's maintained long enough.
 
 Willy
 
