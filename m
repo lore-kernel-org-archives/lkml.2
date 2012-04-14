@@ -1,42 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753566Ab2DNJSM (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 14 Apr 2012 05:18:12 -0400
-Received: from casper.infradead.org ([85.118.1.10]:58416 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751114Ab2DNJSK convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 14 Apr 2012 05:18:10 -0400
-Message-ID: <1334395065.2528.43.camel@twins>
-Subject: Re: sched: WARNING: at include/linux/cpumask.h:108
- select_fallback_rq+0x241/0x280()
-From: Peter Zijlstra <peterz@infradead.org>
-To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Cc: Sasha Levin <levinsasha928@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        "linux-kernel@vger.kernel.org List" <linux-kernel@vger.kernel.org>,
-        Dave Jones <davej@redhat.com>, mingo@kernel.org,
-        "Liu, Chuansheng" <chuansheng.liu@intel.com>, vapier@gentoo.org,
-        rusty@rustcorp.com.au
-Date: Sat, 14 Apr 2012 11:17:45 +0200
-In-Reply-To: <4F76B7B9.5080709@linux.vnet.ibm.com>
-References: <CA+1xoqcf6qJOouKXGEHsjWSBJdA7qtMnuVopq+hoHS+TX8fvSg@mail.gmail.com>
-	 <CA+1xoqcJAwgTgQG=nZPsH_SLkPFkGt2rUiVWGn5SO5JOAC1RAA@mail.gmail.com>
-	 <4F75BED4.9050005@linux.vnet.ibm.com> <1333118719.2960.27.camel@laptop>
-	 <4F76B7B9.5080709@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.2- 
-Mime-Version: 1.0
+	id S1753478Ab2DNJYm (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 14 Apr 2012 05:24:42 -0400
+Received: from mgw2.diku.dk ([130.225.96.92]:53238 "EHLO mgw2.diku.dk"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751684Ab2DNJYl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 14 Apr 2012 05:24:41 -0400
+From: Julia Lawall <Julia.Lawall@lip6.fr>
+To: Chris Mason <chris.mason@oracle.com>
+Cc: kernel-janitors@vger.kernel.org, linux-btrfs@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] fs/btrfs/volumes.c: add missing free_fs_devices
+Date: Sat, 14 Apr 2012 11:24:33 +0200
+Message-Id: <1334395473-16667-1-git-send-email-Julia.Lawall@lip6.fr>
+X-Mailer: git-send-email 1.7.3.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2012-03-31 at 13:22 +0530, Srivatsa S. Bhat wrote:
-> 
-> One of the perils of using macros instead of true function calls :-(
-> 
-You can do type checking in macros too, its not pretty, but there's
-several such things already, see min()/max() for example.
+From: Julia Lawall <Julia.Lawall@lip6.fr>
 
+Free fs_devices as done in the error-handling code just below.
+
+Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
+
+---
+ fs/btrfs/volumes.c |    4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
+
+diff --git a/fs/btrfs/volumes.c b/fs/btrfs/volumes.c
+index a872b48..5d246c3 100644
+--- a/fs/btrfs/volumes.c
++++ b/fs/btrfs/volumes.c
+@@ -4334,8 +4334,10 @@ static int open_seed_devices(struct btrfs_root *root, u8 *fsid)
+ 
+ 	ret = __btrfs_open_devices(fs_devices, FMODE_READ,
+ 				   root->fs_info->bdev_holder);
+-	if (ret)
++	if (ret) {
++		free_fs_devices(fs_devices);
+ 		goto out;
++	}
+ 
+ 	if (!fs_devices->seeding) {
+ 		__btrfs_close_devices(fs_devices);
 
