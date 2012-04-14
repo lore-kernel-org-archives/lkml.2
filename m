@@ -1,31 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753533Ab2DNNRF (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 14 Apr 2012 09:17:05 -0400
-Received: from casper.infradead.org ([85.118.1.10]:60371 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751144Ab2DNNRE convert rfc822-to-8bit (ORCPT
+	id S1753605Ab2DNNWh (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 14 Apr 2012 09:22:37 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:49112 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752653Ab2DNNWg convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 14 Apr 2012 09:17:04 -0400
-Message-ID: <1334409396.2528.100.camel@twins>
-Subject: Re: [RFC 0/6] uprobes: kill uprobes_srcu/uprobe_srcu_id
+	Sat, 14 Apr 2012 09:22:36 -0400
+Message-ID: <1334409730.2528.103.camel@twins>
+Subject: Re: [PATCH 3/4 V2] implement per-domain single-thread state machine
+ call_srcu()
 From: Peter Zijlstra <peterz@infradead.org>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Ingo Molnar <mingo@elte.hu>, Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
-        LKML <linux-kernel@vger.kernel.org>, Linux-mm <linux-mm@kvack.org>,
-        Andi Kleen <andi@firstfloor.org>,
-        Christoph Hellwig <hch@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Anton Arapov <anton@redhat.com>
-Date: Sat, 14 Apr 2012 15:16:36 +0200
-In-Reply-To: <20120405222024.GA19154@redhat.com>
-References: <20120405222024.GA19154@redhat.com>
+To: paulmck@linux.vnet.ibm.com
+Cc: Lai Jiangshan <laijs@cn.fujitsu.com>, linux-kernel@vger.kernel.org,
+        mingo@elte.hu, dipankar@in.ibm.com, akpm@linux-foundation.org,
+        mathieu.desnoyers@polymtl.ca, josh@joshtriplett.org, niv@us.ibm.com,
+        tglx@linutronix.de, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
+        dhowells@redhat.com, eric.dumazet@gmail.com, darren@dvhart.com,
+        fweisbec@gmail.com, patches@linaro.org
+Date: Sat, 14 Apr 2012 15:22:10 +0200
+In-Reply-To: <20120410231858.GJ2428@linux.vnet.ibm.com>
+References: <1332144734-9375-1-git-send-email-laijs@cn.fujitsu.com>
+	 <1332144734-9375-4-git-send-email-laijs@cn.fujitsu.com>
+	 <20120410231858.GJ2428@linux.vnet.ibm.com>
 Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7BIT
 X-Mailer: Evolution 3.2.2- 
@@ -34,51 +31,44 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2012-04-06 at 00:20 +0200, Oleg Nesterov wrote:
-> Hello.
+On Tue, 2012-04-10 at 16:18 -0700, Paul E. McKenney wrote:
+> > +static void srcu_invoke_callbacks(struct srcu_struct *sp)
+> > +{
+> > +     int i;
+> > +     struct rcu_head *head;
+> > +
+> > +     for (i = 0; i < SRCU_CALLBACK_BATCH; i++) {
 > 
-> Not for inclusion yet, only for the early review.
+> If there really can be thousands of callbacks dumped into SRCU, a more
+> adaptive strategy might be needed.  In the meantime, I am hoping that
+> the fact that the workqueue is retriggered in this case suffices.
 > 
-> I didn't even try to test these changes, and I am not expert
-> in this area. And even _if_ this code is correct, I need to
-> re-split these changes anyway, update the changelogs, etc.
-> 
-> Questions:
-> 
-> 	- does it make sense?
+> Note that this function is preemptible, so there is less penalty for
+> running a very long batch.
 
-Maybe, upside is reclaiming that int from task_struct, downside is that
-down_write :/ It would be very good not to have to do that. Nor do I
-really see how that works.
+With just the ->func() invocation below non-preemptible, I really don't
+see a point in having this loop limit.
 
-> 	- can it work or I missed something "in general" ?
+> Which reminds me...  An srcu_struct structure with a large pile of
+> SRCU callbacks won't react very quickly in response to an invocation of
+> synchronize_srcu_expedited().  This is why the other RCU implementations
+> have a non-callback codepath for expedited grace periods.
+> 
+> Or am I missing something here?
 
-So we insert in the rb-tree before we take mmap_sem, this means we can
-hit a non-uprobe int3 and still find a uprobe there, no?
+I would suggest adding that extra complexity when we need it ;-)
 
-> Why:
+> > +             head = rcu_batch_dequeue(&sp->batch_done);
+> > +             if (!head)
+> > +                     break;
+> > +             head->func(head);
 > 
-> 	- It would be nice to remove a member from task_struct.
-> 
-> 	- Afaics, the usage of uprobes_srcu does not look right,
-> 	  at least in theory, see 6/6.
-> 
-> 	  The comment above delete_uprobe() says:
-> 
-> 	  	The current unregistering thread waits till all
-> 	  	other threads have hit a breakpoint, to acquire
-> 	  	the uprobes_treelock before the uprobe is removed
-> 	  	from the rbtree.
-> 
-> 	  but synchronize_srcu() can only help if a thread which
-> 	  have hit the breakpoint has already called srcu_read_lock().
-> 	  It can't synchronize with read_lock "in future", and there
-> 	  is a small window.
-> 
-> 	  We could probably add another synchronize_sched() before
-> 	  synchronize_srcu(), but this doesn't look very nice and
+> I have surrounded this with local_bh_disable() and local_bh_enable()
+> in order to enforce the no-sleeping-in-callbacks rule.  Please let me
+> know if I missed some other enforcement mechanism.
 
-Right, I think that all was written with the assumption that sync_srcu
-implied a sync_rcu, which of course we've recently wrecked.
+Is that -rt inspired hackery? Otherwise I would simply suggest
+preempt_disable/enable(), they do pretty much the same and are less
+confusing.
 
-
+> > +     } 
