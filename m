@@ -1,123 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751322Ab2DNIy2 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 14 Apr 2012 04:54:28 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:57243 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750734Ab2DNIy0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 14 Apr 2012 04:54:26 -0400
-From: Lubos Lunak <l.lunak@suse.cz>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [PATCH][RESEND] do not redefine userspace's NULL #define
-Date: Sat, 14 Apr 2012 10:54:23 +0200
-User-Agent: KMail/1.9.10
-Cc: Peter Seebach <peter.seebach@windriver.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>
-References: <201204132124.21294.l.lunak@suse.cz> <201204141021.28906.l.lunak@suse.cz> <CA+55aFwmZiWfqEF3-Lb_d1jHZQf2Od+oGQ_hfe0CYu8fBTU8nw@mail.gmail.com>
-In-Reply-To: <CA+55aFwmZiWfqEF3-Lb_d1jHZQf2Od+oGQ_hfe0CYu8fBTU8nw@mail.gmail.com>
+	id S1752092Ab2DNIz1 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 14 Apr 2012 04:55:27 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:35730 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750956Ab2DNIzZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 14 Apr 2012 04:55:25 -0400
+Date: Sat, 14 Apr 2012 10:55:19 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Arnaldo Carvalho de Melo <acme@redhat.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>, hpa@zytor.com,
+        paulus@samba.org, eranian@google.com, linux-kernel@vger.kernel.org,
+        efault@gmx.de, peterz@infradead.org, namhyung@gmail.com,
+        fweisbec@gmail.com, dsahern@gmail.com,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>, tglx@linutronix.de,
+        linux-tip-commits@vger.kernel.org
+Subject: Re: [tip:perf/core] perf ui annotate browser: Allow toggling addr
+ offset view
+Message-ID: <20120414085519.GB28505@gmail.com>
+References: <tip-4zpgimmz8xv7b5c920el7s45@git.kernel.org>
+ <CA+55aFxnv5Wrix=uREQsEg+tSBE8SFvy0v_76csv3hrnmPYG2A@mail.gmail.com>
+ <CA+55aFwcf2uPCccCVrNdCENZVKyev=ARprNj=5zwp5vxD942pw@mail.gmail.com>
+ <20120414010410.GB22114@infradead.org>
 MIME-Version: 1.0
-Content-Type: Multipart/Mixed;
-  boundary="Boundary-00=_/sTiPY5taHpi46e"
-Message-Id: <201204141054.23935.l.lunak@suse.cz>
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20120414010410.GB22114@infradead.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Boundary-00=_/sTiPY5taHpi46e
-Content-Type: text/plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: quoted-printable
-Content-Disposition: inline
 
-On Saturday 14 of April 2012, Linus Torvalds wrote:
-> On Sat, Apr 14, 2012 at 1:21 AM, Lubos Lunak <l.lunak@suse.cz> wrote:
-> > =A0How about the patch? Are there any *actual* problems with it or can =
-it
-> > please go in?
->
-> If we're going to change that thing, I'd actually prefer to just move
-> it inside the #ifdef __KERNEL__ entirely, and get rid of the cplusplus
-> case.
->
-> IOW, something like this (obviously white-space-mangled) patch:
-=2E..
-> which protects the kernel NULL definition along with the whole
-> offsetof and true/false ones too. And just gets rid of the insane C++
-> case entirely.
+* Arnaldo Carvalho de Melo <acme@redhat.com> wrote:
 
- That's what the original version of my patch did, but Arnd pointed out tha=
-t=20
-other exported headers might use NULL and thus not be self-contained in=20
-userspace after this change, breaking backwards source compatibility. But I=
-'d=20
-expect such breakages to be rather unlikely (stddef.h is probably pulled in=
-=20
-by pretty much everything), so if you're fine with it, I'm ok with this=20
-solution too.
+> Em Fri, Apr 13, 2012 at 11:30:52AM -0700, Linus Torvalds escreveu:
+> > On Fri, Apr 13, 2012 at 11:25 AM, Linus Torvalds
+> > <torvalds@linux-foundation.org> wrote:
+> > >
+> > > <kmem_cache_free>:
+> > >    1.91 :          push   %rbp
+> > 
+> > Oh, btw, talking about kmem_cache_free: that one uses altinstructions,
+> > and so perf report shows the hottest instruction wrong (and I'm not
+> > talking about "ugly"):
+> 
+> Well, if we use Masami's disassembler we would use the actual 
+> code as it is being used and not the original DSO that was 
+> later patched by altinstructions.
 
-=2D-=20
- Lubos Lunak
- l.lunak@suse.cz
+Key would be to use the kernel's live RAM image of instructions. 
 
---Boundary-00=_/sTiPY5taHpi46e
-Content-Type: message/rfc822;
-  name="forwarded message"
-Content-Transfer-Encoding: 7bit
-Content-Description: Lubos Lunak <l.lunak@suse.cz>: [PATCH] do not export kernel's NULL #define to userspace
-Content-Disposition: inline
+I.e. we should provide a live /proc/vmlinux image in essence: a 
+'virtual' ELF binary image constructed out of the live kernel 
+RAM image - with no extra RAM overhead. (Maybe with modules 
+included in an intelligent way - although personally I don't use 
+modules when I instrument the kernel)
 
-Subject: [PATCH] do not export kernel's NULL #define to userspace
-From: Lubos Lunak <l.lunak@suse.cz>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
- linux-kernel@vger.kernel.org
-Date: Wed, 21 Mar 2012 14:08:24 +0100
-MIME-Version: 1.0
-Content-Type: text/plain;
-  charset="utf-8"
-Content-Transfer-Encoding: quoted-printable
-Content-Disposition: inline
-Message-Id: <201203211408.25040.l.lunak@suse.cz>
-X-Length: 1543
-X-UID: 26267
+That plus the always-available /proc/kallsyms would offer rather 
+powerful annotation already: without *any* debug info - out of 
+box, on any Linux installation. (This was always the main 
+advantage of /proc/profile and readprofile btw: it worked 
+everywhere while most other profiling solutions needed a 
+debuginfo, etc.)
 
-GCC's NULL is actually __null, which allows detecting some questionable
-NULL usage and warn about it. Moreover each platform/compiler should have
-its own stddef.h anyway (which is different from linux/stddef.h).
-So there's no good reason to leak kernel's NULL to userspace and
-override what the compiler provides.
+Doing /proc/vmlinux would be different from /dev/mem as it only 
+shows the kernel RAM image, and only in a read-only fashion.
 
-Signed-off-by: Lubo=C5=A1 Lu=C5=88=C3=A1k <l.lunak@suse.cz>
-=2D--
- include/linux/stddef.h |    8 ++------
- 1 files changed, 2 insertions(+), 6 deletions(-)
+Default permissions of /proc/vmlinux should probably track 
+console permissions: it should be possible to allow people 
+sitting in front of the computer to read /proc/vmlinux, while 
+people logged in over the network wouldn't.
 
-diff --git a/include/linux/stddef.h b/include/linux/stddef.h
-index 6a40c76..1747b67 100644
-=2D-- a/include/linux/stddef.h
-+++ b/include/linux/stddef.h
-@@ -3,14 +3,10 @@
-=20
- #include <linux/compiler.h>
-=20
-+#ifdef __KERNEL__
-+
- #undef NULL
-=2D#if defined(__cplusplus)
-=2D#define NULL 0
-=2D#else
- #define NULL ((void *)0)
-=2D#endif
-=2D
-=2D#ifdef __KERNEL__
-=20
- enum {
- 	false	=3D 0,
-=2D-=20
-1.7.3.4
-=2D-=20
- Lubos Lunak
- l.lunak@suse.cz
+Doing such a live kernel vmlinux would have other debugging and 
+instrumentation advantages as well: various code patching 
+effects could be checked and observed directly.
 
---Boundary-00=_/sTiPY5taHpi46e--
+Thanks,
+
+	Ingo
