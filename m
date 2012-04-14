@@ -1,53 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754387Ab2DNBcN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Apr 2012 21:32:13 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:56657 "EHLO mx1.redhat.com"
+	id S1754469Ab2DNBq0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Apr 2012 21:46:26 -0400
+Received: from tundra.namei.org ([65.99.196.166]:50314 "EHLO tundra.namei.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752082Ab2DNBcL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Apr 2012 21:32:11 -0400
-Date: Fri, 13 Apr 2012 22:25:39 -0300
-From: Marcelo Tosatti <mtosatti@redhat.com>
-To: "Michael S. Tsirkin" <mst@redhat.com>
-Cc: kvm@vger.kernel.org, Avi Kivity <avi@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] kvm: dont clear TMR on EOI
-Message-ID: <20120414012539.GA9043@amt.cnet>
-References: <20120411154953.GA24008@redhat.com>
+	id S1750916Ab2DNBqY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 Apr 2012 21:46:24 -0400
+Date: Sat, 14 Apr 2012 11:45:08 +1000 (EST)
+From: James Morris <jmorris@namei.org>
+To: Will Drewry <wad@chromium.org>
+cc: linux-kernel@vger.kernel.org, linux-man@vger.kernel.org,
+        linux-security-module@vger.kernel.org, linux-arch@vger.kernel.org,
+        linux-doc@vger.kernel.org, kernel-hardening@lists.openwall.com,
+        netdev@vger.kernel.org, x86@kernel.org, arnd@arndb.de,
+        davem@davemloft.net, hpa@zytor.com, mingo@redhat.com, oleg@redhat.com,
+        peterz@infradead.org, rdunlap@xenotime.net, mcgrathr@chromium.org,
+        tglx@linutronix.de, luto@mit.edu, eparis@redhat.com,
+        serge.hallyn@canonical.com, djm@mindrot.org, scarybeasts@gmail.com,
+        indan@nul.nu, pmoore@redhat.com, akpm@linux-foundation.org,
+        corbet@lwn.net, eric.dumazet@gmail.com, markus@chromium.org,
+        coreyb@linux.vnet.ibm.com, keescook@chromium.org,
+        Andy Lutomirski <luto@amacapital.net>
+Subject: Re: [PATCH v18 01/15] Add PR_{GET,SET}_NO_NEW_PRIVS to prevent execve
+ from granting privs
+In-Reply-To: <1334267284-19166-1-git-send-email-wad@chromium.org>
+Message-ID: <alpine.LRH.2.02.1204141143001.29389@tundra.namei.org>
+References: <1334267284-19166-1-git-send-email-wad@chromium.org>
+User-Agent: Alpine 2.02 (LRH 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120411154953.GA24008@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 11, 2012 at 06:49:55PM +0300, Michael S. Tsirkin wrote:
-> Intel spec says that TMR needs to be set/cleared
-> when IRR is set, but kvm also clears it on  EOI.
-> 
-> I did some tests on a real (AMD based) system,
-> and I see same TMR values both before
-> and after EOI, so I think it's a minor bug in kvm.
-> 
-> This patch fixes TMR to be set/cleared on IRR set
-> only as per spec.
-> 
-> And now that we don't clear TMR, we can save
-> an atomic read of TMR on EOI that's not propagated
-> to ioapic, by checking whether ioapic needs
-> a specific vector first and calculating
-> the mode afterwards.
-> 
-> Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
-> ---
->  arch/x86/kvm/lapic.c |   19 +++++++++++++------
->  virt/kvm/ioapic.c    |   10 +++++++---
->  virt/kvm/ioapic.h    |    1 +
->  3 files changed, 21 insertions(+), 9 deletions(-)
+I applied the patchset to:
+git://git.kernel.org/pub/scm/linux/kernel/git/jmorris/linux-security.git next
 
-Applied, thanks.
+Please test, and make any further updates against that branch.
 
+
+- James
+-- 
+James Morris
+<jmorris@namei.org>
