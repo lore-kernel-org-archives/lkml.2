@@ -1,35 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754667Ab2DNKWo (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 14 Apr 2012 06:22:44 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:34277 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754270Ab2DNKWU convert rfc822-to-8bit (ORCPT
+	id S1754721Ab2DNKXF (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 14 Apr 2012 06:23:05 -0400
+Received: from smtp.snhosting.dk ([87.238.248.203]:28153 "EHLO
+	smtp.domainteam.dk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754619Ab2DNKXD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 14 Apr 2012 06:22:20 -0400
-Message-ID: <1334398930.2528.50.camel@twins>
-Subject: Re: [PATCH 06/12] perf/x86-ibs: Precise event sampling with IBS for
- AMD CPUs
-From: Peter Zijlstra <peterz@infradead.org>
-To: Robert Richter <robert.richter@amd.com>
-Cc: Ingo Molnar <mingo@elte.hu>, Stephane Eranian <eranian@google.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Date: Sat, 14 Apr 2012 12:22:10 +0200
-In-Reply-To: <1333390758-10893-7-git-send-email-robert.richter@amd.com>
-References: <1333390758-10893-1-git-send-email-robert.richter@amd.com>
-	 <1333390758-10893-7-git-send-email-robert.richter@amd.com>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.2- 
-Mime-Version: 1.0
+	Sat, 14 Apr 2012 06:23:03 -0400
+Date: Sat, 14 Apr 2012 12:23:00 +0200
+From: Sam Ravnborg <sam@ravnborg.org>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        David Miller <davem@davemloft.net>, akpm@linux-foundation.org,
+        sparclinux@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [GIT] Sparc
+Message-ID: <20120414102300.GA32120@merkur.ravnborg.org>
+References: <20120413.152455.900761231064979707.davem@davemloft.net> <CA+55aFwYWRv6+ix+UjT52UAn1rQeDpUKmbWq5SdHjZ0qHR2Cbg@mail.gmail.com> <20120413215012.GA31739@merkur.ravnborg.org> <20120414091352.GA15373@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120414091352.GA15373@gmail.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2012-04-02 at 20:19 +0200, Robert Richter wrote:
-> + * IbsOpCntCtl (bit 19) of IBS Execution Control Register (IbsOpCtl,
-> + * MSRC001_1033) is used to select either cycle or micro-ops counting
-> + * mode. 
+On Sat, Apr 14, 2012 at 11:13:52AM +0200, Ingo Molnar wrote:
+> 
+> * Sam Ravnborg <sam@ravnborg.org> wrote:
+> 
+> > On Fri, Apr 13, 2012 at 12:46:34PM -0700, Linus Torvalds wrote:
+> > > On Fri, Apr 13, 2012 at 12:24 PM, David Miller <davem@davemloft.net> wrote:
+> > > >
+> > > > With special guest sparc64 assembler hacker, Paul E. McKenney.
+> > > 
+> > > Oh christ.  You're teaching *more* people about sparc64?
+> > You do not get it...
+> > 
+> > How many people are pondering around tweaking every bit of x86
+> > specific code? A lot! Let them have fun competing :-)
+> 
+> I wish it was so! In reality there's really just a handful of 
+> people looking at actual x86 assembly code. I don't know whether 
+> I've ever seen a conflict between substantial x86 assembly 
+> patches, in the last 4 years since I co-maintain the x86 
+> architecture ...
 
-Ah is that what it does.. the BKDG doesn't appear to say this.
+Hmm...
+
+      lines of c files  lines of S files
+x86   183609            27130
+sparc 66823             25852
+
+There is more than just assembly when dealign with an architecture.
+And honestly I do not "speak" neither sparc nor x86 assembly.
+
+	Sam
