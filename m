@@ -1,65 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932489Ab2DNAp5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Apr 2012 20:45:57 -0400
-Received: from shards.monkeyblade.net ([198.137.202.13]:54141 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757378Ab2DNApz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Apr 2012 20:45:55 -0400
-Date: Fri, 13 Apr 2012 20:45:51 -0400 (EDT)
-Message-Id: <20120413.204551.959091962456153270.davem@davemloft.net>
-To: xiong@qca.qualcomm.com
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        qca-linux-team@qualcomm.com, nic-devel@qualcomm.com
-Subject: Re: [PATCH 04/37] atl1c: remove VPD register
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1334276102-15866-5-git-send-email-xiong@qca.qualcomm.com>
-References: <1334276102-15866-1-git-send-email-xiong@qca.qualcomm.com>
-	<1334276102-15866-5-git-send-email-xiong@qca.qualcomm.com>
-X-Mailer: Mew version 6.4 on Emacs 24.0.95 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Fri, 13 Apr 2012 17:45:54 -0700 (PDT)
+	id S932493Ab2DNAse (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Apr 2012 20:48:34 -0400
+Received: from tundra.namei.org ([65.99.196.166]:54755 "EHLO tundra.namei.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757437Ab2DNAsd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 Apr 2012 20:48:33 -0400
+Date: Sat, 14 Apr 2012 10:48:26 +1000 (EST)
+From: James Morris <jmorris@namei.org>
+To: "Kasatkin, Dmitry" <dmitry.kasatkin@intel.com>
+cc: Jesper Juhl <jj@chaosbits.net>, linux-kernel@vger.kernel.org,
+        "David S. Miller" <davem@davemloft.net>
+Subject: Re: [PATCH] mpi: Avoid using freed pointer in mpi_lshift_limbs()
+In-Reply-To: <CALLzPKY0Jd26gJTgcm5aXLZtzHJKqKVGXipBYtnzsisumnTR5A@mail.gmail.com>
+Message-ID: <alpine.LRH.2.02.1204141048000.29204@tundra.namei.org>
+References: <alpine.LNX.2.00.1202062104440.20117@swampdragon.chaosbits.net> <alpine.LNX.2.00.1203012232480.19443@swampdragon.chaosbits.net> <CALLzPKbAGKL-o66UmWJ4uGSmA1TymdCQA0CfBajHLVYzt_60UA@mail.gmail.com> <alpine.LNX.2.00.1204120030130.2137@swampdragon.chaosbits.net>
+ <CALLzPKY0Jd26gJTgcm5aXLZtzHJKqKVGXipBYtnzsisumnTR5A@mail.gmail.com>
+User-Agent: Alpine 2.02 (LRH 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: MULTIPART/MIXED; BOUNDARY="1665246916-431020138-1334364506=:29204"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: xiong <xiong@qca.qualcomm.com>
-Date: Fri, 13 Apr 2012 08:14:29 +0800
+  This message is in MIME format.  The first part should be readable text,
+  while the remaining parts are likely unreadable without MIME-aware tools.
 
-> VPD register is only used for L1(devid=PCI_DEVICE_ID_ATTANSIC_L1) to
-> access external NV-memory.
-> l1c & later chip doesn't use it any more.
+--1665246916-431020138-1334364506=:29204
+Content-Type: TEXT/PLAIN; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
+
+On Thu, 12 Apr 2012, Kasatkin, Dmitry wrote:
+
+> >> >> Signed-off-by: Jesper Juhl <jj@chaosbits.net>
+> >> >> ---
+> >> >>  lib/mpi/mpi-bit.c |    5 +++--
+> >> >>  1 files changed, 3 insertions(+), 2 deletions(-)
+> >> >>
+> >> >>  only compile tested.
+
+> That is of course correct.
 > 
-> Signed-off-by: xiong <xiong@qca.qualcomm.com>
-> Tested-by: Liu David <dwliu@qca.qualcomm.com>
+> James, can you please apply this patch to security fixes?
+> 
+>  Acked-by: Dmitry Kasatkin <dmitry.kasatkin@intel.com>
+> 
+> - Dmitry
 
-You just broke ethtool register dumps with this change.
+Has this patch been tested?
 
-Now, all the initial registers are reported offset by one entry, yet
-the last two are still reported in their original spots.
 
-This layout is exposed to userspace, and interpreted by tools, and you
-cannot change it.
 
-If this register always reports some value, you should just keep it
-there in the dumps.
-
-I think you guys are way too aggressively removing things from the
-driver.
-
-You are also posting way too many patches at one time.
-
-If you post so many patches at once, if one of the early patches
-have a problem (as already is the case here) it means all the
-rest of your patches will not apply without offsets or rejects
-and therefore will all need to be redone and resubmitted.
-
-Posting too many patches at once also creates a large burdon for
-those who will choose to help review your changes.
-
-Send a small, reasonable, number of patches at one time.  Say,
-for example, 10 or 15 maximum.
-
+-- 
+James Morris
+<jmorris@namei.org>
+--1665246916-431020138-1334364506=:29204--
