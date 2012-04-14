@@ -1,52 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932460Ab2DNAi4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Apr 2012 20:38:56 -0400
-Received: from mail132.messagelabs.com ([216.82.242.115]:56451 "EHLO
-	mail132.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757378Ab2DNAiz (ORCPT
+	id S1757468Ab2DNAnc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Apr 2012 20:43:32 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:62370 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757378Ab2DNAnb convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Apr 2012 20:38:55 -0400
-X-Env-Sender: hartleys@visionengravers.com
-X-Msg-Ref: server-4.tower-132.messagelabs.com!1334363911!8490766!7
-X-Originating-IP: [216.166.12.99]
-X-StarScan-Version: 6.5.7; banners=-,-,-
-X-VirusChecked: Checked
-From: H Hartley Sweeten <hartleys@visionengravers.com>
-To: Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: [PATCH] gpiolib: quiet gpiochip_add boot message noise
-Date: Fri, 13 Apr 2012 17:38:34 -0700
-User-Agent: KMail/1.9.9
-CC: <grant.likely@secretlab.ca>, <linus.walleij@stericsson.com>
+	Fri, 13 Apr 2012 20:43:31 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Content-Disposition: inline
-Message-ID: <201204131738.34500.hartleys@visionengravers.com>
+In-Reply-To: <4F88B54C.5050908@redfish-solutions.com>
+References: <1334101538-19127-1-git-send-email-gurligebis@gentoo.org>
+	<CACPM=kUwXocWWMQUKyakydeH72d7FHj-Rxw3bzqc0qDeyWP-yg@mail.gmail.com>
+	<4F88A660.8040304@redfish-solutions.com>
+	<CACPM=kUWzzWQ-UVA-0A9X2CMc1D86oLRXiJqp3RmfbTMV6LXBg@mail.gmail.com>
+	<4F88B54C.5050908@redfish-solutions.com>
+Date: Sat, 14 Apr 2012 02:43:30 +0200
+X-Google-Sender-Auth: BeLG76zuVaLEIg_Hn_L48xqbR5E
+Message-ID: <CACPM=kV1k8XSrR9eRXuAd8MD=VSBV9J7j3onckOEjc+b_zJGJw@mail.gmail.com>
+Subject: Re: [PATCH] NET5501: Change active_low to 0 for LED driver.
+From: Bjarke Istrup Pedersen <gurligebis@gentoo.org>
+To: Philip Prindeville <philipp_subx@redfish-solutions.com>
+Cc: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The pr_info message in gpiochip_add gets displayed for every
-gpiochip registered. When first bringing up a system this
-information could be helpful but for normal use it's just a
-bunch of noise. Change the message to a pr_debug.
+14. apr. 2012 01.22 skrev Philip Prindeville
+<philipp_subx@redfish-solutions.com>:
+> On 4/13/12 3:33 PM, Bjarke Istrup Pedersen wrote:
+>> 14. apr. 2012 00.19 skrev Philip Prindeville
+>> <philipp_subx@redfish-solutions.com>:
+>>> On 4/13/12 3:17 PM, Bjarke Istrup Pedersen wrote:
+>>>> 11. apr. 2012 01.45 skrev Bjarke Istrup Pedersen <gurligebis@gentoo.org>:
+>>>>> It seems that there was an error with the active_low = 1 for the
+>>>>> LED, since it should be set to 0 (meaning that active is high,
+>>>>> since 0 is false, hence the confusion.
+>>>>>
+>>>>> The wiki article about it confuses it, since it contradicts
+>>>>> itself, regarding what turns on the LED.
+>>>>>
+>>>>> I have tested 3.4-rc2 on my net5501 with this patch, and it
+>>>>> makes the LED behave correctly, where "none" turns it off, and
+>>>>> "default-on" turns it on, when echoed onto the trigger "file"
+>>>>> in /sys/class/leds.
+>>>>>
+>>>>> Signed-off-by: Bjarke Istrup Pedersen <gurligebis@gentoo.org>
+>>>>> ---
+>>>>>  arch/x86/platform/geode/net5501.c |    2 +-
+>>>>>  1 files changed, 1 insertions(+), 1 deletions(-)
+>>>>>
+>>>>> diff --git a/arch/x86/platform/geode/net5501.c b/arch/x86/platform/geode/net5501.c
+>>>>> index 66d377e..646e3b5 100644
+>>>>> --- a/arch/x86/platform/geode/net5501.c
+>>>>> +++ b/arch/x86/platform/geode/net5501.c
+>>>>> @@ -63,7 +63,7 @@ static struct gpio_led net5501_leds[] = {
+>>>>>                .name = "net5501:1",
+>>>>>                .gpio = 6,
+>>>>>                .default_trigger = "default-on",
+>>>>> -               .active_low = 1,
+>>>>> +               .active_low = 0,
+>>>>>        },
+>>>>>  };
+>>>>>
+>>>>> --
+>>>>> 1.7.8.5
+>>>>>
+>>>> I have tried sending it to linux-geode, but the list seems to reject
+>>>> mails from me for some reason.
+>>>> Anyone able to forward it to the right people for inclusion in 3.4-rcX ?
+>>>>
+>>>> Thanks in advance,
+>>>> Bjarke
+>>> The linux-geode list is currently buggered and without an owner, as far as I know.
+>>>
+>>> -Philip
+>> That would explain it :)
+>>
+>> Do you have a chance to push it upstream, like your changes? (Not sure
+>> who I should poke about it)
+>>
+>> /Bjarke
+>>
+>
+> I'd copy it to Andrew Morton, and maybe also platform-driver-x86@vger.kernel.org ...
 
-Cc: Grant Likely <grant.likely@secretlab.ca>
-Cc: Linus Walleij <linus.walleij@stericsson.com>
+Forwarded to andrew and that mailing list :)
 
----
+Lets hope that works, and doesn't gives errors like linux-geode list :)
 
-diff --git a/drivers/gpio/gpiolib.c b/drivers/gpio/gpiolib.c
-index 566d012..f7972d2 100644
---- a/drivers/gpio/gpiolib.c
-+++ b/drivers/gpio/gpiolib.c
-@@ -1093,7 +1093,7 @@ unlock:
- 	if (status)
- 		goto fail;
- 
--	pr_info("gpiochip_add: registered GPIOs %d to %d on device: %s\n",
-+	pr_debug("gpiochip_add: registered GPIOs %d to %d on device: %s\n",
- 		chip->base, chip->base + chip->ngpio - 1,
- 		chip->label ? : "generic");
- 
+/Bjarke
+
+> -Philip
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
