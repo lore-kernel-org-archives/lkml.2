@@ -1,70 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753243Ab2DNIBK (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 14 Apr 2012 04:01:10 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:47533 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753015Ab2DNIBI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 14 Apr 2012 04:01:08 -0400
+	id S1753262Ab2DNIVd (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 14 Apr 2012 04:21:33 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:55657 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753030Ab2DNIVb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 14 Apr 2012 04:21:31 -0400
+From: Lubos Lunak <l.lunak@suse.cz>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [PATCH][RESEND] do not redefine userspace's NULL #define
+Date: Sat, 14 Apr 2012 10:21:28 +0200
+User-Agent: KMail/1.9.10
+Cc: Peter Seebach <peter.seebach@windriver.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>
+References: <201204132124.21294.l.lunak@suse.cz> <201204140843.08671.l.lunak@suse.cz> <CA+55aFwCY0jkFGAzOP5SFb8THQts7BDb_ivChT7K6LvVn6OqoQ@mail.gmail.com>
+In-Reply-To: <CA+55aFwCY0jkFGAzOP5SFb8THQts7BDb_ivChT7K6LvVn6OqoQ@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <20120414033953.GA29189@redhat.com>
-References: <20120414021201.GA23385@redhat.com> <20120414021220.GA23393@redhat.com>
- <CA+55aFyxV8v2mOjb1Ly=1ttPyLvUt6RZO8wgjD_9owtO=VM0hw@mail.gmail.com> <20120414033953.GA29189@redhat.com>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Sat, 14 Apr 2012 01:00:46 -0700
-X-Google-Sender-Auth: iU8FnRORybyAaMXzFSuRetqrTO0
-Message-ID: <CA+55aFxSyCmxv=fZTMgnq3OSTQjj5R4izKFotBExpAu1M5BsQg@mail.gmail.com>
-Subject: Re: [PATCH v4 1/3] task_work_add: generic process-context callbacks
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        David Howells <dhowells@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Alexander Gordeev <agordeev@redhat.com>,
-        Chris Zankel <chris@zankel.net>, David Smith <dsmith@redhat.com>,
-        "Frank Ch. Eigler" <fche@redhat.com>,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        Larry Woodman <lwoodman@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>, Tejun Heo <tj@kernel.org>,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain;
+  charset="windows-1252"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
+Message-Id: <201204141021.28906.l.lunak@suse.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 13, 2012 at 8:39 PM, Oleg Nesterov <oleg@redhat.com> wrote:
->>
->> Alternatively, you must make the rule be that the data can only be
->> freed by the caller *if* it was returned from "task_work_cancel()".
->
-> Exactly.
->
-> Once the caller does task_work_add(twork), it no longer "owns" this
-> twork.
->
-> But, if task_work_cancel() succeeds - you own it again.
+On Saturday 14 of April 2012, Linus Torvalds wrote:
+> Yeah, I'm not a fan of C++. It's a cruddy language.
 
-*IF* it succeeds.
+ Whatever. There's no need for you to waste time on lecturing me on C++, I 
+know it well enough, including the pitfalls. And I especially know well about 
+C++'s NULL, I got enough theoretical lectures from gcc people while making 
+them not bury warnings about incorrect NULL usage in the rather 
+useless -Wconversion. The reality is what it is regardless of how much you or 
+I like it.
 
-My argument was that it might race, and not successfully remove the
-work entry at all - but because it was allocated on the stack, it gets
-freed *regardless* of whether the cancel got it or not.
+ How about the patch? Are there any *actual* problems with it or can it please 
+go in?
 
->> But then you can't allocate it on the stack any more, and have to
->> allocate it separately.
->
-> Yes, unless you do task_work_add/cancel(current).
-
-Ok, your argument seems to be that "current" is special, and can not
-race, because the work execution is always synchronous with the task
-it got scheduled on.
-
-I can buy that. But if so, it needs some big honking comment. Maybe
-the whole "add yourself onto your *own* task work" should be an
-explicit separate interface.
-
-And that whole "run_task_work()" function should *not* take a "task"
-pointer, because it would be horribly horribly wrong to ever run it in
-any context than "current".
-
-                 Linus
+-- 
+ Lubos Lunak
+ l.lunak@suse.cz
