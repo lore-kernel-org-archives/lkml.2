@@ -1,59 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753319Ab2DNI3a (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 14 Apr 2012 04:29:30 -0400
-Received: from moutng.kundenserver.de ([212.227.17.9]:61055 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751727Ab2DNI30 (ORCPT
+	id S1753386Ab2DNIqZ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 14 Apr 2012 04:46:25 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:43334 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753046Ab2DNIqW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 14 Apr 2012 04:29:26 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Lubos Lunak <l.lunak@suse.cz>
-Subject: Re: [PATCH][RESEND] do not redefine userspace's NULL #define
-Date: Sat, 14 Apr 2012 08:28:48 +0000
-User-Agent: KMail/1.12.2 (Linux/3.3.0-rc1; KDE/4.3.2; x86_64; ; )
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org
-References: <201204132124.21294.l.lunak@suse.cz> <CA+55aFxCrVtwCd9bjHLt82Uwisp8OtKP9c+raPYMqCTXqVfxGw@mail.gmail.com> <201204132346.57019.l.lunak@suse.cz>
-In-Reply-To: <201204132346.57019.l.lunak@suse.cz>
+	Sat, 14 Apr 2012 04:46:22 -0400
+Date: Sat, 14 Apr 2012 10:46:16 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Arnaldo Carvalho de Melo <acme@redhat.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>, hpa@zytor.com,
+        paulus@samba.org, eranian@google.com, linux-kernel@vger.kernel.org,
+        efault@gmx.de, peterz@infradead.org, namhyung@gmail.com,
+        fweisbec@gmail.com, dsahern@gmail.com, tglx@linutronix.de,
+        linux-tip-commits@vger.kernel.org
+Subject: Re: [tip:perf/core] perf ui annotate browser: Allow toggling addr
+ offset view
+Message-ID: <20120414084616.GA28505@gmail.com>
+References: <tip-4zpgimmz8xv7b5c920el7s45@git.kernel.org>
+ <CA+55aFxnv5Wrix=uREQsEg+tSBE8SFvy0v_76csv3hrnmPYG2A@mail.gmail.com>
+ <20120414005921.GA22114@infradead.org>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201204140828.49048.arnd@arndb.de>
-X-Provags-ID: V02:K0:id/pWn3b8cVgvU3hac5GEJMJKgweSdTIWG/wv5rPZsX
- LouVy4Z29+lAtJK5WVun7VNVulNhtTd3p/VM4t7mMgtgVzetxW
- dYYCIldsaxXmLOPuZUHoR5+LNC6cFMY1ujayjuuu+IdFeqHknD
- L6tzpk5MnA7y7x9jaSpBSgZUPuU5te1yDV516QHC9y6s2e229p
- e+63lbrpti1khlG2Nx9Rl1QqP6kyQIEuaZEX49lZRXs3ZhHMhK
- jYJHQmZTDnl3zzFOaqec1SHyIYsOWsSdaq/f2y3gw0tllaPluZ
- pJ20wU9l5LA31RrzLj2rUh764QSatcXPVfG4lx/rbsGvkcBvNJ
- VfmYBwhuHxypWL0PcaN8=
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120414005921.GA22114@infradead.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 13 April 2012, Lubos Lunak wrote:
->  If that were the case, one of the earlier versions of the patch would have 
-> been correct then, but as Arnd has pointed out, user applications do include 
-> the header. It's even as simple as:
-> 
-> #include <signal.h>
-> 
-> ( -> bits/sigcontext.h -> asm/sigcontext.h -> linux/types.h -> 
-> linux/posix_types.h -> linux/stddef.h ).
-> 
 
-I knew there must have been something wrong with my thinking and I
-clearly missed the posix_types.h reference. I accidentally did
-'git grep linux/stddef.h obj/usr/include', instead of 'grep -r'.
+* Arnaldo Carvalho de Melo <acme@redhat.com> wrote:
 
-I've tried to be more thorough this time, and I think that nothing
-stops us from removing the linux/stddef.h include from the exported
-version of posix_types.h, but we should probably make sure that we
-still include linux/compiler.h, because a lot of stuff that includes
-linux/posix_types.h expects that. Alternatively, we can just move the
-NULL definition inside of #ifdef __KERNEL__.
+> > Now, fancy arrows etc might be too hard to do (especially 
+> > without cluttering things up too much), but marking just the 
+> > targets would already be lovely. IOW, turn this mess:
+> > 
+> > 
+> >          :        ffffffff810d7e80 <kmem_cache_free>:
+> >     1.91 :        ffffffff810d7e80:       push   %rbp
+> >     0.05 :        ffffffff810d7e81:       mov    %rsp,%rbp
+> >     2.02 :        ffffffff810d7e84:       push   %r12
+> >     0.00 :        ffffffff810d7e86:       mov    %rdi,%r12
+> >     0.55 :        ffffffff810d7e89:       push   %rbx
+> >     0.00 :        ffffffff810d7e8a:       mov    %rsi,%rdi
+> >     1.20 :        ffffffff810d7e8d:       mov    %rsi,%rbx
+> >     1.64 :        ffffffff810d7e90:       callq  ffffffff8102a730 <__phys_addr>
+> >     0.05 :        ffffffff810d7e95:       movabs $0xffffea0000000000,%rdi
+> >     0.22 :        ffffffff810d7e9f:       shr    $0xc,%rax
+> >     0.11 :        ffffffff810d7ea3:       shl    $0x6,%rax
+> >     1.64 :        ffffffff810d7ea7:       lea    (%rax,%rdi,1),%rdi
+> >    42.80 :        ffffffff810d7eab:       mov    (%rdi),%rax
+> >     2.02 :        ffffffff810d7eae:       test   $0x80,%ah
+> >     0.00 :        ffffffff810d7eb1:       jne    ffffffff810d7ef6
+> > <kmem_cache_free+0x76>
+> >     0.22 :        ffffffff810d7eb3:       mov    0x8(%rbp),%r9
+> >     7.14 :        ffffffff810d7eb7:       mov    (%r12),%rax
+> >     0.65 :        ffffffff810d7ebb:       add    %gs:0xcb88,%rax
+> >     4.58 :        ffffffff810d7ec4:       mov    0x8(%rax),%rdx
+> > 
+> > (which has tons of unnecessary white-space too - shades of G+) into
+> 
+> Grin ;-)
+> 
+> Yeah, even the : column isn't needed I think.
 
-	Arnd
+Such delineators are sometimes useful visually, it emulates a 
+vertical line and makes it easier for the brain to ignore the 
+left or right side. We'll fine-tune it.
+
+The occasional color highlighting is useful too, as long as it 
+is used sparingly.
+
+> > Sure, leave some magic keycombination to get the "full 
+> > information", but ..
+> 
+> Yeah, we have o to toggle offset view + s to toggle source 
+> code view, etc.
+
+I suspect the default view should be the 'most intelligent' mode 
+of assembly output we can offer - with easy toggles for the rare 
+cases where someone would like to do something special, plus 
+.perfconfig overrides for those with weird workflows and those 
+with a taste different from ours.
+
+Thanks,
+
+	Ingo
