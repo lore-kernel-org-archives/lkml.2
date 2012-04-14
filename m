@@ -1,93 +1,143 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754511Ab2DNSMm (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 14 Apr 2012 14:12:42 -0400
-Received: from casper.infradead.org ([85.118.1.10]:36946 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752933Ab2DNSMk convert rfc822-to-8bit (ORCPT
+	id S1754698Ab2DNSX3 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 14 Apr 2012 14:23:29 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:59517 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752253Ab2DNSX1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 14 Apr 2012 14:12:40 -0400
-Message-ID: <1334427139.2528.110.camel@twins>
-Subject: Re: sched: WARNING: at include/linux/cpumask.h:108
- select_fallback_rq+0x241/0x280()
-From: Peter Zijlstra <peterz@infradead.org>
-To: Sasha Levin <levinsasha928@gmail.com>
-Cc: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
-        "linux-kernel@vger.kernel.org List" <linux-kernel@vger.kernel.org>,
-        Dave Jones <davej@redhat.com>, mingo@kernel.org,
-        "Liu, Chuansheng" <chuansheng.liu@intel.com>, vapier@gentoo.org,
-        rusty@rustcorp.com.au
-Date: Sat, 14 Apr 2012 20:12:19 +0200
-In-Reply-To: <CA+1xoqe6UL36=F2mg8cYJsyW9_kxjmdX-H=khdKmbhg+mEpbmw@mail.gmail.com>
-References: <CA+1xoqcf6qJOouKXGEHsjWSBJdA7qtMnuVopq+hoHS+TX8fvSg@mail.gmail.com>
-	 <CA+1xoqcJAwgTgQG=nZPsH_SLkPFkGt2rUiVWGn5SO5JOAC1RAA@mail.gmail.com>
-	 <4F75BED4.9050005@linux.vnet.ibm.com> <1333118719.2960.27.camel@laptop>
-	 <4F76B7B9.5080709@linux.vnet.ibm.com> <1334395065.2528.43.camel@twins>
-	 <CA+1xoqe6UL36=F2mg8cYJsyW9_kxjmdX-H=khdKmbhg+mEpbmw@mail.gmail.com>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.2- 
-Mime-Version: 1.0
+	Sat, 14 Apr 2012 14:23:27 -0400
+Date: Sat, 14 Apr 2012 11:22:41 -0700
+From: tip-bot for Kirill Tkhai <tkhai@yandex.ru>
+Message-ID: <tip-8d3d5ada56a692d36a9d55858881147ec10cfeb6@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        rostedt@goodmis.org, peterz@infradead.org, tkhai@yandex.ru,
+        tglx@linutronix.de, mingo@elte.hu
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        rostedt@goodmis.org, peterz@infradead.org, tkhai@yandex.ru,
+        tglx@linutronix.de, mingo@elte.hu
+In-Reply-To: <273741334120764@web83.yandex.ru>
+References: <273741334120764@web83.yandex.ru>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:sched/core] sched_rt:
+  Avoid unnecessary dequeue and enqueue of pushable tasks in set_cpus_allowed_rt
+ ()
+Git-Commit-ID: 8d3d5ada56a692d36a9d55858881147ec10cfeb6
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
+MIME-Version: 1.0
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Sat, 14 Apr 2012 11:22:48 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2012-04-14 at 13:40 +0200, Sasha Levin wrote:
-> On Sat, Apr 14, 2012 at 11:17 AM, Peter Zijlstra <peterz@infradead.org> wrote:
-> > On Sat, 2012-03-31 at 13:22 +0530, Srivatsa S. Bhat wrote:
-> >>
-> >> One of the perils of using macros instead of true function calls :-(
-> >>
-> > You can do type checking in macros too, its not pretty, but there's
-> > several such things already, see min()/max() for example.
-> 
-> Would it make sense to somehow standardize type checking in kernel
-> macros? Possibly a set of wrappers that would make type checking easy
-> to get into new and existing macros?
+Commit-ID:  8d3d5ada56a692d36a9d55858881147ec10cfeb6
+Gitweb:     http://git.kernel.org/tip/8d3d5ada56a692d36a9d55858881147ec10cfeb6
+Author:     Kirill Tkhai <tkhai@yandex.ru>
+AuthorDate: Wed, 11 Apr 2012 09:06:04 +0400
+Committer:  Steven Rostedt <rostedt@goodmis.org>
+CommitDate: Thu, 12 Apr 2012 16:59:37 -0400
 
+sched_rt: Avoid unnecessary dequeue and enqueue of pushable tasks in set_cpus_allowed_rt()
 
-I had a quick go with the below and that doesn't quite work for no
-obvious reasons as of yet.. Also, that call out to cpumask_next() should
-already do type validation for us, so still no clue why my earlier code
-compiled at all.
+Migration status depends on a difference of weight from 0 and 1.
+If weight > 1 (<= 1) and old weight <= 1 (> 1) then task becomes
+pushable (or not pushable). We are not insterested in its exact
+values, is it 3 or 4, for example.
+Now if we are changing affinity from a set of 3 cpus to a set of 4, the-
+task will be dequeued and enqueued sequentially without important
+difference in comparison with initial state. The only difference is in
+internal representation of plist queue of pushable tasks and the fact
+that the task may won't be the first in a sequence of the same priority
+tasks. But it seems to me it gives nothing.
 
+Link: http://lkml.kernel.org/r/273741334120764@web83.yandex.ru
+
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Signed-off-by: Tkhai Kirill <tkhai@yandex.ru>
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- include/linux/cpumask.h |    1 +
- include/linux/kernel.h  |   10 ++++++++++
- 2 files changed, 11 insertions(+), 0 deletions(-)
+ kernel/sched/rt.c |   56 ++++++++++++++++++++++++----------------------------
+ 1 files changed, 26 insertions(+), 30 deletions(-)
 
-diff --git a/include/linux/cpumask.h b/include/linux/cpumask.h
-index a2c819d..aec8355 100644
---- a/include/linux/cpumask.h
-+++ b/include/linux/cpumask.h
-@@ -201,6 +201,7 @@ int cpumask_any_but(const struct cpumask *mask, unsigned int cpu);
-  * After the loop, cpu is >= nr_cpu_ids.
-  */
- #define for_each_cpu(cpu, mask)				\
-+	match_type(const struct cpumask *, (mask));	\
- 	for ((cpu) = -1;				\
- 		(cpu) = cpumask_next((cpu), (mask)),	\
- 		(cpu) < nr_cpu_ids;)
-diff --git a/include/linux/kernel.h b/include/linux/kernel.h
-index 645231c..bcb7da3 100644
---- a/include/linux/kernel.h
-+++ b/include/linux/kernel.h
-@@ -549,6 +549,16 @@ ftrace_vprintk(const char *fmt, va_list ap)
- static inline void ftrace_dump(enum ftrace_dump_mode oops_dump_mode) { }
- #endif /* CONFIG_TRACING */
+diff --git a/kernel/sched/rt.c b/kernel/sched/rt.c
+index b60dad7..90607a9 100644
+--- a/kernel/sched/rt.c
++++ b/kernel/sched/rt.c
+@@ -1803,44 +1803,40 @@ static void task_woken_rt(struct rq *rq, struct task_struct *p)
+ static void set_cpus_allowed_rt(struct task_struct *p,
+ 				const struct cpumask *new_mask)
+ {
+-	int weight = cpumask_weight(new_mask);
++	struct rq *rq;
++	int weight;
  
-+#define match_type_type(t1, t2)			\
-+do {						\
-+	t1 uninitialized_var(____t1);		\
-+	t2 uninitialized_var(____t2);		\
-+	(void) (&____t1 == &____t2);		\
-+} while (0)
+ 	BUG_ON(!rt_task(p));
+ 
+-	/*
+-	 * Update the migration status of the RQ if we have an RT task
+-	 * which is running AND changing its weight value.
+-	 */
+-	if (p->on_rq && (weight != p->rt.nr_cpus_allowed)) {
+-		struct rq *rq = task_rq(p);
+-
+-		if (!task_current(rq, p)) {
+-			/*
+-			 * Make sure we dequeue this task from the pushable list
+-			 * before going further.  It will either remain off of
+-			 * the list because we are no longer pushable, or it
+-			 * will be requeued.
+-			 */
+-			if (p->rt.nr_cpus_allowed > 1)
+-				dequeue_pushable_task(rq, p);
++	if (!p->on_rq)
++		return;
+ 
+-			/*
+-			 * Requeue if our weight is changing and still > 1
+-			 */
+-			if (weight > 1)
+-				enqueue_pushable_task(rq, p);
++	weight = cpumask_weight(new_mask);
+ 
+-		}
++	/*
++	 * Only update if the process changes its state from whether it
++	 * can migrate or not.
++	 */
++	if ((p->rt.nr_cpus_allowed > 1) == (weight > 1))
++		return;
+ 
+-		if ((p->rt.nr_cpus_allowed <= 1) && (weight > 1)) {
+-			rq->rt.rt_nr_migratory++;
+-		} else if ((p->rt.nr_cpus_allowed > 1) && (weight <= 1)) {
+-			BUG_ON(!rq->rt.rt_nr_migratory);
+-			rq->rt.rt_nr_migratory--;
+-		}
++	rq = task_rq(p);
+ 
+-		update_rt_migration(&rq->rt);
++	/*
++	 * The process used to be able to migrate OR it can now migrate
++	 */
++	if (weight <= 1) {
++		if (!task_current(rq, p))
++			dequeue_pushable_task(rq, p);
++		BUG_ON(!rq->rt.rt_nr_migratory);
++		rq->rt.rt_nr_migratory--;
++	} else {
++		if (!task_current(rq, p))
++			enqueue_pushable_task(rq, p);
++		rq->rt.rt_nr_migratory++;
+ 	}
 +
-+#define match_type(t, v)			\
-+	match_type_type(t, typeof(v))
-+
- /*
-  * min()/max()/clamp() macros that also do
-  * strict type-checking.. See the
-
++	update_rt_migration(&rq->rt);
+ }
+ 
+ /* Assumes rq->lock is held */
