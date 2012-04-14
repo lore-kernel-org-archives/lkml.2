@@ -1,79 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932472Ab2DNApA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Apr 2012 20:45:00 -0400
-Received: from mail-wi0-f172.google.com ([209.85.212.172]:40193 "EHLO
-	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757378Ab2DNAo7 convert rfc822-to-8bit (ORCPT
+	id S932489Ab2DNAp5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Apr 2012 20:45:57 -0400
+Received: from shards.monkeyblade.net ([198.137.202.13]:54141 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757378Ab2DNApz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Apr 2012 20:44:59 -0400
-MIME-Version: 1.0
-In-Reply-To: <201204140118.51534.l.lunak@suse.cz>
-References: <201204132124.21294.l.lunak@suse.cz> <20120413170151.20c7230e@wrlaptop>
- <CA+55aFz0c43QARhefvhdiB=H6buO7VpEOnNbuJTYEcUn8M+mKw@mail.gmail.com> <201204140118.51534.l.lunak@suse.cz>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Fri, 13 Apr 2012 17:44:37 -0700
-X-Google-Sender-Auth: NxvUViY7T5WlQkVKskgRCm2LwUI
-Message-ID: <CA+55aFzWiaXYSwO7eGt_V6oUZGWkp_v1hv9xc6KAiFnrzumxXA@mail.gmail.com>
-Subject: Re: [PATCH][RESEND] do not redefine userspace's NULL #define
-To: Lubos Lunak <l.lunak@suse.cz>
-Cc: Peter Seebach <peter.seebach@windriver.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Fri, 13 Apr 2012 20:45:55 -0400
+Date: Fri, 13 Apr 2012 20:45:51 -0400 (EDT)
+Message-Id: <20120413.204551.959091962456153270.davem@davemloft.net>
+To: xiong@qca.qualcomm.com
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        qca-linux-team@qualcomm.com, nic-devel@qualcomm.com
+Subject: Re: [PATCH 04/37] atl1c: remove VPD register
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1334276102-15866-5-git-send-email-xiong@qca.qualcomm.com>
+References: <1334276102-15866-1-git-send-email-xiong@qca.qualcomm.com>
+	<1334276102-15866-5-git-send-email-xiong@qca.qualcomm.com>
+X-Mailer: Mew version 6.4 on Emacs 24.0.95 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Fri, 13 Apr 2012 17:45:54 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 13, 2012 at 4:18 PM, Lubos Lunak <l.lunak@suse.cz> wrote:
->> imagine replacing the kernel ((void *)0) with __null.
->
->  __null apparently exists only with g++, C does not have the stronger type
-> safety that prevents ((void*)0) from being usable in C++
+From: xiong <xiong@qca.qualcomm.com>
+Date: Fri, 13 Apr 2012 08:14:29 +0800
 
-Please don't continue to spread this total bogosity.
+> VPD register is only used for L1(devid=PCI_DEVICE_ID_ATTANSIC_L1) to
+> access external NV-memory.
+> l1c & later chip doesn't use it any more.
+> 
+> Signed-off-by: xiong <xiong@qca.qualcomm.com>
+> Tested-by: Liu David <dwliu@qca.qualcomm.com>
 
-The reason C++ cannot use "(void *)0" has nothing to do with "stronger
-type safety". That's a total idiotic lie by C++ apologists, and I hate
-hearing it repeated over and over again.
+You just broke ethtool register dumps with this change.
 
-And it really *is* a lie. The C++ type system isn't even "stronger",
-it's just different, and it's actively *broken* wrt NULL. Always has
-been.
+Now, all the initial registers are reported offset by one entry, yet
+the last two are still reported in their original spots.
 
-The sane thing to do for C++ would always have been to recognize that
-"(void *)0" is not a "void pointer" - it's just NULL. INSTEAD, the
-morons involved said "no, it's a void pointer, and instead we'll make
-'0' be NULL".
+This layout is exposed to userspace, and interpreted by tools, and you
+cannot change it.
 
-Which is clearly insane, but is also technically simply *wrong*.
+If this register always reports some value, you should just keep it
+there in the dumps.
 
-0 is an integer, it's not NULL _either_, and it's just a more stupid
-version of NULL.
+I think you guys are way too aggressively removing things from the
+driver.
 
-So the C++ people then completely made up the argument that "C++ has a
-stronger type system, we can't use 'void *', so the C style ((void
-*)0) is wrong for C++".
+You are also posting way too many patches at one time.
 
-Which is utter and complete bullshit, and any amount of brains would
-have realized that (since C++ at the same time happily continued to
-special case the *integer* zero).
+If you post so many patches at once, if one of the early patches
+have a problem (as already is the case here) it means all the
+rest of your patches will not apply without offsets or rejects
+and therefore will all need to be redone and resubmitted.
 
-I don't hate __null, but I absolutely despise the crazy C++ apologists
-who try to claim that C++ was somehow "right" in not accepting (void
-*)0, and that it was somehow about "type safety". No, it was not. It
-has always been just nothing but a moronic hang-up, and it has always
-been *wrong*.
+Posting too many patches at once also creates a large burdon for
+those who will choose to help review your changes.
 
-So don't spread that lie. It was wrong. The fact is, the *constant* 0
-is the special one, and C++ could have (and should have) just accepted
-that that constant should have been cast to (void *) and that is what
-NULL is defined to. Instead, C++ used the *weaker* type system of
-saying that the *integer* constant 0 is NULL, which is pure and utter
-garbage.
+Send a small, reasonable, number of patches at one time.  Say,
+for example, 10 or 15 maximum.
 
-And then they lie, and claim that their *weaker* type system NULL is
-"stronger". Pure idiocy.
-
-                 Linus
