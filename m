@@ -1,56 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753436Ab2DNJNU (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 14 Apr 2012 05:13:20 -0400
-Received: from kamaji.grokhost.net ([87.117.218.43]:41331 "EHLO
-	kamaji.grokhost.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753305Ab2DNJNA (ORCPT
+	id S1753368Ab2DNJOA (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 14 Apr 2012 05:14:00 -0400
+Received: from mail-wi0-f172.google.com ([209.85.212.172]:49616 "EHLO
+	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752329Ab2DNJN6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 14 Apr 2012 05:13:00 -0400
-From: Chris Boot <bootc@bootc.net>
-To: linux1394-devel@lists.sourceforge.net, target-devel@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, agrover@redhat.com, clemens@ladisch.de,
-        nab@linux-iscsi.org, stefanr@s5r6.in-berlin.de,
-        Chris Boot <bootc@bootc.net>
-Subject: [PATCH 2/2] sbp-target: update TODO file
-Date: Sat, 14 Apr 2012 10:12:26 +0100
-Message-Id: <1334394746-31738-3-git-send-email-bootc@bootc.net>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1334394746-31738-1-git-send-email-bootc@bootc.net>
-References: <1334394746-31738-1-git-send-email-bootc@bootc.net>
+	Sat, 14 Apr 2012 05:13:58 -0400
+Date: Sat, 14 Apr 2012 11:13:52 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Sam Ravnborg <sam@ravnborg.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        David Miller <davem@davemloft.net>, akpm@linux-foundation.org,
+        sparclinux@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [GIT] Sparc
+Message-ID: <20120414091352.GA15373@gmail.com>
+References: <20120413.152455.900761231064979707.davem@davemloft.net>
+ <CA+55aFwYWRv6+ix+UjT52UAn1rQeDpUKmbWq5SdHjZ0qHR2Cbg@mail.gmail.com>
+ <20120413215012.GA31739@merkur.ravnborg.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120413215012.GA31739@merkur.ravnborg.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The TODO wasn't updated after the last batch of changes before the
-merge, so remove those items that have been completed. This patch also
-re-orders the existing items in priority order and adds a new one.
 
-Signed-off-by: Chris Boot <bootc@bootc.net>
-Cc: Andy Grover <agrover@redhat.com>
-Cc: Clemens Ladisch <clemens@ladisch.de>
-Cc: Stefan Richter <stefanr@s5r6.in-berlin.de>
-Cc: Nicholas Bellinger <nab@linux-iscsi.org>
----
- drivers/target/sbp/TODO |    8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+* Sam Ravnborg <sam@ravnborg.org> wrote:
 
-diff --git a/drivers/target/sbp/TODO b/drivers/target/sbp/TODO
-index eaec1c9..e800058 100644
---- a/drivers/target/sbp/TODO
-+++ b/drivers/target/sbp/TODO
-@@ -1,7 +1,7 @@
--* Force-terminate sessions when disabling targets
-+1. Improve FireWire data transfer rate by queuing up several simultaneous transfers
-+2. Force-terminate sessions when disabling targets
-+3. Implement TASK MANAGEMENT functionality
- * Ability to have several SCSI commands in-flight (TCQ?)
--* Retry failed FireWire transactions a few times with exponential backoff
--* Take into account the page_size field for transfers and/or page tables
-+* Take into account the page_size field for transfers
- * Handle descriptor format sense data
- * Implement QUERY LOGINS management ORB
--* Implement TASK MANAGEMENT functionality
--- 
-1.7.9.5
+> On Fri, Apr 13, 2012 at 12:46:34PM -0700, Linus Torvalds wrote:
+> > On Fri, Apr 13, 2012 at 12:24 PM, David Miller <davem@davemloft.net> wrote:
+> > >
+> > > With special guest sparc64 assembler hacker, Paul E. McKenney.
+> > 
+> > Oh christ.  You're teaching *more* people about sparc64?
+> You do not get it...
+> 
+> How many people are pondering around tweaking every bit of x86
+> specific code? A lot! Let them have fun competing :-)
 
+I wish it was so! In reality there's really just a handful of 
+people looking at actual x86 assembly code. I don't know whether 
+I've ever seen a conflict between substantial x86 assembly 
+patches, in the last 4 years since I co-maintain the x86 
+architecture ...
+
+So there's no competition worth speaking of in x86 assembly 
+land, let alone any harmful competition due to overcrowding.
+You guys are all welcome, and each of you will make a real 
+difference.
+
+Imagine what would happen to Linux adoption rate if DaveM 
+started hacking on assembly code that had more than a few
+dozen active users?? ;-)
+
+> In sparc land things are much more quiet.
+
+I guess when you are close to absolute zero degrees then even 
+liquid oxygen indeed looks incredibly hot ;-)
+
+Thanks,
+
+	Ingo
