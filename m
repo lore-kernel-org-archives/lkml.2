@@ -1,57 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753030Ab2DNNMq (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 14 Apr 2012 09:12:46 -0400
-Received: from mail.parknet.co.jp ([210.171.160.6]:49081 "EHLO
-	mail.parknet.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751144Ab2DNNMo (ORCPT
+	id S1753533Ab2DNNRF (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 14 Apr 2012 09:17:05 -0400
+Received: from casper.infradead.org ([85.118.1.10]:60371 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751144Ab2DNNRE convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 14 Apr 2012 09:12:44 -0400
-From: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
-To: dedekind1@gmail.com
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Linux Kernel Maling List <linux-kernel@vger.kernel.org>,
-        Linux FS Maling List <linux-fsdevel@vger.kernel.org>,
-        Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
-Subject: Re: [PATCH v2 4/4] fat: switch to fsinfo_inode
-References: <1334326795-2446-1-git-send-email-dedekind1@gmail.com>
-	<1334326795-2446-5-git-send-email-dedekind1@gmail.com>
-	<87fwc6hazv.fsf@devron.myhome.or.jp> <1334399379.2263.8.camel@koala>
-	<87bomuha77.fsf@devron.myhome.or.jp> <1334401307.2263.24.camel@koala>
-	<873986h6qa.fsf@devron.myhome.or.jp> <1334406974.2263.38.camel@koala>
-Date: Sat, 14 Apr 2012 22:12:39 +0900
-In-Reply-To: <1334406974.2263.38.camel@koala> (Artem Bityutskiy's message of
-	"Sat, 14 Apr 2012 15:36:11 +0300")
-Message-ID: <87y5pyfoe0.fsf@devron.myhome.or.jp>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1.50 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain
+	Sat, 14 Apr 2012 09:17:04 -0400
+Message-ID: <1334409396.2528.100.camel@twins>
+Subject: Re: [RFC 0/6] uprobes: kill uprobes_srcu/uprobe_srcu_id
+From: Peter Zijlstra <peterz@infradead.org>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Ingo Molnar <mingo@elte.hu>, Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
+        LKML <linux-kernel@vger.kernel.org>, Linux-mm <linux-mm@kvack.org>,
+        Andi Kleen <andi@firstfloor.org>,
+        Christoph Hellwig <hch@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Anton Arapov <anton@redhat.com>
+Date: Sat, 14 Apr 2012 15:16:36 +0200
+In-Reply-To: <20120405222024.GA19154@redhat.com>
+References: <20120405222024.GA19154@redhat.com>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Mailer: Evolution 3.2.2- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Artem Bityutskiy <dedekind1@gmail.com> writes:
+On Fri, 2012-04-06 at 00:20 +0200, Oleg Nesterov wrote:
+> Hello.
+> 
+> Not for inclusion yet, only for the early review.
+> 
+> I didn't even try to test these changes, and I am not expert
+> in this area. And even _if_ this code is correct, I need to
+> re-split these changes anyway, update the changelogs, etc.
+> 
+> Questions:
+> 
+> 	- does it make sense?
 
-> On Sat, 2012-04-14 at 20:51 +0900, OGAWA Hirofumi wrote:
->> Yes, I still worry about order. About ->sync_fs(), you are looking the
->> following?
->
-> Hirofumi, you still did not explain why the order matters. If it
-> matters, it should be easy to explain.
->
-> But I will look at this and think about the ordering, thanks for
-> feed-back. But if you could explain why writing out FSINFO before inodes
-> is an issue, it'd be very helpful.
+Maybe, upside is reclaiming that int from task_struct, downside is that
+down_write :/ It would be very good not to have to do that. Nor do I
+really see how that works.
 
-Hm, you want to this one?
+> 	- can it work or I missed something "in general" ?
 
-If fsinfo is inode, the order can be
+So we insert in the rb-tree before we take mmap_sem, this means we can
+hit a non-uprobe int3 and still find a uprobe there, no?
 
-1) flush inodes
-    1a) flush fsinfo inode
-    1b) flush normal inodes
-2) last iput(normal inodes)
-      truncate()
-           dirty fsinfo inode
--- 
-OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+> Why:
+> 
+> 	- It would be nice to remove a member from task_struct.
+> 
+> 	- Afaics, the usage of uprobes_srcu does not look right,
+> 	  at least in theory, see 6/6.
+> 
+> 	  The comment above delete_uprobe() says:
+> 
+> 	  	The current unregistering thread waits till all
+> 	  	other threads have hit a breakpoint, to acquire
+> 	  	the uprobes_treelock before the uprobe is removed
+> 	  	from the rbtree.
+> 
+> 	  but synchronize_srcu() can only help if a thread which
+> 	  have hit the breakpoint has already called srcu_read_lock().
+> 	  It can't synchronize with read_lock "in future", and there
+> 	  is a small window.
+> 
+> 	  We could probably add another synchronize_sched() before
+> 	  synchronize_srcu(), but this doesn't look very nice and
+
+Right, I think that all was written with the assumption that sync_srcu
+implied a sync_rcu, which of course we've recently wrecked.
+
+
