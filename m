@@ -1,48 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755125Ab2DNL2l (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 14 Apr 2012 07:28:41 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:43578 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751011Ab2DNL2k convert rfc822-to-8bit (ORCPT
+	id S1755325Ab2DNLcm (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 14 Apr 2012 07:32:42 -0400
+Received: from mail-wi0-f178.google.com ([209.85.212.178]:37611 "EHLO
+	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754835Ab2DNLcl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 14 Apr 2012 07:28:40 -0400
-Message-ID: <1334402900.2528.69.camel@twins>
-Subject: Re: [patch 0/2] cpusets, cpu_cgroup: disallow attaching kthreadd
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: David Rientjes <rientjes@google.com>
-Cc: Tejun Heo <tj@kernel.org>, Mike Galbraith <mgalbraith@suse.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Ingo Molnar <mingo@redhat.com>, Paul Menage <paul@paulmenage.org>,
-        LKML <linux-kernel@vger.kernel.org>, Li Zefan <lizefan@huawei.com>
-Date: Sat, 14 Apr 2012 13:28:20 +0200
-In-Reply-To: <alpine.DEB.2.00.1204061337570.23328@chino.kir.corp.google.com>
-References: <20120405160829.GA12854@google.com>
-	 <alpine.DEB.2.00.1204051417490.17852@chino.kir.corp.google.com>
-	 <20120405213704.GA29517@google.com>
-	 <alpine.DEB.2.00.1204051454070.17852@chino.kir.corp.google.com>
-	 <20120405222400.GC29517@google.com>
-	 <alpine.DEB.2.00.1204051542280.25838@chino.kir.corp.google.com>
-	 <20120405225854.GE29517@google.com>
-	 <alpine.DEB.2.00.1204051559480.25838@chino.kir.corp.google.com>
-	 <20120405231306.GF29517@google.com>
-	 <alpine.DEB.2.00.1204051630400.25838@chino.kir.corp.google.com>
-	 <20120406155203.GA4798@dhcp-172-17-108-109.mtv.corp.google.com>
-	 <alpine.DEB.2.00.1204061337570.23328@chino.kir.corp.google.com>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.2- 
-Mime-Version: 1.0
+	Sat, 14 Apr 2012 07:32:41 -0400
+Date: Sat, 14 Apr 2012 13:32:35 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Borislav Petkov <borislav.petkov@amd.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Andreas Herrmann <andreas.herrmann3@amd.com>,
+        Kay Sievers <kay.sievers@vrfy.org>, Dave Jones <davej@redhat.com>,
+        linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
+        "H. Peter Anvin" <hpa@zytor.com>
+Subject: Re: [GIT PULL] x86 microcode fix for 3.4
+Message-ID: <20120414113235.GD24688@gmail.com>
+References: <20120413101021.GC27686@aftab>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120413101021.GC27686@aftab>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2012-04-06 at 13:46 -0700, David Rientjes wrote:
-> That doesn't work, the kmem extension to memcg does not allow slab to be 
-> properly accounted to threads in the root memcg.  From 
-> Documentation/cgroups/memory.txt section 2.7:
-> 
-> "Kernel memory limits are not imposed for the root cgroup. Usage for the 
-> root cgroup may or may not be accounted." 
 
-To me that reads like: kmem/memcg is broken.
+* Borislav Petkov <borislav.petkov@amd.com> wrote:
+
+> Hi Ingo,
+> 
+> please pull the following fix for 3.4 from Andreas. This is seen by
+> people using 3.3 too thus the stable tagging.
+> 
+> Thanks.
+> 
+> ---
+> The following changes since commit 0034102808e0dbbf3a2394b82b1bb40b5778de9e:
+> 
+>   Linux 3.4-rc2 (2012-04-07 18:30:41 -0700)
+> 
+> are available in the git repository at:
+> 
+>   git://git.kernel.org/pub/scm/linux/kernel/git/bp/bp.git tags/microcode-fix-for-3.4
+> 
+> for you to fetch changes up to 283c1f2558ef4a4411fe908364b15b73b6ab44cf:
+> 
+>   x86, microcode: Ensure that module is only loaded on supported AMD CPUs (2012-04-13 11:51:05 +0200)
+> 
+> ----------------------------------------------------------------
+> A two-patch fix from Andreas taking care of a sysfs warning when the
+> microcode driver is loaded on unsupported platforms.
+> 
+> ----------------------------------------------------------------
+> Andreas Herrmann (2):
+>       x86, microcode: Fix sysfs warning during module unload on unsupported CPUs
+>       x86, microcode: Ensure that module is only loaded on supported AMD CPUs
+> 
+>  arch/x86/kernel/microcode_amd.c  |   12 +++++++-----
+>  arch/x86/kernel/microcode_core.c |   10 ++++------
+>  2 files changed, 11 insertions(+), 11 deletions(-)
+
+Pulled, thanks!
+
+	Ingo
