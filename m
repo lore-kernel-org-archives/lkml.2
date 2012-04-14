@@ -1,63 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755481Ab2DNQaj (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 14 Apr 2012 12:30:39 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:36633 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751893Ab2DNQai (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 14 Apr 2012 12:30:38 -0400
-Date: Sat, 14 Apr 2012 13:30:09 -0300
-From: Arnaldo Carvalho de Melo <acme@redhat.com>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: hpa@zytor.com, paulus@samba.org, linux-kernel@vger.kernel.org,
-        a.p.zijlstra@chello.nl, jolsa@redhat.com, fweisbec@gmail.com,
-        tglx@linutronix.de, cjashfor@linux.vnet.ibm.com, mingo@elte.hu,
-        linux-tip-commits@vger.kernel.org
-Subject: Re: [tip:perf/core] perf tools: Fix parsers' rules to dependencies
-Message-ID: <20120414163009.GE22114@infradead.org>
-References: <1334140791-3024-1-git-send-email-jolsa@redhat.com>
- <tip-024e6c9747bb274c9d744ad52a987a0ebec528a6@git.kernel.org>
- <20120414114129.GF24688@gmail.com>
+	id S1755573Ab2DNQjN (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 14 Apr 2012 12:39:13 -0400
+Received: from mail-wi0-f178.google.com ([209.85.212.178]:34787 "EHLO
+	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751893Ab2DNQjM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 14 Apr 2012 12:39:12 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120414114129.GF24688@gmail.com>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.20 (2009-12-10)
+In-Reply-To: <20120414161953.GA18140@linux.vnet.ibm.com>
+References: <20120414161953.GA18140@linux.vnet.ibm.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Sat, 14 Apr 2012 09:38:50 -0700
+X-Google-Sender-Auth: qBMXRPaRY51ZZzh2PkEf9W22ywk
+Message-ID: <CA+55aFw94CZOLu-DF03sXV5gt+JPNegoCt2agvaTfApr+ndmpg@mail.gmail.com>
+Subject: Re: [PATCH RFC 0/7] rcu: v2 Inlinable preemptible rcu_read_lock() and rcu_read_unlock()
+To: paulmck@linux.vnet.ibm.com
+Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
+        dipankar@in.ibm.com, akpm@linux-foundation.org,
+        mathieu.desnoyers@efficios.com, josh@joshtriplett.org, niv@us.ibm.com,
+        tglx@linutronix.de, peterz@infradead.org, rostedt@goodmis.org,
+        Valdis.Kletnieks@vt.edu, dhowells@redhat.com, eric.dumazet@gmail.com,
+        darren@dvhart.com, fweisbec@gmail.com, patches@linaro.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Sat, Apr 14, 2012 at 01:41:29PM +0200, Ingo Molnar escreveu:
-> 
-> * tip-bot for Jiri Olsa <jolsa@redhat.com> wrote:
-> 
-> > Commit-ID:  024e6c9747bb274c9d744ad52a987a0ebec528a6
-> > Gitweb:     http://git.kernel.org/tip/024e6c9747bb274c9d744ad52a987a0ebec528a6
-> > Author:     Jiri Olsa <jolsa@redhat.com>
-> > AuthorDate: Wed, 11 Apr 2012 12:39:51 +0200
-> > Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-> > CommitDate: Wed, 11 Apr 2012 16:57:09 -0300
-> > 
-> > perf tools: Fix parsers' rules to dependencies
-> > 
-> > Currently the parsers objects (bison/flex related) are each time perf
-> > is built. No matter the generated files are already in place, the
-> > parser generation is executed every time.
-> > 
-> > Changing the rules to have proper flex/bison objects generation
-> > dependencies.
-> > 
-> > The parsers code is not rebuilt until the flex/bison source files
-> > are touched. Also when flex/bison source is changed, only dependent
-> > objects are rebuilt.
-> 
-> Hm, can I cherry-pick this over into perf/urgent? I see no good 
-> reason why we should leave the v3.4 version half-broken.
+On Sat, Apr 14, 2012 at 9:19 AM, Paul E. McKenney
+<paulmck@linux.vnet.ibm.com> wrote:
+>
+> This series is version two of the inlinable versions of preemptible
+> RCU's __rcu_read_lock() and __rcu_read_unlock().
 
-Feel free! Overcautious me, wanting to push just only strict bug fixes
-there, this one I found just a minor annoyance, so left for perf/core.
- 
-> Thanks,
-> 
-> 	Ingo
+Btw, what is this supposed to apply on top of? It doesn't seem to
+apply cleanly to either v3.3, v3.4-rc[12], or current top-of-tree.
+
+I can make it apply by reducing the context to just one line for
+patch#6, but your base seems to be odd.
+
+                       Linus
