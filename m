@@ -1,50 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754849Ab2DNQZS (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 14 Apr 2012 12:25:18 -0400
+	id S1754337Ab2DNQZO (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 14 Apr 2012 12:25:14 -0400
 Received: from mail-pz0-f52.google.com ([209.85.210.52]:47566 "EHLO
 	mail-pz0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753513Ab2DNQZO (ORCPT
+	with ESMTP id S1751455Ab2DNQZM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 14 Apr 2012 12:25:14 -0400
+	Sat, 14 Apr 2012 12:25:12 -0400
 From: mathieu.poirier@linaro.org
 To: gregkh@linuxfoundation.org
 Cc: linux-kernel@vger.kernel.org, arnd@arndb.de, mathieu.poirier@linaro.org
-Subject: [PATCH 2/2] misc: do not mark exported functions __devexit
-Date: Sat, 14 Apr 2012 10:25:04 -0600
-Message-Id: <1334420704-22079-3-git-send-email-mathieu.poirier@linaro.org>
+Subject: [PATCH 0/2] misc: randconfig patches for 3.3 kernel
+Date: Sat, 14 Apr 2012 10:25:02 -0600
+Message-Id: <1334420704-22079-1-git-send-email-mathieu.poirier@linaro.org>
 X-Mailer: git-send-email 1.7.5.4
-In-Reply-To: <1334420704-22079-1-git-send-email-mathieu.poirier@linaro.org>
-References: <1334420704-22079-1-git-send-email-mathieu.poirier@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Arnd Bergmann <arnd@arndb.de>
 
-No symbol can be exported when the section is discarded - the only
-solution I could think of is not to mark symbols as __devexit
-when they are exported.
+These patches fix miscellaneous problems when working
+with make randconfig.  They were discovered on kernel
+3.1-rc4 and have been reformatted for 3.3.
 
-Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-Signed-off-by: Mathieu Poirier <mathieu.poirier@linaro.org>
----
+Arnd Bergmann (2):
+  misc: add missing __devexit_p() annotations
+  misc: do not mark exported functions __devexit
+
  drivers/misc/ad525x_dpot.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+ drivers/misc/bh1780gli.c   |    2 +-
+ drivers/misc/pti.c         |    2 +-
+ 3 files changed, 3 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/misc/ad525x_dpot.c b/drivers/misc/ad525x_dpot.c
-index 1d1d426..6938f1b 100644
---- a/drivers/misc/ad525x_dpot.c
-+++ b/drivers/misc/ad525x_dpot.c
-@@ -749,7 +749,7 @@ exit:
- }
- EXPORT_SYMBOL(ad_dpot_probe);
- 
--__devexit int ad_dpot_remove(struct device *dev)
-+int ad_dpot_remove(struct device *dev)
- {
- 	struct dpot_data *data = dev_get_drvdata(dev);
- 	int i;
 -- 
 1.7.5.4
 
