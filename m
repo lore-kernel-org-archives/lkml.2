@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754148Ab2DNQWE (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 14 Apr 2012 12:22:04 -0400
-Received: from e38.co.us.ibm.com ([32.97.110.159]:50857 "EHLO
-	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754538Ab2DNQUy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1755337Ab2DNQUy (ORCPT <rfc822;w@1wt.eu>);
 	Sat, 14 Apr 2012 12:20:54 -0400
+Received: from e33.co.us.ibm.com ([32.97.110.151]:41540 "EHLO
+	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754538Ab2DNQUw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 14 Apr 2012 12:20:52 -0400
 From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 To: linux-kernel@vger.kernel.org
 Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
@@ -17,173 +17,205 @@ Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
         fweisbec@gmail.com, patches@linaro.org, torvalds@linux-foundation.org,
         "Paul E. McKenney" <paul.mckenney@linaro.org>,
         "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: [PATCH RFC 2/7] rcu: Create per-CPU variables and avoid name conflict
-Date: Sat, 14 Apr 2012 09:20:32 -0700
-Message-Id: <1334420437-19264-2-git-send-email-paulmck@linux.vnet.ibm.com>
+Subject: [PATCH RFC 1/7] rcu: Move PREEMPT_RCU preemption to switch_to() invocation
+Date: Sat, 14 Apr 2012 09:20:31 -0700
+Message-Id: <1334420437-19264-1-git-send-email-paulmck@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.7.8
-In-Reply-To: <1334420437-19264-1-git-send-email-paulmck@linux.vnet.ibm.com>
+In-Reply-To: <20120414161953.GA18140@linux.vnet.ibm.com>
 References: <20120414161953.GA18140@linux.vnet.ibm.com>
- <1334420437-19264-1-git-send-email-paulmck@linux.vnet.ibm.com>
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12041416-5518-0000-0000-000003AA61D8
+x-cbid: 12041416-2398-0000-0000-000005D1BC11
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "Paul E. McKenney" <paul.mckenney@linaro.org>
 
-This commit creates the rcu_read_lock_nesting and rcu_read_unlock_special
-per-CPU variables, and renames the rcu_read_unlock_special() function to
-rcu_read_unlock_do_special() to avoid a name conflict with the new per-CPU
-variable.
+Currently, PREEMPT_RCU readers are enqueued upon entry to the scheduler.
+This is inefficient because enqueuing is required only if there is a
+context switch, and entry to the scheduler does not guarantee a context
+switch.
 
-Suggested-by: Linus Torvalds <torvalds@linux-foundation.org>
+The commit therefore moves the enqueuing to immediately precede the
+call to switch_to() from the scheduler.
+
 Signed-off-by: Paul E. McKenney <paul.mckenney@linaro.org>
 Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 ---
- include/linux/rcupdate.h |    3 +++
- kernel/rcupdate.c        |    5 +++++
- kernel/rcutiny_plugin.h  |   10 +++++-----
- kernel/rcutree_plugin.h  |   12 ++++++------
- 4 files changed, 19 insertions(+), 11 deletions(-)
+ arch/um/drivers/mconsole_kern.c |    1 +
+ include/linux/rcupdate.h        |    1 +
+ include/linux/rcutiny.h         |    6 ------
+ include/linux/sched.h           |   10 ++++++++++
+ kernel/rcutree.c                |    1 -
+ kernel/rcutree.h                |    1 -
+ kernel/rcutree_plugin.h         |   14 +++-----------
+ kernel/sched/core.c             |    1 +
+ 8 files changed, 16 insertions(+), 19 deletions(-)
 
+diff --git a/arch/um/drivers/mconsole_kern.c b/arch/um/drivers/mconsole_kern.c
+index c70e047..f69ff2d 100644
+--- a/arch/um/drivers/mconsole_kern.c
++++ b/arch/um/drivers/mconsole_kern.c
+@@ -704,6 +704,7 @@ static void stack_proc(void *arg)
+ 	struct task_struct *from = current, *to = arg;
+ 
+ 	to->thread.saved_task = from;
++	rcu_switch_from(from);
+ 	switch_to(from, to, from);
+ }
+ 
 diff --git a/include/linux/rcupdate.h b/include/linux/rcupdate.h
-index aca4ef0..1cf19ef 100644
+index 9372174..aca4ef0 100644
 --- a/include/linux/rcupdate.h
 +++ b/include/linux/rcupdate.h
-@@ -144,6 +144,9 @@ extern void synchronize_sched(void);
+@@ -183,6 +183,7 @@ static inline int rcu_preempt_depth(void)
+ /* Internal to kernel */
+ extern void rcu_sched_qs(int cpu);
+ extern void rcu_bh_qs(int cpu);
++extern void rcu_preempt_note_context_switch(void);
+ extern void rcu_check_callbacks(int cpu, int user);
+ struct notifier_block;
+ extern void rcu_idle_enter(void);
+diff --git a/include/linux/rcutiny.h b/include/linux/rcutiny.h
+index e93df77..080b5bd 100644
+--- a/include/linux/rcutiny.h
++++ b/include/linux/rcutiny.h
+@@ -87,10 +87,6 @@ static inline void kfree_call_rcu(struct rcu_head *head,
  
- #ifdef CONFIG_PREEMPT_RCU
+ #ifdef CONFIG_TINY_RCU
  
-+DECLARE_PER_CPU(int, rcu_read_lock_nesting);
-+DECLARE_PER_CPU(int, rcu_read_unlock_special);
-+
- extern void __rcu_read_lock(void);
- extern void __rcu_read_unlock(void);
- void synchronize_rcu(void);
-diff --git a/kernel/rcupdate.c b/kernel/rcupdate.c
-index a86f174..eb5d160 100644
---- a/kernel/rcupdate.c
-+++ b/kernel/rcupdate.c
-@@ -51,6 +51,11 @@
- 
- #include "rcu.h"
- 
-+#ifdef CONFIG_PREEMPT_RCU
-+DEFINE_PER_CPU(int, rcu_read_lock_nesting);
-+DEFINE_PER_CPU(int, rcu_read_unlock_special);
-+#endif /* #ifdef CONFIG_PREEMPT_RCU */
-+
- #ifdef CONFIG_DEBUG_LOCK_ALLOC
- static struct lock_class_key rcu_lock_key;
- struct lockdep_map rcu_lock_map =
-diff --git a/kernel/rcutiny_plugin.h b/kernel/rcutiny_plugin.h
-index 22ecea0..ff7ec65 100644
---- a/kernel/rcutiny_plugin.h
-+++ b/kernel/rcutiny_plugin.h
-@@ -132,7 +132,7 @@ static struct rcu_preempt_ctrlblk rcu_preempt_ctrlblk = {
- 	RCU_TRACE(.rcb.name = "rcu_preempt")
- };
- 
--static void rcu_read_unlock_special(struct task_struct *t);
-+static void rcu_read_unlock_do_special(struct task_struct *t);
- static int rcu_preempted_readers_exp(void);
- static void rcu_report_exp_done(void);
- 
-@@ -510,7 +510,7 @@ void rcu_preempt_note_context_switch(void)
- 		 * Complete exit from RCU read-side critical section on
- 		 * behalf of preempted instance of __rcu_read_unlock().
- 		 */
--		rcu_read_unlock_special(t);
-+		rcu_read_unlock_do_special(t);
- 	}
- 
- 	/*
-@@ -543,7 +543,7 @@ EXPORT_SYMBOL_GPL(__rcu_read_lock);
-  * notify RCU core processing or task having blocked during the RCU
-  * read-side critical section.
-  */
--static noinline void rcu_read_unlock_special(struct task_struct *t)
-+static noinline void rcu_read_unlock_do_special(struct task_struct *t)
+-static inline void rcu_preempt_note_context_switch(void)
+-{
+-}
+-
+ static inline void exit_rcu(void)
  {
- 	int empty;
- 	int empty_exp;
-@@ -630,7 +630,7 @@ static noinline void rcu_read_unlock_special(struct task_struct *t)
-  * Tiny-preemptible RCU implementation for rcu_read_unlock().
-  * Decrement ->rcu_read_lock_nesting.  If the result is zero (outermost
-  * rcu_read_unlock()) and ->rcu_read_unlock_special is non-zero, then
-- * invoke rcu_read_unlock_special() to clean up after a context switch
-+ * invoke rcu_read_unlock_do_special() to clean up after a context switch
-  * in an RCU read-side critical section and other special cases.
-  */
- void __rcu_read_unlock(void)
-@@ -644,7 +644,7 @@ void __rcu_read_unlock(void)
- 		t->rcu_read_lock_nesting = INT_MIN;
- 		barrier();  /* assign before ->rcu_read_unlock_special load */
- 		if (unlikely(ACCESS_ONCE(t->rcu_read_unlock_special)))
--			rcu_read_unlock_special(t);
-+			rcu_read_unlock_do_special(t);
- 		barrier();  /* ->rcu_read_unlock_special load before assign */
- 		t->rcu_read_lock_nesting = 0;
- 	}
-diff --git a/kernel/rcutree_plugin.h b/kernel/rcutree_plugin.h
-index b1ac22e..f60b315 100644
---- a/kernel/rcutree_plugin.h
-+++ b/kernel/rcutree_plugin.h
-@@ -78,7 +78,7 @@ struct rcu_state rcu_preempt_state = RCU_STATE_INITIALIZER(rcu_preempt);
- DEFINE_PER_CPU(struct rcu_data, rcu_preempt_data);
- static struct rcu_state *rcu_state = &rcu_preempt_state;
+ }
+@@ -102,7 +98,6 @@ static inline int rcu_needs_cpu(int cpu)
  
--static void rcu_read_unlock_special(struct task_struct *t);
-+static void rcu_read_unlock_do_special(struct task_struct *t);
- static int rcu_preempted_readers_exp(struct rcu_node *rnp);
+ #else /* #ifdef CONFIG_TINY_RCU */
+ 
+-void rcu_preempt_note_context_switch(void);
+ extern void exit_rcu(void);
+ int rcu_preempt_needs_cpu(void);
+ 
+@@ -116,7 +111,6 @@ static inline int rcu_needs_cpu(int cpu)
+ static inline void rcu_note_context_switch(int cpu)
+ {
+ 	rcu_sched_qs(cpu);
+-	rcu_preempt_note_context_switch();
+ }
  
  /*
-@@ -215,7 +215,7 @@ void rcu_preempt_note_context_switch(void)
- 		 * Complete exit from RCU read-side critical section on
- 		 * behalf of preempted instance of __rcu_read_unlock().
- 		 */
--		rcu_read_unlock_special(t);
-+		rcu_read_unlock_do_special(t);
- 	}
+diff --git a/include/linux/sched.h b/include/linux/sched.h
+index e692aba..a749c9d 100644
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -1879,12 +1879,22 @@ static inline void rcu_copy_process(struct task_struct *p)
+ 	INIT_LIST_HEAD(&p->rcu_node_entry);
+ }
  
- 	/*
-@@ -310,7 +310,7 @@ static struct list_head *rcu_next_node_entry(struct task_struct *t,
-  * notify RCU core processing or task having blocked during the RCU
-  * read-side critical section.
-  */
--static noinline void rcu_read_unlock_special(struct task_struct *t)
-+static noinline void rcu_read_unlock_do_special(struct task_struct *t)
++static inline void rcu_switch_from(struct task_struct *prev)
++{
++	if (prev->rcu_read_lock_nesting != 0)
++		rcu_preempt_note_context_switch();
++}
++
+ #else
+ 
+ static inline void rcu_copy_process(struct task_struct *p)
  {
- 	int empty;
- 	int empty_exp;
-@@ -422,7 +422,7 @@ static noinline void rcu_read_unlock_special(struct task_struct *t)
-  * Tree-preemptible RCU implementation for rcu_read_unlock().
-  * Decrement ->rcu_read_lock_nesting.  If the result is zero (outermost
-  * rcu_read_unlock()) and ->rcu_read_unlock_special is non-zero, then
-- * invoke rcu_read_unlock_special() to clean up after a context switch
-+ * invoke rcu_read_unlock_do_special() to clean up after a context switch
-  * in an RCU read-side critical section and other special cases.
+ }
+ 
++static inline void rcu_switch_from(struct task_struct *prev)
++{
++}
++
+ #endif
+ 
+ #ifdef CONFIG_SMP
+diff --git a/kernel/rcutree.c b/kernel/rcutree.c
+index 1050d6d..6135150 100644
+--- a/kernel/rcutree.c
++++ b/kernel/rcutree.c
+@@ -192,7 +192,6 @@ void rcu_note_context_switch(int cpu)
+ {
+ 	trace_rcu_utilization("Start context switch");
+ 	rcu_sched_qs(cpu);
+-	rcu_preempt_note_context_switch(cpu);
+ 	trace_rcu_utilization("End context switch");
+ }
+ EXPORT_SYMBOL_GPL(rcu_note_context_switch);
+diff --git a/kernel/rcutree.h b/kernel/rcutree.h
+index cdd1be0..d6b70b08 100644
+--- a/kernel/rcutree.h
++++ b/kernel/rcutree.h
+@@ -423,7 +423,6 @@ DECLARE_PER_CPU(char, rcu_cpu_has_work);
+ /* Forward declarations for rcutree_plugin.h */
+ static void rcu_bootup_announce(void);
+ long rcu_batches_completed(void);
+-static void rcu_preempt_note_context_switch(int cpu);
+ static int rcu_preempt_blocked_readers_cgp(struct rcu_node *rnp);
+ #ifdef CONFIG_HOTPLUG_CPU
+ static void rcu_report_unblock_qs_rnp(struct rcu_node *rnp,
+diff --git a/kernel/rcutree_plugin.h b/kernel/rcutree_plugin.h
+index c023464..b1ac22e 100644
+--- a/kernel/rcutree_plugin.h
++++ b/kernel/rcutree_plugin.h
+@@ -153,7 +153,7 @@ static void rcu_preempt_qs(int cpu)
+  *
+  * Caller must disable preemption.
   */
- void __rcu_read_unlock(void)
-@@ -436,7 +436,7 @@ void __rcu_read_unlock(void)
- 		t->rcu_read_lock_nesting = INT_MIN;
- 		barrier();  /* assign before ->rcu_read_unlock_special load */
- 		if (unlikely(ACCESS_ONCE(t->rcu_read_unlock_special)))
--			rcu_read_unlock_special(t);
-+			rcu_read_unlock_do_special(t);
- 		barrier();  /* ->rcu_read_unlock_special load before assign */
- 		t->rcu_read_lock_nesting = 0;
- 	}
-@@ -573,7 +573,7 @@ static void rcu_preempt_check_blocked_tasks(struct rcu_node *rnp)
-  * Handle tasklist migration for case in which all CPUs covered by the
-  * specified rcu_node have gone offline.  Move them up to the root
-  * rcu_node.  The reason for not just moving them to the immediate
-- * parent is to remove the need for rcu_read_unlock_special() to
-+ * parent is to remove the need for rcu_read_unlock_do_special() to
-  * make more than two attempts to acquire the target rcu_node's lock.
-  * Returns true if there were tasks blocking the current RCU grace
-  * period.
+-static void rcu_preempt_note_context_switch(int cpu)
++void rcu_preempt_note_context_switch(void)
+ {
+ 	struct task_struct *t = current;
+ 	unsigned long flags;
+@@ -164,7 +164,7 @@ static void rcu_preempt_note_context_switch(int cpu)
+ 	    (t->rcu_read_unlock_special & RCU_READ_UNLOCK_BLOCKED) == 0) {
+ 
+ 		/* Possibly blocking in an RCU read-side critical section. */
+-		rdp = per_cpu_ptr(rcu_preempt_state.rda, cpu);
++		rdp = __this_cpu_ptr(rcu_preempt_state.rda);
+ 		rnp = rdp->mynode;
+ 		raw_spin_lock_irqsave(&rnp->lock, flags);
+ 		t->rcu_read_unlock_special |= RCU_READ_UNLOCK_BLOCKED;
+@@ -228,7 +228,7 @@ static void rcu_preempt_note_context_switch(int cpu)
+ 	 * means that we continue to block the current grace period.
+ 	 */
+ 	local_irq_save(flags);
+-	rcu_preempt_qs(cpu);
++	rcu_preempt_qs(smp_processor_id());
+ 	local_irq_restore(flags);
+ }
+ 
+@@ -1018,14 +1018,6 @@ void rcu_force_quiescent_state(void)
+ EXPORT_SYMBOL_GPL(rcu_force_quiescent_state);
+ 
+ /*
+- * Because preemptible RCU does not exist, we never have to check for
+- * CPUs being in quiescent states.
+- */
+-static void rcu_preempt_note_context_switch(int cpu)
+-{
+-}
+-
+-/*
+  * Because preemptible RCU does not exist, there are never any preempted
+  * RCU readers.
+  */
+diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+index 5255c9d..10689da 100644
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -2051,6 +2051,7 @@ context_switch(struct rq *rq, struct task_struct *prev,
+ #endif
+ 
+ 	/* Here we just switch the register state and the stack. */
++	rcu_switch_from(prev);
+ 	switch_to(prev, next, prev);
+ 
+ 	barrier();
 -- 
 1.7.8
 
