@@ -1,51 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752997Ab2DNMZa (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 14 Apr 2012 08:25:30 -0400
-Received: from casper.infradead.org ([85.118.1.10]:59909 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751934Ab2DNMZ2 convert rfc822-to-8bit (ORCPT
+	id S1753243Ab2DNMcY (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 14 Apr 2012 08:32:24 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:64673 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751455Ab2DNMcW convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 14 Apr 2012 08:25:28 -0400
-Message-ID: <1334406314.2528.90.camel@twins>
-Subject: Re: [Lsf] [RFC] writeback and cgroup
-From: Peter Zijlstra <peterz@infradead.org>
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: Jan Kara <jack@suse.cz>, ctalbott@google.com, rni@google.com,
-        andrea@betterlinux.com, containers@lists.linux-foundation.org,
-        linux-kernel@vger.kernel.org, lsf@lists.linux-foundation.org,
-        linux-mm@kvack.org, jmoyer@redhat.com, lizefan@huawei.com,
-        cgroups@vger.kernel.org, linux-fsdevel@vger.kernel.org
-Date: Sat, 14 Apr 2012 14:25:14 +0200
-In-Reply-To: <20120411154005.GD16692@redhat.com>
-References: <20120403183655.GA23106@dhcp-172-17-108-109.mtv.corp.google.com>
-	 <20120404145134.GC12676@redhat.com> <20120407080027.GA2584@quack.suse.cz>
-	 <20120410180653.GJ21801@redhat.com> <20120410210505.GE4936@quack.suse.cz>
-	 <20120410212041.GP21801@redhat.com> <20120410222425.GF4936@quack.suse.cz>
-	 <20120411154005.GD16692@redhat.com>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.2- 
-Mime-Version: 1.0
+	Sat, 14 Apr 2012 08:32:22 -0400
+MIME-Version: 1.0
+In-Reply-To: <alpine.LFD.2.00.1204141518270.9966@ja.ssi.bg>
+References: <1334409722-26315-1-git-send-email-levinsasha928@gmail.com>
+ <alpine.LFD.2.00.1204141439440.1680@ja.ssi.bg> <CA+1xoqe0q=XH7mO6=qZKPxqZK8LU2Kk5BjmfLeQ9LUD1Ku65YA@mail.gmail.com>
+ <alpine.LFD.2.00.1204141518270.9966@ja.ssi.bg>
+From: Sasha Levin <levinsasha928@gmail.com>
+Date: Sat, 14 Apr 2012 14:32:01 +0200
+Message-ID: <CA+1xoqdOqy8-Nkk00ZoCcUNLLvz0n6ZFyefsP8GoJhpepfVNtg@mail.gmail.com>
+Subject: Re: [PATCH v2 1/2] netfilter: ipvs: Verify that IP_VS protocol has
+ been registered
+To: Julian Anastasov <ja@ssi.bg>
+Cc: wensong@linux-vs.org, horms@verge.net.au, kaber@trash.net,
+        davem@davemloft.net, davej@redhat.com, netdev@vger.kernel.org,
+        lvs-devel@vger.kernel.org, netfilter-devel@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-04-11 at 11:40 -0400, Vivek Goyal wrote:
-> 
-> Ok, that's good to know. How would we configure this special bdi? I am
-> assuming there is no backing device visible in /sys/block/<device>/queue/?
-> Same is true for network file systems. 
+On Sat, Apr 14, 2012 at 2:23 PM, Julian Anastasov <ja@ssi.bg> wrote:
+>
+>        Hello,
+>
+> On Sat, 14 Apr 2012, Sasha Levin wrote:
+>
+>> On Sat, Apr 14, 2012 at 1:53 PM, Julian Anastasov <ja@ssi.bg> wrote:
+>> >        Ops. It seems now we expose old problem when
+>> > no protocol is configured. As this change probably will
+>> > go to stable kernels, lets make it correct. Can you
+>> > remove the defines around register_ip_vs_proto_netns, so
+>> > that it is always compiled. One that wants to save
+>> > memory will not disable all protocols. See commit
+>> > 091bb34c143674d37a59b2d4857534f7106c5d7d for reference.
+>>
+>> Oh, so it wasn't getting built right now at all if we didn't select
+>> any protocols.
+>>
+>> How about moving those defines down to our loop as well? this way
+>> everything will behave exactly like it did before.
+>
+>        Better to remove the defines. It is a misconfiguration
+> to enable IPVS without protocols. The referenced commit
+> just tried to remove warnings, not save memory by commenting
+> unused function. Adding more define makes the things more ugly.
 
-root@twins:/usr/src/linux-2.6# awk '/nfs/ {print $3}' /proc/self/mountinfo | while read bdi ; do ls -la /sys/class/bdi/${bdi}/ ; done
-ls: cannot access /sys/class/bdi/0:20/: No such file or directory
-total 0
-drwxr-xr-x  3 root root    0 2012-03-27 23:18 .
-drwxr-xr-x 35 root root    0 2012-03-27 23:02 ..
--rw-r--r--  1 root root 4096 2012-04-14 14:22 max_ratio
--rw-r--r--  1 root root 4096 2012-04-14 14:22 min_ratio
-drwxr-xr-x  2 root root    0 2012-04-14 14:22 power
--rw-r--r--  1 root root 4096 2012-04-14 14:22 read_ahead_kb
-lrwxrwxrwx  1 root root    0 2012-03-27 23:18 subsystem -> ../../../../class/bdi
--rw-r--r--  1 root root 4096 2012-03-27 23:18 uevent
-
+Understood. I'll resend.
