@@ -1,82 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754737Ab2DNP6J (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 14 Apr 2012 11:58:09 -0400
-Received: from 1wt.eu ([62.212.114.60]:65151 "EHLO 1wt.eu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754438Ab2DNP6H (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 14 Apr 2012 11:58:07 -0400
-Date: Sat, 14 Apr 2012 17:57:33 +0200
-From: Willy Tarreau <w@1wt.eu>
-To: Felipe Contreras <felipe.contreras@gmail.com>
-Cc: Stefan Richter <stefanr@s5r6.in-berlin.de>,
-        Adrian Chadd <adrian@freebsd.org>,
+	id S1754916Ab2DNP7G (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 14 Apr 2012 11:59:06 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:47499 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754438Ab2DNP7D (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 14 Apr 2012 11:59:03 -0400
+MIME-Version: 1.0
+In-Reply-To: <20120414104733.GA4871@gmail.com>
+References: <20120412011313.GA23764@kroah.com>
+	<CAMP44s2q+bQE3-zsX4bs=sQDt4jf8eE5bwZ8V88UjodjRyAjog@mail.gmail.com>
+	<20120412144626.GA14868@kroah.com>
+	<CAMP44s1T4EVwpzDuV_vV0Zh-5WcPCwdw9eeOfL17Geqp_UFN-Q@mail.gmail.com>
+	<CA+55aFwKYYgZcBX=L-q_6UdvkvFai+yjzgVxq7cA+HLL-Zojhw@mail.gmail.com>
+	<CAMP44s14SQont1wyMeOuWcXUT3U5Tgnoj9mbbgOdVXY_hN0+-w@mail.gmail.com>
+	<CA+55aFyLEJsz1yvu4bYe+RHdhLd-XXEScxtAgje=fyuUM+1XxA@mail.gmail.com>
+	<CAMP44s0yPPqFUO4963MhNb8+c_A=xJi4-eFPJ3s+a1TJ8ZfTtQ@mail.gmail.com>
+	<CA+55aFwaOGbD6S_7So34ZuANG-6fZXZhEah8G0X7McDGhionSg@mail.gmail.com>
+	<CAMP44s06jrPBzf5Lt86-GDxD_PxqcaeJgmYS4tJhcvDdf=J5zA@mail.gmail.com>
+	<20120414104733.GA4871@gmail.com>
+Date: Sat, 14 Apr 2012 18:59:01 +0300
+Message-ID: <CAMP44s0tBbgmunXTN9Jyw=HHnXFyvRY3qo5Vf-jXETUM4HEGWA@mail.gmail.com>
+Subject: Re: [ 00/78] 3.3.2-stable review
+From: Felipe Contreras <felipe.contreras@gmail.com>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
         Greg KH <gregkh@linuxfoundation.org>, Sergio Correia <lists@uece.net>,
         linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk,
+        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
         linux-wireless Mailing List <linux-wireless@vger.kernel.org>,
         Sujith Manoharan <c_manoha@qca.qualcomm.com>,
         "ath9k-devel@lists.ath9k.org" <ath9k-devel@venema.h4ckr.net>,
         "John W. Linville" <linville@tuxdriver.com>
-Subject: Re: [ 00/78] 3.3.2-stable review
-Message-ID: <20120414155733.GF19802@1wt.eu>
-References: <20120412144626.GA14868@kroah.com> <CAMP44s1T4EVwpzDuV_vV0Zh-5WcPCwdw9eeOfL17Geqp_UFN-Q@mail.gmail.com> <CAJ-VmonhwvnXPKa=LNOR4W0ZTXZqWmzw4UrsKLoE0YN_Bu0FzQ@mail.gmail.com> <CAMP44s2JPvhEB6Eb049Z_bToAFncHKMEheuyaxyhC=bnh2GJVg@mail.gmail.com> <20120413105746.10ffb120@stein> <CAMP44s0RohH9tPiM5qCDT57XBV=iO66PZkSjYVxA6Usg1qJPtw@mail.gmail.com> <20120413154216.476a02ac@stein> <CAMP44s10KVwL5pY=Q5hWfyUtU6CvvZZ4Bcg-fEY9dAhSL306aQ@mail.gmail.com> <20120414094137.54a7f213@stein> <CAMP44s2Un-M2OCmuRQGpGsHR21gH=S7oJKx4Ci8tvYVCCSitUw@mail.gmail.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAMP44s2Un-M2OCmuRQGpGsHR21gH=S7oJKx4Ci8tvYVCCSitUw@mail.gmail.com>
-User-Agent: Mutt/1.4.2.3i
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Apr 14, 2012 at 06:29:54PM +0300, Felipe Contreras wrote:
-> So, the hypothetical patch that was dropped in the stable review queue
-> yesterday has to be fixed in mainline too, just like the hypothetical
-> patch that made it to stable and was found problematic today has to be
-> fixed in mainline.
+On Sat, Apr 14, 2012 at 1:47 PM, Ingo Molnar <mingo@kernel.org> wrote:
+>
+> * Felipe Contreras <felipe.contreras@gmail.com> wrote:
+>
+>> On Fri, Apr 13, 2012 at 1:07 AM, Linus Torvalds
+>> <torvalds@linux-foundation.org> wrote:
+>> > On Thu, Apr 12, 2012 at 3:04 PM, Felipe Contreras
+>> > <felipe.contreras@gmail.com> wrote:
+>> >>
+>> >> Sure, but removing that patch from the stable tree is not
+>> >> going the change that information; we already know the
+>> >> patch is wrong.
+>> >
+>> > .. and we wait until it has been fixed in mainline so that
+>> > we *know* that information doesn't get lost.
+>>
+>> So why don't we pick potentially dangerous patches that might
+>> benefit from some testing, put them in 'stable', and if there
+>> are problems, make sure they get fixed in upstream first?
+>>
+>> Or for that matter totally broken patches we want to make sure
+>> they get fixed in upstream.
+>>
+>> Because the priority of the 'stable' tree is *stability*. Is
+>> it not?
+>>
+>> But what you are saying is: *before* the final review, even a
+>> hint that the patch might cause problems is reason enough to
+>> drop it from stable, but *after* the review, if we know the
+>> patch is totally broken, then it's the opposite; we really
+>> want it in.
+>
+> What you don't seem to understand is that there are good reasons
+> why we first fix bugs upstream, then in -stable. Greg explained
+> it to you, Linus explained it to you and so did many others.
+>
+> Having an order of patches *necessarily* means that the
+> development tree will get fixes sooner than the stable tree. In
+> other words, this *necessarily* means that the stable tree - and
+> its users - will have to wait a little bit more to have the fix.
+> In the worst-case this 'have to wait a little bit longer' might
+> span the time between two minor stable kernel releases.
+>
+> You seem to equate this 'have to wait a little bit longer to get
+> the fix' property of the maintenance model with 'we don't care
+> about stable tree users' - that claim is obviously idiotic and
+> most of your arguments in this thread are idiotic as well.
 
-Patches are not always dropped from the stable queue if we know they're
-causing issues, sometimes they're left pending in the queue. This is how
-Greg is able to ping developers from time to time.
+This is a straw man again. Again; we are not talking about fixes in
+'stable' that don't exist in mainline, we are talking about reverting
+patches from 'stable' that are not part of the upstream release from
+where the 'stable' branch was forked.
 
-> Again, what makes a released patch undroppable?
+You are avoiding the argument you replying to; yesterday a patch was
+droppable from the stable review queue, but today, after the release,
+now we *need* it to stay there until it's fixed in the mainline. What
+changed?
 
-Being applied, in other words, having a commit ID in the branch.
+What makes a patch droppable yesterday, but dependent on mainline today?
 
-(...)
-> Just by going through the stable review process the patch already
-> received more eyes to make the bugs more shallow. There might be a lot
-> of trees out there where people pick patches from mainline, and they
-> don't *need* to follow the "upstream first" rule, by reviewing the
-> patch, and maybe even testing it, and then reporting the problem, they
-> are helping getting it fixed for v3.4.
-
-They do what they want with their trees. I have a number of patches in my
-trees that are not worth pushing to mainline and that's fine. However the
-rule is that the official stable tree has to hold patches that come from
-mainline.
-
-> You don't *need* to keep the patch in the stable review queue, you
-> don't *need* to make a stable release with it in order to ensure that
-> it will fixed in mainline, the information about the patch problems is
-> not lost.
-
-It's lost since nobody cares once their kernel is fixed. For instance, I
-have an issue with 3.0.x on my netbook which I haven't had time to bisect
-(no resume from s2r). But 3.2 works. If I find that the issue was introduced
-in any stable backport, we'll have to ensure that mainline has the fix,
-because the bug might simply be hidden in 3.2 but still present. If we'd
-just revert the fix from 3.0, what would motivate anyone to fix mainline
-if it appears to work ?
-
-> Seems to me you are abusing the 'stable' branch as a bug tracking
-> system for certain patches for the next release.
-
-The most reliable bug tracking system are the end users. They're the only
-one who remind you to get their fix merged. And you did this yourself,
-quite louder than the average I'd say, but it worked perfectly again.
-
-Willy
-
+-- 
+Felipe Contreras
