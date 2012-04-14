@@ -1,51 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753533Ab2DNJpM (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 14 Apr 2012 05:45:12 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:60870 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751211Ab2DNJpK convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 14 Apr 2012 05:45:10 -0400
-Message-ID: <1334396693.2528.45.camel@twins>
-Subject: Re: kvm: RCU warning in async pf
-From: Peter Zijlstra <peterz@infradead.org>
-To: Gleb Natapov <gleb@redhat.com>
-Cc: Sasha Levin <levinsasha928@gmail.com>, Avi Kivity <avi@redhat.com>,
-        Marcelo Tosatti <mtosatti@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        kvm <kvm@vger.kernel.org>, linux-kernel <linux-kernel@vger.kernel.org>,
-        Dave Jones <davej@redhat.com>
-Date: Sat, 14 Apr 2012 11:44:53 +0200
-In-Reply-To: <20120404123033.GD11918@redhat.com>
-References: <1333414472.11455.7.camel@lappy>
-	 <20120403105226.GF14939@redhat.com> <20120404123033.GD11918@redhat.com>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.2- 
-Mime-Version: 1.0
+	id S1753311Ab2DNJr1 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 14 Apr 2012 05:47:27 -0400
+Received: from mga01.intel.com ([192.55.52.88]:46459 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751581Ab2DNJr0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 14 Apr 2012 05:47:26 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="141658478"
+Date: Sat, 14 Apr 2012 17:42:22 +0800
+From: Fengguang Wu <fengguang.wu@intel.com>
+To: H Hartley Sweeten <hartleys@visionengravers.com>
+Cc: Linux Kernel <linux-kernel@vger.kernel.org>, linux-mm@kvack.org
+Subject: Re: [PATCH] mm: page-writeback.c: local functions should not be
+ exposed globally
+Message-ID: <20120414094222.GA19710@localhost>
+References: <201204121344.20613.hartleys@visionengravers.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201204121344.20613.hartleys@visionengravers.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-04-04 at 15:30 +0300, Gleb Natapov wrote:
->  
-> @@ -253,7 +254,10 @@ do_async_page_fault(struct pt_regs *regs, unsigned long error_code)
->  		kvm_async_pf_task_wait((u32)read_cr2());
->  		break;
->  	case KVM_PV_REASON_PAGE_READY:
-> +		rcu_irq_enter();
-> +		exit_idle();
->  		kvm_async_pf_task_wake((u32)read_cr2());
-> +		rcu_irq_exit();
->  		break;
->  	}
->  }
+On Thu, Apr 12, 2012 at 01:44:20PM -0700, H Hartley Sweeten wrote:
+> The function global_dirtyable_memory is only referenced in this file and
+> should be marked static to prevent it from being exposed globally.
+> 
+> This quiets the sparse warning:
+> 
+> warning: symbol 'global_dirtyable_memory' was not declared. Should it be static?
+> 
+> Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
 
-Wouldn't irq_enter() / irq_exit() be more appropriate? You're basically
-taking an interrupt/exception from idle, irq_enter() will fix up
-everything that needs fixing up, including time sources (which the
-scheduler expects to be up-to-date).
+Applied, thanks!
 
-
+Fengguang
