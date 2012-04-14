@@ -1,212 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751114Ab2DNEMk (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 14 Apr 2012 00:12:40 -0400
-Received: from mail-qa0-f42.google.com ([209.85.216.42]:59738 "EHLO
-	mail-qa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750876Ab2DNEMj convert rfc822-to-8bit (ORCPT
+	id S1751621Ab2DNExW (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 14 Apr 2012 00:53:22 -0400
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:48841 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750933Ab2DNExV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 14 Apr 2012 00:12:39 -0400
+	Sat, 14 Apr 2012 00:53:21 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6679"; a="179378338"
+Message-ID: <4F8902BF.6070801@codeaurora.org>
+Date: Fri, 13 Apr 2012 21:53:19 -0700
+From: Stephen Boyd <sboyd@codeaurora.org>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:11.0) Gecko/20120327 Thunderbird/11.0.1
 MIME-Version: 1.0
-In-Reply-To: <20120411090556.GA32061@polaris.bitmath.org>
-References: <1333039766-8617-1-git-send-email-djkurtz@chromium.org>
- <1333039766-8617-4-git-send-email-djkurtz@chromium.org> <20120411090556.GA32061@polaris.bitmath.org>
-From: Daniel Kurtz <djkurtz@chromium.org>
-Date: Sat, 14 Apr 2012 12:12:16 +0800
-X-Google-Sender-Auth: t4MX_4PHXlq6ILQzgIrdWJCxMYc
-Message-ID: <CAGS+omDgJJ2o0gAzV=FLXy7vPZuCxftC1+bwz2qOye7DiOb7uw@mail.gmail.com>
-Subject: Re: [PATCH 03/16 v2] Input: atmel_mxt_ts - refactor
- mxt_read/write_reg to take a length
-To: Henrik Rydberg <rydberg@bitmath.se>
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Joonyoung Shim <jy0922.shim@samsung.com>,
-        Nick Dyer <nick.dyer@itdev.co.uk>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Benson Leung <bleung@chromium.org>,
-        Yufeng Shen <miletus@chromium.org>
+To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+CC: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
+        LKML <linux-kernel@vger.kernel.org>, Linux-mm <linux-mm@kvack.org>,
+        Oleg Nesterov <oleg@redhat.com>, Andi Kleen <andi@firstfloor.org>,
+        Christoph Hellwig <hch@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Anton Arapov <anton@redhat.com>
+Subject: Re: [Updated PATCH 3/3] tracing: Provide trace events interface for
+ uprobes
+References: <20120413112941.16602.69097.sendpatchset@srdronam.in.ibm.com>
+In-Reply-To: <20120413112941.16602.69097.sendpatchset@srdronam.in.ibm.com>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 11, 2012 at 5:05 PM, Henrik Rydberg <rydberg@bitmath.se> wrote:
->
-> Hi Daniel,
->
-> > The i2c bus requires 5 bytes to do a 1 byte read (1-byte i2c address + 2
-> > byte offset + 1-byte i2c address + 1 byte data), or 4 bytes to do a
-> > 1-byte write (1 byte i2c address + 2 byte offset + 1 byte data).
-> >
-> > By taking a length with reads and writes, the driver can amortize
-> > transaction overhead by performing larger transactions where
-> > appropriate.
-> >
-> > This patch just sets up the new API.  Later patches refactor
-> > reads/writes
-> > to take advantage of the larger transactions.
-> >
-> > Signed-off-by: Daniel Kurtz <djkurtz@chromium.org>
-> > Reviewed-by: Joonyoung Shim <jy0922.shim@samsung.com>
-> > ---
-> >  drivers/input/touchscreen/atmel_mxt_ts.c |   47
-> > +++++++++++++----------------
-> >  1 files changed, 21 insertions(+), 26 deletions(-)
-> >
-> > diff --git a/drivers/input/touchscreen/atmel_mxt_ts.c
-> > b/drivers/input/touchscreen/atmel_mxt_ts.c
-> > index 15ae6fd..971f9dc 100644
-> > --- a/drivers/input/touchscreen/atmel_mxt_ts.c
-> > +++ b/drivers/input/touchscreen/atmel_mxt_ts.c
-> > @@ -397,8 +397,7 @@ static int mxt_fw_write(struct i2c_client *client,
-> >       return 0;
-> >  }
-> >
-> > -static int __mxt_read_reg(struct i2c_client *client,
-> > -                            u16 reg, u16 len, void *val)
-> > +static int mxt_read_reg(struct i2c_client *client, u16 reg, u16 len,
-> > void *val)
-> >  {
-> >       struct i2c_msg xfer[2];
-> >       u8 buf[2];
-> > @@ -419,28 +418,25 @@ static int __mxt_read_reg(struct i2c_client
-> > *client,
-> >       xfer[1].buf = val;
-> >
-> >       if (i2c_transfer(client->adapter, xfer, 2) != 2) {
-> > -             dev_err(&client->dev, "%s: i2c transfer failed\n",
-> > __func__);
-> > +             dev_err(&client->dev, "%s: i2c read failed\n", __func__);
-> >               return -EIO;
-> >       }
-> >
-> >       return 0;
-> >  }
-> >
-> > -static int mxt_read_reg(struct i2c_client *client, u16 reg, u8 *val)
-> > +static int mxt_write_reg(struct i2c_client *client, u16 reg, u16 len,
-> > +                      const void *val)
-> >  {
-> > -     return __mxt_read_reg(client, reg, 1, val);
-> > -}
-> > -
-> > -static int mxt_write_reg(struct i2c_client *client, u16 reg, u8 val)
-> > -{
-> > -     u8 buf[3];
-> > +     size_t count = 2 + len;         /* + 2-byte offset */
-> > +     u8 buf[count];
->
-> How much stack space are you planning to use here?
+On 4/13/2012 4:29 AM, Srikar Dronamraju wrote:
+> diff --git a/arch/Kconfig b/arch/Kconfig
+> index e5d3778..0f8f968 100644
+> --- a/arch/Kconfig
+> +++ b/arch/Kconfig
+> @@ -78,7 +78,7 @@ config OPTPROBES
+>  
+>  config UPROBES
+>  	bool "Transparent user-space probes (EXPERIMENTAL)"
+> -	depends on ARCH_SUPPORTS_UPROBES && PERF_EVENTS
+> +	depends on UPROBE_EVENTS && PERF_EVENTS
 
-I missed this one when removing the other stack allocated array since
-they are (rightly) frowned upon in the kernel.  I will replace with a
-malloc, unless you have a better suggestion?
+Is it UPROBE_EVENTS or UPROBE_EVENT?
 
+>  	default n
+>  	help
+>  	  Uprobes is the user-space counterpart to kprobes: they
+> diff --git a/kernel/trace/Kconfig b/kernel/trace/Kconfig
+> index ce5a5c5..ea4bff6 100644
+> --- a/kernel/trace/Kconfig
+> +++ b/kernel/trace/Kconfig
+> @@ -386,6 +386,22 @@ config KPROBE_EVENT
+>  	  This option is also required by perf-probe subcommand of perf tools.
+>  	  If you want to use perf tools, this option is strongly recommended.
+>  
+> +config UPROBE_EVENT
+
+Looks like UPROBE_EVENT.
+
+> +	bool "Enable uprobes-based dynamic events"
+> +	depends on ARCH_SUPPORTS_UPROBES
+> +	depends on MMU
+> +	select UPROBES
+> +	select PROBE_EVENTS
 >
-> >
-> >       buf[0] = reg & 0xff;
-> >       buf[1] = (reg >> 8) & 0xff;
-> > -     buf[2] = val;
-> > +     memcpy(&buf[2], val, len);
-> >
-> > -     if (i2c_master_send(client, buf, 3) != 3) {
-> > -             dev_err(&client->dev, "%s: i2c send failed\n", __func__);
-> > +     if (i2c_master_send(client, buf, count) != count) {
-> > +             dev_err(&client->dev, "%s: i2c write failed\n", __func__);
-> >               return -EIO;
-> >       }
-> >
-> > @@ -450,8 +446,7 @@ static int mxt_write_reg(struct i2c_client *client,
-> > u16 reg, u8 val)
-> >  static int mxt_read_object_table(struct i2c_client *client,
-> >                                     u16 reg, u8 *object_buf)
-> >  {
-> > -     return __mxt_read_reg(client, reg, MXT_OBJECT_SIZE,
-> > -                                object_buf);
-> > +     return mxt_read_reg(client, reg, MXT_OBJECT_SIZE, object_buf);
-> >  }
-> >
-> >  static struct mxt_object *
-> > @@ -481,8 +476,8 @@ static int mxt_read_message(struct mxt_data *data,
-> >               return -EINVAL;
-> >
-> >       reg = object->start_address;
-> > -     return __mxt_read_reg(data->client, reg,
-> > -                     sizeof(struct mxt_message), message);
-> > +     return mxt_read_reg(data->client, reg, sizeof(struct mxt_message),
-> > +                         message);
-> >  }
-> >
-> >  static int mxt_read_object(struct mxt_data *data,
-> > @@ -496,7 +491,7 @@ static int mxt_read_object(struct mxt_data *data,
-> >               return -EINVAL;
-> >
-> >       reg = object->start_address;
-> > -     return __mxt_read_reg(data->client, reg + offset, 1, val);
-> > +     return mxt_read_reg(data->client, reg + offset, 1, val);
-> >  }
-> >
-> >  static int mxt_write_object(struct mxt_data *data,
-> > @@ -510,7 +505,7 @@ static int mxt_write_object(struct mxt_data *data,
-> >               return -EINVAL;
-> >
-> >       reg = object->start_address;
-> > -     return mxt_write_reg(data->client, reg + offset, val);
-> > +     return mxt_write_reg(data->client, reg + offset, 1, &val);
-> >  }
-> >
-> >  static void mxt_input_report(struct mxt_data *data, int single_id)
-> > @@ -757,27 +752,27 @@ static int mxt_get_info(struct mxt_data *data)
-> >       int error;
-> >       u8 val;
-> >
-> > -     error = mxt_read_reg(client, MXT_FAMILY_ID, &val);
-> > +     error = mxt_read_reg(client, MXT_FAMILY_ID, 1, &val);
-> >       if (error)
-> >               return error;
-> >       info->family_id = val;
-> >
-> > -     error = mxt_read_reg(client, MXT_VARIANT_ID, &val);
-> > +     error = mxt_read_reg(client, MXT_VARIANT_ID, 1, &val);
-> >       if (error)
-> >               return error;
-> >       info->variant_id = val;
-> >
-> > -     error = mxt_read_reg(client, MXT_VERSION, &val);
-> > +     error = mxt_read_reg(client, MXT_VERSION, 1, &val);
-> >       if (error)
-> >               return error;
-> >       info->version = val;
-> >
-> > -     error = mxt_read_reg(client, MXT_BUILD, &val);
-> > +     error = mxt_read_reg(client, MXT_BUILD, 1, &val);
-> >       if (error)
-> >               return error;
-> >       info->build = val;
-> >
-> > -     error = mxt_read_reg(client, MXT_OBJECT_NUM, &val);
-> > +     error = mxt_read_reg(client, MXT_OBJECT_NUM, 1, &val);
-> >       if (error)
-> >               return error;
-> >       info->object_num = val;
-> > @@ -860,12 +855,12 @@ static int mxt_initialize(struct mxt_data *data)
-> >       msleep(MXT_RESET_TIME);
-> >
-> >       /* Update matrix size at info struct */
-> > -     error = mxt_read_reg(client, MXT_MATRIX_X_SIZE, &val);
-> > +     error = mxt_read_reg(client, MXT_MATRIX_X_SIZE, 1, &val);
-> >       if (error)
-> >               return error;
-> >       info->matrix_xsize = val;
-> >
-> > -     error = mxt_read_reg(client, MXT_MATRIX_Y_SIZE, &val);
-> > +     error = mxt_read_reg(client, MXT_MATRIX_Y_SIZE, 1, &val);
-> >       if (error)
-> >               return error;
-> >       info->matrix_ysize = val;
-> > --
-> > 1.7.7.3
-> >
->
-> Thanks,
-> Henrik
+
+-- 
+Sent by an employee of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+
