@@ -1,64 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754499Ab2DNPwF (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 14 Apr 2012 11:52:05 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:41396 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754332Ab2DNPwD convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 14 Apr 2012 11:52:03 -0400
-MIME-Version: 1.0
-In-Reply-To: <20120414111044.4930a5f3@stein>
-References: <20120412011313.GA23764@kroah.com>
-	<CAMP44s2q+bQE3-zsX4bs=sQDt4jf8eE5bwZ8V88UjodjRyAjog@mail.gmail.com>
-	<20120412144626.GA14868@kroah.com>
-	<CAMP44s1T4EVwpzDuV_vV0Zh-5WcPCwdw9eeOfL17Geqp_UFN-Q@mail.gmail.com>
-	<CAJ-VmonhwvnXPKa=LNOR4W0ZTXZqWmzw4UrsKLoE0YN_Bu0FzQ@mail.gmail.com>
-	<CAMP44s2JPvhEB6Eb049Z_bToAFncHKMEheuyaxyhC=bnh2GJVg@mail.gmail.com>
-	<20120413105746.10ffb120@stein>
-	<CAMP44s0RohH9tPiM5qCDT57XBV=iO66PZkSjYVxA6Usg1qJPtw@mail.gmail.com>
-	<20120413154216.476a02ac@stein>
-	<CAMP44s10KVwL5pY=Q5hWfyUtU6CvvZZ4Bcg-fEY9dAhSL306aQ@mail.gmail.com>
-	<20120413230525.GA13995@burratino>
-	<CAMP44s0OdVBTwVtCoru-xvB=LVtO56jgku7X-0a7mUz1=iVCzw@mail.gmail.com>
-	<20120414111044.4930a5f3@stein>
-Date: Sat, 14 Apr 2012 18:52:00 +0300
-Message-ID: <CAMP44s2jLv=VPgjiocmzzyUqzUYp4b7nFEU_XV6nT=n+OZ3RNw@mail.gmail.com>
-Subject: Re: [ 00/78] 3.3.2-stable review
-From: Felipe Contreras <felipe.contreras@gmail.com>
-To: Stefan Richter <stefanr@s5r6.in-berlin.de>
-Cc: Jonathan Nieder <jrnieder@gmail.com>, Adrian Chadd <adrian@freebsd.org>,
-        Greg KH <gregkh@linuxfoundation.org>, Sergio Correia <lists@uece.net>,
-        linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk,
-        linux-wireless Mailing List <linux-wireless@vger.kernel.org>,
-        Sujith Manoharan <c_manoha@qca.qualcomm.com>,
-        "ath9k-devel@lists.ath9k.org" <ath9k-devel@venema.h4ckr.net>,
-        "John W. Linville" <linville@tuxdriver.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	id S1754768Ab2DNPw2 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 14 Apr 2012 11:52:28 -0400
+Received: from a.ns.miles-group.at ([95.130.255.143]:47834 "EHLO radon.swed.at"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754528Ab2DNPwW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 14 Apr 2012 11:52:22 -0400
+From: Richard Weinberger <richard@nod.at>
+To: user-mode-linux-devel@lists.sourceforge.net
+Cc: linux-kernel@vger.kernel.org, hughd@google.com,
+        Richard Weinberger <richard@nod.at>, stable@kernel.org
+Subject: [PATCH 1/2] um: Implement a custom pte_same() function
+Date: Sat, 14 Apr 2012 17:52:10 +0200
+Message-Id: <1334418731-16498-1-git-send-email-richard@nod.at>
+X-Mailer: git-send-email 1.7.7.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Apr 14, 2012 at 12:10 PM, Stefan Richter
-<stefanr@s5r6.in-berlin.de> wrote:
-> On Apr 14 Felipe Contreras wrote:
+UML uses the _PAGE_NEWPAGE flag to mark pages which are not jet
+installed on the host side using mmap().
+pte_same() has to ignore this flag, otherwise unuse_pte_range()
+is unable to unuse the page because two identical
+page tables entries with different _PAGE_NEWPAGE flags would not
+match and swapoff() would never return.
 
->> Of course, although the difference with the stable kernel would be
->> very small if the only thing added is an extra rule for acceptance:
->> "It reverts an earlier patch to 'stable'."
->
-> It looks like a small difference on the surface, but it isn't.  It would
-> mean "yes, we /do/ forward ports in -stable too in some cases".
+CC: stable@kernel.org
+Analyzed-by: Hugh Dickins <hughd@google.com>
+Signed-off-by: Richard Weinberger <richard@nod.at>
+---
+ arch/um/include/asm/pgtable.h |    6 ++++++
+ 1 files changed, 6 insertions(+), 0 deletions(-)
 
-How? There's a lot reverts in mainline, where do they come from? Are
-they forward ports from some ghost trees?
-
-If you drop a patch from the stable review queue before it gets into a
-stable release, and then that patch is reverted from mainline, is that
-also a "forward port"?
-
+diff --git a/arch/um/include/asm/pgtable.h b/arch/um/include/asm/pgtable.h
+index 6a3f984..294254e 100644
+--- a/arch/um/include/asm/pgtable.h
++++ b/arch/um/include/asm/pgtable.h
+@@ -273,6 +273,12 @@ static inline void set_pte(pte_t *pteptr, pte_t pteval)
+ }
+ #define set_pte_at(mm,addr,ptep,pteval) set_pte(ptep,pteval)
+ 
++#define __HAVE_ARCH_PTE_SAME
++static inline int pte_same(pte_t pte_a, pte_t pte_b)
++{
++	return !((pte_val(pte_a) ^ pte_val(pte_b)) & ~_PAGE_NEWPAGE);
++}
++
+ /*
+  * Conversion functions: convert a page and protection to a page entry,
+  * and a page entry and page directory to the page they refer to.
 -- 
-Felipe Contreras
+1.7.7.3
+
