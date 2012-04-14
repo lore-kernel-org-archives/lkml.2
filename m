@@ -1,94 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755598Ab2DNDh3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Apr 2012 23:37:29 -0400
-Received: from mail-pz0-f52.google.com ([209.85.210.52]:49035 "EHLO
-	mail-pz0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755027Ab2DNDh1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Apr 2012 23:37:27 -0400
-Date: Sat, 14 Apr 2012 12:37:22 +0900
-From: Takuya Yoshikawa <takuya.yoshikawa@gmail.com>
-To: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-Cc: Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
-        LKML <linux-kernel@vger.kernel.org>, KVM <kvm@vger.kernel.org>
-Subject: Re: [PATCH v2 00/16] KVM: MMU: fast page fault
-Message-Id: <20120414123722.a94af3adb4ca80a6a5f6b477@gmail.com>
-In-Reply-To: <4F87FA69.5060106@linux.vnet.ibm.com>
-References: <4F87FA69.5060106@linux.vnet.ibm.com>
-X-Mailer: Sylpheed 3.2.0beta3 (GTK+ 2.24.6; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1755764Ab2DNDk5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Apr 2012 23:40:57 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:40258 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755027Ab2DNDk4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 Apr 2012 23:40:56 -0400
+Date: Sat, 14 Apr 2012 05:39:53 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        David Howells <dhowells@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Alexander Gordeev <agordeev@redhat.com>,
+        Chris Zankel <chris@zankel.net>, David Smith <dsmith@redhat.com>,
+        "Frank Ch. Eigler" <fche@redhat.com>,
+        Geert Uytterhoeven <geert@linux-m68k.org>,
+        Larry Woodman <lwoodman@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>, Tejun Heo <tj@kernel.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v4 1/3] task_work_add: generic process-context callbacks
+Message-ID: <20120414033953.GA29189@redhat.com>
+References: <20120414021201.GA23385@redhat.com> <20120414021220.GA23393@redhat.com> <CA+55aFyxV8v2mOjb1Ly=1ttPyLvUt6RZO8wgjD_9owtO=VM0hw@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CA+55aFyxV8v2mOjb1Ly=1ttPyLvUt6RZO8wgjD_9owtO=VM0hw@mail.gmail.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 13 Apr 2012 18:05:29 +0800
-Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com> wrote:
+probably I should also comment this part...
 
-> Thanks for Avi and Marcelo's review, i have simplified the whole things
-> in this version:
-> - it only fix the page fault with PFEC.P = 1 && PFEC.W = 0 that means
->   unlock set_spte path can be dropped.
-> 
-> - it only fixes the page fault caused by dirty-log
-> 
-> In this version, all the information we need is from spte, the
-> SPTE_ALLOW_WRITE bit and SPTE_WRITE_PROTECT bit:
->    - SPTE_ALLOW_WRITE is set if the gpte is writable and the pfn pointed
->      by the spte is writable on host.
->    - SPTE_WRITE_PROTECT is set if the spte is write-protected by shadow
->      page table protection.
-> 
-> All these bits can be protected by cmpxchg, now, all the things is fairly
-> simple than before. :)
+On 04/13, Linus Torvalds wrote:
+>
+> Alternatively, you must make the rule be that the data can only be
+> freed by the caller *if* it was returned from "task_work_cancel()".
 
-Well, could you remove cleanup patches not needed for "lock-less" from
-this patch series?
+Exactly.
 
-I want to see them separately.
+Once the caller does task_work_add(twork), it no longer "owns" this
+twork.
 
-Or everything was needed for "lock-less" ?
+But, if task_work_cancel() succeeds - you own it again.
 
-> Performance test:
-> 
-> autotest migration:
-> (Host: Intel(R) Xeon(R) CPU           X5690  @ 3.47GHz * 12 + 32G)
+> But then you can't allocate it on the stack any more, and have to
+> allocate it separately.
 
-Please explain what this test result means, not just numbers.
+Yes, unless you do task_work_add/cancel(current).
 
-There are many aspects:
-	- how fast migration can converge/complete
-	- how fast programs inside the guest can run during migration:
-	  -- throughput
-	  -- latency
-	- ...
+Oleg.
 
-I think lock-less will reduce latency a lot, but not sure about convergence:
-why it became fast?
-
-> - For ept:
-> 
-> Before:
->                     smp2.Fedora.16.64.migrate
-> Times   .unix      .with_autotest.dbench.unix     total
->  1       104           214                         323
->  2       68            238                         310
->  3       68            242                         314
-> 
-> After:
->                     smp2.Fedora.16.64.migrate
-> Times   .unix      .with_autotest.dbench.unix     total
->  1       101           190                         295
->  2       67            188                         259
->  3       66            217                         289
-> 
-
-As discussed on v1-threads, the main goal of this "lock-less" should be
-the elimination of mmu_lock contentions.
-
-So what we should measure is latency.
-
-Thanks,
-	Takuya
