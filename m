@@ -1,66 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753368Ab2DNJOA (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 14 Apr 2012 05:14:00 -0400
-Received: from mail-wi0-f172.google.com ([209.85.212.172]:49616 "EHLO
-	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752329Ab2DNJN6 (ORCPT
+	id S1753566Ab2DNJSM (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 14 Apr 2012 05:18:12 -0400
+Received: from casper.infradead.org ([85.118.1.10]:58416 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751114Ab2DNJSK convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 14 Apr 2012 05:13:58 -0400
-Date: Sat, 14 Apr 2012 11:13:52 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Sam Ravnborg <sam@ravnborg.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        David Miller <davem@davemloft.net>, akpm@linux-foundation.org,
-        sparclinux@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [GIT] Sparc
-Message-ID: <20120414091352.GA15373@gmail.com>
-References: <20120413.152455.900761231064979707.davem@davemloft.net>
- <CA+55aFwYWRv6+ix+UjT52UAn1rQeDpUKmbWq5SdHjZ0qHR2Cbg@mail.gmail.com>
- <20120413215012.GA31739@merkur.ravnborg.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120413215012.GA31739@merkur.ravnborg.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Sat, 14 Apr 2012 05:18:10 -0400
+Message-ID: <1334395065.2528.43.camel@twins>
+Subject: Re: sched: WARNING: at include/linux/cpumask.h:108
+ select_fallback_rq+0x241/0x280()
+From: Peter Zijlstra <peterz@infradead.org>
+To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+Cc: Sasha Levin <levinsasha928@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        "linux-kernel@vger.kernel.org List" <linux-kernel@vger.kernel.org>,
+        Dave Jones <davej@redhat.com>, mingo@kernel.org,
+        "Liu, Chuansheng" <chuansheng.liu@intel.com>, vapier@gentoo.org,
+        rusty@rustcorp.com.au
+Date: Sat, 14 Apr 2012 11:17:45 +0200
+In-Reply-To: <4F76B7B9.5080709@linux.vnet.ibm.com>
+References: <CA+1xoqcf6qJOouKXGEHsjWSBJdA7qtMnuVopq+hoHS+TX8fvSg@mail.gmail.com>
+	 <CA+1xoqcJAwgTgQG=nZPsH_SLkPFkGt2rUiVWGn5SO5JOAC1RAA@mail.gmail.com>
+	 <4F75BED4.9050005@linux.vnet.ibm.com> <1333118719.2960.27.camel@laptop>
+	 <4F76B7B9.5080709@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Mailer: Evolution 3.2.2- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-* Sam Ravnborg <sam@ravnborg.org> wrote:
-
-> On Fri, Apr 13, 2012 at 12:46:34PM -0700, Linus Torvalds wrote:
-> > On Fri, Apr 13, 2012 at 12:24 PM, David Miller <davem@davemloft.net> wrote:
-> > >
-> > > With special guest sparc64 assembler hacker, Paul E. McKenney.
-> > 
-> > Oh christ.  You're teaching *more* people about sparc64?
-> You do not get it...
+On Sat, 2012-03-31 at 13:22 +0530, Srivatsa S. Bhat wrote:
 > 
-> How many people are pondering around tweaking every bit of x86
-> specific code? A lot! Let them have fun competing :-)
+> One of the perils of using macros instead of true function calls :-(
+> 
+You can do type checking in macros too, its not pretty, but there's
+several such things already, see min()/max() for example.
 
-I wish it was so! In reality there's really just a handful of 
-people looking at actual x86 assembly code. I don't know whether 
-I've ever seen a conflict between substantial x86 assembly 
-patches, in the last 4 years since I co-maintain the x86 
-architecture ...
 
-So there's no competition worth speaking of in x86 assembly 
-land, let alone any harmful competition due to overcrowding.
-You guys are all welcome, and each of you will make a real 
-difference.
-
-Imagine what would happen to Linux adoption rate if DaveM 
-started hacking on assembly code that had more than a few
-dozen active users?? ;-)
-
-> In sparc land things are much more quiet.
-
-I guess when you are close to absolute zero degrees then even 
-liquid oxygen indeed looks incredibly hot ;-)
-
-Thanks,
-
-	Ingo
