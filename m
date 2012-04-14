@@ -1,54 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755562Ab2DNMCQ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 14 Apr 2012 08:02:16 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:63440 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754952Ab2DNMCO (ORCPT
+	id S1755587Ab2DNMGp (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 14 Apr 2012 08:06:45 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:40121 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755335Ab2DNMGn convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 14 Apr 2012 08:02:14 -0400
-Date: Sat, 14 Apr 2012 14:02:08 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: NeilBrown <neilb@suse.de>, Jim Kukunas <james.t.kukunas@linux.intel.com>,
-        x86@kernel.org, linux-kernel@vger.kernel.org, mingo@redhat.com,
-        tglx@linutronix.de, linux-raid@vger.kernel.org
-Subject: Re: arch/86: AVX RAID5 xor checksumming
-Message-ID: <20120414120208.GI24688@gmail.com>
-References: <1334078551-6859-1-git-send-email-james.t.kukunas@linux.intel.com>
- <4F846FBC.9060503@zytor.com>
- <20120411061442.2f839c77@notabene.brown>
- <4F84A40E.8040907@zytor.com>
+	Sat, 14 Apr 2012 08:06:43 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4F84A40E.8040907@zytor.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <alpine.LFD.2.00.1204141439440.1680@ja.ssi.bg>
+References: <1334409722-26315-1-git-send-email-levinsasha928@gmail.com> <alpine.LFD.2.00.1204141439440.1680@ja.ssi.bg>
+From: Sasha Levin <levinsasha928@gmail.com>
+Date: Sat, 14 Apr 2012 14:06:22 +0200
+Message-ID: <CA+1xoqe0q=XH7mO6=qZKPxqZK8LU2Kk5BjmfLeQ9LUD1Ku65YA@mail.gmail.com>
+Subject: Re: [PATCH v2 1/2] netfilter: ipvs: Verify that IP_VS protocol has
+ been registered
+To: Julian Anastasov <ja@ssi.bg>
+Cc: wensong@linux-vs.org, horms@verge.net.au, kaber@trash.net,
+        davem@davemloft.net, davej@redhat.com, netdev@vger.kernel.org,
+        lvs-devel@vger.kernel.org, netfilter-devel@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Sat, Apr 14, 2012 at 1:53 PM, Julian Anastasov <ja@ssi.bg> wrote:
+>        Ops. It seems now we expose old problem when
+> no protocol is configured. As this change probably will
+> go to stable kernels, lets make it correct. Can you
+> remove the defines around register_ip_vs_proto_netns, so
+> that it is always compiled. One that wants to save
+> memory will not disable all protocols. See commit
+> 091bb34c143674d37a59b2d4857534f7106c5d7d for reference.
 
-* H. Peter Anvin <hpa@zytor.com> wrote:
+Oh, so it wasn't getting built right now at all if we didn't select
+any protocols.
 
-> On 04/10/2012 01:14 PM, NeilBrown wrote:
-> >>
-> >> I think this (and the SSSE3 patches for RAID-6) should go in via the
-> >> RAID tree.  Neil, do you agree?
-> > 
-> > I'm happy to take the SSSE3 RAID-6 patches as they only affect lib/raid6, but
-> > I felt that this one - being purely in arch/x86 - should probably go via the
-> > x86 tree.
-> > However I'm flexible and if you (collectively) are happy with these patches
-> > going in through my tree, I'll do that.
-> > 
-> 
-> Go ahead and take them with my Acked-by: -- I think that's easier.
-
-Yeah - and x86/include/asm/xor*.h should probably be renamed 
-raid_xor*.h or so, to make this really obvious to do in the 
-future.
-
-Thanks,
-
-	Ingo
+How about moving those defines down to our loop as well? this way
+everything will behave exactly like it did before.
