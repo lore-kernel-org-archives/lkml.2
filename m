@@ -1,83 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755464Ab2DNLvR (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 14 Apr 2012 07:51:17 -0400
-Received: from mail.parknet.co.jp ([210.171.160.6]:49056 "EHLO
-	mail.parknet.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754952Ab2DNLvO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 14 Apr 2012 07:51:14 -0400
-From: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
-To: dedekind1@gmail.com
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Linux Kernel Maling List <linux-kernel@vger.kernel.org>,
-        Linux FS Maling List <linux-fsdevel@vger.kernel.org>,
-        Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
-Subject: Re: [PATCH v2 4/4] fat: switch to fsinfo_inode
-References: <1334326795-2446-1-git-send-email-dedekind1@gmail.com>
-	<1334326795-2446-5-git-send-email-dedekind1@gmail.com>
-	<87fwc6hazv.fsf@devron.myhome.or.jp> <1334399379.2263.8.camel@koala>
-	<87bomuha77.fsf@devron.myhome.or.jp> <1334401307.2263.24.camel@koala>
-Date: Sat, 14 Apr 2012 20:51:09 +0900
-In-Reply-To: <1334401307.2263.24.camel@koala> (Artem Bityutskiy's message of
-	"Sat, 14 Apr 2012 14:01:45 +0300")
-Message-ID: <873986h6qa.fsf@devron.myhome.or.jp>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1.50 (gnu/linux)
+	id S1755502Ab2DNLwy (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 14 Apr 2012 07:52:54 -0400
+Received: from ja.ssi.bg ([178.16.129.10]:43809 "EHLO ja.ssi.bg"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754952Ab2DNLww (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 14 Apr 2012 07:52:52 -0400
+Date: Sat, 14 Apr 2012 14:53:08 +0300 (EEST)
+From: Julian Anastasov <ja@ssi.bg>
+To: Sasha Levin <levinsasha928@gmail.com>
+cc: wensong@linux-vs.org, horms@verge.net.au, kaber@trash.net,
+        davem@davemloft.net, davej@redhat.com, netdev@vger.kernel.org,
+        lvs-devel@vger.kernel.org, netfilter-devel@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 1/2] netfilter: ipvs: Verify that IP_VS protocol has
+ been registered
+In-Reply-To: <1334409722-26315-1-git-send-email-levinsasha928@gmail.com>
+Message-ID: <alpine.LFD.2.00.1204141439440.1680@ja.ssi.bg>
+References: <1334409722-26315-1-git-send-email-levinsasha928@gmail.com>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Artem Bityutskiy <dedekind1@gmail.com> writes:
 
->> > Sorry, I do not see how this can be true. You have a just bunch of dirty
->> > inodes, and it does not matter in which order you flush them. See
->> > __fat_write_inode() - it does not change the FAT table and does not
->> > affect the FSINFO block.
->> >
->> > Besides, the _current_ code first writes out FSINFO, because VFS calls
->> > ->sync_fs() first, then it starts writing back, then VFS calls
->> > ->sync_fs() for the second time.
->
-> This is actually not exactly correct, but anyway, the first
-> ->sync_fs(sb, 0) may come to FAT FS while it is in the middle of writing
-> out the inodes.
->
-> BTW, fat_clusters_flush() does not wait on the FSINFO block, which I
-> think is a bug. I mean, it should call 'sync_dirty_buffer()'. I can
-> submit a separate patch later.
+	Hello,
 
-write_super() is update and dirty buffer. Actual flush is via blockdev
-(by historical reason), right? So, I think we don't need to wait at
-sync_fs() in FATfs case.
+On Sat, 14 Apr 2012, Sasha Levin wrote:
 
->> Common case is delayed allocation though, in the case of FATfs, it would
->> be only truncate by last iput().
->
-> Sorry, I do not understand what you mean. Do you still want me to take
-> care of the order or not? If yes, could you please explain why?
+> The registration of a protocol might fail, there were no checks
+> and all registrations were assumed to be correct. This lead to
+> NULL ptr dereferences when apps tried registering.
+> 
+> For example:
+> 
+> [ 1293.226051] BUG: unable to handle kernel NULL pointer dereference at 0000000000000018
+> [ 1293.227038] IP: [<ffffffff822aacb0>] tcp_register_app+0x60/0xb0
+> [ 1293.227038] PGD 391de067 PUD 6c20b067 PMD 0
+> [ 1293.227038] Oops: 0000 [#1] PREEMPT SMP
+> [ 1293.227038] CPU 1
+> [ 1293.227038] Pid: 19609, comm: trinity Tainted: G        W    3.4.0-rc1-next-20120405-sasha-dirty #57
+> [ 1293.227038] RIP: 0010:[<ffffffff822aacb0>]  [<ffffffff822aacb0>] tcp_register_app+0x60/0xb0
+> [ 1293.227038] RSP: 0018:ffff880038c1dd18  EFLAGS: 00010286
+> [ 1293.227038] RAX: ffffffffffffffc0 RBX: 0000000000001500 RCX: 0000000000010000
+> [ 1293.227038] RDX: 0000000000000000 RSI: ffff88003a2d5888 RDI: 0000000000000282
+> [ 1293.227038] RBP: ffff880038c1dd48 R08: 0000000000000000 R09: 0000000000000000
+> [ 1293.227038] R10: 0000000000000000 R11: 0000000000000000 R12: ffff88003a2d5668
+> [ 1293.227038] R13: ffff88003a2d5988 R14: ffff8800696a8ff8 R15: 0000000000000000
+> [ 1293.227038] FS:  00007f01930d9700(0000) GS:ffff88007ce00000(0000) knlGS:0000000000000000
+> [ 1293.227038] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+> [ 1293.227038] CR2: 0000000000000018 CR3: 0000000065dfc000 CR4: 00000000000406e0
+> [ 1293.227038] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+> [ 1293.227038] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+> [ 1293.227038] Process trinity (pid: 19609, threadinfo ffff880038c1c000, task ffff88002dc73000)
+> [ 1293.227038] Stack:
+> [ 1293.227038]  ffff880038c1dd48 00000000fffffff4 ffff8800696aada0 ffff8800694f5580
+> [ 1293.227038]  ffffffff8369f1e0 0000000000001500 ffff880038c1dd98 ffffffff822a716b
+> [ 1293.227038]  0000000000000000 ffff8800696a8ff8 0000000000000015 ffff8800694f5580
+> [ 1293.227038] Call Trace:
+> [ 1293.227038]  [<ffffffff822a716b>] ip_vs_app_inc_new+0xdb/0x180
+> [ 1293.227038]  [<ffffffff822a7258>] register_ip_vs_app_inc+0x48/0x70
+> [ 1293.227038]  [<ffffffff822b2fea>] __ip_vs_ftp_init+0xba/0x140
+> [ 1293.227038]  [<ffffffff821c9060>] ops_init+0x80/0x90
+> [ 1293.227038]  [<ffffffff821c90cb>] setup_net+0x5b/0xe0
+> [ 1293.227038]  [<ffffffff821c9416>] copy_net_ns+0x76/0x100
+> [ 1293.227038]  [<ffffffff810dc92b>] create_new_namespaces+0xfb/0x190
+> [ 1293.227038]  [<ffffffff810dca21>] unshare_nsproxy_namespaces+0x61/0x80
+> [ 1293.227038]  [<ffffffff810afd1f>] sys_unshare+0xff/0x290
+> [ 1293.227038]  [<ffffffff8187622e>] ? trace_hardirqs_on_thunk+0x3a/0x3f
+> [ 1293.227038]  [<ffffffff82665539>] system_call_fastpath+0x16/0x1b
+> [ 1293.227038] Code: 89 c7 e8 34 91 3b 00 89 de 66 c1 ee 04 31 de 83 e6 0f 48 83 c6 22 48 c1 e6 04 4a 8b 14 26 49 8d 34 34 48 8d 42 c0 48 39 d6 74 13 <66> 39 58 58 74 22 48 8b 48 40 48 8d 41 c0 48 39 ce 75 ed 49 8d
+> [ 1293.227038] RIP  [<ffffffff822aacb0>] tcp_register_app+0x60/0xb0
+> [ 1293.227038]  RSP <ffff880038c1dd18>
+> [ 1293.227038] CR2: 0000000000000018
+> [ 1293.379284] ---[ end trace 364ab40c7011a009 ]---
+> [ 1293.381182] Kernel panic - not syncing: Fatal exception in interrupt
+> 
+> Signed-off-by: Sasha Levin <levinsasha928@gmail.com>
+> ---
+>  net/netfilter/ipvs/ip_vs_proto.c |   23 ++++++++++++++++++-----
+>  1 files changed, 18 insertions(+), 5 deletions(-)
+> 
+> diff --git a/net/netfilter/ipvs/ip_vs_proto.c b/net/netfilter/ipvs/ip_vs_proto.c
+> index f843a88..57a242d 100644
+> --- a/net/netfilter/ipvs/ip_vs_proto.c
+> +++ b/net/netfilter/ipvs/ip_vs_proto.c
+> @@ -316,22 +316,35 @@ ip_vs_tcpudp_debug_packet(int af, struct ip_vs_protocol *pp,
+>   */
+>  int __net_init ip_vs_protocol_net_init(struct net *net)
+>  {
+> +	int i, ret;
+> +	static struct ip_vs_protocol *protos[] = {
+>  #ifdef CONFIG_IP_VS_PROTO_TCP
+> -	register_ip_vs_proto_netns(net, &ip_vs_protocol_tcp);
+> +        &ip_vs_protocol_tcp,
+>  #endif
+>  #ifdef CONFIG_IP_VS_PROTO_UDP
+> -	register_ip_vs_proto_netns(net, &ip_vs_protocol_udp);
+> +	&ip_vs_protocol_udp,
+>  #endif
+>  #ifdef CONFIG_IP_VS_PROTO_SCTP
+> -	register_ip_vs_proto_netns(net, &ip_vs_protocol_sctp);
+> +	&ip_vs_protocol_sctp,
+>  #endif
+>  #ifdef CONFIG_IP_VS_PROTO_AH
+> -	register_ip_vs_proto_netns(net, &ip_vs_protocol_ah);
+> +	&ip_vs_protocol_ah,
+>  #endif
+>  #ifdef CONFIG_IP_VS_PROTO_ESP
+> -	register_ip_vs_proto_netns(net, &ip_vs_protocol_esp);
+> +	&ip_vs_protocol_esp,
+>  #endif
+> +	};
+> +
+> +	for (i = 0; i < ARRAY_SIZE(protos); i++) {
+> +		ret = register_ip_vs_proto_netns(net, protos[i]);
 
-Yes, I still worry about order. About ->sync_fs(), you are looking the
-following?
+	Ops. It seems now we expose old problem when
+no protocol is configured. As this change probably will
+go to stable kernels, lets make it correct. Can you
+remove the defines around register_ip_vs_proto_netns, so
+that it is always compiled. One that wants to save
+memory will not disable all protocols. See commit
+091bb34c143674d37a59b2d4857534f7106c5d7d for reference.
 
-__sync_filesystem(sb, 0)
-__sync_filesystem(sb, 1)
+Regards
 
-Those are doing
-
-1) try flush dirty all data at first without blocking
-	__sync_filesystem(sb, 0)
-2) wait some data of (1), and complete inodes work
-	part of __sync_filesystem(sb, 1)
-3) write super block to buffer
-	->sync_fs() in __sync_filesystem(sb, 1)
-4) flush and wait all metadata on blockdev
-	__sync_blockdev() in __sync_filesystem(sb, 1)
-
-right?
-
-In your patch, we lose (3). (And I can't remember why I did it though,
-your patch lose write_super() in ->put_super() too.)
--- 
-OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+--
+Julian Anastasov <ja@ssi.bg>
