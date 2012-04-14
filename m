@@ -1,40 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755835Ab2DNTGM (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 14 Apr 2012 15:06:12 -0400
-Received: from intermatrixgroup.ru ([195.178.208.66]:48529 "EHLO
-	tservice.net.ru" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754322Ab2DNTGK (ORCPT
+	id S1755841Ab2DNTPS (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 14 Apr 2012 15:15:18 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:53219 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752253Ab2DNTPQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 14 Apr 2012 15:06:10 -0400
-Date: Sat, 14 Apr 2012 23:06:02 +0400
-From: Evgeniy Polyakov <zbr@ioremap.net>
-To: Dan Carpenter <dan.carpenter@oracle.com>
-Cc: Markus Franke <franm@hrz.tu-chemnitz.de>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
-Subject: Re: [patch] w1: w1_ds28e04: unlock on error path in
- w1_f1C_write_pio()
-Message-ID: <20120414190602.GB6482@ioremap.net>
-References: <20120413133906.GB26645@elgon.mountain>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120413133906.GB26645@elgon.mountain>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Sat, 14 Apr 2012 15:15:16 -0400
+From: Sasha Levin <levinsasha928@gmail.com>
+To: torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        peterz@infradead.org, mingo@elte.hu, hpa@zytor.com, tglx@linutronix.de,
+        srivatsa.bhat@linux.vnet.ibm.com
+Cc: linux-kernel@vger.kernel.org, Sasha Levin <levinsasha928@gmail.com>
+Subject: [RFC 0/3] Extend type checking macros
+Date: Sat, 14 Apr 2012 18:14:42 -0400
+Message-Id: <1334441685-4438-1-git-send-email-levinsasha928@gmail.com>
+X-Mailer: git-send-email 1.7.8.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 13, 2012 at 04:39:06PM +0300, Dan Carpenter (dan.carpenter@oracle.com) wrote:
-> We should unlock here before returning.
+Commit e3831ed ("sched: Fix incorrect usage of for_each_cpu_mask() in
+select_fallback_rq()") fixes a very non obvious bug in select_fallback_rq()
+which was caused by passing 'struct cpumask' instead of 'struct cpumask *'
+to a macro in include/linux/cpumask.h
 
-Looks good, thank you, Dan
+This bug was quite a pain to debug since it doesn't raise any warnings or
+erros during compilation, and the assumption of the kernel hackers who try
+to fix a bug is that if the compiler didn't complain, they passed the right
+types to functions.
 
-> Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+This series of patches adds some more type checking macros to the forgotten
+include/linux/typecheck.h, it modified for_each_cpu_mask() to use those
+macros to trigger a warning when needed (this is a nice demonstration of how
+the bug mentioned before would have been visible with these checks), and
+modifies min()/max() and friend to use these macros as well to show their
+value in reducing duplicate code and improving readability.
 
-Greg, please pull it into your tree
-Acked-by: Evgeniy Polyakov <zbr@ioremap.net>
+Sasha Levin (3):
+  typecheck: extend typecheck.h with more useful typechecking macros
+  sched: add type checks to for_each_cpu_mask()
+  kernel.h: use new typechecking macros in min()/max() and friends
+
+ include/linux/cpumask.h   |    4 ++-
+ include/linux/kernel.h    |   47 ++++++++++++++------------------------------
+ include/linux/typecheck.h |   42 ++++++++++++++++++++++++++++++++-------
+ 3 files changed, 52 insertions(+), 41 deletions(-)
 
 -- 
-	Evgeniy Polyakov
+1.7.8.5
+
