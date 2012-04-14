@@ -1,56 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755108Ab2DNQDI (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 14 Apr 2012 12:03:08 -0400
-Received: from 1wt.eu ([62.212.114.60]:65161 "EHLO 1wt.eu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754671Ab2DNQDH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 14 Apr 2012 12:03:07 -0400
-Date: Sat, 14 Apr 2012 18:02:42 +0200
-From: Willy Tarreau <w@1wt.eu>
-To: Felipe Contreras <felipe.contreras@gmail.com>
-Cc: Jonathan Nieder <jrnieder@gmail.com>,
-        Stefan Richter <stefanr@s5r6.in-berlin.de>,
-        Adrian Chadd <adrian@freebsd.org>,
-        Greg KH <gregkh@linuxfoundation.org>, Sergio Correia <lists@uece.net>,
-        linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk,
-        linux-wireless Mailing List <linux-wireless@vger.kernel.org>,
-        Sujith Manoharan <c_manoha@qca.qualcomm.com>,
-        "ath9k-devel@lists.ath9k.org" <ath9k-devel@venema.h4ckr.net>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: Re: [ 00/78] 3.3.2-stable review
-Message-ID: <20120414160242.GG19802@1wt.eu>
-References: <CAJ-VmonhwvnXPKa=LNOR4W0ZTXZqWmzw4UrsKLoE0YN_Bu0FzQ@mail.gmail.com> <CAMP44s2JPvhEB6Eb049Z_bToAFncHKMEheuyaxyhC=bnh2GJVg@mail.gmail.com> <20120413105746.10ffb120@stein> <CAMP44s0RohH9tPiM5qCDT57XBV=iO66PZkSjYVxA6Usg1qJPtw@mail.gmail.com> <20120413154216.476a02ac@stein> <CAMP44s10KVwL5pY=Q5hWfyUtU6CvvZZ4Bcg-fEY9dAhSL306aQ@mail.gmail.com> <20120413230525.GA13995@burratino> <CAMP44s0OdVBTwVtCoru-xvB=LVtO56jgku7X-0a7mUz1=iVCzw@mail.gmail.com> <20120414054401.GC19802@1wt.eu> <CAMP44s3uTTWSJCohLGf64vV6h6PgSPJ++UrmeRkRWebJWjvJ_A@mail.gmail.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAMP44s3uTTWSJCohLGf64vV6h6PgSPJ++UrmeRkRWebJWjvJ_A@mail.gmail.com>
-User-Agent: Mutt/1.4.2.3i
+	id S1755135Ab2DNQKQ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 14 Apr 2012 12:10:16 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:54926 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753243Ab2DNQKO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 14 Apr 2012 12:10:14 -0400
+From: Subodh Nijsure <subodh.nijsure@gmail.com>
+To: Subodh Nijsure <subodh.nijsure@gmail.com>,
+        Artem Bityutskiy <dedekind1@gmail.com>,
+        Adrian Hunter <adrian.hunter@intel.com>, linux-mtd@lists.infradead.org
+Cc: linux-kernel@vger.kernel.org, Subodh Nijsure <snijsure@grid-net.com>
+Subject: [PATCH 1/1] Remove UBIFS_FS_XATTR config option.
+Date: Sat, 14 Apr 2012 09:09:57 -0700
+Message-Id: <1334419797-28995-1-git-send-email-snijsure@grid-net.com>
+X-Mailer: git-send-email 1.7.5.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Apr 14, 2012 at 06:43:06PM +0300, Felipe Contreras wrote:
-> I understand you use 'stable' as guarantee, and I know it works, but
-> do you *need* this guarantee?
-> 
-> And before you go on why you need this guarantee to avoid fixes to be
-> lost, this is an *entirely different thing*; we are not talking about
-> fixes in 'stable' that don't exist in mainline--for which there is
-> evidence that those caused problems in the past, we are talking about
-> reverting patches from 'stable' that are not part of the upstream
-> release from where the 'stable' branch was forked--*nobody* has showed
-> any evidence that this has happened before and caused issues.
+Remove CONFIG_UBIFS_FS_XATTR configuration option and associated
+UBIFS_FS_XATTR ifdefs.
 
-Why make a special case for the version from which stable was derived ?
-That doesn't make sense at all to me since by definition, *all* patches
-that are in stable were not in this version !
+Testing:
+       Tested using integck while using nandsim on x86 & MX28 based 
+       platform with Micron MT29F2G08ABAEAH4 nand.
 
-Take it simpler if you want : *all* patches in stable need an upstream
-commit ID, whether they're backports or reverts. You don't revert a
-patch from stable, you backport a revert from upstream.
+Signed-off-by: Subodh Nijsure <snijsure@grid-net.com>
+---
+ fs/ubifs/Kconfig   |    6 ------
+ fs/ubifs/Makefile  |    3 +--
+ fs/ubifs/dir.c     |    2 --
+ fs/ubifs/file.c    |    2 --
+ fs/ubifs/journal.c |    2 --
+ 5 files changed, 1 insertions(+), 14 deletions(-)
 
-Willy
+diff --git a/fs/ubifs/Kconfig b/fs/ubifs/Kconfig
+index f8b0160..e49a23c 100644
+--- a/fs/ubifs/Kconfig
++++ b/fs/ubifs/Kconfig
+@@ -11,12 +11,6 @@ config UBIFS_FS
+ 	help
+ 	  UBIFS is a file system for flash devices which works on top of UBI.
+ 
+-config UBIFS_FS_XATTR
+-	bool "Extended attributes support"
+-	depends on UBIFS_FS
+-	help
+-	  This option enables support of extended attributes.
+-
+ config UBIFS_FS_ADVANCED_COMPR
+ 	bool "Advanced compression options"
+ 	depends on UBIFS_FS
+diff --git a/fs/ubifs/Makefile b/fs/ubifs/Makefile
+index 80e93c3..4878614 100644
+--- a/fs/ubifs/Makefile
++++ b/fs/ubifs/Makefile
+@@ -3,7 +3,6 @@ obj-$(CONFIG_UBIFS_FS) += ubifs.o
+ ubifs-y += shrinker.o journal.o file.o dir.o super.o sb.o io.o
+ ubifs-y += tnc.o master.o scan.o replay.o log.o commit.o gc.o orphan.o
+ ubifs-y += budget.o find.o tnc_commit.o compress.o lpt.o lprops.o
+-ubifs-y += recovery.o ioctl.o lpt_commit.o tnc_misc.o
++ubifs-y += recovery.o ioctl.o lpt_commit.o tnc_misc.o xattr.o
+ 
+ ubifs-$(CONFIG_UBIFS_FS_DEBUG) += debug.o
+-ubifs-$(CONFIG_UBIFS_FS_XATTR) += xattr.o
+diff --git a/fs/ubifs/dir.c b/fs/ubifs/dir.c
+index ec9f187..ad6e550 100644
+--- a/fs/ubifs/dir.c
++++ b/fs/ubifs/dir.c
+@@ -1187,12 +1187,10 @@ const struct inode_operations ubifs_dir_inode_operations = {
+ 	.rename      = ubifs_rename,
+ 	.setattr     = ubifs_setattr,
+ 	.getattr     = ubifs_getattr,
+-#ifdef CONFIG_UBIFS_FS_XATTR
+ 	.setxattr    = ubifs_setxattr,
+ 	.getxattr    = ubifs_getxattr,
+ 	.listxattr   = ubifs_listxattr,
+ 	.removexattr = ubifs_removexattr,
+-#endif
+ };
+ 
+ const struct file_operations ubifs_dir_operations = {
+diff --git a/fs/ubifs/file.c b/fs/ubifs/file.c
+index 5c8f6dc..0fe640c 100644
+--- a/fs/ubifs/file.c
++++ b/fs/ubifs/file.c
+@@ -1562,12 +1562,10 @@ const struct address_space_operations ubifs_file_address_operations = {
+ const struct inode_operations ubifs_file_inode_operations = {
+ 	.setattr     = ubifs_setattr,
+ 	.getattr     = ubifs_getattr,
+-#ifdef CONFIG_UBIFS_FS_XATTR
+ 	.setxattr    = ubifs_setxattr,
+ 	.getxattr    = ubifs_getxattr,
+ 	.listxattr   = ubifs_listxattr,
+ 	.removexattr = ubifs_removexattr,
+-#endif
+ };
+ 
+ const struct inode_operations ubifs_symlink_inode_operations = {
+diff --git a/fs/ubifs/journal.c b/fs/ubifs/journal.c
+index 2f438ab..bc75e9d 100644
+--- a/fs/ubifs/journal.c
++++ b/fs/ubifs/journal.c
+@@ -1267,7 +1267,6 @@ out_free:
+ 	return err;
+ }
+ 
+-#ifdef CONFIG_UBIFS_FS_XATTR
+ 
+ /**
+  * ubifs_jnl_delete_xattr - delete an extended attribute.
+@@ -1462,4 +1461,3 @@ out_free:
+ 	return err;
+ }
+ 
+-#endif /* CONFIG_UBIFS_FS_XATTR */
+-- 
+1.7.5.4
 
