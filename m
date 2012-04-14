@@ -1,42 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755587Ab2DNMGp (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 14 Apr 2012 08:06:45 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:40121 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755335Ab2DNMGn convert rfc822-to-8bit (ORCPT
+	id S1755613Ab2DNMJ4 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 14 Apr 2012 08:09:56 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:41740 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755365Ab2DNMJy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 14 Apr 2012 08:06:43 -0400
+	Sat, 14 Apr 2012 08:09:54 -0400
+Message-ID: <4F896787.4050108@gmail.com>
+Date: Sat, 14 Apr 2012 14:03:19 +0200
+From: Marco Stornelli <marco.stornelli@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; it; rv:1.9.2.28) Gecko/20120306 SUSE/3.1.20 Thunderbird/3.1.20
 MIME-Version: 1.0
-In-Reply-To: <alpine.LFD.2.00.1204141439440.1680@ja.ssi.bg>
-References: <1334409722-26315-1-git-send-email-levinsasha928@gmail.com> <alpine.LFD.2.00.1204141439440.1680@ja.ssi.bg>
-From: Sasha Levin <levinsasha928@gmail.com>
-Date: Sat, 14 Apr 2012 14:06:22 +0200
-Message-ID: <CA+1xoqe0q=XH7mO6=qZKPxqZK8LU2Kk5BjmfLeQ9LUD1Ku65YA@mail.gmail.com>
-Subject: Re: [PATCH v2 1/2] netfilter: ipvs: Verify that IP_VS protocol has
- been registered
-To: Julian Anastasov <ja@ssi.bg>
-Cc: wensong@linux-vs.org, horms@verge.net.au, kaber@trash.net,
-        davem@davemloft.net, davej@redhat.com, netdev@vger.kernel.org,
-        lvs-devel@vger.kernel.org, netfilter-devel@vger.kernel.org,
+To: Matthew Garrett <mjg@redhat.com>
+CC: hch@infradead.org, linux-fsdevel@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Subject: Re: [PATCH] hfsplus: Fix bless ioctl when used with hardlinks
+References: <1334326014-15244-1-git-send-email-mjg@redhat.com>
+In-Reply-To: <1334326014-15244-1-git-send-email-mjg@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-15; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Apr 14, 2012 at 1:53 PM, Julian Anastasov <ja@ssi.bg> wrote:
->        Ops. It seems now we expose old problem when
-> no protocol is configured. As this change probably will
-> go to stable kernels, lets make it correct. Can you
-> remove the defines around register_ip_vs_proto_netns, so
-> that it is always compiled. One that wants to save
-> memory will not disable all protocols. See commit
-> 091bb34c143674d37a59b2d4857534f7106c5d7d for reference.
+Il 13/04/2012 16:06, Matthew Garrett ha scritto:
+> HFS+ doesn't really implement hard links - instead, hardlinks are indicated
+> by a magic file type which refers to an indirect node in a hidden
+> directory. The spec indicates that stat() should return the inode number
+> of the indirect node, but it turns out that this doesn't satisfy the
+> firmware when it's looking for a bootloader - it wants the catalog ID of
+> the hardlink file instead. Fix up this case.
+>
+> Signed-off-by: Matthew Garrett<mjg@redhat.com>
+> ---
+>   fs/hfsplus/ioctl.c |    9 +++++++--
+>   1 file changed, 7 insertions(+), 2 deletions(-)
+>
+> diff --git a/fs/hfsplus/ioctl.c b/fs/hfsplus/ioctl.c
+> index c640ba5..5ee0681 100644
+> --- a/fs/hfsplus/ioctl.c
+> +++ b/fs/hfsplus/ioctl.c
+> @@ -31,6 +31,7 @@ static int hfsplus_ioctl_bless(struct file *file, int __user *user_flags)
+>   	struct hfsplus_sb_info *sbi = HFSPLUS_SB(inode->i_sb);
+>   	struct hfsplus_vh *vh = sbi->s_vhdr;
+>   	struct hfsplus_vh *bvh = sbi->s_backup_vhdr;
+> +	int cnid = (u32)(unsigned long)dentry->d_fsdata;
+>
 
-Oh, so it wasn't getting built right now at all if we didn't select
-any protocols.
+Why a double cast?
 
-How about moving those defines down to our loop as well? this way
-everything will behave exactly like it did before.
+Marco
