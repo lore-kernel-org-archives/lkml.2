@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755477Ab2DNSZ4 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 14 Apr 2012 14:25:56 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:59568 "EHLO
+	id S1755407Ab2DNS0d (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 14 Apr 2012 14:26:33 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:59584 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752524Ab2DNSZz (ORCPT
+	with ESMTP id S1752812Ab2DNS0b (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 14 Apr 2012 14:25:55 -0400
-Date: Sat, 14 Apr 2012 11:25:12 -0700
+	Sat, 14 Apr 2012 14:26:31 -0400
+Date: Sat, 14 Apr 2012 11:26:02 -0700
 From: tip-bot for Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-Message-ID: <tip-7396fa818d6278694a44840f389ddc40a3269a9a@git.kernel.org>
+Message-ID: <tip-cbc91f71b51b8335f1fc7ccfca8011f31a717367@git.kernel.org>
 Cc: mingo@kernel.org, torvalds@linux-foundation.org, peterz@infradead.org,
         anton@redhat.com, rostedt@goodmis.org, jkenisto@linux.vnet.ibm.com,
         tglx@linutronix.de, oleg@redhat.com, linux-mm@kvack.org, hpa@zytor.com,
@@ -23,12 +23,12 @@ Reply-To: mingo@kernel.org, torvalds@linux-foundation.org,
         andi@firstfloor.org, hch@infradead.org, ananth@in.ibm.com,
         masami.hiramatsu.pt@hitachi.com, acme@infradead.org,
         srikar@linux.vnet.ibm.com
-In-Reply-To: <20120411103516.23245.2700.sendpatchset@srdronam.in.ibm.com>
-References: <20120411103516.23245.2700.sendpatchset@srdronam.in.ibm.com>
+In-Reply-To: <20120411103527.23245.9835.sendpatchset@srdronam.in.ibm.com>
+References: <20120411103527.23245.9835.sendpatchset@srdronam.in.ibm.com>
 To: linux-tip-commits@vger.kernel.org
 Subject: [tip:perf/uprobes] uprobes/core:
-  Make background page replacement logic account for rss_stat counters
-Git-Commit-ID: 7396fa818d6278694a44840f389ddc40a3269a9a
+  Decrement uprobe count before the pages are unmapped
+Git-Commit-ID: cbc91f71b51b8335f1fc7ccfca8011f31a717367
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -37,26 +37,38 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Sat, 14 Apr 2012 11:25:19 -0700 (PDT)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Sat, 14 Apr 2012 11:26:08 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  7396fa818d6278694a44840f389ddc40a3269a9a
-Gitweb:     http://git.kernel.org/tip/7396fa818d6278694a44840f389ddc40a3269a9a
+Commit-ID:  cbc91f71b51b8335f1fc7ccfca8011f31a717367
+Gitweb:     http://git.kernel.org/tip/cbc91f71b51b8335f1fc7ccfca8011f31a717367
 Author:     Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-AuthorDate: Wed, 11 Apr 2012 16:05:16 +0530
+AuthorDate: Wed, 11 Apr 2012 16:05:27 +0530
 Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Sat, 14 Apr 2012 13:25:47 +0200
+CommitDate: Sat, 14 Apr 2012 13:25:48 +0200
 
-uprobes/core: Make background page replacement logic account for rss_stat counters
+uprobes/core: Decrement uprobe count before the pages are unmapped
 
-Background page replacement logic adds a new anonymous page
-instead of a file backed (while inserting a breakpoint) /
-anonymous page (while removing a breakpoint).
+Uprobes has a callback (uprobe_munmap()) in the unmap path to
+maintain the uprobes count.
 
-Hence the uprobes logic should take care to update the
-task->ss_stat counters accordingly.
+In the exit path this callback gets called in unlink_file_vma().
+However by the time unlink_file_vma() is called, the pages would
+have been unmapped (in unmap_vmas()) and the task->rss_stat counts
+accounted (in zap_pte_range()).
+
+If the exiting process has probepoints, uprobe_munmap() checks if
+the breakpoint instruction was around before decrementing the probe
+count.
+
+This results in a file backed page being reread by uprobe_munmap()
+and hence it does not find the breakpoint.
+
+This patch fixes this problem by moving the callback to
+unmap_single_vma(). Since unmap_single_vma() may not unmap the
+complete vma, add start and end parameters to uprobe_munmap().
 
 This bug became apparent courtesy of commit c3f0327f8e9d
 ("mm: add rss counters consistency check").
@@ -74,25 +86,106 @@ Cc: Arnaldo Carvalho de Melo <acme@infradead.org>
 Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
 Cc: Anton Arapov <anton@redhat.com>
 Cc: Peter Zijlstra <peterz@infradead.org>
-Link: http://lkml.kernel.org/r/20120411103516.23245.2700.sendpatchset@srdronam.in.ibm.com
+Link: http://lkml.kernel.org/r/20120411103527.23245.9835.sendpatchset@srdronam.in.ibm.com
 Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- kernel/events/uprobes.c |    5 +++++
- 1 files changed, 5 insertions(+), 0 deletions(-)
+ include/linux/uprobes.h |    5 +++--
+ kernel/events/uprobes.c |    4 ++--
+ mm/memory.c             |    3 +++
+ mm/mmap.c               |    8 ++++----
+ 4 files changed, 12 insertions(+), 8 deletions(-)
 
+diff --git a/include/linux/uprobes.h b/include/linux/uprobes.h
+index d594d3b..efe4b33 100644
+--- a/include/linux/uprobes.h
++++ b/include/linux/uprobes.h
+@@ -107,7 +107,7 @@ extern bool __weak is_swbp_insn(uprobe_opcode_t *insn);
+ extern int uprobe_register(struct inode *inode, loff_t offset, struct uprobe_consumer *uc);
+ extern void uprobe_unregister(struct inode *inode, loff_t offset, struct uprobe_consumer *uc);
+ extern int uprobe_mmap(struct vm_area_struct *vma);
+-extern void uprobe_munmap(struct vm_area_struct *vma);
++extern void uprobe_munmap(struct vm_area_struct *vma, unsigned long start, unsigned long end);
+ extern void uprobe_free_utask(struct task_struct *t);
+ extern void uprobe_copy_process(struct task_struct *t);
+ extern unsigned long __weak uprobe_get_swbp_addr(struct pt_regs *regs);
+@@ -134,7 +134,8 @@ static inline int uprobe_mmap(struct vm_area_struct *vma)
+ {
+ 	return 0;
+ }
+-static inline void uprobe_munmap(struct vm_area_struct *vma)
++static inline void
++uprobe_munmap(struct vm_area_struct *vma, unsigned long start, unsigned long end)
+ {
+ }
+ static inline void uprobe_notify_resume(struct pt_regs *regs)
 diff --git a/kernel/events/uprobes.c b/kernel/events/uprobes.c
-index 29e881b..c5caeec 100644
+index c5caeec..985be4d 100644
 --- a/kernel/events/uprobes.c
 +++ b/kernel/events/uprobes.c
-@@ -160,6 +160,11 @@ static int __replace_page(struct vm_area_struct *vma, struct page *page, struct
- 	get_page(kpage);
- 	page_add_new_anon_rmap(kpage, vma, addr);
+@@ -1112,7 +1112,7 @@ int uprobe_mmap(struct vm_area_struct *vma)
+ /*
+  * Called in context of a munmap of a vma.
+  */
+-void uprobe_munmap(struct vm_area_struct *vma)
++void uprobe_munmap(struct vm_area_struct *vma, unsigned long start, unsigned long end)
+ {
+ 	struct list_head tmp_list;
+ 	struct uprobe *uprobe, *u;
+@@ -1138,7 +1138,7 @@ void uprobe_munmap(struct vm_area_struct *vma)
+ 		list_del(&uprobe->pending_list);
+ 		vaddr = vma_address(vma, uprobe->offset);
  
-+	if (!PageAnon(page)) {
-+		dec_mm_counter(mm, MM_FILEPAGES);
-+		inc_mm_counter(mm, MM_ANONPAGES);
-+	}
+-		if (vaddr >= vma->vm_start && vaddr < vma->vm_end) {
++		if (vaddr >= start && vaddr < end) {
+ 			/*
+ 			 * An unregister could have removed the probe before
+ 			 * unmap. So check before we decrement the count.
+diff --git a/mm/memory.c b/mm/memory.c
+index 6105f47..bf8b403 100644
+--- a/mm/memory.c
++++ b/mm/memory.c
+@@ -1307,6 +1307,9 @@ static void unmap_single_vma(struct mmu_gather *tlb,
+ 	if (end <= vma->vm_start)
+ 		return;
+ 
++	if (vma->vm_file)
++		uprobe_munmap(vma, start, end);
 +
- 	flush_cache_page(vma, addr, pte_pfn(*ptep));
- 	ptep_clear_flush(vma, addr, ptep);
- 	set_pte_at_notify(mm, addr, ptep, mk_pte(kpage, vma->vm_page_prot));
+ 	if (vma->vm_flags & VM_ACCOUNT)
+ 		*nr_accounted += (end - start) >> PAGE_SHIFT;
+ 
+diff --git a/mm/mmap.c b/mm/mmap.c
+index b17a39f..15c21a1 100644
+--- a/mm/mmap.c
++++ b/mm/mmap.c
+@@ -218,7 +218,6 @@ void unlink_file_vma(struct vm_area_struct *vma)
+ 		mutex_lock(&mapping->i_mmap_mutex);
+ 		__remove_shared_vm_struct(vma, file, mapping);
+ 		mutex_unlock(&mapping->i_mmap_mutex);
+-		uprobe_munmap(vma);
+ 	}
+ }
+ 
+@@ -548,10 +547,11 @@ again:			remove_next = 1 + (end > next->vm_end);
+ 		mapping = file->f_mapping;
+ 		if (!(vma->vm_flags & VM_NONLINEAR)) {
+ 			root = &mapping->i_mmap;
+-			uprobe_munmap(vma);
++			uprobe_munmap(vma, vma->vm_start, vma->vm_end);
+ 
+ 			if (adjust_next)
+-				uprobe_munmap(next);
++				uprobe_munmap(next, next->vm_start,
++							next->vm_end);
+ 		}
+ 
+ 		mutex_lock(&mapping->i_mmap_mutex);
+@@ -632,7 +632,7 @@ again:			remove_next = 1 + (end > next->vm_end);
+ 
+ 	if (remove_next) {
+ 		if (file) {
+-			uprobe_munmap(next);
++			uprobe_munmap(next, next->vm_start, next->vm_end);
+ 			fput(file);
+ 			if (next->vm_flags & VM_EXECUTABLE)
+ 				removed_exe_file_vma(mm);
