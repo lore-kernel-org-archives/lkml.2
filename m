@@ -1,77 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751887Ab2DOVKb (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 15 Apr 2012 17:10:31 -0400
-Received: from mailout-de.gmx.net ([213.165.64.22]:53882 "HELO
-	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751708Ab2DOVKZ (ORCPT
+	id S1751821Ab2DOV1n (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 15 Apr 2012 17:27:43 -0400
+Received: from swampdragon.chaosbits.net ([90.184.90.115]:22005 "EHLO
+	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751538Ab2DOV1m (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 15 Apr 2012 17:10:25 -0400
-X-Authenticated: #12255092
-X-Provags-ID: V01U2FsdGVkX1/DhcZatSjDFUU3NVU5kM+muP/Kl3NVxYc8g8Uadk
-	Yp9ijWEO/k9F1O
-From: Peter Huewe <peterhuewe@gmx.de>
-To: Thomas Winischhofer <thomas@winischhofer.net>
-Cc: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
-        linux-fbdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Peter Huewe <peterhuewe@gmx.de>
-Subject: [PATCH 2/2] video/sis: Remove unused structs SiS_SDRDRAM_TYPE/SiS_DDRDRAM_TYPE
-Date: Sun, 15 Apr 2012 23:10:09 +0200
-Message-Id: <1334524209-20518-2-git-send-email-peterhuewe@gmx.de>
-X-Mailer: git-send-email 1.7.3.4
-In-Reply-To: <1334524209-20518-1-git-send-email-peterhuewe@gmx.de>
-References: <1334524209-20518-1-git-send-email-peterhuewe@gmx.de>
-X-Y-GMX-Trusted: 0
+	Sun, 15 Apr 2012 17:27:42 -0400
+Date: Sun, 15 Apr 2012 23:27:38 +0200 (CEST)
+From: Jesper Juhl <jj@chaosbits.net>
+To: Xi Wang <xi.wang@gmail.com>
+cc: Randy Dunlap <rdunlap@xenotime.net>, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Jens Axboe <axboe@kernel.dk>,
+        Dan Carpenter <dan.carpenter@oracle.com>,
+        David Rientjes <rientjes@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Pekka Enberg <penberg@kernel.org>
+Subject: Re: [PATCH] CodingStyle: add kmalloc_array() to memory allocators
+In-Reply-To: <1334396894-27176-1-git-send-email-xi.wang@gmail.com>
+Message-ID: <alpine.LNX.2.00.1204152326530.18522@swampdragon.chaosbits.net>
+References: <1334396894-27176-1-git-send-email-xi.wang@gmail.com>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch removes the unused structs SiS_SDRDRAM_TYPE and SiS_DDRDRAM_TYPE
-from init.h
+On Sat, 14 Apr 2012, Xi Wang wrote:
 
-These are not used anywhere so we can delete them.
+> Add the new kmalloc_array() to the list of general-purpose memory
+> allocators in chapter 14.
+> 
+> Signed-off-by: Xi Wang <xi.wang@gmail.com>
+> Cc: Jesper Juhl <jj@chaosbits.net>
+> Cc: Jens Axboe <axboe@kernel.dk>
+> Cc: Dan Carpenter <dan.carpenter@oracle.com>
+> Cc: David Rientjes <rientjes@google.com>
+> Cc: Andrew Morton <akpm@linux-foundation.org>
+> Cc: Pekka Enberg <penberg@kernel.org>
 
-Signed-off-by: Peter Huewe <peterhuewe@gmx.de>
----
- drivers/video/sis/init.h |   25 -------------------------
- 1 files changed, 0 insertions(+), 25 deletions(-)
+Looks OK to me.
 
-diff --git a/drivers/video/sis/init.h b/drivers/video/sis/init.h
-index 26ffb3e..5c5a96b 100644
---- a/drivers/video/sis/init.h
-+++ b/drivers/video/sis/init.h
-@@ -125,31 +125,6 @@ static const unsigned short __devinitconst SiS_DRAMType[17][5] = {
- 	{0x09,0x08,0x01,0x01,0x00}
- };
- 
--static const unsigned short SiS_SDRDRAM_TYPE[13][5] =
--{
--	{ 2,12, 9,64,0x35},
--	{ 1,13, 9,64,0x44},
--	{ 2,12, 8,32,0x31},
--	{ 2,11, 9,32,0x25},
--	{ 1,12, 9,32,0x34},
--	{ 1,13, 8,32,0x40},
--	{ 2,11, 8,16,0x21},
--	{ 1,12, 8,16,0x30},
--	{ 1,11, 9,16,0x24},
--	{ 1,11, 8, 8,0x20},
--	{ 2, 9, 8, 4,0x01},
--	{ 1,10, 8, 4,0x10},
--	{ 1, 9, 8, 2,0x00}
--};
--
--static const unsigned short SiS_DDRDRAM_TYPE[4][5] =
--{
--	{ 2,12, 9,64,0x35},
--	{ 2,12, 8,32,0x31},
--	{ 2,11, 8,16,0x21},
--	{ 2, 9, 8, 4,0x01}
--};
--
- static const unsigned char SiS_MDA_DAC[] =
- {
- 	0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,
+Acked-by: Jesper Juhl <jj@chaosbits.net>
+
 -- 
-1.7.3.4
+Jesper Juhl <jj@chaosbits.net>       http://www.chaosbits.net/
+Don't top-post http://www.catb.org/jargon/html/T/top-post.html
+Plain text mails only, please.
 
