@@ -1,61 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752506Ab2DOKOO (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 15 Apr 2012 06:14:14 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:62242 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750963Ab2DOKOM convert rfc822-to-8bit (ORCPT
+	id S1752863Ab2DOKSg (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 15 Apr 2012 06:18:36 -0400
+Received: from relay01.digicable.hu ([92.249.128.189]:42256 "EHLO
+	relay01.digicable.hu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750963Ab2DOKSf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 15 Apr 2012 06:14:12 -0400
+	Sun, 15 Apr 2012 06:18:35 -0400
+Message-ID: <4F8AA073.8090904@freemail.hu>
+Date: Sun, 15 Apr 2012 12:18:27 +0200
+From: =?UTF-8?B?TsOpbWV0aCBNw6FydG9u?= <nm127@freemail.hu>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; hu-HU; rv:1.8.1.21) Gecko/20090402 SeaMonkey/1.1.16
 MIME-Version: 1.0
-Reply-To: mtk.manpages@gmail.com
-In-Reply-To: <20120415065401.GA25380@moon>
-References: <1330518197-12825-1-git-send-email-gorcunov@openvz.org>
- <1330518197-12825-2-git-send-email-gorcunov@openvz.org> <CAKgNAkgwapZXw5gR_sSGyfufybY52S4qD1MjPDKs+6tBcgFJUg@mail.gmail.com>
- <20120415065401.GA25380@moon>
-From: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
-Date: Sun, 15 Apr 2012 22:13:51 +1200
-Message-ID: <CAKgNAkjMpjmKCD3oQa7qTeH5gXydDgMj5TjmKKtyXYzV9f--fA@mail.gmail.com>
-Subject: Re: [PATCH 1/2] prctl: Add PR_SET_MM option description
-To: Cyrill Gorcunov <gorcunov@openvz.org>
-Cc: Pavel Emelyanov <xemul@parallels.com>, linux-man@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>, Tejun Heo <tj@kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+To: Thomas Meyer <thomas@m3y3r.de>
+CC: Arjan van de Ven <arjan@linux.intel.com>, discuss <discuss@lesswatts.org>,
+        Powertop Mailing List <power@bughost.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [SOLVED] where can I find powertop sources?
+References: <4F89304F.1070406@freemail.hu> <1334398320.1431.31.camel@localhost.localdomain>
+In-Reply-To: <1334398320.1431.31.camel@localhost.localdomain>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+X-Original: 188.143.92.151
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Apr 15, 2012 at 6:54 PM, Cyrill Gorcunov <gorcunov@openvz.org> wrote:
-> On Sun, Apr 15, 2012 at 03:48:18PM +1200, Michael Kerrisk (man-pages) wrote:
->> Cyrill,
+Thomas Meyer wrote:
+> Am Samstag, den 14.04.2012, 10:07 +0200 schrieb NÃ©meth MÃ¡rton:
+>> Hi,
+> 
+> hi,
+> 
+>> I'm having trouble to fetch powertop sources. I found the article
+>> titled "Announcing the beta release of PowerTOP 2.0" from January 5 2011
+>> at http://lwn.net/Articles/421733/ but it seems that the links are not
+>> working anymore:
 >>
->> While reviewing your patch to the prctl() manual page, I noticed the
->> following code inkernel/sys.c::prctl_set_mm():
->>
->>         if (opt != PR_SET_MM_START_BRK && opt != PR_SET_MM_BRK) {
->>                 /* It must be existing VMA */
->>                 if (!vma || vma->vm_start > addr)
->>                         goto out;
->>         }
->>
->> At this point, the code causes an exit with error set to zero (i.e.,
->> success). This looks unintended to me. Is the code correct? I suspect
->> a return of -EFAULT or -ENOMEM is warranted.
->
-> Hi Michael, yup, -EINVAL escaped (I think EFAULT or ENOMEM is not really
-> good here). I'll fix and send update. Thanks!
+>> $ git clone git://git.kernel.org/pub/scm/status/powertop/powertop.git
+>> Cloning into powertop...
+>> warning: You appear to have cloned an empty repository.
+>> $ wget http://www.kernel.org/pub/linux/status/powertop/powertop-1.97.tar.bz2
+>> --2012-04-14 10:04:55--  http://www.kernel.org/pub/linux/status/powertop/powertop-1.97.tar.bz2
+>> Resolving www.kernel.org... 149.20.20.133, 149.20.4.69
+>> Connecting to www.kernel.org|149.20.20.133|:80... connected.
+>> HTTP request sent, awaiting response... 403 Forbidden
+>> 2012-04-14 10:04:56 ERROR 403: Forbidden.
+> 
+> http://www.mail-archive.com/power@bughost.org/msg02155.html
+> 
+> The repository is at https://github.com/fenrus75/powertop or
+> git://github.com/fenrus75/powertop.git
+> 
+> with kind regards
+> thomas
 
-For what it's worth (I am no expert), it looks to me as though EFAULT
-or ENOMEM is more usual after a failed find_vma(). Furthermore, EINVAL
-is already heavily used, so not very informative as an error.
+Thanks, both of them works:
 
-Cheers,
+$ git clone https://github.com/fenrus75/powertop.git
+Cloning into powertop...
+remote: Counting objects: 3381, done.
+remote: Compressing objects: 100% (866/866), done.
+remote: Total 3381 (delta 2563), reused 3321 (delta 2503)
+Receiving objects: 100% (3381/3381), 529.06 KiB | 366 KiB/s, done.
+Resolving deltas: 100% (2563/2563), done.
 
-Michael
 
+$ git clone git://github.com/fenrus75/powertop.git
+Cloning into powertop...
+remote: Counting objects: 3381, done.
+remote: Compressing objects: 100% (866/866), done.
+remote: Total 3381 (delta 2563), reused 3321 (delta 2503)
+Receiving objects: 100% (3381/3381), 529.06 KiB | 326 KiB/s, done.
+Resolving deltas: 100% (2563/2563), done.
 
--- 
-Michael Kerrisk
-Linux man-pages maintainer; http://www.kernel.org/doc/man-pages/
-Author of "The Linux Programming Interface"; http://man7.org/tlpi/
+Regards,
+
+	MÃ¡rton NÃ©meth
