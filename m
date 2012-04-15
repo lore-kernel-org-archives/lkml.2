@@ -1,78 +1,144 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754499Ab2DOJdJ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 15 Apr 2012 05:33:09 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:38475 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752302Ab2DOJdG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 15 Apr 2012 05:33:06 -0400
-Message-ID: <4F8A95CB.9070104@redhat.com>
-Date: Sun, 15 Apr 2012 12:32:59 +0300
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120316 Thunderbird/11.0
+	id S1754572Ab2DOJrK (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 15 Apr 2012 05:47:10 -0400
+Received: from nm23.bullet.mail.bf1.yahoo.com ([98.139.212.182]:21966 "HELO
+	nm23.bullet.mail.bf1.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1751534Ab2DOJrH convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 15 Apr 2012 05:47:07 -0400
+X-Yahoo-Newman-Property: ymail-3
+X-Yahoo-Newman-Id: 643983.18732.bm@omp1068.mail.bf1.yahoo.com
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
+  s=s1024; d=yahoo.com;
+  h=X-YMail-OSG:Received:X-Mailer:Message-ID:Date:From:Reply-To:Subject:To:MIME-Version:Content-Type:Content-Transfer-Encoding;
+  b=UYwsF43C9OSqfEdTCqFFfqeNrcAJHjtYRyDaJ2v0d2dzEWnUylHh3Mv9CMlHx9IsO7wjH0YdVP6uj3xkXGkW1loysXeKyFfs0pMvKksTK2xKgRcBOnQgAG5vf50oMOHS7uIBc8y9NiMoYAVTjkIfLPKl/i46lLaiYsK2MAVCgag=;
+X-YMail-OSG: LO5PZJgVM1kWNzdeFhc9mvbIHI0JrE1iTDZrNXEUr0E4hUF
+ SLo7o4vE.7N7gbSXJYOxPKY4LC3FlutGysHYLXGm.olK2tnBi9fx5KMK3ILD
+ kT7UEGrA5xn.5qkSerqGmRYvhDktrsjdMwpg1UKj.2.ojv6vGrb.3UaawDuQ
+ 7iFO0AQm4XTyNi65LaVmMlcef1As8caCAq4mA1tEc.B1K1i.J4TTo6HiI0eP
+ P6jjDeIhzY_I4.fm3iYxb5G9pcKwtifvTQXnX8UbIreiadIMoZh5vZIy_WEb
+ 5fL_kjwlFlLYZR94WYs9_LBdanxSdXZLc6CV8nc4jtzcfvODyioRvktT52Rq
+ SY7.OU.ltl5nQhoS6eG8eNOl9_xPwkvRnAJZ9jTOp5JUKvd6X5H4zQqxU9Sv
+ 9Dj8BlJXZmYWhoOooiiW3Aou85kTbrmEFQNO1MJomN0LWjK7SRBYrZtOEMwi
+ 4PcDkosAmfwqDyX9hYk3D.kgjRiYPs2WAFlMqLCyGzrbVlvOimHINvKd7ysq
+ bQNe1dJBSbpEzYOnE6PURblGEmILT8uuSUk3wvLeimyE6XToq.0ESSID8xw-
+ -
+X-Mailer: YahooMailWebService/0.8.117.340979
+Message-ID: <1334483226.20721.YahooMailNeo@web162003.mail.bf1.yahoo.com>
+Date: Sun, 15 Apr 2012 02:47:06 -0700 (PDT)
+From: PINTU KUMAR <pintu_agarwal@yahoo.com>
+Reply-To: PINTU KUMAR <pintu_agarwal@yahoo.com>
+Subject: [NEW]: Introducing shrink_all_memory from user space
+To: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "pintu.k@samsung.com" <pintu.k@samsung.com>
 MIME-Version: 1.0
-To: Takuya Yoshikawa <takuya.yoshikawa@gmail.com>
-CC: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>,
-        Marcelo Tosatti <mtosatti@redhat.com>,
-        Xiao Guangrong <xiaoguangrong.eric@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>, KVM <kvm@vger.kernel.org>
-Subject: Re: [PATCH 00/13] KVM: MMU: fast page fault
-References: <4F742951.7080003@linux.vnet.ibm.com> <4F82E04E.6000900@redhat.com> <20120409175829.GB21894@amt.cnet> <4F8329D3.7000605@gmail.com> <20120409194614.GB23053@amt.cnet> <4F840DD2.3090101@redhat.com> <20120410204031.ffb5b976225ac9fe6dae474e@gmail.com> <4F842074.1050108@linux.vnet.ibm.com> <20120411211514.35db29c11460516e604059b6@gmail.com> <4F857B61.9080602@linux.vnet.ibm.com> <20120411231441.9d0984672dd252b806f99128@gmail.com> <20120413232528.c5ddbddb3cc0870d6e85a332@gmail.com>
-In-Reply-To: <20120413232528.c5ddbddb3cc0870d6e85a332@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=iso-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/13/2012 05:25 PM, Takuya Yoshikawa wrote:
-> I forgot to say one important thing -- I might give you wrong impression.
->
-> I am perfectly fine with your lock-less work.  It is really nice!
->
-> The reason I say much about O(1) is that O(1) and rmap based
-> GET_DIRTY_LOG have fundamentally different characteristics.
->
-> I am thinking really seriously how to make dirty page tracking work
-> well with QEMU in the future.
->
-> For example, I am thinking about multi-threaded and fine-grained
-> GET_DIRTY_LOG.
->
-> If we use rmap based GET_DIRTY_LOG, we can restrict write protection to
-> only a selected area of one guest memory slot.
->
-> So we may be able to make each thread process dirty pages independently
-> from other threads by calling GET_DIRTY_LOG for its own area.
->
-> But I know that O(1) has its own good point.
-> So please wait a bit.  I will write up what I am thinking or send patches.
->
-> Anyway, I am looking forward to your lock-less work!
-> It will improve the current GET_DIRTY_LOG performance.
->
->
+Dear All,
 
-Just to throw another idea into the mix - we can have write-protect-less
-dirty logging, too.  Instead of write protection, drop the dirty bit,
-and check it again when reading the dirty log.  It might look like we're
-accessing the spte twice here, but it's actually just once - when we
-check it to report for GET_DIRTY_LOG call N, we also prepare it for call
-N+1.
+This is regarding a small proposal for shrink_all_memory( ) function which is found in mm/vmscan.c.
+For those who are not aware, this function helps in reclaiming specified amount of physical memory and returns number of freed pages.
 
-This doesn't work for EPT, which lacks a dirty bit.  But we can emulate
-it: take a free bit and call it spte.NOTDIRTY, when it is set, we also
-clear spte.WRITE, and teach the mmu that if it sees spte.NOTDIRTY and
-can just set spte.WRITE and clear spte.NOTDIRTY.  Now that looks exactly
-like Xiao's lockless write enabling.
+Currently this function is under CONFIG_HIBERNATION flag, so cannot be used by others without enabling hibernation.
+Moreover this function is not exported to the outside world, so no driver can use it directly without including EXPORT_SYMBOL(shrink_all_memory) and recompiling the kernel.
+The purpose of using it under hibernation(kernel/power/snapshot.c) is to regain enough physical pages to create hibernation image.
 
-Another note: O(1) write protection is not mutually exclusive with rmap
-based write protection.  In GET_DIRTY_LOG, you write protect everything,
-and proceed to write enable on faults.  When you reach the page table
-level, you perform the rmap check to see if you should write protect or
-not.  With role.direct=1 the check is very cheap (and sometimes you can
-drop the entire page table and replace it with a large spte).
+The same can be useful for some drivers who wants to allocate large contiguous memory (in MBs) but his/her system is in very bad state and could not do so without rebooting.
+Due to this bad state of the system the user space application will be badly hurt on performance, and there could be a need to quickly reclaim all physical memory from user space.
+This could be very helpful for small embedded products and smart phones where rebooting is never a preferred choice.
 
--- 
-error compiling committee.c: too many arguments to function
+With this support in kernel, a small utility can be developed in user space which user can run and reclaim as many physical pages and noticed that his system performance is increased without rebooting.
 
+To make this work, I have performed a sample experiment on my ubuntu(10.x) machine running with kernel-3.3.0. 
+
+Also I performed the similar experiment of one of our Samsung smart phones as well.
+
+Following are the results from Ubuntu:
+
+1) I downloaded kernel3.3.0 and made the respective changes in mm/vmscan.c. That is added EXPORT_SYMBOL(shrink_all_memory) under the function shrink_all_memory( ).
+    (Note: CONFIG_HIBERNATION was already enabled for my system.)
+
+2) Then I build the kernel and installed it on my Ubuntu PC.
+
+3) After that I have developed a small kernel module (miscdevice: /dev/shrinkmem) to call shrink_all_memory( ) under my driver write( ) function.
+
+4) Then from user space I just need to do this: 
+
+    # echo 100 > /dev/shrinkmem   (To reclaim 100MB of physical memory without reboot)
+
+
+The results that were obtained with this experiment is as follows:
+
+1) At some point of time, the buddyinfo and free pages on my Ubuntu were as follows:
+root@pintu-ubuntu:~/PintuHomeTest/KERNEL_ORG# cat /proc/buddyinfo ; free -tmNode 0, zone      DMA    468     23      0      0      0      0      0      0      0      0      0
+Node 0, zone   Normal    898    161     38      8      0      0      0      0      0      0      0
+                 total       used       free     shared    buffers     cached
+Mem:           497        489          7          0         37        405
+-/+ buffers/cache:         47        449
+Swap:         1458        158       1300
+Total:        1956        648       1308
+
+
+2) After doing "echo 100 > /dev/shrinkmem" :
+[19653.833916] [SHRINKMEM]: memsize(in MB) = 100
+[19653.863618] <SHRINKMEM>: Number of Pages Freed: 26756
+[19653.863664] [SHRINKMEM] : Device is Closed....
+
+Node 0, zone      DMA    411    166     51      5      0      0      0      0      0      0      0
+Node 0, zone   Normal   2915   3792   2475   1335    730     23      0      0      0      0      0
+                 total       used       free     shared    buffers     cached
+Mem:           497        323        173          0         37        238
+-/+ buffers/cache:         47        449
+Swap:         1458        158       1300
+Total:        1956        481       1474
+
+
+3) After running again with : echo 512 > /dev/shrinkmem
+[21961.064534] [SHRINKMEM]: memsize(in MB) = 512
+[21961.109497] <SHRINKMEM>: Number of Pages Freed: 61078
+[21961.109562] [SHRINKMEM] : Device is Closed....
+Node 0, zone      DMA    116     99     87     58     16      6      1      0      0      0      0
+Node 0, zone   Normal   6697   6939   5529   3756   1442    203     17      0      0      0      0
+                 total       used       free     shared    buffers     cached
+Mem:           497         87        410          0         37          9
+-/+ buffers/cache:         40        456
+Swap:         1458        158       1300
+Total:        1956        245       1711
+
+
+4) Thus in both the cases huge number of free pages were reclaimed. 
+
+5) After running this on my system, the performance was improved quickly.
+
+6) I performed the same experiment on our Samsung Smart phones as well. And I have seen a drastic improve in performance after running this for 3/4 times.
+    In case of phones it is more helpful as there is no swap space.
+
+7) Your feedback and suggestion is important. Based on the feedback, I can plan to submit the patches officially after performing basic cleanups.
+
+
+Future Work
+==========
+Our final goal is to use it during lowmem notifier where shrink_all_memory will be called automatically in background if the memory pressure falls below certain limit defined by the system.
+For example we can measure the percentage memory fragmentation level of the system across each zone and if the fragmentation percentage goes above say 80-85% during lowmem notifier, we can invoke shrink_all_memory() in background.
+
+This can be used by some application which requires large mmap or shared memory mapping.
+
+This can be even using inside the multimedia drivers that requires large contiguous memory to check if that many memory pages can be reclaimed or not.
+
+
+Please provide your valuable feedback and suggestion.
+
+
+Thank you very much !
+
+
+With Regards,
+Pintu Kumar
