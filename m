@@ -1,69 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752422Ab2DOXiR (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 15 Apr 2012 19:38:17 -0400
-Received: from mx.logic.tuwien.ac.at ([128.130.175.19]:45425 "EHLO
-	mx.logic.tuwien.ac.at" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752261Ab2DOXiQ (ORCPT
+	id S1752450Ab2DOXnI (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 15 Apr 2012 19:43:08 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:35373 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752273Ab2DOXnG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 15 Apr 2012 19:38:16 -0400
-Date: Mon, 16 Apr 2012 08:38:13 +0900
-From: Norbert Preining <preining@logic.at>
-To: linux-kernel@vger.kernel.org
-Cc: Takashi Iwai <tiwai@suse.de>
-Subject: Realtek codec eating up battery?
-Message-ID: <20120415233813.GA10731@gamma.logic.tuwien.ac.at>
+	Sun, 15 Apr 2012 19:43:06 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <20120415223808.GA26214@redhat.com>
+References: <20120414235238.GA11131@redhat.com> <CA+55aFxJykAy4=9WVOnUOy1PUBYLmPy9mJmydoYZpQEbSkfvJQ@mail.gmail.com>
+ <20120415223808.GA26214@redhat.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Sun, 15 Apr 2012 16:42:45 -0700
+X-Google-Sender-Auth: GaKp3nDfMSxfKNrOvxW3u6_Ekr8
+Message-ID: <CA+55aFwpts0X=V67+wUchJN9Bgjh17eZJqOo0Y0oc2Mzbfa7QA@mail.gmail.com>
+Subject: Re: ptrace && fpu_lazy_restore
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, Chuck Ebbert <chuckebbert.lk@gmail.com>,
+        Jan Kratochvil <jan.kratochvil@redhat.com>,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dear all,
+On Sun, Apr 15, 2012 at 3:38 PM, Oleg Nesterov <oleg@redhat.com> wrote:
+>
+> Suppose that fpu_owner_task exits on CPU_0, and then fork() reuses
+> its task_struct. The new child is still fpu_owner_task and this is
+> obviously wrong (unless of course another thread uses fpu).
+>
+> Initially I thought this should be fixed too, but it seems that
+> "p->fpu_counter = 0" in copy_thread() saves us.
+>
+> This looks a bit fragile... And could you confirm this is really
+> fine?
 
-(please Cc)
+That one is done by design. That fpu_counter=0 in copy_thread() is
+there explicitly to avoid the problem. Although it's possible that we
+should reset last_cpu instead. However, that line was actually added
+before the lazy thing - see commit cea20ca3f318.
 
-running a recent git kernel from today, I see the following in powertop:
-  1.02 W    100.0%    Device         Audio codec hwC0D0: Realtek
+> Btw, do we really need this "old->thread.fpu.last_cpu = ~0" in
+> the "else" branch of switch_fpu_prepare()? Just curious, I guees
+> this doesn't matter since we reset old->fpu_counter. But if we
+> can remove this line, then perhaps we can another optimization.
 
-I am quite sure that was not the case in former times, so I wanted to ask
-if you think this is a kernel change or a user space change that is
-responsible for that?
+Possibly not needed, but quite frankly, I'd rather have last_cpu never
+contain some stale value.
 
-AFAIR before I was running on top of git 7c427f45, now
-on git 6c23b8e9 and there have been quite some changes regarding realtek
-in the meantime:
-    * tag 'sound-3.4' of git://git.kernel.org/pub/scm/linux/kernel/git/tiwai/sound:
-      ALSA: hda/realtek - Fix mem leak (and rid us of trailing whitespace).
-      ALSA: hda/realtek - Add quirk for Mac Pro 5,1 machines
-      ALSA: hda/realtek - Add a fixup entry for Acer Aspire 8940G
-      ALSA: hda/realtek - Fix GPIO1 setup for Acer Aspire 4930 & co
-      ALSA: hda/realtek - Add a few ALC882 model strings back
-
-output of dmesg wrt realtek/hda:
-[   20.952213] snd_hda_intel 0000:00:1b.0: irq 47 for MSI/MSI-X
-[   21.004975] hda_codec: ALC262: SKU not ready 0x411111f0
-[   21.008167] input: HDA Digital PCBeep as /devices/pci0000:00/0000:00:1b.0/input/input10
-[   21.011878] input: HDA Intel Mic as /devices/pci0000:00/0000:00:1b.0/sound/card0/input11
-[   21.013351] input: HDA Intel Headphone as /devices/pci0000:00/0000:00:1b.0/sound/card0/input12
-
-
-Thanks a lot and all the best
-
-Norbert
-------------------------------------------------------------------------
-Norbert Preining            preining@{jaist.ac.jp, logic.at, debian.org}
-JAIST, Japan                                 TeX Live & Debian Developer
-DSA: 0x09C5B094   fp: 14DF 2E6C 0307 BE6D AD76  A9C0 D2BF 4AA3 09C5 B094
-------------------------------------------------------------------------
-`You know they've reintroduced the death penalty for
-insurance company directors?'
-No I didn't. For what offence?'
-Trillian frowned.
-`What do you mean, offence?'
-`I see.'
-                 --- Evidence that there will be some justice in the Universe
-                 --- eventually.
-                 --- Douglas Adams, The Hitchhikers Guide to the Galaxy
+                  Linus
