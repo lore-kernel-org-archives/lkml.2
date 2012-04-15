@@ -1,84 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751358Ab2DOTsY (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 15 Apr 2012 15:48:24 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:44208 "EHLO ogre.sisk.pl"
+	id S1751350Ab2DOTyv (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 15 Apr 2012 15:54:51 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:13771 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751072Ab2DOTsW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 15 Apr 2012 15:48:22 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Mikko Vinni <mmvinni@yahoo.com>
-Subject: Re: [linux-pm] "i8042: Can't reactivate AUX port" after s2ram on 3.4-rc2
-Date: Sun, 15 Apr 2012 21:52:55 +0200
-User-Agent: KMail/1.13.6 (Linux/3.4.0-rc2+; KDE/4.6.0; x86_64; ; )
-Cc: Bjorn Helgaas <bhelgaas@google.com>,
-        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Allen Kay <allen.m.kay@intel.com>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>
-References: <1334310754.17013.YahooMailNeo@web161804.mail.bf1.yahoo.com> <1334486385.82898.YahooMailNeo@web161803.mail.bf1.yahoo.com> <201204152030.23148.rjw@sisk.pl>
-In-Reply-To: <201204152030.23148.rjw@sisk.pl>
+	id S1750968Ab2DOTyu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 15 Apr 2012 15:54:50 -0400
+Date: Sun, 15 Apr 2012 21:53:51 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Ingo Molnar <mingo@elte.hu>, Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
+        LKML <linux-kernel@vger.kernel.org>, Linux-mm <linux-mm@kvack.org>,
+        Andi Kleen <andi@firstfloor.org>,
+        Christoph Hellwig <hch@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Anton Arapov <anton@redhat.com>
+Subject: Re: [RFC 0/6] uprobes: kill uprobes_srcu/uprobe_srcu_id
+Message-ID: <20120415195351.GA22095@redhat.com>
+References: <20120405222024.GA19154@redhat.com> <1334409396.2528.100.camel@twins> <20120414205200.GA9083@redhat.com> <1334487062.2528.113.camel@twins>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201204152152.56048.rjw@sisk.pl>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1334487062.2528.113.camel@twins>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sunday, April 15, 2012, Rafael J. Wysocki wrote:
-> On Sunday, April 15, 2012, Mikko Vinni wrote:
-> > From: Rafael J. Wysocki:
-> > 
-> > >>  > Please change that dev_dbg() in pci_restore_state() into dev_info()
-> > >>  > and see how many times it gets printed with the commit applied (not 
-> > > reverted).
-> > >> 
-> > >> 
-> > >>  I ran the dmesg through "uniq -c" and it looks like this:
-> > >> 
-> > >>        1 ACPI: Low-level resume complete
-> > >>        1 PM: Restoring platform NVS memory
-> > >>        1 Enabling non-boot CPUs ...
-> > >>        1 Booting Node 0 Processor 1 APIC 0x1
-> > >>        1 CPU1 is up
-> > >>        1 ACPI: Waking up from system sleep state S3
-> > >>       10 pcieport 0000:00:02.0: restoring config space at offset 0x7 (was 
-> > > 0x20005151, writing 0x5151)
-> > > 
-> > > Well, yeah.  So the commit you bisected it to is total and utter crap.
-> > > Most importantly, it retries the writes for all of the dwords in the 
-> > > device's
-> > > config space _including_ the status register (which by definition need not be
-> > > the same as the written value).
-> > > 
-> > > I wonder if the appended patch helps?
-> > 
-> > It does. It seems there is a change only in the devices that refuse to wake up;
-> > somehow writing too many times to them affects the rest of the machine.
-> > So, for this machine your patch fixes the problem of the touchpad not working.
-> 
-> Good, thanks for the confirmation. :-)
-> 
-> > The write is now attempted (at most) 11 times, as shown below. Probably not
-> > a huge deal.
-> > 
-> >       1 ACPI: Waking up from system sleep state S3
-> >      11 pcieport 0000:00:02.0: restoring config space at offset 0x1c (was 0x20005151, writing 0x5151)
-> 
-> Well, here you see that the PCI Express port is refusing to accept a new BAR value.
-> It seems not to be operational and this probably is the reason why the device below
-> the port don't respond later.
-> 
-> I'm not sure why that happens, though.
+On 04/15, Peter Zijlstra wrote:
+>
+> On Sat, 2012-04-14 at 22:52 +0200, Oleg Nesterov wrote:
+> > > >     - can it work or I missed something "in general" ?
+> > >
+> > > So we insert in the rb-tree before we take mmap_sem, this means we can
+> > > hit a non-uprobe int3 and still find a uprobe there, no?
+> >
+> > Yes, but unless I miss something this is "off-topic", this
+> > can happen with or without these changes. If find_uprobe()
+> > succeeds we assume that this bp was inserted by uprobe.
+>
+> OK, but then I completely missed what the point of that
+> down_write() stuff is..
 
-OK, I know.  There simply are fewer BARs for bridges (and PCIe ports)
-and here we're attempting to overwrite the secondary status register.  Sigh.
+To ensure handle_swbp() can't race with unregister + register
+and send the wrong SIGTRAP.
 
-Well, I guess we should only retry the writes to BARs for Type 0 headers.
+handle_swbp() roughly does under down_read(mmap_sem)
 
-Thanks,
-Rafael
+
+	if (find_uprobe(vaddr))
+		process_uprobe();
+	else
+	if (is_swbp_at_addr_fast(vaddr))	// non-uprobe int3
+		send_sig(SIGTRAP);
+	else
+		restart_insn(vaddr);		// raced with unregister
+
+
+note that is_swbp_at_addr_fast() is used (currently) to detect
+the race with upbrobe_unregister() and that is why we can remove
+uprobes_srcu.
+
+But if find_uprobe() fails, there is a window before
+is_swbp_at_addr_fast() reads the memory. Suppose that the next
+uprobe_register() inserts the new uprobe at the same address.
+In this case the task will be wrongly killed.
+
+Oleg.
+
