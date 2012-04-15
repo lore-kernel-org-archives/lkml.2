@@ -1,72 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751528Ab2DOUVO (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 15 Apr 2012 16:21:14 -0400
-Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:64122 "EHLO
-	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751378Ab2DOUVM (ORCPT
+	id S1751543Ab2DOUsG (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 15 Apr 2012 16:48:06 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:63184 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751089Ab2DOUsD convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 15 Apr 2012 16:21:12 -0400
+	Sun, 15 Apr 2012 16:48:03 -0400
 MIME-Version: 1.0
-In-Reply-To: <alpine.LFD.2.02.1204131033240.2542@ionos>
-References: <alpine.LFD.2.02.1204131033240.2542@ionos>
-From: Paul Gortmaker <paul.gortmaker@windriver.com>
-Date: Sun, 15 Apr 2012 16:20:39 -0400
-X-Google-Sender-Auth: fn0pAcDEgxnCQ67i3fY8qxXbbwQ
-Message-ID: <CAP=VYLqQf0ZmYPATyE2q=9QtK+eDb8SeRbkusdCjg93fzy2cqA@mail.gmail.com>
-Subject: Re: [ANNOUNCE] 3.4-rc2-rt4
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        linux-rt-users <linux-rt-users@vger.kernel.org>
+Reply-To: mtk.manpages@gmail.com
+In-Reply-To: <12563.1228544795@turing-police.cc.vt.edu>
+References: <493A01E0.1070705@gmail.com> <200812061404.EJG35994.MOJOFQFOLFHtVS@I-love.SAKURA.ne.jp>
+ <12563.1228544795@turing-police.cc.vt.edu>
+From: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
+Date: Mon, 16 Apr 2012 08:47:42 +1200
+Message-ID: <CAKgNAkh+mnOW8ko7NRHeRJqLdX0_HT-Uzm2jnMeVzSe=E2a0JQ@mail.gmail.com>
+Subject: Re: MAC and pam_nologin (was Re: man-pages-3.15 is released)
+To: Valdis.Kletnieks@vt.edu
+Cc: Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>,
+        linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org,
+        mtk.manpages@googlemail.com
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 13, 2012 at 8:11 AM, Thomas Gleixner <tglx@linutronix.de> wrote:
-> Dear RT Folks,
+Hello Tetsuo Handa,
+
+On Sat, Dec 6, 2008 at 7:26 PM,  <Valdis.Kletnieks@vt.edu> wrote:
+> On Sat, 06 Dec 2008 14:04:07 +0900, Tetsuo Handa said:
 >
-> I'm pleased to announce the 3.4-rc2-rt4 release.
+> (Not really a LSM or kernel issue, and I think mtk.man does kernel
+> manpages only.  At least on my Fedora and RedHat systems, the 'login' manpage
+> comes from util-linux, so any manpage fixes would go via that route).
+>
+>> But this description becomes inaccurate when MAC (e.g. SELinux) is enabled.
+>>
+>> MAC can deny open("/etc/nologin", O_RDONLY) by root user. Thus,
+>>
+>>   # ln /etc/shadow /etc/nologin
+>>
+>> will create /etc/nologin which is *not readable* by login(1).
+>> As a result, non-root user's logins are permitted while /etc/nologin *exists*
+>>
+>> I guess pam_nologin is using a code like
+>>
+>>   fp = fopen("/etc/nologin", "r");
+>>   if (fp)
+>>      /* print the contents of /etc/nologin and reject login request. */
+>
+> Rather than guessing, maybe a check of what the source code actually *does*
+> would be better?
+>
+>> So, I think either one of below modifications is needed.
+>>
+>> (1) Change the description of manpage like
+>>
+>>   If the file /etc/nologin *is readable*, login (1) will allow access only to
+>>   root. Other users will be shown the contents of this file and their logins
+>>   will be refused.
+>>
+>> (2) Change the code of pam_nologin like
+>>
+>>   fd = open("/etc/nologin", O_RDONLY);
+>>   if (fd != EOF || errno != ENOENT)
+>>      /* print the contents of /etc/nologin and reject login request. */
+>
+> (3) Recognize that a sysadmin who intentionally goes and creates a
+> /etc/nologin via insane means deserves the insane results.  You have to
+> go out of your way to actually create a case where the distinction between
+> "exists" and "is readable" matters.
+>
+> Having said that, we probably *should* fix 'man login' to say 'is readable'.
 
-[...]
-
-I've made four largely trivial changes to the broken out queue
-so that the commits can all be reliably fed to "git am" on
-a patch-by-patch basis without warnings or errors.
-
-Not sure what is the most convenient for you to get "patches of
-patches" from people, but the ones I've made are here:
-
-http://git.kernel.org/?p=linux/kernel/git/paulg/3.4-rt-patches.git;a=shortlog;h=refs/heads/3.4-rc2-rt4-git-am-fixes
-
-I've created a git repo of your rt patches, akin to what is done for stable,
-and put the cleanups on a branch.  I'll keep master reserved for tracking
-your actual releases, and will tag accordingly.
-
-If you can think of something that better matches your workflow, let
-me know and I'll adapt accordingly.
+I added the words "and is readable" to nologin.5.
 
 Thanks,
-Paul.
-----
 
-The following changes since commit f99f81e7ddc08d220dd03a51cae06f59cfa021b7:
+Michael
 
-  patches-3.4-rc2-rt4.tar.xz (2012-04-15 15:14:55 -0400)
-
-are available in the git repository at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/paulg/3.4-rt-patches.git
-3.4-rc2-rt4-git-am-fixes
-
-for you to fetch changes up to 2d3671bebaea24768cf443822959122efaeb8208:
-
-  git-am: whitespace fixes. (2012-04-15 15:28:57 -0400)
-
-----------------------------------------------------------------
-Paul Gortmaker (4):
-      delete dup mail header from
-sched-teach-migrate_disable-about-atomic-contexts.patch
-      fix subjectless patches
-      git-am: ensure Subject: follows From:
-      git-am: whitespace fixes.
+-- 
+Michael Kerrisk
+Linux man-pages maintainer; http://www.kernel.org/doc/man-pages/
+Author of "The Linux Programming Interface"; http://man7.org/tlpi/
