@@ -1,63 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756699Ab2DOA5n (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 14 Apr 2012 20:57:43 -0400
-Received: from nm9-vm0.bullet.mail.ird.yahoo.com ([77.238.189.197]:40017 "HELO
-	nm9-vm0.bullet.mail.ird.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1756552Ab2DOA5l convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 14 Apr 2012 20:57:41 -0400
-X-Greylist: delayed 347 seconds by postgrey-1.27 at vger.kernel.org; Sat, 14 Apr 2012 20:57:41 EDT
-X-Yahoo-Newman-Property: ymail-3
-X-Yahoo-Newman-Id: 9963.65178.bm@omp1022.mail.ird.yahoo.com
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
-  s=s1024; d=yahoo.fr;
-  h=X-YMail-OSG:Received:X-Mailer:Message-ID:Date:From:Reply-To:Subject:To:MIME-Version:Content-Type:Content-Transfer-Encoding;
-  b=2FhhE5AF7yo67OegVb8y5NhYnFmygefZCi6UbXXPymuDZW3AvTrG8SOQsJYlP981gtgYkB/jRZ5KoCb6eB+tS28Bygf+EY/K0F7Y/6KOmvWqGsqAz1gBPu3+rLz3659fUch+KxSCe8RG8tQAtwGgHRsX8iiGLlyUwsyvitMO4tQ=;
-X-YMail-OSG: .aIO5foVM1l.u.NefqVhZYVynqW0GOX1qjWGN51Yrxrh89z
- Mp4gLsct9E04BkU0lnlPDdJF.PyfR_Ujh2IDKCqw5yE8p_jW3Wih72_VzaGn
- f9RVRYj2PbbPSamBrt1lx6.06zGn8o9UwAy3_jLjR7nQS0YlWB5IA44GdJxa
- SEIpxqCmoCiahy_FcB22hx2UOgnXtiPN2eA4Ca8t3qEhA5qrbaede4dhpWGu
- rVDURf3G6mK29gney0OXbrsV6MKznxQCmmthIfQLr_Cmp8ec5cGS_9WLRtn3
- BhcC4JNxKGzvJdi9skpr18LYZWWbHmDftHn0OCylujd2NgQHl7NySbrpWVtI
- PMoo9k4me7BS8vi_blSkYE74NGIJXBAQ4EOJOuZ2WxycJSku9kX22MYaLwJa
- gJn76q8s6QrQry40pn1FOkXLoby3JPF1vSYT7dtEvMdsT6tbSY_f6SCXdhOg
- XklAAPoGivnVb3l3rVjctaX.lQsOhNb2INB0T.BJ_8LV0pu.0j.CmLz1j6EN
- 58WgmSU8tkGEZ6XG32JOsH97fsxDVeEMpR2hz7tRIXg4j2.pQi9Ho87LBxXS
- owm0Gvn_fTuwWr36Y1TtEXpaRuMI-
-X-Mailer: YahooMailClassic/15.0.5 YahooMailWebService/0.8.117.340979
-Message-ID: <1334451111.40873.YahooMailClassic@web28805.mail.ir2.yahoo.com>
-Date: Sun, 15 Apr 2012 01:51:51 +0100 (BST)
-From: Miss Diane Ghislain <cmsfrgndpt@yahoo.fr>
-Reply-To: misdianeghislain@yahoo.com
-Subject: =?utf-8?B?QWhvaiBtaWzDocSNa3Us?=
-To: undisclosed recipients:;
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
+	id S1756759Ab2DOBWU (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 14 Apr 2012 21:22:20 -0400
+Received: from mail.linux-iscsi.org ([67.23.28.174]:40048 "EHLO
+	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752888Ab2DOBWP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 14 Apr 2012 21:22:15 -0400
+Subject: Re: [PATCH 0/2] sbp-target: cleanup after merge into single file
+From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+To: Stefan Richter <stefanr@s5r6.in-berlin.de>
+Cc: Chris Boot <bootc@bootc.net>, linux1394-devel@lists.sourceforge.net,
+        target-devel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        agrover@redhat.com, clemens@ladisch.de
+In-Reply-To: <20120415011151.55d14826@stein>
+References: <1334366583.12540.12.camel@haakon2.linux-iscsi.org>
+	 <1334394746-31738-1-git-send-email-bootc@bootc.net>
+	 <1334439895.12540.65.camel@haakon2.linux-iscsi.org>
+	 <20120415011151.55d14826@stein>
+Content-Type: text/plain; charset="UTF-8"
+Date: Sat, 14 Apr 2012 18:22:12 -0700
+Message-ID: <1334452932.12540.68.camel@haakon2.linux-iscsi.org>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ahoj miláčku,
+On Sun, 2012-04-15 at 01:11 +0200, Stefan Richter wrote:
+> On Apr 14 Nicholas A. Bellinger wrote:
+> > Also, it looks like Stefan has a few more comments from the last round
+> > of review..
+> 
+> Don't consider them blocking.  I would welcome it if the code gets merged
+> soon, it looks very nice and maintainable.  The card state <-> session
+> state interactions which I was wondering about will be more comfortable for
+> me to investigate when it is in mainline; I believe there is no urgency
+> for me to look into that.  Other obscure but simple things like making use
+> of memory alignment guarantees from firewire-core are more effectively
+> addressed if I can send patches rather than comments.
 
-Doplňující dne na vás, prosím, omluvte mě, jestli jsem zasahovat do vašeho soukromí, jmenuji se Miss Diane Ghislain, věk 24, výška 5 ft 11 palců, hmotnost 61, já jsem jediná dcera pozdní pana Donalda Ghislai z Abidžanu, pobřeží slonoviny v západní Africe, můj otec byl obchodní magnát a politik. Pozoroval jsem si důležitá osobnost, než jsem se do mé mysli vás kontaktovat. Prosím, budu chtít vědět více o vás, protože jsem u sebe nějaké finanční prostředky, které budu rád, že investovat do dobrého obchodu tam ve vaší zemi. Přeji vám mohl být upřímný ke mně tak, že můžu jít do této investice s vámi mé vlastní a budu také muset vaše dobré rady.
+<nod>  In that case, I'll go ahead and add your Acked-by to the initial
+merge commit for sbp-target that will be appearing in
+target-pending/for-next-merge shortly.
 
-Za prvé, já chtěl vědět, co děláte pro bydlení, nezapomeňte si mě zaujalo, že byl důvod, proč bych se s vámi na prvním místě. Budeme vědět víc sami, jak jsme spolu komunikovat.
+Thanks Stefan!
 
-Děkujeme za pochopení v naději, že to slyším od vás brzy.
-
-Z mého srdce
-Slečna Diane Ghislain
+--nab
 
 
-Hello dear,
 
-Complement of the day to you, please pardon me if i interfere into your privacy, my name is Miss Diane Ghislain, Age 24, height 5 ft 11 inches, weight 61, i am the only daughter of Late Mr. Donald Ghislai from ABIDJAN, Ivory Coast in west Africa, my father was a business tycoon and a politician. I observed you are an important personality before i made up my mind to contact you. Please i will like to know more about you because i have with me some funds which i will like to invest in a good business over there in your country. I wish you could be honest to me so that i can go into this investment with you by my self and i will also need your good advices.
-
-First of all, I will like to know what you do for a living; remember you caught my attention that was why i contacted you in the first place. We will know ourselves more as we communicate along.
-
-Thanks for your understanding, hoping to hear from you soon.
-
->From my heart,
-Miss Diane Ghislain
