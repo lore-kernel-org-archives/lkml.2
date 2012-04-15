@@ -1,36 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753061Ab2DOLS1 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 15 Apr 2012 07:18:27 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:52270 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751835Ab2DOLSZ convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 15 Apr 2012 07:18:25 -0400
-Message-ID: <1334488687.28150.3.camel@twins>
-Subject: Re: Using nested locking for spin_lock_bh
-From: Peter Zijlstra <peterz@infradead.org>
-To: Sven Eckelmann <sven@narfation.org>
-Cc: Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
-        simon.wunderlich@s2003.tu-chemnitz.de,
-        Marek Lindner <lindner_marek@yahoo.de>
-Date: Sun, 15 Apr 2012 13:18:07 +0200
-In-Reply-To: <2108147.Aqyix6xDmB@bentobox>
-References: <2108147.Aqyix6xDmB@bentobox>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.2- 
-Mime-Version: 1.0
+	id S1753371Ab2DOLZj (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 15 Apr 2012 07:25:39 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:41007 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751231Ab2DOLZi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 15 Apr 2012 07:25:38 -0400
+Message-ID: <4F8AB02A.9020601@redhat.com>
+Date: Sun, 15 Apr 2012 14:25:30 +0300
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120316 Thunderbird/11.0
+MIME-Version: 1.0
+To: Takuya Yoshikawa <takuya.yoshikawa@gmail.com>
+CC: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>,
+        Marcelo Tosatti <mtosatti@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>, KVM <kvm@vger.kernel.org>
+Subject: Re: [PATCH v2 04/16] KVM: MMU: return bool in __rmap_write_protect
+References: <4F87FA69.5060106@linux.vnet.ibm.com> <4F87FBC1.5010907@linux.vnet.ibm.com> <20120414110031.38450bebfe712215f01d529f@gmail.com>
+In-Reply-To: <20120414110031.38450bebfe712215f01d529f@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-03-28 at 18:36 +0200, Sven Eckelmann wrote:
-> 
-> Is there another way how this should be done or is there a general problem why 
-> there is no nested support for this incarnation of spin_lock? 
+On 04/14/2012 05:00 AM, Takuya Yoshikawa wrote:
+> On Fri, 13 Apr 2012 18:11:13 +0800
+> Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com> wrote:
+>
+> > The reture value of __rmap_write_protect is either 1 or 0, use
+> > true/false instead of these
+>
+> ...
+>
+> > @@ -1689,7 +1690,7 @@ static void mmu_sync_children(struct kvm_vcpu *vcpu,
+> > 
+> >  	kvm_mmu_pages_init(parent, &parents, &pages);
+> >  	while (mmu_unsync_walk(parent, &pages)) {
+> > -		int protected = 0;
+> > +		bool protected = false;
+> > 
+> >  		for_each_sp(pages, sp, parents, i)
+> >  			protected |= rmap_write_protect(vcpu->kvm, sp->gfn);
+>
+> Isn't this the reason we prefer int to bool?
+>
+> Not sure people like to use |= with boolean.
+>
 
-No reason other than that it wasn't needed before now, but I see you've
-resolved things with a lockdep_set_class() which works too.
+Why not?
 
+-- 
+error compiling committee.c: too many arguments to function
 
