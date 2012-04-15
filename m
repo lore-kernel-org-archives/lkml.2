@@ -1,44 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754813Ab2DON6o (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 15 Apr 2012 09:58:44 -0400
-Received: from cassarossa.samfundet.no ([129.241.93.19]:45456 "EHLO
-	cassarossa.samfundet.no" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754126Ab2DON6n (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 15 Apr 2012 09:58:43 -0400
-Date: Sun, 15 Apr 2012 15:58:35 +0200
-From: Hans-Christian Egtvedt <egtvedt@samfundet.no>
-To: Sam Ravnborg <sam@ravnborg.org>
-Cc: Haavard Skinnemoen <hskinnemoen@gmail.com>,
-        lkml <linux-kernel@vger.kernel.org>, Tejun Heo <tj@kernel.org>
-Subject: Re: [PATCH] avr32: drop HAVE_ARCH_BOOTMEM from Kconfig
-Message-ID: <20120415135835.GA29603@samfundet.no>
-References: <20120415092804.GA4947@merkur.ravnborg.org>
+	id S1754997Ab2DOOFb (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 15 Apr 2012 10:05:31 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:61064 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753061Ab2DOOFa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 15 Apr 2012 10:05:30 -0400
+Date: Sun, 15 Apr 2012 16:05:13 +0200
+From: Jiri Olsa <jolsa@redhat.com>
+To: David Ahern <dsahern@gmail.com>
+Cc: acme@redhat.com, a.p.zijlstra@chello.nl, mingo@elte.hu, paulus@samba.org,
+        cjashfor@linux.vnet.ibm.com, fweisbec@gmail.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/3] perf, tool: Force guest machine definition option
+Message-ID: <20120415140513.GA2588@m.redhat.com>
+References: <1334233262-5679-1-git-send-email-jolsa@redhat.com>
+ <1334233262-5679-2-git-send-email-jolsa@redhat.com>
+ <4F86E965.4010506@gmail.com>
+ <20120413113207.GB3384@m.brq.redhat.com>
+ <4F881A62.8060109@gmail.com>
+ <20120413124129.GC3384@m.brq.redhat.com>
+ <4F8834F5.9040605@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120415092804.GA4947@merkur.ravnborg.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <4F8834F5.9040605@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Around Sun 15 Apr 2012 11:28:04 +0200 or thereabout, Sam Ravnborg wrote:
-> From f58a1c9f6717a6754fde691fb10f8eab7170dbc2 Mon Sep 17 00:00:00 2001
-> From: Sam Ravnborg <sam@ravnborg.org>
-> Date: Sun, 15 Apr 2012 11:23:50 +0200
-> Subject: [PATCH] avr32: drop HAVE_ARCH_BOOTMEM from Kconfig
+On Fri, Apr 13, 2012 at 08:15:17AM -0600, David Ahern wrote:
+> On 4/13/12 6:41 AM, Jiri Olsa wrote:
+> >I get same error even on acme's urgent branch.. do you mean
+> >below one?  It fixes the guest machine lookup for mmap event.
+> >
+> >perf kvm: Finding struct machine fails for PERF_RECORD_MMAP
+> >commit 7fb0a5ee8889488f7568ffddffeb66ddeb50917e
+> >Author: Nikunj A. Dadhania<nikunj@linux.vnet.ibm.com>
+> >Date:   Mon Apr 9 13:52:23 2012 +0530
 > 
-> The symbol is default to n - so no point in adding a symbol
-> with def_bool n.
-> Noticed iby Tejun when we removed this symbol from x86.
+> That's the one I was referring to.
 > 
-> Signed-off-by: Sam Ravnborg <sam@ravnborg.org>
-> Cc: Tejun Heo <tj@kernel.org>
+> >
+> >In my case it looks like for some reason the guest buildid DSO
+> >is not stored in record phase (no hits maybe?), so report won't
+> >create guest machine record at all and get NULL machine.
+> 
+> I see now -- different problem, but similar in that it's an mmap
+> event and the pid is 0.
+> 
+> I need to take my daughter to school and won't get back to this for
+> a while but what I am seeing is that on perf-record mmap events are
+> generated with pid set to DEFAULT_GUEST_KERNEL_ID = 0
+> (machines__create_guest_kernel_maps).
+> 
+> On the report side a machine has not been created for pid of 0, so
+> the look up in perf_session__find_machine_for_cpumode fails.
+> 
+> David
 
-Acked-by: Hans-Christian Egtvedt <egtvedt@samfundet.no>
+how about the patch below? it ensures there's machine record for
+the guest. The segfault issue still stays..
 
+jirka
+
+---
+Running 'perf kvm record' without any of following options:
+ --guestmount
+ --guestvmlinux
+ --guestkallsyms
+ --guestmodules
+
+is causing the guest machine to be ommited from the data file,
+and all guest samples are counted in nr_unprocessable_samples.
+
+This patch makes sure the 'perf kvm record' command is not
+let through if guest machine isn't defined.
+
+Signed-off-by: Jiri Olsa <jolsa@redhat.com>
+---
+ tools/perf/builtin-record.c |    8 ++++++++
+ 1 files changed, 8 insertions(+), 0 deletions(-)
+
+diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
+index 10b1f1f..0ae4237 100644
+--- a/tools/perf/builtin-record.c
++++ b/tools/perf/builtin-record.c
+@@ -462,6 +462,14 @@ static int __cmd_record(struct perf_record *rec, int argc, const char **argv)
+ 		return -1;
+ 	}
+ 
++	if (perf_guest &&
++	    !machines__find(&session->machines, DEFAULT_GUEST_KERNEL_ID)) {
++		ui__warning("You need to define guest with one of guestmount|"
++			    "guestvmlinux|guestkallsyms|guestmodules\n");
++		err = -EINVAL;
++		goto out_delete_session;
++	}
++
+ 	rec->session = session;
+ 
+ 	for (feat = HEADER_FIRST_FEATURE; feat < HEADER_LAST_FEATURE; feat++)
 -- 
-mvh
-Hans-Christian Egtvedt
+1.7.7.6
+
