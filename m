@@ -1,95 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755189Ab2DOOQS (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 15 Apr 2012 10:16:18 -0400
-Received: from ftp.meprolight.com ([194.90.149.17]:43073 "EHLO meprolight.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1753934Ab2DOOQR convert rfc822-to-8bit (ORCPT
+	id S1755269Ab2DOORr (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 15 Apr 2012 10:17:47 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:41627 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754552Ab2DOORp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 15 Apr 2012 10:16:17 -0400
-From: Alex Gershgorin <alexg@meprolight.com>
-To: Sascha Hauer <s.hauer@pengutronix.de>
-CC: "g.liakhovetski@gmx.de" <g.liakhovetski@gmx.de>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Sun, 15 Apr 2012 17:15:38 +0300
-Subject: RE: [PATCH] ARM: i.mx35 increase dma consistent region size
-Thread-Topic: [PATCH] ARM: i.mx35 increase dma consistent region size
-Thread-Index: Ac0Zg06TSY8pHp7FR6yuqIN4BCdz6ABaewO+
-Message-ID: <4875438356E7CA4A8F2145FCD3E61C0B2CC34CAD2F@MEP-EXCH.meprolight.com>
-References: <1334167274-29524-1-git-send-email-alexg@meprolight.com>,<20120413144029.GP3852@pengutronix.de>
-In-Reply-To: <20120413144029.GP3852@pengutronix.de>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Sun, 15 Apr 2012 10:17:45 -0400
+Date: Sun, 15 Apr 2012 22:17:43 +0800
+From: Shawn Guo <shawn.guo@linaro.org>
+To: Dong Aisheng <dongas86@gmail.com>
+Cc: Sascha Hauer <s.hauer@pengutronix.de>, linus.walleij@stericsson.com,
+        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
+        rob.herring@calxeda.com, kernel@pengutronix.de,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH 1/3] pinctrl: pinctrl-imx: add imx pinctrl core driver
+Message-ID: <20120415141736.GG24997@S2101-09.ap.freescale.net>
+References: <1334333915-1174-1-git-send-email-b29396@freescale.com>
+ <20120414134814.GA3852@pengutronix.de>
+ <CAA+hA=T0FAfuGKcW0vAKO+OWyFdM-6vQqVo53xKf8y28m7gPOQ@mail.gmail.com>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CAA+hA=T0FAfuGKcW0vAKO+OWyFdM-6vQqVo53xKf8y28m7gPOQ@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Sascha,
+On Sun, Apr 15, 2012 at 11:49:04AM +0800, Dong Aisheng wrote:
+...
+> >> +iomuxc@020e0000 {
+> >> +     compatible = "fsl,imx6q-iomuxc";
+> >> +     reg = <0x020e0000 0x4000>;
+> >> +
+> >> +     /* shared pinctrl settings */
+> >> +     usdhc4 {
+> >> +             pinctrl_usdhc4_1: usdhc4grp-1 {
+> >> +                     fsl,pins =      "MX6Q_PAD_SD4_CMD",
+> >> +                                     "MX6Q_PAD_SD4_CLK",
+> >> +                                     "MX6Q_PAD_SD4_DAT0",
+> >> +                                     "MX6Q_PAD_SD4_DAT1",
+> >> +                                     "MX6Q_PAD_SD4_DAT2",
+> >> +                                     "MX6Q_PAD_SD4_DAT3",
+> >> +                                     "MX6Q_PAD_SD4_DAT4",
+> >> +                                     "MX6Q_PAD_SD4_DAT5",
+> >> +                                     "MX6Q_PAD_SD4_DAT6",
+> >> +                                     "MX6Q_PAD_SD4_DAT7";
+> >
+> > Do we really want to have all combinations of all pins in the devicetree
+> > as strings? This is going to be huge.
+> >
+> Correct.
+> My plan is:
+> 1) not all combinations, just define frequently used ones since
+> it's hard to define all combinations groups for per based IMX.
+> (maybe we can try to add a fix-up function which can do minor changes
+> based on available ones, then user does not need to write a new group
+> caused by only a small change.
+> what do you think?)
+> 
+> 2)  When dt supports macro, will try convert string to integer macro.
+> Then it maybe:
+> fsl,pins = <MX6Q_PAD_SD4_CMD 0
+>                 MX6Q_PAD_SD4_CLK 0
+>                 MX6Q_PAD_SD4_DAT0 1
+>                 .................>,
+> Why i did not start pin id with a raw integer is because it's less
+> meaning to user and
+> not easy to read in dts file.
+> 
+We may want to use integer from the beginning to reduce the churn on
+driver later.
 
-Sorry was not possible to respond to you earlier. 
+I'm thinking about documenting the definition we used to have in
+iomux-mx*.h in the binding document and assign id to each of them
+in order.
 
-On Wed, Apr 11, 2012 at 09:01:14PM +0300, Alex Gershgorin wrote:
-> The default size of the consistent DMA region is 2MB
-> without this patch, attempt to allocate more than 2MB
-> is causing allocation failure
->
-> Signed-off-by: Alex Gershgorin <alexg@meprolight.com>
-> ---
->  arch/arm/mach-imx/mm-imx3.c |    1 +
->  1 files changed, 1 insertions(+), 0 deletions(-)
->
-> diff --git a/arch/arm/mach-imx/mm-imx3.c b/arch/arm/mach-imx/mm-imx3.c
-> index 7412738..a2c0c7d 100644
-> --- a/arch/arm/mach-imx/mm-imx3.c
-> +++ b/arch/arm/mach-imx/mm-imx3.c
-> @@ -201,6 +201,7 @@ static struct map_desc mx35_io_desc[] __initdata = {
->  void __init mx35_map_io(void)
->  {
->       iotable_init(mx35_io_desc, ARRAY_SIZE(mx35_io_desc));
-> +     init_consistent_dma_size(SZ_8M);
+pinmux						id
+------						--
+MX6Q_PAD_SD2_DAT1__USDHC2_DAT1			0
+MX6Q_PAD_SD2_DAT1__ECSPI5_SS0			1
+MX6Q_PAD_SD2_DAT1__WEIM_WEIM_CS_2		2
+...
 
-> > I don't know what to think about this. You probably have a board with
-> > camera support and thus need bigger buffers, right? Nevertheless this
-> > patch affects all i.MX35 users, even the ones without camera support.
+The ordering between the list and imx6q_pin_regs[] array need to match.
 
-Camera support is not an issue, this patch belongs only to those I.MX35 drivers who are using 
-the dma coherent/writecombine allocations.
+By looking at the binding document, we can just put pinmux-id into
+property "fsl,pins" (maybe rename it to "fsl,pinmux-ids") to get the
+desired pinmux settings.  With doing so, we can gain the following.
 
-For example,  mx3fb currently uses only once DMA allocation for the framebuffer,
-In the case of adding overlay support, we need an additional allocation for the overlay 
-buffer as a resulting in the total request more than 2 MB
+1) The pinmux-id can be used as index to locate the entry in array
+   imx6q_pin_regs[], so that the slow string lookup can be avoid.
 
-I have already started work on the mx3fb overlay support, about this we spoke with Guennadi,
-My current kernel mx3fb successfully registered with support overlay buffer allocation.
+2) Property "fsl,mux" can be dropped, as it's been encoded in
+   imx6q_pin_regs[] entry.
 
-Please see my cat /proc/dma-mappings: 
+3) Converting the existing board files to device tree will be much
+   easier.  We only need to find the pinmux-id of those existing
+   definitions and put them in "fsl, pinmux-ids".
 
-btw as you can see below there is no allocation for the camera
+4) When DTC support macro, we can simply move the pinmux-id list from
+   binding document into dts file.  No driver change is needed at all.
 
-0xffa00000-0xffb77000 1536000 __set_par+0xc8/0x7f8
-0xffc00000-0xffd77000 1536000 __set_par+0xc8/0x7f8
-0xffdfa000-0xffdfb000    4096 ehci_mxc_setup+0x194/0x574
-0xffdfb000-0xffdfc000    4096 dma_pool_alloc+0x9c/0x1f0
-0xffdfc000-0xffdfd000    4096 dma_pool_alloc+0x9c/0x1f0
-0xffdfd000-0xffdfe000    4096 fec_probe+0x248/0x71c
-0xffdfe000-0xffdff000    4096 sdma_request_channel+0x2c/0xd8
-0xffdff000-0xffe00000    4096 sdma_probe+0x2cc/0x61c
-
-> > Another possibility would be to make this board specific.
-
-I think this needed adapted for all i.mx3x, maybe need to use. 
-  
-#ifdef CONFIG_FB_MX3
-        init_consistent_dma_size(SZ_8M);
-#endif
+Thoughts?
 
 Regards,
-Alex Gershgorin
+Shawn
+
+> 3) maybe we need a separate imx6q-pinctrl.dtsi when it becomes big
+> after adding all device support.
+> 
+> >> +                     fsl,mux = <0 0 1 1 1 1 1 1 1 1>;
+> >
+> > Still we lose the precious information which pin can be put into which
+> > mode which means that you have to look at the datasheet each time a pin
+> > is missing.
+> To avoid this, i also put the pad function macro in driver, user can
+> look at the pinctrl SoC driver instead of look at the datasheet.
+> See:
+> [PATCH 2/3] pinctrl: pinctrl-imx: add imx6q pinctrl drive
+> +/* imx6q register maps */
+> +static struct imx_pin_reg imx6q_pin_regs[] = {
+> +       IMX_PIN_REG(MX6Q_PAD_SD2_DAT1, 0x0360, 0x004C, 0, 0x0000, 0),
+> /* MX6Q_PAD_SD2_DAT1__USDHC2_DAT1 */
+> +       IMX_PIN_REG(MX6Q_PAD_SD2_DAT1, 0x0360, 0x004C, 1, 0x0834, 0),
+> /* MX6Q_PAD_SD2_DAT1__ECSPI5_SS0 */
+> .......
+> 
