@@ -1,95 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751757Ab2DOGFF (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 15 Apr 2012 02:05:05 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:55035 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750746Ab2DOGFD (ORCPT
+	id S1752584Ab2DOGJb (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 15 Apr 2012 02:09:31 -0400
+Received: from [124.207.24.138] ([124.207.24.138]:38371 "EHLO
+	mail.ss.pku.edu.cn" rhost-flags-FAIL-FAIL-OK-OK) by vger.kernel.org
+	with ESMTP id S1751114Ab2DOGJ3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 15 Apr 2012 02:05:03 -0400
-Date: Sun, 15 Apr 2012 08:04:49 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Arnaldo Carvalho de Melo <acme@infradead.org>
-Cc: linux-kernel@vger.kernel.org, Chanho Park <chanho61.park@samsung.com>,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Namhyung Kim <namhyung@gmail.com>, Namhyung Kim <namhyung.kim@lge.com>,
-        Paul Mackerras <paulus@samba.org>, Pekka Enberg <penberg@kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@google.com>, arnaldo.melo@gmail.com,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: Re: [GIT PULL 0/5] perf/urgent fixes
-Message-ID: <20120415060449.GA29563@gmail.com>
-References: <1334423027-2220-1-git-send-email-acme@infradead.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1334423027-2220-1-git-send-email-acme@infradead.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Sun, 15 Apr 2012 02:09:29 -0400
+From: Lin Ming <mlin@ss.pku.edu.cn>
+To: linux-kernel@vger.kernel.org
+Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Steven Noonan <steven@uplinklabs.net>, Ben Guthro <ben@guthro.net>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Jeremy Fitzhardinge <jeremy@goop.org>,
+        Marcus Granado <marcus.granado@citrix.com>, xen-devel@lists.xen.org
+Subject: [PATCH 2/2] xen: implement IRQ_WORK_VECTOR handler
+Date: Sun, 15 Apr 2012 14:09:32 +0800
+Message-Id: <1334470172-3861-3-git-send-email-mlin@ss.pku.edu.cn>
+X-Mailer: git-send-email 1.7.2.5
+In-Reply-To: <1334470172-3861-1-git-send-email-mlin@ss.pku.edu.cn>
+References: <1334470172-3861-1-git-send-email-mlin@ss.pku.edu.cn>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Signed-off-by: Lin Ming <mlin@ss.pku.edu.cn>
+---
+ arch/x86/include/asm/xen/events.h |    1 +
+ arch/x86/xen/smp.c                |   30 ++++++++++++++++++++++++++++++
+ 2 files changed, 31 insertions(+), 0 deletions(-)
 
-* Arnaldo Carvalho de Melo <acme@infradead.org> wrote:
+diff --git a/arch/x86/include/asm/xen/events.h b/arch/x86/include/asm/xen/events.h
+index 1df3541..cc146d5 100644
+--- a/arch/x86/include/asm/xen/events.h
++++ b/arch/x86/include/asm/xen/events.h
+@@ -6,6 +6,7 @@ enum ipi_vector {
+ 	XEN_CALL_FUNCTION_VECTOR,
+ 	XEN_CALL_FUNCTION_SINGLE_VECTOR,
+ 	XEN_SPIN_UNLOCK_VECTOR,
++	XEN_IRQ_WORK_VECTOR,
+ 
+ 	XEN_NR_IPIS,
+ };
+diff --git a/arch/x86/xen/smp.c b/arch/x86/xen/smp.c
+index 2dc6628..92ad12d 100644
+--- a/arch/x86/xen/smp.c
++++ b/arch/x86/xen/smp.c
+@@ -16,6 +16,7 @@
+ #include <linux/err.h>
+ #include <linux/slab.h>
+ #include <linux/smp.h>
++#include <linux/irq_work.h>
+ 
+ #include <asm/paravirt.h>
+ #include <asm/desc.h>
+@@ -41,10 +42,12 @@ cpumask_var_t xen_cpu_initialized_map;
+ static DEFINE_PER_CPU(int, xen_resched_irq);
+ static DEFINE_PER_CPU(int, xen_callfunc_irq);
+ static DEFINE_PER_CPU(int, xen_callfuncsingle_irq);
++static DEFINE_PER_CPU(int, xen_irq_work);
+ static DEFINE_PER_CPU(int, xen_debug_irq) = -1;
+ 
+ static irqreturn_t xen_call_function_interrupt(int irq, void *dev_id);
+ static irqreturn_t xen_call_function_single_interrupt(int irq, void *dev_id);
++static irqreturn_t xen_irq_work_interrupt(int irq, void *dev_id);
+ 
+ /*
+  * Reschedule call back.
+@@ -143,6 +146,17 @@ static int xen_smp_intr_init(unsigned int cpu)
+ 		goto fail;
+ 	per_cpu(xen_callfuncsingle_irq, cpu) = rc;
+ 
++	callfunc_name = kasprintf(GFP_KERNEL, "irqwork%d", cpu);
++	rc = bind_ipi_to_irqhandler(XEN_IRQ_WORK_VECTOR,
++				    cpu,
++				    xen_irq_work_interrupt,
++				    IRQF_DISABLED|IRQF_PERCPU|IRQF_NOBALANCING,
++				    callfunc_name,
++				    NULL);
++	if (rc < 0)
++		goto fail;
++	per_cpu(xen_irq_work, cpu) = rc;
++
+ 	return 0;
+ 
+  fail:
+@@ -155,6 +169,8 @@ static int xen_smp_intr_init(unsigned int cpu)
+ 	if (per_cpu(xen_callfuncsingle_irq, cpu) >= 0)
+ 		unbind_from_irqhandler(per_cpu(xen_callfuncsingle_irq, cpu),
+ 				       NULL);
++	if (per_cpu(xen_irq_work, cpu) >= 0)
++		unbind_from_irqhandler(per_cpu(xen_irq_work, cpu), NULL);
+ 
+ 	return rc;
+ }
+@@ -509,6 +525,9 @@ static inline int xen_map_vector(int vector)
+ 	case CALL_FUNCTION_SINGLE_VECTOR:
+ 		xen_vector = XEN_CALL_FUNCTION_SINGLE_VECTOR;
+ 		break;
++	case IRQ_WORK_VECTOR:
++		xen_vector = XEN_IRQ_WORK_VECTOR;
++		break;
+ 	default:
+ 		xen_vector = -1;
+ 		printk(KERN_ERR "xen: vector 0x%x is not implemented\n",
+@@ -588,6 +607,16 @@ static irqreturn_t xen_call_function_single_interrupt(int irq, void *dev_id)
+ 	return IRQ_HANDLED;
+ }
+ 
++static irqreturn_t xen_irq_work_interrupt(int irq, void *dev_id)
++{
++	irq_enter();
++	inc_irq_stat(apic_irq_work_irqs);
++	irq_work_run();
++	irq_exit();
++
++	return IRQ_HANDLED;
++}
++
+ static const struct smp_ops xen_smp_ops __initconst = {
+ 	.smp_prepare_boot_cpu = xen_smp_prepare_boot_cpu,
+ 	.smp_prepare_cpus = xen_smp_prepare_cpus,
+@@ -634,6 +663,7 @@ static void xen_hvm_cpu_die(unsigned int cpu)
+ 	unbind_from_irqhandler(per_cpu(xen_callfunc_irq, cpu), NULL);
+ 	unbind_from_irqhandler(per_cpu(xen_debug_irq, cpu), NULL);
+ 	unbind_from_irqhandler(per_cpu(xen_callfuncsingle_irq, cpu), NULL);
++	unbind_from_irqhandler(per_cpu(xen_irq_work, cpu), NULL);
+ 	native_cpu_die(cpu);
+ }
+ 
+-- 
+1.7.2.5
 
-> Hi Ingo,
-> 
-> 	Please consider pulling,
-> 
-> Thanks,
-> 
-> - Arnaldo
-> 
-> The following changes since commit 7fb0a5ee8889488f7568ffddffeb66ddeb50917e:
-> 
->   perf kvm: Finding struct machine fails for PERF_RECORD_MMAP (2012-04-11 11:45:12 -0300)
-> 
-> are available in the git repository at:
-> 
->   git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux tags/perf-urgent-for-mingo
-> 
-> for you to fetch changes up to e3b6193378e8549d04849eda496129f94406ed36:
-> 
->   perf archive: Correct cutting of symbolic link (2012-04-14 13:52:15 -0300)
-> 
-> ----------------------------------------------------------------
-> Fixes for perf/urgent:
-> 
-> . Properly handle ~/.debug, the build id cache, when it is a symlink,
->   fix from Chanho Park
-> 
-> . Fixes for the parser generation process, from Jiri Olsa and Namhyung Kim
-> 
-> . Fix build when NO_GTK2 is specified, From Stephane Eranian
-> 
-> . When a machine is not found, bump the relevant error stat but return
->   0, so that we correctly move to the next perf event. Fix from Jiri Olsa
-> 
-> Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
-> 
-> ----------------------------------------------------------------
-> Chanho Park (1):
->       perf archive: Correct cutting of symbolic link
-> 
-> Jiri Olsa (2):
->       perf session: Skip event correctly for unknown id/machine
->       perf tools: Fix parsers' rules to dependencies
-> 
-> Namhyung Kim (1):
->       perf tools: Ignore auto-generated bison/flex files
-> 
-> Stephane Eranian (1):
->       perf tools: fix NO_GTK2 Makefile config error
-> 
->  tools/perf/.gitignore      |    2 ++
->  tools/perf/Makefile        |   21 +++++++++------------
->  tools/perf/perf-archive.sh |    3 ++-
->  tools/perf/util/session.c  |    4 ++--
->  4 files changed, 15 insertions(+), 15 deletions(-)
-
-Pulled, thanks Arnaldo!
-
-	Ingo
