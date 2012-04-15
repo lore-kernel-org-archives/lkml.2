@@ -1,1153 +1,353 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755451Ab2DONly (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 15 Apr 2012 09:41:54 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:11533 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754953Ab2DONky (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1754895Ab2DONky (ORCPT <rfc822;w@1wt.eu>);
 	Sun, 15 Apr 2012 09:40:54 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:8674 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754425Ab2DONkw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 15 Apr 2012 09:40:52 -0400
 From: Jiri Olsa <jolsa@redhat.com>
 To: acme@redhat.com, a.p.zijlstra@chello.nl, mingo@elte.hu, paulus@samba.org,
         cjashfor@linux.vnet.ibm.com, fweisbec@gmail.com
 Cc: linux-kernel@vger.kernel.org, Jiri Olsa <jolsa@redhat.com>
-Subject: [PATCH 2/6] perf, tool: Move parse event automated tests to separated object
-Date: Sun, 15 Apr 2012 15:40:30 +0200
-Message-Id: <1334497234-5441-3-git-send-email-jolsa@redhat.com>
+Subject: [PATCH 1/6] perf, tool: Split term type into value type and term type
+Date: Sun, 15 Apr 2012 15:40:29 +0200
+Message-Id: <1334497234-5441-2-git-send-email-jolsa@redhat.com>
 In-Reply-To: <1334497234-5441-1-git-send-email-jolsa@redhat.com>
 References: <1334497234-5441-1-git-send-email-jolsa@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Moving event parsing specific tests into separated file:
-  util/parse-events-test.c
+Introducing type_val and type_term for term instead of a single
+type value. Currently the term type marked out the value type as
+well.
 
-Also changing the code a bit to ease running separate tests.
+With this change we can have future string term values being
+specified by user and translated into proper number along the
+processing.
 
 Signed-off-by: Jiri Olsa <jolsa@redhat.com>
 ---
- tools/perf/Makefile                 |    1 +
- tools/perf/builtin-test.c           |  522 +----------------------------------
- tools/perf/util/parse-events-test.c |  535 +++++++++++++++++++++++++++++++++++
- tools/perf/util/parse-events.h      |    4 +
- 4 files changed, 541 insertions(+), 521 deletions(-)
- create mode 100644 tools/perf/util/parse-events-test.c
+ tools/perf/util/parse-events.c |   45 +++++++++++++++++++------
+ tools/perf/util/parse-events.h |   21 +++++++-----
+ tools/perf/util/parse-events.y |   16 ++++----
+ tools/perf/util/pmu.c          |   70 ++++++++++++++++++++++++----------------
+ 4 files changed, 96 insertions(+), 56 deletions(-)
 
-diff --git a/tools/perf/Makefile b/tools/perf/Makefile
-index e98e14c..5f5bc9c 100644
---- a/tools/perf/Makefile
-+++ b/tools/perf/Makefile
-@@ -319,6 +319,7 @@ LIB_OBJS += $(OUTPUT)util/help.o
- LIB_OBJS += $(OUTPUT)util/levenshtein.o
- LIB_OBJS += $(OUTPUT)util/parse-options.o
- LIB_OBJS += $(OUTPUT)util/parse-events.o
-+LIB_OBJS += $(OUTPUT)util/parse-events-test.o
- LIB_OBJS += $(OUTPUT)util/path.o
- LIB_OBJS += $(OUTPUT)util/rbtree.o
- LIB_OBJS += $(OUTPUT)util/bitmap.o
-diff --git a/tools/perf/builtin-test.c b/tools/perf/builtin-test.c
-index 1c5b980..7c61eef 100644
---- a/tools/perf/builtin-test.c
-+++ b/tools/perf/builtin-test.c
-@@ -604,526 +604,6 @@ out_free_threads:
- #undef nsyscalls
- }
- 
--#define TEST_ASSERT_VAL(text, cond) \
--do { \
--	if (!(cond)) { \
--		pr_debug("FAILED %s:%d %s\n", __FILE__, __LINE__, text); \
--		return -1; \
--	} \
--} while (0)
--
--static int test__checkevent_tracepoint(struct perf_evlist *evlist)
--{
--	struct perf_evsel *evsel = list_entry(evlist->entries.next,
--					      struct perf_evsel, node);
--
--	TEST_ASSERT_VAL("wrong number of entries", 1 == evlist->nr_entries);
--	TEST_ASSERT_VAL("wrong type", PERF_TYPE_TRACEPOINT == evsel->attr.type);
--	TEST_ASSERT_VAL("wrong sample_type",
--		(PERF_SAMPLE_RAW | PERF_SAMPLE_TIME | PERF_SAMPLE_CPU) ==
--		evsel->attr.sample_type);
--	TEST_ASSERT_VAL("wrong sample_period", 1 == evsel->attr.sample_period);
--	return 0;
--}
--
--static int test__checkevent_tracepoint_multi(struct perf_evlist *evlist)
--{
--	struct perf_evsel *evsel;
--
--	TEST_ASSERT_VAL("wrong number of entries", evlist->nr_entries > 1);
--
--	list_for_each_entry(evsel, &evlist->entries, node) {
--		TEST_ASSERT_VAL("wrong type",
--			PERF_TYPE_TRACEPOINT == evsel->attr.type);
--		TEST_ASSERT_VAL("wrong sample_type",
--			(PERF_SAMPLE_RAW | PERF_SAMPLE_TIME | PERF_SAMPLE_CPU)
--			== evsel->attr.sample_type);
--		TEST_ASSERT_VAL("wrong sample_period",
--			1 == evsel->attr.sample_period);
--	}
--	return 0;
--}
--
--static int test__checkevent_raw(struct perf_evlist *evlist)
--{
--	struct perf_evsel *evsel = list_entry(evlist->entries.next,
--					      struct perf_evsel, node);
--
--	TEST_ASSERT_VAL("wrong number of entries", 1 == evlist->nr_entries);
--	TEST_ASSERT_VAL("wrong type", PERF_TYPE_RAW == evsel->attr.type);
--	TEST_ASSERT_VAL("wrong config", 0x1a == evsel->attr.config);
--	return 0;
--}
--
--static int test__checkevent_numeric(struct perf_evlist *evlist)
--{
--	struct perf_evsel *evsel = list_entry(evlist->entries.next,
--					      struct perf_evsel, node);
--
--	TEST_ASSERT_VAL("wrong number of entries", 1 == evlist->nr_entries);
--	TEST_ASSERT_VAL("wrong type", 1 == evsel->attr.type);
--	TEST_ASSERT_VAL("wrong config", 1 == evsel->attr.config);
--	return 0;
--}
--
--static int test__checkevent_symbolic_name(struct perf_evlist *evlist)
--{
--	struct perf_evsel *evsel = list_entry(evlist->entries.next,
--					      struct perf_evsel, node);
--
--	TEST_ASSERT_VAL("wrong number of entries", 1 == evlist->nr_entries);
--	TEST_ASSERT_VAL("wrong type", PERF_TYPE_HARDWARE == evsel->attr.type);
--	TEST_ASSERT_VAL("wrong config",
--			PERF_COUNT_HW_INSTRUCTIONS == evsel->attr.config);
--	return 0;
--}
--
--static int test__checkevent_symbolic_name_config(struct perf_evlist *evlist)
--{
--	struct perf_evsel *evsel = list_entry(evlist->entries.next,
--					      struct perf_evsel, node);
--
--	TEST_ASSERT_VAL("wrong number of entries", 1 == evlist->nr_entries);
--	TEST_ASSERT_VAL("wrong type", PERF_TYPE_HARDWARE == evsel->attr.type);
--	TEST_ASSERT_VAL("wrong config",
--			PERF_COUNT_HW_CPU_CYCLES == evsel->attr.config);
--	TEST_ASSERT_VAL("wrong period",
--			100000 == evsel->attr.sample_period);
--	TEST_ASSERT_VAL("wrong config1",
--			0 == evsel->attr.config1);
--	TEST_ASSERT_VAL("wrong config2",
--			1 == evsel->attr.config2);
--	return 0;
--}
--
--static int test__checkevent_symbolic_alias(struct perf_evlist *evlist)
--{
--	struct perf_evsel *evsel = list_entry(evlist->entries.next,
--					      struct perf_evsel, node);
--
--	TEST_ASSERT_VAL("wrong number of entries", 1 == evlist->nr_entries);
--	TEST_ASSERT_VAL("wrong type", PERF_TYPE_SOFTWARE == evsel->attr.type);
--	TEST_ASSERT_VAL("wrong config",
--			PERF_COUNT_SW_PAGE_FAULTS == evsel->attr.config);
--	return 0;
--}
--
--static int test__checkevent_genhw(struct perf_evlist *evlist)
--{
--	struct perf_evsel *evsel = list_entry(evlist->entries.next,
--					      struct perf_evsel, node);
--
--	TEST_ASSERT_VAL("wrong number of entries", 1 == evlist->nr_entries);
--	TEST_ASSERT_VAL("wrong type", PERF_TYPE_HW_CACHE == evsel->attr.type);
--	TEST_ASSERT_VAL("wrong config", (1 << 16) == evsel->attr.config);
--	return 0;
--}
--
--static int test__checkevent_breakpoint(struct perf_evlist *evlist)
--{
--	struct perf_evsel *evsel = list_entry(evlist->entries.next,
--					      struct perf_evsel, node);
--
--	TEST_ASSERT_VAL("wrong number of entries", 1 == evlist->nr_entries);
--	TEST_ASSERT_VAL("wrong type", PERF_TYPE_BREAKPOINT == evsel->attr.type);
--	TEST_ASSERT_VAL("wrong config", 0 == evsel->attr.config);
--	TEST_ASSERT_VAL("wrong bp_type", (HW_BREAKPOINT_R | HW_BREAKPOINT_W) ==
--					 evsel->attr.bp_type);
--	TEST_ASSERT_VAL("wrong bp_len", HW_BREAKPOINT_LEN_4 ==
--					evsel->attr.bp_len);
--	return 0;
--}
--
--static int test__checkevent_breakpoint_x(struct perf_evlist *evlist)
--{
--	struct perf_evsel *evsel = list_entry(evlist->entries.next,
--					      struct perf_evsel, node);
--
--	TEST_ASSERT_VAL("wrong number of entries", 1 == evlist->nr_entries);
--	TEST_ASSERT_VAL("wrong type", PERF_TYPE_BREAKPOINT == evsel->attr.type);
--	TEST_ASSERT_VAL("wrong config", 0 == evsel->attr.config);
--	TEST_ASSERT_VAL("wrong bp_type",
--			HW_BREAKPOINT_X == evsel->attr.bp_type);
--	TEST_ASSERT_VAL("wrong bp_len", sizeof(long) == evsel->attr.bp_len);
--	return 0;
--}
--
--static int test__checkevent_breakpoint_r(struct perf_evlist *evlist)
--{
--	struct perf_evsel *evsel = list_entry(evlist->entries.next,
--					      struct perf_evsel, node);
--
--	TEST_ASSERT_VAL("wrong number of entries", 1 == evlist->nr_entries);
--	TEST_ASSERT_VAL("wrong type",
--			PERF_TYPE_BREAKPOINT == evsel->attr.type);
--	TEST_ASSERT_VAL("wrong config", 0 == evsel->attr.config);
--	TEST_ASSERT_VAL("wrong bp_type",
--			HW_BREAKPOINT_R == evsel->attr.bp_type);
--	TEST_ASSERT_VAL("wrong bp_len",
--			HW_BREAKPOINT_LEN_4 == evsel->attr.bp_len);
--	return 0;
--}
--
--static int test__checkevent_breakpoint_w(struct perf_evlist *evlist)
--{
--	struct perf_evsel *evsel = list_entry(evlist->entries.next,
--					      struct perf_evsel, node);
--
--	TEST_ASSERT_VAL("wrong number of entries", 1 == evlist->nr_entries);
--	TEST_ASSERT_VAL("wrong type",
--			PERF_TYPE_BREAKPOINT == evsel->attr.type);
--	TEST_ASSERT_VAL("wrong config", 0 == evsel->attr.config);
--	TEST_ASSERT_VAL("wrong bp_type",
--			HW_BREAKPOINT_W == evsel->attr.bp_type);
--	TEST_ASSERT_VAL("wrong bp_len",
--			HW_BREAKPOINT_LEN_4 == evsel->attr.bp_len);
--	return 0;
--}
--
--static int test__checkevent_tracepoint_modifier(struct perf_evlist *evlist)
--{
--	struct perf_evsel *evsel = list_entry(evlist->entries.next,
--					      struct perf_evsel, node);
--
--	TEST_ASSERT_VAL("wrong exclude_user", evsel->attr.exclude_user);
--	TEST_ASSERT_VAL("wrong exclude_kernel", !evsel->attr.exclude_kernel);
--	TEST_ASSERT_VAL("wrong exclude_hv", evsel->attr.exclude_hv);
--	TEST_ASSERT_VAL("wrong precise_ip", !evsel->attr.precise_ip);
--
--	return test__checkevent_tracepoint(evlist);
--}
--
--static int
--test__checkevent_tracepoint_multi_modifier(struct perf_evlist *evlist)
--{
--	struct perf_evsel *evsel;
--
--	TEST_ASSERT_VAL("wrong number of entries", evlist->nr_entries > 1);
--
--	list_for_each_entry(evsel, &evlist->entries, node) {
--		TEST_ASSERT_VAL("wrong exclude_user",
--				!evsel->attr.exclude_user);
--		TEST_ASSERT_VAL("wrong exclude_kernel",
--				evsel->attr.exclude_kernel);
--		TEST_ASSERT_VAL("wrong exclude_hv", evsel->attr.exclude_hv);
--		TEST_ASSERT_VAL("wrong precise_ip", !evsel->attr.precise_ip);
--	}
--
--	return test__checkevent_tracepoint_multi(evlist);
--}
--
--static int test__checkevent_raw_modifier(struct perf_evlist *evlist)
--{
--	struct perf_evsel *evsel = list_entry(evlist->entries.next,
--					      struct perf_evsel, node);
--
--	TEST_ASSERT_VAL("wrong exclude_user", evsel->attr.exclude_user);
--	TEST_ASSERT_VAL("wrong exclude_kernel", !evsel->attr.exclude_kernel);
--	TEST_ASSERT_VAL("wrong exclude_hv", evsel->attr.exclude_hv);
--	TEST_ASSERT_VAL("wrong precise_ip", evsel->attr.precise_ip);
--
--	return test__checkevent_raw(evlist);
--}
--
--static int test__checkevent_numeric_modifier(struct perf_evlist *evlist)
--{
--	struct perf_evsel *evsel = list_entry(evlist->entries.next,
--					      struct perf_evsel, node);
--
--	TEST_ASSERT_VAL("wrong exclude_user", evsel->attr.exclude_user);
--	TEST_ASSERT_VAL("wrong exclude_kernel", evsel->attr.exclude_kernel);
--	TEST_ASSERT_VAL("wrong exclude_hv", !evsel->attr.exclude_hv);
--	TEST_ASSERT_VAL("wrong precise_ip", evsel->attr.precise_ip);
--
--	return test__checkevent_numeric(evlist);
--}
--
--static int test__checkevent_symbolic_name_modifier(struct perf_evlist *evlist)
--{
--	struct perf_evsel *evsel = list_entry(evlist->entries.next,
--					      struct perf_evsel, node);
--
--	TEST_ASSERT_VAL("wrong exclude_user", evsel->attr.exclude_user);
--	TEST_ASSERT_VAL("wrong exclude_kernel", evsel->attr.exclude_kernel);
--	TEST_ASSERT_VAL("wrong exclude_hv", !evsel->attr.exclude_hv);
--	TEST_ASSERT_VAL("wrong precise_ip", !evsel->attr.precise_ip);
--
--	return test__checkevent_symbolic_name(evlist);
--}
--
--static int test__checkevent_symbolic_alias_modifier(struct perf_evlist *evlist)
--{
--	struct perf_evsel *evsel = list_entry(evlist->entries.next,
--					      struct perf_evsel, node);
--
--	TEST_ASSERT_VAL("wrong exclude_user", !evsel->attr.exclude_user);
--	TEST_ASSERT_VAL("wrong exclude_kernel", evsel->attr.exclude_kernel);
--	TEST_ASSERT_VAL("wrong exclude_hv", evsel->attr.exclude_hv);
--	TEST_ASSERT_VAL("wrong precise_ip", !evsel->attr.precise_ip);
--
--	return test__checkevent_symbolic_alias(evlist);
--}
--
--static int test__checkevent_genhw_modifier(struct perf_evlist *evlist)
--{
--	struct perf_evsel *evsel = list_entry(evlist->entries.next,
--					      struct perf_evsel, node);
--
--	TEST_ASSERT_VAL("wrong exclude_user", evsel->attr.exclude_user);
--	TEST_ASSERT_VAL("wrong exclude_kernel", !evsel->attr.exclude_kernel);
--	TEST_ASSERT_VAL("wrong exclude_hv", evsel->attr.exclude_hv);
--	TEST_ASSERT_VAL("wrong precise_ip", evsel->attr.precise_ip);
--
--	return test__checkevent_genhw(evlist);
--}
--
--static int test__checkevent_breakpoint_modifier(struct perf_evlist *evlist)
--{
--	struct perf_evsel *evsel = list_entry(evlist->entries.next,
--					      struct perf_evsel, node);
--
--	TEST_ASSERT_VAL("wrong exclude_user", !evsel->attr.exclude_user);
--	TEST_ASSERT_VAL("wrong exclude_kernel", evsel->attr.exclude_kernel);
--	TEST_ASSERT_VAL("wrong exclude_hv", evsel->attr.exclude_hv);
--	TEST_ASSERT_VAL("wrong precise_ip", !evsel->attr.precise_ip);
--
--	return test__checkevent_breakpoint(evlist);
--}
--
--static int test__checkevent_breakpoint_x_modifier(struct perf_evlist *evlist)
--{
--	struct perf_evsel *evsel = list_entry(evlist->entries.next,
--					      struct perf_evsel, node);
--
--	TEST_ASSERT_VAL("wrong exclude_user", evsel->attr.exclude_user);
--	TEST_ASSERT_VAL("wrong exclude_kernel", !evsel->attr.exclude_kernel);
--	TEST_ASSERT_VAL("wrong exclude_hv", evsel->attr.exclude_hv);
--	TEST_ASSERT_VAL("wrong precise_ip", !evsel->attr.precise_ip);
--
--	return test__checkevent_breakpoint_x(evlist);
--}
--
--static int test__checkevent_breakpoint_r_modifier(struct perf_evlist *evlist)
--{
--	struct perf_evsel *evsel = list_entry(evlist->entries.next,
--					      struct perf_evsel, node);
--
--	TEST_ASSERT_VAL("wrong exclude_user", evsel->attr.exclude_user);
--	TEST_ASSERT_VAL("wrong exclude_kernel", evsel->attr.exclude_kernel);
--	TEST_ASSERT_VAL("wrong exclude_hv", !evsel->attr.exclude_hv);
--	TEST_ASSERT_VAL("wrong precise_ip", evsel->attr.precise_ip);
--
--	return test__checkevent_breakpoint_r(evlist);
--}
--
--static int test__checkevent_breakpoint_w_modifier(struct perf_evlist *evlist)
--{
--	struct perf_evsel *evsel = list_entry(evlist->entries.next,
--					      struct perf_evsel, node);
--
--	TEST_ASSERT_VAL("wrong exclude_user", !evsel->attr.exclude_user);
--	TEST_ASSERT_VAL("wrong exclude_kernel", evsel->attr.exclude_kernel);
--	TEST_ASSERT_VAL("wrong exclude_hv", evsel->attr.exclude_hv);
--	TEST_ASSERT_VAL("wrong precise_ip", evsel->attr.precise_ip);
--
--	return test__checkevent_breakpoint_w(evlist);
--}
--
--static int test__checkevent_pmu(struct perf_evlist *evlist)
--{
--
--	struct perf_evsel *evsel = list_entry(evlist->entries.next,
--					      struct perf_evsel, node);
--
--	TEST_ASSERT_VAL("wrong number of entries", 1 == evlist->nr_entries);
--	TEST_ASSERT_VAL("wrong type", PERF_TYPE_RAW == evsel->attr.type);
--	TEST_ASSERT_VAL("wrong config",    10 == evsel->attr.config);
--	TEST_ASSERT_VAL("wrong config1",    1 == evsel->attr.config1);
--	TEST_ASSERT_VAL("wrong config2",    3 == evsel->attr.config2);
--	TEST_ASSERT_VAL("wrong period",  1000 == evsel->attr.sample_period);
--
--	return 0;
--}
--
--static int test__checkevent_list(struct perf_evlist *evlist)
--{
--	struct perf_evsel *evsel;
--
--	TEST_ASSERT_VAL("wrong number of entries", 3 == evlist->nr_entries);
--
--	/* r1 */
--	evsel = list_entry(evlist->entries.next, struct perf_evsel, node);
--	TEST_ASSERT_VAL("wrong type", PERF_TYPE_RAW == evsel->attr.type);
--	TEST_ASSERT_VAL("wrong config", 1 == evsel->attr.config);
--	TEST_ASSERT_VAL("wrong config1", 0 == evsel->attr.config1);
--	TEST_ASSERT_VAL("wrong config2", 0 == evsel->attr.config2);
--	TEST_ASSERT_VAL("wrong exclude_user", !evsel->attr.exclude_user);
--	TEST_ASSERT_VAL("wrong exclude_kernel", !evsel->attr.exclude_kernel);
--	TEST_ASSERT_VAL("wrong exclude_hv", !evsel->attr.exclude_hv);
--	TEST_ASSERT_VAL("wrong precise_ip", !evsel->attr.precise_ip);
--
--	/* syscalls:sys_enter_open:k */
--	evsel = list_entry(evsel->node.next, struct perf_evsel, node);
--	TEST_ASSERT_VAL("wrong type", PERF_TYPE_TRACEPOINT == evsel->attr.type);
--	TEST_ASSERT_VAL("wrong sample_type",
--		(PERF_SAMPLE_RAW | PERF_SAMPLE_TIME | PERF_SAMPLE_CPU) ==
--		evsel->attr.sample_type);
--	TEST_ASSERT_VAL("wrong sample_period", 1 == evsel->attr.sample_period);
--	TEST_ASSERT_VAL("wrong exclude_user", evsel->attr.exclude_user);
--	TEST_ASSERT_VAL("wrong exclude_kernel", !evsel->attr.exclude_kernel);
--	TEST_ASSERT_VAL("wrong exclude_hv", evsel->attr.exclude_hv);
--	TEST_ASSERT_VAL("wrong precise_ip", !evsel->attr.precise_ip);
--
--	/* 1:1:hp */
--	evsel = list_entry(evsel->node.next, struct perf_evsel, node);
--	TEST_ASSERT_VAL("wrong type", 1 == evsel->attr.type);
--	TEST_ASSERT_VAL("wrong config", 1 == evsel->attr.config);
--	TEST_ASSERT_VAL("wrong exclude_user", evsel->attr.exclude_user);
--	TEST_ASSERT_VAL("wrong exclude_kernel", evsel->attr.exclude_kernel);
--	TEST_ASSERT_VAL("wrong exclude_hv", !evsel->attr.exclude_hv);
--	TEST_ASSERT_VAL("wrong precise_ip", evsel->attr.precise_ip);
--
--	return 0;
--}
--
--static struct test__event_st {
--	const char *name;
--	__u32 type;
--	int (*check)(struct perf_evlist *evlist);
--} test__events[] = {
--	{
--		.name  = "syscalls:sys_enter_open",
--		.check = test__checkevent_tracepoint,
--	},
--	{
--		.name  = "syscalls:*",
--		.check = test__checkevent_tracepoint_multi,
--	},
--	{
--		.name  = "r1a",
--		.check = test__checkevent_raw,
--	},
--	{
--		.name  = "1:1",
--		.check = test__checkevent_numeric,
--	},
--	{
--		.name  = "instructions",
--		.check = test__checkevent_symbolic_name,
--	},
--	{
--		.name  = "cycles/period=100000,config2/",
--		.check = test__checkevent_symbolic_name_config,
--	},
--	{
--		.name  = "faults",
--		.check = test__checkevent_symbolic_alias,
--	},
--	{
--		.name  = "L1-dcache-load-miss",
--		.check = test__checkevent_genhw,
--	},
--	{
--		.name  = "mem:0",
--		.check = test__checkevent_breakpoint,
--	},
--	{
--		.name  = "mem:0:x",
--		.check = test__checkevent_breakpoint_x,
--	},
--	{
--		.name  = "mem:0:r",
--		.check = test__checkevent_breakpoint_r,
--	},
--	{
--		.name  = "mem:0:w",
--		.check = test__checkevent_breakpoint_w,
--	},
--	{
--		.name  = "syscalls:sys_enter_open:k",
--		.check = test__checkevent_tracepoint_modifier,
--	},
--	{
--		.name  = "syscalls:*:u",
--		.check = test__checkevent_tracepoint_multi_modifier,
--	},
--	{
--		.name  = "r1a:kp",
--		.check = test__checkevent_raw_modifier,
--	},
--	{
--		.name  = "1:1:hp",
--		.check = test__checkevent_numeric_modifier,
--	},
--	{
--		.name  = "instructions:h",
--		.check = test__checkevent_symbolic_name_modifier,
--	},
--	{
--		.name  = "faults:u",
--		.check = test__checkevent_symbolic_alias_modifier,
--	},
--	{
--		.name  = "L1-dcache-load-miss:kp",
--		.check = test__checkevent_genhw_modifier,
--	},
--	{
--		.name  = "mem:0:u",
--		.check = test__checkevent_breakpoint_modifier,
--	},
--	{
--		.name  = "mem:0:x:k",
--		.check = test__checkevent_breakpoint_x_modifier,
--	},
--	{
--		.name  = "mem:0:r:hp",
--		.check = test__checkevent_breakpoint_r_modifier,
--	},
--	{
--		.name  = "mem:0:w:up",
--		.check = test__checkevent_breakpoint_w_modifier,
--	},
--	{
--		.name  = "cpu/config=10,config1,config2=3,period=1000/u",
--		.check = test__checkevent_pmu,
--	},
--	{
--		.name  = "r1,syscalls:sys_enter_open:k,1:1:hp",
--		.check = test__checkevent_list,
--	},
--};
--
--#define TEST__EVENTS_CNT (sizeof(test__events) / sizeof(struct test__event_st))
--
--static int test__parse_events(void)
--{
--	struct perf_evlist *evlist;
--	u_int i;
--	int ret = 0;
--
--	for (i = 0; i < TEST__EVENTS_CNT; i++) {
--		struct test__event_st *e = &test__events[i];
--
--		evlist = perf_evlist__new(NULL, NULL);
--		if (evlist == NULL)
--			break;
--
--		ret = parse_events(evlist, e->name, 0);
--		if (ret) {
--			pr_debug("failed to parse event '%s', err %d\n",
--				 e->name, ret);
--			break;
--		}
--
--		ret = e->check(evlist);
--		perf_evlist__delete(evlist);
--		if (ret)
--			break;
--	}
--
--	return ret;
--}
--
- static int sched__get_first_possible_cpu(pid_t pid, cpu_set_t **maskp,
- 					 size_t *sizep)
+diff --git a/tools/perf/util/parse-events.c b/tools/perf/util/parse-events.c
+index 5b3a0ef..c7fc18a 100644
+--- a/tools/perf/util/parse-events.c
++++ b/tools/perf/util/parse-events.c
+@@ -593,17 +593,27 @@ int parse_events_add_breakpoint(struct list_head *list, int *idx,
+ static int config_term(struct perf_event_attr *attr,
+ 		       struct parse_events__term *term)
  {
-@@ -1644,7 +1124,7 @@ static struct test {
- 	},
- 	{
- 		.desc = "parse events tests",
--		.func = test__parse_events,
-+		.func = parse_events__test,
- 	},
- #if defined(__x86_64__) || defined(__i386__)
- 	{
-diff --git a/tools/perf/util/parse-events-test.c b/tools/perf/util/parse-events-test.c
-new file mode 100644
-index 0000000..c1d41ba
---- /dev/null
-+++ b/tools/perf/util/parse-events-test.c
-@@ -0,0 +1,535 @@
-+
-+#include "parse-events.h"
-+#include "evsel.h"
-+#include "evlist.h"
-+#include "../../../include/linux/hw_breakpoint.h"
-+
-+#define TEST_ASSERT_VAL(text, cond) \
-+do { \
-+	if (!(cond)) { \
-+		pr_debug("FAILED %s:%d %s\n", __FILE__, __LINE__, text); \
-+		return -1; \
-+	} \
+-	switch (term->type) {
++#define CHECK_TYPE_VAL(type)					\
++do {								\
++	if (PARSE_EVENTS__TERM_TYPE_ ## type != term->type_val)	\
++		return -EINVAL;					\
 +} while (0)
 +
-+static int test__checkevent_tracepoint(struct perf_evlist *evlist)
-+{
-+	struct perf_evsel *evsel = list_entry(evlist->entries.next,
-+					      struct perf_evsel, node);
++	switch (term->type_term) {
+ 	case PARSE_EVENTS__TERM_TYPE_CONFIG:
++		CHECK_TYPE_VAL(NUM);
+ 		attr->config = term->val.num;
+ 		break;
+ 	case PARSE_EVENTS__TERM_TYPE_CONFIG1:
++		CHECK_TYPE_VAL(NUM);
+ 		attr->config1 = term->val.num;
+ 		break;
+ 	case PARSE_EVENTS__TERM_TYPE_CONFIG2:
++		CHECK_TYPE_VAL(NUM);
+ 		attr->config2 = term->val.num;
+ 		break;
+ 	case PARSE_EVENTS__TERM_TYPE_SAMPLE_PERIOD:
++		CHECK_TYPE_VAL(NUM);
+ 		attr->sample_period = term->val.num;
+ 		break;
+ 	case PARSE_EVENTS__TERM_TYPE_BRANCH_SAMPLE_TYPE:
+@@ -615,7 +625,9 @@ static int config_term(struct perf_event_attr *attr,
+ 	default:
+ 		return -EINVAL;
+ 	}
 +
-+	TEST_ASSERT_VAL("wrong number of entries", 1 == evlist->nr_entries);
-+	TEST_ASSERT_VAL("wrong type", PERF_TYPE_TRACEPOINT == evsel->attr.type);
-+	TEST_ASSERT_VAL("wrong sample_type",
-+		(PERF_SAMPLE_RAW | PERF_SAMPLE_TIME | PERF_SAMPLE_CPU) ==
-+		evsel->attr.sample_type);
-+	TEST_ASSERT_VAL("wrong sample_period", 1 == evsel->attr.sample_period);
-+	return 0;
+ 	return 0;
++#undef CHECK_TYPE_VAL
+ }
+ 
+ static int config_attr(struct perf_event_attr *attr,
+@@ -1015,11 +1027,12 @@ void print_events(const char *event_glob)
+ 
+ int parse_events__is_hardcoded_term(struct parse_events__term *term)
+ {
+-	return term->type <= PARSE_EVENTS__TERM_TYPE_HARDCODED_MAX;
++	return term->type_term != PARSE_EVENTS__TERM_TYPE_USER;
+ }
+ 
+-int parse_events__new_term(struct parse_events__term **_term, int type,
+-			   char *config, char *str, long num)
++static int new_term(struct parse_events__term **_term, int type_val,
++		    int type_term, char *config,
++		    char *str, long num)
+ {
+ 	struct parse_events__term *term;
+ 
+@@ -1028,15 +1041,11 @@ int parse_events__new_term(struct parse_events__term **_term, int type,
+ 		return -ENOMEM;
+ 
+ 	INIT_LIST_HEAD(&term->list);
+-	term->type = type;
++	term->type_val  = type_val;
++	term->type_term = type_term;
+ 	term->config = config;
+ 
+-	switch (type) {
+-	case PARSE_EVENTS__TERM_TYPE_CONFIG:
+-	case PARSE_EVENTS__TERM_TYPE_CONFIG1:
+-	case PARSE_EVENTS__TERM_TYPE_CONFIG2:
+-	case PARSE_EVENTS__TERM_TYPE_SAMPLE_PERIOD:
+-	case PARSE_EVENTS__TERM_TYPE_BRANCH_SAMPLE_TYPE:
++	switch (type_val) {
+ 	case PARSE_EVENTS__TERM_TYPE_NUM:
+ 		term->val.num = num;
+ 		break;
+@@ -1051,6 +1060,20 @@ int parse_events__new_term(struct parse_events__term **_term, int type,
+ 	return 0;
+ }
+ 
++int parse_events__term_num(struct parse_events__term **term,
++			   int type_term, char *config, long num)
++{
++	return new_term(term, PARSE_EVENTS__TERM_TYPE_NUM, type_term,
++			config, NULL, num);
 +}
 +
-+static int test__checkevent_tracepoint_multi(struct perf_evlist *evlist)
++int parse_events__term_str(struct parse_events__term **term,
++			   int type_term, char *config, char *str)
 +{
-+	struct perf_evsel *evsel;
-+
-+	TEST_ASSERT_VAL("wrong number of entries", evlist->nr_entries > 1);
-+
-+	list_for_each_entry(evsel, &evlist->entries, node) {
-+		TEST_ASSERT_VAL("wrong type",
-+			PERF_TYPE_TRACEPOINT == evsel->attr.type);
-+		TEST_ASSERT_VAL("wrong sample_type",
-+			(PERF_SAMPLE_RAW | PERF_SAMPLE_TIME | PERF_SAMPLE_CPU)
-+			== evsel->attr.sample_type);
-+		TEST_ASSERT_VAL("wrong sample_period",
-+			1 == evsel->attr.sample_period);
-+	}
-+	return 0;
++	return new_term(term, PARSE_EVENTS__TERM_TYPE_STR, type_term,
++			config, str, 0);
 +}
 +
-+static int test__checkevent_raw(struct perf_evlist *evlist)
-+{
-+	struct perf_evsel *evsel = list_entry(evlist->entries.next,
-+					      struct perf_evsel, node);
-+
-+	TEST_ASSERT_VAL("wrong number of entries", 1 == evlist->nr_entries);
-+	TEST_ASSERT_VAL("wrong type", PERF_TYPE_RAW == evsel->attr.type);
-+	TEST_ASSERT_VAL("wrong config", 0x1a == evsel->attr.config);
-+	return 0;
-+}
-+
-+static int test__checkevent_numeric(struct perf_evlist *evlist)
-+{
-+	struct perf_evsel *evsel = list_entry(evlist->entries.next,
-+					      struct perf_evsel, node);
-+
-+	TEST_ASSERT_VAL("wrong number of entries", 1 == evlist->nr_entries);
-+	TEST_ASSERT_VAL("wrong type", 1 == evsel->attr.type);
-+	TEST_ASSERT_VAL("wrong config", 1 == evsel->attr.config);
-+	return 0;
-+}
-+
-+static int test__checkevent_symbolic_name(struct perf_evlist *evlist)
-+{
-+	struct perf_evsel *evsel = list_entry(evlist->entries.next,
-+					      struct perf_evsel, node);
-+
-+	TEST_ASSERT_VAL("wrong number of entries", 1 == evlist->nr_entries);
-+	TEST_ASSERT_VAL("wrong type", PERF_TYPE_HARDWARE == evsel->attr.type);
-+	TEST_ASSERT_VAL("wrong config",
-+			PERF_COUNT_HW_INSTRUCTIONS == evsel->attr.config);
-+	return 0;
-+}
-+
-+static int test__checkevent_symbolic_name_config(struct perf_evlist *evlist)
-+{
-+	struct perf_evsel *evsel = list_entry(evlist->entries.next,
-+					      struct perf_evsel, node);
-+
-+	TEST_ASSERT_VAL("wrong number of entries", 1 == evlist->nr_entries);
-+	TEST_ASSERT_VAL("wrong type", PERF_TYPE_HARDWARE == evsel->attr.type);
-+	TEST_ASSERT_VAL("wrong config",
-+			PERF_COUNT_HW_CPU_CYCLES == evsel->attr.config);
-+	TEST_ASSERT_VAL("wrong period",
-+			100000 == evsel->attr.sample_period);
-+	TEST_ASSERT_VAL("wrong config1",
-+			0 == evsel->attr.config1);
-+	TEST_ASSERT_VAL("wrong config2",
-+			1 == evsel->attr.config2);
-+	return 0;
-+}
-+
-+static int test__checkevent_symbolic_alias(struct perf_evlist *evlist)
-+{
-+	struct perf_evsel *evsel = list_entry(evlist->entries.next,
-+					      struct perf_evsel, node);
-+
-+	TEST_ASSERT_VAL("wrong number of entries", 1 == evlist->nr_entries);
-+	TEST_ASSERT_VAL("wrong type", PERF_TYPE_SOFTWARE == evsel->attr.type);
-+	TEST_ASSERT_VAL("wrong config",
-+			PERF_COUNT_SW_PAGE_FAULTS == evsel->attr.config);
-+	return 0;
-+}
-+
-+static int test__checkevent_genhw(struct perf_evlist *evlist)
-+{
-+	struct perf_evsel *evsel = list_entry(evlist->entries.next,
-+					      struct perf_evsel, node);
-+
-+	TEST_ASSERT_VAL("wrong number of entries", 1 == evlist->nr_entries);
-+	TEST_ASSERT_VAL("wrong type", PERF_TYPE_HW_CACHE == evsel->attr.type);
-+	TEST_ASSERT_VAL("wrong config", (1 << 16) == evsel->attr.config);
-+	return 0;
-+}
-+
-+static int test__checkevent_breakpoint(struct perf_evlist *evlist)
-+{
-+	struct perf_evsel *evsel = list_entry(evlist->entries.next,
-+					      struct perf_evsel, node);
-+
-+	TEST_ASSERT_VAL("wrong number of entries", 1 == evlist->nr_entries);
-+	TEST_ASSERT_VAL("wrong type", PERF_TYPE_BREAKPOINT == evsel->attr.type);
-+	TEST_ASSERT_VAL("wrong config", 0 == evsel->attr.config);
-+	TEST_ASSERT_VAL("wrong bp_type", (HW_BREAKPOINT_R | HW_BREAKPOINT_W) ==
-+					 evsel->attr.bp_type);
-+	TEST_ASSERT_VAL("wrong bp_len", HW_BREAKPOINT_LEN_4 ==
-+					evsel->attr.bp_len);
-+	return 0;
-+}
-+
-+static int test__checkevent_breakpoint_x(struct perf_evlist *evlist)
-+{
-+	struct perf_evsel *evsel = list_entry(evlist->entries.next,
-+					      struct perf_evsel, node);
-+
-+	TEST_ASSERT_VAL("wrong number of entries", 1 == evlist->nr_entries);
-+	TEST_ASSERT_VAL("wrong type", PERF_TYPE_BREAKPOINT == evsel->attr.type);
-+	TEST_ASSERT_VAL("wrong config", 0 == evsel->attr.config);
-+	TEST_ASSERT_VAL("wrong bp_type",
-+			HW_BREAKPOINT_X == evsel->attr.bp_type);
-+	TEST_ASSERT_VAL("wrong bp_len", sizeof(long) == evsel->attr.bp_len);
-+	return 0;
-+}
-+
-+static int test__checkevent_breakpoint_r(struct perf_evlist *evlist)
-+{
-+	struct perf_evsel *evsel = list_entry(evlist->entries.next,
-+					      struct perf_evsel, node);
-+
-+	TEST_ASSERT_VAL("wrong number of entries", 1 == evlist->nr_entries);
-+	TEST_ASSERT_VAL("wrong type",
-+			PERF_TYPE_BREAKPOINT == evsel->attr.type);
-+	TEST_ASSERT_VAL("wrong config", 0 == evsel->attr.config);
-+	TEST_ASSERT_VAL("wrong bp_type",
-+			HW_BREAKPOINT_R == evsel->attr.bp_type);
-+	TEST_ASSERT_VAL("wrong bp_len",
-+			HW_BREAKPOINT_LEN_4 == evsel->attr.bp_len);
-+	return 0;
-+}
-+
-+static int test__checkevent_breakpoint_w(struct perf_evlist *evlist)
-+{
-+	struct perf_evsel *evsel = list_entry(evlist->entries.next,
-+					      struct perf_evsel, node);
-+
-+	TEST_ASSERT_VAL("wrong number of entries", 1 == evlist->nr_entries);
-+	TEST_ASSERT_VAL("wrong type",
-+			PERF_TYPE_BREAKPOINT == evsel->attr.type);
-+	TEST_ASSERT_VAL("wrong config", 0 == evsel->attr.config);
-+	TEST_ASSERT_VAL("wrong bp_type",
-+			HW_BREAKPOINT_W == evsel->attr.bp_type);
-+	TEST_ASSERT_VAL("wrong bp_len",
-+			HW_BREAKPOINT_LEN_4 == evsel->attr.bp_len);
-+	return 0;
-+}
-+
-+static int test__checkevent_tracepoint_modifier(struct perf_evlist *evlist)
-+{
-+	struct perf_evsel *evsel = list_entry(evlist->entries.next,
-+					      struct perf_evsel, node);
-+
-+	TEST_ASSERT_VAL("wrong exclude_user", evsel->attr.exclude_user);
-+	TEST_ASSERT_VAL("wrong exclude_kernel", !evsel->attr.exclude_kernel);
-+	TEST_ASSERT_VAL("wrong exclude_hv", evsel->attr.exclude_hv);
-+	TEST_ASSERT_VAL("wrong precise_ip", !evsel->attr.precise_ip);
-+
-+	return test__checkevent_tracepoint(evlist);
-+}
-+
-+static int
-+test__checkevent_tracepoint_multi_modifier(struct perf_evlist *evlist)
-+{
-+	struct perf_evsel *evsel;
-+
-+	TEST_ASSERT_VAL("wrong number of entries", evlist->nr_entries > 1);
-+
-+	list_for_each_entry(evsel, &evlist->entries, node) {
-+		TEST_ASSERT_VAL("wrong exclude_user",
-+				!evsel->attr.exclude_user);
-+		TEST_ASSERT_VAL("wrong exclude_kernel",
-+				evsel->attr.exclude_kernel);
-+		TEST_ASSERT_VAL("wrong exclude_hv", evsel->attr.exclude_hv);
-+		TEST_ASSERT_VAL("wrong precise_ip", !evsel->attr.precise_ip);
-+	}
-+
-+	return test__checkevent_tracepoint_multi(evlist);
-+}
-+
-+static int test__checkevent_raw_modifier(struct perf_evlist *evlist)
-+{
-+	struct perf_evsel *evsel = list_entry(evlist->entries.next,
-+					      struct perf_evsel, node);
-+
-+	TEST_ASSERT_VAL("wrong exclude_user", evsel->attr.exclude_user);
-+	TEST_ASSERT_VAL("wrong exclude_kernel", !evsel->attr.exclude_kernel);
-+	TEST_ASSERT_VAL("wrong exclude_hv", evsel->attr.exclude_hv);
-+	TEST_ASSERT_VAL("wrong precise_ip", evsel->attr.precise_ip);
-+
-+	return test__checkevent_raw(evlist);
-+}
-+
-+static int test__checkevent_numeric_modifier(struct perf_evlist *evlist)
-+{
-+	struct perf_evsel *evsel = list_entry(evlist->entries.next,
-+					      struct perf_evsel, node);
-+
-+	TEST_ASSERT_VAL("wrong exclude_user", evsel->attr.exclude_user);
-+	TEST_ASSERT_VAL("wrong exclude_kernel", evsel->attr.exclude_kernel);
-+	TEST_ASSERT_VAL("wrong exclude_hv", !evsel->attr.exclude_hv);
-+	TEST_ASSERT_VAL("wrong precise_ip", evsel->attr.precise_ip);
-+
-+	return test__checkevent_numeric(evlist);
-+}
-+
-+static int test__checkevent_symbolic_name_modifier(struct perf_evlist *evlist)
-+{
-+	struct perf_evsel *evsel = list_entry(evlist->entries.next,
-+					      struct perf_evsel, node);
-+
-+	TEST_ASSERT_VAL("wrong exclude_user", evsel->attr.exclude_user);
-+	TEST_ASSERT_VAL("wrong exclude_kernel", evsel->attr.exclude_kernel);
-+	TEST_ASSERT_VAL("wrong exclude_hv", !evsel->attr.exclude_hv);
-+	TEST_ASSERT_VAL("wrong precise_ip", !evsel->attr.precise_ip);
-+
-+	return test__checkevent_symbolic_name(evlist);
-+}
-+
-+static int test__checkevent_symbolic_alias_modifier(struct perf_evlist *evlist)
-+{
-+	struct perf_evsel *evsel = list_entry(evlist->entries.next,
-+					      struct perf_evsel, node);
-+
-+	TEST_ASSERT_VAL("wrong exclude_user", !evsel->attr.exclude_user);
-+	TEST_ASSERT_VAL("wrong exclude_kernel", evsel->attr.exclude_kernel);
-+	TEST_ASSERT_VAL("wrong exclude_hv", evsel->attr.exclude_hv);
-+	TEST_ASSERT_VAL("wrong precise_ip", !evsel->attr.precise_ip);
-+
-+	return test__checkevent_symbolic_alias(evlist);
-+}
-+
-+static int test__checkevent_genhw_modifier(struct perf_evlist *evlist)
-+{
-+	struct perf_evsel *evsel = list_entry(evlist->entries.next,
-+					      struct perf_evsel, node);
-+
-+	TEST_ASSERT_VAL("wrong exclude_user", evsel->attr.exclude_user);
-+	TEST_ASSERT_VAL("wrong exclude_kernel", !evsel->attr.exclude_kernel);
-+	TEST_ASSERT_VAL("wrong exclude_hv", evsel->attr.exclude_hv);
-+	TEST_ASSERT_VAL("wrong precise_ip", evsel->attr.precise_ip);
-+
-+	return test__checkevent_genhw(evlist);
-+}
-+
-+static int test__checkevent_breakpoint_modifier(struct perf_evlist *evlist)
-+{
-+	struct perf_evsel *evsel = list_entry(evlist->entries.next,
-+					      struct perf_evsel, node);
-+
-+	TEST_ASSERT_VAL("wrong exclude_user", !evsel->attr.exclude_user);
-+	TEST_ASSERT_VAL("wrong exclude_kernel", evsel->attr.exclude_kernel);
-+	TEST_ASSERT_VAL("wrong exclude_hv", evsel->attr.exclude_hv);
-+	TEST_ASSERT_VAL("wrong precise_ip", !evsel->attr.precise_ip);
-+
-+	return test__checkevent_breakpoint(evlist);
-+}
-+
-+static int test__checkevent_breakpoint_x_modifier(struct perf_evlist *evlist)
-+{
-+	struct perf_evsel *evsel = list_entry(evlist->entries.next,
-+					      struct perf_evsel, node);
-+
-+	TEST_ASSERT_VAL("wrong exclude_user", evsel->attr.exclude_user);
-+	TEST_ASSERT_VAL("wrong exclude_kernel", !evsel->attr.exclude_kernel);
-+	TEST_ASSERT_VAL("wrong exclude_hv", evsel->attr.exclude_hv);
-+	TEST_ASSERT_VAL("wrong precise_ip", !evsel->attr.precise_ip);
-+
-+	return test__checkevent_breakpoint_x(evlist);
-+}
-+
-+static int test__checkevent_breakpoint_r_modifier(struct perf_evlist *evlist)
-+{
-+	struct perf_evsel *evsel = list_entry(evlist->entries.next,
-+					      struct perf_evsel, node);
-+
-+	TEST_ASSERT_VAL("wrong exclude_user", evsel->attr.exclude_user);
-+	TEST_ASSERT_VAL("wrong exclude_kernel", evsel->attr.exclude_kernel);
-+	TEST_ASSERT_VAL("wrong exclude_hv", !evsel->attr.exclude_hv);
-+	TEST_ASSERT_VAL("wrong precise_ip", evsel->attr.precise_ip);
-+
-+	return test__checkevent_breakpoint_r(evlist);
-+}
-+
-+static int test__checkevent_breakpoint_w_modifier(struct perf_evlist *evlist)
-+{
-+	struct perf_evsel *evsel = list_entry(evlist->entries.next,
-+					      struct perf_evsel, node);
-+
-+	TEST_ASSERT_VAL("wrong exclude_user", !evsel->attr.exclude_user);
-+	TEST_ASSERT_VAL("wrong exclude_kernel", evsel->attr.exclude_kernel);
-+	TEST_ASSERT_VAL("wrong exclude_hv", evsel->attr.exclude_hv);
-+	TEST_ASSERT_VAL("wrong precise_ip", evsel->attr.precise_ip);
-+
-+	return test__checkevent_breakpoint_w(evlist);
-+}
-+
-+static int test__checkevent_pmu(struct perf_evlist *evlist)
-+{
-+
-+	struct perf_evsel *evsel = list_entry(evlist->entries.next,
-+					      struct perf_evsel, node);
-+
-+	TEST_ASSERT_VAL("wrong number of entries", 1 == evlist->nr_entries);
-+	TEST_ASSERT_VAL("wrong type", PERF_TYPE_RAW == evsel->attr.type);
-+	TEST_ASSERT_VAL("wrong config",    10 == evsel->attr.config);
-+	TEST_ASSERT_VAL("wrong config1",    1 == evsel->attr.config1);
-+	TEST_ASSERT_VAL("wrong config2",    3 == evsel->attr.config2);
-+	TEST_ASSERT_VAL("wrong period",  1000 == evsel->attr.sample_period);
-+
-+	return 0;
-+}
-+
-+static int test__checkevent_list(struct perf_evlist *evlist)
-+{
-+	struct perf_evsel *evsel;
-+
-+	TEST_ASSERT_VAL("wrong number of entries", 3 == evlist->nr_entries);
-+
-+	/* r1 */
-+	evsel = list_entry(evlist->entries.next, struct perf_evsel, node);
-+	TEST_ASSERT_VAL("wrong type", PERF_TYPE_RAW == evsel->attr.type);
-+	TEST_ASSERT_VAL("wrong config", 1 == evsel->attr.config);
-+	TEST_ASSERT_VAL("wrong config1", 0 == evsel->attr.config1);
-+	TEST_ASSERT_VAL("wrong config2", 0 == evsel->attr.config2);
-+	TEST_ASSERT_VAL("wrong exclude_user", !evsel->attr.exclude_user);
-+	TEST_ASSERT_VAL("wrong exclude_kernel", !evsel->attr.exclude_kernel);
-+	TEST_ASSERT_VAL("wrong exclude_hv", !evsel->attr.exclude_hv);
-+	TEST_ASSERT_VAL("wrong precise_ip", !evsel->attr.precise_ip);
-+
-+	/* syscalls:sys_enter_open:k */
-+	evsel = list_entry(evsel->node.next, struct perf_evsel, node);
-+	TEST_ASSERT_VAL("wrong type", PERF_TYPE_TRACEPOINT == evsel->attr.type);
-+	TEST_ASSERT_VAL("wrong sample_type",
-+		(PERF_SAMPLE_RAW | PERF_SAMPLE_TIME | PERF_SAMPLE_CPU) ==
-+		evsel->attr.sample_type);
-+	TEST_ASSERT_VAL("wrong sample_period", 1 == evsel->attr.sample_period);
-+	TEST_ASSERT_VAL("wrong exclude_user", evsel->attr.exclude_user);
-+	TEST_ASSERT_VAL("wrong exclude_kernel", !evsel->attr.exclude_kernel);
-+	TEST_ASSERT_VAL("wrong exclude_hv", evsel->attr.exclude_hv);
-+	TEST_ASSERT_VAL("wrong precise_ip", !evsel->attr.precise_ip);
-+
-+	/* 1:1:hp */
-+	evsel = list_entry(evsel->node.next, struct perf_evsel, node);
-+	TEST_ASSERT_VAL("wrong type", 1 == evsel->attr.type);
-+	TEST_ASSERT_VAL("wrong config", 1 == evsel->attr.config);
-+	TEST_ASSERT_VAL("wrong exclude_user", evsel->attr.exclude_user);
-+	TEST_ASSERT_VAL("wrong exclude_kernel", evsel->attr.exclude_kernel);
-+	TEST_ASSERT_VAL("wrong exclude_hv", !evsel->attr.exclude_hv);
-+	TEST_ASSERT_VAL("wrong precise_ip", evsel->attr.precise_ip);
-+
-+	return 0;
-+}
-+
-+static struct test__event_st {
-+	const char *name;
-+	__u32 type;
-+	int (*check)(struct perf_evlist *evlist);
-+} test__events[] = {
-+	[0] = {
-+		.name  = "syscalls:sys_enter_open",
-+		.check = test__checkevent_tracepoint,
-+	},
-+	[1] = {
-+		.name  = "syscalls:*",
-+		.check = test__checkevent_tracepoint_multi,
-+	},
-+	[2] = {
-+		.name  = "r1a",
-+		.check = test__checkevent_raw,
-+	},
-+	[3] = {
-+		.name  = "1:1",
-+		.check = test__checkevent_numeric,
-+	},
-+	[4] = {
-+		.name  = "instructions",
-+		.check = test__checkevent_symbolic_name,
-+	},
-+	[5] = {
-+		.name  = "cycles/period=100000,config2/",
-+		.check = test__checkevent_symbolic_name_config,
-+	},
-+	[6] = {
-+		.name  = "faults",
-+		.check = test__checkevent_symbolic_alias,
-+	},
-+	[7] = {
-+		.name  = "L1-dcache-load-miss",
-+		.check = test__checkevent_genhw,
-+	},
-+	[8] = {
-+		.name  = "mem:0",
-+		.check = test__checkevent_breakpoint,
-+	},
-+	[9] = {
-+		.name  = "mem:0:x",
-+		.check = test__checkevent_breakpoint_x,
-+	},
-+	[10] = {
-+		.name  = "mem:0:r",
-+		.check = test__checkevent_breakpoint_r,
-+	},
-+	[11] = {
-+		.name  = "mem:0:w",
-+		.check = test__checkevent_breakpoint_w,
-+	},
-+	[12] = {
-+		.name  = "syscalls:sys_enter_open:k",
-+		.check = test__checkevent_tracepoint_modifier,
-+	},
-+	[13] = {
-+		.name  = "syscalls:*:u",
-+		.check = test__checkevent_tracepoint_multi_modifier,
-+	},
-+	[14] = {
-+		.name  = "r1a:kp",
-+		.check = test__checkevent_raw_modifier,
-+	},
-+	[15] = {
-+		.name  = "1:1:hp",
-+		.check = test__checkevent_numeric_modifier,
-+	},
-+	[16] = {
-+		.name  = "instructions:h",
-+		.check = test__checkevent_symbolic_name_modifier,
-+	},
-+	[17] = {
-+		.name  = "faults:u",
-+		.check = test__checkevent_symbolic_alias_modifier,
-+	},
-+	[18] = {
-+		.name  = "L1-dcache-load-miss:kp",
-+		.check = test__checkevent_genhw_modifier,
-+	},
-+	[19] = {
-+		.name  = "mem:0:u",
-+		.check = test__checkevent_breakpoint_modifier,
-+	},
-+	[20] = {
-+		.name  = "mem:0:x:k",
-+		.check = test__checkevent_breakpoint_x_modifier,
-+	},
-+	[21] = {
-+		.name  = "mem:0:r:hp",
-+		.check = test__checkevent_breakpoint_r_modifier,
-+	},
-+	[22] = {
-+		.name  = "mem:0:w:up",
-+		.check = test__checkevent_breakpoint_w_modifier,
-+	},
-+	[23] = {
-+		.name  = "cpu/config=10,config1,config2=3,period=1000/u",
-+		.check = test__checkevent_pmu,
-+	},
-+	[24] = {
-+		.name  = "r1,syscalls:sys_enter_open:k,1:1:hp",
-+		.check = test__checkevent_list,
-+	},
-+};
-+
-+#define TEST__EVENTS_CNT (sizeof(test__events) / sizeof(struct test__event_st))
-+
-+static int test(struct test__event_st *e)
-+{
-+	struct perf_evlist *evlist;
-+	int ret;
-+
-+	evlist = perf_evlist__new(NULL, NULL);
-+	if (evlist == NULL)
-+		return -ENOMEM;
-+
-+	ret = parse_events(evlist, e->name, 0);
-+	if (ret) {
-+		pr_debug("failed to parse event '%s', err %d\n",
-+			 e->name, ret);
-+		return ret;
-+	}
-+
-+	ret = e->check(evlist);
-+	perf_evlist__delete(evlist);
-+
-+	return ret;
-+}
-+
-+int parse_events__test(void)
-+{
-+	u_int i;
-+	int ret = 0;
-+
-+	for (i = 0; i < TEST__EVENTS_CNT; i++) {
-+		struct test__event_st *e = &test__events[i];
-+
-+		pr_debug("running test %d '%s'\n", i, e->name);
-+		ret = test(e);
-+		if (ret)
-+			break;
-+	}
-+
-+	return ret;
-+}
+ void parse_events__free_terms(struct list_head *terms)
+ {
+ 	struct parse_events__term *term, *h;
 diff --git a/tools/perf/util/parse-events.h b/tools/perf/util/parse-events.h
-index a39e15d..6f1f86c 100644
+index ca069f8..a39e15d 100644
 --- a/tools/perf/util/parse-events.h
 +++ b/tools/perf/util/parse-events.h
-@@ -4,6 +4,9 @@
-  * Parse symbolic events/counts passed in as options:
-  */
+@@ -34,16 +34,17 @@ extern int parse_filter(const struct option *opt, const char *str, int unset);
+ #define EVENTS_HELP_MAX (128*1024)
  
-+#include <linux/list.h>
-+#include <stdbool.h>
-+#include "types.h"
- #include "../../../include/linux/perf_event.h"
+ enum {
++	PARSE_EVENTS__TERM_TYPE_NUM,
++	PARSE_EVENTS__TERM_TYPE_STR,
++};
++
++enum {
++	PARSE_EVENTS__TERM_TYPE_USER,
+ 	PARSE_EVENTS__TERM_TYPE_CONFIG,
+ 	PARSE_EVENTS__TERM_TYPE_CONFIG1,
+ 	PARSE_EVENTS__TERM_TYPE_CONFIG2,
+ 	PARSE_EVENTS__TERM_TYPE_SAMPLE_PERIOD,
+ 	PARSE_EVENTS__TERM_TYPE_BRANCH_SAMPLE_TYPE,
+-	PARSE_EVENTS__TERM_TYPE_NUM,
+-	PARSE_EVENTS__TERM_TYPE_STR,
+-
+-	PARSE_EVENTS__TERM_TYPE_HARDCODED_MAX =
+-		PARSE_EVENTS__TERM_TYPE_BRANCH_SAMPLE_TYPE,
+ };
  
- struct list_head;
-@@ -84,6 +87,7 @@ void parse_events_update_lists(struct list_head *list_event,
- void parse_events_error(struct list_head *list_all,
- 			struct list_head *list_event,
- 			int *idx, char const *msg);
-+int parse_events__test(void);
+ struct parse_events__term {
+@@ -52,14 +53,16 @@ struct parse_events__term {
+ 		char *str;
+ 		long  num;
+ 	} val;
+-	int type;
+-
++	int type_val;
++	int type_term;
+ 	struct list_head list;
+ };
  
- void print_events(const char *event_glob);
- void print_events_type(u8 type);
+ int parse_events__is_hardcoded_term(struct parse_events__term *term);
+-int parse_events__new_term(struct parse_events__term **term, int type,
+-			   char *config, char *str, long num);
++int parse_events__term_num(struct parse_events__term **_term,
++			   int type_term, char *config, long num);
++int parse_events__term_str(struct parse_events__term **_term,
++			   int type_term, char *config, char *str);
+ void parse_events__free_terms(struct list_head *terms);
+ int parse_events_modifier(struct list_head *list __used, char *str __used);
+ int parse_events_add_tracepoint(struct list_head *list, int *idx,
+diff --git a/tools/perf/util/parse-events.y b/tools/perf/util/parse-events.y
+index d9637da..936913e 100644
+--- a/tools/perf/util/parse-events.y
++++ b/tools/perf/util/parse-events.y
+@@ -176,8 +176,8 @@ PE_NAME '=' PE_NAME
+ {
+ 	struct parse_events__term *term;
+ 
+-	ABORT_ON(parse_events__new_term(&term, PARSE_EVENTS__TERM_TYPE_STR,
+-		 $1, $3, 0));
++	ABORT_ON(parse_events__term_str(&term, PARSE_EVENTS__TERM_TYPE_USER,
++					$1, $3));
+ 	$$ = term;
+ }
+ |
+@@ -185,8 +185,8 @@ PE_NAME '=' PE_VALUE
+ {
+ 	struct parse_events__term *term;
+ 
+-	ABORT_ON(parse_events__new_term(&term, PARSE_EVENTS__TERM_TYPE_NUM,
+-		 $1, NULL, $3));
++	ABORT_ON(parse_events__term_num(&term, PARSE_EVENTS__TERM_TYPE_USER,
++					$1, $3));
+ 	$$ = term;
+ }
+ |
+@@ -194,8 +194,8 @@ PE_NAME
+ {
+ 	struct parse_events__term *term;
+ 
+-	ABORT_ON(parse_events__new_term(&term, PARSE_EVENTS__TERM_TYPE_NUM,
+-		 $1, NULL, 1));
++	ABORT_ON(parse_events__term_num(&term, PARSE_EVENTS__TERM_TYPE_USER,
++					$1, 1));
+ 	$$ = term;
+ }
+ |
+@@ -203,7 +203,7 @@ PE_TERM '=' PE_VALUE
+ {
+ 	struct parse_events__term *term;
+ 
+-	ABORT_ON(parse_events__new_term(&term, $1, NULL, NULL, $3));
++	ABORT_ON(parse_events__term_num(&term, $1, NULL, $3));
+ 	$$ = term;
+ }
+ |
+@@ -211,7 +211,7 @@ PE_TERM
+ {
+ 	struct parse_events__term *term;
+ 
+-	ABORT_ON(parse_events__new_term(&term, $1, NULL, NULL, 1));
++	ABORT_ON(parse_events__term_num(&term, $1, NULL, 1));
+ 	$$ = term;
+ }
+ 
+diff --git a/tools/perf/util/pmu.c b/tools/perf/util/pmu.c
+index cb08a11..8ee219b 100644
+--- a/tools/perf/util/pmu.c
++++ b/tools/perf/util/pmu.c
+@@ -225,7 +225,7 @@ static int pmu_config_term(struct list_head *formats,
+ 	if (parse_events__is_hardcoded_term(term))
+ 		return 0;
+ 
+-	if (term->type != PARSE_EVENTS__TERM_TYPE_NUM)
++	if (term->type_val != PARSE_EVENTS__TERM_TYPE_NUM)
+ 		return -EINVAL;
+ 
+ 	format = pmu_find_format(formats, term->config);
+@@ -246,6 +246,11 @@ static int pmu_config_term(struct list_head *formats,
+ 		return -EINVAL;
+ 	}
+ 
++	/*
++	 * XXX If we ever decide to go with string values for
++	 * non-hardcoded terms, here's the place to translate
++	 * them into value.
++	 */
+ 	*vp |= pmu_format_value(format->bits, term->val.num);
+ 	return 0;
+ }
+@@ -324,49 +329,58 @@ static struct test_format {
+ /* Simulated users input. */
+ static struct parse_events__term test_terms[] = {
+ 	{
+-		.config  = (char *) "krava01",
+-		.val.num = 15,
+-		.type    = PARSE_EVENTS__TERM_TYPE_NUM,
++		.config    = (char *) "krava01",
++		.val.num   = 15,
++		.type_val  = PARSE_EVENTS__TERM_TYPE_NUM,
++		.type_term = PARSE_EVENTS__TERM_TYPE_USER,
+ 	},
+ 	{
+-		.config  = (char *) "krava02",
+-		.val.num = 170,
+-		.type    = PARSE_EVENTS__TERM_TYPE_NUM,
++		.config    = (char *) "krava02",
++		.val.num   = 170,
++		.type_val  = PARSE_EVENTS__TERM_TYPE_NUM,
++		.type_term = PARSE_EVENTS__TERM_TYPE_USER,
+ 	},
+ 	{
+-		.config  = (char *) "krava03",
+-		.val.num = 1,
+-		.type    = PARSE_EVENTS__TERM_TYPE_NUM,
++		.config    = (char *) "krava03",
++		.val.num   = 1,
++		.type_val  = PARSE_EVENTS__TERM_TYPE_NUM,
++		.type_term = PARSE_EVENTS__TERM_TYPE_USER,
+ 	},
+ 	{
+-		.config  = (char *) "krava11",
+-		.val.num = 27,
+-		.type    = PARSE_EVENTS__TERM_TYPE_NUM,
++		.config    = (char *) "krava11",
++		.val.num   = 27,
++		.type_val  = PARSE_EVENTS__TERM_TYPE_NUM,
++		.type_term = PARSE_EVENTS__TERM_TYPE_USER,
+ 	},
+ 	{
+-		.config  = (char *) "krava12",
+-		.val.num = 1,
+-		.type    = PARSE_EVENTS__TERM_TYPE_NUM,
++		.config    = (char *) "krava12",
++		.val.num   = 1,
++		.type_val  = PARSE_EVENTS__TERM_TYPE_NUM,
++		.type_term = PARSE_EVENTS__TERM_TYPE_USER,
+ 	},
+ 	{
+-		.config  = (char *) "krava13",
+-		.val.num = 2,
+-		.type    = PARSE_EVENTS__TERM_TYPE_NUM,
++		.config    = (char *) "krava13",
++		.val.num   = 2,
++		.type_val  = PARSE_EVENTS__TERM_TYPE_NUM,
++		.type_term = PARSE_EVENTS__TERM_TYPE_USER,
+ 	},
+ 	{
+-		.config  = (char *) "krava21",
+-		.val.num = 119,
+-		.type    = PARSE_EVENTS__TERM_TYPE_NUM,
++		.config    = (char *) "krava21",
++		.val.num   = 119,
++		.type_val  = PARSE_EVENTS__TERM_TYPE_NUM,
++		.type_term = PARSE_EVENTS__TERM_TYPE_USER,
+ 	},
+ 	{
+-		.config  = (char *) "krava22",
+-		.val.num = 11,
+-		.type    = PARSE_EVENTS__TERM_TYPE_NUM,
++		.config    = (char *) "krava22",
++		.val.num   = 11,
++		.type_val  = PARSE_EVENTS__TERM_TYPE_NUM,
++		.type_term = PARSE_EVENTS__TERM_TYPE_USER,
+ 	},
+ 	{
+-		.config  = (char *) "krava23",
+-		.val.num = 2,
+-		.type    = PARSE_EVENTS__TERM_TYPE_NUM,
++		.config    = (char *) "krava23",
++		.val.num   = 2,
++		.type_val  = PARSE_EVENTS__TERM_TYPE_NUM,
++		.type_term = PARSE_EVENTS__TERM_TYPE_USER,
+ 	},
+ };
+ #define TERMS_CNT (sizeof(test_terms) / sizeof(struct parse_events__term))
 -- 
 1.7.7.6
 
