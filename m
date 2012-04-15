@@ -1,118 +1,144 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756202Ab2DOR56 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 15 Apr 2012 13:57:58 -0400
-Received: from static.78-46-68-141.clients.your-server.de ([78.46.68.141]:39562
-	"HELO eristoteles.iwoars.net" rhost-flags-OK-FAIL-OK-FAIL)
-	by vger.kernel.org with SMTP id S1754926Ab2DOR54 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 15 Apr 2012 13:57:56 -0400
-Date: Sun, 15 Apr 2012 19:57:51 +0200 (CEST)
-From: Joel Reardon <joel@clambassador.com>
-X-X-Sender: joel@eristoteles.iwoars.net
-To: Al Viro <viro@ZenIV.linux.org.uk>
-cc: Artem Bityutskiy <dedekind1@gmail.com>, linux-mtd@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: mtdchar kernel oops
-In-Reply-To: <20120415153220.GR6589@ZenIV.linux.org.uk>
-Message-ID: <alpine.DEB.2.00.1204151951560.16000@eristoteles.iwoars.net>
-References: <alpine.DEB.2.00.1204151350450.13924@eristoteles.iwoars.net> <20120415153220.GR6589@ZenIV.linux.org.uk>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1756122Ab2DOSOQ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 15 Apr 2012 14:14:16 -0400
+Received: from tex.lwn.net ([70.33.254.29]:56013 "EHLO vena.lwn.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752626Ab2DOSOO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 15 Apr 2012 14:14:14 -0400
+Date: Sun, 15 Apr 2012 12:14:13 -0600
+From: Jonathan Corbet <corbet@lwn.net>
+To: David Miller <davem@davemloft.net>
+Cc: operational.people@gmail.com, linux-kernel@vger.kernel.org
+Subject: Re: Where I can find the guide/help to device driver development
+Message-ID: <20120415121413.111a7461@lwn.net>
+In-Reply-To: <20120415.003704.657782177790226484.davem@davemloft.net>
+References: <CAKB833=3-a+gkyOHnBwpq2dTiQkVk3p-ZYSQP7rS_rgXYhq6zQ@mail.gmail.com>
+	<20120415.003704.657782177790226484.davem@davemloft.net>
+Organization: LWN.net
+X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.10; x86_64-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Nope, still there.
+On Sun, 15 Apr 2012 00:37:04 -0400 (EDT)
+David Miller <davem@davemloft.net> wrote:
 
-As example trace:
+> From: Vishal Nandanwar <operational.people@gmail.com>
+> Date: Sun, 15 Apr 2012 09:59:02 +0530
+> 
+> > I am new in Linux device driver development. Currently I am learning
+> > drivers from the book "Linux device drivers" by Rubini. This book is
+> > quite big and quite boring. What are the ways to learn the drivers?
+> > 
+> > Do any one have any guide in video or PPT format or in any other format?  
+> 
+> Sorry, nobody is going to produce and direct a science fiction film
+> about kernel development just to make it more interesting for you.
 
-[  162.141319] BUG: unable to handle kernel paging request at 367fb000
-[  162.141405] IP: [<c023614f>] mntget+0xf/0x20
-[  162.141463] *pde = 00000000
-[  162.141499] Oops: 0002 [#1] SMP
-[  162.141542] Modules linked in: mtdchar nandsim nand nand_ids mtd
-nand_ecc aes_i586 aes_generic parport_pc ppdev dm_crypt snd_hda_codec_hdmi
-snd_hda_codec_conexant snd_hda_intel snd_hda_codec btusb bluetooth
-snd_hwdep snd_pcm_oss snd_mixer_oss snd_pcm thinkpad_acpi binfmt_misc
-snd_seq_dummy snd_seq_oss snd_seq_midi arc4 snd_rawmidi snd_seq_midi_event
-snd_seq iwlwifi mac80211 snd_timer snd_seq_device snd coretemp tpm_tis
-cfg80211 psmouse serio_raw joydev soundcore snd_page_alloc tpm microcode
-tpm_bios nvram lp parport fbcon i915 tileblit font bitblit softcursor
-drm_kms_helper usbhid hid mmc_block drm mxm_wmi crc32c_intel firewire_ohci
-sdhci_pci sdhci ahci libahci firewire_core crc_itu_t i2c_algo_bit video
-intel_agp intel_gtt agpgart e1000e [last unloaded: kvm]
-[  162.142435]
-[  162.142456] Pid: 2260, comm: ubiformat Not tainted
-[  162.142569] EIP: 0060:[<c023614f>] EFLAGS: 00010282 CPU: 1
-[  162.142632] EIP is at mntget+0xf/0x20
-[  162.142674] EAX: f6804c10 EBX: f917ff38 ECX: 00000073 EDX: 00000000
-[  162.142744] ESI: f917ff34 EDI: 00000000 EBP: f0847db8 ESP: f0847db8
-[  162.142815]  DS: 007b ES: 007b FS: 00d8 GS: 00e0 SS: 0068
-[  162.142875] CR0: 80050033 CR2: 367fb000 CR3: 36b56000 CR4: 000007d0
-[  162.142946] DR0: 00000000 DR1: 00000000 DR2: 00000000 DR3: 00000000
-[  162.143016] DR6: ffff0ff0 DR7: 00000400
-[  162.143060] Process ubiformat (pid: 2260, ti=f0846000 task=f43fa5e0
-task.ti=f0846000)
-[  162.143146] Stack:
-[  162.143170]  f0847dd8 c023b888 f4834c00 f0847df0 c0a7088c fffffff3
-f3df00c0 00000000
-[  162.143271]  f0847df0 f917fa34 c0220231 00000000 f6f11440 00000000
-f0847e14 c0220252
-[  162.143372]  f3df00c0 f2795b70 c0a706bc 00000000 f3df00c0 f2795b70
-f11ff500 f0847e3c
-[  162.143474] Call Trace:
-[  162.143507]  [<c023b888>] simple_pin_fs+0x38/0xb0
-[  162.143570]  [<f917fa34>] mtdchar_open+0x44/0x1a8 [mtdchar]
-[  162.143636]  [<c0220231>] ? chrdev_open+0x71/0x180
-[  162.143692]  [<c0220252>] chrdev_open+0x92/0x180
-[  162.143749]  [<c021a2ee>] __dentry_open+0x1ee/0x2a0
-[  162.147258]  [<c021b72e>] nameidata_to_filp+0x6e/0x80
-[  162.150750]  [<c02201c0>] ? cdev_put+0x20/0x20
-[  162.154212]  [<c02286a7>] do_last+0x287/0x800
-[  162.157582]  [<c0229c45>] path_openat+0xa5/0x350
-[  162.160949]  [<c022a001>] do_filp_open+0x31/0x80
-[  162.164289]  [<c0234e93>] ? alloc_fd+0xa3/0xe0
-[  162.167577]  [<c0225cf5>] ? getname_flags+0xe5/0x160
-[  162.170862]  [<c021b81a>] do_sys_open+0xda/0x1a0
-[  162.174118]  [<c021b912>] sys_open+0x32/0x40
-[  162.177363]  [<c0615c63>] sysenter_do_call+0x12/0x28
-[  162.180564] Code: fe ff ff 89 d8 31 db e8 40 fa ff ff e9 6c ff ff ff 8d
-74 26 00 8d bc 27 00 00 00 00 55 89 e5 3e 8d 74 26 00 85 c0 74 06 8b 50 0c
-<64> ff 02 5d c3 8d b6 00 00 00 00 8d bf 00 00 00 00 55 89 e5 53
-[  162.187488] EIP: [<c023614f>] mntget+0xf/0x20 SS:ESP 0068:f0847db8
-[  162.190993] CR2: 00000000367fb000
-[  162.261991] ---[ end trace 1e4490d14c39e9e1 ]---
+I don't know...this could actually be kind of fun...
 
+EPISODE 4: A NEW HACK
 
-It also occasionally does it while modprobing nandsim and claims
-"mtd_probe" as the process.
+Our hero Luke is happily gaming away when his whole system goes up in
+flames.  He encounters a pompous whitespace-specialist robot accompanied by
+an R2-format USB stick in search of Obiwan Rubini.  Luke realizes he knows
+Obiwan, a reclusive, bearded figure seen as boring by younger folks, but
+known to the older generation as the source of great wisdom.  Obiwan is
+able to decrypt a video on the R2, finding a plea for help from Princess
+Leianux, who is in great need of help.
 
-Cheers,
-Joel
+Obiwan takes the group to the Black Thorn Cantina, known to be an
+occasional gathering place for great hackers in the early days; there they
+encounter Alan Solo, who is able to offer the services of his beat up old
+development system.  As they travel, Obiwan begins to teach Luke the
+secrets of the Gnudi Hackers and how to use the light side of The Source.
+Luke gets frustrated; it seems he is spending all his time being zapped by
+compilation errors and configuration variables, but Obiwan insists that one
+must follow the path, even if it's boring, lest one end up on the dark
+side, where binary blobs and DRM are to be found.
 
-On Sun, 15 Apr 2012, Al Viro wrote:
+There is an early encounter with Darl McVader and his fearsome squads of
+imperial IP lawyers, but our heroes are lucky: while the lawyers may look
+scary, they are unable to shoot well enough to hit the side of a Java heap
+allocator.  They are able to rescue the princess and head off to join the
+rebel hackers with the top-secret Death Box datasheet that the princess was
+able to copy.  Luke's training continues; by the time they join the rebels,
+he has a sense for char drivers, has learned all about printk(), and can
+sometimes feel the presence of a bug with his eyes closed.  He has also,
+like any aspiring Gnudi, built his own weapon: an ftrace saber of great
+sharpness.
 
-> On Sun, Apr 15, 2012 at 01:58:39PM +0200, Joel Reardon wrote:
-> > I think that this patch:
-> > "mtdchar: kill persistently held vfsmount"
-> > http://permalink.gmane.org/gmane.linux.kernel.commits.head/314175
-> >
-> > has started causing kernel oops's when running ubiformat. The oops is
-> > occuring in fs/namespace.c's mnt_add_count() line:
-> >         this_cpu_add(mnt->mnt_pcp->mnt_count, n);
-> >
-> > with the stack trace:
-> > mntget()
-> > simple_pin_fs()
-> > mtdchar_open()
->
-> Check if commit c65390f4dd49755863f6d772ec538ee4757c08d7
-> Author: Al Viro <viro@zeniv.linux.org.uk>
-> Date:   Mon Apr 9 01:36:28 2012 -0400
->
->     fix breakage in mtdchar_open(), sanitize failure exits
->
-> has fixed that.
->
+This episode ends with a climactic encounter at the Death Box, which is
+threatening our hackers with a litigation ray of unprecedented power.  But,
+by this point, Luke has learned the power of kmalloc() and feels ready.
+Analysis of the datasheet, along with some rebel reverse engineering, has
+turned up a zero-day vulnerability in the Death Box; it is Luke's job to
+drop a patch into it and jailbreak the whole thing.  In the end, when all
+appears lost, Luke turns off his debugger and, using his growing ability
+to be one with the Source, gets his patch in just before the merge window
+closes and everybody lives happily ever after.
+
+Or at least until...
+
+EPISODE 5: THE VENDOR STRIKES BACK
+
+The empire discovers the rebels' secret repository and succeed in getting
+it taken off the net; the rebels, faced with injunction-bearing AT-AT
+walkers, are forced to flee.  Luke, realizing that he must grow his Gnudi
+development skills, heads off to the swampy LKML system to study under the
+great master Ts'oda.  He learns of block drivers, DMA, and signals, but,
+impatient to earn his place in the top-20 contributors list and heedless of
+Ts'oda's admonition that "changeset counts make not one great!", he leaves
+before his training is complete.
+
+Darl McBride is able to exploit this impatience to set up a race condition
+and force Luke into a triple fault situation.  As the battle winds down,
+Luke learns that his nemesis is, in fact, his parent process; Darl offers a
+sharing of resources, but Luke NAKs the idea and chooses to oops instead.
+Happily he is able to kexec() into a new image, leaving open the
+possibility of a proper reboot in a future episode.  Meanwhile, though,
+Alan Solo has been manipulated into a hard-frozen non-compete agreement and
+is effectively removed from the scene.
+
+EPISODE 6: THE RETURN OF THE GNUDI
+
+Princess Leianux and Luke are able to rescue Alan Solo from his
+non-compete, which had been transferred to Ballmer the Hutt; the rescue
+involves an unlikely escape from the extreme Sarlacc memory leak.  Luke
+returns to LKML to finish his training, hoping to learn about race
+conditions, concurrency, and mutual exclusion, but finds that the server
+has been compromised; Luke has no alternative to learning from the Source
+directly.
+
+It seems that the Death Box is being rebooted with new firmware, a
+regression that, from the rebels' point of view, must be reverted
+immediately.  The alliance stages a daring attack, hoping to shut it down
+before it goes multiuser, only to discover "It's a BPT trap!" and the Box
+is already at full capability, and, even worse, is running systemd.  It
+looks like a dark time for the Gnudi.
+
+But Alan Solo and Leianux are able, with the help of an army of long-haired
+smellies and a simple credential-spoofing attack, to get into the shield
+generator and disable SELinux.  Luke manages to defeat Darl McVader in a
+vicious editor battle, but, despite the init process's goading, is
+unwilling to kill McVader and cause himself to be reparented to Init
+directly.  McVader himself attaches to Init, putting him into the zombie
+state; McVader, it seems, has cast off his binary blobs and returned to the
+light.  
+
+The Death Box is rooted once again.  Luke adds his Acked-by to the merge of
+Alan Solo and Princess Leianux, then, with signoffs from Ts'oda, McVader,
+and Obiwan Rubini, takes his place as a proper Gnudi subsystem maintainer.
+
+EPISODE 1: THE PATCHBOMB MENACE
+
+To be written in about 20 years; look for the thrilling appearance of
+Jar-Jar Bunks!
+
+I guess I better get some real work done now.
+
+jon
