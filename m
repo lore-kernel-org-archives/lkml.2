@@ -1,41 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753786Ab2DOKxT (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 15 Apr 2012 06:53:19 -0400
-Received: from mailout-de.gmx.net ([213.165.64.23]:34622 "HELO
-	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752366Ab2DOKxS (ORCPT
+	id S1753987Ab2DOK4o (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 15 Apr 2012 06:56:44 -0400
+Received: from casper.infradead.org ([85.118.1.10]:43039 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752366Ab2DOK4m convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 15 Apr 2012 06:53:18 -0400
-X-Authenticated: #18353093
-X-Provags-ID: V01U2FsdGVkX1+O+7QEdjGOi6qAd8wFnW2mJqz9wrhje4IyDna5i6
-	CnCgZppaGIYpis
-Message-ID: <4F8AA8AC.8070304@gmx.de>
-Date: Sun, 15 Apr 2012 12:53:32 +0200
-From: Karl Herz <karl.herz@gmx.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120312 Thunderbird/11.0
-MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org
-Subject: Workaround for ASM108X interrupt problem (nobody cared ...)
-Content-Type: text/plain; charset=ISO-8859-15; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Y-GMX-Trusted: 0
+	Sun, 15 Apr 2012 06:56:42 -0400
+Message-ID: <1334487366.2528.115.camel@twins>
+Subject: Re: [tip:perf/core] perf ui annotate browser: Allow toggling addr
+ offset view
+From: Peter Zijlstra <peterz@infradead.org>
+To: Arnaldo Carvalho de Melo <acme@redhat.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>, mingo@kernel.org,
+        hpa@zytor.com, paulus@samba.org, eranian@google.com,
+        linux-kernel@vger.kernel.org, efault@gmx.de, namhyung@gmail.com,
+        fweisbec@gmail.com, dsahern@gmail.com,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>, tglx@linutronix.de,
+        linux-tip-commits@vger.kernel.org
+Date: Sun, 15 Apr 2012 12:56:06 +0200
+In-Reply-To: <20120414010410.GB22114@infradead.org>
+References: <tip-4zpgimmz8xv7b5c920el7s45@git.kernel.org>
+	 <CA+55aFxnv5Wrix=uREQsEg+tSBE8SFvy0v_76csv3hrnmPYG2A@mail.gmail.com>
+	 <CA+55aFwcf2uPCccCVrNdCENZVKyev=ARprNj=5zwp5vxD942pw@mail.gmail.com>
+	 <20120414010410.GB22114@infradead.org>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Mailer: Evolution 3.2.2- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-My VDR system (ASUS P8H67-V) is running stable with 3 PCI cards (2 DVB, 
-1 network)
-by using the following kernel options:  noirqdebug irqpoll
+On Fri, 2012-04-13 at 22:04 -0300, Arnaldo Carvalho de Melo wrote:
+> Well, if we use Masami's disassembler we would use the actual code as it
+> is being used and not the original DSO that was later patched by
+> altinstructions. 
 
-This seems to work as
-- With noirqdebug the interrupts are not disabled (and the ASM108X 
-interrupt bursts stop after some time).
-- With irqpoll the interrupts with lower priority than the ASM108X 
-interrupts are handled in time.
-
-I hope this workaround helps to get also some other systems running 
-stable with PCI cards.
-
-Karl
-
+Just noting that there's tons of disassemblers available, we need not
+wait for Masami's one to complete.
