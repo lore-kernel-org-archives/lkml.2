@@ -1,223 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755407Ab2DOQUO (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 15 Apr 2012 12:20:14 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:53051 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755237Ab2DOQUK convert rfc822-to-8bit (ORCPT
+	id S1755453Ab2DOQ0t (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 15 Apr 2012 12:26:49 -0400
+Received: from e31.co.us.ibm.com ([32.97.110.149]:38169 "EHLO
+	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755106Ab2DOQ0r (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 15 Apr 2012 12:20:10 -0400
+	Sun, 15 Apr 2012 12:26:47 -0400
+Date: Sun, 15 Apr 2012 09:25:37 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
+        dipankar@in.ibm.com, akpm@linux-foundation.org,
+        mathieu.desnoyers@efficios.com, josh@joshtriplett.org, niv@us.ibm.com,
+        tglx@linutronix.de, peterz@infradead.org, rostedt@goodmis.org,
+        Valdis.Kletnieks@vt.edu, dhowells@redhat.com, eric.dumazet@gmail.com,
+        darren@dvhart.com, fweisbec@gmail.com, patches@linaro.org
+Subject: Re: [PATCH RFC 0/7] rcu: v2 Inlinable preemptible rcu_read_lock()
+ and rcu_read_unlock()
+Message-ID: <20120415162537.GA13071@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20120414161953.GA18140@linux.vnet.ibm.com>
+ <CA+55aFyR7Rt0-guH4TrrS83VQLsj-wrvQgOwvrf0UscRCxM-OA@mail.gmail.com>
+ <CA+55aFzrmg2Fqg9VD9zV==gxiimW_By2zM17AvJXKY5ecX-ang@mail.gmail.com>
+ <20120414172504.GH2452@linux.vnet.ibm.com>
 MIME-Version: 1.0
-In-Reply-To: <CAEXv5_jiZsd6t=H1KWMNhUdgMez0B-WdC5XAHzdHffjOQh_J4A@mail.gmail.com>
-References: <1540670.AFBi1SpGoi@sifl>
-	<CAEXv5_jiZsd6t=H1KWMNhUdgMez0B-WdC5XAHzdHffjOQh_J4A@mail.gmail.com>
-Date: Sun, 15 Apr 2012 09:20:07 -0700
-X-Google-Sender-Auth: YiXdHY6X8kMr80EJuVRe_VYa9Zo
-Message-ID: <CAGXu5jJp1etKiMTqDcBUxRKwRvp8KHkWR+SWN4-+XdHFxphQ3Q@mail.gmail.com>
-Subject: Re: ANN: libseccomp
-From: Kees Cook <keescook@chromium.org>
-To: David Windsor <dwindsor@gmail.com>
-Cc: Paul Moore <paul@paul-moore.com>, libseccomp-discuss@lists.sourceforge.net,
-        linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
-        Will Drewry <wad@chromium.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120414172504.GH2452@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12041516-7282-0000-0000-000008346663
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Sat, Apr 14, 2012 at 10:25:04AM -0700, Paul E. McKenney wrote:
+> On Sat, Apr 14, 2012 at 10:08:54AM -0700, Linus Torvalds wrote:
+> > On Sat, Apr 14, 2012 at 9:58 AM, Linus Torvalds
+> > <torvalds@linux-foundation.org> wrote:
+> > >
+> > > I'll see if it boots and what it does to my profiles and
+> > > microbenchmark, though.
+> > 
+> > Ok, I can't see any performance difference in the numbers - my
+> > benchmark noise is *much* bigger than anything this would show.
+> 
+> Might still be worthwhile on embedded CPUs that don't optimize
+> function calls as thoroughly as does x86, maybe?
+> 
+> > The profile looks fine, and obviously __rcu_read_lock() is entirely
+> > gone. The top user (avc_has_perm_flags()) looks fine. I note that you
+> > might want to look at the placement of the percpu data - I think it
+> > probably makes sense to put the RCU data close to 'current' etc to get
+> > as much cacheline sharing as possible, and it doesn't seem to be right
+> > now, but it looks reasonable.
+> 
+> Is there somewhere in non-architecture-specific code that would be a
+> good place to put this?  Or is the DEFINE_PER_CPU() for current_task
+> moving from arch/x86 to core code?
+> 
+> > But on the whole, I can't claim that it looks noticeable ;*(
+> 
+> Well, then, I guess I don't feel quite so bad about having prioritized
+> this so low for so long.  ;-)
 
-The seccomp mini-tutorial I wrote[1] could be extended to restart
-system calls. That's the closest I've seen so far. Right now it just
-needs to be run repeatedly until all the needed syscalls are found. :P
+One other thing -- may I add your Tested-by to the series?
 
--Kees
+							Thanx, Paul
 
-[1] http://outflux.net/teach-seccomp/
-
-On Sat, Apr 14, 2012 at 7:10 AM, David Windsor <dwindsor@gmail.com> wrote:
-> Out of curiosity, are there any current efforts towards creating a "learning
-> mode" type of application for seccomp?  I.e. creating a profile for a
-> particular application based upon which syscalls it makes during normal
-> operation.  I realize that many people consider this a security
-> anti-pattern, but it could be useful for the initial creation of a seccomp
-> filter for a particular application, and other security subsystems already
-> do this (ala AppArmor's learning/complain mode).  IIUC, no other kernel
-> mechanisms would need to be created; ptrace could accomplish syscall
-> monitoring.
->
-> Thanks,
-> David Windsor
->
-> On Mon, Apr 9, 2012 at 2:58 PM, Paul Moore <paul@paul-moore.com> wrote:
->>
->> With the seccomp patches finally stabilizing a bit, it seems like now is a
->> good time to announce libseccomp: a library designed to make it easier to
->> create complex, architecture independent seccomp filters.
->>
->>  * http://sourceforge.net/projects/libseccomp/
->>  * git clone git://git.code.sf.net/p/libseccomp/libseccomp
->>
->> The library has only been in development for the past couple months, so it
->> may
->> be a little rough around the edges, and definitely could use more testing,
->> but
->> it is functional and has had some basic testing against the seccomp v17
->> patches.  The project currently lacks any online documentation or a
->> website
->> beyond the basic SF.net tools, but there are current man pages in the
->> source
->> repository and the code is reasonably well commented.
->>
->> For those of you who are interested in making use of the library, or
->> contributing to its development and testing, we do have a mailing list
->> setup
->> (see the To/CC line above) and you can subscribe at the link below; all
->> are
->> welcome.
->>
->>  * https://lists.sourceforge.net/lists/listinfo/libseccomp-discuss
->>
->> To demonstrate some of the basic libseccomp capabilities, I've included a
->> short example below.  The example is trivial, it opens /dev/zero and
->> writes to
->> /dev/null, but it shows how to use libseccomp to create a simple filter
->> and
->> load it into the kernel; filtering both on just the syscall and a syscall
->> with
->> specific arguments.
->>
->> > #include <errno.h>
->> > #include <stdlib.h>
->> > #include <stdio.h>
->> > #include <unistd.h>
->> >
->> > #include <seccomp.h>
->> >
->> > #define BUF_LEN               256
->> >
->> > int main(int argc, char *argv[])
->> > {
->> >       int rc;
->> >       FILE *read_stream, *write_stream;
->> >       unsigned char buf[BUF_LEN];
->> >       size_t op_len;
->> >
->> >       /* initialize the seccomp filter */
->> >       printf("scmp: initializing the seccomp filter ...");
->> >       rc = seccomp_init(SCMP_ACT_KILL);
->> >       if (rc < 0)
->> >               goto failure_scmp;
->> >       printf("ok\n");
->> >
->> >       /* do the setup */
->> >       printf("info: opening /dev/zero for reading ... ");
->> >       read_stream = fopen("/dev/zero", "r");
->> >       if (read_stream == NULL)
->> >               goto failure;
->> >       printf("ok\n");
->> >       printf("info: opening /dev/null for writing ... ");
->> >       write_stream = fopen("/dev/null", "w");
->> >       if (write_stream == NULL)
->> >               goto failure;
->> >       printf("ok\n");
->> >
->> >       /* configure the seccomp filter */
->> >       printf("scmp: configuring the seccomp_filter ... ");
->> >       rc = seccomp_rule_add(SCMP_ACT_ALLOW, SCMP_SYS(read), 1,
->> >                             SCMP_A0(SCMP_CMP_EQ, fileno(read_stream)));
->> >       if (rc < 0)
->> >               goto failure_scmp;
->> >       rc = seccomp_rule_add(SCMP_ACT_ALLOW, SCMP_SYS(write), 1,
->> >                             SCMP_A0(SCMP_CMP_EQ, STDOUT_FILENO));
->> >       if (rc < 0)
->> >               goto failure_scmp;
->> >       rc = seccomp_rule_add(SCMP_ACT_ALLOW, SCMP_SYS(write), 1,
->> >                             SCMP_A0(SCMP_CMP_EQ, STDERR_FILENO));
->> >       if (rc < 0)
->> >               goto failure_scmp;
->> >       rc = seccomp_rule_add(SCMP_ACT_ALLOW, SCMP_SYS(write), 1,
->> >                             SCMP_A0(SCMP_CMP_EQ, fileno(write_stream)));
->> >       if (rc < 0)
->> >               goto failure_scmp;
->> >       rc = seccomp_rule_add(SCMP_ACT_ALLOW, SCMP_SYS(close), 0);
->> >       if (rc < 0)
->> >               goto failure_scmp;
->> >       rc = seccomp_rule_add(SCMP_ACT_ALLOW, SCMP_SYS(exit_group), 0);
->> >       if (rc < 0)
->> >               goto failure_scmp;
->> >       rc = seccomp_rule_add(SCMP_ACT_ALLOW, SCMP_SYS(fstat), 0);
->> >       if (rc < 0)
->> >               goto failure_scmp;
->> >       rc = seccomp_rule_add(SCMP_ACT_ALLOW, SCMP_SYS(ioctl), 0);
->> >       if (rc < 0)
->> >               goto failure_scmp;
->> >       rc = seccomp_rule_add(SCMP_ACT_ALLOW, SCMP_SYS(mmap), 0);
->> >       if (rc < 0)
->> >               goto failure_scmp;
->> >       rc = seccomp_rule_add(SCMP_ACT_ALLOW, SCMP_SYS(mprotect), 0);
->> >       if (rc < 0)
->> >               goto failure_scmp;
->> >       rc = seccomp_rule_add(SCMP_ACT_ALLOW, SCMP_SYS(munmap), 0);
->> >       if (rc < 0)
->> >               goto failure_scmp;
->> >       printf("ok\n");
->> >
->> >       /* load the seccomp filter into the kernel */
->> >       printf("scmp: load the filter ... ");
->> >       rc = seccomp_load();
->> >       if (rc < 0)
->> >               goto failure_scmp;
->> >       seccomp_release();
->> >       printf("ok\n");
->> >
->> >       /* perform the i/o */
->> >       printf("info: attempting to read BUF_LEN bytes ... ");
->> >       op_len = fread(buf, BUF_LEN, 1, read_stream);
->> >       if (op_len != 1)
->> >               return errno;
->> >       printf("ok\n");
->> >
->> >       printf("info: attempting to write BUF_LEN bytes ... ");
->> >       op_len = fwrite(buf, BUF_LEN, 1, write_stream);
->> >       if (op_len != 1)
->> >               return errno;
->> >       printf("ok\n");
->> >
->> >       /* shutdown */
->> >       printf("info: closing file streams and exiting\n");
->> >       fclose(write_stream);
->> >       fclose(read_stream);
->> >       return 0;
->> >
->> > failure_scmp:
->> >       errno = -rc;
->> > failure:
->> >       /* oops ... */
->> >       printf("failed, errno = %u\n", errno);
->> >       return errno;
->> > }
->>
->> --
->> paul moore
->> www.paul-moore.com
->>
->> --
->> To unsubscribe from this list: send the line "unsubscribe
->> linux-security-module" in
->> the body of a message to majordomo@vger.kernel.org
->> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->
->
->
->
-> --
-> PGP: 6141 5FFD 11AE 9844 153E  F268 7C98 7268 6B19 6CC9
-
-
-
--- 
-Kees Cook
-ChromeOS Security
