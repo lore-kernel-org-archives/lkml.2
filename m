@@ -1,40 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755087Ab2DOO75 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 15 Apr 2012 10:59:57 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:7297 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753168Ab2DOO74 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 15 Apr 2012 10:59:56 -0400
-Date: Sun, 15 Apr 2012 17:59:48 +0300
-From: Gleb Natapov <gleb@redhat.com>
-To: acme@ghostprotocols.net
-Cc: a.p.zijlstra@chello.nl, mingo@redhat.com, jolsa@redhat.com,
+	id S1755361Ab2DOPMf (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 15 Apr 2012 11:12:35 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:44627 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751837Ab2DOPMe convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 15 Apr 2012 11:12:34 -0400
+Message-ID: <1334502742.28150.13.camel@twins>
+Subject: Re: [PATCH] perf tools: Add 'G' and 'H' modifiers to event parsing
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Gleb Natapov <gleb@redhat.com>
+Cc: acme@ghostprotocols.net, mingo@redhat.com, jolsa@redhat.com,
         linux-kernel@vger.kernel.org, avi@redhat.com
-Subject: [PATCH] perf tools: Add 'G' and 'H' modifiers to event parsing
-Message-ID: <20120415145948.GK11918@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Date: Sun, 15 Apr 2012 17:12:22 +0200
+In-Reply-To: <20120415145948.GK11918@redhat.com>
+References: <20120415145948.GK11918@redhat.com>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Mailer: Evolution 3.2.2- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-They were dropped during conversion of event parser.
+On Sun, 2012-04-15 at 17:59 +0300, Gleb Natapov wrote:
+> -modifier_event [ukhp]{1,5}
+> +modifier_event [ukhpGH]{1,5} 
 
-Signed-off-by: Gleb Natapov <gleb@redhat.com>
-diff --git a/tools/perf/util/parse-events.l b/tools/perf/util/parse-events.l
-index 05d766e..37a3f17 100644
---- a/tools/perf/util/parse-events.l
-+++ b/tools/perf/util/parse-events.l
-@@ -54,7 +54,7 @@ num_dec		[0-9]+
- num_hex		0x[a-fA-F0-9]+
- num_raw_hex	[a-fA-F0-9]+
- name		[a-zA-Z_*?][a-zA-Z0-9_*?]*
--modifier_event	[ukhp]{1,5}
-+modifier_event	[ukhpGH]{1,5}
- modifier_bp	[rwx]
- 
- %%
---
-			Gleb.
+You'd also need to increase the 5 to 7 I think, unless there's a clear
+exclusion with some of the other flags.
+
+Hmm, as it stands I think the 5 is already too low: "ukhppp" is 6.
+
+We should really write this as ['u'] ['k'] ['h'] ['G'] ['H'] ['p'{1,3}],
+not the combined thing.
