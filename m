@@ -1,54 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754425Ab2DOMKE (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 15 Apr 2012 08:10:04 -0400
-Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:49281 "EHLO
-	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752302Ab2DOMKC (ORCPT
+	id S1754226Ab2DOMYe (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 15 Apr 2012 08:24:34 -0400
+Received: from mail-qc0-f174.google.com ([209.85.216.174]:65527 "EHLO
+	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751231Ab2DOMYc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 15 Apr 2012 08:10:02 -0400
+	Sun, 15 Apr 2012 08:24:32 -0400
 MIME-Version: 1.0
-In-Reply-To: <1334490429.67558.YahooMailNeo@web162006.mail.bf1.yahoo.com>
-References: <1334483226.20721.YahooMailNeo@web162003.mail.bf1.yahoo.com>
-	<CAFLxGvwJCMoiXFn3OgwiX+B50FTzGZmo6eG3xQ1KaPsEVZVA1g@mail.gmail.com>
-	<1334490429.67558.YahooMailNeo@web162006.mail.bf1.yahoo.com>
-Date: Sun, 15 Apr 2012 14:10:00 +0200
-Message-ID: <CAFLxGvz5tmEi-39CZbJN+0zNd3ZpHXzZcNSFUpUWS_aMDJ4t6Q@mail.gmail.com>
-Subject: Re: [NEW]: Introducing shrink_all_memory from user space
-From: richard -rw- weinberger <richard.weinberger@gmail.com>
-To: PINTU KUMAR <pintu_agarwal@yahoo.com>
-Cc: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "pintu.k@samsung.com" <pintu.k@samsung.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Date: Sun, 15 Apr 2012 16:24:31 +0400
+Message-ID: <CAA1sL1QTRKnfvCnHWjbSJ-hq6dgZK+KGDPVTrOhsfZcFTs01Mw@mail.gmail.com>
+Subject: 3.4.0-rc2: skb_put() -> skb_over_panic
+From: Alexander Beregalov <a.beregalov@gmail.com>
+To: netdev <netdev@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Apr 15, 2012 at 1:47 PM, PINTU KUMAR <pintu_agarwal@yahoo.com> wrote:
-> Moreover, this is mainly meant for mobile phones where there is only *one* user.
+Hi
 
-I see. Jet another awful hack.
-Mobile phones are nothing special. They are computers.
+kernel 3.4.0-rc2-00333-g668ce0a
 
->>
->> If we expose it to user space *every* program/user will try too free
->> memory such that it
->> can use more.
->> Can you see the problem?
->>
-> As indicated above, every program/user cannot use it, as it requires root privileges.
-> Ok, you mean to say, every driver can call "shrink_all_memory" simultaneously??
-> Well, we can implement locking for that.
-> Anyways, I wrote a simple script to do this (echo 512 > /dev/shrinkmem) in a loop for 20 times from 2 different terminal (as root) and it works.
-> I cannot see any problem.
+calltrace is lost on netconsole, sorry.
 
-Every program which is allowed to use this interface will (ab)use it.
-Anyway, by exposing this interface to user space (or kernel modules)
-you'll confuse the VM system.
+ethernet is realtek/r8169
 
--- 
-Thanks,
-//richard
+It happened already two times with rtorrent, perhaps I can reproduce
+it, what else can I provide to you?
+
+skb_over_panic: text:ffffffff8136d919 len:1016 put:815
+head:ffff8800afe4d800 data:ffff8800afe4dd6b tail:0x963 end:0x6c0
+dev:<NULL>
+------------[ cut here ]------------
+kernel BUG at net/core/skbuff.c:127!
+invalid opcode: 0000 [#1] SMP
+CPU 2
+Modules linked in:
+
+Pid: 0, comm: swapper/2 Not tainted 3.4.0-rc2-00333-g668ce0a #1
+          /D525MW
+RIP: 0010:[<ffffffff8132414a>]  [<ffffffff8132414a>] skb_put+0x7c/0x86
+RSP: 0018:ffff8800bed03950  EFLAGS: 00010246
+RAX: 0000000000000098 RBX: ffff88002883a580 RCX: 0000000000000015
+RDX: 0000000000000001 RSI: 0000000000000046 RDI: ffffffff8162a0b0
+RBP: ffff8800bed03970 R08: ffffffff813cd540 R09: ffff8800bed03650
+R10: 0000000000000000 R11: 0000000000000000 R12: ffff88002895c380
+R13: ffff88002895ca80 R14: ffff88002895c3a8 R15: ffff88002883a660
+FS:  0000000000000000(0000) GS:ffff8800bed00000(0000) knlGS:0000000000000000
+CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+CR2: 00007fcbba6e1000 CR3: 0000000001520000 CR4: 00000000000007e0
+DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+Process swapper/2 (pid: 0, threadinfo ffff8800bb0a8000, task ffff8800bb06d780)
+Stack:
+ 0000000000000963 00000000000006c0 ffffffff814d06e7 ffff88002895c380
+ ffff8800bed039d0 ffffffff8136d919 ffff88000000032f 000000c98102ebbd
+ ffff88002883a660 0000019c0000250f ffff88002883a580 ffff88002883a580
+Call Trace:
+ <IRQ>
