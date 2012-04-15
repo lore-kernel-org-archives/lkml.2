@@ -1,41 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753987Ab2DOK4o (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 15 Apr 2012 06:56:44 -0400
-Received: from casper.infradead.org ([85.118.1.10]:43039 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752366Ab2DOK4m convert rfc822-to-8bit (ORCPT
+	id S1753541Ab2DOLDY (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 15 Apr 2012 07:03:24 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:32891 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751797Ab2DOLDX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 15 Apr 2012 06:56:42 -0400
-Message-ID: <1334487366.2528.115.camel@twins>
-Subject: Re: [tip:perf/core] perf ui annotate browser: Allow toggling addr
- offset view
-From: Peter Zijlstra <peterz@infradead.org>
-To: Arnaldo Carvalho de Melo <acme@redhat.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>, mingo@kernel.org,
-        hpa@zytor.com, paulus@samba.org, eranian@google.com,
-        linux-kernel@vger.kernel.org, efault@gmx.de, namhyung@gmail.com,
-        fweisbec@gmail.com, dsahern@gmail.com,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>, tglx@linutronix.de,
-        linux-tip-commits@vger.kernel.org
-Date: Sun, 15 Apr 2012 12:56:06 +0200
-In-Reply-To: <20120414010410.GB22114@infradead.org>
-References: <tip-4zpgimmz8xv7b5c920el7s45@git.kernel.org>
-	 <CA+55aFxnv5Wrix=uREQsEg+tSBE8SFvy0v_76csv3hrnmPYG2A@mail.gmail.com>
-	 <CA+55aFwcf2uPCccCVrNdCENZVKyev=ARprNj=5zwp5vxD942pw@mail.gmail.com>
-	 <20120414010410.GB22114@infradead.org>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.2- 
-Mime-Version: 1.0
+	Sun, 15 Apr 2012 07:03:23 -0400
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Liam Girdwood <lrg@ti.com>
+Cc: linux-kernel@vger.kernel.org, patches@opensource.wolfsonmicro.com,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Subject: [PATCH] regulator: wm8994: Convert to set_voltage_sel()
+Date: Sun, 15 Apr 2012 12:03:19 +0100
+Message-Id: <1334487799-824-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+X-Mailer: git-send-email 1.7.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2012-04-13 at 22:04 -0300, Arnaldo Carvalho de Melo wrote:
-> Well, if we use Masami's disassembler we would use the actual code as it
-> is being used and not the original DSO that was later patched by
-> altinstructions. 
+There's no need to implement set_voltage() as there is only a very small
+range of selectors for the regulators in the WM8994 and the voltages are
+not expected to vary frequently at runtime.
 
-Just noting that there's tons of disassemblers available, we need not
-wait for Masami's one to complete.
+Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+---
+ drivers/regulator/wm8994-regulator.c |   41 +++++-----------------------------
+ 1 files changed, 6 insertions(+), 35 deletions(-)
+
+diff --git a/drivers/regulator/wm8994-regulator.c b/drivers/regulator/wm8994-regulator.c
+index f4a6294..0ee81e1 100644
+--- a/drivers/regulator/wm8994-regulator.c
++++ b/drivers/regulator/wm8994-regulator.c
+@@ -98,18 +98,11 @@ static int wm8994_ldo1_get_voltage_sel(struct regulator_dev *rdev)
+ 	return (val & WM8994_LDO1_VSEL_MASK) >> WM8994_LDO1_VSEL_SHIFT;
+ }
+ 
+-static int wm8994_ldo1_set_voltage(struct regulator_dev *rdev,
+-				   int min_uV, int max_uV, unsigned *s)
++static int wm8994_ldo1_set_voltage_sel(struct regulator_dev *rdev,
++				       unsigned selector)
+ {
+ 	struct wm8994_ldo *ldo = rdev_get_drvdata(rdev);
+-	int selector, v;
+ 
+-	selector = (min_uV - 2400000) / 100000;
+-	v = wm8994_ldo1_list_voltage(rdev, selector);
+-	if (v < 0 || v > max_uV)
+-		return -EINVAL;
+-
+-	*s = selector;
+ 	selector <<= WM8994_LDO1_VSEL_SHIFT;
+ 
+ 	return wm8994_set_bits(ldo->wm8994, WM8994_LDO_1,
+@@ -124,7 +117,7 @@ static struct regulator_ops wm8994_ldo1_ops = {
+ 
+ 	.list_voltage = wm8994_ldo1_list_voltage,
+ 	.get_voltage_sel = wm8994_ldo1_get_voltage_sel,
+-	.set_voltage = wm8994_ldo1_set_voltage,
++	.set_voltage_sel = wm8994_ldo1_set_voltage_sel,
+ };
+ 
+ static int wm8994_ldo2_list_voltage(struct regulator_dev *rdev,
+@@ -165,33 +158,11 @@ static int wm8994_ldo2_get_voltage_sel(struct regulator_dev *rdev)
+ 	return (val & WM8994_LDO2_VSEL_MASK) >> WM8994_LDO2_VSEL_SHIFT;
+ }
+ 
+-static int wm8994_ldo2_set_voltage(struct regulator_dev *rdev,
+-				   int min_uV, int max_uV, unsigned *s)
++static int wm8994_ldo2_set_voltage_sel(struct regulator_dev *rdev,
++				       unsigned selector)
+ {
+ 	struct wm8994_ldo *ldo = rdev_get_drvdata(rdev);
+-	int selector, v;
+-
+-	switch (ldo->wm8994->type) {
+-	case WM8994:
+-		selector = (min_uV - 900000) / 100000;
+-		break;
+-	case WM8958:
+-		selector = (min_uV - 1000000) / 100000;
+-		break;
+-	case WM1811:
+-		selector = (min_uV - 950000) / 100000;
+-		if (selector == 0)
+-			selector = 1;
+-		break;
+-	default:
+-		return -EINVAL;
+-	}
+-
+-	v = wm8994_ldo2_list_voltage(rdev, selector);
+-	if (v < 0 || v > max_uV)
+-		return -EINVAL;
+ 
+-	*s = selector;
+ 	selector <<= WM8994_LDO2_VSEL_SHIFT;
+ 
+ 	return wm8994_set_bits(ldo->wm8994, WM8994_LDO_2,
+@@ -206,7 +177,7 @@ static struct regulator_ops wm8994_ldo2_ops = {
+ 
+ 	.list_voltage = wm8994_ldo2_list_voltage,
+ 	.get_voltage_sel = wm8994_ldo2_get_voltage_sel,
+-	.set_voltage = wm8994_ldo2_set_voltage,
++	.set_voltage_sel = wm8994_ldo2_set_voltage_sel,
+ };
+ 
+ static const struct regulator_desc wm8994_ldo_desc[] = {
+-- 
+1.7.9.1
+
