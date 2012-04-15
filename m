@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754553Ab2DOLvN (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 15 Apr 2012 07:51:13 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:44646 "EHLO
+	id S1754916Ab2DOLva (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 15 Apr 2012 07:51:30 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:44644 "EHLO
 	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753509Ab2DOLtn (ORCPT
+	by vger.kernel.org with ESMTP id S1753371Ab2DOLtn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 15 Apr 2012 07:49:43 -0400
 From: Mark Brown <broonie@opensource.wolfsonmicro.com>
 To: Liam Girdwood <lrg@ti.com>
 Cc: linux-kernel@vger.kernel.org, patches@opensource.wolfsonmicro.com,
         Mark Brown <broonie@opensource.wolfsonmicro.com>
-Subject: [PATCH 5/8] regulator: wm8994: Use core voltage selector operations
-Date: Sun, 15 Apr 2012 12:49:22 +0100
-Message-Id: <1334490565-19808-5-git-send-email-broonie@opensource.wolfsonmicro.com>
+Subject: [PATCH 4/8] regulator: wm831x-ldo: Use regulator_get_voltage_sel_regmap()
+Date: Sun, 15 Apr 2012 12:49:21 +0100
+Message-Id: <1334490565-19808-4-git-send-email-broonie@opensource.wolfsonmicro.com>
 X-Mailer: git-send-email 1.7.9.1
 In-Reply-To: <1334490565-19808-1-git-send-email-broonie@opensource.wolfsonmicro.com>
 References: <1334490565-19808-1-git-send-email-broonie@opensource.wolfsonmicro.com>
@@ -23,120 +23,150 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
 ---
- drivers/regulator/wm8994-regulator.c |   59 +++++----------------------------
- 1 files changed, 9 insertions(+), 50 deletions(-)
+ drivers/regulator/wm831x-ldo.c |   63 +++++++--------------------------------
+ 1 files changed, 12 insertions(+), 51 deletions(-)
 
-diff --git a/drivers/regulator/wm8994-regulator.c b/drivers/regulator/wm8994-regulator.c
-index 0ee81e1..e07972f 100644
---- a/drivers/regulator/wm8994-regulator.c
-+++ b/drivers/regulator/wm8994-regulator.c
-@@ -86,29 +86,6 @@ static int wm8994_ldo1_list_voltage(struct regulator_dev *rdev,
- 	return (selector * 100000) + 2400000;
+diff --git a/drivers/regulator/wm831x-ldo.c b/drivers/regulator/wm831x-ldo.c
+index 344beb8..ef017ea 100644
+--- a/drivers/regulator/wm831x-ldo.c
++++ b/drivers/regulator/wm831x-ldo.c
+@@ -161,22 +161,6 @@ static int wm831x_gp_ldo_set_suspend_voltage(struct regulator_dev *rdev,
+ 	return wm831x_gp_ldo_set_voltage_int(rdev, reg, uV, uV, &selector);
  }
  
--static int wm8994_ldo1_get_voltage_sel(struct regulator_dev *rdev)
+-static int wm831x_gp_ldo_get_voltage_sel(struct regulator_dev *rdev)
 -{
--	struct wm8994_ldo *ldo = rdev_get_drvdata(rdev);
--	int val;
+-	struct wm831x_ldo *ldo = rdev_get_drvdata(rdev);
+-	struct wm831x *wm831x = ldo->wm831x;
+-	int reg = ldo->base + WM831X_LDO_ON_CONTROL;
+-	int ret;
 -
--	val = wm8994_reg_read(ldo->wm8994, WM8994_LDO_1);
--	if (val < 0)
--		return val;
+-	ret = wm831x_reg_read(wm831x, reg);
+-	if (ret < 0)
+-		return ret;
 -
--	return (val & WM8994_LDO1_VSEL_MASK) >> WM8994_LDO1_VSEL_SHIFT;
+-	ret &= WM831X_LDO1_ON_VSEL_MASK;
+-
+-	return ret;
 -}
 -
--static int wm8994_ldo1_set_voltage_sel(struct regulator_dev *rdev,
--				       unsigned selector)
--{
--	struct wm8994_ldo *ldo = rdev_get_drvdata(rdev);
--
--	selector <<= WM8994_LDO1_VSEL_SHIFT;
--
--	return wm8994_set_bits(ldo->wm8994, WM8994_LDO_1,
--			       WM8994_LDO1_VSEL_MASK, selector);
--}
--
- static struct regulator_ops wm8994_ldo1_ops = {
- 	.enable = wm8994_ldo_enable,
- 	.disable = wm8994_ldo_disable,
-@@ -116,8 +93,8 @@ static struct regulator_ops wm8994_ldo1_ops = {
- 	.enable_time = wm8994_ldo_enable_time,
+ static unsigned int wm831x_gp_ldo_get_mode(struct regulator_dev *rdev)
+ {
+ 	struct wm831x_ldo *ldo = rdev_get_drvdata(rdev);
+@@ -294,7 +278,7 @@ static unsigned int wm831x_gp_ldo_get_optimum_mode(struct regulator_dev *rdev,
  
- 	.list_voltage = wm8994_ldo1_list_voltage,
--	.get_voltage_sel = wm8994_ldo1_get_voltage_sel,
--	.set_voltage_sel = wm8994_ldo1_set_voltage_sel,
+ static struct regulator_ops wm831x_gp_ldo_ops = {
+ 	.list_voltage = wm831x_gp_ldo_list_voltage,
+-	.get_voltage_sel = wm831x_gp_ldo_get_voltage_sel,
 +	.get_voltage_sel = regulator_get_voltage_sel_regmap,
-+	.set_voltage_sel = regulator_set_voltage_sel_regmap,
- };
+ 	.set_voltage = wm831x_gp_ldo_set_voltage,
+ 	.set_suspend_voltage = wm831x_gp_ldo_set_suspend_voltage,
+ 	.get_mode = wm831x_gp_ldo_get_mode,
+@@ -356,10 +340,13 @@ static __devinit int wm831x_gp_ldo_probe(struct platform_device *pdev)
+ 	ldo->desc.n_voltages = WM831X_GP_LDO_MAX_SELECTOR + 1;
+ 	ldo->desc.ops = &wm831x_gp_ldo_ops;
+ 	ldo->desc.owner = THIS_MODULE;
++	ldo->desc.vsel_reg = ldo->base + WM831X_LDO_ON_CONTROL;
++	ldo->desc.vsel_mask = WM831X_LDO1_ON_VSEL_MASK;
  
- static int wm8994_ldo2_list_voltage(struct regulator_dev *rdev,
-@@ -146,29 +123,6 @@ static int wm8994_ldo2_list_voltage(struct regulator_dev *rdev,
- 	}
- }
- 
--static int wm8994_ldo2_get_voltage_sel(struct regulator_dev *rdev)
--{
--	struct wm8994_ldo *ldo = rdev_get_drvdata(rdev);
--	int val;
--
--	val = wm8994_reg_read(ldo->wm8994, WM8994_LDO_2);
--	if (val < 0)
--		return val;
--
--	return (val & WM8994_LDO2_VSEL_MASK) >> WM8994_LDO2_VSEL_SHIFT;
--}
--
--static int wm8994_ldo2_set_voltage_sel(struct regulator_dev *rdev,
--				       unsigned selector)
--{
--	struct wm8994_ldo *ldo = rdev_get_drvdata(rdev);
--
--	selector <<= WM8994_LDO2_VSEL_SHIFT;
--
--	return wm8994_set_bits(ldo->wm8994, WM8994_LDO_2,
--			       WM8994_LDO2_VSEL_MASK, selector);
--}
--
- static struct regulator_ops wm8994_ldo2_ops = {
- 	.enable = wm8994_ldo_enable,
- 	.disable = wm8994_ldo_disable,
-@@ -176,8 +130,8 @@ static struct regulator_ops wm8994_ldo2_ops = {
- 	.enable_time = wm8994_ldo_enable_time,
- 
- 	.list_voltage = wm8994_ldo2_list_voltage,
--	.get_voltage_sel = wm8994_ldo2_get_voltage_sel,
--	.set_voltage_sel = wm8994_ldo2_set_voltage_sel,
-+	.get_voltage_sel = regulator_get_voltage_sel_regmap,
-+	.set_voltage_sel = regulator_set_voltage_sel_regmap,
- };
- 
- static const struct regulator_desc wm8994_ldo_desc[] = {
-@@ -186,6 +140,8 @@ static const struct regulator_desc wm8994_ldo_desc[] = {
- 		.id = 1,
- 		.type = REGULATOR_VOLTAGE,
- 		.n_voltages = WM8994_LDO1_MAX_SELECTOR + 1,
-+		.vsel_reg = WM8994_LDO_1,
-+		.vsel_mask = WM8994_LDO1_VSEL_MASK,
- 		.ops = &wm8994_ldo1_ops,
- 		.owner = THIS_MODULE,
- 	},
-@@ -194,6 +150,8 @@ static const struct regulator_desc wm8994_ldo_desc[] = {
- 		.id = 2,
- 		.type = REGULATOR_VOLTAGE,
- 		.n_voltages = WM8994_LDO2_MAX_SELECTOR + 1,
-+		.vsel_reg = WM8994_LDO_2,
-+		.vsel_mask = WM8994_LDO2_VSEL_MASK,
- 		.ops = &wm8994_ldo2_ops,
- 		.owner = THIS_MODULE,
- 	},
-@@ -243,6 +201,7 @@ static __devinit int wm8994_ldo_probe(struct platform_device *pdev)
- 	config.dev = &pdev->dev;
- 	config.init_data = pdata->ldo[id].init_data;
+ 	config.dev = pdev->dev.parent;
+ 	config.init_data = pdata->ldo[id];
  	config.driver_data = ldo;
-+	config.regmap = wm8994->regmap;
++	config.regmap = wm831x->regmap;
  
- 	ldo->regulator = regulator_register(&wm8994_ldo_desc[id], &config);
+ 	ldo->regulator = regulator_register(&ldo->desc, &config);
+ 	if (IS_ERR(ldo->regulator)) {
+@@ -478,22 +465,6 @@ static int wm831x_aldo_set_suspend_voltage(struct regulator_dev *rdev,
+ 	return wm831x_aldo_set_voltage_int(rdev, reg, uV, uV, &selector);
+ }
+ 
+-static int wm831x_aldo_get_voltage_sel(struct regulator_dev *rdev)
+-{
+-	struct wm831x_ldo *ldo = rdev_get_drvdata(rdev);
+-	struct wm831x *wm831x = ldo->wm831x;
+-	int reg = ldo->base + WM831X_LDO_ON_CONTROL;
+-	int ret;
+-
+-	ret = wm831x_reg_read(wm831x, reg);
+-	if (ret < 0)
+-		return ret;
+-
+-	ret &= WM831X_LDO7_ON_VSEL_MASK;
+-
+-	return ret;
+-}
+-
+ static unsigned int wm831x_aldo_get_mode(struct regulator_dev *rdev)
+ {
+ 	struct wm831x_ldo *ldo = rdev_get_drvdata(rdev);
+@@ -569,7 +540,7 @@ static int wm831x_aldo_get_status(struct regulator_dev *rdev)
+ 
+ static struct regulator_ops wm831x_aldo_ops = {
+ 	.list_voltage = wm831x_aldo_list_voltage,
+-	.get_voltage_sel = wm831x_aldo_get_voltage_sel,
++	.get_voltage_sel = regulator_get_voltage_sel_regmap,
+ 	.set_voltage = wm831x_aldo_set_voltage,
+ 	.set_suspend_voltage = wm831x_aldo_set_suspend_voltage,
+ 	.get_mode = wm831x_aldo_get_mode,
+@@ -630,10 +601,13 @@ static __devinit int wm831x_aldo_probe(struct platform_device *pdev)
+ 	ldo->desc.n_voltages = WM831X_ALDO_MAX_SELECTOR + 1;
+ 	ldo->desc.ops = &wm831x_aldo_ops;
+ 	ldo->desc.owner = THIS_MODULE;
++	ldo->desc.vsel_reg = ldo->base + WM831X_LDO_ON_CONTROL;
++	ldo->desc.vsel_mask = WM831X_LDO7_ON_VSEL_MASK;
+ 
+ 	config.dev = pdev->dev.parent;
+ 	config.init_data = pdata->ldo[id];
+ 	config.driver_data = ldo;
++	config.regmap = wm831x->regmap;
+ 
+ 	ldo->regulator = regulator_register(&ldo->desc, &config);
+ 	if (IS_ERR(ldo->regulator)) {
+@@ -739,22 +713,6 @@ static int wm831x_alive_ldo_set_suspend_voltage(struct regulator_dev *rdev,
+ 	return wm831x_alive_ldo_set_voltage_int(rdev, reg, uV, uV, &selector);
+ }
+ 
+-static int wm831x_alive_ldo_get_voltage_sel(struct regulator_dev *rdev)
+-{
+-	struct wm831x_ldo *ldo = rdev_get_drvdata(rdev);
+-	struct wm831x *wm831x = ldo->wm831x;
+-	int reg = ldo->base + WM831X_ALIVE_LDO_ON_CONTROL;
+-	int ret;
+-
+-	ret = wm831x_reg_read(wm831x, reg);
+-	if (ret < 0)
+-		return ret;
+-
+-	ret &= WM831X_LDO11_ON_VSEL_MASK;
+-
+-	return ret;
+-}
+-
+ static int wm831x_alive_ldo_get_status(struct regulator_dev *rdev)
+ {
+ 	struct wm831x_ldo *ldo = rdev_get_drvdata(rdev);
+@@ -774,7 +732,7 @@ static int wm831x_alive_ldo_get_status(struct regulator_dev *rdev)
+ 
+ static struct regulator_ops wm831x_alive_ldo_ops = {
+ 	.list_voltage = wm831x_alive_ldo_list_voltage,
+-	.get_voltage_sel = wm831x_alive_ldo_get_voltage_sel,
++	.get_voltage_sel = regulator_get_voltage_sel_regmap,
+ 	.set_voltage = wm831x_alive_ldo_set_voltage,
+ 	.set_suspend_voltage = wm831x_alive_ldo_set_suspend_voltage,
+ 	.get_status = wm831x_alive_ldo_get_status,
+@@ -834,10 +792,13 @@ static __devinit int wm831x_alive_ldo_probe(struct platform_device *pdev)
+ 	ldo->desc.n_voltages = WM831X_ALIVE_LDO_MAX_SELECTOR + 1;
+ 	ldo->desc.ops = &wm831x_alive_ldo_ops;
+ 	ldo->desc.owner = THIS_MODULE;
++	ldo->desc.vsel_reg = ldo->base + WM831X_ALIVE_LDO_ON_CONTROL;
++	ldo->desc.vsel_mask = WM831X_LDO11_ON_VSEL_MASK;
+ 
+ 	config.dev = pdev->dev.parent;
+ 	config.init_data = pdata->ldo[id];
+ 	config.driver_data = ldo;
++	config.regmap = wm831x->regmap;
+ 
+ 	ldo->regulator = regulator_register(&ldo->desc, &config);
  	if (IS_ERR(ldo->regulator)) {
 -- 
 1.7.9.1
