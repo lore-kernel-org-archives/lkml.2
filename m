@@ -1,53 +1,217 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756759Ab2DOBWU (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 14 Apr 2012 21:22:20 -0400
-Received: from mail.linux-iscsi.org ([67.23.28.174]:40048 "EHLO
-	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752888Ab2DOBWP (ORCPT
+	id S1756743Ab2DOB7w (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 14 Apr 2012 21:59:52 -0400
+Received: from mail-pz0-f52.google.com ([209.85.210.52]:59661 "EHLO
+	mail-pz0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756558Ab2DOB7u (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 14 Apr 2012 21:22:15 -0400
-Subject: Re: [PATCH 0/2] sbp-target: cleanup after merge into single file
-From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-To: Stefan Richter <stefanr@s5r6.in-berlin.de>
-Cc: Chris Boot <bootc@bootc.net>, linux1394-devel@lists.sourceforge.net,
-        target-devel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        agrover@redhat.com, clemens@ladisch.de
-In-Reply-To: <20120415011151.55d14826@stein>
-References: <1334366583.12540.12.camel@haakon2.linux-iscsi.org>
-	 <1334394746-31738-1-git-send-email-bootc@bootc.net>
-	 <1334439895.12540.65.camel@haakon2.linux-iscsi.org>
-	 <20120415011151.55d14826@stein>
-Content-Type: text/plain; charset="UTF-8"
-Date: Sat, 14 Apr 2012 18:22:12 -0700
-Message-ID: <1334452932.12540.68.camel@haakon2.linux-iscsi.org>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	Sat, 14 Apr 2012 21:59:50 -0400
+Date: Sun, 15 Apr 2012 09:59:52 +0800
+From: Shawn Guo <shawn.guo@linaro.org>
+To: "Ying-Chun Liu (PaulLiu)" <paul.liu@linaro.org>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linaro-dev@lists.linaro.org, patches@linaro.org,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Ashish Jangam <ashish.jangam@kpitcummins.com>
+Subject: Re: [PATCH v3] mfd: da9052: add device-tree support for i2c driver
+Message-ID: <20120415015949.GD24997@S2101-09.ap.freescale.net>
+References: <1334410747-26087-1-git-send-email-paul.liu@linaro.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1334410747-26087-1-git-send-email-paul.liu@linaro.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2012-04-15 at 01:11 +0200, Stefan Richter wrote:
-> On Apr 14 Nicholas A. Bellinger wrote:
-> > Also, it looks like Stefan has a few more comments from the last round
-> > of review..
+On Sat, Apr 14, 2012 at 09:39:06PM +0800, Ying-Chun Liu (PaulLiu) wrote:
+> From: "Ying-Chun Liu (PaulLiu)" <paul.liu@linaro.org>
 > 
-> Don't consider them blocking.  I would welcome it if the code gets merged
-> soon, it looks very nice and maintainable.  The card state <-> session
-> state interactions which I was wondering about will be more comfortable for
-> me to investigate when it is in mainline; I believe there is no urgency
-> for me to look into that.  Other obscure but simple things like making use
-> of memory alignment guarantees from firewire-core are more effectively
-> addressed if I can send patches rather than comments.
+> This patch adds device-tree support for dialog MFD and the binding
+> documentations.
+> 
+> Signed-off-by: Ying-Chun Liu (PaulLiu) <paul.liu@linaro.org>
+> Cc: Samuel Ortiz <sameo@linux.intel.com>
+> Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>
+> Cc: Shawn Guo <shawn.guo@linaro.org>
+> Cc: Ashish Jangam <ashish.jangam@kpitcummins.com>
+> ---
+>  .../devicetree/bindings/mfd/da9052-i2c.txt         |   60 ++++++++++++++++++++
+>  drivers/mfd/da9052-i2c.c                           |   51 ++++++++++++++---
+>  2 files changed, 103 insertions(+), 8 deletions(-)
+>  create mode 100644 Documentation/devicetree/bindings/mfd/da9052-i2c.txt
+> 
+> diff --git a/Documentation/devicetree/bindings/mfd/da9052-i2c.txt b/Documentation/devicetree/bindings/mfd/da9052-i2c.txt
+> new file mode 100644
+> index 0000000..1857f4a
+> --- /dev/null
+> +++ b/Documentation/devicetree/bindings/mfd/da9052-i2c.txt
+> @@ -0,0 +1,60 @@
+> +* Dialog DA9052/53 Power Management Integrated Circuit (PMIC)
+> +
+> +Required properties:
+> +- compatible : Should be "dlg,da9052", "dlg,da9053-aa",
+> +			 "dlg,da9053-ab", or "dlg,da9053-bb"
+> +
+> +Sub-nodes:
+> +- regulators : Contain the regulator nodes. The DA9052/53 regulators are
+> +  bound using their names as listed below:
+> +
+> +    buck0     : regulator BUCK0
+> +    buck1     : regulator BUCK1
+> +    buck2     : regulator BUCK2
+> +    buck3     : regulator BUCK3
+> +    ldo4      : regulator LDO4
+> +    ldo5      : regulator LDO5
+> +    ldo6      : regulator LDO6
+> +    ldo7      : regulator LDO7
+> +    ldo8      : regulator LDO8
+> +    ldo9      : regulator LDO9
+> +    ldo10     : regulator LDO10
+> +    ldo11     : regulator LDO11
+> +    ldo12     : regulator LDO12
+> +    ldo13     : regulator LDO13
+> +
+> +  The bindings details of individual regulator device can be found in:
+> +  Documentation/devicetree/bindings/regulator/regulator.txt
+> +
+> +Examples:
+> +
+> +i2c@63fc8000 { /* I2C1 */
+> +	status = "okay";
+> +
+> +	pmic: dialog@48 {
+> +		compatible = "dlg,da9053-aa";
+> +		reg = <0x48>;
+> +
+> +		regulators {
+> +			buck0 {
+> +				regulator-min-microvolt = <500000>;
+> +				regulator-max-microvolt = <2075000>;
+> +			};
+> +
+> +			buck1 {
+> +				regulator-min-microvolt = <500000>;
+> +				regulator-max-microvolt = <2075000>;
+> +			};
+> +
+> +			buck2 {
+> +				regulator-min-microvolt = <925000>;
+> +				regulator-max-microvolt = <2500000>;
+> +			};
+> +
+> +			buck3 {
+> +				regulator-min-microvolt = <925000>;
+> +				regulator-max-microvolt = <2500000>;
+> +			};
+> +		};
+> +	};
+> +};
+> diff --git a/drivers/mfd/da9052-i2c.c b/drivers/mfd/da9052-i2c.c
+> index 36b88e3..b946b0ff 100644
+> --- a/drivers/mfd/da9052-i2c.c
+> +++ b/drivers/mfd/da9052-i2c.c
+> @@ -22,6 +22,11 @@
+>  #include <linux/mfd/da9052/da9052.h>
+>  #include <linux/mfd/da9052/reg.h>
+>  
+> +#ifdef CONFIG_OF
+> +#include <linux/of.h>
+> +#include <linux/of_device.h>
+> +#endif
+> +
+I'm not a big fan of "#ifdef CONFIG_OF", but maintainers may like
+to compile out DT support for non-DT build, so I leave it there.
 
-<nod>  In that case, I'll go ahead and add your Acked-by to the initial
-merge commit for sbp-target that will be appearing in
-target-pending/for-next-merge shortly.
+>  static int da9052_i2c_enable_multiwrite(struct da9052 *da9052)
+>  {
+>  	int reg_val, ret;
+> @@ -41,6 +46,24 @@ static int da9052_i2c_enable_multiwrite(struct da9052 *da9052)
+>  	return 0;
+>  }
+>  
+> +static struct i2c_device_id da9052_i2c_id[] = {
+> +	{"da9052", DA9052},
+> +	{"da9053-aa", DA9053_AA},
+> +	{"da9053-ba", DA9053_BA},
+> +	{"da9053-bb", DA9053_BB},
+> +	{}
+> +};
+> +
+> +#ifdef CONFIG_OF
+> +static const struct of_device_id dialog_dt_ids[] = {
+> +	{ .compatible = "dlg,da9052", .data = &da9052_i2c_id[0] },
+> +	{ .compatible = "dlg,da9053-aa", .data = &da9052_i2c_id[1] },
+> +	{ .compatible = "dlg,da9053-ab", .data = &da9052_i2c_id[2] },
+> +	{ .compatible = "dlg,da9053-bb", .data = &da9052_i2c_id[3] },
+> +	{ /* sentinel */ }
+> +};
+> +#endif
+> +
+>  static int __devinit da9052_i2c_probe(struct i2c_client *client,
+>  				       const struct i2c_device_id *id)
+>  {
+> @@ -76,6 +99,23 @@ static int __devinit da9052_i2c_probe(struct i2c_client *client,
+>  	if (ret < 0)
+>  		goto err_regmap;
+>  
+> +#ifdef CONFIG_OF
+> +	if (!id) {
+> +		int i;
 
-Thanks Stefan!
+What is this for?
 
---nab
+> +		struct device_node *np = client->dev.of_node;
+> +		const struct of_device_id *deviceid;
+> +
+> +		deviceid = of_match_node(np, dialog_dt_ids);
+> +		id = (const struct i2c_device_id *)(deviceid->data);
 
+Unnecessary parentheses around deviceid->data.
 
+Regards,
+Shawn
 
+> +	}
+> +#endif
+> +
+> +	if (!id) {
+> +		ret = -ENODEV;
+> +		dev_err(&client->dev, "id is null.\n");
+> +		goto err_regmap;
+> +	}
+> +
+>  	ret = da9052_device_init(da9052, id->driver_data);
+>  	if (ret != 0)
+>  		goto err_regmap;
+> @@ -100,14 +140,6 @@ static int __devexit da9052_i2c_remove(struct i2c_client *client)
+>  	return 0;
+>  }
+>  
+> -static struct i2c_device_id da9052_i2c_id[] = {
+> -	{"da9052", DA9052},
+> -	{"da9053-aa", DA9053_AA},
+> -	{"da9053-ba", DA9053_BA},
+> -	{"da9053-bb", DA9053_BB},
+> -	{}
+> -};
+> -
+>  static struct i2c_driver da9052_i2c_driver = {
+>  	.probe = da9052_i2c_probe,
+>  	.remove = __devexit_p(da9052_i2c_remove),
+> @@ -115,6 +147,9 @@ static struct i2c_driver da9052_i2c_driver = {
+>  	.driver = {
+>  		.name = "da9052",
+>  		.owner = THIS_MODULE,
+> +#ifdef CONFIG_OF
+> +		.of_match_table = dialog_dt_ids,
+> +#endif
+>  	},
+>  };
+>  
+> -- 
+> 1.7.9.5
+> 
