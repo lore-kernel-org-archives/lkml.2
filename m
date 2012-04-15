@@ -1,112 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753541Ab2DOLDY (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 15 Apr 2012 07:03:24 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:32891 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751797Ab2DOLDX (ORCPT
+	id S1752626Ab2DOLMW (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 15 Apr 2012 07:12:22 -0400
+Received: from casper.infradead.org ([85.118.1.10]:43122 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751231Ab2DOLMI convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 15 Apr 2012 07:03:23 -0400
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Liam Girdwood <lrg@ti.com>
-Cc: linux-kernel@vger.kernel.org, patches@opensource.wolfsonmicro.com,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-Subject: [PATCH] regulator: wm8994: Convert to set_voltage_sel()
-Date: Sun, 15 Apr 2012 12:03:19 +0100
-Message-Id: <1334487799-824-1-git-send-email-broonie@opensource.wolfsonmicro.com>
-X-Mailer: git-send-email 1.7.9.1
+	Sun, 15 Apr 2012 07:12:08 -0400
+Message-ID: <1334488312.28150.2.camel@twins>
+Subject: Re: [PATCH v3 1/3] task_work_queue: add generic process-context
+ callbacks
+From: Peter Zijlstra <peterz@infradead.org>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        David Howells <dhowells@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Alexander Gordeev <agordeev@redhat.com>,
+        Chris Zankel <chris@zankel.net>, David Smith <dsmith@redhat.com>,
+        "Frank Ch. Eigler" <fche@redhat.com>,
+        Geert Uytterhoeven <geert@linux-m68k.org>,
+        Larry Woodman <lwoodman@redhat.com>, Tejun Heo <tj@kernel.org>,
+        linux-kernel@vger.kernel.org
+Date: Sun, 15 Apr 2012 13:11:52 +0200
+In-Reply-To: <20120412231520.GA1656@redhat.com>
+References: <20120412211146.GA30448@redhat.com>
+	 <20120412211208.GA30456@redhat.com>
+	 <20120412152246.2eb4211b.akpm@linux-foundation.org>
+	 <20120412231520.GA1656@redhat.com>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Mailer: Evolution 3.2.2- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There's no need to implement set_voltage() as there is only a very small
-range of selectors for the regulators in the WM8994 and the voltages are
-not expected to vary frequently at runtime.
+On Fri, 2012-04-13 at 01:15 +0200, Oleg Nesterov wrote:
+> > hm, I see.  The "queue" in "task_work_queue" is "the action of
+> > queueing", not "a queue".  Noun-vs-verb.
+> 
+> Cough. Peter, do you read this? I stole the naming and the first
+> line of the changelog from kernel/irq_work.c! 
 
-Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
----
- drivers/regulator/wm8994-regulator.c |   41 +++++-----------------------------
- 1 files changed, 6 insertions(+), 35 deletions(-)
+Am now.. right, so that was modeled after queue_work(), although I now
+realize I reversed the words and made it irq_work_queue() instead of
+queue_irq_work().
 
-diff --git a/drivers/regulator/wm8994-regulator.c b/drivers/regulator/wm8994-regulator.c
-index f4a6294..0ee81e1 100644
---- a/drivers/regulator/wm8994-regulator.c
-+++ b/drivers/regulator/wm8994-regulator.c
-@@ -98,18 +98,11 @@ static int wm8994_ldo1_get_voltage_sel(struct regulator_dev *rdev)
- 	return (val & WM8994_LDO1_VSEL_MASK) >> WM8994_LDO1_VSEL_SHIFT;
- }
- 
--static int wm8994_ldo1_set_voltage(struct regulator_dev *rdev,
--				   int min_uV, int max_uV, unsigned *s)
-+static int wm8994_ldo1_set_voltage_sel(struct regulator_dev *rdev,
-+				       unsigned selector)
- {
- 	struct wm8994_ldo *ldo = rdev_get_drvdata(rdev);
--	int selector, v;
- 
--	selector = (min_uV - 2400000) / 100000;
--	v = wm8994_ldo1_list_voltage(rdev, selector);
--	if (v < 0 || v > max_uV)
--		return -EINVAL;
--
--	*s = selector;
- 	selector <<= WM8994_LDO1_VSEL_SHIFT;
- 
- 	return wm8994_set_bits(ldo->wm8994, WM8994_LDO_1,
-@@ -124,7 +117,7 @@ static struct regulator_ops wm8994_ldo1_ops = {
- 
- 	.list_voltage = wm8994_ldo1_list_voltage,
- 	.get_voltage_sel = wm8994_ldo1_get_voltage_sel,
--	.set_voltage = wm8994_ldo1_set_voltage,
-+	.set_voltage_sel = wm8994_ldo1_set_voltage_sel,
- };
- 
- static int wm8994_ldo2_list_voltage(struct regulator_dev *rdev,
-@@ -165,33 +158,11 @@ static int wm8994_ldo2_get_voltage_sel(struct regulator_dev *rdev)
- 	return (val & WM8994_LDO2_VSEL_MASK) >> WM8994_LDO2_VSEL_SHIFT;
- }
- 
--static int wm8994_ldo2_set_voltage(struct regulator_dev *rdev,
--				   int min_uV, int max_uV, unsigned *s)
-+static int wm8994_ldo2_set_voltage_sel(struct regulator_dev *rdev,
-+				       unsigned selector)
- {
- 	struct wm8994_ldo *ldo = rdev_get_drvdata(rdev);
--	int selector, v;
--
--	switch (ldo->wm8994->type) {
--	case WM8994:
--		selector = (min_uV - 900000) / 100000;
--		break;
--	case WM8958:
--		selector = (min_uV - 1000000) / 100000;
--		break;
--	case WM1811:
--		selector = (min_uV - 950000) / 100000;
--		if (selector == 0)
--			selector = 1;
--		break;
--	default:
--		return -EINVAL;
--	}
--
--	v = wm8994_ldo2_list_voltage(rdev, selector);
--	if (v < 0 || v > max_uV)
--		return -EINVAL;
- 
--	*s = selector;
- 	selector <<= WM8994_LDO2_VSEL_SHIFT;
- 
- 	return wm8994_set_bits(ldo->wm8994, WM8994_LDO_2,
-@@ -206,7 +177,7 @@ static struct regulator_ops wm8994_ldo2_ops = {
- 
- 	.list_voltage = wm8994_ldo2_list_voltage,
- 	.get_voltage_sel = wm8994_ldo2_get_voltage_sel,
--	.set_voltage = wm8994_ldo2_set_voltage,
-+	.set_voltage_sel = wm8994_ldo2_set_voltage_sel,
- };
- 
- static const struct regulator_desc wm8994_ldo_desc[] = {
--- 
-1.7.9.1
-
+I'd prefer to keep the queue thing as per workqueue and irq_work etc..
