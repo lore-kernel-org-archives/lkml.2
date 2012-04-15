@@ -1,52 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754191Ab2DOHht (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 15 Apr 2012 03:37:49 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:52475 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752469Ab2DOHhs (ORCPT
+	id S1752380Ab2DOIMv (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 15 Apr 2012 04:12:51 -0400
+Received: from mail-qc0-f174.google.com ([209.85.216.174]:52928 "EHLO
+	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751127Ab2DOIMs convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 15 Apr 2012 03:37:48 -0400
-Date: Sun, 15 Apr 2012 15:37:54 +0800
-From: Shawn Guo <shawn.guo@linaro.org>
-To: Dong Aisheng <dongas86@gmail.com>
-Cc: Sascha Hauer <s.hauer@pengutronix.de>, linus.walleij@stericsson.com,
-        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
-        rob.herring@calxeda.com, kernel@pengutronix.de,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 3/3] ARM: imx6q: switch to use pinctrl driver
-Message-ID: <20120415073751.GF24997@S2101-09.ap.freescale.net>
-References: <1334333915-1174-1-git-send-email-b29396@freescale.com>
- <1334333915-1174-3-git-send-email-b29396@freescale.com>
- <20120414135331.GB3852@pengutronix.de>
- <CAA+hA=QhSUZg0bWTss_4ROwZ--OOQfcP=mpt+MP7-ZKPkEwXyA@mail.gmail.com>
+	Sun, 15 Apr 2012 04:12:48 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAA+hA=QhSUZg0bWTss_4ROwZ--OOQfcP=mpt+MP7-ZKPkEwXyA@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1334350068.79333.YahooMailNeo@web161804.mail.bf1.yahoo.com>
+References: <1334310754.17013.YahooMailNeo@web161804.mail.bf1.yahoo.com>
+	<201204132118.22074.rjw@sisk.pl>
+	<1334346546.93033.YahooMailNeo@web161806.mail.bf1.yahoo.com>
+	<201204132219.23106.rjw@sisk.pl>
+	<1334350068.79333.YahooMailNeo@web161804.mail.bf1.yahoo.com>
+Date: Sun, 15 Apr 2012 09:12:47 +0100
+Message-ID: <CAAMvbhEFLHPsemALYVQwsuTaAiom1RviLECcPwqdtzA4ogmuLw@mail.gmail.com>
+Subject: Re: [linux-pm] "i8042: Can't reactivate AUX port" after s2ram on 3.4-rc2
+From: James Courtier-Dutton <james.dutton@gmail.com>
+To: Mikko Vinni <mmvinni@yahoo.com>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, Bjorn Helgaas <bhelgaas@google.com>,
+        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Allen Kay <allen.m.kay@intel.com>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Apr 15, 2012 at 12:03:16PM +0800, Dong Aisheng wrote:
-...
-> For MX3 and MX5, before their pinctrl driver are available, user may
-> need to define a dummy in dt to avoid such an error.
-> 
-That is insane, and will not work.
+On 13 April 2012 21:47, Mikko Vinni <mmvinni@yahoo.com> wrote:
+>       1 firewire_ohci 0000:0a:00.0: Refused to change power state, currently in D3
+>      10 firewire_ohci 0000:0a:00.0: restoring config space at offset 0xf (was 0xffffffff, writing 0x10a)
+>      10 firewire_ohci 0000:0a:00.0: restoring config space at offset 0xe (was 0xffffffff, writing 0x0)
+<snip>
+>       1 sdhci-pci 0000:0a:00.1: Refused to change power state, currently in D3
+>      10 sdhci-pci 0000:0a:00.1: restoring config space at offset 0xf (was 0xffffffff, writing 0x10a)
+>      10 sdhci-pci 0000:0a:00.1: restoring config space at offset 0xe (was 0xffffffff, writing 0x0)
+<snip>
 
-1) We do not have device tree support for MX3 yet.
-2) It's not practical to add dummy entries in dt to avoid the error.
-3) There are still so many non-dt board files support in the tree.
-How will they work with that?
-
-My suggestion is to not make it an error but a dev_dbg, assuming that
-the pins are already set up by platform code if we do not find the
-entry from pinctrl system.  We can take it as a transition solution,
-and turn the dev_dbg back to error when all the users of the device
-driver are converted to device tree.
-
--- 
-Regards,
-Shawn
+Could the problem be more due to "Refused to change power state,
+currently in D3".
+the "was 0xffffffff" would be returned if their was no power to the device.
+Don't you need power, before you can write to the config space?
