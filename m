@@ -1,353 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754895Ab2DONky (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 15 Apr 2012 09:40:54 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:8674 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754425Ab2DONkw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1754552Ab2DONkw (ORCPT <rfc822;w@1wt.eu>);
 	Sun, 15 Apr 2012 09:40:52 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:5766 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751837Ab2DONkv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 15 Apr 2012 09:40:51 -0400
 From: Jiri Olsa <jolsa@redhat.com>
 To: acme@redhat.com, a.p.zijlstra@chello.nl, mingo@elte.hu, paulus@samba.org,
         cjashfor@linux.vnet.ibm.com, fweisbec@gmail.com
-Cc: linux-kernel@vger.kernel.org, Jiri Olsa <jolsa@redhat.com>
-Subject: [PATCH 1/6] perf, tool: Split term type into value type and term type
-Date: Sun, 15 Apr 2012 15:40:29 +0200
-Message-Id: <1334497234-5441-2-git-send-email-jolsa@redhat.com>
-In-Reply-To: <1334497234-5441-1-git-send-email-jolsa@redhat.com>
-References: <1334497234-5441-1-git-send-email-jolsa@redhat.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: [PATCH 0/6] perf, tool: event parsing enhancements/fixes
+Date: Sun, 15 Apr 2012 15:40:28 +0200
+Message-Id: <1334497234-5441-1-git-send-email-jolsa@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Introducing type_val and type_term for term instead of a single
-type value. Currently the term type marked out the value type as
-well.
+Hi,
+adding some enhancements/fixies for perf event parsing.
 
-With this change we can have future string term values being
-specified by user and translated into proper number along the
-processing.
+Attached patches:
+  1/6 perf, tool: Split term type into value type and term type
+  2/6 perf, tool: Move parse event automated tests to separated object
+  3/6 perf, tool: Add support for displaying event parser debug info
+  4/6 perf, tool: Use allocated list for each parsed event
+  5/6 perf, tool: Separate 'mem:' event scanner bits
+  6/6 perf, tool: Add hardcoded name term for pmu events
 
-Signed-off-by: Jiri Olsa <jolsa@redhat.com>
+thanks,
+jirka
 ---
- tools/perf/util/parse-events.c |   45 +++++++++++++++++++------
- tools/perf/util/parse-events.h |   21 +++++++-----
- tools/perf/util/parse-events.y |   16 ++++----
- tools/perf/util/pmu.c          |   70 ++++++++++++++++++++++++----------------
- 4 files changed, 96 insertions(+), 56 deletions(-)
-
-diff --git a/tools/perf/util/parse-events.c b/tools/perf/util/parse-events.c
-index 5b3a0ef..c7fc18a 100644
---- a/tools/perf/util/parse-events.c
-+++ b/tools/perf/util/parse-events.c
-@@ -593,17 +593,27 @@ int parse_events_add_breakpoint(struct list_head *list, int *idx,
- static int config_term(struct perf_event_attr *attr,
- 		       struct parse_events__term *term)
- {
--	switch (term->type) {
-+#define CHECK_TYPE_VAL(type)					\
-+do {								\
-+	if (PARSE_EVENTS__TERM_TYPE_ ## type != term->type_val)	\
-+		return -EINVAL;					\
-+} while (0)
-+
-+	switch (term->type_term) {
- 	case PARSE_EVENTS__TERM_TYPE_CONFIG:
-+		CHECK_TYPE_VAL(NUM);
- 		attr->config = term->val.num;
- 		break;
- 	case PARSE_EVENTS__TERM_TYPE_CONFIG1:
-+		CHECK_TYPE_VAL(NUM);
- 		attr->config1 = term->val.num;
- 		break;
- 	case PARSE_EVENTS__TERM_TYPE_CONFIG2:
-+		CHECK_TYPE_VAL(NUM);
- 		attr->config2 = term->val.num;
- 		break;
- 	case PARSE_EVENTS__TERM_TYPE_SAMPLE_PERIOD:
-+		CHECK_TYPE_VAL(NUM);
- 		attr->sample_period = term->val.num;
- 		break;
- 	case PARSE_EVENTS__TERM_TYPE_BRANCH_SAMPLE_TYPE:
-@@ -615,7 +625,9 @@ static int config_term(struct perf_event_attr *attr,
- 	default:
- 		return -EINVAL;
- 	}
-+
- 	return 0;
-+#undef CHECK_TYPE_VAL
- }
- 
- static int config_attr(struct perf_event_attr *attr,
-@@ -1015,11 +1027,12 @@ void print_events(const char *event_glob)
- 
- int parse_events__is_hardcoded_term(struct parse_events__term *term)
- {
--	return term->type <= PARSE_EVENTS__TERM_TYPE_HARDCODED_MAX;
-+	return term->type_term != PARSE_EVENTS__TERM_TYPE_USER;
- }
- 
--int parse_events__new_term(struct parse_events__term **_term, int type,
--			   char *config, char *str, long num)
-+static int new_term(struct parse_events__term **_term, int type_val,
-+		    int type_term, char *config,
-+		    char *str, long num)
- {
- 	struct parse_events__term *term;
- 
-@@ -1028,15 +1041,11 @@ int parse_events__new_term(struct parse_events__term **_term, int type,
- 		return -ENOMEM;
- 
- 	INIT_LIST_HEAD(&term->list);
--	term->type = type;
-+	term->type_val  = type_val;
-+	term->type_term = type_term;
- 	term->config = config;
- 
--	switch (type) {
--	case PARSE_EVENTS__TERM_TYPE_CONFIG:
--	case PARSE_EVENTS__TERM_TYPE_CONFIG1:
--	case PARSE_EVENTS__TERM_TYPE_CONFIG2:
--	case PARSE_EVENTS__TERM_TYPE_SAMPLE_PERIOD:
--	case PARSE_EVENTS__TERM_TYPE_BRANCH_SAMPLE_TYPE:
-+	switch (type_val) {
- 	case PARSE_EVENTS__TERM_TYPE_NUM:
- 		term->val.num = num;
- 		break;
-@@ -1051,6 +1060,20 @@ int parse_events__new_term(struct parse_events__term **_term, int type,
- 	return 0;
- }
- 
-+int parse_events__term_num(struct parse_events__term **term,
-+			   int type_term, char *config, long num)
-+{
-+	return new_term(term, PARSE_EVENTS__TERM_TYPE_NUM, type_term,
-+			config, NULL, num);
-+}
-+
-+int parse_events__term_str(struct parse_events__term **term,
-+			   int type_term, char *config, char *str)
-+{
-+	return new_term(term, PARSE_EVENTS__TERM_TYPE_STR, type_term,
-+			config, str, 0);
-+}
-+
- void parse_events__free_terms(struct list_head *terms)
- {
- 	struct parse_events__term *term, *h;
-diff --git a/tools/perf/util/parse-events.h b/tools/perf/util/parse-events.h
-index ca069f8..a39e15d 100644
---- a/tools/perf/util/parse-events.h
-+++ b/tools/perf/util/parse-events.h
-@@ -34,16 +34,17 @@ extern int parse_filter(const struct option *opt, const char *str, int unset);
- #define EVENTS_HELP_MAX (128*1024)
- 
- enum {
-+	PARSE_EVENTS__TERM_TYPE_NUM,
-+	PARSE_EVENTS__TERM_TYPE_STR,
-+};
-+
-+enum {
-+	PARSE_EVENTS__TERM_TYPE_USER,
- 	PARSE_EVENTS__TERM_TYPE_CONFIG,
- 	PARSE_EVENTS__TERM_TYPE_CONFIG1,
- 	PARSE_EVENTS__TERM_TYPE_CONFIG2,
- 	PARSE_EVENTS__TERM_TYPE_SAMPLE_PERIOD,
- 	PARSE_EVENTS__TERM_TYPE_BRANCH_SAMPLE_TYPE,
--	PARSE_EVENTS__TERM_TYPE_NUM,
--	PARSE_EVENTS__TERM_TYPE_STR,
--
--	PARSE_EVENTS__TERM_TYPE_HARDCODED_MAX =
--		PARSE_EVENTS__TERM_TYPE_BRANCH_SAMPLE_TYPE,
- };
- 
- struct parse_events__term {
-@@ -52,14 +53,16 @@ struct parse_events__term {
- 		char *str;
- 		long  num;
- 	} val;
--	int type;
--
-+	int type_val;
-+	int type_term;
- 	struct list_head list;
- };
- 
- int parse_events__is_hardcoded_term(struct parse_events__term *term);
--int parse_events__new_term(struct parse_events__term **term, int type,
--			   char *config, char *str, long num);
-+int parse_events__term_num(struct parse_events__term **_term,
-+			   int type_term, char *config, long num);
-+int parse_events__term_str(struct parse_events__term **_term,
-+			   int type_term, char *config, char *str);
- void parse_events__free_terms(struct list_head *terms);
- int parse_events_modifier(struct list_head *list __used, char *str __used);
- int parse_events_add_tracepoint(struct list_head *list, int *idx,
-diff --git a/tools/perf/util/parse-events.y b/tools/perf/util/parse-events.y
-index d9637da..936913e 100644
---- a/tools/perf/util/parse-events.y
-+++ b/tools/perf/util/parse-events.y
-@@ -176,8 +176,8 @@ PE_NAME '=' PE_NAME
- {
- 	struct parse_events__term *term;
- 
--	ABORT_ON(parse_events__new_term(&term, PARSE_EVENTS__TERM_TYPE_STR,
--		 $1, $3, 0));
-+	ABORT_ON(parse_events__term_str(&term, PARSE_EVENTS__TERM_TYPE_USER,
-+					$1, $3));
- 	$$ = term;
- }
- |
-@@ -185,8 +185,8 @@ PE_NAME '=' PE_VALUE
- {
- 	struct parse_events__term *term;
- 
--	ABORT_ON(parse_events__new_term(&term, PARSE_EVENTS__TERM_TYPE_NUM,
--		 $1, NULL, $3));
-+	ABORT_ON(parse_events__term_num(&term, PARSE_EVENTS__TERM_TYPE_USER,
-+					$1, $3));
- 	$$ = term;
- }
- |
-@@ -194,8 +194,8 @@ PE_NAME
- {
- 	struct parse_events__term *term;
- 
--	ABORT_ON(parse_events__new_term(&term, PARSE_EVENTS__TERM_TYPE_NUM,
--		 $1, NULL, 1));
-+	ABORT_ON(parse_events__term_num(&term, PARSE_EVENTS__TERM_TYPE_USER,
-+					$1, 1));
- 	$$ = term;
- }
- |
-@@ -203,7 +203,7 @@ PE_TERM '=' PE_VALUE
- {
- 	struct parse_events__term *term;
- 
--	ABORT_ON(parse_events__new_term(&term, $1, NULL, NULL, $3));
-+	ABORT_ON(parse_events__term_num(&term, $1, NULL, $3));
- 	$$ = term;
- }
- |
-@@ -211,7 +211,7 @@ PE_TERM
- {
- 	struct parse_events__term *term;
- 
--	ABORT_ON(parse_events__new_term(&term, $1, NULL, NULL, 1));
-+	ABORT_ON(parse_events__term_num(&term, $1, NULL, 1));
- 	$$ = term;
- }
- 
-diff --git a/tools/perf/util/pmu.c b/tools/perf/util/pmu.c
-index cb08a11..8ee219b 100644
---- a/tools/perf/util/pmu.c
-+++ b/tools/perf/util/pmu.c
-@@ -225,7 +225,7 @@ static int pmu_config_term(struct list_head *formats,
- 	if (parse_events__is_hardcoded_term(term))
- 		return 0;
- 
--	if (term->type != PARSE_EVENTS__TERM_TYPE_NUM)
-+	if (term->type_val != PARSE_EVENTS__TERM_TYPE_NUM)
- 		return -EINVAL;
- 
- 	format = pmu_find_format(formats, term->config);
-@@ -246,6 +246,11 @@ static int pmu_config_term(struct list_head *formats,
- 		return -EINVAL;
- 	}
- 
-+	/*
-+	 * XXX If we ever decide to go with string values for
-+	 * non-hardcoded terms, here's the place to translate
-+	 * them into value.
-+	 */
- 	*vp |= pmu_format_value(format->bits, term->val.num);
- 	return 0;
- }
-@@ -324,49 +329,58 @@ static struct test_format {
- /* Simulated users input. */
- static struct parse_events__term test_terms[] = {
- 	{
--		.config  = (char *) "krava01",
--		.val.num = 15,
--		.type    = PARSE_EVENTS__TERM_TYPE_NUM,
-+		.config    = (char *) "krava01",
-+		.val.num   = 15,
-+		.type_val  = PARSE_EVENTS__TERM_TYPE_NUM,
-+		.type_term = PARSE_EVENTS__TERM_TYPE_USER,
- 	},
- 	{
--		.config  = (char *) "krava02",
--		.val.num = 170,
--		.type    = PARSE_EVENTS__TERM_TYPE_NUM,
-+		.config    = (char *) "krava02",
-+		.val.num   = 170,
-+		.type_val  = PARSE_EVENTS__TERM_TYPE_NUM,
-+		.type_term = PARSE_EVENTS__TERM_TYPE_USER,
- 	},
- 	{
--		.config  = (char *) "krava03",
--		.val.num = 1,
--		.type    = PARSE_EVENTS__TERM_TYPE_NUM,
-+		.config    = (char *) "krava03",
-+		.val.num   = 1,
-+		.type_val  = PARSE_EVENTS__TERM_TYPE_NUM,
-+		.type_term = PARSE_EVENTS__TERM_TYPE_USER,
- 	},
- 	{
--		.config  = (char *) "krava11",
--		.val.num = 27,
--		.type    = PARSE_EVENTS__TERM_TYPE_NUM,
-+		.config    = (char *) "krava11",
-+		.val.num   = 27,
-+		.type_val  = PARSE_EVENTS__TERM_TYPE_NUM,
-+		.type_term = PARSE_EVENTS__TERM_TYPE_USER,
- 	},
- 	{
--		.config  = (char *) "krava12",
--		.val.num = 1,
--		.type    = PARSE_EVENTS__TERM_TYPE_NUM,
-+		.config    = (char *) "krava12",
-+		.val.num   = 1,
-+		.type_val  = PARSE_EVENTS__TERM_TYPE_NUM,
-+		.type_term = PARSE_EVENTS__TERM_TYPE_USER,
- 	},
- 	{
--		.config  = (char *) "krava13",
--		.val.num = 2,
--		.type    = PARSE_EVENTS__TERM_TYPE_NUM,
-+		.config    = (char *) "krava13",
-+		.val.num   = 2,
-+		.type_val  = PARSE_EVENTS__TERM_TYPE_NUM,
-+		.type_term = PARSE_EVENTS__TERM_TYPE_USER,
- 	},
- 	{
--		.config  = (char *) "krava21",
--		.val.num = 119,
--		.type    = PARSE_EVENTS__TERM_TYPE_NUM,
-+		.config    = (char *) "krava21",
-+		.val.num   = 119,
-+		.type_val  = PARSE_EVENTS__TERM_TYPE_NUM,
-+		.type_term = PARSE_EVENTS__TERM_TYPE_USER,
- 	},
- 	{
--		.config  = (char *) "krava22",
--		.val.num = 11,
--		.type    = PARSE_EVENTS__TERM_TYPE_NUM,
-+		.config    = (char *) "krava22",
-+		.val.num   = 11,
-+		.type_val  = PARSE_EVENTS__TERM_TYPE_NUM,
-+		.type_term = PARSE_EVENTS__TERM_TYPE_USER,
- 	},
- 	{
--		.config  = (char *) "krava23",
--		.val.num = 2,
--		.type    = PARSE_EVENTS__TERM_TYPE_NUM,
-+		.config    = (char *) "krava23",
-+		.val.num   = 2,
-+		.type_val  = PARSE_EVENTS__TERM_TYPE_NUM,
-+		.type_term = PARSE_EVENTS__TERM_TYPE_USER,
- 	},
- };
- #define TERMS_CNT (sizeof(test_terms) / sizeof(struct parse_events__term))
--- 
-1.7.7.6
-
+ tools/perf/Makefile                 |   13 +-
+ tools/perf/builtin-test.c           |  522 +--------------------------------
+ tools/perf/util/parse-events-test.c |  560 +++++++++++++++++++++++++++++++++++
+ tools/perf/util/parse-events.c      |  103 +++++--
+ tools/perf/util/parse-events.h      |   43 ++--
+ tools/perf/util/parse-events.l      |   26 ++-
+ tools/perf/util/parse-events.y      |   93 +++++--
+ tools/perf/util/pmu.c               |   85 ++++--
+ tools/perf/util/pmu.h               |    2 +
+ 9 files changed, 821 insertions(+), 626 deletions(-)
