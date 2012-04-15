@@ -1,73 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755431Ab2DOPQL (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 15 Apr 2012 11:16:11 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:33574 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754126Ab2DOPQJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 15 Apr 2012 11:16:09 -0400
-Subject: Re: 3.4.0-rc2: skb_put() -> skb_over_panic
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Alexander Beregalov <a.beregalov@gmail.com>
-Cc: netdev <netdev@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-In-Reply-To: <CAA1sL1QTRKnfvCnHWjbSJ-hq6dgZK+KGDPVTrOhsfZcFTs01Mw@mail.gmail.com>
-References: <CAA1sL1QTRKnfvCnHWjbSJ-hq6dgZK+KGDPVTrOhsfZcFTs01Mw@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Sun, 15 Apr 2012 17:16:04 +0200
-Message-ID: <1334502964.28012.1.camel@edumazet-glaptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+	id S1755550Ab2DOPQg (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 15 Apr 2012 11:16:36 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:2324 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754993Ab2DOPQf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 15 Apr 2012 11:16:35 -0400
+Message-ID: <4F8AE64F.7080909@redhat.com>
+Date: Sun, 15 Apr 2012 18:16:31 +0300
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120316 Thunderbird/11.0
+MIME-Version: 1.0
+To: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+CC: Marcelo Tosatti <mtosatti@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        KVM <kvm@vger.kernel.org>
+Subject: Re: [PATCH v2 10/16] KVM: MMU: fask check whether page is writable
+References: <4F87FA69.5060106@linux.vnet.ibm.com> <4F87FC82.2050302@linux.vnet.ibm.com>
+In-Reply-To: <4F87FC82.2050302@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2012-04-15 at 16:24 +0400, Alexander Beregalov wrote:
-> Hi
-> 
-> kernel 3.4.0-rc2-00333-g668ce0a
-> 
-> calltrace is lost on netconsole, sorry.
-> 
-> ethernet is realtek/r8169
-> 
-> It happened already two times with rtorrent, perhaps I can reproduce
-> it, what else can I provide to you?
-> 
-> skb_over_panic: text:ffffffff8136d919 len:1016 put:815
-> head:ffff8800afe4d800 data:ffff8800afe4dd6b tail:0x963 end:0x6c0
-> dev:<NULL>
-> ------------[ cut here ]------------
-> kernel BUG at net/core/skbuff.c:127!
-> invalid opcode: 0000 [#1] SMP
-> CPU 2
-> Modules linked in:
-> 
-> Pid: 0, comm: swapper/2 Not tainted 3.4.0-rc2-00333-g668ce0a #1
->           /D525MW
-> RIP: 0010:[<ffffffff8132414a>]  [<ffffffff8132414a>] skb_put+0x7c/0x86
-> RSP: 0018:ffff8800bed03950  EFLAGS: 00010246
-> RAX: 0000000000000098 RBX: ffff88002883a580 RCX: 0000000000000015
-> RDX: 0000000000000001 RSI: 0000000000000046 RDI: ffffffff8162a0b0
-> RBP: ffff8800bed03970 R08: ffffffff813cd540 R09: ffff8800bed03650
-> R10: 0000000000000000 R11: 0000000000000000 R12: ffff88002895c380
-> R13: ffff88002895ca80 R14: ffff88002895c3a8 R15: ffff88002883a660
-> FS:  0000000000000000(0000) GS:ffff8800bed00000(0000) knlGS:0000000000000000
-> CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
-> CR2: 00007fcbba6e1000 CR3: 0000000001520000 CR4: 00000000000007e0
-> DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-> DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-> Process swapper/2 (pid: 0, threadinfo ffff8800bb0a8000, task ffff8800bb06d780)
-> Stack:
->  0000000000000963 00000000000006c0 ffffffff814d06e7 ffff88002895c380
->  ffff8800bed039d0 ffffffff8136d919 ffff88000000032f 000000c98102ebbd
->  ffff88002883a660 0000019c0000250f ffff88002883a580 ffff88002883a580
-> Call Trace:
->  <IRQ>
-> --
+On 04/13/2012 01:14 PM, Xiao Guangrong wrote:
+> Using bit 1 (PTE_LIST_WP_BIT) in rmap store the write-protect status
+> to avoid unnecessary shadow page walking
+>
+> Signed-off-by: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+> ---
+>  arch/x86/kvm/mmu.c |   40 ++++++++++++++++++++++++++++++++++------
+>  1 files changed, 34 insertions(+), 6 deletions(-)
+>
+> diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
+> index 0c6e92d..8b71908 100644
+> --- a/arch/x86/kvm/mmu.c
+> +++ b/arch/x86/kvm/mmu.c
+> @@ -796,7 +796,9 @@ static int mapping_level(struct kvm_vcpu *vcpu, gfn_t large_gfn)
+>  	return level - 1;
+>  }
+>
+> -#define PTE_LIST_DESC		(0x1ull)
+> +#define PTE_LIST_DESC_BIT	0
+> +#define PTE_LIST_WP_BIT	1
+> +#define PTE_LIST_DESC		(1 << PTE_LIST_DESC_BIT)
+>  #define PTE_LIST_FLAG_MASK	(0x3ull)
+>
+>  static void
+> @@ -1067,6 +1069,12 @@ static bool rmap_can_add(struct kvm_vcpu *vcpu)
+>  	return mmu_memory_cache_free_objects(cache);
+>  }
+>
+> +static void host_page_write_protect(u64 *spte, unsigned long *rmapp)
+> +{
+> +	if (!(*spte & SPTE_HOST_WRITEABLE))
+> +		__test_and_set_bit(PTE_LIST_WP_BIT, rmapp);
+> +}
+>
 
-full stack trace needed please.
+Why is this needed, in addition to spte.SPTE_WRITE_PROTECT?
 
+-- 
+error compiling committee.c: too many arguments to function
 
