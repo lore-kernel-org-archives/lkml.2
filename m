@@ -1,79 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752863Ab2DOKSg (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 15 Apr 2012 06:18:36 -0400
-Received: from relay01.digicable.hu ([92.249.128.189]:42256 "EHLO
-	relay01.digicable.hu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750963Ab2DOKSf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 15 Apr 2012 06:18:35 -0400
-Message-ID: <4F8AA073.8090904@freemail.hu>
-Date: Sun, 15 Apr 2012 12:18:27 +0200
-From: =?UTF-8?B?TsOpbWV0aCBNw6FydG9u?= <nm127@freemail.hu>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; hu-HU; rv:1.8.1.21) Gecko/20090402 SeaMonkey/1.1.16
-MIME-Version: 1.0
-To: Thomas Meyer <thomas@m3y3r.de>
-CC: Arjan van de Ven <arjan@linux.intel.com>, discuss <discuss@lesswatts.org>,
-        Powertop Mailing List <power@bughost.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [SOLVED] where can I find powertop sources?
-References: <4F89304F.1070406@freemail.hu> <1334398320.1431.31.camel@localhost.localdomain>
-In-Reply-To: <1334398320.1431.31.camel@localhost.localdomain>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
-X-Original: 188.143.92.151
+	id S1753157Ab2DOK1m (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 15 Apr 2012 06:27:42 -0400
+Received: from mgw2.diku.dk ([130.225.96.92]:45533 "EHLO mgw2.diku.dk"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751797Ab2DOK1k (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 15 Apr 2012 06:27:40 -0400
+From: Julia Lawall <Julia.Lawall@lip6.fr>
+To: Wim Van Sebroeck <wim@iguana.be>
+Cc: kernel-janitors@vger.kernel.org, linux-watchdog@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] drivers/watchdog/ar7_wdt.c: use devm_request_and_ioremap
+Date: Sun, 15 Apr 2012 12:27:33 +0200
+Message-Id: <1334485653-13860-1-git-send-email-Julia.Lawall@lip6.fr>
+X-Mailer: git-send-email 1.7.3.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thomas Meyer wrote:
-> Am Samstag, den 14.04.2012, 10:07 +0200 schrieb Németh Márton:
->> Hi,
-> 
-> hi,
-> 
->> I'm having trouble to fetch powertop sources. I found the article
->> titled "Announcing the beta release of PowerTOP 2.0" from January 5 2011
->> at http://lwn.net/Articles/421733/ but it seems that the links are not
->> working anymore:
->>
->> $ git clone git://git.kernel.org/pub/scm/status/powertop/powertop.git
->> Cloning into powertop...
->> warning: You appear to have cloned an empty repository.
->> $ wget http://www.kernel.org/pub/linux/status/powertop/powertop-1.97.tar.bz2
->> --2012-04-14 10:04:55--  http://www.kernel.org/pub/linux/status/powertop/powertop-1.97.tar.bz2
->> Resolving www.kernel.org... 149.20.20.133, 149.20.4.69
->> Connecting to www.kernel.org|149.20.20.133|:80... connected.
->> HTTP request sent, awaiting response... 403 Forbidden
->> 2012-04-14 10:04:56 ERROR 403: Forbidden.
-> 
-> http://www.mail-archive.com/power@bughost.org/msg02155.html
-> 
-> The repository is at https://github.com/fenrus75/powertop or
-> git://github.com/fenrus75/powertop.git
-> 
-> with kind regards
-> thomas
+From: Julia Lawall <Julia.Lawall@lip6.fr>
 
-Thanks, both of them works:
+Combine request_region and ioremap into devm_request_and_ioremap.  This has
+the effect of fixing a missing iounmap on the failure of clk_get.
 
-$ git clone https://github.com/fenrus75/powertop.git
-Cloning into powertop...
-remote: Counting objects: 3381, done.
-remote: Compressing objects: 100% (866/866), done.
-remote: Total 3381 (delta 2563), reused 3321 (delta 2503)
-Receiving objects: 100% (3381/3381), 529.06 KiB | 366 KiB/s, done.
-Resolving deltas: 100% (2563/2563), done.
+This also introduces a call to clk_put and clears the vbus_clk variable in
+the case of failure or device removal.
 
+Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
 
-$ git clone git://github.com/fenrus75/powertop.git
-Cloning into powertop...
-remote: Counting objects: 3381, done.
-remote: Compressing objects: 100% (866/866), done.
-remote: Total 3381 (delta 2563), reused 3321 (delta 2503)
-Receiving objects: 100% (3381/3381), 529.06 KiB | 326 KiB/s, done.
-Resolving deltas: 100% (2563/2563), done.
+---
+Perhaps the call to clk_put is not necessary.  If it is not wanted, I can
+remove it.
 
-Regards,
+ drivers/watchdog/ar7_wdt.c |   35 +++++++++--------------------------
+ 1 file changed, 9 insertions(+), 26 deletions(-)
 
-	Márton Németh
+diff --git a/drivers/watchdog/ar7_wdt.c b/drivers/watchdog/ar7_wdt.c
+index 639ae9a..425c403 100644
+--- a/drivers/watchdog/ar7_wdt.c
++++ b/drivers/watchdog/ar7_wdt.c
+@@ -280,31 +280,17 @@ static int __devinit ar7_wdt_probe(struct platform_device *pdev)
+ 
+ 	ar7_regs_wdt =
+ 		platform_get_resource_byname(pdev, IORESOURCE_MEM, "regs");
+-	if (!ar7_regs_wdt) {
+-		pr_err("could not get registers resource\n");
+-		rc = -ENODEV;
+-		goto out;
+-	}
+-
+-	if (!request_mem_region(ar7_regs_wdt->start,
+-				resource_size(ar7_regs_wdt), LONGNAME)) {
+-		pr_warn("watchdog I/O region busy\n");
+-		rc = -EBUSY;
+-		goto out;
+-	}
+ 
+-	ar7_wdt = ioremap(ar7_regs_wdt->start, resource_size(ar7_regs_wdt));
++	ar7_wdt = devm_request_and_ioremap(&pdev->dev, ar7_regs_wdt);
+ 	if (!ar7_wdt) {
+ 		pr_err("could not ioremap registers\n");
+-		rc = -ENXIO;
+-		goto out_mem_region;
++		return -ENXIO;
+ 	}
+ 
+ 	vbus_clk = clk_get(NULL, "vbus");
+ 	if (IS_ERR(vbus_clk)) {
+ 		pr_err("could not get vbus clock\n");
+-		rc = PTR_ERR(vbus_clk);
+-		goto out_mem_region;
++		return PTR_ERR(vbus_clk);
+ 	}
+ 
+ 	ar7_wdt_disable_wdt();
+@@ -314,24 +300,21 @@ static int __devinit ar7_wdt_probe(struct platform_device *pdev)
+ 	rc = misc_register(&ar7_wdt_miscdev);
+ 	if (rc) {
+ 		pr_err("unable to register misc device\n");
+-		goto out_alloc;
++		goto out;
+ 	}
+-	goto out;
++	return 0;
+ 
+-out_alloc:
+-	iounmap(ar7_wdt);
+-out_mem_region:
+-	release_mem_region(ar7_regs_wdt->start, resource_size(ar7_regs_wdt));
+ out:
++	clk_put(vbus_clk);
++	vbus_clk = NULL;
+ 	return rc;
+ }
+ 
+ static int __devexit ar7_wdt_remove(struct platform_device *pdev)
+ {
+ 	misc_deregister(&ar7_wdt_miscdev);
+-	iounmap(ar7_wdt);
+-	release_mem_region(ar7_regs_wdt->start, resource_size(ar7_regs_wdt));
+-
++	clk_put(vbus_clk);
++	vbus_clk = NULL;
+ 	return 0;
+ }
+ 
+
