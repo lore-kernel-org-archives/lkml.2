@@ -1,117 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751397Ab2DOT5p (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 15 Apr 2012 15:57:45 -0400
-Received: from aldebaran.gro-tsen.net ([88.191.60.176]:36363 "EHLO
-	aldebaran.gro-tsen.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750968Ab2DOT5o (ORCPT
+	id S1751469Ab2DOT6C (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 15 Apr 2012 15:58:02 -0400
+Received: from rcsinet15.oracle.com ([148.87.113.117]:17424 "EHLO
+	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750968Ab2DOT6A convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 15 Apr 2012 15:57:44 -0400
-Date: Sun, 15 Apr 2012 21:57:42 +0200
-From: David Madore <david+ml@madore.org>
-To: linux-kernel@vger.kernel.org, linux-watchdog@vger.kernel.org
-Subject: [PATCH] iTCO_wdt: restore watchdog state and timeout after resume
-Message-ID: <20120415195741.GA25635@aldebaran.gro-tsen.net>
-References: <20120415163130.GA12802@aldebaran.gro-tsen.net>
-MIME-Version: 1.0
+	Sun, 15 Apr 2012 15:58:00 -0400
+Subject: Re: [PATCH RFC] vfs: make fstatat retry on ESTALE errors from getattr call
+Mime-Version: 1.0 (Apple Message framework v1257)
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120415163130.GA12802@aldebaran.gro-tsen.net>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+From: Chuck Lever <chuck.lever@oracle.com>
+In-Reply-To: <4F8B1B7B.3040304@itwm.fraunhofer.de>
+Date: Sun, 15 Apr 2012 15:57:32 -0400
+Cc: Jeff Layton <jlayton@redhat.com>, Malahal Naineni <malahal@us.ibm.com>,
+        linux-nfs@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, pstaubach@exagrid.com, miklos@szeredi.hu,
+        viro@ZenIV.linux.org.uk, hch@infradead.org,
+        michael.brantley@deshaw.com, sven.breuner@itwm.fraunhofer.de
+Content-Transfer-Encoding: 8BIT
+Message-Id: <F7D07FEC-4CA3-471F-8043-0DB899660BBB@oracle.com>
+References: <1334316311-22331-1-git-send-email-jlayton@redhat.com> <20120413150518.GA1987@us.ibm.com> <20120413114236.0e557e01@tlielax.poochiereds.net> <4F8B1B7B.3040304@itwm.fraunhofer.de>
+To: Bernd Schubert <bernd.schubert@itwm.fraunhofer.de>
+X-Mailer: Apple Mail (2.1257)
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+X-CT-RefId: str=0001.0A090205.4F8B2833.006F,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The iTCO_wdt watchdog state and timeout (heartbeat) need to be
-restored after resume.  Use pm_ops to do this.
 
-Signed-off-by: David A. Madore <david+linux@madore.org>
+On Apr 15, 2012, at 3:03 PM, Bernd Schubert wrote:
 
----
+> On 04/13/2012 05:42 PM, Jeff Layton wrote:
+>> (note: please don't trim the CC list!)
+>> 
+>> Indefinitely does make some sense (as Peter articulated in his original
+>> set). It's possible you could race several times in a row, or a server
+>> misconfiguration or something has happened and you have a transient
+>> error that will eventually recover. His assertion was that any limit on
+>> the number of retries is by definition wrong. For NFS, a fatal signal
+>> ought to interrupt things as well, so retrying indefinitely has some
+>> appeal there.
+>> 
+>> OTOH, we do have to contend with filesystems that might return ESTALE
+>> persistently for other reasons and that might not respond to signals.
+>> Miklos pointed out that some FUSE fs' do this in his review of Peter's
+>> set.
+>> 
+>> As a purely defensive coding measure, limiting the number of retries to
+>> something finite makes sense. If we're going to do that though, I'd
+>> probably recommend that we set the number of retries be something
+>> higher just so that this is more resilient in the face of multiple
+>> races. Those other fs' might "spin" a bit in that case but it is an
+>> error condition and IMO resiliency trumps performance -- at least in
+> this case.
+> 
+> I am definitely voting against an infinite number of retries. I'm
+> working on FhGFS, which supports distributed meta data servers. So when
+> a file is moved around between directories, its file handle, which
+> contains the meta-data target id might become invalid.
 
---- old/drivers/watchdog/iTCO_wdt.c	2012-04-13 18:42:02.000000000 +0200
-+++ new/drivers/watchdog/iTCO_wdt.c	2012-04-15 20:43:39.609718697 +0200
-@@ -56,6 +56,7 @@
- #include <linux/kernel.h>		/* For printk/panic/... */
- #include <linux/miscdevice.h>		/* For MODULE_ALIAS_MISCDEV
- 							(WATCHDOG_MINOR) */
-+#include <linux/pm.h>			/* For struct dev_pm_ops */
- #include <linux/watchdog.h>		/* For the watchdog specific items */
- #include <linux/init.h>			/* For __init/__exit/... */
- #include <linux/fs.h>			/* For file operations */
-@@ -400,6 +401,8 @@ static struct {		/* this is private data
- 	spinlock_t io_lock;
- 	/* the PCI-device */
- 	struct pci_dev *pdev;
-+	/* whether the timer is started */
-+	char is_started;
- } iTCO_wdt_private;
- 
- /* the watchdog platform device */
-@@ -506,6 +509,7 @@ static int iTCO_wdt_start(void)
- 	val &= 0xf7ff;
- 	outw(val, TCO1_CNT);
- 	val = inw(TCO1_CNT);
-+	iTCO_wdt_private.is_started = 1;
- 	spin_unlock(&iTCO_wdt_private.io_lock);
- 
- 	if (val & 0x0800)
-@@ -530,6 +534,8 @@ static int iTCO_wdt_stop(void)
- 	/* Set the NO_REBOOT bit to prevent later reboots, just for sure */
- 	iTCO_wdt_set_NO_REBOOT_bit();
- 
-+	iTCO_wdt_private.is_started = 0;
-+
- 	spin_unlock(&iTCO_wdt_private.io_lock);
- 
- 	if ((val & 0x0800) == 0)
-@@ -965,6 +971,35 @@ static void iTCO_wdt_shutdown(struct pla
- 	iTCO_wdt_stop();
- }
- 
-+#ifdef CONFIG_PM
-+static int iTCO_wdt_suspend(struct device *dev)
-+{
-+	char save_is_started = iTCO_wdt_private.is_started;
-+	iTCO_wdt_stop();
-+	iTCO_wdt_private.is_started = save_is_started;
-+	return 0;
-+}
-+
-+static int iTCO_wdt_resume(struct device *dev)
-+{
-+	iTCO_wdt_set_heartbeat(heartbeat);
-+	iTCO_wdt_keepalive();
-+	if (iTCO_wdt_private.is_started) {
-+		printk(KERN_INFO PFX "Watchdog restarted after resume.\n");
-+		iTCO_wdt_start();
-+	} else {
-+		printk(KERN_INFO PFX "Watchdog stopped after resume.\n");
-+		iTCO_wdt_stop();
-+	}
-+	return 0;
-+}
-+
-+static const struct dev_pm_ops iTCO_wdt_pm_ops = {
-+	.suspend        = iTCO_wdt_suspend,
-+	.resume         = iTCO_wdt_resume,
-+};
-+#endif /* CONFIG_PM */
-+
- static struct platform_driver iTCO_wdt_driver = {
- 	.probe          = iTCO_wdt_probe,
- 	.remove         = __devexit_p(iTCO_wdt_remove),
-@@ -972,6 +1007,9 @@ static struct platform_driver iTCO_wdt_d
- 	.driver         = {
- 		.owner  = THIS_MODULE,
- 		.name   = DRV_NAME,
-+#ifdef CONFIG_PM
-+		.pm     = &iTCO_wdt_pm_ops,
-+#endif /* CONFIG_PM */
- 	},
- };
- 
+Doesn't Jeff's recovery mechanism resolve this situation?  The client does a fresh lookup, so shouldn't it get the new FH at that point?  If there is no possible way for the client to discover the new FH, then ESTALE recovery should probably be finite.
+
+> As NFSv3 is
+> stateless we cannot inform the client about that and must return ESTALE
+> then. NFSv4 is better, but I'm not sure how well invalidating a file
+> handle works.  So retrying once on ESTALE might be a good idea, but
+> retrying forever is not.
+> Also, what about asymmetric HA servers? I believe to remember that also
+> resulted in ESTALE. So for example server1 exports /home and /scratch,
+> but on failure server2 can only take over /home and denies access to
+> /scratch.
+
+Retrying forever is bad only if we think there are cases where there is no possible recovery action for the client, or the ESTALE signals a condition that is not temporary.
+
+It is temporary, for instance, when an administrator takes an exported volume offline; at some point, that volume will be brought back online.  Maybe it is better generally for the client to retry indefinitely instead of causing applications to fail.
+
+Retrying forever is exactly what we do for "hard" NFS mounts, for example, and for many types of NFSv4 state recovery.  Philosophically, how is this situation different?
+
+It would be reasonable, at least, to insert a backoff delay in the retry logic.
 
 -- 
-     David A. Madore
-   ( http://www.madore.org/~david/ )
+Chuck Lever
+chuck[dot]lever[at]oracle[dot]com
+
+
+
+
