@@ -1,38 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754812Ab2DOL6t (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 15 Apr 2012 07:58:49 -0400
-Received: from static.78-46-68-141.clients.your-server.de ([78.46.68.141]:55913
-	"HELO eristoteles.iwoars.net" rhost-flags-OK-FAIL-OK-FAIL)
-	by vger.kernel.org with SMTP id S1752966Ab2DOL6r (ORCPT
+	id S1754425Ab2DOMKE (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 15 Apr 2012 08:10:04 -0400
+Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:49281 "EHLO
+	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752302Ab2DOMKC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 15 Apr 2012 07:58:47 -0400
-Date: Sun, 15 Apr 2012 13:58:39 +0200 (CEST)
-From: Joel Reardon <joel@clambassador.com>
-X-X-Sender: joel@eristoteles.iwoars.net
-To: Artem Bityutskiy <dedekind1@gmail.com>
-cc: linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: mtdchar kernel oops
-Message-ID: <alpine.DEB.2.00.1204151350450.13924@eristoteles.iwoars.net>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Sun, 15 Apr 2012 08:10:02 -0400
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <1334490429.67558.YahooMailNeo@web162006.mail.bf1.yahoo.com>
+References: <1334483226.20721.YahooMailNeo@web162003.mail.bf1.yahoo.com>
+	<CAFLxGvwJCMoiXFn3OgwiX+B50FTzGZmo6eG3xQ1KaPsEVZVA1g@mail.gmail.com>
+	<1334490429.67558.YahooMailNeo@web162006.mail.bf1.yahoo.com>
+Date: Sun, 15 Apr 2012 14:10:00 +0200
+Message-ID: <CAFLxGvz5tmEi-39CZbJN+0zNd3ZpHXzZcNSFUpUWS_aMDJ4t6Q@mail.gmail.com>
+Subject: Re: [NEW]: Introducing shrink_all_memory from user space
+From: richard -rw- weinberger <richard.weinberger@gmail.com>
+To: PINTU KUMAR <pintu_agarwal@yahoo.com>
+Cc: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "pintu.k@samsung.com" <pintu.k@samsung.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I think that this patch:
-"mtdchar: kill persistently held vfsmount"
-http://permalink.gmane.org/gmane.linux.kernel.commits.head/314175
+On Sun, Apr 15, 2012 at 1:47 PM, PINTU KUMAR <pintu_agarwal@yahoo.com> wrote:
+> Moreover, this is mainly meant for mobile phones where there is only *one* user.
 
-has started causing kernel oops's when running ubiformat. The oops is
-occuring in fs/namespace.c's mnt_add_count() line:
-        this_cpu_add(mnt->mnt_pcp->mnt_count, n);
+I see. Jet another awful hack.
+Mobile phones are nothing special. They are computers.
 
-with the stack trace:
-mntget()
-simple_pin_fs()
-mtdchar_open()
+>>
+>> If we expose it to user space *every* program/user will try too free
+>> memory such that it
+>> can use more.
+>> Can you see the problem?
+>>
+> As indicated above, every program/user cannot use it, as it requires root privileges.
+> Ok, you mean to say, every driver can call "shrink_all_memory" simultaneously??
+> Well, we can implement locking for that.
+> Anyways, I wrote a simple script to do this (echo 512 > /dev/shrinkmem) in a loop for 20 times from 2 different terminal (as root) and it works.
+> I cannot see any problem.
 
-Cheers,
-Joel
+Every program which is allowed to use this interface will (ab)use it.
+Anyway, by exposing this interface to user space (or kernel modules)
+you'll confuse the VM system.
+
+-- 
+Thanks,
+//richard
