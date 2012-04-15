@@ -1,107 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754997Ab2DOOFb (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 15 Apr 2012 10:05:31 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:61064 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753061Ab2DOOFa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 15 Apr 2012 10:05:30 -0400
-Date: Sun, 15 Apr 2012 16:05:13 +0200
-From: Jiri Olsa <jolsa@redhat.com>
-To: David Ahern <dsahern@gmail.com>
-Cc: acme@redhat.com, a.p.zijlstra@chello.nl, mingo@elte.hu, paulus@samba.org,
-        cjashfor@linux.vnet.ibm.com, fweisbec@gmail.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/3] perf, tool: Force guest machine definition option
-Message-ID: <20120415140513.GA2588@m.redhat.com>
-References: <1334233262-5679-1-git-send-email-jolsa@redhat.com>
- <1334233262-5679-2-git-send-email-jolsa@redhat.com>
- <4F86E965.4010506@gmail.com>
- <20120413113207.GB3384@m.brq.redhat.com>
- <4F881A62.8060109@gmail.com>
- <20120413124129.GC3384@m.brq.redhat.com>
- <4F8834F5.9040605@gmail.com>
+	id S1755153Ab2DOOGh (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 15 Apr 2012 10:06:37 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:40286 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754462Ab2DOOGf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 15 Apr 2012 10:06:35 -0400
+Date: Sun, 15 Apr 2012 09:06:28 -0500
+From: Jonathan Nieder <jrnieder@gmail.com>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: linux-kernel@vger.kernel.org, Kevin Tian <kevin.tian@intel.com>,
+        Fengzhe Zhang <fengzhe.zhang@intel.com>, mingo@redhat.com,
+        hpa@zytor.com, Ian Campbell <Ian.Campbell@eu.citrix.com>,
+        JBeulich@novell.com, xen-devel@lists.xensource.com,
+        Lars Boegild Thomsen <lth@cow.dk>, Robert Scott <bugs@humanleg.org.uk>,
+        e568b31a443d@6cc2cce7af2d.anonbox.net,
+        "Liu, Chuansheng" <chuansheng.liu@intel.com>
+Subject: Re: [regression] Ideapad S10-3 does not wake up from suspend
+Message-ID: <20120415140628.GA4536@burratino>
+References: <625BA99ED14B2D499DC4E29D8138F1505C8ED7F7E3@shsmsx502.ccr.corp.intel.com>
+ <20110829041532.GA22087@elie.gateway.2wire.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4F8834F5.9040605@gmail.com>
+In-Reply-To: <20110829041532.GA22087@elie.gateway.2wire.net>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 13, 2012 at 08:15:17AM -0600, David Ahern wrote:
-> On 4/13/12 6:41 AM, Jiri Olsa wrote:
-> >I get same error even on acme's urgent branch.. do you mean
-> >below one?  It fixes the guest machine lookup for mmap event.
-> >
-> >perf kvm: Finding struct machine fails for PERF_RECORD_MMAP
-> >commit 7fb0a5ee8889488f7568ffddffeb66ddeb50917e
-> >Author: Nikunj A. Dadhania<nikunj@linux.vnet.ibm.com>
-> >Date:   Mon Apr 9 13:52:23 2012 +0530
-> 
-> That's the one I was referring to.
-> 
-> >
-> >In my case it looks like for some reason the guest buildid DSO
-> >is not stored in record phase (no hits maybe?), so report won't
-> >create guest machine record at all and get NULL machine.
-> 
-> I see now -- different problem, but similar in that it's an mmap
-> event and the pid is 0.
-> 
-> I need to take my daughter to school and won't get back to this for
-> a while but what I am seeing is that on perf-record mmap events are
-> generated with pid set to DEFAULT_GUEST_KERNEL_ID = 0
-> (machines__create_guest_kernel_maps).
-> 
-> On the report side a machine has not been created for pid of 0, so
-> the look up in perf_session__find_machine_for_cpumode fails.
-> 
-> David
+Hi,
 
-how about the patch below? it ensures there's machine record for
-the guest. The segfault issue still stays..
+Quick summary and update.
 
-jirka
+> Lars Boegild Thomsen writes[1]:
 
----
-Running 'perf kvm record' without any of following options:
- --guestmount
- --guestvmlinux
- --guestkallsyms
- --guestmodules
+>> After update from 2.6 kernel to 3.0 my Idepad S10-3 will not wake up after 
+>> sleep.
+[...]
+>> 983bbf1af0664b78689612b247acb514300f62c7 is the first bad commit
 
-is causing the guest machine to be ommited from the data file,
-and all guest samples are counted in nr_unprocessable_samples.
+983bbf1af06 is "x86: Don't unmask disabled irqs when migrating them",
+2011-05-06, and looks like this:
 
-This patch makes sure the 'perf kvm record' command is not
-let through if guest machine isn't defined.
+>> --- a/arch/x86/kernel/irq.c
+>> +++ b/arch/x86/kernel/irq.c
+>> @@ -276,7 +276,8 @@ void fixup_irqs(void)
+>>  		else if (!(warned++))
+>>  			set_affinity = 0;
+>>  
+>> -		if (!irqd_can_move_in_process_context(data) && chip->irq_unmask)
+>> +		if (!irqd_can_move_in_process_context(data) &&
+>> +		    !irqd_irq_disabled(data) && chip->irq_unmask)
+>>  			chip->irq_unmask(data);
 
-Signed-off-by: Jiri Olsa <jolsa@redhat.com>
----
- tools/perf/builtin-record.c |    8 ++++++++
- 1 files changed, 8 insertions(+), 0 deletions(-)
+Robert Scott found[1], using 3.2.12:
 
-diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
-index 10b1f1f..0ae4237 100644
---- a/tools/perf/builtin-record.c
-+++ b/tools/perf/builtin-record.c
-@@ -462,6 +462,14 @@ static int __cmd_record(struct perf_record *rec, int argc, const char **argv)
- 		return -1;
- 	}
- 
-+	if (perf_guest &&
-+	    !machines__find(&session->machines, DEFAULT_GUEST_KERNEL_ID)) {
-+		ui__warning("You need to define guest with one of guestmount|"
-+			    "guestvmlinux|guestkallsyms|guestmodules\n");
-+		err = -EINVAL;
-+		goto out_delete_session;
-+	}
-+
- 	rec->session = session;
- 
- 	for (feat = HEADER_FIRST_FEATURE; feat < HEADER_LAST_FEATURE; feat++)
--- 
-1.7.7.6
+> I'm getting the same behaviour on my Lenovo Ideapad S10-3
 
+An anonymous contributor[2] also reports the same problem in v3.3.
+
+Lars, Robert, anon: can you try 3.4-rc2 or newer and let us know how
+it goes?  I suspect v3.4-rc2~24^2~4 ("x86: Preserve lazy irq disable
+semantics in fixup_irqs()") will fix this.
+
+Liu Chuansheng et al: do you think that commit would be a good
+candidate for inclusion in -stable kernels?
+
+Thanks and hope that helps,
+Jonathan
+
+> [1] http://bugs.debian.org/635575
+[2] https://bugzilla.kernel.org/show_bug.cgi?id=41932
