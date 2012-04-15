@@ -1,37 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755296Ab2DOOTO (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 15 Apr 2012 10:19:14 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:54943 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754552Ab2DOOTN convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 15 Apr 2012 10:19:13 -0400
+	id S1754698Ab2DOOVS (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 15 Apr 2012 10:21:18 -0400
+Received: from mga09.intel.com ([134.134.136.24]:48532 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751837Ab2DOOVR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 15 Apr 2012 10:21:17 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
+   d="scan'208";a="129816141"
+Date: Sun, 15 Apr 2012 07:21:16 -0700
+From: Andi Kleen <ak@linux.intel.com>
+To: Andi Kleen <andi@firstfloor.org>
+Cc: linux-kernel@vger.kernel.org, penberg@kernel.org
+Subject: Re: [PATCH] slab/mempolicy: always use local policy from interrupt
+ context
+Message-ID: <20120415142116.GB2566@tassilo.jf.intel.com>
+References: <1334358010-17019-1-git-send-email-andi@firstfloor.org>
 MIME-Version: 1.0
-In-Reply-To: <alpine.DEB.2.00.1204151350450.13924@eristoteles.iwoars.net>
-References: <alpine.DEB.2.00.1204151350450.13924@eristoteles.iwoars.net>
-Date: Sun, 15 Apr 2012 11:19:11 -0300
-Message-ID: <CAOMZO5BL8bKauB6-srbZCLapHJNAVRqB0g0uw+17_h1wy3_9-g@mail.gmail.com>
-Subject: Re: mtdchar kernel oops
-From: Fabio Estevam <festevam@gmail.com>
-To: Joel Reardon <joel@clambassador.com>
-Cc: Artem Bityutskiy <dedekind1@gmail.com>, linux-mtd@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1334358010-17019-1-git-send-email-andi@firstfloor.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Apr 15, 2012 at 8:58 AM, Joel Reardon <joel@clambassador.com> wrote:
-> I think that this patch:
-> "mtdchar: kill persistently held vfsmount"
-> http://permalink.gmane.org/gmane.linux.kernel.commits.head/314175
->
-> has started causing kernel oops's when running ubiformat. The oops is
-> occuring in fs/namespace.c's mnt_add_count() line:
->        this_cpu_add(mnt->mnt_pcp->mnt_count, n);
+>   * such protection.
+>   */
+> -unsigned slab_node(struct mempolicy *policy)
+> +unsigned slab_node(void)
+>  {
+> +	struct mempolicy *policy = in_interrupt() ? current->policy : NULL;
 
-I also see kernel oops when running flash_eraseall on a SPI NOR flash.
+Oops I sent the wrong version of the patch. This should be 
+!in_interrupt() of course. Resend coming.
 
-If this patch is reverted the flash_eraseall operation is successful.
+-Andi
