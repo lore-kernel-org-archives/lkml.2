@@ -1,28 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753949Ab2DOIhk (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 15 Apr 2012 04:37:40 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:35549 "EHLO
+	id S1754337Ab2DOIiU (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 15 Apr 2012 04:38:20 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:35566 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753431Ab2DOIhH (ORCPT
+	with ESMTP id S1751757Ab2DOIiS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 15 Apr 2012 04:37:07 -0400
-Date: Sun, 15 Apr 2012 01:35:39 -0700
-From: tip-bot for Stephane Eranian <eranian@google.com>
-Message-ID: <tip-f755397211745e26a4cc693a195982de6c454edd@git.kernel.org>
-Cc: acme@redhat.com, linux-kernel@vger.kernel.org, eranian@google.com,
-        hpa@zytor.com, mingo@kernel.org, peterz@infradead.org,
-        penberg@kernel.org, dsahern@gmail.com, tglx@linutronix.de,
-        mingo@elte.hu
-Reply-To: mingo@kernel.org, hpa@zytor.com, eranian@google.com,
-        linux-kernel@vger.kernel.org, acme@redhat.com, penberg@kernel.org,
-        peterz@infradead.org, dsahern@gmail.com, tglx@linutronix.de,
-        mingo@elte.hu
-In-Reply-To: <20120410103513.GA9229@quad>
-References: <20120410103513.GA9229@quad>
+	Sun, 15 Apr 2012 04:38:18 -0400
+Date: Sun, 15 Apr 2012 01:36:28 -0700
+From: tip-bot for Jiri Olsa <jolsa@redhat.com>
+Message-ID: <tip-2a5204fed0f313f9b55a7b4d5f48ca484446d095@git.kernel.org>
+Cc: acme@redhat.com, linux-kernel@vger.kernel.org, paulus@samba.org,
+        hpa@zytor.com, mingo@kernel.org, a.p.zijlstra@chello.nl,
+        jolsa@redhat.com, fweisbec@gmail.com, tglx@linutronix.de,
+        cjashfor@linux.vnet.ibm.com, mingo@elte.hu
+Reply-To: mingo@kernel.org, hpa@zytor.com, paulus@samba.org,
+        linux-kernel@vger.kernel.org, acme@redhat.com, a.p.zijlstra@chello.nl,
+        jolsa@redhat.com, fweisbec@gmail.com, tglx@linutronix.de,
+        cjashfor@linux.vnet.ibm.com, mingo@elte.hu
+In-Reply-To: <1334140791-3024-1-git-send-email-jolsa@redhat.com>
+References: <1334140791-3024-1-git-send-email-jolsa@redhat.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/urgent] perf tools: fix NO_GTK2 Makefile config error
-Git-Commit-ID: f755397211745e26a4cc693a195982de6c454edd
+Subject: [tip:perf/urgent] perf tools: Fix parsers' rules to dependencies
+Git-Commit-ID: 2a5204fed0f313f9b55a7b4d5f48ca484446d095
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -31,47 +31,83 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Sun, 15 Apr 2012 01:35:45 -0700 (PDT)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Sun, 15 Apr 2012 01:36:33 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  f755397211745e26a4cc693a195982de6c454edd
-Gitweb:     http://git.kernel.org/tip/f755397211745e26a4cc693a195982de6c454edd
-Author:     Stephane Eranian <eranian@google.com>
-AuthorDate: Tue, 10 Apr 2012 12:35:13 +0200
+Commit-ID:  2a5204fed0f313f9b55a7b4d5f48ca484446d095
+Gitweb:     http://git.kernel.org/tip/2a5204fed0f313f9b55a7b4d5f48ca484446d095
+Author:     Jiri Olsa <jolsa@redhat.com>
+AuthorDate: Wed, 11 Apr 2012 12:39:51 +0200
 Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Thu, 12 Apr 2012 15:48:15 -0300
+CommitDate: Sat, 14 Apr 2012 13:49:43 -0300
 
-perf tools: fix NO_GTK2 Makefile config error
+perf tools: Fix parsers' rules to dependencies
 
-In case the user specified NO_GTK2 on the make cmdline, compilation
-would fail with undefined symbol because the Makefile would not set the
-correct cpp variable: NO_GTK2 vs. NO_GTK2_SUPPORT.
+Currently the parsers objects (bison/flex related) are each time perf
+is built. No matter the generated files are already in place, the
+parser generation is executed every time.
 
-This patch renames the variable to the correct name.
+Changing the rules to have proper flex/bison objects generation
+dependencies.
 
-Signed-off-by: Stephane Eranian <eranian@google.com>
-Cc: David Ahern <dsahern@gmail.com>
+The parsers code is not rebuilt until the flex/bison source files
+are touched. Also when flex/bison source is changed, only dependent
+objects are rebuilt.
+
+Signed-off-by: Jiri Olsa <jolsa@redhat.com>
+Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Pekka Enberg <penberg@kernel.org>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Link: http://lkml.kernel.org/r/20120410103513.GA9229@quad
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Link: http://lkml.kernel.org/r/1334140791-3024-1-git-send-email-jolsa@redhat.com
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/Makefile |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+ tools/perf/Makefile |   19 ++++++++-----------
+ 1 files changed, 8 insertions(+), 11 deletions(-)
 
 diff --git a/tools/perf/Makefile b/tools/perf/Makefile
-index 820371f..a20d0c5 100644
+index a20d0c5..03059e7 100644
 --- a/tools/perf/Makefile
 +++ b/tools/perf/Makefile
-@@ -527,7 +527,7 @@ else
- endif
+@@ -237,21 +237,20 @@ export PERL_PATH
+ FLEX = $(CROSS_COMPILE)flex
+ BISON= $(CROSS_COMPILE)bison
  
- ifdef NO_GTK2
--	BASIC_CFLAGS += -DNO_GTK2
-+	BASIC_CFLAGS += -DNO_GTK2_SUPPORT
- else
- 	FLAGS_GTK2=$(ALL_CFLAGS) $(ALL_LDFLAGS) $(EXTLIBS) $(shell pkg-config --libs --cflags gtk+-2.0)
- 	ifneq ($(call try-cc,$(SOURCE_GTK2),$(FLAGS_GTK2)),y)
+-event-parser:
+-	$(QUIET_BISON)$(BISON) -v util/parse-events.y -d -o $(OUTPUT)util/parse-events-bison.c
++$(OUTPUT)util/parse-events-flex.c: util/parse-events.l
+ 	$(QUIET_FLEX)$(FLEX) --header-file=$(OUTPUT)util/parse-events-flex.h -t util/parse-events.l > $(OUTPUT)util/parse-events-flex.c
+ 
+-$(OUTPUT)util/parse-events-flex.c: event-parser
+-$(OUTPUT)util/parse-events-bison.c: event-parser
++$(OUTPUT)util/parse-events-bison.c: util/parse-events.y
++	$(QUIET_BISON)$(BISON) -v util/parse-events.y -d -o $(OUTPUT)util/parse-events-bison.c
+ 
+-pmu-parser:
+-	$(QUIET_BISON)$(BISON) -v util/pmu.y -d -o $(OUTPUT)util/pmu-bison.c
++$(OUTPUT)util/pmu-flex.c: util/pmu.l
+ 	$(QUIET_FLEX)$(FLEX) --header-file=$(OUTPUT)util/pmu-flex.h -t util/pmu.l > $(OUTPUT)util/pmu-flex.c
+ 
+-$(OUTPUT)util/pmu-flex.c: pmu-parser
+-$(OUTPUT)util/pmu-bison.c: pmu-parser
++$(OUTPUT)util/pmu-bison.c: util/pmu.y
++	$(QUIET_BISON)$(BISON) -v util/pmu.y -d -o $(OUTPUT)util/pmu-bison.c
+ 
+-$(OUTPUT)util/parse-events.o: event-parser pmu-parser
++$(OUTPUT)util/parse-events.o: $(OUTPUT)util/parse-events-flex.c $(OUTPUT)util/parse-events-bison.c
++$(OUTPUT)util/pmu.o: $(OUTPUT)util/pmu-flex.c $(OUTPUT)util/pmu-bison.c
+ 
+ LIB_FILE=$(OUTPUT)libperf.a
+ 
+@@ -852,8 +851,6 @@ help:
+ 	@echo '  html		- make html documentation'
+ 	@echo '  info		- make GNU info documentation (access with info <foo>)'
+ 	@echo '  pdf		- make pdf documentation'
+-	@echo '  event-parser	- make event parser code'
+-	@echo '  pmu-parser	- make pmu format parser code'
+ 	@echo '  TAGS		- use etags to make tag information for source browsing'
+ 	@echo '  tags		- use ctags to make tag information for source browsing'
+ 	@echo '  cscope	- use cscope to make interactive browsing database'
