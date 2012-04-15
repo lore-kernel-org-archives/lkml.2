@@ -1,49 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752355Ab2DOXMd (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 15 Apr 2012 19:12:33 -0400
-Received: from usmamail.tilera.com ([206.83.70.75]:28450 "EHLO
-	USMAMAIL.TILERA.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752091Ab2DOXMc convert rfc822-to-8bit (ORCPT
+	id S1752422Ab2DOXiR (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 15 Apr 2012 19:38:17 -0400
+Received: from mx.logic.tuwien.ac.at ([128.130.175.19]:45425 "EHLO
+	mx.logic.tuwien.ac.at" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752261Ab2DOXiQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 15 Apr 2012 19:12:32 -0400
-From: Chris Metcalf <cmetcalf@tilera.com>
-To: Bjorn Helgaas <bhelgaas@google.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>,
-        "Michael S. Tsirkin" <mst@redhat.com>,
-        Myron Stowe <myron.stowe@redhat.com>, Arnd Bergmann <arnd@arndb.de>,
-        Jiri Kosina <jkosina@suse.cz>, Joe Perches <joe@perches.com>,
-        David Howells <dhowells@redhat.com>
-Subject: RE: [PATCH 3/3] arch/tile: tilegx PCI root complex support
-Thread-Topic: [PATCH 3/3] arch/tile: tilegx PCI root complex support
-Thread-Index: AQHNFq02w7CnYh4xbECCSXNoaIFxhpacjEcM
-Date: Sun, 15 Apr 2012 23:09:32 +0000
-Message-ID: <9D6CA7A63751804FADD8B075304A6858109A6E1A@USMAExch1.tad.internal.tilera.com>
-References: <201204072316.q37NGv8d019280@farm-0023.internal.tilera.com>
- <201204072319.q37NJlNp019384@farm-0023.internal.tilera.com>,<CAErSpo6_gV1XKJ1jsDSvHo+BEORL_5wLC2YRyVG+OjVNDYbHgw@mail.gmail.com>
-In-Reply-To: <CAErSpo6_gV1XKJ1jsDSvHo+BEORL_5wLC2YRyVG+OjVNDYbHgw@mail.gmail.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Sun, 15 Apr 2012 19:38:16 -0400
+Date: Mon, 16 Apr 2012 08:38:13 +0900
+From: Norbert Preining <preining@logic.at>
+To: linux-kernel@vger.kernel.org
+Cc: Takashi Iwai <tiwai@suse.de>
+Subject: Realtek codec eating up battery?
+Message-ID: <20120415233813.GA10731@gamma.logic.tuwien.ac.at>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Bjorn Helgaas wrote:
-> Can this be done with the generic pcie_bus_configure_settings() or is
-> there something tilegx-specific about this?
-> If at all possible, you should use pci_scan_root_bus() here instead,
-> so you can tell PCI what the host bridge apertures are.
+Dear all,
 
-I've been exchanging email with the author of this driver during the week (he's based out of the California office, and I'm in Massachusetts) and the two suggestions quoted above still need further investigation before we can get back to you.  I'm out next week for spring school break so it won't be until the following week that I'll put out a v2 of this patch.  The other comments (not quoted) we've already incorporated into the driver.
+(please Cc)
 
-So thanks a lot for your feedback!
+running a recent git kernel from today, I see the following in powertop:
+  1.02 W    100.0%    Device         Audio codec hwC0D0: Realtek
 
-Chris Metcalf
-Tilera Corp.
+I am quite sure that was not the case in former times, so I wanted to ask
+if you think this is a kernel change or a user space change that is
+responsible for that?
+
+AFAIR before I was running on top of git 7c427f45, now
+on git 6c23b8e9 and there have been quite some changes regarding realtek
+in the meantime:
+    * tag 'sound-3.4' of git://git.kernel.org/pub/scm/linux/kernel/git/tiwai/sound:
+      ALSA: hda/realtek - Fix mem leak (and rid us of trailing whitespace).
+      ALSA: hda/realtek - Add quirk for Mac Pro 5,1 machines
+      ALSA: hda/realtek - Add a fixup entry for Acer Aspire 8940G
+      ALSA: hda/realtek - Fix GPIO1 setup for Acer Aspire 4930 & co
+      ALSA: hda/realtek - Add a few ALC882 model strings back
+
+output of dmesg wrt realtek/hda:
+[   20.952213] snd_hda_intel 0000:00:1b.0: irq 47 for MSI/MSI-X
+[   21.004975] hda_codec: ALC262: SKU not ready 0x411111f0
+[   21.008167] input: HDA Digital PCBeep as /devices/pci0000:00/0000:00:1b.0/input/input10
+[   21.011878] input: HDA Intel Mic as /devices/pci0000:00/0000:00:1b.0/sound/card0/input11
+[   21.013351] input: HDA Intel Headphone as /devices/pci0000:00/0000:00:1b.0/sound/card0/input12
+
+
+Thanks a lot and all the best
+
+Norbert
+------------------------------------------------------------------------
+Norbert Preining            preining@{jaist.ac.jp, logic.at, debian.org}
+JAIST, Japan                                 TeX Live & Debian Developer
+DSA: 0x09C5B094   fp: 14DF 2E6C 0307 BE6D AD76  A9C0 D2BF 4AA3 09C5 B094
+------------------------------------------------------------------------
+`You know they've reintroduced the death penalty for
+insurance company directors?'
+No I didn't. For what offence?'
+Trillian frowned.
+`What do you mean, offence?'
+`I see.'
+                 --- Evidence that there will be some justice in the Universe
+                 --- eventually.
+                 --- Douglas Adams, The Hitchhikers Guide to the Galaxy
