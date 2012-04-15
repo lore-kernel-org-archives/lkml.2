@@ -1,61 +1,164 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752000Ab2DOVpl (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 15 Apr 2012 17:45:41 -0400
-Received: from moutng.kundenserver.de ([212.227.17.10]:50298 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751773Ab2DOVpj (ORCPT
+	id S1752022Ab2DOVtF (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 15 Apr 2012 17:49:05 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:34948 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751773Ab2DOVtD convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 15 Apr 2012 17:45:39 -0400
-Message-ID: <4F8B417F.6030204@kdrennert.de>
-Date: Sun, 15 Apr 2012 23:45:35 +0200
-From: Benedikt Bergenthal <benedikt@kdrennert.de>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:11.0) Gecko/20120327 Thunderbird/11.0.1
-MIME-Version: 1.0
-To: jkosina@suse.cz
-CC: linux-kernel@vger.kernel.org, linux-input@vger.kernel.org
-Subject: Style issue in Driver/hid/hid-apple
-Content-Type: text/plain; charset=ISO-8859-15
-Content-Transfer-Encoding: 7bit
-X-Provags-ID: V02:K0:vjMD/kc3DIZBkQ1kfkUqBLQ86zHzIKeMXO1taUMlvuw
- MZgPRX4MC7Z9xd9Q4VgMlzShYF9V8IQV7xIufo32AmpLXahC1m
- tHsvxUSEAbmR8PU68BTLam57Rm5dmB5D2wBb1mn1ua81El1iMK
- w5hW4CkefG/+2Kb2Pk8kelFuo7UX8iu5J7/HZdhqqQn7BA/nZQ
- DVKkL9p2uNaBwiMLPRbBkNxbAhSnhxHeNSDVukfCibmyz/zg5Z
- bDn/ka2DtzIKIJh6MkjaL+0BAZsbUr57Woc+YcdO0cs0PMnK3V
- W/+nqlslHw+vCBF2iE0k2nqD3IdC3xY4Iseeuts+aK6+dXtLgv
- rFP4m8+iDfvCeAn9fSQCesxZeOvTVWVtTgjGsPXlu
+	Sun, 15 Apr 2012 17:49:03 -0400
+Message-ID: <1334526513.28150.23.camel@twins>
+Subject: Re: [RFC 0/6] uprobes: kill uprobes_srcu/uprobe_srcu_id
+From: Peter Zijlstra <peterz@infradead.org>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Ingo Molnar <mingo@elte.hu>, Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
+        LKML <linux-kernel@vger.kernel.org>, Linux-mm <linux-mm@kvack.org>,
+        Andi Kleen <andi@firstfloor.org>,
+        Christoph Hellwig <hch@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Anton Arapov <anton@redhat.com>
+Date: Sun, 15 Apr 2012 23:48:33 +0200
+In-Reply-To: <20120415195351.GA22095@redhat.com>
+References: <20120405222024.GA19154@redhat.com>
+	 <1334409396.2528.100.camel@twins> <20120414205200.GA9083@redhat.com>
+	 <1334487062.2528.113.camel@twins> <20120415195351.GA22095@redhat.com>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Mailer: Evolution 3.2.2- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->From 6e3e0130d7b9b39e114aeb55b1626f3070e22239 Mon Sep 17 00:00:00 2001
-From: Benedikt <bbergenthal@cern.ch>
-Date: Sun, 15 Apr 2012 23:29:57 +0200
-Subject: [PATCH] Driver: HID: hid-apple: Fixed a tab width style issue
+On Sun, 2012-04-15 at 21:53 +0200, Oleg Nesterov wrote:
+> On 04/15, Peter Zijlstra wrote:
+> >
+> > On Sat, 2012-04-14 at 22:52 +0200, Oleg Nesterov wrote:
+> > > > >     - can it work or I missed something "in general" ?
+> > > >
+> > > > So we insert in the rb-tree before we take mmap_sem, this means we can
+> > > > hit a non-uprobe int3 and still find a uprobe there, no?
+> > >
+> > > Yes, but unless I miss something this is "off-topic", this
+> > > can happen with or without these changes. If find_uprobe()
+> > > succeeds we assume that this bp was inserted by uprobe.
+> >
+> > OK, but then I completely missed what the point of that
+> > down_write() stuff is..
+> 
+> To ensure handle_swbp() can't race with unregister + register
+> and send the wrong SIGTRAP.
+> 
+> handle_swbp() roughly does under down_read(mmap_sem)
+> 
+> 
+> 	if (find_uprobe(vaddr))
+> 		process_uprobe();
+> 	else
+> 	if (is_swbp_at_addr_fast(vaddr))	// non-uprobe int3
+> 		send_sig(SIGTRAP);
+> 	else
+> 		restart_insn(vaddr);		// raced with unregister
+> 
+> 
+> note that is_swbp_at_addr_fast() is used (currently) to detect
+> the race with upbrobe_unregister() and that is why we can remove
+> uprobes_srcu.
+> 
+> But if find_uprobe() fails, there is a window before
+> is_swbp_at_addr_fast() reads the memory. Suppose that the next
+> uprobe_register() inserts the new uprobe at the same address.
+> In this case the task will be wrongly killed.
 
-Fixed a style issue.
+OK, still not seeing how your proposal could work.. consider the below
+patch comment, I'm not seeing how is_swbp_at_addr_fast() deals with an
+in-progress INT3 while we remove the probe.
 
-Signed-off-by: Benedikt Bergenthal <benedikt@kdrennert.de>
+By ensuring the non-race with reg/unreg it will either find the uprobe
+(no problem) or not find it and not see a breakpoint instruction either,
+even though the pending breakpoint was generated by a uprobe (which is
+now gone), causing a false positive SIGTRAP.
+
+Or am I still not getting it?
+
 ---
- drivers/hid/hid-apple.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+ kernel/events/uprobes.c |   53 +++++++++++++++++++++++++++++++++++++++-------
+ 1 files changed, 45 insertions(+), 8 deletions(-)
 
-diff --git a/drivers/hid/hid-apple.c b/drivers/hid/hid-apple.c
-index 299d238..7a79e39 100644
---- a/drivers/hid/hid-apple.c
-+++ b/drivers/hid/hid-apple.c
-@@ -234,7 +234,7 @@ static int hidinput_apple_event(struct hid_device
-*hid, struct input_dev *input,
-         }
-     }
+diff --git a/kernel/events/uprobes.c b/kernel/events/uprobes.c
+index 29e881b..67818ff 100644
+--- a/kernel/events/uprobes.c
++++ b/kernel/events/uprobes.c
+@@ -723,20 +723,57 @@ remove_breakpoint(struct uprobe *uprobe, struct mm_struct *mm, loff_t vaddr)
+ }
  
--        if (iso_layout) {
-+    if (iso_layout) {
-         if (asc->quirks & APPLE_ISO_KEYBOARD) {
-             trans = apple_find_translation(apple_iso_keyboard,
-usage->code);
-             if (trans) {
--- 
-1.7.5.4
+ /*
+- * There could be threads that have hit the breakpoint and are entering the
+- * notifier code and trying to acquire the uprobes_treelock. The thread
+- * calling delete_uprobe() that is removing the uprobe from the rb_tree can
+- * race with these threads and might acquire the uprobes_treelock compared
+- * to some of the breakpoint hit threads. In such a case, the breakpoint
+- * hit threads will not find the uprobe. The current unregistering thread
+- * waits till all other threads have hit a breakpoint, to acquire the
+- * uprobes_treelock before the uprobe is removed from the rbtree.
++ * <userspace>
++ *  ...
++ *  int3 ---->	<IRQ>
++ *	   	  do_int3
++ *	  (A)	    DIE_INT3 -> uprobe_pre_sstep_notifier()
++ *	   	      ...
++ *		      set_thread_flag(TIF_UPROBE)
++ *		      srcu_read_lock_raw()
++ *		<EOI>
++ *	  (B)
++ *		ret_from_intr
++ *		  do_notify_resume()
++ *		    uprobe_notify_resume()
++ *		      handle_swbp()
++ *		        uprobe = find_uprobe()
++ *		          atomic_inc(&uprobe->ref)
++ *			srcu_read_unlock_raw()
++ *			...
++ *	  (C)
++ *	  		put_uprobe()
++ *	 <----	ret_from_intr
++ *
++ * ...
+  */
+ static void delete_uprobe(struct uprobe *uprobe)
+ {
+ 	unsigned long flags;
+ 
++	/*
++	 * At this point all breakpoint instructions belonging to this uprobe
++	 * have been removed, so no new references to this uprobe can be
++	 * created, however!
++	 *
++	 * There could be an in-progress breakpoint from before we removed the
++	 * instruction still pending (A). synchronize_sched() insures all CPUs
++	 * will have scheduled at least once, therefore all such pending
++	 * interrupts will hereafter have reached (B) and thus have taken their
++	 * SRCU reference.
++	 */
++	synchronize_sched();
++
++	/*
++	 * Wait for all in-progress breakpoint handlers to finish, ensuring all
++	 * handlers passed (C) turning all references into active refcounts.
++	 */
+ 	synchronize_srcu(&uprobes_srcu);
++
++	/*
++	 * We can now safely remove the uprobe, all references are active
++	 * references and the refcounting will work as expected.
++	 */
+ 	spin_lock_irqsave(&uprobes_treelock, flags);
+ 	rb_erase(&uprobe->rb_node, &uprobes_tree);
+ 	spin_unlock_irqrestore(&uprobes_treelock, flags);
 
