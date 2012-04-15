@@ -1,28 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754337Ab2DOIiU (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 15 Apr 2012 04:38:20 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:35566 "EHLO
+	id S1754572Ab2DOIjD (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 15 Apr 2012 04:39:03 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:35573 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751757Ab2DOIiS (ORCPT
+	with ESMTP id S1751610Ab2DOIjA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 15 Apr 2012 04:38:18 -0400
-Date: Sun, 15 Apr 2012 01:36:28 -0700
-From: tip-bot for Jiri Olsa <jolsa@redhat.com>
-Message-ID: <tip-2a5204fed0f313f9b55a7b4d5f48ca484446d095@git.kernel.org>
+	Sun, 15 Apr 2012 04:39:00 -0400
+Date: Sun, 15 Apr 2012 01:37:17 -0700
+From: tip-bot for Namhyung Kim <namhyung.kim@lge.com>
+Message-ID: <tip-77394ad6e465ee3cc3d3cf448c8500c57ced60bf@git.kernel.org>
 Cc: acme@redhat.com, linux-kernel@vger.kernel.org, paulus@samba.org,
-        hpa@zytor.com, mingo@kernel.org, a.p.zijlstra@chello.nl,
-        jolsa@redhat.com, fweisbec@gmail.com, tglx@linutronix.de,
-        cjashfor@linux.vnet.ibm.com, mingo@elte.hu
-Reply-To: mingo@kernel.org, hpa@zytor.com, paulus@samba.org,
+        mingo@redhat.com, hpa@zytor.com, mingo@kernel.org,
+        a.p.zijlstra@chello.nl, namhyung.kim@lge.com, namhyung@gmail.com,
+        tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, mingo@redhat.com, paulus@samba.org,
         linux-kernel@vger.kernel.org, acme@redhat.com, a.p.zijlstra@chello.nl,
-        jolsa@redhat.com, fweisbec@gmail.com, tglx@linutronix.de,
-        cjashfor@linux.vnet.ibm.com, mingo@elte.hu
-In-Reply-To: <1334140791-3024-1-git-send-email-jolsa@redhat.com>
-References: <1334140791-3024-1-git-send-email-jolsa@redhat.com>
+        namhyung.kim@lge.com, tglx@linutronix.de, namhyung@gmail.com
+In-Reply-To: <1333948274-20043-1-git-send-email-namhyung.kim@lge.com>
+References: <1333948274-20043-1-git-send-email-namhyung.kim@lge.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/urgent] perf tools: Fix parsers' rules to dependencies
-Git-Commit-ID: 2a5204fed0f313f9b55a7b4d5f48ca484446d095
+Subject: [tip:perf/urgent] perf tools: Ignore auto-generated bison/
+ flex files
+Git-Commit-ID: 77394ad6e465ee3cc3d3cf448c8500c57ced60bf
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -31,83 +31,42 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Sun, 15 Apr 2012 01:36:33 -0700 (PDT)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Sun, 15 Apr 2012 01:37:23 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  2a5204fed0f313f9b55a7b4d5f48ca484446d095
-Gitweb:     http://git.kernel.org/tip/2a5204fed0f313f9b55a7b4d5f48ca484446d095
-Author:     Jiri Olsa <jolsa@redhat.com>
-AuthorDate: Wed, 11 Apr 2012 12:39:51 +0200
+Commit-ID:  77394ad6e465ee3cc3d3cf448c8500c57ced60bf
+Gitweb:     http://git.kernel.org/tip/77394ad6e465ee3cc3d3cf448c8500c57ced60bf
+Author:     Namhyung Kim <namhyung.kim@lge.com>
+AuthorDate: Mon, 9 Apr 2012 14:11:14 +0900
 Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Sat, 14 Apr 2012 13:49:43 -0300
+CommitDate: Sat, 14 Apr 2012 13:50:39 -0300
 
-perf tools: Fix parsers' rules to dependencies
+perf tools: Ignore auto-generated bison/flex files
 
-Currently the parsers objects (bison/flex related) are each time perf
-is built. No matter the generated files are already in place, the
-parser generation is executed every time.
+The commit 65f3e56e0c81 ("perf tools: Remove auto-generated bison/flex
+files") removed those files from git, so they'll be listed on untracked
+files after building perf. Fix it.
 
-Changing the rules to have proper flex/bison objects generation
-dependencies.
-
-The parsers code is not rebuilt until the flex/bison source files
-are touched. Also when flex/bison source is changed, only dependent
-objects are rebuilt.
-
-Signed-off-by: Jiri Olsa <jolsa@redhat.com>
-Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@elte.hu>
+Signed-off-by: Namhyung Kim <namhyung.kim@lge.com>
+Cc: Ingo Molnar <mingo@redhat.com>
+Cc: Namhyung Kim <namhyung@gmail.com>
 Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/1334140791-3024-1-git-send-email-jolsa@redhat.com
+Link: http://lkml.kernel.org/r/1333948274-20043-1-git-send-email-namhyung.kim@lge.com
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/Makefile |   19 ++++++++-----------
- 1 files changed, 8 insertions(+), 11 deletions(-)
+ tools/perf/.gitignore |    2 ++
+ 1 files changed, 2 insertions(+), 0 deletions(-)
 
-diff --git a/tools/perf/Makefile b/tools/perf/Makefile
-index a20d0c5..03059e7 100644
---- a/tools/perf/Makefile
-+++ b/tools/perf/Makefile
-@@ -237,21 +237,20 @@ export PERL_PATH
- FLEX = $(CROSS_COMPILE)flex
- BISON= $(CROSS_COMPILE)bison
- 
--event-parser:
--	$(QUIET_BISON)$(BISON) -v util/parse-events.y -d -o $(OUTPUT)util/parse-events-bison.c
-+$(OUTPUT)util/parse-events-flex.c: util/parse-events.l
- 	$(QUIET_FLEX)$(FLEX) --header-file=$(OUTPUT)util/parse-events-flex.h -t util/parse-events.l > $(OUTPUT)util/parse-events-flex.c
- 
--$(OUTPUT)util/parse-events-flex.c: event-parser
--$(OUTPUT)util/parse-events-bison.c: event-parser
-+$(OUTPUT)util/parse-events-bison.c: util/parse-events.y
-+	$(QUIET_BISON)$(BISON) -v util/parse-events.y -d -o $(OUTPUT)util/parse-events-bison.c
- 
--pmu-parser:
--	$(QUIET_BISON)$(BISON) -v util/pmu.y -d -o $(OUTPUT)util/pmu-bison.c
-+$(OUTPUT)util/pmu-flex.c: util/pmu.l
- 	$(QUIET_FLEX)$(FLEX) --header-file=$(OUTPUT)util/pmu-flex.h -t util/pmu.l > $(OUTPUT)util/pmu-flex.c
- 
--$(OUTPUT)util/pmu-flex.c: pmu-parser
--$(OUTPUT)util/pmu-bison.c: pmu-parser
-+$(OUTPUT)util/pmu-bison.c: util/pmu.y
-+	$(QUIET_BISON)$(BISON) -v util/pmu.y -d -o $(OUTPUT)util/pmu-bison.c
- 
--$(OUTPUT)util/parse-events.o: event-parser pmu-parser
-+$(OUTPUT)util/parse-events.o: $(OUTPUT)util/parse-events-flex.c $(OUTPUT)util/parse-events-bison.c
-+$(OUTPUT)util/pmu.o: $(OUTPUT)util/pmu-flex.c $(OUTPUT)util/pmu-bison.c
- 
- LIB_FILE=$(OUTPUT)libperf.a
- 
-@@ -852,8 +851,6 @@ help:
- 	@echo '  html		- make html documentation'
- 	@echo '  info		- make GNU info documentation (access with info <foo>)'
- 	@echo '  pdf		- make pdf documentation'
--	@echo '  event-parser	- make event parser code'
--	@echo '  pmu-parser	- make pmu format parser code'
- 	@echo '  TAGS		- use etags to make tag information for source browsing'
- 	@echo '  tags		- use ctags to make tag information for source browsing'
- 	@echo '  cscope	- use cscope to make interactive browsing database'
+diff --git a/tools/perf/.gitignore b/tools/perf/.gitignore
+index 416684b..26b823b 100644
+--- a/tools/perf/.gitignore
++++ b/tools/perf/.gitignore
+@@ -19,3 +19,5 @@ TAGS
+ cscope*
+ config.mak
+ config.mak.autogen
++*-bison.*
++*-flex.*
