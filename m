@@ -1,44 +1,223 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755161Ab2DOQHe (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 15 Apr 2012 12:07:34 -0400
-Received: from mail-wi0-f170.google.com ([209.85.212.170]:45209 "EHLO
-	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753379Ab2DOQHd (ORCPT
+	id S1755407Ab2DOQUO (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 15 Apr 2012 12:20:14 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:53051 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755237Ab2DOQUK convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 15 Apr 2012 12:07:33 -0400
-From: Nicola Lamacchia <nicola.lamacchia@gmail.com>
-To: tglx@linutronix.de
-Cc: linux-kernel@vger.kernel.org,
-        Nicola Lamacchia <nicola.lamacchia@gmail.com>
-Subject: [PATCH] Kernel: time: timer_stats: fix indentation issue.
-Date: Sun, 15 Apr 2012 18:07:21 +0200
-Message-Id: <1334506041-18612-1-git-send-email-nicola.lamacchia@gmail.com>
-X-Mailer: git-send-email 1.7.5.4
+	Sun, 15 Apr 2012 12:20:10 -0400
+MIME-Version: 1.0
+In-Reply-To: <CAEXv5_jiZsd6t=H1KWMNhUdgMez0B-WdC5XAHzdHffjOQh_J4A@mail.gmail.com>
+References: <1540670.AFBi1SpGoi@sifl>
+	<CAEXv5_jiZsd6t=H1KWMNhUdgMez0B-WdC5XAHzdHffjOQh_J4A@mail.gmail.com>
+Date: Sun, 15 Apr 2012 09:20:07 -0700
+X-Google-Sender-Auth: YiXdHY6X8kMr80EJuVRe_VYa9Zo
+Message-ID: <CAGXu5jJp1etKiMTqDcBUxRKwRvp8KHkWR+SWN4-+XdHFxphQ3Q@mail.gmail.com>
+Subject: Re: ANN: libseccomp
+From: Kees Cook <keescook@chromium.org>
+To: David Windsor <dwindsor@gmail.com>
+Cc: Paul Moore <paul@paul-moore.com>, libseccomp-discuss@lists.sourceforge.net,
+        linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
+        Will Drewry <wad@chromium.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix a coding style issue (bad indentation).
+Hi,
 
-Signed-off-by: Nicola Lamacchia <nicola.lamacchia@gmail.com>
----
- kernel/time/timer_stats.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+The seccomp mini-tutorial I wrote[1] could be extended to restart
+system calls. That's the closest I've seen so far. Right now it just
+needs to be run repeatedly until all the needed syscalls are found. :P
 
-diff --git a/kernel/time/timer_stats.c b/kernel/time/timer_stats.c
-index 0b537f2..0aa0eb9 100644
---- a/kernel/time/timer_stats.c
-+++ b/kernel/time/timer_stats.c
-@@ -306,7 +306,7 @@ static int tstats_show(struct seq_file *m, void *v)
- 
- 	for (i = 0; i < nr_entries; i++) {
- 		entry = entries + i;
-- 		if (entry->timer_flag & TIMER_STATS_FLAG_DEFERRABLE) {
-+		if (entry->timer_flag & TIMER_STATS_FLAG_DEFERRABLE) {
- 			seq_printf(m, "%4luD, %5d %-16s ",
- 				entry->count, entry->pid, entry->comm);
- 		} else {
+-Kees
+
+[1] http://outflux.net/teach-seccomp/
+
+On Sat, Apr 14, 2012 at 7:10 AM, David Windsor <dwindsor@gmail.com> wrote:
+> Out of curiosity, are there any current efforts towards creating a "learning
+> mode" type of application for seccomp?  I.e. creating a profile for a
+> particular application based upon which syscalls it makes during normal
+> operation.  I realize that many people consider this a security
+> anti-pattern, but it could be useful for the initial creation of a seccomp
+> filter for a particular application, and other security subsystems already
+> do this (ala AppArmor's learning/complain mode).  IIUC, no other kernel
+> mechanisms would need to be created; ptrace could accomplish syscall
+> monitoring.
+>
+> Thanks,
+> David Windsor
+>
+> On Mon, Apr 9, 2012 at 2:58 PM, Paul Moore <paul@paul-moore.com> wrote:
+>>
+>> With the seccomp patches finally stabilizing a bit, it seems like now is a
+>> good time to announce libseccomp: a library designed to make it easier to
+>> create complex, architecture independent seccomp filters.
+>>
+>>  * http://sourceforge.net/projects/libseccomp/
+>>  * git clone git://git.code.sf.net/p/libseccomp/libseccomp
+>>
+>> The library has only been in development for the past couple months, so it
+>> may
+>> be a little rough around the edges, and definitely could use more testing,
+>> but
+>> it is functional and has had some basic testing against the seccomp v17
+>> patches.  The project currently lacks any online documentation or a
+>> website
+>> beyond the basic SF.net tools, but there are current man pages in the
+>> source
+>> repository and the code is reasonably well commented.
+>>
+>> For those of you who are interested in making use of the library, or
+>> contributing to its development and testing, we do have a mailing list
+>> setup
+>> (see the To/CC line above) and you can subscribe at the link below; all
+>> are
+>> welcome.
+>>
+>>  * https://lists.sourceforge.net/lists/listinfo/libseccomp-discuss
+>>
+>> To demonstrate some of the basic libseccomp capabilities, I've included a
+>> short example below.  The example is trivial, it opens /dev/zero and
+>> writes to
+>> /dev/null, but it shows how to use libseccomp to create a simple filter
+>> and
+>> load it into the kernel; filtering both on just the syscall and a syscall
+>> with
+>> specific arguments.
+>>
+>> > #include <errno.h>
+>> > #include <stdlib.h>
+>> > #include <stdio.h>
+>> > #include <unistd.h>
+>> >
+>> > #include <seccomp.h>
+>> >
+>> > #define BUF_LEN               256
+>> >
+>> > int main(int argc, char *argv[])
+>> > {
+>> >       int rc;
+>> >       FILE *read_stream, *write_stream;
+>> >       unsigned char buf[BUF_LEN];
+>> >       size_t op_len;
+>> >
+>> >       /* initialize the seccomp filter */
+>> >       printf("scmp: initializing the seccomp filter ...");
+>> >       rc = seccomp_init(SCMP_ACT_KILL);
+>> >       if (rc < 0)
+>> >               goto failure_scmp;
+>> >       printf("ok\n");
+>> >
+>> >       /* do the setup */
+>> >       printf("info: opening /dev/zero for reading ... ");
+>> >       read_stream = fopen("/dev/zero", "r");
+>> >       if (read_stream == NULL)
+>> >               goto failure;
+>> >       printf("ok\n");
+>> >       printf("info: opening /dev/null for writing ... ");
+>> >       write_stream = fopen("/dev/null", "w");
+>> >       if (write_stream == NULL)
+>> >               goto failure;
+>> >       printf("ok\n");
+>> >
+>> >       /* configure the seccomp filter */
+>> >       printf("scmp: configuring the seccomp_filter ... ");
+>> >       rc = seccomp_rule_add(SCMP_ACT_ALLOW, SCMP_SYS(read), 1,
+>> >                             SCMP_A0(SCMP_CMP_EQ, fileno(read_stream)));
+>> >       if (rc < 0)
+>> >               goto failure_scmp;
+>> >       rc = seccomp_rule_add(SCMP_ACT_ALLOW, SCMP_SYS(write), 1,
+>> >                             SCMP_A0(SCMP_CMP_EQ, STDOUT_FILENO));
+>> >       if (rc < 0)
+>> >               goto failure_scmp;
+>> >       rc = seccomp_rule_add(SCMP_ACT_ALLOW, SCMP_SYS(write), 1,
+>> >                             SCMP_A0(SCMP_CMP_EQ, STDERR_FILENO));
+>> >       if (rc < 0)
+>> >               goto failure_scmp;
+>> >       rc = seccomp_rule_add(SCMP_ACT_ALLOW, SCMP_SYS(write), 1,
+>> >                             SCMP_A0(SCMP_CMP_EQ, fileno(write_stream)));
+>> >       if (rc < 0)
+>> >               goto failure_scmp;
+>> >       rc = seccomp_rule_add(SCMP_ACT_ALLOW, SCMP_SYS(close), 0);
+>> >       if (rc < 0)
+>> >               goto failure_scmp;
+>> >       rc = seccomp_rule_add(SCMP_ACT_ALLOW, SCMP_SYS(exit_group), 0);
+>> >       if (rc < 0)
+>> >               goto failure_scmp;
+>> >       rc = seccomp_rule_add(SCMP_ACT_ALLOW, SCMP_SYS(fstat), 0);
+>> >       if (rc < 0)
+>> >               goto failure_scmp;
+>> >       rc = seccomp_rule_add(SCMP_ACT_ALLOW, SCMP_SYS(ioctl), 0);
+>> >       if (rc < 0)
+>> >               goto failure_scmp;
+>> >       rc = seccomp_rule_add(SCMP_ACT_ALLOW, SCMP_SYS(mmap), 0);
+>> >       if (rc < 0)
+>> >               goto failure_scmp;
+>> >       rc = seccomp_rule_add(SCMP_ACT_ALLOW, SCMP_SYS(mprotect), 0);
+>> >       if (rc < 0)
+>> >               goto failure_scmp;
+>> >       rc = seccomp_rule_add(SCMP_ACT_ALLOW, SCMP_SYS(munmap), 0);
+>> >       if (rc < 0)
+>> >               goto failure_scmp;
+>> >       printf("ok\n");
+>> >
+>> >       /* load the seccomp filter into the kernel */
+>> >       printf("scmp: load the filter ... ");
+>> >       rc = seccomp_load();
+>> >       if (rc < 0)
+>> >               goto failure_scmp;
+>> >       seccomp_release();
+>> >       printf("ok\n");
+>> >
+>> >       /* perform the i/o */
+>> >       printf("info: attempting to read BUF_LEN bytes ... ");
+>> >       op_len = fread(buf, BUF_LEN, 1, read_stream);
+>> >       if (op_len != 1)
+>> >               return errno;
+>> >       printf("ok\n");
+>> >
+>> >       printf("info: attempting to write BUF_LEN bytes ... ");
+>> >       op_len = fwrite(buf, BUF_LEN, 1, write_stream);
+>> >       if (op_len != 1)
+>> >               return errno;
+>> >       printf("ok\n");
+>> >
+>> >       /* shutdown */
+>> >       printf("info: closing file streams and exiting\n");
+>> >       fclose(write_stream);
+>> >       fclose(read_stream);
+>> >       return 0;
+>> >
+>> > failure_scmp:
+>> >       errno = -rc;
+>> > failure:
+>> >       /* oops ... */
+>> >       printf("failed, errno = %u\n", errno);
+>> >       return errno;
+>> > }
+>>
+>> --
+>> paul moore
+>> www.paul-moore.com
+>>
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe
+>> linux-security-module" in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>
+>
+>
+>
+> --
+> PGP: 6141 5FFD 11AE 9844 153E  F268 7C98 7268 6B19 6CC9
+
+
+
 -- 
-1.7.5.4
-
+Kees Cook
+ChromeOS Security
