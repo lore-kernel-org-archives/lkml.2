@@ -1,76 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751350Ab2DOTyv (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 15 Apr 2012 15:54:51 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:13771 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750968Ab2DOTyu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 15 Apr 2012 15:54:50 -0400
-Date: Sun, 15 Apr 2012 21:53:51 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Ingo Molnar <mingo@elte.hu>, Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
-        LKML <linux-kernel@vger.kernel.org>, Linux-mm <linux-mm@kvack.org>,
-        Andi Kleen <andi@firstfloor.org>,
-        Christoph Hellwig <hch@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Anton Arapov <anton@redhat.com>
-Subject: Re: [RFC 0/6] uprobes: kill uprobes_srcu/uprobe_srcu_id
-Message-ID: <20120415195351.GA22095@redhat.com>
-References: <20120405222024.GA19154@redhat.com> <1334409396.2528.100.camel@twins> <20120414205200.GA9083@redhat.com> <1334487062.2528.113.camel@twins>
+	id S1751397Ab2DOT5p (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 15 Apr 2012 15:57:45 -0400
+Received: from aldebaran.gro-tsen.net ([88.191.60.176]:36363 "EHLO
+	aldebaran.gro-tsen.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750968Ab2DOT5o (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 15 Apr 2012 15:57:44 -0400
+Date: Sun, 15 Apr 2012 21:57:42 +0200
+From: David Madore <david+ml@madore.org>
+To: linux-kernel@vger.kernel.org, linux-watchdog@vger.kernel.org
+Subject: [PATCH] iTCO_wdt: restore watchdog state and timeout after resume
+Message-ID: <20120415195741.GA25635@aldebaran.gro-tsen.net>
+References: <20120415163130.GA12802@aldebaran.gro-tsen.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1334487062.2528.113.camel@twins>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <20120415163130.GA12802@aldebaran.gro-tsen.net>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/15, Peter Zijlstra wrote:
->
-> On Sat, 2012-04-14 at 22:52 +0200, Oleg Nesterov wrote:
-> > > >     - can it work or I missed something "in general" ?
-> > >
-> > > So we insert in the rb-tree before we take mmap_sem, this means we can
-> > > hit a non-uprobe int3 and still find a uprobe there, no?
-> >
-> > Yes, but unless I miss something this is "off-topic", this
-> > can happen with or without these changes. If find_uprobe()
-> > succeeds we assume that this bp was inserted by uprobe.
->
-> OK, but then I completely missed what the point of that
-> down_write() stuff is..
+The iTCO_wdt watchdog state and timeout (heartbeat) need to be
+restored after resume.  Use pm_ops to do this.
 
-To ensure handle_swbp() can't race with unregister + register
-and send the wrong SIGTRAP.
+Signed-off-by: David A. Madore <david+linux@madore.org>
 
-handle_swbp() roughly does under down_read(mmap_sem)
+---
 
+--- old/drivers/watchdog/iTCO_wdt.c	2012-04-13 18:42:02.000000000 +0200
++++ new/drivers/watchdog/iTCO_wdt.c	2012-04-15 20:43:39.609718697 +0200
+@@ -56,6 +56,7 @@
+ #include <linux/kernel.h>		/* For printk/panic/... */
+ #include <linux/miscdevice.h>		/* For MODULE_ALIAS_MISCDEV
+ 							(WATCHDOG_MINOR) */
++#include <linux/pm.h>			/* For struct dev_pm_ops */
+ #include <linux/watchdog.h>		/* For the watchdog specific items */
+ #include <linux/init.h>			/* For __init/__exit/... */
+ #include <linux/fs.h>			/* For file operations */
+@@ -400,6 +401,8 @@ static struct {		/* this is private data
+ 	spinlock_t io_lock;
+ 	/* the PCI-device */
+ 	struct pci_dev *pdev;
++	/* whether the timer is started */
++	char is_started;
+ } iTCO_wdt_private;
+ 
+ /* the watchdog platform device */
+@@ -506,6 +509,7 @@ static int iTCO_wdt_start(void)
+ 	val &= 0xf7ff;
+ 	outw(val, TCO1_CNT);
+ 	val = inw(TCO1_CNT);
++	iTCO_wdt_private.is_started = 1;
+ 	spin_unlock(&iTCO_wdt_private.io_lock);
+ 
+ 	if (val & 0x0800)
+@@ -530,6 +534,8 @@ static int iTCO_wdt_stop(void)
+ 	/* Set the NO_REBOOT bit to prevent later reboots, just for sure */
+ 	iTCO_wdt_set_NO_REBOOT_bit();
+ 
++	iTCO_wdt_private.is_started = 0;
++
+ 	spin_unlock(&iTCO_wdt_private.io_lock);
+ 
+ 	if ((val & 0x0800) == 0)
+@@ -965,6 +971,35 @@ static void iTCO_wdt_shutdown(struct pla
+ 	iTCO_wdt_stop();
+ }
+ 
++#ifdef CONFIG_PM
++static int iTCO_wdt_suspend(struct device *dev)
++{
++	char save_is_started = iTCO_wdt_private.is_started;
++	iTCO_wdt_stop();
++	iTCO_wdt_private.is_started = save_is_started;
++	return 0;
++}
++
++static int iTCO_wdt_resume(struct device *dev)
++{
++	iTCO_wdt_set_heartbeat(heartbeat);
++	iTCO_wdt_keepalive();
++	if (iTCO_wdt_private.is_started) {
++		printk(KERN_INFO PFX "Watchdog restarted after resume.\n");
++		iTCO_wdt_start();
++	} else {
++		printk(KERN_INFO PFX "Watchdog stopped after resume.\n");
++		iTCO_wdt_stop();
++	}
++	return 0;
++}
++
++static const struct dev_pm_ops iTCO_wdt_pm_ops = {
++	.suspend        = iTCO_wdt_suspend,
++	.resume         = iTCO_wdt_resume,
++};
++#endif /* CONFIG_PM */
++
+ static struct platform_driver iTCO_wdt_driver = {
+ 	.probe          = iTCO_wdt_probe,
+ 	.remove         = __devexit_p(iTCO_wdt_remove),
+@@ -972,6 +1007,9 @@ static struct platform_driver iTCO_wdt_d
+ 	.driver         = {
+ 		.owner  = THIS_MODULE,
+ 		.name   = DRV_NAME,
++#ifdef CONFIG_PM
++		.pm     = &iTCO_wdt_pm_ops,
++#endif /* CONFIG_PM */
+ 	},
+ };
+ 
 
-	if (find_uprobe(vaddr))
-		process_uprobe();
-	else
-	if (is_swbp_at_addr_fast(vaddr))	// non-uprobe int3
-		send_sig(SIGTRAP);
-	else
-		restart_insn(vaddr);		// raced with unregister
-
-
-note that is_swbp_at_addr_fast() is used (currently) to detect
-the race with upbrobe_unregister() and that is why we can remove
-uprobes_srcu.
-
-But if find_uprobe() fails, there is a window before
-is_swbp_at_addr_fast() reads the memory. Suppose that the next
-uprobe_register() inserts the new uprobe at the same address.
-In this case the task will be wrongly killed.
-
-Oleg.
-
+-- 
+     David A. Madore
+   ( http://www.madore.org/~david/ )
