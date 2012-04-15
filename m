@@ -1,90 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751469Ab2DOT6C (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 15 Apr 2012 15:58:02 -0400
-Received: from rcsinet15.oracle.com ([148.87.113.117]:17424 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750968Ab2DOT6A convert rfc822-to-8bit (ORCPT
+	id S1751441Ab2DOUFO (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 15 Apr 2012 16:05:14 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:52205 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751118Ab2DOUFM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 15 Apr 2012 15:58:00 -0400
-Subject: Re: [PATCH RFC] vfs: make fstatat retry on ESTALE errors from getattr call
-Mime-Version: 1.0 (Apple Message framework v1257)
-Content-Type: text/plain; charset=us-ascii
-From: Chuck Lever <chuck.lever@oracle.com>
-In-Reply-To: <4F8B1B7B.3040304@itwm.fraunhofer.de>
-Date: Sun, 15 Apr 2012 15:57:32 -0400
-Cc: Jeff Layton <jlayton@redhat.com>, Malahal Naineni <malahal@us.ibm.com>,
-        linux-nfs@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, pstaubach@exagrid.com, miklos@szeredi.hu,
-        viro@ZenIV.linux.org.uk, hch@infradead.org,
-        michael.brantley@deshaw.com, sven.breuner@itwm.fraunhofer.de
-Content-Transfer-Encoding: 8BIT
-Message-Id: <F7D07FEC-4CA3-471F-8043-0DB899660BBB@oracle.com>
-References: <1334316311-22331-1-git-send-email-jlayton@redhat.com> <20120413150518.GA1987@us.ibm.com> <20120413114236.0e557e01@tlielax.poochiereds.net> <4F8B1B7B.3040304@itwm.fraunhofer.de>
-To: Bernd Schubert <bernd.schubert@itwm.fraunhofer.de>
-X-Mailer: Apple Mail (2.1257)
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
-X-CT-RefId: str=0001.0A090205.4F8B2833.006F,ss=1,re=0.000,fgs=0
+	Sun, 15 Apr 2012 16:05:12 -0400
+MIME-Version: 1.0
+In-Reply-To: <4F8B0609.8010603@snewbury.org.uk>
+References: <1333968563.5678.19.camel@infinity>
+	<4F848357.3060007@snewbury.org.uk>
+	<CAE9FiQXTgh3X4x+xD1T0ipsEbhbPtctYucfGeuWK=cq7kHeZ1Q@mail.gmail.com>
+	<4F848E10.1090703@snewbury.org.uk>
+	<CAE9FiQXvwYrJhLi91VDVtD4+OOfbGQ1U20-Cap+8tBZUt7QCkA@mail.gmail.com>
+	<1334089568.4083.2.camel@Nokia-N900>
+	<CAE9FiQWnvB2VbBQQaEnDE0nf+Zwy6nyoGrEuVrUesQEzgYfbvA@mail.gmail.com>
+	<4F84A3EC.6030903@snewbury.org.uk>
+	<CAE9FiQU+EEtBWrc66Sw4GFQjSy9Vh9fyFvhgQUheev_aVpAzrw@mail.gmail.com>
+	<1334229754.30606.7.camel@Nokia-N900>
+	<CAE9FiQXhzAOErMeQxz6U-BSYAK1LirHMpiFH90iRoXxwduPhPw@mail.gmail.com>
+	<1334248841.2910.6.camel@Nokia-N900>
+	<4F89B5E8.3040906@snewbury.org.uk>
+	<4F89BC84.50308@snewbury.org.uk>
+	<4F89C513.3000006@snewbury.org.uk>
+	<4F89CB16.2000908@snewbury.org.uk>
+	<4F89CE43.7040200@snewbury.org.uk>
+	<CAE9FiQVwDNM9MkqG_g139LDf6Ypjx0uygzVqosDe=fF=c_Y3gA@mail.gmail.com>
+	<4F8AA0DC.6010902@snewbury.org.uk>
+	<4F8AB312.7060606@snewbury.org.uk>
+	<4F8B04A4.4070507@snewbury.org.uk>
+	<4F8B0609.8010603@snewbury.org.uk>
+Date: Sun, 15 Apr 2012 13:05:11 -0700
+X-Google-Sender-Auth: ENaRBSVtx3P_lOnqKXSfIv7xPcM
+Message-ID: <CAE9FiQUsQjUNeW1sa_mQL6MEaDhxvoMhFaN9wLPAqOXzh+AXPQ@mail.gmail.com>
+Subject: Re: PCI resources above 4GB
+From: Yinghai Lu <yinghai@kernel.org>
+To: Steven Newbury <steve@snewbury.org.uk>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Cc: "Barnes, Jesse" <jesse.barnes@intel.com>, Dave Airlie <airlied@linux.ie>,
+        Bjorn Helgaas <bhelgaas@google.com>, linux-pci@vger.kernel.org,
+        DRI mailing list <dri-devel@lists.freedesktop.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: multipart/mixed; boundary=047d7b339bb51d66c604bdbd3960
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+--047d7b339bb51d66c604bdbd3960
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: quoted-printable
 
-On Apr 15, 2012, at 3:03 PM, Bernd Schubert wrote:
+On Sun, Apr 15, 2012 at 10:31 AM, Steven Newbury <steve@snewbury.org.uk> wr=
+ote:
+>>>>>>>
+>>>>>>> pci 0000:03:08.0: BAR 15: can't assign mem pref (size
+>>>>>>> 0x18000000)
+>>>>>> Ah! Not enough space for the bridge window!:(
+>>>>>>
+>>
+>>>>> please append pci=3Dnorom ...
+>>
+>>>> That worked. =A0Except of course the radeon driver can't POST the
+>>>> =A0card without the ROM! :-P
+>>> Can the ROM resource be mapped above 4G?
+>> I didn't really think that through, obviously it can't because
+>> it's not on a 64-bit capable bridge. =A0I wonder though, could it be
+>> shadowed then disabled early before the IOMEM?
+> I see there's "#if 0"'d helper functions for exactly that in rom.c.
+> They've been disabled since 2007!
 
-> On 04/13/2012 05:42 PM, Jeff Layton wrote:
->> (note: please don't trim the CC list!)
->> 
->> Indefinitely does make some sense (as Peter articulated in his original
->> set). It's possible you could race several times in a row, or a server
->> misconfiguration or something has happened and you have a transient
->> error that will eventually recover. His assertion was that any limit on
->> the number of retries is by definition wrong. For NFS, a fatal signal
->> ought to interrupt things as well, so retrying indefinitely has some
->> appeal there.
->> 
->> OTOH, we do have to contend with filesystems that might return ESTALE
->> persistently for other reasons and that might not respond to signals.
->> Miklos pointed out that some FUSE fs' do this in his review of Peter's
->> set.
->> 
->> As a purely defensive coding measure, limiting the number of retries to
->> something finite makes sense. If we're going to do that though, I'd
->> probably recommend that we set the number of retries be something
->> higher just so that this is more resilient in the face of multiple
->> races. Those other fs' might "spin" a bit in that case but it is an
->> error condition and IMO resiliency trumps performance -- at least in
-> this case.
-> 
-> I am definitely voting against an infinite number of retries. I'm
-> working on FhGFS, which supports distributed meta data servers. So when
-> a file is moved around between directories, its file handle, which
-> contains the meta-data target id might become invalid.
+solution could be one of three:
+1. when bridge support 64bit pref, will not allocate rom bar in bridge
+pref resource.
+=3D=3D=3D=3D> patch: rom_pref.patch
 
-Doesn't Jeff's recovery mechanism resolve this situation?  The client does a fresh lookup, so shouldn't it get the new FH at that point?  If there is no possible way for the client to discover the new FH, then ESTALE recovery should probably be finite.
+2. unconditionally to make rom bar allocation in bridge non-pref range.
+=3D=3D=3D=3D> patch: rom_no_pref.patch
+Looks like BIOS and at least one of other OSes is doing that.
 
-> As NFSv3 is
-> stateless we cannot inform the client about that and must return ESTALE
-> then. NFSv4 is better, but I'm not sure how well invalidating a file
-> handle works.  So retrying once on ESTALE might be a good idea, but
-> retrying forever is not.
-> Also, what about asymmetric HA servers? I believe to remember that also
-> resulted in ESTALE. So for example server1 exports /home and /scratch,
-> but on failure server2 can only take over /home and denies access to
-> /scratch.
+I can not find the the history why ROM res is with PREFETCH bit set.
+Maybe Linus has some idea about that.
 
-Retrying forever is bad only if we think there are cases where there is no possible recovery action for the client, or the ESTALE signals a condition that is not temporary.
+3. use pci_bus_allocate_resource in drm/radeon driver ... =3D=3D=3D> but
+that could fail.
+   so could hack it like a. disable bar 0x10 and steal BAR address,
+then set 0x30 to that address then copy ROM to ram.
+   after that, disable rom again and set back address to 0x10.
+   You try to update radeon_get_bios() to achieve that.
 
-It is temporary, for instance, when an administrator takes an exported volume offline; at some point, that volume will be brought back online.  Maybe it is better generally for the client to retry indefinitely instead of causing applications to fail.
+      Yinghai
 
-Retrying forever is exactly what we do for "hard" NFS mounts, for example, and for many types of NFSv4 state recovery.  Philosophically, how is this situation different?
+--047d7b339bb51d66c604bdbd3960
+Content-Type: application/octet-stream; name="rom_pref.patch"
+Content-Disposition: attachment; filename="rom_pref.patch"
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_h12iezge0
 
-It would be reasonable, at least, to insert a backoff delay in the retry logic.
-
--- 
-Chuck Lever
-chuck[dot]lever[at]oracle[dot]com
-
-
-
-
+U3ViamVjdDogW1BBVENIXSBQQ0k6IERvbid0IGxldCBST00gYmFyIHJlZHVjZSBjaGFuY2UgdG8g
+cHJlZiBtZW02NAoKTm93IHJvbSByZXNvdXJjZSBpcyBzZXQgdG8gUFJFRkVUQ0gsIGJ1dCBpcyBu
+b3QgTUVNXzY0LCBTbyBpdCB3b3VsZAptYWtlIHRoZSB3aG9sZSBicmlkZ2Ugbm90IHVzZSBwcmVm
+IGFib3ZlIDRnLgoKSW4gdGhhdCBjYXNlLCBqdXN0IGNsZWFyIFBSRUZFVENIIGZvciB0aGF0IHJv
+bSByZXNvdXJjZSwgYW5kIHB1c2ggaXQKdG8gYnJpZGdlIHJlc291cmNlIHdpdGhvdXQgcHJlZi4K
+ClNpZ25lZC1vZmYtYnk6IFlpbmdoYWkgTHUgPHlpbmdoYWlAa2VybmVsLm9yZz4KLS0tCiBkcml2
+ZXJzL3BjaS9zZXR1cC1idXMuYyB8ICAgMTAgKysrKysrKysrKwogMSBmaWxlIGNoYW5nZWQsIDEw
+IGluc2VydGlvbnMoKykKCkluZGV4OiBsaW51eC0yLjYvZHJpdmVycy9wY2kvc2V0dXAtYnVzLmMK
+PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09
+PT09PT09PT09PQotLS0gbGludXgtMi42Lm9yaWcvZHJpdmVycy9wY2kvc2V0dXAtYnVzLmMKKysr
+IGxpbnV4LTIuNi9kcml2ZXJzL3BjaS9zZXR1cC1idXMuYwpAQCAtODEwLDYgKzgxMCwxNiBAQCBz
+dGF0aWMgaW50IHBidXNfc2l6ZV9tZW0oc3RydWN0IHBjaV9idXMKIAogCQkJaWYgKHItPnBhcmVu
+dCB8fCAoci0+ZmxhZ3MgJiBtYXNrKSAhPSB0eXBlKQogCQkJCWNvbnRpbnVlOworCisJCQkvKiBE
+b24ndCBsZXQgUk9NIHB1bGwgZG93biBwcmVmNjQgKi8KKwkJCWlmIChzaXplb2YocmVzb3VyY2Vf
+c2l6ZV90KSA+PSA4ICYmCisJCQkgICAgaSA9PSBQQ0lfUk9NX1JFU09VUkNFICYmCisJCQkgICAg
+KHR5cGUgJiBJT1JFU09VUkNFX1BSRUZFVENIKSAmJgorCQkJICAgIChtZW02NF9tYXNrICYgSU9S
+RVNPVVJDRV9NRU1fNjQpKSB7CisJCQkJci0+ZmxhZ3MgJj0gfklPUkVTT1VSQ0VfUFJFRkVUQ0g7
+CisJCQkJY29udGludWU7CisJCQl9CisKIAkJCXJfc2l6ZSA9IHJlc291cmNlX3NpemUocik7CiAj
+aWZkZWYgQ09ORklHX1BDSV9JT1YKIAkJCS8qIHB1dCBTUklPViByZXF1ZXN0ZWQgcmVzIHRvIHRo
+ZSBvcHRpb25hbCBsaXN0ICovCg==
+--047d7b339bb51d66c604bdbd3960--
