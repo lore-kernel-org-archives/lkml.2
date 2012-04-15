@@ -1,48 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752380Ab2DOIMv (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 15 Apr 2012 04:12:51 -0400
-Received: from mail-qc0-f174.google.com ([209.85.216.174]:52928 "EHLO
-	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751127Ab2DOIMs convert rfc822-to-8bit (ORCPT
+	id S1753248Ab2DOIgs (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 15 Apr 2012 04:36:48 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:35544 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751610Ab2DOIgp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 15 Apr 2012 04:12:48 -0400
+	Sun, 15 Apr 2012 04:36:45 -0400
+Date: Sun, 15 Apr 2012 01:34:48 -0700
+From: tip-bot for Jiri Olsa <jolsa@redhat.com>
+Message-ID: <tip-6782206b5dfece4c51f587b3ca1540a4027f87dd@git.kernel.org>
+Cc: acme@redhat.com, linux-kernel@vger.kernel.org, paulus@samba.org,
+        hpa@zytor.com, mingo@kernel.org, a.p.zijlstra@chello.nl,
+        jolsa@redhat.com, fweisbec@gmail.com, tglx@linutronix.de,
+        cjashfor@linux.vnet.ibm.com, mingo@elte.hu
+Reply-To: mingo@kernel.org, hpa@zytor.com, paulus@samba.org,
+        linux-kernel@vger.kernel.org, acme@redhat.com, a.p.zijlstra@chello.nl,
+        jolsa@redhat.com, fweisbec@gmail.com, tglx@linutronix.de,
+        cjashfor@linux.vnet.ibm.com, mingo@elte.hu
+In-Reply-To: <1334233262-5679-3-git-send-email-jolsa@redhat.com>
+References: <1334233262-5679-3-git-send-email-jolsa@redhat.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/urgent] perf session:
+  Skip event correctly for unknown id/machine
+Git-Commit-ID: 6782206b5dfece4c51f587b3ca1540a4027f87dd
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-In-Reply-To: <1334350068.79333.YahooMailNeo@web161804.mail.bf1.yahoo.com>
-References: <1334310754.17013.YahooMailNeo@web161804.mail.bf1.yahoo.com>
-	<201204132118.22074.rjw@sisk.pl>
-	<1334346546.93033.YahooMailNeo@web161806.mail.bf1.yahoo.com>
-	<201204132219.23106.rjw@sisk.pl>
-	<1334350068.79333.YahooMailNeo@web161804.mail.bf1.yahoo.com>
-Date: Sun, 15 Apr 2012 09:12:47 +0100
-Message-ID: <CAAMvbhEFLHPsemALYVQwsuTaAiom1RviLECcPwqdtzA4ogmuLw@mail.gmail.com>
-Subject: Re: [linux-pm] "i8042: Can't reactivate AUX port" after s2ram on 3.4-rc2
-From: James Courtier-Dutton <james.dutton@gmail.com>
-To: Mikko Vinni <mmvinni@yahoo.com>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, Bjorn Helgaas <bhelgaas@google.com>,
-        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Allen Kay <allen.m.kay@intel.com>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>
+Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Sun, 15 Apr 2012 01:34:56 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 13 April 2012 21:47, Mikko Vinni <mmvinni@yahoo.com> wrote:
->       1 firewire_ohci 0000:0a:00.0: Refused to change power state, currently in D3
->      10 firewire_ohci 0000:0a:00.0: restoring config space at offset 0xf (was 0xffffffff, writing 0x10a)
->      10 firewire_ohci 0000:0a:00.0: restoring config space at offset 0xe (was 0xffffffff, writing 0x0)
-<snip>
->       1 sdhci-pci 0000:0a:00.1: Refused to change power state, currently in D3
->      10 sdhci-pci 0000:0a:00.1: restoring config space at offset 0xf (was 0xffffffff, writing 0x10a)
->      10 sdhci-pci 0000:0a:00.1: restoring config space at offset 0xe (was 0xffffffff, writing 0x0)
-<snip>
+Commit-ID:  6782206b5dfece4c51f587b3ca1540a4027f87dd
+Gitweb:     http://git.kernel.org/tip/6782206b5dfece4c51f587b3ca1540a4027f87dd
+Author:     Jiri Olsa <jolsa@redhat.com>
+AuthorDate: Thu, 12 Apr 2012 14:21:01 +0200
+Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
+CommitDate: Thu, 12 Apr 2012 12:14:50 -0300
 
-Could the problem be more due to "Refused to change power state,
-currently in D3".
-the "was 0xffffffff" would be returned if their was no power to the device.
-Don't you need power, before you can write to the config space?
+perf session: Skip event correctly for unknown id/machine
+
+In case the perf_session__process_event function fails, we estimate the
+next event offset.
+
+This is not necessary for sample event failing on unknown ID or machine.
+In such case we know proper size of the event, so we dont need to guess.
+Also failure statistics are updated correctly so we don't miss any
+information.
+
+Forcing perf_session__process_event to return 0 in case of unknown ID or
+machine.
+
+Signed-off-by: Jiri Olsa <jolsa@redhat.com>
+Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Link: http://lkml.kernel.org/r/1334233262-5679-3-git-send-email-jolsa@redhat.com
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+---
+ tools/perf/util/session.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/tools/perf/util/session.c b/tools/perf/util/session.c
+index 00923cd..1efd3be 100644
+--- a/tools/perf/util/session.c
++++ b/tools/perf/util/session.c
+@@ -876,11 +876,11 @@ static int perf_session_deliver_event(struct perf_session *session,
+ 		dump_sample(session, event, sample);
+ 		if (evsel == NULL) {
+ 			++session->hists.stats.nr_unknown_id;
+-			return -1;
++			return 0;
+ 		}
+ 		if (machine == NULL) {
+ 			++session->hists.stats.nr_unprocessable_samples;
+-			return -1;
++			return 0;
+ 		}
+ 		return tool->sample(tool, event, sample, evsel, machine);
+ 	case PERF_RECORD_MMAP:
