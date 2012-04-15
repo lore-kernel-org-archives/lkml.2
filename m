@@ -1,67 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750961Ab2DOTUL (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 15 Apr 2012 15:20:11 -0400
-Received: from isrv.corpit.ru ([86.62.121.231]:53663 "EHLO isrv.corpit.ru"
+	id S1751179Ab2DOT1X (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 15 Apr 2012 15:27:23 -0400
+Received: from fieldses.org ([174.143.236.118]:43065 "EHLO fieldses.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750789Ab2DOTUI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 15 Apr 2012 15:20:08 -0400
-Message-ID: <4F8B1F64.9030502@msgid.tls.msk.ru>
-Date: Sun, 15 Apr 2012 23:20:04 +0400
-From: Michael Tokarev <mjt@tls.msk.ru>
-Organization: Telecom Service, JSC
-User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:10.0.3) Gecko/20120329 Icedove/10.0.3
+	id S1750819Ab2DOT1V (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 15 Apr 2012 15:27:21 -0400
+Date: Sun, 15 Apr 2012 15:27:14 -0400
+To: Bernd Schubert <bernd.schubert@itwm.fraunhofer.de>
+Cc: Jeff Layton <jlayton@redhat.com>, Malahal Naineni <malahal@us.ibm.com>,
+        linux-nfs@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, pstaubach@exagrid.com, miklos@szeredi.hu,
+        viro@ZenIV.linux.org.uk, hch@infradead.org,
+        michael.brantley@deshaw.com, sven.breuner@itwm.fraunhofer.de
+Subject: Re: [PATCH RFC] vfs: make fstatat retry on ESTALE errors from
+ getattr call
+Message-ID: <20120415192714.GA3842@fieldses.org>
+References: <1334316311-22331-1-git-send-email-jlayton@redhat.com>
+ <20120413150518.GA1987@us.ibm.com>
+ <20120413114236.0e557e01@tlielax.poochiereds.net>
+ <4F8B1B7B.3040304@itwm.fraunhofer.de>
 MIME-Version: 1.0
-To: Linux-kernel <linux-kernel@vger.kernel.org>
-CC: linux-acpi@vger.kernel.org
-Subject: Recent intel Cedarview motherboards: does not poweroff
-X-Enigmail-Version: 1.4
-OpenPGP: id=804465C5
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4F8B1B7B.3040304@itwm.fraunhofer.de>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+From: "J. Bruce Fields" <bfields@fieldses.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello.
+On Sun, Apr 15, 2012 at 09:03:23PM +0200, Bernd Schubert wrote:
+> On 04/13/2012 05:42 PM, Jeff Layton wrote:
+> > (note: please don't trim the CC list!)
+> > 
+> > Indefinitely does make some sense (as Peter articulated in his original
+> > set). It's possible you could race several times in a row, or a server
+> > misconfiguration or something has happened and you have a transient
+> > error that will eventually recover. His assertion was that any limit on
+> > the number of retries is by definition wrong. For NFS, a fatal signal
+> > ought to interrupt things as well, so retrying indefinitely has some
+> > appeal there.
+> > 
+> > OTOH, we do have to contend with filesystems that might return ESTALE
+> > persistently for other reasons and that might not respond to signals.
+> > Miklos pointed out that some FUSE fs' do this in his review of Peter's
+> > set.
+> > 
+> > As a purely defensive coding measure, limiting the number of retries to
+> > something finite makes sense. If we're going to do that though, I'd
+> > probably recommend that we set the number of retries be something
+> > higher just so that this is more resilient in the face of multiple
+> > races. Those other fs' might "spin" a bit in that case but it is an
+> > error condition and IMO resiliency trumps performance -- at least in
+>  this case.
+> 
+> I am definitely voting against an infinite number of retries. I'm
+> working on FhGFS, which supports distributed meta data servers. So when
+> a file is moved around between directories, its file handle, which
+> contains the meta-data target id might become invalid.  As NFSv3 is
+> stateless we cannot inform the client about that and must return ESTALE
+> then.
 
-Intel produced a set of very nice mini-ITX boards with new Cedarview
-Atom CPUs onboard -- D2500CC, D2700MUD, D2800MT etc.  Apparently
-all of these boards have issues powering off from linux.
+Note we're not talking about retrying the operation that returned ESTALE
+with the same filehandle--probably any server would return ESTALE again
+in that case.
 
-Here's the last few lines left on the screen when the system should
-turn the power off:
+We're talking about re-looking up the path (in the case where we're
+implementing a system call that takes a path as an argument), and then
+retrying the operation with the newly looked-up filehandle.
 
-ACPI: Preparing to enter system sleep state S5
-ACPI Error (psargs-8359): [\_SB_.PCI0.LPCB.TPM_.PTS_] Namespace lookup failure, AE_NOT_FOUND
-ACPI Error (psparse-8537): Method parse/execution failed [\_PTS] (Node f703c504), AE_NOT_FOUND
-Disabling non-boot CPUs ...
-CPU1 is now offline
-SNP alternatives: switching to UP code
-Power down.
-_
+--b.
 
-
-The cursor is blinking, and power staus on.
-
-Is there anything can be done with this?
-
-Thanks!
-
-
-Besides, these boards have a bios bug which is kinda difficult to work
-around if you don't know how.  Even with latest BIOS, the beasts don't
-REboot if the active partition is something not FAT/NTFS -- eg, any linux
-native filesystem.  It boots fine after power on, but on reboot, instead
-of displaying bootloader prompt, the screen becomes blank with cursor
-blinking at the upper left corner, and after about 30..40 seconds staying
-in this state and not reacting to Ctrl+Alt+Del, the system reboots, ad
-infinitum.  One can powercycle the motherboard and it will boot again
-(just once again), or it is possible to enter bios settings and save
-settings (without changing anything) -- this way it will also boot, but
-also just once.  The workaround is to create a small fat16 /boot partition...
-
-Maybe this information will save quite some time and frustration to
-someone... ;)
-
-/mjt
+> NFSv4 is better, but I'm not sure how well invalidating a file
+> handle works. So retrying once on ESTALE might be a good idea, but
+> retrying forever is not.
+> Also, what about asymmetric HA servers? I believe to remember that also
+> resulted in ESTALE. So for example server1 exports /home and /scratch,
+> but on failure server2 can only take over /home and denies access to
+> /scratch.
+> 
+> 
+> Thanks,
+> Bernd
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-nfs" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
