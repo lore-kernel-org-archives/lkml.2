@@ -1,37 +1,146 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932106Ab2DOEhJ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 15 Apr 2012 00:37:09 -0400
-Received: from shards.monkeyblade.net ([198.137.202.13]:33969 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751505Ab2DOEhG (ORCPT
+	id S1752007Ab2DOEvo (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 15 Apr 2012 00:51:44 -0400
+Received: from mailout-de.gmx.net ([213.165.64.23]:55483 "HELO
+	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1750728Ab2DOEvn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 15 Apr 2012 00:37:06 -0400
-Date: Sun, 15 Apr 2012 00:37:04 -0400 (EDT)
-Message-Id: <20120415.003704.657782177790226484.davem@davemloft.net>
-To: operational.people@gmail.com
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: Where I can find the guide/help to device driver development
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <CAKB833=3-a+gkyOHnBwpq2dTiQkVk3p-ZYSQP7rS_rgXYhq6zQ@mail.gmail.com>
-References: <CAKB833=3-a+gkyOHnBwpq2dTiQkVk3p-ZYSQP7rS_rgXYhq6zQ@mail.gmail.com>
-X-Mailer: Mew version 6.4 on Emacs 24.0.95 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+	Sun, 15 Apr 2012 00:51:43 -0400
+X-Authenticated: #14349625
+X-Provags-ID: V01U2FsdGVkX19Zbo1kTMxZ6jgVU+H0+25EeC73eAJW1erD4zjaPt
+	yss6GxySHHfDql
+Message-ID: <1334465495.7802.6.camel@marge.simpson.net>
+Subject: Re: RFC [patch] sched,cgroup_sched: convince RT_GROUP_SCHED
+ throttle to work
+From: Mike Galbraith <efault@gmx.de>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@redhat.com>
+Date: Sun, 15 Apr 2012 06:51:35 +0200
+In-Reply-To: <1334461470.5751.21.camel@marge.simpson.net>
+References: <1333444106.9072.4.camel@marge.simpson.net>
+	 <1333444788.9072.9.camel@marge.simpson.net>
+	 <1333789124.12677.15.camel@marge.simpson.net>
+	 <1333792489.12677.58.camel@marge.simpson.net>
+	 <1334048925.7524.21.camel@marge.simpson.net>
+	 <1334401847.2528.65.camel@twins>
+	 <1334461061.5751.15.camel@marge.simpson.net>
+	 <1334461470.5751.21.camel@marge.simpson.net>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.1 
 Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Sat, 14 Apr 2012 21:37:05 -0700 (PDT)
+Mime-Version: 1.0
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Vishal Nandanwar <operational.people@gmail.com>
-Date: Sun, 15 Apr 2012 09:59:02 +0530
-
-> I am new in Linux device driver development. Currently I am learning
-> drivers from the book "Linux device drivers" by Rubini. This book is
-> quite big and quite boring. What are the ways to learn the drivers?
+On Sun, 2012-04-15 at 05:44 +0200, Mike Galbraith wrote: 
+> On Sun, 2012-04-15 at 05:37 +0200, Mike Galbraith wrote: 
+> > On Sat, 2012-04-14 at 13:10 +0200, Peter Zijlstra wrote: 
+> > > On Tue, 2012-04-10 at 11:08 +0200, Mike Galbraith wrote:
+> > >  
+> > > > --- a/kernel/sched/rt.c
+> > > > +++ b/kernel/sched/rt.c
+> > > > @@ -782,6 +782,19 @@ static int do_sched_rt_period_timer(stru
+> > > >  	const struct cpumask *span;
+> > > >  
+> > > >  	span = sched_rt_period_mask();
+> > > > +#ifdef CONFIG_RT_GROUP_SCHED
+> > > > +	/*
+> > > > +	 * FIXME: isolated CPUs should really leave the root task group,
+> > > 
+> > > No no, that's the wrong fix, the right fix is to remove isolcpus :-)
+> > 
+> > Yeah, isolcpus needs to die, but...
+> > 
+> > > I guess the alternative 'fix' is to not account the rt_runtime on
+> > > isolated cpus.. does something like the below actually work?
+> > 
+> > I haven't tried it, because the exact same thing happens when you
+> > isolate via cpusets directly below root.  One timer, two (or more)
+> > rd->span, so _somebody_ is screwed.
 > 
-> Do any one have any guide in video or PPT format or in any other format?
+> You _could_ bail on !rq->sd I suppose, but the way I hacked around it,
+> the user can keep the throttle for testing/troubleshooting their
+> isolated setup, and turn it off in production.  OTOH, auto throttle
+> disable for all isolated sets could work just as well.
 
-Sorry, nobody is going to produce and direct a science fiction film
-about kernel development just to make it more interesting for you.
+Like so seems to work.  I personally like 2 lines better, but whatever
+solves dinky but deadly problem works for me.
+
+---
+ kernel/sched/core.c  |    7 ++++++-
+ kernel/sched/rt.c    |    9 +++++++++
+ kernel/sched/sched.h |    3 +++
+ 3 files changed, 18 insertions(+), 1 deletion(-)
+
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -5875,6 +5875,11 @@ cpu_attach_domain(struct sched_domain *s
+ 			sd->child = NULL;
+ 	}
+ 
++	if (sd)
++		cpumask_clear_cpu(cpu, cpu_isolated_map);
++	else
++		cpumask_set_cpu(cpu, cpu_isolated_map);
++
+ 	sched_domain_debug(sd, cpu);
+ 
+ 	rq_attach_root(rq, rd);
+@@ -5886,7 +5891,7 @@ cpu_attach_domain(struct sched_domain *s
+ }
+ 
+ /* cpus with isolated domains */
+-static cpumask_var_t cpu_isolated_map;
++cpumask_var_t cpu_isolated_map;
+ 
+ /* Setup the mask of cpus configured for isolated domains */
+ static int __init isolated_cpu_setup(char *str)
+--- a/kernel/sched/rt.c
++++ b/kernel/sched/rt.c
+@@ -922,6 +922,9 @@ static void update_curr_rt(struct rq *rq
+ 	if (!rt_bandwidth_enabled())
+ 		return;
+ 
++	if (cpumask_test_cpu(cpu_of(rq), cpu_isolated_map))
++		return;
++
+ 	for_each_sched_rt_entity(rt_se) {
+ 		rt_rq = rt_rq_of_se(rt_se);
+ 
+@@ -1014,6 +1017,9 @@ static inline void dec_rt_prio(struct rt
+ static void
+ inc_rt_group(struct sched_rt_entity *rt_se, struct rt_rq *rt_rq)
+ {
++	if (cpumask_test_cpu(rq_of_rt_rq(rt_rq)->cpu, cpu_isolated_map))
++		return;
++
+ 	if (rt_se_boosted(rt_se))
+ 		rt_rq->rt_nr_boosted++;
+ 
+@@ -1035,6 +1041,9 @@ dec_rt_group(struct sched_rt_entity *rt_
+ static void
+ inc_rt_group(struct sched_rt_entity *rt_se, struct rt_rq *rt_rq)
+ {
++	if (cpumask_test_cpu(rq_of_rt_rq(rt_rq)->cpu, cpu_isolated_map))
++		return;
++
+ 	start_rt_bandwidth(&def_rt_bandwidth);
+ }
+ 
+--- a/kernel/sched/sched.h
++++ b/kernel/sched/sched.h
+@@ -73,6 +73,9 @@ struct rt_bandwidth {
+ 
+ extern struct mutex sched_domains_mutex;
+ 
++/* cpus with isolated domains */
++extern cpumask_var_t cpu_isolated_map;
++
+ #ifdef CONFIG_CGROUP_SCHED
+ 
+ #include <linux/cgroup.h>
+
+
