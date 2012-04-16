@@ -1,103 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752954Ab2DPJb3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Apr 2012 05:31:29 -0400
-Received: from na3sys009aog130.obsmtp.com ([74.125.149.143]:32832 "EHLO
-	na3sys009aog130.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752464Ab2DPJb2 (ORCPT
+	id S1752788Ab2DPJoJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Apr 2012 05:44:09 -0400
+Received: from mail7.hitachi.co.jp ([133.145.228.42]:48542 "EHLO
+	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752011Ab2DPJoH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Apr 2012 05:31:28 -0400
-Date: Mon, 16 Apr 2012 12:30:30 +0300
-From: Felipe Balbi <balbi@ti.com>
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: linux-m68k@vger.kernel.org, Felipe Balbi <balbi@ti.com>,
-        Greg Ungerer <gerg@uclinux.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org
-Subject: Re: [PATCH] m68k: Make sure {read,write}s[bwl]() are always defined
-Message-ID: <20120416093029.GJ30878@arwen.pp.htv.fi>
-Reply-To: balbi@ti.com
-References: <1334516410-5777-1-git-send-email-geert@linux-m68k.org>
+	Mon, 16 Apr 2012 05:44:07 -0400
+X-AuditID: b753bd60-97991ba000007b1b-a8-4f8be9e4b122
+X-AuditID: b753bd60-97991ba000007b1b-a8-4f8be9e4b122
+Message-ID: <4F8BE9D8.5060803@hitachi.com>
+Date: Mon, 16 Apr 2012 18:43:52 +0900
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Organization: Hitachi, Ltd., Japan
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:11.0) Gecko/20120327 Thunderbird/11.0.1
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="x+RZeZVNR8VILNfK"
-Content-Disposition: inline
-In-Reply-To: <1334516410-5777-1-git-send-email-geert@linux-m68k.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
+        LKML <linux-kernel@vger.kernel.org>, Linux-mm <linux-mm@kvack.org>,
+        Oleg Nesterov <oleg@redhat.com>, Andi Kleen <andi@firstfloor.org>,
+        Christoph Hellwig <hch@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Anton Arapov <anton@redhat.com>
+Subject: Re: [PATCH 3/3] tracing: Provide trace events interface for uprobes
+References: <20120416091936.19174.2641.sendpatchset@srdronam.in.ibm.com> <20120416091957.19174.22913.sendpatchset@srdronam.in.ibm.com>
+In-Reply-To: <20120416091957.19174.22913.sendpatchset@srdronam.in.ibm.com>
+Content-Type: text/plain; charset=ISO-2022-JP
+Content-Transfer-Encoding: 7bit
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+(2012/04/16 18:19), Srikar Dronamraju wrote:
+> From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+> 
+> Implements trace_event support for uprobes. In its current form it can
+> be used to put probes at a specified offset in a file and dump the
+> required registers when the code flow passes through the probed address.
+> 
+> The following example shows how to dump the instruction pointer and %ax
+> a register at the probed text address.  Here we are trying to probe
+> zfree in /bin/zsh
+> 
+> # cd /sys/kernel/debug/tracing/
+> # cat /proc/`pgrep  zsh`/maps | grep /bin/zsh | grep r-xp
+> 00400000-0048a000 r-xp 00000000 08:03 130904 /bin/zsh
+> # objdump -T /bin/zsh | grep -w zfree
+> 0000000000446420 g    DF .text  0000000000000012  Base        zfree
+> # echo 'p /bin/zsh:0x46420 %ip %ax' > uprobe_events
+> # cat uprobe_events
+> p:uprobes/p_zsh_0x46420 /bin/zsh:0x0000000000046420
+> # echo 1 > events/uprobes/enable
+> # sleep 20
+> # echo 0 > events/uprobes/enable
+> # cat trace
+> # tracer: nop
+> #
+> #           TASK-PID    CPU#    TIMESTAMP  FUNCTION
+> #              | |       |          |         |
+>              zsh-24842 [006] 258544.995456: p_zsh_0x46420: (0x446420) arg1=446421 arg2=79
+>              zsh-24842 [007] 258545.000270: p_zsh_0x46420: (0x446420) arg1=446421 arg2=79
+>              zsh-24842 [002] 258545.043929: p_zsh_0x46420: (0x446420) arg1=446421 arg2=79
+>              zsh-24842 [004] 258547.046129: p_zsh_0x46420: (0x446420) arg1=446421 arg2=79
+> 
+> Acked-by: Steven Rostedt <rostedt@goodmis.org>
+> Signed-off-by: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
 
---x+RZeZVNR8VILNfK
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Looks good for me :)
 
-On Sun, Apr 15, 2012 at 09:00:10PM +0200, Geert Uytterhoeven wrote:
-> If CONFIG_ATARI_ROM_ISA is defined (e.g. allmodconfig), musb fails to
-> compile with:
->=20
-> In file included from drivers/usb/musb/musb_core.h:68,
->                  from drivers/usb/musb/musb_core.c:104:
-> drivers/usb/musb/musb_io.h:45: error: conflicting types for =E2=80=98raw_=
-insl=E2=80=99
-> arch/m68k/include/asm/raw_io.h:200: error: previous definition of =E2=80=
-=98raw_insl=E2=80=99 was here
-> drivers/usb/musb/musb_io.h:47: error: conflicting types for =E2=80=98raw_=
-insw=E2=80=99
-> arch/m68k/include/asm/raw_io.h:121: error: previous definition of =E2=80=
-=98raw_insw=E2=80=99 was here
-> drivers/usb/musb/musb_io.h:52: error: conflicting types for =E2=80=98raw_=
-outsl=E2=80=99
-> arch/m68k/include/asm/raw_io.h:240: error: previous definition of =E2=80=
-=98raw_outsl=E2=80=99 was here
-> drivers/usb/musb/musb_io.h:54: error: conflicting types for =E2=80=98raw_=
-outsw=E2=80=99
-> arch/m68k/include/asm/raw_io.h:161: error: previous definition of =E2=80=
-=98raw_outsw=E2=80=99 was here
-> make[4]: *** [drivers/usb/musb/musb_core.o] Error 1
->=20
-> This happens because musb_io.h provides default implementations for
-> {read,write}s[bwl]() on most platforms, some of which conflict with their
-> Atari ROM ISA counterparts.
->=20
-> To avoid adding a check for CONFIG_ATARI_ROM_ISA to musb_io.h, make sure
-> {read,write}s[bwl]() are always defined on m68k, and disable the default
-> implementations in musb_io.h on m68k, like is already done for several
-> other architectures.
->=20
-> Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
-> Cc: Felipe Balbi <balbi@ti.com>
-> Cc: Greg Ungerer <gerg@uclinux.org>
+Acked-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
 
-Go ahea Geert, here's my ack.
 
-Acked-by: Felipe Balbi <balbi@ti.com>
+Thanks!
 
---=20
-balbi
 
---x+RZeZVNR8VILNfK
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJPi+a1AAoJEIaOsuA1yqREBpsP/2kV7VPQdJv/en3pp2/KJLHH
-+2NsE6h79UBdSZoeC0vodCnU6m/ncUJYbtn0bLalcSTD6nceKWj5IsGZWCKJI/LI
-wgVOYlXrV4GJD+7pq2y96KlrUAg9HQDN6DZtzVKWa35naqO/wT0viaGAYwraqhuu
-o3r3OE6giv/sSD17nNCp9REep4ZAdmPbBbbu4V9smAuZr3pr7j5yyza7iM8PfDAB
-upViOOIixQrBuFRQw7JQPGDktAMBT6PumiUaal7O3hoTjSMu6T4vn0c5V5WFkzVi
-k8WenYzOOryINcsX+hyP/1VLxibyCLuw67KpOMNC4em0sheX/VKGpnW8zr3TGH7R
-uxQeb2zbVVnYNjzprlSRNIaqhbl8wP59xZhVyW6DP1EjwDHnkeiIUf3mzXjlVQil
-07rJqd2VmBExX7jIfZAnHmK1mxZ84H27gOZ4/8jJhXy9WaXK2NcjZuykjFrCqI1c
-ziNmP3WaFmAY2K/84r4TL+wzzXe4Ucl4ztWZdRXAN8yCaUeDNmiv5B02qslzHqI9
-DAIEVuvzo9S6rw44guQOEaZJCNzt3iilymn4K/tRGy5JS0b3iAesbFzlE4swNZjt
-qf9h+hW0LkxFm0JBcAQsok8R3SkXdXHv+e9rweW3J7Tzszz1+ac+t6+r1cJ9p+Jn
-G9XCCieVDzfW6MXjH8ae
-=5ILI
------END PGP SIGNATURE-----
-
---x+RZeZVNR8VILNfK--
+-- 
+Masami HIRAMATSU
+Software Platform Research Dept. Linux Technology Center
+Hitachi, Ltd., Yokohama Research Laboratory
+E-mail: masami.hiramatsu.pt@hitachi.com
