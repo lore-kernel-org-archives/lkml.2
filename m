@@ -1,53 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754895Ab2DPRDB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Apr 2012 13:03:01 -0400
-Received: from e39.co.us.ibm.com ([32.97.110.160]:34094 "EHLO
-	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752524Ab2DPRC4 (ORCPT
+	id S1754536Ab2DPRIi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Apr 2012 13:08:38 -0400
+Received: from ocelot.phlegethon.org ([81.29.64.94]:49352 "EHLO
+	mail.phlegethon.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751052Ab2DPRIg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Apr 2012 13:02:56 -0400
-Date: Mon, 16 Apr 2012 10:02:30 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        "Paul E. McKenney" <paul.mckenney@linaro.org>
-Subject: Re: linux-next: build failure after merge of the rcu tree
-Message-ID: <20120416170230.GB2448@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20120416141117.6dfcc5931400fede4e8cbe58@canb.auug.org.au>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	Mon, 16 Apr 2012 13:08:36 -0400
+Date: Mon, 16 Apr 2012 18:08:27 +0100
+From: Tim Deegan <tim@xen.org>
+To: Dan Magenheimer <dan.magenheimer@oracle.com>
+Cc: David Vrabel <david.vrabel@citrix.com>, Jan Beulich <JBeulich@suse.com>,
+        Konrad Wilk <konrad.wilk@oracle.com>, linux-kernel@vger.kernel.org,
+        xen-devel <xen-devel@lists.xen.org>, Sheng Yang <sheng@yasker.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [Xen-devel] [PATCH] xen: always set the sched clock as unstable
+Message-ID: <20120416170827.GE13111@ocelot.phlegethon.org>
+References: <1334341255-11153-1-git-send-email-david.vrabel@citrix.com> <4F8C1F6D020000780007E11A@nat28.tlf.novell.com> <4F8C33E0.2080007@citrix.com> <049b7b93-fb37-4962-b272-d786e1dcfacb@default>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <20120416141117.6dfcc5931400fede4e8cbe58@canb.auug.org.au>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12041617-4242-0000-0000-0000015C0AF9
+In-Reply-To: <049b7b93-fb37-4962-b272-d786e1dcfacb@default>
+User-Agent: Mutt/1.4.2.1i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 16, 2012 at 02:11:17PM +1000, Stephen Rothwell wrote:
-> Hi Paul,
-> 
-> After merging the rcu tree, today's linux-next build (powerpc
-> ppc64_defconfig) failed like this:
-> 
-> fs/binfmt_misc.c: In function 'create_entry':
-> fs/binfmt_misc.c:314:2: error: implicit declaration of function '_copy_from_user' [-Werror=implicit-function-declaration]
-> 
-> Caused by commit d17faaa53e2e ("fs: Silence bogus copy_to_user() build
-> errors").  _copy_from_user() appears to only exist for the x86 and tile
-> architectures ...
-> 
-> I have used the rcu tree from next-20120413 for today.
+At 09:05 -0700 on 16 Apr (1334567132), Dan Magenheimer wrote:
+> Hmmm... I spent a great deal of time on TSC support in the hypervisor
+> 2-3 years ago.  I worked primarily on PV, but Intel supposedly was tracking
+> everything on HVM as well.  There's most likely a bug or two still lurking
+> but, for all guests, with the default tsc_mode, TSC is provided by Xen
+> as an absolutely stable clock source.  If Xen determines that the underlying
+> hardware declares that TSC is stable, guest rdtsc instructions are not trapped.
+> If it is not, Xen emulates all guest rdtsc instructions.  After a migration or
+> save/restore, TSC is always emulated.  The result is (ignoring possible
+> bugs) that TSC as provided by Xen is a) monotonic; b) synchronized across
+> CPUs; and c) constant rate.  Even across migration/save/restore.
 
-<red face>
+AIUI, this thread is about the PV-time clock source, not about the TSC
+itself.  Even if the TSC is emulated (or in some other way made
+"stable") the PV wallclock is not necessarily stable across migration.
+But since migration is controlled by the kernel, presumably the kernel
+can DTRT about it.
 
-It turns out that bug that commit d17faaa53e2e was working around has
-been fixed in 3.4-rc2, so I have dropped that patch and reposted the
-series.  Please accept my apologies for the hassle!
+> In fact, it might be wise for a Xen-savvy kernel to check to see
+> if it is running on Xen-4.0+ and, if so, force clocksource=tsc
+> and tsc=reliable.
 
-							Thanx, Paul
+That seems like overdoing it.  Certainly it's not OK unless it can also
+check that Xen is providing a stable TSC (i.e. that tscmode==1).
 
+In the case where the PV clock has been selected, can it not be marked
+unstable without also marking the TSC unstable?
+
+Tim.
