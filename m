@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755549Ab2DPUZf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Apr 2012 16:25:35 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:42006 "EHLO mx1.redhat.com"
+	id S1755527Ab2DPUZe (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Apr 2012 16:25:34 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:12174 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754825Ab2DPUVz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Apr 2012 16:21:55 -0400
+	id S1754830Ab2DPUV4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Apr 2012 16:21:56 -0400
 From: Mauro Carvalho Chehab <mchehab@redhat.com>
 Cc: Mauro Carvalho Chehab <mchehab@redhat.com>,
         Linux Edac Mailing List <linux-edac@vger.kernel.org>,
         Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Tim Small <tim@buttersideup.com>
-Subject: [EDAC_ABI PATCH v13 22/26] r82600_edac: convert driver to use the new edac ABI
-Date: Mon, 16 Apr 2012 17:21:41 -0300
-Message-Id: <1334607705-30320-23-git-send-email-mchehab@redhat.com>
+        Borislav Petkov <borislav.petkov@amd.com>
+Subject: [EDAC_ABI PATCH v13 25/26] x38_edac: convert driver to use the new edac ABI
+Date: Mon, 16 Apr 2012 17:21:44 -0300
+Message-Id: <1334607705-30320-26-git-send-email-mchehab@redhat.com>
 In-Reply-To: <1334607705-30320-1-git-send-email-mchehab@redhat.com>
 References: <1334607133-30039-1-git-send-email-mchehab@redhat.com>
  <1334607705-30320-1-git-send-email-mchehab@redhat.com>
@@ -25,69 +25,70 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 The legacy edac ABI is going to be removed. Port the driver to use
 and benefit from the new API functionality.
 
-Cc: Tim Small <tim@buttersideup.com>
+Cc: Borislav Petkov <borislav.petkov@amd.com>
 Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
 ---
- drivers/edac/r82600_edac.c |   27 ++++++++++++++++++---------
- 1 files changed, 18 insertions(+), 9 deletions(-)
+ drivers/edac/x38_edac.c |   28 +++++++++++++++++++++-------
+ 1 files changed, 21 insertions(+), 7 deletions(-)
 
-diff --git a/drivers/edac/r82600_edac.c b/drivers/edac/r82600_edac.c
-index 19f3a10..ca64939 100644
---- a/drivers/edac/r82600_edac.c
-+++ b/drivers/edac/r82600_edac.c
-@@ -179,10 +179,11 @@ static int r82600_process_error_info(struct mem_ctl_info *mci,
- 		error_found = 1;
+diff --git a/drivers/edac/x38_edac.c b/drivers/edac/x38_edac.c
+index 0de288f..f715269 100644
+--- a/drivers/edac/x38_edac.c
++++ b/drivers/edac/x38_edac.c
+@@ -215,19 +215,26 @@ static void x38_process_error_info(struct mem_ctl_info *mci,
+ 		return;
  
- 		if (handle_errors)
--			edac_mc_handle_ce(mci, page, 0,	/* not avail */
--					syndrome,
--					edac_mc_find_csrow_by_page(mci, page),
--					0, mci->ctl_name);
-+			edac_mc_handle_error(HW_EVENT_ERR_CORRECTED, mci,
-+					     page, 0, syndrome,
-+					     edac_mc_find_csrow_by_page(mci, page),
-+					     0, -1,
-+					     mci->ctl_name, "", NULL);
+ 	if ((info->errsts ^ info->errsts2) & X38_ERRSTS_BITS) {
+-		edac_mc_handle_ce_no_info(mci, "UE overwrote CE");
++		edac_mc_handle_error(HW_EVENT_ERR_UNCORRECTED, mci, 0, 0, 0,
++				     -1, -1, -1,
++				     "UE overwrote CE", "", NULL);
+ 		info->errsts = info->errsts2;
  	}
  
- 	if (info->eapr & BIT(1)) {	/* UE? */
-@@ -190,9 +191,11 @@ static int r82600_process_error_info(struct mem_ctl_info *mci,
- 
- 		if (handle_errors)
- 			/* 82600 doesn't give enough info */
--			edac_mc_handle_ue(mci, page, 0,
--					edac_mc_find_csrow_by_page(mci, page),
--					mci->ctl_name);
+ 	for (channel = 0; channel < x38_channel_num; channel++) {
+ 		log = info->eccerrlog[channel];
+ 		if (log & X38_ECCERRLOG_UE) {
+-			edac_mc_handle_ue(mci, 0, 0,
+-				eccerrlog_row(channel, log), "x38 UE");
 +			edac_mc_handle_error(HW_EVENT_ERR_UNCORRECTED, mci,
-+					     page, 0, 0,
-+					     edac_mc_find_csrow_by_page(mci, page),
-+					     0, -1,
-+					     mci->ctl_name, "", NULL);
++					     0, 0, 0,
++					     eccerrlog_row(channel, log),
++					     -1, -1,
++					     "x38 UE", "", NULL);
+ 		} else if (log & X38_ECCERRLOG_CE) {
+-			edac_mc_handle_ce(mci, 0, 0,
+-				eccerrlog_syndrome(log),
+-				eccerrlog_row(channel, log), 0, "x38 CE");
++			edac_mc_handle_error(HW_EVENT_ERR_CORRECTED, mci,
++					     0, 0, eccerrlog_syndrome(log),
++					     eccerrlog_row(channel, log),
++					     -1, -1,
++					     "x38 CE", "", NULL);
+ 		}
  	}
- 
- 	return error_found;
-@@ -267,6 +270,7 @@ static void r82600_init_csrows(struct mem_ctl_info *mci, struct pci_dev *pdev,
- static int r82600_probe1(struct pci_dev *pdev, int dev_idx)
- {
- 	struct mem_ctl_info *mci;
+ }
+@@ -319,6 +326,7 @@ static int x38_probe1(struct pci_dev *pdev, int dev_idx)
+ 	int rc;
+ 	int i, j;
+ 	struct mem_ctl_info *mci = NULL;
 +	struct edac_mc_layer layers[2];
- 	u8 dramcr;
- 	u32 eapr;
- 	u32 scrub_disabled;
-@@ -281,8 +285,13 @@ static int r82600_probe1(struct pci_dev *pdev, int dev_idx)
- 	debugf2("%s(): sdram refresh rate = %#0x\n", __func__,
- 		sdram_refresh_rate);
- 	debugf2("%s(): DRAMC register = %#0x\n", __func__, dramcr);
--	mci = edac_mc_alloc(0, R82600_NR_CSROWS, R82600_NR_CHANS, 0);
--
+ 	u16 drbs[X38_CHANNELS][X38_RANKS_PER_CHANNEL];
+ 	bool stacked;
+ 	void __iomem *window;
+@@ -334,7 +342,13 @@ static int x38_probe1(struct pci_dev *pdev, int dev_idx)
+ 	how_many_channel(pdev);
+ 
+ 	/* FIXME: unconventional pvt_info usage */
+-	mci = edac_mc_alloc(0, X38_RANKS, x38_channel_num, 0);
 +	layers[0].type = EDAC_MC_LAYER_CHIP_SELECT;
-+	layers[0].size = R82600_NR_CSROWS;
++	layers[0].size = X38_RANKS;
 +	layers[0].is_csrow = true;
 +	layers[1].type = EDAC_MC_LAYER_CHANNEL;
-+	layers[1].size = R82600_NR_CHANS;
++	layers[1].size = x38_channel_num;
 +	layers[1].is_csrow = false;
 +	mci = new_edac_mc_alloc(0, ARRAY_SIZE(layers), layers, false, 0);
- 	if (mci == NULL)
+ 	if (!mci)
  		return -ENOMEM;
  
 -- 
