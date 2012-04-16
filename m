@@ -1,126 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755322Ab2DPS7u (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Apr 2012 14:59:50 -0400
-Received: from moutng.kundenserver.de ([212.227.126.186]:61889 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754058Ab2DPS7t (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Apr 2012 14:59:49 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Stephan Uphoff <ups@google.com>
-Subject: Re: swap on eMMC and other flash
-Date: Mon, 16 Apr 2012 18:59:32 +0000
-User-Agent: KMail/1.12.2 (Linux/3.3.0-rc1; KDE/4.3.2; x86_64; ; )
-Cc: Minchan Kim <minchan@kernel.org>, linaro-kernel@lists.linaro.org,
-        android-kernel@googlegroups.com, linux-mm@kvack.org,
-        "Luca Porzio (lporzio)" <lporzio@micron.com>,
-        Alex Lemberg <alex.lemberg@sandisk.com>, linux-kernel@vger.kernel.org,
-        Saugata Das <saugata.das@linaro.org>,
-        Venkatraman S <venkat@linaro.org>, Yejin Moon <yejin.moon@samsung.com>,
-        Hyojin Jeong <syr.jeong@samsung.com>,
-        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>
-References: <201203301744.16762.arnd@arndb.de> <201204111557.14153.arnd@arndb.de> <CAKL-ytsXbe4=u94PjqvhZo=ZLiChQ0FmZC84GNrFHa0N1mDjFw@mail.gmail.com>
-In-Reply-To: <CAKL-ytsXbe4=u94PjqvhZo=ZLiChQ0FmZC84GNrFHa0N1mDjFw@mail.gmail.com>
+	id S1755293Ab2DPTEk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Apr 2012 15:04:40 -0400
+Received: from nm34.bullet.mail.bf1.yahoo.com ([72.30.238.192]:35554 "HELO
+	nm34.bullet.mail.bf1.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1752578Ab2DPTEj convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Apr 2012 15:04:39 -0400
+X-Greylist: delayed 413 seconds by postgrey-1.27 at vger.kernel.org; Mon, 16 Apr 2012 15:04:38 EDT
+X-Yahoo-Newman-Property: ymail-3
+X-Yahoo-Newman-Id: 426069.6173.bm@omp1031.mail.bf1.yahoo.com
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
+  s=s1024; d=yahoo.com;
+  h=X-YMail-OSG:Received:X-Mailer:References:Message-ID:Date:From:Reply-To:Subject:To:Cc:In-Reply-To:MIME-Version:Content-Type:Content-Transfer-Encoding;
+  b=MC0LjSttzja91Y665xVbH58WZPPfVlkWsbekejiLICrksMDZxd5BlkXyhmcabYMpKB+NZwQV9Vxj/3pbW1263CVmUv25Ca8mrOg9zdtUypow/gUOsmLLtd2AV46DRMCyXc4x+hWMShEzAYq8WBOKLIOFeiTXldoJaj3tCzOyiMo=;
+X-YMail-OSG: nogfN8oVM1nOh8eYH2XknYWBmoyVOmWdXlGw27a2C7ve1za
+ pecM5nVGIqz13X4vzSb_7ylRBRyGx78N1sF_V4KzU5oad7iTVeU6InrZOtPD
+ RU0YkE7YrPe3613EUuhzQbdylQNwsySBnLzCmWBvewLHGEj3VkSiFW1_F1m3
+ vH70Zey.5QVidiNT17xLAPA1WZF6oDsEkjtj5ovHvfaRa4k.6PaTCzL7jLn.
+ bH18IJjaneSgAmREe2i2GdUrMDzpEWrLIj1lVJNQpJk8OH76qXVljjG24E3Y
+ d79WbUWWvdFto3wx7lC57J_8cSt6b7GTvlOtPW8WwUo2iSZSdW0OggNKSxFT
+ Ir3hHfQR3zOWpMGO4_IjrrTgBYdKsDiCOYFsRGvsIqAyByDnUPDdjLViKp9Y
+ kjFV_d4OOVFcPGbIgDiRD0Ox3QUxO8rlum.gT.iFMFE3zqWIy1sUIo2fXMHY
+ a2yjHds2pKE4WiDFJYyP3DrXI0cfaUJz45M05DCHlWIY6Iah6
+X-Mailer: YahooMailWebService/0.8.117.340979
+References: <1334310754.17013.YahooMailNeo@web161804.mail.bf1.yahoo.com> <201204152256.03198.rjw@sisk.pl> <1334560992.32851.YahooMailNeo@web161806.mail.bf1.yahoo.com> <201204161817.21800.rjw@sisk.pl>
+Message-ID: <1334602665.33371.YahooMailNeo@web161806.mail.bf1.yahoo.com>
+Date: Mon, 16 Apr 2012 11:57:45 -0700 (PDT)
+From: Mikko Vinni <mmvinni@yahoo.com>
+Reply-To: Mikko Vinni <mmvinni@yahoo.com>
+Subject: Re: [linux-pm] "i8042: Can't reactivate AUX port" after s2ram on 3.4-rc2
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Bjorn Helgaas <bhelgaas@google.com>,
+        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Allen Kay <allen.m.kay@intel.com>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>
+In-Reply-To: <201204161817.21800.rjw@sisk.pl>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201204161859.32436.arnd@arndb.de>
-X-Provags-ID: V02:K0:B0eUykzhawWUdWK78Mj3WpAnode/HpvKGAYTxU8wV6s
- g5d0LswPoSQsJjZHlYkkebsMncEUFpt0R3QBQ4h6BcUzpm+e4P
- YhH6IU7vEMiIBYLHjNIWU12mODXDARoh7fT+ui5kTjqKsoAqwq
- G9ukE0c5M+dyu2b722o8vH7+KyrqqHX8+2jSvtHjYBov+oSPz3
- ZqZxO5QER0OhB5ZuMZtoT2wX984q5oaGFPBl8l/p5d0lTYjEfN
- Z+AtU9VQN3n4SHqHFZ+lWiTeDVNcfqwke8BPMsJGW/PTw22gtp
- xXnKnZ4rl2asroJjnocibxJgjf4e6QMoWn3HvXfYws5oMojVpT
- cY31wilWzbmbpNKNU6WA=
+Content-Type: text/plain; charset=iso-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 16 April 2012, Stephan Uphoff wrote:
-> opportunity to plant a few ideas.
+From: Rafael J. Wysocki:
+
+>>  Ok, I tested v4 and also v3, which is in 3.4-rc3. On this laptop both 
+> versions
+>>  work equally: touchpad works after resume (no help for the card reader
+>>  problem, though).
 > 
-> In contrast to rotational disks read/write operation overhead and
-> costs are not symmetric.
-> While random reads are much faster on flash - the number of write
-> operations is limited by wearout and garbage collection overhead.
-> To further improve swapping on eMMC or similar flash media I believe
-> that the following issues need to be addressed:
+> [...]
 > 
-> 1) Limit average write bandwidth to eMMC to a configurable level to
-> guarantee a minimum device lifetime
-> 2) Aim for a low write amplification factor to maximize useable write bandwidth
-> 3) Strongly favor read over write operations
+>>  Difference from v3:
+>>  --- /tmp/v3-uniq        2012-04-16 09:57:42.880521878 +0300
+>>  +++ /tmp/v4-uniq        2012-04-16 09:58:03.880545386 +0300
+>>  @@ -1019,11 +1018,11 @@
+>>         1 Booting Node 0 Processor 1 APIC 0x1
+>>         1 CPU1 is up
+>>         1 ACPI: Waking up from system sleep state S3
+>>  -     11 pcieport 0000:00:02.0: restoring config space at offset 0x1c (was 
+> 0x20005151, writing 0x5151)
+>>  +      1 pcieport 0000:00:02.0: restoring config space at offset 0x1c (was 
+> 0x20005151, writing 0x5151)
 > 
-> Lowering write amplification (2) has been discussed in this email
-> thread - and the only observation I would like to add is that
-> over-provisioning the internal swap space compared to the exported
-> swap space significantly can guarantee a lower write amplification
-> factor with the indirection and GC techniques discussed.
+> OK, so clearly we need to prevent the writes into the secondary status register
+> of the PCIe port from being repreated pointlessly.
+> 
+> Can you please test the appended patch from completness on top of 3.4-rc3?
 
-Yes, good point.
+I think that's what I did already :)
 
-> I believe the swap functionality is currently optimized for storage
-> media where read and write costs are nearly identical.
-> As this is not the case on flash I propose splitting the anonymous
-> inactive queue (at least conceptually) - keeping clean anonymous pages
-> with swap slots on a separate queue as the cost of swapping them
-> out/in is only an inexpensive read operation. A variable similar to
-> swapiness (or a more dynamic algorithmn) could determine the
-> preference for swapping out clean pages or dirty pages. ( A similar
-> argument could be made for splitting up the file inactive queue )
+git pull to 3.4-rc3
+(test, result as v3 output/diff in the previous email)
+Revert "PCI: Fix regression in pci_restore_state(), v3"
+apply v4 of the patch
+(test, result as v4 output in the previous email)
+git diff v3.4-rc3 -- drivers/pci/pci.c --> matches the patch below
 
-I'm not sure I understand yet how this would be different from swappiness.
 
-> The problem of limiting the average write bandwidth reminds me of
-> enforcing cpu utilization limits on interactive workloads.
-> Just as with cpu workloads - using the resources to the limit produces
-> poor interactivity.
-> When interactivity suffers too much I believe the only sane response
-> for an interactive device is to limit usage of the swap device and
-> transition into a low memory situation - and if needed - either
-> allowing userspace to reduce memory usage or invoking the OOM killer.
-> As a result low memory situations could not only be encountered on new
-> memory allocations but also on workload changes that increase the
-> number of dirty pages.
+Mikko
 
-While swap is just a special case for anonymous memory in writeback
-rather than file backed pages, I think what you want here is a tuning
-knob that decides whether we should discard a clean page or write back
-a dirty page under memory pressure. I have to say that I don't know
-whether we already have such a knob or whether we already treat them
-differently, but it is certainly a valid observation that on hard
-drives, discarding a clean page that is likely going to be needed
-again has about the same overhead as writing back a dirty page
-(i.e. one seek operation), while on flash the former would be much
-cheaper than the latter.
 
-> A wild idea to avoid some writes altogether is to see if
-> de-duplication techniques can be used to (partially?) match pages
-> previously written so swap.
-
-Interesting! We already have KSM (kernel samepage merging) to do
-the same thing in memory, but I don't know how that works
-during swapout. It might already be there, waiting to get switched
-on, or might not be possible until we implemnt an extra remapping
-layer in swap as has been proposed. It's certainly worth remembering
-this as we work on the design for that remapping layer.
-
-> In case of unencrypted swap  (or encrypted swap with a static key)
-> swap pages on eMMC could even be re-used across multiple reboots.
-> A simple version would just compare dirty pages with data in their
-> swap slots as I suspect (but really don't know) that some user space
-> algorithms (garbage collection?) dirty a page just temporarily -
-> eventually reverting it to the previous content.
-
-I think that would incur overhead for indexing the pages in swap space
-in a persistent way, something that by itself would contribute to
-write amplification because for every swapout, we would have to write
-both the page and the index (eventually), and that index would likely
-be a random write.
-
-Thanks for your thoughts!
-
-	Arnd
+> 
+> Rafael
+> 
+> 
+> ---
+> drivers/pci/pci.c |   18 +++++++++++-------
+> 1 file changed, 11 insertions(+), 7 deletions(-)
+> 
+> Index: linux/drivers/pci/pci.c
+> ===================================================================
+> --- linux.orig/drivers/pci/pci.c
+> +++ linux/drivers/pci/pci.c
+> @@ -1015,13 +1015,17 @@ void pci_restore_state(struct pci_dev *d
+>     pci_restore_pcie_state(dev);
+>     pci_restore_ats_state(dev);
+> 
+> -    pci_restore_config_space(dev, 10, 15, 0);
+> -    /*
+> -     * The Base Address register should be programmed before the command
+> -     * register(s)
+> -     */
+> -    pci_restore_config_space(dev, 4, 9, 10);
+> -    pci_restore_config_space(dev, 0, 3, 0);
+> +    if (dev->hdr_type == PCI_HEADER_TYPE_NORMAL) {
+> +        pci_restore_config_space(dev, 10, 15, 0);
+> +        /*
+> +         * The Base Address register should be programmed before the
+> +         * command register(s)
+> +         */
+> +        pci_restore_config_space(dev, 4, 9, 10);
+> +        pci_restore_config_space(dev, 0, 3, 0);
+> +    } else {
+> +        pci_restore_config_space(dev, 0, 15, 0);
+> +    }
+> 
+>     pci_restore_pcix_state(dev);
+>     pci_restore_msi_state(dev);
+> 
