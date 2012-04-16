@@ -1,121 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753102Ab2DPJXs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Apr 2012 05:23:48 -0400
-Received: from na3sys009aog103.obsmtp.com ([74.125.149.71]:59470 "EHLO
-	na3sys009aog103.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752970Ab2DPJXq (ORCPT
+	id S1752967Ab2DPJYX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Apr 2012 05:24:23 -0400
+Received: from newsmtp5.atmel.com ([204.2.163.5]:12048 "EHLO
+	sjogate2.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752042Ab2DPJVT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Apr 2012 05:23:46 -0400
-Date: Mon, 16 Apr 2012 12:22:47 +0300
-From: Felipe Balbi <balbi@ti.com>
-To: Nicolas Ferre <nicolas.ferre@atmel.com>
-Cc: linux-arm-kernel@lists.infradead.org, arnd@arndb.de, olof@lixom.net,
-        plagnioj@jcrosoft.com, ludovic.desroches@atmel.com,
-        linux-kernel@vger.kernel.org, Felipe Balbi <balbi@ti.com>,
-        linux-usb@vger.kernel.org
-Subject: Re: [PATCH 12/12] USB: gadget/at91_udc: add gpio_to_irq() function
- to vbus interrupt
-Message-ID: <20120416092246.GH30878@arwen.pp.htv.fi>
-Reply-To: balbi@ti.com
+	Mon, 16 Apr 2012 05:21:19 -0400
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
+To: linux-arm-kernel@lists.infradead.org, arnd@arndb.de, olof@lixom.net
+Cc: plagnioj@jcrosoft.com, ludovic.desroches@atmel.com,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 08/12] ARM: at91: fix at91sam9261ek Ethernet dm9000 irq
+Date: Mon, 16 Apr 2012 11:20:52 +0200
+Message-Id: <ee9dd7631af6fb5c02964ed5b496217cd4ced059.1334567594.git.nicolas.ferre@atmel.com>
+X-Mailer: git-send-email 1.7.10
+In-Reply-To: <cover.1334567594.git.nicolas.ferre@atmel.com>
 References: <cover.1334567594.git.nicolas.ferre@atmel.com>
- <041833f4078b6c28cf8a286fad8982bfae18f4b8.1334567594.git.nicolas.ferre@atmel.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="nO3oAMapP4dBpMZi"
-Content-Disposition: inline
-In-Reply-To: <041833f4078b6c28cf8a286fad8982bfae18f4b8.1334567594.git.nicolas.ferre@atmel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <cover.1334567594.git.nicolas.ferre@atmel.com>
+References: <cover.1334567594.git.nicolas.ferre@atmel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
 
---nO3oAMapP4dBpMZi
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+You need to setup the dm9000 irq via gpio_to_irq() since
+d0fbda9add (ARM: at91/gpio: drop PIN_BASE).
 
-On Mon, Apr 16, 2012 at 11:20:56AM +0200, Nicolas Ferre wrote:
-> Now that we are using irqdomains, we need to convert GPIO pins to Linux
-> IRQ numbers using the gpio_to_irq() function.
-> This call is added to request/free_irq calls.
->=20
-> Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
-> Cc: Felipe Balbi <balbi@ti.com>
-> Cc: linux-usb@vger.kernel.org
+Signed-off-by: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+Acked-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+Cc: stable <stable@vger.kernel.org>	[3.2+]
+---
+ arch/arm/mach-at91/board-sam9261ek.c |    5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
 
-Please carry on with your series, patches looks fine.
+diff --git a/arch/arm/mach-at91/board-sam9261ek.c b/arch/arm/mach-at91/board-sam9261ek.c
+index c3f9944..065fed3 100644
+--- a/arch/arm/mach-at91/board-sam9261ek.c
++++ b/arch/arm/mach-at91/board-sam9261ek.c
+@@ -85,8 +85,6 @@ static struct resource dm9000_resource[] = {
+ 		.flags	= IORESOURCE_MEM
+ 	},
+ 	[2] = {
+-		.start	= AT91_PIN_PC11,
+-		.end	= AT91_PIN_PC11,
+ 		.flags	= IORESOURCE_IRQ
+ 			| IORESOURCE_IRQ_LOWEDGE | IORESOURCE_IRQ_HIGHEDGE,
+ 	}
+@@ -130,6 +128,8 @@ static struct sam9_smc_config __initdata dm9000_smc_config = {
+ 
+ static void __init ek_add_device_dm9000(void)
+ {
++	struct resource *r = &dm9000_resource[2];
++
+ 	/* Configure chip-select 2 (DM9000) */
+ 	sam9_smc_configure(0, 2, &dm9000_smc_config);
+ 
+@@ -139,6 +139,7 @@ static void __init ek_add_device_dm9000(void)
+ 	/* Configure Interrupt pin as input, no pull-up */
+ 	at91_set_gpio_input(AT91_PIN_PC11, 0);
+ 
++	r->start = r->end = gpio_to_irq(AT91_PIN_PC11);
+ 	platform_device_register(&dm9000_device);
+ }
+ #else
+-- 
+1.7.10
 
-Acked-by: Felipe Balbi <balbi@ti.com>
-
-> ---
->  drivers/usb/gadget/at91_udc.c |    8 ++++----
->  1 file changed, 4 insertions(+), 4 deletions(-)
->=20
-> diff --git a/drivers/usb/gadget/at91_udc.c b/drivers/usb/gadget/at91_udc.c
-> index 0c935d7..9d7bcd9 100644
-> --- a/drivers/usb/gadget/at91_udc.c
-> +++ b/drivers/usb/gadget/at91_udc.c
-> @@ -1863,8 +1863,8 @@ static int __devinit at91udc_probe(struct platform_=
-device *pdev)
->  			mod_timer(&udc->vbus_timer,
->  				  jiffies + VBUS_POLL_TIMEOUT);
->  		} else {
-> -			if (request_irq(udc->board.vbus_pin, at91_vbus_irq,
-> -					0, driver_name, udc)) {
-> +			if (request_irq(gpio_to_irq(udc->board.vbus_pin),
-> +					at91_vbus_irq, 0, driver_name, udc)) {
->  				DBG("request vbus irq %d failed\n",
->  				    udc->board.vbus_pin);
->  				retval =3D -EBUSY;
-> @@ -1886,7 +1886,7 @@ static int __devinit at91udc_probe(struct platform_=
-device *pdev)
->  	return 0;
->  fail4:
->  	if (gpio_is_valid(udc->board.vbus_pin) && !udc->board.vbus_polled)
-> -		free_irq(udc->board.vbus_pin, udc);
-> +		free_irq(gpio_to_irq(udc->board.vbus_pin), udc);
->  fail3:
->  	if (gpio_is_valid(udc->board.vbus_pin))
->  		gpio_free(udc->board.vbus_pin);
-> @@ -1924,7 +1924,7 @@ static int __exit at91udc_remove(struct platform_de=
-vice *pdev)
->  	device_init_wakeup(&pdev->dev, 0);
->  	remove_debug_file(udc);
->  	if (gpio_is_valid(udc->board.vbus_pin)) {
-> -		free_irq(udc->board.vbus_pin, udc);
-> +		free_irq(gpio_to_irq(udc->board.vbus_pin), udc);
->  		gpio_free(udc->board.vbus_pin);
->  	}
->  	free_irq(udc->udp_irq, udc);
-> --=20
-> 1.7.10
->=20
-
---=20
-balbi
-
---nO3oAMapP4dBpMZi
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJPi+TmAAoJEIaOsuA1yqRENCAP/jj93/g3gnoJCHr/MQ1ItrHX
-2wMrxqKhqcdBasa15rixxulwXbd7pkvKQHDLPeyhM9EdI0/0fglhoV36TQjpEl7a
-tJoGTql134I8/LZorc2weRoAWTe/FZsnNsYtfkLFKodIY6X5dNrJdaD8CAcvDRHV
-ESqvm5/7ZeJHQTq0nBH4ylaCZdZR1KkbUwef7N/rSkpR9V/yxKO1R7EjNV5Zy9Fi
-AxM7rnQG7I7y4EhsRVoCzrlYAevA3EsjLEOhwqItqtzO+1ddgQY8eJ3ff4nD5gT6
-nfJKISRNw7EuHqW+oyXTPd9R0ydg+IBmEFUP0XQ0zUIfVtwzj0Ojf5svuKd9H5XM
-Vb29AunAH5mToRoUDFzqqw6Zj5oFap7iiW8ui4y7AHyTDE0UMUFx4ykvO72tGABS
-YjKRss7urG/k8YOGEOZap1wt0rMJ285Y2v6m/ox9Cg6YAwXrXfmzT4pOa5+ssHk+
-XZyWb+OzWjrZGTjDreUPUjD2XWnZ3ESG7vnQ/XWK/BUOMLuRX4xkzeHqsETFTnCZ
-G8BrqzxSVOqG7kxn0uYXW1nnl51OFevfrbSVALK7oiBxE8PaMUbqcR51jseq70un
-zbSw/3RwBe4R2m9znkq2yqBkKG4TNWxMH11ZeK6WtTXs1gp5daDV2O9kiOsiDIty
-+BnXNnax9FBTKtyJH6KH
-=bGrP
------END PGP SIGNATURE-----
-
---nO3oAMapP4dBpMZi--
