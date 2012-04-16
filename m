@@ -1,141 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754496Ab2DPNy4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Apr 2012 09:54:56 -0400
-Received: from p02c11o142.mxlogic.net ([208.65.144.75]:56668 "EHLO
-	p02c11o142.mxlogic.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753794Ab2DPNyz convert rfc822-to-8bit (ORCPT
+	id S1754526Ab2DPNzw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Apr 2012 09:55:52 -0400
+Received: from ironport-out.teksavvy.com ([206.248.143.162]:30953 "EHLO
+	ironport-out.teksavvy.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754385Ab2DPNzv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Apr 2012 09:54:55 -0400
-X-Greylist: delayed 834 seconds by postgrey-1.27 at vger.kernel.org; Mon, 16 Apr 2012 09:54:55 EDT
-X-MXL-Hash: 4f8c24af79211380-ae5a67497d8539548d78af804d35f4170a4990df
-X-MXL-Hash: 4f8c1f5f18631936-b98c6c350452741008c55ac19ba2ea4be114a106
-From: Peter Staubach <pstaubach@exagrid.com>
-To: Jeff Layton <jlayton@redhat.com>,
-        Bernd Schubert <bernd.schubert@itwm.fraunhofer.de>
-CC: Malahal Naineni <malahal@us.ibm.com>,
-        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "miklos@szeredi.hu" <miklos@szeredi.hu>,
-        "viro@ZenIV.linux.org.uk" <viro@ZenIV.linux.org.uk>,
-        "hch@infradead.org" <hch@infradead.org>,
-        "michael.brantley@deshaw.com" <michael.brantley@deshaw.com>,
-        "sven.breuner@itwm.fraunhofer.de" <sven.breuner@itwm.fraunhofer.de>
-Date: Mon, 16 Apr 2012 08:54:02 -0400
-Subject: RE: [PATCH RFC] vfs: make fstatat retry on ESTALE errors from
- getattr call
-Thread-Topic: [PATCH RFC] vfs: make fstatat retry on ESTALE errors from
- getattr call
-Thread-Index: Ac0bxSA5hv0D8VL7QFWD85sgyFQLygACKs5A
-Message-ID: <FA8A9A935BFD3A4D8F0CDA1C4F611BCC063CF8E01D@IT-1874.Isys.com>
-References: <1334316311-22331-1-git-send-email-jlayton@redhat.com>
-	<20120413150518.GA1987@us.ibm.com>
-	<20120413114236.0e557e01@tlielax.poochiereds.net>
-	<4F8B1B7B.3040304@itwm.fraunhofer.de>
- <20120416073655.7cdb90cf@corrin.poochiereds.net>
-In-Reply-To: <20120416073655.7cdb90cf@corrin.poochiereds.net>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Mon, 16 Apr 2012 09:55:51 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AuEBACxOgk8Y9geI/2dsb2JhbAANLAqFc7AkhiwBAQEBAyMEURELGAICBRYLAgIJAwIBAgFFBgEMCAEBtCSKGIEviXSEH4EYBKklgTgW
+X-IronPort-AV: E=Sophos;i="4.75,391,1330923600"; 
+   d="scan'208";a="174586722"
+Message-ID: <4F8C24E5.4020703@teksavvy.com>
+Date: Mon, 16 Apr 2012 09:55:49 -0400
+From: Mark Lord <kernel@teksavvy.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:11.0) Gecko/20120327 Thunderbird/11.0.1
 MIME-Version: 1.0
-X-Spam: [F=0.2000000000; CM=0.500; S=0.200(2010122901)]
-X-MAIL-FROM: <pstaubach@exagrid.com>
-X-SOURCE-IP: [69.84.133.248]
-X-AnalysisOut: [v=1.0 c=1 a=XjRXyhSzQbsA:10 a=ooaBVg03rvgA:10 a=BLceEmwcHo]
-X-AnalysisOut: [wA:10 a=kj9zAlcOel0A:10 a=YmXeKoonWU0GTmr6cORa5w==:17 a=20]
-X-AnalysisOut: [KFwNOVAAAA:8 a=VwQbUJbxAAAA:8 a=drOt6m5kAAAA:8 a=JfrnYn6hA]
-X-AnalysisOut: [AAA:8 a=sHqLhEVXAAAA:8 a=FG6ArtYpSwMziaRakR4A:9 a=UcEAGSEk]
-X-AnalysisOut: [PZ2jSVK-ZjgA:7 a=CjuIK1q_8ugA:10 a=jEp0ucaQiEUA:10 a=3Rfx1]
-X-AnalysisOut: [nUSh_UA:10 a=tIBAwYQmwVgA:10 a=PDWgB3GmdA1fGoly:21 a=RZfhl]
-X-AnalysisOut: [CdYkeM1TDgD:21]
+To: Linux Kernel <linux-kernel@vger.kernel.org>, rtc-linux@googlegroups.com,
+        Alessandro Zummo <a.zummo@towertech.it>,
+        Greg Kroah-Hartman <greg@kroah.com>, stable@vger.kernel.org
+Subject: Re: [REGRESSION] rtc/interface.c: kills suspend-to-ram
+References: <4F8BA1C1.4030804@teksavvy.com>
+In-Reply-To: <4F8BA1C1.4030804@teksavvy.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There seems to be a lot of, perhaps, misinformation here.
-
-The looping occurs when the file system on the server returns a valid file handle during a pathname traversal and then returns ESTALE on a subsequent operation.
-
-The client should retry the pathname traversal, which should either return a valid file handle or ENOENT.  If a subsequent operation returns ESTALE, then start over again at the original pathname traversal.
-
-The client should not loop when 1) there is a signal pending which would cause the system call to terminate with EINTR or when it can't recover from the ESTALE return.  For example, if lookup("./foo") returns ESTALE, then clearly the current directory has become stale and there is no way for the client to recover.  One could make the argument that the client can recover by relooking up the current directory, which is fine, but eventually if the file handle for the root of the mounted file system is also stale, then there is no further recovery possible, at least for NFSv[23] and perhaps even for NFSv4 depending upon how the file system was mounted.
-
-I think that engaging again with Miklos and/or Bernd to understand why the underlying file system would return valid file identification information, but then be unable to use it in a subsequent operation.  The definition of ESTALE is that a file handle, which referred to a valid file, no longer refers to a valid file.  Why should FUSE impose any special requirements in this regard?  If FUSE has attempted to expand the definition of ESTALE, then we should consider this situation and perhaps make recommendations for a more appropriate errno to use.
-
-The bottom line is that for pathname based system calls, the application should never see an ESTALE error.  The system call should either succeed or fail on its own merits or fail with ENOENT.
-
-	Thanx...
-
-		ps
-
-
------Original Message-----
-From: Jeff Layton [mailto:jlayton@redhat.com] 
-Sent: Monday, April 16, 2012 7:37 AM
-To: Bernd Schubert
-Cc: Malahal Naineni; linux-nfs@vger.kernel.org; linux-fsdevel@vger.kernel.org; linux-kernel@vger.kernel.org; Peter Staubach; miklos@szeredi.hu; viro@ZenIV.linux.org.uk; hch@infradead.org; michael.brantley@deshaw.com; sven.breuner@itwm.fraunhofer.de
-Subject: Re: [PATCH RFC] vfs: make fstatat retry on ESTALE errors from getattr call
-
-On Sun, 15 Apr 2012 21:03:23 +0200
-Bernd Schubert <bernd.schubert@itwm.fraunhofer.de> wrote:
-
-> On 04/13/2012 05:42 PM, Jeff Layton wrote:
-> > (note: please don't trim the CC list!)
-> > 
-> > Indefinitely does make some sense (as Peter articulated in his 
-> > original set). It's possible you could race several times in a row, 
-> > or a server misconfiguration or something has happened and you have 
-> > a transient error that will eventually recover. His assertion was 
-> > that any limit on the number of retries is by definition wrong. For 
-> > NFS, a fatal signal ought to interrupt things as well, so retrying 
-> > indefinitely has some appeal there.
-> > 
-> > OTOH, we do have to contend with filesystems that might return 
-> > ESTALE persistently for other reasons and that might not respond to signals.
-> > Miklos pointed out that some FUSE fs' do this in his review of 
-> > Peter's set.
-> > 
-> > As a purely defensive coding measure, limiting the number of retries 
-> > to something finite makes sense. If we're going to do that though, 
-> > I'd probably recommend that we set the number of retries be 
-> > something higher just so that this is more resilient in the face of 
-> > multiple races. Those other fs' might "spin" a bit in that case but 
-> > it is an error condition and IMO resiliency trumps performance -- at 
-> > least in
->  this case.
+On 12-04-16 12:36 AM, Mark Lord wrote:
+> Something recent has killed suspend-to-ram on a number of machines here.
+> The symptom is that they suspend, but immediately wake up and panic,
+> with just a black screen so no visible messages to go by.
 > 
-> I am definitely voting against an infinite number of retries. I'm 
-> working on FhGFS, which supports distributed meta data servers. So 
-> when a file is moved around between directories, its file handle, 
-> which contains the meta-data target id might become invalid. As NFSv3 
-> is stateless we cannot inform the client about that and must return 
-> ESTALE then. NFSv4 is better, but I'm not sure how well invalidating a 
-> file handle works. So retrying once on ESTALE might be a good idea, 
-> but retrying forever is not.
-
-It's important to note that I'm only proposing to wrap syscalls this way that take a pathname argument. We can't do anything about those that don't since at that point we have no way to retry the lookup.
-
-So, I'm not sure this patch would affect the case you're concerned about one way or another. If you move the file to a different directory, then it's pathname would also change, and at that point you'd end up with an ENOENT error or something on the next retry.
-
-If the file was open and you were (for instance) reading or writing to it from a client when you moved it, then we can't retry the lookup at that point. The open is long since done and the pathname is now gone.
-You'll get an ESTALE back in userspace regardless.
-
-> Also, what about asymmetric HA servers? I believe to remember that 
-> also resulted in ESTALE. So for example server1 exports /home and 
-> /scratch, but on failure server2 can only take over /home and denies 
-> access to /scratch.
+> The patch below works around the issue -- making things work as they used to work.
 > 
+> +++ linux/drivers/rtc/interface.c	2012-04-16 00:09:14.105387382 -0400
+> @@ -773,7 +773,7 @@
+>  	if (!rtc->ops || !rtc->ops->alarm_irq_enable)
+>  		return;
+> 
+> -	rtc->ops->alarm_irq_enable(rtc->dev.parent, false);
+> +	//rtc->ops->alarm_irq_enable(rtc->dev.parent, false);  // Kills suspend on ZBOX HD-ID41U
+>  }
+>
+> Last known working kernel was 3.2.11.
+> The line above got added somewhere between it and 3.2.15,
+> and is also present (no surprise) in newer kernels.
+> 
+> The highest kernel I've tested for this is 3.3.2,
+> which also fails until I nuke the line shown above.
+> 
+> This is straight x86_64 (Atom) hardware, using rtc-cmos.
+> I can re-test if anyone has a fix for this.
+> 
+> Meanwhile, whatever patch put this into -stable probably
+> ought to be reverted upstream and in -stable as well.
 
-That sounds like a broken cluster configuration. Still...
 
-Presumably at some point in the future, a sysadmin would intervene and fix the situation such that /scratch is available again. Is it better to return an error to the application at that point, or simply allow it to keep retrying until the problem has been fixed?
+Speaking of which -- that batch of RTC updates is riddled with bugs.
+For example, this beauty from rtc-mpc5121.c in the same update:
 
-The person with the long running job that's doing operations in /scratch would probably prefer the latter. If not, then they could always send the program a fatal signal to stop it altogether.
+        ...
+        rtc->rtc = rtc_device_register("mpc5200-rtc", &op->dev,
+                                        &mpc5200_rtc_ops, THIS_MODULE);
+        ...
 
---
-Jeff Layton <jlayton@redhat.com>
+        rtc->rtc->uie_unsupported = 1;    // <<<< Ooops NULL pointer >>>>
+
+        if (IS_ERR(rtc->rtc)) {           // <<<< this needs to be earlier >>>>
+                err = PTR_ERR(rtc->rtc);
+                goto out_free_irq;
+        }
+        ...
+
+Can somebody show me how to identify the commit from the code?
+I know which lines got changed, but don't know how to find
+the corresponding commits in -git.
+
+And once we do identify the commits, they really need a code review.
+
+Thanks.
