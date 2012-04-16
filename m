@@ -1,97 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754222Ab2DPQT5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Apr 2012 12:19:57 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:40946 "EHLO mx2.suse.de"
+	id S1754504Ab2DPQUg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Apr 2012 12:20:36 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:12123 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752345Ab2DPQOX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Apr 2012 12:14:23 -0400
-From: Jan Kara <jack@suse.cz>
-To: Al Viro <viro@ZenIV.linux.org.uk>
-Cc: dchinner@redhat.com, LKML <linux-kernel@vger.kernel.org>,
-        linux-fsdevel@vger.kernel.org, Jan Kara <jack@suse.cz>,
-        OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
-Subject: [PATCH 10/27] fat: Push mnt_want_write() outside of i_mutex
-Date: Mon, 16 Apr 2012 18:13:48 +0200
-Message-Id: <1334592845-22862-11-git-send-email-jack@suse.cz>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <1334592845-22862-1-git-send-email-jack@suse.cz>
-References: <1334592845-22862-1-git-send-email-jack@suse.cz>
+	id S1752533Ab2DPQUe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Apr 2012 12:20:34 -0400
+Message-ID: <1334593220.10194.30.camel@dcbw.foobar.com>
+Subject: Re: [PATCH] drivers/net/wireless/libertas/if_usb.c: add missing
+ debugging code
+From: Dan Williams <dcbw@redhat.com>
+To: Julia Lawall <Julia.Lawall@lip6.fr>
+Cc: kernel-janitors@vger.kernel.org,
+        "John W. Linville" <linville@tuxdriver.com>,
+        libertas-dev@lists.infradead.org, linux-wireless@vger.kernel.org,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Date: Mon, 16 Apr 2012 11:20:20 -0500
+In-Reply-To: <1334591040-29298-1-git-send-email-Julia.Lawall@lip6.fr>
+References: <1334591040-29298-1-git-send-email-Julia.Lawall@lip6.fr>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When mnt_want_write() starts to handle freezing it will get a full lock
-semantics requiring proper lock ordering. So push mnt_want_write() call
-outside of i_mutex as in other places.
+On Mon, 2012-04-16 at 17:44 +0200, Julia Lawall wrote:
+> From: Julia Lawall <Julia.Lawall@lip6.fr>
+> 
+> Add a corresponding leave call on error failure.
+> 
+> Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
 
-CC: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
-Signed-off-by: Jan Kara <jack@suse.cz>
----
- fs/fat/file.c |   15 +++++++--------
- 1 files changed, 7 insertions(+), 8 deletions(-)
+Acked-by: Dan Williams <dcbw@redhat.com>
 
-diff --git a/fs/fat/file.c b/fs/fat/file.c
-index a71fe37..e007b8b 100644
---- a/fs/fat/file.c
-+++ b/fs/fat/file.c
-@@ -43,10 +43,10 @@ static int fat_ioctl_set_attributes(struct file *file, u32 __user *user_attr)
- 	if (err)
- 		goto out;
- 
--	mutex_lock(&inode->i_mutex);
- 	err = mnt_want_write_file(file);
- 	if (err)
--		goto out_unlock_inode;
-+		goto out;
-+	mutex_lock(&inode->i_mutex);
- 
- 	/*
- 	 * ATTR_VOLUME and ATTR_DIR cannot be changed; this also
-@@ -73,14 +73,14 @@ static int fat_ioctl_set_attributes(struct file *file, u32 __user *user_attr)
- 	/* The root directory has no attributes */
- 	if (inode->i_ino == MSDOS_ROOT_INO && attr != ATTR_DIR) {
- 		err = -EINVAL;
--		goto out_drop_write;
-+		goto out_unlock_inode;
- 	}
- 
- 	if (sbi->options.sys_immutable &&
- 	    ((attr | oldattr) & ATTR_SYS) &&
- 	    !capable(CAP_LINUX_IMMUTABLE)) {
- 		err = -EPERM;
--		goto out_drop_write;
-+		goto out_unlock_inode;
- 	}
- 
- 	/*
-@@ -90,12 +90,12 @@ static int fat_ioctl_set_attributes(struct file *file, u32 __user *user_attr)
- 	 */
- 	err = security_inode_setattr(file->f_path.dentry, &ia);
- 	if (err)
--		goto out_drop_write;
-+		goto out_unlock_inode;
- 
- 	/* This MUST be done before doing anything irreversible... */
- 	err = fat_setattr(file->f_path.dentry, &ia);
- 	if (err)
--		goto out_drop_write;
-+		goto out_unlock_inode;
- 
- 	fsnotify_change(file->f_path.dentry, ia.ia_valid);
- 	if (sbi->options.sys_immutable) {
-@@ -107,10 +107,9 @@ static int fat_ioctl_set_attributes(struct file *file, u32 __user *user_attr)
- 
- 	fat_save_attrs(inode, attr);
- 	mark_inode_dirty(inode);
--out_drop_write:
--	mnt_drop_write_file(file);
- out_unlock_inode:
- 	mutex_unlock(&inode->i_mutex);
-+	mnt_drop_write_file(file);
- out:
- 	return err;
- }
--- 
-1.7.1
+> 
+> ---
+>  drivers/net/wireless/libertas/if_usb.c |    6 ++++--
+>  1 file changed, 4 insertions(+), 2 deletions(-)
+> 
+> diff --git a/drivers/net/wireless/libertas/if_usb.c b/drivers/net/wireless/libertas/if_usb.c
+> index 74da5f1..ce4938d 100644
+> --- a/drivers/net/wireless/libertas/if_usb.c
+> +++ b/drivers/net/wireless/libertas/if_usb.c
+> @@ -1128,8 +1128,10 @@ static int if_usb_suspend(struct usb_interface *intf, pm_message_t message)
+>  
+>  	lbs_deb_enter(LBS_DEB_USB);
+>  
+> -	if (priv->psstate != PS_STATE_FULL_POWER)
+> -		return -1;
+> +	if (priv->psstate != PS_STATE_FULL_POWER) {
+> +		ret = -1;
+> +		goto out;
+> +	}
+>  
+>  #ifdef CONFIG_OLPC
+>  	if (machine_is_olpc()) {
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-wireless" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+
 
