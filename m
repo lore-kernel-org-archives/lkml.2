@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752996Ab2DPKJX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Apr 2012 06:09:23 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:34653 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752042Ab2DPKJV convert rfc822-to-8bit (ORCPT
+	id S1752781Ab2DPKR2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Apr 2012 06:17:28 -0400
+Received: from casper.infradead.org ([85.118.1.10]:54534 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752042Ab2DPKR1 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Apr 2012 06:09:21 -0400
-Message-ID: <1334570935.28150.25.camel@twins>
-Subject: Re: [PATCH 2/6] uprobes: introduce is_swbp_at_addr_fast()
+	Mon, 16 Apr 2012 06:17:27 -0400
+Message-ID: <1334571419.28150.30.camel@twins>
+Subject: Re: [RFC 0/6] uprobes: kill uprobes_srcu/uprobe_srcu_id
 From: Peter Zijlstra <peterz@infradead.org>
 To: Oleg Nesterov <oleg@redhat.com>
 Cc: Ingo Molnar <mingo@elte.hu>, Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
@@ -23,10 +23,12 @@ Cc: Ingo Molnar <mingo@elte.hu>, Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
         Arnaldo Carvalho de Melo <acme@infradead.org>,
         Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
         Thomas Gleixner <tglx@linutronix.de>, Anton Arapov <anton@redhat.com>
-Date: Mon, 16 Apr 2012 12:08:55 +0200
-In-Reply-To: <20120405222106.GB19166@redhat.com>
+Date: Mon, 16 Apr 2012 12:16:59 +0200
+In-Reply-To: <20120415234401.GA32662@redhat.com>
 References: <20120405222024.GA19154@redhat.com>
-	 <20120405222106.GB19166@redhat.com>
+	 <1334409396.2528.100.camel@twins> <20120414205200.GA9083@redhat.com>
+	 <1334487062.2528.113.camel@twins> <20120415195351.GA22095@redhat.com>
+	 <1334526513.28150.23.camel@twins> <20120415234401.GA32662@redhat.com>
 Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7BIT
 X-Mailer: Evolution 3.2.2- 
@@ -35,30 +37,21 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2012-04-06 at 00:21 +0200, Oleg Nesterov wrote:
-> +int __weak is_swbp_at_addr_fast(unsigned long vaddr)
-> +{
-> +       uprobe_opcode_t opcode;
-> +       int fault;
-> +
-> +       pagefault_disable();
-> +       fault = __copy_from_user_inatomic(&opcode, (void __user*)vaddr,
-> +                                                       sizeof(opcode));
-> +       pagefault_enable();
-> +
-> +       if (unlikely(fault)) {
-> +               /*
-> +                * XXX: read_opcode() lacks FOLL_FORCE, it can fail if
-> +                * we race with another thread which does mprotect(NONE)
-> +                * after we hit bp.
-> +                */
-> +               if (read_opcode(current->mm, vaddr, &opcode))
-> +                       return -EFAULT;
-> +       }
-> +
-> +       return is_swbp_insn(&opcode);
-> +} 
+On Mon, 2012-04-16 at 01:44 +0200, Oleg Nesterov wrote:
 
-Why bother with the pagefault_disable() and unlikely fault case and not
-simply do copy_from_user() and have it deal with the fault if its needed
-anyway?
+> No. Please note that if is_swbp_at_addr_fast() sets is_swbp == 0 we
+> restart this insn.
+
+Ah, see I was missing something..  Hmm ok, let me think about this a
+little more though.. but at least I think I'm now (finally!) seeing what
+you propose.
+
+> And. I have another reason for down_write() in register/unregister.
+> I am still not sure this is possible (I had no time to try to
+> implement), but it seems to me we can kill the uprobe counter in
+> mm_struct.
+
+You mean by making register/unregister down_write, you're exclusive with
+munmap() and thus we can rely on is_swbp_at_addr_fast() to inspect the
+address to see if there's a breakpoint or not and avoid the rest of the
+work that way?
