@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753647Ab2DPMRN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Apr 2012 08:17:13 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:47711 "EHLO mx2.suse.de"
+	id S1754472Ab2DPM0s (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Apr 2012 08:26:48 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:47735 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753593Ab2DPMRK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Apr 2012 08:17:10 -0400
+	id S1753627Ab2DPMRN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Apr 2012 08:17:13 -0400
 From: Mel Gorman <mgorman@suse.de>
 To: Andrew Morton <akpm@linux-foundation.org>
 Cc: Linux-MM <linux-mm@kvack.org>, Linux-Netdev <netdev@vger.kernel.org>,
@@ -14,9 +14,9 @@ Cc: Linux-MM <linux-mm@kvack.org>, Linux-Netdev <netdev@vger.kernel.org>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Mike Christie <michaelc@cs.wisc.edu>,
         Eric B Munson <emunson@mgebm.net>, Mel Gorman <mgorman@suse.de>
-Subject: [PATCH 03/16] mm: slub: Optimise the SLUB fast path to avoid pfmemalloc checks
-Date: Mon, 16 Apr 2012 13:16:50 +0100
-Message-Id: <1334578624-23257-4-git-send-email-mgorman@suse.de>
+Subject: [PATCH 06/16] mm: Ignore mempolicies when using ALLOC_NO_WATERMARK
+Date: Mon, 16 Apr 2012 13:16:53 +0100
+Message-Id: <1334578624-23257-7-git-send-email-mgorman@suse.de>
 X-Mailer: git-send-email 1.7.9.2
 In-Reply-To: <1334578624-23257-1-git-send-email-mgorman@suse.de>
 References: <1334578624-23257-1-git-send-email-mgorman@suse.de>
@@ -24,66 +24,44 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Christoph Lameter <cl@linux.com>
+The reserve is proportionally distributed over all !highmem zones
+in the system. So we need to allow an emergency allocation access to
+all zones.  In order to do that we need to break out of any mempolicy
+boundaries we might have.
 
-This patch removes the check for pfmemalloc from the alloc hotpath and
-puts the logic after the election of a new per cpu slab. For a pfmemalloc
-page we do not use the fast path but force the use of the slow path which
-is also used for the debug case.
+In my opinion that does not break mempolicies as those are user
+oriented and not system oriented. That is, system allocations are
+not guaranteed to be within mempolicy boundaries. For instance IRQs
+do not even have a mempolicy.
 
-This has the side-effect of weakening pfmemalloc processing in the
-following way;
+So breaking out of mempolicy boundaries for 'rare' emergency
+allocations, which are always system allocations (as opposed to user)
+is ok.
 
-1. A process that is allocating for network swap calls __slab_alloc.
-   pfmemalloc_match is true so the freelist is loaded and c->freelist is
-   now pointing to a pfmemalloc page.
-
-2. A process that is attempting normal allocations calls slab_alloc,
-   finds the pfmemalloc page on the freelist and uses it because it did
-   not check pfmemalloc_match()
-
-The patch allows non-pfmemalloc allocations to use pfmemalloc pages with
-the kmalloc slabs being the most vunerable caches on the grounds they
-are most likely to have a mix of pfmemalloc and !pfmemalloc requests. A
-later patch will still protect the system as processes will get throttled
-if the pfmemalloc reserves get depleted but performance will not degrade
-as smoothly.
-
-[mgorman@suse.de: Expanded changelog]
-Signed-off-by: Christoph Lameter <cl@linux.com>
+Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
 Signed-off-by: Mel Gorman <mgorman@suse.de>
 ---
- mm/slub.c |    7 +++----
- 1 file changed, 3 insertions(+), 4 deletions(-)
+ mm/page_alloc.c |    7 +++++++
+ 1 file changed, 7 insertions(+)
 
-diff --git a/mm/slub.c b/mm/slub.c
-index f0909bf..f8cbec4 100644
---- a/mm/slub.c
-+++ b/mm/slub.c
-@@ -2298,11 +2298,11 @@ new_slab:
- 		}
- 	}
+diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+index 15c0ff7..0d7bea5 100644
+--- a/mm/page_alloc.c
++++ b/mm/page_alloc.c
+@@ -2293,6 +2293,13 @@ rebalance:
  
--	if (likely(!kmem_cache_debug(s)))
-+	if (likely(!kmem_cache_debug(s) && pfmemalloc_match(c, gfpflags)))
- 		goto load_freelist;
- 
- 	/* Only entered in the debug case */
--	if (!alloc_debug_processing(s, c->page, object, addr))
-+	if (kmem_cache_debug(s) && !alloc_debug_processing(s, c->page, object, addr))
- 		goto new_slab;	/* Slab failed checks. Next slab needed */
- 
- 	c->freelist = get_freepointer(s, object);
-@@ -2352,8 +2352,7 @@ redo:
- 	barrier();
- 
- 	object = c->freelist;
--	if (unlikely(!object || !node_match(c, node) ||
--					!pfmemalloc_match(c, gfpflags)))
-+	if (unlikely(!object || !node_match(c, node)))
- 		object = __slab_alloc(s, gfpflags, node, addr, c);
- 
- 	else {
+ 	/* Allocate without watermarks if the context allows */
+ 	if (alloc_flags & ALLOC_NO_WATERMARKS) {
++		/*
++		 * Ignore mempolicies if ALLOC_NO_WATERMARKS on the grounds
++		 * the allocation is high priority and these type of
++		 * allocations are system rather than user orientated
++		 */
++		zonelist = node_zonelist(numa_node_id(), gfp_mask);
++
+ 		page = __alloc_pages_high_priority(gfp_mask, order,
+ 				zonelist, high_zoneidx, nodemask,
+ 				preferred_zone, migratetype);
 -- 
 1.7.9.2
 
