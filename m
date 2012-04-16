@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754395Ab2DPMY7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Apr 2012 08:24:59 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:47755 "EHLO mx2.suse.de"
+	id S1753692Ab2DPMRP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Apr 2012 08:17:15 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:47702 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753600Ab2DPMRQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Apr 2012 08:17:16 -0400
+	id S1753584Ab2DPMRK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Apr 2012 08:17:10 -0400
 From: Mel Gorman <mgorman@suse.de>
 To: Andrew Morton <akpm@linux-foundation.org>
 Cc: Linux-MM <linux-mm@kvack.org>, Linux-Netdev <netdev@vger.kernel.org>,
@@ -14,9 +14,9 @@ Cc: Linux-MM <linux-mm@kvack.org>, Linux-Netdev <netdev@vger.kernel.org>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Mike Christie <michaelc@cs.wisc.edu>,
         Eric B Munson <emunson@mgebm.net>, Mel Gorman <mgorman@suse.de>
-Subject: [PATCH 09/16] netvm: Allow skb allocation to use PFMEMALLOC reserves
-Date: Mon, 16 Apr 2012 13:16:56 +0100
-Message-Id: <1334578624-23257-10-git-send-email-mgorman@suse.de>
+Subject: [PATCH 02/16] mm: sl[au]b: Add knowledge of PFMEMALLOC reserve pages
+Date: Mon, 16 Apr 2012 13:16:49 +0100
+Message-Id: <1334578624-23257-3-git-send-email-mgorman@suse.de>
 X-Mailer: git-send-email 1.7.9.2
 In-Reply-To: <1334578624-23257-1-git-send-email-mgorman@suse.de>
 References: <1334578624-23257-1-git-send-email-mgorman@suse.de>
@@ -24,390 +24,576 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Change the skb allocation API to indicate RX usage and use this to fall
-back to the PFMEMALLOC reserve when needed. SKBs allocated from the
-reserve are tagged in skb->pfmemalloc. If an SKB is allocated from
-the reserve and the socket is later found to be unrelated to page
-reclaim, the packet is dropped so that the memory remains available
-for page reclaim. Network protocols are expected to recover from this
-packet loss.
+Allocations of pages below the min watermark run a risk of the
+machine hanging due to a lack of memory.  To prevent this, only
+callers who have PF_MEMALLOC or TIF_MEMDIE set and are not processing
+an interrupt are allowed to allocate with ALLOC_NO_WATERMARKS. Once
+they are allocated to a slab though, nothing prevents other callers
+consuming free objects within those slabs. This patch limits access
+to slab pages that were alloced from the PFMEMALLOC reserves.
 
-[a.p.zijlstra@chello.nl: Ideas taken from various patches]
+Pages allocated from the reserve are returned with page->pfmemalloc
+set and it is up to the caller to determine how the page should be
+protected. SLAB restricts access to any page with page->pfmemalloc set
+to callers which are known to able to access the PFMEMALLOC reserve. If
+one is not available, an attempt is made to allocate a new page rather
+than use a reserve. SLUB is a bit more relaxed in that it only records
+if the current per-CPU page was allocated from PFMEMALLOC reserve and
+uses another partial slab if the caller does not have the necessary
+GFP or process flags. This was found to be sufficient in tests to
+avoid hangs due to SLUB generally maintaining smaller lists than SLAB.
+
+In low-memory conditions it does mean that !PFMEMALLOC allocators
+can fail a slab allocation even though free objects are available
+because they are being preserved for callers that are freeing pages.
+
+[a.p.zijlstra@chello.nl: Original implementation]
 Signed-off-by: Mel Gorman <mgorman@suse.de>
 ---
- include/linux/gfp.h    |    3 ++
- include/linux/skbuff.h |   17 +++++++--
- include/net/sock.h     |    6 ++++
- mm/internal.h          |    3 --
- net/core/filter.c      |    8 +++++
- net/core/skbuff.c      |   93 ++++++++++++++++++++++++++++++++++++++++--------
- net/core/sock.c        |    4 +++
- 7 files changed, 114 insertions(+), 20 deletions(-)
+ include/linux/mm_types.h   |    9 +++
+ include/linux/page-flags.h |   28 +++++++
+ mm/internal.h              |    3 +
+ mm/page_alloc.c            |   27 +++++--
+ mm/slab.c                  |  188 +++++++++++++++++++++++++++++++++++++++-----
+ mm/slub.c                  |   27 ++++++-
+ 6 files changed, 257 insertions(+), 25 deletions(-)
 
-diff --git a/include/linux/gfp.h b/include/linux/gfp.h
-index 94af4a2..83cd7b6 100644
---- a/include/linux/gfp.h
-+++ b/include/linux/gfp.h
-@@ -385,6 +385,9 @@ void drain_local_pages(void *dummy);
-  */
- extern gfp_t gfp_allowed_mask;
+diff --git a/include/linux/mm_types.h b/include/linux/mm_types.h
+index 3cc3062..56a465f 100644
+--- a/include/linux/mm_types.h
++++ b/include/linux/mm_types.h
+@@ -53,6 +53,15 @@ struct page {
+ 		union {
+ 			pgoff_t index;		/* Our offset within mapping. */
+ 			void *freelist;		/* slub first free object */
++			bool pfmemalloc;	/* If set by the page allocator,
++						 * ALLOC_PFMEMALLOC was set
++						 * and the low watermark was not
++						 * met implying that the system
++						 * is under some pressure. The
++						 * caller should try ensure
++						 * this page is only used to
++						 * free other pages.
++						 */
+ 		};
+ 
+ 		union {
+diff --git a/include/linux/page-flags.h b/include/linux/page-flags.h
+index c88d2a9..e66eb0d 100644
+--- a/include/linux/page-flags.h
++++ b/include/linux/page-flags.h
+@@ -453,6 +453,34 @@ static inline int PageTransTail(struct page *page)
+ }
+ #endif
+ 
++/*
++ * If network-based swap is enabled, sl*b must keep track of whether pages
++ * were allocated from pfmemalloc reserves.
++ */
++static inline int PageSlabPfmemalloc(struct page *page)
++{
++	VM_BUG_ON(!PageSlab(page));
++	return PageActive(page);
++}
++
++static inline void SetPageSlabPfmemalloc(struct page *page)
++{
++	VM_BUG_ON(!PageSlab(page));
++	SetPageActive(page);
++}
++
++static inline void __ClearPageSlabPfmemalloc(struct page *page)
++{
++	VM_BUG_ON(!PageSlab(page));
++	__ClearPageActive(page);
++}
++
++static inline void ClearPageSlabPfmemalloc(struct page *page)
++{
++	VM_BUG_ON(!PageSlab(page));
++	ClearPageActive(page);
++}
++
+ #ifdef CONFIG_MMU
+ #define __PG_MLOCKED		(1 << PG_mlocked)
+ #else
+diff --git a/mm/internal.h b/mm/internal.h
+index 2189af4..bff60d8 100644
+--- a/mm/internal.h
++++ b/mm/internal.h
+@@ -239,6 +239,9 @@ static inline struct page *mem_map_next(struct page *iter,
+ #define __paginginit __init
+ #endif
  
 +/* Returns true if the gfp_mask allows use of ALLOC_NO_WATERMARK */
 +bool gfp_pfmemalloc_allowed(gfp_t gfp_mask);
 +
- extern void pm_restrict_gfp_mask(void);
- extern void pm_restore_gfp_mask(void);
- 
-diff --git a/include/linux/skbuff.h b/include/linux/skbuff.h
-index 3337027..e889594 100644
---- a/include/linux/skbuff.h
-+++ b/include/linux/skbuff.h
-@@ -464,6 +464,7 @@ struct sk_buff {
- #ifdef CONFIG_IPV6_NDISC_NODETYPE
- 	__u8			ndisc_nodetype:2;
- #endif
-+	__u8			pfmemalloc:1;
- 	__u8			ooo_okay:1;
- 	__u8			l4_rxhash:1;
- 	__u8			wifi_acked_valid:1;
-@@ -502,6 +503,15 @@ struct sk_buff {
- #include <linux/slab.h>
- 
- 
-+#define SKB_ALLOC_FCLONE	0x01
-+#define SKB_ALLOC_RX		0x02
-+
-+/* Returns true if the skb was allocated from PFMEMALLOC reserves */
-+static inline bool skb_pfmemalloc(struct sk_buff *skb)
-+{
-+	return unlikely(skb->pfmemalloc);
-+}
-+
- /*
-  * skb might have a dst pointer attached, refcounted or not.
-  * _skb_refdst low order bit is set if refcount was _not_ taken
-@@ -559,7 +569,7 @@ extern void kfree_skb(struct sk_buff *skb);
- extern void consume_skb(struct sk_buff *skb);
- extern void	       __kfree_skb(struct sk_buff *skb);
- extern struct sk_buff *__alloc_skb(unsigned int size,
--				   gfp_t priority, int fclone, int node);
-+				   gfp_t priority, int flags, int node);
- extern struct sk_buff *build_skb(void *data);
- static inline struct sk_buff *alloc_skb(unsigned int size,
- 					gfp_t priority)
-@@ -570,7 +580,7 @@ static inline struct sk_buff *alloc_skb(unsigned int size,
- static inline struct sk_buff *alloc_skb_fclone(unsigned int size,
- 					       gfp_t priority)
- {
--	return __alloc_skb(size, priority, 1, NUMA_NO_NODE);
-+	return __alloc_skb(size, priority, SKB_ALLOC_FCLONE, NUMA_NO_NODE);
- }
- 
- extern void skb_recycle(struct sk_buff *skb);
-@@ -1665,7 +1675,8 @@ static inline void __skb_queue_purge(struct sk_buff_head *list)
- static inline struct sk_buff *__dev_alloc_skb(unsigned int length,
- 					      gfp_t gfp_mask)
- {
--	struct sk_buff *skb = alloc_skb(length + NET_SKB_PAD, gfp_mask);
-+	struct sk_buff *skb = __alloc_skb(length + NET_SKB_PAD, gfp_mask,
-+						SKB_ALLOC_RX, NUMA_NO_NODE);
- 	if (likely(skb))
- 		skb_reserve(skb, NET_SKB_PAD);
- 	return skb;
-diff --git a/include/net/sock.h b/include/net/sock.h
-index d8df4a1..a936614 100644
---- a/include/net/sock.h
-+++ b/include/net/sock.h
-@@ -644,6 +644,12 @@ static inline int sock_flag(struct sock *sk, enum sock_flags flag)
- 	return test_bit(flag, &sk->sk_flags);
- }
- 
-+extern atomic_t memalloc_socks;
-+static inline int sk_memalloc_socks(void)
-+{
-+	return atomic_read(&memalloc_socks);
-+}
-+
- static inline gfp_t sk_allocation(struct sock *sk, gfp_t gfp_mask)
- {
- 	return gfp_mask | (sk->sk_allocation & __GFP_MEMALLOC);
-diff --git a/mm/internal.h b/mm/internal.h
-index bff60d8..2189af4 100644
---- a/mm/internal.h
-+++ b/mm/internal.h
-@@ -239,9 +239,6 @@ static inline struct page *mem_map_next(struct page *iter,
- #define __paginginit __init
- #endif
- 
--/* Returns true if the gfp_mask allows use of ALLOC_NO_WATERMARK */
--bool gfp_pfmemalloc_allowed(gfp_t gfp_mask);
--
  /* Memory initialisation debug and verification */
  enum mminit_level {
  	MMINIT_WARNING,
-diff --git a/net/core/filter.c b/net/core/filter.c
-index 6f755cc..bc620e5 100644
---- a/net/core/filter.c
-+++ b/net/core/filter.c
-@@ -82,6 +82,14 @@ int sk_filter(struct sock *sk, struct sk_buff *skb)
- 	int err;
- 	struct sk_filter *filter;
+diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+index 280eabe..0fa2c72 100644
+--- a/mm/page_alloc.c
++++ b/mm/page_alloc.c
+@@ -1463,6 +1463,7 @@ failed:
+ #define ALLOC_HARDER		0x10 /* try to alloc harder */
+ #define ALLOC_HIGH		0x20 /* __GFP_HIGH set */
+ #define ALLOC_CPUSET		0x40 /* check for correct cpuset */
++#define ALLOC_PFMEMALLOC	0x80 /* Caller has PF_MEMALLOC set */
  
-+	/*
-+	 * If the skb was allocated from pfmemalloc reserves, only
-+	 * allow SOCK_MEMALLOC sockets to use it as this socket is
-+	 * helping free memory
-+	 */
-+	if (skb_pfmemalloc(skb) && !sock_flag(sk, SOCK_MEMALLOC))
-+		return -ENOMEM;
+ #ifdef CONFIG_FAIL_PAGE_ALLOC
+ 
+@@ -2208,16 +2209,22 @@ gfp_to_alloc_flags(gfp_t gfp_mask)
+ 	} else if (unlikely(rt_task(current)) && !in_interrupt())
+ 		alloc_flags |= ALLOC_HARDER;
+ 
+-	if (likely(!(gfp_mask & __GFP_NOMEMALLOC))) {
+-		if (!in_interrupt() &&
+-		    ((current->flags & PF_MEMALLOC) ||
+-		     unlikely(test_thread_flag(TIF_MEMDIE))))
++	if ((current->flags & PF_MEMALLOC) ||
++			unlikely(test_thread_flag(TIF_MEMDIE))) {
++		alloc_flags |= ALLOC_PFMEMALLOC;
 +
- 	err = security_sock_rcv_skb(sk, skb);
- 	if (err)
- 		return err;
-diff --git a/net/core/skbuff.c b/net/core/skbuff.c
-index baf8d28..ec8cb9b 100644
---- a/net/core/skbuff.c
-+++ b/net/core/skbuff.c
-@@ -146,6 +146,43 @@ static void skb_under_panic(struct sk_buff *skb, int sz, void *here)
- 	BUG();
++		if (likely(!(gfp_mask & __GFP_NOMEMALLOC)) && !in_interrupt())
+ 			alloc_flags |= ALLOC_NO_WATERMARKS;
+ 	}
+ 
+ 	return alloc_flags;
  }
  
-+
-+/*
-+ * kmalloc_reserve is a wrapper around kmalloc_node_track_caller that tells
-+ * the caller if emergency pfmemalloc reserves are being used. If it is and
-+ * the socket is later found to be SOCK_MEMALLOC then PFMEMALLOC reserves
-+ * may be used. Otherwise, the packet data may be discarded until enough
-+ * memory is free
-+ */
-+#define kmalloc_reserve(size, gfp, node, pfmemalloc) \
-+	 __kmalloc_reserve(size, gfp, node, _RET_IP_, pfmemalloc)
-+void *__kmalloc_reserve(size_t size, gfp_t flags, int node, unsigned long ip,
-+			 bool *pfmemalloc)
++bool gfp_pfmemalloc_allowed(gfp_t gfp_mask)
 +{
-+	void *obj;
-+	bool ret_pfmemalloc = false;
++	return !!(gfp_to_alloc_flags(gfp_mask) & ALLOC_PFMEMALLOC);
++}
 +
+ static inline struct page *
+ __alloc_pages_slowpath(gfp_t gfp_mask, unsigned int order,
+ 	struct zonelist *zonelist, enum zone_type high_zoneidx,
+@@ -2407,8 +2414,16 @@ nopage:
+ got_pg:
+ 	if (kmemcheck_enabled)
+ 		kmemcheck_pagealloc_alloc(page, order, gfp_mask);
+-	return page;
+ 
 +	/*
-+	 * Try a regular allocation, when that fails and we're not entitled
-+	 * to the reserves, fail.
++	 * page->pfmemalloc is set when the caller had PFMEMALLOC set or is
++	 * been OOM killed. The expectation is that the caller is taking
++	 * steps that will free more memory. The caller should avoid the
++	 * page being used for !PFMEMALLOC purposes.
 +	 */
-+	obj = kmalloc_node_track_caller(size,
-+				flags | __GFP_NOMEMALLOC | __GFP_NOWARN,
-+				node);
-+	if (obj || !(gfp_pfmemalloc_allowed(flags)))
-+		goto out;
++	page->pfmemalloc = !!(alloc_flags & ALLOC_PFMEMALLOC);
 +
-+	/* Try again but now we are using pfmemalloc reserves */
-+	ret_pfmemalloc = true;
-+	obj = kmalloc_node_track_caller(size, flags, node);
++	return page;
+ }
+ 
+ /*
+@@ -2459,6 +2474,8 @@ retry_cpuset:
+ 		page = __alloc_pages_slowpath(gfp_mask, order,
+ 				zonelist, high_zoneidx, nodemask,
+ 				preferred_zone, migratetype);
++	else
++		page->pfmemalloc = false;
+ 
+ 	trace_mm_page_alloc(page, order, gfp_mask, migratetype);
+ 
+diff --git a/mm/slab.c b/mm/slab.c
+index e901a36..7f483d6 100644
+--- a/mm/slab.c
++++ b/mm/slab.c
+@@ -123,6 +123,8 @@
+ 
+ #include <trace/events/kmem.h>
+ 
++#include	"internal.h"
++
+ /*
+  * DEBUG	- 1 for kmem_cache_create() to honour; SLAB_RED_ZONE & SLAB_POISON.
+  *		  0 for faster, smaller code (especially in the critical paths).
+@@ -151,6 +153,12 @@
+ #define ARCH_KMALLOC_FLAGS SLAB_HWCACHE_ALIGN
+ #endif
+ 
++/*
++ * true if a page was allocated from pfmemalloc reserves for network-based
++ * swap
++ */
++static bool pfmemalloc_active __read_mostly;
++
+ /* Legal flag mask for kmem_cache_create(). */
+ #if DEBUG
+ # define CREATE_MASK	(SLAB_RED_ZONE | \
+@@ -256,9 +264,30 @@ struct array_cache {
+ 			 * Must have this definition in here for the proper
+ 			 * alignment of array_cache. Also simplifies accessing
+ 			 * the entries.
++			 *
++			 * Entries should not be directly dereferenced as
++			 * entries belonging to slabs marked pfmemalloc will
++			 * have the lower bits set SLAB_OBJ_PFMEMALLOC
+ 			 */
+ };
+ 
++#define SLAB_OBJ_PFMEMALLOC	1
++static inline bool is_obj_pfmemalloc(void *objp)
++{
++	return (unsigned long)objp & SLAB_OBJ_PFMEMALLOC;
++}
++
++static inline void set_obj_pfmemalloc(void **objp)
++{
++	*objp = (void *)((unsigned long)*objp | SLAB_OBJ_PFMEMALLOC);
++	return;
++}
++
++static inline void clear_obj_pfmemalloc(void **objp)
++{
++	*objp = (void *)((unsigned long)*objp & ~SLAB_OBJ_PFMEMALLOC);
++}
++
+ /*
+  * bootstrap: The caches do not work without cpuarrays anymore, but the
+  * cpuarrays are allocated from the generic caches...
+@@ -951,6 +980,98 @@ static struct array_cache *alloc_arraycache(int node, int entries,
+ 	return nc;
+ }
+ 
++static inline bool is_slab_pfmemalloc(struct slab *slabp)
++{
++	struct page *page = virt_to_page(slabp->s_mem);
++
++	return PageSlabPfmemalloc(page);
++}
++
++/* Clears ac->pfmemalloc if no slabs have pfmalloc set */
++static void check_ac_pfmemalloc(struct kmem_cache *cachep,
++						struct array_cache *ac)
++{
++	struct kmem_list3 *l3 = cachep->nodelists[numa_mem_id()];
++	struct slab *slabp;
++
++	if (!pfmemalloc_active)
++		return;
++
++	list_for_each_entry(slabp, &l3->slabs_full, list)
++		if (is_slab_pfmemalloc(slabp))
++			return;
++
++	list_for_each_entry(slabp, &l3->slabs_partial, list)
++		if (is_slab_pfmemalloc(slabp))
++			return;
++
++	list_for_each_entry(slabp, &l3->slabs_free, list)
++		if (is_slab_pfmemalloc(slabp))
++			return;
++
++	pfmemalloc_active = false;
++}
++
++static void *ac_get_obj(struct kmem_cache *cachep, struct array_cache *ac,
++						gfp_t flags, bool force_refill)
++{
++	int i;
++	void *objp = ac->entry[--ac->avail];
++
++	/* Ensure the caller is allowed to use objects from PFMEMALLOC slab */
++	if (unlikely(is_obj_pfmemalloc(objp))) {
++		struct kmem_list3 *l3;
++
++		if (gfp_pfmemalloc_allowed(flags)) {
++			clear_obj_pfmemalloc(&objp);
++			return objp;
++		}
++
++		/* The caller cannot use PFMEMALLOC objects, find another one */
++		for (i = 1; i < ac->avail; i++) {
++			/* If a !PFMEMALLOC object is found, swap them */
++			if (!is_obj_pfmemalloc(ac->entry[i])) {
++				objp = ac->entry[i];
++				ac->entry[i] = ac->entry[ac->avail];
++				ac->entry[ac->avail] = objp;
++				return objp;
++			}
++		}
++
++		/*
++		 * If there are empty slabs on the slabs_free list and we are
++		 * being forced to refill the cache, mark this one !pfmemalloc.
++		 */
++		l3 = cachep->nodelists[numa_mem_id()];
++		if (!list_empty(&l3->slabs_free) && force_refill) {
++			struct slab *slabp = virt_to_slab(objp);
++			ClearPageSlabPfmemalloc(virt_to_page(slabp->s_mem));
++			clear_obj_pfmemalloc(&objp);
++			check_ac_pfmemalloc(cachep, ac);
++			return objp;
++		}
++
++		/* No !PFMEMALLOC objects available */
++		ac->avail++;
++		objp = NULL;
++	}
++
++	return objp;
++}
++
++static void ac_put_obj(struct kmem_cache *cachep, struct array_cache *ac,
++								void *objp)
++{
++	if (unlikely(pfmemalloc_active)) {
++		/* Some pfmemalloc slabs exist, check if this is one */
++		struct page *page = virt_to_page(objp);
++		if (PageSlabPfmemalloc(page))
++			set_obj_pfmemalloc(&objp);
++	}
++
++	ac->entry[ac->avail++] = objp;
++}
++
+ /*
+  * Transfer objects in one arraycache to another.
+  * Locking must be handled by the caller.
+@@ -1127,7 +1248,7 @@ static inline int cache_free_alien(struct kmem_cache *cachep, void *objp)
+ 			STATS_INC_ACOVERFLOW(cachep);
+ 			__drain_alien_cache(cachep, alien, nodeid);
+ 		}
+-		alien->entry[alien->avail++] = objp;
++		ac_put_obj(cachep, alien, objp);
+ 		spin_unlock(&alien->lock);
+ 	} else {
+ 		spin_lock(&(cachep->nodelists[nodeid])->list_lock);
+@@ -1809,6 +1930,10 @@ static void *kmem_getpages(struct kmem_cache *cachep, gfp_t flags, int nodeid)
+ 		return NULL;
+ 	}
+ 
++	/* Record if ALLOC_PFMEMALLOC was set when allocating the slab */
++	if (unlikely(page->pfmemalloc))
++		pfmemalloc_active = true;
++
+ 	nr_pages = (1 << cachep->gfporder);
+ 	if (cachep->flags & SLAB_RECLAIM_ACCOUNT)
+ 		add_zone_page_state(page_zone(page),
+@@ -1816,9 +1941,13 @@ static void *kmem_getpages(struct kmem_cache *cachep, gfp_t flags, int nodeid)
+ 	else
+ 		add_zone_page_state(page_zone(page),
+ 			NR_SLAB_UNRECLAIMABLE, nr_pages);
+-	for (i = 0; i < nr_pages; i++)
++	for (i = 0; i < nr_pages; i++) {
+ 		__SetPageSlab(page + i);
+ 
++		if (page->pfmemalloc)
++			SetPageSlabPfmemalloc(page + i);
++	}
++
+ 	if (kmemcheck_enabled && !(cachep->flags & SLAB_NOTRACK)) {
+ 		kmemcheck_alloc_shadow(page, cachep->gfporder, flags, nodeid);
+ 
+@@ -1851,6 +1980,7 @@ static void kmem_freepages(struct kmem_cache *cachep, void *addr)
+ 	while (i--) {
+ 		BUG_ON(!PageSlab(page));
+ 		__ClearPageSlab(page);
++		__ClearPageSlabPfmemalloc(page);
+ 		page++;
+ 	}
+ 	if (current->reclaim_state)
+@@ -3120,16 +3250,19 @@ bad:
+ #define check_slabp(x,y) do { } while(0)
+ #endif
+ 
+-static void *cache_alloc_refill(struct kmem_cache *cachep, gfp_t flags)
++static void *cache_alloc_refill(struct kmem_cache *cachep, gfp_t flags,
++							bool force_refill)
+ {
+ 	int batchcount;
+ 	struct kmem_list3 *l3;
+ 	struct array_cache *ac;
+ 	int node;
+ 
+-retry:
+ 	check_irq_off();
+ 	node = numa_mem_id();
++	if (unlikely(force_refill))
++		goto force_grow;
++retry:
+ 	ac = cpu_cache_get(cachep);
+ 	batchcount = ac->batchcount;
+ 	if (!ac->touched && batchcount > BATCHREFILL_LIMIT) {
+@@ -3179,8 +3312,8 @@ retry:
+ 			STATS_INC_ACTIVE(cachep);
+ 			STATS_SET_HIGH(cachep);
+ 
+-			ac->entry[ac->avail++] = slab_get_obj(cachep, slabp,
+-							    node);
++			ac_put_obj(cachep, ac, slab_get_obj(cachep, slabp,
++									node));
+ 		}
+ 		check_slabp(cachep, slabp);
+ 
+@@ -3199,18 +3332,22 @@ alloc_done:
+ 
+ 	if (unlikely(!ac->avail)) {
+ 		int x;
++force_grow:
+ 		x = cache_grow(cachep, flags | GFP_THISNODE, node, NULL);
+ 
+ 		/* cache_grow can reenable interrupts, then ac could change. */
+ 		ac = cpu_cache_get(cachep);
+-		if (!x && ac->avail == 0)	/* no objects in sight? abort */
++
++		/* no objects in sight? abort */
++		if (!x && (ac->avail == 0 || force_refill))
+ 			return NULL;
+ 
+ 		if (!ac->avail)		/* objects refilled by interrupt? */
+ 			goto retry;
+ 	}
+ 	ac->touched = 1;
+-	return ac->entry[--ac->avail];
++
++	return ac_get_obj(cachep, ac, flags, force_refill);
+ }
+ 
+ static inline void cache_alloc_debugcheck_before(struct kmem_cache *cachep,
+@@ -3292,23 +3429,35 @@ static inline void *____cache_alloc(struct kmem_cache *cachep, gfp_t flags)
+ {
+ 	void *objp;
+ 	struct array_cache *ac;
++	bool force_refill = false;
+ 
+ 	check_irq_off();
+ 
+ 	ac = cpu_cache_get(cachep);
+ 	if (likely(ac->avail)) {
+-		STATS_INC_ALLOCHIT(cachep);
+ 		ac->touched = 1;
+-		objp = ac->entry[--ac->avail];
+-	} else {
+-		STATS_INC_ALLOCMISS(cachep);
+-		objp = cache_alloc_refill(cachep, flags);
++		objp = ac_get_obj(cachep, ac, flags, false);
++
+ 		/*
+-		 * the 'ac' may be updated by cache_alloc_refill(),
+-		 * and kmemleak_erase() requires its correct value.
++		 * Allow for the possibility all avail objects are not allowed
++		 * by the current flags
+ 		 */
+-		ac = cpu_cache_get(cachep);
++		if (objp) {
++			STATS_INC_ALLOCHIT(cachep);
++			goto out;
++		}
++		force_refill = true;
+ 	}
++
++	STATS_INC_ALLOCMISS(cachep);
++	objp = cache_alloc_refill(cachep, flags, force_refill);
++	/*
++	 * the 'ac' may be updated by cache_alloc_refill(),
++	 * and kmemleak_erase() requires its correct value.
++	 */
++	ac = cpu_cache_get(cachep);
 +
 +out:
-+	if (pfmemalloc)
-+		*pfmemalloc = ret_pfmemalloc;
-+
-+	return obj;
-+}
-+
- /* 	Allocate a new skbuff. We do this ourselves so we can fill in a few
-  *	'private' fields and also do memory statistics to find all the
-  *	[BEEP] leaks.
-@@ -156,8 +193,10 @@ static void skb_under_panic(struct sk_buff *skb, int sz, void *here)
-  *	__alloc_skb	-	allocate a network buffer
-  *	@size: size to allocate
-  *	@gfp_mask: allocation mask
-- *	@fclone: allocate from fclone cache instead of head cache
-- *		and allocate a cloned (child) skb
-+ *	@flags: If SKB_ALLOC_FCLONE is set, allocate from fclone cache
-+ *		instead of head cache and allocate a cloned (child) skb.
-+ *		If SKB_ALLOC_RX is set, __GFP_MEMALLOC will be used for
-+ *		allocations in case the data is required for writeback
-  *	@node: numa node to allocate memory on
-  *
-  *	Allocate a new &sk_buff. The returned buffer has no headroom and a
-@@ -168,14 +207,19 @@ static void skb_under_panic(struct sk_buff *skb, int sz, void *here)
-  *	%GFP_ATOMIC.
-  */
- struct sk_buff *__alloc_skb(unsigned int size, gfp_t gfp_mask,
--			    int fclone, int node)
-+			    int flags, int node)
- {
- 	struct kmem_cache *cache;
- 	struct skb_shared_info *shinfo;
- 	struct sk_buff *skb;
- 	u8 *data;
-+	bool pfmemalloc;
-+
-+	cache = (flags & SKB_ALLOC_FCLONE)
-+		? skbuff_fclone_cache : skbuff_head_cache;
- 
--	cache = fclone ? skbuff_fclone_cache : skbuff_head_cache;
-+	if (sk_memalloc_socks() && (flags & SKB_ALLOC_RX))
-+		gfp_mask |= __GFP_MEMALLOC;
- 
- 	/* Get the HEAD */
- 	skb = kmem_cache_alloc_node(cache, gfp_mask & ~__GFP_DMA, node);
-@@ -190,7 +234,7 @@ struct sk_buff *__alloc_skb(unsigned int size, gfp_t gfp_mask,
- 	 */
- 	size = SKB_DATA_ALIGN(size);
- 	size += SKB_DATA_ALIGN(sizeof(struct skb_shared_info));
--	data = kmalloc_node_track_caller(size, gfp_mask, node);
-+	data = kmalloc_reserve(size, gfp_mask, node, &pfmemalloc);
- 	if (!data)
- 		goto nodata;
- 	/* kmalloc(size) might give us more room than requested.
-@@ -208,6 +252,7 @@ struct sk_buff *__alloc_skb(unsigned int size, gfp_t gfp_mask,
- 	memset(skb, 0, offsetof(struct sk_buff, tail));
- 	/* Account for allocated memory : skb + skb->head */
- 	skb->truesize = SKB_TRUESIZE(size);
-+	skb->pfmemalloc = pfmemalloc;
- 	atomic_set(&skb->users, 1);
- 	skb->head = data;
- 	skb->data = data;
-@@ -223,7 +268,7 @@ struct sk_buff *__alloc_skb(unsigned int size, gfp_t gfp_mask,
- 	atomic_set(&shinfo->dataref, 1);
- 	kmemcheck_annotate_variable(shinfo->destructor_arg);
- 
--	if (fclone) {
-+	if (flags & SKB_ALLOC_FCLONE) {
- 		struct sk_buff *child = skb + 1;
- 		atomic_t *fclone_ref = (atomic_t *) (child + 1);
- 
-@@ -233,6 +278,7 @@ struct sk_buff *__alloc_skb(unsigned int size, gfp_t gfp_mask,
- 		atomic_set(fclone_ref, 1);
- 
- 		child->fclone = SKB_FCLONE_UNAVAILABLE;
-+		child->pfmemalloc = pfmemalloc;
- 	}
- out:
- 	return skb;
-@@ -310,7 +356,8 @@ struct sk_buff *__netdev_alloc_skb(struct net_device *dev,
- {
- 	struct sk_buff *skb;
- 
--	skb = __alloc_skb(length + NET_SKB_PAD, gfp_mask, 0, NUMA_NO_NODE);
-+	skb = __alloc_skb(length + NET_SKB_PAD, gfp_mask,
-+						SKB_ALLOC_RX, NUMA_NO_NODE);
- 	if (likely(skb)) {
- 		skb_reserve(skb, NET_SKB_PAD);
- 		skb->dev = dev;
-@@ -605,6 +652,7 @@ static void __copy_skb_header(struct sk_buff *new, const struct sk_buff *old)
- #if IS_ENABLED(CONFIG_IP_VS)
- 	new->ipvs_property	= old->ipvs_property;
- #endif
-+	new->pfmemalloc		= old->pfmemalloc;
- 	new->protocol		= old->protocol;
- 	new->mark		= old->mark;
- 	new->skb_iif		= old->skb_iif;
-@@ -763,6 +811,9 @@ struct sk_buff *skb_clone(struct sk_buff *skb, gfp_t gfp_mask)
- 		n->fclone = SKB_FCLONE_CLONE;
- 		atomic_inc(fclone_ref);
- 	} else {
-+		if (skb_pfmemalloc(skb))
-+			gfp_mask |= __GFP_MEMALLOC;
-+
- 		n = kmem_cache_alloc(skbuff_head_cache, gfp_mask);
- 		if (!n)
- 			return NULL;
-@@ -799,6 +850,13 @@ static void copy_skb_header(struct sk_buff *new, const struct sk_buff *old)
- 	skb_shinfo(new)->gso_type = skb_shinfo(old)->gso_type;
- }
- 
-+static inline int skb_alloc_rx_flag(const struct sk_buff *skb)
-+{
-+	if (skb_pfmemalloc((struct sk_buff *)skb))
-+		return SKB_ALLOC_RX;
-+	return 0;
-+}
-+
- /**
-  *	skb_copy	-	create private copy of an sk_buff
-  *	@skb: buffer to copy
-@@ -820,7 +878,8 @@ struct sk_buff *skb_copy(const struct sk_buff *skb, gfp_t gfp_mask)
- {
- 	int headerlen = skb_headroom(skb);
- 	unsigned int size = (skb_end_pointer(skb) - skb->head) + skb->data_len;
--	struct sk_buff *n = alloc_skb(size, gfp_mask);
-+	struct sk_buff *n = __alloc_skb(size, gfp_mask,
-+					skb_alloc_rx_flag(skb), NUMA_NO_NODE);
- 
- 	if (!n)
- 		return NULL;
-@@ -855,7 +914,8 @@ EXPORT_SYMBOL(skb_copy);
- struct sk_buff *__pskb_copy(struct sk_buff *skb, int headroom, gfp_t gfp_mask)
- {
- 	unsigned int size = skb_headlen(skb) + headroom;
--	struct sk_buff *n = alloc_skb(size, gfp_mask);
-+	struct sk_buff *n = __alloc_skb(size, gfp_mask,
-+					skb_alloc_rx_flag(skb), NUMA_NO_NODE);
- 
- 	if (!n)
- 		goto out;
-@@ -952,7 +1012,10 @@ int pskb_expand_head(struct sk_buff *skb, int nhead, int ntail,
- 		goto adjust_others;
- 	}
- 
--	data = kmalloc(size + sizeof(struct skb_shared_info), gfp_mask);
-+	if (skb_pfmemalloc(skb))
-+		gfp_mask |= __GFP_MEMALLOC;
-+	data = kmalloc_reserve(size + sizeof(struct skb_shared_info), gfp_mask,
-+			NUMA_NO_NODE, NULL);
- 	if (!data)
- 		goto nodata;
- 
-@@ -1060,8 +1123,9 @@ struct sk_buff *skb_copy_expand(const struct sk_buff *skb,
  	/*
- 	 *	Allocate the copy buffer
- 	 */
--	struct sk_buff *n = alloc_skb(newheadroom + skb->len + newtailroom,
--				      gfp_mask);
-+	struct sk_buff *n = __alloc_skb(newheadroom + skb->len + newtailroom,
-+				      gfp_mask, skb_alloc_rx_flag(skb),
-+				      NUMA_NO_NODE);
- 	int oldheadroom = skb_headroom(skb);
- 	int head_copy_len, head_copy_off;
- 	int off;
-@@ -2727,8 +2791,9 @@ struct sk_buff *skb_segment(struct sk_buff *skb, netdev_features_t features)
- 			skb_release_head_state(nskb);
- 			__skb_push(nskb, doffset);
- 		} else {
--			nskb = alloc_skb(hsize + doffset + headroom,
--					 GFP_ATOMIC);
-+			nskb = __alloc_skb(hsize + doffset + headroom,
-+					 GFP_ATOMIC, skb_alloc_rx_flag(skb),
-+					 NUMA_NO_NODE);
+ 	 * To avoid a false negative, if an object that is in one of the
+ 	 * per-CPU caches is leaked, we need to make sure kmemleak doesn't
+@@ -3630,9 +3779,12 @@ static void free_block(struct kmem_cache *cachep, void **objpp, int nr_objects,
+ 	struct kmem_list3 *l3;
  
- 			if (unlikely(!nskb))
- 				goto err;
-diff --git a/net/core/sock.c b/net/core/sock.c
-index b0f0613..cd2ad2b 100644
---- a/net/core/sock.c
-+++ b/net/core/sock.c
-@@ -266,6 +266,8 @@ __u32 sysctl_rmem_default __read_mostly = SK_RMEM_MAX;
- int sysctl_optmem_max __read_mostly = sizeof(unsigned long)*(2*UIO_MAXIOV+512);
- EXPORT_SYMBOL(sysctl_optmem_max);
+ 	for (i = 0; i < nr_objects; i++) {
+-		void *objp = objpp[i];
++		void *objp;
+ 		struct slab *slabp;
  
-+atomic_t memalloc_socks __read_mostly;
++		clear_obj_pfmemalloc(&objpp[i]);
++		objp = objpp[i];
 +
+ 		slabp = virt_to_slab(objp);
+ 		l3 = cachep->nodelists[node];
+ 		list_del(&slabp->list);
+@@ -3750,7 +3902,7 @@ static inline void __cache_free(struct kmem_cache *cachep, void *objp,
+ 		cache_flusharray(cachep, ac);
+ 	}
+ 
+-	ac->entry[ac->avail++] = objp;
++	ac_put_obj(cachep, ac, objp);
+ }
+ 
  /**
-  * sk_set_memalloc - sets %SOCK_MEMALLOC
-  * @sk: socket to set it on
-@@ -278,6 +280,7 @@ void sk_set_memalloc(struct sock *sk)
- {
- 	sock_set_flag(sk, SOCK_MEMALLOC);
- 	sk->sk_allocation |= __GFP_MEMALLOC;
-+	atomic_inc(&memalloc_socks);
- }
- EXPORT_SYMBOL_GPL(sk_set_memalloc);
+diff --git a/mm/slub.c b/mm/slub.c
+index ffe13fd..f0909bf 100644
+--- a/mm/slub.c
++++ b/mm/slub.c
+@@ -33,6 +33,8 @@
  
-@@ -285,6 +288,7 @@ void sk_clear_memalloc(struct sock *sk)
- {
- 	sock_reset_flag(sk, SOCK_MEMALLOC);
- 	sk->sk_allocation &= ~__GFP_MEMALLOC;
-+	atomic_dec(&memalloc_socks);
- }
- EXPORT_SYMBOL_GPL(sk_clear_memalloc);
+ #include <trace/events/kmem.h>
  
++#include "internal.h"
++
+ /*
+  * Lock order:
+  *   1. slub_lock (Global Semaphore)
+@@ -1370,6 +1372,8 @@ static struct page *new_slab(struct kmem_cache *s, gfp_t flags, int node)
+ 	inc_slabs_node(s, page_to_nid(page), page->objects);
+ 	page->slab = s;
+ 	page->flags |= 1 << PG_slab;
++	if (page->pfmemalloc)
++		SetPageSlabPfmemalloc(page);
+ 
+ 	start = page_address(page);
+ 
+@@ -1414,6 +1418,7 @@ static void __free_slab(struct kmem_cache *s, struct page *page)
+ 		-pages);
+ 
+ 	__ClearPageSlab(page);
++	__ClearPageSlabPfmemalloc(page);
+ 	reset_page_mapcount(page);
+ 	if (current->reclaim_state)
+ 		current->reclaim_state->reclaimed_slab += pages;
+@@ -2153,6 +2158,14 @@ static inline void *new_slab_objects(struct kmem_cache *s, gfp_t flags,
+ 	return object;
+ }
+ 
++static inline bool pfmemalloc_match(struct kmem_cache_cpu *c, gfp_t gfpflags)
++{
++	if (unlikely(PageSlabPfmemalloc(c->page)))
++		return gfp_pfmemalloc_allowed(gfpflags);
++
++	return true;
++}
++
+ /*
+  * Check the page->freelist of a page and either transfer the freelist to the per cpu freelist
+  * or deactivate the page.
+@@ -2225,6 +2238,16 @@ redo:
+ 		goto new_slab;
+ 	}
+ 
++	/*
++	 * By rights, we should be searching for a slab page that was
++	 * PFMEMALLOC but right now, we are losing the pfmemalloc
++	 * information when the page leaves the per-cpu allocator
++	 */
++	if (unlikely(!pfmemalloc_match(c, gfpflags))) {
++		deactivate_slab(s, c);
++		goto new_slab;
++	}
++
+ 	/* must check again c->freelist in case of cpu migration or IRQ */
+ 	object = c->freelist;
+ 	if (object)
+@@ -2329,8 +2352,8 @@ redo:
+ 	barrier();
+ 
+ 	object = c->freelist;
+-	if (unlikely(!object || !node_match(c, node)))
+-
++	if (unlikely(!object || !node_match(c, node) ||
++					!pfmemalloc_match(c, gfpflags)))
+ 		object = __slab_alloc(s, gfpflags, node, addr, c);
+ 
+ 	else {
 -- 
 1.7.9.2
 
