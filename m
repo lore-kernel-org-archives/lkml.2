@@ -1,35 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753343Ab2DPLYg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Apr 2012 07:24:36 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:43724 "EHLO
+	id S1753368Ab2DPLZf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Apr 2012 07:25:35 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:43746 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753175Ab2DPLYe (ORCPT
+	with ESMTP id S1753175Ab2DPLZd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Apr 2012 07:24:34 -0400
-Date: Mon, 16 Apr 2012 04:23:39 -0700
-From: tip-bot for Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Message-ID: <tip-6c7b8e82aab75a25581c4d446fc87f96634e9ef9@git.kernel.org>
-Cc: mingo@kernel.org, torvalds@linux-foundation.org, peterz@infradead.org,
-        anton@redhat.com, rostedt@goodmis.org, jkenisto@linux.vnet.ibm.com,
-        oleg@redhat.com, tglx@linutronix.de, linux-mm@kvack.org, hpa@zytor.com,
-        linux-kernel@vger.kernel.org, andi@firstfloor.org,
-        prashanth@linux.vnet.ibm.com, hch@infradead.org, ananth@in.ibm.com,
-        masami.hiramatsu.pt@hitachi.com, acme@infradead.org,
-        srikar@linux.vnet.ibm.com
-Reply-To: mingo@kernel.org, torvalds@linux-foundation.org,
-        peterz@infradead.org, anton@redhat.com, rostedt@goodmis.org,
-        jkenisto@linux.vnet.ibm.com, oleg@redhat.com, tglx@linutronix.de,
-        linux-mm@kvack.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        andi@firstfloor.org, prashanth@linux.vnet.ibm.com, hch@infradead.org,
-        ananth@in.ibm.com, masami.hiramatsu.pt@hitachi.com, acme@infradead.org,
-        srikar@linux.vnet.ibm.com
-In-Reply-To: <20120413032427.32577.42602.stgit@localhost.localdomain>
-References: <20120413032427.32577.42602.stgit@localhost.localdomain>
+	Mon, 16 Apr 2012 07:25:33 -0400
+Date: Mon, 16 Apr 2012 04:24:31 -0700
+From: "tip-bot for Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Message-ID: <tip-92d52de4add0e4502aeb063cd45daf314a9c2e1b@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, paul.mckenney@linaro.org, hpa@zytor.com,
+        mingo@kernel.org, torvalds@linux-foundation.org,
+        sergey.senozhatsky@gmail.com, paulmck@linux.vnet.ibm.com,
+        tglx@linutronix.de
+Reply-To: paulmck@linux.vnet.ibm.com, mingo@kernel.org, hpa@zytor.com,
+        paul.mckenney@linaro.org, linux-kernel@vger.kernel.org,
+        torvalds@linux-foundation.org, sergey.senozhatsky@gmail.com,
+        tglx@linutronix.de
+In-Reply-To: <20120405222604.GA15713@linux.vnet.ibm.com>
+References: <20120405222604.GA15713@linux.vnet.ibm.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/urgent] x86:
-  Handle failures of parsing immediate operands in the instruction decoder
-Git-Commit-ID: 6c7b8e82aab75a25581c4d446fc87f96634e9ef9
+Subject: [tip:core/urgent] rcu: Permit call_rcu() from CPU_DYING notifiers
+Git-Commit-ID: 92d52de4add0e4502aeb063cd45daf314a9c2e1b
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -38,179 +31,119 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Mon, 16 Apr 2012 04:23:47 -0700 (PDT)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Mon, 16 Apr 2012 04:24:37 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  6c7b8e82aab75a25581c4d446fc87f96634e9ef9
-Gitweb:     http://git.kernel.org/tip/6c7b8e82aab75a25581c4d446fc87f96634e9ef9
-Author:     Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-AuthorDate: Fri, 13 Apr 2012 12:24:27 +0900
+Commit-ID:  92d52de4add0e4502aeb063cd45daf314a9c2e1b
+Gitweb:     http://git.kernel.org/tip/92d52de4add0e4502aeb063cd45daf314a9c2e1b
+Author:     Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+AuthorDate: Thu, 5 Apr 2012 15:26:04 -0700
 Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Mon, 16 Apr 2012 08:56:11 +0200
+CommitDate: Mon, 16 Apr 2012 11:17:57 +0200
 
-x86: Handle failures of parsing immediate operands in the instruction decoder
+rcu: Permit call_rcu() from CPU_DYING notifiers
 
-This can happen if the instruction is much longer than the maximum length,
-or if insn->opnd_bytes is manually changed.
+As of:
 
-This patch also fixes warnings from -Wswitch-default flag.
+  29494be71afe ("rcu,cleanup: simplify the code when cpu is dying")
 
-Reported-by: Prashanth Nageshappa <prashanth@linux.vnet.ibm.com>
-Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+RCU adopts callbacks from the dying CPU in its CPU_DYING notifier,
+which means that any callbacks posted by later CPU_DYING notifiers
+are ignored until the CPU comes back online.
+
+A WARN_ON_ONCE() was added to __call_rcu() by:
+
+  e56014000816 ("rcu: Simplify offline processing")
+
+to check for this condition.  Although this condition did not trigger
+(at least as far as I know) during -next testing, it did recently
+trigger in mainline:
+
+  https://lkml.org/lkml/2012/4/2/34
+
+This commit therefore causes RCU's CPU_DEAD notifier to adopt
+any callbacks that were posted by CPU_DYING notifiers and
+removes the WARN_ON_ONCE() from __call_rcu().
+
+A more targeted warning for callback posting from offline CPUs will be
+added as a separate commit.
+
+Tested-by: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+Signed-off-by: Paul E. McKenney <paul.mckenney@linaro.org>
+Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Ananth N Mavinakayanahalli <ananth@in.ibm.com>
-Cc: Jim Keniston <jkenisto@linux.vnet.ibm.com>
-Cc: Linux-mm <linux-mm@kvack.org>
-Cc: Oleg Nesterov <oleg@redhat.com>
-Cc: Andi Kleen <andi@firstfloor.org>
-Cc: Christoph Hellwig <hch@infradead.org>
-Cc: Steven Rostedt <rostedt@goodmis.org>
-Cc: Arnaldo Carvalho de Melo <acme@infradead.org>
-Cc: Anton Arapov <anton@redhat.com>
-Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-Cc: yrl.pp-manager.tt@hitachi.com
-Cc: Peter Zijlstra <peterz@infradead.org>
-Link: http://lkml.kernel.org/r/20120413032427.32577.42602.stgit@localhost.localdomain
+Cc: laijs@cn.fujitsu.com
+Cc: dipankar@in.ibm.com
+Cc: mathieu.desnoyers@efficios.com
+Cc: josh@joshtriplett.org
+Cc: niv@us.ibm.com
+Cc: peterz@infradead.org
+Cc: rostedt@goodmis.org
+Cc: Valdis.Kletnieks@vt.edu
+Cc: dhowells@redhat.com
+Cc: eric.dumazet@gmail.com
+Cc: darren@dvhart.com
+Cc: fweisbec@gmail.com
+Cc: patches@linaro.org
+Link: http://lkml.kernel.org/r/20120405222604.GA15713@linux.vnet.ibm.com
 Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- arch/x86/lib/insn.c |   53 ++++++++++++++++++++++++++++++++++----------------
- 1 files changed, 36 insertions(+), 17 deletions(-)
+ kernel/rcutree.c |   31 ++++++++++++++++++++++++++++++-
+ 1 files changed, 30 insertions(+), 1 deletions(-)
 
-diff --git a/arch/x86/lib/insn.c b/arch/x86/lib/insn.c
-index 25feb1a..b1e6c4b 100644
---- a/arch/x86/lib/insn.c
-+++ b/arch/x86/lib/insn.c
-@@ -379,8 +379,8 @@ err_out:
- 	return;
- }
- 
--/* Decode moffset16/32/64 */
--static void __get_moffset(struct insn *insn)
-+/* Decode moffset16/32/64. Return 0 if failed */
-+static int __get_moffset(struct insn *insn)
+diff --git a/kernel/rcutree.c b/kernel/rcutree.c
+index 1050d6d..4c927e6 100644
+--- a/kernel/rcutree.c
++++ b/kernel/rcutree.c
+@@ -1406,11 +1406,41 @@ static void rcu_cleanup_dying_cpu(struct rcu_state *rsp)
+ static void rcu_cleanup_dead_cpu(int cpu, struct rcu_state *rsp)
  {
- 	switch (insn->addr_bytes) {
- 	case 2:
-@@ -397,15 +397,19 @@ static void __get_moffset(struct insn *insn)
- 		insn->moffset2.value = get_next(int, insn);
- 		insn->moffset2.nbytes = 4;
- 		break;
-+	default:	/* opnd_bytes must be modified manually */
-+		goto err_out;
- 	}
- 	insn->moffset1.got = insn->moffset2.got = 1;
+ 	unsigned long flags;
++	int i;
+ 	unsigned long mask;
+ 	int need_report = 0;
+ 	struct rcu_data *rdp = per_cpu_ptr(rsp->rda, cpu);
+ 	struct rcu_node *rnp = rdp->mynode;  /* Outgoing CPU's rnp. */
  
-+	return 1;
++	/* If a CPU_DYING notifier has enqueued callbacks, adopt them. */
++	if (rdp->nxtlist != NULL) {
++		struct rcu_data *receive_rdp;
 +
- err_out:
--	return;
-+	return 0;
- }
- 
--/* Decode imm v32(Iz) */
--static void __get_immv32(struct insn *insn)
-+/* Decode imm v32(Iz). Return 0 if failed */
-+static int __get_immv32(struct insn *insn)
- {
- 	switch (insn->opnd_bytes) {
- 	case 2:
-@@ -417,14 +421,18 @@ static void __get_immv32(struct insn *insn)
- 		insn->immediate.value = get_next(int, insn);
- 		insn->immediate.nbytes = 4;
- 		break;
-+	default:	/* opnd_bytes must be modified manually */
-+		goto err_out;
- 	}
- 
-+	return 1;
++		local_irq_save(flags);
++		receive_rdp = per_cpu_ptr(rsp->rda, smp_processor_id());
 +
- err_out:
--	return;
-+	return 0;
- }
++		/* Adjust the counts. */
++		receive_rdp->qlen_lazy += rdp->qlen_lazy;
++		receive_rdp->qlen += rdp->qlen;
++		rdp->qlen_lazy = 0;
++		rdp->qlen = 0;
++
++		/*
++		 * Adopt all callbacks.  The outgoing CPU was in no shape
++		 * to advance them, so make them all go through a full
++		 * grace period.
++		 */
++		*receive_rdp->nxttail[RCU_NEXT_TAIL] = rdp->nxtlist;
++		receive_rdp->nxttail[RCU_NEXT_TAIL] =
++			rdp->nxttail[RCU_NEXT_TAIL];
++		local_irq_restore(flags);
++
++		/* Initialize the outgoing CPU's callback list. */
++		rdp->nxtlist = NULL;
++		for (i = 0; i < RCU_NEXT_SIZE; i++)
++			rdp->nxttail[i] = &rdp->nxtlist;
++	}
++
+ 	/* Adjust any no-longer-needed kthreads. */
+ 	rcu_stop_cpu_kthread(cpu);
+ 	rcu_node_kthread_setaffinity(rnp, -1);
+@@ -1820,7 +1850,6 @@ __call_rcu(struct rcu_head *head, void (*func)(struct rcu_head *rcu),
+ 	 * a quiescent state betweentimes.
+ 	 */
+ 	local_irq_save(flags);
+-	WARN_ON_ONCE(cpu_is_offline(smp_processor_id()));
+ 	rdp = this_cpu_ptr(rsp->rda);
  
--/* Decode imm v64(Iv/Ov) */
--static void __get_immv(struct insn *insn)
-+/* Decode imm v64(Iv/Ov), Return 0 if failed */
-+static int __get_immv(struct insn *insn)
- {
- 	switch (insn->opnd_bytes) {
- 	case 2:
-@@ -441,15 +449,18 @@ static void __get_immv(struct insn *insn)
- 		insn->immediate2.value = get_next(int, insn);
- 		insn->immediate2.nbytes = 4;
- 		break;
-+	default:	/* opnd_bytes must be modified manually */
-+		goto err_out;
- 	}
- 	insn->immediate1.got = insn->immediate2.got = 1;
- 
-+	return 1;
- err_out:
--	return;
-+	return 0;
- }
- 
- /* Decode ptr16:16/32(Ap) */
--static void __get_immptr(struct insn *insn)
-+static int __get_immptr(struct insn *insn)
- {
- 	switch (insn->opnd_bytes) {
- 	case 2:
-@@ -462,14 +473,17 @@ static void __get_immptr(struct insn *insn)
- 		break;
- 	case 8:
- 		/* ptr16:64 is not exist (no segment) */
--		return;
-+		return 0;
-+	default:	/* opnd_bytes must be modified manually */
-+		goto err_out;
- 	}
- 	insn->immediate2.value = get_next(unsigned short, insn);
- 	insn->immediate2.nbytes = 2;
- 	insn->immediate1.got = insn->immediate2.got = 1;
- 
-+	return 1;
- err_out:
--	return;
-+	return 0;
- }
- 
- /**
-@@ -489,7 +503,8 @@ void insn_get_immediate(struct insn *insn)
- 		insn_get_displacement(insn);
- 
- 	if (inat_has_moffset(insn->attr)) {
--		__get_moffset(insn);
-+		if (!__get_moffset(insn))
-+			goto err_out;
- 		goto done;
- 	}
- 
-@@ -517,16 +532,20 @@ void insn_get_immediate(struct insn *insn)
- 		insn->immediate2.nbytes = 4;
- 		break;
- 	case INAT_IMM_PTR:
--		__get_immptr(insn);
-+		if (!__get_immptr(insn))
-+			goto err_out;
- 		break;
- 	case INAT_IMM_VWORD32:
--		__get_immv32(insn);
-+		if (!__get_immv32(insn))
-+			goto err_out;
- 		break;
- 	case INAT_IMM_VWORD:
--		__get_immv(insn);
-+		if (!__get_immv(insn))
-+			goto err_out;
- 		break;
- 	default:
--		break;
-+		/* Here, insn must have an immediate, but failed */
-+		goto err_out;
- 	}
- 	if (inat_has_second_immediate(insn->attr)) {
- 		insn->immediate2.value = get_next(char, insn);
+ 	/* Add the callback to our list. */
