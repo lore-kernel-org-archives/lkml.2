@@ -1,18 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755555Ab2DPU2L (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Apr 2012 16:28:11 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:31578 "EHLO mx1.redhat.com"
+	id S1755478Ab2DPU2J (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Apr 2012 16:28:09 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:41786 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754624Ab2DPUVx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1754665Ab2DPUVx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 16 Apr 2012 16:21:53 -0400
 From: Mauro Carvalho Chehab <mchehab@redhat.com>
 Cc: Mauro Carvalho Chehab <mchehab@redhat.com>,
         Linux Edac Mailing List <linux-edac@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: [EDAC_ABI PATCH v13 16/26] i82875p_edac: convert driver to use the new edac ABI
-Date: Mon, 16 Apr 2012 17:21:35 -0300
-Message-Id: <1334607705-30320-17-git-send-email-mchehab@redhat.com>
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Jason Uhlenkott <juhlenko@akamai.com>
+Subject: [EDAC_ABI PATCH v13 07/26] i3000_edac: convert driver to use the new edac ABI
+Date: Mon, 16 Apr 2012 17:21:26 -0300
+Message-Id: <1334607705-30320-8-git-send-email-mchehab@redhat.com>
 In-Reply-To: <1334607705-30320-1-git-send-email-mchehab@redhat.com>
 References: <1334607133-30039-1-git-send-email-mchehab@redhat.com>
  <1334607705-30320-1-git-send-email-mchehab@redhat.com>
@@ -24,29 +25,20 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 The legacy edac ABI is going to be removed. Port the driver to use
 and benefit from the new API functionality.
 
+Cc: Jason Uhlenkott <juhlenko@akamai.com>
 Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
 ---
- drivers/edac/i82875p_edac.c |   29 +++++++++++++++++++++--------
- 1 files changed, 21 insertions(+), 8 deletions(-)
+ drivers/edac/i3000_edac.c |   25 ++++++++++++++++++++-----
+ 1 files changed, 20 insertions(+), 5 deletions(-)
 
-diff --git a/drivers/edac/i82875p_edac.c b/drivers/edac/i82875p_edac.c
-index dc207dc..4259c4a 100644
---- a/drivers/edac/i82875p_edac.c
-+++ b/drivers/edac/i82875p_edac.c
-@@ -38,7 +38,8 @@
- #endif				/* PCI_DEVICE_ID_INTEL_82875_6 */
- 
- /* four csrows in dual channel, eight in single channel */
--#define I82875P_NR_CSROWS(nr_chans) (8/(nr_chans))
-+#define I82875P_NR_DIMMS		8
-+#define I82875P_NR_CSROWS(nr_chans)	(I82875P_NR_DIMMS / (nr_chans))
- 
- /* Intel 82875p register addresses - device 0 function 0 - DRAM Controller */
- #define I82875P_EAP		0x58	/* Error Address Pointer (32b)
-@@ -235,7 +236,9 @@ static int i82875p_process_error_info(struct mem_ctl_info *mci,
+diff --git a/drivers/edac/i3000_edac.c b/drivers/edac/i3000_edac.c
+index bf8a230..9b2c561 100644
+--- a/drivers/edac/i3000_edac.c
++++ b/drivers/edac/i3000_edac.c
+@@ -245,7 +245,9 @@ static int i3000_process_error_info(struct mem_ctl_info *mci,
  		return 1;
  
- 	if ((info->errsts ^ info->errsts2) & 0x0081) {
+ 	if ((info->errsts ^ info->errsts2) & I3000_ERRSTS_BITS) {
 -		edac_mc_handle_ce_no_info(mci, "UE overwrote CE");
 +		edac_mc_handle_error(HW_EVENT_ERR_UNCORRECTED, mci, 0, 0, 0,
 +				     -1, -1, -1,
@@ -54,51 +46,49 @@ index dc207dc..4259c4a 100644
  		info->errsts = info->errsts2;
  	}
  
-@@ -243,11 +246,15 @@ static int i82875p_process_error_info(struct mem_ctl_info *mci,
- 	row = edac_mc_find_csrow_by_page(mci, info->eap);
+@@ -256,10 +258,15 @@ static int i3000_process_error_info(struct mem_ctl_info *mci,
+ 	row = edac_mc_find_csrow_by_page(mci, pfn);
  
- 	if (info->errsts & 0x0080)
--		edac_mc_handle_ue(mci, info->eap, 0, row, "i82875p UE");
+ 	if (info->errsts & I3000_ERRSTS_UE)
+-		edac_mc_handle_ue(mci, pfn, offset, row, "i3000 UE");
 +		edac_mc_handle_error(HW_EVENT_ERR_UNCORRECTED, mci,
-+				     info->eap, 0, 0,
++				     pfn, offset, 0,
 +				     row, -1, -1,
-+				     "i82875p UE", "", NULL);
++				     "i3000 UE", "", NULL);
  	else
--		edac_mc_handle_ce(mci, info->eap, 0, info->derrsyn, row,
--				multi_chan ? (info->des & 0x1) : 0,
--				"i82875p CE");
+-		edac_mc_handle_ce(mci, pfn, offset, info->derrsyn, row,
+-				multi_chan ? channel : 0, "i3000 CE");
 +		edac_mc_handle_error(HW_EVENT_ERR_CORRECTED, mci,
-+				     info->eap, 0, info->derrsyn,
-+				     row, multi_chan ? (info->des & 0x1) : 0,
-+				     -1, "i82875p CE", "", NULL);
++				     pfn, offset, info->derrsyn,
++				     row, multi_chan ? channel : 0, -1,
++				     "i3000 CE", "", NULL);
  
  	return 1;
  }
-@@ -390,6 +397,7 @@ static int i82875p_probe1(struct pci_dev *pdev, int dev_idx)
- {
- 	int rc = -ENODEV;
- 	struct mem_ctl_info *mci;
+@@ -306,6 +313,7 @@ static int i3000_probe1(struct pci_dev *pdev, int dev_idx)
+ 	int rc;
+ 	int i, j;
+ 	struct mem_ctl_info *mci = NULL;
 +	struct edac_mc_layer layers[2];
- 	struct i82875p_pvt *pvt;
- 	struct pci_dev *ovrfl_pdev;
- 	void __iomem *ovrfl_window;
-@@ -405,9 +413,14 @@ static int i82875p_probe1(struct pci_dev *pdev, int dev_idx)
- 		return -ENODEV;
- 	drc = readl(ovrfl_window + I82875P_DRC);
- 	nr_chans = dual_channel_active(drc) + 1;
--	mci = edac_mc_alloc(sizeof(*pvt), I82875P_NR_CSROWS(nr_chans),
--			nr_chans, 0);
- 
+ 	unsigned long last_cumul_size, nr_pages;
+ 	int interleaved, nr_channels;
+ 	unsigned char dra[I3000_RANKS / 2], drb[I3000_RANKS];
+@@ -347,7 +355,14 @@ static int i3000_probe1(struct pci_dev *pdev, int dev_idx)
+ 	 */
+ 	interleaved = i3000_is_interleaved(c0dra, c1dra, c0drb, c1drb);
+ 	nr_channels = interleaved ? 2 : 1;
+-	mci = edac_mc_alloc(0, I3000_RANKS / nr_channels, nr_channels, 0);
++
 +	layers[0].type = EDAC_MC_LAYER_CHIP_SELECT;
-+	layers[0].size = I82875P_NR_CSROWS(nr_chans);
++	layers[0].size = I3000_RANKS / nr_channels;
 +	layers[0].is_csrow = true;
 +	layers[1].type = EDAC_MC_LAYER_CHANNEL;
-+	layers[1].size = nr_chans;
++	layers[1].size = nr_channels;
 +	layers[1].is_csrow = false;
-+	mci = new_edac_mc_alloc(0, ARRAY_SIZE(layers), layers, false, sizeof(*pvt));
- 	if (!mci) {
- 		rc = -ENOMEM;
- 		goto fail0;
++	mci = new_edac_mc_alloc(0, ARRAY_SIZE(layers), layers, false, 0);
+ 	if (!mci)
+ 		return -ENOMEM;
+ 
 -- 
 1.7.8
 
