@@ -1,18 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753974Ab2DPQTy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Apr 2012 12:19:54 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:40941 "EHLO mx2.suse.de"
+	id S1753627Ab2DPQTw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Apr 2012 12:19:52 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:40951 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752294Ab2DPQOX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1752330Ab2DPQOX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 16 Apr 2012 12:14:23 -0400
 From: Jan Kara <jack@suse.cz>
 To: Al Viro <viro@ZenIV.linux.org.uk>
 Cc: dchinner@redhat.com, LKML <linux-kernel@vger.kernel.org>,
-        linux-fsdevel@vger.kernel.org, Jan Kara <jack@suse.cz>
-Subject: [PATCH 14/27] fs: Add freezing handling to mnt_want_write() / mnt_drop_write()
-Date: Mon, 16 Apr 2012 18:13:52 +0200
-Message-Id: <1334592845-22862-15-git-send-email-jack@suse.cz>
+        linux-fsdevel@vger.kernel.org, Jan Kara <jack@suse.cz>,
+        ocfs2-devel@oss.oracle.com, Mark Fasheh <mfasheh@suse.com>,
+        Joel Becker <jlbec@evilplan.org>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [PATCH 09/27] fs: Push mnt_want_write() outside of i_mutex
+Date: Mon, 16 Apr 2012 18:13:47 +0200
+Message-Id: <1334592845-22862-10-git-send-email-jack@suse.cz>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1334592845-22862-1-git-send-email-jack@suse.cz>
 References: <1334592845-22862-1-git-send-email-jack@suse.cz>
@@ -20,12 +23,24 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Most of places where we want freeze protection coincides with the places where
-we also have remount-ro protection. So make mnt_want_write() and
-mnt_drop_write() (and their _file alternative) prevent freezing as well.
-For the few cases that are really interested only in remount-ro protection
-provide new function variants.
+Currently, mnt_want_write() is sometimes called with i_mutex held and sometimes
+without it. This isn't really a problem because mnt_want_write() is a
+non-blocking operation (essentially has a trylock semantics) but when the
+function starts to handle also frozen filesystems, it will get a full lock
+semantics and thus proper lock ordering has to be established. So move
+all mnt_want_write() calls outside of i_mutex.
 
+One non-trivial case needing conversion is kern_path_create() /
+user_path_create() which didn't include mnt_want_write() but now needs to
+because it acquires i_mutex.  Because there are virtual file systems which
+don't bother with freeze / remount-ro protection we actually provide both
+versions of the function - one which calls mnt_want_write() and one which does
+not.
+
+CC: ocfs2-devel@oss.oracle.com
+CC: Mark Fasheh <mfasheh@suse.com>
+CC: Joel Becker <jlbec@evilplan.org>
+CC: "David S. Miller" <davem@davemloft.net>
 BugLink: https://bugs.launchpad.net/bugs/897421
 Tested-by: Kamal Mostafa <kamal@canonical.com>
 Tested-by: Peter M. Petrakis <peter.petrakis@canonical.com>
@@ -33,285 +48,409 @@ Tested-by: Dann Frazier <dann.frazier@canonical.com>
 Tested-by: Massimo Morana <massimo.morana@canonical.com>
 Signed-off-by: Jan Kara <jack@suse.cz>
 ---
- fs/file_table.c       |    2 +-
- fs/inode.c            |    4 +-
- fs/namei.c            |   16 +++++++-
- fs/namespace.c        |  101 +++++++++++++++++++++++++++++++++++++++----------
- fs/open.c             |    2 +-
- include/linux/mount.h |    4 ++
- 6 files changed, 103 insertions(+), 26 deletions(-)
+ fs/namei.c              |  115 +++++++++++++++++++++++++++--------------------
+ fs/ocfs2/refcounttree.c |   10 +---
+ include/linux/namei.h   |    2 +
+ net/unix/af_unix.c      |   13 ++----
+ 4 files changed, 74 insertions(+), 66 deletions(-)
 
-diff --git a/fs/file_table.c b/fs/file_table.c
-index 70f2a0f..e842ca3 100644
---- a/fs/file_table.c
-+++ b/fs/file_table.c
-@@ -216,7 +216,7 @@ static void drop_file_write_access(struct file *file)
- 		return;
- 	if (file_check_writeable(file) != 0)
- 		return;
--	mnt_drop_write(mnt);
-+	__mnt_drop_write(mnt);
- 	file_release_write(file);
- }
- 
-diff --git a/fs/inode.c b/fs/inode.c
-index 9f4f5fe..396a388 100644
---- a/fs/inode.c
-+++ b/fs/inode.c
-@@ -1560,7 +1560,7 @@ void file_update_time(struct file *file)
- 		return;
- 
- 	/* Finally allowed to write? Takes lock. */
--	if (mnt_want_write_file(file))
-+	if (__mnt_want_write_file(file))
- 		return;
- 
- 	/* Only change inode inside the lock region */
-@@ -1571,7 +1571,7 @@ void file_update_time(struct file *file)
- 	if (sync_it & S_MTIME)
- 		inode->i_mtime = now;
- 	mark_inode_dirty_sync(inode);
--	mnt_drop_write_file(file);
-+	__mnt_drop_write_file(file);
- }
- EXPORT_SYMBOL(file_update_time);
- 
 diff --git a/fs/namei.c b/fs/namei.c
-index 5417fa1..87dd013 100644
+index 0062dd1..5417fa1 100644
 --- a/fs/namei.c
 +++ b/fs/namei.c
-@@ -2243,12 +2243,21 @@ static struct file *do_last(struct nameidata *nd, struct path *path,
- 	if (nd->last.name[nd->last.len])
- 		goto exit;
+@@ -2460,7 +2460,9 @@ struct file *do_file_open_root(struct dentry *dentry, struct vfsmount *mnt,
+ 	return file;
+ }
  
-+	/*
-+	 * We don't know whether write access will be needed or not. But we
-+	 * must get the protection before getting i_mutex due to locking
-+	 * constraints. Thus O_CREAT open will get blocked on frozen filesystem
-+	 * even if it didn't need to create anything. Not that surprising...
-+	 */
-+	sb_start_write(dir->d_sb);
-+
- 	mutex_lock(&dir->d_inode->i_mutex);
+-struct dentry *kern_path_create(int dfd, const char *pathname, struct path *path, int is_dir)
++static struct dentry *do_kern_path_create(int dfd, const char *pathname,
++					  struct path *path, int is_dir,
++					  int freeze_protect)
+ {
+ 	struct dentry *dentry = ERR_PTR(-EEXIST);
+ 	struct nameidata nd;
+@@ -2478,6 +2480,14 @@ struct dentry *kern_path_create(int dfd, const char *pathname, struct path *path
+ 	nd.flags |= LOOKUP_CREATE | LOOKUP_EXCL;
+ 	nd.intent.open.flags = O_EXCL;
  
- 	dentry = lookup_hash(nd);
- 	error = PTR_ERR(dentry);
- 	if (IS_ERR(dentry)) {
- 		mutex_unlock(&dir->d_inode->i_mutex);
-+		sb_end_write(dir->d_sb);
- 		goto exit;
- 	}
- 
-@@ -2267,9 +2276,11 @@ static struct file *do_last(struct nameidata *nd, struct path *path,
- 		 * a permanent write count is taken through
- 		 * the 'struct file' in nameidata_to_filp().
- 		 */
--		error = mnt_want_write(nd->path.mnt);
--		if (error)
-+		error = __mnt_want_write(nd->path.mnt);
++	if (freeze_protect) {
++		error = mnt_want_write(nd.path.mnt);
 +		if (error) {
-+			sb_end_write(dir->d_sb);
- 			goto exit_mutex_unlock;
++			dentry = ERR_PTR(error);
++			goto out;
 +		}
- 		want_write = 1;
- 		/* Don't check for write permission, don't truncate */
- 		open_flag &= ~O_TRUNC;
-@@ -2291,6 +2302,7 @@ static struct file *do_last(struct nameidata *nd, struct path *path,
- 	 * It already exists.
++	}
++
+ 	/*
+ 	 * Do the final lookup.
  	 */
- 	mutex_unlock(&dir->d_inode->i_mutex);
-+	sb_end_write(dir->d_sb);
- 	audit_inode(pathname, path->dentry);
- 
- 	error = -EEXIST;
-diff --git a/fs/namespace.c b/fs/namespace.c
-index e608199..157afbe 100644
---- a/fs/namespace.c
-+++ b/fs/namespace.c
-@@ -283,24 +283,22 @@ static int mnt_is_readonly(struct vfsmount *mnt)
+@@ -2506,24 +2516,49 @@ eexist:
+ 	dentry = ERR_PTR(-EEXIST);
+ fail:
+ 	mutex_unlock(&nd.path.dentry->d_inode->i_mutex);
++	if (freeze_protect)
++		mnt_drop_write(nd.path.mnt);
+ out:
+ 	path_put(&nd.path);
+ 	return dentry;
  }
++
++struct dentry *kern_path_create(int dfd, const char *pathname, struct path *path, int is_dir)
++{
++	return do_kern_path_create(dfd, pathname, path, is_dir, 0);
++}
+ EXPORT_SYMBOL(kern_path_create);
  
- /*
-- * Most r/o checks on a fs are for operations that take
-- * discrete amounts of time, like a write() or unlink().
-- * We must keep track of when those operations start
-- * (for permission checks) and when they end, so that
-- * we can determine when writes are able to occur to
-- * a filesystem.
-+ * Most r/o & frozen checks on a fs are for operations that take discrete
-+ * amounts of time, like a write() or unlink().  We must keep track of when
-+ * those operations start (for permission checks) and when they end, so that we
-+ * can determine when writes are able to occur to a filesystem.
-  */
- /**
-- * mnt_want_write - get write access to a mount
-+ * __mnt_want_write - get write access to a mount without freeze protection
-  * @m: the mount on which to take a write
-  *
-- * This tells the low-level filesystem that a write is
-- * about to be performed to it, and makes sure that
-- * writes are allowed before returning success.  When
-- * the write operation is finished, mnt_drop_write()
-- * must be called.  This is effectively a refcount.
-+ * This tells the low-level filesystem that a write is about to be performed to
-+ * it, and makes sure that writes are allowed (mnt it read-write) before
-+ * returning success. This operation does not protect against filesystem being
-+ * frozen. When the write operation is finished, __mnt_drop_write() must be
-+ * called. This is effectively a refcount.
-  */
--int mnt_want_write(struct vfsmount *m)
-+int __mnt_want_write(struct vfsmount *m)
++struct dentry *kern_path_create_thawed(int dfd, const char *pathname, struct path *path, int is_dir)
++{
++	return do_kern_path_create(dfd, pathname, path, is_dir, 1);
++}
++EXPORT_SYMBOL(kern_path_create_thawed);
++
+ struct dentry *user_path_create(int dfd, const char __user *pathname, struct path *path, int is_dir)
  {
- 	struct mount *mnt = real_mount(m);
- 	int ret = 0;
-@@ -326,6 +324,28 @@ int mnt_want_write(struct vfsmount *m)
- 		ret = -EROFS;
+ 	char *tmp = getname(pathname);
+ 	struct dentry *res;
+ 	if (IS_ERR(tmp))
+ 		return ERR_CAST(tmp);
+-	res = kern_path_create(dfd, tmp, path, is_dir);
++	res = do_kern_path_create(dfd, tmp, path, is_dir, 0);
+ 	putname(tmp);
+ 	return res;
+ }
+ EXPORT_SYMBOL(user_path_create);
+ 
++struct dentry *user_path_create_thawed(int dfd, const char __user *pathname, struct path *path, int is_dir)
++{
++	char *tmp = getname(pathname);
++	struct dentry *res;
++	if (IS_ERR(tmp))
++		return ERR_CAST(tmp);
++	res = do_kern_path_create(dfd, tmp, path, is_dir, 1);
++	putname(tmp);
++	return res;
++}
++EXPORT_SYMBOL(user_path_create_thawed);
++
+ int vfs_mknod(struct inode *dir, struct dentry *dentry, umode_t mode, dev_t dev)
+ {
+ 	int error = may_create(dir, dentry);
+@@ -2579,7 +2614,7 @@ SYSCALL_DEFINE4(mknodat, int, dfd, const char __user *, filename, umode_t, mode,
+ 	if (S_ISDIR(mode))
+ 		return -EPERM;
+ 
+-	dentry = user_path_create(dfd, filename, &path, 0);
++	dentry = user_path_create_thawed(dfd, filename, &path, 0);
+ 	if (IS_ERR(dentry))
+ 		return PTR_ERR(dentry);
+ 
+@@ -2588,12 +2623,9 @@ SYSCALL_DEFINE4(mknodat, int, dfd, const char __user *, filename, umode_t, mode,
+ 	error = may_mknod(mode);
+ 	if (error)
+ 		goto out_dput;
+-	error = mnt_want_write(path.mnt);
+-	if (error)
+-		goto out_dput;
+ 	error = security_path_mknod(&path, dentry, mode, dev);
+ 	if (error)
+-		goto out_drop_write;
++		goto out_dput;
+ 	switch (mode & S_IFMT) {
+ 		case 0: case S_IFREG:
+ 			error = vfs_create(path.dentry->d_inode,dentry,mode,NULL);
+@@ -2606,11 +2638,10 @@ SYSCALL_DEFINE4(mknodat, int, dfd, const char __user *, filename, umode_t, mode,
+ 			error = vfs_mknod(path.dentry->d_inode,dentry,mode,0);
+ 			break;
  	}
- 	preempt_enable();
-+
-+	return ret;
-+}
-+EXPORT_SYMBOL_GPL(__mnt_want_write);
-+
-+/**
-+ * mnt_want_write - get write access to a mount
-+ * @m: the mount on which to take a write
-+ *
-+ * This tells the low-level filesystem that a write is about to be performed to
-+ * it, and makes sure that writes are allowed (mount is read-write, filesystem
-+ * is not frozen) before returning success.  When the write operation is
-+ * finished, mnt_drop_write() must be called.  This is effectively a refcount.
-+ */
-+int mnt_want_write(struct vfsmount *m)
-+{
-+	int ret;
-+
-+	sb_start_write(m->mnt_sb);
-+	ret = __mnt_want_write(m);
-+	if (ret)
-+		sb_end_write(m->mnt_sb);
- 	return ret;
- }
- EXPORT_SYMBOL_GPL(mnt_want_write);
-@@ -355,38 +375,79 @@ int mnt_clone_write(struct vfsmount *mnt)
- EXPORT_SYMBOL_GPL(mnt_clone_write);
+-out_drop_write:
+-	mnt_drop_write(path.mnt);
+ out_dput:
+ 	dput(dentry);
+ 	mutex_unlock(&path.dentry->d_inode->i_mutex);
++	mnt_drop_write(path.mnt);
+ 	path_put(&path);
  
- /**
-- * mnt_want_write_file - get write access to a file's mount
-+ * __mnt_want_write_file - get write access to a file's mount
-  * @file: the file who's mount on which to take a write
-  *
-- * This is like mnt_want_write, but it takes a file and can
-+ * This is like __mnt_want_write, but it takes a file and can
-  * do some optimisations if the file is open for write already
-  */
--int mnt_want_write_file(struct file *file)
-+int __mnt_want_write_file(struct file *file)
- {
- 	struct inode *inode = file->f_dentry->d_inode;
-+
- 	if (!(file->f_mode & FMODE_WRITE) || special_file(inode->i_mode))
--		return mnt_want_write(file->f_path.mnt);
-+		return __mnt_want_write(file->f_path.mnt);
- 	else
- 		return mnt_clone_write(file->f_path.mnt);
- }
-+EXPORT_SYMBOL_GPL(__mnt_want_write_file);
-+
-+/**
-+ * mnt_want_write_file - get write access to a file's mount
-+ * @file: the file who's mount on which to take a write
-+ *
-+ * This is like mnt_want_write, but it takes a file and can
-+ * do some optimisations if the file is open for write already
-+ */
-+int mnt_want_write_file(struct file *file)
-+{
-+	int ret;
-+
-+	sb_start_write(file->f_path.mnt->mnt_sb);
-+	ret = __mnt_want_write_file(file);
-+	if (ret)
-+		sb_end_write(file->f_path.mnt->mnt_sb);
-+	return ret;
-+}
- EXPORT_SYMBOL_GPL(mnt_want_write_file);
+ 	return error;
+@@ -2652,24 +2683,20 @@ SYSCALL_DEFINE3(mkdirat, int, dfd, const char __user *, pathname, umode_t, mode)
+ 	struct path path;
+ 	int error;
  
- /**
-- * mnt_drop_write - give up write access to a mount
-+ * __mnt_drop_write - give up write access to a mount
-  * @mnt: the mount on which to give up write access
-  *
-  * Tells the low-level filesystem that we are done
-  * performing writes to it.  Must be matched with
-- * mnt_want_write() call above.
-+ * __mnt_want_write() call above.
-  */
--void mnt_drop_write(struct vfsmount *mnt)
-+void __mnt_drop_write(struct vfsmount *mnt)
- {
- 	preempt_disable();
- 	mnt_dec_writers(real_mount(mnt));
- 	preempt_enable();
- }
-+EXPORT_SYMBOL_GPL(__mnt_drop_write);
-+
-+/**
-+ * mnt_drop_write - give up write access to a mount
-+ * @mnt: the mount on which to give up write access
-+ *
-+ * Tells the low-level filesystem that we are done performing writes to it and
-+ * also allows filesystem to be frozen again.  Must be matched with
-+ * mnt_want_write() call above.
-+ */
-+void mnt_drop_write(struct vfsmount *mnt)
-+{
-+	__mnt_drop_write(mnt);
-+	sb_end_write(mnt->mnt_sb);
-+}
- EXPORT_SYMBOL_GPL(mnt_drop_write);
+-	dentry = user_path_create(dfd, pathname, &path, 1);
++	dentry = user_path_create_thawed(dfd, pathname, &path, 1);
+ 	if (IS_ERR(dentry))
+ 		return PTR_ERR(dentry);
  
-+void __mnt_drop_write_file(struct file *file)
-+{
-+	__mnt_drop_write(file->f_path.mnt);
-+}
-+EXPORT_SYMBOL(__mnt_drop_write_file);
-+
- void mnt_drop_write_file(struct file *file)
- {
- 	mnt_drop_write(file->f_path.mnt);
-diff --git a/fs/open.c b/fs/open.c
-index 5720854..06afb5b 100644
---- a/fs/open.c
-+++ b/fs/open.c
-@@ -637,7 +637,7 @@ static inline int __get_file_write_access(struct inode *inode,
- 		/*
- 		 * Balanced in __fput()
- 		 */
--		error = mnt_want_write(mnt);
-+		error = __mnt_want_write(mnt);
+ 	if (!IS_POSIXACL(path.dentry->d_inode))
+ 		mode &= ~current_umask();
+-	error = mnt_want_write(path.mnt);
+-	if (error)
+-		goto out_dput;
+ 	error = security_path_mkdir(&path, dentry, mode);
+ 	if (error)
+-		goto out_drop_write;
++		goto out_dput;
+ 	error = vfs_mkdir(path.dentry->d_inode, dentry, mode);
+-out_drop_write:
+-	mnt_drop_write(path.mnt);
+ out_dput:
+ 	dput(dentry);
+ 	mutex_unlock(&path.dentry->d_inode->i_mutex);
++	mnt_drop_write(path.mnt);
+ 	path_put(&path);
+ 	return error;
+ }
+@@ -2764,6 +2791,9 @@ static long do_rmdir(int dfd, const char __user *pathname)
+ 	}
+ 
+ 	nd.flags &= ~LOOKUP_PARENT;
++	error = mnt_want_write(nd.path.mnt);
++	if (error)
++		goto exit1;
+ 
+ 	mutex_lock_nested(&nd.path.dentry->d_inode->i_mutex, I_MUTEX_PARENT);
+ 	dentry = lookup_hash(&nd);
+@@ -2774,19 +2804,15 @@ static long do_rmdir(int dfd, const char __user *pathname)
+ 		error = -ENOENT;
+ 		goto exit3;
+ 	}
+-	error = mnt_want_write(nd.path.mnt);
+-	if (error)
+-		goto exit3;
+ 	error = security_path_rmdir(&nd.path, dentry);
+ 	if (error)
+-		goto exit4;
++		goto exit3;
+ 	error = vfs_rmdir(nd.path.dentry->d_inode, dentry);
+-exit4:
+-	mnt_drop_write(nd.path.mnt);
+ exit3:
+ 	dput(dentry);
+ exit2:
+ 	mutex_unlock(&nd.path.dentry->d_inode->i_mutex);
++	mnt_drop_write(nd.path.mnt);
+ exit1:
+ 	path_put(&nd.path);
+ 	putname(name);
+@@ -2853,6 +2879,9 @@ static long do_unlinkat(int dfd, const char __user *pathname)
+ 		goto exit1;
+ 
+ 	nd.flags &= ~LOOKUP_PARENT;
++	error = mnt_want_write(nd.path.mnt);
++	if (error)
++		goto exit1;
+ 
+ 	mutex_lock_nested(&nd.path.dentry->d_inode->i_mutex, I_MUTEX_PARENT);
+ 	dentry = lookup_hash(&nd);
+@@ -2865,21 +2894,17 @@ static long do_unlinkat(int dfd, const char __user *pathname)
+ 		if (!inode)
+ 			goto slashes;
+ 		ihold(inode);
+-		error = mnt_want_write(nd.path.mnt);
+-		if (error)
+-			goto exit2;
+ 		error = security_path_unlink(&nd.path, dentry);
  		if (error)
- 			put_write_access(inode);
+-			goto exit3;
++			goto exit2;
+ 		error = vfs_unlink(nd.path.dentry->d_inode, dentry);
+-exit3:
+-		mnt_drop_write(nd.path.mnt);
+-	exit2:
++exit2:
+ 		dput(dentry);
  	}
-diff --git a/include/linux/mount.h b/include/linux/mount.h
-index d7029f4..d6ffc3d 100644
---- a/include/linux/mount.h
-+++ b/include/linux/mount.h
-@@ -55,10 +55,14 @@ struct vfsmount {
+ 	mutex_unlock(&nd.path.dentry->d_inode->i_mutex);
+ 	if (inode)
+ 		iput(inode);	/* truncate the inode here */
++	mnt_drop_write(nd.path.mnt);
+ exit1:
+ 	path_put(&nd.path);
+ 	putname(name);
+@@ -2939,23 +2964,19 @@ SYSCALL_DEFINE3(symlinkat, const char __user *, oldname,
+ 	if (IS_ERR(from))
+ 		return PTR_ERR(from);
  
- struct file; /* forward dec */
+-	dentry = user_path_create(newdfd, newname, &path, 0);
++	dentry = user_path_create_thawed(newdfd, newname, &path, 0);
+ 	error = PTR_ERR(dentry);
+ 	if (IS_ERR(dentry))
+ 		goto out_putname;
  
-+extern int __mnt_want_write(struct vfsmount *mnt);
- extern int mnt_want_write(struct vfsmount *mnt);
-+extern int __mnt_want_write_file(struct file *file);
- extern int mnt_want_write_file(struct file *file);
- extern int mnt_clone_write(struct vfsmount *mnt);
-+extern void __mnt_drop_write(struct vfsmount *mnt);
- extern void mnt_drop_write(struct vfsmount *mnt);
-+extern void __mnt_drop_write_file(struct file *file);
- extern void mnt_drop_write_file(struct file *file);
- extern void mntput(struct vfsmount *mnt);
- extern struct vfsmount *mntget(struct vfsmount *mnt);
+-	error = mnt_want_write(path.mnt);
+-	if (error)
+-		goto out_dput;
+ 	error = security_path_symlink(&path, dentry, from);
+ 	if (error)
+-		goto out_drop_write;
++		goto out_dput;
+ 	error = vfs_symlink(path.dentry->d_inode, dentry, from);
+-out_drop_write:
+-	mnt_drop_write(path.mnt);
+ out_dput:
+ 	dput(dentry);
+ 	mutex_unlock(&path.dentry->d_inode->i_mutex);
++	mnt_drop_write(path.mnt);
+ 	path_put(&path);
+ out_putname:
+ 	putname(from);
+@@ -3048,7 +3069,7 @@ SYSCALL_DEFINE5(linkat, int, olddfd, const char __user *, oldname,
+ 	if (error)
+ 		return error;
+ 
+-	new_dentry = user_path_create(newdfd, newname, &new_path, 0);
++	new_dentry = user_path_create_thawed(newdfd, newname, &new_path, 0);
+ 	error = PTR_ERR(new_dentry);
+ 	if (IS_ERR(new_dentry))
+ 		goto out;
+@@ -3056,18 +3077,14 @@ SYSCALL_DEFINE5(linkat, int, olddfd, const char __user *, oldname,
+ 	error = -EXDEV;
+ 	if (old_path.mnt != new_path.mnt)
+ 		goto out_dput;
+-	error = mnt_want_write(new_path.mnt);
+-	if (error)
+-		goto out_dput;
+ 	error = security_path_link(old_path.dentry, &new_path, new_dentry);
+ 	if (error)
+-		goto out_drop_write;
++		goto out_dput;
+ 	error = vfs_link(old_path.dentry, new_path.dentry->d_inode, new_dentry);
+-out_drop_write:
+-	mnt_drop_write(new_path.mnt);
+ out_dput:
+ 	dput(new_dentry);
+ 	mutex_unlock(&new_path.dentry->d_inode->i_mutex);
++	mnt_drop_write(new_path.mnt);
+ 	path_put(&new_path);
+ out:
+ 	path_put(&old_path);
+@@ -3264,6 +3281,10 @@ SYSCALL_DEFINE4(renameat, int, olddfd, const char __user *, oldname,
+ 	if (newnd.last_type != LAST_NORM)
+ 		goto exit2;
+ 
++	error = mnt_want_write(oldnd.path.mnt);
++	if (error)
++		goto exit2;
++
+ 	oldnd.flags &= ~LOOKUP_PARENT;
+ 	newnd.flags &= ~LOOKUP_PARENT;
+ 	newnd.flags |= LOOKUP_RENAME_TARGET;
+@@ -3299,23 +3320,19 @@ SYSCALL_DEFINE4(renameat, int, olddfd, const char __user *, oldname,
+ 	if (new_dentry == trap)
+ 		goto exit5;
+ 
+-	error = mnt_want_write(oldnd.path.mnt);
+-	if (error)
+-		goto exit5;
+ 	error = security_path_rename(&oldnd.path, old_dentry,
+ 				     &newnd.path, new_dentry);
+ 	if (error)
+-		goto exit6;
++		goto exit5;
+ 	error = vfs_rename(old_dir->d_inode, old_dentry,
+ 				   new_dir->d_inode, new_dentry);
+-exit6:
+-	mnt_drop_write(oldnd.path.mnt);
+ exit5:
+ 	dput(new_dentry);
+ exit4:
+ 	dput(old_dentry);
+ exit3:
+ 	unlock_rename(new_dir, old_dir);
++	mnt_drop_write(oldnd.path.mnt);
+ exit2:
+ 	path_put(&newnd.path);
+ 	putname(to);
+diff --git a/fs/ocfs2/refcounttree.c b/fs/ocfs2/refcounttree.c
+index cf78233..a99b8e2 100644
+--- a/fs/ocfs2/refcounttree.c
++++ b/fs/ocfs2/refcounttree.c
+@@ -4453,7 +4453,7 @@ int ocfs2_reflink_ioctl(struct inode *inode,
+ 		return error;
+ 	}
+ 
+-	new_dentry = user_path_create(AT_FDCWD, newname, &new_path, 0);
++	new_dentry = user_path_create_thawed(AT_FDCWD, newname, &new_path, 0);
+ 	error = PTR_ERR(new_dentry);
+ 	if (IS_ERR(new_dentry)) {
+ 		mlog_errno(error);
+@@ -4466,19 +4466,13 @@ int ocfs2_reflink_ioctl(struct inode *inode,
+ 		goto out_dput;
+ 	}
+ 
+-	error = mnt_want_write(new_path.mnt);
+-	if (error) {
+-		mlog_errno(error);
+-		goto out_dput;
+-	}
+-
+ 	error = ocfs2_vfs_reflink(old_path.dentry,
+ 				  new_path.dentry->d_inode,
+ 				  new_dentry, preserve);
+-	mnt_drop_write(new_path.mnt);
+ out_dput:
+ 	dput(new_dentry);
+ 	mutex_unlock(&new_path.dentry->d_inode->i_mutex);
++	mnt_drop_write(new_path.mnt);
+ 	path_put(&new_path);
+ out:
+ 	path_put(&old_path);
+diff --git a/include/linux/namei.h b/include/linux/namei.h
+index ffc0213..432f6bb 100644
+--- a/include/linux/namei.h
++++ b/include/linux/namei.h
+@@ -77,7 +77,9 @@ extern int user_path_at_empty(int, const char __user *, unsigned, struct path *,
+ extern int kern_path(const char *, unsigned, struct path *);
+ 
+ extern struct dentry *kern_path_create(int, const char *, struct path *, int);
++extern struct dentry *kern_path_create_thawed(int, const char *, struct path *, int);
+ extern struct dentry *user_path_create(int, const char __user *, struct path *, int);
++extern struct dentry *user_path_create_thawed(int, const char __user *, struct path *, int);
+ extern int kern_path_parent(const char *, struct nameidata *);
+ extern int vfs_path_lookup(struct dentry *, struct vfsmount *,
+ 			   const char *, unsigned int, struct path *);
+diff --git a/net/unix/af_unix.c b/net/unix/af_unix.c
+index d510353..c532632 100644
+--- a/net/unix/af_unix.c
++++ b/net/unix/af_unix.c
+@@ -865,7 +865,7 @@ static int unix_bind(struct socket *sock, struct sockaddr *uaddr, int addr_len)
+ 		 * Get the parent directory, calculate the hash for last
+ 		 * component.
+ 		 */
+-		dentry = kern_path_create(AT_FDCWD, sun_path, &path, 0);
++		dentry = kern_path_create_thawed(AT_FDCWD, sun_path, &path, 0);
+ 		err = PTR_ERR(dentry);
+ 		if (IS_ERR(dentry))
+ 			goto out_mknod_parent;
+@@ -875,19 +875,13 @@ static int unix_bind(struct socket *sock, struct sockaddr *uaddr, int addr_len)
+ 		 */
+ 		mode = S_IFSOCK |
+ 		       (SOCK_INODE(sock)->i_mode & ~current_umask());
+-		err = mnt_want_write(path.mnt);
+-		if (err)
+-			goto out_mknod_dput;
+ 		err = security_path_mknod(&path, dentry, mode, 0);
+ 		if (err)
+-			goto out_mknod_drop_write;
+-		err = vfs_mknod(path.dentry->d_inode, dentry, mode, 0);
+-out_mknod_drop_write:
+-		mnt_drop_write(path.mnt);
+-		if (err)
+ 			goto out_mknod_dput;
++		err = vfs_mknod(path.dentry->d_inode, dentry, mode, 0);
+ 		mutex_unlock(&path.dentry->d_inode->i_mutex);
+ 		dput(path.dentry);
++		mnt_drop_write(path.mnt);
+ 		path.dentry = dentry;
+ 
+ 		addr->hash = UNIX_HASH_SIZE;
+@@ -924,6 +918,7 @@ out:
+ out_mknod_dput:
+ 	dput(dentry);
+ 	mutex_unlock(&path.dentry->d_inode->i_mutex);
++	mnt_drop_write(path.mnt);
+ 	path_put(&path);
+ out_mknod_parent:
+ 	if (err == -EEXIST)
 -- 
 1.7.1
 
