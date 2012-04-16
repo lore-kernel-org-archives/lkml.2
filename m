@@ -1,66 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755638Ab2DPWKJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Apr 2012 18:10:09 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:17316 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755573Ab2DPWJ7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Apr 2012 18:09:59 -0400
-Date: Tue, 17 Apr 2012 00:09:25 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, Chuck Ebbert <chuckebbert.lk@gmail.com>,
-        Jan Kratochvil <jan.kratochvil@redhat.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/1] i387: ptrace breaks the lazy-fpu-restore logic
-Message-ID: <20120416220925.GA29434@redhat.com>
-References: <20120414235238.GA11131@redhat.com> <CA+55aFxJykAy4=9WVOnUOy1PUBYLmPy9mJmydoYZpQEbSkfvJQ@mail.gmail.com> <20120415223808.GA26214@redhat.com> <CA+55aFwpts0X=V67+wUchJN9Bgjh17eZJqOo0Y0oc2Mzbfa7QA@mail.gmail.com> <CA+55aFzeLqBMJ_tGyKh7EJhqWwPkD7DfggZ=NDmxwi3gYNjkdA@mail.gmail.com> <20120416204756.GA24884@redhat.com> <20120416204815.GB24884@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120416204815.GB24884@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1755500Ab2DPWLi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Apr 2012 18:11:38 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:38283 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751221Ab2DPWLh (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Apr 2012 18:11:37 -0400
+Date: Mon, 16 Apr 2012 15:11:30 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Stanislav Kinsbursky <skinsbursky@parallels.com>
+Cc: serge.hallyn@canonical.com, criu@openvz.org, arnd@arndb.de,
+        lucas.demarchi@profusion.mobi, linux-kernel@vger.kernel.org,
+        dhowells@redhat.com, mtk.manpages@gmail.com
+Subject: Re: [PATCH v2 2/2] IPC: selftest tor new MSG_PEEK_ALL flag for
+ msgrcv()
+Message-Id: <20120416151130.732cd0d0.akpm@linux-foundation.org>
+In-Reply-To: <20120416140613.653.89845.stgit@localhost6.localdomain6>
+References: <20120416140235.653.36996.stgit@localhost6.localdomain6>
+	<20120416140613.653.89845.stgit@localhost6.localdomain6>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Damn, I forgot to add
+On Mon, 16 Apr 2012 18:06:13 +0400
+Stanislav Kinsbursky <skinsbursky@parallels.com> wrote:
 
-Cc: <stable@vger.kernel.org> # 3.3
-
-On 04/16, Oleg Nesterov wrote:
-> Starting from 7e16838d "i387: support lazy restore of FPU state"
-> we assume that fpu_owner_task doesn't need restore_fpu_checking()
-> on the context switch, its FPU state should match what we already
-> have in the FPU on this CPU.
+> This test send two messages, then peek them and check, that they are equal to
+> original messages. Then it receives messages and check once more to make sure,
+> that messages are not corrupted or lost after peek operation.
 > 
-> However, debugger can change the tracee's FPU state, in this case
-> we should reset fpu.last_cpu to ensure fpu_lazy_restore() can't
-> return true.
-> 
-> Change init_fpu() to do this, it is called by user_regset->set()
-> methods.
-> 
-> Reported-by: Jan Kratochvil <jan.kratochvil@redhat.com>
-> Suggested-by: Linus Torvalds <torvalds@linux-foundation.org>
-> Signed-off-by: Oleg Nesterov <oleg@redhat.com>
 > ---
->  arch/x86/kernel/i387.c |    1 +
->  1 files changed, 1 insertions(+), 0 deletions(-)
-> 
-> diff --git a/arch/x86/kernel/i387.c b/arch/x86/kernel/i387.c
-> index 7734bcb..2d6e649 100644
-> --- a/arch/x86/kernel/i387.c
-> +++ b/arch/x86/kernel/i387.c
-> @@ -235,6 +235,7 @@ int init_fpu(struct task_struct *tsk)
->  	if (tsk_used_math(tsk)) {
->  		if (HAVE_HWFP && tsk == current)
->  			unlazy_fpu(tsk);
-> +		tsk->thread.fpu.last_cpu = ~0;
->  		return 0;
->  	}
->  
-> -- 
-> 1.5.5.1
-> 
 
+Missing signed-off-by.  I added your s-o-b to my copy of the changelog.
