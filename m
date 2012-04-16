@@ -1,113 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754524Ab2DPM1F (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Apr 2012 08:27:05 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:47724 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753610Ab2DPMRM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Apr 2012 08:17:12 -0400
-From: Mel Gorman <mgorman@suse.de>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Linux-MM <linux-mm@kvack.org>, Linux-Netdev <netdev@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        David Miller <davem@davemloft.net>, Neil Brown <neilb@suse.de>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Mike Christie <michaelc@cs.wisc.edu>,
-        Eric B Munson <emunson@mgebm.net>, Mel Gorman <mgorman@suse.de>
-Subject: [PATCH 05/16] mm: allow PF_MEMALLOC from softirq context
-Date: Mon, 16 Apr 2012 13:16:52 +0100
-Message-Id: <1334578624-23257-6-git-send-email-mgorman@suse.de>
-X-Mailer: git-send-email 1.7.9.2
-In-Reply-To: <1334578624-23257-1-git-send-email-mgorman@suse.de>
-References: <1334578624-23257-1-git-send-email-mgorman@suse.de>
+	id S1753717Ab2DPMgG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Apr 2012 08:36:06 -0400
+Received: from e38.co.us.ibm.com ([32.97.110.159]:57350 "EHLO
+	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753343Ab2DPMgE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Apr 2012 08:36:04 -0400
+Date: Mon, 16 Apr 2012 17:57:37 +0530
+From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+To: Arnaldo Carvalho de Melo <acme@infradead.org>
+Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
+        LKML <linux-kernel@vger.kernel.org>, Linux-mm <linux-mm@kvack.org>,
+        Oleg Nesterov <oleg@redhat.com>, Andi Kleen <andi@firstfloor.org>,
+        Christoph Hellwig <hch@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Anton Arapov <anton@redhat.com>
+Subject: Re: [PATCH] perf/probe: Provide perf interface for uprobes
+Message-ID: <20120416122737.GB25464@linux.vnet.ibm.com>
+Reply-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+References: <20120411135742.29198.45061.sendpatchset@srdronam.in.ibm.com>
+ <20120411144918.GD16257@infradead.org>
+ <20120411170343.GB29831@linux.vnet.ibm.com>
+ <20120411181727.GK16257@infradead.org>
+ <4F864BB3.3090405@hitachi.com>
+ <20120412140751.GM16257@infradead.org>
+ <20120412151037.GC21587@linux.vnet.ibm.com>
+ <4F87C76B.10001@hitachi.com>
+ <20120414011330.GC31880@infradead.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+In-Reply-To: <20120414011330.GC31880@infradead.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12041612-5518-0000-0000-000003B093AD
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is needed to allow network softirq packet processing to make
-use of PF_MEMALLOC.
+> 
+> > > Another case 
+> > > perf probe do_fork clone_flags now looks for variable clone_flags in
+> > > kernel function do_fork.
+> 
+> > > But if we allow to trace perf probe zsh zfree; then 
+> > > 'perf probe do_fork clone_flags' should it check for do_fork executable
+> > > or not? If it does check and finds one, and searches for clone_flags
+> > > function and doesnt find, then should it continue with searching the
+> > > kernel?
+> 
+> > Agree. I'd like to suggest you to start with only full path support,
+> > and see, how we can handle abbreviations :)
+> 
+> Agreed, I was just making usability suggestions.
+> 
+> Those can be implemented later, if we agree they ease the tool use.
+> 
 
-Currently softirq context cannot use PF_MEMALLOC due to it not being
-associated with a task, and therefore not having task flags to fiddle
-with - thus the gfp to alloc flag mapping ignores the task flags when
-in interrupts (hard or soft) context.
+I have just made a prototype for guessing the target when -m and -x
+options arent passed. That still uses the absolute path for now.
 
-Allowing softirqs to make use of PF_MEMALLOC therefore requires some
-trickery.  We basically borrow the task flags from whatever process
-happens to be preempted by the softirq.
+I was trying to see if we can identify the module by the short name by
+using kernel_get_module_path(). However kernel_get_module_path() needs
+init_vmlinux() to be called before. Since init_vmlinux() cant be called
+more than once and init_vmlinux gets called later, I thought calling it
+here wasnt good option. Wanted to see if we could open /proc/modules
+and then match the module name.  But again, I wasnt sure how to handle
+offline modules.  
 
-So we modify the gfp to alloc flags mapping to not exclude task flags
-in softirq context, and modify the softirq code to save, clear and
-restore the PF_MEMALLOC flag.
-
-The save and clear, ensures the preempted task's PF_MEMALLOC flag
-doesn't leak into the softirq. The restore ensures a softirq's
-PF_MEMALLOC flag cannot leak back into the preempted process.
-
-Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Signed-off-by: Mel Gorman <mgorman@suse.de>
----
- include/linux/sched.h |    7 +++++++
- kernel/softirq.c      |    3 +++
- mm/page_alloc.c       |    6 +++++-
- 3 files changed, 15 insertions(+), 1 deletion(-)
-
-diff --git a/include/linux/sched.h b/include/linux/sched.h
-index 81a173c..2ad408f 100644
---- a/include/linux/sched.h
-+++ b/include/linux/sched.h
-@@ -1913,6 +1913,13 @@ static inline void rcu_copy_process(struct task_struct *p)
- 
- #endif
- 
-+static inline void tsk_restore_flags(struct task_struct *p,
-+				     unsigned long pflags, unsigned long mask)
-+{
-+	p->flags &= ~mask;
-+	p->flags |= pflags & mask;
-+}
-+
- #ifdef CONFIG_SMP
- extern void do_set_cpus_allowed(struct task_struct *p,
- 			       const struct cpumask *new_mask);
-diff --git a/kernel/softirq.c b/kernel/softirq.c
-index 671f959..d349caa 100644
---- a/kernel/softirq.c
-+++ b/kernel/softirq.c
-@@ -210,6 +210,8 @@ asmlinkage void __do_softirq(void)
- 	__u32 pending;
- 	int max_restart = MAX_SOFTIRQ_RESTART;
- 	int cpu;
-+	unsigned long pflags = current->flags;
-+	current->flags &= ~PF_MEMALLOC;
- 
- 	pending = local_softirq_pending();
- 	account_system_vtime(current);
-@@ -265,6 +267,7 @@ restart:
- 
- 	account_system_vtime(current);
- 	__local_bh_enable(SOFTIRQ_OFFSET);
-+	tsk_restore_flags(current, pflags, PF_MEMALLOC);
- }
- 
- #ifndef __ARCH_HAS_DO_SOFTIRQ
-diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index ee9f49c..15c0ff7 100644
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -2211,7 +2211,11 @@ gfp_to_alloc_flags(gfp_t gfp_mask)
- 	if (likely(!(gfp_mask & __GFP_NOMEMALLOC))) {
- 		if (gfp_mask & __GFP_MEMALLOC)
- 			alloc_flags |= ALLOC_NO_WATERMARKS;
--		else if (likely(!(gfp_mask & __GFP_NOMEMALLOC)) && !in_interrupt())
-+		else if (in_serving_softirq() && (current->flags & PF_MEMALLOC))
-+			alloc_flags |= ALLOC_NO_WATERMARKS;
-+		else if (!in_interrupt() &&
-+				((current->flags & PF_MEMALLOC) ||
-+				 unlikely(test_thread_flag(TIF_MEMDIE))))
- 			alloc_flags |= ALLOC_NO_WATERMARKS;
- 	}
- 
 -- 
-1.7.9.2
+Thanks and Regards
+Srikar
 
