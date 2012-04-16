@@ -1,68 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754239Ab2DPOSv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Apr 2012 10:18:51 -0400
-Received: from esgrybm03.stc.com.sa ([212.118.156.88]:42663 "EHLO
-	ESGRYBM03.stc.com.sa" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753641Ab2DPOSu convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Apr 2012 10:18:50 -0400
-X-Greylist: delayed 1801 seconds by postgrey-1.27 at vger.kernel.org; Mon, 16 Apr 2012 10:18:49 EDT
-X-AuditID: d4769c58-b7f476d000005c9a-7e-4f8c233d5edb
-To: undisclosed-recipients:;
-From: contactus <contactus@stc.com.sa>
-Date: Mon, 16 Apr 2012 16:49:21 +0300
-Subject: FINAL NOTIFICATION
-Thread-Topic: FINAL NOTIFICATION
-Thread-Index: AQHNG9e55tU7tR8+UkKism45XhsrbQ==
-Message-ID: <DD588E9A4AD01D47B184C8FC19CA96B927EE9F8EF5@STCCNTMSG01.stc.corp>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="iso-8859-1"
-content-transfer-encoding: 8BIT
+	id S1754223Ab2DPOXk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Apr 2012 10:23:40 -0400
+Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:34429 "EHLO
+	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753326Ab2DPOXi convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Apr 2012 10:23:38 -0400
 MIME-Version: 1.0
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrFJsWRmVeSWpSXmKPExsXCpcBirWur3ONv0PJC2OJa4x4Wi0t39zBZ
-	LFi9jNFixpV7LBaXb31nszjdpWRxedccNos/v5ksXjxfy2ix5MBOJovVL78zWnSd+stq0di2
-	n9Hi7yWg+rWvLrNbHHy/hcWicS6QO/2lkMWZ0//ZLf5/amVxEPHofLeH2ePc4XY2j58nN7B7
-	zO+8w+xx8sciVo9N934weaz//pbd40jzB2aPnv5eJo+D8/uYPS49PsHiMeHkTjaPKfPiPT5v
-	kvN4+/YiewB/VAOjTVJiSVlwZnqevp1NYl5efkliSapCSmpxsq1ScIizgiNEKDM/r1hJITPF
-	VslESaEgJzE5NTc1r8RWKbGgIDUvRcmOSwED2ACVZeYppOYl56dk5qXbKnkG++taWJha6hoq
-	2YVkpCpk5qXlF+UmbObO+Hi/i73gEnPFk2unWBoY3zB1MXJySAiYSPz9cBHKFpO4cG89Wxcj
-	F4eQwEFGiYmXJ7GDJEQEZCTmzn7MCpFoY5TY2v2HGSTBJqAmsflhA1gRi4CqxIo3L9hAbGEB
-	aYmFa+8xQzQrSNyff4uli5EDyNaT+H8kG8TkFfCVeHaDEaSCEWjv91NrwG5gFhCXuPVkPtQ9
-	AhJL9pxnhrBFJV4+/scKUS8qcad9PSNEvZ7EjalT2CBsbYllC1+D1fMKCEqcnPmEZQKj8Cwk
-	Y2chaZmFpGUWkpYFjCyrGEVcg92DIp18DYz1ikuS9ZLzc/WKEzcxAtPhlbI5ETsYd0zTPsQo
-	wMGoxMO7Mq7bX4g1say4MvcQowQHs5IIb4wsUIg3JbGyKrUoP76oNCe1+BBjFTCIJjJLiSbn
-	A1N1Xkm8obGRpZGRkbGRoaGlMVWElcR5TzH3+AsJpANTV3ZqakFqEcxyJg5OkOO4pESKgSkp
-	tSixtCQjHpQm44uBiVKqgXH6wvWWgSraBun/zgQb9nH+yHu9oipw7ipxTeevi271z8myfGNr
-	IqEprvu1x3TuttfnPzItuuNm3tCntSrfmrvMMTlMdP7SxfPP/VOObY/7/ky4dffLdcoWpQtX
-	9DN3f56yczeXxJdJ0S1e/X+1DB+vmFRdI+6c12GYm+W880ZKWMdCUd8COyWW4oxEQy3mouJE
-	ABTMwSf9AwAA
+In-Reply-To: <4F8C24E5.4020703@teksavvy.com>
+References: <4F8BA1C1.4030804@teksavvy.com>
+	<4F8C24E5.4020703@teksavvy.com>
+Date: Mon, 16 Apr 2012 16:23:36 +0200
+Message-ID: <CAFLxGvzkcYw-iUA1X8jK+Q8A2HFEG1SSXvfZ3Uj+OwKWgi+zAA@mail.gmail.com>
+Subject: Re: [REGRESSION] rtc/interface.c: kills suspend-to-ram
+From: richard -rw- weinberger <richard.weinberger@gmail.com>
+To: Mark Lord <kernel@teksavvy.com>
+Cc: Linux Kernel <linux-kernel@vger.kernel.org>, rtc-linux@googlegroups.com,
+        Alessandro Zummo <a.zummo@towertech.it>,
+        Greg Kroah-Hartman <greg@kroah.com>, stable@vger.kernel.org,
+        John Stultz <john.stultz@linaro.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, Apr 16, 2012 at 3:55 PM, Mark Lord <kernel@teksavvy.com> wrote:
+> On 12-04-16 12:36 AM, Mark Lord wrote:
+>> Something recent has killed suspend-to-ram on a number of machines here.
+>> The symptom is that they suspend, but immediately wake up and panic,
+>> with just a black screen so no visible messages to go by.
+>>
+>> The patch below works around the issue -- making things work as they used to work.
+>>
+>> +++ linux/drivers/rtc/interface.c     2012-04-16 00:09:14.105387382 -0400
+>> @@ -773,7 +773,7 @@
+>>       if (!rtc->ops || !rtc->ops->alarm_irq_enable)
+>>               return;
+>>
+>> -     rtc->ops->alarm_irq_enable(rtc->dev.parent, false);
+>> +     //rtc->ops->alarm_irq_enable(rtc->dev.parent, false);  // Kills suspend on ZBOX HD-ID41U
+>>  }
+>>
+>> Last known working kernel was 3.2.11.
+>> The line above got added somewhere between it and 3.2.15,
+>> and is also present (no surprise) in newer kernels.
+>>
+>> The highest kernel I've tested for this is 3.3.2,
+>> which also fails until I nuke the line shown above.
+>>
+>> This is straight x86_64 (Atom) hardware, using rtc-cmos.
+>> I can re-test if anyone has a fix for this.
+>>
+>> Meanwhile, whatever patch put this into -stable probably
+>> ought to be reverted upstream and in -stable as well.
+>
+>
+> Speaking of which -- that batch of RTC updates is riddled with bugs.
+> For example, this beauty from rtc-mpc5121.c in the same update:
+>
+>        ...
+>        rtc->rtc = rtc_device_register("mpc5200-rtc", &op->dev,
+>                                        &mpc5200_rtc_ops, THIS_MODULE);
+>        ...
+>
+>        rtc->rtc->uie_unsupported = 1;    // <<<< Ooops NULL pointer >>>>
+>
+>        if (IS_ERR(rtc->rtc)) {           // <<<< this needs to be earlier >>>>
+>                err = PTR_ERR(rtc->rtc);
+>                goto out_free_irq;
+>        }
+>        ...
+>
+> Can somebody show me how to identify the commit from the code?
+> I know which lines got changed, but don't know how to find
+> the corresponding commits in -git.
 
+CC'in John.
 
+---
+commit 4a649903f91232d02284d53724b0a45728111767
+Author: John Stultz <john.stultz@linaro.org>
+Date:   Tue Mar 6 17:16:09 2012 -0800
 
+    rtc: Provide flag for rtc devices that don't support UIE
 
+    Richard Weinberger noticed that on some RTC hardware that
+    doesn't support UIE mode, due to coarse granular alarms
+    (like 1minute resolution), the current virtualized RTC
+    support doesn't properly error out when UIE is enabled.
 
-Dear Email User,
+    Instead the current code queues an alarm for the next second,
+    but it won't fire until up to a miniute later.
 
+    This patch provides a generic way to flag this sort of hardware
+    and fixes the issue on the mpc5121 where Richard noticed the
+    problem.
 
-  We have recieved an alert that your mailbox is not secured and lot of spam in your mailbox, you are to open the link below and fill the form with your required details to avoid losing your account.
+    CC: stable@vger.kernel.org
+    Reported-by: Richard Weinberger <richard@nod.at>
+    Tested-by: Richard Weinberger <richard@nod.at>
+    Signed-off-by: John Stultz <john.stultz@linaro.org>
 
-
-N:B- Failure to do this in 3 days will cause us to de-activate your account and you can no longer use it.
-
-
-http://rcservico.com.br/cadastros/use/WebmailHelpdesk/form1.html
-
-
-Thanks.
-Copyright © 2012
-Email Spam Center
-The information in this email may contain confidential material and it is intended solely for the addresses. Access to this  email by anyone else is unauthorized. If you are not the intended recipient, please delete the email and destroy any copies of it, any disclosure, copying, distribution is prohibited and may be considered unlawful. Contents of this email and any attachments may be altered, Statement and opinions expressed in this email are those of the sender, and do not necessarily  reflect those of Saudi Telecommunications Company (STC).
+-- 
+Thanks,
+//richard
