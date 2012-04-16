@@ -1,67 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754554Ab2DPOPD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Apr 2012 10:15:03 -0400
-Received: from mail-pz0-f52.google.com ([209.85.210.52]:43206 "EHLO
-	mail-pz0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754241Ab2DPOPA (ORCPT
+	id S1754371Ab2DPOPb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Apr 2012 10:15:31 -0400
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:14970 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753801Ab2DPOP2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Apr 2012 10:15:00 -0400
-Date: Mon, 16 Apr 2012 23:14:55 +0900
-From: Takuya Yoshikawa <takuya.yoshikawa@gmail.com>
-To: Avi Kivity <avi@redhat.com>
-Cc: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>,
-        Marcelo Tosatti <mtosatti@redhat.com>,
-        LKML <linux-kernel@vger.kernel.org>, KVM <kvm@vger.kernel.org>
-Subject: Re: [PATCH v2 04/16] KVM: MMU: return bool in __rmap_write_protect
-Message-Id: <20120416231455.f978b3ac9fb995cfce2853ae@gmail.com>
-In-Reply-To: <4F8AB02A.9020601@redhat.com>
-References: <4F87FA69.5060106@linux.vnet.ibm.com>
-	<4F87FBC1.5010907@linux.vnet.ibm.com>
-	<20120414110031.38450bebfe712215f01d529f@gmail.com>
-	<4F8AB02A.9020601@redhat.com>
-X-Mailer: Sylpheed 3.2.0beta3 (GTK+ 2.24.6; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Mon, 16 Apr 2012 10:15:28 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp05.nvidia.com on Mon, 16 Apr 2012 07:15:27 -0700
+Message-ID: <4F8C268F.9080608@nvidia.com>
+Date: Mon, 16 Apr 2012 19:32:55 +0530
+From: Laxman Dewangan <ldewangan@nvidia.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101208 Thunderbird/3.1.7
+MIME-Version: 1.0
+To: Paul Gortmaker <paul.gortmaker@windriver.com>
+CC: "sameo@linux.intel.com" <sameo@linux.intel.com>,
+        "broonie@opensource.wolfsonmicro.com" 
+	<broonie@opensource.wolfsonmicro.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>
+Subject: Re: [PATCH] mfd: fix modular builds of rc5t583 regulator support
+References: <1334549301-32114-1-git-send-email-paul.gortmaker@windriver.com> <4F8BC20A.2090105@nvidia.com> <4F8C28C5.9070308@windriver.com>
+In-Reply-To: <4F8C28C5.9070308@windriver.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 15 Apr 2012 14:25:30 +0300
-Avi Kivity <avi@redhat.com> wrote:
+On Monday 16 April 2012 07:42 PM, Paul Gortmaker wrote:
+> On 12-04-16 02:54 AM, Laxman Dewangan wrote:
+>> On Monday 16 April 2012 09:38 AM, Paul Gortmaker wrote:
+>>
+> As I said in the commit log, it doesn't seem to make sense to export
+> them when they are trivial enough to be static inline, since it
+> avoids having them pollute the /proc/kallsyms namespace.
+>
+> It is almost like having basic inb/outb as functions vs inline; it
+> just doesn't make sense to me.
+>
+> However, if you are determined to rewrite the patch in another way,
+> please add the customary reported-by line.
+>
 
-> > > @@ -1689,7 +1690,7 @@ static void mmu_sync_children(struct kvm_vcpu *vcpu,
-> > > 
-> > >  	kvm_mmu_pages_init(parent, &parents, &pages);
-> > >  	while (mmu_unsync_walk(parent, &pages)) {
-> > > -		int protected = 0;
-> > > +		bool protected = false;
-> > > 
-> > >  		for_each_sp(pages, sp, parents, i)
-> > >  			protected |= rmap_write_protect(vcpu->kvm, sp->gfn);
-> >
-> > Isn't this the reason we prefer int to bool?
-> >
-> > Not sure people like to use |= with boolean.
-> >
-> 
-> Why not?
-> 
+I am fine on either way i.e. inline or exporting symbols only.
 
-The code "bitwise OR assignment" is assuming the internal representations
-of true and false: true=1, false=0.
-
-I might have seen some point if it had been
-	protected = protected || rmap_...
-
-
-But the real question is whether there is any point in re-writing completely
-correct C code: there are tons of int like this in the kernel code.
-
-__rmap_write_protect() was introduced recently, so if this conversion is
-really worthwhile, I should have been told to use bool at that time, no?
-
-
-Thanks,
-	Takuya
