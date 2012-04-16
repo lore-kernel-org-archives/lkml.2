@@ -1,136 +1,154 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752479Ab2DPIfT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Apr 2012 04:35:19 -0400
-Received: from va3ehsobe006.messaging.microsoft.com ([216.32.180.16]:54236
-	"EHLO va3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752302Ab2DPIfP convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Apr 2012 04:35:15 -0400
-X-SpamScore: 0
-X-BigFish: VPS0(zzzz1202hzzz2dh668h839h944hd25h)
-X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
-X-WSS-ID: 0M2KD6G-02-04H-02
-X-M-MSG: 
-From: "Chen, Dennis (SRDC SW)" <Dennis1.Chen@amd.com>
-To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-CC: Ingo Molnar <mingo@kernel.org>,
-        "paulmck@linux.vnet.ibm.com" <paulmck@linux.vnet.ibm.com>,
-        "peterz@infradead.org" <peterz@infradead.org>,
-        Paul Mackerras <paulus@samba.org>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Subject: [PATCH 0/2] tools perf: Add a new benchmark tool for semaphore/mutex
-Thread-Topic: [PATCH 0/2] tools perf: Add a new benchmark tool for
- semaphore/mutex
-Thread-Index: AQHNG6upzgKJX6FgME2406schBDqSw==
-Date: Mon, 16 Apr 2012 08:33:55 +0000
-Message-ID: <491D6B4EAD0A714894D8AD22F4BDE043B158BE@SCYBEXDAG03.amd.com>
-References: <4F7DA8FD.1020909@ladisch.de>
- <491D6B4EAD0A714894D8AD22F4BDE0439F9E45@SCYBEXDAG02.amd.com>
- <4F7EC111.4010608@ladisch.de>
- <491D6B4EAD0A714894D8AD22F4BDE0439F9ED2@SCYBEXDAG02.amd.com>
- <20120409184538.GE2430@linux.vnet.ibm.com>
- <491D6B4EAD0A714894D8AD22F4BDE043A33A9E@SCYBEXDAG02.amd.com>
- <20120411173006.GB2473@linux.vnet.ibm.com>
- <491D6B4EAD0A714894D8AD22F4BDE043A33D37@SCYBEXDAG02.amd.com>
- <20120412151854.GB2394@linux.vnet.ibm.com>
- <491D6B4EAD0A714894D8AD22F4BDE043A33FD3@SCYBEXDAG02.amd.com>
- <20120413184350.GD2402@linux.vnet.ibm.com>
-In-Reply-To: <20120413184350.GD2402@linux.vnet.ibm.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.237.74.102]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1752415Ab2DPIlq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Apr 2012 04:41:46 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:38108 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751811Ab2DPIlp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Apr 2012 04:41:45 -0400
+Message-ID: <4F8BDB3D.2020808@redhat.com>
+Date: Mon, 16 Apr 2012 05:41:33 -0300
+From: Mauro Carvalho Chehab <mchehab@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120329 Thunderbird/11.0.1
 MIME-Version: 1.0
-X-OriginatorOrg: amd.com
+To: Borislav Petkov <bp@amd64.org>
+CC: Linux Edac Mailing List <linux-edac@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 01/13] edac: Create a dimm struct and move the labels
+ into it
+References: <1333039546-5590-1-git-send-email-mchehab@redhat.com> <1333039546-5590-2-git-send-email-mchehab@redhat.com> <20120330105048.GA30876@aftab>
+In-Reply-To: <20120330105048.GA30876@aftab>
+X-Enigmail-Version: 1.4
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-<PATCH PREFACE>
--------------------
-This patch series are used to add a new performance benchmark tool for semaphore or mutex:
-The new tool will fork NR tasks specified through the command line and bind each of them
-to every CPUs in the system equally. The command to launch the tool looks like:
-'# perf bench locking mutex -p 8 -t 400 -c'
+Em 30-03-2012 07:50, Borislav Petkov escreveu:
+> On Thu, Mar 29, 2012 at 01:45:34PM -0300, Mauro Carvalho Chehab wrote:
+>> The way a DIMM is currently represented implies that they're
+>> linked into a per-csrow struct. However, some drivers don't see
+>> csrows, as they're ridden behind some chip like the AMB's
+>> on FBDIMM's, for example.
+>>
+>> This forced drivers to fake a csrow struct, and to create
+>> a mess under csrow/channel original's concept.
+>>
+>> Move the DIMM labels into a per-DIMM struct, and add there
+>> the real location of the socket, in terms of csrow/channel.
+>> Latter patches will modify the location to properly represent the
+>> memory architecture.
+>>
+>> All other drivers will use a per-csrow type of location.
+>> Some of those drivers will require a latter conversion, as
+>> they also fake the csrows internally.
+>>
+>> TODO: While this patch doesn't change the existing behavior, on
+>> csrows-based memory controllers, a csrow/channel pair points to a memory
+>> rank. There's a known bug at the EDAC core that allows having different
+>> labels for the same DIMM, if it has more than one rank. A latter patch
+>> is need to merge the several ranks for a DIMM into the same dimm_info
+>> struct, in order to avoid having different labels for the same DIMM.
+>>
+>> Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
+>> ---
+>>  drivers/edac/edac_mc.c       |   50 +++++++++++++++++++++++++++++++----------
+>>  drivers/edac/edac_mc_sysfs.c |   11 ++++-----
+>>  drivers/edac/i5100_edac.c    |    8 +++---
+>>  drivers/edac/i7core_edac.c   |    4 +-
+>>  drivers/edac/i82975x_edac.c  |    2 +-
+>>  drivers/edac/sb_edac.c       |    4 +-
+>>  include/linux/edac.h         |   28 +++++++++++++++++++----
+>>  7 files changed, 75 insertions(+), 32 deletions(-)
+>>
+>> diff --git a/drivers/edac/edac_mc.c b/drivers/edac/edac_mc.c
+>> index 690cbf1..c03bfe7 100644
+>> --- a/drivers/edac/edac_mc.c
+>> +++ b/drivers/edac/edac_mc.c
+>> @@ -44,7 +44,7 @@ static void edac_mc_dump_channel(struct rank_info *chan)
+>>  	debugf4("\tchannel = %p\n", chan);
+>>  	debugf4("\tchannel->chan_idx = %d\n", chan->chan_idx);
+>>  	debugf4("\tchannel->ce_count = %d\n", chan->ce_count);
+>> -	debugf4("\tchannel->label = '%s'\n", chan->label);
+>> +	debugf4("\tchannel->label = '%s'\n", chan->dimm->label);
+>>  	debugf4("\tchannel->csrow = %p\n\n", chan->csrow);
+>>  }
+>>  
+>> @@ -157,6 +157,7 @@ struct mem_ctl_info *edac_mc_alloc(unsigned sz_pvt, unsigned nr_csrows,
+>>  	struct mem_ctl_info *mci;
+>>  	struct csrow_info *csi, *csrow;
+>>  	struct rank_info *chi, *chp, *chan;
+>> +	struct dimm_info *dimm;
+>>  	void *pvt;
+>>  	unsigned size;
+>>  	int row, chn;
+>> @@ -170,7 +171,8 @@ struct mem_ctl_info *edac_mc_alloc(unsigned sz_pvt, unsigned nr_csrows,
+>>  	mci = (struct mem_ctl_info *)0;
+>>  	csi = edac_align_ptr(&mci[1], sizeof(*csi));
+>>  	chi = edac_align_ptr(&csi[nr_csrows], sizeof(*chi));
+>> -	pvt = edac_align_ptr(&chi[nr_chans * nr_csrows], sz_pvt);
+>> +	dimm = edac_align_ptr(&chi[nr_chans * nr_csrows], sizeof(*dimm));
+>> +	pvt = edac_align_ptr(&dimm[nr_chans * nr_csrows], sz_pvt);
+>>  	size = ((unsigned long)pvt) + sz_pvt;
+>>  
+>>  	mci = kzalloc(size, GFP_KERNEL);
+>> @@ -182,11 +184,13 @@ struct mem_ctl_info *edac_mc_alloc(unsigned sz_pvt, unsigned nr_csrows,
+>>  	 */
+>>  	csi = (struct csrow_info *)(((char *)mci) + ((unsigned long)csi));
+>>  	chi = (struct rank_info *)(((char *)mci) + ((unsigned long)chi));
+>> +	dimm = (struct dimm_info *)(((char *)mci) + ((unsigned long)dimm));
+>>  	pvt = sz_pvt ? (((char *)mci) + ((unsigned long)pvt)) : NULL;
+>>  
+>>  	/* setup index and various internal pointers */
+>>  	mci->mc_idx = edac_index;
+>>  	mci->csrows = csi;
+>> +	mci->dimms  = dimm;
+>>  	mci->pvt_info = pvt;
+>>  	mci->nr_csrows = nr_csrows;
+>>  
+>> @@ -205,6 +209,21 @@ struct mem_ctl_info *edac_mc_alloc(unsigned sz_pvt, unsigned nr_csrows,
+>>  		}
+>>  	}
+>>  
+>> +	/*
+>> +	 * By default, assumes that a per-csrow arrangement will be used,
+>> +	 * as most drivers are based on such assumption.
+>> +	 */
+>> +	dimm = mci->dimms;
+>> +	for (row = 0; row < mci->nr_csrows; row++) {
+>> +		for (chn = 0; chn < mci->csrows[row].nr_channels; chn++) {
+>> +			mci->csrows[row].channels[chn].dimm = dimm;
+>> +			dimm->csrow = row;
+>> +			dimm->csrow_channel = chn;
+>> +			dimm++;
+>> +			mci->nr_dimms++;
+>> +		}
+>> +	}
+> 
+> There's a double loop above this one which iterates over the same
+> things: rows and then channels in each row. So merge that loop with the
+> one above instead of repeating it here.
 
-The above command will create 400 tasks in a system with 8-CPU, each CPU will have 50 tasks.
-After the task be created, it will read all the files and directories in '/sys/module'.
-sysfs is RAM based and its read operation for both dir and file is very sensitive for mutex
-lock, also '/sys/module' has almost no dependencies on external devices.
+This is not a double loop. Instead, this is a preparation step made to simplify
+the following patches.
 
-We can use this tool with 'perf record' command to get the hot-spot of the codes or 
-'perf top -g' to get live info, for example, below is a test case run in a intel i7-2600 box
-(-c option is to get the cpu cycles, I don't use it in this test case):
+This loop initializes the dimm structs, while the first one initializes the
+(virtual) csrows/channels.
 
-# perf record -a perf bench locking mutex -p 8 -t 4000
-# Running locking/mutex benchmark... 
- ...
- [13894 ]/6  duration        23 s   609392 us
- [13996 ]/4  duration        23 s   599418 us
- [14056 ]/0  duration        23 s   595710 us
- [13715 ]/3  duration        23 s   621719 us
- [13390 ]/6  duration        23 s   644020 us
- [13696 ]/0  duration        23 s   623101 us
- [14334 ]/6  duration        23 s   580262 us
- [14343 ]/7  duration        23 s   578702 us
- [14283 ]/3  duration        23 s   583007 us
- -----------------------------------
- Total duration     79353 s   943945 us
+On this point on the series, dimms and ranks are still equal because the patches
+that add the capability of handling different memory hierarchies weren't added yet,
+as there are more changes to be done.
 
- real: 23.84   s
- user: 0.00   
- sys:  0.45   
+In the following patches, this loop will be transformed to:
 
-# perf report
-===================================================================================
+	for (i = 0; i < tot_dimms; i++) {
 ...
-# perf version : 3.3.2
-# arch : x86_64
-# nrcpus online : 8
-# nrcpus avail : 8
-# cpudesc : Intel(R) Core(TM) i7-2600 CPU @ 3.40GHz
-# total memory : 3966460 kB
-# cmdline : /usr/bin/perf record -a perf bench locking mutex -p 8 -t 4000
+	}
 
-# Events: 131K cycles
-#
-# Overhead          Command                      Shared Object                                 Symbol
-# ........  ...............  .................................  .....................................
-#
-    22.12%           perf  [kernel.kallsyms]                  [k] __mutex_lock_slowpath
-     8.27%           perf  [kernel.kallsyms]                  [k] _raw_spin_lock
-     6.16%           perf  [kernel.kallsyms]                  [k] mutex_unlock
-     5.22%           perf  [kernel.kallsyms]                  [k] mutex_spin_on_owner
-     4.94%           perf  [kernel.kallsyms]                  [k] sysfs_refresh_inode
-     4.82%           perf  [kernel.kallsyms]                  [k] mutex_lock
-     2.67%           perf  [kernel.kallsyms]                  [k] __mutex_unlock_slowpath
-     2.61%           perf  [kernel.kallsyms]                  [k] link_path_walk
-     2.42%           perf  [kernel.kallsyms]                  [k] _raw_spin_lock_irqsave
-     1.61%           perf  [kernel.kallsyms]                  [k] __d_lookup
-     1.18%           perf  [kernel.kallsyms]                  [k] clear_page_c
-     1.16%           perf  [kernel.kallsyms]                  [k] dput
-     0.97%           perf  [kernel.kallsyms]                  [k] do_lookup
-     0.93%        swapper  [kernel.kallsyms]                  [k] intel_idle
-     0.87%           perf  [kernel.kallsyms]                  [k] get_page_from_freelist
-     0.85%           perf  [kernel.kallsyms]                  [k] __strncpy_from_user
-     0.81%           perf  [kernel.kallsyms]                  [k] system_call
-     0.78%           perf  libc-2.13.so                       [.] 0x84ef0         
-     0.71%           perf  [kernel.kallsyms]                  [k] vfsmount_lock_local_lock
-     0.68%           perf  [kernel.kallsyms]                  [k] sysfs_dentry_revalidate
-     0.62%           perf  [kernel.kallsyms]                  [k] try_to_wake_up
-     0.62%           perf  [kernel.kallsyms]                  [k] kfree
-     0.60%           perf  [kernel.kallsyms]                  [k] kmem_cache_alloc   
-............................................................................................
+while the first loop will keep the per csrows/nr_channels range.
 
-We can see that for 4000 tasks running in 8 CPUs simultaneously, it will create a very heavy 
-contention for the mutex lock, so lot's of tasks enter into the slow path of the mutex lock...
-I am very curious if we switch the mutex to the semaphore in this case, how's thing going? 
-My next plan
+So, there's nothing here to be changed.
 
-
-
-
+Regards,
+Mauro
