@@ -1,69 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751101Ab2DPF7S (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Apr 2012 01:59:18 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:57770 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750870Ab2DPF7R (ORCPT
+	id S1751193Ab2DPGH4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Apr 2012 02:07:56 -0400
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:38907 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750788Ab2DPGHy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Apr 2012 01:59:17 -0400
-Date: Mon, 16 Apr 2012 15:59:07 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: David Miller <davem@davemloft.net>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Tkhai Kirill <tkhai@yandex.ru>
-Subject: linux-next: build failure after merge of the final tree (sparc-next
- tree related)
-Message-Id: <20120416155907.32c0041caa002f72da4635b7@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0beta7 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Mon__16_Apr_2012_15_59_07_+1000_HSfljrAXC4tUyZCe"
+	Mon, 16 Apr 2012 02:07:54 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6681"; a="179647274"
+X-IronPort-AV: E=Sophos;i="4.75,426,1330934400"; 
+   d="scan'208";a="120384488"
+Message-ID: <4F8BB735.4040409@qca.qualcomm.com>
+Date: Mon, 16 Apr 2012 09:07:49 +0300
+From: Kalle Valo <kvalo@qca.qualcomm.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.28) Gecko/20120313 Thunderbird/3.1.20
+MIME-Version: 1.0
+To: Jesper Juhl <jj@chaosbits.net>
+CC: <linux-wireless@vger.kernel.org>, <netdev@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, Robert Love <rlove@google.com>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        ath6kl-devel <ath6kl-devel@qualcomm.com>
+Subject: Re: [PATCH] ath6kl: fix memory leak in ath6kl_fwlog_block_read()
+References: <alpine.LNX.2.00.1204112239070.2137@swampdragon.chaosbits.net>
+In-Reply-To: <alpine.LNX.2.00.1204112239070.2137@swampdragon.chaosbits.net>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [172.30.39.5]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Mon__16_Apr_2012_15_59_07_+1000_HSfljrAXC4tUyZCe
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On 04/11/2012 11:41 PM, Jesper Juhl wrote:
+> If, in
+> drivers/net/wireless/ath/ath6kl/debug.c::ath6kl_fwlog_block_read(),
+> the call to wait_for_completion_interruptible() returns -ERESTARTSYS
+> then we'll return without freeing the (as yet unused) memory we
+> allocated for 'buf' - thus leaking it.
+> 
+> Signed-off-by: Jesper Juhl <jj@chaosbits.net>
 
-Hi all,
+Thanks, applied to ath6kl.git.
 
-After merging the final tree, today's linux-next build (sparc32 defconfig)
-failed like this:
-
-arch/sparc/kernel/pcic.c: In function 'pci_time_init':
-arch/sparc/kernel/pcic.c:741:2: error: 'timer_cs_period' undeclared (first =
-use in this function)
-
-Caused by commit 62f082830d63 ("sparc32: generic clockevent support").
-
-I have reverted that commit for today.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
---Signature=_Mon__16_Apr_2012_15_59_07_+1000_HSfljrAXC4tUyZCe
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJPi7UrAAoJEECxmPOUX5FEqmcP/RaxBRvkhSxHiqjWdqhbWVAY
-ScM2qPKMAsLT8W1YtGZyfNY3Hd37KXusWdg1+EoACfYPECC3+PUp7apynqnCRJw7
-/bQjvYiX2FiFnBRRpK6cC0QuItGAvQPWUbf3vzonwVhUIbRkLnrgMA7wn73iX2+f
-IyIjvcg2cIsALAgs1pqJl1fRjXmDcSAA/qjvgL2WTwNgMT50O5mLE1Bb6wuNzG0M
-ggYQK1b14lZZ8O7Jv6/4DBELhuCg6xtkQtHm7ZDIua/UIl/BEHs5e7EBwIheNjrC
-H4A/MHtUo2X8F/JP81MSFsbrEmat+3l07IiI+8TOe3XOm3tkr4YoUmUiaFZNh3Su
-0rsEFQGJZ/L1fx8qcMUQJqg9w3Fmmp2y2JhfBdCIYAfyi1M/Kjp3NNn8l++DasXm
-OQnwU8KIiimRRInfUsayzc/D5qGPeBiJoZ7CjetYJBY+yHTMjwONIOMTpOHCvB6n
-egSlRXQY3SbgyItopbXV72wG9ULqm7/bQfbUJ/Mk0W28TeppRi+7RuR5fP03GTjE
-LDYFGwaQ/y7kea0vxGIS2UnlTaDdgQ1RxEMH2Ar7k9xW5zmCssnPpr0tMzBGORMo
-58esU6c2mjGdt7lozFp7wZXXJkOj6WPjqBkEPuLoqwS3PLDLRykudeau5zHSZ6hX
-IPP4hVuclcCSaT9uvrKB
-=+TIA
------END PGP SIGNATURE-----
-
---Signature=_Mon__16_Apr_2012_15_59_07_+1000_HSfljrAXC4tUyZCe--
+Kalle
