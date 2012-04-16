@@ -1,47 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755163Ab2DPPvb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Apr 2012 11:51:31 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:47869 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755068Ab2DPPv3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Apr 2012 11:51:29 -0400
-Message-ID: <4F8C3FFD.6030602@lwfinger.net>
-Date: Mon, 16 Apr 2012 10:51:25 -0500
-From: Larry Finger <Larry.Finger@lwfinger.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120312 Thunderbird/11.0
+	id S1755157Ab2DPPwM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Apr 2012 11:52:12 -0400
+Received: from antcom.de ([188.40.178.216]:43719 "EHLO chuck.antcom.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755088Ab2DPPwK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Apr 2012 11:52:10 -0400
+Message-ID: <4F8C4028.5090602@antcom.de>
+Date: Mon, 16 Apr 2012 17:52:08 +0200
+From: Roland Stigge <stigge@antcom.de>
+Organization: ANTCOM IT Research & Development
+User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:8.0) Gecko/20120216 Icedove/8.0
 MIME-Version: 1.0
-To: Herbert Xu <herbert@gondor.hengli.com.au>
-CC: LKML <linux-kernel@vger.kernel.org>,
-        driverdevel <devel@driverdev.osuosl.org>,
-        wireless <linux-wireless@vger.kernel.org>,
-        Jan Simonson <jan@simonson.se>,
-        Linux Crypto Mailing List <linux-crypto@vger.kernel.org>
-Subject: Re: Problem with crypto when initializing TKIP
-References: <4F8BAE2F.5090200@lwfinger.net> <20120416124839.GA5985@gondor.apana.org.au>
-In-Reply-To: <20120416124839.GA5985@gondor.apana.org.au>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: Alan Stern <stern@rowland.harvard.edu>
+CC: gregkh@linuxfoundation.org, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org, kevin.wells@nxp.com,
+        srinivas.bakki@nxp.com, arnd@arndb.de,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH v2 1/3] USB: Add driver for NXP ISP1301 USB transceiver
+References: <Pine.LNX.4.44L0.1204161106410.1408-100000@iolanthe.rowland.org>
+In-Reply-To: <Pine.LNX.4.44L0.1204161106410.1408-100000@iolanthe.rowland.org>
+X-Enigmail-Version: 1.3.4
+OpenPGP: url=subkeys.pgp.net
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/16/2012 07:48 AM, Herbert Xu wrote:
-> On Mon, Apr 16, 2012 at 12:29:19AM -0500, Larry Finger wrote:
->>
->> The value of ok is NOTIFY_OK, which leads to a return of -ENOENT and
->> a failure of the initialization.
->
-> NOTIFY_OK means that we have no notifiers installed.  Did you
-> compile/load CRYPTO_MANAGER?
+On 04/16/2012 05:09 PM, Alan Stern wrote:
+>>  drivers/usb/Makefile        |    5 ++
+>>  drivers/usb/misc/Kconfig    |   12 ++++++
+>>  drivers/usb/misc/Makefile   |    1 
+>>  drivers/usb/misc/isp1301.c  |   64 ++++++++++++++++++++++++++++++++++
+>>  include/linux/usb/isp1301.h |   82 ++++++++++++++++++++++++++++++++++++++++++++
+> 
+> You know, drivers/usb/misc is meant for miscellaneous USB device 
+> drivers.  Not for host or transceiver drivers.
+> 
+> You should put the new file somewhere else.  Maybe in the otg 
+> directory, although that may not be completely appropriate either.  
+> Maybe something under the host directory.
 
-Thanks for responding. The CRYPTO_MANAGER is built in, but your suggestion got 
-me into the correct area. For some unknown reason, CONFIG_MICHAEL_MIC was 
-dropped from my configuration. When I added it, everything works.
+The driver is used by drivers in the following directories:
 
-I will improve the error message in the driver.
+drivers/usb/host/    (ohci-nxp.c)
+drivers/usb/otg/     (isp1301_omap.c)
+drivers/usb/gadget/  (lpc32xx_udc.c)
 
-Thanks again,
+So host/ and otg/ don't look much better.
 
-Larry
+Maybe one of (new):
+
+    drivers/usb/transceiver/
+    drivers/usb/phy/
+    drivers/usb/lowlevel/
+
+?
+
+Otherwise, I will put it in drivers/usb/otg/ even of it doesn't look
+better to me but the chip is advertised as "OTG transceiver". ;-)
+
+Thanks in advance,
+
+Roland
