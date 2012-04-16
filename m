@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753776Ab2DPMRT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Apr 2012 08:17:19 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:47682 "EHLO mx2.suse.de"
+	id S1754308Ab2DPMYQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Apr 2012 08:24:16 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:47776 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753569Ab2DPMRI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Apr 2012 08:17:08 -0400
+	id S1753748Ab2DPMRS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Apr 2012 08:17:18 -0400
 From: Mel Gorman <mgorman@suse.de>
 To: Andrew Morton <akpm@linux-foundation.org>
 Cc: Linux-MM <linux-mm@kvack.org>, Linux-Netdev <netdev@vger.kernel.org>,
@@ -14,155 +14,35 @@ Cc: Linux-MM <linux-mm@kvack.org>, Linux-Netdev <netdev@vger.kernel.org>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Mike Christie <michaelc@cs.wisc.edu>,
         Eric B Munson <emunson@mgebm.net>, Mel Gorman <mgorman@suse.de>
-Subject: [PATCH 00/16] Swap-over-NBD without deadlocking V9
-Date: Mon, 16 Apr 2012 13:16:47 +0100
-Message-Id: <1334578624-23257-1-git-send-email-mgorman@suse.de>
+Subject: [PATCH 11/16] netvm: Propagate page->pfmemalloc from netdev_alloc_page to skb
+Date: Mon, 16 Apr 2012 13:16:58 +0100
+Message-Id: <1334578624-23257-12-git-send-email-mgorman@suse.de>
 X-Mailer: git-send-email 1.7.9.2
+In-Reply-To: <1334578624-23257-1-git-send-email-mgorman@suse.de>
+References: <1334578624-23257-1-git-send-email-mgorman@suse.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Changelog since V8
-  o Rebase to 3.4-rc2
-  o Use page flag instead of slab fields to keep structures the same size
-  o Properly detect allocations from softirq context that use PF_MEMALLOC
-  o Ensure kswapd does not sleep while processes are throttled
-  o Do not accidentally throttle !_GFP_FS processes indefinitely
+The skb->pfmemalloc flag gets set to true iff during the slab
+allocation of data in __alloc_skb that the the PFMEMALLOC reserves
+were used. If page splitting is used, it is possible that pages will
+be allocated from the PFMEMALLOC reserve without propagating this
+information to the skb. This patch propagates page->pfmemalloc from
+pages allocated for fragments to the skb.
 
-Changelog since V7
-  o Rebase to 3.3-rc2
-  o Take greater care propagating page->pfmemalloc to skb
-  o Propagate pfmemalloc from netdev_alloc_page to skb where possible
-  o Release RCU lock properly on preempt kernel
+It works by reintroducing and expanding the netdev_alloc_page() API
+to take an skb. If the page was allocated from pfmemalloc reserves,
+it is automatically copied. If the driver allocates the page before
+the skb, it should call propagate_pfmemalloc_skb() after the skb is
+allocated to ensure the flag is copied properly.
 
-Changelog since V6
-  o Rebase to 3.1-rc8
-  o Use wake_up instead of wake_up_interruptible()
-  o Do not throttle kernel threads
-  o Avoid a potential race between kswapd going to sleep and processes being
-    throttled
+Failure to do so is not critical. The resulting driver may perform
+slower if it is used for swap-over-NBD or swap-over-NFS but it should
+not result in failure.
 
-Changelog since V5
-  o Rebase to 3.1-rc5
-
-Changelog since V4
-  o Update comment clarifying what protocols can be used		(Michal)
-  o Rebase to 3.0-rc3
-
-Changelog since V3
-  o Propogate pfmemalloc from packet fragment pages to skb		(Neil)
-  o Rebase to 3.0-rc2
-
-Changelog since V2
-  o Document that __GFP_NOMEMALLOC overrides __GFP_MEMALLOC		(Neil)
-  o Use wait_event_interruptible					(Neil)
-  o Use !! when casting to bool to avoid any possibilitity of type
-    truncation								(Neil)
-  o Nicer logic when using skb_pfmemalloc_protocol			(Neil)
-
-Changelog since V1
-  o Rebase on top of mmotm
-  o Use atomic_t for memalloc_socks		(David Miller)
-  o Remove use of sk_memalloc_socks in vmscan	(Neil Brown)
-  o Check throttle within prepare_to_wait	(Neil Brown)
-  o Add statistics on throttling instead of printk
-
-When a user or administrator requires swap for their application, they
-create a swap partition and file, format it with mkswap and activate it
-with swapon. Swap over the network is considered as an option in diskless
-systems. The two likely scenarios are when blade servers are used as part
-of a cluster where the form factor or maintenance costs do not allow the
-use of disks and thin clients.
-
-The Linux Terminal Server Project recommends the use of the
-Network Block Device (NBD) for swap according to the manual at
-https://sourceforge.net/projects/ltsp/files/Docs-Admin-Guide/LTSPManual.pdf/download
-There is also documentation and tutorials on how to setup swap over NBD
-at places like https://help.ubuntu.com/community/UbuntuLTSP/EnableNBDSWAP
-The nbd-client also documents the use of NBD as swap. Despite this, the
-fact is that a machine using NBD for swap can deadlock within minutes if
-swap is used intensively. This patch series addresses the problem.
-
-The core issue is that network block devices do not use mempools like
-normal block devices do. As the host cannot control where they receive
-packets from, they cannot reliably work out in advance how much memory
-they might need. Some years ago, Peter Ziljstra developed a series of
-patches that supported swap over an NFS that at least one distribution
-is carrying within their kernels. This patch series borrows very heavily
-from Peter's work to support swapping over NBD as a pre-requisite to
-supporting swap-over-NFS. The bulk of the complexity is concerned with
-preserving memory that is allocated from the PFMEMALLOC reserves for use
-by the network layer which is needed for both NBD and NFS.
-
-Patch 1 serialises access to min_free_kbytes. It's not strictly needed
-	by this series but as the series cares about watermarks in
-	general, it's a harmless fix. It could be merged independently
-	and may be if CMA is merged in advance.
-
-Patch 2 adds knowledge of the PFMEMALLOC reserves to SLAB and SLUB to
-	preserve access to pages allocated under low memory situations
-	to callers that are freeing memory.
-
-Patch 3 introduces __GFP_MEMALLOC to allow access to the PFMEMALLOC
-	reserves without setting PFMEMALLOC.
-
-Patch 4 opens the possibility for softirqs to use PFMEMALLOC reserves
-	for later use by network packet processing.
-
-Patch 5 ignores memory policies when ALLOC_NO_WATERMARKS is set.
-
-Patches 6-13 allows network processing to use PFMEMALLOC reserves when
-	the socket has been marked as being used by the VM to clean pages. If
-	packets are received and stored in pages that were allocated under
-	low-memory situations and are unrelated to the VM, the packets
-	are dropped.
-
-	Patch 11 reintroduces __netdev_alloc_page which the networking
-	folk may object to but is needed in some cases to propogate
-	pfmemalloc from a newly allocated page to an skb. If there is a
-	strong objection, this patch can be dropped with the impact being
-	that swap-over-network will be slower in some cases but it should
-	not fail.
-
-Patch 13 is a micro-optimisation to avoid a function call in the
-	common case.
-
-Patch 14 tags NBD sockets as being SOCK_MEMALLOC so they can use
-	PFMEMALLOC if necessary.
-
-Patch 15 notes that it is still possible for the PFMEMALLOC reserve
-	to be depleted. To prevent this, direct reclaimers get throttled on
-	a waitqueue if 50% of the PFMEMALLOC reserves are depleted.  It is
-	expected that kswapd and the direct reclaimers already running
-	will clean enough pages for the low watermark to be reached and
-	the throttled processes are woken up.
-
-Patch 16 adds a statistic to track how often processes get throttled
-
-Some basic performance testing was run using kernel builds, netperf
-on loopback for UDP and TCP, hackbench (pipes and sockets), iozone
-and sysbench. Each of them were expected to use the sl*b allocators
-reasonably heavily but there did not appear to be significant
-performance variances.
-
-For testing swap-over-NBD, a machine was booted with 2G of RAM with a
-swapfile backed by NBD. 8*NUM_CPU processes were started that create
-anonymous memory mappings and read them linearly in a loop. The total
-size of the mappings were 4*PHYSICAL_MEMORY to use swap heavily under
-memory pressure.
-
-Without the patches and using SLUB, the machine locks up within minutes and
-runs to completion with them applied. With SLAB, the story is different
-as an unpatched kernel run to completion. However, the patched kernel
-completed the test 40% faster.
-
-                                         3.4.0-rc2     3.4.0-rc2
-                                      vanilla-slab     swapnbd
-Sys Time Running Test (seconds)              87.90     73.45
-User+Sys Time Running Test (seconds)         91.93     76.91
-Total Elapsed Time (seconds)               4174.37   2953.96
-
- drivers/block/nbd.c                               |    6 +-
+Signed-off-by: Mel Gorman <mgorman@suse.de>
+---
  drivers/net/ethernet/chelsio/cxgb4/sge.c          |    2 +-
  drivers/net/ethernet/chelsio/cxgb4vf/sge.c        |    2 +-
  drivers/net/ethernet/intel/igb/igb_main.c         |    2 +-
@@ -170,30 +50,174 @@ Total Elapsed Time (seconds)               4174.37   2953.96
  drivers/net/ethernet/intel/ixgbevf/ixgbevf_main.c |    3 +-
  drivers/net/usb/cdc-phonet.c                      |    2 +-
  drivers/usb/gadget/f_phonet.c                     |    2 +-
- include/linux/gfp.h                               |   13 +-
- include/linux/mm_types.h                          |    9 +
- include/linux/mmzone.h                            |    1 +
- include/linux/page-flags.h                        |   28 +++
- include/linux/sched.h                             |    7 +
- include/linux/skbuff.h                            |   83 +++++++-
- include/linux/vm_event_item.h                     |    1 +
- include/net/sock.h                                |   19 ++
- include/trace/events/gfpflags.h                   |    1 +
- kernel/softirq.c                                  |    3 +
- mm/page_alloc.c                                   |   58 ++++--
- mm/slab.c                                         |  212 +++++++++++++++++++--
- mm/slub.c                                         |   28 ++-
- mm/vmscan.c                                       |  112 +++++++++++
- mm/vmstat.c                                       |    1 +
- net/core/dev.c                                    |   52 ++++-
- net/core/filter.c                                 |    8 +
- net/core/skbuff.c                                 |   93 +++++++--
- net/core/sock.c                                   |   42 ++++
- net/ipv4/tcp.c                                    |    3 +-
- net/ipv4/tcp_output.c                             |   16 +-
- net/ipv6/tcp_ipv6.c                               |    8 +-
- 30 files changed, 742 insertions(+), 77 deletions(-)
+ include/linux/skbuff.h                            |   55 +++++++++++++++++++++
+ 8 files changed, 63 insertions(+), 7 deletions(-)
 
+diff --git a/drivers/net/ethernet/chelsio/cxgb4/sge.c b/drivers/net/ethernet/chelsio/cxgb4/sge.c
+index 2dae795..05f02b3 100644
+--- a/drivers/net/ethernet/chelsio/cxgb4/sge.c
++++ b/drivers/net/ethernet/chelsio/cxgb4/sge.c
+@@ -528,7 +528,7 @@ static unsigned int refill_fl(struct adapter *adap, struct sge_fl *q, int n,
+ #endif
+ 
+ 	while (n--) {
+-		pg = alloc_page(gfp);
++		pg = __netdev_alloc_page(gfp, NULL);
+ 		if (unlikely(!pg)) {
+ 			q->alloc_failed++;
+ 			break;
+diff --git a/drivers/net/ethernet/chelsio/cxgb4vf/sge.c b/drivers/net/ethernet/chelsio/cxgb4vf/sge.c
+index 0bd585b..e8a372e 100644
+--- a/drivers/net/ethernet/chelsio/cxgb4vf/sge.c
++++ b/drivers/net/ethernet/chelsio/cxgb4vf/sge.c
+@@ -653,7 +653,7 @@ static unsigned int refill_fl(struct adapter *adapter, struct sge_fl *fl,
+ 
+ alloc_small_pages:
+ 	while (n--) {
+-		page = alloc_page(gfp | __GFP_NOWARN | __GFP_COLD);
++		page = __netdev_alloc_page(gfp | __GFP_NOWARN, NULL);
+ 		if (unlikely(!page)) {
+ 			fl->alloc_failed++;
+ 			break;
+diff --git a/drivers/net/ethernet/intel/igb/igb_main.c b/drivers/net/ethernet/intel/igb/igb_main.c
+index 5ec3159..9c2d7f6 100644
+--- a/drivers/net/ethernet/intel/igb/igb_main.c
++++ b/drivers/net/ethernet/intel/igb/igb_main.c
+@@ -6229,7 +6229,7 @@ static bool igb_alloc_mapped_page(struct igb_ring *rx_ring,
+ 		return true;
+ 
+ 	if (!page) {
+-		page = alloc_page(GFP_ATOMIC | __GFP_COLD);
++		page = __netdev_alloc_page(GFP_ATOMIC, bi->skb);
+ 		bi->page = page;
+ 		if (unlikely(!page)) {
+ 			rx_ring->rx_stats.alloc_failed++;
+diff --git a/drivers/net/ethernet/intel/ixgbe/ixgbe_main.c b/drivers/net/ethernet/intel/ixgbe/ixgbe_main.c
+index 3e26b1f9..3a60339 100644
+--- a/drivers/net/ethernet/intel/ixgbe/ixgbe_main.c
++++ b/drivers/net/ethernet/intel/ixgbe/ixgbe_main.c
+@@ -1126,7 +1126,7 @@ static bool ixgbe_alloc_mapped_page(struct ixgbe_ring *rx_ring,
+ 
+ 	/* alloc new page for storage */
+ 	if (likely(!page)) {
+-		page = alloc_pages(GFP_ATOMIC | __GFP_COLD,
++		page = __netdev_alloc_pages(GFP_ATOMIC, bi->skb,
+ 				   ixgbe_rx_pg_order(rx_ring));
+ 		if (unlikely(!page)) {
+ 			rx_ring->rx_stats.alloc_rx_page_failed++;
+diff --git a/drivers/net/ethernet/intel/ixgbevf/ixgbevf_main.c b/drivers/net/ethernet/intel/ixgbevf/ixgbevf_main.c
+index 307611a..4f1c14f 100644
+--- a/drivers/net/ethernet/intel/ixgbevf/ixgbevf_main.c
++++ b/drivers/net/ethernet/intel/ixgbevf/ixgbevf_main.c
+@@ -369,7 +369,7 @@ static void ixgbevf_alloc_rx_buffers(struct ixgbevf_adapter *adapter,
+ 		if (!bi->page_dma &&
+ 		    (adapter->flags & IXGBE_FLAG_RX_PS_ENABLED)) {
+ 			if (!bi->page) {
+-				bi->page = alloc_page(GFP_ATOMIC | __GFP_COLD);
++				bi->page = __netdev_alloc_page(GFP_ATOMIC, NULL);
+ 				if (!bi->page) {
+ 					adapter->alloc_rx_page_failed++;
+ 					goto no_buffers;
+@@ -403,6 +403,7 @@ static void ixgbevf_alloc_rx_buffers(struct ixgbevf_adapter *adapter,
+ 			 */
+ 			skb_reserve(skb, NET_IP_ALIGN);
+ 
++			propagate_pfmemalloc_skb(bi->page_dma, skb);
+ 			bi->skb = skb;
+ 		}
+ 		if (!bi->dma) {
+diff --git a/drivers/net/usb/cdc-phonet.c b/drivers/net/usb/cdc-phonet.c
+index 3e41b00..5d46473 100644
+--- a/drivers/net/usb/cdc-phonet.c
++++ b/drivers/net/usb/cdc-phonet.c
+@@ -130,7 +130,7 @@ static int rx_submit(struct usbpn_dev *pnd, struct urb *req, gfp_t gfp_flags)
+ 	struct page *page;
+ 	int err;
+ 
+-	page = alloc_page(gfp_flags);
++	page = __netdev_alloc_page(gfp_flags | __GFP_NOMEMALLOC, NULL);
+ 	if (!page)
+ 		return -ENOMEM;
+ 
+diff --git a/drivers/usb/gadget/f_phonet.c b/drivers/usb/gadget/f_phonet.c
+index 965a629..19adb15 100644
+--- a/drivers/usb/gadget/f_phonet.c
++++ b/drivers/usb/gadget/f_phonet.c
+@@ -301,7 +301,7 @@ pn_rx_submit(struct f_phonet *fp, struct usb_request *req, gfp_t gfp_flags)
+ 	struct page *page;
+ 	int err;
+ 
+-	page = alloc_page(gfp_flags);
++	page = __netdev_alloc_page(gfp_flags | __GFP_NOMEMALLOC, NULL);
+ 	if (!page)
+ 		return -ENOMEM;
+ 
+diff --git a/include/linux/skbuff.h b/include/linux/skbuff.h
+index b01a993..4e31d4a 100644
+--- a/include/linux/skbuff.h
++++ b/include/linux/skbuff.h
+@@ -1733,6 +1733,61 @@ static inline struct sk_buff *netdev_alloc_skb_ip_align(struct net_device *dev,
+ 	return __netdev_alloc_skb_ip_align(dev, length, GFP_ATOMIC);
+ }
+ 
++/*
++ *	__netdev_alloc_page - allocate a page for ps-rx on a specific device
++ *	@gfp_mask: alloc_pages_node mask. Set __GFP_NOMEMALLOC if not for network packet RX
++ *	@skb: skb to set pfmemalloc on if __GFP_MEMALLOC is used
++ *	@order: size of the allocation
++ *
++ * 	Allocate a new page. dev currently unused.
++ *
++ * 	%NULL is returned if there is no free memory.
++*/
++static inline struct page *__netdev_alloc_pages(gfp_t gfp_mask,
++						struct sk_buff *skb,
++						unsigned int order)
++{
++	struct page *page;
++
++	gfp_mask |= __GFP_COLD;
++
++	if (!(gfp_mask & __GFP_NOMEMALLOC))
++		gfp_mask |= __GFP_MEMALLOC;
++
++	page = alloc_pages_node(NUMA_NO_NODE, gfp_mask, order);
++	if (skb && page && page->pfmemalloc)
++		skb->pfmemalloc = true;
++
++	return page;
++}
++
++/**
++ *	__netdev_alloc_page - allocate a page for ps-rx on a specific device
++ *	@gfp_mask: alloc_pages_node mask. Set __GFP_NOMEMALLOC if not for network packet RX
++ *	@skb: skb to set pfmemalloc on if __GFP_MEMALLOC is used
++ *
++ * 	Allocate a new page. dev currently unused.
++ *
++ * 	%NULL is returned if there is no free memory.
++ */
++static inline struct page *__netdev_alloc_page(gfp_t gfp_mask,
++						struct sk_buff *skb)
++{
++	return __netdev_alloc_pages(gfp_mask, skb, 0);
++}
++
++/**
++ *	propagate_pfmemalloc_skb - Propagate pfmemalloc if skb is allocated after RX page
++ *	@page: The page that was allocated from netdev_alloc_page
++ *	@skb: The skb that may need pfmemalloc set
++ */
++static inline void propagate_pfmemalloc_skb(struct page *page,
++						struct sk_buff *skb)
++{
++	if (page && page->pfmemalloc)
++		skb->pfmemalloc = true;
++}
++
+ /**
+  * skb_frag_page - retrieve the page refered to by a paged fragment
+  * @frag: the paged fragment
 -- 
 1.7.9.2
 
