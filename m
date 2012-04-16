@@ -1,54 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752884Ab2DPKVc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Apr 2012 06:21:32 -0400
-Received: from mga01.intel.com ([192.55.52.88]:43717 "EHLO mga01.intel.com"
+	id S1752994Ab2DPK3P (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Apr 2012 06:29:15 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:41471 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752479Ab2DPKVb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Apr 2012 06:21:31 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="154091599"
-Date: Mon, 16 Apr 2012 12:30:23 +0200
-From: Samuel Ortiz <sameo@linux.intel.com>
-To: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        kernel@pengutronix.de
-Subject: Re: [PATCH v2 06/15] mfd: mark const init data with __initconst
- instead of __initdata
-Message-ID: <20120416103023.GE1647@sortiz-mobl>
-References: <20120330200358.GV15647@pengutronix.de>
- <1333137905-13809-6-git-send-email-u.kleine-koenig@pengutronix.de>
+	id S1752616Ab2DPK3O (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Apr 2012 06:29:14 -0400
+Date: Mon, 16 Apr 2012 13:28:55 +0300
+From: Gleb Natapov <gleb@redhat.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Sasha Levin <levinsasha928@gmail.com>, Avi Kivity <avi@redhat.com>,
+        Marcelo Tosatti <mtosatti@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        kvm <kvm@vger.kernel.org>, linux-kernel <linux-kernel@vger.kernel.org>,
+        Dave Jones <davej@redhat.com>
+Subject: Re: kvm: RCU warning in async pf
+Message-ID: <20120416102855.GP11918@redhat.com>
+References: <1333414472.11455.7.camel@lappy>
+ <20120403105226.GF14939@redhat.com>
+ <20120404123033.GD11918@redhat.com>
+ <1334396693.2528.45.camel@twins>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1333137905-13809-6-git-send-email-u.kleine-koenig@pengutronix.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1334396693.2528.45.camel@twins>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Uwe,
-
-On Fri, Mar 30, 2012 at 10:04:56PM +0200, Uwe Kleine-König wrote:
-> As long as there is no other non-const variable marked __initdata in the
-> same compilation unit it doesn't hurt. If there were one however
-> compilation would fail with
+On Sat, Apr 14, 2012 at 11:44:53AM +0200, Peter Zijlstra wrote:
+> On Wed, 2012-04-04 at 15:30 +0300, Gleb Natapov wrote:
+> >  
+> > @@ -253,7 +254,10 @@ do_async_page_fault(struct pt_regs *regs, unsigned long error_code)
+> >  		kvm_async_pf_task_wait((u32)read_cr2());
+> >  		break;
+> >  	case KVM_PV_REASON_PAGE_READY:
+> > +		rcu_irq_enter();
+> > +		exit_idle();
+> >  		kvm_async_pf_task_wake((u32)read_cr2());
+> > +		rcu_irq_exit();
+> >  		break;
+> >  	}
+> >  }
 > 
-> 	error: $variablename causes a section type conflict
+> Wouldn't irq_enter() / irq_exit() be more appropriate? You're basically
+> taking an interrupt/exception from idle, irq_enter() will fix up
+> everything that needs fixing up, including time sources (which the
+> scheduler expects to be up-to-date).
 > 
-> because a section containing const variables is marked read only and so
-> cannot contain non-const variables.
-> 
-> Signed-off-by: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
-> Cc: Samuel Ortiz <sameo@linux.intel.com>
-Patch applied, thanks.
+You are right. Will send a patch.
 
-Cheers,
-Samuel.
-
--- 
-Intel Open Source Technology Centre
-http://oss.intel.com/
+--
+			Gleb.
