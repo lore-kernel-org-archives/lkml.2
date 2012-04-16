@@ -1,76 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751708Ab2DPHC0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Apr 2012 03:02:26 -0400
-Received: from mail-qa0-f42.google.com ([209.85.216.42]:36889 "EHLO
-	mail-qa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750993Ab2DPHCY (ORCPT
+	id S1751489Ab2DPHGa (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Apr 2012 03:06:30 -0400
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:9665 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750993Ab2DPHG3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Apr 2012 03:02:24 -0400
-From: Yong Zhang <yong.zhang0@gmail.com>
-To: linux-rt-users@vger.kernel.org, linux-kernel@vger.kernel.org
-Cc: tglx@linutronix.de, Yong Zhang <yong.zhang@windriver.com>
-Subject: [PATCH 2/2 -rt] lockdep: selftest: Only do hardirq context test for raw spinlock
-Date: Mon, 16 Apr 2012 15:01:56 +0800
-Message-Id: <1334559716-18447-3-git-send-email-yong.zhang0@gmail.com>
-X-Mailer: git-send-email 1.7.5.4
-In-Reply-To: <1334559716-18447-1-git-send-email-yong.zhang0@gmail.com>
-References: <1334559716-18447-1-git-send-email-yong.zhang0@gmail.com>
+	Mon, 16 Apr 2012 03:06:29 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp06.nvidia.com on Mon, 16 Apr 2012 00:06:29 -0700
+Message-ID: <4F8BC20A.2090105@nvidia.com>
+Date: Mon, 16 Apr 2012 12:24:02 +0530
+From: Laxman Dewangan <ldewangan@nvidia.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101208 Thunderbird/3.1.7
+MIME-Version: 1.0
+To: Paul Gortmaker <paul.gortmaker@windriver.com>
+CC: "sameo@linux.intel.com" <sameo@linux.intel.com>,
+        "broonie@opensource.wolfsonmicro.com" 
+	<broonie@opensource.wolfsonmicro.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>
+Subject: Re: [PATCH] mfd: fix modular builds of rc5t583 regulator support
+References: <1334549301-32114-1-git-send-email-paul.gortmaker@windriver.com>
+In-Reply-To: <1334549301-32114-1-git-send-email-paul.gortmaker@windriver.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Yong Zhang <yong.zhang@windriver.com>
+On Monday 16 April 2012 09:38 AM, Paul Gortmaker wrote:
+> The combination of commit 1b1247dd75aa5cf5fae54a3bec7280046e9c7957
+>
+>      "mfd: Add support for RICOH PMIC RC5T583"
+>
+> and commit 6ffc3270210efa2bea526953a142ffc908f5bd86
+>
+>      "regulator: Add support for RICOH PMIC RC5T583 regulator"
+>
+> are causing the i386 allmodconfig builds to fail with this:
+>
+>    ERROR: "rc5t583_update" [drivers/regulator/rc5t583-regulator.ko] undefined!
+>    ERROR: "rc5t583_set_bits" [drivers/regulator/rc5t583-regulator.ko] undefined!
+>    ERROR: "rc5t583_clear_bits" [drivers/regulator/rc5t583-regulator.ko] undefined!
+>    ERROR: "rc5t583_read" [drivers/regulator/rc5t583-regulator.ko] undefined!
+>
+> and this:
+>
+>    ERROR: "rc5t583_ext_power_req_config" [drivers/regulator/rc5t583-regulator.ko] undefined!
+>
+> For the 1st four, make the simple ops static inline, instead of
+> polluting the namespace with trivial exports.  For the last one,
+> add an EXPORT_SYMBOL.
+>
+> Signed-off-by: Paul Gortmaker<paul.gortmaker@windriver.com>
+> ---
+>
+> [ alternately, make REGULATOR_RC5T583 bool instead of tristate? ]
 
-On -rt there is no softirq context any more and rwlock is sleepable,
-disable softirq context test and rwlock+irq test.
-
-Signed-off-by: Yong Zhang <yong.zhang0@gmail.com>
----
- lib/locking-selftest.c |   23 +++++++++++++++++++++++
- 1 files changed, 23 insertions(+), 0 deletions(-)
-
-diff --git a/lib/locking-selftest.c b/lib/locking-selftest.c
-index c3eb261..23b8564 100644
---- a/lib/locking-selftest.c
-+++ b/lib/locking-selftest.c
-@@ -1175,6 +1175,7 @@ void locking_selftest(void)
- 
- 	printk("  --------------------------------------------------------------------------\n");
- 
-+#ifndef CONFIG_PREEMPT_RT_FULL
- 	/*
- 	 * irq-context testcases:
- 	 */
-@@ -1187,6 +1188,28 @@ void locking_selftest(void)
- 
- 	DO_TESTCASE_6x2("irq read-recursion", irq_read_recursion);
- //	DO_TESTCASE_6x2B("irq read-recursion #2", irq_read_recursion2);
-+#else
-+	/* On -rt, we only do hardirq context test for raw spinlock */
-+	DO_TESTCASE_1B("hard-irqs-on + irq-safe-A", irqsafe1_hard_spin, 12);
-+	DO_TESTCASE_1B("hard-irqs-on + irq-safe-A", irqsafe1_hard_spin, 21);
-+
-+	DO_TESTCASE_1B("hard-safe-A + irqs-on", irqsafe2B_hard_spin, 12);
-+	DO_TESTCASE_1B("hard-safe-A + irqs-on", irqsafe2B_hard_spin, 21);
-+
-+	DO_TESTCASE_1B("hard-safe-A + unsafe-B #1", irqsafe3_hard_spin, 123);
-+	DO_TESTCASE_1B("hard-safe-A + unsafe-B #1", irqsafe3_hard_spin, 132);
-+	DO_TESTCASE_1B("hard-safe-A + unsafe-B #1", irqsafe3_hard_spin, 213);
-+	DO_TESTCASE_1B("hard-safe-A + unsafe-B #1", irqsafe3_hard_spin, 231);
-+	DO_TESTCASE_1B("hard-safe-A + unsafe-B #1", irqsafe3_hard_spin, 312);
-+	DO_TESTCASE_1B("hard-safe-A + unsafe-B #1", irqsafe3_hard_spin, 321);
-+
-+	DO_TESTCASE_1B("hard-safe-A + unsafe-B #2", irqsafe4_hard_spin, 123);
-+	DO_TESTCASE_1B("hard-safe-A + unsafe-B #2", irqsafe4_hard_spin, 132);
-+	DO_TESTCASE_1B("hard-safe-A + unsafe-B #2", irqsafe4_hard_spin, 213);
-+	DO_TESTCASE_1B("hard-safe-A + unsafe-B #2", irqsafe4_hard_spin, 231);
-+	DO_TESTCASE_1B("hard-safe-A + unsafe-B #2", irqsafe4_hard_spin, 312);
-+	DO_TESTCASE_1B("hard-safe-A + unsafe-B #2", irqsafe4_hard_spin, 321);
-+#endif
- 
- 	if (unexpected_testcase_failures) {
- 		printk("-----------------------------------------------------------------\n");
--- 
-1.7.5.4
-
+Why not export all require symbol from mfd core.
+I am sending the patch to exporting all required apis. Please review.
