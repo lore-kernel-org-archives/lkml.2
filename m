@@ -1,75 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754626Ab2DPO7s (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Apr 2012 10:59:48 -0400
-Received: from smtp02.citrix.com ([66.165.176.63]:12815 "EHLO
-	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753511Ab2DPO7r (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Apr 2012 10:59:47 -0400
-X-IronPort-AV: E=Sophos;i="4.75,429,1330923600"; 
-   d="scan'208";a="190522964"
-Message-ID: <4F8C33E0.2080007@citrix.com>
-Date: Mon, 16 Apr 2012 15:59:44 +0100
-From: David Vrabel <david.vrabel@citrix.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20120317 Icedove/3.0.11
+	id S1754443Ab2DPPC1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Apr 2012 11:02:27 -0400
+Received: from mga03.intel.com ([143.182.124.21]:33203 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752883Ab2DPPC0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Apr 2012 11:02:26 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="89585027"
+Date: Mon, 16 Apr 2012 17:10:35 +0200
+From: Samuel Ortiz <sameo@linux.intel.com>
+To: Axel Lin <axel.lin@gmail.com>
+Cc: linux-kernel@vger.kernel.org, Andres Salomon <dilinger@queued.net>,
+        "Ira W. Snyder" <iws@ovro.caltech.edu>,
+        Florian Fainelli <florian@openwrt.org>,
+        Denis Turischev <denis@compulab.co.il>,
+        Harald Welte <HaraldWelte@viatech.com>
+Subject: Re: [PATCH] mfd: use module_pci_driver
+Message-ID: <20120416151035.GE24130@sortiz-mobl>
+References: <1333415359.18133.3.camel@phoenix>
 MIME-Version: 1.0
-To: Jan Beulich <JBeulich@suse.com>
-CC: Thomas Gleixner <tglx@linutronix.de>, xen-devel <xen-devel@lists.xen.org>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Tim (Xen.org)" <tim@xen.org>, Sheng Yang <sheng@yasker.org>
-Subject: Re: [PATCH] xen: always set the sched clock as unstable
-References: <1334341255-11153-1-git-send-email-david.vrabel@citrix.com> <4F8C1F6D020000780007E11A@nat28.tlf.novell.com>
-In-Reply-To: <4F8C1F6D020000780007E11A@nat28.tlf.novell.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1333415359.18133.3.camel@phoenix>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 16/04/12 12:32, Jan Beulich wrote:
->>>> On 13.04.12 at 20:20, David Vrabel <david.vrabel@citrix.com> wrote:
->> From: David Vrabel <david.vrabel@citrix.com>
->>
->> The sched clock was considered stable based on the capabilities of the
->> underlying hardware.  This does not make sense for Xen PV guests as:
->> a) the hardware TSC is not used directly as the clock source; and b)
->> guests may migrate to hosts with different hardware capabilities.
->>
->> It is not clear to me whether the Xen clock source is supposed to be
->> stable and whether it should be stable across migration.  For a clock
->> source to be stable it must be: a) monotonic; c) synchronized across
->> CPUs; and c) constant rate.
+Hi Axel,
 
-Tim, Thomas, can you comment on the above paragraph?  Is it correct?
-
->> There have also been reports of systems with apparently unstable
->> clocks where clearing sched_clock_stable has fixed problems with
->> migrated VMs hanging.
->>
->> So, always set the sched clock as unstable when using the Xen clock
->> source.
->>
->> Signed-off-by: David Vrabel <david.vrabel@citrix.com>
->> ---
->>  arch/x86/xen/time.c |    1 +
->>  1 files changed, 1 insertions(+), 0 deletions(-)
->>
->> diff --git a/arch/x86/xen/time.c b/arch/x86/xen/time.c
->> index 0296a95..8469b5a 100644
->> --- a/arch/x86/xen/time.c
->> +++ b/arch/x86/xen/time.c
->> @@ -473,6 +473,7 @@ static void __init xen_time_init(void)
->>  	do_settimeofday(&tp);
->>  
->>  	setup_force_cpu_cap(X86_FEATURE_TSC);
->> +	sched_clock_stable = 0;
+On Tue, Apr 03, 2012 at 09:09:19AM +0800, Axel Lin wrote:
+> This patch converts the drivers in drivers/mfd/* to use module_pci_driver()
+> macro which makes the code smaller and a bit simpler.
 > 
-> This, unfortunately, is not sufficient afaict: If a CPU gets brought up
-> post-boot, the variable may need to be cleared again. Instead you
-> ought to call mark_tsc_unstable().
+> Signed-off-by: Axel Lin <axel.lin@gmail.com>
+> Cc: Andres Salomon <dilinger@queued.net>
+> Cc: Ira W. Snyder <iws@ovro.caltech.edu>
+> Cc: Florian Fainelli <florian@openwrt.org>
+> Cc: Denis Turischev <denis@compulab.co.il>
+> Cc: Harald Welte <HaraldWelte@viatech.com>
+> ---
+>  drivers/mfd/cs5535-mfd.c          |   13 +------------
+>  drivers/mfd/janz-cmodio.c         |   17 +----------------
+>  drivers/mfd/lpc_sch.c             |   13 +------------
+>  drivers/mfd/rdc321x-southbridge.c |   13 +------------
+>  drivers/mfd/vx855.c               |   12 +-----------
+>  5 files changed, 5 insertions(+), 63 deletions(-)
+Applied to my for-next branch.
 
-Yeah, mark_tsc_unstable() is the right thing to do.
+Cheers,
+Samuel.
 
-David
+-- 
+Intel Open Source Technology Centre
+http://oss.intel.com/
