@@ -1,103 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755074Ab2DPPto (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Apr 2012 11:49:44 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:34998 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754575Ab2DPPtm (ORCPT
+	id S1755048Ab2DPPua (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Apr 2012 11:50:30 -0400
+Received: from acsinet15.oracle.com ([141.146.126.227]:46797 "EHLO
+	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753882Ab2DPPu2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Apr 2012 11:49:42 -0400
-Date: Tue, 17 Apr 2012 00:49:35 +0900
-From: Takuya Yoshikawa <takuya.yoshikawa@gmail.com>
-To: Avi Kivity <avi@redhat.com>, kvm-ppc@vger.kernel.org
-Cc: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>,
-        Marcelo Tosatti <mtosatti@redhat.com>,
-        Xiao Guangrong <xiaoguangrong.eric@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>, KVM <kvm@vger.kernel.org>
-Subject: Re: [PATCH 00/13] KVM: MMU: fast page fault
-Message-Id: <20120417004935.a9a39d951b3c24588e29edd2@gmail.com>
-In-Reply-To: <4F8A95CB.9070104@redhat.com>
-References: <4F742951.7080003@linux.vnet.ibm.com>
-	<4F82E04E.6000900@redhat.com>
-	<20120409175829.GB21894@amt.cnet>
-	<4F8329D3.7000605@gmail.com>
-	<20120409194614.GB23053@amt.cnet>
-	<4F840DD2.3090101@redhat.com>
-	<20120410204031.ffb5b976225ac9fe6dae474e@gmail.com>
-	<4F842074.1050108@linux.vnet.ibm.com>
-	<20120411211514.35db29c11460516e604059b6@gmail.com>
-	<4F857B61.9080602@linux.vnet.ibm.com>
-	<20120411231441.9d0984672dd252b806f99128@gmail.com>
-	<20120413232528.c5ddbddb3cc0870d6e85a332@gmail.com>
-	<4F8A95CB.9070104@redhat.com>
-X-Mailer: Sylpheed 3.2.0beta3 (GTK+ 2.24.6; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Mon, 16 Apr 2012 11:50:28 -0400
+Date: Mon, 16 Apr 2012 11:44:29 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
+        Jeremy Fitzhardinge <jeremy@goop.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
+        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
+        Ingo Molnar <mingo@elte.hu>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        the arch/x86 maintainers <x86@kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, Avi Kivity <avi@redhat.com>,
+        Marcelo Tosatti <mtosatti@redhat.com>, KVM <kvm@vger.kernel.org>,
+        Andi Kleen <andi@firstfloor.org>,
+        Xen Devel <xen-devel@lists.xensource.com>,
+        Virtualization <virtualization@lists.linux-foundation.org>,
+        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
+        Stephan Diestelhorst <stephan.diestelhorst@amd.com>,
+        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+        Attilio Rao <attilio.rao@citrix.com>
+Subject: Re: [PATCH RFC V6 0/11] Paravirtualized ticketlocks
+Message-ID: <20120416154429.GB4654@phenom.dumpdata.com>
+References: <20120321102041.473.61069.sendpatchset@codeblue.in.ibm.com>
+ <4F7616F5.4070000@zytor.com>
+ <alpine.LFD.2.02.1203302333560.2542@ionos>
+ <20120331040745.GC14030@linux.vnet.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120331040745.GC14030@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+X-CT-RefId: str=0001.0A090208.4F8C3F95.00E5,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 15 Apr 2012 12:32:59 +0300
-Avi Kivity <avi@redhat.com> wrote:
+On Sat, Mar 31, 2012 at 09:37:45AM +0530, Srivatsa Vaddagiri wrote:
+> * Thomas Gleixner <tglx@linutronix.de> [2012-03-31 00:07:58]:
+> 
+> > I know that Peter is going to go berserk on me, but if we are running
+> > a paravirt guest then it's simple to provide a mechanism which allows
+> > the host (aka hypervisor) to check that in the guest just by looking
+> > at some global state.
+> > 
+> > So if a guest exits due to an external event it's easy to inspect the
+> > state of that guest and avoid to schedule away when it was interrupted
+> > in a spinlock held section. That guest/host shared state needs to be
+> > modified to indicate the guest to invoke an exit when the last nested
+> > lock has been released.
+> 
+> I had attempted something like that long back:
+> 
+> http://lkml.org/lkml/2010/6/3/4
+> 
+> The issue is with ticketlocks though. VCPUs could go into a spin w/o
+> a lock being held by anybody. Say VCPUs 1-99 try to grab a lock in
+> that order (on a host with one cpu). VCPU1 wins (after VCPU0 releases it)
+> and releases the lock. VCPU1 is next eligible to take the lock. If 
+> that is not scheduled early enough by host, then remaining vcpus would keep 
+> spinning (even though lock is technically not held by anybody) w/o making 
+> forward progress.
+> 
+> In that situation, what we really need is for the guest to hint to host
+> scheduler to schedule VCPU1 early (via yield_to or something similar). 
+> 
+> The current pv-spinlock patches however does not track which vcpu is
+> spinning at what head of the ticketlock. I suppose we can consider 
+> that optimization in future and see how much benefit it provides (over
+> plain yield/sleep the way its done now).
 
-> Just to throw another idea into the mix - we can have write-protect-less
-> dirty logging, too.  Instead of write protection, drop the dirty bit,
-> and check it again when reading the dirty log.  It might look like we're
-> accessing the spte twice here, but it's actually just once - when we
-> check it to report for GET_DIRTY_LOG call N, we also prepare it for call
-> N+1.
+Right. I think Jeremy played around with this some time?
+> 
+> Do you see any issues if we take in what we have today and address the
+> finer-grained optimization as next step?
 
-kvm-ppc's dirty tracking, implemented by Paul, is using information supplied
-by hardware and seems to be similar to what you described here.
+I think that is the proper course - these patches show
+that on baremetal we don't incur performance regressions and in
+virtualization case we benefit greatly. Since these are the basic
+building blocks of a kernel - taking it slow and just adding
+this set of patches for v3.5 is a good idea - and then building on top
+of that for further refinement.
 
-We may be able to get feedback from kvm-ppc developers.
-
-> This doesn't work for EPT, which lacks a dirty bit.  But we can emulate
-> it: take a free bit and call it spte.NOTDIRTY, when it is set, we also
-> clear spte.WRITE, and teach the mmu that if it sees spte.NOTDIRTY and
-> can just set spte.WRITE and clear spte.NOTDIRTY.  Now that looks exactly
-> like Xiao's lockless write enabling.
-
-How do we sync with dirty_bitmap?
-
-> Another note: O(1) write protection is not mutually exclusive with rmap
-> based write protection.  In GET_DIRTY_LOG, you write protect everything,
-> and proceed to write enable on faults.  When you reach the page table
-> level, you perform the rmap check to see if you should write protect or
-> not.  With role.direct=1 the check is very cheap (and sometimes you can
-> drop the entire page table and replace it with a large spte).
-
-I understand that there are many possible combinations.
-
-But the question is whether the complexity is really worth it.
-
-
-Once, when we were searching a way to find atomic bitmap switch, you said
-to me that we should do our best not to add overheads to VCPU threads.
-
->From then, I tried my best to mitigate the latency problem without adding
-code to VCPU thread paths: if we add cond_resched patch, we will get a simple
-solution to the current known problem -- probably 64GB guests will work well
-without big latencies, once QEMU gets improved.
-
-	I also surveyed other known hypervisors internally.  We can easily see
-	hundreds of ms latency during migration.  But people rarely complain
-	about that if they are stable and usable in most situations.
-
-
-Although O(1) is actually O(1) for GET_DIRTY_LOG thread, it adds some
-overheads to page fault handling.  We may need to hold mmu_lock for properly
-handling O(1)'s write protection and ~500 write protections will not be so
-cheap.  And there is no answer to the question how to achive slot-wise write
-protection.
-
-Of course, we may need such a tree-wide write protection when we want to
-support guests with hundreds of GB, or TB, of memory.  Sadly it's not now.
-
-
-Well, if you need the best answer now, we should discuss the whole design:
-KVM Forum may be a good place for that.
-
-Thanks,
-	Takuya
+> 
+> - vatsa 
