@@ -1,38 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755181Ab2DPV6B (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Apr 2012 17:58:01 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:39575 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751701Ab2DPV6A (ORCPT
+	id S1755077Ab2DPV77 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Apr 2012 17:59:59 -0400
+Received: from mail-pz0-f52.google.com ([209.85.210.52]:38610 "EHLO
+	mail-pz0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751701Ab2DPV75 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Apr 2012 17:58:00 -0400
-Date: Mon, 16 Apr 2012 14:57:55 -0700
-From: Tejun Heo <tj@kernel.org>
-To: Dan Carpenter <dan.carpenter@oracle.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [patch v2] workqueue: change BUG_ON() to WARN_ON()
-Message-ID: <20120416215755.GA12421@google.com>
-References: <CAOS58YOSy-acB7Oara9ay1Zeznx0vCSB0Z23F+6KtEKZ56nXmQ@mail.gmail.com>
- <20120413190658.GA18505@elgon.mountain>
-MIME-Version: 1.0
+	Mon, 16 Apr 2012 17:59:57 -0400
+Subject: Re: [PATCH 00/19 v5] Fix filesystem freezing deadlocks
+Mime-Version: 1.0 (Apple Message framework v1084)
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120413190658.GA18505@elgon.mountain>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+From: Andreas Dilger <adilger@whamcloud.com>
+In-Reply-To: <1334592845-22862-1-git-send-email-jack@suse.cz>
+Date: Mon, 16 Apr 2012 15:02:50 -0700
+Cc: Al Viro <viro@ZenIV.linux.org.uk>, dchinner@redhat.com,
+        LKML <linux-kernel@vger.kernel.org>, linux-fsdevel@vger.kernel.org,
+        Alex Elder <elder@kernel.org>, Anton Altaparmakov <anton@tuxera.com>,
+        Ben Myers <bpm@sgi.com>, Chris Mason <chris.mason@oracle.com>,
+        cluster-devel@redhat.com, "David S. Miller" <davem@davemloft.net>,
+        fuse-devel@lists.sourceforge.net,
+        "J. Bruce Fields" <bfields@fieldses.org>,
+        Joel Becker <jlbec@evilplan.org>,
+        KONISHI Ryusuke <konishi.ryusuke@lab.ntt.co.jp>,
+        linux-btrfs@vger.kernel.org, linux-ext4@vger.kernel.org,
+        linux-nfs@vger.kernel.org, linux-nilfs@vger.kernel.org,
+        linux-ntfs-dev@lists.sourceforge.net, Mark Fasheh <mfasheh@suse.com>,
+        Miklos Szeredi <miklos@szeredi.hu>, ocfs2-devel@oss.oracle.com,
+        OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>,
+        Steven Whitehouse <swhiteho@redhat.com>,
+        "Theodore Ts'o" <tytso@mit.edu>, xfs@oss.sgi.com
+Content-Transfer-Encoding: 8BIT
+Message-Id: <C9A0E2F0-ED57-40D6-9F75-5D72D45D21F0@dilger.ca>
+References: <1334592845-22862-1-git-send-email-jack@suse.cz>
+To: Jan Kara <jack@suse.cz>
+X-Mailer: Apple Mail (2.1084)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 13, 2012 at 10:06:58PM +0300, Dan Carpenter wrote:
-> This BUG_ON() can be triggered if you call schedule_work() before
-> calling INIT_WORK().  It is a bug definitely, but it's nicer to just
-> print a stack trace and return.
-> 
-> Reported-by: Matt Renzelmann <mjr@cs.wisc.edu>
-> Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+On 2012-04-16, at 9:13 AM, Jan Kara wrote:
+> Another potential contention point might be patch 19. In that patch
+> we make freeze_super() refuse to freeze the filesystem when there
+> are open but unlinked files which may be impractical in some cases.
+> The main reason for this is the problem with handling of file deletion
+> from fput() called with mmap_sem held (e.g. from munmap(2)), and
+> then there's the fact that we cannot really force such filesystem
+> into a consistent state... But if people think that freezing with
+> open but unlinked files should happen, then I have some possible
+> solutions in mind (maybe as a separate patchset since this is
+> large enough).
 
-Applied to wq/for-3.5.  Thanks.
+Looking at a desktop system, I think it is very typical that there
+are open-unlinked files present, so I don't know if this is really
+an acceptable solution.  It isn't clear from your comments whether
+this is a blanket refusal for all open-unlinked files, or only in
+some particular cases...
 
--- 
-tejun
+lsof | grep deleted
+nautilus  25393  adilger   19r      REG           253,0      340     253954 /home/adilger/.local/share/gvfs-metadata/home (deleted)
+nautilus  25393  adilger   20r      REG           253,0    32768     253964 /home/adilger/.local/share/gvfs-metadata/home-f332a8f3.log (deleted)
+gnome-ter 25623  adilger   22u      REG            0,18    17841    2717846 /tmp/vtePIRJCW (deleted)
+gnome-ter 25623  adilger   23u      REG            0,18     5568    2717847 /tmp/vteDCSJCW (deleted)
+gnome-ter 25623  adilger   29u      REG            0,18      480    2728484 /tmp/vte6C1TCW (deleted)
+
+Cheers, Andreas
+
+
+
+
+
