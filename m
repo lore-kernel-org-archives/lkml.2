@@ -1,48 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753359Ab2DPL1U (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Apr 2012 07:27:20 -0400
-Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:46902 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753213Ab2DPL1T (ORCPT
+	id S1753316Ab2DPLaI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Apr 2012 07:30:08 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:52674 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753172Ab2DPLaG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Apr 2012 07:27:19 -0400
-Date: Mon, 16 Apr 2012 12:26:34 +0100
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+	Mon, 16 Apr 2012 07:30:06 -0400
+Message-ID: <4F8C025A.6020002@mvista.com>
+Date: Mon, 16 Apr 2012 15:28:26 +0400
+From: Sergei Shtylyov <sshtylyov@mvista.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:11.0) Gecko/20120327 Thunderbird/11.0.1
+MIME-Version: 1.0
 To: Andy Whitcroft <apw@canonical.com>
-Cc: Jeff Garzik <jgarzik@pobox.com>, linux-ide@vger.kernel.org,
+CC: Jeff Garzik <jgarzik@pobox.com>, linux-ide@vger.kernel.org,
         linux-kernel@vger.kernel.org, "K. Y. Srinivasan" <kys@microsoft.com>,
-        Mike Sterling <Mike.Sterling@microsoft.com>
-Subject: Re: [PATCH 0/2] Hyper-V disk support V3
-Message-ID: <20120416122634.7d1357e1@ultron>
-In-Reply-To: <1334575229-7493-1-git-send-email-apw@canonical.com>
-References: <20120414170223.24f6ea31@pyramind.ukuu.org.uk>
-	<1334575229-7493-1-git-send-email-apw@canonical.com>
-X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+        Mike Sterling <Mike.Sterling@microsoft.com>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>
+Subject: Re: [PATCH 2/2] UBUNTU: SAUCE: ata_piix: defer disks to the Hyper-V
+ drivers by default
+References: <20120414170223.24f6ea31@pyramind.ukuu.org.uk> <1334575229-7493-1-git-send-email-apw@canonical.com> <1334575229-7493-3-git-send-email-apw@canonical.com>
+In-Reply-To: <1334575229-7493-3-git-send-email-apw@canonical.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 16 Apr 2012 12:20:27 +0100
-Andy Whitcroft <apw@canonical.com> wrote:
+Hello.
 
-> Add support for ignoring disks devices on specific host controllers to
-> libata.  Use this support to trigger us to ignore Hyper-V disk devices
-> on the emulated SATA device based on the system DMI information.
-> 
-> Jeff, I believe the first patch is what you had in mind in your comments.
-> Alan, the piix sadly has no subvendor/subdevice identifiers at all
+On 16-04-2012 15:20, Andy Whitcroft wrote:
 
-So its 0x0000,0x0000 ?
+> When we are hosted on a Microsoft Hyper-V hypervisor the guest disks
+> are exposed both via the Hyper-V paravirtualised drivers and via an
+> emulated SATA disk drive.  In this case we want to use the paravirtualised
+> drivers if we can as they are much more efficient.  Note that the Hyper-V
+> paravirtualised drivers only expose the virtual hard disk devices, the
+> CDROM/DVD devices must still be enumerated.
 
-> though we are able to detect the platform from the DMI information,
-> this any better?
+> Mark the host controller ATA_HOST_IGNORE_ATA to prevent enumeration of
+> disk devices.
 
-What happens if you have a PIIX device which is being passed through from
-the underlying hardware or will hyper-v never support pass through ?
+> BugLink: http://bugs.launchpad.net/bugs/929545
+> BugLink: http://bugs.launchpad.net/bugs/942316
+> Signed-off-by: Andy Whitcroft<apw@canonical.com>
+> ---
+>   drivers/ata/ata_piix.c |   38 ++++++++++++++++++++++++++++++++++++++
+>   1 file changed, 38 insertions(+)
 
-Alan
+> diff --git a/drivers/ata/ata_piix.c b/drivers/ata/ata_piix.c
+> index 68013f9..05e0ffa 100644
+> --- a/drivers/ata/ata_piix.c
+> +++ b/drivers/ata/ata_piix.c
+> @@ -1552,6 +1552,41 @@ static bool piix_broken_system_poweroff(struct pci_dev *pdev)
+>   	return false;
+>   }
+>
+> +static int prefer_ms_hyperv = 1;
+> +module_param(prefer_ms_hyperv, int, 0);
+> +
+> +static void piix_ignore_devices_quirk(struct ata_host *host)
+> +{
+> +	static const struct dmi_system_id ignore_devices[] = {
+> +		{
+> +			/* On Hyper-V hypervisors the disks are exposed on
+> +			 * both the emulated SATA controller and on the
+> +			 * paravirtualised drivers.  The CD/DVD devices
+> +			 * are only exposed on the emulated controller.
+> +			 * Request we * ignore ATA devices on this host.
+
+    '*' not needed here.
+
+> +			 */
+> +			.ident = "Hyper-V Virtual Machine",
+> +			.matches = {
+> +				DMI_MATCH(DMI_SYS_VENDOR,
+> +						"Microsoft Corporation"),
+> +				DMI_MATCH(DMI_PRODUCT_NAME, "Virtual Machine"),
+> +			},
+> +			.driver_data = (void *)ATA_HOST_IGNORE_ATA,
+> +		},
+> +
+> +		{ }	/* terminate list */
+> +	};
+> +	const struct dmi_system_id *dmi = dmi_first_match(ignore_devices);
+> +
+> +	if (dmi) {
+> +		unsigned long flags = (unsigned long)dmi->driver_data;
+> +
+> +		host->flags |= flags;
+> +		dev_info(host->dev, "%s detected, device ignore set %08lx\n",
+
+    dev_dbg()?
+
+MBR, Sergei
