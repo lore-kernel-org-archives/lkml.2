@@ -1,132 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753145Ab2DPJYp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Apr 2012 05:24:45 -0400
-Received: from mail-wi0-f172.google.com ([209.85.212.172]:50711 "EHLO
-	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751678Ab2DPJYn (ORCPT
+	id S1752698Ab2DPJ1b (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Apr 2012 05:27:31 -0400
+Received: from mail-pz0-f52.google.com ([209.85.210.52]:60632 "EHLO
+	mail-pz0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751811Ab2DPJ13 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Apr 2012 05:24:43 -0400
-Date: Mon, 16 Apr 2012 11:24:37 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: "Chen, Dennis (SRDC SW)" <Dennis1.Chen@amd.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "paulmck@linux.vnet.ibm.com" <paulmck@linux.vnet.ibm.com>,
-        "peterz@infradead.org" <peterz@infradead.org>,
-        Paul Mackerras <paulus@samba.org>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Subject: Re: [PATCH 0/2] tools perf: Add a new benchmark tool for
- semaphore/mutex
-Message-ID: <20120416092437.GB27526@gmail.com>
-References: <4F7EC111.4010608@ladisch.de>
- <491D6B4EAD0A714894D8AD22F4BDE0439F9ED2@SCYBEXDAG02.amd.com>
- <20120409184538.GE2430@linux.vnet.ibm.com>
- <491D6B4EAD0A714894D8AD22F4BDE043A33A9E@SCYBEXDAG02.amd.com>
- <20120411173006.GB2473@linux.vnet.ibm.com>
- <491D6B4EAD0A714894D8AD22F4BDE043A33D37@SCYBEXDAG02.amd.com>
- <20120412151854.GB2394@linux.vnet.ibm.com>
- <491D6B4EAD0A714894D8AD22F4BDE043A33FD3@SCYBEXDAG02.amd.com>
- <20120413184350.GD2402@linux.vnet.ibm.com>
- <491D6B4EAD0A714894D8AD22F4BDE043B158BE@SCYBEXDAG03.amd.com>
+	Mon, 16 Apr 2012 05:27:29 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <491D6B4EAD0A714894D8AD22F4BDE043B158BE@SCYBEXDAG03.amd.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <EF2E73589CA71846A15D0B2CDF79505D0905D5A1AA@wm021.weinmann.com>
+References: <20120413103937.GH7154@arwen.pp.htv.fi>
+	<1334317476-10044-1-git-send-email-h.feurstein@gmail.com>
+	<EF2E73589CA71846A15D0B2CDF79505D0905D5A1AA@wm021.weinmann.com>
+Date: Mon, 16 Apr 2012 11:27:29 +0200
+Message-ID: <CAFfN3gV0Cd2rrZ7OpGk51MPi71S2u7ZxWt4VLeirY+zz11yESA@mail.gmail.com>
+Subject: Re: [PATCH] i2c-at91: fix data-loss issue
+From: Hubert Feurstein <h.feurstein@gmail.com>
+To: "Voss, Nikolaus" <N.Voss@weinmann.de>
+Cc: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>,
+        "nicolas.ferre@atmel.com" <nicolas.ferre@atmel.com>,
+        "ben-linux@fluff.org" <ben-linux@fluff.org>,
+        "balbi@ti.com" <balbi@ti.com>, "rmallon@gmail.com" <rmallon@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Am 16. April 2012 09:30 schrieb Voss, Nikolaus <N.Voss@weinmann.de>:
+> Hubert Feurstein wrote on 2012-04-13:
+>> In the interrupt handler both status-flags (TXCOMP and RXRDY) might be
+>> pending at the same time. In this case TXCOMP is handled but NOT RXRDY
+>> which causes a data-loss on the current transfer
+>
+> Right, this is definitely a bug and must be corrected. Part of my
+> motivation for exclusively or-ing the irq bits was not reading/
+> writing beyond the buffer because of (still) pending bits despite
+> of an already finished transfer, so I gave TXCOMP the highest prio.
+>
+> Because of other reasons, write_next_byte() already checks this and
+> does nothing if all data already has been written. My suggestion is
+> to have read_next_byte() do this check too, as I don't trust the
+> hardware to reset RXRDY _immediately_ after reading.
+Adding a check in read_next_byte() would be good just for safety.
 
-* Chen, Dennis (SRDC SW) <Dennis1.Chen@amd.com> wrote:
+>
+>> @@ -161,18 +161,22 @@ static irqreturn_t atmel_twi_interrupt(int irq, void
+>> *dev_id)
+>>  {
+>>       struct at91_twi_dev *dev = dev_id;
+>>       const unsigned status = at91_twi_read(dev, AT91_TWI_SR);
+>> -     const unsigned irqstatus = status & at91_twi_read(dev, AT91_TWI_IMR);
+>> +     unsigned irqstatus = status & at91_twi_read(dev, AT91_TWI_IMR);
+>> +
+>> +     irqstatus &= (AT91_TWI_RXRDY | AT91_TWI_TXRDY | AT91_TWI_TXCOMP);
+>
+> The above line should be unnecessary as no more than those interrupts
+> are enabled anyway. Any special reason for this?
+No special reason for this.
 
-> <PATCH PREFACE>
-> -------------------
-> This patch series are used to add a new performance benchmark tool for semaphore or mutex:
-> The new tool will fork NR tasks specified through the command line and bind each of them
-> to every CPUs in the system equally. The command to launch the tool looks like:
-> '# perf bench locking mutex -p 8 -t 400 -c'
-> 
-> The above command will create 400 tasks in a system with 8-CPU, each CPU will have 50 tasks.
-> After the task be created, it will read all the files and directories in '/sys/module'.
-> sysfs is RAM based and its read operation for both dir and file is very sensitive for mutex
-> lock, also '/sys/module' has almost no dependencies on external devices.
-> 
-> We can use this tool with 'perf record' command to get the hot-spot of the codes or 
-> 'perf top -g' to get live info, for example, below is a test case run in a intel i7-2600 box
-> (-c option is to get the cpu cycles, I don't use it in this test case):
-> 
-> # perf record -a perf bench locking mutex -p 8 -t 4000
-> # Running locking/mutex benchmark... 
->  ...
->  [13894 ]/6  duration        23 s   609392 us
->  [13996 ]/4  duration        23 s   599418 us
->  [14056 ]/0  duration        23 s   595710 us
->  [13715 ]/3  duration        23 s   621719 us
->  [13390 ]/6  duration        23 s   644020 us
->  [13696 ]/0  duration        23 s   623101 us
->  [14334 ]/6  duration        23 s   580262 us
->  [14343 ]/7  duration        23 s   578702 us
->  [14283 ]/3  duration        23 s   583007 us
->  -----------------------------------
->  Total duration     79353 s   943945 us
-> 
->  real: 23.84   s
->  user: 0.00   
->  sys:  0.45   
-> 
-> # perf report
-> ===================================================================================
-> ...
-> # perf version : 3.3.2
-> # arch : x86_64
-> # nrcpus online : 8
-> # nrcpus avail : 8
-> # cpudesc : Intel(R) Core(TM) i7-2600 CPU @ 3.40GHz
-> # total memory : 3966460 kB
-> # cmdline : /usr/bin/perf record -a perf bench locking mutex -p 8 -t 4000
-> 
-> # Events: 131K cycles
-> #
-> # Overhead          Command                      Shared Object                                 Symbol
-> # ........  ...............  .................................  .....................................
-> #
->     22.12%           perf  [kernel.kallsyms]                  [k] __mutex_lock_slowpath
->      8.27%           perf  [kernel.kallsyms]                  [k] _raw_spin_lock
->      6.16%           perf  [kernel.kallsyms]                  [k] mutex_unlock
->      5.22%           perf  [kernel.kallsyms]                  [k] mutex_spin_on_owner
->      4.94%           perf  [kernel.kallsyms]                  [k] sysfs_refresh_inode
->      4.82%           perf  [kernel.kallsyms]                  [k] mutex_lock
->      2.67%           perf  [kernel.kallsyms]                  [k] __mutex_unlock_slowpath
->      2.61%           perf  [kernel.kallsyms]                  [k] link_path_walk
->      2.42%           perf  [kernel.kallsyms]                  [k] _raw_spin_lock_irqsave
->      1.61%           perf  [kernel.kallsyms]                  [k] __d_lookup
->      1.18%           perf  [kernel.kallsyms]                  [k] clear_page_c
->      1.16%           perf  [kernel.kallsyms]                  [k] dput
->      0.97%           perf  [kernel.kallsyms]                  [k] do_lookup
->      0.93%        swapper  [kernel.kallsyms]                  [k] intel_idle
->      0.87%           perf  [kernel.kallsyms]                  [k] get_page_from_freelist
->      0.85%           perf  [kernel.kallsyms]                  [k] __strncpy_from_user
->      0.81%           perf  [kernel.kallsyms]                  [k] system_call
->      0.78%           perf  libc-2.13.so                       [.] 0x84ef0         
->      0.71%           perf  [kernel.kallsyms]                  [k] vfsmount_lock_local_lock
->      0.68%           perf  [kernel.kallsyms]                  [k] sysfs_dentry_revalidate
->      0.62%           perf  [kernel.kallsyms]                  [k] try_to_wake_up
->      0.62%           perf  [kernel.kallsyms]                  [k] kfree
->      0.60%           perf  [kernel.kallsyms]                  [k] kmem_cache_alloc   
-> ............................................................................................
-> 
+>
+>> +     if (!irqstatus)
+>> +             return IRQ_NONE;
+>> +
+>> +     if (irqstatus & AT91_TWI_RXRDY)
+>> +             at91_twi_read_next_byte(dev);
+>> +
+>> +     if (irqstatus & AT91_TWI_TXRDY)
+>> +             at91_twi_write_next_byte(dev);
+>
+> I would like to exclusively or TXRDY and RXRDY as those really should
+> not be active at the same time. Keeps the decision tree lean ;-).
+I agree, it should be save to xor at least those two.
 
-Nice! Would be nice to lift some of this information over into 
-the changelogs, to address my complaints in the previous mail.
+>
+>> @@ -189,6 +193,10 @@ static int
+>>  at91_do_twi_transfer(struct at91_twi_dev *dev)       if (dev->msg->flags &
+>>  I2C_M_RD) {          unsigned start_flags = AT91_TWI_START;
+>> +             /* clear any pending data */
+>> +             (void)at91_twi_read(dev, AT91_TWI_SR);
+>> +             (void)at91_twi_read(dev, AT91_TWI_RHR);
+>
+> I would like to modify this, as this is a partial fix for the above bug
+> which should already be fully fixed by the modified isr.
+> I fear subtle data-loss if we make (partial) tabula rasa before each
+> transfer. I'd rather add an assertion to check if the corresponding
+> irqs are active as an indication for a driver/hw-bug.
+You also can add both, print an error/warning if the state in SR is
+not as expected and then add the two recovery lines.
 
-> We can see that for 4000 tasks running in 8 CPUs simultaneously, it will create a very heavy 
-> contention for the mutex lock, so lot's of tasks enter into the slow path of the mutex lock...
-> I am very curious if we switch the mutex to the semaphore in this case, how's thing going? 
-> My next plan
+>
+> I'll repost the driver with your fix on positive feedback from you.
+> Thanks for tracking this down.
+>
+> Ben, is there any chance to get this driver into next?
+>
+> Niko
+>
+>
 
-Seems like an unfinished sentence.
-
-Thanks,
-
-	Ingo
+Hubert
