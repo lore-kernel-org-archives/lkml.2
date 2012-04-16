@@ -1,79 +1,148 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751811Ab2DPQDs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Apr 2012 12:03:48 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:44709 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751646Ab2DPQDp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Apr 2012 12:03:45 -0400
-Date: Mon, 16 Apr 2012 12:04:18 -0400
-From: Jeff Layton <jlayton@redhat.com>
-To: Peter Staubach <pstaubach@exagrid.com>
-Cc: Bernd Schubert <bernd.schubert@itwm.fraunhofer.de>,
-        Malahal Naineni <malahal@us.ibm.com>,
-        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "miklos@szeredi.hu" <miklos@szeredi.hu>,
-        "viro@ZenIV.linux.org.uk" <viro@ZenIV.linux.org.uk>,
-        "hch@infradead.org" <hch@infradead.org>,
-        "michael.brantley@deshaw.com" <michael.brantley@deshaw.com>,
-        "sven.breuner@itwm.fraunhofer.de" <sven.breuner@itwm.fraunhofer.de>
-Subject: Re: [PATCH RFC] vfs: make fstatat retry on ESTALE errors from
- getattr call
-Message-ID: <20120416120418.6857d74f@corrin.poochiereds.net>
-In-Reply-To: <FA8A9A935BFD3A4D8F0CDA1C4F611BCC063CF8E01D@IT-1874.Isys.com>
-References: <1334316311-22331-1-git-send-email-jlayton@redhat.com>
-	<20120413150518.GA1987@us.ibm.com>
-	<20120413114236.0e557e01@tlielax.poochiereds.net>
-	<4F8B1B7B.3040304@itwm.fraunhofer.de>
-	<20120416073655.7cdb90cf@corrin.poochiereds.net>
-	<FA8A9A935BFD3A4D8F0CDA1C4F611BCC063CF8E01D@IT-1874.Isys.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1751535Ab2DPQGK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Apr 2012 12:06:10 -0400
+Received: from rcsinet15.oracle.com ([148.87.113.117]:39262 "EHLO
+	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751163Ab2DPQGI convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Apr 2012 12:06:08 -0400
+MIME-Version: 1.0
+Message-ID: <049b7b93-fb37-4962-b272-d786e1dcfacb@default>
+Date: Mon, 16 Apr 2012 09:05:32 -0700 (PDT)
+From: Dan Magenheimer <dan.magenheimer@oracle.com>
+To: David Vrabel <david.vrabel@citrix.com>, Jan Beulich <JBeulich@suse.com>
+Cc: Konrad Wilk <konrad.wilk@oracle.com>, "Tim (Xen.org)" <tim@xen.org>,
+        linux-kernel@vger.kernel.org, xen-devel <xen-devel@lists.xen.org>,
+        Sheng Yang <sheng@yasker.org>, Thomas Gleixner <tglx@linutronix.de>
+Subject: RE: [Xen-devel] [PATCH] xen: always set the sched clock as unstable
+References: <1334341255-11153-1-git-send-email-david.vrabel@citrix.com>
+ <4F8C1F6D020000780007E11A@nat28.tlf.novell.com> <4F8C33E0.2080007@citrix.com>
+In-Reply-To: <4F8C33E0.2080007@citrix.com>
+X-Priority: 3
+X-Mailer: Oracle Beehive Extensions for Outlook 2.0.1.6  (510070) [OL
+ 12.0.6607.1000 (x86)]
+Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 8BIT
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+X-CT-RefId: str=0001.0A090205.4F8C435E.0078,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 16 Apr 2012 08:54:02 -0400
-Peter Staubach <pstaubach@exagrid.com> wrote:
+> From: David Vrabel [mailto:david.vrabel@citrix.com]
+> Subject: Re: [Xen-devel] [PATCH] xen: always set the sched clock as unstable
 
-> There seems to be a lot of, perhaps, misinformation here.
+Nacked-by: Dan Magenheimer <dan.magenheimer@oracle.com>
+
+(Apologies for missing the original post... our Oracle mail server
+has gone bonkers again... classifying nearly all (but not all) xen-devel
+email as spam.  This problem started when xen.org moved to a different
+ISP last year, was supposedly fixed by Oracle IT, and has just
+started being a problem again. Argh!)
+ 
+> On 16/04/12 12:32, Jan Beulich wrote:
+> >>>> On 13.04.12 at 20:20, David Vrabel <david.vrabel@citrix.com> wrote:
+> >> From: David Vrabel <david.vrabel@citrix.com>
+> >>
+> >> The sched clock was considered stable based on the capabilities of the
+> >> underlying hardware.  This does not make sense for Xen PV guests as:
+> >> a) the hardware TSC is not used directly as the clock source; and b)
+> >> guests may migrate to hosts with different hardware capabilities.
+> >>
+> >> It is not clear to me whether the Xen clock source is supposed to be
+> >> stable and whether it should be stable across migration.  For a clock
+> >> source to be stable it must be: a) monotonic; c) synchronized across
+> >> CPUs; and c) constant rate.
 > 
-> The looping occurs when the file system on the server returns a valid file handle during a pathname traversal and then returns ESTALE on a subsequent operation.
+> Tim, Thomas, can you comment on the above paragraph?  Is it correct?
+
+(Sigh... I keep seeing clock-related things, wish I had more time
+to spend on them, cursing, and going back to other things.  But,
+I need to comment further here...)
+
+Hmmm... I spent a great deal of time on TSC support in the hypervisor
+2-3 years ago.  I worked primarily on PV, but Intel supposedly was tracking
+everything on HVM as well.  There's most likely a bug or two still lurking
+but, for all guests, with the default tsc_mode, TSC is provided by Xen
+as an absolutely stable clock source.  If Xen determines that the underlying
+hardware declares that TSC is stable, guest rdtsc instructions are not trapped.
+If it is not, Xen emulates all guest rdtsc instructions.  After a migration or
+save/restore, TSC is always emulated.  The result is (ignoring possible
+bugs) that TSC as provided by Xen is a) monotonic; b) synchronized across
+CPUs; and c) constant rate.  Even across migration/save/restore.
+
+This should be true for Xen 4.0+ (but not for pre-Xen-4.0).
+
+Please see docs/misc/tscmode.txt in the xen tree.  Though
+it may appear at first to be targeted at a different audience,
+all the relevant info is in there if you read it all the way through.
+
+(If you have any questions or disagreements on that doc, please start
+a new thread and cc me directly since my list access is unreliable.)
+ 
+> >> There have also been reports of systems with apparently unstable
+> >> clocks where clearing sched_clock_stable has fixed problems with
+> >> migrated VMs hanging.
+> >>
+> >> So, always set the sched clock as unstable when using the Xen clock
+> >> source.
+> >>
+> >> Signed-off-by: David Vrabel <david.vrabel@citrix.com>
+> >> ---
+> >>  arch/x86/xen/time.c |    1 +
+> >>  1 files changed, 1 insertions(+), 0 deletions(-)
+> >>
+> >> diff --git a/arch/x86/xen/time.c b/arch/x86/xen/time.c
+> >> index 0296a95..8469b5a 100644
+> >> --- a/arch/x86/xen/time.c
+> >> +++ b/arch/x86/xen/time.c
+> >> @@ -473,6 +473,7 @@ static void __init xen_time_init(void)
+> >>  	do_settimeofday(&tp);
+> >>
+> >>  	setup_force_cpu_cap(X86_FEATURE_TSC);
+> >> +	sched_clock_stable = 0;
+> >
+> > This, unfortunately, is not sufficient afaict: If a CPU gets brought up
+> > post-boot, the variable may need to be cleared again. Instead you
+> > ought to call mark_tsc_unstable().
 > 
-> The client should retry the pathname traversal, which should either return a valid file handle or ENOENT.  If a subsequent operation returns ESTALE, then start over again at the original pathname traversal.
-> 
-> The client should not loop when 1) there is a signal pending which would cause the system call to terminate with EINTR or when it can't recover from the ESTALE return.  For example, if lookup("./foo") returns ESTALE, then clearly the current directory has become stale and there is no way for the client to recover. 
+> Yeah, mark_tsc_unstable() is the right thing to do.
 
-I think it's reasonable to make the syscall "wrapper" break out of the
-loop if there's a _fatal_ signal pending. At that point, we don't
-necessarily care what the return was since the program is going to be
-dying soon anyway.
+NACK!
 
-Some filesystems (e.g. NFS) would already return a different error code
-in that situation, but dealing with it here seems like a reasonable way
-to mitigate problems from filesystems that do not deal with signals
-themselves.
+No, no, no.  The exact opposite is true.  Like VMware, TSC is
+stable.  The issue is that Linux trusts other clock hardware more
+completely than TSC so whenever there is a problem with another
+clocksource, Linux blames TSC and marks TSC unstable.  But TSC
+on Xen 4.0+ is innocent.  In fact, TSC is a better clocksource
+choice than clocksource=xen (aka pvclock) because pvclock
+indirectly depends on TSC.
 
->One could make the argument that the client can recover by relooking up the current directory, which is fine, but eventually if the file handle for the root of the mounted file system is also stale, then there is no further recovery possible, at least for NFSv[23] and perhaps even for NFSv4 depending upon how the file system was mounted.
+For upstream kernels, the answer is to set clocksource=tsc
+and tsc=reliable, like VMware enforces. See:
 
-If it gets an ESTALE on the initial lookup, then the VFS will already
-attempt to retry the lookup again with LOOKUP_REVAL set. IIUC, that
-makes it revalidate all the way back up to the root. It currently does
-this regardless of whether LOOKUP_REVAL was set on the initial lookup
-attempt.
+https://lists.ubuntu.com/archives/kernel-team/2008-October/004283.html 
 
-It sounds here like you're suggesting that we should just go ahead and
-give up and return ESTALE to userspace if the root of the mount went
-stale. So, if someone mistakenly unexports the fs on the server, these
-operations would still fail with ESTALE.
+In fact, it might be wise for a Xen-savvy kernel to check to see
+if it is running on Xen-4.0+ and, if so, force clocksource=tsc
+and tsc=reliable.
 
-If so, I'm OK with that since I'm not necessarily interested in making
-that situation more recoverable. It would be a nice to have, but it's
-not as essential as fixing these other situations where the ESTALE is
-more easily recovered.
+There have been very odd rare problems reported in Xen time
+handling for a very long time.  These usually manifest as some
+kind of "TSC is not stable" message from a guest Linux kernel,
+but the symptoms always point away from TSC as the culprit.
+Forcing Xen-savvy guests to use TSC will either make these problems
+go away (if they haven't already been fixed) or allow us to find
+the obscure underlying hypervisor bugs rather than paper over them.
 
--- 
-Jeff Layton <jlayton@redhat.com>
+Thanks,
+Dan
+
+P.S.  For anyone new to this areas, see VMware's classic document: http://www.vmware.com/files/pdf/Timekeeping-In-VirtualMachines.pdf 
+
+P.P.S. note this recent kernel issue which is related, but
+likely not seen in Xen... it pre-requires cpu overcommitment
+at boot time when TSC is being calibrated by the kernel.
+
+https://lkml.org/lkml/2012/2/21/518
