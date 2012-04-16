@@ -1,68 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752511Ab2DPIsH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Apr 2012 04:48:07 -0400
-Received: from mga01.intel.com ([192.55.52.88]:41642 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751951Ab2DPIr2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Apr 2012 04:47:28 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="142187301"
-From: Mika Westerberg <mika.westerberg@linux.intel.com>
-To: linux-kernel@vger.kernel.org
-Cc: anton.vorontsov@linaro.org, alan@linux.intel.com,
-        bruce.e.robertson@intel.com,
-        Mika Westerberg <mika.westerberg@linux.intel.com>
-Subject: [PATCH 3/4] power-supply: smb347-charger: move IRQ enabling to the end of probe
-Date: Mon, 16 Apr 2012 11:48:40 +0300
-Message-Id: <1334566121-8243-3-git-send-email-mika.westerberg@linux.intel.com>
-X-Mailer: git-send-email 1.7.9.1
-In-Reply-To: <1334566121-8243-1-git-send-email-mika.westerberg@linux.intel.com>
-References: <1334566121-8243-1-git-send-email-mika.westerberg@linux.intel.com>
+	id S1752224Ab2DPIt7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Apr 2012 04:49:59 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:50587 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751262Ab2DPIt6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Apr 2012 04:49:58 -0400
+Subject: Re: [PATCH 2/6] macvtap: zerocopy: fix truesize underestimation
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: "Michael S. Tsirkin" <mst@redhat.com>
+Cc: Jason Wang <jasowang@redhat.com>, netdev@vger.kernel.org, xma@us.ibm.com,
+        davem@davemloft.net, linux-kernel@vger.kernel.org,
+        ebiederm@xmission.com
+In-Reply-To: <20120416071423.GA25396@redhat.com>
+References: <20120416060749.14140.19433.stgit@intel-e5620-16-2.englab.nay.redhat.com>
+	 <20120416060758.14140.40252.stgit@intel-e5620-16-2.englab.nay.redhat.com>
+	 <20120416071423.GA25396@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 16 Apr 2012 10:49:53 +0200
+Message-ID: <1334566193.28012.66.camel@edumazet-glaptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There is a potential problem if we call smb347_irq_enable() from
-smb347_irq_init() because smb347_irq_enable() makes the device registers
-read-only once it returns and smb347_irq_init() expects them to still be
-read-write. Currently no harm happens because it is the last call we make in
-smb347_irq_init().
+On Mon, 2012-04-16 at 10:14 +0300, Michael S. Tsirkin wrote:
+> On Mon, Apr 16, 2012 at 02:07:59PM +0800, Jason Wang wrote:
+> > As the skb fragment were pinned/built from user pages, we should
+> > account the page instead of length for truesize.
+> > 
+> > Signed-off-by: Jason Wang <jasowang@redhat.com>
+> 
+> I'm not sure this is right: the skb does *not* consume the
+> whole page, userspace uses the rest of the page
+> for other skbs. So we'll end up accounting for the
+> same page twice.
+> Eric, what's the right thing to do here in your opinion?
 
-Anyway a better place for enabling IRQs is at the end of probe function and
-this is also symmetric to call smb347_irq_disable() which is done at the
-beginning of remove function.
+Problem is we dont know for sure userspace wont free pages right after
+this syscall. So an evil application could consume more kernel memory
+than what socket limit allowed.
 
-Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
----
- drivers/power/smb347-charger.c |    6 ++----
- 1 files changed, 2 insertions(+), 4 deletions(-)
+Its same problem with vmsplice(mem -> pipe) + splice(pipe -> socket)
 
-diff --git a/drivers/power/smb347-charger.c b/drivers/power/smb347-charger.c
-index d774fd3..781c058 100644
---- a/drivers/power/smb347-charger.c
-+++ b/drivers/power/smb347-charger.c
-@@ -923,10 +923,6 @@ static int smb347_irq_init(struct smb347_charger *smb)
- 	if (ret < 0)
- 		goto fail_readonly;
- 
--	ret = smb347_irq_enable(smb);
--	if (ret < 0)
--		goto fail_readonly;
--
- 	smb347_set_writable(smb, false);
- 	smb->client->irq = irq;
- 	return 0;
-@@ -1233,6 +1229,8 @@ static int smb347_probe(struct i2c_client *client,
- 		if (ret < 0) {
- 			dev_warn(dev, "failed to initialize IRQ: %d\n", ret);
- 			dev_warn(dev, "disabling IRQ support\n");
-+		} else {
-+			smb347_irq_enable(smb);
- 		}
- 	}
- 
--- 
-1.7.9.1
+When we clone skb with frags, resulting skb will have same truesize,
+even if the pages are shared ...
+
+
 
