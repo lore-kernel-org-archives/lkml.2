@@ -1,42 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754908Ab2DPU6P (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Apr 2012 16:58:15 -0400
-Received: from shards.monkeyblade.net ([198.137.202.13]:48061 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754059Ab2DPU6O (ORCPT
+	id S1755383Ab2DPU7D (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Apr 2012 16:59:03 -0400
+Received: from mail-pz0-f52.google.com ([209.85.210.52]:51098 "EHLO
+	mail-pz0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754567Ab2DPU7A (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Apr 2012 16:58:14 -0400
-Date: Mon, 16 Apr 2012 16:58:04 -0400 (EDT)
-Message-Id: <20120416.165804.411912709558079358.davem@davemloft.net>
-To: mingo@kernel.org
-Cc: joe@perches.com, linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
-        torvalds@linux-foundation.org, apw@canonical.com
-Subject: Re: Please fix or revert: [PATCH] checkpatch: add --strict tests
- for braces, comments and casts
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <20120416202654.GA4678@gmail.com>
-References: <20120416091719.GA4113@gmail.com>
-	<20120416.142728.864894452301706752.davem@davemloft.net>
-	<20120416202654.GA4678@gmail.com>
-X-Mailer: Mew version 6.4 on Emacs 23.3 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Mon, 16 Apr 2012 13:58:08 -0700 (PDT)
+	Mon, 16 Apr 2012 16:59:00 -0400
+Date: Mon, 16 Apr 2012 13:58:56 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Felipe Contreras <felipe.contreras@gmail.com>
+Cc: Stefan Richter <stefanr@s5r6.in-berlin.de>,
+        "ath9k-devel@lists.ath9k.org" <ath9k-devel@venema.h4ckr.net>,
+        linux-wireless Mailing List <linux-wireless@vger.kernel.org>,
+        linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        "John W. Linville" <linville@tuxdriver.com>, akpm@linux-foundation.org,
+        torvalds@linux-foundation.org, alan@lxorguk.ukuu.org.uk
+Subject: Re: [ath9k-devel] [ 00/78] 3.3.2-stable review
+Message-ID: <20120416205856.GA22298@kroah.com>
+References: <20120412144626.GA14868@kroah.com>
+ <CAMP44s1T4EVwpzDuV_vV0Zh-5WcPCwdw9eeOfL17Geqp_UFN-Q@mail.gmail.com>
+ <CAJ-VmonhwvnXPKa=LNOR4W0ZTXZqWmzw4UrsKLoE0YN_Bu0FzQ@mail.gmail.com>
+ <CAMP44s2JPvhEB6Eb049Z_bToAFncHKMEheuyaxyhC=bnh2GJVg@mail.gmail.com>
+ <20120413105746.10ffb120@stein>
+ <CAMP44s0RohH9tPiM5qCDT57XBV=iO66PZkSjYVxA6Usg1qJPtw@mail.gmail.com>
+ <20120413190819.9469.qmail@stuge.se>
+ <CAMP44s02v_OhviaF12Y8LWBJygyVLZk00d3P69GVvKAeJwjiuw@mail.gmail.com>
+ <20120416162710.GA24100@kroah.com>
+ <CAMP44s1o9kBp8672oBnvna+qH4WpqSqGUsyNpc_C74cfNYcX_g@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CAMP44s1o9kBp8672oBnvna+qH4WpqSqGUsyNpc_C74cfNYcX_g@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Ingo Molnar <mingo@kernel.org>
-Date: Mon, 16 Apr 2012 22:26:54 +0200
+On Mon, Apr 16, 2012 at 11:11:05PM +0300, Felipe Contreras wrote:
+> On Mon, Apr 16, 2012 at 7:27 PM, Greg KH <gregkh@linuxfoundation.org> wrote:
+> > Just one minor correction in this looney email thread:
+> >
+> > On Sat, Apr 14, 2012 at 01:53:22AM +0300, Felipe Contreras wrote:
+> >> v3.3.x on the other hand are *not* stable. They contain patches
+> >> backported from v3.4, but nobody guarantees they will work. There was
+> >> no v3.3.1-rc1, so the first time the patches compromising v3.3.1 were
+> >> generally tested together is in v3.3.1, at which point if somebody
+> >> finds issues, it's too late; bad patches are *not* going to be removed
+> >> in v3.3.2.
+> >
+> > Of course there was a 3.3.1-rc1, see the linux-kernel archives for the
+> > announcemen and the individual patches.  kernel.org has the large patch
+> > itself if you like that format instead.
+> 
+> I don't see it here:
+> http://git.kernel.org/?p=linux/kernel/git/stable/linux-stable.git;a=tags
+> 
+> If you really want people to try it, why not tag it?
 
->     If you don't "see" it as ugly it's simply because your brain
->     is not wired up to see 3D/2D geometry as a significant
->     source of information.
+That would be because I don't keep it in that tree.  It is in a quilt
+tree you can find in the stable-queue.git repo, and I have never tagged
+-rc1 releases there.  No one has ever asked for it before, so in the
+past 6 years of stable releases, I guess no one ever needed it.
 
-I'm sorry that I'm so handicapped that I cannot match your
-visual capabilitites.
+ketchup and tarballs seem to work well for others, perhaps you can use
+that as well (hint, ketchup on top of the linux-stable tree works just
+fine for testing this.)
 
-I hope you have a nice day too Ingo.
-
+greg k-h
