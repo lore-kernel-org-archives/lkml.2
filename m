@@ -1,80 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753865Ab2DPMRY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Apr 2012 08:17:24 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:47809 "EHLO mx2.suse.de"
+	id S1754129Ab2DPMWr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Apr 2012 08:22:47 -0400
+Received: from mail.tpi.com ([70.99.223.143]:2096 "EHLO mail.tpi.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753597Ab2DPMRV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Apr 2012 08:17:21 -0400
-From: Mel Gorman <mgorman@suse.de>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Linux-MM <linux-mm@kvack.org>, Linux-Netdev <netdev@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        David Miller <davem@davemloft.net>, Neil Brown <neilb@suse.de>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Mike Christie <michaelc@cs.wisc.edu>,
-        Eric B Munson <emunson@mgebm.net>, Mel Gorman <mgorman@suse.de>
-Subject: [PATCH 14/16] nbd: Set SOCK_MEMALLOC for access to PFMEMALLOC reserves
-Date: Mon, 16 Apr 2012 13:17:01 +0100
-Message-Id: <1334578624-23257-15-git-send-email-mgorman@suse.de>
-X-Mailer: git-send-email 1.7.9.2
-In-Reply-To: <1334578624-23257-1-git-send-email-mgorman@suse.de>
-References: <1334578624-23257-1-git-send-email-mgorman@suse.de>
+	id S1753500Ab2DPMWp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Apr 2012 08:22:45 -0400
+Message-ID: <4F8C0EE1.7030901@canonical.com>
+Date: Mon, 16 Apr 2012 06:21:53 -0600
+From: Tim Gardner <tim.gardner@canonical.com>
+Reply-To: tim.gardner@canonical.com
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120410 Thunderbird/11.0.1
+MIME-Version: 1.0
+To: Ben Hutchings <ben@decadent.org.uk>
+CC: Tim Gardner <tim.gardner@canonical.com>, linux-kernel@vger.kernel.org,
+        Jon Mason <jdmason@kudzu.us>, netdev@vger.kernel.org
+Subject: Re: [PATCH net-next] net: vxge: Add MODULE_FIRMWARE
+References: <1334262882-96973-1-git-send-email-tim.gardner@canonical.com> <1334498215.3209.4.camel@deadeye>
+In-Reply-To: <1334498215.3209.4.camel@deadeye>
+X-Enigmail-Version: 1.4
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Set SOCK_MEMALLOC on the NBD socket to allow access to PFMEMALLOC
-reserves so pages backed by NBD, particularly if swap related, can
-be cleaned to prevent the machine being deadlocked. It is still
-possible that the PFMEMALLOC reserves get depleted resulting in
-deadlock but this can be resolved by the administrator by increasing
-min_free_kbytes.
+-----BEGIN PGP SIGNED MESSAGE-----
+Hash: SHA512
 
-Signed-off-by: Mel Gorman <mgorman@suse.de>
----
- drivers/block/nbd.c |    6 +++++-
- 1 file changed, 5 insertions(+), 1 deletion(-)
+On 04/15/2012 07:56 AM, Ben Hutchings wrote:
+> On Thu, 2012-04-12 at 14:34 -0600, Tim Gardner wrote:
+>> Cc: Jon Mason <jdmason@kudzu.us> Cc: netdev@vger.kernel.org 
+>> Signed-off-by: Tim Gardner <tim.gardner@canonical.com> --- 
+>> drivers/net/ethernet/neterion/vxge/vxge-main.c |    2 ++ 1 file
+>> changed, 2 insertions(+)
+>> 
+>> diff --git a/drivers/net/ethernet/neterion/vxge/vxge-main.c
+>> b/drivers/net/ethernet/neterion/vxge/vxge-main.c index
+>> 51387c3..dcef72d 100644 ---
+>> a/drivers/net/ethernet/neterion/vxge/vxge-main.c +++
+>> b/drivers/net/ethernet/neterion/vxge/vxge-main.c @@ -4856,3
+>> +4856,5 @@ vxge_closer(void) } module_init(vxge_starter); 
+>> module_exit(vxge_closer); +MODULE_FIRMWARE("vxge/X3fw-pxe.ncf"); 
+>> +MODULE_FIRMWARE("vxge/X3fw.ncf");
+> 
+> I don't agree; these firmware files are updates for the flash and
+> only need to be loaded once.
+> 
+> Also: this driver's behaviour of automatically updating flash
+> without any confirmation seems quite dangerous.  The driver also
+> isn't usable after it performs such an update:
+> 
+> printk(KERN_NOTICE "Upgrade of firmware successful!  Adapter must
+> be " "hard reset before using, thus requiring a system reboot or a
+> " "hotplug event.\n");
+> 
+> So what is the point of integrating firmware update into the driver
+> at all?
+> 
+> Ben.
+> 
 
-diff --git a/drivers/block/nbd.c b/drivers/block/nbd.c
-index 061427a75d..76bc96f 100644
---- a/drivers/block/nbd.c
-+++ b/drivers/block/nbd.c
-@@ -154,6 +154,7 @@ static int sock_xmit(struct nbd_device *nbd, int send, void *buf, int size,
- 	struct msghdr msg;
- 	struct kvec iov;
- 	sigset_t blocked, oldset;
-+	unsigned long pflags = current->flags;
- 
- 	if (unlikely(!sock)) {
- 		dev_err(disk_to_dev(nbd->disk),
-@@ -167,8 +168,9 @@ static int sock_xmit(struct nbd_device *nbd, int send, void *buf, int size,
- 	siginitsetinv(&blocked, sigmask(SIGKILL));
- 	sigprocmask(SIG_SETMASK, &blocked, &oldset);
- 
-+	current->flags |= PF_MEMALLOC;
- 	do {
--		sock->sk->sk_allocation = GFP_NOIO;
-+		sock->sk->sk_allocation = GFP_NOIO | __GFP_MEMALLOC;
- 		iov.iov_base = buf;
- 		iov.iov_len = size;
- 		msg.msg_name = NULL;
-@@ -214,6 +216,7 @@ static int sock_xmit(struct nbd_device *nbd, int send, void *buf, int size,
- 	} while (size > 0);
- 
- 	sigprocmask(SIG_SETMASK, &oldset, NULL);
-+	tsk_restore_flags(current, pflags, PF_MEMALLOC);
- 
- 	return result;
- }
-@@ -405,6 +408,7 @@ static int nbd_do_it(struct nbd_device *nbd)
- 
- 	BUG_ON(nbd->magic != NBD_MAGIC);
- 
-+	sk_set_memalloc(nbd->sock->sk);
- 	nbd->pid = task_pid_nr(current);
- 	ret = device_create_file(disk_to_dev(nbd->disk), &pid_attr);
- 	if (ret) {
--- 
-1.7.9.2
+I guess I'm confused about use of the MODULE_FIRMWARE() macro. I
+thought it merely described the names of the firmware files that were
+actually used by the driver and had no run-time impact. Regardless of
+whether firmware files are used on every load, why _not_ describe them
+to modinfo ?
 
+I'm auditing the Ubuntu linux-firmware package to reduce size by
+removing obsolete firmware files. Along the way I'm also trying to
+update the drivers that have caught my attention in their use of
+MODULE_FIRMWARE.
+
+rtg
+- -- 
+Tim Gardner tim.gardner@canonical.com
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+Comment: Using GnuPG with Mozilla - http://enigmail.mozdev.org/
+
+iQIcBAEBCgAGBQJPjA7cAAoJED12yEX6FEfKqWEQAJHHf/g0yuJg5eJ7XSdCJWbV
+6xs5NNj3Wwo2bN578PnwK28grBFT6atDg6Y0KkcMgZ/NCc7Q8GN/7yJaK+VcW6wQ
+395JNYf67bFx+6B+MDVj2qPHa/2EJjYGjZlxMzPPIKUqYOzHt18A779Tb5DLWelj
+B1DAJJcTDVF1jyAEB/4zCDq1R39jARWGDzC11OqrQqEmBqbE2z5CgLeDECR0uDsg
+axyIW4Mc+nSF1SrrmvdtXfHzDPN+wpXVoGTjb83iqBLWSkKo8QYQDQLnc67mZgAa
+lT+ZdFIfAY8vE/PmfokX+xkCc7Dk1B36fIuwWEIRM4QUgFp0skXHUyr8n3xDRLiD
++Kcb3IMIIprzlPi7zpEwB0ulubyjKdh8+dCwlHZVLmRt/QgXUyLCQJG6vqg6WlBO
+T53xZ24JcwmdSASYDMTxWmEc3ERq33b1uKPfrUGTLENdyt4F5yU1KT0HXmkJ8Chq
+/wQLX9fAC3janMKJP4fdQvox/WBAihZ4wIBNUKnCYl01XXCDvy0FnOtxk3ZGPHzv
+g1tS8U2pJUuktX74U1p4ltrKQXhW3z4Oro5BdLTqNunlXDqmT0kiBVkLbJmDNzwK
+mL7tlcx8Nn28WRYUM+MW7J1C0+tVRaVMtF8dW1ICduhzzPy5KSarI23SFlExoQ5s
+Kn56ELI/wV/ajx+z2pTk
+=mobO
+-----END PGP SIGNATURE-----
