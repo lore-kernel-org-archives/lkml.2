@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752648Ab2DPQO0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Apr 2012 12:14:26 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:40900 "EHLO mx2.suse.de"
+	id S1754003Ab2DPQRT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Apr 2012 12:17:19 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:40977 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751402Ab2DPQOV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Apr 2012 12:14:21 -0400
+	id S1752524Ab2DPQOZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Apr 2012 12:14:25 -0400
 From: Jan Kara <jack@suse.cz>
 To: Al Viro <viro@ZenIV.linux.org.uk>
 Cc: dchinner@redhat.com, LKML <linux-kernel@vger.kernel.org>,
         linux-fsdevel@vger.kernel.org, Jan Kara <jack@suse.cz>,
-        Jaya Kumar <jayalk@intworks.biz>
-Subject: [PATCH 01/27] fb_defio: Push file_update_time() into fb_deferred_io_mkwrite()
-Date: Mon, 16 Apr 2012 18:13:39 +0200
-Message-Id: <1334592845-22862-2-git-send-email-jack@suse.cz>
+        linux-btrfs@vger.kernel.org, Chris Mason <chris.mason@oracle.com>
+Subject: [PATCH 24/27] btrfs: Convert to new freezing mechanism
+Date: Mon, 16 Apr 2012 18:14:02 +0200
+Message-Id: <1334592845-22862-25-git-send-email-jack@suse.cz>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1334592845-22862-1-git-send-email-jack@suse.cz>
 References: <1334592845-22862-1-git-send-email-jack@suse.cz>
@@ -21,24 +21,91 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-CC: Jaya Kumar <jayalk@intworks.biz>
+We convert btrfs_file_aio_write() to use new freeze check.  We also add proper
+freeze protection to btrfs_page_mkwrite(). Checks in cleaner_kthread() and
+transaction_kthread() can be safely removed since btrfs_freeze() will lock
+the mutexes and thus block the threads (and they shouldn't have anything to
+do anyway).
+
+CC: linux-btrfs@vger.kernel.org
+CC: Chris Mason <chris.mason@oracle.com>
 Signed-off-by: Jan Kara <jack@suse.cz>
 ---
- drivers/video/fb_defio.c |    2 ++
- 1 files changed, 2 insertions(+), 0 deletions(-)
+ fs/btrfs/disk-io.c |    3 ---
+ fs/btrfs/file.c    |    3 ++-
+ fs/btrfs/inode.c   |    6 +++++-
+ 3 files changed, 7 insertions(+), 5 deletions(-)
 
-diff --git a/drivers/video/fb_defio.c b/drivers/video/fb_defio.c
-index c27e153..7a09c06 100644
---- a/drivers/video/fb_defio.c
-+++ b/drivers/video/fb_defio.c
-@@ -104,6 +104,8 @@ static int fb_deferred_io_mkwrite(struct vm_area_struct *vma,
- 	deferred framebuffer IO. then if userspace touches a page
- 	again, we repeat the same scheme */
+diff --git a/fs/btrfs/disk-io.c b/fs/btrfs/disk-io.c
+index 20196f4..555a57a 100644
+--- a/fs/btrfs/disk-io.c
++++ b/fs/btrfs/disk-io.c
+@@ -1527,8 +1527,6 @@ static int cleaner_kthread(void *arg)
+ 	struct btrfs_root *root = arg;
  
-+	file_update_time(vma->vm_file);
-+
- 	/* protect against the workqueue changing the page list */
- 	mutex_lock(&fbdefio->lock);
+ 	do {
+-		vfs_check_frozen(root->fs_info->sb, SB_FREEZE_WRITE);
+-
+ 		if (!(root->fs_info->sb->s_flags & MS_RDONLY) &&
+ 		    mutex_trylock(&root->fs_info->cleaner_mutex)) {
+ 			btrfs_run_delayed_iputs(root);
+@@ -1560,7 +1558,6 @@ static int transaction_kthread(void *arg)
+ 	do {
+ 		cannot_commit = false;
+ 		delay = HZ * 30;
+-		vfs_check_frozen(root->fs_info->sb, SB_FREEZE_WRITE);
+ 		mutex_lock(&root->fs_info->transaction_kthread_mutex);
+ 
+ 		spin_lock(&root->fs_info->trans_lock);
+diff --git a/fs/btrfs/file.c b/fs/btrfs/file.c
+index d83260d..a48251e 100644
+--- a/fs/btrfs/file.c
++++ b/fs/btrfs/file.c
+@@ -1358,7 +1358,7 @@ static ssize_t btrfs_file_aio_write(struct kiocb *iocb,
+ 	ssize_t err = 0;
+ 	size_t count, ocount;
+ 
+-	vfs_check_frozen(inode->i_sb, SB_FREEZE_WRITE);
++	sb_start_write(inode->i_sb);
+ 
+ 	mutex_lock(&inode->i_mutex);
+ 
+@@ -1449,6 +1449,7 @@ static ssize_t btrfs_file_aio_write(struct kiocb *iocb,
+ 			num_written = err;
+ 	}
+ out:
++	sb_end_write(inode->i_sb);
+ 	current->backing_dev_info = NULL;
+ 	return num_written ? num_written : err;
+ }
+diff --git a/fs/btrfs/inode.c b/fs/btrfs/inode.c
+index 115bc05..db4fc01 100644
+--- a/fs/btrfs/inode.c
++++ b/fs/btrfs/inode.c
+@@ -6592,6 +6592,7 @@ int btrfs_page_mkwrite(struct vm_area_struct *vma, struct vm_fault *vmf)
+ 	u64 page_start;
+ 	u64 page_end;
+ 
++	sb_start_pagefault(inode->i_sb);
+ 	ret  = btrfs_delalloc_reserve_space(inode, PAGE_CACHE_SIZE);
+ 	if (!ret) {
+ 		ret = btrfs_update_time(vma->vm_file);
+@@ -6681,12 +6682,15 @@ again:
+ 	unlock_extent_cached(io_tree, page_start, page_end, &cached_state, GFP_NOFS);
+ 
+ out_unlock:
+-	if (!ret)
++	if (!ret) {
++		sb_end_pagefault(inode->i_sb);
+ 		return VM_FAULT_LOCKED;
++	}
+ 	unlock_page(page);
+ out:
+ 	btrfs_delalloc_release_space(inode, PAGE_CACHE_SIZE);
+ out_noreserve:
++	sb_end_pagefault(inode->i_sb);
+ 	return ret;
+ }
  
 -- 
 1.7.1
