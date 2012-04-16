@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753744Ab2DPMRR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Apr 2012 08:17:17 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:47691 "EHLO mx2.suse.de"
+	id S1754371Ab2DPMYj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Apr 2012 08:24:39 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:47764 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753575Ab2DPMRI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Apr 2012 08:17:08 -0400
+	id S1753715Ab2DPMRR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Apr 2012 08:17:17 -0400
 From: Mel Gorman <mgorman@suse.de>
 To: Andrew Morton <akpm@linux-foundation.org>
 Cc: Linux-MM <linux-mm@kvack.org>, Linux-Netdev <netdev@vger.kernel.org>,
@@ -14,9 +14,9 @@ Cc: Linux-MM <linux-mm@kvack.org>, Linux-Netdev <netdev@vger.kernel.org>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Mike Christie <michaelc@cs.wisc.edu>,
         Eric B Munson <emunson@mgebm.net>, Mel Gorman <mgorman@suse.de>
-Subject: [PATCH 01/16] mm: Serialize access to min_free_kbytes
-Date: Mon, 16 Apr 2012 13:16:48 +0100
-Message-Id: <1334578624-23257-2-git-send-email-mgorman@suse.de>
+Subject: [PATCH 10/16] netvm: Propagate page->pfmemalloc to skb
+Date: Mon, 16 Apr 2012 13:16:57 +0100
+Message-Id: <1334578624-23257-11-git-send-email-mgorman@suse.de>
 X-Mailer: git-send-email 1.7.9.2
 In-Reply-To: <1334578624-23257-1-git-send-email-mgorman@suse.de>
 References: <1334578624-23257-1-git-send-email-mgorman@suse.de>
@@ -24,59 +24,40 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There is a race between the min_free_kbytes sysctl, memory hotplug
-and transparent hugepage support enablement.  Memory hotplug uses a
-zonelists_mutex to avoid a race when building zonelists. Reuse it to
-serialise watermark updates.
+The skb->pfmemalloc flag gets set to true iff during the slab
+allocation of data in __alloc_skb that the the PFMEMALLOC reserves
+were used. If the packet is fragmented, it is possible that pages
+will be allocated from the PFMEMALLOC reserve without propagating
+this information to the skb. This patch propagates page->pfmemalloc
+from pages allocated for fragments to the skb.
 
-[a.p.zijlstra@chello.nl: Older patch fixed the race with spinlock]
 Signed-off-by: Mel Gorman <mgorman@suse.de>
-Reviewed-by: Rik van Riel <riel@redhat.com>
 ---
- mm/page_alloc.c |   23 +++++++++++++++--------
- 1 file changed, 15 insertions(+), 8 deletions(-)
+ include/linux/skbuff.h |   11 +++++++++++
+ 1 file changed, 11 insertions(+)
 
-diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index a712fb9..280eabe 100644
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -4976,14 +4976,7 @@ static void setup_per_zone_lowmem_reserve(void)
- 	calculate_totalreserve_pages();
- }
- 
--/**
-- * setup_per_zone_wmarks - called when min_free_kbytes changes
-- * or when memory is hot-{added|removed}
-- *
-- * Ensures that the watermark[min,low,high] values for each zone are set
-- * correctly with respect to min_free_kbytes.
-- */
--void setup_per_zone_wmarks(void)
-+static void __setup_per_zone_wmarks(void)
+diff --git a/include/linux/skbuff.h b/include/linux/skbuff.h
+index e889594..b01a993 100644
+--- a/include/linux/skbuff.h
++++ b/include/linux/skbuff.h
+@@ -1227,6 +1227,17 @@ static inline void __skb_fill_page_desc(struct sk_buff *skb, int i,
  {
- 	unsigned long pages_min = min_free_kbytes >> (PAGE_SHIFT - 10);
- 	unsigned long lowmem_pages = 0;
-@@ -5038,6 +5031,20 @@ void setup_per_zone_wmarks(void)
- 	calculate_totalreserve_pages();
- }
+ 	skb_frag_t *frag = &skb_shinfo(skb)->frags[i];
  
-+/**
-+ * setup_per_zone_wmarks - called when min_free_kbytes changes
-+ * or when memory is hot-{added|removed}
-+ *
-+ * Ensures that the watermark[min,low,high] values for each zone are set
-+ * correctly with respect to min_free_kbytes.
-+ */
-+void setup_per_zone_wmarks(void)
-+{
-+	mutex_lock(&zonelists_mutex);
-+	__setup_per_zone_wmarks();
-+	mutex_unlock(&zonelists_mutex);
-+}
-+
- /*
-  * The inactive anon list should be small enough that the VM never has to
-  * do too much work, but large enough that each inactive page has a chance
++	/*
++	 * Propagate page->pfmemalloc to the skb if we can. The problem is
++	 * that not all callers have unique ownership of the page. If
++	 * pfmemalloc is set, we check the mapping as a mapping implies
++	 * page->index is set (index and pfmemalloc share space).
++	 * If it's a valid mapping, we cannot use page->pfmemalloc but we
++	 * do not lose pfmemalloc information as the pages would not be
++	 * allocated using __GFP_MEMALLOC.
++	 */
++	if (page->pfmemalloc && !page->mapping)
++		skb->pfmemalloc	= true;
+ 	frag->page.p		  = page;
+ 	frag->page_offset	  = off;
+ 	skb_frag_size_set(frag, size);
 -- 
 1.7.9.2
 
