@@ -1,159 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755533Ab2DPU04 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Apr 2012 16:26:56 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:27749 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755265Ab2DPU03 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Apr 2012 16:26:29 -0400
-From: Matthew Garrett <mjg@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: Matthew Garrett <mjg@redhat.com>, hpa@zytor.com, matt.fleming@intel.com
-Subject: [PATCH V2 4/4] efifb: Implement vga_default_device()
-Date: Mon, 16 Apr 2012 16:26:05 -0400
-Message-Id: <1334607965-9582-4-git-send-email-mjg@redhat.com>
-In-Reply-To: <1334607965-9582-1-git-send-email-mjg@redhat.com>
-References: <1334607965-9582-1-git-send-email-mjg@redhat.com>
-X-SA-Do-Not-Run: Yes
-X-SA-Exim-Connect-IP: 66.187.233.202
-X-SA-Exim-Mail-From: mjg@redhat.com
-X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
+	id S1755559Ab2DPU1D (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Apr 2012 16:27:03 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:62262 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755265Ab2DPU07 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Apr 2012 16:26:59 -0400
+Date: Mon, 16 Apr 2012 22:26:54 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: David Miller <davem@davemloft.net>
+Cc: joe@perches.com, linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
+        torvalds@linux-foundation.org, apw@canonical.com
+Subject: Re: Please fix or revert: [PATCH] checkpatch: add --strict tests for
+ braces, comments and casts
+Message-ID: <20120416202654.GA4678@gmail.com>
+References: <20120416091719.GA4113@gmail.com>
+ <20120416.142728.864894452301706752.davem@davemloft.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120416.142728.864894452301706752.davem@davemloft.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-EFI doesn't typically make use of the legacy VGA ROM, but it may still be
-configured to pass that through to a given video device. This may lead to
-an inaccurate choice of default video device. Add support to efifb to pick
-out the correct active video device.
 
-Signed-off-by: Matthew Garrett <mjg@redhat.com>
-Cc: hpa@zytor.com
-Cc: matt.fleming@intel.com
----
- arch/x86/include/asm/vga.h |    6 ++++
- drivers/video/efifb.c      |   77 ++++++++++++++++++++++++++++++++------------
- 2 files changed, 63 insertions(+), 20 deletions(-)
+* David Miller <davem@davemloft.net> wrote:
 
-diff --git a/arch/x86/include/asm/vga.h b/arch/x86/include/asm/vga.h
-index c4b9dc2..2723c07 100644
---- a/arch/x86/include/asm/vga.h
-+++ b/arch/x86/include/asm/vga.h
-@@ -17,4 +17,10 @@
- #define vga_readb(x) (*(x))
- #define vga_writeb(x, y) (*(y) = (x))
- 
-+#if CONFIG_FB_EFI
-+#define __ARCH_HAS_VGA_DEFAULT_DEVICE
-+extern struct pci_dev *vga_default_device(void);
-+extern void vga_set_default_device(struct pci_dev *pdev);
-+#endif
-+
- #endif /* _ASM_X86_VGA_H */
-diff --git a/drivers/video/efifb.c b/drivers/video/efifb.c
-index 784139a..66ed991 100644
---- a/drivers/video/efifb.c
-+++ b/drivers/video/efifb.c
-@@ -18,6 +18,8 @@
- 
- static bool request_mem_succeeded = false;
- 
-+static struct pci_dev *default_vga;
-+
- static struct fb_var_screeninfo efifb_defined __devinitdata = {
- 	.activate		= FB_ACTIVATE_NOW,
- 	.height			= -1,
-@@ -298,35 +300,70 @@ static struct fb_ops efifb_ops = {
- 	.fb_imageblit	= cfb_imageblit,
- };
- 
-+struct pci_dev *vga_default_device(void)
-+{
-+	return default_vga;
-+}
-+
-+void vga_set_default_device(struct pci_dev *pdev)
-+{
-+	default_vga = pdev;
-+}
-+
- static int __init efifb_setup(char *options)
- {
- 	char *this_opt;
- 	int i;
-+	struct pci_dev *dev = NULL;
-+
-+	if (options && *options) {
-+		while ((this_opt = strsep(&options, ",")) != NULL) {
-+			if (!*this_opt) continue;
-+
-+			for (i = 0; i < M_UNKNOWN; i++) {
-+				if (!strcmp(this_opt, dmi_list[i].optname) &&
-+				    dmi_list[i].base != 0) {
-+					screen_info.lfb_base = dmi_list[i].base;
-+					screen_info.lfb_linelength = dmi_list[i].stride;
-+					screen_info.lfb_width = dmi_list[i].width;
-+					screen_info.lfb_height = dmi_list[i].height;
-+				}
-+			}
-+			if (!strncmp(this_opt, "base:", 5))
-+				screen_info.lfb_base = simple_strtoul(this_opt+5, NULL, 0);
-+			else if (!strncmp(this_opt, "stride:", 7))
-+				screen_info.lfb_linelength = simple_strtoul(this_opt+7, NULL, 0) * 4;
-+			else if (!strncmp(this_opt, "height:", 7))
-+				screen_info.lfb_height = simple_strtoul(this_opt+7, NULL, 0);
-+			else if (!strncmp(this_opt, "width:", 6))
-+				screen_info.lfb_width = simple_strtoul(this_opt+6, NULL, 0);
-+		}
-+	}
- 
--	if (!options || !*options)
--		return 0;
-+	for_each_pci_dev(dev) {
-+		int i;
- 
--	while ((this_opt = strsep(&options, ",")) != NULL) {
--		if (!*this_opt) continue;
-+		if ((dev->class >> 8) != PCI_CLASS_DISPLAY_VGA)
-+			continue;
- 
--		for (i = 0; i < M_UNKNOWN; i++) {
--			if (!strcmp(this_opt, dmi_list[i].optname) &&
--					dmi_list[i].base != 0) {
--				screen_info.lfb_base = dmi_list[i].base;
--				screen_info.lfb_linelength = dmi_list[i].stride;
--				screen_info.lfb_width = dmi_list[i].width;
--				screen_info.lfb_height = dmi_list[i].height;
--			}
-+		for (i=0; i < DEVICE_COUNT_RESOURCE; i++) {
-+			resource_size_t start, end;
-+
-+			if (!(pci_resource_flags(dev, i) & IORESOURCE_MEM))
-+				continue;
-+
-+			start = pci_resource_start(dev, i);
-+			end  = pci_resource_end(dev, i);
-+
-+			if (!start || !end)
-+				continue;
-+
-+			if (screen_info.lfb_base >= start &&
-+			    (screen_info.lfb_base + screen_info.lfb_size) < end)
-+				default_vga = dev;
- 		}
--		if (!strncmp(this_opt, "base:", 5))
--			screen_info.lfb_base = simple_strtoul(this_opt+5, NULL, 0);
--		else if (!strncmp(this_opt, "stride:", 7))
--			screen_info.lfb_linelength = simple_strtoul(this_opt+7, NULL, 0) * 4;
--		else if (!strncmp(this_opt, "height:", 7))
--			screen_info.lfb_height = simple_strtoul(this_opt+7, NULL, 0);
--		else if (!strncmp(this_opt, "width:", 6))
--			screen_info.lfb_width = simple_strtoul(this_opt+6, NULL, 0);
- 	}
-+
- 	return 0;
- }
- 
--- 
-1.7.10
+> From: Ingo Molnar <mingo@kernel.org>
+> Date: Mon, 16 Apr 2012 11:17:20 +0200
+> 
+> > 
+> > This recent checkpatch commit, added in v3.4-rc1:
+> > 
+> >   aad4f6149831 checkpatch: add --strict tests for braces, comments and casts
+> > 
+> > made the default checkpatch run complain about the following 
+> > perfectly fine multi-line comment block:
+> > 
+> > +               rdp->qlen_lazy = 0;
+> > +               rdp->qlen = 0;
+> > +
+> > +               /*
+> > +                * Adopt all callbacks.  The outgoing CPU was in no shape
+> > +                * to advance them, so make them all go through a full
+> > +                * grace period.
+> > +                */
+> > +               *receive_rdp->nxttail[RCU_NEXT_TAIL] = rdp->nxtlist;
+> > 
+> 
+> I would like to formally propose that we change CodingStyle so that
+> our comments are of the form:
+> 
+> 	/* XXX
+> 	 * YYY
+> 	 */
+> 
+> So that we can save one line of vertical space.
+> 
+> We've adopted this all across the networking, and the code 
+> looks a lot nicer as well as allowing more actual code onto a 
+> single window of text.
 
+Sigh, this is sad for two reasons:
+
+ 1) It's butt ugly and it violates every basic principle of
+    typography. Saving a line is often counter-productive, a 
+    well placed whitespace (vertical or horizontal) will often 
+    increase readability. Key is good balance.
+
+    If you don't "see" it as ugly it's simply because your brain
+    is not wired up to see 3D/2D geometry as a significant
+    source of information. A significant portion (I'd 
+    guesstimate a narrow majority) of kernel hackers *does* see
+    2D/3D layout details in code and finds inconsistencies in 
+    them counterproductive.
+
+    ( It's roughly the same distinction that makes some people
+      love the typographic layout of the iPhone/iPad while 
+      others consider it unnecessary bling. )
+
+ 2) Even if it was proper typography (which it isnt), we have
+    Documentation/CodingStyle for damn good reasons: so that
+    people see a uniform style of code across the kernel. The 
+    taste set out there is sometimes arbitrary in its details, 
+    but one thing is certainly worse than arbitrary style rules:
+    *random*, inconsistent rules, because that only adds noise.
+
+Thanks,
+
+	Ingo
