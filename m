@@ -1,47 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751432Ab2DPGpd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Apr 2012 02:45:33 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:44558 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751052Ab2DPGpb (ORCPT
+	id S1751305Ab2DPGxB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Apr 2012 02:53:01 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:64015 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750869Ab2DPGxA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Apr 2012 02:45:31 -0400
+	Mon, 16 Apr 2012 02:53:00 -0400
+Date: Mon, 16 Apr 2012 08:52:49 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Andreas Herrmann <andreas.herrmann3@amd.com>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] x86, amd: Re-enable CPU topology extensions in case BIOS
+ has disabled it
+Message-ID: <20120416065249.GA5292@gmail.com>
+References: <20120411152640.GC4794@alberich.amd.com>
 MIME-Version: 1.0
-Date: Mon, 16 Apr 2012 14:45:30 +0800
-Message-ID: <CAFgQCTsXfs-QAgMp1nfEu=pzhyO763ZQ7XoY7jS9XkjZv0Vxww@mail.gmail.com>
-Subject: net-sched/vhost-net: Besides Qdisc on host, is it worth to have a try
- for tranfic control on vhost-net device?
-From: Liu ping fan <kernelfans@gmail.com>
-To: netdev@vger.kernel.org, qemu-devel@nongnu.org
-Cc: linux-kernel@vger.kernel.org, "Michael S. Tsirkin" <mst@redhat.com>,
-        Anthony Liguori <anthony@codemonkey.ws>,
-        Stefan Hajnoczi <stefanha@gmail.com>,
-        Eric Dumazet <eric.dumazet@gmail.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120411152640.GC4794@alberich.amd.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi guys,
 
-Nowadays, in order to limit the guest's TX bandwidth, we can apply tc
-on tap device's ingress Qdisc on host. But I think it is based on
-dropping packets in the host's Qdisc layer(Right?).
-If my assumption is right, then on guest, whether the sender process
-will lower its output or not, will depend on protocol layer implement.
-As to protocol armed with congestion control such as tcp, the sender
-process will block and save cpu. But as to udp, it seems that the
-sender process just generate some unnecessary dropped packets.
-In order to save cpu, we can introduce control vhost-net, then the
-guest udp sender will block on sk.sk_wmem_alloc to get the same effect
-as blocking on congestion like tcp.
+* Andreas Herrmann <andreas.herrmann3@amd.com> wrote:
 
-But all of above are based on the Qdisc layer's behavior when network
-over-limit on host. Is it simply drop skb or defer its transferring?
-If deferring, any example code?
+> 
+> For detection of thread siblings we are relying on the topology
+> extension CPUID leafs. Thus we have to re-enable it in case BIOS tries
+> to hide the correpsonding CPUID feature flag.
+> 
+> Cc: stable@vger.kernel.org
+> Signed-off-by: Andreas Herrmann <andreas.herrmann3@amd.com>
 
-Any comments?
+This changelog is missing some key information:
 
-Thanks and regards,
-pingfan
+ - how did you find the bug - did you see some actual badness?
+
+ - what practical effect (if any) did you see from this patch?
+
+ - what practical effect (if any) do you expect others to see from this patch?
+
+This kind of information helps us prioritize bugfixes and helps 
+us determine whether a fix requires a -stable backport.
+
+Thanks,
+
+    Ingo
