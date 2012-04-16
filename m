@@ -1,46 +1,193 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753608Ab2DPNIY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Apr 2012 09:08:24 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:55074 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753247Ab2DPNIX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Apr 2012 09:08:23 -0400
-Date: Mon, 16 Apr 2012 16:08:06 +0300
-From: Gleb Natapov <gleb@redhat.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Sasha Levin <levinsasha928@gmail.com>, Avi Kivity <avi@redhat.com>,
-        Marcelo Tosatti <mtosatti@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        kvm <kvm@vger.kernel.org>, linux-kernel <linux-kernel@vger.kernel.org>,
-        Dave Jones <davej@redhat.com>
-Subject: Re: kvm: RCU warning in async pf
-Message-ID: <20120416130806.GV11918@redhat.com>
-References: <1333414472.11455.7.camel@lappy>
- <20120403105226.GF14939@redhat.com>
- <20120404123033.GD11918@redhat.com>
- <1334396693.2528.45.camel@twins>
- <20120416102855.GP11918@redhat.com>
- <20120416125848.GT11918@redhat.com>
- <1334581548.28150.40.camel@twins>
+	id S1753675Ab2DPNKI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Apr 2012 09:10:08 -0400
+Received: from mail-vb0-f46.google.com ([209.85.212.46]:60969 "EHLO
+	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753262Ab2DPNKG convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Apr 2012 09:10:06 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1334581548.28150.40.camel@twins>
+In-Reply-To: <1334578675-23445-9-git-send-email-mgorman@suse.de>
+References: <1334578675-23445-1-git-send-email-mgorman@suse.de>
+	<1334578675-23445-9-git-send-email-mgorman@suse.de>
+Date: Mon, 16 Apr 2012 09:10:04 -0400
+X-Google-Sender-Auth: C2hLDMjRnquqcZ9o8WElM_ooHuo
+Message-ID: <CADnza444dTr=JEtqpL5wxHRNkEc7vBz1qq9TL7Z+5h749vNawg@mail.gmail.com>
+Subject: Re: [PATCH 08/11] nfs: disable data cache revalidation for swapfiles
+From: Fred Isaman <iisaman@netapp.com>
+To: Mel Gorman <mgorman@suse.de>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Linux-MM <linux-mm@kvack.org>,
+        Linux-Netdev <netdev@vger.kernel.org>,
+        Linux-NFS <linux-nfs@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        David Miller <davem@davemloft.net>,
+        Trond Myklebust <Trond.Myklebust@netapp.com>,
+        Neil Brown <neilb@suse.de>, Christoph Hellwig <hch@infradead.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Mike Christie <michaelc@cs.wisc.edu>,
+        Eric B Munson <emunson@mgebm.net>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 16, 2012 at 03:05:48PM +0200, Peter Zijlstra wrote:
-> On Mon, 2012-04-16 at 15:58 +0300, Gleb Natapov wrote:
-> > -               rcu_irq_enter();
-> > +               irq_enter();
-> >                 exit_idle(); 
-> 
-> Do we really need the exit_idle()? I can't remember other interrupt
-> handlers doing that.
-They do. That's where I got the idea.
+On Mon, Apr 16, 2012 at 8:17 AM, Mel Gorman <mgorman@suse.de> wrote:
+> The VM does not like PG_private set on PG_swapcache pages. As suggested
+> by Trond in http://lkml.org/lkml/2006/8/25/348, this patch disables
+> NFS data cache revalidation on swap files.  as it does not make
+> sense to have other clients change the file while it is being used as
+> swap. This avoids setting PG_private on swap pages, since there ought
+> to be no further races with invalidate_inode_pages2() to deal with.
+>
+> Since we cannot set PG_private we cannot use page->private which
+> is already used by PG_swapcache pages to store the nfs_page. Thus
+> augment the new nfs_page_find_request logic.
+>
+> Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+> Signed-off-by: Mel Gorman <mgorman@suse.de>
+> ---
+>  fs/nfs/inode.c |    6 ++++++
+>  fs/nfs/write.c |   51 +++++++++++++++++++++++++++++++++++++--------------
+>  2 files changed, 43 insertions(+), 14 deletions(-)
+>
+> diff --git a/fs/nfs/inode.c b/fs/nfs/inode.c
+> index e8bbfa5..af43ef6 100644
+> --- a/fs/nfs/inode.c
+> +++ b/fs/nfs/inode.c
+> @@ -880,6 +880,12 @@ int nfs_revalidate_mapping(struct inode *inode, struct address_space *mapping)
+>        struct nfs_inode *nfsi = NFS_I(inode);
+>        int ret = 0;
+>
+> +       /*
+> +        * swapfiles are not supposed to be shared.
+> +        */
+> +       if (IS_SWAPFILE(inode))
+> +               goto out;
+> +
+>        if ((nfsi->cache_validity & NFS_INO_REVAL_PAGECACHE)
+>                        || nfs_attribute_cache_expired(inode)
+>                        || NFS_STALE(inode)) {
+> diff --git a/fs/nfs/write.c b/fs/nfs/write.c
+> index 6a891eb..eea4ec0 100644
+> --- a/fs/nfs/write.c
+> +++ b/fs/nfs/write.c
+> @@ -111,15 +111,30 @@ static void nfs_context_set_write_error(struct nfs_open_context *ctx, int error)
+>        set_bit(NFS_CONTEXT_ERROR_WRITE, &ctx->flags);
+>  }
+>
+> -static struct nfs_page *nfs_page_find_request_locked(struct page *page)
+> +static struct nfs_page *
+> +nfs_page_find_request_locked(struct nfs_inode *nfsi, struct page *page)
+>  {
+>        struct nfs_page *req = NULL;
+>
+> -       if (PagePrivate(page)) {
+> +       if (PagePrivate(page))
+>                req = (struct nfs_page *)page_private(page);
+> -               if (req != NULL)
+> -                       kref_get(&req->wb_kref);
+> +       else if (unlikely(PageSwapCache(page))) {
+> +               struct nfs_page *freq, *t;
+> +
+> +               /* Linearly search the commit list for the correct req */
+> +               list_for_each_entry_safe(freq, t, &nfsi->commit_list, wb_list) {
+> +                       if (freq->wb_page == page) {
+> +                               req = freq;
+> +                               break;
+> +                       }
+> +               }
+> +
+> +               BUG_ON(req == NULL);
 
---
-			Gleb.
+I suspect I am missing something, but why is it guaranteed that the
+req is on the commit list?
+
+Fred
+
+>        }
+> +
+> +       if (req)
+> +               kref_get(&req->wb_kref);
+> +
+>        return req;
+>  }
+>
+> @@ -129,7 +144,7 @@ static struct nfs_page *nfs_page_find_request(struct page *page)
+>        struct nfs_page *req = NULL;
+>
+>        spin_lock(&inode->i_lock);
+> -       req = nfs_page_find_request_locked(page);
+> +       req = nfs_page_find_request_locked(NFS_I(inode), page);
+>        spin_unlock(&inode->i_lock);
+>        return req;
+>  }
+> @@ -232,7 +247,7 @@ static struct nfs_page *nfs_find_and_lock_request(struct page *page, bool nonblo
+>
+>        spin_lock(&inode->i_lock);
+>        for (;;) {
+> -               req = nfs_page_find_request_locked(page);
+> +               req = nfs_page_find_request_locked(NFS_I(inode), page);
+>                if (req == NULL)
+>                        break;
+>                if (nfs_lock_request_dontget(req))
+> @@ -385,9 +400,15 @@ static void nfs_inode_add_request(struct inode *inode, struct nfs_page *req)
+>        spin_lock(&inode->i_lock);
+>        if (!nfsi->npages && nfs_have_delegation(inode, FMODE_WRITE))
+>                inode->i_version++;
+> -       set_bit(PG_MAPPED, &req->wb_flags);
+> -       SetPagePrivate(req->wb_page);
+> -       set_page_private(req->wb_page, (unsigned long)req);
+> +       /*
+> +        * Swap-space should not get truncated. Hence no need to plug the race
+> +        * with invalidate/truncate.
+> +        */
+> +       if (likely(!PageSwapCache(req->wb_page))) {
+> +               set_bit(PG_MAPPED, &req->wb_flags);
+> +               SetPagePrivate(req->wb_page);
+> +               set_page_private(req->wb_page, (unsigned long)req);
+> +       }
+>        nfsi->npages++;
+>        kref_get(&req->wb_kref);
+>        spin_unlock(&inode->i_lock);
+> @@ -404,9 +425,11 @@ static void nfs_inode_remove_request(struct nfs_page *req)
+>        BUG_ON (!NFS_WBACK_BUSY(req));
+>
+>        spin_lock(&inode->i_lock);
+> -       set_page_private(req->wb_page, 0);
+> -       ClearPagePrivate(req->wb_page);
+> -       clear_bit(PG_MAPPED, &req->wb_flags);
+> +       if (likely(!PageSwapCache(req->wb_page))) {
+> +               set_page_private(req->wb_page, 0);
+> +               ClearPagePrivate(req->wb_page);
+> +               clear_bit(PG_MAPPED, &req->wb_flags);
+> +       }
+>        nfsi->npages--;
+>        spin_unlock(&inode->i_lock);
+>        nfs_release_request(req);
+> @@ -646,7 +669,7 @@ static struct nfs_page *nfs_try_to_update_request(struct inode *inode,
+>        spin_lock(&inode->i_lock);
+>
+>        for (;;) {
+> -               req = nfs_page_find_request_locked(page);
+> +               req = nfs_page_find_request_locked(NFS_I(inode), page);
+>                if (req == NULL)
+>                        goto out_unlock;
+>
+> @@ -1690,7 +1713,7 @@ int nfs_wb_page_cancel(struct inode *inode, struct page *page)
+>  */
+>  int nfs_wb_page(struct inode *inode, struct page *page)
+>  {
+> -       loff_t range_start = page_offset(page);
+> +       loff_t range_start = page_file_offset(page);
+>        loff_t range_end = range_start + (loff_t)(PAGE_CACHE_SIZE - 1);
+>        struct writeback_control wbc = {
+>                .sync_mode = WB_SYNC_ALL,
+> --
+> 1.7.9.2
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-nfs" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
