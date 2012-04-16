@@ -1,148 +1,160 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755420Ab2DPUhb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Apr 2012 16:37:31 -0400
-Received: from acsinet15.oracle.com ([141.146.126.227]:44161 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751751Ab2DPUh3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Apr 2012 16:37:29 -0400
-Date: Mon, 16 Apr 2012 16:32:10 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Lin Ming <mlin@ss.pku.edu.cn>
-Cc: linux-kernel@vger.kernel.org, Steven Noonan <steven@uplinklabs.net>,
-        Ben Guthro <ben@guthro.net>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Jeremy Fitzhardinge <jeremy@goop.org>,
-        Marcus Granado <marcus.granado@citrix.com>, xen-devel@lists.xen.org
-Subject: Re: [PATCH 2/2] xen: implement IRQ_WORK_VECTOR handler
-Message-ID: <20120416203210.GD14982@phenom.dumpdata.com>
-References: <1334470172-3861-1-git-send-email-mlin@ss.pku.edu.cn>
- <1334470172-3861-3-git-send-email-mlin@ss.pku.edu.cn>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1334470172-3861-3-git-send-email-mlin@ss.pku.edu.cn>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090203.4F8C82FC.00DB,ss=1,re=0.000,fgs=0
+	id S1755788Ab2DPUjB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Apr 2012 16:39:01 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:64452 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755090Ab2DPUiz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Apr 2012 16:38:55 -0400
+From: Mauro Carvalho Chehab <mchehab@redhat.com>
+Cc: Mauro Carvalho Chehab <mchehab@redhat.com>,
+        Linux Edac Mailing List <linux-edac@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Doug Thompson <norsk5@yahoo.com>
+Subject: [EDAC ABI v13 01/25] edac: Initialize the dimm label with the known information
+Date: Mon, 16 Apr 2012 17:38:25 -0300
+Message-Id: <1334608729-30803-2-git-send-email-mchehab@redhat.com>
+In-Reply-To: <1334608729-30803-1-git-send-email-mchehab@redhat.com>
+References: <1334608729-30803-1-git-send-email-mchehab@redhat.com>
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Apr 15, 2012 at 02:09:32PM +0800, Lin Ming wrote:
-> Signed-off-by: Lin Ming <mlin@ss.pku.edu.cn>
-> ---
->  arch/x86/include/asm/xen/events.h |    1 +
->  arch/x86/xen/smp.c                |   30 ++++++++++++++++++++++++++++++
->  2 files changed, 31 insertions(+), 0 deletions(-)
-> 
-> diff --git a/arch/x86/include/asm/xen/events.h b/arch/x86/include/asm/xen/events.h
-> index 1df3541..cc146d5 100644
-> --- a/arch/x86/include/asm/xen/events.h
-> +++ b/arch/x86/include/asm/xen/events.h
-> @@ -6,6 +6,7 @@ enum ipi_vector {
->  	XEN_CALL_FUNCTION_VECTOR,
->  	XEN_CALL_FUNCTION_SINGLE_VECTOR,
->  	XEN_SPIN_UNLOCK_VECTOR,
-> +	XEN_IRQ_WORK_VECTOR,
->  
->  	XEN_NR_IPIS,
->  };
-> diff --git a/arch/x86/xen/smp.c b/arch/x86/xen/smp.c
-> index 2dc6628..92ad12d 100644
-> --- a/arch/x86/xen/smp.c
-> +++ b/arch/x86/xen/smp.c
-> @@ -16,6 +16,7 @@
->  #include <linux/err.h>
->  #include <linux/slab.h>
->  #include <linux/smp.h>
-> +#include <linux/irq_work.h>
->  
->  #include <asm/paravirt.h>
->  #include <asm/desc.h>
-> @@ -41,10 +42,12 @@ cpumask_var_t xen_cpu_initialized_map;
->  static DEFINE_PER_CPU(int, xen_resched_irq);
->  static DEFINE_PER_CPU(int, xen_callfunc_irq);
->  static DEFINE_PER_CPU(int, xen_callfuncsingle_irq);
-> +static DEFINE_PER_CPU(int, xen_irq_work);
->  static DEFINE_PER_CPU(int, xen_debug_irq) = -1;
->  
->  static irqreturn_t xen_call_function_interrupt(int irq, void *dev_id);
->  static irqreturn_t xen_call_function_single_interrupt(int irq, void *dev_id);
-> +static irqreturn_t xen_irq_work_interrupt(int irq, void *dev_id);
->  
->  /*
->   * Reschedule call back.
-> @@ -143,6 +146,17 @@ static int xen_smp_intr_init(unsigned int cpu)
->  		goto fail;
->  	per_cpu(xen_callfuncsingle_irq, cpu) = rc;
->  
-> +	callfunc_name = kasprintf(GFP_KERNEL, "irqwork%d", cpu);
-> +	rc = bind_ipi_to_irqhandler(XEN_IRQ_WORK_VECTOR,
-> +				    cpu,
-> +				    xen_irq_work_interrupt,
-> +				    IRQF_DISABLED|IRQF_PERCPU|IRQF_NOBALANCING,
-> +				    callfunc_name,
-> +				    NULL);
-> +	if (rc < 0)
-> +		goto fail;
-> +	per_cpu(xen_irq_work, cpu) = rc;
-> +
->  	return 0;
->  
->   fail:
-> @@ -155,6 +169,8 @@ static int xen_smp_intr_init(unsigned int cpu)
->  	if (per_cpu(xen_callfuncsingle_irq, cpu) >= 0)
->  		unbind_from_irqhandler(per_cpu(xen_callfuncsingle_irq, cpu),
->  				       NULL);
-> +	if (per_cpu(xen_irq_work, cpu) >= 0)
-> +		unbind_from_irqhandler(per_cpu(xen_irq_work, cpu), NULL);
->  
->  	return rc;
->  }
-> @@ -509,6 +525,9 @@ static inline int xen_map_vector(int vector)
->  	case CALL_FUNCTION_SINGLE_VECTOR:
->  		xen_vector = XEN_CALL_FUNCTION_SINGLE_VECTOR;
->  		break;
-> +	case IRQ_WORK_VECTOR:
-> +		xen_vector = XEN_IRQ_WORK_VECTOR;
-> +		break;
->  	default:
->  		xen_vector = -1;
->  		printk(KERN_ERR "xen: vector 0x%x is not implemented\n",
-> @@ -588,6 +607,16 @@ static irqreturn_t xen_call_function_single_interrupt(int irq, void *dev_id)
->  	return IRQ_HANDLED;
->  }
->  
-> +static irqreturn_t xen_irq_work_interrupt(int irq, void *dev_id)
-> +{
-> +	irq_enter();
-> +	inc_irq_stat(apic_irq_work_irqs);
-> +	irq_work_run();
+While userspace doesn't fill the dimm labels, add there the dimm location,
+as described by the used memory model. This could eventually match what
+is described at the dmidecode, making easier for people to identify the
+memory.
 
-I think this usually done the other way around:
+For example, on an Intel motherboard, the memory is described as:
 
-irq_work_run()
-inc_irq_stat(apic_irq_work_irqs)
+Memory Device
+	Array Handle: 0x0029
+	Error Information Handle: Not Provided
+	Total Width: 64 bits
+	Data Width: 64 bits
+	Size: 2048 MB
+	Form Factor: DIMM
+	Set: 1
+	Locator: A1_DIMM0
+	Bank Locator: A1_Node0_Channel0_Dimm0
+	Type: <OUT OF SPEC>
+	Type Detail: Synchronous
+	Speed: 800 MHz
+	Manufacturer: A1_Manufacturer0
+	Serial Number: A1_SerNum0
+	Asset Tag: A1_AssetTagNum0
+	Part Number: A1_PartNum0
 
-Or is there an excellent reason for doing it this way?
+After this patch, the memory label will be filled with:
+	/sys/devices/system/edac/mc/mc0/dimm0/dimm_label:mc#0channel#0slot#0
 
-> +	irq_exit();
-> +
-> +	return IRQ_HANDLED;
-> +}
-> +
->  static const struct smp_ops xen_smp_ops __initconst = {
->  	.smp_prepare_boot_cpu = xen_smp_prepare_boot_cpu,
->  	.smp_prepare_cpus = xen_smp_prepare_cpus,
-> @@ -634,6 +663,7 @@ static void xen_hvm_cpu_die(unsigned int cpu)
->  	unbind_from_irqhandler(per_cpu(xen_callfunc_irq, cpu), NULL);
->  	unbind_from_irqhandler(per_cpu(xen_debug_irq, cpu), NULL);
->  	unbind_from_irqhandler(per_cpu(xen_callfuncsingle_irq, cpu), NULL);
-> +	unbind_from_irqhandler(per_cpu(xen_irq_work, cpu), NULL);
->  	native_cpu_die(cpu);
->  }
->  
-> -- 
-> 1.7.2.5
+With somewhat matches what it is at the Bank Locator DMI information.
+So, it is easier to associate the dimm labels, of course assuming that
+the DMI has the Bank Locator filled, and the BIOS doesn't have any bugs.
+
+Yet, even without it, several motherboards are provided with enough
+info to map from channel/slot (or branch/channel/slot) into the DIMM
+label. So, letting the EDAC core fill it, by default is a good thing.
+
+It should noticed that, as the label filling happens at the
+edac_mc_alloc(), drivers can override it to better describe the memories
+(and some actually do it).
+
+Reviewed-by: Aristeu Rozanski <arozansk@redhat.com>
+Cc: Doug Thompson <norsk5@yahoo.com>
+Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
+---
+ drivers/edac/edac_mc.c       |   21 +++++++++++++++++----
+ drivers/edac/edac_mc_sysfs.c |    8 ++++----
+ include/linux/edac.h         |    2 --
+ 3 files changed, 21 insertions(+), 10 deletions(-)
+
+diff --git a/drivers/edac/edac_mc.c b/drivers/edac/edac_mc.c
+index f5be026..3323d99 100644
+--- a/drivers/edac/edac_mc.c
++++ b/drivers/edac/edac_mc.c
+@@ -202,10 +202,10 @@ struct mem_ctl_info *edac_mc_alloc(unsigned edac_index,
+ 	struct rank_info *chi, *chp, *chan;
+ 	struct dimm_info *dimm;
+ 	u32 *ce_per_layer[EDAC_MAX_LAYERS], *ue_per_layer[EDAC_MAX_LAYERS];
+-	void *pvt;
++	void *pvt, *p;
+ 	unsigned size, tot_dimms, count, pos[EDAC_MAX_LAYERS];
+ 	unsigned tot_csrows, tot_cschannels;
+-	int i, j;
++	int i, j, n, len;
+ 	int err;
+ 	int row, chn;
+ 
+@@ -311,9 +311,22 @@ struct mem_ctl_info *edac_mc_alloc(unsigned edac_index,
+ 			i, (dimm - mci->dimms),
+ 			pos[0], pos[1], pos[2], row, chn);
+ 
+-		/* Copy DIMM location */
+-		for (j = 0; j < n_layers; j++)
++		/*
++		 * Copy DIMM location and initialize the memory location
++		 */
++		len = sizeof(dimm->label);
++		p = dimm->label;
++		n = snprintf(p, len, "mc#%u", edac_index);
++		p += n;
++		len -= n;
++		for (j = 0; j < n_layers; j++) {
++			n = snprintf(p, len, "%s#%u",
++				     edac_layer_name[layers[j].type],
++				     pos[j]);
++			p += n;
++			len -= n;
+ 			dimm->location[j] = pos[j];
++		}
+ 
+ 		/* Link it to the csrows old API data */
+ 		chan->dimm = dimm;
+diff --git a/drivers/edac/edac_mc_sysfs.c b/drivers/edac/edac_mc_sysfs.c
+index c0275e6..cfeb92c 100644
+--- a/drivers/edac/edac_mc_sysfs.c
++++ b/drivers/edac/edac_mc_sysfs.c
+@@ -425,8 +425,8 @@ static ssize_t mci_reset_counters_store(struct mem_ctl_info *mci,
+ 
+ 	mci->ue_noinfo_count = 0;
+ 	mci->ce_noinfo_count = 0;
+-	mci->ue_count = 0;
+-	mci->ce_count = 0;
++	mci->ue_mc = 0;
++	mci->ce_mc = 0;
+ 
+ 	for (row = 0; row < mci->nr_csrows; row++) {
+ 		struct csrow_info *ri = &mci->csrows[row];
+@@ -495,12 +495,12 @@ static ssize_t mci_sdram_scrub_rate_show(struct mem_ctl_info *mci, char *data)
+ /* default attribute files for the MCI object */
+ static ssize_t mci_ue_count_show(struct mem_ctl_info *mci, char *data)
+ {
+-	return sprintf(data, "%d\n", mci->ue_count);
++	return sprintf(data, "%d\n", mci->ue_mc);
+ }
+ 
+ static ssize_t mci_ce_count_show(struct mem_ctl_info *mci, char *data)
+ {
+-	return sprintf(data, "%d\n", mci->ce_count);
++	return sprintf(data, "%d\n", mci->ce_mc);
+ }
+ 
+ static ssize_t mci_ce_noinfo_show(struct mem_ctl_info *mci, char *data)
+diff --git a/include/linux/edac.h b/include/linux/edac.h
+index 1439670..6d8c394 100644
+--- a/include/linux/edac.h
++++ b/include/linux/edac.h
+@@ -553,8 +553,6 @@ struct mem_ctl_info {
+ 	const char *dev_name;
+ 	char proc_name[MC_PROC_NAME_MAX_LEN + 1];
+ 	void *pvt_info;
+-	u32 ue_count;           /* Total Uncorrectable Errors for this MC */
+-	u32 ce_count;           /* Total Correctable Errors for this MC */
+ 	unsigned long start_time;	/* mci load start time (in jiffies) */
+ 
+ 	/* drivers shouldn't access this struct directly */
+-- 
+1.7.8
+
