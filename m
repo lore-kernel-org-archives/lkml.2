@@ -1,127 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753247Ab2DPLWl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Apr 2012 07:22:41 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:27535 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753035Ab2DPLWj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Apr 2012 07:22:39 -0400
-Date: Mon, 16 Apr 2012 07:23:08 -0400
-From: Jeff Layton <jlayton@redhat.com>
-To: Chuck Lever <chuck.lever@oracle.com>
-Cc: Bernd Schubert <bernd.schubert@itwm.fraunhofer.de>,
-        Malahal Naineni <malahal@us.ibm.com>, linux-nfs@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        pstaubach@exagrid.com, miklos@szeredi.hu, viro@ZenIV.linux.org.uk,
-        hch@infradead.org, michael.brantley@deshaw.com,
-        sven.breuner@itwm.fraunhofer.de
-Subject: Re: [PATCH RFC] vfs: make fstatat retry on ESTALE errors from
- getattr call
-Message-ID: <20120416072308.5a2e06d2@corrin.poochiereds.net>
-In-Reply-To: <F7D07FEC-4CA3-471F-8043-0DB899660BBB@oracle.com>
-References: <1334316311-22331-1-git-send-email-jlayton@redhat.com>
-	<20120413150518.GA1987@us.ibm.com>
-	<20120413114236.0e557e01@tlielax.poochiereds.net>
-	<4F8B1B7B.3040304@itwm.fraunhofer.de>
-	<F7D07FEC-4CA3-471F-8043-0DB899660BBB@oracle.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1753278Ab2DPLXI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Apr 2012 07:23:08 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:43699 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753035Ab2DPLXG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Apr 2012 07:23:06 -0400
+Date: Mon, 16 Apr 2012 04:22:49 -0700
+From: tip-bot for Andreas Herrmann <andreas.herrmann3@amd.com>
+Message-ID: <tip-d7de8649f34d45041409d1af4ba4a521971a9075@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        andreas.herrmann3@amd.com, tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        andreas.herrmann3@amd.com, tglx@linutronix.de
+In-Reply-To: <20120411151238.GA4794@alberich.amd.com>
+References: <20120411151238.GA4794@alberich.amd.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/urgent] x86/amd:
+  Remove broken links from comment and kernel message
+Git-Commit-ID: d7de8649f34d45041409d1af4ba4a521971a9075
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
+MIME-Version: 1.0
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Mon, 16 Apr 2012 04:22:56 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 15 Apr 2012 15:57:32 -0400
-Chuck Lever <chuck.lever@oracle.com> wrote:
+Commit-ID:  d7de8649f34d45041409d1af4ba4a521971a9075
+Gitweb:     http://git.kernel.org/tip/d7de8649f34d45041409d1af4ba4a521971a9075
+Author:     Andreas Herrmann <andreas.herrmann3@amd.com>
+AuthorDate: Wed, 11 Apr 2012 17:12:38 +0200
+Committer:  Ingo Molnar <mingo@kernel.org>
+CommitDate: Mon, 16 Apr 2012 08:53:43 +0200
 
-> 
-> On Apr 15, 2012, at 3:03 PM, Bernd Schubert wrote:
-> 
-> > On 04/13/2012 05:42 PM, Jeff Layton wrote:
-> >> (note: please don't trim the CC list!)
-> >> 
-> >> Indefinitely does make some sense (as Peter articulated in his original
-> >> set). It's possible you could race several times in a row, or a server
-> >> misconfiguration or something has happened and you have a transient
-> >> error that will eventually recover. His assertion was that any limit on
-> >> the number of retries is by definition wrong. For NFS, a fatal signal
-> >> ought to interrupt things as well, so retrying indefinitely has some
-> >> appeal there.
-> >> 
-> >> OTOH, we do have to contend with filesystems that might return ESTALE
-> >> persistently for other reasons and that might not respond to signals.
-> >> Miklos pointed out that some FUSE fs' do this in his review of Peter's
-> >> set.
-> >> 
-> >> As a purely defensive coding measure, limiting the number of retries to
-> >> something finite makes sense. If we're going to do that though, I'd
-> >> probably recommend that we set the number of retries be something
-> >> higher just so that this is more resilient in the face of multiple
-> >> races. Those other fs' might "spin" a bit in that case but it is an
-> >> error condition and IMO resiliency trumps performance -- at least in
-> > this case.
-> > 
-> > I am definitely voting against an infinite number of retries. I'm
-> > working on FhGFS, which supports distributed meta data servers. So when
-> > a file is moved around between directories, its file handle, which
-> > contains the meta-data target id might become invalid.
-> 
-> Doesn't Jeff's recovery mechanism resolve this situation?  The client does a fresh lookup, so shouldn't it get the new FH at that point?  If there is no possible way for the client to discover the new FH, then ESTALE recovery should probably be finite.
-> 
-> > As NFSv3 is
-> > stateless we cannot inform the client about that and must return ESTALE
-> > then. NFSv4 is better, but I'm not sure how well invalidating a file
-> > handle works.  So retrying once on ESTALE might be a good idea, but
-> > retrying forever is not.
-> > Also, what about asymmetric HA servers? I believe to remember that also
-> > resulted in ESTALE. So for example server1 exports /home and /scratch,
-> > but on failure server2 can only take over /home and denies access to
-> > /scratch.
-> 
-> Retrying forever is bad only if we think there are cases where there is no possible recovery action for the client, or the ESTALE signals a condition that is not temporary.
-> 
-> It is temporary, for instance, when an administrator takes an exported volume offline; at some point, that volume will be brought back online.  Maybe it is better generally for the client to retry indefinitely instead of causing applications to fail.
-> 
-> Retrying forever is exactly what we do for "hard" NFS mounts, for example, and for many types of NFSv4 state recovery.  Philosophically, how is this situation different?
-> 
-> It would be reasonable, at least, to insert a backoff delay in the retry logic.
-> 
+x86/amd: Remove broken links from comment and kernel message
 
-Good idea. If we go with an infinite retry or a large number of
-attempts, then an exponential backoff would be good. Probably not
-worthwhile though if we're only going to retry a dozen times or so.
+Signed-off-by: Andreas Herrmann <andreas.herrmann3@amd.com>
+Link: http://lkml.kernel.org/r/20120411151238.GA4794@alberich.amd.com
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
+---
+ arch/x86/kernel/cpu/amd.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
-We might also want to consider having this code bail out of the loop on
-fatal_signal_pending() too. That would help cover the case of
-filesystems that don't handle signals appropriately themselves.
-
-There are 3 possible "problem" situations that I can see with an
-infinite retry:
-
-1) you have a filesystem that persistently returns ESTALE on a lookup
-for some reason. That situation will never resolve itself if we retry
-indefinitely without outside intervention.
-
-2) a filesystem has a successful lookup but is handing out bogus inodes
-such that the operation consistently fails with ESTALE. Again, that
-will probably never resolve itself, and is probably indicative that
-something is broken in the fs.
-
-3) you have a situation where the results of the lookup consistently go
-stale before the actual operation, and the operation returns ESTALE.
-With NFS, this could happen if you had a job on the server renaming a
-new file on top of an old one very rapidly while trying to access it in
-some fashion from the other client. If timed just right, this could end
-up in a livelock of sorts.
-
-To answer your question above, I don't see any major difference
-philosophically between retrying on ESTALE and retrying a v4 operation
-on an OLD_STATEID error or something. That said, I'm not worried about
-NFS here. I'm pretty sure it can cope in some fashion with all of the
-above situations.
-
-The big questions are whether that would cause problems with other
-filesystems and if so, how best would we deal with it?
-
--- 
-Jeff Layton <jlayton@redhat.com>
+diff --git a/arch/x86/kernel/cpu/amd.c b/arch/x86/kernel/cpu/amd.c
+index 0a44b90..1248f9c 100644
+--- a/arch/x86/kernel/cpu/amd.c
++++ b/arch/x86/kernel/cpu/amd.c
+@@ -26,7 +26,8 @@
+  *	contact AMD for precise details and a CPU swap.
+  *
+  *	See	http://www.multimania.com/poulot/k6bug.html
+- *		http://www.amd.com/K6/k6docs/revgd.html
++ *	and	section 2.6.2 of "AMD-K6 Processor Revision Guide - Model 6"
++ *		(Publication # 21266  Issue Date: August 1998)
+  *
+  *	The following test is erm.. interesting. AMD neglected to up
+  *	the chip setting when fixing the bug but they also tweaked some
+@@ -94,7 +95,6 @@ static void __cpuinit init_amd_k6(struct cpuinfo_x86 *c)
+ 				"system stability may be impaired when more than 32 MB are used.\n");
+ 		else
+ 			printk(KERN_CONT "probably OK (after B9730xxxx).\n");
+-		printk(KERN_INFO "Please see http://membres.lycos.fr/poulot/k6bug.html\n");
+ 	}
+ 
+ 	/* K6 with old style WHCR */
