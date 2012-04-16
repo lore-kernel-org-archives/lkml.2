@@ -1,140 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753859Ab2DPSKL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Apr 2012 14:10:11 -0400
-Received: from mail.tpi.com ([70.99.223.143]:2186 "EHLO mail.tpi.com"
+	id S1755128Ab2DPSKl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Apr 2012 14:10:41 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:26320 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751319Ab2DPSKK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Apr 2012 14:10:10 -0400
-Message-ID: <4F8C604B.70700@canonical.com>
-Date: Mon, 16 Apr 2012 12:09:15 -0600
-From: Tim Gardner <tim.gardner@canonical.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120410 Thunderbird/11.0.1
+	id S1754749Ab2DPSKh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Apr 2012 14:10:37 -0400
+Date: Mon, 16 Apr 2012 13:15:46 -0400
+From: Jason Baron <jbaron@redhat.com>
+To: Johannes Stezenbach <js@sig21.net>
+Cc: Alan Stern <stern@rowland.harvard.edu>, linux-kernel@vger.kernel.org,
+        linux-usb@vger.kernel.org
+Subject: Re: ehci dynamic debug problem
+Message-ID: <20120416171546.GD2345@redhat.com>
+References: <20120413174107.GA6021@sig21.net>
+ <Pine.LNX.4.44L0.1204131411010.1166-100000@iolanthe.rowland.org>
+ <20120413190311.GA6238@sig21.net>
+ <20120416155423.GB2345@redhat.com>
+ <20120416164139.GA14077@sig21.net>
 MIME-Version: 1.0
-To: Bryan Wu <bryan.wu@canonical.com>
-CC: linux@arm.linux.org.uk, rpurdie@rpsys.net,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linus.walleij@linaro.org, akpm@linux-foundation.org,
-        arnd.bergmann@linaro.org, nicolas.pitre@linaro.org
-Subject: Re: [PATCH 01/18] led-triggers: create a trigger for CPU activity
-References: <1334316377-23915-1-git-send-email-bryan.wu@canonical.com> <1334316377-23915-2-git-send-email-bryan.wu@canonical.com> <4F883E92.60001@canonical.com> <CAK5ve-K=KUO+uNK7bJw_RFJ55oid=q36tFHmqLJmeGdRxkt=wg@mail.gmail.com>
-In-Reply-To: <CAK5ve-K=KUO+uNK7bJw_RFJ55oid=q36tFHmqLJmeGdRxkt=wg@mail.gmail.com>
-X-Enigmail-Version: 1.4
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120416164139.GA14077@sig21.net>
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/16/2012 03:51 AM, Bryan Wu wrote:
->>> +
->>> +#define MAX_NAME_LEN 8
->>> +
->>
->> This length accommodates up to 10000 CPUs. How long will that suffice ?
->>
+On Mon, Apr 16, 2012 at 06:41:39PM +0200, Johannes Stezenbach wrote:
+> On Mon, Apr 16, 2012 at 11:54:24AM -0400, Jason Baron wrote:
+> > On Fri, Apr 13, 2012 at 09:03:11PM +0200, Johannes Stezenbach wrote:
+> > > 
+> > >   Does dynamic debug offer an "is the message two lines below enabled" test?
+> > > 
+> > 
+> > Sorry was away for a bit...
+> > 
+> > dynamic debug doesn't offer any is enabled test, its hidden from the
+> > user. That said, in this case, you can delay the printing to the buffer
+> > with:
+> ...
+> > +	ehci_dbg (ehci, "%s\n", dbg_port_buf (_buf, sizeof _buf, label, port, status)); \
 > 
-> How about this:
-> #define MAX_NAME_LEN    (4 + DIV_ROUND_UP(NR_CPUS, 255))
+> I think arguments are evaluated before dev_dbg is called so this
+> won't help.
 > 
-
-That doesn't really work either. How about just leave MAX_NAME_LEN at 8
-and add a 'BUILD_BUG_ON(CONFIG_NR_CPUS > 9999)' somewhere ?
-
-> 
->>> +static DEFINE_PER_CPU(struct led_trigger *, cpu_trig);
->>> +static DEFINE_PER_CPU(char [MAX_NAME_LEN], trig_name);
->>> +
->>> +void ledtrig_cpu(enum cpu_led_event ledevt)
->>> +{
->>> +     struct led_trigger *trig = __get_cpu_var(cpu_trig);
->>> +
->>> +     if (!trig)
->>> +             return;
->>
->> I don't think __get_cpu_var(cpu_trig) _should_ ever return NULL. See
->> discussion about exclusion below in ledtrig_cpu_init().
->>
->>> +
->>> +     /* Locate the correct CPU LED */
->>> +     switch (ledevt) {
->>> +     case CPU_LED_IDLE_END:
->>> +     case CPU_LED_START:
->>> +             /* Will turn the LED on, max brightness */
->>> +             led_trigger_event(trig, LED_FULL);
->>> +             break;
->>> +
->>> +     case CPU_LED_IDLE_START:
->>> +     case CPU_LED_STOP:
->>> +     case CPU_LED_HALTED:
->>> +             /* Will turn the LED off */
->>> +             led_trigger_event(trig, LED_OFF);
->>> +             break;
->>> +
->>> +     default:
->>> +             /* Will leave the LED as it is */
->>> +             break;
->>> +     }
->>> +}
->>> +EXPORT_SYMBOL(ledtrig_cpu);
->>> +
->>> +static int ledtrig_cpu_syscore_suspend(void)
->>> +{
->>> +     ledtrig_cpu(CPU_LED_STOP);
->>> +     return 0;
->>> +}
->>> +
->>> +static void ledtrig_cpu_syscore_resume(void)
->>> +{
->>> +     ledtrig_cpu(CPU_LED_START);
->>> +}
->>> +
->>> +static void ledtrig_cpu_syscore_shutdown(void)
->>> +{
->>> +     ledtrig_cpu(CPU_LED_HALTED);
->>> +}
->>> +
->>> +static struct syscore_ops ledtrig_cpu_syscore_ops = {
->>> +     .shutdown       = ledtrig_cpu_syscore_shutdown,
->>> +     .suspend        = ledtrig_cpu_syscore_suspend,
->>> +     .resume         = ledtrig_cpu_syscore_resume,
->>> +};
->>> +
->>> +static int __init ledtrig_cpu_init(void)
->>> +{
->>> +     int cpu;
->>> +
->>> +     /*
->>> +      * Registering CPU led trigger for each CPU cores here
->>> +      * ignores CPU hotplug, but after this CPU hotplug works
->>> +      * fine with this trigger.
->>> +      */
->>> +     for_each_possible_cpu(cpu) {
->>> +             struct led_trigger *trig;
->>> +             char *name = per_cpu(trig_name, cpu);
->>> +
->>> +             snprintf(name, MAX_NAME_LEN, "cpu%d", cpu);
->>> +             led_trigger_register_simple(name, &trig);
->>
->> Check for trig == NULL. led_trigger_register_simple() does a
->> kzalloc(GFP_KERNEL). You'll also have to unwind any successful
->> registrations. Perhaps carve the guts out of ledtrig_cpu_exit() into a
->> function that can be called from either place.
->>
-> 
-> Actually, led_trigger_register_simple() will take care of kzalloc()
-> failure. And if so trig will be NULL. I think it's unnecessary to
-> check trig == NULL here and unwind any passed registrations, since
-> those registration failure on for one CPU has no relationship with
-> other successful registrations.
-> 
-> So it is necessary for us to check trig==NULL in ledtrig_cpu().
 > 
 
-I guess that means you're OK with partial registrations? That doesn't
-seem orthogonal to me, but probably won't cause an OOPS. I'll look again
-when you send out v2 of this patch set.
+I looked at the disassembly - and this argument was in fact *not* evaluated
+before the call. So I think this approach is worthwhile.
 
-rtg
--- 
-Tim Gardner tim.gardner@canonical.com
+Thanks,
+
+-Jason
