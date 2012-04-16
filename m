@@ -1,51 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752226Ab2DPGRT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Apr 2012 02:17:19 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:38395 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751961Ab2DPGRQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Apr 2012 02:17:16 -0400
-Subject: [PATCH 6/6] vhost_net: don't poll on -EFAULT
-To: netdev@vger.kernel.org, xma@us.ibm.com, davem@davemloft.net,
-        linux-kernel@vger.kernel.org, mst@redhat.com
-From: Jason Wang <jasowang@redhat.com>
-Cc: ebiederm@xmission.com
-Date: Mon, 16 Apr 2012 14:08:33 +0800
-Message-ID: <20120416060833.14140.28139.stgit@intel-e5620-16-2.englab.nay.redhat.com>
-In-Reply-To: <20120416060749.14140.19433.stgit@intel-e5620-16-2.englab.nay.redhat.com>
-References: <20120416060749.14140.19433.stgit@intel-e5620-16-2.englab.nay.redhat.com>
-User-Agent: StGit/0.15
-MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
+	id S1751965Ab2DPGSZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Apr 2012 02:18:25 -0400
+Received: from shards.monkeyblade.net ([198.137.202.13]:41070 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751657Ab2DPGSX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Apr 2012 02:18:23 -0400
+Date: Mon, 16 Apr 2012 02:16:13 -0400 (EDT)
+Message-Id: <20120416.021613.606704342231219042.davem@davemloft.net>
+To: sfr@canb.auug.org.au
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org, tkhai@yandex.ru,
+        sam@ravnborg.org
+Subject: Re: linux-next: build failure after merge of the final tree
+ (sparc-next tree related)
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <20120416155907.32c0041caa002f72da4635b7@canb.auug.org.au>
+References: <20120416155907.32c0041caa002f72da4635b7@canb.auug.org.au>
+X-Mailer: Mew version 6.4 on Emacs 24.0.95 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Sun, 15 Apr 2012 23:16:16 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently, we restart tx polling unconditionally when sendmsg()
-fails. This would cause unnecessary wakeups of vhost wokers as it's
-only needed when the socket send buffer were exceeded. Fix this by
-restart the tx polling only when sendmsg() returns value other than
--EFAULT.
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+Date: Mon, 16 Apr 2012 15:59:07 +1000
 
-Signed-off-by: Jason Wang <jasowang@redhat.com>
----
- drivers/vhost/net.c |    3 ++-
- 1 files changed, 2 insertions(+), 1 deletions(-)
+> After merging the final tree, today's linux-next build (sparc32 defconfig)
+> failed like this:
+> 
+> arch/sparc/kernel/pcic.c: In function 'pci_time_init':
+> arch/sparc/kernel/pcic.c:741:2: error: 'timer_cs_period' undeclared (first use in this function)
+> 
+> Caused by commit 62f082830d63 ("sparc32: generic clockevent support").
+> 
+> I have reverted that commit for today.
 
-diff --git a/drivers/vhost/net.c b/drivers/vhost/net.c
-index 29abd65..035fa95 100644
---- a/drivers/vhost/net.c
-+++ b/drivers/vhost/net.c
-@@ -262,7 +262,8 @@ static void handle_tx(struct vhost_net *net)
- 					UIO_MAXIOV;
- 			}
- 			vhost_discard_vq_desc(vq, 1);
--			tx_poll_start(net, sock);
-+			if (err != -EFAULT)
-+				tx_poll_start(net, sock);
- 			break;
- 		}
- 		if (err != len)
-
+Sam, Tkhai, please fix this.
