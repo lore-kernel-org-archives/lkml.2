@@ -1,68 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755322Ab2DPU5g (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Apr 2012 16:57:36 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:44295 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752969Ab2DPU5e (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Apr 2012 16:57:34 -0400
-From: Matthew Garrett <mjg@redhat.com>
-To: hch@infradead.org
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Matthew Garrett <mjg@redhat.com>
-Subject: [PATCH V2] hfsplus: Fix bless ioctl when used with hardlinks
-Date: Mon, 16 Apr 2012 16:57:18 -0400
-Message-Id: <1334609838-14831-1-git-send-email-mjg@redhat.com>
-X-SA-Do-Not-Run: Yes
-X-SA-Exim-Connect-IP: 66.187.233.202
-X-SA-Exim-Mail-From: mjg@redhat.com
-X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
+	id S1754908Ab2DPU6P (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Apr 2012 16:58:15 -0400
+Received: from shards.monkeyblade.net ([198.137.202.13]:48061 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754059Ab2DPU6O (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Apr 2012 16:58:14 -0400
+Date: Mon, 16 Apr 2012 16:58:04 -0400 (EDT)
+Message-Id: <20120416.165804.411912709558079358.davem@davemloft.net>
+To: mingo@kernel.org
+Cc: joe@perches.com, linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
+        torvalds@linux-foundation.org, apw@canonical.com
+Subject: Re: Please fix or revert: [PATCH] checkpatch: add --strict tests
+ for braces, comments and casts
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <20120416202654.GA4678@gmail.com>
+References: <20120416091719.GA4113@gmail.com>
+	<20120416.142728.864894452301706752.davem@davemloft.net>
+	<20120416202654.GA4678@gmail.com>
+X-Mailer: Mew version 6.4 on Emacs 23.3 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Mon, 16 Apr 2012 13:58:08 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-HFS+ doesn't really implement hard links - instead, hardlinks are indicated
-by a magic file type which refers to an indirect node in a hidden
-directory. The spec indicates that stat() should return the inode number
-of the indirect node, but it turns out that this doesn't satisfy the
-firmware when it's looking for a bootloader - it wants the catalog ID of
-the hardlink file instead. Fix up this case.
+From: Ingo Molnar <mingo@kernel.org>
+Date: Mon, 16 Apr 2012 22:26:54 +0200
 
-Signed-off-by: Matthew Garrett <mjg@redhat.com>
----
+>     If you don't "see" it as ugly it's simply because your brain
+>     is not wired up to see 3D/2D geometry as a significant
+>     source of information.
 
-V2 cleans up the casting.
+I'm sorry that I'm so handicapped that I cannot match your
+visual capabilitites.
 
- fs/hfsplus/ioctl.c |    9 +++++++--
- 1 file changed, 7 insertions(+), 2 deletions(-)
-
-diff --git a/fs/hfsplus/ioctl.c b/fs/hfsplus/ioctl.c
-index c640ba5..09addc8 100644
---- a/fs/hfsplus/ioctl.c
-+++ b/fs/hfsplus/ioctl.c
-@@ -31,6 +31,7 @@ static int hfsplus_ioctl_bless(struct file *file, int __user *user_flags)
- 	struct hfsplus_sb_info *sbi = HFSPLUS_SB(inode->i_sb);
- 	struct hfsplus_vh *vh = sbi->s_vhdr;
- 	struct hfsplus_vh *bvh = sbi->s_backup_vhdr;
-+	u32 cnid = (unsigned long)dentry->d_fsdata;
- 
- 	if (!capable(CAP_SYS_ADMIN))
- 		return -EPERM;
-@@ -41,8 +42,12 @@ static int hfsplus_ioctl_bless(struct file *file, int __user *user_flags)
- 	vh->finder_info[0] = bvh->finder_info[0] =
- 		cpu_to_be32(parent_ino(dentry));
- 
--	/* Bootloader */
--	vh->finder_info[1] = bvh->finder_info[1] = cpu_to_be32(inode->i_ino);
-+	/*
-+	 * Bootloader. Just using the inode here breaks in the case of
-+	 * hard links - the firmware wants the ID of the hard link file,
-+	 * but the inode points at the indirect inode
-+	 */
-+	vh->finder_info[1] = bvh->finder_info[1] = cpu_to_be32(cnid);
- 
- 	/* Per spec, the OS X system folder - same as finder_info[0] here */
- 	vh->finder_info[5] = bvh->finder_info[5] =
--- 
-1.7.10
+I hope you have a nice day too Ingo.
 
