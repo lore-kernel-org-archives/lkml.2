@@ -1,55 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752994Ab2DPK3P (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Apr 2012 06:29:15 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:41471 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752616Ab2DPK3O (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Apr 2012 06:29:14 -0400
-Date: Mon, 16 Apr 2012 13:28:55 +0300
-From: Gleb Natapov <gleb@redhat.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Sasha Levin <levinsasha928@gmail.com>, Avi Kivity <avi@redhat.com>,
-        Marcelo Tosatti <mtosatti@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        kvm <kvm@vger.kernel.org>, linux-kernel <linux-kernel@vger.kernel.org>,
-        Dave Jones <davej@redhat.com>
-Subject: Re: kvm: RCU warning in async pf
-Message-ID: <20120416102855.GP11918@redhat.com>
-References: <1333414472.11455.7.camel@lappy>
- <20120403105226.GF14939@redhat.com>
- <20120404123033.GD11918@redhat.com>
- <1334396693.2528.45.camel@twins>
+	id S1752902Ab2DPKbg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Apr 2012 06:31:36 -0400
+Received: from forward3.mail.yandex.net ([77.88.46.8]:44053 "EHLO
+	forward3.mail.yandex.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752009Ab2DPKbf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Apr 2012 06:31:35 -0400
+X-Greylist: delayed 470 seconds by postgrey-1.27 at vger.kernel.org; Mon, 16 Apr 2012 06:31:34 EDT
+Date: Mon, 16 Apr 2012 14:22:35 +0400
+From: Oleg <lego12239@yandex.ru>
+To: linux-kernel@vger.kernel.org
+Subject: usb-to-serial converter problem
+Message-ID: <20120416102235.GA22599@localhost>
+Reply-To: Oleg <lego12239@yandex.ru>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=koi8-r
 Content-Disposition: inline
-In-Reply-To: <1334396693.2528.45.camel@twins>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Apr 14, 2012 at 11:44:53AM +0200, Peter Zijlstra wrote:
-> On Wed, 2012-04-04 at 15:30 +0300, Gleb Natapov wrote:
-> >  
-> > @@ -253,7 +254,10 @@ do_async_page_fault(struct pt_regs *regs, unsigned long error_code)
-> >  		kvm_async_pf_task_wait((u32)read_cr2());
-> >  		break;
-> >  	case KVM_PV_REASON_PAGE_READY:
-> > +		rcu_irq_enter();
-> > +		exit_idle();
-> >  		kvm_async_pf_task_wake((u32)read_cr2());
-> > +		rcu_irq_exit();
-> >  		break;
-> >  	}
-> >  }
-> 
-> Wouldn't irq_enter() / irq_exit() be more appropriate? You're basically
-> taking an interrupt/exception from idle, irq_enter() will fix up
-> everything that needs fixing up, including time sources (which the
-> scheduler expects to be up-to-date).
-> 
-You are right. Will send a patch.
+  Hi, all.
 
---
-			Gleb.
+  I have a strange problem with my usb-to-serial converter TU-S9
+(http://www.trendnet.com/products/proddetail.asp?prod=265_TU-S9&cat=32). When i
+attach it, i see /dev/ttyUSB0 device, but i cann't communicate with a switch
+console from minicom. minicom show nothing, just like no switch at all on
+another side of TU-S9. On my old notebook dell inspiron 1501 it worked fine, on
+another machine it works fine, but on my new dell inspiron n5110 it doesn't
+work correctly.
+  Now I'm using Debian 6, vanilla kernel 3.2.14. When TU-S9 is connected, dmesg
+show:
+
+usb 3-2: new full-speed USB device number 3 using xhci_hcd
+xhci_hcd 0000:0b:00.0: WARN: short transfer on control ep
+xhci_hcd 0000:0b:00.0: WARN: short transfer on control ep
+xhci_hcd 0000:0b:00.0: WARN: short transfer on control ep
+pl2303 3-2:1.0: pl2303 converter detected
+usb 3-2: pl2303 converter now attached to ttyUSB0
+
+  What i do wrong?
+  May be the problem exist bacause of inspiron n5110 have no usb 1.1 host?
+
+  Thanks.
