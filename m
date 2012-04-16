@@ -1,42 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753500Ab2DPLsD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Apr 2012 07:48:03 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:19666 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753189Ab2DPLsB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Apr 2012 07:48:01 -0400
-Message-ID: <4F8C06ED.6020805@redhat.com>
-Date: Mon, 16 Apr 2012 14:47:57 +0300
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120316 Thunderbird/11.0
+	id S1753513Ab2DPLwM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Apr 2012 07:52:12 -0400
+Received: from mail-qc0-f174.google.com ([209.85.216.174]:50630 "EHLO
+	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753189Ab2DPLwK convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Apr 2012 07:52:10 -0400
 MIME-Version: 1.0
-To: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-CC: Marcelo Tosatti <mtosatti@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        KVM <kvm@vger.kernel.org>
-Subject: Re: [PATCH v2 10/16] KVM: MMU: fask check whether page is writable
-References: <4F87FA69.5060106@linux.vnet.ibm.com> <4F87FC82.2050302@linux.vnet.ibm.com> <4F8AE64F.7080909@redhat.com> <4F8B9115.2030807@linux.vnet.ibm.com> <4F8BEE1B.8000704@redhat.com> <4F8BF265.7020405@linux.vnet.ibm.com>
-In-Reply-To: <4F8BF265.7020405@linux.vnet.ibm.com>
+In-Reply-To: <1334573285-24016-1-git-send-email-hare@suse.de>
+References: <1334573285-24016-1-git-send-email-hare@suse.de>
+From: Kay Sievers <kay@vrfy.org>
+Date: Mon, 16 Apr 2012 13:51:46 +0200
+Message-ID: <CAPXgP11S6R4L-8tZ4cPY=MZfcvTBBHkUdTvt7FTKhvhVF6uKPQ@mail.gmail.com>
+Subject: Re: [PATCH] driver core: check 'start' argument in bus iterators
+To: Hannes Reinecke <hare@suse.de>
+Cc: Linux Kernel <linux-kernel@vger.kernel.org>,
+        Greg Kroah-Hartmann <gregkh@linuxfoundation.org>,
+        Kay Sievers <ksievers@vrfy.org>, Stable Kernel <stable@kernel.org>
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/16/2012 01:20 PM, Xiao Guangrong wrote:
-> >>
-> >> It is used to avoid the unnecessary overload 
-> > 
-> > It's overloading me :(
-> > 
->
->
-> Sorry.
->
+On Mon, Apr 16, 2012 at 12:48, Hannes Reinecke <hare@suse.de> wrote:
+> bus_for_each_dev() and bus_find_device() both take a 'start'
+> argument to start the iteration at a specific list entry.
+> However, this list entry might already been detached by
+> the time these functions are called.
+> So we need to check if the arguments are still valid.
 
-The trick is to send those in separate patchset so the maintainer
-doesn't notice.
+> +       if (start && !klist_node_attached(&start->p->knode_bus))
+> +               return -ENODEV;
+> +
+>        klist_iter_init_node(&bus->p->klist_devices, &i,
+>                             (start ? &start->p->knode_bus : NULL));
 
--- 
-error compiling committee.c: too many arguments to function
+Shouldn't we do this check in klist_iter_init_node()?
+After a kref_get(), and return -ENODEV from there if the node it as
+asked to start is gone?
 
+This check otherwise still has the window between the check and the
+use of it, only very unlikely to hit now, hasn't it?
+
+Kay
