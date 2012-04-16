@@ -1,54 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754568Ab2DPOPm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Apr 2012 10:15:42 -0400
-Received: from mail-qa0-f53.google.com ([209.85.216.53]:61330 "EHLO
-	mail-qa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753498Ab2DPOPh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Apr 2012 10:15:37 -0400
-From: Paul Moore <paul@paul-moore.com>
-To: libseccomp-discuss@lists.sourceforge.net
-Cc: Henrique de Moraes Holschuh <hmh@hmh.eng.br>,
-        linux-security-module@vger.kernel.org, Will Drewry <wad@chromium.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [libseccomp-discuss] ANN: libseccomp
-Date: Mon, 16 Apr 2012 10:15:33 -0400
-Message-ID: <4892415.SaF4mnePOG@sifl>
-User-Agent: KMail/4.8.2 (Linux/3.3.1-gentoo; KDE/4.8.2; x86_64; ; )
-In-Reply-To: <20120414024708.GB10926@khazad-dum.debian.net>
-References: <1540670.AFBi1SpGoi@sifl> <9270063.OgsgoBpmh0@sifl> <20120414024708.GB10926@khazad-dum.debian.net>
+	id S1754261Ab2DPORz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Apr 2012 10:17:55 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:56419 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753498Ab2DPORx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Apr 2012 10:17:53 -0400
+Date: Mon, 16 Apr 2012 17:17:35 +0300
+From: Gleb Natapov <gleb@redhat.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Sasha Levin <levinsasha928@gmail.com>, Avi Kivity <avi@redhat.com>,
+        Marcelo Tosatti <mtosatti@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        kvm <kvm@vger.kernel.org>, linux-kernel <linux-kernel@vger.kernel.org>,
+        Dave Jones <davej@redhat.com>
+Subject: Re: kvm: RCU warning in async pf
+Message-ID: <20120416141735.GA18613@redhat.com>
+References: <1333414472.11455.7.camel@lappy>
+ <20120403105226.GF14939@redhat.com>
+ <20120404123033.GD11918@redhat.com>
+ <1334396693.2528.45.camel@twins>
+ <20120416102855.GP11918@redhat.com>
+ <20120416125848.GT11918@redhat.com>
+ <1334581548.28150.40.camel@twins>
+ <20120416130806.GV11918@redhat.com>
+ <1334582281.28150.41.camel@twins>
+ <1334582840.28150.43.camel@twins>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1334582840.28150.43.camel@twins>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday, April 13, 2012 11:47:08 PM Henrique de Moraes Holschuh wrote:
-> On Fri, 13 Apr 2012, Paul Moore wrote:
-> > the seccomp filter into the kernel.  By default libseccomp attempts to set
-> > NO_NEW_PRIVS but does not fail if prctl(NO_NEW_PRIVS) returns with an
-> > error;
->
-> Isn't that dangerous in non-obvious ways, as in it can actually
-> cause/activate/enable/open security issues on priviledged processes that
-> don't expect whatever filtering seccomp will subject them to?
+On Mon, Apr 16, 2012 at 03:27:20PM +0200, Peter Zijlstra wrote:
+> On Mon, 2012-04-16 at 15:18 +0200, Peter Zijlstra wrote:
+> > On Mon, 2012-04-16 at 16:08 +0300, Gleb Natapov wrote:
+> > > On Mon, Apr 16, 2012 at 03:05:48PM +0200, Peter Zijlstra wrote:
+> > > > On Mon, 2012-04-16 at 15:58 +0300, Gleb Natapov wrote:
+> > > > > -               rcu_irq_enter();
+> > > > > +               irq_enter();
+> > > > >                 exit_idle(); 
+> > > > 
+> > > > Do we really need the exit_idle()? I can't remember other interrupt
+> > > > handlers doing that.
+> > > They do. That's where I got the idea.
+> > 
+> > Some do.. some don't.. /me goes have a look what this exit_idle nonsense
+> > is all about. Looks to be something broken.
+> 
+> Yeah, its broken and the whole implementation is crap anyway. There's
+> only one user (drivers/idle/i7300_idle.c) so it likely doesn't matter
+> (much) anyway.
+> 
+Should I resend the patch with removal of exit_idle() call or it will
+be removed by a patch that removes exit_idle() completely later?
 
-We could debate this point but it turns out it is a bit of a non-issue as the 
-kernel code requires NO_NEW_PRIVS unless CAP_SYS_ADMIN is set; if neither 
-conditions are true the seccomp filter with fail (check Will's patches).
+> Thomas, can we rip that stuff out? or do we have to like actually fix
+> it?
 
-If prctl(NO_NEW_PRIVS) fails the error is always returned, and the 
-attribute/boolean to disable this functionality has been removed since it 
-likely serves little purpose.
-
-> Defaults are important, as they're what people _who don't know any better_
-> are likely to use.
-
-Agreed.  You'll never hear me argue otherwise.
-
--- 
-paul moore
-www.paul-moore.com
-
+--
+			Gleb.
