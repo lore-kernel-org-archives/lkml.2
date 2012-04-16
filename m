@@ -1,162 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754374Ab2DPS7R (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Apr 2012 14:59:17 -0400
-Received: from mail209.messagelabs.com ([216.82.255.3]:53802 "EHLO
-	mail209.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752485Ab2DPS7Q convert rfc822-to-8bit (ORCPT
+	id S1755322Ab2DPS7u (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Apr 2012 14:59:50 -0400
+Received: from moutng.kundenserver.de ([212.227.126.186]:61889 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754058Ab2DPS7t (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Apr 2012 14:59:16 -0400
-X-Env-Sender: hartleys@visionengravers.com
-X-Msg-Ref: server-12.tower-209.messagelabs.com!1334602738!3332867!36
-X-Originating-IP: [216.166.12.69]
-X-StarScan-Version: 6.5.7; banners=-,-,-
-X-VirusChecked: Checked
-From: H Hartley Sweeten <hartleys@visionengravers.com>
-To: Rafal Prylowski <prylowski@metasoft.pl>
-CC: Mika Westerberg <mika.westerberg@iki.fi>,
-        "vinod.koul@intel.com" <vinod.koul@intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "rmallon@gmail.com" <rmallon@gmail.com>
-Date: Mon, 16 Apr 2012 13:59:08 -0500
-Subject: RE: [PATCH] ep93xx: Implement double buffering for M2M DMA channels
-Thread-Topic: [PATCH] ep93xx: Implement double buffering for M2M DMA channels
-Thread-Index: Ac0Xs1rGHQKdSwDwR0axCj1A9GwhsgEThigw
-Message-ID: <ADE657CA350FB648AAC2C43247A983F00206987A3BFE@AUSP01VMBX24.collaborationhost.net>
-References: <4F683B36.8090101@metasoft.pl>
- <20120321193836.GC3740@mwesterb-mobl.ger.corp.intel.com>
- <ADE657CA350FB648AAC2C43247A983F0020696D48E3E@AUSP01VMBX24.collaborationhost.net>
- <20120323070446.GC5812@mwesterb-mobl.ger.corp.intel.com>
- <ADE657CA350FB648AAC2C43247A983F0020696D48EEB@AUSP01VMBX24.collaborationhost.net>
- <20120410172853.GA25697@mwesterb-mobl>
- <ADE657CA350FB648AAC2C43247A983F00206986C01D4@AUSP01VMBX24.collaborationhost.net>
- <4F853053.7040800@metasoft.pl>
-In-Reply-To: <4F853053.7040800@metasoft.pl>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Mon, 16 Apr 2012 14:59:49 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Stephan Uphoff <ups@google.com>
+Subject: Re: swap on eMMC and other flash
+Date: Mon, 16 Apr 2012 18:59:32 +0000
+User-Agent: KMail/1.12.2 (Linux/3.3.0-rc1; KDE/4.3.2; x86_64; ; )
+Cc: Minchan Kim <minchan@kernel.org>, linaro-kernel@lists.linaro.org,
+        android-kernel@googlegroups.com, linux-mm@kvack.org,
+        "Luca Porzio (lporzio)" <lporzio@micron.com>,
+        Alex Lemberg <alex.lemberg@sandisk.com>, linux-kernel@vger.kernel.org,
+        Saugata Das <saugata.das@linaro.org>,
+        Venkatraman S <venkat@linaro.org>, Yejin Moon <yejin.moon@samsung.com>,
+        Hyojin Jeong <syr.jeong@samsung.com>,
+        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>
+References: <201203301744.16762.arnd@arndb.de> <201204111557.14153.arnd@arndb.de> <CAKL-ytsXbe4=u94PjqvhZo=ZLiChQ0FmZC84GNrFHa0N1mDjFw@mail.gmail.com>
+In-Reply-To: <CAKL-ytsXbe4=u94PjqvhZo=ZLiChQ0FmZC84GNrFHa0N1mDjFw@mail.gmail.com>
 MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201204161859.32436.arnd@arndb.de>
+X-Provags-ID: V02:K0:B0eUykzhawWUdWK78Mj3WpAnode/HpvKGAYTxU8wV6s
+ g5d0LswPoSQsJjZHlYkkebsMncEUFpt0R3QBQ4h6BcUzpm+e4P
+ YhH6IU7vEMiIBYLHjNIWU12mODXDARoh7fT+ui5kTjqKsoAqwq
+ G9ukE0c5M+dyu2b722o8vH7+KyrqqHX8+2jSvtHjYBov+oSPz3
+ ZqZxO5QER0OhB5ZuMZtoT2wX984q5oaGFPBl8l/p5d0lTYjEfN
+ Z+AtU9VQN3n4SHqHFZ+lWiTeDVNcfqwke8BPMsJGW/PTw22gtp
+ xXnKnZ4rl2asroJjnocibxJgjf4e6QMoWn3HvXfYws5oMojVpT
+ cY31wilWzbmbpNKNU6WA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday, April 11, 2012 12:19 AM, Rafal Prylowski wrote:
-> On 2012-04-10 19:55, H Hartley Sweeten wrote:
->> On Tuesday, April 10, 2012 10:29 AM, Mika Westerberg wrote:
->>> On Fri, Mar 23, 2012 at 11:09:50AM -0500, H Hartley Sweeten wrote:
->>>
->>> Now that the spurious interrupts thing with VIC has been sorted out, should we
->>> revisit this patch? Hartley, do you have any objections merging this?
-> >
->> I have not had a chance to look at this with the VIC issue fixed.
->> 
->> Last time I tried testing the double buffering patch my system would not boot
->> correctly. I'll try to test this again shortly.
->> 
->> Rafal,
->> 
->> Could you repost the latest version of the patch?
->> 
->
-> Hi,
->
-> Here is the patch. It applies to current mainline (3.4rc2). The only thing that
-> has changed is additional call to ep93xx_dma_advance_active(..) before disabling
-> the channel.
+On Monday 16 April 2012, Stephan Uphoff wrote:
+> opportunity to plant a few ideas.
+> 
+> In contrast to rotational disks read/write operation overhead and
+> costs are not symmetric.
+> While random reads are much faster on flash - the number of write
+> operations is limited by wearout and garbage collection overhead.
+> To further improve swapping on eMMC or similar flash media I believe
+> that the following issues need to be addressed:
+> 
+> 1) Limit average write bandwidth to eMMC to a configurable level to
+> guarantee a minimum device lifetime
+> 2) Aim for a low write amplification factor to maximize useable write bandwidth
+> 3) Strongly favor read over write operations
+> 
+> Lowering write amplification (2) has been discussed in this email
+> thread - and the only observation I would like to add is that
+> over-provisioning the internal swap space compared to the exported
+> swap space significantly can guarantee a lower write amplification
+> factor with the indirection and GC techniques discussed.
 
-Rafal,
+Yes, good point.
 
-This patch still doesn't work on my ep93xx system.
+> I believe the swap functionality is currently optimized for storage
+> media where read and write costs are nearly identical.
+> As this is not the case on flash I propose splitting the anonymous
+> inactive queue (at least conceptually) - keeping clean anonymous pages
+> with swap slots on a separate queue as the cost of swapping them
+> out/in is only an inexpensive read operation. A variable similar to
+> swapiness (or a more dynamic algorithmn) could determine the
+> preference for swapping out clean pages or dirty pages. ( A similar
+> argument could be made for splitting up the file inactive queue )
 
-FWIW, I have two devices on my SPI bus:
+I'm not sure I understand yet how this would be different from swappiness.
 
-static struct spi_board_info vision_spi_board_info[] __initdata = {
-	{
-		.modalias		= "sst25l",
-		.platform_data		= &vision_spi_flash_data,
-		.controller_data	= &vision_spi_flash_hw,
-		.max_speed_hz		= 20000000,
-		.bus_num		= 0,
-		.chip_select		= 0,
-		.mode			= SPI_MODE_3,
-	}, {
-		.modalias		= "mmc_spi",
-		.platform_data		= &vision_spi_mmc_data,
-		.controller_data	= &vision_spi_mmc_hw,
-		.max_speed_hz		= 20000000,
-		.bus_num		= 0,
-		.chip_select		= 1,
-		.mode			= SPI_MODE_3,
-	},
-};
+> The problem of limiting the average write bandwidth reminds me of
+> enforcing cpu utilization limits on interactive workloads.
+> Just as with cpu workloads - using the resources to the limit produces
+> poor interactivity.
+> When interactivity suffers too much I believe the only sane response
+> for an interactive device is to limit usage of the swap device and
+> transition into a low memory situation - and if needed - either
+> allowing userspace to reduce memory usage or invoking the OOM killer.
+> As a result low memory situations could not only be encountered on new
+> memory allocations but also on workload changes that increase the
+> number of dirty pages.
 
-static struct ep93xx_spi_info vision_spi_master __initdata = {
-	.num_chipselect		= ARRAY_SIZE(vision_spi_board_info),
-	.use_dma		= true,
-};
+While swap is just a special case for anonymous memory in writeback
+rather than file backed pages, I think what you want here is a tuning
+knob that decides whether we should discard a clean page or write back
+a dirty page under memory pressure. I have to say that I don't know
+whether we already have such a knob or whether we already treat them
+differently, but it is certainly a valid observation that on hard
+drives, discarding a clean page that is likely going to be needed
+again has about the same overhead as writing back a dirty page
+(i.e. one seek operation), while on flash the former would be much
+cheaper than the latter.
 
-With your patch applied I get these relevant messages during boot:
+> A wild idea to avoid some writes altogether is to see if
+> de-duplication techniques can be used to (partially?) match pages
+> previously written so swap.
 
-sst25l spi0.0: sst25lf040a (512 KiB)
-Creating 3 MTD partitions on "SPI Flash":
-0x000000000000-0x000000001000 : "SPI bootstrap"
-0x000000001000-0x000000002000 : "Bootstrap config"
-0x000000002000-0x000000080000 : "System config"
-ep93xx-spi ep93xx-spi.0: EP93xx SPI Controller at 0x808a0000 irq 53
-mmc_spi spi0.1: SD/MMC host mmc0, no poweroff
+Interesting! We already have KSM (kernel samepage merging) to do
+the same thing in memory, but I don't know how that works
+during swapout. It might already be there, waiting to get switched
+on, or might not be possible until we implemnt an extra remapping
+layer in swap as has been proposed. It's certainly worth remembering
+this as we work on the design for that remapping layer.
 
-And /proc/interrupts shows this right after boot:
+> In case of unencrypted swap  (or encrypted swap with a static key)
+> swap pages on eMMC could even be re-used across multiple reboots.
+> A simple version would just compare dirty pages with data in their
+> swap slots as I suspect (but really don't know) that some user space
+> algorithms (garbage collection?) dirty a page just temporarily -
+> eventually reverting it to the previous content.
 
-# cat /proc/interrupts
-           CPU0
-  4:       4519       VIC  ep93xx timer
- 17:    1268725       VIC  ep93xx-spi-rx
- 18:    1277244       VIC  ep93xx-spi-tx
- 29:          0       VIC  ep93xx-keypad
- 33:          0       VIC  rtc-isl1208
- 39:        176       VIC  eth0
- 52:        112       VIC  uart-pl010
- 53:          1       VIC  ep93xx-spi
- 56:          0       VIC  ohci_hcd:usb1
- 79:          0      GPIO  mmc_spi:cd
- 87:          0      GPIO  0-0074
+I think that would incur overhead for indexing the pages in swap space
+in a persistent way, something that by itself would contribute to
+write amplification because for every swapout, we would have to write
+both the page and the index (eventually), and that index would likely
+be a random write.
 
-Without your patch I get this:
+Thanks for your thoughts!
 
-sst25l spi0.0: sst25lf040a (512 KiB)
-Creating 3 MTD partitions on "SPI Flash":
-0x000000000000-0x000000001000 : "SPI bootstrap"
-0x000000001000-0x000000002000 : "Bootstrap config"
-0x000000002000-0x000000080000 : "System config"
-ep93xx-spi ep93xx-spi.0: EP93xx SPI Controller at 0x808a0000 irq 53
-mmc_spi spi0.1: SD/MMC host mmc0, no poweroff
-mmc0: new SD card on SPI
-mmcblk0: mmc0:0000 S064B 60.6 MiB
-mmcblk0: p1
-
-# cat /proc/interrupts
-           CPU0
-  4:       1794       VIC  ep93xx timer
- 17:        141       VIC  ep93xx-spi-rx
- 18:        141       VIC  ep93xx-spi-tx
- 29:          0       VIC  ep93xx-keypad
- 33:          0       VIC  rtc-isl1208
- 39:        100       VIC  eth0
- 52:        109       VIC  uart-pl010
- 53:        418       VIC  ep93xx-spi
- 56:          0       VIC  ohci_hcd:usb1
- 79:          0      GPIO  mmc_spi:cd
- 87:          0      GPIO  0-0074
-Err:          0
-
-It appears your patch is causing an interrupt storm on my system.
-
-Regards,
-Hartley
-
+	Arnd
