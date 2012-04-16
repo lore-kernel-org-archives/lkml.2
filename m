@@ -1,124 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753371Ab2DPKsE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Apr 2012 06:48:04 -0400
-Received: from e28smtp02.in.ibm.com ([122.248.162.2]:53110 "EHLO
-	e28smtp02.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753078Ab2DPKpR (ORCPT
+	id S1753448Ab2DPKsH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Apr 2012 06:48:07 -0400
+Received: from e28smtp06.in.ibm.com ([122.248.162.6]:56403 "EHLO
+	e28smtp06.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753168Ab2DPKpQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Apr 2012 06:45:17 -0400
+	Mon, 16 Apr 2012 06:45:16 -0400
 From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
 To: linux-mm@kvack.org, mgorman@suse.de, kamezawa.hiroyu@jp.fujitsu.com,
         dhillf@gmail.com, aarcange@redhat.com, mhocko@suse.cz,
         akpm@linux-foundation.org, hannes@cmpxchg.org
 Cc: linux-kernel@vger.kernel.org, cgroups@vger.kernel.org,
         "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-Subject: [PATCH -V6 13/14] hugetlb: migrate memcg info from oldpage to new page during migration
-Date: Mon, 16 Apr 2012 16:14:50 +0530
-Message-Id: <1334573091-18602-14-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+Subject: [PATCH -V6 14/14] memcg: Add memory controller documentation for hugetlb management
+Date: Mon, 16 Apr 2012 16:14:51 +0530
+Message-Id: <1334573091-18602-15-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.7.10
 In-Reply-To: <1334573091-18602-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
 References: <1334573091-18602-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
-x-cbid: 12041610-5816-0000-0000-000002274726
+x-cbid: 12041610-9574-0000-0000-0000023776F0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
 
-With HugeTLB pages, memcg is uncharged in compound page destructor.
-Since we are holding a hugepage reference, we can be sure that old
-page won't get uncharged till the last put_page(). On successful
-migrate, we can move the memcg information to new page's page_cgroup
-and mark the old page's page_cgroup unused.
-
 Signed-off-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
 ---
- include/linux/memcontrol.h |    8 ++++++++
- mm/memcontrol.c            |   28 ++++++++++++++++++++++++++++
- mm/migrate.c               |    4 ++++
- 3 files changed, 40 insertions(+)
+ Documentation/cgroups/memory.txt |   29 +++++++++++++++++++++++++++++
+ 1 file changed, 29 insertions(+)
 
-diff --git a/include/linux/memcontrol.h b/include/linux/memcontrol.h
-index 70317e5..6f2d392 100644
---- a/include/linux/memcontrol.h
-+++ b/include/linux/memcontrol.h
-@@ -464,6 +464,8 @@ extern int mem_cgroup_move_hugetlb_parent(int idx, struct cgroup *cgroup,
- 					  struct page *page);
- extern bool mem_cgroup_have_hugetlb_usage(struct cgroup *cgroup);
+diff --git a/Documentation/cgroups/memory.txt b/Documentation/cgroups/memory.txt
+index 4c95c00..d99c41b 100644
+--- a/Documentation/cgroups/memory.txt
++++ b/Documentation/cgroups/memory.txt
+@@ -43,6 +43,7 @@ Features:
+  - usage threshold notifier
+  - oom-killer disable knob and oom-notifier
+  - Root cgroup has no limit controls.
++ - resource accounting for HugeTLB pages
  
-+extern void  mem_cgroup_hugetlb_migrate(struct page *oldhpage,
-+					struct page *newhpage);
- #else
- static inline int
- mem_cgroup_hugetlb_charge_page(int idx, unsigned long nr_pages,
-@@ -510,6 +512,12 @@ static inline bool mem_cgroup_have_hugetlb_usage(struct cgroup *cgroup)
- {
- 	return 0;
- }
-+
-+static inline  void  mem_cgroup_hugetlb_migrate(struct page *oldhpage,
-+						struct page *newhpage)
-+{
-+	return;
-+}
- #endif  /* CONFIG_MEM_RES_CTLR_HUGETLB */
- #endif /* _LINUX_MEMCONTROL_H */
+  Kernel memory support is work in progress, and the current version provides
+  basically functionality. (See Section 2.7)
+@@ -75,6 +76,12 @@ Brief summary of control files.
+  memory.kmem.tcp.limit_in_bytes  # set/show hard limit for tcp buf memory
+  memory.kmem.tcp.usage_in_bytes  # show current tcp buf memory allocation
  
-diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index 0b245fb..519d370 100644
---- a/mm/memcontrol.c
-+++ b/mm/memcontrol.c
-@@ -3379,6 +3379,34 @@ err_out:
- out:
- 	return ret;
- }
 +
-+void  mem_cgroup_hugetlb_migrate(struct page *oldhpage, struct page *newhpage)
-+{
-+	struct mem_cgroup *memcg;
-+	struct page_cgroup *pc;
++ memory.hugetlb.<hugepagesize>.limit_in_bytes     # set/show limit of "hugepagesize" hugetlb usage
++ memory.hugetlb.<hugepagesize>.max_usage_in_bytes # show max "hugepagesize" hugetlb  usage recorded
++ memory.hugetlb.<hugepagesize>.usage_in_bytes     # show current res_counter usage for "hugepagesize" hugetlb
++						  # see 5.7 for details
 +
-+	VM_BUG_ON(!PageHuge(oldhpage));
-+
-+	if (mem_cgroup_disabled())
-+		return;
-+
-+	pc = lookup_page_cgroup(oldhpage);
-+	lock_page_cgroup(pc);
-+	memcg = pc->mem_cgroup;
-+	pc->mem_cgroup = root_mem_cgroup;
-+	ClearPageCgroupUsed(pc);
-+	cgroup_exclude_rmdir(&memcg->css);
-+	unlock_page_cgroup(pc);
-+
-+	/* move the mem_cg details to new cgroup */
-+	pc = lookup_page_cgroup(newhpage);
-+	lock_page_cgroup(pc);
-+	pc->mem_cgroup = memcg;
-+	SetPageCgroupUsed(pc);
-+	unlock_page_cgroup(pc);
-+	cgroup_release_and_wakeup_rmdir(&memcg->css);
-+	return;
-+}
- #endif /* CONFIG_MEM_RES_CTLR_HUGETLB */
+ 1. History
  
- /*
-diff --git a/mm/migrate.c b/mm/migrate.c
-index d7eb82d..2b931e5 100644
---- a/mm/migrate.c
-+++ b/mm/migrate.c
-@@ -928,6 +928,10 @@ static int unmap_and_move_huge_page(new_page_t get_new_page,
+ The memory controller has a long history. A request for comments for the memory
+@@ -279,6 +286,15 @@ per cgroup, instead of globally.
  
- 	if (anon_vma)
- 		put_anon_vma(anon_vma);
+ * tcp memory pressure: sockets memory pressure for the tcp protocol.
+ 
++2.8 HugeTLB extension
 +
-+	if (!rc)
-+		mem_cgroup_hugetlb_migrate(hpage, new_hpage);
++This extension allows to limit the HugeTLB usage per control group and
++enforces the controller limit during page fault. Since HugeTLB doesn't
++support page reclaim, enforcing the limit at page fault time implies that,
++the application will get SIGBUS signal if it tries to access HugeTLB pages
++beyond its limit. This requires the application to know beforehand how much
++HugeTLB pages it would require for its use.
 +
- 	unlock_page(hpage);
- out:
- 	put_page(new_hpage);
+ 3. User Interface
+ 
+ 0. Configuration
+@@ -287,6 +303,7 @@ a. Enable CONFIG_CGROUPS
+ b. Enable CONFIG_RESOURCE_COUNTERS
+ c. Enable CONFIG_CGROUP_MEM_RES_CTLR
+ d. Enable CONFIG_CGROUP_MEM_RES_CTLR_SWAP (to use swap extension)
++f. Enable CONFIG_MEM_RES_CTLR_HUGETLB (to use HugeTLB extension)
+ 
+ 1. Prepare the cgroups (see cgroups.txt, Why are cgroups needed?)
+ # mount -t tmpfs none /sys/fs/cgroup
+@@ -510,6 +527,18 @@ unevictable=<total anon pages> N0=<node 0 pages> N1=<node 1 pages> ...
+ 
+ And we have total = file + anon + unevictable.
+ 
++5.7 HugeTLB resource control files
++For a system supporting two hugepage size (16M and 16G) the control
++files include:
++
++ memory.hugetlb.16GB.limit_in_bytes
++ memory.hugetlb.16GB.max_usage_in_bytes
++ memory.hugetlb.16GB.usage_in_bytes
++ memory.hugetlb.16MB.limit_in_bytes
++ memory.hugetlb.16MB.max_usage_in_bytes
++ memory.hugetlb.16MB.usage_in_bytes
++
++
+ 6. Hierarchy support
+ 
+ The memory controller supports a deep hierarchy and hierarchical accounting.
 -- 
 1.7.10
 
