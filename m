@@ -1,45 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755029Ab2DPPoN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Apr 2012 11:44:13 -0400
-Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:33408 "EHLO
-	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754979Ab2DPPoL convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Apr 2012 11:44:11 -0400
-MIME-Version: 1.0
-In-Reply-To: <1334590461.2250.0.camel@localhost>
-References: <20120416154607.302f7ae245472e1e917dacef@canb.auug.org.au>
-	<CABqD9hauxzd4vVbxyC5M1p9e6mLt1cjYP7wbhzTKPi3iMpc0kg@mail.gmail.com>
-	<1334590461.2250.0.camel@localhost>
-Date: Mon, 16 Apr 2012 10:44:09 -0500
-Message-ID: <CABqD9haMbVKn=cKuE75hSQ1YG9FgnzDhAaGUhTvk0kvJS8MGGg@mail.gmail.com>
-Subject: Re: linux-next: build failure after merge of the final tree (security
- tree related)
-From: Will Drewry <wad@chromium.org>
-To: Eric Paris <eparis@redhat.com>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>, James Morris <jmorris@namei.org>,
-        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        "H. Peter Anvin" <hpa@zytor.com>, Kees Cook <keescook@chromium.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	id S1755008Ab2DPPoK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Apr 2012 11:44:10 -0400
+Received: from mgw2.diku.dk ([130.225.96.92]:49603 "EHLO mgw2.diku.dk"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754690Ab2DPPoI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Apr 2012 11:44:08 -0400
+From: Julia Lawall <Julia.Lawall@lip6.fr>
+To: Dan Williams <dcbw@redhat.com>
+Cc: kernel-janitors@vger.kernel.org,
+        "John W. Linville" <linville@tuxdriver.com>,
+        libertas-dev@lists.infradead.org, linux-wireless@vger.kernel.org,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] drivers/net/wireless/libertas/if_usb.c: add missing debugging code
+Date: Mon, 16 Apr 2012 17:44:00 +0200
+Message-Id: <1334591040-29298-1-git-send-email-Julia.Lawall@lip6.fr>
+X-Mailer: git-send-email 1.7.3.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 16, 2012 at 10:34 AM, Eric Paris <eparis@redhat.com> wrote:
-> On Mon, 2012-04-16 at 10:32 -0500, Will Drewry wrote:
->
->> Thanks for this, and the other two fixes!  I'll pull together a patch
->> fixing up the other call sites.  My past revisions had avoided this by
->> using a new symbol, and I totally forgot to touch these up in the last
->> round.
->>
->> What's the best way to submit the clean up -- against the security-next tree?
->>
->> Thanks and sorry for the noise!
->
-> Just send fixes to James and they will get picked up by Stephen the day
-> after he commits them to security-next.
+From: Julia Lawall <Julia.Lawall@lip6.fr>
 
-Cool - thanks!
+Add a corresponding leave call on error failure.
+
+Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
+
+---
+ drivers/net/wireless/libertas/if_usb.c |    6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/net/wireless/libertas/if_usb.c b/drivers/net/wireless/libertas/if_usb.c
+index 74da5f1..ce4938d 100644
+--- a/drivers/net/wireless/libertas/if_usb.c
++++ b/drivers/net/wireless/libertas/if_usb.c
+@@ -1128,8 +1128,10 @@ static int if_usb_suspend(struct usb_interface *intf, pm_message_t message)
+ 
+ 	lbs_deb_enter(LBS_DEB_USB);
+ 
+-	if (priv->psstate != PS_STATE_FULL_POWER)
+-		return -1;
++	if (priv->psstate != PS_STATE_FULL_POWER) {
++		ret = -1;
++		goto out;
++	}
+ 
+ #ifdef CONFIG_OLPC
+ 	if (machine_is_olpc()) {
+
