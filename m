@@ -1,45 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751383Ab2DPGNC (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Apr 2012 02:13:02 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:41871 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750892Ab2DPGNA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Apr 2012 02:13:00 -0400
-Message-ID: <4F8BB814.1090607@zytor.com>
-Date: Sun, 15 Apr 2012 23:11:32 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120329 Thunderbird/11.0.1
-MIME-Version: 1.0
-To: Pedro Alves <palves@redhat.com>
-CC: Nick Bowler <nbowler@elliptictech.com>, Jiri Slaby <jslaby@suse.cz>,
-        Phil Carmody <ext-phil.2.carmody@nokia.com>, apw@canonical.com,
+	id S1751492Ab2DPGNb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Apr 2012 02:13:31 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:65407 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750892Ab2DPGN3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Apr 2012 02:13:29 -0400
+Date: Mon, 16 Apr 2012 10:13:24 +0400
+From: Cyrill Gorcunov <gorcunov@openvz.org>
+To: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
+Cc: akpm@linux-foundation.org, xemul@parallels.com, linux-man@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/1] checkpatch.pl: thou shalt not use () or (...) in
- function declarations
-References: <1332430038-21057-1-git-send-email-ext-phil.2.carmody@nokia.com> <4F6B51C9.6010904@suse.cz> <20120322171702.GA27776@elliptictech.com> <4F703F06.60709@redhat.com>
-In-Reply-To: <4F703F06.60709@redhat.com>
-X-Enigmail-Version: 1.4
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Subject: Re: [PATCH 1/2] prctl.2: Add PR_SET_MM option description
+Message-ID: <20120416061324.GC4115@moon>
+References: <1331326042-32558-1-git-send-email-gorcunov@openvz.org>
+ <1331326042-32558-2-git-send-email-gorcunov@openvz.org>
+ <CAKgNAkgJm01K9+GhnouxUwOUW3gk+YiuHLfofrs7adWzEqqO8Q@mail.gmail.com>
+ <20120320222424.GL14269@moon>
+ <CAKgNAkghWdju=o1prxw8dXEVjf95a+jLpe+3oKeHRWN1UK_cKg@mail.gmail.com>
+ <20120324061704.GA4324@moon>
+ <CAKgNAkiqWe4ygWpAr4yEx09=SdS8qvXTwsuefQT1zq1w8t_qqw@mail.gmail.com>
+ <20120415215531.GA2229@moon>
+ <CAKgNAkie6d8vn76x+Aa03Ciw=R-8PSWFfbeyrr4deeS8_8k3gQ@mail.gmail.com>
+ <CAKgNAkhdjTitkiVcNbxFz=q9_hR3Lkt26Gh5icQyhi-t_=9uhg@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAKgNAkhdjTitkiVcNbxFz=q9_hR3Lkt26Gh5icQyhi-t_=9uhg@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/26/2012 03:03 AM, Pedro Alves wrote:
-> On 03/22/2012 05:17 PM, Nick Bowler wrote:
+On Mon, Apr 16, 2012 at 10:34:53AM +1200, Michael Kerrisk (man-pages) wrote:
+> Hi Cyrill,
 > 
->> GCC will not normally warn about the above (unless you pass
->> -Wold-style-definition) which warns for all function definitions that
->> lack a prototype.
-> 
-> 
-> /me asks the stupid question:
-> 
-> Why not make the compiler catch this instead then, with -Werror=old-style-definition?
+> Below (and also attached) is the current draft of the prctl.2 page
+> with your PR_SET_MM materials.
 > 
 
-Sounds like a good thing to do.
+Hi Michael, looks good to me, thanks!
 
-	-hpa
-
+	Cyrill
