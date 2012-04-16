@@ -1,63 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752659Ab2DPBUH (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 15 Apr 2012 21:20:07 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:50247 "EHLO
-	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752555Ab2DPBUF (ORCPT
+	id S1752654Ab2DPB0F (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 15 Apr 2012 21:26:05 -0400
+Received: from mail1.windriver.com ([147.11.146.13]:53071 "EHLO
+	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752545Ab2DPB0C (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 15 Apr 2012 21:20:05 -0400
-X-Sasl-enc: ZH7Iu4czLoZJgIdQaJwhLkMvx/GHsZmtGID0/JFVO/CuH+CFHlvXXnYT9g 1334539202
-Message-ID: <1334539199.2250.1.camel@perseus.themaw.net>
-Subject: Re: [PATCH] fs/autofs4/dev-ioctl.c: add missing free_dev_ioctl
-From: Ian Kent <raven@themaw.net>
-To: Julia Lawall <Julia.Lawall@lip6.fr>
-Cc: kernel-janitors@vger.kernel.org, autofs@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Date: Mon, 16 Apr 2012 09:19:59 +0800
-In-Reply-To: <1334396928-17537-1-git-send-email-Julia.Lawall@lip6.fr>
-References: <1334396928-17537-1-git-send-email-Julia.Lawall@lip6.fr>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 (3.2.3-2.fc16) 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Sun, 15 Apr 2012 21:26:02 -0400
+Date: Sun, 15 Apr 2012 21:25:52 -0400
+From: Paul Gortmaker <paul.gortmaker@windriver.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+CC: <linux-next@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <daniel.vetter@ffwll.ch>
+Subject: Re: linux-next: triage for April 15, 2012
+Message-ID: <20120416012551.GA23010@windriver.com>
+References: <20120415223049.GA17089@windriver.com>
+ <20120416095829.b9b1c9fcede7bc0c86a999f4@canb.auug.org.au>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <20120416095829.b9b1c9fcede7bc0c86a999f4@canb.auug.org.au>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2012-04-14 at 11:48 +0200, Julia Lawall wrote:
-> From: Julia Lawall <Julia.Lawall@lip6.fr>
-> 
-> Free param as done in the other error-handling code.
-> 
-> Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
+[Re: linux-next: triage for April 15, 2012] On 16/04/2012 (Mon 09:58) Stephen Rothwell wrote:
 
-Oops!
-Acked-by: Ian Kent <raven@themaw.net>
+> Hi Paul,
+> 
+> On Sun, 15 Apr 2012 18:30:49 -0400 Paul Gortmaker <paul.gortmaker@windriver.com> wrote:
+> >
+> > All new breakage is in pagemap.h ; it seems a fix has been
+> > posted already.
+> > 
+> > 	http://marc.info/?l=linux-kernel&m=133441945530527&w=2
+> 
+> And that patch has been added to the drm tree and so will be in today's
+> linux-next.
+> 
+> > powerpc:allyesconfig
+> > 	when:	May 18 2009, 22:11
+> > 	why:	fat ass kernel with everything simply won't link
+> > 	status:	need to fix build config to ignore the final link
+> > 	fix:	
+> > 	ref:	http://kisskb.ellerman.id.au/kisskb/buildresult/5806793/
+> 
+> This is well known, so is probably not worth reporting any more.  I am
+> having a (slow) look at fixing it properly, but that is a long term goal.
+
+True.  Maybe I should shove all failures that are >6mo old off the pier.
+
+Paul.
 
 > 
-> ---
->  fs/autofs4/dev-ioctl.c |    3 ++-
->  1 file changed, 2 insertions(+), 1 deletion(-)
-> 
-> diff --git a/fs/autofs4/dev-ioctl.c b/fs/autofs4/dev-ioctl.c
-> index 9dacb85..f99c2ce 100644
-> --- a/fs/autofs4/dev-ioctl.c
-> +++ b/fs/autofs4/dev-ioctl.c
-> @@ -651,7 +651,8 @@ static int _autofs_dev_ioctl(unsigned int command, struct autofs_dev_ioctl __use
->  	fn = lookup_dev_ioctl(cmd);
->  	if (!fn) {
->  		AUTOFS_WARN("unknown command 0x%08x", command);
-> -		return -ENOTTY;
-> +		err = -ENOTTY;
-> +		goto out;
->  	}
->  
->  	fp = NULL;
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe autofs" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> -- 
+> Cheers,
+> Stephen Rothwell                    sfr@canb.auug.org.au
 
 
