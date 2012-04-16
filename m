@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755400Ab2DPUXN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Apr 2012 16:23:13 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:4125 "EHLO mx1.redhat.com"
+	id S1755453Ab2DPUXd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Apr 2012 16:23:33 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:60896 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755105Ab2DPUWR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Apr 2012 16:22:17 -0400
+	id S1754358Ab2DPUWQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Apr 2012 16:22:16 -0400
 From: Mauro Carvalho Chehab <mchehab@redhat.com>
 Cc: Mauro Carvalho Chehab <mchehab@redhat.com>,
         Linux Edac Mailing List <linux-edac@vger.kernel.org>,
         Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Ranganathan Desikan <ravi@jetztechnologies.com>,
-        "Arvind R." <arvino55@gmail.com>
-Subject: [EDAC_ABI PATCH v13 17/26] i82975x_edac: convert driver to use the new edac ABI
-Date: Mon, 16 Apr 2012 17:21:36 -0300
-Message-Id: <1334607705-30320-18-git-send-email-mchehab@redhat.com>
+        Michal Marek <mmarek@suse.cz>
+Subject: [EDAC_ABI PATCH v13 15/26] i82860_edac: convert driver to use the new edac ABI
+Date: Mon, 16 Apr 2012 17:21:34 -0300
+Message-Id: <1334607705-30320-16-git-send-email-mchehab@redhat.com>
 In-Reply-To: <1334607705-30320-1-git-send-email-mchehab@redhat.com>
 References: <1334607133-30039-1-git-send-email-mchehab@redhat.com>
  <1334607705-30320-1-git-send-email-mchehab@redhat.com>
@@ -26,28 +25,25 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 The legacy edac ABI is going to be removed. Port the driver to use
 and benefit from the new API functionality.
 
-Cc: Ranganathan Desikan <ravi@jetztechnologies.com>
-Cc: "Arvind R." <arvino55@gmail.com>
+Cc: Michal Marek <mmarek@suse.cz>
 Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
 ---
- drivers/edac/i82975x_edac.c |   27 ++++++++++++++++++++-------
- 1 files changed, 20 insertions(+), 7 deletions(-)
+ drivers/edac/i82860_edac.c |   42 +++++++++++++++++++++++++++++-------------
+ 1 files changed, 29 insertions(+), 13 deletions(-)
 
-diff --git a/drivers/edac/i82975x_edac.c b/drivers/edac/i82975x_edac.c
-index 304af1d..bfd632c 100644
---- a/drivers/edac/i82975x_edac.c
-+++ b/drivers/edac/i82975x_edac.c
-@@ -29,7 +29,8 @@
- #define PCI_DEVICE_ID_INTEL_82975_0	0x277c
- #endif				/* PCI_DEVICE_ID_INTEL_82975_0 */
+diff --git a/drivers/edac/i82860_edac.c b/drivers/edac/i82860_edac.c
+index 48e0ecd..26d91ba 100644
+--- a/drivers/edac/i82860_edac.c
++++ b/drivers/edac/i82860_edac.c
+@@ -99,6 +99,7 @@ static int i82860_process_error_info(struct mem_ctl_info *mci,
+ 				struct i82860_error_info *info,
+ 				int handle_errors)
+ {
++	struct dimm_info *dimm;
+ 	int row;
  
--#define I82975X_NR_CSROWS(nr_chans)		(8/(nr_chans))
-+#define I82975X_NR_DIMMS		8
-+#define I82975X_NR_CSROWS(nr_chans)	(I82975X_NR_DIMMS / (nr_chans))
- 
- /* Intel 82975X register addresses - device 0 function 0 - DRAM Controller */
- #define I82975X_EAP		0x58	/* Dram Error Address Pointer (32b)
-@@ -287,7 +288,8 @@ static int i82975x_process_error_info(struct mem_ctl_info *mci,
+ 	if (!(info->errsts2 & 0x0003))
+@@ -108,18 +109,25 @@ static int i82860_process_error_info(struct mem_ctl_info *mci,
  		return 1;
  
  	if ((info->errsts ^ info->errsts2) & 0x0003) {
@@ -57,49 +53,62 @@ index 304af1d..bfd632c 100644
  		info->errsts = info->errsts2;
  	}
  
-@@ -312,10 +314,15 @@ static int i82975x_process_error_info(struct mem_ctl_info *mci,
- 			   (1 << mci->csrows[row].channels[chan].dimm->grain));
+ 	info->eap >>= PAGE_SHIFT;
+ 	row = edac_mc_find_csrow_by_page(mci, info->eap);
++	dimm = mci->csrows[row].channels[0].dimm;
  
  	if (info->errsts & 0x0002)
--		edac_mc_handle_ue(mci, page, offst , row, "i82975x UE");
+-		edac_mc_handle_ue(mci, info->eap, 0, row, "i82860 UE");
 +		edac_mc_handle_error(HW_EVENT_ERR_UNCORRECTED, mci,
-+				     page, offst, 0,
-+				     row, -1, -1,
-+				     "i82975x UE", "", NULL);
++				     info->eap, 0, 0,
++				     dimm->location[0], dimm->location[1], -1,
++				     "i82860 UE", "", NULL);
  	else
--		edac_mc_handle_ce(mci, page, offst, info->derrsyn, row,
--				chan, "i82975x CE");
-+		edac_mc_handle_error(HW_EVENT_ERR_CORRECTED, mci,
-+				     page, offst, info->derrsyn,
-+				     row, chan ? chan : 0, -1,
-+				     "i82975x CE", "", NULL);
+-		edac_mc_handle_ce(mci, info->eap, 0, info->derrsyn, row, 0,
+-				"i82860 UE");
++		edac_mc_handle_error(HW_EVENT_ERR_UNCORRECTED, mci,
++				     info->eap, 0, info->derrsyn,
++				     dimm->location[0], dimm->location[1], -1,
++				     "i82860 CE", "", NULL);
  
  	return 1;
  }
-@@ -473,6 +480,7 @@ static int i82975x_probe1(struct pci_dev *pdev, int dev_idx)
+@@ -179,18 +187,26 @@ static void i82860_init_csrows(struct mem_ctl_info *mci, struct pci_dev *pdev)
+ static int i82860_probe1(struct pci_dev *pdev, int dev_idx)
  {
- 	int rc = -ENODEV;
  	struct mem_ctl_info *mci;
 +	struct edac_mc_layer layers[2];
- 	struct i82975x_pvt *pvt;
- 	void __iomem *mch_window;
- 	u32 mchbar;
-@@ -541,8 +549,13 @@ static int i82975x_probe1(struct pci_dev *pdev, int dev_idx)
- 	chans = dual_channel_active(mch_window) + 1;
+ 	struct i82860_error_info discard;
  
- 	/* assuming only one controller, index thus is 0 */
--	mci = edac_mc_alloc(sizeof(*pvt), I82975X_NR_CSROWS(chans),
--					chans, 0);
-+	layers[0].type = EDAC_MC_LAYER_CHIP_SELECT;
-+	layers[0].size = I82975X_NR_DIMMS;
+-	/* RDRAM has channels but these don't map onto the abstractions that
+-	   edac uses.
+-	   The device groups from the GRA registers seem to map reasonably
+-	   well onto the notion of a chip select row.
+-	   There are 16 GRA registers and since the name is associated with
+-	   the channel and the GRA registers map to physical devices so we are
+-	   going to make 1 channel for group.
++	/*
++	 * RDRAM has channels but these don't map onto the csrow abstraction.
++	 * According with the datasheet, there are 2 Rambus channels, supporting
++	 * up to 16 direct RDRAM devices.
++	 * The device groups from the GRA registers seem to map reasonably
++	 * well onto the notion of a chip select row.
++	 * There are 16 GRA registers and since the name is associated with
++	 * the channel and the GRA registers map to physical devices so we are
++	 * going to make 1 channel for group.
+ 	 */
+-	mci = edac_mc_alloc(0, 16, 1, 0);
+-
++	layers[0].type = EDAC_MC_LAYER_CHANNEL;
++	layers[0].size = 2;
 +	layers[0].is_csrow = true;
-+	layers[1].type = EDAC_MC_LAYER_CHANNEL;
-+	layers[1].size = I82975X_NR_CSROWS(chans);
-+	layers[1].is_csrow = false;
-+	mci = new_edac_mc_alloc(0, ARRAY_SIZE(layers), layers, false, sizeof(*pvt));
- 	if (!mci) {
- 		rc = -ENOMEM;
- 		goto fail1;
++	layers[1].type = EDAC_MC_LAYER_SLOT;
++	layers[1].size = 8;
++	layers[1].is_csrow = true;
++	mci = new_edac_mc_alloc(0, ARRAY_SIZE(layers), layers, false, 0);
+ 	if (!mci)
+ 		return -ENOMEM;
+ 
 -- 
 1.7.8
 
