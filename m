@@ -1,78 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755487Ab2DPUZa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Apr 2012 16:25:30 -0400
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:34191 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755037Ab2DPUZW convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Apr 2012 16:25:22 -0400
+	id S1755467Ab2DPUZ2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Apr 2012 16:25:28 -0400
+Received: from mx2.netapp.com ([216.240.18.37]:51831 "EHLO mx2.netapp.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755071Ab2DPUZX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Apr 2012 16:25:23 -0400
+X-IronPort-AV: E=Sophos;i="4.75,430,1330934400"; 
+   d="scan'208";a="641374964"
+From: "Myklebust, Trond" <Trond.Myklebust@netapp.com>
+To: Jeff Layton <jlayton@redhat.com>
+CC: Bernd Schubert <bernd.schubert@itwm.fraunhofer.de>,
+        Malahal Naineni <malahal@us.ibm.com>,
+        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "pstaubach@exagrid.com" <pstaubach@exagrid.com>,
+        "miklos@szeredi.hu" <miklos@szeredi.hu>,
+        "viro@ZenIV.linux.org.uk" <viro@ZenIV.linux.org.uk>,
+        "hch@infradead.org" <hch@infradead.org>,
+        "michael.brantley@deshaw.com" <michael.brantley@deshaw.com>,
+        "sven.breuner@itwm.fraunhofer.de" <sven.breuner@itwm.fraunhofer.de>
+Subject: Re: [PATCH RFC] vfs: make fstatat retry on ESTALE errors from
+ getattr call
+Thread-Topic: [PATCH RFC] vfs: make fstatat retry on ESTALE errors from
+ getattr call
+Thread-Index: AQHNHAe/WFyXQNvYykq9RVAgdBQu35aeT6UAgAALqQA=
+Date: Mon, 16 Apr 2012 20:25:06 +0000
+Message-ID: <1334607906.2879.36.camel@lade.trondhjem.org>
+References: <1334316311-22331-1-git-send-email-jlayton@redhat.com>
+	 <20120413150518.GA1987@us.ibm.com>
+	 <20120413114236.0e557e01@tlielax.poochiereds.net>
+	 <4F8B1B7B.3040304@itwm.fraunhofer.de>
+	 <20120416073655.7cdb90cf@corrin.poochiereds.net>
+	 <4F8C3036.2030702@itwm.fraunhofer.de>
+	 <20120416134642.1754cd3e@corrin.poochiereds.net>
+	 <1334604785.2879.23.camel@lade.trondhjem.org>
+	 <20120416154322.0d95e435@corrin.poochiereds.net>
+In-Reply-To: <20120416154322.0d95e435@corrin.poochiereds.net>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.104.60.115]
+Content-Type: text/plain; charset="utf-8"
+Content-ID: <A89C04956FD83A40B880EB2F49D48EAD@tahoe.netapp.com>
 MIME-Version: 1.0
-In-Reply-To: <20120416053220.GA14338@gmail.com>
-References: <CA+55aFyLEJsz1yvu4bYe+RHdhLd-XXEScxtAgje=fyuUM+1XxA@mail.gmail.com>
-	<CAMP44s0yPPqFUO4963MhNb8+c_A=xJi4-eFPJ3s+a1TJ8ZfTtQ@mail.gmail.com>
-	<CA+55aFwaOGbD6S_7So34ZuANG-6fZXZhEah8G0X7McDGhionSg@mail.gmail.com>
-	<CAMP44s06jrPBzf5Lt86-GDxD_PxqcaeJgmYS4tJhcvDdf=J5zA@mail.gmail.com>
-	<20120414104733.GA4871@gmail.com>
-	<CAMP44s0tBbgmunXTN9Jyw=HHnXFyvRY3qo5Vf-jXETUM4HEGWA@mail.gmail.com>
-	<20120415065124.GC29563@gmail.com>
-	<CAMP44s3mOsCGG5_gd6zTUeXewTFKeVEmAkt2FvM=wTm-5AEC+w@mail.gmail.com>
-	<CA+55aFz8oepgj7W8W=d18qwQt3JUGgv+pCto-_2WS3WJ3ZKqzQ@mail.gmail.com>
-	<CAMP44s2vx5cn_=tRD46SqAobRceLiZDfi9-zLUnv_g89wLxryQ@mail.gmail.com>
-	<20120416053220.GA14338@gmail.com>
-Date: Mon, 16 Apr 2012 23:25:18 +0300
-Message-ID: <CAMP44s1j297wO8TJgto+w1x3G0qTC=BehuKtE2TZnxYmdoM=Fg@mail.gmail.com>
-Subject: Re: [ 00/78] 3.3.2-stable review
-From: Felipe Contreras <felipe.contreras@gmail.com>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Greg KH <gregkh@linuxfoundation.org>, Sergio Correia <lists@uece.net>,
-        linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        linux-wireless Mailing List <linux-wireless@vger.kernel.org>,
-        Sujith Manoharan <c_manoha@qca.qualcomm.com>,
-        "ath9k-devel@lists.ath9k.org" <ath9k-devel@venema.h4ckr.net>,
-        "John W. Linville" <linville@tuxdriver.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by nfs id q3GKRurX005412
 
-On Mon, Apr 16, 2012 at 8:32 AM, Ingo Molnar <mingo@kernel.org> wrote:
+On Mon, 2012-04-16 at 15:43 -0400, Jeff Layton wrote:
+> On Mon, 16 Apr 2012 19:33:05 +0000
+> "Myklebust, Trond" <Trond.Myklebust@netapp.com> wrote:
+> 
+> > On Mon, 2012-04-16 at 13:46 -0400, Jeff Layton wrote:
+> > > The question about looping indefinitely really comes down to:
+> > > 
+> > > 1) is a persistent ESTALE in conjunction with a successful lookup a
+> > > situation that we expect to be temporary. i.e. will the admin at some
+> > > point be able to do something about it? If not, then there's no point
+> > > in continuing to retry. Again, this is a situation that *really* should
+> > > not happen if the filesystem is doing the right thing.
+> > > 
+> > > 2) If the admin can't do anything about it, is it reasonable to expect
+> > > that users can send a fatal signal to hung applications if this
+> > > situation occurs.
+> > > 
+> > > We expect that that's ok in other situations to resolve hung
+> > > applications, so I'm not sure I understand why it wouldn't be
+> > > acceptable here...
+> > 
+> > There are definitely potentially persistent pathological situations that
+> > the filesystem can't do anything about. If the point of origin for your
+> > pathname (for instance your current directory in the case of a relative
+> > pathname) is stale, then no amount of looping is going to help you to
+> > recover.
+> > 
+> 
+> Ok -- Peter pretty much said something similar. Retrying indefnitely
+> when the lookup returns ESTALE probably won't help. I'm ok with
+> basically letting the VFS continue to do what it does there already. If
+> it gets an ESTALE, it tries again with LOOKUP_REVAL set and then gives
+> up if that doesn't work.
+> 
+> If however, the operation itself keeps returning ESTALE, are we OK to
+> retry indefinitely assuming that we'll break out of the loop on fatal
+> signals?
 >
-> * Felipe Contreras <felipe.contreras@gmail.com> wrote:
->
->> On Sun, Apr 15, 2012 at 8:49 PM, Linus Torvalds
->> <torvalds@linux-foundation.org> wrote:
+> For example, something like the v2 patch I sent a little while ago?
 
->> > The only thing that matters is "it's been made available to others".
->>
->> Exactly! Now *this* is a reason. [...]
->
-> Erm, many people referred to that in this discussion explicitly
-> and implicitly - beyond its well-known technical meaning it's
-> also the English meaning of the word 'release':
->
-> Â  http://www.merriam-webster.com/dictionary/releasing
 
-Releasing implies many things. There is this notion called theory of
-mind, which children learn at a very young age, that helps us see the
-world through the eyes of other people. If you think people *must* see
-the word "release" and think *exactly* the same thing as  you do, and
-apologize when they don't, well, I'd say you are missing a very
-valuable skill.
-
-But fine, lets suppose I should have thought exactly the same thing as
-you did, and fine, lets say I was wrong in not doing so. That still
-doesn't help one iota in this discussion. Linus Torvalds pointed the
-exact reason, which allowed us to move forward, because of my
-incompetence, or whatever.
-
-The next logical question has still not been answered; does the
-undroppability come from the fact that v3.4 is more important that
-v3.3.1? This time I promise to think at least one day for all the
-possible meanings of each key word you say.
+Won't something like fstatat(AT_FDCWD, "", &stat, AT_EMPTY_PATH) risk
+looping forever there, or am I missing something?
 
 -- 
-Felipe Contreras
+Trond Myklebust
+Linux NFS client maintainer
+
+NetApp
+Trond.Myklebust@netapp.com
+www.netapp.com
+
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
