@@ -1,62 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754556Ab2DPN5B (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Apr 2012 09:57:01 -0400
-Received: from db3ehsobe001.messaging.microsoft.com ([213.199.154.139]:45635
-	"EHLO db3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754366Ab2DPN47 (ORCPT
+	id S1754347Ab2DPN7l (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Apr 2012 09:59:41 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:38777 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753598Ab2DPN7k (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Apr 2012 09:56:59 -0400
-X-SpamScore: 3
-X-BigFish: VS3(zzzz1202h1082kzz8275dhz2dh2a8h668h839hd24h)
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-From: Dong Aisheng <b29396@freescale.com>
-To: <linux-kernel@vger.kernel.org>
-CC: <linux-arm-kernel@lists.infradead.org>, <linus.walleij@stericsson.com>,
-        <swarren@wwwdotorg.org>
-Subject: [PATCH 2/3] pinctrl: a minor fix of pin config debug information
-Date: Mon, 16 Apr 2012 22:07:24 +0800
-Message-ID: <1334585244-10249-2-git-send-email-b29396@freescale.com>
-X-Mailer: git-send-email 1.7.0.4
-In-Reply-To: <1334585244-10249-1-git-send-email-b29396@freescale.com>
-References: <1334585244-10249-1-git-send-email-b29396@freescale.com>
+	Mon, 16 Apr 2012 09:59:40 -0400
+Date: Mon, 16 Apr 2012 08:59:31 -0500
+From: Serge Hallyn <serge.hallyn@canonical.com>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Daniel Lezcano <daniel.lezcano@free.fr>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] pidns: reboot_pid_ns: use SEND_SIG_FORCED instead of
+ force_sig()
+Message-ID: <20120416135931.GB4234@sergelap>
+References: <20120413004446.GA8376@redhat.com>
+ <20120413182051.GA11149@sergelap>
+ <20120413192455.GA24464@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-OriginatorOrg: freescale.com
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120413192455.GA24464@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Dong Aisheng <dong.aisheng@linaro.org>
+Quoting Oleg Nesterov (oleg@redhat.com):
+> Hi Serge,
+> 
+> On 04/13, Serge Hallyn wrote:
+> >
+> > Quoting Oleg Nesterov (oleg@redhat.com):
+> > > cf3f8921 "pidns: add reboot_pid_ns() to handle the reboot syscall"
+> > > uses force_sig() to kill the SIGNAL_UNKILLABLE cinit, this was the
+> > > only choice.
+> > >
+> > > After 629d362b we can use SEND_SIG_FORCED instead, force_sig() has
+> > > the special semantics and should be avoided if possible.
+> > >
+> > > Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+> >
+> > Hi Oleg,
+> >
+> > I like the patch in theory, however after applying it containers are
+> > no longer able to shutdown/reboot.  I can externally kill them with
+> > lxc-stop, but internal shutdown fails.
+> 
+> Oh, thanks a lot for testing.
+> 
+> Strange... I even tested this change, but only in the root namespace.
+> OK, thanks, I'll investigate. I hope you verified your kernel has
+> 629d362b commit ;)
 
-Signed-off-by: Dong Aisheng <dong.aisheng@linaro.org>
----
- drivers/pinctrl/pinconf.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
+I took friday's HEAD of Linus tree.  All went fine.  Added this patch.
+The container can shutdown, but reboot causes shutdown.  Don't undersrtand
+why.
 
-diff --git a/drivers/pinctrl/pinconf.c b/drivers/pinctrl/pinconf.c
-index 384dcc1..5d231b3 100644
---- a/drivers/pinctrl/pinconf.c
-+++ b/drivers/pinctrl/pinconf.c
-@@ -455,7 +455,7 @@ static int pinconf_pins_show(struct seq_file *s, void *what)
- 		return 0;
- 
- 	seq_puts(s, "Pin config settings per pin\n");
--	seq_puts(s, "Format: pin (name): pinmux setting array\n");
-+	seq_puts(s, "Format: pin (name): configs\n");
- 
- 	mutex_lock(&pinctrl_mutex);
- 
-@@ -506,7 +506,7 @@ static int pinconf_groups_show(struct seq_file *s, void *what)
- 		return 0;
- 
- 	seq_puts(s, "Pin config settings per pin group\n");
--	seq_puts(s, "Format: group (name): pinmux setting array\n");
-+	seq_puts(s, "Format: group (name): configs\n");
- 
- 	mutex_lock(&pinctrl_mutex);
- 
--- 
-1.7.0.4
-
-
+-serge
