@@ -1,416 +1,180 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755162Ab2DPSZp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Apr 2012 14:25:45 -0400
-Received: from fieldses.org ([174.143.236.118]:40339 "EHLO fieldses.org"
+	id S1754230Ab2DPS0n (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Apr 2012 14:26:43 -0400
+Received: from david.siemens.de ([192.35.17.14]:16401 "EHLO david.siemens.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754365Ab2DPSZm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Apr 2012 14:25:42 -0400
-Date: Mon, 16 Apr 2012 14:25:33 -0400
-From: "J. Bruce Fields" <bfields@fieldses.org>
-To: Jan Kara <jack@suse.cz>
-Cc: Al Viro <viro@ZenIV.linux.org.uk>, dchinner@redhat.com,
-        LKML <linux-kernel@vger.kernel.org>, linux-fsdevel@vger.kernel.org,
-        linux-nfs@vger.kernel.org
-Subject: Re: [PATCH 12/27] nfsd: Push mnt_want_write() outside of i_mutex
-Message-ID: <20120416182533.GA16340@fieldses.org>
-References: <1334592845-22862-1-git-send-email-jack@suse.cz>
- <1334592845-22862-13-git-send-email-jack@suse.cz>
+	id S1750823Ab2DPS0l (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Apr 2012 14:26:41 -0400
+Message-ID: <4F8C645C.7010302@siemens.com>
+Date: Mon, 16 Apr 2012 20:26:36 +0200
+From: Jan Kiszka <jan.kiszka@siemens.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); de; rv:1.8.1.12) Gecko/20080226 SUSE/2.0.0.12-1.1 Thunderbird/2.0.0.12 Mnenhy/0.7.5.666
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1334592845-22862-13-git-send-email-jack@suse.cz>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>
+CC: kvm <kvm@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: [PATCH] KVM: x86: Run PIT work in own kthread
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 16, 2012 at 06:13:50PM +0200, Jan Kara wrote:
-> When mnt_want_write() starts to handle freezing it will get a full lock
-> semantics requiring proper lock ordering. So push mnt_want_write() call
-> consistently outside of i_mutex.
+We can't run PIT IRQ injection work in the interrupt context of the host
+timer. This would allow the user to influence the handler complexity by
+asking for a broadcast to a large number of VCPUs. Therefore, this work
+was pushed into workqueue context in 9d244caf2e. However, this prevents
+prioritizing the PIT injection over other task as workqueues share
+kernel threads.
 
-How are you testing this?  And do you want this particular track merged
-for 3.5 through the nfsd tree, or should it go some other way?
+This replaces the workqueue with a kthread worker and gives that thread
+a name in the format "kvm-pit/<owner-process-pid>". That allows to
+identify and adjust the kthread priority according to the VM process
+parameters.
 
---b.
+Signed-off-by: Jan Kiszka <jan.kiszka@siemens.com>
+---
+ arch/x86/kvm/i8254.c |   31 +++++++++++++++++++------------
+ arch/x86/kvm/i8254.h |    7 +++++--
+ 2 files changed, 24 insertions(+), 14 deletions(-)
 
-> 
-> CC: linux-nfs@vger.kernel.org
-> CC: "J. Bruce Fields" <bfields@fieldses.org>
-> Signed-off-by: Jan Kara <jack@suse.cz>
-> ---
->  fs/nfsd/nfs4recover.c      |    9 +++--
->  fs/nfsd/nfsfh.c            |    1 +
->  fs/nfsd/nfsproc.c          |    9 ++++-
->  fs/nfsd/vfs.c              |   79 ++++++++++++++++++++++---------------------
->  fs/nfsd/vfs.h              |   11 +++++-
->  include/linux/nfsd/nfsfh.h |    1 +
->  6 files changed, 64 insertions(+), 46 deletions(-)
-> 
-> diff --git a/fs/nfsd/nfs4recover.c b/fs/nfsd/nfs4recover.c
-> index 4767429..efa7574 100644
-> --- a/fs/nfsd/nfs4recover.c
-> +++ b/fs/nfsd/nfs4recover.c
-> @@ -154,6 +154,10 @@ nfsd4_create_clid_dir(struct nfs4_client *clp)
->  	if (status < 0)
->  		return;
->  
-> +	status = mnt_want_write_file(rec_file);
-> +	if (status)
-> +		return;
-> +
->  	dir = rec_file->f_path.dentry;
->  	/* lock the parent */
->  	mutex_lock(&dir->d_inode->i_mutex);
-> @@ -173,11 +177,7 @@ nfsd4_create_clid_dir(struct nfs4_client *clp)
->  		 * as well be forgiving and just succeed silently.
->  		 */
->  		goto out_put;
-> -	status = mnt_want_write_file(rec_file);
-> -	if (status)
-> -		goto out_put;
->  	status = vfs_mkdir(dir->d_inode, dentry, S_IRWXU);
-> -	mnt_drop_write_file(rec_file);
->  out_put:
->  	dput(dentry);
->  out_unlock:
-> @@ -189,6 +189,7 @@ out_unlock:
->  				" (err %d); please check that %s exists"
->  				" and is writeable", status,
->  				user_recovery_dirname);
-> +	mnt_drop_write_file(rec_file);
->  	nfs4_reset_creds(original_cred);
->  }
->  
-> diff --git a/fs/nfsd/nfsfh.c b/fs/nfsd/nfsfh.c
-> index 68454e7..8b93353 100644
-> --- a/fs/nfsd/nfsfh.c
-> +++ b/fs/nfsd/nfsfh.c
-> @@ -635,6 +635,7 @@ fh_put(struct svc_fh *fhp)
->  		fhp->fh_post_saved = 0;
->  #endif
->  	}
-> +	fh_drop_write(fhp);
->  	if (exp) {
->  		cache_put(&exp->h, &svc_export_cache);
->  		fhp->fh_export = NULL;
-> diff --git a/fs/nfsd/nfsproc.c b/fs/nfsd/nfsproc.c
-> index e15dc45..aad6d45 100644
-> --- a/fs/nfsd/nfsproc.c
-> +++ b/fs/nfsd/nfsproc.c
-> @@ -196,6 +196,7 @@ nfsd_proc_create(struct svc_rqst *rqstp, struct nfsd_createargs *argp,
->  	struct dentry	*dchild;
->  	int		type, mode;
->  	__be32		nfserr;
-> +	int		hosterr;
->  	dev_t		rdev = 0, wanted = new_decode_dev(attr->ia_size);
->  
->  	dprintk("nfsd: CREATE   %s %.*s\n",
-> @@ -214,6 +215,12 @@ nfsd_proc_create(struct svc_rqst *rqstp, struct nfsd_createargs *argp,
->  	nfserr = nfserr_exist;
->  	if (isdotent(argp->name, argp->len))
->  		goto done;
-> +	hosterr = fh_want_write(dirfhp);
-> +	if (hosterr) {
-> +		nfserr = nfserrno(hosterr);
-> +		goto done;
-> +	}
-> +
->  	fh_lock_nested(dirfhp, I_MUTEX_PARENT);
->  	dchild = lookup_one_len(argp->name, dirfhp->fh_dentry, argp->len);
->  	if (IS_ERR(dchild)) {
-> @@ -330,7 +337,7 @@ nfsd_proc_create(struct svc_rqst *rqstp, struct nfsd_createargs *argp,
->  out_unlock:
->  	/* We don't really need to unlock, as fh_put does it. */
->  	fh_unlock(dirfhp);
-> -
-> +	fh_drop_write(dirfhp);
->  done:
->  	fh_put(dirfhp);
->  	return nfsd_return_dirop(nfserr, resp);
-> diff --git a/fs/nfsd/vfs.c b/fs/nfsd/vfs.c
-> index 296d671..b8bb649 100644
-> --- a/fs/nfsd/vfs.c
-> +++ b/fs/nfsd/vfs.c
-> @@ -1276,6 +1276,10 @@ nfsd_create(struct svc_rqst *rqstp, struct svc_fh *fhp,
->  	 * If it has, the parent directory should already be locked.
->  	 */
->  	if (!resfhp->fh_dentry) {
-> +		host_err = fh_want_write(fhp);
-> +		if (host_err)
-> +			goto out_nfserr;
-> +
->  		/* called from nfsd_proc_mkdir, or possibly nfsd3_proc_create */
->  		fh_lock_nested(fhp, I_MUTEX_PARENT);
->  		dchild = lookup_one_len(fname, dentry, flen);
-> @@ -1319,14 +1323,11 @@ nfsd_create(struct svc_rqst *rqstp, struct svc_fh *fhp,
->  		goto out;
->  	}
->  
-> -	host_err = fh_want_write(fhp);
-> -	if (host_err)
-> -		goto out_nfserr;
-> -
->  	/*
->  	 * Get the dir op function pointer.
->  	 */
->  	err = 0;
-> +	host_err = 0;
->  	switch (type) {
->  	case S_IFREG:
->  		host_err = vfs_create(dirp, dchild, iap->ia_mode, NULL);
-> @@ -1343,10 +1344,8 @@ nfsd_create(struct svc_rqst *rqstp, struct svc_fh *fhp,
->  		host_err = vfs_mknod(dirp, dchild, iap->ia_mode, rdev);
->  		break;
->  	}
-> -	if (host_err < 0) {
-> -		fh_drop_write(fhp);
-> +	if (host_err < 0)
->  		goto out_nfserr;
-> -	}
->  
->  	err = nfsd_create_setattr(rqstp, resfhp, iap);
->  
-> @@ -1358,7 +1357,6 @@ nfsd_create(struct svc_rqst *rqstp, struct svc_fh *fhp,
->  	err2 = nfserrno(commit_metadata(fhp));
->  	if (err2)
->  		err = err2;
-> -	fh_drop_write(fhp);
->  	/*
->  	 * Update the file handle to get the new inode info.
->  	 */
-> @@ -1417,6 +1415,11 @@ do_nfsd_create(struct svc_rqst *rqstp, struct svc_fh *fhp,
->  	err = nfserr_notdir;
->  	if (!dirp->i_op->lookup)
->  		goto out;
-> +
-> +	host_err = fh_want_write(fhp);
-> +	if (host_err)
-> +		goto out_nfserr;
-> +
->  	fh_lock_nested(fhp, I_MUTEX_PARENT);
->  
->  	/*
-> @@ -1449,9 +1452,6 @@ do_nfsd_create(struct svc_rqst *rqstp, struct svc_fh *fhp,
->  		v_atime = verifier[1]&0x7fffffff;
->  	}
->  	
-> -	host_err = fh_want_write(fhp);
-> -	if (host_err)
-> -		goto out_nfserr;
->  	if (dchild->d_inode) {
->  		err = 0;
->  
-> @@ -1522,7 +1522,6 @@ do_nfsd_create(struct svc_rqst *rqstp, struct svc_fh *fhp,
->  	if (!err)
->  		err = nfserrno(commit_metadata(fhp));
->  
-> -	fh_drop_write(fhp);
->  	/*
->  	 * Update the filehandle to get the new inode info.
->  	 */
-> @@ -1533,6 +1532,7 @@ do_nfsd_create(struct svc_rqst *rqstp, struct svc_fh *fhp,
->  	fh_unlock(fhp);
->  	if (dchild && !IS_ERR(dchild))
->  		dput(dchild);
-> +	fh_drop_write(fhp);
->   	return err;
->   
->   out_nfserr:
-> @@ -1613,6 +1613,11 @@ nfsd_symlink(struct svc_rqst *rqstp, struct svc_fh *fhp,
->  	err = fh_verify(rqstp, fhp, S_IFDIR, NFSD_MAY_CREATE);
->  	if (err)
->  		goto out;
-> +
-> +	host_err = fh_want_write(fhp);
-> +	if (host_err)
-> +		goto out_nfserr;
-> +
->  	fh_lock(fhp);
->  	dentry = fhp->fh_dentry;
->  	dnew = lookup_one_len(fname, dentry, flen);
-> @@ -1620,10 +1625,6 @@ nfsd_symlink(struct svc_rqst *rqstp, struct svc_fh *fhp,
->  	if (IS_ERR(dnew))
->  		goto out_nfserr;
->  
-> -	host_err = fh_want_write(fhp);
-> -	if (host_err)
-> -		goto out_nfserr;
-> -
->  	if (unlikely(path[plen] != 0)) {
->  		char *path_alloced = kmalloc(plen+1, GFP_KERNEL);
->  		if (path_alloced == NULL)
-> @@ -1683,6 +1684,12 @@ nfsd_link(struct svc_rqst *rqstp, struct svc_fh *ffhp,
->  	if (isdotent(name, len))
->  		goto out;
->  
-> +	host_err = fh_want_write(tfhp);
-> +	if (host_err) {
-> +		err = nfserrno(host_err);
-> +		goto out;
-> +	}
-> +
->  	fh_lock_nested(ffhp, I_MUTEX_PARENT);
->  	ddir = ffhp->fh_dentry;
->  	dirp = ddir->d_inode;
-> @@ -1694,18 +1701,13 @@ nfsd_link(struct svc_rqst *rqstp, struct svc_fh *ffhp,
->  
->  	dold = tfhp->fh_dentry;
->  
-> -	host_err = fh_want_write(tfhp);
-> -	if (host_err) {
-> -		err = nfserrno(host_err);
-> -		goto out_dput;
-> -	}
->  	err = nfserr_noent;
->  	if (!dold->d_inode)
-> -		goto out_drop_write;
-> +		goto out_dput;
->  	host_err = nfsd_break_lease(dold->d_inode);
->  	if (host_err) {
->  		err = nfserrno(host_err);
-> -		goto out_drop_write;
-> +		goto out_dput;
->  	}
->  	host_err = vfs_link(dold, dirp, dnew);
->  	if (!host_err) {
-> @@ -1718,12 +1720,11 @@ nfsd_link(struct svc_rqst *rqstp, struct svc_fh *ffhp,
->  		else
->  			err = nfserrno(host_err);
->  	}
-> -out_drop_write:
-> -	fh_drop_write(tfhp);
->  out_dput:
->  	dput(dnew);
->  out_unlock:
->  	fh_unlock(ffhp);
-> +	fh_drop_write(tfhp);
->  out:
->  	return err;
->  
-> @@ -1766,6 +1767,12 @@ nfsd_rename(struct svc_rqst *rqstp, struct svc_fh *ffhp, char *fname, int flen,
->  	if (!flen || isdotent(fname, flen) || !tlen || isdotent(tname, tlen))
->  		goto out;
->  
-> +	host_err = fh_want_write(ffhp);
-> +	if (host_err) {
-> +		err = nfserrno(host_err);
-> +		goto out;
-> +	}
-> +
->  	/* cannot use fh_lock as we need deadlock protective ordering
->  	 * so do it by hand */
->  	trap = lock_rename(tdentry, fdentry);
-> @@ -1796,17 +1803,14 @@ nfsd_rename(struct svc_rqst *rqstp, struct svc_fh *ffhp, char *fname, int flen,
->  	host_err = -EXDEV;
->  	if (ffhp->fh_export->ex_path.mnt != tfhp->fh_export->ex_path.mnt)
->  		goto out_dput_new;
-> -	host_err = fh_want_write(ffhp);
-> -	if (host_err)
-> -		goto out_dput_new;
->  
->  	host_err = nfsd_break_lease(odentry->d_inode);
->  	if (host_err)
-> -		goto out_drop_write;
-> +		goto out_dput_new;
->  	if (ndentry->d_inode) {
->  		host_err = nfsd_break_lease(ndentry->d_inode);
->  		if (host_err)
-> -			goto out_drop_write;
-> +			goto out_dput_new;
->  	}
->  	host_err = vfs_rename(fdir, odentry, tdir, ndentry);
->  	if (!host_err) {
-> @@ -1814,8 +1818,6 @@ nfsd_rename(struct svc_rqst *rqstp, struct svc_fh *ffhp, char *fname, int flen,
->  		if (!host_err)
->  			host_err = commit_metadata(ffhp);
->  	}
-> -out_drop_write:
-> -	fh_drop_write(ffhp);
->   out_dput_new:
->  	dput(ndentry);
->   out_dput_old:
-> @@ -1831,6 +1833,7 @@ out_drop_write:
->  	fill_post_wcc(tfhp);
->  	unlock_rename(tdentry, fdentry);
->  	ffhp->fh_locked = tfhp->fh_locked = 0;
-> +	fh_drop_write(ffhp);
->  
->  out:
->  	return err;
-> @@ -1856,6 +1859,10 @@ nfsd_unlink(struct svc_rqst *rqstp, struct svc_fh *fhp, int type,
->  	if (err)
->  		goto out;
->  
-> +	host_err = fh_want_write(fhp);
-> +	if (host_err)
-> +		goto out_nfserr;
-> +
->  	fh_lock_nested(fhp, I_MUTEX_PARENT);
->  	dentry = fhp->fh_dentry;
->  	dirp = dentry->d_inode;
-> @@ -1874,21 +1881,15 @@ nfsd_unlink(struct svc_rqst *rqstp, struct svc_fh *fhp, int type,
->  	if (!type)
->  		type = rdentry->d_inode->i_mode & S_IFMT;
->  
-> -	host_err = fh_want_write(fhp);
-> -	if (host_err)
-> -		goto out_put;
-> -
->  	host_err = nfsd_break_lease(rdentry->d_inode);
->  	if (host_err)
-> -		goto out_drop_write;
-> +		goto out_put;
->  	if (type != S_IFDIR)
->  		host_err = vfs_unlink(dirp, rdentry);
->  	else
->  		host_err = vfs_rmdir(dirp, rdentry);
->  	if (!host_err)
->  		host_err = commit_metadata(fhp);
-> -out_drop_write:
-> -	fh_drop_write(fhp);
->  out_put:
->  	dput(rdentry);
->  
-> diff --git a/fs/nfsd/vfs.h b/fs/nfsd/vfs.h
-> index ec0611b..359594c 100644
-> --- a/fs/nfsd/vfs.h
-> +++ b/fs/nfsd/vfs.h
-> @@ -110,12 +110,19 @@ int nfsd_set_posix_acl(struct svc_fh *, int, struct posix_acl *);
->  
->  static inline int fh_want_write(struct svc_fh *fh)
->  {
-> -	return mnt_want_write(fh->fh_export->ex_path.mnt);
-> +	int ret = mnt_want_write(fh->fh_export->ex_path.mnt);
-> +
-> +	if (!ret)
-> +		fh->fh_want_write = 1;
-> +	return ret;
->  }
->  
->  static inline void fh_drop_write(struct svc_fh *fh)
->  {
-> -	mnt_drop_write(fh->fh_export->ex_path.mnt);
-> +	if (fh->fh_want_write) {
-> +		fh->fh_want_write = 0;
-> +		mnt_drop_write(fh->fh_export->ex_path.mnt);
-> +	}
->  }
->  
->  #endif /* LINUX_NFSD_VFS_H */
-> diff --git a/include/linux/nfsd/nfsfh.h b/include/linux/nfsd/nfsfh.h
-> index ce4743a..fa63048 100644
-> --- a/include/linux/nfsd/nfsfh.h
-> +++ b/include/linux/nfsd/nfsfh.h
-> @@ -143,6 +143,7 @@ typedef struct svc_fh {
->  	int			fh_maxsize;	/* max size for fh_handle */
->  
->  	unsigned char		fh_locked;	/* inode locked by us */
-> +	unsigned char		fh_want_write;	/* remount protection taken */
->  
->  #ifdef CONFIG_NFSD_V3
->  	unsigned char		fh_post_saved;	/* post-op attrs saved */
-> -- 
-> 1.7.1
-> 
+diff --git a/arch/x86/kvm/i8254.c b/arch/x86/kvm/i8254.c
+index d68f99d..adba28f 100644
+--- a/arch/x86/kvm/i8254.c
++++ b/arch/x86/kvm/i8254.c
+@@ -34,7 +34,6 @@
+ 
+ #include <linux/kvm_host.h>
+ #include <linux/slab.h>
+-#include <linux/workqueue.h>
+ 
+ #include "irq.h"
+ #include "i8254.h"
+@@ -249,7 +248,7 @@ static void kvm_pit_ack_irq(struct kvm_irq_ack_notifier *kian)
+ 		/* in this case, we had multiple outstanding pit interrupts
+ 		 * that we needed to inject.  Reinject
+ 		 */
+-		queue_work(ps->pit->wq, &ps->pit->expired);
++		queue_kthread_work(&ps->pit->worker, &ps->pit->expired);
+ 	ps->irq_ack = 1;
+ 	spin_unlock(&ps->inject_lock);
+ }
+@@ -270,7 +269,7 @@ void __kvm_migrate_pit_timer(struct kvm_vcpu *vcpu)
+ static void destroy_pit_timer(struct kvm_pit *pit)
+ {
+ 	hrtimer_cancel(&pit->pit_state.pit_timer.timer);
+-	cancel_work_sync(&pit->expired);
++	flush_kthread_work(&pit->expired);
+ }
+ 
+ static bool kpit_is_periodic(struct kvm_timer *ktimer)
+@@ -284,7 +283,7 @@ static struct kvm_timer_ops kpit_ops = {
+ 	.is_periodic = kpit_is_periodic,
+ };
+ 
+-static void pit_do_work(struct work_struct *work)
++static void pit_do_work(struct kthread_work *work)
+ {
+ 	struct kvm_pit *pit = container_of(work, struct kvm_pit, expired);
+ 	struct kvm *kvm = pit->kvm;
+@@ -328,7 +327,7 @@ static enum hrtimer_restart pit_timer_fn(struct hrtimer *data)
+ 
+ 	if (ktimer->reinject || !atomic_read(&ktimer->pending)) {
+ 		atomic_inc(&ktimer->pending);
+-		queue_work(pt->wq, &pt->expired);
++		queue_kthread_work(&pt->worker, &pt->expired);
+ 	}
+ 
+ 	if (ktimer->t_ops->is_periodic(ktimer)) {
+@@ -353,7 +352,7 @@ static void create_pit_timer(struct kvm *kvm, u32 val, int is_period)
+ 
+ 	/* TODO The new value only affected after the retriggered */
+ 	hrtimer_cancel(&pt->timer);
+-	cancel_work_sync(&ps->pit->expired);
++	flush_kthread_work(&ps->pit->expired);
+ 	pt->period = interval;
+ 	ps->is_periodic = is_period;
+ 
+@@ -669,6 +668,8 @@ struct kvm_pit *kvm_create_pit(struct kvm *kvm, u32 flags)
+ {
+ 	struct kvm_pit *pit;
+ 	struct kvm_kpit_state *pit_state;
++	struct pid *pid;
++	pid_t pid_nr;
+ 	int ret;
+ 
+ 	pit = kzalloc(sizeof(struct kvm_pit), GFP_KERNEL);
+@@ -685,14 +686,20 @@ struct kvm_pit *kvm_create_pit(struct kvm *kvm, u32 flags)
+ 	mutex_lock(&pit->pit_state.lock);
+ 	spin_lock_init(&pit->pit_state.inject_lock);
+ 
+-	pit->wq = create_singlethread_workqueue("kvm-pit-wq");
+-	if (!pit->wq) {
++	pid = get_pid(task_tgid(current));
++	pid_nr = pid_vnr(pid);
++	put_pid(pid);
++
++	init_kthread_worker(&pit->worker);
++	pit->worker_task = kthread_run(kthread_worker_fn, &pit->worker,
++				       "kvm-pit/%d", pid_nr);
++	if (IS_ERR(pit->worker_task)) {
+ 		mutex_unlock(&pit->pit_state.lock);
+ 		kvm_free_irq_source_id(kvm, pit->irq_source_id);
+ 		kfree(pit);
+ 		return NULL;
+ 	}
+-	INIT_WORK(&pit->expired, pit_do_work);
++	init_kthread_work(&pit->expired, pit_do_work);
+ 
+ 	kvm->arch.vpit = pit;
+ 	pit->kvm = kvm;
+@@ -736,7 +743,7 @@ fail:
+ 	kvm_unregister_irq_mask_notifier(kvm, 0, &pit->mask_notifier);
+ 	kvm_unregister_irq_ack_notifier(kvm, &pit_state->irq_ack_notifier);
+ 	kvm_free_irq_source_id(kvm, pit->irq_source_id);
+-	destroy_workqueue(pit->wq);
++	kthread_stop(pit->worker_task);
+ 	kfree(pit);
+ 	return NULL;
+ }
+@@ -756,10 +763,10 @@ void kvm_free_pit(struct kvm *kvm)
+ 		mutex_lock(&kvm->arch.vpit->pit_state.lock);
+ 		timer = &kvm->arch.vpit->pit_state.pit_timer.timer;
+ 		hrtimer_cancel(timer);
+-		cancel_work_sync(&kvm->arch.vpit->expired);
++		flush_kthread_work(&kvm->arch.vpit->expired);
++		kthread_stop(kvm->arch.vpit->worker_task);
+ 		kvm_free_irq_source_id(kvm, kvm->arch.vpit->irq_source_id);
+ 		mutex_unlock(&kvm->arch.vpit->pit_state.lock);
+-		destroy_workqueue(kvm->arch.vpit->wq);
+ 		kfree(kvm->arch.vpit);
+ 	}
+ }
+diff --git a/arch/x86/kvm/i8254.h b/arch/x86/kvm/i8254.h
+index 51a9742..fdf4042 100644
+--- a/arch/x86/kvm/i8254.h
++++ b/arch/x86/kvm/i8254.h
+@@ -1,6 +1,8 @@
+ #ifndef __I8254_H
+ #define __I8254_H
+ 
++#include <linux/kthread.h>
++
+ #include "iodev.h"
+ 
+ struct kvm_kpit_channel_state {
+@@ -39,8 +41,9 @@ struct kvm_pit {
+ 	struct kvm_kpit_state pit_state;
+ 	int irq_source_id;
+ 	struct kvm_irq_mask_notifier mask_notifier;
+-	struct workqueue_struct *wq;
+-	struct work_struct expired;
++	struct kthread_worker worker;
++	struct task_struct *worker_task;
++	struct kthread_work expired;
+ };
+ 
+ #define KVM_PIT_BASE_ADDRESS	    0x40
+-- 
+1.7.3.4
