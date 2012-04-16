@@ -1,61 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755330Ab2DPTIF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Apr 2012 15:08:05 -0400
-Received: from bar.sig21.net ([80.81.252.164]:58444 "EHLO bar.sig21.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754028Ab2DPTIC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Apr 2012 15:08:02 -0400
-Date: Mon, 16 Apr 2012 21:07:52 +0200
-From: Johannes Stezenbach <js@sig21.net>
-To: Jason Baron <jbaron@redhat.com>
-Cc: Alan Stern <stern@rowland.harvard.edu>, linux-kernel@vger.kernel.org,
-        linux-usb@vger.kernel.org
-Subject: Re: ehci dynamic debug problem
-Message-ID: <20120416190752.GA1854@sig21.net>
-References: <20120413174107.GA6021@sig21.net>
- <Pine.LNX.4.44L0.1204131411010.1166-100000@iolanthe.rowland.org>
- <20120413190311.GA6238@sig21.net>
- <20120416155423.GB2345@redhat.com>
- <20120416164139.GA14077@sig21.net>
- <20120416171546.GD2345@redhat.com>
+	id S1755316Ab2DPTJf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Apr 2012 15:09:35 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:50459 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752970Ab2DPTJe convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Apr 2012 15:09:34 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120416171546.GD2345@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Spam-21-Score: -2.9 (--)
-X-Spam-21-Report: No, score=-2.9 required=8.0 tests=ALL_TRUSTED=-1,BAYES_00=-1.9 autolearn=ham
+In-Reply-To: <20120416.142728.864894452301706752.davem@davemloft.net>
+References: <20120416091719.GA4113@gmail.com> <20120416.142728.864894452301706752.davem@davemloft.net>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Mon, 16 Apr 2012 12:09:12 -0700
+X-Google-Sender-Auth: ePPwxa8SE5GSlnm3zwz6m_1YzH4
+Message-ID: <CA+55aFzz9uu=R6zKy=r0JSpjCgtfoMCLvcLwdBXhhJ4=u-PagA@mail.gmail.com>
+Subject: Re: Please fix or revert: [PATCH] checkpatch: add --strict tests for
+ braces, comments and casts
+To: David Miller <davem@davemloft.net>
+Cc: mingo@kernel.org, joe@perches.com, linux-kernel@vger.kernel.org,
+        akpm@linux-foundation.org, apw@canonical.com
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 16, 2012 at 01:15:46PM -0400, Jason Baron wrote:
-> On Mon, Apr 16, 2012 at 06:41:39PM +0200, Johannes Stezenbach wrote:
-> > On Mon, Apr 16, 2012 at 11:54:24AM -0400, Jason Baron wrote:
-> > > On Fri, Apr 13, 2012 at 09:03:11PM +0200, Johannes Stezenbach wrote:
-> > > > 
-> > > >   Does dynamic debug offer an "is the message two lines below enabled" test?
-> > > > 
-> > > 
-> > > Sorry was away for a bit...
-> > > 
-> > > dynamic debug doesn't offer any is enabled test, its hidden from the
-> > > user. That said, in this case, you can delay the printing to the buffer
-> > > with:
-> > ...
-> > > +	ehci_dbg (ehci, "%s\n", dbg_port_buf (_buf, sizeof _buf, label, port, status)); \
-> > 
-> > I think arguments are evaluated before dev_dbg is called so this
-> > won't help.
-> 
-> I looked at the disassembly - and this argument was in fact *not* evaluated
-> before the call. So I think this approach is worthwhile.
+On Mon, Apr 16, 2012 at 11:27 AM, David Miller <davem@davemloft.net> wrote:
+>
+> I would like to formally propose that we change CodingStyle so that
+> our comments are of the form:
+>
+>        /* XXX
+>         * YYY
+>         */
+>
+> So that we can save one line of vertical space.
 
-OK, I was in a hurry before but now that I looked at
-dynamic_dev_dbg() definition in include/linux/dynamic_debug.h
-I see that it works.  IMHO it's a good solution.
+Ugh, I personally hate it. No way will we make that the recommended
+version, even if it might be an acceptable substitute in some
+subsystems.
 
+It looks unbalanced. If you want to save that vertical space, just use
+C++ style comments instead, for chissake! Then you save *two* lines,
+without the unbalanced thing, and just write it as
 
-Thank you,
-Johannes
+    // XXX
+    // YYY
+
+which is much preferred.
+
+Your suggested format just sucks, and has the worst of all worlds.
+
+                      Linus
