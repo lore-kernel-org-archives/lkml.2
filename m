@@ -1,47 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754754Ab2DPQng (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Apr 2012 12:43:36 -0400
-Received: from mail.tpi.com ([70.99.223.143]:1270 "EHLO mail.tpi.com"
+	id S1754808Ab2DPQnu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Apr 2012 12:43:50 -0400
+Received: from mga01.intel.com ([192.55.52.88]:27528 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753944Ab2DPQne (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Apr 2012 12:43:34 -0400
-Message-ID: <4F8C4C06.1070307@canonical.com>
-Date: Mon, 16 Apr 2012 10:42:46 -0600
-From: Tim Gardner <tim.gardner@canonical.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120410 Thunderbird/11.0.1
+	id S1753875Ab2DPQnt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Apr 2012 12:43:49 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="142370775"
+Date: Mon, 16 Apr 2012 18:50:54 +0200
+From: Samuel Ortiz <sameo@linux.intel.com>
+To: Pasi Savanainen <ext-pasi.m.savanainen@nokia.com>
+Cc: linux-kernel@vger.kernel.org,
+        Mika Westerberg <mika.westerberg@linux.intel.com>
+Subject: Re: [PATCH] mfd: Convert Intel MSIC driver to use devm_* interfaces.
+Message-ID: <20120416165054.GQ24130@sortiz-mobl>
+References: <1334223637-16965-1-git-send-email-ext-pasi.m.savanainen@nokia.com>
 MIME-Version: 1.0
-To: Kalle Valo <kvalo@qca.qualcomm.com>
-CC: linux-kernel@vger.kernel.org, "John W. Linville" <linville@tuxdriver.com>,
-        linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
-        ath6kl-devel <ath6kl-devel@qualcomm.com>
-Subject: Re: [PATCH linux-next 1/1] ath6k: Normalize use of FW_DIR
-References: <1334337448-26270-1-git-send-email-tim.gardner@canonical.com> <1334337448-26270-2-git-send-email-tim.gardner@canonical.com> <4F8BBEAD.40305@qca.qualcomm.com>
-In-Reply-To: <4F8BBEAD.40305@qca.qualcomm.com>
-X-Enigmail-Version: 1.4
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1334223637-16965-1-git-send-email-ext-pasi.m.savanainen@nokia.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/16/2012 12:39 AM, Kalle Valo wrote:
-> On 04/13/2012 08:17 PM, Tim Gardner wrote:
->> Cc: Kalle Valo <kvalo@qca.qualcomm.com>
->> Cc: "John W. Linville" <linville@tuxdriver.com>
->> Cc: linux-wireless@vger.kernel.org
->> Cc: netdev@vger.kernel.org
->> Signed-off-by: Tim Gardner <tim.gardner@canonical.com>
-> 
-> Thanks, applied to ath6kl.git. But ar6004 hw1.2 supports wasn't in
-> linux-next yet so I changed it as well. If you can, please check my changes:
-> 
-> https://github.com/kvalo/ath6kl/commit/2023dbb8310ab39ac1119a32ef52405f7a73f51f
-> 
-> Kalle
+Hi Pasi,
 
-Looks good to me.
+On Thu, Apr 12, 2012 at 12:40:37PM +0300, Pasi Savanainen wrote:
+> The devm_* functions eliminate the need for manual resource releasing
+> and simplify error handling. Resources allocated by devm_* are freed
+> automatically on driver detach.
+> 
+> Signed-off-by: Pasi Savanainen <ext-pasi.m.savanainen@gmail.com>
+> Cc: Mika Westerberg <mika.westerberg@linux.intel.com>
+> ---
+>  drivers/mfd/intel_msic.c |   31 +++++--------------------------
+>  1 files changed, 5 insertions(+), 26 deletions(-)
+Thanks, patch applied.
 
-rtg
+Cheers,
+Samuel.
+
 -- 
-Tim Gardner tim.gardner@canonical.com
+Intel Open Source Technology Centre
+http://oss.intel.com/
