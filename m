@@ -1,40 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753487Ab2DPQQs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Apr 2012 12:16:48 -0400
-Received: from e24smtp04.br.ibm.com ([32.104.18.25]:33836 "EHLO
-	e24smtp04.br.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752690Ab2DPQQn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Apr 2012 12:16:43 -0400
-Message-ID: <4F8C45DA.7040403@linux.vnet.ibm.com>
-Date: Mon, 16 Apr 2012 13:16:26 -0300
-From: Rajiv Andrade <srajiv@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.6; rv:11.0) Gecko/20120327 Thunderbird/11.0.1
-MIME-Version: 1.0
-To: Marcel Selhorst <tpmdd@selhorst.net>
-CC: Paul Bolle <pebolle@tiscali.nl>,
-        Debora Velarde <debora@linux.vnet.ibm.com>,
-        tpmdd-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Remove Marcel Selhorst as maintainer
-References: <1334225676.2439.12.camel@x61.thuisdomein> <1334239429.1913.15.camel@x61.thuisdomein> <4F8AF460.7020407@selhorst.net>
-In-Reply-To: <4F8AF460.7020407@selhorst.net>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12041616-8936-0000-0000-0000067C952E
+	id S1752648Ab2DPQO0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Apr 2012 12:14:26 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:40900 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751402Ab2DPQOV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Apr 2012 12:14:21 -0400
+From: Jan Kara <jack@suse.cz>
+To: Al Viro <viro@ZenIV.linux.org.uk>
+Cc: dchinner@redhat.com, LKML <linux-kernel@vger.kernel.org>,
+        linux-fsdevel@vger.kernel.org, Jan Kara <jack@suse.cz>,
+        Jaya Kumar <jayalk@intworks.biz>
+Subject: [PATCH 01/27] fb_defio: Push file_update_time() into fb_deferred_io_mkwrite()
+Date: Mon, 16 Apr 2012 18:13:39 +0200
+Message-Id: <1334592845-22862-2-git-send-email-jack@suse.cz>
+X-Mailer: git-send-email 1.7.1
+In-Reply-To: <1334592845-22862-1-git-send-email-jack@suse.cz>
+References: <1334592845-22862-1-git-send-email-jack@suse.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 15/04/12 13:16, Marcel Selhorst wrote:
-> Hi Paul,
->
-> thanks for notifying the list. And yes, I am still here ;)
-> I assumed the patch was already merged.
-> @Rajiv: Could you please merge my new E-Mail into GIT?
-Sure.
+CC: Jaya Kumar <jayalk@intworks.biz>
+Signed-off-by: Jan Kara <jack@suse.cz>
+---
+ drivers/video/fb_defio.c |    2 ++
+ 1 files changed, 2 insertions(+), 0 deletions(-)
 
-Thanks,
-Rajiv
+diff --git a/drivers/video/fb_defio.c b/drivers/video/fb_defio.c
+index c27e153..7a09c06 100644
+--- a/drivers/video/fb_defio.c
++++ b/drivers/video/fb_defio.c
+@@ -104,6 +104,8 @@ static int fb_deferred_io_mkwrite(struct vm_area_struct *vma,
+ 	deferred framebuffer IO. then if userspace touches a page
+ 	again, we repeat the same scheme */
+ 
++	file_update_time(vma->vm_file);
++
+ 	/* protect against the workqueue changing the page list */
+ 	mutex_lock(&fbdefio->lock);
+ 
+-- 
+1.7.1
 
