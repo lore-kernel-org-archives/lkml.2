@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754203Ab2DPMUY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Apr 2012 08:20:24 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:47995 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754003Ab2DPMSE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1754012Ab2DPMSE (ORCPT <rfc822;w@1wt.eu>);
 	Mon, 16 Apr 2012 08:18:04 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:47939 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753679Ab2DPMSA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Apr 2012 08:18:00 -0400
 From: Mel Gorman <mgorman@suse.de>
 To: Andrew Morton <akpm@linux-foundation.org>
 Cc: Linux-MM <linux-mm@kvack.org>, Linux-Netdev <netdev@vger.kernel.org>,
@@ -17,9 +17,9 @@ Cc: Linux-MM <linux-mm@kvack.org>, Linux-Netdev <netdev@vger.kernel.org>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Mike Christie <michaelc@cs.wisc.edu>,
         Eric B Munson <emunson@mgebm.net>, Mel Gorman <mgorman@suse.de>
-Subject: [PATCH 05/11] mm: swap: Implement generic handler for swap_activate
-Date: Mon, 16 Apr 2012 13:17:49 +0100
-Message-Id: <1334578675-23445-6-git-send-email-mgorman@suse.de>
+Subject: [PATCH 01/11] netvm: Prevent a stream-specific deadlock
+Date: Mon, 16 Apr 2012 13:17:45 +0100
+Message-Id: <1334578675-23445-2-git-send-email-mgorman@suse.de>
 X-Mailer: git-send-email 1.7.9.2
 In-Reply-To: <1334578675-23445-1-git-send-email-mgorman@suse.de>
 References: <1334578675-23445-1-git-send-email-mgorman@suse.de>
@@ -27,289 +27,129 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The version of swap_activate introduced is sufficient for swap-over-NFS
-but would not provide enough information to implement a generic handler.
-This patch shuffles things slightly to ensure the same information is
-available for aops->swap_activate() as is available to the core.
+It could happen that all !SOCK_MEMALLOC sockets have buffered so
+much data that we're over the global rmem limit. This will prevent
+SOCK_MEMALLOC buffers from receiving data, which will prevent userspace
+from running, which is needed to reduce the buffered data.
 
-No functionality change.
+Fix this by exempting the SOCK_MEMALLOC sockets from the rmem limit.
 
+Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
 Signed-off-by: Mel Gorman <mgorman@suse.de>
 ---
- include/linux/fs.h   |    7 ++--
- include/linux/swap.h |    5 +++
- mm/page_io.c         |   92 ++++++++++++++++++++++++++++++++++++++++++++++++++
- mm/swapfile.c        |   91 +++----------------------------------------------
- 4 files changed, 107 insertions(+), 88 deletions(-)
+ include/net/sock.h     |    7 ++++---
+ net/caif/caif_socket.c |    2 +-
+ net/core/sock.c        |    2 +-
+ net/ipv4/tcp_input.c   |   12 ++++++------
+ net/sctp/ulpevent.c    |    2 +-
+ 5 files changed, 13 insertions(+), 12 deletions(-)
 
-diff --git a/include/linux/fs.h b/include/linux/fs.h
-index 0dcd1e8..5a71145 100644
---- a/include/linux/fs.h
-+++ b/include/linux/fs.h
-@@ -587,6 +587,8 @@ typedef struct {
- typedef int (*read_actor_t)(read_descriptor_t *, struct page *,
- 		unsigned long, unsigned long);
- 
-+struct swap_info_struct;
-+
- struct address_space_operations {
- 	int (*writepage)(struct page *page, struct writeback_control *wbc);
- 	int (*readpage)(struct file *, struct page *);
-@@ -628,8 +630,9 @@ struct address_space_operations {
- 	int (*error_remove_page)(struct address_space *, struct page *);
- 
- 	/* swapfile support */
--	int (*swap_activate)(struct file *file);
--	int (*swap_deactivate)(struct file *file);
-+	int (*swap_activate)(struct swap_info_struct *sis, struct file *file,
-+				sector_t *span);
-+	void (*swap_deactivate)(struct file *file);
- };
- 
- extern const struct address_space_operations empty_aops;
-diff --git a/include/linux/swap.h b/include/linux/swap.h
-index 6b40350..4ab2276 100644
---- a/include/linux/swap.h
-+++ b/include/linux/swap.h
-@@ -320,6 +320,11 @@ extern int swap_writepage(struct page *page, struct writeback_control *wbc);
- extern int swap_set_page_dirty(struct page *page);
- extern void end_swap_bio_read(struct bio *bio, int err);
- 
-+int add_swap_extent(struct swap_info_struct *sis, unsigned long start_page,
-+		unsigned long nr_pages, sector_t start_block);
-+int generic_swapfile_activate(struct swap_info_struct *, struct file *,
-+		sector_t *);
-+
- /* linux/mm/swap_state.c */
- extern struct address_space swapper_space;
- #define total_swapcache_pages  swapper_space.nrpages
-diff --git a/mm/page_io.c b/mm/page_io.c
-index 2a7a4c1..0a7492c 100644
---- a/mm/page_io.c
-+++ b/mm/page_io.c
-@@ -86,6 +86,98 @@ void end_swap_bio_read(struct bio *bio, int err)
- 	bio_put(bio);
+diff --git a/include/net/sock.h b/include/net/sock.h
+index de6ebda..733d614 100644
+--- a/include/net/sock.h
++++ b/include/net/sock.h
+@@ -1279,12 +1279,13 @@ static inline int sk_wmem_schedule(struct sock *sk, int size)
+ 		__sk_mem_schedule(sk, size, SK_MEM_SEND);
  }
  
-+int generic_swapfile_activate(struct swap_info_struct *sis,
-+				struct file *swap_file,
-+				sector_t *span)
-+{
-+	struct address_space *mapping = swap_file->f_mapping;
-+	struct inode *inode = mapping->host;
-+	unsigned blocks_per_page;
-+	unsigned long page_no;
-+	unsigned blkbits;
-+	sector_t probe_block;
-+	sector_t last_block;
-+	sector_t lowest_block = -1;
-+	sector_t highest_block = 0;
-+	int nr_extents = 0;
-+	int ret;
-+
-+	blkbits = inode->i_blkbits;
-+	blocks_per_page = PAGE_SIZE >> blkbits;
-+
-+	/*
-+	 * Map all the blocks into the extent list.  This code doesn't try
-+	 * to be very smart.
-+	 */
-+	probe_block = 0;
-+	page_no = 0;
-+	last_block = i_size_read(inode) >> blkbits;
-+	while ((probe_block + blocks_per_page) <= last_block &&
-+			page_no < sis->max) {
-+		unsigned block_in_page;
-+		sector_t first_block;
-+
-+		first_block = bmap(inode, probe_block);
-+		if (first_block == 0)
-+			goto bad_bmap;
-+
-+		/*
-+		 * It must be PAGE_SIZE aligned on-disk
-+		 */
-+		if (first_block & (blocks_per_page - 1)) {
-+			probe_block++;
-+			goto reprobe;
-+		}
-+
-+		for (block_in_page = 1; block_in_page < blocks_per_page;
-+					block_in_page++) {
-+			sector_t block;
-+
-+			block = bmap(inode, probe_block + block_in_page);
-+			if (block == 0)
-+				goto bad_bmap;
-+			if (block != first_block + block_in_page) {
-+				/* Discontiguity */
-+				probe_block++;
-+				goto reprobe;
-+			}
-+		}
-+
-+		first_block >>= (PAGE_SHIFT - blkbits);
-+		if (page_no) {	/* exclude the header page */
-+			if (first_block < lowest_block)
-+				lowest_block = first_block;
-+			if (first_block > highest_block)
-+				highest_block = first_block;
-+		}
-+
-+		/*
-+		 * We found a PAGE_SIZE-length, PAGE_SIZE-aligned run of blocks
-+		 */
-+		ret = add_swap_extent(sis, page_no, 1, first_block);
-+		if (ret < 0)
-+			goto out;
-+		nr_extents += ret;
-+		page_no++;
-+		probe_block += blocks_per_page;
-+reprobe:
-+		continue;
-+	}
-+	ret = nr_extents;
-+	*span = 1 + highest_block - lowest_block;
-+	if (page_no == 0)
-+		page_no = 1;	/* force Empty message */
-+	sis->max = page_no;
-+	sis->pages = page_no - 1;
-+	sis->highest_bit = page_no - 1;
-+out:
-+	return ret;
-+bad_bmap:
-+	printk(KERN_ERR "swapon: swapfile has holes\n");
-+	ret = -EINVAL;
-+	goto out;
-+}
-+
- /*
-  * We may have stale swap cache pages in memory: notice
-  * them here and get rid of the unnecessary final write.
-diff --git a/mm/swapfile.c b/mm/swapfile.c
-index fe2ed44..80b3415 100644
---- a/mm/swapfile.c
-+++ b/mm/swapfile.c
-@@ -1358,7 +1358,7 @@ static void destroy_swap_extents(struct swap_info_struct *sis)
-  *
-  * This function rather assumes that it is called in ascending page order.
-  */
--static int
-+int
- add_swap_extent(struct swap_info_struct *sis, unsigned long start_page,
- 		unsigned long nr_pages, sector_t start_block)
+-static inline int sk_rmem_schedule(struct sock *sk, int size)
++static inline int sk_rmem_schedule(struct sock *sk, struct sk_buff *skb)
  {
-@@ -1434,106 +1434,25 @@ static int setup_swap_extents(struct swap_info_struct *sis, sector_t *span)
- 	struct file *swap_file = sis->swap_file;
- 	struct address_space *mapping = swap_file->f_mapping;
- 	struct inode *inode = mapping->host;
--	unsigned blocks_per_page;
--	unsigned long page_no;
--	unsigned blkbits;
--	sector_t probe_block;
--	sector_t last_block;
--	sector_t lowest_block = -1;
--	sector_t highest_block = 0;
--	int nr_extents = 0;
- 	int ret;
- 
- 	if (S_ISBLK(inode->i_mode)) {
- 		ret = add_swap_extent(sis, 0, sis->max, 0);
- 		*span = sis->pages;
--		goto out;
-+		return ret;
- 	}
- 
- 	if (mapping->a_ops->swap_activate) {
--		ret = mapping->a_ops->swap_activate(swap_file);
-+		ret = mapping->a_ops->swap_activate(sis, swap_file, span);
- 		if (!ret) {
- 			sis->flags |= SWP_FILE;
- 			ret = add_swap_extent(sis, 0, sis->max, 0);
- 			*span = sis->pages;
- 		}
--		goto out;
-+		return ret;
- 	}
- 
--	blkbits = inode->i_blkbits;
--	blocks_per_page = PAGE_SIZE >> blkbits;
--
--	/*
--	 * Map all the blocks into the extent list.  This code doesn't try
--	 * to be very smart.
--	 */
--	probe_block = 0;
--	page_no = 0;
--	last_block = i_size_read(inode) >> blkbits;
--	while ((probe_block + blocks_per_page) <= last_block &&
--			page_no < sis->max) {
--		unsigned block_in_page;
--		sector_t first_block;
--
--		first_block = bmap(inode, probe_block);
--		if (first_block == 0)
--			goto bad_bmap;
--
--		/*
--		 * It must be PAGE_SIZE aligned on-disk
--		 */
--		if (first_block & (blocks_per_page - 1)) {
--			probe_block++;
--			goto reprobe;
--		}
--
--		for (block_in_page = 1; block_in_page < blocks_per_page;
--					block_in_page++) {
--			sector_t block;
--
--			block = bmap(inode, probe_block + block_in_page);
--			if (block == 0)
--				goto bad_bmap;
--			if (block != first_block + block_in_page) {
--				/* Discontiguity */
--				probe_block++;
--				goto reprobe;
--			}
--		}
--
--		first_block >>= (PAGE_SHIFT - blkbits);
--		if (page_no) {	/* exclude the header page */
--			if (first_block < lowest_block)
--				lowest_block = first_block;
--			if (first_block > highest_block)
--				highest_block = first_block;
--		}
--
--		/*
--		 * We found a PAGE_SIZE-length, PAGE_SIZE-aligned run of blocks
--		 */
--		ret = add_swap_extent(sis, page_no, 1, first_block);
--		if (ret < 0)
--			goto out;
--		nr_extents += ret;
--		page_no++;
--		probe_block += blocks_per_page;
--reprobe:
--		continue;
--	}
--	ret = nr_extents;
--	*span = 1 + highest_block - lowest_block;
--	if (page_no == 0)
--		page_no = 1;	/* force Empty message */
--	sis->max = page_no;
--	sis->pages = page_no - 1;
--	sis->highest_bit = page_no - 1;
--out:
--	return ret;
--bad_bmap:
--	printk(KERN_ERR "swapon: swapfile has holes\n");
--	ret = -EINVAL;
--	goto out;
-+	return generic_swapfile_activate(sis, swap_file, span);
+ 	if (!sk_has_account(sk))
+ 		return 1;
+-	return size <= sk->sk_forward_alloc ||
+-		__sk_mem_schedule(sk, size, SK_MEM_RECV);
++	return skb->truesize <= sk->sk_forward_alloc ||
++		__sk_mem_schedule(sk, skb->truesize, SK_MEM_RECV) ||
++		skb_pfmemalloc(skb);
  }
  
- static void enable_swap_info(struct swap_info_struct *p, int prio,
+ static inline void sk_mem_reclaim(struct sock *sk)
+diff --git a/net/caif/caif_socket.c b/net/caif/caif_socket.c
+index 5016fa5..aaf711c 100644
+--- a/net/caif/caif_socket.c
++++ b/net/caif/caif_socket.c
+@@ -142,7 +142,7 @@ static int caif_queue_rcv_skb(struct sock *sk, struct sk_buff *skb)
+ 	err = sk_filter(sk, skb);
+ 	if (err)
+ 		return err;
+-	if (!sk_rmem_schedule(sk, skb->truesize) && rx_flow_is_on(cf_sk)) {
++	if (!sk_rmem_schedule(sk, skb) && rx_flow_is_on(cf_sk)) {
+ 		set_rx_flow_off(cf_sk);
+ 		if (net_ratelimit())
+ 			pr_debug("sending flow OFF due to rmem_schedule\n");
+diff --git a/net/core/sock.c b/net/core/sock.c
+index 9ad1ed9..4193266 100644
+--- a/net/core/sock.c
++++ b/net/core/sock.c
+@@ -391,7 +391,7 @@ int sock_queue_rcv_skb(struct sock *sk, struct sk_buff *skb)
+ 	if (err)
+ 		return err;
+ 
+-	if (!sk_rmem_schedule(sk, skb->truesize)) {
++	if (!sk_rmem_schedule(sk, skb)) {
+ 		atomic_inc(&sk->sk_drops);
+ 		return -ENOBUFS;
+ 	}
+diff --git a/net/ipv4/tcp_input.c b/net/ipv4/tcp_input.c
+index e886e2f..330c097 100644
+--- a/net/ipv4/tcp_input.c
++++ b/net/ipv4/tcp_input.c
+@@ -4427,19 +4427,19 @@ static void tcp_ofo_queue(struct sock *sk)
+ static int tcp_prune_ofo_queue(struct sock *sk);
+ static int tcp_prune_queue(struct sock *sk);
+ 
+-static inline int tcp_try_rmem_schedule(struct sock *sk, unsigned int size)
++static inline int tcp_try_rmem_schedule(struct sock *sk, struct sk_buff *skb)
+ {
+ 	if (atomic_read(&sk->sk_rmem_alloc) > sk->sk_rcvbuf ||
+-	    !sk_rmem_schedule(sk, size)) {
++	    !sk_rmem_schedule(sk, skb)) {
+ 
+ 		if (tcp_prune_queue(sk) < 0)
+ 			return -1;
+ 
+-		if (!sk_rmem_schedule(sk, size)) {
++		if (!sk_rmem_schedule(sk, skb)) {
+ 			if (!tcp_prune_ofo_queue(sk))
+ 				return -1;
+ 
+-			if (!sk_rmem_schedule(sk, size))
++			if (!sk_rmem_schedule(sk, skb))
+ 				return -1;
+ 		}
+ 	}
+@@ -4454,7 +4454,7 @@ static void tcp_data_queue_ofo(struct sock *sk, struct sk_buff *skb)
+ 
+ 	TCP_ECN_check_ce(tp, skb);
+ 
+-	if (tcp_try_rmem_schedule(sk, skb->truesize)) {
++	if (tcp_try_rmem_schedule(sk, skb)) {
+ 		/* TODO: should increment a counter */
+ 		__kfree_skb(skb);
+ 		return;
+@@ -4623,7 +4623,7 @@ static void tcp_data_queue(struct sock *sk, struct sk_buff *skb)
+ 		if (eaten <= 0) {
+ queue_and_out:
+ 			if (eaten < 0 &&
+-			    tcp_try_rmem_schedule(sk, skb->truesize))
++			    tcp_try_rmem_schedule(sk, skb))
+ 				goto drop;
+ 
+ 			skb_set_owner_r(skb, sk);
+diff --git a/net/sctp/ulpevent.c b/net/sctp/ulpevent.c
+index 8a84017..6c6ed2d 100644
+--- a/net/sctp/ulpevent.c
++++ b/net/sctp/ulpevent.c
+@@ -702,7 +702,7 @@ struct sctp_ulpevent *sctp_ulpevent_make_rcvmsg(struct sctp_association *asoc,
+ 	if (rx_count >= asoc->base.sk->sk_rcvbuf) {
+ 
+ 		if ((asoc->base.sk->sk_userlocks & SOCK_RCVBUF_LOCK) ||
+-		    (!sk_rmem_schedule(asoc->base.sk, chunk->skb->truesize)))
++		    (!sk_rmem_schedule(asoc->base.sk, chunk->skb)))
+ 			goto fail;
+ 	}
+ 
 -- 
 1.7.9.2
 
