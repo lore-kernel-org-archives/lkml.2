@@ -1,82 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755690Ab2DPXLs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Apr 2012 19:11:48 -0400
-Received: from na3sys009aog128.obsmtp.com ([74.125.149.141]:45917 "EHLO
-	na3sys009aog128.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752470Ab2DPXLr convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Apr 2012 19:11:47 -0400
+	id S1754277Ab2DPXM4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Apr 2012 19:12:56 -0400
+Received: from swampdragon.chaosbits.net ([90.184.90.115]:23479 "EHLO
+	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752000Ab2DPXMz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Apr 2012 19:12:55 -0400
+Date: Tue, 17 Apr 2012 01:12:54 +0200 (CEST)
+From: Jesper Juhl <jj@chaosbits.net>
+To: Randy Dunlap <rdunlap@xenotime.net>
+cc: linux-kernel@vger.kernel.org, trivial@kernel.org,
+        Steven Rostedt <rostedt@goodmis.org>
+Subject: Re: [PATCH] [Trivial] ktest: change singular "paranthesis" to plural
+ "parantheses"
+In-Reply-To: <4F8CCFFF.2060808@xenotime.net>
+Message-ID: <alpine.LNX.2.00.1204170110460.21898@swampdragon.chaosbits.net>
+References: <alpine.LNX.2.00.1204170027250.21898@swampdragon.chaosbits.net> <4F8CCFFF.2060808@xenotime.net>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-In-Reply-To: <20120416205259.GI20478@pengutronix.de>
-References: <1334192572-12499-1-git-send-email-mturquette@linaro.org>
- <1334192572-12499-14-git-send-email-mturquette@linaro.org> <20120416205259.GI20478@pengutronix.de>
-From: "Turquette, Mike" <mturquette@ti.com>
-Date: Mon, 16 Apr 2012 16:11:24 -0700
-Message-ID: <CAJOA=zNW5zvG678sEzXvQ887DRwsXQAKFjzY7=HS434Vn0LC4g@mail.gmail.com>
-Subject: Re: [PATCH 13/13] clk: basic: improve parent_names & return errors
-To: Sascha Hauer <s.hauer@pengutronix.de>
-Cc: Andrew Lunn <andrew@lunn.ch>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Russell King <linux@arm.linux.org.uk>, patches@linaro.org,
-        Rajendra Nayak <rnayak@ti.com>, linux-kernel@vger.kernel.org,
-        Saravana Kannan <skannan@codeaurora.org>,
-        linux-arm-kernel@lists.infradead.org, Olof Johansson <olof@lixom.net>,
-        linaro-dev@lists.linaro.org, arnd.bergmann@linaro.org,
-        Richard Zhao <richard.zhao@linaro.org>,
-        Shawn Guo <shawn.guo@freescale.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 16, 2012 at 1:52 PM, Sascha Hauer <s.hauer@pengutronix.de> wrote:
-> On Wed, Apr 11, 2012 at 06:02:51PM -0700, Mike Turquette wrote:
->> This patch is the basic clk version of 'clk: core: copy parent_names &
->> return error codes'.
->>
->> The registration functions are changed to allow the core code to copy
->> the array of strings and allow platforms to declare those arrays as
->> __initdata.
->>
->> This patch also converts all of the basic clk registration functions to
->> return error codes which better aligns them with the existing clk.h api.
->>
->>
->> + */
->>  struct clk *clk_register_divider(struct device *dev, const char *name,
->>               const char *parent_name, unsigned long flags,
->>               void __iomem *reg, u8 shift, u8 width,
->>               u8 clk_divider_flags, spinlock_t *lock)
->>  {
->>       struct clk_divider *div;
->> -     struct clk *clk;
->> +     struct clk *clk = ERR_PTR(-ENOMEM);
->> +     const char *parent_names[1];
->>
->> +     /* allocate the divider */
->>       div = kzalloc(sizeof(struct clk_divider), GFP_KERNEL);
->> -
->>       if (!div) {
->>               pr_err("%s: could not allocate divider clk\n", __func__);
->>               return NULL;
->
-> You missed a conversion to ERR_PTR here.
+On Mon, 16 Apr 2012, Randy Dunlap wrote:
 
-Thanks for the catch.
+> On 04/16/2012 03:28 PM, Jesper Juhl wrote:
+> 
+> > Signed-off-by: Jesper Juhl <jj@chaosbits.net>
+> > ---
+> >  tools/testing/ktest/sample.conf |    2 +-
+> >  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> It's misspelled before and after the patch.  :(
+> 
+Ahh, crap, you are right. Sorry about that :-(
 
-Mike
+I could try to blame that on english not being my first language, but I 
+won't since it's just me screwing up.
+I did read the patch several times before sending it and thought I'd made 
+sure there were no trivial errors like that, but I was wrong - damn it.
 
-> Sascha
->
-> --
-> Pengutronix e.K.                           |                             |
-> Industrial Linux Solutions                 | http://www.pengutronix.de/  |
-> Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
-> Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
->
-> _______________________________________________
-> linux-arm-kernel mailing list
-> linux-arm-kernel@lists.infradead.org
-> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
+
+This should be better :
+
+From: Jesper Juhl <jj@chaosbits.net>
+Date: Mon, 16 Apr 2012 19:40:24 +0200
+Subject: [PATCH] [Trivial] ktest: change singular "paranthesis" to plural "parentheses"
+
+
+Signed-off-by: Jesper Juhl <jj@chaosbits.net>
+---
+ tools/testing/ktest/sample.conf |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/tools/testing/ktest/sample.conf b/tools/testing/ktest/sample.conf
+index b682456..2d5109f 100644
+--- a/tools/testing/ktest/sample.conf
++++ b/tools/testing/ktest/sample.conf
+@@ -158,7 +158,7 @@
+ #
+ # TEST_START IF (DEFINED ALL_TESTS || ${MYTEST} == boottest) && ${MACHINE} == gandalf
+ #
+-# Notice the use of paranthesis. Without any paranthesis the above would be
++# Notice the use of parentheses. Without any parentheses the above would be
+ # processed the same as:
+ #
+ # TEST_START IF DEFINED ALL_TESTS || (${MYTEST} == boottest && ${MACHINE} == gandalf)
+-- 
+1.7.10
+
+
+-- 
+Jesper Juhl <jj@chaosbits.net>       http://www.chaosbits.net/
+Don't top-post http://www.catb.org/jargon/html/T/top-post.html
+Plain text mails only, please.
+
