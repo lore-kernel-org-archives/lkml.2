@@ -1,452 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755605Ab2DPWfn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Apr 2012 18:35:43 -0400
-Received: from e31.co.us.ibm.com ([32.97.110.149]:47494 "EHLO
-	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751633Ab2DPWfl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Apr 2012 18:35:41 -0400
-Date: Mon, 16 Apr 2012 15:35:12 -0700
+	id S1755598Ab2DPWnE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Apr 2012 18:43:04 -0400
+Received: from e7.ny.us.ibm.com ([32.97.182.137]:35296 "EHLO e7.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753314Ab2DPWnB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Apr 2012 18:43:01 -0400
+Date: Mon, 16 Apr 2012 15:41:32 -0700
 From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        David Howells <dhowells@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        David Smith <dsmith@redhat.com>, "Frank Ch. Eigler" <fche@redhat.com>,
-        Larry Woodman <lwoodman@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>, Tejun Heo <tj@kernel.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: hlist_for_each_entry && pos (Was: task_work_queue)
-Message-ID: <20120416223512.GI2448@linux.vnet.ibm.com>
+To: Vivek Goyal <vgoyal@redhat.com>
+Cc: Tejun Heo <tj@kernel.org>, axboe@kernel.dk, ctalbott@google.com,
+        rni@google.com, linux-kernel@vger.kernel.org, cgroups@vger.kernel.org,
+        containers@lists.linux-foundation.org
+Subject: Re: [PATCH 5/8] blkcg: make sure blkg_lookup() returns %NULL if @q
+ is bypassing
+Message-ID: <20120416224131.GJ2448@linux.vnet.ibm.com>
 Reply-To: paulmck@linux.vnet.ibm.com
-References: <20120412024751.GA17561@redhat.com>
- <20120412024810.GA17984@redhat.com>
- <20120412040059.GA20462@redhat.com>
+References: <1334273380-30233-1-git-send-email-tj@kernel.org>
+ <1334273380-30233-6-git-send-email-tj@kernel.org>
+ <20120413160053.GE26383@redhat.com>
+ <20120413170334.GB12233@google.com>
+ <20120413172336.GF26383@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120412040059.GA20462@redhat.com>
+In-Reply-To: <20120413172336.GF26383@redhat.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12041622-7282-0000-0000-0000083CE41F
+x-cbid: 12041622-5806-0000-0000-0000145235BE
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 12, 2012 at 06:00:59AM +0200, Oleg Nesterov wrote:
-> On 04/12, Oleg Nesterov wrote:
-> >
-> > +	hlist_for_each_entry(twork, pos, &task->task_works, hlist) {
+On Fri, Apr 13, 2012 at 01:23:36PM -0400, Vivek Goyal wrote:
+> On Fri, Apr 13, 2012 at 10:03:34AM -0700, Tejun Heo wrote:
+> > Hey,
+> > 
+> > On Fri, Apr 13, 2012 at 12:00:53PM -0400, Vivek Goyal wrote:
+> > > On Thu, Apr 12, 2012 at 04:29:37PM -0700, Tejun Heo wrote:
+> > > 
+> > > [..]
+> > > >   * In bypass mode, only the dispatch FIFO queue of @q is used.  This
+> > > >   * function makes @q enter bypass mode and drains all requests which were
+> > > >   * throttled or issued before.  On return, it's guaranteed that no request
+> > > > - * is being throttled or has ELVPRIV set.
+> > > > + * is being throttled or has ELVPRIV set and blk_queue_bypass() is %true
+> > > > + * inside queue or RCU read lock.
+> > > >   */
+> > > >  void blk_queue_bypass_start(struct request_queue *q)
+> > > >  {
+> > > > @@ -426,6 +427,7 @@ void blk_queue_bypass_start(struct request_queue *q)
+> > > >  	spin_unlock_irq(q->queue_lock);
+> > > >  
+> > > >  	blk_drain_queue(q, false);
+> > > > +	synchronize_rcu();
+> > > 
+> > > I guess this synchronize_rcu() needs some comments here to make it clear
+> > > what it meant for. IIUC, you are protecting against policy data (stats
+> > > update) which happen under rcu in throttling code? You want to make sure
+> > > all these updaters are done before you go ahead with
+> > > activation/deactivation of a policy.
+> > > 
+> > > Well, I am wondering if CFQ is policy being activated/deactivated why
+> > > should we try to drain other policie's requests. Can't one continue
+> > > to work without draining all the throttled requests. We probably just
+> > > need to make sure new groups are not created.
+> > 
+> > So, I think synchronization rules like this are something which the
+> > core should define.  cfq may not use it but the sync rules should
+> > still be the same for all policies.  In this case, what the core
+> > provides is "blk_queue_bypass() is guaranteed to be seen as %true
+> > inside RCU read lock section once this function returns", which in
+> > turn will guarantee that RCU read-lock protected blkg_lookup() is
+> > guaranteed to fail once the function returns.  This property makes RCU
+> > protected blkg_lookup() safe against queue bypassing, which is what we
+> > want.
 > 
-> This reminds me.
-> 
-> hlist_for_each_entry_*() do not need "pos", it can be
-> 
-> 	#define hlist_for_each_entry(pos, head, member)					\
-> 		for (pos = (void*)(head)->first;					\
-> 		pos && ({ pos = hlist_entry((void*)pos, typeof(*pos), member); 1; });	\
-> 		pos = (void*)(pos)->member.next)
-> 
-> The only problem, is there any possibility to change the callers
-> somehow??? I even wrote the script which converts them all, but the
-> patch is huge.
-> 
-> Please see the old (2008-04-21) message I sent to lkml below, today
-> the diffstat is even "worse":
-> 
-> 	152 files changed, 611 insertions(+), 906 deletions(-)
-> 
-> and the patch size is 242k.
-> 
-> No? we can't?
+> I think now synchronize_rcu() has become part of cfq_init_queue()
+> effectively and that will slow down boot. In the past I had to remove
+> it.
 
-Maybe this needs a phased approach:
-
-1.	Add a new API name without the "pos" argument.
-
-2.	Send individual patches to the uses, which allows time to
-	clean up stragglers.
-
-3.	Remove the old API name.  If any patches from #2 have been
-	ignored, push them with the removal patch.
-
-4.	Rename the new API name to the old one, if desired.
-
-Yeah, cowardly of me, I know.
+One alternative approach is to use synchronize_rcu_expedited().
 
 							Thanx, Paul
-
-> -------------------------------------------------------------------------------
-> [PATCH 0.01/1] hlist_for_each_entry_xxx: kill the "pos" argument
-> 
-> (The actual patch is huge, 116K, I'll send it offline. This email contains
->  the chunk for list.h only).
-> 
-> COMPILE TESTED ONLY (make allyesconfig).
-> 
-> All hlist_for_each_entry_xxx() macros require the "pos" argument, which is not
-> actually needed and can be removed. See the changes in include/linux/list.h
-> (note that hlist_for_each_entry_safe() now does prefetch() too).
-> 
-> Now we should convert the callers somehow. Unfortunately, this is not always
-> easy. Consider this code for example:
-> 
-> 	{
-> 		struct hlist_node *tmp1, *tmp2;
-> 
-> 		hlist_for_each_entry(pos, tmp1, head,mem)
-> 			do_something(pos);
-> 
-> 		hlist_for_each_entry(pos, tmp2, head,mem)
-> 			use(tmp2);
-> 	}
-> 
-> The first hlist_for_each_entry is easy, but the second can't be converted
-> automatically because "tmp2" is used.
-> 
-> So, this patch
-> 
-> 	- copies these macros to "obsolete" __hlist_for_each_entry_xxx()
-> 
-> 	- changes hlist_for_each_entry_xxxx() to avoid the "struct hlist_nod*"
-> 
-> 	- converts the rest of the kernel to use either new or old macros
-> 
-> For example, the patch for the code above is
-> 
-> 	 {
-> 	-	struct hlist_node *tmp1, *tmp2;
-> 	+	struct hlist_node *tmp2;
-> 	 
-> 	-	hlist_for_each_entry(pos, tmp1, head,mem)
-> 	+	hlist_for_each_entry(pos, head,mem)
-> 			do_something(pos);
-> 	 
-> 	-	hlist_for_each_entry(pos, tmp2, head,mem)
-> 	+	__hlist_for_each_entry(pos, tmp2, head,mem)
-> 			use(tmp2);
-> 	 }
-> 
-> I believe it is very easy to convert the users of the obsolete macros, but
-> this needs separate patches.
-> 
-> Except for changes in include/linux/list.h the patch was generated by this
-> script:
-> 
-> 	#!/usr/bin/perl -w
-> 	use strict;
-> 
-> 	my ($N_CNT, $O_CNT, @SRC, $CTXT, @CTXT);
-> 
-> 	sub say { printf STDERR "%4d: %s.\n", $., "@_" }
-> 
-> 	sub var { return $_->{$_[0]} || next for @CTXT }
-> 
-> 	sub parse_line
-> 	{
-> 		if (ord == ord '{') {
-> 			unshift @CTXT, $CTXT = {
-> 				-v_list => \@{$CTXT->{-v_list}},
-> 				-v_rexp =>    $CTXT->{-v_rexp},
-> 			};
-> 		}
-> 		elsif (ord == ord '}') {
-> 			say "WARN! unmatched '}'" unless $CTXT;
-> 
-> 			while (my ($v, $c) = each %$CTXT) {
-> 				my $trim = ord $v != ord '-' &&
-> 					!$c->{used} && $c->{trim} || next;
-> 
-> 				for my $tr (@$trim) {
-> 					substr($_, $tr->[1], 2, ''),
-> 					substr($_, $tr->[2], $tr->[3], '')
-> 						for $SRC[$tr->[0]];
-> 					$N_CNT++;
-> 				}
-> 
-> 				for ($SRC[$c->{decl}]) {
-> 					s/\* \s* $v \b (?: \s* , \s*)?//x || die;
-> 					s/,\s*(?=;)//; s/\bstruct\s+hlist_node\s*;//;
-> 					$_ = '' if /^\s*\\?\s*$/;
-> 				}
-> 			}
-> 			shift @CTXT; $CTXT = $CTXT[0];
-> 		}
-> 		elsif ($CTXT && /\b struct \s+ hlist_node \b ([^;]+)/x) {
-> 			my $v_list = $CTXT->{-v_list};
-> 			for (split /,/, $1) {
-> 				/^\s* \* (\w+) \s* \z/x or next;
-> 				$CTXT->{$1} = { decl => 0+@SRC };
-> 				push @$v_list, $1;
-> 			}
-> 			$CTXT->{-v_rexp} = qr/\b(@{[join '|', @$v_list]})\b/
-> 				if @$v_list;
-> 		}
-> 		elsif (/\b hlist_for_each_entry (?:_continue|_from|_safe|_rcu)? \b/xg) {
-> 			my $u = length $`;
-> 			if (/\G \s* \( .+? (, \s* (\w+) \s*)/x) {
-> 				my $tr = [0+@SRC, $u, $-[1], length $1];
-> 				if (my $v = var $2) { push @{$v->{trim}}, $tr; }
-> 			} else {
-> 				say "suspicious usage of hlist_for_each_entry_xxx()";
-> 			}
-> 			substr $_, $u, 0, '__';
-> 			$O_CNT++;
-> 		}
-> 		elsif (my $re = $CTXT && $CTXT->{-v_rexp}) {
-> 			var($1)->{used}++ while /$re/g;
-> 		}
-> 
-> 		push @SRC, $_;
-> 	}
-> 
-> 	sub diff_file
-> 	{
-> 		my $file = $_;
-> 		warn "====> $file ...\n";
-> 		($N_CNT, $O_CNT, @SRC, $CTXT, @CTXT) = 0;
-> 
-> 		open my $fd, '<', $file or die;
-> 		while (<$fd>) {
-> 			my $comm = s/(\/\*.*)//s && $1;
-> 			parse_line for split /([{}])/, $_, -1;
-> 			while ($comm) {
-> 				push @SRC, $comm;
-> 				$comm = $comm !~ /\*\// && <$fd>;
-> 			}
-> 		}
-> 
-> 		warn "WARN! unmatched '{'\n" if $CTXT;
-> 		return warn "WARN! not changed\n" unless $O_CNT;
-> 		warn "stat: $N_CNT from $O_CNT\n";
-> 
-> 		open my $diff, "|diff -up --label a/$file $file --label b/$file -";
-> 		print $diff @SRC;
-> 	}
-> 
-> 
-> 	@ARGV || die "usage: $0 path_to_kernel || list_of_files\n";
-> 
-> 	if (-d $ARGV[0]) {
-> 		chdir $ARGV[0] || die "ERR!! can't cd to $ARGV[0]\n";
-> 		warn "grep ...\n";
-> 		@ARGV = sort grep {
-> 			chomp; s/^\.\///; $_ ne 'include/linux/list.h';
-> 		} qx{grep --include='*.[ch]' -rle '\\bhlist_for_each_entry' .};
-> 	}
-> 
-> 	diff_file for @ARGV;
-> 
-> (it open files readonly, so can be used safely)
-> 
-> Signed-off-by: Oleg Nesterov <oleg@tv-sign.ru>
-> 
->  arch/arm/kernel/kprobes.c            |    6 +--
->  arch/ia64/kernel/kprobes.c           |    8 ++--
->  arch/powerpc/kernel/kprobes.c        |    6 +--
->  arch/s390/kernel/kprobes.c           |    6 +--
->  arch/sparc64/kernel/kprobes.c        |    6 +--
->  arch/sparc64/kernel/ldc.c            |    3 -
->  arch/x86/kernel/kprobes.c            |    6 +--
->  arch/x86/kvm/mmu.c                   |   20 ++++------
->  block/cfq-iosched.c                  |    3 -
->  block/elevator.c                     |    4 +-
->  crypto/algapi.c                      |    6 +--
->  drivers/infiniband/core/cma.c        |    3 -
->  drivers/infiniband/core/fmr_pool.c   |    3 -
->  drivers/md/raid5.c                   |    6 +--
->  drivers/net/macvlan.c                |    6 +--
->  drivers/net/pppol2tp.c               |    6 +--
->  drivers/net/sunvnet.c                |    3 -
->  drivers/net/wireless/zd1201.c        |    7 +--
->  fs/dcache.c                          |    3 -
->  fs/ecryptfs/messaging.c              |    5 +-
->  fs/fat/inode.c                       |    3 -
->  fs/gfs2/glock.c                      |    6 +--
->  fs/lockd/host.c                      |   17 +++------
->  fs/lockd/svcsubs.c                   |    7 +--
->  fs/nfsd/nfscache.c                   |    3 -
->  fs/ocfs2/dlm/dlmdebug.c              |    3 -
->  fs/ocfs2/dlm/dlmrecovery.c           |    6 +--
->  fs/xfs/xfs_inode.c                   |    3 -
->  include/linux/pci.h                  |    3 -
->  include/linux/pid.h                  |    3 -
->  include/net/ax25.h                   |    4 +-
->  include/net/inet_hashtables.h        |    2 -
->  include/net/inet_timewait_sock.h     |    6 +--
->  include/net/netrom.h                 |    8 ++--
->  include/net/sctp/sctp.h              |    2 -
->  include/net/sock.h                   |   10 ++---
->  kernel/kprobes.c                     |   36 ++++++++-----------
->  kernel/marker.c                      |   15 ++------
->  kernel/pid.c                         |    3 -
->  kernel/sched.c                       |    6 +--
->  kernel/user.c                        |    3 -
->  net/8021q/vlan.c                     |    3 -
->  net/9p/error.c                       |    2 -
->  net/atm/lec.c                        |   64 +++++++++++++++--------------------
->  net/ax25/ax25_iface.c                |    3 -
->  net/bridge/br_fdb.c                  |   17 +++------
->  net/can/af_can.c                     |   21 +++++------
->  net/can/proc.c                       |    6 +--
->  net/decnet/dn_table.c                |   13 ++-----
->  net/ipv4/fib_frontend.c              |   11 ++----
->  net/ipv4/fib_hash.c                  |   30 ++++++----------
->  net/ipv4/fib_semantics.c             |   23 ++++--------
->  net/ipv4/fib_trie.c                  |   25 ++++---------
->  net/ipv4/inet_fragment.c             |   10 ++---
->  net/ipv4/netfilter/nf_nat_core.c     |    3 -
->  net/ipv6/addrlabel.c                 |   14 +++----
->  net/ipv6/ip6_fib.c                   |    9 +---
->  net/ipv6/xfrm6_tunnel.c              |   12 ++----
->  net/netfilter/nf_conntrack_core.c    |   18 +++------
->  net/netfilter/nf_conntrack_expect.c  |   12 ++----
->  net/netfilter/nf_conntrack_helper.c  |   14 +++----
->  net/netfilter/nf_conntrack_netlink.c |   12 ++----
->  net/netfilter/nfnetlink_log.c        |    7 +--
->  net/netfilter/nfnetlink_queue.c      |   10 ++---
->  net/netfilter/xt_RATEEST.c           |    3 -
->  net/netfilter/xt_hashlimit.c         |   13 ++-----
->  net/sched/sch_htb.c                  |    9 +---
->  net/sunrpc/auth.c                    |    5 +-
->  net/sunrpc/svcauth.c                 |    3 -
->  net/tipc/name_table.c                |    8 +---
->  net/xfrm/xfrm_policy.c               |   53 ++++++++++++----------------
->  net/xfrm/xfrm_state.c                |   43 ++++++++---------------
->  72 files changed, 302 insertions(+), 439 deletions(-)
-> 
-> --- HL/include/linux/list.h~HLIST	2007-10-25 16:22:12.000000000 +0400
-> +++ HL/include/linux/list.h	2008-04-21 17:17:44.000000000 +0400
-> @@ -926,58 +926,54 @@ static inline void hlist_add_after_rcu(s
-> 
->  /**
->   * hlist_for_each_entry	- iterate over list of given type
-> - * @tpos:	the type * to use as a loop cursor.
-> - * @pos:	the &struct hlist_node to use as a loop cursor.
-> + * @pos:	the type * to use as a loop cursor.
->   * @head:	the head for your list.
->   * @member:	the name of the hlist_node within the struct.
->   */
-> -#define hlist_for_each_entry(tpos, pos, head, member)			 \
-> -	for (pos = (head)->first;					 \
-> -	     pos && ({ prefetch(pos->next); 1;}) &&			 \
-> -		({ tpos = hlist_entry(pos, typeof(*tpos), member); 1;}); \
-> -	     pos = pos->next)
-> +#define hlist_for_each_entry(pos, head, member)				\
-> +	for (pos = (void*)(head)->first; pos && ({			\
-> +		prefetch(((struct hlist_node*)pos)->next);		\
-> +		pos = hlist_entry((void*)pos, typeof(*pos), member); 1;	\
-> +	     }); pos = (void*)(pos)->member.next)
-> 
->  /**
->   * hlist_for_each_entry_continue - iterate over a hlist continuing after current point
-> - * @tpos:	the type * to use as a loop cursor.
-> - * @pos:	the &struct hlist_node to use as a loop cursor.
-> + * @pos:	the type * to use as a loop cursor.
->   * @member:	the name of the hlist_node within the struct.
->   */
-> -#define hlist_for_each_entry_continue(tpos, pos, member)		 \
-> -	for (pos = (pos)->next;						 \
-> -	     pos && ({ prefetch(pos->next); 1;}) &&			 \
-> -		({ tpos = hlist_entry(pos, typeof(*tpos), member); 1;}); \
-> -	     pos = pos->next)
-> +#define hlist_for_each_entry_continue(pos, member)			\
-> +	for (; (pos = (void*)(pos)->member.next) && ({			\
-> +		prefetch(((struct hlist_node*)pos)->next);		\
-> +		pos = hlist_entry((void*)pos, typeof(*pos), member); 1;	\
-> +	     }); )
-> 
->  /**
->   * hlist_for_each_entry_from - iterate over a hlist continuing from current point
-> - * @tpos:	the type * to use as a loop cursor.
-> - * @pos:	the &struct hlist_node to use as a loop cursor.
-> + * @pos:	the type * to use as a loop cursor.
->   * @member:	the name of the hlist_node within the struct.
->   */
-> -#define hlist_for_each_entry_from(tpos, pos, member)			 \
-> -	for (; pos && ({ prefetch(pos->next); 1;}) &&			 \
-> -		({ tpos = hlist_entry(pos, typeof(*tpos), member); 1;}); \
-> -	     pos = pos->next)
-> +#define hlist_for_each_entry_from(pos, member)				\
-> +	for (pos = pos ? (void*)&(pos)->member.next : pos; pos && ({	\
-> +		prefetch(((struct hlist_node*)pos)->next);		\
-> +		pos = hlist_entry((void*)pos, typeof(*pos), member); 1;	\
-> +	     }); pos = (void*)(pos)->member.next)
-> 
->  /**
->   * hlist_for_each_entry_safe - iterate over list of given type safe against removal of list entry
-> - * @tpos:	the type * to use as a loop cursor.
-> - * @pos:	the &struct hlist_node to use as a loop cursor.
-> + * @pos:	the type * to use as a loop cursor.
->   * @n:		another &struct hlist_node to use as temporary storage
->   * @head:	the head for your list.
->   * @member:	the name of the hlist_node within the struct.
->   */
-> -#define hlist_for_each_entry_safe(tpos, pos, n, head, member) 		 \
-> -	for (pos = (head)->first;					 \
-> -	     pos && ({ n = pos->next; 1; }) && 				 \
-> -		({ tpos = hlist_entry(pos, typeof(*tpos), member); 1;}); \
-> -	     pos = n)
-> +#define hlist_for_each_entry_safe(pos, n, head, member)			\
-> +	for (pos = (void*)(head)->first; pos && ({			\
-> +		n = ((struct hlist_node*)pos)->next; prefetch(n);	\
-> +		pos = hlist_entry((void*)pos, typeof(*pos), member); 1;	\
-> +	     }); pos = (void*)n)
-> 
->  /**
->   * hlist_for_each_entry_rcu - iterate over rcu list of given type
-> - * @tpos:	the type * to use as a loop cursor.
-> - * @pos:	the &struct hlist_node to use as a loop cursor.
-> + * @pos:	the type * to use as a loop cursor.
->   * @head:	the head for your list.
->   * @member:	the name of the hlist_node within the struct.
->   *
-> @@ -985,7 +981,38 @@ static inline void hlist_add_after_rcu(s
->   * the _rcu list-mutation primitives such as hlist_add_head_rcu()
->   * as long as the traversal is guarded by rcu_read_lock().
->   */
-> -#define hlist_for_each_entry_rcu(tpos, pos, head, member)		 \
-> +#define hlist_for_each_entry_rcu(pos, head, member)			\
-> +	for (pos = (void*)(head)->first; rcu_dereference(pos) && ({	\
-> +		prefetch(((struct hlist_node*)pos)->next);		\
-> +		pos = hlist_entry((void*)pos, typeof(*pos), member); 1;	\
-> +	     }); pos = (void*)(pos)->member.next)
-> +
-> +/* -------- Obsolete, to be removed soon, do not use -------- */
-> +
-> +#define __hlist_for_each_entry(tpos, pos, head, member)			 \
-> +	for (pos = (head)->first;					 \
-> +	     pos && ({ prefetch(pos->next); 1;}) &&			 \
-> +		({ tpos = hlist_entry(pos, typeof(*tpos), member); 1;}); \
-> +	     pos = pos->next)
-> +
-> +#define __hlist_for_each_entry_continue(tpos, pos, member)		 \
-> +	for (pos = (pos)->next;						 \
-> +	     pos && ({ prefetch(pos->next); 1;}) &&			 \
-> +		({ tpos = hlist_entry(pos, typeof(*tpos), member); 1;}); \
-> +	     pos = pos->next)
-> +
-> +#define __hlist_for_each_entry_from(tpos, pos, member)			 \
-> +	for (; pos && ({ prefetch(pos->next); 1;}) &&			 \
-> +		({ tpos = hlist_entry(pos, typeof(*tpos), member); 1;}); \
-> +	     pos = pos->next)
-> +
-> +#define __hlist_for_each_entry_safe(tpos, pos, n, head, member) 	 \
-> +	for (pos = (head)->first;					 \
-> +	     pos && ({ n = pos->next; 1; }) && 				 \
-> +		({ tpos = hlist_entry(pos, typeof(*tpos), member); 1;}); \
-> +	     pos = n)
-> +
-> +#define __hlist_for_each_entry_rcu(tpos, pos, head, member)		 \
->  	for (pos = (head)->first;					 \
->  	     rcu_dereference(pos) && ({ prefetch(pos->next); 1;}) &&	 \
->  		({ tpos = hlist_entry(pos, typeof(*tpos), member); 1;}); \
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-> 
 
