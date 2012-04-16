@@ -1,149 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753368Ab2DPLZf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Apr 2012 07:25:35 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:43746 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753175Ab2DPLZd (ORCPT
+	id S1753359Ab2DPL1U (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Apr 2012 07:27:20 -0400
+Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:46902 "EHLO
+	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753213Ab2DPL1T (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Apr 2012 07:25:33 -0400
-Date: Mon, 16 Apr 2012 04:24:31 -0700
-From: "tip-bot for Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Message-ID: <tip-92d52de4add0e4502aeb063cd45daf314a9c2e1b@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, paul.mckenney@linaro.org, hpa@zytor.com,
-        mingo@kernel.org, torvalds@linux-foundation.org,
-        sergey.senozhatsky@gmail.com, paulmck@linux.vnet.ibm.com,
-        tglx@linutronix.de
-Reply-To: paulmck@linux.vnet.ibm.com, mingo@kernel.org, hpa@zytor.com,
-        paul.mckenney@linaro.org, linux-kernel@vger.kernel.org,
-        torvalds@linux-foundation.org, sergey.senozhatsky@gmail.com,
-        tglx@linutronix.de
-In-Reply-To: <20120405222604.GA15713@linux.vnet.ibm.com>
-References: <20120405222604.GA15713@linux.vnet.ibm.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:core/urgent] rcu: Permit call_rcu() from CPU_DYING notifiers
-Git-Commit-ID: 92d52de4add0e4502aeb063cd45daf314a9c2e1b
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
-MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Mon, 16 Apr 2012 04:24:37 -0700 (PDT)
+	Mon, 16 Apr 2012 07:27:19 -0400
+Date: Mon, 16 Apr 2012 12:26:34 +0100
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Andy Whitcroft <apw@canonical.com>
+Cc: Jeff Garzik <jgarzik@pobox.com>, linux-ide@vger.kernel.org,
+        linux-kernel@vger.kernel.org, "K. Y. Srinivasan" <kys@microsoft.com>,
+        Mike Sterling <Mike.Sterling@microsoft.com>
+Subject: Re: [PATCH 0/2] Hyper-V disk support V3
+Message-ID: <20120416122634.7d1357e1@ultron>
+In-Reply-To: <1334575229-7493-1-git-send-email-apw@canonical.com>
+References: <20120414170223.24f6ea31@pyramind.ukuu.org.uk>
+	<1334575229-7493-1-git-send-email-apw@canonical.com>
+X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  92d52de4add0e4502aeb063cd45daf314a9c2e1b
-Gitweb:     http://git.kernel.org/tip/92d52de4add0e4502aeb063cd45daf314a9c2e1b
-Author:     Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-AuthorDate: Thu, 5 Apr 2012 15:26:04 -0700
-Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Mon, 16 Apr 2012 11:17:57 +0200
+On Mon, 16 Apr 2012 12:20:27 +0100
+Andy Whitcroft <apw@canonical.com> wrote:
 
-rcu: Permit call_rcu() from CPU_DYING notifiers
+> Add support for ignoring disks devices on specific host controllers to
+> libata.  Use this support to trigger us to ignore Hyper-V disk devices
+> on the emulated SATA device based on the system DMI information.
+> 
+> Jeff, I believe the first patch is what you had in mind in your comments.
+> Alan, the piix sadly has no subvendor/subdevice identifiers at all
 
-As of:
+So its 0x0000,0x0000 ?
 
-  29494be71afe ("rcu,cleanup: simplify the code when cpu is dying")
+> though we are able to detect the platform from the DMI information,
+> this any better?
 
-RCU adopts callbacks from the dying CPU in its CPU_DYING notifier,
-which means that any callbacks posted by later CPU_DYING notifiers
-are ignored until the CPU comes back online.
+What happens if you have a PIIX device which is being passed through from
+the underlying hardware or will hyper-v never support pass through ?
 
-A WARN_ON_ONCE() was added to __call_rcu() by:
-
-  e56014000816 ("rcu: Simplify offline processing")
-
-to check for this condition.  Although this condition did not trigger
-(at least as far as I know) during -next testing, it did recently
-trigger in mainline:
-
-  https://lkml.org/lkml/2012/4/2/34
-
-This commit therefore causes RCU's CPU_DEAD notifier to adopt
-any callbacks that were posted by CPU_DYING notifiers and
-removes the WARN_ON_ONCE() from __call_rcu().
-
-A more targeted warning for callback posting from offline CPUs will be
-added as a separate commit.
-
-Tested-by: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
-Signed-off-by: Paul E. McKenney <paul.mckenney@linaro.org>
-Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: laijs@cn.fujitsu.com
-Cc: dipankar@in.ibm.com
-Cc: mathieu.desnoyers@efficios.com
-Cc: josh@joshtriplett.org
-Cc: niv@us.ibm.com
-Cc: peterz@infradead.org
-Cc: rostedt@goodmis.org
-Cc: Valdis.Kletnieks@vt.edu
-Cc: dhowells@redhat.com
-Cc: eric.dumazet@gmail.com
-Cc: darren@dvhart.com
-Cc: fweisbec@gmail.com
-Cc: patches@linaro.org
-Link: http://lkml.kernel.org/r/20120405222604.GA15713@linux.vnet.ibm.com
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
----
- kernel/rcutree.c |   31 ++++++++++++++++++++++++++++++-
- 1 files changed, 30 insertions(+), 1 deletions(-)
-
-diff --git a/kernel/rcutree.c b/kernel/rcutree.c
-index 1050d6d..4c927e6 100644
---- a/kernel/rcutree.c
-+++ b/kernel/rcutree.c
-@@ -1406,11 +1406,41 @@ static void rcu_cleanup_dying_cpu(struct rcu_state *rsp)
- static void rcu_cleanup_dead_cpu(int cpu, struct rcu_state *rsp)
- {
- 	unsigned long flags;
-+	int i;
- 	unsigned long mask;
- 	int need_report = 0;
- 	struct rcu_data *rdp = per_cpu_ptr(rsp->rda, cpu);
- 	struct rcu_node *rnp = rdp->mynode;  /* Outgoing CPU's rnp. */
- 
-+	/* If a CPU_DYING notifier has enqueued callbacks, adopt them. */
-+	if (rdp->nxtlist != NULL) {
-+		struct rcu_data *receive_rdp;
-+
-+		local_irq_save(flags);
-+		receive_rdp = per_cpu_ptr(rsp->rda, smp_processor_id());
-+
-+		/* Adjust the counts. */
-+		receive_rdp->qlen_lazy += rdp->qlen_lazy;
-+		receive_rdp->qlen += rdp->qlen;
-+		rdp->qlen_lazy = 0;
-+		rdp->qlen = 0;
-+
-+		/*
-+		 * Adopt all callbacks.  The outgoing CPU was in no shape
-+		 * to advance them, so make them all go through a full
-+		 * grace period.
-+		 */
-+		*receive_rdp->nxttail[RCU_NEXT_TAIL] = rdp->nxtlist;
-+		receive_rdp->nxttail[RCU_NEXT_TAIL] =
-+			rdp->nxttail[RCU_NEXT_TAIL];
-+		local_irq_restore(flags);
-+
-+		/* Initialize the outgoing CPU's callback list. */
-+		rdp->nxtlist = NULL;
-+		for (i = 0; i < RCU_NEXT_SIZE; i++)
-+			rdp->nxttail[i] = &rdp->nxtlist;
-+	}
-+
- 	/* Adjust any no-longer-needed kthreads. */
- 	rcu_stop_cpu_kthread(cpu);
- 	rcu_node_kthread_setaffinity(rnp, -1);
-@@ -1820,7 +1850,6 @@ __call_rcu(struct rcu_head *head, void (*func)(struct rcu_head *rcu),
- 	 * a quiescent state betweentimes.
- 	 */
- 	local_irq_save(flags);
--	WARN_ON_ONCE(cpu_is_offline(smp_processor_id()));
- 	rdp = this_cpu_ptr(rsp->rda);
- 
- 	/* Add the callback to our list. */
+Alan
