@@ -1,54 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755105Ab2DPVHF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Apr 2012 17:07:05 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:46623 "EHLO ogre.sisk.pl"
+	id S1755409Ab2DPVIt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Apr 2012 17:08:49 -0400
+Received: from mms2.broadcom.com ([216.31.210.18]:4154 "EHLO mms2.broadcom.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752086Ab2DPVHD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Apr 2012 17:07:03 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: "Yan, Zheng" <zheng.z.yan@intel.com>
-Subject: Re: [RFC PATCH] PCIe: Add PCIe runtime D3cold support
-Date: Mon, 16 Apr 2012 23:11:37 +0200
-User-Agent: KMail/1.13.6 (Linux/3.4.0-rc3+; KDE/4.6.0; x86_64; ; )
-Cc: bhelgaas@google.com, linux-kernel@vger.kernel.org,
-        linux-pci@vger.kernel.org, linux-pm@vger.kernel.org,
-        Lin Ming <ming.m.lin@intel.com>, Zhang Rui <rui.zhang@intel.com>,
-        huang ying <huang.ying.caritas@gmail.com>,
-        ACPI Devel Mailing List <linux-acpi@vger.kernel.org>
-References: <4F8790F6.5080408@intel.com> <201204132141.58063.rjw@sisk.pl> <4F8BCF00.3020004@intel.com>
-In-Reply-To: <4F8BCF00.3020004@intel.com>
+	id S1752626Ab2DPVIr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Apr 2012 17:08:47 -0400
+X-Server-Uuid: 72204117-5C29-4314-8910-60DB108979CB
+Message-ID: <4F8C8A4F.3060208@broadcom.com>
+Date: Mon, 16 Apr 2012 23:08:31 +0200
+From: "Arend van Spriel" <arend@broadcom.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:11.0) Gecko/20120329
+ Thunderbird/11.0.1
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="windows-1252"
+To: "Felipe Contreras" <felipe.contreras@gmail.com>
+cc: "Ingo Molnar" <mingo@kernel.org>,
+        "Linus Torvalds" <torvalds@linux-foundation.org>,
+        "Greg KH" <gregkh@linuxfoundation.org>,
+        "Sergio Correia" <lists@uece.net>, linux-kernel@vger.kernel.org,
+        stable@vger.kernel.org, akpm@linux-foundation.org,
+        alan@lxorguk.ukuu.org.uk,
+        "linux-wireless Mailing List" <linux-wireless@vger.kernel.org>,
+        "Sujith Manoharan" <c_manoha@qca.qualcomm.com>,
+        "ath9k-devel@lists.ath9k.org" <ath9k-devel@venema.h4ckr.net>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: Re: [ 00/78] 3.3.2-stable review
+References: <CA+55aFyLEJsz1yvu4bYe+RHdhLd-XXEScxtAgje=fyuUM+1XxA@mail.gmail.com>
+ <CAMP44s0yPPqFUO4963MhNb8+c_A=xJi4-eFPJ3s+a1TJ8ZfTtQ@mail.gmail.com>
+ <CA+55aFwaOGbD6S_7So34ZuANG-6fZXZhEah8G0X7McDGhionSg@mail.gmail.com>
+ <CAMP44s06jrPBzf5Lt86-GDxD_PxqcaeJgmYS4tJhcvDdf=J5zA@mail.gmail.com>
+ <20120414104733.GA4871@gmail.com>
+ <CAMP44s0tBbgmunXTN9Jyw=HHnXFyvRY3qo5Vf-jXETUM4HEGWA@mail.gmail.com>
+ <20120415065124.GC29563@gmail.com>
+ <CAMP44s3mOsCGG5_gd6zTUeXewTFKeVEmAkt2FvM=wTm-5AEC+w@mail.gmail.com>
+ <CA+55aFz8oepgj7W8W=d18qwQt3JUGgv+pCto-_2WS3WJ3ZKqzQ@mail.gmail.com>
+ <CAMP44s2vx5cn_=tRD46SqAobRceLiZDfi9-zLUnv_g89wLxryQ@mail.gmail.com>
+ <20120416053220.GA14338@gmail.com>
+ <CAMP44s1j297wO8TJgto+w1x3G0qTC=BehuKtE2TZnxYmdoM=Fg@mail.gmail.com>
+In-Reply-To: <CAMP44s1j297wO8TJgto+w1x3G0qTC=BehuKtE2TZnxYmdoM=Fg@mail.gmail.com>
+X-WSS-ID: 639253433IO5756224-01-01
+Content-Type: text/plain;
+ charset=iso-8859-1;
+ format=flowed
 Content-Transfer-Encoding: 7bit
-Message-Id: <201204162311.37499.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday, April 16, 2012, Yan, Zheng wrote:
-> On 04/14/2012 03:41 AM, Rafael J. Wysocki wrote:
-> >> > @@ -296,7 +296,8 @@ static void acpi_pci_propagate_run_wake(struct pci_bus *bus, bool enable)
-> >> >  
-> >> >  static int acpi_pci_run_wake(struct pci_dev *dev, bool enable)
-> >> >  {
-> >> > -	if (dev->pme_interrupt)
-> >> > +	/* PME interrupt isn't available in the D3cold case */
-> >> > +	if (dev->pme_interrupt && !dev->runtime_d3cold)
-> >
-> > This whole thing is wrong.  First off, I don't think that the runtime_d3cold
-> > flag makes any sense.  We already cover that in dev->pme_support.
-> > 
-> > Second, pme_interrupt means that the _root_ _port_, not the device itself will
-> > trigger an interrupt whenever the device sends the PME message to it (which
-> > very well may happen for a device in D3_cold woken up by an external signal).
-> > 
-> 
-> I rechecked this. The port does trigger PME interrupt, but after the WAKE# signal
-> restores device power. So my comments "PME interrupt isn't available in the D3cold
-> case" is wrong, but setup ACPI wakeup is still required.
+On 04/16/2012 10:25 PM, Felipe Contreras wrote:
+> Releasing implies many things. There is this notion called theory of
+> mind, which children learn at a very young age, that helps us see the
+> world through the eyes of other people. If you think people *must* see
+> the word "release" and think *exactly* the same thing as  you do, and
+> apologize when they don't, well, I'd say you are missing a very
+> valuable skill.
 
-What exactly do you mean by "setup ACPI wakeup"?
+Maybe we are all a bit autistic then.
 
-Rafael
+> But fine, lets suppose I should have thought exactly the same thing as
+> you did, and fine, lets say I was wrong in not doing so. That still
+> doesn't help one iota in this discussion. Linus Torvalds pointed the
+> exact reason, which allowed us to move forward, because of my
+> incompetence, or whatever.
+
+I think this thread has been going on long enough and a fair number of 
+people tried to explain the process and why it is set up as such. How 
+long do you want to rephrase and stick to your "theory of mind". Email 
+filters will probably be created rather sooner than later. Does 
+Contreras have the same linguistic origin as "contrary"? Sorry, could 
+not think of anything constructive here.
+
+> The next logical question has still not been answered; does the
+> undroppability come from the fact that v3.4 is more important that
+> v3.3.1? This time I promise to think at least one day for all the
+> possible meanings of each key word you say.
+
+3.4 is not most important, but upstream is and currently those are the 
+3.4-rcN releases. Every patch has to go upstream first as it was, is, 
+and will be our past, present, and future.
+
+The only thing I can think of in favor of your arguments is that the 
+name 'stable' imply that they are without issues, ie. stable. However, 
+with a bit of ToM you may see that they are maintenance releases.
+
+Gr. AvS
+
+
