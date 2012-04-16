@@ -1,64 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753064Ab2DPKka (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Apr 2012 06:40:30 -0400
-Received: from moutng.kundenserver.de ([212.227.17.10]:52764 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752693Ab2DPKk3 (ORCPT
+	id S1753120Ab2DPKoc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Apr 2012 06:44:32 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:42961 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752883Ab2DPKob (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Apr 2012 06:40:29 -0400
-Message-ID: <1334572822.3101.5.camel@ubuntu.ubuntu-domain>
-Subject: Fixed a style issue in Drivers/staging/comedi/comedi_fops
-From: Benedikt Bergenthal <benedikt@kdrennert.de>
-To: greg@kroah.com
-Cc: abbotti@mev.co.uk, fmhess@users.sourceforge.net, fschmaus@gmail.com,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Date: Mon, 16 Apr 2012 12:40:22 +0200
+	Mon, 16 Apr 2012 06:44:31 -0400
+Message-ID: <1334573063.2673.2.camel@phoenix>
+Subject: [PATCH v2] regulator: core: Add checking set_mode callback in
+ regulator_set_optimum_mode
+From: Axel Lin <axel.lin@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Liam Girdwood <lrg@ti.com>, Stephen Boyd <sboyd@codeaurora.org>
+Date: Mon, 16 Apr 2012 18:44:23 +0800
 Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
+X-Mailer: Evolution 3.2.2- 
 Content-Transfer-Encoding: 7bit
 Mime-Version: 1.0
-X-Provags-ID: V02:K0:DIzqAYGLQKTh2+TqpOUP1/dRoch3gnerBtmPOLShuBg
- N/vWtNDYih0mMSXueGdWlvAGixiEAem61NjaI5kyxrMTw7ital
- ctAMeJ0Lb3pIRCPXaD8YKAJ1VGEe8Qx1n9JCMExRQMKoNcmqzF
- LCDoyBh9xEW1d8WIYEl7e02vyS4WSPsXeC4UCYTL2L3bbKdMrm
- JfO0hCtcFq3rfL2HxM9LV7g2Jl4VxCHHVIj2nTVjHGXsTT1RiS
- Eln0xMETJ57Vq4DfGEWWDfqIG01QYZpnWxqW48IqX0vDJi/Tso
- Owiww2C04Bn6v/4hOl5T9235e+n49ak7cg3M5U74YSFF6b7t+S
- zSulJFXU12vB+I6gPfoTQG9Kwji8zrJfWei5LhD/Q3WKfGBPDP
- j0wZjBEMaKS/w==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->From 7f8dfad47674d8e7ad0b9a6e994da21c130bfd51 Mon Sep 17 00:00:00 2001
-From: Benedikt <bberget@cern.ch>
-Date: Mon, 16 Apr 2012 12:34:24 +0200
-Subject: [PATCH] Drivers: Staging: Comedi: comedi_fops: Fixed a code style
- issue
+regulator_set_optimum_mode needs set_mode to properly work.
+Add checking for set_mode callback in case it may be not implemented.
 
-Fixed a code style issue.
-
-Signed-off-by: Benedikt Bergenthal <benedikt@kdrennert.de>
+Signed-off-by: Axel Lin <axel.lin@gmail.com>
 ---
- drivers/staging/comedi/comedi_fops.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/regulator/core.c |    3 +++
+ 1 files changed, 3 insertions(+), 0 deletions(-)
 
-diff --git a/drivers/staging/comedi/comedi_fops.c b/drivers/staging/comedi/comedi_fops.c
-index 9bcf87a..5badea5 100644
---- a/drivers/staging/comedi/comedi_fops.c
-+++ b/drivers/staging/comedi/comedi_fops.c
-@@ -1545,7 +1545,7 @@ done:
- 	return retval;
- }
+diff --git a/drivers/regulator/core.c b/drivers/regulator/core.c
+index f68b22a..de8ad8f 100644
+--- a/drivers/regulator/core.c
++++ b/drivers/regulator/core.c
+@@ -2340,6 +2340,9 @@ int regulator_set_optimum_mode(struct regulator *regulator, int uA_load)
+ 	 */
+ 	ret = -EINVAL;
  
--static unsigned int comedi_poll(struct file *file, poll_table * wait)
-+static unsigned int comedi_poll(struct file *file, poll_table *wait)
- {
- 	unsigned int mask = 0;
- 	const unsigned minor = iminor(file->f_dentry->d_inode);
++	if (!rdev->desc->ops->set_mode)
++		goto out;
++
+ 	/* get output voltage */
+ 	output_uV = _regulator_get_voltage(rdev);
+ 	if (output_uV <= 0) {
 -- 
-1.7.9.5
+1.7.5.4
 
 
 
