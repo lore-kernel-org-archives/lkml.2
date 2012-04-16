@@ -1,52 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751305Ab2DPGxB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Apr 2012 02:53:01 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:64015 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750869Ab2DPGxA (ORCPT
+	id S1751558Ab2DPGxQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Apr 2012 02:53:16 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:62978 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751324Ab2DPGxI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Apr 2012 02:53:00 -0400
-Date: Mon, 16 Apr 2012 08:52:49 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Andreas Herrmann <andreas.herrmann3@amd.com>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] x86, amd: Re-enable CPU topology extensions in case BIOS
- has disabled it
-Message-ID: <20120416065249.GA5292@gmail.com>
-References: <20120411152640.GC4794@alberich.amd.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120411152640.GC4794@alberich.amd.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 16 Apr 2012 02:53:08 -0400
+Subject: Re: [PATCH 3/6] macvtap: zerocopy: validate vector length before
+ pinning user pages
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Jason Wang <jasowang@redhat.com>
+Cc: netdev@vger.kernel.org, xma@us.ibm.com, davem@davemloft.net,
+        linux-kernel@vger.kernel.org, mst@redhat.com, ebiederm@xmission.com
+In-Reply-To: <20120416060807.14140.96229.stgit@intel-e5620-16-2.englab.nay.redhat.com>
+References: <20120416060749.14140.19433.stgit@intel-e5620-16-2.englab.nay.redhat.com>
+	 <20120416060807.14140.96229.stgit@intel-e5620-16-2.englab.nay.redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 16 Apr 2012 08:53:03 +0200
+Message-ID: <1334559183.28012.45.camel@edumazet-glaptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-* Andreas Herrmann <andreas.herrmann3@amd.com> wrote:
-
+On Mon, 2012-04-16 at 14:08 +0800, Jason Wang wrote:
+> Currently we do not validate the vector length before calling
+> get_user_pages_fast(), host stack would be easily overflowed by
+> malicious guest driver who give us a descriptor with length greater
+> than MAX_SKB_FRAGS. Solve this problem by checking the free entries
+> before trying to pin user pages.
 > 
-> For detection of thread siblings we are relying on the topology
-> extension CPUID leafs. Thus we have to re-enable it in case BIOS tries
-> to hide the correpsonding CPUID feature flag.
+> Signed-off-by: Jason Wang <jasowang@redhat.com>
+> ---
+>  drivers/net/macvtap.c |    2 ++
+>  1 files changed, 2 insertions(+), 0 deletions(-)
 > 
-> Cc: stable@vger.kernel.org
-> Signed-off-by: Andreas Herrmann <andreas.herrmann3@amd.com>
+> diff --git a/drivers/net/macvtap.c b/drivers/net/macvtap.c
+> index 7cb2684..d197a78 100644
+> --- a/drivers/net/macvtap.c
+> +++ b/drivers/net/macvtap.c
+> @@ -529,6 +529,8 @@ static int zerocopy_sg_from_iovec(struct sk_buff *skb, const struct iovec *from,
+>  		}
+>  		base = (unsigned long)from->iov_base + offset;
+>  		size = ((base & ~PAGE_MASK) + len + ~PAGE_MASK) >> PAGE_SHIFT;
+> +		if (i + size >= MAX_SKB_FRAGS)
+> +			return -EFAULT;
+>  		num_pages = get_user_pages_fast(base, size, 0, &page[i]);
+>  		if ((num_pages != size) ||
+>  		    (num_pages > MAX_SKB_FRAGS - skb_shinfo(skb)->nr_frags))
+> 
 
-This changelog is missing some key information:
+Hi Jason
 
- - how did you find the bug - did you see some actual badness?
+Why is -EFAULT the right error code ?
 
- - what practical effect (if any) did you see from this patch?
+Also, why not removing the "(num_pages > MAX_SKB_FRAGS -
+skb_shinfo(skb)->nr_frags)" test done few lines after ?
 
- - what practical effect (if any) do you expect others to see from this patch?
+Also, if get_user_pages_fast() returns truncated result (size - 1 for
+example), we apparently dont free the references on pages.
 
-This kind of information helps us prioritize bugfixes and helps 
-us determine whether a fix requires a -stable backport.
+The comment applies only on pages that were added in skb frags.
 
-Thanks,
 
-    Ingo
