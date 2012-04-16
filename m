@@ -1,70 +1,179 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755210Ab2DPSv7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Apr 2012 14:51:59 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:58758 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751189Ab2DPSv5 (ORCPT
+	id S1755262Ab2DPSwv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Apr 2012 14:52:51 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:47129 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752506Ab2DPSwt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Apr 2012 14:51:57 -0400
-Date: Mon, 16 Apr 2012 19:51:53 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Thomas Abraham <thomas.abraham@linaro.org>
-Cc: linux-kernel@vger.kernel.org, k.lewandowsk@samsung.com,
-        devicetree-discuss@lists.ozlabs.org, rob.herring@calxeda.com,
-        grant.likely@secretlab.ca, kgene.kim@samsung.com,
-        myungjoo.ham@samsung.com, kyungmin.park@samsung.com,
-        linux-arm-kernel@lists.infradead.org,
-        linux-samsung-soc@vger.kernel.org, patches@linaro.org,
-        Rajendra Nayak <rnayak@ti.com>
-Subject: Re: [PATCH v4 2/2] regulator: add device tree support for max8997
-Message-ID: <20120416185153.GH3219@opensource.wolfsonmicro.com>
-References: <1332582590-16382-3-git-send-email-thomas.abraham@linaro.org>
+	Mon, 16 Apr 2012 14:52:49 -0400
+Date: Mon, 16 Apr 2012 11:52:38 -0700
+From: tip-bot for Matt Fleming <matt.fleming@intel.com>
+Message-ID: <tip-b1994304fc399f5d3a5368c81111d713490c4799@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        matt.hfleming@intel.com, matt.fleming@intel.com,
+        jordan.l.justen@intel.com, tglx@linutronix.de, hpa@linux.intel.com
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        matt.fleming@intel.com, matt.hfleming@intel.com,
+        jordan.l.justen@intel.com, tglx@linutronix.de, hpa@linux.intel.com
+In-Reply-To: <1334584744.26997.14.camel@mfleming-mobl1.ger.corp.intel.com>
+References: <1334584744.26997.14.camel@mfleming-mobl1.ger.corp.intel.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/urgent] x86, efi: Add dedicated EFI stub entry point
+Git-Commit-ID: b1994304fc399f5d3a5368c81111d713490c4799
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="3VRmKSg17yJg2MZg"
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-In-Reply-To: <1332582590-16382-3-git-send-email-thomas.abraham@linaro.org>
-X-Cookie: If you can read this, you're too close.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Mon, 16 Apr 2012 11:52:44 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Commit-ID:  b1994304fc399f5d3a5368c81111d713490c4799
+Gitweb:     http://git.kernel.org/tip/b1994304fc399f5d3a5368c81111d713490c4799
+Author:     Matt Fleming <matt.fleming@intel.com>
+AuthorDate: Sun, 15 Apr 2012 16:06:04 +0100
+Committer:  H. Peter Anvin <hpa@linux.intel.com>
+CommitDate: Mon, 16 Apr 2012 11:41:44 -0700
 
---3VRmKSg17yJg2MZg
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+x86, efi: Add dedicated EFI stub entry point
 
-On Sat, Mar 24, 2012 at 03:19:50PM +0530, Thomas Abraham wrote:
-> Add device tree based discovery support for max8997.
+The method used to work out whether we were booted by EFI firmware or
+via a boot loader is broken. Because efi_main() is always executed
+when booting from a boot loader we will dereference invalid pointers
+either on the stack (CONFIG_X86_32) or contained in %rdx
+(CONFIG_X86_64) when searching for an EFI System Table signature.
 
-I tried to apply this but it's collided with some other changes in the
-driver which have arrived in the meantime and the rejects were too large
-to fix up.  I suspect it's mostly just the change in parameters for
-regulator_register().  Can you please regenerate against my current
-topic/drivers branch?
+Instead of dereferencing these invalid system table pointers, add a
+new entry point that is only used when booting from EFI firmware, when
+we know the pointer arguments will be valid. With this change legacy
+boot loaders will no longer execute efi_main(), but will instead skip
+EFI stub initialisation completely.
 
---3VRmKSg17yJg2MZg
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+[ hpa: Marking this for urgent/stable since it is a regression when
+  the option is enabled; without the option the patch has no effect ]
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
+Signed-off-by: Matt Fleming <matt.hfleming@intel.com>
+Link: http://lkml.kernel.org/r/1334584744.26997.14.camel@mfleming-mobl1.ger.corp.intel.com
+Reported-by: Jordan Justen <jordan.l.justen@intel.com>
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+Cc: <stable@vger.kernel.org> v3.3
+---
+ arch/x86/boot/compressed/head_32.S |   14 +++++++++++---
+ arch/x86/boot/compressed/head_64.S |   22 ++++++++++++++++------
+ arch/x86/boot/tools/build.c        |   15 +++++++++++----
+ 3 files changed, 38 insertions(+), 13 deletions(-)
 
-iQIcBAEBAgAGBQJPjGoKAAoJEBus8iNuMP3d99gP/Asy1dmv69B1i0MvCJszqNH0
-J9DvsKbigYPj2iUc0nqIvy84YPSB7ou7dYnFjKZGCswXkRwVL3io19/nyiqInwf+
-uV84dlaoxuBvg3VMtYqC1hxMRO8hJzulXVgJEn2aMpdlgfayfzeV1OpSoXMAiDUJ
-aQADob+fls8pHmbysRD+ErHlnCz9y/9iuwuQdD5fUEzD6iACA/YvBlQeT2Mxnc1r
-/D98S5lmV5JJdYRWHMeBU42GwJoH3JMBFvGKgFYLZJMEjqvdLlBG9DJfr7IE7Lfb
-gatZ9MTXg8MBl6Cju1EGOw6ERGVoT74F2SEqrTrTa6QAw1DFxYDr4MQQnXaZ9ljo
-qmRLPdgCweVzidH1habeuq850RqgswWEu/SMYHzmKNZG8qJMX/KUXxzg/+ALaC4e
-GqxpS3zCohQVnncmxsQczyXnfdSW6iyiUaTbHbQIp4UJLWm97/mxrNvtYLIvT6xG
-eJeIqag+Mnb7PulV7j8vMjb85llWaRN7IUsm0UzLcvONLBfYwrDB98wNKqNbtDxb
-S3kqy+/6tjKKHE72xb8+cDZ0pNpnp6tNIFuv9GrME+iQcI8/VyYKZjZR+CfWcjCF
-/NorGpr0LDNerWMUla0KnBqcoaroxIiPQW7a8wCbDzxKKxsz0yFRjMdVHnPK0L1i
-BKuZegRIejPsD28UvTlR
-=bdae
------END PGP SIGNATURE-----
-
---3VRmKSg17yJg2MZg--
+diff --git a/arch/x86/boot/compressed/head_32.S b/arch/x86/boot/compressed/head_32.S
+index a055993..c85e3ac 100644
+--- a/arch/x86/boot/compressed/head_32.S
++++ b/arch/x86/boot/compressed/head_32.S
+@@ -33,6 +33,9 @@
+ 	__HEAD
+ ENTRY(startup_32)
+ #ifdef CONFIG_EFI_STUB
++	jmp	preferred_addr
++
++	.balign	0x10
+ 	/*
+ 	 * We don't need the return address, so set up the stack so
+ 	 * efi_main() can find its arugments.
+@@ -41,12 +44,17 @@ ENTRY(startup_32)
+ 
+ 	call	efi_main
+ 	cmpl	$0, %eax
+-	je	preferred_addr
+ 	movl	%eax, %esi
+-	call	1f
++	jne	2f
+ 1:
++	/* EFI init failed, so hang. */
++	hlt
++	jmp	1b
++2:
++	call	3f
++3:
+ 	popl	%eax
+-	subl	$1b, %eax
++	subl	$3b, %eax
+ 	subl	BP_pref_address(%esi), %eax
+ 	add	BP_code32_start(%esi), %eax
+ 	leal	preferred_addr(%eax), %eax
+diff --git a/arch/x86/boot/compressed/head_64.S b/arch/x86/boot/compressed/head_64.S
+index 558d76c..87e03a1 100644
+--- a/arch/x86/boot/compressed/head_64.S
++++ b/arch/x86/boot/compressed/head_64.S
+@@ -200,18 +200,28 @@ ENTRY(startup_64)
+ 	 * entire text+data+bss and hopefully all of memory.
+ 	 */
+ #ifdef CONFIG_EFI_STUB
+-	pushq	%rsi
++	/*
++	 * The entry point for the PE/COFF executable is 0x210, so only
++	 * legacy boot loaders will execute this jmp.
++	 */
++	jmp	preferred_addr
++
++	.org 0x210
+ 	mov	%rcx, %rdi
+ 	mov	%rdx, %rsi
+ 	call	efi_main
+-	popq	%rsi
+-	cmpq	$0,%rax
+-	je	preferred_addr
+ 	movq	%rax,%rsi
+-	call	1f
++	cmpq	$0,%rax
++	jne	2f
+ 1:
++	/* EFI init failed, so hang. */
++	hlt
++	jmp	1b
++2:
++	call	3f
++3:
+ 	popq	%rax
+-	subq	$1b, %rax
++	subq	$3b, %rax
+ 	subq	BP_pref_address(%rsi), %rax
+ 	add	BP_code32_start(%esi), %eax
+ 	leaq	preferred_addr(%rax), %rax
+diff --git a/arch/x86/boot/tools/build.c b/arch/x86/boot/tools/build.c
+index ed54976..24443a3 100644
+--- a/arch/x86/boot/tools/build.c
++++ b/arch/x86/boot/tools/build.c
+@@ -205,8 +205,13 @@ int main(int argc, char ** argv)
+ 	put_unaligned_le32(file_sz, &buf[pe_header + 0x50]);
+ 
+ #ifdef CONFIG_X86_32
+-	/* Address of entry point */
+-	put_unaligned_le32(i, &buf[pe_header + 0x28]);
++	/*
++	 * Address of entry point.
++	 *
++	 * The EFI stub entry point is +16 bytes from the start of
++	 * the .text section.
++	 */
++	put_unaligned_le32(i + 16, &buf[pe_header + 0x28]);
+ 
+ 	/* .text size */
+ 	put_unaligned_le32(file_sz, &buf[pe_header + 0xb0]);
+@@ -217,9 +222,11 @@ int main(int argc, char ** argv)
+ 	/*
+ 	 * Address of entry point. startup_32 is at the beginning and
+ 	 * the 64-bit entry point (startup_64) is always 512 bytes
+-	 * after.
++	 * after. The EFI stub entry point is 16 bytes after that, as
++	 * the first instruction allows legacy loaders to jump over
++	 * the EFI stub initialisation
+ 	 */
+-	put_unaligned_le32(i + 512, &buf[pe_header + 0x28]);
++	put_unaligned_le32(i + 528, &buf[pe_header + 0x28]);
+ 
+ 	/* .text size */
+ 	put_unaligned_le32(file_sz, &buf[pe_header + 0xc0]);
