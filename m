@@ -1,65 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753651Ab2DPQbX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Apr 2012 12:31:23 -0400
-Received: from mga03.intel.com ([143.182.124.21]:42890 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751174Ab2DPQbW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Apr 2012 12:31:22 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="89619288"
-Date: Mon, 16 Apr 2012 18:40:14 +0200
-From: Samuel Ortiz <sameo@linux.intel.com>
-To: Paul Parsons <lost.distance@yahoo.com>
-Cc: linux-kernel@vger.kernel.org, philipp.zabel@gmail.com
-Subject: Re: [PATCH v2] mfd: asic3: Avoid unbalanced irq wakeup
- enables/disables
-Message-ID: <20120416164014.GO24130@sortiz-mobl>
-References: <1334100934.85623.YahooMailClassic@web29003.mail.ird.yahoo.com>
+	id S1754118Ab2DPQcm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Apr 2012 12:32:42 -0400
+Received: from oproxy1-pub.bluehost.com ([66.147.249.253]:46393 "HELO
+	oproxy1-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752265Ab2DPQcl (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Apr 2012 12:32:41 -0400
+Message-ID: <4F8C73DD.3080804@xenotime.net>
+Date: Mon, 16 Apr 2012 12:32:45 -0700
+From: Randy Dunlap <rdunlap@xenotime.net>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1334100934.85623.YahooMailClassic@web29003.mail.ird.yahoo.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Masanari Iida <standby24x7@gmail.com>
+CC: trivial@kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] [trivial] Fix typo in various Kconfig file
+References: <1334330051-20051-1-git-send-email-standby24x7@gmail.com>
+In-Reply-To: <1334330051-20051-1-git-send-email-standby24x7@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Paul,
+On 04/13/2012 08:14 AM, Masanari Iida wrote:
 
-On Wed, Apr 11, 2012 at 12:35:34AM +0100, Paul Parsons wrote:
-> The mfd/asic3 driver does not currently define a irq_set_wake() handler.
-> Consequently any attempt to configure the 3 ASIC3 GPIO buttons - RECORD,
-> CALENDAR, HOME - as wakeup sources results in Unbalanced IRQ warnings
-> when the system is woken from sleep mode:
+> Correct spelling typo in various Kconfig file.
 > 
-> WARNING: at kernel/irq/manage.c:520 irq_set_irq_wake+0xc4/0xf8()
-> Unbalanced IRQ 342 wake disable
-> ...
-> WARNING: at kernel/irq/manage.c:520 irq_set_irq_wake+0xc4/0xf8()
-> Unbalanced IRQ 337 wake disable
-> ...
-> WARNING: at kernel/irq/manage.c:520 irq_set_irq_wake+0xc4/0xf8()
-> Unbalanced IRQ 339 wake disable
-> ...
-> 
-> This patch adds a irq_set_wake() handler to the mfd/asic3 driver.
-> 
-> Signed-off-by: Paul Parsons <lost.distance@yahoo.com>
-> Cc: Philipp Zabel <philipp.zabel@gmail.com>
+> Signed-off-by: Masanari Iida <standby24x7@gmail.com>
 > ---
-> 
-> V2:
-> This patch now adds asic3_gpio_irq_set_wake() to mfd/asic3 instead of
-> disabling the 3 ASIC3 GPIO buttons as wakeup sources in pxa/hx4700.
-> This patch now submitted to linux-kernel instead of linux-arm-kernel.
-> Rebased from linux-2.6.39-rc6 to linux-3.4-rc2.
-Thanks, patch applied as well.
+>  arch/m68k/Kconfig.cpu                  |    2 +-
+>  arch/mips/Kconfig                      |    4 ++--
+>  arch/mips/Kconfig.debug                |    2 +-
+>  arch/openrisc/Kconfig                  |    2 +-
+>  arch/powerpc/platforms/Kconfig.cputype |    4 ++--
+>  arch/powerpc/platforms/pseries/Kconfig |    2 +-
+>  arch/sh/Kconfig.cpu                    |    2 +-
+>  drivers/devfreq/Kconfig                |    2 +-
+>  drivers/hid/Kconfig                    |    2 +-
+>  drivers/hwmon/Kconfig                  |    2 +-
+>  drivers/i2c/busses/Kconfig             |    2 +-
+>  drivers/mfd/Kconfig                    |    6 +++---
+>  drivers/ptp/Kconfig                    |    2 +-
+>  drivers/watchdog/Kconfig               |    2 +-
+>  drivers/xen/Kconfig                    |    2 +-
+>  15 files changed, 19 insertions(+), 19 deletions(-)
 
-Cheers,
-Samuel.
+Acked-by: Randy Dunlap <rdunlap@xenotime.net>
+
+A few more possible corrections are noted below.
+
+Thanks.
+
+
+> diff --git a/arch/mips/Kconfig b/arch/mips/Kconfig
+> index ce30e2f..923a6c3 100644
+> --- a/arch/mips/Kconfig
+> +++ b/arch/mips/Kconfig
+> @@ -1001,12 +1001,12 @@ config HOLES_IN_ZONE
+>  	bool
+>  
+>  #
+> -# Endianess selection.  Sufficiently obscure so many users don't know what to
+> +# Endianness selection.  Sufficiently obscure so many users don't know what to
+>  # answer,so we try hard to limit the available choices.  Also the use of a
+
+
+space after ','
+
+>  # choice statement should be more obvious to the user.
+>  #
+>  choice
+> -	prompt "Endianess selection"
+> +	prompt "Endianness selection"
+>  	help
+>  	  Some MIPS machines can be configured for either little or big endian
+>  	  byte order. These modes require different kernels and a different
+> diff --git a/arch/openrisc/Kconfig b/arch/openrisc/Kconfig
+> index a478719..66dff20 100644
+> --- a/arch/openrisc/Kconfig
+> +++ b/arch/openrisc/Kconfig
+> @@ -141,7 +141,7 @@ config DEBUG_STACKOVERFLOW
+>  	bool "Check for kernel stack overflow"
+>  	default y
+>  	help
+> -	  Make extra checks for space avaliable on stack in some
+> +	  Make extra checks for space available on stack in some
+>            critical functions. This will cause kernel to run a bit slower,
+>  	  but will catch most of kernel stack overruns and exit gracefuly.
+
+
+	                                                        gracefully.
+
+>  
+
 
 -- 
-Intel Open Source Technology Centre
-http://oss.intel.com/
+~Randy
