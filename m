@@ -1,280 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754873Ab2DPRVF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Apr 2012 13:21:05 -0400
-Received: from rcsinet15.oracle.com ([148.87.113.117]:30276 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754246Ab2DPRUu (ORCPT
+	id S1754809Ab2DPRVB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Apr 2012 13:21:01 -0400
+Received: from acsinet15.oracle.com ([141.146.126.227]:17764 "EHLO
+	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754595Ab2DPRUv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Apr 2012 13:20:50 -0400
+	Mon, 16 Apr 2012 13:20:51 -0400
 From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 To: linux-kernel@vger.kernel.org, david.vrabel@citrix.com, JBeulich@suse.com
 Cc: xen-devel@lists.xensource.com,
         Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Subject: [PATCH 7/8] xen/setup: Populate freed MFNs from non-RAM E820 entries and gaps to E820 RAM
-Date: Mon, 16 Apr 2012 13:15:38 -0400
-Message-Id: <1334596539-18172-8-git-send-email-konrad.wilk@oracle.com>
+Subject: [PATCH 6/8] xen/setup: Work properly with 'dom0_mem=X' or with not dom0_mem.
+Date: Mon, 16 Apr 2012 13:15:37 -0400
+Message-Id: <1334596539-18172-7-git-send-email-konrad.wilk@oracle.com>
 X-Mailer: git-send-email 1.7.7.5
 In-Reply-To: <1334596539-18172-1-git-send-email-konrad.wilk@oracle.com>
 References: <1334596539-18172-1-git-send-email-konrad.wilk@oracle.com>
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
-X-CT-RefId: str=0001.0A090204.4F8C54EC.000D,ss=1,re=-2.300,fgs=0
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090208.4F8C54EB.007B,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When the Xen hypervisor boots a PV kernel it hands it two pieces
-of information: nr_pages and a made up E820 entry.
+We ignored the X value and ended up populating up to
+max(MAX_DOMAIN_PAGES, last E820_RAM entry).
 
-The nr_pages value defines the range from zero to nr_pages of PFNs
-which have a valid Machine Frame Number (MFN) underneath it. The
-E820 mirrors that (with the VGA hole):
-BIOS-provided physical RAM map:
- Xen: 0000000000000000 - 00000000000a0000 (usable)
- Xen: 00000000000a0000 - 0000000000100000 (reserved)
- Xen: 0000000000100000 - 0000000080800000 (usable)
+This fixes it by figuring out how many RAM nr_pages the
+hypervisor wanted to provide to us and cap the populate
+hypercalls up to that.
 
-The fun comes when a PV guest that is run with a machine E820 - that
-can either be the initial domain or a PCI PV guest, where the E820
-looks like the normal thing:
+The end result is (on a 8GB box):
 
-BIOS-provided physical RAM map:
- Xen: 0000000000000000 - 000000000009e000 (usable)
- Xen: 000000000009ec00 - 0000000000100000 (reserved)
- Xen: 0000000000100000 - 0000000020000000 (usable)
- Xen: 0000000020000000 - 0000000020200000 (reserved)
- Xen: 0000000020200000 - 0000000040000000 (usable)
- Xen: 0000000040000000 - 0000000040200000 (reserved)
- Xen: 0000000040200000 - 00000000bad80000 (usable)
- Xen: 00000000bad80000 - 00000000badc9000 (ACPI NVS)
-..
-With that overlaying the nr_pages directly on the E820 does not
-work as there are gaps and non-RAM regions that won't be used
-by the memory allocator. The 'xen_release_chunk' helps with that
-by punching holes in the P2M (PFN to MFN lookup tree) for those
-regions and tells us that:
-
-Freeing  20000-20200 pfn range: 512 pages freed
-Freeing  40000-40200 pfn range: 512 pages freed
-Freeing  bad80-badf4 pfn range: 116 pages freed
-Freeing  badf6-bae7f pfn range: 137 pages freed
-Freeing  bb000-100000 pfn range: 282624 pages freed
-Released 283999 pages of unused memory
-
-Those 283999 pages are subtracted from the nr_pages and are returned
-to the hypervisor. The end result is that the initial domain
-boots with 1GB less memory as the nr_pages has been subtracted by
-the amount of pages residing within the PCI hole. It can balloon up
-to that if desired using 'xl mem-set 0 8092', but the balloon driver
-is not always compiled in for the initial domain.
-
-This patch, implements the populate hypercall (XENMEM_populate_physmap)
-which increases the the domain with the same amount of pages that
-were released.
-
-The other solution (that did not work) was to transplant the MFN in
-the P2M tree - the ones that were going to be freed were put in
-the E820_RAM regions past the nr_pages. But the modifications to the
-M2P array (the other side of creating PTEs) were not carried away.
-As the hypervisor is the only one capable of modifying that and the
-only two hypercalls that would do this are: the update_va_mapping
-(which won't work, as during initial bootup only PFNs up to nr_pages
-are mapped in the guest) or via the populate hypercall.
-
-The end result is that the kernel can now boot with the
-nr_pages without having to subtract the 283999 pages.
-
-On a 8GB machine, with various dom0_mem= parameters this is what we get:
+dom0_mem=1G
+-Memory: 610884k/9435136k available (5817k kernel code, 1136060k absent, 7688192k reserved, 2899k data, 696k init)
++Memory: 724184k/1053064k available (5817k kernel code, 4552k absent, 324328k reserved, 2899k data, 696k init)
 
 no dom0_mem
--Memory: 6485264k/9435136k available (5817k kernel code, 1136060k absent, 1813812k reserved, 2899k data, 696k init)
-+Memory: 7619036k/9435136k available (5817k kernel code, 1136060k absent, 680040k reserved, 2899k data, 696k init)
+-Memory: 7619036k/9435136k available (5817k kernel code, 1136060k absent, 680040k reserved, 2899k data, 696k init)
++Memory: 7621460k/9208688k available (5817k kernel code, 1136060k absent, 451168k reserved, 2899k data, 696k init)
 
-dom0_mem=3G
--Memory: 2616536k/9435136k available (5817k kernel code, 1136060k absent, 5682540k reserved, 2899k data, 696k init)
-+Memory: 2703776k/9435136k available (5817k kernel code, 1136060k absent, 5595300k reserved, 2899k data, 696k init)
-
-dom0_mem=max:3G
--Memory: 2696732k/4281724k available (5817k kernel code, 1136060k absent, 448932k reserved, 2899k data, 696k init)
-+Memory: 2702204k/4281724k available (5817k kernel code, 1136060k absent, 443460k reserved, 2899k data, 696k init)
-
-And the 'xm list' or 'xl list' now reflect what the dom0_mem=
-argument is.
-
-[v2: Use populate hypercall]
-[v3: Remove debug printks]
-[v4: Simplify code]
+[v1: Details added]
 Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 ---
- arch/x86/xen/setup.c |  116 ++++++++++++++++++++++++++++++++++++++++++++++++--
- 1 files changed, 112 insertions(+), 4 deletions(-)
+ arch/x86/xen/setup.c |   18 ++++++++++++++++++
+ 1 files changed, 18 insertions(+), 0 deletions(-)
 
 diff --git a/arch/x86/xen/setup.c b/arch/x86/xen/setup.c
-index 0e82bf1..b44d409 100644
+index 7b0ab77..0e82bf1 100644
 --- a/arch/x86/xen/setup.c
 +++ b/arch/x86/xen/setup.c
-@@ -26,7 +26,6 @@
- #include <xen/interface/memory.h>
- #include <xen/interface/physdev.h>
- #include <xen/features.h>
--
- #include "xen-ops.h"
- #include "vdso.h"
- 
-@@ -120,7 +119,105 @@ static unsigned long __init xen_release_chunk(unsigned long start,
- 
- 	return len;
- }
-+static unsigned long __init xen_populate_physmap(unsigned long start,
-+						 unsigned long end)
-+{
-+	struct xen_memory_reservation reservation = {
-+		.address_bits = 0,
-+		.extent_order = 0,
-+		.domid        = DOMID_SELF
-+	};
-+	unsigned long len = 0;
-+	int ret;
-+
-+	for (pfn = start; pfn < end; pfn++) {
-+		unsigned long frame;
-+
-+		/* Make sure pfn does not exists to start with */
-+		if (pfn_to_mfn(pfn) != INVALID_P2M_ENTRY)
-+			continue;
- 
-+		frame = pfn;
-+		set_xen_guest_handle(reservation.extent_start, &frame);
-+		reservation.nr_extents = 1;
-+
-+		ret = HYPERVISOR_memory_op(XENMEM_populate_physmap, &reservation);
-+		WARN(ret != 1, "Failed to populate pfn %lx err=%d\n", pfn, ret);
-+		if (ret == 1) {
-+			if (!early_set_phys_to_machine(pfn, frame)) {
-+				set_xen_guest_handle(reservation.extent_start, &frame);
-+				reservation.nr_extents = 1;
-+				ret = HYPERVISOR_memory_op(XENMEM_decrease_reservation,
-+							&reservation);
-+				break;
-+			}
-+			len++;
-+		} else
-+			break;
-+	}
-+	if (len)
-+		printk(KERN_INFO "Populated %lx-%lx pfn range: %lu pages added\n",
-+		       start, end, len);
-+	return len;
-+}
-+static unsigned long __init xen_populate_chunk(
-+	const struct e820entry *list, size_t map_size,
-+	unsigned long max_pfn, unsigned long *last_pfn,
-+	unsigned long credits_left)
-+{
-+	const struct e820entry *entry;
-+	unsigned int i;
-+	unsigned long done = 0;
-+	unsigned long dest_pfn;
-+
-+	for (i = 0, entry = list; i < map_size; i++, entry++) {
-+		unsigned long credits = credits_left;
-+		unsigned long s_pfn;
-+		unsigned long e_pfn;
-+		unsigned long pfns;
-+		long capacity;
-+
-+		if (credits <= 0)
-+			break;
-+
-+		if (entry->type != E820_RAM)
-+			continue;
-+
-+		e_pfn = PFN_UP(entry->addr + entry->size);
-+
-+		/* We only care about E820 after the xen_start_info->nr_pages */
-+		if (e_pfn <= max_pfn)
-+			continue;
-+
-+		s_pfn = PFN_DOWN(entry->addr);
-+		/* If the E820 falls within the nr_pages, we want to start
-+		 * at the nr_pages PFN.
-+		 * If that would mean going past the E820 entry, skip it
-+		 */
-+		if (s_pfn <= max_pfn) {
-+			capacity = e_pfn - max_pfn;
-+			dest_pfn = max_pfn;
-+		} else {
-+			/* last_pfn MUST be within E820_RAM regions */
-+			if (*last_pfn && e_pfn >= *last_pfn)
-+				s_pfn = *last_pfn;
-+			capacity = e_pfn - s_pfn;
-+			dest_pfn = s_pfn;
-+		}
-+		/* If we had filled this E820_RAM entry, go to the next one. */
-+		if (capacity <= 0)
-+			continue;
-+
-+		if (credits > capacity)
-+			credits = capacity;
-+
-+		pfns = xen_populate_physmap(dest_pfn, dest_pfn + credits);
-+		done += pfns;
-+		credits_left -= pfns;
-+		*last_pfn = (dest_pfn + pfns);
-+	}
-+	return done;
-+}
- static unsigned long __init xen_set_identity_and_release(
- 	const struct e820entry *list, size_t map_size, unsigned long nr_pages)
- {
-@@ -143,7 +240,6 @@ static unsigned long __init xen_set_identity_and_release(
+@@ -185,11 +185,29 @@ static unsigned long __init xen_get_max_pages(void)
+ 	 * the current maximum rather than the static maximum. In this
+ 	 * case the e820 map provided to us will cover the static
+ 	 * maximum region.
++	 *
++	 * The dom0_mem=min:X,max:Y tweaks options differently depending
++	 * on the version, but in general this is what we get:
++	 *                | XENMEM_maximum_reser  | nr_pages
++	 * --------------++-----------------------+-------------------
++	 *  no dom0_mem   | INT_MAX               | max_phys_pfn
++	 *  =3G           | INT_MAX               | 786432
++	 *  =max:3G       | 786432                | 786432
++	 *  =min:1G,max:3G| INT_MAX               | max_phys_fn
++	 *  =1G,max:3G    | INT_MAX               | 262144
++	 *  =min:1G,max:3G,2G | INT_MAX           | max_phys_fn
++	 *
++	 * The =3G is often used and it lead to us initially setting
++	 * 786432 and allowing dom0 to balloon up to the max_physical_pfn.
++	 * This is at odd with the classic XenOClassic so lets emulate
++	 * the classic behavior.
  	 */
- 	for (i = 0, entry = list; i < map_size; i++, entry++) {
- 		phys_addr_t end = entry->addr + entry->size;
--
- 		if (entry->type == E820_RAM || i == map_size - 1) {
- 			unsigned long start_pfn = PFN_DOWN(start);
- 			unsigned long end_pfn = PFN_UP(end);
-@@ -238,7 +334,9 @@ char * __init xen_memory_setup(void)
- 	int rc;
- 	struct xen_memory_map memmap;
- 	unsigned long max_pages;
-+	unsigned long last_pfn = 0;
- 	unsigned long extra_pages = 0;
-+	unsigned long populated;
- 	int i;
- 	int op;
+ 	if (xen_initial_domain()) {
+ 		ret = HYPERVISOR_memory_op(XENMEM_maximum_reservation, &domid);
+ 		if (ret > 0)
+ 			max_pages = ret;
++		if (ret == -1UL)
++			max_pages = xen_start_info->nr_pages;
+ 	}
  
-@@ -278,9 +376,20 @@ char * __init xen_memory_setup(void)
- 	 */
- 	xen_released_pages = xen_set_identity_and_release(
- 		map, memmap.nr_entries, max_pfn);
--	extra_pages += xen_released_pages;
- 
- 	/*
-+	 * Populate back the non-RAM pages and E820 gaps that had been
-+	 * released. */
-+	populated = xen_populate_chunk(map, memmap.nr_entries,
-+			max_pfn, &last_pfn, xen_released_pages);
-+
-+	extra_pages += (xen_released_pages - populated);
-+
-+	if (last_pfn > max_pfn) {
-+		max_pfn = min(MAX_DOMAIN_PAGES, last_pfn);
-+		mem_end = PFN_PHYS(max_pfn);
-+	}
-+	/*
- 	 * Clamp the amount of extra memory to a EXTRA_MEM_RATIO
- 	 * factor the base size.  On non-highmem systems, the base
- 	 * size is the full initial memory allocation; on highmem it
-@@ -293,7 +402,6 @@ char * __init xen_memory_setup(void)
- 	 */
- 	extra_pages = min(EXTRA_MEM_RATIO * min(max_pfn, PFN_DOWN(MAXMEM)),
- 			  extra_pages);
--
- 	i = 0;
- 	while (i < memmap.nr_entries) {
- 		u64 addr = map[i].addr;
+ 	return min(max_pages, MAX_DOMAIN_PAGES);
 -- 
 1.7.7.5
 
