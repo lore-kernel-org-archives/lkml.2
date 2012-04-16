@@ -1,63 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751035Ab2DPFPn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Apr 2012 01:15:43 -0400
-Received: from nm10.bullet.mail.bf1.yahoo.com ([98.139.212.169]:43583 "HELO
-	nm10.bullet.mail.bf1.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1750788Ab2DPFPm (ORCPT
+	id S1751116Ab2DPF3Z (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Apr 2012 01:29:25 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:48891 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750789Ab2DPF3X (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Apr 2012 01:15:42 -0400
-X-Yahoo-Newman-Property: ymail-3
-X-Yahoo-Newman-Id: 219258.98495.bm@omp1033.mail.bf1.yahoo.com
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
-  s=s1024; d=yahoo.com;
-  h=X-YMail-OSG:Received:X-Mailer:References:Message-ID:Date:From:Reply-To:Subject:To:Cc:In-Reply-To:MIME-Version:Content-Type;
-  b=fsDyq8JNdktcw3Ida5MFQjYrZiMODMpPK+WYFNDKMxFZ57a7mFYVJuWxPof4NrBbPJbYWhGeenD5siDzUEG8G3rt11zgt/iFyRIZ4x5nAnhkYd4CGTaoLapp66Znk74DKk+hr5NfbJKeMs8zzlULWRMgD1MN1YZNV8eZgkYaVro=;
-X-YMail-OSG: oyzSIvEVM1lM9sH8c8B4csZ1xW27vlpN5yHY4HH4LKDGLnF
- beE_mkWG9U6ahtMxGyrPDD.LSAl0zgkUjvUh7MLtrbSpaS8tUe0p14gW0p0b
- fGWjFfqN1ZIBEQyqehIxCcEz7EZ0Rei4BgvQJwglP.i8dNeAyYKlFtrqnXsR
- cjGguSQGpjXBMrh5.M2MSqusa9HHtJ3UAic9W89fCtSp2OK1mZ4R9MKDyCnR
- bmclZSqrrp_HfievevkCWenjciV_x9sfB5bYzGdwPkjNmUPNaM9nbbohwUmK
- q1PmaUWOEhC0LXUyvLf8whqiazn22mrGxSIbdqJ2hv35dRoSLwBisBWiqoUX
- B7SxtMfgvKbnjHLWKkaFDDYrHcOkjPlgE2JGqw5LN1rTSk92dnChyCTueC_n
- btBQf8WzczkFYzkhv.Vvh29B5J.EPoJszYWzxds6pelZdMBpfWJDqW0KGzvP
- o6KZbui4CDxfX33qQx8_9rsj_l_nzkiv28u4wzXsNFEZBgq.TdFX0Q2EFWNn
- Owy16u__HdVeDhCI6YE85YIReVncGDIhtzCgQ7IV8orOuS5XEwKD.4WsiOip
- L5f8wLtfuQzCu4ilPoIjaki8d
-X-Mailer: YahooMailWebService/0.8.117.340979
-References: <1334310754.17013.YahooMailNeo@web161804.mail.bf1.yahoo.com> <201204150011.53556.rjw@sisk.pl> <1334486385.82898.YahooMailNeo@web161803.mail.bf1.yahoo.com> <201204152030.23148.rjw@sisk.pl>
-Message-ID: <1334553341.70819.YahooMailNeo@web161806.mail.bf1.yahoo.com>
-Date: Sun, 15 Apr 2012 22:15:41 -0700 (PDT)
-From: Mikko Vinni <mmvinni@yahoo.com>
-Reply-To: Mikko Vinni <mmvinni@yahoo.com>
-Subject: Re: [linux-pm] "i8042: Can't reactivate AUX port" after s2ram on 3.4-rc2
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Bjorn Helgaas <bhelgaas@google.com>,
-        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Allen Kay <allen.m.kay@intel.com>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>
-In-Reply-To: <201204152030.23148.rjw@sisk.pl>
+	Mon, 16 Apr 2012 01:29:23 -0400
+Message-ID: <4F8BAE2F.5090200@lwfinger.net>
+Date: Mon, 16 Apr 2012 00:29:19 -0500
+From: Larry Finger <Larry.Finger@lwfinger.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120312 Thunderbird/11.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+To: LKML <linux-kernel@vger.kernel.org>,
+        Herbert Xu <herbert@gondor.hengli.com.au>
+CC: driverdevel <devel@driverdev.osuosl.org>,
+        wireless <linux-wireless@vger.kernel.org>,
+        Jan Simonson <jan@simonson.se>
+Subject: Problem with crypto when initializing TKIP
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Rafael J. Wysocki
+I am trying to fix the driver r8192e_pci from the staging tree. It works fine 
+with WEP and CCMP encryption, but it fails when trying to initialize TKIP. This 
+driver does not use mac80211, but incorporates its own softmac routines.
 
->
-> Do you still have the kernel where all PCI devices worked correctly after system
-> resume?
+This problem is a regression between 3.2.0 and 3.3.0, but I was unable to get a 
+reasonable result using bisection.
 
-If you are talking about https://bugzilla.kernel.org/show_bug.cgi?id=35452,
-I am not aware of such a kernel. That bug has existed for as long as I have
-cared to test.
+Routine rtllib_tkip_init() from drivers/staging/rtl8192e/rtllib_crypt_tkip.c 
+does the same set of steps as is done in mac80211. Everything works with mac80211.
 
-Testing the patch v4 soon.
+The block cipher allocation calls to crypto_alloc_blkcipher("ecb(arc4)",...) are 
+OK. The crypto_alloc_hash("michael_mic",...) call is the part that fails. The 
+problem shows up in the code fragment below from crypto/api.c:
 
+         ok = crypto_probing_notify(CRYPTO_MSG_ALG_REQUEST, larval);
 
-Mikko
+         if (ok == NOTIFY_STOP)
+                 alg = crypto_larval_wait(larval);
+         else {
+                 crypto_mod_put(larval);
+                 alg = ERR_PTR(-ENOENT);
+         }
 
+The value of ok is NOTIFY_OK, which leads to a return of -ENOENT and a failure 
+of the initialization.
+
+I know this code is pretty old, and perhaps nobody remembers it, but I would 
+appreciate some pointers on debugging this issue.
+
+Thanks,
+
+Larry
