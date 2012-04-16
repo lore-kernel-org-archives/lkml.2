@@ -1,58 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754088Ab2DPMxx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Apr 2012 08:53:53 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:62841 "EHLO mx1.redhat.com"
+	id S1754124Ab2DPMzM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Apr 2012 08:55:12 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:40960 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753717Ab2DPMxv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Apr 2012 08:53:51 -0400
-Message-ID: <4F8C1652.7000004@redhat.com>
-Date: Mon, 16 Apr 2012 15:53:38 +0300
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120329 Thunderbird/11.0.1
+	id S1753640Ab2DPMzK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Apr 2012 08:55:10 -0400
+Date: Mon, 16 Apr 2012 08:54:32 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Jan Kara <jack@suse.cz>, ctalbott@google.com, rni@google.com,
+        andrea@betterlinux.com, containers@lists.linux-foundation.org,
+        linux-kernel@vger.kernel.org, lsf@lists.linux-foundation.org,
+        linux-mm@kvack.org, jmoyer@redhat.com, lizefan@huawei.com,
+        cgroups@vger.kernel.org, linux-fsdevel@vger.kernel.org
+Subject: Re: [Lsf] [RFC] writeback and cgroup
+Message-ID: <20120416125432.GB12776@redhat.com>
+References: <20120403183655.GA23106@dhcp-172-17-108-109.mtv.corp.google.com>
+ <20120404145134.GC12676@redhat.com>
+ <20120407080027.GA2584@quack.suse.cz>
+ <20120410180653.GJ21801@redhat.com>
+ <20120410210505.GE4936@quack.suse.cz>
+ <20120410212041.GP21801@redhat.com>
+ <20120410222425.GF4936@quack.suse.cz>
+ <20120411154005.GD16692@redhat.com>
+ <1334406314.2528.90.camel@twins>
 MIME-Version: 1.0
-To: Alexander Graf <agraf@suse.de>
-CC: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        KVM list <kvm@vger.kernel.org>, Marcelo Tosatti <mtosatti@redhat.com>,
-        Paul Mackerras <paulus@au1.ibm.com>
-Subject: Re: [GIT PULL] KVM updates for the 3.4 merge window
-References: <4F688F48.6090303@redhat.com> <1332461414.2982.90.camel@pasglop> <CA+55aFxdf_K97KJ-phck-2YcTWAc6icc+Qhi6hOg0MA8FAjiyA@mail.gmail.com> <4F6EEEC1.4030608@redhat.com> <20120326213809.GA29788@bloggs.ozlabs.ibm.com> <4F7191E8.7020804@redhat.com> <20120330120107.GA28503@bloggs.ozlabs.ibm.com> <4F784C4D.3000409@redhat.com> <1333314138.30734.17.camel@pasglop> <4F796C18.2040209@redhat.com> <1333359979.30734.48.camel@pasglop> <3BB9812B-6FE2-4370-9D55-D273364BFFD1@suse.de>
-In-Reply-To: <3BB9812B-6FE2-4370-9D55-D273364BFFD1@suse.de>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1334406314.2528.90.camel@twins>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/16/2012 03:47 PM, Alexander Graf wrote:
-> On 02.04.2012, at 11:46, Benjamin Herrenschmidt wrote:
->
-> > On Mon, 2012-04-02 at 12:06 +0300, Avi Kivity wrote:
-> >>> The current process is such that it takes absolutely forever for our
-> >>> patches to get in, which is a major PITA for something in such state of
-> >>> active development.
-> >> 
-> >> If the patches were posted two weeks earlier, they would have gone in.
+On Sat, Apr 14, 2012 at 02:25:14PM +0200, Peter Zijlstra wrote:
+> On Wed, 2012-04-11 at 11:40 -0400, Vivek Goyal wrote:
 > > 
-> > I believe on our side they were, but Alex took a while to make up his
-> > tree ... oh well..
->
-> Yes, because to me the kvm-ppc-next tree basically is the same semantically as -next for Avi. It's where patches cook a while to make sure they actually work. Nobody tests KVM PPC patches against kvm's master tree. All testing (compile and execution) happens against kvm-ppc-next.
->
-> That's why I don't see the point in having it cook again in Avi's tree. At the end of the day the patches will surely become way too chewy ;).
+> > Ok, that's good to know. How would we configure this special bdi? I am
+> > assuming there is no backing device visible in /sys/block/<device>/queue/?
+> > Same is true for network file systems. 
+> 
+> root@twins:/usr/src/linux-2.6# awk '/nfs/ {print $3}' /proc/self/mountinfo | while read bdi ; do ls -la /sys/class/bdi/${bdi}/ ; done
+> ls: cannot access /sys/class/bdi/0:20/: No such file or directory
+> total 0
+> drwxr-xr-x  3 root root    0 2012-03-27 23:18 .
+> drwxr-xr-x 35 root root    0 2012-03-27 23:02 ..
+> -rw-r--r--  1 root root 4096 2012-04-14 14:22 max_ratio
+> -rw-r--r--  1 root root 4096 2012-04-14 14:22 min_ratio
+> drwxr-xr-x  2 root root    0 2012-04-14 14:22 power
+> -rw-r--r--  1 root root 4096 2012-04-14 14:22 read_ahead_kb
+> lrwxrwxrwx  1 root root    0 2012-03-27 23:18 subsystem -> ../../../../class/bdi
+> -rw-r--r--  1 root root 4096 2012-03-27 23:18 uevent
 
-kvm.git next is exposed to linux-next, where they get tested quite a
-lot.  Granted it's mostly build testing, and people are unlikely to test
-kvm there, but they will test the non-kvm bits that creep in there.
+Ok, got it. So /proc/self/mountinfo has the information about st_dev and
+one can use that to reach to associated bdi. Thanks Peter.
 
-> The alternative would be that I don't have a -next tree, just collect patches and immediately send them to Avi. That way the main kvm tree would be broken more often, but at least we don't get these horrible synchronization latencies.
-
-That works too.  Don't post immediately; 2-3 week batches would reduce
-noise.
-
--- 
-error compiling committee.c: too many arguments to function
-
+Vivek
