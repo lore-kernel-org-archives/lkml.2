@@ -1,86 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755598Ab2DPWnE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Apr 2012 18:43:04 -0400
-Received: from e7.ny.us.ibm.com ([32.97.182.137]:35296 "EHLO e7.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753314Ab2DPWnB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Apr 2012 18:43:01 -0400
-Date: Mon, 16 Apr 2012 15:41:32 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: Tejun Heo <tj@kernel.org>, axboe@kernel.dk, ctalbott@google.com,
-        rni@google.com, linux-kernel@vger.kernel.org, cgroups@vger.kernel.org,
-        containers@lists.linux-foundation.org
-Subject: Re: [PATCH 5/8] blkcg: make sure blkg_lookup() returns %NULL if @q
- is bypassing
-Message-ID: <20120416224131.GJ2448@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <1334273380-30233-1-git-send-email-tj@kernel.org>
- <1334273380-30233-6-git-send-email-tj@kernel.org>
- <20120413160053.GE26383@redhat.com>
- <20120413170334.GB12233@google.com>
- <20120413172336.GF26383@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120413172336.GF26383@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12041622-5806-0000-0000-0000145235BE
+	id S1754117Ab2DPWrV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Apr 2012 18:47:21 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:34481 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752101Ab2DPWrS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Apr 2012 18:47:18 -0400
+Date: Tue, 17 Apr 2012 08:47:07 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Will Drewry <wad@chromium.org>
+Cc: jmorris@namei.org, linux-kernel@vger.kernel.org,
+        linux-security-module@vger.kernel.org
+Subject: Re: [PATCH] seccomp: ignore secure_computing return values
+Message-Id: <20120417084707.318091fd28f6dd306e891195@canb.auug.org.au>
+In-Reply-To: <1334598461-3160-1-git-send-email-wad@chromium.org>
+References: <1334598461-3160-1-git-send-email-wad@chromium.org>
+X-Mailer: Sylpheed 3.2.0beta7 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Tue__17_Apr_2012_08_47_07_+1000_IG3Rt40nJez/TF5h"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 13, 2012 at 01:23:36PM -0400, Vivek Goyal wrote:
-> On Fri, Apr 13, 2012 at 10:03:34AM -0700, Tejun Heo wrote:
-> > Hey,
-> > 
-> > On Fri, Apr 13, 2012 at 12:00:53PM -0400, Vivek Goyal wrote:
-> > > On Thu, Apr 12, 2012 at 04:29:37PM -0700, Tejun Heo wrote:
-> > > 
-> > > [..]
-> > > >   * In bypass mode, only the dispatch FIFO queue of @q is used.  This
-> > > >   * function makes @q enter bypass mode and drains all requests which were
-> > > >   * throttled or issued before.  On return, it's guaranteed that no request
-> > > > - * is being throttled or has ELVPRIV set.
-> > > > + * is being throttled or has ELVPRIV set and blk_queue_bypass() is %true
-> > > > + * inside queue or RCU read lock.
-> > > >   */
-> > > >  void blk_queue_bypass_start(struct request_queue *q)
-> > > >  {
-> > > > @@ -426,6 +427,7 @@ void blk_queue_bypass_start(struct request_queue *q)
-> > > >  	spin_unlock_irq(q->queue_lock);
-> > > >  
-> > > >  	blk_drain_queue(q, false);
-> > > > +	synchronize_rcu();
-> > > 
-> > > I guess this synchronize_rcu() needs some comments here to make it clear
-> > > what it meant for. IIUC, you are protecting against policy data (stats
-> > > update) which happen under rcu in throttling code? You want to make sure
-> > > all these updaters are done before you go ahead with
-> > > activation/deactivation of a policy.
-> > > 
-> > > Well, I am wondering if CFQ is policy being activated/deactivated why
-> > > should we try to drain other policie's requests. Can't one continue
-> > > to work without draining all the throttled requests. We probably just
-> > > need to make sure new groups are not created.
-> > 
-> > So, I think synchronization rules like this are something which the
-> > core should define.  cfq may not use it but the sync rules should
-> > still be the same for all policies.  In this case, what the core
-> > provides is "blk_queue_bypass() is guaranteed to be seen as %true
-> > inside RCU read lock section once this function returns", which in
-> > turn will guarantee that RCU read-lock protected blkg_lookup() is
-> > guaranteed to fail once the function returns.  This property makes RCU
-> > protected blkg_lookup() safe against queue bypassing, which is what we
-> > want.
-> 
-> I think now synchronize_rcu() has become part of cfq_init_queue()
-> effectively and that will slow down boot. In the past I had to remove
-> it.
+--Signature=_Tue__17_Apr_2012_08_47_07_+1000_IG3Rt40nJez/TF5h
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-One alternative approach is to use synchronize_rcu_expedited().
+Hi Will,
 
-							Thanx, Paul
+On Mon, 16 Apr 2012 12:47:41 -0500 Will Drewry <wad@chromium.org> wrote:
+>
+> Unless an architecture selects CONFIG_HAVE_ARCH_SECCOMP_FILTER, it
+> is not required to respect the return value from secure_computing().
+>=20
+> This change matches https://lkml.org/lkml/2012/4/16/14 exactly except
+> that it applies cleanly to security-next.  Because there is no
+> other difference than the alignment, I've kept Signed-off-by intact.
 
+Given that, I think you should have kept the authorship (i.e. put
+
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+
+at the top of the patch).  Also, you should probably mention the compile
+error that this fixes in the commit message as well.
+
+But otherwise, thanks for submitting this.
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Signature=_Tue__17_Apr_2012_08_47_07_+1000_IG3Rt40nJez/TF5h
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCAAGBQJPjKFrAAoJEECxmPOUX5FE6jIQAIs7HRmqVsLELtfDaUV1M3MQ
+I0Ll3WnEO2ZaIyF8m1rU64VPF7POP/LLcLu1vBXl2JW7Xl/3eqv5xpuWYElcW8FM
+Ye3qv5AbLvkPSDtQQrXR8t3p0hMIeL2Eq+Xrf+2KKExnRJYvAMIJfXgkHFN2tROG
+kVOz8urSDF5ahgfIRQMu7MS1eTGCGPP8Pk7GJ0LWKWCXDu9D95swxgVZsyfie8ul
+T+LKrIYIWie6/9DWGEjM+tWSEd4C0b6dELbX8o9tavee/NaB3IP52vr3Tdb91OCJ
+mZe+tk0olh3Dsr/IGJh3wXtjHr+5kiJ0g+B+IMJr9Jr3PO0xY9LINaAPsseFeEps
+kitZeEv7J+7tkp/qUcXoK3h5HPOoi3aJhPbjT3QxjM/Lvd/hcObaAXFkXUu3Ca4+
+IS8Ep8PKFsKtR2Q9Ws3WIIZwAiMc3TIevM3g0XHwc2O6FNYM3W2j3IiI6AR8KhW7
+qNhQ4qNlyJybyPHdggcNMW5uqHvH3JJdrjyX0GCPqQdifPhD59+t9DW7CzGiINO4
+zbuR4MofvrsXODlGa2mmA12bKNkAOOmhf1xfG/T5o9yPyESt+FT3EF5vpLTuue04
+tnxID805tpHi0GXzDLjWzuASLJ5E3HGcK4TGK6szlzi2wqtxImGweqeN2GulQjoq
+bRDVbhw/WT23beGBOLEe
+=eC0s
+-----END PGP SIGNATURE-----
+
+--Signature=_Tue__17_Apr_2012_08_47_07_+1000_IG3Rt40nJez/TF5h--
