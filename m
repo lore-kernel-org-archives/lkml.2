@@ -1,56 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751734Ab2DPHQn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Apr 2012 03:16:43 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:9198 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751163Ab2DPHQl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Apr 2012 03:16:41 -0400
-Date: Mon, 16 Apr 2012 10:16:47 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Jason Wang <jasowang@redhat.com>
-Cc: netdev@vger.kernel.org, xma@us.ibm.com, davem@davemloft.net,
-        linux-kernel@vger.kernel.org, ebiederm@xmission.com
-Subject: Re: [PATCH 6/6] vhost_net: don't poll on -EFAULT
-Message-ID: <20120416071646.GB25396@redhat.com>
-References: <20120416060749.14140.19433.stgit@intel-e5620-16-2.englab.nay.redhat.com>
- <20120416060833.14140.28139.stgit@intel-e5620-16-2.englab.nay.redhat.com>
+	id S1751790Ab2DPHWF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Apr 2012 03:22:05 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:47920 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751523Ab2DPHV7 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Apr 2012 03:21:59 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120416060833.14140.28139.stgit@intel-e5620-16-2.englab.nay.redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1334483574-3997-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+References: <1334483574-3997-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+Date: Mon, 16 Apr 2012 09:21:58 +0200
+Message-ID: <CACRpkdZ8yH1ZSG-nQ9dLm0TipHS-jZDuxwqohUC=LGH9V-5q4w@mail.gmail.com>
+Subject: Re: [PATCH] gpiolib/arches: Centralise bolierplate asm/gpio.h
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: Grant Likely <grant@secretlab.ca>,
+        Linus Walleij <linus.walleij@stericsson.com>,
+        linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
+        linux-alpha@vger.kernel.org, linux-ia64@vger.kernel.org,
+        microblaze-uclinux@itee.uq.edu.au, linux@openrisc.net,
+        "linuxppc-dev@lists.ozlabs.org list" <linuxppc-dev@lists.ozlabs.org>,
+        sparclinux@vger.kernel.org, Chris Zankel <chris@zankel.net>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 16, 2012 at 02:08:33PM +0800, Jason Wang wrote:
-> Currently, we restart tx polling unconditionally when sendmsg()
-> fails. This would cause unnecessary wakeups of vhost wokers as it's
-> only needed when the socket send buffer were exceeded.
+On Sun, Apr 15, 2012 at 11:52 AM, Mark Brown
+<broonie@opensource.wolfsonmicro.com> wrote:
 
-Why is this a problem?
-
-> Fix this by
-> restart the tx polling only when sendmsg() returns value other than
-> -EFAULT.
-> 
-> Signed-off-by: Jason Wang <jasowang@redhat.com>
+> Rather than requiring architectures that use gpiolib but don't have any
+> need to define anything custom to copy an asm/gpio.h provide a Kconfig
+> symbol which architectures must select in order to include gpio.h and
+> for other architectures just provide the trivial implementation directly.
+>
+> This makes it much easier to do gpiolib updates and is also a step towards
+> making gpiolib APIs available on every architecture.
+>
+> For architectures with existing boilerplate code leave a stub header in
+> place which warns on direct inclusion of asm/gpio.h and includes
+> linux/gpio.h to catch code that's doing this.  Direct inclusion of
+> asm/gpio.h has long been deprecated.
+>
+> Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
 > ---
->  drivers/vhost/net.c |    3 ++-
->  1 files changed, 2 insertions(+), 1 deletions(-)
-> 
-> diff --git a/drivers/vhost/net.c b/drivers/vhost/net.c
-> index 29abd65..035fa95 100644
-> --- a/drivers/vhost/net.c
-> +++ b/drivers/vhost/net.c
-> @@ -262,7 +262,8 @@ static void handle_tx(struct vhost_net *net)
->  					UIO_MAXIOV;
->  			}
->  			vhost_discard_vq_desc(vq, 1);
-> -			tx_poll_start(net, sock);
-> +			if (err != -EFAULT)
-> +				tx_poll_start(net, sock);
->  			break;
->  		}
->  		if (err != len)
+>  arch/alpha/include/asm/gpio.h      |   59 ++----------------------------
+>  arch/arm/Kconfig                   |    1 +
+>  arch/avr32/Kconfig                 |    1 +
+>  arch/blackfin/Kconfig              |    1 +
+>  arch/ia64/include/asm/gpio.h       |   59 ++----------------------------
+>  arch/m68k/Kconfig.cpu              |    1 +
+>  arch/microblaze/include/asm/gpio.h |   57 ++---------------------------
+>  arch/mips/Kconfig                  |    1 +
+>  arch/openrisc/include/asm/gpio.h   |   69 ++---------------------------------
+>  arch/powerpc/include/asm/gpio.h    |   57 ++---------------------------
+>  arch/sh/Kconfig                    |    1 +
+>  arch/sparc/include/asm/gpio.h      |   40 ++-------------------
+>  arch/unicore32/Kconfig             |    1 +
+>  arch/x86/include/asm/gpio.h        |   57 ++---------------------------
+>  arch/xtensa/include/asm/gpio.h     |   60 ++-----------------------------
+>  drivers/gpio/Kconfig               |    8 ++++
+>  include/linux/gpio.h               |   34 +++++++++++++++++
+>  17 files changed, 81 insertions(+), 426 deletions(-)
+
+This looks good but I think we need to page the alpha, ia64, m68k, microblaze,
+openrisc etc subarch maintainers on this patch so they have their say.
+
+Yours,
+Linus Walleij
