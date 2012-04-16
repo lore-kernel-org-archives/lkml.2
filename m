@@ -1,20 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753769Ab2DPQSv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Apr 2012 12:18:51 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:40971 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752478Ab2DPQOY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1752521Ab2DPQOY (ORCPT <rfc822;w@1wt.eu>);
 	Mon, 16 Apr 2012 12:14:24 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:40899 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751052Ab2DPQOV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Apr 2012 12:14:21 -0400
 From: Jan Kara <jack@suse.cz>
 To: Al Viro <viro@ZenIV.linux.org.uk>
 Cc: dchinner@redhat.com, LKML <linux-kernel@vger.kernel.org>,
-        linux-fsdevel@vger.kernel.org, Jan Kara <jack@suse.cz>,
-        Mark Fasheh <mfasheh@suse.com>, Joel Becker <jlbec@evilplan.org>,
-        ocfs2-devel@oss.oracle.com
-Subject: [PATCH 19/27] ocfs2: Convert to new freezing mechanism
-Date: Mon, 16 Apr 2012 18:13:57 +0200
-Message-Id: <1334592845-22862-20-git-send-email-jack@suse.cz>
+        linux-fsdevel@vger.kernel.org, Jan Kara <jack@suse.cz>
+Subject: [PATCH 02/27] fs: Push file_update_time() into __block_page_mkwrite()
+Date: Mon, 16 Apr 2012 18:13:40 +0200
+Message-Id: <1334592845-22862-3-git-send-email-jack@suse.cz>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1334592845-22862-1-git-send-email-jack@suse.cz>
 References: <1334592845-22862-1-git-send-email-jack@suse.cz>
@@ -22,115 +20,32 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Protect ocfs2_page_mkwrite() and ocfs2_file_aio_write() using the new
-freeze protection. We also protect several ioctl entry points which
-were missing the protection.
-
-CC: Mark Fasheh <mfasheh@suse.com>
-CC: Joel Becker <jlbec@evilplan.org>
-CC: ocfs2-devel@oss.oracle.com
+Tested-by: Kamal Mostafa <kamal@canonical.com>
+Tested-by: Peter M. Petrakis <peter.petrakis@canonical.com>
+Tested-by: Dann Frazier <dann.frazier@canonical.com>
+Tested-by: Massimo Morana <massimo.morana@canonical.com>
 Signed-off-by: Jan Kara <jack@suse.cz>
 ---
- fs/ocfs2/file.c  |   11 +++++++++--
- fs/ocfs2/ioctl.c |   14 ++++++++++++--
- fs/ocfs2/mmap.c  |    2 ++
- 3 files changed, 23 insertions(+), 4 deletions(-)
+ fs/buffer.c |    6 ++++++
+ 1 files changed, 6 insertions(+), 0 deletions(-)
 
-diff --git a/fs/ocfs2/file.c b/fs/ocfs2/file.c
-index 061591a..9b1e3d4 100644
---- a/fs/ocfs2/file.c
-+++ b/fs/ocfs2/file.c
-@@ -1971,6 +1971,7 @@ int ocfs2_change_file_space(struct file *file, unsigned int cmd,
- {
- 	struct inode *inode = file->f_path.dentry->d_inode;
- 	struct ocfs2_super *osb = OCFS2_SB(inode->i_sb);
-+	int ret;
- 
- 	if ((cmd == OCFS2_IOC_RESVSP || cmd == OCFS2_IOC_RESVSP64) &&
- 	    !ocfs2_writes_unwritten_extents(osb))
-@@ -1985,7 +1986,12 @@ int ocfs2_change_file_space(struct file *file, unsigned int cmd,
- 	if (!(file->f_mode & FMODE_WRITE))
- 		return -EBADF;
- 
--	return __ocfs2_change_file_space(file, inode, file->f_pos, cmd, sr, 0);
-+	ret = mnt_want_write_file(file);
-+	if (ret)
-+		return ret;
-+	ret = __ocfs2_change_file_space(file, inode, file->f_pos, cmd, sr, 0);
-+	mnt_drop_write_file(file);
-+	return ret;
- }
- 
- static long ocfs2_fallocate(struct file *file, int mode, loff_t offset,
-@@ -2261,7 +2267,7 @@ static ssize_t ocfs2_file_aio_write(struct kiocb *iocb,
- 	if (iocb->ki_left == 0)
- 		return 0;
- 
--	vfs_check_frozen(inode->i_sb, SB_FREEZE_WRITE);
-+	sb_start_write(inode->i_sb);
- 
- 	appending = file->f_flags & O_APPEND ? 1 : 0;
- 	direct_io = file->f_flags & O_DIRECT ? 1 : 0;
-@@ -2434,6 +2440,7 @@ out_sems:
- 		ocfs2_iocb_clear_sem_locked(iocb);
- 
- 	mutex_unlock(&inode->i_mutex);
-+	sb_end_write(inode->i_sb);
- 
- 	if (written)
- 		ret = written;
-diff --git a/fs/ocfs2/ioctl.c b/fs/ocfs2/ioctl.c
-index a1a1bfd..d9c352b 100644
---- a/fs/ocfs2/ioctl.c
-+++ b/fs/ocfs2/ioctl.c
-@@ -926,7 +926,12 @@ long ocfs2_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
- 		if (get_user(new_clusters, (int __user *)arg))
- 			return -EFAULT;
- 
--		return ocfs2_group_extend(inode, new_clusters);
-+		status = mnt_want_write_file(filp);
-+		if (status)
-+			return status;
-+		status = ocfs2_group_extend(inode, new_clusters);
-+		mnt_drop_write_file(filp);
-+		return status;
- 	case OCFS2_IOC_GROUP_ADD:
- 	case OCFS2_IOC_GROUP_ADD64:
- 		if (!capable(CAP_SYS_RESOURCE))
-@@ -935,7 +940,12 @@ long ocfs2_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
- 		if (copy_from_user(&input, (int __user *) arg, sizeof(input)))
- 			return -EFAULT;
- 
--		return ocfs2_group_add(inode, &input);
-+		status = mnt_want_write_file(filp);
-+		if (status)
-+			return status;
-+		status = ocfs2_group_add(inode, &input);
-+		mnt_drop_write_file(filp);
-+		return status;
- 	case OCFS2_IOC_REFLINK:
- 		if (copy_from_user(&args, (struct reflink_arguments *)arg,
- 				   sizeof(args)))
-diff --git a/fs/ocfs2/mmap.c b/fs/ocfs2/mmap.c
-index 9cd4108..d150372 100644
---- a/fs/ocfs2/mmap.c
-+++ b/fs/ocfs2/mmap.c
-@@ -136,6 +136,7 @@ static int ocfs2_page_mkwrite(struct vm_area_struct *vma, struct vm_fault *vmf)
- 	sigset_t oldset;
+diff --git a/fs/buffer.c b/fs/buffer.c
+index 36d6665..b8a2386 100644
+--- a/fs/buffer.c
++++ b/fs/buffer.c
+@@ -2313,6 +2313,12 @@ int __block_page_mkwrite(struct vm_area_struct *vma, struct vm_fault *vmf,
+ 	loff_t size;
  	int ret;
  
-+	sb_start_pagefault(inode->i_sb);
- 	ocfs2_block_signals(&oldset);
- 
- 	/*
-@@ -165,6 +166,7 @@ static int ocfs2_page_mkwrite(struct vm_area_struct *vma, struct vm_fault *vmf)
- 
- out:
- 	ocfs2_unblock_signals(&oldset);
-+	sb_end_pagefault(inode->i_sb);
- 	return ret;
- }
- 
++	/*
++	 * Update file times before taking page lock. We may end up failing the
++	 * fault so this update may be superfluous but who really cares...
++	 */
++	file_update_time(vma->vm_file);
++
+ 	lock_page(page);
+ 	size = i_size_read(inode);
+ 	if ((page->mapping != inode->i_mapping) ||
 -- 
 1.7.1
 
