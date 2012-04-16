@@ -1,107 +1,149 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755467Ab2DPUZ2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Apr 2012 16:25:28 -0400
-Received: from mx2.netapp.com ([216.240.18.37]:51831 "EHLO mx2.netapp.com"
+	id S1755633Ab2DPU2R (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Apr 2012 16:28:17 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:55779 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755071Ab2DPUZX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Apr 2012 16:25:23 -0400
-X-IronPort-AV: E=Sophos;i="4.75,430,1330934400"; 
-   d="scan'208";a="641374964"
-From: "Myklebust, Trond" <Trond.Myklebust@netapp.com>
-To: Jeff Layton <jlayton@redhat.com>
-CC: Bernd Schubert <bernd.schubert@itwm.fraunhofer.de>,
-        Malahal Naineni <malahal@us.ibm.com>,
-        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "pstaubach@exagrid.com" <pstaubach@exagrid.com>,
-        "miklos@szeredi.hu" <miklos@szeredi.hu>,
-        "viro@ZenIV.linux.org.uk" <viro@ZenIV.linux.org.uk>,
-        "hch@infradead.org" <hch@infradead.org>,
-        "michael.brantley@deshaw.com" <michael.brantley@deshaw.com>,
-        "sven.breuner@itwm.fraunhofer.de" <sven.breuner@itwm.fraunhofer.de>
-Subject: Re: [PATCH RFC] vfs: make fstatat retry on ESTALE errors from
- getattr call
-Thread-Topic: [PATCH RFC] vfs: make fstatat retry on ESTALE errors from
- getattr call
-Thread-Index: AQHNHAe/WFyXQNvYykq9RVAgdBQu35aeT6UAgAALqQA=
-Date: Mon, 16 Apr 2012 20:25:06 +0000
-Message-ID: <1334607906.2879.36.camel@lade.trondhjem.org>
-References: <1334316311-22331-1-git-send-email-jlayton@redhat.com>
-	 <20120413150518.GA1987@us.ibm.com>
-	 <20120413114236.0e557e01@tlielax.poochiereds.net>
-	 <4F8B1B7B.3040304@itwm.fraunhofer.de>
-	 <20120416073655.7cdb90cf@corrin.poochiereds.net>
-	 <4F8C3036.2030702@itwm.fraunhofer.de>
-	 <20120416134642.1754cd3e@corrin.poochiereds.net>
-	 <1334604785.2879.23.camel@lade.trondhjem.org>
-	 <20120416154322.0d95e435@corrin.poochiereds.net>
-In-Reply-To: <20120416154322.0d95e435@corrin.poochiereds.net>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.104.60.115]
-Content-Type: text/plain; charset="utf-8"
-Content-ID: <A89C04956FD83A40B880EB2F49D48EAD@tahoe.netapp.com>
-MIME-Version: 1.0
+	id S1754515Ab2DPUVx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Apr 2012 16:21:53 -0400
+From: Mauro Carvalho Chehab <mchehab@redhat.com>
+Cc: Mauro Carvalho Chehab <mchehab@redhat.com>,
+        Linux Edac Mailing List <linux-edac@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Mark Gross <mark.gross@intel.com>, Doug Thompson <norsk5@yahoo.com>
+Subject: [EDAC_ABI PATCH v13 05/26] e752x_edac: convert driver to use the new edac ABI
+Date: Mon, 16 Apr 2012 17:21:24 -0300
+Message-Id: <1334607705-30320-6-git-send-email-mchehab@redhat.com>
+In-Reply-To: <1334607705-30320-1-git-send-email-mchehab@redhat.com>
+References: <1334607133-30039-1-git-send-email-mchehab@redhat.com>
+ <1334607705-30320-1-git-send-email-mchehab@redhat.com>
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id q3GKRurX005412
 
-On Mon, 2012-04-16 at 15:43 -0400, Jeff Layton wrote:
-> On Mon, 16 Apr 2012 19:33:05 +0000
-> "Myklebust, Trond" <Trond.Myklebust@netapp.com> wrote:
-> 
-> > On Mon, 2012-04-16 at 13:46 -0400, Jeff Layton wrote:
-> > > The question about looping indefinitely really comes down to:
-> > > 
-> > > 1) is a persistent ESTALE in conjunction with a successful lookup a
-> > > situation that we expect to be temporary. i.e. will the admin at some
-> > > point be able to do something about it? If not, then there's no point
-> > > in continuing to retry. Again, this is a situation that *really* should
-> > > not happen if the filesystem is doing the right thing.
-> > > 
-> > > 2) If the admin can't do anything about it, is it reasonable to expect
-> > > that users can send a fatal signal to hung applications if this
-> > > situation occurs.
-> > > 
-> > > We expect that that's ok in other situations to resolve hung
-> > > applications, so I'm not sure I understand why it wouldn't be
-> > > acceptable here...
-> > 
-> > There are definitely potentially persistent pathological situations that
-> > the filesystem can't do anything about. If the point of origin for your
-> > pathname (for instance your current directory in the case of a relative
-> > pathname) is stale, then no amount of looping is going to help you to
-> > recover.
-> > 
-> 
-> Ok -- Peter pretty much said something similar. Retrying indefnitely
-> when the lookup returns ESTALE probably won't help. I'm ok with
-> basically letting the VFS continue to do what it does there already. If
-> it gets an ESTALE, it tries again with LOOKUP_REVAL set and then gives
-> up if that doesn't work.
-> 
-> If however, the operation itself keeps returning ESTALE, are we OK to
-> retry indefinitely assuming that we'll break out of the loop on fatal
-> signals?
->
-> For example, something like the v2 patch I sent a little while ago?
+The legacy edac ABI is going to be removed. Port the driver to use
+and benefit from the new API functionality.
 
+Cc: Mark Gross <mark.gross@intel.com>
+Cc: Doug Thompson <norsk5@yahoo.com>
+Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
+---
+ drivers/edac/e752x_edac.c |   49 +++++++++++++++++++++++++++++++-------------
+ 1 files changed, 34 insertions(+), 15 deletions(-)
 
-Won't something like fstatat(AT_FDCWD, "", &stat, AT_EMPTY_PATH) risk
-looping forever there, or am I missing something?
-
+diff --git a/drivers/edac/e752x_edac.c b/drivers/edac/e752x_edac.c
+index 6d81d3c..7b6ce11 100644
+--- a/drivers/edac/e752x_edac.c
++++ b/drivers/edac/e752x_edac.c
+@@ -6,6 +6,9 @@
+  *
+  * See "enum e752x_chips" below for supported chipsets
+  *
++ * Datasheet:
++ *	http://www.intel.in/content/www/in/en/chipsets/e7525-memory-controller-hub-datasheet.html
++ *
+  * Written by Tom Zimmerman
+  *
+  * Contributors:
+@@ -350,8 +353,10 @@ static void do_process_ce(struct mem_ctl_info *mci, u16 error_one,
+ 	channel = !(error_one & 1);
+ 
+ 	/* e752x mc reads 34:6 of the DRAM linear address */
+-	edac_mc_handle_ce(mci, page, offset_in_page(sec1_add << 4),
+-			sec1_syndrome, row, channel, "e752x CE");
++	edac_mc_handle_error(HW_EVENT_ERR_CORRECTED, mci,
++			     page, offset_in_page(sec1_add << 4), sec1_syndrome,
++			     row, channel, -1,
++			     "e752x CE", "", NULL);
+ }
+ 
+ static inline void process_ce(struct mem_ctl_info *mci, u16 error_one,
+@@ -385,9 +390,12 @@ static void do_process_ue(struct mem_ctl_info *mci, u16 error_one,
+ 			edac_mc_find_csrow_by_page(mci, block_page);
+ 
+ 		/* e752x mc reads 34:6 of the DRAM linear address */
+-		edac_mc_handle_ue(mci, block_page,
+-				offset_in_page(error_2b << 4),
+-				row, "e752x UE from Read");
++		edac_mc_handle_error(HW_EVENT_ERR_UNCORRECTED, mci,
++					block_page,
++					offset_in_page(error_2b << 4), 0,
++					 row, -1, -1,
++					"e752x UE from Read", "", NULL);
++
+ 	}
+ 	if (error_one & 0x0404) {
+ 		error_2b = scrb_add;
+@@ -401,9 +409,11 @@ static void do_process_ue(struct mem_ctl_info *mci, u16 error_one,
+ 			edac_mc_find_csrow_by_page(mci, block_page);
+ 
+ 		/* e752x mc reads 34:6 of the DRAM linear address */
+-		edac_mc_handle_ue(mci, block_page,
+-				offset_in_page(error_2b << 4),
+-				row, "e752x UE from Scruber");
++		edac_mc_handle_error(HW_EVENT_ERR_UNCORRECTED, mci,
++					block_page,
++					offset_in_page(error_2b << 4), 0,
++					row, -1, -1,
++					"e752x UE from Scruber", "", NULL);
+ 	}
+ }
+ 
+@@ -426,7 +436,9 @@ static inline void process_ue_no_info_wr(struct mem_ctl_info *mci,
+ 		return;
+ 
+ 	debugf3("%s()\n", __func__);
+-	edac_mc_handle_ue_no_info(mci, "e752x UE log memory write");
++	edac_mc_handle_error(HW_EVENT_ERR_UNCORRECTED, mci, 0, 0, 0,
++			     -1, -1, -1,
++			     "e752x UE log memory write", "", NULL);
+ }
+ 
+ static void do_process_ded_retry(struct mem_ctl_info *mci, u16 error,
+@@ -1081,10 +1093,11 @@ static void e752x_init_csrows(struct mem_ctl_info *mci, struct pci_dev *pdev,
+ 		nr_pages = cumul_size - last_cumul_size;
+ 		last_cumul_size = cumul_size;
+ 
+-		for (i = 0; i < drc_chan + 1; i++) {
++		for (i = 0; i < csrow->nr_channels; i++) {
+ 			struct dimm_info *dimm = csrow->channels[i].dimm;
+ 
+-			dimm->nr_pages = nr_pages / (drc_chan + 1);
++			debugf3("Initializing rank at (%i,%i)\n", index, i);
++			dimm->nr_pages = nr_pages / csrow->nr_channels;
+ 			dimm->grain = 1 << 12;	/* 4KiB - resolution of CELOG */
+ 			dimm->mtype = MEM_RDDR;	/* only one type supported */
+ 			dimm->dtype = mem_dev ? DEV_X4 : DEV_X8;
+@@ -1232,6 +1245,7 @@ static int e752x_probe1(struct pci_dev *pdev, int dev_idx)
+ 	u16 pci_data;
+ 	u8 stat8;
+ 	struct mem_ctl_info *mci;
++	struct edac_mc_layer layers[2];
+ 	struct e752x_pvt *pvt;
+ 	u16 ddrcsr;
+ 	int drc_chan;		/* Number of channels 0=1chan,1=2chan */
+@@ -1258,11 +1272,16 @@ static int e752x_probe1(struct pci_dev *pdev, int dev_idx)
+ 	/* Dual channel = 1, Single channel = 0 */
+ 	drc_chan = dual_channel_active(ddrcsr);
+ 
+-	mci = edac_mc_alloc(sizeof(*pvt), E752X_NR_CSROWS, drc_chan + 1, 0);
+-
+-	if (mci == NULL) {
++	layers[0].type = EDAC_MC_LAYER_CHIP_SELECT;
++	layers[0].size = E752X_NR_CSROWS;
++	layers[0].is_csrow = true;
++	layers[1].type = EDAC_MC_LAYER_CHANNEL;
++	layers[1].size = drc_chan + 1;
++	layers[1].is_csrow = false;
++	mci = new_edac_mc_alloc(0, ARRAY_SIZE(layers), layers,
++			    false, sizeof(*pvt));
++	if (mci == NULL)
+ 		return -ENOMEM;
+-	}
+ 
+ 	debugf3("%s(): init mci\n", __func__);
+ 	mci->mtype_cap = MEM_FLAG_RDDR;
 -- 
-Trond Myklebust
-Linux NFS client maintainer
+1.7.8
 
-NetApp
-Trond.Myklebust@netapp.com
-www.netapp.com
-
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
