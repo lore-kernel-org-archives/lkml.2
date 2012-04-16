@@ -1,45 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751398Ab2DPGjt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Apr 2012 02:39:49 -0400
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:6236 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750923Ab2DPGjr (ORCPT
+	id S1751442Ab2DPGkz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Apr 2012 02:40:55 -0400
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:47298 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750937Ab2DPGky (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Apr 2012 02:39:47 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6681"; a="181947782"
-X-IronPort-AV: E=Sophos;i="4.75,426,1330934400"; 
-   d="scan'208";a="120384998"
-Message-ID: <4F8BBEAD.40305@qca.qualcomm.com>
-Date: Mon, 16 Apr 2012 09:39:41 +0300
-From: Kalle Valo <kvalo@qca.qualcomm.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.28) Gecko/20120313 Thunderbird/3.1.20
-MIME-Version: 1.0
-To: Tim Gardner <tim.gardner@canonical.com>
-CC: <linux-kernel@vger.kernel.org>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        <linux-wireless@vger.kernel.org>, <netdev@vger.kernel.org>,
-        ath6kl-devel <ath6kl-devel@qualcomm.com>
-Subject: Re: [PATCH linux-next 1/1] ath6k: Normalize use of FW_DIR
-References: <1334337448-26270-1-git-send-email-tim.gardner@canonical.com> <1334337448-26270-2-git-send-email-tim.gardner@canonical.com>
-In-Reply-To: <1334337448-26270-2-git-send-email-tim.gardner@canonical.com>
-Content-Type: text/plain; charset="ISO-8859-1"
+	Mon, 16 Apr 2012 02:40:54 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Mon, 16 Apr 2012 15:40:30 +0900 (JST)
+Message-Id: <20120416.154030.310066043.d.hatayama@jp.fujitsu.com>
+To: ebiederm@xmission.com
+Cc: kexec@lists.infradead.org, linux-kernel@vger.kernel.org, vgoyal@redhat.com,
+        kumagai-atsushi@mxc.nes.nec.co.jp
+Subject: Re: [PATCH 0/2] kdump: Enter 2nd kernel with BSP for enabling
+ multiple CPUs
+From: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>
+In-Reply-To: <beaa8ade-b7af-4e71-b4e0-a418ceb83f1e@email.android.com>
+References: <20120416021951.9303.58568.stgit@localhost6.localdomain6>
+	<beaa8ade-b7af-4e71-b4e0-a418ceb83f1e@email.android.com>
+X-Mailer: Mew version 6.3 on Emacs 23.4 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [172.30.39.5]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/13/2012 08:17 PM, Tim Gardner wrote:
-> Cc: Kalle Valo <kvalo@qca.qualcomm.com>
-> Cc: "John W. Linville" <linville@tuxdriver.com>
-> Cc: linux-wireless@vger.kernel.org
-> Cc: netdev@vger.kernel.org
-> Signed-off-by: Tim Gardner <tim.gardner@canonical.com>
+From: "Eric W. Biederman" <ebiederm@xmission.com>
+Subject: Re: [PATCH 0/2] kdump: Enter 2nd kernel with BSP for enabling multiple CPUs
+Date: Sun, 15 Apr 2012 19:59:52 -0700
 
-Thanks, applied to ath6kl.git. But ar6004 hw1.2 supports wasn't in
-linux-next yet so I changed it as well. If you can, please check my changes:
+> HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com> wrote:
+> 
+>>Currently, booting up 2nd kernel with multiple CPUs fails in most
+>>cases since it enters 2nd kernel with AP if the crash happens on the
+>>AP. The problem is to signal startup IPI from AP to BSP.
+> 
+> If so, then we need to fix our code that sends startupIPIs.
+> And perhaps the code that attempts to shutdown the other cpus.
+> 
 
-https://github.com/kvalo/ath6kl/commit/2023dbb8310ab39ac1119a32ef52405f7a73f51f
+Now maxcpus=1 is set at default, in which configuration, 2nd kernel
+doesn't try to wake up secondary and later CPUs. So there's no startup
+IPI on the 2nd kernel now.
 
-Kalle
+> It is not ok to switch cpus during kdump (reducing the reliability) just so you can write crash dumps faster.  Better would be to cope with secondary cpus not booting.
+
+Even the current implememntation uses NMI to stop other CPUs. The
+reliability you are concerned about here is the possibility where the
+non-crashing BSP doesn't go into machine_kexec() due to some failures
+of interrupt processing, right?
+
+Alternative idea is:
+  1) try to go into 2nd kernel with BSP,
+  2) after some seconds, then try to go into 2nd kernel with crashing
+  CPU. Then, think of CPUs except for the crashing cpu as abnormal,
+  and use crashing cpu only on the 2nd kernel.
+
+This seems as reliable as the current one.
+
+> 
+> I do like the direction of pounding on things so we can get multiple cpus going in large configurations.  Although I am surprised you are cpu bound and not disk bound in the time to write your crash dumps.
+> 
+
+What do you indicate in the 1st sentence? I don't understand around
+``pounding on thing'', sorry.
+
+For the 2nd, it depends on data. If data is sparse enough, the data
+size is significantly reduced, and so IO size is also reduced. If data
+is randomized enough, compression takes much time and the data remains
+the same size, resulting in cpu bound processing.
+
+Thanks.
+HATAYAMA, Daisuke
+
