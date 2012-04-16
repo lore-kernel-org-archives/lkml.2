@@ -1,84 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755728Ab2DPUd3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Apr 2012 16:33:29 -0400
-Received: from rcsinet15.oracle.com ([148.87.113.117]:36548 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754307Ab2DPUd2 (ORCPT
+	id S1755823Ab2DPUeU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Apr 2012 16:34:20 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:37251 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755797Ab2DPUeT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Apr 2012 16:33:28 -0400
-Date: Mon, 16 Apr 2012 16:28:21 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: "Liu, Jinsong" <jinsong.liu@intel.com>
-Cc: "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 2/2] Register native mce handler as vMCE bounce back point
-Message-ID: <20120416202821.GC14982@phenom.dumpdata.com>
-References: <DE8DF0795D48FD4CA783C40EC8292335146A7A@SHSMSX101.ccr.corp.intel.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <DE8DF0795D48FD4CA783C40EC8292335146A7A@SHSMSX101.ccr.corp.intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
-X-CT-RefId: str=0001.0A090203.4F8C8211.001D,ss=1,re=0.000,fgs=0
+	Mon, 16 Apr 2012 16:34:19 -0400
+From: Arnaldo Carvalho de Melo <acme@infradead.org>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: linux-kernel@vger.kernel.org, David Ahern <dsahern@gmail.com>,
+        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
+        Stephane Eranian <eranian@google.com>,
+        Namhyung Kim <namhyung.kim@lge.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: [PATCH 1/2] perf report: Fix crash showing warning related to kernel maps
+Date: Mon, 16 Apr 2012 17:29:06 -0300
+Message-Id: <1334608147-30588-2-git-send-email-acme@infradead.org>
+X-Mailer: git-send-email 1.7.9.2.358.g22243
+In-Reply-To: <1334608147-30588-1-git-send-email-acme@infradead.org>
+References: <1334608147-30588-1-git-send-email-acme@infradead.org>
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by canuck.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 16, 2012 at 01:07:35AM +0000, Liu, Jinsong wrote:
-> >From 76e40a60878ff72986fd8d92611400195ae0f997 Mon Sep 17 00:00:00 2001
-> From: Liu, Jinsong <jinsong.liu@intel.com>
-> Date: Mon, 16 Apr 2012 00:16:58 +0800
-> Subject: [PATCH 2/2] Register native mce handler as vMCE bounce back point
-> 
-> When xen hyeprvisor inject vMCE to guest, use native mce handler to handle it
+From: David Ahern <dsahern@gmail.com>
 
-hypervisor
+While testing https://lkml.org/lkml/2012/4/10/123 I hit this crash:
 
-> 
-> Signed-off-by: Liu, Jinsong <jinsong.liu@intel.com>
-> Signed-off-by: Ke, Liping <liping.ke@intel.com>
-> Signed-off-by: Jiang, Yunhong <yunhong.jiang@intel.com>
-> Signed-off-by: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
-> ---
->  arch/x86/xen/enlighten.c |   10 +++++++---
->  1 files changed, 7 insertions(+), 3 deletions(-)
-> 
-> diff --git a/arch/x86/xen/enlighten.c b/arch/x86/xen/enlighten.c
-> index 15628d4..346ba64 100644
-> --- a/arch/x86/xen/enlighten.c
-> +++ b/arch/x86/xen/enlighten.c
-> @@ -614,8 +614,8 @@ static int cvt_gate_to_trap(int vector, const gate_desc *val,
->  	/*
->  	 * Look for known traps using IST, and substitute them
->  	 * appropriately.  The debugger ones are the only ones we care
-> -	 * about.  Xen will handle faults like double_fault and
-> -	 * machine_check, so we should never see them.  Warn if
-> +	 * about.  Xen will handle faults like double_fault,
-> +	 * so we should never see them.  Warn if
->  	 * there's an unexpected IST-using fault handler.
->  	 */
->  	if (addr == (unsigned long)debug)
-> @@ -630,7 +630,11 @@ static int cvt_gate_to_trap(int vector, const gate_desc *val,
->  		return 0;
->  #ifdef CONFIG_X86_MCE
->  	} else if (addr == (unsigned long)machine_check) {
-> -		return 0;
-> +		/*
-> +		 * when xen hyeprvisor inject vMCE to guest,
-> +		 * use native mce handler to handle it
-> +		 */
-> +		;
+(gdb) bt
+ 0  0x000000000042000f in __cmd_report (rep=0x7fff80cec580) at builtin-report.c:380
+ 1  cmd_report (argc=0, argv=<optimized out>, prefix=<optimized out>) at builtin-report.c:759
+ 2  0x0000000000414513 in run_builtin (p=0x7724a8, argc=3, argv=0x7fff80ceca70) at perf.c:273
+ 3  0x0000000000413d41 in handle_internal_command (argv=0x7fff80ceca70, argc=3) at perf.c:345
+ 4  run_argv (argv=0x7fff80cec880, argcp=0x7fff80cec88c) at perf.c:389
+ 5  main (argc=3, argv=0x7fff80ceca70) at perf.c:487
 
+kernel_map can be NULL, so need to handle it while dumping a warning
+to user.
 
-Can you just take the check out?
+v2:
+- fixed RB_EMPTY_ROOT check -- desc takes the altnerative output when RB_EMPTY_ROOT is false.
 
+Signed-off-by: David Ahern <dsahern@gmail.com>
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Stephane Eranian <eranian@google.com>
+Cc: Namhyung Kim <namhyung.kim@lge.com>
+Link: http://lkml.kernel.org/r/1334544855-55021-1-git-send-email-dsahern@gmail.com
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+---
+ tools/perf/builtin-report.c |   17 ++++++++++++-----
+ 1 file changed, 12 insertions(+), 5 deletions(-)
 
->  #endif
->  	} else {
->  		/* Some other trap using IST? */
-> -- 
-> 1.7.1
-
+diff --git a/tools/perf/builtin-report.c b/tools/perf/builtin-report.c
+index 2e31743..cdae9b2 100644
+--- a/tools/perf/builtin-report.c
++++ b/tools/perf/builtin-report.c
+@@ -374,16 +374,23 @@ static int __cmd_report(struct perf_report *rep)
+ 	    (kernel_map->dso->hit &&
+ 	     (kernel_kmap->ref_reloc_sym == NULL ||
+ 	      kernel_kmap->ref_reloc_sym->addr == 0))) {
+-		const struct dso *kdso = kernel_map->dso;
++		const char *desc =
++		    "As no suitable kallsyms nor vmlinux was found, kernel samples\n"
++		    "can't be resolved.";
++
++		if (kernel_map) {
++			const struct dso *kdso = kernel_map->dso;
++			if (!RB_EMPTY_ROOT(&kdso->symbols[MAP__FUNCTION])) {
++				desc = "If some relocation was applied (e.g. "
++				       "kexec) symbols may be misresolved.";
++			}
++		}
+ 
+ 		ui__warning(
+ "Kernel address maps (/proc/{kallsyms,modules}) were restricted.\n\n"
+ "Check /proc/sys/kernel/kptr_restrict before running 'perf record'.\n\n%s\n\n"
+ "Samples in kernel modules can't be resolved as well.\n\n",
+-			    RB_EMPTY_ROOT(&kdso->symbols[MAP__FUNCTION]) ?
+-"As no suitable kallsyms nor vmlinux was found, kernel samples\n"
+-"can't be resolved." :
+-"If some relocation was applied (e.g. kexec) symbols may be misresolved.");
++		desc);
+ 	}
+ 
+ 	if (dump_trace) {
+-- 
+1.7.9.2.358.g22243
 
