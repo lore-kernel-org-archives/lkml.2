@@ -1,60 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752028Ab2DPQL3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Apr 2012 12:11:29 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:37222 "EHLO mx1.redhat.com"
+	id S1752221Ab2DPQMS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Apr 2012 12:12:18 -0400
+Received: from mga02.intel.com ([134.134.136.20]:64816 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751454Ab2DPQL1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Apr 2012 12:11:27 -0400
-Date: Mon, 16 Apr 2012 11:52:07 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Fengguang Wu <fengguang.wu@intel.com>
-Cc: Peter Zijlstra <peterz@infradead.org>, ctalbott@google.com, rni@google.com,
-        andrea@betterlinux.com, containers@lists.linux-foundation.org,
-        linux-kernel@vger.kernel.org, lsf@lists.linux-foundation.org,
-        linux-mm@kvack.org, jmoyer@redhat.com, lizefan@huawei.com,
-        linux-fsdevel@vger.kernel.org, cgroups@vger.kernel.org
-Subject: Re: [Lsf] [RFC] writeback and cgroup
-Message-ID: <20120416155207.GB15437@redhat.com>
-References: <20120404145134.GC12676@redhat.com>
- <20120407080027.GA2584@quack.suse.cz>
- <20120410180653.GJ21801@redhat.com>
- <20120410210505.GE4936@quack.suse.cz>
- <20120410212041.GP21801@redhat.com>
- <20120410222425.GF4936@quack.suse.cz>
- <20120411154005.GD16692@redhat.com>
- <1334406314.2528.90.camel@twins>
- <20120416125432.GB12776@redhat.com>
- <20120416130707.GA10532@localhost>
+	id S1751454Ab2DPQMQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Apr 2012 12:12:16 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
+   d="scan'208";a="133080592"
+Date: Mon, 16 Apr 2012 18:21:02 +0200
+From: Samuel Ortiz <sameo@linux.intel.com>
+To: Seth Heasley <seth.heasley@intel.com>
+Cc: linux-kernel@vger.kernel.org, James Ralston <james.d.ralston@intel.com>
+Subject: Re: [PATCH 1/1] lpc_sch: Add Intel Centerton Multifunction Device
+ support
+Message-ID: <20120416162102.GM24130@sortiz-mobl>
+References: <1332349191-8068-1-git-send-email-seth.heasley@intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120416130707.GA10532@localhost>
+In-Reply-To: <1332349191-8068-1-git-send-email-seth.heasley@intel.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 16, 2012 at 09:07:07PM +0800, Fengguang Wu wrote:
+Hi Seth,
 
-[..]
-> Vivek, I noticed these lines in cfq code
+On Wed, Mar 21, 2012 at 09:59:51AM -0700, Seth Heasley wrote:
+> This patch adds the DeviceIDs for the Intel Centerton Legacy Block.  The Legacy Block includes SMBus, GPIO, and Watchdog functionality.
 > 
->                 sscanf(dev_name(bdi->dev), "%u:%u", &major, &minor);
+> Signed-off-by: Seth Heasley <seth.heasley@intel.com>
+> ---
+>  drivers/mfd/lpc_sch.c |   16 +++++++++++++---
+>  1 files changed, 13 insertions(+), 3 deletions(-)
 > 
-> Why not use bdi->dev->devt?  The problem is that dev_name() will
-> return "btrfs-X" for btrfs rather than "major:minor".
+> diff --git a/drivers/mfd/lpc_sch.c b/drivers/mfd/lpc_sch.c
+> index abc4213..778af13 100644
+> --- a/drivers/mfd/lpc_sch.c
+> +++ b/drivers/mfd/lpc_sch.c
+> @@ -36,10 +36,13 @@
+>  
+>  #define GPIOBASE	0x44
+>  #define GPIO_IO_SIZE	64
+> +#define GPIO_IO_SIZE_128	128
+>  
+>  #define WDTBASE		0x84
+>  #define WDT_IO_SIZE	64
+>  
+> +#define PCI_DEVICE_ID_INTEL_CENTERTON_ILB	0x0c60
+> +
+So we're not going to need this ID anywhere else ? In the GPIO driver for
+example ?
+If we do need it there, this ID should move to pci_ids.h
 
-Isn't bdi->dev->devt 0?  I see following code.
 
-add_disk()
-   bdi_register_dev()
-      bdi_register()
-         device_create_vargs(MKDEV(0,0))
-	      dev->devt = devt = MKDEV(0,0);
+>  static struct resource smbus_sch_resource = {
+>  		.flags = IORESOURCE_IO,
+>  };
+> @@ -68,7 +71,7 @@ static struct resource wdt_sch_resource = {
+>  
+>  static struct mfd_cell tunnelcreek_cells[] = {
+>  	{
+> -		.name = "tunnelcreek_wdt",
+> +		.name = "ie6xx_wdt",
+What do we need this change for ?
 
-So for normal block devices, I think bdi->dev->devt will be zero, that's
-why probably we don't use it.
+The rest of the patch looks good.
 
-Thanks
-Vivek
+Cheers,
+Samuel.
+
+-- 
+Intel Open Source Technology Centre
+http://oss.intel.com/
