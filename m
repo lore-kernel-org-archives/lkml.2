@@ -1,42 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751965Ab2DPGSZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Apr 2012 02:18:25 -0400
-Received: from shards.monkeyblade.net ([198.137.202.13]:41070 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751657Ab2DPGSX (ORCPT
+	id S1751866Ab2DPGUF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Apr 2012 02:20:05 -0400
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:2836 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751358Ab2DPGUD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Apr 2012 02:18:23 -0400
-Date: Mon, 16 Apr 2012 02:16:13 -0400 (EDT)
-Message-Id: <20120416.021613.606704342231219042.davem@davemloft.net>
-To: sfr@canb.auug.org.au
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org, tkhai@yandex.ru,
-        sam@ravnborg.org
-Subject: Re: linux-next: build failure after merge of the final tree
- (sparc-next tree related)
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <20120416155907.32c0041caa002f72da4635b7@canb.auug.org.au>
-References: <20120416155907.32c0041caa002f72da4635b7@canb.auug.org.au>
-X-Mailer: Mew version 6.4 on Emacs 24.0.95 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+	Mon, 16 Apr 2012 02:20:03 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6681"; a="181945224"
+X-IronPort-AV: E=Sophos;i="4.75,426,1330934400"; 
+   d="scan'208";a="302904103"
+Message-ID: <4F8BBA0E.9080506@qca.qualcomm.com>
+Date: Mon, 16 Apr 2012 09:19:58 +0300
+From: Kalle Valo <kvalo@qca.qualcomm.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.28) Gecko/20120313 Thunderbird/3.1.20
+MIME-Version: 1.0
+To: Tim Gardner <tim.gardner@canonical.com>
+CC: <linux-kernel@vger.kernel.org>, ath6kl-devel <ath6kl-devel@qualcomm.com>
+Subject: Re: [PATCH linux-next 0/1] ath6k: Normalize use of FW_DIR
+References: <1334337448-26270-1-git-send-email-tim.gardner@canonical.com>
+In-Reply-To: <1334337448-26270-1-git-send-email-tim.gardner@canonical.com>
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Sun, 15 Apr 2012 23:16:16 -0700 (PDT)
+X-Originating-IP: [172.30.39.5]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-Date: Mon, 16 Apr 2012 15:59:07 +1000
+Hi Tim,
 
-> After merging the final tree, today's linux-next build (sparc32 defconfig)
-> failed like this:
-> 
-> arch/sparc/kernel/pcic.c: In function 'pci_time_init':
-> arch/sparc/kernel/pcic.c:741:2: error: 'timer_cs_period' undeclared (first use in this function)
-> 
-> Caused by commit 62f082830d63 ("sparc32: generic clockevent support").
-> 
-> I have reverted that commit for today.
+On 04/13/2012 08:17 PM, Tim Gardner wrote:
+> Kalle - I've been cleaning out old firmware files in the Ubuntu linux-firmware
+> package and noticed that there are a number of AR6004 firmware files referenced in
+> the ath6k USB driver that do not exist in the upstream linux-firmware
+> repository. Are y'all planning to submit them soon ?
 
-Sam, Tkhai, please fix this.
+I submitted ar6004 hw1.2 firmware files last week and Ben applied them
+yesterday. ar6004 hw1.0 and hw1.1 again are more like internal releases
+so we are planning to send any firmware files for them.
+
+Kalle
