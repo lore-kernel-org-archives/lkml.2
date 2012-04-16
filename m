@@ -1,57 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754981Ab2DPVAP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Apr 2012 17:00:15 -0400
-Received: from shards.monkeyblade.net ([198.137.202.13]:48098 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754488Ab2DPVAN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Apr 2012 17:00:13 -0400
-Date: Mon, 16 Apr 2012 17:00:04 -0400 (EDT)
-Message-Id: <20120416.170004.2154403807488537042.davem@davemloft.net>
-To: mingo@kernel.org
-Cc: joe@perches.com, linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
-        torvalds@linux-foundation.org, apw@canonical.com
-Subject: Re: Please fix or revert: [PATCH] checkpatch: add --strict tests
- for braces, comments and casts
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <20120416203451.GA4248@gmail.com>
-References: <20120416.142728.864894452301706752.davem@davemloft.net>
-	<20120416202654.GA4678@gmail.com>
-	<20120416203451.GA4248@gmail.com>
-X-Mailer: Mew version 6.4 on Emacs 23.3 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+	id S1754947Ab2DPVDS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Apr 2012 17:03:18 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:46609 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750890Ab2DPVDQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Apr 2012 17:03:16 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [PATCH] PCI: Retry BARs restoration for Type 0 headers only
+Date: Mon, 16 Apr 2012 23:07:50 +0200
+User-Agent: KMail/1.13.6 (Linux/3.4.0-rc3+; KDE/4.6.0; x86_64; ; )
+Cc: Bjorn Helgaas <bhelgaas@google.com>, Mikko Vinni <mmvinni@yahoo.com>,
+        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Allen Kay <allen.m.kay@intel.com>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>
+References: <1334310754.17013.YahooMailNeo@web161804.mail.bf1.yahoo.com> <201204162235.49901.rjw@sisk.pl> <CA+55aFyccAfEpECmD5yKYE4AquV1ZsfjRAL4coP39LmkAqrO=w@mail.gmail.com>
+In-Reply-To: <CA+55aFyccAfEpECmD5yKYE4AquV1ZsfjRAL4coP39LmkAqrO=w@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Mon, 16 Apr 2012 14:00:07 -0700 (PDT)
+Message-Id: <201204162307.51168.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Ingo Molnar <mingo@kernel.org>
-Date: Mon, 16 Apr 2012 22:34:51 +0200
+On Monday, April 16, 2012, Linus Torvalds wrote:
+> On Mon, Apr 16, 2012 at 1:35 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+> > From: Rafael J. Wysocki <rjw@sisk.pl>
+> >
+> > Some shortcomings introduced into pci_restore_state() by commit
+> > 26f41062f28d ("PCI: check for pci bar restore completion and
+> > retry") have been fixed by recent commit ebfc5b802fa76 ("PCI: Fix
+> > regression in pci_restore_state(), v3"), but that commit treats
+> > all PCI devices as those with Type 0 configuration headers.
+> 
+> Make me happier and just make all of this a helper function again.
+> Call that helper function pci_restore_config_space(), and make the
+> existing "pci_restore_config_space()" be called
+> "pci_restore_config_space_range()" or something. Ok?
 
-> 
-> * Ingo Molnar <mingo@kernel.org> wrote:
-> 
->>     If you don't "see" it as ugly it's simply because your brain
->>     is not wired up to see 3D/2D geometry as a significant
->>     source of information. A significant portion (I'd 
->>     guesstimate a narrow majority) of kernel hackers *does* see
->>     2D/3D layout details in code and finds inconsistencies in 
->>     them counterproductive.
->> 
->>     ( It's roughly the same distinction that makes some people
->>       love the typographic layout of the iPhone/iPad while 
->>       others consider it unnecessary bling. )
-> 
-> Another example are the recent Google+ layout changes. Those who 
-> don't see 2D details found it an unnecessary waste of screen 
-> real estate.
-> 
-> To me and many others the new layout, while sparser, is actually 
-> noticeably less taxing to read, because information is 
-> structured in such a "geometrically obvious" way.
+Something like this, you mean?
 
-I guess us visual retards will have to find a new web site to
-use then, thanks for the lesson Ingo.
+---
+From: Rafael J. Wysocki <rjw@sisk.pl>
+Subject: PCI: Retry BARs restoration for Type 0 headers only
+
+Some shortcomings introduced into pci_restore_state() by commit
+26f41062f28d ("PCI: check for pci bar restore completion and
+retry") have been fixed by recent commit ebfc5b802fa76 ("PCI: Fix
+regression in pci_restore_state(), v3"), but that commit treats
+all PCI devices as those with Type 0 configuration headers.  That
+is not entirely correct, because Type 1 and Type 2 headers have
+different layouts.  In particular, the area occupied by BARs in
+Type 0 config headers contains the secondary status register in
+Type 1 ones and it doesn't make sense to retry the restoration of
+that register even if the value read back from it after a write is
+not the same as the written one (it very well may be different).
+
+For this reason, make pci_restore_state() only retry the restoration
+of BARs for Type 0 config headers.  This effectively makes it behave
+as before commit 26f41062f28d for all header types except for Type 0.
+
+Tested-by: Mikko Vinni <mmvinni@yahoo.com>
+Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
+---
+ drivers/pci/pci.c |   24 +++++++++++++++---------
+ 1 file changed, 15 insertions(+), 9 deletions(-)
+
+Index: linux/drivers/pci/pci.c
+===================================================================
+--- linux.orig/drivers/pci/pci.c
++++ linux/drivers/pci/pci.c
+@@ -991,8 +991,8 @@ static void pci_restore_config_dword(str
+ 	}
+ }
+ 
+-static void pci_restore_config_space(struct pci_dev *pdev, int start, int end,
+-				     int retry)
++static void pci_restore_config_space_range(struct pci_dev *pdev,
++					   int start, int end, int retry)
+ {
+ 	int index;
+ 
+@@ -1002,6 +1002,18 @@ static void pci_restore_config_space(str
+ 					 retry);
+ }
+ 
++static void pci_restore_config_space(struct pci_dev *pdev)
++{
++	if (pdev->hdr_type == PCI_HEADER_TYPE_NORMAL) {
++		pci_restore_config_space_range(pdev, 10, 15, 0);
++		/* Restore BARs before the command register. */
++		pci_restore_config_space_range(pdev, 4, 9, 10);
++		pci_restore_config_space_range(pdev, 0, 3, 0);
++	} else {
++		pci_restore_config_space_range(pdev, 0, 15, 0);
++	}
++}
++
+ /** 
+  * pci_restore_state - Restore the saved state of a PCI device
+  * @dev: - PCI device that we're dealing with
+@@ -1015,13 +1027,7 @@ void pci_restore_state(struct pci_dev *d
+ 	pci_restore_pcie_state(dev);
+ 	pci_restore_ats_state(dev);
+ 
+-	pci_restore_config_space(dev, 10, 15, 0);
+-	/*
+-	 * The Base Address register should be programmed before the command
+-	 * register(s)
+-	 */
+-	pci_restore_config_space(dev, 4, 9, 10);
+-	pci_restore_config_space(dev, 0, 3, 0);
++	pci_restore_config_space(dev);
+ 
+ 	pci_restore_pcix_state(dev);
+ 	pci_restore_msi_state(dev);
