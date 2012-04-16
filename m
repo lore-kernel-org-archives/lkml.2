@@ -1,74 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751693Ab2DPHoL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Apr 2012 03:44:11 -0400
-Received: from e06smtp11.uk.ibm.com ([195.75.94.107]:51020 "EHLO
-	e06smtp11.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751169Ab2DPHoK (ORCPT
+	id S1751838Ab2DPHrQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Apr 2012 03:47:16 -0400
+Received: from portal.weinmann.de ([62.8.140.122]:40769 "EHLO
+	portal.weinmann.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751271Ab2DPHrO convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Apr 2012 03:44:10 -0400
-Date: Mon, 16 Apr 2012 09:43:55 +0200
-From: Martin Schwidefsky <schwidefsky@de.ibm.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Lubos Lunak <l.lunak@suse.cz>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH][RESEND] do not redefine userspace's NULL #define
-Message-ID: <20120416094355.53309edb@de.ibm.com>
-In-Reply-To: <201204132102.14873.arnd@arndb.de>
-References: <201204132124.21294.l.lunak@suse.cz>
-	<CA+55aFxCrVtwCd9bjHLt82Uwisp8OtKP9c+raPYMqCTXqVfxGw@mail.gmail.com>
-	<201204132102.14873.arnd@arndb.de>
-Organization: IBM Corporation
-X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-x-cbid: 12041607-5024-0000-0000-00000244863D
+	Mon, 16 Apr 2012 03:47:14 -0400
+From: "Voss, Nikolaus" <N.Voss@weinmann.de>
+To: "'Hubert Feurstein'" <h.feurstein@gmail.com>
+CC: "'linux-arm-kernel@lists.infradead.org'" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "'linux-kernel@vger.kernel.org'" <linux-kernel@vger.kernel.org>,
+        "'linux-i2c@vger.kernel.org'" <linux-i2c@vger.kernel.org>,
+        "'nicolas.ferre@atmel.com'" <nicolas.ferre@atmel.com>,
+        "'ben-linux@fluff.org'" <ben-linux@fluff.org>,
+        "'balbi@ti.com'" <balbi@ti.com>,
+        "'rmallon@gmail.com'" <rmallon@gmail.com>
+Date: Mon, 16 Apr 2012 09:30:02 +0200
+Subject: RE: [PATCH] i2c-at91: fix data-loss issue
+Thread-Topic: [PATCH] i2c-at91: fix data-loss issue
+Thread-Index: Ac0ZavEibeAKtN1jQNek+KfJgL9y4wCL5gjw
+Message-ID: <EF2E73589CA71846A15D0B2CDF79505D0905D5A1AA@wm021.weinmann.com>
+References: <20120413103937.GH7154@arwen.pp.htv.fi>
+ <1334317476-10044-1-git-send-email-h.feurstein@gmail.com>
+In-Reply-To: <1334317476-10044-1-git-send-email-h.feurstein@gmail.com>
+Accept-Language: en-US, de-DE
+Content-Language: de-DE
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US, de-DE
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 13 Apr 2012 21:02:14 +0000
-Arnd Bergmann <arnd@arndb.de> wrote:
+Hubert Feurstein wrote on 2012-04-13:
+> In the interrupt handler both status-flags (TXCOMP and RXRDY) might be
+> pending at the same time. In this case TXCOMP is handled but NOT RXRDY
+> which causes a data-loss on the current transfer
 
-> On Friday 13 April 2012, Linus Torvalds wrote:
-> > There's no way user should ever include the linux internal stddef.h.
-> > 
-> > And quite frankly, kernel-external definitions of NULL have
-> > traditionally been pure sh*t (ie plain "0" without the cast to a
-> > pointer), so I'm not entirely convinced about this patch.
-> > 
-> > So what is the actual thing this helps with?
-> 
-> I think it used to get included implictly though other exported
-> kernel headers, but I found only one instance where this is still
-> true, in the s390 version of asm/ptrace.h.
-> 
-> Martin, does this work for you?
-> 
-> 8<-----
-> headers: do not export linux/stddef.h
-> 
-> There is no reason to export linux/stddef.h and users should never
-> include it because the header conflicts with the standard stddef.h.
-> 
-> The only other exported header file that actually includes linux/stddef.h
-> is the s390 asm/ptrace.h, but there is no reason for it to do so, so
-> we can remove both the export and the inclusion.
-> When the file is no longer exported, we can also remove the extra lines
-> that attempt to make it safe for inclusion
-> 
-> Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+Right, this is definitely a bug and must be corrected. Part of my
+motivation for exclusively or-ing the irq bits was not reading/
+writing beyond the buffer because of (still) pending bits despite
+of an already finished transfer, so I gave TXCOMP the highest prio.
 
-Kernel compiles and boots. After protecting the stddef.h #include in
-include/linux/posix_types.h with #ifdef __KERNEL__ gdb and strace
-could be build as well.
+Because of other reasons, write_next_byte() already checks this and
+does nothing if all data already has been written. My suggestion is
+to have read_next_byte() do this check too, as I don't trust the
+hardware to reset RXRDY _immediately_ after reading.
 
--- 
-blue skies,
-   Martin.
+> @@ -161,18 +161,22 @@ static irqreturn_t atmel_twi_interrupt(int irq, void
+> *dev_id)
+>  {
+>  	struct at91_twi_dev *dev = dev_id;
+>  	const unsigned status = at91_twi_read(dev, AT91_TWI_SR);
+> -	const unsigned irqstatus = status & at91_twi_read(dev, AT91_TWI_IMR);
+> +	unsigned irqstatus = status & at91_twi_read(dev, AT91_TWI_IMR);
+> +
+> +	irqstatus &= (AT91_TWI_RXRDY | AT91_TWI_TXRDY | AT91_TWI_TXCOMP);
 
-"Reality continues to ruin my life." - Calvin.
+The above line should be unnecessary as no more than those interrupts
+are enabled anyway. Any special reason for this?
+ 
+> +	if (!irqstatus)
+> +		return IRQ_NONE;
+> +
+> +	if (irqstatus & AT91_TWI_RXRDY)
+> +		at91_twi_read_next_byte(dev);
+> +
+> +	if (irqstatus & AT91_TWI_TXRDY)
+> +		at91_twi_write_next_byte(dev);
+
+I would like to exclusively or TXRDY and RXRDY as those really should
+not be active at the same time. Keeps the decision tree lean ;-).
+
+> @@ -189,6 +193,10 @@ static int
+>  at91_do_twi_transfer(struct at91_twi_dev *dev) 	if (dev->msg->flags &
+>  I2C_M_RD) { 		unsigned start_flags = AT91_TWI_START;
+> +		/* clear any pending data */
+> +		(void)at91_twi_read(dev, AT91_TWI_SR);
+> +		(void)at91_twi_read(dev, AT91_TWI_RHR);
+
+I would like to modify this, as this is a partial fix for the above bug
+which should already be fully fixed by the modified isr.
+I fear subtle data-loss if we make (partial) tabula rasa before each
+transfer. I'd rather add an assertion to check if the corresponding
+irqs are active as an indication for a driver/hw-bug.
+
+I'll repost the driver with your fix on positive feedback from you.
+Thanks for tracking this down.
+
+Ben, is there any chance to get this driver into next?
+
+Niko
+
 
