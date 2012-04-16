@@ -1,247 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755911Ab2DPUjM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Apr 2012 16:39:12 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:55370 "EHLO mx1.redhat.com"
+	id S1755891Ab2DPUjK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Apr 2012 16:39:10 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:23986 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755794Ab2DPUjC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Apr 2012 16:39:02 -0400
+	id S1755798Ab2DPUjE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Apr 2012 16:39:04 -0400
 From: Mauro Carvalho Chehab <mchehab@redhat.com>
 Cc: Mauro Carvalho Chehab <mchehab@redhat.com>,
         Linux Edac Mailing List <linux-edac@vger.kernel.org>,
         Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Doug Thompson <norsk5@yahoo.com>, Steven Rostedt <rostedt@goodmis.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>
-Subject: [EDAC ABI v13 04/25] events/hw_event: Create a Hardware Events Report Mecanism (HERM)
-Date: Mon, 16 Apr 2012 17:38:28 -0300
-Message-Id: <1334608729-30803-5-git-send-email-mchehab@redhat.com>
+        =?UTF-8?q?Niklas=20S=C3=B6derlund?= <niklas.soderlund@ericsson.com>,
+        Borislav Petkov <borislav.petkov@amd.com>
+Subject: [EDAC ABI v13 20/25] i5100_edac: Fix a warning when compiled with 32 bits
+Date: Mon, 16 Apr 2012 17:38:44 -0300
+Message-Id: <1334608729-30803-21-git-send-email-mchehab@redhat.com>
 In-Reply-To: <1334608729-30803-1-git-send-email-mchehab@redhat.com>
 References: <1334608729-30803-1-git-send-email-mchehab@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Adds a trace class for handle hardware events
-
-Part of the description bellow is shamelessly copied from Tony
-Luck's notes about the Hardware Error BoF during LPC 2010 [1].
-Tony, thanks for your notes and discussions to generate the
-h/w error reporting requirements.
-
-[1] http://lwn.net/Articles/416669/
-
-    We have several subsystems & methods for reporting hardware errors:
-
-    1) EDAC ("Error Detection and Correction").  In its original form
-    this consisted of a platform specific driver that read topology
-    information and error counts from chipset registers and reported
-    the results via a sysfs interface.
-
-    2) mcelog - x86 specific decoding of machine check bank registers
-    reporting in binary form via /dev/mcelog. Recent additions make use
-    of the APEI extensions that were documented in version 4.0a of the
-    ACPI specification to acquire more information about errors without
-    having to rely reading chipset registers directly. A user level
-    programs decodes into somewhat human readable format.
-
-    3) drivers/edac/mce_amd.c - this driver hooks into the mcelog path and
-    decodes errors reported via machine check bank registers in AMD
-    processors to the console log using printk();
-
-    Each of these mechanisms has a band of followers ... and none
-    of them appear to meet all the needs of all users.
-
-In order to provide a proper hardware event subsystem, let's
-encapsulate the memory error hardware events into a trace facility.
-
-As no agreement was reached so far for the MCA-based trace events, for
-now, let's add events only for memory errors. A latter patch can change
-the tracepoint, for events originated via MCA.
+drivers/edac/i5100_edac.c: In function ‘i5100_init_csrows’:
+drivers/edac/i5100_edac.c:862:3: warning: format ‘%zd’ expects argument of type ‘signed size_t’, but argument 5 has type ‘long unsigned int’ [-Wformat]
 
 Reviewed-by: Aristeu Rozanski <arozansk@redhat.com>
-Cc: Doug Thompson <norsk5@yahoo.com>
-Cc: Steven Rostedt <rostedt@goodmis.org>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@redhat.com>
+Cc: "Niklas Söderlund" <niklas.soderlund@ericsson.com>
+Cc: Borislav Petkov <borislav.petkov@amd.com>
 Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
 ---
- drivers/edac/edac_core.h        |    2 +-
- drivers/edac/edac_mc.c          |   11 ++++-
- include/trace/events/hw_event.h |  107 +++++++++++++++++++++++++++++++++++++++
- 3 files changed, 118 insertions(+), 2 deletions(-)
- create mode 100644 include/trace/events/hw_event.h
+ drivers/edac/i5100_edac.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/edac/edac_core.h b/drivers/edac/edac_core.h
-index 8aadd83..f7c8c8a 100644
---- a/drivers/edac/edac_core.h
-+++ b/drivers/edac/edac_core.h
-@@ -469,7 +469,7 @@ void edac_mc_handle_error(const enum hw_event_mc_err_type type,
- 			  const int layer2,
- 			  const char *msg,
- 			  const char *other_detail,
--			  const void *mcelog);
-+			  const void *arch_log);
+diff --git a/drivers/edac/i5100_edac.c b/drivers/edac/i5100_edac.c
+index 11aba5e..dd260c8 100644
+--- a/drivers/edac/i5100_edac.c
++++ b/drivers/edac/i5100_edac.c
+@@ -859,8 +859,8 @@ static void __devinit i5100_init_csrows(struct mem_ctl_info *mci)
+ 				i5100_rank_to_slot(mci, chan, rank));
+ 		}
  
- /*
-  * edac_device APIs
-diff --git a/drivers/edac/edac_mc.c b/drivers/edac/edac_mc.c
-index 3323d99..002e6b6 100644
---- a/drivers/edac/edac_mc.c
-+++ b/drivers/edac/edac_mc.c
-@@ -33,6 +33,9 @@
- #include "edac_core.h"
- #include "edac_module.h"
- 
-+#define CREATE_TRACE_POINTS
-+#include <trace/events/hw_event.h>
-+
- /* lock to memory controller's control array */
- static DEFINE_MUTEX(mem_ctls_mutex);
- static LIST_HEAD(mc_devices);
-@@ -381,6 +384,9 @@ struct mem_ctl_info *edac_mc_alloc(unsigned edac_index,
- 	 * which will perform kobj unregistration and the actual free
- 	 * will occur during the kobject callback operation
- 	 */
-+
-+	trace_hw_event_init("edac", (unsigned)edac_index);
-+
- 	return mci;
+-		debugf2("dimm channel %d, rank %d, size %zd\n",
+-			chan, rank, PAGES_TO_MiB(npages));
++		debugf2("dimm channel %d, rank %d, size %ld\n",
++			chan, rank, (long)PAGES_TO_MiB(npages));
+ 	}
  }
- EXPORT_SYMBOL_GPL(edac_mc_alloc);
-@@ -900,7 +906,7 @@ void edac_mc_handle_error(const enum hw_event_mc_err_type type,
- 			  const int layer2,
- 			  const char *msg,
- 			  const char *other_detail,
--			  const void *mcelog)
-+			  const void *arch_log)
- {
- 	unsigned long remapped_page;
- 	/* FIXME: too much for stack: move it to some pre-alocated area */
-@@ -1038,6 +1044,9 @@ void edac_mc_handle_error(const enum hw_event_mc_err_type type,
- 			"page 0x%lx offset 0x%lx grain %d",
- 			page_frame_number, offset_in_page, grain);
  
-+	trace_mc_error(type, mci->mc_idx, msg, label, location,
-+		       detail, other_detail);
-+
- 	if (type == HW_EVENT_ERR_CORRECTED) {
- 		if (edac_mc_get_log_ce())
- 			edac_mc_printk(mci, KERN_WARNING,
-diff --git a/include/trace/events/hw_event.h b/include/trace/events/hw_event.h
-new file mode 100644
-index 0000000..1fabfe2
---- /dev/null
-+++ b/include/trace/events/hw_event.h
-@@ -0,0 +1,107 @@
-+#undef TRACE_SYSTEM
-+#define TRACE_SYSTEM hw_event
-+
-+#if !defined(_TRACE_HW_EVENT_MC_H) || defined(TRACE_HEADER_MULTI_READ)
-+#define _TRACE_HW_EVENT_MC_H
-+
-+#include <linux/tracepoint.h>
-+#include <linux/edac.h>
-+#include <linux/ktime.h>
-+
-+/*
-+ * Hardware Anomaly Report Mecanism (HARM) events
-+ *
-+ * Those events are generated when hardware detected a corrected or
-+ * uncorrected event, and are meant to replace the current API to report
-+ * errors defined on both EDAC and MCE subsystems.
-+ *
-+ * FIXME: Add events for handling memory errors originated from the
-+ *        MCE subsystem.
-+ */
-+
-+DECLARE_EVENT_CLASS(hw_event_class,
-+	TP_PROTO(const char *type, unsigned int instance),
-+	TP_ARGS(type, instance),
-+
-+	TP_STRUCT__entry(
-+		__string(	type,		type			)
-+		__field(	unsigned int,	instance		)
-+	),
-+
-+	TP_fast_assign(
-+		__assign_str(type, type);
-+		__entry->instance = instance;
-+	),
-+
-+	TP_printk("Initialized %s#%d\n",
-+		__get_str(type),
-+		__entry->instance)
-+);
-+
-+/*
-+ * This event indicates that a hardware collection mechanism is started
-+ */
-+DEFINE_EVENT(hw_event_class, hw_event_init,
-+
-+	TP_PROTO(const char *type, unsigned int instance),
-+
-+	TP_ARGS(type, instance)
-+);
-+
-+
-+/*
-+ * Hardware-independent Memory Controller specific events
-+ */
-+
-+/*
-+ * Default error mechanisms for Memory Controller errors (CE and UE)
-+ */
-+TRACE_EVENT(mc_error,
-+
-+	TP_PROTO(const unsigned int err_type,
-+		 const unsigned int mc_index,
-+		 const char *msg,
-+		 const char *label,
-+		 const char *location,
-+		 const char *detail,
-+		 const char *driver_detail),
-+
-+	TP_ARGS(err_type, mc_index, msg, label, location,
-+		detail, driver_detail),
-+
-+	TP_STRUCT__entry(
-+		__field(	unsigned int,	err_type		)
-+		__field(	unsigned int,	mc_index		)
-+		__string(	msg,		msg			)
-+		__string(	label,		label			)
-+		__string(	detail,		detail			)
-+		__string(	location,	location		)
-+		__string(	driver_detail,	driver_detail		)
-+	),
-+
-+	TP_fast_assign(
-+		__entry->err_type		= err_type;
-+		__entry->mc_index		= mc_index;
-+		__assign_str(msg, msg);
-+		__assign_str(label, label);
-+		__assign_str(location, location);
-+		__assign_str(detail, detail);
-+		__assign_str(driver_detail, driver_detail);
-+	),
-+
-+	TP_printk(HW_ERR "mce#%d: %s error %s on label \"%s\" (%s %s %s)",
-+		  __entry->mc_index,
-+		  (__entry->err_type == HW_EVENT_ERR_CORRECTED) ? "Corrected" :
-+			((__entry->err_type == HW_EVENT_ERR_FATAL) ?
-+			"Fatal" : "Uncorrected"),
-+		  __get_str(msg),
-+		  __get_str(label),
-+		  __get_str(location),
-+		  __get_str(detail),
-+		  __get_str(driver_detail))
-+);
-+
-+#endif /* _TRACE_HW_EVENT_MC_H */
-+
-+/* This part must be outside protection */
-+#include <trace/define_trace.h>
 -- 
 1.7.8
 
