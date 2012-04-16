@@ -1,88 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754088Ab2DPM7i (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Apr 2012 08:59:38 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:35822 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753671Ab2DPM7h (ORCPT
+	id S1753974Ab2DPNFY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Apr 2012 09:05:24 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:51475 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753626Ab2DPNFX convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Apr 2012 08:59:37 -0400
-Date: Mon, 16 Apr 2012 13:59:31 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Ashish Chavan <ashish.chavan@kpitcummins.com>
-Cc: lrg <lrg@ti.com>, alsa-devel <alsa-devel@alsa-project.org>,
-        David Dajun Chen <david.chen@diasemi.com>,
-        "kuninori.morimoto.gx" <kuninori.morimoto.gx@renesas.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [alsa-devel] [PATCH] ASoC: da7210: Add support for PLL and SRM
-Message-ID: <20120416125930.GB3219@opensource.wolfsonmicro.com>
-References: <1334122120.3991.13.camel@matrix>
- <20120413093012.GK3168@opensource.wolfsonmicro.com>
- <1334578993.26734.6.camel@matrix>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="rJwd6BRFiFCcLxzm"
-Content-Disposition: inline
-In-Reply-To: <1334578993.26734.6.camel@matrix>
-X-Cookie: If you can read this, you're too close.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 16 Apr 2012 09:05:23 -0400
+Subject: Re: [GIT PULL] KVM updates for the 3.4 merge window
+Mime-Version: 1.0 (Apple Message framework v1257)
+Content-Type: text/plain; charset=US-ASCII
+From: Alexander Graf <agraf@suse.de>
+In-Reply-To: <4F8C1652.7000004@redhat.com>
+Date: Mon, 16 Apr 2012 15:05:21 +0200
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        KVM list <kvm@vger.kernel.org>, Marcelo Tosatti <mtosatti@redhat.com>,
+        Paul Mackerras <paulus@au1.ibm.com>
+Content-Transfer-Encoding: 7BIT
+Message-Id: <71F69299-0CCB-4676-9EDA-7777E8F84E37@suse.de>
+References: <4F688F48.6090303@redhat.com> <1332461414.2982.90.camel@pasglop> <CA+55aFxdf_K97KJ-phck-2YcTWAc6icc+Qhi6hOg0MA8FAjiyA@mail.gmail.com> <4F6EEEC1.4030608@redhat.com> <20120326213809.GA29788@bloggs.ozlabs.ibm.com> <4F7191E8.7020804@redhat.com> <20120330120107.GA28503@bloggs.ozlabs.ibm.com> <4F784C4D.3000409@redhat.com> <1333314138.30734.17.camel@pasglop> <4F796C18.2040209@redhat.com> <1333359979.30734.48.camel@pasglop> <3BB9812B-6FE2-4370-9D55-D273364BFFD1@suse.de> <4F8C1652.7000004@redhat.com>
+To: Avi Kivity <avi@redhat.com>
+X-Mailer: Apple Mail (2.1257)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---rJwd6BRFiFCcLxzm
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On 16.04.2012, at 14:53, Avi Kivity wrote:
 
-On Mon, Apr 16, 2012 at 05:53:13PM +0530, Ashish Chavan wrote:
-> On Fri, 2012-04-13 at 10:30 +0100, Mark Brown wrote:
-> > On Wed, Apr 11, 2012 at 10:58:40AM +0530, Ashish Chavan wrote:
+> On 04/16/2012 03:47 PM, Alexander Graf wrote:
+>> On 02.04.2012, at 11:46, Benjamin Herrenschmidt wrote:
+>> 
+>>> On Mon, 2012-04-02 at 12:06 +0300, Avi Kivity wrote:
+>>>>> The current process is such that it takes absolutely forever for our
+>>>>> patches to get in, which is a major PITA for something in such state of
+>>>>> active development.
+>>>> 
+>>>> If the patches were posted two weeks earlier, they would have gone in.
+>>> 
+>>> I believe on our side they were, but Alex took a while to make up his
+>>> tree ... oh well..
+>> 
+>> Yes, because to me the kvm-ppc-next tree basically is the same semantically as -next for Avi. It's where patches cook a while to make sure they actually work. Nobody tests KVM PPC patches against kvm's master tree. All testing (compile and execution) happens against kvm-ppc-next.
+>> 
+>> That's why I don't see the point in having it cook again in Avi's tree. At the end of the day the patches will surely become way too chewy ;).
+> 
+> kvm.git next is exposed to linux-next, where they get tested quite a
+> lot.  Granted it's mostly build testing, and people are unlikely to test
+> kvm there, but they will test the non-kvm bits that creep in there.
+> 
+>> The alternative would be that I don't have a -next tree, just collect patches and immediately send them to Avi. That way the main kvm tree would be broken more often, but at least we don't get these horrible synchronization latencies.
+> 
+> That works too.  Don't post immediately; 2-3 week batches would reduce
+> noise.
 
-> > > +	/* for MASTER mode, fs =3D 48Khz */
-> > > +	{ 12000000, 0xF3, 0x12, 0x7, },		/* MCLK=3D12Mhz */
+Ok, let's try to move to that scheme then :). I'll just send pull requests to you even though there are unprocessed other kvm ppc patches still around and we'll stage everything in your tree.
 
-> > This *still* has magic number problems.
 
-> OK, will replace frequency values with defines. That is what you are
-> pointing, right?
+Alex
 
-No!  As with *all* the other times you've submitted this you're relying
-on magic array indexes to find stuff in the table which I've *repeatedly*=
-=20
-pointed out is terrible for readability and maintainability.  It's very
-disappointing to see the same problem coming back repeatedly.
-
-> > These defines now need to be kept in sync with the table and are going
-> > to be *very* painful to review.
-
-> Yes, these defines need to be kept in sync with the table. Can you
-> suggest any other, preferred way to do this?
-
-Yes.  For example, you could use the same technique you're using for the
-frequencies.
-
---rJwd6BRFiFCcLxzm
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAEBAgAGBQJPjBSmAAoJEBus8iNuMP3dXpwP/AnQdA3Em1GXCYVfeduIv0vd
-jUe1KoovXw5+/Zwoz72EaUG05/Z+rTQe1+EWDIvInK7B90GaT9MYteWaejbtlxai
-Cea/93S/F9IxtR+yaKlcNePFkzoOWs/fpapWr9hl2qcFotmjpXdU/2cQ9Z2vRawe
-5fQ1aLMRMS9018PRxNB6bIwl613WOVmnj9rOZLnxlq5SM2nRzvHyJQlPwdilZA7a
-SbHLTM7xC6NSrWvQyNoVzJ18SftKBiixNCGiiCI2zMd4WE9XI7cXDE+QhxUuEB6v
-cWWy8EobHuP7JkIv6Y19Tr0lp9n+hOFqwRTOg+2RhfTGhHz2Y8DkYTLREfgH8rOu
-gKpw1fFyCSz/nln7sltmI+alMJe4L4ZCH3/f0xowL++fo74npWNR8sTDar1TOQ4+
-PmTJRoEsMGgOxcAGSVUlDMirBAixETV36QfqfBz3JmK4/WJYJMaEEM5Cv6Bbx26y
-HWTbu6y5PY2EFxEUCO1aCIF4MuNCkqUMW9c0gA/WzqY9nEmrGesdzQt7keK8Hjpe
-LgksNnBtTAdvPTs/bah8C18d1NqESHrptWwCHxJkO5rsAIVpcHC5s1Gm69gdkoTL
-w1du0+sBA6tuwVYk9jF9XG6lUf1wQapM4itXlB+dltoATEi8jWZQWv6nFVRiFqCo
-p2f2uY2KlanoPo2uw1ty
-=R63J
------END PGP SIGNATURE-----
-
---rJwd6BRFiFCcLxzm--
