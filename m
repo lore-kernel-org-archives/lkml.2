@@ -1,77 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752221Ab2DPQMS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Apr 2012 12:12:18 -0400
-Received: from mga02.intel.com ([134.134.136.20]:64816 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751454Ab2DPQMQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1752101Ab2DPQMQ (ORCPT <rfc822;w@1wt.eu>);
 	Mon, 16 Apr 2012 12:12:16 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
-   d="scan'208";a="133080592"
-Date: Mon, 16 Apr 2012 18:21:02 +0200
-From: Samuel Ortiz <sameo@linux.intel.com>
-To: Seth Heasley <seth.heasley@intel.com>
-Cc: linux-kernel@vger.kernel.org, James Ralston <james.d.ralston@intel.com>
-Subject: Re: [PATCH 1/1] lpc_sch: Add Intel Centerton Multifunction Device
- support
-Message-ID: <20120416162102.GM24130@sortiz-mobl>
-References: <1332349191-8068-1-git-send-email-seth.heasley@intel.com>
+Received: from antcom.de ([188.40.178.216]:45667 "EHLO chuck.antcom.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751454Ab2DPQMO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Apr 2012 12:12:14 -0400
+Message-ID: <4F8C44DC.7030702@antcom.de>
+Date: Mon, 16 Apr 2012 18:12:12 +0200
+From: Roland Stigge <stigge@antcom.de>
+Organization: ANTCOM IT Research & Development
+User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:8.0) Gecko/20120216 Icedove/8.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1332349191-8068-1-git-send-email-seth.heasley@intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Alan Stern <stern@rowland.harvard.edu>
+CC: gregkh@linuxfoundation.org, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org, kevin.wells@nxp.com,
+        srinivas.bakki@nxp.com, arnd@arndb.de,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH v2 1/3] USB: Add driver for NXP ISP1301 USB transceiver
+References: <Pine.LNX.4.44L0.1204161201480.1408-100000@iolanthe.rowland.org>
+In-Reply-To: <Pine.LNX.4.44L0.1204161201480.1408-100000@iolanthe.rowland.org>
+X-Enigmail-Version: 1.3.4
+OpenPGP: url=subkeys.pgp.net
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Seth,
-
-On Wed, Mar 21, 2012 at 09:59:51AM -0700, Seth Heasley wrote:
-> This patch adds the DeviceIDs for the Intel Centerton Legacy Block.  The Legacy Block includes SMBus, GPIO, and Watchdog functionality.
+On 04/16/2012 06:02 PM, Alan Stern wrote:
+>> Maybe one of (new):
+>>
+>>     drivers/usb/transceiver/
+>>     drivers/usb/phy/
+>>     drivers/usb/lowlevel/
+>>
+>> ?
+>>
+>> Otherwise, I will put it in drivers/usb/otg/ even of it doesn't look
+>> better to me but the chip is advertised as "OTG transceiver". ;-)
 > 
-> Signed-off-by: Seth Heasley <seth.heasley@intel.com>
-> ---
->  drivers/mfd/lpc_sch.c |   16 +++++++++++++---
->  1 files changed, 13 insertions(+), 3 deletions(-)
-> 
-> diff --git a/drivers/mfd/lpc_sch.c b/drivers/mfd/lpc_sch.c
-> index abc4213..778af13 100644
-> --- a/drivers/mfd/lpc_sch.c
-> +++ b/drivers/mfd/lpc_sch.c
-> @@ -36,10 +36,13 @@
->  
->  #define GPIOBASE	0x44
->  #define GPIO_IO_SIZE	64
-> +#define GPIO_IO_SIZE_128	128
->  
->  #define WDTBASE		0x84
->  #define WDT_IO_SIZE	64
->  
-> +#define PCI_DEVICE_ID_INTEL_CENTERTON_ILB	0x0c60
-> +
-So we're not going to need this ID anywhere else ? In the GPIO driver for
-example ?
-If we do need it there, this ID should move to pci_ids.h
+> I don't know.  Maybe Greg KH or Felipe Balbi will have a
+> recommendation.  But any of these alternatives would be better than
+> drivers/usb/misc/.
 
+Since you and Greg-KH seem to be fine with the above, I'll pick
+drivers/usb/phy/ for now.
 
->  static struct resource smbus_sch_resource = {
->  		.flags = IORESOURCE_IO,
->  };
-> @@ -68,7 +71,7 @@ static struct resource wdt_sch_resource = {
->  
->  static struct mfd_cell tunnelcreek_cells[] = {
->  	{
-> -		.name = "tunnelcreek_wdt",
-> +		.name = "ie6xx_wdt",
-What do we need this change for ?
+Thanks for your fast responses,
 
-The rest of the patch looks good.
-
-Cheers,
-Samuel.
-
--- 
-Intel Open Source Technology Centre
-http://oss.intel.com/
+Roland
