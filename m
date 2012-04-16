@@ -1,169 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752678Ab2DPJR1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Apr 2012 05:17:27 -0400
-Received: from mail-wi0-f172.google.com ([209.85.212.172]:33862 "EHLO
-	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751360Ab2DPJR0 (ORCPT
+	id S1752593Ab2DPJTv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Apr 2012 05:19:51 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:60043 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751373Ab2DPJTt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Apr 2012 05:17:26 -0400
-Date: Mon, 16 Apr 2012 11:17:20 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Joe Perches <joe@perches.com>
-Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andy Whitcroft <apw@canonical.com>
-Subject: Please fix or revert: [PATCH] checkpatch: add --strict tests for
- braces, comments and casts
-Message-ID: <20120416091719.GA4113@gmail.com>
+	Mon, 16 Apr 2012 05:19:49 -0400
+Date: Mon, 16 Apr 2012 10:19:46 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Axel Lin <axel.lin@gmail.com>
+Cc: linux-kernel@vger.kernel.org, Liam Girdwood <lrg@ti.com>
+Subject: Re: [PATCH] regulator: core: Fix getting input_uV when supplied by
+ another regulator
+Message-ID: <20120416091946.GD3238@opensource.wolfsonmicro.com>
+References: <1334324105.2732.2.camel@phoenix>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="fOHHtNG4YXGJ0yqR"
 Content-Disposition: inline
+In-Reply-To: <1334324105.2732.2.camel@phoenix>
+X-Cookie: Beware of Bigfoot!
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-This recent checkpatch commit, added in v3.4-rc1:
+--fOHHtNG4YXGJ0yqR
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-  aad4f6149831 checkpatch: add --strict tests for braces, comments and casts
+On Fri, Apr 13, 2012 at 09:35:05PM +0800, Axel Lin wrote:
+> When supplied by another regulator, returns the supply regulator's output
+> voltage for inpu_uV.
+>=20
+> Signed-off-by: Axel Lin <axel.lin@gmail.com>
 
-made the default checkpatch run complain about the following 
-perfectly fine multi-line comment block:
+Applied, thanks.
 
-+               rdp->qlen_lazy = 0;
-+               rdp->qlen = 0;
-+
-+               /*
-+                * Adopt all callbacks.  The outgoing CPU was in no shape
-+                * to advance them, so make them all go through a full
-+                * grace period.
-+                */
-+               *receive_rdp->nxttail[RCU_NEXT_TAIL] = rdp->nxtlist;
+--fOHHtNG4YXGJ0yqR
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-With:
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
 
- CHECK: Don't begin block comments with only a /* line, use /* comment...
+iQIcBAEBAgAGBQJPi+QsAAoJEBus8iNuMP3dAMgP/0KWKkgW4pgKSGod7O4sp5U2
+yJDwLHOMGS+SjvI5zxM50bB7q5Av8rYe2mubE3R9sWEuFTpu35lkjVGMrfFfcACh
+SrSmXnSmYvZPTUDmV05N23TfJ9oS4Np+VcyBKa5AYg7TlGSRQvIWEIjv0T++JWvk
+Hi/CRghPKAA1pWX5KyO4gf6zJ4rpjLE0S06XF51nwHkGZ8Yfu1d4IxO6LTMz578A
+dkY8q5l+yokAr1hFrcl5Z35F3L5irjKZY3AE6UjgxCRn2G4h7PLJLBAM1xBpnCpI
+6klQ6zi+MftzwQ68PlydKP3tB2epbQwxBA62+g2M625sycMMQHO0QIRk7WmHvEYy
+Gt/WlrGBvY6sgYBLm/qErrA26rTzYUjp07rf360JxxrLddT8Ty5h4H2TzffaZBsA
+fv84iqb1gQ/vp7KBdbM6LvUfz76UV10VqA4W/14f/v0aSNBalbZuLU2DWL311MED
+BDLN7QhuIYZCSweBCs4v1QkDCEguJ9qULwaf/e90yP3uXosy6czSEmSxGzxy9MB1
+PNab8g7dT5sZXdSkUoqUhWaBrJoVGkiwSRk5RORRCsCR/E7oAfooLfFXUpjqC9EA
+m7Iakl/Xi+lFec0yzs/o8VTbqxlVLeFM7b6HGSjlAYRl9jZV+d0mWLZ0GHolaB9s
+VMgBKCzCSCwIdFQU0R0v
+=74aK
+-----END PGP SIGNATURE-----
 
-#80: FILE: kernel/rcutree.c:1428:
-+
-+		/*
-
-Which is an obviously bogus warning: the comment is perfectly 
-fine and it has the form that Documentation/CodingStyle 
-specifically recommends:
-
-|                 Chapter 8: Commenting
-|
-| [...]
-|
-| The preferred style for long (multi-line) comments is:
-|
-|        /*
-|         * This is the preferred style for multi-line
-|         * comments in the Linux kernel source code.
-|         * Please use it consistently.
-|         *
-|         * Description:  A column of asterisks on the left side,
-|         * with beginning and ending almost-blank lines.
-|         */
-|
-
-Please turn this new warning off by default, or fix the check, 
-or revert it. (The revert below applies cleanly on top of latest 
--git and solves the warning for me.)
-
-Thanks,
-
-	Ingo
-
-This reverts commit aad4f61498314d41d047ea2161b7bd7237b72d33.
-
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
----
- scripts/checkpatch.pl |   40 ++++++++--------------------------------
- 1 files changed, 8 insertions(+), 32 deletions(-)
-
-diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
-index de639ee..6217093 100755
---- a/scripts/checkpatch.pl
-+++ b/scripts/checkpatch.pl
-@@ -1864,17 +1864,6 @@ sub process {
- 			}
- 		}
- 
--		if ($line =~ /^\+.*\*[ \t]*\)[ \t]+/) {
--			CHK("SPACING",
--			    "No space is necessary after a cast\n" . $hereprev);
--		}
--
--		if ($rawline =~ /^\+[ \t]*\/\*[ \t]*$/ &&
--		    $prevrawline =~ /^\+[ \t]*$/) {
--			CHK("BLOCK_COMMENT_STYLE",
--			    "Don't begin block comments with only a /* line, use /* comment...\n" . $hereprev);
--		}
--
- # check for spaces at the beginning of a line.
- # Exceptions:
- #  1) within comments
-@@ -2987,8 +2976,7 @@ sub process {
- 			#print "chunks<$#chunks> linenr<$linenr> endln<$endln> level<$level>\n";
- 			#print "APW: <<$chunks[1][0]>><<$chunks[1][1]>>\n";
- 			if ($#chunks > 0 && $level == 0) {
--				my @allowed = ();
--				my $allow = 0;
-+				my $allowed = 0;
- 				my $seen = 0;
- 				my $herectx = $here . "\n";
- 				my $ln = $linenr - 1;
-@@ -2999,7 +2987,6 @@ sub process {
- 					my ($whitespace) = ($cond =~ /^((?:\s*\n[+-])*\s*)/s);
- 					my $offset = statement_rawlines($whitespace) - 1;
- 
--					$allowed[$allow] = 0;
- 					#print "COND<$cond> whitespace<$whitespace> offset<$offset>\n";
- 
- 					# We have looked at and allowed this specific line.
-@@ -3012,34 +2999,23 @@ sub process {
- 
- 					$seen++ if ($block =~ /^\s*{/);
- 
--					#print "cond<$cond> block<$block> allowed<$allowed[$allow]>\n";
-+					#print "cond<$cond> block<$block> allowed<$allowed>\n";
- 					if (statement_lines($cond) > 1) {
- 						#print "APW: ALLOWED: cond<$cond>\n";
--						$allowed[$allow] = 1;
-+						$allowed = 1;
- 					}
- 					if ($block =~/\b(?:if|for|while)\b/) {
- 						#print "APW: ALLOWED: block<$block>\n";
--						$allowed[$allow] = 1;
-+						$allowed = 1;
- 					}
- 					if (statement_block_size($block) > 1) {
- 						#print "APW: ALLOWED: lines block<$block>\n";
--						$allowed[$allow] = 1;
-+						$allowed = 1;
- 					}
--					$allow++;
- 				}
--				if ($seen) {
--					my $sum_allowed = 0;
--					foreach (@allowed) {
--						$sum_allowed += $_;
--					}
--					if ($sum_allowed == 0) {
--						WARN("BRACES",
--						     "braces {} are not necessary for any arm of this statement\n" . $herectx);
--					} elsif ($sum_allowed != $allow &&
--						 $seen != $allow) {
--						CHK("BRACES",
--						    "braces {} should be used on all arms of this statement\n" . $herectx);
--					}
-+				if ($seen && !$allowed) {
-+					WARN("BRACES",
-+					     "braces {} are not necessary for any arm of this statement\n" . $herectx);
- 				}
- 			}
- 		}
+--fOHHtNG4YXGJ0yqR--
