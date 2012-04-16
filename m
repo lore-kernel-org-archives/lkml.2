@@ -1,77 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755506Ab2DPUZb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Apr 2012 16:25:31 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:3282 "EHLO mx1.redhat.com"
+	id S1755552Ab2DPU0c (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Apr 2012 16:26:32 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:15578 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754841Ab2DPUV4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Apr 2012 16:21:56 -0400
-From: Mauro Carvalho Chehab <mchehab@redhat.com>
-Cc: Mauro Carvalho Chehab <mchehab@redhat.com>,
-        Linux Edac Mailing List <linux-edac@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Chris Metcalf <cmetcalf@tilera.com>
-Subject: [EDAC_ABI PATCH v13 24/26] tile_edac: convert driver to use the new edac ABI
-Date: Mon, 16 Apr 2012 17:21:43 -0300
-Message-Id: <1334607705-30320-25-git-send-email-mchehab@redhat.com>
-In-Reply-To: <1334607705-30320-1-git-send-email-mchehab@redhat.com>
-References: <1334607133-30039-1-git-send-email-mchehab@redhat.com>
- <1334607705-30320-1-git-send-email-mchehab@redhat.com>
-To: unlisted-recipients:; (no To-header on input)
+	id S1752993Ab2DPU00 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Apr 2012 16:26:26 -0400
+From: Matthew Garrett <mjg@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: Matthew Garrett <mjg@redhat.com>, airlied@redhat.com
+Subject: [PATCH V2 2/4] vga-switcheroo: Use vga_default_device()
+Date: Mon, 16 Apr 2012 16:26:03 -0400
+Message-Id: <1334607965-9582-2-git-send-email-mjg@redhat.com>
+In-Reply-To: <1334607965-9582-1-git-send-email-mjg@redhat.com>
+References: <1334607965-9582-1-git-send-email-mjg@redhat.com>
+X-SA-Do-Not-Run: Yes
+X-SA-Exim-Connect-IP: 66.187.233.202
+X-SA-Exim-Mail-From: mjg@redhat.com
+X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The legacy edac ABI is going to be removed. Port the driver to use
-and benefit from the new API functionality.
+vga-switcheroo currently changes the default VGA device by fiddling with
+the IORESOURCE_ROM_SHADOW flag on the device. This isn't strictly accurate,
+since there's no guarantee that switching also changes the ROM decoding.
+Switch over to using the vgaarb functions for this.
 
-Cc: Chris Metcalf <cmetcalf@tilera.com>
-Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
+Signed-off-by: Matthew Garrett <mjg@redhat.com>
+Cc: airlied@redhat.com
 ---
- drivers/edac/tile_edac.c |   16 +++++++++++++---
- 1 files changed, 13 insertions(+), 3 deletions(-)
+ drivers/gpu/vga/vga_switcheroo.c |    9 +++++----
+ 1 file changed, 5 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/edac/tile_edac.c b/drivers/edac/tile_edac.c
-index 6314ff9..0e4d628 100644
---- a/drivers/edac/tile_edac.c
-+++ b/drivers/edac/tile_edac.c
-@@ -71,7 +71,10 @@ static void tile_edac_check(struct mem_ctl_info *mci)
- 	if (mem_error.sbe_count != priv->ce_count) {
- 		dev_dbg(mci->dev, "ECC CE err on node %d\n", priv->node);
- 		priv->ce_count = mem_error.sbe_count;
--		edac_mc_handle_ce(mci, 0, 0, 0, 0, 0, mci->ctl_name);
-+		edac_mc_handle_error(HW_EVENT_ERR_CORRECTED, mci,
-+				     0, 0, 0,
-+				     0, 0, -1,
-+				     mci->ctl_name, "", NULL);
- 	}
+diff --git a/drivers/gpu/vga/vga_switcheroo.c b/drivers/gpu/vga/vga_switcheroo.c
+index 9a2c805..44c664e 100644
+--- a/drivers/gpu/vga/vga_switcheroo.c
++++ b/drivers/gpu/vga/vga_switcheroo.c
+@@ -28,6 +28,8 @@
+ #include <linux/pci.h>
+ #include <linux/vga_switcheroo.h>
+ 
++#include <linux/vgaarb.h>
++
+ struct vga_switcheroo_client {
+ 	struct pci_dev *pdev;
+ 	struct fb_info *fb_info;
+@@ -140,7 +142,7 @@ int vga_switcheroo_register_client(struct pci_dev *pdev,
+ 	vgasr_priv.clients[index].reprobe = reprobe;
+ 	vgasr_priv.clients[index].can_switch = can_switch;
+ 	vgasr_priv.clients[index].id = -1;
+-	if (pdev->resource[PCI_ROM_RESOURCE].flags & IORESOURCE_ROM_SHADOW)
++	if (pdev == vga_default_device())
+ 		vgasr_priv.clients[index].active = true;
+ 
+ 	vgasr_priv.registered_clients |= (1 << index);
+@@ -248,9 +250,8 @@ static int vga_switchto_stage1(struct vga_switcheroo_client *new_client)
+ 	if (new_client->pwr_state == VGA_SWITCHEROO_OFF)
+ 		vga_switchon(new_client);
+ 
+-	/* swap shadow resource to denote boot VGA device has changed so X starts on new device */
+-	active->pdev->resource[PCI_ROM_RESOURCE].flags &= ~IORESOURCE_ROM_SHADOW;
+-	new_client->pdev->resource[PCI_ROM_RESOURCE].flags |= IORESOURCE_ROM_SHADOW;
++	vga_set_default_device(new_client->pdev);
++
+ 	return 0;
  }
  
-@@ -122,6 +125,7 @@ static int __devinit tile_edac_mc_probe(struct platform_device *pdev)
- 	char			hv_file[32];
- 	int			hv_devhdl;
- 	struct mem_ctl_info	*mci;
-+	struct edac_mc_layer	layers[2];
- 	struct tile_edac_priv	*priv;
- 	int			rc;
- 
-@@ -131,8 +135,14 @@ static int __devinit tile_edac_mc_probe(struct platform_device *pdev)
- 		return -EINVAL;
- 
- 	/* A TILE MC has a single channel and one chip-select row. */
--	mci = edac_mc_alloc(sizeof(struct tile_edac_priv),
--		TILE_EDAC_NR_CSROWS, TILE_EDAC_NR_CHANS, pdev->id);
-+	layers[0].type = EDAC_MC_LAYER_CHIP_SELECT;
-+	layers[0].size = TILE_EDAC_NR_CSROWS;
-+	layers[0].is_csrow = true;
-+	layers[1].type = EDAC_MC_LAYER_CHANNEL;
-+	layers[1].size = TILE_EDAC_NR_CHANS;
-+	layers[1].is_csrow = false;
-+	mci = new_edac_mc_alloc(pdev->id, ARRAY_SIZE(layers), layers, false,
-+			    sizeof(struct tile_edac_priv));
- 	if (mci == NULL)
- 		return -ENOMEM;
- 	priv = mci->pvt_info;
 -- 
-1.7.8
+1.7.10
 
