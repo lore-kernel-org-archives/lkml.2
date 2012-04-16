@@ -1,105 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752698Ab2DPJ1b (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Apr 2012 05:27:31 -0400
-Received: from mail-pz0-f52.google.com ([209.85.210.52]:60632 "EHLO
-	mail-pz0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751811Ab2DPJ13 convert rfc822-to-8bit (ORCPT
+	id S1752970Ab2DPJ1m (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Apr 2012 05:27:42 -0400
+Received: from e28smtp08.in.ibm.com ([122.248.162.8]:38979 "EHLO
+	e28smtp08.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751811Ab2DPJ1j (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Apr 2012 05:27:29 -0400
-MIME-Version: 1.0
-In-Reply-To: <EF2E73589CA71846A15D0B2CDF79505D0905D5A1AA@wm021.weinmann.com>
-References: <20120413103937.GH7154@arwen.pp.htv.fi>
-	<1334317476-10044-1-git-send-email-h.feurstein@gmail.com>
-	<EF2E73589CA71846A15D0B2CDF79505D0905D5A1AA@wm021.weinmann.com>
-Date: Mon, 16 Apr 2012 11:27:29 +0200
-Message-ID: <CAFfN3gV0Cd2rrZ7OpGk51MPi71S2u7ZxWt4VLeirY+zz11yESA@mail.gmail.com>
-Subject: Re: [PATCH] i2c-at91: fix data-loss issue
-From: Hubert Feurstein <h.feurstein@gmail.com>
-To: "Voss, Nikolaus" <N.Voss@weinmann.de>
-Cc: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>,
-        "nicolas.ferre@atmel.com" <nicolas.ferre@atmel.com>,
-        "ben-linux@fluff.org" <ben-linux@fluff.org>,
-        "balbi@ti.com" <balbi@ti.com>, "rmallon@gmail.com" <rmallon@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Mon, 16 Apr 2012 05:27:39 -0400
+From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+To: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
+        LKML <linux-kernel@vger.kernel.org>, Linux-mm <linux-mm@kvack.org>,
+        Oleg Nesterov <oleg@redhat.com>, Andi Kleen <andi@firstfloor.org>,
+        Christoph Hellwig <hch@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Anton Arapov <anton@redhat.com>
+Date: Mon, 16 Apr 2012 14:49:36 +0530
+Message-Id: <20120416091936.19174.2641.sendpatchset@srdronam.in.ibm.com>
+Subject: [PATCH 1/3] tracing: Modify is_delete, is_return from int to bool
+x-cbid: 12041609-2000-0000-0000-0000072008B3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 16. April 2012 09:30 schrieb Voss, Nikolaus <N.Voss@weinmann.de>:
-> Hubert Feurstein wrote on 2012-04-13:
->> In the interrupt handler both status-flags (TXCOMP and RXRDY) might be
->> pending at the same time. In this case TXCOMP is handled but NOT RXRDY
->> which causes a data-loss on the current transfer
->
-> Right, this is definitely a bug and must be corrected. Part of my
-> motivation for exclusively or-ing the irq bits was not reading/
-> writing beyond the buffer because of (still) pending bits despite
-> of an already finished transfer, so I gave TXCOMP the highest prio.
->
-> Because of other reasons, write_next_byte() already checks this and
-> does nothing if all data already has been written. My suggestion is
-> to have read_next_byte() do this check too, as I don't trust the
-> hardware to reset RXRDY _immediately_ after reading.
-Adding a check in read_next_byte() would be good just for safety.
+From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
 
->
->> @@ -161,18 +161,22 @@ static irqreturn_t atmel_twi_interrupt(int irq, void
->> *dev_id)
->>  {
->>       struct at91_twi_dev *dev = dev_id;
->>       const unsigned status = at91_twi_read(dev, AT91_TWI_SR);
->> -     const unsigned irqstatus = status & at91_twi_read(dev, AT91_TWI_IMR);
->> +     unsigned irqstatus = status & at91_twi_read(dev, AT91_TWI_IMR);
->> +
->> +     irqstatus &= (AT91_TWI_RXRDY | AT91_TWI_TXRDY | AT91_TWI_TXCOMP);
->
-> The above line should be unnecessary as no more than those interrupts
-> are enabled anyway. Any special reason for this?
-No special reason for this.
+is_delete and is_return can take utmost 2 values and are better of
+being a boolean than a int. There are no functional changes.
 
->
->> +     if (!irqstatus)
->> +             return IRQ_NONE;
->> +
->> +     if (irqstatus & AT91_TWI_RXRDY)
->> +             at91_twi_read_next_byte(dev);
->> +
->> +     if (irqstatus & AT91_TWI_TXRDY)
->> +             at91_twi_write_next_byte(dev);
->
-> I would like to exclusively or TXRDY and RXRDY as those really should
-> not be active at the same time. Keeps the decision tree lean ;-).
-I agree, it should be save to xor at least those two.
+Acked-by: Steven Rostedt <rostedt@goodmis.org>
+Acked-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Signed-off-by: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+---
 
->
->> @@ -189,6 +193,10 @@ static int
->>  at91_do_twi_transfer(struct at91_twi_dev *dev)       if (dev->msg->flags &
->>  I2C_M_RD) {          unsigned start_flags = AT91_TWI_START;
->> +             /* clear any pending data */
->> +             (void)at91_twi_read(dev, AT91_TWI_SR);
->> +             (void)at91_twi_read(dev, AT91_TWI_RHR);
->
-> I would like to modify this, as this is a partial fix for the above bug
-> which should already be fully fixed by the modified isr.
-> I fear subtle data-loss if we make (partial) tabula rasa before each
-> transfer. I'd rather add an assertion to check if the corresponding
-> irqs are active as an indication for a driver/hw-bug.
-You also can add both, print an error/warning if the state in SR is
-not as expected and then add the two recovery lines.
+Changelog:
+(v5):
+ - separated out as different patch on Masami's suggestion.
 
->
-> I'll repost the driver with your fix on positive feedback from you.
-> Thanks for tracking this down.
->
-> Ben, is there any chance to get this driver into next?
->
-> Niko
->
->
+ kernel/trace/trace_kprobe.c |   16 ++++++++--------
+ 1 files changed, 8 insertions(+), 8 deletions(-)
 
-Hubert
+diff --git a/kernel/trace/trace_kprobe.c b/kernel/trace/trace_kprobe.c
+index 580a05e..4f935f8 100644
+--- a/kernel/trace/trace_kprobe.c
++++ b/kernel/trace/trace_kprobe.c
+@@ -651,7 +651,7 @@ static struct trace_probe *alloc_trace_probe(const char *group,
+ 					     void *addr,
+ 					     const char *symbol,
+ 					     unsigned long offs,
+-					     int nargs, int is_return)
++					     int nargs, bool is_return)
+ {
+ 	struct trace_probe *tp;
+ 	int ret = -ENOMEM;
+@@ -944,7 +944,7 @@ static int split_symbol_offset(char *symbol, unsigned long *offset)
+ #define PARAM_MAX_STACK (THREAD_SIZE / sizeof(unsigned long))
+ 
+ static int parse_probe_vars(char *arg, const struct fetch_type *t,
+-			    struct fetch_param *f, int is_return)
++			    struct fetch_param *f, bool is_return)
+ {
+ 	int ret = 0;
+ 	unsigned long param;
+@@ -977,7 +977,7 @@ static int parse_probe_vars(char *arg, const struct fetch_type *t,
+ 
+ /* Recursive argument parser */
+ static int __parse_probe_arg(char *arg, const struct fetch_type *t,
+-			     struct fetch_param *f, int is_return)
++			     struct fetch_param *f, bool is_return)
+ {
+ 	int ret = 0;
+ 	unsigned long param;
+@@ -1089,7 +1089,7 @@ static int __parse_bitfield_probe_arg(const char *bf,
+ 
+ /* String length checking wrapper */
+ static int parse_probe_arg(char *arg, struct trace_probe *tp,
+-			   struct probe_arg *parg, int is_return)
++			   struct probe_arg *parg, bool is_return)
+ {
+ 	const char *t;
+ 	int ret;
+@@ -1162,7 +1162,7 @@ static int create_trace_probe(int argc, char **argv)
+ 	 */
+ 	struct trace_probe *tp;
+ 	int i, ret = 0;
+-	int is_return = 0, is_delete = 0;
++	bool is_return = false, is_delete = false;
+ 	char *symbol = NULL, *event = NULL, *group = NULL;
+ 	char *arg;
+ 	unsigned long offset = 0;
+@@ -1171,11 +1171,11 @@ static int create_trace_probe(int argc, char **argv)
+ 
+ 	/* argc must be >= 1 */
+ 	if (argv[0][0] == 'p')
+-		is_return = 0;
++		is_return = false;
+ 	else if (argv[0][0] == 'r')
+-		is_return = 1;
++		is_return = true;
+ 	else if (argv[0][0] == '-')
+-		is_delete = 1;
++		is_delete = true;
+ 	else {
+ 		pr_info("Probe definition must be started with 'p', 'r' or"
+ 			" '-'.\n");
+
+
