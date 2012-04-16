@@ -1,88 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754194Ab2DPOOV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Apr 2012 10:14:21 -0400
-Received: from moutng.kundenserver.de ([212.227.17.10]:56223 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753801Ab2DPOOT (ORCPT
+	id S1754554Ab2DPOPD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Apr 2012 10:15:03 -0400
+Received: from mail-pz0-f52.google.com ([209.85.210.52]:43206 "EHLO
+	mail-pz0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754241Ab2DPOPA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Apr 2012 10:14:19 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Roland Stigge <stigge@antcom.de>
-Subject: Re: [PATCH v2 1/3] USB: Add driver for NXP ISP1301 USB transceiver
-Date: Mon, 16 Apr 2012 14:14:14 +0000
-User-Agent: KMail/1.12.2 (Linux/3.3.0-rc1; KDE/4.3.2; x86_64; ; )
-Cc: gregkh@linuxfoundation.org, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org, kevin.wells@nxp.com,
-        srinivas.bakki@nxp.com, stern@rowland.harvard.edu,
-        linux-arm-kernel@lists.infradead.org
-References: <1334582166-5485-1-git-send-email-stigge@antcom.de>
-In-Reply-To: <1334582166-5485-1-git-send-email-stigge@antcom.de>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
+	Mon, 16 Apr 2012 10:15:00 -0400
+Date: Mon, 16 Apr 2012 23:14:55 +0900
+From: Takuya Yoshikawa <takuya.yoshikawa@gmail.com>
+To: Avi Kivity <avi@redhat.com>
+Cc: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>,
+        Marcelo Tosatti <mtosatti@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>, KVM <kvm@vger.kernel.org>
+Subject: Re: [PATCH v2 04/16] KVM: MMU: return bool in __rmap_write_protect
+Message-Id: <20120416231455.f978b3ac9fb995cfce2853ae@gmail.com>
+In-Reply-To: <4F8AB02A.9020601@redhat.com>
+References: <4F87FA69.5060106@linux.vnet.ibm.com>
+	<4F87FBC1.5010907@linux.vnet.ibm.com>
+	<20120414110031.38450bebfe712215f01d529f@gmail.com>
+	<4F8AB02A.9020601@redhat.com>
+X-Mailer: Sylpheed 3.2.0beta3 (GTK+ 2.24.6; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-Message-Id: <201204161414.14624.arnd@arndb.de>
-X-Provags-ID: V02:K0:xJMP4kcETyUq1t84pRhsz+cjIPDeLkCVNeaBdOxY8RF
- 73lT724Ina+FrH1PAWjI1ZVbHSmN1mvqUvXlayuYQvz1Dmb1aQ
- aCjdClqsbwoa7t1LMWkDrDyqCjaFZAQ52us/iUlPtGcwiD1qnO
- bUbS1Jy3Wj+/RamQKC0nnyTFMCuAW6bQSvSWhdLMK0YXBreeTH
- xUxP6B2YRBT4IIQXAbsJRGvghLmfofmF7d0sPlzLPl40bj6JY5
- nUy5u5MBXkv0WjY+ldlULpa/N9BLTmKpnfMDg/3mO8Qhut7kjO
- d1LkdctxQuw/6u81QN+OW4TFrgN8Qhb5tZ4euWy85V9hcreqzH
- /C2xyl4cuXsVvma+psVc=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 16 April 2012, Roland Stigge wrote:
-> This very-lowlevel driver registers the NXP ISP1301 chip via the I2C subsystem.
-> The chip is the USB transceiver shared by ohci-nxp, lpc32xx_udc (gadget) and
-> isp1301_omap.
+On Sun, 15 Apr 2012 14:25:30 +0300
+Avi Kivity <avi@redhat.com> wrote:
+
+> > > @@ -1689,7 +1690,7 @@ static void mmu_sync_children(struct kvm_vcpu *vcpu,
+> > > 
+> > >  	kvm_mmu_pages_init(parent, &parents, &pages);
+> > >  	while (mmu_unsync_walk(parent, &pages)) {
+> > > -		int protected = 0;
+> > > +		bool protected = false;
+> > > 
+> > >  		for_each_sp(pages, sp, parents, i)
+> > >  			protected |= rmap_write_protect(vcpu->kvm, sp->gfn);
+> >
+> > Isn't this the reason we prefer int to bool?
+> >
+> > Not sure people like to use |= with boolean.
+> >
 > 
-> Following patches let the respective USB host and gadget drivers use this
-> driver, instead of duplicating ISP1301 handling.
+> Why not?
 > 
-> Signed-off-by: Roland Stigge <stigge@antcom.de>
 
-All three patches:
+The code "bitwise OR assignment" is assuming the internal representations
+of true and false: true=1, false=0.
 
-Acked-by: Arnd Bergmann <arnd@arndb.de>
+I might have seen some point if it had been
+	protected = protected || rmap_...
 
-> This driver needs to be probe()d before the respective USB driver using it. For
-> modules, this is handled via the module dependency. When linking statically, it
-> is done via linking order in the Makefile (misc/ before host/ and the gadget/).
 
-You can easily avoid the link order restriction now by returning -EPROBE_DEFER
-from the probe function of the device that needs this one.
+But the real question is whether there is any point in re-writing completely
+correct C code: there are tons of int like this in the kernel code.
 
-> Currently, only one ISP1301 chip is supported. To support multiple instances,
-> we would need a mechanism to identify the respective chips via DT (and static
-> resources or platform data) to be referenced by the higher level USB driver at
-> isp1301_get_client(). Any suggestions?
+__rmap_write_protect() was introduced recently, so if this conversion is
+really worthwhile, I should have been told to use bool at that time, no?
 
-Put a phandle into the usb device node, like:
 
-       isp1301: usb-transceiver@23 {
-		compatible = "nxp,isp1301";
-		reg = <23>;
-	};
-
-       usbd@31020000 {
-               compatible = "nxp,lpc32xx-udc";
-               reg = <0x31020000 0x300>;
-               interrupt-parent = <&mic>;
-               interrupts = <0x3d 0>, <0x3e 0>, <0x3c 0>, <0x3a 0>;
-	       transceiver = <&isp1301>;
-               status = "disable";
-       };
-
-Then add a device_node argument to the isp1301_get_client() function
-and change the function to use bus_find_device() with a match function
-that compares the driver pointer.
-
-Alternatively (and much more complex), you could add a generic usb-transceiver
-abstraction that does this and also hides the register accesses behind
-hardware independent function calls.
-
-	Arnd
+Thanks,
+	Takuya
