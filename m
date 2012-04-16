@@ -1,35 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755118Ab2DPUNP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Apr 2012 16:13:15 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:63826 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755097Ab2DPUNM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Apr 2012 16:13:12 -0400
+	id S1755197Ab2DPUNX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Apr 2012 16:13:23 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:23098 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755128Ab2DPUNT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Apr 2012 16:13:19 -0400
+Message-ID: <4F8C7D59.1000402@redhat.com>
+Date: Mon, 16 Apr 2012 16:13:13 -0400
+From: Rik van Riel <riel@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120329 Thunderbird/11.0.1
 MIME-Version: 1.0
-In-Reply-To: <20120416144213.GC24130@sortiz-mobl>
-References: <1333382148-14137-1-git-send-email-daniel.lezcano@linaro.org>
-	<20120416144213.GC24130@sortiz-mobl>
-Date: Mon, 16 Apr 2012 22:13:11 +0200
-Message-ID: <CACRpkdahCmYXR_LNa=p8NGnsRownmn0aFmDR8DhnJyppAOuNrA@mail.gmail.com>
-Subject: Re: [PATCH] mfd : dbx500 : fix compilation error
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Samuel Ortiz <sameo@linux.intel.com>
-Cc: Daniel Lezcano <daniel.lezcano@linaro.org>,
-        srinidhi.kasagar@stericsson.com, linus.walleij@stericsson.com,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+To: Dan Magenheimer <dan.magenheimer@oracle.com>
+CC: linux-kernel@vger.kernel.org, linux-mm <linux-mm@kvack.org>
+Subject: Re: Followup: [PATCH -mm] make swapin readahead skip over holes
+References: <7297ae3b-f3e1-480b-838f-69b0e09a733d@default>
+In-Reply-To: <7297ae3b-f3e1-480b-838f-69b0e09a733d@default>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 16, 2012 at 4:42 PM, Samuel Ortiz <sameo@linux.intel.com> wrote:
+On 04/16/2012 02:34 PM, Dan Magenheimer wrote:
+> Hi Rik --
+>
+> I saw this patch in 3.4-rc1 (because it caused a minor merge
+> conflict with frontswap) and wondered about its impact.
+> Since I had a server still set up from running benchmarks
+> before LSFMM, I ran my kernel compile -jN workload (with
+> N varying from 4 to 40) on 1GB of RAM, on 3.4-rc2 both with
+> and without this patch.
+>
+> For values of N=24 and N=28, your patch made the workload
+> run 4-9% percent faster.  For N=16 and N=20, it was 5-10%
+> slower.  And for N=36 and N=40, it was 30%-40% slower!
+>
+> Is this expected?  Since the swap "disk" is a partition
+> on the one active drive, maybe the advantage is lost due
+> to contention?
 
-> Applied to my for-linus branch, thanks.
+There are several things going on here:
 
-I'll rebase the recent 5500 deletion patches on top of that as soon as it's
-available.
+1) you are running a workload that thrashes
 
-Yours,
-Linus Walleij
+2) the speed at which data is swapped in is increased
+    with this patch
+
+3) with only 1GB memory, the inactive anon list is
+    the same size as the active anon list
+
+4) the above points combined mean that less of the
+    working set could be in memory at once
+
+One solution may be to decrease the swap cluster for
+small systems, when they are thrashing.
+
+On the other hand, for most systems swap is very much
+a special circumstance, and you want to focus on quickly
+moving excess stuff into swap, and moving it back into
+memory when needed.
+
+Workloads that thrash are very much an exception, and
+probably not what we should optimize for.
+
+
+-- 
+All rights reversed
