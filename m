@@ -1,41 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754577Ab2DPOZE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Apr 2012 10:25:04 -0400
-Received: from casper.infradead.org ([85.118.1.10]:58948 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753945Ab2DPOZC convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Apr 2012 10:25:02 -0400
-Message-ID: <1334586287.28150.54.camel@twins>
-Subject: Re: kvm: RCU warning in async pf
-From: Peter Zijlstra <peterz@infradead.org>
-To: Gleb Natapov <gleb@redhat.com>
-Cc: Sasha Levin <levinsasha928@gmail.com>, Avi Kivity <avi@redhat.com>,
-        Marcelo Tosatti <mtosatti@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        kvm <kvm@vger.kernel.org>, linux-kernel <linux-kernel@vger.kernel.org>,
-        Dave Jones <davej@redhat.com>
-Date: Mon, 16 Apr 2012 16:24:47 +0200
-In-Reply-To: <20120416141735.GA18613@redhat.com>
-References: <1333414472.11455.7.camel@lappy>
-	 <20120403105226.GF14939@redhat.com> <20120404123033.GD11918@redhat.com>
-	 <1334396693.2528.45.camel@twins> <20120416102855.GP11918@redhat.com>
-	 <20120416125848.GT11918@redhat.com> <1334581548.28150.40.camel@twins>
-	 <20120416130806.GV11918@redhat.com> <1334582281.28150.41.camel@twins>
-	 <1334582840.28150.43.camel@twins> <20120416141735.GA18613@redhat.com>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.2- 
-Mime-Version: 1.0
+	id S1754597Ab2DPOZ1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Apr 2012 10:25:27 -0400
+Received: from mga11.intel.com ([192.55.52.93]:2874 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754116Ab2DPOZD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Apr 2012 10:25:03 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="142318815"
+Date: Mon, 16 Apr 2012 22:19:44 +0800
+From: Fengguang Wu <fengguang.wu@intel.com>
+To: Vivek Goyal <vgoyal@redhat.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, ctalbott@google.com, rni@google.com,
+        andrea@betterlinux.com, containers@lists.linux-foundation.org,
+        linux-kernel@vger.kernel.org, lsf@lists.linux-foundation.org,
+        linux-mm@kvack.org, jmoyer@redhat.com, lizefan@huawei.com,
+        linux-fsdevel@vger.kernel.org, cgroups@vger.kernel.org
+Subject: Re: [Lsf] [RFC] writeback and cgroup
+Message-ID: <20120416141944.GA5750@localhost>
+References: <20120404145134.GC12676@redhat.com>
+ <20120407080027.GA2584@quack.suse.cz>
+ <20120410180653.GJ21801@redhat.com>
+ <20120410210505.GE4936@quack.suse.cz>
+ <20120410212041.GP21801@redhat.com>
+ <20120410222425.GF4936@quack.suse.cz>
+ <20120411154005.GD16692@redhat.com>
+ <1334406314.2528.90.camel@twins>
+ <20120416125432.GB12776@redhat.com>
+ <20120416130707.GA10532@localhost>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120416130707.GA10532@localhost>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2012-04-16 at 17:17 +0300, Gleb Natapov wrote:
-> Should I resend the patch with removal of exit_idle() call or it will
-> be removed by a patch that removes exit_idle() completely later?
+On Mon, Apr 16, 2012 at 09:07:07PM +0800, Fengguang Wu wrote:
+> On Mon, Apr 16, 2012 at 08:54:32AM -0400, Vivek Goyal wrote:
+> > On Sat, Apr 14, 2012 at 02:25:14PM +0200, Peter Zijlstra wrote:
+> > > On Wed, 2012-04-11 at 11:40 -0400, Vivek Goyal wrote:
+> > > > 
+> > > > Ok, that's good to know. How would we configure this special bdi? I am
+> > > > assuming there is no backing device visible in /sys/block/<device>/queue/?
+> > > > Same is true for network file systems. 
+> > > 
+> > > root@twins:/usr/src/linux-2.6# awk '/nfs/ {print $3}' /proc/self/mountinfo | while read bdi ; do ls -la /sys/class/bdi/${bdi}/ ; done
+> > > ls: cannot access /sys/class/bdi/0:20/: No such file or directory
+> > > total 0
+> > > drwxr-xr-x  3 root root    0 2012-03-27 23:18 .
+> > > drwxr-xr-x 35 root root    0 2012-03-27 23:02 ..
+> > > -rw-r--r--  1 root root 4096 2012-04-14 14:22 max_ratio
+> > > -rw-r--r--  1 root root 4096 2012-04-14 14:22 min_ratio
+> > > drwxr-xr-x  2 root root    0 2012-04-14 14:22 power
+> > > -rw-r--r--  1 root root 4096 2012-04-14 14:22 read_ahead_kb
+> > > lrwxrwxrwx  1 root root    0 2012-03-27 23:18 subsystem -> ../../../../class/bdi
+> > > -rw-r--r--  1 root root 4096 2012-03-27 23:18 uevent
+> > 
+> > Ok, got it. So /proc/self/mountinfo has the information about st_dev and
+> > one can use that to reach to associated bdi. Thanks Peter.
 > 
-I think we can do the latter, once we decided what to do with that stuff
-we can clean it up/remove it whole sale.
+> Vivek, I noticed these lines in cfq code
+> 
+>                 sscanf(dev_name(bdi->dev), "%u:%u", &major, &minor);
+> 
+> Why not use bdi->dev->devt?  The problem is that dev_name() will
+> return "btrfs-X" for btrfs rather than "major:minor".
+
+Sorry it's not that simple. btrfs reports its faked btrfs_fs_info.bdi
+to upper layer which is different from the bdi's for
+btrfs_fs_info.fs_devices.devices saw by cfq.
+
+It's the faked btrfs bdi that is named "btrfs-X" by this function:
+
+setup_bdi():
+        bdi_setup_and_register(bdi, "btrfs", BDI_CAP_MAP_COPY);
+
+It does impose difficulties to interpret btrfs mountinfo, where you
+cannot directly get the block device major/minor numbers:
+
+35 16 0:26 / /fs/sda3 rw,relatime - btrfs /dev/sda3 rw,noacl
+
+Thanks,
+Fengguang
