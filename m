@@ -1,414 +1,199 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755847Ab2DPUjI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Apr 2012 16:39:08 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:46613 "EHLO mx1.redhat.com"
+	id S1755437Ab2DPUmJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Apr 2012 16:42:09 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:42641 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755802Ab2DPUjF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Apr 2012 16:39:05 -0400
+	id S1755766Ab2DPUjA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Apr 2012 16:39:00 -0400
 From: Mauro Carvalho Chehab <mchehab@redhat.com>
 Cc: Mauro Carvalho Chehab <mchehab@redhat.com>,
         Linux Edac Mailing List <linux-edac@vger.kernel.org>,
         Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
         Doug Thompson <norsk5@yahoo.com>,
-        Borislav Petkov <borislav.petkov@amd.com>,
-        Randy Dunlap <rdunlap@xenotime.net>, Josh Boyer <jwboyer@redhat.com>,
-        Hui Wang <jason77.wang@gmail.com>
-Subject: [EDAC ABI v13 14/25] edac: add a new per-dimm API and make the old per-virtual-rank API obsolete
-Date: Mon, 16 Apr 2012 17:38:38 -0300
-Message-Id: <1334608729-30803-15-git-send-email-mchehab@redhat.com>
+        Greg K H <gregkh@linuxfoundation.org>
+Subject: [EDAC ABI v13 17/25] edac: Create a per-Memory Controller bus
+Date: Mon, 16 Apr 2012 17:38:41 -0300
+Message-Id: <1334608729-30803-18-git-send-email-mchehab@redhat.com>
 In-Reply-To: <1334608729-30803-1-git-send-email-mchehab@redhat.com>
 References: <1334608729-30803-1-git-send-email-mchehab@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The old EDAC API is broken. It only works fine for systems manufatured
-before 2005 and for AMD 64. The reason is that it forces all memory
-controller drivers to discover rank info.
+I'm getting this bug on machines with more than one memory controller:
 
-Also, it doesn't allow grouping the several ranks into a DIMM.
+[  819.094946] EDAC DEBUG: find_mci_by_dev: find_mci_by_dev()
+[  819.094948] EDAC DEBUG: edac_create_sysfs_mci_device: edac_create_sysfs_mci_device() idx=1
+[  819.094952] EDAC DEBUG: edac_create_sysfs_mci_device: edac_create_sysfs_mci_device(): creating device mc1
+[  819.094967] EDAC DEBUG: edac_create_sysfs_mci_device: edac_create_sysfs_mci_device creating dimm0, located at channel 0 slot 0
+[  819.094984] ------------[ cut here ]------------
+[  819.100142] WARNING: at fs/sysfs/dir.c:481 sysfs_add_one+0xc1/0xf0()
+[  819.107282] Hardware name: S2600CP
+[  819.111078] sysfs: cannot create duplicate filename '/bus/edac/devices/dimm0'
+[  819.119062] Modules linked in: sb_edac(+) edac_core ip6table_filter ip6_tables ebtable_nat ebtables ipt_MASQUERADE iptable_nat nf_nat nf_conntrack_ipv4 nf_defrag_ipv4 xt_state nf_conntrack ipt_REJECT xt_CHECKSUM iptable_mangle iptable_filter ip_tables bridge stp llc sunrpc binfmt_misc dm_mirror dm_region_hash dm_log vhost_net macvtap macvlan tun kvm microcode pcspkr iTCO_wdt iTCO_vendor_support igb i2c_i801 i2c_core sg ioatdma dca sr_mod cdrom sd_mod crc_t10dif ahci libahci isci libsas libata scsi_transport_sas scsi_mod wmi dm_mod [last unloaded: scsi_wait_scan]
+[  819.175748] Pid: 10902, comm: modprobe Not tainted 3.3.0-0.11.el7.v12.2.x86_64 #1
+[  819.184113] Call Trace:
+[  819.186868]  [<ffffffff8105adaf>] warn_slowpath_common+0x7f/0xc0
+[  819.193573]  [<ffffffff8105aea6>] warn_slowpath_fmt+0x46/0x50
+[  819.200000]  [<ffffffff811f53d1>] sysfs_add_one+0xc1/0xf0
+[  819.206025]  [<ffffffff811f5cf5>] sysfs_do_create_link+0x135/0x220
+[  819.212944]  [<ffffffff811f7023>] ? sysfs_create_group+0x13/0x20
+[  819.219656]  [<ffffffff811f5df3>] sysfs_create_link+0x13/0x20
+[  819.226109]  [<ffffffff813b04f6>] bus_add_device+0xe6/0x1b0
+[  819.232350]  [<ffffffff813ae7cb>] device_add+0x2db/0x460
+[  819.238300]  [<ffffffffa0325634>] edac_create_dimm_object+0x84/0xf0 [edac_core]
+[  819.246460]  [<ffffffffa0325e18>] edac_create_sysfs_mci_device+0xe8/0x290 [edac_core]
+[  819.255215]  [<ffffffffa0322e2a>] edac_mc_add_mc+0x5a/0x2c0 [edac_core]
+[  819.262611]  [<ffffffffa03412df>] sbridge_register_mci+0x1bc/0x279 [sb_edac]
+[  819.270493]  [<ffffffffa03417a3>] sbridge_probe+0xef/0x175 [sb_edac]
+[  819.277630]  [<ffffffff813ba4e8>] ? pm_runtime_enable+0x58/0x90
+[  819.284268]  [<ffffffff812f430c>] local_pci_probe+0x5c/0xd0
+[  819.290508]  [<ffffffff812f5ba1>] __pci_device_probe+0xf1/0x100
+[  819.297117]  [<ffffffff812f5bea>] pci_device_probe+0x3a/0x60
+[  819.303457]  [<ffffffff813b1003>] really_probe+0x73/0x270
+[  819.309496]  [<ffffffff813b138e>] driver_probe_device+0x4e/0xb0
+[  819.316104]  [<ffffffff813b149b>] __driver_attach+0xab/0xb0
+[  819.322337]  [<ffffffff813b13f0>] ? driver_probe_device+0xb0/0xb0
+[  819.329151]  [<ffffffff813af5d6>] bus_for_each_dev+0x56/0x90
+[  819.335489]  [<ffffffff813b0d7e>] driver_attach+0x1e/0x20
+[  819.341534]  [<ffffffff813b0980>] bus_add_driver+0x1b0/0x2a0
+[  819.347884]  [<ffffffffa0347000>] ? 0xffffffffa0346fff
+[  819.353641]  [<ffffffff813b19f6>] driver_register+0x76/0x140
+[  819.359980]  [<ffffffff8159f18b>] ? printk+0x51/0x53
+[  819.365524]  [<ffffffffa0347000>] ? 0xffffffffa0346fff
+[  819.371291]  [<ffffffff812f5896>] __pci_register_driver+0x56/0xd0
+[  819.378096]  [<ffffffffa0347054>] sbridge_init+0x54/0x1000 [sb_edac]
+[  819.385231]  [<ffffffff8100203f>] do_one_initcall+0x3f/0x170
+[  819.391577]  [<ffffffff810bcd2e>] sys_init_module+0xbe/0x230
+[  819.397926]  [<ffffffff815bb529>] system_call_fastpath+0x16/0x1b
+[  819.404633] ---[ end trace 1654fdd39556689f ]---
 
-So, what almost all modern drivers do is to create a fake virtual-rank
-information, and use it to cheat the EDAC core to accept the driver.
+This is happening because the bus is not being properly initialized.
+Instead of putting the memory sub-devices inside the memory controller,
+it is putting everything under the same directory:
 
-While this works if the user has enough time to discover what DIMM slot
-corresponds to each "virtual-rank" information, it prevents EDAC usage
-for users with less available time. It also makes life hard for vendors
-that may want to provide a table with their motherboards to the userspace
-tool (edac-utils) as each driver has its own logic for the virtual
-mapping.
+$ tree /sys/bus/edac/
+/sys/bus/edac/
+├── devices
+│   ├── all_channel_counts -> ../../../devices/system/edac/mc/mc0/all_channel_counts
+│   ├── csrow0 -> ../../../devices/system/edac/mc/mc0/csrow0
+│   ├── csrow1 -> ../../../devices/system/edac/mc/mc0/csrow1
+│   ├── csrow2 -> ../../../devices/system/edac/mc/mc0/csrow2
+│   ├── dimm0 -> ../../../devices/system/edac/mc/mc0/dimm0
+│   ├── dimm1 -> ../../../devices/system/edac/mc/mc0/dimm1
+│   ├── dimm3 -> ../../../devices/system/edac/mc/mc0/dimm3
+│   ├── dimm6 -> ../../../devices/system/edac/mc/mc0/dimm6
+│   ├── inject_addrmatch -> ../../../devices/system/edac/mc/mc0/inject_addrmatch
+│   ├── mc -> ../../../devices/system/edac/mc
+│   └── mc0 -> ../../../devices/system/edac/mc/mc0
+├── drivers
+├── drivers_autoprobe
+├── drivers_probe
+└── uevent
 
-So, the old API should be removed, in favor of a more flexible API that
-allows newer drivers to not lie to the EDAC core.
+On a multi-memory controller system, the names "csrow%d" and "dimm%d"
+should be under "mc%d", and not at the main hierarchy level.
+
+So, we need to create a per-MC bus, in order to have its own namespace.
 
 Reviewed-by: Aristeu Rozanski <arozansk@redhat.com>
 Cc: Doug Thompson <norsk5@yahoo.com>
-Cc: Borislav Petkov <borislav.petkov@amd.com>
-Cc: Randy Dunlap <rdunlap@xenotime.net>
-Cc: Josh Boyer <jwboyer@redhat.com>
-Cc: Hui Wang <jason77.wang@gmail.com>
+Cc: Greg K H <gregkh@linuxfoundation.org>
 Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
 ---
- drivers/edac/Kconfig         |    8 ++
- drivers/edac/edac_mc.c       |   43 ++++++++----
- drivers/edac/edac_mc_sysfs.c |  165 +++++++++++++++++++++++++++++++++++++++++-
- 3 files changed, 202 insertions(+), 14 deletions(-)
+ drivers/edac/edac_mc_sysfs.c |   25 +++++++++++++++++++++----
+ include/linux/edac.h         |    1 +
+ 2 files changed, 22 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/edac/Kconfig b/drivers/edac/Kconfig
-index fdffa1b..3b3f84f 100644
---- a/drivers/edac/Kconfig
-+++ b/drivers/edac/Kconfig
-@@ -31,6 +31,14 @@ if EDAC
- 
- comment "Reporting subsystems"
- 
-+config EDAC_LEGACY_SYSFS
-+	bool "EDAC legacy sysfs"
-+	default y
-+	help
-+	  Enable the compatibility sysfs nodes.
-+	  Use 'Y' if your edac utilities aren't ported to work with the newer
-+	  structures.
-+
- config EDAC_DEBUG
- 	bool "Debugging"
- 	help
-diff --git a/drivers/edac/edac_mc.c b/drivers/edac/edac_mc.c
-index 35c8f3b..bb96fac 100644
---- a/drivers/edac/edac_mc.c
-+++ b/drivers/edac/edac_mc.c
-@@ -89,7 +89,7 @@ static void edac_mc_dump_mci(struct mem_ctl_info *mci)
- 	debugf4("\tmci->edac_check = %p\n", mci->edac_check);
- 	debugf3("\tmci->nr_csrows = %d, csrows = %p\n",
- 		mci->nr_csrows, mci->csrows);
--	debugf3("\tmci->nr_dimms = %d, dimns = %p\n",
-+	debugf3("\tmci->nr_dimms = %d, dimms = %p\n",
- 		mci->tot_dimms, mci->dimms);
- 	debugf3("\tdev = %p\n", mci->pdev);
- 	debugf3("\tmod_name:ctl_name = %s:%s\n", mci->mod_name, mci->ctl_name);
-@@ -170,10 +170,6 @@ void *edac_align_ptr(void **p, unsigned size, int quant)
-  * @size_pvt:		size of private storage needed
-  *
-  *
-- * FIXME: drivers handle multi-rank memories on different ways: on some
-- * drivers, one multi-rank memory is mapped as one DIMM, while, on others,
-- * a single multi-rank DIMM would be mapped into several "dimms".
-- *
-  * Non-csrow based drivers (like FB-DIMM and RAMBUS ones) will likely report
-  * such DIMMS properly, but the CSROWS-based ones will likely do the wrong
-  * thing, as two chip select values are used for dual-rank memories (and 4, for
-@@ -188,6 +184,12 @@ void *edac_align_ptr(void **p, unsigned size, int quant)
-  *
-  * Use edac_mc_free() to free mc structures allocated by this function.
-  *
-+ * NOTE: drivers handle multi-rank memories on different ways: on some
-+ * drivers, one multi-rank memory is mapped as one entry, while, on others,
-+ * a single multi-rank DIMM would be mapped into several entries. Currently,
-+ * this function will allocate multiple struct dimm_info on such scenarios,
-+ * as grouping the multiple ranks require drivers change.
-+ *
-  * Returns:
-  *	NULL allocation failed
-  *	struct mem_ctl_info pointer
-@@ -207,9 +209,10 @@ struct mem_ctl_info *edac_mc_alloc(unsigned edac_index,
- 	u32 *ce_per_layer[EDAC_MAX_LAYERS], *ue_per_layer[EDAC_MAX_LAYERS];
- 	void *pvt, *p;
- 	unsigned size, tot_dimms, count, pos[EDAC_MAX_LAYERS];
--	unsigned tot_csrows, tot_cschannels;
-+	unsigned tot_csrows, tot_cschannels, tot_errcount = 0;
- 	int i, j, n, len;
- 	int row, chn;
-+	bool per_rank = false;
- 
- 	BUG_ON(n_layers > EDAC_MAX_LAYERS);
- 	/*
-@@ -225,6 +228,9 @@ struct mem_ctl_info *edac_mc_alloc(unsigned edac_index,
- 			tot_csrows *= layers[i].size;
- 		else
- 			tot_cschannels *= layers[i].size;
-+
-+		if (layers[i].type == EDAC_MC_LAYER_CHIP_SELECT)
-+			per_rank = true;
- 	}
- 
- 	/* Figure out the offsets of the various items from the start of an mc
-@@ -241,14 +247,21 @@ struct mem_ctl_info *edac_mc_alloc(unsigned edac_index,
- 	count = 1;
- 	for (i = 0; i < n_layers; i++) {
- 		count *= layers[i].size;
-+		debugf4("%s: errcount layer %d size %d\n", __func__, i, count);
- 		ce_per_layer[i] = edac_align_ptr(&ptr, sizeof(u32), count);
- 		ue_per_layer[i] = edac_align_ptr(&ptr, sizeof(u32), count);
-+		tot_errcount += 2 * count;
- 	}
-+
-+	debugf4("%s: allocating %d error counters\n", __func__, tot_errcount);
- 	pvt = edac_align_ptr(&ptr, sz_pvt, 1);
- 	size = ((unsigned long)pvt) + sz_pvt;
- 
--	debugf1("%s(): allocating %u bytes for mci data (%d dimms, %d csrows/channels)\n",
--		__func__, size, tot_dimms, tot_csrows * tot_cschannels);
-+	debugf1("%s(): allocating %u bytes for mci data (%d %s, %d csrows/channels)\n",
-+		__func__, size,
-+		tot_dimms,
-+		per_rank ? "ranks" : "dimms",
-+		tot_csrows * tot_cschannels);
- 	mci = kzalloc(size, GFP_KERNEL);
- 	if (mci == NULL)
- 		return NULL;
-@@ -277,6 +290,7 @@ struct mem_ctl_info *edac_mc_alloc(unsigned edac_index,
- 	memcpy(mci->layers, layers, sizeof(*lay) * n_layers);
- 	mci->nr_csrows = tot_csrows;
- 	mci->num_cschannel = tot_cschannels;
-+	mci->mem_is_per_rank = per_rank;
- 
- 	/*
- 	 * Fills the csrow struct
-@@ -302,15 +316,16 @@ struct mem_ctl_info *edac_mc_alloc(unsigned edac_index,
- 	memset(&pos, 0, sizeof(pos));
- 	row = 0;
- 	chn = 0;
--	debugf4("%s: initializing %d dimms\n", __func__, tot_dimms);
-+	debugf4("%s: initializing %d %s\n", __func__, tot_dimms,
-+		per_rank ? "ranks" : "dimms");
- 	for (i = 0; i < tot_dimms; i++) {
- 		chan = &csi[row].channels[chn];
- 		dimm = GET_POS(lay, mci->dimms, n_layers,
- 			       pos[0], pos[1], pos[2]);
- 		dimm->mci = mci;
- 
--		debugf2("%s: %d: dimm%zd (%d:%d:%d): row %d, chan %d\n", __func__,
--			i, (dimm - mci->dimms),
-+		debugf2("%s: %d: %s%zd (%d:%d:%d): row %d, chan %d\n", __func__,
-+			i, per_rank ? "rank" : "dimm", (dimm - mci->dimms),
- 			pos[0], pos[1], pos[2], row, chn);
- 
- 		/*
-@@ -982,8 +997,10 @@ void edac_mc_handle_error(const enum hw_event_mc_err_type type,
- 			 * get csrow/channel of the dimm, in order to allow
- 			 * incrementing the compat API counters
- 			 */
--			debugf4("%s: dimm csrows (%d,%d)\n",
--				__func__, dimm->csrow, dimm->cschannel);
-+			debugf4("%s: %s csrows map: (%d,%d)\n",
-+				__func__,
-+				mci->mem_is_per_rank ? "rank" : "dimm",
-+				dimm->csrow, dimm->cschannel);
- 			if (row == -1)
- 				row = dimm->csrow;
- 			else if (row >= 0 && row != dimm->csrow)
 diff --git a/drivers/edac/edac_mc_sysfs.c b/drivers/edac/edac_mc_sysfs.c
-index 3709d5e..a4ee4aa 100644
+index 5f7f0f1..38fccf2 100644
 --- a/drivers/edac/edac_mc_sysfs.c
 +++ b/drivers/edac/edac_mc_sysfs.c
-@@ -130,6 +130,7 @@ static const char *edac_caps[] = {
- 	[EDAC_S16ECD16ED] = "S16ECD16ED"
- };
+@@ -357,7 +357,7 @@ static int edac_create_csrow_object(struct mem_ctl_info *mci,
+ 		return -ENODEV;
  
-+#ifdef CONFIG_EDAC_LEGACY_SYSFS
- /*
-  * EDAC sysfs CSROW data structures and methods
-  */
-@@ -443,6 +444,159 @@ static void edac_delete_csrow_objects(struct mem_ctl_info *mci)
- 		device_del(&mci->csrows[i].dev);
- 	}
- }
-+#endif
+ 	csrow->dev.type = &csrow_attr_type;
+-	csrow->dev.bus = mci_pdev.bus;
++	csrow->dev.bus = &mci->bus;
+ 	device_initialize(&csrow->dev);
+ 	csrow->dev.parent = &mci->dev;
+ 	dev_set_name(&csrow->dev, "csrow%d", index);
+@@ -580,7 +580,7 @@ static int edac_create_dimm_object(struct mem_ctl_info *mci,
+ 	dimm->mci = mci;
+ 
+ 	dimm->dev.type = &dimm_attr_type;
+-	dimm->dev.bus = mci_pdev.bus;
++	dimm->dev.bus = &mci->bus;
+ 	device_initialize(&dimm->dev);
+ 
+ 	dimm->dev.parent = &mci->dev;
+@@ -934,16 +934,29 @@ int edac_create_sysfs_mci_device(struct mem_ctl_info *mci)
+ 	device_initialize(&mci->dev);
+ 
+ 	mci->dev.parent = &mci_pdev;
+-	mci->dev.bus = mci_pdev.bus;
++	mci->dev.bus = &mci->bus;
+ 	dev_set_name(&mci->dev, "mc%d", mci->mc_idx);
+ 	dev_set_drvdata(&mci->dev, mci);
+ 	pm_runtime_forbid(&mci->dev);
+ 
++	/*
++	 * The memory controller needs its own bus, in order to avoid
++	 * namespace conflicts at /sys/bus/edac.
++	 */
++	debugf0("creating bus %s\n",mci->bus.name);
++	mci->bus.name = kstrdup(dev_name(&mci->dev), GFP_KERNEL);
++	err = bus_register(&mci->bus);
++	if (err < 0)
++		return err;
 +
-+/*
-+ * Per-dimm (or per-rank) devices
-+ */
-+
-+#define to_dimm(k) container_of(k, struct dimm_info, dev)
-+
-+/* show/store functions for DIMM Label attributes */
-+static ssize_t dimmdev_location_show(struct device *dev,
-+				     struct device_attribute *mattr, char *data)
-+{
-+	struct dimm_info *dimm = to_dimm(dev);
-+	struct mem_ctl_info *mci = dimm->mci;
-+	int i;
-+	char *p = data;
-+
-+	for (i = 0; i < mci->n_layers; i++) {
-+		p += sprintf(p, "%s %d ",
-+			     edac_layer_name[mci->layers[i].type],
-+			     dimm->location[i]);
+ 	debugf0("%s(): creating device %s\n", __func__,
+ 		dev_name(&mci->dev));
+ 	err = device_add(&mci->dev);
+-	if (err < 0)
++	if (err < 0) {
++		bus_unregister(&mci->bus);
++		kfree(mci->bus.name);
+ 		return err;
 +	}
-+
-+	return p - data;
-+}
-+
-+static ssize_t dimmdev_label_show(struct device *dev,
-+				  struct device_attribute *mattr, char *data)
-+{
-+	struct dimm_info *dimm = to_dimm(dev);
-+
-+	/* if field has not been initialized, there is nothing to send */
-+	if (!dimm->label[0])
-+		return 0;
-+
-+	return snprintf(data, EDAC_MC_LABEL_LEN, "%s\n", dimm->label);
-+}
-+
-+static ssize_t dimmdev_label_store(struct device *dev,
-+				   struct device_attribute *mattr,
-+				   const char *data,
-+				   size_t count)
-+{
-+	struct dimm_info *dimm = to_dimm(dev);
-+
-+	ssize_t max_size = 0;
-+
-+	max_size = min((ssize_t) count, (ssize_t) EDAC_MC_LABEL_LEN - 1);
-+	strncpy(dimm->label, data, max_size);
-+	dimm->label[max_size] = '\0';
-+
-+	return max_size;
-+}
-+
-+static ssize_t dimmdev_size_show(struct device *dev,
-+				 struct device_attribute *mattr, char *data)
-+{
-+	struct dimm_info *dimm = to_dimm(dev);
-+
-+	return sprintf(data, "%u\n", PAGES_TO_MiB(dimm->nr_pages));
-+}
-+
-+static ssize_t dimmdev_mem_type_show(struct device *dev,
-+				     struct device_attribute *mattr, char *data)
-+{
-+	struct dimm_info *dimm = to_dimm(dev);
-+
-+	return sprintf(data, "%s\n", mem_types[dimm->mtype]);
-+}
-+
-+static ssize_t dimmdev_dev_type_show(struct device *dev,
-+				     struct device_attribute *mattr, char *data)
-+{
-+	struct dimm_info *dimm = to_dimm(dev);
-+
-+	return sprintf(data, "%s\n", dev_types[dimm->dtype]);
-+}
-+
-+static ssize_t dimmdev_edac_mode_show(struct device *dev,
-+				      struct device_attribute *mattr,
-+				      char *data)
-+{
-+	struct dimm_info *dimm = to_dimm(dev);
-+
-+	return sprintf(data, "%s\n", edac_caps[dimm->edac_mode]);
-+}
-+
-+/* dimm/rank attribute files */
-+static DEVICE_ATTR(dimm_label, S_IRUGO | S_IWUSR,
-+		   dimmdev_label_show, dimmdev_label_store);
-+static DEVICE_ATTR(dimm_location, S_IRUGO, dimmdev_location_show, NULL);
-+static DEVICE_ATTR(size, S_IRUGO, dimmdev_size_show, NULL);
-+static DEVICE_ATTR(dimm_mem_type, S_IRUGO, dimmdev_mem_type_show, NULL);
-+static DEVICE_ATTR(dimm_dev_type, S_IRUGO, dimmdev_dev_type_show, NULL);
-+static DEVICE_ATTR(dimm_edac_mode, S_IRUGO, dimmdev_edac_mode_show, NULL);
-+
-+/* attributes of the dimm<id>/rank<id> object */
-+static struct attribute *dimm_attrs[] = {
-+	&dev_attr_dimm_label.attr,
-+	&dev_attr_dimm_location.attr,
-+	&dev_attr_size.attr,
-+	&dev_attr_dimm_mem_type.attr,
-+	&dev_attr_dimm_dev_type.attr,
-+	&dev_attr_dimm_edac_mode.attr,
-+	NULL,
-+};
-+
-+static struct attribute_group dimm_attr_grp = {
-+	.attrs	= dimm_attrs,
-+};
-+
-+static const struct attribute_group *dimm_attr_groups[] = {
-+	&dimm_attr_grp,
-+	NULL
-+};
-+
-+static void dimm_attr_release(struct device *device)
-+{
-+	debugf1("Releasing dimm device %s\n", dev_name(device));
-+}
-+
-+static struct device_type dimm_attr_type = {
-+	.groups		= dimm_attr_groups,
-+	.release	= dimm_attr_release,
-+};
-+
-+/* Create a DIMM object under specifed memory controller device */
-+static int edac_create_dimm_object(struct mem_ctl_info *mci,
-+				   struct dimm_info *dimm,
-+				   int index)
-+{
-+	int err;
-+	dimm->mci = mci;
-+
-+	dimm->dev.type = &dimm_attr_type;
-+	dimm->dev.bus = mci_pdev.bus;
-+	device_initialize(&dimm->dev);
-+
-+	dimm->dev.parent = &mci->dev;
-+	if (mci->mem_is_per_rank)
-+		dev_set_name(&dimm->dev, "rank%d", index);
-+	else
-+		dev_set_name(&dimm->dev, "dimm%d", index);
-+	dev_set_drvdata(&dimm->dev, dimm);
-+	pm_runtime_forbid(&mci->dev);
-+
-+	err =  device_add(&dimm->dev);
-+
-+	debugf0("%s(): creating rank/dimm device %s\n", __func__,
-+		dev_name(&dimm->dev));
-+
-+	return err;
-+}
  
- /*
-  * Memory controller device
-@@ -660,7 +814,6 @@ static struct device_type mci_attr_type = {
- 	.release	= mci_attr_release,
- };
- 
--
- /*
-  * Create a new Memory Controller kobject instance,
-  *	mc<id> under the 'mc' directory
-@@ -712,11 +865,19 @@ int edac_create_sysfs_mci_device(struct mem_ctl_info *mci)
- 			printk(KERN_CONT "\n");
- 		}
- #endif
-+		err = edac_create_dimm_object(mci, dimm, i);
-+		if (err) {
-+			debugf1("%s() failure: create dimm %d obj\n",
-+				__func__, i);
-+			goto fail;
-+		}
+ 	/*
+ 	 * Create the dimm/rank devices
+@@ -994,6 +1007,8 @@ fail:
  	}
+ 	put_device(&mci->dev);
+ 	device_del(&mci->dev);
++	bus_unregister(&mci->bus);
++	kfree(mci->bus.name);
+ 	return err;
+ }
  
-+#ifdef CONFIG_EDAC_LEGACY_SYSFS
- 	err = edac_create_csrow_objects(mci);
- 	if (err < 0)
- 		goto fail;
-+#endif
+@@ -1029,6 +1044,8 @@ void edac_unregister_sysfs(struct mem_ctl_info *mci)
+ 	debugf1("Unregistering device %s\n", dev_name(&mci->dev));
+ 	put_device(&mci->dev);
+ 	device_del(&mci->dev);
++	bus_unregister(&mci->bus);
++	kfree(mci->bus.name);
+ }
  
- 	return 0;
+ static void mc_attr_release(struct device *device)
+diff --git a/include/linux/edac.h b/include/linux/edac.h
+index a32ed72..22c3fca 100644
+--- a/include/linux/edac.h
++++ b/include/linux/edac.h
+@@ -507,6 +507,7 @@ struct edac_hierarchy {
+  */
+ struct mem_ctl_info {
+ 	struct device			dev;
++	struct bus_type			bus;
  
-@@ -742,7 +903,9 @@ void edac_remove_sysfs_mci_device(struct mem_ctl_info *mci)
+ 	struct list_head link;	/* for global list of mem_ctl_info structs */
  
- 	debugf0("%s()\n", __func__);
- 
-+#ifdef CONFIG_EDAC_LEGACY_SYSFS
- 	edac_delete_csrow_objects(mci);
-+#endif
- 
- 	for (i = 0; i < mci->tot_dimms; i++) {
- 		struct dimm_info *dimm = &mci->dimms[i];
 -- 
 1.7.8
 
