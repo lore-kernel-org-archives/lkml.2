@@ -1,100 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753460Ab2DPLgV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Apr 2012 07:36:21 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:14533 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753213Ab2DPLgT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Apr 2012 07:36:19 -0400
-Date: Mon, 16 Apr 2012 07:36:55 -0400
-From: Jeff Layton <jlayton@redhat.com>
-To: Bernd Schubert <bernd.schubert@itwm.fraunhofer.de>
-Cc: Malahal Naineni <malahal@us.ibm.com>, linux-nfs@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        pstaubach@exagrid.com, miklos@szeredi.hu, viro@ZenIV.linux.org.uk,
-        hch@infradead.org, michael.brantley@deshaw.com,
-        sven.breuner@itwm.fraunhofer.de
-Subject: Re: [PATCH RFC] vfs: make fstatat retry on ESTALE errors from
- getattr call
-Message-ID: <20120416073655.7cdb90cf@corrin.poochiereds.net>
-In-Reply-To: <4F8B1B7B.3040304@itwm.fraunhofer.de>
-References: <1334316311-22331-1-git-send-email-jlayton@redhat.com>
-	<20120413150518.GA1987@us.ibm.com>
-	<20120413114236.0e557e01@tlielax.poochiereds.net>
-	<4F8B1B7B.3040304@itwm.fraunhofer.de>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1753485Ab2DPLkO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Apr 2012 07:40:14 -0400
+Received: from e38.co.us.ibm.com ([32.97.110.159]:43359 "EHLO
+	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753436Ab2DPLkL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Apr 2012 07:40:11 -0400
+Date: Mon, 16 Apr 2012 17:01:24 +0530
+From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: Oleg Nesterov <oleg@redhat.com>, Ingo Molnar <mingo@elte.hu>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
+        LKML <linux-kernel@vger.kernel.org>, Linux-mm <linux-mm@kvack.org>,
+        Andi Kleen <andi@firstfloor.org>,
+        Christoph Hellwig <hch@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Anton Arapov <anton@redhat.com>
+Subject: Re: [RFC 0/6] uprobes: kill uprobes_srcu/uprobe_srcu_id
+Message-ID: <20120416113124.GA25464@linux.vnet.ibm.com>
+Reply-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+References: <20120405222024.GA19154@redhat.com>
+ <20120414111637.GB24688@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+In-Reply-To: <20120414111637.GB24688@gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12041611-5518-0000-0000-000003B04D45
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 15 Apr 2012 21:03:23 +0200
-Bernd Schubert <bernd.schubert@itwm.fraunhofer.de> wrote:
+* Ingo Molnar <mingo@kernel.org> [2012-04-14 13:16:37]:
 
-> On 04/13/2012 05:42 PM, Jeff Layton wrote:
-> > (note: please don't trim the CC list!)
-> > 
-> > Indefinitely does make some sense (as Peter articulated in his original
-> > set). It's possible you could race several times in a row, or a server
-> > misconfiguration or something has happened and you have a transient
-> > error that will eventually recover. His assertion was that any limit on
-> > the number of retries is by definition wrong. For NFS, a fatal signal
-> > ought to interrupt things as well, so retrying indefinitely has some
-> > appeal there.
-> > 
-> > OTOH, we do have to contend with filesystems that might return ESTALE
-> > persistently for other reasons and that might not respond to signals.
-> > Miklos pointed out that some FUSE fs' do this in his review of Peter's
-> > set.
-> > 
-> > As a purely defensive coding measure, limiting the number of retries to
-> > something finite makes sense. If we're going to do that though, I'd
-> > probably recommend that we set the number of retries be something
-> > higher just so that this is more resilient in the face of multiple
-> > races. Those other fs' might "spin" a bit in that case but it is an
-> > error condition and IMO resiliency trumps performance -- at least in
->  this case.
 > 
-> I am definitely voting against an infinite number of retries. I'm
-> working on FhGFS, which supports distributed meta data servers. So when
-> a file is moved around between directories, its file handle, which
-> contains the meta-data target id might become invalid. As NFSv3 is
-> stateless we cannot inform the client about that and must return ESTALE
-> then. NFSv4 is better, but I'm not sure how well invalidating a file
-> handle works. So retrying once on ESTALE might be a good idea, but
-> retrying forever is not.
-
-It's important to note that I'm only proposing to wrap syscalls this
-way that take a pathname argument. We can't do anything about those
-that don't since at that point we have no way to retry the lookup.
-
-So, I'm not sure this patch would affect the case you're concerned
-about one way or another. If you move the file to a different
-directory, then it's pathname would also change, and at that point
-you'd end up with an ENOENT error or something on the next retry.
-
-If the file was open and you were (for instance) reading or writing to
-it from a client when you moved it, then we can't retry the lookup at
-that point. The open is long since done and the pathname is now gone.
-You'll get an ESTALE back in userspace regardless.
-
-> Also, what about asymmetric HA servers? I believe to remember that also
-> resulted in ESTALE. So for example server1 exports /home and /scratch,
-> but on failure server2 can only take over /home and denies access to
-> /scratch.
+> * Oleg Nesterov <oleg@redhat.com> wrote:
+> 
+> > Hello.
+> > 
+> > Not for inclusion yet, only for the early review.
+> 
+> Srikar, any objection to these? They look like fine changes to 
+> me in principle, making uprobes less of an overhead to other 
+> kernel subsystems.
 > 
 
-That sounds like a broken cluster configuration. Still...
+I dont have any objections to Oleg's changes. However as Oleg has said,
+they are currently untested. Once the tracing and perf bits are in -tip,
+I will add these bits and test them and let you know.
 
-Presumably at some point in the future, a sysadmin would intervene and
-fix the situation such that /scratch is available again. Is it better
-to return an error to the application at that point, or simply allow it
-to keep retrying until the problem has been fixed?
+Given that I have tested the current bits in -tip several times, I think
+it might be worthwhile to keep these changes on hold till the current
+uprobe bits in -tip go upstream. 
 
-The person with the long running job that's doing operations
-in /scratch would probably prefer the latter. If not, then they could
-always send the program a fatal signal to stop it altogether.
+Oleg: Would this be acceptable?
 
 -- 
-Jeff Layton <jlayton@redhat.com>
+Thanks and Regards
+Srikar
+
