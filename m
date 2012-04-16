@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755388Ab2DPUWS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Apr 2012 16:22:18 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:48401 "EHLO mx1.redhat.com"
+	id S1755417Ab2DPUWW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Apr 2012 16:22:22 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:1796 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752993Ab2DPUWP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Apr 2012 16:22:15 -0400
+	id S1752993Ab2DPUWS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Apr 2012 16:22:18 -0400
 From: Mauro Carvalho Chehab <mchehab@redhat.com>
 Cc: Mauro Carvalho Chehab <mchehab@redhat.com>,
         Linux Edac Mailing List <linux-edac@vger.kernel.org>,
         Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
         Michal Marek <mmarek@suse.cz>
-Subject: [EDAC_ABI PATCH v13 02/26] amd76x_edac: convert driver to use the new edac ABI
-Date: Mon, 16 Apr 2012 17:21:21 -0300
-Message-Id: <1334607705-30320-3-git-send-email-mchehab@redhat.com>
+Subject: [EDAC_ABI PATCH v13 04/26] cpc925_edac: convert driver to use the new edac ABI
+Date: Mon, 16 Apr 2012 17:21:23 -0300
+Message-Id: <1334607705-30320-5-git-send-email-mchehab@redhat.com>
 In-Reply-To: <1334607705-30320-1-git-send-email-mchehab@redhat.com>
 References: <1334607133-30039-1-git-send-email-mchehab@redhat.com>
  <1334607705-30320-1-git-send-email-mchehab@redhat.com>
@@ -25,81 +27,66 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 The legacy edac ABI is going to be removed. Port the driver to use
 and benefit from the new API functionality.
 
+Cc: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 Cc: Michal Marek <mmarek@suse.cz>
 Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
 ---
- drivers/edac/amd76x_edac.c |   28 +++++++++++++++++++---------
- 1 files changed, 19 insertions(+), 9 deletions(-)
+ drivers/edac/cpc925_edac.c |   23 ++++++++++++++++++-----
+ 1 files changed, 18 insertions(+), 5 deletions(-)
 
-diff --git a/drivers/edac/amd76x_edac.c b/drivers/edac/amd76x_edac.c
-index 1532750..fd9ab44 100644
---- a/drivers/edac/amd76x_edac.c
-+++ b/drivers/edac/amd76x_edac.c
-@@ -29,7 +29,6 @@
- 	edac_mc_chipset_printk(mci, level, "amd76x", fmt, ##arg)
- 
- #define AMD76X_NR_CSROWS 8
--#define AMD76X_NR_CHANS  1
- #define AMD76X_NR_DIMMS  4
- 
- /* AMD 76x register addresses - device 0 function 0 - PCI bridge */
-@@ -146,8 +145,10 @@ static int amd76x_process_error_info(struct mem_ctl_info *mci,
- 
- 		if (handle_errors) {
- 			row = (info->ecc_mode_status >> 4) & 0xf;
--			edac_mc_handle_ue(mci, mci->csrows[row].first_page, 0,
--					row, mci->ctl_name);
-+			edac_mc_handle_error(HW_EVENT_ERR_UNCORRECTED, mci,
-+					     mci->csrows[row].first_page, 0, 0,
-+					     row, 0, -1,
-+					     mci->ctl_name, "", NULL);
- 		}
+diff --git a/drivers/edac/cpc925_edac.c b/drivers/edac/cpc925_edac.c
+index 7b764a8..adbeb13 100644
+--- a/drivers/edac/cpc925_edac.c
++++ b/drivers/edac/cpc925_edac.c
+@@ -555,13 +555,18 @@ static void cpc925_mc_check(struct mem_ctl_info *mci)
+ 	if (apiexcp & CECC_EXCP_DETECTED) {
+ 		cpc925_mc_printk(mci, KERN_INFO, "DRAM CECC Fault\n");
+ 		channel = cpc925_mc_find_channel(mci, syndrome);
+-		edac_mc_handle_ce(mci, pfn, offset, syndrome,
+-				  csrow, channel, mci->ctl_name);
++		edac_mc_handle_error(HW_EVENT_ERR_CORRECTED, mci,
++				     pfn, offset, syndrome,
++				     csrow, channel, -1,
++				     mci->ctl_name, "", NULL);
  	}
  
-@@ -159,8 +160,10 @@ static int amd76x_process_error_info(struct mem_ctl_info *mci,
- 
- 		if (handle_errors) {
- 			row = info->ecc_mode_status & 0xf;
--			edac_mc_handle_ce(mci, mci->csrows[row].first_page, 0,
--					0, row, 0, mci->ctl_name);
-+			edac_mc_handle_error(HW_EVENT_ERR_CORRECTED, mci,
-+					     mci->csrows[row].first_page, 0, 0,
-+					     row, 0, -1,
-+					     mci->ctl_name, "", NULL);
- 		}
+ 	if (apiexcp & UECC_EXCP_DETECTED) {
+ 		cpc925_mc_printk(mci, KERN_INFO, "DRAM UECC Fault\n");
+-		edac_mc_handle_ue(mci, pfn, offset, csrow, mci->ctl_name);
++		edac_mc_handle_error(HW_EVENT_ERR_CORRECTED, mci,
++				     pfn, offset, 0,
++				     csrow, -1, -1,
++				     mci->ctl_name, "", NULL);
  	}
  
-@@ -232,7 +235,8 @@ static int amd76x_probe1(struct pci_dev *pdev, int dev_idx)
- 		EDAC_SECDED,
- 		EDAC_SECDED
- 	};
--	struct mem_ctl_info *mci = NULL;
-+	struct mem_ctl_info *mci;
+ 	cpc925_mc_printk(mci, KERN_INFO, "Dump registers:\n");
+@@ -933,6 +938,7 @@ static int __devinit cpc925_probe(struct platform_device *pdev)
+ {
+ 	static int edac_mc_idx;
+ 	struct mem_ctl_info *mci;
 +	struct edac_mc_layer layers[2];
- 	u32 ems;
- 	u32 ems_mode;
- 	struct amd76x_error_info discard;
-@@ -240,11 +244,17 @@ static int amd76x_probe1(struct pci_dev *pdev, int dev_idx)
- 	debugf0("%s()\n", __func__);
- 	pci_read_config_dword(pdev, AMD76X_ECC_MODE_STATUS, &ems);
- 	ems_mode = (ems >> 10) & 0x3;
--	mci = edac_mc_alloc(0, AMD76X_NR_CSROWS, AMD76X_NR_CHANS, 0);
+ 	void __iomem *vbase;
+ 	struct cpc925_mc_pdata *pdata;
+ 	struct resource *r;
+@@ -969,8 +975,15 @@ static int __devinit cpc925_probe(struct platform_device *pdev)
+ 	}
  
--	if (mci == NULL) {
+ 	nr_channels = cpc925_mc_get_channels(vbase) + 1;
+-	mci = edac_mc_alloc(sizeof(struct cpc925_mc_pdata),
+-			CPC925_NR_CSROWS, nr_channels, edac_mc_idx);
++
 +	layers[0].type = EDAC_MC_LAYER_CHIP_SELECT;
-+	layers[0].size = AMD76X_NR_CSROWS;
++	layers[0].size = CPC925_NR_CSROWS;
 +	layers[0].is_csrow = true;
 +	layers[1].type = EDAC_MC_LAYER_CHANNEL;
-+	layers[1].size = 1;
++	layers[1].size = nr_channels;
 +	layers[1].is_csrow = false;
-+	mci = new_edac_mc_alloc(0, ARRAY_SIZE(layers), layers, false, 0);
-+
-+	if (mci == NULL)
- 		return -ENOMEM;
--	}
- 
- 	debugf0("%s(): mci = %p\n", __func__, mci);
- 	mci->dev = &pdev->dev;
++	mci = new_edac_mc_alloc(edac_mc_idx, ARRAY_SIZE(layers), layers, false,
++			    sizeof(struct cpc925_mc_pdata));
+ 	if (!mci) {
+ 		cpc925_printk(KERN_ERR, "No memory for mem_ctl_info\n");
+ 		res = -ENOMEM;
 -- 
 1.7.8
 
