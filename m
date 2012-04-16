@@ -1,94 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755559Ab2DPU1D (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Apr 2012 16:27:03 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:62262 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755265Ab2DPU07 (ORCPT
+	id S1755487Ab2DPUZa (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Apr 2012 16:25:30 -0400
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:34191 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755037Ab2DPUZW convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Apr 2012 16:26:59 -0400
-Date: Mon, 16 Apr 2012 22:26:54 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: David Miller <davem@davemloft.net>
-Cc: joe@perches.com, linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
-        torvalds@linux-foundation.org, apw@canonical.com
-Subject: Re: Please fix or revert: [PATCH] checkpatch: add --strict tests for
- braces, comments and casts
-Message-ID: <20120416202654.GA4678@gmail.com>
-References: <20120416091719.GA4113@gmail.com>
- <20120416.142728.864894452301706752.davem@davemloft.net>
+	Mon, 16 Apr 2012 16:25:22 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120416.142728.864894452301706752.davem@davemloft.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20120416053220.GA14338@gmail.com>
+References: <CA+55aFyLEJsz1yvu4bYe+RHdhLd-XXEScxtAgje=fyuUM+1XxA@mail.gmail.com>
+	<CAMP44s0yPPqFUO4963MhNb8+c_A=xJi4-eFPJ3s+a1TJ8ZfTtQ@mail.gmail.com>
+	<CA+55aFwaOGbD6S_7So34ZuANG-6fZXZhEah8G0X7McDGhionSg@mail.gmail.com>
+	<CAMP44s06jrPBzf5Lt86-GDxD_PxqcaeJgmYS4tJhcvDdf=J5zA@mail.gmail.com>
+	<20120414104733.GA4871@gmail.com>
+	<CAMP44s0tBbgmunXTN9Jyw=HHnXFyvRY3qo5Vf-jXETUM4HEGWA@mail.gmail.com>
+	<20120415065124.GC29563@gmail.com>
+	<CAMP44s3mOsCGG5_gd6zTUeXewTFKeVEmAkt2FvM=wTm-5AEC+w@mail.gmail.com>
+	<CA+55aFz8oepgj7W8W=d18qwQt3JUGgv+pCto-_2WS3WJ3ZKqzQ@mail.gmail.com>
+	<CAMP44s2vx5cn_=tRD46SqAobRceLiZDfi9-zLUnv_g89wLxryQ@mail.gmail.com>
+	<20120416053220.GA14338@gmail.com>
+Date: Mon, 16 Apr 2012 23:25:18 +0300
+Message-ID: <CAMP44s1j297wO8TJgto+w1x3G0qTC=BehuKtE2TZnxYmdoM=Fg@mail.gmail.com>
+Subject: Re: [ 00/78] 3.3.2-stable review
+From: Felipe Contreras <felipe.contreras@gmail.com>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Greg KH <gregkh@linuxfoundation.org>, Sergio Correia <lists@uece.net>,
+        linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+        linux-wireless Mailing List <linux-wireless@vger.kernel.org>,
+        Sujith Manoharan <c_manoha@qca.qualcomm.com>,
+        "ath9k-devel@lists.ath9k.org" <ath9k-devel@venema.h4ckr.net>,
+        "John W. Linville" <linville@tuxdriver.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, Apr 16, 2012 at 8:32 AM, Ingo Molnar <mingo@kernel.org> wrote:
+>
+> * Felipe Contreras <felipe.contreras@gmail.com> wrote:
+>
+>> On Sun, Apr 15, 2012 at 8:49 PM, Linus Torvalds
+>> <torvalds@linux-foundation.org> wrote:
 
-* David Miller <davem@davemloft.net> wrote:
+>> > The only thing that matters is "it's been made available to others".
+>>
+>> Exactly! Now *this* is a reason. [...]
+>
+> Erm, many people referred to that in this discussion explicitly
+> and implicitly - beyond its well-known technical meaning it's
+> also the English meaning of the word 'release':
+>
+>   http://www.merriam-webster.com/dictionary/releasing
 
-> From: Ingo Molnar <mingo@kernel.org>
-> Date: Mon, 16 Apr 2012 11:17:20 +0200
-> 
-> > 
-> > This recent checkpatch commit, added in v3.4-rc1:
-> > 
-> >   aad4f6149831 checkpatch: add --strict tests for braces, comments and casts
-> > 
-> > made the default checkpatch run complain about the following 
-> > perfectly fine multi-line comment block:
-> > 
-> > +               rdp->qlen_lazy = 0;
-> > +               rdp->qlen = 0;
-> > +
-> > +               /*
-> > +                * Adopt all callbacks.  The outgoing CPU was in no shape
-> > +                * to advance them, so make them all go through a full
-> > +                * grace period.
-> > +                */
-> > +               *receive_rdp->nxttail[RCU_NEXT_TAIL] = rdp->nxtlist;
-> > 
-> 
-> I would like to formally propose that we change CodingStyle so that
-> our comments are of the form:
-> 
-> 	/* XXX
-> 	 * YYY
-> 	 */
-> 
-> So that we can save one line of vertical space.
-> 
-> We've adopted this all across the networking, and the code 
-> looks a lot nicer as well as allowing more actual code onto a 
-> single window of text.
+Releasing implies many things. There is this notion called theory of
+mind, which children learn at a very young age, that helps us see the
+world through the eyes of other people. If you think people *must* see
+the word "release" and think *exactly* the same thing as  you do, and
+apologize when they don't, well, I'd say you are missing a very
+valuable skill.
 
-Sigh, this is sad for two reasons:
+But fine, lets suppose I should have thought exactly the same thing as
+you did, and fine, lets say I was wrong in not doing so. That still
+doesn't help one iota in this discussion. Linus Torvalds pointed the
+exact reason, which allowed us to move forward, because of my
+incompetence, or whatever.
 
- 1) It's butt ugly and it violates every basic principle of
-    typography. Saving a line is often counter-productive, a 
-    well placed whitespace (vertical or horizontal) will often 
-    increase readability. Key is good balance.
+The next logical question has still not been answered; does the
+undroppability come from the fact that v3.4 is more important that
+v3.3.1? This time I promise to think at least one day for all the
+possible meanings of each key word you say.
 
-    If you don't "see" it as ugly it's simply because your brain
-    is not wired up to see 3D/2D geometry as a significant
-    source of information. A significant portion (I'd 
-    guesstimate a narrow majority) of kernel hackers *does* see
-    2D/3D layout details in code and finds inconsistencies in 
-    them counterproductive.
-
-    ( It's roughly the same distinction that makes some people
-      love the typographic layout of the iPhone/iPad while 
-      others consider it unnecessary bling. )
-
- 2) Even if it was proper typography (which it isnt), we have
-    Documentation/CodingStyle for damn good reasons: so that
-    people see a uniform style of code across the kernel. The 
-    taste set out there is sometimes arbitrary in its details, 
-    but one thing is certainly worse than arbitrary style rules:
-    *random*, inconsistent rules, because that only adds noise.
-
-Thanks,
-
-	Ingo
+-- 
+Felipe Contreras
