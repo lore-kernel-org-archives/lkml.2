@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753806Ab2DPMRU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Apr 2012 08:17:20 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:47717 "EHLO mx2.suse.de"
+	id S1753962Ab2DPMXQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Apr 2012 08:23:16 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:47818 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753597Ab2DPMRL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Apr 2012 08:17:11 -0400
+	id S1753611Ab2DPMRW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Apr 2012 08:17:22 -0400
 From: Mel Gorman <mgorman@suse.de>
 To: Andrew Morton <akpm@linux-foundation.org>
 Cc: Linux-MM <linux-mm@kvack.org>, Linux-Netdev <netdev@vger.kernel.org>,
@@ -14,9 +14,9 @@ Cc: Linux-MM <linux-mm@kvack.org>, Linux-Netdev <netdev@vger.kernel.org>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Mike Christie <michaelc@cs.wisc.edu>,
         Eric B Munson <emunson@mgebm.net>, Mel Gorman <mgorman@suse.de>
-Subject: [PATCH 04/16] mm: Introduce __GFP_MEMALLOC to allow access to emergency reserves
-Date: Mon, 16 Apr 2012 13:16:51 +0100
-Message-Id: <1334578624-23257-5-git-send-email-mgorman@suse.de>
+Subject: [PATCH 15/16] mm: Throttle direct reclaimers if PF_MEMALLOC reserves are low and swap is backed by network storage
+Date: Mon, 16 Apr 2012 13:17:02 +0100
+Message-Id: <1334578624-23257-16-git-send-email-mgorman@suse.de>
 X-Mailer: git-send-email 1.7.9.2
 In-Reply-To: <1334578624-23257-1-git-send-email-mgorman@suse.de>
 References: <1334578624-23257-1-git-send-email-mgorman@suse.de>
@@ -24,144 +24,195 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-__GFP_MEMALLOC will allow the allocation to disregard the watermarks,
-much like PF_MEMALLOC. It allows one to pass along the memalloc state
-in object related allocation flags as opposed to task related flags,
-such as sk->sk_allocation. This removes the need for ALLOC_PFMEMALLOC
-as callers using __GFP_MEMALLOC can get the ALLOC_NO_WATERMARK flag
-which is now enough to identify allocations related to page reclaim.
+If swap is backed by network storage such as NBD, there is a risk
+that a large number of reclaimers can hang the system by consuming
+all PF_MEMALLOC reserves. To avoid these hangs, the administrator
+must tune min_free_kbytes in advance which is a bit fragile.
 
-Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+This patch throttles direct reclaimers if half the PF_MEMALLOC reserves
+are in use. If the system is routinely getting throttled the system
+administrator can increase min_free_kbytes so degradation is smoother
+but the system will keep running.
+
 Signed-off-by: Mel Gorman <mgorman@suse.de>
 ---
- include/linux/gfp.h             |   10 ++++++++--
- include/linux/mm_types.h        |    2 +-
- include/trace/events/gfpflags.h |    1 +
- mm/page_alloc.c                 |   14 ++++++--------
- mm/slab.c                       |    2 +-
- 5 files changed, 17 insertions(+), 12 deletions(-)
+ include/linux/mmzone.h |    1 +
+ mm/page_alloc.c        |    1 +
+ mm/vmscan.c            |  109 ++++++++++++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 111 insertions(+)
 
-diff --git a/include/linux/gfp.h b/include/linux/gfp.h
-index 581e74b..94af4a2 100644
---- a/include/linux/gfp.h
-+++ b/include/linux/gfp.h
-@@ -23,6 +23,7 @@ struct vm_area_struct;
- #define ___GFP_REPEAT		0x400u
- #define ___GFP_NOFAIL		0x800u
- #define ___GFP_NORETRY		0x1000u
-+#define ___GFP_MEMALLOC		0x2000u
- #define ___GFP_COMP		0x4000u
- #define ___GFP_ZERO		0x8000u
- #define ___GFP_NOMEMALLOC	0x10000u
-@@ -76,9 +77,14 @@ struct vm_area_struct;
- #define __GFP_REPEAT	((__force gfp_t)___GFP_REPEAT)	/* See above */
- #define __GFP_NOFAIL	((__force gfp_t)___GFP_NOFAIL)	/* See above */
- #define __GFP_NORETRY	((__force gfp_t)___GFP_NORETRY) /* See above */
-+#define __GFP_MEMALLOC	((__force gfp_t)___GFP_MEMALLOC)/* Allow access to emergency reserves */
- #define __GFP_COMP	((__force gfp_t)___GFP_COMP)	/* Add compound page metadata */
- #define __GFP_ZERO	((__force gfp_t)___GFP_ZERO)	/* Return zeroed page on success */
--#define __GFP_NOMEMALLOC ((__force gfp_t)___GFP_NOMEMALLOC) /* Don't use emergency reserves */
-+#define __GFP_NOMEMALLOC ((__force gfp_t)___GFP_NOMEMALLOC) /* Don't use emergency reserves.
-+							 * This takes precedence over the
-+							 * __GFP_MEMALLOC flag if both are
-+							 * set
-+							 */
- #define __GFP_HARDWALL   ((__force gfp_t)___GFP_HARDWALL) /* Enforce hardwall cpuset memory allocs */
- #define __GFP_THISNODE	((__force gfp_t)___GFP_THISNODE)/* No fallback, no policies */
- #define __GFP_RECLAIMABLE ((__force gfp_t)___GFP_RECLAIMABLE) /* Page is reclaimable */
-@@ -129,7 +135,7 @@ struct vm_area_struct;
- /* Control page allocator reclaim behavior */
- #define GFP_RECLAIM_MASK (__GFP_WAIT|__GFP_HIGH|__GFP_IO|__GFP_FS|\
- 			__GFP_NOWARN|__GFP_REPEAT|__GFP_NOFAIL|\
--			__GFP_NORETRY|__GFP_NOMEMALLOC)
-+			__GFP_NORETRY|__GFP_MEMALLOC|__GFP_NOMEMALLOC)
- 
- /* Control slab gfp mask during early boot */
- #define GFP_BOOT_MASK (__GFP_BITS_MASK & ~(__GFP_WAIT|__GFP_IO|__GFP_FS))
-diff --git a/include/linux/mm_types.h b/include/linux/mm_types.h
-index 56a465f..7718903 100644
---- a/include/linux/mm_types.h
-+++ b/include/linux/mm_types.h
-@@ -54,7 +54,7 @@ struct page {
- 			pgoff_t index;		/* Our offset within mapping. */
- 			void *freelist;		/* slub first free object */
- 			bool pfmemalloc;	/* If set by the page allocator,
--						 * ALLOC_PFMEMALLOC was set
-+						 * ALLOC_NO_WATERMARKS was set
- 						 * and the low watermark was not
- 						 * met implying that the system
- 						 * is under some pressure. The
-diff --git a/include/trace/events/gfpflags.h b/include/trace/events/gfpflags.h
-index 9fe3a366..d6fd8e5 100644
---- a/include/trace/events/gfpflags.h
-+++ b/include/trace/events/gfpflags.h
-@@ -30,6 +30,7 @@
- 	{(unsigned long)__GFP_COMP,		"GFP_COMP"},		\
- 	{(unsigned long)__GFP_ZERO,		"GFP_ZERO"},		\
- 	{(unsigned long)__GFP_NOMEMALLOC,	"GFP_NOMEMALLOC"},	\
-+	{(unsigned long)__GFP_MEMALLOC,		"GFP_MEMALLOC"},	\
- 	{(unsigned long)__GFP_HARDWALL,		"GFP_HARDWALL"},	\
- 	{(unsigned long)__GFP_THISNODE,		"GFP_THISNODE"},	\
- 	{(unsigned long)__GFP_RECLAIMABLE,	"GFP_RECLAIMABLE"},	\
+diff --git a/include/linux/mmzone.h b/include/linux/mmzone.h
+index dff7115..e6b733d 100644
+--- a/include/linux/mmzone.h
++++ b/include/linux/mmzone.h
+@@ -663,6 +663,7 @@ typedef struct pglist_data {
+ 					     range, including holes */
+ 	int node_id;
+ 	wait_queue_head_t kswapd_wait;
++	wait_queue_head_t pfmemalloc_wait;
+ 	struct task_struct *kswapd;
+ 	int kswapd_max_order;
+ 	enum zone_type classzone_idx;
 diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index 0fa2c72..ee9f49c 100644
+index 0d7bea5..71802cb 100644
 --- a/mm/page_alloc.c
 +++ b/mm/page_alloc.c
-@@ -1463,7 +1463,6 @@ failed:
- #define ALLOC_HARDER		0x10 /* try to alloc harder */
- #define ALLOC_HIGH		0x20 /* __GFP_HIGH set */
- #define ALLOC_CPUSET		0x40 /* check for correct cpuset */
--#define ALLOC_PFMEMALLOC	0x80 /* Caller has PF_MEMALLOC set */
+@@ -4325,6 +4325,7 @@ static void __paginginit free_area_init_core(struct pglist_data *pgdat,
+ 	pgdat_resize_init(pgdat);
+ 	pgdat->nr_zones = 0;
+ 	init_waitqueue_head(&pgdat->kswapd_wait);
++	init_waitqueue_head(&pgdat->pfmemalloc_wait);
+ 	pgdat->kswapd_max_order = 0;
+ 	pgdat_page_cgroup_init(pgdat);
+ 	
+diff --git a/mm/vmscan.c b/mm/vmscan.c
+index 33c332b..fdb63db 100644
+--- a/mm/vmscan.c
++++ b/mm/vmscan.c
+@@ -2431,6 +2431,73 @@ out:
+ 	return 0;
+ }
  
- #ifdef CONFIG_FAIL_PAGE_ALLOC
- 
-@@ -2209,11 +2208,10 @@ gfp_to_alloc_flags(gfp_t gfp_mask)
- 	} else if (unlikely(rt_task(current)) && !in_interrupt())
- 		alloc_flags |= ALLOC_HARDER;
- 
--	if ((current->flags & PF_MEMALLOC) ||
--			unlikely(test_thread_flag(TIF_MEMDIE))) {
--		alloc_flags |= ALLOC_PFMEMALLOC;
--
--		if (likely(!(gfp_mask & __GFP_NOMEMALLOC)) && !in_interrupt())
-+	if (likely(!(gfp_mask & __GFP_NOMEMALLOC))) {
-+		if (gfp_mask & __GFP_MEMALLOC)
-+			alloc_flags |= ALLOC_NO_WATERMARKS;
-+		else if (likely(!(gfp_mask & __GFP_NOMEMALLOC)) && !in_interrupt())
- 			alloc_flags |= ALLOC_NO_WATERMARKS;
- 	}
- 
-@@ -2222,7 +2220,7 @@ gfp_to_alloc_flags(gfp_t gfp_mask)
- 
- bool gfp_pfmemalloc_allowed(gfp_t gfp_mask)
++static bool pfmemalloc_watermark_ok(pg_data_t *pgdat)
++{
++	struct zone *zone;
++	unsigned long pfmemalloc_reserve = 0;
++	unsigned long free_pages = 0;
++	int i;
++	bool wmark_ok;
++
++	for (i = 0; i <= ZONE_NORMAL; i++) {
++		zone = &pgdat->node_zones[i];
++		pfmemalloc_reserve += min_wmark_pages(zone);
++		free_pages += zone_page_state(zone, NR_FREE_PAGES);
++	}
++
++	wmark_ok = (free_pages > pfmemalloc_reserve / 2) ? true : false;
++
++	/* kswapd must be awake if processes are being throttled */
++	if (!wmark_ok && waitqueue_active(&pgdat->kswapd_wait)) {
++		pgdat->classzone_idx = min(pgdat->classzone_idx,
++						(enum zone_type)ZONE_NORMAL);
++		wake_up_interruptible(&pgdat->kswapd_wait);
++	}
++
++	return wmark_ok;
++}
++
++/*
++ * Throttle direct reclaimers if backing storage is backed by the network
++ * and the PFMEMALLOC reserve for the preferred node is getting dangerously
++ * depleted. kswapd will continue to make progress and wake the processes
++ * when the low watermark is reached
++ */
++static void throttle_direct_reclaim(gfp_t gfp_mask, struct zonelist *zonelist,
++					nodemask_t *nodemask)
++{
++	struct zone *zone;
++	int high_zoneidx = gfp_zone(gfp_mask);
++	pg_data_t *pgdat;
++
++	/* Kernel threads such as kjournald should not be throttled */
++	if (current->flags & PF_KTHREAD)
++		return;
++
++	/* Check if the pfmemalloc reserves are ok */
++	first_zones_zonelist(zonelist, high_zoneidx, NULL, &zone);
++	pgdat = zone->zone_pgdat;
++	if (pfmemalloc_watermark_ok(pgdat))
++		return;
++
++	/*
++	 * If the caller cannot enter the filesystem, it's possible that it
++	 * is processing a journal transaction. In this case, it is not safe
++	 * to block on pfmemalloc_wait as kswapd could also be blocked waiting
++	 * to start a transaction. Instead, throttle for up to a second before
++	 * the reclaim must continue.
++	 */
++	if (!(gfp_mask & __GFP_FS)) {
++		wait_event_interruptible_timeout(pgdat->pfmemalloc_wait,
++			pfmemalloc_watermark_ok(pgdat), HZ);
++		return;
++	}
++
++	/* Throttle until kswapd wakes the process */
++	wait_event_killable(zone->zone_pgdat->pfmemalloc_wait,
++		pfmemalloc_watermark_ok(pgdat));
++}
++
+ unsigned long try_to_free_pages(struct zonelist *zonelist, int order,
+ 				gfp_t gfp_mask, nodemask_t *nodemask)
  {
--	return !!(gfp_to_alloc_flags(gfp_mask) & ALLOC_PFMEMALLOC);
-+	return !!(gfp_to_alloc_flags(gfp_mask) & ALLOC_NO_WATERMARKS);
- }
+@@ -2449,6 +2516,15 @@ unsigned long try_to_free_pages(struct zonelist *zonelist, int order,
+ 		.gfp_mask = sc.gfp_mask,
+ 	};
  
- static inline struct page *
-@@ -2421,7 +2419,7 @@ got_pg:
- 	 * steps that will free more memory. The caller should avoid the
- 	 * page being used for !PFMEMALLOC purposes.
- 	 */
--	page->pfmemalloc = !!(alloc_flags & ALLOC_PFMEMALLOC);
-+	page->pfmemalloc = !!(alloc_flags & ALLOC_NO_WATERMARKS);
++	throttle_direct_reclaim(gfp_mask, zonelist, nodemask);
++
++	/*
++	 * Do not enter reclaim if fatal signal is pending. 1 is returned so
++	 * that the page allocator does not consider triggering OOM
++	 */
++	if (fatal_signal_pending(current))
++		return 1;
++
+ 	trace_mm_vmscan_direct_reclaim_begin(order,
+ 				sc.may_writepage,
+ 				gfp_mask);
+@@ -2610,6 +2686,20 @@ static bool sleeping_prematurely(pg_data_t *pgdat, int order, long remaining,
+ 	if (remaining)
+ 		return true;
  
- 	return page;
- }
-diff --git a/mm/slab.c b/mm/slab.c
-index 7f483d6..8e660b3 100644
---- a/mm/slab.c
-+++ b/mm/slab.c
-@@ -1930,7 +1930,7 @@ static void *kmem_getpages(struct kmem_cache *cachep, gfp_t flags, int nodeid)
- 		return NULL;
- 	}
++	/*
++	 * There is a potential race between when kswapd checks it watermarks
++	 * and a process gets throttled. There is also a potential race if
++	 * processes get throttled, kswapd wakes, a large process exits therby
++	 * balancing the zones that causes kswapd to miss a wakeup. If kswapd
++	 * is going to sleep, no process should be sleeping on pfmemalloc_wait
++	 * so wake them now if necessary. If necessary, processes will wake
++	 * kswapd and get throttled again
++	 */
++	if (waitqueue_active(&pgdat->pfmemalloc_wait)) {
++		wake_up(&pgdat->pfmemalloc_wait);
++		return true;
++	}
++
+ 	/* Check the watermark levels */
+ 	for (i = 0; i <= classzone_idx; i++) {
+ 		struct zone *zone = pgdat->node_zones + i;
+@@ -2871,6 +2961,12 @@ loop_again:
+ 			}
  
--	/* Record if ALLOC_PFMEMALLOC was set when allocating the slab */
-+	/* Record if ALLOC_NO_WATERMARKS was set when allocating the slab */
- 	if (unlikely(page->pfmemalloc))
- 		pfmemalloc_active = true;
+ 		}
++
++		/* Wake throttled direct reclaimers if low watermark is met */
++		if (waitqueue_active(&pgdat->pfmemalloc_wait) &&
++				pfmemalloc_watermark_ok(pgdat))
++			wake_up(&pgdat->pfmemalloc_wait);
++
+ 		if (all_zones_ok || (order && pgdat_balanced(pgdat, balanced, *classzone_idx)))
+ 			break;		/* kswapd: all done */
+ 		/*
+@@ -3005,6 +3101,19 @@ static void kswapd_try_to_sleep(pg_data_t *pgdat, int order, int classzone_idx)
+ 		trace_mm_vmscan_kswapd_sleep(pgdat->node_id);
  
+ 		/*
++		 * There is a potential race between when kswapd checks it
++		 * watermarks and a process gets throttled. There is also
++		 * a potential race if processes get throttled, kswapd wakes,
++		 * a large process exits therby balancing the zones that causes
++		 * kswapd to miss a wakeup. If kswapd is going to sleep, no
++		 * process should be sleeping on pfmemalloc_wait so wake them
++		 * now if necessary. If necessary, processes will wake kswapd
++		 * and get throttled again
++		 */
++		if (waitqueue_active(&pgdat->pfmemalloc_wait))
++			wake_up(&pgdat->pfmemalloc_wait);
++
++		/*
+ 		 * vmstat counters are not perfectly accurate and the estimated
+ 		 * value for counters such as NR_FREE_PAGES can deviate from the
+ 		 * true value by nr_online_cpus * threshold. To avoid the zone
 -- 
 1.7.9.2
 
