@@ -1,26 +1,29 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755262Ab2DPSwv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Apr 2012 14:52:51 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:47129 "EHLO
+	id S1755249Ab2DPSyA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Apr 2012 14:54:00 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:47143 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752506Ab2DPSwt (ORCPT
+	with ESMTP id S1751189Ab2DPSx7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Apr 2012 14:52:49 -0400
-Date: Mon, 16 Apr 2012 11:52:38 -0700
-From: tip-bot for Matt Fleming <matt.fleming@intel.com>
-Message-ID: <tip-b1994304fc399f5d3a5368c81111d713490c4799@git.kernel.org>
+	Mon, 16 Apr 2012 14:53:59 -0400
+Date: Mon, 16 Apr 2012 11:53:28 -0700
+From: tip-bot for Andreas Herrmann <andreas.herrmann3@amd.com>
+Message-ID: <tip-68894632afb2729a1d8785c877840953894c7283@git.kernel.org>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        matt.hfleming@intel.com, matt.fleming@intel.com,
-        jordan.l.justen@intel.com, tglx@linutronix.de, hpa@linux.intel.com
+        andreas.herrmann3@amd.com, sp@numascale.com, bp@amd64.org,
+        stable@kernel.org, tglx@linutronix.de, borislav.petkov@amd.com,
+        daniel@numascale-asia.com
 Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        matt.fleming@intel.com, matt.hfleming@intel.com,
-        jordan.l.justen@intel.com, tglx@linutronix.de, hpa@linux.intel.com
-In-Reply-To: <1334584744.26997.14.camel@mfleming-mobl1.ger.corp.intel.com>
-References: <1334584744.26997.14.camel@mfleming-mobl1.ger.corp.intel.com>
+        andreas.herrmann3@amd.com, sp@numascale.com, bp@amd64.org,
+        stable@kernel.org, tglx@linutronix.de, daniel@numascale-asia.com,
+        borislav.petkov@amd.com
+In-Reply-To: <20120402160648.GR27684@alberich.amd.com>
+References: <20120402160648.GR27684@alberich.amd.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/urgent] x86, efi: Add dedicated EFI stub entry point
-Git-Commit-ID: b1994304fc399f5d3a5368c81111d713490c4799
+Subject: [tip:x86/urgent] x86/platform:
+  Remove incorrect error message in x86_default_fixup_cpu_id()
+Git-Commit-ID: 68894632afb2729a1d8785c877840953894c7283
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -29,151 +32,130 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Mon, 16 Apr 2012 11:52:44 -0700 (PDT)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Mon, 16 Apr 2012 11:53:34 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  b1994304fc399f5d3a5368c81111d713490c4799
-Gitweb:     http://git.kernel.org/tip/b1994304fc399f5d3a5368c81111d713490c4799
-Author:     Matt Fleming <matt.fleming@intel.com>
-AuthorDate: Sun, 15 Apr 2012 16:06:04 +0100
-Committer:  H. Peter Anvin <hpa@linux.intel.com>
-CommitDate: Mon, 16 Apr 2012 11:41:44 -0700
+Commit-ID:  68894632afb2729a1d8785c877840953894c7283
+Gitweb:     http://git.kernel.org/tip/68894632afb2729a1d8785c877840953894c7283
+Author:     Andreas Herrmann <andreas.herrmann3@amd.com>
+AuthorDate: Mon, 2 Apr 2012 18:06:48 +0200
+Committer:  Ingo Molnar <mingo@kernel.org>
+CommitDate: Mon, 16 Apr 2012 20:43:43 +0200
 
-x86, efi: Add dedicated EFI stub entry point
+x86/platform: Remove incorrect error message in x86_default_fixup_cpu_id()
 
-The method used to work out whether we were booted by EFI firmware or
-via a boot loader is broken. Because efi_main() is always executed
-when booting from a boot loader we will dereference invalid pointers
-either on the stack (CONFIG_X86_32) or contained in %rdx
-(CONFIG_X86_64) when searching for an EFI System Table signature.
+It's only called from amd.c:srat_detect_node(). The introduced
+condition for calling the fixup code is true for all AMD
+multi-node processors, e.g. Magny-Cours and Interlagos. There we
+have 2 NUMA nodes on one socket. Thus there are cores having
+different numa-node-id but with equal phys_proc_id.
 
-Instead of dereferencing these invalid system table pointers, add a
-new entry point that is only used when booting from EFI firmware, when
-we know the pointer arguments will be valid. With this change legacy
-boot loaders will no longer execute efi_main(), but will instead skip
-EFI stub initialisation completely.
+There is no point to print error messages in such a situation.
 
-[ hpa: Marking this for urgent/stable since it is a regression when
-  the option is enabled; without the option the patch has no effect ]
+The confusing/misleading error message was introduced with
+commit 64be4c1c2428e148de6081af235e2418e6a66dda ("x86: Add
+x86_init platform override to fix up NUMA core numbering").
 
-Signed-off-by: Matt Fleming <matt.hfleming@intel.com>
-Link: http://lkml.kernel.org/r/1334584744.26997.14.camel@mfleming-mobl1.ger.corp.intel.com
-Reported-by: Jordan Justen <jordan.l.justen@intel.com>
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
-Cc: <stable@vger.kernel.org> v3.3
+Remove the default fixup function (especially the error message)
+and replace it by a NULL pointer check, move the
+Numascale-specific condition for calling the fixup into the
+fixup-function itself and slightly adapt the comment.
+
+Signed-off-by: Andreas Herrmann <andreas.herrmann3@amd.com>
+Acked-by: Borislav Petkov <borislav.petkov@amd.com>
+Cc: <stable@kernel.org>
+Cc: <sp@numascale.com>
+Cc: <bp@amd64.org>
+Cc: <daniel@numascale-asia.com>
+Link: http://lkml.kernel.org/r/20120402160648.GR27684@alberich.amd.com
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- arch/x86/boot/compressed/head_32.S |   14 +++++++++++---
- arch/x86/boot/compressed/head_64.S |   22 ++++++++++++++++------
- arch/x86/boot/tools/build.c        |   15 +++++++++++----
- 3 files changed, 38 insertions(+), 13 deletions(-)
+ arch/x86/include/asm/x86_init.h      |    1 -
+ arch/x86/kernel/apic/apic_numachip.c |    7 +++++--
+ arch/x86/kernel/cpu/amd.c            |    7 ++++---
+ arch/x86/kernel/cpu/common.c         |    9 ---------
+ arch/x86/kernel/x86_init.c           |    1 -
+ 5 files changed, 9 insertions(+), 16 deletions(-)
 
-diff --git a/arch/x86/boot/compressed/head_32.S b/arch/x86/boot/compressed/head_32.S
-index a055993..c85e3ac 100644
---- a/arch/x86/boot/compressed/head_32.S
-+++ b/arch/x86/boot/compressed/head_32.S
-@@ -33,6 +33,9 @@
- 	__HEAD
- ENTRY(startup_32)
- #ifdef CONFIG_EFI_STUB
-+	jmp	preferred_addr
+diff --git a/arch/x86/include/asm/x86_init.h b/arch/x86/include/asm/x86_init.h
+index baaca8d..764b66a 100644
+--- a/arch/x86/include/asm/x86_init.h
++++ b/arch/x86/include/asm/x86_init.h
+@@ -195,6 +195,5 @@ extern struct x86_msi_ops x86_msi;
+ 
+ extern void x86_init_noop(void);
+ extern void x86_init_uint_noop(unsigned int unused);
+-extern void x86_default_fixup_cpu_id(struct cpuinfo_x86 *c, int node);
+ 
+ #endif
+diff --git a/arch/x86/kernel/apic/apic_numachip.c b/arch/x86/kernel/apic/apic_numachip.c
+index 899803e..23e7542 100644
+--- a/arch/x86/kernel/apic/apic_numachip.c
++++ b/arch/x86/kernel/apic/apic_numachip.c
+@@ -207,8 +207,11 @@ static void __init map_csrs(void)
+ 
+ static void fixup_cpu_id(struct cpuinfo_x86 *c, int node)
+ {
+-	c->phys_proc_id = node;
+-	per_cpu(cpu_llc_id, smp_processor_id()) = node;
 +
-+	.balign	0x10
++	if (c->phys_proc_id != node) {
++		c->phys_proc_id = node;
++		per_cpu(cpu_llc_id, smp_processor_id()) = node;
++	}
+ }
+ 
+ static int __init numachip_system_init(void)
+diff --git a/arch/x86/kernel/cpu/amd.c b/arch/x86/kernel/cpu/amd.c
+index 1248f9c..1c67ca1 100644
+--- a/arch/x86/kernel/cpu/amd.c
++++ b/arch/x86/kernel/cpu/amd.c
+@@ -353,10 +353,11 @@ static void __cpuinit srat_detect_node(struct cpuinfo_x86 *c)
+ 		node = per_cpu(cpu_llc_id, cpu);
+ 
  	/*
- 	 * We don't need the return address, so set up the stack so
- 	 * efi_main() can find its arugments.
-@@ -41,12 +44,17 @@ ENTRY(startup_32)
- 
- 	call	efi_main
- 	cmpl	$0, %eax
--	je	preferred_addr
- 	movl	%eax, %esi
--	call	1f
-+	jne	2f
- 1:
-+	/* EFI init failed, so hang. */
-+	hlt
-+	jmp	1b
-+2:
-+	call	3f
-+3:
- 	popl	%eax
--	subl	$1b, %eax
-+	subl	$3b, %eax
- 	subl	BP_pref_address(%esi), %eax
- 	add	BP_code32_start(%esi), %eax
- 	leal	preferred_addr(%eax), %eax
-diff --git a/arch/x86/boot/compressed/head_64.S b/arch/x86/boot/compressed/head_64.S
-index 558d76c..87e03a1 100644
---- a/arch/x86/boot/compressed/head_64.S
-+++ b/arch/x86/boot/compressed/head_64.S
-@@ -200,18 +200,28 @@ ENTRY(startup_64)
- 	 * entire text+data+bss and hopefully all of memory.
+-	 * If core numbers are inconsistent, it's likely a multi-fabric platform,
+-	 * so invoke platform-specific handler
++	 * On multi-fabric platform (e.g. Numascale NumaChip) a
++	 * platform-specific handler needs to be called to fixup some
++	 * IDs of the CPU.
  	 */
- #ifdef CONFIG_EFI_STUB
--	pushq	%rsi
-+	/*
-+	 * The entry point for the PE/COFF executable is 0x210, so only
-+	 * legacy boot loaders will execute this jmp.
-+	 */
-+	jmp	preferred_addr
-+
-+	.org 0x210
- 	mov	%rcx, %rdi
- 	mov	%rdx, %rsi
- 	call	efi_main
--	popq	%rsi
--	cmpq	$0,%rax
--	je	preferred_addr
- 	movq	%rax,%rsi
--	call	1f
-+	cmpq	$0,%rax
-+	jne	2f
- 1:
-+	/* EFI init failed, so hang. */
-+	hlt
-+	jmp	1b
-+2:
-+	call	3f
-+3:
- 	popq	%rax
--	subq	$1b, %rax
-+	subq	$3b, %rax
- 	subq	BP_pref_address(%rsi), %rax
- 	add	BP_code32_start(%esi), %eax
- 	leaq	preferred_addr(%rax), %rax
-diff --git a/arch/x86/boot/tools/build.c b/arch/x86/boot/tools/build.c
-index ed54976..24443a3 100644
---- a/arch/x86/boot/tools/build.c
-+++ b/arch/x86/boot/tools/build.c
-@@ -205,8 +205,13 @@ int main(int argc, char ** argv)
- 	put_unaligned_le32(file_sz, &buf[pe_header + 0x50]);
+-	if (c->phys_proc_id != node)
++	if (x86_cpuinit.fixup_cpu_id)
+ 		x86_cpuinit.fixup_cpu_id(c, node);
  
- #ifdef CONFIG_X86_32
--	/* Address of entry point */
--	put_unaligned_le32(i, &buf[pe_header + 0x28]);
-+	/*
-+	 * Address of entry point.
-+	 *
-+	 * The EFI stub entry point is +16 bytes from the start of
-+	 * the .text section.
-+	 */
-+	put_unaligned_le32(i + 16, &buf[pe_header + 0x28]);
+ 	if (!node_online(node)) {
+diff --git a/arch/x86/kernel/cpu/common.c b/arch/x86/kernel/cpu/common.c
+index 67e2583..cf79302 100644
+--- a/arch/x86/kernel/cpu/common.c
++++ b/arch/x86/kernel/cpu/common.c
+@@ -1163,15 +1163,6 @@ static void dbg_restore_debug_regs(void)
+ #endif /* ! CONFIG_KGDB */
  
- 	/* .text size */
- 	put_unaligned_le32(file_sz, &buf[pe_header + 0xb0]);
-@@ -217,9 +222,11 @@ int main(int argc, char ** argv)
- 	/*
- 	 * Address of entry point. startup_32 is at the beginning and
- 	 * the 64-bit entry point (startup_64) is always 512 bytes
--	 * after.
-+	 * after. The EFI stub entry point is 16 bytes after that, as
-+	 * the first instruction allows legacy loaders to jump over
-+	 * the EFI stub initialisation
- 	 */
--	put_unaligned_le32(i + 512, &buf[pe_header + 0x28]);
-+	put_unaligned_le32(i + 528, &buf[pe_header + 0x28]);
+ /*
+- * Prints an error where the NUMA and configured core-number mismatch and the
+- * platform didn't override this to fix it up
+- */
+-void __cpuinit x86_default_fixup_cpu_id(struct cpuinfo_x86 *c, int node)
+-{
+-	pr_err("NUMA core number %d differs from configured core number %d\n", node, c->phys_proc_id);
+-}
+-
+-/*
+  * cpu_init() initializes state that is per-CPU. Some data is already
+  * initialized (naturally) in the bootstrap process, such as the GDT
+  * and IDT. We reload them nevertheless, this function acts as a
+diff --git a/arch/x86/kernel/x86_init.c b/arch/x86/kernel/x86_init.c
+index e9f265f..9cf71d0 100644
+--- a/arch/x86/kernel/x86_init.c
++++ b/arch/x86/kernel/x86_init.c
+@@ -93,7 +93,6 @@ struct x86_init_ops x86_init __initdata = {
+ struct x86_cpuinit_ops x86_cpuinit __cpuinitdata = {
+ 	.early_percpu_clock_init	= x86_init_noop,
+ 	.setup_percpu_clockev		= setup_secondary_APIC_clock,
+-	.fixup_cpu_id			= x86_default_fixup_cpu_id,
+ };
  
- 	/* .text size */
- 	put_unaligned_le32(file_sz, &buf[pe_header + 0xc0]);
+ static void default_nmi_init(void) { };
