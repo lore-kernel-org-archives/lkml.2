@@ -1,93 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752902Ab2DPKUq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Apr 2012 06:20:46 -0400
-Received: from e28smtp01.in.ibm.com ([122.248.162.1]:46111 "EHLO
-	e28smtp01.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752415Ab2DPKUo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Apr 2012 06:20:44 -0400
-Message-ID: <4F8BF265.7020405@linux.vnet.ibm.com>
-Date: Mon, 16 Apr 2012 18:20:21 +0800
-From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120216 Thunderbird/10.0.1
+	id S1752884Ab2DPKVc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Apr 2012 06:21:32 -0400
+Received: from mga01.intel.com ([192.55.52.88]:43717 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752479Ab2DPKVb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Apr 2012 06:21:31 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="154091599"
+Date: Mon, 16 Apr 2012 12:30:23 +0200
+From: Samuel Ortiz <sameo@linux.intel.com>
+To: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        kernel@pengutronix.de
+Subject: Re: [PATCH v2 06/15] mfd: mark const init data with __initconst
+ instead of __initdata
+Message-ID: <20120416103023.GE1647@sortiz-mobl>
+References: <20120330200358.GV15647@pengutronix.de>
+ <1333137905-13809-6-git-send-email-u.kleine-koenig@pengutronix.de>
 MIME-Version: 1.0
-To: Avi Kivity <avi@redhat.com>
-CC: Marcelo Tosatti <mtosatti@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        KVM <kvm@vger.kernel.org>
-Subject: Re: [PATCH v2 10/16] KVM: MMU: fask check whether page is writable
-References: <4F87FA69.5060106@linux.vnet.ibm.com> <4F87FC82.2050302@linux.vnet.ibm.com> <4F8AE64F.7080909@redhat.com> <4F8B9115.2030807@linux.vnet.ibm.com> <4F8BEE1B.8000704@redhat.com>
-In-Reply-To: <4F8BEE1B.8000704@redhat.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-x-cbid: 12041610-4790-0000-0000-00000233CB0C
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1333137905-13809-6-git-send-email-u.kleine-koenig@pengutronix.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/16/2012 06:02 PM, Avi Kivity wrote:
+Hi Uwe,
 
-> On 04/16/2012 06:25 AM, Xiao Guangrong wrote:
->> On 04/15/2012 11:16 PM, Avi Kivity wrote:
->>
->>> On 04/13/2012 01:14 PM, Xiao Guangrong wrote:
->>>> Using bit 1 (PTE_LIST_WP_BIT) in rmap store the write-protect status
->>>> to avoid unnecessary shadow page walking
->>>>
->>>> Signed-off-by: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
->>>> ---
->>>>  arch/x86/kvm/mmu.c |   40 ++++++++++++++++++++++++++++++++++------
->>>>  1 files changed, 34 insertions(+), 6 deletions(-)
->>>>
->>>> diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
->>>> index 0c6e92d..8b71908 100644
->>>> --- a/arch/x86/kvm/mmu.c
->>>> +++ b/arch/x86/kvm/mmu.c
->>>> @@ -796,7 +796,9 @@ static int mapping_level(struct kvm_vcpu *vcpu, gfn_t large_gfn)
->>>>  	return level - 1;
->>>>  }
->>>>
->>>> -#define PTE_LIST_DESC		(0x1ull)
->>>> +#define PTE_LIST_DESC_BIT	0
->>>> +#define PTE_LIST_WP_BIT	1
->>>> +#define PTE_LIST_DESC		(1 << PTE_LIST_DESC_BIT)
->>>>  #define PTE_LIST_FLAG_MASK	(0x3ull)
->>>>
->>>>  static void
->>>> @@ -1067,6 +1069,12 @@ static bool rmap_can_add(struct kvm_vcpu *vcpu)
->>>>  	return mmu_memory_cache_free_objects(cache);
->>>>  }
->>>>
->>>> +static void host_page_write_protect(u64 *spte, unsigned long *rmapp)
->>>> +{
->>>> +	if (!(*spte & SPTE_HOST_WRITEABLE))
->>>> +		__test_and_set_bit(PTE_LIST_WP_BIT, rmapp);
->>>> +}
->>>>
->>>
->>> Why is this needed, in addition to spte.SPTE_WRITE_PROTECT?
->>>
->>
->>
->> It is used to avoid the unnecessary overload 
+On Fri, Mar 30, 2012 at 10:04:56PM +0200, Uwe Kleine-König wrote:
+> As long as there is no other non-const variable marked __initdata in the
+> same compilation unit it doesn't hurt. If there were one however
+> compilation would fail with
 > 
-> It's overloading me :(
+> 	error: $variablename causes a section type conflict
 > 
-
-
-Sorry.
-
->> for fast page fault if
->> KSM is enabled. On the fast check path, it can see the gfn is write-protected
->> by host, then the fast page fault path is not called.
+> because a section containing const variables is marked read only and so
+> cannot contain non-const variables.
 > 
-> The fast page fault path is supposed to be fast, so it's okay if we take
-> a bit of extra overhead before a COW (which is going to be slow anyway).
-> 
-> Let's get the simplest possible version in, and then discuss if/how we
-> need to optimize it further.
-> 
+> Signed-off-by: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
+> Cc: Samuel Ortiz <sameo@linux.intel.com>
+Patch applied, thanks.
 
+Cheers,
+Samuel.
 
-Okay, i will drop setting PTE_LIST_WP_BIT for this case in the next version.:)
-
+-- 
+Intel Open Source Technology Centre
+http://oss.intel.com/
