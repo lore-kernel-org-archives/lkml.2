@@ -1,54 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754173Ab2DPPDT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Apr 2012 11:03:19 -0400
-Received: from mgw2.diku.dk ([130.225.96.92]:59439 "EHLO mgw2.diku.dk"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752902Ab2DPPDS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Apr 2012 11:03:18 -0400
-From: Julia Lawall <Julia.Lawall@lip6.fr>
-To: Felipe Balbi <balbi@ti.com>
-Cc: kernel-janitors@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] drivers/usb/musb/davinci.c: add missing unregister
-Date: Mon, 16 Apr 2012 17:03:10 +0200
-Message-Id: <1334588590-23891-1-git-send-email-Julia.Lawall@lip6.fr>
-X-Mailer: git-send-email 1.7.3.4
+	id S1754751Ab2DPPDi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Apr 2012 11:03:38 -0400
+Received: from mail-vb0-f46.google.com ([209.85.212.46]:63286 "EHLO
+	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753761Ab2DPPDg convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Apr 2012 11:03:36 -0400
+MIME-Version: 1.0
+In-Reply-To: <20120416134422.GC2359@suse.de>
+References: <1334578675-23445-1-git-send-email-mgorman@suse.de>
+	<1334578675-23445-9-git-send-email-mgorman@suse.de>
+	<CADnza444dTr=JEtqpL5wxHRNkEc7vBz1qq9TL7Z+5h749vNawg@mail.gmail.com>
+	<20120416134422.GC2359@suse.de>
+Date: Mon, 16 Apr 2012 11:03:35 -0400
+X-Google-Sender-Auth: PZ1wx6057sd1Kfwz44TW2qdNMyE
+Message-ID: <CADnza440ERBNTyQuXaG-MJGGw2u-ADmFdn+w+nvJ1F7cNyreGA@mail.gmail.com>
+Subject: Re: [PATCH 08/11] nfs: disable data cache revalidation for swapfiles
+From: Fred Isaman <iisaman@netapp.com>
+To: Mel Gorman <mgorman@suse.de>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Linux-MM <linux-mm@kvack.org>,
+        Linux-Netdev <netdev@vger.kernel.org>,
+        Linux-NFS <linux-nfs@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        David Miller <davem@davemloft.net>,
+        Trond Myklebust <Trond.Myklebust@netapp.com>,
+        Neil Brown <neilb@suse.de>, Christoph Hellwig <hch@infradead.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Mike Christie <michaelc@cs.wisc.edu>,
+        Eric B Munson <emunson@mgebm.net>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Julia Lawall <Julia.Lawall@lip6.fr>
+On Mon, Apr 16, 2012 at 9:44 AM, Mel Gorman <mgorman@suse.de> wrote:
+> On Mon, Apr 16, 2012 at 09:10:04AM -0400, Fred Isaman wrote:
+>> > <SNIP>
+>> > -static struct nfs_page *nfs_page_find_request_locked(struct page *page)
+>> > +static struct nfs_page *
+>> > +nfs_page_find_request_locked(struct nfs_inode *nfsi, struct page *page)
+>> >  {
+>> >        struct nfs_page *req = NULL;
+>> >
+>> > -       if (PagePrivate(page)) {
+>> > +       if (PagePrivate(page))
+>> >                req = (struct nfs_page *)page_private(page);
+>> > -               if (req != NULL)
+>> > -                       kref_get(&req->wb_kref);
+>> > +       else if (unlikely(PageSwapCache(page))) {
+>> > +               struct nfs_page *freq, *t;
+>> > +
+>> > +               /* Linearly search the commit list for the correct req */
+>> > +               list_for_each_entry_safe(freq, t, &nfsi->commit_list, wb_list) {
+>> > +                       if (freq->wb_page == page) {
+>> > +                               req = freq;
+>> > +                               break;
+>> > +                       }
+>> > +               }
+>> > +
+>> > +               BUG_ON(req == NULL);
+>>
+>> I suspect I am missing something, but why is it guaranteed that the
+>> req is on the commit list?
+>>
+>
+> It's a fair question and a statement about what I expected to happen.
+> The commit list replaces the nfs_page_tree radix tree that used to exist
+> and my understanding was that the req would exist in the radix tree until
+> the swap IO was completed. I expected it to be the same for the commit
+> list and the BUG_ON was based on that expectation. Are there cases where
+> the req would not be found?
+>
+> Thanks.
+>
+> --
+> Mel Gorman
+> SUSE Labs
+> --
 
-usb_nop_xceiv_unregister is needed on failure of usb_get_transceiver, as
-done in other error-handling code in the same function.
+A req is on the commit list only if it actually needs to be scheduled
+for COMMIT.  In other words, only after it has been sent via WRITE and
+the server did not return NFS_FILE_SYNC.
 
-Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
+Thus dirtying a page, then trying to touch it again before the WRITE
+is sent will not find the corresponding req on the commit_list.
 
----
- drivers/usb/musb/davinci.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
-
-diff --git a/drivers/usb/musb/davinci.c b/drivers/usb/musb/davinci.c
-index 97ab975..768b4b5 100644
---- a/drivers/usb/musb/davinci.c
-+++ b/drivers/usb/musb/davinci.c
-@@ -386,7 +386,7 @@ static int davinci_musb_init(struct musb *musb)
- 	usb_nop_xceiv_register();
- 	musb->xceiv = usb_get_transceiver();
- 	if (!musb->xceiv)
--		return -ENODEV;
-+		goto unregister;
- 
- 	musb->mregs += DAVINCI_BASE_OFFSET;
- 
-@@ -444,6 +444,7 @@ static int davinci_musb_init(struct musb *musb)
- 
- fail:
- 	usb_put_transceiver(musb->xceiv);
-+unregister:
- 	usb_nop_xceiv_unregister();
- 	return -ENODEV;
- }
-
+Fred
