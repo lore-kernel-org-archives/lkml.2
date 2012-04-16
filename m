@@ -1,42 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753856Ab2DPMsw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Apr 2012 08:48:52 -0400
-Received: from sting.hengli.com.au ([178.18.18.71]:47327 "EHLO
-	fornost.hengli.com.au" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753493Ab2DPMsv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Apr 2012 08:48:51 -0400
-Date: Mon, 16 Apr 2012 20:48:39 +0800
-From: Herbert Xu <herbert@gondor.hengli.com.au>
-To: Larry Finger <Larry.Finger@lwfinger.net>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        driverdevel <devel@driverdev.osuosl.org>,
-        wireless <linux-wireless@vger.kernel.org>,
-        Jan Simonson <jan@simonson.se>,
-        Linux Crypto Mailing List <linux-crypto@vger.kernel.org>
-Subject: Re: Problem with crypto when initializing TKIP
-Message-ID: <20120416124839.GA5985@gondor.apana.org.au>
-References: <4F8BAE2F.5090200@lwfinger.net>
+	id S1754088Ab2DPMxx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Apr 2012 08:53:53 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:62841 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753717Ab2DPMxv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Apr 2012 08:53:51 -0400
+Message-ID: <4F8C1652.7000004@redhat.com>
+Date: Mon, 16 Apr 2012 15:53:38 +0300
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120329 Thunderbird/11.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4F8BAE2F.5090200@lwfinger.net>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Alexander Graf <agraf@suse.de>
+CC: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        KVM list <kvm@vger.kernel.org>, Marcelo Tosatti <mtosatti@redhat.com>,
+        Paul Mackerras <paulus@au1.ibm.com>
+Subject: Re: [GIT PULL] KVM updates for the 3.4 merge window
+References: <4F688F48.6090303@redhat.com> <1332461414.2982.90.camel@pasglop> <CA+55aFxdf_K97KJ-phck-2YcTWAc6icc+Qhi6hOg0MA8FAjiyA@mail.gmail.com> <4F6EEEC1.4030608@redhat.com> <20120326213809.GA29788@bloggs.ozlabs.ibm.com> <4F7191E8.7020804@redhat.com> <20120330120107.GA28503@bloggs.ozlabs.ibm.com> <4F784C4D.3000409@redhat.com> <1333314138.30734.17.camel@pasglop> <4F796C18.2040209@redhat.com> <1333359979.30734.48.camel@pasglop> <3BB9812B-6FE2-4370-9D55-D273364BFFD1@suse.de>
+In-Reply-To: <3BB9812B-6FE2-4370-9D55-D273364BFFD1@suse.de>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 16, 2012 at 12:29:19AM -0500, Larry Finger wrote:
+On 04/16/2012 03:47 PM, Alexander Graf wrote:
+> On 02.04.2012, at 11:46, Benjamin Herrenschmidt wrote:
 >
-> The value of ok is NOTIFY_OK, which leads to a return of -ENOENT and
-> a failure of the initialization.
+> > On Mon, 2012-04-02 at 12:06 +0300, Avi Kivity wrote:
+> >>> The current process is such that it takes absolutely forever for our
+> >>> patches to get in, which is a major PITA for something in such state of
+> >>> active development.
+> >> 
+> >> If the patches were posted two weeks earlier, they would have gone in.
+> > 
+> > I believe on our side they were, but Alex took a while to make up his
+> > tree ... oh well..
+>
+> Yes, because to me the kvm-ppc-next tree basically is the same semantically as -next for Avi. It's where patches cook a while to make sure they actually work. Nobody tests KVM PPC patches against kvm's master tree. All testing (compile and execution) happens against kvm-ppc-next.
+>
+> That's why I don't see the point in having it cook again in Avi's tree. At the end of the day the patches will surely become way too chewy ;).
 
-NOTIFY_OK means that we have no notifiers installed.  Did you
-compile/load CRYPTO_MANAGER?
+kvm.git next is exposed to linux-next, where they get tested quite a
+lot.  Granted it's mostly build testing, and people are unlikely to test
+kvm there, but they will test the non-kvm bits that creep in there.
 
-Cheers,
+> The alternative would be that I don't have a -next tree, just collect patches and immediately send them to Avi. That way the main kvm tree would be broken more often, but at least we don't get these horrible synchronization latencies.
+
+That works too.  Don't post immediately; 2-3 week batches would reduce
+noise.
+
 -- 
-Email: Herbert Xu <herbert@gondor.apana.org.au>
-Home Page: http://gondor.apana.org.au/~herbert/
-PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
+error compiling committee.c: too many arguments to function
+
