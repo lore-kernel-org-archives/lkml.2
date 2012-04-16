@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754030Ab2DPQSw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Apr 2012 12:18:52 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:40970 "EHLO mx2.suse.de"
+	id S1753769Ab2DPQSv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Apr 2012 12:18:51 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:40971 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752440Ab2DPQOY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1752478Ab2DPQOY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 16 Apr 2012 12:14:24 -0400
 From: Jan Kara <jack@suse.cz>
 To: Al Viro <viro@ZenIV.linux.org.uk>
 Cc: dchinner@redhat.com, LKML <linux-kernel@vger.kernel.org>,
         linux-fsdevel@vger.kernel.org, Jan Kara <jack@suse.cz>,
-        linux-ext4@vger.kernel.org, "Theodore Ts'o" <tytso@mit.edu>
-Subject: [PATCH 17/27] ext4: Convert to new freezing mechanism
-Date: Mon, 16 Apr 2012 18:13:55 +0200
-Message-Id: <1334592845-22862-18-git-send-email-jack@suse.cz>
+        Mark Fasheh <mfasheh@suse.com>, Joel Becker <jlbec@evilplan.org>,
+        ocfs2-devel@oss.oracle.com
+Subject: [PATCH 19/27] ocfs2: Convert to new freezing mechanism
+Date: Mon, 16 Apr 2012 18:13:57 +0200
+Message-Id: <1334592845-22862-20-git-send-email-jack@suse.cz>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1334592845-22862-1-git-send-email-jack@suse.cz>
 References: <1334592845-22862-1-git-send-email-jack@suse.cz>
@@ -21,190 +22,115 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We remove most of frozen checks since upper layer takes care
-of blocking all writes. We only have to handle protection in
-ext4_page_mkwrite() in a special way because we cannot use
-generic block_page_mkwrite().
+Protect ocfs2_page_mkwrite() and ocfs2_file_aio_write() using the new
+freeze protection. We also protect several ioctl entry points which
+were missing the protection.
 
-CC: linux-ext4@vger.kernel.org
-CC: "Theodore Ts'o" <tytso@mit.edu>
-BugLink: https://bugs.launchpad.net/bugs/897421
-Tested-by: Kamal Mostafa <kamal@canonical.com>
-Tested-by: Peter M. Petrakis <peter.petrakis@canonical.com>
-Tested-by: Dann Frazier <dann.frazier@canonical.com>
-Tested-by: Massimo Morana <massimo.morana@canonical.com>
+CC: Mark Fasheh <mfasheh@suse.com>
+CC: Joel Becker <jlbec@evilplan.org>
+CC: ocfs2-devel@oss.oracle.com
 Signed-off-by: Jan Kara <jack@suse.cz>
 ---
- fs/ext4/inode.c |    7 ++-----
- fs/ext4/mmp.c   |   14 ++++++++++----
- fs/ext4/super.c |   31 +++++++------------------------
- 3 files changed, 19 insertions(+), 33 deletions(-)
+ fs/ocfs2/file.c  |   11 +++++++++--
+ fs/ocfs2/ioctl.c |   14 ++++++++++++--
+ fs/ocfs2/mmap.c  |    2 ++
+ 3 files changed, 23 insertions(+), 4 deletions(-)
 
-diff --git a/fs/ext4/inode.c b/fs/ext4/inode.c
-index c77b0bd..bf568fb 100644
---- a/fs/ext4/inode.c
-+++ b/fs/ext4/inode.c
-@@ -4600,11 +4600,7 @@ int ext4_page_mkwrite(struct vm_area_struct *vma, struct vm_fault *vmf)
- 	get_block_t *get_block;
- 	int retries = 0;
+diff --git a/fs/ocfs2/file.c b/fs/ocfs2/file.c
+index 061591a..9b1e3d4 100644
+--- a/fs/ocfs2/file.c
++++ b/fs/ocfs2/file.c
+@@ -1971,6 +1971,7 @@ int ocfs2_change_file_space(struct file *file, unsigned int cmd,
+ {
+ 	struct inode *inode = file->f_path.dentry->d_inode;
+ 	struct ocfs2_super *osb = OCFS2_SB(inode->i_sb);
++	int ret;
  
--	/*
--	 * This check is racy but catches the common case. We rely on
--	 * __block_page_mkwrite() to do a reliable check.
--	 */
+ 	if ((cmd == OCFS2_IOC_RESVSP || cmd == OCFS2_IOC_RESVSP64) &&
+ 	    !ocfs2_writes_unwritten_extents(osb))
+@@ -1985,7 +1986,12 @@ int ocfs2_change_file_space(struct file *file, unsigned int cmd,
+ 	if (!(file->f_mode & FMODE_WRITE))
+ 		return -EBADF;
+ 
+-	return __ocfs2_change_file_space(file, inode, file->f_pos, cmd, sr, 0);
++	ret = mnt_want_write_file(file);
++	if (ret)
++		return ret;
++	ret = __ocfs2_change_file_space(file, inode, file->f_pos, cmd, sr, 0);
++	mnt_drop_write_file(file);
++	return ret;
+ }
+ 
+ static long ocfs2_fallocate(struct file *file, int mode, loff_t offset,
+@@ -2261,7 +2267,7 @@ static ssize_t ocfs2_file_aio_write(struct kiocb *iocb,
+ 	if (iocb->ki_left == 0)
+ 		return 0;
+ 
 -	vfs_check_frozen(inode->i_sb, SB_FREEZE_WRITE);
++	sb_start_write(inode->i_sb);
+ 
+ 	appending = file->f_flags & O_APPEND ? 1 : 0;
+ 	direct_io = file->f_flags & O_DIRECT ? 1 : 0;
+@@ -2434,6 +2440,7 @@ out_sems:
+ 		ocfs2_iocb_clear_sem_locked(iocb);
+ 
+ 	mutex_unlock(&inode->i_mutex);
++	sb_end_write(inode->i_sb);
+ 
+ 	if (written)
+ 		ret = written;
+diff --git a/fs/ocfs2/ioctl.c b/fs/ocfs2/ioctl.c
+index a1a1bfd..d9c352b 100644
+--- a/fs/ocfs2/ioctl.c
++++ b/fs/ocfs2/ioctl.c
+@@ -926,7 +926,12 @@ long ocfs2_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
+ 		if (get_user(new_clusters, (int __user *)arg))
+ 			return -EFAULT;
+ 
+-		return ocfs2_group_extend(inode, new_clusters);
++		status = mnt_want_write_file(filp);
++		if (status)
++			return status;
++		status = ocfs2_group_extend(inode, new_clusters);
++		mnt_drop_write_file(filp);
++		return status;
+ 	case OCFS2_IOC_GROUP_ADD:
+ 	case OCFS2_IOC_GROUP_ADD64:
+ 		if (!capable(CAP_SYS_RESOURCE))
+@@ -935,7 +940,12 @@ long ocfs2_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
+ 		if (copy_from_user(&input, (int __user *) arg, sizeof(input)))
+ 			return -EFAULT;
+ 
+-		return ocfs2_group_add(inode, &input);
++		status = mnt_want_write_file(filp);
++		if (status)
++			return status;
++		status = ocfs2_group_add(inode, &input);
++		mnt_drop_write_file(filp);
++		return status;
+ 	case OCFS2_IOC_REFLINK:
+ 		if (copy_from_user(&args, (struct reflink_arguments *)arg,
+ 				   sizeof(args)))
+diff --git a/fs/ocfs2/mmap.c b/fs/ocfs2/mmap.c
+index 9cd4108..d150372 100644
+--- a/fs/ocfs2/mmap.c
++++ b/fs/ocfs2/mmap.c
+@@ -136,6 +136,7 @@ static int ocfs2_page_mkwrite(struct vm_area_struct *vma, struct vm_fault *vmf)
+ 	sigset_t oldset;
+ 	int ret;
+ 
 +	sb_start_pagefault(inode->i_sb);
- 	/* Delalloc case is easy... */
- 	if (test_opt(inode->i_sb, DELALLOC) &&
- 	    !ext4_should_journal_data(inode) &&
-@@ -4672,5 +4668,6 @@ retry_alloc:
- out_ret:
- 	ret = block_page_mkwrite_return(ret);
+ 	ocfs2_block_signals(&oldset);
+ 
+ 	/*
+@@ -165,6 +166,7 @@ static int ocfs2_page_mkwrite(struct vm_area_struct *vma, struct vm_fault *vmf)
+ 
  out:
+ 	ocfs2_unblock_signals(&oldset);
 +	sb_end_pagefault(inode->i_sb);
  	return ret;
  }
-diff --git a/fs/ext4/mmp.c b/fs/ext4/mmp.c
-index ed6548d..4f63f90 100644
---- a/fs/ext4/mmp.c
-+++ b/fs/ext4/mmp.c
-@@ -10,14 +10,20 @@
-  * Write the MMP block using WRITE_SYNC to try to get the block on-disk
-  * faster.
-  */
--static int write_mmp_block(struct buffer_head *bh)
-+static int write_mmp_block(struct super_block *sb, struct buffer_head *bh)
- {
-+	/*
-+	 * We protect against freezing so that we don't create dirty buffers
-+	 * on frozen filesystem.
-+	 */
-+	sb_start_write(sb);
- 	mark_buffer_dirty(bh);
- 	lock_buffer(bh);
- 	bh->b_end_io = end_buffer_write_sync;
- 	get_bh(bh);
- 	submit_bh(WRITE_SYNC, bh);
- 	wait_on_buffer(bh);
-+	sb_end_write(sb);
- 	if (unlikely(!buffer_uptodate(bh)))
- 		return 1;
  
-@@ -120,7 +126,7 @@ static int kmmpd(void *data)
- 		mmp->mmp_time = cpu_to_le64(get_seconds());
- 		last_update_time = jiffies;
- 
--		retval = write_mmp_block(bh);
-+		retval = write_mmp_block(sb, bh);
- 		/*
- 		 * Don't spew too many error messages. Print one every
- 		 * (s_mmp_update_interval * 60) seconds.
-@@ -200,7 +206,7 @@ static int kmmpd(void *data)
- 	mmp->mmp_seq = cpu_to_le32(EXT4_MMP_SEQ_CLEAN);
- 	mmp->mmp_time = cpu_to_le64(get_seconds());
- 
--	retval = write_mmp_block(bh);
-+	retval = write_mmp_block(sb, bh);
- 
- failed:
- 	kfree(data);
-@@ -299,7 +305,7 @@ skip:
- 	seq = mmp_new_seq();
- 	mmp->mmp_seq = cpu_to_le32(seq);
- 
--	retval = write_mmp_block(bh);
-+	retval = write_mmp_block(sb, bh);
- 	if (retval)
- 		goto failed;
- 
-diff --git a/fs/ext4/super.c b/fs/ext4/super.c
-index ceebaf8..08c7326 100644
---- a/fs/ext4/super.c
-+++ b/fs/ext4/super.c
-@@ -290,33 +290,17 @@ static void ext4_put_nojournal(handle_t *handle)
-  * journal_end calls result in the superblock being marked dirty, so
-  * that sync() will call the filesystem's write_super callback if
-  * appropriate.
-- *
-- * To avoid j_barrier hold in userspace when a user calls freeze(),
-- * ext4 prevents a new handle from being started by s_frozen, which
-- * is in an upper layer.
-  */
- handle_t *ext4_journal_start_sb(struct super_block *sb, int nblocks)
- {
- 	journal_t *journal;
--	handle_t  *handle;
- 
- 	trace_ext4_journal_start(sb, nblocks, _RET_IP_);
- 	if (sb->s_flags & MS_RDONLY)
- 		return ERR_PTR(-EROFS);
- 
-+	WARN_ON(sb->s_writers.frozen == SB_FREEZE_COMPLETE);
- 	journal = EXT4_SB(sb)->s_journal;
--	handle = ext4_journal_current_handle();
--
--	/*
--	 * If a handle has been started, it should be allowed to
--	 * finish, otherwise deadlock could happen between freeze
--	 * and others(e.g. truncate) due to the restart of the
--	 * journal handle if the filesystem is forzen and active
--	 * handles are not stopped.
--	 */
--	if (!handle)
--		vfs_check_frozen(sb, SB_FREEZE_TRANS);
--
- 	if (!journal)
- 		return ext4_get_nojournal();
- 	/*
-@@ -2635,6 +2619,7 @@ static int ext4_run_li_request(struct ext4_li_request *elr)
- 	sb = elr->lr_super;
- 	ngroups = EXT4_SB(sb)->s_groups_count;
- 
-+	sb_start_write(sb);
- 	for (group = elr->lr_next_group; group < ngroups; group++) {
- 		gdp = ext4_get_group_desc(sb, group, NULL);
- 		if (!gdp) {
-@@ -2661,6 +2646,7 @@ static int ext4_run_li_request(struct ext4_li_request *elr)
- 		elr->lr_next_sched = jiffies + elr->lr_timeout;
- 		elr->lr_next_group = group + 1;
- 	}
-+	sb_end_write(sb);
- 
- 	return ret;
- }
-@@ -4137,10 +4123,8 @@ int ext4_force_commit(struct super_block *sb)
- 		return 0;
- 
- 	journal = EXT4_SB(sb)->s_journal;
--	if (journal) {
--		vfs_check_frozen(sb, SB_FREEZE_TRANS);
-+	if (journal)
- 		ret = ext4_journal_force_commit(journal);
--	}
- 
- 	return ret;
- }
-@@ -4172,9 +4156,8 @@ static int ext4_sync_fs(struct super_block *sb, int wait)
-  * gives us a chance to flush the journal completely and mark the fs clean.
-  *
-  * Note that only this function cannot bring a filesystem to be in a clean
-- * state independently, because ext4 prevents a new handle from being started
-- * by @sb->s_frozen, which stays in an upper layer.  It thus needs help from
-- * the upper layer.
-+ * state independently. It relies on upper layer to stop all data & metadata
-+ * modifications.
-  */
- static int ext4_freeze(struct super_block *sb)
- {
-@@ -4201,7 +4184,7 @@ static int ext4_freeze(struct super_block *sb)
- 	EXT4_CLEAR_INCOMPAT_FEATURE(sb, EXT4_FEATURE_INCOMPAT_RECOVER);
- 	error = ext4_commit_super(sb, 1);
- out:
--	/* we rely on s_frozen to stop further updates */
-+	/* we rely on upper layer to stop further updates */
- 	jbd2_journal_unlock_updates(EXT4_SB(sb)->s_journal);
- 	return error;
- }
 -- 
 1.7.1
 
