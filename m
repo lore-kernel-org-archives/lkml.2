@@ -1,51 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752140Ab2DPIPG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Apr 2012 04:15:06 -0400
-Received: from mail-vb0-f46.google.com ([209.85.212.46]:52032 "EHLO
-	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751256Ab2DPIPD convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Apr 2012 04:15:03 -0400
-MIME-Version: 1.0
-In-Reply-To: <20120413060626.GA7856@alex-p.amd.com>
-References: <4F8790F6.5080408@intel.com>
-	<20120413060626.GA7856@alex-p.amd.com>
-Date: Mon, 16 Apr 2012 16:15:01 +0800
-Message-ID: <CAC=cRTOiHkkR5r+BVv8BRaN+mwqhRJ1dfYq-3Xw8ui0x1wOOoQ@mail.gmail.com>
-Subject: Re: [RFC PATCH] PCIe: Add PCIe runtime D3cold support
-From: huang ying <huang.ying.caritas@gmail.com>
-To: Alex He <alex.he@amd.com>
-Cc: "Yan, Zheng" <zheng.z.yan@intel.com>, bhelgaas@google.com, rjw@sisk.pl,
-        linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
-        linux-pm@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+	id S1752292Ab2DPIQy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Apr 2012 04:16:54 -0400
+Received: from eu1sys200aog118.obsmtp.com ([207.126.144.145]:49592 "EHLO
+	eu1sys200aog118.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752009Ab2DPIQv convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Apr 2012 04:16:51 -0400
+From: Bhupesh SHARMA <bhupesh.sharma@st.com>
+To: "balbi@ti.com" <balbi@ti.com>
+Cc: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "stern@rowland.harvard.edu" <stern@rowland.harvard.edu>
+Date: Mon, 16 Apr 2012 16:15:00 +0800
+Subject: RE: Enabling multiple gadgets on top of composite driver
+Thread-Topic: Enabling multiple gadgets on top of composite driver
+Thread-Index: Ac0ZZG0vL4ObRSZiST+HKRggpTcGswCRGSFw
+Message-ID: <D5ECB3C7A6F99444980976A8C6D896384FA41864D4@EAPEX1MAIL1.st.com>
+References: <D5ECB3C7A6F99444980976A8C6D896384FA30FA942@EAPEX1MAIL1.st.com>
+ <20120413105921.GM7154@arwen.pp.htv.fi>
+In-Reply-To: <20120413105921.GM7154@arwen.pp.htv.fi>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-cr-hashedpuzzle: Cw8F KV5w L7Uq NSQ3 NyB4 US6S VLE5 aK3g dr6T erBe fHd8
+ iuGl khCB l31K mDSn
+ v8uS;5;YgBhAGwAYgBpAEAAdABpAC4AYwBvAG0AOwBnAHIAZQBnAGsAaABAAGwAaQBuAHUAeABmAG8AdQBuAGQAYQB0AGkAbwBuAC4AbwByAGcAOwBsAGkAbgB1AHgALQBrAGUAcgBuAGUAbABAAHYAZwBlAHIALgBrAGUAcgBuAGUAbAAuAG8AcgBnADsAbABpAG4AdQB4AC0AdQBzAGIAQAB2AGcAZQByAC4AawBlAHIAbgBlAGwALgBvAHIAZwA7AHMAdABlAHIAbgBAAHIAbwB3AGwAYQBuAGQALgBoAGEAcgB2AGEAcgBkAC4AZQBkAHUA;Sosha1_v1;7;{907B2D7F-5496-4891-B35C-EB37147FBA32};YgBoAHUAcABlAHMAaAAuAHMAaABhAHIAbQBhAEAAcwB0AC4AYwBvAG0A;Mon,
+ 16 Apr 2012 08:15:00
+ GMT;UgBFADoAIABFAG4AYQBiAGwAaQBuAGcAIABtAHUAbAB0AGkAcABsAGUAIABnAGEAZABnAGUAdABzACAAbwBuACAAdABvAHAAIABvAGYAIABjAG8AbQBwAG8AcwBpAHQAZQAgAGQAcgBpAHYAZQByAA==
+x-cr-puzzleid: {907B2D7F-5496-4891-B35C-EB37147FBA32}
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 13, 2012 at 2:06 PM, Alex He <alex.he@amd.com> wrote:
-> On Fri, Apr 13, 2012 at 10:35:34AM +0800, Yan, Zheng wrote:
-[snip]
->> @@ -750,7 +750,8 @@ int pci_set_power_state(struct pci_dev *dev, pci_power_t state)
->>       if (state == PCI_D3hot && (dev->dev_flags & PCI_DEV_FLAGS_NO_D3))
->>               return 0;
->>
->> -     error = pci_raw_set_power_state(dev, state);
->> +     error = pci_raw_set_power_state(dev, state > PCI_D3hot ?
->> +                                     PCI_D3hot : state);
-> Do you want to set the pci device to D3hot if the state = D3Code through
-> PMCSR register?
+Hi Felipe,
 
-Yes.
+> -----Original Message-----
+> From: Felipe Balbi [mailto:balbi@ti.com]
+> Sent: Friday, April 13, 2012 4:29 PM
+> To: Bhupesh SHARMA
+> Cc: balbi@ti.com; gregkh@linuxfoundation.org; linux-
+> usb@vger.kernel.org; linux-kernel@vger.kernel.org;
+> stern@rowland.harvard.edu
+> Subject: Re: Enabling multiple gadgets on top of composite driver
+> 
+> On Fri, Apr 13, 2012 at 06:51:26PM +0800, Bhupesh SHARMA wrote:
+> > Hi,
+> >
+> > I have a query regarding enabling multiple gadgets (like g_webcam,
+> > g_zero etc..) on top of the Composite driver.
+> >
+> > My use case is very simple:
+> > 	- I want to expose a USB composite device to a standard USB host,
+> where
+> > 	  the Composite device supports a webcam gadget + zero gadget +
+> some other gadget..
+> 
+> look at how nokia.c does it.
 
-> I am agree if you realy want that but what is the meaninig
-> to distingulish D3cold with D3hot in this patch. We can't put the PCI device
-> through PMCSR register.
+Ok.
+ 
+> > On the older kernels like 2.6.27, this was easily possible, but the
+> > latest gadget code doesn't seem to support the same:
+> > 	- I can see that first a 'choicemenu' is provided which allows
+> selection of only
+> > 	  one gadget at a time.
+> 
+> Answer M instead of Y to "USB Gadget Drivers"
+> 
+> > 	- The "common" stuff like "composite.c", "epautoconfig.c" have
+> been included in
+> > 	  each f_* function driver (for e.g. f_uvc.c, f_sourcesink.c,
+> etc..), so even if
+> > 	  I somehow tweak the 'choicemenu' stuff, I get redeclaration
+> errors.
+> 
+> yeah, that still needs to be cleaned up. The story behind that is very
+> long.
+> 
+> > What is the best way to enable multiple gadgets (like g_webcam,
+> g_zero
+> > etc..) on top of the Composite driver or am I missing something here?
+> 
+> Either you want multiple gadgets or you want a composite gadget, what
+> is it ? If you want a composite gadget, you need to write a small C
+> file which combines multiple functions together (see nokia.c), if you
+> want multiple gadget drivers, just make them all modules. I always
+> compile all gadget drivers as modules and can use any one of them at
+> any time.
+> 
 
-Yes.  We put PCI device into D3hot via PMCSR firstly, then we use ACPI
-_PS3 and _PR3 to put device into D3cold.
+Thanks for your help.
+I need to support multiple functions over a composite gadget. I will now
+have a quick look at the 'nokia.c' driver.
 
-Best Regards,
-Huang Ying
+Regards,
+Bhupesh
