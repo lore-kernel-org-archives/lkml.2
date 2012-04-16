@@ -1,81 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752274Ab2DPD3T (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 15 Apr 2012 23:29:19 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:48566 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751123Ab2DPD3S (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 15 Apr 2012 23:29:18 -0400
-Date: Mon, 16 Apr 2012 13:29:04 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: James Morris <jmorris@namei.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>,
-        Jiri Pirko <jpirko@redhat.com>, Will Drewry <wad@chromium.org>
-Subject: linux-next: manual merge of the security tree with the net-next
- tree
-Message-Id: <20120416132904.85e0f40b3e509f42c3f3284c@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0beta6 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Mon__16_Apr_2012_13_29_04_+1000_+opk4LkRiaad2SzE"
+	id S1752259Ab2DPDgi (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 15 Apr 2012 23:36:38 -0400
+Received: from am1ehsobe004.messaging.microsoft.com ([213.199.154.207]:18990
+	"EHLO am1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751101Ab2DPDgh convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 15 Apr 2012 23:36:37 -0400
+X-SpamScore: -13
+X-BigFish: VS-13(zz1dbaL1432N98dKzz1202hzzz2dh2a8h668h839hd25h)
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+Date: Mon, 16 Apr 2012 11:47:14 +0800
+From: Dong Aisheng <aisheng.dong@freescale.com>
+To: Shawn Guo <shawn.guo@linaro.org>
+CC: Dong Aisheng <dongas86@gmail.com>, Sascha Hauer <s.hauer@pengutronix.de>,
+        <linus.walleij@stericsson.com>, <devicetree-discuss@lists.ozlabs.org>,
+        <linux-kernel@vger.kernel.org>, <rob.herring@calxeda.com>,
+        <kernel@pengutronix.de>, <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH 1/3] pinctrl: pinctrl-imx: add imx pinctrl core driver
+Message-ID: <20120416034713.GB17173@shlinux2.ap.freescale.net>
+References: <1334333915-1174-1-git-send-email-b29396@freescale.com>
+ <20120414134814.GA3852@pengutronix.de>
+ <CAA+hA=T0FAfuGKcW0vAKO+OWyFdM-6vQqVo53xKf8y28m7gPOQ@mail.gmail.com>
+ <20120415141736.GG24997@S2101-09.ap.freescale.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="iso-8859-1"
+Content-Disposition: inline
+In-Reply-To: <20120415141736.GG24997@S2101-09.ap.freescale.net>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Transfer-Encoding: 8BIT
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Mon__16_Apr_2012_13_29_04_+1000_+opk4LkRiaad2SzE
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Sun, Apr 15, 2012 at 10:17:43PM +0800, Shawn Guo wrote:
+> On Sun, Apr 15, 2012 at 11:49:04AM +0800, Dong Aisheng wrote:
+> ...
+> > >> +iomuxc@020e0000 {
+> > >> +     compatible = "fsl,imx6q-iomuxc";
+> > >> +     reg = <0x020e0000 0x4000>;
+> > >> +
+> > >> +     /* shared pinctrl settings */
+> > >> +     usdhc4 {
+> > >> +             pinctrl_usdhc4_1: usdhc4grp-1 {
+> > >> +                     fsl,pins =      "MX6Q_PAD_SD4_CMD",
+> > >> +                                     "MX6Q_PAD_SD4_CLK",
+> > >> +                                     "MX6Q_PAD_SD4_DAT0",
+> > >> +                                     "MX6Q_PAD_SD4_DAT1",
+> > >> +                                     "MX6Q_PAD_SD4_DAT2",
+> > >> +                                     "MX6Q_PAD_SD4_DAT3",
+> > >> +                                     "MX6Q_PAD_SD4_DAT4",
+> > >> +                                     "MX6Q_PAD_SD4_DAT5",
+> > >> +                                     "MX6Q_PAD_SD4_DAT6",
+> > >> +                                     "MX6Q_PAD_SD4_DAT7";
+> > >
+> > > Do we really want to have all combinations of all pins in the devicetree
+> > > as strings? This is going to be huge.
+> > >
+> > Correct.
+> > My plan is:
+> > 1) not all combinations, just define frequently used ones since
+> > it's hard to define all combinations groups for per based IMX.
+> > (maybe we can try to add a fix-up function which can do minor changes
+> > based on available ones, then user does not need to write a new group
+> > caused by only a small change.
+> > what do you think?)
+> > 
+> > 2)  When dt supports macro, will try convert string to integer macro.
+> > Then it maybe:
+> > fsl,pins = <MX6Q_PAD_SD4_CMD 0
+> >                 MX6Q_PAD_SD4_CLK 0
+> >                 MX6Q_PAD_SD4_DAT0 1
+> >                 .................>,
+> > Why i did not start pin id with a raw integer is because it's less
+> > meaning to user and
+> > not easy to read in dts file.
+> > 
+> We may want to use integer from the beginning to reduce the churn on
+> driver later.
+> 
+> I'm thinking about documenting the definition we used to have in
+> iomux-mx*.h in the binding document and assign id to each of them
+> in order.
+> 
+> pinmux						id
+> ------						--
+> MX6Q_PAD_SD2_DAT1__USDHC2_DAT1			0
+> MX6Q_PAD_SD2_DAT1__ECSPI5_SS0			1
+> MX6Q_PAD_SD2_DAT1__WEIM_WEIM_CS_2		2
+> ...
+> 
+> The ordering between the list and imx6q_pin_regs[] array need to match.
+> 
+> By looking at the binding document, we can just put pinmux-id into
+> property "fsl,pins" (maybe rename it to "fsl,pinmux-ids") to get the
+> desired pinmux settings.  With doing so, we can gain the following.
+> 
+> 1) The pinmux-id can be used as index to locate the entry in array
+>    imx6q_pin_regs[], so that the slow string lookup can be avoid.
+> 
+> 2) Property "fsl,mux" can be dropped, as it's been encoded in
+>    imx6q_pin_regs[] entry.
+> 
+> 3) Converting the existing board files to device tree will be much
+>    easier.  We only need to find the pinmux-id of those existing
+>    definitions and put them in "fsl, pinmux-ids".
+> 
+> 4) When DTC support macro, we can simply move the pinmux-id list from
+>    binding document into dts file.  No driver change is needed at all.
+> 
+> Thoughts?
+> 
+Good suggestion.
+I can do it and it's easy to change.
+But as i said above, before the dtc macro support is available, the pinctrl
+setting in dts file will be hard to read since it's all raw data.
+It becomes
+fsl,pins = <1 2 3 4 5 6 ....>;
+People have to search the binding doc to see what the data means.
 
-Hi James,
+The question is how long the dtc macro support will be available?
+I'm very willing to do like as you said if it's just a short time.
+But if it's long time, do we still want to lose the readability right now?
 
-Today's linux-next merge of the security tree got a conflict in
-include/linux/filter.h between commit ffe06c17afbb ("filter: add XOR
-operation") from the net-next tree and commit 46b325c7eb01
-("sk_run_filter: add BPF_S_ANC_SECCOMP_LD_W") from the security tree.
+Regards
+Dong Aisheng
 
-Just context changes.  I fixed it up (see below) and can carry the fax as
-necessary.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
-diff --cc include/linux/filter.h
-index 7209099,f2e5315..0000000
---- a/include/linux/filter.h
-+++ b/include/linux/filter.h
-@@@ -232,7 -239,7 +243,8 @@@ enum=20
-  	BPF_S_ANC_HATYPE,
-  	BPF_S_ANC_RXHASH,
-  	BPF_S_ANC_CPU,
- +	BPF_S_ANC_ALU_XOR_X,
-+ 	BPF_S_ANC_SECCOMP_LD_W,
-  };
- =20
-  #endif /* __KERNEL__ */
-
---Signature=_Mon__16_Apr_2012_13_29_04_+1000_+opk4LkRiaad2SzE
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJPi5IAAAoJEECxmPOUX5FEIIIQAJEPizRReIZYjMGafUwd+GWa
-7r6RNyNhYoM0+D7nl2DybWupqVzOkkNoTtLR545hXa8iHg7crKiY0lhIGA2DtxYQ
-rnZ3ZdGT8AAJTHh8MT9t9cGl7r3g7yJDV2RPmetW0bAjBpTGaG/hacpZ9TRi1PFq
-XMphsmvkLKGYb2SMy7frvp8Lh3NO+hMMdmeQfuBzLx13belYjiK/J1kccJAPet74
-PWE/zWgZGzQAq3doX/3dJqVNQ9P8E9xh9b7b0jOPchRYW0oxGoy041RZcvndKXxG
-37OKycxnlgERt+OUJpoksJu7K9azKOPDrMkNv3wrPY1C4t6aiXjmjNKjfM9U2DOY
-yIOq+AxJ30JAXEhn73Y2QtZ6AscVzKO81EdAUH3vkM4qMJCeHsLNpFy7bv2kJ12z
-JbImIjqOKVqL6KCIQO16BrzmKFSe//tmzvsum4r7+GwsNYhT7n9wdH5RCAlyUhjn
-ypkYR095CxOv4JvmmKX4pVXAXxykmKgs+aG+SbeyRZCg1ph5+Zyq51fpOIB3Py72
-o8+CE0cfLlv4oGK7Aq1v6xylgYThoVffOiHcCHdcL94UmQxUPuecfnooHNduUX7P
-+VofWDQ+d9xF1BTArlM3m0X8AptxzdlVkDCXTnnrswLiFShvmktmcBI3+P83QOqY
-RYr0cnJy2DkIHpydkfoo
-=gK7b
------END PGP SIGNATURE-----
-
---Signature=_Mon__16_Apr_2012_13_29_04_+1000_+opk4LkRiaad2SzE--
