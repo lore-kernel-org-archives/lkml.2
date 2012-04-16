@@ -1,64 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753657Ab2DPMj7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Apr 2012 08:39:59 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:26038 "EHLO mx1.redhat.com"
+	id S1753824Ab2DPMro (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Apr 2012 08:47:44 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:50283 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753302Ab2DPMj5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Apr 2012 08:39:57 -0400
-Date: Mon, 16 Apr 2012 08:39:51 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: axboe@kernel.dk, ctalbott@google.com, rni@google.com,
-        linux-kernel@vger.kernel.org, cgroups@vger.kernel.org,
-        containers@lists.linux-foundation.org
-Subject: Re: [PATCH 07/11] blkcg: make request_queue bypassing on allocation
-Message-ID: <20120416123951.GA12776@redhat.com>
-References: <1334347895-6268-1-git-send-email-tj@kernel.org>
- <1334347895-6268-8-git-send-email-tj@kernel.org>
- <20120413203205.GI26383@redhat.com>
- <20120413203726.GE12233@google.com>
- <20120413204446.GK26383@redhat.com>
- <20120413204710.GF12233@google.com>
- <20120413205501.GL26383@redhat.com>
- <20120413210548.GG12233@google.com>
- <20120413213344.GA1825@redhat.com>
- <20120413213852.GJ12233@google.com>
-MIME-Version: 1.0
+	id S1753705Ab2DPMrm convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Apr 2012 08:47:42 -0400
+Subject: Re: [GIT PULL] KVM updates for the 3.4 merge window
+Mime-Version: 1.0 (Apple Message framework v1257)
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120413213852.GJ12233@google.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+From: Alexander Graf <agraf@suse.de>
+In-Reply-To: <1333359979.30734.48.camel@pasglop>
+Date: Mon, 16 Apr 2012 14:47:39 +0200
+Cc: Avi Kivity <avi@redhat.com>, Paul Mackerras <paulus@samba.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        KVM list <kvm@vger.kernel.org>, Marcelo Tosatti <mtosatti@redhat.com>,
+        Paul Mackerras <paulus@au1.ibm.com>
+Content-Transfer-Encoding: 8BIT
+Message-Id: <3BB9812B-6FE2-4370-9D55-D273364BFFD1@suse.de>
+References: <4F688F48.6090303@redhat.com> <1332461414.2982.90.camel@pasglop> <CA+55aFxdf_K97KJ-phck-2YcTWAc6icc+Qhi6hOg0MA8FAjiyA@mail.gmail.com> <4F6EEEC1.4030608@redhat.com> <20120326213809.GA29788@bloggs.ozlabs.ibm.com> <4F7191E8.7020804@redhat.com> <20120330120107.GA28503@bloggs.ozlabs.ibm.com> <4F784C4D.3000409@redhat.com> <1333314138.30734.17.camel@pasglop> <4F796C18.2040209@redhat.com> <1333359979.30734.48.camel@pasglop>
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+X-Mailer: Apple Mail (2.1257)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 13, 2012 at 02:38:52PM -0700, Tejun Heo wrote:
-> On Fri, Apr 13, 2012 at 05:33:44PM -0400, Vivek Goyal wrote:
-> > On Fri, Apr 13, 2012 at 02:05:48PM -0700, Tejun Heo wrote:
-> > > On Fri, Apr 13, 2012 at 04:55:01PM -0400, Vivek Goyal wrote:
-> > > > But neither seems to be the case here. So to make sure that blkg_lookup()
-> > > > under rcu will see the updated value of queue flag (bypass), are we
-> > > > relying on the fact that caller should see the DEAD flag and not go
-> > > > ahead with blkg_lookup()?  If yes, atleast it is not obivious.
-> > > 
-> > > We're relying on the fact that it doesn't matter anymore because all
-> > > blkgs will be shoot down in queue cleanup path which goes through rcu
-> > > free, which is different from deactivating individual policies.  It
-> > > indeed is subtle.  Umm... this is starting to get ridiculous.  Why the
-> > > hell was megaraid messing with so many queues anyways?
-> > 
-> > Well, blkcg_deactivate_policy() frees the policy data in a non-rcu
-> > manner. So group is around but policy data is gone. So technically if some
-> > IO submitter does not see the queue bypass flag, he might still try to
-> > access blkg->pd[pol->plid] after being freed.
+
+On 02.04.2012, at 11:46, Benjamin Herrenschmidt wrote:
+
+> On Mon, 2012-04-02 at 12:06 +0300, Avi Kivity wrote:
+>>> The current process is such that it takes absolutely forever for our
+>>> patches to get in, which is a major PITA for something in such state of
+>>> active development.
+>> 
+>> If the patches were posted two weeks earlier, they would have gone in.
 > 
-> No, we always go through blkg_destroy_all() and each blkg along with
-> any attached policy_data will go through RCU grace period before
-> getting destroyed.  It is stupid subtle but nevertheless correct.
+> I believe on our side they were, but Alex took a while to make up his
+> tree ... oh well..
 
-Ok, I see that we are calling blkg_destroy_all() before we call
-blk_throtl_exit() or elevator_exit(). So yes, this should be fine.
+Yes, because to me the kvm-ppc-next tree basically is the same semantically as -next for Avi. It's where patches cook a while to make sure they actually work. Nobody tests KVM PPC patches against kvm's master tree. All testing (compile and execution) happens against kvm-ppc-next.
 
-Thanks
-Vivek
+That's why I don't see the point in having it cook again in Avi's tree. At the end of the day the patches will surely become way too chewy ;).
+
+The alternative would be that I don't have a -next tree, just collect patches and immediately send them to Avi. That way the main kvm tree would be broken more often, but at least we don't get these horrible synchronization latencies.
+
+
+Alex
+
