@@ -1,59 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753716Ab2DPTji (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Apr 2012 15:39:38 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:44099 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751948Ab2DPTjh (ORCPT
+	id S1754222Ab2DPTmo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Apr 2012 15:42:44 -0400
+Received: from mail-qa0-f53.google.com ([209.85.216.53]:37922 "EHLO
+	mail-qa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752101Ab2DPTmm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Apr 2012 15:39:37 -0400
-Message-ID: <4F8C7574.5070109@landley.net>
-Date: Mon, 16 Apr 2012 14:39:32 -0500
-From: Rob Landley <rob@landley.net>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.27) Gecko/20120216 Thunderbird/3.1.19
+	Mon, 16 Apr 2012 15:42:42 -0400
+Message-ID: <4F8C7648.8000701@gmail.com>
+Date: Mon, 16 Apr 2012 15:43:04 -0400
+From: Scott Lovenberg <scott.lovenberg@gmail.com>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.9.2.28) Gecko/20120306 Thunderbird/3.1.20 ThunderBrowse/3.8
 MIME-Version: 1.0
-To: Marcos Paulo de Souza <marcos.souza.org@gmail.com>
-CC: rdunlap@xenotime.net, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Documentation/initrd.txt: Change the location of util-linux
-References: <1334200474-28574-1-git-send-email-marcos.souza.org@gmail.com>
-In-Reply-To: <1334200474-28574-1-git-send-email-marcos.souza.org@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Jeff Layton <jlayton@redhat.com>
+CC: Bernd Schubert <bernd.schubert@itwm.fraunhofer.de>,
+        Malahal Naineni <malahal@us.ibm.com>, linux-nfs@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        pstaubach@exagrid.com, miklos@szeredi.hu, viro@ZenIV.linux.org.uk,
+        hch@infradead.org, michael.brantley@deshaw.com,
+        sven.breuner@itwm.fraunhofer.de
+Subject: Re: [PATCH RFC] vfs: make fstatat retry on ESTALE errors from getattr
+ call
+References: <1334316311-22331-1-git-send-email-jlayton@redhat.com>	<20120413150518.GA1987@us.ibm.com>	<20120413114236.0e557e01@tlielax.poochiereds.net>	<4F8B1B7B.3040304@itwm.fraunhofer.de>	<20120416073655.7cdb90cf@corrin.poochiereds.net>	<4F8C3036.2030702@itwm.fraunhofer.de> <20120416134642.1754cd3e@corrin.poochiereds.net>
+In-Reply-To: <20120416134642.1754cd3e@corrin.poochiereds.net>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/11/2012 10:14 PM, Marcos Paulo de Souza wrote:
-> The address of util-linux seems deprecated. The new util-linux location is 
-> in the kernel.org. So, change this for the correct address.
-> 
-> Signed-off-by: Marcos Paulo de Souza <marcos.souza.org@gmail.com>
-> ---
->  Documentation/initrd.txt |    4 ++--
->  1 files changed, 2 insertions(+), 2 deletions(-)
-> 
-> diff --git a/Documentation/initrd.txt b/Documentation/initrd.txt
-> index 1ba84f3..3d8bc62 100644
-> --- a/Documentation/initrd.txt
-> +++ b/Documentation/initrd.txt
-> @@ -362,5 +362,5 @@ Resources
->      http://www.almesberger.net/cv/papers/ols2k-9.ps.gz
->  [2] newlib package (experimental), with initrd example
->      http://sources.redhat.com/newlib/
-> -[3] Brouwer, Andries; "util-linux: Miscellaneous utilities for Linux"
-> -    ftp://ftp.win.tue.nl/pub/linux-local/utils/util-linux/
-> +[3] util-linux: Miscellaneous utilities for Linux
-> +    http://www.kernel.org/pub/linux/utils/util-linux/
+On 4/16/2012 1:46 PM, Jeff Layton wrote:
+> NFS will generally return a different error if the process catches a
+> fatal signal, so a soft mount should not be necessary and is not
+> recommended anyway...
+>
+> In any case, we loop indefinitely now in the NFS code when (for
+> instance) there's a loss of communication. Users are not generally
+> happy if that causes an error, since their applications start dying.
+>
+ From the peanut gallery, I've always set an infinite loop with an 
+exponential backoff on the loss of communication.  IE, in some code I 
+wrote for S3backer (a FUSE file system on top of Amazon EC3) a few years 
+ago (committed by Archie Cobbs).
 
-Signed-off-by Rob Landley <rob@landley.net>
-
-I'm tracking this and will put it in the stack I forward to Jiri this
-evening.
-
-Thanks,
-
-Rob
--- 
-GNU/Linux isn't: Linux=GPLv2, GNU=GPLv3+, they can't share code.
-Either it's "mere aggregation", or a license violation.  Pick one.
+The trade off is that your applications will try to submit requests if 
+you don't tell them "leave me alone, I can't service you now".  The more 
+I think about it, the more it seems like failing silently.  Isn't the 
+rule supposed to be "if you must fail, do it loudly and as soon as 
+possible"?  Just my $0.02.  Take it as you will.
