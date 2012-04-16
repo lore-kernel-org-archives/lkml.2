@@ -1,56 +1,332 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754705Ab2DPQue (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Apr 2012 12:50:34 -0400
-Received: from oproxy9.bluehost.com ([69.89.24.6]:53354 "HELO
-	oproxy9.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751651Ab2DPQuc (ORCPT
+	id S1754769Ab2DPQvQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Apr 2012 12:51:16 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:54033 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751674Ab2DPQvP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Apr 2012 12:50:32 -0400
-Message-ID: <4F8C780D.9010702@xenotime.net>
-Date: Mon, 16 Apr 2012 12:50:37 -0700
-From: Randy Dunlap <rdunlap@xenotime.net>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
-MIME-Version: 1.0
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-CC: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        David Woodhouse <dwmw2@infradead.org>, linux-mtd@lists.infradead.org,
-        Tim Hockin <thockin@sun.com>
-Subject: [PATCH -next] mtd: fix sbc2_flash build when PCI is not enabled
-References: <20120416161121.261ba4e7e38989173accfb16@canb.auug.org.au>
-In-Reply-To: <20120416161121.261ba4e7e38989173accfb16@canb.auug.org.au>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
+	Mon, 16 Apr 2012 12:51:15 -0400
+From: Stephen Warren <swarren@wwwdotorg.org>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: Stephen Boyd <sboyd@codeaurora.org>, linux-kernel@vger.kernel.org,
+        Stephen Warren <swarren@nvidia.com>
+Subject: [PATCH V3] pinctrl: implement devm_pinctrl_get()/put()
+Date: Mon, 16 Apr 2012 10:51:00 -0600
+Message-Id: <1334595060-12178-1-git-send-email-swarren@wwwdotorg.org>
+X-Mailer: git-send-email 1.7.0.4
+X-NVConfidentiality: public
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Randy Dunlap <rdunlap@xenotime.net>
+From: Stephen Warren <swarren@nvidia.com>
 
-sbc2_flash.c is a PCI driver, but its build fails when CONFIG_PCI
-is not enabled, so make it depend on PCI.
+These functions allow the driver core to automatically clean up any
+allocations made by drivers, thus leading to simplified drivers.
 
-drivers/mtd/maps/scb2_flash.c:237:1: warning: data definition has no type or storage class
-drivers/mtd/maps/scb2_flash.c:237:1: warning: type defaults to 'int' in declaration of 'module_pci_driver'
-drivers/mtd/maps/scb2_flash.c:237:1: warning: parameter names (without types) in function declaration
-
-Signed-off-by: Randy Dunlap <rdunlap@xenotime.net>
-Cc:	David Woodhouse <dwmw2@infradead.org>
-Cc:	linux-mtd@lists.infradead.org
+Signed-off-by: Stephen Warren <swarren@nvidia.com>
 ---
- drivers/mtd/maps/Kconfig |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+v3: Update Documentation/driver-model/devres.txt.
+v2:
+* Updated documentation to describe and recommend using devm_* functions.
+* Added devm_pinctrl_get_select() and devm_pinctrl_get_select_default() to
+  consumer.h
+---
+ Documentation/driver-model/devres.txt |    4 ++
+ Documentation/pinctrl.txt             |   48 +++++++++++++++++-----------
+ drivers/pinctrl/core.c                |   56 +++++++++++++++++++++++++++++++++
+ include/linux/pinctrl/consumer.h      |   44 ++++++++++++++++++++++++++
+ 4 files changed, 133 insertions(+), 19 deletions(-)
 
---- linux-next-20120416.orig/drivers/mtd/maps/Kconfig
-+++ linux-next-20120416/drivers/mtd/maps/Kconfig
-@@ -224,7 +224,7 @@ config MTD_CK804XROM
+diff --git a/Documentation/driver-model/devres.txt b/Documentation/driver-model/devres.txt
+index 2a596a4..ef4fa7b 100644
+--- a/Documentation/driver-model/devres.txt
++++ b/Documentation/driver-model/devres.txt
+@@ -276,3 +276,7 @@ REGULATOR
+   devm_regulator_get()
+   devm_regulator_put()
+   devm_regulator_bulk_get()
++
++PINCTRL
++  devm_pinctrl_get()
++  devm_pinctrl_put()
+diff --git a/Documentation/pinctrl.txt b/Documentation/pinctrl.txt
+index 4431c3e..e40f4b4 100644
+--- a/Documentation/pinctrl.txt
++++ b/Documentation/pinctrl.txt
+@@ -945,13 +945,13 @@ case), we define a mapping like this:
+ The result of grabbing this mapping from the device with something like
+ this (see next paragraph):
  
- config MTD_SCB2_FLASH
- 	tristate "BIOS flash chip on Intel SCB2 boards"
--	depends on X86 && MTD_JEDECPROBE
-+	depends on X86 && MTD_JEDECPROBE && PCI
- 	help
- 	  Support for treating the BIOS flash chip on Intel SCB2 boards
- 	  as an MTD device - with this you can reprogram your BIOS.
+-	p = pinctrl_get(dev);
++	p = devm_pinctrl_get(dev);
+ 	s = pinctrl_lookup_state(p, "8bit");
+ 	ret = pinctrl_select_state(p, s);
+ 
+ or more simply:
+ 
+-	p = pinctrl_get_select(dev, "8bit");
++	p = devm_pinctrl_get_select(dev, "8bit");
+ 
+ Will be that you activate all the three bottom records in the mapping at
+ once. Since they share the same name, pin controller device, function and
+@@ -985,7 +985,7 @@ foo_probe()
+ 	/* Allocate a state holder named "foo" etc */
+ 	struct foo_state *foo = ...;
+ 
+-	foo->p = pinctrl_get(&device);
++	foo->p = devm_pinctrl_get(&device);
+ 	if (IS_ERR(foo->p)) {
+ 		/* FIXME: clean up "foo" here */
+ 		return PTR_ERR(foo->p);
+@@ -993,24 +993,17 @@ foo_probe()
+ 
+ 	foo->s = pinctrl_lookup_state(foo->p, PINCTRL_STATE_DEFAULT);
+ 	if (IS_ERR(foo->s)) {
+-		pinctrl_put(foo->p);
+ 		/* FIXME: clean up "foo" here */
+ 		return PTR_ERR(s);
+ 	}
+ 
+ 	ret = pinctrl_select_state(foo->s);
+ 	if (ret < 0) {
+-		pinctrl_put(foo->p);
+ 		/* FIXME: clean up "foo" here */
+ 		return ret;
+ 	}
+ }
+ 
+-foo_remove()
+-{
+-	pinctrl_put(state->p);
+-}
+-
+ This get/lookup/select/put sequence can just as well be handled by bus drivers
+ if you don't want each and every driver to handle it and you know the
+ arrangement on your bus.
+@@ -1022,6 +1015,11 @@ The semantics of the pinctrl APIs are:
+   kernel memory to hold the pinmux state. All mapping table parsing or similar
+   slow operations take place within this API.
+ 
++- devm_pinctrl_get() is a variant of pinctrl_get() that causes pinctrl_put()
++  to be called automatically on the retrieved pointer when the associated
++  device is removed. It is recommended to use this function over plain
++  pinctrl_get().
++
+ - pinctrl_lookup_state() is called in process context to obtain a handle to a
+   specific state for a the client device. This operation may be slow too.
+ 
+@@ -1034,14 +1032,25 @@ The semantics of the pinctrl APIs are:
+ 
+ - pinctrl_put() frees all information associated with a pinctrl handle.
+ 
++- devm_pinctrl_put() is a variant of pinctrl_put() that may be used to
++  explicitly destroy a pinctrl object returned by devm_pinctrl_get().
++  However, use of this function will be rare, due to the automatic cleanup
++  that will occur even without calling it.
++
++  pinctrl_get() must be paired with a plain pinctrl_put().
++  pinctrl_get() may not be paired with devm_pinctrl_put().
++  devm_pinctrl_get() can optionally be paired with devm_pinctrl_put().
++  devm_pinctrl_get() may not be paired with plain pinctrl_put().
++
+ Usually the pin control core handled the get/put pair and call out to the
+ device drivers bookkeeping operations, like checking available functions and
+ the associated pins, whereas the enable/disable pass on to the pin controller
+ driver which takes care of activating and/or deactivating the mux setting by
+ quickly poking some registers.
+ 
+-The pins are allocated for your device when you issue the pinctrl_get() call,
+-after this you should be able to see this in the debugfs listing of all pins.
++The pins are allocated for your device when you issue the devm_pinctrl_get()
++call, after this you should be able to see this in the debugfs listing of all
++pins.
+ 
+ NOTE: the pinctrl system will return -EPROBE_DEFER if it cannot find the
+ requested pinctrl handles, for example if the pinctrl driver has not yet
+@@ -1092,13 +1101,13 @@ it, disables and releases it, and muxes it in on the pins defined by group B:
+ 
+ #include <linux/pinctrl/consumer.h>
+ 
+-foo_switch()
+-{
+-	struct pinctrl *p;
+-	struct pinctrl_state *s1, *s2;
++struct pinctrl *p;
++struct pinctrl_state *s1, *s2;
+ 
++foo_probe()
++{
+ 	/* Setup */
+-	p = pinctrl_get(&device);
++	p = devm_pinctrl_get(&device);
+ 	if (IS_ERR(p))
+ 		...
+ 
+@@ -1109,7 +1118,10 @@ foo_switch()
+ 	s2 = pinctrl_lookup_state(foo->p, "pos-B");
+ 	if (IS_ERR(s2))
+ 		...
++}
+ 
++foo_switch()
++{
+ 	/* Enable on position A */
+ 	ret = pinctrl_select_state(s1);
+ 	if (ret < 0)
+@@ -1123,8 +1135,6 @@ foo_switch()
+ 	    ...
+ 
+ 	...
+-
+-	pinctrl_put(p);
+ }
+ 
+ The above has to be done from process context.
+diff --git a/drivers/pinctrl/core.c b/drivers/pinctrl/core.c
+index 59027ab..2eaa187 100644
+--- a/drivers/pinctrl/core.c
++++ b/drivers/pinctrl/core.c
+@@ -23,6 +23,7 @@
+ #include <linux/sysfs.h>
+ #include <linux/debugfs.h>
+ #include <linux/seq_file.h>
++#include <linux/pinctrl/consumer.h>
+ #include <linux/pinctrl/pinctrl.h>
+ #include <linux/pinctrl/machine.h>
+ #include "core.h"
+@@ -801,6 +802,61 @@ int pinctrl_select_state(struct pinctrl *p, struct pinctrl_state *state)
+ }
+ EXPORT_SYMBOL_GPL(pinctrl_select_state);
+ 
++static void devm_pinctrl_release(struct device *dev, void *res)
++{
++	pinctrl_put(*(struct pinctrl **)res);
++}
++
++/**
++ * struct devm_pinctrl_get() - Resource managed pinctrl_get()
++ * @dev: the device to obtain the handle for
++ *
++ * If there is a need to explicitly destroy the returned struct pinctrl,
++ * devm_pinctrl_put() should be used, rather than plain pinctrl_put().
++ */
++struct pinctrl *devm_pinctrl_get(struct device *dev)
++{
++	struct pinctrl **ptr, *p;
++
++	ptr = devres_alloc(devm_pinctrl_release, sizeof(*ptr), GFP_KERNEL);
++	if (!ptr)
++		return ERR_PTR(-ENOMEM);
++
++	p = pinctrl_get(dev);
++	if (!IS_ERR(p)) {
++		*ptr = p;
++		devres_add(dev, ptr);
++	} else {
++		devres_free(ptr);
++	}
++
++	return p;
++}
++EXPORT_SYMBOL_GPL(devm_pinctrl_get);
++
++static int devm_pinctrl_match(struct device *dev, void *res, void *data)
++{
++	struct pinctrl **p = res;
++
++	return *p == data;
++}
++
++/**
++ * devm_pinctrl_put() - Resource managed pinctrl_put()
++ * @p: the pinctrl handle to release
++ *
++ * Deallocate a struct pinctrl obtained via devm_pinctrl_get(). Normally
++ * this function will not need to be called and the resource management
++ * code will ensure that the resource is freed.
++ */
++void devm_pinctrl_put(struct pinctrl *p)
++{
++	WARN_ON(devres_destroy(p->dev, devm_pinctrl_release,
++			       devm_pinctrl_match, p));
++	pinctrl_put(p);
++}
++EXPORT_SYMBOL_GPL(devm_pinctrl_put);
++
+ int pinctrl_register_map(struct pinctrl_map const *maps, unsigned num_maps,
+ 			 bool dup, bool locked)
+ {
+diff --git a/include/linux/pinctrl/consumer.h b/include/linux/pinctrl/consumer.h
+index 191e726..6dd96fb 100644
+--- a/include/linux/pinctrl/consumer.h
++++ b/include/linux/pinctrl/consumer.h
+@@ -36,6 +36,9 @@ extern struct pinctrl_state * __must_check pinctrl_lookup_state(
+ 							const char *name);
+ extern int pinctrl_select_state(struct pinctrl *p, struct pinctrl_state *s);
+ 
++extern struct pinctrl * __must_check devm_pinctrl_get(struct device *dev);
++extern void devm_pinctrl_put(struct pinctrl *p);
++
+ #else /* !CONFIG_PINCTRL */
+ 
+ static inline int pinctrl_request_gpio(unsigned gpio)
+@@ -79,6 +82,15 @@ static inline int pinctrl_select_state(struct pinctrl *p,
+ 	return 0;
+ }
+ 
++static inline struct pinctrl * __must_check devm_pinctrl_get(struct device *dev)
++{
++	return NULL;
++}
++
++static inline void devm_pinctrl_put(struct pinctrl *p)
++{
++}
++
+ #endif /* CONFIG_PINCTRL */
+ 
+ static inline struct pinctrl * __must_check pinctrl_get_select(
+@@ -113,6 +125,38 @@ static inline struct pinctrl * __must_check pinctrl_get_select_default(
+ 	return pinctrl_get_select(dev, PINCTRL_STATE_DEFAULT);
+ }
+ 
++static inline struct pinctrl * __must_check devm_pinctrl_get_select(
++					struct device *dev, const char *name)
++{
++	struct pinctrl *p;
++	struct pinctrl_state *s;
++	int ret;
++
++	p = devm_pinctrl_get(dev);
++	if (IS_ERR(p))
++		return p;
++
++	s = pinctrl_lookup_state(p, name);
++	if (IS_ERR(s)) {
++		devm_pinctrl_put(p);
++		return ERR_PTR(PTR_ERR(s));
++	}
++
++	ret = pinctrl_select_state(p, s);
++	if (ret < 0) {
++		devm_pinctrl_put(p);
++		return ERR_PTR(ret);
++	}
++
++	return p;
++}
++
++static inline struct pinctrl * __must_check devm_pinctrl_get_select_default(
++					struct device *dev)
++{
++	return devm_pinctrl_get_select(dev, PINCTRL_STATE_DEFAULT);
++}
++
+ #ifdef CONFIG_PINCONF
+ 
+ extern int pin_config_get(const char *dev_name, const char *name,
+-- 
+1.7.0.4
+
