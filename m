@@ -1,43 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751373Ab2DPHCH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Apr 2012 03:02:07 -0400
-Received: from mail-qc0-f174.google.com ([209.85.216.174]:41775 "EHLO
-	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750845Ab2DPHCE (ORCPT
+	id S1751581Ab2DPHCT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Apr 2012 03:02:19 -0400
+Received: from mail-qa0-f53.google.com ([209.85.216.53]:46470 "EHLO
+	mail-qa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750845Ab2DPHCO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Apr 2012 03:02:04 -0400
+	Mon, 16 Apr 2012 03:02:14 -0400
 From: Yong Zhang <yong.zhang0@gmail.com>
 To: linux-rt-users@vger.kernel.org, linux-kernel@vger.kernel.org
-Cc: tglx@linutronix.de
-Subject: [PATCH 0/2 -rt] make locckdep selftest work on -rt
-Date: Mon, 16 Apr 2012 15:01:54 +0800
-Message-Id: <1334559716-18447-1-git-send-email-yong.zhang0@gmail.com>
+Cc: tglx@linutronix.de, Yong Zhang <yong.zhang@windriver.com>
+Subject: [PATCH 1/2 -rt] lockdep: selftest: convert spinlock to raw spinlock
+Date: Mon, 16 Apr 2012 15:01:55 +0800
+Message-Id: <1334559716-18447-2-git-send-email-yong.zhang0@gmail.com>
 X-Mailer: git-send-email 1.7.5.4
+In-Reply-To: <1334559716-18447-1-git-send-email-yong.zhang0@gmail.com>
+References: <1334559716-18447-1-git-send-email-yong.zhang0@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On -rt,
-1) There is no softirq context any more;
-2) rwlock can not be used in harirq context;
+From: Yong Zhang <yong.zhang@windriver.com>
 
-Wrt that, convert spinlock to raw spinlock to make spinlock+hardirq
-work, and discard the test for rwlock+hardirq and softirq.
+spinlock is sleepable on -rt and can not be used in
+interrupt context.
 
-BTW, I think patch#1 can go to upstream.
-
-Thanks,
-Yong
-
+Signed-off-by: Yong Zhang <yong.zhang0@gmail.com>
 ---
-Yong Zhang (2):
-  lockdep: selftest: convert spinlock to raw spinlock
-  lockdep: selftest: Only do hardirq context test for raw spinlock
+ lib/locking-selftest.c |   34 +++++++++++++++++-----------------
+ 1 files changed, 17 insertions(+), 17 deletions(-)
 
- lib/locking-selftest.c |   57 +++++++++++++++++++++++++++++++++--------------
- 1 files changed, 40 insertions(+), 17 deletions(-)
-
+diff --git a/lib/locking-selftest.c b/lib/locking-selftest.c
+index 7aae0f2..c3eb261 100644
+--- a/lib/locking-selftest.c
++++ b/lib/locking-selftest.c
+@@ -47,10 +47,10 @@ __setup("debug_locks_verbose=", setup_debug_locks_verbose);
+  * Normal standalone locks, for the circular and irq-context
+  * dependency tests:
+  */
+-static DEFINE_SPINLOCK(lock_A);
+-static DEFINE_SPINLOCK(lock_B);
+-static DEFINE_SPINLOCK(lock_C);
+-static DEFINE_SPINLOCK(lock_D);
++static DEFINE_RAW_SPINLOCK(lock_A);
++static DEFINE_RAW_SPINLOCK(lock_B);
++static DEFINE_RAW_SPINLOCK(lock_C);
++static DEFINE_RAW_SPINLOCK(lock_D);
+ 
+ static DEFINE_RWLOCK(rwlock_A);
+ static DEFINE_RWLOCK(rwlock_B);
+@@ -73,12 +73,12 @@ static DECLARE_RWSEM(rwsem_D);
+  * but X* and Y* are different classes. We do this so that
+  * we do not trigger a real lockup:
+  */
+-static DEFINE_SPINLOCK(lock_X1);
+-static DEFINE_SPINLOCK(lock_X2);
+-static DEFINE_SPINLOCK(lock_Y1);
+-static DEFINE_SPINLOCK(lock_Y2);
+-static DEFINE_SPINLOCK(lock_Z1);
+-static DEFINE_SPINLOCK(lock_Z2);
++static DEFINE_RAW_SPINLOCK(lock_X1);
++static DEFINE_RAW_SPINLOCK(lock_X2);
++static DEFINE_RAW_SPINLOCK(lock_Y1);
++static DEFINE_RAW_SPINLOCK(lock_Y2);
++static DEFINE_RAW_SPINLOCK(lock_Z1);
++static DEFINE_RAW_SPINLOCK(lock_Z2);
+ 
+ static DEFINE_RWLOCK(rwlock_X1);
+ static DEFINE_RWLOCK(rwlock_X2);
+@@ -107,10 +107,10 @@ static DECLARE_RWSEM(rwsem_Z2);
+  */
+ #define INIT_CLASS_FUNC(class) 				\
+ static noinline void					\
+-init_class_##class(spinlock_t *lock, rwlock_t *rwlock, struct mutex *mutex, \
+-		 struct rw_semaphore *rwsem)		\
++init_class_##class(raw_spinlock_t *lock, rwlock_t *rwlock, \
++	struct mutex *mutex, struct rw_semaphore *rwsem)\
+ {							\
+-	spin_lock_init(lock);				\
++	raw_spin_lock_init(lock);			\
+ 	rwlock_init(rwlock);				\
+ 	mutex_init(mutex);				\
+ 	init_rwsem(rwsem);				\
+@@ -168,10 +168,10 @@ static void init_shared_classes(void)
+  * Shortcuts for lock/unlock API variants, to keep
+  * the testcases compact:
+  */
+-#define L(x)			spin_lock(&lock_##x)
+-#define U(x)			spin_unlock(&lock_##x)
++#define L(x)			raw_spin_lock(&lock_##x)
++#define U(x)			raw_spin_unlock(&lock_##x)
+ #define LU(x)			L(x); U(x)
+-#define SI(x)			spin_lock_init(&lock_##x)
++#define SI(x)			raw_spin_lock_init(&lock_##x)
+ 
+ #define WL(x)			write_lock(&rwlock_##x)
+ #define WU(x)			write_unlock(&rwlock_##x)
+@@ -911,7 +911,7 @@ GENERATE_PERMUTATIONS_3_EVENTS(irq_read_recursion_soft)
+ 
+ #define I2(x)					\
+ 	do {					\
+-		spin_lock_init(&lock_##x);	\
++		raw_spin_lock_init(&lock_##x);	\
+ 		rwlock_init(&rwlock_##x);	\
+ 		mutex_init(&mutex_##x);		\
+ 		init_rwsem(&rwsem_##x);		\
 -- 
 1.7.5.4
 
