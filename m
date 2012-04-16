@@ -1,72 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754072Ab2DPNMk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Apr 2012 09:12:40 -0400
-Received: from mga11.intel.com ([192.55.52.93]:30716 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753919Ab2DPNMi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Apr 2012 09:12:38 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="142276053"
-Date: Mon, 16 Apr 2012 21:07:07 +0800
-From: Fengguang Wu <fengguang.wu@intel.com>
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: Peter Zijlstra <peterz@infradead.org>, ctalbott@google.com, rni@google.com,
-        andrea@betterlinux.com, containers@lists.linux-foundation.org,
-        linux-kernel@vger.kernel.org, lsf@lists.linux-foundation.org,
-        linux-mm@kvack.org, jmoyer@redhat.com, lizefan@huawei.com,
-        linux-fsdevel@vger.kernel.org, cgroups@vger.kernel.org
-Subject: Re: [Lsf] [RFC] writeback and cgroup
-Message-ID: <20120416130707.GA10532@localhost>
-References: <20120403183655.GA23106@dhcp-172-17-108-109.mtv.corp.google.com>
- <20120404145134.GC12676@redhat.com>
- <20120407080027.GA2584@quack.suse.cz>
- <20120410180653.GJ21801@redhat.com>
- <20120410210505.GE4936@quack.suse.cz>
- <20120410212041.GP21801@redhat.com>
- <20120410222425.GF4936@quack.suse.cz>
- <20120411154005.GD16692@redhat.com>
- <1334406314.2528.90.camel@twins>
- <20120416125432.GB12776@redhat.com>
+	id S1753989Ab2DPNN7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Apr 2012 09:13:59 -0400
+Received: from mail-out.m-online.net ([212.18.0.10]:44676 "EHLO
+	mail-out.m-online.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753431Ab2DPNN6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Apr 2012 09:13:58 -0400
+From: Andreas Schwab <schwab@linux-m68k.org>
+To: "Ulrich Windl" <Ulrich.Windl@rz.uni-regensburg.de>
+Cc: <linux-kernel@vger.kernel.org>
+Subject: Re: Q: When do files in /proc change their times?
+References: <4F8BF2FD020000A1000097D2@gwsmtp1.uni-regensburg.de>
+X-Yow: Gee, I feel kind of LIGHT in the head now, knowing I can't make
+ my satellite dish PAYMENTS!
+Date: Mon, 16 Apr 2012 15:13:51 +0200
+In-Reply-To: <4F8BF2FD020000A1000097D2@gwsmtp1.uni-regensburg.de> (Ulrich
+	Windl's message of "Mon, 16 Apr 2012 10:22:53 +0200")
+Message-ID: <m2d377250w.fsf@igel.home>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.0.95 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120416125432.GB12776@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 16, 2012 at 08:54:32AM -0400, Vivek Goyal wrote:
-> On Sat, Apr 14, 2012 at 02:25:14PM +0200, Peter Zijlstra wrote:
-> > On Wed, 2012-04-11 at 11:40 -0400, Vivek Goyal wrote:
-> > > 
-> > > Ok, that's good to know. How would we configure this special bdi? I am
-> > > assuming there is no backing device visible in /sys/block/<device>/queue/?
-> > > Same is true for network file systems. 
-> > 
-> > root@twins:/usr/src/linux-2.6# awk '/nfs/ {print $3}' /proc/self/mountinfo | while read bdi ; do ls -la /sys/class/bdi/${bdi}/ ; done
-> > ls: cannot access /sys/class/bdi/0:20/: No such file or directory
-> > total 0
-> > drwxr-xr-x  3 root root    0 2012-03-27 23:18 .
-> > drwxr-xr-x 35 root root    0 2012-03-27 23:02 ..
-> > -rw-r--r--  1 root root 4096 2012-04-14 14:22 max_ratio
-> > -rw-r--r--  1 root root 4096 2012-04-14 14:22 min_ratio
-> > drwxr-xr-x  2 root root    0 2012-04-14 14:22 power
-> > -rw-r--r--  1 root root 4096 2012-04-14 14:22 read_ahead_kb
-> > lrwxrwxrwx  1 root root    0 2012-03-27 23:18 subsystem -> ../../../../class/bdi
-> > -rw-r--r--  1 root root 4096 2012-03-27 23:18 uevent
-> 
-> Ok, got it. So /proc/self/mountinfo has the information about st_dev and
-> one can use that to reach to associated bdi. Thanks Peter.
+"Ulrich Windl" <Ulrich.Windl@rz.uni-regensburg.de> writes:
 
-Vivek, I noticed these lines in cfq code
+> I have a simple question: When do files in /proc show changed modification
+> times?
 
-                sscanf(dev_name(bdi->dev), "%u:%u", &major, &minor);
+Whenever the inode is dropped from the inode cache and then recreated.
+The proc fs always uses the current time to set the inode times.
 
-Why not use bdi->dev->devt?  The problem is that dev_name() will
-return "btrfs-X" for btrfs rather than "major:minor".
+Andreas.
 
-Thanks,
-Fengguang
+-- 
+Andreas Schwab, schwab@linux-m68k.org
+GPG Key fingerprint = 58CA 54C7 6D53 942B 1756  01D3 44D5 214B 8276 4ED5
+"And now for something completely different."
