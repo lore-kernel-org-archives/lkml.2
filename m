@@ -1,53 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754876Ab2DPPiZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Apr 2012 11:38:25 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:3845 "EHLO mx1.redhat.com"
+	id S1754918Ab2DPPjR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Apr 2012 11:39:17 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:65291 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754524Ab2DPPiY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Apr 2012 11:38:24 -0400
-Date: Mon, 16 Apr 2012 17:37:39 +0200
-From: Jiri Olsa <jolsa@redhat.com>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: acme@redhat.com, mingo@elte.hu, paulus@samba.org,
-        cjashfor@linux.vnet.ibm.com, fweisbec@gmail.com,
-        linux-kernel@vger.kernel.org, tglx@linutronix.de, andi@firstfloor.org
-Subject: Re: [RFCv2 0/8] perf tool: Add new event group management
-Message-ID: <20120416153739.GB1660@m.brq.redhat.com>
-References: <1333574176-11388-1-git-send-email-jolsa@redhat.com>
- <1334503015.28150.16.camel@twins>
- <20120416121627.GA1660@m.brq.redhat.com>
- <1334589962.28150.69.camel@twins>
+	id S1753673Ab2DPPjQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Apr 2012 11:39:16 -0400
+Date: Mon, 16 Apr 2012 17:38:43 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Serge Hallyn <serge.hallyn@canonical.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Daniel Lezcano <daniel.lezcano@free.fr>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] pidns: reboot_pid_ns: use SEND_SIG_FORCED instead of
+	force_sig()
+Message-ID: <20120416153843.GA9302@redhat.com>
+References: <20120413004446.GA8376@redhat.com> <20120413182051.GA11149@sergelap> <20120413192455.GA24464@redhat.com> <20120416135931.GB4234@sergelap>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1334589962.28150.69.camel@twins>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20120416135931.GB4234@sergelap>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 16, 2012 at 05:26:02PM +0200, Peter Zijlstra wrote:
-> On Mon, 2012-04-16 at 14:16 +0200, Jiri Olsa wrote:
-> > group:        group_spec '{' events '}'
-> > group_spec:   name  ':' mod | empty 
-> 
-> How about something like:
-> 
-> groups: groups ',' group | group
-> group:	group_name '{' events '}' group_mod
-> group_name: name ':' | empty
-> group_mod: ':' group_mods | empty
-> group_mods: [l]
-> 
-> 
+On 04/16, Serge Hallyn wrote:
+>
+> Quoting Oleg Nesterov (oleg@redhat.com):
+> >
+> > Strange... I even tested this change, but only in the root namespace.
+> > OK, thanks, I'll investigate. I hope you verified your kernel has
+> > 629d362b commit ;)
+>
+> I took friday's HEAD of Linus tree.  All went fine.  Added this patch.
+> The container can shutdown, but reboot causes shutdown.  Don't undersrtand
+> why.
 
-so you'd like something like:
-  'group1:{cycles,faults}:1
+Heh. This looks "impossible". I'd like to understand the reason.
+So, LINUX_REBOOT_CMD_RESTART results in WIFSIGNALED() == SIGINT?
 
-hm, do you want the ':' behind the name? It does not seem necessary,
-but might be readable though.. ok :)
-  'group1{cycles,faults}:1
+OK, I'll try to test this patch in the non-root namespace.
 
-thanks,
-jirka
+Oleg.
+
