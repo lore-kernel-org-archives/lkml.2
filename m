@@ -1,337 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755186Ab2DPVO3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Apr 2012 17:14:29 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:36946 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751046Ab2DPVO1 (ORCPT
+	id S1754791Ab2DPVSR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Apr 2012 17:18:17 -0400
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:47360 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750869Ab2DPVSP convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Apr 2012 17:14:27 -0400
-Date: Mon, 16 Apr 2012 14:14:09 -0700 (PDT)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hugh@eggly.anvils
-To: Mel Gorman <mgorman@suse.de>
-cc: Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Rik van Riel <riel@redhat.com>, Linux-MM <linux-mm@kvack.org>,
-        Linux-S390 <linux-s390@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC PATCH] s390: mm: rmap: Transfer storage key to struct page
- under the page lock
-In-Reply-To: <20120416141423.GD2359@suse.de>
-Message-ID: <alpine.LSU.2.00.1204161332120.1675@eggly.anvils>
-References: <20120416141423.GD2359@suse.de>
-User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
+	Mon, 16 Apr 2012 17:18:15 -0400
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <20120416205856.GA22298@kroah.com>
+References: <20120412144626.GA14868@kroah.com>
+	<CAMP44s1T4EVwpzDuV_vV0Zh-5WcPCwdw9eeOfL17Geqp_UFN-Q@mail.gmail.com>
+	<CAJ-VmonhwvnXPKa=LNOR4W0ZTXZqWmzw4UrsKLoE0YN_Bu0FzQ@mail.gmail.com>
+	<CAMP44s2JPvhEB6Eb049Z_bToAFncHKMEheuyaxyhC=bnh2GJVg@mail.gmail.com>
+	<20120413105746.10ffb120@stein>
+	<CAMP44s0RohH9tPiM5qCDT57XBV=iO66PZkSjYVxA6Usg1qJPtw@mail.gmail.com>
+	<20120413190819.9469.qmail@stuge.se>
+	<CAMP44s02v_OhviaF12Y8LWBJygyVLZk00d3P69GVvKAeJwjiuw@mail.gmail.com>
+	<20120416162710.GA24100@kroah.com>
+	<CAMP44s1o9kBp8672oBnvna+qH4WpqSqGUsyNpc_C74cfNYcX_g@mail.gmail.com>
+	<20120416205856.GA22298@kroah.com>
+Date: Tue, 17 Apr 2012 00:18:13 +0300
+Message-ID: <CAMP44s2OdH+1RG2O6+QXkik8Ww_ZSHN=yzEKwD1KvRAcceNSRA@mail.gmail.com>
+Subject: Re: [ath9k-devel] [ 00/78] 3.3.2-stable review
+From: Felipe Contreras <felipe.contreras@gmail.com>
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: Stefan Richter <stefanr@s5r6.in-berlin.de>,
+        "ath9k-devel@lists.ath9k.org" <ath9k-devel@venema.h4ckr.net>,
+        linux-wireless Mailing List <linux-wireless@vger.kernel.org>,
+        linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        "John W. Linville" <linville@tuxdriver.com>, akpm@linux-foundation.org,
+        torvalds@linux-foundation.org, alan@lxorguk.ukuu.org.uk
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 16 Apr 2012, Mel Gorman wrote:
+On Mon, Apr 16, 2012 at 11:58 PM, Greg KH <gregkh@linuxfoundation.org> wrote:
+> On Mon, Apr 16, 2012 at 11:11:05PM +0300, Felipe Contreras wrote:
+>> On Mon, Apr 16, 2012 at 7:27 PM, Greg KH <gregkh@linuxfoundation.org> wrote:
+>> > Just one minor correction in this looney email thread:
+>> >
+>> > On Sat, Apr 14, 2012 at 01:53:22AM +0300, Felipe Contreras wrote:
+>> >> v3.3.x on the other hand are *not* stable. They contain patches
+>> >> backported from v3.4, but nobody guarantees they will work. There was
+>> >> no v3.3.1-rc1, so the first time the patches compromising v3.3.1 were
+>> >> generally tested together is in v3.3.1, at which point if somebody
+>> >> finds issues, it's too late; bad patches are *not* going to be removed
+>> >> in v3.3.2.
+>> >
+>> > Of course there was a 3.3.1-rc1, see the linux-kernel archives for the
+>> > announcemen and the individual patches.  kernel.org has the large patch
+>> > itself if you like that format instead.
+>>
+>> I don't see it here:
+>> http://git.kernel.org/?p=linux/kernel/git/stable/linux-stable.git;a=tags
+>>
+>> If you really want people to try it, why not tag it?
+>
+> That would be because I don't keep it in that tree.  It is in a quilt
+> tree you can find in the stable-queue.git repo, and I have never tagged
+> -rc1 releases there.  No one has ever asked for it before, so in the
+> past 6 years of stable releases, I guess no one ever needed it.
+>
+> ketchup and tarballs seem to work well for others, perhaps you can use
+> that as well (hint, ketchup on top of the linux-stable tree works just
+> fine for testing this.)
 
-> This patch is horribly ugly and there has to be a better way of doing
-> it. I'm looking for suggestions on what s390 can do here that is not
-> painful or broken. 
-> 
-> The following bug was reported on s390
-> 
-> kernel BUG at
-> /usr/src/packages/BUILD/kernel-default-3.0.13/linux-3.0/lib/radix-tree.c:477!
-> illegal operation: 0001 [#1] SMP
-> Modules linked in: ext2 dm_round_robin dm_multipath sg sd_mod crc_t10dif fuse
-> loop dm_mod ipv6 qeth_l3 ipv6_lib zfcp scsi_transport_fc scsi_tgt qeth qdio
-> ccwgroup ext3 jbd mbcache dasd_eckd_mod dasd_mod scsi_dh_rdac scsi_dh_emc
-> scsi_dh_alua scsi_dh_hp_sw scsi_dh scsi_mod
-> Supported: Yes
-> CPU: 3 Not tainted 3.0.13-0.27-default #1
-> Process kpartx_id (pid: 24381, task: 000000004d938138, ksp: 00000000733539f0)
-> Krnl PSW : 0404000180000000 000000000037935e
-> (radix_tree_tag_set+0xfe/0x118)
->            R:0 T:1 IO:0 EX:0 Key:0 M:1 W:0 P:0 AS:0 CC:0 PM:0 EA:3
-> Krnl GPRS: 0000000000000002 0000000000000018 00000000004e82a8 0000000000000000
->            0000000000000007 0000000000000003 00000000004e82a8 00000000007280c0
->            0000000000000000 0000000000000000 00000000fac55d5f 0000000000000000
->            000003e000000006 0000000000529f88 0000000000000000 0000000073353ad0
-> Krnl Code: 0000000000379352: a7cafffa           ahi     %r12,-6
->            0000000000379356: a7f4ffb5           brc     15,3792c0
->            000000000037935a: a7f40001           brc     15,37935c
->           >000000000037935e: a7f40000           brc     15,37935e
->            0000000000379362: b90200bb           ltgr    %r11,%r11
->            0000000000379366: a784fff0           brc     8,379346
->            000000000037936a: a7f4ffe1           brc     15,37932c
->            000000000037936e: a7f40001           brc     15,379370
-> Call Trace:
-> ([<00000000002080ae>] __set_page_dirty_nobuffers+0x10a/0x1d0)
->  [<0000000000234970>] page_remove_rmap+0x100/0x104
->  [<0000000000228608>] zap_pte_range+0x194/0x608
->  [<0000000000228caa>] unmap_page_range+0x22e/0x33c
->  [<0000000000228ec2>] unmap_vmas+0x10a/0x274
->  [<000000000022f2f6>] exit_mmap+0xd2/0x254
->  [<00000000001472d6>] mmput+0x5e/0x144
->  [<000000000014d306>] exit_mm+0x196/0x1d4
->  [<000000000014f650>] do_exit+0x18c/0x408
->  [<000000000014f92c>] do_group_exit+0x60/0xec
->  [<000000000014f9ea>] SyS_exit_group+0x32/0x40
->  [<00000000004e1660>] sysc_noemu+0x16/0x1c
->  [<000003fffd23ab96>] 0x3fffd23ab96
-> Last Breaking-Event-Address:
->  [<000000000037935a>] radix_tree_tag_set+0xfa/0x118
-> 
-> While this bug was reproduced on a 3.0.x kernel, there is no reason why
-> it should not happen in mainline.
-> 
-> The bug was triggered because a page had a valid mapping but by the time
-> set_page_dirty() was called there was no valid entry in the radix tree.
-> This was reproduced while underlying storage was unplugged but this may
-> be indirectly related to the problem.
-> 
-> This bug only triggers on s390 and may be explained by a race. Normally
-> when pages are being readahead in read_cache_pages(), an attempt is made
-> to add the page to the page cache. If that fails, the page is invalidated
-> by locking it, giving it a valid mapping, calling do_invalidatepage()
-> and then setting mapping to NULL again. It's similar with page cache is
-> being deleted. The page is locked, the tree lock is taken, it's removed
-> from the radix tree and the mapping is set to NULL.
-> 
-> In many cases looking up the radix tree is protected by a combination of
-> the page lock and the tree lock. When zapping pages, the page lock is not
-> taken which does not matter as most architectures do nothing special with
-> the mapping and for file-backed pages, the mapping should be pinned by
-> the open file. However, s390 also calls set_dirty_page() for
-> PageSwapCache() pages where it is potentially racing against
-> reuse_swap_page() for example.
-> 
-> This patch splits the propagation of the storage key into a separate
-> function and introduces a new variant of page_remove_rmap() called
-> page_remove_rmap_nolock() which is only used during page table zapping
-> that attempts to acquire the page lock. The approach is ugly although it
-> works in that the bug can no longer be triggered. At the time the page
-> lock is required, the PTL is held so it cannot sleep so it busy waits on
-> trylock_page(). That potentially deadlocks against reclaim which holds
-> the page table lock and is trying to acquire the pagetable lock so in
-> some cases there is no choice except to race. In the file-backed case,
-> this is ok because the address space will be valid (zap_pte_range() makes
-> the same assumption. However, s390 needs a better way of guarding against
-> PageSwapCache pages being removed from the radix tree while set_page_dirty()
-> is being called. The patch would be marginally better if in the PageSwapCache
-> case we simply tried to lock once and in the contended case just fail to
-> propogate the storage key. I lack familiarity with the s390 architecture
-> to be certain if this is safe or not. Suggestions on a better fix?
-> 
-> Signed-off-by: Mel Gorman <mgorman@suse.de>
+Perhaps the current process will be continue to be OK, but I do
+believe a tagged v3.3.1-rc1 would have catched the ath9k issue.
+Hopefully that would mean it could have been dropped/reverted for
+v3.3.1.
 
-I'm very confused - and wonder if you are too ;)
+I used to compile my own kernels and use your stable tree, but this a
+new laptop and I was using Arch Linux which automatically updated to
+v3.3.1, and with no network I had no way to revert to v3.2.x.
+Fortunately I had the kernel sources available, but I wonder how many
+people were completely stuck.
 
-Please forgive me if I've not been patient enough in reading through
-all you've written, and knocking it into my skull: ask me to go back
-and read again.
+If some other 3.x.1 release get broken this way, I would seriously
+consider tagging v3.x.1-rc1 as well. It works for Linus' tree.
 
-But it seems to me that you're approaching this from the wrong end
-(page_remove_rmap), instead of from the end that's giving rise to the
-problem - perhaps because you've not yet identified that other end?
+Cheers.
 
-I'm confused as to whether you see this problem with file pages,
-or with anon-swap-cache pages, or with both, or not yet determined.
-
-The obvious places which set page->mapping = NULL or ClearPageSwapCache,
-once they've been visible to the outside world, are careful to do so at
-the same time as removing the radix_tree entry, holding mapping->tree_lock.
-
-And __set_page_dirty_nobuffers(), the set_page_dirty variant implicated
-in the trace above, is careful to recheck mapping under tree_lock, as I
-think are the others.  There is an issue if mapping itself could vanish
-while in there, but that's not a danger in page_remove_rmap().
-
-(You do remind me that I meant years ago to switch swapper_space over
-to the much simpler __set_page_dirty_no_writeback(), which shmem has
-used for ages; but as far as this problem goes, that would probably
-be at best a workaround, rather than the proper fix.)
-
-You indicate read_cache_pages_invalidate_page() above, and yes that's
-weird the way it sets and unsets page->mapping; I never came across it
-before, but IIUC it's safe because those pages have not yet been made
-visible to the outside world.  (Or do we have a speculative pagecache
-issue here?)
-
-You compare do_invalidatepage() with deletion from page cache, but I hope
-that's mistaken: aren't such pages usually being invalidated precisely
-because they raced with pages found already there in the page cache,
-which need to be left in place?
-
-So, is there somewhere which is setting page->mapping = NULL, or
-doing ClearPageSwapCache, in a separate block from removing that
-page's entry from the radix_tree?  If there is, then I think it
-could pose a problem on more than s390.
-
-Hmm, mm/migrate.c.
-
-Hugh
-
-> ---
->  include/linux/rmap.h |    1 +
->  mm/memory.c          |    2 +-
->  mm/rmap.c            |  109 +++++++++++++++++++++++++++++++++++++++++++-------
->  3 files changed, 96 insertions(+), 16 deletions(-)
-> 
-> diff --git a/include/linux/rmap.h b/include/linux/rmap.h
-> index 2148b12..59146af 100644
-> --- a/include/linux/rmap.h
-> +++ b/include/linux/rmap.h
-> @@ -142,6 +142,7 @@ void do_page_add_anon_rmap(struct page *, struct vm_area_struct *,
->  void page_add_new_anon_rmap(struct page *, struct vm_area_struct *, unsigned long);
->  void page_add_file_rmap(struct page *);
->  void page_remove_rmap(struct page *);
-> +void page_remove_rmap_nolock(struct page *);
->  
->  void hugepage_add_anon_rmap(struct page *, struct vm_area_struct *,
->  			    unsigned long);
-> diff --git a/mm/memory.c b/mm/memory.c
-> index f1d788e..4f1bf96 100644
-> --- a/mm/memory.c
-> +++ b/mm/memory.c
-> @@ -1184,7 +1184,7 @@ again:
->  					mark_page_accessed(page);
->  				rss[MM_FILEPAGES]--;
->  			}
-> -			page_remove_rmap(page);
-> +			page_remove_rmap_nolock(page);
->  			if (unlikely(page_mapcount(page) < 0))
->  				print_bad_pte(vma, addr, ptent, page);
->  			force_flush = !__tlb_remove_page(tlb, page);
-> diff --git a/mm/rmap.c b/mm/rmap.c
-> index 6546da9..9d2279b 100644
-> --- a/mm/rmap.c
-> +++ b/mm/rmap.c
-> @@ -1114,29 +1114,81 @@ void page_add_file_rmap(struct page *page)
->  	}
->  }
->  
-> -/**
-> - * page_remove_rmap - take down pte mapping from a page
-> - * @page: page to remove mapping from
-> +/*
-> + * When the late PTE has gone, s390 must transfer the dirty flag from the
-> + * storage key to struct page. We can usually skip this if the page is anon,
-> + * so about to be freed; but perhaps not if it's in swapcache - there might
-> + * be another pte slot containing the swap entry, but page not yet written to
-> + * swap.
->   *
-> - * The caller needs to hold the pte lock.
-> + * set_page_dirty() is called while the page_mapcount is still postive and
-> + * under the page lock to avoid races with the mapping being invalidated.
->   */
-> -void page_remove_rmap(struct page *page)
-> +static void propogate_storage_key(struct page *page, bool lock_required)
-> +{
-> +	if (page_mapcount(page) == 1 &&
-> +			(!PageAnon(page) || PageSwapCache(page)) &&
-> +	    		page_test_and_clear_dirty(page_to_pfn(page), 1)) {
-> +		if (lock_required) {
-> +			bool locked;
-> +
-> +			/*
-> +			 * This is called from zap_pte_range which holds the
-> +			 * PTL. The page lock is normally needed to avoid
-> +			 * truncation races and cannot sleep as a result.
-> +			 * During zap_pte_range, it is assumed that the open
-> +			 * file pins the mapping and a check is made under the
-> +			 * tree_lock. The same does not hold true for SwapCache
-> +			 * pages because it may be getting reused.
-> +			 *
-> +			 * Ideally we would take the page lock but in this
-> +			 * context the PTL is held so we can't sleep. We
-> +			 * are also potentially contending with processes
-> +			 * in reclaim context that hold the page lock but
-> +			 * are trying to acquire the PTL which leads to
-> +			 * an ABBA deadlock.
-> +			 *
-> +			 * Hence this resulting mess. s390 needs a better
-> +			 * way to guard against races. Suggestions?
-> +			 */
-> +			while ((locked = trylock_page(page)) == false) {
-> +				cpu_relax();
-> +
-> +				if (need_resched())
-> +					break;
-> +			}
-> +
-> +			/* If the page is locked, it's safe to call set_page_dirty */
-> +			if (locked) {
-> +				set_page_dirty(page);
-> +				unlock_page(page);
-> +			} else {
-> +
-> +				/*
-> +				 * For swap cache pages, we have no real choice
-> +				 * except to lose the storage key information
-> +				 * and expect the new user to preserve dirty
-> +				 * information.
-> +				 *
-> +				 * For file-backed pages, the open file should
-> +				 * be enough to pin the mapping similar which
-> +				 * is also assumed by zap_pte_range().
-> +				 */
-> +				if (WARN_ON_ONCE(!PageSwapCache(page)))
-> +					set_page_dirty(page);
-> +			}
-> +		} else
-> +			set_page_dirty(page);
-> +	}
-> +}
-> +
-> +static void __page_remove_rmap(struct page *page)
->  {
->  	/* page still mapped by someone else? */
->  	if (!atomic_add_negative(-1, &page->_mapcount))
->  		return;
->  
->  	/*
-> -	 * Now that the last pte has gone, s390 must transfer dirty
-> -	 * flag from storage key to struct page.  We can usually skip
-> -	 * this if the page is anon, so about to be freed; but perhaps
-> -	 * not if it's in swapcache - there might be another pte slot
-> -	 * containing the swap entry, but page not yet written to swap.
-> -	 */
-> -	if ((!PageAnon(page) || PageSwapCache(page)) &&
-> -	    page_test_and_clear_dirty(page_to_pfn(page), 1))
-> -		set_page_dirty(page);
-> -	/*
->  	 * Hugepages are not counted in NR_ANON_PAGES nor NR_FILE_MAPPED
->  	 * and not charged by memcg for now.
->  	 */
-> @@ -1164,6 +1216,33 @@ void page_remove_rmap(struct page *page)
->  	 */
->  }
->  
-> +/**
-> + * page_remove_rmap - take down pte mapping from an unlocked page
-> + * @page: page to remove mapping from
-> + *
-> + * The caller needs to hold the pte lock.
-> + */
-> +void page_remove_rmap(struct page *page)
-> +{
-> +	propogate_storage_key(page, false);
-> +	__page_remove_rmap(page);
-> +}
-> +
-> +/**
-> + * page_remove_rmap_nolock - take down pte mapping where the caller does not have the mapping pinned
-> + * @page: page to remove mapping from
-> + *
-> + * The caller needs to hold the PTE lock and is called from a context where
-> + * the page is neither locked nor the mapping->host pinned. On s390 in this
-> + * case the page lock will be taken to pin the mapping if the page needs to
-> + * be set dirty.
-> + */
-> +void page_remove_rmap_nolock(struct page *page)
-> +{
-> +	propogate_storage_key(page, true);
-> +	__page_remove_rmap(page);
-> +}
-> +
->  /*
->   * Subfunctions of try_to_unmap: try_to_unmap_one called
->   * repeatedly from either try_to_unmap_anon or try_to_unmap_file.
-> 
+-- 
+Felipe Contreras
