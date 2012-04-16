@@ -1,69 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752841Ab2DPJaq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Apr 2012 05:30:46 -0400
-Received: from e34.co.us.ibm.com ([32.97.110.152]:44829 "EHLO
-	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752511Ab2DPJap (ORCPT
+	id S1752954Ab2DPJb3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Apr 2012 05:31:29 -0400
+Received: from na3sys009aog130.obsmtp.com ([74.125.149.143]:32832 "EHLO
+	na3sys009aog130.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752464Ab2DPJb2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Apr 2012 05:30:45 -0400
-Date: Mon, 16 Apr 2012 14:52:27 +0530
-From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: Steven Rostedt <rostedt@goodmis.org>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
-        LKML <linux-kernel@vger.kernel.org>, Linux-mm <linux-mm@kvack.org>,
-        Oleg Nesterov <oleg@redhat.com>, Andi Kleen <andi@firstfloor.org>,
-        Christoph Hellwig <hch@infradead.org>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Anton Arapov <anton@redhat.com>
-Subject: Re: [PATCH UPDATED 3/3] tracing: Provide trace events interface
- for uprobes
-Message-ID: <20120416092227.GD13363@linux.vnet.ibm.com>
-Reply-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-References: <20120409091133.8343.65289.sendpatchset@srdronam.in.ibm.com>
- <20120409091154.8343.50489.sendpatchset@srdronam.in.ibm.com>
- <20120411103043.GB29437@linux.vnet.ibm.com>
- <1334236456.23924.333.camel@gandalf.stny.rr.com>
- <20120414111206.GA24688@gmail.com>
+	Mon, 16 Apr 2012 05:31:28 -0400
+Date: Mon, 16 Apr 2012 12:30:30 +0300
+From: Felipe Balbi <balbi@ti.com>
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: linux-m68k@vger.kernel.org, Felipe Balbi <balbi@ti.com>,
+        Greg Ungerer <gerg@uclinux.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org
+Subject: Re: [PATCH] m68k: Make sure {read,write}s[bwl]() are always defined
+Message-ID: <20120416093029.GJ30878@arwen.pp.htv.fi>
+Reply-To: balbi@ti.com
+References: <1334516410-5777-1-git-send-email-geert@linux-m68k.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="x+RZeZVNR8VILNfK"
 Content-Disposition: inline
-In-Reply-To: <20120414111206.GA24688@gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12041609-1780-0000-0000-000004CABE55
-X-IBM-ISS-SpamDetectors: 
-X-IBM-ISS-DetailInfo: BY=3.00000269; HX=3.00000187; KW=3.00000007;
- PH=3.00000001; SC=3.00000001; SDB=6.00131337; UDB=6.00030937; UTC=2012-04-16
- 09:30:43
+In-Reply-To: <1334516410-5777-1-git-send-email-geert@linux-m68k.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Ingo Molnar <mingo@kernel.org> [2012-04-14 13:12:06]:
 
-> 
-> * Steven Rostedt <rostedt@goodmis.org> wrote:
-> 
-> > I'm fine with what I see here (still need to fix what Masami 
-> > suggested).
-> > 
-> > Acked-by: Steven Rostedt <rostedt@goodmis.org>
-> 
-> Ok - Srikar, mind sending the latest (3-patch?) series again, 
-> with all suggestions and acks incorporated?
-> 
+--x+RZeZVNR8VILNfK
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Just sent out the 3 patches incorporation all suggestions including the
-last one from Stephen Boyd.
+On Sun, Apr 15, 2012 at 09:00:10PM +0200, Geert Uytterhoeven wrote:
+> If CONFIG_ATARI_ROM_ISA is defined (e.g. allmodconfig), musb fails to
+> compile with:
+>=20
+> In file included from drivers/usb/musb/musb_core.h:68,
+>                  from drivers/usb/musb/musb_core.c:104:
+> drivers/usb/musb/musb_io.h:45: error: conflicting types for =E2=80=98raw_=
+insl=E2=80=99
+> arch/m68k/include/asm/raw_io.h:200: error: previous definition of =E2=80=
+=98raw_insl=E2=80=99 was here
+> drivers/usb/musb/musb_io.h:47: error: conflicting types for =E2=80=98raw_=
+insw=E2=80=99
+> arch/m68k/include/asm/raw_io.h:121: error: previous definition of =E2=80=
+=98raw_insw=E2=80=99 was here
+> drivers/usb/musb/musb_io.h:52: error: conflicting types for =E2=80=98raw_=
+outsl=E2=80=99
+> arch/m68k/include/asm/raw_io.h:240: error: previous definition of =E2=80=
+=98raw_outsl=E2=80=99 was here
+> drivers/usb/musb/musb_io.h:54: error: conflicting types for =E2=80=98raw_=
+outsw=E2=80=99
+> arch/m68k/include/asm/raw_io.h:161: error: previous definition of =E2=80=
+=98raw_outsw=E2=80=99 was here
+> make[4]: *** [drivers/usb/musb/musb_core.o] Error 1
+>=20
+> This happens because musb_io.h provides default implementations for
+> {read,write}s[bwl]() on most platforms, some of which conflict with their
+> Atari ROM ISA counterparts.
+>=20
+> To avoid adding a check for CONFIG_ATARI_ROM_ISA to musb_io.h, make sure
+> {read,write}s[bwl]() are always defined on m68k, and disable the default
+> implementations in musb_io.h on m68k, like is already done for several
+> other architectures.
+>=20
+> Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
+> Cc: Felipe Balbi <balbi@ti.com>
+> Cc: Greg Ungerer <gerg@uclinux.org>
 
--- 
-Thanks and Regards
-Srikar
+Go ahea Geert, here's my ack.
 
+Acked-by: Felipe Balbi <balbi@ti.com>
+
+--=20
+balbi
+
+--x+RZeZVNR8VILNfK
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJPi+a1AAoJEIaOsuA1yqREBpsP/2kV7VPQdJv/en3pp2/KJLHH
++2NsE6h79UBdSZoeC0vodCnU6m/ncUJYbtn0bLalcSTD6nceKWj5IsGZWCKJI/LI
+wgVOYlXrV4GJD+7pq2y96KlrUAg9HQDN6DZtzVKWa35naqO/wT0viaGAYwraqhuu
+o3r3OE6giv/sSD17nNCp9REep4ZAdmPbBbbu4V9smAuZr3pr7j5yyza7iM8PfDAB
+upViOOIixQrBuFRQw7JQPGDktAMBT6PumiUaal7O3hoTjSMu6T4vn0c5V5WFkzVi
+k8WenYzOOryINcsX+hyP/1VLxibyCLuw67KpOMNC4em0sheX/VKGpnW8zr3TGH7R
+uxQeb2zbVVnYNjzprlSRNIaqhbl8wP59xZhVyW6DP1EjwDHnkeiIUf3mzXjlVQil
+07rJqd2VmBExX7jIfZAnHmK1mxZ84H27gOZ4/8jJhXy9WaXK2NcjZuykjFrCqI1c
+ziNmP3WaFmAY2K/84r4TL+wzzXe4Ucl4ztWZdRXAN8yCaUeDNmiv5B02qslzHqI9
+DAIEVuvzo9S6rw44guQOEaZJCNzt3iilymn4K/tRGy5JS0b3iAesbFzlE4swNZjt
+qf9h+hW0LkxFm0JBcAQsok8R3SkXdXHv+e9rweW3J7Tzszz1+ac+t6+r1cJ9p+Jn
+G9XCCieVDzfW6MXjH8ae
+=5ILI
+-----END PGP SIGNATURE-----
+
+--x+RZeZVNR8VILNfK--
