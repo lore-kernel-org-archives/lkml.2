@@ -1,71 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751186Ab2DPELa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Apr 2012 00:11:30 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:52736 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750735Ab2DPEL3 (ORCPT
+	id S1750870Ab2DPEgK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Apr 2012 00:36:10 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:48209 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750735Ab2DPEgI convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Apr 2012 00:11:29 -0400
-Date: Mon, 16 Apr 2012 14:11:17 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        "Paul E. McKenney" <paul.mckenney@linaro.org>
-Subject: linux-next: build failure after merge of the rcu tree
-Message-Id: <20120416141117.6dfcc5931400fede4e8cbe58@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0beta6 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Mon__16_Apr_2012_14_11_17_+1000_kWt7R0QzWZVtoQvE"
+	Mon, 16 Apr 2012 00:36:08 -0400
+MIME-Version: 1.0
+In-Reply-To: <87iph118pd.fsf@skywalker.in.ibm.com>
+References: <1334353716-19483-1-git-send-email-levinsasha928@gmail.com> <87iph118pd.fsf@skywalker.in.ibm.com>
+From: Sasha Levin <levinsasha928@gmail.com>
+Date: Mon, 16 Apr 2012 06:35:47 +0200
+Message-ID: <CA+1xoqfgA6DJL7ztMOdfLZedV6YwzZPUfbovFykdSSZy0Aio6w@mail.gmail.com>
+Subject: Re: [PATCH] 9p: disconnect channel when PCI device is removed
+To: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+Cc: davem@davemloft.net, ericvh@gmail.com, jvrao@linux.vnet.ibm.com,
+        rusty@rustcorp.com.au, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, davej@redhat.com
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Mon__16_Apr_2012_14_11_17_+1000_kWt7R0QzWZVtoQvE
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Sun, Apr 15, 2012 at 2:27 PM, Aneesh Kumar K.V
+<aneesh.kumar@linux.vnet.ibm.com> wrote:
+> Sasha Levin <levinsasha928@gmail.com> writes:
+>
+>> When a virtio_9p pci device is being removed, we should close down any
+>> active channels and free up resources, we're not supposed to BUG() if there's
+>> still an open channel since it's a valid case when removing the PCI device.
+>>
+>> Otherwise, removing the PCI device with an open channel would cause the
+>> following BUG():
+>>
+> ...
+>
+>> diff --git a/net/9p/trans_virtio.c b/net/9p/trans_virtio.c
+>> index 3d43206..5af18d1 100644
+>> --- a/net/9p/trans_virtio.c
+>> +++ b/net/9p/trans_virtio.c
+>> @@ -615,7 +615,8 @@ static void p9_virtio_remove(struct virtio_device *vdev)
+>>  {
+>>       struct virtio_chan *chan = vdev->priv;
+>>
+>> -     BUG_ON(chan->inuse);
+>> +     if (chan->inuse)
+>> +             p9_virtio_close(chan->client);
+>>       vdev->config->del_vqs(vdev);
+>>
+>>       mutex_lock(&virtio_9p_lock);
+>
+> But an umount should have resulted in p9_virtio_close ? How are you
+> removing the device ? Are you removing the device with file system
+> mounted  ?. In that case may be we should return EBUSY ?
 
-Hi Paul,
-
-After merging the rcu tree, today's linux-next build (powerpc
-ppc64_defconfig) failed like this:
-
-fs/binfmt_misc.c: In function 'create_entry':
-fs/binfmt_misc.c:314:2: error: implicit declaration of function '_copy_from=
-_user' [-Werror=3Dimplicit-function-declaration]
-
-Caused by commit d17faaa53e2e ("fs: Silence bogus copy_to_user() build
-errors").  _copy_from_user() appears to only exist for the x86 and tile
-architectures ...
-
-I have used the rcu tree from next-20120413 for today.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
---Signature=_Mon__16_Apr_2012_14_11_17_+1000_kWt7R0QzWZVtoQvE
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJPi5vlAAoJEECxmPOUX5FEqNEP/2nsIMHNep2YHa5ZIkTQJ6cF
-19xCNXv7m4LFgoJ1c2D5vav4ClqRm8HLCvnLG0DaxKTzcWhyc5SUkp4GXYkUWYj4
-Kxn3Z0hqPS+qj7c1HWMlylwq6gsWRoRELjs3svs+6FPB4r83db/F12qC8aTubvUB
-n3AU6FYqIb7UW3StGVY2XeXG2siXpn7j4HWaclSprnTtzRzXRa65HvwiXGdCOakn
-QP9zdDJ4qfwVPBMnhTVUJX6D+HcKwsiGDPtxUGLpR4Fn+N6EBauiyzByT9zaiUde
-oMzJkPzdafmpHMLBVBvWkJi4culcX9DcWKC7/yRUgawWjTCU4So7jvzn+FlnGOKI
-QKL8Nn25Jy5FQcfRNqMK0sP/duxA96mgzjMr1eq8MyGQG8v4Bn5VRFKKTR8o4K+v
-svm/U8CmgQTLmSNyOC7YnwE028807RQZplF8Xs2sKAVbG71XVyY8jbeX1Qou8+3Z
-Va4AYlBH3dwoQu7tb4JMivj2vaiws5Pui/ImUMksD41s2mEFoUcnGEk1v+3JeU9O
-fyITFG2cyOPOa2iLxVHs9k1ZiYzrybZan/FC9jQDqMvkhWogLwlgKstLuSK1w7rz
-1HeVXPfLUY4eC4k9CCFmqgaQ5w/jqxCXjR0WNIefgJ1Mv1fKUWF7M3+cXKoFJmuc
-IifIAcS6CuekqJv5kQFK
-=IEYc
------END PGP SIGNATURE-----
-
---Signature=_Mon__16_Apr_2012_14_11_17_+1000_kWt7R0QzWZVtoQvE--
+I signal the underlying PCI device to remove (echo 1 >
+/sys/devices/pci0000\:00/[...]/remove), we can't really prevent that
+thing so we must clean up ourselves.
