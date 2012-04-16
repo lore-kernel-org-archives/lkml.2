@@ -1,45 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754719Ab2DPPaa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Apr 2012 11:30:30 -0400
-Received: from mga03.intel.com ([143.182.124.21]:7868 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753794Ab2DPPa3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Apr 2012 11:30:29 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="89594864"
-Date: Mon, 16 Apr 2012 17:39:22 +0200
-From: Samuel Ortiz <sameo@linux.intel.com>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: patches@opensource.wolfsonmicro.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] mfd: wm8994: Cache chip revision
-Message-ID: <20120416153922.GH24130@sortiz-mobl>
-References: <1333635416-3905-1-git-send-email-broonie@opensource.wolfsonmicro.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1333635416-3905-1-git-send-email-broonie@opensource.wolfsonmicro.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1754830Ab2DPPbO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Apr 2012 11:31:14 -0400
+Received: from mail.windriver.com ([147.11.1.11]:64803 "EHLO
+	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754271Ab2DPPbN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Apr 2012 11:31:13 -0400
+From: Paul Gortmaker <paul.gortmaker@windriver.com>
+To: linux-kernel@vger.kernel.org
+Cc: Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: [PATCH] pagemap.h: fix warning about possibly used before init var
+Date: Mon, 16 Apr 2012 11:31:01 -0400
+Message-Id: <1334590261-20310-1-git-send-email-paul.gortmaker@windriver.com>
+X-Mailer: git-send-email 1.7.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Mark,
+Commit f56f821feb7b36223f309e0ec05986bb137ce418 (linux-next)
 
-On Thu, Apr 05, 2012 at 03:16:56PM +0100, Mark Brown wrote:
-> There's no need to mark the chip revision registers as volatile, it won't
-> change at runtime so we can cache it from the device at startup.
-> 
-> Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
-> ---
->  drivers/mfd/wm8994-regmap.c |    1 -
->  1 files changed, 0 insertions(+), 1 deletions(-)
-Applied to my for-next branch, thanks.
+    "mm: extend prefault helpers to fault in more than PAGE_SIZE"
 
-Cheers,
-Samuel.
+added in the new functions:
 
+	fault_in_multipages_writeable
+	fault_in_multipages_readable
+
+However, we currently see:
+
+  include/linux/pagemap.h:492: warning: 'ret' may be used uninitialized in this function
+  include/linux/pagemap.h:492: note: 'ret' was declared here
+
+Unlike a lot of gcc nags, this one appears somewhat legit.
+i.e. passing in an invalid negative value of "size" does make
+it look like all the conditionals in there would be bypassed and
+the uninitialized value would be returned.
+
+Cc: Daniel Vetter <daniel.vetter@ffwll.ch>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
+---
+
+[should we be more proactive guarding against negative size values?]
+
+diff --git a/include/linux/pagemap.h b/include/linux/pagemap.h
+index efa26b4..7cfad3b 100644
+--- a/include/linux/pagemap.h
++++ b/include/linux/pagemap.h
+@@ -460,11 +460,11 @@ static inline int fault_in_pages_readable(const char __user *uaddr, int size)
+  */
+ static inline int fault_in_multipages_writeable(char __user *uaddr, int size)
+ {
+-	int ret;
++	int ret = 0;
+ 	char __user *end = uaddr + size - 1;
+ 
+ 	if (unlikely(size == 0))
+-		return 0;
++		return ret;
+ 
+ 	/*
+ 	 * Writing zeroes into userspace here is OK, because we know that if
+@@ -489,11 +489,11 @@ static inline int fault_in_multipages_readable(const char __user *uaddr,
+ 					       int size)
+ {
+ 	volatile char c;
+-	int ret;
++	int ret = 0;
+ 	const char __user *end = uaddr + size - 1;
+ 
+ 	if (unlikely(size == 0))
+-		return 0;
++		return ret;
+ 
+ 	while (uaddr <= end) {
+ 		ret = __get_user(c, uaddr);
 -- 
-Intel Open Source Technology Centre
-http://oss.intel.com/
+1.7.9.1
+
