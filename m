@@ -1,73 +1,233 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754551Ab2DPQVI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Apr 2012 12:21:08 -0400
-Received: from acsinet15.oracle.com ([141.146.126.227]:49844 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752993Ab2DPQVD convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Apr 2012 12:21:03 -0400
-MIME-Version: 1.0
-Message-ID: <cab53fa9-398f-4e06-885f-c388a9ea3c29@default>
-Date: Mon, 16 Apr 2012 09:20:26 -0700 (PDT)
-From: Dan Magenheimer <dan.magenheimer@oracle.com>
-To: Konrad Wilk <konrad.wilk@oracle.com>,
-        David Vrabel <david.vrabel@citrix.com>
-Cc: "Tim (Xen.org)" <tim@xen.org>, linux-kernel@vger.kernel.org,
-        xen-devel <xen-devel@lists.xen.org>, Jan Beulich <JBeulich@suse.com>,
-        Sheng Yang <sheng@yasker.org>, Thomas Gleixner <tglx@linutronix.de>
-Subject: RE: [Xen-devel] [PATCH] xen: always set the sched clock as unstable
-References: <1334341255-11153-1-git-send-email-david.vrabel@citrix.com>
- <4F8C1F6D020000780007E11A@nat28.tlf.novell.com> <4F8C33E0.2080007@citrix.com>
- <20120416151759.GI1903@phenom.dumpdata.com>
-In-Reply-To: <20120416151759.GI1903@phenom.dumpdata.com>
-X-Priority: 3
-X-Mailer: Oracle Beehive Extensions for Outlook 2.0.1.6  (510070) [OL
- 12.0.6607.1000 (x86)]
-Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 8BIT
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090204.4F8C46DE.00A7,ss=1,re=0.000,fgs=0
+	id S1754155Ab2DPQT4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Apr 2012 12:19:56 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:40940 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752292Ab2DPQOX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Apr 2012 12:14:23 -0400
+From: Jan Kara <jack@suse.cz>
+To: Al Viro <viro@ZenIV.linux.org.uk>
+Cc: dchinner@redhat.com, LKML <linux-kernel@vger.kernel.org>,
+        linux-fsdevel@vger.kernel.org, Jan Kara <jack@suse.cz>
+Subject: [PATCH 16/27] fs: Protect write paths by sb_start_write - sb_end_write
+Date: Mon, 16 Apr 2012 18:13:54 +0200
+Message-Id: <1334592845-22862-17-git-send-email-jack@suse.cz>
+X-Mailer: git-send-email 1.7.1
+In-Reply-To: <1334592845-22862-1-git-send-email-jack@suse.cz>
+References: <1334592845-22862-1-git-send-email-jack@suse.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> From: Konrad Rzeszutek Wilk
-> Subject: Re: [Xen-devel] [PATCH] xen: always set the sched clock as unstable
-> 
-> On Mon, Apr 16, 2012 at 03:59:44PM +0100, David Vrabel wrote:
-> > On 16/04/12 12:32, Jan Beulich wrote:
-> > >>>> On 13.04.12 at 20:20, David Vrabel <david.vrabel@citrix.com> wrote:
-> > >> From: David Vrabel <david.vrabel@citrix.com>
-> > >>
-> > >> The sched clock was considered stable based on the capabilities of the
-> > >> underlying hardware.  This does not make sense for Xen PV guests as:
-> 
-> In regards to PV dom0 is this still the case? Asking b/c your
-> patch will make dom0 be in the same category.
-> 
-> > >> a) the hardware TSC is not used directly as the clock source; and b)
-> > >> guests may migrate to hosts with different hardware capabilities.
-> > >>
-> > >> It is not clear to me whether the Xen clock source is supposed to be
-> > >> stable and whether it should be stable across migration.  For a clock
+There are several entry points which dirty pages in a filesystem.  mmap
+(handled by block_page_mkwrite()), buffered write (handled by
+__generic_file_aio_write()), splice write (generic_file_splice_write),
+truncate, and fallocate (these can dirty last partial page - handled inside
+each filesystem separately). Protect these places with sb_start_write() and
+sb_end_write().
 
-Xen is -- and has always been -- responsible for emulating sufficient
-clock hardware devices and presenting them to the guest AND ensuring
-that this emulation works properly across migration/save/restore (which
-is required because these transitions may be completely transparent
-to the guest).
+->page_mkwrite() calls are particularly complex since they are called with
+mmap_sem held and thus we cannot use standard sb_start_write() due to lock
+ordering constraints. We solve the problem by using a special freeze protection
+sb_start_pagefault() which ranks below mmap_sem.
 
-Prior to Xen 4.0, TSC was not considered to be a clocksource worthy
-of emulating and was passed through to PV guests unchanged (and not
-fully handled for HVM either IIRC).  At Xen 4.0+, it is handled properly.
+BugLink: https://bugs.launchpad.net/bugs/897421
+Tested-by: Kamal Mostafa <kamal@canonical.com>
+Tested-by: Peter M. Petrakis <peter.petrakis@canonical.com>
+Tested-by: Dann Frazier <dann.frazier@canonical.com>
+Tested-by: Massimo Morana <massimo.morana@canonical.com>
+Signed-off-by: Jan Kara <jack@suse.cz>
+---
+ fs/buffer.c      |   22 ++++------------------
+ fs/open.c        |    7 ++++++-
+ fs/splice.c      |    3 +++
+ mm/filemap.c     |   12 ++++++++++--
+ mm/filemap_xip.c |    5 +++--
+ 5 files changed, 26 insertions(+), 23 deletions(-)
+
+diff --git a/fs/buffer.c b/fs/buffer.c
+index b8a2386..0331d4a 100644
+--- a/fs/buffer.c
++++ b/fs/buffer.c
+@@ -2301,8 +2301,8 @@ EXPORT_SYMBOL(block_commit_write);
+  * beyond EOF, then the page is guaranteed safe against truncation until we
+  * unlock the page.
+  *
+- * Direct callers of this function should call vfs_check_frozen() so that page
+- * fault does not busyloop until the fs is thawed.
++ * Direct callers of this function should protect against filesystem freezing
++ * using sb_start_write() - sb_end_write() functions.
+  */
+ int __block_page_mkwrite(struct vm_area_struct *vma, struct vm_fault *vmf,
+ 			 get_block_t get_block)
+@@ -2340,18 +2340,7 @@ int __block_page_mkwrite(struct vm_area_struct *vma, struct vm_fault *vmf,
  
-> I thought it was dependent on XEN_DOMCTL_settscinfo:
->  - whether it gets emulated, or the guest can do rdtsc or pvrdtsc?
->
-> Which I think is determined by some 'timer=X' option in the guest config?
-
-I think you may be thinking of tsc_mode.  See docs/misc/tscmode.txt
-in the Xen source.  The default should work correctly.
+ 	if (unlikely(ret < 0))
+ 		goto out_unlock;
+-	/*
+-	 * Freezing in progress? We check after the page is marked dirty and
+-	 * with page lock held so if the test here fails, we are sure freezing
+-	 * code will wait during syncing until the page fault is done - at that
+-	 * point page will be dirty and unlocked so freezing code will write it
+-	 * and writeprotect it again.
+-	 */
+ 	set_page_dirty(page);
+-	if (inode->i_sb->s_frozen != SB_UNFROZEN) {
+-		ret = -EAGAIN;
+-		goto out_unlock;
+-	}
+ 	wait_on_page_writeback(page);
+ 	return 0;
+ out_unlock:
+@@ -2366,12 +2355,9 @@ int block_page_mkwrite(struct vm_area_struct *vma, struct vm_fault *vmf,
+ 	int ret;
+ 	struct super_block *sb = vma->vm_file->f_path.dentry->d_inode->i_sb;
+ 
+-	/*
+-	 * This check is racy but catches the common case. The check in
+-	 * __block_page_mkwrite() is reliable.
+-	 */
+-	vfs_check_frozen(sb, SB_FREEZE_WRITE);
++	sb_start_pagefault(sb);
+ 	ret = __block_page_mkwrite(vma, vmf, get_block);
++	sb_end_pagefault(sb);
+ 	return block_page_mkwrite_return(ret);
+ }
+ EXPORT_SYMBOL(block_page_mkwrite);
+diff --git a/fs/open.c b/fs/open.c
+index 06afb5b..e3181a4 100644
+--- a/fs/open.c
++++ b/fs/open.c
+@@ -164,11 +164,13 @@ static long do_sys_ftruncate(unsigned int fd, loff_t length, int small)
+ 	if (IS_APPEND(inode))
+ 		goto out_putf;
+ 
++	sb_start_write(inode->i_sb);
+ 	error = locks_verify_truncate(inode, file, length);
+ 	if (!error)
+ 		error = security_path_truncate(&file->f_path);
+ 	if (!error)
+ 		error = do_truncate(dentry, length, ATTR_MTIME|ATTR_CTIME, file);
++	sb_end_write(inode->i_sb);
+ out_putf:
+ 	fput(file);
+ out:
+@@ -266,7 +268,10 @@ int do_fallocate(struct file *file, int mode, loff_t offset, loff_t len)
+ 	if (!file->f_op->fallocate)
+ 		return -EOPNOTSUPP;
+ 
+-	return file->f_op->fallocate(file, mode, offset, len);
++	sb_start_write(inode->i_sb);
++	ret = file->f_op->fallocate(file, mode, offset, len);
++	sb_end_write(inode->i_sb);
++	return ret;
+ }
+ 
+ SYSCALL_DEFINE(fallocate)(int fd, int mode, loff_t offset, loff_t len)
+diff --git a/fs/splice.c b/fs/splice.c
+index f847684..e06da17 100644
+--- a/fs/splice.c
++++ b/fs/splice.c
+@@ -992,6 +992,8 @@ generic_file_splice_write(struct pipe_inode_info *pipe, struct file *out,
+ 	};
+ 	ssize_t ret;
+ 
++	sb_start_write(inode->i_sb);
++
+ 	pipe_lock(pipe);
+ 
+ 	splice_from_pipe_begin(&sd);
+@@ -1028,6 +1030,7 @@ generic_file_splice_write(struct pipe_inode_info *pipe, struct file *out,
+ 			*ppos += ret;
+ 		balance_dirty_pages_ratelimited_nr(mapping, nr_pages);
+ 	}
++	sb_end_write(inode->i_sb);
+ 
+ 	return ret;
+ }
+diff --git a/mm/filemap.c b/mm/filemap.c
+index aec7356..689ffdb 100644
+--- a/mm/filemap.c
++++ b/mm/filemap.c
+@@ -1757,6 +1757,7 @@ int filemap_page_mkwrite(struct vm_area_struct *vma, struct vm_fault *vmf)
+ 	struct inode *inode = vma->vm_file->f_path.dentry->d_inode;
+ 	int ret = VM_FAULT_LOCKED;
+ 
++	sb_start_pagefault(inode->i_sb);
+ 	file_update_time(vma->vm_file);
+ 	lock_page(page);
+ 	if (page->mapping != inode->i_mapping) {
+@@ -1764,7 +1765,14 @@ int filemap_page_mkwrite(struct vm_area_struct *vma, struct vm_fault *vmf)
+ 		ret = VM_FAULT_NOPAGE;
+ 		goto out;
+ 	}
++	/*
++	 * We mark the page dirty already here so that when freeze is in
++	 * progress, we are guaranteed that writeback during freezing will
++	 * see the dirty page and writeprotect it again.
++	 */
++	set_page_dirty(page);
+ out:
++	sb_end_pagefault(inode->i_sb);
+ 	return ret;
+ }
+ EXPORT_SYMBOL(filemap_page_mkwrite);
+@@ -2530,8 +2538,6 @@ ssize_t __generic_file_aio_write(struct kiocb *iocb, const struct iovec *iov,
+ 	count = ocount;
+ 	pos = *ppos;
+ 
+-	vfs_check_frozen(inode->i_sb, SB_FREEZE_WRITE);
+-
+ 	/* We can write back this queue in page reclaim */
+ 	current->backing_dev_info = mapping->backing_dev_info;
+ 	written = 0;
+@@ -2628,6 +2634,7 @@ ssize_t generic_file_aio_write(struct kiocb *iocb, const struct iovec *iov,
+ 
+ 	BUG_ON(iocb->ki_pos != pos);
+ 
++	sb_start_write(inode->i_sb);
+ 	mutex_lock(&inode->i_mutex);
+ 	blk_start_plug(&plug);
+ 	ret = __generic_file_aio_write(iocb, iov, nr_segs, &iocb->ki_pos);
+@@ -2641,6 +2648,7 @@ ssize_t generic_file_aio_write(struct kiocb *iocb, const struct iovec *iov,
+ 			ret = err;
+ 	}
+ 	blk_finish_plug(&plug);
++	sb_end_write(inode->i_sb);
+ 	return ret;
+ }
+ EXPORT_SYMBOL(generic_file_aio_write);
+diff --git a/mm/filemap_xip.c b/mm/filemap_xip.c
+index 591dba6..b051f0d 100644
+--- a/mm/filemap_xip.c
++++ b/mm/filemap_xip.c
+@@ -402,6 +402,8 @@ xip_file_write(struct file *filp, const char __user *buf, size_t len,
+ 	loff_t pos;
+ 	ssize_t ret;
+ 
++	sb_start_write(inode->i_sb);
++
+ 	mutex_lock(&inode->i_mutex);
+ 
+ 	if (!access_ok(VERIFY_READ, buf, len)) {
+@@ -412,8 +414,6 @@ xip_file_write(struct file *filp, const char __user *buf, size_t len,
+ 	pos = *ppos;
+ 	count = len;
+ 
+-	vfs_check_frozen(inode->i_sb, SB_FREEZE_WRITE);
+-
+ 	/* We can write back this queue in page reclaim */
+ 	current->backing_dev_info = mapping->backing_dev_info;
+ 
+@@ -435,6 +435,7 @@ xip_file_write(struct file *filp, const char __user *buf, size_t len,
+ 	current->backing_dev_info = NULL;
+  out_up:
+ 	mutex_unlock(&inode->i_mutex);
++	sb_end_write(inode->i_sb);
+ 	return ret;
+ }
+ EXPORT_SYMBOL_GPL(xip_file_write);
+-- 
+1.7.1
 
