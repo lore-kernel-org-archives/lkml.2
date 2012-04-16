@@ -1,52 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754131Ab2DPOEr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Apr 2012 10:04:47 -0400
-Received: from mx.scalarmail.ca ([98.158.95.75]:49605 "EHLO
-	ironport-01.sms.scalar.ca" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753314Ab2DPOEq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Apr 2012 10:04:46 -0400
-Date: Mon, 16 Apr 2012 10:04:43 -0400
-From: Nick Bowler <nbowler@elliptictech.com>
-To: Russell Whitaker <russ@ashlandhome.net>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: default framebuffer
-Message-ID: <20120416140443.GA1153@elliptictech.com>
-References: <alpine.LNX.2.00.1204152129060.2200@bigred.russwhit.org>
+	id S1753565Ab2DPOGE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Apr 2012 10:06:04 -0400
+Received: from mailhub.sw.ru ([195.214.232.25]:45346 "EHLO relay.sw.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753339Ab2DPOGC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Apr 2012 10:06:02 -0400
+Subject: [PATCH v2 0/2] IPC: message queue checkpoint/restore -	requested
+ updates
+To: akpm@linux-foundation.org
+From: Stanislav Kinsbursky <skinsbursky@parallels.com>
+Cc: serge.hallyn@canonical.com, criu@openvz.org, arnd@arndb.de,
+        lucas.demarchi@profusion.mobi, linux-kernel@vger.kernel.org,
+        dhowells@redhat.com, mtk.manpages@gmail.com
+Date: Mon, 16 Apr 2012 18:05:56 +0400
+Message-ID: <20120416140235.653.36996.stgit@localhost6.localdomain6>
+User-Agent: StGit/0.15
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LNX.2.00.1204152129060.2200@bigred.russwhit.org>
-Organization: Elliptic Technologies Inc.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Russell,
+Comparing to previous version:
+1) single patch for all changes related to the feature (i.e. this patch is the
+replacement for c-r-ipc-message-queue-stealing-feature-introduced.patch).
+2) Added self-test for MSG_PEEK_ALL feature.
 
-On 2012-04-15 21:37 -0700, Russell Whitaker wrote:
-> Trying out kernel 3.2.13
-> 
-> When it boots, it starts out with 80x25 screen.
-> Then the framebuffer kicks in and I get a 60 line screen.
-> 
-> My eye-sight is not so good anymore, so I need a magnifing glass to read 
-> that small print.
-> 
-> What should I do to keep the screen at 80x25?
+The following series consists of:
 
-Load a bigger console font.  For example, the Terminus font package
-http://terminus-font.sourceforge.net/ includes some nice console fonts
-in a variety of sizes.  Try
+---
 
-  setfont ter-132b
+Stanislav Kinsbursky (2):
+      IPC: message queue stealing feature introduced
+      IPC: selftest tor new MSG_PEEK_ALL flag for msgrcv()
 
-to start.  Your distribution probably provides a convenient way to set
-the console font at boot.
 
-Hope that helps,
--- 
-Nick Bowler, Elliptic Technologies (http://www.elliptictech.com/)
+ include/linux/msg.h                           |    8 +
+ ipc/compat.c                                  |   42 ++++++
+ ipc/msg.c                                     |   65 +++++++++-
+ tools/testing/selftests/ipc/Makefile          |   31 +++++
+ tools/testing/selftests/ipc/msgque_peek_all.c |  170 +++++++++++++++++++++++++
+ 5 files changed, 313 insertions(+), 3 deletions(-)
+ create mode 100644 tools/testing/selftests/ipc/Makefile
+ create mode 100644 tools/testing/selftests/ipc/msgque_peek_all.c
 
