@@ -1,68 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751558Ab2DPGxQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Apr 2012 02:53:16 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:62978 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751324Ab2DPGxI (ORCPT
+	id S1751373Ab2DPHCH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Apr 2012 03:02:07 -0400
+Received: from mail-qc0-f174.google.com ([209.85.216.174]:41775 "EHLO
+	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750845Ab2DPHCE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Apr 2012 02:53:08 -0400
-Subject: Re: [PATCH 3/6] macvtap: zerocopy: validate vector length before
- pinning user pages
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Jason Wang <jasowang@redhat.com>
-Cc: netdev@vger.kernel.org, xma@us.ibm.com, davem@davemloft.net,
-        linux-kernel@vger.kernel.org, mst@redhat.com, ebiederm@xmission.com
-In-Reply-To: <20120416060807.14140.96229.stgit@intel-e5620-16-2.englab.nay.redhat.com>
-References: <20120416060749.14140.19433.stgit@intel-e5620-16-2.englab.nay.redhat.com>
-	 <20120416060807.14140.96229.stgit@intel-e5620-16-2.englab.nay.redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 16 Apr 2012 08:53:03 +0200
-Message-ID: <1334559183.28012.45.camel@edumazet-glaptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	Mon, 16 Apr 2012 03:02:04 -0400
+From: Yong Zhang <yong.zhang0@gmail.com>
+To: linux-rt-users@vger.kernel.org, linux-kernel@vger.kernel.org
+Cc: tglx@linutronix.de
+Subject: [PATCH 0/2 -rt] make locckdep selftest work on -rt
+Date: Mon, 16 Apr 2012 15:01:54 +0800
+Message-Id: <1334559716-18447-1-git-send-email-yong.zhang0@gmail.com>
+X-Mailer: git-send-email 1.7.5.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2012-04-16 at 14:08 +0800, Jason Wang wrote:
-> Currently we do not validate the vector length before calling
-> get_user_pages_fast(), host stack would be easily overflowed by
-> malicious guest driver who give us a descriptor with length greater
-> than MAX_SKB_FRAGS. Solve this problem by checking the free entries
-> before trying to pin user pages.
-> 
-> Signed-off-by: Jason Wang <jasowang@redhat.com>
-> ---
->  drivers/net/macvtap.c |    2 ++
->  1 files changed, 2 insertions(+), 0 deletions(-)
-> 
-> diff --git a/drivers/net/macvtap.c b/drivers/net/macvtap.c
-> index 7cb2684..d197a78 100644
-> --- a/drivers/net/macvtap.c
-> +++ b/drivers/net/macvtap.c
-> @@ -529,6 +529,8 @@ static int zerocopy_sg_from_iovec(struct sk_buff *skb, const struct iovec *from,
->  		}
->  		base = (unsigned long)from->iov_base + offset;
->  		size = ((base & ~PAGE_MASK) + len + ~PAGE_MASK) >> PAGE_SHIFT;
-> +		if (i + size >= MAX_SKB_FRAGS)
-> +			return -EFAULT;
->  		num_pages = get_user_pages_fast(base, size, 0, &page[i]);
->  		if ((num_pages != size) ||
->  		    (num_pages > MAX_SKB_FRAGS - skb_shinfo(skb)->nr_frags))
-> 
+On -rt,
+1) There is no softirq context any more;
+2) rwlock can not be used in harirq context;
 
-Hi Jason
+Wrt that, convert spinlock to raw spinlock to make spinlock+hardirq
+work, and discard the test for rwlock+hardirq and softirq.
 
-Why is -EFAULT the right error code ?
+BTW, I think patch#1 can go to upstream.
 
-Also, why not removing the "(num_pages > MAX_SKB_FRAGS -
-skb_shinfo(skb)->nr_frags)" test done few lines after ?
+Thanks,
+Yong
 
-Also, if get_user_pages_fast() returns truncated result (size - 1 for
-example), we apparently dont free the references on pages.
+---
+Yong Zhang (2):
+  lockdep: selftest: convert spinlock to raw spinlock
+  lockdep: selftest: Only do hardirq context test for raw spinlock
 
-The comment applies only on pages that were added in skb frags.
+ lib/locking-selftest.c |   57 +++++++++++++++++++++++++++++++++--------------
+ 1 files changed, 40 insertions(+), 17 deletions(-)
 
+-- 
+1.7.5.4
 
