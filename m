@@ -1,70 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752327Ab2DPIPx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Apr 2012 04:15:53 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:50624 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752180Ab2DPIPi (ORCPT
+	id S1752140Ab2DPIPG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Apr 2012 04:15:06 -0400
+Received: from mail-vb0-f46.google.com ([209.85.212.46]:52032 "EHLO
+	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751256Ab2DPIPD convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Apr 2012 04:15:38 -0400
-Date: Mon, 16 Apr 2012 09:15:32 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: Grant Likely <grant@secretlab.ca>,
-        Linus Walleij <linus.walleij@stericsson.com>,
-        linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
-        linux-alpha@vger.kernel.org, linux-ia64@vger.kernel.org,
-        microblaze-uclinux@itee.uq.edu.au, linux@openrisc.net,
-        "linuxppc-dev@lists.ozlabs.org list" <linuxppc-dev@lists.ozlabs.org>,
-        sparclinux@vger.kernel.org, Chris Zankel <chris@zankel.net>
-Subject: Re: [PATCH] gpiolib/arches: Centralise bolierplate asm/gpio.h
-Message-ID: <20120416081532.GA3238@opensource.wolfsonmicro.com>
-References: <1334483574-3997-1-git-send-email-broonie@opensource.wolfsonmicro.com>
- <CACRpkdZ8yH1ZSG-nQ9dLm0TipHS-jZDuxwqohUC=LGH9V-5q4w@mail.gmail.com>
+	Mon, 16 Apr 2012 04:15:03 -0400
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="SLDf9lqlvOQaIe6s"
-Content-Disposition: inline
-In-Reply-To: <CACRpkdZ8yH1ZSG-nQ9dLm0TipHS-jZDuxwqohUC=LGH9V-5q4w@mail.gmail.com>
-X-Cookie: Beware of Bigfoot!
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20120413060626.GA7856@alex-p.amd.com>
+References: <4F8790F6.5080408@intel.com>
+	<20120413060626.GA7856@alex-p.amd.com>
+Date: Mon, 16 Apr 2012 16:15:01 +0800
+Message-ID: <CAC=cRTOiHkkR5r+BVv8BRaN+mwqhRJ1dfYq-3Xw8ui0x1wOOoQ@mail.gmail.com>
+Subject: Re: [RFC PATCH] PCIe: Add PCIe runtime D3cold support
+From: huang ying <huang.ying.caritas@gmail.com>
+To: Alex He <alex.he@amd.com>
+Cc: "Yan, Zheng" <zheng.z.yan@intel.com>, bhelgaas@google.com, rjw@sisk.pl,
+        linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
+        linux-pm@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, Apr 13, 2012 at 2:06 PM, Alex He <alex.he@amd.com> wrote:
+> On Fri, Apr 13, 2012 at 10:35:34AM +0800, Yan, Zheng wrote:
+[snip]
+>> @@ -750,7 +750,8 @@ int pci_set_power_state(struct pci_dev *dev, pci_power_t state)
+>>       if (state == PCI_D3hot && (dev->dev_flags & PCI_DEV_FLAGS_NO_D3))
+>>               return 0;
+>>
+>> -     error = pci_raw_set_power_state(dev, state);
+>> +     error = pci_raw_set_power_state(dev, state > PCI_D3hot ?
+>> +                                     PCI_D3hot : state);
+> Do you want to set the pci device to D3hot if the state = D3Code through
+> PMCSR register?
 
---SLDf9lqlvOQaIe6s
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Yes.
 
-On Mon, Apr 16, 2012 at 09:21:58AM +0200, Linus Walleij wrote:
+> I am agree if you realy want that but what is the meaninig
+> to distingulish D3cold with D3hot in this patch. We can't put the PCI device
+> through PMCSR register.
 
-> This looks good but I think we need to page the alpha, ia64, m68k, microblaze,
-> openrisc etc subarch maintainers on this patch so they have their say.
+Yes.  We put PCI device into D3hot via PMCSR firstly, then we use ACPI
+_PS3 and _PR3 to put device into D3cold.
 
-That's why I CCed linux-arch, to get all the architecture maintainers
-included.  vger would get upset if I CCed everyone individually.
-
---SLDf9lqlvOQaIe6s
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAEBAgAGBQJPi9UcAAoJEBus8iNuMP3dwnAP/2dv6D/vCKCnVow62FY69z5M
-6VwwMtgSOYJ68+/oGt/n45g/bTZoF2+eZAgN9Tljjdn/aVWj7YxWSvrNMnSIk3sP
-Lr0QYsbTaD+TNA1I39DUrENH/hA0sm4XDIxlE1swMs3stcqt+SrNT8i9bcZTG9bV
-71Y2Dsrwg4uyU2Sq0szL6S0fTgSe5c8bz9LlVInrSpiSoqkUB+D0UAyRQBHTlYnl
-GqmpyVmh938NjZT8tDeCtQ9VhTabsxtzP359JsshSbXpSYrsV/epKY83b1OzTPFw
-tG8gPANoy2N6CSNvdC60y6ZXF+WtIZsooQXDWK/rd2pDQgShQxkXknDHYvnZC2L6
-W2a4abHw99U9kT7pUzpWSKhkcFYbwEhbWD54beMN5UwEao1YhLmL0OOxs9hU3n7X
-96xZL6Pk/4Gv8qFtuJndHEwY0kt0VAujFLiz01ZUbrzZp8Ea30yQnF2ZoZTCVsWx
-GvG99k6EIfke/Jx+/iwU1xuTZUXqas/2jZ8gHpbvD9Njd6FqToJzm8lE2FDxfUip
-+KnOSqrkPf4X5v/ycWmJpzcYJ1RgwXfRAG5UbcpWQqGEwTyaXmzqkmIoe4vMbidl
-yHSF9Va4ptGrMrETzdNAe2NEB1GTJAdrIpzxAPV0a2xBMN/E9vje2BjCkfp3iMqf
-JWhB4suNDfmlpLGNPLm4
-=BiWD
------END PGP SIGNATURE-----
-
---SLDf9lqlvOQaIe6s--
+Best Regards,
+Huang Ying
