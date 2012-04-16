@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755024Ab2DPUMv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Apr 2012 16:12:51 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:49537 "EHLO mx1.redhat.com"
+	id S1755080Ab2DPUNB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Apr 2012 16:13:01 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:55435 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754515Ab2DPUMs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Apr 2012 16:12:48 -0400
+	id S1754910Ab2DPUM6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Apr 2012 16:12:58 -0400
 From: Mauro Carvalho Chehab <mchehab@redhat.com>
 Cc: Mauro Carvalho Chehab <mchehab@redhat.com>,
         Linux Edac Mailing List <linux-edac@vger.kernel.org>,
         Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Doug Thompson <norsk5@yahoo.com>,
-        Ranganathan Desikan <ravi@jetztechnologies.com>,
-        "Arvind R." <arvino55@gmail.com>,
-        =?UTF-8?q?Niklas=20S=C3=B6derlund?= <niklas.soderlund@ericsson.com>
-Subject: [EDAC PATCH v13 1/7] edac: Create a dimm struct and move the labels into it
-Date: Mon, 16 Apr 2012 17:12:07 -0300
-Message-Id: <1334607133-30039-2-git-send-email-mchehab@redhat.com>
+        Doug Thompson <norsk5@yahoo.com>, Chris Metcalf <cmetcalf@tilera.com>,
+        Hitoshi Mitake <h.mitake@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        =?UTF-8?q?Niklas=20S=C3=B6derlund?= <niklas.soderlund@ericsson.com>,
+        Josh Boyer <jwboyer@gmail.com>, Jiri Kosina <jkosina@suse.cz>
+Subject: [EDAC PATCH v13 3/7] edac: Don't initialize csrow's first_page & friends when not needed
+Date: Mon, 16 Apr 2012 17:12:09 -0300
+Message-Id: <1334607133-30039-4-git-send-email-mchehab@redhat.com>
 In-Reply-To: <1334607133-30039-1-git-send-email-mchehab@redhat.com>
 References: <1333039546-5590-1-git-send-email-mchehab@redhat.com>
  <1334607133-30039-1-git-send-email-mchehab@redhat.com>
@@ -28,393 +29,349 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The way a DIMM is currently represented implies that they're
-linked into a per-csrow struct. However, some drivers don't see
-csrows, as they're ridden behind some chip like the AMB's
-on FBDIMM's, for example.
+Almost all edac	drivers	initialize csrow_info->first_page,
+csrow_info->last_page and csrow_info->page_mask. Those vars are
+used inside the EDAC core, in order to calculate the csrow affected
+by an error, by using the routine edac_mc_find_csrow_by_page().
 
-This forced drivers to fake^Wvirtualize a csrow struct, and to create
-a mess under csrow/channel original's concept.
+However, very few drivers actually use it:
+        e752x_edac.c
+        e7xxx_edac.c
+        i3000_edac.c
+        i82443bxgx_edac.c
+        i82860_edac.c
+        i82875p_edac.c
+        i82975x_edac.c
+        r82600_edac.c
 
-Move the DIMM labels into a per-DIMM struct, and add there
-the real location of the socket, in terms of csrow/channel.
-Latter patches will modify the location to properly represent the
-memory architecture.
+There also a few other drivers that have their own calculus
+formula internally using those vars.
 
-All other drivers will use a per-csrow type of location.
-Some of those drivers will require a latter conversion, as
-they also fake the csrows internally.
+All the others are just wasting time by initializing those
+data.
 
-TODO: While this patch doesn't change the existing behavior, on
-csrows-based memory controllers, a csrow/channel pair points to a memory
-rank. There's a known bug at the EDAC core that allows having different
-labels for the same DIMM, if it has more than one rank. A latter patch
-is need to merge the several ranks for a DIMM into the same dimm_info
-struct, in order to avoid having different labels for the same DIMM.
-
-The edac_mc_alloc() will now contain a per-dimm initialization loop that
-will be changed by latter patches in order to match other types of
-memory architectures.
+While initializing data without using them won't cause any troubles, as
+those information is stored at the wrong place (at csrows structure), it
+is better to remove what is unused, in order to simplify the next patch.
 
 Reviewed-by: Aristeu Rozanski <arozansk@redhat.com>
+Acked-by: Borislav Petkov <borislav.petkov@amd.com>
 Cc: Doug Thompson <norsk5@yahoo.com>
-Cc: Ranganathan Desikan <ravi@jetztechnologies.com>
-Cc: "Arvind R." <arvino55@gmail.com>
+Cc: Chris Metcalf <cmetcalf@tilera.com>
+Cc: Hitoshi Mitake <h.mitake@gmail.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>
 Cc: "Niklas Söderlund" <niklas.soderlund@ericsson.com>
+Cc: Josh Boyer <jwboyer@gmail.com>
+Cc: Jiri Kosina <jkosina@suse.cz>
 Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
 ---
- drivers/edac/edac_mc.c       |   47 +++++++++++++++++++++++++++++++----------
- drivers/edac/edac_mc_sysfs.c |   11 ++++-----
- drivers/edac/i5100_edac.c    |    8 +++---
- drivers/edac/i7core_edac.c   |    4 +-
- drivers/edac/i82975x_edac.c  |    2 +-
- drivers/edac/sb_edac.c       |    4 +-
- include/linux/edac.h         |   28 ++++++++++++++++++++----
- 7 files changed, 72 insertions(+), 32 deletions(-)
+ drivers/edac/amd64_edac.c   |   38 ++------------------------------------
+ drivers/edac/i3200_edac.c   |    5 -----
+ drivers/edac/i5000_edac.c   |    5 -----
+ drivers/edac/i5100_edac.c   |    2 --
+ drivers/edac/i5400_edac.c   |    5 -----
+ drivers/edac/i7300_edac.c   |    5 +----
+ drivers/edac/i7core_edac.c  |    5 -----
+ drivers/edac/mv64x60_edac.c |    1 -
+ drivers/edac/ppc4xx_edac.c  |    7 -------
+ drivers/edac/sb_edac.c      |    2 --
+ drivers/edac/tile_edac.c    |    2 --
+ drivers/edac/x38_edac.c     |    5 -----
+ 12 files changed, 3 insertions(+), 79 deletions(-)
 
-diff --git a/drivers/edac/edac_mc.c b/drivers/edac/edac_mc.c
-index 690cbf1..ba2599e 100644
---- a/drivers/edac/edac_mc.c
-+++ b/drivers/edac/edac_mc.c
-@@ -44,7 +44,7 @@ static void edac_mc_dump_channel(struct rank_info *chan)
- 	debugf4("\tchannel = %p\n", chan);
- 	debugf4("\tchannel->chan_idx = %d\n", chan->chan_idx);
- 	debugf4("\tchannel->ce_count = %d\n", chan->ce_count);
--	debugf4("\tchannel->label = '%s'\n", chan->label);
-+	debugf4("\tchannel->label = '%s'\n", chan->dimm->label);
- 	debugf4("\tchannel->csrow = %p\n\n", chan->csrow);
+diff --git a/drivers/edac/amd64_edac.c b/drivers/edac/amd64_edac.c
+index c4c61fb..0be3f29 100644
+--- a/drivers/edac/amd64_edac.c
++++ b/drivers/edac/amd64_edac.c
+@@ -715,25 +715,6 @@ static inline u64 input_addr_to_sys_addr(struct mem_ctl_info *mci,
+ 				     input_addr_to_dram_addr(mci, input_addr));
  }
  
-@@ -157,6 +157,7 @@ struct mem_ctl_info *edac_mc_alloc(unsigned sz_pvt, unsigned nr_csrows,
- 	struct mem_ctl_info *mci;
- 	struct csrow_info *csi, *csrow;
- 	struct rank_info *chi, *chp, *chan;
-+	struct dimm_info *dimm;
- 	void *pvt;
- 	unsigned size;
- 	int row, chn;
-@@ -170,7 +171,8 @@ struct mem_ctl_info *edac_mc_alloc(unsigned sz_pvt, unsigned nr_csrows,
- 	mci = (struct mem_ctl_info *)0;
- 	csi = edac_align_ptr(&mci[1], sizeof(*csi));
- 	chi = edac_align_ptr(&csi[nr_csrows], sizeof(*chi));
--	pvt = edac_align_ptr(&chi[nr_chans * nr_csrows], sz_pvt);
-+	dimm = edac_align_ptr(&chi[nr_chans * nr_csrows], sizeof(*dimm));
-+	pvt = edac_align_ptr(&dimm[nr_chans * nr_csrows], sz_pvt);
- 	size = ((unsigned long)pvt) + sz_pvt;
+-/*
+- * Find the minimum and maximum InputAddr values that map to the given @csrow.
+- * Pass back these values in *input_addr_min and *input_addr_max.
+- */
+-static void find_csrow_limits(struct mem_ctl_info *mci, int csrow,
+-			      u64 *input_addr_min, u64 *input_addr_max)
+-{
+-	struct amd64_pvt *pvt;
+-	u64 base, mask;
+-
+-	pvt = mci->pvt_info;
+-	BUG_ON((csrow < 0) || (csrow >= pvt->csels[0].b_cnt));
+-
+-	get_cs_base_and_mask(pvt, csrow, 0, &base, &mask);
+-
+-	*input_addr_min = base & ~mask;
+-	*input_addr_max = base | mask;
+-}
+-
+ /* Map the Error address to a PAGE and PAGE OFFSET. */
+ static inline void error_address_to_page_and_offset(u64 error_address,
+ 						    u32 *page, u32 *offset)
+@@ -2166,7 +2147,7 @@ static int init_csrows(struct mem_ctl_info *mci)
+ {
+ 	struct csrow_info *csrow;
+ 	struct amd64_pvt *pvt = mci->pvt_info;
+-	u64 input_addr_min, input_addr_max, sys_addr, base, mask;
++	u64 base, mask;
+ 	u32 val;
+ 	int i, j, empty = 1;
+ 	enum mem_type mtype;
+@@ -2194,28 +2175,13 @@ static int init_csrows(struct mem_ctl_info *mci)
  
- 	mci = kzalloc(size, GFP_KERNEL);
-@@ -182,14 +184,22 @@ struct mem_ctl_info *edac_mc_alloc(unsigned sz_pvt, unsigned nr_csrows,
+ 		empty = 0;
+ 		csrow->nr_pages = amd64_csrow_nr_pages(pvt, 0, i);
+-		find_csrow_limits(mci, i, &input_addr_min, &input_addr_max);
+-		sys_addr = input_addr_to_sys_addr(mci, input_addr_min);
+-		csrow->first_page = (u32) (sys_addr >> PAGE_SHIFT);
+-		sys_addr = input_addr_to_sys_addr(mci, input_addr_max);
+-		csrow->last_page = (u32) (sys_addr >> PAGE_SHIFT);
+-
+ 		get_cs_base_and_mask(pvt, i, 0, &base, &mask);
+-		csrow->page_mask = ~mask;
+ 		/* 8 bytes of resolution */
+ 
+ 		mtype = amd64_determine_memory_type(pvt, i);
+ 
+ 		debugf1("  for MC node %d csrow %d:\n", pvt->mc_node_id, i);
+-		debugf1("    input_addr_min: 0x%lx input_addr_max: 0x%lx\n",
+-			(unsigned long)input_addr_min,
+-			(unsigned long)input_addr_max);
+-		debugf1("    sys_addr: 0x%lx  page_mask: 0x%lx\n",
+-			(unsigned long)sys_addr, csrow->page_mask);
+-		debugf1("    nr_pages: %u  first_page: 0x%lx "
+-			"last_page: 0x%lx\n",
+-			(unsigned)csrow->nr_pages,
+-			csrow->first_page, csrow->last_page);
++		debugf1("    nr_pages: %u\n", csrow->nr_pages);
+ 
+ 		/*
+ 		 * determine whether CHIPKILL or JUST ECC or NO ECC is operating
+diff --git a/drivers/edac/i3200_edac.c b/drivers/edac/i3200_edac.c
+index 73529fd..d8fa7f3 100644
+--- a/drivers/edac/i3200_edac.c
++++ b/drivers/edac/i3200_edac.c
+@@ -321,7 +321,6 @@ static int i3200_probe1(struct pci_dev *pdev, int dev_idx)
+ 	int rc;
+ 	int i, j;
+ 	struct mem_ctl_info *mci = NULL;
+-	unsigned long last_page;
+ 	u16 drbs[I3200_CHANNELS][I3200_RANKS_PER_CHANNEL];
+ 	bool stacked;
+ 	void __iomem *window;
+@@ -366,7 +365,6 @@ static int i3200_probe1(struct pci_dev *pdev, int dev_idx)
+ 	 * cumulative; the last one will contain the total memory
+ 	 * contained in all ranks.
  	 */
- 	csi = (struct csrow_info *)(((char *)mci) + ((unsigned long)csi));
- 	chi = (struct rank_info *)(((char *)mci) + ((unsigned long)chi));
-+	dimm = (struct dimm_info *)(((char *)mci) + ((unsigned long)dimm));
- 	pvt = sz_pvt ? (((char *)mci) + ((unsigned long)pvt)) : NULL;
+-	last_page = -1UL;
+ 	for (i = 0; i < mci->nr_csrows; i++) {
+ 		unsigned long nr_pages;
+ 		struct csrow_info *csrow = &mci->csrows[i];
+@@ -378,9 +376,6 @@ static int i3200_probe1(struct pci_dev *pdev, int dev_idx)
+ 		if (nr_pages == 0)
+ 			continue;
  
- 	/* setup index and various internal pointers */
- 	mci->mc_idx = edac_index;
- 	mci->csrows = csi;
-+	mci->dimms  = dimm;
- 	mci->pvt_info = pvt;
- 	mci->nr_csrows = nr_csrows;
+-		csrow->first_page = last_page + 1;
+-		last_page += nr_pages;
+-		csrow->last_page = last_page;
+ 		csrow->nr_pages = nr_pages;
  
-+	/*
-+	 * For now, assumes that a per-csrow arrangement for dimms.
-+	 * This will be latter changed.
-+	 */
-+	dimm = mci->dimms;
-+
- 	for (row = 0; row < nr_csrows; row++) {
- 		csrow = &csi[row];
- 		csrow->csrow_idx = row;
-@@ -202,6 +212,12 @@ struct mem_ctl_info *edac_mc_alloc(unsigned sz_pvt, unsigned nr_csrows,
- 			chan = &chp[chn];
- 			chan->chan_idx = chn;
- 			chan->csrow = csrow;
-+
-+			mci->csrows[row].channels[chn].dimm = dimm;
-+			dimm->csrow = row;
-+			dimm->csrow_channel = chn;
-+			dimm++;
-+			mci->nr_dimms++;
+ 		for (j = 0; j < nr_channels; j++) {
+diff --git a/drivers/edac/i5000_edac.c b/drivers/edac/i5000_edac.c
+index e612f1e..f00f684 100644
+--- a/drivers/edac/i5000_edac.c
++++ b/drivers/edac/i5000_edac.c
+@@ -1263,11 +1263,6 @@ static int i5000_init_csrows(struct mem_ctl_info *mci)
+ 		if (!MTR_DIMMS_PRESENT(mtr) && !MTR_DIMMS_PRESENT(mtr1))
+ 			continue;
+ 
+-		/* FAKE OUT VALUES, FIXME */
+-		p_csrow->first_page = 0 + csrow * 20;
+-		p_csrow->last_page = 9 + csrow * 20;
+-		p_csrow->page_mask = 0xFFF;
+-
+ 		csrow_megs = 0;
+ 		for (channel = 0; channel < pvt->maxch; channel++) {
+ 			csrow_megs += pvt->dimm_info[csrow][channel].megabytes;
+diff --git a/drivers/edac/i5100_edac.c b/drivers/edac/i5100_edac.c
+index 9caff36..8da7ce1 100644
+--- a/drivers/edac/i5100_edac.c
++++ b/drivers/edac/i5100_edac.c
+@@ -859,8 +859,6 @@ static void __devinit i5100_init_csrows(struct mem_ctl_info *mci)
+ 		 * FIXME: these two are totally bogus -- I don't see how to
+ 		 * map them correctly to this structure...
+ 		 */
+-		mci->csrows[i].first_page = total_pages;
+-		mci->csrows[i].last_page = total_pages + npages - 1;
+ 		mci->csrows[i].nr_pages = npages;
+ 		mci->csrows[i].csrow_idx = i;
+ 		mci->csrows[i].mci = mci;
+diff --git a/drivers/edac/i5400_edac.c b/drivers/edac/i5400_edac.c
+index 229aff5..4a23813 100644
+--- a/drivers/edac/i5400_edac.c
++++ b/drivers/edac/i5400_edac.c
+@@ -1180,11 +1180,6 @@ static int i5400_init_csrows(struct mem_ctl_info *mci)
+ 		if (!MTR_DIMMS_PRESENT(mtr))
+ 			continue;
+ 
+-		/* FAKE OUT VALUES, FIXME */
+-		p_csrow->first_page = 0 + csrow * 20;
+-		p_csrow->last_page = 9 + csrow * 20;
+-		p_csrow->page_mask = 0xFFF;
+-
+ 		csrow_megs = 0;
+ 		for (channel = 0; channel < pvt->maxch; channel++) {
+ 			csrow_megs += pvt->dimm_info[csrow][channel].megabytes;
+diff --git a/drivers/edac/i7300_edac.c b/drivers/edac/i7300_edac.c
+index 07a5927..df6cd59 100644
+--- a/drivers/edac/i7300_edac.c
++++ b/drivers/edac/i7300_edac.c
+@@ -778,7 +778,7 @@ static int i7300_init_csrows(struct mem_ctl_info *mci)
+ 	int rc = -ENODEV;
+ 	int mtr;
+ 	int ch, branch, slot, channel;
+-	u32 last_page = 0, nr_pages;
++	u32 nr_pages;
+ 	struct dimm_info *dimm;
+ 
+ 	pvt = mci->pvt_info;
+@@ -828,9 +828,6 @@ static int i7300_init_csrows(struct mem_ctl_info *mci)
+ 
+ 				/* Update per_csrow memory count */
+ 				p_csrow->nr_pages += nr_pages;
+-				p_csrow->first_page = last_page;
+-				last_page += nr_pages;
+-				p_csrow->last_page = last_page;
+ 
+ 				rc = 0;
+ 			}
+diff --git a/drivers/edac/i7core_edac.c b/drivers/edac/i7core_edac.c
+index 21f9791..89ccec6 100644
+--- a/drivers/edac/i7core_edac.c
++++ b/drivers/edac/i7core_edac.c
+@@ -599,7 +599,6 @@ static int get_dimm_config(struct mem_ctl_info *mci)
+ 	struct pci_dev *pdev;
+ 	int i, j;
+ 	int csrow = 0;
+-	unsigned long last_page = 0;
+ 	enum edac_type mode;
+ 	enum mem_type mtype;
+ 	struct dimm_info *dimm;
+@@ -716,12 +715,8 @@ static int get_dimm_config(struct mem_ctl_info *mci)
+ 			npages = MiB_TO_PAGES(size);
+ 
+ 			csr = &mci->csrows[csrow];
+-			csr->first_page = last_page + 1;
+-			last_page += npages;
+-			csr->last_page = last_page;
+ 			csr->nr_pages = npages;
+ 
+-			csr->page_mask = 0;
+ 			csr->csrow_idx = csrow;
+ 			csr->nr_channels = 1;
+ 
+diff --git a/drivers/edac/mv64x60_edac.c b/drivers/edac/mv64x60_edac.c
+index 12d7fe0..d2e3c39 100644
+--- a/drivers/edac/mv64x60_edac.c
++++ b/drivers/edac/mv64x60_edac.c
+@@ -668,7 +668,6 @@ static void mv64x60_init_csrows(struct mem_ctl_info *mci,
+ 	csrow = &mci->csrows[0];
+ 	dimm = csrow->channels[0].dimm;
+ 	csrow->nr_pages = pdata->total_mem >> PAGE_SHIFT;
+-	csrow->last_page = csrow->first_page + csrow->nr_pages - 1;
+ 	dimm->grain = 8;
+ 
+ 	dimm->mtype = (ctl & MV64X60_SDRAM_REGISTERED) ? MEM_RDDR : MEM_DDR;
+diff --git a/drivers/edac/ppc4xx_edac.c b/drivers/edac/ppc4xx_edac.c
+index a75e567..ec5e529 100644
+--- a/drivers/edac/ppc4xx_edac.c
++++ b/drivers/edac/ppc4xx_edac.c
+@@ -897,7 +897,6 @@ ppc4xx_edac_init_csrows(struct mem_ctl_info *mci, u32 mcopt1)
+ 	enum edac_type edac_mode;
+ 	int row, j;
+ 	u32 mbxcf, size;
+-	static u32 ppc4xx_last_page;
+ 
+ 	/* Establish the memory type and width */
+ 
+@@ -959,10 +958,6 @@ ppc4xx_edac_init_csrows(struct mem_ctl_info *mci, u32 mcopt1)
+ 			goto done;
+ 		}
+ 
+-		csi->first_page = ppc4xx_last_page;
+-		csi->last_page	= csi->first_page + csi->nr_pages - 1;
+-		csi->page_mask	= 0;
+-
+ 		/*
+ 		 * It's unclear exactly what grain should be set to
+ 		 * here. The SDRAM_ECCES register allows resolution of
+@@ -984,8 +979,6 @@ ppc4xx_edac_init_csrows(struct mem_ctl_info *mci, u32 mcopt1)
+ 			dimm->dtype	= dtype;
+ 
+ 			dimm->edac_mode	= edac_mode;
+-
+-		ppc4xx_last_page += csi->nr_pages;
  		}
  	}
  
-@@ -678,6 +694,7 @@ void edac_mc_handle_ce(struct mem_ctl_info *mci,
- 		int row, int channel, const char *msg)
- {
- 	unsigned long remapped_page;
-+	char *label = NULL;
- 
- 	debugf3("MC%d: %s()\n", mci->mc_idx, __func__);
- 
-@@ -701,6 +718,8 @@ void edac_mc_handle_ce(struct mem_ctl_info *mci,
- 		return;
- 	}
- 
-+	label = mci->csrows[row].channels[channel].dimm->label;
-+
- 	if (edac_mc_get_log_ce())
- 		/* FIXME - put in DIMM location */
- 		edac_mc_printk(mci, KERN_WARNING,
-@@ -708,7 +727,7 @@ void edac_mc_handle_ce(struct mem_ctl_info *mci,
- 			"0x%lx, row %d, channel %d, label \"%s\": %s\n",
- 			page_frame_number, offset_in_page,
- 			mci->csrows[row].grain, syndrome, row, channel,
--			mci->csrows[row].channels[channel].label, msg);
-+			label, msg);
- 
- 	mci->ce_count++;
- 	mci->csrows[row].ce_count++;
-@@ -754,6 +773,7 @@ void edac_mc_handle_ue(struct mem_ctl_info *mci,
- 	char *pos = labels;
- 	int chan;
- 	int chars;
-+	char *label = NULL;
- 
- 	debugf3("MC%d: %s()\n", mci->mc_idx, __func__);
- 
-@@ -767,15 +787,15 @@ void edac_mc_handle_ue(struct mem_ctl_info *mci,
- 		return;
- 	}
- 
--	chars = snprintf(pos, len + 1, "%s",
--			 mci->csrows[row].channels[0].label);
-+	label = mci->csrows[row].channels[0].dimm->label;
-+	chars = snprintf(pos, len + 1, "%s", label);
- 	len -= chars;
- 	pos += chars;
- 
- 	for (chan = 1; (chan < mci->csrows[row].nr_channels) && (len > 0);
- 		chan++) {
--		chars = snprintf(pos, len + 1, ":%s",
--				 mci->csrows[row].channels[chan].label);
-+		label = mci->csrows[row].channels[chan].dimm->label;
-+		chars = snprintf(pos, len + 1, ":%s", label);
- 		len -= chars;
- 		pos += chars;
- 	}
-@@ -824,6 +844,7 @@ void edac_mc_handle_fbd_ue(struct mem_ctl_info *mci,
- 	char labels[len + 1];
- 	char *pos = labels;
- 	int chars;
-+	char *label;
- 
- 	if (csrow >= mci->nr_csrows) {
- 		/* something is wrong */
-@@ -858,12 +879,12 @@ void edac_mc_handle_fbd_ue(struct mem_ctl_info *mci,
- 	mci->csrows[csrow].ue_count++;
- 
- 	/* Generate the DIMM labels from the specified channels */
--	chars = snprintf(pos, len + 1, "%s",
--			 mci->csrows[csrow].channels[channela].label);
-+	label = mci->csrows[csrow].channels[channela].dimm->label;
-+	chars = snprintf(pos, len + 1, "%s", label);
- 	len -= chars;
- 	pos += chars;
- 	chars = snprintf(pos, len + 1, "-%s",
--			 mci->csrows[csrow].channels[channelb].label);
-+			mci->csrows[csrow].channels[channelb].dimm->label);
- 
- 	if (edac_mc_get_log_ue())
- 		edac_mc_printk(mci, KERN_EMERG,
-@@ -885,6 +906,7 @@ EXPORT_SYMBOL(edac_mc_handle_fbd_ue);
- void edac_mc_handle_fbd_ce(struct mem_ctl_info *mci,
- 			unsigned int csrow, unsigned int channel, char *msg)
- {
-+	char *label = NULL;
- 
- 	/* Ensure boundary values */
- 	if (csrow >= mci->nr_csrows) {
-@@ -904,12 +926,13 @@ void edac_mc_handle_fbd_ce(struct mem_ctl_info *mci,
- 		return;
- 	}
- 
-+	label = mci->csrows[csrow].channels[channel].dimm->label;
-+
- 	if (edac_mc_get_log_ce())
- 		/* FIXME - put in DIMM location */
- 		edac_mc_printk(mci, KERN_WARNING,
- 			"CE row %d, channel %d, label \"%s\": %s\n",
--			csrow, channel,
--			mci->csrows[csrow].channels[channel].label, msg);
-+			csrow, channel, label, msg);
- 
- 	mci->ce_count++;
- 	mci->csrows[csrow].ce_count++;
-diff --git a/drivers/edac/edac_mc_sysfs.c b/drivers/edac/edac_mc_sysfs.c
-index d56e634..c83697c 100644
---- a/drivers/edac/edac_mc_sysfs.c
-+++ b/drivers/edac/edac_mc_sysfs.c
-@@ -170,11 +170,11 @@ static ssize_t channel_dimm_label_show(struct csrow_info *csrow,
- 				char *data, int channel)
- {
- 	/* if field has not been initialized, there is nothing to send */
--	if (!csrow->channels[channel].label[0])
-+	if (!csrow->channels[channel].dimm->label[0])
- 		return 0;
- 
- 	return snprintf(data, EDAC_MC_LABEL_LEN, "%s\n",
--			csrow->channels[channel].label);
-+			csrow->channels[channel].dimm->label);
- }
- 
- static ssize_t channel_dimm_label_store(struct csrow_info *csrow,
-@@ -184,8 +184,8 @@ static ssize_t channel_dimm_label_store(struct csrow_info *csrow,
- 	ssize_t max_size = 0;
- 
- 	max_size = min((ssize_t) count, (ssize_t) EDAC_MC_LABEL_LEN - 1);
--	strncpy(csrow->channels[channel].label, data, max_size);
--	csrow->channels[channel].label[max_size] = '\0';
-+	strncpy(csrow->channels[channel].dimm->label, data, max_size);
-+	csrow->channels[channel].dimm->label[max_size] = '\0';
- 
- 	return max_size;
- }
-@@ -952,9 +952,8 @@ int edac_create_sysfs_mci_device(struct mem_ctl_info *mci)
- 	/* CSROW error: backout what has already been registered,  */
- fail1:
- 	for (i--; i >= 0; i--) {
--		if (csrow->nr_pages > 0) {
-+		if (mci->csrows[i].nr_pages > 0)
- 			kobject_put(&mci->csrows[i].kobj);
--		}
- 	}
- 
- 	/* remove the mci instance's attributes, if any */
-diff --git a/drivers/edac/i5100_edac.c b/drivers/edac/i5100_edac.c
-index 2a6e7ff..2ce7ef1 100644
---- a/drivers/edac/i5100_edac.c
-+++ b/drivers/edac/i5100_edac.c
-@@ -433,7 +433,7 @@ static void i5100_handle_ce(struct mem_ctl_info *mci,
- 		"CE chan %d, bank %u, rank %u, syndrome 0x%lx, "
- 		"cas %u, ras %u, csrow %u, label \"%s\": %s\n",
- 		chan, bank, rank, syndrome, cas, ras,
--		csrow, mci->csrows[csrow].channels[0].label, msg);
-+		csrow, mci->csrows[csrow].channels[0].dimm->label, msg);
- 
- 	mci->ce_count++;
- 	mci->csrows[csrow].ce_count++;
-@@ -455,7 +455,7 @@ static void i5100_handle_ue(struct mem_ctl_info *mci,
- 		"UE chan %d, bank %u, rank %u, syndrome 0x%lx, "
- 		"cas %u, ras %u, csrow %u, label \"%s\": %s\n",
- 		chan, bank, rank, syndrome, cas, ras,
--		csrow, mci->csrows[csrow].channels[0].label, msg);
-+		csrow, mci->csrows[csrow].channels[0].dimm->label, msg);
- 
- 	mci->ue_count++;
- 	mci->csrows[csrow].ue_count++;
-@@ -868,8 +868,8 @@ static void __devinit i5100_init_csrows(struct mem_ctl_info *mci)
- 		mci->csrows[i].channels[0].chan_idx = 0;
- 		mci->csrows[i].channels[0].ce_count = 0;
- 		mci->csrows[i].channels[0].csrow = mci->csrows + i;
--		snprintf(mci->csrows[i].channels[0].label,
--			 sizeof(mci->csrows[i].channels[0].label),
-+		snprintf(mci->csrows[i].channels[0].dimm->label,
-+			 sizeof(mci->csrows[i].channels[0].dimm->label),
- 			 "DIMM%u", i5100_rank_to_slot(mci, chan, rank));
- 
- 		total_pages += npages;
-diff --git a/drivers/edac/i7core_edac.c b/drivers/edac/i7core_edac.c
-index 8568d9b..5203f30 100644
---- a/drivers/edac/i7core_edac.c
-+++ b/drivers/edac/i7core_edac.c
-@@ -746,8 +746,8 @@ static int get_dimm_config(const struct mem_ctl_info *mci)
- 
- 			csr->edac_mode = mode;
- 			csr->mtype = mtype;
--			snprintf(csr->channels[0].label,
--					sizeof(csr->channels[0].label),
-+			snprintf(csr->channels[0].dimm->label,
-+					sizeof(csr->channels[0].dimm->label),
- 					"CPU#%uChannel#%u_DIMM#%u",
- 					pvt->i7core_dev->socket, i, j);
- 
-diff --git a/drivers/edac/i82975x_edac.c b/drivers/edac/i82975x_edac.c
-index 4184e01..864061b 100644
---- a/drivers/edac/i82975x_edac.c
-+++ b/drivers/edac/i82975x_edac.c
-@@ -407,7 +407,7 @@ static void i82975x_init_csrows(struct mem_ctl_info *mci,
- 		 *   [0-3] for dual-channel; i.e. csrow->nr_channels = 2
- 		 */
- 		for (chan = 0; chan < csrow->nr_channels; chan++)
--			strncpy(csrow->channels[chan].label,
-+			strncpy(csrow->channels[chan].dimm->label,
- 					labels[(index >> 1) + (chan * 2)],
- 					EDAC_MC_LABEL_LEN);
- 
 diff --git a/drivers/edac/sb_edac.c b/drivers/edac/sb_edac.c
-index 2917887..dea1ef3 100644
+index ec6e03d..cf53007 100644
 --- a/drivers/edac/sb_edac.c
 +++ b/drivers/edac/sb_edac.c
-@@ -651,8 +651,8 @@ static int get_dimm_config(const struct mem_ctl_info *mci)
- 				csr->channels[0].chan_idx = i;
- 				csr->channels[0].ce_count = 0;
- 				pvt->csrow_map[i][j] = csrow;
--				snprintf(csr->channels[0].label,
--					 sizeof(csr->channels[0].label),
-+				snprintf(csr->channels[0].dimm->label,
-+					 sizeof(csr->channels[0].dimm->label),
- 					 "CPU_SrcID#%u_Channel#%u_DIMM#%u",
- 					 pvt->sbridge_dev->source_id, i, j);
- 				last_page += npages;
-diff --git a/include/linux/edac.h b/include/linux/edac.h
-index e3e3d26..f40b835 100644
---- a/include/linux/edac.h
-+++ b/include/linux/edac.h
-@@ -308,23 +308,34 @@ enum scrub_type {
-  * PS - I enjoyed writing all that about as much as you enjoyed reading it.
-  */
+@@ -642,8 +642,6 @@ static int get_dimm_config(struct mem_ctl_info *mci)
+ 				 * csrows.
+ 				 */
+ 				csr = &mci->csrows[csrow];
+-				csr->first_page = last_page;
+-				csr->last_page = last_page + npages - 1;
+ 				csr->nr_pages = npages;
+ 				csr->csrow_idx = csrow;
+ 				csr->nr_channels = 1;
+diff --git a/drivers/edac/tile_edac.c b/drivers/edac/tile_edac.c
+index db7d2ae..ba0917b 100644
+--- a/drivers/edac/tile_edac.c
++++ b/drivers/edac/tile_edac.c
+@@ -110,9 +110,7 @@ static int __devinit tile_edac_init_csrows(struct mem_ctl_info *mci)
+ 		return -1;
+ 	}
  
-+/* FIXME: add a per-dimm ce error count */
-+struct dimm_info {
-+	char label[EDAC_MC_LABEL_LEN + 1];	/* DIMM label on motherboard */
-+	unsigned memory_controller;
-+	unsigned csrow;
-+	unsigned csrow_channel;
-+};
-+
- /**
-  * struct rank_info - contains the information for one DIMM rank
-  *
-  * @chan_idx:	channel number where the rank is (typically, 0 or 1)
-  * @ce_count:	number of correctable errors for this rank
-- * @label:	DIMM label. Different ranks for the same DIMM should be
-- *		filled, on userspace, with the same label.
-- *		FIXME: The core currently won't enforce it.
-  * @csrow:	A pointer to the chip select row structure (the parent
-  *		structure). The location of the rank is given by
-  *		the (csrow->csrow_idx, chan_idx) vector.
-+ * @dimm:	A pointer to the DIMM structure, where the DIMM label
-+ *		information is stored.
-+ *
-+ * FIXME: Currently, the EDAC core model will assume one DIMM per rank.
-+ *	  This is a bad assumption, but it makes this patch easier. Later
-+ *	  patches in this series will fix this issue.
-  */
- struct rank_info {
- 	int chan_idx;
- 	u32 ce_count;
--	char label[EDAC_MC_LABEL_LEN + 1];
--	struct csrow_info *csrow;	/* the parent */
-+	struct csrow_info *csrow;
-+	struct dimm_info *dimm;
- };
+-	csrow->first_page = 0;
+ 	csrow->nr_pages = mem_info.mem_size >> PAGE_SHIFT;
+-	csrow->last_page = csrow->first_page + csrow->nr_pages - 1;
+ 	dimm->grain = TILE_EDAC_ERROR_GRAIN;
+ 	dimm->dtype = DEV_UNKNOWN;
  
- struct csrow_info {
-@@ -424,6 +435,13 @@ struct mem_ctl_info {
- 	int mc_idx;
- 	int nr_csrows;
- 	struct csrow_info *csrows;
-+
-+	/*
-+	 * DIMM info. Will eventually remove the entire csrows_info some day
-+	 */
-+	unsigned nr_dimms;
-+	struct dimm_info *dimms;
-+
- 	/*
- 	 * FIXME - what about controllers on other busses? - IDs must be
- 	 * unique.  dev pointer should be sufficiently unique, but
+diff --git a/drivers/edac/x38_edac.c b/drivers/edac/x38_edac.c
+index 52c8d69..7be10dd 100644
+--- a/drivers/edac/x38_edac.c
++++ b/drivers/edac/x38_edac.c
+@@ -319,7 +319,6 @@ static int x38_probe1(struct pci_dev *pdev, int dev_idx)
+ 	int rc;
+ 	int i, j;
+ 	struct mem_ctl_info *mci = NULL;
+-	unsigned long last_page;
+ 	u16 drbs[X38_CHANNELS][X38_RANKS_PER_CHANNEL];
+ 	bool stacked;
+ 	void __iomem *window;
+@@ -363,7 +362,6 @@ static int x38_probe1(struct pci_dev *pdev, int dev_idx)
+ 	 * cumulative; the last one will contain the total memory
+ 	 * contained in all ranks.
+ 	 */
+-	last_page = -1UL;
+ 	for (i = 0; i < mci->nr_csrows; i++) {
+ 		unsigned long nr_pages;
+ 		struct csrow_info *csrow = &mci->csrows[i];
+@@ -375,9 +373,6 @@ static int x38_probe1(struct pci_dev *pdev, int dev_idx)
+ 		if (nr_pages == 0)
+ 			continue;
+ 
+-		csrow->first_page = last_page + 1;
+-		last_page += nr_pages;
+-		csrow->last_page = last_page;
+ 		csrow->nr_pages = nr_pages;
+ 
+ 		for (j = 0; j < x38_channel_num; j++) {
 -- 
 1.7.8
 
