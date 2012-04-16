@@ -1,129 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754930Ab2DPRVs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Apr 2012 13:21:48 -0400
-Received: from rcsinet15.oracle.com ([148.87.113.117]:30275 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754217Ab2DPRUt (ORCPT
+	id S1755024Ab2DPRWu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Apr 2012 13:22:50 -0400
+Received: from acsinet15.oracle.com ([141.146.126.227]:18768 "EHLO
+	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754643Ab2DPRWt convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Apr 2012 13:20:49 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: linux-kernel@vger.kernel.org, david.vrabel@citrix.com, JBeulich@suse.com
-Cc: xen-devel@lists.xensource.com,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Subject: [PATCH 1/8] xen/p2m: Move code around to allow for better re-usage.
-Date: Mon, 16 Apr 2012 13:15:32 -0400
-Message-Id: <1334596539-18172-2-git-send-email-konrad.wilk@oracle.com>
-X-Mailer: git-send-email 1.7.7.5
-In-Reply-To: <1334596539-18172-1-git-send-email-konrad.wilk@oracle.com>
-References: <1334596539-18172-1-git-send-email-konrad.wilk@oracle.com>
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
-X-CT-RefId: str=0001.0A090208.4F8C54EB.006C,ss=1,re=0.000,fgs=0
+	Mon, 16 Apr 2012 13:22:49 -0400
+MIME-Version: 1.0
+Message-ID: <84023b26-a682-44b5-990e-1635da6949ff@default>
+Date: Mon, 16 Apr 2012 10:22:08 -0700 (PDT)
+From: Dan Magenheimer <dan.magenheimer@oracle.com>
+To: Jan Beulich <JBeulich@suse.com>, David Vrabel <david.vrabel@citrix.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>, xen-devel <xen-devel@lists.xen.org>,
+        Konrad Wilk <konrad.wilk@oracle.com>, linux-kernel@vger.kernel.org,
+        "Tim (Xen.org)" <tim@xen.org>, Sheng Yang <sheng@yasker.org>
+Subject: RE: [Xen-devel] [PATCH] xen: always set the sched clock as unstable
+References: <1334341255-11153-1-git-send-email-david.vrabel@citrix.com>
+ <4F8C1F6D020000780007E11A@nat28.tlf.novell.com> <4F8C33E0.2080007@citrix.com>
+ <049b7b93-fb37-4962-b272-d786e1dcfacb@default>
+ <4F8C619C020000780007E34E@nat28.tlf.novell.com>
+In-Reply-To: <4F8C619C020000780007E34E@nat28.tlf.novell.com>
+X-Priority: 3
+X-Mailer: Oracle Beehive Extensions for Outlook 2.0.1.6  (510070) [OL
+ 12.0.6607.1000 (x86)]
+Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 8BIT
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090202.4F8C554B.0120,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We are going to be using the early_alloc_p2m (and
-early_alloc_p2m_middle) code in follow up patches which
-are not related to setting identity pages.
+> From: Jan Beulich [mailto:JBeulich@suse.com]
+> Subject: RE: [Xen-devel] [PATCH] xen: always set the sched clock as unstable
+> 
+> >>> On 16.04.12 at 18:05, Dan Magenheimer <dan.magenheimer@oracle.com> wrote:
+> >>  From: David Vrabel [mailto:david.vrabel@citrix.com]
+> >> On 16/04/12 12:32, Jan Beulich wrote:
+> >> >>>> On 13.04.12 at 20:20, David Vrabel <david.vrabel@citrix.com> wrote:
+> >> >> --- a/arch/x86/xen/time.c
+> >> >> +++ b/arch/x86/xen/time.c
+> >> >> @@ -473,6 +473,7 @@ static void __init xen_time_init(void)
+> >> >>  	do_settimeofday(&tp);
+> >> >>
+> >> >>  	setup_force_cpu_cap(X86_FEATURE_TSC);
+> >> >> +	sched_clock_stable = 0;
+> >> >
+> >> > This, unfortunately, is not sufficient afaict: If a CPU gets brought up
+> >> > post-boot, the variable may need to be cleared again. Instead you
+> >> > ought to call mark_tsc_unstable().
+> >>
+> >> Yeah, mark_tsc_unstable() is the right thing to do.
+> >
+> > NACK!
+> >
+> > No, no, no.  The exact opposite is true.  Like VMware, TSC is
+> > stable.  The issue is that Linux trusts other clock hardware more
+> > completely than TSC so whenever there is a problem with another
+> > clocksource, Linux blames TSC and marks TSC unstable.  But TSC
+> > on Xen 4.0+ is innocent.  In fact, TSC is a better clocksource
+> > choice than clocksource=xen (aka pvclock) because pvclock
+> > indirectly depends on TSC.
+> >
+> > For upstream kernels, the answer is to set clocksource=tsc
+> > and tsc=reliable, like VMware enforces. See:
+> >
+> > https://lists.ubuntu.com/archives/kernel-team/2008-October/004283.html
+> >
+> > In fact, it might be wise for a Xen-savvy kernel to check to see
+> > if it is running on Xen-4.0+ and, if so, force clocksource=tsc
+> > and tsc=reliable.
+> 
+> Are you possibly mixing up PV and HVM cases? sched_clock_stable
+> getting set _is_ a problem in PV kernels - we had bug reports long
+> ago when this first appeared in arch/x86/kernel/cpu/intel.c. I'm
+> suspecting this because there's not supposed to be (and in non-
+> pv-ops there is no; in pv-ops I assume it simply has no effect)
+> clocksource=tsc in PV kernels.
 
-Hence lets move the code out in its own function and
-rename them as appropiate.
+Hi Jan --
 
-Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
----
- arch/x86/xen/p2m.c |   62 ++++++++++++++++++++++++++++-----------------------
- 1 files changed, 34 insertions(+), 28 deletions(-)
+In upstream (and recent pv-ops) kernels, is there any need for there
+to be a difference between HVM and PV in the clocksource chosen?  The
+pvclock algorithm was necessary for PV when non-TSC hardware clocks
+were privileged and the only non-privileged hardware clock (TSC)
+was badly broken in hardware and for migration/save/restore.
+With TSC now working and stable, and now that we are making changes
+in the upstream kernel that work for both PV and HVM, is it
+time to drop pvclock (at least as the default for PV)?
 
-diff --git a/arch/x86/xen/p2m.c b/arch/x86/xen/p2m.c
-index 1b267e7..3cc3afe 100644
---- a/arch/x86/xen/p2m.c
-+++ b/arch/x86/xen/p2m.c
-@@ -499,7 +499,7 @@ static bool alloc_p2m(unsigned long pfn)
- 	return true;
- }
- 
--static bool __init __early_alloc_p2m(unsigned long pfn)
-+static bool __init early_alloc_p2m_middle(unsigned long pfn)
- {
- 	unsigned topidx, mididx, idx;
- 
-@@ -541,6 +541,36 @@ static bool __init __early_alloc_p2m(unsigned long pfn)
- 	}
- 	return idx != 0;
- }
-+
-+static bool __init early_alloc_p2m(unsigned long pfn)
-+{
-+	unsigned topidx = p2m_top_index(pfn);
-+	unsigned long *mid_mfn_p;
-+	unsigned long **mid;
-+
-+	mid = p2m_top[topidx];
-+	mid_mfn_p = p2m_top_mfn_p[topidx];
-+	if (mid == p2m_mid_missing) {
-+		mid = extend_brk(PAGE_SIZE, PAGE_SIZE);
-+
-+		p2m_mid_init(mid);
-+
-+		p2m_top[topidx] = mid;
-+
-+		BUG_ON(mid_mfn_p != p2m_mid_missing_mfn);
-+	}
-+	/* And the save/restore P2M tables.. */
-+	if (mid_mfn_p == p2m_mid_missing_mfn) {
-+		mid_mfn_p = extend_brk(PAGE_SIZE, PAGE_SIZE);
-+		p2m_mid_mfn_init(mid_mfn_p);
-+
-+		p2m_top_mfn_p[topidx] = mid_mfn_p;
-+		p2m_top_mfn[topidx] = virt_to_mfn(mid_mfn_p);
-+		/* Note: we don't set mid_mfn_p[midix] here,
-+		 * look in early_alloc_p2m_middle */
-+	}
-+	return true;
-+}
- unsigned long __init set_phys_range_identity(unsigned long pfn_s,
- 				      unsigned long pfn_e)
- {
-@@ -559,35 +589,11 @@ unsigned long __init set_phys_range_identity(unsigned long pfn_s,
- 		pfn < ALIGN(pfn_e, (P2M_MID_PER_PAGE * P2M_PER_PAGE));
- 		pfn += P2M_MID_PER_PAGE * P2M_PER_PAGE)
- 	{
--		unsigned topidx = p2m_top_index(pfn);
--		unsigned long *mid_mfn_p;
--		unsigned long **mid;
--
--		mid = p2m_top[topidx];
--		mid_mfn_p = p2m_top_mfn_p[topidx];
--		if (mid == p2m_mid_missing) {
--			mid = extend_brk(PAGE_SIZE, PAGE_SIZE);
--
--			p2m_mid_init(mid);
--
--			p2m_top[topidx] = mid;
--
--			BUG_ON(mid_mfn_p != p2m_mid_missing_mfn);
--		}
--		/* And the save/restore P2M tables.. */
--		if (mid_mfn_p == p2m_mid_missing_mfn) {
--			mid_mfn_p = extend_brk(PAGE_SIZE, PAGE_SIZE);
--			p2m_mid_mfn_init(mid_mfn_p);
--
--			p2m_top_mfn_p[topidx] = mid_mfn_p;
--			p2m_top_mfn[topidx] = virt_to_mfn(mid_mfn_p);
--			/* Note: we don't set mid_mfn_p[midix] here,
--		 	 * look in __early_alloc_p2m */
--		}
-+		WARN_ON(!early_alloc_p2m(pfn));
- 	}
- 
--	__early_alloc_p2m(pfn_s);
--	__early_alloc_p2m(pfn_e);
-+	early_alloc_p2m_middle(pfn_s);
-+	early_alloc_p2m_middle(pfn_e);
- 
- 	for (pfn = pfn_s; pfn < pfn_e; pfn++)
- 		if (!__set_phys_to_machine(pfn, IDENTITY_FRAME(pfn)))
--- 
-1.7.7.5
+Certainly if an old (non-pv-ops) kernel is broken, something like
+David's patch might be an acceptable workaround.  I'm just arguing
+against perpetuating pvclock-as-the-only-xen-clock upstream.
 
+Does that make sense?
+Dan
