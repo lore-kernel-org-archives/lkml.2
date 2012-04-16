@@ -1,54 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755840Ab2DPUe6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Apr 2012 16:34:58 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:37917 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754824Ab2DPUe4 (ORCPT
+	id S1755728Ab2DPUd3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Apr 2012 16:33:29 -0400
+Received: from rcsinet15.oracle.com ([148.87.113.117]:36548 "EHLO
+	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754307Ab2DPUd2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Apr 2012 16:34:56 -0400
-Date: Mon, 16 Apr 2012 22:34:51 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: David Miller <davem@davemloft.net>
-Cc: joe@perches.com, linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
-        torvalds@linux-foundation.org, apw@canonical.com
-Subject: Re: Please fix or revert: [PATCH] checkpatch: add --strict tests for
- braces, comments and casts
-Message-ID: <20120416203451.GA4248@gmail.com>
-References: <20120416091719.GA4113@gmail.com>
- <20120416.142728.864894452301706752.davem@davemloft.net>
- <20120416202654.GA4678@gmail.com>
+	Mon, 16 Apr 2012 16:33:28 -0400
+Date: Mon, 16 Apr 2012 16:28:21 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: "Liu, Jinsong" <jinsong.liu@intel.com>
+Cc: "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 2/2] Register native mce handler as vMCE bounce back point
+Message-ID: <20120416202821.GC14982@phenom.dumpdata.com>
+References: <DE8DF0795D48FD4CA783C40EC8292335146A7A@SHSMSX101.ccr.corp.intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120416202654.GA4678@gmail.com>
+In-Reply-To: <DE8DF0795D48FD4CA783C40EC8292335146A7A@SHSMSX101.ccr.corp.intel.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+X-CT-RefId: str=0001.0A090203.4F8C8211.001D,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-* Ingo Molnar <mingo@kernel.org> wrote:
-
->     If you don't "see" it as ugly it's simply because your brain
->     is not wired up to see 3D/2D geometry as a significant
->     source of information. A significant portion (I'd 
->     guesstimate a narrow majority) of kernel hackers *does* see
->     2D/3D layout details in code and finds inconsistencies in 
->     them counterproductive.
+On Mon, Apr 16, 2012 at 01:07:35AM +0000, Liu, Jinsong wrote:
+> >From 76e40a60878ff72986fd8d92611400195ae0f997 Mon Sep 17 00:00:00 2001
+> From: Liu, Jinsong <jinsong.liu@intel.com>
+> Date: Mon, 16 Apr 2012 00:16:58 +0800
+> Subject: [PATCH 2/2] Register native mce handler as vMCE bounce back point
 > 
->     ( It's roughly the same distinction that makes some people
->       love the typographic layout of the iPhone/iPad while 
->       others consider it unnecessary bling. )
+> When xen hyeprvisor inject vMCE to guest, use native mce handler to handle it
 
-Another example are the recent Google+ layout changes. Those who 
-don't see 2D details found it an unnecessary waste of screen 
-real estate.
+hypervisor
 
-To me and many others the new layout, while sparser, is actually 
-noticeably less taxing to read, because information is 
-structured in such a "geometrically obvious" way.
+> 
+> Signed-off-by: Liu, Jinsong <jinsong.liu@intel.com>
+> Signed-off-by: Ke, Liping <liping.ke@intel.com>
+> Signed-off-by: Jiang, Yunhong <yunhong.jiang@intel.com>
+> Signed-off-by: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
+> ---
+>  arch/x86/xen/enlighten.c |   10 +++++++---
+>  1 files changed, 7 insertions(+), 3 deletions(-)
+> 
+> diff --git a/arch/x86/xen/enlighten.c b/arch/x86/xen/enlighten.c
+> index 15628d4..346ba64 100644
+> --- a/arch/x86/xen/enlighten.c
+> +++ b/arch/x86/xen/enlighten.c
+> @@ -614,8 +614,8 @@ static int cvt_gate_to_trap(int vector, const gate_desc *val,
+>  	/*
+>  	 * Look for known traps using IST, and substitute them
+>  	 * appropriately.  The debugger ones are the only ones we care
+> -	 * about.  Xen will handle faults like double_fault and
+> -	 * machine_check, so we should never see them.  Warn if
+> +	 * about.  Xen will handle faults like double_fault,
+> +	 * so we should never see them.  Warn if
+>  	 * there's an unexpected IST-using fault handler.
+>  	 */
+>  	if (addr == (unsigned long)debug)
+> @@ -630,7 +630,11 @@ static int cvt_gate_to_trap(int vector, const gate_desc *val,
+>  		return 0;
+>  #ifdef CONFIG_X86_MCE
+>  	} else if (addr == (unsigned long)machine_check) {
+> -		return 0;
+> +		/*
+> +		 * when xen hyeprvisor inject vMCE to guest,
+> +		 * use native mce handler to handle it
+> +		 */
+> +		;
 
-Thanks,
 
-	Ingo
+Can you just take the check out?
+
+
+>  #endif
+>  	} else {
+>  		/* Some other trap using IST? */
+> -- 
+> 1.7.1
+
+
