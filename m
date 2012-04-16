@@ -1,61 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754808Ab2DPULL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Apr 2012 16:11:11 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:33050 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754689Ab2DPULJ convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Apr 2012 16:11:09 -0400
+	id S1754766Ab2DPUMX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Apr 2012 16:12:23 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:2684 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751915Ab2DPUMV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Apr 2012 16:12:21 -0400
+From: Mauro Carvalho Chehab <mchehab@redhat.com>
+Cc: Mauro Carvalho Chehab <mchehab@redhat.com>,
+        Linux Edac Mailing List <linux-edac@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: [EDAC PATCH v13 0/7] Convert EDAC core to work with non-csrow-based memory controllers
+Date: Mon, 16 Apr 2012 17:12:06 -0300
+Message-Id: <1334607133-30039-1-git-send-email-mchehab@redhat.com>
+In-Reply-To: <1333039546-5590-1-git-send-email-mchehab@redhat.com>
+References: <1333039546-5590-1-git-send-email-mchehab@redhat.com>
 MIME-Version: 1.0
-In-Reply-To: <20120416162710.GA24100@kroah.com>
-References: <20120412011313.GA23764@kroah.com>
-	<CAMP44s2q+bQE3-zsX4bs=sQDt4jf8eE5bwZ8V88UjodjRyAjog@mail.gmail.com>
-	<20120412144626.GA14868@kroah.com>
-	<CAMP44s1T4EVwpzDuV_vV0Zh-5WcPCwdw9eeOfL17Geqp_UFN-Q@mail.gmail.com>
-	<CAJ-VmonhwvnXPKa=LNOR4W0ZTXZqWmzw4UrsKLoE0YN_Bu0FzQ@mail.gmail.com>
-	<CAMP44s2JPvhEB6Eb049Z_bToAFncHKMEheuyaxyhC=bnh2GJVg@mail.gmail.com>
-	<20120413105746.10ffb120@stein>
-	<CAMP44s0RohH9tPiM5qCDT57XBV=iO66PZkSjYVxA6Usg1qJPtw@mail.gmail.com>
-	<20120413190819.9469.qmail@stuge.se>
-	<CAMP44s02v_OhviaF12Y8LWBJygyVLZk00d3P69GVvKAeJwjiuw@mail.gmail.com>
-	<20120416162710.GA24100@kroah.com>
-Date: Mon, 16 Apr 2012 23:11:05 +0300
-Message-ID: <CAMP44s1o9kBp8672oBnvna+qH4WpqSqGUsyNpc_C74cfNYcX_g@mail.gmail.com>
-Subject: Re: [ath9k-devel] [ 00/78] 3.3.2-stable review
-From: Felipe Contreras <felipe.contreras@gmail.com>
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: Stefan Richter <stefanr@s5r6.in-berlin.de>,
-        "ath9k-devel@lists.ath9k.org" <ath9k-devel@venema.h4ckr.net>,
-        linux-wireless Mailing List <linux-wireless@vger.kernel.org>,
-        linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        "John W. Linville" <linville@tuxdriver.com>, akpm@linux-foundation.org,
-        torvalds@linux-foundation.org, alan@lxorguk.ukuu.org.uk
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Transfer-Encoding: 8bit
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 16, 2012 at 7:27 PM, Greg KH <gregkh@linuxfoundation.org> wrote:
-> Just one minor correction in this looney email thread:
->
-> On Sat, Apr 14, 2012 at 01:53:22AM +0300, Felipe Contreras wrote:
->> v3.3.x on the other hand are *not* stable. They contain patches
->> backported from v3.4, but nobody guarantees they will work. There was
->> no v3.3.1-rc1, so the first time the patches compromising v3.3.1 were
->> generally tested together is in v3.3.1, at which point if somebody
->> finds issues, it's too late; bad patches are *not* going to be removed
->> in v3.3.2.
->
-> Of course there was a 3.3.1-rc1, see the linux-kernel archives for the
-> announcemen and the individual patches.  kernel.org has the large patch
-> itself if you like that format instead.
+It is the first patchset for the EDAC rewrite. On this patchset,
+there are all the internal changes at the EDAC core, needed
+to properly represent memories at modern memory controllers that
+aren't oriented per rank/channel.
 
-I don't see it here:
-http://git.kernel.org/?p=linux/kernel/git/stable/linux-stable.git;a=tags
+Drivers will be changed by the next changeset.
 
-If you really want people to try it, why not tag it?
+This series is needed in order to fix a long-term bug at the EDAC drivers
+for the Intel memory controllers deployed since 2005 (well, in fact,
+there is one Rambus that it is older, but also suffers from the same
+syndrome), including the drivers for the recent Intel Nehalem and
+Sandy Bridge architectures.
+
+The new EDAC architecture supports both per rank/channel memory
+controllers and per-DIMM ones.
+
+On this changeset, there are no changes at the Kernel-Userspace
+API. All changes are at the EDAC kernel API used by the drivers.
+
+Mauro Carvalho Chehab (7):
+  edac: Create a dimm struct and move the labels into it
+  edac: move dimm properties to struct dimm_info
+  edac: Don't initialize csrow's first_page & friends when not needed
+  edac: move nr_pages to dimm struct
+  edac: rewrite edac_align_ptr()
+  edac.h: Prepare to handle with generic layers
+  edac: Change internal representation to work with layers
+
+ drivers/edac/amd64_edac.c      |   66 +---
+ drivers/edac/amd76x_edac.c     |   14 +-
+ drivers/edac/cell_edac.c       |   18 +-
+ drivers/edac/cpc925_edac.c     |   70 +++--
+ drivers/edac/e752x_edac.c      |   48 ++--
+ drivers/edac/e7xxx_edac.c      |   49 ++--
+ drivers/edac/edac_core.h       |   92 +++++-
+ drivers/edac/edac_device.c     |   27 +-
+ drivers/edac/edac_mc.c         |  691 ++++++++++++++++++++++++++--------------
+ drivers/edac/edac_mc_sysfs.c   |   62 +++--
+ drivers/edac/edac_module.h     |    2 +-
+ drivers/edac/edac_pci.c        |    7 +-
+ drivers/edac/i3000_edac.c      |   24 +-
+ drivers/edac/i3200_edac.c      |   24 +-
+ drivers/edac/i5000_edac.c      |   31 +-
+ drivers/edac/i5100_edac.c      |   46 ++--
+ drivers/edac/i5400_edac.c      |   38 +--
+ drivers/edac/i7300_edac.c      |   40 +--
+ drivers/edac/i7core_edac.c     |   40 +--
+ drivers/edac/i82443bxgx_edac.c |   15 +-
+ drivers/edac/i82860_edac.c     |   13 +-
+ drivers/edac/i82875p_edac.c    |   22 +-
+ drivers/edac/i82975x_edac.c    |   30 ++-
+ drivers/edac/mpc85xx_edac.c    |   16 +-
+ drivers/edac/mv64x60_edac.c    |   22 +-
+ drivers/edac/pasemi_edac.c     |   24 +-
+ drivers/edac/ppc4xx_edac.c     |   25 +-
+ drivers/edac/r82600_edac.c     |   13 +-
+ drivers/edac/sb_edac.c         |   37 +--
+ drivers/edac/tile_edac.c       |   17 +-
+ drivers/edac/x38_edac.c        |   24 +-
+ include/linux/edac.h           |  164 ++++++++--
+ 32 files changed, 1099 insertions(+), 712 deletions(-)
 
 -- 
-Felipe Contreras
+1.7.8
+
