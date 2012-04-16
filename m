@@ -1,47 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752047Ab2DPQJk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Apr 2012 12:09:40 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:45878 "EHLO ogre.sisk.pl"
+	id S1752028Ab2DPQL3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Apr 2012 12:11:29 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:37222 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751734Ab2DPQJj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Apr 2012 12:09:39 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Mikko Vinni <mmvinni@yahoo.com>
-Subject: Re: [linux-pm] "i8042: Can't reactivate AUX port" after s2ram on 3.4-rc2
-Date: Mon, 16 Apr 2012 18:14:12 +0200
-User-Agent: KMail/1.13.6 (Linux/3.4.0-rc2+; KDE/4.6.0; x86_64; ; )
-Cc: Bjorn Helgaas <bhelgaas@google.com>,
-        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Allen Kay <allen.m.kay@intel.com>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>
-References: <1334310754.17013.YahooMailNeo@web161804.mail.bf1.yahoo.com> <201204152030.23148.rjw@sisk.pl> <1334553341.70819.YahooMailNeo@web161806.mail.bf1.yahoo.com>
-In-Reply-To: <1334553341.70819.YahooMailNeo@web161806.mail.bf1.yahoo.com>
+	id S1751454Ab2DPQL1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Apr 2012 12:11:27 -0400
+Date: Mon, 16 Apr 2012 11:52:07 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Fengguang Wu <fengguang.wu@intel.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, ctalbott@google.com, rni@google.com,
+        andrea@betterlinux.com, containers@lists.linux-foundation.org,
+        linux-kernel@vger.kernel.org, lsf@lists.linux-foundation.org,
+        linux-mm@kvack.org, jmoyer@redhat.com, lizefan@huawei.com,
+        linux-fsdevel@vger.kernel.org, cgroups@vger.kernel.org
+Subject: Re: [Lsf] [RFC] writeback and cgroup
+Message-ID: <20120416155207.GB15437@redhat.com>
+References: <20120404145134.GC12676@redhat.com>
+ <20120407080027.GA2584@quack.suse.cz>
+ <20120410180653.GJ21801@redhat.com>
+ <20120410210505.GE4936@quack.suse.cz>
+ <20120410212041.GP21801@redhat.com>
+ <20120410222425.GF4936@quack.suse.cz>
+ <20120411154005.GD16692@redhat.com>
+ <1334406314.2528.90.camel@twins>
+ <20120416125432.GB12776@redhat.com>
+ <20120416130707.GA10532@localhost>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201204161814.12441.rjw@sisk.pl>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120416130707.GA10532@localhost>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday, April 16, 2012, Mikko Vinni wrote:
-> From: Rafael J. Wysocki
+On Mon, Apr 16, 2012 at 09:07:07PM +0800, Fengguang Wu wrote:
+
+[..]
+> Vivek, I noticed these lines in cfq code
 > 
-> >
-> > Do you still have the kernel where all PCI devices worked correctly after system
-> > resume?
+>                 sscanf(dev_name(bdi->dev), "%u:%u", &major, &minor);
 > 
-> If you are talking about https://bugzilla.kernel.org/show_bug.cgi?id=35452,
-> I am not aware of such a kernel. That bug has existed for as long as I have
-> cared to test.
+> Why not use bdi->dev->devt?  The problem is that dev_name() will
+> return "btrfs-X" for btrfs rather than "major:minor".
 
-OK, let's try to debug it a bit more in the Bugzilla entry.
+Isn't bdi->dev->devt 0?  I see following code.
 
-> Testing the patch v4 soon.
+add_disk()
+   bdi_register_dev()
+      bdi_register()
+         device_create_vargs(MKDEV(0,0))
+	      dev->devt = devt = MKDEV(0,0);
 
-Thanks!
+So for normal block devices, I think bdi->dev->devt will be zero, that's
+why probably we don't use it.
+
+Thanks
+Vivek
