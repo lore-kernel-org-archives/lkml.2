@@ -1,80 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753717Ab2DPMgG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Apr 2012 08:36:06 -0400
-Received: from e38.co.us.ibm.com ([32.97.110.159]:57350 "EHLO
-	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753343Ab2DPMgE (ORCPT
+	id S1753919Ab2DPMgT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Apr 2012 08:36:19 -0400
+Received: from e06smtp16.uk.ibm.com ([195.75.94.112]:34665 "EHLO
+	e06smtp16.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753792Ab2DPMgP convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Apr 2012 08:36:04 -0400
-Date: Mon, 16 Apr 2012 17:57:37 +0530
-From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-To: Arnaldo Carvalho de Melo <acme@infradead.org>
-Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
-        LKML <linux-kernel@vger.kernel.org>, Linux-mm <linux-mm@kvack.org>,
-        Oleg Nesterov <oleg@redhat.com>, Andi Kleen <andi@firstfloor.org>,
-        Christoph Hellwig <hch@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Anton Arapov <anton@redhat.com>
-Subject: Re: [PATCH] perf/probe: Provide perf interface for uprobes
-Message-ID: <20120416122737.GB25464@linux.vnet.ibm.com>
-Reply-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-References: <20120411135742.29198.45061.sendpatchset@srdronam.in.ibm.com>
- <20120411144918.GD16257@infradead.org>
- <20120411170343.GB29831@linux.vnet.ibm.com>
- <20120411181727.GK16257@infradead.org>
- <4F864BB3.3090405@hitachi.com>
- <20120412140751.GM16257@infradead.org>
- <20120412151037.GC21587@linux.vnet.ibm.com>
- <4F87C76B.10001@hitachi.com>
- <20120414011330.GC31880@infradead.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-In-Reply-To: <20120414011330.GC31880@infradead.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12041612-5518-0000-0000-000003B093AD
+	Mon, 16 Apr 2012 08:36:15 -0400
+Date: Mon, 16 Apr 2012 14:36:06 +0200
+From: Martin Schwidefsky <schwidefsky@de.ibm.com>
+To: Bas van der Oest <bassvdo@gmail.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: /proc/stat information incorrect
+Message-ID: <20120416143606.2ee7c571@de.ibm.com>
+In-Reply-To: <CABWpNyZkL8K3R=ObOvV9SGMVGTcs1R83H0LSWyXFrQ-Wwb5p+w@mail.gmail.com>
+References: <CABWpNyZkL8K3R=ObOvV9SGMVGTcs1R83H0LSWyXFrQ-Wwb5p+w@mail.gmail.com>
+Organization: IBM Corporation
+X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
+x-cbid: 12041612-3548-0000-0000-000001A1718C
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> 
-> > > Another case 
-> > > perf probe do_fork clone_flags now looks for variable clone_flags in
-> > > kernel function do_fork.
-> 
-> > > But if we allow to trace perf probe zsh zfree; then 
-> > > 'perf probe do_fork clone_flags' should it check for do_fork executable
-> > > or not? If it does check and finds one, and searches for clone_flags
-> > > function and doesnt find, then should it continue with searching the
-> > > kernel?
-> 
-> > Agree. I'd like to suggest you to start with only full path support,
-> > and see, how we can handle abbreviations :)
-> 
-> Agreed, I was just making usability suggestions.
-> 
-> Those can be implemented later, if we agree they ease the tool use.
-> 
+On Mon, 16 Apr 2012 10:04:48 +0200
+Bas van der Oest <bassvdo@gmail.com> wrote:
 
-I have just made a prototype for guessing the target when -m and -x
-options arent passed. That still uses the absolute path for now.
+> After dropping some zero columns and taking the difference between the
+> statistics the reformatted result is:
+>        user    nice    system  idle    iowait  irq     softirq sum
+> cpu     5       0       434     7676    0       0       53      8168
+> cpu0    0       0       0       1067    0       0       0       1067
+> cpu1    0       0       1       1070    0       0       0       1071
+> cpu2    0       0       0       1071    0       0       0       1071
+> cpu3    1       0       0       1070    0       0       0       1071
+> cpu4    1       0       94      974     0       0       0       1069
+> cpu5    2       0       92      535     0       0       52      681
+> cpu6    0       0       82      987     0       0       0       1069
+> cpu7    1       0       165     905     0       0       0       1071
+> 
+> I added a sum column which totals the time spent in the different
+> modes. The above table now shows how long each CPU was in what mode
+> for how long.
+> Now I am wondering how it is possible that CPU5 has spent much less
+> time than all the other CPUs. I expected that all CPUs spent around
+> the same time (10s). This time includes idle time so this is not
+> related to the difference in active/idle CPUs.
+> 
+> I know for a fact that this effect is related to which CPU is handling
+> my IRQs; this effect happens to all CPUs if I map the interrupts to
+> that particular CPU.
+> I looked up the scheduler's statistics handling in the kernel source
+> but was not able to find any cause for the above mentioned effect.
+> 
+> Can anyone reproduce this behaviour?
+> Does anyone know where/what might be the cause of this?
 
-I was trying to see if we can identify the module by the short name by
-using kernel_get_module_path(). However kernel_get_module_path() needs
-init_vmlinux() to be called before. Since init_vmlinux() cant be called
-more than once and init_vmlinux gets called later, I thought calling it
-here wasnt good option. Wanted to see if we could open /proc/modules
-and then match the module name.  But again, I wasnt sure how to handle
-offline modules.  
+Assuming that you are on a recent kernel (>= 3.2), could you please
+try to revoke git commit a25cac5198d4ff28 "proc: Consider NO_HZ when
+printing idle and iowait times" and try again ?
 
 -- 
-Thanks and Regards
-Srikar
+blue skies,
+   Martin.
+
+"Reality continues to ruin my life." - Calvin.
 
