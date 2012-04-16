@@ -1,66 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753460Ab2DPMK0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Apr 2012 08:10:26 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:47193 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753100Ab2DPMKZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Apr 2012 08:10:25 -0400
-Message-ID: <4F8C0C2F.7020306@suse.de>
-Date: Mon, 16 Apr 2012 14:10:23 +0200
-From: Hannes Reinecke <hare@suse.de>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.14) Gecko/20110221 SUSE/3.1.8 Thunderbird/3.1.8
-MIME-Version: 1.0
-To: Kay Sievers <kay@vrfy.org>
-Cc: Linux Kernel <linux-kernel@vger.kernel.org>,
-        Greg Kroah-Hartmann <gregkh@linuxfoundation.org>,
-        Stable Kernel <stable@kernel.org>
-Subject: Re: [PATCH] driver core: check 'start' argument in bus iterators
-References: <1334573285-24016-1-git-send-email-hare@suse.de> <CAPXgP11S6R4L-8tZ4cPY=MZfcvTBBHkUdTvt7FTKhvhVF6uKPQ@mail.gmail.com>
-In-Reply-To: <CAPXgP11S6R4L-8tZ4cPY=MZfcvTBBHkUdTvt7FTKhvhVF6uKPQ@mail.gmail.com>
-X-Enigmail-Version: 1.1.2
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+	id S1753540Ab2DPMLN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Apr 2012 08:11:13 -0400
+Received: from casper.infradead.org ([85.118.1.10]:56284 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753100Ab2DPMLM convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Apr 2012 08:11:12 -0400
+Message-ID: <1334578264.28150.39.camel@twins>
+Subject: Re: [PATCH 2/5] perf: generic intel uncore support
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: "Yan, Zheng" <zheng.z.yan@intel.com>
+Cc: mingo@elte.hu, andi@firstfloor.org, eranian@google.com,
+        linux-kernel@vger.kernel.org, ming.m.lin@intel.com
+Date: Mon, 16 Apr 2012 14:11:04 +0200
+In-Reply-To: <4F838370.2080305@intel.com>
+References: <1332916998-10628-1-git-send-email-zheng.z.yan@intel.com>
+	  <1332916998-10628-3-git-send-email-zheng.z.yan@intel.com>
+	  <1333163902.2960.63.camel@laptop>  <4F77C75B.4060105@intel.com>
+	  <1333404693.2960.82.camel@laptop>  <4F7AB4AC.1060108@intel.com>
+	 <1333463364.2960.100.camel@laptop> <4F838370.2080305@intel.com>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Mailer: Evolution 3.2.2- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/16/2012 01:51 PM, Kay Sievers wrote:
-> On Mon, Apr 16, 2012 at 12:48, Hannes Reinecke <hare@suse.de> wrote:
->> bus_for_each_dev() and bus_find_device() both take a 'start'
->> argument to start the iteration at a specific list entry.
->> However, this list entry might already been detached by
->> the time these functions are called.
->> So we need to check if the arguments are still valid.
+On Tue, 2012-04-10 at 08:48 +0800, Yan, Zheng wrote:
+> On 04/03/2012 10:29 PM, Peter Zijlstra wrote:
+> > On Tue, 2012-04-03 at 16:28 +0800, Yan, Zheng wrote:
+> >> On 04/03/2012 06:11 AM, Peter Zijlstra wrote:
+> >>> On Sun, 2012-04-01 at 11:11 +0800, Yan, Zheng wrote:
+> >>>>
+> >>>> Because using per-cpu allocation is inconvenience for PCI uncore device.
+> >>>
+> >>> What are those, where does one read about them and why?
+> >>>
+> >> PCI uncore device support was added by patch 4. If using per-cpu pointer,
+> >> we have to setup the per-cpu pointer after the PCI driver's probe function
+> >> recognizes the uncore device. It means we have to first add the PCI uncore
+> >> device to a list, then call a function on all cpus to scan the list, find
+> >> the right uncore device and setup the per-cpu pointer.
+> > 
+> > Yeah, I saw that, but it was all completely lacking in where one can
+> > find actual detail on that stuff. What parts of the SDM do I read? Is
+> > there anything other than the SDM, etc..
+> > 
+> The uncore performance monitoring guide:
 > 
->> +       if (start && !klist_node_attached(&start->p->knode_bus))
->> +               return -ENODEV;
->> +
->>        klist_iter_init_node(&bus->p->klist_devices, &i,
->>                             (start ? &start->p->knode_bus : NULL));
-> 
-> Shouldn't we do this check in klist_iter_init_node()?
-> After a kref_get(), and return -ENODEV from there if the node it as
-> asked to start is gone?
-> 
-Sure, if you prefer.
+> http://www.intel.com/content/dam/www/public/us/en/documents/design-guides/xeon-e5-2600-uncore-guide.pdf
 
-> This check otherwise still has the window between the check and the
-> use of it, only very unlikely to hit now, hasn't it?
-> 
-yeah, very.
-The iteration itself could take some time (locks etc), but the race
-between those two lines is really tiny.
-
-But yeah, for the sake of correctness, we should.
-
-I'll be sending an updated patch.
-
-Cheers,
-
-Hannes
--- 
-Dr. Hannes Reinecke		      zSeries & Storage
-hare@suse.de			      +49 911 74053 688
-SUSE LINUX Products GmbH, Maxfeldstr. 5, 90409 Nürnberg
-GF: J. Hawn, J. Guild, F. Imendörffer, HRB 16746 (AG Nürnberg)
+Thanks,.. ok so I don't see what the problem for PCI is. They're similar
+to the MSR based ones except the access is memory-io instead of MSR.
