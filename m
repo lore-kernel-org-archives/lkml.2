@@ -1,64 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754308Ab2DPN2w (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Apr 2012 09:28:52 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:27411 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753785Ab2DPN2v (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Apr 2012 09:28:51 -0400
-Date: Mon, 16 Apr 2012 16:28:41 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Jason Wang <jasowang@redhat.com>
-Cc: netdev@vger.kernel.org, xma@us.ibm.com, davem@davemloft.net,
-        linux-kernel@vger.kernel.org, ebiederm@xmission.com
-Subject: Re: [PATCH 5/6] vhost_net: fix use after free of vq->ubufs
-Message-ID: <20120416132841.GB13113@redhat.com>
-References: <20120416060749.14140.19433.stgit@intel-e5620-16-2.englab.nay.redhat.com>
- <20120416060825.14140.32069.stgit@intel-e5620-16-2.englab.nay.redhat.com>
+	id S1754391Ab2DPNbE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Apr 2012 09:31:04 -0400
+Received: from mx.logic.tuwien.ac.at ([128.130.175.19]:51266 "EHLO
+	mx.logic.tuwien.ac.at" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753368Ab2DPNbB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Apr 2012 09:31:01 -0400
+Date: Mon, 16 Apr 2012 22:30:57 +0900
+From: Norbert Preining <preining@logic.at>
+To: Takashi Iwai <tiwai@suse.de>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: Realtek codec eating up battery?
+Message-ID: <20120416133057.GA14223@gamma.logic.tuwien.ac.at>
+References: <20120415233813.GA10731@gamma.logic.tuwien.ac.at> <s5h62d0t7ct.wl%tiwai@suse.de>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120416060825.14140.32069.stgit@intel-e5620-16-2.englab.nay.redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <s5h62d0t7ct.wl%tiwai@suse.de>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 16, 2012 at 02:08:25PM +0800, Jason Wang wrote:
-> When zerocopy socket is used, ubufs pointer were used in handle_tx()
-> without any validation. This would cause NULL pointer deference after
-> it has been freed in vhost_net_set_backend(). Fix this by check the
-> pointer before using it.
-> 
-> Signed-off-by: Jason Wang <jasowang@redhat.com>
+Hi Iwai-san,
 
+On Mo, 16 Apr 2012, Takashi Iwai wrote:
+> There should be no kernel change for such a problem.
 
-OK so it's NULL dereference and not user after free :)
-Also could you clarify how does this happen pls?
-Don't we always initialize ubufs when vhost_sock_zcopy is set?
+Thanks.
 
-> ---
->  drivers/vhost/net.c |    7 ++++++-
->  1 files changed, 6 insertions(+), 1 deletions(-)
-> 
-> diff --git a/drivers/vhost/net.c b/drivers/vhost/net.c
-> index f0da2c3..29abd65 100644
-> --- a/drivers/vhost/net.c
-> +++ b/drivers/vhost/net.c
-> @@ -163,10 +163,15 @@ static void handle_tx(struct vhost_net *net)
->  	mutex_lock(&vq->mutex);
->  	vhost_disable_notify(&net->dev, vq);
->  
-> +	zcopy = vhost_sock_zcopy(sock);
-> +	if (zcopy && !vq->ubufs) {
-> +		mutex_unlock(&vq->mutex);
-> +		return;
-> +	}
-> +
->  	if (wmem < sock->sk->sk_sndbuf / 2)
->  		tx_poll_stop(net);
->  	hdr_size = vq->vhost_hlen;
-> -	zcopy = vhost_sock_zcopy(sock);
->  
->  	for (;;) {
->  		/* Release DMAs done buffers first */
+> Basically the above message means that no power-saving feature is
+> kicked off.
+
+Indeed, I now installed laptop-mode-tools and suddenly the 
+HDA disappeared from the list of power consumers ..
+
+I don't know *what* has changed in Debian/sid recently that this
+not-saving became the default, but it happened, because I regularly
+check with powertop and never saw the HDA before.
+
+Anyway, thanks, back to normal.
+
+Best wishes
+
+Norbert
+------------------------------------------------------------------------
+Norbert Preining            preining@{jaist.ac.jp, logic.at, debian.org}
+JAIST, Japan                                 TeX Live & Debian Developer
+DSA: 0x09C5B094   fp: 14DF 2E6C 0307 BE6D AD76  A9C0 D2BF 4AA3 09C5 B094
+------------------------------------------------------------------------
+You're very sure of your facts, " he said at last, "I
+couldn't trust the thinking of a man who takes the Universe
+- if there is one - for granted.
+                 --- Douglas Adams, The Hitchhikers Guide to the Galaxy
