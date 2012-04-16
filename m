@@ -1,65 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754280Ab2DPN2J (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Apr 2012 09:28:09 -0400
-Received: from mail2.unitix.de ([176.9.2.175]:40450 "EHLO mail2.unitix.de"
+	id S1754308Ab2DPN2w (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Apr 2012 09:28:52 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:27411 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753729Ab2DPN2I (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Apr 2012 09:28:08 -0400
-From: Arnd Hannemann <arnd@arndnet.de>
-To: dave@jikos.cz
-Cc: chris.mason@oracle.com, linux-btrfs@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Arnd Hannemann <arnd@arndnet.de>
-Subject: [PATCH v2] Btrfs: allow mount -o remount,compress=no
-Date: Mon, 16 Apr 2012 15:27:51 +0200
-Message-Id: <1334582871-3670-1-git-send-email-arnd@arndnet.de>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <20120406102232.GH14256@twin.jikos.cz>
-References: <20120406102232.GH14256@twin.jikos.cz>
+	id S1753785Ab2DPN2v (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Apr 2012 09:28:51 -0400
+Date: Mon, 16 Apr 2012 16:28:41 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Jason Wang <jasowang@redhat.com>
+Cc: netdev@vger.kernel.org, xma@us.ibm.com, davem@davemloft.net,
+        linux-kernel@vger.kernel.org, ebiederm@xmission.com
+Subject: Re: [PATCH 5/6] vhost_net: fix use after free of vq->ubufs
+Message-ID: <20120416132841.GB13113@redhat.com>
+References: <20120416060749.14140.19433.stgit@intel-e5620-16-2.englab.nay.redhat.com>
+ <20120416060825.14140.32069.stgit@intel-e5620-16-2.englab.nay.redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120416060825.14140.32069.stgit@intel-e5620-16-2.englab.nay.redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Btrfs allows to turn on compression on a mounted and used filesystem
-by issuing mount -o remount,compress=lzo.
-This patch allows to turn compression off again
-while the filesystem is mounted. As suggested by David Sterba
-if the compress-force option was set, it is implicitly cleared
-if compression is turned off.
+On Mon, Apr 16, 2012 at 02:08:25PM +0800, Jason Wang wrote:
+> When zerocopy socket is used, ubufs pointer were used in handle_tx()
+> without any validation. This would cause NULL pointer deference after
+> it has been freed in vhost_net_set_backend(). Fix this by check the
+> pointer before using it.
+> 
+> Signed-off-by: Jason Wang <jasowang@redhat.com>
 
-Signed-off-by: Arnd Hannemann <arnd@arndnet.de>
----
- fs/btrfs/super.c |    9 ++++++++-
- 1 file changed, 8 insertions(+), 1 deletion(-)
 
-diff --git a/fs/btrfs/super.c b/fs/btrfs/super.c
-index 8d5d380..79a2ca5 100644
---- a/fs/btrfs/super.c
-+++ b/fs/btrfs/super.c
-@@ -394,15 +394,22 @@ int btrfs_parse_options(struct btrfs_root *root, char *options)
- 			    strcmp(args[0].from, "zlib") == 0) {
- 				compress_type = "zlib";
- 				info->compress_type = BTRFS_COMPRESS_ZLIB;
-+				btrfs_set_opt(info->mount_opt, COMPRESS);
- 			} else if (strcmp(args[0].from, "lzo") == 0) {
- 				compress_type = "lzo";
- 				info->compress_type = BTRFS_COMPRESS_LZO;
-+				btrfs_set_opt(info->mount_opt, COMPRESS);
-+			} else if (strncmp(args[0].from, "no", 2) == 0) {
-+				compress_type = "no";
-+				info->compress_type = BTRFS_COMPRESS_NONE;
-+				btrfs_clear_opt(info->mount_opt, COMPRESS);
-+				btrfs_clear_opt(info->mount_opt, FORCE_COMPRESS);
-+				compress_force = false;
- 			} else {
- 				ret = -EINVAL;
- 				goto out;
- 			}
- 
--			btrfs_set_opt(info->mount_opt, COMPRESS);
- 			if (compress_force) {
- 				btrfs_set_opt(info->mount_opt, FORCE_COMPRESS);
- 				pr_info("btrfs: force %s compression\n",
--- 
-1.7.9.5
+OK so it's NULL dereference and not user after free :)
+Also could you clarify how does this happen pls?
+Don't we always initialize ubufs when vhost_sock_zcopy is set?
 
+> ---
+>  drivers/vhost/net.c |    7 ++++++-
+>  1 files changed, 6 insertions(+), 1 deletions(-)
+> 
+> diff --git a/drivers/vhost/net.c b/drivers/vhost/net.c
+> index f0da2c3..29abd65 100644
+> --- a/drivers/vhost/net.c
+> +++ b/drivers/vhost/net.c
+> @@ -163,10 +163,15 @@ static void handle_tx(struct vhost_net *net)
+>  	mutex_lock(&vq->mutex);
+>  	vhost_disable_notify(&net->dev, vq);
+>  
+> +	zcopy = vhost_sock_zcopy(sock);
+> +	if (zcopy && !vq->ubufs) {
+> +		mutex_unlock(&vq->mutex);
+> +		return;
+> +	}
+> +
+>  	if (wmem < sock->sk->sk_sndbuf / 2)
+>  		tx_poll_stop(net);
+>  	hdr_size = vq->vhost_hlen;
+> -	zcopy = vhost_sock_zcopy(sock);
+>  
+>  	for (;;) {
+>  		/* Release DMAs done buffers first */
