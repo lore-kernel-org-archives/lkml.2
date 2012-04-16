@@ -1,57 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755363Ab2DPTYx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Apr 2012 15:24:53 -0400
-Received: from masquerade.micron.com ([137.201.242.130]:42742 "EHLO
-	masquerade.micron.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754196Ab2DPTYv (ORCPT
+	id S1755380Ab2DPTZo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Apr 2012 15:25:44 -0400
+Received: from casper.infradead.org ([85.118.1.10]:35840 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752570Ab2DPTZn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Apr 2012 15:24:51 -0400
-Message-ID: <4F8C71FD.70204@micron.com>
-Date: Mon, 16 Apr 2012 12:24:45 -0700
-From: Asai Thambi S P <asamymuthupa@micron.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:11.0) Gecko/20120327 Thunderbird/11.0.1
+	Mon, 16 Apr 2012 15:25:43 -0400
+Message-ID: <4F8C7232.50404@kernel.dk>
+Date: Mon, 16 Apr 2012 21:25:38 +0200
+From: Jens Axboe <axboe@kernel.dk>
 MIME-Version: 1.0
-To: Jens Axboe <axboe@kernel.dk>
-CC: Dan Carpenter <dan.carpenter@oracle.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Sam Bradshaw <sbradshaw@micron.com>
-Subject: [PATCH] mtip32xx: release the semaphore on an error path
-Content-Type: text/plain; charset="ISO-8859-1"
+To: Jesper Juhl <jj@chaosbits.net>
+CC: linux-kernel@vger.kernel.org, Tejun Heo <tj@kernel.org>,
+        Danny Kukawka <danny.kukawka@bisect.de>
+Subject: Re: [PATCH] dac960: Remove unused variables from DAC960_CreateProcEntries()
+References: <alpine.LNX.2.00.1204162025430.21898@swampdragon.chaosbits.net>
+In-Reply-To: <alpine.LNX.2.00.1204162025430.21898@swampdragon.chaosbits.net>
+X-Enigmail-Version: 1.4
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-TM-AS-Product-Ver: SMEX-10.0.0.4152-6.800.1017-18844.001
-X-TM-AS-Result: No--7.201000-0.000000-31
-X-TM-AS-User-Approved-Sender: Yes
-X-TM-AS-User-Blocked-Sender: No
-X-MT-CheckInternalSenderRule: True
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Release the semaphore in an error path in mtip_hw_get_scatterlist(). This
-fixes the smatch warning inconsistent returns.
+On 2012-04-16 20:29, Jesper Juhl wrote:
+> The variables 'StatusProcEntry' and 'UserCommandProcEntry' are
+> assigned to once and then never used. This patch gets rid of the
+> variables.
+> 
+> While I was there I also fixed the indentation of the function to use
+> tabs rather than spaces for the lines that did not already do so.
 
-Reported-by: Dan Carpenter <dan.carpenter@oracle.com>
-Signed-off-by: Asai Thambi S P <asamymuthupa@micron.com>
----
- drivers/block/mtip32xx/mtip32xx.c |    4 +++-
- 1 files changed, 3 insertions(+), 1 deletions(-)
+Thanks, applied.
 
-diff --git a/drivers/block/mtip32xx/mtip32xx.c b/drivers/block/mtip32xx/mtip32xx.c
-index 00f9fc9..304000c 100644
---- a/drivers/block/mtip32xx/mtip32xx.c
-+++ b/drivers/block/mtip32xx/mtip32xx.c
-@@ -2510,8 +2510,10 @@ static struct scatterlist *mtip_hw_get_scatterlist(struct driver_data *dd,
- 		up(&dd->port->cmd_slot);
- 		return NULL;
- 	}
--	if (unlikely(*tag < 0))
-+	if (unlikely(*tag < 0)) {
-+		up(&dd->port->cmd_slot);
- 		return NULL;
-+	}
- 
- 	return dd->port->commands[*tag].sg;
- }
 -- 
-1.7.1
+Jens Axboe
+
