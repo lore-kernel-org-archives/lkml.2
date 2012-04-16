@@ -1,61 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754347Ab2DPN7l (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Apr 2012 09:59:41 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:38777 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753598Ab2DPN7k (ORCPT
+	id S1754225Ab2DPOCM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Apr 2012 10:02:12 -0400
+Received: from smtp101.prem.mail.ac4.yahoo.com ([76.13.13.40]:32132 "HELO
+	smtp101.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1753431Ab2DPOCL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Apr 2012 09:59:40 -0400
-Date: Mon, 16 Apr 2012 08:59:31 -0500
-From: Serge Hallyn <serge.hallyn@canonical.com>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Daniel Lezcano <daniel.lezcano@free.fr>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] pidns: reboot_pid_ns: use SEND_SIG_FORCED instead of
- force_sig()
-Message-ID: <20120416135931.GB4234@sergelap>
-References: <20120413004446.GA8376@redhat.com>
- <20120413182051.GA11149@sergelap>
- <20120413192455.GA24464@redhat.com>
+	Mon, 16 Apr 2012 10:02:11 -0400
+X-Yahoo-Newman-Property: ymail-3
+X-YMail-OSG: 57NhGGQVM1m__aGYVftDQO83Mc0AvMFcVSNCld.VKXSp3f4
+ MLLHGC4qdTmbXTVqN8jY_vGWhFIPAHTCjZDlpXh51q8IRfOYKOH6ranCcRtM
+ x8sd1uoC8dlX9CghSqKd8d0UuEgqWIICDcyoRSfA9czc_Epw5uAbPyBQ2D32
+ yuH8ct6wafZ.dSMb_Ilt0FRpt5vbEPvl_LbPN1U4GZ7dbvZybRpEpap2klRC
+ FW5n9_1DxzEyPfdJmD7aztxzRJYR.56STXsgQG9SeGyCKdSdBLC870OWzTk_
+ 7cuK2Urmso.olmh_F5aV_kcaDRyWPFDbSi5JSK3jAeaYkqgwKI_fSM2veOIC
+ VCRM93tSMv3X_2eEw9.tjYpvrMGD.VHF1dddWuO63EvfFMabQh8ihHI6itTI
+ _6zyWDliZciW9T.tbp4WqrKJHDURfL8ZED6EN
+X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
+Date: Mon, 16 Apr 2012 09:02:07 -0500 (CDT)
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@router.home
+To: Glauber Costa <glommer@parallels.com>
+cc: linux-mm@kvack.org, Suleiman Souhlal <suleiman@google.com>,
+        devel@openvz.org, linux-kernel@vger.kernel.org,
+        Pekka Enberg <penberg@cs.helsinki.fi>
+Subject: Re: [PATCH] slub: don't create a copy of the name string in
+ kmem_cache_create
+In-Reply-To: <1334351170-26672-1-git-send-email-glommer@parallels.com>
+Message-ID: <alpine.DEB.2.00.1204160900270.7795@router.home>
+References: <1334351170-26672-1-git-send-email-glommer@parallels.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120413192455.GA24464@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting Oleg Nesterov (oleg@redhat.com):
-> Hi Serge,
-> 
-> On 04/13, Serge Hallyn wrote:
-> >
-> > Quoting Oleg Nesterov (oleg@redhat.com):
-> > > cf3f8921 "pidns: add reboot_pid_ns() to handle the reboot syscall"
-> > > uses force_sig() to kill the SIGNAL_UNKILLABLE cinit, this was the
-> > > only choice.
-> > >
-> > > After 629d362b we can use SEND_SIG_FORCED instead, force_sig() has
-> > > the special semantics and should be avoided if possible.
-> > >
-> > > Signed-off-by: Oleg Nesterov <oleg@redhat.com>
-> >
-> > Hi Oleg,
-> >
-> > I like the patch in theory, however after applying it containers are
-> > no longer able to shutdown/reboot.  I can externally kill them with
-> > lxc-stop, but internal shutdown fails.
-> 
-> Oh, thanks a lot for testing.
-> 
-> Strange... I even tested this change, but only in the root namespace.
-> OK, thanks, I'll investigate. I hope you verified your kernel has
-> 629d362b commit ;)
+On Fri, 13 Apr 2012, Glauber Costa wrote:
 
-I took friday's HEAD of Linus tree.  All went fine.  Added this patch.
-The container can shutdown, but reboot causes shutdown.  Don't undersrtand
-why.
+> When creating a cache, slub keeps a copy of the cache name through
+> strdup. The slab however, doesn't do that. This means that everyone
+> registering caches have to keep a copy themselves anyway, since code
+> needs to work on all allocators.
+>
+> Having slab create a copy of it as well may very well be the right
+> thing to do: but at this point, the callers are already there
 
--serge
+What would break if we would add that to slab? I think this is more robust
+because right now slab relies on the caller not freeing the string.
