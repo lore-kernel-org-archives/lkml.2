@@ -1,70 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753824Ab2DPOiA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Apr 2012 10:38:00 -0400
-Received: from mga14.intel.com ([143.182.124.37]:9890 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753368Ab2DPOh7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Apr 2012 10:37:59 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="89575851"
-Date: Mon, 16 Apr 2012 16:46:23 +0200
-From: Samuel Ortiz <sameo@linux.intel.com>
-To: Peter Ujfalusi <peter.ujfalusi@ti.com>
-Cc: Tony Lindgren <tony@atomide.com>, Liam Girdwood <lrg@ti.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org,
-        alsa-devel@alsa-project.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH for 3.4] MFD: twl6040: Convert to i2c driver, and
- separate it from twl core
-Message-ID: <20120416144623.GD24130@sortiz-mobl>
-References: <1333443411-23056-1-git-send-email-peter.ujfalusi@ti.com>
+	id S1753806Ab2DPOih (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Apr 2012 10:38:37 -0400
+Received: from mailgw1.uni-kl.de ([131.246.120.220]:47449 "EHLO
+	mailgw1.uni-kl.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753787Ab2DPOie (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Apr 2012 10:38:34 -0400
+X-Greylist: delayed 885 seconds by postgrey-1.27 at vger.kernel.org; Mon, 16 Apr 2012 10:38:32 EDT
+Message-ID: <4F8C2B6A.1000203@itwm.fraunhofer.de>
+Date: Mon, 16 Apr 2012 16:23:38 +0200
+From: Bernd Schubert <bernd.schubert@itwm.fraunhofer.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120310 Thunderbird/11.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1333443411-23056-1-git-send-email-peter.ujfalusi@ti.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: "J. Bruce Fields" <bfields@fieldses.org>
+CC: Jeff Layton <jlayton@redhat.com>, Malahal Naineni <malahal@us.ibm.com>,
+        linux-nfs@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, pstaubach@exagrid.com, miklos@szeredi.hu,
+        viro@ZenIV.linux.org.uk, hch@infradead.org,
+        michael.brantley@deshaw.com, sven.breuner@itwm.fraunhofer.de
+Subject: Re: [PATCH RFC] vfs: make fstatat retry on ESTALE errors from getattr
+ call
+References: <1334316311-22331-1-git-send-email-jlayton@redhat.com> <20120413150518.GA1987@us.ibm.com> <20120413114236.0e557e01@tlielax.poochiereds.net> <4F8B1B7B.3040304@itwm.fraunhofer.de> <20120415192714.GA3842@fieldses.org>
+In-Reply-To: <20120415192714.GA3842@fieldses.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-ITWM-CharSet: ISO-8859-1
+X-ITWM-Scanned-By: mail2.itwm.fhg.de
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Peter,
+On 04/15/2012 09:27 PM, J. Bruce Fields wrote:
+> On Sun, Apr 15, 2012 at 09:03:23PM +0200, Bernd Schubert wrote:
+>> On 04/13/2012 05:42 PM, Jeff Layton wrote:
+>>> (note: please don't trim the CC list!)
+>>>
+>>> Indefinitely does make some sense (as Peter articulated in his original
+>>> set). It's possible you could race several times in a row, or a server
+>>> misconfiguration or something has happened and you have a transient
+>>> error that will eventually recover. His assertion was that any limit on
+>>> the number of retries is by definition wrong. For NFS, a fatal signal
+>>> ought to interrupt things as well, so retrying indefinitely has some
+>>> appeal there.
+>>>
+>>> OTOH, we do have to contend with filesystems that might return ESTALE
+>>> persistently for other reasons and that might not respond to signals.
+>>> Miklos pointed out that some FUSE fs' do this in his review of Peter's
+>>> set.
+>>>
+>>> As a purely defensive coding measure, limiting the number of retries to
+>>> something finite makes sense. If we're going to do that though, I'd
+>>> probably recommend that we set the number of retries be something
+>>> higher just so that this is more resilient in the face of multiple
+>>> races. Those other fs' might "spin" a bit in that case but it is an
+>>> error condition and IMO resiliency trumps performance -- at least in
+>>   this case.
+>>
+>> I am definitely voting against an infinite number of retries. I'm
+>> working on FhGFS, which supports distributed meta data servers. So when
+>> a file is moved around between directories, its file handle, which
+>> contains the meta-data target id might become invalid.  As NFSv3 is
+>> stateless we cannot inform the client about that and must return ESTALE
+>> then.
+>
+> Note we're not talking about retrying the operation that returned ESTALE
+> with the same filehandle--probably any server would return ESTALE again
+> in that case.
+>
+> We're talking about re-looking up the path (in the case where we're
+> implementing a system call that takes a path as an argument), and then
+> retrying the operation with the newly looked-up filehandle.
+>
 
-On Tue, Apr 03, 2012 at 11:56:51AM +0300, Peter Ujfalusi wrote:
-> Complete the separation of the twl6040 from the twl core since
-> it is a separate chip, not part of the twl6030 PMIC.
-> 
-> Make the needed Kconfig changes for the depending drivers at the same time to
-> avoid breaking the kernel build (vibra, ASoC components).
-> 
-> Signed-off-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
-> Reviewed-by: Mark Brown <broonie@opensource.wolfsonicro.com>
-> Acked-by: Tony Lindgren <tony@atomide.com>
-> Acked-by: Samuel Ortiz <sameo@linux.intel.com>
-> Acked-by: Dmitry Torokhov <dtor@mail.ru>
-> ---
-> 
-> Hi Samuel, Tony, Liam,
-> 
-> Due to some cross tree issues 3.4-rc1 have big regression in OMAP4 audio:
-> The twl6040 mfd driver (and codec, vibra) is no longer probe since the twl-core
-> now did not create the platform device for it. This means we do not have audio
-> working in rc1.
-> This patch meant to follow the twl-core change (to not probe the twll6040 as
-> platform device), but there were some glitch in the logistics so this patch is
-> not in 3.4-rc1.
-> 
-> I have forward ported it on top of 3.4-rc1, and you can also find the patch in:
-> git@gitorious.org:omap-audio/linux-audio.git peter/upstream/for-3.4-rc2
-> 
-> Can someone take this patch further to be included in 3.4-rc2?
-Applied to my for-linus branch. I'll send a pull request this week, so I
-expect it to make it to rc4.
+Oh, sorry my mistake. Somehow I missed that it is really _only_ about 
+path lookups and not already opened files.
 
-Cheers,
-Samuel.
-
--- 
-Intel Open Source Technology Centre
-http://oss.intel.com/
+Thanks,
+Bernd
