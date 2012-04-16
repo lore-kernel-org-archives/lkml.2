@@ -1,93 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755048Ab2DPPua (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Apr 2012 11:50:30 -0400
-Received: from acsinet15.oracle.com ([141.146.126.227]:46797 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753882Ab2DPPu2 (ORCPT
+	id S1755087Ab2DPPvG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Apr 2012 11:51:06 -0400
+Received: from e06smtp17.uk.ibm.com ([195.75.94.113]:55891 "EHLO
+	e06smtp17.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753812Ab2DPPvD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Apr 2012 11:50:28 -0400
-Date: Mon, 16 Apr 2012 11:44:29 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
-        Jeremy Fitzhardinge <jeremy@goop.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
-        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
-        Ingo Molnar <mingo@elte.hu>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        the arch/x86 maintainers <x86@kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, Avi Kivity <avi@redhat.com>,
-        Marcelo Tosatti <mtosatti@redhat.com>, KVM <kvm@vger.kernel.org>,
-        Andi Kleen <andi@firstfloor.org>,
-        Xen Devel <xen-devel@lists.xensource.com>,
-        Virtualization <virtualization@lists.linux-foundation.org>,
-        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
-        Stephan Diestelhorst <stephan.diestelhorst@amd.com>,
-        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
-        Attilio Rao <attilio.rao@citrix.com>
-Subject: Re: [PATCH RFC V6 0/11] Paravirtualized ticketlocks
-Message-ID: <20120416154429.GB4654@phenom.dumpdata.com>
-References: <20120321102041.473.61069.sendpatchset@codeblue.in.ibm.com>
- <4F7616F5.4070000@zytor.com>
- <alpine.LFD.2.02.1203302333560.2542@ionos>
- <20120331040745.GC14030@linux.vnet.ibm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120331040745.GC14030@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
-X-CT-RefId: str=0001.0A090208.4F8C3F95.00E5,ss=1,re=0.000,fgs=0
+	Mon, 16 Apr 2012 11:51:03 -0400
+Date: Mon, 16 Apr 2012 17:50:40 +0200
+From: Martin Schwidefsky <schwidefsky@de.ibm.com>
+To: Mel Gorman <mgorman@suse.de>
+Cc: Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Hugh Dickins <hughd@google.com>, Rik van Riel <riel@redhat.com>,
+        Linux-MM <linux-mm@kvack.org>, Linux-S390 <linux-s390@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC PATCH] s390: mm: rmap: Transfer storage key to struct page
+ under the page lock
+Message-ID: <20120416175040.0e33b37f@de.ibm.com>
+In-Reply-To: <20120416141423.GD2359@suse.de>
+References: <20120416141423.GD2359@suse.de>
+Organization: IBM Corporation
+X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+x-cbid: 12041615-0542-0000-0000-0000018E86F1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Mar 31, 2012 at 09:37:45AM +0530, Srivatsa Vaddagiri wrote:
-> * Thomas Gleixner <tglx@linutronix.de> [2012-03-31 00:07:58]:
-> 
-> > I know that Peter is going to go berserk on me, but if we are running
-> > a paravirt guest then it's simple to provide a mechanism which allows
-> > the host (aka hypervisor) to check that in the guest just by looking
-> > at some global state.
-> > 
-> > So if a guest exits due to an external event it's easy to inspect the
-> > state of that guest and avoid to schedule away when it was interrupted
-> > in a spinlock held section. That guest/host shared state needs to be
-> > modified to indicate the guest to invoke an exit when the last nested
-> > lock has been released.
-> 
-> I had attempted something like that long back:
-> 
-> http://lkml.org/lkml/2010/6/3/4
-> 
-> The issue is with ticketlocks though. VCPUs could go into a spin w/o
-> a lock being held by anybody. Say VCPUs 1-99 try to grab a lock in
-> that order (on a host with one cpu). VCPU1 wins (after VCPU0 releases it)
-> and releases the lock. VCPU1 is next eligible to take the lock. If 
-> that is not scheduled early enough by host, then remaining vcpus would keep 
-> spinning (even though lock is technically not held by anybody) w/o making 
-> forward progress.
-> 
-> In that situation, what we really need is for the guest to hint to host
-> scheduler to schedule VCPU1 early (via yield_to or something similar). 
-> 
-> The current pv-spinlock patches however does not track which vcpu is
-> spinning at what head of the ticketlock. I suppose we can consider 
-> that optimization in future and see how much benefit it provides (over
-> plain yield/sleep the way its done now).
+On Mon, 16 Apr 2012 15:14:23 +0100
+Mel Gorman <mgorman@suse.de> wrote:
 
-Right. I think Jeremy played around with this some time?
+> This patch is horribly ugly and there has to be a better way of doing
+> it. I'm looking for suggestions on what s390 can do here that is not
+> painful or broken. 
 > 
-> Do you see any issues if we take in what we have today and address the
-> finer-grained optimization as next step?
+> However, s390 needs a better way of guarding against
+> PageSwapCache pages being removed from the radix tree while set_page_dirty()
+> is being called. The patch would be marginally better if in the PageSwapCache
+> case we simply tried to lock once and in the contended case just fail to
+> propogate the storage key. I lack familiarity with the s390 architecture
+> to be certain if this is safe or not. Suggestions on a better fix?
 
-I think that is the proper course - these patches show
-that on baremetal we don't incur performance regressions and in
-virtualization case we benefit greatly. Since these are the basic
-building blocks of a kernel - taking it slow and just adding
-this set of patches for v3.5 is a good idea - and then building on top
-of that for further refinement.
+One though that crossed my mind is that maybe a better approach would be
+to move the page_test_and_clear_dirty check out of page_remove_rmap.
+What we need to look out for are code sequences of the form:
 
-> 
-> - vatsa 
+	if (pte_dirty(pte))
+		set_page_dirty(page);
+	...
+	page_remove_rmap(page);
+
+There are four of those as far as I can see: in try_to_unmap_one,
+try_to_unmap_cluster, zap_pte, and zap_pte_range.
+
+A valid implementation for s390 would be to test and clear the changed
+bit in the storage key for every of those pte_dirty() calls.
+
+	if (pte_dirty(pte) || page_test_and_clear_dirty(page))
+		set_page_dirty(page);
+	...
+	page_remove_rmap(page); /* w/o page_test_clear_dirty */
+
+Trouble is that the ISKE and SSKE instructions are very expensive, that
+is why we currently have the operation in page_remove_rmap after the
+map counter dropped to zero (which is wrong as we now have learned the
+hard way). The additional check for (!PageAnon || PageSwapCache) is
+just another variation of avoiding ISKE/SSKE.
+
+Thinking about a function like this:
+
+static inline int page_test_dirty_eco(struct page *page)
+{
+	if (page_mapcount(page) > 1)
+		return 0;
+	if (PageAnon(page) && !PageSwapCache(page))
+		return 0;
+	return page_test_and_clear_dirty(page);
+}
+
+and use it alongside the pte_dirty() check. The worry I have is the
+map counter. What guarantees us that the map counter is not decremented
+concurrently? Which is probably a problem with the current patch as
+well, checking atomic_add_negative(-1, &page->_mapcount) against zero
+works, doing (page_mapcount(page) == 1) followed by the decrement 
+can race. And we better not forget a dirty bit ..
+
+-- 
+blue skies,
+   Martin.
+
+"Reality continues to ruin my life." - Calvin.
+
