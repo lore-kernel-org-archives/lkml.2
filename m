@@ -1,57 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753037Ab2DPLSR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Apr 2012 07:18:17 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:47861 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752693Ab2DPLSQ (ORCPT
+	id S1753292Ab2DPLUi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Apr 2012 07:20:38 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:38043 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753005Ab2DPLUe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Apr 2012 07:18:16 -0400
-MIME-Version: 1.0
-In-Reply-To: <1334564854-6102-1-git-send-email-linus.walleij@stericsson.com>
-References: <1334564854-6102-1-git-send-email-linus.walleij@stericsson.com>
-Date: Mon, 16 Apr 2012 13:18:15 +0200
-Message-ID: <CACRpkdZuTJHQSFoLjjVjewtz6YR3gLmeGrP-RY+GfN1y1RzR_g@mail.gmail.com>
-Subject: Re: [PATCH 1/2] mfd/db5500-prcmu: delete DB5500 PRCMU support
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Linus Walleij <linus.walleij@stericsson.com>,
-        Samuel Ortiz <sameo@linux.intel.com>
-Cc: linux-kernel@vger.kernel.org,
-        Srinidhi Kasagar <srinidhi.kasagar@stericsson.com>,
-        Rabin Vincent <rabin.vincent@stericsson.com>,
-        Jonas Aberg <jonas.aberg@stericsson.com>,
-        Per Forlin <per.forlin@stericsson.com>,
-        Ulf Hansson <ulf.hansson@stericsson.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Mon, 16 Apr 2012 07:20:34 -0400
+From: Andy Whitcroft <apw@canonical.com>
+To: Jeff Garzik <jgarzik@pobox.com>, linux-ide@vger.kernel.org
+Cc: Andy Whitcroft <apw@canonical.com>, linux-kernel@vger.kernel.org,
+        "K. Y. Srinivasan" <kys@microsoft.com>,
+        Mike Sterling <Mike.Sterling@microsoft.com>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>
+Subject: [PATCH 2/2] UBUNTU: SAUCE: ata_piix: defer disks to the Hyper-V drivers by default
+Date: Mon, 16 Apr 2012 12:20:29 +0100
+Message-Id: <1334575229-7493-3-git-send-email-apw@canonical.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1334575229-7493-1-git-send-email-apw@canonical.com>
+References: <20120414170223.24f6ea31@pyramind.ukuu.org.uk>
+ <1334575229-7493-1-git-send-email-apw@canonical.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 16, 2012 at 10:27 AM, Linus Walleij
-<linus.walleij@stericsson.com> wrote:
+When we are hosted on a Microsoft Hyper-V hypervisor the guest disks
+are exposed both via the Hyper-V paravirtualised drivers and via an
+emulated SATA disk drive.  In this case we want to use the paravirtualised
+drivers if we can as they are much more efficient.  Note that the Hyper-V
+paravirtualised drivers only expose the virtual hard disk devices, the
+CDROM/DVD devices must still be enumerated.
 
-> From: Linus Walleij <linus.walleij@linaro.org>
->
-> This platform has been obsoleted and was only available inside of
-> ST-Ericsson, no users of this code are left in the world. This
-> deletes the core U5500 support entirely in the same manner as the
-> obsoleted U8500 silicon was previously deleted.
->
-> Cc: Srinidhi Kasagar <srinidhi.kasagar@stericsson.com>
-> Cc: Rabin Vincent <rabin.vincent@stericsson.com>
-> Cc: Jonas Aberg <jonas.aberg@stericsson.com>
-> Cc: Per Forlin <per.forlin@stericsson.com>
-> Cc: Ulf Hansson <ulf.hansson@stericsson.com>
-> Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
+Mark the host controller ATA_HOST_IGNORE_ATA to prevent enumeration of
+disk devices.
 
-BTW Sam, these have cross-dependencies on stuff happening in arch/arm/mach-ux500
-so if I can get ACKs for this it's better if I merge it through the
-AMR SoC tree.
+BugLink: http://bugs.launchpad.net/bugs/929545
+BugLink: http://bugs.launchpad.net/bugs/942316
+Signed-off-by: Andy Whitcroft <apw@canonical.com>
+---
+ drivers/ata/ata_piix.c |   38 ++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 38 insertions(+)
 
-HOWEVER: if you apply Axel Lin's patch reording all the KConfig entries, that
-will *not* work, we might have to merge this during the merge window in that
-case, so I want to know how to proceed here ... if the Kconfig patch is applied
-to the -rc:s or postponed, I can merge these two patches.
+diff --git a/drivers/ata/ata_piix.c b/drivers/ata/ata_piix.c
+index 68013f9..05e0ffa 100644
+--- a/drivers/ata/ata_piix.c
++++ b/drivers/ata/ata_piix.c
+@@ -1552,6 +1552,41 @@ static bool piix_broken_system_poweroff(struct pci_dev *pdev)
+ 	return false;
+ }
+ 
++static int prefer_ms_hyperv = 1;
++module_param(prefer_ms_hyperv, int, 0);
++
++static void piix_ignore_devices_quirk(struct ata_host *host)
++{
++	static const struct dmi_system_id ignore_devices[] = {
++		{
++			/* On Hyper-V hypervisors the disks are exposed on
++			 * both the emulated SATA controller and on the
++			 * paravirtualised drivers.  The CD/DVD devices
++			 * are only exposed on the emulated controller.
++			 * Request we * ignore ATA devices on this host.
++			 */
++			.ident = "Hyper-V Virtual Machine",
++			.matches = {
++				DMI_MATCH(DMI_SYS_VENDOR,
++						"Microsoft Corporation"),
++				DMI_MATCH(DMI_PRODUCT_NAME, "Virtual Machine"),
++			},
++			.driver_data = (void *)ATA_HOST_IGNORE_ATA,
++		},
++
++		{ }	/* terminate list */
++	};
++	const struct dmi_system_id *dmi = dmi_first_match(ignore_devices);
++
++	if (dmi) {
++		unsigned long flags = (unsigned long)dmi->driver_data;
++
++		host->flags |= flags;
++		dev_info(host->dev, "%s detected, device ignore set %08lx\n",
++			dmi->ident, flags);
++	}
++}
++
+ /**
+  *	piix_init_one - Register PIIX ATA PCI device with kernel services
+  *	@pdev: PCI device to register
+@@ -1667,6 +1702,9 @@ static int __devinit piix_init_one(struct pci_dev *pdev,
+ 	}
+ 	host->flags |= ATA_HOST_PARALLEL_SCAN;
+ 
++	/* Allow hosts to specify device types to ignore when scanning. */
++	piix_ignore_devices_quirk(host);
++
+ 	pci_set_master(pdev);
+ 	return ata_pci_sff_activate_host(host, ata_bmdma_interrupt, sht);
+ }
+-- 
+1.7.9.5
 
-Yours,
-Linus Walleij
