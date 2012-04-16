@@ -1,94 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751163Ab2DPFc2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Apr 2012 01:32:28 -0400
-Received: from mail-wi0-f170.google.com ([209.85.212.170]:36610 "EHLO
-	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750892Ab2DPFc0 (ORCPT
+	id S1751159Ab2DPFfH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Apr 2012 01:35:07 -0400
+Received: from mga05.intel.com ([192.55.52.89]:45773 "EHLO
+	fmsmga101.fm.intel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1750909Ab2DPFfF convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Apr 2012 01:32:26 -0400
-Date: Mon, 16 Apr 2012 07:32:20 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Felipe Contreras <felipe.contreras@gmail.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Greg KH <gregkh@linuxfoundation.org>, Sergio Correia <lists@uece.net>,
-        linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        linux-wireless Mailing List <linux-wireless@vger.kernel.org>,
-        Sujith Manoharan <c_manoha@qca.qualcomm.com>,
-        "ath9k-devel@lists.ath9k.org" <ath9k-devel@venema.h4ckr.net>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: Re: [ 00/78] 3.3.2-stable review
-Message-ID: <20120416053220.GA14338@gmail.com>
-References: <CA+55aFyLEJsz1yvu4bYe+RHdhLd-XXEScxtAgje=fyuUM+1XxA@mail.gmail.com>
- <CAMP44s0yPPqFUO4963MhNb8+c_A=xJi4-eFPJ3s+a1TJ8ZfTtQ@mail.gmail.com>
- <CA+55aFwaOGbD6S_7So34ZuANG-6fZXZhEah8G0X7McDGhionSg@mail.gmail.com>
- <CAMP44s06jrPBzf5Lt86-GDxD_PxqcaeJgmYS4tJhcvDdf=J5zA@mail.gmail.com>
- <20120414104733.GA4871@gmail.com>
- <CAMP44s0tBbgmunXTN9Jyw=HHnXFyvRY3qo5Vf-jXETUM4HEGWA@mail.gmail.com>
- <20120415065124.GC29563@gmail.com>
- <CAMP44s3mOsCGG5_gd6zTUeXewTFKeVEmAkt2FvM=wTm-5AEC+w@mail.gmail.com>
- <CA+55aFz8oepgj7W8W=d18qwQt3JUGgv+pCto-_2WS3WJ3ZKqzQ@mail.gmail.com>
- <CAMP44s2vx5cn_=tRD46SqAobRceLiZDfi9-zLUnv_g89wLxryQ@mail.gmail.com>
+	Mon, 16 Apr 2012 01:35:05 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAMP44s2vx5cn_=tRD46SqAobRceLiZDfi9-zLUnv_g89wLxryQ@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <alpine.LNX.2.00.1204142231540.15578@swampdragon.chaosbits.net>
+References: <alpine.LNX.2.00.1202062104440.20117@swampdragon.chaosbits.net>
+	<alpine.LNX.2.00.1203012232480.19443@swampdragon.chaosbits.net>
+	<CALLzPKbAGKL-o66UmWJ4uGSmA1TymdCQA0CfBajHLVYzt_60UA@mail.gmail.com>
+	<alpine.LNX.2.00.1204120030130.2137@swampdragon.chaosbits.net>
+	<CALLzPKY0Jd26gJTgcm5aXLZtzHJKqKVGXipBYtnzsisumnTR5A@mail.gmail.com>
+	<alpine.LRH.2.02.1204141048000.29204@tundra.namei.org>
+	<alpine.LNX.2.00.1204142231540.15578@swampdragon.chaosbits.net>
+Date: Mon, 16 Apr 2012 08:34:45 +0300
+Message-ID: <CALLzPKbgYA+A-9rro-8T4t6CHH3v12cBiyB8fQt9no5F2LVkXA@mail.gmail.com>
+Subject: Re: [PATCH] mpi: Avoid using freed pointer in mpi_lshift_limbs()
+From: "Kasatkin, Dmitry" <dmitry.kasatkin@intel.com>
+To: Jesper Juhl <jj@chaosbits.net>
+Cc: James Morris <jmorris@namei.org>, linux-kernel@vger.kernel.org,
+        "David S. Miller" <davem@davemloft.net>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Sat, Apr 14, 2012 at 11:32 PM, Jesper Juhl <jj@chaosbits.net> wrote:
+> On Sat, 14 Apr 2012, James Morris wrote:
+>
+>> On Thu, 12 Apr 2012, Kasatkin, Dmitry wrote:
+>>
+>> > >> >> Signed-off-by: Jesper Juhl <jj@chaosbits.net>
+>> > >> >> ---
+>> > >> >>  lib/mpi/mpi-bit.c |    5 +++--
+>> > >> >>  1 files changed, 3 insertions(+), 2 deletions(-)
+>> > >> >>
+>> > >> >>  only compile tested.
+>>
+>> > That is of course correct.
+>> >
+>> > James, can you please apply this patch to security fixes?
+>> >
+>> >  Acked-by: Dmitry Kasatkin <dmitry.kasatkin@intel.com>
+>> >
+>> > - Dmitry
+>>
+>> Has this patch been tested?
+>>
+> Personally I don't really have a way to test it properly, so the only
+> testing I've personally done is to check that it compiles.
+>
 
-* Felipe Contreras <felipe.contreras@gmail.com> wrote:
+It works...
+In fact there are few other places in the code which take pointer
+after re-sizing...
 
-> On Sun, Apr 15, 2012 at 8:49 PM, Linus Torvalds
-> <torvalds@linux-foundation.org> wrote:
-> > On Sun, Apr 15, 2012 at 10:15 AM, Felipe Contreras
-> > <felipe.contreras@gmail.com> wrote:
-> >>
-> >> This is not a reason, this is just stating what happens without
-> >> explaining *why*.
-> >>
-> >> Q: What changes when a tag is made?
-> >> A: A tag is made
-> 
-> [...]
-> 
-> > The only thing that matters is "it's been made available to others".
-> 
-> Exactly! Now *this* is a reason. [...]
+- Dmitry
 
-Erm, many people referred to that in this discussion explicitly 
-and implicitly - beyond its well-known technical meaning it's 
-also the English meaning of the word 'release':
-
-   http://www.merriam-webster.com/dictionary/releasing
-
-  : [...] to make available to the public [...]
-
-So stop pretending that this is somehow the mistake of *others* 
-explaining it to you wrong ...
-
-Just admit it already that you were trivially and dead wrong all 
-along, and that you were pretty difficult and obnoxious about 
-handling a discussion that went against you.
-
-Being wrong is normal and it happens all the time - and a big 
-part of the picture is how you handle such situations, to not 
-try to wriggle out of the responsibility of being wrong and to 
-not waste other people's time with such self-gratifying mental 
-obfuscation.
-
-Such as:
-
-> I'm not going to argue the semantics of what is a revert, 
-> [...]
-
-You should not argue about the semantics about a revert not 
-because somehow it's not important (it is), but because you've 
-been wrong about this issue too. You should learn and improve.
-
-Thanks,
-
-	Ingo
+> --
+> Jesper Juhl <jj@chaosbits.net>       http://www.chaosbits.net/
+> Don't top-post http://www.catb.org/jargon/html/T/top-post.html
+> Plain text mails only, please.
