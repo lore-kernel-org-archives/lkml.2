@@ -1,76 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754554Ab2DPTuM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Apr 2012 15:50:12 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:40308 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752861Ab2DPTuK convert rfc822-to-8bit (ORCPT
+	id S1754680Ab2DPTv1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Apr 2012 15:51:27 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:37993 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754515Ab2DPTvZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Apr 2012 15:50:10 -0400
+	Mon, 16 Apr 2012 15:51:25 -0400
+Message-ID: <4F8C7839.6060104@flameeyes.eu>
+Date: Mon, 16 Apr 2012 12:51:21 -0700
+From: =?UTF-8?B?RGllZ28gRWxpbyBQZXR0ZW7Dsg==?= <flameeyes@flameeyes.eu>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120412 Thunderbird/11.0.1
 MIME-Version: 1.0
-In-Reply-To: <4F8C7574.5070109@landley.net>
-References: <1334200474-28574-1-git-send-email-marcos.souza.org@gmail.com>
-	<4F8C7574.5070109@landley.net>
-Date: Mon, 16 Apr 2012 16:50:09 -0300
-Message-ID: <CAH0vN5JR2wDpj1zixBtcWVL3qiN575G66CKb1yRkOoJtOkYK3Q@mail.gmail.com>
-Subject: Re: [PATCH] Documentation/initrd.txt: Change the location of util-linux
-From: Marcos Souza <marcos.souza.org@gmail.com>
-To: Rob Landley <rob@landley.net>
-Cc: rdunlap@xenotime.net, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+To: Grant Likely <grant.likely@secretlab.ca>,
+        guillaume ligneul <guillaume.ligneul@oselis.com>,
+        Linus Walleij <linus.walleij@stericsson.com>,
+        Guenter Roeck <guenter.roeck@ericsson.com>,
+        Jean Delvare <khali@linux-fr.org>, Wim Van Sebroeck <wim@iguana.be>,
+        Denis Turischev <denis@compulab.co.il>
+CC: linux-kernel@vger.kernel.org, linux-watchdog@vger.kernel.org
+Subject: [RFC] IT87xx GPIO and other drivers
+X-Enigmail-Version: 1.4
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em 16 de abril de 2012 16:39, Rob Landley <rob@landley.net> escreveu:
->
-> On 04/11/2012 10:14 PM, Marcos Paulo de Souza wrote:
-> > The address of util-linux seems deprecated. The new util-linux location is
-> > in the kernel.org. So, change this for the correct address.
-> >
-> > Signed-off-by: Marcos Paulo de Souza <marcos.souza.org@gmail.com>
-> > ---
-> >  Documentation/initrd.txt |    4 ++--
-> >  1 files changed, 2 insertions(+), 2 deletions(-)
-> >
-> > diff --git a/Documentation/initrd.txt b/Documentation/initrd.txt
-> > index 1ba84f3..3d8bc62 100644
-> > --- a/Documentation/initrd.txt
-> > +++ b/Documentation/initrd.txt
-> > @@ -362,5 +362,5 @@ Resources
-> >      http://www.almesberger.net/cv/papers/ols2k-9.ps.gz
-> >  [2] newlib package (experimental), with initrd example
-> >      http://sources.redhat.com/newlib/
-> > -[3] Brouwer, Andries; "util-linux: Miscellaneous utilities for Linux"
-> > -    ftp://ftp.win.tue.nl/pub/linux-local/utils/util-linux/
-> > +[3] util-linux: Miscellaneous utilities for Linux
-> > +    http://www.kernel.org/pub/linux/utils/util-linux/
->
-> Signed-off-by Rob Landley <rob@landley.net>
->
-> I'm tracking this and will put it in the stack I forward to Jiri this
-> evening.
->
+Hi all, sorry if I'm mailing lots of you at once, but I'm afraid I got
+my hands on a can of worms right now...
 
-Thanks for this Rob!
+As some of you remember I've been working on a driver for supporting the
+GPIO functions of the IT8728F Super I/O chip, as well as making the WDT
+driver to work on this chip.
 
->
-> Thanks,
->
-> Rob
-> --
-> GNU/Linux isn't: Linux=GPLv2, GNU=GPLv3+, they can't share code.
-> Either it's "mere aggregation", or a license violation.  Pick one.
+After trying to make a bit of sense of it all, I'm concerned that the
+only _correct_ way to handle this would be to ahve a set of drivers that
+work together, rather than a number of drivers that all do their own
+part. Currently we have:
 
+ - hwmon/it87 which supports most it87xx chips;
+ - it87_wdt for most it87xx chips (including it8712);
+ - it8712f_wdt which supports the "Smart Guardian" watchdog;
+ - gpio_it8761e for that single IT87xx gpio;
+ - my gpio_it87 driver that works with it8728f and should work with
+it8761e (for what I can tell from the other driver), and Guillaume has
+code for IT8712 as well (which variant?).
 
+What issues are there with this situation?
 
+All these drivers use to some extent the Super I/O addresses (0x2e/0x2f)
+to read and write to its registers, including detection code which is
+replicated for each of them. The functions to read and write superio
+registers is also duplicate.
 
---
-Att,
+Only some of these drivers (namely gpio-it8761e for what I can tell)
+support checking both 0x2e/0x2f and 0x4e/0x4f, which is an alternative
+addressing for the superio register handling.
 
-Marcos Paulo de Souza
-Acadêmico de Ciencia da Computação - FURB - SC
-"Uma vida sem desafios é uma vida sem razão"
-"A life without challenges, is a non reason life"
+The GPIO pins on most of the it87xx chips are also multi-function, and
+_should not_ be user-visible, but for some of them it might make sense
+to (for instance it should be possible to drive some of the LEDs on
+it8728f-based motherboards by replacing the functions of some PINs to GPIO).
+
+For what I can tell, it should probably be a good idea to have something
+along these lines, but I'm _not_ a driver expert:
+
+ - mfd-it87xx: a platform driver, which probes the superio to check it
+to be an it87xx chip, and then reserve resources for the other drivers;
+ - hwmon/it87: no longer probes autonomously for which chip it is, and
+where it is;
+ - it87_wdt: ibidem;
+ - it8712_wdt: no clue about it, but I guess the same;
+ - gpio-it87: ibidem again;
+ - pinctrl-it87: abstracts support for the various pin-choice registers;
+ - led-it87: possibly to drive the power/network/hdd leds, akin to what
+happens with some laptops, and embedded systems.
+
+Does a plan like this make sense? Denis have you still access to an
+it8761e board?
+
+-- 
+Diego Elio PettenÃ² â€” Flameeyes
+flameeyes@flameeyes.eu â€” http://blog.flameeyes.eu/
