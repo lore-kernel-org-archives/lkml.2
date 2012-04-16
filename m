@@ -1,188 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753319Ab2DPKqf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Apr 2012 06:46:35 -0400
-Received: from e28smtp03.in.ibm.com ([122.248.162.3]:45551 "EHLO
-	e28smtp03.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753159Ab2DPKpR (ORCPT
+	id S1753412Ab2DPKq5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Apr 2012 06:46:57 -0400
+Received: from newsmtp5.atmel.com ([204.2.163.5]:45336 "EHLO
+	sjogate2.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753177Ab2DPKqz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Apr 2012 06:45:17 -0400
-From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-To: linux-mm@kvack.org, mgorman@suse.de, kamezawa.hiroyu@jp.fujitsu.com,
-        dhillf@gmail.com, aarcange@redhat.com, mhocko@suse.cz,
-        akpm@linux-foundation.org, hannes@cmpxchg.org
-Cc: linux-kernel@vger.kernel.org, cgroups@vger.kernel.org,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-Subject: [PATCH -V6 06/14] hugetlb: Simplify migrate_huge_page
-Date: Mon, 16 Apr 2012 16:14:43 +0530
-Message-Id: <1334573091-18602-7-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+	Mon, 16 Apr 2012 06:46:55 -0400
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
+To: linux-arm-kernel@lists.infradead.org, arnd@arndb.de, olof@lixom.net
+Cc: plagnioj@jcrosoft.com, ludovic.desroches@atmel.com,
+        linux-kernel@vger.kernel.org, Nicolas Ferre <nicolas.ferre@atmel.com>
+Subject: [PATCH 13/13] dmaengine: Kconfig: fix Atmel at_hdmac entry
+Date: Mon, 16 Apr 2012 12:46:30 +0200
+Message-Id: <1334573190-14931-1-git-send-email-nicolas.ferre@atmel.com>
 X-Mailer: git-send-email 1.7.10
-In-Reply-To: <1334573091-18602-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
-References: <1334573091-18602-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
-x-cbid: 12041610-3864-0000-0000-0000024866FE
+In-Reply-To: <cover.1334567594.git.nicolas.ferre@atmel.com>
+References: <cover.1334567594.git.nicolas.ferre@atmel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+Remove SoC dependency and make it generic for every Atmel ARM AT91. That will
+allow to select this driver for newer chips. Keep dependency on AT91 because of
+the use of an header file located in include/mach directory.
+Modify the comment to reflect this.
 
-Since we migrate only one hugepage don't use linked list for passing
-the page around. Directly pass page that need to be migrated as argument.
-This also remove the usage page->lru in migrate path.
-
-Signed-off-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
+Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+Acked-by: Vinod Koul <vinod.koul@linux.intel.com>
 ---
- include/linux/migrate.h |    4 +--
- mm/memory-failure.c     |   13 ++--------
- mm/migrate.c            |   65 +++++++++++++++--------------------------------
- 3 files changed, 25 insertions(+), 57 deletions(-)
+I keep this Kconfig modification in this "fixes" series. The DMA
+driver will not be available for 9x5 SoC family otherwise.
 
-diff --git a/include/linux/migrate.h b/include/linux/migrate.h
-index 855c337..ce7e667 100644
---- a/include/linux/migrate.h
-+++ b/include/linux/migrate.h
-@@ -15,7 +15,7 @@ extern int migrate_page(struct address_space *,
- extern int migrate_pages(struct list_head *l, new_page_t x,
- 			unsigned long private, bool offlining,
- 			enum migrate_mode mode);
--extern int migrate_huge_pages(struct list_head *l, new_page_t x,
-+extern int migrate_huge_page(struct page *, new_page_t x,
- 			unsigned long private, bool offlining,
- 			enum migrate_mode mode);
+ drivers/dma/Kconfig |    5 ++---
+ 1 file changed, 2 insertions(+), 3 deletions(-)
+
+diff --git a/drivers/dma/Kconfig b/drivers/dma/Kconfig
+index cf9da36..ef378b5 100644
+--- a/drivers/dma/Kconfig
++++ b/drivers/dma/Kconfig
+@@ -91,11 +91,10 @@ config DW_DMAC
  
-@@ -36,7 +36,7 @@ static inline void putback_lru_pages(struct list_head *l) {}
- static inline int migrate_pages(struct list_head *l, new_page_t x,
- 		unsigned long private, bool offlining,
- 		enum migrate_mode mode) { return -ENOSYS; }
--static inline int migrate_huge_pages(struct list_head *l, new_page_t x,
-+static inline int migrate_huge_page(struct page *page, new_page_t x,
- 		unsigned long private, bool offlining,
- 		enum migrate_mode mode) { return -ENOSYS; }
+ config AT_HDMAC
+ 	tristate "Atmel AHB DMA support"
+-	depends on ARCH_AT91SAM9RL || ARCH_AT91SAM9G45
++	depends on ARCH_AT91
+ 	select DMA_ENGINE
+ 	help
+-	  Support the Atmel AHB DMA controller.  This can be integrated in
+-	  chips such as the Atmel AT91SAM9RL.
++	  Support the Atmel AHB DMA controller.
  
-diff --git a/mm/memory-failure.c b/mm/memory-failure.c
-index 97cc273..1f092db 100644
---- a/mm/memory-failure.c
-+++ b/mm/memory-failure.c
-@@ -1414,7 +1414,6 @@ static int soft_offline_huge_page(struct page *page, int flags)
- 	int ret;
- 	unsigned long pfn = page_to_pfn(page);
- 	struct page *hpage = compound_head(page);
--	LIST_HEAD(pagelist);
- 
- 	ret = get_any_page(page, pfn, flags);
- 	if (ret < 0)
-@@ -1429,19 +1428,11 @@ static int soft_offline_huge_page(struct page *page, int flags)
- 	}
- 
- 	/* Keep page count to indicate a given hugepage is isolated. */
--
--	list_add(&hpage->lru, &pagelist);
--	ret = migrate_huge_pages(&pagelist, new_page, MPOL_MF_MOVE_ALL, 0,
--				true);
-+	ret = migrate_huge_page(page, new_page, MPOL_MF_MOVE_ALL, 0, true);
-+	put_page(page);
- 	if (ret) {
--		struct page *page1, *page2;
--		list_for_each_entry_safe(page1, page2, &pagelist, lru)
--			put_page(page1);
--
- 		pr_info("soft offline: %#lx: migration failed %d, type %lx\n",
- 			pfn, ret, page->flags);
--		if (ret > 0)
--			ret = -EIO;
- 		return ret;
- 	}
- done:
-diff --git a/mm/migrate.c b/mm/migrate.c
-index 51c08a0..d7eb82d 100644
---- a/mm/migrate.c
-+++ b/mm/migrate.c
-@@ -929,15 +929,8 @@ static int unmap_and_move_huge_page(new_page_t get_new_page,
- 	if (anon_vma)
- 		put_anon_vma(anon_vma);
- 	unlock_page(hpage);
--
- out:
--	if (rc != -EAGAIN) {
--		list_del(&hpage->lru);
--		put_page(hpage);
--	}
--
- 	put_page(new_hpage);
--
- 	if (result) {
- 		if (rc)
- 			*result = rc;
-@@ -1013,48 +1006,32 @@ out:
- 	return nr_failed + retry;
- }
- 
--int migrate_huge_pages(struct list_head *from,
--		new_page_t get_new_page, unsigned long private, bool offlining,
--		enum migrate_mode mode)
-+int migrate_huge_page(struct page *hpage, new_page_t get_new_page,
-+		      unsigned long private, bool offlining,
-+		      enum migrate_mode mode)
- {
--	int retry = 1;
--	int nr_failed = 0;
--	int pass = 0;
--	struct page *page;
--	struct page *page2;
--	int rc;
--
--	for (pass = 0; pass < 10 && retry; pass++) {
--		retry = 0;
--
--		list_for_each_entry_safe(page, page2, from, lru) {
-+	int pass, rc;
-+
-+	for (pass = 0; pass < 10; pass++) {
-+		rc = unmap_and_move_huge_page(get_new_page,
-+					      private, hpage, pass > 2, offlining,
-+					      mode);
-+		switch (rc) {
-+		case -ENOMEM:
-+			goto out;
-+		case -EAGAIN:
-+			/* try again */
- 			cond_resched();
--
--			rc = unmap_and_move_huge_page(get_new_page,
--					private, page, pass > 2, offlining,
--					mode);
--
--			switch(rc) {
--			case -ENOMEM:
--				goto out;
--			case -EAGAIN:
--				retry++;
--				break;
--			case 0:
--				break;
--			default:
--				/* Permanent failure */
--				nr_failed++;
--				break;
--			}
-+			break;
-+		case 0:
-+			goto out;
-+		default:
-+			rc = -EIO;
-+			goto out;
- 		}
- 	}
--	rc = 0;
- out:
--	if (rc)
--		return rc;
--
--	return nr_failed + retry;
-+	return rc;
- }
- 
- #ifdef CONFIG_NUMA
+ config FSL_DMA
+ 	tristate "Freescale Elo and Elo Plus DMA support"
 -- 
 1.7.10
 
