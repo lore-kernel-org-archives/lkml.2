@@ -1,178 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754556Ab2DPQYL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Apr 2012 12:24:11 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:39938 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752828Ab2DPQYK (ORCPT
+	id S1753639Ab2DPQ1S (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Apr 2012 12:27:18 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:56622 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752498Ab2DPQ1P (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Apr 2012 12:24:10 -0400
-Date: Mon, 16 Apr 2012 11:24:02 -0500
-From: Serge Hallyn <serge.hallyn@canonical.com>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Daniel Lezcano <daniel.lezcano@free.fr>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] pidns: reboot_pid_ns: use SEND_SIG_FORCED instead of
- force_sig()
-Message-ID: <20120416162402.GA7995@sergelap>
-References: <20120413004446.GA8376@redhat.com>
- <20120413182051.GA11149@sergelap>
- <20120413192455.GA24464@redhat.com>
- <20120416135931.GB4234@sergelap>
- <20120416153843.GA9302@redhat.com>
+	Mon, 16 Apr 2012 12:27:15 -0400
+Date: Mon, 16 Apr 2012 09:27:10 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Felipe Contreras <felipe.contreras@gmail.com>
+Cc: Stefan Richter <stefanr@s5r6.in-berlin.de>,
+        "ath9k-devel@lists.ath9k.org" <ath9k-devel@venema.h4ckr.net>,
+        linux-wireless Mailing List <linux-wireless@vger.kernel.org>,
+        linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        "John W. Linville" <linville@tuxdriver.com>, akpm@linux-foundation.org,
+        torvalds@linux-foundation.org, alan@lxorguk.ukuu.org.uk
+Subject: Re: [ath9k-devel] [ 00/78] 3.3.2-stable review
+Message-ID: <20120416162710.GA24100@kroah.com>
+References: <20120412011313.GA23764@kroah.com>
+ <CAMP44s2q+bQE3-zsX4bs=sQDt4jf8eE5bwZ8V88UjodjRyAjog@mail.gmail.com>
+ <20120412144626.GA14868@kroah.com>
+ <CAMP44s1T4EVwpzDuV_vV0Zh-5WcPCwdw9eeOfL17Geqp_UFN-Q@mail.gmail.com>
+ <CAJ-VmonhwvnXPKa=LNOR4W0ZTXZqWmzw4UrsKLoE0YN_Bu0FzQ@mail.gmail.com>
+ <CAMP44s2JPvhEB6Eb049Z_bToAFncHKMEheuyaxyhC=bnh2GJVg@mail.gmail.com>
+ <20120413105746.10ffb120@stein>
+ <CAMP44s0RohH9tPiM5qCDT57XBV=iO66PZkSjYVxA6Usg1qJPtw@mail.gmail.com>
+ <20120413190819.9469.qmail@stuge.se>
+ <CAMP44s02v_OhviaF12Y8LWBJygyVLZk00d3P69GVvKAeJwjiuw@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120416153843.GA9302@redhat.com>
+In-Reply-To: <CAMP44s02v_OhviaF12Y8LWBJygyVLZk00d3P69GVvKAeJwjiuw@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting Oleg Nesterov (oleg@redhat.com):
-> On 04/16, Serge Hallyn wrote:
-> >
-> > Quoting Oleg Nesterov (oleg@redhat.com):
-> > >
-> > > Strange... I even tested this change, but only in the root namespace.
-> > > OK, thanks, I'll investigate. I hope you verified your kernel has
-> > > 629d362b commit ;)
-> >
-> > I took friday's HEAD of Linus tree.  All went fine.  Added this patch.
-> > The container can shutdown, but reboot causes shutdown.  Don't undersrtand
-> > why.
-> 
-> Heh. This looks "impossible". I'd like to understand the reason.
-> So, LINUX_REBOOT_CMD_RESTART results in WIFSIGNALED() == SIGINT?
-> 
-> OK, I'll try to test this patch in the non-root namespace.
+Just one minor correction in this looney email thread:
 
-Playing with the test case below (based on the one Daniel submitted
-alongside his container reboot patches), it looks like
-WIFSIGNALED(status) and WTERMSIG(status) are 0 with this kernel, not
-1 and sig.
+On Sat, Apr 14, 2012 at 01:53:22AM +0300, Felipe Contreras wrote:
+> v3.3.x on the other hand are *not* stable. They contain patches
+> backported from v3.4, but nobody guarantees they will work. There was
+> no v3.3.1-rc1, so the first time the patches compromising v3.3.1 were
+> generally tested together is in v3.3.1, at which point if somebody
+> finds issues, it's too late; bad patches are *not* going to be removed
+> in v3.3.2.
 
--serge
+Of course there was a 3.3.1-rc1, see the linux-kernel archives for the
+announcemen and the individual patches.  kernel.org has the large patch
+itself if you like that format instead.
 
-#include <alloca.h>
-#include <stdio.h>
-#include <sched.h>
-#include <unistd.h>
-#include <signal.h>
-#include <sys/reboot.h>
-#include <sys/types.h>
-#include <sys/wait.h>
-
-#include <linux/sched.h>
-#include <linux/reboot.h>
-
-static int do_reboot(void *arg)
-{
-        int *cmd = arg;
-
-        if (reboot(*cmd))
-                printf("failed to reboot(%d): %m\n", *cmd);
-}
-
-int test_reboot(int cmd, int sig)
-{
-        long stack_size = 4096;
-        void *stack = alloca(stack_size) + stack_size;
-        int status;
-        pid_t ret;
-
-        ret = clone(do_reboot, stack, CLONE_NEWPID | SIGCHLD, &cmd);
-        if (ret < 0) {
-                printf("failed to clone: %m\n");
-                return -1;
-        }
-
-        if (wait(&status) < 0) {
-                printf("unexpected wait error: %m\n");
-                return -1;
-        }
-
-	printf("WIFSIGNALED is %d\n", WIFSIGNALED(status));
-
-	printf("signal termination is %d, expected %d)\n", WTERMSIG(status), sig);
-
-        if (!WIFSIGNALED(status)) {
-		if (sig != -1)
-			printf("child process exited but was not signaled\n");
-                return -1;
-        }
-
-        if (WTERMSIG(status) != sig) {
-                printf("signal termination is not the one expected\n");
-                return -1;
-        }
-
-        return 0;
-}
-
-static int have_reboot_patch(void)
-{
-	FILE *f = fopen("/proc/sys/kernel/ctrl-alt-del", "r");
-	int ret;
-	int v;
-
-	if (!f)
-		return 0;
-
-	ret = fscanf(f, "%d", &v);
-	fclose(f);
-	if (ret != 1)
-		return 0;
-	ret = reboot(v ? LINUX_REBOOT_CMD_CAD_ON : LINUX_REBOOT_CMD_CAD_OFF);
-	if (ret != -1)
-		return 0;
-	return 1;
-}
-
-int main(int argc, char *argv[])
-{
-        int status;
-
-	if (getuid() != 0) {
-                printf("Must run as root.\n");
-                return 1;
-	}
-
-	status = have_reboot_patch();
-	if (status != 0) {
-                printf("Your kernel does not have the container reboot patch\n");
-                return 1;
-	}
-
-#if 0
-        status = test_reboot(LINUX_REBOOT_CMD_CAD_ON, -1);
-        if (status >= 0) {
-                printf("reboot(LINUX_REBOOT_CMD_CAD_ON) should have failed\n");
-                return 1;
-        }
-        printf("reboot(LINUX_REBOOT_CMD_CAD_ON) has failed as expected\n");
-#endif
-
-        status = test_reboot(LINUX_REBOOT_CMD_RESTART, SIGHUP);
-        if (status < 0)
-                return 1;
-        printf("reboot(LINUX_REBOOT_CMD_RESTART) succeed\n");
-
-        status = test_reboot(LINUX_REBOOT_CMD_RESTART2, SIGHUP);
-        if (status < 0)
-                return 1;
-        printf("reboot(LINUX_REBOOT_CMD_RESTART2) succeed\n");
-
-        status = test_reboot(LINUX_REBOOT_CMD_HALT, SIGINT);
-        if (status < 0)
-                return 1;
-        printf("reboot(LINUX_REBOOT_CMD_HALT) succeed\n");
-
-        status = test_reboot(LINUX_REBOOT_CMD_POWER_OFF, SIGINT);
-        if (status < 0)
-                return 1;
-        printf("reboot(LINUX_REBOOT_CMD_POWERR_OFF) succeed\n");
-
-        printf("All tests passed\n");
-        return 0;
-}
+greg k-h
