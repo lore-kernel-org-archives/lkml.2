@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755531Ab2DPVTf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Apr 2012 17:19:35 -0400
-Received: from mail-1-out2.atlantis.sk ([80.94.52.71]:55643 "EHLO
+	id S1755567Ab2DPVTh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Apr 2012 17:19:37 -0400
+Received: from mail-1-out2.atlantis.sk ([80.94.52.71]:43333 "EHLO
 	mail.atlantis.sk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1755005Ab2DPVTa (ORCPT
+	with ESMTP id S1755496Ab2DPVTf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Apr 2012 17:19:30 -0400
+	Mon, 16 Apr 2012 17:19:35 -0400
 From: Ondrej Zary <linux@rainbow-software.org>
 To: alsa-devel@alsa-project.org
 Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH 3/4] Add Wolfson Microelectronics WM8776 codec ALSA driver
-Date: Mon, 16 Apr 2012 23:18:37 +0200
-Message-Id: <1334611118-10301-4-git-send-email-linux@rainbow-software.org>
+Subject: [PATCH 4/4] snd-ice1712: Add Philips PSC724 Ultimate Edge
+Date: Mon, 16 Apr 2012 23:18:38 +0200
+Message-Id: <1334611118-10301-5-git-send-email-linux@rainbow-software.org>
 X-Mailer: git-send-email 1.7.2.5
 In-Reply-To: <1334611118-10301-1-git-send-email-linux@rainbow-software.org>
 References: <1334611118-10301-1-git-send-email-linux@rainbow-software.org>
@@ -20,271 +20,72 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Needed by Philips PSC724 subdriver. The code does not contain any
-card-specific bits so it can be used by any other ALSA driver.
+Add psc724 subdriver to snd-ice1712 that provides full support for
+Philips PSC724 Ultimate Edge sound cards. Outputs and inputs are provided
+by WM8766 and WM8776 codec drivers.
 
 Signed-off-by: Ondrej Zary <linux@rainbow-software.org>
 ---
- include/sound/wm8776.h   |  223 ++++++++++++++++
- sound/i2c/other/Makefile |    3 +-
- sound/i2c/other/wm8776.c |  645 ++++++++++++++++++++++++++++++++++++++++++++++
- 3 files changed, 870 insertions(+), 1 deletions(-)
- create mode 100644 include/sound/wm8776.h
- create mode 100644 sound/i2c/other/wm8776.c
+ sound/pci/ice1712/Makefile  |    2 +-
+ sound/pci/ice1712/ice1724.c |    4 +-
+ sound/pci/ice1712/psc724.c  |  446 +++++++++++++++++++++++++++++++++++++++++++
+ sound/pci/ice1712/psc724.h  |   13 ++
+ 4 files changed, 463 insertions(+), 2 deletions(-)
+ create mode 100644 sound/pci/ice1712/psc724.c
+ create mode 100644 sound/pci/ice1712/psc724.h
 
-diff --git a/include/sound/wm8776.h b/include/sound/wm8776.h
-new file mode 100644
-index 0000000..78a73eb
---- /dev/null
-+++ b/include/sound/wm8776.h
-@@ -0,0 +1,223 @@
-+#ifndef __SOUND_WM8776_H
-+#define __SOUND_WM8776_H
-+
-+/*
-+ *   ALSA driver for WM8776 codecs
-+ *
-+ *	Copyright (c) 2012 Ondrej Zary <linux@rainbow-software.org>
-+ *
-+ *   This program is free software; you can redistribute it and/or modify
-+ *   it under the terms of the GNU General Public License as published by
-+ *   the Free Software Foundation; either version 2 of the License, or
-+ *   (at your option) any later version.
-+ *
-+ *   This program is distributed in the hope that it will be useful,
-+ *   but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ *   GNU General Public License for more details.
-+ *
-+ *   You should have received a copy of the GNU General Public License
-+ *   along with this program; if not, write to the Free Software
-+ *   Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307 USA
-+ *
-+ */
-+
-+#define WM8776_REG_HPLVOL	0x00
-+#define WM8776_REG_HPRVOL	0x01
-+#define WM8776_REG_HPMASTER	0x02
-+#define WM8776_HPVOL_MASK		0x17f		/* incl. update bit */
-+#define WM8776_VOL_HPZCEN		(1 << 7)	/* zero cross detect */
-+#define WM8776_VOL_UPDATE		(1 << 8)	/* update volume */
-+#define WM8776_REG_DACLVOL	0x03
-+#define WM8776_REG_DACRVOL	0x04
-+#define WM8776_REG_DACMASTER	0x05
-+#define WM8776_DACVOL_MASK		0x1ff		/* incl. update bit */
-+#define WM8776_REG_PHASESWAP	0x06
-+#define WM8776_PHASE_INVERTL		(1 << 0)
-+#define WM8776_PHASE_INVERTR		(1 << 1)
-+#define WM8776_REG_DACCTRL1	0x07
-+#define WM8776_DAC_DZCEN		(1 << 0)
-+#define WM8776_DAC_ATC			(1 << 1)
-+#define WM8776_DAC_IZD			(1 << 2)
-+#define WM8776_DAC_TOD			(1 << 3)
-+#define WM8776_DAC_PL_MASK		0xf0
-+#define WM8776_DAC_PL_LL		(1 << 4)	/* L chan: L signal */
-+#define WM8776_DAC_PL_LR		(2 << 4)	/* L chan: R signal */
-+#define WM8776_DAC_PL_LB		(3 << 4)	/* L chan: both */
-+#define WM8776_DAC_PL_RL		(1 << 6)	/* R chan: L signal */
-+#define WM8776_DAC_PL_RR		(2 << 6)	/* R chan: R signal */
-+#define WM8776_DAC_PL_RB		(3 << 6)	/* R chan: both */
-+#define WM8776_REG_DACMUTE	0x08
-+#define WM8776_DACMUTE			(1 << 0)
-+#define WM8776_REG_DACCTRL2	0x09
-+#define WM8776_DAC2_DEEMPH		(1 << 0)
-+#define WM8776_DAC2_ZFLAG_DISABLE	(0 << 1)
-+#define WM8776_DAC2_ZFLAG_OWN		(1 << 1)
-+#define WM8776_DAC2_ZFLAG_BOTH		(2 << 1)
-+#define WM8776_DAC2_ZFLAG_EITHER	(3 << 1)
-+#define WM8776_REG_DACIFCTRL	0x0a
-+#define WM8776_FMT_RIGHTJ		(0 << 0)
-+#define WM8776_FMT_LEFTJ		(1 << 0)
-+#define WM8776_FMT_I2S			(2 << 0)
-+#define WM8776_FMT_DSP			(3 << 0)
-+#define WM8776_FMT_DSP_LATE		(1 << 2)	/* in DSP mode */
-+#define WM8776_FMT_LRC_INVERTED		(1 << 2)	/* in other modes */
-+#define WM8776_FMT_BCLK_INVERTED	(1 << 3)
-+#define WM8776_FMT_16BIT		(0 << 4)
-+#define WM8776_FMT_20BIT		(1 << 4)
-+#define WM8776_FMT_24BIT		(2 << 4)
-+#define WM8776_FMT_32BIT		(3 << 4)
-+#define WM8776_REG_ADCIFCTRL	0x0b
-+#define WM8776_FMT_ADCMCLK_INVERTED	(1 << 6)
-+#define WM8776_FMT_ADCHPD		(1 << 8)
-+#define WM8776_REG_MSTRCTRL	0x0c
-+#define WM8776_IF_ADC256FS		(2 << 0)
-+#define WM8776_IF_ADC384FS		(3 << 0)
-+#define WM8776_IF_ADC512FS		(4 << 0)
-+#define WM8776_IF_ADC768FS		(5 << 0)
-+#define WM8776_IF_OVERSAMP64		(1 << 3)
-+#define WM8776_IF_DAC128FS		(0 << 4)
-+#define WM8776_IF_DAC192FS		(1 << 4)
-+#define WM8776_IF_DAC256FS		(2 << 4)
-+#define WM8776_IF_DAC384FS		(3 << 4)
-+#define WM8776_IF_DAC512FS		(4 << 4)
-+#define WM8776_IF_DAC768FS		(5 << 4)
-+#define WM8776_IF_DAC_MASTER		(1 << 7)
-+#define WM8776_IF_ADC_MASTER		(1 << 8)
-+#define WM8776_REG_PWRDOWN	0x0d
-+#define WM8776_PWR_PDWN			(1 << 0)
-+#define WM8776_PWR_ADCPD		(1 << 1)
-+#define WM8776_PWR_DACPD		(1 << 2)
-+#define WM8776_PWR_HPPD			(1 << 3)
-+#define WM8776_PWR_AINPD		(1 << 6)
-+#define WM8776_REG_ADCLVOL	0x0e
-+#define WM8776_REG_ADCRVOL	0x0f
-+#define WM8776_ADC_GAIN_MASK		0xff
-+#define WM8776_ADC_ZCEN			(1 << 8)
-+#define WM8776_REG_ALCCTRL1	0x10
-+#define WM8776_ALC1_LCT_MASK		0x0f	/* 0=-16dB, 1=-15dB..15=-1dB */
-+#define WM8776_ALC1_MAXGAIN_MASK	0x70	/* 0,1=0dB, 2=+4dB...7=+24dB */
-+#define WM8776_ALC1_LCSEL_MASK		0x180
-+#define WM8776_ALC1_LCSEL_LIMITER	(0 << 7)
-+#define WM8776_ALC1_LCSEL_ALCR		(1 << 7)
-+#define WM8776_ALC1_LCSEL_ALCL		(2 << 7)
-+#define WM8776_ALC1_LCSEL_ALCSTEREO	(3 << 7)
-+#define WM8776_REG_ALCCTRL2	0x11
-+#define WM8776_ALC2_HOLD_MASK		0x0f	/*0=0ms, 1=2.67ms, 2=5.33ms.. */
-+#define WM8776_ALC2_ZCEN		(1 << 7)
-+#define WM8776_ALC2_LCEN		(1 << 8)
-+#define WM8776_REG_ALCCTRL3	0x12
-+#define WM8776_ALC3_ATK_MASK		0x0f
-+#define WM8776_ALC3_DCY_MASK		0xf0
-+#define WM8776_ALC3_FDECAY		(1 << 8)
-+#define WM8776_REG_NOISEGATE	0x13
-+#define WM8776_NGAT_ENABLE		(1 << 0)
-+#define WM8776_NGAT_THR_MASK		0x1c	/*0=-78dB, 1=-72dB...7=-36dB */
-+#define WM8776_REG_LIMITER	0x14
-+#define WM8776_LIM_MAXATTEN_MASK	0x0f
-+#define WM8776_LIM_TRANWIN_MASK		0x70	/*0=0us, 1=62.5us, 2=125us.. */
-+#define WM8776_REG_ADCMUX	0x15
-+#define WM8776_ADC_MUX_AIN1		(1 << 0)
-+#define WM8776_ADC_MUX_AIN2		(1 << 1)
-+#define WM8776_ADC_MUX_AIN3		(1 << 2)
-+#define WM8776_ADC_MUX_AIN4		(1 << 3)
-+#define WM8776_ADC_MUX_AIN5		(1 << 4)
-+#define WM8776_ADC_MUTER		(1 << 6)
-+#define WM8776_ADC_MUTEL		(1 << 7)
-+#define WM8776_ADC_LRBOTH		(1 << 8)
-+#define WM8776_REG_OUTMUX	0x16
-+#define WM8776_OUTMUX_DAC		(1 << 0)
-+#define WM8776_OUTMUX_AUX		(1 << 1)
-+#define WM8776_OUTMUX_BYPASS		(1 << 2)
-+#define WM8776_REG_RESET	0x17
-+
-+#define WM8776_REG_COUNT	0x17	/* don't cache the RESET register */
-+
-+struct snd_wm8776;
-+
-+struct snd_wm8776_ops {
-+	void (*write)(struct snd_wm8776 *wm, u8 addr, u8 data);
-+};
-+
-+enum snd_wm8776_ctl_id {
-+	WM8776_CTL_DAC_VOL,
-+	WM8776_CTL_DAC_SW,
-+	WM8776_CTL_DAC_ZC_SW,
-+	WM8776_CTL_HP_VOL,
-+	WM8776_CTL_HP_SW,
-+	WM8776_CTL_HP_ZC_SW,
-+	WM8776_CTL_AUX_SW,
-+	WM8776_CTL_BYPASS_SW,
-+	WM8776_CTL_DAC_IZD_SW,
-+	WM8776_CTL_PHASE_SW,
-+	WM8776_CTL_DEEMPH_SW,
-+	WM8776_CTL_ADC_VOL,
-+	WM8776_CTL_ADC_SW,
-+	WM8776_CTL_INPUT1_SW,
-+	WM8776_CTL_INPUT2_SW,
-+	WM8776_CTL_INPUT3_SW,
-+	WM8776_CTL_INPUT4_SW,
-+	WM8776_CTL_INPUT5_SW,
-+	WM8776_CTL_AGC_SEL,
-+	WM8776_CTL_LIM_THR,
-+	WM8776_CTL_LIM_ATK,
-+	WM8776_CTL_LIM_DCY,
-+	WM8776_CTL_LIM_TRANWIN,
-+	WM8776_CTL_LIM_MAXATTN,
-+	WM8776_CTL_ALC_TGT,
-+	WM8776_CTL_ALC_ATK,
-+	WM8776_CTL_ALC_DCY,
-+	WM8776_CTL_ALC_MAXGAIN,
-+	WM8776_CTL_ALC_MAXATTN,
-+	WM8776_CTL_ALC_HLD,
-+	WM8776_CTL_NGT_SW,
-+	WM8776_CTL_NGT_THR,
-+
-+	WM8776_CTL_COUNT,
-+};
-+
-+#define WM8776_ENUM_MAX		16
-+
-+#define WM8776_FLAG_STEREO	(1 << 0)
-+#define WM8776_FLAG_VOL_UPDATE	(1 << 1)
-+#define WM8776_FLAG_INVERT	(1 << 2)
-+#define WM8776_FLAG_LIM		(1 << 3)
-+#define WM8776_FLAG_ALC		(1 << 4)
-+
-+struct snd_wm8776_ctl {
-+	char *name;
-+	snd_ctl_elem_type_t type;
-+	const char *const enum_names[WM8776_ENUM_MAX];
-+	const unsigned int *tlv;
-+	u16 reg1, reg2, mask1, mask2, min, max, flags;
-+	void (*set)(struct snd_wm8776 *wm, u16 ch1, u16 ch2);
-+	void (*get)(struct snd_wm8776 *wm, u16 *ch1, u16 *ch2);
-+};
-+
-+enum snd_wm8776_agc_mode {
-+	WM8776_AGC_OFF,
-+	WM8776_AGC_LIM,
-+	WM8776_AGC_ALC_R,
-+	WM8776_AGC_ALC_L,
-+	WM8776_AGC_ALC_STEREO
-+};
-+
-+struct snd_wm8776 {
-+	struct snd_card *card;
-+	struct snd_wm8776_ctl ctl[WM8776_CTL_COUNT];
-+	enum snd_wm8776_agc_mode agc_mode;
-+	struct snd_wm8776_ops ops;
-+	u16 regs[WM8776_REG_COUNT];	/* 9-bit registers */
-+};
-+
-+
-+
-+void snd_wm8776_init(struct snd_wm8776 *wm);
-+void snd_wm8776_set_dac_if(struct snd_wm8776 *wm, u16 dac);
-+void snd_wm8776_set_adc_if(struct snd_wm8776 *wm, u16 adc);
-+void snd_wm8776_set_master_mode(struct snd_wm8776 *wm, u16 mode);
-+void snd_wm8776_set_power(struct snd_wm8776 *wm, u16 power);
-+void snd_wm8776_volume_restore(struct snd_wm8776 *wm);
-+int snd_wm8776_build_controls(struct snd_wm8776 *wm);
-+
-+#endif /* __SOUND_WM8776_H */
-diff --git a/sound/i2c/other/Makefile b/sound/i2c/other/Makefile
-index 93406f7..433a76d 100644
---- a/sound/i2c/other/Makefile
-+++ b/sound/i2c/other/Makefile
-@@ -10,9 +10,10 @@ snd-ak4xxx-adda-objs := ak4xxx-adda.o
- snd-pt2258-objs := pt2258.o
- snd-tea575x-tuner-objs := tea575x-tuner.o
- snd-wm8766-objs := wm8766.o
-+snd-wm8776-objs := wm8776.o
+diff --git a/sound/pci/ice1712/Makefile b/sound/pci/ice1712/Makefile
+index f7ce33f..6d6ae06 100644
+--- a/sound/pci/ice1712/Makefile
++++ b/sound/pci/ice1712/Makefile
+@@ -5,7 +5,7 @@
  
- # Module Dependency
- obj-$(CONFIG_SND_PDAUDIOCF) += snd-ak4117.o
- obj-$(CONFIG_SND_ICE1712) += snd-ak4xxx-adda.o
--obj-$(CONFIG_SND_ICE1724) += snd-ak4114.o snd-ak4113.o snd-ak4xxx-adda.o snd-pt2258.o snd-wm8766.o
-+obj-$(CONFIG_SND_ICE1724) += snd-ak4114.o snd-ak4113.o snd-ak4xxx-adda.o snd-pt2258.o snd-wm8766.o snd-wm8776.o
- obj-$(CONFIG_SND_TEA575X) += snd-tea575x-tuner.o
-diff --git a/sound/i2c/other/wm8776.c b/sound/i2c/other/wm8776.c
+ snd-ice17xx-ak4xxx-objs := ak4xxx.o
+ snd-ice1712-objs := ice1712.o delta.o hoontech.o ews.o
+-snd-ice1724-objs := ice1724.o amp.o revo.o aureon.o vt1720_mobo.o pontis.o prodigy192.o prodigy_hifi.o juli.o phase.o wtm.o se.o maya44.o quartet.o
++snd-ice1724-objs := ice1724.o amp.o revo.o aureon.o vt1720_mobo.o pontis.o prodigy192.o prodigy_hifi.o juli.o phase.o wtm.o se.o maya44.o quartet.o psc724.o
+ 
+ # Toplevel Module Dependency
+ obj-$(CONFIG_SND_ICE1712) += snd-ice1712.o snd-ice17xx-ak4xxx.o
+diff --git a/sound/pci/ice1712/ice1724.c b/sound/pci/ice1712/ice1724.c
+index ea686c4..f76e8a8 100644
+--- a/sound/pci/ice1712/ice1724.c
++++ b/sound/pci/ice1712/ice1724.c
+@@ -54,6 +54,7 @@
+ #include "wtm.h"
+ #include "se.h"
+ #include "quartet.h"
++#include "psc724.h"
+ 
+ MODULE_AUTHOR("Jaroslav Kysela <perex@perex.cz>");
+ MODULE_DESCRIPTION("VIA ICEnsemble ICE1724/1720 (Envy24HT/PT)");
+@@ -2234,6 +2235,7 @@ static struct snd_ice1712_card_info *card_tables[] __devinitdata = {
+ 	snd_vt1724_se_cards,
+ 	snd_vt1724_qtet_cards,
+ 	snd_vt1724_ooaoo_cards,
++	snd_vt1724_psc724_cards,
+ 	NULL,
+ };
+ 
+@@ -2349,7 +2351,7 @@ static int __devinit snd_vt1724_read_eeprom(struct snd_ice1712 *ice,
+ 		return -EIO;
+ 	}
+ 	ice->eeprom.version = snd_vt1724_read_i2c(ice, dev, 0x05);
+-	if (ice->eeprom.version != 2)
++	if (ice->eeprom.version != 1 && ice->eeprom.version != 2)
+ 		printk(KERN_WARNING "ice1724: Invalid EEPROM version %i\n",
+ 		       ice->eeprom.version);
+ 	size = ice->eeprom.size - 6;
+diff --git a/sound/pci/ice1712/psc724.c b/sound/pci/ice1712/psc724.c
 new file mode 100644
-index 0000000..253cbcf
+index 0000000..f00eda0
 --- /dev/null
-+++ b/sound/i2c/other/wm8776.c
-@@ -0,0 +1,645 @@
++++ b/sound/pci/ice1712/psc724.c
+@@ -0,0 +1,446 @@
 +/*
-+ *   ALSA driver for WM8776 codecs
++ *   ALSA driver for ICEnsemble VT1724 (Envy24HT)
++ *
++ *   Lowlevel functions for Philips PSC724 Ultimate Edge
 + *
 + *	Copyright (c) 2012 Ondrej Zary <linux@rainbow-software.org>
 + *
@@ -306,628 +107,446 @@ index 0000000..253cbcf
 +
 +#include <linux/delay.h>
 +#include <linux/init.h>
-+#include <linux/module.h>
-+#include <sound/control.h>
-+#include <sound/tlv.h>
-+#include <sound/wm8776.h>
++#include <linux/slab.h>
++#include <sound/core.h>
 +
-+MODULE_AUTHOR("Ondrej Zary <linux@rainbow-software.org>");
-+MODULE_DESCRIPTION("Routines for control of WM8776 codecs");
-+MODULE_LICENSE("GPL");
++#include "ice1712.h"
++#include "envy24ht.h"
++#include "psc724.h"
++#include "sound/wm8766.h"
++#include "sound/wm8776.h"
 +
-+/* low-level access */
++struct psc724_spec {
++	struct snd_wm8766 wm8766;
++	struct snd_wm8776 wm8776;
++	bool mute_all, jack_detect;
++	struct snd_ice1712 *ice;
++	struct delayed_work hp_work;
++	bool hp_connected;
++};
 +
-+void snd_wm8776_write(struct snd_wm8776 *wm, u16 addr, u16 data)
++/****************************************************************************/
++/*  PHILIPS PSC724 ULTIMATE EDGE                                            */
++/****************************************************************************/
++/*
++ *  VT1722 (Envy24GT) - 6 outputs, 4 inputs (only 2 used), 24-bit/96kHz
++ *
++ *  system configuration ICE_EEP2_SYSCONF=0x42
++ *    XIN1 49.152MHz
++ *    no MPU401
++ *    one stereo ADC, no S/PDIF receiver
++ *    three stereo DACs (FRONT, REAR, CENTER+LFE)
++ *
++ *  AC-Link configuration ICE_EEP2_ACLINK=0x80
++ *    use I2S, not AC97
++ *
++ *  I2S converters feature ICE_EEP2_I2S=0x30
++ *    I2S codec has no volume/mute control feature (bug!)
++ *    I2S codec does not support 96KHz or 192KHz (bug!)
++ *    I2S codec 24bits
++ *
++ *  S/PDIF configuration ICE_EEP2_SPDIF=0xc1
++ *    Enable integrated S/PDIF transmitter
++ *    internal S/PDIF out implemented
++ *    No S/PDIF input
++ *    External S/PDIF out implemented
++ *
++ *
++ * ** connected chips **
++ *
++ *  WM8776
++ *     2-channel DAC used for main output and stereo ADC (with 10-channel MUX)
++ *     AIN1: LINE IN, AIN2: CD/VIDEO, AIN3: AUX, AIN4: Front MIC, AIN5: Rear MIC
++ *     Controlled by I2C using VT1722 I2C interface:
++ *          MODE (pin16) -- GND
++ *          CE   (pin17) -- GND  I2C mode (address=0x34)
++ *          DI   (pin18) -- SDA  (VT1722 pin70)
++ *          CL   (pin19) -- SCLK (VT1722 pin71)
++ *
++ *  WM8766
++ *      6-channel DAC used for rear & center/LFE outputs (only 4 channels used)
++ *      Controlled by SPI using VT1722 GPIO pins:
++ *          MODE   (pin 1) -- GPIO19 (VT1722 pin99)
++ *          ML/I2S (pin11) -- GPIO18 (VT1722 pin98)
++ *          MC/IWL (pin12) -- GPIO17 (VT1722 pin97)
++ *          MD/DM  (pin13) -- GPIO16 (VT1722 pin96)
++ *          MUTE   (pin14) -- GPIO20 (VT1722 pin101)
++ *
++ *  GPIO14 is used as input for headphone jack detection (1 = connected)
++ *  GPIO22 is used as MUTE ALL output, grounding all 6 channels
++ *
++ * ** output pins and device names **
++ *
++ *   5.1ch name -- output connector color -- device (-D option)
++ *
++ *      FRONT 2ch                  -- green  -- plughw:0,0
++ *      CENTER(Lch) SUBWOOFER(Rch) -- orange -- plughw:0,2,0
++ *      REAR 2ch                   -- black  -- plughw:0,2,1
++ */
++
++/* codec access low-level functions */
++
++#define GPIO_HP_JACK	(1 << 14)
++#define GPIO_MUTE_SUR	(1 << 20)
++#define GPIO_MUTE_ALL	(1 << 22)
++
++#define JACK_INTERVAL	1000
++
++#define PSC724_SPI_DELAY 1
++
++#define PSC724_SPI_DATA	(1 << 16)
++#define PSC724_SPI_CLK	(1 << 17)
++#define PSC724_SPI_LOAD	(1 << 18)
++#define PSC724_SPI_MASK	(PSC724_SPI_DATA | PSC724_SPI_CLK | PSC724_SPI_LOAD)
++
++static void psc724_wm8766_write(struct snd_wm8766 *wm, u16 addr, u16 data)
 +{
-+	u8 bus_addr = addr << 1 | data >> 8;	/* addr + 9th data bit */
-+	u8 bus_data = data & 0xff;		/* remaining 8 data bits */
++	struct psc724_spec *spec = container_of(wm, struct psc724_spec, wm8766);
++	struct snd_ice1712 *ice = spec->ice;
++	u32 st, bits;
++	int i;
 +
-+	if (addr < WM8776_REG_RESET)
-+		wm->regs[addr] = data;
-+	wm->ops.write(wm, bus_addr, bus_data);
++	snd_ice1712_save_gpio_status(ice);
++
++	st = ((addr & 0x7f) << 9) | (data & 0x1ff);
++	snd_ice1712_gpio_set_dir(ice, ice->gpio.direction | PSC724_SPI_MASK);
++	snd_ice1712_gpio_set_mask(ice, ice->gpio.write_mask & ~PSC724_SPI_MASK);
++	bits = snd_ice1712_gpio_read(ice) & ~PSC724_SPI_MASK;
++	snd_ice1712_gpio_write(ice, bits);
++
++	for (i = 0; i < 16; i++) {
++		udelay(PSC724_SPI_DELAY);
++		bits &= ~PSC724_SPI_CLK;
++		/* MSB first */
++		st <<= 1;
++		if (st & 0x10000)
++			bits |= PSC724_SPI_DATA;
++		else
++			bits &= ~PSC724_SPI_DATA;
++		snd_ice1712_gpio_write(ice, bits);
++		/* CLOCK high */
++		udelay(PSC724_SPI_DELAY);
++		bits |= PSC724_SPI_CLK;
++		snd_ice1712_gpio_write(ice, bits);
++	}
++	/* LOAD high */
++	udelay(PSC724_SPI_DELAY);
++	bits |= PSC724_SPI_LOAD;
++	snd_ice1712_gpio_write(ice, bits);
++	/* LOAD low, DATA and CLOCK high */
++	udelay(PSC724_SPI_DELAY);
++	bits |= (PSC724_SPI_DATA | PSC724_SPI_CLK);
++	snd_ice1712_gpio_write(ice, bits);
++
++	snd_ice1712_restore_gpio_status(ice);
 +}
 +
-+/* register-level functions */
-+
-+void snd_wm8776_activate_ctl(struct snd_wm8776 *wm, char *ctl_name, bool active)
++static void psc724_wm8776_write(struct snd_wm8776 *wm, u8 addr, u8 data)
 +{
-+	struct snd_card *card = wm->card;
-+	struct snd_kcontrol *kctl;
-+	struct snd_kcontrol_volatile *vd;
-+	struct snd_ctl_elem_id elem_id;
-+	unsigned int index_offset;
++	struct psc724_spec *spec = container_of(wm, struct psc724_spec, wm8776);
 +
-+	memset(&elem_id, 0, sizeof(elem_id));
-+	strncpy(elem_id.name, ctl_name, sizeof(elem_id.name));
-+	elem_id.iface = SNDRV_CTL_ELEM_IFACE_MIXER;
-+	kctl = snd_ctl_find_id(card, &elem_id);
-+	if (!kctl)
-+		return;
-+	index_offset = snd_ctl_get_ioff(kctl, &kctl->id);
-+	vd = &kctl->vd[index_offset];
-+	if (active)
-+		vd->access &= ~SNDRV_CTL_ELEM_ACCESS_INACTIVE;
++	snd_vt1724_write_i2c(spec->ice, 0x34, addr, data);
++}
++
++/* mute all */
++
++static void psc724_set_master_switch(struct snd_ice1712 *ice, bool on)
++{
++	unsigned int bits = snd_ice1712_gpio_read(ice);
++	struct psc724_spec *spec = ice->spec;
++
++	spec->mute_all = !on;
++	if (on)
++		bits &= ~(GPIO_MUTE_ALL | GPIO_MUTE_SUR);
 +	else
-+		vd->access |= SNDRV_CTL_ELEM_ACCESS_INACTIVE;
-+	snd_ctl_notify(card, SNDRV_CTL_EVENT_MASK_INFO, &kctl->id);
++		bits |= GPIO_MUTE_ALL | GPIO_MUTE_SUR;
++	snd_ice1712_gpio_write(ice, bits);
 +}
 +
-+static void snd_wm8776_update_agc_ctl(struct snd_wm8776 *wm)
++static bool psc724_get_master_switch(struct snd_ice1712 *ice)
 +{
-+	int i, flags_on = 0, flags_off = 0;
++	struct psc724_spec *spec = ice->spec;
 +
-+	switch (wm->agc_mode) {
-+	case WM8776_AGC_OFF:
-+		flags_off = WM8776_FLAG_LIM | WM8776_FLAG_ALC;
-+		break;
-+	case WM8776_AGC_LIM:
-+		flags_off = WM8776_FLAG_ALC;
-+		flags_on = WM8776_FLAG_LIM;
-+		break;
-+	case WM8776_AGC_ALC_R:
-+	case WM8776_AGC_ALC_L:
-+	case WM8776_AGC_ALC_STEREO:
-+		flags_off = WM8776_FLAG_LIM;
-+		flags_on = WM8776_FLAG_ALC;
-+		break;
-+	}
-+
-+	for (i = 0; i < WM8776_CTL_COUNT; i++)
-+		if (wm->ctl[i].flags & flags_off)
-+			snd_wm8776_activate_ctl(wm, wm->ctl[i].name, false);
-+		else if (wm->ctl[i].flags & flags_on)
-+			snd_wm8776_activate_ctl(wm, wm->ctl[i].name, true);
++	return !spec->mute_all;
 +}
 +
-+static void snd_wm8776_set_agc(struct snd_wm8776 *wm, u16 agc, u16 nothing)
-+{
-+	u16 alc1 = wm->regs[WM8776_REG_ALCCTRL1] & ~WM8776_ALC1_LCT_MASK;
-+	u16 alc2 = wm->regs[WM8776_REG_ALCCTRL2] & ~WM8776_ALC2_LCEN;
++/* jack detection */
 +
-+	switch (agc) {
-+	case 0:	/* Off */
-+		wm->agc_mode = WM8776_AGC_OFF;
-+		break;
-+	case 1: /* Limiter */
-+		alc2 |= WM8776_ALC2_LCEN;
-+		wm->agc_mode = WM8776_AGC_LIM;
-+		break;
-+	case 2: /* ALC Right */
-+		alc1 |= WM8776_ALC1_LCSEL_ALCR;
-+		alc2 |= WM8776_ALC2_LCEN;
-+		wm->agc_mode = WM8776_AGC_ALC_R;
-+		break;
-+	case 3: /* ALC Left */
-+		alc1 |= WM8776_ALC1_LCSEL_ALCL;
-+		alc2 |= WM8776_ALC2_LCEN;
-+		wm->agc_mode = WM8776_AGC_ALC_L;
-+		break;
-+	case 4: /* ALC Stereo */
-+		alc1 |= WM8776_ALC1_LCSEL_ALCSTEREO;
-+		alc2 |= WM8776_ALC2_LCEN;
-+		wm->agc_mode = WM8776_AGC_ALC_STEREO;
-+		break;
-+	}
-+	snd_wm8776_write(wm, WM8776_REG_ALCCTRL1, alc1);
-+	snd_wm8776_write(wm, WM8776_REG_ALCCTRL2, alc2);
-+	snd_wm8776_update_agc_ctl(wm);
++static void psc724_set_jack_state(struct snd_ice1712 *ice, bool hp_connected)
++{
++	struct psc724_spec *spec = ice->spec;
++	struct snd_ctl_elem_id elem_id;
++	struct snd_kcontrol *kctl;	
++	u16 power = spec->wm8776.regs[WM8776_REG_PWRDOWN] & ~WM8776_PWR_HPPD;
++
++	psc724_set_master_switch(ice, !hp_connected);
++	if (!hp_connected)
++		power |= WM8776_PWR_HPPD;
++	snd_wm8776_set_power(&spec->wm8776, power);
++	spec->hp_connected = hp_connected;
++	/* notify about master speaker mute change */
++	memset(&elem_id, 0, sizeof(elem_id));
++	elem_id.iface = SNDRV_CTL_ELEM_IFACE_MIXER;
++	strncpy(elem_id.name, "Master Speakers Playback Switch",
++						sizeof(elem_id.name));
++	kctl = snd_ctl_find_id(ice->card, &elem_id);
++	snd_ctl_notify(ice->card, SNDRV_CTL_EVENT_MASK_VALUE, &kctl->id);
++	/* and headphone mute change */
++	strncpy(elem_id.name, spec->wm8776.ctl[WM8776_CTL_HP_SW].name,
++						sizeof(elem_id.name));
++	kctl = snd_ctl_find_id(ice->card, &elem_id);
++	snd_ctl_notify(ice->card, SNDRV_CTL_EVENT_MASK_VALUE, &kctl->id);
 +}
 +
-+static void snd_wm8776_get_agc(struct snd_wm8776 *wm, u16 *mode, u16 *nothing)
++static void psc724_update_hp_jack_state(struct work_struct *work)
 +{
-+	*mode = wm->agc_mode;
++	struct psc724_spec *spec = container_of(work, struct psc724_spec,
++						hp_work.work);
++	struct snd_ice1712 *ice = spec->ice;
++	bool hp_connected = snd_ice1712_gpio_read(ice) & GPIO_HP_JACK;
++
++	schedule_delayed_work(&spec->hp_work, msecs_to_jiffies(JACK_INTERVAL));
++	if (hp_connected == spec->hp_connected)
++		return;
++	psc724_set_jack_state(ice, hp_connected);
++}
++
++static void psc724_set_jack_detection(struct snd_ice1712 *ice, bool on)
++{
++	struct psc724_spec *spec = ice->spec;
++
++	if (spec->jack_detect == on)
++		return;
++
++	spec->jack_detect = on;
++	if (on) {
++		bool hp_connected = snd_ice1712_gpio_read(ice) & GPIO_HP_JACK;
++		psc724_set_jack_state(ice, hp_connected);
++		schedule_delayed_work(&spec->hp_work,
++					msecs_to_jiffies(JACK_INTERVAL));
++	} else
++		cancel_delayed_work_sync(&spec->hp_work);
++}
++
++static bool psc724_get_jack_detection(struct snd_ice1712 *ice)
++{
++	struct psc724_spec *spec = ice->spec;
++
++	return spec->jack_detect;
 +}
 +
 +/* mixer controls */
 +
-+static const DECLARE_TLV_DB_SCALE(wm8776_hp_tlv, -7400, 100, 1);
-+static const DECLARE_TLV_DB_SCALE(wm8776_dac_tlv, -12750, 50, 1);
-+static const DECLARE_TLV_DB_SCALE(wm8776_adc_tlv, -10350, 50, 1);
-+static const DECLARE_TLV_DB_SCALE(wm8776_lct_tlv, -1600, 100, 0);
-+static const DECLARE_TLV_DB_SCALE(wm8776_maxgain_tlv, 0, 400, 0);
-+static const DECLARE_TLV_DB_SCALE(wm8776_ngth_tlv, -7800, 600, 0);
-+static const DECLARE_TLV_DB_SCALE(wm8776_maxatten_lim_tlv, -1200, 100, 0);
-+static const DECLARE_TLV_DB_SCALE(wm8776_maxatten_alc_tlv, -2100, 400, 0);
++struct psc724_control {
++	char *name;
++	void (*set)(struct snd_ice1712 *ice, bool on);
++	bool (*get)(struct snd_ice1712 *ice);
++};
 +
-+static struct snd_wm8776_ctl default_ctl[WM8776_CTL_COUNT] = {
-+	[WM8776_CTL_DAC_VOL] = {
-+		.name = "Master Playback Volume",
-+		.type = SNDRV_CTL_ELEM_TYPE_INTEGER,
-+		.tlv = wm8776_dac_tlv,
-+		.reg1 = WM8776_REG_DACLVOL,
-+		.reg2 = WM8776_REG_DACRVOL,
-+		.mask1 = WM8776_DACVOL_MASK,
-+		.mask2 = WM8776_DACVOL_MASK,
-+		.max = 0xff,
-+		.flags = WM8776_FLAG_STEREO | WM8776_FLAG_VOL_UPDATE,
++static const struct psc724_control psc724_cont[] = {
++	{
++		.name = "Master Speakers Playback Switch",
++		.set = psc724_set_master_switch,
++		.get = psc724_get_master_switch,
 +	},
-+	[WM8776_CTL_DAC_SW] = {
-+		.name = "Master Playback Switch",
-+		.type = SNDRV_CTL_ELEM_TYPE_BOOLEAN,
-+		.reg1 = WM8776_REG_DACCTRL1,
-+		.reg2 = WM8776_REG_DACCTRL1,
-+		.mask1 = WM8776_DAC_PL_LL,
-+		.mask2 = WM8776_DAC_PL_RR,
-+		.flags = WM8776_FLAG_STEREO,
-+	},
-+	[WM8776_CTL_DAC_ZC_SW] = {
-+		.name = "Master Zero Cross Detect Playback Switch",
-+		.type = SNDRV_CTL_ELEM_TYPE_BOOLEAN,
-+		.reg1 = WM8776_REG_DACCTRL1,
-+		.mask1 = WM8776_DAC_DZCEN,
-+	},
-+	[WM8776_CTL_HP_VOL] = {
-+		.name = "Headphone Playback Volume",
-+		.type = SNDRV_CTL_ELEM_TYPE_INTEGER,
-+		.tlv = wm8776_hp_tlv,
-+		.reg1 = WM8776_REG_HPLVOL,
-+		.reg2 = WM8776_REG_HPRVOL,
-+		.mask1 = WM8776_HPVOL_MASK,
-+		.mask2 = WM8776_HPVOL_MASK,
-+		.min = 0x2f,
-+		.max = 0x7f,
-+		.flags = WM8776_FLAG_STEREO | WM8776_FLAG_VOL_UPDATE,
-+	},
-+	[WM8776_CTL_HP_SW] = {
-+		.name = "Headphone Playback Switch",
-+		.type = SNDRV_CTL_ELEM_TYPE_BOOLEAN,
-+		.reg1 = WM8776_REG_PWRDOWN,
-+		.mask1 = WM8776_PWR_HPPD,
-+		.flags = WM8776_FLAG_INVERT,
-+	},
-+	[WM8776_CTL_HP_ZC_SW] = {
-+		.name = "Headphone Zero Cross Detect Playback Switch",
-+		.type = SNDRV_CTL_ELEM_TYPE_BOOLEAN,
-+		.reg1 = WM8776_REG_HPLVOL,
-+		.reg2 = WM8776_REG_HPRVOL,
-+		.mask1 = WM8776_VOL_HPZCEN,
-+		.mask2 = WM8776_VOL_HPZCEN,
-+		.flags = WM8776_FLAG_STEREO,
-+	},
-+	[WM8776_CTL_AUX_SW] = {
-+		.name = "AUX Playback Switch",
-+		.type = SNDRV_CTL_ELEM_TYPE_BOOLEAN,
-+		.reg1 = WM8776_REG_OUTMUX,
-+		.mask1 = WM8776_OUTMUX_AUX,
-+	},
-+	[WM8776_CTL_BYPASS_SW] = {
-+		.name = "Bypass Playback Switch",
-+		.type = SNDRV_CTL_ELEM_TYPE_BOOLEAN,
-+		.reg1 = WM8776_REG_OUTMUX,
-+		.mask1 = WM8776_OUTMUX_BYPASS,
-+	},
-+	[WM8776_CTL_DAC_IZD_SW] = {
-+		.name = "Infinite Zero Detect Playback Switch",
-+		.type = SNDRV_CTL_ELEM_TYPE_BOOLEAN,
-+		.reg1 = WM8776_REG_DACCTRL1,
-+		.mask1 = WM8776_DAC_IZD,
-+	},
-+	[WM8776_CTL_PHASE_SW] = {
-+		.name = "Phase Invert Playback Switch",
-+		.type = SNDRV_CTL_ELEM_TYPE_BOOLEAN,
-+		.reg1 = WM8776_REG_PHASESWAP,
-+		.reg2 = WM8776_REG_PHASESWAP,
-+		.mask1 = WM8776_PHASE_INVERTL,
-+		.mask2 = WM8776_PHASE_INVERTR,
-+		.flags = WM8776_FLAG_STEREO,
-+	},
-+	[WM8776_CTL_DEEMPH_SW] = {
-+		.name = "Deemphasis Playback Switch",
-+		.type = SNDRV_CTL_ELEM_TYPE_BOOLEAN,
-+		.reg1 = WM8776_REG_DACCTRL2,
-+		.mask1 = WM8776_DAC2_DEEMPH,
-+	},
-+	[WM8776_CTL_ADC_VOL] = {
-+		.name = "Input Capture Volume",
-+		.type = SNDRV_CTL_ELEM_TYPE_INTEGER,
-+		.tlv = wm8776_adc_tlv,
-+		.reg1 = WM8776_REG_ADCLVOL,
-+		.reg2 = WM8776_REG_ADCRVOL,
-+		.mask1 = WM8776_ADC_GAIN_MASK,
-+		.mask2 = WM8776_ADC_GAIN_MASK,
-+		.max = 0xff,
-+		.flags = WM8776_FLAG_STEREO | WM8776_FLAG_VOL_UPDATE,
-+	},
-+	[WM8776_CTL_ADC_SW] = {
-+		.name = "Input Capture Switch",
-+		.type = SNDRV_CTL_ELEM_TYPE_BOOLEAN,
-+		.reg1 = WM8776_REG_ADCMUX,
-+		.reg2 = WM8776_REG_ADCMUX,
-+		.mask1 = WM8776_ADC_MUTEL,
-+		.mask2 = WM8776_ADC_MUTER,
-+		.flags = WM8776_FLAG_STEREO | WM8776_FLAG_INVERT,
-+	},
-+	[WM8776_CTL_INPUT1_SW] = {
-+		.name = "AIN1 Capture Switch",
-+		.type = SNDRV_CTL_ELEM_TYPE_BOOLEAN,
-+		.reg1 = WM8776_REG_ADCMUX,
-+		.mask1 = WM8776_ADC_MUX_AIN1,
-+	},
-+	[WM8776_CTL_INPUT2_SW] = {
-+		.name = "AIN2 Capture Switch",
-+		.type = SNDRV_CTL_ELEM_TYPE_BOOLEAN,
-+		.reg1 = WM8776_REG_ADCMUX,
-+		.mask1 = WM8776_ADC_MUX_AIN2,
-+	},
-+	[WM8776_CTL_INPUT3_SW] = {
-+		.name = "AIN3 Capture Switch",
-+		.type = SNDRV_CTL_ELEM_TYPE_BOOLEAN,
-+		.reg1 = WM8776_REG_ADCMUX,
-+		.mask1 = WM8776_ADC_MUX_AIN3,
-+	},
-+	[WM8776_CTL_INPUT4_SW] = {
-+		.name = "AIN4 Capture Switch",
-+		.type = SNDRV_CTL_ELEM_TYPE_BOOLEAN,
-+		.reg1 = WM8776_REG_ADCMUX,
-+		.mask1 = WM8776_ADC_MUX_AIN4,
-+	},
-+	[WM8776_CTL_INPUT5_SW] = {
-+		.name = "AIN5 Capture Switch",
-+		.type = SNDRV_CTL_ELEM_TYPE_BOOLEAN,
-+		.reg1 = WM8776_REG_ADCMUX,
-+		.mask1 = WM8776_ADC_MUX_AIN5,
-+	},
-+	[WM8776_CTL_AGC_SEL] = {
-+		.name = "AGC Select Capture Enum",
-+		.type = SNDRV_CTL_ELEM_TYPE_ENUMERATED,
-+		.enum_names = { "Off", "Limiter", "ALC Right", "ALC Left",
-+				"ALC Stereo" },
-+		.max = 5,	/* .enum_names item count */
-+		.set = snd_wm8776_set_agc,
-+		.get = snd_wm8776_get_agc,
-+	},
-+	[WM8776_CTL_LIM_THR] = {
-+		.name = "Limiter Threshold Capture Volume",
-+		.type = SNDRV_CTL_ELEM_TYPE_INTEGER,
-+		.tlv = wm8776_lct_tlv,
-+		.reg1 = WM8776_REG_ALCCTRL1,
-+		.mask1 = WM8776_ALC1_LCT_MASK,
-+		.max = 15,
-+		.flags = WM8776_FLAG_LIM,
-+	},
-+	[WM8776_CTL_LIM_ATK] = {
-+		.name = "Limiter Attack Time Capture Enum",
-+		.type = SNDRV_CTL_ELEM_TYPE_ENUMERATED,
-+		.enum_names = { "0.25 ms", "0.5 ms", "1 ms", "2 ms", "4 ms",
-+			"8 ms", "16 ms", "32 ms", "64 ms", "128 ms", "256 ms" },
-+		.max = 11,	/* .enum_names item count */
-+		.reg1 = WM8776_REG_ALCCTRL3,
-+		.mask1 = WM8776_ALC3_ATK_MASK,
-+		.flags = WM8776_FLAG_LIM,
-+	},
-+	[WM8776_CTL_LIM_DCY] = {
-+		.name = "Limiter Decay Time Capture Enum",
-+		.type = SNDRV_CTL_ELEM_TYPE_ENUMERATED,
-+		.enum_names = {	"1.2 ms", "2.4 ms", "4.8 ms", "9.6 ms",
-+			"19.2 ms", "38.4 ms", "76.8 ms", "154 ms", "307 ms",
-+			"614 ms", "1.23 s" },
-+		.max = 11,	/* .enum_names item count */
-+		.reg1 = WM8776_REG_ALCCTRL3,
-+		.mask1 = WM8776_ALC3_DCY_MASK,
-+		.flags = WM8776_FLAG_LIM,
-+	},
-+	[WM8776_CTL_LIM_TRANWIN] = {
-+		.name = "Limiter Transient Window Capture Enum",
-+		.type = SNDRV_CTL_ELEM_TYPE_ENUMERATED,
-+		.enum_names = {	"0 us", "62.5 us", "125 us", "250 us", "500 us",
-+			"1 ms", "2 ms", "4 ms" },
-+		.max = 8,	/* .enum_names item count */
-+		.reg1 = WM8776_REG_LIMITER,
-+		.mask1 = WM8776_LIM_TRANWIN_MASK,
-+		.flags = WM8776_FLAG_LIM,
-+	},
-+	[WM8776_CTL_LIM_MAXATTN] = {
-+		.name = "Limiter Maximum Attenuation Capture Volume",
-+		.type = SNDRV_CTL_ELEM_TYPE_INTEGER,
-+		.tlv = wm8776_maxatten_lim_tlv,
-+		.reg1 = WM8776_REG_LIMITER,
-+		.mask1 = WM8776_LIM_MAXATTEN_MASK,
-+		.min = 3,
-+		.max = 12,
-+		.flags = WM8776_FLAG_LIM | WM8776_FLAG_INVERT,
-+	},
-+	[WM8776_CTL_ALC_TGT] = {
-+		.name = "ALC Target Level Capture Volume",
-+		.type = SNDRV_CTL_ELEM_TYPE_INTEGER,
-+		.tlv = wm8776_lct_tlv,
-+		.reg1 = WM8776_REG_ALCCTRL1,
-+		.mask1 = WM8776_ALC1_LCT_MASK,
-+		.max = 15,
-+		.flags = WM8776_FLAG_ALC,
-+	},
-+	[WM8776_CTL_ALC_ATK] = {
-+		.name = "ALC Attack Time Capture Enum",
-+		.type = SNDRV_CTL_ELEM_TYPE_ENUMERATED,
-+		.enum_names = { "8.40 ms", "16.8 ms", "33.6 ms", "67.2 ms",
-+			"134 ms", "269 ms", "538 ms", "1.08 s",	"2.15 s",
-+			"4.3 s", "8.6 s" },
-+		.max = 11,	/* .enum_names item count */
-+		.reg1 = WM8776_REG_ALCCTRL3,
-+		.mask1 = WM8776_ALC3_ATK_MASK,
-+		.flags = WM8776_FLAG_ALC,
-+	},
-+	[WM8776_CTL_ALC_DCY] = {
-+		.name = "ALC Decay Time Capture Enum",
-+		.type = SNDRV_CTL_ELEM_TYPE_ENUMERATED,
-+		.enum_names = {	"33.5 ms", "67.0 ms", "134 ms", "268 ms",
-+			"536 ms", "1.07 s", "2.14 s", "4.29 s",	"8.58 s",
-+			"17.2 s", "34.3 s" },
-+		.max = 11,	/* .enum_names item count */
-+		.reg1 = WM8776_REG_ALCCTRL3,
-+		.mask1 = WM8776_ALC3_DCY_MASK,
-+		.flags = WM8776_FLAG_ALC,
-+	},
-+	[WM8776_CTL_ALC_MAXGAIN] = {
-+		.name = "ALC Maximum Gain Capture Volume",
-+		.type = SNDRV_CTL_ELEM_TYPE_INTEGER,
-+		.tlv = wm8776_maxgain_tlv,
-+		.reg1 = WM8776_REG_ALCCTRL1,
-+		.mask1 = WM8776_ALC1_MAXGAIN_MASK,
-+		.min = 1,
-+		.max = 7,
-+		.flags = WM8776_FLAG_ALC,
-+	},
-+	[WM8776_CTL_ALC_MAXATTN] = {
-+		.name = "ALC Maximum Attenuation Capture Volume",
-+		.type = SNDRV_CTL_ELEM_TYPE_INTEGER,
-+		.tlv = wm8776_maxatten_alc_tlv,
-+		.reg1 = WM8776_REG_LIMITER,
-+		.mask1 = WM8776_LIM_MAXATTEN_MASK,
-+		.min = 10,
-+		.max = 15,
-+		.flags = WM8776_FLAG_ALC | WM8776_FLAG_INVERT,
-+	},
-+	[WM8776_CTL_ALC_HLD] = {
-+		.name = "ALC Hold Time Capture Enum",
-+		.type = SNDRV_CTL_ELEM_TYPE_ENUMERATED,
-+		.enum_names = {	"0 ms", "2.67 ms", "5.33 ms", "10.6 ms",
-+			"21.3 ms", "42.7 ms", "85.3 ms", "171 ms", "341 ms",
-+			"683 ms", "1.37 s", "2.73 s", "5.46 s", "10.9 s",
-+			"21.8 s", "43.7 s" },
-+		.max = 16,	/* .enum_names item count */
-+		.reg1 = WM8776_REG_ALCCTRL2,
-+		.mask1 = WM8776_ALC2_HOLD_MASK,
-+		.flags = WM8776_FLAG_ALC,
-+	},
-+	[WM8776_CTL_NGT_SW] = {
-+		.name = "Noise Gate Capture Switch",
-+		.type = SNDRV_CTL_ELEM_TYPE_BOOLEAN,
-+		.reg1 = WM8776_REG_NOISEGATE,
-+		.mask1 = WM8776_NGAT_ENABLE,
-+		.flags = WM8776_FLAG_ALC,
-+	},
-+	[WM8776_CTL_NGT_THR] = {
-+		.name = "Noise Gate Threshold Capture Volume",
-+		.type = SNDRV_CTL_ELEM_TYPE_INTEGER,
-+		.tlv = wm8776_ngth_tlv,
-+		.reg1 = WM8776_REG_NOISEGATE,
-+		.mask1 = WM8776_NGAT_THR_MASK,
-+		.max = 7,
-+		.flags = WM8776_FLAG_ALC,
++	{
++		.name = "Headphone Jack Detection Playback Switch",
++		.set = psc724_set_jack_detection,
++		.get = psc724_get_jack_detection,
 +	},
 +};
 +
-+/* exported functions */
-+
-+void snd_wm8776_init(struct snd_wm8776 *wm)
-+{
-+	int i;
-+	static const u16 default_values[] = {
-+		0x000, 0x100, 0x000,
-+		0x000, 0x100, 0x000,
-+		0x000, 0x090, 0x000, 0x000,
-+		0x022, 0x022, 0x022,
-+		0x008, 0x0cf, 0x0cf, 0x07b, 0x000,
-+		0x032, 0x000, 0x0a6, 0x001, 0x001
-+	};
-+
-+	memcpy(wm->ctl, default_ctl, sizeof(wm->ctl));
-+
-+	snd_wm8776_write(wm, WM8776_REG_RESET, 0x00); /* reset */
-+	udelay(10);
-+	/* load defaults */
-+	for (i = 0; i < ARRAY_SIZE(default_values); i++)
-+		snd_wm8776_write(wm, i, default_values[i]);
-+}
-+EXPORT_SYMBOL(snd_wm8776_init);
-+
-+void snd_wm8776_set_dac_if(struct snd_wm8776 *wm, u16 dac)
-+{
-+	snd_wm8776_write(wm, WM8776_REG_DACIFCTRL, dac);
-+}
-+EXPORT_SYMBOL(snd_wm8776_set_dac_if);
-+
-+void snd_wm8776_set_adc_if(struct snd_wm8776 *wm, u16 adc)
-+{
-+	snd_wm8776_write(wm, WM8776_REG_ADCIFCTRL, adc);
-+}
-+EXPORT_SYMBOL(snd_wm8776_set_adc_if);
-+
-+void snd_wm8776_set_master_mode(struct snd_wm8776 *wm, u16 mode)
-+{
-+	snd_wm8776_write(wm, WM8776_REG_MSTRCTRL, mode);
-+}
-+EXPORT_SYMBOL(snd_wm8776_set_master_mode);
-+
-+void snd_wm8776_set_power(struct snd_wm8776 *wm, u16 power)
-+{
-+	snd_wm8776_write(wm, WM8776_REG_PWRDOWN, power);
-+}
-+EXPORT_SYMBOL(snd_wm8776_set_power);
-+
-+void snd_wm8776_volume_restore(struct snd_wm8776 *wm)
-+{
-+	u16 val = wm->regs[WM8776_REG_DACRVOL];
-+	/* restore volume after MCLK stopped */
-+	snd_wm8776_write(wm, WM8776_REG_DACRVOL, val | WM8776_VOL_UPDATE);
-+}
-+EXPORT_SYMBOL(snd_wm8776_volume_restore);
-+
-+/* mixer callbacks */
-+
-+static int snd_wm8776_volume_info(struct snd_kcontrol *kcontrol,
-+				   struct snd_ctl_elem_info *uinfo)
-+{
-+	struct snd_wm8776 *wm = snd_kcontrol_chip(kcontrol);
-+	int n = kcontrol->private_value;
-+
-+	uinfo->type = SNDRV_CTL_ELEM_TYPE_INTEGER;
-+	uinfo->count = (wm->ctl[n].flags & WM8776_FLAG_STEREO) ? 2 : 1;
-+	uinfo->value.integer.min = wm->ctl[n].min;
-+	uinfo->value.integer.max = wm->ctl[n].max;
-+
-+	return 0;
-+}
-+
-+static int snd_wm8776_enum_info(struct snd_kcontrol *kcontrol,
-+				      struct snd_ctl_elem_info *uinfo)
-+{
-+	struct snd_wm8776 *wm = snd_kcontrol_chip(kcontrol);
-+	int n = kcontrol->private_value;
-+
-+	return snd_ctl_enum_info(uinfo, 1, wm->ctl[n].max,
-+						wm->ctl[n].enum_names);
-+}
-+
-+static int snd_wm8776_ctl_get(struct snd_kcontrol *kcontrol,
++static int psc724_ctl_get(struct snd_kcontrol *kcontrol,
 +				  struct snd_ctl_elem_value *ucontrol)
 +{
-+	struct snd_wm8776 *wm = snd_kcontrol_chip(kcontrol);
++	struct snd_ice1712 *ice = snd_kcontrol_chip(kcontrol);
 +	int n = kcontrol->private_value;
-+	u16 val1, val2;
 +
-+	if (wm->ctl[n].get)
-+		wm->ctl[n].get(wm, &val1, &val2);
-+	else {
-+		val1 = wm->regs[wm->ctl[n].reg1] & wm->ctl[n].mask1;
-+		val1 >>= __ffs(wm->ctl[n].mask1);
-+		if (wm->ctl[n].flags & WM8776_FLAG_STEREO) {
-+			val2 = wm->regs[wm->ctl[n].reg2] & wm->ctl[n].mask2;
-+			val2 >>= __ffs(wm->ctl[n].mask2);
-+			if (wm->ctl[n].flags & WM8776_FLAG_VOL_UPDATE)
-+				val2 &= ~WM8776_VOL_UPDATE;
-+		}
-+	}
-+	if (wm->ctl[n].flags & WM8776_FLAG_INVERT) {
-+		val1 = wm->ctl[n].max - (val1 - wm->ctl[n].min);
-+		val2 = wm->ctl[n].max - (val2 - wm->ctl[n].min);
-+	}
-+	ucontrol->value.integer.value[0] = val1;
-+	if (wm->ctl[n].flags & WM8776_FLAG_STEREO)
-+		ucontrol->value.integer.value[1] = val2;
++	ucontrol->value.integer.value[0] = psc724_cont[n].get(ice);
 +
 +	return 0;
 +}
 +
-+static int snd_wm8776_ctl_put(struct snd_kcontrol *kcontrol,
++static int psc724_ctl_put(struct snd_kcontrol *kcontrol,
 +				  struct snd_ctl_elem_value *ucontrol)
 +{
-+	struct snd_wm8776 *wm = snd_kcontrol_chip(kcontrol);
++	struct snd_ice1712 *ice = snd_kcontrol_chip(kcontrol);
 +	int n = kcontrol->private_value;
-+	u16 val, regval1, regval2;
 +
-+	/* this also works for enum because value is an union */
-+	regval1 = ucontrol->value.integer.value[0];
-+	regval2 = ucontrol->value.integer.value[1];
-+	if (wm->ctl[n].flags & WM8776_FLAG_INVERT) {
-+		regval1 = wm->ctl[n].max - (regval1 - wm->ctl[n].min);
-+		regval2 = wm->ctl[n].max - (regval2 - wm->ctl[n].min);
-+	}
-+	if (wm->ctl[n].set)
-+		wm->ctl[n].set(wm, regval1, regval2);
-+	else {
-+		val = wm->regs[wm->ctl[n].reg1] & ~wm->ctl[n].mask1;
-+		val |= regval1 << __ffs(wm->ctl[n].mask1);
-+		/* both stereo controls in one register */
-+		if (wm->ctl[n].flags & WM8776_FLAG_STEREO &&
-+				wm->ctl[n].reg1 == wm->ctl[n].reg2) {
-+			val &= ~wm->ctl[n].mask2;
-+			val |= regval2 << __ffs(wm->ctl[n].mask2);
-+		}
-+		snd_wm8776_write(wm, wm->ctl[n].reg1, val);
-+		/* stereo controls in different registers */
-+		if (wm->ctl[n].flags & WM8776_FLAG_STEREO &&
-+				wm->ctl[n].reg1 != wm->ctl[n].reg2) {
-+			val = wm->regs[wm->ctl[n].reg2] & ~wm->ctl[n].mask2;
-+			val |= regval2 << __ffs(wm->ctl[n].mask2);
-+			if (wm->ctl[n].flags & WM8776_FLAG_VOL_UPDATE)
-+				val |= WM8776_VOL_UPDATE;
-+			snd_wm8776_write(wm, wm->ctl[n].reg2, val);
-+		}
-+	}
++	psc724_cont[n].set(ice, ucontrol->value.integer.value[0]);
 +
 +	return 0;
 +}
 +
-+int snd_wm8776_add_control(struct snd_wm8776 *wm, int num)
++static char *front_volume	= "Front Playback Volume";
++static char *front_switch	= "Front Playback Switch";
++static char *front_zc		= "Front Zero Cross Detect Playback Switch";
++static char *front_izd		= "Front Infinite Zero Detect Playback Switch";
++static char *front_phase	= "Front Phase Invert Playback Switch";
++static char *front_deemph	= "Front Deemphasis Playback Switch";
++static char *ain1_switch	= "Line Capture Switch";
++static char *ain2_switch	= "CD Capture Switch";
++static char *ain3_switch	= "AUX Capture Switch";
++static char *ain4_switch	= "Front Mic Capture Switch";
++static char *ain5_switch	= "Rear Mic Capture Switch";
++static char *rear_volume	= "Surround Playback Volume";
++static char *clfe_volume	= "CLFE Playback Volume";
++static char *rear_switch	= "Surround Playback Switch";
++static char *clfe_switch	= "CLFE Playback Switch";
++static char *rear_phase		= "Surround Phase Invert Playback Switch";
++static char *clfe_phase		= "CLFE Phase Invert Playback Switch";
++static char *rear_deemph	= "Surround Deemphasis Playback Switch";
++static char *clfe_deemph	= "CLFE Deemphasis Playback Switch";
++static char *rear_clfe_izd	= "Rear Infinite Zero Detect Playback Switch";
++static char *rear_clfe_zc	= "Rear Zero Cross Detect Playback Switch";
++
++static int __devinit psc724_add_controls(struct snd_ice1712 *ice)
 +{
 +	struct snd_kcontrol_new cont;
 +	struct snd_kcontrol *ctl;
++	int err, i;
++	struct psc724_spec *spec = ice->spec;
++
++	spec->wm8776.ctl[WM8776_CTL_DAC_VOL].name = front_volume;
++	spec->wm8776.ctl[WM8776_CTL_DAC_SW].name = front_switch;
++	spec->wm8776.ctl[WM8776_CTL_DAC_ZC_SW].name = front_zc;
++	spec->wm8776.ctl[WM8776_CTL_AUX_SW].name = NULL;
++	spec->wm8776.ctl[WM8776_CTL_DAC_IZD_SW].name = front_izd;
++	spec->wm8776.ctl[WM8776_CTL_PHASE_SW].name = front_phase;
++	spec->wm8776.ctl[WM8776_CTL_DEEMPH_SW].name = front_deemph;
++	spec->wm8776.ctl[WM8776_CTL_INPUT1_SW].name = ain1_switch;
++	spec->wm8776.ctl[WM8776_CTL_INPUT2_SW].name = ain2_switch;
++	spec->wm8776.ctl[WM8776_CTL_INPUT3_SW].name = ain3_switch;
++	spec->wm8776.ctl[WM8776_CTL_INPUT4_SW].name = ain4_switch;
++	spec->wm8776.ctl[WM8776_CTL_INPUT5_SW].name = ain5_switch;
++	snd_wm8776_build_controls(&spec->wm8776);
++	spec->wm8766.ctl[WM8766_CTL_CH1_VOL].name = rear_volume;
++	spec->wm8766.ctl[WM8766_CTL_CH2_VOL].name = clfe_volume;
++	spec->wm8766.ctl[WM8766_CTL_CH3_VOL].name = NULL;
++	spec->wm8766.ctl[WM8766_CTL_CH1_SW].name = rear_switch;
++	spec->wm8766.ctl[WM8766_CTL_CH2_SW].name = clfe_switch;
++	spec->wm8766.ctl[WM8766_CTL_CH3_SW].name = NULL;
++	spec->wm8766.ctl[WM8766_CTL_PHASE1_SW].name = rear_phase;
++	spec->wm8766.ctl[WM8766_CTL_PHASE2_SW].name = clfe_phase;
++	spec->wm8766.ctl[WM8766_CTL_PHASE3_SW].name = NULL;
++	spec->wm8766.ctl[WM8766_CTL_DEEMPH1_SW].name = rear_deemph;
++	spec->wm8766.ctl[WM8766_CTL_DEEMPH2_SW].name = clfe_deemph;
++	spec->wm8766.ctl[WM8766_CTL_DEEMPH3_SW].name = NULL;
++	spec->wm8766.ctl[WM8766_CTL_IZD_SW].name = rear_clfe_izd;
++	spec->wm8766.ctl[WM8766_CTL_ZC_SW].name = rear_clfe_zc;
++	snd_wm8766_build_controls(&spec->wm8766);
 +
 +	memset(&cont, 0, sizeof(cont));
 +	cont.iface = SNDRV_CTL_ELEM_IFACE_MIXER;
-+	cont.private_value = num;
-+	cont.name = wm->ctl[num].name;
-+	cont.access = SNDRV_CTL_ELEM_ACCESS_READWRITE;
-+	if (wm->ctl[num].flags & WM8776_FLAG_LIM ||
-+	    wm->ctl[num].flags & WM8776_FLAG_ALC)
-+		cont.access |= SNDRV_CTL_ELEM_ACCESS_INACTIVE;
-+	cont.tlv.p = NULL;
-+	cont.get = snd_wm8776_ctl_get;
-+	cont.put = snd_wm8776_ctl_put;
-+
-+	switch (wm->ctl[num].type) {
-+	case SNDRV_CTL_ELEM_TYPE_INTEGER:
-+		cont.info = snd_wm8776_volume_info;
-+		cont.access |= SNDRV_CTL_ELEM_ACCESS_TLV_READ;
-+		cont.tlv.p = wm->ctl[num].tlv;
-+		break;
-+	case SNDRV_CTL_ELEM_TYPE_BOOLEAN:
-+		wm->ctl[num].max = 1;
-+		if (wm->ctl[num].flags & WM8776_FLAG_STEREO)
-+			cont.info = snd_ctl_boolean_stereo_info;
-+		else
-+			cont.info = snd_ctl_boolean_mono_info;
-+		break;
-+	case SNDRV_CTL_ELEM_TYPE_ENUMERATED:
-+		cont.info = snd_wm8776_enum_info;
-+		break;
-+	default:
-+		return -EINVAL;
++	for (i = 0; i < ARRAY_SIZE(psc724_cont); i++) {
++		cont.private_value = i;
++		cont.name = psc724_cont[i].name;
++		cont.access = SNDRV_CTL_ELEM_ACCESS_READWRITE;
++		cont.info = snd_ctl_boolean_mono_info;
++		cont.get = psc724_ctl_get;
++		cont.put = psc724_ctl_put;
++		ctl = snd_ctl_new1(&cont, ice);
++		if (!ctl)
++			return -ENOMEM;
++		err = snd_ctl_add(ice->card, ctl);
++		if (err < 0)
++			return err;
 +	}
-+	ctl = snd_ctl_new1(&cont, wm);
-+	if (!ctl)
++
++	return 0;
++}
++
++static void psc724_set_pro_rate(struct snd_ice1712 *ice, unsigned int rate)
++{
++	struct psc724_spec *spec = ice->spec;
++	/* restore codec volume settings after rate change (PMCLK stop) */
++	snd_wm8776_volume_restore(&spec->wm8776);
++	snd_wm8766_volume_restore(&spec->wm8766);
++}
++
++/* init */
++
++static int __devinit psc724_init(struct snd_ice1712 *ice)
++{
++	struct psc724_spec *spec;
++
++	spec = kzalloc(sizeof(*spec), GFP_KERNEL);
++	if (!spec)
 +		return -ENOMEM;
++	ice->spec = spec;
++	spec->ice = ice;
 +
-+	return snd_ctl_add(wm->card, ctl);
-+}
-+
-+int snd_wm8776_build_controls(struct snd_wm8776 *wm)
-+{
-+	int err, i;
-+
-+	for (i = 0; i < WM8776_CTL_COUNT; i++)
-+		if (wm->ctl[i].name) {
-+			err = snd_wm8776_add_control(wm, i);
-+			if (err < 0)
-+				return err;
-+		}
-+
-+	return 0;
-+}
-+EXPORT_SYMBOL(snd_wm8776_build_controls);
-+
-+static int __init alsa_wm8776_module_init(void)
-+{
++	ice->num_total_dacs = 6;
++	ice->num_total_adcs = 2;
++	spec->wm8776.ops.write = psc724_wm8776_write;
++	spec->wm8776.card = ice->card;
++	snd_wm8776_init(&spec->wm8776);
++	spec->wm8766.ops.write = psc724_wm8766_write;
++	spec->wm8766.card = ice->card;
++	snd_wm8766_init(&spec->wm8766);
++	snd_wm8766_set_if(&spec->wm8766,
++			WM8766_IF_FMT_I2S | WM8766_IF_IWL_24BIT);
++	ice->gpio.set_pro_rate = psc724_set_pro_rate;
++	INIT_DELAYED_WORK(&spec->hp_work, psc724_update_hp_jack_state);
++	psc724_set_jack_detection(ice, true);
 +	return 0;
 +}
 +
-+static void __exit alsa_wm8776_module_exit(void)
++static void psc724_exit(struct snd_ice1712 *ice)
 +{
++	struct psc724_spec *spec = ice->spec;
++
++	cancel_delayed_work_sync(&spec->hp_work);
 +}
 +
-+module_init(alsa_wm8776_module_init)
-+module_exit(alsa_wm8776_module_exit)
++/* PSC724 has buggy EEPROM (no 96&192kHz, all FFh GPIOs), so override it here */
++static unsigned char psc724_eeprom[] __devinitdata = {
++	[ICE_EEP2_SYSCONF]	= 0x42,	/* 49.152MHz, 1 ADC, 3 DACs */
++	[ICE_EEP2_ACLINK]	= 0x80,	/* I2S */
++	[ICE_EEP2_I2S]		= 0xf0,	/* I2S volume, 96kHz, 24bit */
++	[ICE_EEP2_SPDIF]	= 0xc1,	/* spdif out-en, out-int, no input */
++	/* GPIO outputs */
++	[ICE_EEP2_GPIO_DIR2]	= 0x5f, /* MUTE_ALL,WM8766 MUTE/MODE/ML/MC/MD */
++	/* GPIO write enable */
++	[ICE_EEP2_GPIO_MASK]	= 0xff, /* read-only */
++	[ICE_EEP2_GPIO_MASK1]	= 0xff, /* read-only */
++	[ICE_EEP2_GPIO_MASK2]	= 0xa0, /* MUTE_ALL,WM8766 MUTE/MODE/ML/MC/MD */
++	/* GPIO initial state */
++	[ICE_EEP2_GPIO_STATE2]	= 0x20,	/* unmuted, all WM8766 pins low */
++};
++
++struct snd_ice1712_card_info snd_vt1724_psc724_cards[] __devinitdata = {
++	{
++		.subvendor = VT1724_SUBDEVICE_PSC724,
++		.name = "Philips PSC724 Ultimate Edge",
++		.model = "psc724",
++		.chip_init = psc724_init,
++		.chip_exit = psc724_exit,
++		.build_controls = psc724_add_controls,
++		.eeprom_size = sizeof(psc724_eeprom),
++		.eeprom_data = psc724_eeprom,
++	},
++	{} /*terminator*/
++};
+diff --git a/sound/pci/ice1712/psc724.h b/sound/pci/ice1712/psc724.h
+new file mode 100644
+index 0000000..858e5fd
+--- /dev/null
++++ b/sound/pci/ice1712/psc724.h
+@@ -0,0 +1,13 @@
++#ifndef __SOUND_PSC724_H
++#define __SOUND_PSC724_H
++
++/* ID */
++#define PSC724_DEVICE_DESC	\
++		"{Philips,PSC724 Ultimate Edge},"
++
++#define VT1724_SUBDEVICE_PSC724		0xab170619
++
++/* entry struct */
++extern struct snd_ice1712_card_info snd_vt1724_psc724_cards[];
++
++#endif /* __SOUND_PSC724_H */
 -- 
 Ondrej Zary
 
