@@ -1,89 +1,178 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754560Ab2DPQXl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Apr 2012 12:23:41 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:40905 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751581Ab2DPQOV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Apr 2012 12:14:21 -0400
-From: Jan Kara <jack@suse.cz>
-To: Al Viro <viro@ZenIV.linux.org.uk>
-Cc: dchinner@redhat.com, LKML <linux-kernel@vger.kernel.org>,
-        linux-fsdevel@vger.kernel.org, Jan Kara <jack@suse.cz>
-Subject: [PATCH 07/27] mm: Update file times from fault path only if .page_mkwrite is not set
-Date: Mon, 16 Apr 2012 18:13:45 +0200
-Message-Id: <1334592845-22862-8-git-send-email-jack@suse.cz>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <1334592845-22862-1-git-send-email-jack@suse.cz>
-References: <1334592845-22862-1-git-send-email-jack@suse.cz>
+	id S1754556Ab2DPQYL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Apr 2012 12:24:11 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:39938 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752828Ab2DPQYK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Apr 2012 12:24:10 -0400
+Date: Mon, 16 Apr 2012 11:24:02 -0500
+From: Serge Hallyn <serge.hallyn@canonical.com>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Daniel Lezcano <daniel.lezcano@free.fr>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] pidns: reboot_pid_ns: use SEND_SIG_FORCED instead of
+ force_sig()
+Message-ID: <20120416162402.GA7995@sergelap>
+References: <20120413004446.GA8376@redhat.com>
+ <20120413182051.GA11149@sergelap>
+ <20120413192455.GA24464@redhat.com>
+ <20120416135931.GB4234@sergelap>
+ <20120416153843.GA9302@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120416153843.GA9302@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Filesystems wanting to properly support freezing need to have control
-when file_update_time() is called. After pushing file_update_time()
-to all relevant .page_mkwrite implementations we can just stop calling
-file_update_time() when filesystem implements .page_mkwrite.
+Quoting Oleg Nesterov (oleg@redhat.com):
+> On 04/16, Serge Hallyn wrote:
+> >
+> > Quoting Oleg Nesterov (oleg@redhat.com):
+> > >
+> > > Strange... I even tested this change, but only in the root namespace.
+> > > OK, thanks, I'll investigate. I hope you verified your kernel has
+> > > 629d362b commit ;)
+> >
+> > I took friday's HEAD of Linus tree.  All went fine.  Added this patch.
+> > The container can shutdown, but reboot causes shutdown.  Don't undersrtand
+> > why.
+> 
+> Heh. This looks "impossible". I'd like to understand the reason.
+> So, LINUX_REBOOT_CMD_RESTART results in WIFSIGNALED() == SIGINT?
+> 
+> OK, I'll try to test this patch in the non-root namespace.
 
-Tested-by: Kamal Mostafa <kamal@canonical.com>
-Tested-by: Peter M. Petrakis <peter.petrakis@canonical.com>
-Tested-by: Dann Frazier <dann.frazier@canonical.com>
-Tested-by: Massimo Morana <massimo.morana@canonical.com>
-Signed-off-by: Jan Kara <jack@suse.cz>
----
- mm/memory.c |   14 +++++++-------
- 1 files changed, 7 insertions(+), 7 deletions(-)
+Playing with the test case below (based on the one Daniel submitted
+alongside his container reboot patches), it looks like
+WIFSIGNALED(status) and WTERMSIG(status) are 0 with this kernel, not
+1 and sig.
 
-diff --git a/mm/memory.c b/mm/memory.c
-index 6105f47..4803e47 100644
---- a/mm/memory.c
-+++ b/mm/memory.c
-@@ -2633,6 +2633,9 @@ reuse:
- 		if (!page_mkwrite) {
- 			wait_on_page_locked(dirty_page);
- 			set_page_dirty_balance(dirty_page, page_mkwrite);
-+			/* file_update_time outside page_lock */
-+			if (vma->vm_file)
-+				file_update_time(vma->vm_file);
- 		}
- 		put_page(dirty_page);
- 		if (page_mkwrite) {
-@@ -2650,10 +2653,6 @@ reuse:
- 			}
- 		}
- 
--		/* file_update_time outside page_lock */
--		if (vma->vm_file)
--			file_update_time(vma->vm_file);
--
- 		return ret;
- 	}
- 
-@@ -3322,12 +3321,13 @@ static int __do_fault(struct mm_struct *mm, struct vm_area_struct *vma,
- 
- 	if (dirty_page) {
- 		struct address_space *mapping = page->mapping;
-+		int dirtied = 0;
- 
- 		if (set_page_dirty(dirty_page))
--			page_mkwrite = 1;
-+			dirtied = 1;
- 		unlock_page(dirty_page);
- 		put_page(dirty_page);
--		if (page_mkwrite && mapping) {
-+		if ((dirtied || page_mkwrite) && mapping) {
- 			/*
- 			 * Some device drivers do not set page.mapping but still
- 			 * dirty their pages
-@@ -3336,7 +3336,7 @@ static int __do_fault(struct mm_struct *mm, struct vm_area_struct *vma,
- 		}
- 
- 		/* file_update_time outside page_lock */
--		if (vma->vm_file)
-+		if (vma->vm_file && !page_mkwrite)
- 			file_update_time(vma->vm_file);
- 	} else {
- 		unlock_page(vmf.page);
--- 
-1.7.1
+-serge
 
+#include <alloca.h>
+#include <stdio.h>
+#include <sched.h>
+#include <unistd.h>
+#include <signal.h>
+#include <sys/reboot.h>
+#include <sys/types.h>
+#include <sys/wait.h>
+
+#include <linux/sched.h>
+#include <linux/reboot.h>
+
+static int do_reboot(void *arg)
+{
+        int *cmd = arg;
+
+        if (reboot(*cmd))
+                printf("failed to reboot(%d): %m\n", *cmd);
+}
+
+int test_reboot(int cmd, int sig)
+{
+        long stack_size = 4096;
+        void *stack = alloca(stack_size) + stack_size;
+        int status;
+        pid_t ret;
+
+        ret = clone(do_reboot, stack, CLONE_NEWPID | SIGCHLD, &cmd);
+        if (ret < 0) {
+                printf("failed to clone: %m\n");
+                return -1;
+        }
+
+        if (wait(&status) < 0) {
+                printf("unexpected wait error: %m\n");
+                return -1;
+        }
+
+	printf("WIFSIGNALED is %d\n", WIFSIGNALED(status));
+
+	printf("signal termination is %d, expected %d)\n", WTERMSIG(status), sig);
+
+        if (!WIFSIGNALED(status)) {
+		if (sig != -1)
+			printf("child process exited but was not signaled\n");
+                return -1;
+        }
+
+        if (WTERMSIG(status) != sig) {
+                printf("signal termination is not the one expected\n");
+                return -1;
+        }
+
+        return 0;
+}
+
+static int have_reboot_patch(void)
+{
+	FILE *f = fopen("/proc/sys/kernel/ctrl-alt-del", "r");
+	int ret;
+	int v;
+
+	if (!f)
+		return 0;
+
+	ret = fscanf(f, "%d", &v);
+	fclose(f);
+	if (ret != 1)
+		return 0;
+	ret = reboot(v ? LINUX_REBOOT_CMD_CAD_ON : LINUX_REBOOT_CMD_CAD_OFF);
+	if (ret != -1)
+		return 0;
+	return 1;
+}
+
+int main(int argc, char *argv[])
+{
+        int status;
+
+	if (getuid() != 0) {
+                printf("Must run as root.\n");
+                return 1;
+	}
+
+	status = have_reboot_patch();
+	if (status != 0) {
+                printf("Your kernel does not have the container reboot patch\n");
+                return 1;
+	}
+
+#if 0
+        status = test_reboot(LINUX_REBOOT_CMD_CAD_ON, -1);
+        if (status >= 0) {
+                printf("reboot(LINUX_REBOOT_CMD_CAD_ON) should have failed\n");
+                return 1;
+        }
+        printf("reboot(LINUX_REBOOT_CMD_CAD_ON) has failed as expected\n");
+#endif
+
+        status = test_reboot(LINUX_REBOOT_CMD_RESTART, SIGHUP);
+        if (status < 0)
+                return 1;
+        printf("reboot(LINUX_REBOOT_CMD_RESTART) succeed\n");
+
+        status = test_reboot(LINUX_REBOOT_CMD_RESTART2, SIGHUP);
+        if (status < 0)
+                return 1;
+        printf("reboot(LINUX_REBOOT_CMD_RESTART2) succeed\n");
+
+        status = test_reboot(LINUX_REBOOT_CMD_HALT, SIGINT);
+        if (status < 0)
+                return 1;
+        printf("reboot(LINUX_REBOOT_CMD_HALT) succeed\n");
+
+        status = test_reboot(LINUX_REBOOT_CMD_POWER_OFF, SIGINT);
+        if (status < 0)
+                return 1;
+        printf("reboot(LINUX_REBOOT_CMD_POWERR_OFF) succeed\n");
+
+        printf("All tests passed\n");
+        return 0;
+}
