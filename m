@@ -1,55 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754526Ab2DPOnB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Apr 2012 10:43:01 -0400
-Received: from mx2.parallels.com ([64.131.90.16]:59600 "EHLO mx2.parallels.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754432Ab2DPOm6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Apr 2012 10:42:58 -0400
-Message-ID: <4F8C2F8F.1040009@parallels.com>
-Date: Mon, 16 Apr 2012 11:41:19 -0300
-From: Glauber Costa <glommer@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120216 Thunderbird/10.0.1
+	id S1754507Ab2DPOoO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Apr 2012 10:44:14 -0400
+Received: from mailgw1.uni-kl.de ([131.246.120.220]:59475 "EHLO
+	mailgw1.uni-kl.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753673Ab2DPOoN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Apr 2012 10:44:13 -0400
+Message-ID: <4F8C3036.2030702@itwm.fraunhofer.de>
+Date: Mon, 16 Apr 2012 16:44:06 +0200
+From: Bernd Schubert <bernd.schubert@itwm.fraunhofer.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120310 Thunderbird/11.0
 MIME-Version: 1.0
-To: Christoph Lameter <cl@linux.com>
-CC: <linux-mm@kvack.org>, Suleiman Souhlal <suleiman@google.com>,
-        <devel@openvz.org>, <linux-kernel@vger.kernel.org>,
-        Pekka Enberg <penberg@cs.helsinki.fi>
-Subject: Re: [PATCH] slub: don't create a copy of the name string in kmem_cache_create
-References: <1334351170-26672-1-git-send-email-glommer@parallels.com> <alpine.DEB.2.00.1204160900270.7795@router.home>
-In-Reply-To: <alpine.DEB.2.00.1204160900270.7795@router.home>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+To: Jeff Layton <jlayton@redhat.com>
+CC: Malahal Naineni <malahal@us.ibm.com>, linux-nfs@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        pstaubach@exagrid.com, miklos@szeredi.hu, viro@ZenIV.linux.org.uk,
+        hch@infradead.org, michael.brantley@deshaw.com,
+        sven.breuner@itwm.fraunhofer.de
+Subject: Re: [PATCH RFC] vfs: make fstatat retry on ESTALE errors from getattr
+ call
+References: <1334316311-22331-1-git-send-email-jlayton@redhat.com> <20120413150518.GA1987@us.ibm.com> <20120413114236.0e557e01@tlielax.poochiereds.net> <4F8B1B7B.3040304@itwm.fraunhofer.de> <20120416073655.7cdb90cf@corrin.poochiereds.net>
+In-Reply-To: <20120416073655.7cdb90cf@corrin.poochiereds.net>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [201.82.19.44]
+X-ITWM-CharSet: ISO-8859-1
+X-ITWM-Scanned-By: mail2.itwm.fhg.de
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/16/2012 11:02 AM, Christoph Lameter wrote:
-> On Fri, 13 Apr 2012, Glauber Costa wrote:
+>> I am definitely voting against an infinite number of retries. I'm
+>> working on FhGFS, which supports distributed meta data servers. So when
+>> a file is moved around between directories, its file handle, which
+>> contains the meta-data target id might become invalid. As NFSv3 is
+>> stateless we cannot inform the client about that and must return ESTALE
+>> then. NFSv4 is better, but I'm not sure how well invalidating a file
+>> handle works. So retrying once on ESTALE might be a good idea, but
+>> retrying forever is not.
 >
->> When creating a cache, slub keeps a copy of the cache name through
->> strdup. The slab however, doesn't do that. This means that everyone
->> registering caches have to keep a copy themselves anyway, since code
->> needs to work on all allocators.
+> It's important to note that I'm only proposing to wrap syscalls this
+> way that take a pathname argument. We can't do anything about those
+> that don't since at that point we have no way to retry the lookup.
+>
+> So, I'm not sure this patch would affect the case you're concerned
+> about one way or another. If you move the file to a different
+> directory, then it's pathname would also change, and at that point
+> you'd end up with an ENOENT error or something on the next retry.
+>
+> If the file was open and you were (for instance) reading or writing to
+> it from a client when you moved it, then we can't retry the lookup at
+> that point. The open is long since done and the pathname is now gone.
+> You'll get an ESTALE back in userspace regardless.
+
+Yes, sorry, I should have read the patch and its description more carefully.
+
+>
+>> Also, what about asymmetric HA servers? I believe to remember that also
+>> resulted in ESTALE. So for example server1 exports /home and /scratch,
+>> but on failure server2 can only take over /home and denies access to
+>> /scratch.
 >>
->> Having slab create a copy of it as well may very well be the right
->> thing to do: but at this point, the callers are already there
 >
-> What would break if we would add that to slab? I think this is more robust
-> because right now slab relies on the caller not freeing the string.
+> That sounds like a broken cluster configuration. Still...
 
-Hard to think of anything, since we call kmem_cache_create() outside of
-interrupt context anyway.
+Simply budget and safety. I had to do that in the past, /home was 
+mirrored via drbd, but /scratch was not. And although /scratch was on an 
+external raid system, I simply did not setup a connection to the 
+failover system. HA software is not reliable and extensive testing 
+revealed possible split brain situations with corrupting double mounts. 
+Nowadays there are ext4 + enabled MMP, but in 2004 there was no such 
+additional protection.
 
-We have one more point in which we can fail - specially now that we are 
-constraining memory usage, but one can argue that if we are short on 
-memory, better not create another cache anyway.
+>
+> Presumably at some point in the future, a sysadmin would intervene and
+> fix the situation such that /scratch is available again. Is it better
+> to return an error to the application at that point, or simply allow it
+> to keep retrying until the problem has been fixed?
+>
+> The person with the long running job that's doing operations
+> in /scratch would probably prefer the latter. If not, then they could
+> always send the program a fatal signal to stop it altogether.
+>
 
-My main reason for taking this out of slub, instead of adding to the 
-slab, is that I don't remember any single bug report about that - and 
-there are certainly people around using slab, and the interface has been 
-around for so long, that pretty much everyone will assume this anyway.
+That was not a compute cluster, but the diskless desktop environment. 
+And things get difficult if desktop evironments start to hang. I'm not 
+sure if a soft mount is the solution then, as users do not like to kill 
+their running desktops. And with kde and gnome and their habit to 
+monitor everything it might not be easy to kill their proccesses 
+monitoring /scratch without killing the entire desktop.
+But then I'm not sure if anyone still is doing async HA clusters and how 
+applications react to that nowadays. I just wonder if it is always a 
+good idea to loop forever in ESTALE in such situations.
 
-I am happy, however, to patch it either way.
 
+Cheers,
+Bernd
