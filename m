@@ -1,180 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754230Ab2DPS0n (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Apr 2012 14:26:43 -0400
-Received: from david.siemens.de ([192.35.17.14]:16401 "EHLO david.siemens.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750823Ab2DPS0l (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Apr 2012 14:26:41 -0400
-Message-ID: <4F8C645C.7010302@siemens.com>
-Date: Mon, 16 Apr 2012 20:26:36 +0200
-From: Jan Kiszka <jan.kiszka@siemens.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); de; rv:1.8.1.12) Gecko/20080226 SUSE/2.0.0.12-1.1 Thunderbird/2.0.0.12 Mnenhy/0.7.5.666
-MIME-Version: 1.0
-To: Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>
-CC: kvm <kvm@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: [PATCH] KVM: x86: Run PIT work in own kthread
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1755107Ab2DPS1i (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Apr 2012 14:27:38 -0400
+Received: from shards.monkeyblade.net ([198.137.202.13]:46531 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750823Ab2DPS1h (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Apr 2012 14:27:37 -0400
+Date: Mon, 16 Apr 2012 14:27:28 -0400 (EDT)
+Message-Id: <20120416.142728.864894452301706752.davem@davemloft.net>
+To: mingo@kernel.org
+Cc: joe@perches.com, linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
+        torvalds@linux-foundation.org, apw@canonical.com
+Subject: Re: Please fix or revert: [PATCH] checkpatch: add --strict tests
+ for braces, comments and casts
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <20120416091719.GA4113@gmail.com>
+References: <20120416091719.GA4113@gmail.com>
+X-Mailer: Mew version 6.4 on Emacs 23.3 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Mon, 16 Apr 2012 11:27:30 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We can't run PIT IRQ injection work in the interrupt context of the host
-timer. This would allow the user to influence the handler complexity by
-asking for a broadcast to a large number of VCPUs. Therefore, this work
-was pushed into workqueue context in 9d244caf2e. However, this prevents
-prioritizing the PIT injection over other task as workqueues share
-kernel threads.
+From: Ingo Molnar <mingo@kernel.org>
+Date: Mon, 16 Apr 2012 11:17:20 +0200
 
-This replaces the workqueue with a kthread worker and gives that thread
-a name in the format "kvm-pit/<owner-process-pid>". That allows to
-identify and adjust the kthread priority according to the VM process
-parameters.
+> 
+> This recent checkpatch commit, added in v3.4-rc1:
+> 
+>   aad4f6149831 checkpatch: add --strict tests for braces, comments and casts
+> 
+> made the default checkpatch run complain about the following 
+> perfectly fine multi-line comment block:
+> 
+> +               rdp->qlen_lazy = 0;
+> +               rdp->qlen = 0;
+> +
+> +               /*
+> +                * Adopt all callbacks.  The outgoing CPU was in no shape
+> +                * to advance them, so make them all go through a full
+> +                * grace period.
+> +                */
+> +               *receive_rdp->nxttail[RCU_NEXT_TAIL] = rdp->nxtlist;
+> 
 
-Signed-off-by: Jan Kiszka <jan.kiszka@siemens.com>
----
- arch/x86/kvm/i8254.c |   31 +++++++++++++++++++------------
- arch/x86/kvm/i8254.h |    7 +++++--
- 2 files changed, 24 insertions(+), 14 deletions(-)
+I would like to formally propose that we change CodingStyle so that
+our comments are of the form:
 
-diff --git a/arch/x86/kvm/i8254.c b/arch/x86/kvm/i8254.c
-index d68f99d..adba28f 100644
---- a/arch/x86/kvm/i8254.c
-+++ b/arch/x86/kvm/i8254.c
-@@ -34,7 +34,6 @@
- 
- #include <linux/kvm_host.h>
- #include <linux/slab.h>
--#include <linux/workqueue.h>
- 
- #include "irq.h"
- #include "i8254.h"
-@@ -249,7 +248,7 @@ static void kvm_pit_ack_irq(struct kvm_irq_ack_notifier *kian)
- 		/* in this case, we had multiple outstanding pit interrupts
- 		 * that we needed to inject.  Reinject
- 		 */
--		queue_work(ps->pit->wq, &ps->pit->expired);
-+		queue_kthread_work(&ps->pit->worker, &ps->pit->expired);
- 	ps->irq_ack = 1;
- 	spin_unlock(&ps->inject_lock);
- }
-@@ -270,7 +269,7 @@ void __kvm_migrate_pit_timer(struct kvm_vcpu *vcpu)
- static void destroy_pit_timer(struct kvm_pit *pit)
- {
- 	hrtimer_cancel(&pit->pit_state.pit_timer.timer);
--	cancel_work_sync(&pit->expired);
-+	flush_kthread_work(&pit->expired);
- }
- 
- static bool kpit_is_periodic(struct kvm_timer *ktimer)
-@@ -284,7 +283,7 @@ static struct kvm_timer_ops kpit_ops = {
- 	.is_periodic = kpit_is_periodic,
- };
- 
--static void pit_do_work(struct work_struct *work)
-+static void pit_do_work(struct kthread_work *work)
- {
- 	struct kvm_pit *pit = container_of(work, struct kvm_pit, expired);
- 	struct kvm *kvm = pit->kvm;
-@@ -328,7 +327,7 @@ static enum hrtimer_restart pit_timer_fn(struct hrtimer *data)
- 
- 	if (ktimer->reinject || !atomic_read(&ktimer->pending)) {
- 		atomic_inc(&ktimer->pending);
--		queue_work(pt->wq, &pt->expired);
-+		queue_kthread_work(&pt->worker, &pt->expired);
- 	}
- 
- 	if (ktimer->t_ops->is_periodic(ktimer)) {
-@@ -353,7 +352,7 @@ static void create_pit_timer(struct kvm *kvm, u32 val, int is_period)
- 
- 	/* TODO The new value only affected after the retriggered */
- 	hrtimer_cancel(&pt->timer);
--	cancel_work_sync(&ps->pit->expired);
-+	flush_kthread_work(&ps->pit->expired);
- 	pt->period = interval;
- 	ps->is_periodic = is_period;
- 
-@@ -669,6 +668,8 @@ struct kvm_pit *kvm_create_pit(struct kvm *kvm, u32 flags)
- {
- 	struct kvm_pit *pit;
- 	struct kvm_kpit_state *pit_state;
-+	struct pid *pid;
-+	pid_t pid_nr;
- 	int ret;
- 
- 	pit = kzalloc(sizeof(struct kvm_pit), GFP_KERNEL);
-@@ -685,14 +686,20 @@ struct kvm_pit *kvm_create_pit(struct kvm *kvm, u32 flags)
- 	mutex_lock(&pit->pit_state.lock);
- 	spin_lock_init(&pit->pit_state.inject_lock);
- 
--	pit->wq = create_singlethread_workqueue("kvm-pit-wq");
--	if (!pit->wq) {
-+	pid = get_pid(task_tgid(current));
-+	pid_nr = pid_vnr(pid);
-+	put_pid(pid);
-+
-+	init_kthread_worker(&pit->worker);
-+	pit->worker_task = kthread_run(kthread_worker_fn, &pit->worker,
-+				       "kvm-pit/%d", pid_nr);
-+	if (IS_ERR(pit->worker_task)) {
- 		mutex_unlock(&pit->pit_state.lock);
- 		kvm_free_irq_source_id(kvm, pit->irq_source_id);
- 		kfree(pit);
- 		return NULL;
- 	}
--	INIT_WORK(&pit->expired, pit_do_work);
-+	init_kthread_work(&pit->expired, pit_do_work);
- 
- 	kvm->arch.vpit = pit;
- 	pit->kvm = kvm;
-@@ -736,7 +743,7 @@ fail:
- 	kvm_unregister_irq_mask_notifier(kvm, 0, &pit->mask_notifier);
- 	kvm_unregister_irq_ack_notifier(kvm, &pit_state->irq_ack_notifier);
- 	kvm_free_irq_source_id(kvm, pit->irq_source_id);
--	destroy_workqueue(pit->wq);
-+	kthread_stop(pit->worker_task);
- 	kfree(pit);
- 	return NULL;
- }
-@@ -756,10 +763,10 @@ void kvm_free_pit(struct kvm *kvm)
- 		mutex_lock(&kvm->arch.vpit->pit_state.lock);
- 		timer = &kvm->arch.vpit->pit_state.pit_timer.timer;
- 		hrtimer_cancel(timer);
--		cancel_work_sync(&kvm->arch.vpit->expired);
-+		flush_kthread_work(&kvm->arch.vpit->expired);
-+		kthread_stop(kvm->arch.vpit->worker_task);
- 		kvm_free_irq_source_id(kvm, kvm->arch.vpit->irq_source_id);
- 		mutex_unlock(&kvm->arch.vpit->pit_state.lock);
--		destroy_workqueue(kvm->arch.vpit->wq);
- 		kfree(kvm->arch.vpit);
- 	}
- }
-diff --git a/arch/x86/kvm/i8254.h b/arch/x86/kvm/i8254.h
-index 51a9742..fdf4042 100644
---- a/arch/x86/kvm/i8254.h
-+++ b/arch/x86/kvm/i8254.h
-@@ -1,6 +1,8 @@
- #ifndef __I8254_H
- #define __I8254_H
- 
-+#include <linux/kthread.h>
-+
- #include "iodev.h"
- 
- struct kvm_kpit_channel_state {
-@@ -39,8 +41,9 @@ struct kvm_pit {
- 	struct kvm_kpit_state pit_state;
- 	int irq_source_id;
- 	struct kvm_irq_mask_notifier mask_notifier;
--	struct workqueue_struct *wq;
--	struct work_struct expired;
-+	struct kthread_worker worker;
-+	struct task_struct *worker_task;
-+	struct kthread_work expired;
- };
- 
- #define KVM_PIT_BASE_ADDRESS	    0x40
--- 
-1.7.3.4
+	/* XXX
+	 * YYY
+	 */
+
+So that we can save one line of vertical space.
+
+We've adopted this all across the networking, and the code looks a
+lot nicer as well as allowing more actual code onto a single window
+of text.
