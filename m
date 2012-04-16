@@ -1,66 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753125Ab2DPJYh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Apr 2012 05:24:37 -0400
-Received: from newsmtp5.atmel.com ([204.2.163.5]:39722 "EHLO
-	sjogate2.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751678Ab2DPJVS (ORCPT
+	id S1753145Ab2DPJYp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Apr 2012 05:24:45 -0400
+Received: from mail-wi0-f172.google.com ([209.85.212.172]:50711 "EHLO
+	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751678Ab2DPJYn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Apr 2012 05:21:18 -0400
-From: Nicolas Ferre <nicolas.ferre@atmel.com>
-To: linux-arm-kernel@lists.infradead.org, arnd@arndb.de, olof@lixom.net
-Cc: plagnioj@jcrosoft.com, ludovic.desroches@atmel.com,
-        linux-kernel@vger.kernel.org, Joachim Eastwood <manabian@gmail.com>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>
-Subject: [PATCH 01/12] ARM: at91: Export at91_st_base
-Date: Mon, 16 Apr 2012 11:20:45 +0200
-Message-Id: <9fce85c7e4357a93457c8fd2534a1cc1c3055bf5.1334567594.git.nicolas.ferre@atmel.com>
-X-Mailer: git-send-email 1.7.10
-In-Reply-To: <cover.1334567594.git.nicolas.ferre@atmel.com>
-References: <cover.1334567594.git.nicolas.ferre@atmel.com>
-In-Reply-To: <cover.1334567594.git.nicolas.ferre@atmel.com>
-References: <cover.1334567594.git.nicolas.ferre@atmel.com>
+	Mon, 16 Apr 2012 05:24:43 -0400
+Date: Mon, 16 Apr 2012 11:24:37 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: "Chen, Dennis (SRDC SW)" <Dennis1.Chen@amd.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "paulmck@linux.vnet.ibm.com" <paulmck@linux.vnet.ibm.com>,
+        "peterz@infradead.org" <peterz@infradead.org>,
+        Paul Mackerras <paulus@samba.org>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Subject: Re: [PATCH 0/2] tools perf: Add a new benchmark tool for
+ semaphore/mutex
+Message-ID: <20120416092437.GB27526@gmail.com>
+References: <4F7EC111.4010608@ladisch.de>
+ <491D6B4EAD0A714894D8AD22F4BDE0439F9ED2@SCYBEXDAG02.amd.com>
+ <20120409184538.GE2430@linux.vnet.ibm.com>
+ <491D6B4EAD0A714894D8AD22F4BDE043A33A9E@SCYBEXDAG02.amd.com>
+ <20120411173006.GB2473@linux.vnet.ibm.com>
+ <491D6B4EAD0A714894D8AD22F4BDE043A33D37@SCYBEXDAG02.amd.com>
+ <20120412151854.GB2394@linux.vnet.ibm.com>
+ <491D6B4EAD0A714894D8AD22F4BDE043A33FD3@SCYBEXDAG02.amd.com>
+ <20120413184350.GD2402@linux.vnet.ibm.com>
+ <491D6B4EAD0A714894D8AD22F4BDE043B158BE@SCYBEXDAG03.amd.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <491D6B4EAD0A714894D8AD22F4BDE043B158BE@SCYBEXDAG03.amd.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Joachim Eastwood <manabian@gmail.com>
 
-After commit 5e9cf5e (ARM: at91: make ST (System Timer) soc independent)
-building at91rm9200_wdt as a module fails with following message
-  ERROR: "at91_st_base" [drivers/watchdog/at91rm9200_wdt.ko] undefined!
-  make[1]: *** [__modpost] Error 1
-  make: *** [modules] Error 2
+* Chen, Dennis (SRDC SW) <Dennis1.Chen@amd.com> wrote:
 
-Export symbol to allow wdt driver to be built as a module again.
+> <PATCH PREFACE>
+> -------------------
+> This patch series are used to add a new performance benchmark tool for semaphore or mutex:
+> The new tool will fork NR tasks specified through the command line and bind each of them
+> to every CPUs in the system equally. The command to launch the tool looks like:
+> '# perf bench locking mutex -p 8 -t 400 -c'
+> 
+> The above command will create 400 tasks in a system with 8-CPU, each CPU will have 50 tasks.
+> After the task be created, it will read all the files and directories in '/sys/module'.
+> sysfs is RAM based and its read operation for both dir and file is very sensitive for mutex
+> lock, also '/sys/module' has almost no dependencies on external devices.
+> 
+> We can use this tool with 'perf record' command to get the hot-spot of the codes or 
+> 'perf top -g' to get live info, for example, below is a test case run in a intel i7-2600 box
+> (-c option is to get the cpu cycles, I don't use it in this test case):
+> 
+> # perf record -a perf bench locking mutex -p 8 -t 4000
+> # Running locking/mutex benchmark... 
+>  ...
+>  [13894 ]/6  duration        23 s   609392 us
+>  [13996 ]/4  duration        23 s   599418 us
+>  [14056 ]/0  duration        23 s   595710 us
+>  [13715 ]/3  duration        23 s   621719 us
+>  [13390 ]/6  duration        23 s   644020 us
+>  [13696 ]/0  duration        23 s   623101 us
+>  [14334 ]/6  duration        23 s   580262 us
+>  [14343 ]/7  duration        23 s   578702 us
+>  [14283 ]/3  duration        23 s   583007 us
+>  -----------------------------------
+>  Total duration     79353 s   943945 us
+> 
+>  real: 23.84   s
+>  user: 0.00   
+>  sys:  0.45   
+> 
+> # perf report
+> ===================================================================================
+> ...
+> # perf version : 3.3.2
+> # arch : x86_64
+> # nrcpus online : 8
+> # nrcpus avail : 8
+> # cpudesc : Intel(R) Core(TM) i7-2600 CPU @ 3.40GHz
+> # total memory : 3966460 kB
+> # cmdline : /usr/bin/perf record -a perf bench locking mutex -p 8 -t 4000
+> 
+> # Events: 131K cycles
+> #
+> # Overhead          Command                      Shared Object                                 Symbol
+> # ........  ...............  .................................  .....................................
+> #
+>     22.12%           perf  [kernel.kallsyms]                  [k] __mutex_lock_slowpath
+>      8.27%           perf  [kernel.kallsyms]                  [k] _raw_spin_lock
+>      6.16%           perf  [kernel.kallsyms]                  [k] mutex_unlock
+>      5.22%           perf  [kernel.kallsyms]                  [k] mutex_spin_on_owner
+>      4.94%           perf  [kernel.kallsyms]                  [k] sysfs_refresh_inode
+>      4.82%           perf  [kernel.kallsyms]                  [k] mutex_lock
+>      2.67%           perf  [kernel.kallsyms]                  [k] __mutex_unlock_slowpath
+>      2.61%           perf  [kernel.kallsyms]                  [k] link_path_walk
+>      2.42%           perf  [kernel.kallsyms]                  [k] _raw_spin_lock_irqsave
+>      1.61%           perf  [kernel.kallsyms]                  [k] __d_lookup
+>      1.18%           perf  [kernel.kallsyms]                  [k] clear_page_c
+>      1.16%           perf  [kernel.kallsyms]                  [k] dput
+>      0.97%           perf  [kernel.kallsyms]                  [k] do_lookup
+>      0.93%        swapper  [kernel.kallsyms]                  [k] intel_idle
+>      0.87%           perf  [kernel.kallsyms]                  [k] get_page_from_freelist
+>      0.85%           perf  [kernel.kallsyms]                  [k] __strncpy_from_user
+>      0.81%           perf  [kernel.kallsyms]                  [k] system_call
+>      0.78%           perf  libc-2.13.so                       [.] 0x84ef0         
+>      0.71%           perf  [kernel.kallsyms]                  [k] vfsmount_lock_local_lock
+>      0.68%           perf  [kernel.kallsyms]                  [k] sysfs_dentry_revalidate
+>      0.62%           perf  [kernel.kallsyms]                  [k] try_to_wake_up
+>      0.62%           perf  [kernel.kallsyms]                  [k] kfree
+>      0.60%           perf  [kernel.kallsyms]                  [k] kmem_cache_alloc   
+> ............................................................................................
+> 
 
-Signed-off-by: Joachim Eastwood <joachim.eastwood@jotron.com>
-[nicolas.ferre@atmel.com: use EXPORT_SYMBOL_GPL()]
-Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
----
- arch/arm/mach-at91/at91rm9200_time.c |    2 ++
- 1 file changed, 2 insertions(+)
+Nice! Would be nice to lift some of this information over into 
+the changelogs, to address my complaints in the previous mail.
 
-diff --git a/arch/arm/mach-at91/at91rm9200_time.c b/arch/arm/mach-at91/at91rm9200_time.c
-index dd7f782..104ca40 100644
---- a/arch/arm/mach-at91/at91rm9200_time.c
-+++ b/arch/arm/mach-at91/at91rm9200_time.c
-@@ -23,6 +23,7 @@
- #include <linux/interrupt.h>
- #include <linux/irq.h>
- #include <linux/clockchips.h>
-+#include <linux/export.h>
- 
- #include <asm/mach/time.h>
- 
-@@ -176,6 +177,7 @@ static struct clock_event_device clkevt = {
- };
- 
- void __iomem *at91_st_base;
-+EXPORT_SYMBOL_GPL(at91_st_base);
- 
- void __init at91rm9200_ioremap_st(u32 addr)
- {
--- 
-1.7.10
+> We can see that for 4000 tasks running in 8 CPUs simultaneously, it will create a very heavy 
+> contention for the mutex lock, so lot's of tasks enter into the slow path of the mutex lock...
+> I am very curious if we switch the mutex to the semaphore in this case, how's thing going? 
+> My next plan
 
+Seems like an unfinished sentence.
+
+Thanks,
+
+	Ingo
