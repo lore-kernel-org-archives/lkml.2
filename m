@@ -1,54 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753639Ab2DPQ1S (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Apr 2012 12:27:18 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:56622 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752498Ab2DPQ1P (ORCPT
+	id S1753904Ab2DPQ3o (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Apr 2012 12:29:44 -0400
+Received: from smtp02.citrix.com ([66.165.176.63]:20745 "EHLO
+	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752430Ab2DPQ3n (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Apr 2012 12:27:15 -0400
-Date: Mon, 16 Apr 2012 09:27:10 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Felipe Contreras <felipe.contreras@gmail.com>
-Cc: Stefan Richter <stefanr@s5r6.in-berlin.de>,
-        "ath9k-devel@lists.ath9k.org" <ath9k-devel@venema.h4ckr.net>,
-        linux-wireless Mailing List <linux-wireless@vger.kernel.org>,
-        linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        "John W. Linville" <linville@tuxdriver.com>, akpm@linux-foundation.org,
-        torvalds@linux-foundation.org, alan@lxorguk.ukuu.org.uk
-Subject: Re: [ath9k-devel] [ 00/78] 3.3.2-stable review
-Message-ID: <20120416162710.GA24100@kroah.com>
-References: <20120412011313.GA23764@kroah.com>
- <CAMP44s2q+bQE3-zsX4bs=sQDt4jf8eE5bwZ8V88UjodjRyAjog@mail.gmail.com>
- <20120412144626.GA14868@kroah.com>
- <CAMP44s1T4EVwpzDuV_vV0Zh-5WcPCwdw9eeOfL17Geqp_UFN-Q@mail.gmail.com>
- <CAJ-VmonhwvnXPKa=LNOR4W0ZTXZqWmzw4UrsKLoE0YN_Bu0FzQ@mail.gmail.com>
- <CAMP44s2JPvhEB6Eb049Z_bToAFncHKMEheuyaxyhC=bnh2GJVg@mail.gmail.com>
- <20120413105746.10ffb120@stein>
- <CAMP44s0RohH9tPiM5qCDT57XBV=iO66PZkSjYVxA6Usg1qJPtw@mail.gmail.com>
- <20120413190819.9469.qmail@stuge.se>
- <CAMP44s02v_OhviaF12Y8LWBJygyVLZk00d3P69GVvKAeJwjiuw@mail.gmail.com>
+	Mon, 16 Apr 2012 12:29:43 -0400
+X-IronPort-AV: E=Sophos;i="4.75,430,1330923600"; 
+   d="scan'208";a="190550051"
+Message-ID: <4F8C4818.8070603@citrix.com>
+Date: Mon, 16 Apr 2012 17:26:00 +0100
+From: David Vrabel <david.vrabel@citrix.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20120317 Icedove/3.0.11
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAMP44s02v_OhviaF12Y8LWBJygyVLZk00d3P69GVvKAeJwjiuw@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Dan Magenheimer <dan.magenheimer@oracle.com>
+CC: Jan Beulich <JBeulich@suse.com>, Konrad Wilk <konrad.wilk@oracle.com>,
+        "Tim (Xen.org)" <tim@xen.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        xen-devel <xen-devel@lists.xen.org>, Sheng Yang <sheng@yasker.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [Xen-devel] [PATCH] xen: always set the sched clock as unstable
+References: <1334341255-11153-1-git-send-email-david.vrabel@citrix.com> <4F8C1F6D020000780007E11A@nat28.tlf.novell.com> <4F8C33E0.2080007@citrix.com> <049b7b93-fb37-4962-b272-d786e1dcfacb@default>
+In-Reply-To: <049b7b93-fb37-4962-b272-d786e1dcfacb@default>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Just one minor correction in this looney email thread:
+On 16/04/12 17:05, Dan Magenheimer wrote:
+>> From: David Vrabel [mailto:david.vrabel@citrix.com]
+>> Subject: Re: [Xen-devel] [PATCH] xen: always set the sched clock as unstable
+> 
+> Nacked-by: Dan Magenheimer <dan.magenheimer@oracle.com>
 
-On Sat, Apr 14, 2012 at 01:53:22AM +0300, Felipe Contreras wrote:
-> v3.3.x on the other hand are *not* stable. They contain patches
-> backported from v3.4, but nobody guarantees they will work. There was
-> no v3.3.1-rc1, so the first time the patches compromising v3.3.1 were
-> generally tested together is in v3.3.1, at which point if somebody
-> finds issues, it's too late; bad patches are *not* going to be removed
-> in v3.3.2.
+Fair enough,
 
-Of course there was a 3.3.1-rc1, see the linux-kernel archives for the
-announcemen and the individual patches.  kernel.org has the large patch
-itself if you like that format instead.
+> [A stable clock] should be true for Xen 4.0+ (but not for pre-Xen-4.0).
 
-greg k-h
+The original customer problem is on a host with Xen 3.4.  What do you
+recommend for Linux guests running such hosts?
+
+> In fact, it might be wise for a Xen-savvy kernel to check to see
+> if it is running on Xen-4.0+ and, if so, force clocksource=tsc
+> and tsc=reliable.
+
+So, should the xen clocksource do:
+
+if Xen 4.0+
+    clock is stable, use rdtsc only.
+else
+    clock is unstable, use existing pvclock implementation.
+
+David
