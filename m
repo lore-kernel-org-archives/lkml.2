@@ -1,87 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755223Ab2DPS35 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Apr 2012 14:29:57 -0400
-Received: from swampdragon.chaosbits.net ([90.184.90.115]:14839 "EHLO
-	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752973Ab2DPS34 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Apr 2012 14:29:56 -0400
-Date: Mon, 16 Apr 2012 20:29:54 +0200 (CEST)
-From: Jesper Juhl <jj@chaosbits.net>
-To: linux-kernel@vger.kernel.org
-cc: Tejun Heo <tj@kernel.org>, Danny Kukawka <danny.kukawka@bisect.de>,
-        Jens Axboe <axboe@kernel.dk>
-Subject: [PATCH] dac960: Remove unused variables from
- DAC960_CreateProcEntries()
-Message-ID: <alpine.LNX.2.00.1204162025430.21898@swampdragon.chaosbits.net>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1755221Ab2DPSeH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Apr 2012 14:34:07 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:46215 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753028Ab2DPSeF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Apr 2012 14:34:05 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Bojan Smojver <bojan@rexursive.com>
+Subject: Re: [PATCH v11]: Hibernation: fix the number of pages used for hibernate/thaw buffering
+Date: Mon, 16 Apr 2012 20:38:38 +0200
+User-Agent: KMail/1.13.6 (Linux/3.4.0-rc2+; KDE/4.6.0; x86_64; ; )
+Cc: Per Olofsson <pelle@debian.org>, linux-kernel@vger.kernel.org,
+        Linux PM list <linux-pm@vger.kernel.org>
+References: <1334267969.2573.14.camel@shrek.rexursive.com> <201204160008.41104.rjw@sisk.pl> <1334529077.2092.1.camel@shrek.rexursive.com>
+In-Reply-To: <1334529077.2092.1.camel@shrek.rexursive.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201204162038.38760.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The variables 'StatusProcEntry' and 'UserCommandProcEntry' are
-assigned to once and then never used. This patch gets rid of the
-variables.
+On Monday, April 16, 2012, Bojan Smojver wrote:
+> On Mon, 2012-04-16 at 00:08 +0200, Rafael J. Wysocki wrote:
+> > > Signed-off-by: Per Olofsson <pelle@debian.org>
+> > 
+> > Why signed-off? 
+> 
+> Per contributed significantly to the development of the patch. In fact,
+> it was Per who noticed what the problem with number of free pages
+> calculation during hibernation actually was.
 
-While I was there I also fixed the indentation of the function to use
-tabs rather than spaces for the lines that did not already do so.
+OK, but you wrote the patch in the end.
 
-Signed-off-by: Jesper Juhl <jj@chaosbits.net>
----
- drivers/block/DAC960.c |   23 ++++++++++-------------
- 1 file changed, 10 insertions(+), 13 deletions(-)
+Reviewed-by from Per would be more appropriate.
 
-  Disclaimer: I don't have the hardware, so the only testing this has seen 
-  is that I verified that it compiles.
+Signed-off-by means as much as "I certify that am the author of this patch" or
+"This patch has gone through my hands and I know who the author is" (it implies
+"Acked-by" in the latter case).  None of these is the case here.
 
-diff --git a/drivers/block/DAC960.c b/drivers/block/DAC960.c
-index 8db9089..9a13e88 100644
---- a/drivers/block/DAC960.c
-+++ b/drivers/block/DAC960.c
-@@ -6580,24 +6580,21 @@ static const struct file_operations dac960_user_command_proc_fops = {
- 
- static void DAC960_CreateProcEntries(DAC960_Controller_T *Controller)
- {
--	struct proc_dir_entry *StatusProcEntry;
- 	struct proc_dir_entry *ControllerProcEntry;
--	struct proc_dir_entry *UserCommandProcEntry;
- 
- 	if (DAC960_ProcDirectoryEntry == NULL) {
--  		DAC960_ProcDirectoryEntry = proc_mkdir("rd", NULL);
--  		StatusProcEntry = proc_create("status", 0,
--					   DAC960_ProcDirectoryEntry,
--					   &dac960_proc_fops);
-+		DAC960_ProcDirectoryEntry = proc_mkdir("rd", NULL);
-+		proc_create("status", 0, DAC960_ProcDirectoryEntry,
-+			    &dac960_proc_fops);
- 	}
- 
--      sprintf(Controller->ControllerName, "c%d", Controller->ControllerNumber);
--      ControllerProcEntry = proc_mkdir(Controller->ControllerName,
--				       DAC960_ProcDirectoryEntry);
--      proc_create_data("initial_status", 0, ControllerProcEntry, &dac960_initial_status_proc_fops, Controller);
--      proc_create_data("current_status", 0, ControllerProcEntry, &dac960_current_status_proc_fops, Controller);
--      UserCommandProcEntry = proc_create_data("user_command", S_IWUSR | S_IRUSR, ControllerProcEntry, &dac960_user_command_proc_fops, Controller);
--      Controller->ControllerProcEntry = ControllerProcEntry;
-+	sprintf(Controller->ControllerName, "c%d", Controller->ControllerNumber);
-+	ControllerProcEntry = proc_mkdir(Controller->ControllerName,
-+					 DAC960_ProcDirectoryEntry);
-+	proc_create_data("initial_status", 0, ControllerProcEntry, &dac960_initial_status_proc_fops, Controller);
-+	proc_create_data("current_status", 0, ControllerProcEntry, &dac960_current_status_proc_fops, Controller);
-+	proc_create_data("user_command", S_IWUSR | S_IRUSR, ControllerProcEntry, &dac960_user_command_proc_fops, Controller);
-+	Controller->ControllerProcEntry = ControllerProcEntry;
- }
- 
- 
--- 
-1.7.10
-
-
--- 
-Jesper Juhl <jj@chaosbits.net>       http://www.chaosbits.net/
-Don't top-post http://www.catb.org/jargon/html/T/top-post.html
-Plain text mails only, please.
-
+Thanks,
+Rafael
