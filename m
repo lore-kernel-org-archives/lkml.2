@@ -1,18 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755720Ab2DPUi7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Apr 2012 16:38:59 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:20138 "EHLO mx1.redhat.com"
+	id S1755832Ab2DPUnM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Apr 2012 16:43:12 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:9816 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754173Ab2DPUiz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Apr 2012 16:38:55 -0400
+	id S1755684Ab2DPUi6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Apr 2012 16:38:58 -0400
 From: Mauro Carvalho Chehab <mchehab@redhat.com>
 Cc: Mauro Carvalho Chehab <mchehab@redhat.com>,
         Linux Edac Mailing List <linux-edac@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: [EDAC ABI v13 02/25] edac: Cleanup the logs for i7core and sb edac drivers
-Date: Mon, 16 Apr 2012 17:38:26 -0300
-Message-Id: <1334608729-30803-3-git-send-email-mchehab@redhat.com>
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Doug Thompson <norsk5@yahoo.com>
+Subject: [EDAC ABI v13 15/25] edac: add a sysfs node to report the maximum location for the system
+Date: Mon, 16 Apr 2012 17:38:39 -0300
+Message-Id: <1334608729-30803-16-git-send-email-mchehab@redhat.com>
 In-Reply-To: <1334608729-30803-1-git-send-email-mchehab@redhat.com>
 References: <1334608729-30803-1-git-send-email-mchehab@redhat.com>
 To: unlisted-recipients:; (no To-header on input)
@@ -20,93 +21,60 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Remove some information that it is duplicated at the MCE log,
-and don't have much usage for the error. Those data will be
-added again, when creating a trace function that outputs both
-memory errors and MCE fields.
+The userspace tools need to know what's the maximum location on each
+system, as it helps to create nice maps showing how the memory was
+filled at the system.
 
 Reviewed-by: Aristeu Rozanski <arozansk@redhat.com>
+Cc: Doug Thompson <norsk5@yahoo.com>
 Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
 ---
- drivers/edac/i7core_edac.c |    9 ++-------
- drivers/edac/sb_edac.c     |   29 ++++++++++++++---------------
- 2 files changed, 16 insertions(+), 22 deletions(-)
+ drivers/edac/edac_mc_sysfs.c |   19 +++++++++++++++++++
+ 1 files changed, 19 insertions(+), 0 deletions(-)
 
-diff --git a/drivers/edac/i7core_edac.c b/drivers/edac/i7core_edac.c
-index 72553dd..42775c4 100644
---- a/drivers/edac/i7core_edac.c
-+++ b/drivers/edac/i7core_edac.c
-@@ -1623,7 +1623,7 @@ static void i7core_mce_output_error(struct mem_ctl_info *mci,
- 				    const struct mce *m)
- {
- 	struct i7core_pvt *pvt = mci->pvt_info;
--	char *type, *optype, *err, *msg;
-+	char *type, *optype, *err, msg[80];
- 	enum hw_event_mc_err_type tp_event;
- 	unsigned long error = m->status & 0x1ff0000l;
- 	bool uncorrected_error = m->mcgstatus & 1ll << 61;
-@@ -1701,10 +1701,7 @@ static void i7core_mce_output_error(struct mem_ctl_info *mci,
- 		err = "unknown";
- 	}
- 
--	msg = kasprintf(GFP_ATOMIC,
--		"addr=0x%08llx cpu=%d count=%d Err=%08llx:%08llx (%s: %s))\n",
--		(long long) m->addr, m->cpu, core_err_cnt,
--		(long long)m->status, (long long)m->misc, optype, err);
-+	snprintf(msg, sizeof(msg), "count=%d %s", core_err_cnt, optype);
- 
- 	/*
- 	 * Call the helper to output message
-@@ -1718,8 +1715,6 @@ static void i7core_mce_output_error(struct mem_ctl_info *mci,
- 				     syndrome,
- 				     channel, dimm, -1,
- 				     err, msg, m);
--
--	kfree(msg);
+diff --git a/drivers/edac/edac_mc_sysfs.c b/drivers/edac/edac_mc_sysfs.c
+index a4ee4aa..67a07c4 100644
+--- a/drivers/edac/edac_mc_sysfs.c
++++ b/drivers/edac/edac_mc_sysfs.c
+@@ -766,6 +766,23 @@ static ssize_t mci_size_mb_show(struct device *dev,
+ 	return sprintf(data, "%u\n", PAGES_TO_MiB(total_pages));
  }
  
- /*
-diff --git a/drivers/edac/sb_edac.c b/drivers/edac/sb_edac.c
-index b253675..ad27e27 100644
---- a/drivers/edac/sb_edac.c
-+++ b/drivers/edac/sb_edac.c
-@@ -1433,23 +1433,22 @@ static void sbridge_mce_output_error(struct mem_ctl_info *mci,
- 		recoverable_msg = "";
++static ssize_t mci_max_location_show(struct device *dev,
++				     struct device_attribute *mattr,
++				     char *data)
++{
++	struct mem_ctl_info *mci = to_mci(dev);
++	int i;
++	char *p = data;
++
++	for (i = 0; i < mci->n_layers; i++) {
++		p += sprintf(p, "%s %d ",
++			     edac_layer_name[mci->layers[i].type],
++			     mci->layers[i].size - 1);
++	}
++
++	return p - data;
++}
++
+ /* default Control file */
+ DEVICE_ATTR(reset_counters, S_IWUSR, NULL, mci_reset_counters_store);
  
- 	/*
--	 * FIXME: What should we do with "channel" information on mcelog?
--	 * Probably, we can just discard it, as the channel information
--	 * comes from the get_memory_error_data() address decoding
-+	 * FIXME: On some memory configurations (mirror, lockstep), the
-+	 * Memory Controller can't point the error to a single DIMM. The
-+	 * EDAC core should be handling the channel mask, in order to point
-+	 * to the group of dimm's where the error may be happening.
- 	 */
- 	snprintf(msg, sizeof(msg),
--			"%d error(s)%s: %s%s: cpu=%d Err=%04x:%04x addr = 0x%08llx socket=%d Channel=%ld(mask=%ld), rank=%d\n",
--			core_err_cnt,
--			overflow ? " OVERFLOW" : "",
--			area_type,
--			recoverable_msg,
--			m->cpu,
--			mscod, errcode,
--			(long long) m->addr,
--			socket,
--			first_channel,		/* This is the real channel on SB */
--			channel_mask,
--			rank);
-+		 "%d error(s)%s: %s%s: Err=%04x:%04x socket=%d channel=%ld/mask=%ld rank=%d",
-+		 core_err_cnt,
-+		 overflow ? " OVERFLOW" : "",
-+		 area_type,
-+		 recoverable_msg,
-+		 mscod, errcode,
-+		 socket,
-+		 first_channel,
-+		 channel_mask,
-+		 rank);
+@@ -777,6 +794,7 @@ DEVICE_ATTR(ue_noinfo_count, S_IRUGO, mci_ue_noinfo_show, NULL);
+ DEVICE_ATTR(ce_noinfo_count, S_IRUGO, mci_ce_noinfo_show, NULL);
+ DEVICE_ATTR(ue_count, S_IRUGO, mci_ue_count_show, NULL);
+ DEVICE_ATTR(ce_count, S_IRUGO, mci_ce_count_show, NULL);
++DEVICE_ATTR(max_location, S_IRUGO, mci_max_location_show, NULL);
  
- 	debugf0("%s", msg);
+ /* memory scrubber attribute file */
+ DEVICE_ATTR(sdram_scrub_rate, S_IRUGO | S_IWUSR, mci_sdram_scrub_rate_show,
+@@ -792,6 +810,7 @@ static struct attribute *mci_attrs[] = {
+ 	&dev_attr_ue_count.attr,
+ 	&dev_attr_ce_count.attr,
+ 	&dev_attr_sdram_scrub_rate.attr,
++	&dev_attr_max_location.attr,
+ 	NULL
+ };
  
 -- 
 1.7.8
