@@ -1,81 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753540Ab2DPMRA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Apr 2012 08:17:00 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:24099 "EHLO mx1.redhat.com"
+	id S1753934Ab2DPMR1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Apr 2012 08:17:27 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:47827 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753252Ab2DPMQ7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Apr 2012 08:16:59 -0400
-Date: Mon, 16 Apr 2012 14:16:28 +0200
-From: Jiri Olsa <jolsa@redhat.com>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: acme@redhat.com, mingo@elte.hu, paulus@samba.org,
-        cjashfor@linux.vnet.ibm.com, fweisbec@gmail.com,
-        linux-kernel@vger.kernel.org, tglx@linutronix.de, andi@firstfloor.org
-Subject: Re: [RFCv2 0/8] perf tool: Add new event group management
-Message-ID: <20120416121627.GA1660@m.brq.redhat.com>
-References: <1333574176-11388-1-git-send-email-jolsa@redhat.com>
- <1334503015.28150.16.camel@twins>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1334503015.28150.16.camel@twins>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1753824Ab2DPMRX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Apr 2012 08:17:23 -0400
+From: Mel Gorman <mgorman@suse.de>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Linux-MM <linux-mm@kvack.org>, Linux-Netdev <netdev@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        David Miller <davem@davemloft.net>, Neil Brown <neilb@suse.de>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Mike Christie <michaelc@cs.wisc.edu>,
+        Eric B Munson <emunson@mgebm.net>, Mel Gorman <mgorman@suse.de>
+Subject: [PATCH 16/16] mm: Account for the number of times direct reclaimers get throttled
+Date: Mon, 16 Apr 2012 13:17:03 +0100
+Message-Id: <1334578624-23257-17-git-send-email-mgorman@suse.de>
+X-Mailer: git-send-email 1.7.9.2
+In-Reply-To: <1334578624-23257-1-git-send-email-mgorman@suse.de>
+References: <1334578624-23257-1-git-send-email-mgorman@suse.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Apr 15, 2012 at 05:16:55PM +0200, Peter Zijlstra wrote:
-> On Wed, 2012-04-04 at 23:16 +0200, Jiri Olsa wrote:
-> > - added 'group=...' syntax to group events (patches 1-5).
-> 
-> > - added 'group:1=...' syntax to specify which event to sample (leader) 
-> 
-> I'm still sad about not actually using {} for grouping. Esp. since you
-> use ';' which needs escaping anyway:
+Under significant pressure when writing back to network-backed storage,
+direct reclaimers may get throttled. This is expected to be a
+short-lived event and the processes get woken up again but processes do
+get stalled. This patch counts how many times such stalling occurs. It's
+up to the administrator whether to reduce these stalls by increasing
+min_free_kbytes.
 
-yea, I realized we need ending separator after all ;)
-so right we could use {} then..
+Signed-off-by: Mel Gorman <mgorman@suse.de>
+---
+ include/linux/vm_event_item.h |    1 +
+ mm/vmscan.c                   |    3 +++
+ mm/vmstat.c                   |    1 +
+ 3 files changed, 5 insertions(+)
 
-so smth like:
+diff --git a/include/linux/vm_event_item.h b/include/linux/vm_event_item.h
+index 03b90cdc..652e5f3 100644
+--- a/include/linux/vm_event_item.h
++++ b/include/linux/vm_event_item.h
+@@ -29,6 +29,7 @@ enum vm_event_item { PGPGIN, PGPGOUT, PSWPIN, PSWPOUT,
+ 		FOR_ALL_ZONES(PGSTEAL),
+ 		FOR_ALL_ZONES(PGSCAN_KSWAPD),
+ 		FOR_ALL_ZONES(PGSCAN_DIRECT),
++		PGSCAN_DIRECT_THROTTLE,
+ #ifdef CONFIG_NUMA
+ 		PGSCAN_ZONE_RECLAIM_FAILED,
+ #endif
+diff --git a/mm/vmscan.c b/mm/vmscan.c
+index fdb63db..ff2322e 100644
+--- a/mm/vmscan.c
++++ b/mm/vmscan.c
+@@ -2480,6 +2480,9 @@ static void throttle_direct_reclaim(gfp_t gfp_mask, struct zonelist *zonelist,
+ 	if (pfmemalloc_watermark_ok(pgdat))
+ 		return;
+ 
++	/* Account for the throttling */
++	count_vm_event(PGSCAN_DIRECT_THROTTLE);
++
+ 	/*
+ 	 * If the caller cannot enter the filesystem, it's possible that it
+ 	 * is processing a journal transaction. In this case, it is not safe
+diff --git a/mm/vmstat.c b/mm/vmstat.c
+index f600557..0fff13d 100644
+--- a/mm/vmstat.c
++++ b/mm/vmstat.c
+@@ -741,6 +741,7 @@ const char * const vmstat_text[] = {
+ 	TEXTS_FOR_ZONES("pgsteal")
+ 	TEXTS_FOR_ZONES("pgscan_kswapd")
+ 	TEXTS_FOR_ZONES("pgscan_direct")
++	"pgscan_direct_throttle",
+ 
+ #ifdef CONFIG_NUMA
+ 	"zone_reclaim_failed",
+-- 
+1.7.9.2
 
-  '{cycles,faults}'
-   - anonymous group
-
-  'group1{cycles,faults}
-   - group with name 'group1'
-
-  'group1:1{cycles,faults}
-   - group with name 'group1' and modifier '1'
-
-  'group1{cycles,faults},{instructions,cache-misses},faults'
-  '{cycles,faults},group1:2{instructions,cache-misses},faults' ls
-   - group/event combinations 
-
-
-group:        group_spec '{' events '}'
-group_spec:   name  ':' mod | empty
-
-
-also, any thoughts about the displaying question? ;)
-
-> I'm looking on how to present this data in perf and it seems we need
-> to reset all siblings once we read/store them (in kernel) to the
-> leader sample.
-> 
-> My current thinking is to store siblings' sum values for each
-> hists entry of the sample (perf report count unit) .. and display
-> them in similar way we display callchains: for each hists entry
-> display the sum value for each sibling.
-> 
-> Could you provide more of your world examples? Your expectations about
-> presenting this..
-> 
-> Maybe we want to make the reset optional, and do some do some other
-> math with siblings' values..?
-
-Not sure it could affect the syntax, but it'd be better to have
-whole picture
-
-thanks,
-jirka
