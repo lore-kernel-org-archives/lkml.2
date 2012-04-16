@@ -1,127 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753398Ab2DPKta (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Apr 2012 06:49:30 -0400
-Received: from e28smtp09.in.ibm.com ([122.248.162.9]:60617 "EHLO
-	e28smtp09.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753114Ab2DPKpP (ORCPT
+	id S1753114Ab2DPKwV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Apr 2012 06:52:21 -0400
+Received: from edge2.cs.stonybrook.edu ([130.245.9.211]:40767 "EHLO
+	edge2.cs.stonybrook.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752764Ab2DPKwU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Apr 2012 06:45:15 -0400
-From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-To: linux-mm@kvack.org, mgorman@suse.de, kamezawa.hiroyu@jp.fujitsu.com,
-        dhillf@gmail.com, aarcange@redhat.com, mhocko@suse.cz,
-        akpm@linux-foundation.org, hannes@cmpxchg.org
-Cc: linux-kernel@vger.kernel.org, cgroups@vger.kernel.org,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-Subject: [PATCH -V6 08/14] hugetlb: add charge/uncharge calls for HugeTLB alloc/free
-Date: Mon, 16 Apr 2012 16:14:45 +0530
-Message-Id: <1334573091-18602-9-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
-X-Mailer: git-send-email 1.7.10
-In-Reply-To: <1334573091-18602-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
-References: <1334573091-18602-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
-x-cbid: 12041610-2674-0000-0000-0000040BF689
+	Mon, 16 Apr 2012 06:52:20 -0400
+Message-ID: <4F8BF9D0.4090104@cs.stonybrook.edu>
+Date: Mon, 16 Apr 2012 06:52:00 -0400
+From: Richard Yao <ryao@cs.stonybrook.edu>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.3) Gecko/20120406 Thunderbird/10.0.3
+MIME-Version: 1.0
+To: Kernel development list <linux-kernel@vger.kernel.org>
+Subject: Re: How do I detect a block device is being used as swap inside its
+ request queue handler?
+References: <4F8BF514.509@cs.stonybrook.edu>
+In-Reply-To: <4F8BF514.509@cs.stonybrook.edu>
+X-Enigmail-Version: 1.3.5
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature";
+	boundary="------------enig9F50D7596E6FEB7A3A1A14A5"
+X-Originating-IP: [72.89.250.133]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+--------------enig9F50D7596E6FEB7A3A1A14A5
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: quoted-printable
 
-This adds necessary charge/uncharge calls in the HugeTLB code. We do
-memcg charge in page alloc and uncharge in compound page destructor.
-We also need to ignore HugeTLB pages in __mem_cgroup_uncharge_common
-because that get called from delete_from_page_cache
+On 04/16/12 06:31, Richard Yao wrote:
+> Dear Linus Torvalds et al,
+>=20
+> I am having some trouble with an out of tree module for a virtual block=
 
-Reviewed-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Acked-by: Hillf Danton <dhillf@gmail.com>
-Signed-off-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
----
- mm/hugetlb.c    |   20 +++++++++++++++++++-
- mm/memcontrol.c |    5 +++++
- 2 files changed, 24 insertions(+), 1 deletion(-)
+> device driver. I need to disable the direct reclaim path when the devic=
+e
+> is used as swap. I cannot see a way to detect that the device is being
+> used as swap, so I am currently disabling it unconditionally.
+>=20
+> Is there a clean way to detect that the block device is being used as
+> swap? I am not subscribed to the list, so please CC replies to me.
+>=20
+> Yours truly,
+> Richard Yao
+>=20
 
-diff --git a/mm/hugetlb.c b/mm/hugetlb.c
-index 8cd89b4..dd00087 100644
---- a/mm/hugetlb.c
-+++ b/mm/hugetlb.c
-@@ -21,6 +21,8 @@
- #include <linux/rmap.h>
- #include <linux/swap.h>
- #include <linux/swapops.h>
-+#include <linux/memcontrol.h>
-+#include <linux/page_cgroup.h>
- 
- #include <asm/page.h>
- #include <asm/pgtable.h>
-@@ -628,6 +630,8 @@ static void free_huge_page(struct page *page)
- 	BUG_ON(page_mapcount(page));
- 	INIT_LIST_HEAD(&page->lru);
- 
-+	mem_cgroup_hugetlb_uncharge_page(hstate_index(h),
-+					 pages_per_huge_page(h), page);
- 	spin_lock(&hugetlb_lock);
- 	if (h->surplus_huge_pages_node[nid] && huge_page_order(h) < MAX_ORDER) {
- 		update_and_free_page(h, page);
-@@ -1113,7 +1117,10 @@ static struct page *alloc_huge_page(struct vm_area_struct *vma,
- 	struct hstate *h = hstate_vma(vma);
- 	struct page *page;
- 	long chg;
-+	int ret, idx;
-+	struct mem_cgroup *memcg;
- 
-+	idx = hstate_index(h);
- 	/*
- 	 * Processes that did not create the mapping will have no
- 	 * reserves and will not have accounted against subpool
-@@ -1129,6 +1136,12 @@ static struct page *alloc_huge_page(struct vm_area_struct *vma,
- 		if (hugepage_subpool_get_pages(spool, chg))
- 			return ERR_PTR(-ENOSPC);
- 
-+	ret = mem_cgroup_hugetlb_charge_page(idx, pages_per_huge_page(h),
-+					     &memcg);
-+	if (ret) {
-+		hugepage_subpool_put_pages(spool, chg);
-+		return ERR_PTR(-ENOSPC);
-+	}
- 	spin_lock(&hugetlb_lock);
- 	page = dequeue_huge_page_vma(h, vma, addr, avoid_reserve);
- 	spin_unlock(&hugetlb_lock);
-@@ -1136,6 +1149,9 @@ static struct page *alloc_huge_page(struct vm_area_struct *vma,
- 	if (!page) {
- 		page = alloc_buddy_huge_page(h, NUMA_NO_NODE);
- 		if (!page) {
-+			mem_cgroup_hugetlb_uncharge_memcg(idx,
-+							  pages_per_huge_page(h),
-+							  memcg);
- 			hugepage_subpool_put_pages(spool, chg);
- 			return ERR_PTR(-ENOSPC);
- 		}
-@@ -1144,7 +1160,9 @@ static struct page *alloc_huge_page(struct vm_area_struct *vma,
- 	set_page_private(page, (unsigned long)spool);
- 
- 	vma_commit_reservation(h, vma, addr);
--
-+	/* update page cgroup details */
-+	mem_cgroup_hugetlb_commit_charge(idx, pages_per_huge_page(h),
-+					 memcg, page);
- 	return page;
- }
- 
-diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index 884f479..e906b41 100644
---- a/mm/memcontrol.c
-+++ b/mm/memcontrol.c
-@@ -2966,6 +2966,11 @@ __mem_cgroup_uncharge_common(struct page *page, enum charge_type ctype)
- 
- 	if (PageSwapCache(page))
- 		return NULL;
-+	/*
-+	 * HugeTLB page uncharge happen in the HugeTLB compound page destructor
-+	 */
-+	if (PageHuge(page))
-+		return NULL;
- 
- 	if (PageTransHuge(page)) {
- 		nr_pages <<= compound_order(page);
--- 
-1.7.10
+Please disregard my previous email. I just discovered a deadlock that
+can occur if this were done.
 
+
+--------------enig9F50D7596E6FEB7A3A1A14A5
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.17 (GNU/Linux)
+Comment: Using GnuPG with Mozilla - http://enigmail.mozdev.org/
+
+iQIcBAEBAgAGBQJPi/nTAAoJELFAT5FmjZuEhREP/1LivjU595plbUWf7NNN0brM
+r90K0FMo1uVvVVG14yTkIEboy9FOJL+vLHTDev7c/Oc7rXTMH/Hm4FdJbBlaU+Vl
+o9GEqoiQEXqYcGeXxZ7RgHbzj1VXh0nXy6/+IhowAJpr/z1/Bqz9u2qFO+UcWOqc
+TjL1jpzLf3wVmwuHk3K8QBYvAMQ0gYS2SfSQBh1YQ79CauHHKCE2MPJ2qEMSqMAl
+7df5Y0UcdISWLgVVjxZounIr8k/YrJny3mD+iVVy8Zxd+PB9C4o5hisc5kWdCrtb
+c2aOWr+lCEZ33FbE4wOv6uX62iwxuJX3YBvBgMmVYrE/rNVLqRKCi0Cr4YUzV4pH
+g9kp9fyrfhWnvvRTA8rvQCfeUOZnMizaXVF5j5TxA8fscWh5NfOHGx1czRInV4WX
+0WCejSskOBoj0kA2CnWseGNuII3Z4MTnir6qRWZCGDt9BHC/4DCiVkIMrvxdjhbo
+u8Lwlyr0HFAmPJuHuoPCLfEzi09atpsYS3jXsNumY5QPP0v/8XzKrKG/hKMe2PNF
+odpDEzETLAJXbfJXRob7Q4jShIbkCNlXRHj02kbPZ0OGQdIQKe6IFiCcrG16k9YT
+BvWNqT5D5Am4ln0RAFZuHBZoR6JVvVTUYNsfJilRfWnI+wndV0viYPVcmHMF7NGG
+jgJSvdimZ4jkRRzoYMeI
+=TWT2
+-----END PGP SIGNATURE-----
+
+--------------enig9F50D7596E6FEB7A3A1A14A5--
