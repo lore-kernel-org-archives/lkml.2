@@ -1,48 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754371Ab2DPOPb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Apr 2012 10:15:31 -0400
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:14970 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753801Ab2DPOP2 (ORCPT
+	id S1754568Ab2DPOPm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Apr 2012 10:15:42 -0400
+Received: from mail-qa0-f53.google.com ([209.85.216.53]:61330 "EHLO
+	mail-qa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753498Ab2DPOPh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Apr 2012 10:15:28 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp05.nvidia.com on Mon, 16 Apr 2012 07:15:27 -0700
-Message-ID: <4F8C268F.9080608@nvidia.com>
-Date: Mon, 16 Apr 2012 19:32:55 +0530
-From: Laxman Dewangan <ldewangan@nvidia.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101208 Thunderbird/3.1.7
+	Mon, 16 Apr 2012 10:15:37 -0400
+From: Paul Moore <paul@paul-moore.com>
+To: libseccomp-discuss@lists.sourceforge.net
+Cc: Henrique de Moraes Holschuh <hmh@hmh.eng.br>,
+        linux-security-module@vger.kernel.org, Will Drewry <wad@chromium.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [libseccomp-discuss] ANN: libseccomp
+Date: Mon, 16 Apr 2012 10:15:33 -0400
+Message-ID: <4892415.SaF4mnePOG@sifl>
+User-Agent: KMail/4.8.2 (Linux/3.3.1-gentoo; KDE/4.8.2; x86_64; ; )
+In-Reply-To: <20120414024708.GB10926@khazad-dum.debian.net>
+References: <1540670.AFBi1SpGoi@sifl> <9270063.OgsgoBpmh0@sifl> <20120414024708.GB10926@khazad-dum.debian.net>
 MIME-Version: 1.0
-To: Paul Gortmaker <paul.gortmaker@windriver.com>
-CC: "sameo@linux.intel.com" <sameo@linux.intel.com>,
-        "broonie@opensource.wolfsonmicro.com" 
-	<broonie@opensource.wolfsonmicro.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>
-Subject: Re: [PATCH] mfd: fix modular builds of rc5t583 regulator support
-References: <1334549301-32114-1-git-send-email-paul.gortmaker@windriver.com> <4F8BC20A.2090105@nvidia.com> <4F8C28C5.9070308@windriver.com>
-In-Reply-To: <4F8C28C5.9070308@windriver.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 16 April 2012 07:42 PM, Paul Gortmaker wrote:
-> On 12-04-16 02:54 AM, Laxman Dewangan wrote:
->> On Monday 16 April 2012 09:38 AM, Paul Gortmaker wrote:
->>
-> As I said in the commit log, it doesn't seem to make sense to export
-> them when they are trivial enough to be static inline, since it
-> avoids having them pollute the /proc/kallsyms namespace.
+On Friday, April 13, 2012 11:47:08 PM Henrique de Moraes Holschuh wrote:
+> On Fri, 13 Apr 2012, Paul Moore wrote:
+> > the seccomp filter into the kernel.  By default libseccomp attempts to set
+> > NO_NEW_PRIVS but does not fail if prctl(NO_NEW_PRIVS) returns with an
+> > error;
 >
-> It is almost like having basic inb/outb as functions vs inline; it
-> just doesn't make sense to me.
->
-> However, if you are determined to rewrite the patch in another way,
-> please add the customary reported-by line.
->
+> Isn't that dangerous in non-obvious ways, as in it can actually
+> cause/activate/enable/open security issues on priviledged processes that
+> don't expect whatever filtering seccomp will subject them to?
 
-I am fine on either way i.e. inline or exporting symbols only.
+We could debate this point but it turns out it is a bit of a non-issue as the 
+kernel code requires NO_NEW_PRIVS unless CAP_SYS_ADMIN is set; if neither 
+conditions are true the seccomp filter with fail (check Will's patches).
+
+If prctl(NO_NEW_PRIVS) fails the error is always returned, and the 
+attribute/boolean to disable this functionality has been removed since it 
+likely serves little purpose.
+
+> Defaults are important, as they're what people _who don't know any better_
+> are likely to use.
+
+Agreed.  You'll never hear me argue otherwise.
+
+-- 
+paul moore
+www.paul-moore.com
 
