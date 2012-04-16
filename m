@@ -1,47 +1,175 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755212Ab2DPS5B (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Apr 2012 14:57:01 -0400
-Received: from mail-vx0-f174.google.com ([209.85.220.174]:51361 "EHLO
-	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751189Ab2DPS47 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Apr 2012 14:56:59 -0400
+	id S1755307Ab2DPS5L (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Apr 2012 14:57:11 -0400
+Received: from smtp.outflux.net ([198.145.64.163]:35668 "EHLO smtp.outflux.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755251Ab2DPS5H (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Apr 2012 14:57:07 -0400
+Date: Mon, 16 Apr 2012 11:56:45 -0700
+From: Kees Cook <keescook@chromium.org>
+To: linux-kernel@vger.kernel.org
+Cc: James Morris <james.l.morris@oracle.com>,
+        Randy Dunlap <rdunlap@xenotime.net>,
+        John Johansen <john.johansen@canonical.com>, linux-doc@vger.kernel.org,
+        linux-security-module@vger.kernel.org,
+        kernel-hardening@lists.openwall.com, spender@grsecurity.net
+Subject: [PATCH] Yama: add additional ptrace scopes
+Message-ID: <20120416185645.GA13667@www.outflux.net>
 MIME-Version: 1.0
-In-Reply-To: <20120416185153.GH3219@opensource.wolfsonmicro.com>
-References: <1332582590-16382-3-git-send-email-thomas.abraham@linaro.org>
-	<20120416185153.GH3219@opensource.wolfsonmicro.com>
-Date: Tue, 17 Apr 2012 00:26:57 +0530
-Message-ID: <CAJuYYwSK=T3Fi=mOwjuBciEbG9dD5x8PvqGO3mfF-4qdL50QrA@mail.gmail.com>
-Subject: Re: [PATCH v4 2/2] regulator: add device tree support for max8997
-From: Thomas Abraham <thomas.abraham@linaro.org>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: linux-kernel@vger.kernel.org, k.lewandowsk@samsung.com,
-        devicetree-discuss@lists.ozlabs.org, rob.herring@calxeda.com,
-        grant.likely@secretlab.ca, kgene.kim@samsung.com,
-        myungjoo.ham@samsung.com, kyungmin.park@samsung.com,
-        linux-arm-kernel@lists.infradead.org,
-        linux-samsung-soc@vger.kernel.org, patches@linaro.org,
-        Rajendra Nayak <rnayak@ti.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-HELO: www.outflux.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 17 April 2012 00:21, Mark Brown <broonie@opensource.wolfsonmicro.com> wrote:
-> On Sat, Mar 24, 2012 at 03:19:50PM +0530, Thomas Abraham wrote:
->> Add device tree based discovery support for max8997.
->
-> I tried to apply this but it's collided with some other changes in the
-> driver which have arrived in the meantime and the rejects were too large
-> to fix up.  I suspect it's mostly just the change in parameters for
-> regulator_register().  Can you please regenerate against my current
-> topic/drivers branch?
+This expands the available Yama ptrace restrictions to include two more
+modes. Mode 2 requires CAP_SYS_PTRACE for PTRACE_ATTACH, and mode 3
+completely disables PTRACE_ATTACH (and locks the sysctl).
 
-Hi Mark,
+Signed-off-by: Kees Cook <keescook@chromium.org>
+---
+ Documentation/security/Yama.txt |   10 +++++-
+ security/yama/yama_lsm.c        |   62 ++++++++++++++++++++++++++++++++-------
+ 2 files changed, 60 insertions(+), 12 deletions(-)
 
-Sure, I will do redo this patch based on your current 'topic/drivers' branch.
+diff --git a/Documentation/security/Yama.txt b/Documentation/security/Yama.txt
+index a9511f1..e369de2 100644
+--- a/Documentation/security/Yama.txt
++++ b/Documentation/security/Yama.txt
+@@ -34,7 +34,7 @@ parent to a child process (i.e. direct "gdb EXE" and "strace EXE" still
+ work), or with CAP_SYS_PTRACE (i.e. "gdb --pid=PID", and "strace -p PID"
+ still work as root).
+ 
+-For software that has defined application-specific relationships
++In mode 1, software that has defined application-specific relationships
+ between a debugging process and its inferior (crash handlers, etc),
+ prctl(PR_SET_PTRACER, pid, ...) can be used. An inferior can declare which
+ other process (and its descendents) are allowed to call PTRACE_ATTACH
+@@ -46,6 +46,8 @@ restrictions, it can call prctl(PR_SET_PTRACER, PR_SET_PTRACER_ANY, ...)
+ so that any otherwise allowed process (even those in external pid namespaces)
+ may attach.
+ 
++These restrictions do not change how ptrace via PTRACE_TRACEME operates.
++
+ The sysctl settings are:
+ 
+ 0 - classic ptrace permissions: a process can PTRACE_ATTACH to any other
+@@ -60,6 +62,12 @@ The sysctl settings are:
+     inferior can call prctl(PR_SET_PTRACER, debugger, ...) to declare
+     an allowed debugger PID to call PTRACE_ATTACH on the inferior.
+ 
++2 - admin-only attach: only processes with CAP_SYS_PTRACE may use ptrace
++    with PTRACE_ATTACH.
++
++3 - no attach: no processes may use ptrace with PTRACE_ATTACH. Once set,
++    this sysctl cannot be changed to a lower value.
++
+ The original children-only logic was based on the restrictions in grsecurity.
+ 
+ ==============================================================
+diff --git a/security/yama/yama_lsm.c b/security/yama/yama_lsm.c
+index 5737238..afb04cb 100644
+--- a/security/yama/yama_lsm.c
++++ b/security/yama/yama_lsm.c
+@@ -18,7 +18,12 @@
+ #include <linux/prctl.h>
+ #include <linux/ratelimit.h>
+ 
+-static int ptrace_scope = 1;
++#define YAMA_SCOPE_DISABLED	0
++#define YAMA_SCOPE_RELATIONAL	1
++#define YAMA_SCOPE_CAPABILITY	2
++#define YAMA_SCOPE_NO_ATTACH	3
++
++static int ptrace_scope = YAMA_SCOPE_RELATIONAL;
+ 
+ /* describe a ptrace relationship for potential exception */
+ struct ptrace_relation {
+@@ -251,17 +256,32 @@ static int yama_ptrace_access_check(struct task_struct *child,
+ 		return rc;
+ 
+ 	/* require ptrace target be a child of ptracer on attach */
+-	if (mode == PTRACE_MODE_ATTACH &&
+-	    ptrace_scope &&
+-	    !task_is_descendant(current, child) &&
+-	    !ptracer_exception_found(current, child) &&
+-	    !capable(CAP_SYS_PTRACE))
+-		rc = -EPERM;
++	if (mode == PTRACE_MODE_ATTACH) {
++		switch (ptrace_scope) {
++		case YAMA_SCOPE_DISABLED:
++			/* No additional restrictions. */
++			break;
++		case YAMA_SCOPE_RELATIONAL:
++			if (!task_is_descendant(current, child) &&
++			    !ptracer_exception_found(current, child) &&
++			    !capable(CAP_SYS_PTRACE))
++				rc = -EPERM;
++			break;
++		case YAMA_SCOPE_CAPABILITY:
++			if (!capable(CAP_SYS_PTRACE))
++				rc = -EPERM;
++			break;
++		case YAMA_SCOPE_NO_ATTACH:
++		default:
++			rc = -EPERM;
++			break;
++		}
++	}
+ 
+ 	if (rc) {
+ 		char name[sizeof(current->comm)];
+-		printk_ratelimited(KERN_NOTICE "ptrace of non-child"
+-			" pid %d was attempted by: %s (pid %d)\n",
++		printk_ratelimited(KERN_NOTICE
++			"ptrace of pid %d was attempted by: %s (pid %d)\n",
+ 			child->pid,
+ 			get_task_comm(name, current),
+ 			current->pid);
+@@ -279,8 +299,28 @@ static struct security_operations yama_ops = {
+ };
+ 
+ #ifdef CONFIG_SYSCTL
++static int yama_dointvec_minmax(struct ctl_table *table, int write,
++				void __user *buffer, size_t *lenp, loff_t *ppos)
++{
++	int rc;
++
++	if (write && !capable(CAP_SYS_PTRACE))
++		return -EPERM;
++
++	rc = proc_dointvec_minmax(table, write, buffer, lenp, ppos);
++	if (rc)
++		return rc;
++
++	/* Lock the max value if it ever gets set. */
++	if (write && *(int *)table->data == *(int *)table->extra2)
++		table->extra1 = table->extra2;
++
++	return rc;
++}
++
+ static int zero;
+ static int one = 1;
++static int max_scope = YAMA_SCOPE_NO_ATTACH;
+ 
+ struct ctl_path yama_sysctl_path[] = {
+ 	{ .procname = "kernel", },
+@@ -294,9 +334,9 @@ static struct ctl_table yama_sysctl_table[] = {
+ 		.data           = &ptrace_scope,
+ 		.maxlen         = sizeof(int),
+ 		.mode           = 0644,
+-		.proc_handler   = proc_dointvec_minmax,
++		.proc_handler   = yama_dointvec_minmax,
+ 		.extra1         = &zero,
+-		.extra2         = &one,
++		.extra2         = &max_scope,
+ 	},
+ 	{ }
+ };
+-- 
+1.7.0.4
 
-Thanks,
-Thomas.
