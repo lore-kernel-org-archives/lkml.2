@@ -1,41 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754619Ab2DPOs3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Apr 2012 10:48:29 -0400
-Received: from na3sys009aog101.obsmtp.com ([74.125.149.67]:35349 "EHLO
-	na3sys009aog101.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753806Ab2DPOs2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Apr 2012 10:48:28 -0400
-Message-ID: <1334587677.5214.2.camel@odin>
-Subject: Re: [PATCH 1/8] regulator: core: Allow drivers to pass in a regmap
-From: Liam Girdwood <lrg@ti.com>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: linux-kernel@vger.kernel.org, patches@opensource.wolfsonmicro.com
-Date: Mon, 16 Apr 2012 15:47:57 +0100
-In-Reply-To: <1334490565-19808-1-git-send-email-broonie@opensource.wolfsonmicro.com>
-References: <1334490565-19808-1-git-send-email-broonie@opensource.wolfsonmicro.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2- 
+	id S1754628Ab2DPOxL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Apr 2012 10:53:11 -0400
+Received: from mail.tpi.com ([70.99.223.143]:4472 "EHLO mail.tpi.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754366Ab2DPOxJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Apr 2012 10:53:09 -0400
+Message-ID: <4F8C3217.4030702@canonical.com>
+Date: Mon, 16 Apr 2012 08:52:07 -0600
+From: Tim Gardner <tim.gardner@canonical.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120410 Thunderbird/11.0.1
+MIME-Version: 1.0
+To: Ben Hutchings <ben@decadent.org.uk>
+CC: linux-kernel@vger.kernel.org, Jon Mason <jdmason@kudzu.us>,
+        netdev@vger.kernel.org
+Subject: Re: [PATCH net-next] net: vxge: Add MODULE_FIRMWARE
+References: <1334262882-96973-1-git-send-email-tim.gardner@canonical.com>  <1334498215.3209.4.camel@deadeye> <4F8C0EE1.7030901@canonical.com> <1334586550.3209.128.camel@deadeye>
+In-Reply-To: <1334586550.3209.128.camel@deadeye>
+X-Enigmail-Version: 1.4
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2012-04-15 at 12:49 +0100, Mark Brown wrote:
-> Since many regulators use regmap for register I/O and since there's quite
-> a few very common patterns in the code allow drivers to pass in a regmap
-> to the core for use in generic code.
+-----BEGIN PGP SIGNED MESSAGE-----
+Hash: SHA512
+
+On 04/16/2012 08:29 AM, Ben Hutchings wrote:
+>> 
+>> I guess I'm confused about use of the MODULE_FIRMWARE() macro. I 
+>> thought it merely described the names of the firmware files that
+>> were actually used by the driver and had no run-time impact.
+>> Regardless of whether firmware files are used on every load, why
+>> _not_ describe them to modinfo ?
+> [...]
 > 
-> Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
-> ---
->  drivers/regulator/core.c         |    2 ++
->  include/linux/regulator/driver.h |    4 ++++
->  2 files changed, 6 insertions(+), 0 deletions(-)
+> Ah, that's a good question.  Quoting my own interpretation from 
+> <1257629601.15927.361.camel@localhost>:
+> 
+>> Drivers that must load 'firmware' into the devices they drive
+>> should declare the names of the files they will request, using
+>> the MODULE_FIRMWARE() macro.  This enables other tools to
+>> discover these dependencies statically, and warn the user if
+>> firmware files are missing.
+> 
+> In Debian we use this to decide which files need to be copied into
+> an initramfs.  You use that too unless you've changed this feature
+> of initramfs-tools.  We warn when building an initramfs and during
+> a major kernel upgrade if it looks like a driver will be used and
+> the corresponding firmware isn't installed.
 > 
 
-All 
+Yep, we've merged "initramfs-tools (0.99) unstable" into precise. I'll
+assume it behaves as described. The Ubuntu server installer will
+certainly annoy you if firmware is missing. Its likely the LiveCD will
+as well.
 
-Acked-by: Liam Girdwood <lrg@ti.com>
+> I also have an (unfinished) patch that will use this information
+> for CONFIG_FIRMWARE_IN_KERNEL.
+> 
+> In this case the firmware files are used to upgrade old flash, but
+> since the vendor has closed down there aren't going to be any
+> further updates. So the likelihood of the files actually being
+> needed by the driver is very small.
+> 
+> Ben.
+> 
 
+I didn't realize the vendor is defunct, so I suddenly don't care as much.
+
+rtg
+- -- 
+Tim Gardner tim.gardner@canonical.com
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+Comment: Using GnuPG with Mozilla - http://enigmail.mozdev.org/
+
+iQIcBAEBCgAGBQJPjDIXAAoJED12yEX6FEfKRE4P/j7zqPOeom4wwocrn4zQrU/6
+BW5BTUpea9pnC7dgIp/Vl/HgO+5WrdApBrcONpfJeHE+1bBM1gx6NANLu2qPx3BG
+EqMUI+I7bAbwFqUQnDs1wgqfat5CKTGfmf8lwjTzbmRVMlPRMfCGZWlfSL/Pi9Tn
+5R8M4TxbspOkI0+iRmcjlOiRVAYuTglaiQD9r0cqyRQeJ+jQ5RK/uwCNyTKHh3eB
+LmeXj7RU/gbUiXZkqh6HEtT9QqhOL2BYHboVjHnKGcdvLylqaLNiwcWKLOrQ4bxy
+q3GuLtEmAb7fV5stONhyoqrDBfvWGNtbOSmqW4yXIeKOT3S4/UOs+LrrIXItgLgD
+qpBW9xBNjT+K+DkTh8iTpCF39igyMG+PvPJ3bjxEznPZoYU5TLJLPrw6YDUnfe54
+lFUMdnAVHZmgdF9uUrakNacwPXkdTd3t4F+Y+sPLxaHYyOC/+hrXnkj9KLxlVjYr
+RP82iHhINcNgEl5Rqj98Kp0kw8vsVBuDm5i5LvaRLlah7PNWJ/tSbFXwG+qC0VZK
+BkVSatVyLgWDOJAN4NYgPME9/IAV+Mmlu7ZOIN/8oyRiMaK4HPsDDSLYhwthmXN3
+r9ViAJTdGCBf+FTvLS8H3YXbueFuLNoH0nfV4oPB77jrYWesEPEqJlKPqefJAVAG
+NZshSCqSm2x4C+2UXuhp
+=BYdE
+-----END PGP SIGNATURE-----
