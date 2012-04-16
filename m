@@ -1,81 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752487Ab2DOX6m (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 15 Apr 2012 19:58:42 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:46048 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752312Ab2DOX6k (ORCPT
+	id S1752512Ab2DPAQl (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 15 Apr 2012 20:16:41 -0400
+Received: from mail-pz0-f52.google.com ([209.85.210.52]:57310 "EHLO
+	mail-pz0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752406Ab2DPAQj convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 15 Apr 2012 19:58:40 -0400
-Date: Mon, 16 Apr 2012 09:58:29 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Paul Gortmaker <paul.gortmaker@windriver.com>
-Cc: <linux-next@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <daniel.vetter@ffwll.ch>
-Subject: Re: linux-next: triage for April 15, 2012
-Message-Id: <20120416095829.b9b1c9fcede7bc0c86a999f4@canb.auug.org.au>
-In-Reply-To: <20120415223049.GA17089@windriver.com>
-References: <20120415223049.GA17089@windriver.com>
-X-Mailer: Sylpheed 3.2.0beta6 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Mon__16_Apr_2012_09_58_29_+1000_Rbs.PPXtf=0s4UV/"
+	Sun, 15 Apr 2012 20:16:39 -0400
+MIME-Version: 1.0
+In-Reply-To: <1334206506.7150.386.camel@deadeye>
+References: <20120411231036.581670888@linuxfoundation.org> <1334206506.7150.386.camel@deadeye>
+From: Paul Gortmaker <paul.gortmaker@windriver.com>
+Date: Sun, 15 Apr 2012 20:16:08 -0400
+X-Google-Sender-Auth: IAkQ26F7gJJmwxtdUfIWs42LHwY
+Message-ID: <CAP=VYLp6F3YB_71aX=FxLf_dz7kzs-W+dPcA4OmC0VV0kQteiw@mail.gmail.com>
+Subject: Re: [ 06/59] Fix non TBI PHY access; a bad merge undid bug fix in a
+ previous commit.
+To: Ben Hutchings <ben@decadent.org.uk>
+Cc: Greg KH <gregkh@linuxfoundation.org>, linux-kernel@vger.kernel.org,
+        stable@vger.kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+        Kenth Eriksson <kenth.eriksson@transmode.com>,
+        "David S. Miller" <davem@davemloft.net>, afleming@freescale.com
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Mon__16_Apr_2012_09_58_29_+1000_Rbs.PPXtf=0s4UV/
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
-
-Hi Paul,
-
-On Sun, 15 Apr 2012 18:30:49 -0400 Paul Gortmaker <paul.gortmaker@windriver=
-.com> wrote:
+On Thu, Apr 12, 2012 at 12:55 AM, Ben Hutchings <ben@decadent.org.uk> wrote:
+> On Wed, 2012-04-11 at 16:10 -0700, Greg KH wrote:
+>> 3.2-stable review patch.  If anyone has any objections, please let me know.
+>>
+>> ------------------
+>>
+>>
+>> From: Kenth Eriksson <kenth.eriksson@transmode.com>
+>>
+>> [ Upstream commit 464b57da56910c8737ede75ad820b9a7afc46b3e ]
+>>
+>> The merge done in commit b26e478f undid bug fix in commit c3e072f8
+>> ("net: fsl_pq_mdio: fix non tbi phy access"), with the result that non
+>> TBI (e.g. MDIO) PHYs cannot be accessed.
+> [...]
 >
-> All new breakage is in pagemap.h ; it seems a fix has been
-> posted already.
->=20
-> 	http://marc.info/?l=3Dlinux-kernel&m=3D133441945530527&w=3D2
+> This doesn't look relevant to 3.2.
+>
+> $ git describe --contains b26e478f
+> v3.3-rc1~182^2~207
+> $ git describe --contains c3e072f8
+> v3.3-rc1~182^2~598
+> $ git show c3e072f8 | head -8
+> commit c3e072f8a6c5625028531c40ec65f7e301531be2
+> Author: Baruch Siach <baruch@tkos.co.il>
+> Date:   Mon Nov 14 08:21:30 2011 +0200
+>
+>    net: fsl_pq_mdio: fix non tbi phy access
+>
+>    Since 952c5ca1 (fsl_pq_mdio: Clean up tbi address configuration) .probe returns
+>    -EBUSY when the "tbi-phy" node is missing. Fix this.
+> $ git describe --contains 952c5ca1
+> v3.3-rc1~182^2~603
+> $ git rev-list v3.2..v3.2.14 drivers/net/ethernet/freescale/fsl_pq_mdio.c
 
-And that patch has been added to the drm tree and so will be in today's
-linux-next.
+I think 952c5ca1 is a red herring;  What is called out as the regression
+commit appeared in tree earlier than that as 28d8ea2d568.
 
-> powerpc:allyesconfig
-> 	when:	May 18 2009, 22:11
-> 	why:	fat ass kernel with everything simply won't link
-> 	status:	need to fix build config to ignore the final link
-> 	fix:=09
-> 	ref:	http://kisskb.ellerman.id.au/kisskb/buildresult/5806793/
+$ git describe --contains 28d8ea2d568
+v3.2-rc6~3^2~6
+$ git show 952c5ca1|diffstat -p0
+ b/drivers/net/ethernet/freescale/fsl_pq_mdio.c |   53 +++----------------------
+ 1 file changed, 8 insertions(+), 45 deletions(-)
+$ git show  28d8ea2d568 | diffstat -p0
+ b/drivers/net/ethernet/freescale/fsl_pq_mdio.c |   53 +++----------------------
+ 1 file changed, 8 insertions(+), 45 deletions(-)
+$
 
-This is well known, so is probably not worth reporting any more.  I am
-having a (slow) look at fixing it properly, but that is a long term goal.
+I documented some history about this in commit 1ee4af86fa16d636.
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+I wasn't aware of the bad merge at the time; adding the TBI node to
+my mpc836x board DTS simply fixed the issue with no source changes.
 
---Signature=_Mon__16_Apr_2012_09_58_29_+1000_Rbs.PPXtf=0s4UV/
-Content-Type: application/pgp-signature
+Paul.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJPi2ClAAoJEECxmPOUX5FE8VgP/Rtb35jOVuHTZFzETlIIGUPb
-Ov6z5uFGS9I0fIizxCtfPjGf1zeMH/+Yi4StEK0XjOzhZS5xo7i0PAgMh16o1Z0e
-tvG8xd8nKJFGivQMRcvuwtTx3ROWf9cxjjgT0n3oPpvh+DEWh9um7Anv+lYVTPUr
-PCy8OuKnNlDsJLKTCM1xhgAF1Ixg0Ln3U1CTk8R07ffdVCjRF4V0rAVukFR9qmxw
-FhvRoT8/srfbHgBLCQueC7Sx8SyEsF6Wmw5ZcmkgXirNMzOfaYT4sbLM7EV/tAMO
-+evPoEk8d5byrrksz6MhjjJ1L9bC7uA6lZb7wsCn5zvyKkw5F2whQUNLqLs5aRJE
-pmzHDOsuLkrlLDhUCYGWX3xDn79EIVXj3yxeWg78W0qpO2tlB/YNnpG6zpYZVUPq
-IIsZw8ftKGmDYYNzKAETZykk+qxQC6g30M731KAUoI7lTALEvkRo7+KGO1NQN5l2
-gvVdZKIWUqid8nEZQK53N8SJ5dC+QqZggJAKM5iTs1j5FsouqB3/TRTmUrVe6KbJ
-59npp9aKWyS0JeyeeBO4xhnVciM/S+nTlY274QcsczNsCcakGThktRd/w1SJCv4A
-C0cD7gwdhTEAfFl/g6KEKSIrcBPOpHHu6KPHSodeHUkcrw6mLxPOvo7dPZf+jwNB
-EuHobOn230X8IXy45Nnp
-=Y+EP
------END PGP SIGNATURE-----
-
---Signature=_Mon__16_Apr_2012_09_58_29_+1000_Rbs.PPXtf=0s4UV/--
+> $
+>
+> Ben.
+>
+> --
+> Ben Hutchings
+> It is easier to change the specification to fit the program than vice versa.
