@@ -1,19 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754584Ab2DPQWU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Apr 2012 12:22:20 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:40921 "EHLO mx2.suse.de"
+	id S1754431Ab2DPQWT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Apr 2012 12:22:19 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:40922 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752179Ab2DPQOW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1752180Ab2DPQOW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 16 Apr 2012 12:14:22 -0400
 From: Jan Kara <jack@suse.cz>
 To: Al Viro <viro@ZenIV.linux.org.uk>
 Cc: dchinner@redhat.com, LKML <linux-kernel@vger.kernel.org>,
-        linux-fsdevel@vger.kernel.org, Jan Kara <jack@suse.cz>,
-        Chris Mason <chris.mason@oracle.com>, linux-btrfs@vger.kernel.org
-Subject: [PATCH 11/27] btrfs: Push mnt_want_write() outside of i_mutex
-Date: Mon, 16 Apr 2012 18:13:49 +0200
-Message-Id: <1334592845-22862-12-git-send-email-jack@suse.cz>
+        linux-fsdevel@vger.kernel.org, Jan Kara <jack@suse.cz>
+Subject: [PATCH 15/27] fs: Skip atime update on frozen filesystem
+Date: Mon, 16 Apr 2012 18:13:53 +0200
+Message-Id: <1334592845-22862-16-git-send-email-jack@suse.cz>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1334592845-22862-1-git-send-email-jack@suse.cz>
 References: <1334592845-22862-1-git-send-email-jack@suse.cz>
@@ -21,93 +20,44 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When mnt_want_write() starts to handle freezing it will get a full lock
-semantics requiring proper lock ordering. So push mnt_want_write() call
-consistently outside of i_mutex.
+It is unexpected to block reading of frozen filesystem because of atime update.
+Also handling blocking on frozen filesystem because of atime update would make
+locking more complex than it already is. So just skip atime update when
+filesystem is frozen like we skip it when filesystem is remounted read-only.
 
-CC: Chris Mason <chris.mason@oracle.com>
-CC: linux-btrfs@vger.kernel.org
+BugLink: https://bugs.launchpad.net/bugs/897421
+Tested-by: Kamal Mostafa <kamal@canonical.com>
+Tested-by: Peter M. Petrakis <peter.petrakis@canonical.com>
+Tested-by: Dann Frazier <dann.frazier@canonical.com>
+Tested-by: Massimo Morana <massimo.morana@canonical.com>
 Signed-off-by: Jan Kara <jack@suse.cz>
 ---
- fs/btrfs/ioctl.c |   23 +++++++++++------------
- 1 files changed, 11 insertions(+), 12 deletions(-)
+ fs/inode.c |    9 +++++++--
+ 1 files changed, 7 insertions(+), 2 deletions(-)
 
-diff --git a/fs/btrfs/ioctl.c b/fs/btrfs/ioctl.c
-index 18cc23d..869d913 100644
---- a/fs/btrfs/ioctl.c
-+++ b/fs/btrfs/ioctl.c
-@@ -192,6 +192,10 @@ static int btrfs_ioctl_setflags(struct file *file, void __user *arg)
- 	if (!inode_owner_or_capable(inode))
- 		return -EACCES;
+diff --git a/fs/inode.c b/fs/inode.c
+index 396a388..3ded74d 100644
+--- a/fs/inode.c
++++ b/fs/inode.c
+@@ -1515,12 +1515,17 @@ void touch_atime(struct path *path)
+ 	if (timespec_equal(&inode->i_atime, &now))
+ 		return;
  
-+	ret = mnt_want_write_file(file);
-+	if (ret)
-+		return ret;
+-	if (mnt_want_write(mnt))
++	if (!sb_start_write_trylock(inode->i_sb))
+ 		return;
+ 
++	if (__mnt_want_write(mnt))
++		goto skip_update;
 +
- 	mutex_lock(&inode->i_mutex);
- 
- 	ip_oldflags = ip->flags;
-@@ -206,10 +210,6 @@ static int btrfs_ioctl_setflags(struct file *file, void __user *arg)
- 		}
- 	}
- 
--	ret = mnt_want_write_file(file);
--	if (ret)
--		goto out_unlock;
--
- 	if (flags & FS_SYNC_FL)
- 		ip->flags |= BTRFS_INODE_SYNC;
- 	else
-@@ -271,9 +271,9 @@ static int btrfs_ioctl_setflags(struct file *file, void __user *arg)
- 		inode->i_flags = i_oldflags;
- 	}
- 
--	mnt_drop_write_file(file);
-  out_unlock:
- 	mutex_unlock(&inode->i_mutex);
-+	mnt_drop_write_file(file);
- 	return ret;
+ 	inode->i_atime = now;
+ 	mark_inode_dirty_sync(inode);
+-	mnt_drop_write(mnt);
++	__mnt_drop_write(mnt);
++skip_update:
++	sb_end_write(inode->i_sb);
  }
- 
-@@ -639,6 +639,10 @@ static noinline int btrfs_mksubvol(struct path *parent,
- 	struct dentry *dentry;
- 	int error;
- 
-+	error = mnt_want_write(parent->mnt);
-+	if (error)
-+		return error;
-+
- 	mutex_lock_nested(&dir->i_mutex, I_MUTEX_PARENT);
- 
- 	dentry = lookup_one_len(name, parent->dentry, namelen);
-@@ -650,13 +654,9 @@ static noinline int btrfs_mksubvol(struct path *parent,
- 	if (dentry->d_inode)
- 		goto out_dput;
- 
--	error = mnt_want_write(parent->mnt);
--	if (error)
--		goto out_dput;
--
- 	error = btrfs_may_create(dir, dentry);
- 	if (error)
--		goto out_drop_write;
-+		goto out_dput;
- 
- 	down_read(&BTRFS_I(dir)->root->fs_info->subvol_sem);
- 
-@@ -674,12 +674,11 @@ static noinline int btrfs_mksubvol(struct path *parent,
- 		fsnotify_mkdir(dir, dentry);
- out_up_read:
- 	up_read(&BTRFS_I(dir)->root->fs_info->subvol_sem);
--out_drop_write:
--	mnt_drop_write(parent->mnt);
- out_dput:
- 	dput(dentry);
- out_unlock:
- 	mutex_unlock(&dir->i_mutex);
-+	mnt_drop_write(parent->mnt);
- 	return error;
- }
+ EXPORT_SYMBOL(touch_atime);
  
 -- 
 1.7.1
