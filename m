@@ -1,42 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756308Ab2DQQOK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Apr 2012 12:14:10 -0400
-Received: from mail-1-out2.atlantis.sk ([80.94.52.71]:43972 "EHLO
-	mail.atlantis.sk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1755863Ab2DQQOI (ORCPT
+	id S932281Ab2DQQPb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Apr 2012 12:15:31 -0400
+Received: from e06smtp16.uk.ibm.com ([195.75.94.112]:40020 "EHLO
+	e06smtp16.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932128Ab2DQQP3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Apr 2012 12:14:08 -0400
-From: Ondrej Zary <linux@rainbow-software.org>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Subject: Re: [PATCH 3/4] Add Wolfson Microelectronics WM8776 codec ALSA driver
-Date: Tue, 17 Apr 2012 18:13:40 +0200
-User-Agent: KMail/1.9.10
-Cc: alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org
-References: <1334611118-10301-1-git-send-email-linux@rainbow-software.org> <1334611118-10301-4-git-send-email-linux@rainbow-software.org> <20120417150234.GB22575@sirena.org.uk>
-In-Reply-To: <20120417150234.GB22575@sirena.org.uk>
+	Tue, 17 Apr 2012 12:15:29 -0400
+Date: Tue, 17 Apr 2012 18:14:55 +0200
+From: Heiko Carstens <heiko.carstens@de.ibm.com>
+To: Paul Gortmaker <paul.gortmaker@windriver.com>
+Cc: linux-kernel@vger.kernel.org, Jiri Slaby <jslaby@suse.cz>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>, linux390@de.ibm.com,
+        linux-s390@vger.kernel.org
+Subject: Re: [PATCH] s390: fix build failure in con3215.c tty wakeup tasklet
+Message-ID: <20120417161455.GB4382@osiris.boeblingen.de.ibm.com>
+References: <1334135699-30180-3-git-send-email-jslaby@suse.cz>
+ <1334678829-30823-1-git-send-email-paul.gortmaker@windriver.com>
 MIME-Version: 1.0
-Content-Type: text/plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Message-Id: <201204171813.44044.linux@rainbow-software.org>
+In-Reply-To: <1334678829-30823-1-git-send-email-paul.gortmaker@windriver.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+x-cbid: 12041716-3548-0000-0000-000001A52CAD
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 17 April 2012 17:02:34 Mark Brown wrote:
-> On Mon, Apr 16, 2012 at 11:18:37PM +0200, Ondrej Zary wrote:
-> > Needed by Philips PSC724 subdriver. The code does not contain any
-> > card-specific bits so it can be used by any other ALSA driver.
->
-> Same comments as the previous patch, this should be using ASoC.  In this
-> case the device has in fact been supported in mainline since 2.6.32...
+On Tue, Apr 17, 2012 at 12:07:09PM -0400, Paul Gortmaker wrote:
+> Commit 86b26007a37d81e7aca242bb5b649473f8f81297 (tty-next)
+> 
+>     "TTY: con3215, use tty from tty_port"
+> 
+> removed the tty struct from the raw struct, causing:
+> 
+>   CC      drivers/s390/char/con3215.o
+> drivers/s390/char/con3215.c: In function 'raw3215_wakeup':
+> drivers/s390/char/con3215.c:339:16: error: 'struct raw3215_info' has no member named 'tty'
+> make[2]: *** [drivers/s390/char/con3215.o] Error 1
 
-Yes, the driver is there - but I dont's see any way to use it. ASoC was not 
-designed to be used with sound cards and nobody has ever used any ASoC driver 
-in a sound card driver. I don't feel like breaking a working driver (with 16 
-subdrivers for many more card types).
+...
 
--- 
-Ondrej Zary
+> diff --git a/drivers/s390/char/con3215.c b/drivers/s390/char/con3215.c
+> index e928e04..759c43c 100644
+> --- a/drivers/s390/char/con3215.c
+> +++ b/drivers/s390/char/con3215.c
+> @@ -336,7 +336,13 @@ static inline void raw3215_try_io(struct raw3215_info *raw)
+>  static void raw3215_wakeup(unsigned long data)
+>  {
+>  	struct raw3215_info *raw = (struct raw3215_info *) data;
+> -	tty_wakeup(raw->tty);
+> +	struct tty_struct *tty = tty_port_tty_get(&raw->port);
+> +
+> +	if (tty == NULL)
+> +		return;
+> +
+> +	tty_wakeup(tty);
+> +	tty_kref_put(tty);
+
+Yep, I posted a similar patch earlier:
+http://marc.info/?l=linux-next&m=133466152209052&w=2
+
+The NULL check is not necessary, because "it cannot happen" ;)
+
+Thanks,
+Heiko
+
