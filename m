@@ -1,87 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752246Ab2DQTxI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Apr 2012 15:53:08 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:35622 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751101Ab2DQTxH (ORCPT
+	id S1752523Ab2DQTxU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Apr 2012 15:53:20 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:34291 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751101Ab2DQTxQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Apr 2012 15:53:07 -0400
-Message-ID: <4F8DCA1F.3020904@wwwdotorg.org>
-Date: Tue, 17 Apr 2012 13:53:03 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.28) Gecko/20120313 Thunderbird/3.1.20
+	Tue, 17 Apr 2012 15:53:16 -0400
+Date: Tue, 17 Apr 2012 20:53:13 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Ashish Chavan <ashish.chavan@kpitcummins.com>
+Cc: lrg <lrg@ti.com>, alsa-devel <alsa-devel@alsa-project.org>,
+        David Dajun Chen <david.chen@diasemi.com>,
+        "kuninori.morimoto.gx" <kuninori.morimoto.gx@renesas.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [alsa-devel] [PATCH v2] ASoC: da7210: Minor update for PLL and
+ SRM
+Message-ID: <20120417195312.GY6652@opensource.wolfsonmicro.com>
+References: <1334677064.13279.16.camel@matrix>
 MIME-Version: 1.0
-To: Dong Aisheng <aisheng.dong@freescale.com>
-CC: Dong Aisheng-B29396 <B29396@freescale.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linus.walleij@stericsson.com" <linus.walleij@stericsson.com>
-Subject: Re: [PATCH 1/1] pinctrl: handle dummy state in core
-References: <1334586289-13078-1-git-send-email-b29396@freescale.com> <4F8C42D6.2000607@wwwdotorg.org> <20120417034210.GD17173@shlinux2.ap.freescale.net>
-In-Reply-To: <20120417034210.GD17173@shlinux2.ap.freescale.net>
-X-Enigmail-Version: 1.1.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="DVXvgjZtTc9TWCEb"
+Content-Disposition: inline
+In-Reply-To: <1334677064.13279.16.camel@matrix>
+X-Cookie: Long life is in store for you.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/16/2012 09:42 PM, Dong Aisheng wrote:
-> On Tue, Apr 17, 2012 at 12:03:34AM +0800, Stephen Warren wrote:
->> On 04/16/2012 08:24 AM, Dong Aisheng wrote:
->>> From: Dong Aisheng <dong.aisheng@linaro.org>
->>>
->>> Remove dummy state user interface and handle it totally in core.
->>> This can make it more easy to use by platforms which has neither pinctrl
->>> driver support nor dt support.
->>>
->>> Signed-off-by: Dong Aisheng <dong.aisheng@linaro.org>
->>
->> I think this is the wrong direction.
->>
->> I specifically want people to think about which drivers require what
->> pinctrl states to be defined, and what their content should be, and
->> hence explicitly define dummy states when it's appropriate. This patch
->> prevents that.
->>
-> It's correct if all platforms have switched to pinctrl subsystem.
-> 
-> I think the main issue is for one platform neither supports dt nor using pinctrl
-> subsystem, do you think it still makes too much sense to force that platform
-> to define a _PINCTRL_ dummy state in their machine code?
-> 
-> But the driver is commonly shared between these different platforms(using pinctrl
-> or not).
 
-For a platform that doesn't have any pinctrl driver, wouldn't you just
-disable CONFIG_PINCTRL. When that's disabled, all the pinctrl APIs are
-already stubbed out not to return errors, IIRC.
+--DVXvgjZtTc9TWCEb
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-If you're converting a platform to pinctrl for the first time, I don't
-think it's unreasonable to have to define the dummy states for any
-drivers that already use pinctrl. After all, there will on average
-probably not be any/many such drivers, since presumably you'd write the
-pinctrl driver first, then enable pinctrl for the platform, then port
-all the relevant drivers to using pinctrl. The only pre-existing drivers
-that actually use pinctrl would be shared IP blocks, which aren't too
-common across different SoCs. (They are common within a series of SoCs
-from the same vendor, but I still think it's reasonable to just write
-few dummy states during the early conversion process either way).
+On Tue, Apr 17, 2012 at 09:07:44PM +0530, Ashish Chavan wrote:
+> This patch converts multiple if conditions in to single if with "&&"s.
 
-If you don't agree with my thinking, can we at least make your patch
-conditional, probably using a Kconfig variable, so that fully ported
-platforms can require the mapping table (or DT) to fully specify all
-pinctrl state (including dummy states if required), but people doing
-development can flip a Kconfig switch to make pinctrl_get/lookup_state
-return a dummy state instead of an error"?
+Applied, thanks.
 
-> That's why i proposed to handle dummy state in core in this patch rather than require
-> user to do it.
-> 
-> You must can assume there're so many platforms still have not switched to use pinctrl
-> subsystem. If we require user to do it, we need change many code.
-> 
-> Regards
-> Dong Aisheng
+--DVXvgjZtTc9TWCEb
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJPjcoYAAoJEBus8iNuMP3dMN8P/3nWPxcyhj25GIQNmjXFO1OT
+M40k7K2O7i6YRkTrb9RYWEyTemy3kDWk/aGGjvVGv+8fkJakEAneMYo7jyb41lEE
+L4QQkGyiWGb352+yRxQFC0n0wSmHU5qcUYKW1PQc8wCxVZFPQ3/xGw63Eo8xUB1O
+SzYWci3o4yGBr3o3C/3KUwihvPCkkwLTKpegXk6jhOsF8XJCXILkC92wxUejwaPV
+1mwzn24s5PfCCIVofjvWx3VIRAhY1eAujSjEmgBsj/LsBbszC8LSlMcQSCZKK8r2
+0m0Q/4m70FHDM5wcjim4gR6JxsK7PQSOvxqljF8OferIiMssVFn4smpO2jRmE3l5
+ToI67YKSE4FWi0aUum1UkRo70McmYM2CazyWqPbFxbNBJWvvNIU9ysI84jkeF7nC
+kujlXRZzlDsqAXg3oHU2sqNo4Uz8gZKuyqoK10fvULDtCmfC+YwZjbrLUiTOfkQN
+0PgTbW2i+RxdlbE/j45jVzn/8rgPvw/bs6NdtNLjO1h1SnbPpwqFwDEDtdQ1p7Sf
+OGnvneYHH1/7KGIxeSvcTnP8nWHf/M8ICkfqJph13HUIl4TsLAPChPnVCyL1gFk4
+0jdPFX0GSsyKwUOxNFkc7cyhWdSLIbEfPpCnec9rZPcSzX/uawhbqeN5VmKy7lmO
+0TlsKjmNjmrFmz0CnByP
+=Hk1u
+-----END PGP SIGNATURE-----
+
+--DVXvgjZtTc9TWCEb--
