@@ -1,108 +1,181 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755240Ab2DQLQM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Apr 2012 07:16:12 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:62105 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752221Ab2DQLQL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Apr 2012 07:16:11 -0400
-From: Valentin Ilie <valentin.ilie@gmail.com>
-To: geoff@infradead.org
-Cc: linuxppc-dev@lists.ozlabs.org, cbe-oss-dev@lists.ozlabs.org,
-        linux-kernel@vger.kernel.org, Valentin Ilie <valentin.ilie@gmail.com>
-Subject: [PATCH] Drivers: ps3: ps3av.c: fixed checkpatch warnings
-Date: Tue, 17 Apr 2012 14:16:01 +0300
-Message-Id: <1334661361-3699-1-git-send-email-valentin.ilie@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
+	id S1755174Ab2DQLSA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Apr 2012 07:18:00 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:43162 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752302Ab2DQLR6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Apr 2012 07:17:58 -0400
+From: Jiri Olsa <jolsa@redhat.com>
+To: acme@redhat.com, a.p.zijlstra@chello.nl, mingo@elte.hu, paulus@samba.org,
+        cjashfor@linux.vnet.ibm.com, fweisbec@gmail.com
+Cc: eranian@google.com, gorcunov@openvz.org, tzanussi@gmail.com,
+        mhiramat@redhat.com, rostedt@goodmis.org, robert.richter@amd.com,
+        fche@redhat.com, linux-kernel@vger.kernel.org,
+        masami.hiramatsu.pt@hitachi.com, drepper@gmail.com,
+        Jiri Olsa <jolsa@redhat.com>
+Subject: [PATCH 01/16] uaccess: Add new copy_from_user_gup API
+Date: Tue, 17 Apr 2012 13:17:06 +0200
+Message-Id: <1334661441-4420-2-git-send-email-jolsa@redhat.com>
+In-Reply-To: <1334661441-4420-1-git-send-email-jolsa@redhat.com>
+References: <1334661441-4420-1-git-send-email-jolsa@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fixed some indenting problems.
+This brings a get_user_page_fast() based copy_from_user() that can
+do a best effort copy from any context.
 
-Signed-off-by: Valentin Ilie <valentin.ilie@gmail.com>
+In order to support user stack dump safely in perf samples from
+generic code, rename x86 copy_from_user_nmi to copy_from_user_gup
+and make it generally available. If the arch doesn't provide an
+implementation it will map to copy_from_user_inatomic.
+
+Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
+Signed-off-by: Jiri Olsa <jolsa@redhat.com>
 ---
- drivers/ps3/ps3av.c |   11 ++---------
- 1 file changed, 2 insertions(+), 9 deletions(-)
+ arch/x86/include/asm/uaccess.h             |    7 +++++--
+ arch/x86/kernel/cpu/perf_event.c           |    4 ++--
+ arch/x86/kernel/cpu/perf_event_intel_ds.c  |    3 ++-
+ arch/x86/kernel/cpu/perf_event_intel_lbr.c |    2 +-
+ arch/x86/lib/usercopy.c                    |    4 ++--
+ arch/x86/oprofile/backtrace.c              |    4 ++--
+ include/asm-generic/uaccess.h              |    4 ++++
+ 7 files changed, 18 insertions(+), 10 deletions(-)
 
-diff --git a/drivers/ps3/ps3av.c b/drivers/ps3/ps3av.c
-index a409fa0..46136b0 100644
---- a/drivers/ps3/ps3av.c
-+++ b/drivers/ps3/ps3av.c
-@@ -25,8 +25,8 @@
- #include <linux/ioctl.h>
- #include <linux/fb.h>
- #include <linux/slab.h>
-+#include <linux/firmware.h>
+diff --git a/arch/x86/include/asm/uaccess.h b/arch/x86/include/asm/uaccess.h
+index e054459..b8724e9 100644
+--- a/arch/x86/include/asm/uaccess.h
++++ b/arch/x86/include/asm/uaccess.h
+@@ -228,6 +228,11 @@ extern void __put_user_2(void);
+ extern void __put_user_4(void);
+ extern void __put_user_8(void);
  
--#include <asm/firmware.h>
- #include <asm/ps3av.h>
- #include <asm/ps3.h>
++extern unsigned long
++__copy_from_user_gup(void *to, const void __user *from, unsigned long n);
++
++#define copy_from_user_gup(to, from, n) __copy_from_user_gup(to, from, n)
++
+ #ifdef CONFIG_X86_WP_WORKS_OK
  
-@@ -338,7 +338,7 @@ int ps3av_do_pkt(u32 cid, u16 send_len, size_t usr_buf_size,
- 	mutex_unlock(&ps3av->mutex);
- 	return 0;
+ /**
+@@ -555,8 +560,6 @@ struct __large_struct { unsigned long buf[100]; };
  
--      err:
-+err:
- 	mutex_unlock(&ps3av->mutex);
- 	printk(KERN_ERR "%s: failed cid:%x res:%d\n", __func__, cid, res);
- 	return res;
-@@ -477,7 +477,6 @@ int ps3av_set_audio_mode(u32 ch, u32 fs, u32 word_bits, u32 format, u32 source)
+ #endif /* CONFIG_X86_WP_WORKS_OK */
  
- 	return 0;
- }
--
- EXPORT_SYMBOL_GPL(ps3av_set_audio_mode);
+-extern unsigned long
+-copy_from_user_nmi(void *to, const void __user *from, unsigned long n);
+ extern __must_check long
+ strncpy_from_user(char *dst, const char __user *src, long count);
  
- static int ps3av_set_videomode(void)
-@@ -870,21 +869,18 @@ int ps3av_set_video_mode(int id)
+diff --git a/arch/x86/kernel/cpu/perf_event.c b/arch/x86/kernel/cpu/perf_event.c
+index bb8e034..294ad68 100644
+--- a/arch/x86/kernel/cpu/perf_event.c
++++ b/arch/x86/kernel/cpu/perf_event.c
+@@ -1781,7 +1781,7 @@ perf_callchain_user32(struct pt_regs *regs, struct perf_callchain_entry *entry)
+ 		frame.next_frame     = 0;
+ 		frame.return_address = 0;
  
- 	return 0;
- }
--
- EXPORT_SYMBOL_GPL(ps3av_set_video_mode);
+-		bytes = copy_from_user_nmi(&frame, fp, sizeof(frame));
++		bytes = copy_from_user_gup(&frame, fp, sizeof(frame));
+ 		if (bytes != sizeof(frame))
+ 			break;
  
- int ps3av_get_auto_mode(void)
+@@ -1827,7 +1827,7 @@ perf_callchain_user(struct perf_callchain_entry *entry, struct pt_regs *regs)
+ 		frame.next_frame	     = NULL;
+ 		frame.return_address = 0;
+ 
+-		bytes = copy_from_user_nmi(&frame, fp, sizeof(frame));
++		bytes = copy_from_user_gup(&frame, fp, sizeof(frame));
+ 		if (bytes != sizeof(frame))
+ 			break;
+ 
+diff --git a/arch/x86/kernel/cpu/perf_event_intel_ds.c b/arch/x86/kernel/cpu/perf_event_intel_ds.c
+index 7f64df1..77053af 100644
+--- a/arch/x86/kernel/cpu/perf_event_intel_ds.c
++++ b/arch/x86/kernel/cpu/perf_event_intel_ds.c
+@@ -520,7 +520,8 @@ static int intel_pmu_pebs_fixup_ip(struct pt_regs *regs)
+ 		if (!kernel_ip(ip)) {
+ 			int bytes, size = MAX_INSN_SIZE;
+ 
+-			bytes = copy_from_user_nmi(buf, (void __user *)to, size);
++			bytes = copy_from_user_gup(buf, (void __user *)to,
++						   size);
+ 			if (bytes != size)
+ 				return 0;
+ 
+diff --git a/arch/x86/kernel/cpu/perf_event_intel_lbr.c b/arch/x86/kernel/cpu/perf_event_intel_lbr.c
+index 520b426..8f0b9ce 100644
+--- a/arch/x86/kernel/cpu/perf_event_intel_lbr.c
++++ b/arch/x86/kernel/cpu/perf_event_intel_lbr.c
+@@ -437,7 +437,7 @@ static int branch_type(unsigned long from, unsigned long to)
+ 			return X86_BR_NONE;
+ 
+ 		/* may fail if text not present */
+-		bytes = copy_from_user_nmi(buf, (void __user *)from, size);
++		bytes = copy_from_user_gup(buf, (void __user *)from, size);
+ 		if (bytes != size)
+ 			return X86_BR_NONE;
+ 
+diff --git a/arch/x86/lib/usercopy.c b/arch/x86/lib/usercopy.c
+index d6ae30b..e797d6e 100644
+--- a/arch/x86/lib/usercopy.c
++++ b/arch/x86/lib/usercopy.c
+@@ -13,7 +13,7 @@
+  * best effort, GUP based copy_from_user() that is NMI-safe
+  */
+ unsigned long
+-copy_from_user_nmi(void *to, const void __user *from, unsigned long n)
++__copy_from_user_gup(void *to, const void __user *from, unsigned long n)
  {
- 	return ps3av_auto_videomode(&ps3av->av_hw_conf);
- }
--
- EXPORT_SYMBOL_GPL(ps3av_get_auto_mode);
+ 	unsigned long offset, addr = (unsigned long)from;
+ 	unsigned long size, len = 0;
+@@ -42,7 +42,7 @@ copy_from_user_nmi(void *to, const void __user *from, unsigned long n)
  
- int ps3av_get_mode(void)
+ 	return len;
+ }
+-EXPORT_SYMBOL_GPL(copy_from_user_nmi);
++EXPORT_SYMBOL_GPL(__copy_from_user_gup);
+ 
+ static inline unsigned long count_bytes(unsigned long mask)
  {
- 	return ps3av ? ps3av->ps3av_mode : 0;
- }
--
- EXPORT_SYMBOL_GPL(ps3av_get_mode);
+diff --git a/arch/x86/oprofile/backtrace.c b/arch/x86/oprofile/backtrace.c
+index d6aa6e8..42511b0 100644
+--- a/arch/x86/oprofile/backtrace.c
++++ b/arch/x86/oprofile/backtrace.c
+@@ -46,7 +46,7 @@ dump_user_backtrace_32(struct stack_frame_ia32 *head)
+ 	struct stack_frame_ia32 *fp;
+ 	unsigned long bytes;
  
- /* get resolution by video_mode */
-@@ -902,7 +898,6 @@ int ps3av_video_mode2res(u32 id, u32 *xres, u32 *yres)
- 	*yres = video_mode_table[id].y;
- 	return 0;
- }
--
- EXPORT_SYMBOL_GPL(ps3av_video_mode2res);
+-	bytes = copy_from_user_nmi(bufhead, head, sizeof(bufhead));
++	bytes = copy_from_user_gup(bufhead, head, sizeof(bufhead));
+ 	if (bytes != sizeof(bufhead))
+ 		return NULL;
  
- /* mute */
-@@ -911,7 +906,6 @@ int ps3av_video_mute(int mute)
- 	return ps3av_set_av_video_mute(mute ? PS3AV_CMD_MUTE_ON
- 					    : PS3AV_CMD_MUTE_OFF);
- }
--
- EXPORT_SYMBOL_GPL(ps3av_video_mute);
+@@ -92,7 +92,7 @@ static struct stack_frame *dump_user_backtrace(struct stack_frame *head)
+ 	struct stack_frame bufhead[2];
+ 	unsigned long bytes;
  
- /* mute analog output only */
-@@ -935,7 +929,6 @@ int ps3av_audio_mute(int mute)
- 	return ps3av_set_audio_mute(mute ? PS3AV_CMD_MUTE_ON
- 					 : PS3AV_CMD_MUTE_OFF);
- }
--
- EXPORT_SYMBOL_GPL(ps3av_audio_mute);
+-	bytes = copy_from_user_nmi(bufhead, head, sizeof(bufhead));
++	bytes = copy_from_user_gup(bufhead, head, sizeof(bufhead));
+ 	if (bytes != sizeof(bufhead))
+ 		return NULL;
  
- static int __devinit ps3av_probe(struct ps3_system_bus_device *dev)
+diff --git a/include/asm-generic/uaccess.h b/include/asm-generic/uaccess.h
+index 9788568..759339b 100644
+--- a/include/asm-generic/uaccess.h
++++ b/include/asm-generic/uaccess.h
+@@ -240,6 +240,10 @@ extern int __get_user_bad(void) __attribute__((noreturn));
+ #define __copy_to_user_inatomic __copy_to_user
+ #endif
+ 
++#ifndef copy_from_user_gup
++#define copy_from_user_gup __copy_from_user_inatomic
++#endif
++
+ static inline long copy_from_user(void *to,
+ 		const void __user * from, unsigned long n)
+ {
 -- 
-1.7.9.5
+1.7.7.6
 
