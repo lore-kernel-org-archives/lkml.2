@@ -1,55 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751602Ab2DQUrS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Apr 2012 16:47:18 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:52220 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751173Ab2DQUrR (ORCPT
+	id S1752572Ab2DQUrw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Apr 2012 16:47:52 -0400
+Received: from shards.monkeyblade.net ([198.137.202.13]:58517 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751211Ab2DQUrv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Apr 2012 16:47:17 -0400
-Date: Tue, 17 Apr 2012 13:47:12 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Ivo Sieben <meltedpianoman@gmail.com>
-Cc: Remy Bohmer <linux@bohmer.net>, Chris Wright <chrisw@sous-sol.org>,
-        linux-kernel@vger.kernel.org, Jean Delvare <khali@linux-fr.org>,
-        Kevin Hilman <khilman@deeprootsystems.com>,
-        Wolfram Sang <w.sang@pengutronix.de>
-Subject: Re: [PATCH-v3] Support M95040 SPI EEPROM
-Message-ID: <20120417204712.GC3120@kroah.com>
-References: <20120403170708.GC2477@pengutronix.de>
- <20120403171112.GH19952@sequoia.sous-sol.org>
- <20120403171736.GD2477@pengutronix.de>
- <CAMSQXEHpjD7LWQkKWJOU=9eFYqsaJi-xHFTxexQr7yoKiCG7HQ@mail.gmail.com>
- <20120404075956.GB9073@pengutronix.de>
- <CAMSQXEHxaJpmjpOz_VL54bs1W9x3kCJKGoeTCmBpZva_hSTVsw@mail.gmail.com>
- <20120405164354.GC16546@kroah.com>
- <CANqCtQJjzkANJQMd8E9XKvOyk_FLCm1ER=VznrQ+cAerGbO0zQ@mail.gmail.com>
- <20120406182237.GB13649@pengutronix.de>
- <CAMSQXEHXQOH7k=aLzXZyxnBQmPwXkrvx8J6brPEWUyFfV-b6pQ@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAMSQXEHXQOH7k=aLzXZyxnBQmPwXkrvx8J6brPEWUyFfV-b6pQ@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 17 Apr 2012 16:47:51 -0400
+Date: Tue, 17 Apr 2012 16:47:48 -0400 (EDT)
+Message-Id: <20120417.164748.432392687904063236.davem@davemloft.net>
+To: eric.dumazet@gmail.com
+Cc: a.beregalov@gmail.com, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: 3.4.0-rc2: skb_put() -> skb_over_panic
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1334695506.2472.46.camel@edumazet-glaptop>
+References: <1334502964.28012.1.camel@edumazet-glaptop>
+	<CAA1sL1SJyY7fYJn7OKqo5Pa=b4-r9DW90-5WVGBf==tFjVEBpg@mail.gmail.com>
+	<1334695506.2472.46.camel@edumazet-glaptop>
+X-Mailer: Mew version 6.4 on Emacs 24.0.95 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Tue, 17 Apr 2012 13:47:50 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 17, 2012 at 04:43:54PM +0200, Ivo Sieben wrote:
-> >> Is this acceptable for you Greg?
-> >
-> > If so, don't forget my
-> >
-> > Reviewed-by: Wolfram Sang <w.sang@pengutronix.de>
-> >
-> > given to the original patch.
-> >
-> 
-> Greg, what's the status on this patch?
-> Is it acceptable for you, or do you want me to resend the patch
-> (including the "Reviewed-by" tag)
+From: Eric Dumazet <eric.dumazet@gmail.com>
+Date: Tue, 17 Apr 2012 22:45:06 +0200
 
-Please resend it, as all I seem to be able to find is a base64
-attachment, which is a pain to deal with...
+> Could you check if commit a21d45726acacc963d8baddf74607d9b74e2b723
+> (tcp: avoid order-1 allocations on wifi and tx path)
+> was in your tree ?
 
-greg k-h
+I was about to say that I think this is the guilty commit too.
+
+Good thing I held off the -stable submission of that change
+for a bit :-)
