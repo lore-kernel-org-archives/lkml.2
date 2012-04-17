@@ -1,98 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932290Ab2DQNJJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Apr 2012 09:09:09 -0400
-Received: from david.siemens.de ([192.35.17.14]:18566 "EHLO david.siemens.de"
+	id S932243Ab2DQNKs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Apr 2012 09:10:48 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:20315 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932255Ab2DQNJH convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Apr 2012 09:09:07 -0400
-X-Greylist: delayed 995 seconds by postgrey-1.27 at vger.kernel.org; Tue, 17 Apr 2012 09:09:07 EDT
-From: "Mittelberger, Martin" <martin.mittelberger@siemens.com>
-To: Peter Fodrek <peter.fodrek@stuba.sk>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Kiszka, Jan" <jan.kiszka@siemens.com>
-Date: Tue, 17 Apr 2012 14:52:24 +0200
-Subject: AW: Siemens CP1616 and DK16xx PN IO
-Thread-Topic: Siemens CP1616 and DK16xx PN IO
-Thread-Index: Ac0cg3mnUS8wfrMYQKqGoQLydnytDgAFQdLQ
-Message-ID: <79F2B521EC933B4EBAE3679EE4C2A2B408B12E90B5@DEMCHP99E75MSX.ww902.siemens.net>
-References: <3632059.pZx5gyW0oe@fodrek>
-Keywords: CP 1616
-In-Reply-To: <3632059.pZx5gyW0oe@fodrek>
-Accept-Language: de-DE
-Content-Language: de-DE
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: de-DE
-Content-Type: text/plain; charset="iso-8859-1"
-Content-Transfer-Encoding: 8BIT
+	id S1756060Ab2DQNKq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Apr 2012 09:10:46 -0400
+Message-ID: <4F8D580B.7060104@RedHat.com>
+Date: Tue, 17 Apr 2012 07:46:19 -0400
+From: Steve Dickson <SteveD@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120210 Thunderbird/10.0.1
 MIME-Version: 1.0
+To: Jeff Layton <jlayton@redhat.com>
+CC: "Myklebust, Trond" <Trond.Myklebust@netapp.com>,
+        Bernd Schubert <bernd.schubert@itwm.fraunhofer.de>,
+        Malahal Naineni <malahal@us.ibm.com>,
+        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "pstaubach@exagrid.com" <pstaubach@exagrid.com>,
+        "miklos@szeredi.hu" <miklos@szeredi.hu>,
+        "viro@ZenIV.linux.org.uk" <viro@ZenIV.linux.org.uk>,
+        "hch@infradead.org" <hch@infradead.org>,
+        "michael.brantley@deshaw.com" <michael.brantley@deshaw.com>,
+        "sven.breuner@itwm.fraunhofer.de" <sven.breuner@itwm.fraunhofer.de>
+Subject: Re: [PATCH RFC] vfs: make fstatat retry on ESTALE errors from getattr
+ call
+References: <1334316311-22331-1-git-send-email-jlayton@redhat.com> <20120413150518.GA1987@us.ibm.com> <20120413114236.0e557e01@tlielax.poochiereds.net> <4F8B1B7B.3040304@itwm.fraunhofer.de> <20120416073655.7cdb90cf@corrin.poochiereds.net> <4F8C3036.2030702@itwm.fraunhofer.de> <20120416134642.1754cd3e@corrin.poochiereds.net> <1334604785.2879.23.camel@lade.trondhjem.org> <20120416154322.0d95e435@corrin.poochiereds.net> <1334607906.2879.36.camel@lade.trondhjem.org> <20120416190548.2463d1d0@corrin.poochiereds.net>
+In-Reply-To: <20120416190548.2463d1d0@corrin.poochiereds.net>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dear Mr. Fodrek,
 
-I will put the latest version on the FTP Server for you.
-Unfortunately I cannot answer you question.
-I never have heard "inside upstream kernel" before.
-For technical questions please contact the customer support.
 
-With best regards,
-Martin Mittelberger
+On 04/16/2012 07:05 PM, Jeff Layton wrote:
+> On Mon, 16 Apr 2012 20:25:06 +0000
+> "Myklebust, Trond" <Trond.Myklebust@netapp.com> wrote:
+> 
+>> On Mon, 2012-04-16 at 15:43 -0400, Jeff Layton wrote:
+>>> On Mon, 16 Apr 2012 19:33:05 +0000
+>>> "Myklebust, Trond" <Trond.Myklebust@netapp.com> wrote:
+>>>
+>>>> On Mon, 2012-04-16 at 13:46 -0400, Jeff Layton wrote:
+>>>>> The question about looping indefinitely really comes down to:
+>>>>>
+>>>>> 1) is a persistent ESTALE in conjunction with a successful lookup a
+>>>>> situation that we expect to be temporary. i.e. will the admin at some
+>>>>> point be able to do something about it? If not, then there's no point
+>>>>> in continuing to retry. Again, this is a situation that *really* should
+>>>>> not happen if the filesystem is doing the right thing.
+>>>>>
+>>>>> 2) If the admin can't do anything about it, is it reasonable to expect
+>>>>> that users can send a fatal signal to hung applications if this
+>>>>> situation occurs.
+>>>>>
+>>>>> We expect that that's ok in other situations to resolve hung
+>>>>> applications, so I'm not sure I understand why it wouldn't be
+>>>>> acceptable here...
+>>>>
+>>>> There are definitely potentially persistent pathological situations that
+>>>> the filesystem can't do anything about. If the point of origin for your
+>>>> pathname (for instance your current directory in the case of a relative
+>>>> pathname) is stale, then no amount of looping is going to help you to
+>>>> recover.
+>>>>
+>>>
+>>> Ok -- Peter pretty much said something similar. Retrying indefnitely
+>>> when the lookup returns ESTALE probably won't help. I'm ok with
+>>> basically letting the VFS continue to do what it does there already. If
+>>> it gets an ESTALE, it tries again with LOOKUP_REVAL set and then gives
+>>> up if that doesn't work.
+>>>
+>>> If however, the operation itself keeps returning ESTALE, are we OK to
+>>> retry indefinitely assuming that we'll break out of the loop on fatal
+>>> signals?
+>>>
+>>> For example, something like the v2 patch I sent a little while ago?
+>>
+>>
+>> Won't something like fstatat(AT_FDCWD, "", &stat, AT_EMPTY_PATH) risk
+>> looping forever there, or am I missing something?
+>>
+> 
+> To make sure I understand, that should be "shortcut" for a lookup of the
+> cwd?
+> 
+> So I guess the concern is that you'd do the above and get a successful
+> lookup since you're just going to get back the cwd. At that point,
+> you'd attempt the getattr and get ESTALE back. Then, you'd redo the
+> lookup with LOOKUP_REVAL set -- but since we're operating on the
+> cwd, we don't have a way to redo the lookup since we don't have a
+> pathname that we can look up again...
+> 
+> So yeah, I guess if you're sitting in a stale directory, something like
+> that could loop eternally.
+> 
+> Do you think the proposed check for fatal_signal_pending is enough to
+> mitigate such a problem? Or do we need to limit the number of retries
+> to address those sorts of loops?
+> 
+I think your version 2 patch is definitely more clever than v1, but I'm
+thinking Trond's point is no matter what type of looping is done or how
+long its done its going to fail... So why loop at all? 
 
-Siemens AG
-Industry Sector
-Industry Automation Division
-Sensors and Communication
-I IA SC CI PRM 3
-Gleiwitzer Str. 555
-90475 Nuremberg, Germany
-Tel.: +49 911 895-2185 
-Fax: +49 911 895-152185 
-Mobile: +49 174 1525222
-mailto:martin.mittelberger@siemens.com
+Again I think the safest and simply way, from the VFS point of view,
+is do the looping once if the file system as registered for it
+through the fs_flags. This will catch %99 of the issues, failing
+on the %1 of the corner cases... 
 
-Siemens Aktiengesellschaft: Chairman of the Supervisory Board: Gerhard Cromme; Managing Board: Peter Loescher, Chairman, President and Chief Executive Officer; Roland Busch, Brigitte Ederer, Klaus Helmrich, Joe Kaeser, Barbara Kux, Hermann Requardt, Siegfried Russwurm, Peter Y. Solmssen, Michael Suess; Registered offices: Berlin and Munich, Germany; Commercial registries: Berlin Charlottenburg, HRB 12300, Munich, HRB 6684; WEEE-Reg.-No. DE 23691322
- 
+steved.
 
-> -----Ursprüngliche Nachricht-----
-> Von: Peter Fodrek [mailto:peter.fodrek@stuba.sk] 
-> Gesendet: Dienstag, 17. April 2012 12:19
-> An: Kiszka, Jan
-> Cc: linux-kernel@vger.kernel.org
-> Betreff: Siemens CP1616 and DK16xx PN IO
-> 
-> Dear Dr. Kizska and other Siemens Linux experts,
-> 
-> We are to start Linux and Profinet/Profibus based project
-> at the Slovak University of Technology. 
-> 
-> Other department members are active insiders 
-> of the Profibus/Profinet consortium but our 
-> software department are not. We are only 
-> department interested into Linux project using 
-> Siemens products.
-> 
-> We were been delivered  DK16xx PN IO
-> from year of 2008. We were found some 
-> discussion about IWLAN inside upstream
-> Linux kernel as well.
-> 
-> I would like to ask you if it Is possible to
-> get information about support 
-> of CP1616 adapter  inside upstream kernel?
-> 
-> Is it possible to get newer version of the 
-> DK16xx PN IO  via electronic way 
-> of delivery,please?
-> 
-> I look forward hearing from you 
-> 
-> Yours faithfully
-> 
-> Peter Fodrek
-> 
->  
-> 
+
+
+  
