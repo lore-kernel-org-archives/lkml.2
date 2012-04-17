@@ -1,37 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756207Ab2DQQC0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Apr 2012 12:02:26 -0400
-Received: from newsmtp5.atmel.com ([204.2.163.5]:59538 "EHLO
-	sjogate2.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755786Ab2DQQCZ (ORCPT
+	id S1756215Ab2DQQDR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Apr 2012 12:03:17 -0400
+Received: from mail-qc0-f174.google.com ([209.85.216.174]:43374 "EHLO
+	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754297Ab2DQQDP convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Apr 2012 12:02:25 -0400
-Message-ID: <4F8D9403.5000706@atmel.com>
-Date: Tue, 17 Apr 2012 18:02:11 +0200
-From: Nicolas Ferre <nicolas.ferre@atmel.com>
-Organization: atmel
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120329 Thunderbird/11.0.1
+	Tue, 17 Apr 2012 12:03:15 -0400
 MIME-Version: 1.0
-To: linux-arm-kernel <linux-arm-kernel@lists.infradead.org>
-CC: Arnd Bergmann <arnd@arndb.de>, Olof Johansson <olof@lixom.net>,
-        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        Linux Kernel list <linux-kernel@vger.kernel.org>
-Subject: Re: [GIT PULL] at91: fist cleanup branch for 3.5
-References: <4F8D9037.9010401@atmel.com>
-In-Reply-To: <4F8D9037.9010401@atmel.com>
-X-Enigmail-Version: 1.4
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <201204171153.04489.gene.heskett@gmail.com>
+References: <20120411163849.GE4794@alberich.amd.com> <4F8D7A0A.4080404@linux.vnet.ibm.com>
+ <20120417145002.GA11221@aftab> <201204171153.04489.gene.heskett@gmail.com>
+From: Kay Sievers <kay@vrfy.org>
+Date: Tue, 17 Apr 2012 18:02:54 +0200
+Message-ID: <CAPXgP12_k4D-r=HQy3zidHhMP8ygMsT4J5Q+-h0CE3k_vpsazA@mail.gmail.com>
+Subject: Re: [PATCH 2/2] x86, microcode: Ensure that module is only loaded for
+To: Gene Heskett <gene.heskett@gmail.com>
+Cc: Borislav Petkov <bp@amd64.org>,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Andreas Herrmann <andreas.herrmann3@amd.com>,
+        Dave Jones <davej@redhat.com>, linux-kernel@vger.kernel.org,
+        Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
+        tigran@aivazian.fsnet.co.uk, hpa@zytor.com, x86@kernel.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Obviously:
+2012/4/17 Gene Heskett <gene.heskett@gmail.com>:
 
-s/fist/first/ on Subject:
-s/branch/tag/ on Subject:
+> I do not think the above has anything to do with the current version
+> shipping in some distro's, which is trying to find the intel code on
+> kernels >2.6.39 when running on AMD stuff, so that script in /etc/init.d
+> needs attention too.  I have nuked about half of that script in my local
+> copy so that it does install AMD code on AMD processors.  The errors I was
+> seeing were only the lack of its ability to find the Intel code and does
+> not generate any output resembling the above.
 
-Bye,
--- 
-Nicolas Ferre
+Just a note: the intel microcode is loaded by a kernel-initiated
+firmware request these days. There is no (broken) init script on
+recent systems, to (rather mindlessly) fiddle around in userspace with
+kernel internals.
+
+Kay
