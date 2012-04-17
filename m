@@ -1,71 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752967Ab2DQWOP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Apr 2012 18:14:15 -0400
-Received: from na3sys009aog117.obsmtp.com ([74.125.149.242]:49482 "EHLO
-	na3sys009aog117.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753257Ab2DQWOM convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Apr 2012 18:14:12 -0400
+	id S1753549Ab2DQWRY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Apr 2012 18:17:24 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:34149 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752584Ab2DQWRV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Apr 2012 18:17:21 -0400
+From: <manjunatha_halli@ti.com>
+To: <linux-media@vger.kernel.org>
+CC: <benzyg@ti.com>, <linux-kernel@vger.kernel.org>,
+        Manjunatha Halli <x0130808@ti.com>
+Subject: [PATCH 0/4] [Media] Radio: Fixes and New features for FM
+Date: Tue, 17 Apr 2012 17:17:03 -0500
+Message-ID: <1334701027-19159-1-git-send-email-manjunatha_halli@ti.com>
+X-Mailer: git-send-email 1.7.4.1
 MIME-Version: 1.0
-In-Reply-To: <1334003101-17274-2-git-send-email-robherring2@gmail.com>
-References: <1334003101-17274-1-git-send-email-robherring2@gmail.com> <1334003101-17274-2-git-send-email-robherring2@gmail.com>
-From: "Turquette, Mike" <mturquette@ti.com>
-Date: Tue, 17 Apr 2012 15:13:49 -0700
-Message-ID: <CAJOA=zMPqiH2fQJ5JWJ=COnju7Cmur6J2ATYUTcx41C4WMjFQQ@mail.gmail.com>
-Subject: Re: [PATCH 1/4] clk: select CLKDEV_LOOKUP for COMMON_CLK
-To: Rob Herring <robherring2@gmail.com>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        devicetree-discuss@lists.ozlabs.org,
-        Thierry Reding <thierry.reding@avionic-design.de>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Sascha Hauer <kernel@pengutronix.de>, shawn.guo@linaro.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 9, 2012 at 1:24 PM, Rob Herring <robherring2@gmail.com> wrote:
-> From: Rob Herring <rob.herring@calxeda.com>
->
-> Using the common clock infrastructure without the common clkdev code makes
-> little sense, so select CLKDEV_LOOKUP for COMMON_CLK.
->
-> Signed-off-by: Rob Herring <rob.herring@calxeda.com>
-> ---
->  drivers/clk/Kconfig |    1 +
->  1 files changed, 1 insertions(+), 0 deletions(-)
->
-> diff --git a/drivers/clk/Kconfig b/drivers/clk/Kconfig
-> index 165e1fe..f05a60d 100644
-> --- a/drivers/clk/Kconfig
-> +++ b/drivers/clk/Kconfig
-> @@ -12,6 +12,7 @@ config HAVE_MACH_CLKDEV
->  config COMMON_CLK
->        bool
->        select HAVE_CLK_PREPARE
-> +       select CLKDEV_LOOKUP
->        ---help---
->          The common clock framework is a single definition of struct
->          clk, useful across many platforms, as well as an
+From: Manjunatha Halli <x0130808@ti.com>
 
-Hi Rob,
+Mauro and the list,
+ 
+This patchset sreates new control class 'V4L2_CTRL_CLASS_FM_RX' for FM RX.
+Also this patches set introduces 3 new CID's for FM RX and FM TX.
+  
+Also this patch adds few new features to TI's FM driver fetures
+are listed below,
+   
+1) FM TX RDS Support (RT, PS, AF, PI, PTY)          
+2) FM RX Russian band support
+3) FM RX AF set/get
+4) FM RX De-emphasis mode set/get
+    
+Along with new features this patch also fixes few issues in the driver
+like default rssi level for seek, unnecessory logs etc.
 
-I agree that the common clk framework is not particularly useful
-without clkdev.  However the core code has no dependency on clkdev.
-Why not just select it from an arch Kconfig, or even make it a
-dependency based on your own platform clock data/code?
 
-Regards,
-Mike
+Manjunatha Halli (4):
+  [Media] WL128x: Add support for FM TX RDS
+  [Media] Create new control class for FM RX.
+  [Documentation] Add documentation for V4L2 FM new features,
+  [Media] WL12xx: Add support for FM new features.
 
-> --
-> 1.7.5.4
->
->
-> _______________________________________________
-> linux-arm-kernel mailing list
-> linux-arm-kernel@lists.infradead.org
-> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
+ Documentation/DocBook/media/v4l/compat.xml         |    3 +
+ Documentation/DocBook/media/v4l/controls.xml       |   78 +++++++++++
+ Documentation/DocBook/media/v4l/dev-rds.xml        |    5 +-
+ .../DocBook/media/v4l/vidioc-g-ext-ctrls.xml       |    7 +
+ drivers/media/radio/wl128x/fmdrv.h                 |    3 +-
+ drivers/media/radio/wl128x/fmdrv_common.c          |   55 ++++++--
+ drivers/media/radio/wl128x/fmdrv_common.h          |   43 +++++-
+ drivers/media/radio/wl128x/fmdrv_rx.c              |   92 ++++++++++---
+ drivers/media/radio/wl128x/fmdrv_rx.h              |    2 +-
+ drivers/media/radio/wl128x/fmdrv_tx.c              |   41 +++----
+ drivers/media/radio/wl128x/fmdrv_tx.h              |    3 +-
+ drivers/media/radio/wl128x/fmdrv_v4l2.c            |  138 +++++++++++++++++++-
+ drivers/media/video/v4l2-ctrls.c                   |   18 +++
+ include/linux/videodev2.h                          |   17 +++-
+ 14 files changed, 429 insertions(+), 76 deletions(-)
+
+-- 
+1.7.4.1
+
