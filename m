@@ -1,65 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753907Ab2DQGrW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Apr 2012 02:47:22 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:61851 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751721Ab2DQGrS convert rfc822-to-8bit (ORCPT
+	id S1753070Ab2DQGuO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Apr 2012 02:50:14 -0400
+Received: from ch1ehsobe001.messaging.microsoft.com ([216.32.181.181]:29653
+	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750987Ab2DQGuL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Apr 2012 02:47:18 -0400
+	Tue, 17 Apr 2012 02:50:11 -0400
+X-SpamScore: 3
+X-BigFish: VS3(zzzz1202h1082kzz8275dhz2dh2a8h668h839hd24h)
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+From: Dong Aisheng <b29396@freescale.com>
+To: <linux-kernel@vger.kernel.org>
+CC: <linux-arm-kernel@lists.infradead.org>, <linus.walleij@stericsson.com>,
+        <swarren@wwwdotorg.org>
+Subject: [PATCH v2 2/2] pinctrl: show pin name for pingroups in sysfs
+Date: Tue, 17 Apr 2012 15:00:46 +0800
+Message-ID: <1334646046-467-2-git-send-email-b29396@freescale.com>
+X-Mailer: git-send-email 1.7.0.4
+In-Reply-To: <1334646046-467-1-git-send-email-b29396@freescale.com>
+References: <1334646046-467-1-git-send-email-b29396@freescale.com>
 MIME-Version: 1.0
-In-Reply-To: <4F8C7839.6060104@flameeyes.eu>
-References: <4F8C7839.6060104@flameeyes.eu>
-Date: Tue, 17 Apr 2012 08:47:17 +0200
-Message-ID: <CACRpkdaOSSA8PuTSQ4utp9JHKbBiz+iWfuPn=2WyojZxsR5a3A@mail.gmail.com>
-Subject: Re: [RFC] IT87xx GPIO and other drivers
-From: Linus Walleij <linus.walleij@linaro.org>
-To: =?ISO-8859-1?Q?Diego_Elio_Petten=F2?= <flameeyes@flameeyes.eu>
-Cc: Grant Likely <grant.likely@secretlab.ca>,
-        guillaume ligneul <guillaume.ligneul@oselis.com>,
-        Linus Walleij <linus.walleij@stericsson.com>,
-        Guenter Roeck <guenter.roeck@ericsson.com>,
-        Jean Delvare <khali@linux-fr.org>, Wim Van Sebroeck <wim@iguana.be>,
-        Denis Turischev <denis@compulab.co.il>, linux-kernel@vger.kernel.org,
-        linux-watchdog@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 16, 2012 at 9:51 PM, Diego Elio Pettenò
-<flameeyes@flameeyes.eu> wrote:
+From: Dong Aisheng <dong.aisheng@linaro.org>
 
-> The GPIO pins on most of the it87xx chips are also multi-function, and
-> _should not_ be user-visible, but for some of them it might make sense
-> to (for instance it should be possible to drive some of the LEDs on
-> it8728f-based motherboards by replacing the functions of some PINs to GPIO).
->
-> For what I can tell, it should probably be a good idea to have something
-> along these lines, but I'm _not_ a driver expert:
->
->  - mfd-it87xx: a platform driver, which probes the superio to check it
-> to be an it87xx chip, and then reserve resources for the other drivers;
->  - hwmon/it87: no longer probes autonomously for which chip it is, and
-> where it is;
->  - it87_wdt: ibidem;
->  - it8712_wdt: no clue about it, but I guess the same;
->  - gpio-it87: ibidem again;
->  - pinctrl-it87: abstracts support for the various pin-choice registers;
->  - led-it87: possibly to drive the power/network/hdd leds, akin to what
-> happens with some laptops, and embedded systems.
+Pin name is more useful to users.
 
-I would suggest merging gpio-it87 and pinctrl-it87 into one driver
-in drivers/pinctrl-it87.c. I don't know for sure however, since it depends
-on hardware: usually these is a tight dependence between GPIO and
-pinctrl (IIRC this was the case with SuperIO), and then it often makes
-a lot of sense to create a composite driver, in order to just have one
-state container (cookie) to pass around in the functions, and to remap
-a register range only once.
+Signed-off-by: Dong Aisheng <dong.aisheng@linaro.org>
 
-The concept is explained in my pinctrl talk on a high level:
-http://www.df.lth.se/~triad/papers/pincontrol.pdf
+---
+Changes v1->v2:
+1) add WARN_ON if no pin name found.
+2) separate pin request change in another patch
 
-Yours,
-Linus Walleij
+After change, when cat pingroups in sysfs, it becomes:
+root@freescale /sys/kernel/debug/pinctrl/20e0000.iomuxc$ cat pingroups
+registered pin groups:
+group: uart4grp-1
+pin 219 (MX6Q_PAD_KEY_ROW0)
+pin 218 (MX6Q_PAD_KEY_COL0)
+
+group: usdhc4grp-1
+pin 305 (MX6Q_PAD_SD4_CMD)
+pin 306 (MX6Q_PAD_SD4_CLK)
+pin 315 (MX6Q_PAD_SD4_DAT0)
+pin 316 (MX6Q_PAD_SD4_DAT1)
+pin 317 (MX6Q_PAD_SD4_DAT2)
+pin 318 (MX6Q_PAD_SD4_DAT3)
+pin 319 (MX6Q_PAD_SD4_DAT4)
+pin 320 (MX6Q_PAD_SD4_DAT5)
+pin 321 (MX6Q_PAD_SD4_DAT6)
+pin 322 (MX6Q_PAD_SD4_DAT7)
+---
+ drivers/pinctrl/core.c |   32 ++++++++++++++++++++++++++++----
+ drivers/pinctrl/core.h |    1 +
+ 2 files changed, 29 insertions(+), 4 deletions(-)
+
+diff --git a/drivers/pinctrl/core.c b/drivers/pinctrl/core.c
+index 59027ab..3530e58 100644
+--- a/drivers/pinctrl/core.c
++++ b/drivers/pinctrl/core.c
+@@ -125,6 +125,25 @@ int pin_get_from_name(struct pinctrl_dev *pctldev, const char *name)
+ }
+ 
+ /**
++ * pin_get_name_from_id() - look up a pin name from a pin id
++ * @pctldev: the pin control device to lookup the pin on
++ * @name: the name of the pin to look up
++ */
++const char *pin_get_name(struct pinctrl_dev *pctldev, const unsigned pin)
++{
++	const struct pin_desc *desc;
++
++	desc = pin_desc_get(pctldev, pin);
++	if (desc == NULL) {
++		dev_err(pctldev->dev, "failed to get pin(%d) name\n",
++			pin);
++		return NULL;
++	}
++
++	return desc->name;
++}
++
++/**
+  * pin_is_valid() - check if pin exists on controller
+  * @pctldev: the pin control device to check the pin on
+  * @pin: pin to check, use the local pin controller index number
+@@ -955,6 +974,7 @@ static int pinctrl_groups_show(struct seq_file *s, void *what)
+ 		const unsigned *pins;
+ 		unsigned num_pins;
+ 		const char *gname = ops->get_group_name(pctldev, selector);
++		const char *pname;
+ 		int ret;
+ 		int i;
+ 
+@@ -964,10 +984,14 @@ static int pinctrl_groups_show(struct seq_file *s, void *what)
+ 			seq_printf(s, "%s [ERROR GETTING PINS]\n",
+ 				   gname);
+ 		else {
+-			seq_printf(s, "group: %s, pins = [ ", gname);
+-			for (i = 0; i < num_pins; i++)
+-				seq_printf(s, "%d ", pins[i]);
+-			seq_puts(s, "]\n");
++			seq_printf(s, "group: %s\n", gname);
++			for (i = 0; i < num_pins; i++) {
++				pname = pin_get_name(pctldev, pins[i]);
++				if (WARN_ON(!pname))
++					return -EINVAL;
++				seq_printf(s, "pin %d (%s)\n", pins[i], pname);
++			}
++			seq_puts(s, "\n");
+ 		}
+ 		selector++;
+ 	}
+diff --git a/drivers/pinctrl/core.h b/drivers/pinctrl/core.h
+index 98ae808..1f40ff6 100644
+--- a/drivers/pinctrl/core.h
++++ b/drivers/pinctrl/core.h
+@@ -148,6 +148,7 @@ struct pin_desc {
+ 
+ struct pinctrl_dev *get_pinctrl_dev_from_devname(const char *dev_name);
+ int pin_get_from_name(struct pinctrl_dev *pctldev, const char *name);
++const char *pin_get_name(struct pinctrl_dev *pctldev, const unsigned pin);
+ int pinctrl_get_group_selector(struct pinctrl_dev *pctldev,
+ 			       const char *pin_group);
+ 
+-- 
+1.7.0.4
+
+
