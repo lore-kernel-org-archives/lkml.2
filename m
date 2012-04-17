@@ -1,100 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755510Ab2DQIgp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Apr 2012 04:36:45 -0400
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:56688 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755347Ab2DQIgn (ORCPT
+	id S1755562Ab2DQInL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Apr 2012 04:43:11 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:48488 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755347Ab2DQInJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Apr 2012 04:36:43 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6683"; a="182318475"
-X-IronPort-AV: E=Sophos;i="4.75,432,1330934400"; 
-   d="scan'208";a="303085805"
-From: "Huang, Xiong" <xiong@qca.qualcomm.com>
-To: Ben Hutchings <bhutchings@solarflare.com>
-CC: David Miller <davem@davemloft.net>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        qca-linux-team <qca-linux-team@qualcomm.com>,
-        nic-devel <nic-devel@qualcomm.com>
-Subject: RE: [PATCH 04/37] atl1c: remove VPD register
-Thread-Topic: [PATCH 04/37] atl1c: remove VPD register
-Thread-Index: AQHNGQqSFrw7Qq1rE0KxsIfaXt7JDZaZ8ySAgAAUkECAAM+ygIAD4NZV
-Date: Tue, 17 Apr 2012 08:36:41 +0000
-Message-ID: <157393863283F442885425D2C454285623D576A2@nasanexd02a.na.qualcomm.com>
-References: <1334276102-15866-1-git-send-email-xiong@qca.qualcomm.com>
-	 <1334276102-15866-5-git-send-email-xiong@qca.qualcomm.com>
-	 <20120413.204551.959091962456153270.davem@davemloft.net>
-	 <157393863283F442885425D2C454285623D486D9@nasanexd02a.na.qualcomm.com>,<1334413369.7150.422.camel@deadeye>
-In-Reply-To: <1334413369.7150.422.camel@deadeye>
-Accept-Language: zh-CN, en-US
-Content-Language: zh-CN
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [199.106.114.10]
-Content-Type: text/plain; charset="gb2312"
+	Tue, 17 Apr 2012 04:43:09 -0400
 MIME-Version: 1.0
+From: Sasha Levin <levinsasha928@gmail.com>
+Date: Tue, 17 Apr 2012 10:42:47 +0200
+Message-ID: <CA+1xoqdJjTe+BMe_ebMBSg57gs2FA60T_0WKhrHvfDoE8AvCuw@mail.gmail.com>
+Subject: New RCU related warning due to rcu_preempt_depth() changes
+To: Paul McKenney <paulmck@linux.vnet.ibm.com>
+Cc: Dave Jones <davej@redhat.com>,
+        "linux-kernel@vger.kernel.org List" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id q3H8aw4Y008762
 
-Ok, I will update it. thanks a lot
+Hi Paul,
 
--Xiong
-________________________________________
-·¢¼şÈË: Ben Hutchings [bhutchings@solarflare.com]
-·¢ËÍÊ±¼ä: 2012Äê4ÔÂ14ÈÕ 22:22
-ÊÕ¼şÈË: Huang, Xiong
-Cc: David Miller; netdev@vger.kernel.org; linux-kernel@vger.kernel.org; qca-linux-team; nic-devel
-Ö÷Ìâ: RE: [PATCH 04/37] atl1c: remove VPD register
+It looks like commit 7298b03 ("rcu: Move __rcu_read_lock() and
+__rcu_read_unlock() to per-CPU variables") is causing the following
+warning (I've added the extra fields on the second line):
 
-On Sat, 2012-04-14 at 09:12 +0000, Huang, Xiong wrote:
->
-> > -----Original Message-----
-> > From: David Miller [mailto:davem@davemloft.net]
-> > Sent: Saturday, April 14, 2012 8:46
-> > To: Huang, Xiong
-> > Cc: netdev@vger.kernel.org; linux-kernel@vger.kernel.org; qca-linux-team; nic-
-> > devel
-> > Subject: Re: [PATCH 04/37] atl1c: remove VPD register
-> >
-> > From: xiong <xiong@qca.qualcomm.com>
-> > Date: Fri, 13 Apr 2012 08:14:29 +0800
-> >
-> > > VPD register is only used for L1(devid=PCI_DEVICE_ID_ATTANSIC_L1) to
-> > > access external NV-memory.
-> > > l1c & later chip doesn't use it any more.
-> > >
-> > > Signed-off-by: xiong <xiong@qca.qualcomm.com>
-> > > Tested-by: Liu David <dwliu@qca.qualcomm.com>
-> >
-> > You just broke ethtool register dumps with this change.
-> >
-> > Now, all the initial registers are reported offset by one entry, yet the last two are
-> > still reported in their original spots.
-> >
-> > This layout is exposed to userspace, and interpreted by tools, and you cannot
-> > change it.
-> >
-> > If this register always reports some value, you should just keep it there in the
-> > dumps.
-> >
-> The VPD register doesn't report anything :(, just a dummy register now.
-> we don't have any special tools in userspace to explain the dumped registers.
-> Actually the purpose of dumping these registers via ethtool is just for debug.
-[...]
+[   77.330920] BUG: sleeping function called from invalid context at
+mm/memory.c:3933
+[   77.336571] in_atomic(): 0, irqs_disabled(): 0, preempt count: 0,
+preempt offset: 0, rcu depth: 1, pid: 5669, name: trinity
+[   77.344135] no locks held by trinity/5669.
+[   77.349644] Pid: 5669, comm: trinity Tainted: G        W
+3.4.0-rc3-next-20120417-sasha-dirty #83
+[   77.354401] Call Trace:
+[   77.355956]  [<ffffffff810e83f3>] __might_sleep+0x1f3/0x210
+[   77.358811]  [<ffffffff81198eaf>] might_fault+0x2f/0xa0
+[   77.361997]  [<ffffffff810e3228>] schedule_tail+0x88/0xb0
+[   77.364671]  [<ffffffff826a01d3>] ret_from_fork+0x13/0x80
 
-Of course, the whole purpose of the operation is for debugging.  But you
-should bump the dump version number (currently 0) every time you change
-the offsets of registers in the dump.
+As you can see, rcu_preempt_depth() returns 1 when running in that
+context, which looks pretty odd.
 
-Ben.
-
---
-Ben Hutchings, Staff Engineer, Solarflare
-Not speaking for my employer; that's the marketing department's job.
-They asked us to note that Solarflare product names are trademarked.
-
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+Thanks.
