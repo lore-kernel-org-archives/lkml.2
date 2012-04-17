@@ -1,139 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755427Ab2DQI2r (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Apr 2012 04:28:47 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:54794 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755250Ab2DQI2n (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Apr 2012 04:28:43 -0400
-Date: Tue, 17 Apr 2012 10:28:37 +0200 (CEST)
-From: Jiri Kosina <jkosina@suse.cz>
-X-X-Sender: jikos@twin.jikos.cz
-To: Benjamin Tissoires <benjamin.tissoires@gmail.com>
-Cc: =?ISO-8859-15?Q?Richard_Sch=FCtz?= <r.schtz@t-online.de>,
-        Nestor Lopez Casado <nlopezcasad@logitech.com>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Jiri Kosina <jkosina@suse.cz>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org, rtitmuss@logitech.com, ogay@logitech.com,
-        jzanone@logitech.com
-Subject: Re: [PATCH v5 1/1] HID: Add full support for Logitech Unifying
- receivers
-In-Reply-To: <CAN+gG=EcaMrz2w-cVL-cCwi2NNVJ-NXOpOQpbjyFdCwn5+Bn+w@mail.gmail.com>
-Message-ID: <alpine.LRH.2.00.1204171027220.11298@twin.jikos.cz>
-References: <1316018905-4175-1-git-send-email-nlopezcasad@logitech.com> <4E77A221.1060909@t-online.de> <CAN+gG=EcaMrz2w-cVL-cCwi2NNVJ-NXOpOQpbjyFdCwn5+Bn+w@mail.gmail.com>
-User-Agent: Alpine 2.00 (LRH 1167 2008-08-23)
+	id S1755478Ab2DQIbt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Apr 2012 04:31:49 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:58196 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755296Ab2DQIbq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Apr 2012 04:31:46 -0400
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <20120406143455.GC8666@thinkpad-t410>
+References: <20120320163002.GB6811@srcf.ucam.org>
+	<1332421699-5315-1-git-send-email-corentincj@iksaif.net>
+	<CAHR064hc4AdFUeoO8Szg0FG6CwLK+xauGn9VMJntWV1Gik=ACQ@mail.gmail.com>
+	<20120327112105.GA2845@srcf.ucam.org>
+	<CAHR064hBVJjmEd=GeGuG-xTg5ONfJTxwqzP88=JABaXFrfiehA@mail.gmail.com>
+	<20120406143455.GC8666@thinkpad-t410>
+Date: Tue, 17 Apr 2012 10:31:44 +0200
+Message-ID: <CAHR064hagc7s19fn=bF90WXvnrdT=yh_vTDcMmf3aKdaL66HnQ@mail.gmail.com>
+Subject: Re: [PATCH] samsung-laptop: unregister ACPI video module for some
+ well known laptops
+From: Corentin Chary <corentin.chary@gmail.com>
+To: Matthew Garrett <mjg59@srcf.ucam.org>,
+        Corentin Chary <corentin.chary@gmail.com>,
+        platform-driver-x86@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux acpi <linux-acpi@vger.kernel.org>,
+        Len Brown <len.brown@intel.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 22 Sep 2011, Benjamin Tissoires wrote:
+On Fri, Apr 6, 2012 at 4:34 PM, Seth Forshee <seth.forshee@canonical.com> wrote:
+> On Fri, Apr 06, 2012 at 11:42:18AM +0200, Corentin Chary wrote:
+>> On Tue, Mar 27, 2012 at 1:21 PM, Matthew Garrett <mjg59@srcf.ucam.org> wrote:
+>> > On Tue, Mar 27, 2012 at 11:11:18AM +0200, Corentin Chary wrote:
+>> >> Matthew, is this one ok ? I really hope this patch can go in 3.4 so we
+>> >> don't introduce a regression for old laptops.
+>> >
+>> > Yes, I've got this now.
+>> >
+>> > Thanks,
+>>
+>>
+>> A user just found a DSDT which is broken by this way of doing things
+>> (this is not really a regression since it was also broken before).
+>>
+>> _BCL contains a wierd "Or (VDRV, 0x02, VDRV)".
+>> So if you call _BLC once (video.ko will), it set a flag that affect
+>> the behavior of all backlight related stuff, and it breaks
+>> samsung-laptop's backlight even if samsung-laptop unload the acpi
+>> backlight.
+>> Using acpi_backlight=vendor solves that since it prevents the module
+>> from being loaded. My previous patch also fix that since it use
+>> acpi_backlight= mechanism.
+>>
+>> Do you think using acpi_backlight=vendor is a good enought solution
+>> here ? Should we use my first patch instead ?
+>
+> I've recently noticed another problem with using acpi_video_unregister()
+> to disable known broken backlights -- another module might call
+> acpi_video_register() and make it reappear. i915 does this, so when I
+> EFI boot the MacBook Pro 8,2 the acpi backlights reappear (under a BIOS
+> compatible boot the Intel GPU doesn't show up on the bus).
+>
+> So Corentin's solution does seem like a better way to go, or else
+> something similar that forces the ACPI video driver to behave as with
+> acpi_video=vendor.
+>
+> Seth
+>
 
-> Hi Richard,
-> 
-> here, you'll find a small C program that allows you to do a pairing of
-> a new device to a receiver.
-> 
-> compile it with with gcc -o pairing_tool pairing_tool.c
+Matthew, Len, any input on that ? Should we keep the current code even
+if broken with some (also broken) hardware or should we move the
+blacklist in acpi/video.c ?
 
-Could this perhaps be provided into Documentation/ or samples/ somewhere? 
-I don't think that Logitech themselves do ship pairing application for 
-Linux, or do they?
-
-If they don't, it'd be nice to have this at least documented somewhere, so 
-that someone could write a pairing GUI.
-
-Thanks.
-
-> 
-> --------------------------------- file pairing_tool.c
-> ---------------------------------
-> /*
->  * Copyright 2011 Benjamin Tissoires <benjamin.tissoires@gmail.com>
->  *
->  * This program is free software: you can redistribute it and/or modify
->  * it under the terms of the GNU General Public License as published by
->  * the Free Software Foundation, either version 3 of the License, or
->  * (at your option) any later version.
->  *
->  * This program is distributed in the hope that it will be useful,
->  * but WITHOUT ANY WARRANTY; without even the implied warranty of
->  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
->  * GNU General Public License for more details.
->  *
->  * You should have received a copy of the GNU General Public License
->  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
->  */
-> 
-> #include <linux/input.h>
-> #include <linux/hidraw.h>
-> #include <sys/ioctl.h>
-> #include <fcntl.h>
-> #include <unistd.h>
-> #include <stdio.h>
-> #include <errno.h>
-> 
-> #define USB_VENDOR_ID_LOGITECH			(__u32)0x046d
-> #define USB_DEVICE_ID_UNIFYING_RECEIVER		(__s16)0xc52b
-> #define USB_DEVICE_ID_UNIFYING_RECEIVER_2	(__s16)0xc532
-> 
-> int main(int argc, char **argv)
-> {
-> 	int fd;
-> 	int res;
-> 	struct hidraw_devinfo info;
-> 	char magic_sequence[] = {0x10, 0xFF, 0x80, 0xB2, 0x01, 0x00, 0x00};
-> 
-> 	if (argc == 1) {
-> 		errno = EINVAL;
-> 		perror("No hidraw device given");
-> 		return 1;
-> 	}
-> 
-> 	/* Open the Device with non-blocking reads. */
-> 	fd = open(argv[1], O_RDWR|O_NONBLOCK);
-> 
-> 	if (fd < 0) {
-> 		perror("Unable to open device");
-> 		return 1;
-> 	}
-> 
-> 	/* Get Raw Info */
-> 	res = ioctl(fd, HIDIOCGRAWINFO, &info);
-> 	if (res < 0) {
-> 		perror("error while getting info from device");
-> 	} else {
-> 		if (info.bustype != BUS_USB ||
-> 		    info.vendor != USB_VENDOR_ID_LOGITECH ||
-> 		    (info.product != USB_DEVICE_ID_UNIFYING_RECEIVER &&
-> 		     info.product != USB_DEVICE_ID_UNIFYING_RECEIVER_2)) {
-> 			errno = EPERM;
-> 			perror("The given device is not a Logitech "
-> 				"Unifying Receiver");
-> 			return 1;
-> 		}
-> 	}
-> 
-> 	/* Send the magic sequence to the Device */
-> 	res = write(fd, magic_sequence, sizeof(magic_sequence));
-> 	if (res < 0) {
-> 		printf("Error: %d\n", errno);
-> 		perror("write");
-> 	} else if (res == sizeof(magic_sequence)) {
-> 		printf("The receiver is ready to pair a new device.\n"
-> 		"Switch your device on to pair it.\n");
-> 	} else {
-> 		errno = ENOMEM;
-> 		printf("write: %d were written instead of %ld.\n", res,
-> 			sizeof(magic_sequence));
-> 		perror("write");
-> 	}
-> 	close(fd);
-> 	return 0;
-> }
 
 -- 
-Jiri Kosina
-SUSE Labs
-
+Corentin Chary
+http://xf.iksaif.net
