@@ -1,20 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753354Ab2DQXFQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Apr 2012 19:05:16 -0400
-Received: from g4t0017.houston.hp.com ([15.201.24.20]:31478 "EHLO
-	g4t0017.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752302Ab2DQXFP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Apr 2012 19:05:15 -0400
-Message-ID: <1334703911.2655.9.camel@lorien2>
-Subject: [PATCH] leds: ledtrig-timer trigger_data allocation fix
-From: Shuah Khan <shuahkhan@gmail.com>
-Reply-To: shuahkhan@gmail.com
+	id S1752928Ab2DQXI0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Apr 2012 19:08:26 -0400
+Received: from 93-97-173-237.zone5.bethere.co.uk ([93.97.173.237]:62333 "EHLO
+	tim.rpsys.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751519Ab2DQXIZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Apr 2012 19:08:25 -0400
+Message-ID: <1334704072.616.152.camel@ted>
+Subject: Re: [PATCH 01/18] led-triggers: create a trigger for CPU activity
+From: Richard Purdie <richard.purdie@linuxfoundation.org>
 To: Andrew Morton <akpm@linux-foundation.org>
-Cc: shuahkhan@gmail.com, LKML <linux-kernel@vger.kernel.org>,
-        Richard Purdie <richard.purdie@linuxfoundation.org>
-Date: Tue, 17 Apr 2012 17:05:11 -0600
+Cc: Bryan Wu <bryan.wu@canonical.com>, linux@arm.linux.org.uk,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linus.walleij@linaro.org, arnd.bergmann@linaro.org,
+        nicolas.pitre@linaro.org, tim.gardner@canonical.com
+Date: Wed, 18 Apr 2012 00:07:52 +0100
+In-Reply-To: <20120417155241.0f619a9a.akpm@linux-foundation.org>
+References: <1334660025-20442-1-git-send-email-bryan.wu@canonical.com>
+	 <1334660025-20442-2-git-send-email-bryan.wu@canonical.com>
+	 <20120417155241.0f619a9a.akpm@linux-foundation.org>
 Content-Type: text/plain; charset="UTF-8"
 X-Mailer: Evolution 3.2.2- 
 Content-Transfer-Encoding: 7bit
@@ -23,63 +27,58 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-ledtrig-timer doesn't allocate memory for trigger_data and assigns
-(void *)1 to save state. Fixed it to allocate int instead. Please 
-note that non-null trigger_data is used to key off of to do proper
-cleanup in deactivation routine and not used during the life of the
-trigger itself.
+On Tue, 2012-04-17 at 15:52 -0700, Andrew Morton wrote:
+> On Tue, 17 Apr 2012 18:53:28 +0800
+> Bryan Wu <bryan.wu@canonical.com> wrote:
+> > +	 * ignores CPU hotplug, but after this CPU hotplug works
+> > +	 * fine with this trigger.
+> > +	 */
+> > +	for_each_possible_cpu(cpu) {
+> > +		struct led_trigger *trig;
+> > +		char *name = per_cpu(trig_name, cpu);
+> > +		struct rw_semaphore *lock = &per_cpu(trig_lock, cpu);
+> > +
+> > +		init_rwsem(lock);
+> > +
+> > +		snprintf(name, MAX_NAME_LEN, "cpu%d", cpu);
+> > +
+> > +		down_write(lock);
+> > +		led_trigger_register_simple(name, &trig);
+> 
+> OK, problem.
+> 
+> led_trigger_register_simple() calls kzalloc() and
+> led_trigger_register(), both of which can fail. 
+> led_trigger_register_simple() just returns void, failing to propagate
+> the error back.  This is bad, and we (ie you ;)) should fix
+> led_trigger_register_simple() before proceeding to use it.  If at all
+> possible.  Please.  Let us not propagate the badness further.  Sorry.
 
->From 9f7a6fc40ce7322145b6adea8771c8d547c151ec Mon Sep 17 00:00:00 2001
-From: Shuah Khan <shuahkhan@gmail.com>
-Date: Tue, 17 Apr 2012 16:04:56 -0600
-Subject: [PATCH] leds: ledtrig-timer trigger_data allocation fix
+FWIW, this was really the way led_trigger_register_simple() was designed
+to work. It's original use was adding a trigger into other subsystems
+which didn't want a ton of LED code so it had the simple form:
 
+xxx = led_trigger_register_simple(name, &trig);
 
-Signed-off-by: Shuah Khan <shuahkhan@gmail.com>
----
- drivers/leds/ledtrig-timer.c |    8 +++++++-
- 1 files changed, 7 insertions(+), 1 deletions(-)
+where xxx could then be unregistered later equally simply and safely in
+one line. It didn't seem to make sense to pass the error around as it
+didn't really matter to the code it was being used in.
 
-diff --git a/drivers/leds/ledtrig-timer.c b/drivers/leds/ledtrig-timer.c
-index b32d5ea..64b6915 100644
---- a/drivers/leds/ledtrig-timer.c
-+++ b/drivers/leds/ledtrig-timer.c
-@@ -16,6 +16,7 @@
- #include <linux/init.h>
- #include <linux/device.h>
- #include <linux/ctype.h>
-+#include <linux/slab.h>
- #include <linux/leds.h>
- #include "leds.h"
- 
-@@ -88,10 +89,14 @@ static void timer_trig_activate(struct led_classdev *led_cdev)
- 	led_blink_set(led_cdev, &led_cdev->blink_delay_on,
- 		      &led_cdev->blink_delay_off);
- 
--	led_cdev->trigger_data = (void *)1;
-+	led_cdev->trigger_data = kzalloc(sizeof(int), GFP_KERNEL);
-+	if (!led_cdev->trigger_data)
-+		goto err_out_delayoff;
- 
- 	return;
- 
-+err_out_delayoff:
-+	device_remove_file(led_cdev->dev, &dev_attr_delay_off);
- err_out_delayon:
- 	device_remove_file(led_cdev->dev, &dev_attr_delay_on);
- }
-@@ -101,6 +106,7 @@ static void timer_trig_deactivate(struct led_classdev *led_cdev)
- 	if (led_cdev->trigger_data) {
- 		device_remove_file(led_cdev->dev, &dev_attr_delay_on);
- 		device_remove_file(led_cdev->dev, &dev_attr_delay_off);
-+		kfree(led_cdev->trigger_data);
- 	}
- 
- 	/* Stop blinking */
--- 
-1.7.5.4
+I guess we could return an error pointer and check for that at
+unregister time in led_trigger_unregister_simple().
 
+> 
+> > +		char *name = per_cpu(trig_name, cpu);
+> > +
+> > +		led_trigger_unregister_simple(trig);
+> 
+> And what happens if led_trigger_register_simple() had silently failed
+> to register this trigger?  afacit, nothing: your code handles the
+> trig==NULL case OK.  Still, we should be checking for those failures!
 
+FWIW, led_trigger_unregister_simple() will deal with NULL safely.
 
+Cheers,
 
+Richard
 
