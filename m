@@ -1,88 +1,326 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752394Ab2DQTcY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Apr 2012 15:32:24 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:55010 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751101Ab2DQTcX convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Apr 2012 15:32:23 -0400
+	id S1752296Ab2DQTfL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Apr 2012 15:35:11 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:60688 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751398Ab2DQTfI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Apr 2012 15:35:08 -0400
+Date: Tue, 17 Apr 2012 21:34:09 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: David Howells <dhowells@redhat.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Alexander Gordeev <agordeev@redhat.com>,
+        Chris Zankel <chris@zankel.net>, David Smith <dsmith@redhat.com>,
+        "Frank Ch. Eigler" <fche@redhat.com>,
+        Geert Uytterhoeven <geert@linux-m68k.org>,
+        Larry Woodman <lwoodman@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>, Tejun Heo <tj@kernel.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v4 3/3] cred: change keyctl_session_to_parent() to use
+	task_work_add()
+Message-ID: <20120417193409.GA20312@redhat.com>
+References: <20120414021252.GC23393@redhat.com> <20120414021201.GA23385@redhat.com> <27037.1334672580@redhat.com> <20120417163606.GC14527@redhat.com>
 MIME-Version: 1.0
-In-Reply-To: <20120417174213.GD3852@pengutronix.de>
-References: <1334620214-25803-1-git-send-email-rob.lee@linaro.org>
- <1334620214-25803-2-git-send-email-rob.lee@linaro.org> <20120417074301.GM20478@pengutronix.de>
- <CAMXH7KH41kWMPu_dEpetZc8OUD3C0-mtxGbXX0Vqd4EODPWJUg@mail.gmail.com> <20120417174213.GD3852@pengutronix.de>
-From: Rob Lee <rob.lee@linaro.org>
-Date: Tue, 17 Apr 2012 14:32:02 -0500
-Message-ID: <CAMXH7KFYA24sPUcwgKfwVLNPA0jWQ-QG02y+SfPNnAqdiv0+gg@mail.gmail.com>
-Subject: Re: [PATCH 1/3] ARM: imx: Add common imx cpuidle init functionality.
-To: Sascha Hauer <s.hauer@pengutronix.de>
-Cc: kernel@pengutronix.de, linaro-dev@lists.linaro.org, patches@linaro.org,
-        daniel.lezcano@linaro.org, linux-kernel@vger.kernel.org,
-        amit.kucheria@linaro.org, shawn.guo@linaro.org,
-        linux-arm-kernel@lists.infradead.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120417163606.GC14527@redhat.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->> >> +void __init imx_cpuidle_set_driver(struct cpuidle_driver *p)
->> >> +{
->> >> +     drv = p;
->> >> +}
->> >
->> > You like it complicated, eh? Why do you introduce a function which sets
->> > a variable...
->> >
->>
->> This complication is used to deal with the timing of various levels of
->> init calls.  More explanation below.
->>
->> >> +
->> >> +void imx_cpuidle_devices_uninit(void)
->> >> +{
->> >> +     int cpu_id;
->> >> +     struct cpuidle_device *dev;
->> >> +
->> >> +     for_each_possible_cpu(cpu_id) {
->> >> +             dev = per_cpu_ptr(imx_cpuidle_devices, cpu_id);
->> >> +             cpuidle_unregister_device(dev);
->> >> +     }
->> >> +
->> >> +     free_percpu(imx_cpuidle_devices);
->> >> +}
->> >> +
->> >> +static int __init imx_cpuidle_init(void)
->> >
->> > ... instead of passing it directly to the function which uses it?
->> >
->>
->> If I called imx_cpuidle_init directly from imx5 or imx6q init
->> routines, it would be getting called before the coreinit_call of core
->> cpuidle causing a failure.  There were various other directions to
->> take and all seemed less desirable than this one.
->>
->> One alternative would be to add a function to return the pointer to
->> the cpuidle driver object based on the machine type.  Functionality
->> exists to identify imx5 as a machine type but not imx6q, so I couldn't
->> use that machine based method without adding that extra code.
->>
->> Another alternative would be to add a general platform lateinit_call
->> function to each platforms that support cpuidle.
+On 04/17, Oleg Nesterov wrote:
 >
-> Just put the initcall into mm-imx5.c and check the cpu type. Then you
-> also don't have to make imx5_idle global.
+> On 04/17, David Howells wrote:
+> >
+> > > -void key_replace_session_keyring(void)
+> > > +void key_change_session_keyring(struct task_work *twork)
+> >
+> > There's no particular need to change the name of the function.
+>
+> There is.
+>
+> Until we cleanup arch/* do_notify_resume() still does
+>
+> 	if (current->replacement_session_keyring)
+> 		key_replace_session_keyring();
 
-That solution is currently available for imx5 but for imx6q it implies
-adding the cpu type support for imx6q.  Are you ok with that?
+So the rename is still here.
 
->
-> Sascha
->
->
-> --
-> Pengutronix e.K.                           |                             |
-> Industrial Linux Solutions                 | http://www.pengutronix.de/  |
-> Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
-> Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
+Anything else? Please see the updated patch below.
+
+Oleg.
+
+>From 2ce2ff8e8715d0d25cc0228fa58f5721caebb780 Mon Sep 17 00:00:00 2001
+From: Oleg Nesterov <oleg@redhat.com>
+Date: Thu, 12 Apr 2012 02:30:44 +0200
+Subject: [PATCH] cred: change keyctl_session_to_parent() to use task_work_add()
+
+Change keyctl_session_to_parent() to use task_work_add() and
+move key_replace_session_keyring() logic into task_work->func().
+
+Note that we do task_work_cancel() before task_work_add() to
+ensure that only one work can be pending at any time. This is
+important, we must not allow user-space to abuse the parent's
+->task_works list.
+
+The callback, replace_session_keyring(), checks PF_EXITING.
+I guess this is not really needed but looks better.
+
+As a side effect, this fixes the (unlikely) race. The callers
+of key_replace_session_keyring() and keyctl_session_to_parent()
+lack the necessary barriers, the parent can miss the request.
+
+Now we can remove task_struct->replacement_session_keyring and
+related code.
+
+Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+---
+ include/linux/key.h          |    6 +--
+ security/keys/internal.h     |    2 +
+ security/keys/keyctl.c       |   73 ++++++++++++++++++++----------------------
+ security/keys/process_keys.c |   21 ++++--------
+ 4 files changed, 46 insertions(+), 56 deletions(-)
+
+diff --git a/include/linux/key.h b/include/linux/key.h
+index 96933b1..0c263d6 100644
+--- a/include/linux/key.h
++++ b/include/linux/key.h
+@@ -33,6 +33,8 @@ typedef uint32_t key_perm_t;
+ 
+ struct key;
+ 
++#define key_replace_session_keyring()	do { } while (0)
++
+ #ifdef CONFIG_KEYS
+ 
+ #undef KEY_DEBUGGING
+@@ -302,9 +304,6 @@ static inline bool key_is_instantiated(const struct key *key)
+ #ifdef CONFIG_SYSCTL
+ extern ctl_table key_sysctls[];
+ #endif
+-
+-extern void key_replace_session_keyring(void);
+-
+ /*
+  * the userspace interface
+  */
+@@ -327,7 +326,6 @@ extern void key_init(void);
+ #define key_fsuid_changed(t)		do { } while(0)
+ #define key_fsgid_changed(t)		do { } while(0)
+ #define key_init()			do { } while(0)
+-#define key_replace_session_keyring()	do { } while(0)
+ 
+ #endif /* CONFIG_KEYS */
+ #endif /* __KERNEL__ */
+diff --git a/security/keys/internal.h b/security/keys/internal.h
+index 65647f8..c2986da 100644
+--- a/security/keys/internal.h
++++ b/security/keys/internal.h
+@@ -14,6 +14,7 @@
+ 
+ #include <linux/sched.h>
+ #include <linux/key-type.h>
++#include <linux/task_work.h>
+ 
+ #ifdef __KDEBUG
+ #define kenter(FMT, ...) \
+@@ -148,6 +149,7 @@ extern key_ref_t lookup_user_key(key_serial_t id, unsigned long flags,
+ #define KEY_LOOKUP_FOR_UNLINK	0x04
+ 
+ extern long join_session_keyring(const char *name);
++extern void key_change_session_keyring(struct task_work *twork);
+ 
+ extern struct work_struct key_gc_work;
+ extern unsigned key_gc_delay;
+diff --git a/security/keys/keyctl.c b/security/keys/keyctl.c
+index fb767c6..55a451b 100644
+--- a/security/keys/keyctl.c
++++ b/security/keys/keyctl.c
+@@ -1423,50 +1423,57 @@ long keyctl_get_security(key_serial_t keyid,
+  */
+ long keyctl_session_to_parent(void)
+ {
+-#ifdef TIF_NOTIFY_RESUME
+ 	struct task_struct *me, *parent;
+ 	const struct cred *mycred, *pcred;
+-	struct cred *cred, *oldcred;
++	struct task_work *newwork, *oldwork;
+ 	key_ref_t keyring_r;
++	struct cred *cred;
+ 	int ret;
+ 
+ 	keyring_r = lookup_user_key(KEY_SPEC_SESSION_KEYRING, 0, KEY_LINK);
+ 	if (IS_ERR(keyring_r))
+ 		return PTR_ERR(keyring_r);
+ 
++	ret = -ENOMEM;
++	newwork = kmalloc(sizeof(struct task_work), GFP_KERNEL);
++	if (!newwork)
++		goto error_keyring;
++
+ 	/* our parent is going to need a new cred struct, a new tgcred struct
+ 	 * and new security data, so we allocate them here to prevent ENOMEM in
+ 	 * our parent */
+-	ret = -ENOMEM;
+ 	cred = cred_alloc_blank();
+ 	if (!cred)
+-		goto error_keyring;
++		goto error_newwork;
+ 
+ 	cred->tgcred->session_keyring = key_ref_to_ptr(keyring_r);
+-	keyring_r = NULL;
++	init_task_work(newwork, key_change_session_keyring, cred);
+ 
+ 	me = current;
+ 	rcu_read_lock();
+ 	write_lock_irq(&tasklist_lock);
+ 
+-	parent = me->real_parent;
+ 	ret = -EPERM;
++	oldwork = NULL;
++	parent = me->real_parent;
+ 
+ 	/* the parent mustn't be init and mustn't be a kernel thread */
+ 	if (parent->pid <= 1 || !parent->mm)
+-		goto not_permitted;
++		goto unlock;
+ 
+ 	/* the parent must be single threaded */
+ 	if (!thread_group_empty(parent))
+-		goto not_permitted;
++		goto unlock;
+ 
+ 	/* the parent and the child must have different session keyrings or
+ 	 * there's no point */
+ 	mycred = current_cred();
+ 	pcred = __task_cred(parent);
+ 	if (mycred == pcred ||
+-	    mycred->tgcred->session_keyring == pcred->tgcred->session_keyring)
+-		goto already_same;
++	    mycred->tgcred->session_keyring == pcred->tgcred->session_keyring) {
++		ret = 0;
++		goto unlock;
++	}
+ 
+ 	/* the parent must have the same effective ownership and mustn't be
+ 	 * SUID/SGID */
+@@ -1476,50 +1483,40 @@ long keyctl_session_to_parent(void)
+ 	    pcred->gid	!= mycred->egid	||
+ 	    pcred->egid	!= mycred->egid	||
+ 	    pcred->sgid	!= mycred->egid)
+-		goto not_permitted;
++		goto unlock;
+ 
+ 	/* the keyrings must have the same UID */
+ 	if ((pcred->tgcred->session_keyring &&
+ 	     pcred->tgcred->session_keyring->uid != mycred->euid) ||
+ 	    mycred->tgcred->session_keyring->uid != mycred->euid)
+-		goto not_permitted;
++		goto unlock;
+ 
+-	/* if there's an already pending keyring replacement, then we replace
+-	 * that */
+-	oldcred = parent->replacement_session_keyring;
++	/* cancel an already pending keyring replacement */
++	oldwork = task_work_cancel(parent, key_change_session_keyring);
+ 
+ 	/* the replacement session keyring is applied just prior to userspace
+ 	 * restarting */
+-	parent->replacement_session_keyring = cred;
+-	cred = NULL;
+-	set_ti_thread_flag(task_thread_info(parent), TIF_NOTIFY_RESUME);
+-
++	ret = task_work_add(parent, newwork, true);
++	if (!ret)
++		newwork = NULL;
++unlock:
+ 	write_unlock_irq(&tasklist_lock);
+ 	rcu_read_unlock();
+-	if (oldcred)
+-		put_cred(oldcred);
+-	return 0;
+-
+-already_same:
+-	ret = 0;
+-not_permitted:
+-	write_unlock_irq(&tasklist_lock);
+-	rcu_read_unlock();
+-	put_cred(cred);
++	if (oldwork) {
++		put_cred(oldwork->data);
++		kfree(oldwork);
++	}
++	if (newwork) {
++		put_cred(newwork->data);
++		kfree(newwork);
++	}
+ 	return ret;
+ 
++error_newwork:
++	kfree(newwork);
+ error_keyring:
+ 	key_ref_put(keyring_r);
+ 	return ret;
+-
+-#else /* !TIF_NOTIFY_RESUME */
+-	/*
+-	 * To be removed when TIF_NOTIFY_RESUME has been implemented on
+-	 * m68k/xtensa
+-	 */
+-#warning TIF_NOTIFY_RESUME not implemented
+-	return -EOPNOTSUPP;
+-#endif /* !TIF_NOTIFY_RESUME */
+ }
+ 
+ /*
+diff --git a/security/keys/process_keys.c b/security/keys/process_keys.c
+index be7ecb2..556dea2 100644
+--- a/security/keys/process_keys.c
++++ b/security/keys/process_keys.c
+@@ -832,23 +832,17 @@ error:
+  * Replace a process's session keyring on behalf of one of its children when
+  * the target  process is about to resume userspace execution.
+  */
+-void key_replace_session_keyring(void)
++void key_change_session_keyring(struct task_work *twork)
+ {
+-	const struct cred *old;
+-	struct cred *new;
++	const struct cred *old = current_cred();
++	struct cred *new = twork->data;
+ 
+-	if (!current->replacement_session_keyring)
+-		return;
+-
+-	write_lock_irq(&tasklist_lock);
+-	new = current->replacement_session_keyring;
+-	current->replacement_session_keyring = NULL;
+-	write_unlock_irq(&tasklist_lock);
+-
+-	if (!new)
++	kfree(twork);
++	if (unlikely(current->flags & PF_EXITING)) {
++		put_cred(new);
+ 		return;
++	}
+ 
+-	old = current_cred();
+ 	new->  uid	= old->  uid;
+ 	new-> euid	= old-> euid;
+ 	new-> suid	= old-> suid;
+@@ -873,6 +867,5 @@ void key_replace_session_keyring(void)
+ 	new->tgcred->process_keyring = key_get(old->tgcred->process_keyring);
+ 
+ 	security_transfer_creds(new, old);
+-
+ 	commit_creds(new);
+ }
+-- 
+1.5.5.1
+
+
+
