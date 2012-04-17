@@ -1,68 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753085Ab2DQVRI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Apr 2012 17:17:08 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:49133 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751542Ab2DQVRG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Apr 2012 17:17:06 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Linus Torvalds <torvalds@linux-foundation.org>,
-        Sven Joachim <svenjoac@gmx.de>
-Subject: Re: kernel panic after suspend/resume (was: Linux 3.4-rc3)
-Date: Tue, 17 Apr 2012 23:21:40 +0200
-User-Agent: KMail/1.13.6 (Linux/3.4.0-rc3+; KDE/4.6.0; x86_64; ; )
-Cc: Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-References: <CA+55aFzsjpJt09b6e4NA0T50M3w0xtASSYXz_=UWVDqKRywo=A@mail.gmail.com> <87pqb6fkji.fsf@turtle.gmx.de> <CA+55aFxhb6hriqHHwVtNeYHmtcy5JCEJX-zABBcG2Zjw_gawPw@mail.gmail.com>
-In-Reply-To: <CA+55aFxhb6hriqHHwVtNeYHmtcy5JCEJX-zABBcG2Zjw_gawPw@mail.gmail.com>
+	id S1753136Ab2DQVSB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Apr 2012 17:18:01 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:48326 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752054Ab2DQVR7 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Apr 2012 17:17:59 -0400
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201204172321.41095.rjw@sisk.pl>
+In-Reply-To: <4F72ED25.60307@jp.fujitsu.com>
+References: <4F72EB84.7080000@jp.fujitsu.com>
+	<4F72ED25.60307@jp.fujitsu.com>
+Date: Tue, 17 Apr 2012 14:17:57 -0700
+Message-ID: <CALWz4izNDGdGYmkJzHCRFspCk9QwoZtvRWpKmn=0YZRaVrcVAA@mail.gmail.com>
+Subject: Re: [RFC][PATCH 2/6] memcg: add pc_set_mem_cgroup_and_flags()
+From: Ying Han <yinghan@google.com>
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Michal Hocko <mhocko@suse.cz>, Johannes Weiner <hannes@cmpxchg.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Glauber Costa <glommer@parallels.com>,
+        Konstantin Khlebnikov <khlebnikov@openvz.org>,
+        Suleiman Souhlal <suleiman@google.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, April 17, 2012, Linus Torvalds wrote:
-> On Tue, Apr 17, 2012 at 8:24 AM, Sven Joachim <svenjoac@gmx.de> wrote:
-> >
-> > With Linux 3.4-rc3, I'm experiencing crashes after resuming from
-> > suspend, not immediately but after a few minutes.  This has happened
-> > three times so far, note that 3.4-rc2 worked fine.
-> 
-> Hmm. Looks like "global_clock_event->event_handler" is NULL. Which
-> doesn't make any sense what-so-ever, but clearly it is.
-> 
->  Added Ingo and Thomas to the cc, since that's a very x86
-> timer-looking thing. And Rafael since it's about suspend/resume. I do
-> wonder if it's some odd memory corruption due to a wild pointer. Of
-> course, if it's somewhat repeatable, that's some *seriously* odd
-> corruption, though. So that sounds unlikely too - but that
-> global_clock_event thing looks odd.
-> 
-> Oh: guys, one thing to look at is that "lapic_cal_handler" thing.
-> Weren't there some changes to timer calibration wrt SMP lately? Not in
-> -rc3, but we had some calibrate_delay() changes - skipping them on
-> other CPU's when the TSC was reliable, and irq disable things.
-> 
-> Maybe the calibration at resume now does something different?
-> 
-> Two questions:
-> 
->  - if it is reasonably repeatable, can you try to bisect it? There's
-> just under 400 commits in between rc2 and rc3, and you don't really
-> need to do a full bisect, but if you do just four bisections, it
-> should narrow it down to just 25 commits or so.
-> 
->  - how sure are you that rc2 is fine? I don't see anything suspicious
-> in this area since rc2, so I would ask you to really test it very well
-> to make sure it really was introduced after rc2.
-> 
-> Thomas, Ingo, Rafael - any ideas?
+On Wed, Mar 28, 2012 at 3:51 AM, KAMEZAWA Hiroyuki
+<kamezawa.hiroyu@jp.fujitsu.com> wrote:
+> Consolidate a code for setting pc->mem_cgroup and USED bit which requires smp_wmb().
+> And remove a macro PCGF_NOCOPY_AT_SPLIT which isn't helpful to read code, now.
+>
+> Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+> ---
+>  include/linux/page_cgroup.h |   18 ++++++++++++++++++
+>  mm/memcontrol.c             |   18 ++++--------------
+>  2 files changed, 22 insertions(+), 14 deletions(-)
+>
+> diff --git a/include/linux/page_cgroup.h b/include/linux/page_cgroup.h
+> index 92768cb..2707809 100644
+> --- a/include/linux/page_cgroup.h
+> +++ b/include/linux/page_cgroup.h
+> @@ -1,6 +1,8 @@
+>  #ifndef __LINUX_PAGE_CGROUP_H
+>  #define __LINUX_PAGE_CGROUP_H
+>
+> +#include <linux/smp.h>
+> +
+>  enum {
+>        /* flags for mem_cgroup */
+>        PCG_LOCK,  /* Lock for pc->mem_cgroup and following bits. */
+> @@ -94,6 +96,22 @@ pc_set_mem_cgroup(struct page_cgroup *pc, struct mem_cgroup *memcg)
+>        pc->mem_cgroup = memcg;
+>  }
+>
+> +static inline void
+> +pc_set_mem_cgroup_and_flags(struct page_cgroup *pc, struct mem_cgroup *memcg,
+> +                       unsigned long flags)
+> +{
+> +       pc->mem_cgroup = memcg;
+> +       /*
+> +        * We access a page_cgroup asynchronously without lock_page_cgroup().
+> +        * Especially when a page_cgroup is taken from a page, pc's mem_cgroup
+> +        * is accessed after testing USED bit. To make pc's mem_cgroup visible
+> +        * before USED bit, we need memory barrier here.
+> +        * See mem_cgroup_add_lru_list(), etc.
+> +        */
+> +       smp_wmb();
+> +       pc->flags = flags;
+> +}
+> +
+>  #else /* CONFIG_CGROUP_MEM_RES_CTLR */
+>  struct page_cgroup;
+>
+> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+> index 8077460..d366b60 100644
+> --- a/mm/memcontrol.c
+> +++ b/mm/memcontrol.c
+> @@ -2511,16 +2511,7 @@ static void __mem_cgroup_commit_charge(struct mem_cgroup *memcg,
+>                }
+>        }
+>
+> -       pc_set_mem_cgroup(pc, memcg);
+> -       /*
+> -        * We access a page_cgroup asynchronously without lock_page_cgroup().
+> -        * Especially when a page_cgroup is taken from a page, pc's mem_cgroup
+> -        * is accessed after testing USED bit. To make pc's mem_cgroup visible
+> -        * before USED bit, we need memory barrier here.
+> -        * See mem_cgroup_add_lru_list(), etc.
+> -        */
+> -       smp_wmb();
+> -       SetPageCgroupUsed(pc);
 
-Well, commit fa4da365bc7772c kind of looks like it might be the source of
-this trouble.  Sven, can you try to revert it, please?
+I might be confused. We removed this SetPageCgroupUsed() but not
+adding it back elsewhere ?
 
-Rafael
+--Ying
+
+> +       pc_set_mem_cgroup_and_flags(pc, memcg, BIT(PCG_USED) | BIT(PCG_LOCK));
+>
+>        if (lrucare) {
+>                if (was_on_lru) {
+> @@ -2549,7 +2540,6 @@ static void __mem_cgroup_commit_charge(struct mem_cgroup *memcg,
+>
+>  #ifdef CONFIG_TRANSPARENT_HUGEPAGE
+>
+> -#define PCGF_NOCOPY_AT_SPLIT ((1 << PCG_LOCK) | (1 << PCG_MIGRATION))
+>  /*
+>  * Because tail pages are not marked as "used", set it. We're under
+>  * zone->lru_lock, 'splitting on pmd' and compound_lock.
+> @@ -2565,11 +2555,11 @@ void mem_cgroup_split_huge_fixup(struct page *head)
+>
+>        if (mem_cgroup_disabled())
+>                return;
+> +       if (!PageCgroupUsed(head_pc))
+> +               return;
+>        for (i = 1; i < HPAGE_PMD_NR; i++) {
+>                pc = head_pc + i;
+> -               pc_set_mem_cgroup(pc, memcg);
+> -               smp_wmb();/* see __commit_charge() */
+> -               pc->flags = head_pc->flags & ~PCGF_NOCOPY_AT_SPLIT;
+> +               pc_set_mem_cgroup_and_flags(pc, memcg, BIT(PCG_USED));
+>        }
+>  }
+>  #endif /* CONFIG_TRANSPARENT_HUGEPAGE */
+> --
+> 1.7.4.1
+>
+>
