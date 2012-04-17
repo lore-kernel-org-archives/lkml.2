@@ -1,49 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755688Ab2DPWBg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Apr 2012 18:01:36 -0400
-Received: from mail-out.m-online.net ([212.18.0.10]:60551 "EHLO
-	mail-out.m-online.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755623Ab2DPWBa (ORCPT
+	id S1755760Ab2DPWCG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Apr 2012 18:02:06 -0400
+Received: from oproxy6-pub.bluehost.com ([67.222.54.6]:36288 "HELO
+	oproxy6-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1755604Ab2DPWB3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Apr 2012 18:01:30 -0400
-From: Andreas Schwab <schwab@linux-m68k.org>
-To: Grant Likely <grant.likely@secretlab.ca>
-Cc: David Daney <ddaney.cavm@gmail.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
-        David Daney <david.daney@cavium.com>
-Subject: Re: [PATCH] iqrdomain: Improve formatting in debugfs.
-References: <1334016417-18748-1-git-send-email-ddaney.cavm@gmail.com>
-	<20120411070332.6F3C03E081E@localhost> <m21unuoch5.fsf@igel.home>
-	<CACxGe6sDcqu6TcS9ZYYeNffMdUrH0_SVou37H83qzM8mKAGV_A@mail.gmail.com>
-X-Yow: I don't know WHY I said that..  I think it came from the FILLINGS
- in my rear molars..
-Date: Tue, 17 Apr 2012 00:01:26 +0200
-In-Reply-To: <CACxGe6sDcqu6TcS9ZYYeNffMdUrH0_SVou37H83qzM8mKAGV_A@mail.gmail.com>
-	(Grant Likely's message of "Wed, 11 Apr 2012 08:52:03 -0600")
-Message-ID: <m2bomrz689.fsf@igel.home>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.0.95 (gnu/linux)
+	Mon, 16 Apr 2012 18:01:29 -0400
+Message-ID: <4F8CC0ED.2000006@xenotime.net>
+Date: Mon, 16 Apr 2012 18:01:33 -0700
+From: Randy Dunlap <rdunlap@xenotime.net>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8bit
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+CC: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        netdev@vger.kernel.org, linux-hippi@sunsite.dk,
+        Jes Sorensen <jes@trained-monkey.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: [PATCH -next] hippi: fix printk format in rrunner.c
+References: <20120416161121.261ba4e7e38989173accfb16@canb.auug.org.au>
+In-Reply-To: <20120416161121.261ba4e7e38989173accfb16@canb.auug.org.au>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Grant Likely <grant.likely@secretlab.ca> writes:
+From: Randy Dunlap <rdunlap@xenotime.net>
 
-> Also, gcc complains about it:
->
-> /home/grant/hacking/linux/kernel/irq/irqdomain.c: In function ‘virq_debug_show’:
-> /home/grant/hacking/linux/kernel/irq/irqdomain.c:670:4: warning: '#'
-> flag used with ‘%p’ gnu_printf format [-Wformat]
+Fix printk format warning (from i386 build):
 
-Then it's probably not such a good idea after all.
+drivers/net/hippi/rrunner.c:146:9: warning: format '%08llx' expects type 'long long unsigned int', but argument 3 has type 'resource_size_t'
 
-Andreas.
+Signed-off-by: Randy Dunlap <rdunlap@xenotime.net>
+Cc: Jes Sorensen <jes@trained-monkey.org>
+Cc:	linux-hippi@sunsite.dk
+---
+ drivers/net/hippi/rrunner.c |    5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
 
--- 
-Andreas Schwab, schwab@linux-m68k.org
-GPG Key fingerprint = 58CA 54C7 6D53 942B 1756  01D3 44D5 214B 8276 4ED5
-"And now for something completely different."
+--- linux-next-20120416.orig/drivers/net/hippi/rrunner.c
++++ linux-next-20120416/drivers/net/hippi/rrunner.c
+@@ -142,8 +142,9 @@ static int __devinit rr_init_one(struct
+ 	pci_set_master(pdev);
+ 
+ 	printk(KERN_INFO "%s: Essential RoadRunner serial HIPPI "
+-	       "at 0x%08llx, irq %i, PCI latency %i\n", dev->name,
+-	       pci_resource_start(pdev, 0), pdev->irq, pci_latency);
++	       "at 0x%llx, irq %i, PCI latency %i\n", dev->name,
++	       (unsigned long long)pci_resource_start(pdev, 0),
++	       pdev->irq, pci_latency);
+ 
+ 	/*
+ 	 * Remap the MMIO regs into kernel space.
