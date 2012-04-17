@@ -1,59 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753280Ab2DQGq4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Apr 2012 02:46:56 -0400
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:4856 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752064Ab2DQGqy (ORCPT
+	id S1753907Ab2DQGrW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Apr 2012 02:47:22 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:61851 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751721Ab2DQGrS convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Apr 2012 02:46:54 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Mon, 16 Apr 2012 23:46:36 -0700
-From: Laxman Dewangan <ldewangan@nvidia.com>
-To: grant.likely@secretlab.ca, rob.herring@calxeda.com, rdunlap@xenotime.net,
-        linux@arm.linux.org.uk, jic23@cam.ac.uk, gregkh@linuxfoundation.org,
-        broonie@opensource.wolfsonmicro.com, swarren@nvidia.com,
-        cbouatmailru@gmail.com, olof@lixom.net, linus.walleij@linaro.org,
-        lars@metafoo.de, bfreed@chromium.org, grundler@chromium.org,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-iio@vger.kernel.org,
-        devel@driverdev.osuosl.org
-Cc: Laxman Dewangan <ldewangan@nvidia.com>
-Subject: [PATCH 3/3] ARM: dt: tegra_ventana: als and proximity sensor isl29018 support
-Date: Tue, 17 Apr 2012 12:15:55 +0530
-Message-Id: <1334645155-13799-4-git-send-email-ldewangan@nvidia.com>
-X-Mailer: git-send-email 1.7.1.1
-In-Reply-To: <1334645155-13799-1-git-send-email-ldewangan@nvidia.com>
-References: <1334645155-13799-1-git-send-email-ldewangan@nvidia.com>
+	Tue, 17 Apr 2012 02:47:18 -0400
+MIME-Version: 1.0
+In-Reply-To: <4F8C7839.6060104@flameeyes.eu>
+References: <4F8C7839.6060104@flameeyes.eu>
+Date: Tue, 17 Apr 2012 08:47:17 +0200
+Message-ID: <CACRpkdaOSSA8PuTSQ4utp9JHKbBiz+iWfuPn=2WyojZxsR5a3A@mail.gmail.com>
+Subject: Re: [RFC] IT87xx GPIO and other drivers
+From: Linus Walleij <linus.walleij@linaro.org>
+To: =?ISO-8859-1?Q?Diego_Elio_Petten=F2?= <flameeyes@flameeyes.eu>
+Cc: Grant Likely <grant.likely@secretlab.ca>,
+        guillaume ligneul <guillaume.ligneul@oselis.com>,
+        Linus Walleij <linus.walleij@stericsson.com>,
+        Guenter Roeck <guenter.roeck@ericsson.com>,
+        Jean Delvare <khali@linux-fr.org>, Wim Van Sebroeck <wim@iguana.be>,
+        Denis Turischev <denis@compulab.co.il>, linux-kernel@vger.kernel.org,
+        linux-watchdog@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add the device info for ALS and proximity sensor isl29018.
-This device is connected on i2c0 bus.
+On Mon, Apr 16, 2012 at 9:51 PM, Diego Elio Pettenò
+<flameeyes@flameeyes.eu> wrote:
 
-Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
----
- arch/arm/boot/dts/tegra-ventana.dts |    6 ++++++
- 1 files changed, 6 insertions(+), 0 deletions(-)
+> The GPIO pins on most of the it87xx chips are also multi-function, and
+> _should not_ be user-visible, but for some of them it might make sense
+> to (for instance it should be possible to drive some of the LEDs on
+> it8728f-based motherboards by replacing the functions of some PINs to GPIO).
+>
+> For what I can tell, it should probably be a good idea to have something
+> along these lines, but I'm _not_ a driver expert:
+>
+>  - mfd-it87xx: a platform driver, which probes the superio to check it
+> to be an it87xx chip, and then reserve resources for the other drivers;
+>  - hwmon/it87: no longer probes autonomously for which chip it is, and
+> where it is;
+>  - it87_wdt: ibidem;
+>  - it8712_wdt: no clue about it, but I guess the same;
+>  - gpio-it87: ibidem again;
+>  - pinctrl-it87: abstracts support for the various pin-choice registers;
+>  - led-it87: possibly to drive the power/network/hdd leds, akin to what
+> happens with some laptops, and embedded systems.
 
-diff --git a/arch/arm/boot/dts/tegra-ventana.dts b/arch/arm/boot/dts/tegra-ventana.dts
-index 71eb2e5..dd474e1 100644
---- a/arch/arm/boot/dts/tegra-ventana.dts
-+++ b/arch/arm/boot/dts/tegra-ventana.dts
-@@ -256,6 +256,12 @@
- 			micdet-delay = <100>;
- 			gpio-cfg = < 0xffffffff 0xffffffff 0 0xffffffff 0xffffffff >;
- 		};
-+
-+		/* ALS and proximity sensor */
-+		isl29018: isl29018@44 {
-+			compatible = "isl,isl29018";
-+			reg = <0x44>;
-+		};
- 	};
- 
- 	i2c@7000c400 {
--- 
-1.7.1.1
+I would suggest merging gpio-it87 and pinctrl-it87 into one driver
+in drivers/pinctrl-it87.c. I don't know for sure however, since it depends
+on hardware: usually these is a tight dependence between GPIO and
+pinctrl (IIRC this was the case with SuperIO), and then it often makes
+a lot of sense to create a composite driver, in order to just have one
+state container (cookie) to pass around in the functions, and to remap
+a register range only once.
 
+The concept is explained in my pinctrl talk on a high level:
+http://www.df.lth.se/~triad/papers/pincontrol.pdf
+
+Yours,
+Linus Walleij
