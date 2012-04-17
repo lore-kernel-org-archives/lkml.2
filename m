@@ -1,94 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754750Ab2DQGX3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Apr 2012 02:23:29 -0400
-Received: from szxga03-in.huawei.com ([58.251.152.66]:38510 "EHLO
-	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753042Ab2DQGX1 (ORCPT
+	id S1754824Ab2DQGYB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Apr 2012 02:24:01 -0400
+Received: from am1ehsobe005.messaging.microsoft.com ([213.199.154.208]:42664
+	"EHLO am1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752854Ab2DQGYA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Apr 2012 02:23:27 -0400
-Date: Tue, 17 Apr 2012 14:22:26 +0800
-From: "Peter Huang (Peng)" <peter.huangpeng@huawei.com>
-Subject: [PATCH] set fake_rtable's dst to NULL to avoid kernel Oops.
-X-Originating-IP: [10.166.90.111]
-To: shemminger@vyatta.com, "'David S. Miller'" <davem@davemloft.net>,
-        netdev@vger.kernel.org
-Cc: eric.dumazet@gmail.com, linux-kernel@vger.kernel.org,
-        ctrix+debianbugs@navynet.it, peter.huangpeng@huawei.com,
-        peter.huangpeng@gmail.com, harry.majun@huawei.com
-Message-id: <000001cd1c62$75d10de0$617329a0$%huangpeng@huawei.com>
-MIME-version: 1.0
-X-Mailer: Microsoft Office Outlook 12.0
-Content-type: text/plain; charset=us-ascii
-Content-language: zh-cn
-Content-transfer-encoding: 7BIT
-Thread-index: Ac0cYmEFNWM4R9FFT9OY3OEb+cx/cQ==
-X-CFilter-Loop: Reflected
+	Tue, 17 Apr 2012 02:24:00 -0400
+X-SpamScore: -11
+X-BigFish: VS-11(zzbb2dI9371I1432N98dKzz1202hzz8275dhz2dh2a8h668h839h944hd25h)
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+Date: Tue, 17 Apr 2012 14:34:38 +0800
+From: Dong Aisheng <aisheng.dong@freescale.com>
+To: Stephen Warren <swarren@wwwdotorg.org>
+CC: Dong Aisheng-B29396 <B29396@freescale.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linus.walleij@stericsson.com" <linus.walleij@stericsson.com>
+Subject: Re: [PATCH 1/3] pinctrl: display pin name instead of raw pin id
+Message-ID: <20120417063437.GE17173@shlinux2.ap.freescale.net>
+References: <1334585244-10249-1-git-send-email-b29396@freescale.com>
+ <4F8C60EE.30008@wwwdotorg.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <4F8C60EE.30008@wwwdotorg.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When bridge is deleted before tap/vif device's delete, kernel may encounter an oops because of NULL reference to fake_rtable's dst.
-Set fake_rtable's dst to NULL before sending packets out can solve this problem.
+On Tue, Apr 17, 2012 at 02:11:58AM +0800, Stephen Warren wrote:
+> On 04/16/2012 08:07 AM, Dong Aisheng wrote:
+> > From: Dong Aisheng <dong.aisheng@linaro.org>
+> > 
+> > Pin name is more useful to users.
+> 
+> > diff --git a/drivers/pinctrl/core.c b/drivers/pinctrl/core.c
+> 
+> > @@ -964,10 +984,14 @@ static int pinctrl_groups_show(struct seq_file *s, void *what)
+> >  			seq_printf(s, "%s [ERROR GETTING PINS]\n",
+> >  				   gname);
+> >  		else {
+> > +			seq_printf(s, "group: %s\n", gname);
+> > +			for (i = 0; i < num_pins; i++) {
+> > +				pname = pin_get_name(pctldev, pins[i]);
+> > +				if (!pname)
+> > +					return -EINVAL;
+> 
+> I'd rather see this say pname = "(unknown)" instead of return, to get as
+> much of the information into debugfs possible even in the face of errors.
+> 
+pinctrl_register_one_pin will guarantee the pname should never be NULL.
+So this condition is a never happen case.
+That's why i simply returned an error with no debug information.
 
+> But perhaps that condition should even be a BUG(); it would imply that
+> pinctrl_register_on_pin() had failed pretty badly.
+> 
+>From the comments of BUG() in bug.h, it looks using BUG() here is a little
+too seriously.
+=====
+ * Don't use BUG() or BUG_ON() unless there's really no way out;
 
-Acked-by: Eric Dumazet <eric.dumazet@gmail.com>
-Signed-off-by: Peter Huang <peter.huangpeng@huawei.com>
----
-include/linux/netfilter_bridge.h |    8 ++++++++
- net/bridge/br_forward.c          |    1 +
- net/bridge/br_netfilter.c        |    6 +-----
- 3 files changed, 10 insertions(+), 5 deletions(-)
+Maybe WARN_ON is more suitable here, right?
+I will send a patch for your review.
 
-diff --git a/include/linux/netfilter_bridge.h b/include/linux/netfilter_bridge.h
-index 0ddd161..70744fe 100644
---- a/include/linux/netfilter_bridge.h
-+++ b/include/linux/netfilter_bridge.h
-@@ -104,9 +104,17 @@ struct bridge_skb_cb {
- 	} daddr;
- };
- 
-+static inline void br_drop_fake_rtable(struct sk_buff *skb) {
-+	struct dst_entry *dst = skb_dst(skb);
-+	/* abuse fact that only fake_rtable has DST_NOPEER set */
-+	if (dst && (dst->flags & DST_NOPEER))
-+		skb_dst_drop(skb);
-+}
-+
- #else
- #define nf_bridge_maybe_copy_header(skb)	(0)
- #define nf_bridge_pad(skb)			(0)
-+#define br_drop_fake_rtable(skb)		(0)
- #endif /* CONFIG_BRIDGE_NETFILTER */
- 
- #endif /* __KERNEL__ */
-diff --git a/net/bridge/br_forward.c b/net/bridge/br_forward.c index 61f6534..a2098e3 100644
---- a/net/bridge/br_forward.c
-+++ b/net/bridge/br_forward.c
-@@ -47,6 +47,7 @@ int br_dev_queue_push_xmit(struct sk_buff *skb)
- 		kfree_skb(skb);
- 	} else {
- 		skb_push(skb, ETH_HLEN);
-+		br_drop_fake_rtable(skb);
- 		dev_queue_xmit(skb);
- 	}
- 
-diff --git a/net/bridge/br_netfilter.c b/net/bridge/br_netfilter.c index dec4f38..946dcb0 100644
---- a/net/bridge/br_netfilter.c
-+++ b/net/bridge/br_netfilter.c
-@@ -694,11 +694,7 @@ static unsigned int br_nf_local_in(unsigned int hook, struct sk_buff *skb,
- 				   const struct net_device *out,
- 				   int (*okfn)(struct sk_buff *))
- {
--	struct rtable *rt = skb_rtable(skb);
--
--	if (rt && rt == bridge_parent_rtable(in))
--		skb_dst_drop(skb);
--
-+	br_drop_fake_rtable(skb);
- 	return NF_ACCEPT;
- }
---------------------------------
-Peter Huang(peng)
+> > diff --git a/drivers/pinctrl/pinmux.c b/drivers/pinctrl/pinmux.c
+> > index c494c37..fa0357b 100644
+> > --- a/drivers/pinctrl/pinmux.c
+> > +++ b/drivers/pinctrl/pinmux.c
+> > @@ -88,8 +88,6 @@ static int pin_request(struct pinctrl_dev *pctldev,
+> >  	const struct pinmux_ops *ops = pctldev->desc->pmxops;
+> >  	int status = -EINVAL;
+> >  
+> > -	dev_dbg(pctldev->dev, "request pin %d for %s\n", pin, owner);
+> > -
+> >  	desc = pin_desc_get(pctldev, pin);
+> >  	if (desc == NULL) {
+> >  		dev_err(pctldev->dev,
+> > @@ -97,6 +95,9 @@ static int pin_request(struct pinctrl_dev *pctldev,
+> >  		goto out;
+> >  	}
+> >  
+> > +	dev_dbg(pctldev->dev, "request pin %d (%s) for %s\n",
+> > +		pin, desc->name, owner);
+> > +
+> >  	if (gpio_range) {
+> >  		/* There's no need to support multiple GPIO requests */
+> >  		if (desc->gpio_owner) {
+> 
+> That seems like it should be a separate patch?
+> 
+Ok to me, will make a separate one.
 
+Regards
+Dong Aisheng
 
