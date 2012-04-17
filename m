@@ -1,145 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752464Ab2DQTt4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Apr 2012 15:49:56 -0400
-Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:37690 "EHLO
-	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751350Ab2DQTtu (ORCPT
+	id S1752884Ab2DQTuR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Apr 2012 15:50:17 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:43649 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751350Ab2DQTuE convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Apr 2012 15:49:50 -0400
-Date: Tue, 17 Apr 2012 23:49:45 +0400
-From: Cyrill Gorcunov <gorcunov@openvz.org>
-To: Kees Cook <keescook@chromium.org>, LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Tejun Heo <tj@kernel.org>,
-        Serge Hallyn <serge.hallyn@canonical.com>,
-        Pavel Emelyanov <xemul@parallels.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Subject: Re: [PATCH c/r -mm] c/r: prctl: Simplify PR_SET_MM on mm::code/data
- assignment
-Message-ID: <20120417194945.GB14663@moon>
-References: <20120416225520.GD9756@moon>
- <CAGXu5jKnfOsXGTx8QbKCCH9C9c+szFwi5oA1R99pjCue9kfpWg@mail.gmail.com>
- <20120417191916.GQ1906@moon>
+	Tue, 17 Apr 2012 15:50:04 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120417191916.GQ1906@moon>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1334688545-8465-2-git-send-email-swarren@wwwdotorg.org>
+References: <1334688545-8465-1-git-send-email-swarren@wwwdotorg.org>
+	<1334688545-8465-2-git-send-email-swarren@wwwdotorg.org>
+Date: Tue, 17 Apr 2012 21:50:02 +0200
+Message-ID: <CACRpkdbqE7H7Q1xUeFQL3DmgoKF6HNbWp-DswYKqMVK12tVSVw@mail.gmail.com>
+Subject: Re: [PATCH 2/2] i2c: Add generic I2C multiplexer using pinctrl API
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Stephen Warren <swarren@wwwdotorg.org>
+Cc: Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>, Ben Dooks <ben-linux@fluff.org>,
+        Wolfram Sang <w.sang@pengutronix.de>,
+        devicetree-discuss@lists.ozlabs.org, linux-i2c@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Stephen Warren <swarren@nvidia.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 17, 2012 at 11:19:16PM +0400, Cyrill Gorcunov wrote:
-...
-> > Since this is CAP_SYS_RESOURCE, and mmap_min_addr is CAP_SYS_RAWIO,
-> > how about a lower-bounds check against mmap_min_addr? (We're already
-> > doing the TASK_SIZE upper check, so this additional sanity checking
-> > seems reasonable to me.)
-> 
-> I think this is good idea, thanks Kees. I'll check it out.
+On Tue, Apr 17, 2012 at 8:49 PM, Stephen Warren <swarren@wwwdotorg.org> wrote:
 
-Updated and tested version is below.
+> This is useful for SoCs whose I2C module's signals can be routed to
+> different sets of pins at run-time, using the pinctrl API.
+>
+>                                 +-----+  +-----+
+>                                 | dev |  | dev |
+>    +------------------------+   +-----+  +-----+
+>    | SoC                    |      |        |
+>    |                   /----|------+--------+
+>    |   +---+   +------+     | child bus A, on first set of pins
+>    |   |I2C|---|Pinmux|     |
+>    |   +---+   +------+     | child bus B, on second set of pins
+>    |                   \----|------+--------+--------+
+>    |                        |      |        |        |
+>    +------------------------+  +-----+  +-----+  +-----+
+>                                | dev |  | dev |  | dev |
+>                                +-----+  +-----+  +-----+
+>
+> Signed-off-by: Stephen Warren <swarren@nvidia.com>
 
-	Cyrill
----
-From: Cyrill Gorcunov <gorcunov@openvz.org>
-Subject: [PATCH] c/r: prctl: Simplify PR_SET_MM on mm::code/data assignment v2
+I remember you told me about this thing, it's really fascinating!
+Acked-by: Linus Walleij <linus.walleij@linaro.org>
 
-The mm::start_code, end_code, start_data, end_data members
-are set during startup of executable file and are not changed
-after.
+> Note: This patch depends on the latest pinctrl tree. In order to merge
+> this series into the I2C tree, you'll need to merge the pinctrl tree
+> into it first. However, the pinctrl tree doesn't yet have a stable tag/branch
+> that you can merge, so this patch can't actually be committed yet.
 
-But the program itself might map new executable or/and data areas in
-time so the original values written into mm fields mentioned above
-might not have correspond VMA area at all, thus if one try to
-use this prctl codes without underlied VMA, the error will be
-returned.
+I'll create a tag once I have the devm* stuff in place (it's so
+good we just have to have it).
 
-Drop this requirement. This shrinks the code and eliminates
-redundant calls to vma_flags_mismatch. The worst thing one can
-do (if say to write some bad values here) -- the weird results
-will be shown in /proc/$pid/statm or in /proc/pid/stat.
+BTW another way is to have this ACK:ed by Jean/Dooks/Wolfram
+and I just put it in the pinctrl tree, unless there is something
+radical happening in the mux part of the I2C tree this merge
+window?
 
-Still, assignement of data on stack (such as command line and
-environment variables) requires the underlied VMA to exist.
-
-v2:
- Also make sure the address being set is greater than mmap_min_addr.
- Suggested by Kees Cook.
-
-Signed-off-by: Cyrill Gorcunov <gorcunov@openvz.org>
-Cc: Kees Cook <keescook@chromium.org>
-Cc: Tejun Heo <tj@kernel.org>
-Cc: Serge Hallyn <serge.hallyn@canonical.com>
-Cc: Pavel Emelyanov <xemul@parallels.com>
-Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>
----
- kernel/sys.c |   36 +++++++++---------------------------
- 1 file changed, 9 insertions(+), 27 deletions(-)
-
-Index: linux-2.6.git/kernel/sys.c
-===================================================================
---- linux-2.6.git.orig/kernel/sys.c
-+++ linux-2.6.git/kernel/sys.c
-@@ -1771,44 +1771,24 @@ static int prctl_set_mm(int opt, unsigne
- 	if (opt == PR_SET_MM_EXE_FILE)
- 		return prctl_set_mm_exe_file(mm, (unsigned int)addr);
- 
--	if (addr >= TASK_SIZE)
-+	if (addr >= TASK_SIZE || addr < mmap_min_addr)
- 		return -EINVAL;
- 
- 	down_read(&mm->mmap_sem);
- 	vma = find_vma(mm, addr);
- 
--	if (opt != PR_SET_MM_START_BRK &&
--	    opt != PR_SET_MM_BRK &&
--	    opt != PR_SET_MM_AUXV) {
--		/* It must be existing VMA */
--		if (!vma || vma->vm_start > addr)
--			goto out;
--	}
--
--	error = -EINVAL;
- 	switch (opt) {
- 	case PR_SET_MM_START_CODE:
-+		mm->start_code = addr;
-+		break;
- 	case PR_SET_MM_END_CODE:
--		if (vma_flags_mismatch(vma, VM_READ | VM_EXEC,
--				       VM_WRITE | VM_MAYSHARE))
--			goto out;
--
--		if (opt == PR_SET_MM_START_CODE)
--			mm->start_code = addr;
--		else
--			mm->end_code = addr;
-+		mm->end_code = addr;
- 		break;
--
- 	case PR_SET_MM_START_DATA:
-+		mm->start_data = addr;
-+		break;
- 	case PR_SET_MM_END_DATA:
--		if (vma_flags_mismatch(vma, VM_READ | VM_WRITE,
--				       VM_EXEC | VM_MAYSHARE))
--			goto out;
--
--		if (opt == PR_SET_MM_START_DATA)
--			mm->start_data = addr;
--		else
--			mm->end_data = addr;
-+		mm->end_data = addr;
- 		break;
- 
- 	case PR_SET_MM_START_BRK:
-@@ -1847,6 +1827,8 @@ static int prctl_set_mm(int opt, unsigne
- 	case PR_SET_MM_ARG_END:
- 	case PR_SET_MM_ENV_START:
- 	case PR_SET_MM_ENV_END:
-+		if (!vma)
-+			goto out;
- #ifdef CONFIG_STACK_GROWSUP
- 		if (vma_flags_mismatch(vma, VM_READ | VM_WRITE | VM_GROWSUP, 0))
- #else
+Yours,
+Linus Walleij
