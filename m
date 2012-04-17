@@ -1,67 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752329Ab2DQVEB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Apr 2012 17:04:01 -0400
-Received: from antcom.de ([188.40.178.216]:59149 "EHLO chuck.antcom.de"
+	id S1752699Ab2DQVGG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Apr 2012 17:06:06 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:38327 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751318Ab2DQVD7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Apr 2012 17:03:59 -0400
-Message-ID: <4F8DDABA.2070208@antcom.de>
-Date: Tue, 17 Apr 2012 23:03:54 +0200
-From: Roland Stigge <stigge@antcom.de>
-Organization: ANTCOM Open Source Research and Development
-User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:10.0.3) Gecko/20120329 Icedove/10.0.3
+	id S1751887Ab2DQVGD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Apr 2012 17:06:03 -0400
+Date: Tue, 17 Apr 2012 17:05:50 -0400
+From: Josh Boyer <jwboyer@redhat.com>
+To: Matt Carlson <mcarlson@broadcom.com>
+Cc: Michael Chan <mchan@broadcom.com>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Ben Hutchings <ben@decadent.org.uk>,
+        harald@redhat.com
+Subject: Re: tg3 'No PHY devices' loading issue
+Message-ID: <20120417210549.GI19507@zod.bos.redhat.com>
+References: <20120417141856.GA19507@zod.bos.redhat.com>
+ <20120417185007.GA3742@mcarlson.broadcom.com>
+ <20120417193908.GG19507@zod.bos.redhat.com>
 MIME-Version: 1.0
-To: Arnd Bergmann <arnd@arndb.de>
-CC: arm@kernel.org, linux-arm-kernel@lists.infradead.org,
-        thierry.reding@avionic-design.de, gregkh@linuxfoundation.org,
-        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-input@vger.kernel.org, dmitry.torokhov@gmail.com,
-        axel.lin@gmail.com, broonie@opensource.wolfsonmicro.com,
-        marek.vasut@gmail.com, devel@driverdev.osuosl.org, kevin.wells@nxp.com,
-        srinivas.bakki@nxp.com
-Subject: Re: [PATCH v2 1/8] ohci-nxp: Driver cleanup
-References: <1334682507-15055-1-git-send-email-stigge@antcom.de> <1334682507-15055-2-git-send-email-stigge@antcom.de> <201204172036.15663.arnd@arndb.de>
-In-Reply-To: <201204172036.15663.arnd@arndb.de>
-X-Enigmail-Version: 1.4
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120417193908.GG19507@zod.bos.redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-
-On 17/04/12 22:36, Arnd Bergmann wrote:
->> +       hcd->regs = devm_request_and_ioremap(&pdev->dev, res);
->> +       if (!hcd->regs) {
->> +               err("Failed to devm_request_and_ioremap");
->>                 ret =  -ENOMEM;
->>                 goto out4;
->>         }
->> -       hcd->regs = (void __iomem *)pdev->resource[0].start;
->> +       hcd->rsrc_start = (u64)(u32)hcd->regs;
->> +       hcd->rsrc_len = resource_size(res);
+On Tue, Apr 17, 2012 at 03:39:08PM -0400, Josh Boyer wrote:
+> On Tue, Apr 17, 2012 at 11:50:07AM -0700, Matt Carlson wrote:
+> > On Tue, Apr 17, 2012 at 10:18:57AM -0400, Josh Boyer wrote:
+> > > It has worked on some of the older kernels without the need for the
+> > > manual rmmod/modprobe step, so it seems to be somewhat timing related.
+> > > I'm not sure if there is a module load ordering issue, but that doesn't
+> > > seem to be the case.  I can't explain why a later modprobe would work
+> > > just fine though.
+> > > 
+> > > Do you have any thoughts on how to go about debugging/fixing this?  I'd
+> > > be happy to test and provide whatever information you need.
+> > 
+> > The 57788 uses the broadcom phylib module.  For some reason, it isn't
+> > available the first module load attempt.  A while ago, code was added to
+> > phylib to request modules from userspace if the particular phy support
+> > code wasn't already loaded.  It looks like this mechanism isn't working
+> > too well the first time through.
+> > 
+> > Can you reproduce the problem if you run 'rmmod broadcom' and then
+> > reload tg3?
 > 
-> This is wrong in multiple ways:
-> 
-> * rsrc_start is a physical address, not an __iomem token.
-> * you cannot cast a pointer to u32 in general, only to unsigned long.
-> 
-> The fact that you need an ugly type cast like above could have told
-> you that you are doing something wrong here. I guess it should
-> be
-> 
-> 	hcd->rsrc_start = res->start;
+> I'll give it a shot, but that sounds like a quite plausible scenario to
+> me.  Oddly, even after the manual modprobe, the broadcom phy module
+> doesn't show an increased use count.  There's also no dependency on
+> 'broadcom' listed for tg3 by modinfo.
 
-Right. Thanks for the hint!
+If I rmmod both tg3 and broadcom and then just load tg3 (either via
+insmod or modprobe), it works fine.  It does so because whatever you did
+to make it request the phylib module from userspace also worked because
+the broadcom module is loaded as well.
 
-Technically, I ported the bug, didn't introduce it ;-)
-(pdev->resource[0].start was previously provided via resource already in
-IO_ADDRESS (mapped) format). Nevertheless, it's a bug, of course, and it
-didn't show up since the driver seems to not use hcd->rsrc_start anyway
-(but hcd->regs).
+So it seems my issue is basically because the initramfs isn't built with
+the broadcom module included.  I'll have to figure out a way to teach
+dracut what to do here, since it doesn't seem to be automatically
+picking it up (Harald CC'd).
 
-Will post an update after making sure it's tested well.
+Thanks much for the very quick response from everyone.
 
-Roland
+josh
