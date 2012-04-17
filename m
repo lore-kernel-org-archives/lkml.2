@@ -1,110 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755725Ab2DPXFp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Apr 2012 19:05:45 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:22216 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755652Ab2DPXFm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Apr 2012 19:05:42 -0400
-Date: Mon, 16 Apr 2012 19:05:48 -0400
-From: Jeff Layton <jlayton@redhat.com>
-To: "Myklebust, Trond" <Trond.Myklebust@netapp.com>
-Cc: Bernd Schubert <bernd.schubert@itwm.fraunhofer.de>,
-        Malahal Naineni <malahal@us.ibm.com>,
-        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "pstaubach@exagrid.com" <pstaubach@exagrid.com>,
-        "miklos@szeredi.hu" <miklos@szeredi.hu>,
-        "viro@ZenIV.linux.org.uk" <viro@ZenIV.linux.org.uk>,
-        "hch@infradead.org" <hch@infradead.org>,
-        "michael.brantley@deshaw.com" <michael.brantley@deshaw.com>,
-        "sven.breuner@itwm.fraunhofer.de" <sven.breuner@itwm.fraunhofer.de>
-Subject: Re: [PATCH RFC] vfs: make fstatat retry on ESTALE errors from
- getattr call
-Message-ID: <20120416190548.2463d1d0@corrin.poochiereds.net>
-In-Reply-To: <1334607906.2879.36.camel@lade.trondhjem.org>
-References: <1334316311-22331-1-git-send-email-jlayton@redhat.com>
-	<20120413150518.GA1987@us.ibm.com>
-	<20120413114236.0e557e01@tlielax.poochiereds.net>
-	<4F8B1B7B.3040304@itwm.fraunhofer.de>
-	<20120416073655.7cdb90cf@corrin.poochiereds.net>
-	<4F8C3036.2030702@itwm.fraunhofer.de>
-	<20120416134642.1754cd3e@corrin.poochiereds.net>
-	<1334604785.2879.23.camel@lade.trondhjem.org>
-	<20120416154322.0d95e435@corrin.poochiereds.net>
-	<1334607906.2879.36.camel@lade.trondhjem.org>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1755788Ab2DPXFs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Apr 2012 19:05:48 -0400
+Received: from oproxy1-pub.bluehost.com ([66.147.249.253]:55813 "HELO
+	oproxy1-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1755659Ab2DPXFr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Apr 2012 19:05:47 -0400
+Message-ID: <4F8CCFFF.2060808@xenotime.net>
+Date: Mon, 16 Apr 2012 19:05:51 -0700
+From: Randy Dunlap <rdunlap@xenotime.net>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
+MIME-Version: 1.0
+To: Jesper Juhl <jj@chaosbits.net>
+CC: linux-kernel@vger.kernel.org, trivial@kernel.org,
+        Steven Rostedt <rostedt@goodmis.org>
+Subject: Re: [PATCH] [Trivial] ktest: change singular "paranthesis" to plural
+ "parantheses"
+References: <alpine.LNX.2.00.1204170027250.21898@swampdragon.chaosbits.net>
+In-Reply-To: <alpine.LNX.2.00.1204170027250.21898@swampdragon.chaosbits.net>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
+X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 16 Apr 2012 20:25:06 +0000
-"Myklebust, Trond" <Trond.Myklebust@netapp.com> wrote:
+On 04/16/2012 03:28 PM, Jesper Juhl wrote:
 
-> On Mon, 2012-04-16 at 15:43 -0400, Jeff Layton wrote:
-> > On Mon, 16 Apr 2012 19:33:05 +0000
-> > "Myklebust, Trond" <Trond.Myklebust@netapp.com> wrote:
-> > 
-> > > On Mon, 2012-04-16 at 13:46 -0400, Jeff Layton wrote:
-> > > > The question about looping indefinitely really comes down to:
-> > > > 
-> > > > 1) is a persistent ESTALE in conjunction with a successful lookup a
-> > > > situation that we expect to be temporary. i.e. will the admin at some
-> > > > point be able to do something about it? If not, then there's no point
-> > > > in continuing to retry. Again, this is a situation that *really* should
-> > > > not happen if the filesystem is doing the right thing.
-> > > > 
-> > > > 2) If the admin can't do anything about it, is it reasonable to expect
-> > > > that users can send a fatal signal to hung applications if this
-> > > > situation occurs.
-> > > > 
-> > > > We expect that that's ok in other situations to resolve hung
-> > > > applications, so I'm not sure I understand why it wouldn't be
-> > > > acceptable here...
-> > > 
-> > > There are definitely potentially persistent pathological situations that
-> > > the filesystem can't do anything about. If the point of origin for your
-> > > pathname (for instance your current directory in the case of a relative
-> > > pathname) is stale, then no amount of looping is going to help you to
-> > > recover.
-> > > 
-> > 
-> > Ok -- Peter pretty much said something similar. Retrying indefnitely
-> > when the lookup returns ESTALE probably won't help. I'm ok with
-> > basically letting the VFS continue to do what it does there already. If
-> > it gets an ESTALE, it tries again with LOOKUP_REVAL set and then gives
-> > up if that doesn't work.
-> > 
-> > If however, the operation itself keeps returning ESTALE, are we OK to
-> > retry indefinitely assuming that we'll break out of the loop on fatal
-> > signals?
-> >
-> > For example, something like the v2 patch I sent a little while ago?
-> 
-> 
-> Won't something like fstatat(AT_FDCWD, "", &stat, AT_EMPTY_PATH) risk
-> looping forever there, or am I missing something?
-> 
+> Signed-off-by: Jesper Juhl <jj@chaosbits.net>
+> ---
+>  tools/testing/ktest/sample.conf |    2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
 
-To make sure I understand, that should be "shortcut" for a lookup of the
-cwd?
+It's misspelled before and after the patch.  :(
 
-So I guess the concern is that you'd do the above and get a successful
-lookup since you're just going to get back the cwd. At that point,
-you'd attempt the getattr and get ESTALE back. Then, you'd redo the
-lookup with LOOKUP_REVAL set -- but since we're operating on the
-cwd, we don't have a way to redo the lookup since we don't have a
-pathname that we can look up again...
 
-So yeah, I guess if you're sitting in a stale directory, something like
-that could loop eternally.
+> diff --git a/tools/testing/ktest/sample.conf b/tools/testing/ktest/sample.conf
+> index b682456..1a6e0d9 100644
+> --- a/tools/testing/ktest/sample.conf
+> +++ b/tools/testing/ktest/sample.conf
+> @@ -158,7 +158,7 @@
+>  #
+>  # TEST_START IF (DEFINED ALL_TESTS || ${MYTEST} == boottest) && ${MACHINE} == gandalf
+>  #
+> -# Notice the use of paranthesis. Without any paranthesis the above would be
+> +# Notice the use of parantheses. Without any parantheses the above would be
+>  # processed the same as:
+>  #
+>  # TEST_START IF DEFINED ALL_TESTS || (${MYTEST} == boottest && ${MACHINE} == gandalf)
 
-Do you think the proposed check for fatal_signal_pending is enough to
-mitigate such a problem? Or do we need to limit the number of retries
-to address those sorts of loops?
+
 
 -- 
-Jeff Layton <jlayton@redhat.com>
+~Randy
