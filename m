@@ -1,51 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755652Ab2DQOfE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Apr 2012 10:35:04 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:50237 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752931Ab2DQOfC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Apr 2012 10:35:02 -0400
-Date: Tue, 17 Apr 2012 10:34:52 -0400
-From: Jason Baron <jbaron@redhat.com>
-Message-Id: <201204171434.q3HEYqrq007242@int-mx09.intmail.prod.int.phx2.redhat.com>
-To: akpm@linux-foundation.org
-Cc: Yurij.Plotnikov@oktetlabs.ru, Alexandra.Kossovsky@oktetlabs.ru,
-        davidel@xmailserver.org, nelhage@nelhage.com,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] epoll: clear the tfile_check_list on -ELOOP
+	id S1756100Ab2DQOfs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Apr 2012 10:35:48 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:62768 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754131Ab2DQOfq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Apr 2012 10:35:46 -0400
+Date: Tue, 17 Apr 2012 11:35:51 -0300
+From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+To: Jiri Olsa <jolsa@redhat.com>
+Cc: Gleb Natapov <gleb@redhat.com>, a.p.zijlstra@chello.nl, mingo@redhat.com,
+        linux-kernel@vger.kernel.org, avi@redhat.com
+Subject: Re: [PATCHv2] perf tools: Add 'G' and 'H' modifiers to event parsing
+Message-ID: <20120417143551.GA4978@infradead.org>
+References: <20120417111345.GK11918@redhat.com>
+ <20120417112500.GC1650@m.brq.redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120417112500.GC1650@m.brq.redhat.com>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-An epoll_ctl(,EPOLL_CTL_ADD,,) operation can return '-ELOOP' to prevent
-circular epoll dependencies from being created. However, in that case
-we do not properly clear the 'tfile_check_list'. Thus, add a call to
-clear_tfile_check_list() for the -ELOOP case.
+Em Tue, Apr 17, 2012 at 01:25:00PM +0200, Jiri Olsa escreveu:
+> On Tue, Apr 17, 2012 at 02:13:45PM +0300, Gleb Natapov wrote:
+> > They were dropped during conversion of event parser. Add test case to
+> > make sure this will not happen again.
+> > 
+> > Signed-off-by: Gleb Natapov <gleb@redhat.com>
+> Acked-by: Jiri Olsa <jolsa@redhat.com>
 
-Reported-by: Yurij M. Plotnikov <Yurij.Plotnikov@oktetlabs.ru>
-Tested-by: Alexandra N. Kossovsky <Alexandra.Kossovsky@oktetlabs.ru>
-Signed-off-by: Jason Baron <jbaron@redhat.com>
----
- fs/eventpoll.c |    4 +++-
- 1 files changed, 3 insertions(+), 1 deletions(-)
+Thanks guys, applied and pushed out to perf/urgent.
 
-diff --git a/fs/eventpoll.c b/fs/eventpoll.c
-index 739b098..c0b3c70 100644
---- a/fs/eventpoll.c
-+++ b/fs/eventpoll.c
-@@ -1663,8 +1663,10 @@ SYSCALL_DEFINE4(epoll_ctl, int, epfd, int, op, int, fd,
- 	if (op == EPOLL_CTL_ADD) {
- 		if (is_file_epoll(tfile)) {
- 			error = -ELOOP;
--			if (ep_loop_check(ep, tfile) != 0)
-+			if (ep_loop_check(ep, tfile) != 0) {
-+				clear_tfile_check_list();
- 				goto error_tgt_fput;
-+			}
- 		} else
- 			list_add(&tfile->f_tfile_llink, &tfile_check_list);
- 	}
--- 
-1.7.7.6
-
+- Arnaldo
