@@ -1,64 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753174Ab2DQWIt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Apr 2012 18:08:49 -0400
-Received: from mail-wi0-f172.google.com ([209.85.212.172]:52540 "EHLO
-	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752584Ab2DQWIr convert rfc822-to-8bit (ORCPT
+	id S1753080Ab2DQWNk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Apr 2012 18:13:40 -0400
+Received: from www.linutronix.de ([62.245.132.108]:58613 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750851Ab2DQWNi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Apr 2012 18:08:47 -0400
+	Tue, 17 Apr 2012 18:13:38 -0400
+Date: Wed, 18 Apr 2012 00:13:30 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+cc: Sven Joachim <svenjoac@gmx.de>, Ingo Molnar <mingo@kernel.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: kernel panic after suspend/resume
+In-Reply-To: <CA+55aFychSQgAG8raDq9rvXm3Lq7GFdByCd3-NZERieyTdAc2g@mail.gmail.com>
+Message-ID: <alpine.LFD.2.02.1204180013180.2542@ionos>
+References: <CA+55aFzsjpJt09b6e4NA0T50M3w0xtASSYXz_=UWVDqKRywo=A@mail.gmail.com> <87pqb6fkji.fsf@turtle.gmx.de> <CA+55aFxhb6hriqHHwVtNeYHmtcy5JCEJX-zABBcG2Zjw_gawPw@mail.gmail.com> <878vhufcrk.fsf@turtle.gmx.de>
+ <CA+55aFychSQgAG8raDq9rvXm3Lq7GFdByCd3-NZERieyTdAc2g@mail.gmail.com>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
 MIME-Version: 1.0
-In-Reply-To: <20120417211419.GC27426@fieldses.org>
-References: <20120417052511.GU6589@ZenIV.linux.org.uk> <CA+55aFw75=Mtq1njQ9vNmNsGuTPbpUhLHnb7YBLmCZs4Q5ByMA@mail.gmail.com>
- <20120417180129.GW6589@ZenIV.linux.org.uk> <20120417182825.GX6589@ZenIV.linux.org.uk>
- <20120417211419.GC27426@fieldses.org>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Tue, 17 Apr 2012 15:08:26 -0700
-X-Google-Sender-Auth: PuMVFJIbnGExmgjcBxiaP14GvSU
-Message-ID: <CA+55aFwdh_QWG-R2FQ71kDXiNYZ04qPANBsY_PssVUwEBH4uSw@mail.gmail.com>
-Subject: Re: [git pull] vfs and fs fixes
-To: "J. Bruce Fields" <bfields@fieldses.org>
-Cc: Al Viro <viro@zeniv.linux.org.uk>, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: MULTIPART/MIXED; BOUNDARY="8323328-1317375203-1334700811=:2542"
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 17, 2012 at 2:14 PM, J. Bruce Fields <bfields@fieldses.org> wrote:
-> On Tue, Apr 17, 2012 at 07:28:26PM +0100, Al Viro wrote:>
-> Maybe instead I could continue using the i_mutex but handle rename some
-> other way; e.g. in delegation code:
->
->        if (!mutex_trylock(inode->i_mutex))
->                return -EAGAIN;
->        if (atomic_read(inode->i_renames_in_progress))
->                return -EAGAIN;
->
-> and add an
->
->        atomic_inc(inode->i_renames_in_progress);
->        atomic_dec(inode->i_renames_in_progress);
->
-> pair around rename.
+  This message is in MIME format.  The first part should be readable text,
+  while the remaining parts are likely unreadable without MIME-aware tools.
 
-Please don't make up your own locking. Plus it's broken anyway, since
-a rename could come in directly after your atomic_read (and this is
-*why* people shouldn't make up their own locks - they are invariably
-broken).
+--8323328-1317375203-1334700811=:2542
+Content-Type: TEXT/PLAIN; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 
-> Or I could increment that counter for all the conflicting operations and
-> rely on it instead of the i_mutex.  I was trying to avoid adding
-> something like that (an inc, a dec, another error path) to every
-> operation.  And hoping to avoid adding another field to struct inode.
-> Oh well.
 
-We could just say that we can do a double inode lock, but then
-standardize on the order. And the only sane order is comparing inode
-pointers, not inode numbers like ext4 apparently does.
+On Tue, 17 Apr 2012, Linus Torvalds wrote:
 
-With a standard order, I don't think it would be at all wrong to just
-take the inode lock on rename.
+> On Tue, Apr 17, 2012 at 11:12 AM, Sven Joachim <svenjoac@gmx.de> wrote:
+> >
+> > So far, it has repeated itself every time I suspended with 3.4-rc3,
+> > i.e. three times.  That's a small sample, so the bisection might not be
+> > reliable (especially since the crashes happened with delay), but I can
+> > try.
+> >
+> >>  - how sure are you that rc2 is fine?
+> >
+> > Reasonably sure, I had been running rc2 for the whole last week and
+> > suspended about 20 times without any problems whatsoever.
+> 
+> Ok, that sounds very hopeful for bisection. If it has happened three
+> out of three times, it doesn't sound like it's some subtle timing
+> race.
 
-                        Linus
+Sven, can you please provide the output of /proc/timer_list befor you
+suspend ?
+
+Thanks,
+
+        tglx
+--8323328-1317375203-1334700811=:2542--
