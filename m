@@ -1,92 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755539Ab2DQCCs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Apr 2012 22:02:48 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:36477 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750892Ab2DQCCr (ORCPT
+	id S1755153Ab2DQCEu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Apr 2012 22:04:50 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:36819 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750892Ab2DQCEs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Apr 2012 22:02:47 -0400
-Date: Tue, 17 Apr 2012 12:02:33 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: James Morris <jmorris@namei.org>
-Cc: Will Drewry <wad@chromium.org>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, "H. Peter Anvin" <hpa@zytor.com>,
-        Eric Paris <eparis@redhat.com>, Kees Cook <keescook@chromium.org>
-Subject: Re: linux-next: build failure after merge of the final tree
- (security tree related)
-Message-Id: <20120417120233.5be055e2821d71b3eadd0149@canb.auug.org.au>
-In-Reply-To: <alpine.LRH.2.02.1204171127130.14814@tundra.namei.org>
-References: <20120416154607.302f7ae245472e1e917dacef@canb.auug.org.au>
-	<CABqD9hauxzd4vVbxyC5M1p9e6mLt1cjYP7wbhzTKPi3iMpc0kg@mail.gmail.com>
-	<CABqD9hYhC3dNX3CVSbsuJaG=zBUC4VMyMVYYmyOTN+Xfb=uC8w@mail.gmail.com>
-	<alpine.LRH.2.02.1204171127130.14814@tundra.namei.org>
-X-Mailer: Sylpheed 3.2.0beta7 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Tue__17_Apr_2012_12_02_33_+1000_GcEHLSP.GHGS3Z0v"
+	Mon, 16 Apr 2012 22:04:48 -0400
+Date: Mon, 16 Apr 2012 21:04:33 -0500
+From: Jonathan Nieder <jrnieder@gmail.com>
+To: Robert Scott <bugs@humanleg.org.uk>
+Cc: Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
+        Kevin Tian <kevin.tian@intel.com>,
+        Fengzhe Zhang <fengzhe.zhang@intel.com>, mingo@redhat.com,
+        hpa@zytor.com, Ian Campbell <Ian.Campbell@eu.citrix.com>,
+        JBeulich@novell.com, xen-devel@lists.xensource.com,
+        Lars Boegild Thomsen <lth@cow.dk>,
+        e568b31a443d@6cc2cce7af2d.anonbox.net,
+        "Liu, Chuansheng" <chuansheng.liu@intel.com>
+Subject: Re: [regression] Ideapad S10-3 does not wake up from suspend
+Message-ID: <20120417020433.GA15848@burratino>
+References: <625BA99ED14B2D499DC4E29D8138F1505C8ED7F7E3@shsmsx502.ccr.corp.intel.com>
+ <20110829041532.GA22087@elie.gateway.2wire.net>
+ <20120415140628.GA4536@burratino>
+ <201204161905.13260.bugs@humanleg.org.uk>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201204161905.13260.bugs@humanleg.org.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Tue__17_Apr_2012_12_02_33_+1000_GcEHLSP.GHGS3Z0v
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Robert Scott wrote:
+> On Sunday 15 April 2012, Jonathan Nieder wrote:
 
-Hi James,
-
-On Tue, 17 Apr 2012 11:33:26 +1000 (EST) James Morris <jmorris@namei.org> w=
-rote:
+>> Lars, Robert, anon: can you try 3.4-rc2 or newer and let us know how
+>> it goes?  I suspect v3.4-rc2~24^2~4 ("x86: Preserve lazy irq disable
+>> semantics in fixup_irqs()") will fix this.
 >
-> On Mon, 16 Apr 2012, Will Drewry wrote:
->=20
-> > >> arch/powerpc/kernel/ptrace.c: In function 'do_syscall_trace_enter':
-> > >> arch/powerpc/kernel/ptrace.c:1713:2: error: statement with no effect=
- [-Werror=3Dunused-value]
-> > >> cc1: all warnings being treated as errors
->=20
-> Is this happening because of
->=20
-> 	#define secure_computing(x) 0
->=20
-> ?
->
-> In any case, that should probably be a static inline.
+> Hmm, no, 3.4-rc2 seems to produce the same results I'm afraid.
 
-That could well be so - sorry I missed that.  The failure was in an
-allnoconfig build, so CONFIG_SECCOMP was off.
+Alas.  Does suspend-to-disk ("echo disk >/sys/power/state") have the
+same problem?  Can you get a log of the failure with
+"no_console_suspend" appended to the kernel command line, for example
+with a serial console or netconsole?
 
-And yes, changing that to:
+If someone has time to go through the steps in
+"Documentation/power/basic-pm-debugging.txt", that would also be useful.
 
-static inline int secure_computing(int this_syscall) { return 0; }
+Thanks, and sorry to take so long to get to this.
 
-fixes the build problem.  So that is a better fix.
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
---Signature=_Tue__17_Apr_2012_12_02_33_+1000_GcEHLSP.GHGS3Z0v
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJPjM85AAoJEECxmPOUX5FEGE4P/2pcZF7iaiI7bil1p44ikEDi
-jRRG+EYE4X/5D1WV8DWH/Rm5OrvbZPOqe+qy5VIOIcpOvDm/1bO5yckf2eoweQuz
-jCcY79OceABxZZdACmVdQa+5VIvDosb7USPOWjLXIqOehgb8g1IqL8ThE1GTGRs6
-qUr75dxf2p8huAGq2zB7Pqylj+tJcwv2Pb7EUXRdC2zp2vplbhQbcywkCwTfuieX
-WISInGXkrJp/pMXM/8mbGX4Sn7/Kt3Y44YQfnByX0ZcCuedTC8wChTTVW41EuBPg
-uo9X6CSrTofyk4xCy0d2+KHdv+w6TGShUDxRJzxm07sbcJIII4K10KYmUGffS4Xb
-bc6bZF2oyqOz10wSZJfipVE4aTGIa6hqQFJ2Liaov5cPmd+pIExSFL4PPBkHp8e7
-5oLbL+8nfIK/8qm6ZRbjwYhhTN+3HnzPn7eZVcz3aUYZ0ZLOGbkKmtdeRwErXzkQ
-l8CuSkIPdrzB3tmYL2C6ZfK4eZNcacXNrptuZAUf9/4H/YKJYtOM3nImPC+qfQ1+
-HxdkAGeU4I0ov9J+geQyL14aWzWYsYPMiqkqm5+eiGqfZp1UqseSnyN/r6cAD3W0
-yazgNFFkJ2suhVy2qQk61eD7jdq3m/5Qd2/KwHuXKI5vsCyDjOBoLElA6Zbg4rmO
-qP9rC+7Lf22uLI8oA+Rf
-=1U/p
------END PGP SIGNATURE-----
-
---Signature=_Tue__17_Apr_2012_12_02_33_+1000_GcEHLSP.GHGS3Z0v--
+Sincerely,
+Jonathan
