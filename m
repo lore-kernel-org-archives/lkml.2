@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755554Ab2DQLB6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Apr 2012 07:01:58 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:53272 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754710Ab2DQLB4 (ORCPT
+	id S1755580Ab2DQLCJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Apr 2012 07:02:09 -0400
+Received: from mail-pz0-f52.google.com ([209.85.210.52]:43876 "EHLO
+	mail-pz0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754536Ab2DQLCF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Apr 2012 07:01:56 -0400
+	Tue, 17 Apr 2012 07:02:05 -0400
 From: Bryan Wu <bryan.wu@canonical.com>
 To: linux@arm.linux.org.uk, rpurdie@rpsys.net,
         linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
         linus.walleij@linaro.org, akpm@linux-foundation.org,
         arnd.bergmann@linaro.org, nicolas.pitre@linaro.org,
         tim.gardner@canonical.com
-Subject: [PATCH 16/18] ARM: mach-omap1: retire custom LED code
-Date: Tue, 17 Apr 2012 18:53:43 +0800
-Message-Id: <1334660025-20442-17-git-send-email-bryan.wu@canonical.com>
+Subject: [PATCH 17/18] ARM: mach-sa1100: retire custom LED code
+Date: Tue, 17 Apr 2012 18:53:44 +0800
+Message-Id: <1334660025-20442-18-git-send-email-bryan.wu@canonical.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1334660025-20442-1-git-send-email-bryan.wu@canonical.com>
 References: <1334660025-20442-1-git-send-email-bryan.wu@canonical.com>
@@ -24,409 +24,641 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Bryan Wu <bryan.wu@canonical.com>
-Acked-by: Tony Lindgren <tony@atomide.com>
 ---
- arch/arm/mach-omap1/Makefile          |    8 -
- arch/arm/mach-omap1/board-h2.c        |   32 ++++
- arch/arm/mach-omap1/board-h3.c        |   32 ++++
- arch/arm/mach-omap1/board-osk.c       |   33 ++++
- arch/arm/mach-omap1/leds-h2p2-debug.c |  166 -------------------
- arch/arm/mach-omap1/leds-innovator.c  |   98 -----------
- arch/arm/mach-omap1/leds-osk.c        |  113 -------------
- arch/arm/mach-omap1/leds.c            |   69 --------
- arch/arm/mach-omap1/leds.h            |    3 -
- arch/arm/mach-omap1/time.c            |    1 -
- arch/arm/mach-omap1/timer32k.c        |    1 -
- arch/arm/plat-omap/Kconfig            |    3 +-
- arch/arm/plat-omap/debug-leds.c       |  293 ++++++++-------------------------
- 13 files changed, 165 insertions(+), 687 deletions(-)
- delete mode 100644 arch/arm/mach-omap1/leds-h2p2-debug.c
- delete mode 100644 arch/arm/mach-omap1/leds-innovator.c
- delete mode 100644 arch/arm/mach-omap1/leds-osk.c
- delete mode 100644 arch/arm/mach-omap1/leds.c
- delete mode 100644 arch/arm/mach-omap1/leds.h
+ arch/arm/mach-sa1100/Makefile       |    9 ---
+ arch/arm/mach-sa1100/assabet.c      |   83 +++++++++++++++++++++++++
+ arch/arm/mach-sa1100/badge4.c       |   30 ++++++++++
+ arch/arm/mach-sa1100/cerf.c         |   42 +++++++++++++
+ arch/arm/mach-sa1100/hackkit.c      |   32 ++++++++++
+ arch/arm/mach-sa1100/lart.c         |   26 ++++++++
+ arch/arm/mach-sa1100/leds-assabet.c |  113 -----------------------------------
+ arch/arm/mach-sa1100/leds-badge4.c  |  110 ----------------------------------
+ arch/arm/mach-sa1100/leds-cerf.c    |  109 ---------------------------------
+ arch/arm/mach-sa1100/leds-hackkit.c |  111 ----------------------------------
+ arch/arm/mach-sa1100/leds-lart.c    |  100 -------------------------------
+ arch/arm/mach-sa1100/leds.c         |   50 ----------------
+ arch/arm/mach-sa1100/leds.h         |   13 ----
+ 13 files changed, 213 insertions(+), 615 deletions(-)
+ delete mode 100644 arch/arm/mach-sa1100/leds-assabet.c
+ delete mode 100644 arch/arm/mach-sa1100/leds-badge4.c
+ delete mode 100644 arch/arm/mach-sa1100/leds-cerf.c
+ delete mode 100644 arch/arm/mach-sa1100/leds-hackkit.c
+ delete mode 100644 arch/arm/mach-sa1100/leds-lart.c
+ delete mode 100644 arch/arm/mach-sa1100/leds.c
+ delete mode 100644 arch/arm/mach-sa1100/leds.h
 
-diff --git a/arch/arm/mach-omap1/Makefile b/arch/arm/mach-omap1/Makefile
-index 9923f92..e63e6e7 100644
---- a/arch/arm/mach-omap1/Makefile
-+++ b/arch/arm/mach-omap1/Makefile
-@@ -56,14 +56,6 @@ obj-$(CONFIG_ARCH_OMAP850)		+= gpio7xx.o
- obj-$(CONFIG_ARCH_OMAP15XX)		+= gpio15xx.o
- obj-$(CONFIG_ARCH_OMAP16XX)		+= gpio16xx.o
+diff --git a/arch/arm/mach-sa1100/Makefile b/arch/arm/mach-sa1100/Makefile
+index 60b97ec..1aed9e7 100644
+--- a/arch/arm/mach-sa1100/Makefile
++++ b/arch/arm/mach-sa1100/Makefile
+@@ -7,21 +7,17 @@ obj-y := clock.o generic.o irq.o time.o #nmi-oopser.o
+ obj-m :=
+ obj-n :=
+ obj-  :=
+-led-y := leds.o
+ 
+ obj-$(CONFIG_CPU_FREQ_SA1100)		+= cpu-sa1100.o
+ obj-$(CONFIG_CPU_FREQ_SA1110)		+= cpu-sa1110.o
+ 
+ # Specific board support
+ obj-$(CONFIG_SA1100_ASSABET)		+= assabet.o
+-led-$(CONFIG_SA1100_ASSABET)		+= leds-assabet.o
+ obj-$(CONFIG_ASSABET_NEPONSET)		+= neponset.o
+ 
+ obj-$(CONFIG_SA1100_BADGE4)		+= badge4.o
+-led-$(CONFIG_SA1100_BADGE4)		+= leds-badge4.o
+ 
+ obj-$(CONFIG_SA1100_CERF)		+= cerf.o
+-led-$(CONFIG_SA1100_CERF)		+= leds-cerf.o
+ 
+ obj-$(CONFIG_SA1100_COLLIE)		+= collie.o
+ 
+@@ -29,13 +25,11 @@ obj-$(CONFIG_SA1100_H3100)		+= h3100.o h3xxx.o
+ obj-$(CONFIG_SA1100_H3600)		+= h3600.o h3xxx.o
+ 
+ obj-$(CONFIG_SA1100_HACKKIT)		+= hackkit.o
+-led-$(CONFIG_SA1100_HACKKIT)		+= leds-hackkit.o
+ 
+ obj-$(CONFIG_SA1100_JORNADA720)		+= jornada720.o
+ obj-$(CONFIG_SA1100_JORNADA720_SSP)	+= jornada720_ssp.o
+ 
+ obj-$(CONFIG_SA1100_LART)		+= lart.o
+-led-$(CONFIG_SA1100_LART)		+= leds-lart.o
+ 
+ obj-$(CONFIG_SA1100_NANOENGINE)		+= nanoengine.o
+ obj-$(CONFIG_PCI_NANOENGINE)		+= pci-nanoengine.o
+@@ -46,9 +40,6 @@ obj-$(CONFIG_SA1100_SHANNON)		+= shannon.o
+ 
+ obj-$(CONFIG_SA1100_SIMPAD)		+= simpad.o
  
 -# LEDs support
--led-$(CONFIG_MACH_OMAP_H2)		+= leds-h2p2-debug.o
--led-$(CONFIG_MACH_OMAP_H3)		+= leds-h2p2-debug.o
--led-$(CONFIG_MACH_OMAP_INNOVATOR)	+= leds-innovator.o
--led-$(CONFIG_MACH_OMAP_PERSEUS2)	+= leds-h2p2-debug.o
--led-$(CONFIG_MACH_OMAP_OSK)		+= leds-osk.o
--obj-$(CONFIG_LEDS)			+= $(led-y)
+-obj-$(CONFIG_LEDS) += $(led-y)
 -
- ifneq ($(CONFIG_FB_OMAP),)
- obj-y += lcd_dma.o
- endif
-diff --git a/arch/arm/mach-omap1/board-h2.c b/arch/arm/mach-omap1/board-h2.c
-index 9811b27..77a1019 100644
---- a/arch/arm/mach-omap1/board-h2.c
-+++ b/arch/arm/mach-omap1/board-h2.c
-@@ -31,6 +31,7 @@
- #include <linux/i2c/tps65010.h>
- #include <linux/smc91x.h>
- #include <linux/omapfb.h>
+ # Miscellaneous functions
+ obj-$(CONFIG_PM)			+= pm.o sleep.o
+ obj-$(CONFIG_SA1100_SSP)		+= ssp.o
+diff --git a/arch/arm/mach-sa1100/assabet.c b/arch/arm/mach-sa1100/assabet.c
+index 375d3f7..0e29ec2 100644
+--- a/arch/arm/mach-sa1100/assabet.c
++++ b/arch/arm/mach-sa1100/assabet.c
+@@ -20,6 +20,8 @@
+ #include <linux/mtd/partitions.h>
+ #include <linux/delay.h>
+ #include <linux/mm.h>
++#include <linux/leds.h>
++#include <linux/slab.h>
+ 
+ #include <video/sa1100fb.h>
+ 
+@@ -529,6 +531,87 @@ static void __init assabet_map_io(void)
+ 	sa1100_register_uart(2, 3);
+ }
+ 
++/* LEDs */
++struct assabet_led {
++	struct led_classdev cdev;
++	u32 mask;
++};
++
++/*
++ * The triggers lines up below will only be used if the
++ * LED triggers are compiled in.
++ */
++static const struct {
++	const char *name;
++	const char *trigger;
++} assabet_leds[] = {
++	{ "assabet:red", "cpu0",},
++	{ "assabet:green", "heartbeat", },
++};
++
++/*
++ * The LED control in Assabet is reversed:
++ *  - setting bit means turn off LED
++ *  - clearing bit means turn on LED
++ */
++static void assabet_led_set(struct led_classdev *cdev,
++		enum led_brightness b)
++{
++	struct assabet_led *led = container_of(cdev,
++			struct assabet_led, cdev);
++
++	if (b != LED_OFF)
++		ASSABET_BCR_clear(led->mask);
++	else
++		ASSABET_BCR_set(led->mask);
++}
++
++static enum led_brightness assabet_led_get(struct led_classdev *cdev)
++{
++	struct assabet_led *led = container_of(cdev,
++			struct assabet_led, cdev);
++
++	return (ASSABET_BCR & led->mask) ? LED_OFF : LED_FULL;
++}
++
++static int __init assabet_leds_init(void)
++{
++	int i;
++
++	if (!machine_is_assabet())
++		return -ENODEV;
++
++	for (i = 0; i < ARRAY_SIZE(assabet_leds); i++) {
++		struct assabet_led *led;
++
++		led = kzalloc(sizeof(*led), GFP_KERNEL);
++		if (!led)
++			break;
++
++		led->cdev.name = assabet_leds[i].name;
++		led->cdev.brightness_set = assabet_led_set;
++		led->cdev.brightness_get = assabet_led_get;
++		led->cdev.default_trigger = assabet_leds[i].trigger;
++
++		if (!i)
++			led->mask = ASSABET_BCR_LED_RED;
++		else
++			led->mask = ASSABET_BCR_LED_GREEN;
++
++		if (led_classdev_register(NULL, &led->cdev) < 0) {
++			kfree(led);
++			break;
++		}
++	}
++
++	return 0;
++}
++
++/*
++ * Since we may have triggers on any subsystem, defer registration
++ * until after subsystem_init.
++ */
++fs_initcall(assabet_leds_init);
+ 
+ MACHINE_START(ASSABET, "Intel-Assabet")
+ 	.atag_offset	= 0x100,
+diff --git a/arch/arm/mach-sa1100/badge4.c b/arch/arm/mach-sa1100/badge4.c
+index e0f0c03..58b2d95 100644
+--- a/arch/arm/mach-sa1100/badge4.c
++++ b/arch/arm/mach-sa1100/badge4.c
+@@ -22,6 +22,8 @@
+ #include <linux/mtd/mtd.h>
+ #include <linux/mtd/partitions.h>
+ #include <linux/errno.h>
++#include <linux/gpio.h>
 +#include <linux/leds.h>
  
+ #include <mach/hardware.h>
  #include <asm/mach-types.h>
- #include <asm/mach/arch.h>
-@@ -321,12 +322,39 @@ static struct platform_device h2_irda_device = {
- 	.resource	= h2_irda_resources,
+@@ -76,8 +78,36 @@ static struct platform_device sa1111_device = {
+ 	.resource	= sa1111_resources,
  };
  
-+static struct gpio_led h2_gpio_led_pins[] = {
++/* LEDs */
++struct gpio_led badge4_gpio_leds[] = {
 +	{
-+		.name		= "h2:red",
-+		.default_trigger = "heartbeat",
-+		.gpio		= 3,
++		.name			= "badge4:red",
++		.default_trigger	= "heartbeat",
++		.gpio			= 7,
 +	},
 +	{
-+		.name		= "h2:green",
-+		.default_trigger = "cpu0",
-+		.gpio		= OMAP_MPUIO(4),
++		.name			= "badge4:green",
++		.default_trigger	= "cpu0",
++		.gpio			= 9,
 +	},
 +};
 +
-+static struct gpio_led_platform_data h2_gpio_led_data = {
-+	.leds		= h2_gpio_led_pins,
-+	.num_leds	= ARRAY_SIZE(h2_gpio_led_pins),
++static struct gpio_led_platform_data badge4_gpio_led_info = {
++	.leds		= badge4_gpio_leds,
++	.num_leds	= ARRAY_SIZE(badge4_gpio_leds),
 +};
 +
-+static struct platform_device h2_gpio_leds = {
++static struct platform_device badge4_leds = {
 +	.name	= "leds-gpio",
 +	.id	= -1,
 +	.dev	= {
-+		.platform_data = &h2_gpio_led_data,
-+	},
-+};
-+
- static struct platform_device *h2_devices[] __initdata = {
- 	&h2_nor_device,
- 	&h2_nand_device,
- 	&h2_smc91x_device,
- 	&h2_irda_device,
- 	&h2_kp_device,
-+	&h2_gpio_leds,
- };
- 
- static void __init h2_init_smc91x(void)
-@@ -421,6 +449,10 @@ static void __init h2_init(void)
- 	omap_cfg_reg(E19_1610_KBR4);
- 	omap_cfg_reg(N19_1610_KBR5);
- 
-+	/* GPIO based LEDs */
-+	omap_cfg_reg(P18_1610_GPIO3);
-+	omap_cfg_reg(MPUIO4);
-+
- 	h2_smc91x_resources[1].start = gpio_to_irq(0);
- 	h2_smc91x_resources[1].end = gpio_to_irq(0);
- 	platform_add_devices(h2_devices, ARRAY_SIZE(h2_devices));
-diff --git a/arch/arm/mach-omap1/board-h3.c b/arch/arm/mach-omap1/board-h3.c
-index 94858dc..f5a509b 100644
---- a/arch/arm/mach-omap1/board-h3.c
-+++ b/arch/arm/mach-omap1/board-h3.c
-@@ -31,6 +31,7 @@
- #include <linux/i2c/tps65010.h>
- #include <linux/smc91x.h>
- #include <linux/omapfb.h>
-+#include <linux/leds.h>
- 
- #include <asm/setup.h>
- #include <asm/page.h>
-@@ -338,6 +339,32 @@ static struct spi_board_info h3_spi_board_info[] __initdata = {
- 	},
- };
- 
-+static struct gpio_led h3_gpio_led_pins[] = {
-+	{
-+		.name		= "h3:red",
-+		.default_trigger = "heartbeat",
-+		.gpio		= 3,
-+	},
-+	{
-+		.name		= "h3:green",
-+		.default_trigger = "cpu0",
-+		.gpio		= OMAP_MPUIO(4),
-+	},
-+};
-+
-+static struct gpio_led_platform_data h3_gpio_led_data = {
-+	.leds		= h3_gpio_led_pins,
-+	.num_leds	= ARRAY_SIZE(h3_gpio_led_pins),
-+};
-+
-+static struct platform_device h3_gpio_leds = {
-+	.name	= "leds-gpio",
-+	.id	= -1,
-+	.dev	= {
-+		.platform_data = &h3_gpio_led_data,
-+	},
++		.platform_data	= &badge4_gpio_led_info,
++	}
 +};
 +
  static struct platform_device *devices[] __initdata = {
- 	&nor_device,
- 	&nand_device,
-@@ -345,6 +372,7 @@ static struct platform_device *devices[] __initdata = {
- 	&intlat_device,
- 	&h3_kp_device,
- 	&h3_lcd_device,
-+	&h3_gpio_leds,
+ 	&sa1111_device,
++	&badge4_leds,
  };
  
- static struct omap_usb_config h3_usb_config __initdata = {
-@@ -412,6 +440,10 @@ static void __init h3_init(void)
- 	omap_cfg_reg(E19_1610_KBR4);
- 	omap_cfg_reg(N19_1610_KBR5);
+ static int __init badge4_sa1111_init(void)
+diff --git a/arch/arm/mach-sa1100/cerf.c b/arch/arm/mach-sa1100/cerf.c
+index 4a61f60..c4edf2e 100644
+--- a/arch/arm/mach-sa1100/cerf.c
++++ b/arch/arm/mach-sa1100/cerf.c
+@@ -17,6 +17,8 @@
+ #include <linux/irq.h>
+ #include <linux/mtd/mtd.h>
+ #include <linux/mtd/partitions.h>
++#include <linux/gpio.h>
++#include <linux/leds.h>
  
-+	/* GPIO based LEDs */
-+	omap_cfg_reg(P18_1610_GPIO3);
-+	omap_cfg_reg(MPUIO4);
-+
- 	smc91x_resources[1].start = gpio_to_irq(40);
- 	smc91x_resources[1].end = gpio_to_irq(40);
- 	platform_add_devices(devices, ARRAY_SIZE(devices));
-diff --git a/arch/arm/mach-omap1/board-osk.c b/arch/arm/mach-omap1/board-osk.c
-index a5f85dd..de8d1f3 100644
---- a/arch/arm/mach-omap1/board-osk.c
-+++ b/arch/arm/mach-omap1/board-osk.c
-@@ -380,10 +380,37 @@ static struct platform_device osk5912_lcd_device = {
- 	.id		= -1,
+ #include <mach/hardware.h>
+ #include <asm/setup.h>
+@@ -43,8 +45,48 @@ static struct platform_device cerfuart2_device = {
+ 	.resource	= cerfuart2_resources,
  };
  
-+static struct gpio_led mistral_gpio_led_pins[] = {
++/* LEDs */
++struct gpio_led cerf_gpio_leds[] = {
 +	{
-+		.name		= "mistral:red",
-+		.default_trigger = "heartbeat",
-+		.gpio		= 3,
++		.name			= "cerf:d0",
++		.default_trigger	= "heartbeat",
++		.gpio			= 0,
 +	},
 +	{
-+		.name		= "mistral:green",
-+		.default_trigger = "cpu0",
-+		.gpio		= OMAP_MPUIO(4),
++		.name			= "cerf:d1",
++		.default_trigger	= "cpu0",
++		.gpio			= 1,
 +	},
++	{
++		.name			= "cerf:d2",
++		.default_trigger	= "default-on",
++		.gpio			= 2,
++	},
++	{
++		.name			= "cerf:d3",
++		.default_trigger	= "default-on",
++		.gpio			= 3,
++	},
++
 +};
 +
-+static struct gpio_led_platform_data mistral_gpio_led_data = {
-+	.leds		= mistral_gpio_led_pins,
-+	.num_leds	= ARRAY_SIZE(mistral_gpio_led_pins),
++static struct gpio_led_platform_data cerf_gpio_led_info = {
++	.leds		= cerf_gpio_leds,
++	.num_leds	= ARRAY_SIZE(cerf_gpio_leds),
 +};
 +
-+static struct platform_device mistral_gpio_leds = {
++static struct platform_device cerf_leds = {
 +	.name	= "leds-gpio",
 +	.id	= -1,
 +	.dev	= {
-+		.platform_data = &mistral_gpio_led_data,
++		.platform_data	= &cerf_gpio_led_info,
++	}
++};
++
++
+ static struct platform_device *cerf_devices[] __initdata = {
+ 	&cerfuart2_device,
++	&cerf_leds,
+ };
+ 
+ #ifdef CONFIG_SA1100_CERF_FLASH_32MB
+diff --git a/arch/arm/mach-sa1100/hackkit.c b/arch/arm/mach-sa1100/hackkit.c
+index 5535475..85e82ab 100644
+--- a/arch/arm/mach-sa1100/hackkit.c
++++ b/arch/arm/mach-sa1100/hackkit.c
+@@ -21,6 +21,10 @@
+ #include <linux/serial_core.h>
+ #include <linux/mtd/mtd.h>
+ #include <linux/mtd/partitions.h>
++#include <linux/tty.h>
++#include <linux/gpio.h>
++#include <linux/leds.h>
++#include <linux/platform_device.h>
+ 
+ #include <asm/mach-types.h>
+ #include <asm/setup.h>
+@@ -183,9 +187,37 @@ static struct flash_platform_data hackkit_flash_data = {
+ static struct resource hackkit_flash_resource =
+ 	DEFINE_RES_MEM(SA1100_CS0_PHYS, SZ_32M);
+ 
++/* LEDs */
++struct gpio_led hackkit_gpio_leds[] = {
++	{
++		.name			= "hackkit:red",
++		.default_trigger	= "cpu0",
++		.gpio			= 22,
++	},
++	{
++		.name			= "hackkit:green",
++		.default_trigger	= "heartbeat",
++		.gpio			= 23,
 +	},
 +};
 +
- static struct platform_device *mistral_devices[] __initdata = {
- 	&osk5912_kp_device,
- 	&mistral_bl_device,
- 	&osk5912_lcd_device,
-+	&mistral_gpio_leds,
++static struct gpio_led_platform_data hackkit_gpio_led_info = {
++	.leds		= hackkit_gpio_leds,
++	.num_leds	= ARRAY_SIZE(hackkit_gpio_leds),
++};
++
++static struct platform_device hackkit_leds = {
++	.name	= "leds-gpio",
++	.id	= -1,
++	.dev	= {
++		.platform_data	= &hackkit_gpio_led_info,
++	}
++};
++
+ static void __init hackkit_init(void)
+ {
+ 	sa11x0_register_mtd(&hackkit_flash_data, &hackkit_flash_resource, 1);
++	platform_device_register(&hackkit_leds);
+ }
+ 
+ /**********************************************************************
+diff --git a/arch/arm/mach-sa1100/lart.c b/arch/arm/mach-sa1100/lart.c
+index eb6534e..9a4b4ab 100644
+--- a/arch/arm/mach-sa1100/lart.c
++++ b/arch/arm/mach-sa1100/lart.c
+@@ -5,6 +5,9 @@
+ #include <linux/init.h>
+ #include <linux/kernel.h>
+ #include <linux/tty.h>
++#include <linux/gpio.h>
++#include <linux/leds.h>
++#include <linux/platform_device.h>
+ 
+ #include <video/sa1100fb.h>
+ 
+@@ -126,6 +129,27 @@ static struct map_desc lart_io_desc[] __initdata = {
+ 	}
  };
  
- static int mistral_get_pendown_state(void)
-@@ -508,6 +535,12 @@ static void __init osk_mistral_init(void)
- 	if (gpio_request(2, "lcd_pwr") == 0)
- 		gpio_direction_output(2, 1);
- 
-+	/*
-+	 * GPIO based LEDs
-+	 */
-+	omap_cfg_reg(P18_1610_GPIO3);
-+	omap_cfg_reg(MPUIO4);
++/* LEDs */
++struct gpio_led lart_gpio_leds[] = {
++	{
++		.name			= "lart:red",
++		.default_trigger	= "cpu0",
++		.gpio			= 23,
++	},
++};
 +
- 	i2c_register_board_info(1, mistral_i2c_board_info,
- 			ARRAY_SIZE(mistral_i2c_board_info));
++static struct gpio_led_platform_data lart_gpio_led_info = {
++	.leds		= lart_gpio_leds,
++	.num_leds	= ARRAY_SIZE(lart_gpio_leds),
++};
++
++static struct platform_device lart_leds = {
++	.name	= "leds-gpio",
++	.id	= -1,
++	.dev	= {
++		.platform_data	= &lart_gpio_led_info,
++	}
++};
+ static void __init lart_map_io(void)
+ {
+ 	sa1100_map_io();
+@@ -139,6 +163,8 @@ static void __init lart_map_io(void)
+ 	GPDR |= GPIO_UART_TXD;
+ 	GPDR &= ~GPIO_UART_RXD;
+ 	PPAR |= PPAR_UPR;
++
++	platform_device_register(&lart_leds);
+ }
  
-diff --git a/arch/arm/mach-omap1/leds-h2p2-debug.c b/arch/arm/mach-omap1/leds-h2p2-debug.c
+ MACHINE_START(LART, "LART")
+diff --git a/arch/arm/mach-sa1100/leds-assabet.c b/arch/arm/mach-sa1100/leds-assabet.c
 deleted file mode 100644
-index f6b14a1..0000000
---- a/arch/arm/mach-omap1/leds-h2p2-debug.c
+index 3699176..0000000
+--- a/arch/arm/mach-sa1100/leds-assabet.c
 +++ /dev/null
-@@ -1,166 +0,0 @@
+@@ -1,113 +0,0 @@
 -/*
-- * linux/arch/arm/mach-omap1/leds-h2p2-debug.c
+- * linux/arch/arm/mach-sa1100/leds-assabet.c
 - *
-- * Copyright 2003 by Texas Instruments Incorporated
+- * Copyright (C) 2000 John Dorsey <john+@cs.cmu.edu>
 - *
-- * There are 16 LEDs on the debug board (all green); four may be used
-- * for logical 'green', 'amber', 'red', and 'blue' (after "claiming").
+- * Original (leds-footbridge.c) by Russell King
 - *
-- * The "surfer" expansion board and H2 sample board also have two-color
-- * green+red LEDs (in parallel), used here for timer and idle indicators.
+- * Assabet uses the LEDs as follows:
+- *   - Green - toggles state every 50 timer interrupts
+- *   - Red   - on if system is not idle
 - */
--#include <linux/gpio.h>
 -#include <linux/init.h>
--#include <linux/kernel_stat.h>
--#include <linux/sched.h>
--#include <linux/io.h>
 -
 -#include <mach/hardware.h>
 -#include <asm/leds.h>
--#include <asm/mach-types.h>
--
--#include <plat/fpga.h>
+-#include <mach/assabet.h>
 -
 -#include "leds.h"
 -
 -
--#define GPIO_LED_RED		3
--#define GPIO_LED_GREEN		OMAP_MPUIO(4)
+-#define LED_STATE_ENABLED	1
+-#define LED_STATE_CLAIMED	2
 -
+-static unsigned int led_state;
+-static unsigned int hw_led_state;
 -
--#define LED_STATE_ENABLED	0x01
--#define LED_STATE_CLAIMED	0x02
--#define LED_TIMER_ON		0x04
+-#define ASSABET_BCR_LED_MASK	(ASSABET_BCR_LED_GREEN | ASSABET_BCR_LED_RED)
 -
--#define GPIO_IDLE		GPIO_LED_GREEN
--#define GPIO_TIMER		GPIO_LED_RED
--
--
--void h2p2_dbg_leds_event(led_event_t evt)
+-void assabet_leds_event(led_event_t evt)
 -{
 -	unsigned long flags;
 -
--	static struct h2p2_dbg_fpga __iomem *fpga;
--	static u16 led_state, hw_led_state;
--
 -	local_irq_save(flags);
--
--	if (!(led_state & LED_STATE_ENABLED) && evt != led_start)
--		goto done;
 -
 -	switch (evt) {
 -	case led_start:
--		if (!fpga)
--			fpga = ioremap(H2P2_DBG_FPGA_START,
--						H2P2_DBG_FPGA_SIZE);
--		if (fpga) {
--			led_state |= LED_STATE_ENABLED;
--			__raw_writew(~0, &fpga->leds);
--		}
+-		hw_led_state = ASSABET_BCR_LED_RED | ASSABET_BCR_LED_GREEN;
+-		led_state = LED_STATE_ENABLED;
 -		break;
 -
 -	case led_stop:
--	case led_halted:
--		/* all leds off during suspend or shutdown */
--
--		if (! machine_is_omap_perseus2()) {
--			gpio_set_value(GPIO_TIMER, 0);
--			gpio_set_value(GPIO_IDLE, 0);
--		}
--
--		__raw_writew(~0, &fpga->leds);
 -		led_state &= ~LED_STATE_ENABLED;
--		if (evt == led_halted) {
--			iounmap(fpga);
--			fpga = NULL;
--		}
--
--		goto done;
+-		hw_led_state = ASSABET_BCR_LED_RED | ASSABET_BCR_LED_GREEN;
+-		ASSABET_BCR_frob(ASSABET_BCR_LED_MASK, hw_led_state);
+-		break;
 -
 -	case led_claim:
 -		led_state |= LED_STATE_CLAIMED;
--		hw_led_state = 0;
+-		hw_led_state = ASSABET_BCR_LED_RED | ASSABET_BCR_LED_GREEN;
 -		break;
 -
 -	case led_release:
 -		led_state &= ~LED_STATE_CLAIMED;
+-		hw_led_state = ASSABET_BCR_LED_RED | ASSABET_BCR_LED_GREEN;
 -		break;
 -
 -#ifdef CONFIG_LEDS_TIMER
 -	case led_timer:
--		led_state ^= LED_TIMER_ON;
--
--		if (machine_is_omap_perseus2())
--			hw_led_state ^= H2P2_DBG_FPGA_P2_LED_TIMER;
--		else {
--			gpio_set_value(GPIO_TIMER, led_state & LED_TIMER_ON);
--			goto done;
--		}
--
+-		if (!(led_state & LED_STATE_CLAIMED))
+-			hw_led_state ^= ASSABET_BCR_LED_GREEN;
 -		break;
 -#endif
 -
 -#ifdef CONFIG_LEDS_CPU
 -	case led_idle_start:
--		if (machine_is_omap_perseus2())
--			hw_led_state |= H2P2_DBG_FPGA_P2_LED_IDLE;
--		else {
--			gpio_set_value(GPIO_IDLE, 1);
--			goto done;
--		}
--
+-		if (!(led_state & LED_STATE_CLAIMED))
+-			hw_led_state |= ASSABET_BCR_LED_RED;
 -		break;
 -
 -	case led_idle_end:
--		if (machine_is_omap_perseus2())
--			hw_led_state &= ~H2P2_DBG_FPGA_P2_LED_IDLE;
--		else {
--			gpio_set_value(GPIO_IDLE, 0);
--			goto done;
--		}
--
+-		if (!(led_state & LED_STATE_CLAIMED))
+-			hw_led_state &= ~ASSABET_BCR_LED_RED;
 -		break;
 -#endif
 -
--	case led_green_on:
--		hw_led_state |= H2P2_DBG_FPGA_LED_GREEN;
+-	case led_halted:
 -		break;
+-
+-	case led_green_on:
+-		if (led_state & LED_STATE_CLAIMED)
+-			hw_led_state &= ~ASSABET_BCR_LED_GREEN;
+-		break;
+-
 -	case led_green_off:
--		hw_led_state &= ~H2P2_DBG_FPGA_LED_GREEN;
+-		if (led_state & LED_STATE_CLAIMED)
+-			hw_led_state |= ASSABET_BCR_LED_GREEN;
 -		break;
 -
 -	case led_amber_on:
--		hw_led_state |= H2P2_DBG_FPGA_LED_AMBER;
 -		break;
+-
 -	case led_amber_off:
--		hw_led_state &= ~H2P2_DBG_FPGA_LED_AMBER;
 -		break;
 -
 -	case led_red_on:
--		hw_led_state |= H2P2_DBG_FPGA_LED_RED;
--		break;
--	case led_red_off:
--		hw_led_state &= ~H2P2_DBG_FPGA_LED_RED;
+-		if (led_state & LED_STATE_CLAIMED)
+-			hw_led_state &= ~ASSABET_BCR_LED_RED;
 -		break;
 -
--	case led_blue_on:
--		hw_led_state |= H2P2_DBG_FPGA_LED_BLUE;
--		break;
--	case led_blue_off:
--		hw_led_state &= ~H2P2_DBG_FPGA_LED_BLUE;
+-	case led_red_off:
+-		if (led_state & LED_STATE_CLAIMED)
+-			hw_led_state |= ASSABET_BCR_LED_RED;
 -		break;
 -
 -	default:
 -		break;
 -	}
 -
+-	if  (led_state & LED_STATE_ENABLED)
+-		ASSABET_BCR_frob(ASSABET_BCR_LED_MASK, hw_led_state);
 -
--	/*
--	 *  Actually burn the LEDs
--	 */
--	if (led_state & LED_STATE_ENABLED)
--		__raw_writew(~hw_led_state, &fpga->leds);
--
--done:
 -	local_irq_restore(flags);
 -}
-diff --git a/arch/arm/mach-omap1/leds-innovator.c b/arch/arm/mach-omap1/leds-innovator.c
+diff --git a/arch/arm/mach-sa1100/leds-badge4.c b/arch/arm/mach-sa1100/leds-badge4.c
 deleted file mode 100644
-index 3a066ee..0000000
---- a/arch/arm/mach-omap1/leds-innovator.c
+index f99fac3..0000000
+--- a/arch/arm/mach-sa1100/leds-badge4.c
 +++ /dev/null
-@@ -1,98 +0,0 @@
+@@ -1,110 +0,0 @@
 -/*
-- * linux/arch/arm/mach-omap1/leds-innovator.c
+- * linux/arch/arm/mach-sa1100/leds-badge4.c
+- *
+- * Author: Christopher Hoover <ch@hpl.hp.com>
+- * Copyright (C) 2002 Hewlett-Packard Company
+- *
+- * This program is free software; you can redistribute it and/or modify
+- * it under the terms of the GNU General Public License version 2 as
+- * published by the Free Software Foundation.
+- *
+- */
+-
+-#include <linux/init.h>
+-
+-#include <mach/hardware.h>
+-#include <asm/leds.h>
+-
+-#include "leds.h"
+-
+-#define LED_STATE_ENABLED	1
+-#define LED_STATE_CLAIMED	2
+-
+-static unsigned int led_state;
+-static unsigned int hw_led_state;
+-
+-#define LED_RED		GPIO_GPIO(7)
+-#define LED_GREEN       GPIO_GPIO(9)
+-#define LED_MASK	(LED_RED|LED_GREEN)
+-
+-#define LED_IDLE	LED_GREEN
+-#define LED_TIMER	LED_RED
+-
+-void badge4_leds_event(led_event_t evt)
+-{
+-        unsigned long flags;
+-
+-	local_irq_save(flags);
+-
+-        switch (evt) {
+-        case led_start:
+-		GPDR |= LED_MASK;
+-                hw_led_state = LED_MASK;
+-                led_state = LED_STATE_ENABLED;
+-                break;
+-
+-        case led_stop:
+-                led_state &= ~LED_STATE_ENABLED;
+-                break;
+-
+-        case led_claim:
+-                led_state |= LED_STATE_CLAIMED;
+-                hw_led_state = LED_MASK;
+-                break;
+-
+-        case led_release:
+-                led_state &= ~LED_STATE_CLAIMED;
+-                hw_led_state = LED_MASK;
+-                break;
+-
+-#ifdef CONFIG_LEDS_TIMER
+-        case led_timer:
+-                if (!(led_state & LED_STATE_CLAIMED))
+-                        hw_led_state ^= LED_TIMER;
+-                break;
+-#endif
+-
+-#ifdef CONFIG_LEDS_CPU
+-        case led_idle_start:
+-		/* LED off when system is idle */
+-                if (!(led_state & LED_STATE_CLAIMED))
+-                        hw_led_state &= ~LED_IDLE;
+-                break;
+-
+-        case led_idle_end:
+-                if (!(led_state & LED_STATE_CLAIMED))
+-                        hw_led_state |= LED_IDLE;
+-                break;
+-#endif
+-
+-        case led_red_on:
+-                if (!(led_state & LED_STATE_CLAIMED))
+-                        hw_led_state &= ~LED_RED;
+-                break;
+-
+-        case led_red_off:
+-                if (!(led_state & LED_STATE_CLAIMED))
+-                        hw_led_state |= LED_RED;
+-                break;
+-
+-        case led_green_on:
+-                if (!(led_state & LED_STATE_CLAIMED))
+-                        hw_led_state &= ~LED_GREEN;
+-                break;
+-
+-        case led_green_off:
+-                if (!(led_state & LED_STATE_CLAIMED))
+-                        hw_led_state |= LED_GREEN;
+-                break;
+-
+-	default:
+-		break;
+-        }
+-
+-        if  (led_state & LED_STATE_ENABLED) {
+-                GPSR = hw_led_state;
+-                GPCR = hw_led_state ^ LED_MASK;
+-        }
+-
+-	local_irq_restore(flags);
+-}
+diff --git a/arch/arm/mach-sa1100/leds-cerf.c b/arch/arm/mach-sa1100/leds-cerf.c
+deleted file mode 100644
+index 040540f..0000000
+--- a/arch/arm/mach-sa1100/leds-cerf.c
++++ /dev/null
+@@ -1,109 +0,0 @@
+-/*
+- * linux/arch/arm/mach-sa1100/leds-cerf.c
+- *
+- * Author: ???
 - */
 -#include <linux/init.h>
 -
@@ -442,99 +674,113 @@ index 3a066ee..0000000
 -static unsigned int led_state;
 -static unsigned int hw_led_state;
 -
--void innovator_leds_event(led_event_t evt)
+-#define LED_D0          GPIO_GPIO(0)
+-#define LED_D1          GPIO_GPIO(1)
+-#define LED_D2          GPIO_GPIO(2)
+-#define LED_D3          GPIO_GPIO(3)
+-#define LED_MASK        (LED_D0|LED_D1|LED_D2|LED_D3)
+-
+-void cerf_leds_event(led_event_t evt)
 -{
--	unsigned long flags;
+-        unsigned long flags;
 -
 -	local_irq_save(flags);
 -
--	switch (evt) {
--	case led_start:
--		hw_led_state = 0;
--		led_state = LED_STATE_ENABLED;
--		break;
+-        switch (evt) {
+-        case led_start:
+-                hw_led_state = LED_MASK;
+-                led_state = LED_STATE_ENABLED;
+-                break;
 -
--	case led_stop:
--		led_state &= ~LED_STATE_ENABLED;
--		hw_led_state = 0;
--		break;
+-        case led_stop:
+-                led_state &= ~LED_STATE_ENABLED;
+-                break;
 -
--	case led_claim:
--		led_state |= LED_STATE_CLAIMED;
--		hw_led_state = 0;
--		break;
--
--	case led_release:
--		led_state &= ~LED_STATE_CLAIMED;
--		hw_led_state = 0;
--		break;
+-        case led_claim:
+-                led_state |= LED_STATE_CLAIMED;
+-                hw_led_state = LED_MASK;
+-                break;
+-        case led_release:
+-                led_state &= ~LED_STATE_CLAIMED;
+-                hw_led_state = LED_MASK;
+-                break;
 -
 -#ifdef CONFIG_LEDS_TIMER
--	case led_timer:
--		if (!(led_state & LED_STATE_CLAIMED))
--			hw_led_state ^= 0;
--		break;
+-        case led_timer:
+-                if (!(led_state & LED_STATE_CLAIMED))
+-                        hw_led_state ^= LED_D0;
+-                break;
 -#endif
 -
 -#ifdef CONFIG_LEDS_CPU
--	case led_idle_start:
--		if (!(led_state & LED_STATE_CLAIMED))
--			hw_led_state |= 0;
--		break;
+-        case led_idle_start:
+-                if (!(led_state & LED_STATE_CLAIMED))
+-                        hw_led_state &= ~LED_D1;
+-                break;
 -
--	case led_idle_end:
--		if (!(led_state & LED_STATE_CLAIMED))
--			hw_led_state &= ~0;
--		break;
+-        case led_idle_end:
+-                if (!(led_state & LED_STATE_CLAIMED))
+-                        hw_led_state |= LED_D1;
+-                break;
 -#endif
+-        case led_green_on:
+-                if (!(led_state & LED_STATE_CLAIMED))
+-                        hw_led_state &= ~LED_D2;
+-                break;
 -
--	case led_halted:
--		break;
+-        case led_green_off:
+-                if (!(led_state & LED_STATE_CLAIMED))
+-                        hw_led_state |= LED_D2;
+-                break;
 -
--	case led_green_on:
--		if (led_state & LED_STATE_CLAIMED)
--			hw_led_state &= ~0;
--		break;
+-        case led_amber_on:
+-                if (!(led_state & LED_STATE_CLAIMED))
+-                        hw_led_state &= ~LED_D3;
+-                break;
 -
--	case led_green_off:
--		if (led_state & LED_STATE_CLAIMED)
--			hw_led_state |= 0;
--		break;
+-        case led_amber_off:
+-                if (!(led_state & LED_STATE_CLAIMED))
+-                        hw_led_state |= LED_D3;
+-                break;
 -
--	case led_amber_on:
--		break;
+-        case led_red_on:
+-                if (!(led_state & LED_STATE_CLAIMED))
+-                        hw_led_state &= ~LED_D1;
+-                break;
 -
--	case led_amber_off:
--		break;
+-        case led_red_off:
+-                if (!(led_state & LED_STATE_CLAIMED))
+-                        hw_led_state |= LED_D1;
+-                break;
 -
--	case led_red_on:
--		if (led_state & LED_STATE_CLAIMED)
--			hw_led_state &= ~0;
--		break;
+-        default:
+-                break;
+-        }
 -
--	case led_red_off:
--		if (led_state & LED_STATE_CLAIMED)
--			hw_led_state |= 0;
--		break;
--
--	default:
--		break;
--	}
+-        if  (led_state & LED_STATE_ENABLED) {
+-                GPSR = hw_led_state;
+-                GPCR = hw_led_state ^ LED_MASK;
+-        }
 -
 -	local_irq_restore(flags);
 -}
-diff --git a/arch/arm/mach-omap1/leds-osk.c b/arch/arm/mach-omap1/leds-osk.c
+diff --git a/arch/arm/mach-sa1100/leds-hackkit.c b/arch/arm/mach-sa1100/leds-hackkit.c
 deleted file mode 100644
-index 936ed42..0000000
---- a/arch/arm/mach-omap1/leds-osk.c
+index 6a23524..0000000
+--- a/arch/arm/mach-sa1100/leds-hackkit.c
 +++ /dev/null
-@@ -1,113 +0,0 @@
+@@ -1,111 +0,0 @@
 -/*
-- * linux/arch/arm/mach-omap1/leds-osk.c
+- * linux/arch/arm/mach-sa1100/leds-hackkit.c
 - *
-- * LED driver for OSK with optional Mistral QVGA board
+- * based on leds-lart.c
+- *
+- * (C) Erik Mouw (J.A.K.Mouw@its.tudelft.nl), April 21, 2000
+- * (C) Stefan Eletzhofer <stefan.eletzhofer@eletztrick.de>, 2002
+- *
+- * The HackKit has two leds (GPIO 22/23). The red led (gpio 22) is used
+- * as cpu led, the green one is used as timer led.
 - */
--#include <linux/gpio.h>
 -#include <linux/init.h>
 -
 -#include <mach/hardware.h>
@@ -543,593 +789,279 @@ index 936ed42..0000000
 -#include "leds.h"
 -
 -
--#define LED_STATE_ENABLED	(1 << 0)
--#define LED_STATE_CLAIMED	(1 << 1)
--static u8 led_state;
+-#define LED_STATE_ENABLED	1
+-#define LED_STATE_CLAIMED	2
 -
--#define	TIMER_LED		(1 << 3)	/* Mistral board */
--#define	IDLE_LED		(1 << 4)	/* Mistral board */
--static u8 hw_led_state;
+-static unsigned int led_state;
+-static unsigned int hw_led_state;
 -
+-#define LED_GREEN    GPIO_GPIO23
+-#define LED_RED    GPIO_GPIO22
+-#define LED_MASK  (LED_RED | LED_GREEN)
 -
--#ifdef	CONFIG_OMAP_OSK_MISTRAL
--
--/* For now, all system indicators require the Mistral board, since that
-- * LED can be manipulated without a task context.  This LED is either red,
-- * or green, but not both; it can't give the full "disco led" effect.
-- */
--
--#define GPIO_LED_RED		3
--#define GPIO_LED_GREEN		OMAP_MPUIO(4)
--
--static void mistral_setled(void)
+-void hackkit_leds_event(led_event_t evt)
 -{
--	int	red = 0;
--	int	green = 0;
--
--	if (hw_led_state & TIMER_LED)
--		red = 1;
--	else if (hw_led_state & IDLE_LED)
--		green = 1;
--	/* else both sides are disabled */
--
--	gpio_set_value(GPIO_LED_GREEN, green);
--	gpio_set_value(GPIO_LED_RED, red);
--}
--
--#endif
--
--void osk_leds_event(led_event_t evt)
--{
--	unsigned long	flags;
--	u16		leds;
+-	unsigned long flags;
 -
 -	local_irq_save(flags);
 -
--	if (!(led_state & LED_STATE_ENABLED) && evt != led_start)
--		goto done;
+-	switch(evt) {
+-		case led_start:
+-			/* pin 22/23 are outputs */
+-			GPDR |= LED_MASK;
+-			hw_led_state = LED_MASK;
+-			led_state = LED_STATE_ENABLED;
+-			break;
 -
--	leds = hw_led_state;
--	switch (evt) {
+-		case led_stop:
+-			led_state &= ~LED_STATE_ENABLED;
+-			break;
+-
+-		case led_claim:
+-			led_state |= LED_STATE_CLAIMED;
+-			hw_led_state = LED_MASK;
+-			break;
+-
+-		case led_release:
+-			led_state &= ~LED_STATE_CLAIMED;
+-			hw_led_state = LED_MASK;
+-			break;
+-
+-#ifdef CONFIG_LEDS_TIMER
+-		case led_timer:
+-			if (!(led_state & LED_STATE_CLAIMED))
+-				hw_led_state ^= LED_GREEN;
+-			break;
+-#endif
+-
+-#ifdef CONFIG_LEDS_CPU
+-		case led_idle_start:
+-			/* The LART people like the LED to be off when the
+-			   system is idle... */
+-			if (!(led_state & LED_STATE_CLAIMED))
+-				hw_led_state &= ~LED_RED;
+-			break;
+-
+-		case led_idle_end:
+-			/* ... and on if the system is not idle */
+-			if (!(led_state & LED_STATE_CLAIMED))
+-				hw_led_state |= LED_RED;
+-			break;
+-#endif
+-
+-		case led_red_on:
+-			if (led_state & LED_STATE_CLAIMED)
+-				hw_led_state &= ~LED_RED;
+-			break;
+-
+-		case led_red_off:
+-			if (led_state & LED_STATE_CLAIMED)
+-				hw_led_state |= LED_RED;
+-			break;
+-
+-		case led_green_on:
+-			if (led_state & LED_STATE_CLAIMED)
+-				hw_led_state &= ~LED_GREEN;
+-			break;
+-
+-		case led_green_off:
+-			if (led_state & LED_STATE_CLAIMED)
+-				hw_led_state |= LED_GREEN;
+-			break;
+-
+-		default:
+-			break;
+-	}
+-
+-	/* Now set the GPIO state, or nothing will happen at all */
+-	if (led_state & LED_STATE_ENABLED) {
+-		GPSR = hw_led_state;
+-		GPCR = hw_led_state ^ LED_MASK;
+-	}
+-
+-	local_irq_restore(flags);
+-}
+diff --git a/arch/arm/mach-sa1100/leds-lart.c b/arch/arm/mach-sa1100/leds-lart.c
+deleted file mode 100644
+index a51830c..0000000
+--- a/arch/arm/mach-sa1100/leds-lart.c
++++ /dev/null
+@@ -1,100 +0,0 @@
+-/*
+- * linux/arch/arm/mach-sa1100/leds-lart.c
+- *
+- * (C) Erik Mouw (J.A.K.Mouw@its.tudelft.nl), April 21, 2000
+- *
+- * LART uses the LED as follows:
+- *   - GPIO23 is the LED, on if system is not idle
+- *  You can use both CONFIG_LEDS_CPU and CONFIG_LEDS_TIMER at the same
+- *  time, but in that case the timer events will still dictate the
+- *  pace of the LED.
+- */
+-#include <linux/init.h>
+-
+-#include <mach/hardware.h>
+-#include <asm/leds.h>
+-
+-#include "leds.h"
+-
+-
+-#define LED_STATE_ENABLED	1
+-#define LED_STATE_CLAIMED	2
+-
+-static unsigned int led_state;
+-static unsigned int hw_led_state;
+-
+-#define LED_23    GPIO_GPIO23
+-#define LED_MASK  (LED_23)
+-
+-void lart_leds_event(led_event_t evt)
+-{
+-	unsigned long flags;
+-
+-	local_irq_save(flags);
+-
+-	switch(evt) {
 -	case led_start:
--		led_state |= LED_STATE_ENABLED;
--		hw_led_state = 0;
--		leds = ~0;
+-		/* pin 23 is output pin */
+-		GPDR |= LED_23;
+-		hw_led_state = LED_MASK;
+-		led_state = LED_STATE_ENABLED;
 -		break;
 -
--	case led_halted:
 -	case led_stop:
 -		led_state &= ~LED_STATE_ENABLED;
--		hw_led_state = 0;
 -		break;
 -
 -	case led_claim:
 -		led_state |= LED_STATE_CLAIMED;
--		hw_led_state = 0;
--		leds = ~0;
+-		hw_led_state = LED_MASK;
 -		break;
 -
 -	case led_release:
 -		led_state &= ~LED_STATE_CLAIMED;
--		hw_led_state = 0;
+-		hw_led_state = LED_MASK;
 -		break;
 -
--#ifdef	CONFIG_OMAP_OSK_MISTRAL
--
+-#ifdef CONFIG_LEDS_TIMER
 -	case led_timer:
--		hw_led_state ^= TIMER_LED;
--		mistral_setled();
+-		if (!(led_state & LED_STATE_CLAIMED))
+-			hw_led_state ^= LED_23;
 -		break;
+-#endif
 -
--	case led_idle_start:	/* idle == off */
--		hw_led_state &= ~IDLE_LED;
--		mistral_setled();
+-#ifdef CONFIG_LEDS_CPU
+-	case led_idle_start:
+-		/* The LART people like the LED to be off when the
+-                   system is idle... */
+-		if (!(led_state & LED_STATE_CLAIMED))
+-			hw_led_state &= ~LED_23;
 -		break;
 -
 -	case led_idle_end:
--		hw_led_state |= IDLE_LED;
--		mistral_setled();
+-		/* ... and on if the system is not idle */
+-		if (!(led_state & LED_STATE_CLAIMED))
+-			hw_led_state |= LED_23;
+-		break;
+-#endif
+-
+-	case led_red_on:
+-		if (led_state & LED_STATE_CLAIMED)
+-			hw_led_state &= ~LED_23;
 -		break;
 -
--#endif	/* CONFIG_OMAP_OSK_MISTRAL */
+-	case led_red_off:
+-		if (led_state & LED_STATE_CLAIMED)
+-			hw_led_state |= LED_23;
+-		break;
 -
 -	default:
 -		break;
 -	}
 -
--	leds ^= hw_led_state;
+-	/* Now set the GPIO state, or nothing will happen at all */
+-	if (led_state & LED_STATE_ENABLED) {
+-		GPSR = hw_led_state;
+-		GPCR = hw_led_state ^ LED_MASK;
+-	}
 -
--done:
 -	local_irq_restore(flags);
 -}
-diff --git a/arch/arm/mach-omap1/leds.c b/arch/arm/mach-omap1/leds.c
+diff --git a/arch/arm/mach-sa1100/leds.c b/arch/arm/mach-sa1100/leds.c
 deleted file mode 100644
-index ae6dd93..0000000
---- a/arch/arm/mach-omap1/leds.c
+index 5fe71a0..0000000
+--- a/arch/arm/mach-sa1100/leds.c
 +++ /dev/null
-@@ -1,69 +0,0 @@
+@@ -1,50 +0,0 @@
 -/*
-- * linux/arch/arm/mach-omap1/leds.c
+- * linux/arch/arm/mach-sa1100/leds.c
 - *
-- * OMAP LEDs dispatcher
+- * SA1100 LEDs dispatcher
+- *
+- * Copyright (C) 2001 Nicolas Pitre
 - */
--#include <linux/gpio.h>
--#include <linux/kernel.h>
+-#include <linux/compiler.h>
 -#include <linux/init.h>
 -
 -#include <asm/leds.h>
 -#include <asm/mach-types.h>
 -
--#include <plat/mux.h>
--
 -#include "leds.h"
 -
 -static int __init
--omap_leds_init(void)
+-sa1100_leds_init(void)
 -{
--	if (!cpu_class_is_omap1())
--		return -ENODEV;
--
--	if (machine_is_omap_innovator())
--		leds_event = innovator_leds_event;
--
--	else if (machine_is_omap_h2()
--			|| machine_is_omap_h3()
--			|| machine_is_omap_perseus2())
--		leds_event = h2p2_dbg_leds_event;
--
--	else if (machine_is_omap_osk())
--		leds_event = osk_leds_event;
--
--	else
--		return -1;
--
--	if (machine_is_omap_h2()
--			|| machine_is_omap_h3()
--#ifdef	CONFIG_OMAP_OSK_MISTRAL
--			|| machine_is_omap_osk()
--#endif
--			) {
--
--		/* LED1/LED2 pins can be used as GPIO (as done here), or by
--		 * the LPG (works even in deep sleep!), to drive a bicolor
--		 * LED on the H2 sample board, and another on the H2/P2
--		 * "surfer" expansion board.
--		 *
--		 * The same pins drive a LED on the OSK Mistral board, but
--		 * that's a different kind of LED (just one color at a time).
--		 */
--		omap_cfg_reg(P18_1610_GPIO3);
--		if (gpio_request(3, "LED red") == 0)
--			gpio_direction_output(3, 1);
--		else
--			printk(KERN_WARNING "LED: can't get GPIO3/red?\n");
--
--		omap_cfg_reg(MPUIO4);
--		if (gpio_request(OMAP_MPUIO(4), "LED green") == 0)
--			gpio_direction_output(OMAP_MPUIO(4), 1);
--		else
--			printk(KERN_WARNING "LED: can't get MPUIO4/green?\n");
--	}
+-	if (machine_is_assabet())
+-		leds_event = assabet_leds_event;
+-	if (machine_is_consus())
+-		leds_event = consus_leds_event;
+-	if (machine_is_badge4())
+-		leds_event = badge4_leds_event;
+-	if (machine_is_brutus())
+-		leds_event = brutus_leds_event;
+-	if (machine_is_cerf())
+-		leds_event = cerf_leds_event;
+-	if (machine_is_flexanet())
+-		leds_event = flexanet_leds_event;
+-	if (machine_is_graphicsclient())
+-		leds_event = graphicsclient_leds_event;
+-	if (machine_is_hackkit())
+-		leds_event = hackkit_leds_event;
+-	if (machine_is_lart())
+-		leds_event = lart_leds_event;
+-	if (machine_is_pfs168())
+-		leds_event = pfs168_leds_event;
+-	if (machine_is_graphicsmaster())
+-		leds_event = graphicsmaster_leds_event;
+-	if (machine_is_adsbitsy())
+-		leds_event = adsbitsy_leds_event;
+-	if (machine_is_pt_system3())
+-		leds_event = system3_leds_event;
 -
 -	leds_event(led_start);
 -	return 0;
 -}
 -
--__initcall(omap_leds_init);
-diff --git a/arch/arm/mach-omap1/leds.h b/arch/arm/mach-omap1/leds.h
+-core_initcall(sa1100_leds_init);
+diff --git a/arch/arm/mach-sa1100/leds.h b/arch/arm/mach-sa1100/leds.h
 deleted file mode 100644
-index a1e9fed..0000000
---- a/arch/arm/mach-omap1/leds.h
+index 776b602..0000000
+--- a/arch/arm/mach-sa1100/leds.h
 +++ /dev/null
-@@ -1,3 +0,0 @@
--extern void innovator_leds_event(led_event_t evt);
--extern void h2p2_dbg_leds_event(led_event_t evt);
--extern void osk_leds_event(led_event_t evt);
-diff --git a/arch/arm/mach-omap1/time.c b/arch/arm/mach-omap1/time.c
-index 4d8dd9a..050ef74 100644
---- a/arch/arm/mach-omap1/time.c
-+++ b/arch/arm/mach-omap1/time.c
-@@ -44,7 +44,6 @@
- #include <linux/clockchips.h>
- #include <linux/io.h>
- 
--#include <asm/leds.h>
- #include <asm/irq.h>
- #include <asm/sched_clock.h>
- 
-diff --git a/arch/arm/mach-omap1/timer32k.c b/arch/arm/mach-omap1/timer32k.c
-index 325b9a0..ac7e713 100644
---- a/arch/arm/mach-omap1/timer32k.c
-+++ b/arch/arm/mach-omap1/timer32k.c
-@@ -46,7 +46,6 @@
- #include <linux/clockchips.h>
- #include <linux/io.h>
- 
--#include <asm/leds.h>
- #include <asm/irq.h>
- #include <asm/mach/irq.h>
- #include <asm/mach/time.h>
-diff --git a/arch/arm/plat-omap/Kconfig b/arch/arm/plat-omap/Kconfig
-index ad95c7a..aa8e668 100644
---- a/arch/arm/plat-omap/Kconfig
-+++ b/arch/arm/plat-omap/Kconfig
-@@ -41,9 +41,8 @@ config OMAP_DEBUG_DEVICES
- 	  For debug cards on TI reference boards.
- 
- config OMAP_DEBUG_LEDS
--	bool
-+	def_bool y if NEW_LEDS
- 	depends on OMAP_DEBUG_DEVICES
--	default y if LEDS_CLASS
- 
- config OMAP_SMARTREFLEX
- 	bool "SmartReflex support"
-diff --git a/arch/arm/plat-omap/debug-leds.c b/arch/arm/plat-omap/debug-leds.c
-index 39407cb..24e23f3 100644
---- a/arch/arm/plat-omap/debug-leds.c
-+++ b/arch/arm/plat-omap/debug-leds.c
-@@ -1,279 +1,118 @@
- /*
-  * linux/arch/arm/plat-omap/debug-leds.c
-  *
-+ * Copyright 2011 by Bryan Wu <bryan.wu@canonical.com>
-  * Copyright 2003 by Texas Instruments Incorporated
-  *
-  * This program is free software; you can redistribute it and/or modify
-  * it under the terms of the GNU General Public License version 2 as
-  * published by the Free Software Foundation.
-  */
--#include <linux/gpio.h>
-+
-+#include <linux/kernel.h>
- #include <linux/init.h>
- #include <linux/platform_device.h>
- #include <linux/leds.h>
- #include <linux/io.h>
-+#include <linux/slab.h>
- 
- #include <mach/hardware.h>
--#include <asm/leds.h>
- #include <asm/mach-types.h>
- 
- #include <plat/fpga.h>
- 
--
- /* Many OMAP development platforms reuse the same "debug board"; these
-  * platforms include H2, H3, H4, and Perseus2.  There are 16 LEDs on the
-  * debug board (all green), accessed through FPGA registers.
-- *
-- * The "surfer" expansion board and H2 sample board also have two-color
-- * green+red LEDs (in parallel), used here for timer and idle indicators
-- * in preference to the ones on the debug board, for a "Disco LED" effect.
-- *
-- * This driver exports either the original ARM LED API, the new generic
-- * one, or both.
-- */
--
--static spinlock_t			lock;
--static struct h2p2_dbg_fpga __iomem	*fpga;
--static u16				led_state, hw_led_state;
--
--
--#ifdef	CONFIG_OMAP_DEBUG_LEDS
--#define new_led_api()	1
--#else
--#define new_led_api()	0
--#endif
--
--
--/*-------------------------------------------------------------------------*/
--
--/* original ARM debug LED API:
-- *  - timer and idle leds (some boards use non-FPGA leds here);
-- *  - up to 4 generic leds, easily accessed in-kernel (any context)
-  */
- 
--#define GPIO_LED_RED		3
--#define GPIO_LED_GREEN		OMAP_MPUIO(4)
--
--#define LED_STATE_ENABLED	0x01
--#define LED_STATE_CLAIMED	0x02
--#define LED_TIMER_ON		0x04
--
--#define GPIO_IDLE		GPIO_LED_GREEN
--#define GPIO_TIMER		GPIO_LED_RED
--
--static void h2p2_dbg_leds_event(led_event_t evt)
--{
--	unsigned long flags;
--
--	spin_lock_irqsave(&lock, flags);
--
--	if (!(led_state & LED_STATE_ENABLED) && evt != led_start)
--		goto done;
--
--	switch (evt) {
--	case led_start:
--		if (fpga)
--			led_state |= LED_STATE_ENABLED;
--		break;
--
--	case led_stop:
--	case led_halted:
--		/* all leds off during suspend or shutdown */
--
--		if (!(machine_is_omap_perseus2() || machine_is_omap_h4())) {
--			gpio_set_value(GPIO_TIMER, 0);
--			gpio_set_value(GPIO_IDLE, 0);
--		}
--
--		__raw_writew(~0, &fpga->leds);
--		led_state &= ~LED_STATE_ENABLED;
--		goto done;
--
--	case led_claim:
--		led_state |= LED_STATE_CLAIMED;
--		hw_led_state = 0;
--		break;
--
--	case led_release:
--		led_state &= ~LED_STATE_CLAIMED;
--		break;
--
--#ifdef CONFIG_LEDS_TIMER
--	case led_timer:
--		led_state ^= LED_TIMER_ON;
--
--		if (machine_is_omap_perseus2() || machine_is_omap_h4())
--			hw_led_state ^= H2P2_DBG_FPGA_P2_LED_TIMER;
--		else {
--			gpio_set_value(GPIO_TIMER,
--					led_state & LED_TIMER_ON);
--			goto done;
--		}
--
--		break;
--#endif
--
--#ifdef CONFIG_LEDS_CPU
--	/* LED lit iff busy */
--	case led_idle_start:
--		if (machine_is_omap_perseus2() || machine_is_omap_h4())
--			hw_led_state &= ~H2P2_DBG_FPGA_P2_LED_IDLE;
--		else {
--			gpio_set_value(GPIO_IDLE, 1);
--			goto done;
--		}
--
--		break;
-+static struct h2p2_dbg_fpga __iomem *fpga;
- 
--	case led_idle_end:
--		if (machine_is_omap_perseus2() || machine_is_omap_h4())
--			hw_led_state |= H2P2_DBG_FPGA_P2_LED_IDLE;
--		else {
--			gpio_set_value(GPIO_IDLE, 0);
--			goto done;
--		}
--
--		break;
--#endif
--
--	case led_green_on:
--		hw_led_state |= H2P2_DBG_FPGA_LED_GREEN;
--		break;
--	case led_green_off:
--		hw_led_state &= ~H2P2_DBG_FPGA_LED_GREEN;
--		break;
--
--	case led_amber_on:
--		hw_led_state |= H2P2_DBG_FPGA_LED_AMBER;
--		break;
--	case led_amber_off:
--		hw_led_state &= ~H2P2_DBG_FPGA_LED_AMBER;
--		break;
--
--	case led_red_on:
--		hw_led_state |= H2P2_DBG_FPGA_LED_RED;
--		break;
--	case led_red_off:
--		hw_led_state &= ~H2P2_DBG_FPGA_LED_RED;
--		break;
--
--	case led_blue_on:
--		hw_led_state |= H2P2_DBG_FPGA_LED_BLUE;
--		break;
--	case led_blue_off:
--		hw_led_state &= ~H2P2_DBG_FPGA_LED_BLUE;
--		break;
--
--	default:
--		break;
--	}
--
--
--	/*
--	 *  Actually burn the LEDs
--	 */
--	if (led_state & LED_STATE_ENABLED)
--		__raw_writew(~hw_led_state, &fpga->leds);
--
--done:
--	spin_unlock_irqrestore(&lock, flags);
--}
--
--/*-------------------------------------------------------------------------*/
--
--/* "new" LED API
-- *  - with syfs access and generic triggering
-- *  - not readily accessible to in-kernel drivers
-- */
-+static u16 fpga_led_state;
- 
- struct dbg_led {
- 	struct led_classdev	cdev;
- 	u16			mask;
- };
- 
--static struct dbg_led dbg_leds[] = {
--	/* REVISIT at least H2 uses different timer & cpu leds... */
--#ifndef CONFIG_LEDS_TIMER
--	{ .mask = 1 << 0,  .cdev.name =  "d4:green",
--		.cdev.default_trigger = "heartbeat", },
--#endif
--#ifndef CONFIG_LEDS_CPU
--	{ .mask = 1 << 1,  .cdev.name =  "d5:green", },		/* !idle */
--#endif
--	{ .mask = 1 << 2,  .cdev.name =  "d6:green", },
--	{ .mask = 1 << 3,  .cdev.name =  "d7:green", },
--
--	{ .mask = 1 << 4,  .cdev.name =  "d8:green", },
--	{ .mask = 1 << 5,  .cdev.name =  "d9:green", },
--	{ .mask = 1 << 6,  .cdev.name = "d10:green", },
--	{ .mask = 1 << 7,  .cdev.name = "d11:green", },
--
--	{ .mask = 1 << 8,  .cdev.name = "d12:green", },
--	{ .mask = 1 << 9,  .cdev.name = "d13:green", },
--	{ .mask = 1 << 10, .cdev.name = "d14:green", },
--	{ .mask = 1 << 11, .cdev.name = "d15:green", },
--
--#ifndef	CONFIG_LEDS
--	{ .mask = 1 << 12, .cdev.name = "d16:green", },
--	{ .mask = 1 << 13, .cdev.name = "d17:green", },
--	{ .mask = 1 << 14, .cdev.name = "d18:green", },
--	{ .mask = 1 << 15, .cdev.name = "d19:green", },
--#endif
-+static const struct {
-+	const char *name;
-+	const char *trigger;
-+} dbg_leds[] = {
-+	{ "dbg:d4", "heartbeat", },
-+	{ "dbg:d5", "cpu0", },
-+	{ "dbg:d6", "default-on", },
-+	{ "dbg:d7", },
-+	{ "dbg:d8", },
-+	{ "dbg:d9", },
-+	{ "dbg:d10", },
-+	{ "dbg:d11", },
-+	{ "dbg:d12", },
-+	{ "dbg:d13", },
-+	{ "dbg:d14", },
-+	{ "dbg:d15", },
-+	{ "dbg:d16", },
-+	{ "dbg:d17", },
-+	{ "dbg:d18", },
-+	{ "dbg:d19", },
- };
- 
--static void
--fpga_led_set(struct led_classdev *cdev, enum led_brightness value)
-+/*
-+ * The triggers lines up below will only be used if the
-+ * LED triggers are compiled in.
-+ */
-+static void dbg_led_set(struct led_classdev *cdev,
-+			      enum led_brightness b)
- {
--	struct dbg_led	*led = container_of(cdev, struct dbg_led, cdev);
--	unsigned long	flags;
-+	struct dbg_led *led = container_of(cdev, struct dbg_led, cdev);
-+	u16 reg;
- 
--	spin_lock_irqsave(&lock, flags);
--	if (value == LED_OFF)
--		hw_led_state &= ~led->mask;
-+	reg = __raw_readw(&fpga->leds);
-+	if (b != LED_OFF)
-+		reg |= led->mask;
- 	else
--		hw_led_state |= led->mask;
--	__raw_writew(~hw_led_state, &fpga->leds);
--	spin_unlock_irqrestore(&lock, flags);
-+		reg &= ~led->mask;
-+	__raw_writew(reg, &fpga->leds);
- }
- 
--static void __init newled_init(struct device *dev)
-+static enum led_brightness dbg_led_get(struct led_classdev *cdev)
- {
--	unsigned	i;
--	struct dbg_led	*led;
--	int		status;
-+	struct dbg_led *led = container_of(cdev, struct dbg_led, cdev);
-+	u16 reg;
- 
--	for (i = 0, led = dbg_leds; i < ARRAY_SIZE(dbg_leds); i++, led++) {
--		led->cdev.brightness_set = fpga_led_set;
--		status = led_classdev_register(dev, &led->cdev);
--		if (status < 0)
--			break;
--	}
--	return;
-+	reg = __raw_readw(&fpga->leds);
-+	return (reg & led->mask) ? LED_FULL : LED_OFF;
- }
- 
--
--/*-------------------------------------------------------------------------*/
--
--static int /* __init */ fpga_probe(struct platform_device *pdev)
-+static int fpga_probe(struct platform_device *pdev)
- {
- 	struct resource	*iomem;
--
--	spin_lock_init(&lock);
-+	int i;
- 
- 	iomem = platform_get_resource(pdev, IORESOURCE_MEM, 0);
- 	if (!iomem)
- 		return -ENODEV;
- 
- 	fpga = ioremap(iomem->start, H2P2_DBG_FPGA_SIZE);
--	__raw_writew(~0, &fpga->leds);
-+	__raw_writew(0xff, &fpga->leds);
-+
-+	for (i = 0; i < ARRAY_SIZE(dbg_leds); i++) {
-+		struct dbg_led *led;
-+
-+		led = kzalloc(sizeof(*led), GFP_KERNEL);
-+		if (!led)
-+			break;
- 
--#ifdef	CONFIG_LEDS
--	leds_event = h2p2_dbg_leds_event;
--	leds_event(led_start);
--#endif
-+		led->cdev.name = dbg_leds[i].name;
-+		led->cdev.brightness_set = dbg_led_set;
-+		led->cdev.brightness_get = dbg_led_get;
-+		led->cdev.default_trigger = dbg_leds[i].trigger;
-+		led->mask = BIT(i);
- 
--	if (new_led_api()) {
--		newled_init(&pdev->dev);
-+		if (led_classdev_register(NULL, &led->cdev) < 0) {
-+			kfree(led);
-+			break;
-+		}
- 	}
- 
- 	return 0;
-@@ -281,13 +120,15 @@ static int /* __init */ fpga_probe(struct platform_device *pdev)
- 
- static int fpga_suspend_noirq(struct device *dev)
- {
--	__raw_writew(~0, &fpga->leds);
-+	fpga_led_state = __raw_readw(&fpga->leds);
-+	__raw_writew(0xff, &fpga->leds);
-+
- 	return 0;
- }
- 
- static int fpga_resume_noirq(struct device *dev)
- {
--	__raw_writew(~hw_led_state, &fpga->leds);
-+	__raw_writew(~fpga_led_state, &fpga->leds);
- 	return 0;
- }
- 
+@@ -1,13 +0,0 @@
+-extern void assabet_leds_event(led_event_t evt);
+-extern void badge4_leds_event(led_event_t evt);
+-extern void consus_leds_event(led_event_t evt);
+-extern void brutus_leds_event(led_event_t evt);
+-extern void cerf_leds_event(led_event_t evt);
+-extern void flexanet_leds_event(led_event_t evt);
+-extern void graphicsclient_leds_event(led_event_t evt);
+-extern void hackkit_leds_event(led_event_t evt);
+-extern void lart_leds_event(led_event_t evt);
+-extern void pfs168_leds_event(led_event_t evt);
+-extern void graphicsmaster_leds_event(led_event_t evt);
+-extern void adsbitsy_leds_event(led_event_t evt);
+-extern void system3_leds_event(led_event_t evt);
 -- 
 1.7.9.5
 
