@@ -1,95 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756111Ab2DQNMM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Apr 2012 09:12:12 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:50931 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756096Ab2DQNMK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Apr 2012 09:12:10 -0400
-From: Miklos Szeredi <miklos@szeredi.hu>
-To: Jeff Layton <jlayton@redhat.com>
-Cc: "Myklebust\, Trond" <Trond.Myklebust@netapp.com>,
-        Bernd Schubert <bernd.schubert@itwm.fraunhofer.de>,
-        Malahal Naineni <malahal@us.ibm.com>,
-        "linux-nfs\@vger.kernel.org" <linux-nfs@vger.kernel.org>,
-        "linux-fsdevel\@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "pstaubach\@exagrid.com" <pstaubach@exagrid.com>,
-        "viro\@ZenIV.linux.org.uk" <viro@ZenIV.linux.org.uk>,
-        "hch\@infradead.org" <hch@infradead.org>,
-        "michael.brantley\@deshaw.com" <michael.brantley@deshaw.com>,
-        "sven.breuner\@itwm.fraunhofer.de" <sven.breuner@itwm.fraunhofer.de>
-Subject: Re: [PATCH RFC] vfs: make fstatat retry on ESTALE errors from getattr call
-References: <1334316311-22331-1-git-send-email-jlayton@redhat.com>
-	<20120413150518.GA1987@us.ibm.com>
-	<20120413114236.0e557e01@tlielax.poochiereds.net>
-	<4F8B1B7B.3040304@itwm.fraunhofer.de>
-	<20120416073655.7cdb90cf@corrin.poochiereds.net>
-	<4F8C3036.2030702@itwm.fraunhofer.de>
-	<20120416134642.1754cd3e@corrin.poochiereds.net>
-	<1334604785.2879.23.camel@lade.trondhjem.org>
-	<20120416154322.0d95e435@corrin.poochiereds.net>
-	<1334607906.2879.36.camel@lade.trondhjem.org>
-	<20120416190548.2463d1d0@corrin.poochiereds.net>
-Date: Tue, 17 Apr 2012 15:12:20 +0200
-In-Reply-To: <20120416190548.2463d1d0@corrin.poochiereds.net> (Jeff Layton's
-	message of "Mon, 16 Apr 2012 19:05:48 -0400")
-Message-ID: <87sjg2o62z.fsf@tucsk.pomaz.szeredi.hu>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S932293Ab2DQNYJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Apr 2012 09:24:09 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:40808 "EHLO
+	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932175Ab2DQNYI convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Apr 2012 09:24:08 -0400
+X-Sasl-enc: fygnEFQe+FtsBGRd1vTuIpzB1/ZWTpesFnEmODfwA7Pn 1334669046
+Date: Tue, 17 Apr 2012 14:24:04 +0100
+From: James Le Cuirot <chewi@aura-online.co.uk>
+To: Seth Forshee <seth.forshee@canonical.com>
+Cc: linux-kernel@vger.kernel.org, Matthew Garrett <mjg@redhat.com>
+Subject: Re: toshiba-acpi: =?UTF-8?B?UG9ydMOpZ8Op?= 3500 function keys
+ broken since 2.6.33
+Message-ID: <20120417142404.4499ca23@symphony.aura-online.co.uk>
+In-Reply-To: <20120416203957.GC3959@thinkpad-t410>
+References: <20120414224512.5f943f31@symphony.aura-online.co.uk>
+	<20120416203957.GC3959@thinkpad-t410>
+X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Jeff Layton <jlayton@redhat.com> writes:
+On Mon, 16 Apr 2012 15:39:57 -0500
+Seth Forshee <seth.forshee@canonical.com> wrote:
 
->> 
->> Won't something like fstatat(AT_FDCWD, "", &stat, AT_EMPTY_PATH) risk
->> looping forever there, or am I missing something?
->> 
->
-> To make sure I understand, that should be "shortcut" for a lookup of the
-> cwd?
->
-> So I guess the concern is that you'd do the above and get a successful
-> lookup since you're just going to get back the cwd. At that point,
-> you'd attempt the getattr and get ESTALE back. Then, you'd redo the
-> lookup with LOOKUP_REVAL set -- but since we're operating on the
-> cwd, we don't have a way to redo the lookup since we don't have a
-> pathname that we can look up again...
->
-> So yeah, I guess if you're sitting in a stale directory, something like
-> that could loop eternally.
->
-> Do you think the proposed check for fatal_signal_pending is enough to
-> mitigate such a problem? Or do we need to limit the number of retries
-> to address those sorts of loops?
+> On Sat, Apr 14, 2012 at 10:45:12PM +0100, James Le Cuirot wrote:
+> > Following a kernel git bisect, I have found that commit
+> > 6335e4d56681f6f08f24f4b812a72d402793d393 broke the function keys on
+> > the Toshiba Portégé 3500. Details of that commit can be seen at
+> > https://lkml.org/lkml/2009/3/31/440.
+> > 
+> > Apart from fnfxd not responding to key presses, the hotkey_ready and
+> > hotkey values found in /proc/acpi/toshiba/keys remain stuck on 0
+> > whereas before they used to change after a single function key
+> > press.
+> > 
+> > Some months after the commit, a patch was proposed in response to
+> > fix the multimedia keys on the Toshiba Satellite A40. Unfortunately
+> > this patch didn't fix the problem in my case. Regardless, the patch
+> > can be found at https://lkml.org/lkml/2010/2/27/138.
+> > 
+> > Matthew Garrett initially requested an acpidump in order to diagnose
+> > the above problem so I have attached mine here. I also attempted to
+> > get the ACPI debug output but it more than filled my entire dmesg
+> > buffer and I wasn't even sure it was relevant. Let me know if you
+> > wish to see that anyway.
+> > 
+> > Please CC me in your replies.
+> 
+> I did some work on toshiba_acpi to support additional interfaces for
+> supporting hotkeys that went into 3.4. Based on your ACPI tables this
+> might help you, but I can't be certain, so you should give the latest
+> 3.4-rc a try to see if it helps.
 
-Lets step back a bit.
+I tried 3.4-rc3 and after wrestling with a new, unrelated ACPI issue
+that stopped the machine from booting at all (now reverted), I found
+that the hotkeys still don't work. Shame, it sounded promising.
 
-The retry is needed when when we discover during ->getattr() that the
-cached lookup returned a stale file handle.
-
-If the lookup wasn't cached or if there was no lookup at all
-(stat(".") and friends) then retrying will not gain anything.
-
-And that also means that retrying multiple times is pointless, since
-after the first retry we are sure to have up-to-date attributes.
-
-Unfortunately it's impossible for the filesystem to know whether a
-->getattr (or other inode operation) was perfromed after a cached or a
-non-cached lookup.
-
-I'm not sure what the right interface for this would be.  One would be
-to just pass the "cached-or-not" information as a flag.  That works for
-getattr() but not for other operations.
-
-Another is to introduce atomic lookup+foo variants of these operations
-just like for open.  E.g. the lookup+getattr is called if the cached
-lookup fails or if the cached lookup succeeds and the plain ->getattr
-call returns ESTALE.
-
-Thanks,
-Miklos
+James
