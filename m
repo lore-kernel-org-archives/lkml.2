@@ -1,62 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756098Ab2DQSPp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Apr 2012 14:15:45 -0400
-Received: from mail-1-out2.atlantis.sk ([80.94.52.71]:46144 "EHLO
-	mail.atlantis.sk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1755068Ab2DQSPo (ORCPT
+	id S1755577Ab2DQSSM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Apr 2012 14:18:12 -0400
+Received: from mail-qa0-f42.google.com ([209.85.216.42]:33156 "EHLO
+	mail-qa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752520Ab2DQSSK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Apr 2012 14:15:44 -0400
-From: Ondrej Zary <linux@rainbow-software.org>
-To: Takashi Iwai <tiwai@suse.de>
-Subject: Re: [alsa-devel] [PATCH 3/4] Add Wolfson Microelectronics WM8776 codec ALSA driver
-Date: Tue, 17 Apr 2012 20:15:06 +0200
-User-Agent: KMail/1.9.10
-Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org
-References: <1334611118-10301-1-git-send-email-linux@rainbow-software.org> <20120417170431.GT6652@opensource.wolfsonmicro.com> <s5h3982p71g.wl%tiwai@suse.de>
-In-Reply-To: <s5h3982p71g.wl%tiwai@suse.de>
+	Tue, 17 Apr 2012 14:18:10 -0400
+Message-ID: <4F8DB3DC.7000602@gmail.com>
+Date: Tue, 17 Apr 2012 14:18:04 -0400
+From: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:11.0) Gecko/20120327 Thunderbird/11.0.1
 MIME-Version: 1.0
-Content-Type: text/plain;
-  charset="iso-8859-1"
+To: Minchan Kim <minchan@kernel.org>
+CC: Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Rik van Riel <riel@redhat.com>, Hugh Dickins <hughd@google.com>,
+        Mel Gorman <mgorman@suse.de>, Johannes Weiner <hannes@cmpxchg.org>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        linux-arm-kernel@lists.infradead.org, linaro-mm-sig@lists.linaro.org,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Arnd Bergmann <arnd@arndb.de>,
+        Chunsang Jeong <chunsang.jeong@linaro.org>,
+        Krishna Reddy <vdumpa@nvidia.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Hiroshi Doyu <hdoyu@nvidia.com>, Subash Patel <subashrp@gmail.com>,
+        kosaki.motohiro@gmail.com
+Subject: Re: [PATCH 4/4] ARM: remove consistent dma region and use common
+ vmalloc range for dma allocations
+References: <1334325950-7881-1-git-send-email-m.szyprowski@samsung.com> <1334325950-7881-5-git-send-email-m.szyprowski@samsung.com> <20120413183813.GO24211@n2100.arm.linux.org.uk> <4F8B76B9.1060505@kernel.org>
+In-Reply-To: <4F8B76B9.1060505@kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-Content-Disposition: inline
-Message-Id: <201204172015.14582.linux@rainbow-software.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 17 April 2012 20:06:19 Takashi Iwai wrote:
-> At Tue, 17 Apr 2012 18:04:31 +0100,
+(4/15/12 9:32 PM), Minchan Kim wrote:
+> On 04/14/2012 03:38 AM, Russell King - ARM Linux wrote:
+>> On Fri, Apr 13, 2012 at 04:05:50PM +0200, Marek Szyprowski wrote:
+>>> This patch changes dma-mapping subsystem to use generic vmalloc areas
+>>> for all consistent dma allocations. This increases the total size limit
+>>> of the consistent allocations and removes platform hacks and a lot of
+>>> duplicated code.
+>>
+>> NAK. I don't think you appreciate the contexts from which the dma coherent
+>> code can be called from, and the reason why we pre-allocate the page
+>> tables (so that IRQ-based allocations work.)
+>>
+>> The vmalloc region doesn't allow that because page tables are allocated
+>> using GFP_KERNEL not GFP_ATOMIC.
+>>
+>> Sorry.
+>>
 >
-> Mark Brown wrote:
-> > On Tue, Apr 17, 2012 at 06:52:49PM +0200, Takashi Iwai wrote:
-> > > Mark Brown wrote:
-> > > > This isn't just adding something into a specific driver which fails
-> > > > at abstraction, it's adding generic code.  If it were adding
-> > > > something to the ice17xx driver then that'd be one thing but look at
-> > > > the subject line and location of the file...  this stuff should be
-> > > > buried inside the driver if it's too painful to make the driver sane.
-> > >
-> > > The codes in sound/i2c are mostly oly for ice1712/ice1724 drivers
-> > > after all...  They could be used by others, but I don't think there
-> > > will be any more at this point.
-> >
-> > If they're specific to that driver we should make them specific to that
-> > driver and make sure the pain is confined there.  We really don't want
-> > to end up going back to the bad old days of having to do per-CPU/card
-> > drivers for CODECs because nobody had thought to abstract this stuff,
-> > that just makes everyone miserable.
-> >
-> > Looking at these commits I'd not expect anyone to figure out that this
-> > isn't how we want or expect people to add generic CODEC drivers.
+> Off-topic.
 >
-> Yeah, these stuff can be better put in pci/ice1712/ directory only
-> for ice1724 driver.  In that way, you can avoid unnecessary exported
-> symbols, too.
+> I don't know why vmalloc functions have gfp_t argument.
+> As Russel pointed out, we allocates page tables with GFP_KERNEL regardless of gfp_t passed.
+> It means gfp_t passed is useless.
+> I see there are many cases calling __vmalloc with GFP_NOFS, even GFP_ATOMIC. Then, it could end up deadlocking in reclaim context or schedule bug.
+> I'm not sure why we can't see such bugs until now.
+> If I didn't miss something, Shouldn't we fix it?
 
-Xonar (oxygen) has a private version of these drivers too. It could be 
-converted to use common code instead.
+I believe it should be fixed. of course. :)
 
--- 
-Ondrej Zary
+
