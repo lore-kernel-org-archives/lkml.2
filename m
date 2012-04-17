@@ -1,61 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932097Ab2DQJhh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Apr 2012 05:37:37 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:11040 "EHLO mx1.redhat.com"
+	id S932110Ab2DQJnw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Apr 2012 05:43:52 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:44074 "EHLO bear.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755973Ab2DQJhg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Apr 2012 05:37:36 -0400
-Date: Tue, 17 Apr 2012 12:37:13 +0300
-From: Gleb Natapov <gleb@redhat.com>
-To: Jiri Olsa <jolsa@redhat.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, acme@ghostprotocols.net,
-        mingo@redhat.com, linux-kernel@vger.kernel.org, avi@redhat.com
-Subject: Re: [PATCH] perf tools: Add 'G' and 'H' modifiers to event parsing
-Message-ID: <20120417093713.GD11918@redhat.com>
-References: <20120415145948.GK11918@redhat.com>
- <1334502742.28150.13.camel@twins>
- <20120415152300.GL11918@redhat.com>
- <20120416201030.GB11503@m.brq.redhat.com>
+	id S1755993Ab2DQJnt convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Apr 2012 05:43:49 -0400
+From: "Shankarmurthy, Akshay" <akshay.s@ti.com>
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+CC: "linux-serial@vger.kernel.org" <linux-serial@vger.kernel.org>,
+        "alan@linux.intel.com" <alan@linux.intel.com>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "paul.gortmaker@windriver.com" <paul.gortmaker@windriver.com>,
+        "jamie@jamieiles.com" <jamie@jamieiles.com>,
+        "swarren@nvidia.com" <swarren@nvidia.com>,
+        "dianders@chromium.org" <dianders@chromium.org>,
+        "davinci-linux-open-source@linux.davincidsp.com" 
+	<davinci-linux-open-source@linux.davincidsp.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH] serial: 8250: Add cpufreq support
+Thread-Topic: [PATCH] serial: 8250: Add cpufreq support
+Thread-Index: AQHNEWH/ogbkcH+7O02pQ5jFyo8I/ZaIgNYAgAN273D//73mAIAK/Rkg///w8wCACAtT4A==
+Date: Tue, 17 Apr 2012 09:43:30 +0000
+Message-ID: <6F6B80BD2E18844D97BB4B51FE3705C83E92A183@DBDE01.ent.ti.com>
+References: <1333433022-5455-1-git-send-email-akshay.s@ti.com>
+	<20120403105530.7fa3bce7@pyramind.ukuu.org.uk>
+	<6F6B80BD2E18844D97BB4B51FE3705C831790EA0@DBDE01.ent.ti.com>
+	<20120405115322.15e6088c@pyramind.ukuu.org.uk>
+	<6F6B80BD2E18844D97BB4B51FE3705C83179146B@DBDE01.ent.ti.com>
+ <20120412104758.3fc8085d@pyramind.ukuu.org.uk>
+In-Reply-To: <20120412104758.3fc8085d@pyramind.ukuu.org.uk>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [172.24.170.142]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120416201030.GB11503@m.brq.redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 16, 2012 at 10:10:30PM +0200, Jiri Olsa wrote:
-> On Sun, Apr 15, 2012 at 06:23:00PM +0300, Gleb Natapov wrote:
-> > On Sun, Apr 15, 2012 at 05:12:22PM +0200, Peter Zijlstra wrote:
-> > > On Sun, 2012-04-15 at 17:59 +0300, Gleb Natapov wrote:
-> > > > -modifier_event [ukhp]{1,5}
-> > > > +modifier_event [ukhpGH]{1,5} 
+On Thu, Apr 12, 2012 at 15:17:58, Alan Cox wrote:
+> > > > I will have a look at this and add the lock if necessary.
 > > > 
-> > > You'd also need to increase the 5 to 7 I think, unless there's a clear
-> > > exclusion with some of the other flags.
+> > > At the very least you need reference counts held on the tty struct and to allow for the tty having vanished under you.
 > > > 
-> > > Hmm, as it stands I think the 5 is already too low: "ukhppp" is 6.
-> > > 
-> > > We should really write this as ['u'] ['k'] ['h'] ['G'] ['H'] ['p'{1,3}],
-> > > not the combined thing.
+> > 
+> > I am planning to add "tty->termios_mutex" lock. Any comments ?
 > 
-> you mean to match them strictly in parser, right?
-> because what we have now can match also stuff like 'uuu' 'kkuu' ...
+> Explain how this will help. You need a reference count to the tty itself.
 > 
-> So far it eludes me how to do that purely in flex and
-> doing this via rules in bison seems like overkill.
-> 
-> I'd rather keep it the way we have and do the extra check
-> in parse_events_modifier function.. unless someone comes up
-> with flex regular expression that would do that (which is
-> possible given my regex knowledge..) 
-> 
-> also we need 8 characters for it, since this seems to be
-> valid modifier: ukhGHppp
-> 
-So want me to resend with 8 to fix missing GH for now? I can't think of
-proper regex either.
 
---
-			Gleb.
+
+I have gone through the serial driver, still I am not able to figure out the requirement
+of tty reference count here. Correct me if I am wrong. 
+As per my understanding, tty count keeps the count of tty_open and tty_release, that is
+how many open and close happened on the tty device file(/dev/ttyS*).
+The requirement here is a tty count check, if it is greater than zero then only it should
+proceed for further execution. 
+Kindly elaborate more on the same if it's not correct.
+
+> 
+> Alan
+> 
+
