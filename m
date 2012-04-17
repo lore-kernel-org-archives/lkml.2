@@ -1,81 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754679Ab2DQHbf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Apr 2012 03:31:35 -0400
-Received: from eu1sys200aog120.obsmtp.com ([207.126.144.149]:57547 "EHLO
-	eu1sys200aog120.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752491Ab2DQHbF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Apr 2012 03:31:05 -0400
-From: Linus Walleij <linus.walleij@stericsson.com>
-To: Samuel Ortiz <sameo@linux.intel.com>, <linux-kernel@vger.kernel.org>
-Cc: Jonas Aaberg <jonas.aberg@stericsson.com>,
-        Linus Walleij <linus.walleij@linaro.org>
-Subject: [PATCH 4/6] mfd/ab8500: print switch off cause
-Date: Tue, 17 Apr 2012 09:30:40 +0200
-Message-ID: <1334647840-1736-1-git-send-email-linus.walleij@stericsson.com>
-X-Mailer: git-send-email 1.7.9.2
+	id S1754749Ab2DQHlr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Apr 2012 03:41:47 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:46186 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753597Ab2DQHlq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Apr 2012 03:41:46 -0400
+Message-ID: <4F8D1EB5.2000302@redhat.com>
+Date: Tue, 17 Apr 2012 10:41:41 +0300
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120329 Thunderbird/11.0.1
 MIME-Version: 1.0
-Content-Type: text/plain
+To: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+CC: Marcelo Tosatti <mtosatti@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        KVM <kvm@vger.kernel.org>
+Subject: Re: [PATCH v2 10/16] KVM: MMU: fask check whether page is writable
+References: <4F87FA69.5060106@linux.vnet.ibm.com> <4F87FC82.2050302@linux.vnet.ibm.com> <4F8AE64F.7080909@redhat.com> <4F8B9115.2030807@linux.vnet.ibm.com> <4F8BEE1B.8000704@redhat.com> <4F8BF265.7020405@linux.vnet.ibm.com> <4F8C06ED.6020805@redhat.com> <4F8CE9CF.6050506@linux.vnet.ibm.com>
+In-Reply-To: <4F8CE9CF.6050506@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jonas Aaberg <jonas.aberg@stericsson.com>
+On 04/17/2012 06:55 AM, Xiao Guangrong wrote:
+> On 04/16/2012 07:47 PM, Avi Kivity wrote:
+>
+> > On 04/16/2012 01:20 PM, Xiao Guangrong wrote:
+> >>>>
+> >>>> It is used to avoid the unnecessary overload 
+> >>>
+> >>> It's overloading me :(
+> >>>
+> >>
+> >>
+> >> Sorry.
+> >>
+> > 
+> > The trick is to send those in separate patchset so the maintainer
+> > doesn't notice.
+> > 
+>
+>
+> Thanks for your suggestion, i will pay more attention on it in the
+> further.
+>
+> For this patch, what did you mean of "those"? You mean the whole
+> rmap.PTE_LIST_WP_BIT (fast check for shadow page table write protection
+> and host write protection) or just about host_page_write_protect
+> (for KSM only)?
 
-Instead of just printing the register value, also output some
-description of the value.
+All of it.  Let's start with just modifying sptes concurrently and only
+later add reading bits from rmap concurrently, if it proves necessary.
 
-Signed-off-by: Jonas Aaberg <jonas.aberg@stericsson.com>
-Reviewed-by: Mattias Wallin <mattias.wallin@stericsson.com>
-Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
----
- drivers/mfd/ab8500-core.c |   25 ++++++++++++++++++++++++-
- 1 file changed, 24 insertions(+), 1 deletion(-)
+>
+> If we do not have rmap.PTE_LIST_WP_BIT, there may have regression on
+> shadow mmu.
+>
+> Hmm, do i need implement rmap.PTE_LIST_WP_BIT, then fast page fault?
 
-diff --git a/drivers/mfd/ab8500-core.c b/drivers/mfd/ab8500-core.c
-index eee9560..9781e1e 100644
---- a/drivers/mfd/ab8500-core.c
-+++ b/drivers/mfd/ab8500-core.c
-@@ -1072,6 +1072,16 @@ static struct attribute_group ab9540_attr_group = {
- 
- int __devinit ab8500_init(struct ab8500 *ab8500, enum ab8500_version version)
- {
-+	static char *switch_off_status[] = {
-+		"Swoff bit programming",
-+		"Thermal protection activation",
-+		"Vbat lower then BattOk falling threshold",
-+		"Watchdog expired",
-+		"Non presence of 32kHz clock",
-+		"Battery level lower than power on reset threshold",
-+		"Power on key 1 pressed longer than 10 seconds",
-+		"DB8500 thermal shutdown"};
-+
- 	struct ab8500_platform_data *plat = dev_get_platdata(ab8500->dev);
- 	int ret;
- 	int i;
-@@ -1139,7 +1149,20 @@ int __devinit ab8500_init(struct ab8500 *ab8500, enum ab8500_version version)
- 		AB8500_SWITCH_OFF_STATUS, &value);
- 	if (ret < 0)
- 		return ret;
--	dev_info(ab8500->dev, "switch off status: %#x", value);
-+	dev_info(ab8500->dev, "switch off cause(s) (%#x): ", value);
-+
-+	if (value) {
-+		for (i = 0; i < ARRAY_SIZE(switch_off_status); i++) {
-+			if (value & 1)
-+				printk("\"%s\" ", switch_off_status[i]);
-+			value = value >> 1;
-+
-+		}
-+		printk("\n");
-+	} else {
-+		printk("None\n");
-+	}
-+
- 
- 	if (plat && plat->init)
- 		plat->init(ab8500);
+Let's try to measure the effect without rmap.PTE_LIST_WP_BIT.  Usually
+PTE chains for page tables are short so the effect would be small.  Of
+course we can't tell about all guest.
+
 -- 
-1.7.9.2
+error compiling committee.c: too many arguments to function
 
