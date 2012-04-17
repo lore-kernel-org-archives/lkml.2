@@ -1,29 +1,30 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932317Ab2DQNbz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Apr 2012 09:31:55 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:61647 "EHLO mx1.redhat.com"
+	id S932329Ab2DQNgR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Apr 2012 09:36:17 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:5507 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932175Ab2DQNbx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Apr 2012 09:31:53 -0400
-Date: Tue, 17 Apr 2012 09:32:22 -0400
+	id S932175Ab2DQNgP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Apr 2012 09:36:15 -0400
+Date: Tue, 17 Apr 2012 09:36:43 -0400
 From: Jeff Layton <jlayton@redhat.com>
-To: Miklos Szeredi <miklos@szeredi.hu>
-Cc: "Myklebust\, Trond" <Trond.Myklebust@netapp.com>,
+To: Steve Dickson <SteveD@redhat.com>
+Cc: "Myklebust, Trond" <Trond.Myklebust@netapp.com>,
         Bernd Schubert <bernd.schubert@itwm.fraunhofer.de>,
         Malahal Naineni <malahal@us.ibm.com>,
-        "linux-nfs\@vger.kernel.org" <linux-nfs@vger.kernel.org>,
-        "linux-fsdevel\@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "pstaubach\@exagrid.com" <pstaubach@exagrid.com>,
-        "viro\@ZenIV.linux.org.uk" <viro@ZenIV.linux.org.uk>,
-        "hch\@infradead.org" <hch@infradead.org>,
-        "michael.brantley\@deshaw.com" <michael.brantley@deshaw.com>,
-        "sven.breuner\@itwm.fraunhofer.de" <sven.breuner@itwm.fraunhofer.de>
+        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "pstaubach@exagrid.com" <pstaubach@exagrid.com>,
+        "miklos@szeredi.hu" <miklos@szeredi.hu>,
+        "viro@ZenIV.linux.org.uk" <viro@ZenIV.linux.org.uk>,
+        "hch@infradead.org" <hch@infradead.org>,
+        "michael.brantley@deshaw.com" <michael.brantley@deshaw.com>,
+        "sven.breuner@itwm.fraunhofer.de" <sven.breuner@itwm.fraunhofer.de>
 Subject: Re: [PATCH RFC] vfs: make fstatat retry on ESTALE errors from
  getattr call
-Message-ID: <20120417093222.2ff5e1bd@corrin.poochiereds.net>
-In-Reply-To: <87sjg2o62z.fsf@tucsk.pomaz.szeredi.hu>
+Message-ID: <20120417093643.7f172057@corrin.poochiereds.net>
+In-Reply-To: <4F8D580B.7060104@RedHat.com>
 References: <1334316311-22331-1-git-send-email-jlayton@redhat.com>
 	<20120413150518.GA1987@us.ibm.com>
 	<20120413114236.0e557e01@tlielax.poochiereds.net>
@@ -35,7 +36,7 @@ References: <1334316311-22331-1-git-send-email-jlayton@redhat.com>
 	<20120416154322.0d95e435@corrin.poochiereds.net>
 	<1334607906.2879.36.camel@lade.trondhjem.org>
 	<20120416190548.2463d1d0@corrin.poochiereds.net>
-	<87sjg2o62z.fsf@tucsk.pomaz.szeredi.hu>
+	<4F8D580B.7060104@RedHat.com>
 Mime-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
@@ -43,80 +44,146 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 17 Apr 2012 15:12:20 +0200
-Miklos Szeredi <miklos@szeredi.hu> wrote:
+On Tue, 17 Apr 2012 07:46:19 -0400
+Steve Dickson <SteveD@redhat.com> wrote:
 
-> Jeff Layton <jlayton@redhat.com> writes:
 > 
-> >> 
+> 
+> On 04/16/2012 07:05 PM, Jeff Layton wrote:
+> > On Mon, 16 Apr 2012 20:25:06 +0000
+> > "Myklebust, Trond" <Trond.Myklebust@netapp.com> wrote:
+> > 
+> >> On Mon, 2012-04-16 at 15:43 -0400, Jeff Layton wrote:
+> >>> On Mon, 16 Apr 2012 19:33:05 +0000
+> >>> "Myklebust, Trond" <Trond.Myklebust@netapp.com> wrote:
+> >>>
+> >>>> On Mon, 2012-04-16 at 13:46 -0400, Jeff Layton wrote:
+> >>>>> The question about looping indefinitely really comes down to:
+> >>>>>
+> >>>>> 1) is a persistent ESTALE in conjunction with a successful lookup a
+> >>>>> situation that we expect to be temporary. i.e. will the admin at some
+> >>>>> point be able to do something about it? If not, then there's no point
+> >>>>> in continuing to retry. Again, this is a situation that *really* should
+> >>>>> not happen if the filesystem is doing the right thing.
+> >>>>>
+> >>>>> 2) If the admin can't do anything about it, is it reasonable to expect
+> >>>>> that users can send a fatal signal to hung applications if this
+> >>>>> situation occurs.
+> >>>>>
+> >>>>> We expect that that's ok in other situations to resolve hung
+> >>>>> applications, so I'm not sure I understand why it wouldn't be
+> >>>>> acceptable here...
+> >>>>
+> >>>> There are definitely potentially persistent pathological situations that
+> >>>> the filesystem can't do anything about. If the point of origin for your
+> >>>> pathname (for instance your current directory in the case of a relative
+> >>>> pathname) is stale, then no amount of looping is going to help you to
+> >>>> recover.
+> >>>>
+> >>>
+> >>> Ok -- Peter pretty much said something similar. Retrying indefnitely
+> >>> when the lookup returns ESTALE probably won't help. I'm ok with
+> >>> basically letting the VFS continue to do what it does there already. If
+> >>> it gets an ESTALE, it tries again with LOOKUP_REVAL set and then gives
+> >>> up if that doesn't work.
+> >>>
+> >>> If however, the operation itself keeps returning ESTALE, are we OK to
+> >>> retry indefinitely assuming that we'll break out of the loop on fatal
+> >>> signals?
+> >>>
+> >>> For example, something like the v2 patch I sent a little while ago?
+> >>
+> >>
 > >> Won't something like fstatat(AT_FDCWD, "", &stat, AT_EMPTY_PATH) risk
 > >> looping forever there, or am I missing something?
-> >> 
-> >
+> >>
+> > 
 > > To make sure I understand, that should be "shortcut" for a lookup of the
 > > cwd?
-> >
+> > 
 > > So I guess the concern is that you'd do the above and get a successful
 > > lookup since you're just going to get back the cwd. At that point,
 > > you'd attempt the getattr and get ESTALE back. Then, you'd redo the
 > > lookup with LOOKUP_REVAL set -- but since we're operating on the
 > > cwd, we don't have a way to redo the lookup since we don't have a
 > > pathname that we can look up again...
-> >
+> > 
 > > So yeah, I guess if you're sitting in a stale directory, something like
 > > that could loop eternally.
-> >
+> > 
 > > Do you think the proposed check for fatal_signal_pending is enough to
 > > mitigate such a problem? Or do we need to limit the number of retries
 > > to address those sorts of loops?
-> 
-> Lets step back a bit.
-> 
-> The retry is needed when when we discover during ->getattr() that the
-> cached lookup returned a stale file handle.
-> 
-> If the lookup wasn't cached or if there was no lookup at all
-> (stat(".") and friends) then retrying will not gain anything.
+> > 
+> I think your version 2 patch is definitely more clever than v1, but I'm
+> thinking Trond's point is no matter what type of looping is done or how
+> long its done its going to fail... So why loop at all? 
 > 
 
-That's not necessarily the case, at least not with NFS. It's easily
-possible for you to do a full-fledged lookup over the wire, and then
-for that inode to be removed prior to issuing a call against the FH that
-you got back. 
+Because we can't distinguish between that case and a case where
+retrying may help. If we can avoid failing altogether, isn't that
+preferable?
 
-> And that also means that retrying multiple times is pointless, since
-> after the first retry we are sure to have up-to-date attributes.
+> Again I think the safest and simply way, from the VFS point of view,
+> is do the looping once if the file system as registered for it
+> through the fs_flags. This will catch %99 of the issues, failing
+> on the %1 of the corner cases... 
 > 
 
-Again, it's not pointless. It's possible (though somewhat pathological)
-for you to hit the race above more than once in the same operation.
-Granted, it's an unlikely race but it is possible.
+If we're just going to retry once, then I see no need to bother with a
+fs flag. Retrying once should be harmless for all filesystems. The main
+reason to bother with a per-fs flag is to deal with those that would
+have problems looping indefinitely on an ESTALE return from the
+operation.
 
-> Unfortunately it's impossible for the filesystem to know whether a
-> ->getattr (or other inode operation) was perfromed after a cached or a
-> non-cached lookup.
-> 
-> I'm not sure what the right interface for this would be.  One would be
-> to just pass the "cached-or-not" information as a flag.  That works for
-> getattr() but not for other operations.
-> 
-> Another is to introduce atomic lookup+foo variants of these operations
-> just like for open.  E.g. the lookup+getattr is called if the cached
-> lookup fails or if the cached lookup succeeds and the plain ->getattr
-> call returns ESTALE.
->
+So, to give your proposal some "legs", you'd prefer to see something
+like this?
 
-To do that would require protocol support that we simply don't have. We
-don't have a way to (for instance) say via NFS "give me the attributes
-for this filename". Well, at least not for NFSv3...
+---------------------------------[snip]-------------------------------
 
-With v4 you could theoretically construct a compound that does that,
-but you'd have to assume that the server won't release the reference to
-the inode midway through the compound. That's a reasonably safe
-assumption.
+[PATCH] vfs: make fstatat retry once on ESTALE errors from getattr call
 
-While it's nice to consider new atomic ops like this, it's not really
-possible with earlier versions of NFS.
+A third patch. This one takes the minimalist approach. It only retries
+once per syscall.
 
+Signed-off-by: Jeff Layton <jlayton@redhat.com>
+---
+ fs/stat.c |    9 ++++++++-
+ 1 files changed, 8 insertions(+), 1 deletions(-)
+
+diff --git a/fs/stat.c b/fs/stat.c
+index c733dc5..0ee9cb4 100644
+--- a/fs/stat.c
++++ b/fs/stat.c
+@@ -73,7 +73,8 @@ int vfs_fstatat(int dfd, const char __user *filename, struct kstat *stat,
+ {
+ 	struct path path;
+ 	int error = -EINVAL;
+-	int lookup_flags = 0;
++	bool retried = false;
++	unsigned int lookup_flags = 0;
+ 
+ 	if ((flag & ~(AT_SYMLINK_NOFOLLOW | AT_NO_AUTOMOUNT |
+ 		      AT_EMPTY_PATH)) != 0)
+@@ -84,12 +85,18 @@ int vfs_fstatat(int dfd, const char __user *filename, struct kstat *stat,
+ 	if (flag & AT_EMPTY_PATH)
+ 		lookup_flags |= LOOKUP_EMPTY;
+ 
++retry:
+ 	error = user_path_at(dfd, filename, lookup_flags, &path);
+ 	if (error)
+ 		goto out;
+ 
+ 	error = vfs_getattr(path.mnt, path.dentry, stat);
+ 	path_put(&path);
++	if (error == -ESTALE && !retried) {
++		retried = true;
++		lookup_flags |= LOOKUP_REVAL;
++		goto retry;
++	}
+ out:
+ 	return error;
+ }
 -- 
-Jeff Layton <jlayton@redhat.com>
+1.7.7.6
+
