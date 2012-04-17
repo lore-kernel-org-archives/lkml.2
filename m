@@ -1,103 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932213Ab2DQMwQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Apr 2012 08:52:16 -0400
-Received: from [206.248.143.162] ([206.248.143.162]:28623 "EHLO
-	ironport-out.teksavvy.com" rhost-flags-FAIL-FAIL-OK-OK)
-	by vger.kernel.org with ESMTP id S1755749Ab2DQMwP (ORCPT
+	id S932258Ab2DQMwl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Apr 2012 08:52:41 -0400
+Received: from mail-wi0-f170.google.com ([209.85.212.170]:54289 "EHLO
+	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932125Ab2DQMwk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Apr 2012 08:52:15 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AuEBACxOgk8Y9geI/2dsb2JhbAANNoVzsCSGLAEBAQECASMEUQEFCwsYAgIFFgsCAgkDAgECAUUGDQEHAQGIBawfihiBL44TgRgEqSWBOBY
-X-IronPort-AV: E=Sophos;i="4.75,391,1330923600"; 
-   d="scan'208";a="174884638"
-Message-ID: <4F8D6769.7080504@teksavvy.com>
-Date: Tue, 17 Apr 2012 08:51:53 -0400
-From: Mark Lord <kernel@teksavvy.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:11.0) Gecko/20120327 Thunderbird/11.0.1
+	Tue, 17 Apr 2012 08:52:40 -0400
+Message-ID: <4F8D678C.6050104@nasza-klasa.pl>
+Date: Tue, 17 Apr 2012 14:52:28 +0200
+From: =?UTF-8?B?TGVzxYJhdyBLb3BlxIc=?= <leslaw.kopec@nasza-klasa.pl>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.28) Gecko/20120313 Lightning/1.0b2 Thunderbird/3.1.20
 MIME-Version: 1.0
-To: John Stultz <john.stultz@linaro.org>
-CC: richard -rw- weinberger <richard.weinberger@gmail.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        rtc-linux@googlegroups.com, Alessandro Zummo <a.zummo@towertech.it>,
-        Greg Kroah-Hartman <greg@kroah.com>, stable@vger.kernel.org,
-        Rabin Vincent <rabin.vincent@stericsson.com>
-Subject: Re: [REGRESSION] rtc/interface.c: kills suspend-to-ram
-References: <4F8BA1C1.4030804@teksavvy.com> <4F8C24E5.4020703@teksavvy.com> <CAFLxGvzkcYw-iUA1X8jK+Q8A2HFEG1SSXvfZ3Uj+OwKWgi+zAA@mail.gmail.com> <4F8C3DDF.8030103@teksavvy.com> <CAFLxGvy=3SHKFYoSfUcQrJKsCYWq5Fxpi4q_DTQjjFNDSSnJOw@mail.gmail.com> <4F8C415C.80806@teksavvy.com> <4F8C76EB.20709@linaro.org> <4F8C926D.2040503@linaro.org> <4F8CD5D3.8060006@teksavvy.com> <4F8CFC12.6050700@linaro.org>
-In-Reply-To: <4F8CFC12.6050700@linaro.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+To: Peter Zijlstra <peterz@infradead.org>
+CC: Aman Gupta <aman@tmm1.net>, linux-kernel@vger.kernel.org,
+        Chase Douglas <chase.douglas@canonical.com>,
+        Damien Wyart <damien.wyart@free.fr>, Kyle McMartin <kyle@redhat.com>,
+        Venkatesh Pallipadi <venki@google.com>,
+        Jonathan Nieder <jrnieder@gmail.com>,
+        Doug Smythies <dsmythies@telus.net>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: Inconsistent load average on tickless kernels
+References: <CAK=uwuy80LaNdQ4P49i+bGUXFvxf1zB=oKqNBTdAyvFc+mOTyw@mail.gmail.com>	 <4F465F6E.9070605@nasza-klasa.pl> <1330517195.11248.148.camel@twins>	 <1330532667.11248.153.camel@twins> <1330534998.11248.158.camel@twins>	 <4F551ABE.5080605@nasza-klasa.pl>	 <CAK=uwuxvzGwes4ffy9EXVReG95U3HQaKmPPKgFnHzo_MwaO_NA@mail.gmail.com>	 <1330989903.11248.261.camel@twins> <1330990360.11248.264.camel@twins> <1330990413.11248.265.camel@twins>
+In-Reply-To: <1330990413.11248.265.camel@twins>
+X-Enigmail-Version: 1.1.2
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ protocol="application/pgp-signature";
+ boundary="------------enig40343A29FA9B69FFD175B25B"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12-04-17 01:13 AM, John Stultz wrote:
-> On 04/16/2012 07:30 PM, Mark Lord wrote:
-..
->> And.. on some of the systems I'm testing on, the BIOS setup has
->> the RTC Alarm "enabled", which means "under BIOS control",
->> as opposed to "disabled" which means "under software control".
->>
->> It's the "under BIOS control" systems that the above patch breaks.
-..
-> Thanks for the extra info. Although I'm still a little perplexed why that's causing trouble.
-> When "under BIOS control" is the RTC unusable by the kernel? Will any access cause problems? Or just
-> the extra disable path?
+This is an OpenPGP/MIME signed message (RFC 2440 and 3156)
+--------------enig40343A29FA9B69FFD175B25B
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: quoted-printable
 
-Not totally clear yet, but I have noticed failures just reading
-the RTC alarm setting when it is "under BIOS control",
-so it does seem to cause issues.
+Hello!
 
-I've further isolated it down to one specific revision of motherboard here.
-The later rev of the same mobo doesn't exhibit the problem (I have both revs).
-Interesting, that.  But if this board does it, then there probably are others
-out there which could also be affected.
+I've finally finished testing patch c308b56b53. Apologies for the delay
+in reporting back. This time I've compared kernels from 3.2 and 2.6.32
+branches. Here's a snapshot of load 15 on different versions:
 
-> On a hunch, I wonder if your tripping over the alarmtimer initialization issue that was recently fixed.
-> Have you also seen this issue w/ 3.4-rc2+ ?
+2.6.32.55-hz-0f004f5a69			12.78
+2.6.32.55-no-hz-74f5187ac8		4.42
+2.6.32.55-no-hz-0f004f5a69		0.49
+2.6.32.55-no-hz-c308b56b53		4.37
+3.2.12-hz				12.85
+3.2.12-no-hz				0.65
+3.2.12-no-hz-c308b56b53			7.25
+3.2.12-no-hz-c308b56b53	nohz=3Doff	10.59
 
-These boxes aren't ready for 3.4-xx yet.  :)
+A whole day trend is available on a comparison chart [1].
 
-> I guess I'm curious why you're hitting the rtc_alarm_disable if you're not using the alarm. If you
-> use the following diff, can you provide the resulting stack traces?
+Just to make things clear 2.6.32 kernels were patched as follows:
+* 74f5187ac8 - just 74f5187ac8
+* 0f004f5a69 - 74f5187ac8 + 0f004f5a69
+* c308b56b53 - 74f5187ac8 + 0f004f5a69 + c308b56b53
+
+For kernel 3.2.12 patch c308b56b53 seems almost perfect. For low CPU
+utilization the load value is slightly lower for NO_HZ version than it
+is for HZ one. However the difference is small and the overall trend
+relates to CPU usage quite closely. This is definitely the best match so
+far. Thanks!
+
+Looking at results for 2.6.32.55 branch it seems that we're back at
+74f5187ac8 patch - the values are almost the same. The difference
+between NO_HZ and HZ versions is noticeable. At the risk of sounding
+like an ungrateful bastard - will there be further attempts at fixing
+this bug for 2.6.32 kernels?
 
 
-Yeah, excellent suggestion.  I'm very curious who calls this and when.
+[1] http://img535.imageshack.us/img535/2204/kernelload.png
 
-> diff --git a/drivers/rtc/interface.c b/drivers/rtc/interface.c
-> index eb415bd..4c98ee5 100644
-> --- a/drivers/rtc/interface.c
-> +++ b/drivers/rtc/interface.c
-> @@ -786,7 +786,8 @@ static void rtc_alarm_disable(struct rtc_device *rtc)
->      if (!rtc->ops || !rtc->ops->alarm_irq_enable)
->          return;
-> 
-> -    rtc->ops->alarm_irq_enable(rtc->dev.parent, false);
-> +    //rtc->ops->alarm_irq_enable(rtc->dev.parent, false);
-> +    dump_stack();
->  }
-..
+--=20
+Les=C5=82aw Kope=C4=87
 
-> Then un-comment/re-add the alarm_irq_enable() call above, and try the following, to see if the
-> behavior changes? Then re-add each line one by one to see if you can isolate where things go wrong
-> in the cmos code?
-> 
-> diff --git a/drivers/rtc/rtc-cmos.c b/drivers/rtc/rtc-cmos.c
-> index 7d5f56e..c500bce 100644
-> --- a/drivers/rtc/rtc-cmos.c
-> +++ b/drivers/rtc/rtc-cmos.c
-> @@ -318,9 +318,9 @@ static void cmos_irq_disable(struct cmos_rtc *cmos, unsigned char mask)
->      rtc_control = CMOS_READ(RTC_CONTROL);
->      rtc_control&= ~mask;
->      CMOS_WRITE(rtc_control, RTC_CONTROL);
-> -    hpet_mask_rtc_irq_bit(mask);
-> +    //hpet_mask_rtc_irq_bit(mask);
-> 
-> -    cmos_checkintr(cmos, rtc_control);
-> +    //cmos_checkintr(cmos, rtc_control);
-..
 
-Ack.  Will do.  Probably not for 12-24 hours though.
+--------------enig40343A29FA9B69FFD175B25B
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
 
-Cheers
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+Comment: Using GnuPG with Mozilla - http://enigmail.mozdev.org/
 
+iEYEARECAAYFAk+NZ40ACgkQNZJfI+JDs2JIMwCgm85X8vDmAjqB9Vu9CICDcOAD
+TvMAnAhBIm/ZjYHpnidnMkBomHS5jOxf
+=Nvds
+-----END PGP SIGNATURE-----
+
+--------------enig40343A29FA9B69FFD175B25B--
