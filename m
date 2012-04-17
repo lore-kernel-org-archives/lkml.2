@@ -1,75 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932131Ab2DQJeM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Apr 2012 05:34:12 -0400
-Received: from fold.natur.cuni.cz ([195.113.57.32]:39713 "HELO
-	fold.natur.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S932082Ab2DQJeK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S932111Ab2DQJeK (ORCPT <rfc822;w@1wt.eu>);
 	Tue, 17 Apr 2012 05:34:10 -0400
-Message-ID: <4F8D390F.9050408@fold.natur.cuni.cz>
-Date: Tue, 17 Apr 2012 11:34:07 +0200
-From: Martin Mokrejs <mmokrejs@fold.natur.cuni.cz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120319 Firefox/11.0 SeaMonkey/2.8
+Received: from cantor2.suse.de ([195.135.220.15]:60342 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755969Ab2DQJeI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Apr 2012 05:34:08 -0400
+Message-ID: <4F8D391D.8080008@suse.de>
+Date: Tue, 17 Apr 2012 11:34:21 +0200
+From: Alexander Graf <agraf@suse.de>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.14) Gecko/20110221 SUSE/3.1.8 Thunderbird/3.1.8
 MIME-Version: 1.0
-To: Yinghai Lu <yinghai@kernel.org>
-CC: Thomas Gleixner <tglx@linutronix.de>, linux-pci@vger.kernel.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: 3.2.11: PCI Express card cannot be re-detected withing cca 60sec
- timeframe
-References: <4F6A483D.50702@fold.natur.cuni.cz> <CAE9FiQVnErU-cska4gpinyj-LOup-U+3vsEG2z_-7h6kyREYtw@mail.gmail.com> <4F6A5A53.305@fold.natur.cuni.cz> <CAE9FiQXP7fO9OGN557jdofFFiFj96wL--ZA8X3UPEJ6o9JLvBw@mail.gmail.com> <4F8BEB1D.9080903@fold.natur.cuni.cz> <CAE9FiQXoX3J6P_9Tun_XbkK3egvSeBZxAtC13HacFDO0fwmZaA@mail.gmail.com> <4F8C6E4E.1000205@fold.natur.cuni.cz> <CAE9FiQXikqikMw_LYGqAUsWqFqL-tLiresPhpkpDhb+AxwundQ@mail.gmail.com> <CAE9FiQUFB=9zbP1yuBDH1RJrCCP=83kV_fH+TEtk80981-uP=w@mail.gmail.com> <CAE9FiQUbzM_TVu+bbXa6LWiUt01QsFiGoyYd0qV=41dXx4J31g@mail.gmail.com> <4F8D1B72.2000105@fold.natur.cuni.cz> <CAE9FiQW2MAW_WT+sq8XVtMOx=uR8FAN8O2wL2AOxkFBfEM285g@mail.gmail.com> <CAE9FiQWSw1h772ijZ6YL4EujwjgvZ84bbDx9VbF_cdE63D-41w@mail.gmail.com>
-In-Reply-To: <CAE9FiQWSw1h772ijZ6YL4EujwjgvZ84bbDx9VbF_cdE63D-41w@mail.gmail.com>
-X-Enigmail-Version: 1.4
-Content-Type: text/plain; charset=UTF-8
+To: Avi Kivity <avi@redhat.com>
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        KVM list <kvm@vger.kernel.org>, Marcelo Tosatti <mtosatti@redhat.com>,
+        Paul Mackerras <paulus@au1.ibm.com>
+Subject: Re: [GIT PULL] KVM updates for the 3.4 merge window
+References: <4F688F48.6090303@redhat.com> <1332461414.2982.90.camel@pasglop>  <CA+55aFxdf_K97KJ-phck-2YcTWAc6icc+Qhi6hOg0MA8FAjiyA@mail.gmail.com>  <4F6EEEC1.4030608@redhat.com>  <20120326213809.GA29788@bloggs.ozlabs.ibm.com>  <4F7191E8.7020804@redhat.com>  <20120330120107.GA28503@bloggs.ozlabs.ibm.com>  <4F784C4D.3000409@redhat.com> <1333314138.30734.17.camel@pasglop>  <4F796C18.2040209@redhat.com> <1333359979.30734.48.camel@pasglop>  <3BB9812B-6FE2-4370-9D55-D273364BFFD1@suse.de>  <4F8C1652.7000004@redhat.com> <1334617517.25353.17.camel@pasglop> <4F8D19D3.1060002@redhat.com>
+In-Reply-To: <4F8D19D3.1060002@redhat.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Yinghai Lu wrote:
-> On Tue, Apr 17, 2012 at 1:46 AM, Yinghai Lu <yinghai@kernel.org> wrote:
->> On Tue, Apr 17, 2012 at 12:27 AM, Martin Mokrejs
->> <mmokrejs@fold.natur.cuni.cz> wrote:
->>>>
->>>> can you send out lspci -vvxxxx -s 00:1c.7 after removing USB 3.0 express card?
+On 04/17/2012 09:20 AM, Avi Kivity wrote:
+> On 04/17/2012 02:05 AM, Benjamin Herrenschmidt wrote:
+>> On Mon, 2012-04-16 at 15:53 +0300, Avi Kivity wrote:
+>>> kvm.git next is exposed to linux-next, where they get tested quite a
+>>> lot.  Granted it's mostly build testing, and people are unlikely to
+>>> test
+>>> kvm there, but they will test the non-kvm bits that creep in there.
 >>>
->>> No, that did not help (tried on 3.4-rc3). First I plugged in the NEC uPD720200 USB3.0 card
->>> and unplugged it (card removal not reported :(), saved the lspci output.
->>> Then I inserted the FireWire card, unplugged, again saved the lspci output.
->>> Finally, saved the dmesg. All three files are attached.
+>>>> The alternative would be that I don't have a -next tree, just
+>>> collect patches and immediately send them to Avi. That way the main
+>>> kvm tree would be broken more often, but at least we don't get these
+>>> horrible synchronization latencies.
+>>>
+>>> That works too.  Don't post immediately; 2-3 week batches would reduce
+>>> noise.
+>> Or do like I do with Kumar for FSL stuff... his stuff gets pulled via my
+>> tree but his tree is in linux-next as well. There's no reason not to do
+>> that.
 >>
->> for USB 3.0:
->>                SltSta: Status: AttnBtn- PowerFlt- MRL- CmdCplt- PresDet+ Interlock-
->>                        Changed: MRL- PresDet- LinkState+
-> 
-> LnkSta: Speed 2.5GT/s, Width x1, TrErr- Train- SlotClk+ DLActive+
-> BWMgmt+ ABWMgmt-
-> 
-> link still active even that card get removed, that looks like chipset
-> have problem.
+>> That way, his next branch gets linux-next coverage whether it's in my
+>> tree or not, and I pull when I put the final powerpc-next together,
+>> which gives me a chance to do a quick vet "just in case" and sort out
+>> any major conflict before it all goes to Linus.
+>>
+> Sure, that works too.
 
-Yinghai,
-  so what should I ask Dell for? To fix BIOS of the laptop? What exactly? Or do you think
-this is a hardware issue with the chipset?
+Sounds even easier to me. So how do I get my tree into linux-next?
 
-# lspci
-00:00.0 Host bridge: Intel Corporation 2nd Generation Core Processor Family DRAM Controller (rev 09)
-00:02.0 VGA compatible controller: Intel Corporation 2nd Generation Core Processor Family Integrated Graphics Controller (rev 09)
-00:16.0 Communication controller: Intel Corporation 6 Series/C200 Series Chipset Family MEI Controller #1 (rev 04)
-00:1a.0 USB controller: Intel Corporation 6 Series/C200 Series Chipset Family USB Enhanced Host Controller #2 (rev 05)
-00:1b.0 Audio device: Intel Corporation 6 Series/C200 Series Chipset Family High Definition Audio Controller (rev 05)
-00:1c.0 PCI bridge: Intel Corporation 6 Series/C200 Series Chipset Family PCI Express Root Port 1 (rev b5)
-00:1c.1 PCI bridge: Intel Corporation 6 Series/C200 Series Chipset Family PCI Express Root Port 2 (rev b5)
-00:1c.3 PCI bridge: Intel Corporation 6 Series/C200 Series Chipset Family PCI Express Root Port 4 (rev b5)
-00:1c.4 PCI bridge: Intel Corporation 6 Series/C200 Series Chipset Family PCI Express Root Port 5 (rev b5)
-00:1c.7 PCI bridge: Intel Corporation 6 Series/C200 Series Chipset Family PCI Express Root Port 8 (rev b5)
-00:1d.0 USB controller: Intel Corporation 6 Series/C200 Series Chipset Family USB Enhanced Host Controller #1 (rev 05)
-00:1f.0 ISA bridge: Intel Corporation HM67 Express Chipset Family LPC Controller (rev 05)
-00:1f.2 SATA controller: Intel Corporation 6 Series/C200 Series Chipset Family 6 port SATA AHCI Controller (rev 05)
-00:1f.3 SMBus: Intel Corporation 6 Series/C200 Series Chipset Family SMBus Controller (rev 05)
-05:00.0 Ethernet controller: Realtek Semiconductor Co., Ltd. RTL8111/8168B PCI Express Gigabit Ethernet controller (rev 06)
-09:00.0 Network controller: Intel Corporation Centrino Wireless-N 1030 (rev 34)
-0b:00.0 USB controller: Texas Instruments Device 8241 (rev 02)
-#
 
-Martin
+Alex
+
