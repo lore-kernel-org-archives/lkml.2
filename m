@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753580Ab2DQFsM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Apr 2012 01:48:12 -0400
+	id S1754340Ab2DQFsT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Apr 2012 01:48:19 -0400
 Received: from mga14.intel.com ([143.182.124.37]:49201 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752055Ab2DQFsK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Apr 2012 01:48:10 -0400
+	id S1753957Ab2DQFsR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Apr 2012 01:48:17 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="89863251"
+   d="scan'208";a="89863275"
 From: Lin Ming <ming.m.lin@intel.com>
 To: "Rafael J. Wysocki" <rjw@sisk.pl>, Len Brown <lenb@kernel.og>
 Cc: linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org,
         Zhang Rui <rui.zhang@intel.com>,
         Huang Ying <huang.ying.caritas@gmail.com>, Aaron Lu <aaron.lu@amd.com>
-Subject: [PATCH 1/6] ACPI: D3cold state is always valid
-Date: Tue, 17 Apr 2012 13:47:51 +0800
-Message-Id: <1334641676-14566-2-git-send-email-ming.m.lin@intel.com>
+Subject: [PATCH 5/6] PCI/ACPI: Map PCI D3cold state to ACPI D3cold state
+Date: Tue, 17 Apr 2012 13:47:55 +0800
+Message-Id: <1334641676-14566-6-git-send-email-ming.m.lin@intel.com>
 X-Mailer: git-send-email 1.7.2.5
 In-Reply-To: <1334641676-14566-1-git-send-email-ming.m.lin@intel.com>
 References: <1334641676-14566-1-git-send-email-ming.m.lin@intel.com>
@@ -24,42 +24,23 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-ACPI_STATE_D3 actually means ACPI D3hot which is not always valid.
-Instead, ACPI D3cold is always valid.
-
 Signed-off-by: Lin Ming <ming.m.lin@intel.com>
 ---
- drivers/acpi/scan.c |   11 ++---------
- 1 files changed, 2 insertions(+), 9 deletions(-)
+ drivers/pci/pci-acpi.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/drivers/acpi/scan.c b/drivers/acpi/scan.c
-index 767e2dc..fb56388 100644
---- a/drivers/acpi/scan.c
-+++ b/drivers/acpi/scan.c
-@@ -884,13 +884,6 @@ static int acpi_bus_get_power_flags(struct acpi_device *device)
- 				acpi_bus_add_power_resource(ps->resources.handles[j]);
- 		}
- 
--		/* The exist of _PR3 indicates D3Cold support */
--		if (i == ACPI_STATE_D3) {
--			status = acpi_get_handle(device->handle, object_name, &handle);
--			if (ACPI_SUCCESS(status))
--				device->power.states[ACPI_STATE_D3_COLD].flags.valid = 1;
--		}
--
- 		/* Evaluate "_PSx" to see if we can do explicit sets */
- 		object_name[2] = 'S';
- 		status = acpi_get_handle(device->handle, object_name, &handle);
-@@ -908,8 +901,8 @@ static int acpi_bus_get_power_flags(struct acpi_device *device)
- 	/* Set defaults for D0 and D3 states (always valid) */
- 	device->power.states[ACPI_STATE_D0].flags.valid = 1;
- 	device->power.states[ACPI_STATE_D0].power = 100;
--	device->power.states[ACPI_STATE_D3].flags.valid = 1;
--	device->power.states[ACPI_STATE_D3].power = 0;
-+	device->power.states[ACPI_STATE_D3_COLD].flags.valid = 1;
-+	device->power.states[ACPI_STATE_D3_COLD].power = 0;
- 
- 	acpi_bus_init_power(device);
+diff --git a/drivers/pci/pci-acpi.c b/drivers/pci/pci-acpi.c
+index 0f150f2..e641953 100644
+--- a/drivers/pci/pci-acpi.c
++++ b/drivers/pci/pci-acpi.c
+@@ -224,7 +224,7 @@ static int acpi_pci_set_power_state(struct pci_dev *dev, pci_power_t state)
+ 		[PCI_D1] = ACPI_STATE_D1,
+ 		[PCI_D2] = ACPI_STATE_D2,
+ 		[PCI_D3hot] = ACPI_STATE_D3,
+-		[PCI_D3cold] = ACPI_STATE_D3
++		[PCI_D3cold] = ACPI_STATE_D3_COLD
+ 	};
+ 	int error = -EINVAL;
  
 -- 
 1.7.2.5
