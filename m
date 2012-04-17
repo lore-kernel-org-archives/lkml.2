@@ -1,66 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932166Ab2DQQEv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Apr 2012 12:04:51 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:65142 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755832Ab2DQQEu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Apr 2012 12:04:50 -0400
-Message-ID: <4F8D9457.2080900@redhat.com>
-Date: Tue, 17 Apr 2012 13:03:35 -0300
-From: Mauro Carvalho Chehab <mchehab@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120329 Thunderbird/11.0.1
+	id S1756250Ab2DQQGv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Apr 2012 12:06:51 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:60398 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752073Ab2DQQGu convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Apr 2012 12:06:50 -0400
 MIME-Version: 1.0
-To: Jesper Juhl <jj@chaosbits.net>
-CC: linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Randy Dunlap <rdunlap@xenotime.net>, trivial@kernel.org,
-        kjsisson@bellsouth.net, Ben Dooks <ben-linux@fluff.org>,
-        Mauro Carvalho Chehab <mchehab@infradead.org>,
-        Ben Dooks <ben@simtec.co.uk>, Jaroslav Kysela <perex@perex.cz>,
-        Takashi Iwai <tiwai@suse.de>, Andy Lutomirski <luto@mit.edu>,
-        "H. Peter Anvin" <hpa@linux.intel.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Josua Dietze <digidietze@draisberghof.de>,
-        Andiry Xu <andiry.xu@amd.com>, Matthew Garrett <mjg@redhat.com>,
-        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Mike Frysinger <vapier@gentoo.org>,
-        Michael Hennerich <michael.hennerich@analog.com>,
-        linux-media@vger.kernel.org, alsa-devel@alsa-project.org
-Subject: Re: [PATCH] [Trivial] Documentation: Add newline at end-of-file to
- files lacking one
-References: <alpine.LNX.2.00.1204162329190.21898@swampdragon.chaosbits.net>
-In-Reply-To: <alpine.LNX.2.00.1204162329190.21898@swampdragon.chaosbits.net>
-X-Enigmail-Version: 1.4
+In-Reply-To: <20120417141023.40aefc2ff17c29b2edf51762@canb.auug.org.au>
+References: <20120417141023.40aefc2ff17c29b2edf51762@canb.auug.org.au>
+Date: Tue, 17 Apr 2012 11:06:48 -0500
+Message-ID: <CABqD9hbi=2SsybyirtCPivUerrx6Uohu5GJLc_gaUcTiT8h-kg@mail.gmail.com>
+Subject: Re: linux-next: build warning after merge of the final tree (security
+ tree related)
+From: Will Drewry <wad@chromium.org>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: James Morris <jmorris@namei.org>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Kees Cook <keescook@chromium.org>,
+        Eric Paris <eparis@redhat.com>,
+        Serge Hallyn <serge.hallyn@canonical.com>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em 16-04-2012 18:35, Jesper Juhl escreveu:
-> This patch simply adds a newline character at end-of-file to those
-> files in Documentation/ that currently lack one.
-> 
-> This is done for a few different reasons:
-> 
-> A) It's rather annoying when you do "cat some_file.txt" that your
->    prompt/cursor ends up at the end of the last line of output rather
->    than on a new line.
-> 
-> B) Some tools that process files line-by-line may get confused by the
->    lack of a newline on the last line.
-> 
-> C) The "\ No newline at end of file" line in diffs annoys me for some
->    reason.
-> 
-> So, let's just add the missing newline once and for all.
-> 
-> Signed-off-by: Jesper Juhl <jj@chaosbits.net>
-> ---
+Doh - thanks! I'll figure out the right way to silence these warnings
+in this config case and post the patch against James's tree.
 
->  Documentation/dvb/opera-firmware.txt                           |    2 +-
->  Documentation/video4linux/cpia2_overview.txt                   |    2 +-
->  Documentation/video4linux/stv680.txt                           |    2 +-
+Thanks!
 
-Acked-by: Mauro Carvalho Chehab <mchehab@redhat.com>
+On Mon, Apr 16, 2012 at 11:10 PM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+> Hi all,
+>
+> After merging the final tree, today's linux-next build (sparc64 defconfig)
+> produced this warning:
+>
+> kernel/seccomp.c: In function '__secure_computing':
+> kernel/seccomp.c:445:1: warning: label 'skip' defined but not used [-Wunused-label]
+> kernel/seccomp.c:381:6: warning: unused variable 'data' [-Wunused-variable]
+> kernel/seccomp.c:380:6: warning: unused variable 'ret' [-Wunused-variable]
+>
+> Introduced by commit acf3b2c71ed2 ("seccomp: add SECCOMP_RET_ERRNO").
+> This build has CONFIG_SECCOMP_FILTER turned off.
+>
+> --
+> Cheers,
+> Stephen Rothwell                    sfr@canb.auug.org.au
