@@ -1,50 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753297Ab2DQVHg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Apr 2012 17:07:36 -0400
-Received: from rcsinet15.oracle.com ([148.87.113.117]:30501 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752868Ab2DQVHd (ORCPT
+	id S1753081Ab2DQVId (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Apr 2012 17:08:33 -0400
+Received: from mail-1-out2.atlantis.sk ([80.94.52.71]:51320 "EHLO
+	mail.atlantis.sk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1750859Ab2DQVIc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Apr 2012 17:07:33 -0400
-Date: Wed, 18 Apr 2012 00:09:05 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: Roland Stigge <stigge@antcom.de>
-Cc: arm@kernel.org, linux-arm-kernel@lists.infradead.org,
-        thierry.reding@avionic-design.de, gregkh@linuxfoundation.org,
-        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-input@vger.kernel.org, dmitry.torokhov@gmail.com,
-        axel.lin@gmail.com, broonie@opensource.wolfsonmicro.com,
-        marek.vasut@gmail.com, devel@driverdev.osuosl.org, kevin.wells@nxp.com,
-        srinivas.bakki@nxp.com
-Subject: Re: [PATCH v2 3/8] ARM: LPC32xx: clock.c update
-Message-ID: <20120417210905.GJ6498@mwanda>
-References: <1334682507-15055-1-git-send-email-stigge@antcom.de>
- <1334682507-15055-4-git-send-email-stigge@antcom.de>
+	Tue, 17 Apr 2012 17:08:32 -0400
+From: Ondrej Zary <linux@rainbow-software.org>
+To: Takashi Iwai <tiwai@suse.de>
+Subject: Re: [alsa-devel] [PATCH 3/4] Add Wolfson Microelectronics WM8776 codec ALSA driver
+Date: Tue, 17 Apr 2012 23:07:48 +0200
+User-Agent: KMail/1.9.10
+Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org
+References: <1334611118-10301-1-git-send-email-linux@rainbow-software.org> <201204172015.14582.linux@rainbow-software.org> <s5hy5punpem.wl%tiwai@suse.de>
+In-Reply-To: <s5hy5punpem.wl%tiwai@suse.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
 Content-Disposition: inline
-In-Reply-To: <1334682507-15055-4-git-send-email-stigge@antcom.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
-X-CT-RefId: str=0001.0A090208.4F8DDB74.00B3,ss=1,re=0.000,fgs=0
+Message-Id: <201204172307.58016.linux@rainbow-software.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 17, 2012 at 07:08:22PM +0200, Roland Stigge wrote:
-> Besides switching to the default macro CLKDEV_INIT() for clock registration,
-> this patch actually updates the clock registrations of pl08xdmac.
-> 
+On Tuesday 17 April 2012 21:12:33 you wrote:
+> At Tue, 17 Apr 2012 20:15:06 +0200,
+>
+> Ondrej Zary wrote:
+> > On Tuesday 17 April 2012 20:06:19 Takashi Iwai wrote:
+> > > At Tue, 17 Apr 2012 18:04:31 +0100,
+> > >
+> > > Mark Brown wrote:
+> > > > On Tue, Apr 17, 2012 at 06:52:49PM +0200, Takashi Iwai wrote:
+> > > > > Mark Brown wrote:
+> > > > > > This isn't just adding something into a specific driver which
+> > > > > > fails at abstraction, it's adding generic code.  If it were
+> > > > > > adding something to the ice17xx driver then that'd be one thing
+> > > > > > but look at the subject line and location of the file...  this
+> > > > > > stuff should be buried inside the driver if it's too painful to
+> > > > > > make the driver sane.
+> > > > >
+> > > > > The codes in sound/i2c are mostly oly for ice1712/ice1724 drivers
+> > > > > after all...  They could be used by others, but I don't think there
+> > > > > will be any more at this point.
+> > > >
+> > > > If they're specific to that driver we should make them specific to
+> > > > that driver and make sure the pain is confined there.  We really
+> > > > don't want to end up going back to the bad old days of having to do
+> > > > per-CPU/card drivers for CODECs because nobody had thought to
+> > > > abstract this stuff, that just makes everyone miserable.
+> > > >
+> > > > Looking at these commits I'd not expect anyone to figure out that
+> > > > this isn't how we want or expect people to add generic CODEC drivers.
+> > >
+> > > Yeah, these stuff can be better put in pci/ice1712/ directory only
+> > > for ice1724 driver.  In that way, you can avoid unnecessary exported
+> > > symbols, too.
+> >
+> > Xonar (oxygen) has a private version of these drivers too. It could be
+> > converted to use common code instead.
+>
+> Hm, only if the generated controls do match with your case,..
+> It's case by case, especally if there is only one another candidate.
 
-When there is a cleanup and a new feature added in the same patch,
-it makes it hard to read...  :/  So when we update pl08xdmac:
+Control names can be changed (and also disabled) by the driver. In fact, 
+psc724 does exactly this as is needs the WM8776 controls to be named 
+as "front" and WM8766 as "rear".
+I don't see any problem if something needs to be changed for this code to be 
+used by Xonar (or some other driver).
 
--       CLKDEV_INIT(NULL, "clk_dmac", &clk_dma),
-+       CLKDEV_INIT("pl08xdmac", NULL, &clk_dma),
-
-What does that actually do?  Is it a bug fix?
-
-regards,
-dan carpenter
-
+-- 
+Ondrej Zary
