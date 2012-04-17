@@ -1,58 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755754Ab2DQD43 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Apr 2012 23:56:29 -0400
-Received: from e23smtp05.au.ibm.com ([202.81.31.147]:34713 "EHLO
-	e23smtp05.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751670Ab2DQD42 (ORCPT
+	id S1751334Ab2DQEKd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Apr 2012 00:10:33 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:45285 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750731Ab2DQEKb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Apr 2012 23:56:28 -0400
-Message-ID: <4F8CE9CF.6050506@linux.vnet.ibm.com>
-Date: Tue, 17 Apr 2012 11:55:59 +0800
-From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120216 Thunderbird/10.0.1
-MIME-Version: 1.0
-To: Avi Kivity <avi@redhat.com>
-CC: Marcelo Tosatti <mtosatti@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        KVM <kvm@vger.kernel.org>
-Subject: Re: [PATCH v2 10/16] KVM: MMU: fask check whether page is writable
-References: <4F87FA69.5060106@linux.vnet.ibm.com> <4F87FC82.2050302@linux.vnet.ibm.com> <4F8AE64F.7080909@redhat.com> <4F8B9115.2030807@linux.vnet.ibm.com> <4F8BEE1B.8000704@redhat.com> <4F8BF265.7020405@linux.vnet.ibm.com> <4F8C06ED.6020805@redhat.com>
-In-Reply-To: <4F8C06ED.6020805@redhat.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-x-cbid: 12041617-1396-0000-0000-000000FD3572
+	Tue, 17 Apr 2012 00:10:31 -0400
+Date: Tue, 17 Apr 2012 14:10:23 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: James Morris <jmorris@namei.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Will Drewry <wad@chromium.org>, Kees Cook <keescook@chromium.org>,
+        Eric Paris <eparis@redhat.com>,
+        Serge Hallyn <serge.hallyn@canonical.com>
+Subject: linux-next: build warning after merge of the final tree (security
+ tree related)
+Message-Id: <20120417141023.40aefc2ff17c29b2edf51762@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0beta7 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Tue__17_Apr_2012_14_10_23_+1000_8Q0O88w=KhKpINNI"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/16/2012 07:47 PM, Avi Kivity wrote:
+--Signature=_Tue__17_Apr_2012_14_10_23_+1000_8Q0O88w=KhKpINNI
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> On 04/16/2012 01:20 PM, Xiao Guangrong wrote:
->>>>
->>>> It is used to avoid the unnecessary overload 
->>>
->>> It's overloading me :(
->>>
->>
->>
->> Sorry.
->>
-> 
-> The trick is to send those in separate patchset so the maintainer
-> doesn't notice.
-> 
+Hi all,
 
+After merging the final tree, today's linux-next build (sparc64 defconfig)
+produced this warning:
 
-Thanks for your suggestion, i will pay more attention on it in the
-further.
+kernel/seccomp.c: In function '__secure_computing':
+kernel/seccomp.c:445:1: warning: label 'skip' defined but not used [-Wunuse=
+d-label]
+kernel/seccomp.c:381:6: warning: unused variable 'data' [-Wunused-variable]
+kernel/seccomp.c:380:6: warning: unused variable 'ret' [-Wunused-variable]
 
-For this patch, what did you mean of "those"? You mean the whole
-rmap.PTE_LIST_WP_BIT (fast check for shadow page table write protection
-and host write protection) or just about host_page_write_protect
-(for KSM only)?
+Introduced by commit acf3b2c71ed2 ("seccomp: add SECCOMP_RET_ERRNO").
+This build has CONFIG_SECCOMP_FILTER turned off.
 
-If we do not have rmap.PTE_LIST_WP_BIT, there may have regression on
-shadow mmu.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-Hmm, do i need implement rmap.PTE_LIST_WP_BIT, then fast page fault?
+--Signature=_Tue__17_Apr_2012_14_10_23_+1000_8Q0O88w=KhKpINNI
+Content-Type: application/pgp-signature
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCAAGBQJPjO0vAAoJEECxmPOUX5FEf2kP/1V/VJuAA4t/el0hWTW7j4KP
+Ce6PXFQN1tZZ09STZk27G/Gu/W7K6Owtk+IJhc+YuiuGHIbofOIz/LNJ3h/WoyuD
+qLCzvcE8EmOr8BR+jlivLkChLjvDxzoeNLba7BBmLX1cczkJXa6b7mKWI01uP2MC
+6Sc9RG2JMgB6adQSlZfUBlfG+TMEeAXAr584ejjqNSKzIWlp13hY9zMqOkZT6h30
+F1UrdcUK6bc29XzsuBsldL2GCYzjNuejj+LAErXRoGNa9NGpzG9Xqr1hu+Bk77LH
+utEoKTXY/r7fINxEPh4/V0BullV6NilVqkFkWuF6h+6qLQYsVBHZTuguztQ0PLcX
+iUnumi3cHZUJa2mQDfaWnr1jgHzObKljytqWTwFzDvz5wE0ZNJXG5HhDXsxNqcAP
+Du/FJVqeg9T5s07s/jmxxDtkmHHR2BPKxgmSZiaAGdOJ9yq/6WhG9//wIKNwz987
+5CjpNDvhVB3cFJs+tQ+oR/sIh7XX4wfkLbPAXDVJjFhRYFmQQPqaKC9ATLANU9lW
+awE4bX+k40TPVr/jL2x11NwfzVwyQAGFNRiKcJYkd9KnW3LP237uAqkHaYqBFXbi
+FwFpv/dFSnrOejxkAHQvXpkOlH8n0OWz5G46ivvuCRCoQC/Rl/1FMYjPk5++okmY
+KikMquSTNxidf7fQ0Wvo
+=NQx5
+-----END PGP SIGNATURE-----
+
+--Signature=_Tue__17_Apr_2012_14_10_23_+1000_8Q0O88w=KhKpINNI--
