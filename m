@@ -1,161 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755861Ab2DQCTe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Apr 2012 22:19:34 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:55946 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755823Ab2DQCTc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Apr 2012 22:19:32 -0400
-Date: Mon, 16 Apr 2012 19:19:21 -0700
-From: Joel Becker <jlbec@evilplan.org>
-To: Jan Kara <jack@suse.cz>
-Cc: Al Viro <viro@ZenIV.linux.org.uk>, dchinner@redhat.com,
-        LKML <linux-kernel@vger.kernel.org>, linux-fsdevel@vger.kernel.org,
-        Mark Fasheh <mfasheh@suse.com>, ocfs2-devel@oss.oracle.com
-Subject: Re: [PATCH 19/27] ocfs2: Convert to new freezing mechanism
-Message-ID: <20120417021921.GC31464@dhcp-172-17-9-228.mtv.corp.google.com>
-Mail-Followup-To: Jan Kara <jack@suse.cz>,
-	Al Viro <viro@ZenIV.linux.org.uk>, dchinner@redhat.com,
-	LKML <linux-kernel@vger.kernel.org>, linux-fsdevel@vger.kernel.org,
-	Mark Fasheh <mfasheh@suse.com>, ocfs2-devel@oss.oracle.com
-References: <1334592845-22862-1-git-send-email-jack@suse.cz>
- <1334592845-22862-20-git-send-email-jack@suse.cz>
+	id S1755909Ab2DQCTl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Apr 2012 22:19:41 -0400
+Received: from mga01.intel.com ([192.55.52.88]:49208 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754488Ab2DQCTj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Apr 2012 22:19:39 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="142538865"
+Date: Tue, 17 Apr 2012 10:14:24 +0800
+From: Fengguang Wu <fengguang.wu@intel.com>
+To: Vivek Goyal <vgoyal@redhat.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, ctalbott@google.com, rni@google.com,
+        andrea@betterlinux.com, containers@lists.linux-foundation.org,
+        linux-kernel@vger.kernel.org, lsf@lists.linux-foundation.org,
+        linux-mm@kvack.org, jmoyer@redhat.com, lizefan@huawei.com,
+        linux-fsdevel@vger.kernel.org, cgroups@vger.kernel.org
+Subject: Re: [Lsf] [RFC] writeback and cgroup
+Message-ID: <20120417021424.GA9418@localhost>
+References: <20120407080027.GA2584@quack.suse.cz>
+ <20120410180653.GJ21801@redhat.com>
+ <20120410210505.GE4936@quack.suse.cz>
+ <20120410212041.GP21801@redhat.com>
+ <20120410222425.GF4936@quack.suse.cz>
+ <20120411154005.GD16692@redhat.com>
+ <1334406314.2528.90.camel@twins>
+ <20120416125432.GB12776@redhat.com>
+ <20120416130707.GA10532@localhost>
+ <20120416155207.GB15437@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1334592845-22862-20-git-send-email-jack@suse.cz>
-X-Burt-Line: Trees are cool.
-X-Red-Smith: Ninety feet between bases is perhaps as close as man has ever
- come to perfection.
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20120416155207.GB15437@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 16, 2012 at 06:13:57PM +0200, Jan Kara wrote:
-> Protect ocfs2_page_mkwrite() and ocfs2_file_aio_write() using the new
-> freeze protection. We also protect several ioctl entry points which
-> were missing the protection.
+On Mon, Apr 16, 2012 at 11:52:07AM -0400, Vivek Goyal wrote:
+> On Mon, Apr 16, 2012 at 09:07:07PM +0800, Fengguang Wu wrote:
 > 
-> CC: Mark Fasheh <mfasheh@suse.com>
-> CC: Joel Becker <jlbec@evilplan.org>
-> CC: ocfs2-devel@oss.oracle.com
-> Signed-off-by: Jan Kara <jack@suse.cz>
-
-Acked-by: Joel Becker <jlbec@evilplan.org>
-
-> ---
->  fs/ocfs2/file.c  |   11 +++++++++--
->  fs/ocfs2/ioctl.c |   14 ++++++++++++--
->  fs/ocfs2/mmap.c  |    2 ++
->  3 files changed, 23 insertions(+), 4 deletions(-)
+> [..]
+> > Vivek, I noticed these lines in cfq code
+> > 
+> >                 sscanf(dev_name(bdi->dev), "%u:%u", &major, &minor);
+> > 
+> > Why not use bdi->dev->devt?  The problem is that dev_name() will
+> > return "btrfs-X" for btrfs rather than "major:minor".
 > 
-> diff --git a/fs/ocfs2/file.c b/fs/ocfs2/file.c
-> index 061591a..9b1e3d4 100644
-> --- a/fs/ocfs2/file.c
-> +++ b/fs/ocfs2/file.c
-> @@ -1971,6 +1971,7 @@ int ocfs2_change_file_space(struct file *file, unsigned int cmd,
->  {
->  	struct inode *inode = file->f_path.dentry->d_inode;
->  	struct ocfs2_super *osb = OCFS2_SB(inode->i_sb);
-> +	int ret;
->  
->  	if ((cmd == OCFS2_IOC_RESVSP || cmd == OCFS2_IOC_RESVSP64) &&
->  	    !ocfs2_writes_unwritten_extents(osb))
-> @@ -1985,7 +1986,12 @@ int ocfs2_change_file_space(struct file *file, unsigned int cmd,
->  	if (!(file->f_mode & FMODE_WRITE))
->  		return -EBADF;
->  
-> -	return __ocfs2_change_file_space(file, inode, file->f_pos, cmd, sr, 0);
-> +	ret = mnt_want_write_file(file);
-> +	if (ret)
-> +		return ret;
-> +	ret = __ocfs2_change_file_space(file, inode, file->f_pos, cmd, sr, 0);
-> +	mnt_drop_write_file(file);
-> +	return ret;
->  }
->  
->  static long ocfs2_fallocate(struct file *file, int mode, loff_t offset,
-> @@ -2261,7 +2267,7 @@ static ssize_t ocfs2_file_aio_write(struct kiocb *iocb,
->  	if (iocb->ki_left == 0)
->  		return 0;
->  
-> -	vfs_check_frozen(inode->i_sb, SB_FREEZE_WRITE);
-> +	sb_start_write(inode->i_sb);
->  
->  	appending = file->f_flags & O_APPEND ? 1 : 0;
->  	direct_io = file->f_flags & O_DIRECT ? 1 : 0;
-> @@ -2434,6 +2440,7 @@ out_sems:
->  		ocfs2_iocb_clear_sem_locked(iocb);
->  
->  	mutex_unlock(&inode->i_mutex);
-> +	sb_end_write(inode->i_sb);
->  
->  	if (written)
->  		ret = written;
-> diff --git a/fs/ocfs2/ioctl.c b/fs/ocfs2/ioctl.c
-> index a1a1bfd..d9c352b 100644
-> --- a/fs/ocfs2/ioctl.c
-> +++ b/fs/ocfs2/ioctl.c
-> @@ -926,7 +926,12 @@ long ocfs2_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
->  		if (get_user(new_clusters, (int __user *)arg))
->  			return -EFAULT;
->  
-> -		return ocfs2_group_extend(inode, new_clusters);
-> +		status = mnt_want_write_file(filp);
-> +		if (status)
-> +			return status;
-> +		status = ocfs2_group_extend(inode, new_clusters);
-> +		mnt_drop_write_file(filp);
-> +		return status;
->  	case OCFS2_IOC_GROUP_ADD:
->  	case OCFS2_IOC_GROUP_ADD64:
->  		if (!capable(CAP_SYS_RESOURCE))
-> @@ -935,7 +940,12 @@ long ocfs2_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
->  		if (copy_from_user(&input, (int __user *) arg, sizeof(input)))
->  			return -EFAULT;
->  
-> -		return ocfs2_group_add(inode, &input);
-> +		status = mnt_want_write_file(filp);
-> +		if (status)
-> +			return status;
-> +		status = ocfs2_group_add(inode, &input);
-> +		mnt_drop_write_file(filp);
-> +		return status;
->  	case OCFS2_IOC_REFLINK:
->  		if (copy_from_user(&args, (struct reflink_arguments *)arg,
->  				   sizeof(args)))
-> diff --git a/fs/ocfs2/mmap.c b/fs/ocfs2/mmap.c
-> index 9cd4108..d150372 100644
-> --- a/fs/ocfs2/mmap.c
-> +++ b/fs/ocfs2/mmap.c
-> @@ -136,6 +136,7 @@ static int ocfs2_page_mkwrite(struct vm_area_struct *vma, struct vm_fault *vmf)
->  	sigset_t oldset;
->  	int ret;
->  
-> +	sb_start_pagefault(inode->i_sb);
->  	ocfs2_block_signals(&oldset);
->  
->  	/*
-> @@ -165,6 +166,7 @@ static int ocfs2_page_mkwrite(struct vm_area_struct *vma, struct vm_fault *vmf)
->  
->  out:
->  	ocfs2_unblock_signals(&oldset);
-> +	sb_end_pagefault(inode->i_sb);
->  	return ret;
->  }
->  
-> -- 
-> 1.7.1
+> Isn't bdi->dev->devt 0?  I see following code.
 > 
+> add_disk()
+>    bdi_register_dev()
+>       bdi_register()
+>          device_create_vargs(MKDEV(0,0))
+> 	      dev->devt = devt = MKDEV(0,0);
+> 
+> So for normal block devices, I think bdi->dev->devt will be zero, that's
+> why probably we don't use it.
 
--- 
+Yes indeed. I can confirm this with tracing. There are two main cases
 
-Life's Little Instruction Book #197
+- some filesystems do not have a real device for the bdi.
 
-	"Don't forget, a person's greatest emotional need is to 
-	 feel appreciated."
+- add_disk() calls bdi_register_dev() with the devt, however this
+  information is not passed down for some reason.
+  device_create_vargs() will try to create a sysfs dev file if the
+  devt is not MKDEV(0,0).
 
-			http://www.jlbec.org/
-			jlbec@evilplan.org
+Thanks,
+Fengguang
