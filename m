@@ -1,58 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932167Ab2DQKKD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Apr 2012 06:10:03 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:57484 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932096Ab2DQKKC convert rfc822-to-8bit (ORCPT
+	id S932222Ab2DQKNP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Apr 2012 06:13:15 -0400
+Received: from mail-wi0-f170.google.com ([209.85.212.170]:62877 "EHLO
+	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932116Ab2DQKNN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Apr 2012 06:10:02 -0400
-Message-ID: <1334657383.28150.78.camel@twins>
-Subject: Re: A quick view of the performance benchmark for semaphore-like
- and mutex
-From: Peter Zijlstra <peterz@infradead.org>
-To: "Chen, Dennis (SRDC SW)" <Dennis1.Chen@amd.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@kernel.org>,
-        "paulmck@linux.vnet.ibm.com" <paulmck@linux.vnet.ibm.com>,
-        Paul Mackerras <paulus@samba.org>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Date: Tue, 17 Apr 2012 12:09:43 +0200
-In-Reply-To: <491D6B4EAD0A714894D8AD22F4BDE043B15DCF@SCYBEXDAG03.amd.com>
-References: <491D6B4EAD0A714894D8AD22F4BDE043B15DCF@SCYBEXDAG03.amd.com>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.2- 
-Mime-Version: 1.0
+	Tue, 17 Apr 2012 06:13:13 -0400
+From: Peter Korsgaard <jacmet@sunsite.dk>
+To: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org
+Cc: Peter Korsgaard <jacmet@sunsite.dk>
+Subject: [PATCH] core.c: fix 'the the' typo
+Date: Tue, 17 Apr 2012 12:12:57 +0200
+Message-Id: <1334657577-16852-1-git-send-email-jacmet@sunsite.dk>
+X-Mailer: git-send-email 1.7.8.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-04-17 at 09:36 +0000, Chen, Dennis (SRDC SW) wrote:
-> Just as a quick & rough test, with below changes based on mutex (almost the same as semaphore):
-> 
-> --- /home/dennis/Linux/linux-3.3.2-sem/kernel/mutex.c   2012-04-17 14:59:49.823177615 +0800
-> +++ ./mutex.c   2012-04-17 17:00:12.963059284 +0800
-> @@ -140,6 +140,7 @@ __mutex_lock_common(struct mutex *lock,
->         preempt_disable();
->         mutex_acquire_nest(&lock->dep_map, subclass, 0, nest_lock, ip);
->  
-> +#if 0
->  #ifdef CONFIG_MUTEX_SPIN_ON_OWNER
->         /*
->          * Optimistic spinning.
-> @@ -195,6 +196,7 @@ __mutex_lock_common(struct mutex *lock,
->                 arch_mutex_cpu_relax();
->         }
->  #endif
-> +#endif
->         spin_lock_mutex(&lock->wait_lock, flags);
->  
->         debug_mutex_lock_common(lock, &waiter);
+Signed-off-by: Peter Korsgaard <jacmet@sunsite.dk>
+---
+ drivers/base/core.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
-
-or you do:
-
-echo NO_OWNER_SPIN > /debug/sched_features
-
+diff --git a/drivers/base/core.c b/drivers/base/core.c
+index e28ce98..6cb25f1 100644
+--- a/drivers/base/core.c
++++ b/drivers/base/core.c
+@@ -878,8 +878,8 @@ EXPORT_SYMBOL_GPL(dev_set_name);
+  * to NULL prevents an entry from being created.  class->dev_kobj must
+  * be set (or cleared) before any devices are registered to the class
+  * otherwise device_create_sys_dev_entry() and
+- * device_remove_sys_dev_entry() will disagree about the the presence
+- * of the link.
++ * device_remove_sys_dev_entry() will disagree about the presence of
++ * the link.
+  */
+ static struct kobject *device_to_dev_kobj(struct device *dev)
+ {
+-- 
+1.7.8.3
 
