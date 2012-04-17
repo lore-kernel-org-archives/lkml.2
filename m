@@ -1,58 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755494Ab2DQPof (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Apr 2012 11:44:35 -0400
-Received: from www17.your-server.de ([213.133.104.17]:60525 "EHLO
-	www17.your-server.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753332Ab2DQPod (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Apr 2012 11:44:33 -0400
-Message-ID: <1334677466.1435.0.camel@localhost.localdomain>
-Subject: Re: 3.3.2 - Crash in kthread_data (power_supply_core/led?)
-From: Thomas Meyer <thomas@m3y3r.de>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>, cbou@mail.ru,
-        stern@rowland.harvard.edu, Linux PM list <linux-pm@vger.kernel.org>
-Date: Tue, 17 Apr 2012 17:44:26 +0200
-In-Reply-To: <201204152036.41938.rjw@sisk.pl>
-References: <1334481858.1444.20.camel@localhost.localdomain>
-	 <201204152036.41938.rjw@sisk.pl>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 (3.2.3-2.fc16) 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
-X-Authenticated-Sender: thomas@m3y3r.de
+	id S1755764Ab2DQPp7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Apr 2012 11:45:59 -0400
+Received: from fieldses.org ([174.143.236.118]:54345 "EHLO fieldses.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751639Ab2DQPp6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Apr 2012 11:45:58 -0400
+Date: Tue, 17 Apr 2012 11:45:49 -0400
+To: Jeff Layton <jlayton@redhat.com>
+Cc: "Myklebust, Trond" <Trond.Myklebust@netapp.com>,
+        Miklos Szeredi <miklos@szeredi.hu>,
+        Bernd Schubert <bernd.schubert@itwm.fraunhofer.de>,
+        Malahal Naineni <malahal@us.ibm.com>,
+        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "pstaubach@exagrid.com" <pstaubach@exagrid.com>,
+        "viro@ZenIV.linux.org.uk" <viro@ZenIV.linux.org.uk>,
+        "hch@infradead.org" <hch@infradead.org>,
+        "michael.brantley@deshaw.com" <michael.brantley@deshaw.com>,
+        "sven.breuner@itwm.fraunhofer.de" <sven.breuner@itwm.fraunhofer.de>
+Subject: Re: [PATCH RFC] vfs: make fstatat retry on ESTALE errors from
+ getattr call
+Message-ID: <20120417154549.GA27426@fieldses.org>
+References: <4F8C3036.2030702@itwm.fraunhofer.de>
+ <20120416134642.1754cd3e@corrin.poochiereds.net>
+ <1334604785.2879.23.camel@lade.trondhjem.org>
+ <20120416154322.0d95e435@corrin.poochiereds.net>
+ <1334607906.2879.36.camel@lade.trondhjem.org>
+ <20120416190548.2463d1d0@corrin.poochiereds.net>
+ <87sjg2o62z.fsf@tucsk.pomaz.szeredi.hu>
+ <20120417093222.2ff5e1bd@corrin.poochiereds.net>
+ <1334671473.2963.27.camel@lade.trondhjem.org.localdomain>
+ <20120417102035.2236e553@corrin.poochiereds.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120417102035.2236e553@corrin.poochiereds.net>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+From: "J. Bruce Fields" <bfields@fieldses.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Sonntag, den 15.04.2012, 20:36 +0200 schrieb Rafael J. Wysocki:
-> On Sunday, April 15, 2012, Thomas Meyer wrote:
-> > Hi,
-> > 
-> > I resumed my computer from RAM today and found this crash on the text
-> > console -> see attachment. One LED was blinking, (PS2 attached) keyboard
-> > didn't react anymore and I had to reboot my machine.
-> > 
-> > I couldn't capture the whole dump, the crash didn't made it to the log
-> > on disk, so I only have this screenshot. It's the first time I see this
-> > crash with any kernel. I did update to 3.3.2 yesterday, but maybe this
-> > is unrelated.
-> > 
-> > The crash looks like the power_supply_core/led wants to send some event
-> > and then things goes awry.
+On Tue, Apr 17, 2012 at 10:20:35AM -0400, Jeff Layton wrote:
+> Well, it's possible, but it seems pathological to me for a server to do
+> that...
 > 
-> This looks like a delayed work item triggering at a wrong time.
+> Bruce and I were discussing this the other day. It would be good to add
+> something like this to the RFCs:
 > 
-> I guess that the leds' suspend forgets to cancel its delayed work itmes which
-> then may be started during system resume.
+> "On a PUTFH, a server SHOULD hold a reference to the filehandle such
 
-just resumed my machine again and same crash. again I needed to reboot
-my machine. I never had these problems with 3.2.x kernels.
+For "filehandle" I'd specify "current and saved filehandle".
 
-> 
-> Thanks,
-> Rafael
+> that it does not go stale over the life of the compound."
 
+And that's *much* less of a burden on the server than requiring that the
+compound execute atomically.
 
+> ...or something along those lines. That's a different matter though and
+> not directly related to this. :)
 
+Yes.
+
+--b.
