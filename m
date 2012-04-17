@@ -1,61 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755508Ab2DQAlJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Apr 2012 20:41:09 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:35637 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754755Ab2DQAlI convert rfc822-to-8bit (ORCPT
+	id S1755612Ab2DQAnh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Apr 2012 20:43:37 -0400
+Received: from ipmail07.adl2.internode.on.net ([150.101.137.131]:5998 "EHLO
+	ipmail07.adl2.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754755Ab2DQAnf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Apr 2012 20:41:08 -0400
+	Mon, 16 Apr 2012 20:43:35 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: Av0EAMu7jE95LJKO/2dsb2JhbABEsW+BCIIJAQEFOhwjEAgDDgouFCUDIRMbh3K5bxOLFYU+YwSVbJA2gnmBQg
+Date: Tue, 17 Apr 2012 10:43:29 +1000
+From: Dave Chinner <david@fromorbit.com>
+To: Andreas Dilger <adilger@whamcloud.com>
+Cc: Jan Kara <jack@suse.cz>, Al Viro <viro@ZenIV.linux.org.uk>,
+        dchinner@redhat.com, LKML <linux-kernel@vger.kernel.org>,
+        linux-fsdevel@vger.kernel.org, Alex Elder <elder@kernel.org>,
+        Anton Altaparmakov <anton@tuxera.com>, Ben Myers <bpm@sgi.com>,
+        Chris Mason <chris.mason@oracle.com>, cluster-devel@redhat.com,
+        "David S. Miller" <davem@davemloft.net>,
+        fuse-devel@lists.sourceforge.net,
+        "J. Bruce Fields" <bfields@fieldses.org>,
+        Joel Becker <jlbec@evilplan.org>,
+        KONISHI Ryusuke <konishi.ryusuke@lab.ntt.co.jp>,
+        linux-btrfs@vger.kernel.org, linux-ext4@vger.kernel.org,
+        linux-nfs@vger.kernel.org, linux-nilfs@vger.kernel.org,
+        linux-ntfs-dev@lists.sourceforge.net, Mark Fasheh <mfasheh@suse.com>,
+        Miklos Szeredi <miklos@szeredi.hu>, ocfs2-devel@oss.oracle.com,
+        OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>,
+        Steven Whitehouse <swhiteho@redhat.com>,
+        "Theodore Ts'o" <tytso@mit.edu>, xfs@oss.sgi.com
+Subject: Re: [PATCH 00/19 v5] Fix filesystem freezing deadlocks
+Message-ID: <20120417004329.GE6734@dastard>
+References: <1334592845-22862-1-git-send-email-jack@suse.cz>
+ <C9A0E2F0-ED57-40D6-9F75-5D72D45D21F0@dilger.ca>
 MIME-Version: 1.0
-In-Reply-To: <CAE9FiQW5LwRdM2NRUQZjBkyg023gwXa6r10Ym2bo0L1vk74yBg@mail.gmail.com>
-References: <CAE_yGnAWsWQHCSCLA-LCuugOGTf5L4v2NcQatar4Vv421TNQcw@mail.gmail.com>
-	<CAE_yGnDYkoJYVus-iPinSnqTj1CDfaf-oScPjZ2ibDaeeWF0oQ@mail.gmail.com>
-	<CAE9FiQW5LwRdM2NRUQZjBkyg023gwXa6r10Ym2bo0L1vk74yBg@mail.gmail.com>
-Date: Tue, 17 Apr 2012 02:41:06 +0200
-X-Google-Sender-Auth: rZRskVmlZbhMOxmAsa53CpM-VF8
-Message-ID: <CAE_yGnAJ5pEZDXDp1uFaUqZa758+HZbcbcLCgEQh4YYnFBDHxw@mail.gmail.com>
-Subject: Re: can't boot my laptop with kernel-3.3.*
-From: Scant Light <scantlight@gmail.com>
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: "the arch/x86 maintainers" <x86@kernel.org>, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <C9A0E2F0-ED57-40D6-9F75-5D72D45D21F0@dilger.ca>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 17 April 2012 00:09, Yinghai Lu <yinghai@kernel.org> wrote:
-> On Mon, Apr 16, 2012 at 7:35 AM, Scant Light <scantlight@gmail.com> wrote:
->> I don't know if this is the right place,
->> however I write you to say that I have a problem to boot my laptop
->> using a kernel with version greater that 3.2.*
->> the error message can be found on photo situated at
->> http://www.pasteall.org/pic/30277
->>
->> what kind of other information you need for this?
->>
->
-> can you append  with "debug ignore_loglevel apic=debug"
->
-> Yinghai
+On Mon, Apr 16, 2012 at 03:02:50PM -0700, Andreas Dilger wrote:
+> On 2012-04-16, at 9:13 AM, Jan Kara wrote:
+> > Another potential contention point might be patch 19. In that patch
+> > we make freeze_super() refuse to freeze the filesystem when there
+> > are open but unlinked files which may be impractical in some cases.
+> > The main reason for this is the problem with handling of file deletion
+> > from fput() called with mmap_sem held (e.g. from munmap(2)), and
+> > then there's the fact that we cannot really force such filesystem
+> > into a consistent state... But if people think that freezing with
+> > open but unlinked files should happen, then I have some possible
+> > solutions in mind (maybe as a separate patchset since this is
+> > large enough).
+> 
+> Looking at a desktop system, I think it is very typical that there
+> are open-unlinked files present, so I don't know if this is really
+> an acceptable solution.  It isn't clear from your comments whether
+> this is a blanket refusal for all open-unlinked files, or only in
+> some particular cases...
+> 
+> lsof | grep deleted
+> nautilus  25393  adilger   19r      REG           253,0      340     253954 /home/adilger/.local/share/gvfs-metadata/home (deleted)
+> nautilus  25393  adilger   20r      REG           253,0    32768     253964 /home/adilger/.local/share/gvfs-metadata/home-f332a8f3.log (deleted)
+> gnome-ter 25623  adilger   22u      REG            0,18    17841    2717846 /tmp/vtePIRJCW (deleted)
+> gnome-ter 25623  adilger   23u      REG            0,18     5568    2717847 /tmp/vteDCSJCW (deleted)
+> gnome-ter 25623  adilger   29u      REG            0,18      480    2728484 /tmp/vte6C1TCW (deleted)
 
-I used another argument to force the kernel to write some message:
-earlyprintk=vga
-Unfortunately the camera on my phone is not so fast :(
+Unlinked-but-open files are the reason that XFS dirties the log
+after the freeze process is complete. This ensures that if the
+system crashes while the filesystem is frozen then log recovery
+during the next mount will process the unlinked (orphaned) inodes
+and free the correctly. i.e. you can still freeze a filesystem with
+inodes in this state successfully and have everythign behave as
+you'd expect.
 
-the only two image that can be considered to be good are the first and last
-here is the link to all 9 images:
+I'm not sure how other filesystems handle this problem, but perhaps
+pushing this check down into filesystem specific code or adding a
+superblock feature flag might be a way to allow filesystems to
+handle this case in the way they think is best...
 
-1. http://www.pasteall.org/pic/30325
-2. http://www.pasteall.org/pic/30326
-3. http://www.pasteall.org/pic/30327
-4. http://www.pasteall.org/pic/30328
-5. http://www.pasteall.org/pic/30329
-6. http://www.pasteall.org/pic/30330
-7. http://www.pasteall.org/pic/30331
-8. http://www.pasteall.org/pic/30332
-9. http://www.pasteall.org/pic/30333
+Cheers,
 
-
-thank you and please let me know if you need other info
+Dave.
+-- 
+Dave Chinner
+david@fromorbit.com
