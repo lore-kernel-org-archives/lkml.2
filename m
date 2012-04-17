@@ -1,176 +1,216 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752664Ab2DQU6g (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Apr 2012 16:58:36 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:49067 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751602Ab2DQU6e (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Apr 2012 16:58:34 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: huang ying <huang.ying.caritas@gmail.com>
-Subject: Re: [RFC PATCH] PCIe: Add PCIe runtime D3cold support
-Date: Tue, 17 Apr 2012 23:03:07 +0200
-User-Agent: KMail/1.13.6 (Linux/3.4.0-rc3+; KDE/4.6.0; x86_64; ; )
-Cc: "Yan, Zheng" <zheng.z.yan@intel.com>, bhelgaas@google.com,
-        linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
-        linux-pm@vger.kernel.org, Lin Ming <ming.m.lin@intel.com>,
-        Zhang Rui <rui.zhang@intel.com>,
-        ACPI Devel Mailing List <linux-acpi@vger.kernel.org>
-References: <4F8790F6.5080408@intel.com> <201204162330.12178.rjw@sisk.pl> <CAC=cRTNL0R--5njYdWzvREx7fhebAhFW_sBJ4jt9n_c8rp_ZTQ@mail.gmail.com>
-In-Reply-To: <CAC=cRTNL0R--5njYdWzvREx7fhebAhFW_sBJ4jt9n_c8rp_ZTQ@mail.gmail.com>
+	id S1752699Ab2DQU6w (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Apr 2012 16:58:52 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:54215 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751200Ab2DQU6v (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Apr 2012 16:58:51 -0400
+Message-ID: <4F8DD986.9080702@wwwdotorg.org>
+Date: Tue, 17 Apr 2012 14:58:46 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.28) Gecko/20120313 Thunderbird/3.1.20
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
+To: Dong Aisheng <b29396@freescale.com>
+CC: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        devicetree-discuss@lists.ozlabs.org, linus.walleij@stericsson.com,
+        s.hauer@pengutronix.de, shawn.guo@freescale.com, kernel@pengutronix.de,
+        grant.likely@secretlab.ca, rob.herring@calxeda.com
+Subject: Re: [PATCH 1/3] pinctrl: pinctrl-imx: add imx pinctrl core driver
+References: <1334333915-1174-1-git-send-email-b29396@freescale.com>
+In-Reply-To: <1334333915-1174-1-git-send-email-b29396@freescale.com>
+X-Enigmail-Version: 1.1.2
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-Message-Id: <201204172303.07419.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, April 17, 2012, huang ying wrote:
-> On Tue, Apr 17, 2012 at 5:30 AM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
-> > On Monday, April 16, 2012, huang ying wrote:
-> >> Hi,
-> >>
-> >> On Sat, Apr 14, 2012 at 3:41 AM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
-> >> > Hi,
-> >> >
-> >> > On Friday, April 13, 2012, Yan, Zheng wrote:
-> >> >> Hi all,
-> >> >>
-> >> >> This patch adds PCIe runtime D3cold support, namely cut power supply for functions
-> >> >> beneath a PCIe port when they all have entered D3. A device in D3cold can only
-> >> >> generate wake event through the WAKE# pin. Because we can not access to a device's
-> >> >> configure space while it's in D3cold, pme_poll is disabled for devices in D3cold.
-> >> >>
-> >> >> Any comment will be appreciated.
-> >> >>
-> >> >> Signed-off-by: Zheng Yan <zheng.z.yan@intel.com>
-> >> >> ---
-> >> >> diff --git a/drivers/pci/pci-acpi.c b/drivers/pci/pci-acpi.c
-> >> >> index 0f150f2..e210e8cb 100644
-> >> >> --- a/drivers/pci/pci-acpi.c
-> >> >> +++ b/drivers/pci/pci-acpi.c
-> >> >> @@ -224,7 +224,7 @@ static int acpi_pci_set_power_state(struct pci_dev *dev, pci_power_t state)
-> >> >>               [PCI_D1] = ACPI_STATE_D1,
-> >> >>               [PCI_D2] = ACPI_STATE_D2,
-> >> >>               [PCI_D3hot] = ACPI_STATE_D3,
-> >> >> -             [PCI_D3cold] = ACPI_STATE_D3
-> >> >> +             [PCI_D3cold] = ACPI_STATE_D3_COLD
-> >> >>       };
-> >> >>       int error = -EINVAL;
-> >> >>
-> >> >
-> >> > Please don't use that ACPI_STATE_D3_COLD thing, it's not defined correctly.
-> >> >
-> >> > We should define ACPI_STATE_D3_COLD == ACPI_STATE_D3 and add ACPI_STATE_D3_HOT
-> >> > instead.  I'll prepare a patch for that over the weekend if no one has done
-> >> > that already.
-> >> >
-> >> >> @@ -296,7 +296,8 @@ static void acpi_pci_propagate_run_wake(struct pci_bus *bus, bool enable)
-> >> >>
-> >> >>  static int acpi_pci_run_wake(struct pci_dev *dev, bool enable)
-> >> >>  {
-> >> >> -     if (dev->pme_interrupt)
-> >> >> +     /* PME interrupt isn't available in the D3cold case */
-> >> >> +     if (dev->pme_interrupt && !dev->runtime_d3cold)
-> >> >
-> >> > This whole thing is wrong.  First off, I don't think that the runtime_d3cold
-> >> > flag makes any sense.  We already cover that in dev->pme_support.
-> >>
-> >> PCIe devices and PCIe root port may have proper PME interrupt support
-> >> (that is, dev->pme_interrupt = true), but the process of remote wakeup
-> >> from D3cold is as follow:
-> >>
-> >> 1) In D3cold, the power of the main link is turned off, aux power is
-> >> provided (PCIe L2 link state)
-> >> 2) Device detect condition to resume, then assert #WAKE pin
-> >> 2) ACPI circuit linked with #WAKE pin, and will generate a GPE for that
-> >> 3) GPE handler will resume device with ACPI (via _PS3 and _PR0), the
-> >> power of the main link is turned on, after a while, link goes into L0
-> >> state
-> >> 4) The PME message is sent to root port, pme interrupt generated
-> >
-> > This isn't how it's supposed to work in theory.  If the device can signal PME
-> > from D3cold, it should be able to reestablish the link and send a PME
-> > message from there.  dev->pme_interrupt set means exactly that.
-> >
-> > ACPI is only supposed to be needed for things that don't send PME
-> > messages (in your case the PME interrupt generated by the port is essentially
-> > useless, because the wakeup event has already been signaled through ACPI).
-> >
-> >> So, for deivce, dev->pme_interrupt = true and dev->pme_support
-> >> advocate it support PME in D3cold.  But we still need ACPI to setup
-> >> run wake for the device.
-> >
-> > OK, so this is nonstandard.
+On 04/13/2012 10:18 AM, Dong Aisheng wrote:
+> From: Dong Aisheng <dong.aisheng@linaro.org>
 > 
-> This is the standard behavior.  Please refer to PCI Express Base
-> Sepcification Revision 2.0, section 5.3.3.2 Link Wakeup.  In D1, D2
-> and D3hot state, PCIe device can transit the link from L1 to L0 state,
-> and send the PME message.  In D3cold, the main link is powered off,
-> PCIe device will use a STANDARD sideband signal WAKE# to signal wakeup
-> firstly, then platform (power controller in spec) will power on the
-> main link for the device, after main link is back to L0, the PME
-> message is send to root port, pme interrupt is generated.  So in
-> theory, the wake up process can be divided into platform part (which
-> power on the main link) and PCIe part (which send PME).
-
-That's fine.  However, the platform part should be completely transparent
-to the PCI bus type, then.  It just should power up the link to allow a
-PME message to be transmitted through it.
-
-[...]
-
-> > So don't use pci_set_power_state() for that, because it's essentially
-> > a different operation.  You need a pci_platform_remove_power() helper or
-> > similar for that.
-> >
-> > What ACPI method exactly is used to remove power from the device?
+> The driver has mux and config support while the gpio is still
+> not supported.
+> For select input setting, the driver will handle it internally
+> and do not need user to take care of it.
 > 
-> The ACPI method executed is as follow:
+> The pinctrl-imx core driver will parse the dts file and dynamically
+> create the pinmux functions and groups.
 > 
-> - _PS3 (if exist)
-> - Power resources in _PR3 is turned on
-> - Power resources in _PR0 is turned off
-> - Power resources in _PR3 is turned off
+> Each IMX SoC pinctrl driver should register pins with a pin register map
+> including mux register and config register and select input map to core
+> for proper operations.
 
-I'd rather think
+> diff --git a/Documentation/devicetree/bindings/pinctrl/fsl,imx6q-pinctrl.txt b/Documentation/devicetree/bindings/pinctrl/fsl,imx6q-pinctrl.txt
 
-- make sure that _PR3 resources are referenced
-- drop references (from this device) for all other power resources
-- execute _PS3 (if any)
-- drop references for _PR3 resources
+> +* Freescale IOMUX Controller (IOMUXC) for i.MX
+> +
+> +The IOMUX Controller (IOMUXC), together with the IOMUX, enables the IC
+> +to share one PAD to several functional blocks. The sharing is done by
+> +multiplexing the PAD input/output signals. For each PAD there are up to
+> +8 muxing options (called ALT modes). Since different modules require
+> +different PAD settings (like pull up, keeper, etc) the IOMUXC controls
+> +also the PAD settings parameters.
+> +
+> +Required properties:
+> +
+> +- compatible: "fsl,imx6q-iomuxc"
+> +- fsl,pins : An array of strings. Each string represents the name of a pin.
+> +  Refer to the following table for the availabe pins of imx6q to use.
+> +- fsl,function: A string containing the name of the function to mux to the pin.
 
-if Section 7.2.11 of ACPI 5.0 is to be followed.
+This document should really distinguish between required properties for
+the top-level controller node ("compatible") and in the pin
+configuration nodes ("fsl,pins", "fsl,function", and all the optional
+properties below). As written, the documentation says I need "fsl,pins"
+at the top-level.
 
-> I think the process can fit pci_set_power_state() quite well, so why
-> invent another helper for that?
+Note that the documentation for fsl,function talks about a single
+string, whereas the example below and the patch 3 in this series contain
+an fsl,mux property that contains integers.
 
-OK, we can special case it, perhaps.
+> +Requirements to use pinctrl-imx driver based on dt:
+> +1. The pinmux function nodes should be defined under iomux controller node
+> +2. The pin group nodes should be defined under function node which this group
+> +   is intend to work on.
+> +
+> +The hierarchy is:
+> +iomuxc@020e0000 {
+> +	func-a {
+> +		group-a {
+> +			fsl,pins = "PIN_A",
+> +				   "PIN_B",
+> +				   ....
+> +			fsl,mux = <...>,
+> +			fsl,pull = <..>;
+> +			fsl,drive-strength = <..>;
+> +			...
+> +		};
+> +
+> +		group-b {
+> +			...
+> +		};
+> +		...
+> +	};
+> +
+> +	func-b {
+> +		...
+> +	};
+> +	...
+> +};
 
-Suppose we have a "this device may be put into D3_cold" flag.
+I'd like to see some more explanation in the above part of the document.
+In particular, what is the motivation for having a two-level binding
+structure (group-a within func-a) rather than just having func-a
+directly underneath the pin controller's node. How is a device tree
+author supposed to know what to name the "func-a" and "group-a" nodes,
+and how many "group-a"/"group-b" nodes should be inside a single
+"func-a" node and why?
 
-Who's going to decide whether to put it into D3_hot or D3_cold?
+> +The function node name will be parsed as the pinmux function node, the group
+> +node name will be parsed as the group name.
 
+I don't understand that sentence. As far as I can tell, the names of the
+function/group nodes aren't used for anything, at least according to the
+binding documentation.
 
-[...]
+> diff --git a/drivers/pinctrl/Makefile b/drivers/pinctrl/Makefile
 
-> >> > So now please tell me what exactly you want to achieve and why you want to do
-> >> > that in the first place.
-> >
-> > Well, is there any chance to get that information?
-> 
-> You mean the runtime_d3cold flag? That flag is used to tell
-> acpi_pci_run_wake() that we need ACPI wakeup setup for the device
-> because that is needed by D3cold.  The ACPI wakeup setup here means
-> turn on power resources needed by wake up (_PRW) and execute _DSW.
-> 
-> If you mean the whole patch, we want to implement runtime D3cold
-> support, which can save more power than D3hot.
+>  obj-$(CONFIG_PINCTRL_TEGRA30)	+= pinctrl-tegra30.o
+>  obj-$(CONFIG_PINCTRL_U300)	+= pinctrl-u300.o
+>  obj-$(CONFIG_PINCTRL_COH901)	+= pinctrl-coh901.o
+> +obj-$(CONFIG_PINCTRL_IMX)	+= pinctrl-imx.o
 
-So, do I think correctly that you'd like to put devices into D3_cold
-if that's possible via ACPI and to be able to wake it up from that state
-using remote wakeup?
+It might be nice to keep this list sorted as possible (admittedly COH901
+isn't). Same goes for Kconfig.
 
-Rafael
+> diff --git a/drivers/pinctrl/pinctrl-imx.c b/drivers/pinctrl/pinctrl-imx.c
+
+> +static const char *imx_get_group_name(struct pinctrl_dev *pctldev,
+> +				       unsigned selector)
+> +{
+> +	struct imx_pmx *ipmx = pinctrl_dev_get_drvdata(pctldev);
+> +	struct imx_pinctrl_info *info = ipmx->info;
+> +
+> +	if (selector >= info->ngroups)
+> +		return NULL;
+
+I think we decided to remove this error-checking from the drivers and
+rely on the pinctrl core not to be bad to drivers. Certainly, a patch
+from Viresh was committed to the Tegra driver to do that.
+
+> +static int imx_pinconf_group_set(struct pinctrl_dev *pctldev,
+> +				   unsigned group, unsigned long config)
+
+> +	/* save the current group config value */
+> +	info->groups[group].config = config;
+
+This is only so imx_pinconf_group_get() can return it right? Why not
+just read the value back from the register of the first pin in the group?
+
+> +struct pinconf_ops imx_pinconf_ops = {
+> +	.pin_config_get = imx_pinconf_get,
+> +	.pin_config_set = imx_pinconf_set,
+
+Given that the DT parsing code only generates group config, I'm not sure
+you need to implement the per-pin config get/set; I don't think it will
+ever get used?
+
+> +static int __devinit imx_pmx_parse_functions(struct device_node *np,
+> +			struct imx_pinctrl_info *info, u32 index)
+
+Oh, I see.
+
+You're defining the set of functions exported from the driver based on
+the content of the pin configuration nodes in device tree. I must admit,
+I don't like that much, and I didn't get that impression at all from
+reading the binding document.
+
+I know that there's some disagreement over whether the groups that a pin
+controller driver exposes should be limited to groups that actually
+exist in HW registers or not, but surely at least the functions that the
+driver exposes should actually correspond directly to the function in
+the HW registers?
+
+> +#else
+> +static int __devinit imx_pmx_probe_dt(struct platform_device *pdev,
+> +				struct imx_pinctrl_info *info)
+> +{
+> +	return -ENODEV;
+> +}
+> +#endif
+
+Hmm. If this driver is device-tree-only, shouldn't it depend on
+CONFIG_OF in the Kconfig file? Then, you could remove all the "ifdef
+CONFIG_OF" from this file. The rest of my comments assume you do want to
+support CONFIG_OF-vs-not.
+
+> +static const struct of_device_id imx_pmx_dt_ids[] = {
+> +	{ /* sentinel */ }
+> +};
+> +MODULE_DEVICE_TABLE(of, imx_pmx_dt_ids);
+
+Other parts of the driver say "ifdef CONFIG_OF". You might want to here too.
+
+> +static int __init imx_pmx_probe(struct platform_device *pdev)
+
+> +	if (!devm_request_mem_region(dev, res->start, res_size, res->name))
+
+> +	ipmx->base = devm_ioremap_nocache(dev, res->start, res_size);
+
+You can combine those two into devm_request_and_ioremap() if you want.
+
+> +static int __exit imx_pmx_remove(struct platform_device *pdev)
+
+> +	platform_set_drvdata(pdev, NULL);
+
+There's no need to clear the drvdata.
+
+> +static struct platform_driver imx_pmx_driver = {
+> +	.driver = {
+> +		.name = DRIVER_NAME,
+> +		.owner = THIS_MODULE,
+> +		.of_match_table = imx_pmx_dt_ids,
+
+Perhaps = of_match_ptr(imx_pmx_dt_ids)?
