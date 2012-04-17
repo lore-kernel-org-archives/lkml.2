@@ -1,18 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753651Ab2DQWR2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Apr 2012 18:17:28 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:34152 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753468Ab2DQWRY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Apr 2012 18:17:24 -0400
+	id S1753377Ab2DQWRW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Apr 2012 18:17:22 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:48236 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752246Ab2DQWRU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Apr 2012 18:17:20 -0400
 From: <manjunatha_halli@ti.com>
 To: <linux-media@vger.kernel.org>
 CC: <benzyg@ti.com>, <linux-kernel@vger.kernel.org>,
         Manjunatha Halli <x0130808@ti.com>
-Subject: [PATCH 4/4] [Media] WL12xx: Add support for FM new features.
-Date: Tue, 17 Apr 2012 17:17:07 -0500
-Message-ID: <1334701027-19159-5-git-send-email-manjunatha_halli@ti.com>
+Subject: [PATCH 1/4] [Media] WL128x: Add support for FM TX RDS
+Date: Tue, 17 Apr 2012 17:17:04 -0500
+Message-ID: <1334701027-19159-2-git-send-email-manjunatha_halli@ti.com>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1334701027-19159-1-git-send-email-manjunatha_halli@ti.com>
 References: <1334701027-19159-1-git-send-email-manjunatha_halli@ti.com>
@@ -24,554 +25,376 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Manjunatha Halli <x0130808@ti.com>
 
-This patch adds below features to TI's V4l2 FM driver for Wilink
-chipsets,
+This patch adds support for following FM TX RDS features,
+     1. Radio Text
+     2. PS Name
+     3. PI Code
+     4. PTY Code.
 
-	1) FM RX Set frequency allows to set frequency anywhere between
-	65.5 MHz till 108 MHz (if chip is Wilink8 then till 164.55 MHz)
-	2) FM RX seek caters for band switch
-	3) FM RX RDS AF turn ON/OFF
-	4) FM RX De-Emphasis mode set/get
-	5) FM TX Alternate Frequency set/get
-
-Also this patch fixes below issues
-
-	1) FM audio volume gain setting
-	2) Default rssi level is set to 8 instead of 20
-	3) Issue related to audio mute/unmute
-	4) Enable FM RX AF support in driver
-	5) In wrap_around seek mode try for once
+Along with above this patch fixes few other minor issues(like
+fm tx get frequency, unnecessary error messages etc).
 
 Signed-off-by: Manjunatha Halli <x0130808@ti.com>
 ---
- drivers/media/radio/wl128x/fmdrv.h        |    3 +-
- drivers/media/radio/wl128x/fmdrv_common.c |   38 ++++++++++---
- drivers/media/radio/wl128x/fmdrv_common.h |   28 ++++++++-
- drivers/media/radio/wl128x/fmdrv_rx.c     |   90 +++++++++++++++++++++++------
- drivers/media/radio/wl128x/fmdrv_rx.h     |    2 +-
- drivers/media/radio/wl128x/fmdrv_v4l2.c   |   91 +++++++++++++++++++++++++++--
- 6 files changed, 215 insertions(+), 37 deletions(-)
+ drivers/media/radio/wl128x/fmdrv_common.c |   17 +++++++---
+ drivers/media/radio/wl128x/fmdrv_common.h |   17 +++++++----
+ drivers/media/radio/wl128x/fmdrv_rx.c     |    2 +-
+ drivers/media/radio/wl128x/fmdrv_tx.c     |   41 ++++++++++---------------
+ drivers/media/radio/wl128x/fmdrv_tx.h     |    3 +-
+ drivers/media/radio/wl128x/fmdrv_v4l2.c   |   47 +++++++++++++++++++++++++++++
+ 6 files changed, 90 insertions(+), 37 deletions(-)
 
-diff --git a/drivers/media/radio/wl128x/fmdrv.h b/drivers/media/radio/wl128x/fmdrv.h
-index d84ad9d..c806c85 100644
---- a/drivers/media/radio/wl128x/fmdrv.h
-+++ b/drivers/media/radio/wl128x/fmdrv.h
-@@ -150,6 +150,7 @@ struct fm_rx {
- 	struct region_info region;	/* Current selected band */
- 	u32 freq;	/* Current RX frquency */
- 	u8 mute_mode;	/* Current mute mode */
-+	u8 bl_flag;	/* Band limit reached flag */
- 	u8 deemphasis_mode; /* Current deemphasis mode */
- 	/* RF dependent soft mute mode */
- 	u8 rf_depend_mute;
-@@ -203,7 +204,7 @@ struct fmtx_data {
- struct fmdev {
- 	struct video_device *radio_dev;	/* V4L2 video device pointer */
- 	struct snd_card *card;	/* Card which holds FM mixer controls */
--	u16 asci_id;
-+	u16 asic_id;
- 	spinlock_t rds_buff_lock; /* To protect access to RDS buffer */
- 	spinlock_t resp_skb_lock; /* To protect access to received SKB */
- 
 diff --git a/drivers/media/radio/wl128x/fmdrv_common.c b/drivers/media/radio/wl128x/fmdrv_common.c
-index fcce61a..ac20556 100644
+index bf867a6..fcce61a 100644
 --- a/drivers/media/radio/wl128x/fmdrv_common.c
 +++ b/drivers/media/radio/wl128x/fmdrv_common.c
-@@ -44,20 +44,41 @@
+@@ -354,7 +354,7 @@ static void send_tasklet(unsigned long arg)
  
- /* Region info */
- static struct region_info region_configs[] = {
-+	/* Super set of all bands */
-+	{
-+	 .chanl_space = FM_CHANNEL_SPACING_200KHZ * FM_FREQ_MUL,
-+	 .bot_freq = 65800,	/* 87.5 MHz */
-+	 .top_freq = 162550,	/* 108 MHz */
-+	 .fm_band = 0,
-+	 },
- 	/* Europe/US */
- 	{
- 	 .chanl_space = FM_CHANNEL_SPACING_200KHZ * FM_FREQ_MUL,
- 	 .bot_freq = 87500,	/* 87.5 MHz */
- 	 .top_freq = 108000,	/* 108 MHz */
--	 .fm_band = 0,
-+	 .fm_band = 1,
- 	 },
- 	/* Japan */
- 	{
- 	 .chanl_space = FM_CHANNEL_SPACING_200KHZ * FM_FREQ_MUL,
- 	 .bot_freq = 76000,	/* 76 MHz */
- 	 .top_freq = 90000,	/* 90 MHz */
--	 .fm_band = 1,
-+	 .fm_band = 2,
- 	 },
-+	/* Russian (OIRT) band */
-+	{
-+	.chanl_space = FM_CHANNEL_SPACING_50KHZ * FM_FREQ_MUL_RUS,
-+	.bot_freq = 65800,     /* 65.8 MHz */
-+	.top_freq = 74000,     /* 74 MHz */
-+	.fm_band = 3,
-+	},
-+	/* Wether Band */
-+	{
-+	.chanl_space = FM_CHANNEL_SPACING_50KHZ * FM_FREQ_MUL_WB,
-+	.bot_freq = 162400,     /* 162.4 MHz */
-+	.top_freq = 162550,     /* 162.55 MHz */
-+	.fm_band = 4,
-+	}
- };
- 
- /* Band selection */
-@@ -596,7 +617,6 @@ static void fm_irq_handle_flag_getcmd_resp(struct fmdev *fmdev)
- 	memcpy(&fmdev->irq_info.flag, skb->data, fm_evt_hdr->dlen);
- 
- 	fmdev->irq_info.flag = be16_to_cpu(fmdev->irq_info.flag);
--	fmdbg("irq: flag register(0x%x)\n", fmdev->irq_info.flag);
- 
- 	/* Continue next function in interrupt handler table */
- 	fm_irq_call_stage(fmdev, FM_HW_MAL_FUNC_IDX);
-@@ -702,7 +722,7 @@ static void fm_rdsparse_swapbytes(struct fmdev *fmdev,
- 	 * in Dolphin they are in big endian, the parsing of the RDS data
- 	 * is chip dependent
- 	 */
--	if (fmdev->asci_id != 0x6350) {
-+	if (fmdev->asic_id != 0x6350) {
- 		rds_buff = &rds_format->data.groupdatabuff.buff[0];
- 		while (index + 1 < FM_RX_RDS_INFO_FIELD_MAX) {
- 			byte1 = rds_buff[index];
-@@ -1353,11 +1373,13 @@ static int fm_power_up(struct fmdev *fmdev, u8 mode)
- 			sizeof(asic_ver), &asic_ver, &resp_len))
- 		goto rel;
- 
-+	fmdev->asic_id = be16_to_cpu(asic_id);
-+
- 	fmdbg("ASIC ID: 0x%x , ASIC Version: %d\n",
--		be16_to_cpu(asic_id), be16_to_cpu(asic_ver));
-+		fmdev->asic_id, be16_to_cpu(asic_ver));
- 
- 	sprintf(fw_name, "%s_%x.%d.bts", FM_FMC_FW_FILE_START,
--		be16_to_cpu(asic_id), be16_to_cpu(asic_ver));
-+		fmdev->asic_id, be16_to_cpu(asic_ver));
- 
- 	ret = fm_download_firmware(fmdev, fw_name);
- 	if (ret < 0) {
-@@ -1366,7 +1388,7 @@ static int fm_power_up(struct fmdev *fmdev, u8 mode)
+ 	/* Check, is there any timeout happened to last transmitted packet */
+ 	if ((jiffies - fmdev->last_tx_jiffies) > FM_DRV_TX_TIMEOUT) {
+-		fmerr("TX timeout occurred\n");
++		fmdbg("TX timeout occurred\n");
+ 		atomic_set(&fmdev->tx_cnt, 1);
  	}
- 	sprintf(fw_name, "%s_%x.%d.bts", (mode == FM_MODE_RX) ?
- 			FM_RX_FW_FILE_START : FM_TX_FW_FILE_START,
--			be16_to_cpu(asic_id), be16_to_cpu(asic_ver));
-+			fmdev->asic_id, be16_to_cpu(asic_ver));
  
- 	ret = fm_download_firmware(fmdev, fw_name);
- 	if (ret < 0) {
-@@ -1576,7 +1598,7 @@ int fmc_prepare(struct fmdev *fmdev)
- 	fmdev->rx.rds.flag = FM_RDS_DISABLE;
- 	fmdev->rx.freq = FM_UNDEFINED_FREQ;
- 	fmdev->rx.rds_mode = FM_RDS_SYSTEM_RDS;
--	fmdev->rx.af_mode = FM_RX_RDS_AF_SWITCH_MODE_OFF;
-+	fmdev->rx.af_mode = FM_RX_RDS_AF_SWITCH_MODE_ON;
+@@ -615,7 +615,11 @@ static void fm_irq_handle_rds_start(struct fmdev *fmdev)
+ {
+ 	if (fmdev->irq_info.flag & FM_RDS_EVENT & fmdev->irq_info.mask) {
+ 		fmdbg("irq: rds threshold reached\n");
+-		fmdev->irq_info.stage = FM_RDS_SEND_RDS_GETCMD_IDX;
++		/* If RSSI reached below threshold then dont get RDS data */
++		if (fmdev->irq_info.flag & FM_LEV_EVENT)
++			fmdev->irq_info.stage = FM_HW_TUNE_OP_ENDED_IDX;
++		else
++			fmdev->irq_info.stage = FM_RDS_SEND_RDS_GETCMD_IDX;
+ 	} else {
+ 		/* Continue next function in interrupt handler table */
+ 		fmdev->irq_info.stage = FM_HW_TUNE_OP_ENDED_IDX;
+@@ -1129,8 +1133,9 @@ int fmc_set_freq(struct fmdev *fmdev, u32 freq_to_set)
+ 
+ int fmc_get_freq(struct fmdev *fmdev, u32 *cur_tuned_frq)
+ {
+-	if (fmdev->rx.freq == FM_UNDEFINED_FREQ) {
+-		fmerr("RX frequency is not set\n");
++	if (fmdev->rx.freq == FM_UNDEFINED_FREQ &&
++			fmdev->tx_data.tx_frq == FM_UNDEFINED_FREQ) {
++		fmerr("RX/TX frequency is not set\n");
+ 		return -EPERM;
+ 	}
+ 	if (cur_tuned_frq == NULL) {
+@@ -1144,7 +1149,7 @@ int fmc_get_freq(struct fmdev *fmdev, u32 *cur_tuned_frq)
+ 		return 0;
+ 
+ 	case FM_MODE_TX:
+-		*cur_tuned_frq = 0;	/* TODO : Change this later */
++		*cur_tuned_frq = fmdev->tx_data.tx_frq;
+ 		return 0;
+ 
+ 	default:
+@@ -1574,6 +1579,8 @@ int fmc_prepare(struct fmdev *fmdev)
+ 	fmdev->rx.af_mode = FM_RX_RDS_AF_SWITCH_MODE_OFF;
  	fmdev->irq_info.retry = 0;
  
- 	fmdev->tx_data.tx_frq = FM_UNDEFINED_FREQ;
++	fmdev->tx_data.tx_frq = FM_UNDEFINED_FREQ;
++
+ 	fm_rx_reset_rds_cache(fmdev);
+ 	init_waitqueue_head(&fmdev->rx.rds.read_queue);
+ 
 diff --git a/drivers/media/radio/wl128x/fmdrv_common.h b/drivers/media/radio/wl128x/fmdrv_common.h
-index 196ff7d..b25c49e 100644
+index d9b9c6c..196ff7d 100644
 --- a/drivers/media/radio/wl128x/fmdrv_common.h
 +++ b/drivers/media/radio/wl128x/fmdrv_common.h
-@@ -201,8 +201,24 @@ struct fm_event_msg_hdr {
- #define FM_UNDEFINED_FREQ		   0xFFFFFFFF
+@@ -48,8 +48,8 @@ struct fm_reg_table {
+ #define SEARCH_LVL_SET           15
+ #define BAND_SET                 16
+ #define MUTE_STATUS_SET          17
+-#define RDS_PAUSE_LVL_SET        18
+-#define RDS_PAUSE_DUR_SET        19
++#define AUD_PAUSE_LVL_SET        18
++#define AUD_PAUSE_DUR_SET        19
+ #define RDS_MEM_SET              20
+ #define RDS_BLK_B_SET            21
+ #define RDS_MSK_B_SET            22
+@@ -84,11 +84,12 @@ struct fm_reg_table {
  
- /* Band types */
--#define FM_BAND_EUROPE_US	0
--#define FM_BAND_JAPAN		1
-+#define FM_BAND_ALL		0
-+#define FM_BAND_EUROPE_US	1
-+#define FM_BAND_JAPAN		2
-+#define FM_BAND_RUSSIAN		3
-+#define FM_BAND_WEATHER		4
-+
-+/* Frequencies */
-+#define FM_RUSSIAN_BAND_LOW	65800
-+#define FM_RUSSIAN_BAND_HIGH	74000
-+
-+#define FM_JAPAN_BAND_LOW       76000
-+#define FM_JAPAN_BAND_HIGH      90000
-+
-+#define FM_US_BAND_LOW          87500
-+#define FM_US_BAND_HIGH         108000
-+
-+#define FM_WEATHER_BAND_LOW	162400
-+#define FM_WEATHER_BAND_HIGH	162550
+ #define FM_POWER_MODE            254
+ #define FM_INTERRUPT             255
++#define STATION_VALID		 123
  
- /* Seek directions */
- #define FM_SEARCH_DIRECTION_DOWN	0
-@@ -213,6 +229,10 @@ struct fm_event_msg_hdr {
- #define FM_TUNER_PRESET_MODE		1
- #define FM_TUNER_AUTONOMOUS_SEARCH_MODE	2
- #define FM_TUNER_AF_JUMP_MODE		3
-+#define FM_TUNER_PI_MATCH_MODE		4
-+#define FM_TUNER_BULK_SEARCH_MODE	5
-+#define FM_TUNER_WRAP_SEARCH_MODE	6
-+#define FM_TUNER_WEATHER_MODE		7
+ /* Transmitter API */
  
- /* Min and Max volume */
- #define FM_RX_VOLUME_MIN	0
-@@ -353,7 +373,7 @@ struct fm_event_msg_hdr {
+ #define CHANL_SET                55
+-#define CHANL_BW_SET		56
++#define SCAN_SPACING_SET         56
+ #define REF_SET                  57
+ #define POWER_ENB_SET            90
+ #define POWER_ATT_SET            58
+@@ -103,7 +104,8 @@ struct fm_reg_table {
+ #define MONO_SET                 66
+ #define MUTE                     92
+ #define MPX_LMT_ENABLE           67
+-#define PI_SET                   93
++#define REF_ERR_SET		 93
++#define PI_SET                   68
+ #define ECC_SET                  69
+ #define PTY                      70
+ #define AF                       71
+@@ -120,6 +122,10 @@ struct fm_reg_table {
+ #define TX_AUDIO_LEVEL_TEST      96
+ #define TX_AUDIO_LEVEL_TEST_THRESHOLD    73
+ #define TX_AUDIO_INPUT_LEVEL_RANGE_SET   54
++#define TX_AUDIO_LEVEL_GET		 7
++#define READ_FMANT_TUNE_VALUE            104
++
++/* New FM APIs (Rx and Tx) */
+ #define RX_ANTENNA_SELECT        87
+ #define I2C_DEV_ADDR_SET         86
+ #define REF_ERR_CALIB_PARAM_SET          88
+@@ -131,7 +137,6 @@ struct fm_reg_table {
+ #define RSSI_BLOCK_SCAN_FREQ_SET 95
+ #define RSSI_BLOCK_SCAN_START    97
+ #define RSSI_BLOCK_SCAN_DATA_GET  5
+-#define READ_FMANT_TUNE_VALUE            104
+ 
+ /* SKB helpers */
+ struct fm_skb_cb {
+@@ -348,7 +353,7 @@ struct fm_event_msg_hdr {
   * with this default values after loading RX firmware.
   */
  #define FM_DEFAULT_RX_VOLUME		10
--#define FM_DEFAULT_RSSI_THRESHOLD	20
-+#define FM_DEFAULT_RSSI_THRESHOLD	8
+-#define FM_DEFAULT_RSSI_THRESHOLD	3
++#define FM_DEFAULT_RSSI_THRESHOLD	20
  
  /* Range for TX power level in units for dB/uV */
  #define FM_PWR_LVL_LOW			91
-@@ -402,6 +422,8 @@ int fmc_get_mode(struct fmdev *, u8 *);
- #define FM_CHANNEL_SPACING_100KHZ 2
- #define FM_CHANNEL_SPACING_200KHZ 4
- #define FM_FREQ_MUL 50
-+#define FM_FREQ_MUL_RUS 10
-+#define FM_FREQ_MUL_WB 25
- 
- #endif
- 
 diff --git a/drivers/media/radio/wl128x/fmdrv_rx.c b/drivers/media/radio/wl128x/fmdrv_rx.c
-index a806bda..85b4be5 100644
+index 43fb722..a806bda 100644
 --- a/drivers/media/radio/wl128x/fmdrv_rx.c
 +++ b/drivers/media/radio/wl128x/fmdrv_rx.c
-@@ -51,7 +51,19 @@ int fm_rx_set_freq(struct fmdev *fmdev, u32 freq)
- 	u32 resp_len;
+@@ -156,7 +156,7 @@ static int fm_rx_set_channel_spacing(struct fmdev *fmdev, u32 spacing)
+ 
+ 	/* set channel spacing */
+ 	payload = spacing;
+-	ret = fmc_send_cmd(fmdev, CHANL_BW_SET, REG_WR, &payload,
++	ret = fmc_send_cmd(fmdev, SCAN_SPACING_SET, REG_WR, &payload,
+ 			sizeof(payload), NULL, NULL);
+ 	if (ret < 0)
+ 		return ret;
+diff --git a/drivers/media/radio/wl128x/fmdrv_tx.c b/drivers/media/radio/wl128x/fmdrv_tx.c
+index 6ea33e0..6d879fb 100644
+--- a/drivers/media/radio/wl128x/fmdrv_tx.c
++++ b/drivers/media/radio/wl128x/fmdrv_tx.c
+@@ -51,6 +51,7 @@ static int set_rds_text(struct fmdev *fmdev, u8 *rds_text)
+ 	u16 payload;
  	int ret;
  
--	if (freq < fmdev->rx.region.bot_freq || freq > fmdev->rx.region.top_freq) {
-+
-+	if (freq >= FM_RUSSIAN_BAND_LOW && freq <= FM_RUSSIAN_BAND_HIGH)
-+		fm_rx_set_region(fmdev, FM_BAND_RUSSIAN);
-+	else if (freq >= FM_JAPAN_BAND_LOW && freq <= FM_JAPAN_BAND_HIGH)
-+		fm_rx_set_region(fmdev, FM_BAND_JAPAN);
-+	else if (freq >= FM_US_BAND_LOW && freq <= FM_US_BAND_HIGH)
-+		fm_rx_set_region(fmdev, FM_BAND_EUROPE_US);
-+	else if (freq >= FM_WEATHER_BAND_LOW && freq <= FM_WEATHER_BAND_HIGH) {
-+		if (fmdev->asic_id < 0x1800)
-+			return -ERANGE;
-+
-+		fm_rx_set_region(fmdev, FM_BAND_WEATHER);
-+	} else {
- 		fmerr("Invalid frequency %d\n", freq);
- 		return -EINVAL;
- 	}
-@@ -72,7 +84,12 @@ int fm_rx_set_freq(struct fmdev *fmdev, u32 freq)
- 		return ret;
- 
- 	/* Calculate frequency index and set*/
--	payload = (freq - fmdev->rx.region.bot_freq) / FM_FREQ_MUL;
-+	if (fmdev->rx.region.fm_band == FM_BAND_RUSSIAN)
-+		payload = (freq - fmdev->rx.region.bot_freq) / FM_FREQ_MUL_RUS;
-+	else if (fmdev->rx.region.fm_band == FM_BAND_WEATHER)
-+		payload = (freq - fmdev->rx.region.bot_freq) / FM_FREQ_MUL_WB;
-+	else
-+		payload = (freq - fmdev->rx.region.bot_freq) / FM_FREQ_MUL;
- 
- 	ret = fmc_send_cmd(fmdev, FREQ_SET, REG_WR, &payload,
- 			sizeof(payload), NULL, NULL);
-@@ -117,7 +134,13 @@ int fm_rx_set_freq(struct fmdev *fmdev, u32 freq)
- 		goto exit;
- 
- 	curr_frq = be16_to_cpu(curr_frq);
--	curr_frq_in_khz = (fmdev->rx.region.bot_freq + ((u32)curr_frq * FM_FREQ_MUL));
-+
-+	if (fmdev->rx.region.fm_band == FM_BAND_RUSSIAN)
-+		curr_frq_in_khz = (fmdev->rx.region.bot_freq + ((u32)curr_frq * FM_FREQ_MUL_RUS));
-+	else if (fmdev->rx.region.fm_band == FM_BAND_WEATHER)
-+		curr_frq_in_khz = (fmdev->rx.region.bot_freq + ((u32)curr_frq * FM_FREQ_MUL_WB));
-+	else
-+		curr_frq_in_khz = (fmdev->rx.region.bot_freq + ((u32)curr_frq * FM_FREQ_MUL));
- 
- 	if (curr_frq_in_khz != freq) {
- 		pr_info("Frequency is set to (%d) but "
-@@ -167,15 +190,22 @@ static int fm_rx_set_channel_spacing(struct fmdev *fmdev, u32 spacing)
++	*(u16 *)rds_text = cpu_to_be16(*(u16 *)rds_text);
+ 	ret = fmc_send_cmd(fmdev, RDS_DATA_SET, REG_WR, rds_text,
+ 			strlen(rds_text), NULL, NULL);
+ 	if (ret < 0)
+@@ -66,26 +67,31 @@ static int set_rds_text(struct fmdev *fmdev, u8 *rds_text)
+ 	return 0;
  }
  
- int fm_rx_seek(struct fmdev *fmdev, u32 seek_upward,
--		u32 wrap_around, u32 spacing)
-+		u32 wrap_around, u32 spacing, u32 fm_band)
+-static int set_rds_data_mode(struct fmdev *fmdev, u8 mode)
++int set_rds_picode(struct fmdev *fmdev, u16 pi_val)
  {
- 	u32 resp_len;
--	u16 curr_frq, next_frq, last_frq;
-+	u16 curr_frq, next_frq, last_frq, fm_frq_mul;
- 	u16 payload, int_reason, intr_flag;
- 	u16 offset, space_idx;
- 	unsigned long timeleft;
+ 	u16 payload;
  	int ret;
  
-+	if (fmdev->rx.region.fm_band != fm_band) {
-+		if ((fmdev->asic_id < 0x1800) && (fm_band == FM_BAND_WEATHER))
-+			return -ERANGE;
-+
-+		fm_rx_set_region(fmdev, fm_band);
-+	}
-+
- 	/* Set channel spacing */
- 	ret = fm_rx_set_channel_spacing(fmdev, spacing);
- 	if (ret < 0) {
-@@ -190,10 +220,22 @@ int fm_rx_seek(struct fmdev *fmdev, u32 seek_upward,
- 		return ret;
- 
- 	curr_frq = be16_to_cpu(curr_frq);
--	last_frq = (fmdev->rx.region.top_freq - fmdev->rx.region.bot_freq) / FM_FREQ_MUL;
- 
- 	/* Check the offset in order to be aligned to the channel spacing*/
--	space_idx = fmdev->rx.region.chanl_space / FM_FREQ_MUL;
-+	if (fmdev->rx.region.fm_band == FM_BAND_RUSSIAN) {
-+		last_frq = (fmdev->rx.region.top_freq - fmdev->rx.region.bot_freq) / FM_FREQ_MUL_RUS;
-+		space_idx = fmdev->rx.region.chanl_space / FM_FREQ_MUL_RUS;
-+		fm_frq_mul = FM_FREQ_MUL_RUS;
-+	} else if (fmdev->rx.region.fm_band == FM_BAND_WEATHER) {
-+		last_frq = (fmdev->rx.region.top_freq - fmdev->rx.region.bot_freq) / FM_FREQ_MUL_WB;
-+		space_idx = 1;
-+		fm_frq_mul = FM_FREQ_MUL_WB;
-+	} else {
-+		last_frq = (fmdev->rx.region.top_freq - fmdev->rx.region.bot_freq) / FM_FREQ_MUL;
-+		space_idx = fmdev->rx.region.chanl_space / FM_FREQ_MUL;
-+		fm_frq_mul = FM_FREQ_MUL;
-+	}
-+
- 	offset = curr_frq % space_idx;
- 
- 	next_frq = seek_upward ? curr_frq + space_idx /* Seek Up */ :
-@@ -238,7 +280,11 @@ again:
- 		return ret;
- 
- 	/* Start seek */
--	payload = FM_TUNER_AUTONOMOUS_SEARCH_MODE;
-+	if (fmdev->rx.region.fm_band == FM_BAND_WEATHER)
-+		payload = FM_TUNER_WEATHER_MODE;
-+	else
-+		payload = FM_TUNER_AUTONOMOUS_SEARCH_MODE;
-+
- 	ret = fmc_send_cmd(fmdev, TUNER_MODE_SET, REG_WR, &payload,
+-	/* Setting unique PI TODO: how unique? */
+-	payload = (u16)0xcafe;
++	payload = pi_val;
+ 	ret = fmc_send_cmd(fmdev, PI_SET, REG_WR, &payload,
  			sizeof(payload), NULL, NULL);
  	if (ret < 0)
-@@ -265,6 +311,7 @@ again:
  		return ret;
  
- 	if (int_reason & FM_BL_EVENT) {
-+		fmdev->rx.bl_flag = 1;
- 		if (wrap_around == 0) {
- 			fmdev->rx.freq = seek_upward ?
- 				fmdev->rx.region.top_freq :
-@@ -274,8 +321,11 @@ again:
- 				fmdev->rx.region.bot_freq :
- 				fmdev->rx.region.top_freq;
- 			/* Calculate frequency index to write */
--			next_frq = (fmdev->rx.freq -
--					fmdev->rx.region.bot_freq) / FM_FREQ_MUL;
-+			next_frq = (fmdev->rx.freq - fmdev->rx.region.bot_freq) / fm_frq_mul;
+-	/* Set decoder id */
+-	payload = (u16)0xa;
+-	ret = fmc_send_cmd(fmdev, DI_SET, REG_WR, &payload,
++	return 0;
++}
 +
-+			/* If no valid chanel then report default frequency */
-+			wrap_around = 0;
++int set_rds_pty(struct fmdev *fmdev, u16 pty)
++{
++	u16 payload;
++	u32 ret;
 +
- 			goto again;
- 		}
- 	} else {
-@@ -286,9 +336,7 @@ again:
- 			return ret;
++	payload = pty;
++	ret = fmc_send_cmd(fmdev, PTY, REG_WR, &payload,
+ 			sizeof(payload), NULL, NULL);
+ 	if (ret < 0)
+ 		return ret;
  
- 		curr_frq = be16_to_cpu(curr_frq);
--		fmdev->rx.freq = (fmdev->rx.region.bot_freq +
--				((u32)curr_frq * FM_FREQ_MUL));
+-	/* TODO: RDS_MODE_GET? */
+ 	return 0;
+ }
+ 
+@@ -101,7 +107,6 @@ static int set_rds_len(struct fmdev *fmdev, u8 type, u16 len)
+ 	if (ret < 0)
+ 		return ret;
+ 
+-	/* TODO: LENGTH_GET? */
+ 	return 0;
+ }
+ 
+@@ -109,20 +114,17 @@ int fm_tx_set_rds_mode(struct fmdev *fmdev, u8 rds_en_dis)
+ {
+ 	u16 payload;
+ 	int ret;
+-	u8 rds_text[] = "Zoom2\n";
++	u8 rds_text[] = "WL12XX Radio\n";
+ 
+ 	fmdbg("rds_en_dis:%d(E:%d, D:%d)\n", rds_en_dis,
+ 		   FM_RDS_ENABLE, FM_RDS_DISABLE);
+ 
+ 	if (rds_en_dis == FM_RDS_ENABLE) {
+ 		/* Set RDS length */
+-		set_rds_len(fmdev, 0, strlen(rds_text));
++		set_rds_len(fmdev, 2, strlen(rds_text));
+ 
+ 		/* Set RDS text */
+ 		set_rds_text(fmdev, rds_text);
 -
-+		fmdev->rx.freq = (fmdev->rx.region.bot_freq + ((u32)curr_frq * fm_frq_mul));
- 	}
- 	/* Reset RDS cache and current station pointers */
- 	fm_rx_reset_rds_cache(fmdev);
-@@ -364,18 +412,21 @@ int fm_rx_set_region(struct fmdev *fmdev, u8 region_to_set)
- 	int ret;
- 
- 	if (region_to_set != FM_BAND_EUROPE_US &&
--	    region_to_set != FM_BAND_JAPAN) {
-+	    region_to_set != FM_BAND_JAPAN &&
-+	    region_to_set != FM_BAND_RUSSIAN &&
-+	    region_to_set != FM_BAND_WEATHER) {
- 		fmerr("Invalid band\n");
- 		return -EINVAL;
+-		/* Set RDS mode */
+-		set_rds_data_mode(fmdev, 0x0);
  	}
  
- 	if (fmdev->rx.region.fm_band == region_to_set) {
--		fmerr("Requested band is already configured\n");
-+		fmdbg("Requested band is already configured\n");
- 		return 0;
- 	}
- 
- 	/* Send cmd to set the band  */
--	payload = (u16)region_to_set;
-+	/* Since 0 indicates super band actual payload should be payload - 1*/
-+	payload = (u16)(region_to_set - 1);
- 	ret = fmc_send_cmd(fmdev, BAND_SET, REG_WR, &payload,
- 			sizeof(payload), NULL, NULL);
+ 	/* Send command to enable RDS */
+@@ -136,13 +138,6 @@ int fm_tx_set_rds_mode(struct fmdev *fmdev, u8 rds_en_dis)
  	if (ret < 0)
-@@ -636,8 +687,11 @@ int fm_rx_set_deemphasis_mode(struct fmdev *fmdev, u16 mode)
- 	if (fmdev->curr_fmmode != FM_MODE_RX)
+ 		return ret;
+ 
+-	if (rds_en_dis == FM_RDS_ENABLE) {
+-		/* Set RDS length */
+-		set_rds_len(fmdev, 0, strlen(rds_text));
+-
+-		/* Set RDS text */
+-		set_rds_text(fmdev, rds_text);
+-	}
+ 	fmdev->tx_data.rds.flag = rds_en_dis;
+ 
+ 	return 0;
+@@ -156,7 +151,6 @@ int fm_tx_set_radio_text(struct fmdev *fmdev, u8 *rds_text, u8 rds_type)
+ 	if (fmdev->curr_fmmode != FM_MODE_TX)
  		return -EPERM;
  
--	if (mode != FM_RX_EMPHASIS_FILTER_50_USEC &&
--			mode != FM_RX_EMPHASIS_FILTER_75_USEC) {
-+	if (mode == V4L2_DEEMPHASIS_DISABLED)
-+		return 0;
-+
-+	if (mode != V4L2_DEEMPHASIS_50_uS &&
-+			mode != V4L2_DEEMPHASIS_75_uS) {
- 		fmerr("Invalid rx de-emphasis mode (%d)\n", mode);
- 		return -EINVAL;
- 	}
-diff --git a/drivers/media/radio/wl128x/fmdrv_rx.h b/drivers/media/radio/wl128x/fmdrv_rx.h
-index 32add81..261420e 100644
---- a/drivers/media/radio/wl128x/fmdrv_rx.h
-+++ b/drivers/media/radio/wl128x/fmdrv_rx.h
-@@ -37,7 +37,7 @@ int fm_rx_set_af_switch(struct fmdev *, u8);
- void fm_rx_reset_rds_cache(struct fmdev *);
- void fm_rx_reset_station_info(struct fmdev *);
+-	fm_tx_set_rds_mode(fmdev, 0);
  
--int fm_rx_seek(struct fmdev *, u32, u32, u32);
-+int fm_rx_seek(struct fmdev *, u32, u32, u32, u32);
+ 	/* Set RDS length */
+ 	set_rds_len(fmdev, rds_type, strlen(rds_text));
+@@ -164,9 +158,6 @@ int fm_tx_set_radio_text(struct fmdev *fmdev, u8 *rds_text, u8 rds_type)
+ 	/* Set RDS text */
+ 	set_rds_text(fmdev, rds_text);
  
- int fm_rx_get_rds_mode(struct fmdev *, u8 *);
- int fm_rx_get_rds_system(struct fmdev *, u8 *);
-diff --git a/drivers/media/radio/wl128x/fmdrv_v4l2.c b/drivers/media/radio/wl128x/fmdrv_v4l2.c
-index b9da1ae..e9bd84c 100644
---- a/drivers/media/radio/wl128x/fmdrv_v4l2.c
-+++ b/drivers/media/radio/wl128x/fmdrv_v4l2.c
-@@ -212,6 +212,7 @@ static int fm_v4l2_s_ctrl(struct v4l2_ctrl *ctrl)
+-	/* Set RDS mode */
+-	set_rds_data_mode(fmdev, 0x0);
+-
+ 	payload = 1;
+ 	ret = fmc_send_cmd(fmdev, RDS_DATA_ENB, REG_WR, &payload,
+ 			sizeof(payload), NULL, NULL);
+@@ -421,6 +412,8 @@ int fm_tx_set_freq(struct fmdev *fmdev, u32 freq_to_set)
+ 	tx->aud_mode = FM_STEREO_MODE;
+ 	tx->rds.flag = FM_RDS_DISABLE;
  
- 	int ret;
- 
-+	fmdbg(" fm_v4l2_s_ctrl - AF bit = %d\n", ctrl->val);
- 	switch (ctrl->id) {
- 	case V4L2_CID_AUDIO_VOLUME:	/* set volume */
- 		return fm_rx_set_volume(fmdev, (u16)ctrl->val);
-@@ -258,6 +259,22 @@ static int fm_v4l2_s_ctrl(struct v4l2_ctrl *ctrl)
- 		}
- 		return 0;
- 
-+	case V4L2_CID_RDS_TX_AF_FREQ:
-+		ret = fm_tx_set_af(fmdev, ctrl->val);
-+		if (ret < 0) {
-+			fmerr("Failed to set FM TX AF Frequency\n");
-+			return ret;
-+		}
-+		return 0;
-+
-+	case V4L2_CID_RDS_AF_SWITCH:	/* enable/disable FM RX RDS AF*/
-+		fmdbg("V4L2_CID_RDS_AF_SWITCH:\n");
-+		return fm_rx_set_af_switch(fmdev, (u8)ctrl->val);
-+
-+	case V4L2_CID_TUNE_DEEMPHASIS:
-+		fmdbg("V4L2_CID_TUNE_DEEMPHASIS\n");
-+		return fm_rx_set_deemphasis_mode(fmdev, (u8) ctrl->val);
-+
- 	default:
- 		return -EINVAL;
- 	}
-@@ -420,7 +437,7 @@ static int fm_v4l2_vidioc_s_hw_freq_seek(struct file *file, void *priv,
- 		struct v4l2_hw_freq_seek *seek)
- {
- 	struct fmdev *fmdev = video_drvdata(file);
--	int ret;
-+	int ret, curr_band = fmdev->rx.region.fm_band;
- 
- 	if (fmdev->curr_fmmode != FM_MODE_RX) {
- 		ret = fmc_set_mode(fmdev, FM_MODE_RX);
-@@ -430,12 +447,64 @@ static int fm_v4l2_vidioc_s_hw_freq_seek(struct file *file, void *priv,
- 		}
- 	}
- 
--	ret = fm_rx_seek(fmdev, seek->seek_upward, seek->wrap_around,
--			seek->spacing);
--	if (ret < 0)
--		fmerr("RX seek failed - %d\n", ret);
-+	if (seek->fm_band != 0) {
-+		ret = fm_rx_seek(fmdev, seek->seek_upward, seek->wrap_around,
-+			seek->spacing, seek->fm_band);
-+		if (ret < 0)
-+			fmerr("RX seek failed - %d\n", ret);
- 
--	return ret;
-+		return ret;
-+	} else {
-+		do {
-+			ret = fm_rx_seek(fmdev, seek->seek_upward, seek->wrap_around,
-+					seek->spacing, curr_band);
-+			if (ret < 0)
-+				fmerr("RX seek failed - %d\n", ret);
-+
-+			if (fmdev->rx.bl_flag != 1) {
-+				return ret;
-+			}
-+
-+			/* If reached the 162.55 or 65.8 then return the same*/
-+			if (!seek->seek_upward && (fmdev->rx.region.fm_band == FM_BAND_RUSSIAN))
-+				return ret;
-+
-+			if (seek->seek_upward && (fmdev->rx.region.fm_band == FM_BAND_WEATHER)) {
-+				if (fmdev->asic_id < 0x1800) {
-+					fmdev->rx.freq = FM_US_BAND_HIGH;
-+					return FM_US_BAND_HIGH;
-+				}
-+
-+				return ret;
-+			}
-+
-+			if (seek->seek_upward) {
-+				switch (fmdev->rx.region.fm_band) {
-+				case FM_BAND_RUSSIAN:
-+					curr_band = FM_BAND_JAPAN;
-+					break;
-+				case FM_BAND_JAPAN:
-+					curr_band = FM_BAND_EUROPE_US;
-+					break;
-+				case FM_BAND_EUROPE_US:
-+					curr_band = FM_BAND_WEATHER;
-+					break;
-+				}
-+			} else {
-+				switch (fmdev->rx.region.fm_band) {
-+				case FM_BAND_WEATHER:
-+					curr_band = FM_BAND_EUROPE_US;
-+					break;
-+				case FM_BAND_EUROPE_US:
-+					curr_band = FM_BAND_JAPAN;
-+					break;
-+				case FM_BAND_JAPAN:
-+					curr_band = FM_BAND_RUSSIAN;
-+					break;
-+				}
-+			}
-+		} while (1);
-+	}
- }
- /* Get modulator attributes. If mode is not TX, return no attributes. */
- static int fm_v4l2_vidioc_g_modulator(struct file *file, void *priv,
-@@ -596,6 +665,9 @@ int fm_v4l2_init_video_device(struct fmdev *fmdev, int radio_nr)
- 	v4l2_ctrl_new_std(&fmdev->ctrl_handler, &fm_ctrl_ops,
- 			V4L2_CID_RDS_TX_RADIO_TEXT, 0, 0xffff, 1, 0);
- 
-+	v4l2_ctrl_new_std(&fmdev->ctrl_handler, &fm_ctrl_ops,
-+			V4L2_CID_RDS_TX_AF_FREQ, 76000, 180000, 1, 87500);
-+
- 	v4l2_ctrl_new_std_menu(&fmdev->ctrl_handler, &fm_ctrl_ops,
- 			V4L2_CID_TUNE_PREEMPHASIS, V4L2_PREEMPHASIS_75_uS,
- 			0, V4L2_PREEMPHASIS_75_uS);
-@@ -611,6 +683,13 @@ int fm_v4l2_init_video_device(struct fmdev *fmdev, int radio_nr)
- 	if (ctrl)
- 		ctrl->flags |= V4L2_CTRL_FLAG_VOLATILE;
- 
-+	v4l2_ctrl_new_std(&fmdev->ctrl_handler, &fm_ctrl_ops,
-+			V4L2_CID_RDS_AF_SWITCH, 0, 1, 1, 0);
-+
-+	v4l2_ctrl_new_std_menu(&fmdev->ctrl_handler, &fm_ctrl_ops,
-+			V4L2_CID_TUNE_DEEMPHASIS, V4L2_DEEMPHASIS_75_uS,
-+			0, V4L2_DEEMPHASIS_75_uS);
++	tx->tx_frq = freq_to_set * 1000; /* in KHz */
 +
  	return 0;
  }
  
+diff --git a/drivers/media/radio/wl128x/fmdrv_tx.h b/drivers/media/radio/wl128x/fmdrv_tx.h
+index 11ae2e4..8ed71bd 100644
+--- a/drivers/media/radio/wl128x/fmdrv_tx.h
++++ b/drivers/media/radio/wl128x/fmdrv_tx.h
+@@ -32,6 +32,7 @@ int fm_tx_set_radio_text(struct fmdev *, u8 *, u8);
+ int fm_tx_set_af(struct fmdev *, u32);
+ int fm_tx_set_preemph_filter(struct fmdev *, u32);
+ int fm_tx_get_tune_cap_val(struct fmdev *);
+-
++int set_rds_picode(struct fmdev *, u16);
++int set_rds_pty(struct fmdev *, u16);
+ #endif
+ 
+diff --git a/drivers/media/radio/wl128x/fmdrv_v4l2.c b/drivers/media/radio/wl128x/fmdrv_v4l2.c
+index 077d369..b9da1ae 100644
+--- a/drivers/media/radio/wl128x/fmdrv_v4l2.c
++++ b/drivers/media/radio/wl128x/fmdrv_v4l2.c
+@@ -210,6 +210,8 @@ static int fm_v4l2_s_ctrl(struct v4l2_ctrl *ctrl)
+ 	struct fmdev *fmdev = container_of(ctrl->handler,
+ 			struct fmdev, ctrl_handler);
+ 
++	int ret;
++
+ 	switch (ctrl->id) {
+ 	case V4L2_CID_AUDIO_VOLUME:	/* set volume */
+ 		return fm_rx_set_volume(fmdev, (u16)ctrl->val);
+@@ -224,6 +226,38 @@ static int fm_v4l2_s_ctrl(struct v4l2_ctrl *ctrl)
+ 	case V4L2_CID_TUNE_PREEMPHASIS:
+ 		return fm_tx_set_preemph_filter(fmdev, (u8) ctrl->val);
+ 
++	case V4L2_CID_RDS_TX_PI:
++		ret = set_rds_picode(fmdev, ctrl->val);
++		if (ret < 0) {
++			fmerr("Failed to set RDS Radio PS Name\n");
++			return ret;
++		}
++		return 0;
++
++	case V4L2_CID_RDS_TX_PTY:
++		ret = set_rds_pty(fmdev, ctrl->val);
++		if (ret < 0) {
++			fmerr("Failed to set RDS Radio PS Name\n");
++			return ret;
++		}
++		return 0;
++
++	case V4L2_CID_RDS_TX_PS_NAME:
++		ret = fm_tx_set_radio_text(fmdev, ctrl->string, 1);
++		if (ret < 0) {
++			fmerr("Failed to set RDS Radio PS Name\n");
++			return ret;
++		}
++		return 0;
++
++	case V4L2_CID_RDS_TX_RADIO_TEXT:
++		ret = fm_tx_set_radio_text(fmdev, ctrl->string, 2);
++		if (ret < 0) {
++			fmerr("Failed to set RDS Radio Text\n");
++			return ret;
++		}
++		return 0;
++
+ 	default:
+ 		return -EINVAL;
+ 	}
+@@ -455,6 +489,7 @@ static int fm_v4l2_vidioc_s_modulator(struct file *file, void *priv,
+ 		fmerr("Failed to set mono/stereo mode for TX\n");
+ 		return ret;
+ 	}
++
+ 	ret = fm_tx_set_rds_mode(fmdev, rds_mode);
+ 	if (ret < 0)
+ 		fmerr("Failed to set rds mode for TX\n");
+@@ -549,6 +584,18 @@ int fm_v4l2_init_video_device(struct fmdev *fmdev, int radio_nr)
+ 	v4l2_ctrl_new_std(&fmdev->ctrl_handler, &fm_ctrl_ops,
+ 			V4L2_CID_AUDIO_MUTE, 0, 1, 1, 1);
+ 
++	v4l2_ctrl_new_std(&fmdev->ctrl_handler, &fm_ctrl_ops,
++			V4L2_CID_RDS_TX_PI, 0x0, 0xffff, 1, 0x0);
++
++	v4l2_ctrl_new_std(&fmdev->ctrl_handler, &fm_ctrl_ops,
++			V4L2_CID_RDS_TX_PTY, 0, 32, 1, 0);
++
++	v4l2_ctrl_new_std(&fmdev->ctrl_handler, &fm_ctrl_ops,
++			V4L2_CID_RDS_TX_PS_NAME, 0, 0xffff, 1, 0);
++
++	v4l2_ctrl_new_std(&fmdev->ctrl_handler, &fm_ctrl_ops,
++			V4L2_CID_RDS_TX_RADIO_TEXT, 0, 0xffff, 1, 0);
++
+ 	v4l2_ctrl_new_std_menu(&fmdev->ctrl_handler, &fm_ctrl_ops,
+ 			V4L2_CID_TUNE_PREEMPHASIS, V4L2_PREEMPHASIS_75_uS,
+ 			0, V4L2_PREEMPHASIS_75_uS);
 -- 
 1.7.4.1
 
