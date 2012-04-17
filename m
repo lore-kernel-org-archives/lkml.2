@@ -1,67 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754526Ab2DQO1H (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Apr 2012 10:27:07 -0400
-Received: from mail-wg0-f42.google.com ([74.125.82.42]:33551 "EHLO
-	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751811Ab2DQO1E (ORCPT
+	id S1755298Ab2DQO1n (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Apr 2012 10:27:43 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:42021 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751811Ab2DQO1l (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Apr 2012 10:27:04 -0400
-From: Miklos Szeredi <miklos@szeredi.hu>
-To: Steve Dickson <SteveD@redhat.com>
-Cc: Jeff Layton <jlayton@redhat.com>,
-        "Myklebust\, Trond" <Trond.Myklebust@netapp.com>,
-        Bernd Schubert <bernd.schubert@itwm.fraunhofer.de>,
-        Malahal Naineni <malahal@us.ibm.com>,
-        "linux-nfs\@vger.kernel.org" <linux-nfs@vger.kernel.org>,
-        "linux-fsdevel\@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "pstaubach\@exagrid.com" <pstaubach@exagrid.com>,
-        "viro\@ZenIV.linux.org.uk" <viro@ZenIV.linux.org.uk>,
-        "hch\@infradead.org" <hch@infradead.org>,
-        "michael.brantley\@deshaw.com" <michael.brantley@deshaw.com>,
-        "sven.breuner\@itwm.fraunhofer.de" <sven.breuner@itwm.fraunhofer.de>
-Subject: Re: [PATCH RFC] vfs: make fstatat retry on ESTALE errors from getattr call
-References: <1334316311-22331-1-git-send-email-jlayton@redhat.com>
-	<20120413150518.GA1987@us.ibm.com>
-	<20120413114236.0e557e01@tlielax.poochiereds.net>
-	<4F8B1B7B.3040304@itwm.fraunhofer.de>
-	<20120416073655.7cdb90cf@corrin.poochiereds.net>
-	<4F8C3036.2030702@itwm.fraunhofer.de>
-	<20120416134642.1754cd3e@corrin.poochiereds.net>
-	<1334604785.2879.23.camel@lade.trondhjem.org>
-	<20120416154322.0d95e435@corrin.poochiereds.net>
-	<1334607906.2879.36.camel@lade.trondhjem.org>
-	<20120416190548.2463d1d0@corrin.poochiereds.net>
-	<4F8D580B.7060104@RedHat.com>
-	<20120417093643.7f172057@corrin.poochiereds.net>
-	<4F8D7ADF.9030709@RedHat.com>
-Date: Tue, 17 Apr 2012 16:27:16 +0200
-In-Reply-To: <4F8D7ADF.9030709@RedHat.com> (Steve Dickson's message of "Tue,
-	17 Apr 2012 10:14:55 -0400")
-Message-ID: <87k41eo2m3.fsf@tucsk.pomaz.szeredi.hu>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	Tue, 17 Apr 2012 10:27:41 -0400
+From: Laura Vasilescu <laura@rosedu.org>
+To: linux-kernel@vger.kernel.org
+Cc: netdev@vger.kernel.org, eric.dumazet@gmail.com, nhorman@tuxdriver.com,
+        davem@davemloft.net, Laura Vasilescu <laura@rosedu.org>
+Subject: [PATCH] ethernet: fix checkpatch errors
+Date: Tue, 17 Apr 2012 17:27:24 +0300
+Message-Id: <1334672844-10129-1-git-send-email-laura@rosedu.org>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Steve Dickson <SteveD@redhat.com> writes:
+Signed-off-by: Laura Vasilescu <laura@rosedu.org>
+---
+ net/ethernet/eth.c |   20 ++++++++++++--------
+ 1 files changed, 12 insertions(+), 8 deletions(-)
 
-> True, but even so... Giving file systems an opt-out option with the 
-> default being out, maybe still have some merit... Making file systems
-> enable this new type of functionality would cut down on any of the
-> "surprise" that might occur with this redo ;-) 
+diff --git a/net/ethernet/eth.c b/net/ethernet/eth.c
+index bf10a31..5cca0ff 100644
+--- a/net/ethernet/eth.c
++++ b/net/ethernet/eth.c
+@@ -20,8 +20,8 @@
+  *		Alan Cox	: eth_rebuild_header missing an htons and
+  *				  minor other things.
+  *		Tegge		: Arp bug fixes.
+- *		Florian		: Removed many unnecessary functions, code cleanup
+- *				  and changes for new arp and skbuff.
++ *		Florian		: Removed many unnecessary functions, code
++ *				  cleanup and changes for new arp and skbuff.
+  *		Alan Cox	: Redid header building to reflect new format.
+  *		Alan Cox	: ARP only when compiled with CONFIG_INET
+  *		Greg Page	: 802.2 and SNAP stuff.
+@@ -29,8 +29,9 @@
+  *		Paul Gortmaker	: eth_copy_and_sum shouldn't csum padding.
+  *		Alan Cox	: Protect against forwarding explosions with
+  *				  older network drivers and IFF_ALLMULTI.
+- *	Christer Weinigel	: Better rebuild header message.
+- *             Andrew Morton    : 26Feb01: kill ether_setup() - use netdev_boot_setup().
++ *		Christer Weinigel: Better rebuild header message.
++ *		Andrew Morton   : 26Feb01: kill ether_setup() -
++ *				  use netdev_boot_setup().
+  *
+  *		This program is free software; you can redistribute it and/or
+  *		modify it under the terms of the GNU General Public License
+@@ -178,8 +179,9 @@ __be16 eth_type_trans(struct sk_buff *skb, struct net_device *dev)
+ 	 *      seems to set IFF_PROMISC.
+ 	 */
+ 
+-	else if (1 /*dev->flags&IFF_PROMISC */ ) {
+-		if (unlikely(compare_ether_addr_64bits(eth->h_dest, dev->dev_addr)))
++	else if (1 /*dev->flags&IFF_PROMISC */) {
++		if (unlikely(compare_ether_addr_64bits(eth->h_dest,
++							dev->dev_addr)))
+ 			skb->pkt_type = PACKET_OTHERHOST;
+ 	}
+ 
+@@ -233,7 +235,9 @@ EXPORT_SYMBOL(eth_header_parse);
+  * @type: Ethernet type field
+  * Create an Ethernet header template from the neighbour.
+  */
+-int eth_header_cache(const struct neighbour *neigh, struct hh_cache *hh, __be16 type)
++int eth_header_cache(const struct neighbour *neigh,
++			struct hh_cache *hh,
++			__be16 type)
+ {
+ 	struct ethhdr *eth;
+ 	const struct net_device *dev = neigh->dev;
+@@ -336,7 +340,7 @@ void ether_setup(struct net_device *dev)
+ {
+ 	dev->header_ops		= &eth_header_ops;
+ 	dev->type		= ARPHRD_ETHER;
+-	dev->hard_header_len 	= ETH_HLEN;
++	dev->hard_header_len	= ETH_HLEN;
+ 	dev->mtu		= ETH_DATA_LEN;
+ 	dev->addr_len		= ETH_ALEN;
+ 	dev->tx_queue_len	= 1000;	/* Ethernet wants good queues */
+-- 
+1.7.1
 
-I've been arguing for something slightly different for quite some time:
-I never liked errno values which have side effects in the kernel yet
-might be visible to userspace.
-
-So why not introduce ERETRYSTALE, a *kernel internal* errno value that
-userspace will never see and filesystems never accidentally set.  The
-VFS can turn this into ESTALE if it doesn't retry for some reason
-(e.g. already retried).
-
-Thanks,
-Miklos
