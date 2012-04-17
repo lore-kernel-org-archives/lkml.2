@@ -1,53 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751052Ab2DQOn4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Apr 2012 10:43:56 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:59476 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752998Ab2DQOnz (ORCPT
+	id S1756138Ab2DQOri (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Apr 2012 10:47:38 -0400
+Received: from mail-pz0-f52.google.com ([209.85.210.52]:65084 "EHLO
+	mail-pz0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753123Ab2DQOrg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Apr 2012 10:43:55 -0400
-MIME-Version: 1.0
-In-Reply-To: <20120406182237.GB13649@pengutronix.de>
-References: <1333434302-14897-1-git-send-email-meltedpianoman@gmail.com>
-	<20120403165320.GG19952@sequoia.sous-sol.org>
-	<20120403170708.GC2477@pengutronix.de>
-	<20120403171112.GH19952@sequoia.sous-sol.org>
-	<20120403171736.GD2477@pengutronix.de>
-	<CAMSQXEHpjD7LWQkKWJOU=9eFYqsaJi-xHFTxexQr7yoKiCG7HQ@mail.gmail.com>
-	<20120404075956.GB9073@pengutronix.de>
-	<CAMSQXEHxaJpmjpOz_VL54bs1W9x3kCJKGoeTCmBpZva_hSTVsw@mail.gmail.com>
-	<20120405164354.GC16546@kroah.com>
-	<CANqCtQJjzkANJQMd8E9XKvOyk_FLCm1ER=VznrQ+cAerGbO0zQ@mail.gmail.com>
-	<20120406182237.GB13649@pengutronix.de>
-Date: Tue, 17 Apr 2012 16:43:54 +0200
-Message-ID: <CAMSQXEHXQOH7k=aLzXZyxnBQmPwXkrvx8J6brPEWUyFfV-b6pQ@mail.gmail.com>
-Subject: Re: [PATCH-v3] Support M95040 SPI EEPROM
-From: Ivo Sieben <meltedpianoman@gmail.com>
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: Remy Bohmer <linux@bohmer.net>, Chris Wright <chrisw@sous-sol.org>,
-        linux-kernel@vger.kernel.org, Jean Delvare <khali@linux-fr.org>,
-        Kevin Hilman <khilman@deeprootsystems.com>,
-        Wolfram Sang <w.sang@pengutronix.de>
-Content-Type: text/plain; charset=ISO-8859-1
+	Tue, 17 Apr 2012 10:47:36 -0400
+Date: Tue, 17 Apr 2012 23:47:31 +0900
+From: Takuya Yoshikawa <takuya.yoshikawa@gmail.com>
+To: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+Cc: Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>, KVM <kvm@vger.kernel.org>
+Subject: Re: [PATCH v2 07/16] KVM: MMU: introduce for_each_pte_list_spte
+Message-Id: <20120417234731.a19f270d5701b11ce95d13d4@gmail.com>
+In-Reply-To: <4F8B93B9.2030801@linux.vnet.ibm.com>
+References: <4F87FA69.5060106@linux.vnet.ibm.com>
+	<4F87FC19.8080404@linux.vnet.ibm.com>
+	<20120414114422.e3fe6e2abbfdcce61e6f69c8@gmail.com>
+	<4F8B93B9.2030801@linux.vnet.ibm.com>
+X-Mailer: Sylpheed 3.2.0beta3 (GTK+ 2.24.6; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->> Is this acceptable for you Greg?
->
-> If so, don't forget my
->
-> Reviewed-by: Wolfram Sang <w.sang@pengutronix.de>
->
-> given to the original patch.
->
+On Mon, 16 Apr 2012 11:36:25 +0800
+Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com> wrote:
 
-Greg, what's the status on this patch?
-Is it acceptable for you, or do you want me to resend the patch
-(including the "Reviewed-by" tag)
+> I tested it with kernbench, no regression is found.
 
-Thanks.
+Because kernbench is not at all good test for this.
 
-Regards,
-Ivo Sieben
+> It is not a problem since the iter and spte should be in the cache.
+
+I have checked dirty-log-perf myself with this patch [01-07].
+
+GET_DIRTY_LOG for 1GB dirty pages has become more than 15% slower.
+
+This is not a pure cleanup and introduces significant regression to
+rmap handling.
+
+This is the reason why I asked to remove "cleanup patches" from this
+patch series.  Had it been really trivial cleanup, I would not have
+asked that.
+
+
+Note: if you had checked the worst case latency with this patch series,
+you should have noticed this regression by yourself.
+
+Auto-test and kernbench are not enough to see the effect of this work.
+
+Thanks,
+	Takuya
