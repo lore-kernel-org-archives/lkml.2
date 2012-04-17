@@ -1,63 +1,250 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755829Ab2DQOXS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Apr 2012 10:23:18 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:37434 "EHLO mx1.redhat.com"
+	id S1754947Ab2DQOXP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Apr 2012 10:23:15 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:44116 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752593Ab2DQOXR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Apr 2012 10:23:17 -0400
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
-	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
-	Kingdom.
-	Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-In-Reply-To: <20120414021252.GC23393@redhat.com>
-References: <20120414021252.GC23393@redhat.com> <20120414021201.GA23385@redhat.com>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: dhowells@redhat.com, Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Alexander Gordeev <agordeev@redhat.com>,
-        Chris Zankel <chris@zankel.net>, David Smith <dsmith@redhat.com>,
-        "Frank Ch. Eigler" <fche@redhat.com>,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        Larry Woodman <lwoodman@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>, Tejun Heo <tj@kernel.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v4 3/3] cred: change keyctl_session_to_parent() to use task_work_add()
-Date: Tue, 17 Apr 2012 15:23:00 +0100
-Message-ID: <27037.1334672580@redhat.com>
+	id S1751649Ab2DQOXL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Apr 2012 10:23:11 -0400
+From: Mauro Carvalho Chehab <mchehab@redhat.com>
+To: Greg K H <gregkh@linuxfoundation.org>
+Cc: Mauro Carvalho Chehab <mchehab@redhat.com>,
+        Linux Edac Mailing List <linux-edac@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: [PATCH 1/2] edac: move documentation ABI to ABI/testing/sysfs-devices-edac
+Date: Tue, 17 Apr 2012 11:22:59 -0300
+Message-Id: <1334672580-12883-2-git-send-email-mchehab@redhat.com>
+In-Reply-To: <1334672580-12883-1-git-send-email-mchehab@redhat.com>
+References: <1334672580-12883-1-git-send-email-mchehab@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Oleg Nesterov <oleg@redhat.com> wrote:
+The EDAC MC API is currently stored at the wrong place. Move the
+parts of the EDAC MC ABI that will be kept to
+ABI/testing/sysfs-devices-edac.
 
-> -	int ret;
-> +	struct cred *cred;
-> +	int err;
+The Date: field were added based on git timestamps for the git
+commit patches that added the functionality at edac.txt.
 
-There's no need to change ret to be err.  It produces slightly less churn if
-you don't.
+Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
+---
+ Documentation/ABI/testing/sysfs-devices-edac |   76 +++++++++++++++++
+ Documentation/edac.txt                       |  112 ++------------------------
+ 2 files changed, 84 insertions(+), 104 deletions(-)
+ create mode 100644 Documentation/ABI/testing/sysfs-devices-edac
 
-> +	err = -ENOMEM;
-> +	newwork = kmalloc(sizeof(struct task_work), GFP_KERNEL);
-> +	if (!newwork)
-> +		goto error_keyring;
+diff --git a/Documentation/ABI/testing/sysfs-devices-edac b/Documentation/ABI/testing/sysfs-devices-edac
+new file mode 100644
+index 0000000..40db633
+--- /dev/null
++++ b/Documentation/ABI/testing/sysfs-devices-edac
+@@ -0,0 +1,76 @@
++What:		/sys/devices/system/edac/mc/mc*/reset_counters
++Date:		January 2006
++Contact:	linux-edac@vger.kernel.org
++Description:	This write-only control file will zero all the statistical
++		counters for UE and CE errors on the given memory controller.
++		Zeroing the counters will also reset the timer indicating how
++		long since the last counter were reset. This is useful for
++		computing errors/time.  Since the counters are always reset
++		at driver initialization time, no module/kernel parameter
++		is available.
++
++What:		/sys/devices/system/edac/mc/mc*/seconds_since_reset
++Date:		January 2006
++Contact:	linux-edac@vger.kernel.org
++Description:	This attribute file displays how many seconds have elapsed
++		since the last counter reset. This can be used with the error
++		counters to measure error rates.
++
++What:		/sys/devices/system/edac/mc/mc*/mc_name
++Date:		January 2006
++Contact:	linux-edac@vger.kernel.org
++Description:	This attribute file displays the type of memory controller
++		that is being utilized.
++
++What:		/sys/devices/system/edac/mc/mc*/size_mb
++Date:		January 2006
++Contact:	linux-edac@vger.kernel.org
++Description:	This attribute file displays, in count of megabytes, of memory
++		that this memory controller manages.
++
++What:		/sys/devices/system/edac/mc/mc*/ue_count
++Date:		January 2006
++Contact:	linux-edac@vger.kernel.org
++Description:	This attribute file displays the total count of uncorrectable
++		errors that have occurred on this memory controller. If
++		panic_on_ue is set, this counter will not have a chance to
++		increment, since EDAC will panic the system
++
++What:		/sys/devices/system/edac/mc/mc*/ue_noinfo_count
++Date:		January 2006
++Contact:	linux-edac@vger.kernel.org
++Description:	This attribute file displays the number of UEs that have
++		occurred on this memory controller with no information as to
++		which DIMM slot is having errors.
++
++What:		/sys/devices/system/edac/mc/mc*/ce_count
++Date:		January 2006
++Contact:	linux-edac@vger.kernel.org
++Description:	This attribute file displays the total count of correctable
++		errors that have occurred on this memory controller. This
++		count is very important to examine. CEs provide early
++		indications that a DIMM is beginning to fail. This count
++		field should be monitored for non-zero values and report
++		such information to the system administrator.
++
++What:		/sys/devices/system/edac/mc/mc*/ce_noinfo_count
++Date:		January 2006
++Contact:	linux-edac@vger.kernel.org
++Description:	This attribute file displays the number of CEs that
++		have occurred on this memory controller wherewith no
++		information as to which DIMM slot is having errors. Memory is
++		handicapped, but operational, yet no information is available
++		to indicate which slot the failing memory is in. This count
++		field should be also be monitored for non-zero values.
++
++What:		/sys/devices/system/edac/mc/mc*/sdram_scrub_rate
++Date:		February 2007
++Contact:	linux-edac@vger.kernel.org
++Description:	Read/Write attribute file that controls memory scrubbing.
++		The scrubbing rate used by the memory controller is set by
++		writing a minimum bandwidth in bytes/sec to the attribute file.
++		The rate will be translated to an internal value that gives at
++		least the specified rate.
++		Reading the file will return the actual scrubbing rate employed.
++		If configuration fails or memory scrubbing is not implemented,
++		the value of the attribute file will be -1.
+diff --git a/Documentation/edac.txt b/Documentation/edac.txt
+index 249822c..c25f086 100644
+--- a/Documentation/edac.txt
++++ b/Documentation/edac.txt
+@@ -232,116 +232,20 @@ EDAC control and attribute files.
+ 
+ 
+ In 'mcX' directories are EDAC control and attribute files for
+-this 'X' instance of the memory controllers:
+-
+-
+-Counter reset control file:
+-
+-	'reset_counters'
+-
+-	This write-only control file will zero all the statistical counters
+-	for UE and CE errors.  Zeroing the counters will also reset the timer
+-	indicating how long since the last counter zero.  This is useful
+-	for computing errors/time.  Since the counters are always reset at
+-	driver initialization time, no module/kernel parameter is available.
+-
+-	RUN TIME: echo "anything" >/sys/devices/system/edac/mc/mc0/counter_reset
+-
+-		This resets the counters on memory controller 0
+-
+-
+-Seconds since last counter reset control file:
+-
+-	'seconds_since_reset'
+-
+-	This attribute file displays how many seconds have elapsed since the
+-	last counter reset. This can be used with the error counters to
+-	measure error rates.
+-
+-
+-
+-Memory Controller name attribute file:
+-
+-	'mc_name'
+-
+-	This attribute file displays the type of memory controller
+-	that is being utilized.
+-
+-
+-Total memory managed by this memory controller attribute file:
+-
+-	'size_mb'
+-
+-	This attribute file displays, in count of megabytes, of memory
+-	that this instance of memory controller manages.
+-
+-
+-Total Uncorrectable Errors count attribute file:
+-
+-	'ue_count'
+-
+-	This attribute file displays the total count of uncorrectable
+-	errors that have occurred on this memory controller. If panic_on_ue
+-	is set this counter will not have a chance to increment,
+-	since EDAC will panic the system.
+-
+-
+-Total UE count that had no information attribute fileY:
+-
+-	'ue_noinfo_count'
+-
+-	This attribute file displays the number of UEs that have occurred
+-	with no information as to which DIMM slot is having errors.
+-
+-
+-Total Correctable Errors count attribute file:
+-
+-	'ce_count'
+-
+-	This attribute file displays the total count of correctable
+-	errors that have occurred on this memory controller. This
+-	count is very important to examine. CEs provide early
+-	indications that a DIMM is beginning to fail. This count
+-	field should be monitored for non-zero values and report
+-	such information to the system administrator.
+-
+-
+-Total Correctable Errors count attribute file:
+-
+-	'ce_noinfo_count'
+-
+-	This attribute file displays the number of CEs that
+-	have occurred wherewith no information as to which DIMM slot
+-	is having errors. Memory is handicapped, but operational,
+-	yet no information is available to indicate which slot
+-	the failing memory is in. This count field should be also
+-	be monitored for non-zero values.
+-
+-Device Symlink:
+-
+-	'device'
+-
+-	Symlink to the memory controller device.
+-
+-Sdram memory scrubbing rate:
+-
+-	'sdram_scrub_rate'
+-
+-	Read/Write attribute file that controls memory scrubbing. The scrubbing
+-	rate is set by writing a minimum bandwidth in bytes/sec to the attribute
+-	file. The rate will be translated to an internal value that gives at
+-	least the specified rate.
+-
+-	Reading the file will return the actual scrubbing rate employed.
+-
+-	If configuration fails or memory scrubbing is not implemented, the value
+-	of the attribute file will be -1.
++this 'X' instance of the memory controllers.
+ 
++For a description of the sysfs API, please see:
++	Documentation/ABI/testing/sysfs/devices-edac
+ 
+ 
+ ============================================================================
+ 'csrowX' DIRECTORIES
+ 
++When CONFIG_EDAC_LEGACY_SYSFS is enabled, the sysfs will contain the
++csrowX directories. As this API doesn't work properly for Rambus, FB-DIMMs
++and modern Intel Memory Controllers, this is being deprecated in favor
++of dimmX directories.
++
+ In the 'csrowX' directories are EDAC control and attribute files for
+ this 'X' instance of csrow:
+ 
+-- 
+1.7.8
 
-This passes unnecessarily through kfree(newwork).  Please add a new goto label
-and go to that.
-
-> -/*
-> - * Replace a process's session keyring on behalf of one of its children when
-> - * the target  process is about to resume userspace execution.
-> - */
-
-Please don't delete the banner comment saying what the function does.
-
-> -void key_replace_session_keyring(void)
-> +void key_change_session_keyring(struct task_work *twork)
-
-There's no particular need to change the name of the function.
-
-David
