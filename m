@@ -1,98 +1,198 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755928Ab2DQJH5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Apr 2012 05:07:57 -0400
-Received: from eu1sys200aog102.obsmtp.com ([207.126.144.113]:57446 "EHLO
-	eu1sys200aog102.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755750Ab2DQJHz (ORCPT
+	id S1755948Ab2DQJJL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Apr 2012 05:09:11 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:50121 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755750Ab2DQJJJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Apr 2012 05:07:55 -0400
-From: Viresh Kumar <viresh.kumar@st.com>
-To: <w.sang@pengutronix.de>, <ben-linux@fluff.org>
-Cc: <spear-devel@list.st.com>, <viresh.linux@gmail.com>, <khali@linux-fr.org>,
-        <linux-i2c@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        Viresh Kumar <viresh.kumar@st.com>
-Subject: [PATCH] i2c: designware: Add clk_{un}prepare() support
-Date: Tue, 17 Apr 2012 14:23:09 +0530
-Message-ID: <caa4a0645f80f199b31ec16de37a5c4c9c67a6fa.1334652570.git.viresh.kumar@st.com>
-X-Mailer: git-send-email 1.7.9
-MIME-Version: 1.0
-Content-Type: text/plain
+	Tue, 17 Apr 2012 05:09:09 -0400
+Message-ID: <1334653736.23427.7.camel@phoenix>
+Subject: [PATCH RFT] regulator: tps65090: Use generic regmap enable/disable
+ operations
+From: Axel Lin <axel.lin@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Venu Byravarasu <vbyravarasu@nvidia.com>, Liam Girdwood <lrg@ti.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Samuel Ortiz <sameo@linux.intel.com>
+Date: Tue, 17 Apr 2012 17:08:56 +0800
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2- 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-clk_{un}prepare is mandatory for platforms using common clock framework. Since
-this driver is used by SPEAr platform, which supports common clock framework,
-add clk_{un}prepare() support for designware i2c.
+This patch converts tps65090 regulator driver to use generic regmap
+enable/disable operations.
 
-Signed-off-by: Viresh Kumar <viresh.kumar@st.com>
+Also move struct tps65090 to include/linux/mfd/tps65090.h because
+the regulator driver needs to access the rmap field of struct tps65090.
+
+Signed-off-by: Axel Lin <axel.lin@gmail.com>
 ---
- drivers/i2c/busses/i2c-designware-platdrv.c |   19 ++++++++++++++++---
- 1 files changed, 16 insertions(+), 3 deletions(-)
+ drivers/mfd/tps65090.c                 |   11 -----
+ drivers/regulator/tps65090-regulator.c |   64 +++----------------------------
+ include/linux/mfd/tps65090.h           |   13 ++++++
+ 3 files changed, 20 insertions(+), 68 deletions(-)
 
-diff --git a/drivers/i2c/busses/i2c-designware-platdrv.c b/drivers/i2c/busses/i2c-designware-platdrv.c
-index 76bf108..7b50eec 100644
---- a/drivers/i2c/busses/i2c-designware-platdrv.c
-+++ b/drivers/i2c/busses/i2c-designware-platdrv.c
-@@ -97,13 +97,20 @@ static int __devinit dw_i2c_probe(struct platform_device *pdev)
- 	platform_set_drvdata(pdev, dev);
+diff --git a/drivers/mfd/tps65090.c b/drivers/mfd/tps65090.c
+index a66d4df..47f802b 100644
+--- a/drivers/mfd/tps65090.c
++++ b/drivers/mfd/tps65090.c
+@@ -78,17 +78,6 @@ static struct mfd_cell tps65090s[] = {
+ 	},
+ };
  
- 	dev->clk = clk_get(&pdev->dev, NULL);
--	dev->get_clk_rate_khz = i2c_dw_get_clk_rate_khz;
+-struct tps65090 {
+-	struct mutex		lock;
+-	struct device		*dev;
+-	struct i2c_client	*client;
+-	struct regmap		*rmap;
+-	struct irq_chip		irq_chip;
+-	struct mutex		irq_lock;
+-	int			irq_base;
+-	unsigned int		id;
+-};
 -
- 	if (IS_ERR(dev->clk)) {
- 		r = -ENODEV;
- 		goto err_free_mem;
- 	}
--	clk_enable(dev->clk);
-+
-+	r = clk_prepare(dev->clk);
-+	if (r)
-+		goto err_put_clk;
-+
-+	r = clk_enable(dev->clk);
-+	if (r)
-+		goto err_unprepare_clk;
-+
-+	dev->get_clk_rate_khz = i2c_dw_get_clk_rate_khz;
+ int tps65090_write(struct device *dev, int reg, uint8_t val)
+ {
+ 	struct tps65090 *tps = dev_get_drvdata(dev);
+diff --git a/drivers/regulator/tps65090-regulator.c b/drivers/regulator/tps65090-regulator.c
+index 6bbf760..299237d 100644
+--- a/drivers/regulator/tps65090-regulator.c
++++ b/drivers/regulator/tps65090-regulator.c
+@@ -29,10 +29,6 @@
  
- 	dev->functionality =
- 		I2C_FUNC_I2C |
-@@ -181,6 +188,9 @@ err_iounmap:
- 	iounmap(dev->base);
- err_unuse_clocks:
- 	clk_disable(dev->clk);
-+err_unprepare_clk:
-+	clk_unprepare(dev->clk);
-+err_put_clk:
- 	clk_put(dev->clk);
- 	dev->clk = NULL;
- err_free_mem:
-@@ -203,6 +213,7 @@ static int __devexit dw_i2c_remove(struct platform_device *pdev)
- 	put_device(&pdev->dev);
+ struct tps65090_regulator {
+ 	int		id;
+-	/* Regulator register address.*/
+-	u8		reg_en_reg;
+-	u8		en_bit;
+-
+ 	/* used by regulator core */
+ 	struct regulator_desc	desc;
  
- 	clk_disable(dev->clk);
-+	clk_unprepare(dev->clk);
- 	clk_put(dev->clk);
- 	dev->clk = NULL;
+@@ -40,64 +36,14 @@ struct tps65090_regulator {
+ 	struct device		*dev;
+ };
  
-@@ -230,6 +241,7 @@ static int dw_i2c_suspend(struct device *dev)
- 	struct dw_i2c_dev *i_dev = platform_get_drvdata(pdev);
+-static inline struct device *to_tps65090_dev(struct regulator_dev *rdev)
+-{
+-	return rdev_get_dev(rdev)->parent->parent;
+-}
+-
+-static int tps65090_reg_is_enabled(struct regulator_dev *rdev)
+-{
+-	struct tps65090_regulator *ri = rdev_get_drvdata(rdev);
+-	struct device *parent = to_tps65090_dev(rdev);
+-	uint8_t control;
+-	int ret;
+-
+-	ret = tps65090_read(parent, ri->reg_en_reg, &control);
+-	if (ret < 0) {
+-		dev_err(&rdev->dev, "Error in reading reg 0x%x\n",
+-			ri->reg_en_reg);
+-		return ret;
+-	}
+-	return (((control >> ri->en_bit) & 1) == 1);
+-}
+-
+-static int tps65090_reg_enable(struct regulator_dev *rdev)
+-{
+-	struct tps65090_regulator *ri = rdev_get_drvdata(rdev);
+-	struct device *parent = to_tps65090_dev(rdev);
+-	int ret;
+-
+-	ret = tps65090_set_bits(parent, ri->reg_en_reg, ri->en_bit);
+-	if (ret < 0)
+-		dev_err(&rdev->dev, "Error in updating reg 0x%x\n",
+-			ri->reg_en_reg);
+-	return ret;
+-}
+-
+-static int tps65090_reg_disable(struct regulator_dev *rdev)
+-{
+-	struct tps65090_regulator *ri = rdev_get_drvdata(rdev);
+-	struct device *parent = to_tps65090_dev(rdev);
+-	int ret;
+-
+-	ret = tps65090_clr_bits(parent, ri->reg_en_reg, ri->en_bit);
+-	if (ret < 0)
+-		dev_err(&rdev->dev, "Error in updating reg 0x%x\n",
+-			ri->reg_en_reg);
+-
+-	return ret;
+-}
+-
+ static struct regulator_ops tps65090_ops = {
+-	.enable		= tps65090_reg_enable,
+-	.disable	= tps65090_reg_disable,
+-	.is_enabled	= tps65090_reg_is_enabled,
++	.enable = regulator_enable_regmap,
++	.disable = regulator_disable_regmap,
++	.is_enabled = regulator_is_enabled_regmap,
+ };
  
- 	clk_disable(i_dev->clk);
-+	clk_unprepare(i_dev->clk);
- 
- 	return 0;
+ #define tps65090_REG(_id)				\
+ {							\
+-	.reg_en_reg	= (TPS65090_ID_##_id) + 12,	\
+-	.en_bit		= 0,				\
+ 	.id		= TPS65090_ID_##_id,		\
+ 	.desc = {					\
+ 		.name = tps65090_rails(_id),		\
+@@ -105,6 +51,8 @@ static struct regulator_ops tps65090_ops = {
+ 		.ops = &tps65090_ops,			\
+ 		.type = REGULATOR_VOLTAGE,		\
+ 		.owner = THIS_MODULE,			\
++		.enable_reg = (TPS65090_ID_##_id) + 12,	\
++		.enable_mask = BIT(0),			\
+ 	},						\
  }
-@@ -239,6 +251,7 @@ static int dw_i2c_resume(struct device *dev)
- 	struct platform_device *pdev = to_platform_device(dev);
- 	struct dw_i2c_dev *i_dev = platform_get_drvdata(pdev);
  
-+	clk_prepare(i_dev->clk);
- 	clk_enable(i_dev->clk);
- 	i2c_dw_init(i_dev);
+@@ -136,6 +84,7 @@ static inline struct tps65090_regulator *find_regulator_info(int id)
  
+ static int __devinit tps65090_regulator_probe(struct platform_device *pdev)
+ {
++	struct tps65090 *tps65090_mfd = dev_get_drvdata(pdev->dev.parent);
+ 	struct tps65090_regulator *ri = NULL;
+ 	struct regulator_config config = { };
+ 	struct regulator_dev *rdev;
+@@ -155,6 +104,7 @@ static int __devinit tps65090_regulator_probe(struct platform_device *pdev)
+ 	config.dev = &pdev->dev;
+ 	config.init_data = &tps_pdata->regulator;
+ 	config.driver_data = ri;
++	config.regmap = tps65090_mfd->rmap;
+ 
+ 	rdev = regulator_register(&ri->desc, &config);
+ 	if (IS_ERR(rdev)) {
+diff --git a/include/linux/mfd/tps65090.h b/include/linux/mfd/tps65090.h
+index 38e31c5..6bc31d8 100644
+--- a/include/linux/mfd/tps65090.h
++++ b/include/linux/mfd/tps65090.h
+@@ -22,6 +22,19 @@
+ #ifndef __LINUX_MFD_TPS65090_H
+ #define __LINUX_MFD_TPS65090_H
+ 
++#include <linux/irq.h>
++
++struct tps65090 {
++	struct mutex		lock;
++	struct device		*dev;
++	struct i2c_client	*client;
++	struct regmap		*rmap;
++	struct irq_chip		irq_chip;
++	struct mutex		irq_lock;
++	int			irq_base;
++	unsigned int		id;
++};
++
+ struct tps65090_subdev_info {
+ 	int		id;
+ 	const char	*name;
 -- 
-1.7.9
+1.7.5.4
+
+
 
