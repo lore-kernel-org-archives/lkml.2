@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751744Ab2DQStQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Apr 2012 14:49:16 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:46657 "EHLO
+	id S1752935Ab2DQStT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Apr 2012 14:49:19 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:56028 "EHLO
 	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751087Ab2DQStP (ORCPT
+	with ESMTP id S1751879Ab2DQStR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Apr 2012 14:49:15 -0400
+	Tue, 17 Apr 2012 14:49:17 -0400
 From: Stephen Warren <swarren@wwwdotorg.org>
 To: Grant Likely <grant.likely@secretlab.ca>,
         Rob Herring <rob.herring@calxeda.com>, Ben Dooks <ben-linux@fluff.org>,
@@ -14,10 +14,12 @@ To: Grant Likely <grant.likely@secretlab.ca>,
         Linus Walleij <linus.walleij@linaro.org>
 Cc: devicetree-discuss@lists.ozlabs.org, linux-i2c@vger.kernel.org,
         linux-kernel@vger.kernel.org, Stephen Warren <swarren@nvidia.com>
-Subject: [PATCH 1/2] i2c: mux: add device tree support
-Date: Tue, 17 Apr 2012 12:49:04 -0600
-Message-Id: <1334688545-8465-1-git-send-email-swarren@wwwdotorg.org>
+Subject: [PATCH 2/2] i2c: Add generic I2C multiplexer using pinctrl API
+Date: Tue, 17 Apr 2012 12:49:05 -0600
+Message-Id: <1334688545-8465-2-git-send-email-swarren@wwwdotorg.org>
 X-Mailer: git-send-email 1.7.0.4
+In-Reply-To: <1334688545-8465-1-git-send-email-swarren@wwwdotorg.org>
+References: <1334688545-8465-1-git-send-email-swarren@wwwdotorg.org>
 X-NVConfidentiality: public
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,60 +27,92 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Stephen Warren <swarren@nvidia.com>
 
-* Define core portions of the DT binding for I2C bus muxes.
-* Enhance i2c_add_mux_adapter():
-** Add parameters required for DT support. Update all callers.
-** Set the appropriate adap->dev.of_node for the child bus.
-** Call of_i2c_register_devices() for the child bus.
+This is useful for SoCs whose I2C module's signals can be routed to
+different sets of pins at run-time, using the pinctrl API.
+
+                                 +-----+  +-----+
+                                 | dev |  | dev |
+    +------------------------+   +-----+  +-----+
+    | SoC                    |      |        |
+    |                   /----|------+--------+
+    |   +---+   +------+     | child bus A, on first set of pins
+    |   |I2C|---|Pinmux|     |
+    |   +---+   +------+     | child bus B, on second set of pins
+    |                   \----|------+--------+--------+
+    |                        |      |        |        |
+    +------------------------+  +-----+  +-----+  +-----+
+                                | dev |  | dev |  | dev |
+                                +-----+  +-----+  +-----+
 
 Signed-off-by: Stephen Warren <swarren@nvidia.com>
 ---
-Note: This series depends on the 3 patches I just sent that affect
-of_find_i2c_device_by_node and implement of_find_i2c_adapter_by_node.
-It might be useful to put this patch (and the others I sent) in
-a separate tree so it can be merged into any SoC trees that wish to use
-this new feature.
+Note: This patch depends on the latest pinctrl tree. In order to merge
+this series into the I2C tree, you'll need to merge the pinctrl tree
+into it first. However, the pinctrl tree doesn't yet have a stable tag/branch
+that you can merge, so this patch can't actually be committed yet.
 
- Documentation/devicetree/bindings/i2c/i2cmux.txt |   45 ++++++++++++++++++++++
- drivers/i2c/i2c-mux.c                            |   23 +++++++++++-
- drivers/i2c/muxes/gpio-i2cmux.c                  |    5 +-
- drivers/i2c/muxes/pca9541.c                      |    4 +-
- drivers/i2c/muxes/pca954x.c                      |    4 +-
- include/linux/i2c-mux.h                          |    4 +-
- 6 files changed, 77 insertions(+), 8 deletions(-)
- create mode 100644 Documentation/devicetree/bindings/i2c/i2cmux.txt
+ .../devicetree/bindings/i2c/pinctrl-i2cmux.txt     |   66 ++++++
+ drivers/i2c/muxes/Kconfig                          |   12 +
+ drivers/i2c/muxes/Makefile                         |    1 +
+ drivers/i2c/muxes/pinctrl-i2cmux.c                 |  246 ++++++++++++++++++++
+ include/linux/pinctrl-i2cmux.h                     |   41 ++++
+ 5 files changed, 366 insertions(+), 0 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/i2c/pinctrl-i2cmux.txt
+ create mode 100644 drivers/i2c/muxes/pinctrl-i2cmux.c
+ create mode 100644 include/linux/pinctrl-i2cmux.h
 
-diff --git a/Documentation/devicetree/bindings/i2c/i2cmux.txt b/Documentation/devicetree/bindings/i2c/i2cmux.txt
+diff --git a/Documentation/devicetree/bindings/i2c/pinctrl-i2cmux.txt b/Documentation/devicetree/bindings/i2c/pinctrl-i2cmux.txt
 new file mode 100644
-index 0000000..1e4e2bc
+index 0000000..9e37034
 --- /dev/null
-+++ b/Documentation/devicetree/bindings/i2c/i2cmux.txt
-@@ -0,0 +1,45 @@
-+Common I2C mux bindings
++++ b/Documentation/devicetree/bindings/i2c/pinctrl-i2cmux.txt
+@@ -0,0 +1,66 @@
++Pinctrl-based I2C Bus Mux
 +
-+An I2C mux is a device that connects a master I2C bus to one of a number of
-+child I2C busses, under programmatic control.
++This binding describes an I2C bus multiplexer that uses the pin multiplexing
++to route the I2C signals, and represents the pin multiplexing configuration
++using the pinctrl device tree bindings.
 +
-+Each I2C mux may define the set of child busses it supports in a different
-+way. Some devices may have a hard-coded set of child ports, whereas others may
-+support a varying set of child busses (especially when the bus mux is
-+implemented using GPIOs or pin muxing). Any bindings required to represent
-+this are the domain of the individual mux device.
++Required properties:
++- compatible: pinctrl-i2cmux
++- i2c-parent: The phandle of the I2C bus this multiplexer's master-side port
++  is connected to.
 +
-+For each child bus, there shall be a node within the I2C mux's own node for
-+that bus. This node will contain all the I2C devices on that bus, just like
-+any other I2C bus. Each child bus shall be identified by some name. The set
-+of child bus names is defined by the individual I2C mux's bindings. Bus names
-+are used to construct the name of the bus's child node using the format
-+i2c-bus-%s. Each child bus node needs the usual #address-cells and #size-cells
-+properties.
++Also required are:
++
++* Standard pinctrl properties that specify the pin mux state for each child
++  bus. See ../pinctrl/pinctrl-bindings.txt.
++
++  For each named state defined in the pinctrl-names property, an I2C child bus
++  will be created, with that name. The only exception is that if the pinctrl
++  state named "idle" is defined, no bus will be created for that pinctrl
++  state.
++
++* I2C child bus nodes. See i2cmux.txt.
++
++Whenever an access is made to a device on a child bus, the relevant pinctrl
++state will be programmed into hardware.
++
++If an idle state is defined, whenever an access is not being made to a device
++on a child bus, the idle pinctrl state will be programmed into hardware.
++
++If an idle state is not defined, the most recently used pinctrl state will be
++left programmed into hardware whenever no access is being made of a device on
++a child bus.
 +
 +Example:
 +
 +	i2cmux {
-+		// properties here omitted from the example.
++		compatible = "pinctrl-i2cmux";
 +
-+		i2c-bus-0 {
++		i2c-parent = <&i2c1>;
++
++		pinctrl-names = "ddc", "pta", "idle";
++		pinctrl-0 = <&state_i2cmux_ddc>;
++		pinctrl-1 = <&state_i2cmux_pta>;
++		pinctrl-2 = <&state_i2cmux_idle>;
++
++		i2c-bus-ddc {
 +			#address-cells = <1>;
 +			#size-cells = <0>;
 +
@@ -88,7 +122,7 @@ index 0000000..1e4e2bc
 +			};
 +		};
 +
-+		i2c-bus-1 {
++		i2c-bus-pta {
 +			#address-cells = <1>;
 +			#size-cells = <0>;
 +
@@ -99,124 +133,337 @@ index 0000000..1e4e2bc
 +		};
 +	};
 +
-diff --git a/drivers/i2c/i2c-mux.c b/drivers/i2c/i2c-mux.c
-index d7a4833..8adeeec 100644
---- a/drivers/i2c/i2c-mux.c
-+++ b/drivers/i2c/i2c-mux.c
-@@ -24,6 +24,7 @@
- #include <linux/slab.h>
- #include <linux/i2c.h>
- #include <linux/i2c-mux.h>
+diff --git a/drivers/i2c/muxes/Kconfig b/drivers/i2c/muxes/Kconfig
+index 90b7a01..8602384 100644
+--- a/drivers/i2c/muxes/Kconfig
++++ b/drivers/i2c/muxes/Kconfig
+@@ -37,4 +37,16 @@ config I2C_MUX_PCA954x
+ 	  This driver can also be built as a module.  If so, the module
+ 	  will be called pca954x.
+ 
++config I2C_MUX_PINCTRL
++	tristate "pinctrl-based I2C multiplexer"
++	depends on PINCTRL
++	help
++	  If you say yes to this option, support will be included for an I2C
++	  multiplexer that uses the pinctrl subsystem, i.e. pin multiplexing.
++	  This is useful for SoCs whose I2C module's signals can be routed to
++	  different sets of pins at run-time.
++
++	  This driver can also be built as a module. If so, the module will be
++	  called pinctrl-i2cmux.
++
+ endmenu
+diff --git a/drivers/i2c/muxes/Makefile b/drivers/i2c/muxes/Makefile
+index 4640436..7ba65fc 100644
+--- a/drivers/i2c/muxes/Makefile
++++ b/drivers/i2c/muxes/Makefile
+@@ -4,5 +4,6 @@
+ obj-$(CONFIG_I2C_MUX_GPIO)	+= gpio-i2cmux.o
+ obj-$(CONFIG_I2C_MUX_PCA9541)	+= pca9541.o
+ obj-$(CONFIG_I2C_MUX_PCA954x)	+= pca954x.o
++obj-$(CONFIG_I2C_MUX_PINCTRL)	+= pinctrl-i2cmux.o
+ 
+ ccflags-$(CONFIG_I2C_DEBUG_BUS) := -DDEBUG
+diff --git a/drivers/i2c/muxes/pinctrl-i2cmux.c b/drivers/i2c/muxes/pinctrl-i2cmux.c
+new file mode 100644
+index 0000000..bf4928b
+--- /dev/null
++++ b/drivers/i2c/muxes/pinctrl-i2cmux.c
+@@ -0,0 +1,246 @@
++/*
++ * I2C multiplexer using pinctrl API
++ *
++ * Copyright (c) 2012, NVIDIA CORPORATION.  All rights reserved.
++ *
++ * This program is free software; you can redistribute it and/or modify it
++ * under the terms and conditions of the GNU General Public License,
++ * version 2, as published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope it will be useful, but WITHOUT
++ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
++ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
++ * more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
++ */
++
++#include <linux/i2c.h>
++#include <linux/i2c-mux.h>
++#include <linux/init.h>
++#include <linux/module.h>
 +#include <linux/of_i2c.h>
- 
- /* multiplexer per channel data */
- struct i2c_mux_priv {
-@@ -86,8 +87,10 @@ static u32 i2c_mux_functionality(struct i2c_adapter *adap)
- 	return parent->algo->functionality(parent);
- }
- 
--struct i2c_adapter *i2c_add_mux_adapter(struct i2c_adapter *parent,
-+struct i2c_adapter *i2c_add_mux_adapter(struct device *dev,
-+				struct i2c_adapter *parent,
- 				void *mux_dev, u32 force_nr, u32 chan_id,
-+				const char *chan_name,
- 				int (*select) (struct i2c_adapter *,
- 					       void *, u32),
- 				int (*deselect) (struct i2c_adapter *,
-@@ -124,6 +127,22 @@ struct i2c_adapter *i2c_add_mux_adapter(struct i2c_adapter *parent,
- 	priv->adap.algo_data = priv;
- 	priv->adap.dev.parent = &parent->dev;
- 
-+	if (dev->of_node) {
-+		const char *name;
++#include <linux/pinctrl/consumer.h>
++#include <linux/pinctrl-i2cmux.h>
++#include <linux/platform_device.h>
++#include <linux/slab.h>
 +
-+		if (chan_name)
-+			name = kasprintf(GFP_KERNEL, "i2c-bus-%s",
-+					     chan_name);
-+		else
-+			name = kasprintf(GFP_KERNEL, "i2c-bus-%d",
-+					     chan_id);
++struct pinctrl_mux {
++	struct pinctrl_i2cmux_platform_data *pdata;
++	struct pinctrl *pinctrl;
++	struct pinctrl_state **states;
++	struct pinctrl_state *state_idle;
++	struct i2c_adapter *parent;
++	struct i2c_adapter **busses;
++};
 +
-+		priv->adap.dev.of_node = of_find_node_by_name(dev->of_node,
-+							      name);
++static int pinctrl_mux_select(struct i2c_adapter *adap, void *data, u32 chan)
++{
++	struct pinctrl_mux *mux = data;
 +
-+		kfree(name);
++	return pinctrl_select_state(mux->pinctrl, mux->states[chan]);
++}
++
++static int pinctrl_mux_deselect(struct i2c_adapter *adap, void *data, u32 chan)
++{
++	struct pinctrl_mux *mux = data;
++
++	return pinctrl_select_state(mux->pinctrl, mux->state_idle);
++}
++
++#ifdef CONFIG_OF
++static int pinctrl_mux_parse_dt(struct pinctrl_mux *mux,
++				struct platform_device *pdev)
++{
++	struct device_node *np = pdev->dev.of_node;
++	int num_names, i, ret;
++	struct device_node *adapter_np;
++	struct i2c_adapter *adapter;
++
++	if (!np)
++		return 0;
++
++	mux->pdata = devm_kzalloc(&pdev->dev, sizeof(*mux->pdata), GFP_KERNEL);
++	if (!mux->pdata)
++		return -ENOMEM;
++
++	num_names = of_property_count_strings(np, "pinctrl-names");
++	if (num_names < 0)
++		return num_names;
++
++	mux->pdata->pinctrl_states = devm_kzalloc(&pdev->dev,
++		sizeof(*mux->pdata->pinctrl_states) * num_names,
++		GFP_KERNEL);
++	if (!mux->pdata->pinctrl_states)
++		return -ENOMEM;
++
++	for (i = 0; i < num_names; i++) {
++		ret = of_property_read_string_index(np, "pinctrl-names", i,
++			&mux->pdata->pinctrl_states[mux->pdata->bus_count]);
++		if (ret < 0)
++			return ret;
++		if (!strcmp(mux->pdata->pinctrl_states[mux->pdata->bus_count],
++			    "idle")) {
++			mux->pdata->pinctrl_state_idle = "idle";
++		} else {
++			mux->pdata->bus_count++;
++		}
 +	}
 +
- 	if (force_nr) {
- 		priv->adap.nr = force_nr;
- 		ret = i2c_add_numbered_adapter(&priv->adap);
-@@ -141,6 +160,8 @@ struct i2c_adapter *i2c_add_mux_adapter(struct i2c_adapter *parent,
- 	dev_info(&parent->dev, "Added multiplexed i2c bus %d\n",
- 		 i2c_adapter_id(&priv->adap));
- 
-+	of_i2c_register_devices(&priv->adap);
++	adapter_np = of_parse_phandle(np, "i2c-parent", 0);
++	if (!adapter_np)
++		return -ENODEV;
++	adapter = of_find_i2c_adapter_by_node(adapter_np);
++	if (!adapter)
++		return -ENODEV;
++	mux->pdata->parent_bus_num = i2c_adapter_id(adapter);
++	put_device(&adapter->dev);
 +
- 	return &priv->adap;
- }
- EXPORT_SYMBOL_GPL(i2c_add_mux_adapter);
-diff --git a/drivers/i2c/muxes/gpio-i2cmux.c b/drivers/i2c/muxes/gpio-i2cmux.c
-index e5fa695..7284c70 100644
---- a/drivers/i2c/muxes/gpio-i2cmux.c
-+++ b/drivers/i2c/muxes/gpio-i2cmux.c
-@@ -105,8 +105,9 @@ static int __devinit gpiomux_probe(struct platform_device *pdev)
- 	for (i = 0; i < pdata->n_values; i++) {
- 		u32 nr = pdata->base_nr ? (pdata->base_nr + i) : 0;
- 
--		mux->adap[i] = i2c_add_mux_adapter(parent, mux, nr, i,
--						   gpiomux_select, deselect);
-+		mux->adap[i] = i2c_add_mux_adapter(&pdev->dev, parent, mux, nr,
-+						   i, NULL, gpiomux_select,
-+						   deselect);
- 		if (!mux->adap[i]) {
- 			ret = -ENODEV;
- 			dev_err(&pdev->dev, "Failed to add adapter %d\n", i);
-diff --git a/drivers/i2c/muxes/pca9541.c b/drivers/i2c/muxes/pca9541.c
-index e0df9b6..e1777fb 100644
---- a/drivers/i2c/muxes/pca9541.c
-+++ b/drivers/i2c/muxes/pca9541.c
-@@ -353,8 +353,8 @@ static int pca9541_probe(struct i2c_client *client,
- 	force = 0;
- 	if (pdata)
- 		force = pdata->modes[0].adap_id;
--	data->mux_adap = i2c_add_mux_adapter(adap, client, force, 0,
--					     pca9541_select_chan,
-+	data->mux_adap = i2c_add_mux_adapter(&client->dev, adap, client, force,
-+					     0, NULL, pca9541_select_chan,
- 					     pca9541_release_chan);
- 
- 	if (data->mux_adap == NULL) {
-diff --git a/drivers/i2c/muxes/pca954x.c b/drivers/i2c/muxes/pca954x.c
-index 0e37ef2..736a803 100644
---- a/drivers/i2c/muxes/pca954x.c
-+++ b/drivers/i2c/muxes/pca954x.c
-@@ -226,8 +226,8 @@ static int pca954x_probe(struct i2c_client *client,
- 		}
- 
- 		data->virt_adaps[num] =
--			i2c_add_mux_adapter(adap, client,
--				force, num, pca954x_select_chan,
-+			i2c_add_mux_adapter(&client->dev, adap, client,
-+				force, num, NULL, pca954x_select_chan,
- 				(pdata && pdata->modes[num].deselect_on_exit)
- 					? pca954x_deselect_mux : NULL);
- 
-diff --git a/include/linux/i2c-mux.h b/include/linux/i2c-mux.h
-index 747f0cd..43fb11a 100644
---- a/include/linux/i2c-mux.h
-+++ b/include/linux/i2c-mux.h
-@@ -33,8 +33,10 @@
-  * and deselect callback functions to perform hardware-specific
-  * mux control.
-  */
--struct i2c_adapter *i2c_add_mux_adapter(struct i2c_adapter *parent,
-+struct i2c_adapter *i2c_add_mux_adapter(struct device *dev,
-+				struct i2c_adapter *parent,
- 				void *mux_dev, u32 force_nr, u32 chan_id,
-+				const char *chan_name,
- 				int (*select) (struct i2c_adapter *,
- 					       void *mux_dev, u32 chan_id),
- 				int (*deselect) (struct i2c_adapter *,
++	return 0;
++}
++#else
++static inline int pinctrl_mux_parse_dt(struct pinctrl_mux *mux,
++				       struct platform_device *pdev)
++{
++	return 0;
++}
++#endif
++
++static int __devinit pinctrl_mux_probe(struct platform_device *pdev)
++{
++	struct pinctrl_mux *mux;
++	int (*deselect)(struct i2c_adapter *, void *, u32);
++	int i, ret;
++
++	mux = devm_kzalloc(&pdev->dev, sizeof(*mux), GFP_KERNEL);
++	if (!mux) {
++		ret = -ENOMEM;
++		goto err;
++	}
++	platform_set_drvdata(pdev, mux);
++
++	mux->pdata = pdev->dev.platform_data;
++	if (!mux->pdata) {
++		ret = pinctrl_mux_parse_dt(mux, pdev);
++		if (ret < 0)
++			goto err;
++	}
++	if (!mux->pdata) {
++		dev_err(&pdev->dev, "Missing platform data\n");
++		ret = -ENODEV;
++		goto err;
++	}
++
++	mux->states = devm_kzalloc(&pdev->dev,
++				   sizeof(*mux->states) * mux->pdata->bus_count,
++				   GFP_KERNEL);
++	if (!mux->states) {
++		ret = -ENOMEM;
++		goto err;
++	}
++
++	mux->busses = devm_kzalloc(&pdev->dev,
++				   sizeof(mux->busses) * mux->pdata->bus_count,
++				   GFP_KERNEL);
++	if (!mux->states) {
++		ret = -ENOMEM;
++		goto err;
++	}
++
++	mux->pinctrl = devm_pinctrl_get(&pdev->dev);
++	if (IS_ERR(mux->pinctrl)) {
++		ret = PTR_ERR(mux->pinctrl);
++		goto err;
++	}
++	for (i = 0; i < mux->pdata->bus_count; i++) {
++		mux->states[i] = pinctrl_lookup_state(mux->pinctrl,
++						mux->pdata->pinctrl_states[i]);
++		if (IS_ERR(mux->states[i])) {
++			ret = PTR_ERR(mux->states[i]);
++			goto err;
++		}
++	}
++	if (mux->pdata->pinctrl_state_idle) {
++		mux->state_idle = pinctrl_lookup_state(mux->pinctrl,
++						mux->pdata->pinctrl_state_idle);
++		if (IS_ERR(mux->state_idle)) {
++			ret = PTR_ERR(mux->state_idle);
++			goto err;
++		}
++
++		deselect = pinctrl_mux_deselect;
++	} else {
++		deselect = NULL;
++	}
++
++	mux->parent = i2c_get_adapter(mux->pdata->parent_bus_num);
++	if (!mux->parent) {
++		dev_err(&pdev->dev, "Parent adapter (%d) not found\n",
++			mux->pdata->parent_bus_num);
++		ret = -ENODEV;
++		goto err;
++	}
++
++	for (i = 0; i < mux->pdata->bus_count; i++) {
++		u32 bus = mux->pdata->base_bus_num ?
++				(mux->pdata->base_bus_num + i) : 0;
++
++		mux->busses[i] = i2c_add_mux_adapter(&pdev->dev, mux->parent,
++						mux, bus, i,
++						mux->pdata->pinctrl_states[i],
++						pinctrl_mux_select,
++						deselect);
++		if (!mux->busses[i]) {
++			ret = -ENODEV;
++			dev_err(&pdev->dev, "Failed to add adapter %d\n", i);
++			goto err_del_adapter;
++		}
++	}
++
++	return 0;
++
++err_del_adapter:
++	for (; i > 0; i--)
++		i2c_del_mux_adapter(mux->busses[i - 1]);
++	i2c_put_adapter(mux->parent);
++err:
++	return ret;
++}
++
++static int __devexit pinctrl_mux_remove(struct platform_device *pdev)
++{
++	struct pinctrl_mux *mux = platform_get_drvdata(pdev);
++	int i;
++
++	for (i = 0; i < mux->pdata->bus_count; i++)
++		i2c_del_mux_adapter(mux->busses[i]);
++
++	i2c_put_adapter(mux->parent);
++
++	return 0;
++}
++
++#ifdef CONFIG_OF
++static const struct of_device_id pinctrl_mux_of_match[] __devinitconst = {
++	{ .compatible = "pinctrl-i2cmux", },
++	{},
++};
++MODULE_DEVICE_TABLE(of, pinctrl_mux_of_match);
++#endif
++
++static struct platform_driver pinctrl_mux_driver = {
++	.driver	= {
++		.name	= "pinctrl-i2cmux",
++		.owner	= THIS_MODULE,
++		.of_match_table = of_match_ptr(pinctrl_mux_of_match),
++	},
++	.probe	= pinctrl_mux_probe,
++	.remove	= __devexit_p(pinctrl_mux_remove),
++};
++module_platform_driver(pinctrl_mux_driver);
++
++MODULE_DESCRIPTION("pinctrl-based I2C multiplexer driver");
++MODULE_AUTHOR("Stephen Warren <swarren@nvidia.com>");
++MODULE_LICENSE("GPL v2");
++MODULE_ALIAS("platform:pinctrl-i2cmux");
+diff --git a/include/linux/pinctrl-i2cmux.h b/include/linux/pinctrl-i2cmux.h
+new file mode 100644
+index 0000000..046e420
+--- /dev/null
++++ b/include/linux/pinctrl-i2cmux.h
+@@ -0,0 +1,41 @@
++/*
++ * pinctrl-i2cmux platform data
++ *
++ * Copyright (c) 2012, NVIDIA CORPORATION.  All rights reserved.
++ *
++ * This program is free software; you can redistribute it and/or modify it
++ * under the terms and conditions of the GNU General Public License,
++ * version 2, as published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope it will be useful, but WITHOUT
++ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
++ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
++ * more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
++ */
++
++#ifndef _LINUX_PINCTRL_I2CMUX_H
++#define _LINUX_PINCTRL_I2CMUX_H
++
++/**
++ * struct pinctrl_i2cmux_platform_data - Platform data for pinctrl-i2cmux
++ * @parent_bus_num: Parent I2C bus number
++ * @base_bus_num: Base I2C bus number for the child busses. 0 for dynamic.
++ * @bus_count: Number of child busses. Also the number of elements in
++ *	@pinctrl_states
++ * @pinctrl_states: The names of the pinctrl state to select for each child bus
++ * @pinctrl_state_idle: The pinctrl state to select when no child bus is being
++ *	accessed. If NULL, the most recently used pinctrl state will be left
++ *	selected.
++ */
++struct pinctrl_i2cmux_platform_data {
++	int parent_bus_num;
++	int base_bus_num;
++	int bus_count;
++	const char **pinctrl_states;
++	const char *pinctrl_state_idle;
++};
++
++#endif
 -- 
 1.7.0.4
 
