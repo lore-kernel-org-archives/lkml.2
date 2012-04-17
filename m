@@ -1,102 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932245Ab2DQMzy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Apr 2012 08:55:54 -0400
-Received: from mga14.intel.com ([143.182.124.37]:13983 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756072Ab2DQMzx convert rfc822-to-8bit (ORCPT
+	id S932229Ab2DQNDJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Apr 2012 09:03:09 -0400
+Received: from e06smtp11.uk.ibm.com ([195.75.94.107]:53316 "EHLO
+	e06smtp11.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755905Ab2DQNDI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Apr 2012 08:55:53 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="89990482"
-From: "Liu, Jinsong" <jinsong.liu@intel.com>
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-CC: "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH 2/2] Register native mce handler as vMCE bounce back
- point
-Thread-Topic: [PATCH 2/2] Register native mce handler as vMCE bounce back
- point
-Thread-Index: AQHNHA92/TdpFhoPSxCwxlIbh3KVRpae+H1Q
-Date: Tue, 17 Apr 2012 12:55:49 +0000
-Message-ID: <DE8DF0795D48FD4CA783C40EC829233514BFD4@SHSMSX101.ccr.corp.intel.com>
-References: <DE8DF0795D48FD4CA783C40EC8292335146A7A@SHSMSX101.ccr.corp.intel.com>
- <20120416202821.GC14982@phenom.dumpdata.com>
-In-Reply-To: <20120416202821.GC14982@phenom.dumpdata.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.239.127.40]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	Tue, 17 Apr 2012 09:03:08 -0400
+Date: Tue, 17 Apr 2012 15:02:37 +0200
+From: Martin Schwidefsky <schwidefsky@de.ibm.com>
+To: Mel Gorman <mgorman@suse.de>
+Cc: Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Hugh Dickins <hughd@google.com>, Rik van Riel <riel@redhat.com>,
+        Linux-MM <linux-mm@kvack.org>, Linux-S390 <linux-s390@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC PATCH] s390: mm: rmap: Transfer storage key to struct page
+ under the page lock
+Message-ID: <20120417150237.0abb8ec5@de.ibm.com>
+In-Reply-To: <20120417122925.GG2359@suse.de>
+References: <20120416141423.GD2359@suse.de>
+	<20120416175040.0e33b37f@de.ibm.com>
+	<20120417122925.GG2359@suse.de>
+Organization: IBM Corporation
+X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+x-cbid: 12041713-5024-0000-0000-0000024897B2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Konrad Rzeszutek Wilk wrote:
-> On Mon, Apr 16, 2012 at 01:07:35AM +0000, Liu, Jinsong wrote:
->>> From 76e40a60878ff72986fd8d92611400195ae0f997 Mon Sep 17 00:00:00
->>> 2001 
->> From: Liu, Jinsong <jinsong.liu@intel.com>
->> Date: Mon, 16 Apr 2012 00:16:58 +0800
->> Subject: [PATCH 2/2] Register native mce handler as vMCE bounce back
->> point 
->> 
->> When xen hyeprvisor inject vMCE to guest, use native mce handler to
->> handle it 
-> 
-> hypervisor
-> 
->> 
->> Signed-off-by: Liu, Jinsong <jinsong.liu@intel.com>
->> Signed-off-by: Ke, Liping <liping.ke@intel.com>
->> Signed-off-by: Jiang, Yunhong <yunhong.jiang@intel.com>
->> Signed-off-by: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
->>  --- arch/x86/xen/enlighten.c |   10 +++++++---
->>  1 files changed, 7 insertions(+), 3 deletions(-)
->> 
->> diff --git a/arch/x86/xen/enlighten.c b/arch/x86/xen/enlighten.c
->> index 15628d4..346ba64 100644
->> --- a/arch/x86/xen/enlighten.c
->> +++ b/arch/x86/xen/enlighten.c
->> @@ -614,8 +614,8 @@ static int cvt_gate_to_trap(int vector, const
->> gate_desc *val,  	/* 
->>  	 * Look for known traps using IST, and substitute them
->>  	 * appropriately.  The debugger ones are the only ones we care
->> -	 * about.  Xen will handle faults like double_fault and
->> -	 * machine_check, so we should never see them.  Warn if
->> +	 * about.  Xen will handle faults like double_fault,
->> +	 * so we should never see them.  Warn if
->>  	 * there's an unexpected IST-using fault handler.  	 */
->>  	if (addr == (unsigned long)debug)
->> @@ -630,7 +630,11 @@ static int cvt_gate_to_trap(int vector, const
->>  gate_desc *val,  		return 0; #ifdef CONFIG_X86_MCE
->>  	} else if (addr == (unsigned long)machine_check) { -		return 0;
->> +		/*
->> +		 * when xen hyeprvisor inject vMCE to guest,
->> +		 * use native mce handler to handle it
->> +		 */
->> +		;
-> 
-> 
-> Can you just take the check out?
+On Tue, 17 Apr 2012 13:29:25 +0100
+Mel Gorman <mgorman@suse.de> wrote:
 
-What do you mean by 'check out'? remove
-else if (addr == (unsigned long) machine_check) {
-	;
-}
-?
-
-That would fail to register mce bounce back point.
-
+> On Mon, Apr 16, 2012 at 05:50:40PM +0200, Martin Schwidefsky wrote:
+> > On Mon, 16 Apr 2012 15:14:23 +0100
+> > Mel Gorman <mgorman@suse.de> wrote:
+> > 
+> > > This patch is horribly ugly and there has to be a better way of doing
+> > > it. I'm looking for suggestions on what s390 can do here that is not
+> > > painful or broken. 
+> > > 
+> > > However, s390 needs a better way of guarding against
+> > > PageSwapCache pages being removed from the radix tree while set_page_dirty()
+> > > is being called. The patch would be marginally better if in the PageSwapCache
+> > > case we simply tried to lock once and in the contended case just fail to
+> > > propogate the storage key. I lack familiarity with the s390 architecture
+> > > to be certain if this is safe or not. Suggestions on a better fix?
+> > 
+> > One though that crossed my mind is that maybe a better approach would be
+> > to move the page_test_and_clear_dirty check out of page_remove_rmap.
+> > What we need to look out for are code sequences of the form:
+> > 
+> > 	if (pte_dirty(pte))
+> > 		set_page_dirty(page);
+> > 	...
+> > 	page_remove_rmap(page);
+> > 
+> > There are four of those as far as I can see: in try_to_unmap_one,
+> > try_to_unmap_cluster, zap_pte, and zap_pte_range.
+> > 
+> > A valid implementation for s390 would be to test and clear the changed
+> > bit in the storage key for every of those pte_dirty() calls.
+> > 
+> > 	if (pte_dirty(pte) || page_test_and_clear_dirty(page))
+> > 		set_page_dirty(page);
+> > 	...
+> > 	page_remove_rmap(page); /* w/o page_test_clear_dirty */
+> > 
 > 
-> 
->>  #endif
->>  	} else {
->>  		/* Some other trap using IST? */
->> --
->> 1.7.1
+> In the zap_pte_range() case at least, pte_dirty() is only being checked
+> for !PageAnon pages so if we took this approach we would miss
+> PageSwapCache pages. If we added the check then the same problem is hit
+> and we'd need additional logic there for s390 to drop the PTL, take the
+> page lock and retry the operation. It'd still be ugly :(
+
+Well if x86 can get away with ignoring PageSwapCache pages in zap_pte_range()
+pages then s390 should be able to get away with it as well, no ?
+
+-- 
+blue skies,
+   Martin.
+
+"Reality continues to ruin my life." - Calvin.
 
