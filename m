@@ -1,162 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932191Ab2DQPuA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Apr 2012 11:50:00 -0400
-Received: from mail-wg0-f42.google.com ([74.125.82.42]:35876 "EHLO
-	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756099Ab2DQPt5 (ORCPT
+	id S1755911Ab2DQPwX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Apr 2012 11:52:23 -0400
+Received: from na3sys009aog117.obsmtp.com ([74.125.149.242]:44322 "EHLO
+	na3sys009aog117.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755391Ab2DQPwV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Apr 2012 11:49:57 -0400
-From: Miklos Szeredi <miklos@szeredi.hu>
-To: Jeff Layton <jlayton@redhat.com>
-Cc: Steve Dickson <SteveD@redhat.com>,
-        "Myklebust\, Trond" <Trond.Myklebust@netapp.com>,
-        Bernd Schubert <bernd.schubert@itwm.fraunhofer.de>,
-        Malahal Naineni <malahal@us.ibm.com>,
-        "linux-nfs\@vger.kernel.org" <linux-nfs@vger.kernel.org>,
-        "linux-fsdevel\@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "pstaubach\@exagrid.com" <pstaubach@exagrid.com>,
-        "viro\@ZenIV.linux.org.uk" <viro@ZenIV.linux.org.uk>,
-        "hch\@infradead.org" <hch@infradead.org>,
-        "michael.brantley\@deshaw.com" <michael.brantley@deshaw.com>,
-        "sven.breuner\@itwm.fraunhofer.de" <sven.breuner@itwm.fraunhofer.de>
-Subject: Re: [PATCH RFC] vfs: make fstatat retry on ESTALE errors from getattr call
-References: <1334316311-22331-1-git-send-email-jlayton@redhat.com>
-	<20120413150518.GA1987@us.ibm.com>
-	<20120413114236.0e557e01@tlielax.poochiereds.net>
-	<4F8B1B7B.3040304@itwm.fraunhofer.de>
-	<20120416073655.7cdb90cf@corrin.poochiereds.net>
-	<4F8C3036.2030702@itwm.fraunhofer.de>
-	<20120416134642.1754cd3e@corrin.poochiereds.net>
-	<1334604785.2879.23.camel@lade.trondhjem.org>
-	<20120416154322.0d95e435@corrin.poochiereds.net>
-	<1334607906.2879.36.camel@lade.trondhjem.org>
-	<20120416190548.2463d1d0@corrin.poochiereds.net>
-	<4F8D580B.7060104@RedHat.com>
-	<20120417093643.7f172057@corrin.poochiereds.net>
-	<4F8D7ADF.9030709@RedHat.com> <87k41eo2m3.fsf@tucsk.pomaz.szeredi.hu>
-	<20120417110219.0db9bdee@corrin.poochiereds.net>
-Date: Tue, 17 Apr 2012 17:50:06 +0200
-In-Reply-To: <20120417110219.0db9bdee@corrin.poochiereds.net> (Jeff Layton's
-	message of "Tue, 17 Apr 2012 11:02:19 -0400")
-Message-ID: <87aa2anys1.fsf@tucsk.pomaz.szeredi.hu>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	Tue, 17 Apr 2012 11:52:21 -0400
+Message-ID: <1334677936.4965.13.camel@cumari>
+Subject: Re: [PATCH -next] wireless: TI wlxxx depends on MAC80211
+From: Luciano Coelho <coelho@ti.com>
+To: Randy Dunlap <rdunlap@xenotime.net>, johannes@sipsolutions.net
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-wireless@vger.kernel.org,
+        "John W. Linville" <linville@tuxdriver.com>
+Date: Tue, 17 Apr 2012 18:52:16 +0300
+In-Reply-To: <4F8DB687.2090701@xenotime.net>
+References: <20120416161121.261ba4e7e38989173accfb16@canb.auug.org.au>
+		 <4F8C784B.2040402@xenotime.net> <1334640620.27247.7.camel@cumari>
+	 <4F8DB687.2090701@xenotime.net>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2- 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Jeff Layton <jlayton@redhat.com> writes:
+On Tue, 2012-04-17 at 11:29 -0700, Randy Dunlap wrote: 
+> On 04/16/2012 10:30 PM, Luciano Coelho wrote:
+> 
+> > Hi Randy,
+> > 
+> > On Mon, 2012-04-16 at 12:51 -0700, Randy Dunlap wrote: 
+> >> From: Randy Dunlap <rdunlap@xenotime.net>
+> >>
+> >> wl12xx build fails with many undefined symbol errors when MAC80211
+> >> and CFG80211 are not enabled, so make WLCORE and WL12XX depend
+> >> on MAC80211 (which already depends on CFG80211).
+> >>
+> >> Here are a few of the many build errors:
+> >>
+> > 
+> > [...]
+> > 
+> >> Signed-off-by: Randy Dunlap <rdunlap@xenotime.net>
+> >> Cc:	Luciano Coelho <coelho@ti.com>
+> >> Cc:	linux-wireless@vger.kernel.org
+> >> Cc:	"John W. Linville" <linville@tuxdriver.com>
+> >> ---
+> > 
+> > Thanks for the patch!
+> > 
+> > 
+> >> --- linux-next-20120416.orig/drivers/net/wireless/ti/wl12xx/Kconfig
+> >> +++ linux-next-20120416/drivers/net/wireless/ti/wl12xx/Kconfig
+> >> @@ -1,5 +1,6 @@
+> >>  config WL12XX
+> >>         tristate "TI wl12xx support"
+> >> +	depends on MAC80211
+> >>         select WLCORE
+> > 
+> > Do we really need this one? wl12xx selects WLCORE which in turn depends
+> > on MAC80211 (with your change below).  Maybe we don't need this?
+> 
+> Hi,
+> 
+> [testing...]
+> 
+> The build fails if either one of these "depends" is omitted.
 
-> On Tue, 17 Apr 2012 16:27:16 +0200
-> Miklos Szeredi <miklos@szeredi.hu> wrote:
->
->> Steve Dickson <SteveD@redhat.com> writes:
->> 
->> > True, but even so... Giving file systems an opt-out option with the 
->> > default being out, maybe still have some merit... Making file systems
->> > enable this new type of functionality would cut down on any of the
->> > "surprise" that might occur with this redo ;-) 
->> 
->> I've been arguing for something slightly different for quite some time:
->> I never liked errno values which have side effects in the kernel yet
->> might be visible to userspace.
->> 
->> So why not introduce ERETRYSTALE, a *kernel internal* errno value that
->> userspace will never see and filesystems never accidentally set.  The
->> VFS can turn this into ESTALE if it doesn't retry for some reason
->> (e.g. already retried).
->> 
->
-> That's possible but it's certainly a lot more invasive. It's also far
-> more difficult for filesystems to opt-in to this sort of behavior.
+Yeah, thanks for testing.  I guess it's because, as Johannes said,
+select doesn't check the dependencies of the selected module.
 
-As a first step all that is needed to opt in is to convert -ESTALE to
--ESTALERETRY on those operations that allow retrying.  Which is lookup,
-at the moment.
-
-If we decide to make more ops retryable (I'm not convinced that's the
-best approach, but it might be) then those can be converted without too
-much pain.
-
-Thanks,
-Miklos
-
-
-diff --git a/fs/namei.c b/fs/namei.c
-index 0062dd1..66b7d06 100644
---- a/fs/namei.c
-+++ b/fs/namei.c
-@@ -1776,9 +1776,14 @@ static int do_path_lookup(int dfd, const char *name,
- 	int retval = path_lookupat(dfd, name, flags | LOOKUP_RCU, nd);
- 	if (unlikely(retval == -ECHILD))
- 		retval = path_lookupat(dfd, name, flags, nd);
--	if (unlikely(retval == -ESTALE))
-+	if (unlikely(retval == -ERETRYLOOKUP)) {
- 		retval = path_lookupat(dfd, name, flags | LOOKUP_REVAL, nd);
- 
-+		/* retry only once */
-+		if (retval == -ERETRYLOOKUP)
-+			retval = -ESTALE;
-+	}
-+
- 	if (likely(!retval)) {
- 		if (unlikely(!audit_dummy_context())) {
- 			if (nd->path.dentry && nd->inode)
-@@ -2433,8 +2438,12 @@ struct file *do_filp_open(int dfd, const char *pathname,
- 	filp = path_openat(dfd, pathname, &nd, op, flags | LOOKUP_RCU);
- 	if (unlikely(filp == ERR_PTR(-ECHILD)))
- 		filp = path_openat(dfd, pathname, &nd, op, flags);
--	if (unlikely(filp == ERR_PTR(-ESTALE)))
-+	if (unlikely(filp == ERR_PTR(-ERETRYLOOKUP))) {
- 		filp = path_openat(dfd, pathname, &nd, op, flags | LOOKUP_REVAL);
-+		if (filp == ERR_PTR(-ERETRYLOOKUP))
-+			filp = ERR_PTR(-ESTALE);
-+	}
-+
- 	return filp;
- }
- 
-@@ -2455,8 +2464,11 @@ struct file *do_file_open_root(struct dentry *dentry, struct vfsmount *mnt,
- 	file = path_openat(-1, name, &nd, op, flags | LOOKUP_RCU);
- 	if (unlikely(file == ERR_PTR(-ECHILD)))
- 		file = path_openat(-1, name, &nd, op, flags);
--	if (unlikely(file == ERR_PTR(-ESTALE)))
-+	if (unlikely(file == ERR_PTR(-ESTALE))) {
- 		file = path_openat(-1, name, &nd, op, flags | LOOKUP_REVAL);
-+		if (file == ERR_PTR(-ERETRYLOOKUP))
-+			file = ERR_PTR(-ESTALE);
-+	}
- 	return file;
- }
- 
-diff --git a/fs/nfs/dir.c b/fs/nfs/dir.c
-index 4aaf031..cd35da3 100644
---- a/fs/nfs/dir.c
-+++ b/fs/nfs/dir.c
-@@ -1303,6 +1303,8 @@ static struct dentry *nfs_lookup(struct inode *dir, struct dentry * dentry, stru
- 	if (error == -ENOENT)
- 		goto no_entry;
- 	if (error < 0) {
-+		if (error == -ESTALE)
-+			error = -ERETRYLOOKUP;
- 		res = ERR_PTR(error);
- 		goto out_unblock_sillyrename;
- 	}
-diff --git a/include/linux/errno.h b/include/linux/errno.h
-index 2d09bfa..cfaedb8 100644
---- a/include/linux/errno.h
-+++ b/include/linux/errno.h
-@@ -17,6 +17,7 @@
- #define ENOIOCTLCMD	515	/* No ioctl command */
- #define ERESTART_RESTARTBLOCK 516 /* restart by calling sys_restart_syscall */
- #define EPROBE_DEFER	517	/* Driver requests probe retry */
-+#define ERETRYLOOKUP	519	/* Retry lookup */
- 
- /* Defined for the NFSv3 protocol */
- #define EBADHANDLE	521	/* Illegal NFS file handle */
+Johannes, thanks for the explanation.
 
 
+-- 
+Cheers,
+Luca.
 
