@@ -1,66 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756088Ab2DQOkq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Apr 2012 10:40:46 -0400
-Received: from frodo.hserus.net ([204.74.68.40]:39251 "EHLO frodo.hserus.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753064Ab2DQOkp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Apr 2012 10:40:45 -0400
-X-Greylist: delayed 1644 seconds by postgrey-1.27 at vger.kernel.org; Tue, 17 Apr 2012 10:40:45 EDT
-Date: Tue, 17 Apr 2012 11:13:09 -0300
-From: Christian Robottom Reis <kiko@linaro.org>
-To: Rob Lee <rob.lee@linaro.org>
-Cc: Sascha Hauer <s.hauer@pengutronix.de>, linaro-dev@lists.linaro.org,
-        patches@linaro.org, linux-kernel@vger.kernel.org,
-        kernel@pengutronix.de, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 1/3] ARM: imx: Add common imx cpuidle init functionality.
-Message-ID: <20120417141309.GH11786@async.com.br>
-References: <1334620214-25803-1-git-send-email-rob.lee@linaro.org>
- <1334620214-25803-2-git-send-email-rob.lee@linaro.org>
- <20120417074301.GM20478@pengutronix.de>
- <CAMXH7KH41kWMPu_dEpetZc8OUD3C0-mtxGbXX0Vqd4EODPWJUg@mail.gmail.com>
+	id S1751052Ab2DQOn4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Apr 2012 10:43:56 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:59476 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752998Ab2DQOnz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Apr 2012 10:43:55 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CAMXH7KH41kWMPu_dEpetZc8OUD3C0-mtxGbXX0Vqd4EODPWJUg@mail.gmail.com>
-Organization: http://www.linaro.org/
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20120406182237.GB13649@pengutronix.de>
+References: <1333434302-14897-1-git-send-email-meltedpianoman@gmail.com>
+	<20120403165320.GG19952@sequoia.sous-sol.org>
+	<20120403170708.GC2477@pengutronix.de>
+	<20120403171112.GH19952@sequoia.sous-sol.org>
+	<20120403171736.GD2477@pengutronix.de>
+	<CAMSQXEHpjD7LWQkKWJOU=9eFYqsaJi-xHFTxexQr7yoKiCG7HQ@mail.gmail.com>
+	<20120404075956.GB9073@pengutronix.de>
+	<CAMSQXEHxaJpmjpOz_VL54bs1W9x3kCJKGoeTCmBpZva_hSTVsw@mail.gmail.com>
+	<20120405164354.GC16546@kroah.com>
+	<CANqCtQJjzkANJQMd8E9XKvOyk_FLCm1ER=VznrQ+cAerGbO0zQ@mail.gmail.com>
+	<20120406182237.GB13649@pengutronix.de>
+Date: Tue, 17 Apr 2012 16:43:54 +0200
+Message-ID: <CAMSQXEHXQOH7k=aLzXZyxnBQmPwXkrvx8J6brPEWUyFfV-b6pQ@mail.gmail.com>
+Subject: Re: [PATCH-v3] Support M95040 SPI EEPROM
+From: Ivo Sieben <meltedpianoman@gmail.com>
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: Remy Bohmer <linux@bohmer.net>, Chris Wright <chrisw@sous-sol.org>,
+        linux-kernel@vger.kernel.org, Jean Delvare <khali@linux-fr.org>,
+        Kevin Hilman <khilman@deeprootsystems.com>,
+        Wolfram Sang <w.sang@pengutronix.de>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 17, 2012 at 08:54:03AM -0500, Rob Lee wrote:
-> >> +void __init imx_cpuidle_set_driver(struct cpuidle_driver *p)
-> >> +{
-> >> +     drv = p;
-> >> +}
-> >
-> > You like it complicated, eh? Why do you introduce a function which sets
-> > a variable...
-> 
-> This complication is used to deal with the timing of various levels of
-> init calls.  More explanation below.
+>> Is this acceptable for you Greg?
+>
+> If so, don't forget my
+>
+> Reviewed-by: Wolfram Sang <w.sang@pengutronix.de>
+>
+> given to the original patch.
+>
 
-Regardless of how you end up solving this, it's probably a good idea
-to document the rationale, perhaps cribbing from what you describe
-below..
+Greg, what's the status on this patch?
+Is it acceptable for you, or do you want me to resend the patch
+(including the "Reviewed-by" tag)
 
-> If I called imx_cpuidle_init directly from imx5 or imx6q init
-> routines, it would be getting called before the coreinit_call of core
-> cpuidle causing a failure.  There were various other directions to
-> take and all seemed less desirable than this one.
-> 
-> One alternative would be to add a function to return the pointer to
-> the cpuidle driver object based on the machine type.  Functionality
-> exists to identify imx5 as a machine type but not imx6q, so I couldn't
-> use that machine based method without adding that extra code.
-> 
-> Another alternative would be to add a general platform lateinit_call
-> function to each platforms that support cpuidle.
+Thanks.
 
-..in a comment; without it, the code indeed looks bizarre.
--- 
-Christian Robottom Reis, Engineering VP
-Brazil (GMT-3) | [+55] 16 9112 6430 | [+1] 612 216 4935
-Linaro.org: Open Source Software for ARM SoCs
+Regards,
+Ivo Sieben
