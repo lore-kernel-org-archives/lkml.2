@@ -1,116 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755975Ab2DQJP1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Apr 2012 05:15:27 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:59514 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755484Ab2DQJPZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Apr 2012 05:15:25 -0400
+	id S932086Ab2DQJdD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Apr 2012 05:33:03 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:60211 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755954Ab2DQJc7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Apr 2012 05:32:59 -0400
+Date: Tue, 17 Apr 2012 11:32:46 +0200
+From: Jan Kara <jack@suse.cz>
+To: Andreas Dilger <adilger@whamcloud.com>
+Cc: Jan Kara <jack@suse.cz>, Al Viro <viro@ZenIV.linux.org.uk>,
+        dchinner@redhat.com, LKML <linux-kernel@vger.kernel.org>,
+        linux-fsdevel@vger.kernel.org, Alex Elder <elder@kernel.org>,
+        Anton Altaparmakov <anton@tuxera.com>, Ben Myers <bpm@sgi.com>,
+        Chris Mason <chris.mason@oracle.com>, cluster-devel@redhat.com,
+        "David S. Miller" <davem@davemloft.net>,
+        fuse-devel@lists.sourceforge.net,
+        "J. Bruce Fields" <bfields@fieldses.org>,
+        Joel Becker <jlbec@evilplan.org>,
+        KONISHI Ryusuke <konishi.ryusuke@lab.ntt.co.jp>,
+        linux-btrfs@vger.kernel.org, linux-ext4@vger.kernel.org,
+        linux-nfs@vger.kernel.org, linux-nilfs@vger.kernel.org,
+        linux-ntfs-dev@lists.sourceforge.net, Mark Fasheh <mfasheh@suse.com>,
+        Miklos Szeredi <miklos@szeredi.hu>, ocfs2-devel@oss.oracle.com,
+        OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>,
+        Steven Whitehouse <swhiteho@redhat.com>,
+        "Theodore Ts'o" <tytso@mit.edu>, xfs@oss.sgi.com
+Subject: Re: [PATCH 00/19 v5] Fix filesystem freezing deadlocks
+Message-ID: <20120417093246.GD7198@quack.suse.cz>
+References: <1334592845-22862-1-git-send-email-jack@suse.cz>
+ <C9A0E2F0-ED57-40D6-9F75-5D72D45D21F0@dilger.ca>
 MIME-Version: 1.0
-In-Reply-To: <CANJuy2KgOX=2Oc9Uaf1TGRAeyXt0UjdjU-o-yo+NVUYxKmk_4g@mail.gmail.com>
-References: <20120403202432.GA18564@core.coreip.homeip.net> <CANJuy2KgOX=2Oc9Uaf1TGRAeyXt0UjdjU-o-yo+NVUYxKmk_4g@mail.gmail.com>
-From: Che-liang Chiou <clchiou@chromium.org>
-Date: Tue, 17 Apr 2012 17:14:44 +0800
-X-Google-Sender-Auth: OViHPYHvGKN0IV9r98yAdUqxRp0
-Message-ID: <CANJuy2KVxAKFETi4YGAcBFnoop-eBLK+VvUVonuy8ZCm+VeZcg@mail.gmail.com>
-Subject: Re: [PATCH] Input: serio_raw - ensure we don't block in non-blocking read
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Cc: linux-input@vger.kernel.org, Wanlong Gao <gaowanlong@cn.fujitsu.com>,
-        David Herrmann <dh.herrmann@googlemail.com>,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-X-System-Of-Record: true
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <C9A0E2F0-ED57-40D6-9F75-5D72D45D21F0@dilger.ca>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id q3H9FaSB008946
 
-Reviewed-by: Che-Liang Chiou <clchiou@chromium.org>
+On Mon 16-04-12 15:02:50, Andreas Dilger wrote:
+> On 2012-04-16, at 9:13 AM, Jan Kara wrote:
+> > Another potential contention point might be patch 19. In that patch
+> > we make freeze_super() refuse to freeze the filesystem when there
+> > are open but unlinked files which may be impractical in some cases.
+> > The main reason for this is the problem with handling of file deletion
+> > from fput() called with mmap_sem held (e.g. from munmap(2)), and
+> > then there's the fact that we cannot really force such filesystem
+> > into a consistent state... But if people think that freezing with
+> > open but unlinked files should happen, then I have some possible
+> > solutions in mind (maybe as a separate patchset since this is
+> > large enough).
+> 
+> Looking at a desktop system, I think it is very typical that there
+> are open-unlinked files present, so I don't know if this is really
+> an acceptable solution.  It isn't clear from your comments whether
+> this is a blanket refusal for all open-unlinked files, or only in
+> some particular cases...
+  Thanks for looking at this. It is currently a blanket refusal. And I
+agree it's problematic. There are two problems with open but unlinked
+files.
 
-On Tue, Apr 17, 2012 at 4:56 PM, Che-liang Chiou <clchiou@chromium.org> wrote:
-> I didn't test the patch, but the logic looks fine to me.
->
-> On Wed, Apr 4, 2012 at 4:24 AM, Dmitry Torokhov
-> <dmitry.torokhov@gmail.com> wrote:
->> Avoid calling wait_event_interruptible() if client requested non-blocking
->> read, since it is not guaranteed that another thread will not consume
->> event after we checked if serio_raw->head != serio_raw->tail.
->>
->> Also ensure we do not return 0 but keep waiting instead in blocking case,
->> when another thread steals "our" byte.
->>
->> Signed-off-by: Dmitry Torokhov <dtor@mail.ru>
->> ---
->>  drivers/input/serio/serio_raw.c |   43 ++++++++++++++++++++++----------------
->>  1 files changed, 25 insertions(+), 18 deletions(-)
->>
->> diff --git a/drivers/input/serio/serio_raw.c b/drivers/input/serio/serio_raw.c
->> index 4494233..094d6fb 100644
->> --- a/drivers/input/serio/serio_raw.c
->> +++ b/drivers/input/serio/serio_raw.c
->> @@ -165,31 +165,38 @@ static ssize_t serio_raw_read(struct file *file, char __user *buffer,
->>        struct serio_raw *serio_raw = client->serio_raw;
->>        char uninitialized_var(c);
->>        ssize_t read = 0;
->> -       int retval;
->> +       int error = 0;
->>
->> -       if (serio_raw->dead)
->> -               return -ENODEV;
->> +       do {
->> +               if (serio_raw->dead)
->> +                       return -ENODEV;
->>
->> -       if (serio_raw->head == serio_raw->tail && (file->f_flags & O_NONBLOCK))
->> -               return -EAGAIN;
->> +               if (serio_raw->head == serio_raw->tail &&
->> +                   (file->f_flags & O_NONBLOCK))
->> +                       return -EAGAIN;
->>
->> -       retval = wait_event_interruptible(serio_raw->wait,
->> -                       serio_raw->head != serio_raw->tail || serio_raw->dead);
->> -       if (retval)
->> -               return retval;
->> +               if (count == 0)
->> +                       break;
->>
->> -       if (serio_raw->dead)
->> -               return -ENODEV;
->> +               while (read < count && serio_raw_fetch_byte(serio_raw, &c)) {
->> +                       if (put_user(c, buffer++)) {
->> +                               error = -EFAULT;
->> +                               goto out;
->> +                       }
->> +                       read++;
->> +               }
->>
->> -       while (read < count && serio_raw_fetch_byte(serio_raw, &c)) {
->> -               if (put_user(c, buffer++)) {
->> -                       retval = -EFAULT;
->> +               if (read)
->>                        break;
->> -               }
->> -               read++;
->> -       }
->>
->> -       return read ?: retval;
->> +               if (!(file->f_flags & O_NONBLOCK))
->> +                       error = wait_event_interruptible(serio_raw->wait,
->> +                                       serio_raw->head != serio_raw->tail ||
->> +                                       serio_raw->dead);
->> +       } while (!error);
->> +
->> +out:
->> +       return read ?: error;
->>  }
->>
->>  static ssize_t serio_raw_write(struct file *file, const char __user *buffer,
->> --
->> 1.7.7.6
->>
->>
->> --
->> Dmitry
-���{.n�+�������+%�����ݶ��w��{.n�+����{��G�����{ay�ʇڙ�,j��f���h��������z_�(�階�ݢj"���m������G������?����&���~��iO��z��v�^�m����������?�I�
+One is that some old filesystems cannot get in a consistent state in
+presence of open but unlinked files but for filesystems we really care
+about - xfs, ext4, ext3, btrfs, or even ocfs2, gfs2 - that is not a real
+issue (these filesystems will delete those inodes on next mount read-write).
+
+The other problem is with what should happen when you put last inode
+reference on a frozen filesystem. Two possibilities I see are:
+
+a) block the iput() call - that is inconvenient because it can be
+called in various contexts. I think we could possibly use the same level of
+freeze protection as for page fault (this has changed since I originally
+thought about this and that would make things simpler) but I'm not
+completely sure.
+
+b) let the iput finish but filesystem will keep inode on its orphan list
+(or it's equivalent) and the inode will be deleted after the filesystem is
+thawed. The advantage of this is we don't have to block iput(), the
+disadvantage is we have to have filesystem support and not all filesystems
+can do this.
+
+Any thoughts?
+
+								Honza
+> 
+> lsof | grep deleted
+> nautilus  25393  adilger   19r      REG           253,0      340     253954 /home/adilger/.local/share/gvfs-metadata/home (deleted)
+> nautilus  25393  adilger   20r      REG           253,0    32768     253964 /home/adilger/.local/share/gvfs-metadata/home-f332a8f3.log (deleted)
+> gnome-ter 25623  adilger   22u      REG            0,18    17841    2717846 /tmp/vtePIRJCW (deleted)
+> gnome-ter 25623  adilger   23u      REG            0,18     5568    2717847 /tmp/vteDCSJCW (deleted)
+> gnome-ter 25623  adilger   29u      REG            0,18      480    2728484 /tmp/vte6C1TCW (deleted)
+  
+-- 
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
