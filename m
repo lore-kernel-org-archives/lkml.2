@@ -1,60 +1,158 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754173Ab2DQC1i (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Apr 2012 22:27:38 -0400
-Received: from ironport-out.teksavvy.com ([206.248.143.162]:19027 "EHLO
-	ironport-out.teksavvy.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752028Ab2DQC1M (ORCPT
+	id S1754688Ab2DQC37 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Apr 2012 22:29:59 -0400
+Received: from mail.linux-iscsi.org ([67.23.28.174]:45924 "EHLO
+	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751023Ab2DQC35 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Apr 2012 22:27:12 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: ApMBACxOgk8Y9geI/2dsb2JhbAANNoVztlABAQEBAyMEUQEQCxgCAgUWCwICCQMCAQIBRQYNAQUCAQG0JIoYgS+OE4EYBKklgTgW
-X-IronPort-AV: E=Sophos;i="4.75,391,1330923600"; 
-   d="scan'208";a="174785858"
-Message-ID: <4F8CD4FC.6020006@teksavvy.com>
-Date: Mon, 16 Apr 2012 22:27:08 -0400
-From: Mark Lord <kernel@teksavvy.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:11.0) Gecko/20120327 Thunderbird/11.0.1
-MIME-Version: 1.0
-To: John Stultz <john.stultz@linaro.org>
-CC: richard -rw- weinberger <richard.weinberger@gmail.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        rtc-linux@googlegroups.com, Alessandro Zummo <a.zummo@towertech.it>,
-        Greg Kroah-Hartman <greg@kroah.com>, stable@vger.kernel.org
-Subject: Re: [REGRESSION] rtc/interface.c: kills suspend-to-ram
-References: <4F8BA1C1.4030804@teksavvy.com>	<4F8C24E5.4020703@teksavvy.com> <CAFLxGvzkcYw-iUA1X8jK+Q8A2HFEG1SSXvfZ3Uj+OwKWgi+zAA@mail.gmail.com> <4F8C76AA.4050608@linaro.org>
-In-Reply-To: <4F8C76AA.4050608@linaro.org>
-Content-Type: text/plain; charset=UTF-8
+	Mon, 16 Apr 2012 22:29:57 -0400
+Subject: linux-next 20120416 + target for-next/for-next-merge
+From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+To: target-devel <target-devel@vger.kernel.org>,
+        linux-scsi <linux-scsi@vger.kernel.org>,
+        linux-usb <linux-usb@vger.kernel.org>,
+        linux1394-devel <linux1394-devel@lists.sourceforge.net>,
+        LKML <linux-kernel@vger.kernel.org>
+Cc: Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        Chris Boot <bootc@bootc.net>, Arun Easi <arun.easi@qlogic.com>,
+        Andrew Vasquez <andrew.vasquez@qlogic.com>,
+        Roland Dreier <roland@kernel.org>, Christoph Hellwig <hch@lst.de>,
+        Greg KH <gregkh@linuxfoundation.org>,
+        James Bottomley <James.Bottomley@HansenPartnership.com>,
+        Andy Grover <agrover@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 16 Apr 2012 19:29:52 -0700
+Message-ID: <1334629792.12540.160.camel@haakon2.linux-iscsi.org>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12-04-16 03:44 PM, John Stultz wrote:
-> On 04/16/2012 07:23 AM, richard -rw- weinberger wrote:
->> On Mon, Apr 16, 2012 at 3:55 PM, Mark Lord<kernel@teksavvy.com>  wrote:
->>> Speaking of which -- that batch of RTC updates is riddled with bugs.
->>> For example, this beauty from rtc-mpc5121.c in the same update:
->>>
->>>         ...
->>>         rtc->rtc = rtc_device_register("mpc5200-rtc",&op->dev,
->>>                                         &mpc5200_rtc_ops, THIS_MODULE);
->>>         ...
->>>
->>>         rtc->rtc->uie_unsupported = 1;    //<<<<  Ooops NULL pointer>>>>
->>>
->>>         if (IS_ERR(rtc->rtc)) {           //<<<<  this needs to be earlier>>>>
->>>                 err = PTR_ERR(rtc->rtc);
->>>                 goto out_free_irq;
->>>         }
->>>         ...
->>>
->>>
-> 
-> Thanks for noticing this and CC'ing me.  I'll spin up a fix promptly for review.
-> -john
+Hi folks,
 
-Yeah.  My apologies for being so harsh there.
-At least the fix is easy enough.
+Just a brief post-mortem on today's linux-next 20120416 build with
+the current set of v3.5-rc target updates, the current qla2xxx target
+merge candidate, and the new usb-gadget + sbp target code that's now
+pending in for-next-merge.
 
-Cheers!
+Here is how the for-next branch is taking shape:
+
+*) Changes from hch that begin to stop splitting commands into multiple 
+   tasks + make pSCSI backends enforce physical SCSI max_sectors
+*) Changes from roland to drop legacy transport_do_task_sg_chain() usage
+   in core + upstream tcm_fc/ib_srpt code
+*) Cleanups + refactoring from agrover for iscsi-target towards an 
+   eventual target_submit_cmd() conversion
+
+and the diffstat from Next/merge.log:
+
+$ git merge target-updates/for-next
+Auto-merging drivers/infiniband/ulp/srpt/ib_srpt.c
+Merge made by the 'recursive' strategy.
+ drivers/infiniband/ulp/srpt/ib_srpt.c             |   10 +-
+ drivers/target/iscsi/iscsi_target.c               |  821 ++++++++++-----------
+ drivers/target/iscsi/iscsi_target.h               |    3 +-
+ drivers/target/iscsi/iscsi_target_configfs.c      |    2 +-
+ drivers/target/iscsi/iscsi_target_core.h          |   12 +-
+ drivers/target/iscsi/iscsi_target_datain_values.c |   35 +-
+ drivers/target/iscsi/iscsi_target_erl0.c          |   31 +-
+ drivers/target/iscsi/iscsi_target_erl1.c          |   23 +-
+ drivers/target/iscsi/iscsi_target_erl2.c          |   28 +-
+ drivers/target/iscsi/iscsi_target_parameters.c    |    8 -
+ drivers/target/iscsi/iscsi_target_seq_pdu_list.c  |  125 ++--
+ drivers/target/iscsi/iscsi_target_seq_pdu_list.h  |    2 +-
+ drivers/target/iscsi/iscsi_target_tmr.c           |   15 +-
+ drivers/target/iscsi/iscsi_target_util.c          |  192 +----
+ drivers/target/iscsi/iscsi_target_util.h          |    3 -
+ drivers/target/loopback/tcm_loop.c                |    4 +-
+ drivers/target/target_core_cdb.c                  |    5 +-
+ drivers/target/target_core_device.c               |    9 +-
+ drivers/target/target_core_file.c                 |   11 +-
+ drivers/target/target_core_pr.c                   |   31 +-
+ drivers/target/target_core_rd.c                   |  154 ++--
+ drivers/target/target_core_rd.h                   |   20 -
+ drivers/target/target_core_tpg.c                  |    5 +-
+ drivers/target/target_core_transport.c            |  242 ++----
+ drivers/target/tcm_fc/tfc_cmd.c                   |   18 +-
+ drivers/target/tcm_fc/tfc_conf.c                  |    3 -
+ drivers/target/tcm_fc/tfc_io.c                    |    2 +-
+ include/target/target_core_base.h                 |    9 +-
+ include/target/target_core_fabric.h               |    9 +-
+ 29 files changed, 693 insertions(+), 1139 deletions(-)
+
+--
+With the new set of v3.5-rc1 target fabric merge candidates thus far we've
+not gotten any reported next build issues for archs supporting allmod
+configs.  Great work by new target fabric maintainers Sebastian + Chris
+to make their code go smoothly into next !
+
+Also, the current qla2xxx/tcm_qla2xxx merge candidate has been updated
+to drop legacy usage of transport_do_task_sg_chain() within for-next
+(roland), while testing continues with qla2xxx LLD target specific
+changes in initiator mode function to avoid any potential regression
+issues for an initial v3.5-rc1 merge. (arun + Co.)
+
+Here is how the diffstat is looking:
+
+Merging target-merge/for-next-merge (3e6e9e9 sbp-target: Initial merge of firewire/ieee-1394 target mode support)
+$ git merge target-merge/for-next-merge
+Merge made by the 'recursive' strategy.
+ drivers/firewire/core-card.c           |    1 +
+ drivers/firewire/core-transaction.c    |    9 +
+ drivers/firewire/core.h                |   15 -
+ drivers/scsi/qla2xxx/Kconfig           |    8 +
+ drivers/scsi/qla2xxx/Makefile          |    3 +-
+ drivers/scsi/qla2xxx/qla_attr.c        |    5 +-
+ drivers/scsi/qla2xxx/qla_dbg.c         |    5 +
+ drivers/scsi/qla2xxx/qla_dbg.h         |    5 +
+ drivers/scsi/qla2xxx/qla_def.h         |   69 +-
+ drivers/scsi/qla2xxx/qla_gbl.h         |    7 +
+ drivers/scsi/qla2xxx/qla_gs.c          |    4 +-
+ drivers/scsi/qla2xxx/qla_init.c        |   82 +-
+ drivers/scsi/qla2xxx/qla_iocb.c        |  102 +-
+ drivers/scsi/qla2xxx/qla_isr.c         |   83 +-
+ drivers/scsi/qla2xxx/qla_mbx.c         |  101 +
+ drivers/scsi/qla2xxx/qla_mid.c         |   17 +-
+ drivers/scsi/qla2xxx/qla_os.c          |  133 +-
+ drivers/scsi/qla2xxx/qla_target.c      | 4724 ++++++++++++++++++++++++++++++++
+ drivers/scsi/qla2xxx/qla_target.h      |  986 +++++++
+ drivers/scsi/qla2xxx/tcm_qla2xxx.c     | 1969 +++++++++++++
+ drivers/scsi/qla2xxx/tcm_qla2xxx.h     |  149 +
+ drivers/target/Kconfig                 |    2 +
+ drivers/target/Makefile                |    2 +
+ drivers/target/sbp/Kconfig             |   11 +
+ drivers/target/sbp/Makefile            |    1 +
+ drivers/target/sbp/sbp_target.c        | 2621 ++++++++++++++++++
+ drivers/target/sbp/sbp_target.h        |  251 ++
+ drivers/target/usb-gadget/Kconfig      |    9 +
+ drivers/target/usb-gadget/Makefile     |    3 +
+ drivers/target/usb-gadget/usb_gadget.c | 2480 +++++++++++++++++
+ drivers/target/usb-gadget/usb_gadget.h |  146 +
+ include/linux/firewire.h               |   15 +
+ 32 files changed, 13968 insertions(+), 50 deletions(-)
+ create mode 100644 drivers/scsi/qla2xxx/qla_target.c
+ create mode 100644 drivers/scsi/qla2xxx/qla_target.h
+ create mode 100644 drivers/scsi/qla2xxx/tcm_qla2xxx.c
+ create mode 100644 drivers/scsi/qla2xxx/tcm_qla2xxx.h
+ create mode 100644 drivers/target/sbp/Kconfig
+ create mode 100644 drivers/target/sbp/Makefile
+ create mode 100644 drivers/target/sbp/sbp_target.c
+ create mode 100644 drivers/target/sbp/sbp_target.h
+ create mode 100644 drivers/target/usb-gadget/Kconfig
+ create mode 100644 drivers/target/usb-gadget/Makefile
+ create mode 100644 drivers/target/usb-gadget/usb_gadget.c
+ create mode 100644 drivers/target/usb-gadget/usb_gadget.h
+
+--
+As usual, please let myself and/or individual fabric maintainers know if
+anyone has any additional review comments+feedback on this new fabric
+code.
+
+Thanks!
+
+--nab
+
+
