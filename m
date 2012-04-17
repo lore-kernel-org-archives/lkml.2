@@ -1,42 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932359Ab2DQNzA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Apr 2012 09:55:00 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:44631 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932402Ab2DQNyl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Apr 2012 09:54:41 -0400
-From: Laura Vasilescu <laura@rosedu.org>
-To: linux-kernel@vger.kernel.org
-Cc: linux-scsi@vger.kernel.org, jack_wang@usish.com, James.Bottomley@suse.de,
-        dan.j.williams@intel.com, yuxiangl@marvell.com,
-        JBottomley@parallels.com, Laura Vasilescu <laura@rosedu.org>
-Subject: [PATCH] scsi: remove unused variable
-Date: Tue, 17 Apr 2012 16:54:26 +0300
-Message-Id: <1334670866-9800-1-git-send-email-laura@rosedu.org>
-X-Mailer: git-send-email 1.7.1
+	id S932382Ab2DQNy0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Apr 2012 09:54:26 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:27465 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932331Ab2DQNyZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Apr 2012 09:54:25 -0400
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+	Kingdom.
+	Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+In-Reply-To: <20120414030507.GA27579@redhat.com>
+References: <20120414030507.GA27579@redhat.com> <20120414021201.GA23385@redhat.com> <20120414021220.GA23393@redhat.com> <CA+55aFyxV8v2mOjb1Ly=1ttPyLvUt6RZO8wgjD_9owtO=VM0hw@mail.gmail.com>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: dhowells@redhat.com, Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Alexander Gordeev <agordeev@redhat.com>,
+        Chris Zankel <chris@zankel.net>, David Smith <dsmith@redhat.com>,
+        "Frank Ch. Eigler" <fche@redhat.com>,
+        Geert Uytterhoeven <geert@linux-m68k.org>,
+        Larry Woodman <lwoodman@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>, Tejun Heo <tj@kernel.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v4 1/3] task_work_add: generic process-context callbacks
+Date: Tue, 17 Apr 2012 14:53:59 +0100
+Message-ID: <26488.1334670839@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Laura Vasilescu <laura@rosedu.org>
----
- drivers/scsi/mvsas/mv_sas.c |    1 -
- 1 files changed, 0 insertions(+), 1 deletions(-)
+Oleg Nesterov <oleg@redhat.com> wrote:
 
-diff --git a/drivers/scsi/mvsas/mv_sas.c b/drivers/scsi/mvsas/mv_sas.c
-index fd3b283..3006ec9 100644
---- a/drivers/scsi/mvsas/mv_sas.c
-+++ b/drivers/scsi/mvsas/mv_sas.c
-@@ -885,7 +885,6 @@ static int mvs_task_exec(struct sas_task *task, const int num, gfp_t gfp_flags,
- 				struct completion *completion, int is_tmf,
- 				struct mvs_tmf_task *tmf)
- {
--	struct domain_device *dev = task->dev;
- 	struct mvs_info *mvi = NULL;
- 	u32 rc = 0;
- 	u32 pass = 0;
--- 
-1.7.1
+> tsk is always "current", probably this should be documented, I'll add
+> the comment.
 
+If tsk is always current, then don't pass it as a parameter.  Some arches keep
+current in a register and it's much more efficient to use current directly in
+those cases - and those that don't have to be able to obtain it reasonably
+quickly.
+
+David
