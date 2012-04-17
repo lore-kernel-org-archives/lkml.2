@@ -1,301 +1,202 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752630Ab2DQUtX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Apr 2012 16:49:23 -0400
-Received: from mail.work-microwave.de ([62.245.205.51]:43540 "EHLO
-	work-microwave.de" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751093Ab2DQUtV (ORCPT
+	id S1752329Ab2DQUv4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Apr 2012 16:51:56 -0400
+Received: from mail209.messagelabs.com ([216.82.255.3]:24327 "EHLO
+	mail209.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751211Ab2DQUvy convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Apr 2012 16:49:21 -0400
-From: Roland Stigge <stigge@antcom.de>
-To: gregkh@linuxfoundation.org, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org, kevin.wells@nxp.com,
-        srinivas.bakki@nxp.com, stern@rowland.harvard.edu,
-        linux-arm-kernel@lists.infradead.org, arnd@arndb.de
-Cc: Roland Stigge <stigge@antcom.de>
-Subject: [PATCH v4 1/3] USB: Add driver for NXP ISP1301 USB transceiver
-Date: Tue, 17 Apr 2012 22:48:40 +0200
-Message-Id: <1334695722-15694-1-git-send-email-stigge@antcom.de>
-X-Mailer: git-send-email 1.7.9
-X-FEAS-SYSTEM-WL: rst@work-microwave.de, 192.168.11.78
+	Tue, 17 Apr 2012 16:51:54 -0400
+X-Env-Sender: hartleys@visionengravers.com
+X-Msg-Ref: server-15.tower-209.messagelabs.com!1334695901!3440825!30
+X-Originating-IP: [216.166.12.97]
+X-StarScan-Version: 6.5.7; banners=-,-,-
+X-VirusChecked: Checked
+From: H Hartley Sweeten <hartleys@visionengravers.com>
+To: H Hartley Sweeten <hartleys@visionengravers.com>,
+        Rafal Prylowski <prylowski@metasoft.pl>
+CC: "vinod.koul@intel.com" <vinod.koul@intel.com>,
+        Mika Westerberg <mika.westerberg@iki.fi>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "rmallon@gmail.com" <rmallon@gmail.com>
+Date: Tue, 17 Apr 2012 15:51:47 -0500
+Subject: RE: [PATCH] ep93xx: Implement double buffering for M2M DMA channels
+Thread-Topic: [PATCH] ep93xx: Implement double buffering for M2M DMA channels
+Thread-Index: Ac0caex4X0qtK6OFStW/8+oWZlDE2AARxXCwAAoZL3A=
+Message-ID: <ADE657CA350FB648AAC2C43247A983F00206987A4034@AUSP01VMBX24.collaborationhost.net>
+References: <4F683B36.8090101@metasoft.pl>
+ <20120321193836.GC3740@mwesterb-mobl.ger.corp.intel.com>
+ <ADE657CA350FB648AAC2C43247A983F0020696D48E3E@AUSP01VMBX24.collaborationhost.net>
+ <20120323070446.GC5812@mwesterb-mobl.ger.corp.intel.com>
+ <ADE657CA350FB648AAC2C43247A983F0020696D48EEB@AUSP01VMBX24.collaborationhost.net>
+ <20120410172853.GA25697@mwesterb-mobl>
+ <ADE657CA350FB648AAC2C43247A983F00206986C01D4@AUSP01VMBX24.collaborationhost.net>
+ <4F853053.7040800@metasoft.pl>
+ <ADE657CA350FB648AAC2C43247A983F00206987A3BFE@AUSP01VMBX24.collaborationhost.net>
+ <4F8D189B.3010100@metasoft.pl>
+ <ADE657CA350FB648AAC2C43247A983F00206987A3E66@AUSP01VMBX24.collaborationhost.net>
+In-Reply-To: <ADE657CA350FB648AAC2C43247A983F00206987A3E66@AUSP01VMBX24.collaborationhost.net>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This very-lowlevel driver registers the NXP ISP1301 chip via the I2C subsystem.
-The chip is the USB transceiver shared by ohci-nxp, lpc32xx_udc (gadget) and
-isp1301_omap.
+On Tuesday, April 17, 2012 8:46 AM, H Hartley Sweeten wrote:
+> On Tuesday, April 17, 2012 12:16 AM, Rafal Prylowski wrote:
+>> On 2012-04-16 20:59, H Hartley Sweeten wrote:
+>>> It appears your patch is causing an interrupt storm on my system.
+>>> 
+>>
+>> Could you please apply the following patch on top of double buffering
+>> patch? I would like to know the state of dma channel when you get
+>> that interrupt storm.
+>
+> Rafal,
+>
+> Here's the output:
+>
+> mmc_spi spi0.1: SD/MMC host mmc0, no poweroff
+> M2M: 20c3
+> M2M: 20c3
+> M2M: 21c3
+> M2M: 21c3
+> M2M: 21c3
+> M2M: 21c3
+> M2M: 21c3
+> M2M: 21c3
+>
+> The "M2M: 21c3" keeps getting output until the system is turned off.
 
-Following patches let the respective USB host and gadget drivers use this
-driver, instead of duplicating ISP1301 handling.
+Rafal,
 
-Signed-off-by: Roland Stigge <stigge@antcom.de>
-Acked-by: Arnd Bergmann <arnd@arndb.de>
+It appears that the M2M_CONTROL_NFBINT bit is never getting set when
+dma is used with the spi-ep93xx.c and mmc_spi.c drivers.
 
----
+I added a prink in msm_hw_submit():
 
-Applies to v3.4-rc3
+	if (ep93xx_dma_advance_active(edmac)) {
+		m2m_fill_desc(edmac);
+		control |= M2M_CONTROL_NFBINT;
+		printk("%s: NFB enabled\n", __func__);
+	}
 
-Changes since v3:
-* Check if device is actually bound to isp1301_driver
-* Error handling fix: Catch NULL return from bus_find_device()
+This message is never displayed.
 
-Thanks to Arnd Bergmann for reviewing and suggestions!
+And for some reason the txd.cookie is not getting set correctly to detect
+the last entry in m2m_hw_interrupt.
 
- Documentation/devicetree/bindings/usb/isp1301.txt |   25 ++++++
- drivers/usb/Kconfig                               |    2 
- drivers/usb/Makefile                              |    1 
- drivers/usb/phy/Kconfig                           |   17 ++++
- drivers/usb/phy/Makefile                          |    7 +
- drivers/usb/phy/isp1301.c                         |   79 ++++++++++++++++++++
- include/linux/usb/isp1301.h                       |   84 ++++++++++++++++++++++
- 7 files changed, 215 insertions(+)
+	/*
+	 * Check whether we are done with descriptors or not. This, together
+	 * with DMA channel state, determines action to take in interrupt.
+	 */
+	last = list_first_entry(edmac->active.next,
+		struct ep93xx_dma_desc, node)->txd.cookie;
 
---- /dev/null
-+++ linux-2.6/Documentation/devicetree/bindings/usb/isp1301.txt
-@@ -0,0 +1,25 @@
-+* NXP ISP1301 USB transceiver
-+
-+Required properties:
-+- compatible: must be "nxp,isp1301"
-+- reg: I2C address of the ISP1301 device
-+
-+Optional properties of devices using ISP1301:
-+- transceiver: phandle of isp1301 - this helps the ISP1301 driver to find the
-+               ISP1301 instance associated with the respective USB driver
-+
-+Example:
-+
-+	isp1301: usb-transceiver@2c {
-+		compatible = "nxp,isp1301";
-+		reg = <0x2c>;
-+	};
-+
-+	usbd@31020000 {
-+		compatible = "nxp,lpc32xx-udc";
-+		reg = <0x31020000 0x300>;
-+		interrupt-parent = <&mic>;
-+		interrupts = <0x3d 0>, <0x3e 0>, <0x3c 0>, <0x3a 0>;
-+		transceiver = <&isp1301>;
-+		status = "okay";
-+	};
---- linux-2.6.orig/drivers/usb/Kconfig
-+++ linux-2.6/drivers/usb/Kconfig
-@@ -177,6 +177,8 @@ source "drivers/usb/serial/Kconfig"
- 
- source "drivers/usb/misc/Kconfig"
- 
-+source "drivers/usb/phy/Kconfig"
-+
- source "drivers/usb/atm/Kconfig"
- 
- source "drivers/usb/gadget/Kconfig"
---- linux-2.6.orig/drivers/usb/Makefile
-+++ linux-2.6/drivers/usb/Makefile
-@@ -46,6 +46,7 @@ obj-$(CONFIG_USB_MICROTEK)	+= image/
- obj-$(CONFIG_USB_SERIAL)	+= serial/
- 
- obj-$(CONFIG_USB)		+= misc/
-+obj-$(CONFIG_USB)		+= phy/
- obj-$(CONFIG_EARLY_PRINTK_DBGP)	+= early/
- 
- obj-$(CONFIG_USB_ATM)		+= atm/
---- /dev/null
-+++ linux-2.6/drivers/usb/phy/Kconfig
-@@ -0,0 +1,17 @@
-+#
-+# Physical Layer USB driver configuration
-+#
-+comment "USB Physical Layer drivers"
-+	depends on USB
-+
-+config USB_ISP1301
-+	tristate "NXP ISP1301 USB transceiver support"
-+	depends on USB
-+	depends on I2C
-+	help
-+	  Say Y here to add support for the NXP ISP1301 USB transceiver driver.
-+	  This chip is typically used as USB transceiver for USB host, gadget
-+	  and OTG drivers (to be selected separately).
-+
-+	  To compile this driver as a module, choose M here: the
-+	  module will be called isp1301.
---- /dev/null
-+++ linux-2.6/drivers/usb/phy/Makefile
-@@ -0,0 +1,7 @@
-+#
-+# Makefile for physical layer USB drivers
-+#
-+
-+ccflags-$(CONFIG_USB_DEBUG) := -DDEBUG
-+
-+obj-$(CONFIG_USB_ISP1301)		+= isp1301.o
---- /dev/null
-+++ linux-2.6/drivers/usb/phy/isp1301.c
-@@ -0,0 +1,79 @@
-+/*
-+ * NXP ISP1301 USB transceiver driver
-+ *
-+ * Copyright (C) 2012 Roland Stigge
-+ *
-+ * Author: Roland Stigge <stigge@antcom.de>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ */
-+
-+#include <linux/module.h>
-+#include <linux/i2c.h>
-+
-+#define DRV_NAME		"isp1301"
-+#define DRV_VERSION		"0.1.0"
-+
-+#define ISP1301_I2C_ADDR	0x2C
-+
-+static const unsigned short normal_i2c[] = {
-+	ISP1301_I2C_ADDR, ISP1301_I2C_ADDR + 1, I2C_CLIENT_END
-+};
-+
-+static const struct i2c_device_id isp1301_id[] = {
-+	{ "isp1301", 0 },
-+	{ }
-+};
-+
-+static struct i2c_client *isp1301_i2c_client;
-+
-+static int isp1301_probe(struct i2c_client *client,
-+			 const struct i2c_device_id *i2c_id)
-+{
-+	isp1301_i2c_client = client;
-+	return 0;
-+}
-+
-+static int isp1301_remove(struct i2c_client *client)
-+{
-+	return 0;
-+}
-+
-+static struct i2c_driver isp1301_driver = {
-+	.driver = {
-+		.name = DRV_NAME,
-+	},
-+	.probe = isp1301_probe,
-+	.remove = isp1301_remove,
-+	.id_table = isp1301_id,
-+};
-+
-+module_i2c_driver(isp1301_driver);
-+
-+static int match(struct device *dev, void *data)
-+{
-+	struct device_node *node = (struct device_node *)data;
-+	return (dev->of_node == node) &&
-+		(dev->driver == &isp1301_driver.driver);
-+}
-+
-+struct i2c_client *isp1301_get_client(struct device_node *node)
-+{
-+	if (node) { /* reference of ISP1301 I2C node via DT */
-+		struct device *dev = bus_find_device(&i2c_bus_type, NULL,
-+						     node, match);
-+		if (!dev)
-+			return NULL;
-+		return to_i2c_client(dev);
-+	} else { /* non-DT: only one ISP1301 chip supported */
-+		return isp1301_i2c_client;
-+	}
-+}
-+EXPORT_SYMBOL(isp1301_get_client);
-+
-+MODULE_AUTHOR("Roland Stigge <stigge@antcom.de>");
-+MODULE_DESCRIPTION("NXP ISP1301 USB transceiver driver");
-+MODULE_LICENSE("GPL");
-+MODULE_VERSION(DRV_VERSION);
---- /dev/null
-+++ linux-2.6/include/linux/usb/isp1301.h
-@@ -0,0 +1,84 @@
-+/*
-+ * NXP ISP1301 USB transceiver driver
-+ *
-+ * Copyright (C) 2012 Roland Stigge <stigge@antcom.de>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation; version 2 of the License.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program; if not, write to the Free Software
-+ * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
-+ *
-+ */
-+
-+#ifndef __LINUX_USB_ISP1301_H
-+#define __LINUX_USB_ISP1301_H
-+
-+#include <linux/of.h>
-+
-+/* I2C Register definitions: */
-+
-+#define ISP1301_I2C_MODE_CONTROL_1	0x04	/* u8 read, set, +1 clear */
-+
-+#define MC1_SPEED_REG			(1 << 0)
-+#define MC1_SUSPEND_REG			(1 << 1)
-+#define MC1_DAT_SE0			(1 << 2)
-+#define MC1_TRANSPARENT			(1 << 3)
-+#define MC1_BDIS_ACON_EN		(1 << 4)
-+#define MC1_OE_INT_EN			(1 << 5)
-+#define MC1_UART_EN			(1 << 6)
-+#define MC1_MASK			0x7f
-+
-+#define ISP1301_I2C_MODE_CONTROL_2	0x12	/* u8 read, set, +1 clear */
-+
-+#define MC2_GLOBAL_PWR_DN		(1 << 0)
-+#define MC2_SPD_SUSP_CTRL		(1 << 1)
-+#define MC2_BI_DI			(1 << 2)
-+#define MC2_TRANSP_BDIR0		(1 << 3)
-+#define MC2_TRANSP_BDIR1		(1 << 4)
-+#define MC2_AUDIO_EN			(1 << 5)
-+#define MC2_PSW_EN			(1 << 6)
-+#define MC2_EN2V7			(1 << 7)
-+
-+#define ISP1301_I2C_OTG_CONTROL_1	0x06	/* u8 read, set, +1 clear */
-+
-+#define OTG1_DP_PULLUP			(1 << 0)
-+#define OTG1_DM_PULLUP			(1 << 1)
-+#define OTG1_DP_PULLDOWN		(1 << 2)
-+#define OTG1_DM_PULLDOWN		(1 << 3)
-+#define OTG1_ID_PULLDOWN		(1 << 4)
-+#define OTG1_VBUS_DRV			(1 << 5)
-+#define OTG1_VBUS_DISCHRG		(1 << 6)
-+#define OTG1_VBUS_CHRG			(1 << 7)
-+
-+#define ISP1301_I2C_OTG_CONTROL_2	0x10	/* u8 readonly */
-+
-+#define OTG_B_SESS_END			(1 << 6)
-+#define OTG_B_SESS_VLD			(1 << 7)
-+
-+#define ISP1301_I2C_INTERRUPT_SOURCE	0x8
-+#define ISP1301_I2C_INTERRUPT_LATCH	0xA
-+#define ISP1301_I2C_INTERRUPT_FALLING	0xC
-+#define ISP1301_I2C_INTERRUPT_RISING	0xE
-+
-+#define INT_VBUS_VLD			(1 << 0)
-+#define INT_SESS_VLD			(1 << 1)
-+#define INT_DP_HI			(1 << 2)
-+#define INT_ID_GND			(1 << 3)
-+#define INT_DM_HI			(1 << 4)
-+#define INT_ID_FLOAT			(1 << 5)
-+#define INT_BDIS_ACON			(1 << 6)
-+#define INT_CR_INT			(1 << 7)
-+
-+#define ISP1301_I2C_REG_CLEAR_ADDR	1	/* Register Address Modifier */
-+
-+struct i2c_client *isp1301_get_client(struct device_node *node);
-+
-+#endif /* __LINUX_USB_ISP1301_H */
+This is causing the code for the INTERRUPT_NEXT_BUFFER to be executed
+even though a "next" buffer does not exist.
+
+I think your handling logic in m2m_hw_interrupt needs a bit more work.
+
+I hacked it to test and this appears to work but it's not optimal...
+
+Here's the whole function:
+
+
+static int m2m_hw_interrupt(struct ep93xx_dma_chan *edmac)
+{
+	u32 status = readl(edmac->regs + M2M_STATUS);
+	u32 ctl_fsm = status & M2M_STATUS_CTL_MASK;
+	u32 buf_fsm = status & M2M_STATUS_BUF_MASK;
+	bool done = status & M2M_STATUS_DONE;
+	bool last;
+	u32 control;
+
+	/* Accept only DONE and NFB interrupts */
+	if (!(readl(edmac->regs + M2M_INTERRUPT) & M2M_INTERRUPT_MASK))
+		return INTERRUPT_UNKNOWN;
+
+	if (done)
+		/* Clear the DONE bit */
+		writel(0, edmac->regs + M2M_INTERRUPT);
+
+	/*
+	 * Check whether we are done with descriptors or not. This, together
+	 * with DMA channel state, determines action to take in interrupt.
+	 */
+	last = list_first_entry(edmac->active.next,
+		struct ep93xx_dma_desc, node)->txd.cookie;
+
+	/*
+	 * Use M2M DMA Buffer FSM and Control FSM to check current state of
+	 * DMA channel. Using DONE and NFB bits from channel status register
+	 * or bits from channel interrupt register was proven not to be
+	 * reliable.
+	 */
+	if (!last &&
+	    (buf_fsm == M2M_STATUS_BUF_NO ||
+	     buf_fsm == M2M_STATUS_BUF_ON)) {
+		/*
+		 * Two buffers are ready for update when Buffer FSM is in
+		 * DMA_NO_BUF state. Only one buffer can be prepared without
+		 * disabling the channel, or polling the DONE bit.
+		 * To simplify things, always prepare only one buffer.
+		 */
+		if (ep93xx_dma_advance_active(edmac)) {
+			m2m_fill_desc(edmac);
+			if (done && !edmac->chan.private) {
+				/* Software trigger for memcpy channel */
+				control = readl(edmac->regs + M2M_CONTROL);
+				control |= M2M_CONTROL_START;
+				writel(control, edmac->regs + M2M_CONTROL);
+			}
+			return INTERRUPT_NEXT_BUFFER;
+		} else {
+			/*
+			 * HACK: We don't have another buffer to prepare.
+			 * Just disable the channel.
+			 */
+			control = readl(edmac->regs + M2M_CONTROL);
+			control &= ~(M2M_CONTROL_DONEINT | M2M_CONTROL_NFBINT
+				| M2M_CONTROL_ENABLE);
+			writel(control, edmac->regs + M2M_CONTROL);
+			return INTERRUPT_DONE;
+		}
+	}
+
+	/*
+	 * Disable the channel only when Buffer FSM is in DMA_NO_BUF state
+	 * and Control FSM is in DMA_STALL state.
+	 */
+	if (last &&
+	    buf_fsm == M2M_STATUS_BUF_NO &&
+	    ctl_fsm == M2M_STATUS_CTL_STALL) {
+		ep93xx_dma_advance_active(edmac);
+		/* Disable interrupts and the channel */
+		control = readl(edmac->regs + M2M_CONTROL);
+		control &= ~(M2M_CONTROL_DONEINT | M2M_CONTROL_NFBINT
+			    | M2M_CONTROL_ENABLE);
+		writel(control, edmac->regs + M2M_CONTROL);
+		return INTERRUPT_DONE;
+	}
+
+	/*
+	 * Nothing to do this time.
+	 */
+	return INTERRUPT_NEXT_BUFFER;
+}
+
+
+With this I am able to boot my system and use the mmc card.
+
+Regards,
+Hartley
+
