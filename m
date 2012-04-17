@@ -1,59 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752018Ab2DQUx5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Apr 2012 16:53:57 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:56415 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750851Ab2DQUxz (ORCPT
+	id S1752152Ab2DQUzz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Apr 2012 16:55:55 -0400
+Received: from acsinet15.oracle.com ([141.146.126.227]:19476 "EHLO
+	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750851Ab2DQUzy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Apr 2012 16:53:55 -0400
-Subject: Re: 3.4.0-rc2: skb_put() -> skb_over_panic
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: David Miller <davem@davemloft.net>
-Cc: a.beregalov@gmail.com, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-In-Reply-To: <20120417.164748.432392687904063236.davem@davemloft.net>
-References: <1334502964.28012.1.camel@edumazet-glaptop>
-	 <CAA1sL1SJyY7fYJn7OKqo5Pa=b4-r9DW90-5WVGBf==tFjVEBpg@mail.gmail.com>
-	 <1334695506.2472.46.camel@edumazet-glaptop>
-	 <20120417.164748.432392687904063236.davem@davemloft.net>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 17 Apr 2012 22:53:51 +0200
-Message-ID: <1334696031.2472.50.camel@edumazet-glaptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	Tue, 17 Apr 2012 16:55:54 -0400
+Date: Tue, 17 Apr 2012 23:57:41 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: Roland Stigge <stigge@antcom.de>
+Cc: arm@kernel.org, linux-arm-kernel@lists.infradead.org,
+        thierry.reding@avionic-design.de, gregkh@linuxfoundation.org,
+        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-input@vger.kernel.org, dmitry.torokhov@gmail.com,
+        axel.lin@gmail.com, broonie@opensource.wolfsonmicro.com,
+        marek.vasut@gmail.com, devel@driverdev.osuosl.org, kevin.wells@nxp.com,
+        srinivas.bakki@nxp.com
+Subject: Re: [PATCH v2 1/8] ohci-nxp: Driver cleanup
+Message-ID: <20120417205740.GI6498@mwanda>
+References: <1334682507-15055-1-git-send-email-stigge@antcom.de>
+ <1334682507-15055-2-git-send-email-stigge@antcom.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1334682507-15055-2-git-send-email-stigge@antcom.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090205.4F8DD8B9.002A,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-04-17 at 16:47 -0400, David Miller wrote:
-> From: Eric Dumazet <eric.dumazet@gmail.com>
-> Date: Tue, 17 Apr 2012 22:45:06 +0200
-> 
-> > Could you check if commit a21d45726acacc963d8baddf74607d9b74e2b723
-> > (tcp: avoid order-1 allocations on wifi and tx path)
-> > was in your tree ?
-> 
-> I was about to say that I think this is the guilty commit too.
-> 
-> Good thing I held off the -stable submission of that change
-> for a bit :-)
+On Tue, Apr 17, 2012 at 07:08:20PM +0200, Roland Stigge wrote:
+> @@ -435,6 +436,7 @@ static int __devinit usb_hcd_nxp_probe(s
+>  	}
+>  
+>  	__raw_writel(__raw_readl(USB_CTRL) | USB_HOST_NEED_CLK_EN, USB_CTRL);
+> +	__raw_writel(__raw_readl(USB_CTRL) & ~USB_DEV_NEED_CLK_EN, USB_CTRL);
+>  
+>  	/* Set to enable all needed USB clocks */
+>  	__raw_writel(USB_CLOCK_MASK, USB_OTG_CLK_CTRL);
 
-Fix should be easy I think, but yes you can hold stable submission of
-course.
+What does this chunk do?  Is this part of the "* Fixed controller
+initialization (bits)" bullet point?  How does it affect the user?
+Should it be included in the 3.4 kernel?
 
-diff --git a/net/ipv4/tcp_output.c b/net/ipv4/tcp_output.c
-index 376b2cf..7ac6423 100644
---- a/net/ipv4/tcp_output.c
-+++ b/net/ipv4/tcp_output.c
-@@ -1096,6 +1096,7 @@ static void __pskb_trim_head(struct sk_buff *skb, int len)
- 	eat = min_t(int, len, skb_headlen(skb));
- 	if (eat) {
- 		__skb_pull(skb, eat);
-+		skb->avail_size -= eat;
- 		len -= eat;
- 		if (!len)
- 			return;
+Generally bug fixes, cleanups, and new features should go into
+different patches.  If you use "git citool" then you can highlight
+and right click on the lines you want to go into the patch.
 
+regards,
+dan carpenter
 
