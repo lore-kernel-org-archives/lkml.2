@@ -1,56 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752152Ab2DQUzz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Apr 2012 16:55:55 -0400
-Received: from acsinet15.oracle.com ([141.146.126.227]:19476 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750851Ab2DQUzy (ORCPT
+	id S1752214Ab2DQU53 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Apr 2012 16:57:29 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:48459 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751024Ab2DQU52 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Apr 2012 16:55:54 -0400
-Date: Tue, 17 Apr 2012 23:57:41 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: Roland Stigge <stigge@antcom.de>
-Cc: arm@kernel.org, linux-arm-kernel@lists.infradead.org,
-        thierry.reding@avionic-design.de, gregkh@linuxfoundation.org,
-        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-input@vger.kernel.org, dmitry.torokhov@gmail.com,
-        axel.lin@gmail.com, broonie@opensource.wolfsonmicro.com,
-        marek.vasut@gmail.com, devel@driverdev.osuosl.org, kevin.wells@nxp.com,
-        srinivas.bakki@nxp.com
-Subject: Re: [PATCH v2 1/8] ohci-nxp: Driver cleanup
-Message-ID: <20120417205740.GI6498@mwanda>
-References: <1334682507-15055-1-git-send-email-stigge@antcom.de>
- <1334682507-15055-2-git-send-email-stigge@antcom.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1334682507-15055-2-git-send-email-stigge@antcom.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090205.4F8DD8B9.002A,ss=1,re=0.000,fgs=0
+	Tue, 17 Apr 2012 16:57:28 -0400
+Date: Tue, 17 Apr 2012 13:57:26 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Konstantin Khlebnikov <khlebnikov@openvz.org>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Mel Gorman <mgorman@suse.de>
+Subject: Re: [PATCH linux-next] mm/hugetlb: fix warning in
+ alloc_huge_page/dequeue_huge_page_vma
+Message-Id: <20120417135726.05de2546.akpm@linux-foundation.org>
+In-Reply-To: <20120417122819.7438.26117.stgit@zurg>
+References: <20120417122819.7438.26117.stgit@zurg>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 17, 2012 at 07:08:20PM +0200, Roland Stigge wrote:
-> @@ -435,6 +436,7 @@ static int __devinit usb_hcd_nxp_probe(s
->  	}
->  
->  	__raw_writel(__raw_readl(USB_CTRL) | USB_HOST_NEED_CLK_EN, USB_CTRL);
-> +	__raw_writel(__raw_readl(USB_CTRL) & ~USB_DEV_NEED_CLK_EN, USB_CTRL);
->  
->  	/* Set to enable all needed USB clocks */
->  	__raw_writel(USB_CLOCK_MASK, USB_OTG_CLK_CTRL);
+On Tue, 17 Apr 2012 16:28:19 +0400
+Konstantin Khlebnikov <khlebnikov@openvz.org> wrote:
 
-What does this chunk do?  Is this part of the "* Fixed controller
-initialization (bits)" bullet point?  How does it affect the user?
-Should it be included in the 3.4 kernel?
+> This patch fixes gcc warning (and bug?) introduced in linux-next commit cc9a6c877
+> ("cpuset: mm: reduce large amounts of memory barrier related damage v3")
+> 
+> Local variable "page" can be uninitialized if nodemask from vma policy does not
+> intersects with nodemask from cpuset. Even if it wouldn't happens it's better to
+> initialize this variable explicitly than to introduce kernel oops on weird corner case.
+> 
+> mm/hugetlb.c: In function ___alloc_huge_page___:
+> mm/hugetlb.c:1135:5: warning: ___page___ may be used uninitialized in this function
+> 
+> ...
+>
+> --- a/mm/hugetlb.c
+> +++ b/mm/hugetlb.c
+> @@ -532,7 +532,7 @@ static struct page *dequeue_huge_page_vma(struct hstate *h,
+>  				struct vm_area_struct *vma,
+>  				unsigned long address, int avoid_reserve)
+>  {
+> -	struct page *page;
+> +	struct page *page = NULL;
+>  	struct mempolicy *mpol;
+>  	nodemask_t *nodemask;
+>  	struct zonelist *zonelist;
 
-Generally bug fixes, cleanups, and new features should go into
-different patches.  If you use "git citool" then you can highlight
-and right click on the lines you want to go into the patch.
-
-regards,
-dan carpenter
+hm, that's a pretty blatant use-uninitialised bug.  I wonder why so few
+gcc versions report it.  Mine doesn't.
 
