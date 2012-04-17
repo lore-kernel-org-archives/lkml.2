@@ -1,113 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755938Ab2DQI4y (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Apr 2012 04:56:54 -0400
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:62887 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755714Ab2DQI4w (ORCPT
+	id S1755949Ab2DQI6R (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Apr 2012 04:58:17 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:61722 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755382Ab2DQI6Q convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Apr 2012 04:56:52 -0400
+	Tue, 17 Apr 2012 04:58:16 -0400
 MIME-Version: 1.0
-In-Reply-To: <20120403202432.GA18564@core.coreip.homeip.net>
-References: <20120403202432.GA18564@core.coreip.homeip.net>
-From: Che-liang Chiou <clchiou@chromium.org>
-Date: Tue, 17 Apr 2012 16:56:11 +0800
-X-Google-Sender-Auth: Pz8wEaXT8Ji80xUTrIf2DynR2Fc
-Message-ID: <CANJuy2KgOX=2Oc9Uaf1TGRAeyXt0UjdjU-o-yo+NVUYxKmk_4g@mail.gmail.com>
-Subject: Re: [PATCH] Input: serio_raw - ensure we don't block in non-blocking read
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Cc: linux-input@vger.kernel.org, Wanlong Gao <gaowanlong@cn.fujitsu.com>,
-        David Herrmann <dh.herrmann@googlemail.com>,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-X-System-Of-Record: true
+In-Reply-To: <CAE9FiQW2MAW_WT+sq8XVtMOx=uR8FAN8O2wL2AOxkFBfEM285g@mail.gmail.com>
+References: <4F6A483D.50702@fold.natur.cuni.cz>
+	<CAE9FiQVnErU-cska4gpinyj-LOup-U+3vsEG2z_-7h6kyREYtw@mail.gmail.com>
+	<4F6A5A53.305@fold.natur.cuni.cz>
+	<CAE9FiQXP7fO9OGN557jdofFFiFj96wL--ZA8X3UPEJ6o9JLvBw@mail.gmail.com>
+	<4F8BEB1D.9080903@fold.natur.cuni.cz>
+	<CAE9FiQXoX3J6P_9Tun_XbkK3egvSeBZxAtC13HacFDO0fwmZaA@mail.gmail.com>
+	<4F8C6E4E.1000205@fold.natur.cuni.cz>
+	<CAE9FiQXikqikMw_LYGqAUsWqFqL-tLiresPhpkpDhb+AxwundQ@mail.gmail.com>
+	<CAE9FiQUFB=9zbP1yuBDH1RJrCCP=83kV_fH+TEtk80981-uP=w@mail.gmail.com>
+	<CAE9FiQUbzM_TVu+bbXa6LWiUt01QsFiGoyYd0qV=41dXx4J31g@mail.gmail.com>
+	<4F8D1B72.2000105@fold.natur.cuni.cz>
+	<CAE9FiQW2MAW_WT+sq8XVtMOx=uR8FAN8O2wL2AOxkFBfEM285g@mail.gmail.com>
+Date: Tue, 17 Apr 2012 01:58:15 -0700
+X-Google-Sender-Auth: zLVGxk-RW0wFrjNrlC9xAAE34uE
+Message-ID: <CAE9FiQWSw1h772ijZ6YL4EujwjgvZ84bbDx9VbF_cdE63D-41w@mail.gmail.com>
+Subject: Re: 3.2.11: PCI Express card cannot be re-detected withing cca 60sec timeframe
+From: Yinghai Lu <yinghai@kernel.org>
+To: Martin Mokrejs <mmokrejs@fold.natur.cuni.cz>
+Cc: Thomas Gleixner <tglx@linutronix.de>, linux-pci@vger.kernel.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id q3H8v5bo008852
 
-I didn't test the patch, but the logic looks fine to me.
+On Tue, Apr 17, 2012 at 1:46 AM, Yinghai Lu <yinghai@kernel.org> wrote:
+> On Tue, Apr 17, 2012 at 12:27 AM, Martin Mokrejs
+> <mmokrejs@fold.natur.cuni.cz> wrote:
+>>>
+>>> can you send out lspci -vvxxxx -s 00:1c.7 after removing USB 3.0 express card?
+>>
+>> No, that did not help (tried on 3.4-rc3). First I plugged in the NEC uPD720200 USB3.0 card
+>> and unplugged it (card removal not reported :(), saved the lspci output.
+>> Then I inserted the FireWire card, unplugged, again saved the lspci output.
+>> Finally, saved the dmesg. All three files are attached.
+>
+> for USB 3.0:
+> � � � � � � � �SltSta: Status: AttnBtn- PowerFlt- MRL- CmdCplt- PresDet+ Interlock-
+> � � � � � � � � � � � �Changed: MRL- PresDet- LinkState+
 
-On Wed, Apr 4, 2012 at 4:24 AM, Dmitry Torokhov
-<dmitry.torokhov@gmail.com> wrote:
-> Avoid calling wait_event_interruptible() if client requested non-blocking
-> read, since it is not guaranteed that another thread will not consume
-> event after we checked if serio_raw->head != serio_raw->tail.
->
-> Also ensure we do not return 0 but keep waiting instead in blocking case,
-> when another thread steals "our" byte.
->
-> Signed-off-by: Dmitry Torokhov <dtor@mail.ru>
-> ---
->  drivers/input/serio/serio_raw.c |   43 ++++++++++++++++++++++----------------
->  1 files changed, 25 insertions(+), 18 deletions(-)
->
-> diff --git a/drivers/input/serio/serio_raw.c b/drivers/input/serio/serio_raw.c
-> index 4494233..094d6fb 100644
-> --- a/drivers/input/serio/serio_raw.c
-> +++ b/drivers/input/serio/serio_raw.c
-> @@ -165,31 +165,38 @@ static ssize_t serio_raw_read(struct file *file, char __user *buffer,
->        struct serio_raw *serio_raw = client->serio_raw;
->        char uninitialized_var(c);
->        ssize_t read = 0;
-> -       int retval;
-> +       int error = 0;
->
-> -       if (serio_raw->dead)
-> -               return -ENODEV;
-> +       do {
-> +               if (serio_raw->dead)
-> +                       return -ENODEV;
->
-> -       if (serio_raw->head == serio_raw->tail && (file->f_flags & O_NONBLOCK))
-> -               return -EAGAIN;
-> +               if (serio_raw->head == serio_raw->tail &&
-> +                   (file->f_flags & O_NONBLOCK))
-> +                       return -EAGAIN;
->
-> -       retval = wait_event_interruptible(serio_raw->wait,
-> -                       serio_raw->head != serio_raw->tail || serio_raw->dead);
-> -       if (retval)
-> -               return retval;
-> +               if (count == 0)
-> +                       break;
->
-> -       if (serio_raw->dead)
-> -               return -ENODEV;
-> +               while (read < count && serio_raw_fetch_byte(serio_raw, &c)) {
-> +                       if (put_user(c, buffer++)) {
-> +                               error = -EFAULT;
-> +                               goto out;
-> +                       }
-> +                       read++;
-> +               }
->
-> -       while (read < count && serio_raw_fetch_byte(serio_raw, &c)) {
-> -               if (put_user(c, buffer++)) {
-> -                       retval = -EFAULT;
-> +               if (read)
->                        break;
-> -               }
-> -               read++;
-> -       }
->
-> -       return read ?: retval;
-> +               if (!(file->f_flags & O_NONBLOCK))
-> +                       error = wait_event_interruptible(serio_raw->wait,
-> +                                       serio_raw->head != serio_raw->tail ||
-> +                                       serio_raw->dead);
-> +       } while (!error);
-> +
-> +out:
-> +       return read ?: error;
->  }
->
->  static ssize_t serio_raw_write(struct file *file, const char __user *buffer,
-> --
-> 1.7.7.6
->
->
-> --
-> Dmitry
-���{.n�+�������+%�����ݶ��w��{.n�+����{��G�����{ay�ʇڙ�,j��f���h��������z_�(�階�ݢj"���m������G������?����&���~��iO��z��v�^�m����������?�I�
+LnkSta: Speed 2.5GT/s, Width x1, TrErr- Train- SlotClk+ DLActive+
+BWMgmt+ ABWMgmt-
+
+link still active even that card get removed, that looks like chipset
+have problem.
+
+Yinghai
