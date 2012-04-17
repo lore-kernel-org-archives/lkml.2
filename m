@@ -1,59 +1,155 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754983Ab2DQGak (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Apr 2012 02:30:40 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:22371 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754105Ab2DQGah (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Apr 2012 02:30:37 -0400
-Message-ID: <4F8D0E03.7030105@redhat.com>
-Date: Tue, 17 Apr 2012 14:30:27 +0800
-From: Jason Wang <jasowang@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120329 Thunderbird/11.0.1
-MIME-Version: 1.0
-To: "Michael S. Tsirkin" <mst@redhat.com>
-CC: netdev@vger.kernel.org, xma@us.ibm.com, davem@davemloft.net,
-        linux-kernel@vger.kernel.org, ebiederm@xmission.com
-Subject: Re: [PATCH 6/6] vhost_net: don't poll on -EFAULT
-References: <20120416060749.14140.19433.stgit@intel-e5620-16-2.englab.nay.redhat.com> <20120416060833.14140.28139.stgit@intel-e5620-16-2.englab.nay.redhat.com> <20120416071646.GB25396@redhat.com> <4F8BD81A.7010507@redhat.com> <20120416133859.GB13190@redhat.com> <4F8CE305.9090100@redhat.com> <20120417045736.GA31278@redhat.com> <4F8D05AF.4000309@redhat.com> <20120417060752.GB20674@redhat.com>
-In-Reply-To: <20120417060752.GB20674@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	id S1751474Ab2DQGey (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Apr 2012 02:34:54 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:51779 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750890Ab2DQGex (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Apr 2012 02:34:53 -0400
+Message-ID: <1334644486.22780.5.camel@phoenix>
+Subject: [PATCH RFT] regulator: tps65910: Use generic regmap enable/disable
+ operations
+From: Axel Lin <axel.lin@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Laxman Dewangan <ldewangan@nvidia.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Liam Girdwood <lrg@ti.com>
+Date: Tue, 17 Apr 2012 14:34:46 +0800
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2- 
 Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/17/2012 02:07 PM, Michael S. Tsirkin wrote:
-> On Tue, Apr 17, 2012 at 01:54:55PM +0800, Jason Wang wrote:
->> On 04/17/2012 12:57 PM, Michael S. Tsirkin wrote:
->>> On Tue, Apr 17, 2012 at 11:27:01AM +0800, Jason Wang wrote:
->>>> On 04/16/2012 09:39 PM, Michael S. Tsirkin wrote:
->>>>> On Mon, Apr 16, 2012 at 04:28:10PM +0800, Jason Wang wrote:
->>>>>>>   On 04/16/2012 03:16 PM, Michael S. Tsirkin wrote:
->>>>>>>>   >On Mon, Apr 16, 2012 at 02:08:33PM +0800, Jason Wang wrote:
->>>>>>>>>   >>Currently, we restart tx polling unconditionally when sendmsg()
->>>>>>>>>   >>fails. This would cause unnecessary wakeups of vhost wokers as it's
->>>>>>>>>   >>only needed when the socket send buffer were exceeded.
->>>>>>>>   >Why is this a problem?
->>>>>>>   >    This issue is when guest driver is able to hit the
->>>>>> -EFAULT, vhost
->>>>>>>   discard the the descriptor and restart the polling. This would wake
->>>>>>>   vhost thread and repeat the loop again which waste cpu.
->>>>> Does same thing happen if we get an error from copy from user?
->>>>>
->>>> Right, so do you think it makes sense that we only restart polling
->>>> on -EAGAIN or -ENOBUFS?
->>> Sounds OK. BTW how do you test this?
->>>
->> Not very hard, w/o this patch, we can see almost 100% cpu
->> utilization for vhost thread if guest hit EFAULT or EINVAL. With
->> this patch, the cpu utilization should be very low I think.
-> Yes but do you have a test that makes guest hit EFAULT or EINVAL?
+Signed-off-by: Axel Lin <axel.lin@gmail.com>
+---
+ drivers/regulator/tps65910-regulator.c |   69 +++++++-------------------------
+ 1 files changed, 15 insertions(+), 54 deletions(-)
 
-Looks like we can do this by supplying an invalid hdr_len in vnet header 
-as tap does the check for this.
-> --
-> To unsubscribe from this list: send the line "unsubscribe netdev" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+diff --git a/drivers/regulator/tps65910-regulator.c b/drivers/regulator/tps65910-regulator.c
+index 747bf57..1ff04a0 100644
+--- a/drivers/regulator/tps65910-regulator.c
++++ b/drivers/regulator/tps65910-regulator.c
+@@ -467,48 +467,6 @@ static int tps65911_get_ctrl_register(int id)
+ 	}
+ }
+ 
+-static int tps65910_is_enabled(struct regulator_dev *dev)
+-{
+-	struct tps65910_reg *pmic = rdev_get_drvdata(dev);
+-	int reg, value, id = rdev_get_id(dev);
+-
+-	reg = pmic->get_ctrl_reg(id);
+-	if (reg < 0)
+-		return reg;
+-
+-	value = tps65910_reg_read(pmic, reg);
+-	if (value < 0)
+-		return value;
+-
+-	return value & TPS65910_SUPPLY_STATE_ENABLED;
+-}
+-
+-static int tps65910_enable(struct regulator_dev *dev)
+-{
+-	struct tps65910_reg *pmic = rdev_get_drvdata(dev);
+-	struct tps65910 *mfd = pmic->mfd;
+-	int reg, id = rdev_get_id(dev);
+-
+-	reg = pmic->get_ctrl_reg(id);
+-	if (reg < 0)
+-		return reg;
+-
+-	return tps65910_set_bits(mfd, reg, TPS65910_SUPPLY_STATE_ENABLED);
+-}
+-
+-static int tps65910_disable(struct regulator_dev *dev)
+-{
+-	struct tps65910_reg *pmic = rdev_get_drvdata(dev);
+-	struct tps65910 *mfd = pmic->mfd;
+-	int reg, id = rdev_get_id(dev);
+-
+-	reg = pmic->get_ctrl_reg(id);
+-	if (reg < 0)
+-		return reg;
+-
+-	return tps65910_clear_bits(mfd, reg, TPS65910_SUPPLY_STATE_ENABLED);
+-}
+-
+ static int tps65910_enable_time(struct regulator_dev *dev)
+ {
+ 	struct tps65910_reg *pmic = rdev_get_drvdata(dev);
+@@ -914,9 +872,9 @@ static int tps65910_set_voltage_dcdc_time_sel(struct regulator_dev *dev,
+ 
+ /* Regulator ops (except VRTC) */
+ static struct regulator_ops tps65910_ops_dcdc = {
+-	.is_enabled		= tps65910_is_enabled,
+-	.enable			= tps65910_enable,
+-	.disable		= tps65910_disable,
++	.is_enabled		= regulator_is_enabled_regmap,
++	.enable			= regulator_enable_regmap,
++	.disable		= regulator_disable_regmap,
+ 	.enable_time		= tps65910_enable_time,
+ 	.set_mode		= tps65910_set_mode,
+ 	.get_mode		= tps65910_get_mode,
+@@ -927,9 +885,9 @@ static struct regulator_ops tps65910_ops_dcdc = {
+ };
+ 
+ static struct regulator_ops tps65910_ops_vdd3 = {
+-	.is_enabled		= tps65910_is_enabled,
+-	.enable			= tps65910_enable,
+-	.disable		= tps65910_disable,
++	.is_enabled		= regulator_is_enabled_regmap,
++	.enable			= regulator_enable_regmap,
++	.disable		= regulator_disable_regmap,
+ 	.enable_time		= tps65910_enable_time,
+ 	.set_mode		= tps65910_set_mode,
+ 	.get_mode		= tps65910_get_mode,
+@@ -938,9 +896,9 @@ static struct regulator_ops tps65910_ops_vdd3 = {
+ };
+ 
+ static struct regulator_ops tps65910_ops = {
+-	.is_enabled		= tps65910_is_enabled,
+-	.enable			= tps65910_enable,
+-	.disable		= tps65910_disable,
++	.is_enabled		= regulator_is_enabled_regmap,
++	.enable			= regulator_enable_regmap,
++	.disable		= regulator_disable_regmap,
+ 	.enable_time		= tps65910_enable_time,
+ 	.set_mode		= tps65910_set_mode,
+ 	.get_mode		= tps65910_get_mode,
+@@ -950,9 +908,9 @@ static struct regulator_ops tps65910_ops = {
+ };
+ 
+ static struct regulator_ops tps65911_ops = {
+-	.is_enabled		= tps65910_is_enabled,
+-	.enable			= tps65910_enable,
+-	.disable		= tps65910_disable,
++	.is_enabled		= regulator_is_enabled_regmap,
++	.enable			= regulator_enable_regmap,
++	.disable		= regulator_disable_regmap,
+ 	.enable_time		= tps65910_enable_time,
+ 	.set_mode		= tps65910_set_mode,
+ 	.get_mode		= tps65910_get_mode,
+@@ -1205,10 +1163,13 @@ static __devinit int tps65910_probe(struct platform_device *pdev)
+ 
+ 		pmic->desc[i].type = REGULATOR_VOLTAGE;
+ 		pmic->desc[i].owner = THIS_MODULE;
++		pmic->desc[i].enable_reg = pmic->get_ctrl_reg(i);
++		pmic->desc[i].enable_mask = TPS65910_SUPPLY_STATE_ENABLED;
+ 
+ 		config.dev = tps65910->dev;
+ 		config.init_data = reg_data;
+ 		config.driver_data = pmic;
++		config.regmap = tps65910->regmap;
+ 
+ 		rdev = regulator_register(&pmic->desc[i], &config);
+ 		if (IS_ERR(rdev)) {
+-- 
+1.7.5.4
+
+
 
