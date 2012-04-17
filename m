@@ -1,49 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753000Ab2DQUQL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Apr 2012 16:16:11 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:48956 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751542Ab2DQUQK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Apr 2012 16:16:10 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: huang ying <huang.ying.caritas@gmail.com>
-Subject: Re: [RFC PATCH] PCIe: Add PCIe runtime D3cold support
-Date: Tue, 17 Apr 2012 22:20:45 +0200
-User-Agent: KMail/1.13.6 (Linux/3.4.0-rc3+; KDE/4.6.0; x86_64; ; )
-Cc: "Yan, Zheng" <zheng.z.yan@intel.com>, bhelgaas@google.com,
-        linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
-        linux-pm@vger.kernel.org, Lin Ming <ming.m.lin@intel.com>,
-        Zhang Rui <rui.zhang@intel.com>,
-        ACPI Devel Mailing List <linux-acpi@vger.kernel.org>
-References: <4F8790F6.5080408@intel.com> <201204161907.13806.rjw@sisk.pl> <CAC=cRTNdLu=A64YAEp78ENc1h2OJKusXY3Wm9LuY4drz9pbomg@mail.gmail.com>
-In-Reply-To: <CAC=cRTNdLu=A64YAEp78ENc1h2OJKusXY3Wm9LuY4drz9pbomg@mail.gmail.com>
+	id S1752992Ab2DQUVP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Apr 2012 16:21:15 -0400
+Received: from mail-wi0-f172.google.com ([209.85.212.172]:59042 "EHLO
+	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751002Ab2DQUVO convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Apr 2012 16:21:14 -0400
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201204172220.45970.rjw@sisk.pl>
+In-Reply-To: <20120417172142.GA30237@redhat.com>
+References: <20120417172142.GA30237@redhat.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Tue, 17 Apr 2012 13:20:51 -0700
+X-Google-Sender-Auth: HBlEyv1qAHqi511aWaaQIAsOqTM
+Message-ID: <CA+55aFy-uhOgEoEBr-LkOjFQBVh14wwr-20jTrtsg_2EnuNY5g@mail.gmail.com>
+Subject: Re: [3.4-rc3] Thread overran stack, or stack corrupted
+To: Dave Jones <davej@redhat.com>, Linux Kernel <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, April 17, 2012, huang ying wrote:
-> On Tue, Apr 17, 2012 at 1:07 AM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
-> > Moreover, I really don't think it's a good idea to put PCI Express ports into
-> > low-power states in general.  It might work on your platform, whatever it is,
-> > but that doesn't mean it's going to work on every PCI Express system out
-> > there.  I actually know of a number of such systems where it surely won't
-> > work at all.
-> 
-> The runtime PM support for PCIe port is not turned on by default, we need
-> 
-> # echo auto > /sys/devices/pcixxxx:xx/<pci id>/power/control
-> 
-> to turn on it.  And we will turn on it on system it works.  Is this sufficient?
+On Tue, Apr 17, 2012 at 10:21 AM, Dave Jones <davej@redhat.com> wrote:
+> My syscall fuzzer started showing up some cases where it we seem to be
+> overrunning the stack.  I added a WARN_ON when the stack is really low,
+> to see if there's a deep call trace, but it's not really telling me much ..
 
-No, it is not.  In some cases it shouldn't be enabled at all for PCI Express
-ports, as far as I can say, so to be on the safe side we should only enable it
-on platforms where PCI Express ports are known to work correctly with runtime PM.
+You seem to have added the WARN_ON() to check_stack_usage() itself.
 
-Thanks,
-Rafael
+That's not very useful, because it uses the *current* stack pointer.
+Instead, how about just calling "show_trace()" with the actual lowest
+stack pointer at that point? That should show you the stack as it was
+when it was at its lowest, and that could actually be useful.
+
+IOW, just something like
+
+    show_trace(NULL, NULL, (void *)end_of_stack(p) + lowest_to_date, NULL);
+
+Or something kind of like that. Yes?
+
+                           Linus
