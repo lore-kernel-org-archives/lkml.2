@@ -1,134 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752307Ab2DQSek (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Apr 2012 14:34:40 -0400
-Received: from rcsinet15.oracle.com ([148.87.113.117]:47977 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752082Ab2DQSef (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Apr 2012 14:34:35 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: linux-kernel@vger.kernel.org, lenb@kernel.org, linux-acpi@vger.kernel.org,
-        ming.m.lin@intel.com, hpa@zytor.com, rjw@sisk.pl, x86@kernel.org
-Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Subject: [PATCH 2/2] x86/acpi: Call acpi_enter_sleep_state via an asmlinkage C function from assembler.
-Date: Tue, 17 Apr 2012 14:29:19 -0400
-Message-Id: <1334687359-9970-3-git-send-email-konrad.wilk@oracle.com>
-X-Mailer: git-send-email 1.7.7.5
-In-Reply-To: <1334687359-9970-1-git-send-email-konrad.wilk@oracle.com>
-References: <1334687359-9970-1-git-send-email-konrad.wilk@oracle.com>
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
-X-CT-RefId: str=0001.0A090202.4F8DB7B0.0078,ss=1,re=0.000,fgs=0
+	id S1752572Ab2DQSfs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Apr 2012 14:35:48 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:14975 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751674Ab2DQSfr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Apr 2012 14:35:47 -0400
+Date: Tue, 17 Apr 2012 20:35:13 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Serge Hallyn <serge.hallyn@canonical.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Daniel Lezcano <daniel.lezcano@free.fr>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] pidns: reboot_pid_ns: use SEND_SIG_FORCED instead of
+	force_sig()
+Message-ID: <20120417183513.GA1037@redhat.com>
+References: <20120413004446.GA8376@redhat.com> <20120413182051.GA11149@sergelap> <20120413192455.GA24464@redhat.com> <20120416135931.GB4234@sergelap> <20120416153843.GA9302@redhat.com> <20120416162402.GA7995@sergelap> <20120416212606.GA27490@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120416212606.GA27490@redhat.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-With commit a2ef5c4fd44ce3922435139393b89f2cce47f576
-"ACPI: Move module parameter gts and bfs to sleep.c" the
-wake_sleep_flags is required when calling acpi_enter_sleep_state.
+On 04/16, Oleg Nesterov wrote:
+>
+> I'll investigate and report tomorrow.
 
-The assembler code in wakeup_*.S did not do that. One solution
-is to call it from assembler and stick the wake_sleep_flags on
-the stack (for 32-bit) or in %esi (for 64-bit). hpa and rafael
-both suggested however to create a wrapper function to call
-acpi_enter_sleep_state and call said wrapper function
-("acpi_enter_s3") from assembler.
+Thanks again Serge, everything is clear. Afaics this needs another
+(almost off-topic) patch.
 
-For 32-bit, the acpi_enter_s3 ends up looking as so:
+Please forget about sys_reboot() for the moment. There is a minor
+and known problem with SIGKILL && SIGNAL_UNKILLABLE. If you send
+SIGKILL from the parent namespace to cinit, this doesn't make it
+SIGNAL_GROUP_EXIT immediately. Only after cinit actually dequeues
+SIGKILL it does do_group_exit() and set this flag. This should be
+fixed anyway, but not now.
 
-  push   %ebp
-  mov    %esp,%ebp
-  sub    $0x8,%esp
-  movzbl 0xc1809314,%eax [wake_sleep_flags]
-  movl   $0x3,(%esp)
-  mov    %eax,0x4(%esp)
-  call   0xc12d1fa0 <acpi_enter_sleep_state>
-  leave
-  ret
+And this explain the problem. Note that your test-case does
+sys_reboot() from the init process, and reboot_pid_ns() does
 
-And 64-bit:
+	kill(pid_ns->child_reaper, SIGKILL);
 
-  movzbl 0x9afde1(%rip),%esi        [wake_sleep_flags]
-  push   %rbp
-  mov    $0x3,%edi
-  mov    %rsp,%rbp
-  callq  0xffffffff812e9800 <acpi_enter_sleep_state>
-  leaveq
-  retq
+	do_exit(0);
 
-Suggested-by: H. Peter Anvin <hpa@zytor.com>
-Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
----
- arch/x86/kernel/acpi/sleep.c     |    4 ++++
- arch/x86/kernel/acpi/sleep.h     |    2 ++
- arch/x86/kernel/acpi/wakeup_32.S |    3 +--
- arch/x86/kernel/acpi/wakeup_64.S |    3 +--
- 4 files changed, 8 insertions(+), 4 deletions(-)
+so it sends SIGKILL to itself and exit. This means that cinit
+(current) obviously can't dequeue SIGKILL, and without
+SIGNAL_GROUP_EXIT wait_task_zombie() ignores
+signal->group_exit_code.
 
-diff --git a/arch/x86/kernel/acpi/sleep.c b/arch/x86/kernel/acpi/sleep.c
-index 103b6ab..146a49c 100644
---- a/arch/x86/kernel/acpi/sleep.c
-+++ b/arch/x86/kernel/acpi/sleep.c
-@@ -24,6 +24,10 @@ unsigned long acpi_realmode_flags;
- static char temp_stack[4096];
- #endif
- 
-+asmlinkage void acpi_enter_s3(void)
-+{
-+	acpi_enter_sleep_state(3, wake_sleep_flags);
-+}
- /**
-  * acpi_suspend_lowlevel - save kernel state
-  *
-diff --git a/arch/x86/kernel/acpi/sleep.h b/arch/x86/kernel/acpi/sleep.h
-index fe5fdda..d68677a 100644
---- a/arch/x86/kernel/acpi/sleep.h
-+++ b/arch/x86/kernel/acpi/sleep.h
-@@ -3,6 +3,7 @@
-  */
- 
- #include <asm/trampoline.h>
-+#include <linux/linkage.h>
- 
- extern unsigned long saved_video_mode;
- extern long saved_magic;
-@@ -10,6 +11,7 @@ extern long saved_magic;
- extern int wakeup_pmode_return;
- 
- extern u8 wake_sleep_flags;
-+extern asmlinkage void acpi_enter_s3(void);
- 
- extern unsigned long acpi_copy_wakeup_routine(unsigned long);
- extern void wakeup_long64(void);
-diff --git a/arch/x86/kernel/acpi/wakeup_32.S b/arch/x86/kernel/acpi/wakeup_32.S
-index 13ab720..d3a18a4 100644
---- a/arch/x86/kernel/acpi/wakeup_32.S
-+++ b/arch/x86/kernel/acpi/wakeup_32.S
-@@ -74,8 +74,7 @@ restore_registers:
- ENTRY(do_suspend_lowlevel)
- 	call	save_processor_state
- 	call	save_registers
--	pushl	$3
--	call	acpi_enter_sleep_state
-+	call	acpi_enter_s3
- 	addl	$4, %esp
- 
- #	In case of S3 failure, we'll emerge here.  Jump
-diff --git a/arch/x86/kernel/acpi/wakeup_64.S b/arch/x86/kernel/acpi/wakeup_64.S
-index 8ea5164..fea733d 100644
---- a/arch/x86/kernel/acpi/wakeup_64.S
-+++ b/arch/x86/kernel/acpi/wakeup_64.S
-@@ -71,9 +71,8 @@ ENTRY(do_suspend_lowlevel)
- 	movq	%rsi, saved_rsi
- 
- 	addq	$8, %rsp
--	movl	$3, %edi
- 	xorl	%eax, %eax
--	call	acpi_enter_sleep_state
-+	call	acpi_enter_s3
- 	/* in case something went wrong, restore the machine status and go on */
- 	jmp	resume_point
- 
--- 
-1.7.7.5
+That is why the patch makes a difference.
+
+But why reboot_pid_ns() does do_exit? Yes, it was copied from
+sys_reboot() and I didn't notice. It should use do_group_exit(),
+and sys_reboot() too. This is the patch I am going to send, but
+I'll try to think a bit more.
+
+Thanks!
+
+Oleg.
 
