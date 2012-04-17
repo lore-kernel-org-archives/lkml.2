@@ -1,156 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751792Ab2DQUJa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Apr 2012 16:09:30 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:7005 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750763Ab2DQUJ2 (ORCPT
+	id S1752523Ab2DQULg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Apr 2012 16:11:36 -0400
+Received: from ironport-out.teksavvy.com ([206.248.143.162]:57274 "EHLO
+	ironport-out.teksavvy.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750763Ab2DQULf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Apr 2012 16:09:28 -0400
-X-Authority-Analysis: v=2.0 cv=V/z/IJbi c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=XQbtiDEiEegA:10 a=5SG0PmZfjMsA:10 a=VwQbUJbxAAAA:8 a=7LLBJ7tCDxQ-ODnZV0QA:9 a=rTplhdVaHLhmt8HBU5cA:7 a=PUjeQqilurYA:10 a=mUV92dz4fC1ZTPsJ:21 a=4leRHVxf-KkwwC0-:21 a=e6kc2jDIFLb4p_FKBpsA:9 a=ZycB6UtQUfgMyuk2+PxD7w==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.80.29
-Message-ID: <1334693363.28106.19.camel@gandalf.stny.rr.com>
-Subject: [ANNOUNCE] 3.2.15-rt26
-From: Steven Rostedt <rostedt@goodmis.org>
-To: LKML <linux-kernel@vger.kernel.org>, RT <linux-rt-users@vger.kernel.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
-        John Kacur <jkacur@redhat.com>
-Date: Tue, 17 Apr 2012 16:09:23 -0400
-Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
-	boundary="=-2NXAdE3WZ+NQH6xr8qUy"
-X-Mailer: Evolution 3.2.2-1 
-Mime-Version: 1.0
+	Tue, 17 Apr 2012 16:11:35 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AuEBACxOgk8Y9geI/2dsb2JhbAANNoVzsCSGLAEBAQECASMEUQEFCwsaAgUWCwICCQMCAQIBRQYNAQcBAYgFrB+KGIEvjhOBGASpJYE4Fg
+X-IronPort-AV: E=Sophos;i="4.75,391,1330923600"; 
+   d="scan'208";a="174927248"
+Message-ID: <4F8DCE74.2020906@teksavvy.com>
+Date: Tue, 17 Apr 2012 16:11:32 -0400
+From: Mark Lord <kernel@teksavvy.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:11.0) Gecko/20120327 Thunderbird/11.0.1
+MIME-Version: 1.0
+To: John Stultz <john.stultz@linaro.org>
+CC: richard -rw- weinberger <richard.weinberger@gmail.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        rtc-linux@googlegroups.com, Alessandro Zummo <a.zummo@towertech.it>,
+        Greg Kroah-Hartman <greg@kroah.com>, stable@vger.kernel.org,
+        Rabin Vincent <rabin.vincent@stericsson.com>
+Subject: Re: [REGRESSION] rtc/interface.c: kills suspend-to-ram
+References: <4F8BA1C1.4030804@teksavvy.com> <4F8C24E5.4020703@teksavvy.com> <CAFLxGvzkcYw-iUA1X8jK+Q8A2HFEG1SSXvfZ3Uj+OwKWgi+zAA@mail.gmail.com> <4F8C3DDF.8030103@teksavvy.com> <CAFLxGvy=3SHKFYoSfUcQrJKsCYWq5Fxpi4q_DTQjjFNDSSnJOw@mail.gmail.com> <4F8C415C.80806@teksavvy.com> <4F8C76EB.20709@linaro.org> <4F8C926D.2040503@linaro.org> <4F8CD5D3.8060006@teksavvy.com> <4F8CFC12.6050700@linaro.org>
+In-Reply-To: <4F8CFC12.6050700@linaro.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 12-04-17 01:13 AM, John Stultz wrote:
+..
+> -    rtc->ops->alarm_irq_enable(rtc->dev.parent, false);
+> +    //rtc->ops->alarm_irq_enable(rtc->dev.parent, false);
+> +    dump_stack();
+..
 
---=-2NXAdE3WZ+NQH6xr8qUy
-Content-Type: text/plain; charset="ISO-8859-15"
-Content-Transfer-Encoding: quoted-printable
+Okay, the call into here is coming from a "hwclock -w -u" line
+in the system suspend script.
 
+Since that command isn't touching the hardware Alarm,
+then neither should the Linux kernel.  Yet it is touching it.
 
-Dear RT Folks,
+>      CMOS_WRITE(rtc_control, RTC_CONTROL);
+> -    hpet_mask_rtc_irq_bit(mask);
+> +    //hpet_mask_rtc_irq_bit(mask);
+> 
+> -    cmos_checkintr(cmos, rtc_control);
+> +    //cmos_checkintr(cmos, rtc_control); 
+...
 
-I'm pleased to announce the 3.2.15-rt26 stable release.
+The problem still occurs (lockup on suspend)
+with both lines above commented out.
 
+Note that it's not 100% in any case, more like 8/10,
+indicating a possible strong race condition somewhere.
 
-As this only was the change to prevent open source developers from
-getting eye cancer, I did not make an -rc release.
+I think all that should be done here, is to change the kernel
+to NOT enable/disable the Alarm unless told to do so by
+an explicit userspace action.  Eg. writing to /sys/../wakealarm
+and/or /proc/acpi/alarm.
 
+If userspace leaves the alarm alone, then so should the kernel when possible.
+That's the old behaviour before the new alarm_irq_enable() stuff.
 
-You can get this release via the git tree at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/rt/linux-stable-rt.git
-
-  Head SHA1: e107fca256630137a81c3a41a8713bd287a9287f
-
-
-Or to build 3.2.15-rt26 directly, the following patches should be applied:
-
-  http://www.kernel.org/pub/linux/kernel/v3.x/linux-3.2.tar.xz
-
-  http://www.kernel.org/pub/linux/kernel/v3.x/patch-3.2.15.xz
-
-  http://www.kernel.org/pub/linux/kernel/projects/rt/3.2/patch-3.2.15-rt26.=
-patch.xz
-
-
-You can also build from 3.2.15-rt25 by applying the incremental patch:
-
-  http://www.kernel.org/pub/linux/kernel/projects/rt/3.2/incr/patch-3.2.15-=
-rt25-rt26.patch.xz
-
-
-
-Enjoy,
-
--- Steve
-
-
-Changes from 3.2.15-rt25:
-
----
-
-Steven Rostedt (2):
-      rt: Make migrate_disable/enable() and __rt_mutex_init non-GPL only
-      Linux 3.2.15-rt26
-
-----
- kernel/rtmutex.c |    2 +-
- kernel/sched.c   |    4 ++--
- localversion-rt  |    2 +-
- 3 files changed, 4 insertions(+), 4 deletions(-)
----------------------------
-diff --git a/kernel/rtmutex.c b/kernel/rtmutex.c
-index b525158..9c4f6e5 100644
---- a/kernel/rtmutex.c
-+++ b/kernel/rtmutex.c
-@@ -1290,7 +1290,7 @@ void __rt_mutex_init(struct rt_mutex *lock, const cha=
-r *name)
-=20
- 	debug_rt_mutex_init(lock, name);
- }
--EXPORT_SYMBOL_GPL(__rt_mutex_init);
-+EXPORT_SYMBOL(__rt_mutex_init);
-=20
- /**
-  * rt_mutex_init_proxy_locked - initialize and lock a rt_mutex on behalf o=
-f a
-diff --git a/kernel/sched.c b/kernel/sched.c
-index 1cc706d..3b12e0b 100644
---- a/kernel/sched.c
-+++ b/kernel/sched.c
-@@ -4426,7 +4426,7 @@ void migrate_disable(void)
- 	p->migrate_disable =3D 1;
- 	preempt_enable();
- }
--EXPORT_SYMBOL_GPL(migrate_disable);
-+EXPORT_SYMBOL(migrate_disable);
-=20
- void migrate_enable(void)
- {
-@@ -4478,7 +4478,7 @@ void migrate_enable(void)
- 	unpin_current_cpu();
- 	preempt_enable();
- }
--EXPORT_SYMBOL_GPL(migrate_enable);
-+EXPORT_SYMBOL(migrate_enable);
- #else
- static inline void update_migrate_disable(struct task_struct *p) { }
- #define migrate_disabled_updated(p)		0
-diff --git a/localversion-rt b/localversion-rt
-index c5b71f9..2e9afd4 100644
---- a/localversion-rt
-+++ b/localversion-rt
-@@ -1 +1 @@
---rt25
-+-rt26
-
-
---=-2NXAdE3WZ+NQH6xr8qUy
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-Content-Transfer-Encoding: 7bit
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAABAgAGBQJPjc3zAAoJEIy3vGnGbaoAnNwP/3gUj8UtQzORzBBdUcJUSDFE
-rNakjN5zMDbQnoXiSSTe9ZOd5WCFlkEek++C4TY4/ZrvKkgVTMwuP3L0mhIUzdCV
-UpsgLDAKd03Tej+w7KGCImtXlJdtI02Vp+Nzj0uUSL8Dbht123q2r8T/6z2ZmhlK
-Y/BnXGkpStI4BQYLyF5H144ku+M8150PZgPnSJ75m9L/mopQZ3NhTkIy6dXZcZZa
-VA1+NWDRVztpbJ3Lc6OHBm/X1jdJrkGWQ67LtO4N5V72i1DXbNVst+fIr6YY+4rt
-boafLNXCxoUXVhsDuskpm1+Uv3dlhb9aLxURc2+bPfPiPDGkKM36iRHkWRC2jroQ
-/Bf7JS2HQiAsWeQaFAJ1hUTI7h/wT0K4dbYqoGkXq+tBLjEYkyw/uNeiVUEWrW8s
-nY8A1/8tut0/4WOrPq31nCJXqa4EiJ9vORzVkCkKS6ZkBgdqMjbRLgzGUKsmqoI+
-k26ub9m7cUwYQbkeV3HZdSyQkG4yR+znVXUemgBeIUQ1ekos8nzHn51EofZj7SkN
-+cg/BmCC3OxvBMAbpuKjpSZAsfnpd69qC4kWHR79teZpHo4YVHE3656MQ+5VhKCF
-bXGZ4hRkU14dP2VxGtONuFFqzrYzFW/EFK5t7uUAJqxB1I/fpYP8Vsfby12qdOWN
-/X33MdDujn3bSurUXy+g
-=oG0M
------END PGP SIGNATURE-----
-
---=-2NXAdE3WZ+NQH6xr8qUy--
-
+Cheers
