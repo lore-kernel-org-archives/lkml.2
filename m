@@ -1,85 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754232Ab2DQQgx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Apr 2012 12:36:53 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:10557 "EHLO mx1.redhat.com"
+	id S1752677Ab2DQQoP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Apr 2012 12:44:15 -0400
+Received: from mga09.intel.com ([134.134.136.24]:52301 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753996Ab2DQQgw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Apr 2012 12:36:52 -0400
-Date: Tue, 17 Apr 2012 18:36:06 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: David Howells <dhowells@redhat.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Alexander Gordeev <agordeev@redhat.com>,
-        Chris Zankel <chris@zankel.net>, David Smith <dsmith@redhat.com>,
-        "Frank Ch. Eigler" <fche@redhat.com>,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        Larry Woodman <lwoodman@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>, Tejun Heo <tj@kernel.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v4 3/3] cred: change keyctl_session_to_parent() to use
-	task_work_add()
-Message-ID: <20120417163606.GC14527@redhat.com>
-References: <20120414021252.GC23393@redhat.com> <20120414021201.GA23385@redhat.com> <27037.1334672580@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <27037.1334672580@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1751241Ab2DQQoO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Apr 2012 12:44:14 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
+   d="scan'208";a="130752802"
+Subject: Re: load balancing regression since commit 367456c7
+From: Tim Chen <tim.c.chen@linux.intel.com>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Suresh Siddha <suresh.b.siddha@intel.com>, Alex Shi <alex.shi@intel.com>,
+        Ying <ying.huang@intel.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+In-Reply-To: <1334664553.28150.87.camel@twins>
+References: <1334106376.19157.89.camel@schen9-DESK>
+	 <1334664553.28150.87.camel@twins>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 17 Apr 2012 09:44:14 -0700
+Message-ID: <1334681054.3796.28.camel@schen9-DESK>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/17, David Howells wrote:
->
-> Oleg Nesterov <oleg@redhat.com> wrote:
->
-> > -	int ret;
-> > +	struct cred *cred;
-> > +	int err;
->
-> There's no need to change ret to be err.  It produces slightly less churn if
-> you don't.
+On Tue, 2012-04-17 at 14:09 +0200, Peter Zijlstra wrote:
+> On Tue, 2012-04-10 at 18:06 -0700, Tim Chen wrote:
+> >                   |--56.52%-- load_balance
+> >                   |          idle_balance
+> >                   |          __schedule
+> >                   |          schedule 
+> 
+> Ahh, I know why I didn't see it, I have a CONFIG_PREEMPT kernel and
+> idle_balancing stops once its gotten a single task over instead of
+> achieving proper balance.
+> 
+> And since hackbench generates insanely long runqueues and the patch that
+> caused your regression 'fixed' the lock-breaking it will now iterate the
+> entire runqueue if needed to achieve balance, which hurts.
+> 
+> I think the patch I send ought to work, let me try disabling
+> CONFIG_PREEMPT.
+> --
 
-OK, I'll change it back.
+yes, CONFIG_PREEMPT is turned off on my side.  With the patch that you
+sent, the slowed down went from a factor of 4 down to a factor 2. 
 
->
-> > +	err = -ENOMEM;
-> > +	newwork = kmalloc(sizeof(struct task_work), GFP_KERNEL);
-> > +	if (!newwork)
-> > +		goto error_keyring;
->
-> This passes unnecessarily through kfree(newwork).
+So the run time is now twice as long vs four time as long vs v3.3
+kernel.
 
-but harmless, newwork == NULL in this case,
-
-> Please add a new goto label
-> and go to that.
-
-OK, probably this is more clear, will do.
-
-> > -/*
-> > - * Replace a process's session keyring on behalf of one of its children when
-> > - * the target  process is about to resume userspace execution.
-> > - */
->
-> Please don't delete the banner comment saying what the function does.
-
-OOPS, sorry, this was unintentional.
-
-> > -void key_replace_session_keyring(void)
-> > +void key_change_session_keyring(struct task_work *twork)
->
-> There's no particular need to change the name of the function.
-
-There is.
-
-Until we cleanup arch/* do_notify_resume() still does
-
-	if (current->replacement_session_keyring)
-		key_replace_session_keyring();
-
-Oleg.
+Tim
 
