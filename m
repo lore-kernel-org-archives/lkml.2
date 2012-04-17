@@ -1,56 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755153Ab2DQCEu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Apr 2012 22:04:50 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:36819 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750892Ab2DQCEs (ORCPT
+	id S1755599Ab2DQCFI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Apr 2012 22:05:08 -0400
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:55609 "EHLO
+	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754648Ab2DQCFG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Apr 2012 22:04:48 -0400
-Date: Mon, 16 Apr 2012 21:04:33 -0500
-From: Jonathan Nieder <jrnieder@gmail.com>
-To: Robert Scott <bugs@humanleg.org.uk>
-Cc: Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
-        Kevin Tian <kevin.tian@intel.com>,
-        Fengzhe Zhang <fengzhe.zhang@intel.com>, mingo@redhat.com,
-        hpa@zytor.com, Ian Campbell <Ian.Campbell@eu.citrix.com>,
-        JBeulich@novell.com, xen-devel@lists.xensource.com,
-        Lars Boegild Thomsen <lth@cow.dk>,
-        e568b31a443d@6cc2cce7af2d.anonbox.net,
-        "Liu, Chuansheng" <chuansheng.liu@intel.com>
-Subject: Re: [regression] Ideapad S10-3 does not wake up from suspend
-Message-ID: <20120417020433.GA15848@burratino>
-References: <625BA99ED14B2D499DC4E29D8138F1505C8ED7F7E3@shsmsx502.ccr.corp.intel.com>
- <20110829041532.GA22087@elie.gateway.2wire.net>
- <20120415140628.GA4536@burratino>
- <201204161905.13260.bugs@humanleg.org.uk>
+	Mon, 16 Apr 2012 22:05:06 -0400
+X-AuditID: 9c930179-b7b2cae000000ca1-0f-4f8ccfce6534
+Message-ID: <4F8CCFD2.70300@kernel.org>
+Date: Tue, 17 Apr 2012 11:05:06 +0900
+From: Minchan Kim <minchan@kernel.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120410 Thunderbird/11.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201204161905.13260.bugs@humanleg.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Newsgroups: gmane.linux.kernel.mm,gmane.comp.handhelds.android.kernel,gmane.linux.kernel,gmane.linux.kernel.mmc
+To: Arnd Bergmann <arnd@arndb.de>
+CC: Stephan Uphoff <ups@google.com>, linaro-kernel@lists.linaro.org,
+        android-kernel@googlegroups.com, linux-mm@kvack.org,
+        "Luca Porzio (lporzio)" <lporzio@micron.com>,
+        Alex Lemberg <alex.lemberg@sandisk.com>, linux-kernel@vger.kernel.org,
+        Saugata Das <saugata.das@linaro.org>,
+        Venkatraman S <venkat@linaro.org>, Yejin Moon <yejin.moon@samsung.com>,
+        Hyojin Jeong <syr.jeong@samsung.com>,
+        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>
+Subject: Re: swap on eMMC and other flash
+References: <201203301744.16762.arnd@arndb.de> <201204111557.14153.arnd@arndb.de> <CAKL-ytsXbe4=u94PjqvhZo=ZLiChQ0FmZC84GNrFHa0N1mDjFw@mail.gmail.com> <201204161859.32436.arnd@arndb.de>
+In-Reply-To: <201204161859.32436.arnd@arndb.de>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Robert Scott wrote:
-> On Sunday 15 April 2012, Jonathan Nieder wrote:
+Hi Arnd,
 
->> Lars, Robert, anon: can you try 3.4-rc2 or newer and let us know how
->> it goes?  I suspect v3.4-rc2~24^2~4 ("x86: Preserve lazy irq disable
->> semantics in fixup_irqs()") will fix this.
+On 04/17/2012 03:59 AM, Arnd Bergmann wrote:
+> On Monday 16 April 2012, Stephan Uphoff wrote:
+>> opportunity to plant a few ideas.
+>>
+>> In contrast to rotational disks read/write operation overhead and
+>> costs are not symmetric.
+>> While random reads are much faster on flash - the number of write
+>> operations is limited by wearout and garbage collection overhead.
+>> To further improve swapping on eMMC or similar flash media I believe
+>> that the following issues need to be addressed:
+>>
+>> 1) Limit average write bandwidth to eMMC to a configurable level to
+>> guarantee a minimum device lifetime
+>> 2) Aim for a low write amplification factor to maximize useable write bandwidth
+>> 3) Strongly favor read over write operations
+>>
+>> Lowering write amplification (2) has been discussed in this email
+>> thread - and the only observation I would like to add is that
+>> over-provisioning the internal swap space compared to the exported
+>> swap space significantly can guarantee a lower write amplification
+>> factor with the indirection and GC techniques discussed.
 >
-> Hmm, no, 3.4-rc2 seems to produce the same results I'm afraid.
+> Yes, good point.
+>
+>> I believe the swap functionality is currently optimized for storage
+>> media where read and write costs are nearly identical.
+>> As this is not the case on flash I propose splitting the anonymous
+>> inactive queue (at least conceptually) - keeping clean anonymous pages
+>> with swap slots on a separate queue as the cost of swapping them
+>> out/in is only an inexpensive read operation. A variable similar to
+>> swapiness (or a more dynamic algorithmn) could determine the
+>> preference for swapping out clean pages or dirty pages. ( A similar
+>> argument could be made for splitting up the file inactive queue )
+>
+> I'm not sure I understand yet how this would be different from swappiness.
+>
+>> The problem of limiting the average write bandwidth reminds me of
+>> enforcing cpu utilization limits on interactive workloads.
+>> Just as with cpu workloads - using the resources to the limit produces
+>> poor interactivity.
+>> When interactivity suffers too much I believe the only sane response
+>> for an interactive device is to limit usage of the swap device and
+>> transition into a low memory situation - and if needed - either
+>> allowing userspace to reduce memory usage or invoking the OOM killer.
+>> As a result low memory situations could not only be encountered on new
+>> memory allocations but also on workload changes that increase the
+>> number of dirty pages.
+>
+> While swap is just a special case for anonymous memory in writeback
+> rather than file backed pages, I think what you want here is a tuning
+> knob that decides whether we should discard a clean page or write back
+> a dirty page under memory pressure. I have to say that I don't know
+> whether we already have such a knob or whether we already treat them
+> differently, but it is certainly a valid observation that on hard
+> drives, discarding a clean page that is likely going to be needed
+> again has about the same overhead as writing back a dirty page
+> (i.e. one seek operation), while on flash the former would be much
+> cheaper than the latter.
 
-Alas.  Does suspend-to-disk ("echo disk >/sys/power/state") have the
-same problem?  Can you get a log of the failure with
-"no_console_suspend" appended to the kernel command line, for example
-with a serial console or netconsole?
+It seems to make sense with considering asymmetric of flash and there is 
+a CFLRU(Clean First LRU)[1] paper about it. You might already know it. 
+Anyway if you don't aware of it, I hope it helps you.
 
-If someone has time to go through the steps in
-"Documentation/power/basic-pm-debugging.txt", that would also be useful.
+[1] 
+http://www.google.com/url?sa=t&rct=j&q=&esrc=s&source=web&cd=1&ved=0CCkQFjAA&url=http%3A%2F%2Fstaff.ustc.edu.cn%2F~jpq%2Fpaper%2Fflash%2F2006-CASES-CFLRU-%2520A%2520Replacement%2520Algorithm%2520for%2520Flash%2520Memory.pdf&ei=G8-MT5jGIqnj0gGMzJyCCg&usg=AFQjCNHybc5rUvuAlMylOUNwsHoFmWegzw&sig2=Uu5LDD3suso0QHsfD7yZ9Q
 
-Thanks, and sorry to take so long to get to this.
 
-Sincerely,
-Jonathan
+-- 
+Kind regards,
+Minchan Kim
