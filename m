@@ -1,96 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755855Ab2DQLyh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Apr 2012 07:54:37 -0400
-Received: from eu1sys200aog112.obsmtp.com ([207.126.144.133]:36012 "EHLO
-	eu1sys200aog112.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751523Ab2DQLyX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Apr 2012 07:54:23 -0400
-From: Viresh Kumar <viresh.kumar@st.com>
-To: <vinod.koul@intel.com>
-Cc: <spear-devel@list.st.com>, <viresh.linux@gmail.com>,
-        <linux-kernel@vger.kernel.org>, Viresh Kumar <viresh.kumar@st.com>
-Subject: [PATCH V2] dmaengine: dw_dmac: Add clk_{un}prepare() support
-Date: Tue, 17 Apr 2012 17:10:07 +0530
-Message-ID: <85bdff0af2dd4e4a116f638fe29b19956a16604d.1334662785.git.viresh.kumar@st.com>
-X-Mailer: git-send-email 1.7.9
+	id S1756078Ab2DQL5y (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Apr 2012 07:57:54 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:1983 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756033Ab2DQL5x (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Apr 2012 07:57:53 -0400
+Message-ID: <4F8D5ABC.4030705@redhat.com>
+Date: Tue, 17 Apr 2012 14:57:48 +0300
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120329 Thunderbird/11.0.1
 MIME-Version: 1.0
-Content-Type: text/plain
+To: Jan Kiszka <jan.kiszka@siemens.com>
+CC: Marcelo Tosatti <mtosatti@redhat.com>, kvm <kvm@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] KVM: x86: Run PIT work in own kthread
+References: <4F8C645C.7010302@siemens.com> <4F8D4598.5080902@redhat.com> <4F8D5186.7020801@siemens.com>
+In-Reply-To: <4F8D5186.7020801@siemens.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-clk_{un}prepare is mandatory for platforms using common clock framework. Since
-this driver is used by SPEAr platform, which supports common clock framework,
-add clk_{un}prepare() support for it.
+On 04/17/2012 02:18 PM, Jan Kiszka wrote:
+> On 2012-04-17 12:27, Avi Kivity wrote:
+> > On 04/16/2012 09:26 PM, Jan Kiszka wrote:
+> >> We can't run PIT IRQ injection work in the interrupt context of the host
+> >> timer. This would allow the user to influence the handler complexity by
+> >> asking for a broadcast to a large number of VCPUs. Therefore, this work
+> >> was pushed into workqueue context in 9d244caf2e. However, this prevents
+> >> prioritizing the PIT injection over other task as workqueues share
+> >> kernel threads.
+> >>
+> >> This replaces the workqueue with a kthread worker and gives that thread
+> >> a name in the format "kvm-pit/<owner-process-pid>". That allows to
+> >> identify and adjust the kthread priority according to the VM process
+> >> parameters.
+> > 
+> > Is this a new ABI?
+>
+> Yep. Scripts will use it, maybe even QEMU. Do you want this to appear in
+> api.txt?
 
-Signed-off-by: Viresh Kumar <viresh.kumar@st.com>
----
-V1->V2:
-- Use clk_prepare_enable and clk_disable_unprepare
+You already know the answer.
 
- drivers/dma/dw_dmac.c |   12 ++++++------
- 1 files changed, 6 insertions(+), 6 deletions(-)
+Please make it explicit that the thread is optional.  This way, if we
+gain real-time workqueue support, or eliminate it through some other
+trick, userspace won't break.
 
-diff --git a/drivers/dma/dw_dmac.c b/drivers/dma/dw_dmac.c
-index 7439079..300d976 100644
---- a/drivers/dma/dw_dmac.c
-+++ b/drivers/dma/dw_dmac.c
-@@ -1429,7 +1429,7 @@ static int __init dw_probe(struct platform_device *pdev)
- 		err = PTR_ERR(dw->clk);
- 		goto err_clk;
- 	}
--	clk_enable(dw->clk);
-+	clk_prepare_enable(dw->clk);
- 
- 	/* force dma off, just in case */
- 	dw_dma_off(dw);
-@@ -1510,7 +1510,7 @@ static int __init dw_probe(struct platform_device *pdev)
- 	return 0;
- 
- err_irq:
--	clk_disable(dw->clk);
-+	clk_disable_unprepare(dw->clk);
- 	clk_put(dw->clk);
- err_clk:
- 	iounmap(dw->regs);
-@@ -1540,7 +1540,7 @@ static int __exit dw_remove(struct platform_device *pdev)
- 		channel_clear_bit(dw, CH_EN, dwc->mask);
- 	}
- 
--	clk_disable(dw->clk);
-+	clk_disable_unprepare(dw->clk);
- 	clk_put(dw->clk);
- 
- 	iounmap(dw->regs);
-@@ -1559,7 +1559,7 @@ static void dw_shutdown(struct platform_device *pdev)
- 	struct dw_dma	*dw = platform_get_drvdata(pdev);
- 
- 	dw_dma_off(platform_get_drvdata(pdev));
--	clk_disable(dw->clk);
-+	clk_disable_unprepare(dw->clk);
- }
- 
- static int dw_suspend_noirq(struct device *dev)
-@@ -1568,7 +1568,7 @@ static int dw_suspend_noirq(struct device *dev)
- 	struct dw_dma	*dw = platform_get_drvdata(pdev);
- 
- 	dw_dma_off(platform_get_drvdata(pdev));
--	clk_disable(dw->clk);
-+	clk_disable_unprepare(dw->clk);
- 
- 	return 0;
- }
-@@ -1578,7 +1578,7 @@ static int dw_resume_noirq(struct device *dev)
- 	struct platform_device *pdev = to_platform_device(dev);
- 	struct dw_dma	*dw = platform_get_drvdata(pdev);
- 
--	clk_enable(dw->clk);
-+	clk_prepare_enable(dw->clk);
- 	dma_writel(dw, CFG, DW_CFG_DMA_EN);
- 	return 0;
- }
 -- 
-1.7.9
+error compiling committee.c: too many arguments to function
 
