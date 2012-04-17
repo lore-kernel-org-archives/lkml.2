@@ -1,91 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932235Ab2DQP3b (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Apr 2012 11:29:31 -0400
-Received: from oproxy9.bluehost.com ([69.89.24.6]:36293 "HELO
-	oproxy9.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S932111Ab2DQP3Z (ORCPT
+	id S932243Ab2DQPao (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Apr 2012 11:30:44 -0400
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:64043 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756169Ab2DQPam convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Apr 2012 11:29:25 -0400
-Message-ID: <4F8DB687.2090701@xenotime.net>
-Date: Tue, 17 Apr 2012 11:29:27 -0700
-From: Randy Dunlap <rdunlap@xenotime.net>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
+	Tue, 17 Apr 2012 11:30:42 -0400
+Date: Tue, 17 Apr 2012 10:30:32 -0500
+From: Jonathan Nieder <jrnieder@gmail.com>
+To: =?utf-8?B?TGVzxYJhdyBLb3BlxIc=?= <leslaw.kopec@nasza-klasa.pl>
+Cc: Peter Zijlstra <peterz@infradead.org>, Aman Gupta <aman@tmm1.net>,
+        linux-kernel@vger.kernel.org,
+        Chase Douglas <chase.douglas@canonical.com>,
+        Damien Wyart <damien.wyart@free.fr>, Kyle McMartin <kyle@redhat.com>,
+        Venkatesh Pallipadi <venki@google.com>,
+        Doug Smythies <dsmythies@telus.net>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: Inconsistent load average on tickless kernels
+Message-ID: <20120417153032.GB21534@burratino>
+References: <4F465F6E.9070605@nasza-klasa.pl>
+ <1330517195.11248.148.camel@twins>
+ <1330532667.11248.153.camel@twins>
+ <1330534998.11248.158.camel@twins>
+ <4F551ABE.5080605@nasza-klasa.pl>
+ <CAK=uwuxvzGwes4ffy9EXVReG95U3HQaKmPPKgFnHzo_MwaO_NA@mail.gmail.com>
+ <1330989903.11248.261.camel@twins>
+ <1330990360.11248.264.camel@twins>
+ <1330990413.11248.265.camel@twins>
+ <4F8D678C.6050104@nasza-klasa.pl>
 MIME-Version: 1.0
-To: Luciano Coelho <coelho@ti.com>
-CC: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-wireless@vger.kernel.org,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: Re: [PATCH -next] wireless: TI wlxxx depends on MAC80211
-References: <20120416161121.261ba4e7e38989173accfb16@canb.auug.org.au>	 <4F8C784B.2040402@xenotime.net> <1334640620.27247.7.camel@cumari>
-In-Reply-To: <1334640620.27247.7.camel@cumari>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8BIT
+In-Reply-To: <4F8D678C.6050104@nasza-klasa.pl>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/16/2012 10:30 PM, Luciano Coelho wrote:
+Lesław Kopeć wrote:
 
-> Hi Randy,
-> 
-> On Mon, 2012-04-16 at 12:51 -0700, Randy Dunlap wrote: 
->> From: Randy Dunlap <rdunlap@xenotime.net>
->>
->> wl12xx build fails with many undefined symbol errors when MAC80211
->> and CFG80211 are not enabled, so make WLCORE and WL12XX depend
->> on MAC80211 (which already depends on CFG80211).
->>
->> Here are a few of the many build errors:
->>
-> 
-> [...]
-> 
->> Signed-off-by: Randy Dunlap <rdunlap@xenotime.net>
->> Cc:	Luciano Coelho <coelho@ti.com>
->> Cc:	linux-wireless@vger.kernel.org
->> Cc:	"John W. Linville" <linville@tuxdriver.com>
->> ---
-> 
-> Thanks for the patch!
-> 
-> 
->> --- linux-next-20120416.orig/drivers/net/wireless/ti/wl12xx/Kconfig
->> +++ linux-next-20120416/drivers/net/wireless/ti/wl12xx/Kconfig
->> @@ -1,5 +1,6 @@
->>  config WL12XX
->>         tristate "TI wl12xx support"
->> +	depends on MAC80211
->>         select WLCORE
-> 
-> Do we really need this one? wl12xx selects WLCORE which in turn depends
-> on MAC80211 (with your change below).  Maybe we don't need this?
+> I've finally finished testing patch c308b56b53. Apologies for the delay
+> in reporting back. This time I've compared kernels from 3.2 and 2.6.32
+> branches. Here's a snapshot of load 15 on different versions:
+[...]
+> Just to make things clear 2.6.32 kernels were patched as follows:
+> * 74f5187ac8 - just 74f5187ac8
+> * 0f004f5a69 - 74f5187ac8 + 0f004f5a69
+> * c308b56b53 - 74f5187ac8 + 0f004f5a69 + c308b56b53
+>
+> For kernel 3.2.12 patch c308b56b53 seems almost perfect. For low CPU
+> utilization the load value is slightly lower for NO_HZ version than it
+> is for HZ one. However the difference is small and the overall trend
+> relates to CPU usage quite closely.
 
-Hi,
+Nice.
 
-[testing...]
+[...]
+> Looking at results for 2.6.32.55 branch it seems that we're back at
+> 74f5187ac8 patch - the values are almost the same. The difference
+> between NO_HZ and HZ versions is noticeable.
 
-The build fails if either one of these "depends" is omitted.
+How does 3.0.y + c308b56b53 do?  (I ask because the usual flow of
+fixes is mainline -> 3.3.y -> 3.2.y -> 3.0.y -> 2.6.32.y with the
+first three steps happening pretty quickly, so it we can get this
+working on 3.0.y then that would be progress.  Also because, like
+2.6.32.y, 3.0.y is longterm maintained, so it might be useful in the
+meantime.)
 
-
->> ---help---
->>  	  This module adds support for wireless adapters based on TI wl1271,
->> --- linux-next-20120416.orig/drivers/net/wireless/ti/wlcore/Kconfig
->> +++ linux-next-20120416/drivers/net/wireless/ti/wlcore/Kconfig
->> @@ -1,6 +1,6 @@
->>  config WLCORE
->>  	tristate "TI wlcore support"
->> -	depends on WL_TI && GENERIC_HARDIRQS
->> +	depends on WL_TI && GENERIC_HARDIRQS && MAC80211
->>  	depends on INET
->>  	select FW_LOADER
->>  	---help---
-> 
-
-
-
--- 
-~Randy
+Curious,
+Jonathan
