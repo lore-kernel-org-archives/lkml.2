@@ -1,93 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753682Ab2DQOVJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Apr 2012 10:21:09 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:51408 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751811Ab2DQOVH (ORCPT
+	id S1753968Ab2DQOVo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Apr 2012 10:21:44 -0400
+Received: from smtp.ctxuk.citrix.com ([62.200.22.115]:39110 "EHLO
+	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751319Ab2DQOVn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Apr 2012 10:21:07 -0400
-Date: Tue, 17 Apr 2012 16:21:05 +0200
-From: Wolfram Sang <w.sang@pengutronix.de>
-To: Zhao Chenhui <chenhui.zhao@freescale.com>
-Cc: linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Li Yang <leoli@freescale.com>
-Subject: Re: [PATCH] i2c-mpc: avoid I2C abnormal after resuming from deep
- sleep
-Message-ID: <20120417142105.GA21802@pengutronix.de>
-References: <1330511961-22498-1-git-send-email-chenhui.zhao@freescale.com>
- <20120229183436.GA30545@pengutronix.de>
+	Tue, 17 Apr 2012 10:21:43 -0400
+X-IronPort-AV: E=Sophos;i="4.75,435,1330905600"; 
+   d="scan'208";a="11980571"
+Date: Tue, 17 Apr 2012 15:26:05 +0100
+From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+X-X-Sender: sstabellini@kaball-desktop
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+CC: Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v3 1/2] xen: enter/exit lazy_mmu_mode around m2p_override
+ calls
+In-Reply-To: <20120417130340.GA25593@phenom.dumpdata.com>
+Message-ID: <alpine.DEB.2.00.1204171457360.26786@kaball-desktop>
+References: <1334075375-25442-1-git-send-email-stefano.stabellini@eu.citrix.com> <20120417130340.GA25593@phenom.dumpdata.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="cNdxnHkX5QqsyA0e"
-Content-Disposition: inline
-In-Reply-To: <20120229183436.GA30545@pengutronix.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
-X-SA-Exim-Mail-From: wsa@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset="US-ASCII"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, 17 Apr 2012, Konrad Rzeszutek Wilk wrote:
+> On Tue, Apr 10, 2012 at 05:29:34PM +0100, Stefano Stabellini wrote:
+> > This patch is a significant performance improvement for the
+> > m2p_override: about 6% using the gntdev device.
+> > 
+> > Each m2p_add/remove_override call issues a MULTI_grant_table_op and a
+> > __flush_tlb_single if kmap_op != NULL.  Batching all the calls together
+> > is a great performance benefit because it means issuing one hypercall
+> > total rather than two hypercall per page.
+> > If paravirt_lazy_mode is set PARAVIRT_LAZY_MMU, all these calls are
+> > going to be batched together, otherwise they are issued one at a time.
+> > 
+> > Adding arch_enter_lazy_mmu_mode/arch_leave_lazy_mmu_mode around the
+> > m2p_add/remove_override calls forces paravirt_lazy_mode to
+> > PARAVIRT_LAZY_MMU, therefore makes sure that they are always batched.
+> > 
+> > 
+> > Changes in v3:
+> > - do not call arch_enter/leave_lazy_mmu_mode in xen_blkbk_unmap, that
+> > can be called in interrupt context.
+> 
+> This is with RHEL5 (somehow the pvops kernels don't trigger this):
 
---cNdxnHkX5QqsyA0e
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Do you mean RHEL5 as a guest? Are you using blkback or qdisk?
+How can I repro the bug?
 
-On Wed, Feb 29, 2012 at 07:45:23PM +0100, Wolfram Sang wrote:
-> Hi,
->=20
-> On Wed, Feb 29, 2012 at 06:39:21PM +0800, Zhao Chenhui wrote:
-> > When entering deep sleep, the value in the registers I2CFDR and
-> > I2CDFSRR are lost. This causes I2C access to fail after resuming.
-> >=20
-> > Add suspend/resume routines to save/restore the registers
-> > I2CFDR and I2CDFSRR.
-> >=20
-> > Signed-off-by: Zhao Chenhui <chenhui.zhao@freescale.com>
-> > Signed-off-by: Li Yang <leoli@freescale.com>
-> > ---
-> >  drivers/i2c/busses/i2c-mpc.c |   34 +++++++++++++++++++++++++++++++++-
-> >  1 files changed, 33 insertions(+), 1 deletions(-)
-> >=20
-> > diff --git a/drivers/i2c/busses/i2c-mpc.c b/drivers/i2c/busses/i2c-mpc.c
-> > index a8ebb84..f95a647 100644
-> > --- a/drivers/i2c/busses/i2c-mpc.c
-> > +++ b/drivers/i2c/busses/i2c-mpc.c
-> > @@ -1,7 +1,9 @@
-> >  /*
-> >   * (C) Copyright 2003-2004
-> >   * Humboldt Solutions Ltd, adrian@humboldt.co.uk.
-> > -
-> > + *
-> > + * Copyright 2012 Freescale Semiconductor, Inc.
-> > + *
->=20
-> I'd think the change is too trivial to claim copyright on the file.
 
-Do you want to resend with the comments addressed?
+In any case it looks like a similar kind of issue to the one I fixed
+before: paravirt_enter_lazy_mmu is probably called with
+paravirt_lazy_mode == PARAVIRT_LAZY_MMU, in this case by
+gnttab_unmap_refs.
+But I don't understand how gnttab_unmap_refs can be called when you seem
+to be using blkback.
 
-Regards,
+Anyhow gnttab_unmap_refs can be called by:
 
-   Wolfram
+- mmu_notifier on invalidate_range_start;
+- vm_operations_struct on close;
+- file_operations on release;
+- the unmap gntdev ioctl.
 
---=20
-Pengutronix e.K.                           | Wolfram Sang                |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+I guess the mmu_notifier or vm_operations_struct could be the ones
+calling gnttab_unmap_refs with lazy_mode set to PARAVIRT_LAZY_MMU.
 
---cNdxnHkX5QqsyA0e
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+I suspect that something like the following code would fix the issue but
+it is pretty ugly and I need to test it before a submitting it as a fix:
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
 
-iEYEARECAAYFAk+NfFEACgkQD27XaX1/VRsRyQCePPnnlynynpq5hVQMeZDBMIWu
-crsAnA4Xgpuf089oXkaxypETfwVnrNg9
-=TAH2
------END PGP SIGNATURE-----
+@@ -780,7 +780,7 @@ EXPORT_SYMBOL_GPL(gnttab_map_refs);
+ int gnttab_unmap_refs(struct gnttab_unmap_grant_ref *unmap_ops,
+                      struct page **pages, unsigned int count, bool clear_pte)
+ {
+-       int i, ret;
++       int i, ret, lazy = 0;
+ 
+        ret = HYPERVISOR_grant_table_op(GNTTABOP_unmap_grant_ref, unmap_ops, count);
+        if (ret)
 
---cNdxnHkX5QqsyA0e--
+@@ -789,7 +789,10 @@ int gnttab_unmap_refs(struct gnttab_unmap_grant_ref *unmap_ops,
+        if (xen_feature(XENFEAT_auto_translated_physmap))
+                return ret;
+ 
+-       arch_enter_lazy_mmu_mode();
++       if (!in_interrupt() && paravirt_get_lazy_mode() == PARAVIRT_LAZY_NONE) {
++               arch_enter_lazy_mmu_mode();
++               lazy = 1;
++       }
+ 
+        for (i = 0; i < count; i++) {
+                ret = m2p_remove_override(pages[i], clear_pte);
+@@ -797,7 +800,8 @@ int gnttab_unmap_refs(struct gnttab_unmap_grant_ref *unmap_ops,
+                        return ret;
+        }
+ 
+-       arch_leave_lazy_mmu_mode();
++       if (lazy)
++               arch_leave_lazy_mmu_mode();
+ 
+        return ret;
+ }
+
