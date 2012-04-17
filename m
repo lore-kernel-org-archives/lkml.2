@@ -1,59 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753570Ab2DQUjH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Apr 2012 16:39:07 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:49014 "EHLO ogre.sisk.pl"
+	id S1753478Ab2DQUoB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Apr 2012 16:44:01 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:29966 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751965Ab2DQUjF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Apr 2012 16:39:05 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: huang ying <huang.ying.caritas@gmail.com>
-Subject: Re: [RFC PATCH] PCIe: Add PCIe runtime D3cold support
-Date: Tue, 17 Apr 2012 22:43:39 +0200
-User-Agent: KMail/1.13.6 (Linux/3.4.0-rc3+; KDE/4.6.0; x86_64; ; )
-Cc: "Yan, Zheng" <zheng.z.yan@intel.com>, bhelgaas@google.com,
-        linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
-        linux-pm@vger.kernel.org, Lin Ming <ming.m.lin@intel.com>,
-        Zhang Rui <rui.zhang@intel.com>,
-        ACPI Devel Mailing List <linux-acpi@vger.kernel.org>
-References: <4F8790F6.5080408@intel.com> <4F8CD18A.5080903@intel.com> <CAC=cRTMk-NTvo+DJ2mAq6_ZeVLbeqiGx+ttZG6Hr_hQyyYkfLw@mail.gmail.com>
-In-Reply-To: <CAC=cRTMk-NTvo+DJ2mAq6_ZeVLbeqiGx+ttZG6Hr_hQyyYkfLw@mail.gmail.com>
+	id S1753275Ab2DQUoA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Apr 2012 16:44:00 -0400
+Date: Tue, 17 Apr 2012 22:43:22 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        David Howells <dhowells@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        David Smith <dsmith@redhat.com>, "Frank Ch. Eigler" <fche@redhat.com>,
+        Larry Woodman <lwoodman@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>, Tejun Heo <tj@kernel.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: hlist_for_each_entry && pos (Was: task_work_queue)
+Message-ID: <20120417204322.GA22946@redhat.com>
+References: <20120412024751.GA17561@redhat.com> <20120412024810.GA17984@redhat.com> <20120412040059.GA20462@redhat.com> <20120416223512.GI2448@linux.vnet.ibm.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201204172243.39525.rjw@sisk.pl>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120416223512.GI2448@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, April 17, 2012, huang ying wrote:
-> On Tue, Apr 17, 2012 at 10:12 AM, Yan, Zheng <zheng.z.yan@intel.com> wrote:
-> > On 04/17/2012 01:07 AM, Rafael J. Wysocki wrote:
+On 04/16, Paul E. McKenney wrote:
+>
+> On Thu, Apr 12, 2012 at 06:00:59AM +0200, Oleg Nesterov wrote:
 > >
-> >> BTW, can you please explain to me what the #WAKE signal is and how it is
-> >> different from PME#?
+> > hlist_for_each_entry_*() do not need "pos", it can be
 > >
-> > #WAKE signal is triggered by a pin connected to the root complex or other
-> > motherboard logic. PME# is triggered by PME message sent to the port.
-> 
-> PME# is a PCI pin, while WAKE# is a PCI Express pin.  In PCI Express,
-> there is no PME#, PME is delivered between end point device and root
-> port or root complex event collector via PME message, and the PME
-> message will trigger IRQ on root port or root complex event collector.
->  WAKE# is not used for PCI Express D1, D2 and D3hot, it is just used
-> by D3cold.  When remote wakeup detected by end point device, it will
-> assert WAKE# to notify power controller (implemented via ACPI on some
-> platform), then power controller will turn on power for main link,
-> after link goes back to L0, PME message will be sent to root port or
-> root complex event collector by end point device.
+> > 	#define hlist_for_each_entry(pos, head, member)					\
+> > 		for (pos = (void*)(head)->first;					\
+> > 		pos && ({ pos = hlist_entry((void*)pos, typeof(*pos), member); 1; });	\
+> > 		pos = (void*)(pos)->member.next)
+> >
+> > The only problem, is there any possibility to change the callers
+> > somehow??? I even wrote the script which converts them all, but the
+> > patch is huge.
+> >
+> > Please see the old (2008-04-21) message I sent to lkml below, today
+> > the diffstat is even "worse":
+> >
+> > 	152 files changed, 611 insertions(+), 906 deletions(-)
+> >
+> > and the patch size is 242k.
+> >
+> > No? we can't?
+>
+> Maybe this needs a phased approach:
+>
+> 1.	Add a new API name without the "pos" argument.
 
-OK
+and this is the first (or main?) problem. Which name??
 
-So do I understand correctly that the WAKE# signal here is the one described
-in Section 5.3.3.2 Link Wakeup of PCI Express Base spec. 2.0?
+> 2.	Send individual patches to the uses, which allows time to
+> 	clean up stragglers.
+>
+> 3.	Remove the old API name.  If any patches from #2 have been
+> 	ignored, push them with the removal patch.
+>
+> 4.	Rename the new API name to the old one, if desired.
 
-So what happens is that it triggers a GPE and that GPE has a _Lxx method
-associated with it, I suppose.  Is that correct?
+Yes, this is much safer, I agree. But I'm afraid that 2. will be
+never finished.
 
-Rafael
+And 4. is not trivial anyway, even if it is trivial to generate
+the obviously correct patch. Too many trees I guess.
+
+
+This reminds me I promised to check the code generation. Will do
+anyway. But I do not expect any improvement, just it should not
+be worse. The only point is too make the usage more simple (you
+seem to agree). But at the same time I agree with "the pain
+changing the interface" from Linus.
+
+Oleg.
+
