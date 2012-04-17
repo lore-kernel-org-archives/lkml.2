@@ -1,107 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754116Ab2DQQgN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Apr 2012 12:36:13 -0400
-Received: from e32.co.us.ibm.com ([32.97.110.150]:44567 "EHLO
-	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753468Ab2DQQgJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Apr 2012 12:36:09 -0400
-Date: Tue, 17 Apr 2012 09:32:32 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Randy Dunlap <rdunlap@xenotime.net>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>, paul.gortmaker@windriver.com
-Subject: Re: linux-next: Tree for Apr 17 (rcu)
-Message-ID: <20120417163232.GG2404@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20120417144241.0d7dc5fde56b2a37ff0dcaba@canb.auug.org.au>
- <4F8DBD14.5000100@xenotime.net>
+	id S1754232Ab2DQQgx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Apr 2012 12:36:53 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:10557 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753996Ab2DQQgw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Apr 2012 12:36:52 -0400
+Date: Tue, 17 Apr 2012 18:36:06 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: David Howells <dhowells@redhat.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Alexander Gordeev <agordeev@redhat.com>,
+        Chris Zankel <chris@zankel.net>, David Smith <dsmith@redhat.com>,
+        "Frank Ch. Eigler" <fche@redhat.com>,
+        Geert Uytterhoeven <geert@linux-m68k.org>,
+        Larry Woodman <lwoodman@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>, Tejun Heo <tj@kernel.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v4 3/3] cred: change keyctl_session_to_parent() to use
+	task_work_add()
+Message-ID: <20120417163606.GC14527@redhat.com>
+References: <20120414021252.GC23393@redhat.com> <20120414021201.GA23385@redhat.com> <27037.1334672580@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4F8DBD14.5000100@xenotime.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12041716-3270-0000-0000-0000059F8AAE
+In-Reply-To: <27037.1334672580@redhat.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 17, 2012 at 11:57:24AM -0700, Randy Dunlap wrote:
-> On 04/16/2012 09:42 PM, Stephen Rothwell wrote:
-> 
-> > Hi all,
-> > 
-> > Changes since 20120416:
-> > 
-> > The rcu tree lost its build failure.
-> 
-> 
-> ERROR: "rcu_read_lock_nesting" [net/sctp/sctp.ko] undefined!
-> ERROR: "rcu_read_lock_nesting" [net/rds/rds.ko] undefined!
-> ERROR: "rcu_read_lock_nesting" [net/phonet/phonet.ko] undefined!
-> ERROR: "rcu_read_lock_nesting" [net/openvswitch/openvswitch.ko] undefined!
-> ERROR: "rcu_read_lock_nesting" [net/netfilter/xt_TCPMSS.ko] undefined!
-> ERROR: "rcu_read_lock_nesting" [net/netfilter/nfnetlink.ko] undefined!
-> ERROR: "rcu_read_lock_nesting" [net/netfilter/nf_conntrack.ko] undefined!
-> ERROR: "rcu_read_lock_nesting" [net/netfilter/ipset/ip_set.ko] undefined!
-> ERROR: "rcu_read_lock_nesting" [net/llc/llc2.ko] undefined!
-> ERROR: "rcu_read_lock_nesting" [net/l2tp/l2tp_ip.ko] undefined!
-> ERROR: "rcu_read_lock_nesting" [net/l2tp/l2tp_core.ko] undefined!
-> ERROR: "rcu_read_lock_nesting" [net/key/af_key.ko] undefined!
-> ERROR: "rcu_read_lock_nesting" [net/ipv4/ipip.ko] undefined!
-> ERROR: "rcu_read_lock_nesting" [net/decnet/decnet.ko] undefined!
-> ERROR: "rcu_read_lock_nesting" [net/core/netprio_cgroup.ko] undefined!
-> ERROR: "rcu_read_lock_nesting" [net/can/can.ko] undefined!
-> ERROR: "rcu_read_lock_nesting" [net/can/can-bcm.ko] undefined!
-> ERROR: "rcu_read_lock_nesting" [net/bridge/bridge.ko] undefined!
-> ERROR: "rcu_read_lock_nesting" [net/bluetooth/bluetooth.ko] undefined!
-> ERROR: "rcu_read_lock_nesting" [net/batman-adv/batman-adv.ko] undefined!
-> ERROR: "rcu_read_lock_nesting" [net/atm/atm.ko] undefined!
-> ERROR: "rcu_read_lock_nesting" [fs/gfs2/gfs2.ko] undefined!
-> ERROR: "rcu_read_lock_nesting" [drivers/net/vmxnet3/vmxnet3.ko] undefined!
-> ERROR: "rcu_read_lock_nesting" [drivers/input/joydev.ko] undefined!
-> ERROR: "rcu_read_lock_nesting" [drivers/char/tpm/tpm.ko] undefined!
-> ERROR: "rcu_read_lock_nesting" [drivers/char/ipmi/ipmi_msghandler.ko] undefined!
-> ERROR: "rcu_read_lock_nesting" [block/cfq-iosched.ko] undefined!
-> ERROR: "rcu_read_lock_nesting" [block/blk-cgroup.ko] undefined!
-> 
-> on i386.
-> 
-> Full randconfig file is attached.
+On 04/17, David Howells wrote:
+>
+> Oleg Nesterov <oleg@redhat.com> wrote:
+>
+> > -	int ret;
+> > +	struct cred *cred;
+> > +	int err;
+>
+> There's no need to change ret to be err.  It produces slightly less churn if
+> you don't.
 
-Sigh!  I failed to add the exports.  Please see the following
-not-yet-tested patch.
+OK, I'll change it back.
 
-							Thanx, Paul
+>
+> > +	err = -ENOMEM;
+> > +	newwork = kmalloc(sizeof(struct task_work), GFP_KERNEL);
+> > +	if (!newwork)
+> > +		goto error_keyring;
+>
+> This passes unnecessarily through kfree(newwork).
 
-------------------------------------------------------------------------
+but harmless, newwork == NULL in this case,
 
-rcu: Add exports for per-CPU variables used for inlining
+> Please add a new goto label
+> and go to that.
 
-The new rcu_read_lock_nesting and rcu_read_unlock_special per-CPU
-variables need to be accessible from modules to allow rcu_read_lock()
-and rcu_read_unlock() to continue to be used from modules.  This
-commit therefore adds the needed EXPORT_PER_CPU_SYMBOL_GPL()s.
+OK, probably this is more clear, will do.
 
-Reported-by: Paul Gortmaker <paul.gortmaker@windriver.com>
-Reported-by: Randy Dunlap <rdunlap@xenotime.net>
-Signed-off-by: Paul E. McKenney <paul.mckenney@linaro.org>
-Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+> > -/*
+> > - * Replace a process's session keyring on behalf of one of its children when
+> > - * the target  process is about to resume userspace execution.
+> > - */
+>
+> Please don't delete the banner comment saying what the function does.
 
-diff --git a/kernel/rcupdate.c b/kernel/rcupdate.c
-index d52c68e..ef83774 100644
---- a/kernel/rcupdate.c
-+++ b/kernel/rcupdate.c
-@@ -53,7 +53,9 @@
- 
- #ifdef CONFIG_PREEMPT_RCU
- DEFINE_PER_CPU(int, rcu_read_lock_nesting);
-+EXPORT_PER_CPU_SYMBOL_GPL(rcu_read_lock_nesting);
- DEFINE_PER_CPU(int, rcu_read_unlock_special);
-+EXPORT_PER_CPU_SYMBOL_GPL(rcu_read_unlock_special);
- #ifdef CONFIG_PROVE_RCU
- DEFINE_PER_CPU(struct task_struct *, rcu_current_task);
- #endif /* #ifdef CONFIG_PROVE_RCU */
+OOPS, sorry, this was unintentional.
+
+> > -void key_replace_session_keyring(void)
+> > +void key_change_session_keyring(struct task_work *twork)
+>
+> There's no particular need to change the name of the function.
+
+There is.
+
+Until we cleanup arch/* do_notify_resume() still does
+
+	if (current->replacement_session_keyring)
+		key_replace_session_keyring();
+
+Oleg.
 
