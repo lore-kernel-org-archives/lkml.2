@@ -1,115 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753015Ab2DQVJT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Apr 2012 17:09:19 -0400
-Received: from oproxy6-pub.bluehost.com ([67.222.54.6]:33969 "HELO
-	oproxy6-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1750851Ab2DQVJS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Apr 2012 17:09:18 -0400
-Message-ID: <4F8DDC22.8050306@xenotime.net>
-Date: Tue, 17 Apr 2012 14:09:54 -0700
-From: Randy Dunlap <rdunlap@xenotime.net>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
-MIME-Version: 1.0
-To: Masanari Iida <standby24x7@gmail.com>
-CC: trivial@kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH/V4] [trivial] Documentation: Fix typo in multiple files
- in Documentation
-References: <1333983696.3519.0@oscar> <1333984933-15328-1-git-send-email-standby24x7@gmail.com>
-In-Reply-To: <1333984933-15328-1-git-send-email-standby24x7@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
+	id S1751757Ab2DQVMa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Apr 2012 17:12:30 -0400
+Received: from mga02.intel.com ([134.134.136.20]:12733 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751002Ab2DQVM3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Apr 2012 17:12:29 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
+   d="scan'208";a="133651909"
+From: Seth Heasley <seth.heasley@intel.com>
+To: Samuel Ortiz <sameo@linux.intel.com>
+Cc: linux-kernel@vger.kernel.org, James Ralston <james.d.ralston@intel.com>,
+        Seth Heasley <seth.heasley@intel.com>
+Subject: [PATCH 3/3] lpc_sch: Add Intel Centerton Multifunction Device support
+Date: Tue, 17 Apr 2012 14:09:22 -0700
+Message-Id: <1334696962-3642-1-git-send-email-seth.heasley@intel.com>
+X-Mailer: git-send-email 1.7.4.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/09/2012 08:22 AM, Masanari Iida wrote:
+This patch adds the Intel Centerton processor DeviceID for the Integrated Legacy Block.  The ILB provides GPIO, SMBus, and Watchdog functionality. The ILB DeviceID is defined in include/linux/pci_ids.h.
 
-> Correct multiple spelling typo in Documentation.
-> 
-> Signed-off-by: Masanari Iida <standby24x7@gmail.com>
-> Acked-by: Rob Landley <rob@landley.net>
-> Reported-by: Anders Larsen <al@alarsen.net>
-> ---
->  Documentation/ABI/testing/sysfs-bus-usb            |    4 +--
->  Documentation/DocBook/kernel-hacking.tmpl          |    2 +-
->  Documentation/DocBook/libata.tmpl                  |    2 +-
->  Documentation/DocBook/media/v4l/controls.xml       |    6 ++---
->  Documentation/blackfin/bfin-gpio-notes.txt         |    2 +-
->  .../devicetree/bindings/net/can/fsl-flexcan.txt    |    2 +-
->  Documentation/dvb/opera-firmware.txt               |    4 +--
->  Documentation/edac.txt                             |    2 +-
->  Documentation/filesystems/nfs/pnfs.txt             |    2 +-
->  Documentation/filesystems/qnx6.txt                 |   28 ++++++++++----------
->  Documentation/hwmon/it87                           |    2 +-
->  Documentation/memory-hotplug.txt                   |    2 +-
->  Documentation/networking/can.txt                   |    2 +-
->  Documentation/parisc/debugging                     |    2 +-
->  Documentation/sound/alsa/compress_offload.txt      |    2 +-
->  Documentation/static-keys.txt                      |    2 +-
->  16 files changed, 33 insertions(+), 33 deletions(-)
+Signed-off-by: Seth Heasley <seth.heasley@intel.com>
+---
+ drivers/mfd/lpc_sch.c |   13 ++++++++++---
+ 1 files changed, 10 insertions(+), 3 deletions(-)
 
-
-
-> diff --git a/Documentation/DocBook/media/v4l/controls.xml b/Documentation/DocBook/media/v4l/controls.xml
-> index b84f25e..dd03cf4 100644
-> --- a/Documentation/DocBook/media/v4l/controls.xml
-> +++ b/Documentation/DocBook/media/v4l/controls.xml
-> @@ -2183,7 +2183,7 @@ Applicable to the MPEG4 and H264 encoders.</entry>
->  		<entry>integer</entry>
->  	      </row>
->  	      <row><entry spanname="descr">The Video Buffer Verifier size in kilobytes, it is used as a limitation of frame skip.
-> -The VBV is defined in the standard as a mean to verify that the produced stream will be succesfully decoded.
-> +The VBV is defined in the standard as a mean to verify that the produced stream will be successfully decoded.
-
-
-                                           means ?
-
->  The standard describes it as "Part of a hypothetical decoder that is conceptually connected to the
->  output of the encoder. Its purpose is to provide a constraint on the variability of the data rate that an
->  encoder or editing process may produce.".
-> @@ -2196,7 +2196,7 @@ Applicable to the MPEG1, MPEG2, MPEG4 encoders.</entry>
->  		<entry>integer</entry>
->  	      </row>
->  	      <row><entry spanname="descr">The Coded Picture Buffer size in kilobytes, it is used as a limitation of frame skip.
-> -The CPB is defined in the H264 standard as a mean to verify that the produced stream will be succesfully decoded.
-> +The CPB is defined in the H264 standard as a mean to verify that the produced stream will be successfully decoded.
-
-
-                                                means ?
-
->  Applicable to the H264 encoder.</entry>
->  	      </row>
->  
-> diff --git a/Documentation/filesystems/qnx6.txt b/Documentation/filesystems/qnx6.txt
-> index 050223e..e59f2f0 100644
-> --- a/Documentation/filesystems/qnx6.txt
-> +++ b/Documentation/filesystems/qnx6.txt
-> @@ -118,13 +118,13 @@ no block pointers and the directory file record pointing to the target file
->  inode.
->  
->  Character and block special devices do not exist in QNX as those files
-> -are handled by the QNX kernel/drivers and created in /dev independant of the
-> +are handled by the QNX kernel/drivers and created in /dev independent of the
->  underlaying filesystem.
-
-
-   underlying ?
-
->  
->  Long filenames
->  --------------
->  
-> -Long filenames are stored in a seperate adressing tree. The staring point
-> +Long filenames are stored in a separate addressing tree. The staring point
-
-
-                                                                starting
-
->  is the longfilename root node in the active superblock.
->  Each data block (tree leaves) holds one long filename. That filename is
->  limited to 510 bytes. The first two starting bytes are used as length field
-
+diff --git a/drivers/mfd/lpc_sch.c b/drivers/mfd/lpc_sch.c
+index abc4213..84b7714 100644
+--- a/drivers/mfd/lpc_sch.c
++++ b/drivers/mfd/lpc_sch.c
+@@ -36,6 +36,7 @@
+ 
+ #define GPIOBASE	0x44
+ #define GPIO_IO_SIZE	64
++#define GPIO_IO_SIZE_CENTERTON	128
+ 
+ #define WDTBASE		0x84
+ #define WDT_IO_SIZE	64
+@@ -68,7 +69,7 @@ static struct resource wdt_sch_resource = {
+ 
+ static struct mfd_cell tunnelcreek_cells[] = {
+ 	{
+-		.name = "tunnelcreek_wdt",
++		.name = "ie6xx_wdt",
+ 		.num_resources = 1,
+ 		.resources = &wdt_sch_resource,
+ 	},
+@@ -77,6 +78,7 @@ static struct mfd_cell tunnelcreek_cells[] = {
+ static DEFINE_PCI_DEVICE_TABLE(lpc_sch_ids) = {
+ 	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_SCH_LPC) },
+ 	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_ITC_LPC) },
++	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_CENTERTON_ILB) },
+ 	{ 0, }
+ };
+ MODULE_DEVICE_TABLE(pci, lpc_sch_ids);
+@@ -115,7 +117,11 @@ static int __devinit lpc_sch_probe(struct pci_dev *dev,
+ 	}
+ 
+ 	gpio_sch_resource.start = base_addr;
+-	gpio_sch_resource.end = base_addr + GPIO_IO_SIZE - 1;
++
++	if (id->device == PCI_DEVICE_ID_INTEL_CENTERTON_ILB)
++		gpio_sch_resource.end = base_addr + GPIO_IO_SIZE_CENTERTON - 1;
++	else
++		gpio_sch_resource.end = base_addr + GPIO_IO_SIZE - 1;
+ 
+ 	for (i=0; i < ARRAY_SIZE(lpc_sch_cells); i++)
+ 		lpc_sch_cells[i].id = id->device;
+@@ -125,7 +131,8 @@ static int __devinit lpc_sch_probe(struct pci_dev *dev,
+ 	if (ret)
+ 		goto out_dev;
+ 
+-	if (id->device == PCI_DEVICE_ID_INTEL_ITC_LPC) {
++	if (id->device == PCI_DEVICE_ID_INTEL_ITC_LPC
++	 || id->device == PCI_DEVICE_ID_INTEL_CENTERTON_ILB) {
+ 		pci_read_config_dword(dev, WDTBASE, &base_addr_cfg);
+ 		if (!(base_addr_cfg & (1 << 31))) {
+ 			dev_err(&dev->dev, "Decode of the WDT I/O range disabled\n");
+-- 
+1.7.4.4
 
