@@ -1,67 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752699Ab2DQVGG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Apr 2012 17:06:06 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:38327 "EHLO mx1.redhat.com"
+	id S1752953Ab2DQVGV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Apr 2012 17:06:21 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:49095 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751887Ab2DQVGD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Apr 2012 17:06:03 -0400
-Date: Tue, 17 Apr 2012 17:05:50 -0400
-From: Josh Boyer <jwboyer@redhat.com>
-To: Matt Carlson <mcarlson@broadcom.com>
-Cc: Michael Chan <mchan@broadcom.com>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Ben Hutchings <ben@decadent.org.uk>,
-        harald@redhat.com
-Subject: Re: tg3 'No PHY devices' loading issue
-Message-ID: <20120417210549.GI19507@zod.bos.redhat.com>
-References: <20120417141856.GA19507@zod.bos.redhat.com>
- <20120417185007.GA3742@mcarlson.broadcom.com>
- <20120417193908.GG19507@zod.bos.redhat.com>
+	id S1751968Ab2DQVGF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Apr 2012 17:06:05 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: huang ying <huang.ying.caritas@gmail.com>
+Subject: Re: [RFC PATCH] PCIe: Add PCIe runtime D3cold support
+Date: Tue, 17 Apr 2012 23:10:38 +0200
+User-Agent: KMail/1.13.6 (Linux/3.4.0-rc3+; KDE/4.6.0; x86_64; ; )
+Cc: "Yan, Zheng" <zheng.z.yan@intel.com>, bhelgaas@google.com,
+        linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
+        linux-pm@vger.kernel.org, Lin Ming <ming.m.lin@intel.com>,
+        Zhang Rui <rui.zhang@intel.com>,
+        ACPI Devel Mailing List <linux-acpi@vger.kernel.org>
+References: <4F8790F6.5080408@intel.com> <201204162330.12178.rjw@sisk.pl> <CAC=cRTMXNnZQ_bDes9JFp9yreGC63b_i9fUX6apQzWrUHw2a0Q@mail.gmail.com>
+In-Reply-To: <CAC=cRTMXNnZQ_bDes9JFp9yreGC63b_i9fUX6apQzWrUHw2a0Q@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120417193908.GG19507@zod.bos.redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201204172310.38816.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 17, 2012 at 03:39:08PM -0400, Josh Boyer wrote:
-> On Tue, Apr 17, 2012 at 11:50:07AM -0700, Matt Carlson wrote:
-> > On Tue, Apr 17, 2012 at 10:18:57AM -0400, Josh Boyer wrote:
-> > > It has worked on some of the older kernels without the need for the
-> > > manual rmmod/modprobe step, so it seems to be somewhat timing related.
-> > > I'm not sure if there is a module load ordering issue, but that doesn't
-> > > seem to be the case.  I can't explain why a later modprobe would work
-> > > just fine though.
-> > > 
-> > > Do you have any thoughts on how to go about debugging/fixing this?  I'd
-> > > be happy to test and provide whatever information you need.
-> > 
-> > The 57788 uses the broadcom phylib module.  For some reason, it isn't
-> > available the first module load attempt.  A while ago, code was added to
-> > phylib to request modules from userspace if the particular phy support
-> > code wasn't already loaded.  It looks like this mechanism isn't working
-> > too well the first time through.
-> > 
-> > Can you reproduce the problem if you run 'rmmod broadcom' and then
-> > reload tg3?
+On Tuesday, April 17, 2012, huang ying wrote:
+> On Tue, Apr 17, 2012 at 5:30 AM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+> >> >> +     return 0;
+> >> >> +}
+> >> >> +
+> >> >> +static int pcie_port_runtime_resume(struct device *dev)
+> >> >> +{
+> >> >> +     struct pci_dev *pdev = to_pci_dev(dev);
+> >> >> +
+> >> >> +     pci_restore_state(pdev);
+> >> >> +     if (pdev->runtime_d3cold)
+> >> >> +             msleep(100);
+> >> >
+> >> > What's _that_ supposed to do?
+> >>
+> >> When resume from d3cold, PCIe main link will be powered on again, it
+> >> will take quite some time before the main link go into L0 state.
+> >> Otherwise, accessing devices under the port may return wrong result.
+> >
+> > OK, but this is generic code and as per the standard the link should have been
+> > reestablished at this point already.
+> >
+> > Please don't put some nonstandard-platform-specific quirks like this into
+> > code that's supposed to handle _every_ PCIe system.
 > 
-> I'll give it a shot, but that sounds like a quite plausible scenario to
-> me.  Oddly, even after the manual modprobe, the broadcom phy module
-> doesn't show an increased use count.  There's also no dependency on
-> 'broadcom' listed for tg3 by modinfo.
+> After checking PCIe spec, I found that the 100ms here has its standard origin :)
+> 
+> In PCI Express Base Specification Revision 2.0:
+> 
+> Section 6.6.1 Conventional Reset
+> 
+> "
+> To allow components to perform internal initialization, system
+> software must wait for at least
+> 100 ms from the end of a Conventional Reset of one or more devices
+> before it is permitted to
+> issue Configuration Requests to those devices
+> "
+> 
+> But I think we should move the 100ms delay here to PCIe bus code or
+> PCIe/ACPI code, because that is needed by all PCIe devices for D3cold
+> support.
 
-If I rmmod both tg3 and broadcom and then just load tg3 (either via
-insmod or modprobe), it works fine.  It does so because whatever you did
-to make it request the phylib module from userspace also worked because
-the broadcom module is loaded as well.
+I think it should be sufficient to wait for the PME message to arrive at
+the root port (which will cause the PME interrupt to appear), at which
+point the device that sent it should be able to receive configuration
+requests.
 
-So it seems my issue is basically because the initramfs isn't built with
-the broadcom module included.  I'll have to figure out a way to teach
-dracut what to do here, since it doesn't seem to be automatically
-picking it up (Harald CC'd).
+At this point, I need to konw what exactly happens when the GPE is triggered
+by WAKE#.
 
-Thanks much for the very quick response from everyone.
-
-josh
+Thanks,
+Rafael
