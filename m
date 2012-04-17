@@ -1,73 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751334Ab2DQEKd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Apr 2012 00:10:33 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:45285 "EHLO
+	id S1751599Ab2DQE17 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Apr 2012 00:27:59 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:59622 "EHLO
 	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750731Ab2DQEKb (ORCPT
+	with ESMTP id S1751031Ab2DQE15 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Apr 2012 00:10:31 -0400
-Date: Tue, 17 Apr 2012 14:10:23 +1000
+	Tue, 17 Apr 2012 00:27:57 -0400
+Date: Tue, 17 Apr 2012 14:27:48 +1000
 From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: James Morris <jmorris@namei.org>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Liam Girdwood <lrg@ti.com>
 Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Will Drewry <wad@chromium.org>, Kees Cook <keescook@chromium.org>,
-        Eric Paris <eparis@redhat.com>,
-        Serge Hallyn <serge.hallyn@canonical.com>
-Subject: linux-next: build warning after merge of the final tree (security
+        Thomas Abraham <thomas.abraham@linaro.org>
+Subject: linux-next: build failure after merge of the final tree (regulator
  tree related)
-Message-Id: <20120417141023.40aefc2ff17c29b2edf51762@canb.auug.org.au>
+Message-Id: <20120417142748.d42daa09958086a6e2ab4878@canb.auug.org.au>
 X-Mailer: Sylpheed 3.2.0beta7 (GTK+ 2.24.10; i486-pc-linux-gnu)
 Mime-Version: 1.0
 Content-Type: multipart/signed; protocol="application/pgp-signature";
  micalg="PGP-SHA256";
- boundary="Signature=_Tue__17_Apr_2012_14_10_23_+1000_8Q0O88w=KhKpINNI"
+ boundary="Signature=_Tue__17_Apr_2012_14_27_48_+1000_iCds5uwYkcIXDM3Q"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Tue__17_Apr_2012_14_10_23_+1000_8Q0O88w=KhKpINNI
+--Signature=_Tue__17_Apr_2012_14_27_48_+1000_iCds5uwYkcIXDM3Q
 Content-Type: text/plain; charset=US-ASCII
 Content-Disposition: inline
 Content-Transfer-Encoding: quoted-printable
 
-Hi all,
+Hi ,
 
-After merging the final tree, today's linux-next build (sparc64 defconfig)
-produced this warning:
+After merging the final tree, today's linux-next build (powerpc
+allyesconfig) failed like this:
 
-kernel/seccomp.c: In function '__secure_computing':
-kernel/seccomp.c:445:1: warning: label 'skip' defined but not used [-Wunuse=
-d-label]
-kernel/seccomp.c:381:6: warning: unused variable 'data' [-Wunused-variable]
-kernel/seccomp.c:380:6: warning: unused variable 'ret' [-Wunused-variable]
+drivers/misc/max8997-muic.c: In function 'max8997_muic_irq_work':
+drivers/misc/max8997-muic.c:313:34: error: 'struct max8997_platform_data' h=
+as no member named 'irq_base'
+drivers/misc/max8997-muic.c: In function 'max8997_muic_probe':
+drivers/misc/max8997-muic.c:434:35: error: 'struct max8997_platform_data' h=
+as no member named 'irq_base'
+drivers/misc/max8997-muic.c: In function 'max8997_muic_remove':
+drivers/misc/max8997-muic.c:474:17: error: 'struct max8997_platform_data' h=
+as no member named 'irq_base'
 
-Introduced by commit acf3b2c71ed2 ("seccomp: add SECCOMP_RET_ERRNO").
-This build has CONFIG_SECCOMP_FILTER turned off.
+Caused by commit 98d8618af377 ("mfd: add irq domain support for max8997
+interrupts").
 
+I have reverted that commit for today.
 --=20
 Cheers,
 Stephen Rothwell                    sfr@canb.auug.org.au
 
---Signature=_Tue__17_Apr_2012_14_10_23_+1000_8Q0O88w=KhKpINNI
+--Signature=_Tue__17_Apr_2012_14_27_48_+1000_iCds5uwYkcIXDM3Q
 Content-Type: application/pgp-signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.12 (GNU/Linux)
 
-iQIcBAEBCAAGBQJPjO0vAAoJEECxmPOUX5FEf2kP/1V/VJuAA4t/el0hWTW7j4KP
-Ce6PXFQN1tZZ09STZk27G/Gu/W7K6Owtk+IJhc+YuiuGHIbofOIz/LNJ3h/WoyuD
-qLCzvcE8EmOr8BR+jlivLkChLjvDxzoeNLba7BBmLX1cczkJXa6b7mKWI01uP2MC
-6Sc9RG2JMgB6adQSlZfUBlfG+TMEeAXAr584ejjqNSKzIWlp13hY9zMqOkZT6h30
-F1UrdcUK6bc29XzsuBsldL2GCYzjNuejj+LAErXRoGNa9NGpzG9Xqr1hu+Bk77LH
-utEoKTXY/r7fINxEPh4/V0BullV6NilVqkFkWuF6h+6qLQYsVBHZTuguztQ0PLcX
-iUnumi3cHZUJa2mQDfaWnr1jgHzObKljytqWTwFzDvz5wE0ZNJXG5HhDXsxNqcAP
-Du/FJVqeg9T5s07s/jmxxDtkmHHR2BPKxgmSZiaAGdOJ9yq/6WhG9//wIKNwz987
-5CjpNDvhVB3cFJs+tQ+oR/sIh7XX4wfkLbPAXDVJjFhRYFmQQPqaKC9ATLANU9lW
-awE4bX+k40TPVr/jL2x11NwfzVwyQAGFNRiKcJYkd9KnW3LP237uAqkHaYqBFXbi
-FwFpv/dFSnrOejxkAHQvXpkOlH8n0OWz5G46ivvuCRCoQC/Rl/1FMYjPk5++okmY
-KikMquSTNxidf7fQ0Wvo
-=NQx5
+iQIcBAEBCAAGBQJPjPFEAAoJEECxmPOUX5FECQ0QAIk19UjtbZ3IDPdnxJZqKV9a
+0XeJWVgNdNG97F7uoBkR9s0WrC3wgsO6OXM/K1V6Euqo1wutS++QE2pOTKSwfMIf
+EINOMB/pw8Jkb8OjzPcNfmP1s7x4jPUbZjAD7W/wJg282/lc2nopebbX35BhRmSK
+efVVUAWxmkF2pzx8iwktzYUcLRMJPVUIDik2ymeoAJOSfdow21iNSczOEPOLuGTU
+Sj9gMKZmDW0ucI5/TeMmkMmglPCGWdHQTB+9MEvEsdA3p8sNRBEHMypL0C9M8NvV
+VTQ27cV/WVe8ba8NeBJ9d+uKBKSU9tS2D2O0dvNszxVOolHE2MC32BCSyjIRrtac
+wQcPpZkA2lCc1XxTVzHtT0E6hHr9fkGkcZS+VTtq4l8yv6goccJBW0Dj4t6vVa7n
+fegBuN5ats92Y+VDSs20W/lIaOS9j8iX1+Jwip7MAkXbq2uXMAEPB2IJsuQsJln4
+sY6ckkb6N8vx+yxU7MN4biO7LcqxLF2xsLHPOdoC10xictWoQiHqGeEEPwU7k+q7
+AjhpI7yhZbkQSO4NwjxI7SZ8SASbZQuzhx/nZSlrf6J3Zfp3bZuP51MjziLCPSIW
+HGOZhD9hCP17z5p6FlFty6NICbm7mbp7NaYTq4wE47XVG+P9ORzc+9kzMMBGkKYF
+YRoSZ0+/k00T2A8mSeby
+=9s+q
 -----END PGP SIGNATURE-----
 
---Signature=_Tue__17_Apr_2012_14_10_23_+1000_8Q0O88w=KhKpINNI--
+--Signature=_Tue__17_Apr_2012_14_27_48_+1000_iCds5uwYkcIXDM3Q--
