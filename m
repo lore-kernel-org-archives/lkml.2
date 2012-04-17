@@ -1,55 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752931Ab2DQFnx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Apr 2012 01:43:53 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:64283 "EHLO mx1.redhat.com"
+	id S1753580Ab2DQFsM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Apr 2012 01:48:12 -0400
+Received: from mga14.intel.com ([143.182.124.37]:49201 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751504Ab2DQFnv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Apr 2012 01:43:51 -0400
-Date: Tue, 17 Apr 2012 08:43:58 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: Jason Wang <jasowang@redhat.com>, netdev@vger.kernel.org, xma@us.ibm.com,
-        davem@davemloft.net, linux-kernel@vger.kernel.org,
-        ebiederm@xmission.com
-Subject: Re: [PATCH 3/6] macvtap: zerocopy: validate vector length before
- pinning user pages
-Message-ID: <20120417054356.GB31278@redhat.com>
-References: <20120416060749.14140.19433.stgit@intel-e5620-16-2.englab.nay.redhat.com>
- <20120416060807.14140.96229.stgit@intel-e5620-16-2.englab.nay.redhat.com>
- <1334559183.28012.45.camel@edumazet-glaptop>
- <4F8BD68F.7070708@redhat.com>
- <1334640808.2472.6.camel@edumazet-glaptop>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1334640808.2472.6.camel@edumazet-glaptop>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1752055Ab2DQFsK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Apr 2012 01:48:10 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="89863251"
+From: Lin Ming <ming.m.lin@intel.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>, Len Brown <lenb@kernel.og>
+Cc: linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org,
+        Zhang Rui <rui.zhang@intel.com>,
+        Huang Ying <huang.ying.caritas@gmail.com>, Aaron Lu <aaron.lu@amd.com>
+Subject: [PATCH 1/6] ACPI: D3cold state is always valid
+Date: Tue, 17 Apr 2012 13:47:51 +0800
+Message-Id: <1334641676-14566-2-git-send-email-ming.m.lin@intel.com>
+X-Mailer: git-send-email 1.7.2.5
+In-Reply-To: <1334641676-14566-1-git-send-email-ming.m.lin@intel.com>
+References: <1334641676-14566-1-git-send-email-ming.m.lin@intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 17, 2012 at 07:33:28AM +0200, Eric Dumazet wrote:
-> On Mon, 2012-04-16 at 16:21 +0800, Jason Wang wrote:
-> > Hi:
-> > On 04/16/2012 02:53 PM, Eric Dumazet wrote:
-> > 	if ((num_pages != size) ||
-> > >>   		    (num_pages>  MAX_SKB_FRAGS - skb_shinfo(skb)->nr_frags))
-> > >>
-> > > Hi Jason
-> > >
-> > > Why is -EFAULT the right error code ?
-> > 
-> > E2BIG or is there any error code you prefer?
-> 
-> Might be good yes.
-> 
-> However it sounds strange user cant write any size he wants (and kernel
-> needs to build several skbs to fulfill user request)
+ACPI_STATE_D3 actually means ACPI D3hot which is not always valid.
+Instead, ACPI D3cold is always valid.
 
-We never supported arbitrary length writes:
-macvtap is exactly like packet sockets in this regard.
+Signed-off-by: Lin Ming <ming.m.lin@intel.com>
+---
+ drivers/acpi/scan.c |   11 ++---------
+ 1 files changed, 2 insertions(+), 9 deletions(-)
 
+diff --git a/drivers/acpi/scan.c b/drivers/acpi/scan.c
+index 767e2dc..fb56388 100644
+--- a/drivers/acpi/scan.c
++++ b/drivers/acpi/scan.c
+@@ -884,13 +884,6 @@ static int acpi_bus_get_power_flags(struct acpi_device *device)
+ 				acpi_bus_add_power_resource(ps->resources.handles[j]);
+ 		}
+ 
+-		/* The exist of _PR3 indicates D3Cold support */
+-		if (i == ACPI_STATE_D3) {
+-			status = acpi_get_handle(device->handle, object_name, &handle);
+-			if (ACPI_SUCCESS(status))
+-				device->power.states[ACPI_STATE_D3_COLD].flags.valid = 1;
+-		}
+-
+ 		/* Evaluate "_PSx" to see if we can do explicit sets */
+ 		object_name[2] = 'S';
+ 		status = acpi_get_handle(device->handle, object_name, &handle);
+@@ -908,8 +901,8 @@ static int acpi_bus_get_power_flags(struct acpi_device *device)
+ 	/* Set defaults for D0 and D3 states (always valid) */
+ 	device->power.states[ACPI_STATE_D0].flags.valid = 1;
+ 	device->power.states[ACPI_STATE_D0].power = 100;
+-	device->power.states[ACPI_STATE_D3].flags.valid = 1;
+-	device->power.states[ACPI_STATE_D3].power = 0;
++	device->power.states[ACPI_STATE_D3_COLD].flags.valid = 1;
++	device->power.states[ACPI_STATE_D3_COLD].power = 0;
+ 
+ 	acpi_bus_init_power(device);
+ 
 -- 
-MST
+1.7.2.5
 
