@@ -1,58 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753218Ab2DQQWU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Apr 2012 12:22:20 -0400
-Received: from fieldses.org ([174.143.236.118]:48975 "EHLO fieldses.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750715Ab2DQQWT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Apr 2012 12:22:19 -0400
-Date: Tue, 17 Apr 2012 12:22:16 -0400
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Al Viro <viro@zeniv.linux.org.uk>, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org
-Subject: Re: [git pull] vfs and fs fixes
-Message-ID: <20120417162216.GB27426@fieldses.org>
-References: <20120417052511.GU6589@ZenIV.linux.org.uk>
- <CA+55aFw75=Mtq1njQ9vNmNsGuTPbpUhLHnb7YBLmCZs4Q5ByMA@mail.gmail.com>
+	id S1752221Ab2DQQZR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Apr 2012 12:25:17 -0400
+Received: from va3ehsobe003.messaging.microsoft.com ([216.32.180.13]:48479
+	"EHLO va3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750888Ab2DQQZP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Apr 2012 12:25:15 -0400
+X-SpamScore: -11
+X-BigFish: VS-11(zzbb2dI9371I1432N98dKzz1202hzzz2dh2a8h668h839hd25h)
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+Message-ID: <4F8D995C.9030300@freescale.com>
+Date: Tue, 17 Apr 2012 11:25:00 -0500
+From: Scott Wood <scottwood@freescale.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120209 Thunderbird/10.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CA+55aFw75=Mtq1njQ9vNmNsGuTPbpUhLHnb7YBLmCZs4Q5ByMA@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-From: "J. Bruce Fields" <bfields@fieldses.org>
+To: Li Yang-R58472 <r58472@freescale.com>
+CC: Wood Scott-B07421 <B07421@freescale.com>,
+        Zhao Chenhui-B35336 <B35336@freescale.com>,
+        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v4 1/4] powerpc/85xx: add HOTPLUG_CPU support
+References: <1331889732-25240-1-git-send-email-chenhui.zhao@freescale.com> <4F8C78B3.1070002@freescale.com> <94F013E7935FF44C83EBE7784D62AD3F092D1098@039-SN2MPN1-022.039d.mgd.msft.net>
+In-Reply-To: <94F013E7935FF44C83EBE7784D62AD3F092D1098@039-SN2MPN1-022.039d.mgd.msft.net>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 17, 2012 at 08:01:48AM -0700, Linus Torvalds wrote:
-> On Mon, Apr 16, 2012 at 10:25 PM, Al Viro <viro@zeniv.linux.org.uk> wrote:
-> >        A bunch of endianness fixes plus a patch from bfields untangling
-> > dependencies between vfs and nfsd trees; in principle, we could keep it
-> > in nfsd tree (along with a bunch of followups that definitely belong there),
-> > but Miklos' stuff in fs/namei.c steps fairly close to it and overlayfs
-> > and unionfs series - even closer, so that would create serious PITA for
-> > both, whichever tree it would sit in.
+On 04/17/2012 04:51 AM, Li Yang-R58472 wrote:
+>>>  struct smp_ops_t smp_85xx_ops = {
+>>>  	.kick_cpu = smp_85xx_kick_cpu,
+>>> -#ifdef CONFIG_KEXEC
+>>> +#ifdef CONFIG_HOTPLUG_CPU
+>>> +	.cpu_disable	= generic_cpu_disable,
+>>> +	.cpu_die	= generic_cpu_die,
+>>> +#endif
+>>>  	.give_timebase	= smp_generic_give_timebase,
+>>>  	.take_timebase	= smp_generic_take_timebase,
+>>> -#endif
+>>>  };
+>>
+>> We need to stop using smp_generic_give/take_timebase, not expand its use.
+>> This stuff breaks under hypervisors where timebase can't be written.  It
+>> wasn't too bad before since we generally didn't enable CONFIG_KEXEC, but
+>> we're more likely to want CONFIG_HOTPLUG_CPU.
 > 
-> Why is that double mutex taking in vfs_rename_other() safe from ABBA?
+> I understand that the guest OS shouldn't change the real timebase.  
+
+Cannot change it, and we've seen the tbsync code loop forever when it
+tries (since the changes aren't taking effect).
+
+> But no matter what timebase syncing method we are using, the timebase need to be changed anyway for certain features.
+
+That's why I said to do it the way U-Boot does it.
+
+> I think the better way should be trapping timebase modification in the hypervisor.
+
+It does trap.  Currently we treat it as a no-op.  The only reasonable
+alternative is to give the guest an exception.  It is simply not allowed
+for a guest to modify the timebase -- we are not going to break the
+host's timebase sync.  See the virtualized implementation note in
+section 9.2.1 of book III-E of Power ISA 2.06B: "In virtualized
+implementations, TBU and TBL are read-only."
+
+>> Do the timebase sync the way U-Boot does -- if you find the appropriate
+>> guts node in the device tree.
 > 
-> We aren't guaranteed to hold the s_vfs_rename_mutex, since the parent
-> directories may be the same.
-> 
-> And yes, we hold the i_mutex on that shared parent, but the inodes may
-> exist (hardlinked) in another directory, so another rename could be
-> doing the i_mutex in the reverse order.
-> 
-> Maybe there is some reason why that double lock is safe, but I don't
-> see it, and I want it clearly documented. So I'm not pulling this.
+> That involves stopping timebase for a short time on all cores including the cores that are still online.  Won't this be a potential issue?
 
-Ugh, no, I think you're right:
+I don't think it's a big deal in the contexts where you'd be doing
+this -- at least not worse than the current situation.  Just make sure
+that you don't reset the timebase to zero or otherwise make a core see
+the timebase go backward.
 
-	rename A/a->A/b
-	rename B/b->B/b
+-Scott
 
-where A/a and B/a are the same file, and A/b and B/b are the same file,
-can result in the first rename holding the lock on A and a and waiting
-on b, and the second holding the lock on B and b and waiting on a.
-
---b.
