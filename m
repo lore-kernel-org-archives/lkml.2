@@ -1,51 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754551Ab2DQG1O (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Apr 2012 02:27:14 -0400
-Received: from e23smtp01.au.ibm.com ([202.81.31.143]:46063 "EHLO
-	e23smtp01.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752640Ab2DQG1N (ORCPT
+	id S1754755Ab2DQG3V (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Apr 2012 02:29:21 -0400
+Received: from portal.weinmann.de ([62.8.140.122]:54196 "EHLO
+	portal.weinmann.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753427Ab2DQG3T (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Apr 2012 02:27:13 -0400
-Message-ID: <4F8D0D29.9050009@linux.vnet.ibm.com>
-Date: Tue, 17 Apr 2012 14:26:49 +0800
-From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120216 Thunderbird/10.0.1
+	Tue, 17 Apr 2012 02:29:19 -0400
+X-Greylist: delayed 983 seconds by postgrey-1.27 at vger.kernel.org; Tue, 17 Apr 2012 02:29:19 EDT
+From: "Voss, Nikolaus" <N.Voss@weinmann.de>
+To: "'Adrian Yanes'" <adrian.yanes@aalto.fi>,
+        "'linux-arm-kernel@lists.infradead.org'" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "'linux-kernel@vger.kernel.org'" <linux-kernel@vger.kernel.org>,
+        "'linux-i2c@vger.kernel.org'" <linux-i2c@vger.kernel.org>
+CC: "'konsta.holtta@aalto.fi'" <konsta.holtta@aalto.fi>,
+        "'ben-linux@fluff.org'" <ben-linux@fluff.org>,
+        "'Hubert Feurstein'" <h.feurstein@gmail.com>,
+        "'Douglas Gilbert'" <dgilbert@interlog.com>
+Date: Tue, 17 Apr 2012 08:12:30 +0200
+Subject: RE: About AT91: replace broken TWI driver i2c-at91.c
+Thread-Topic: About AT91: replace broken TWI driver i2c-at91.c
+Thread-Index: Ac0b7xZJpptEcvYGRN6pFdj8j8ylOQAa9lhQ
+Message-ID: <EF2E73589CA71846A15D0B2CDF79505D0905D5A5FB@wm021.weinmann.com>
+References: <4F8C4A8B.2060005@aalto.fi>
+In-Reply-To: <4F8C4A8B.2060005@aalto.fi>
+Accept-Language: en-US, de-DE
+Content-Language: de-DE
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US, de-DE
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-To: Takuya Yoshikawa <takuya.yoshikawa@gmail.com>
-CC: Avi Kivity <avi@redhat.com>, kvm-ppc@vger.kernel.org,
-        Marcelo Tosatti <mtosatti@redhat.com>,
-        Xiao Guangrong <xiaoguangrong.eric@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>, KVM <kvm@vger.kernel.org>
-Subject: Re: [PATCH 00/13] KVM: MMU: fast page fault
-References: <4F742951.7080003@linux.vnet.ibm.com> <4F82E04E.6000900@redhat.com>	<20120409175829.GB21894@amt.cnet> <4F8329D3.7000605@gmail.com>	<20120409194614.GB23053@amt.cnet> <4F840DD2.3090101@redhat.com> <20120410204031.ffb5b976225ac9fe6dae474e@gmail.com> <4F842074.1050108@linux.vnet.ibm.com> <20120411211514.35db29c11460516e604059b6@gmail.com> <4F857B61.9080602@linux.vnet.ibm.com> <20120411231441.9d0984672dd252b806f99128@gmail.com> <20120413232528.c5ddbddb3cc0870d6e85a332@gmail.com> <4F8A95CB.9070104@redhat.com> <20120417004935.a9a39d951b3c24588e29edd2@gmail.com>
-In-Reply-To: <20120417004935.a9a39d951b3c24588e29edd2@gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-x-cbid: 12041620-1618-0000-0000-00000152C487
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by nfs id q3H6TUNV008210
 
-On 04/16/2012 11:49 PM, Takuya Yoshikawa wrote:
+Hi Adrian,
 
-
-> Although O(1) is actually O(1) for GET_DIRTY_LOG thread, it adds some
-> overheads to page fault handling.  We may need to hold mmu_lock for properly
-> handling O(1)'s write protection and ~500 write protections will not be so
-> cheap.  And there is no answer to the question how to achive slot-wise write
-> protection.
+Adrian Yanes wrote on 2012-04-16:
+> Changing the value to 400000 gives as ~356kHz rate instead of 400kHz,
+> maybe it is due to our processor/board, however, checking the specs of
+> the at91rm9200 (page 405) we found that the CLVID and the CHDIV are
+> calculated as follow:
 > 
+> T_low = (( CLDIV x 2^CKDIV) +3) + T_mck
+> T_high = (( CHDIV x 2^CKDIV) +3) + T_mck
+> 
+> which differs of the method suggested in the patch:
+> 
+> const int div = DIV_ROUND_UP(clk_get_rate(dev->clk), 2 * twi_clk) - 2;
 
+G45 spec is slightly different: T_low = (CLDIV x 2^CKDIV + 4) x T_mck
+With
+twi_clk := 1 / (T_low + T_high) = 1 / (2 * T_low)
+and
+div := CLKDIV x 2^CKDIV = MCK / (2 * twi_clk) - 4
+the above line should be
+const int div = DIV_ROUND_UP(clk_get_rate(dev->clk), 2 * twi_clk) - 4;
+for G45 and
+const int div = DIV_ROUND_UP(clk_get_rate(dev->clk), 2 * twi_clk) - 3;
+for RM9200, right?
 
-Actually no.
+I'll repost the driver with the above fix and Hubert's fix.
 
-We do not increase the overload on page fault for migration. The number of
-page fault of O(1) is the same as write-protect all spte.
+> Finally, did you consider the possibility to add module_param() to
+> handle the TWI_CLK_HZ as a module parameter rather than hardcode the
+> value? it will help to those users that want to run the bus to different
+> frequencies.
 
-And, we can also avoid to hold mmu_lock to write-protect PML4s, we can use
-a generation number, and notify mmu to update its page table when dirty-log
-is enabled.
+No, but feel free to submit a patch ;-).
 
-Anyway, no performance data, no truth. Let me implement it first.
+Niko
 
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
