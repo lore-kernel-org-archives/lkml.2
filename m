@@ -1,106 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754968Ab2DQQrv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Apr 2012 12:47:51 -0400
-Received: from mail-pz0-f66.google.com ([209.85.210.66]:64735 "EHLO
-	mail-pz0-f66.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753824Ab2DQQrZ (ORCPT
+	id S1754793Ab2DQQsU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Apr 2012 12:48:20 -0400
+Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:65132 "EHLO
+	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754017Ab2DQQsS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Apr 2012 12:47:25 -0400
-From: Zheng Liu <gnehzuil.liu@gmail.com>
-To: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        linux-ext4@vger.kernel.org
-Cc: Zheng Liu <wenqing.lz@taobao.com>
-Subject: [RFC][PATCH 2/3] vfs: add security check for _NO_HIDE_STALE flag
-Date: Wed, 18 Apr 2012 00:53:37 +0800
-Message-Id: <1334681618-9452-3-git-send-email-wenqing.lz@taobao.com>
-X-Mailer: git-send-email 1.7.4.1
-In-Reply-To: <1334681618-9452-1-git-send-email-wenqing.lz@taobao.com>
-References: <1334681618-9452-1-git-send-email-wenqing.lz@taobao.com>
+	Tue, 17 Apr 2012 12:48:18 -0400
+Date: Tue, 17 Apr 2012 20:48:13 +0400
+From: Cyrill Gorcunov <gorcunov@openvz.org>
+To: Pavel Emelyanov <xemul@parallels.com>
+Cc: Kees Cook <keescook@chromium.org>, LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>, Tejun Heo <tj@kernel.org>,
+        Serge Hallyn <serge.hallyn@canonical.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Subject: Re: [PATCH c/r -mm] c/r: prctl: Simplify PR_SET_MM on mm::code/data
+ assignment
+Message-ID: <20120417164813.GA14663@moon>
+References: <20120416225520.GD9756@moon>
+ <CAGXu5jKHZSXXxWQdkQ2d0-soaUkQys85XjQ1M2Fx_hg5vTrs2Q@mail.gmail.com>
+ <4F8D9B06.109@parallels.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4F8D9B06.109@parallels.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Zheng Liu <wenqing.lz@taobao.com>
+On Tue, Apr 17, 2012 at 08:32:06PM +0400, Pavel Emelyanov wrote:
+> On 04/17/2012 08:26 PM, Kees Cook wrote:
+> > On Mon, Apr 16, 2012 at 3:55 PM, Cyrill Gorcunov <gorcunov@openvz.org> wrote:
+> >> The mm::start_code, end_code, start_data, end_data members
+> >> are set during startup of executable file and are not changed
+> >> after.
+> >>
+> >> But the program itself might map new executable or/and data areas in
+> >> time so the original values written into mm fields mentioned above
+> >> might not have correspond VMA area at all, thus if one try to
+> >> use this prctl codes without underlied VMA, the error will be
+> >> returned.
+> > 
+> > Hrm, what is the utility of these fields then? If they're not "real",
+> > should the kernel even bother tracking it at all? (Or, should it be
+> > fixed to actually do something useful?)
+> 
+> As far as I see these values are used by aout binfmt core-dumping code
+> and in flat relocations load. Elf doesn't read either of them, just loads.
 
-A new variable is added to enable/disable _NO_HIDE_STALE flag becuase this
-flag is possible to be abused.
+True. But key moment for us (ie c/r) is that where these members are used
+as the source operands after checkpoint/restore (ie is there a way to write
+some 'bad' values via prctl interface and cause kernel to panic or whatever,
+regardless the fact that one need to obtain cap-sys-resource capability
+first, before he will be able to use these prctl codes). And I didn't find
+any side effect except it may cause incorrect statistics in /proc output.
 
-Signed-off-by: Zheng Liu <wenqing.lz@taobao.com>
----
- fs/open.c              |   10 ++++++++++
- include/linux/sysctl.h |    1 +
- kernel/sysctl.c        |   10 ++++++++++
- 3 files changed, 21 insertions(+), 0 deletions(-)
-
-diff --git a/fs/open.c b/fs/open.c
-index 1d3117f..43fd39c 100644
---- a/fs/open.c
-+++ b/fs/open.c
-@@ -213,6 +213,11 @@ SYSCALL_ALIAS(sys_ftruncate64, SyS_ftruncate64);
- #endif
- #endif /* BITS_PER_LONG == 32 */
- 
-+/*
-+ * enable/disable FALLOC_FL_NO_HIDE_STALE flag
-+ * 0: disable (default), 1: enable
-+ */
-+int sysctl_enable_falloc_no_hide_stale = 0;
- 
- int do_fallocate(struct file *file, int mode, loff_t offset, loff_t len)
- {
-@@ -249,6 +254,11 @@ int do_fallocate(struct file *file, int mode, loff_t offset, loff_t len)
- 	if (ret)
- 		return ret;
- 
-+	/* Check for enabling _NO_HIDE_STALE flag */
-+	if (mode & FALLOC_FL_NO_HIDE_STALE &&
-+	    !sysctl_enable_falloc_no_hide_stale)
-+		return -EPERM;
-+
- 	if (S_ISFIFO(inode->i_mode))
- 		return -ESPIPE;
- 
-diff --git a/include/linux/sysctl.h b/include/linux/sysctl.h
-index c34b4c8..484e5dc 100644
---- a/include/linux/sysctl.h
-+++ b/include/linux/sysctl.h
-@@ -820,6 +820,7 @@ enum
- 	FS_AIO_NR=18,	/* current system-wide number of aio requests */
- 	FS_AIO_MAX_NR=19,	/* system-wide maximum number of aio requests */
- 	FS_INOTIFY=20,	/* inotify submenu */
-+	FS_FALLOC_STALE=21,	/* enable fallocate _NO_HIDE_STALE flag */
- 	FS_OCFS2=988,	/* ocfs2 */
- };
- 
-diff --git a/kernel/sysctl.c b/kernel/sysctl.c
-index 4ab1187..37de7c2 100644
---- a/kernel/sysctl.c
-+++ b/kernel/sysctl.c
-@@ -108,6 +108,7 @@ extern int percpu_pagelist_fraction;
- extern int compat_log;
- extern int latencytop_enabled;
- extern int sysctl_nr_open_min, sysctl_nr_open_max;
-+extern int sysctl_enable_falloc_no_hide_stale;
- #ifndef CONFIG_MMU
- extern int sysctl_nr_trim_pages;
- #endif
-@@ -1517,6 +1518,15 @@ static struct ctl_table fs_table[] = {
- 		.proc_handler	= &pipe_proc_fn,
- 		.extra1		= &pipe_min_size,
- 	},
-+	{
-+		.procname	= "falloc_no_hide_stale",
-+		.data		= &sysctl_enable_falloc_no_hide_stale,
-+		.maxlen		= sizeof(int),
-+		.mode		= 0644,
-+		.proc_handler	= proc_dointvec_minmax,
-+		.extra1		= &zero,
-+		.extra2		= &one,
-+	},
- 	{ }
- };
- 
--- 
-1.7.4.1
-
+	Cyrill
