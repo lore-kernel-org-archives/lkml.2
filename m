@@ -1,162 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755194Ab2DQHoN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Apr 2012 03:44:13 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:51915 "EHLO mx2.suse.de"
+	id S1755321Ab2DQHoa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Apr 2012 03:44:30 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:23857 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755048Ab2DQHoK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Apr 2012 03:44:10 -0400
-Date: Tue, 17 Apr 2012 09:44:08 +0200
-From: Jan Kara <jack@suse.cz>
-To: Joel Becker <jlbec@evilplan.org>
-Cc: Jan Kara <jack@suse.cz>, Al Viro <viro@ZenIV.linux.org.uk>,
-        dchinner@redhat.com, LKML <linux-kernel@vger.kernel.org>,
-        linux-fsdevel@vger.kernel.org, Mark Fasheh <mfasheh@suse.com>,
-        ocfs2-devel@oss.oracle.com
-Subject: Re: [PATCH 19/27] ocfs2: Convert to new freezing mechanism
-Message-ID: <20120417074408.GB7198@quack.suse.cz>
-References: <1334592845-22862-1-git-send-email-jack@suse.cz>
- <1334592845-22862-20-git-send-email-jack@suse.cz>
- <20120417021921.GC31464@dhcp-172-17-9-228.mtv.corp.google.com>
+	id S1754624Ab2DQHo0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Apr 2012 03:44:26 -0400
+Message-ID: <4F8D1F46.3090901@redhat.com>
+Date: Tue, 17 Apr 2012 10:44:06 +0300
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120329 Thunderbird/11.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120417021921.GC31464@dhcp-172-17-9-228.mtv.corp.google.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: zhangyanfei <zhangyanfei@cn.fujitsu.com>
+CC: mtosatti@redhat.com, ebiederm@xmission.com, luto@mit.edu,
+        joerg.roedel@amd.com, dzickus@redhat.com, paul.gortmaker@windriver.com,
+        gregkh@suse.de, ludwig.nussel@suse.de, linux-kernel@vger.kernel.org,
+        kvm@vger.kernel.org, kexec@lists.infradead.org
+Subject: Re: [PATCH 0/4] Export offsets of VMCS fields as note information
+ for kdump
+References: <4F84E0DF.8040206@cn.fujitsu.com>
+In-Reply-To: <4F84E0DF.8040206@cn.fujitsu.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon 16-04-12 19:19:21, Joel Becker wrote:
-> On Mon, Apr 16, 2012 at 06:13:57PM +0200, Jan Kara wrote:
-> > Protect ocfs2_page_mkwrite() and ocfs2_file_aio_write() using the new
-> > freeze protection. We also protect several ioctl entry points which
-> > were missing the protection.
-> > 
-> > CC: Mark Fasheh <mfasheh@suse.com>
-> > CC: Joel Becker <jlbec@evilplan.org>
-> > CC: ocfs2-devel@oss.oracle.com
-> > Signed-off-by: Jan Kara <jack@suse.cz>
-> 
-> Acked-by: Joel Becker <jlbec@evilplan.org>
-  Thanks. Added.
+On 04/11/2012 04:39 AM, zhangyanfei wrote:
+> This patch set exports offsets of VMCS fields as note information for
+> kdump. We call it VMCSINFO. The purpose of VMCSINFO is to retrieve
+> runtime state of guest machine image, such as registers, in host
+> machine's crash dump as VMCS format. The problem is that VMCS
+> internal is hidden by Intel in its specification. So, we reverse
+> engineering it in the way implemented in this patch set. Please note
+> that this processing never affects any existing kvm logic. The
+> VMCSINFO is exported via sysfs to kexec-tools just like VMCOREINFO.
+>
+> Here is an example:
+> Processor: Intel(R) Core(TM)2 Duo CPU     E7500  @ 2.93GHz
+>
+> $cat /sys/kernel/vmcsinfo
+> 1cba8c0 2000
+>
+> crash> rd -p 1cba8c0 1000
+>          1cba8c0:  0000127b00000009 53434d5600000000   ....{.......VMCS
+>          1cba8d0:  000000004f464e49 4e4f495349564552   INFO....REVISION
+>          1cba8e0:  49460a643d44495f 5f4e495028444c45   _ID=d.FIELD(PIN_
+>          1cba8f0:  4d565f4445534142 4f435f434558455f   BASED_VM_EXEC_CO
+>          1cba900:  303d294c4f52544e 0a30383130343831   NTROL)=01840180.
+>          1cba910:  504328444c454946 5f44455341425f55   FIELD(CPU_BASED_
+>          1cba920:  5f434558455f4d56 294c4f52544e4f43   VM_EXEC_CONTROL)
+>          1cba930:  393130343931303d 28444c4549460a30   =01940190.FIELD(
+>          1cba940:  5241444e4f434553 4558455f4d565f59   SECONDARY_VM_EXE
+>          1cba950:  4f52544e4f435f43 30346566303d294c   C_CONTROL)=0fe40
+>          1cba960:  4c4549460a306566 4958455f4d562844   fe0.FIELD(VM_EXI
+>          1cba970:  4f52544e4f435f54 346531303d29534c   T_CONTROLS)=01e4
+>          1cba980:  4549460a30653130 4e455f4d5628444c   01e0.FIELD(VM_EN
+>          1cba990:  544e4f435f595254 33303d29534c4f52   TRY_CONTROLS)=03
+>          1cba9a0:  460a303133303431 45554728444c4549   140310.FIELD(GUE
+>          1cba9b0:  45535f53455f5453 3d29524f5443454c   ST_ES_SELECTOR)=
+>          1cba9c0:  4549460a30303530 545345554728444c   0500.FIELD(GUEST
+>          1cba9d0:  454c45535f53435f 35303d29524f5443   _CS_SELECTOR)=05
+>          ......
+>
+> TODO:
+>   1. In kexec-tools, get VMCSINFO via sysfs and dump it as note information
+>      into vmcore.
+>   2. Dump VMCS region of each guest vcpu and VMCSINFO into qemu-process
+>      core file. To do this, we will modify kernel core dumper, gdb gcore
+>      and crash gcore.
+>   3. Dump guest image from the qemu-process core file into a vmcore.
+>
 
-								Honza
+Taking a step back, can you describe the problem scenario you're fixing
+here?
 
-> > ---
-> >  fs/ocfs2/file.c  |   11 +++++++++--
-> >  fs/ocfs2/ioctl.c |   14 ++++++++++++--
-> >  fs/ocfs2/mmap.c  |    2 ++
-> >  3 files changed, 23 insertions(+), 4 deletions(-)
-> > 
-> > diff --git a/fs/ocfs2/file.c b/fs/ocfs2/file.c
-> > index 061591a..9b1e3d4 100644
-> > --- a/fs/ocfs2/file.c
-> > +++ b/fs/ocfs2/file.c
-> > @@ -1971,6 +1971,7 @@ int ocfs2_change_file_space(struct file *file, unsigned int cmd,
-> >  {
-> >  	struct inode *inode = file->f_path.dentry->d_inode;
-> >  	struct ocfs2_super *osb = OCFS2_SB(inode->i_sb);
-> > +	int ret;
-> >  
-> >  	if ((cmd == OCFS2_IOC_RESVSP || cmd == OCFS2_IOC_RESVSP64) &&
-> >  	    !ocfs2_writes_unwritten_extents(osb))
-> > @@ -1985,7 +1986,12 @@ int ocfs2_change_file_space(struct file *file, unsigned int cmd,
-> >  	if (!(file->f_mode & FMODE_WRITE))
-> >  		return -EBADF;
-> >  
-> > -	return __ocfs2_change_file_space(file, inode, file->f_pos, cmd, sr, 0);
-> > +	ret = mnt_want_write_file(file);
-> > +	if (ret)
-> > +		return ret;
-> > +	ret = __ocfs2_change_file_space(file, inode, file->f_pos, cmd, sr, 0);
-> > +	mnt_drop_write_file(file);
-> > +	return ret;
-> >  }
-> >  
-> >  static long ocfs2_fallocate(struct file *file, int mode, loff_t offset,
-> > @@ -2261,7 +2267,7 @@ static ssize_t ocfs2_file_aio_write(struct kiocb *iocb,
-> >  	if (iocb->ki_left == 0)
-> >  		return 0;
-> >  
-> > -	vfs_check_frozen(inode->i_sb, SB_FREEZE_WRITE);
-> > +	sb_start_write(inode->i_sb);
-> >  
-> >  	appending = file->f_flags & O_APPEND ? 1 : 0;
-> >  	direct_io = file->f_flags & O_DIRECT ? 1 : 0;
-> > @@ -2434,6 +2440,7 @@ out_sems:
-> >  		ocfs2_iocb_clear_sem_locked(iocb);
-> >  
-> >  	mutex_unlock(&inode->i_mutex);
-> > +	sb_end_write(inode->i_sb);
-> >  
-> >  	if (written)
-> >  		ret = written;
-> > diff --git a/fs/ocfs2/ioctl.c b/fs/ocfs2/ioctl.c
-> > index a1a1bfd..d9c352b 100644
-> > --- a/fs/ocfs2/ioctl.c
-> > +++ b/fs/ocfs2/ioctl.c
-> > @@ -926,7 +926,12 @@ long ocfs2_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
-> >  		if (get_user(new_clusters, (int __user *)arg))
-> >  			return -EFAULT;
-> >  
-> > -		return ocfs2_group_extend(inode, new_clusters);
-> > +		status = mnt_want_write_file(filp);
-> > +		if (status)
-> > +			return status;
-> > +		status = ocfs2_group_extend(inode, new_clusters);
-> > +		mnt_drop_write_file(filp);
-> > +		return status;
-> >  	case OCFS2_IOC_GROUP_ADD:
-> >  	case OCFS2_IOC_GROUP_ADD64:
-> >  		if (!capable(CAP_SYS_RESOURCE))
-> > @@ -935,7 +940,12 @@ long ocfs2_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
-> >  		if (copy_from_user(&input, (int __user *) arg, sizeof(input)))
-> >  			return -EFAULT;
-> >  
-> > -		return ocfs2_group_add(inode, &input);
-> > +		status = mnt_want_write_file(filp);
-> > +		if (status)
-> > +			return status;
-> > +		status = ocfs2_group_add(inode, &input);
-> > +		mnt_drop_write_file(filp);
-> > +		return status;
-> >  	case OCFS2_IOC_REFLINK:
-> >  		if (copy_from_user(&args, (struct reflink_arguments *)arg,
-> >  				   sizeof(args)))
-> > diff --git a/fs/ocfs2/mmap.c b/fs/ocfs2/mmap.c
-> > index 9cd4108..d150372 100644
-> > --- a/fs/ocfs2/mmap.c
-> > +++ b/fs/ocfs2/mmap.c
-> > @@ -136,6 +136,7 @@ static int ocfs2_page_mkwrite(struct vm_area_struct *vma, struct vm_fault *vmf)
-> >  	sigset_t oldset;
-> >  	int ret;
-> >  
-> > +	sb_start_pagefault(inode->i_sb);
-> >  	ocfs2_block_signals(&oldset);
-> >  
-> >  	/*
-> > @@ -165,6 +166,7 @@ static int ocfs2_page_mkwrite(struct vm_area_struct *vma, struct vm_fault *vmf)
-> >  
-> >  out:
-> >  	ocfs2_unblock_signals(&oldset);
-> > +	sb_end_pagefault(inode->i_sb);
-> >  	return ret;
-> >  }
-> >  
-> > -- 
-> > 1.7.1
-> > 
-> 
-> -- 
-> 
-> Life's Little Instruction Book #197
-> 
-> 	"Don't forget, a person's greatest emotional need is to 
-> 	 feel appreciated."
-> 
-> 			http://www.jlbec.org/
-> 			jlbec@evilplan.org
 -- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+error compiling committee.c: too many arguments to function
+
