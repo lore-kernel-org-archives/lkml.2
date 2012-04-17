@@ -1,159 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932256Ab2DQOJC (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Apr 2012 10:09:02 -0400
-Received: from mx2.netapp.com ([216.240.18.37]:28998 "EHLO mx2.netapp.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755888Ab2DQOI7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Apr 2012 10:08:59 -0400
-X-IronPort-AV: E=Sophos;i="4.75,434,1330934400"; 
-   d="scan'208";a="641524697"
-From: "Myklebust, Trond" <Trond.Myklebust@netapp.com>
-To: Peter Staubach <pstaubach@exagrid.com>
-CC: Jeff Layton <jlayton@redhat.com>,
-        Bernd Schubert <bernd.schubert@itwm.fraunhofer.de>,
-        Malahal Naineni <malahal@us.ibm.com>,
-        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "miklos@szeredi.hu" <miklos@szeredi.hu>,
-        "viro@ZenIV.linux.org.uk" <viro@ZenIV.linux.org.uk>,
-        "hch@infradead.org" <hch@infradead.org>,
-        "michael.brantley@deshaw.com" <michael.brantley@deshaw.com>,
-        "sven.breuner@itwm.fraunhofer.de" <sven.breuner@itwm.fraunhofer.de>
-Subject: RE: [PATCH RFC] vfs: make fstatat retry on ESTALE errors from
- getattr call
-Thread-Topic: [PATCH RFC] vfs: make fstatat retry on ESTALE errors from
- getattr call
-Thread-Index: AQHNHAe/WFyXQNvYykq9RVAgdBQu35aeT6UAgAALqQCAACzmAIAA9BwAgAAIOgA=
-Date: Tue, 17 Apr 2012 14:08:57 +0000
-Message-ID: <1334671736.2963.30.camel@lade.trondhjem.org.localdomain>
-References: <1334316311-22331-1-git-send-email-jlayton@redhat.com>
-	 <20120413150518.GA1987@us.ibm.com>
-	 <20120413114236.0e557e01@tlielax.poochiereds.net>
-	 <4F8B1B7B.3040304@itwm.fraunhofer.de>
-	 <20120416073655.7cdb90cf@corrin.poochiereds.net>
-	 <4F8C3036.2030702@itwm.fraunhofer.de>
-	 <20120416134642.1754cd3e@corrin.poochiereds.net>
-	 <1334604785.2879.23.camel@lade.trondhjem.org>
-	 <20120416154322.0d95e435@corrin.poochiereds.net>
-	 <1334607906.2879.36.camel@lade.trondhjem.org>
-	 <20120416190548.2463d1d0@corrin.poochiereds.net>
-	 <FA8A9A935BFD3A4D8F0CDA1C4F611BCC063CF8E115@IT-1874.Isys.com>
-In-Reply-To: <FA8A9A935BFD3A4D8F0CDA1C4F611BCC063CF8E115@IT-1874.Isys.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.104.60.115]
-Content-Type: text/plain; charset="utf-8"
-Content-ID: <5A6D331D01F83D409DA5C67F9D896417@tahoe.netapp.com>
+	id S1756122Ab2DQOLf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Apr 2012 10:11:35 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:52368 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755605Ab2DQOLe (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Apr 2012 10:11:34 -0400
+Date: Tue, 17 Apr 2012 15:11:28 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Ashish Chavan <ashish.chavan@kpitcummins.com>
+Cc: lrg <lrg@ti.com>, alsa-devel <alsa-devel@alsa-project.org>,
+        David Dajun Chen <david.chen@diasemi.com>,
+        "kuninori.morimoto.gx" <kuninori.morimoto.gx@renesas.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [alsa-devel] [PATCH v2] ASoC: da7210: Add support for PLL and SRM
+Message-ID: <20120417141128.GG6652@opensource.wolfsonmicro.com>
+References: <1334666046.32225.8.camel@matrix>
+ <20120417134351.GD6652@opensource.wolfsonmicro.com>
+ <1334672460.13279.3.camel@matrix>
 MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="GUPx2O/K0ibUojHx"
+Content-Disposition: inline
+In-Reply-To: <1334672460.13279.3.camel@matrix>
+X-Cookie: Long life is in store for you.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id q3HE9HU0010818
 
-On Tue, 2012-04-17 at 09:39 -0400, Peter Staubach wrote:
-> Hi.
-> 
-> There does need to be support in the lookup path to handle stale directories.  During a multi-component lookup, it is possible for one component to be looked up, but then become stale before being used.  The support needs to go into more than just the set of system calls, but also into the lookup code.
-> 
-> I suspect that since the "" case is handled specially anyway, code could be added to do something like issue a GETATTR to verify that the directory is still valid.  Since "" is probably used minimally, the performance impact to the system should be also be minimal.
 
-The problem with that is that even if your current directory is stale, a
-path of the form "../../../blah" can still be valid. I suspect that any
-code that tries to loop forever can quickly get very complicated as we
-start adding all these corner cases.
+--GUPx2O/K0ibUojHx
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-The thing about stat() is that in 99.99% of cases when the path
-revalidation code works, then the NFS client won't have to actually
-issue a GETATTR in the call to vfs_getstat() since the LOOKUP of that
-final path component will revalidate those attributes anyway.
+On Tue, Apr 17, 2012 at 07:51:00PM +0530, Ashish Chavan wrote:
+> On Tue, 2012-04-17 at 14:43 +0100, Mark Brown wrote:
 
-The only exception to that rule will be the 'noac' mounts, which really
-can end up looping forever.
+> > I've applied but this would be a lot clearer if it were writen as a
+> > single if statement with &&s.
 
-Cheers
-  Trond
+> Actually I implemented it like that first. But then realized that
+> because of the 80 chars limit and long conditions, readability was
+> hampered. Let me submit a patch to convert it to single if, if that is
+> preferred way of doing it.
 
-> 		ps
-> 
-> 
-> -----Original Message-----
-> From: Jeff Layton [mailto:jlayton@redhat.com] 
-> Sent: Monday, April 16, 2012 7:06 PM
-> To: Myklebust, Trond
-> Cc: Bernd Schubert; Malahal Naineni; linux-nfs@vger.kernel.org; linux-fsdevel@vger.kernel.org; linux-kernel@vger.kernel.org; Peter Staubach; miklos@szeredi.hu; viro@ZenIV.linux.org.uk; hch@infradead.org; michael.brantley@deshaw.com; sven.breuner@itwm.fraunhofer.de
-> Subject: Re: [PATCH RFC] vfs: make fstatat retry on ESTALE errors from getattr call
-> 
-> On Mon, 16 Apr 2012 20:25:06 +0000
-> "Myklebust, Trond" <Trond.Myklebust@netapp.com> wrote:
-> 
-> > On Mon, 2012-04-16 at 15:43 -0400, Jeff Layton wrote:
-> > > On Mon, 16 Apr 2012 19:33:05 +0000
-> > > "Myklebust, Trond" <Trond.Myklebust@netapp.com> wrote:
-> > > 
-> > > > On Mon, 2012-04-16 at 13:46 -0400, Jeff Layton wrote:
-> > > > > The question about looping indefinitely really comes down to:
-> > > > > 
-> > > > > 1) is a persistent ESTALE in conjunction with a successful 
-> > > > > lookup a situation that we expect to be temporary. i.e. will the 
-> > > > > admin at some point be able to do something about it? If not, 
-> > > > > then there's no point in continuing to retry. Again, this is a 
-> > > > > situation that *really* should not happen if the filesystem is doing the right thing.
-> > > > > 
-> > > > > 2) If the admin can't do anything about it, is it reasonable to 
-> > > > > expect that users can send a fatal signal to hung applications 
-> > > > > if this situation occurs.
-> > > > > 
-> > > > > We expect that that's ok in other situations to resolve hung 
-> > > > > applications, so I'm not sure I understand why it wouldn't be 
-> > > > > acceptable here...
-> > > > 
-> > > > There are definitely potentially persistent pathological 
-> > > > situations that the filesystem can't do anything about. If the 
-> > > > point of origin for your pathname (for instance your current 
-> > > > directory in the case of a relative
-> > > > pathname) is stale, then no amount of looping is going to help you 
-> > > > to recover.
-> > > > 
-> > > 
-> > > Ok -- Peter pretty much said something similar. Retrying indefnitely 
-> > > when the lookup returns ESTALE probably won't help. I'm ok with 
-> > > basically letting the VFS continue to do what it does there already. 
-> > > If it gets an ESTALE, it tries again with LOOKUP_REVAL set and then 
-> > > gives up if that doesn't work.
-> > > 
-> > > If however, the operation itself keeps returning ESTALE, are we OK 
-> > > to retry indefinitely assuming that we'll break out of the loop on 
-> > > fatal signals?
-> > >
-> > > For example, something like the v2 patch I sent a little while ago?
-> > 
-> > 
-> > Won't something like fstatat(AT_FDCWD, "", &stat, AT_EMPTY_PATH) risk 
-> > looping forever there, or am I missing something?
-> > 
-> 
-> To make sure I understand, that should be "shortcut" for a lookup of the cwd?
-> 
-> So I guess the concern is that you'd do the above and get a successful lookup since you're just going to get back the cwd. At that point, you'd attempt the getattr and get ESTALE back. Then, you'd redo the lookup with LOOKUP_REVAL set -- but since we're operating on the cwd, we don't have a way to redo the lookup since we don't have a pathname that we can look up again...
-> 
-> So yeah, I guess if you're sitting in a stale directory, something like that could loop eternally.
-> 
-> Do you think the proposed check for fatal_signal_pending is enough to mitigate such a problem? Or do we need to limit the number of retries to address those sorts of loops?
-> 
-> --
-> Jeff Layton <jlayton@redhat.com>
+Hrm?  The major problem with multiple if statements is that it introduces
+massive levels of indentation which are hard to parse.
 
--- 
-Trond Myklebust
-Linux NFS client maintainer
+--GUPx2O/K0ibUojHx
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-NetApp
-Trond.Myklebust@netapp.com
-www.netapp.com
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
-ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
+iQIcBAEBAgAGBQJPjXn4AAoJEBus8iNuMP3dOWQP/RoPmtS26zmfly2LfgqlZXxk
+mxUZA+P+EDG27haGuB6O9sjGvpbIJvL2C60kHPBiISdOa1v13ujduzBt5ZVDrKH6
+zuYbJlwTohNmm0qsRvFaFfQEzlAwM3MzZfxyModbGQjxWZTBkFyYoJU66RRsRzdE
+ZlTq+1tYuFztXiOEsNjapUpL3Nvu7t5yunzIjwxqgB9rP+ftp17ieO5x5AoJqEHJ
+JgjfB/PCvJjFCOA49hzngmHSm7jqHcwcFKm5eJ8AQatfVfmN6t1fen2QVmK8WOQq
+js5oHQctmU5F7ReyregQ2hDfpkz4XZ+LJ53o8sGK/3aMPPCcBz1gU6bYv33kExuZ
+9ZZ5+5AmtWvLgLAL0Fluak0MdlZR4nDnUO8zIiatn/32ky75sElxdPh7J/k16uUl
+uyAnrQjiVybYqyTFFJirBkKqNmyiiD0umRjJkSFR8RtG51sqbrd7DxD026FPRnNe
+Bjx/lYPxbJ6vyU2pm7y/R83G1wBZRPayIZU/ibx+9gADYSRBw2gud/Dg8HILlEoU
+MMOmbpW9pWTfYo8m/15uiPRtt5s7L1QFeLc9RJ52ZjS8jY/34oBDrMLyDctIHQkg
+OpyGJNYKMjAXkwU2tCywwO9NMj6Y0Grf0BRQ2i7fAYlA7qfpq9vrIrU8yfz6qZab
+r6crsU1pvWA5Rl1qFQyO
+=+TjB
+-----END PGP SIGNATURE-----
+
+--GUPx2O/K0ibUojHx--
