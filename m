@@ -1,56 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752500Ab2DQFsK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Apr 2012 01:48:10 -0400
-Received: from mga14.intel.com ([143.182.124.37]:49201 "EHLO mga14.intel.com"
+	id S1753552Ab2DQFzH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Apr 2012 01:55:07 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:1646 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751201Ab2DQFsJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Apr 2012 01:48:09 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="89863244"
-From: Lin Ming <ming.m.lin@intel.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>, Len Brown <lenb@kernel.og>
-Cc: linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org,
-        Zhang Rui <rui.zhang@intel.com>,
-        Huang Ying <huang.ying.caritas@gmail.com>, Aaron Lu <aaron.lu@amd.com>
-Subject: [PATCH 0/6]: ACPI D3 state cleanup
-Date: Tue, 17 Apr 2012 13:47:50 +0800
-Message-Id: <1334641676-14566-1-git-send-email-ming.m.lin@intel.com>
-X-Mailer: git-send-email 1.7.2.5
+	id S1751298Ab2DQFzF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Apr 2012 01:55:05 -0400
+Message-ID: <4F8D05AF.4000309@redhat.com>
+Date: Tue, 17 Apr 2012 13:54:55 +0800
+From: Jason Wang <jasowang@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120329 Thunderbird/11.0.1
+MIME-Version: 1.0
+To: "Michael S. Tsirkin" <mst@redhat.com>
+CC: netdev@vger.kernel.org, xma@us.ibm.com, davem@davemloft.net,
+        linux-kernel@vger.kernel.org, ebiederm@xmission.com
+Subject: Re: [PATCH 6/6] vhost_net: don't poll on -EFAULT
+References: <20120416060749.14140.19433.stgit@intel-e5620-16-2.englab.nay.redhat.com> <20120416060833.14140.28139.stgit@intel-e5620-16-2.englab.nay.redhat.com> <20120416071646.GB25396@redhat.com> <4F8BD81A.7010507@redhat.com> <20120416133859.GB13190@redhat.com> <4F8CE305.9090100@redhat.com> <20120417045736.GA31278@redhat.com>
+In-Reply-To: <20120417045736.GA31278@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On 04/17/2012 12:57 PM, Michael S. Tsirkin wrote:
+> On Tue, Apr 17, 2012 at 11:27:01AM +0800, Jason Wang wrote:
+>> On 04/16/2012 09:39 PM, Michael S. Tsirkin wrote:
+>>> On Mon, Apr 16, 2012 at 04:28:10PM +0800, Jason Wang wrote:
+>>>>>   On 04/16/2012 03:16 PM, Michael S. Tsirkin wrote:
+>>>>>>   >On Mon, Apr 16, 2012 at 02:08:33PM +0800, Jason Wang wrote:
+>>>>>>>   >>Currently, we restart tx polling unconditionally when sendmsg()
+>>>>>>>   >>fails. This would cause unnecessary wakeups of vhost wokers as it's
+>>>>>>>   >>only needed when the socket send buffer were exceeded.
+>>>>>>   >Why is this a problem?
+>>>>>   >   This issue is when guest driver is able to hit the
+>>>> -EFAULT, vhost
+>>>>>   discard the the descriptor and restart the polling. This would wake
+>>>>>   vhost thread and repeat the loop again which waste cpu.
+>>> Does same thing happen if we get an error from copy from user?
+>>>
+>> Right, so do you think it makes sense that we only restart polling
+>> on -EAGAIN or -ENOBUFS?
+> Sounds OK. BTW how do you test this?
+>
 
-Currently there are 2 ACPI D3 states defined:
-ACPI_STATE_D3 and ACPI_STATE_D3_COLD.
-
-But the uses of these 2 states are not clear/correct in some code.
-For example, some code refer ACPI_STATE_D3 as D3hot and others refer
-it as D3cold.
-
-This patch set try to clean it up.
-
-[PATCH 1/6] ACPI: D3cold state is always valid
-[PATCH 2/6] ACPI: Set D3cold state as default device sleep state
-[PATCH 3/6] ACPI: Set D3cold state as default inferred state
-[PATCH 4/6] ACPI: Fix power resource's device power state when it's off
-[PATCH 5/6] PCI/ACPI: Map PCI D3cold state to ACPI D3cold state
-[PATCH 6/6] ACPI: Rename ACPI_STATE_D3 to ACPI_STATE_D3_HOT
-
- drivers/acpi/fan.c         |    4 ++--
- drivers/acpi/power.c       |   10 +++++-----
- drivers/acpi/scan.c        |   13 +++----------
- drivers/acpi/sleep.c       |    2 +-
- drivers/ata/libata-acpi.c  |    4 ++--
- drivers/ide/ide-acpi.c     |    4 ++--
- drivers/pci/pci-acpi.c     |    6 +++---
- drivers/pnp/pnpacpi/core.c |    4 ++--
- include/acpi/acpi_bus.h    |    2 +-
- include/acpi/actypes.h     |    2 +-
- 10 files changed, 22 insertions(+), 29 deletions(-)
-
-Thanks,
-Lin Ming
+Not very hard, w/o this patch, we can see almost 100% cpu utilization 
+for vhost thread if guest hit EFAULT or EINVAL. With this patch, the cpu 
+utilization should be very low I think.
