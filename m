@@ -1,62 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751651Ab2DQTDb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Apr 2012 15:03:31 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:58695 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750715Ab2DQTD3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Apr 2012 15:03:29 -0400
-Date: Tue, 17 Apr 2012 20:03:22 +0100
-From: Ben Hutchings <ben@decadent.org.uk>
-To: Ian Campbell <Ian.Campbell@citrix.com>
-Cc: netdev@vger.kernel.org, linux-kernel <linux-kernel@vger.kernel.org>,
-        Ian Jackson <Ian.Jackson@eu.citrix.com>,
-        Michael Chan <mchan@broadcom.com>, David Miller <davem@davemloft.net>
-Message-ID: <20120417190322.GA3932@decadent.org.uk>
-References: <1334675504.23948.99.camel@zakaz.uk.xensource.com>
+	id S1751262Ab2DQTFF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Apr 2012 15:05:05 -0400
+Received: from li9-11.members.linode.com ([67.18.176.11]:57156 "EHLO
+	test.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750725Ab2DQTFC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Apr 2012 15:05:02 -0400
+Date: Tue, 17 Apr 2012 15:04:59 -0400
+From: "Ted Ts'o" <tytso@mit.edu>
+To: Eric Sandeen <sandeen@redhat.com>
+Cc: Ric Wheeler <rwheeler@redhat.com>, Zheng Liu <gnehzuil.liu@gmail.com>,
+        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        linux-ext4@vger.kernel.org, Zheng Liu <wenqing.lz@taobao.com>
+Subject: Re: [RFC][PATCH 0/3] add FALLOC_FL_NO_HIDE_STALE flag in fallocate
+Message-ID: <20120417190459.GB5916@thunk.org>
+Mail-Followup-To: Ted Ts'o <tytso@mit.edu>,
+	Eric Sandeen <sandeen@redhat.com>,
+	Ric Wheeler <rwheeler@redhat.com>,
+	Zheng Liu <gnehzuil.liu@gmail.com>, linux-kernel@vger.kernel.org,
+	linux-fsdevel@vger.kernel.org, linux-ext4@vger.kernel.org,
+	Zheng Liu <wenqing.lz@taobao.com>
+References: <1334681618-9452-1-git-send-email-wenqing.lz@taobao.com>
+ <4F8DAF89.5070805@redhat.com>
+ <20120417184306.GA5916@thunk.org>
+ <4F8DBC20.5010401@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1334675504.23948.99.camel@zakaz.uk.xensource.com>
+In-Reply-To: <4F8DBC20.5010401@redhat.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-Subject: Re: In tree firmware not kept up to date
-X-SA-Exim-Version: 4.2.1 (built Mon, 22 Mar 2010 06:51:10 +0000)
-X-SA-Exim-Scanned: Yes (on shadbolt.decadent.org.uk)
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on test.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 17, 2012 at 04:11:44PM +0100, Ian Campbell wrote:
-> Hello,
+On Tue, Apr 17, 2012 at 01:53:20PM -0500, Eric Sandeen wrote:
 > 
-> What is the current policy wrt keeping the in-tree firmware updated
-> alongside the drivers?
+> In my (admittedly quick, hacky) test, xfs suffed about a 1% perf
+> degradation, ext4 about 8%.  Until we at least know why ext4 is so
+> much worse, I'll signal a strong NAK for this change, for whatever
+> may or may not be worth.  :)
 
-Muddled.
+Was this on a HDD?  Try it on a PCIe attached flash device that
+doesn't support persistent discard.  :-)  I suspect in that case even
+with XFS you will see a bigger performance penalty than that.
 
-> I use CONFIG_FIRMWARE_IN_KERNEL but a couple of times[0] recently this
-> has failed me because the in-tree bnx2 driver requires
-> bnx2/bnx2-mips-09-6.2.1b.fw but the tree contains
-> firmware/bnx2/bnx2-mips-09-6.2.1a.fw.ihex and not 6.2.1b.
-> 
-> Is it a bug that bnx2 was updated without adding the new firmware or is
-> a bug that the obsolete firmware is still sitting in the tree?
+That being said, I agree that it would be good to see if we can
+improve ext4's performance without the big hammer, regardless of
+whether or not we can bring the uninit->init overhead down to zero.
+Some of the overhead I suspect is due the fact that ext4 is doing
+physical block journalling, which we won't be able to work around, but
+it may be there is room for improvement in the extent manipulation
+codepaths and and how they get called from the I/O completion handler.
 
-It's a bug that any firmware is still in-tree, but
-CONFIG_FIRMWARE_IN_KERNEL hasn't yet been made to work with a separate
-linux-firmware directory.
+(Oh, and that's assuming you were using DIO or AIO; if you were using
+buffered writes, you were probably getting hit by the ordered mode
+flush requirements, since in buffered mode we do the uninit->init
+conversion before we write out the data block, so we have to do an
+implicit fsync in the commit transaction.  Fixing that is something
+we've talked about before, and that's certainly worth doing; it
+requires the I/O tree work that we talked about at the ext4 workshop
+as a prerequisite, though.)
 
-Ben.
-
-> Ian.
-> 
-> [0] It's possible the same thing and I've just tripped over it more than
-> once now.
-
--- 
-Ben Hutchings
-We get into the habit of living before acquiring the habit of thinking.
-                                                              - Albert Camus
+						- Ted
