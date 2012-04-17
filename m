@@ -1,78 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754755Ab2DQG3V (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Apr 2012 02:29:21 -0400
-Received: from portal.weinmann.de ([62.8.140.122]:54196 "EHLO
-	portal.weinmann.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753427Ab2DQG3T (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Apr 2012 02:29:19 -0400
-X-Greylist: delayed 983 seconds by postgrey-1.27 at vger.kernel.org; Tue, 17 Apr 2012 02:29:19 EDT
-From: "Voss, Nikolaus" <N.Voss@weinmann.de>
-To: "'Adrian Yanes'" <adrian.yanes@aalto.fi>,
-        "'linux-arm-kernel@lists.infradead.org'" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "'linux-kernel@vger.kernel.org'" <linux-kernel@vger.kernel.org>,
-        "'linux-i2c@vger.kernel.org'" <linux-i2c@vger.kernel.org>
-CC: "'konsta.holtta@aalto.fi'" <konsta.holtta@aalto.fi>,
-        "'ben-linux@fluff.org'" <ben-linux@fluff.org>,
-        "'Hubert Feurstein'" <h.feurstein@gmail.com>,
-        "'Douglas Gilbert'" <dgilbert@interlog.com>
-Date: Tue, 17 Apr 2012 08:12:30 +0200
-Subject: RE: About AT91: replace broken TWI driver i2c-at91.c
-Thread-Topic: About AT91: replace broken TWI driver i2c-at91.c
-Thread-Index: Ac0b7xZJpptEcvYGRN6pFdj8j8ylOQAa9lhQ
-Message-ID: <EF2E73589CA71846A15D0B2CDF79505D0905D5A5FB@wm021.weinmann.com>
-References: <4F8C4A8B.2060005@aalto.fi>
-In-Reply-To: <4F8C4A8B.2060005@aalto.fi>
-Accept-Language: en-US, de-DE
-Content-Language: de-DE
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US, de-DE
-Content-Type: text/plain; charset="utf-8"
+	id S1754983Ab2DQGak (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Apr 2012 02:30:40 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:22371 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754105Ab2DQGah (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Apr 2012 02:30:37 -0400
+Message-ID: <4F8D0E03.7030105@redhat.com>
+Date: Tue, 17 Apr 2012 14:30:27 +0800
+From: Jason Wang <jasowang@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120329 Thunderbird/11.0.1
 MIME-Version: 1.0
+To: "Michael S. Tsirkin" <mst@redhat.com>
+CC: netdev@vger.kernel.org, xma@us.ibm.com, davem@davemloft.net,
+        linux-kernel@vger.kernel.org, ebiederm@xmission.com
+Subject: Re: [PATCH 6/6] vhost_net: don't poll on -EFAULT
+References: <20120416060749.14140.19433.stgit@intel-e5620-16-2.englab.nay.redhat.com> <20120416060833.14140.28139.stgit@intel-e5620-16-2.englab.nay.redhat.com> <20120416071646.GB25396@redhat.com> <4F8BD81A.7010507@redhat.com> <20120416133859.GB13190@redhat.com> <4F8CE305.9090100@redhat.com> <20120417045736.GA31278@redhat.com> <4F8D05AF.4000309@redhat.com> <20120417060752.GB20674@redhat.com>
+In-Reply-To: <20120417060752.GB20674@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id q3H6TUNV008210
 
-Hi Adrian,
+On 04/17/2012 02:07 PM, Michael S. Tsirkin wrote:
+> On Tue, Apr 17, 2012 at 01:54:55PM +0800, Jason Wang wrote:
+>> On 04/17/2012 12:57 PM, Michael S. Tsirkin wrote:
+>>> On Tue, Apr 17, 2012 at 11:27:01AM +0800, Jason Wang wrote:
+>>>> On 04/16/2012 09:39 PM, Michael S. Tsirkin wrote:
+>>>>> On Mon, Apr 16, 2012 at 04:28:10PM +0800, Jason Wang wrote:
+>>>>>>>   On 04/16/2012 03:16 PM, Michael S. Tsirkin wrote:
+>>>>>>>>   >On Mon, Apr 16, 2012 at 02:08:33PM +0800, Jason Wang wrote:
+>>>>>>>>>   >>Currently, we restart tx polling unconditionally when sendmsg()
+>>>>>>>>>   >>fails. This would cause unnecessary wakeups of vhost wokers as it's
+>>>>>>>>>   >>only needed when the socket send buffer were exceeded.
+>>>>>>>>   >Why is this a problem?
+>>>>>>>   >    This issue is when guest driver is able to hit the
+>>>>>> -EFAULT, vhost
+>>>>>>>   discard the the descriptor and restart the polling. This would wake
+>>>>>>>   vhost thread and repeat the loop again which waste cpu.
+>>>>> Does same thing happen if we get an error from copy from user?
+>>>>>
+>>>> Right, so do you think it makes sense that we only restart polling
+>>>> on -EAGAIN or -ENOBUFS?
+>>> Sounds OK. BTW how do you test this?
+>>>
+>> Not very hard, w/o this patch, we can see almost 100% cpu
+>> utilization for vhost thread if guest hit EFAULT or EINVAL. With
+>> this patch, the cpu utilization should be very low I think.
+> Yes but do you have a test that makes guest hit EFAULT or EINVAL?
 
-Adrian Yanes wrote on 2012-04-16:
-> Changing the value to 400000 gives as ~356kHz rate instead of 400kHz,
-> maybe it is due to our processor/board, however, checking the specs of
-> the at91rm9200 (page 405) we found that the CLVID and the CHDIV are
-> calculated as follow:
-> 
-> T_low = (( CLDIV x 2^CKDIV) +3) + T_mck
-> T_high = (( CHDIV x 2^CKDIV) +3) + T_mck
-> 
-> which differs of the method suggested in the patch:
-> 
-> const int div = DIV_ROUND_UP(clk_get_rate(dev->clk), 2 * twi_clk) - 2;
+Looks like we can do this by supplying an invalid hdr_len in vnet header 
+as tap does the check for this.
+> --
+> To unsubscribe from this list: send the line "unsubscribe netdev" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
-G45 spec is slightly different: T_low = (CLDIV x 2^CKDIV + 4) x T_mck
-With
-twi_clk := 1 / (T_low + T_high) = 1 / (2 * T_low)
-and
-div := CLKDIV x 2^CKDIV = MCK / (2 * twi_clk) - 4
-the above line should be
-const int div = DIV_ROUND_UP(clk_get_rate(dev->clk), 2 * twi_clk) - 4;
-for G45 and
-const int div = DIV_ROUND_UP(clk_get_rate(dev->clk), 2 * twi_clk) - 3;
-for RM9200, right?
-
-I'll repost the driver with the above fix and Hubert's fix.
-
-> Finally, did you consider the possibility to add module_param() to
-> handle the TWI_CLK_HZ as a module parameter rather than hardcode the
-> value? it will help to those users that want to run the bus to different
-> frequencies.
-
-No, but feel free to submit a patch ;-).
-
-Niko
-
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
