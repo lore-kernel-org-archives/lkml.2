@@ -1,88 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755298Ab2DQO1n (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Apr 2012 10:27:43 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:42021 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751811Ab2DQO1l (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Apr 2012 10:27:41 -0400
-From: Laura Vasilescu <laura@rosedu.org>
-To: linux-kernel@vger.kernel.org
-Cc: netdev@vger.kernel.org, eric.dumazet@gmail.com, nhorman@tuxdriver.com,
-        davem@davemloft.net, Laura Vasilescu <laura@rosedu.org>
-Subject: [PATCH] ethernet: fix checkpatch errors
-Date: Tue, 17 Apr 2012 17:27:24 +0300
-Message-Id: <1334672844-10129-1-git-send-email-laura@rosedu.org>
-X-Mailer: git-send-email 1.7.1
+	id S1755325Ab2DQO2n (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Apr 2012 10:28:43 -0400
+Received: from d1.icnet.pl ([212.160.220.21]:58385 "EHLO d1.icnet.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754087Ab2DQO2l (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Apr 2012 10:28:41 -0400
+X-Greylist: delayed 2234 seconds by postgrey-1.27 at vger.kernel.org; Tue, 17 Apr 2012 10:28:41 EDT
+From: Janusz Krzysztofik <jkrzyszt@tis.icnet.pl>
+To: David Woodhouse <dwmw2@infradead.org>
+Cc: Artem Bityutskiy <Artem.Bityutskiy@linux.intel.com>,
+        Tony Lindgren <tony@atomide.com>, linux-mtd@lists.infradead.org,
+        linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Janusz Krzysztofik <jkrzyszt@tis.icnet.pl>
+Subject: [PATCH v3.4-rc3] MTD: NAND: ams-delta: Fix request_mem_region() failure
+Date: Tue, 17 Apr 2012 15:49:17 +0200
+Message-Id: <1334670557-25640-1-git-send-email-jkrzyszt@tis.icnet.pl>
+X-Mailer: git-send-email 1.7.3.4
+X-SA-Exim-Scanned: No (on d1.icnet); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Laura Vasilescu <laura@rosedu.org>
----
- net/ethernet/eth.c |   20 ++++++++++++--------
- 1 files changed, 12 insertions(+), 8 deletions(-)
+A call to request_mem_region() has been introduced in the omap-gpio
+driver recently (commit 96751fcbe5438e95514b025e9cee7a6d38038f40,
+"gpio/omap: Use devm_ API and add request_mem_region"). This change
+prevented the Amstrad Delta NAND driver, which was doing the same in
+order to take control over OMAP MPU I/O lines that the NAND device hangs
+off, from loading successfully.
 
-diff --git a/net/ethernet/eth.c b/net/ethernet/eth.c
-index bf10a31..5cca0ff 100644
---- a/net/ethernet/eth.c
-+++ b/net/ethernet/eth.c
-@@ -20,8 +20,8 @@
-  *		Alan Cox	: eth_rebuild_header missing an htons and
-  *				  minor other things.
-  *		Tegge		: Arp bug fixes.
-- *		Florian		: Removed many unnecessary functions, code cleanup
-- *				  and changes for new arp and skbuff.
-+ *		Florian		: Removed many unnecessary functions, code
-+ *				  cleanup and changes for new arp and skbuff.
-  *		Alan Cox	: Redid header building to reflect new format.
-  *		Alan Cox	: ARP only when compiled with CONFIG_INET
-  *		Greg Page	: 802.2 and SNAP stuff.
-@@ -29,8 +29,9 @@
-  *		Paul Gortmaker	: eth_copy_and_sum shouldn't csum padding.
-  *		Alan Cox	: Protect against forwarding explosions with
-  *				  older network drivers and IFF_ALLMULTI.
-- *	Christer Weinigel	: Better rebuild header message.
-- *             Andrew Morton    : 26Feb01: kill ether_setup() - use netdev_boot_setup().
-+ *		Christer Weinigel: Better rebuild header message.
-+ *		Andrew Morton   : 26Feb01: kill ether_setup() -
-+ *				  use netdev_boot_setup().
-  *
-  *		This program is free software; you can redistribute it and/or
-  *		modify it under the terms of the GNU General Public License
-@@ -178,8 +179,9 @@ __be16 eth_type_trans(struct sk_buff *skb, struct net_device *dev)
- 	 *      seems to set IFF_PROMISC.
- 	 */
+There is another driver, omap-keypad, which also manipulates OMAP MPUIO
+registers, but has never been calling request_mem_region() on startup,
+so it's not affected by the change in the gpio-omap and works correctly.
+
+Drop request_mem_region() call and related bits from ams-delta NAND
+driver.
+
+Created and tested against linux-3.4-rc3.
+
+Signed-off-by: Janusz Krzysztofik <jkrzyszt@tis.icnet.pl>
+---
+ drivers/mtd/nand/ams-delta.c |   12 +-----------
+ 1 files changed, 1 insertions(+), 11 deletions(-)
+
+diff --git a/drivers/mtd/nand/ams-delta.c b/drivers/mtd/nand/ams-delta.c
+index 7341695..af76da3 100644
+--- a/drivers/mtd/nand/ams-delta.c
++++ b/drivers/mtd/nand/ams-delta.c
+@@ -212,18 +212,11 @@ static int __devinit ams_delta_init(struct platform_device *pdev)
+ 	/* Link the private data with the MTD structure */
+ 	ams_delta_mtd->priv = this;
  
--	else if (1 /*dev->flags&IFF_PROMISC */ ) {
--		if (unlikely(compare_ether_addr_64bits(eth->h_dest, dev->dev_addr)))
-+	else if (1 /*dev->flags&IFF_PROMISC */) {
-+		if (unlikely(compare_ether_addr_64bits(eth->h_dest,
-+							dev->dev_addr)))
- 			skb->pkt_type = PACKET_OTHERHOST;
+-	if (!request_mem_region(res->start, resource_size(res),
+-			dev_name(&pdev->dev))) {
+-		dev_err(&pdev->dev, "request_mem_region failed\n");
+-		err = -EBUSY;
+-		goto out_free;
+-	}
+-
+ 	io_base = ioremap(res->start, resource_size(res));
+ 	if (io_base == NULL) {
+ 		dev_err(&pdev->dev, "ioremap failed\n");
+ 		err = -EIO;
+-		goto out_release_io;
++		goto out_free;
  	}
  
-@@ -233,7 +235,9 @@ EXPORT_SYMBOL(eth_header_parse);
-  * @type: Ethernet type field
-  * Create an Ethernet header template from the neighbour.
-  */
--int eth_header_cache(const struct neighbour *neigh, struct hh_cache *hh, __be16 type)
-+int eth_header_cache(const struct neighbour *neigh,
-+			struct hh_cache *hh,
-+			__be16 type)
- {
- 	struct ethhdr *eth;
- 	const struct net_device *dev = neigh->dev;
-@@ -336,7 +340,7 @@ void ether_setup(struct net_device *dev)
- {
- 	dev->header_ops		= &eth_header_ops;
- 	dev->type		= ARPHRD_ETHER;
--	dev->hard_header_len 	= ETH_HLEN;
-+	dev->hard_header_len	= ETH_HLEN;
- 	dev->mtu		= ETH_DATA_LEN;
- 	dev->addr_len		= ETH_ALEN;
- 	dev->tx_queue_len	= 1000;	/* Ethernet wants good queues */
+ 	this->priv = io_base;
+@@ -271,8 +264,6 @@ out_gpio:
+ 	platform_set_drvdata(pdev, NULL);
+ 	gpio_free(AMS_DELTA_GPIO_PIN_NAND_RB);
+ 	iounmap(io_base);
+-out_release_io:
+-	release_mem_region(res->start, resource_size(res));
+ out_free:
+ 	kfree(ams_delta_mtd);
+  out:
+@@ -293,7 +284,6 @@ static int __devexit ams_delta_cleanup(struct platform_device *pdev)
+ 	gpio_free_array(_mandatory_gpio, ARRAY_SIZE(_mandatory_gpio));
+ 	gpio_free(AMS_DELTA_GPIO_PIN_NAND_RB);
+ 	iounmap(io_base);
+-	release_mem_region(res->start, resource_size(res));
+ 
+ 	/* Free the MTD device structure */
+ 	kfree(ams_delta_mtd);
 -- 
-1.7.1
+1.7.3.4
 
