@@ -1,55 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756148Ab2DQOLk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Apr 2012 10:11:40 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:60530 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755605Ab2DQOLi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Apr 2012 10:11:38 -0400
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
-	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
-	Kingdom.
-	Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-In-Reply-To: <20120414021236.GB23393@redhat.com>
-References: <20120414021236.GB23393@redhat.com> <20120414021201.GA23385@redhat.com>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: dhowells@redhat.com, Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Alexander Gordeev <agordeev@redhat.com>,
-        Chris Zankel <chris@zankel.net>, David Smith <dsmith@redhat.com>,
-        "Frank Ch. Eigler" <fche@redhat.com>,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        Larry Woodman <lwoodman@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>, Tejun Heo <tj@kernel.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v4 2/3] genirq: reimplement exit_irq_thread() hook via task_work_add()
-Date: Tue, 17 Apr 2012 15:11:18 +0100
-Message-ID: <26830.1334671878@redhat.com>
+	id S1756167Ab2DQOLz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Apr 2012 10:11:55 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:46900 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755605Ab2DQOLx convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Apr 2012 10:11:53 -0400
+MIME-Version: 1.0
+In-Reply-To: <20120417081025.GN20478@pengutronix.de>
+References: <1334619468-25680-1-git-send-email-rob.lee@linaro.org> <20120417081025.GN20478@pengutronix.de>
+From: Rob Lee <rob.lee@linaro.org>
+Date: Tue, 17 Apr 2012 09:11:32 -0500
+Message-ID: <CAMXH7KH6rdaUCsJxdj2pU0HrJ5ash5em2PMfyZHKTw+01Z=5nQ@mail.gmail.com>
+Subject: Re: [PATCH] ARM: imx: Fix imx5 idle logic bug
+To: Sascha Hauer <s.hauer@pengutronix.de>
+Cc: kernel@pengutronix.de, shawn.guo@linaro.org, linaro-dev@lists.linaro.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        patches@linaro.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Oleg Nesterov <oleg@redhat.com> wrote:
+On Tue, Apr 17, 2012 at 3:10 AM, Sascha Hauer <s.hauer@pengutronix.de> wrote:
+> On Mon, Apr 16, 2012 at 06:37:48PM -0500, Robert Lee wrote:
+>> The imx5_idle() check of the tzic_eanble_wake() return value uses
+>> incorrect (inverted) logic causing all attempt to idle to fail.
+>>
+>
+> Does this have influence on current kernels or does this only trigger
+> with your cpuidle patches?
 
-> 2. change irq_thread() to do task_queue_work(irq_thread_dtor)
->    at the start and task_work_cancel() before return.
-> 
->    tracehook_notify_resume() can never play with kthreads,
->    only do_exit()->exit_task_work() can call the callback
->    and this is what we want.
+This influences non-cpuidle kernels also as imx5_idle is what
+arm_pm_idle points to for imx51.
 
-Hmmm...  This seems wrong.  You're now using the hook in two distinct ways:
-the primary use of that the hook is to detect that userspace is about to
-resume processing (via TIF_NOTIFY_RESUME) and then you're abusing the fact
-that the hook is also invoked via do_exit() to perform a clean up because
-we've got to get rid of it somehow under that circumstance.
-
-This only works for you because you're operating in a kernel thread which
-doesn't have a userspace (and so will never see TIF_NOTIFY_RESUME).  However,
-if someone tries that in an ordinary thread, it is liable to malfunction as
-the record could be executed and deleted at some unpredictable point in the
-future.
-
-David
+>
+> Sascha
+>
+>> Signed-off-by: Robert Lee <rob.lee@linaro.org>
+>> ---
+>>  arch/arm/mach-imx/mm-imx5.c |    2 +-
+>>  1 file changed, 1 insertion(+), 1 deletion(-)
+>>
+>> diff --git a/arch/arm/mach-imx/mm-imx5.c b/arch/arm/mach-imx/mm-imx5.c
+>> index 05250ae..e10f391 100644
+>> --- a/arch/arm/mach-imx/mm-imx5.c
+>> +++ b/arch/arm/mach-imx/mm-imx5.c
+>> @@ -35,7 +35,7 @@ static void imx5_idle(void)
+>>       }
+>>       clk_enable(gpc_dvfs_clk);
+>>       mx5_cpu_lp_set(WAIT_UNCLOCKED_POWER_OFF);
+>> -     if (tzic_enable_wake() != 0)
+>> +     if (!tzic_enable_wake())
+>>               cpu_do_idle();
+>>       clk_disable(gpc_dvfs_clk);
+>>  }
+>> --
+>> 1.7.10
+>>
+>>
+>> _______________________________________________
+>> linux-arm-kernel mailing list
+>> linux-arm-kernel@lists.infradead.org
+>> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
+>>
+>
+> --
+> Pengutronix e.K.                           |                             |
+> Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+> Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
+> Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
