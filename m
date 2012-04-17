@@ -1,23 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752018Ab2DQTMf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Apr 2012 15:12:35 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:40094 "EHLO mx2.suse.de"
+	id S1752246Ab2DQTOv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Apr 2012 15:14:51 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:40145 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751024Ab2DQTMe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Apr 2012 15:12:34 -0400
-Date: Tue, 17 Apr 2012 21:12:33 +0200
-Message-ID: <s5hy5punpem.wl%tiwai@suse.de>
+	id S1750874Ab2DQTOu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Apr 2012 15:14:50 -0400
+Date: Tue, 17 Apr 2012 21:14:49 +0200
+Message-ID: <s5hwr5enpau.wl%tiwai@suse.de>
 From: Takashi Iwai <tiwai@suse.de>
-To: Ondrej Zary <linux@rainbow-software.org>
-Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: Ondrej Zary <linux@rainbow-software.org>, alsa-devel@alsa-project.org,
+        linux-kernel@vger.kernel.org
 Subject: Re: [alsa-devel] [PATCH 3/4] Add Wolfson Microelectronics WM8776 codec ALSA driver
-In-Reply-To: <201204172015.14582.linux@rainbow-software.org>
+In-Reply-To: <20120417182204.GV6652@opensource.wolfsonmicro.com>
 References: <1334611118-10301-1-git-send-email-linux@rainbow-software.org>
 	<20120417170431.GT6652@opensource.wolfsonmicro.com>
 	<s5h3982p71g.wl%tiwai@suse.de>
 	<201204172015.14582.linux@rainbow-software.org>
+	<20120417182204.GV6652@opensource.wolfsonmicro.com>
 User-Agent: Wanderlust/2.15.6 (Almost Unreal) SEMI/1.14.6 (Maruoka)
  FLIM/1.14.9 (=?UTF-8?B?R29qxY0=?=) APEL/10.7 Emacs/23.3
  (x86_64-suse-linux-gnu) MULE/6.0 (HANACHIRUSATO)
@@ -27,43 +28,25 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-At Tue, 17 Apr 2012 20:15:06 +0200,
-Ondrej Zary wrote:
+At Tue, 17 Apr 2012 19:22:05 +0100,
+Mark Brown wrote:
 > 
-> On Tuesday 17 April 2012 20:06:19 Takashi Iwai wrote:
-> > At Tue, 17 Apr 2012 18:04:31 +0100,
-> >
-> > Mark Brown wrote:
-> > > On Tue, Apr 17, 2012 at 06:52:49PM +0200, Takashi Iwai wrote:
-> > > > Mark Brown wrote:
-> > > > > This isn't just adding something into a specific driver which fails
-> > > > > at abstraction, it's adding generic code.  If it were adding
-> > > > > something to the ice17xx driver then that'd be one thing but look at
-> > > > > the subject line and location of the file...  this stuff should be
-> > > > > buried inside the driver if it's too painful to make the driver sane.
-> > > >
-> > > > The codes in sound/i2c are mostly oly for ice1712/ice1724 drivers
-> > > > after all...  They could be used by others, but I don't think there
-> > > > will be any more at this point.
-> > >
-> > > If they're specific to that driver we should make them specific to that
-> > > driver and make sure the pain is confined there.  We really don't want
-> > > to end up going back to the bad old days of having to do per-CPU/card
-> > > drivers for CODECs because nobody had thought to abstract this stuff,
-> > > that just makes everyone miserable.
-> > >
-> > > Looking at these commits I'd not expect anyone to figure out that this
-> > > isn't how we want or expect people to add generic CODEC drivers.
-> >
-> > Yeah, these stuff can be better put in pci/ice1712/ directory only
-> > for ice1724 driver.  In that way, you can avoid unnecessary exported
-> > symbols, too.
+> On Tue, Apr 17, 2012 at 08:15:06PM +0200, Ondrej Zary wrote:
+> > On Tuesday 17 April 2012 20:06:19 Takashi Iwai wrote:
 > 
-> Xonar (oxygen) has a private version of these drivers too. It could be 
-> converted to use common code instead.
+> > > Yeah, these stuff can be better put in pci/ice1712/ directory only
+> > > for ice1724 driver.  In that way, you can avoid unnecessary exported
+> > > symbols, too.
+> 
+> > Xonar (oxygen) has a private version of these drivers too. It could be 
+> > converted to use common code instead.
+> 
+> Can we make a sound/legacy-codec or something?  Or fix these drivers if
+> they're actively developed...
 
-Hm, only if the generated controls do match with your case,..
-It's case by case, especally if there is only one another candidate.
+sound/i2c are obvious components for such drivers.
+You don't have to react against each rare action.  There aren't so
+many hardware any longer, and will be less and less in future.
 
 
 Takashi
