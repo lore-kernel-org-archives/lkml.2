@@ -1,154 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755267Ab2DQK7C (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Apr 2012 06:59:02 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:39834 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754367Ab2DQK7A (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Apr 2012 06:59:00 -0400
-From: Bryan Wu <bryan.wu@canonical.com>
-To: linux@arm.linux.org.uk, rpurdie@rpsys.net,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linus.walleij@linaro.org, akpm@linux-foundation.org,
-        arnd.bergmann@linaro.org, nicolas.pitre@linaro.org,
-        tim.gardner@canonical.com
-Subject: [PATCH 10/18] ARM: mach-ebsa110: retire custom LED code
-Date: Tue, 17 Apr 2012 18:53:37 +0800
-Message-Id: <1334660025-20442-11-git-send-email-bryan.wu@canonical.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1334660025-20442-1-git-send-email-bryan.wu@canonical.com>
-References: <1334660025-20442-1-git-send-email-bryan.wu@canonical.com>
+	id S1755153Ab2DQK77 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Apr 2012 06:59:59 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:45111 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754551Ab2DQK75 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Apr 2012 06:59:57 -0400
+Message-ID: <4F8D4D1C.4010400@redhat.com>
+Date: Tue, 17 Apr 2012 13:59:40 +0300
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120329 Thunderbird/11.0.1
+MIME-Version: 1.0
+To: zhangyanfei <zhangyanfei@cn.fujitsu.com>
+CC: mtosatti@redhat.com, ebiederm@xmission.com, luto@mit.edu,
+        joerg.roedel@amd.com, dzickus@redhat.com, paul.gortmaker@windriver.com,
+        gregkh@suse.de, ludwig.nussel@suse.de, linux-kernel@vger.kernel.org,
+        kvm@vger.kernel.org, kexec@lists.infradead.org
+Subject: Re: [PATCH 0/4] Export offsets of VMCS fields as note information
+ for kdump
+References: <4F84E0DF.8040206@cn.fujitsu.com> <4F8D1F46.3090901@redhat.com> <4F8D4B4C.8070705@cn.fujitsu.com>
+In-Reply-To: <4F8D4B4C.8070705@cn.fujitsu.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Bryan Wu <bryan.wu@canonical.com>
----
- arch/arm/mach-ebsa110/Makefile |    4 +-
- arch/arm/mach-ebsa110/leds.c   |   79 ++++++++++++++++++++++++----------------
- 2 files changed, 49 insertions(+), 34 deletions(-)
+On 04/17/2012 01:51 PM, zhangyanfei wrote:
+> 于 2012年04月17日 15:44, Avi Kivity 写道:
+> > On 04/11/2012 04:39 AM, zhangyanfei wrote:
+> >> This patch set exports offsets of VMCS fields as note information for
+> >> kdump. We call it VMCSINFO. The purpose of VMCSINFO is to retrieve
+> >> runtime state of guest machine image, such as registers, in host
+> >> machine's crash dump as VMCS format. The problem is that VMCS
+> >> internal is hidden by Intel in its specification. So, we reverse
+> >> engineering it in the way implemented in this patch set. Please note
+> >> that this processing never affects any existing kvm logic. The
+> >> VMCSINFO is exported via sysfs to kexec-tools just like VMCOREINFO.
+> >>
+> >> Here is an example:
+> >> Processor: Intel(R) Core(TM)2 Duo CPU     E7500  @ 2.93GHz
+> >>
+> >> $cat /sys/kernel/vmcsinfo
+> >> 1cba8c0 2000
+> >>
+> >> crash> rd -p 1cba8c0 1000
+> >>          1cba8c0:  0000127b00000009 53434d5600000000   ....{.......VMCS
+> >>          1cba8d0:  000000004f464e49 4e4f495349564552   INFO....REVISION
+> >>          1cba8e0:  49460a643d44495f 5f4e495028444c45   _ID=d.FIELD(PIN_
+> >>          1cba8f0:  4d565f4445534142 4f435f434558455f   BASED_VM_EXEC_CO
+> >>          1cba900:  303d294c4f52544e 0a30383130343831   NTROL)=01840180.
+> >>          1cba910:  504328444c454946 5f44455341425f55   FIELD(CPU_BASED_
+> >>          1cba920:  5f434558455f4d56 294c4f52544e4f43   VM_EXEC_CONTROL)
+> >>          1cba930:  393130343931303d 28444c4549460a30   =01940190.FIELD(
+> >>          1cba940:  5241444e4f434553 4558455f4d565f59   SECONDARY_VM_EXE
+> >>          1cba950:  4f52544e4f435f43 30346566303d294c   C_CONTROL)=0fe40
+> >>          1cba960:  4c4549460a306566 4958455f4d562844   fe0.FIELD(VM_EXI
+> >>          1cba970:  4f52544e4f435f54 346531303d29534c   T_CONTROLS)=01e4
+> >>          1cba980:  4549460a30653130 4e455f4d5628444c   01e0.FIELD(VM_EN
+> >>          1cba990:  544e4f435f595254 33303d29534c4f52   TRY_CONTROLS)=03
+> >>          1cba9a0:  460a303133303431 45554728444c4549   140310.FIELD(GUE
+> >>          1cba9b0:  45535f53455f5453 3d29524f5443454c   ST_ES_SELECTOR)=
+> >>          1cba9c0:  4549460a30303530 545345554728444c   0500.FIELD(GUEST
+> >>          1cba9d0:  454c45535f53435f 35303d29524f5443   _CS_SELECTOR)=05
+> >>          ......
+> >>
+> >> TODO:
+> >>   1. In kexec-tools, get VMCSINFO via sysfs and dump it as note information
+> >>      into vmcore.
+> >>   2. Dump VMCS region of each guest vcpu and VMCSINFO into qemu-process
+> >>      core file. To do this, we will modify kernel core dumper, gdb gcore
+> >>      and crash gcore.
+> >>   3. Dump guest image from the qemu-process core file into a vmcore.
+> >>
+> > 
+> > Taking a step back, can you describe the problem scenario you're fixing
+> > here?
+> > 
+> Considering two scenarios below:
+> 1. Host panics, guests running on that host will also be dumped into
+>    host's vmcore.
+> 2. Qemu process is core dumped (by gdb gcore or kernel core dumper), and
+>    its coresponding guest will be included in the core file.
+>
+> We want to create the guest machine's crash dump from host machine's vmcore
+> or qemu process's core file. Unfortunately, we cannot get the guest's registers
+> values in both scenarios.
+>
+> For scenario 1, some key registers (CR0, CR3...) of the guest machine are stored
+> in VMCS region. But VMCS internal is hidden by Intel specification. So this
+> patch set aims to get offsets of fields in VMCS region and export it as note
+> information for kdump. 
 
-diff --git a/arch/arm/mach-ebsa110/Makefile b/arch/arm/mach-ebsa110/Makefile
-index 6520ac8..935e4af 100644
---- a/arch/arm/mach-ebsa110/Makefile
-+++ b/arch/arm/mach-ebsa110/Makefile
-@@ -4,9 +4,7 @@
- 
- # Object file lists.
- 
--obj-y			:= core.o io.o
-+obj-y			:= core.o io.o leds.o
- obj-m			:=
- obj-n			:=
- obj-			:=
--
--obj-$(CONFIG_LEDS)	+= leds.o
-diff --git a/arch/arm/mach-ebsa110/leds.c b/arch/arm/mach-ebsa110/leds.c
-index 99e14e3..b7dd0a5 100644
---- a/arch/arm/mach-ebsa110/leds.c
-+++ b/arch/arm/mach-ebsa110/leds.c
-@@ -1,52 +1,69 @@
- /*
-- *  linux/arch/arm/mach-ebsa110/leds.c
-+ * Driver for the LED found on the EBSA110 machine
-+ * Based on Versatile and RealView machine LED code
-  *
-- *  Copyright (C) 1998 Russell King
-- *
-- * This program is free software; you can redistribute it and/or modify
-- * it under the terms of the GNU General Public License version 2 as
-- * published by the Free Software Foundation.
-- *
-- *  EBSA-110 LED control routines.  We use the led as follows:
-- *
-- *   - Red - toggles state every 50 timer interrupts
-+ * License terms: GNU General Public License (GPL) version 2
-+ * Author: Bryan Wu <bryan.wu@canonical.com>
-  */
--#include <linux/module.h>
--#include <linux/spinlock.h>
-+#include <linux/kernel.h>
- #include <linux/init.h>
-+#include <linux/io.h>
-+#include <linux/slab.h>
-+#include <linux/leds.h>
- 
--#include <mach/hardware.h>
--#include <asm/leds.h>
- #include <asm/mach-types.h>
- 
- #include "core.h"
- 
--static spinlock_t leds_lock;
--
--static void ebsa110_leds_event(led_event_t ledevt)
-+static void ebsa110_led_set(struct led_classdev *cdev,
-+			      enum led_brightness b)
- {
--	unsigned long flags;
-+	u8 reg = __raw_readb(SOFT_BASE);
- 
--	spin_lock_irqsave(&leds_lock, flags);
-+	if (b != LED_OFF)
-+		reg |= 0x80;
-+	else
-+		reg &= ~0x80;
- 
--	switch(ledevt) {
--	case led_timer:
--		*(volatile unsigned char *)SOFT_BASE ^= 128;
--		break;
-+	__raw_writeb(reg, SOFT_BASE);
-+}
- 
--	default:
--		break;
--	}
-+static enum led_brightness ebsa110_led_get(struct led_classdev *cdev)
-+{
-+	u8 reg = __raw_readb(SOFT_BASE);
- 
--	spin_unlock_irqrestore(&leds_lock, flags);
-+	return (reg & 0x80) ? LED_FULL : LED_OFF;
- }
- 
--static int __init leds_init(void)
-+static int __init ebsa110_leds_init(void)
- {
--	if (machine_is_ebsa110())
--		leds_event = ebsa110_leds_event;
-+
-+	struct led_classdev *cdev;
-+	int ret;
-+
-+	if (!machine_is_ebsa110())
-+		return -ENODEV;
-+
-+	cdev = kzalloc(sizeof(*cdev), GFP_KERNEL);
-+	if (!cdev)
-+		return -ENOMEM;
-+
-+	cdev->name = "ebsa110:0";
-+	cdev->brightness_set = ebsa110_led_set;
-+	cdev->brightness_get = ebsa110_led_get;
-+	cdev->default_trigger = "heartbeat";
-+
-+	ret = led_classdev_register(NULL, cdev);
-+	if (ret	< 0) {
-+		kfree(cdev);
-+		return ret;
-+	}
- 
- 	return 0;
- }
- 
--__initcall(leds_init);
-+/*
-+ * Since we may have triggers on any subsystem, defer registration
-+ * until after subsystem_init.
-+ */
-+fs_initcall(ebsa110_leds_init);
+Okay.  Do you expect it to help in debugging the crash?  Did you have
+cases where it would help?
+
+>
+> For scenario 2, we also want the guest's registers values to be dumped into
+> qemu process's core file when qemu process crashes. This is the task of TODO-list 2.
+
+Why?  If qemu crashed it is because of an internal qemu fault.  If any
+guest registers were involved, they would have been decoded by qemu
+previously and would be present in the stack trace (for example mmio
+address/data).
+
+> Is this what you want?
+>
+
+Yes.  I'm trying to understand if the feature would be useful in real life.
+
 -- 
-1.7.9.5
+error compiling committee.c: too many arguments to function
 
