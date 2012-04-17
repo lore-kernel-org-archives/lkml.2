@@ -1,56 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754876Ab2DQLII (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Apr 2012 07:08:08 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:45599 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752302Ab2DQLIG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Apr 2012 07:08:06 -0400
-Message-ID: <4F8D4EAC.1010301@mvista.com>
-Date: Tue, 17 Apr 2012 15:06:20 +0400
-From: Sergei Shtylyov <sshtylyov@mvista.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:11.0) Gecko/20120327 Thunderbird/11.0.1
+	id S1754868Ab2DQLNu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Apr 2012 07:13:50 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:3157 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752302Ab2DQLNt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Apr 2012 07:13:49 -0400
+Date: Tue, 17 Apr 2012 14:13:45 +0300
+From: Gleb Natapov <gleb@redhat.com>
+To: acme@ghostprotocols.net
+Cc: a.p.zijlstra@chello.nl, mingo@redhat.com, jolsa@redhat.com,
+        linux-kernel@vger.kernel.org, avi@redhat.com
+Subject: [PATCHv2] perf tools: Add 'G' and 'H' modifiers to event parsing
+Message-ID: <20120417111345.GK11918@redhat.com>
 MIME-Version: 1.0
-To: "Thang Q. Nguyen" <tqnguyen@apm.com>
-CC: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>, Jeff Garzik <jgarzik@pobox.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>, Phong Vo <pvo@apm.com>,
-        linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org,
-        linux-ide@vger.kernel.org, devicetree-discuss@lists.ozlabs.org
-Subject: Re: [PATCH 1/7] Add support hardreset
-References: <1334652193-10487-1-git-send-email-tqnguyen@apm.com>
-In-Reply-To: <1334652193-10487-1-git-send-email-tqnguyen@apm.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello.
+They were dropped during conversion of event parser. Add test case to
+make sure this will not happen again.
 
-On 17-04-2012 12:43, Thang Q. Nguyen wrote:
-
->   The hardreset operation is currently not supported. This causes sometime the SATA driver does cause kernel crash because of none-determined state.a This patch will fix the issue.
-
-> Signed-off-by: Thang Q. Nguyen<tqnguyen@apm.com>
-> ---
->   drivers/ata/sata_dwc_460ex.c |   24 +++++++++++++++++++++++-
->   1 files changed, 23 insertions(+), 1 deletions(-)
->
-> diff --git a/drivers/ata/sata_dwc_460ex.c b/drivers/ata/sata_dwc_460ex.c
-> index 69f7cde..ae13ef1 100644
-> --- a/drivers/ata/sata_dwc_460ex.c
-> +++ b/drivers/ata/sata_dwc_460ex.c
-> @@ -1581,10 +1581,31 @@ static void sata_dwc_qc_prep(struct ata_queued_cmd *qc)
->
->   static void sata_dwc_error_handler(struct ata_port *ap)
->   {
-> -	ap->link.flags |= ATA_LFLAG_NO_HRST;
->   	ata_sff_error_handler(ap);
->   }
-
-    Could eliminate this, switching to the default implementation...
-
-MBR, Sergei
+Signed-off-by: Gleb Natapov <gleb@redhat.com>
+diff --git a/tools/perf/builtin-test.c b/tools/perf/builtin-test.c
+index 1c5b980..223ffdc 100644
+--- a/tools/perf/builtin-test.c
++++ b/tools/perf/builtin-test.c
+@@ -851,6 +851,28 @@ static int test__checkevent_symbolic_name_modifier(struct perf_evlist *evlist)
+ 	return test__checkevent_symbolic_name(evlist);
+ }
+ 
++static int test__checkevent_exclude_host_modifier(struct perf_evlist *evlist)
++{
++	struct perf_evsel *evsel = list_entry(evlist->entries.next,
++					      struct perf_evsel, node);
++
++	TEST_ASSERT_VAL("wrong exclude guest", !evsel->attr.exclude_guest);
++	TEST_ASSERT_VAL("wrong exclude host", evsel->attr.exclude_host);
++
++	return test__checkevent_symbolic_name(evlist);
++}
++
++static int test__checkevent_exclude_guest_modifier(struct perf_evlist *evlist)
++{
++	struct perf_evsel *evsel = list_entry(evlist->entries.next,
++					      struct perf_evsel, node);
++
++	TEST_ASSERT_VAL("wrong exclude guest", evsel->attr.exclude_guest);
++	TEST_ASSERT_VAL("wrong exclude host", !evsel->attr.exclude_host);
++
++	return test__checkevent_symbolic_name(evlist);
++}
++
+ static int test__checkevent_symbolic_alias_modifier(struct perf_evlist *evlist)
+ {
+ 	struct perf_evsel *evsel = list_entry(evlist->entries.next,
+@@ -1091,6 +1113,14 @@ static struct test__event_st {
+ 		.name  = "r1,syscalls:sys_enter_open:k,1:1:hp",
+ 		.check = test__checkevent_list,
+ 	},
++	{
++		.name  = "instructions:G",
++		.check = test__checkevent_exclude_host_modifier,
++	},
++	{
++		.name  = "instructions:H",
++		.check = test__checkevent_exclude_guest_modifier,
++	},
+ };
+ 
+ #define TEST__EVENTS_CNT (sizeof(test__events) / sizeof(struct test__event_st))
+diff --git a/tools/perf/util/parse-events.l b/tools/perf/util/parse-events.l
+index 05d766e..1fcf1bb 100644
+--- a/tools/perf/util/parse-events.l
++++ b/tools/perf/util/parse-events.l
+@@ -54,7 +54,7 @@ num_dec		[0-9]+
+ num_hex		0x[a-fA-F0-9]+
+ num_raw_hex	[a-fA-F0-9]+
+ name		[a-zA-Z_*?][a-zA-Z0-9_*?]*
+-modifier_event	[ukhp]{1,5}
++modifier_event	[ukhpGH]{1,8}
+ modifier_bp	[rwx]
+ 
+ %%
+--
+			Gleb.
