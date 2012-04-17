@@ -1,159 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755440Ab2DQDek (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Apr 2012 23:34:40 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:50409 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755313Ab2DQDeh (ORCPT
+	id S1755495Ab2DQDjw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Apr 2012 23:39:52 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:47185 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754408Ab2DQDjv convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Apr 2012 23:34:37 -0400
-Message-ID: <1334633672.22293.3.camel@phoenix>
-Subject: [PATCH RFT 2/2] regulator: da9052: Use generic regmap
- enable/disable operations
-From: Axel Lin <axel.lin@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: David Dajun Chen <dchen@diasemi.com>,
-        Ashish Jangam <ashish.jangam@kpitcummins.com>,
-        "Ying-Chun Liu (PaulLiu)" <paul.liu@linaro.org>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Liam Girdwood <lrg@ti.com>
-Date: Tue, 17 Apr 2012 11:34:32 +0800
-In-Reply-To: <1334633577.22293.1.camel@phoenix>
-References: <1334633577.22293.1.camel@phoenix>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2- 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Mon, 16 Apr 2012 23:39:51 -0400
+MIME-Version: 1.0
+In-Reply-To: <20120417132357.b38685ea31582e638623961c@canb.auug.org.au>
+References: <20120411151155.b1a614f174442a592d1c1561@canb.auug.org.au>
+ <20120412103157.70669ff82b81d5d926c36d4d@canb.auug.org.au>
+ <CACxGe6tDa+AzK0O=E+EPZ90Ek_C-rM-G4fHSnsdL0S+fNcmzmw@mail.gmail.com> <20120417132357.b38685ea31582e638623961c@canb.auug.org.au>
+From: Grant Likely <grant.likely@secretlab.ca>
+Date: Mon, 16 Apr 2012 21:39:30 -0600
+X-Google-Sender-Auth: ooqxy_mH7cXS_cXq1Ipv2O2jAWc
+Message-ID: <CACxGe6ugOsCNRD2Jqyv-gf8X4Dvd012Gn5RyBq4TQBBb86W1qg@mail.gmail.com>
+Subject: Re: linux-next: build failure after merge of the final tree
+ (devicetree tree related)
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Thomas Abraham <thomas.abraham@linaro.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Axel Lin <axel.lin@gmail.com>
----
- drivers/regulator/da9052-regulator.c |   56 +++++++---------------------------
- 1 files changed, 11 insertions(+), 45 deletions(-)
+On Mon, Apr 16, 2012 at 9:23 PM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+> Hi Grant,
+>
+> On Wed, 11 Apr 2012 18:35:34 -0600 Grant Likely <grant.likely@secretlab.ca> wrote:
+>>
+>> On Wed, Apr 11, 2012 at 6:31 PM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+>> > Hi Grant,
+>> >
+>> > On Wed, 11 Apr 2012 15:11:55 +1000 Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+>> >>
+>> >> After merging the final tree, today's linux-next build (sparc64 defconfig)
+>> >> failed like this:
+>> >>
+>> >> drivers/of/of_mdio.c: In function 'of_mdiobus_register':
+>> >> drivers/of/of_mdio.c:75:4: error: implicit declaration of function 'irq_of_parse_and_map' [-Werror=implicit-function-declaration]
+>> >>
+>> >> Caused by commit e46c11b94787 ("of/irq: add empty irq_of_parse_and_map()
+>> >> for non-dt builds").  SPARC has CONFIG_OF but not CONFIG_OF_IRQ ...
+>> >>
+>> >> I have reverted that commit for today.
+>> >
+>> > That commit is actually in the devicetree-current tree.
+>>
+>> Yes, drop that tree or revert that commit.  There's nothing else in
+>> there and I didn't have time to pull it back today before you started
+>> linux-next for the day.  The change is bogus and I'll spin a proper
+>> fixup for tomorrow.
+>
+> Ping?
 
-diff --git a/drivers/regulator/da9052-regulator.c b/drivers/regulator/da9052-regulator.c
-index eaa91cc5..4f2e6f9 100644
---- a/drivers/regulator/da9052-regulator.c
-+++ b/drivers/regulator/da9052-regulator.c
-@@ -71,7 +71,6 @@ struct da9052_regulator_info {
- 	int min_uV;
- 	int max_uV;
- 	unsigned char volt_shift;
--	unsigned char en_bit;
- 	unsigned char activate_bit;
- };
- 
-@@ -90,42 +89,6 @@ static int verify_range(struct da9052_regulator_info *info,
- 	return 0;
- }
- 
--static int da9052_regulator_enable(struct regulator_dev *rdev)
--{
--	struct da9052_regulator *regulator = rdev_get_drvdata(rdev);
--	struct da9052_regulator_info *info = regulator->info;
--	int offset = rdev_get_id(rdev);
--
--	return da9052_reg_update(regulator->da9052,
--				 DA9052_BUCKCORE_REG + offset,
--				 1 << info->en_bit, 1 << info->en_bit);
--}
--
--static int da9052_regulator_disable(struct regulator_dev *rdev)
--{
--	struct da9052_regulator *regulator = rdev_get_drvdata(rdev);
--	struct da9052_regulator_info *info = regulator->info;
--	int offset = rdev_get_id(rdev);
--
--	return da9052_reg_update(regulator->da9052,
--				 DA9052_BUCKCORE_REG + offset,
--				 1 << info->en_bit, 0);
--}
--
--static int da9052_regulator_is_enabled(struct regulator_dev *rdev)
--{
--	struct da9052_regulator *regulator = rdev_get_drvdata(rdev);
--	struct da9052_regulator_info *info = regulator->info;
--	int offset = rdev_get_id(rdev);
--	int ret;
--
--	ret = da9052_reg_read(regulator->da9052, DA9052_BUCKCORE_REG + offset);
--	if (ret < 0)
--		return ret;
--
--	return ret & (1 << info->en_bit);
--}
--
- static int da9052_dcdc_get_current_limit(struct regulator_dev *rdev)
- {
- 	struct da9052_regulator *regulator = rdev_get_drvdata(rdev);
-@@ -292,9 +255,9 @@ static struct regulator_ops da9052_dcdc_ops = {
- 
- 	.list_voltage = da9052_list_voltage,
- 	.get_voltage_sel = da9052_get_regulator_voltage_sel,
--	.is_enabled = da9052_regulator_is_enabled,
--	.enable = da9052_regulator_enable,
--	.disable = da9052_regulator_disable,
-+	.is_enabled = regulator_is_enabled_regmap,
-+	.enable = regulator_enable_regmap,
-+	.disable = regulator_disable_regmap,
- };
- 
- static struct regulator_ops da9052_ldo_ops = {
-@@ -302,9 +265,9 @@ static struct regulator_ops da9052_ldo_ops = {
- 
- 	.list_voltage = da9052_list_voltage,
- 	.get_voltage_sel = da9052_get_regulator_voltage_sel,
--	.is_enabled = da9052_regulator_is_enabled,
--	.enable = da9052_regulator_enable,
--	.disable = da9052_regulator_disable,
-+	.is_enabled = regulator_is_enabled_regmap,
-+	.enable = regulator_enable_regmap,
-+	.disable = regulator_disable_regmap,
- };
- 
- #define DA9052_LDO(_id, step, min, max, sbits, ebits, abits) \
-@@ -316,12 +279,13 @@ static struct regulator_ops da9052_ldo_ops = {
- 		.id = DA9052_ID_##_id,\
- 		.n_voltages = (max - min) / step + 1, \
- 		.owner = THIS_MODULE,\
-+		.enable_reg = DA9052_BUCKCORE_REG + DA9052_ID_##_id, \
-+		.enable_mask = 1 << (ebits),\
- 	},\
- 	.min_uV = (min) * 1000,\
- 	.max_uV = (max) * 1000,\
- 	.step_uV = (step) * 1000,\
- 	.volt_shift = (sbits),\
--	.en_bit = (ebits),\
- 	.activate_bit = (abits),\
- }
- 
-@@ -334,12 +298,13 @@ static struct regulator_ops da9052_ldo_ops = {
- 		.id = DA9052_ID_##_id,\
- 		.n_voltages = (max - min) / step + 1, \
- 		.owner = THIS_MODULE,\
-+		.enable_reg = DA9052_BUCKCORE_REG + DA9052_ID_##_id, \
-+		.enable_mask = 1 << (ebits),\
- 	},\
- 	.min_uV = (min) * 1000,\
- 	.max_uV = (max) * 1000,\
- 	.step_uV = (step) * 1000,\
- 	.volt_shift = (sbits),\
--	.en_bit = (ebits),\
- 	.activate_bit = (abits),\
- }
- 
-@@ -430,6 +395,7 @@ static int __devinit da9052_regulator_probe(struct platform_device *pdev)
- 
- 	config.dev = &pdev->dev;
- 	config.driver_data = regulator;
-+	config.regmap = da9052->regmap;
- 	if (pdata && pdata->regulators) {
- 		config.init_data = pdata->regulators[pdev->id];
- 	} else {
--- 
-1.7.5.4
+Haven't got it done yet.  It's still safe to ignore that tree.
 
-
-
+g.
