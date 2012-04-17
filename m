@@ -1,144 +1,185 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756154Ab2DQOs2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Apr 2012 10:48:28 -0400
-Received: from acsinet15.oracle.com ([141.146.126.227]:19875 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755802Ab2DQOs0 (ORCPT
+	id S932076Ab2DQOsz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Apr 2012 10:48:55 -0400
+Received: from p02c12o147.mxlogic.net ([208.65.145.80]:44094 "EHLO
+	p02c12o147.mxlogic.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751221Ab2DQOsx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Apr 2012 10:48:26 -0400
-Date: Tue, 17 Apr 2012 10:43:19 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-Cc: "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v3 1/2] xen: enter/exit lazy_mmu_mode around m2p_override
- calls
-Message-ID: <20120417144318.GA28477@phenom.dumpdata.com>
-References: <1334075375-25442-1-git-send-email-stefano.stabellini@eu.citrix.com>
- <20120417130340.GA25593@phenom.dumpdata.com>
- <alpine.DEB.2.00.1204171457360.26786@kaball-desktop>
+	Tue, 17 Apr 2012 10:48:53 -0400
+X-MXL-Hash: 4f8d82d45e7d7d29-d38a4364df0d21b95d9ea1232af76f0be957bdef
+X-MXL-Hash: 4f8d82d3035510be-0a990d8c08507c672c229a7a38e3b64fdf3d36f6
+From: Peter Staubach <pstaubach@exagrid.com>
+To: "Myklebust, Trond" <Trond.Myklebust@netapp.com>
+CC: Jeff Layton <jlayton@redhat.com>,
+        Bernd Schubert <bernd.schubert@itwm.fraunhofer.de>,
+        Malahal Naineni <malahal@us.ibm.com>,
+        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "miklos@szeredi.hu" <miklos@szeredi.hu>,
+        "viro@ZenIV.linux.org.uk" <viro@ZenIV.linux.org.uk>,
+        "hch@infradead.org" <hch@infradead.org>,
+        "michael.brantley@deshaw.com" <michael.brantley@deshaw.com>,
+        "sven.breuner@itwm.fraunhofer.de" <sven.breuner@itwm.fraunhofer.de>
+Date: Tue, 17 Apr 2012 10:48:42 -0400
+Subject: RE: [PATCH RFC] vfs: make fstatat retry on ESTALE errors from
+ getattr call
+Thread-Topic: [PATCH RFC] vfs: make fstatat retry on ESTALE errors from
+ getattr call
+Thread-Index: AQHNHAe/WFyXQNvYykq9RVAgdBQu35aeT6UAgAALqQCAACzmAIAA9BwAgAAIOgD//5R3YA==
+Message-ID: <FA8A9A935BFD3A4D8F0CDA1C4F611BCC063CF8E132@IT-1874.Isys.com>
+References: <1334316311-22331-1-git-send-email-jlayton@redhat.com>
+	 <20120413150518.GA1987@us.ibm.com>
+	 <20120413114236.0e557e01@tlielax.poochiereds.net>
+	 <4F8B1B7B.3040304@itwm.fraunhofer.de>
+	 <20120416073655.7cdb90cf@corrin.poochiereds.net>
+	 <4F8C3036.2030702@itwm.fraunhofer.de>
+	 <20120416134642.1754cd3e@corrin.poochiereds.net>
+	 <1334604785.2879.23.camel@lade.trondhjem.org>
+	 <20120416154322.0d95e435@corrin.poochiereds.net>
+	 <1334607906.2879.36.camel@lade.trondhjem.org>
+	 <20120416190548.2463d1d0@corrin.poochiereds.net>
+	 <FA8A9A935BFD3A4D8F0CDA1C4F611BCC063CF8E115@IT-1874.Isys.com>
+ <1334671736.2963.30.camel@lade.trondhjem.org.localdomain>
+In-Reply-To: <1334671736.2963.30.camel@lade.trondhjem.org.localdomain>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.00.1204171457360.26786@kaball-desktop>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090205.4F8D82B4.00BE,ss=1,re=0.000,fgs=0
+X-Spam: [F=0.2000000000; CM=0.500; S=0.200(2010122901)]
+X-MAIL-FROM: <pstaubach@exagrid.com>
+X-SOURCE-IP: [69.84.133.248]
+X-AnalysisOut: [v=1.0 c=1 a=XjRXyhSzQbsA:10 a=ooaBVg03rvgA:10 a=BLceEmwcHo]
+X-AnalysisOut: [wA:10 a=IkcTkHD0fZMA:10 a=YmXeKoonWU0GTmr6cORa5w==:17 a=JD]
+X-AnalysisOut: [jsHSkAAAAA:8 a=VwQbUJbxAAAA:8 a=drOt6m5kAAAA:8 a=JfrnYn6hA]
+X-AnalysisOut: [AAA:8 a=sHqLhEVXAAAA:8 a=20KFwNOVAAAA:8 a=hTtWbpxnfZdzCUA9]
+X-AnalysisOut: [z4IA:9 a=vsqVJXWN0ehg9BL1RAkA:7 a=QEXdDO2ut3YA:10 a=E3ZZfl]
+X-AnalysisOut: [hfDMIA:10 a=Hf6muOzgCGQA:10 a=3Rfx1nUSh_UA:10 a=tIBAwYQmwV]
+X-AnalysisOut: [gA:10 a=jEp0ucaQiEUA:10 a=PHUxf32QGnf9Q64l:21 a=Qjh5E08SIN]
+X-AnalysisOut: [NXngJN:21]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by nfs id q3HEn2Y3011193
 
-On Tue, Apr 17, 2012 at 03:26:05PM +0100, Stefano Stabellini wrote:
-> On Tue, 17 Apr 2012, Konrad Rzeszutek Wilk wrote:
-> > On Tue, Apr 10, 2012 at 05:29:34PM +0100, Stefano Stabellini wrote:
-> > > This patch is a significant performance improvement for the
-> > > m2p_override: about 6% using the gntdev device.
+I don't think that the code ends up being all that complex, actually.  I will have to dig out the patches that I had previously to look to see what they did.  I am pretty sure that they handled all of these cases.  I also had some tests which exercised the modified path based system calls and at least, at one point in time, they would run without returning ESTALE to the user level.
+
+Let me see what I can find.  SteveD, you wouldn't have squirrelled away a copy of my stuff from Red Hat, would you?
+
+	Thanx...
+
+		ps
+
+
+-----Original Message-----
+From: Myklebust, Trond [mailto:Trond.Myklebust@netapp.com] 
+Sent: Tuesday, April 17, 2012 10:09 AM
+To: Peter Staubach
+Cc: Jeff Layton; Bernd Schubert; Malahal Naineni; linux-nfs@vger.kernel.org; linux-fsdevel@vger.kernel.org; linux-kernel@vger.kernel.org; miklos@szeredi.hu; viro@ZenIV.linux.org.uk; hch@infradead.org; michael.brantley@deshaw.com; sven.breuner@itwm.fraunhofer.de
+Subject: RE: [PATCH RFC] vfs: make fstatat retry on ESTALE errors from getattr call
+
+On Tue, 2012-04-17 at 09:39 -0400, Peter Staubach wrote:
+> Hi.
+> 
+> There does need to be support in the lookup path to handle stale directories.  During a multi-component lookup, it is possible for one component to be looked up, but then become stale before being used.  The support needs to go into more than just the set of system calls, but also into the lookup code.
+> 
+> I suspect that since the "" case is handled specially anyway, code could be added to do something like issue a GETATTR to verify that the directory is still valid.  Since "" is probably used minimally, the performance impact to the system should be also be minimal.
+
+The problem with that is that even if your current directory is stale, a path of the form "../../../blah" can still be valid. I suspect that any code that tries to loop forever can quickly get very complicated as we start adding all these corner cases.
+
+The thing about stat() is that in 99.99% of cases when the path revalidation code works, then the NFS client won't have to actually issue a GETATTR in the call to vfs_getstat() since the LOOKUP of that final path component will revalidate those attributes anyway.
+
+The only exception to that rule will be the 'noac' mounts, which really can end up looping forever.
+
+Cheers
+  Trond
+
+> 		ps
+> 
+> 
+> -----Original Message-----
+> From: Jeff Layton [mailto:jlayton@redhat.com]
+> Sent: Monday, April 16, 2012 7:06 PM
+> To: Myklebust, Trond
+> Cc: Bernd Schubert; Malahal Naineni; linux-nfs@vger.kernel.org; 
+> linux-fsdevel@vger.kernel.org; linux-kernel@vger.kernel.org; Peter 
+> Staubach; miklos@szeredi.hu; viro@ZenIV.linux.org.uk; 
+> hch@infradead.org; michael.brantley@deshaw.com; 
+> sven.breuner@itwm.fraunhofer.de
+> Subject: Re: [PATCH RFC] vfs: make fstatat retry on ESTALE errors from 
+> getattr call
+> 
+> On Mon, 16 Apr 2012 20:25:06 +0000
+> "Myklebust, Trond" <Trond.Myklebust@netapp.com> wrote:
+> 
+> > On Mon, 2012-04-16 at 15:43 -0400, Jeff Layton wrote:
+> > > On Mon, 16 Apr 2012 19:33:05 +0000 "Myklebust, Trond" 
+> > > <Trond.Myklebust@netapp.com> wrote:
 > > > 
-> > > Each m2p_add/remove_override call issues a MULTI_grant_table_op and a
-> > > __flush_tlb_single if kmap_op != NULL.  Batching all the calls together
-> > > is a great performance benefit because it means issuing one hypercall
-> > > total rather than two hypercall per page.
-> > > If paravirt_lazy_mode is set PARAVIRT_LAZY_MMU, all these calls are
-> > > going to be batched together, otherwise they are issued one at a time.
+> > > > On Mon, 2012-04-16 at 13:46 -0400, Jeff Layton wrote:
+> > > > > The question about looping indefinitely really comes down to:
+> > > > > 
+> > > > > 1) is a persistent ESTALE in conjunction with a successful 
+> > > > > lookup a situation that we expect to be temporary. i.e. will 
+> > > > > the admin at some point be able to do something about it? If 
+> > > > > not, then there's no point in continuing to retry. Again, this 
+> > > > > is a situation that *really* should not happen if the filesystem is doing the right thing.
+> > > > > 
+> > > > > 2) If the admin can't do anything about it, is it reasonable 
+> > > > > to expect that users can send a fatal signal to hung 
+> > > > > applications if this situation occurs.
+> > > > > 
+> > > > > We expect that that's ok in other situations to resolve hung 
+> > > > > applications, so I'm not sure I understand why it wouldn't be 
+> > > > > acceptable here...
+> > > > 
+> > > > There are definitely potentially persistent pathological 
+> > > > situations that the filesystem can't do anything about. If the 
+> > > > point of origin for your pathname (for instance your current 
+> > > > directory in the case of a relative
+> > > > pathname) is stale, then no amount of looping is going to help 
+> > > > you to recover.
+> > > > 
 > > > 
-> > > Adding arch_enter_lazy_mmu_mode/arch_leave_lazy_mmu_mode around the
-> > > m2p_add/remove_override calls forces paravirt_lazy_mode to
-> > > PARAVIRT_LAZY_MMU, therefore makes sure that they are always batched.
+> > > Ok -- Peter pretty much said something similar. Retrying 
+> > > indefnitely when the lookup returns ESTALE probably won't help. 
+> > > I'm ok with basically letting the VFS continue to do what it does there already.
+> > > If it gets an ESTALE, it tries again with LOOKUP_REVAL set and 
+> > > then gives up if that doesn't work.
 > > > 
-> > > 
-> > > Changes in v3:
-> > > - do not call arch_enter/leave_lazy_mmu_mode in xen_blkbk_unmap, that
-> > > can be called in interrupt context.
+> > > If however, the operation itself keeps returning ESTALE, are we OK 
+> > > to retry indefinitely assuming that we'll break out of the loop on 
+> > > fatal signals?
+> > >
+> > > For example, something like the v2 patch I sent a little while ago?
 > > 
-> > This is with RHEL5 (somehow the pvops kernels don't trigger this):
+> > 
+> > Won't something like fstatat(AT_FDCWD, "", &stat, AT_EMPTY_PATH) 
+> > risk looping forever there, or am I missing something?
+> > 
 > 
-> Do you mean RHEL5 as a guest? Are you using blkback or qdisk?
+> To make sure I understand, that should be "shortcut" for a lookup of the cwd?
+> 
+> So I guess the concern is that you'd do the above and get a successful lookup since you're just going to get back the cwd. At that point, you'd attempt the getattr and get ESTALE back. Then, you'd redo the lookup with LOOKUP_REVAL set -- but since we're operating on the cwd, we don't have a way to redo the lookup since we don't have a pathname that we can look up again...
+> 
+> So yeah, I guess if you're sitting in a stale directory, something like that could loop eternally.
+> 
+> Do you think the proposed check for fatal_signal_pending is enough to mitigate such a problem? Or do we need to limit the number of retries to address those sorts of loops?
+> 
+> --
+> Jeff Layton <jlayton@redhat.com>
 
-blkback:
+--
+Trond Myklebust
+Linux NFS client maintainer
 
-memory = 1024
-name = "RHEL5-64"
-hvm_loader="/usr/bin/pygrub"
-vfb = [ 'vnc=1, vnclisten=0.0.0.0,vncunused=1']
-vcpus=2
-vif = [ ' mac=00:0F:4B:00:00:74,bridge=switch' ]
-disk = [ 'phy:/dev/guests/RHEL5-64,xvda,w' ]
-boot = "dnc"
-device_model = 'qemu-dm'
-vnc=1
-videoram=8
-vnclisten="0.0.0.0"
-vncpasswd=''
-stdvga=0
-serial='pty'
-tsc_mode=0
-usb=1
-usbdevice='tablet'
-xen_platform_pci=1
+NetApp
+Trond.Myklebust@netapp.com
+www.netapp.com
 
-Thought looking at that guest config I am not sure what it boots as
-anymore :-(
-
-
-> How can I repro the bug?
-
-I just bootup the RHEL5 guest and when it tries to get an DHCP address
-it then blows up. Hm, maybe the issue is with network - tap vs netfront ?
-
-> 
-> 
-> In any case it looks like a similar kind of issue to the one I fixed
-> before: paravirt_enter_lazy_mmu is probably called with
-> paravirt_lazy_mode == PARAVIRT_LAZY_MMU, in this case by
-> gnttab_unmap_refs.
-> But I don't understand how gnttab_unmap_refs can be called when you seem
-> to be using blkback.
-> 
-> Anyhow gnttab_unmap_refs can be called by:
-> 
-> - mmu_notifier on invalidate_range_start;
-> - vm_operations_struct on close;
-> - file_operations on release;
-> - the unmap gntdev ioctl.
-> 
-> I guess the mmu_notifier or vm_operations_struct could be the ones
-> calling gnttab_unmap_refs with lazy_mode set to PARAVIRT_LAZY_MMU.
-> 
-> I suspect that something like the following code would fix the issue but
-> it is pretty ugly and I need to test it before a submitting it as a fix:
-> 
-> 
-> @@ -780,7 +780,7 @@ EXPORT_SYMBOL_GPL(gnttab_map_refs);
->  int gnttab_unmap_refs(struct gnttab_unmap_grant_ref *unmap_ops,
->                       struct page **pages, unsigned int count, bool clear_pte)
->  {
-> -       int i, ret;
-> +       int i, ret, lazy = 0;
->  
->         ret = HYPERVISOR_grant_table_op(GNTTABOP_unmap_grant_ref, unmap_ops, count);
->         if (ret)
-> 
-> @@ -789,7 +789,10 @@ int gnttab_unmap_refs(struct gnttab_unmap_grant_ref *unmap_ops,
->         if (xen_feature(XENFEAT_auto_translated_physmap))
->                 return ret;
->  
-> -       arch_enter_lazy_mmu_mode();
-> +       if (!in_interrupt() && paravirt_get_lazy_mode() == PARAVIRT_LAZY_NONE) {
-> +               arch_enter_lazy_mmu_mode();
-> +               lazy = 1;
-> +       }
->  
->         for (i = 0; i < count; i++) {
->                 ret = m2p_remove_override(pages[i], clear_pte);
-> @@ -797,7 +800,8 @@ int gnttab_unmap_refs(struct gnttab_unmap_grant_ref *unmap_ops,
->                         return ret;
->         }
->  
-> -       arch_leave_lazy_mmu_mode();
-> +       if (lazy)
-> +               arch_leave_lazy_mmu_mode();
->  
->         return ret;
->  }
+ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
