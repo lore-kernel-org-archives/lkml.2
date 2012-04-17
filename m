@@ -1,185 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932076Ab2DQOsz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Apr 2012 10:48:55 -0400
-Received: from p02c12o147.mxlogic.net ([208.65.145.80]:44094 "EHLO
-	p02c12o147.mxlogic.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751221Ab2DQOsx (ORCPT
+	id S1755652Ab2DQOuT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Apr 2012 10:50:19 -0400
+Received: from s15943758.onlinehome-server.info ([217.160.130.188]:42023 "EHLO
+	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751052Ab2DQOuR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Apr 2012 10:48:53 -0400
-X-MXL-Hash: 4f8d82d45e7d7d29-d38a4364df0d21b95d9ea1232af76f0be957bdef
-X-MXL-Hash: 4f8d82d3035510be-0a990d8c08507c672c229a7a38e3b64fdf3d36f6
-From: Peter Staubach <pstaubach@exagrid.com>
-To: "Myklebust, Trond" <Trond.Myklebust@netapp.com>
-CC: Jeff Layton <jlayton@redhat.com>,
-        Bernd Schubert <bernd.schubert@itwm.fraunhofer.de>,
-        Malahal Naineni <malahal@us.ibm.com>,
-        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "miklos@szeredi.hu" <miklos@szeredi.hu>,
-        "viro@ZenIV.linux.org.uk" <viro@ZenIV.linux.org.uk>,
-        "hch@infradead.org" <hch@infradead.org>,
-        "michael.brantley@deshaw.com" <michael.brantley@deshaw.com>,
-        "sven.breuner@itwm.fraunhofer.de" <sven.breuner@itwm.fraunhofer.de>
-Date: Tue, 17 Apr 2012 10:48:42 -0400
-Subject: RE: [PATCH RFC] vfs: make fstatat retry on ESTALE errors from
- getattr call
-Thread-Topic: [PATCH RFC] vfs: make fstatat retry on ESTALE errors from
- getattr call
-Thread-Index: AQHNHAe/WFyXQNvYykq9RVAgdBQu35aeT6UAgAALqQCAACzmAIAA9BwAgAAIOgD//5R3YA==
-Message-ID: <FA8A9A935BFD3A4D8F0CDA1C4F611BCC063CF8E132@IT-1874.Isys.com>
-References: <1334316311-22331-1-git-send-email-jlayton@redhat.com>
-	 <20120413150518.GA1987@us.ibm.com>
-	 <20120413114236.0e557e01@tlielax.poochiereds.net>
-	 <4F8B1B7B.3040304@itwm.fraunhofer.de>
-	 <20120416073655.7cdb90cf@corrin.poochiereds.net>
-	 <4F8C3036.2030702@itwm.fraunhofer.de>
-	 <20120416134642.1754cd3e@corrin.poochiereds.net>
-	 <1334604785.2879.23.camel@lade.trondhjem.org>
-	 <20120416154322.0d95e435@corrin.poochiereds.net>
-	 <1334607906.2879.36.camel@lade.trondhjem.org>
-	 <20120416190548.2463d1d0@corrin.poochiereds.net>
-	 <FA8A9A935BFD3A4D8F0CDA1C4F611BCC063CF8E115@IT-1874.Isys.com>
- <1334671736.2963.30.camel@lade.trondhjem.org.localdomain>
-In-Reply-To: <1334671736.2963.30.camel@lade.trondhjem.org.localdomain>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="utf-8"
+	Tue, 17 Apr 2012 10:50:17 -0400
+Date: Tue, 17 Apr 2012 16:50:02 +0200
+From: Borislav Petkov <bp@amd64.org>
+To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+Cc: Borislav Petkov <bp@amd64.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Andreas Herrmann <andreas.herrmann3@amd.com>,
+        Kay Sievers <kay.sievers@vrfy.org>, Dave Jones <davej@redhat.com>,
+        linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>, tigran@aivazian.fsnet.co.uk,
+        hpa@zytor.com, x86@kernel.org
+Subject: Re: [PATCH 2/2] x86, microcode: Ensure that module is only loaded for
+Message-ID: <20120417145002.GA11221@aftab>
+References: <20120411163849.GE4794@alberich.amd.com>
+ <20120411200601.GC12288@kroah.com>
+ <20120411201053.GF18114@aftab>
+ <20120412162351.GJ24549@aftab>
+ <20120412163422.GM24549@aftab>
+ <4F8BDB58.6070007@linux.vnet.ibm.com>
+ <20120416134335.GD308@aftab>
+ <4F8D7A0A.4080404@linux.vnet.ibm.com>
 MIME-Version: 1.0
-X-Spam: [F=0.2000000000; CM=0.500; S=0.200(2010122901)]
-X-MAIL-FROM: <pstaubach@exagrid.com>
-X-SOURCE-IP: [69.84.133.248]
-X-AnalysisOut: [v=1.0 c=1 a=XjRXyhSzQbsA:10 a=ooaBVg03rvgA:10 a=BLceEmwcHo]
-X-AnalysisOut: [wA:10 a=IkcTkHD0fZMA:10 a=YmXeKoonWU0GTmr6cORa5w==:17 a=JD]
-X-AnalysisOut: [jsHSkAAAAA:8 a=VwQbUJbxAAAA:8 a=drOt6m5kAAAA:8 a=JfrnYn6hA]
-X-AnalysisOut: [AAA:8 a=sHqLhEVXAAAA:8 a=20KFwNOVAAAA:8 a=hTtWbpxnfZdzCUA9]
-X-AnalysisOut: [z4IA:9 a=vsqVJXWN0ehg9BL1RAkA:7 a=QEXdDO2ut3YA:10 a=E3ZZfl]
-X-AnalysisOut: [hfDMIA:10 a=Hf6muOzgCGQA:10 a=3Rfx1nUSh_UA:10 a=tIBAwYQmwV]
-X-AnalysisOut: [gA:10 a=jEp0ucaQiEUA:10 a=PHUxf32QGnf9Q64l:21 a=Qjh5E08SIN]
-X-AnalysisOut: [NXngJN:21]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4F8D7A0A.4080404@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id q3HEn2Y3011193
 
-I don't think that the code ends up being all that complex, actually.  I will have to dig out the patches that I had previously to look to see what they did.  I am pretty sure that they handled all of these cases.  I also had some tests which exercised the modified path based system calls and at least, at one point in time, they would run without returning ESTALE to the user level.
-
-Let me see what I can find.  SteveD, you wouldn't have squirrelled away a copy of my stuff from Red Hat, would you?
-
-	Thanx...
-
-		ps
-
-
------Original Message-----
-From: Myklebust, Trond [mailto:Trond.Myklebust@netapp.com] 
-Sent: Tuesday, April 17, 2012 10:09 AM
-To: Peter Staubach
-Cc: Jeff Layton; Bernd Schubert; Malahal Naineni; linux-nfs@vger.kernel.org; linux-fsdevel@vger.kernel.org; linux-kernel@vger.kernel.org; miklos@szeredi.hu; viro@ZenIV.linux.org.uk; hch@infradead.org; michael.brantley@deshaw.com; sven.breuner@itwm.fraunhofer.de
-Subject: RE: [PATCH RFC] vfs: make fstatat retry on ESTALE errors from getattr call
-
-On Tue, 2012-04-17 at 09:39 -0400, Peter Staubach wrote:
-> Hi.
+On Tue, Apr 17, 2012 at 07:41:22PM +0530, Srivatsa S. Bhat wrote:
+> On 04/16/2012 07:13 PM, Borislav Petkov wrote:
 > 
-> There does need to be support in the lookup path to handle stale directories.  During a multi-component lookup, it is possible for one component to be looked up, but then become stale before being used.  The support needs to go into more than just the set of system calls, but also into the lookup code.
-> 
-> I suspect that since the "" case is handled specially anyway, code could be added to do something like issue a GETATTR to verify that the directory is still valid.  Since "" is probably used minimally, the performance impact to the system should be also be minimal.
-
-The problem with that is that even if your current directory is stale, a path of the form "../../../blah" can still be valid. I suspect that any code that tries to loop forever can quickly get very complicated as we start adding all these corner cases.
-
-The thing about stat() is that in 99.99% of cases when the path revalidation code works, then the NFS client won't have to actually issue a GETATTR in the call to vfs_getstat() since the LOOKUP of that final path component will revalidate those attributes anyway.
-
-The only exception to that rule will be the 'noac' mounts, which really can end up looping forever.
-
-Cheers
-  Trond
-
-> 		ps
-> 
-> 
-> -----Original Message-----
-> From: Jeff Layton [mailto:jlayton@redhat.com]
-> Sent: Monday, April 16, 2012 7:06 PM
-> To: Myklebust, Trond
-> Cc: Bernd Schubert; Malahal Naineni; linux-nfs@vger.kernel.org; 
-> linux-fsdevel@vger.kernel.org; linux-kernel@vger.kernel.org; Peter 
-> Staubach; miklos@szeredi.hu; viro@ZenIV.linux.org.uk; 
-> hch@infradead.org; michael.brantley@deshaw.com; 
-> sven.breuner@itwm.fraunhofer.de
-> Subject: Re: [PATCH RFC] vfs: make fstatat retry on ESTALE errors from 
-> getattr call
-> 
-> On Mon, 16 Apr 2012 20:25:06 +0000
-> "Myklebust, Trond" <Trond.Myklebust@netapp.com> wrote:
-> 
-> > On Mon, 2012-04-16 at 15:43 -0400, Jeff Layton wrote:
-> > > On Mon, 16 Apr 2012 19:33:05 +0000 "Myklebust, Trond" 
-> > > <Trond.Myklebust@netapp.com> wrote:
-> > > 
-> > > > On Mon, 2012-04-16 at 13:46 -0400, Jeff Layton wrote:
-> > > > > The question about looping indefinitely really comes down to:
-> > > > > 
-> > > > > 1) is a persistent ESTALE in conjunction with a successful 
-> > > > > lookup a situation that we expect to be temporary. i.e. will 
-> > > > > the admin at some point be able to do something about it? If 
-> > > > > not, then there's no point in continuing to retry. Again, this 
-> > > > > is a situation that *really* should not happen if the filesystem is doing the right thing.
-> > > > > 
-> > > > > 2) If the admin can't do anything about it, is it reasonable 
-> > > > > to expect that users can send a fatal signal to hung 
-> > > > > applications if this situation occurs.
-> > > > > 
-> > > > > We expect that that's ok in other situations to resolve hung 
-> > > > > applications, so I'm not sure I understand why it wouldn't be 
-> > > > > acceptable here...
-> > > > 
-> > > > There are definitely potentially persistent pathological 
-> > > > situations that the filesystem can't do anything about. If the 
-> > > > point of origin for your pathname (for instance your current 
-> > > > directory in the case of a relative
-> > > > pathname) is stale, then no amount of looping is going to help 
-> > > > you to recover.
-> > > > 
-> > > 
-> > > Ok -- Peter pretty much said something similar. Retrying 
-> > > indefnitely when the lookup returns ESTALE probably won't help. 
-> > > I'm ok with basically letting the VFS continue to do what it does there already.
-> > > If it gets an ESTALE, it tries again with LOOKUP_REVAL set and 
-> > > then gives up if that doesn't work.
-> > > 
-> > > If however, the operation itself keeps returning ESTALE, are we OK 
-> > > to retry indefinitely assuming that we'll break out of the loop on 
-> > > fatal signals?
-> > >
-> > > For example, something like the v2 patch I sent a little while ago?
+> > On Mon, Apr 16, 2012 at 02:12:00PM +0530, Srivatsa S. Bhat wrote:
+> >> I guess a similar change in intel microcode driver would also be
+> >> worthwhile, right? If so, then the below patch might be useful:
 > > 
+> > AFAICT, you'd need to test this on a box which is not supported (family
+> > check below). Or you can tweak the family check so that it doesn't
+> > apply and run it on a test box of yours to see whether the module still
+> > unloads properly in the error case (and doesn't remain loaded as in
+> > our case due to something in sysfs remaining registered although it
+> > shouldn't).
 > > 
-> > Won't something like fstatat(AT_FDCWD, "", &stat, AT_EMPTY_PATH) 
-> > risk looping forever there, or am I missing something?
-> > 
+> Judging by the nature of the code itself, its evident that this problem
+> is not restricted to AMD alone. In any case, I went ahead and did the
+> (tweaked) test that you suggested and here is the result:
 > 
-> To make sure I understand, that should be "shortcut" for a lookup of the cwd?
+> 1. dmesg logs :
+> [   21.912451] microcode: CPU0 not a capable Intel processor
+> [   21.916028] microcode: CPU1 not a capable Intel processor
+> [   21.934624] microcode: CPU2 not a capable Intel processor
+> [   21.940276] microcode: CPU3 not a capable Intel processor
+> [   21.946023] microcode: CPU4 not a capable Intel processor
+> [   21.951678] microcode: CPU5 not a capable Intel processor
+> [   21.957326] microcode: CPU6 not a capable Intel processor
+> [   21.962935] microcode: CPU7 not a capable Intel processor
+> [   21.968611] microcode: CPU8 not a capable Intel processor
+> [   21.974212] microcode: CPU9 not a capable Intel processor
+> [   21.979842] microcode: CPU10 not a capable Intel processor
+> [   21.985577] microcode: CPU11 not a capable Intel processor
+> [   21.991323] microcode: CPU12 not a capable Intel processor
+> [   21.997055] microcode: CPU13 not a capable Intel processor
+> [   22.002774] microcode: CPU14 not a capable Intel processor
+> [   22.008460] microcode: CPU15 not a capable Intel processor
+> [   22.014600] microcode: Microcode Update Driver: v2.00 <tigran@aivazian.fsnet.co.uk>, Peter Oruba
 > 
-> So I guess the concern is that you'd do the above and get a successful lookup since you're just going to get back the cwd. At that point, you'd attempt the getattr and get ESTALE back. Then, you'd redo the lookup with LOOKUP_REVAL set -- but since we're operating on the cwd, we don't have a way to redo the lookup since we don't have a pathname that we can look up again...
+> 2. lsmod | grep microcode
+> microcode             117749  0
 > 
-> So yeah, I guess if you're sitting in a stale directory, something like that could loop eternally.
+> 3. rmmod microcode
 > 
-> Do you think the proposed check for fatal_signal_pending is enough to mitigate such a problem? Or do we need to limit the number of retries to address those sorts of loops?
+> 4. dmesg logs:
+> [   64.297638] ------------[ cut here ]------------
+> [   64.302332] WARNING: at fs/sysfs/group.c:142 sysfs_remove_group+0xd9/0xe0()
+> [   64.309446] Hardware name: IBM System x -[7870C4Q]-
+> [   64.309449] sysfs group ffffffffa03a5110 not found for kobject 'cpu0'
+> [   64.309451] Modules linked in: ipv6 cpufreq_conservative cpufreq_userspace cpufreq_powersave acpi_cpufreq mperf fuse loop dm_mod coretemp crc32c_intel shpchp microcode(-) cdc_ether usbnet ioatdma bnx2 mii serio_raw pcspkr pci_hotplug i2c_i801 i7core_edac i2c_core dca edac_core iTCO_wdt iTCO_vendor_support tpm_tis tpm sg tpm_bios rtc_cmos button uhci_hcd ehci_hcd usbcore usb_common sd_mod crc_t10dif edd ext3 mbcache jbd fan processor mptsas mptscsih mptbase scsi_transport_sas scsi_mod thermal thermal_sys hwmon
+> [   64.309499] Pid: 6529, comm: rmmod Not tainted 3.4.0-rc3-intelucodebroken-0.0.0.28.36b5ec9-default #2
+> [   64.309501] Call Trace:
+> [   64.309506]  [<ffffffff811fac69>] ? sysfs_remove_group+0xd9/0xe0
+> [   64.309510]  [<ffffffff811fac69>] ? sysfs_remove_group+0xd9/0xe0
+> [   64.309516]  [<ffffffff8103dd2a>] warn_slowpath_common+0x7a/0xb0
+> [   64.309522]  [<ffffffff8103de01>] warn_slowpath_fmt+0x41/0x50
+> [   64.309526]  [<ffffffff811f87b6>] ? sysfs_get_dirent+0x56/0x80
+> [   64.309531]  [<ffffffff811fac69>] sysfs_remove_group+0xd9/0xe0
+> [   64.309538]  [<ffffffffa03a2118>] mc_device_remove+0x78/0xa0 [microcode]
+> [   64.309545]  [<ffffffff8134b219>] subsys_interface_unregister+0x89/0xd0
+> [   64.309553]  [<ffffffffa03a357a>] microcode_exit+0x5a/0xa4 [microcode]
+> [   64.309559]  [<ffffffff810b0c8a>] sys_delete_module+0x16a/0x2b0
+> [   64.309565]  [<ffffffff810a408d>] ? trace_hardirqs_on_caller+0x12d/0x1b0
+> [   64.309573]  [<ffffffff814b36f9>] system_call_fastpath+0x16/0x1b
+> [   64.309576] ---[ end trace 748ddf8b4218f820 ]---
 > 
-> --
-> Jeff Layton <jlayton@redhat.com>
+> 
+> The above warning was repeated for each cpu, of course.
 
---
-Trond Myklebust
-Linux NFS client maintainer
+Right, this is the warning we're seeing too. Applying your patch fixes
+it, I s'pose? If so, maybe x86 people would pick it up.
 
-NetApp
-Trond.Myklebust@netapp.com
-www.netapp.com
+-- 
+Regards/Gruss,
+Boris.
 
-ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
+Advanced Micro Devices GmbH
+Einsteinring 24, 85609 Dornach
+GM: Alberto Bozzo
+Reg: Dornach, Landkreis Muenchen
+HRB Nr. 43632 WEEE Registernr: 129 19551
