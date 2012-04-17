@@ -1,159 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753894Ab2DQWSg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Apr 2012 18:18:36 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:41647 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753255Ab2DQWRW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Apr 2012 18:17:22 -0400
-From: <manjunatha_halli@ti.com>
-To: <linux-media@vger.kernel.org>
-CC: <benzyg@ti.com>, <linux-kernel@vger.kernel.org>,
-        Manjunatha Halli <x0130808@ti.com>
-Subject: [PATCH 2/4] [Media] Create new control class for FM RX.
-Date: Tue, 17 Apr 2012 17:17:05 -0500
-Message-ID: <1334701027-19159-3-git-send-email-manjunatha_halli@ti.com>
-X-Mailer: git-send-email 1.7.4.1
-In-Reply-To: <1334701027-19159-1-git-send-email-manjunatha_halli@ti.com>
-References: <1334701027-19159-1-git-send-email-manjunatha_halli@ti.com>
+	id S1752612Ab2DQWcc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Apr 2012 18:32:32 -0400
+Received: from mail-qc0-f174.google.com ([209.85.216.174]:36646 "EHLO
+	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751230Ab2DQWcb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Apr 2012 18:32:31 -0400
+Message-ID: <4F8DEF79.409@gmail.com>
+Date: Tue, 17 Apr 2012 18:32:25 -0400
+From: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:11.0) Gecko/20120327 Thunderbird/11.0.1
 MIME-Version: 1.0
-Content-Type: text/plain
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: Doug Ledford <dledford@redhat.com>, linux-kernel@vger.kernel.org,
+        kosaki.motohiro@gmail.com
+Subject: Re: [Patch 2/8] ipc/mqueue: switch back to using non-max values on
+ create
+References: <cover.1334676645.git.dledford@redhat.com> <a9cfc656e665735e11606d452a536a9a9e6ebdde.1334676645.git.dledford@redhat.com> <20120417151729.e255188c.akpm@linux-foundation.org>
+In-Reply-To: <20120417151729.e255188c.akpm@linux-foundation.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Manjunatha Halli <x0130808@ti.com>
+(4/17/12 6:17 PM), Andrew Morton wrote:
+> On Tue, 17 Apr 2012 11:46:19 -0400
+> Doug Ledford<dledford@redhat.com>  wrote:
+>
+>> Commit b231cca4381ee15ec99afbfb244fbc0324869927 changed
+>> how we create a queue that does not include an attr
+>> struct passed to open so that it creates the queue
+>> with whatever the maximum values are.  However, if the
+>> admin has set the maximums to allow flexibility in
+>> creating a queue (aka, both a large size and large queue
+>> are allowed, but combined they create a queue too large
+>> for the RLIMIT_MSGQUEUE of the user), then attempts to
+>> create a queue without an attr struct will fail.  Switch
+>> back to using acceptable defaults regardless of what
+>> the maximums are.
+>>
+>> Note: so far, we only know of a few applications that rely
+>> on this behavior (specifically, set the maximums in /proc,
+>> then run the application which calls mq_open() without
+>> passing in an attr struct, and the application expects the
+>> newly created message queue to have the maximum sizes that
+>> were set in /proc used on the mq_open() call, and all of
+>> those applications that we know of are actually part of
+>> regression test suites that were coded to do something
+>> like this:
+>>
+>> for size in 4096 65536 $((1024 * 1024)) $((16 * 1024 * 1024)); do
+>> 	echo $size>  /proc/sys/fs/mqueue/msgsize_max
+>> 	mq_open || echo "Error opening mq with size $size"
+>> done
+>>
+>> These test suites that depend on any behavior like this are
+>> broken.  The concept that programs should rely upon the
+>> system wide maximum in order to get their desired results
+>> instead of simply using a attr struct to specify what they
+>> want is fundamentally unfriendly programming practice for
+>> any multi-tasking OS.
+>>
+>> Fixing this will break those few apps that we know of (and
+>> those app authors recognize the brokenness of their code
+>> and the need to fix it).  However, a future patch will allow
+>> a workaround in the form of new knobs for the default
+>> msg queue creation parameters for any software out there that
+>> we don't already know about that might rely on this behavior
+>> at the moment.
+>
+> Here the "future patch" is "mqueue: separate mqueue default value from
+> maximum value v2" in this series, yes?
+>
+> So people who have applications which are broken by this patch will
+> need to manually set /proc/sys/fs/mqueue/msg_default and/or
+> /proc/sys/fs/mqueue/msgsize_default to get those apps working again?
+>
 
-Also this patch adds CID's for below new FM features,
-        1) FM RX - De-Emphasis filter mode and RDS AF switch
-	2) FM TX - RDS Alternate frequency set.
+Yes, it works.
 
-Signed-off-by: Manjunatha Halli <x0130808@ti.com>
----
- drivers/media/video/v4l2-ctrls.c |   18 ++++++++++++++++++
- include/linux/videodev2.h        |   17 ++++++++++++++++-
- 2 files changed, 34 insertions(+), 1 deletions(-)
-
-diff --git a/drivers/media/video/v4l2-ctrls.c b/drivers/media/video/v4l2-ctrls.c
-index 18015c0..b4ddd6b 100644
---- a/drivers/media/video/v4l2-ctrls.c
-+++ b/drivers/media/video/v4l2-ctrls.c
-@@ -372,6 +372,12 @@ const char * const *v4l2_ctrl_get_menu(u32 id)
- 		NULL,
- 	};
- 
-+	static const char * const tune_deemphasis[] = {
-+		"No deemphasis",
-+		"50 useconds",
-+		"75 useconds",
-+		NULL,
-+	};
- 	switch (id) {
- 	case V4L2_CID_MPEG_AUDIO_SAMPLING_FREQ:
- 		return mpeg_audio_sampling_freq;
-@@ -414,6 +420,8 @@ const char * const *v4l2_ctrl_get_menu(u32 id)
- 		return colorfx;
- 	case V4L2_CID_TUNE_PREEMPHASIS:
- 		return tune_preemphasis;
-+	case V4L2_CID_TUNE_DEEMPHASIS:
-+		return tune_deemphasis;
- 	case V4L2_CID_FLASH_LED_MODE:
- 		return flash_led_mode;
- 	case V4L2_CID_FLASH_STROBE_SOURCE:
-@@ -606,6 +614,7 @@ const char *v4l2_ctrl_get_name(u32 id)
- 	case V4L2_CID_RDS_TX_PTY:		return "RDS Program Type";
- 	case V4L2_CID_RDS_TX_PS_NAME:		return "RDS PS Name";
- 	case V4L2_CID_RDS_TX_RADIO_TEXT:	return "RDS Radio Text";
-+	case V4L2_CID_RDS_TX_AF_FREQ:		return "RDS Alternate Frequency";
- 	case V4L2_CID_AUDIO_LIMITER_ENABLED:	return "Audio Limiter Feature Enabled";
- 	case V4L2_CID_AUDIO_LIMITER_RELEASE_TIME: return "Audio Limiter Release Time";
- 	case V4L2_CID_AUDIO_LIMITER_DEVIATION:	return "Audio Limiter Deviation";
-@@ -644,6 +653,12 @@ const char *v4l2_ctrl_get_name(u32 id)
- 	case V4L2_CID_JPEG_COMPRESSION_QUALITY:	return "Compression Quality";
- 	case V4L2_CID_JPEG_ACTIVE_MARKER:	return "Active Markers";
- 
-+	/* FM Radio Receiver control */
-+	/* Keep the order of the 'case's the same as in videodev2.h! */
-+	case V4L2_CID_FM_RX_CLASS:		return "FM Radio Receiver Controls";
-+	case V4L2_CID_RDS_AF_SWITCH:		return "FM RX RDS AF switch";
-+	case V4L2_CID_TUNE_DEEMPHASIS:		return "FM RX De-emphasis settings";
-+
- 	default:
- 		return NULL;
- 	}
-@@ -688,6 +703,7 @@ void v4l2_ctrl_fill(u32 id, const char **name, enum v4l2_ctrl_type *type,
- 	case V4L2_CID_MPEG_VIDEO_H264_8X8_TRANSFORM:
- 	case V4L2_CID_MPEG_VIDEO_H264_VUI_SAR_ENABLE:
- 	case V4L2_CID_MPEG_VIDEO_MPEG4_QPEL:
-+	case V4L2_CID_RDS_AF_SWITCH:
- 		*type = V4L2_CTRL_TYPE_BOOLEAN;
- 		*min = 0;
- 		*max = *step = 1;
-@@ -733,6 +749,7 @@ void v4l2_ctrl_fill(u32 id, const char **name, enum v4l2_ctrl_type *type,
- 	case V4L2_CID_MPEG_VIDEO_MPEG4_LEVEL:
- 	case V4L2_CID_MPEG_VIDEO_MPEG4_PROFILE:
- 	case V4L2_CID_JPEG_CHROMA_SUBSAMPLING:
-+	case V4L2_CID_TUNE_DEEMPHASIS:
- 		*type = V4L2_CTRL_TYPE_MENU;
- 		break;
- 	case V4L2_CID_RDS_TX_PS_NAME:
-@@ -745,6 +762,7 @@ void v4l2_ctrl_fill(u32 id, const char **name, enum v4l2_ctrl_type *type,
- 	case V4L2_CID_FM_TX_CLASS:
- 	case V4L2_CID_FLASH_CLASS:
- 	case V4L2_CID_JPEG_CLASS:
-+	case V4L2_CID_FM_RX_CLASS:
- 		*type = V4L2_CTRL_TYPE_CTRL_CLASS;
- 		/* You can neither read not write these */
- 		*flags |= V4L2_CTRL_FLAG_READ_ONLY | V4L2_CTRL_FLAG_WRITE_ONLY;
-diff --git a/include/linux/videodev2.h b/include/linux/videodev2.h
-index c9c9a46..d1c8c1b 100644
---- a/include/linux/videodev2.h
-+++ b/include/linux/videodev2.h
-@@ -1137,6 +1137,7 @@ struct v4l2_ext_controls {
- #define V4L2_CTRL_CLASS_FM_TX 0x009b0000	/* FM Modulator control class */
- #define V4L2_CTRL_CLASS_FLASH 0x009c0000	/* Camera flash controls */
- #define V4L2_CTRL_CLASS_JPEG 0x009d0000		/* JPEG-compression controls */
-+#define V4L2_CTRL_CLASS_FM_RX 0x009e0000	/* FM Receiver control class */
- 
- #define V4L2_CTRL_ID_MASK      	  (0x0fffffff)
- #define V4L2_CTRL_ID2CLASS(id)    ((id) & 0x0fff0000UL)
-@@ -1698,6 +1699,7 @@ enum  v4l2_exposure_auto_type {
- #define V4L2_CID_RDS_TX_PTY			(V4L2_CID_FM_TX_CLASS_BASE + 3)
- #define V4L2_CID_RDS_TX_PS_NAME			(V4L2_CID_FM_TX_CLASS_BASE + 5)
- #define V4L2_CID_RDS_TX_RADIO_TEXT		(V4L2_CID_FM_TX_CLASS_BASE + 6)
-+#define V4L2_CID_RDS_TX_AF_FREQ			(V4L2_CID_FM_TX_CLASS_BASE + 7)
- 
- #define V4L2_CID_AUDIO_LIMITER_ENABLED		(V4L2_CID_FM_TX_CLASS_BASE + 64)
- #define V4L2_CID_AUDIO_LIMITER_RELEASE_TIME	(V4L2_CID_FM_TX_CLASS_BASE + 65)
-@@ -1782,6 +1784,18 @@ enum v4l2_jpeg_chroma_subsampling {
- #define	V4L2_JPEG_ACTIVE_MARKER_DQT		(1 << 17)
- #define	V4L2_JPEG_ACTIVE_MARKER_DHT		(1 << 18)
- 
-+/* FM Receiver class control IDs */
-+#define V4L2_CID_FM_RX_CLASS_BASE		(V4L2_CTRL_CLASS_FM_RX | 0x900)
-+#define V4L2_CID_FM_RX_CLASS			(V4L2_CTRL_CLASS_FM_RX | 1)
-+
-+#define V4L2_CID_RDS_AF_SWITCH			(V4L2_CID_FM_RX_CLASS_BASE + 1)
-+#define V4L2_CID_TUNE_DEEMPHASIS		(V4L2_CID_FM_RX_CLASS_BASE + 2)
-+enum v4l2_deemphasis {
-+	V4L2_DEEMPHASIS_DISABLED	= 0,
-+	V4L2_DEEMPHASIS_50_uS		= 1,
-+	V4L2_DEEMPHASIS_75_uS		= 2,
-+};
-+
- /*
-  *	T U N I N G
-  */
-@@ -1849,7 +1863,8 @@ struct v4l2_hw_freq_seek {
- 	__u32		      seek_upward;
- 	__u32		      wrap_around;
- 	__u32		      spacing;
--	__u32		      reserved[7];
-+	__u32		      fm_band;
-+	__u32		      reserved[6];
- };
- 
- /*
--- 
-1.7.4.1
 
