@@ -1,70 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755317Ab2DQIO3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Apr 2012 04:14:29 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:24354 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754791Ab2DQIO1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Apr 2012 04:14:27 -0400
-Message-ID: <4F8D210C.8070505@redhat.com>
-Date: Tue, 17 Apr 2012 10:51:40 +0300
-From: Avi Kivity <avi@redhat.com>
+	id S1755342Ab2DQIOr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Apr 2012 04:14:47 -0400
+Received: from na3sys009aog131.obsmtp.com ([74.125.149.247]:48261 "EHLO
+	na3sys009aog131.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755340Ab2DQIOn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Apr 2012 04:14:43 -0400
+Message-ID: <4F8D266D.4030207@ti.com>
+Date: Tue, 17 Apr 2012 13:44:37 +0530
+From: Santosh Shilimkar <santosh.shilimkar@ti.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120329 Thunderbird/11.0.1
 MIME-Version: 1.0
-To: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-CC: Takuya Yoshikawa <takuya.yoshikawa@gmail.com>, kvm-ppc@vger.kernel.org,
-        Marcelo Tosatti <mtosatti@redhat.com>,
-        Xiao Guangrong <xiaoguangrong.eric@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>, KVM <kvm@vger.kernel.org>
-Subject: Re: [PATCH 00/13] KVM: MMU: fast page fault
-References: <4F742951.7080003@linux.vnet.ibm.com> <4F82E04E.6000900@redhat.com>	<20120409175829.GB21894@amt.cnet> <4F8329D3.7000605@gmail.com>	<20120409194614.GB23053@amt.cnet> <4F840DD2.3090101@redhat.com> <20120410204031.ffb5b976225ac9fe6dae474e@gmail.com> <4F842074.1050108@linux.vnet.ibm.com> <20120411211514.35db29c11460516e604059b6@gmail.com> <4F857B61.9080602@linux.vnet.ibm.com> <20120411231441.9d0984672dd252b806f99128@gmail.com> <20120413232528.c5ddbddb3cc0870d6e85a332@gmail.com> <4F8A95CB.9070104@redhat.com> <20120417004935.a9a39d951b3c24588e29edd2@gmail.com> <4F8D0D29.9050009@linux.vnet.ibm.com>
-In-Reply-To: <4F8D0D29.9050009@linux.vnet.ibm.com>
+To: Suresh Siddha <suresh.b.siddha@intel.com>
+CC: tglx@linutronix.de, linux-kernel@vger.kernel.org, johnstul@us.ibm.com
+Subject: Re: [PATCH] clockevents: Leave broadcast device shtudown only if
+ the current device is always running.
+References: <1333951423-27621-1-git-send-email-santosh.shilimkar@ti.com>  <1334011304.12400.81.camel@sbsiddha-desk.sc.intel.com>  <4F8AC59D.6070909@ti.com> <1334613816.28674.108.camel@sbsiddha-desk.sc.intel.com>
+In-Reply-To: <1334613816.28674.108.camel@sbsiddha-desk.sc.intel.com>
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/17/2012 09:26 AM, Xiao Guangrong wrote:
-> On 04/16/2012 11:49 PM, Takuya Yoshikawa wrote:
+On Tuesday 17 April 2012 03:33 AM, Suresh Siddha wrote:
+> On Sun, 2012-04-15 at 18:27 +0530, Santosh Shilimkar wrote:
+>> On Tuesday 10 April 2012 04:11 AM, Suresh Siddha wrote:
+>>> @@ -575,10 +575,12 @@ void tick_broadcast_switch_to_oneshot(void)
+>>>  	unsigned long flags;
+>>>  
+>>>  	raw_spin_lock_irqsave(&tick_broadcast_lock, flags);
+>>> +
+>>> +	tick_broadcast_device.mode = TICKDEV_MODE_ONESHOT;
+>>> +
+>>>  	if (cpumask_empty(tick_get_broadcast_mask()))
+>>>  		goto end;
+>>>  
+>>> -	tick_broadcast_device.mode = TICKDEV_MODE_ONESHOT;
+>>>  	bc = tick_broadcast_device.evtdev;
+>>>  	if (bc)
+>>>  		tick_broadcast_setup_oneshot(bc);
+>>>
+>>>
+>> Last time when I tried your patch, some how he ethernet IRQ masked
+>> the issue.
+>>
+>> The problem is still as before. If you make a minimal kernel
+>> configuration and possibly have only local timer, broadcast timer
+>> and say console device as CPU wakeup sources, you should hang in
+>> the boot process itself(Assuming CPUIDLE driver is built-in)
+>>
+>> The main issue is, you are not letting the one time setup
+>> needed for the broadcast device. Even with above change,
+>> the 'tick_broadcast_device.evtdev' is still in SHUTDOWN
+>> mode and the event handler is pointing to clockevents_handle_noop()
+> 
+> On x86, idle driver (like drivers/idle/intel_idle.c:
+> __setup_broadcast_timer()) calls clockevents_notify() with
+> CLOCK_EVT_NOTIFY_BROADCAST_ON, during which we do
+> tick_broadcast_setup_oneshot(). See tick_do_broadcast_on_off() which
+> does this. That should setup the evtdev handler, mode etc.
+> 
+> And during the next CLOCK_EVT_NOTIFY_BROADCAST_ENTER we program the next
+> broadcast event.
 >
->
-> > Although O(1) is actually O(1) for GET_DIRTY_LOG thread, it adds some
-> > overheads to page fault handling.  We may need to hold mmu_lock for properly
-> > handling O(1)'s write protection and ~500 write protections will not be so
-> > cheap.  And there is no answer to the question how to achive slot-wise write
-> > protection.
-> > 
->
->
-> Actually no.
->
-> We do not increase the overload on page fault for migration. The number of
-> page fault of O(1) is the same as write-protect all spte.
+I see.
 
-That's true with the write protect everything approach we use now.  But
-it's not true with range-based write protection, where you issue
-GET_DIRTY_LOG on a range of pages and only need to re-write-protect them.
+>> So the very first 'CLOCK_EVT_NOTIFY_BROADCAST_ENTER' call won't
+>> program the broadcast device with next event and CPU won't wakeup
+>> from low power. if you are lucky and have some other wakeup source,
+>> system will move further and eventually the handler and
+>> mode of the broad-cast device get set correctly.
+> 
+> I am confused. Can you elaborate on how on the next spurious wakeup
+> event, broad-cast device handler, mode is set?
+> 
+No it doesn't set it. I was wrong in quoting that. The system was
+working because of other wakeup sources. I checked the broadcast
+events and they were not happening.
 
-(the motivation for that is to decrease the time between GET_DIRTY_LOG
-and sending the page; as the time increases, the chances that the page
-got re-dirtied go up).
+> 
+> Anyways, can you add CLOCK_EVT_NOTIFY_BROADCAST_ON/OFF notifications in
+> your idle driver to see if it addresses the problem. That is the correct
+> thing to do here.
+> 
+Before your commit 77b0d60c{clockevents: Leave the broadcast device..},
+my idle driver was working without CLOCK_EVT_NOTIFY_BROADCAST_ON
+notifier. Now it's clear that it was relying on the default
+'tick_broadcast_setup_oneshot()' which was happening during boot.
 
-That doesn't mean O(1) is unusable for this, just that it requires more
-thought.  Especially with direct maps, we can write-enable pages very
-quickly.
+And ofcource notifying explicitly with BROADCAST_ON does the
+tick setup. Will update my idle driver accordingly but can
+you please explain me why the proposed patch [1] is not correct
+approach ? It should be also do what you intended to do
+with minimal change, right ?
 
-> And, we can also avoid to hold mmu_lock to write-protect PML4s, we can use
-> a generation number, and notify mmu to update its page table when dirty-log
-> is enabled.
-
-Generation numbers are also useful for o(1) invalidation.
-
->
-> Anyway, no performance data, no truth. Let me implement it first.
->
-
-
--- 
-error compiling committee.c: too many arguments to function
+Regards
+Santosh
+[1] https://lkml.org/lkml/2012/4/9/13
 
