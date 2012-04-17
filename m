@@ -1,50 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755223Ab2DQRB0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Apr 2012 13:01:26 -0400
-Received: from mms3.broadcom.com ([216.31.210.19]:3206 "EHLO MMS3.broadcom.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752656Ab2DQRBZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Apr 2012 13:01:25 -0400
-X-Server-Uuid: B730DE51-FC43-4C83-941F-F1F78A914BDD
-Subject: Re: In tree firmware not kept up to date
-From: "Michael Chan" <mchan@broadcom.com>
-To: "Ian Campbell" <Ian.Campbell@citrix.com>
-cc: netdev@vger.kernel.org, linux-kernel <linux-kernel@vger.kernel.org>,
-        "Ian Jackson" <Ian.Jackson@eu.citrix.com>,
-        "David Miller" <davem@davemloft.net>,
-        "Ben Hutchings" <bhutchings@solarflare.com>
-In-Reply-To: <1334675504.23948.99.camel@zakaz.uk.xensource.com>
-References: <1334675504.23948.99.camel@zakaz.uk.xensource.com>
-Date: Tue, 17 Apr 2012 17:01:17 +0000
-Message-ID: <1334682077.6288.212.camel@LTIRV-MCHAN1.corp.ad.broadcom.com>
+	id S1754611Ab2DQRDx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Apr 2012 13:03:53 -0400
+Received: from mail-qa0-f53.google.com ([209.85.216.53]:63156 "EHLO
+	mail-qa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752815Ab2DQRDw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Apr 2012 13:03:52 -0400
+Message-ID: <4F8DA274.1070508@gmail.com>
+Date: Tue, 17 Apr 2012 13:03:48 -0400
+From: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:11.0) Gecko/20120327 Thunderbird/11.0.1
 MIME-Version: 1.0
-X-WSS-ID: 63937E5D3E019162633-01-01
-Content-Type: text/plain;
- charset=cp1252
+To: Doug Ledford <dledford@redhat.com>
+CC: linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
+        kosaki.motohiro@gmail.com
+Subject: Re: [Patch 1/8] ipc/mqueue: cleanup definition names and locations
+References: <cover.1334676645.git.dledford@redhat.com> <bbf228b7d5f94bd8750083a62f05b6aa51675558.1334676645.git.dledford@redhat.com>
+In-Reply-To: <bbf228b7d5f94bd8750083a62f05b6aa51675558.1334676645.git.dledford@redhat.com>
+Content-Type: text/plain; charset=ISO-2022-JP
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-04-17 at 16:11 +0100, Ian Campbell wrote: 
-> Hello,
+(4/17/12 11:46 AM), Doug Ledford wrote:
+> The various defines for minimums and maximums of the sysctl controllable
+> mqueue values are scattered amongst different files and named
+> inconsistently.  Move them all into ipc_namespace.h and make them have
+> consistent names.  Additionally, make the number of queues per namespace
+> also have a minimum and maximum and use the same sysctl function as the
+> other two settable variables.
 > 
-> What is the current policy wrt keeping the in-tree firmware updated
-> alongside the drivers?
-> 
-> I use CONFIG_FIRMWARE_IN_KERNEL but a couple of times[0] recently this
-> has failed me because the in-tree bnx2 driver requires
-> bnx2/bnx2-mips-09-6.2.1b.fw but the tree contains
-> firmware/bnx2/bnx2-mips-09-6.2.1a.fw.ihex and not 6.2.1b.
-> 
-> Is it a bug that bnx2 was updated without adding the new firmware or is
-> a bug that the obsolete firmware is still sitting in the tree?
+> Signed-off-by: Doug Ledford<dledford@redhat.com>
 
-We probably should remove the obsolete firmware in the kernel tree.  All
-the firmware files to support old and new kernels are here:
+Ack all of this series.
 
-git://git.kernel.org/pub/scm/linux/kernel/git/firmware/linux-firmware.git
-
-
+thanks for patience and good effort.
 
