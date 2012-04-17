@@ -1,223 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755737Ab2DQRkm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Apr 2012 13:40:42 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:51917 "EHLO
+	id S1755934Ab2DQRmS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Apr 2012 13:42:18 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:51943 "EHLO
 	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755424Ab2DQRkl (ORCPT
+	with ESMTP id S1751486Ab2DQRmR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Apr 2012 13:40:41 -0400
-Date: Tue, 17 Apr 2012 19:40:29 +0200
-From: Wolfram Sang <w.sang@pengutronix.de>
-To: Karol Lewandowski <k.lewandowsk@samsung.com>
-Cc: ben-linux@fluff.org, m.szyprowski@samsung.com, thomas.abraham@linaro.org,
-        linux-kernel@vger.kernel.org, linux-i2c@vger.kernel.org,
-        devicetree-discuss@lists.ozlabs.org, linux-samsung-soc@vger.kernel.org,
-        t.stanislaws@samsung.com, kyungmin.park@samsung.com,
-        broonie@opensource.wolfsonmicro.com
-Subject: Re: [PATCH 3/3] i2c-s3c2410: Add HDMIPHY quirk for S3C2440
-Message-ID: <20120417174029.GC22406@pengutronix.de>
-References: <1332357113-2973-1-git-send-email-k.lewandowsk@samsung.com>
- <1332357113-2973-4-git-send-email-k.lewandowsk@samsung.com>
+	Tue, 17 Apr 2012 13:42:17 -0400
+Date: Tue, 17 Apr 2012 19:42:13 +0200
+From: Sascha Hauer <s.hauer@pengutronix.de>
+To: Rob Lee <rob.lee@linaro.org>
+Cc: kernel@pengutronix.de, linaro-dev@lists.linaro.org, patches@linaro.org,
+        daniel.lezcano@linaro.org, linux-kernel@vger.kernel.org,
+        amit.kucheria@linaro.org, shawn.guo@linaro.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH 1/3] ARM: imx: Add common imx cpuidle init functionality.
+Message-ID: <20120417174213.GD3852@pengutronix.de>
+References: <1334620214-25803-1-git-send-email-rob.lee@linaro.org>
+ <1334620214-25803-2-git-send-email-rob.lee@linaro.org>
+ <20120417074301.GM20478@pengutronix.de>
+ <CAMXH7KH41kWMPu_dEpetZc8OUD3C0-mtxGbXX0Vqd4EODPWJUg@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="da4uJneut+ArUgXk"
+Content-Type: text/plain; charset=iso-8859-15
 Content-Disposition: inline
-In-Reply-To: <1332357113-2973-4-git-send-email-k.lewandowsk@samsung.com>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CAMXH7KH41kWMPu_dEpetZc8OUD3C0-mtxGbXX0Vqd4EODPWJUg@mail.gmail.com>
+X-Sent-From: Pengutronix Hildesheim
+X-URL: http://www.pengutronix.de/
+X-IRC: #ptxdist @freenode
+X-Accept-Language: de,en
+X-Accept-Content-Type: text/plain
+X-Uptime: 19:33:30 up 157 days,  1:20, 23 users,  load average: 0.08, 0.05,
+ 0.18
 User-Agent: Mutt/1.5.21 (2010-09-15)
 X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
-X-SA-Exim-Mail-From: wsa@pengutronix.de
+X-SA-Exim-Mail-From: sha@pengutronix.de
 X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
 X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, Apr 17, 2012 at 08:54:03AM -0500, Rob Lee wrote:
+> On Tue, Apr 17, 2012 at 2:43 AM, Sascha Hauer <s.hauer@pengutronix.de> wrote:
+> > On Mon, Apr 16, 2012 at 06:50:12PM -0500, Robert Lee wrote:
+> >> Add common cpuidle init functionality that can be used by various
+> >> imx platforms.
+> >>
+> >> Signed-off-by: Robert Lee <rob.lee@linaro.org>
+> >> ---
+> >> diff --git a/arch/arm/plat-mxc/Makefile b/arch/arm/plat-mxc/Makefile
+> >> index e81290c..7c9e05f 100644
+> >> --- a/arch/arm/plat-mxc/Makefile
+> >> +++ b/arch/arm/plat-mxc/Makefile
+> >> @@ -16,6 +16,8 @@ obj-$(CONFIG_MXC_ULPI) += ulpi.o
+> >>  obj-$(CONFIG_MXC_USE_EPIT) += epit.o
+> >>  obj-$(CONFIG_MXC_DEBUG_BOARD) += 3ds_debugboard.o
+> >>  obj-$(CONFIG_CPU_FREQ_IMX)    += cpufreq.o
+> >> +obj-$(CONFIG_CPU_IDLE)    += cpuidle.o
+> >> +
+> >>  ifdef CONFIG_SND_IMX_SOC
+> >>  obj-y += ssi-fiq.o
+> >>  obj-y += ssi-fiq-ksym.o
+> >> diff --git a/arch/arm/plat-mxc/cpuidle.c b/arch/arm/plat-mxc/cpuidle.c
+> >> new file mode 100644
+> >> index 0000000..d1c9301
+> >> --- /dev/null
+> >> +++ b/arch/arm/plat-mxc/cpuidle.c
+> >> @@ -0,0 +1,89 @@
+> >> +/*
+> >> + * Copyright 2012 Freescale Semiconductor, Inc.
+> >> + * Copyright 2012 Linaro Ltd.
+> >> + *
+> >> + * The code contained herein is licensed under the GNU General Public
+> >> + * License. You may obtain a copy of the GNU General Public License
+> >> + * Version 2 or later at the following locations:
+> >> + *
+> >> + * http://www.opensource.org/licenses/gpl-license.html
+> >> + * http://www.gnu.org/copyleft/gpl.html
+> >> + */
+> >> +
+> >> +#include <linux/kernel.h>
+> >> +#include <linux/io.h>
+> >> +#include <linux/cpuidle.h>
+> >> +#include <linux/hrtimer.h>
+> >> +#include <linux/err.h>
+> >> +#include <linux/slab.h>
+> >> +
+> >> +static struct cpuidle_device __percpu * imx_cpuidle_devices;
+> >> +static struct cpuidle_driver *drv;
+> >> +
+> >> +void __init imx_cpuidle_set_driver(struct cpuidle_driver *p)
+> >> +{
+> >> +     drv = p;
+> >> +}
+> >
+> > You like it complicated, eh? Why do you introduce a function which sets
+> > a variable...
+> >
+> 
+> This complication is used to deal with the timing of various levels of
+> init calls.  More explanation below.
+> 
+> >> +
+> >> +void imx_cpuidle_devices_uninit(void)
+> >> +{
+> >> +     int cpu_id;
+> >> +     struct cpuidle_device *dev;
+> >> +
+> >> +     for_each_possible_cpu(cpu_id) {
+> >> +             dev = per_cpu_ptr(imx_cpuidle_devices, cpu_id);
+> >> +             cpuidle_unregister_device(dev);
+> >> +     }
+> >> +
+> >> +     free_percpu(imx_cpuidle_devices);
+> >> +}
+> >> +
+> >> +static int __init imx_cpuidle_init(void)
+> >
+> > ... instead of passing it directly to the function which uses it?
+> >
+> 
+> If I called imx_cpuidle_init directly from imx5 or imx6q init
+> routines, it would be getting called before the coreinit_call of core
+> cpuidle causing a failure.  There were various other directions to
+> take and all seemed less desirable than this one.
+> 
+> One alternative would be to add a function to return the pointer to
+> the cpuidle driver object based on the machine type.  Functionality
+> exists to identify imx5 as a machine type but not imx6q, so I couldn't
+> use that machine based method without adding that extra code.
+> 
+> Another alternative would be to add a general platform lateinit_call
+> function to each platforms that support cpuidle.
 
---da4uJneut+ArUgXk
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Just put the initcall into mm-imx5.c and check the cpu type. Then you
+also don't have to make imx5_idle global.
 
-Hi,
-
-On Wed, Mar 21, 2012 at 08:11:53PM +0100, Karol Lewandowski wrote:
-> This patch adds support for s3c2440 I2C bus controller dedicated HDMIPHY =
-device on
-> Exynos4 platform. Some quirks are introduced due to differences between H=
-DMIPHY
-> and other I2C controllers on Exynos4.  These differences are:
-> - no GPIOs, HDMIPHY is inside the SoC and the controller is connected
->   internally
-> - due to unknown reason (probably HW bug in HDMIPHY and/or the controller=
-) a
->   transfer fails to finish. The controller hangs after sending the last b=
-yte,
->   the workaround for this bug is resetting the controller after each tran=
-sfer
->=20
-> Signed-off-by: Tomasz Stanislawski <t.stanislaws@samsung.com>
-> Signed-off-by: Karol Lewandowski <k.lewandowsk@samsung.com>
-> Tested-by: Tomasz Stanislawski <t.stanislaws@samsung.com>
-> Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
-> ---
->  .../devicetree/bindings/i2c/samsung-i2c.txt        |   11 +++++-
->  drivers/i2c/busses/i2c-s3c2410.c                   |   35 ++++++++++++++=
-++++++
->  2 files changed, 44 insertions(+), 2 deletions(-)
->=20
-> diff --git a/Documentation/devicetree/bindings/i2c/samsung-i2c.txt b/Docu=
-mentation/devicetree/bindings/i2c/samsung-i2c.txt
-> index 38832c7..c6670f9 100644
-> --- a/Documentation/devicetree/bindings/i2c/samsung-i2c.txt
-> +++ b/Documentation/devicetree/bindings/i2c/samsung-i2c.txt
-> @@ -10,14 +10,21 @@ Required properties:
->      region.
->    - interrupts: interrupt number to the cpu.
->    - samsung,i2c-sda-delay: Delay (in ns) applied to data line (SDA) edge=
-s.
-> -  - gpios: The order of the gpios should be the following: <SDA, SCL>.
-> -    The gpio specifier depends on the gpio controller.
-> =20
->  Optional properties:
-> +  - gpios: The order of the gpios should be the following: <SDA, SCL>.
-> +    The gpio specifier depends on the gpio controller. Required in all c=
-ases
-> +    except when "samsung,i2c-no-gpio" is also specified.
-> +  - samsung,i2c-no-gpio: input/output lines of the controller are
-> +    permanently wired to the respective client, there are no gpio
-> +    lines that need to be configured to enable this controller
-
-Can't we just skip this property...
+Sascha
 
 
->    - samsung,i2c-slave-addr: Slave address in multi-master enviroment. If=
- not
->      specified, default value is 0.
->    - samsung,i2c-max-bus-freq: Desired frequency in Hz of the bus. If not
->      specified, the default value in Hz is 100000.
-> +  - samsung,i2c-quirk-hdmiphy: Quirk for HDMI PHY block found on
-> +    Exynos4 platform - reduce timeout and reset controller after each
-> +    transfer
-
-=2E.. and this one, if we declare a new compatible-entry for exynos4?
-
-> =20
->  Example:
-> =20
-> diff --git a/drivers/i2c/busses/i2c-s3c2410.c b/drivers/i2c/busses/i2c-s3=
-c2410.c
-> index f7b6a14..e50f523 100644
-> --- a/drivers/i2c/busses/i2c-s3c2410.c
-> +++ b/drivers/i2c/busses/i2c-s3c2410.c
-> @@ -50,6 +50,8 @@ static const struct of_device_id s3c24xx_i2c_match[];
-> =20
->  /* Treat S3C2410 as baseline hardware, anything else is supported via qu=
-irks */
->  #define QUIRK_S3C2440		(1 << 0)
-> +#define QUIRK_HDMIPHY		(1 << 1)
-> +#define QUIRK_NO_GPIO		(1 << 2)
-> =20
->  /* i2c controller state */
->  enum s3c24xx_i2c_state {
-> @@ -469,6 +471,13 @@ static int s3c24xx_i2c_set_master(struct s3c24xx_i2c=
- *i2c)
->  	unsigned long iicstat;
->  	int timeout =3D 400;
-> =20
-> +	/* the timeout for HDMIPHY is reduced to 10 ms because
-> +	 * the hangup is expected to happen, so waiting 400 ms
-> +	 * causes only unnecessary system hangup
-> +	 */
-> +	if (i2c->quirks & QUIRK_HDMIPHY)
-> +		timeout =3D 10;
-> +
->  	while (timeout-- > 0) {
->  		iicstat =3D readl(i2c->regs + S3C2410_IICSTAT);
-> =20
-> @@ -478,6 +487,15 @@ static int s3c24xx_i2c_set_master(struct s3c24xx_i2c=
- *i2c)
->  		msleep(1);
->  	}
-> =20
-> +	/* hang-up of bus dedicated for HDMIPHY occurred, resetting */
-> +	if (i2c->quirks & QUIRK_HDMIPHY) {
-> +		writel(0, i2c->regs + S3C2410_IICCON);
-> +		writel(0, i2c->regs + S3C2410_IICSTAT);
-> +		writel(0, i2c->regs + S3C2410_IICDS);
-> +
-> +		return 0;
-> +	}
-> +
->  	return -ETIMEDOUT;
->  }
-> =20
-> @@ -759,6 +777,9 @@ static int s3c24xx_i2c_parse_dt_gpio(struct s3c24xx_i=
-2c *i2c)
->  {
->  	int idx, gpio, ret;
-> =20
-> +	if (i2c->quirks & QUIRK_NO_GPIO)
-> +		return 0;
-> +
->  	for (idx =3D 0; idx < 2; idx++) {
->  		gpio =3D of_get_gpio(i2c->dev->of_node, idx);
->  		if (!gpio_is_valid(gpio)) {
-> @@ -783,6 +804,10 @@ free_gpio:
->  static void s3c24xx_i2c_dt_gpio_free(struct s3c24xx_i2c *i2c)
->  {
->  	unsigned int idx;
-> +
-> +	if (i2c->quirks & QUIRK_NO_GPIO)
-> +		return;
-> +
->  	for (idx =3D 0; idx < 2; idx++)
->  		gpio_free(i2c->gpios[idx]);
->  }
-> @@ -859,6 +884,13 @@ s3c24xx_i2c_parse_dt(struct device_node *np, struct =
-s3c24xx_i2c *i2c)
->  		return;
-> =20
->  	pdata->bus_num =3D -1; /* i2c bus number is dynamically assigned */
-> +
-> +	if (of_get_property(np, "samsung,i2c-quirk-hdmiphy", NULL))
-> +		i2c->quirks |=3D QUIRK_HDMIPHY;
-> +
-> +	if (of_get_property(np, "samsung,i2c-no-gpio", NULL))
-> +		i2c->quirks |=3D QUIRK_NO_GPIO;
-> +
->  	of_property_read_u32(np, "samsung,i2c-sda-delay", &pdata->sda_delay);
->  	of_property_read_u32(np, "samsung,i2c-slave-addr", &pdata->slave_addr);
->  	of_property_read_u32(np, "samsung,i2c-max-bus-freq",
-> @@ -1116,6 +1148,9 @@ static struct platform_device_id s3c24xx_driver_ids=
-[] =3D {
->  	}, {
->  		.name		=3D "s3c2440-i2c",
->  		.driver_data	=3D QUIRK_S3C2440,
-> +	}, {
-> +		.name		=3D "s3c2440-hdmiphy-i2c",
-> +		.driver_data	=3D QUIRK_S3C2440 | QUIRK_HDMIPHY | QUIRK_NO_GPIO,
->  	}, { },
->  };
->  MODULE_DEVICE_TABLE(platform, s3c24xx_driver_ids);
-> --=20
-> 1.7.9
->=20
-
---=20
-Pengutronix e.K.                           | Wolfram Sang                |
+-- 
+Pengutronix e.K.                           |                             |
 Industrial Linux Solutions                 | http://www.pengutronix.de/  |
-
---da4uJneut+ArUgXk
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iEYEARECAAYFAk+Nqw0ACgkQD27XaX1/VRsQcQCgosUZWbOhjZ+Ais3cjWmCjVg/
-yJUAn2K4tQDV1z4iKS3q31W+7pnE3Hv0
-=Rou/
------END PGP SIGNATURE-----
-
---da4uJneut+ArUgXk--
+Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
+Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
