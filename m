@@ -1,77 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932293Ab2DQPsX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Apr 2012 11:48:23 -0400
-Received: from mail209.messagelabs.com ([216.82.255.3]:51001 "EHLO
-	mail209.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756122Ab2DQPqf convert rfc822-to-8bit (ORCPT
+	id S1756256Ab2DQPsg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Apr 2012 11:48:36 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:56078 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755724Ab2DQPsf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Apr 2012 11:46:35 -0400
-X-Env-Sender: hartleys@visionengravers.com
-X-Msg-Ref: server-14.tower-209.messagelabs.com!1334677589!3411659!13
-X-Originating-IP: [216.166.12.180]
-X-StarScan-Version: 6.5.7; banners=-,-,-
-X-VirusChecked: Checked
-From: H Hartley Sweeten <hartleys@visionengravers.com>
-To: Rafal Prylowski <prylowski@metasoft.pl>
-CC: Mika Westerberg <mika.westerberg@iki.fi>,
-        "vinod.koul@intel.com" <vinod.koul@intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "rmallon@gmail.com" <rmallon@gmail.com>
-Date: Tue, 17 Apr 2012 10:46:28 -0500
-Subject: RE: [PATCH] ep93xx: Implement double buffering for M2M DMA channels
-Thread-Topic: [PATCH] ep93xx: Implement double buffering for M2M DMA channels
-Thread-Index: Ac0caex4X0qtK6OFStW/8+oWZlDE2AARxXCw
-Message-ID: <ADE657CA350FB648AAC2C43247A983F00206987A3E66@AUSP01VMBX24.collaborationhost.net>
-References: <4F683B36.8090101@metasoft.pl>
- <20120321193836.GC3740@mwesterb-mobl.ger.corp.intel.com>
- <ADE657CA350FB648AAC2C43247A983F0020696D48E3E@AUSP01VMBX24.collaborationhost.net>
- <20120323070446.GC5812@mwesterb-mobl.ger.corp.intel.com>
- <ADE657CA350FB648AAC2C43247A983F0020696D48EEB@AUSP01VMBX24.collaborationhost.net>
- <20120410172853.GA25697@mwesterb-mobl>
- <ADE657CA350FB648AAC2C43247A983F00206986C01D4@AUSP01VMBX24.collaborationhost.net>
- <4F853053.7040800@metasoft.pl>
- <ADE657CA350FB648AAC2C43247A983F00206987A3BFE@AUSP01VMBX24.collaborationhost.net>
- <4F8D189B.3010100@metasoft.pl>
-In-Reply-To: <4F8D189B.3010100@metasoft.pl>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	Tue, 17 Apr 2012 11:48:35 -0400
+Message-ID: <1334677707.14393.2.camel@phoenix>
+Subject: [PATCH 1/2] regulator: max8997: Remove is_enabled callback
+ implementation for max8997_charger_fixedstate_ops
+From: Axel Lin <axel.lin@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Kyungmin Park <kyungmin.park@samsung.com>, Liam Girdwood <lrg@ti.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Date: Tue, 17 Apr 2012 23:48:27 +0800
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2- 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, April 17, 2012 12:16 AM, Rafal Prylowski wrote:
-> On 2012-04-16 20:59, H Hartley Sweeten wrote:
->> It appears your patch is causing an interrupt storm on my system.
->> 
->
-> Could you please apply the following patch on top of double buffering
-> patch? I would like to know the state of dma channel when you get
-> that interrupt storm.
+If is_enabled callback is not implemented, the core assumes that the regulator
+is on.
 
-Rafal,
+This is simpler than having a hack to retrun 1 in max8997_reg_is_enabled() if
+max8997_get_enable_register() returns -EINVAL.
 
-Here's the output:
+Signed-off-by: Axel Lin <axel.lin@gmail.com>
+---
+ drivers/regulator/max8997.c |    5 +----
+ 1 files changed, 1 insertions(+), 4 deletions(-)
 
-mmc_spi spi0.1: SD/MMC host mmc0, no poweroff
-M2M: 20c3
-M2M: 20c3
-M2M: 21c3
-M2M: 21c3
-M2M: 21c3
-M2M: 21c3
-M2M: 21c3
-M2M: 21c3
+diff --git a/drivers/regulator/max8997.c b/drivers/regulator/max8997.c
+index 99d7cb3..0796ad8 100644
+--- a/drivers/regulator/max8997.c
++++ b/drivers/regulator/max8997.c
+@@ -278,9 +278,7 @@ static int max8997_reg_is_enabled(struct regulator_dev *rdev)
+ 	u8 val;
+ 
+ 	ret = max8997_get_enable_register(rdev, &reg, &mask, &pattern);
+-	if (ret == -EINVAL)
+-		return 1; /* "not controllable" */
+-	else if (ret)
++	if (ret)
+ 		return ret;
+ 
+ 	ret = max8997_read_reg(i2c, reg, &val);
+@@ -887,7 +885,6 @@ static struct regulator_ops max8997_charger_ops = {
+ };
+ 
+ static struct regulator_ops max8997_charger_fixedstate_ops = {
+-	.is_enabled		= max8997_reg_is_enabled,
+ 	.get_current_limit	= max8997_get_current_limit,
+ 	.set_current_limit	= max8997_set_current_limit,
+ };
+-- 
+1.7.5.4
 
-The "M2M: 21c3" keeps getting output until the system is turned off.
 
-Regards,
-Hartley
+
