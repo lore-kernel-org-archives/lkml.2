@@ -1,87 +1,152 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754611Ab2DQQuM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Apr 2012 12:50:12 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:53986 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754173Ab2DQQuJ (ORCPT
+	id S1755248Ab2DQQu0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Apr 2012 12:50:26 -0400
+Received: from host171.canaca.com ([67.55.55.225]:54494 "EHLO
+	host171.canaca.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754140Ab2DQQuX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Apr 2012 12:50:09 -0400
-Date: Tue, 17 Apr 2012 17:50:06 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Takashi Iwai <tiwai@suse.de>
-Cc: Ondrej Zary <linux@rainbow-software.org>, alsa-devel@alsa-project.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [alsa-devel] [PATCH 3/4] Add Wolfson Microelectronics WM8776
- codec ALSA driver
-Message-ID: <20120417165005.GR6652@opensource.wolfsonmicro.com>
-References: <1334611118-10301-1-git-send-email-linux@rainbow-software.org>
- <1334611118-10301-4-git-send-email-linux@rainbow-software.org>
- <20120417150234.GB22575@sirena.org.uk>
- <201204171813.44044.linux@rainbow-software.org>
- <20120417161820.GP6652@opensource.wolfsonmicro.com>
- <s5hlilupbe5.wl%tiwai@suse.de>
+	Tue, 17 Apr 2012 12:50:23 -0400
+Message-ID: <b390b4f641a76b9c2a5240bf344faea9.squirrel@mungewell.org>
+In-Reply-To: <alpine.LRH.2.00.1204171027220.11298@twin.jikos.cz>
+References: <1316018905-4175-1-git-send-email-nlopezcasad@logitech.com>
+    <4E77A221.1060909@t-online.de>
+    <CAN+gG=EcaMrz2w-cVL-cCwi2NNVJ-NXOpOQpbjyFdCwn5+Bn+w@mail.gmail.com>
+    <alpine.LRH.2.00.1204171027220.11298@twin.jikos.cz>
+Date: Tue, 17 Apr 2012 12:50:12 -0400
+Subject: Re: [PATCH v5 1/1] HID: Add full support for Logitech Unifying
+ receivers
+From: simon@mungewell.org
+To: "Jiri Kosina" <jkosina@suse.cz>
+Cc: "Benjamin Tissoires" <benjamin.tissoires@gmail.com>,
+        =?iso-8859-1?Q?=22Richard_Sch=FCtz=22?= <r.schtz@t-online.de>,
+        "Nestor Lopez Casado" <nlopezcasad@logitech.com>,
+        "Dmitry Torokhov" <dmitry.torokhov@gmail.com>,
+        "Jiri Kosina" <jkosina@suse.cz>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org, rtitmuss@logitech.com, ogay@logitech.com,
+        jzanone@logitech.com
+User-Agent: SquirrelMail/1.4.21
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="Q8a9NmTVi5AMeZ2v"
-Content-Disposition: inline
-In-Reply-To: <s5hlilupbe5.wl%tiwai@suse.de>
-X-Cookie: Long life is in store for you.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Priority: 3 (Normal)
+Importance: Normal
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - host171.canaca.com
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - mungewell.org
+X-Source: 
+X-Source-Args: 
+X-Source-Dir: 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+> On Thu, 22 Sep 2011, Benjamin Tissoires wrote:
+>
+>> Hi Richard,
+>>
+>> here, you'll find a small C program that allows you to do a pairing of
+>> a new device to a receiver.
+>>
+>> compile it with with gcc -o pairing_tool pairing_tool.c
+>
+> Could this perhaps be provided into Documentation/ or samples/ somewhere?
+> I don't think that Logitech themselves do ship pairing application for
+> Linux, or do they?
+>
+> If they don't, it'd be nice to have this at least documented somewhere, so
+> that someone could write a pairing GUI.
+>
+> Thanks.
 
---Q8a9NmTVi5AMeZ2v
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Hi all,
+Just as an FYI there is the Logitech Wireless WiiWheel which also uses the
+nRF24L01 in it's dongle.
 
-On Tue, Apr 17, 2012 at 06:32:18PM +0200, Takashi Iwai wrote:
-> Mark Brown wrote:
+This wheel is handled in Linux with 'hid-lg' and 'hid-lg4ff' drivers, but
+we all know engineers are lazy and a certain amount of the control
+protocol is likely to be similar.
 
-> > What makes you cleaim that "ASoC was not designed to be used with sound
-> > cards"?  Implementing sound cards is the sole purpose of ASoC...
+Below are some notes I made (also
+http://wiibrew.org/wiki/Logitech_USB_steering_wheel).
 
-> You don't need to overreact, he surely means only about the existing
-> ice1724 sound driver for his device :)
+Maybe they are of some use from the Unifying dongles.
+Cheers,
+Simon
 
-Possibly...  it's really not clear.
 
-> Restructuring ice1712 and ice1724 drivers to use ASoC would require
-> quite a lot of works, and no one really wants it, I guess.  Many
-> boards are old and can't be tested easily.  And, we still need to
-> match the ASoC components with the controls of the current driver.
+--
+Configuration
 
-> This was already discussed a bit, and Clemens suggested like this
-> way.
+The Wheel/Dongle are configured by writing to the feature port of the USB
+dongle. This allows the control of the 'on-air' features, such as
+initiating the wireless link, controlling the RF channel/hooping sequence
+and RF addressing (sub-channel coding).
 
-This isn't just adding something into a specific driver which fails at
-abstraction, it's adding generic code.  If it were adding something to
-the ice17xx driver then that'd be one thing but look at the subject line
-and location of the file...  this stuff should be buried inside the
-driver if it's too painful to make the driver sane.
+When first plugged in the wireless link between the dongle and the wheel
+is not active, the link can be 'brought up' with writing the '0xAF
+Command' followed by the '0xB2 Command'.
 
---Q8a9NmTVi5AMeZ2v
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+The commands take some time to action, this can be confirmed by reading
+back the feature port, when the command completes the MSB of the first
+byte will be cleared. For most commands the same data that was sent is
+returned, some commands return different data.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+Configure RX/TX Address?
+    Byte 1 - 0xA9
+    Byte 2 - 2nd and 4th Address/Sub-Channel Bytes
+    Byte 3 = 3rd and 5th Address/Sub-Channel Bytes
+    Note 1st Sub-Channel byte is always 0xAE
 
-iQIcBAEBAgAGBQJPjZ80AAoJEBus8iNuMP3djzwQAIrloKi77nhuyOOVB/CQ+rLx
-urDiVVePbP5Je3YEmE74wtHRhLINwd4x7MsJOdr4kNmMWtw6P0kw7a2tqDP11iyo
-PttMS2zCO0FSKOeQa2pNNfdfKWiY6h9Pa0UdJ6/pcCEzcRHZZdTLhY7iv0K1NA4p
-bFxTnhEsQDojAkEmfrZ3I6fuNRKg550VZ2+GKwSI/+EdPEfsJi9s6lDyYbcIwEwq
-5PDowOV1k+HmHTb8QykXR5y2O0F6/kXd9fbXbWcxUSit2dcM1q3p3nRZMmHDuvev
-NurMzgvpOtcSTiXtGGnFDqVAB91CM5pY1I4VZyzHuL2E0wRgo5q+j6XDr7BSbTFC
-VWFWX15IghlCTv/y0zljipbYsdoNEub7gKzgdh02hJzNkuccruhlBOxwkE1OWAKI
-rmAEQJCsI/ny61PPs8Etvy7gffieEVbnETSzhV2lUHO0jvt997NSlVNqLNBmaqOX
-7JFVXCy492VMHAErhsghybjPN8CwYC3YB6QkZyla8gcBpKgYdec/Wc67JuR5vTRV
-Kpyli9uRX0XD3EN5FtoCxuZiHyoQeiCk/Tg+MKq4ZKgijsrBPTjww1SQYjqXexOy
-E+ZaH3r6bxxyMWy9cghme5r9DBMtEucX4KZsunIjvAtMUgMBLVI6gVuQjV9n7Vn/
-3S/jls1nMkbQkiZdLMjI
-=DWAl
------END PGP SIGNATURE-----
+RF Test Mode
+    Byte 1 = 0xAC
+    Byte 2 = Test Mode
 
---Q8a9NmTVi5AMeZ2v--
+        0 - Normal Mode (LED flashes on/off as normal)
+        1 - Constant TX (LED on), RF channel in 'P3' (can kill WiFi ;-)
+        2 - Pulsed TX (LED flashes long-on/short-off)
+        3 - Receive Only? (LED off), RF channel in 'P3'. Continually polls
+nRF24L01 status and clears
+
+    Byte 3 - RF Channel/Frequency
+
+Initialise communications
+    Byte 1 - 0xAF
+    Byte 2 - Hopping Sequence (0x00..0x0F)
+
+Change RX/TX Address
+    Byte 1 - 0xB2
+    Byte 2 - 2nd and 4th Address/Sub-Channel Bytes
+    Byte 3 = 3rd and 5th Address/Sub-Channel Bytes
+    Note 1st Sub-Channel byte is always 0xAE
+
+The following commands do not cause SPI activity to the nRF24L01
+
+Check Status?
+    Byte 1 - 0xA8
+    Returns RX/TX Address bytes in Byte 5 and Byte 6
+    Returns whether the 'button' pressed in Byte 7 bit 5
+    Returns something in Byte 7 bits 4..0 related to 'LED mode' (not a
+direct map)
+    Returns something in Byte 8 which depends on Byte 2 sent
+
+LED Mode
+    Byte 1 - 0xAA
+    Byte 2 - changes the way the LED flashes, unknown what is actually
+happening
+
+Unknown
+    Byte 1 - 0xAE
+    Doesn't clear Byte 1 bit 7, like the other commands. Perhaps it is
+waiting for something...
+    Returns 0x14 in Byte 5 and 0x00 in Byte 6
+
+Active Address?
+    Byte 1 - 0xB3
+    Only clears Byte 1 bit 7 if Command '0xAF' is issued first
+    Returns values in Byte 5 and Byte 6 which are the values from Command
+'0xB2' Bytes 2 & 3
+--
+
