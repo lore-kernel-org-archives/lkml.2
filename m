@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754760Ab2DQK5E (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Apr 2012 06:57:04 -0400
+	id S1754892Ab2DQK5O (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Apr 2012 06:57:14 -0400
 Received: from mail-pb0-f46.google.com ([209.85.160.46]:52937 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753593Ab2DQK5C (ORCPT
+	with ESMTP id S1754694Ab2DQK5K (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Apr 2012 06:57:02 -0400
+	Tue, 17 Apr 2012 06:57:10 -0400
 From: Bryan Wu <bryan.wu@canonical.com>
 To: linux@arm.linux.org.uk, rpurdie@rpsys.net,
         linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
         linus.walleij@linaro.org, akpm@linux-foundation.org,
         arnd.bergmann@linaro.org, nicolas.pitre@linaro.org,
         tim.gardner@canonical.com
-Subject: [PATCH 04/18] ARM: mach-ks8695: remove leds driver, since nobody use it
-Date: Tue, 17 Apr 2012 18:53:31 +0800
-Message-Id: <1334660025-20442-5-git-send-email-bryan.wu@canonical.com>
+Subject: [PATCH 05/18] ARM: mach-shark: retire custom LED code
+Date: Tue, 17 Apr 2012 18:53:32 +0800
+Message-Id: <1334660025-20442-6-git-send-email-bryan.wu@canonical.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1334660025-20442-1-git-send-email-bryan.wu@canonical.com>
 References: <1334660025-20442-1-git-send-email-bryan.wu@canonical.com>
@@ -23,176 +23,301 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Bryan Wu <bryan.wu@canonical.com>
-Acked-by: Andrew Victor <linux@maxim.org.za>
----
- arch/arm/mach-ks8695/Makefile               |    3 -
- arch/arm/mach-ks8695/devices.c              |   21 ------
- arch/arm/mach-ks8695/include/mach/devices.h |    5 --
- arch/arm/mach-ks8695/leds.c                 |   92 ---------------------------
- 4 files changed, 121 deletions(-)
- delete mode 100644 arch/arm/mach-ks8695/leds.c
+The CPU activity LED is now handled by the trigger in the leds
+subsystem, retire this old CONFIG_LEDS-based code.
 
-diff --git a/arch/arm/mach-ks8695/Makefile b/arch/arm/mach-ks8695/Makefile
-index 853efd9..9324ef9 100644
---- a/arch/arm/mach-ks8695/Makefile
-+++ b/arch/arm/mach-ks8695/Makefile
-@@ -11,9 +11,6 @@ obj-				:=
- # PCI support is optional
- obj-$(CONFIG_PCI)		+= pci.o
+Signed-off-by: Bryan Wu <bryan.wu@canonical.com>
+---
+ arch/arm/mach-shark/Makefile |    4 +-
+ arch/arm/mach-shark/core.c   |    1 -
+ arch/arm/mach-shark/leds.c   |  226 ++++++++++++++++--------------------------
+ 3 files changed, 89 insertions(+), 142 deletions(-)
+
+diff --git a/arch/arm/mach-shark/Makefile b/arch/arm/mach-shark/Makefile
+index 45be9b0..2965718 100644
+--- a/arch/arm/mach-shark/Makefile
++++ b/arch/arm/mach-shark/Makefile
+@@ -4,9 +4,7 @@
  
--# LEDs
--obj-$(CONFIG_LEDS)		+= leds.o
+ # Object file lists.
+ 
+-obj-y			:= core.o dma.o irq.o pci.o
++obj-y			:= core.o dma.o irq.o pci.o leds.o
+ obj-m			:=
+ obj-n			:=
+ obj-			:=
 -
- # Board-specific support
- obj-$(CONFIG_MACH_KS8695)	+= board-micrel.o
- obj-$(CONFIG_MACH_DSM320)	+= board-dsm320.o
-diff --git a/arch/arm/mach-ks8695/devices.c b/arch/arm/mach-ks8695/devices.c
-index 73bd638..47399bc 100644
---- a/arch/arm/mach-ks8695/devices.c
-+++ b/arch/arm/mach-ks8695/devices.c
-@@ -182,27 +182,6 @@ static void __init ks8695_add_device_watchdog(void)
+-obj-$(CONFIG_LEDS)	+= leds.o
+diff --git a/arch/arm/mach-shark/core.c b/arch/arm/mach-shark/core.c
+index 2704bcd..c709979 100644
+--- a/arch/arm/mach-shark/core.c
++++ b/arch/arm/mach-shark/core.c
+@@ -13,7 +13,6 @@
+ 
+ #include <asm/setup.h>
+ #include <asm/mach-types.h>
+-#include <asm/leds.h>
+ #include <asm/param.h>
+ #include <asm/system_misc.h>
+ 
+diff --git a/arch/arm/mach-shark/leds.c b/arch/arm/mach-shark/leds.c
+index 2560907..55433b0 100644
+--- a/arch/arm/mach-shark/leds.c
++++ b/arch/arm/mach-shark/leds.c
+@@ -1,165 +1,115 @@
+ /*
+- * arch/arm/mach-shark/leds.c
+- * by Alexander Schulz
+- *
+- * derived from:
+- * arch/arm/kernel/leds-footbridge.c
+- * Copyright (C) 1998-1999 Russell King
+- *
+  * DIGITAL Shark LED control routines.
+  *
+- * The leds use is as follows:
+- *  - Green front - toggles state every 50 timer interrupts
+- *  - Amber front - Unused, this is a dual color led (Amber/Green)
+- *  - Amber back  - On if system is not idle
++ * Driver for the 3 user LEDs found on the Shark
++ * Based on Versatile and RealView machine LED code
+  *
+- * Changelog:
++ * License terms: GNU General Public License (GPL) version 2
++ * Author: Bryan Wu <bryan.wu@canonical.com>
+  */
+ #include <linux/kernel.h>
+-#include <linux/module.h>
+ #include <linux/init.h>
+-#include <linux/spinlock.h>
+-#include <linux/ioport.h>
+ #include <linux/io.h>
++#include <linux/ioport.h>
++#include <linux/slab.h>
++#include <linux/leds.h>
+ 
+-#include <asm/leds.h>
++#include <asm/mach-types.h>
+ 
+-#define LED_STATE_ENABLED	1
+-#define LED_STATE_CLAIMED	2
++struct shark_led {
++	struct led_classdev cdev;
++	u8 mask;
++};
+ 
+-#define SEQUOIA_LED_GREEN       (1<<6)
+-#define SEQUOIA_LED_AMBER       (1<<5)
+-#define SEQUOIA_LED_BACK        (1<<7)
++/*
++ * The triggers lines up below will only be used if the
++ * LED triggers are compiled in.
++ */
++static const struct {
++	const char *name;
++	const char *trigger;
++} shark_leds[] = {
++	{ "shark:amber0", "default-on", },	/* Bit 5 */
++	{ "shark:green", "heartbeat", },	/* Bit 6 */
++	{ "shark:amber1", "cpu0" },		/* Bit 7 */
++};
++
++static u16 led_reg_read(void)
++{
++	outw(0x09, 0x24);
++	return inw(0x26);
++}
+ 
+-static char led_state;
+-static short hw_led_state;
+-static short saved_state;
++static void led_reg_write(u16 value)
++{
++	outw(0x09, 0x24);
++	outw(value, 0x26);
++}
+ 
+-static DEFINE_RAW_SPINLOCK(leds_lock);
++static void shark_led_set(struct led_classdev *cdev,
++			      enum led_brightness b)
++{
++	struct shark_led *led = container_of(cdev,
++						 struct shark_led, cdev);
++	u16 reg = led_reg_read();
+ 
+-short sequoia_read(int addr) {
+-  outw(addr,0x24);
+-  return inw(0x26);
+-}
++	if (b != LED_OFF)
++		reg |= led->mask;
++	else
++		reg &= ~led->mask;
+ 
+-void sequoia_write(short value,short addr) {
+-  outw(addr,0x24);
+-  outw(value,0x26);
++	led_reg_write(reg);
  }
  
- 
--/* --------------------------------------------------------------------
-- *  LEDs
-- * -------------------------------------------------------------------- */
--
--#if defined(CONFIG_LEDS)
--short ks8695_leds_cpu = -1;
--short ks8695_leds_timer = -1;
--
--void __init ks8695_init_leds(u8 cpu_led, u8 timer_led)
--{
--	/* Enable GPIO to access the LEDs */
--	gpio_direction_output(cpu_led, 1);
--	gpio_direction_output(timer_led, 1);
--
--	ks8695_leds_cpu	  = cpu_led;
--	ks8695_leds_timer = timer_led;
--}
--#else
--void __init ks8695_init_leds(u8 cpu_led, u8 timer_led) {}
--#endif
--
- /* -------------------------------------------------------------------- */
- 
- /*
-diff --git a/arch/arm/mach-ks8695/include/mach/devices.h b/arch/arm/mach-ks8695/include/mach/devices.h
-index 85a3c9a..1e6594a 100644
---- a/arch/arm/mach-ks8695/include/mach/devices.h
-+++ b/arch/arm/mach-ks8695/include/mach/devices.h
-@@ -18,11 +18,6 @@ extern void __init ks8695_add_device_wan(void);
- extern void __init ks8695_add_device_lan(void);
- extern void __init ks8695_add_device_hpna(void);
- 
-- /* LEDs */
--extern short ks8695_leds_cpu;
--extern short ks8695_leds_timer;
--extern void __init ks8695_init_leds(u8 cpu_led, u8 timer_led);
--
-  /* PCI */
- #define KS8695_MODE_PCI		0
- #define KS8695_MODE_MINIPCI	1
-diff --git a/arch/arm/mach-ks8695/leds.c b/arch/arm/mach-ks8695/leds.c
-deleted file mode 100644
-index 4bd7075..0000000
---- a/arch/arm/mach-ks8695/leds.c
-+++ /dev/null
-@@ -1,92 +0,0 @@
--/*
-- * LED driver for KS8695-based boards.
-- *
-- * Copyright (C) Andrew Victor
-- *
-- * This program is free software; you can redistribute it and/or modify
-- * it under the terms of the GNU General Public License version 2 as
-- * published by the Free Software Foundation.
-- */
--#include <linux/gpio.h>
--#include <linux/kernel.h>
--#include <linux/module.h>
--#include <linux/init.h>
--
--#include <asm/leds.h>
--#include <mach/devices.h>
--
--
--static inline void ks8695_led_on(unsigned int led)
--{
--	gpio_set_value(led, 0);
--}
--
--static inline void ks8695_led_off(unsigned int led)
--{
--	gpio_set_value(led, 1);
--}
--
--static inline void ks8695_led_toggle(unsigned int led)
--{
--	unsigned long is_off = gpio_get_value(led);
--	if (is_off)
--		ks8695_led_on(led);
--	else
--		ks8695_led_off(led);
--}
--
--
--/*
-- * Handle LED events.
-- */
--static void ks8695_leds_event(led_event_t evt)
--{
+-static void sequoia_leds_event(led_event_t evt)
++static enum led_brightness shark_led_get(struct led_classdev *cdev)
+ {
 -	unsigned long flags;
 -
--	local_irq_save(flags);
+-	raw_spin_lock_irqsave(&leds_lock, flags);
 -
--	switch(evt) {
--	case led_start:		/* System startup */
--		ks8695_led_on(ks8695_leds_cpu);
+-	hw_led_state = sequoia_read(0x09);
+-
+-	switch (evt) {
+-	case led_start:
+-		hw_led_state |= SEQUOIA_LED_GREEN;
+-		hw_led_state |= SEQUOIA_LED_AMBER;
+-#ifdef CONFIG_LEDS_CPU
+-		hw_led_state |= SEQUOIA_LED_BACK;
+-#else
+-		hw_led_state &= ~SEQUOIA_LED_BACK;
+-#endif
+-		led_state |= LED_STATE_ENABLED;
 -		break;
 -
--	case led_stop:		/* System stop / suspend */
--		ks8695_led_off(ks8695_leds_cpu);
+-	case led_stop:
+-		hw_led_state &= ~SEQUOIA_LED_BACK;
+-		hw_led_state |= SEQUOIA_LED_GREEN;
+-		hw_led_state |= SEQUOIA_LED_AMBER;
+-		led_state &= ~LED_STATE_ENABLED;
+-		break;
+-
+-	case led_claim:
+-		led_state |= LED_STATE_CLAIMED;
+-		saved_state = hw_led_state;
+-		hw_led_state &= ~SEQUOIA_LED_BACK;
+-		hw_led_state |= SEQUOIA_LED_GREEN;
+-		hw_led_state |= SEQUOIA_LED_AMBER;
+-		break;
+-
+-	case led_release:
+-		led_state &= ~LED_STATE_CLAIMED;
+-		hw_led_state = saved_state;
 -		break;
 -
 -#ifdef CONFIG_LEDS_TIMER
--	case led_timer:		/* Every 50 timer ticks */
--		ks8695_led_toggle(ks8695_leds_timer);
+-	case led_timer:
+-		if (!(led_state & LED_STATE_CLAIMED))
+-			hw_led_state ^= SEQUOIA_LED_GREEN;
 -		break;
 -#endif
 -
 -#ifdef CONFIG_LEDS_CPU
--	case led_idle_start:	/* Entering idle state */
--		ks8695_led_off(ks8695_leds_cpu);
+-	case led_idle_start:
+-		if (!(led_state & LED_STATE_CLAIMED))
+-			hw_led_state &= ~SEQUOIA_LED_BACK;
 -		break;
 -
--	case led_idle_end:	/* Exit idle state */
--		ks8695_led_on(ks8695_leds_cpu);
+-	case led_idle_end:
+-		if (!(led_state & LED_STATE_CLAIMED))
+-			hw_led_state |= SEQUOIA_LED_BACK;
 -		break;
 -#endif
+-
+-	case led_green_on:
+-		if (led_state & LED_STATE_CLAIMED)
+-			hw_led_state &= ~SEQUOIA_LED_GREEN;
+-		break;
+-
+-	case led_green_off:
+-		if (led_state & LED_STATE_CLAIMED)
+-			hw_led_state |= SEQUOIA_LED_GREEN;
+-		break;
+-
+-	case led_amber_on:
+-		if (led_state & LED_STATE_CLAIMED)
+-			hw_led_state &= ~SEQUOIA_LED_AMBER;
+-		break;
+-
+-	case led_amber_off:
+-		if (led_state & LED_STATE_CLAIMED)
+-			hw_led_state |= SEQUOIA_LED_AMBER;
+-		break;
+-
+-	case led_red_on:
+-		if (led_state & LED_STATE_CLAIMED)
+-			hw_led_state |= SEQUOIA_LED_BACK;
+-		break;
+-
+-	case led_red_off:
+-		if (led_state & LED_STATE_CLAIMED)
+-			hw_led_state &= ~SEQUOIA_LED_BACK;
+-		break;
 -
 -	default:
 -		break;
 -	}
 -
--	local_irq_restore(flags);
--}
--
--
+-	if  (led_state & LED_STATE_ENABLED)
+-		sequoia_write(hw_led_state,0x09);
++	struct shark_led *led = container_of(cdev,
++						 struct shark_led, cdev);
++	u16 reg = led_reg_read();
+ 
+-	raw_spin_unlock_irqrestore(&leds_lock, flags);
++	return (reg & led->mask) ? LED_FULL : LED_OFF;
+ }
+ 
 -static int __init leds_init(void)
--{
--	if ((ks8695_leds_timer == -1) || (ks8695_leds_cpu == -1))
--		return -ENODEV;
--
--	leds_event = ks8695_leds_event;
--
++static int __init shark_leds_init(void)
+ {
+-	extern void (*leds_event)(led_event_t);
+-	short temp;
+-	
+-	leds_event = sequoia_leds_event;
++	int i;
++	u16 reg;
++
++	if (!machine_is_shark())
++		return -ENODEV;
++
++	for (i = 0; i < ARRAY_SIZE(shark_leds); i++) {
++		struct shark_led *led;
++
++		led = kzalloc(sizeof(*led), GFP_KERNEL);
++		if (!led)
++			break;
++
++		led->cdev.name = shark_leds[i].name;
++		led->cdev.brightness_set = shark_led_set;
++		led->cdev.brightness_get = shark_led_get;
++		led->cdev.default_trigger = shark_leds[i].trigger;
++
++		/* Count in 5 bits offset */
++		led->mask = BIT(i + 5);
++
++		if (led_classdev_register(NULL, &led->cdev) < 0) {
++			kfree(led);
++			break;
++		}
++	}
+ 
+ 	/* Make LEDs independent of power-state */
+-	request_region(0x24,4,"sequoia");
+-	temp = sequoia_read(0x09);
+-	temp |= 1<<10;
+-	sequoia_write(temp,0x09);
 -	leds_event(led_start);
--	return 0;
--}
--
++	request_region(0x24, 4, "led_reg");
++	reg = led_reg_read();
++	reg |= 1 << 10;
++	led_reg_write(reg);
++
+ 	return 0;
+ }
+ 
 -__initcall(leds_init);
++/*
++ * Since we may have triggers on any subsystem, defer registration
++ * until after subsystem_init.
++ */
++fs_initcall(shark_leds_init);
 -- 
 1.7.9.5
 
