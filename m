@@ -1,72 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753310Ab2DQHWT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Apr 2012 03:22:19 -0400
-Received: from e23smtp08.au.ibm.com ([202.81.31.141]:36818 "EHLO
-	e23smtp08.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751762Ab2DQHWR (ORCPT
+	id S1754285Ab2DQHXu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Apr 2012 03:23:50 -0400
+Received: from mail-qc0-f174.google.com ([209.85.216.174]:54826 "EHLO
+	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752990Ab2DQHXs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Apr 2012 03:22:17 -0400
-Message-ID: <4F8D168B.7090806@linux.vnet.ibm.com>
-Date: Tue, 17 Apr 2012 12:36:51 +0530
-From: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
-Organization: IBM
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120216 Thunderbird/10.0.1
-MIME-Version: 1.0
-To: Marcelo Tosatti <mtosatti@redhat.com>
-CC: Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        X86 <x86@kernel.org>, Avi Kivity <avi@redhat.com>,
-        Jeremy Fitzhardinge <jeremy@goop.org>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Greg Kroah-Hartman <gregkh@suse.de>, Alexander Graf <agraf@suse.de>,
-        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
-        Gleb Natapov <gleb@redhat.com>, Randy Dunlap <rdunlap@xenotime.net>,
-        linux-doc@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        KVM <kvm@vger.kernel.org>,
-        Virtualization <virtualization@lists.linux-foundation.org>,
-        Xen <xen-devel@lists.xensource.com>,
-        Sasha Levin <levinsasha928@gmail.com>,
-        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>
-Subject: Re: [PATCH RFC V5 2/6] kvm hypervisor : Add a hypercall to KVM hypervisor
- to support pv-ticketlocks
-References: <20120323080503.14568.43092.sendpatchset@codeblue> <20120323080701.14568.97779.sendpatchset@codeblue> <20120412000629.GA32051@amt.cnet> <20120412002909.GD32051@amt.cnet>
-In-Reply-To: <20120412002909.GD32051@amt.cnet>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-x-cbid: 12041621-5140-0000-0000-000001156796
+	Tue, 17 Apr 2012 03:23:48 -0400
+From: Yong Zhang <yong.zhang0@gmail.com>
+To: linux-rt-users@vger.kernel.org, linux-kernel@vger.kernel.org
+Cc: tglx@linutronix.de, Yong Zhang <yong.zhang@windriver.com>
+Subject: [PATCH 3/3 -rt] lockdep: selftest: save/restore migrate_disable count
+Date: Tue, 17 Apr 2012 15:23:39 +0800
+Message-Id: <1334647419-10337-1-git-send-email-yong.zhang0@gmail.com>
+X-Mailer: git-send-email 1.7.5.4
+In-Reply-To: <1334559716-18447-1-git-send-email-yong.zhang0@gmail.com>
+References: <1334559716-18447-1-git-send-email-yong.zhang0@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/12/2012 05:59 AM, Marcelo Tosatti wrote:
-> On Wed, Apr 11, 2012 at 09:06:29PM -0300, Marcelo Tosatti wrote:
->> On Fri, Mar 23, 2012 at 01:37:04PM +0530, Raghavendra K T wrote:
->>> From: Srivatsa Vaddagiri<vatsa@linux.vnet.ibm.com>
->>>
-[...]
+From: Yong Zhang <yong.zhang@windriver.com>
 
-		barrier();
->>
->> Is it always OK to erase the notification, even in case an unrelated
->> event such as interrupt was the source of wakeup?
->
-> Note i am only asking whether it is OK to lose a notification, not
-> requesting a change to atomic test-and-clear.
+->migrate_disable_atomic will corrupt when doing some
+case, such as double lock...
 
-Yes.. got your point.
-IMO, this is the only (safe) place where it can clear
-kicked(pv_unhalted) flag. Since it is going to be runnable.
+->migrate_disable will not be affected for now since
+we have preempt disabled when doing seft test.
+Just record it also for safe.
 
-and you are also right in having concern on unwanted clear of flag
-since that would result in vcpu /vm hangs eventually.
+Signed-off-by: Yong Zhang <yong.zhang0@gmail.com>
+---
+Found it when enable CONFIG_SCHED_DEBUG.
 
-Hope I did not miss anything.
+ lib/locking-selftest.c |   13 +++++++++++++
+ 1 files changed, 13 insertions(+), 0 deletions(-)
 
->
-> It would be nice to have a comment explaining it.
->
-
-Sure will do that
-
->>
+diff --git a/lib/locking-selftest.c b/lib/locking-selftest.c
+index 23b8564..a9cb9e4 100644
+--- a/lib/locking-selftest.c
++++ b/lib/locking-selftest.c
+@@ -939,6 +939,12 @@ static void dotest(void (*testcase_fn)(void), int expected, int lockclass_mask)
+ {
+ 	unsigned long saved_preempt_count = preempt_count();
+ 	int expected_failure = 0;
++#ifdef CONFIG_PREEMPT_RT_FULL
++	int saved_migrate_disable = current->migrate_disable;
++# ifdef CONFIG_SCHED_DEBUG
++	int saved_migrate_disable_atomic = current->migrate_disable_atomic;
++# endif
++#endif
+ 
+ 	WARN_ON(irqs_disabled());
+ 
+@@ -980,6 +986,13 @@ static void dotest(void (*testcase_fn)(void), int expected, int lockclass_mask)
+ 	 * count, so restore it:
+ 	 */
+ 	preempt_count() = saved_preempt_count;
++#ifdef CONFIG_PREEMPT_RT_FULL
++	current->migrate_disable = saved_migrate_disable;
++# ifdef CONFIG_SCHED_DEBUG
++	current->migrate_disable_atomic = saved_migrate_disable_atomic;
++# endif
++#endif
++
+ #ifdef CONFIG_TRACE_IRQFLAGS
+ 	if (softirq_count())
+ 		current->softirqs_enabled = 0;
+-- 
+1.7.5.4
 
