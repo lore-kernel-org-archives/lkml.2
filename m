@@ -1,82 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753003Ab2DQFa2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Apr 2012 01:30:28 -0400
-Received: from na3sys009aog131.obsmtp.com ([74.125.149.247]:40238 "EHLO
-	na3sys009aog131.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751201Ab2DQFa0 (ORCPT
+	id S1753340Ab2DQFcX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Apr 2012 01:32:23 -0400
+Received: from mail-vb0-f46.google.com ([209.85.212.46]:32936 "EHLO
+	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751153Ab2DQFcV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Apr 2012 01:30:26 -0400
-Message-ID: <1334640620.27247.7.camel@cumari>
-Subject: Re: [PATCH -next] wireless: TI wlxxx depends on MAC80211
-From: Luciano Coelho <coelho@ti.com>
-To: Randy Dunlap <rdunlap@xenotime.net>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-wireless@vger.kernel.org,
-        "John W. Linville" <linville@tuxdriver.com>
-Date: Tue, 17 Apr 2012 08:30:20 +0300
-In-Reply-To: <4F8C784B.2040402@xenotime.net>
-References: <20120416161121.261ba4e7e38989173accfb16@canb.auug.org.au>
-	 <4F8C784B.2040402@xenotime.net>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2- 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Tue, 17 Apr 2012 01:32:21 -0400
+MIME-Version: 1.0
+In-Reply-To: <4F8CD18A.5080903@intel.com>
+References: <4F8790F6.5080408@intel.com>
+	<201204132141.58063.rjw@sisk.pl>
+	<4F8B828E.9060606@intel.com>
+	<201204161907.13806.rjw@sisk.pl>
+	<4F8CD18A.5080903@intel.com>
+Date: Tue, 17 Apr 2012 13:32:20 +0800
+Message-ID: <CAC=cRTMk-NTvo+DJ2mAq6_ZeVLbeqiGx+ttZG6Hr_hQyyYkfLw@mail.gmail.com>
+Subject: Re: [RFC PATCH] PCIe: Add PCIe runtime D3cold support
+From: huang ying <huang.ying.caritas@gmail.com>
+To: "Yan, Zheng" <zheng.z.yan@intel.com>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, bhelgaas@google.com,
+        linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
+        linux-pm@vger.kernel.org, Lin Ming <ming.m.lin@intel.com>,
+        Zhang Rui <rui.zhang@intel.com>,
+        ACPI Devel Mailing List <linux-acpi@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Randy,
+On Tue, Apr 17, 2012 at 10:12 AM, Yan, Zheng <zheng.z.yan@intel.com> wrote:
+> On 04/17/2012 01:07 AM, Rafael J. Wysocki wrote:
+>
+>> BTW, can you please explain to me what the #WAKE signal is and how it is
+>> different from PME#?
+>
+> #WAKE signal is triggered by a pin connected to the root complex or other
+> motherboard logic. PME# is triggered by PME message sent to the port.
 
-On Mon, 2012-04-16 at 12:51 -0700, Randy Dunlap wrote: 
-> From: Randy Dunlap <rdunlap@xenotime.net>
-> 
-> wl12xx build fails with many undefined symbol errors when MAC80211
-> and CFG80211 are not enabled, so make WLCORE and WL12XX depend
-> on MAC80211 (which already depends on CFG80211).
-> 
-> Here are a few of the many build errors:
-> 
+PME# is a PCI pin, while WAKE# is a PCI Express pin.  In PCI Express,
+there is no PME#, PME is delivered between end point device and root
+port or root complex event collector via PME message, and the PME
+message will trigger IRQ on root port or root complex event collector.
+ WAKE# is not used for PCI Express D1, D2 and D3hot, it is just used
+by D3cold.  When remote wakeup detected by end point device, it will
+assert WAKE# to notify power controller (implemented via ACPI on some
+platform), then power controller will turn on power for main link,
+after link goes back to L0, PME message will be sent to root port or
+root complex event collector by end point device.
 
-[...]
-
-> Signed-off-by: Randy Dunlap <rdunlap@xenotime.net>
-> Cc:	Luciano Coelho <coelho@ti.com>
-> Cc:	linux-wireless@vger.kernel.org
-> Cc:	"John W. Linville" <linville@tuxdriver.com>
-> ---
-
-Thanks for the patch!
-
-
-> --- linux-next-20120416.orig/drivers/net/wireless/ti/wl12xx/Kconfig
-> +++ linux-next-20120416/drivers/net/wireless/ti/wl12xx/Kconfig
-> @@ -1,5 +1,6 @@
->  config WL12XX
->         tristate "TI wl12xx support"
-> +	depends on MAC80211
->         select WLCORE
-
-Do we really need this one? wl12xx selects WLCORE which in turn depends
-on MAC80211 (with your change below).  Maybe we don't need this?
-
-
-> ---help---
->  	  This module adds support for wireless adapters based on TI wl1271,
-> --- linux-next-20120416.orig/drivers/net/wireless/ti/wlcore/Kconfig
-> +++ linux-next-20120416/drivers/net/wireless/ti/wlcore/Kconfig
-> @@ -1,6 +1,6 @@
->  config WLCORE
->  	tristate "TI wlcore support"
-> -	depends on WL_TI && GENERIC_HARDIRQS
-> +	depends on WL_TI && GENERIC_HARDIRQS && MAC80211
->  	depends on INET
->  	select FW_LOADER
->  	---help---
-
--- 
-Cheers,
-Luca.
-
+Best Regards,
+Huang Ying
