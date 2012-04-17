@@ -1,64 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756098Ab2DQOy6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Apr 2012 10:54:58 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:47627 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752987Ab2DQOy4 (ORCPT
+	id S1756133Ab2DQO4Y (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Apr 2012 10:56:24 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:51607 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752987Ab2DQO4X (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Apr 2012 10:54:56 -0400
-Date: Tue, 17 Apr 2012 23:54:50 +0900
-From: Takuya Yoshikawa <takuya.yoshikawa@gmail.com>
-To: Avi Kivity <avi@redhat.com>
-Cc: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>, kvm-ppc@vger.kernel.org,
-        Marcelo Tosatti <mtosatti@redhat.com>,
-        Xiao Guangrong <xiaoguangrong.eric@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>, KVM <kvm@vger.kernel.org>
-Subject: Re: [PATCH 00/13] KVM: MMU: fast page fault
-Message-Id: <20120417235450.c0972c06034002d7173eeb40@gmail.com>
-In-Reply-To: <4F8D6503.4040800@redhat.com>
-References: <4F742951.7080003@linux.vnet.ibm.com>
-	<4F82E04E.6000900@redhat.com>
-	<20120409175829.GB21894@amt.cnet>
-	<4F8329D3.7000605@gmail.com>
-	<20120409194614.GB23053@amt.cnet>
-	<4F840DD2.3090101@redhat.com>
-	<20120410204031.ffb5b976225ac9fe6dae474e@gmail.com>
-	<4F842074.1050108@linux.vnet.ibm.com>
-	<20120411211514.35db29c11460516e604059b6@gmail.com>
-	<4F857B61.9080602@linux.vnet.ibm.com>
-	<20120411231441.9d0984672dd252b806f99128@gmail.com>
-	<20120413232528.c5ddbddb3cc0870d6e85a332@gmail.com>
-	<4F8A95CB.9070104@redhat.com>
-	<20120417004935.a9a39d951b3c24588e29edd2@gmail.com>
-	<4F8D0D29.9050009@linux.vnet.ibm.com>
-	<4F8D210C.8070505@redhat.com>
-	<20120417213748.f3c4ae8d0056676fd33a47c5@gmail.com>
-	<4F8D6503.4040800@redhat.com>
-X-Mailer: Sylpheed 3.2.0beta3 (GTK+ 2.24.6; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Tue, 17 Apr 2012 10:56:23 -0400
+Date: Tue, 17 Apr 2012 15:56:18 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Ashish Chavan <ashish.chavan@kpitcummins.com>
+Cc: lrg <lrg@ti.com>, alsa-devel <alsa-devel@alsa-project.org>,
+        David Dajun Chen <david.chen@diasemi.com>,
+        "kuninori.morimoto.gx" <kuninori.morimoto.gx@renesas.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [alsa-devel] [PATCH] ASoC: da7210: Minor update for PLL and SRM
+Message-ID: <20120417145618.GL6652@opensource.wolfsonmicro.com>
+References: <1334674858.13279.9.camel@matrix>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="Jbyekxk18hnEXT0m"
+Content-Disposition: inline
+In-Reply-To: <1334674858.13279.9.camel@matrix>
+X-Cookie: Long life is in store for you.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 17 Apr 2012 15:41:39 +0300
-Avi Kivity <avi@redhat.com> wrote:
 
-> > Since there are many known algorithms to predict hot memory pages,
-> > the userspace will be able to tune the frequency of GET_DIRTY_LOG for such
-> > parts not to get too many faults repeatedly, if we can restrict the range
-> > of pages to protect.
-> >
-> > This is the fine-grained control.
-> 
-> Do you want per-page control, or just range-based?
+--Jbyekxk18hnEXT0m
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-Difficult question.
+On Tue, Apr 17, 2012 at 08:30:58PM +0530, Ashish Chavan wrote:
 
-For live migration, range-based control may be enough duo to the locality
-of WWS.
+> +		if ((fref == da7210_pll_div[cnt].fref) &&
+> +			(da7210->master ==  da7210_pll_div[cnt].mode) &&
+> +			(fout == da7210_pll_div[cnt].fout)) {
 
-Thanks,
-	Takuya
+Since this is just a coding style thing how about lining up the (s for
+the branches?
+
+--Jbyekxk18hnEXT0m
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJPjYMqAAoJEBus8iNuMP3d9WQP/ROahhIRDH41PaaWuAgzqrnH
+akfSkbUcYvZIaJ4vyDDFnEQ7u/+EZ/tGujzDyjSey8cmaVSW7e17B3F7+1nifapO
+F+USacLjy483Rg3fZASPON00gjdNzkFulL9Ysl4g4LQWUq6E1H7yzXyY/Pn2L1Tl
+liBrH1RPqs+ShT0hgVnRFtVLWAHpULMBNuAGNzcF8YAsQgP1eyYp2wlw8+zpD3Oq
+incD2ljbbfUklCvjFAjH5LeHumen461yCPfW/HBFuGzNMMEkRT78SaaKy6NyTKEa
+qG05TAXC77XScBpk8k499J8gUGmyY6H4oDjOmPzo58Pnpg96/I7jpzvAjjVl7jVb
+k2i3j87QDsyFZh1Q8+DTpNnDVSJkTQgaRVwuFuvc1oYsH6A2Nep9cuFj6FY9dl1G
+XVTikSWyJKhhYOYAPefPw+iqPInLk2cWsDlBIa0wMgS+nZhyKCToLjPRt8/L5kfL
+W/ZTKpolTQ5PqwC3g9vWM0zaEL9/N2PzKLgI8HjM3jnoN7thOaOTkK9xX9nW4IK2
+CwmmmddcM9quQuFGLL4mxlQhFUHP+DZQjczGb70cM4AKjkn39Z8kGf6SSqnKJwUo
+BuMX1aYyDcURg7sUCRR+EGcbH8e1tTa4rf/G1vVyIkHyliAQ7wLg4Ok6o+k86rBT
+oHKVOegkdKLnZ1tydxhz
+=mI6S
+-----END PGP SIGNATURE-----
+
+--Jbyekxk18hnEXT0m--
