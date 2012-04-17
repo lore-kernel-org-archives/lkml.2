@@ -1,65 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932127Ab2DQJvS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Apr 2012 05:51:18 -0400
-Received: from am1ehsobe005.messaging.microsoft.com ([213.199.154.208]:14743
-	"EHLO am1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755993Ab2DQJvR convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Apr 2012 05:51:17 -0400
-X-SpamScore: -5
-X-BigFish: VS-5(zz1432Nzz1202hzzz2dh2a8h668h839h8e2h8e3h944hd25hbe9i)
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-From: Li Yang-R58472 <r58472@freescale.com>
-To: Wood Scott-B07421 <B07421@freescale.com>,
-        Zhao Chenhui-B35336 <B35336@freescale.com>
-CC: "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH v4 1/4] powerpc/85xx: add HOTPLUG_CPU support
-Thread-Topic: [PATCH v4 1/4] powerpc/85xx: add HOTPLUG_CPU support
-Thread-Index: AQHNA1X5C9oH/gR0U0uwHvF/hlzHUJaeYk6AgACR3pA=
-Date: Tue, 17 Apr 2012 09:51:11 +0000
-Message-ID: <94F013E7935FF44C83EBE7784D62AD3F092D1098@039-SN2MPN1-022.039d.mgd.msft.net>
-References: <1331889732-25240-1-git-send-email-chenhui.zhao@freescale.com>
- <4F8C78B3.1070002@freescale.com>
-In-Reply-To: <4F8C78B3.1070002@freescale.com>
-Accept-Language: zh-CN, en-US
-Content-Language: en-US
+	id S932126Ab2DQJ7m (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Apr 2012 05:59:42 -0400
+Received: from portal.weinmann.de ([62.8.140.122]:47387 "EHLO
+	portal.weinmann.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751126Ab2DQJ7k (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Apr 2012 05:59:40 -0400
+From: "Voss, Nikolaus" <N.Voss@weinmann.de>
+To: "Voss, Nikolaus" <N.Voss@weinmann.de>,
+        "'Adrian Yanes'" <adrian.yanes@aalto.fi>,
+        "'linux-arm-kernel@lists.infradead.org'" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "'linux-kernel@vger.kernel.org'" <linux-kernel@vger.kernel.org>,
+        "'linux-i2c@vger.kernel.org'" <linux-i2c@vger.kernel.org>
+CC: "'konsta.holtta@aalto.fi'" <konsta.holtta@aalto.fi>,
+        "'ben-linux@fluff.org'" <ben-linux@fluff.org>,
+        "'Hubert Feurstein'" <h.feurstein@gmail.com>,
+        "'Douglas Gilbert'" <dgilbert@interlog.com>
+Date: Tue, 17 Apr 2012 11:59:06 +0200
+Subject: RE: About AT91: replace broken TWI driver i2c-at91.c
+Thread-Topic: About AT91: replace broken TWI driver i2c-at91.c
+Thread-Index: Ac0b7xZJpptEcvYGRN6pFdj8j8ylOQAa9lhQAAgAIwA=
+Message-ID: <EF2E73589CA71846A15D0B2CDF79505D0905D5A78B@wm021.weinmann.com>
+References: <4F8C4A8B.2060005@aalto.fi>
+ <EF2E73589CA71846A15D0B2CDF79505D0905AAA1EC@wm021.weinmann.com>
+In-Reply-To: <EF2E73589CA71846A15D0B2CDF79505D0905AAA1EC@wm021.weinmann.com>
+Accept-Language: en-US, de-DE
+Content-Language: de-DE
 X-MS-Has-Attach: 
 X-MS-TNEF-Correlator: 
-x-originating-ip: [10.193.20.76]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+acceptlanguage: en-US, de-DE
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by nfs id q3H9xwja009188
 
-> >  struct smp_ops_t smp_85xx_ops = {
-> >  	.kick_cpu = smp_85xx_kick_cpu,
-> > -#ifdef CONFIG_KEXEC
-> > +#ifdef CONFIG_HOTPLUG_CPU
-> > +	.cpu_disable	= generic_cpu_disable,
-> > +	.cpu_die	= generic_cpu_die,
-> > +#endif
-> >  	.give_timebase	= smp_generic_give_timebase,
-> >  	.take_timebase	= smp_generic_take_timebase,
-> > -#endif
-> >  };
+Voss, Nikolaus wrote on 2012-04-17:
+> Adrian Yanes wrote on 2012-04-16:
+>> Changing the value to 400000 gives as ~356kHz rate instead of 400kHz,
+>> maybe it is due to our processor/board, however, checking the specs of
+>> the at91rm9200 (page 405) we found that the CLVID and the CHDIV are
+>> calculated as follow:
+>> 
+>> T_low = (( CLDIV x 2^CKDIV) +3) + T_mck
+>> T_high = (( CHDIV x 2^CKDIV) +3) + T_mck
+>> 
+>> which differs of the method suggested in the patch:
+>> 
+>> const int div = DIV_ROUND_UP(clk_get_rate(dev->clk), 2 * twi_clk) - 2;
 > 
-> We need to stop using smp_generic_give/take_timebase, not expand its use.
-> This stuff breaks under hypervisors where timebase can't be written.  It
-> wasn't too bad before since we generally didn't enable CONFIG_KEXEC, but
-> we're more likely to want CONFIG_HOTPLUG_CPU.
+> G45 spec is slightly different: T_low = (CLDIV x 2^CKDIV + 4) x T_mck
+> With
+> twi_clk := 1 / (T_low + T_high) = 1 / (2 * T_low)
+> and
+> div := CLKDIV x 2^CKDIV = MCK / (2 * twi_clk) - 4
+> the above line should be
+> const int div = DIV_ROUND_UP(clk_get_rate(dev->clk), 2 * twi_clk) - 4;
+> for G45 and
+> const int div = DIV_ROUND_UP(clk_get_rate(dev->clk), 2 * twi_clk) - 3;
+> for RM9200, right?
 
-I understand that the guest OS shouldn't change the real timebase.  But no matter what timebase syncing method we are using, the timebase need to be changed anyway for certain features.  I think the better way should be trapping timebase modification in the hypervisor.
+Strange: I measured the frequency of scl and I still get too low values
+for offset 4 (instead of 2). On my G45 the correct offset seems to be
+as high as 27.
 
-> 
-> Do the timebase sync the way U-Boot does -- if you find the appropriate
-> guts node in the device tree.
+Adrian, can you please give this a try?
 
-That involves stopping timebase for a short time on all cores including the cores that are still online.  Won't this be a potential issue?
+Niko
 
-- Leo 
-
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
