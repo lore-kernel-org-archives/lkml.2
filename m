@@ -1,66 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753179Ab2DQKdQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Apr 2012 06:33:16 -0400
-Received: from 124-248-200-79.sunnyvision.com ([124.248.200.79]:43324 "EHLO
-	teamb04.edmhongkong.com" rhost-flags-OK-FAIL-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1750888Ab2DQKdP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Apr 2012 06:33:15 -0400
-X-Greylist: delayed 2260 seconds by postgrey-1.27 at vger.kernel.org; Tue, 17 Apr 2012 06:33:14 EDT
-X-DKIM: OpenDKIM Filter v2.4.1 teamb04.edmhongkong.com 28403E14D8
-X-DKIM: OpenDKIM Filter v2.4.1 smtp1.edmhongkong.com 1B61A4FB29
-Message-ID: <D1jmgc@tcts1.seed.net.tw>
-From: boris@dedicatedserver.com.hk
-Subject: Server Rental Service in Hong Kong
-X-Mailer: NSr3dsJBibss38NQ0mrGjd
-Content-Type: text/plain;
-X-Priority: 3
-X-MSMail-Priority: Normal
-Date: Tue, 17 Apr 2012 17:45:01 +0800 (HKT)
-To: unlisted-recipients:; (no To-header on input)
+	id S1754117Ab2DQKqv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Apr 2012 06:46:51 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:1025 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753468Ab2DQKqt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Apr 2012 06:46:49 -0400
+Message-ID: <4F8D4A01.9040901@redhat.com>
+Date: Tue, 17 Apr 2012 18:46:25 +0800
+From: Jason Wang <jasowang@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120329 Thunderbird/11.0.1
+MIME-Version: 1.0
+To: "Michael S. Tsirkin" <mst@redhat.com>
+CC: netdev@vger.kernel.org, xma@us.ibm.com, davem@davemloft.net,
+        linux-kernel@vger.kernel.org, ebiederm@xmission.com
+Subject: Re: [PATCH 6/6] vhost_net: don't poll on -EFAULT
+References: <20120416060749.14140.19433.stgit@intel-e5620-16-2.englab.nay.redhat.com> <20120416060833.14140.28139.stgit@intel-e5620-16-2.englab.nay.redhat.com> <20120416071646.GB25396@redhat.com> <4F8BD81A.7010507@redhat.com> <20120416133859.GB13190@redhat.com> <4F8CE305.9090100@redhat.com> <20120417045736.GA31278@redhat.com> <4F8D05AF.4000309@redhat.com> <20120417060752.GB20674@redhat.com> <4F8D0E03.7030105@redhat.com> <20120417101820.GB20905@redhat.com>
+In-Reply-To: <20120417101820.GB20905@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from Quoted-Printable to 8bit by nfs id q3HAXUMC009443
 
-Dear All,
+On 04/17/2012 06:18 PM, Michael S. Tsirkin wrote:
+> On Tue, Apr 17, 2012 at 02:30:27PM +0800, Jason Wang wrote:
+>> >  On 04/17/2012 02:07 PM, Michael S. Tsirkin wrote:
+>>> >  >On Tue, Apr 17, 2012 at 01:54:55PM +0800, Jason Wang wrote:
+>>>> >  >>On 04/17/2012 12:57 PM, Michael S. Tsirkin wrote:
+>>>>> >  >>>On Tue, Apr 17, 2012 at 11:27:01AM +0800, Jason Wang wrote:
+>>>>>> >  >>>>On 04/16/2012 09:39 PM, Michael S. Tsirkin wrote:
+>>>>>>> >  >>>>>On Mon, Apr 16, 2012 at 04:28:10PM +0800, Jason Wang wrote:
+>>>>>>>>> >  >>>>>>>    On 04/16/2012 03:16 PM, Michael S. Tsirkin wrote:
+>>>>>>>>>> >  >>>>>>>>    >On Mon, Apr 16, 2012 at 02:08:33PM +0800, Jason Wang wrote:
+>>>>>>>>>>> >  >>>>>>>>>    >>Currently, we restart tx polling unconditionally when sendmsg()
+>>>>>>>>>>> >  >>>>>>>>>    >>fails. This would cause unnecessary wakeups of vhost wokers as it's
+>>>>>>>>>>> >  >>>>>>>>>    >>only needed when the socket send buffer were exceeded.
+>>>>>>>>>> >  >>>>>>>>    >Why is this a problem?
+>>>>>>>>> >  >>>>>>>    >     This issue is when guest driver is able to hit the
+>>>>>>>> >  >>>>>>-EFAULT, vhost
+>>>>>>>>> >  >>>>>>>    discard the the descriptor and restart the polling. This would wake
+>>>>>>>>> >  >>>>>>>    vhost thread and repeat the loop again which waste cpu.
+>>>>>>> >  >>>>>Does same thing happen if we get an error from copy from user?
+>>>>>>> >  >>>>>
+>>>>>> >  >>>>Right, so do you think it makes sense that we only restart polling
+>>>>>> >  >>>>on -EAGAIN or -ENOBUFS?
+>>>>> >  >>>Sounds OK. BTW how do you test this?
+>>>>> >  >>>
+>>>> >  >>Not very hard, w/o this patch, we can see almost 100% cpu
+>>>> >  >>utilization for vhost thread if guest hit EFAULT or EINVAL. With
+>>>> >  >>this patch, the cpu utilization should be very low I think.
+>>> >  >Yes but do you have a test that makes guest hit EFAULT or EINVAL?
+>> >  
+>> >  Looks like we can do this by supplying an invalid hdr_len in vnet
+>> >  header as tap does the check for this.
+> Ah so you patched qemu to do this? Cool. Can you post the patch for testing pls?
+>
+No, I mean patch the guest driver like this:
 
-We have our own datacenter in Hong Kong & provide email/application/web rental service to clients.We are APNIC member & provide clean IP to clients.
+diff --git a/drivers/net/virtio_net.c b/drivers/net/virtio_net.c
+index 019da01..6e2f487 100644
+--- a/drivers/net/virtio_net.c
++++ b/drivers/net/virtio_net.c
+@@ -582,7 +582,7 @@ static int xmit_skb(struct virtnet_info *vi, struct 
+sk_buff *skb)
+         }
 
-Dell? PowerEdge? EnterpriseRack Mount Server
--Intel(R) Xeon(R) E3-1240 Processor (3.3GHz, 8M Cache, Turbo, 4C/8T, 80W)
--8GB RAM, 2x4GB, 1333MHz, DDR-3, Dual Ranked UDIMMs
--500GB, 3.5", 6Gbps SAS x 2
--Raid 1 Mirroring Protection
--Remote KVM (iDRAC6 Enterprise)
+         if (skb_is_gso(skb)) {
+-               hdr->hdr.hdr_len = skb_headlen(skb);
++               hdr->hdr.hdr_len = 65535;
+                 hdr->hdr.gso_size = skb_shinfo(skb)->gso_size;
+                 if (skb_shinfo(skb)->gso_type & SKB_GSO_TCPV4)
+                         hdr->hdr.gso_type = VIRTIO_NET_HDR_GSO_TCPV4;
 
-Dell(TM) PowerEdge(TM) R410 Rack Mount Server
--Intel(R) Quad Core E5606 Xeon(R) CPU, 2.13GHz, 4M Cache, 4.86 GT/s QPI
--4GB Memory (2x2GB), 1333MHz Dual Ranked RDIMMs Fully-Buffered
--500GB 7.2K RPM SATAII 3.5" Hard Drive x 2
--iDRAC6 Enterprise or Express (Remote KVM Management)
-
-Every Dedicated Server Hosting Solution Also Includes: 
- 
-Software Specification 
-- CentOS / Fedora / Debian / FreeBSD / Ubuntu / Redhat Linux 
-- Full root-level access 
-- Data Center Facilities 
-- Shared Local & International Bandwidth 
-- 2 IP Addresses Allocation 
-- Un-interruptible Power Supply (UPS) backed up by private diesel generator 
-- FM200¡§based fire suppression system 
-- 24x7 CRAC Air Conditioning and Humidity Control 
-- 24x7 Security Control 
-- 24x7 Remote Hand Service 
-
-Pls send us email for further information.Thanks,
-
-Boris 
-boris@dedicatedserver.com.hk
-
-If you do not wish to further receive this event message, email "borislamsv2@gmail.com" to unsubscribe this message or remove your email from the list.
-
-
+btw, If we still choose to drop the packet, we can hit -EFAULT by send a 
+descriptor with a large number of pages.
