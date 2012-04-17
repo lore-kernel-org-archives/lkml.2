@@ -1,45 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755397Ab2DQBdp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Apr 2012 21:33:45 -0400
-Received: from tundra.namei.org ([65.99.196.166]:57963 "EHLO tundra.namei.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750892Ab2DQBdn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Apr 2012 21:33:43 -0400
-Date: Tue, 17 Apr 2012 11:33:26 +1000 (EST)
-From: James Morris <jmorris@namei.org>
-To: Will Drewry <wad@chromium.org>
-cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, "H. Peter Anvin" <hpa@zytor.com>,
-        Eric Paris <eparis@redhat.com>, Kees Cook <keescook@chromium.org>
-Subject: Re: linux-next: build failure after merge of the final tree (security
- tree related)
-In-Reply-To: <CABqD9hYhC3dNX3CVSbsuJaG=zBUC4VMyMVYYmyOTN+Xfb=uC8w@mail.gmail.com>
-Message-ID: <alpine.LRH.2.02.1204171127130.14814@tundra.namei.org>
-References: <20120416154607.302f7ae245472e1e917dacef@canb.auug.org.au> <CABqD9hauxzd4vVbxyC5M1p9e6mLt1cjYP7wbhzTKPi3iMpc0kg@mail.gmail.com> <CABqD9hYhC3dNX3CVSbsuJaG=zBUC4VMyMVYYmyOTN+Xfb=uC8w@mail.gmail.com>
-User-Agent: Alpine 2.02 (LRH 1266 2009-07-14)
+	id S1755451Ab2DQBei (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Apr 2012 21:34:38 -0400
+Received: from mail-pz0-f52.google.com ([209.85.210.52]:64839 "EHLO
+	mail-pz0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754665Ab2DQBeh (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Apr 2012 21:34:37 -0400
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <CAE_yGnAJ5pEZDXDp1uFaUqZa758+HZbcbcLCgEQh4YYnFBDHxw@mail.gmail.com>
+References: <CAE_yGnAWsWQHCSCLA-LCuugOGTf5L4v2NcQatar4Vv421TNQcw@mail.gmail.com>
+	<CAE_yGnDYkoJYVus-iPinSnqTj1CDfaf-oScPjZ2ibDaeeWF0oQ@mail.gmail.com>
+	<CAE9FiQW5LwRdM2NRUQZjBkyg023gwXa6r10Ym2bo0L1vk74yBg@mail.gmail.com>
+	<CAE_yGnAJ5pEZDXDp1uFaUqZa758+HZbcbcLCgEQh4YYnFBDHxw@mail.gmail.com>
+Date: Mon, 16 Apr 2012 18:34:36 -0700
+X-Google-Sender-Auth: dAcq_Uwtu4Qwq7ta09QMen0Ps6g
+Message-ID: <CAE9FiQU2JkJPhw4QA0B8+XQDM93LUJ-tcYDcJaXBvHsrt9KRpQ@mail.gmail.com>
+Subject: Re: can't boot my laptop with kernel-3.3.*
+From: Yinghai Lu <yinghai@kernel.org>
+To: Scant Light <scantlight@gmail.com>
+Cc: "the arch/x86 maintainers" <x86@kernel.org>, linux-kernel@vger.kernel.org
+Content-Type: multipart/mixed; boundary=e89a8ff1cc40112ad404bdd5f141
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 16 Apr 2012, Will Drewry wrote:
+--e89a8ff1cc40112ad404bdd5f141
+Content-Type: text/plain; charset=ISO-8859-1
 
-> >> arch/powerpc/kernel/ptrace.c: In function 'do_syscall_trace_enter':
-> >> arch/powerpc/kernel/ptrace.c:1713:2: error: statement with no effect [-Werror=unused-value]
-> >> cc1: all warnings being treated as errors
+On Mon, Apr 16, 2012 at 5:41 PM, Scant Light <scantlight@gmail.com> wrote:
+> 9. http://www.pasteall.org/pic/30333
 
-Is this happening because of
+mpc size if 0, please apply attached patch.
 
-	#define secure_computing(x) 0
+Thanks
 
-?
+Yinghai
 
-In any case, that should probably be a static inline.
+--e89a8ff1cc40112ad404bdd5f141
+Content-Type: application/octet-stream; name="mpc_size.patch"
+Content-Disposition: attachment; filename="mpc_size.patch"
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_h14a4gxz0
 
-
-- James
--- 
-James Morris
-<jmorris@namei.org>
+U3ViamVjdDogW1BBVENIXSB4ODY6IENoZWNrIG1wYyBzaXplIGJlZm9yZSByZXNlcnZlIGl0CgpT
+aWduLW9mZi1ieTogWWluZ2hhaSBMdSA8eWluZ2hhaUBrZXJuZWwub3JnPgoKLS0tCiBhcmNoL3g4
+Ni9rZXJuZWwvbXBwYXJzZS5jIHwgICAgNCArKysrCiAxIGZpbGUgY2hhbmdlZCwgNCBpbnNlcnRp
+b25zKCspCgpJbmRleDogbGludXgtMi42L2FyY2gveDg2L2tlcm5lbC9tcHBhcnNlLmMKPT09PT09
+PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09
+PT09PQotLS0gbGludXgtMi42Lm9yaWcvYXJjaC94ODYva2VybmVsL21wcGFyc2UuYworKysgbGlu
+dXgtMi42L2FyY2gveDg2L2tlcm5lbC9tcHBhcnNlLmMKQEAgLTQ0OCw2ICs0NDgsMTAgQEAgc3Rh
+dGljIHVuc2lnbmVkIGxvbmcgX19pbml0IGdldF9tcGNfc2l6ZQogCW1wYyA9IGVhcmx5X2lvcmVt
+YXAocGh5c3B0ciwgUEFHRV9TSVpFKTsKIAlzaXplID0gbXBjLT5sZW5ndGg7CiAJZWFybHlfaW91
+bm1hcChtcGMsIFBBR0VfU0laRSk7CisJaWYgKCFzaXplKSB7CisJCXNpemUgPSBzaXplb2YoKm1w
+Yyk7CisJCXByaW50ayhLRVJOX1dBUk5JTkcsICIgIG1wYyBzaXplIGFkanVzdCBmcm9tIDAgdG8g
+JWx4XG4iLCBzaXplKTsKKwl9CiAJYXBpY19wcmludGsoQVBJQ19WRVJCT1NFLCAiICBtcGM6ICVs
+eC0lbHhcbiIsIHBoeXNwdHIsIHBoeXNwdHIgKyBzaXplKTsKIAogCXJldHVybiBzaXplOwo=
+--e89a8ff1cc40112ad404bdd5f141--
