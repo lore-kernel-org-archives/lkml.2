@@ -1,92 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756231Ab2DQPDL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Apr 2012 11:03:11 -0400
-Received: from newsmtp5.atmel.com ([204.2.163.5]:48134 "EHLO
-	sjogate2.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755997Ab2DQPDK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Apr 2012 11:03:10 -0400
-Message-ID: <4F8D860C.8040306@atmel.com>
-Date: Tue, 17 Apr 2012 17:02:36 +0200
-From: Nicolas Ferre <nicolas.ferre@atmel.com>
-Organization: atmel
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120329 Thunderbird/11.0.1
+	id S1756192Ab2DQPKn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Apr 2012 11:10:43 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:53206 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753888Ab2DQPKm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Apr 2012 11:10:42 -0400
+Date: Tue, 17 Apr 2012 10:18:57 -0400
+From: Josh Boyer <jwboyer@redhat.com>
+To: Matt Carlson <mcarlson@broadcom.com>, Michael Chan <mchan@broadcom.com>
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: tg3 'No PHY devices' loading issue
+Message-ID: <20120417141856.GA19507@zod.bos.redhat.com>
 MIME-Version: 1.0
-To: Arnd Bergmann <arnd@arndb.de>, Olof Johansson <olof@lixom.net>
-CC: linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
-        Linux Kernel list <linux-kernel@vger.kernel.org>,
-        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        Joachim Eastwood <joachim.eastwood@jotron.com>
-Subject: [GIT PULL] at91: 3.4-rc3 fixes
-X-Enigmail-Version: 1.4
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Arnd, Olof,
+Hi Matt and Michael,
 
-This is a new fixes series for AT91. I have tried to make it as a
-signed tag...
+I'm seeing an odd issue with the tg3 driver on one of my development
+machines.  I've tried kernels 3.2.10, 3.3.0, 3.3.1, 3.3.2 and 3.4-rc3
+and they all seem to exhibit this issue now.  When the machine boots
+and the tg3 driver is loaded, it fails to find a PHY and then reports
+'Problem fetching invariants of chip'.  If I do a rmmod/modprobe of
+tg3 after login, the probe seems to work fine and ethernet works as
+expected.  You can see this in the dmesg below:
 
+[jwboyer@vader ~]$ dmesg | grep tg3
+[    2.084969] tg3.c:v3.122 (December 7, 2011)
+[    2.093511] tg3 mdio bus: probed
+[    2.093513] tg3 0000:03:00.0: No PHY devices
+[    2.093531] tg3 0000:03:00.0: Problem fetching invariants of chip, aborting
+[   90.824697] tg3.c:v3.122 (December 7, 2011)
+[   90.857068] tg3 mdio bus: probed
+[   90.862540] tg3 0000:03:00.0: eth0: Tigon3 [partno(BCM57788) rev 57780001] (PCI Express) MAC address 18:03:73:e6:01:88
+[   90.862547] tg3 0000:03:00.0: eth0: attached PHY driver [Broadcom BCM57780] (mii_bus:phy_addr=300:01)
+[   90.862552] tg3 0000:03:00.0: eth0: RXcsums[1] LinkChgREG[0] MIirq[0] ASF[0] TSOcap[1]
+[   90.862557] tg3 0000:03:00.0: eth0: dma_rwctrl[76180000] dma_mask[64-bit]
+[   90.919961] tg3 0000:03:00.0: irq 47 for MSI/MSI-X
+[   91.863311] tg3 0000:03:00.0: p3p1: Link is down
+[   92.864348] tg3 0000:03:00.0: p3p1: Link is up at 100 Mbps, full duplex
+[   92.864352] tg3 0000:03:00.0: p3p1: Flow control is on for TX and on for RX
 
-The following changes since commit e816b57a337ea3b755de72bec38c10c864f23015:
+It has worked on some of the older kernels without the need for the
+manual rmmod/modprobe step, so it seems to be somewhat timing related.
+I'm not sure if there is a module load ordering issue, but that doesn't
+seem to be the case.  I can't explain why a later modprobe would work
+just fine though.
 
-  Linux 3.4-rc3 (2012-04-15 18:28:29 -0700)
+Do you have any thoughts on how to go about debugging/fixing this?  I'd
+be happy to test and provide whatever information you need.
 
-are available in the git repository at:
-
-  git://github.com/at91linux/linux-at91.git tags/at91-fixes
-
-for you to fetch changes up to f898fed0c27b2d46c3d8331e7825c25b6432b9f4:
-
-  dmaengine: Kconfig: fix Atmel at_hdmac entry (2012-04-17 16:29:41 +0200)
-
-----------------------------------------------------------------
-Here is another fixes series for AT91 designed for 3.4-rc.
-We experienced some issues while compiling some drivers as modules: Joachim has
-corrected several of them. We may reduce this number of exported values by
-reworking some drivers, in the future.
-Some drivers are also modified here, I would like to keep them in the series
-as the modifications are really related with our recent move to irqdomains or
-simply related with compiler annotations.
-I keep dmaengine Kconfig modification in this "fixes" series. The DMA
-driver will not be available for 9x5 SoC family otherwise.
-
-----------------------------------------------------------------
-Jean-Christophe PLAGNIOL-VILLARD (2):
-      ARM: at91: fix rm9200ek flash size
-      ARM: at91: fix at91sam9261ek Ethernet dm9000 irq
-
-Joachim Eastwood (5):
-      ARM: at91: Export at91_st_base
-      ARM: at91: Export at91_ramc_base
-      ARM: at91: Export at91_pmc_base
-      ARM: at91: Export at91_matrix_base
-      ARM: at91: remove empty at91_init_serial function
-
-Nicolas Ferre (5):
-      ARM: at91: fix typo in at91_pmc_base assembly declaration
-      leds-atmel-pwm.c: Make pwmled_probe() __devinit
-      USB: ohci-at91: change annotations for probe/remove functions
-      USB: gadget/at91_udc: add gpio_to_irq() function to vbus interrupt
-      dmaengine: Kconfig: fix Atmel at_hdmac entry
-
- arch/arm/mach-at91/at91rm9200_devices.c    |    1 -
- arch/arm/mach-at91/at91rm9200_time.c       |    2 ++
- arch/arm/mach-at91/board-rm9200ek.c        |    2 +-
- arch/arm/mach-at91/board-sam9261ek.c       |    5 +++--
- arch/arm/mach-at91/clock.c                 |    1 +
- arch/arm/mach-at91/include/mach/at91_pmc.h |    2 +-
- arch/arm/mach-at91/setup.c                 |    2 ++
- drivers/dma/Kconfig                        |    5 ++---
- drivers/leds/leds-atmel-pwm.c              |    2 +-
- drivers/usb/gadget/at91_udc.c              |    8 ++++----
- drivers/usb/host/ohci-at91.c               |   12 ++++++------
- 11 files changed, 23 insertions(+), 19 deletions(-)
-
-Thanks, best regards,
--- 
-Nicolas Ferre
+josh
