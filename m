@@ -1,78 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753310Ab2DQUbY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Apr 2012 16:31:24 -0400
-Received: from moutng.kundenserver.de ([212.227.126.186]:57763 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752597Ab2DQUbX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Apr 2012 16:31:23 -0400
-Date: Tue, 17 Apr 2012 22:31:17 +0200 (CEST)
-From: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
-X-X-Sender: lyakh@axis700.grange
-To: H Hartley Sweeten <hartleys@visionengravers.com>
-cc: Linux Kernel <linux-kernel@vger.kernel.org>, linux-mmc@vger.kernel.org,
-        cjb@laptop.org, svenkatr@ti.com
-Subject: Re: [PATCH v2] mmc: cd-gpio.c: Include header to pickup exported
- symbol prototypes
-In-Reply-To: <201204171303.39744.hartleys@visionengravers.com>
-Message-ID: <Pine.LNX.4.64.1204172230540.27488@axis700.grange>
-References: <201204171303.39744.hartleys@visionengravers.com>
+	id S1753341Ab2DQUc2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Apr 2012 16:32:28 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:65017 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752273Ab2DQUc1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Apr 2012 16:32:27 -0400
+Date: Tue, 17 Apr 2012 16:32:23 -0400
+From: Dave Jones <davej@redhat.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [3.4-rc3] Thread overran stack, or stack corrupted
+Message-ID: <20120417203223.GA31699@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	Linus Torvalds <torvalds@linux-foundation.org>,
+	Linux Kernel <linux-kernel@vger.kernel.org>
+References: <20120417172142.GA30237@redhat.com>
+ <CA+55aFy-uhOgEoEBr-LkOjFQBVh14wwr-20jTrtsg_2EnuNY5g@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Provags-ID: V02:K0:RgGwbbfudLAuoEMxjayhdcFqBWp9VJnJmfh+ewmOeXW
- q7fXZRDYhQMp9dxdRx9CPY5VTgnQedXiugI/QobtG2za6iSrhr
- 5xrT7eCkc3gcdBVcC63p9ToLFR9JpV/sQP3pRTZ6DrO7MHgtRy
- gigwmiWC9uZa/Avtqf+eUz84TEA9ndOzIO6Ifj2XgqY9zFJIn4
- /mne4RvCGxKiiXPNAgOGNchnrNE05OIrOJUNLgvpSTjE5YuK2K
- 7rV18lH1fr+vnq6K9B2TV+giy/ERmP2Am6MNkPyVQJoLIsKVOn
- KvGr53S+ujTc0Zr/+mACYGq2IUZk148g5YRMb3P8PV91XHcjp+
- 12i45yF4uv+d8OfoW+xZPDv1vAAjK7a5iRca2nAyLoEq78u7gk
- xuNFzWz4/xDnA==
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CA+55aFy-uhOgEoEBr-LkOjFQBVh14wwr-20jTrtsg_2EnuNY5g@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 17 Apr 2012, H Hartley Sweeten wrote:
+On Tue, Apr 17, 2012 at 01:20:51PM -0700, Linus Torvalds wrote:
+ > On Tue, Apr 17, 2012 at 10:21 AM, Dave Jones <davej@redhat.com> wrote:
+ > > My syscall fuzzer started showing up some cases where it we seem to be
+ > > overrunning the stack.  I added a WARN_ON when the stack is really low,
+ > > to see if there's a deep call trace, but it's not really telling me much ..
+ > 
+ > You seem to have added the WARN_ON() to check_stack_usage() itself.
+ > 
+ > That's not very useful, because it uses the *current* stack pointer.
+ > Instead, how about just calling "show_trace()" with the actual lowest
+ > stack pointer at that point? That should show you the stack as it was
+ > when it was at its lowest, and that could actually be useful.
+ > 
+ > IOW, just something like
+ > 
+ >     show_trace(NULL, NULL, (void *)end_of_stack(p) + lowest_to_date, NULL);
+ > 
+ > Or something kind of like that. Yes?
 
-> Include the linux/mmc/cd-gpio.h header to pickup the prototypes
-> for the two exported symbols.
-> 
-> This quiets the sparse warnings:
-> 
-> warning: symbol 'mmc_cd_gpio_request' was not declared. Should it be static?
-> warning: symbol 'mmc_cd_gpio_free' was not declared. Should it be static?
-> 
-> Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
-> Cc: Chris Ball <cjb@laptop.org>
-> Cc: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
-> Acked-by: Venkatraman S <svenkatr@ti.com>
+Ok, this builds. I'll run with this for a while, and see what falls out.
 
-Acked-by: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+thanks,
 
-Thanks
-Guennadi
+	Dave
 
-> 
-> ---
-> 
-> v2: add new header alphabetically
-> 
-> diff --git a/drivers/mmc/core/cd-gpio.c b/drivers/mmc/core/cd-gpio.c
-> index 29de31e..2c14be7 100644
-> --- a/drivers/mmc/core/cd-gpio.c
-> +++ b/drivers/mmc/core/cd-gpio.c
-> @@ -12,6 +12,7 @@
->  #include <linux/gpio.h>
->  #include <linux/interrupt.h>
->  #include <linux/jiffies.h>
-> +#include <linux/mmc/cd-gpio.h>
->  #include <linux/mmc/host.h>
->  #include <linux/module.h>
->  #include <linux/slab.h>
-> 
+--- linux/kernel/exit.c	2012-03-29 22:45:18.912241586 -0400
++++ linux/kernel/exit.c	2012-04-17 16:29:54.473445787 -0400
+@@ -871,7 +871,7 @@
+ }
+ 
+ #ifdef CONFIG_DEBUG_STACK_USAGE
+-static void check_stack_usage(void)
++static void check_stack_usage(struct task_struct *p)
+ {
+ 	static DEFINE_SPINLOCK(low_water_lock);
+ 	static int lowest_to_date = THREAD_SIZE;
+@@ -888,11 +888,13 @@
+ 				"left\n",
+ 				current->comm, free);
+ 		lowest_to_date = free;
++		if (lowest_to_date < 512)
++			show_trace(NULL, NULL, (long unsigned int *)end_of_stack(p) + lowest_to_date, 0);
+ 	}
+ 	spin_unlock(&low_water_lock);
+ }
+ #else
+-static inline void check_stack_usage(void) {}
++static inline void check_stack_usage(struct task_struct *p) {}
+ #endif
+ 
+ void do_exit(long code)
+@@ -987,7 +989,7 @@
+ 	exit_shm(tsk);
+ 	exit_files(tsk);
+ 	exit_fs(tsk);
+-	check_stack_usage();
++	check_stack_usage(tsk);
+ 	exit_thread();
+ 
+ 	/*
 
----
-Guennadi Liakhovetski, Ph.D.
-Freelance Open-Source Software Developer
-http://www.open-technology.de/
