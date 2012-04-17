@@ -1,62 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755495Ab2DQDjw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Apr 2012 23:39:52 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:47185 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754408Ab2DQDjv convert rfc822-to-8bit (ORCPT
+	id S1755655Ab2DQDkA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Apr 2012 23:40:00 -0400
+Received: from 066-241-084-054.bus.ashlandfiber.net ([66.241.84.54]:39841 "EHLO
+	bigred.russwhit.org" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1754706Ab2DQDjy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Apr 2012 23:39:51 -0400
+	Mon, 16 Apr 2012 23:39:54 -0400
+Date: Mon, 16 Apr 2012 20:38:53 -0700 (PDT)
+From: Russell Whitaker <russ@ashlandhome.net>
+X-X-Sender: russ@bigred.russwhit.org
+To: Ken Moffat <zarniwhoop@ntlworld.com>
+cc: Nick Bowler <nbowler@elliptictech.com>, linux-kernel@vger.kernel.org
+Subject: Re: default framebuffer
+In-Reply-To: <20120416220249.GA25109@milliways>
+Message-ID: <alpine.LNX.2.00.1204162030370.1631@bigred.russwhit.org>
+References: <alpine.LNX.2.00.1204152129060.2200@bigred.russwhit.org> <20120416140443.GA1153@elliptictech.com> <20120416220249.GA25109@milliways>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-In-Reply-To: <20120417132357.b38685ea31582e638623961c@canb.auug.org.au>
-References: <20120411151155.b1a614f174442a592d1c1561@canb.auug.org.au>
- <20120412103157.70669ff82b81d5d926c36d4d@canb.auug.org.au>
- <CACxGe6tDa+AzK0O=E+EPZ90Ek_C-rM-G4fHSnsdL0S+fNcmzmw@mail.gmail.com> <20120417132357.b38685ea31582e638623961c@canb.auug.org.au>
-From: Grant Likely <grant.likely@secretlab.ca>
-Date: Mon, 16 Apr 2012 21:39:30 -0600
-X-Google-Sender-Auth: ooqxy_mH7cXS_cXq1Ipv2O2jAWc
-Message-ID: <CACxGe6ugOsCNRD2Jqyv-gf8X4Dvd012Gn5RyBq4TQBBb86W1qg@mail.gmail.com>
-Subject: Re: linux-next: build failure after merge of the final tree
- (devicetree tree related)
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Thomas Abraham <thomas.abraham@linaro.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: MULTIPART/MIXED; BOUNDARY="-1463798188-1806512402-1334633934=:1631"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 16, 2012 at 9:23 PM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
-> Hi Grant,
->
-> On Wed, 11 Apr 2012 18:35:34 -0600 Grant Likely <grant.likely@secretlab.ca> wrote:
->>
->> On Wed, Apr 11, 2012 at 6:31 PM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
->> > Hi Grant,
->> >
->> > On Wed, 11 Apr 2012 15:11:55 +1000 Stephen Rothwell <sfr@canb.auug.org.au> wrote:
->> >>
->> >> After merging the final tree, today's linux-next build (sparc64 defconfig)
->> >> failed like this:
->> >>
->> >> drivers/of/of_mdio.c: In function 'of_mdiobus_register':
->> >> drivers/of/of_mdio.c:75:4: error: implicit declaration of function 'irq_of_parse_and_map' [-Werror=implicit-function-declaration]
->> >>
->> >> Caused by commit e46c11b94787 ("of/irq: add empty irq_of_parse_and_map()
->> >> for non-dt builds").  SPARC has CONFIG_OF but not CONFIG_OF_IRQ ...
->> >>
->> >> I have reverted that commit for today.
->> >
->> > That commit is actually in the devicetree-current tree.
->>
->> Yes, drop that tree or revert that commit.  There's nothing else in
->> there and I didn't have time to pull it back today before you started
->> linux-next for the day.  The change is bogus and I'll spin a proper
->> fixup for tomorrow.
->
-> Ping?
+  This message is in MIME format.  The first part should be readable text,
+  while the remaining parts are likely unreadable without MIME-aware tools.
 
-Haven't got it done yet.  It's still safe to ignore that tree.
+---1463798188-1806512402-1334633934=:1631
+Content-Type: TEXT/PLAIN; charset=iso-8859-1; format=flowed
+Content-Transfer-Encoding: 8BIT
 
-g.
+
+
+On Mon, 16 Apr 2012, Ken Moffat wrote:
+
+> On Mon, Apr 16, 2012 at 10:04:43AM -0400, Nick Bowler wrote:
+>> Hi Russell,
+>>
+>> On 2012-04-15 21:37 -0700, Russell Whitaker wrote:
+>>>
+>>> What should I do to keep the screen at 80x25?
+>>
+>> Load a bigger console font.  For example, the Terminus font package
+>> http://terminus-font.sourceforge.net/ includes some nice console fonts
+>> in a variety of sizes.  Try
+>>
+>>   setfont ter-132b
+>>
+>> to start.  Your distribution probably provides a convenient way to set
+>> the console font at boot.
+>>
+>> Hope that helps,
+>
+> Alternatively, add video=something to the commandline in your
+> bootloader.  I've got a 1600x1200 screen.  On some machines I use my
+> 12x22 font, on the others I use my 8x16 font with video=1024x768 ¹
+> Oh, and on my netbook I use the 12x22 for something like 95x30.  But
+> I also guess that exactly 80x25 is not necessarily critical,
+> provided the characters are legible.
+>
+> I've no idea which video= values work, and I'm using a lot more
+> than 80x25, but perhaps video=800x600 or video=640x480 (assuming, of
+> course, that you have a 4:3 screen and not the now-common 16:10)
+> with a small font will be in the right area.
+
+Just now put video=640x480 in grub's menu.lst and I got a 80x30 screen.
+That's satisfactory, howeber will also try the larger font suggestion, 
+too.
+
+Thanks guys
+    Russ
+>
+> ¹ LatGrkCyr - they are in kbd as of 1.15.3, but there's no telling
+> whether you will like it - people using a light background almost
+> certainly will hate it.
+>
+> ken
+> -- 
+> das eine Mal als Tragödie, das andere Mal als Farce
+>
+---1463798188-1806512402-1334633934=:1631--
