@@ -1,67 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756204Ab2DQPSA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Apr 2012 11:18:00 -0400
-Received: from mail-pz0-f52.google.com ([209.85.210.52]:48144 "EHLO
-	mail-pz0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752987Ab2DQPR7 (ORCPT
+	id S932159Ab2DQPUN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Apr 2012 11:20:13 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:58871 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752987Ab2DQPUL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Apr 2012 11:17:59 -0400
-Date: Tue, 17 Apr 2012 08:17:53 -0700
-From: Tejun Heo <tj@kernel.org>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Glauber Costa <glommer@parallels.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Hugh Dickins <hughd@google.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Daniel Walsh <dwalsh@redhat.com>,
-        "Daniel P. Berrange" <berrange@redhat.com>,
-        Li Zefan <lizf@cn.fujitsu.com>, LKML <linux-kernel@vger.kernel.org>,
-        Cgroups <cgroups@vger.kernel.org>,
-        Containers <containers@lists.linux-foundation.org>
-Subject: Re: [RFD] Merge task counter into memcg
-Message-ID: <20120417151753.GB32402@google.com>
-References: <20120411185715.GA4317@somewhere.redhat.com>
- <20120412010745.GE1787@cmpxchg.org>
- <20120412145507.GC11455@somewhere.redhat.com>
- <4F87042A.2000902@parallels.com>
- <20120412165922.GA12484@somewhere.redhat.com>
+	Tue, 17 Apr 2012 11:20:11 -0400
+Date: Tue, 17 Apr 2012 16:20:06 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Ashish Chavan <ashish.chavan@kpitcummins.com>
+Cc: lrg <lrg@ti.com>, alsa-devel <alsa-devel@alsa-project.org>,
+        David Dajun Chen <david.chen@diasemi.com>,
+        "kuninori.morimoto.gx" <kuninori.morimoto.gx@renesas.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [alsa-devel] [PATCH] ASoC: da7210: Minor update for PLL and SRM
+Message-ID: <20120417152006.GM6652@opensource.wolfsonmicro.com>
+References: <1334674858.13279.9.camel@matrix>
+ <20120417145618.GL6652@opensource.wolfsonmicro.com>
+ <1334676602.13279.13.camel@matrix>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="YIwHDYD8sUXtBKvt"
 Content-Disposition: inline
-In-Reply-To: <20120412165922.GA12484@somewhere.redhat.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1334676602.13279.13.camel@matrix>
+X-Cookie: Long life is in store for you.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Frederic.
 
-On Thu, Apr 12, 2012 at 06:59:27PM +0200, Frederic Weisbecker wrote:
-> I want:
-> 
-> a) to prevent the forkbomb from going far enough to DDOS the machine
-> b) to be able to kill that forkbomb once detected, in one go without race
-> against concurrent forks.
-> 
-> I think a) can work just fine with kernel stack limiting. I also need
-> to be notified about the fact we reached the limit. And b) should
-> be feasible with the help of the cgroup freezer. 
+--YIwHDYD8sUXtBKvt
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-kmem allocation fail after reaching the limit which in turn should
-fail task creation.  Isn't that the same effect as the task_counter as
-implemented?
+On Tue, Apr 17, 2012 at 09:00:02PM +0530, Ashish Chavan wrote:
 
-> > Is there anything for which you need to know exactly the number of
-> > processes?
-> 
-> No that's really about prevent/kill forkbomb as far as I'm concerned.
+> To do that we will have to use spaces instead of tab for indentation. I
+> am not sure if that is fine. You mean something like below, right?
 
-Hmm... so, accounting overhead aside, if the only purpose is
-preventing the whole machine being brought down by a fork bomb, kmem
-limiting is enough, right?
+> 		if ((fref == da7210_pll_div[cnt].fref) &&
+> 		    (da7210->master ==  da7210_pll_div[cnt].mode) &&
+> 		    (fout == da7210_pll_div[cnt].fout)) {
 
-Thanks.
+Yes, that's totally fine.  8 character tabs and spaces below that.
 
--- 
-tejun
+--YIwHDYD8sUXtBKvt
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJPjYoXAAoJEBus8iNuMP3dKrwQAJj9n2b4Y3HEPqVfCwezZEhk
+VUwqg87v770JLxMrMFCJ4KUPsKXLxvRl0iawMNli2j+/jAtv3TgXGn9s/T6joTuq
+3g0pVlsOgJjCh8tx24vWhfhSsBm5qD44LEq81fQ3hCwV+dyl4zH/U7QIWUWfFs7P
+MZsDhJwhnELndedJWz56RSz/luRs6arZe8EC0s2ANj2kXZsogMPodW17zwKzBVfJ
+sYTO8NYrgyXKXllCs7m9Xchyxi5dh29E8q64anEHK4Ud4RYoYu+UCn6J6myLNXuC
+IzszYkBZK+QIdzz5Jij8VYT5qPVzH5iBH8ZQIi5AKonLl17cKLGH5cWl5Ufjtx8B
+QkXL9vI4O3JoDQva/lRrmRL8PVkz38wR1JP2N6PwRjb7HBbpUF/6JCIsqZPG8aqJ
+6CoD5xJ4PA5C1X9N7bMGSxXDte5HR5xCqwzoOzphsQwi3BmZ1dSw650XlXhDaWtX
+7HIivP5H2MGt0P43CpG91SCkRhQ1ACF78167qwAvM0BAkZn7CAi1qYJPhEq4ui6q
+WbDz86uvrdCkO+C11fdlatSLvH2371vywaBonKtfP4F4uP6QJPOlsyZup9JRrfRs
+djAFxet5Ls0NJc1rK7j+Qbwqm3A8NKnYf7/PMcF6l8ucA+msAHKdBxQvRZfGNJo3
+Px4N4V2WzpK2wk+hibQP
+=GUMY
+-----END PGP SIGNATURE-----
+
+--YIwHDYD8sUXtBKvt--
