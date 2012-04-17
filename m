@@ -1,90 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755911Ab2DQLsz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Apr 2012 07:48:55 -0400
-Received: from eu1sys200aog117.obsmtp.com ([207.126.144.143]:55427 "EHLO
-	eu1sys200aog117.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751523Ab2DQLsx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Apr 2012 07:48:53 -0400
-From: Viresh Kumar <viresh.kumar@st.com>
-To: <w.sang@pengutronix.de>, <ben-linux@fluff.org>
-Cc: <spear-devel@list.st.com>, <viresh.linux@gmail.com>, <khali@linux-fr.org>,
-        <linux-i2c@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        Viresh Kumar <viresh.kumar@st.com>
-Subject: [PATCH V2] i2c: designware: Add clk_{un}prepare() support
-Date: Tue, 17 Apr 2012 17:04:31 +0530
-Message-ID: <b562073871c8c3c13a1f59698f69cfdf65db3b5a.1334662366.git.viresh.kumar@st.com>
-X-Mailer: git-send-email 1.7.9
-In-Reply-To: <caa4a0645f80f199b31ec16de37a5c4c9c67a6fa.1334652570.git.viresh.kumar@st.com>
-References: <caa4a0645f80f199b31ec16de37a5c4c9c67a6fa.1334652570.git.viresh.kumar@st.com>
+	id S1755397Ab2DQLwh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Apr 2012 07:52:37 -0400
+Received: from tx2ehsobe003.messaging.microsoft.com ([65.55.88.13]:9135 "EHLO
+	tx2outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754551Ab2DQLwg convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Apr 2012 07:52:36 -0400
+X-SpamScore: -13
+X-BigFish: VPS-13(zz9371I936eK1432N98dKzz1202hzz8275dhz2dh668h839h944hd25h)
+X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
+X-WSS-ID: 0M2MGZH-01-6DP-02
+X-M-MSG: 
+From: "Chen, Dennis (SRDC SW)" <Dennis1.Chen@amd.com>
+To: Peter Zijlstra <peterz@infradead.org>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@kernel.org>,
+        "paulmck@linux.vnet.ibm.com" <paulmck@linux.vnet.ibm.com>,
+        Paul Mackerras <paulus@samba.org>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Subject: RE: A quick view of the performance benchmark for semaphore-like
+ and mutex
+Thread-Topic: A quick view of the performance benchmark for semaphore-like
+ and mutex
+Thread-Index: Ac0bq8MflXUZwOd4SI6p7+Nhh3anqAALxinAACf1RvD//4nKgP//X4Hw
+Date: Tue, 17 Apr 2012 11:52:26 +0000
+Message-ID: <491D6B4EAD0A714894D8AD22F4BDE043B15E04@SCYBEXDAG03.amd.com>
+References: <491D6B4EAD0A714894D8AD22F4BDE043B15DCF@SCYBEXDAG03.amd.com>
+ <1334657569.28150.81.camel@twins>
+In-Reply-To: <1334657569.28150.81.camel@twins>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.237.74.102]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-clk_{un}prepare is mandatory for platforms using common clock framework. Since
-this driver is used by SPEAr platform, which supports common clock framework,
-add clk_{un}prepare() support for designware i2c.
+On Tue, Apr 17, 2012 at 6:12 PM, Peter Zijlstra <peterz@infradead.org> wrote:
+> On Tue, 2012-04-17 at 09:36 +0000, Chen, Dennis (SRDC SW) wrote:
+>>
+>> Interesting!! Semaphore-like is almost 8s slower than mutex... Also, the Events sycles of perf
+>> reported is different
+>
+> I suspect that if you were to use actual semaphores it would be even
+> worse, the semaphore implementation doesn't do lock-stealing nor does it
+> have fancy assembly fast paths.
+>
+> In fact, I don't know why you even bother with sems, they're a
+> deprecated serialization primitive that really shouldn't be used
+> anymore.
 
-Signed-off-by: Viresh Kumar <viresh.kumar@st.com>
----
-V1->V2:
-- Use clk_prepare_enable and clk_disable_unprepare
-
- drivers/i2c/busses/i2c-designware-platdrv.c |   10 +++++-----
- 1 files changed, 5 insertions(+), 5 deletions(-)
-
-diff --git a/drivers/i2c/busses/i2c-designware-platdrv.c b/drivers/i2c/busses/i2c-designware-platdrv.c
-index 76bf108..3a7a4e8 100644
---- a/drivers/i2c/busses/i2c-designware-platdrv.c
-+++ b/drivers/i2c/busses/i2c-designware-platdrv.c
-@@ -103,7 +103,7 @@ static int __devinit dw_i2c_probe(struct platform_device *pdev)
- 		r = -ENODEV;
- 		goto err_free_mem;
- 	}
--	clk_enable(dev->clk);
-+	clk_prepare_enable(dev->clk);
- 
- 	dev->functionality =
- 		I2C_FUNC_I2C |
-@@ -180,7 +180,7 @@ err_free_irq:
- err_iounmap:
- 	iounmap(dev->base);
- err_unuse_clocks:
--	clk_disable(dev->clk);
-+	clk_disable_unprepare(dev->clk);
- 	clk_put(dev->clk);
- 	dev->clk = NULL;
- err_free_mem:
-@@ -202,7 +202,7 @@ static int __devexit dw_i2c_remove(struct platform_device *pdev)
- 	i2c_del_adapter(&dev->adapter);
- 	put_device(&pdev->dev);
- 
--	clk_disable(dev->clk);
-+	clk_disable_unprepare(dev->clk);
- 	clk_put(dev->clk);
- 	dev->clk = NULL;
- 
-@@ -229,7 +229,7 @@ static int dw_i2c_suspend(struct device *dev)
- 	struct platform_device *pdev = to_platform_device(dev);
- 	struct dw_i2c_dev *i_dev = platform_get_drvdata(pdev);
- 
--	clk_disable(i_dev->clk);
-+	clk_disable_unprepare(i_dev->clk);
- 
- 	return 0;
- }
-@@ -239,7 +239,7 @@ static int dw_i2c_resume(struct device *dev)
- 	struct platform_device *pdev = to_platform_device(dev);
- 	struct dw_i2c_dev *i_dev = platform_get_drvdata(pdev);
- 
--	clk_enable(i_dev->clk);
-+	clk_prepare_enable(i_dev->clk);
- 	i2c_dw_init(i_dev);
- 
- 	return 0;
--- 
-1.7.9
+Yes, I am also apt to believe that...Actually I never been bothered by sems in my real life, just 
+for fun! I enjoy the data :-)
 
