@@ -1,122 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755645Ab2DQRHV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Apr 2012 13:07:21 -0400
-Received: from mga03.intel.com ([143.182.124.21]:2413 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754968Ab2DQRHT convert rfc822-to-8bit (ORCPT
+	id S1755827Ab2DQRH4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Apr 2012 13:07:56 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:52314 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754876Ab2DQRHy convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Apr 2012 13:07:19 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="90096558"
-From: "Liu, Jinsong" <jinsong.liu@intel.com>
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-CC: "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH 2/2] Register native mce handler as vMCE bounce back
- point
-Thread-Topic: [PATCH 2/2] Register native mce handler as vMCE bounce back
- point
-Thread-Index: AQHNHLNw/TdpFhoPSxCwxlIbh3KVRpafPnOQ
-Date: Tue, 17 Apr 2012 17:06:49 +0000
-Message-ID: <DE8DF0795D48FD4CA783C40EC829233514CDEF@SHSMSX101.ccr.corp.intel.com>
-References: <DE8DF0795D48FD4CA783C40EC8292335146A7A@SHSMSX101.ccr.corp.intel.com>
- <20120416202821.GC14982@phenom.dumpdata.com>
- <DE8DF0795D48FD4CA783C40EC829233514BFD4@SHSMSX101.ccr.corp.intel.com>
- <20120417160208.GB28477@phenom.dumpdata.com>
-In-Reply-To: <20120417160208.GB28477@phenom.dumpdata.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.239.127.40]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Tue, 17 Apr 2012 13:07:54 -0400
 MIME-Version: 1.0
+In-Reply-To: <4F8D390F.9050408@fold.natur.cuni.cz>
+References: <4F6A483D.50702@fold.natur.cuni.cz>
+	<CAE9FiQVnErU-cska4gpinyj-LOup-U+3vsEG2z_-7h6kyREYtw@mail.gmail.com>
+	<4F6A5A53.305@fold.natur.cuni.cz>
+	<CAE9FiQXP7fO9OGN557jdofFFiFj96wL--ZA8X3UPEJ6o9JLvBw@mail.gmail.com>
+	<4F8BEB1D.9080903@fold.natur.cuni.cz>
+	<CAE9FiQXoX3J6P_9Tun_XbkK3egvSeBZxAtC13HacFDO0fwmZaA@mail.gmail.com>
+	<4F8C6E4E.1000205@fold.natur.cuni.cz>
+	<CAE9FiQXikqikMw_LYGqAUsWqFqL-tLiresPhpkpDhb+AxwundQ@mail.gmail.com>
+	<CAE9FiQUFB=9zbP1yuBDH1RJrCCP=83kV_fH+TEtk80981-uP=w@mail.gmail.com>
+	<CAE9FiQUbzM_TVu+bbXa6LWiUt01QsFiGoyYd0qV=41dXx4J31g@mail.gmail.com>
+	<4F8D1B72.2000105@fold.natur.cuni.cz>
+	<CAE9FiQW2MAW_WT+sq8XVtMOx=uR8FAN8O2wL2AOxkFBfEM285g@mail.gmail.com>
+	<CAE9FiQWSw1h772ijZ6YL4EujwjgvZ84bbDx9VbF_cdE63D-41w@mail.gmail.com>
+	<4F8D390F.9050408@fold.natur.cuni.cz>
+Date: Tue, 17 Apr 2012 10:07:53 -0700
+X-Google-Sender-Auth: _-Zk9LkoUGBIDe5RrthqL-eETZQ
+Message-ID: <CAE9FiQU-_BCCS1OKagVuj8YNrut8-6GH2_i86FsfS8UDWQ1pRA@mail.gmail.com>
+Subject: Re: 3.2.11: PCI Express card cannot be re-detected withing cca 60sec timeframe
+From: Yinghai Lu <yinghai@kernel.org>
+To: Martin Mokrejs <mmokrejs@fold.natur.cuni.cz>
+Cc: Thomas Gleixner <tglx@linutronix.de>, linux-pci@vger.kernel.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Konrad Rzeszutek Wilk wrote:
-> On Tue, Apr 17, 2012 at 12:55:49PM +0000, Liu, Jinsong wrote:
->> Konrad Rzeszutek Wilk wrote:
->>> On Mon, Apr 16, 2012 at 01:07:35AM +0000, Liu, Jinsong wrote:
->>>>> From 76e40a60878ff72986fd8d92611400195ae0f997 Mon Sep 17 00:00:00
->>>>> 2001
->>>> From: Liu, Jinsong <jinsong.liu@intel.com>
->>>> Date: Mon, 16 Apr 2012 00:16:58 +0800
->>>> Subject: [PATCH 2/2] Register native mce handler as vMCE bounce
->>>> back point 
->>>> 
->>>> When xen hyeprvisor inject vMCE to guest, use native mce handler to
->>>> handle it
->>> 
->>> hypervisor
->>> 
->>>> 
->>>> Signed-off-by: Liu, Jinsong <jinsong.liu@intel.com>
->>>> Signed-off-by: Ke, Liping <liping.ke@intel.com>
->>>> Signed-off-by: Jiang, Yunhong <yunhong.jiang@intel.com>
->>>> Signed-off-by: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
->>>>  --- arch/x86/xen/enlighten.c |   10 +++++++---
->>>>  1 files changed, 7 insertions(+), 3 deletions(-)
->>>> 
->>>> diff --git a/arch/x86/xen/enlighten.c b/arch/x86/xen/enlighten.c
->>>> index 15628d4..346ba64 100644 --- a/arch/x86/xen/enlighten.c
->>>> +++ b/arch/x86/xen/enlighten.c
->>>> @@ -614,8 +614,8 @@ static int cvt_gate_to_trap(int vector, const
->>>> gate_desc *val,  	/* 
->>>>  	 * Look for known traps using IST, and substitute them
->>>>  	 * appropriately.  The debugger ones are the only ones we care
->>>> -	 * about.  Xen will handle faults like double_fault and
->>>> -	 * machine_check, so we should never see them.  Warn if
->>>> +	 * about.  Xen will handle faults like double_fault,
->>>> +	 * so we should never see them.  Warn if
->>>>  	 * there's an unexpected IST-using fault handler.  	 */
->>>>  	if (addr == (unsigned long)debug)
->>>> @@ -630,7 +630,11 @@ static int cvt_gate_to_trap(int vector, const
->>>>  gate_desc *val,  		return 0; #ifdef CONFIG_X86_MCE
->>>>  	} else if (addr == (unsigned long)machine_check) { -		return 0;
->>>> +		/* +		 * when xen hyeprvisor inject vMCE to guest,
->>>> +		 * use native mce handler to handle it
->>>> +		 */
->>>> +		;
->>> 
->>> 
->>> Can you just take the check out?
->> 
->> What do you mean by 'check out'? remove
->> else if (addr == (unsigned long) machine_check) {
->> 	;
->> }
->> ?
->> 
->> That would fail to register mce bounce back point.
-> 
-> Right, b/c right after we hit this check:
->   /* Some other trap using IST? */
->  639                 if (WARN_ON(val->ist != 0))
->  640                         return 0;
->  641         }
-> 
-> .. And the val->ist is not set for MCEs right?
+On Tue, Apr 17, 2012 at 2:34 AM, Martin Mokrejs
+<mmokrejs@fold.natur.cuni.cz> wrote:
+> Yinghai Lu wrote:
+>> On Tue, Apr 17, 2012 at 1:46 AM, Yinghai Lu <yinghai@kernel.org> wrote:
+>>> On Tue, Apr 17, 2012 at 12:27 AM, Martin Mokrejs
+>>> <mmokrejs@fold.natur.cuni.cz> wrote:
+>>>>>
+>>>>> can you send out lspci -vvxxxx -s 00:1c.7 after removing USB 3.0 express card?
+>>>>
+>>>> No, that did not help (tried on 3.4-rc3). First I plugged in the NEC uPD720200 USB3.0 card
+>>>> and unplugged it (card removal not reported :(), saved the lspci output.
+>>>> Then I inserted the FireWire card, unplugged, again saved the lspci output.
+>>>> Finally, saved the dmesg. All three files are attached.
+>>>
+>>> for USB 3.0:
+>>>                SltSta: Status: AttnBtn- PowerFlt- MRL- CmdCplt- PresDet+ Interlock-
+>>>                        Changed: MRL- PresDet- LinkState+
+>>
+>> LnkSta: Speed 2.5GT/s, Width x1, TrErr- Train- SlotClk+ DLActive+
+>> BWMgmt+ ABWMgmt-
+>>
+>> link still active even that card get removed, that looks like chipset
+>> have problem.
+>
+> Yinghai,
+>  so what should I ask Dell for? To fix BIOS of the laptop? What exactly? Or do you think
+> this is a hardware issue with the chipset?
 
-No, mce ist is set as 0/5 (32/64), set_intr_gate_ist(X86_TRAP_MC, &machine_check, MCE_STACK); 
+after the expresscard get removed, that root port socket status bits
+still report Data Link Active, and
+the card still present.
 
-> 
->> 
->>> 
->>> 
->>>>  #endif
->>>>  	} else {
->>>>  		/* Some other trap using IST? */
->>>> --
->>>> 1.7.1
->> 
->> --
->> To unsubscribe from this list: send the line "unsubscribe
->> linux-kernel" in the body of a message to majordomo@vger.kernel.org
->> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->> Please read the FAQ at  http://www.tux.org/lkml/
+Better check with Dell at first, and ask them to talk with intel if
+there is silicon bug with that chipset that report wrong status.
 
+Let me check if i could rebase one my local patch do reset pcie link
+to prove that problem it silicon related.
+
+Yinghai
