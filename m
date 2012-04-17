@@ -1,73 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754884Ab2DPX6P (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Apr 2012 19:58:15 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:24611 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752810Ab2DPX6N (ORCPT
+	id S1755240Ab2DQAFg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Apr 2012 20:05:36 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:49196 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754551Ab2DQAFf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Apr 2012 19:58:13 -0400
-X-Authority-Analysis: v=2.0 cv=IaEFqBWa c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=XQbtiDEiEegA:10 a=s3nvyBDuQC4A:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=0azM3ZO7AAAA:8 a=68eEZQRoAAAA:8 a=fUl8lY1HmGEe7czQXw4A:9 a=PUjeQqilurYA:10 a=BGWj8ct6lkoA:10 a=7YLhZ6jOsBkA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.80.29
-Message-ID: <1334620691.28106.12.camel@gandalf.stny.rr.com>
-Subject: Re: [PATCH] [Trivial] ktest: change singular "paranthesis" to
- plural "parantheses"
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Randy Dunlap <rdunlap@xenotime.net>
-Cc: Jesper Juhl <jj@chaosbits.net>, linux-kernel@vger.kernel.org,
-        trivial@kernel.org
-Date: Mon, 16 Apr 2012 19:58:11 -0400
-In-Reply-To: <4F8CD243.30900@xenotime.net>
-References: <alpine.LNX.2.00.1204170027250.21898@swampdragon.chaosbits.net>
-	 <4F8CCFFF.2060808@xenotime.net>
-	 <alpine.LNX.2.00.1204170110460.21898@swampdragon.chaosbits.net>
-	 <4F8CD243.30900@xenotime.net>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.2.2-1 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Mon, 16 Apr 2012 20:05:35 -0400
+Date: Mon, 16 Apr 2012 17:05:11 -0700
+From: tip-bot for Oleg Nesterov <oleg@redhat.com>
+Message-ID: <tip-089f9fba56faf33cc6dd2a6442b7ac92c58b8209@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        torvalds@linux-foundation.org, jan.kratochvil@redhat.com,
+        tglx@linutronix.de, oleg@redhat.com, hpa@linux.intel.com
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        torvalds@linux-foundation.org, jan.kratochvil@redhat.com,
+        tglx@linutronix.de, oleg@redhat.com, hpa@linux.intel.com
+In-Reply-To: <20120416204815.GB24884@redhat.com>
+References: <20120416204815.GB24884@redhat.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/urgent] i387: ptrace breaks the lazy-fpu-restore logic
+Git-Commit-ID: 089f9fba56faf33cc6dd2a6442b7ac92c58b8209
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
+MIME-Version: 1.0
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Mon, 16 Apr 2012 17:05:17 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2012-04-16 at 19:15 -0700, Randy Dunlap wrote:
-> On 04/16/2012 04:12 PM, Jesper Juhl wrote:
-> 
-> > On Mon, 16 Apr 2012, Randy Dunlap wrote:
-> > 
-> >> On 04/16/2012 03:28 PM, Jesper Juhl wrote:
-> >>
-> >>> Signed-off-by: Jesper Juhl <jj@chaosbits.net>
-> >>> ---
-> >>>  tools/testing/ktest/sample.conf |    2 +-
-> >>>  1 file changed, 1 insertion(+), 1 deletion(-)
-> >>
-> >> It's misspelled before and after the patch.  :(
-> >>
-> > Ahh, crap, you are right. Sorry about that :-(
-> > 
-> > I could try to blame that on english not being my first language, but I 
-> > won't since it's just me screwing up.
-> > I did read the patch several times before sending it and thought I'd made 
-> > sure there were no trivial errors like that, but I was wrong - damn it.
-> > 
-> > 
-> > This should be better :
-> > 
-> > From: Jesper Juhl <jj@chaosbits.net>
-> > Date: Mon, 16 Apr 2012 19:40:24 +0200
-> > Subject: [PATCH] [Trivial] ktest: change singular "paranthesis" to plural "parentheses"
-> > 
-> 
-> 
-> Looks good.  Thanks.
-> 
-> Acked-by: Randy Dunlap <rdunlap@xenotime.net>
-> 
+Commit-ID:  089f9fba56faf33cc6dd2a6442b7ac92c58b8209
+Gitweb:     http://git.kernel.org/tip/089f9fba56faf33cc6dd2a6442b7ac92c58b8209
+Author:     Oleg Nesterov <oleg@redhat.com>
+AuthorDate: Mon, 16 Apr 2012 22:48:15 +0200
+Committer:  H. Peter Anvin <hpa@linux.intel.com>
+CommitDate: Mon, 16 Apr 2012 16:23:59 -0700
 
-I'll pull this into my queue for 3.5
+i387: ptrace breaks the lazy-fpu-restore logic
 
--- Steve
+Starting from 7e16838d "i387: support lazy restore of FPU state"
+we assume that fpu_owner_task doesn't need restore_fpu_checking()
+on the context switch, its FPU state should match what we already
+have in the FPU on this CPU.
 
+However, debugger can change the tracee's FPU state, in this case
+we should reset fpu.last_cpu to ensure fpu_lazy_restore() can't
+return true.
 
+Change init_fpu() to do this, it is called by user_regset->set()
+methods.
+
+Reported-by: Jan Kratochvil <jan.kratochvil@redhat.com>
+Suggested-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+Link: http://lkml.kernel.org/r/20120416204815.GB24884@redhat.com
+Cc: <stable@vger.kernel.org> v3.3
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+---
+ arch/x86/kernel/i387.c |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
+
+diff --git a/arch/x86/kernel/i387.c b/arch/x86/kernel/i387.c
+index 7734bcb..2d6e649 100644
+--- a/arch/x86/kernel/i387.c
++++ b/arch/x86/kernel/i387.c
+@@ -235,6 +235,7 @@ int init_fpu(struct task_struct *tsk)
+ 	if (tsk_used_math(tsk)) {
+ 		if (HAVE_HWFP && tsk == current)
+ 			unlazy_fpu(tsk);
++		tsk->thread.fpu.last_cpu = ~0;
+ 		return 0;
+ 	}
+ 
