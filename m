@@ -1,99 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755681Ab2DQR0P (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Apr 2012 13:26:15 -0400
-Received: from db3ehsobe003.messaging.microsoft.com ([213.199.154.141]:47925
-	"EHLO db3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755267Ab2DQR0N (ORCPT
+	id S1756165Ab2DQR1t (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Apr 2012 13:27:49 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:37941 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752055Ab2DQR1s (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Apr 2012 13:26:13 -0400
-X-SpamScore: -10
-X-BigFish: VPS-10(zz1432N98dK4015Izz1202hzz8275bhz2dh668h839h93fhd25h)
-X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
-X-WSS-ID: 0M2MWFH-01-35X-02
-X-M-MSG: 
-Date: Tue, 17 Apr 2012 19:26:02 +0200
-From: Andreas Herrmann <andreas.herrmann3@amd.com>
-To: Vlad Zolotarov <vlad@scalemp.com>
-CC: <linux-kernel@vger.kernel.org>, <tglx@linutronix.de>, <mingo@redhat.com>,
-        <hpa@zytor.com>, <borislav.petkov@amd.com>,
-        <Ravikiran.Thirumalai@amd.com>,
-        "Shai Fultheim (Shai@ScaleMP.com)" <Shai@scalemp.com>
-Subject: Re: [PATCH] x86, amd: Probe CPUs by APICID instead of initial APICID
-Message-ID: <20120417172602.GE19517@alberich.amd.com>
-References: <201204171306.37426.vlad@scalemp.com>
+	Tue, 17 Apr 2012 13:27:48 -0400
+Message-ID: <4F8DA80F.6030205@gmail.com>
+Date: Tue, 17 Apr 2012 10:27:43 -0700
+From: David Daney <ddaney.cavm@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.15) Gecko/20101027 Fedora/3.0.10-1.fc12 Thunderbird/3.0.10
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Disposition: inline
-In-Reply-To: <201204171306.37426.vlad@scalemp.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginatorOrg: amd.com
+To: Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>,
+        devicetree-discuss@lists.ozlabs.org,
+        "David S. Miller" <davem@davemloft.net>, netdev@vger.kernel.org
+CC: linux-kernel@vger.kernel.org, linux-mips@linux-mips.org,
+        afleming@gmail.com, galak@kernel.crashing.org,
+        David Daney <david.daney@cavium.com>
+Subject: Re: [PATCH v3 1/3] netdev/of/phy: New function: of_mdio_find_bus().
+References: <1334624608-26667-1-git-send-email-ddaney.cavm@gmail.com> <1334624608-26667-2-git-send-email-ddaney.cavm@gmail.com>
+In-Reply-To: <1334624608-26667-2-git-send-email-ddaney.cavm@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 17, 2012 at 01:06:36PM +0300, Vlad Zolotarov wrote:
-> From: Shai Fultheim <shai@scalemp.com>
-> 
-> Make AMD identify processors using APICID (32 bit) rather than the initial 
-> APICID (8 bit).  This is critical to make sure the last level cache (llc), 
-> which is used for sibling detection, will be different between boards - on 
-> aggregated systems with more than 8 processors.
-> 
-> 
-> Signed-off-by: Shai Fultheim <shai@scalemp.com>
-> Signed-off-by: Vlad Zolotarov <vlad@scalemp.com>
-
-I think instead of fiddling with the generic code you rather should do
-what was implemented for numascale support. See apic_numachip.c
-
-Especially changing node_id will break other stuff.
-
-
+On 04/16/2012 06:03 PM, David Daney wrote:
+> From: David Daney<david.daney@cavium.com>
+>
+> Add of_mdio_find_bus() which allows an mii_bus to be located given its
+> associated the device tree node.
+>
+> This is needed by the follow-on patch to add a driver for MDIO bus
+> multiplexers.
+>
+> The of_mdiobus_register() function is modified so that the device tree
+> node is recorded in the mii_bus.  Then we can find it again by
+> iterating over all mdio_bus_class devices.
+>
+> Because the OF device tree has now become an integral part of the
+> kernel, this can live in mdio_bus.c (which contains the needed
+> mdio_bus_class structure) instead of of_mdio.c.
+>
+> Signed-off-by: David Daney<david.daney@cavium.com>
+> Cc: Grant Likely<grant.likely@secretlab.ca>
+> Cc: "David S. Miller"<davem@davemloft.net>
 > ---
->  arch/x86/kernel/cpu/amd.c |   10 +++++-----
->  1 files changed, 5 insertions(+), 5 deletions(-)
-> 
-> diff --git a/arch/x86/kernel/cpu/amd.c b/arch/x86/kernel/cpu/amd.c
-> index 0bab2b1..33d9502 100644
-> --- a/arch/x86/kernel/cpu/amd.c
-> +++ b/arch/x86/kernel/cpu/amd.c
-> @@ -277,7 +277,7 @@ static void __cpuinit amd_get_topology(struct cpuinfo_x86 *c)
->  
->  		cpuid(0x8000001e, &eax, &ebx, &ecx, &edx);
->  		nodes = ((ecx >> 8) & 7) + 1;
-> -		node_id = ecx & 7;
-> +		node_id = (ecx & 7) + (c->phys_proc_id << 3);
->  
->  		/* get compute unit information */
->  		smp_num_siblings = ((ebx >> 8) & 3) + 1;
-> @@ -288,7 +288,7 @@ static void __cpuinit amd_get_topology(struct cpuinfo_x86 *c)
->  
->  		rdmsrl(MSR_FAM10H_NODE_ID, value);
->  		nodes = ((value >> 3) & 7) + 1;
-> -		node_id = value & 7;
-> +		node_id = (value & 7) + (c->phys_proc_id << 3);
->  	} else
->  		return;
->  
-> @@ -323,9 +323,9 @@ static void __cpuinit amd_detect_cmp(struct cpuinfo_x86 *c)
->  
->  	bits = c->x86_coreid_bits;
->  	/* Low order bits define the core id (index of core in socket) */
-> -	c->cpu_core_id = c->initial_apicid & ((1 << bits)-1);
-> -	/* Convert the initial APIC ID into the socket ID */
-> -	c->phys_proc_id = c->initial_apicid >> bits;
-> +	c->cpu_core_id = c->apicid & ((1 << bits)-1);
-> +	/* Convert the APIC ID into the socket ID */
-> +	c->phys_proc_id = c->apicid >> bits;
+>   drivers/net/phy/mdio_bus.c |   32 ++++++++++++++++++++++++++++++++
+>   drivers/of/of_mdio.c       |    2 ++
+>   include/linux/of_mdio.h    |    2 ++
+>   3 files changed, 36 insertions(+), 0 deletions(-)
+>
+> diff --git a/drivers/net/phy/mdio_bus.c b/drivers/net/phy/mdio_bus.c
+> index 8985cc6..46e7dc5 100644
+> --- a/drivers/net/phy/mdio_bus.c
+> +++ b/drivers/net/phy/mdio_bus.c
+> @@ -88,6 +88,38 @@ static struct class mdio_bus_class = {
+>   	.dev_release	= mdiobus_release,
+>   };
+>
+> +#ifdef CONFIG_OF_MDIO
+> +/* Helper function for of_phy_find_device */
 
-Extracting phys_proc_id from apicid will result in wrong socket
-enumeration on several systems. E.g. they would start with package_id
-1 instead of 0.
+This comment is incorrect.  I will resend the set with this cleaned up.
 
+David Daney
 
-Thanks,
-
-Andreas
-
-
+> +static int of_mii_bus_match(struct device *dev, void *mii_bus_np)
+> +{
+> +	return dev->of_node == mii_bus_np;
+> +}
+> +/**
+> + * of_mdio_find_bus - Given an mii_bus node, find the mii_bus.
+> + * @mdio_np: Pointer to the mii_bus.
+> + *
+> + * Returns a pointer to the mii_bus, or NULL if none found.
+> + *
+> + * Because the association of a device_node and mii_bus is made via
+> + * of_mdiobus_register(), the mii_bus cannot be found before it is
+> + * registered with of_mdiobus_register().
+> + *
+> + */
+> +struct mii_bus *of_mdio_find_bus(struct device_node *mdio_np)
+> +{
+[...]
