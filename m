@@ -1,64 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755035Ab2DQBcY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Apr 2012 21:32:24 -0400
-Received: from mail127.messagelabs.com ([216.82.250.115]:42981 "EHLO
-	mail127.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752626Ab2DQBcX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Apr 2012 21:32:23 -0400
-X-Env-Sender: hartleys@visionengravers.com
-X-Msg-Ref: server-14.tower-127.messagelabs.com!1334626342!3277003!1
-X-Originating-IP: [216.166.12.72]
-X-StarScan-Version: 6.5.7; banners=-,-,-
-X-VirusChecked: Checked
-From: H Hartley Sweeten <hartleys@visionengravers.com>
-To: Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: [PATCH] drivers/scs/scsi_sysfs.c: local variables should not be exposed globally
-Date: Mon, 16 Apr 2012 18:32:18 -0700
-User-Agent: KMail/1.9.9
-CC: <linux-scsi@vger.kernel.org>, <JBottomley@parallels.com>
+	id S1755397Ab2DQBdp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Apr 2012 21:33:45 -0400
+Received: from tundra.namei.org ([65.99.196.166]:57963 "EHLO tundra.namei.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750892Ab2DQBdn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Apr 2012 21:33:43 -0400
+Date: Tue, 17 Apr 2012 11:33:26 +1000 (EST)
+From: James Morris <jmorris@namei.org>
+To: Will Drewry <wad@chromium.org>
+cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, "H. Peter Anvin" <hpa@zytor.com>,
+        Eric Paris <eparis@redhat.com>, Kees Cook <keescook@chromium.org>
+Subject: Re: linux-next: build failure after merge of the final tree (security
+ tree related)
+In-Reply-To: <CABqD9hYhC3dNX3CVSbsuJaG=zBUC4VMyMVYYmyOTN+Xfb=uC8w@mail.gmail.com>
+Message-ID: <alpine.LRH.2.02.1204171127130.14814@tundra.namei.org>
+References: <20120416154607.302f7ae245472e1e917dacef@canb.auug.org.au> <CABqD9hauxzd4vVbxyC5M1p9e6mLt1cjYP7wbhzTKPi3iMpc0kg@mail.gmail.com> <CABqD9hYhC3dNX3CVSbsuJaG=zBUC4VMyMVYYmyOTN+Xfb=uC8w@mail.gmail.com>
+User-Agent: Alpine 2.02 (LRH 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Content-Disposition: inline
-Message-ID: <201204161832.18848.hartleys@visionengravers.com>
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Variables not referenced outside of a source file should be marked
-static to prevent it from being exposed globally.
+On Mon, 16 Apr 2012, Will Drewry wrote:
 
-This quiets the sparse warnings:
+> >> arch/powerpc/kernel/ptrace.c: In function 'do_syscall_trace_enter':
+> >> arch/powerpc/kernel/ptrace.c:1713:2: error: statement with no effect [-Werror=unused-value]
+> >> cc1: all warnings being treated as errors
 
-warning: symbol 'dev_attr_hstate' was not declared. Should it be static?
-warning: symbol 'scsi_shost_attr_group' was not declared. Should it be static?
+Is this happening because of
 
-Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
-Cc: "James E.J. Bottomley" <JBottomley@parallels.com>
+	#define secure_computing(x) 0
 
----
+?
 
-diff --git a/drivers/scsi/scsi_sysfs.c b/drivers/scsi/scsi_sysfs.c
-index 04c2a27..fbff014 100644
---- a/drivers/scsi/scsi_sysfs.c
-+++ b/drivers/scsi/scsi_sysfs.c
-@@ -197,7 +197,7 @@ show_shost_state(struct device *dev, struct device_attribute *attr, char *buf)
- }
- 
- /* DEVICE_ATTR(state) clashes with dev_attr_state for sdev */
--struct device_attribute dev_attr_hstate =
-+static struct device_attribute dev_attr_hstate =
- 	__ATTR(state, S_IRUGO | S_IWUSR, show_shost_state, store_shost_state);
- 
- static ssize_t
-@@ -313,7 +313,7 @@ static struct attribute *scsi_sysfs_shost_attrs[] = {
- 	NULL
- };
- 
--struct attribute_group scsi_shost_attr_group = {
-+static struct attribute_group scsi_shost_attr_group = {
- 	.attrs =	scsi_sysfs_shost_attrs,
- };
- 
+In any case, that should probably be a static inline.
+
+
+- James
+-- 
+James Morris
+<jmorris@namei.org>
