@@ -1,114 +1,591 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755153Ab2DQK77 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Apr 2012 06:59:59 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:45111 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754551Ab2DQK75 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Apr 2012 06:59:57 -0400
-Message-ID: <4F8D4D1C.4010400@redhat.com>
-Date: Tue, 17 Apr 2012 13:59:40 +0300
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120329 Thunderbird/11.0.1
-MIME-Version: 1.0
-To: zhangyanfei <zhangyanfei@cn.fujitsu.com>
-CC: mtosatti@redhat.com, ebiederm@xmission.com, luto@mit.edu,
-        joerg.roedel@amd.com, dzickus@redhat.com, paul.gortmaker@windriver.com,
-        gregkh@suse.de, ludwig.nussel@suse.de, linux-kernel@vger.kernel.org,
-        kvm@vger.kernel.org, kexec@lists.infradead.org
-Subject: Re: [PATCH 0/4] Export offsets of VMCS fields as note information
- for kdump
-References: <4F84E0DF.8040206@cn.fujitsu.com> <4F8D1F46.3090901@redhat.com> <4F8D4B4C.8070705@cn.fujitsu.com>
-In-Reply-To: <4F8D4B4C.8070705@cn.fujitsu.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+	id S1755402Ab2DQLAV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Apr 2012 07:00:21 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:50124 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751486Ab2DQLAR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Apr 2012 07:00:17 -0400
+From: Bryan Wu <bryan.wu@canonical.com>
+To: linux@arm.linux.org.uk, rpurdie@rpsys.net,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linus.walleij@linaro.org, akpm@linux-foundation.org,
+        arnd.bergmann@linaro.org, nicolas.pitre@linaro.org,
+        tim.gardner@canonical.com
+Subject: [PATCH 11/18] ARM: mach-footbridge: retire custom LED code
+Date: Tue, 17 Apr 2012 18:53:38 +0800
+Message-Id: <1334660025-20442-12-git-send-email-bryan.wu@canonical.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1334660025-20442-1-git-send-email-bryan.wu@canonical.com>
+References: <1334660025-20442-1-git-send-email-bryan.wu@canonical.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/17/2012 01:51 PM, zhangyanfei wrote:
-> 于 2012年04月17日 15:44, Avi Kivity 写道:
-> > On 04/11/2012 04:39 AM, zhangyanfei wrote:
-> >> This patch set exports offsets of VMCS fields as note information for
-> >> kdump. We call it VMCSINFO. The purpose of VMCSINFO is to retrieve
-> >> runtime state of guest machine image, such as registers, in host
-> >> machine's crash dump as VMCS format. The problem is that VMCS
-> >> internal is hidden by Intel in its specification. So, we reverse
-> >> engineering it in the way implemented in this patch set. Please note
-> >> that this processing never affects any existing kvm logic. The
-> >> VMCSINFO is exported via sysfs to kexec-tools just like VMCOREINFO.
-> >>
-> >> Here is an example:
-> >> Processor: Intel(R) Core(TM)2 Duo CPU     E7500  @ 2.93GHz
-> >>
-> >> $cat /sys/kernel/vmcsinfo
-> >> 1cba8c0 2000
-> >>
-> >> crash> rd -p 1cba8c0 1000
-> >>          1cba8c0:  0000127b00000009 53434d5600000000   ....{.......VMCS
-> >>          1cba8d0:  000000004f464e49 4e4f495349564552   INFO....REVISION
-> >>          1cba8e0:  49460a643d44495f 5f4e495028444c45   _ID=d.FIELD(PIN_
-> >>          1cba8f0:  4d565f4445534142 4f435f434558455f   BASED_VM_EXEC_CO
-> >>          1cba900:  303d294c4f52544e 0a30383130343831   NTROL)=01840180.
-> >>          1cba910:  504328444c454946 5f44455341425f55   FIELD(CPU_BASED_
-> >>          1cba920:  5f434558455f4d56 294c4f52544e4f43   VM_EXEC_CONTROL)
-> >>          1cba930:  393130343931303d 28444c4549460a30   =01940190.FIELD(
-> >>          1cba940:  5241444e4f434553 4558455f4d565f59   SECONDARY_VM_EXE
-> >>          1cba950:  4f52544e4f435f43 30346566303d294c   C_CONTROL)=0fe40
-> >>          1cba960:  4c4549460a306566 4958455f4d562844   fe0.FIELD(VM_EXI
-> >>          1cba970:  4f52544e4f435f54 346531303d29534c   T_CONTROLS)=01e4
-> >>          1cba980:  4549460a30653130 4e455f4d5628444c   01e0.FIELD(VM_EN
-> >>          1cba990:  544e4f435f595254 33303d29534c4f52   TRY_CONTROLS)=03
-> >>          1cba9a0:  460a303133303431 45554728444c4549   140310.FIELD(GUE
-> >>          1cba9b0:  45535f53455f5453 3d29524f5443454c   ST_ES_SELECTOR)=
-> >>          1cba9c0:  4549460a30303530 545345554728444c   0500.FIELD(GUEST
-> >>          1cba9d0:  454c45535f53435f 35303d29524f5443   _CS_SELECTOR)=05
-> >>          ......
-> >>
-> >> TODO:
-> >>   1. In kexec-tools, get VMCSINFO via sysfs and dump it as note information
-> >>      into vmcore.
-> >>   2. Dump VMCS region of each guest vcpu and VMCSINFO into qemu-process
-> >>      core file. To do this, we will modify kernel core dumper, gdb gcore
-> >>      and crash gcore.
-> >>   3. Dump guest image from the qemu-process core file into a vmcore.
-> >>
-> > 
-> > Taking a step back, can you describe the problem scenario you're fixing
-> > here?
-> > 
-> Considering two scenarios below:
-> 1. Host panics, guests running on that host will also be dumped into
->    host's vmcore.
-> 2. Qemu process is core dumped (by gdb gcore or kernel core dumper), and
->    its coresponding guest will be included in the core file.
->
-> We want to create the guest machine's crash dump from host machine's vmcore
-> or qemu process's core file. Unfortunately, we cannot get the guest's registers
-> values in both scenarios.
->
-> For scenario 1, some key registers (CR0, CR3...) of the guest machine are stored
-> in VMCS region. But VMCS internal is hidden by Intel specification. So this
-> patch set aims to get offsets of fields in VMCS region and export it as note
-> information for kdump. 
+Signed-off-by: Bryan Wu <bryan.wu@canonical.com>
+---
+ arch/arm/mach-footbridge/Makefile         |    4 -
+ arch/arm/mach-footbridge/ebsa285-leds.c   |  138 -----------------------------
+ arch/arm/mach-footbridge/ebsa285.c        |   79 +++++++++++++++++
+ arch/arm/mach-footbridge/netwinder-hw.c   |  110 ++++++++++++++++++++---
+ arch/arm/mach-footbridge/netwinder-leds.c |  138 -----------------------------
+ 5 files changed, 175 insertions(+), 294 deletions(-)
+ delete mode 100644 arch/arm/mach-footbridge/ebsa285-leds.c
+ delete mode 100644 arch/arm/mach-footbridge/netwinder-leds.c
 
-Okay.  Do you expect it to help in debugging the crash?  Did you have
-cases where it would help?
-
->
-> For scenario 2, we also want the guest's registers values to be dumped into
-> qemu process's core file when qemu process crashes. This is the task of TODO-list 2.
-
-Why?  If qemu crashed it is because of an internal qemu fault.  If any
-guest registers were involved, they would have been decoded by qemu
-previously and would be present in the stack trace (for example mmio
-address/data).
-
-> Is this what you want?
->
-
-Yes.  I'm trying to understand if the feature would be useful in real life.
-
+diff --git a/arch/arm/mach-footbridge/Makefile b/arch/arm/mach-footbridge/Makefile
+index 3afb1b2..0b64dd4 100644
+--- a/arch/arm/mach-footbridge/Makefile
++++ b/arch/arm/mach-footbridge/Makefile
+@@ -14,15 +14,11 @@ pci-$(CONFIG_ARCH_EBSA285_HOST) += ebsa285-pci.o
+ pci-$(CONFIG_ARCH_NETWINDER) += netwinder-pci.o
+ pci-$(CONFIG_ARCH_PERSONAL_SERVER) += personal-pci.o
+ 
+-leds-$(CONFIG_ARCH_EBSA285) += ebsa285-leds.o
+-leds-$(CONFIG_ARCH_NETWINDER) += netwinder-leds.o
+-
+ obj-$(CONFIG_ARCH_CATS) += cats-hw.o isa-timer.o
+ obj-$(CONFIG_ARCH_EBSA285) += ebsa285.o dc21285-timer.o
+ obj-$(CONFIG_ARCH_NETWINDER) += netwinder-hw.o isa-timer.o
+ obj-$(CONFIG_ARCH_PERSONAL_SERVER) += personal.o dc21285-timer.o
+ 
+ obj-$(CONFIG_PCI)	+=$(pci-y)
+-obj-$(CONFIG_LEDS)	+=$(leds-y)
+ 
+ obj-$(CONFIG_ISA)	+= isa.o isa-rtc.o
+diff --git a/arch/arm/mach-footbridge/ebsa285-leds.c b/arch/arm/mach-footbridge/ebsa285-leds.c
+deleted file mode 100644
+index 5bd2667..0000000
+--- a/arch/arm/mach-footbridge/ebsa285-leds.c
++++ /dev/null
+@@ -1,138 +0,0 @@
+-/*
+- *  linux/arch/arm/mach-footbridge/ebsa285-leds.c
+- *
+- *  Copyright (C) 1998-1999 Russell King
+- *
+- * This program is free software; you can redistribute it and/or modify
+- * it under the terms of the GNU General Public License version 2 as
+- * published by the Free Software Foundation.
+- * EBSA-285 control routines.
+- *
+- * The EBSA-285 uses the leds as follows:
+- *  - Green - toggles state every 50 timer interrupts
+- *  - Amber - On if system is not idle
+- *  - Red   - currently unused
+- *
+- * Changelog:
+- *   02-05-1999	RMK	Various cleanups
+- */
+-#include <linux/module.h>
+-#include <linux/kernel.h>
+-#include <linux/init.h>
+-#include <linux/spinlock.h>
+-
+-#include <mach/hardware.h>
+-#include <asm/leds.h>
+-#include <asm/mach-types.h>
+-
+-#define LED_STATE_ENABLED	1
+-#define LED_STATE_CLAIMED	2
+-static char led_state;
+-static char hw_led_state;
+-
+-static DEFINE_SPINLOCK(leds_lock);
+-
+-static void ebsa285_leds_event(led_event_t evt)
+-{
+-	unsigned long flags;
+-
+-	spin_lock_irqsave(&leds_lock, flags);
+-
+-	switch (evt) {
+-	case led_start:
+-		hw_led_state = XBUS_LED_RED | XBUS_LED_GREEN;
+-#ifndef CONFIG_LEDS_CPU
+-		hw_led_state |= XBUS_LED_AMBER;
+-#endif
+-		led_state |= LED_STATE_ENABLED;
+-		break;
+-
+-	case led_stop:
+-		led_state &= ~LED_STATE_ENABLED;
+-		break;
+-
+-	case led_claim:
+-		led_state |= LED_STATE_CLAIMED;
+-		hw_led_state = XBUS_LED_RED | XBUS_LED_GREEN | XBUS_LED_AMBER;
+-		break;
+-
+-	case led_release:
+-		led_state &= ~LED_STATE_CLAIMED;
+-		hw_led_state = XBUS_LED_RED | XBUS_LED_GREEN | XBUS_LED_AMBER;
+-		break;
+-
+-#ifdef CONFIG_LEDS_TIMER
+-	case led_timer:
+-		if (!(led_state & LED_STATE_CLAIMED))
+-			hw_led_state ^= XBUS_LED_GREEN;
+-		break;
+-#endif
+-
+-#ifdef CONFIG_LEDS_CPU
+-	case led_idle_start:
+-		if (!(led_state & LED_STATE_CLAIMED))
+-			hw_led_state |= XBUS_LED_AMBER;
+-		break;
+-
+-	case led_idle_end:
+-		if (!(led_state & LED_STATE_CLAIMED))
+-			hw_led_state &= ~XBUS_LED_AMBER;
+-		break;
+-#endif
+-
+-	case led_halted:
+-		if (!(led_state & LED_STATE_CLAIMED))
+-			hw_led_state &= ~XBUS_LED_RED;
+-		break;
+-
+-	case led_green_on:
+-		if (led_state & LED_STATE_CLAIMED)
+-			hw_led_state &= ~XBUS_LED_GREEN;
+-		break;
+-
+-	case led_green_off:
+-		if (led_state & LED_STATE_CLAIMED)
+-			hw_led_state |= XBUS_LED_GREEN;
+-		break;
+-
+-	case led_amber_on:
+-		if (led_state & LED_STATE_CLAIMED)
+-			hw_led_state &= ~XBUS_LED_AMBER;
+-		break;
+-
+-	case led_amber_off:
+-		if (led_state & LED_STATE_CLAIMED)
+-			hw_led_state |= XBUS_LED_AMBER;
+-		break;
+-
+-	case led_red_on:
+-		if (led_state & LED_STATE_CLAIMED)
+-			hw_led_state &= ~XBUS_LED_RED;
+-		break;
+-
+-	case led_red_off:
+-		if (led_state & LED_STATE_CLAIMED)
+-			hw_led_state |= XBUS_LED_RED;
+-		break;
+-
+-	default:
+-		break;
+-	}
+-
+-	if  (led_state & LED_STATE_ENABLED)
+-		*XBUS_LEDS = hw_led_state;
+-
+-	spin_unlock_irqrestore(&leds_lock, flags);
+-}
+-
+-static int __init leds_init(void)
+-{
+-	if (machine_is_ebsa285())
+-		leds_event = ebsa285_leds_event;
+-
+-	leds_event(led_start);
+-
+-	return 0;
+-}
+-
+-__initcall(leds_init);
+diff --git a/arch/arm/mach-footbridge/ebsa285.c b/arch/arm/mach-footbridge/ebsa285.c
+index 27716a7..2ab83c3 100644
+--- a/arch/arm/mach-footbridge/ebsa285.c
++++ b/arch/arm/mach-footbridge/ebsa285.c
+@@ -5,6 +5,8 @@
+  */
+ #include <linux/init.h>
+ #include <linux/spinlock.h>
++#include <linux/slab.h>
++#include <linux/leds.h>
+ 
+ #include <asm/hardware/dec21285.h>
+ #include <asm/mach-types.h>
+@@ -13,6 +15,83 @@
+ 
+ #include "common.h"
+ 
++/* LEDs */
++struct ebsa285_led {
++	struct led_classdev     cdev;
++	u8                      mask;
++};
++
++/*
++ * The triggers lines up below will only be used if the
++ * LED triggers are compiled in.
++ */
++static const struct {
++	const char *name;
++	const char *trigger;
++} ebsa285_leds[] = {
++	{ "ebsa285:amber", "heartbeat", },
++	{ "ebsa285:green", "cpu0", },
++	{ "ebsa285:red",},
++};
++
++static void ebsa285_led_set(struct led_classdev *cdev,
++		enum led_brightness b)
++{
++	struct ebsa285_led *led = container_of(cdev,
++			struct ebsa285_led, cdev);
++
++	if (b != LED_OFF)
++		*XBUS_LEDS |= led->mask;
++	else
++		*XBUS_LEDS &= ~led->mask;
++}
++
++static enum led_brightness ebsa285_led_get(struct led_classdev *cdev)
++{
++	struct ebsa285_led *led = container_of(cdev,
++			struct ebsa285_led, cdev);
++
++	return (*XBUS_LEDS & led->mask) ? LED_FULL : LED_OFF;
++}
++
++static int __init ebsa285_leds_init(void)
++{
++	int i;
++
++	if (machine_is_ebsa285())
++		return -ENODEV;
++
++	/* 3 LEDS All ON */
++	*XBUS_LEDS |= XBUS_LED_AMBER | XBUS_LED_GREEN | XBUS_LED_RED;
++
++	for (i = 0; i < ARRAY_SIZE(ebsa285_leds); i++) {
++		struct ebsa285_led *led;
++
++		led = kzalloc(sizeof(*led), GFP_KERNEL);
++		if (!led)
++			break;
++
++		led->cdev.name = ebsa285_leds[i].name;
++		led->cdev.brightness_set = ebsa285_led_set;
++		led->cdev.brightness_get = ebsa285_led_get;
++		led->cdev.default_trigger = ebsa285_leds[i].trigger;
++		led->mask = BIT(i);
++
++		if (led_classdev_register(NULL, &led->cdev) < 0) {
++			kfree(led);
++			break;
++		}
++	}
++
++	return 0;
++}
++
++/*
++ * Since we may have triggers on any subsystem, defer registration
++ * until after subsystem_init.
++ */
++fs_initcall(ebsa285_leds_init);
++
+ MACHINE_START(EBSA285, "EBSA285")
+ 	/* Maintainer: Russell King */
+ 	.atag_offset	= 0x100,
+diff --git a/arch/arm/mach-footbridge/netwinder-hw.c b/arch/arm/mach-footbridge/netwinder-hw.c
+index cac9f67..a0a31bb 100644
+--- a/arch/arm/mach-footbridge/netwinder-hw.c
++++ b/arch/arm/mach-footbridge/netwinder-hw.c
+@@ -12,9 +12,10 @@
+ #include <linux/init.h>
+ #include <linux/io.h>
+ #include <linux/spinlock.h>
++#include <linux/slab.h>
++#include <linux/leds.h>
+ 
+ #include <asm/hardware/dec21285.h>
+-#include <asm/leds.h>
+ #include <asm/mach-types.h>
+ #include <asm/setup.h>
+ #include <asm/system_misc.h>
+@@ -27,13 +28,6 @@
+ #define GP1_IO_BASE		0x338
+ #define GP2_IO_BASE		0x33a
+ 
+-
+-#ifdef CONFIG_LEDS
+-#define DEFAULT_LEDS	0
+-#else
+-#define DEFAULT_LEDS	GPIO_GREEN_LED
+-#endif
+-
+ /*
+  * Winbond WB83977F accessibility stuff
+  */
+@@ -611,15 +605,9 @@ static void __init rwa010_init(void)
+ static int __init nw_hw_init(void)
+ {
+ 	if (machine_is_netwinder()) {
+-		unsigned long flags;
+-
+ 		wb977_init();
+ 		cpld_init();
+ 		rwa010_init();
+-
+-		raw_spin_lock_irqsave(&nw_gpio_lock, flags);
+-		nw_gpio_modify_op(GPIO_RED_LED|GPIO_GREEN_LED, DEFAULT_LEDS);
+-		raw_spin_unlock_irqrestore(&nw_gpio_lock, flags);
+ 	}
+ 	return 0;
+ }
+@@ -672,6 +660,100 @@ static void netwinder_restart(char mode, const char *cmd)
+ 	}
+ }
+ 
++/* LEDs */
++struct netwinder_led {
++	struct led_classdev     cdev;
++	u8                      mask;
++};
++
++/*
++ * The triggers lines up below will only be used if the
++ * LED triggers are compiled in.
++ */
++static const struct {
++	const char *name;
++	const char *trigger;
++} netwinder_leds[] = {
++	{ "netwinder:green", "heartbeat", },
++	{ "netwinder:red", "cpu0", },
++};
++
++/*
++ * The LED control in Netwinder is reversed:
++ *  - setting bit means turn off LED
++ *  - clearing bit means turn on LED
++ */
++static void netwinder_led_set(struct led_classdev *cdev,
++		enum led_brightness b)
++{
++	struct netwinder_led *led = container_of(cdev,
++			struct netwinder_led, cdev);
++	unsigned long flags;
++	u32 reg;
++
++	spin_lock_irqsave(&nw_gpio_lock, flags);
++	reg = nw_gpio_read();
++	if (b != LED_OFF)
++		reg &= ~led->mask;
++	else
++		reg |= led->mask;
++	nw_gpio_modify_op(led->mask, reg);
++	spin_unlock_irqrestore(&nw_gpio_lock, flags);
++}
++
++static enum led_brightness netwinder_led_get(struct led_classdev *cdev)
++{
++	struct netwinder_led *led = container_of(cdev,
++			struct netwinder_led, cdev);
++	unsigned long flags;
++	u32 reg;
++
++	spin_lock_irqsave(&nw_gpio_lock, flags);
++	reg = nw_gpio_read();
++	spin_unlock_irqrestore(&nw_gpio_lock, flags);
++
++	return (reg & led->mask) ? LED_OFF : LED_FULL;
++}
++
++static int __init netwinder_leds_init(void)
++{
++	int i;
++
++	if (!machine_is_netwinder())
++		return -ENODEV;
++
++	for (i = 0; i < ARRAY_SIZE(netwinder_leds); i++) {
++		struct netwinder_led *led;
++
++		led = kzalloc(sizeof(*led), GFP_KERNEL);
++		if (!led)
++			break;
++
++		led->cdev.name = netwinder_leds[i].name;
++		led->cdev.brightness_set = netwinder_led_set;
++		led->cdev.brightness_get = netwinder_led_get;
++		led->cdev.default_trigger = netwinder_leds[i].trigger;
++
++		if (i == 0)
++			led->mask = GPIO_GREEN_LED;
++		else
++			led->mask = GPIO_RED_LED;
++
++		if (led_classdev_register(NULL, &led->cdev) < 0) {
++			kfree(led);
++			break;
++		}
++	}
++
++	return 0;
++}
++
++/*
++ * Since we may have triggers on any subsystem, defer registration
++ * until after subsystem_init.
++ */
++fs_initcall(netwinder_leds_init);
++
+ MACHINE_START(NETWINDER, "Rebel-NetWinder")
+ 	/* Maintainer: Russell King/Rebel.com */
+ 	.atag_offset	= 0x100,
+diff --git a/arch/arm/mach-footbridge/netwinder-leds.c b/arch/arm/mach-footbridge/netwinder-leds.c
+deleted file mode 100644
+index 5a2bd89..0000000
+--- a/arch/arm/mach-footbridge/netwinder-leds.c
++++ /dev/null
+@@ -1,138 +0,0 @@
+-/*
+- *  linux/arch/arm/mach-footbridge/netwinder-leds.c
+- *
+- *  Copyright (C) 1998-1999 Russell King
+- *
+- * This program is free software; you can redistribute it and/or modify
+- * it under the terms of the GNU General Public License version 2 as
+- * published by the Free Software Foundation.
+- *
+- * NetWinder LED control routines.
+- *
+- * The Netwinder uses the leds as follows:
+- *  - Green - toggles state every 50 timer interrupts
+- *  - Red   - On if the system is not idle
+- *
+- * Changelog:
+- *   02-05-1999	RMK	Various cleanups
+- */
+-#include <linux/module.h>
+-#include <linux/kernel.h>
+-#include <linux/init.h>
+-#include <linux/spinlock.h>
+-
+-#include <mach/hardware.h>
+-#include <asm/leds.h>
+-#include <asm/mach-types.h>
+-
+-#define LED_STATE_ENABLED	1
+-#define LED_STATE_CLAIMED	2
+-static char led_state;
+-static char hw_led_state;
+-
+-static DEFINE_RAW_SPINLOCK(leds_lock);
+-
+-static void netwinder_leds_event(led_event_t evt)
+-{
+-	unsigned long flags;
+-
+-	raw_spin_lock_irqsave(&leds_lock, flags);
+-
+-	switch (evt) {
+-	case led_start:
+-		led_state |= LED_STATE_ENABLED;
+-		hw_led_state = GPIO_GREEN_LED;
+-		break;
+-
+-	case led_stop:
+-		led_state &= ~LED_STATE_ENABLED;
+-		break;
+-
+-	case led_claim:
+-		led_state |= LED_STATE_CLAIMED;
+-		hw_led_state = 0;
+-		break;
+-
+-	case led_release:
+-		led_state &= ~LED_STATE_CLAIMED;
+-		hw_led_state = 0;
+-		break;
+-
+-#ifdef CONFIG_LEDS_TIMER
+-	case led_timer:
+-		if (!(led_state & LED_STATE_CLAIMED))
+-			hw_led_state ^= GPIO_GREEN_LED;
+-		break;
+-#endif
+-
+-#ifdef CONFIG_LEDS_CPU
+-	case led_idle_start:
+-		if (!(led_state & LED_STATE_CLAIMED))
+-			hw_led_state &= ~GPIO_RED_LED;
+-		break;
+-
+-	case led_idle_end:
+-		if (!(led_state & LED_STATE_CLAIMED))
+-			hw_led_state |= GPIO_RED_LED;
+-		break;
+-#endif
+-
+-	case led_halted:
+-		if (!(led_state & LED_STATE_CLAIMED))
+-			hw_led_state |= GPIO_RED_LED;
+-		break;
+-
+-	case led_green_on:
+-		if (led_state & LED_STATE_CLAIMED)
+-			hw_led_state |= GPIO_GREEN_LED;
+-		break;
+-
+-	case led_green_off:
+-		if (led_state & LED_STATE_CLAIMED)
+-			hw_led_state &= ~GPIO_GREEN_LED;
+-		break;
+-
+-	case led_amber_on:
+-		if (led_state & LED_STATE_CLAIMED)
+-			hw_led_state |= GPIO_GREEN_LED | GPIO_RED_LED;
+-		break;
+-
+-	case led_amber_off:
+-		if (led_state & LED_STATE_CLAIMED)
+-			hw_led_state &= ~(GPIO_GREEN_LED | GPIO_RED_LED);
+-		break;
+-
+-	case led_red_on:
+-		if (led_state & LED_STATE_CLAIMED)
+-			hw_led_state |= GPIO_RED_LED;
+-		break;
+-
+-	case led_red_off:
+-		if (led_state & LED_STATE_CLAIMED)
+-			hw_led_state &= ~GPIO_RED_LED;
+-		break;
+-
+-	default:
+-		break;
+-	}
+-
+-	raw_spin_unlock_irqrestore(&leds_lock, flags);
+-
+-	if  (led_state & LED_STATE_ENABLED) {
+-		raw_spin_lock_irqsave(&nw_gpio_lock, flags);
+-		nw_gpio_modify_op(GPIO_RED_LED | GPIO_GREEN_LED, hw_led_state);
+-		raw_spin_unlock_irqrestore(&nw_gpio_lock, flags);
+-	}
+-}
+-
+-static int __init leds_init(void)
+-{
+-	if (machine_is_netwinder())
+-		leds_event = netwinder_leds_event;
+-
+-	leds_event(led_start);
+-
+-	return 0;
+-}
+-
+-__initcall(leds_init);
 -- 
-error compiling committee.c: too many arguments to function
+1.7.9.5
 
