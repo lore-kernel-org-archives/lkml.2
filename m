@@ -1,45 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754981Ab2DQDaV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Apr 2012 23:30:21 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:2197 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753945Ab2DQDaU (ORCPT
+	id S1755005Ab2DQDbq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Apr 2012 23:31:46 -0400
+Received: from va3ehsobe001.messaging.microsoft.com ([216.32.180.11]:55855
+	"EHLO va3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753330Ab2DQDbp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Apr 2012 23:30:20 -0400
-X-Authority-Analysis: v=2.0 cv=V/z/IJbi c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=XQbtiDEiEegA:10 a=wom5GMh1gUkA:10 a=RzvPVTyy1GEA:10 a=5SG0PmZfjMsA:10 a=kj9zAlcOel0A:10 a=pERNxqYv0pfWRa5e08wA:9 a=CjuIK1q_8ugA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.80.29
-Date: Mon, 16 Apr 2012 23:30:17 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: David Miller <davem@davemloft.net>
-Cc: mingo@kernel.org, joe@perches.com, linux-kernel@vger.kernel.org,
-        akpm@linux-foundation.org, torvalds@linux-foundation.org,
-        apw@canonical.com
-Subject: Re: Please fix or revert: [PATCH] checkpatch: add --strict tests for
- braces, comments and casts
-Message-ID: <20120417033016.GC11036@home.goodmis.org>
-References: <20120416.142728.864894452301706752.davem@davemloft.net>
- <20120416202654.GA4678@gmail.com>
- <20120416203451.GA4248@gmail.com>
- <20120416.170004.2154403807488537042.davem@davemloft.net>
+	Mon, 16 Apr 2012 23:31:45 -0400
+X-SpamScore: -11
+X-BigFish: VS-11(zzbb2dI9371I1432N98dKzz1202hzz8275dhz2dh2a8h668h839h944hd25h)
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+Date: Tue, 17 Apr 2012 11:42:11 +0800
+From: Dong Aisheng <aisheng.dong@freescale.com>
+To: Stephen Warren <swarren@wwwdotorg.org>
+CC: Dong Aisheng-B29396 <B29396@freescale.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linus.walleij@stericsson.com" <linus.walleij@stericsson.com>
+Subject: Re: [PATCH 1/1] pinctrl: handle dummy state in core
+Message-ID: <20120417034210.GD17173@shlinux2.ap.freescale.net>
+References: <1334586289-13078-1-git-send-email-b29396@freescale.com>
+ <4F8C42D6.2000607@wwwdotorg.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset="us-ascii"
 Content-Disposition: inline
-In-Reply-To: <20120416.170004.2154403807488537042.davem@davemloft.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <4F8C42D6.2000607@wwwdotorg.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 16, 2012 at 05:00:04PM -0400, David Miller wrote:
+On Tue, Apr 17, 2012 at 12:03:34AM +0800, Stephen Warren wrote:
+> On 04/16/2012 08:24 AM, Dong Aisheng wrote:
+> > From: Dong Aisheng <dong.aisheng@linaro.org>
+> > 
+> > Remove dummy state user interface and handle it totally in core.
+> > This can make it more easy to use by platforms which has neither pinctrl
+> > driver support nor dt support.
+> > 
+> > Signed-off-by: Dong Aisheng <dong.aisheng@linaro.org>
 > 
-> I guess us visual retards will have to find a new web site to
-> use then, thanks for the lesson Ingo.
+> I think this is the wrong direction.
+> 
+> I specifically want people to think about which drivers require what
+> pinctrl states to be defined, and what their content should be, and
+> hence explicitly define dummy states when it's appropriate. This patch
+> prevents that.
+> 
+It's correct if all platforms have switched to pinctrl subsystem.
 
-Facebook would love to welcome you back :-)
+I think the main issue is for one platform neither supports dt nor using pinctrl
+subsystem, do you think it still makes too much sense to force that platform
+to define a _PINCTRL_ dummy state in their machine code?
 
-I must be retarded, as I still find facebook better than G+.
+But the driver is commonly shared between these different platforms(using pinctrl
+or not).
 
--- Steve
+That's why i proposed to handle dummy state in core in this patch rather than require
+user to do it.
+
+You must can assume there're so many platforms still have not switched to use pinctrl
+subsystem. If we require user to do it, we need change many code.
+
+Regards
+Dong Aisheng
 
