@@ -1,89 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754868Ab2DQLNu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Apr 2012 07:13:50 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:3157 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752302Ab2DQLNt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Apr 2012 07:13:49 -0400
-Date: Tue, 17 Apr 2012 14:13:45 +0300
-From: Gleb Natapov <gleb@redhat.com>
-To: acme@ghostprotocols.net
-Cc: a.p.zijlstra@chello.nl, mingo@redhat.com, jolsa@redhat.com,
-        linux-kernel@vger.kernel.org, avi@redhat.com
-Subject: [PATCHv2] perf tools: Add 'G' and 'H' modifiers to event parsing
-Message-ID: <20120417111345.GK11918@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+	id S1755240Ab2DQLQM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Apr 2012 07:16:12 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:62105 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752221Ab2DQLQL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Apr 2012 07:16:11 -0400
+From: Valentin Ilie <valentin.ilie@gmail.com>
+To: geoff@infradead.org
+Cc: linuxppc-dev@lists.ozlabs.org, cbe-oss-dev@lists.ozlabs.org,
+        linux-kernel@vger.kernel.org, Valentin Ilie <valentin.ilie@gmail.com>
+Subject: [PATCH] Drivers: ps3: ps3av.c: fixed checkpatch warnings
+Date: Tue, 17 Apr 2012 14:16:01 +0300
+Message-Id: <1334661361-3699-1-git-send-email-valentin.ilie@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-They were dropped during conversion of event parser. Add test case to
-make sure this will not happen again.
+Fixed some indenting problems.
 
-Signed-off-by: Gleb Natapov <gleb@redhat.com>
-diff --git a/tools/perf/builtin-test.c b/tools/perf/builtin-test.c
-index 1c5b980..223ffdc 100644
---- a/tools/perf/builtin-test.c
-+++ b/tools/perf/builtin-test.c
-@@ -851,6 +851,28 @@ static int test__checkevent_symbolic_name_modifier(struct perf_evlist *evlist)
- 	return test__checkevent_symbolic_name(evlist);
+Signed-off-by: Valentin Ilie <valentin.ilie@gmail.com>
+---
+ drivers/ps3/ps3av.c |   11 ++---------
+ 1 file changed, 2 insertions(+), 9 deletions(-)
+
+diff --git a/drivers/ps3/ps3av.c b/drivers/ps3/ps3av.c
+index a409fa0..46136b0 100644
+--- a/drivers/ps3/ps3av.c
++++ b/drivers/ps3/ps3av.c
+@@ -25,8 +25,8 @@
+ #include <linux/ioctl.h>
+ #include <linux/fb.h>
+ #include <linux/slab.h>
++#include <linux/firmware.h>
+ 
+-#include <asm/firmware.h>
+ #include <asm/ps3av.h>
+ #include <asm/ps3.h>
+ 
+@@ -338,7 +338,7 @@ int ps3av_do_pkt(u32 cid, u16 send_len, size_t usr_buf_size,
+ 	mutex_unlock(&ps3av->mutex);
+ 	return 0;
+ 
+-      err:
++err:
+ 	mutex_unlock(&ps3av->mutex);
+ 	printk(KERN_ERR "%s: failed cid:%x res:%d\n", __func__, cid, res);
+ 	return res;
+@@ -477,7 +477,6 @@ int ps3av_set_audio_mode(u32 ch, u32 fs, u32 word_bits, u32 format, u32 source)
+ 
+ 	return 0;
  }
+-
+ EXPORT_SYMBOL_GPL(ps3av_set_audio_mode);
  
-+static int test__checkevent_exclude_host_modifier(struct perf_evlist *evlist)
-+{
-+	struct perf_evsel *evsel = list_entry(evlist->entries.next,
-+					      struct perf_evsel, node);
-+
-+	TEST_ASSERT_VAL("wrong exclude guest", !evsel->attr.exclude_guest);
-+	TEST_ASSERT_VAL("wrong exclude host", evsel->attr.exclude_host);
-+
-+	return test__checkevent_symbolic_name(evlist);
-+}
-+
-+static int test__checkevent_exclude_guest_modifier(struct perf_evlist *evlist)
-+{
-+	struct perf_evsel *evsel = list_entry(evlist->entries.next,
-+					      struct perf_evsel, node);
-+
-+	TEST_ASSERT_VAL("wrong exclude guest", evsel->attr.exclude_guest);
-+	TEST_ASSERT_VAL("wrong exclude host", !evsel->attr.exclude_host);
-+
-+	return test__checkevent_symbolic_name(evlist);
-+}
-+
- static int test__checkevent_symbolic_alias_modifier(struct perf_evlist *evlist)
+ static int ps3av_set_videomode(void)
+@@ -870,21 +869,18 @@ int ps3av_set_video_mode(int id)
+ 
+ 	return 0;
+ }
+-
+ EXPORT_SYMBOL_GPL(ps3av_set_video_mode);
+ 
+ int ps3av_get_auto_mode(void)
  {
- 	struct perf_evsel *evsel = list_entry(evlist->entries.next,
-@@ -1091,6 +1113,14 @@ static struct test__event_st {
- 		.name  = "r1,syscalls:sys_enter_open:k,1:1:hp",
- 		.check = test__checkevent_list,
- 	},
-+	{
-+		.name  = "instructions:G",
-+		.check = test__checkevent_exclude_host_modifier,
-+	},
-+	{
-+		.name  = "instructions:H",
-+		.check = test__checkevent_exclude_guest_modifier,
-+	},
- };
+ 	return ps3av_auto_videomode(&ps3av->av_hw_conf);
+ }
+-
+ EXPORT_SYMBOL_GPL(ps3av_get_auto_mode);
  
- #define TEST__EVENTS_CNT (sizeof(test__events) / sizeof(struct test__event_st))
-diff --git a/tools/perf/util/parse-events.l b/tools/perf/util/parse-events.l
-index 05d766e..1fcf1bb 100644
---- a/tools/perf/util/parse-events.l
-+++ b/tools/perf/util/parse-events.l
-@@ -54,7 +54,7 @@ num_dec		[0-9]+
- num_hex		0x[a-fA-F0-9]+
- num_raw_hex	[a-fA-F0-9]+
- name		[a-zA-Z_*?][a-zA-Z0-9_*?]*
--modifier_event	[ukhp]{1,5}
-+modifier_event	[ukhpGH]{1,8}
- modifier_bp	[rwx]
+ int ps3av_get_mode(void)
+ {
+ 	return ps3av ? ps3av->ps3av_mode : 0;
+ }
+-
+ EXPORT_SYMBOL_GPL(ps3av_get_mode);
  
- %%
---
-			Gleb.
+ /* get resolution by video_mode */
+@@ -902,7 +898,6 @@ int ps3av_video_mode2res(u32 id, u32 *xres, u32 *yres)
+ 	*yres = video_mode_table[id].y;
+ 	return 0;
+ }
+-
+ EXPORT_SYMBOL_GPL(ps3av_video_mode2res);
+ 
+ /* mute */
+@@ -911,7 +906,6 @@ int ps3av_video_mute(int mute)
+ 	return ps3av_set_av_video_mute(mute ? PS3AV_CMD_MUTE_ON
+ 					    : PS3AV_CMD_MUTE_OFF);
+ }
+-
+ EXPORT_SYMBOL_GPL(ps3av_video_mute);
+ 
+ /* mute analog output only */
+@@ -935,7 +929,6 @@ int ps3av_audio_mute(int mute)
+ 	return ps3av_set_audio_mute(mute ? PS3AV_CMD_MUTE_ON
+ 					 : PS3AV_CMD_MUTE_OFF);
+ }
+-
+ EXPORT_SYMBOL_GPL(ps3av_audio_mute);
+ 
+ static int __devinit ps3av_probe(struct ps3_system_bus_device *dev)
+-- 
+1.7.9.5
+
