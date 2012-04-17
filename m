@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752874Ab2DQGq2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Apr 2012 02:46:28 -0400
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:4768 "EHLO
+	id S1753740Ab2DQGq6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Apr 2012 02:46:58 -0400
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:4870 "EHLO
 	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752302Ab2DQGq0 (ORCPT
+	with ESMTP id S1752064Ab2DQGq4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Apr 2012 02:46:26 -0400
+	Tue, 17 Apr 2012 02:46:56 -0400
 X-PGP-Universal: processed;
-	by hqnvupgp05.nvidia.com on Mon, 16 Apr 2012 23:46:25 -0700
+	by hqnvupgp07.nvidia.com on Mon, 16 Apr 2012 23:46:30 -0700
 From: Laxman Dewangan <ldewangan@nvidia.com>
 To: grant.likely@secretlab.ca, rob.herring@calxeda.com, rdunlap@xenotime.net,
         linux@arm.linux.org.uk, jic23@cam.ac.uk, gregkh@linuxfoundation.org,
@@ -19,9 +19,9 @@ To: grant.likely@secretlab.ca, rob.herring@calxeda.com, rdunlap@xenotime.net,
         linux-arm-kernel@lists.infradead.org, linux-iio@vger.kernel.org,
         devel@driverdev.osuosl.org
 Cc: Laxman Dewangan <ldewangan@nvidia.com>
-Subject: [PATCH 1/3] devicetree: Document Intersil Corporation vendor prefix
-Date: Tue, 17 Apr 2012 12:15:53 +0530
-Message-Id: <1334645155-13799-2-git-send-email-ldewangan@nvidia.com>
+Subject: [PATCH 2/3] staging: iio: light: of: Fix vendor prefix of isl29018
+Date: Tue, 17 Apr 2012 12:15:54 +0530
+Message-Id: <1334645155-13799-3-git-send-email-ldewangan@nvidia.com>
 X-Mailer: git-send-email 1.7.1.1
 In-Reply-To: <1334645155-13799-1-git-send-email-ldewangan@nvidia.com>
 References: <1334645155-13799-1-git-send-email-ldewangan@nvidia.com>
@@ -29,23 +29,28 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+ISL29018 is from Intersil Corporation and the vendor prefix
+for this part should be "isl", at least not "invn" for OF
+compatibility.
+
 Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
 ---
- .../devicetree/bindings/vendor-prefixes.txt        |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
+ drivers/staging/iio/light/isl29018.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/Documentation/devicetree/bindings/vendor-prefixes.txt b/Documentation/devicetree/bindings/vendor-prefixes.txt
-index 82ac057..89650da 100644
---- a/Documentation/devicetree/bindings/vendor-prefixes.txt
-+++ b/Documentation/devicetree/bindings/vendor-prefixes.txt
-@@ -22,6 +22,7 @@ hp	Hewlett Packard
- ibm	International Business Machines (IBM)
- idt	Integrated Device Technologies, Inc.
- intercontrol	Inter Control Group
-+isl	Intersil Corporation
- linux	Linux-specific binding
- marvell	Marvell Technology Group Ltd.
- maxim	Maxim Integrated Products
+diff --git a/drivers/staging/iio/light/isl29018.c b/drivers/staging/iio/light/isl29018.c
+index 38ec52b..ee220ae 100644
+--- a/drivers/staging/iio/light/isl29018.c
++++ b/drivers/staging/iio/light/isl29018.c
+@@ -593,7 +593,7 @@ static const struct i2c_device_id isl29018_id[] = {
+ MODULE_DEVICE_TABLE(i2c, isl29018_id);
+ 
+ static const struct of_device_id isl29018_of_match[] = {
+-	{ .compatible = "invn,isl29018", },
++	{ .compatible = "isl,isl29018", },
+ 	{ },
+ };
+ MODULE_DEVICE_TABLE(of, isl29018_of_match);
 -- 
 1.7.1.1
 
