@@ -1,47 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754675Ab2DQOYP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Apr 2012 10:24:15 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:52954 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751052Ab2DQOYN (ORCPT
+	id S1753949Ab2DQO0R (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Apr 2012 10:26:17 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:36088 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751811Ab2DQO0Q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Apr 2012 10:24:13 -0400
-Date: Tue, 17 Apr 2012 10:24:12 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Nicolas Ferre <nicolas.ferre@atmel.com>
-cc: linux-arm-kernel@lists.infradead.org, <arnd@arndb.de>, <olof@lixom.net>,
-        <plagnioj@jcrosoft.com>, <ludovic.desroches@atmel.com>,
-        <linux-kernel@vger.kernel.org>, <linux-usb@vger.kernel.org>
-Subject: Re: [PATCH 11/12] USB: ohci-at91: change annotations for probe/remove
- functions
-In-Reply-To: <4F8D64F5.5060300@atmel.com>
-Message-ID: <Pine.LNX.4.44L0.1204171022550.1364-100000@iolanthe.rowland.org>
+	Tue, 17 Apr 2012 10:26:16 -0400
+Date: Tue, 17 Apr 2012 15:26:12 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Axel Lin <axel.lin@gmail.com>
+Cc: linux-kernel@vger.kernel.org, Kyungmin Park <kyungmin.park@samsung.com>,
+        MyungJoo Ham <myungjoo.ham@smasung.com>, Liam Girdwood <lrg@ti.com>
+Subject: Re: [PATCH RFT 1/2] regulator: Convert max8997 to get_voltage_sel
+Message-ID: <20120417142612.GI6652@opensource.wolfsonmicro.com>
+References: <1334156171.2469.1.camel@phoenix>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="zqjkMoGlbUJ91oFe"
+Content-Disposition: inline
+In-Reply-To: <1334156171.2469.1.camel@phoenix>
+X-Cookie: Long life is in store for you.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 17 Apr 2012, Nicolas Ferre wrote:
 
-> On 04/16/2012 11:20 AM, Nicolas Ferre :
-> > Add __devinit and __devexit on *_probe() and *_remove() functions
-> > with proper modification of struct platform_driver.
-> > 
-> > Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
-> > Cc: Alan Stern <stern@rowland.harvard.edu>
-> 
-> Alan,
-> 
-> Can I have your "Acked-by" for this modification? I plan to push a
-> "fixes" series though arm-soc git tree.
+--zqjkMoGlbUJ91oFe
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-Yes, you can add it.
+On Wed, Apr 11, 2012 at 10:56:11PM +0800, Axel Lin wrote:
+> Also rename get_current_limit and set_current_limit callbacks
+> to max8997_get_current_limit and max8997_set_current_limit for
+> better readability.
 
-I tend not to respond to simple changes that are independent of the USB 
-functionality, like this one.
+Applied both, thanks.
 
-Alan Stern
+--zqjkMoGlbUJ91oFe
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJPjX19AAoJEBus8iNuMP3dvVwP+wZ7Rk21uJykApMMGYzOxDzF
+hXMDiXaoZ769MCQNTO6vlvESyFYGPC9n9M9ls1hsJpFDJL0xUDOP6hsO70zjV/fp
+vP5iLOSmh5MkjdbwdceoC8LSHAWpJ6KdtcTPGZ+WCJEaEzRJn5bqlRErGHroZt6A
+Y9dLomfRO1Z6KynJgOTeFOwua0yee96m6DWOvT1rcnSP1BMn8zkPwMgk4B1gER3Q
++on0j7MwZnIziMJ/YieGvViOQ8ASTFxVlXmYAZROsK/nArz84N3gvbQDpaPd8Qq/
+GgpTM8y4UJWwE/A4YjUd01x6vjCOg/BkXoG+ecuMq7PWPvuDZSzFKP43XeEZdT7K
+TVwhd7ZfShv3fp+nHAOwgMJCdIK79JWGJFQJ25aZW1xK38wYwgrMrgJU5EFg7fAQ
+D5AaB6YbQdF//aLA7gsxuC5HlF9gQq+R37AxGxTxbbmBgqimJiR5gMHUz4wmPuuk
+KCsdDJ/Z+JhGregTNcBrGrgVUMJ4QazU5W7u724ElNjQqMgPWVmpMC3GtXWCOErS
+CJ39U/c/KOv6TF1nEX1pv+zCdaOnRaykz1V6XXTigJJ5ANI64HYY5HNRA4G+HM2r
+21clTNbjo5BTqC0QWw0gVkCYzqe9ky2JidkZxq9Z295T6eCwpB8k+t1V578e//5V
+J4JrUicayeRzeKLzpqLd
+=m/Hr
+-----END PGP SIGNATURE-----
+
+--zqjkMoGlbUJ91oFe--
