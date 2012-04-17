@@ -1,64 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752101Ab2DQOR4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Apr 2012 10:17:56 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:33508 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751052Ab2DQORz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Apr 2012 10:17:55 -0400
-Date: Tue, 17 Apr 2012 15:17:51 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Axel Lin <axel.lin@gmail.com>
-Cc: linux-kernel@vger.kernel.org, Kyungmin Park <kyungmin.park@samsung.com>,
-        MyungJoo Ham <myungjoo.ham@smasung.com>, Liam Girdwood <lrg@ti.com>
-Subject: Re: [PATCH] regulator: Fix the logic to ensure new voltage setting
- in valid range
-Message-ID: <20120417141750.GH6652@opensource.wolfsonmicro.com>
-References: <1334148838.8687.1.camel@phoenix>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="ISKrrfpKsPiF35CV"
-Content-Disposition: inline
-In-Reply-To: <1334148838.8687.1.camel@phoenix>
-X-Cookie: Long life is in store for you.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1753060Ab2DQOUL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Apr 2012 10:20:11 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:42611 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751221Ab2DQOUJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Apr 2012 10:20:09 -0400
+Date: Tue, 17 Apr 2012 10:20:35 -0400
+From: Jeff Layton <jlayton@redhat.com>
+To: "Myklebust, Trond" <Trond.Myklebust@netapp.com>
+Cc: Miklos Szeredi <miklos@szeredi.hu>,
+        Bernd Schubert <bernd.schubert@itwm.fraunhofer.de>,
+        Malahal Naineni <malahal@us.ibm.com>,
+        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "pstaubach@exagrid.com" <pstaubach@exagrid.com>,
+        "viro@ZenIV.linux.org.uk" <viro@ZenIV.linux.org.uk>,
+        "hch@infradead.org" <hch@infradead.org>,
+        "michael.brantley@deshaw.com" <michael.brantley@deshaw.com>,
+        "sven.breuner@itwm.fraunhofer.de" <sven.breuner@itwm.fraunhofer.de>
+Subject: Re: [PATCH RFC] vfs: make fstatat retry on ESTALE errors from
+ getattr call
+Message-ID: <20120417102035.2236e553@corrin.poochiereds.net>
+In-Reply-To: <1334671473.2963.27.camel@lade.trondhjem.org.localdomain>
+References: <1334316311-22331-1-git-send-email-jlayton@redhat.com>
+	<20120413150518.GA1987@us.ibm.com>
+	<20120413114236.0e557e01@tlielax.poochiereds.net>
+	<4F8B1B7B.3040304@itwm.fraunhofer.de>
+	<20120416073655.7cdb90cf@corrin.poochiereds.net>
+	<4F8C3036.2030702@itwm.fraunhofer.de>
+	<20120416134642.1754cd3e@corrin.poochiereds.net>
+	<1334604785.2879.23.camel@lade.trondhjem.org>
+	<20120416154322.0d95e435@corrin.poochiereds.net>
+	<1334607906.2879.36.camel@lade.trondhjem.org>
+	<20120416190548.2463d1d0@corrin.poochiereds.net>
+	<87sjg2o62z.fsf@tucsk.pomaz.szeredi.hu>
+	<20120417093222.2ff5e1bd@corrin.poochiereds.net>
+	<1334671473.2963.27.camel@lade.trondhjem.org.localdomain>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, 17 Apr 2012 14:04:34 +0000
+"Myklebust, Trond" <Trond.Myklebust@netapp.com> wrote:
 
---ISKrrfpKsPiF35CV
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+> On Tue, 2012-04-17 at 09:32 -0400, Jeff Layton wrote:
+> > On Tue, 17 Apr 2012 15:12:20 +0200
+> > Miklos Szeredi <miklos@szeredi.hu> wrote:
+> 
+> > To do that would require protocol support that we simply don't have. We
+> > don't have a way to (for instance) say via NFS "give me the attributes
+> > for this filename". Well, at least not for NFSv3...
+> 
+> What's wrong with LOOKUP?
+> 
 
-On Wed, Apr 11, 2012 at 08:53:58PM +0800, Axel Lin wrote:
-> I think this is a typo.
-> To ensure new voltage setting won't greater than desc->max,
-> the equation should be desc->min + desc->step * new_val <= desc->max.
+Some of this is due to my decision to use fstatat as an example, but we
+should bear in mind that I've just been using that as an example. We'll
+eventually have to do something similar for all path based syscalls in
+order to fix tihs comprehensively.
 
-Applied, thanks.
+While it may be possible to handle stat type calls atomically with a
+simple LOOKUP call, other operations may require more than one round
+trip. Consider chmod(), for instance...
 
---ISKrrfpKsPiF35CV
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+> > With v4 you could theoretically construct a compound that does that,
+> > but you'd have to assume that the server won't release the reference to
+> > the inode midway through the compound. That's a reasonably safe
+> > assumption.
+> 
+> Actually, NFSv4 is the one that has the problem: there are no atomicity
+> guarantees within compounds, so you could theoretically get an ESTALE in
+> the GETATTR part of our lookup compound.
+> 
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+Well, it's possible, but it seems pathological to me for a server to do
+that...
 
-iQIcBAEBAgAGBQJPjXuGAAoJEBus8iNuMP3dk0sQAJcLU+B9GTtGpoQDkMhAF5bG
-OZsn42ban82oSVoUdtbUtk4MLvA7Hj8qCCWieqzvM5OHmuelhJ5KpAqXSw6pxHJ6
-cqik+3t/um0RK+b776eFt2/x8iHN0xQeXcIrt00KYtWe4ZYH5Q+92K8z+IpHiWjO
-cKTW/IjJ9J1/1O0srCVN12UMD05Y77CHZr9Gu8ifudcm6b7CinC7qDULYDe8pg7N
-5KBz4/9OU2YpDm8+tCROhieD8FMGLM8qZLrZqzX72T9yvD06ULbcDo4av1SM6pNu
-mYY342WIY3S3x+30bDZI6AawYu95TWUqJSJdPM6kbrM330mpsVqzQtwpYle9ADez
-xhrHEj+ooGDHpmKUwLIKWwrU+RMN2TcnejSVJgg14nr5A8RhiXFo11bP5OeyuS9Q
-E13449T2comoK8cfI1M9H1zla8Yb7qdsuIR0RlqLiG+75elHg9ZUjgsHTgAHc3fw
-NtSOTyQSJHVVkIH0DdFONyDVJKuhjULB/KEUovyqTrZajdW4q/aMtrnwy1IwMqKA
-3BJnEtGd4n0AVjR8mVG6S54Svm4Rd6ZR+SgZ1naC/zzHDS09crZ1VBD+PzwgBZHS
-nhP3zehT00TbckueQAWTeY8WOnsEn/ispNwJBYb/ZJHg6TF8BdmQfEnrwNZvPpO9
-IfvyeqE175zP9lOQ2IKr
-=szfo
------END PGP SIGNATURE-----
+Bruce and I were discussing this the other day. It would be good to add
+something like this to the RFCs:
 
---ISKrrfpKsPiF35CV--
+"On a PUTFH, a server SHOULD hold a reference to the filehandle such
+that it does not go stale over the life of the compound."
+
+...or something along those lines. That's a different matter though and
+not directly related to this. :)
+
+-- 
+Jeff Layton <jlayton@redhat.com>
