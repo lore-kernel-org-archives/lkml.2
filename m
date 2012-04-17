@@ -1,91 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754116Ab2DQQuD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Apr 2012 12:50:03 -0400
-Received: from plane.gmane.org ([80.91.229.3]:58257 "EHLO plane.gmane.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750888Ab2DQQuA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Apr 2012 12:50:00 -0400
-X-Injected-Via-Gmane: http://gmane.org/
-To: linux-kernel@vger.kernel.org
-From: Anthony Liguori <anthony@codemonkey.ws>
-Subject: Re: [PATCH 0/4] Export offsets of VMCS fields as note information
- for kdump
-Date: Tue, 17 Apr 2012 11:49:36 -0500
-Message-ID: <4F8D9F20.9050507@codemonkey.ws>
-References: <4F84E0DF.8040206@cn.fujitsu.com> <4F8D1F46.3090901@redhat.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Complaints-To: usenet@dough.gmane.org
-Cc: kexec@lists.infradead.org, kvm@vger.kernel.org
-X-Gmane-NNTP-Posting-Host: 32.97.110.59
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120329 Thunderbird/11.0.1
-In-Reply-To: <4F8D1F46.3090901@redhat.com>
-Cc: kvm@vger.kernel.org, linux-kernel@vger.kernel.org
+	id S1754611Ab2DQQuM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Apr 2012 12:50:12 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:53986 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754173Ab2DQQuJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Apr 2012 12:50:09 -0400
+Date: Tue, 17 Apr 2012 17:50:06 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Takashi Iwai <tiwai@suse.de>
+Cc: Ondrej Zary <linux@rainbow-software.org>, alsa-devel@alsa-project.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [alsa-devel] [PATCH 3/4] Add Wolfson Microelectronics WM8776
+ codec ALSA driver
+Message-ID: <20120417165005.GR6652@opensource.wolfsonmicro.com>
+References: <1334611118-10301-1-git-send-email-linux@rainbow-software.org>
+ <1334611118-10301-4-git-send-email-linux@rainbow-software.org>
+ <20120417150234.GB22575@sirena.org.uk>
+ <201204171813.44044.linux@rainbow-software.org>
+ <20120417161820.GP6652@opensource.wolfsonmicro.com>
+ <s5hlilupbe5.wl%tiwai@suse.de>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="Q8a9NmTVi5AMeZ2v"
+Content-Disposition: inline
+In-Reply-To: <s5hlilupbe5.wl%tiwai@suse.de>
+X-Cookie: Long life is in store for you.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/17/2012 02:44 AM, Avi Kivity wrote:
-> On 04/11/2012 04:39 AM, zhangyanfei wrote:
->> This patch set exports offsets of VMCS fields as note information for
->> kdump. We call it VMCSINFO. The purpose of VMCSINFO is to retrieve
->> runtime state of guest machine image, such as registers, in host
->> machine's crash dump as VMCS format. The problem is that VMCS
->> internal is hidden by Intel in its specification. So, we reverse
->> engineering it in the way implemented in this patch set. Please note
->> that this processing never affects any existing kvm logic. The
->> VMCSINFO is exported via sysfs to kexec-tools just like VMCOREINFO.
->>
->> Here is an example:
->> Processor: Intel(R) Core(TM)2 Duo CPU     E7500  @ 2.93GHz
->>
->> $cat /sys/kernel/vmcsinfo
->> 1cba8c0 2000
->>
->> crash>  rd -p 1cba8c0 1000
->>           1cba8c0:  0000127b00000009 53434d5600000000   ....{.......VMCS
->>           1cba8d0:  000000004f464e49 4e4f495349564552   INFO....REVISION
->>           1cba8e0:  49460a643d44495f 5f4e495028444c45   _ID=d.FIELD(PIN_
->>           1cba8f0:  4d565f4445534142 4f435f434558455f   BASED_VM_EXEC_CO
->>           1cba900:  303d294c4f52544e 0a30383130343831   NTROL)=01840180.
->>           1cba910:  504328444c454946 5f44455341425f55   FIELD(CPU_BASED_
->>           1cba920:  5f434558455f4d56 294c4f52544e4f43   VM_EXEC_CONTROL)
->>           1cba930:  393130343931303d 28444c4549460a30   =01940190.FIELD(
->>           1cba940:  5241444e4f434553 4558455f4d565f59   SECONDARY_VM_EXE
->>           1cba950:  4f52544e4f435f43 30346566303d294c   C_CONTROL)=0fe40
->>           1cba960:  4c4549460a306566 4958455f4d562844   fe0.FIELD(VM_EXI
->>           1cba970:  4f52544e4f435f54 346531303d29534c   T_CONTROLS)=01e4
->>           1cba980:  4549460a30653130 4e455f4d5628444c   01e0.FIELD(VM_EN
->>           1cba990:  544e4f435f595254 33303d29534c4f52   TRY_CONTROLS)=03
->>           1cba9a0:  460a303133303431 45554728444c4549   140310.FIELD(GUE
->>           1cba9b0:  45535f53455f5453 3d29524f5443454c   ST_ES_SELECTOR)=
->>           1cba9c0:  4549460a30303530 545345554728444c   0500.FIELD(GUEST
->>           1cba9d0:  454c45535f53435f 35303d29524f5443   _CS_SELECTOR)=05
->>           ......
->>
->> TODO:
->>    1. In kexec-tools, get VMCSINFO via sysfs and dump it as note information
->>       into vmcore.
->>    2. Dump VMCS region of each guest vcpu and VMCSINFO into qemu-process
->>       core file. To do this, we will modify kernel core dumper, gdb gcore
->>       and crash gcore.
->>    3. Dump guest image from the qemu-process core file into a vmcore.
->>
->
-> Taking a step back, can you describe the problem scenario you're fixing
-> here?
 
-Note that assuming that VMCS fields map to offsets within memory is not 
-guaranteed to work for future processors.
+--Q8a9NmTVi5AMeZ2v
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-There is no guarantee that fields won't be compressed or stored with inverted 
-bit ordering.
+On Tue, Apr 17, 2012 at 06:32:18PM +0200, Takashi Iwai wrote:
+> Mark Brown wrote:
 
-Regards,
+> > What makes you cleaim that "ASoC was not designed to be used with sound
+> > cards"?  Implementing sound cards is the sole purpose of ASoC...
 
-Anthony Liguori
->
+> You don't need to overreact, he surely means only about the existing
+> ice1724 sound driver for his device :)
 
+Possibly...  it's really not clear.
 
+> Restructuring ice1712 and ice1724 drivers to use ASoC would require
+> quite a lot of works, and no one really wants it, I guess.  Many
+> boards are old and can't be tested easily.  And, we still need to
+> match the ASoC components with the controls of the current driver.
+
+> This was already discussed a bit, and Clemens suggested like this
+> way.
+
+This isn't just adding something into a specific driver which fails at
+abstraction, it's adding generic code.  If it were adding something to
+the ice17xx driver then that'd be one thing but look at the subject line
+and location of the file...  this stuff should be buried inside the
+driver if it's too painful to make the driver sane.
+
+--Q8a9NmTVi5AMeZ2v
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJPjZ80AAoJEBus8iNuMP3djzwQAIrloKi77nhuyOOVB/CQ+rLx
+urDiVVePbP5Je3YEmE74wtHRhLINwd4x7MsJOdr4kNmMWtw6P0kw7a2tqDP11iyo
+PttMS2zCO0FSKOeQa2pNNfdfKWiY6h9Pa0UdJ6/pcCEzcRHZZdTLhY7iv0K1NA4p
+bFxTnhEsQDojAkEmfrZ3I6fuNRKg550VZ2+GKwSI/+EdPEfsJi9s6lDyYbcIwEwq
+5PDowOV1k+HmHTb8QykXR5y2O0F6/kXd9fbXbWcxUSit2dcM1q3p3nRZMmHDuvev
+NurMzgvpOtcSTiXtGGnFDqVAB91CM5pY1I4VZyzHuL2E0wRgo5q+j6XDr7BSbTFC
+VWFWX15IghlCTv/y0zljipbYsdoNEub7gKzgdh02hJzNkuccruhlBOxwkE1OWAKI
+rmAEQJCsI/ny61PPs8Etvy7gffieEVbnETSzhV2lUHO0jvt997NSlVNqLNBmaqOX
+7JFVXCy492VMHAErhsghybjPN8CwYC3YB6QkZyla8gcBpKgYdec/Wc67JuR5vTRV
+Kpyli9uRX0XD3EN5FtoCxuZiHyoQeiCk/Tg+MKq4ZKgijsrBPTjww1SQYjqXexOy
+E+ZaH3r6bxxyMWy9cghme5r9DBMtEucX4KZsunIjvAtMUgMBLVI6gVuQjV9n7Vn/
+3S/jls1nMkbQkiZdLMjI
+=DWAl
+-----END PGP SIGNATURE-----
+
+--Q8a9NmTVi5AMeZ2v--
