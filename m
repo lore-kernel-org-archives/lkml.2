@@ -1,61 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751657Ab2DQTTX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Apr 2012 15:19:23 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:43074 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750715Ab2DQTTV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Apr 2012 15:19:21 -0400
-Date: Tue, 17 Apr 2012 23:19:16 +0400
-From: Cyrill Gorcunov <gorcunov@openvz.org>
-To: Kees Cook <keescook@chromium.org>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Tejun Heo <tj@kernel.org>,
-        Serge Hallyn <serge.hallyn@canonical.com>,
-        Pavel Emelyanov <xemul@parallels.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Subject: Re: [PATCH c/r -mm] c/r: prctl: Simplify PR_SET_MM on mm::code/data
- assignment
-Message-ID: <20120417191916.GQ1906@moon>
-References: <20120416225520.GD9756@moon>
- <CAGXu5jKnfOsXGTx8QbKCCH9C9c+szFwi5oA1R99pjCue9kfpWg@mail.gmail.com>
+	id S1751837Ab2DQT02 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Apr 2012 15:26:28 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:12360 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750937Ab2DQT01 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Apr 2012 15:26:27 -0400
+Message-ID: <4F8DC3DC.7040408@redhat.com>
+Date: Tue, 17 Apr 2012 15:26:20 -0400
+From: Rik van Riel <riel@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120329 Thunderbird/11.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAGXu5jKnfOsXGTx8QbKCCH9C9c+szFwi5oA1R99pjCue9kfpWg@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Dan Magenheimer <dan.magenheimer@oracle.com>
+CC: linux-kernel@vger.kernel.org, linux-mm <linux-mm@kvack.org>
+Subject: Re: Followup: [PATCH -mm] make swapin readahead skip over holes
+References: <7297ae3b-f3e1-480b-838f-69b0e09a733d@default> <4F8C7D59.1000402@redhat.com> <f81dcf86-fb34-4e39-923b-3fd1862e60c6@default>
+In-Reply-To: <f81dcf86-fb34-4e39-923b-3fd1862e60c6@default>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 17, 2012 at 11:22:06AM -0700, Kees Cook wrote:
-> On Mon, Apr 16, 2012 at 3:55 PM, Cyrill Gorcunov <gorcunov@openvz.org> wrote:
-> > The mm::start_code, end_code, start_data, end_data members
-> > are set during startup of executable file and are not changed
-> > after.
-> >
-> > But the program itself might map new executable or/and data areas in
-> > time so the original values written into mm fields mentioned above
-> > might not have correspond VMA area at all, thus if one try to
-> > use this prctl codes without underlied VMA, the error will be
-> > returned.
-> >
-> > Drop this requirement. This shrinks the code and eliminates
-> > redundant calls to vma_flags_mismatch. The worst thing one can
-> > do (if say to write some bad values here) -- the weird results
-> > will be shown in /proc/$pid/statm or in /proc/pid/stat.
-> >
-> > Still, assignement of data on stack (such as command line and
-> > environment variables) requires the underlied VMA to exist.
-> >
-> > Signed-off-by: Cyrill Gorcunov <gorcunov@openvz.org>
-> 
-> Since this is CAP_SYS_RESOURCE, and mmap_min_addr is CAP_SYS_RAWIO,
-> how about a lower-bounds check against mmap_min_addr? (We're already
-> doing the TASK_SIZE upper check, so this additional sanity checking
-> seems reasonable to me.)
+On 04/17/2012 11:20 AM, Dan Magenheimer wrote:
 
-I think this is good idea, thanks Kees. I'll check it out.
+> In other words, you are both presuming a "swap workload"
+> that is more sequential than random for which this patch
+> improves performance, and assuming a "swap device"
+> for which the cost of a seek is high enough to overcome
+> the costs of filling the swap cache with pages that won't
+> be used.
 
-	Cyrill
+Indeed, on spinning media the cost of seeking to
+a cluster and reading one page is essentially the
+same as the cost of seeking to a cluster and
+reading the whole thing.
+
+
+> While it is easy to write a simple test/benchmark that
+> swaps a lot (and we probably all have similar test code
+> that writes data into a huge bigger-than-RAM array and then
+> reads it back), such a test/benchmark is usually sequential,
+> so one would assume most swap testing is done with a
+> sequential-favoring workload.
+
+Lots of programs allocate fairly large memory
+objects, and access them again in the same
+large chunks.
+
+Take a look at a desktop application like a
+web browser, for example.
+
+> The kernbench workload
+> apparently exercises swap quite a bit more randomly and
+> your patch makes it run slower for low and high levels
+> of swapping, while faster for moderate swapping.
+
+The kernbench workload consists of a large number
+of fairly small, short lived processes. I suspect
+this is a very non-typical workload to run into
+swap, on today's systems.
+
+A more typical workload consists of multiple large
+processes, with the working set moving from one
+part of memory (now inactive) to somewhere else.
+
+We need to maximize swap IO throughput in order to
+allow the system to quickly move to the new working
+set.
+
+> I also suspect (without proof) that the patch will
+> result in lower performance on non-rotating devices, such
+> as SSDs.
+>
+> (Sure one can change the swap cluster size to 1, but how
+> many users or even sysadmins know such a thing even
+> exists... so the default is important.)
+
+If the default should be changed for some systems,
+that is worth doing.
+
+How does your test run with smaller swap cluster
+sizes?
+
+Would a swap cluster of 4 or 5 be closer to optimal
+for a 1GB system?
+
+-- 
+All rights reversed
