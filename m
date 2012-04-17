@@ -1,58 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755272Ab2DQILn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Apr 2012 04:11:43 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:54403 "EHLO mx1.redhat.com"
+	id S1755317Ab2DQIO3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Apr 2012 04:14:29 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:24354 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754678Ab2DQILk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Apr 2012 04:11:40 -0400
-Message-ID: <4F8D19D3.1060002@redhat.com>
-Date: Tue, 17 Apr 2012 10:20:51 +0300
+	id S1754791Ab2DQIO1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Apr 2012 04:14:27 -0400
+Message-ID: <4F8D210C.8070505@redhat.com>
+Date: Tue, 17 Apr 2012 10:51:40 +0300
 From: Avi Kivity <avi@redhat.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120329 Thunderbird/11.0.1
 MIME-Version: 1.0
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-CC: Alexander Graf <agraf@suse.de>, Paul Mackerras <paulus@samba.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        KVM list <kvm@vger.kernel.org>, Marcelo Tosatti <mtosatti@redhat.com>,
-        Paul Mackerras <paulus@au1.ibm.com>
-Subject: Re: [GIT PULL] KVM updates for the 3.4 merge window
-References: <4F688F48.6090303@redhat.com> <1332461414.2982.90.camel@pasglop>  <CA+55aFxdf_K97KJ-phck-2YcTWAc6icc+Qhi6hOg0MA8FAjiyA@mail.gmail.com>  <4F6EEEC1.4030608@redhat.com>  <20120326213809.GA29788@bloggs.ozlabs.ibm.com>  <4F7191E8.7020804@redhat.com>  <20120330120107.GA28503@bloggs.ozlabs.ibm.com>  <4F784C4D.3000409@redhat.com> <1333314138.30734.17.camel@pasglop>  <4F796C18.2040209@redhat.com> <1333359979.30734.48.camel@pasglop>  <3BB9812B-6FE2-4370-9D55-D273364BFFD1@suse.de>  <4F8C1652.7000004@redhat.com> <1334617517.25353.17.camel@pasglop>
-In-Reply-To: <1334617517.25353.17.camel@pasglop>
+To: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+CC: Takuya Yoshikawa <takuya.yoshikawa@gmail.com>, kvm-ppc@vger.kernel.org,
+        Marcelo Tosatti <mtosatti@redhat.com>,
+        Xiao Guangrong <xiaoguangrong.eric@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>, KVM <kvm@vger.kernel.org>
+Subject: Re: [PATCH 00/13] KVM: MMU: fast page fault
+References: <4F742951.7080003@linux.vnet.ibm.com> <4F82E04E.6000900@redhat.com>	<20120409175829.GB21894@amt.cnet> <4F8329D3.7000605@gmail.com>	<20120409194614.GB23053@amt.cnet> <4F840DD2.3090101@redhat.com> <20120410204031.ffb5b976225ac9fe6dae474e@gmail.com> <4F842074.1050108@linux.vnet.ibm.com> <20120411211514.35db29c11460516e604059b6@gmail.com> <4F857B61.9080602@linux.vnet.ibm.com> <20120411231441.9d0984672dd252b806f99128@gmail.com> <20120413232528.c5ddbddb3cc0870d6e85a332@gmail.com> <4F8A95CB.9070104@redhat.com> <20120417004935.a9a39d951b3c24588e29edd2@gmail.com> <4F8D0D29.9050009@linux.vnet.ibm.com>
+In-Reply-To: <4F8D0D29.9050009@linux.vnet.ibm.com>
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/17/2012 02:05 AM, Benjamin Herrenschmidt wrote:
-> On Mon, 2012-04-16 at 15:53 +0300, Avi Kivity wrote:
-> > 
-> > kvm.git next is exposed to linux-next, where they get tested quite a
-> > lot.  Granted it's mostly build testing, and people are unlikely to
-> > test
-> > kvm there, but they will test the non-kvm bits that creep in there.
-> > 
-> > > The alternative would be that I don't have a -next tree, just
-> > collect patches and immediately send them to Avi. That way the main
-> > kvm tree would be broken more often, but at least we don't get these
-> > horrible synchronization latencies.
-> > 
-> > That works too.  Don't post immediately; 2-3 week batches would reduce
-> > noise.
+On 04/17/2012 09:26 AM, Xiao Guangrong wrote:
+> On 04/16/2012 11:49 PM, Takuya Yoshikawa wrote:
 >
-> Or do like I do with Kumar for FSL stuff... his stuff gets pulled via my
-> tree but his tree is in linux-next as well. There's no reason not to do
-> that.
 >
-> That way, his next branch gets linux-next coverage whether it's in my
-> tree or not, and I pull when I put the final powerpc-next together,
-> which gives me a chance to do a quick vet "just in case" and sort out
-> any major conflict before it all goes to Linus.
+> > Although O(1) is actually O(1) for GET_DIRTY_LOG thread, it adds some
+> > overheads to page fault handling.  We may need to hold mmu_lock for properly
+> > handling O(1)'s write protection and ~500 write protections will not be so
+> > cheap.  And there is no answer to the question how to achive slot-wise write
+> > protection.
+> > 
+>
+>
+> Actually no.
+>
+> We do not increase the overload on page fault for migration. The number of
+> page fault of O(1) is the same as write-protect all spte.
+
+That's true with the write protect everything approach we use now.  But
+it's not true with range-based write protection, where you issue
+GET_DIRTY_LOG on a range of pages and only need to re-write-protect them.
+
+(the motivation for that is to decrease the time between GET_DIRTY_LOG
+and sending the page; as the time increases, the chances that the page
+got re-dirtied go up).
+
+That doesn't mean O(1) is unusable for this, just that it requires more
+thought.  Especially with direct maps, we can write-enable pages very
+quickly.
+
+> And, we can also avoid to hold mmu_lock to write-protect PML4s, we can use
+> a generation number, and notify mmu to update its page table when dirty-log
+> is enabled.
+
+Generation numbers are also useful for o(1) invalidation.
+
+>
+> Anyway, no performance data, no truth. Let me implement it first.
 >
 
-Sure, that works too.
 
 -- 
 error compiling committee.c: too many arguments to function
