@@ -1,93 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932163Ab2DQKH2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Apr 2012 06:07:28 -0400
-Received: from eu1sys200aog120.obsmtp.com ([207.126.144.149]:43911 "EHLO
-	eu1sys200aog120.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751126Ab2DQKH0 (ORCPT
+	id S932172Ab2DQKH4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Apr 2012 06:07:56 -0400
+Received: from mail-wi0-f178.google.com ([209.85.212.178]:48164 "EHLO
+	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932106Ab2DQKHy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Apr 2012 06:07:26 -0400
-From: Viresh Kumar <viresh.kumar@st.com>
-To: <vinod.koul@intel.com>
-Cc: <spear-devel@list.st.com>, <viresh.linux@gmail.com>,
-        <linux-kernel@vger.kernel.org>, Viresh Kumar <viresh.kumar@st.com>
-Subject: [PATCH] dmaengine: dw_dmac: Add clk_{un}prepare() support
-Date: Tue, 17 Apr 2012 15:22:10 +0530
-Message-ID: <8404741a5c01dffed43f1344fcaf6ea513a47cc2.1334656295.git.viresh.kumar@st.com>
-X-Mailer: git-send-email 1.7.9
+	Tue, 17 Apr 2012 06:07:54 -0400
+Date: Tue, 17 Apr 2012 12:07:49 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Joe Perches <joe@perches.com>, Randy Dunlap <rdunlap@xenotime.net>,
+        linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Andy Whitcroft <apw@canonical.com>
+Subject: Re: [PATCH] checkpatch: revert --strict test for net/ and
+ drivers/net block comment style
+Message-ID: <20120417100748.GA17894@gmail.com>
+References: <20120416091719.GA4113@gmail.com>
+ <4F8C76A0.2050601@xenotime.net>
+ <1334604911.2726.2.camel@joe2Laptop>
+ <20120416202813.GB4678@gmail.com>
+ <CA+55aFz6FFQAyx5E10CpwC1H+pOYqqLwQnkgUBYDp_zjH4t2pw@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CA+55aFz6FFQAyx5E10CpwC1H+pOYqqLwQnkgUBYDp_zjH4t2pw@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-clk_{un}prepare is mandatory for platforms using common clock framework. Since
-this driver is used by SPEAr platform, which supports common clock framework,
-add clk_{un}prepare() support for it.
 
-Signed-off-by: Viresh Kumar <viresh.kumar@st.com>
----
- drivers/dma/dw_dmac.c |   12 ++++++++++--
- 1 files changed, 10 insertions(+), 2 deletions(-)
+* Linus Torvalds <torvalds@linux-foundation.org> wrote:
 
-diff --git a/drivers/dma/dw_dmac.c b/drivers/dma/dw_dmac.c
-index 7439079..06d5bff 100644
---- a/drivers/dma/dw_dmac.c
-+++ b/drivers/dma/dw_dmac.c
-@@ -1429,7 +1429,9 @@ static int __init dw_probe(struct platform_device *pdev)
- 		err = PTR_ERR(dw->clk);
- 		goto err_clk;
- 	}
--	clk_enable(dw->clk);
-+
-+	if (!clk_prepare(dw->clk))
-+		clk_enable(dw->clk);
- 
- 	/* force dma off, just in case */
- 	dw_dma_off(dw);
-@@ -1511,6 +1513,7 @@ static int __init dw_probe(struct platform_device *pdev)
- 
- err_irq:
- 	clk_disable(dw->clk);
-+	clk_unprepare(dw->clk);
- 	clk_put(dw->clk);
- err_clk:
- 	iounmap(dw->regs);
-@@ -1541,6 +1544,7 @@ static int __exit dw_remove(struct platform_device *pdev)
- 	}
- 
- 	clk_disable(dw->clk);
-+	clk_unprepare(dw->clk);
- 	clk_put(dw->clk);
- 
- 	iounmap(dw->regs);
-@@ -1560,6 +1564,7 @@ static void dw_shutdown(struct platform_device *pdev)
- 
- 	dw_dma_off(platform_get_drvdata(pdev));
- 	clk_disable(dw->clk);
-+	clk_unprepare(dw->clk);
- }
- 
- static int dw_suspend_noirq(struct device *dev)
-@@ -1569,6 +1574,7 @@ static int dw_suspend_noirq(struct device *dev)
- 
- 	dw_dma_off(platform_get_drvdata(pdev));
- 	clk_disable(dw->clk);
-+	clk_unprepare(dw->clk);
- 
- 	return 0;
- }
-@@ -1578,7 +1584,9 @@ static int dw_resume_noirq(struct device *dev)
- 	struct platform_device *pdev = to_platform_device(dev);
- 	struct dw_dma	*dw = platform_get_drvdata(pdev);
- 
--	clk_enable(dw->clk);
-+	if (!clk_prepare(dw->clk))
-+		clk_enable(dw->clk);
-+
- 	dma_writel(dw, CFG, DW_CFG_DMA_EN);
- 	return 0;
- }
--- 
-1.7.9
+> On Mon, Apr 16, 2012 at 1:28 PM, Ingo Molnar <mingo@kernel.org> wrote:
+> >
+> > * Joe Perches <joe@perches.com> wrote:
+> >
+> >> Revert the --strict test for the old preferred block
+> >> comment style in drivers/net and net/
+> >
+> > Emphatic NAK.
+> 
+> Ingo, I don't think you understood. That test reverts the thing you
+> wanted reverted wrt the block comments.
 
+Yeah, I was confused: I judged it by the title and description 
+and assumed it was only doing it for drivers/net/ and net/.
+
+But in reality it just does a wholesale revert of this check 
+with no net/ and drivers/net/ specificity to it, so it's 
+perfectly fine to me:
+
+Acked-by: Ingo Molnar <mingo@elte.hu>
+
+Thanks,
+
+	Ingo
