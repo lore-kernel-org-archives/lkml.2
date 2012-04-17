@@ -1,104 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756180Ab2DQOMM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Apr 2012 10:12:12 -0400
-Received: from e28smtp06.in.ibm.com ([122.248.162.6]:33809 "EHLO
-	e28smtp06.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755605Ab2DQOMI (ORCPT
+	id S932243Ab2DQOMV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Apr 2012 10:12:21 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:28246 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755605Ab2DQOMQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Apr 2012 10:12:08 -0400
-Message-ID: <4F8D7A0A.4080404@linux.vnet.ibm.com>
-Date: Tue, 17 Apr 2012 19:41:22 +0530
-From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120329 Thunderbird/11.0.1
-MIME-Version: 1.0
-To: Borislav Petkov <bp@amd64.org>
-CC: Borislav Petkov <borislav.petkov@amd.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Andreas Herrmann <andreas.herrmann3@amd.com>,
-        Kay Sievers <kay.sievers@vrfy.org>, Dave Jones <davej@redhat.com>,
-        linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, tigran@aivazian.fsnet.co.uk,
-        hpa@zytor.com, x86@kernel.org
-Subject: Re: [PATCH 2/2] x86, microcode: Ensure that module is only loaded
- for
-References: <20120411163849.GE4794@alberich.amd.com> <20120411200601.GC12288@kroah.com> <20120411201053.GF18114@aftab> <20120412162351.GJ24549@aftab> <20120412163422.GM24549@aftab> <4F8BDB58.6070007@linux.vnet.ibm.com> <20120416134335.GD308@aftab>
-In-Reply-To: <20120416134335.GD308@aftab>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-x-cbid: 12041714-9574-0000-0000-0000023BF7C7
+	Tue, 17 Apr 2012 10:12:16 -0400
+X-Authority-Analysis: v=2.0 cv=V/z/IJbi c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=XQbtiDEiEegA:10 a=5SG0PmZfjMsA:10 a=VwQbUJbxAAAA:8 a=ocnSwVl0gY4aouACwvcA:9 a=PUjeQqilurYA:10 a=AiwGP3IMiOprmPMXhEwA:9 a=ZycB6UtQUfgMyuk2+PxD7w==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.80.29
+Message-ID: <1334671929.28106.16.camel@gandalf.stny.rr.com>
+Subject: [ANNOUNCE] 3.0.28-rt47
+From: Steven Rostedt <rostedt@goodmis.org>
+To: LKML <linux-kernel@vger.kernel.org>, RT <linux-rt-users@vger.kernel.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
+        John Kacur <jkacur@redhat.com>
+Date: Tue, 17 Apr 2012 10:12:09 -0400
+Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
+	boundary="=-gXXHU9RiJKhLz6nwAMgu"
+X-Mailer: Evolution 3.2.2-1 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/16/2012 07:13 PM, Borislav Petkov wrote:
 
-> On Mon, Apr 16, 2012 at 02:12:00PM +0530, Srivatsa S. Bhat wrote:
->> I guess a similar change in intel microcode driver would also be
->> worthwhile, right? If so, then the below patch might be useful:
-> 
-> AFAICT, you'd need to test this on a box which is not supported (family
-> check below). Or you can tweak the family check so that it doesn't
-> apply and run it on a test box of yours to see whether the module still
-> unloads properly in the error case (and doesn't remain loaded as in
-> our case due to something in sysfs remaining registered although it
-> shouldn't).
-> 
+--=-gXXHU9RiJKhLz6nwAMgu
+Content-Type: text/plain; charset="ISO-8859-15"
+Content-Transfer-Encoding: quoted-printable
 
 
-Judging by the nature of the code itself, its evident that this problem
-is not restricted to AMD alone. In any case, I went ahead and did the
-(tweaked) test that you suggested and here is the result:
+Dear RT Folks,
 
-1. dmesg logs :
-[   21.912451] microcode: CPU0 not a capable Intel processor
-[   21.916028] microcode: CPU1 not a capable Intel processor
-[   21.934624] microcode: CPU2 not a capable Intel processor
-[   21.940276] microcode: CPU3 not a capable Intel processor
-[   21.946023] microcode: CPU4 not a capable Intel processor
-[   21.951678] microcode: CPU5 not a capable Intel processor
-[   21.957326] microcode: CPU6 not a capable Intel processor
-[   21.962935] microcode: CPU7 not a capable Intel processor
-[   21.968611] microcode: CPU8 not a capable Intel processor
-[   21.974212] microcode: CPU9 not a capable Intel processor
-[   21.979842] microcode: CPU10 not a capable Intel processor
-[   21.985577] microcode: CPU11 not a capable Intel processor
-[   21.991323] microcode: CPU12 not a capable Intel processor
-[   21.997055] microcode: CPU13 not a capable Intel processor
-[   22.002774] microcode: CPU14 not a capable Intel processor
-[   22.008460] microcode: CPU15 not a capable Intel processor
-[   22.014600] microcode: Microcode Update Driver: v2.00 <tigran@aivazian.fsnet.co.uk>, Peter Oruba
-
-2. lsmod | grep microcode
-microcode             117749  0
-
-3. rmmod microcode
-
-4. dmesg logs:
-[   64.297638] ------------[ cut here ]------------
-[   64.302332] WARNING: at fs/sysfs/group.c:142 sysfs_remove_group+0xd9/0xe0()
-[   64.309446] Hardware name: IBM System x -[7870C4Q]-
-[   64.309449] sysfs group ffffffffa03a5110 not found for kobject 'cpu0'
-[   64.309451] Modules linked in: ipv6 cpufreq_conservative cpufreq_userspace cpufreq_powersave acpi_cpufreq mperf fuse loop dm_mod coretemp crc32c_intel shpchp microcode(-) cdc_ether usbnet ioatdma bnx2 mii serio_raw pcspkr pci_hotplug i2c_i801 i7core_edac i2c_core dca edac_core iTCO_wdt iTCO_vendor_support tpm_tis tpm sg tpm_bios rtc_cmos button uhci_hcd ehci_hcd usbcore usb_common sd_mod crc_t10dif edd ext3 mbcache jbd fan processor mptsas mptscsih mptbase scsi_transport_sas scsi_mod thermal thermal_sys hwmon
-[   64.309499] Pid: 6529, comm: rmmod Not tainted 3.4.0-rc3-intelucodebroken-0.0.0.28.36b5ec9-default #2
-[   64.309501] Call Trace:
-[   64.309506]  [<ffffffff811fac69>] ? sysfs_remove_group+0xd9/0xe0
-[   64.309510]  [<ffffffff811fac69>] ? sysfs_remove_group+0xd9/0xe0
-[   64.309516]  [<ffffffff8103dd2a>] warn_slowpath_common+0x7a/0xb0
-[   64.309522]  [<ffffffff8103de01>] warn_slowpath_fmt+0x41/0x50
-[   64.309526]  [<ffffffff811f87b6>] ? sysfs_get_dirent+0x56/0x80
-[   64.309531]  [<ffffffff811fac69>] sysfs_remove_group+0xd9/0xe0
-[   64.309538]  [<ffffffffa03a2118>] mc_device_remove+0x78/0xa0 [microcode]
-[   64.309545]  [<ffffffff8134b219>] subsys_interface_unregister+0x89/0xd0
-[   64.309553]  [<ffffffffa03a357a>] microcode_exit+0x5a/0xa4 [microcode]
-[   64.309559]  [<ffffffff810b0c8a>] sys_delete_module+0x16a/0x2b0
-[   64.309565]  [<ffffffff810a408d>] ? trace_hardirqs_on_caller+0x12d/0x1b0
-[   64.309573]  [<ffffffff814b36f9>] system_call_fastpath+0x16/0x1b
-[   64.309576] ---[ end trace 748ddf8b4218f820 ]---
+I'm pleased to announce the 3.0.28-rt47 stable release.
 
 
-The above warning was repeated for each cpu, of course.
- 
-Regards,
-Srivatsa S. Bhat
+This release is just an update to the new stable 3.0.28 version
+and no RT specific changes have been made.
+
+
+You can get this release via the git tree at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/rt/linux-stable-rt.git
+
+  Head SHA1: bdf9776ef8e286b06bd6b8a32b9e45eb6b1931bf
+
+
+Or to build 3.0.28-rt47 directly, the following patches should be applied:
+
+  http://www.kernel.org/pub/linux/kernel/v3.0/linux-3.0.tar.xz
+
+  http://www.kernel.org/pub/linux/kernel/v3.0/patch-3.0.28.xz
+
+  http://www.kernel.org/pub/linux/kernel/projects/rt/3.0/patch-3.0.28-rt47.=
+patch.xz
+
+
+
+Enjoy,
+
+-- Steve
+
+
+
+--=-gXXHU9RiJKhLz6nwAMgu
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+Content-Transfer-Encoding: 7bit
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAABAgAGBQJPjXo5AAoJEIy3vGnGbaoA6lEP/A2lKZtoMIJ2tcMs66kth27p
+Z1ZLFo/cYx+tKfFcvC2LvqDJGi5ggJc4Tw0EcZLMaJImvyc/VwJjt2i73QtKjMtD
+nAbh78mAkHzwWJBUynf6VlSTN/20GRg0JJTeLWEroLKvHfT+ixlkqolKbvJj/XAl
+mSY4wrel8GX7kZ+3hW+DgL2ycZa86hN7lVK4lG5FDMGfykz3BRdVkn1eKfRq1udo
+u2xwbE9VKiohDCysVTM66y85hq75TzgEchkHeVnqRMZEcrPVDSDKUxhpe6vSBKeA
+pzlwdHIoQM6ReVfRSF3JYOMKK8S3jKU0ieO27hwrNUkHwf2mBRdF2J8Old7uVLDl
+C83qtN2layQfgrGjj12rOdU03FQ5iphWTYGETA1AtSFj5sY8S/U3MTWtfdeSfxJm
+UTvRyGi4aMA56rhia69GgYPRNakxFmW5OFaQrb0wousBKSbwx0qspbm7wQ80pKBn
+q/LIlWA/0JrTsvRRpjVTdJWCH8Opl83VJYFTLVctrmyoqx4eJ4UmVFm+tCYP52go
+7WX9gyfHWxf3qVFrgQdpicqUNf1IGSwil/9HCiFE762J9NmNjXpvLMrMSPEnp3Rb
+nVPm1USdC/C9TJyM5zxn5WB7s8f7XKbzItPiOAgxeniKKLxzc02K2CzPtufCqELK
+J40vgSTwL0yg+1eY0wcd
+=bAxh
+-----END PGP SIGNATURE-----
+
+--=-gXXHU9RiJKhLz6nwAMgu--
 
