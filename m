@@ -1,56 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756262Ab2DQP3U (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Apr 2012 11:29:20 -0400
-Received: from mx2.parallels.com ([64.131.90.16]:49376 "EHLO mx2.parallels.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753996Ab2DQP3S (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Apr 2012 11:29:18 -0400
-Message-ID: <4F8D8BE5.9020902@parallels.com>
-Date: Tue, 17 Apr 2012 12:27:33 -0300
-From: Glauber Costa <glommer@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120216 Thunderbird/10.0.1
+	id S932235Ab2DQP3b (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Apr 2012 11:29:31 -0400
+Received: from oproxy9.bluehost.com ([69.89.24.6]:36293 "HELO
+	oproxy9.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S932111Ab2DQP3Z (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Apr 2012 11:29:25 -0400
+Message-ID: <4F8DB687.2090701@xenotime.net>
+Date: Tue, 17 Apr 2012 11:29:27 -0700
+From: Randy Dunlap <rdunlap@xenotime.net>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
 MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: Johannes Weiner <hannes@cmpxchg.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Hugh Dickins <hughd@google.com>,
+To: Luciano Coelho <coelho@ti.com>
+CC: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Daniel Walsh <dwalsh@redhat.com>,
-        "Daniel P. Berrange" <berrange@redhat.com>,
-        Li Zefan <lizefan@huawei.com>, LKML <linux-kernel@vger.kernel.org>,
-        Cgroups <cgroups@vger.kernel.org>,
-        Containers <containers@lists.linux-foundation.org>
-Subject: Re: Cgroup in a single hierarchy (Was: Re: [RFD] Merge task counter
- into memcg)
-References: <20120411185715.GA4317@somewhere.redhat.com> <4F862851.3040208@jp.fujitsu.com> <20120412113217.GB11455@somewhere.redhat.com> <4F86BFC6.2050400@parallels.com> <20120412123256.GI1787@cmpxchg.org> <4F86D4BD.1040305@parallels.com> <20120412153055.GL1787@cmpxchg.org> <20120412163825.GB13069@google.com> <4F870B18.5060703@parallels.com> <20120417151352.GA32402@google.com>
-In-Reply-To: <20120417151352.GA32402@google.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+        linux-wireless@vger.kernel.org,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: Re: [PATCH -next] wireless: TI wlxxx depends on MAC80211
+References: <20120416161121.261ba4e7e38989173accfb16@canb.auug.org.au>	 <4F8C784B.2040402@xenotime.net> <1334640620.27247.7.camel@cumari>
+In-Reply-To: <1334640620.27247.7.camel@cumari>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [143.106.24.197]
+X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/17/2012 12:13 PM, Tejun Heo wrote:
-> Pretty similar to the plan that I was thinking about.
->
-> * Provide both mechanisms from the kernel while implementing new
->    features / optimizations with the assumption that there's one
->    hierarchy.
-I believe the static_keys, that we are already using for the tcp
-buffers can play a large role here. They can't save us from the 
-complexity of still supporting multiple hierarchies in the mean time, 
-but maybe nothing can.
+On 04/16/2012 10:30 PM, Luciano Coelho wrote:
 
-the only problem with that, is that it is proving itself to be quite 
-fragile. Because cpusets gets a bunch of function calls with the 
-cgroup_mutex held from within the cpu hotplug notifier, this creates a 
-lock dependency between the hotplug lock and cgroup mutex, meaning we
-can't call any jump label function patching with the cgroup mutex held.
+> Hi Randy,
+> 
+> On Mon, 2012-04-16 at 12:51 -0700, Randy Dunlap wrote: 
+>> From: Randy Dunlap <rdunlap@xenotime.net>
+>>
+>> wl12xx build fails with many undefined symbol errors when MAC80211
+>> and CFG80211 are not enabled, so make WLCORE and WL12XX depend
+>> on MAC80211 (which already depends on CFG80211).
+>>
+>> Here are a few of the many build errors:
+>>
+> 
+> [...]
+> 
+>> Signed-off-by: Randy Dunlap <rdunlap@xenotime.net>
+>> Cc:	Luciano Coelho <coelho@ti.com>
+>> Cc:	linux-wireless@vger.kernel.org
+>> Cc:	"John W. Linville" <linville@tuxdriver.com>
+>> ---
+> 
+> Thanks for the patch!
+> 
+> 
+>> --- linux-next-20120416.orig/drivers/net/wireless/ti/wl12xx/Kconfig
+>> +++ linux-next-20120416/drivers/net/wireless/ti/wl12xx/Kconfig
+>> @@ -1,5 +1,6 @@
+>>  config WL12XX
+>>         tristate "TI wl12xx support"
+>> +	depends on MAC80211
+>>         select WLCORE
+> 
+> Do we really need this one? wl12xx selects WLCORE which in turn depends
+> on MAC80211 (with your change below).  Maybe we don't need this?
 
-Neither we seem to be able to defer it to a worker, since it will create 
-a window of opportunity in which the information presented is inconsistent.
+Hi,
 
-Sigh...
+[testing...]
+
+The build fails if either one of these "depends" is omitted.
+
+
+>> ---help---
+>>  	  This module adds support for wireless adapters based on TI wl1271,
+>> --- linux-next-20120416.orig/drivers/net/wireless/ti/wlcore/Kconfig
+>> +++ linux-next-20120416/drivers/net/wireless/ti/wlcore/Kconfig
+>> @@ -1,6 +1,6 @@
+>>  config WLCORE
+>>  	tristate "TI wlcore support"
+>> -	depends on WL_TI && GENERIC_HARDIRQS
+>> +	depends on WL_TI && GENERIC_HARDIRQS && MAC80211
+>>  	depends on INET
+>>  	select FW_LOADER
+>>  	---help---
+> 
+
+
+
+-- 
+~Randy
