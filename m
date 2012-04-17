@@ -1,75 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752620Ab2DQVAE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Apr 2012 17:00:04 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:59467 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751318Ab2DQVAC (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Apr 2012 17:00:02 -0400
-Date: Tue, 17 Apr 2012 21:59:55 +0100
-From: Ben Hutchings <ben@decadent.org.uk>
-To: Josh Boyer <jwboyer@redhat.com>
-Cc: Matt Carlson <mcarlson@broadcom.com>, Michael Chan <mchan@broadcom.com>,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Message-ID: <20120417205955.GC3932@decadent.org.uk>
-References: <20120417141856.GA19507@zod.bos.redhat.com>
- <20120417185007.GA3742@mcarlson.broadcom.com>
- <20120417191042.GB3932@decadent.org.uk>
- <20120417194029.GH19507@zod.bos.redhat.com>
+	id S1752329Ab2DQVEB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Apr 2012 17:04:01 -0400
+Received: from antcom.de ([188.40.178.216]:59149 "EHLO chuck.antcom.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751318Ab2DQVD7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Apr 2012 17:03:59 -0400
+Message-ID: <4F8DDABA.2070208@antcom.de>
+Date: Tue, 17 Apr 2012 23:03:54 +0200
+From: Roland Stigge <stigge@antcom.de>
+Organization: ANTCOM Open Source Research and Development
+User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:10.0.3) Gecko/20120329 Icedove/10.0.3
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120417194029.GH19507@zod.bos.redhat.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-Subject: Re: tg3 'No PHY devices' loading issue
-X-SA-Exim-Version: 4.2.1 (built Mon, 22 Mar 2010 06:51:10 +0000)
-X-SA-Exim-Scanned: Yes (on shadbolt.decadent.org.uk)
+To: Arnd Bergmann <arnd@arndb.de>
+CC: arm@kernel.org, linux-arm-kernel@lists.infradead.org,
+        thierry.reding@avionic-design.de, gregkh@linuxfoundation.org,
+        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-input@vger.kernel.org, dmitry.torokhov@gmail.com,
+        axel.lin@gmail.com, broonie@opensource.wolfsonmicro.com,
+        marek.vasut@gmail.com, devel@driverdev.osuosl.org, kevin.wells@nxp.com,
+        srinivas.bakki@nxp.com
+Subject: Re: [PATCH v2 1/8] ohci-nxp: Driver cleanup
+References: <1334682507-15055-1-git-send-email-stigge@antcom.de> <1334682507-15055-2-git-send-email-stigge@antcom.de> <201204172036.15663.arnd@arndb.de>
+In-Reply-To: <201204172036.15663.arnd@arndb.de>
+X-Enigmail-Version: 1.4
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 17, 2012 at 03:40:30PM -0400, Josh Boyer wrote:
-> On Tue, Apr 17, 2012 at 08:10:42PM +0100, Ben Hutchings wrote:
-> > On Tue, Apr 17, 2012 at 11:50:07AM -0700, Matt Carlson wrote:
-> > > On Tue, Apr 17, 2012 at 10:18:57AM -0400, Josh Boyer wrote:
-> > > > Hi Matt and Michael,
-> > > > 
-> > > > I'm seeing an odd issue with the tg3 driver on one of my development
-> > > > machines.  I've tried kernels 3.2.10, 3.3.0, 3.3.1, 3.3.2 and 3.4-rc3
-> > > > and they all seem to exhibit this issue now.  When the machine boots
-> > > > and the tg3 driver is loaded, it fails to find a PHY and then reports
-> > > > 'Problem fetching invariants of chip'.  If I do a rmmod/modprobe of
-> > > > tg3 after login, the probe seems to work fine and ethernet works as
-> > > > expected.  You can see this in the dmesg below:
-> > [...]
-> > > The 57788 uses the broadcom phylib module.  For some reason, it isn't
-> > > available the first module load attempt.  A while ago, code was added to
-> > > phylib to request modules from userspace if the particular phy support
-> > > code wasn't already loaded.  It looks like this mechanism isn't working
-> > > too well the first time through.
-> > [...]
-> > 
-> > At a guess, tg3 is in the initramfs but broadcom isn't.
+Hi,
+
+On 17/04/12 22:36, Arnd Bergmann wrote:
+>> +       hcd->regs = devm_request_and_ioremap(&pdev->dev, res);
+>> +       if (!hcd->regs) {
+>> +               err("Failed to devm_request_and_ioremap");
+>>                 ret =  -ENOMEM;
+>>                 goto out4;
+>>         }
+>> -       hcd->regs = (void __iomem *)pdev->resource[0].start;
+>> +       hcd->rsrc_start = (u64)(u32)hcd->regs;
+>> +       hcd->rsrc_len = resource_size(res);
 > 
-> Good guess.  At least on one of the initramfs' I checked.  I'll verify
-> the others, but it seems likely they match.  As I just said in my other
-> reply, I would have expected tg3 to have a module dep on it to get it
-> included in the initramfs built, but it seems that isn't the case.
- 
-tg3 doesn't use any symbols from broadcom, which is the only way
-depmod can find dependencies.
+> This is wrong in multiple ways:
+> 
+> * rsrc_start is a physical address, not an __iomem token.
+> * you cannot cast a pointer to u32 in general, only to unsigned long.
+> 
+> The fact that you need an ugly type cast like above could have told
+> you that you are doing something wrong here. I guess it should
+> be
+> 
+> 	hcd->rsrc_start = res->start;
 
-In initramfs-tools (used in Debian and its derivatives) we just copy
-all PHY drivers into the initramfs by default.  dracut should probably
-do the same, at least when phylib is in the initramfs (or built into
-the kernel).  (tg3 does use symbols from phylib.)
+Right. Thanks for the hint!
 
-Ben.
+Technically, I ported the bug, didn't introduce it ;-)
+(pdev->resource[0].start was previously provided via resource already in
+IO_ADDRESS (mapped) format). Nevertheless, it's a bug, of course, and it
+didn't show up since the driver seems to not use hcd->rsrc_start anyway
+(but hcd->regs).
 
--- 
-Ben Hutchings
-We get into the habit of living before acquiring the habit of thinking.
-                                                              - Albert Camus
+Will post an update after making sure it's tested well.
+
+Roland
