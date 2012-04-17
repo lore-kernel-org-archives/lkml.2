@@ -1,100 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755685Ab2DQBJO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Apr 2012 21:09:14 -0400
-Received: from mail-qc0-f174.google.com ([209.85.216.174]:48262 "EHLO
-	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750892Ab2DQBJM (ORCPT
+	id S1755399Ab2DQBYg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Apr 2012 21:24:36 -0400
+Received: from mail127.messagelabs.com ([216.82.250.115]:3349 "EHLO
+	mail127.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751074Ab2DQBYe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Apr 2012 21:09:12 -0400
-Date: Tue, 17 Apr 2012 03:09:05 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Alexander Nikiforov <a.nikiforov@samsung.com>
-Cc: Hugh Dickins <hughd@google.com>, Johannes Weiner <hannes@cmpxchg.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Glauber Costa <glommer@parallels.com>, Tejun Heo <tj@kernel.org>,
-        Daniel Walsh <dwalsh@redhat.com>,
-        "Daniel P. Berrange" <berrange@redhat.com>,
-        Li Zefan <lizf@cn.fujitsu.com>, LKML <linux-kernel@vger.kernel.org>,
-        Cgroups <cgroups@vger.kernel.org>,
-        Containers <containers@lists.linux-foundation.org>
-Subject: Re: [RFD] Merge task counter into memcg
-Message-ID: <20120417010902.GA14646@somewhere.redhat.com>
-References: <20120411185715.GA4317@somewhere.redhat.com>
- <4F86527C.2080507@samsung.com>
+	Mon, 16 Apr 2012 21:24:34 -0400
+X-Env-Sender: hartleys@visionengravers.com
+X-Msg-Ref: server-7.tower-127.messagelabs.com!1334625872!3266032!2
+X-Originating-IP: [216.166.12.97]
+X-StarScan-Version: 6.5.7; banners=-,-,-
+X-VirusChecked: Checked
+From: H Hartley Sweeten <hartleys@visionengravers.com>
+To: Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: [PATCH] mmc: cd-gpio.c: Include header to pickup exported symbol prototypes
+Date: Mon, 16 Apr 2012 18:24:26 -0700
+User-Agent: KMail/1.9.9
+CC: <linux-mmc@vger.kernel.org>, <cjb@laptop.org>, <g.liakhovetski@gmx.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Content-Disposition: inline
-In-Reply-To: <4F86527C.2080507@samsung.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Message-ID: <201204161824.26879.hartleys@visionengravers.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 12, 2012 at 07:56:44AM +0400, Alexander Nikiforov wrote:
-> On 04/11/2012 10:57 PM, Frederic Weisbecker wrote:
-> >Hi,
-> >
-> >While talking with Tejun about targetting the cgroup task counter subsystem
-> >for the next merge window, he suggested to check if this could be merged into
-> >the memcg subsystem rather than creating a new one cgroup subsystem just
-> >for task count limit purpose.
-> >
-> >So I'm pinging you guys to seek your insight.
-> >
-> >I assume not everybody in the Cc list knows what the task counter subsystem
-> >is all about. So here is a summary: this is a cgroup subsystem (latest version
-> >in https://lwn.net/Articles/478631/) that keeps track of the number of tasks
-> >present in a cgroup. Hooks are set in task fork/exit and cgroup migration to
-> >maintain this accounting visible to a special tasks.usage file. The user can
-> >set a limit on the number of tasks by writing on the tasks.limit file.
-> >Further forks or cgroup migration are then rejected if the limit is exceeded.
-> >
-> >This feature is especially useful to protect against forkbombs in containers.
-> >Or more generally to limit the resources on the number of tasks on a cgroup
-> >as it involves some kernel memory allocation.
-> >
-> >Now the dilemna is how to implement it?
-> >
-> >1) As a standalone subsystem, as it stands currently (https://lwn.net/Articles/478631/)
-> >
-> >2) As a feature in memcg, part of the memory.kmem.* files. This makes sense
-> >because this is about kernel memory allocation limitation. We could have a
-> >memory.kmem.tasks.count
-> >
-> >My personal opinion is that the task counter brings some overhead: a charge
-> >across the whole hierarchy at every fork, and the mirrored uncharge on task exit.
-> >And this overhead happens even in the off-case (when the task counter susbsystem
-> >is mounted but the limit is the default: ULLONG_MAX).
-> >
-> >So if we choose the second solution, this overhead will be added unconditionally
-> >to memcg.
-> >But I don't expect every users of memcg will need the task counter. So perhaps
-> >the overhead should be kept in its own separate subsystem.
-> >
-> >OTOH memory.kmem.* interface would have be a good fit.
-> >
-> >What do you think?
-> >--
-> >To unsubscribe from this list: send the line "unsubscribe cgroups" in
-> >the body of a message to majordomo@vger.kernel.org
-> >More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> >
-> 
-> Hi,
-> 
-> I'm agree that this is memory related thing, but I prefer this as a
-> separate subsystem.
-> Yes it has some impact on a system, but on the other hand we will
-> have some very useful tool to track tasks state.
-> As I wrote before
-> 
-> http://comments.gmane.org/gmane.linux.kernel.cgroups/1448
-> 
-> it'll very useful to have event in the userspace about fork/exit
-> about group of the processes.
+Include the linux/mmc/cd-gpio.h header to pickup the prototypes
+for the two exported symbols.
 
-I need more clarifications about your needs. The task counter susbsytem
-doesn't inform you about forks or exits unless you reach the limit on
-the number of tasks.
+This quiets the sparse warnings:
+
+warning: symbol 'mmc_cd_gpio_request' was not declared. Should it be static?
+warning: symbol 'mmc_cd_gpio_free' was not declared. Should it be static?
+
+Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
+Cc: Chris Ball <cjb@laptop.org>
+Cc: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+
+---
+
+diff --git a/drivers/mmc/core/cd-gpio.c b/drivers/mmc/core/cd-gpio.c
+index 29de31e..da7c3f9 100644
+--- a/drivers/mmc/core/cd-gpio.c
++++ b/drivers/mmc/core/cd-gpio.c
+@@ -13,6 +13,7 @@
+ #include <linux/interrupt.h>
+ #include <linux/jiffies.h>
+ #include <linux/mmc/host.h>
++#include <linux/mmc/cd-gpio.h>
+ #include <linux/module.h>
+ #include <linux/slab.h>
+ 
