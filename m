@@ -1,21 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932243Ab2DQPrp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Apr 2012 11:47:45 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:10605 "EHLO mx1.redhat.com"
+	id S1755834Ab2DQPqg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Apr 2012 11:46:36 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:52085 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756276Ab2DQPrn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Apr 2012 11:47:43 -0400
+	id S1755724Ab2DQPqe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Apr 2012 11:46:34 -0400
 From: Doug Ledford <dledford@redhat.com>
 To: linux-kernel@vger.kernel.org
 Cc: akpm@linux-foundation.org, kosaki.motohiro@gmail.com,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        KOSAKI Motohiro <mkosaki@jp.fujitsu.com>,
-        Amerigo Wang <amwang@redhat.com>, "Serge E. Hallyn" <serue@us.ibm.com>,
-        Jiri Slaby <jslaby@suse.cz>
-Subject: [Patch 6/8] mqueue: don't use kmalloc with KMALLOC_MAX_SIZE
-Date: Tue, 17 Apr 2012 11:46:23 -0400
-Message-Id: <a4466082257558adf6654facc633630c14b65033.1334676645.git.dledford@redhat.com>
+        Doug Ledford <dledford@redhat.com>
+Subject: [Patch 2/8] ipc/mqueue: switch back to using non-max values on create
+Date: Tue, 17 Apr 2012 11:46:19 -0400
+Message-Id: <a9cfc656e665735e11606d452a536a9a9e6ebdde.1334676645.git.dledford@redhat.com>
 In-Reply-To: <cover.1334676645.git.dledford@redhat.com>
 References: <cover.1334676645.git.dledford@redhat.com>
 In-Reply-To: <cover.1334676645.git.dledford@redhat.com>
@@ -24,46 +21,86 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Commit b231cca4381ee15ec99afbfb244fbc0324869927 changed
+how we create a queue that does not include an attr
+struct passed to open so that it creates the queue
+with whatever the maximum values are.  However, if the
+admin has set the maximums to allow flexibility in
+creating a queue (aka, both a large size and large queue
+are allowed, but combined they create a queue too large
+for the RLIMIT_MSGQUEUE of the user), then attempts to
+create a queue without an attr struct will fail.  Switch
+back to using acceptable defaults regardless of what
+the maximums are.
 
-KMALLOC_MAX_SIZE is no good threshold. It is extream high and
-problematic. Unfortunately, some silly drivers depend on and
-we can't change it. but any new code don't use such extream
-ugly high order allocations. It bring us awful fragmentation
-issue and system slowdown.
+Note: so far, we only know of a few applications that rely
+on this behavior (specifically, set the maximums in /proc,
+then run the application which calls mq_open() without
+passing in an attr struct, and the application expects the
+newly created message queue to have the maximum sizes that
+were set in /proc used on the mq_open() call, and all of
+those applications that we know of are actually part of
+regression test suites that were coded to do something
+like this:
 
-Signed-off-by: KOSAKI Motohiro <mkosaki@jp.fujitsu.com>
-Acked-by: Doug Ledford <dledford@redhat.com>
-Acked-by: Joe Korty <joe.korty@ccur.com>
-Cc: Amerigo Wang <amwang@redhat.com>
-Cc: Serge E. Hallyn <serue@us.ibm.com>
-Cc: Jiri Slaby <jslaby@suse.cz>
+for size in 4096 65536 $((1024 * 1024)) $((16 * 1024 * 1024)); do
+	echo $size > /proc/sys/fs/mqueue/msgsize_max
+	mq_open || echo "Error opening mq with size $size"
+done
+
+These test suites that depend on any behavior like this are
+broken.  The concept that programs should rely upon the
+system wide maximum in order to get their desired results
+instead of simply using a attr struct to specify what they
+want is fundamentally unfriendly programming practice for
+any multi-tasking OS.
+
+Fixing this will break those few apps that we know of (and
+those app authors recognize the brokenness of their code
+and the need to fix it).  However, a future patch will allow
+a workaround in the form of new knobs for the default
+msg queue creation parameters for any software out there that
+we don't already know about that might rely on this behavior
+at the moment.
+
+Signed-off-by: Doug Ledford <dledford@redhat.com>
 ---
- ipc/mqueue.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
+ include/linux/ipc_namespace.h |    2 ++
+ ipc/mqueue.c                  |    5 +++--
+ 2 files changed, 5 insertions(+), 2 deletions(-)
 
+diff --git a/include/linux/ipc_namespace.h b/include/linux/ipc_namespace.h
+index 1372b56..bde094e 100644
+--- a/include/linux/ipc_namespace.h
++++ b/include/linux/ipc_namespace.h
+@@ -95,9 +95,11 @@ extern int mq_init_ns(struct ipc_namespace *ns);
+ #define DFLT_QUEUESMAX 256     /* max number of message queues */
+ #define HARD_QUEUESMAX 1024
+ #define MIN_MSGMAX     1
++#define DFLT_MSG       10U
+ #define DFLT_MSGMAX    10      /* max number of messages in each queue */
+ #define HARD_MSGMAX    (32768*sizeof(void *)/4)
+ #define MIN_MSGSIZEMAX  128
++#define DFLT_MSGSIZE    8192U
+ #define DFLT_MSGSIZEMAX 8192   /* max message size */
+ #define HARD_MSGSIZEMAX (8192*128)
+ #else
 diff --git a/ipc/mqueue.c b/ipc/mqueue.c
-index 3ced596..f9f0782 100644
+index 28bd64d..b178268 100644
 --- a/ipc/mqueue.c
 +++ b/ipc/mqueue.c
-@@ -150,7 +150,7 @@ static struct inode *mqueue_get_inode(struct super_block *sb,
+@@ -142,8 +142,9 @@ static struct inode *mqueue_get_inode(struct super_block *sb,
+ 		info->qsize = 0;
+ 		info->user = NULL;	/* set when all is ok */
+ 		memset(&info->attr, 0, sizeof(info->attr));
+-		info->attr.mq_maxmsg = ipc_ns->mq_msg_max;
+-		info->attr.mq_msgsize = ipc_ns->mq_msgsize_max;
++		info->attr.mq_maxmsg = min(ipc_ns->mq_msg_max, DFLT_MSG);
++		info->attr.mq_msgsize =
++			min(ipc_ns->mq_msgsize_max, DFLT_MSGSIZE);
+ 		if (attr) {
+ 			info->attr.mq_maxmsg = attr->mq_maxmsg;
  			info->attr.mq_msgsize = attr->mq_msgsize;
- 		}
- 		mq_msg_tblsz = info->attr.mq_maxmsg * sizeof(struct msg_msg *);
--		if (mq_msg_tblsz > KMALLOC_MAX_SIZE)
-+		if (mq_msg_tblsz > PAGE_SIZE)
- 			info->messages = vmalloc(mq_msg_tblsz);
- 		else
- 			info->messages = kmalloc(mq_msg_tblsz, GFP_KERNEL);
-@@ -263,7 +263,7 @@ static void mqueue_evict_inode(struct inode *inode)
- 	spin_lock(&info->lock);
- 	for (i = 0; i < info->attr.mq_curmsgs; i++)
- 		free_msg(info->messages[i]);
--	if (info->attr.mq_maxmsg * sizeof(struct msg_msg *) > KMALLOC_MAX_SIZE)
-+	if (is_vmalloc_addr(info->messages))
- 		vfree(info->messages);
- 	else
- 		kfree(info->messages);
 -- 
 1.7.7.6
 
