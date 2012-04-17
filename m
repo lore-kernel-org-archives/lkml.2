@@ -1,59 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755872Ab2DQLq6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Apr 2012 07:46:58 -0400
-Received: from david.siemens.de ([192.35.17.14]:29915 "EHLO david.siemens.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751523Ab2DQLq5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Apr 2012 07:46:57 -0400
-Message-ID: <4F8D5829.6050601@siemens.com>
-Date: Tue, 17 Apr 2012 13:46:49 +0200
-From: Jan Kiszka <jan.kiszka@siemens.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); de; rv:1.8.1.12) Gecko/20080226 SUSE/2.0.0.12-1.1 Thunderbird/2.0.0.12 Mnenhy/0.7.5.666
+	id S1755911Ab2DQLsz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Apr 2012 07:48:55 -0400
+Received: from eu1sys200aog117.obsmtp.com ([207.126.144.143]:55427 "EHLO
+	eu1sys200aog117.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751523Ab2DQLsx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Apr 2012 07:48:53 -0400
+From: Viresh Kumar <viresh.kumar@st.com>
+To: <w.sang@pengutronix.de>, <ben-linux@fluff.org>
+Cc: <spear-devel@list.st.com>, <viresh.linux@gmail.com>, <khali@linux-fr.org>,
+        <linux-i2c@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        Viresh Kumar <viresh.kumar@st.com>
+Subject: [PATCH V2] i2c: designware: Add clk_{un}prepare() support
+Date: Tue, 17 Apr 2012 17:04:31 +0530
+Message-ID: <b562073871c8c3c13a1f59698f69cfdf65db3b5a.1334662366.git.viresh.kumar@st.com>
+X-Mailer: git-send-email 1.7.9
+In-Reply-To: <caa4a0645f80f199b31ec16de37a5c4c9c67a6fa.1334652570.git.viresh.kumar@st.com>
+References: <caa4a0645f80f199b31ec16de37a5c4c9c67a6fa.1334652570.git.viresh.kumar@st.com>
 MIME-Version: 1.0
-To: Peter Fodrek <peter.fodrek@stuba.sk>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: Siemens CP1616 and DK16xx PN IO
-References: <3632059.pZx5gyW0oe@fodrek>
-In-Reply-To: <3632059.pZx5gyW0oe@fodrek>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2012-04-17 12:18, Peter Fodrek wrote:
-> Dear Dr. Kizska and other Siemens Linux experts,
-> 
-> We are to start Linux and Profinet/Profibus based project
-> at the Slovak University of Technology. 
-> 
-> Other department members are active insiders 
-> of the Profibus/Profinet consortium but our 
-> software department are not. We are only 
-> department interested into Linux project using 
-> Siemens products.
-> 
-> We were been delivered  DK16xx PN IO
-> from year of 2008. We were found some 
-> discussion about IWLAN inside upstream
-> Linux kernel as well.
-> 
-> I would like to ask you if it Is possible to
-> get information about support 
-> of CP1616 adapter  inside upstream kernel?
-> 
-> Is it possible to get newer version of the 
-> DK16xx PN IO  via electronic way 
-> of delivery,please?
+clk_{un}prepare is mandatory for platforms using common clock framework. Since
+this driver is used by SPEAr platform, which supports common clock framework,
+add clk_{un}prepare() support for designware i2c.
 
-I'm not aware of any upstream activities around the CP1616 or similar
-controllers. But I'll try to put you in contact with someone for our
-Industry Automation division who may know better (definitely about the
-last question).
+Signed-off-by: Viresh Kumar <viresh.kumar@st.com>
+---
+V1->V2:
+- Use clk_prepare_enable and clk_disable_unprepare
 
-Jan
+ drivers/i2c/busses/i2c-designware-platdrv.c |   10 +++++-----
+ 1 files changed, 5 insertions(+), 5 deletions(-)
 
+diff --git a/drivers/i2c/busses/i2c-designware-platdrv.c b/drivers/i2c/busses/i2c-designware-platdrv.c
+index 76bf108..3a7a4e8 100644
+--- a/drivers/i2c/busses/i2c-designware-platdrv.c
++++ b/drivers/i2c/busses/i2c-designware-platdrv.c
+@@ -103,7 +103,7 @@ static int __devinit dw_i2c_probe(struct platform_device *pdev)
+ 		r = -ENODEV;
+ 		goto err_free_mem;
+ 	}
+-	clk_enable(dev->clk);
++	clk_prepare_enable(dev->clk);
+ 
+ 	dev->functionality =
+ 		I2C_FUNC_I2C |
+@@ -180,7 +180,7 @@ err_free_irq:
+ err_iounmap:
+ 	iounmap(dev->base);
+ err_unuse_clocks:
+-	clk_disable(dev->clk);
++	clk_disable_unprepare(dev->clk);
+ 	clk_put(dev->clk);
+ 	dev->clk = NULL;
+ err_free_mem:
+@@ -202,7 +202,7 @@ static int __devexit dw_i2c_remove(struct platform_device *pdev)
+ 	i2c_del_adapter(&dev->adapter);
+ 	put_device(&pdev->dev);
+ 
+-	clk_disable(dev->clk);
++	clk_disable_unprepare(dev->clk);
+ 	clk_put(dev->clk);
+ 	dev->clk = NULL;
+ 
+@@ -229,7 +229,7 @@ static int dw_i2c_suspend(struct device *dev)
+ 	struct platform_device *pdev = to_platform_device(dev);
+ 	struct dw_i2c_dev *i_dev = platform_get_drvdata(pdev);
+ 
+-	clk_disable(i_dev->clk);
++	clk_disable_unprepare(i_dev->clk);
+ 
+ 	return 0;
+ }
+@@ -239,7 +239,7 @@ static int dw_i2c_resume(struct device *dev)
+ 	struct platform_device *pdev = to_platform_device(dev);
+ 	struct dw_i2c_dev *i_dev = platform_get_drvdata(pdev);
+ 
+-	clk_enable(i_dev->clk);
++	clk_prepare_enable(i_dev->clk);
+ 	i2c_dw_init(i_dev);
+ 
+ 	return 0;
 -- 
-Siemens AG, Corporate Technology, CT T DE IT 1
-Corporate Competence Center Embedded Linux
+1.7.9
+
