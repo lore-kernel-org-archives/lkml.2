@@ -1,30 +1,33 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932072Ab2DQOho (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Apr 2012 10:37:44 -0400
-Received: from mga03.intel.com ([143.182.124.21]:16735 "EHLO mga03.intel.com"
+	id S1756114Ab2DQOiz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Apr 2012 10:38:55 -0400
+Received: from mga14.intel.com ([143.182.124.37]:55447 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754247Ab2DQOhn convert rfc822-to-8bit (ORCPT
+	id S1755153Ab2DQOiy convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Apr 2012 10:37:43 -0400
+	Tue, 17 Apr 2012 10:38:54 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="90031870"
+   d="scan'208";a="90032266"
 From: "Tu, Xiaobing" <xiaobing.tu@intel.com>
-To: Lin Ming <mlin@ss.pku.edu.cn>, "Tu, Xiaobing" <xiaobing.tu@intel.com>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+To: Lin Ming <mlin@ss.pku.edu.cn>
+CC: "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
         "mingo@elte.hu" <mingo@elte.hu>,
         "rusty@rustcorp.com.au" <rusty@rustcorp.com.au>,
         "a.p.zijlstra@chello.nl" <a.p.zijlstra@chello.nl>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
         "yanmin_zhang@linux.intel.com" <yanmin_zhang@linux.intel.com>,
-        "rostedt@goodmis.org" <rostedt@goodmis.org>
-CC: "Zuo, Jiao" <jiao.zuo@intel.com>
+        "rostedt@goodmis.org" <rostedt@goodmis.org>,
+        "Zuo, Jiao" <jiao.zuo@intel.com>
 Subject: RE: [RFC 1/2] kernel patch for dump user space stack tool
 Thread-Topic: [RFC 1/2] kernel patch for dump user space stack tool
-Thread-Index: Ac0XskWlaD7yFSDNT9mu3HsJv3yBEQAAahrQAAGA81ABO0XVcA==
-Date: Tue, 17 Apr 2012 14:37:37 +0000
-Message-ID: <EE928378561BF1449699C96571234A740FCED62F@SHSMSX101.ccr.corp.intel.com>
+Thread-Index: AQHNHFTYRi+/E8vWAU248nte6/IJp5aeg2Og
+Date: Tue, 17 Apr 2012 14:38:50 +0000
+Message-ID: <EE928378561BF1449699C96571234A740FCED63D@SHSMSX101.ccr.corp.intel.com>
+References: <EE928378561BF1449699C96571234A740FCE3704@SHSMSX102.ccr.corp.intel.com>
+ <CAF1ivSZpcrCt3_cJWZLu7f7Z-DMGhijO4gM+2MTLNQC1p8=A7g@mail.gmail.com>
+In-Reply-To: <CAF1ivSZpcrCt3_cJWZLu7f7Z-DMGhijO4gM+2MTLNQC1p8=A7g@mail.gmail.com>
 Accept-Language: en-US
 Content-Language: en-US
 X-MS-Has-Attach: 
@@ -37,133 +40,26 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Resend the patch because of the log is too long on a single line.
+Hi Ming
+  Thank you for you kindly advice, I just resend the main for your suggestion. :)
 
-From: xiaobing tu <xiaobing.tu@intel.com> 
+Br
+Xiaobing
 
-Here is the kernel patch for this tool, The idea is to output user space stack call-chain from 
-/proc/xxx/stack, currently, /proc/xxx/stack only output kernel stack call chain. We extend 
-it to output user space call chain in hex format
 
-Signed-off-by: yanmin zhang <yanmin_zhang@linux.intel.com>
-Signed-off-by: xiaobing tu <xiaobing.tu@intel.com>
----
- arch/x86/kernel/stacktrace.c |   55 ++++++++++++++++++++++++++++++++++++++++++
- fs/proc/base.c               |   19 +++++++++++++-
- include/linux/stacktrace.h   |    5 +++-
- 3 files changed, 77 insertions(+), 2 deletions(-)
+-----Original Message-----
+From: Lin Ming [mailto:mlin@ss.pku.edu.cn] 
+Sent: Tuesday, April 17, 2012 12:43 PM
+To: Tu, Xiaobing
+Cc: akpm@linux-foundation.org; mingo@elte.hu; rusty@rustcorp.com.au; a.p.zijlstra@chello.nl; linux-kernel@vger.kernel.org; yanmin_zhang@linux.intel.com; rostedt@goodmis.org; Zuo, Jiao
+Subject: Re: [RFC 1/2] kernel patch for dump user space stack tool
 
-diff --git a/arch/x86/kernel/stacktrace.c b/arch/x86/kernel/stacktrace.c index fdd0c64..d802f05 100644
---- a/arch/x86/kernel/stacktrace.c
-+++ b/arch/x86/kernel/stacktrace.c
-@@ -7,6 +7,7 @@
- #include <linux/stacktrace.h>
- #include <linux/module.h>
- #include <linux/uaccess.h>
-+#include <linux/mm.h>
- #include <asm/stacktrace.h>
- 
- static int save_stack_stack(void *data, char *name) @@ -144,3 +145,57 @@ void save_stack_trace_user(struct stack_trace *trace)
- 		trace->entries[trace->nr_entries++] = ULONG_MAX;  }
- 
-+static inline void __save_stack_trace_user_task(struct task_struct *task,
-+		struct stack_trace *trace)
-+{
-+	const struct pt_regs *regs = task_pt_regs(task);
-+	const void __user *fp;
-+	unsigned long addr;
-+
-+	if (task != current && task->state == TASK_RUNNING && task->on_cpu) {
-+		/* To trap into kernel at least once */
-+		smp_send_reschedule(task_cpu(task));
-+	}
-+
-+	fp = (const void __user *)regs->bp;
-+	if (trace->nr_entries < trace->max_entries)
-+		trace->entries[trace->nr_entries++] = regs->ip;
-+
-+	while (trace->nr_entries < trace->max_entries) {
-+		struct stack_frame_user frame;
-+
-+		frame.next_fp = NULL;
-+		frame.ret_addr = 0;
-+
-+		addr = (unsigned long)fp;
-+		if (!access_process_vm(task, addr, (void *)&frame,
-+				sizeof(frame), 0))
-+			break;
-+		if ((unsigned long)fp < regs->sp)
-+			break;
-+		if (frame.ret_addr) {
-+			trace->entries[trace->nr_entries++] =
-+				frame.ret_addr;
-+		}
-+		if (fp == frame.next_fp)
-+			break;
-+		fp = frame.next_fp;
-+	}
-+}
-+
-+void save_stack_trace_user_task(struct task_struct *task,
-+		struct stack_trace *trace)
-+{
-+	if (task == current || !task) {
-+		save_stack_trace_user(trace);
-+		return;
-+	}
-+
-+	if (task->mm)
-+		__save_stack_trace_user_task(task, trace);
-+
-+	if (trace->nr_entries < trace->max_entries)
-+		trace->entries[trace->nr_entries++] = ULONG_MAX; } 
-+EXPORT_SYMBOL_GPL(save_stack_trace_user_task);
-+
-diff --git a/fs/proc/base.c b/fs/proc/base.c index d4548dd..603e708 100644
---- a/fs/proc/base.c
-+++ b/fs/proc/base.c
-@@ -327,8 +327,25 @@ static int proc_pid_stack(struct seq_file *m, struct pid_namespace *ns,
- 			seq_printf(m, "[<%pK>] %pS\n",
- 				   (void *)entries[i], (void *)entries[i]);
- 		}
--		unlock_trace(task);
-+	} else
-+		goto out;
-+
-+	trace.nr_entries	= 0;
-+	trace.max_entries	= MAX_STACK_TRACE_DEPTH;
-+	trace.entries		= entries;
-+	trace.skip		= 0;
-+
-+	seq_printf(m, "userspace\n");
-+
-+	save_stack_trace_user_task(task, &trace);
-+
-+	for (i = 0; i < trace.nr_entries; i++) {
-+		if (entries[i] != ULONG_MAX)
-+			seq_printf(m, "%p\n", (void *)entries[i]);
- 	}
-+	unlock_trace(task);
-+
-+out:
- 	kfree(entries);
- 
- 	return err;
-diff --git a/include/linux/stacktrace.h b/include/linux/stacktrace.h index 115b570..65e9ae4 100644
---- a/include/linux/stacktrace.h
-+++ b/include/linux/stacktrace.h
-@@ -23,8 +23,11 @@ extern void print_stack_trace(struct stack_trace *trace, int spaces);
- 
- #ifdef CONFIG_USER_STACKTRACE_SUPPORT
- extern void save_stack_trace_user(struct stack_trace *trace);
-+extern void save_stack_trace_user_task(struct task_struct *task,
-+		struct stack_trace *trace);
- #else
--# define save_stack_trace_user(trace)              do { } while (0)
-+# define save_stack_trace_user(trace)			do { } while (0)
-+# define save_stack_trace_user_task(task, trace)	do { } while (0)
- #endif
- 
- #else
---
-1.7.6
+On Wed, Apr 11, 2012 at 4:07 PM, Tu, Xiaobing <xiaobing.tu@intel.com> wrote:
+> From: xiaobing tu <xiaobing.tu@intel.com>
+>
+> Here is the kernel patch for this tool, The idea is to output user space stack call-chain from /proc/xxx/stack, currently, /proc/xxx/stack only output kernel stack call chain. We extend it to output user space call chain in hex format
+
+The log is too long on a single line.
+You should split it to multiple lines.
+
+Lin Ming
