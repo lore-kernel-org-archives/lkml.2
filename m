@@ -1,84 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752928Ab2DQXI0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Apr 2012 19:08:26 -0400
-Received: from 93-97-173-237.zone5.bethere.co.uk ([93.97.173.237]:62333 "EHLO
-	tim.rpsys.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751519Ab2DQXIZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Apr 2012 19:08:25 -0400
-Message-ID: <1334704072.616.152.camel@ted>
-Subject: Re: [PATCH 01/18] led-triggers: create a trigger for CPU activity
-From: Richard Purdie <richard.purdie@linuxfoundation.org>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Bryan Wu <bryan.wu@canonical.com>, linux@arm.linux.org.uk,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linus.walleij@linaro.org, arnd.bergmann@linaro.org,
-        nicolas.pitre@linaro.org, tim.gardner@canonical.com
-Date: Wed, 18 Apr 2012 00:07:52 +0100
-In-Reply-To: <20120417155241.0f619a9a.akpm@linux-foundation.org>
-References: <1334660025-20442-1-git-send-email-bryan.wu@canonical.com>
-	 <1334660025-20442-2-git-send-email-bryan.wu@canonical.com>
-	 <20120417155241.0f619a9a.akpm@linux-foundation.org>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2- 
+	id S1753479Ab2DQXMj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Apr 2012 19:12:39 -0400
+Received: from oproxy8-pub.bluehost.com ([69.89.22.20]:36598 "HELO
+	oproxy8-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752120Ab2DQXMi (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Apr 2012 19:12:38 -0400
+Message-ID: <4F8DF90B.1090002@xenotime.net>
+Date: Tue, 17 Apr 2012 16:13:15 -0700
+From: Randy Dunlap <rdunlap@xenotime.net>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
+MIME-Version: 1.0
+To: qasdfgtyuiop <qasdfgtyuiop@gmail.com>
+CC: linux-kernel <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>, alain@knaff.lu,
+        albin.tonnerre@free-electrons.com, lasse.collin@tukaani.org,
+        hpa@zytor.com
+Subject: [PATCH] kconfig: update compression algorithm info
+References: <CAMtaSwTi=7rmG8diJ+K0c_CcV=0TcgXDjRFEdZGGiKE2K5x89A@mail.gmail.com>
+In-Reply-To: <CAMtaSwTi=7rmG8diJ+K0c_CcV=0TcgXDjRFEdZGGiKE2K5x89A@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-04-17 at 15:52 -0700, Andrew Morton wrote:
-> On Tue, 17 Apr 2012 18:53:28 +0800
-> Bryan Wu <bryan.wu@canonical.com> wrote:
-> > +	 * ignores CPU hotplug, but after this CPU hotplug works
-> > +	 * fine with this trigger.
-> > +	 */
-> > +	for_each_possible_cpu(cpu) {
-> > +		struct led_trigger *trig;
-> > +		char *name = per_cpu(trig_name, cpu);
-> > +		struct rw_semaphore *lock = &per_cpu(trig_lock, cpu);
-> > +
-> > +		init_rwsem(lock);
-> > +
-> > +		snprintf(name, MAX_NAME_LEN, "cpu%d", cpu);
-> > +
-> > +		down_write(lock);
-> > +		led_trigger_register_simple(name, &trig);
-> 
-> OK, problem.
-> 
-> led_trigger_register_simple() calls kzalloc() and
-> led_trigger_register(), both of which can fail. 
-> led_trigger_register_simple() just returns void, failing to propagate
-> the error back.  This is bad, and we (ie you ;)) should fix
-> led_trigger_register_simple() before proceeding to use it.  If at all
-> possible.  Please.  Let us not propagate the badness further.  Sorry.
+From: Randy Dunlap <rdunlap@xenotime.net>
 
-FWIW, this was really the way led_trigger_register_simple() was designed
-to work. It's original use was adding a trigger into other subsystems
-which didn't want a ton of LED code so it had the simple form:
+There have been new compression algorithms added without
+updating nearby relevant descriptive text that refers to
+(a) the number of compression algorithms and (b) the most
+recent one.  Fix these inconsistencies.
 
-xxx = led_trigger_register_simple(name, &trig);
+Reported-by: qasdfgtyuiop@gmail.com
+Signed-off-by: Randy Dunlap <rdunlap@xenotime.net>
+---
+ init/Kconfig |   11 +++++------
+ usr/Kconfig  |   10 +++++-----
+ 2 files changed, 10 insertions(+), 11 deletions(-)
 
-where xxx could then be unregistered later equally simply and safely in
-one line. It didn't seem to make sense to pass the error around as it
-didn't really matter to the code it was being used in.
-
-I guess we could return an error pointer and check for that at
-unregister time in led_trigger_unregister_simple().
-
-> 
-> > +		char *name = per_cpu(trig_name, cpu);
-> > +
-> > +		led_trigger_unregister_simple(trig);
-> 
-> And what happens if led_trigger_register_simple() had silently failed
-> to register this trigger?  afacit, nothing: your code handles the
-> trig==NULL case OK.  Still, we should be checking for those failures!
-
-FWIW, led_trigger_unregister_simple() will deal with NULL safely.
-
-Cheers,
-
-Richard
-
+--- lnx-34-rc3.orig/usr/Kconfig
++++ lnx-34-rc3/usr/Kconfig
+@@ -134,7 +134,7 @@ config INITRAMFS_COMPRESSION_BZIP2
+ 	depends on RD_BZIP2
+ 	help
+ 	  Its compression ratio and speed is intermediate.
+-	  Decompression speed is slowest among the four.  The initramfs
++	  Decompression speed is slowest among the choices.  The initramfs
+ 	  size is about 10% smaller with bzip2, in comparison to gzip.
+ 	  Bzip2 uses a large amount of memory. For modern kernels you
+ 	  will need at least 8MB RAM or more for booting.
+@@ -143,9 +143,9 @@ config INITRAMFS_COMPRESSION_LZMA
+ 	bool "LZMA"
+ 	depends on RD_LZMA
+ 	help
+-	  The most recent compression algorithm.
+-	  Its ratio is best, decompression speed is between the other
+-	  three. Compression is slowest. The initramfs size is about 33%
++	  This algorithm's compression ratio is best.
++	  Decompression speed is between the other choices.
++	  Compression is slowest. The initramfs size is about 33%
+ 	  smaller with LZMA in comparison to gzip.
+ 
+ config INITRAMFS_COMPRESSION_XZ
+@@ -161,7 +161,7 @@ config INITRAMFS_COMPRESSION_LZO
+ 	bool "LZO"
+ 	depends on RD_LZO
+ 	help
+-	  Its compression ratio is the poorest among the four. The kernel
++	  Its compression ratio is the poorest among the choices. The kernel
+ 	  size is about 10% bigger than gzip; however its speed
+ 	  (both compression and decompression) is the fastest.
+ 
+--- lnx-34-rc3.orig/init/Kconfig
++++ lnx-34-rc3/init/Kconfig
+@@ -164,7 +164,7 @@ config KERNEL_BZIP2
+ 	depends on HAVE_KERNEL_BZIP2
+ 	help
+ 	  Its compression ratio and speed is intermediate.
+-	  Decompression speed is slowest among the three.  The kernel
++	  Decompression speed is slowest among the choices.  The kernel
+ 	  size is about 10% smaller with bzip2, in comparison to gzip.
+ 	  Bzip2 uses a large amount of memory. For modern kernels you
+ 	  will need at least 8MB RAM or more for booting.
+@@ -173,10 +173,9 @@ config KERNEL_LZMA
+ 	bool "LZMA"
+ 	depends on HAVE_KERNEL_LZMA
+ 	help
+-	  The most recent compression algorithm.
+-	  Its ratio is best, decompression speed is between the other
+-	  two. Compression is slowest.	The kernel size is about 33%
+-	  smaller with LZMA in comparison to gzip.
++	  This compression algorithm's ratio is best.  Decompression speed
++	  is between gzip and bzip2.  Compression is slowest.
++	  The kernel size is about 33% smaller with LZMA in comparison to gzip.
+ 
+ config KERNEL_XZ
+ 	bool "XZ"
+@@ -197,7 +196,7 @@ config KERNEL_LZO
+ 	bool "LZO"
+ 	depends on HAVE_KERNEL_LZO
+ 	help
+-	  Its compression ratio is the poorest among the 4. The kernel
++	  Its compression ratio is the poorest among the choices. The kernel
+ 	  size is about 10% bigger than gzip; however its speed
+ 	  (both compression and decompression) is the fastest.
+ 
