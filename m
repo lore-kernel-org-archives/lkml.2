@@ -1,194 +1,222 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752734Ab2DQSs2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Apr 2012 14:48:28 -0400
-Received: from s15943758.onlinehome-server.info ([217.160.130.188]:43366 "EHLO
-	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751021Ab2DQSs1 (ORCPT
+	id S1751744Ab2DQStQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Apr 2012 14:49:16 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:46657 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751087Ab2DQStP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Apr 2012 14:48:27 -0400
-Date: Tue, 17 Apr 2012 20:48:08 +0200
-From: Borislav Petkov <bp@amd64.org>
-To: Mauro Carvalho Chehab <mchehab@redhat.com>
-Cc: Linux Edac Mailing List <linux-edac@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Doug Thompson <norsk5@yahoo.com>, Mark Gross <mark.gross@intel.com>,
-        Jason Uhlenkott <juhlenko@akamai.com>,
-        Tim Small <tim@buttersideup.com>,
-        Ranganathan Desikan <ravi@jetztechnologies.com>,
-        "Arvind R." <arvino55@gmail.com>, Olof Johansson <olof@lixom.net>,
-        Egor Martovetsky <egor@pasemi.com>,
-        Chris Metcalf <cmetcalf@tilera.com>, Michal Marek <mmarek@suse.cz>,
-        Jiri Kosina <jkosina@suse.cz>, Joe Perches <joe@perches.com>,
-        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Hitoshi Mitake <h.mitake@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Niklas =?iso-8859-1?Q?S=F6derlund?= 
-	<niklas.soderlund@ericsson.com>,
-        Shaohui Xie <Shaohui.Xie@freescale.com>,
-        Josh Boyer <jwboyer@gmail.com>, linuxppc-dev@lists.ozlabs.org
-Subject: Re: [EDAC PATCH v13 4/7] edac: move nr_pages to dimm struct
-Message-ID: <20120417184808.GD13989@aftab>
-References: <1333039546-5590-1-git-send-email-mchehab@redhat.com>
- <1334607133-30039-1-git-send-email-mchehab@redhat.com>
- <1334607133-30039-5-git-send-email-mchehab@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1334607133-30039-5-git-send-email-mchehab@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 17 Apr 2012 14:49:15 -0400
+From: Stephen Warren <swarren@wwwdotorg.org>
+To: Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>, Ben Dooks <ben-linux@fluff.org>,
+        Wolfram Sang <w.sang@pengutronix.de>,
+        Linus Walleij <linus.walleij@linaro.org>
+Cc: devicetree-discuss@lists.ozlabs.org, linux-i2c@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Stephen Warren <swarren@nvidia.com>
+Subject: [PATCH 1/2] i2c: mux: add device tree support
+Date: Tue, 17 Apr 2012 12:49:04 -0600
+Message-Id: <1334688545-8465-1-git-send-email-swarren@wwwdotorg.org>
+X-Mailer: git-send-email 1.7.0.4
+X-NVConfidentiality: public
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 16, 2012 at 05:12:10PM -0300, Mauro Carvalho Chehab wrote:
-> The number of pages is a dimm property. Move it to the dimm struct.
-> 
-> After this change, it is possible to add sysfs nodes for the DIMM's that
+From: Stephen Warren <swarren@nvidia.com>
 
-Minor nitpick:
+* Define core portions of the DT binding for I2C bus muxes.
+* Enhance i2c_add_mux_adapter():
+** Add parameters required for DT support. Update all callers.
+** Set the appropriate adap->dev.of_node for the child bus.
+** Call of_i2c_register_devices() for the child bus.
 
-                                                               DIMMs
+Signed-off-by: Stephen Warren <swarren@nvidia.com>
+---
+Note: This series depends on the 3 patches I just sent that affect
+of_find_i2c_device_by_node and implement of_find_i2c_adapter_by_node.
+It might be useful to put this patch (and the others I sent) in
+a separate tree so it can be merged into any SoC trees that wish to use
+this new feature.
 
-Please go over the rest of the commit messages because they have similar
-typos.
+ Documentation/devicetree/bindings/i2c/i2cmux.txt |   45 ++++++++++++++++++++++
+ drivers/i2c/i2c-mux.c                            |   23 +++++++++++-
+ drivers/i2c/muxes/gpio-i2cmux.c                  |    5 +-
+ drivers/i2c/muxes/pca9541.c                      |    4 +-
+ drivers/i2c/muxes/pca954x.c                      |    4 +-
+ include/linux/i2c-mux.h                          |    4 +-
+ 6 files changed, 77 insertions(+), 8 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/i2c/i2cmux.txt
 
-> will properly represent the DIMM stick properties, including its size.
-> 
-> A TODO fix here is to properly represent dual-rank/quad-rank DIMMs when
-> the memory controller represents the memory via chip select rows.
-> 
-> Reviewed-by: Aristeu Rozanski <arozansk@redhat.com>
-> Cc: Doug Thompson <norsk5@yahoo.com>
-> Cc: Borislav Petkov <borislav.petkov@amd.com>
-> Cc: Mark Gross <mark.gross@intel.com>
-> Cc: Jason Uhlenkott <juhlenko@akamai.com>
-> Cc: Tim Small <tim@buttersideup.com>
-> Cc: Ranganathan Desikan <ravi@jetztechnologies.com>
-> Cc: "Arvind R." <arvino55@gmail.com>
-> Cc: Olof Johansson <olof@lixom.net>
-> Cc: Egor Martovetsky <egor@pasemi.com>
-> Cc: Chris Metcalf <cmetcalf@tilera.com>
-> Cc: Michal Marek <mmarek@suse.cz>
-> Cc: Jiri Kosina <jkosina@suse.cz>
-> Cc: Joe Perches <joe@perches.com>
-> Cc: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>
-> Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-> Cc: Hitoshi Mitake <h.mitake@gmail.com>
-> Cc: Andrew Morton <akpm@linux-foundation.org>
-> Cc: "Niklas Söderlund" <niklas.soderlund@ericsson.com>
-> Cc: Shaohui Xie <Shaohui.Xie@freescale.com>
-> Cc: Josh Boyer <jwboyer@gmail.com>
-> Cc: linuxppc-dev@lists.ozlabs.org
-> Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
-> ---
->  drivers/edac/amd64_edac.c      |   12 +++------
->  drivers/edac/amd76x_edac.c     |    6 ++--
->  drivers/edac/cell_edac.c       |    8 ++++--
->  drivers/edac/cpc925_edac.c     |    8 ++++--
->  drivers/edac/e752x_edac.c      |    6 +++-
->  drivers/edac/e7xxx_edac.c      |    5 ++-
->  drivers/edac/edac_mc.c         |   16 ++++++++-----
->  drivers/edac/edac_mc_sysfs.c   |   47 ++++++++++++++++++++++++++++------------
->  drivers/edac/i3000_edac.c      |    6 +++-
->  drivers/edac/i3200_edac.c      |    3 +-
->  drivers/edac/i5000_edac.c      |   14 ++++++-----
->  drivers/edac/i5100_edac.c      |   22 +++++++++++-------
->  drivers/edac/i5400_edac.c      |    9 ++-----
->  drivers/edac/i7300_edac.c      |   22 +++++-------------
->  drivers/edac/i7core_edac.c     |   10 ++------
->  drivers/edac/i82443bxgx_edac.c |    2 +-
->  drivers/edac/i82860_edac.c     |    2 +-
->  drivers/edac/i82875p_edac.c    |    5 ++-
->  drivers/edac/i82975x_edac.c    |   11 ++++++--
->  drivers/edac/mpc85xx_edac.c    |    3 +-
->  drivers/edac/mv64x60_edac.c    |    3 +-
->  drivers/edac/pasemi_edac.c     |   14 ++++++------
->  drivers/edac/ppc4xx_edac.c     |    5 ++-
->  drivers/edac/r82600_edac.c     |    3 +-
->  drivers/edac/sb_edac.c         |    8 +-----
->  drivers/edac/tile_edac.c       |    2 +-
->  drivers/edac/x38_edac.c        |    4 +-
->  include/linux/edac.h           |    8 ++++--
->  28 files changed, 144 insertions(+), 120 deletions(-)
-> 
-> diff --git a/drivers/edac/amd64_edac.c b/drivers/edac/amd64_edac.c
-> index 0be3f29..8804ac8 100644
-> --- a/drivers/edac/amd64_edac.c
-> +++ b/drivers/edac/amd64_edac.c
-> @@ -2126,12 +2126,6 @@ static u32 amd64_csrow_nr_pages(struct amd64_pvt *pvt, u8 dct, int csrow_nr)
->  
->  	nr_pages = pvt->ops->dbam_to_cs(pvt, dct, cs_mode) << (20 - PAGE_SHIFT);
->  
-> -	/*
-> -	 * If dual channel then double the memory size of single channel.
-> -	 * Channel count is 1 or 2
-> -	 */
-> -	nr_pages <<= (pvt->channel_count - 1);
-
-This changes DEBUG output from:
-
-EDAC DEBUG: init_csrows: ----CSROW 0 VALID for MC node 0
-EDAC DEBUG: amd64_csrow_nr_pages:   (csrow=0) DBAM map index= 8
-EDAC DEBUG: amd64_csrow_nr_pages:     nr_pages= 1048576  channel-count = 2
-EDAC amd64: CS0: Registered DDR3 RAM
-EDAC DEBUG: init_csrows:   for MC node 0 csrow 0:
-EDAC DEBUG: init_csrows:     nr_pages: 1048576
-
-to
-
-EDAC DEBUG: init_csrows: ----CSROW 0 VALID for MC node 0
-EDAC DEBUG: amd64_csrow_nr_pages:   (csrow=0) DBAM map index= 8
-EDAC DEBUG: amd64_csrow_nr_pages:     nr_pages= 524288  channel-count = 2
-
-which is only half the pages.
-
-> -
->  	debugf0("  (csrow=%d) DBAM map index= %d\n", csrow_nr, cs_mode);
->  	debugf0("    nr_pages= %u  channel-count = %d\n",
->  		nr_pages, pvt->channel_count);
-> @@ -2152,6 +2146,7 @@ static int init_csrows(struct mem_ctl_info *mci)
->  	int i, j, empty = 1;
->  	enum mem_type mtype;
->  	enum edac_type edac_mode;
-> +	int nr_pages;
->  
->  	amd64_read_pci_cfg(pvt->F3, NBCFG, &val);
->  
-> @@ -2174,14 +2169,14 @@ static int init_csrows(struct mem_ctl_info *mci)
->  			i, pvt->mc_node_id);
->  
->  		empty = 0;
-> -		csrow->nr_pages = amd64_csrow_nr_pages(pvt, 0, i);
-> +		nr_pages = amd64_csrow_nr_pages(pvt, 0, i);
->  		get_cs_base_and_mask(pvt, i, 0, &base, &mask);
->  		/* 8 bytes of resolution */
->  
->  		mtype = amd64_determine_memory_type(pvt, i);
->  
->  		debugf1("  for MC node %d csrow %d:\n", pvt->mc_node_id, i);
-> -		debugf1("    nr_pages: %u\n", csrow->nr_pages);
-> +		debugf1("    nr_pages: %u\n", nr_pages);
->  
->  		/*
->  		 * determine whether CHIPKILL or JUST ECC or NO ECC is operating
-> @@ -2195,6 +2190,7 @@ static int init_csrows(struct mem_ctl_info *mci)
->  		for (j = 0; j < pvt->channel_count; j++) {
->  			csrow->channels[j].dimm->mtype = mtype;
->  			csrow->channels[j].dimm->edac_mode = edac_mode;
-> +			csrow->channels[j].dimm->nr_pages = nr_pages;
-
-I'm guessing you want to accumulate the nr_pages for all channels here
-and dump it properly?
-
+diff --git a/Documentation/devicetree/bindings/i2c/i2cmux.txt b/Documentation/devicetree/bindings/i2c/i2cmux.txt
+new file mode 100644
+index 0000000..1e4e2bc
+--- /dev/null
++++ b/Documentation/devicetree/bindings/i2c/i2cmux.txt
+@@ -0,0 +1,45 @@
++Common I2C mux bindings
++
++An I2C mux is a device that connects a master I2C bus to one of a number of
++child I2C busses, under programmatic control.
++
++Each I2C mux may define the set of child busses it supports in a different
++way. Some devices may have a hard-coded set of child ports, whereas others may
++support a varying set of child busses (especially when the bus mux is
++implemented using GPIOs or pin muxing). Any bindings required to represent
++this are the domain of the individual mux device.
++
++For each child bus, there shall be a node within the I2C mux's own node for
++that bus. This node will contain all the I2C devices on that bus, just like
++any other I2C bus. Each child bus shall be identified by some name. The set
++of child bus names is defined by the individual I2C mux's bindings. Bus names
++are used to construct the name of the bus's child node using the format
++i2c-bus-%s. Each child bus node needs the usual #address-cells and #size-cells
++properties.
++
++Example:
++
++	i2cmux {
++		// properties here omitted from the example.
++
++		i2c-bus-0 {
++			#address-cells = <1>;
++			#size-cells = <0>;
++
++			eeprom {
++				compatible = "eeprom";
++				reg = <0x50>;
++			};
++		};
++
++		i2c-bus-1 {
++			#address-cells = <1>;
++			#size-cells = <0>;
++
++			eeprom {
++				compatible = "eeprom";
++				reg = <0x50>;
++			};
++		};
++	};
++
+diff --git a/drivers/i2c/i2c-mux.c b/drivers/i2c/i2c-mux.c
+index d7a4833..8adeeec 100644
+--- a/drivers/i2c/i2c-mux.c
++++ b/drivers/i2c/i2c-mux.c
+@@ -24,6 +24,7 @@
+ #include <linux/slab.h>
+ #include <linux/i2c.h>
+ #include <linux/i2c-mux.h>
++#include <linux/of_i2c.h>
+ 
+ /* multiplexer per channel data */
+ struct i2c_mux_priv {
+@@ -86,8 +87,10 @@ static u32 i2c_mux_functionality(struct i2c_adapter *adap)
+ 	return parent->algo->functionality(parent);
+ }
+ 
+-struct i2c_adapter *i2c_add_mux_adapter(struct i2c_adapter *parent,
++struct i2c_adapter *i2c_add_mux_adapter(struct device *dev,
++				struct i2c_adapter *parent,
+ 				void *mux_dev, u32 force_nr, u32 chan_id,
++				const char *chan_name,
+ 				int (*select) (struct i2c_adapter *,
+ 					       void *, u32),
+ 				int (*deselect) (struct i2c_adapter *,
+@@ -124,6 +127,22 @@ struct i2c_adapter *i2c_add_mux_adapter(struct i2c_adapter *parent,
+ 	priv->adap.algo_data = priv;
+ 	priv->adap.dev.parent = &parent->dev;
+ 
++	if (dev->of_node) {
++		const char *name;
++
++		if (chan_name)
++			name = kasprintf(GFP_KERNEL, "i2c-bus-%s",
++					     chan_name);
++		else
++			name = kasprintf(GFP_KERNEL, "i2c-bus-%d",
++					     chan_id);
++
++		priv->adap.dev.of_node = of_find_node_by_name(dev->of_node,
++							      name);
++
++		kfree(name);
++	}
++
+ 	if (force_nr) {
+ 		priv->adap.nr = force_nr;
+ 		ret = i2c_add_numbered_adapter(&priv->adap);
+@@ -141,6 +160,8 @@ struct i2c_adapter *i2c_add_mux_adapter(struct i2c_adapter *parent,
+ 	dev_info(&parent->dev, "Added multiplexed i2c bus %d\n",
+ 		 i2c_adapter_id(&priv->adap));
+ 
++	of_i2c_register_devices(&priv->adap);
++
+ 	return &priv->adap;
+ }
+ EXPORT_SYMBOL_GPL(i2c_add_mux_adapter);
+diff --git a/drivers/i2c/muxes/gpio-i2cmux.c b/drivers/i2c/muxes/gpio-i2cmux.c
+index e5fa695..7284c70 100644
+--- a/drivers/i2c/muxes/gpio-i2cmux.c
++++ b/drivers/i2c/muxes/gpio-i2cmux.c
+@@ -105,8 +105,9 @@ static int __devinit gpiomux_probe(struct platform_device *pdev)
+ 	for (i = 0; i < pdata->n_values; i++) {
+ 		u32 nr = pdata->base_nr ? (pdata->base_nr + i) : 0;
+ 
+-		mux->adap[i] = i2c_add_mux_adapter(parent, mux, nr, i,
+-						   gpiomux_select, deselect);
++		mux->adap[i] = i2c_add_mux_adapter(&pdev->dev, parent, mux, nr,
++						   i, NULL, gpiomux_select,
++						   deselect);
+ 		if (!mux->adap[i]) {
+ 			ret = -ENODEV;
+ 			dev_err(&pdev->dev, "Failed to add adapter %d\n", i);
+diff --git a/drivers/i2c/muxes/pca9541.c b/drivers/i2c/muxes/pca9541.c
+index e0df9b6..e1777fb 100644
+--- a/drivers/i2c/muxes/pca9541.c
++++ b/drivers/i2c/muxes/pca9541.c
+@@ -353,8 +353,8 @@ static int pca9541_probe(struct i2c_client *client,
+ 	force = 0;
+ 	if (pdata)
+ 		force = pdata->modes[0].adap_id;
+-	data->mux_adap = i2c_add_mux_adapter(adap, client, force, 0,
+-					     pca9541_select_chan,
++	data->mux_adap = i2c_add_mux_adapter(&client->dev, adap, client, force,
++					     0, NULL, pca9541_select_chan,
+ 					     pca9541_release_chan);
+ 
+ 	if (data->mux_adap == NULL) {
+diff --git a/drivers/i2c/muxes/pca954x.c b/drivers/i2c/muxes/pca954x.c
+index 0e37ef2..736a803 100644
+--- a/drivers/i2c/muxes/pca954x.c
++++ b/drivers/i2c/muxes/pca954x.c
+@@ -226,8 +226,8 @@ static int pca954x_probe(struct i2c_client *client,
+ 		}
+ 
+ 		data->virt_adaps[num] =
+-			i2c_add_mux_adapter(adap, client,
+-				force, num, pca954x_select_chan,
++			i2c_add_mux_adapter(&client->dev, adap, client,
++				force, num, NULL, pca954x_select_chan,
+ 				(pdata && pdata->modes[num].deselect_on_exit)
+ 					? pca954x_deselect_mux : NULL);
+ 
+diff --git a/include/linux/i2c-mux.h b/include/linux/i2c-mux.h
+index 747f0cd..43fb11a 100644
+--- a/include/linux/i2c-mux.h
++++ b/include/linux/i2c-mux.h
+@@ -33,8 +33,10 @@
+  * and deselect callback functions to perform hardware-specific
+  * mux control.
+  */
+-struct i2c_adapter *i2c_add_mux_adapter(struct i2c_adapter *parent,
++struct i2c_adapter *i2c_add_mux_adapter(struct device *dev,
++				struct i2c_adapter *parent,
+ 				void *mux_dev, u32 force_nr, u32 chan_id,
++				const char *chan_name,
+ 				int (*select) (struct i2c_adapter *,
+ 					       void *mux_dev, u32 chan_id),
+ 				int (*deselect) (struct i2c_adapter *,
 -- 
-Regards/Gruss,
-Boris.
+1.7.0.4
 
-Advanced Micro Devices GmbH
-Einsteinring 24, 85609 Dornach
-GM: Alberto Bozzo
-Reg: Dornach, Landkreis Muenchen
-HRB Nr. 43632 WEEE Registernr: 129 19551
