@@ -1,75 +1,155 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752357Ab2DQSum (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Apr 2012 14:50:42 -0400
-Received: from mms2.broadcom.com ([216.31.210.18]:3054 "EHLO mms2.broadcom.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750851Ab2DQSul (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Apr 2012 14:50:41 -0400
-X-Server-Uuid: 72204117-5C29-4314-8910-60DB108979CB
-Date: Tue, 17 Apr 2012 11:50:07 -0700
-From: "Matt Carlson" <mcarlson@broadcom.com>
-To: "Josh Boyer" <jwboyer@redhat.com>
-cc: "Matt Carlson" <mcarlson@broadcom.com>,
-        "Michael Chan" <mchan@broadcom.com>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: tg3 'No PHY devices' loading issue
-Message-ID: <20120417185007.GA3742@mcarlson.broadcom.com>
-References: <20120417141856.GA19507@zod.bos.redhat.com>
-MIME-Version: 1.0
-In-Reply-To: <20120417141856.GA19507@zod.bos.redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-WSS-ID: 639364FC3IO6249052-01-01
-Content-Type: text/plain;
- charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: 7bit
+	id S1752955Ab2DQSvG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Apr 2012 14:51:06 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:40598 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751674Ab2DQSvD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Apr 2012 14:51:03 -0400
+From: Stephen Warren <swarren@wwwdotorg.org>
+To: Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>, Ben Dooks <ben-linux@fluff.org>,
+        Wolfram Sang <w.sang@pengutronix.de>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Olof Johansson <olof@lixom.net>, Colin Cross <ccross@android.com>
+Cc: devicetree-discuss@lists.ozlabs.org, linux-i2c@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-tegra@vger.kernel.org,
+        Stephen Warren <swarren@nvidia.com>
+Subject: [PATCH 1/2] ARM: dt: tegra: seaboard: instantiate pinctrl-based I2C bus mux
+Date: Tue, 17 Apr 2012 12:50:54 -0600
+Message-Id: <1334688655-8509-1-git-send-email-swarren@wwwdotorg.org>
+X-Mailer: git-send-email 1.7.0.4
+X-NVConfidentiality: public
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 17, 2012 at 10:18:57AM -0400, Josh Boyer wrote:
-> Hi Matt and Michael,
-> 
-> I'm seeing an odd issue with the tg3 driver on one of my development
-> machines.  I've tried kernels 3.2.10, 3.3.0, 3.3.1, 3.3.2 and 3.4-rc3
-> and they all seem to exhibit this issue now.  When the machine boots
-> and the tg3 driver is loaded, it fails to find a PHY and then reports
-> 'Problem fetching invariants of chip'.  If I do a rmmod/modprobe of
-> tg3 after login, the probe seems to work fine and ethernet works as
-> expected.  You can see this in the dmesg below:
-> 
-> [jwboyer@vader ~]$ dmesg | grep tg3
-> [    2.084969] tg3.c:v3.122 (December 7, 2011)
-> [    2.093511] tg3 mdio bus: probed
-> [    2.093513] tg3 0000:03:00.0: No PHY devices
-> [    2.093531] tg3 0000:03:00.0: Problem fetching invariants of chip, aborting
-> [   90.824697] tg3.c:v3.122 (December 7, 2011)
-> [   90.857068] tg3 mdio bus: probed
-> [   90.862540] tg3 0000:03:00.0: eth0: Tigon3 [partno(BCM57788) rev 57780001] (PCI Express) MAC address 18:03:73:e6:01:88
-> [   90.862547] tg3 0000:03:00.0: eth0: attached PHY driver [Broadcom BCM57780] (mii_bus:phy_addr=300:01)
-> [   90.862552] tg3 0000:03:00.0: eth0: RXcsums[1] LinkChgREG[0] MIirq[0] ASF[0] TSOcap[1]
-> [   90.862557] tg3 0000:03:00.0: eth0: dma_rwctrl[76180000] dma_mask[64-bit]
-> [   90.919961] tg3 0000:03:00.0: irq 47 for MSI/MSI-X
-> [   91.863311] tg3 0000:03:00.0: p3p1: Link is down
-> [   92.864348] tg3 0000:03:00.0: p3p1: Link is up at 100 Mbps, full duplex
-> [   92.864352] tg3 0000:03:00.0: p3p1: Flow control is on for TX and on for RX
-> 
-> It has worked on some of the older kernels without the need for the
-> manual rmmod/modprobe step, so it seems to be somewhat timing related.
-> I'm not sure if there is a module load ordering issue, but that doesn't
-> seem to be the case.  I can't explain why a later modprobe would work
-> just fine though.
-> 
-> Do you have any thoughts on how to go about debugging/fixing this?  I'd
-> be happy to test and provide whatever information you need.
+From: Stephen Warren <swarren@nvidia.com>
 
-The 57788 uses the broadcom phylib module.  For some reason, it isn't
-available the first module load attempt.  A while ago, code was added to
-phylib to request modules from userspace if the particular phy support
-code wasn't already loaded.  It looks like this mechanism isn't working
-too well the first time through.
+Tegra's I2C2 controller can be routed to either the PTA or DDC pin group
+on Seaboard. Define the pinctrl state nodes required to allow runtime
+control of this routing. Instantiate a pinctrl-i2cmux I2C bus mux that
+uses these pinctrl states.
 
-Can you reproduce the problem if you run 'rmmod broadcom' and then
-reload tg3?
+Signed-off-by: Stephen Warren <swarren@nvidia.com>
+---
+Ben, Wolfram, I'll take this one patch through the Tegra tree at an
+appropriate time. I'm including it here to give a good example.
+---
+ arch/arm/boot/dts/tegra-seaboard.dts |   57 +++++++++++++++++++++++++++++-----
+ 1 files changed, 49 insertions(+), 8 deletions(-)
+
+diff --git a/arch/arm/boot/dts/tegra-seaboard.dts b/arch/arm/boot/dts/tegra-seaboard.dts
+index ed0a2f5..e1025e2 100644
+--- a/arch/arm/boot/dts/tegra-seaboard.dts
++++ b/arch/arm/boot/dts/tegra-seaboard.dts
+@@ -65,11 +65,6 @@
+ 				nvidia,pins = "dap4";
+ 				nvidia,function = "dap4";
+ 			};
+-			ddc {
+-				nvidia,pins = "ddc", "owc", "spdi", "spdo",
+-					"uac";
+-				nvidia,function = "rsvd2";
+-			};
+ 			dta {
+ 				nvidia,pins = "dta", "dtb", "dtc", "dtd", "dte";
+ 				nvidia,function = "vi";
+@@ -100,7 +95,7 @@
+ 			};
+ 			hdint {
+ 				nvidia,pins = "hdint", "lpw0", "lpw2", "lsc1",
+-					"lsck", "lsda", "pta";
++					"lsck", "lsda";
+ 				nvidia,function = "hdmi";
+ 			};
+ 			i2cp {
+@@ -130,6 +125,10 @@
+ 					"lspi", "lvp1", "lvs";
+ 				nvidia,function = "displaya";
+ 			};
++			owc {
++				nvidia,pins = "owc", "spdi", "spdo", "uac";
++				nvidia,function = "rsvd2";
++			};
+ 			pmc {
+ 				nvidia,pins = "pmc";
+ 				nvidia,function = "pwr_on";
+@@ -173,7 +172,7 @@
+ 			conf_ata {
+ 				nvidia,pins = "ata", "atb", "atc", "atd",
+ 					"cdev1", "cdev2", "dap1", "dap2",
+-					"dap4", "dtf", "gma", "gmc", "gmd",
++					"dap4", "ddc", "dtf", "gma", "gmc", "gmd",
+ 					"gme", "gpu", "gpu7", "i2cp", "irrx",
+ 					"irtx", "pta", "rm", "sdc", "sdd",
+ 					"slxd", "slxk", "spdi", "spdo", "uac",
+@@ -182,7 +181,7 @@
+ 				nvidia,tristate = <0>;
+ 			};
+ 			conf_ate {
+-				nvidia,pins = "ate", "csus", "dap3", "ddc",
++				nvidia,pins = "ate", "csus", "dap3",
+ 					"gpv", "owc", "slxc", "spib", "spid",
+ 					"spie";
+ 				nvidia,pull = <0>;
+@@ -252,6 +251,28 @@
+ 				nvidia,slew-rate-falling = <3>;
+ 			};
+ 		};
++
++		state_i2cmux_ddc: pinmux_i2cmux_ddc {
++			ddc {
++				nvidia,pins = "ddc";
++				nvidia,function = "i2c2";
++			};
++			pta {
++				nvidia,pins = "pta";
++				nvidia,function = "rsvd4";
++			};
++		};
++
++		state_i2cmux_pta: pinmux_i2cmux_pta {
++			ddc {
++				nvidia,pins = "ddc";
++				nvidia,function = "rsvd4";
++			};
++			pta {
++				nvidia,pins = "pta";
++				nvidia,function = "i2c2";
++			};
++		};
+ 	};
+ 
+ 	i2c@7000c000 {
+@@ -276,6 +297,26 @@
+ 		clock-frequency = <400000>;
+ 	};
+ 
++	i2cmux {
++		compatible = "pinctrl-i2cmux";
++
++		i2c-parent = <&{/i2c@7000c400}>;
++
++		pinctrl-names = "ddc", "pta";
++		pinctrl-0 = <&state_i2cmux_ddc>;
++		pinctrl-1 = <&state_i2cmux_pta>;
++
++		i2c-bus-ddc {
++			#address-cells = <1>;
++			#size-cells = <0>;
++		};
++
++		i2c-bus-pta {
++			#address-cells = <1>;
++			#size-cells = <0>;
++		};
++	};
++
+ 	i2c@7000c500 {
+ 		clock-frequency = <400000>;
+ 	};
+-- 
+1.7.0.4
 
