@@ -1,75 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752520Ab2DQFNm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Apr 2012 01:13:42 -0400
-Received: from mail-vb0-f46.google.com ([209.85.212.46]:62548 "EHLO
-	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751201Ab2DQFNk convert rfc822-to-8bit (ORCPT
+	id S1752937Ab2DQFOF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Apr 2012 01:14:05 -0400
+Received: from e39.co.us.ibm.com ([32.97.110.160]:48750 "EHLO
+	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751201Ab2DQFOC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Apr 2012 01:13:40 -0400
+	Tue, 17 Apr 2012 01:14:02 -0400
+Message-ID: <4F8CFC12.6050700@linaro.org>
+Date: Mon, 16 Apr 2012 22:13:54 -0700
+From: John Stultz <john.stultz@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120329 Thunderbird/11.0.1
 MIME-Version: 1.0
-In-Reply-To: <201204162330.12178.rjw@sisk.pl>
-References: <4F8790F6.5080408@intel.com>
-	<201204132141.58063.rjw@sisk.pl>
-	<CAC=cRTNYGGq2ncJr7mvEOm2udqXsAD3T9T=5Tafue_jrjAWCug@mail.gmail.com>
-	<201204162330.12178.rjw@sisk.pl>
-Date: Tue, 17 Apr 2012 13:13:39 +0800
-Message-ID: <CAC=cRTMXNnZQ_bDes9JFp9yreGC63b_i9fUX6apQzWrUHw2a0Q@mail.gmail.com>
-Subject: Re: [RFC PATCH] PCIe: Add PCIe runtime D3cold support
-From: huang ying <huang.ying.caritas@gmail.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: "Yan, Zheng" <zheng.z.yan@intel.com>, bhelgaas@google.com,
-        linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
-        linux-pm@vger.kernel.org, Lin Ming <ming.m.lin@intel.com>,
-        Zhang Rui <rui.zhang@intel.com>,
-        ACPI Devel Mailing List <linux-acpi@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+To: Mark Lord <kernel@teksavvy.com>
+CC: richard -rw- weinberger <richard.weinberger@gmail.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        rtc-linux@googlegroups.com, Alessandro Zummo <a.zummo@towertech.it>,
+        Greg Kroah-Hartman <greg@kroah.com>, stable@vger.kernel.org,
+        Rabin Vincent <rabin.vincent@stericsson.com>
+Subject: Re: [REGRESSION] rtc/interface.c: kills suspend-to-ram
+References: <4F8BA1C1.4030804@teksavvy.com> <4F8C24E5.4020703@teksavvy.com> <CAFLxGvzkcYw-iUA1X8jK+Q8A2HFEG1SSXvfZ3Uj+OwKWgi+zAA@mail.gmail.com> <4F8C3DDF.8030103@teksavvy.com> <CAFLxGvy=3SHKFYoSfUcQrJKsCYWq5Fxpi4q_DTQjjFNDSSnJOw@mail.gmail.com> <4F8C415C.80806@teksavvy.com> <4F8C76EB.20709@linaro.org> <4F8C926D.2040503@linaro.org> <4F8CD5D3.8060006@teksavvy.com>
+In-Reply-To: <4F8CD5D3.8060006@teksavvy.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12041705-4242-0000-0000-0000015D9A05
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 17, 2012 at 5:30 AM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
->> >> +     return 0;
->> >> +}
->> >> +
->> >> +static int pcie_port_runtime_resume(struct device *dev)
->> >> +{
->> >> +     struct pci_dev *pdev = to_pci_dev(dev);
->> >> +
->> >> +     pci_restore_state(pdev);
->> >> +     if (pdev->runtime_d3cold)
->> >> +             msleep(100);
->> >
->> > What's _that_ supposed to do?
->>
->> When resume from d3cold, PCIe main link will be powered on again, it
->> will take quite some time before the main link go into L0 state.
->> Otherwise, accessing devices under the port may return wrong result.
+On 04/16/2012 07:30 PM, Mark Lord wrote:
 >
-> OK, but this is generic code and as per the standard the link should have been
-> reestablished at this point already.
+> Thanks for looking into it, John.
 >
-> Please don't put some nonstandard-platform-specific quirks like this into
-> code that's supposed to handle _every_ PCIe system.
+> I also spent many more hours digging away at it here today,
+> and I now understand (mostly) what is happening and why.
+>
+> The code above introduces a new access to the RTC that never existed before.
+> For the case where the Alarm has never been enabled by software,
+> I believe the code above will still try to "disable" it.
+> That's the new behaviour we didn't have prior to this patch.
+>
+> And.. on some of the systems I'm testing on, the BIOS setup has
+> the RTC Alarm "enabled", which means "under BIOS control",
+> as opposed to "disabled" which means "under software control".
+>
+> It's the "under BIOS control" systems that the above patch breaks.
+>
+> So I think the code may just need to be slightly more clever,
+> and not disable an Alarm that was never enabled by software in the first place.
 
-After checking PCIe spec, I found that the 100ms here has its standard origin :)
+Thanks for the extra info. Although I'm still a little perplexed why 
+that's causing trouble.
+When "under BIOS control" is the RTC unusable by the kernel? Will any 
+access cause problems? Or just the extra disable path?
 
-In PCI Express Base Specification Revision 2.0:
+On a hunch, I wonder if your tripping over the alarmtimer initialization 
+issue that was recently fixed.
+Have you also seen this issue w/ 3.4-rc2+ ?
 
-Section 6.6.1 Conventional Reset
+I still can't trigger anything similar playing with the BIOS options for 
+my system. If its not too much trouble, could you try the following two 
+changes?
 
-"
-To allow components to perform internal initialization, system
-software must wait for at least
-100 ms from the end of a Conventional Reset of one or more devices
-before it is permitted to
-issue Configuration Requests to those devices
-"
+thanks
+-john
 
-But I think we should move the 100ms delay here to PCIe bus code or
-PCIe/ACPI code, because that is needed by all PCIe devices for D3cold
-support.
+I guess I'm curious why you're hitting the rtc_alarm_disable if you're 
+not using the alarm. If you use the following diff, can you provide the 
+resulting stack traces?
 
-Best Regards,
-Huang Ying
+diff --git a/drivers/rtc/interface.c b/drivers/rtc/interface.c
+index eb415bd..4c98ee5 100644
+--- a/drivers/rtc/interface.c
++++ b/drivers/rtc/interface.c
+@@ -786,7 +786,8 @@ static void rtc_alarm_disable(struct rtc_device *rtc)
+  	if (!rtc->ops || !rtc->ops->alarm_irq_enable)
+  		return;
+
+-	rtc->ops->alarm_irq_enable(rtc->dev.parent, false);
++	//rtc->ops->alarm_irq_enable(rtc->dev.parent, false);
++	dump_stack();
+  }
+
+  /**
+
+
+
+
+Then un-comment/re-add the alarm_irq_enable() call above, and try the 
+following, to see if the behavior changes? Then re-add each line one by 
+one to see if you can isolate where things go wrong in the cmos code?
+
+diff --git a/drivers/rtc/rtc-cmos.c b/drivers/rtc/rtc-cmos.c
+index 7d5f56e..c500bce 100644
+--- a/drivers/rtc/rtc-cmos.c
++++ b/drivers/rtc/rtc-cmos.c
+@@ -318,9 +318,9 @@ static void cmos_irq_disable(struct cmos_rtc *cmos, unsigned char mask)
+  	rtc_control = CMOS_READ(RTC_CONTROL);
+  	rtc_control&= ~mask;
+  	CMOS_WRITE(rtc_control, RTC_CONTROL);
+-	hpet_mask_rtc_irq_bit(mask);
++	//hpet_mask_rtc_irq_bit(mask);
+
+-	cmos_checkintr(cmos, rtc_control);
++	//cmos_checkintr(cmos, rtc_control);
+  }
+
+  static int cmos_set_alarm(struct device *dev, struct rtc_wkalrm *t)
+
