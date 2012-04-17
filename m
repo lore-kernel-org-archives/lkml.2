@@ -1,54 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754895Ab2DQQyI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Apr 2012 12:54:08 -0400
-Received: from mx2.parallels.com ([64.131.90.16]:37814 "EHLO mx2.parallels.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751241Ab2DQQyG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Apr 2012 12:54:06 -0400
-Message-ID: <4F8D9FC4.3080800@parallels.com>
-Date: Tue, 17 Apr 2012 13:52:20 -0300
-From: Glauber Costa <glommer@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120216 Thunderbird/10.0.1
+	id S1755321Ab2DQQyz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Apr 2012 12:54:55 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:37251 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752699Ab2DQQyy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Apr 2012 12:54:54 -0400
+Date: Tue, 17 Apr 2012 17:54:51 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Ondrej Zary <linux@rainbow-software.org>
+Cc: alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/4] Add Wolfson Microelectronics WM8766 codec ALSA driver
+Message-ID: <20120417165451.GS6652@opensource.wolfsonmicro.com>
+References: <1334611118-10301-1-git-send-email-linux@rainbow-software.org>
+ <1334611118-10301-3-git-send-email-linux@rainbow-software.org>
+ <20120417145929.GA22575@sirena.org.uk>
+ <201204171835.38252.linux@rainbow-software.org>
 MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Hugh Dickins <hughd@google.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Daniel Walsh <dwalsh@redhat.com>,
-        "Daniel P. Berrange" <berrange@redhat.com>,
-        Li Zefan <lizf@cn.fujitsu.com>, LKML <linux-kernel@vger.kernel.org>,
-        Cgroups <cgroups@vger.kernel.org>,
-        Containers <containers@lists.linux-foundation.org>
-Subject: Re: [RFD] Merge task counter into memcg
-References: <4F862851.3040208@jp.fujitsu.com> <20120412113217.GB11455@somewhere.redhat.com> <4F86BFC6.2050400@parallels.com> <20120412123256.GI1787@cmpxchg.org> <4F86D4BD.1040305@parallels.com> <20120412153055.GL1787@cmpxchg.org> <20120412163825.GB13069@google.com> <20120412172309.GM1787@cmpxchg.org> <20120412174155.GC13069@google.com> <4F878480.60505@jp.fujitsu.com> <20120417154117.GE32402@google.com>
-In-Reply-To: <20120417154117.GE32402@google.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [143.106.24.197]
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="YvpO9wCO44Ze8QQC"
+Content-Disposition: inline
+In-Reply-To: <201204171835.38252.linux@rainbow-software.org>
+X-Cookie: Long life is in store for you.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
->> In short, I don't think it's better to have task-counting and fd-counting in memcg.
->> It's kmem, but it's more than that, I think.
->> Please provide subsys like ulimit.
->
-> So, you think that while kmem would be enough to prevent fork-bombs,
-> it would still make sense to limit in more traditional ways
-> (ie. ulimit style object limits).  Hmmm....
->
+--YvpO9wCO44Ze8QQC
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-I personally think this is namespaces business, not cgroups.
-If you have a process namespace, an interface that works to limit the 
-number of processes should keep working given the constraints you are 
-given.
+On Tue, Apr 17, 2012 at 06:35:32PM +0200, Ondrej Zary wrote:
+> On Tuesday 17 April 2012 16:59:29 Mark Brown wrote:
 
-What doesn't make sense, is to create a *new* interface to limit 
-something that doesn't really need to be limited, just because you
-limited a similar resource before.
+> > No, this should be supported in ASoC - anything adding new code in
+> > sound/i2c is *deeply* suspicious.
 
+> I agree that sound/i2c is wrong. I worked on tea575x-tuner before which l=
+ives=20
+> in this directory too - but it's neither an I2C device nor a sound chip...
+> There should probably be something like sound/codecs instead that could b=
+e=20
+> used by any sound card drivers.
 
+That's what sound/soc/codecs is - anything with sufficiently split up
+hardware to have distinct CODECs ought to be within that framework.
+"soc" in this case to a large extent just means "mix and match CODEC and
+CPU interface".
+
+> > > +struct snd_wm8766_ops {
+> > > +	void (*write)(struct snd_wm8766 *wm, u16 addr, u16 data);
+> > > +};
+
+> > You should in general use regmap rather than open coding register I/O
+> > for I2C devices.
+
+> regmap seems like an overkill here. It requires the i2c bus to be registe=
+red=20
+> in the kernel i2c subsystem (which is not in the case of ice1712).
+
+Oh, that's fail.  I did notice that patch 4 looked to be open coding
+rather generic stuff - I guess this is why.
+
+> > I've not yet looked at the rest of the code but this looks awfully like
+> > you've just invented a minimal version of the ASoC interfaces...
+
+> The _set functions are just simple register writes - the caller needs to =
+know=20
+> what to write there (only _set_if is used by psc724).
+
+You can obviously do stuff as hard coded register write sequences, many
+of which will be very short.
+
+--YvpO9wCO44Ze8QQC
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJPjaBRAAoJEBus8iNuMP3dE7gP+wWqaepuJQV10rrTXQQAySKG
+cPoYCFFkKk5CuD75/2PRwOsgSDG++XhW3pMdCnAQXIlZuRgJM4pSauhIFBFZScYR
+5pWXvu5/2Cki02RsG3p9JonV4IxSu4bEIvTg1t8gpiD7Ixahge+RKAsABlDZ0lBK
+x7HgDtU/GPm4PKJE8trJxTdQKzxGc1KRay9di7fovu+VPjfptHDf0t/52nQZw7rB
+vOrZgHsUldkiCgbUWwX8fhBIprg6gG4q6cwL6+sr0VLb9sIpipaMNueLdcvoSUM9
+awOT8g5+s0SUYXANV9zFjvGXCoy+t+Q/OGYdP/viCLNYkuZvi8aStQ25qi25rMrD
+MhtH2VCy8+QsnhMjLu9hTNy3yVFNAflcEkfDzsQEwg8/PI4n8xabugH/wTkPJPqH
+x3xYpJ52Yr63bZ15BAycGNS8UbXys1N9dYkUTuDfS8+kMp3AFP3rHsvUJF4jWDQe
+pEMy7R3LYIIzhjR4/TB/FYolIr+LkCXOoU3N5B4TpFeQOK9lx7OG6IPBL3M8geIK
+KLKp4XoJMkski9m6wwZSyKhUufD2Czbn9ojnQY4gxyDrG+UV+3fsQ6h5+3J8g6Lw
+94yc6SlM7SrS+tA+r0pN4gl1c9BUu4igvVxGMj52S5R1X8dV5+EwJNk0NaGsoFHq
+Z96wvSwc3+cEFATON/ox
+=Nq70
+-----END PGP SIGNATURE-----
+
+--YvpO9wCO44Ze8QQC--
