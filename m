@@ -1,51 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755994Ab2DQSM4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Apr 2012 14:12:56 -0400
-Received: from mailout-de.gmx.net ([213.165.64.22]:44569 "HELO
-	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1754793Ab2DQSMy (ORCPT
+	id S1756098Ab2DQSPp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Apr 2012 14:15:45 -0400
+Received: from mail-1-out2.atlantis.sk ([80.94.52.71]:46144 "EHLO
+	mail.atlantis.sk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1755068Ab2DQSPo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Apr 2012 14:12:54 -0400
-X-Authenticated: #28250155
-X-Provags-ID: V01U2FsdGVkX1/+RYlUtK/+rSHgRjw+HxBck9kAb97bEkbRiDpFml
-	BBnaaytJg+FNQx
-From: Sven Joachim <svenjoac@gmx.de>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: kernel panic after suspend/resume
-References: <CA+55aFzsjpJt09b6e4NA0T50M3w0xtASSYXz_=UWVDqKRywo=A@mail.gmail.com>
-	<87pqb6fkji.fsf@turtle.gmx.de>
-	<CA+55aFxhb6hriqHHwVtNeYHmtcy5JCEJX-zABBcG2Zjw_gawPw@mail.gmail.com>
-Date: Tue, 17 Apr 2012 20:12:47 +0200
-In-Reply-To: <CA+55aFxhb6hriqHHwVtNeYHmtcy5JCEJX-zABBcG2Zjw_gawPw@mail.gmail.com>
-	(Linus Torvalds's message of "Tue, 17 Apr 2012 09:00:48 -0700")
-Message-ID: <878vhufcrk.fsf@turtle.gmx.de>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.0.95 (gnu/linux)
+	Tue, 17 Apr 2012 14:15:44 -0400
+From: Ondrej Zary <linux@rainbow-software.org>
+To: Takashi Iwai <tiwai@suse.de>
+Subject: Re: [alsa-devel] [PATCH 3/4] Add Wolfson Microelectronics WM8776 codec ALSA driver
+Date: Tue, 17 Apr 2012 20:15:06 +0200
+User-Agent: KMail/1.9.10
+Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org
+References: <1334611118-10301-1-git-send-email-linux@rainbow-software.org> <20120417170431.GT6652@opensource.wolfsonmicro.com> <s5h3982p71g.wl%tiwai@suse.de>
+In-Reply-To: <s5h3982p71g.wl%tiwai@suse.de>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Y-GMX-Trusted: 0
+Content-Type: text/plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
+Message-Id: <201204172015.14582.linux@rainbow-software.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2012-04-17 18:00 +0200, Linus Torvalds wrote:
-
-> Two questions:
+On Tuesday 17 April 2012 20:06:19 Takashi Iwai wrote:
+> At Tue, 17 Apr 2012 18:04:31 +0100,
 >
->  - if it is reasonably repeatable, can you try to bisect it?
+> Mark Brown wrote:
+> > On Tue, Apr 17, 2012 at 06:52:49PM +0200, Takashi Iwai wrote:
+> > > Mark Brown wrote:
+> > > > This isn't just adding something into a specific driver which fails
+> > > > at abstraction, it's adding generic code.  If it were adding
+> > > > something to the ice17xx driver then that'd be one thing but look at
+> > > > the subject line and location of the file...  this stuff should be
+> > > > buried inside the driver if it's too painful to make the driver sane.
+> > >
+> > > The codes in sound/i2c are mostly oly for ice1712/ice1724 drivers
+> > > after all...  They could be used by others, but I don't think there
+> > > will be any more at this point.
+> >
+> > If they're specific to that driver we should make them specific to that
+> > driver and make sure the pain is confined there.  We really don't want
+> > to end up going back to the bad old days of having to do per-CPU/card
+> > drivers for CODECs because nobody had thought to abstract this stuff,
+> > that just makes everyone miserable.
+> >
+> > Looking at these commits I'd not expect anyone to figure out that this
+> > isn't how we want or expect people to add generic CODEC drivers.
+>
+> Yeah, these stuff can be better put in pci/ice1712/ directory only
+> for ice1724 driver.  In that way, you can avoid unnecessary exported
+> symbols, too.
 
-So far, it has repeated itself every time I suspended with 3.4-rc3,
-i.e. three times.  That's a small sample, so the bisection might not be
-reliable (especially since the crashes happened with delay), but I can
-try.
+Xonar (oxygen) has a private version of these drivers too. It could be 
+converted to use common code instead.
 
->  - how sure are you that rc2 is fine?
-
-Reasonably sure, I had been running rc2 for the whole last week and
-suspended about 20 times without any problems whatsoever.
-
-Cheers,
-       Sven
+-- 
+Ondrej Zary
