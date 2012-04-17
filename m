@@ -1,105 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751408Ab2DQTCI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Apr 2012 15:02:08 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:54153 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750715Ab2DQTCF convert rfc822-to-8bit (ORCPT
+	id S1751651Ab2DQTDb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Apr 2012 15:03:31 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:58695 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750715Ab2DQTD3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Apr 2012 15:02:05 -0400
+	Tue, 17 Apr 2012 15:03:29 -0400
+Date: Tue, 17 Apr 2012 20:03:22 +0100
+From: Ben Hutchings <ben@decadent.org.uk>
+To: Ian Campbell <Ian.Campbell@citrix.com>
+Cc: netdev@vger.kernel.org, linux-kernel <linux-kernel@vger.kernel.org>,
+        Ian Jackson <Ian.Jackson@eu.citrix.com>,
+        Michael Chan <mchan@broadcom.com>, David Miller <davem@davemloft.net>
+Message-ID: <20120417190322.GA3932@decadent.org.uk>
+References: <1334675504.23948.99.camel@zakaz.uk.xensource.com>
 MIME-Version: 1.0
-In-Reply-To: <CAE9FiQU-_BCCS1OKagVuj8YNrut8-6GH2_i86FsfS8UDWQ1pRA@mail.gmail.com>
-References: <4F6A483D.50702@fold.natur.cuni.cz>
-	<CAE9FiQVnErU-cska4gpinyj-LOup-U+3vsEG2z_-7h6kyREYtw@mail.gmail.com>
-	<4F6A5A53.305@fold.natur.cuni.cz>
-	<CAE9FiQXP7fO9OGN557jdofFFiFj96wL--ZA8X3UPEJ6o9JLvBw@mail.gmail.com>
-	<4F8BEB1D.9080903@fold.natur.cuni.cz>
-	<CAE9FiQXoX3J6P_9Tun_XbkK3egvSeBZxAtC13HacFDO0fwmZaA@mail.gmail.com>
-	<4F8C6E4E.1000205@fold.natur.cuni.cz>
-	<CAE9FiQXikqikMw_LYGqAUsWqFqL-tLiresPhpkpDhb+AxwundQ@mail.gmail.com>
-	<CAE9FiQUFB=9zbP1yuBDH1RJrCCP=83kV_fH+TEtk80981-uP=w@mail.gmail.com>
-	<CAE9FiQUbzM_TVu+bbXa6LWiUt01QsFiGoyYd0qV=41dXx4J31g@mail.gmail.com>
-	<4F8D1B72.2000105@fold.natur.cuni.cz>
-	<CAE9FiQW2MAW_WT+sq8XVtMOx=uR8FAN8O2wL2AOxkFBfEM285g@mail.gmail.com>
-	<CAE9FiQWSw1h772ijZ6YL4EujwjgvZ84bbDx9VbF_cdE63D-41w@mail.gmail.com>
-	<4F8D390F.9050408@fold.natur.cuni.cz>
-	<CAE9FiQU-_BCCS1OKagVuj8YNrut8-6GH2_i86FsfS8UDWQ1pRA@mail.gmail.com>
-Date: Tue, 17 Apr 2012 12:02:04 -0700
-X-Google-Sender-Auth: qSdoNpoewNwtFdd0q6HbmRyv2jE
-Message-ID: <CAE9FiQUxoHvUWFXv5LLcBT9vVGnQKp1-Tg7M3XPPULWwtX1iUw@mail.gmail.com>
-Subject: Re: 3.2.11: PCI Express card cannot be re-detected withing cca 60sec timeframe
-From: Yinghai Lu <yinghai@kernel.org>
-To: Martin Mokrejs <mmokrejs@fold.natur.cuni.cz>
-Cc: linux-pci@vger.kernel.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1334675504.23948.99.camel@zakaz.uk.xensource.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: ben@decadent.org.uk
+Subject: Re: In tree firmware not kept up to date
+X-SA-Exim-Version: 4.2.1 (built Mon, 22 Mar 2010 06:51:10 +0000)
+X-SA-Exim-Scanned: Yes (on shadbolt.decadent.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 17, 2012 at 10:07 AM, Yinghai Lu <yinghai@kernel.org> wrote:
-> On Tue, Apr 17, 2012 at 2:34 AM, Martin Mokrejs
-> <mmokrejs@fold.natur.cuni.cz> wrote:
->> Yinghai Lu wrote:
->>> On Tue, Apr 17, 2012 at 1:46 AM, Yinghai Lu <yinghai@kernel.org> wrote:
->>>> On Tue, Apr 17, 2012 at 12:27 AM, Martin Mokrejs
->>>> <mmokrejs@fold.natur.cuni.cz> wrote:
->>>>>>
->>>>>> can you send out lspci -vvxxxx -s 00:1c.7 after removing USB 3.0 express card?
->>>>>
->>>>> No, that did not help (tried on 3.4-rc3). First I plugged in the NEC uPD720200 USB3.0 card
->>>>> and unplugged it (card removal not reported :(), saved the lspci output.
->>>>> Then I inserted the FireWire card, unplugged, again saved the lspci output.
->>>>> Finally, saved the dmesg. All three files are attached.
->>>>
->>>> for USB 3.0:
->>>>                SltSta: Status: AttnBtn- PowerFlt- MRL- CmdCplt- PresDet+ Interlock-
->>>>                        Changed: MRL- PresDet- LinkState+
->>>
->>> LnkSta: Speed 2.5GT/s, Width x1, TrErr- Train- SlotClk+ DLActive+
->>> BWMgmt+ ABWMgmt-
->>>
->>> link still active even that card get removed, that looks like chipset
->>> have problem.
->>
->> Yinghai,
->>  so what should I ask Dell for? To fix BIOS of the laptop? What exactly? Or do you think
->> this is a hardware issue with the chipset?
->
-> after the expresscard get removed, that root port socket status bits
-> still report Data Link Active, and
-> the card still present.
->
-> Better check with Dell at first, and ask them to talk with intel if
-> there is silicon bug with that chipset that report wrong status.
->
-> Let me check if i could rebase one my local patch do reset pcie link
-> to prove that problem it silicon related.
+On Tue, Apr 17, 2012 at 04:11:44PM +0100, Ian Campbell wrote:
+> Hello,
+> 
+> What is the current policy wrt keeping the in-tree firmware updated
+> alongside the drivers?
 
-Rebase patches about pcie link disable/enable in /sys. please check them at
+Muddled.
 
- git://git.kernel.org/pub/scm/linux/kernel/git/yinghai/linux-yinghai.git
-for-pci-test
+> I use CONFIG_FIRMWARE_IN_KERNEL but a couple of times[0] recently this
+> has failed me because the in-tree bnx2 driver requires
+> bnx2/bnx2-mips-09-6.2.1b.fw but the tree contains
+> firmware/bnx2/bnx2-mips-09-6.2.1a.fw.ihex and not 6.2.1b.
+> 
+> Is it a bug that bnx2 was updated without adding the new firmware or is
+> a bug that the obsolete firmware is still sitting in the tree?
 
-  PCI, sysfs: merge dev and bus cpuaffinity show handling
-  PCI, sys: Use is_visable() with boot_vga attribute for pci_dev
-  PCI, sysfs: Put resource_alignment info pci_bus_attrs array
-  PCI: Move pcie_link_disable to pcie-link.c
-  PCI, sysfs: Add pcie attrs for pcie device under pci dev dir.
-  PCI: Add link_disable in /sysfs for pcie device
+It's a bug that any firmware is still in-tree, but
+CONFIG_FIRMWARE_IN_KERNEL hasn't yet been made to work with a separate
+linux-firmware directory.
 
-it is based on for-pci-root-bus-hotplug branch
+Ben.
 
-Or you can just master branch like
-git clone git://git.kernel.org/pub/scm/linux/kernel/git/yinghai/linux-yinghai.git
+> Ian.
+> 
+> [0] It's possible the same thing and I've just tripped over it more than
+> once now.
 
-After you remove USB3 expresscard, you need to
-
-echo 1 > /sys/devices/pci0000\:00/0000\:00\:1c.7/pcie_link_disable
-then
-echo 0 > /sys/devices/pci0000\:00/0000\:00\:1c.7/pcie_link_disable
-
-Thanks
-
-Yinghai
+-- 
+Ben Hutchings
+We get into the habit of living before acquiring the habit of thinking.
+                                                              - Albert Camus
