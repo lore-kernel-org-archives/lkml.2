@@ -1,97 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932086Ab2DQJdD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Apr 2012 05:33:03 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:60211 "EHLO mx2.suse.de"
+	id S932093Ab2DQJdx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Apr 2012 05:33:53 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:2397 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755954Ab2DQJc7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Apr 2012 05:32:59 -0400
-Date: Tue, 17 Apr 2012 11:32:46 +0200
-From: Jan Kara <jack@suse.cz>
-To: Andreas Dilger <adilger@whamcloud.com>
-Cc: Jan Kara <jack@suse.cz>, Al Viro <viro@ZenIV.linux.org.uk>,
-        dchinner@redhat.com, LKML <linux-kernel@vger.kernel.org>,
-        linux-fsdevel@vger.kernel.org, Alex Elder <elder@kernel.org>,
-        Anton Altaparmakov <anton@tuxera.com>, Ben Myers <bpm@sgi.com>,
-        Chris Mason <chris.mason@oracle.com>, cluster-devel@redhat.com,
-        "David S. Miller" <davem@davemloft.net>,
-        fuse-devel@lists.sourceforge.net,
-        "J. Bruce Fields" <bfields@fieldses.org>,
-        Joel Becker <jlbec@evilplan.org>,
-        KONISHI Ryusuke <konishi.ryusuke@lab.ntt.co.jp>,
-        linux-btrfs@vger.kernel.org, linux-ext4@vger.kernel.org,
-        linux-nfs@vger.kernel.org, linux-nilfs@vger.kernel.org,
-        linux-ntfs-dev@lists.sourceforge.net, Mark Fasheh <mfasheh@suse.com>,
-        Miklos Szeredi <miklos@szeredi.hu>, ocfs2-devel@oss.oracle.com,
-        OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>,
-        Steven Whitehouse <swhiteho@redhat.com>,
-        "Theodore Ts'o" <tytso@mit.edu>, xfs@oss.sgi.com
-Subject: Re: [PATCH 00/19 v5] Fix filesystem freezing deadlocks
-Message-ID: <20120417093246.GD7198@quack.suse.cz>
-References: <1334592845-22862-1-git-send-email-jack@suse.cz>
- <C9A0E2F0-ED57-40D6-9F75-5D72D45D21F0@dilger.ca>
+	id S1755969Ab2DQJdw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Apr 2012 05:33:52 -0400
+Date: Tue, 17 Apr 2012 11:33:26 +0200
+From: Jiri Olsa <jolsa@redhat.com>
+To: Namhyung Kim <namhyung.kim@lge.com>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, acme@redhat.com, mingo@elte.hu,
+        paulus@samba.org, cjashfor@linux.vnet.ibm.com, fweisbec@gmail.com,
+        linux-kernel@vger.kernel.org, tglx@linutronix.de, andi@firstfloor.org
+Subject: Re: [RFCv2 0/8] perf tool: Add new event group management
+Message-ID: <20120417093326.GA1650@m.brq.redhat.com>
+References: <1333574176-11388-1-git-send-email-jolsa@redhat.com>
+ <1334503015.28150.16.camel@twins>
+ <20120416121627.GA1660@m.brq.redhat.com>
+ <1334589962.28150.69.camel@twins>
+ <87lilud8so.fsf@sejong.aot.lge.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <C9A0E2F0-ED57-40D6-9F75-5D72D45D21F0@dilger.ca>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <87lilud8so.fsf@sejong.aot.lge.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon 16-04-12 15:02:50, Andreas Dilger wrote:
-> On 2012-04-16, at 9:13 AM, Jan Kara wrote:
-> > Another potential contention point might be patch 19. In that patch
-> > we make freeze_super() refuse to freeze the filesystem when there
-> > are open but unlinked files which may be impractical in some cases.
-> > The main reason for this is the problem with handling of file deletion
-> > from fput() called with mmap_sem held (e.g. from munmap(2)), and
-> > then there's the fact that we cannot really force such filesystem
-> > into a consistent state... But if people think that freezing with
-> > open but unlinked files should happen, then I have some possible
-> > solutions in mind (maybe as a separate patchset since this is
-> > large enough).
+On Tue, Apr 17, 2012 at 06:09:11PM +0900, Namhyung Kim wrote:
+> Hi,
 > 
-> Looking at a desktop system, I think it is very typical that there
-> are open-unlinked files present, so I don't know if this is really
-> an acceptable solution.  It isn't clear from your comments whether
-> this is a blanket refusal for all open-unlinked files, or only in
-> some particular cases...
-  Thanks for looking at this. It is currently a blanket refusal. And I
-agree it's problematic. There are two problems with open but unlinked
-files.
-
-One is that some old filesystems cannot get in a consistent state in
-presence of open but unlinked files but for filesystems we really care
-about - xfs, ext4, ext3, btrfs, or even ocfs2, gfs2 - that is not a real
-issue (these filesystems will delete those inodes on next mount read-write).
-
-The other problem is with what should happen when you put last inode
-reference on a frozen filesystem. Two possibilities I see are:
-
-a) block the iput() call - that is inconvenient because it can be
-called in various contexts. I think we could possibly use the same level of
-freeze protection as for page fault (this has changed since I originally
-thought about this and that would make things simpler) but I'm not
-completely sure.
-
-b) let the iput finish but filesystem will keep inode on its orphan list
-(or it's equivalent) and the inode will be deleted after the filesystem is
-thawed. The advantage of this is we don't have to block iput(), the
-disadvantage is we have to have filesystem support and not all filesystems
-can do this.
-
-Any thoughts?
-
-								Honza
+> On Mon, 16 Apr 2012 17:26:02 +0200, Peter Zijlstra wrote:
+> > On Mon, 2012-04-16 at 14:16 +0200, Jiri Olsa wrote:
+> >> group:        group_spec '{' events '}'
+> >> group_spec:   name  ':' mod | empty 
+> >
+> > How about something like:
+> >
+> > groups: groups ',' group | group
+> > group:	group_name '{' events '}' group_mod
+> > group_name: name ':' | empty
+> > group_mod: ':' group_mods | empty
+> > group_mods: [l]
 > 
-> lsof | grep deleted
-> nautilus  25393  adilger   19r      REG           253,0      340     253954 /home/adilger/.local/share/gvfs-metadata/home (deleted)
-> nautilus  25393  adilger   20r      REG           253,0    32768     253964 /home/adilger/.local/share/gvfs-metadata/home-f332a8f3.log (deleted)
-> gnome-ter 25623  adilger   22u      REG            0,18    17841    2717846 /tmp/vtePIRJCW (deleted)
-> gnome-ter 25623  adilger   23u      REG            0,18     5568    2717847 /tmp/vteDCSJCW (deleted)
-> gnome-ter 25623  adilger   29u      REG            0,18      480    2728484 /tmp/vte6C1TCW (deleted)
-  
--- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+> Wouldn't it be better if group_mods accepts [ukhHGp] also and pass them
+> to all members in the group?
+
+nice idea, I think it's doable
+
+jirka
