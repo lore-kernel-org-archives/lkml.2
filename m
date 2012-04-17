@@ -1,68 +1,144 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754749Ab2DQHlr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Apr 2012 03:41:47 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:46186 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753597Ab2DQHlq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Apr 2012 03:41:46 -0400
-Message-ID: <4F8D1EB5.2000302@redhat.com>
-Date: Tue, 17 Apr 2012 10:41:41 +0300
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120329 Thunderbird/11.0.1
+	id S1754710Ab2DQHnH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Apr 2012 03:43:07 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:35946 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751832Ab2DQHnF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Apr 2012 03:43:05 -0400
+Date: Tue, 17 Apr 2012 09:43:01 +0200
+From: Sascha Hauer <s.hauer@pengutronix.de>
+To: Robert Lee <rob.lee@linaro.org>
+Cc: kernel@pengutronix.de, linaro-dev@lists.linaro.org, patches@linaro.org,
+        daniel.lezcano@linaro.org, linux-kernel@vger.kernel.org,
+        amit.kucheria@linaro.org, shawn.guo@linaro.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH 1/3] ARM: imx: Add common imx cpuidle init functionality.
+Message-ID: <20120417074301.GM20478@pengutronix.de>
+References: <1334620214-25803-1-git-send-email-rob.lee@linaro.org>
+ <1334620214-25803-2-git-send-email-rob.lee@linaro.org>
 MIME-Version: 1.0
-To: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-CC: Marcelo Tosatti <mtosatti@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        KVM <kvm@vger.kernel.org>
-Subject: Re: [PATCH v2 10/16] KVM: MMU: fask check whether page is writable
-References: <4F87FA69.5060106@linux.vnet.ibm.com> <4F87FC82.2050302@linux.vnet.ibm.com> <4F8AE64F.7080909@redhat.com> <4F8B9115.2030807@linux.vnet.ibm.com> <4F8BEE1B.8000704@redhat.com> <4F8BF265.7020405@linux.vnet.ibm.com> <4F8C06ED.6020805@redhat.com> <4F8CE9CF.6050506@linux.vnet.ibm.com>
-In-Reply-To: <4F8CE9CF.6050506@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1334620214-25803-2-git-send-email-rob.lee@linaro.org>
+X-Sent-From: Pengutronix Hildesheim
+X-URL: http://www.pengutronix.de/
+X-IRC: #ptxdist @freenode
+X-Accept-Language: de,en
+X-Accept-Content-Type: text/plain
+X-Uptime: 09:32:28 up 156 days, 15:19, 43 users,  load average: 0.06, 0.10,
+ 0.33
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
+X-SA-Exim-Mail-From: sha@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/17/2012 06:55 AM, Xiao Guangrong wrote:
-> On 04/16/2012 07:47 PM, Avi Kivity wrote:
->
-> > On 04/16/2012 01:20 PM, Xiao Guangrong wrote:
-> >>>>
-> >>>> It is used to avoid the unnecessary overload 
-> >>>
-> >>> It's overloading me :(
-> >>>
-> >>
-> >>
-> >> Sorry.
-> >>
-> > 
-> > The trick is to send those in separate patchset so the maintainer
-> > doesn't notice.
-> > 
->
->
-> Thanks for your suggestion, i will pay more attention on it in the
-> further.
->
-> For this patch, what did you mean of "those"? You mean the whole
-> rmap.PTE_LIST_WP_BIT (fast check for shadow page table write protection
-> and host write protection) or just about host_page_write_protect
-> (for KSM only)?
+On Mon, Apr 16, 2012 at 06:50:12PM -0500, Robert Lee wrote:
+> Add common cpuidle init functionality that can be used by various
+> imx platforms.
+> 
+> Signed-off-by: Robert Lee <rob.lee@linaro.org>
+> ---
+> diff --git a/arch/arm/plat-mxc/Makefile b/arch/arm/plat-mxc/Makefile
+> index e81290c..7c9e05f 100644
+> --- a/arch/arm/plat-mxc/Makefile
+> +++ b/arch/arm/plat-mxc/Makefile
+> @@ -16,6 +16,8 @@ obj-$(CONFIG_MXC_ULPI) += ulpi.o
+>  obj-$(CONFIG_MXC_USE_EPIT) += epit.o
+>  obj-$(CONFIG_MXC_DEBUG_BOARD) += 3ds_debugboard.o
+>  obj-$(CONFIG_CPU_FREQ_IMX)    += cpufreq.o
+> +obj-$(CONFIG_CPU_IDLE)    += cpuidle.o
+> +
+>  ifdef CONFIG_SND_IMX_SOC
+>  obj-y += ssi-fiq.o
+>  obj-y += ssi-fiq-ksym.o
+> diff --git a/arch/arm/plat-mxc/cpuidle.c b/arch/arm/plat-mxc/cpuidle.c
+> new file mode 100644
+> index 0000000..d1c9301
+> --- /dev/null
+> +++ b/arch/arm/plat-mxc/cpuidle.c
+> @@ -0,0 +1,89 @@
+> +/*
+> + * Copyright 2012 Freescale Semiconductor, Inc.
+> + * Copyright 2012 Linaro Ltd.
+> + *
+> + * The code contained herein is licensed under the GNU General Public
+> + * License. You may obtain a copy of the GNU General Public License
+> + * Version 2 or later at the following locations:
+> + *
+> + * http://www.opensource.org/licenses/gpl-license.html
+> + * http://www.gnu.org/copyleft/gpl.html
+> + */
+> +
+> +#include <linux/kernel.h>
+> +#include <linux/io.h>
+> +#include <linux/cpuidle.h>
+> +#include <linux/hrtimer.h>
+> +#include <linux/err.h>
+> +#include <linux/slab.h>
+> +
+> +static struct cpuidle_device __percpu * imx_cpuidle_devices;
+> +static struct cpuidle_driver *drv;
+> +
+> +void __init imx_cpuidle_set_driver(struct cpuidle_driver *p)
+> +{
+> +	drv = p;
+> +}
 
-All of it.  Let's start with just modifying sptes concurrently and only
-later add reading bits from rmap concurrently, if it proves necessary.
+You like it complicated, eh? Why do you introduce a function which sets
+a variable...
 
->
-> If we do not have rmap.PTE_LIST_WP_BIT, there may have regression on
-> shadow mmu.
->
-> Hmm, do i need implement rmap.PTE_LIST_WP_BIT, then fast page fault?
+> +
+> +void imx_cpuidle_devices_uninit(void)
+> +{
+> +	int cpu_id;
+> +	struct cpuidle_device *dev;
+> +
+> +	for_each_possible_cpu(cpu_id) {
+> +		dev = per_cpu_ptr(imx_cpuidle_devices, cpu_id);
+> +		cpuidle_unregister_device(dev);
+> +	}
+> +
+> +	free_percpu(imx_cpuidle_devices);
+> +}
+> +
+> +static int __init imx_cpuidle_init(void)
 
-Let's try to measure the effect without rmap.PTE_LIST_WP_BIT.  Usually
-PTE chains for page tables are short so the effect would be small.  Of
-course we can't tell about all guest.
+... instead of passing it directly to the function which uses it?
+
+> +{
+> +	struct cpuidle_device *dev;
+> +	int cpu_id, ret;
+> +
+> +	if (!drv || drv->state_count > CPUIDLE_STATE_MAX) {
+> +		pr_err("%s: Invalid Input\n", __func__);
+
+You introduce a pointless error message on SoCs not setting a cpuidle
+driver. When will people learn that initcalls do not only run on
+machines they have on their desk?
+
+> +		return -EINVAL;
+> +	}
+> +
+> +	ret = cpuidle_register_driver(drv);
+> +
+> +	if (ret) {
+> +		pr_err("%s: Failed to register cpuidle driver\n", __func__);
+
+It's always nice to add the return value to the error message to get a
+clue *what* went wrong. The function name though is rather
+uninteresting.
+
+Sascha
+
 
 -- 
-error compiling committee.c: too many arguments to function
-
+Pengutronix e.K.                           |                             |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
+Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
