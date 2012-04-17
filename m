@@ -1,107 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755599Ab2DQCFI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Apr 2012 22:05:08 -0400
-Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:55609 "EHLO
-	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754648Ab2DQCFG (ORCPT
+	id S1755316Ab2DQCIC (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Apr 2012 22:08:02 -0400
+Received: from mail-vb0-f46.google.com ([209.85.212.46]:36582 "EHLO
+	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751523Ab2DQCH6 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Apr 2012 22:05:06 -0400
-X-AuditID: 9c930179-b7b2cae000000ca1-0f-4f8ccfce6534
-Message-ID: <4F8CCFD2.70300@kernel.org>
-Date: Tue, 17 Apr 2012 11:05:06 +0900
-From: Minchan Kim <minchan@kernel.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120410 Thunderbird/11.0.1
+	Mon, 16 Apr 2012 22:07:58 -0400
 MIME-Version: 1.0
-Newsgroups: gmane.linux.kernel.mm,gmane.comp.handhelds.android.kernel,gmane.linux.kernel,gmane.linux.kernel.mmc
-To: Arnd Bergmann <arnd@arndb.de>
-CC: Stephan Uphoff <ups@google.com>, linaro-kernel@lists.linaro.org,
-        android-kernel@googlegroups.com, linux-mm@kvack.org,
-        "Luca Porzio (lporzio)" <lporzio@micron.com>,
-        Alex Lemberg <alex.lemberg@sandisk.com>, linux-kernel@vger.kernel.org,
-        Saugata Das <saugata.das@linaro.org>,
-        Venkatraman S <venkat@linaro.org>, Yejin Moon <yejin.moon@samsung.com>,
-        Hyojin Jeong <syr.jeong@samsung.com>,
-        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>
-Subject: Re: swap on eMMC and other flash
-References: <201203301744.16762.arnd@arndb.de> <201204111557.14153.arnd@arndb.de> <CAKL-ytsXbe4=u94PjqvhZo=ZLiChQ0FmZC84GNrFHa0N1mDjFw@mail.gmail.com> <201204161859.32436.arnd@arndb.de>
-In-Reply-To: <201204161859.32436.arnd@arndb.de>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Brightmail-Tracker: AAAAAA==
+In-Reply-To: <201204161907.13806.rjw@sisk.pl>
+References: <4F8790F6.5080408@intel.com>
+	<201204132141.58063.rjw@sisk.pl>
+	<4F8B828E.9060606@intel.com>
+	<201204161907.13806.rjw@sisk.pl>
+Date: Tue, 17 Apr 2012 10:07:56 +0800
+Message-ID: <CAC=cRTNdLu=A64YAEp78ENc1h2OJKusXY3Wm9LuY4drz9pbomg@mail.gmail.com>
+Subject: Re: [RFC PATCH] PCIe: Add PCIe runtime D3cold support
+From: huang ying <huang.ying.caritas@gmail.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: "Yan, Zheng" <zheng.z.yan@intel.com>, bhelgaas@google.com,
+        linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
+        linux-pm@vger.kernel.org, Lin Ming <ming.m.lin@intel.com>,
+        Zhang Rui <rui.zhang@intel.com>,
+        ACPI Devel Mailing List <linux-acpi@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Arnd,
+On Tue, Apr 17, 2012 at 1:07 AM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+> Moreover, I really don't think it's a good idea to put PCI Express ports into
+> low-power states in general.  It might work on your platform, whatever it is,
+> but that doesn't mean it's going to work on every PCI Express system out
+> there.  I actually know of a number of such systems where it surely won't
+> work at all.
 
-On 04/17/2012 03:59 AM, Arnd Bergmann wrote:
-> On Monday 16 April 2012, Stephan Uphoff wrote:
->> opportunity to plant a few ideas.
->>
->> In contrast to rotational disks read/write operation overhead and
->> costs are not symmetric.
->> While random reads are much faster on flash - the number of write
->> operations is limited by wearout and garbage collection overhead.
->> To further improve swapping on eMMC or similar flash media I believe
->> that the following issues need to be addressed:
->>
->> 1) Limit average write bandwidth to eMMC to a configurable level to
->> guarantee a minimum device lifetime
->> 2) Aim for a low write amplification factor to maximize useable write bandwidth
->> 3) Strongly favor read over write operations
->>
->> Lowering write amplification (2) has been discussed in this email
->> thread - and the only observation I would like to add is that
->> over-provisioning the internal swap space compared to the exported
->> swap space significantly can guarantee a lower write amplification
->> factor with the indirection and GC techniques discussed.
->
-> Yes, good point.
->
->> I believe the swap functionality is currently optimized for storage
->> media where read and write costs are nearly identical.
->> As this is not the case on flash I propose splitting the anonymous
->> inactive queue (at least conceptually) - keeping clean anonymous pages
->> with swap slots on a separate queue as the cost of swapping them
->> out/in is only an inexpensive read operation. A variable similar to
->> swapiness (or a more dynamic algorithmn) could determine the
->> preference for swapping out clean pages or dirty pages. ( A similar
->> argument could be made for splitting up the file inactive queue )
->
-> I'm not sure I understand yet how this would be different from swappiness.
->
->> The problem of limiting the average write bandwidth reminds me of
->> enforcing cpu utilization limits on interactive workloads.
->> Just as with cpu workloads - using the resources to the limit produces
->> poor interactivity.
->> When interactivity suffers too much I believe the only sane response
->> for an interactive device is to limit usage of the swap device and
->> transition into a low memory situation - and if needed - either
->> allowing userspace to reduce memory usage or invoking the OOM killer.
->> As a result low memory situations could not only be encountered on new
->> memory allocations but also on workload changes that increase the
->> number of dirty pages.
->
-> While swap is just a special case for anonymous memory in writeback
-> rather than file backed pages, I think what you want here is a tuning
-> knob that decides whether we should discard a clean page or write back
-> a dirty page under memory pressure. I have to say that I don't know
-> whether we already have such a knob or whether we already treat them
-> differently, but it is certainly a valid observation that on hard
-> drives, discarding a clean page that is likely going to be needed
-> again has about the same overhead as writing back a dirty page
-> (i.e. one seek operation), while on flash the former would be much
-> cheaper than the latter.
+The runtime PM support for PCIe port is not turned on by default, we need
 
-It seems to make sense with considering asymmetric of flash and there is 
-a CFLRU(Clean First LRU)[1] paper about it. You might already know it. 
-Anyway if you don't aware of it, I hope it helps you.
+# echo auto > /sys/devices/pcixxxx:xx/<pci id>/power/control
 
-[1] 
-http://www.google.com/url?sa=t&rct=j&q=&esrc=s&source=web&cd=1&ved=0CCkQFjAA&url=http%3A%2F%2Fstaff.ustc.edu.cn%2F~jpq%2Fpaper%2Fflash%2F2006-CASES-CFLRU-%2520A%2520Replacement%2520Algorithm%2520for%2520Flash%2520Memory.pdf&ei=G8-MT5jGIqnj0gGMzJyCCg&usg=AFQjCNHybc5rUvuAlMylOUNwsHoFmWegzw&sig2=Uu5LDD3suso0QHsfD7yZ9Q
+to turn on it.  And we will turn on it on system it works.  Is this sufficient?
 
-
--- 
-Kind regards,
-Minchan Kim
+Best Regards,
+Huang Ying
