@@ -1,63 +1,157 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932375Ab2DQNoz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Apr 2012 09:44:55 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:45748 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932338Ab2DQNoy (ORCPT
+	id S932397Ab2DQNy1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Apr 2012 09:54:27 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:53736 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932318Ab2DQNyZ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Apr 2012 09:44:54 -0400
-Date: Tue, 17 Apr 2012 14:44:51 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Axel Lin <axel.lin@gmail.com>
-Cc: linux-kernel@vger.kernel.org, Wolfram Sang <w.sang@pengutronix.de>,
-        Liam Girdwood <lrg@ti.com>
-Subject: Re: [PATCH] regulator: max8660: Fix a memory leak due to missing
- devm_kzalloc conversion
-Message-ID: <20120417134451.GE6652@opensource.wolfsonmicro.com>
-References: <1334657210.7265.1.camel@phoenix>
+	Tue, 17 Apr 2012 09:54:25 -0400
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="Dzs2zDY0zgkG72+7"
-Content-Disposition: inline
-In-Reply-To: <1334657210.7265.1.camel@phoenix>
-X-Cookie: Long life is in store for you.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20120417074301.GM20478@pengutronix.de>
+References: <1334620214-25803-1-git-send-email-rob.lee@linaro.org>
+ <1334620214-25803-2-git-send-email-rob.lee@linaro.org> <20120417074301.GM20478@pengutronix.de>
+From: Rob Lee <rob.lee@linaro.org>
+Date: Tue, 17 Apr 2012 08:54:03 -0500
+Message-ID: <CAMXH7KH41kWMPu_dEpetZc8OUD3C0-mtxGbXX0Vqd4EODPWJUg@mail.gmail.com>
+Subject: Re: [PATCH 1/3] ARM: imx: Add common imx cpuidle init functionality.
+To: Sascha Hauer <s.hauer@pengutronix.de>
+Cc: kernel@pengutronix.de, linaro-dev@lists.linaro.org, patches@linaro.org,
+        daniel.lezcano@linaro.org, linux-kernel@vger.kernel.org,
+        amit.kucheria@linaro.org, shawn.guo@linaro.org,
+        linux-arm-kernel@lists.infradead.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, Apr 17, 2012 at 2:43 AM, Sascha Hauer <s.hauer@pengutronix.de> wrote:
+> On Mon, Apr 16, 2012 at 06:50:12PM -0500, Robert Lee wrote:
+>> Add common cpuidle init functionality that can be used by various
+>> imx platforms.
+>>
+>> Signed-off-by: Robert Lee <rob.lee@linaro.org>
+>> ---
+>> diff --git a/arch/arm/plat-mxc/Makefile b/arch/arm/plat-mxc/Makefile
+>> index e81290c..7c9e05f 100644
+>> --- a/arch/arm/plat-mxc/Makefile
+>> +++ b/arch/arm/plat-mxc/Makefile
+>> @@ -16,6 +16,8 @@ obj-$(CONFIG_MXC_ULPI) += ulpi.o
+>>  obj-$(CONFIG_MXC_USE_EPIT) += epit.o
+>>  obj-$(CONFIG_MXC_DEBUG_BOARD) += 3ds_debugboard.o
+>>  obj-$(CONFIG_CPU_FREQ_IMX)    += cpufreq.o
+>> +obj-$(CONFIG_CPU_IDLE)    += cpuidle.o
+>> +
+>>  ifdef CONFIG_SND_IMX_SOC
+>>  obj-y += ssi-fiq.o
+>>  obj-y += ssi-fiq-ksym.o
+>> diff --git a/arch/arm/plat-mxc/cpuidle.c b/arch/arm/plat-mxc/cpuidle.c
+>> new file mode 100644
+>> index 0000000..d1c9301
+>> --- /dev/null
+>> +++ b/arch/arm/plat-mxc/cpuidle.c
+>> @@ -0,0 +1,89 @@
+>> +/*
+>> + * Copyright 2012 Freescale Semiconductor, Inc.
+>> + * Copyright 2012 Linaro Ltd.
+>> + *
+>> + * The code contained herein is licensed under the GNU General Public
+>> + * License. You may obtain a copy of the GNU General Public License
+>> + * Version 2 or later at the following locations:
+>> + *
+>> + * http://www.opensource.org/licenses/gpl-license.html
+>> + * http://www.gnu.org/copyleft/gpl.html
+>> + */
+>> +
+>> +#include <linux/kernel.h>
+>> +#include <linux/io.h>
+>> +#include <linux/cpuidle.h>
+>> +#include <linux/hrtimer.h>
+>> +#include <linux/err.h>
+>> +#include <linux/slab.h>
+>> +
+>> +static struct cpuidle_device __percpu * imx_cpuidle_devices;
+>> +static struct cpuidle_driver *drv;
+>> +
+>> +void __init imx_cpuidle_set_driver(struct cpuidle_driver *p)
+>> +{
+>> +     drv = p;
+>> +}
+>
+> You like it complicated, eh? Why do you introduce a function which sets
+> a variable...
+>
 
---Dzs2zDY0zgkG72+7
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+This complication is used to deal with the timing of various levels of
+init calls.  More explanation below.
 
-On Tue, Apr 17, 2012 at 06:06:50PM +0800, Axel Lin wrote:
-> commit 4d26f7 "regulator: max8660: Use devm_kzalloc()" missed to
-> replace kzalloc by devm_kzalloc. Fix it.
+>> +
+>> +void imx_cpuidle_devices_uninit(void)
+>> +{
+>> +     int cpu_id;
+>> +     struct cpuidle_device *dev;
+>> +
+>> +     for_each_possible_cpu(cpu_id) {
+>> +             dev = per_cpu_ptr(imx_cpuidle_devices, cpu_id);
+>> +             cpuidle_unregister_device(dev);
+>> +     }
+>> +
+>> +     free_percpu(imx_cpuidle_devices);
+>> +}
+>> +
+>> +static int __init imx_cpuidle_init(void)
+>
+> ... instead of passing it directly to the function which uses it?
+>
 
-Applied, thanks.
+If I called imx_cpuidle_init directly from imx5 or imx6q init
+routines, it would be getting called before the coreinit_call of core
+cpuidle causing a failure.  There were various other directions to
+take and all seemed less desirable than this one.
 
---Dzs2zDY0zgkG72+7
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+One alternative would be to add a function to return the pointer to
+the cpuidle driver object based on the machine type.  Functionality
+exists to identify imx5 as a machine type but not imx6q, so I couldn't
+use that machine based method without adding that extra code.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+Another alternative would be to add a general platform lateinit_call
+function to each platforms that support cpuidle.
 
-iQIcBAEBAgAGBQJPjXPHAAoJEBus8iNuMP3dc/MP/0DofGws4m5ZjbaB594got85
-8AVaIZ0TxyiEPxc+dKFYlj2jaa4LGrizXPKzT9X3i7Y2PEXsbFdN2/3x8BKLsW8Q
-HmZKuHSb6zzEA6H1U/L3iF4H+w3kiHOsVqFPNhWgR0NnFl5gRe9YYsadAER4K5Gy
-hwSR0KNtdOjUD92it0SyLRC5eNyeHDarOc6TOZEtCAyIqRE7VfnUy2UOkQFuY5SV
-yyNiYTATLyUsvwUpPrQZyzN8LVkyXEAoI2mQVtBoiskAj//oQOEMJdXkx1SbwHHj
-1f2u+czutvzS4Cf1nGFLZ1TZVax6lyiMuD5dTBRqClHOcysdoP/puk5XtYwJYF36
-57GNsnYK+x19OZD05fcQ1F9mdn9LPWOeu8PBIFkYF4U9d124Q02YInOcAVYu9eEG
-aQdjMcGRctBoM6NNDRkilVFmYHjfrau8aHgeW3iL0sGhDP6o11+gfSGUgUUNW3fy
-djd5Cev4yfQBIaFSV2JIG6MsvWagpQ2HQaGaDR0xTS6yJXuFHgnLImqeIej/PjN8
-07It6aI8cdc5vEFCPmwgvq+5Id1qqctSkSMwd0PNwqXepuI2CGvDlmwh1OnoxHOk
-v1mmDIkvmouJp5mhChwtIjzEqQz6t633ghfVAYLp4gzBiYUA1u2Aa91BiqJyLhj0
-pDVj/aGJsjkY9xidY0tr
-=Qnc/
------END PGP SIGNATURE-----
+>> +{
+>> +     struct cpuidle_device *dev;
+>> +     int cpu_id, ret;
+>> +
+>> +     if (!drv || drv->state_count > CPUIDLE_STATE_MAX) {
+>> +             pr_err("%s: Invalid Input\n", __func__);
+>
+> You introduce a pointless error message on SoCs not setting a cpuidle
+> driver. When will people learn that initcalls do not only run on
+> machines they have on their desk?
+>
 
---Dzs2zDY0zgkG72+7--
+Will fix in next version.
+
+>> +             return -EINVAL;
+>> +     }
+>> +
+>> +     ret = cpuidle_register_driver(drv);
+>> +
+>> +     if (ret) {
+>> +             pr_err("%s: Failed to register cpuidle driver\n", __func__);
+>
+> It's always nice to add the return value to the error message to get a
+> clue *what* went wrong. The function name though is rather
+> uninteresting.
+
+Will add the return value in the next version.
+
+>
+> Sascha
+>
+>
+> --
+> Pengutronix e.K.                           |                             |
+> Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+> Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
+> Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
