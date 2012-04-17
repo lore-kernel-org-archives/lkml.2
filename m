@@ -1,71 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752850Ab2DQVHP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Apr 2012 17:07:15 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:38188 "EHLO mx1.redhat.com"
+	id S1753032Ab2DQVH3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Apr 2012 17:07:29 -0400
+Received: from mga09.intel.com ([134.134.136.24]:59135 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752018Ab2DQVHO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Apr 2012 17:07:14 -0400
-Date: Tue, 17 Apr 2012 17:07:00 -0400
-From: Josh Boyer <jwboyer@redhat.com>
-To: Ben Hutchings <ben@decadent.org.uk>
-Cc: Matt Carlson <mcarlson@broadcom.com>, Michael Chan <mchan@broadcom.com>,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: tg3 'No PHY devices' loading issue
-Message-ID: <20120417210700.GJ19507@zod.bos.redhat.com>
-References: <20120417141856.GA19507@zod.bos.redhat.com>
- <20120417185007.GA3742@mcarlson.broadcom.com>
- <20120417191042.GB3932@decadent.org.uk>
- <20120417194029.GH19507@zod.bos.redhat.com>
- <20120417205955.GC3932@decadent.org.uk>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120417205955.GC3932@decadent.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1752855Ab2DQVHZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Apr 2012 17:07:25 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
+   d="scan'208";a="133650428"
+From: Seth Heasley <seth.heasley@intel.com>
+To: Grant Likely <grant.likely@secretlab.ca>,
+        Linus Walleij <linus.walleij@stericsson.com>
+Cc: linux-kernel@vger.kernel.org, James Ralston <james.d.ralston@intel.com>,
+        Seth Heasley <seth.heasley@intel.com>
+Subject: [PATCH 2/3] gpio-sch: Add Intel Centerton DeviceID for GPIO
+Date: Tue, 17 Apr 2012 14:04:21 -0700
+Message-Id: <1334696661-3569-1-git-send-email-seth.heasley@intel.com>
+X-Mailer: git-send-email 1.7.4.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 17, 2012 at 09:59:55PM +0100, Ben Hutchings wrote:
-> On Tue, Apr 17, 2012 at 03:40:30PM -0400, Josh Boyer wrote:
-> > On Tue, Apr 17, 2012 at 08:10:42PM +0100, Ben Hutchings wrote:
-> > > On Tue, Apr 17, 2012 at 11:50:07AM -0700, Matt Carlson wrote:
-> > > > On Tue, Apr 17, 2012 at 10:18:57AM -0400, Josh Boyer wrote:
-> > > > > Hi Matt and Michael,
-> > > > > 
-> > > > > I'm seeing an odd issue with the tg3 driver on one of my development
-> > > > > machines.  I've tried kernels 3.2.10, 3.3.0, 3.3.1, 3.3.2 and 3.4-rc3
-> > > > > and they all seem to exhibit this issue now.  When the machine boots
-> > > > > and the tg3 driver is loaded, it fails to find a PHY and then reports
-> > > > > 'Problem fetching invariants of chip'.  If I do a rmmod/modprobe of
-> > > > > tg3 after login, the probe seems to work fine and ethernet works as
-> > > > > expected.  You can see this in the dmesg below:
-> > > [...]
-> > > > The 57788 uses the broadcom phylib module.  For some reason, it isn't
-> > > > available the first module load attempt.  A while ago, code was added to
-> > > > phylib to request modules from userspace if the particular phy support
-> > > > code wasn't already loaded.  It looks like this mechanism isn't working
-> > > > too well the first time through.
-> > > [...]
-> > > 
-> > > At a guess, tg3 is in the initramfs but broadcom isn't.
-> > 
-> > Good guess.  At least on one of the initramfs' I checked.  I'll verify
-> > the others, but it seems likely they match.  As I just said in my other
-> > reply, I would have expected tg3 to have a module dep on it to get it
-> > included in the initramfs built, but it seems that isn't the case.
->  
-> tg3 doesn't use any symbols from broadcom, which is the only way
-> depmod can find dependencies.
-> 
-> In initramfs-tools (used in Debian and its derivatives) we just copy
-> all PHY drivers into the initramfs by default.  dracut should probably
-> do the same, at least when phylib is in the initramfs (or built into
-> the kernel).  (tg3 does use symbols from phylib.)
+This patch adds the Intel Centerton processor DeviceID for GPIO. The DeviceID is defined in include/linux/pci_ids.h
 
-Heh.  Yep, that's basically what I just concluded as well in my other
-reply.  I'll work with Harald and get that included or something similar
-to it.
+Signed-off-by: Seth Heasley <seth.heasley@intel.com>
+---
+ drivers/gpio/Kconfig    |    9 ++++++---
+ drivers/gpio/gpio-sch.c |    8 ++++++++
+ 2 files changed, 14 insertions(+), 3 deletions(-)
 
-josh
+diff --git a/drivers/gpio/Kconfig b/drivers/gpio/Kconfig
+index e03653d..d84eb4d 100644
+--- a/drivers/gpio/Kconfig
++++ b/drivers/gpio/Kconfig
+@@ -162,13 +162,13 @@ config GPIO_VR41XX
+ 	  Say yes here to support the NEC VR4100 series General-purpose I/O Uint
+ 
+ config GPIO_SCH
+-	tristate "Intel SCH/TunnelCreek GPIO"
++	tristate "Intel SCH/TunnelCreek/Centerton GPIO"
+ 	depends on PCI && X86
+ 	select MFD_CORE
+ 	select LPC_SCH
+ 	help
+-	  Say yes here to support GPIO interface on Intel Poulsbo SCH
+-	  or Intel Tunnel Creek processor.
++	  Say yes here to support GPIO interface on Intel Poulsbo SCH,
++	  Intel Tunnel Creek processor or Intel Centerton processor.
+ 	  The Intel SCH contains a total of 14 GPIO pins. Ten GPIOs are
+ 	  powered by the core power rail and are turned off during sleep
+ 	  modes (S3 and higher). The remaining four GPIOs are powered by
+@@ -177,6 +177,9 @@ config GPIO_SCH
+ 	  system from the Suspend-to-RAM state.
+ 	  The Intel Tunnel Creek processor has 5 GPIOs powered by the
+ 	  core power rail and 9 from suspend power supply.
++	  The Intel Centerton processor has a total of 30 GPIO pins.
++	  Twenty-one are powered by the core power rail and 9 from the
++	  suspend power supply.
+ 
+ config GPIO_VX855
+ 	tristate "VIA VX855/VX875 GPIO"
+diff --git a/drivers/gpio/gpio-sch.c b/drivers/gpio/gpio-sch.c
+index 8cadf4d..424dce8 100644
+--- a/drivers/gpio/gpio-sch.c
++++ b/drivers/gpio/gpio-sch.c
+@@ -232,6 +232,14 @@ static int __devinit sch_gpio_probe(struct platform_device *pdev)
+ 			sch_gpio_resume.ngpio = 9;
+ 			break;
+ 
++		case PCI_DEVICE_ID_INTEL_CENTERTON_ILB:
++			sch_gpio_core.base = 0;
++			sch_gpio_core.ngpio = 21;
++
++			sch_gpio_resume.base = 21;
++			sch_gpio_resume.ngpio = 9;
++			break;
++
+ 		default:
+ 			return -ENODEV;
+ 	}
+-- 
+1.7.4.4
+
