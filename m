@@ -1,113 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755622Ab2DQR7n (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Apr 2012 13:59:43 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:19081 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753557Ab2DQR7m (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Apr 2012 13:59:42 -0400
-Message-ID: <4F8DAF89.5070805@redhat.com>
-Date: Tue, 17 Apr 2012 13:59:37 -0400
-From: Ric Wheeler <rwheeler@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120329 Thunderbird/11.0.1
+	id S1755849Ab2DQSAB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Apr 2012 14:00:01 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:43396 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755591Ab2DQSAA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Apr 2012 14:00:00 -0400
+Date: Tue, 17 Apr 2012 18:59:55 +0100
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: "J. Bruce Fields" <bfields@fieldses.org>, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org
+Subject: Re: [git pull] vfs and fs fixes
+Message-ID: <20120417175954.GV6589@ZenIV.linux.org.uk>
+References: <20120417052511.GU6589@ZenIV.linux.org.uk>
+ <CA+55aFw75=Mtq1njQ9vNmNsGuTPbpUhLHnb7YBLmCZs4Q5ByMA@mail.gmail.com>
+ <20120417162216.GB27426@fieldses.org>
+ <CA+55aFzTKt43-qm4se2ac24kEVQO=aH8sckh0e-Lf-wydnYHfg@mail.gmail.com>
 MIME-Version: 1.0
-To: Zheng Liu <gnehzuil.liu@gmail.com>
-CC: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        linux-ext4@vger.kernel.org, Zheng Liu <wenqing.lz@taobao.com>
-Subject: Re: [RFC][PATCH 0/3] add FALLOC_FL_NO_HIDE_STALE flag in fallocate
-References: <1334681618-9452-1-git-send-email-wenqing.lz@taobao.com>
-In-Reply-To: <1334681618-9452-1-git-send-email-wenqing.lz@taobao.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CA+55aFzTKt43-qm4se2ac24kEVQO=aH8sckh0e-Lf-wydnYHfg@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/17/2012 12:53 PM, Zheng Liu wrote:
-> Hi list,
->
-> fallocate is a useful system call because it can preallocate some disk blocks
-> for a file and keep blocks contiguous.  However, it has a defect that file
-> system will convert an uninitialized extent to be an initialized when the user
-> wants to write some data to this file, because file system create an
-> unititalized extent while it preallocates some blocks in fallocate (e.g. ext4).
-> Especially, it causes a severe degradation when the user tries to do some
-> random write operations, which frequently modifies the metadata of this file.
-> We meet this problem in our product system at Taobao.  Last month, in ext4
-> workshop, we discussed this problem and the Google faces the same problem.  So
-> a new flag, FALLOC_FL_NO_HIDE_STALE, is added in order to solve this problem.
-> When this flag is set, file system will create an inititalized extent for this
-> file.  So it avoids the conversion from uninitialized to initialized.  If users
-> want to use this flag, they must guarantee that file has been initialized by
-> themselves before it is read at the same offset.  This flag is added in vfs so
-> that other file systems can also support this flag to improve the performance.
+On Tue, Apr 17, 2012 at 09:33:06AM -0700, Linus Torvalds wrote:
+> On Tue, Apr 17, 2012 at 9:22 AM, J. Bruce Fields <bfields@fieldses.org> wrote:
 
-I really, really don't like exposing stale data to users and applications.
+> In fact I don't think you need even that much. Just a simple
+> 
+>   touch a
+>   ln a b
+>   mv a b
+> 
+> looks like it should deadlock on itself, no? source and dest inodes
+> will be the same, so the mutex_lock() will just deadlock without even
+> any ABBA race.
 
-This is something that no enterprise file system (or distribution) would be able 
-to support and it totally breaks one of the age old promises that file systems 
-have always given to applications (if you preallocate and don't write, you will 
-read back zeros).
-
-Sounds like we are proposing the introduction a huge security hole instead of 
-addressing the performance issue head on. Let's not punt on solving the design 
-challenge by relying on the inherent goodness of arbitrary users just yet please!
-
-You could get both security and avoid the run time hit by fully writing the file 
-or by having a variation that relied on "discard" (i.e., no need to zero data if 
-we can discard or track it as unwritten).
-
-Ric
-
-
->
-> I try to make ext4 support this new flag, and run a simple test in my own
-> desktop to verify it.  The machine has a Intel(R) Core(TM)2 Duo CPU E8400, 4G
-> memory and a WDC WD1600AAJS-75M0A0 160G SATA disk.  I use the following script
-> to tset the performance.
->
-> #/bin/sh
-> mkfs.ext4 ${DEVICE}
-> mount -t ext4 ${DEVICE} ${TARGET}
-> fallocate -l 27262976 ${TARGET}/test # the size of the file is 256M (*)
-> time for((i=0;i<2000;i++)); do dd if=/dev/zero of=/mnt/sda1/test_256M \
-> 	conv=notrunc bs=4k count=1 seek=`expr $i \* 16` oflag=sync,direct \
-> 	2>/dev/null; done
->
-> * I write a wrapper program to call fallocate(2) with FALLOC_FL_NO_HIDE_STALE
->    flag because the userspace tool doesn't support the new flag.
->
-> The result:
-> 	w/o 		w/
-> real	1m16.043s	0m17.946s	-76.4%
-> user	0m0.195s	0m0.192s	-1.54%
-> sys	0m0.468s	0m0.462s	-1.28%
->
-> Obviously, this flag will bring an secure issue because the malicious user
-> could use this flag to get other user's data if (s)he doesn't do a
-> initialization before reading this file.  Thus, a sysctl parameter
-> 'fs.falloc_no_hide_stale' is defined in order to let administrator to determine
-> whether or not this flag is enabled.  Currently, this flag is disabled by
-> default.  I am not sure whether this is enough or not.  Another option is that
-> a new Kconfig entry is created to remove this flag during the kernel is
-> complied.  So any suggestions or comments are appreciated.
->
-> Regards,
-> Zheng
->
-> Zheng Liu (3):
->        vfs: add FALLOC_FL_NO_HIDE_STALE flag in fallocate
->        vfs: add security check for _NO_HIDE_STALE flag
->        ext4: add FALLOC_FL_NO_HIDE_STALE support
->
->   fs/ext4/extents.c      |    7 +++++--
->   fs/open.c              |   12 +++++++++++-
->   include/linux/falloc.h |    5 +++++
->   include/linux/sysctl.h |    1 +
->   kernel/sysctl.c        |   10 ++++++++++
->   5 files changed, 32 insertions(+), 3 deletions(-)
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-ext4" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-
+No, this one will bail out much earlier.
