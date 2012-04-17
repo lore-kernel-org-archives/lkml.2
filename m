@@ -1,46 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753227Ab2DQSy0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Apr 2012 14:54:26 -0400
-Received: from mga02.intel.com ([134.134.136.20]:3445 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752059Ab2DQSyZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Apr 2012 14:54:25 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
-   d="scan'208";a="133604972"
-From: Seth Heasley <seth.heasley@intel.com>
-To: Bjorn Helgaas <bhelgaas@google.com>
-Cc: linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
-        James Ralston <james.d.ralston@intel.com>,
-        Seth Heasley <seth.heasley@intel.com>
-Subject: [PATCH 1/3] pci_ids: Add Intel Centerton Legacy Block DeviceID
-Date: Tue, 17 Apr 2012 11:51:23 -0700
-Message-Id: <1334688683-3280-1-git-send-email-seth.heasley@intel.com>
-X-Mailer: git-send-email 1.7.4.4
+	id S1753399Ab2DQSyi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Apr 2012 14:54:38 -0400
+Received: from li9-11.members.linode.com ([67.18.176.11]:38779 "EHLO
+	test.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753341Ab2DQSyh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Apr 2012 14:54:37 -0400
+Date: Tue, 17 Apr 2012 14:54:33 -0400
+Message-Id: <E1SKDXt-0003Hz-A7@tytso-glaptop.cam.corp.google.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Andi Kleen <andi@firstfloor.org>
+Subject: [GIT PULL] ext4 regression fixes for 3.4
+From: "Theodore Ts'o" <tytso@mit.edu>
+Phone: (781) 391-3464
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on test.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds the Integrated Legacy Block DeviceID for the Centerton CPU.  It will be used in the GPIO and Multifunction Devices driver.
 
-Signed-off-by: Seth Heasley <seth.heasley@intel.com>
----
- include/linux/pci_ids.h |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
+The following changes since commit 0034102808e0dbbf3a2394b82b1bb40b5778de9e:
 
-diff --git a/include/linux/pci_ids.h b/include/linux/pci_ids.h
-index 3329965..ab741b0 100644
---- a/include/linux/pci_ids.h
-+++ b/include/linux/pci_ids.h
-@@ -2506,6 +2506,7 @@
- #define PCI_DEVICE_ID_INTEL_MRST_SD2	0x084F
- #define PCI_DEVICE_ID_INTEL_I960	0x0960
- #define PCI_DEVICE_ID_INTEL_I960RM	0x0962
-+#define PCI_DEVICE_ID_INTEL_CENTERTON_ILB	0x0c60
- #define PCI_DEVICE_ID_INTEL_8257X_SOL	0x1062
- #define PCI_DEVICE_ID_INTEL_82573E_SOL	0x1085
- #define PCI_DEVICE_ID_INTEL_82573L_SOL	0x108F
--- 
-1.7.4.4
+  Linux 3.4-rc2 (2012-04-07 18:30:41 -0700)
 
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/tytso/ext4.git tags/ext4_for_linus
+
+for you to fetch changes up to 57f73c2c89a5d3b2ed87201c8100d1fa989a1a65:
+
+  ext4: fix handling of journalled quota options (2012-04-16 18:55:26 -0400)
+
+----------------------------------------------------------------
+Ext4 regression fixes for 3.4
+
+This fixes a scalability problem reported by Andi Kleen and Tim Chen;
+they were quite secretive about the precise nature of their workload,
+but they later admitted that it only showed up when they were using a
+large sparse file, so the amount of data I/O that was needed was close
+to zero.  I'm not sure how realistic this is and it's only a
+regression if you consider changes made since 2.6.39 to be a
+"regression" vis-a-vis the policy regarding post-merge window bug
+fixes, but Linus agreed it was worth fixing, so I'm including it in
+this pull request.
+
+This also fixes the journalled quota mount options, which I
+accidentally broke while I was cleaning up the mount option handling.
+
+----------------------------------------------------------------
+Theodore Ts'o (2):
+      ext4: address scalability issue by removing extent cache statistics
+      ext4: fix handling of journalled quota options
+
+ fs/ext4/ext4.h    |    3 ---
+ fs/ext4/extents.c |    4 ----
+ fs/ext4/super.c   |   48 +++++++++++++++---------------------------------
+ 3 files changed, 15 insertions(+), 40 deletions(-)
