@@ -1,82 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755655Ab2DQDkA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Apr 2012 23:40:00 -0400
-Received: from 066-241-084-054.bus.ashlandfiber.net ([66.241.84.54]:39841 "EHLO
-	bigred.russwhit.org" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754706Ab2DQDjy (ORCPT
+	id S1755402Ab2DQDpJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Apr 2012 23:45:09 -0400
+Received: from mail-pz0-f52.google.com ([209.85.210.52]:45416 "EHLO
+	mail-pz0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752570Ab2DQDpH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Apr 2012 23:39:54 -0400
-Date: Mon, 16 Apr 2012 20:38:53 -0700 (PDT)
-From: Russell Whitaker <russ@ashlandhome.net>
-X-X-Sender: russ@bigred.russwhit.org
-To: Ken Moffat <zarniwhoop@ntlworld.com>
-cc: Nick Bowler <nbowler@elliptictech.com>, linux-kernel@vger.kernel.org
-Subject: Re: default framebuffer
-In-Reply-To: <20120416220249.GA25109@milliways>
-Message-ID: <alpine.LNX.2.00.1204162030370.1631@bigred.russwhit.org>
-References: <alpine.LNX.2.00.1204152129060.2200@bigred.russwhit.org> <20120416140443.GA1153@elliptictech.com> <20120416220249.GA25109@milliways>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: MULTIPART/MIXED; BOUNDARY="-1463798188-1806512402-1334633934=:1631"
+	Mon, 16 Apr 2012 23:45:07 -0400
+From: Sha Zhengju <handai.szj@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: davidel@xmailserver.org, akpm@linux-foundation.org, avi@redhat.com,
+        Sha Zhengju <handai.szj@taobao.com>
+Subject: [PATCH V2] eventfd: change int to __u64 in eventfd_signal()
+Date: Tue, 17 Apr 2012 11:44:36 +0800
+Message-Id: <1334634276-5186-1-git-send-email-handai.szj@taobao.com>
+X-Mailer: git-send-email 1.7.4.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  This message is in MIME format.  The first part should be readable text,
-  while the remaining parts are likely unreadable without MIME-aware tools.
+From: Sha Zhengju <handai.szj@taobao.com>
 
----1463798188-1806512402-1334633934=:1631
-Content-Type: TEXT/PLAIN; charset=iso-8859-1; format=flowed
-Content-Transfer-Encoding: 8BIT
+eventfd_ctx->count is an __u64 counter which is allowed to reach ULLONG_MAX.
+Now eventfd_write() add an __u64 value to "count", but kernel side 
+eventfd_signal() only add an int value to it. So make them consistent.  
 
+changelog v2..v1
+1. Changing 'n' to an unsigned type makes the "if (n < 0)" test a no-op.
 
+Signed-off-by: Sha Zhengju <handai.szj@taobao.com>
 
-On Mon, 16 Apr 2012, Ken Moffat wrote:
+---
+ fs/eventfd.c            |    6 ++----
+ include/linux/eventfd.h |    2 +-
+ 2 files changed, 3 insertions(+), 5 deletions(-)
 
-> On Mon, Apr 16, 2012 at 10:04:43AM -0400, Nick Bowler wrote:
->> Hi Russell,
->>
->> On 2012-04-15 21:37 -0700, Russell Whitaker wrote:
->>>
->>> What should I do to keep the screen at 80x25?
->>
->> Load a bigger console font.  For example, the Terminus font package
->> http://terminus-font.sourceforge.net/ includes some nice console fonts
->> in a variety of sizes.  Try
->>
->>   setfont ter-132b
->>
->> to start.  Your distribution probably provides a convenient way to set
->> the console font at boot.
->>
->> Hope that helps,
->
-> Alternatively, add video=something to the commandline in your
-> bootloader.  I've got a 1600x1200 screen.  On some machines I use my
-> 12x22 font, on the others I use my 8x16 font with video=1024x768 ¹
-> Oh, and on my netbook I use the 12x22 for something like 95x30.  But
-> I also guess that exactly 80x25 is not necessarily critical,
-> provided the characters are legible.
->
-> I've no idea which video= values work, and I'm using a lot more
-> than 80x25, but perhaps video=800x600 or video=640x480 (assuming, of
-> course, that you have a 4:3 screen and not the now-common 16:10)
-> with a small font will be in the right area.
+diff --git a/fs/eventfd.c b/fs/eventfd.c
+index dba15fe..f570e7a 100644
+--- a/fs/eventfd.c
++++ b/fs/eventfd.c
+@@ -51,15 +51,13 @@ struct eventfd_ctx {
+  *
+  * -EINVAL    : The value of @n is negative.
+  */
+-int eventfd_signal(struct eventfd_ctx *ctx, int n)
++__u64 eventfd_signal(struct eventfd_ctx *ctx, __u64 n)
+ {
+ 	unsigned long flags;
+ 
+-	if (n < 0)
+-		return -EINVAL;
+ 	spin_lock_irqsave(&ctx->wqh.lock, flags);
+ 	if (ULLONG_MAX - ctx->count < n)
+-		n = (int) (ULLONG_MAX - ctx->count);
++		n = ULLONG_MAX - ctx->count;
+ 	ctx->count += n;
+ 	if (waitqueue_active(&ctx->wqh))
+ 		wake_up_locked_poll(&ctx->wqh, POLLIN);
+diff --git a/include/linux/eventfd.h b/include/linux/eventfd.h
+index 91bb4f2..3c3ef19 100644
+--- a/include/linux/eventfd.h
++++ b/include/linux/eventfd.h
+@@ -34,7 +34,7 @@ void eventfd_ctx_put(struct eventfd_ctx *ctx);
+ struct file *eventfd_fget(int fd);
+ struct eventfd_ctx *eventfd_ctx_fdget(int fd);
+ struct eventfd_ctx *eventfd_ctx_fileget(struct file *file);
+-int eventfd_signal(struct eventfd_ctx *ctx, int n);
++__u64 eventfd_signal(struct eventfd_ctx *ctx, __u64 n);
+ ssize_t eventfd_ctx_read(struct eventfd_ctx *ctx, int no_wait, __u64 *cnt);
+ int eventfd_ctx_remove_wait_queue(struct eventfd_ctx *ctx, wait_queue_t *wait,
+ 				  __u64 *cnt);
+-- 
+1.7.4.1
 
-Just now put video=640x480 in grub's menu.lst and I got a 80x30 screen.
-That's satisfactory, howeber will also try the larger font suggestion, 
-too.
-
-Thanks guys
-    Russ
->
-> ¹ LatGrkCyr - they are in kbd as of 1.15.3, but there's no telling
-> whether you will like it - people using a light background almost
-> certainly will hate it.
->
-> ken
-> -- 
-> das eine Mal als Tragödie, das andere Mal als Farce
->
----1463798188-1806512402-1334633934=:1631--
