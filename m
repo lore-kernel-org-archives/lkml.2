@@ -1,43 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753257Ab2DQSwY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Apr 2012 14:52:24 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:24690 "EHLO mx1.redhat.com"
+	id S1753318Ab2DQSx3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Apr 2012 14:53:29 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:37614 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751533Ab2DQSwX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Apr 2012 14:52:23 -0400
-Message-ID: <4F8DBBDF.6010803@redhat.com>
-Date: Tue, 17 Apr 2012 14:52:15 -0400
-From: Ric Wheeler <rwheeler@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120329 Thunderbird/11.0.1
+	id S1750763Ab2DQSx1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Apr 2012 14:53:27 -0400
+Message-ID: <4F8DBC20.5010401@redhat.com>
+Date: Tue, 17 Apr 2012 13:53:20 -0500
+From: Eric Sandeen <sandeen@redhat.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.6; rv:11.0) Gecko/20120327 Thunderbird/11.0.1
 MIME-Version: 1.0
-To: "Ted Ts'o" <tytso@mit.edu>, Zheng Liu <gnehzuil.liu@gmail.com>,
-        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        linux-ext4@vger.kernel.org, Zheng Liu <wenqing.lz@taobao.com>
+To: "Ted Ts'o" <tytso@mit.edu>, Ric Wheeler <rwheeler@redhat.com>,
+        Zheng Liu <gnehzuil.liu@gmail.com>, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org, linux-ext4@vger.kernel.org,
+        Zheng Liu <wenqing.lz@taobao.com>
 Subject: Re: [RFC][PATCH 0/3] add FALLOC_FL_NO_HIDE_STALE flag in fallocate
 References: <1334681618-9452-1-git-send-email-wenqing.lz@taobao.com> <4F8DAF89.5070805@redhat.com> <20120417184306.GA5916@thunk.org>
 In-Reply-To: <20120417184306.GA5916@thunk.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+X-Enigmail-Version: 1.4
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/17/2012 02:43 PM, Ted Ts'o wrote:
+On 4/17/12 1:43 PM, Ted Ts'o wrote:
 > On Tue, Apr 17, 2012 at 01:59:37PM -0400, Ric Wheeler wrote:
+>>
 >> You could get both security and avoid the run time hit by fully
 >> writing the file or by having a variation that relied on "discard"
 >> (i.e., no need to zero data if we can discard or track it as
 >> unwritten).
+> 
 > It's certainly the case that if the device supports persistent
 > discard, something which we definitely *should* do is to send the
 > discard at fallocate time and then mark the space as initialized.
-
-This should be all advertised in /sys/block/sda - definitely worth encouraging 
-this for devices. I think that the device mapper "thin" target also supports 
-discard so you could get this behaviour with all devices if needed.
-
->
+> 
 > Unfortunately, not all devices, and in particular no HDD's for which I
 > aware support persistent discard.  And, writing all zero's to the file
 > is in fact what a number of programs for which I am aware (including
@@ -50,36 +49,12 @@ discard so you could get this behaviour with all devices if needed.
 > while it does solve the problem for some use cases (such as DVR's),
 > it's not a complete solution.
 
-We also have a WRITE_SAME (with default pattern of zero data) that has long been 
-used in SCSI to initialize data.
+Can we please start with profiling the workload causing trouble, see why
+ext4 takes such a hit, and see if anything can be done there to fix
+it surgically, rather than just throwing this big hammer at it?
 
->
-> Whether or not it is a security issue is debateable.  If using the
-> fallocate flag requires CAP_SYS_RAWIO, and the process has to
-> explicitly ask for the privilege, a process with those privileges can
-> directly access memory and I/O ports directly, via the ioperm(2) and
-> iopl(2) system calls.  So I think it's possible to be a bit nuanced
-> over whether or not this is as horrible as you might think.
+In my (admittedly quick, hacky) test, xfs suffed about a 1% perf degradation,
+ext4 about 8%.  Until we at least know why ext4 is so much worse, I'll
+signal a strong NAK for this change, for whatever may or may not be worth.  :)
 
-We are still papering over an issue that seems to not be a challenge for XFS.
-
->
-> Ultimately, if there are application programmers who are really
-> desperate for that the last bit of performance, they can always use
-> FIBMAP/FIEMAP and then read/write directly to the block device.  (And
-> no, that's not a theoretical example.)  I think it is a worthwhile
-> goal to provide file system interfaces that allow a trusted process
-> which has the appropriate security capabilities to do things in a
-> safer way than that.
->
-
-I would prefer to let the very few crazy application programmers who need this 
-do insane things instead of opening and exposing data to these applications.
-
-Or have them use a different file system that does not have this same penalty 
-(or to the same degree).
-
-Thanks!
-
-Ric
-
+-Eric
