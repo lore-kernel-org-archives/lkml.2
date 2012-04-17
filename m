@@ -1,82 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754139Ab2DQPlZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Apr 2012 11:41:25 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:54756 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752022Ab2DQPlX (ORCPT
+	id S1755497Ab2DQPlm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Apr 2012 11:41:42 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:50565 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753487Ab2DQPll (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Apr 2012 11:41:23 -0400
-Date: Tue, 17 Apr 2012 08:41:17 -0700
-From: Tejun Heo <tj@kernel.org>
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: Johannes Weiner <hannes@cmpxchg.org>,
-        Glauber Costa <glommer@parallels.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Hugh Dickins <hughd@google.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Daniel Walsh <dwalsh@redhat.com>,
-        "Daniel P. Berrange" <berrange@redhat.com>,
-        Li Zefan <lizf@cn.fujitsu.com>, LKML <linux-kernel@vger.kernel.org>,
-        Cgroups <cgroups@vger.kernel.org>,
-        Containers <containers@lists.linux-foundation.org>
-Subject: Re: [RFD] Merge task counter into memcg
-Message-ID: <20120417154117.GE32402@google.com>
-References: <4F862851.3040208@jp.fujitsu.com>
- <20120412113217.GB11455@somewhere.redhat.com>
- <4F86BFC6.2050400@parallels.com>
- <20120412123256.GI1787@cmpxchg.org>
- <4F86D4BD.1040305@parallels.com>
- <20120412153055.GL1787@cmpxchg.org>
- <20120412163825.GB13069@google.com>
- <20120412172309.GM1787@cmpxchg.org>
- <20120412174155.GC13069@google.com>
- <4F878480.60505@jp.fujitsu.com>
+	Tue, 17 Apr 2012 11:41:41 -0400
+Message-ID: <4F8D8F2D.7030704@landley.net>
+Date: Tue, 17 Apr 2012 10:41:33 -0500
+From: Rob Landley <rob@landley.net>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.28) Gecko/20120313 Thunderbird/3.1.20
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4F878480.60505@jp.fujitsu.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Jesper Juhl <jj@chaosbits.net>
+CC: linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Randy Dunlap <rdunlap@xenotime.net>, trivial@kernel.org,
+        kjsisson@bellsouth.net, Ben Dooks <ben-linux@fluff.org>,
+        Mauro Carvalho Chehab <mchehab@infradead.org>,
+        Ben Dooks <ben@simtec.co.uk>, Jaroslav Kysela <perex@perex.cz>,
+        Takashi Iwai <tiwai@suse.de>, Andy Lutomirski <luto@mit.edu>,
+        "H. Peter Anvin" <hpa@linux.intel.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Josua Dietze <digidietze@draisberghof.de>,
+        Andiry Xu <andiry.xu@amd.com>, Matthew Garrett <mjg@redhat.com>,
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Mike Frysinger <vapier@gentoo.org>,
+        Michael Hennerich <michael.hennerich@analog.com>,
+        linux-media@vger.kernel.org, alsa-devel@alsa-project.org
+Subject: Re: [PATCH] [Trivial] Documentation: Add newline at end-of-file to
+ files lacking one
+References: <alpine.LNX.2.00.1204162329190.21898@swampdragon.chaosbits.net>
+In-Reply-To: <alpine.LNX.2.00.1204162329190.21898@swampdragon.chaosbits.net>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, KAMEZAWA.
-
-On Fri, Apr 13, 2012 at 10:42:24AM +0900, KAMEZAWA Hiroyuki wrote:
-> > So, there's spectrum of solutions between merging task counter and
-> > just directing everyone to kmem without distinguishing task resource
-> > at all, and at the moment voices in my head are succeeding at making
-> > cases for both directions.  What do you guys think about the above two
-> > issues?
+On 04/16/2012 04:35 PM, Jesper Juhl wrote:
+> This patch simply adds a newline character at end-of-file to those
+> files in Documentation/ that currently lack one.
 > 
+> This is done for a few different reasons:
 > 
-> To be honest, I doubt that task counter is unnecessary...memcg can catch
-> oom situation well. I often test 'make -j' under memcg.
-
-Heh, the double negation is confusing me.  Were you trying to say that
-task_counter is necessary or was it the other way around?
-
-> To the questions
-> *   It sounds like a 'ulimit' cgroup. How about overwriting
->     ulimit values via cgroup ? (sounds joke?) Then, overhead will be small but
->     I'm not sure it can be hierarchical and doesn't break userland.
+> A) It's rather annoying when you do "cat some_file.txt" that your
+>    prompt/cursor ends up at the end of the last line of output rather
+>    than on a new line.
 > 
->     If people wants to limit the number of tasks, I think interface should provide it
->     in the unit of objects. Then, I'm ok to have other subsystem for counting something.
->     fork-bomb's memory overhead can be prevent by memcg. What memcg cannot handle
->     is ulimit. If forkbomb exhausts all ulimit/tasks, the user cannot login.
->     So, having task-limit cgroup subsys for a sandbox will make sense in some situation.
+> B) Some tools that process files line-by-line may get confused by the
+>    lack of a newline on the last line.
 > 
-> In short, I don't think it's better to have task-counting and fd-counting in memcg.
-> It's kmem, but it's more than that, I think.
-> Please provide subsys like ulimit.
+> C) The "\ No newline at end of file" line in diffs annoys me for some
+>    reason.
+> 
+> So, let's just add the missing newline once and for all.
+> 
+> Signed-off-by: Jesper Juhl <jj@chaosbits.net>
 
-So, you think that while kmem would be enough to prevent fork-bombs,
-it would still make sense to limit in more traditional ways
-(ie. ulimit style object limits).  Hmmm....
+Acked-by: Rob Landley <rob@landley.net>
 
-Thanks.
-
+Rob
 -- 
-tejun
+GNU/Linux isn't: Linux=GPLv2, GNU=GPLv3+, they can't share code.
+Either it's "mere aggregation", or a license violation.  Pick one.
