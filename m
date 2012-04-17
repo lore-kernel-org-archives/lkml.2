@@ -1,61 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753399Ab2DQSyi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Apr 2012 14:54:38 -0400
-Received: from li9-11.members.linode.com ([67.18.176.11]:38779 "EHLO
-	test.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753341Ab2DQSyh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Apr 2012 14:54:37 -0400
-Date: Tue, 17 Apr 2012 14:54:33 -0400
-Message-Id: <E1SKDXt-0003Hz-A7@tytso-glaptop.cam.corp.google.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Andi Kleen <andi@firstfloor.org>
-Subject: [GIT PULL] ext4 regression fixes for 3.4
-From: "Theodore Ts'o" <tytso@mit.edu>
-Phone: (781) 391-3464
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on test.thunk.org); SAEximRunCond expanded to false
+	id S1753015Ab2DQS4Y (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Apr 2012 14:56:24 -0400
+Received: from oproxy6-pub.bluehost.com ([67.222.54.6]:37186 "HELO
+	oproxy6-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751173Ab2DQS4W (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Apr 2012 14:56:22 -0400
+Message-ID: <4F8DBCFC.4010601@xenotime.net>
+Date: Tue, 17 Apr 2012 11:57:00 -0700
+From: Randy Dunlap <rdunlap@xenotime.net>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
+MIME-Version: 1.0
+To: David Mackey <tdmackey@twitter.com>
+CC: Doug Thompson <dougthompson@xmission.com>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>, trivial@kernel.org,
+        linux-edac@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Vinson Lee <vlee@twitter.com>
+Subject: Re: [PATCH] edac: Fix spelling errors.
+References: <1334687452-10178-1-git-send-email-tdmackey@twitter.com>
+In-Reply-To: <1334687452-10178-1-git-send-email-tdmackey@twitter.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 04/17/2012 11:30 AM, David Mackey wrote:
 
-The following changes since commit 0034102808e0dbbf3a2394b82b1bb40b5778de9e:
+> Signed-off-by: David Mackey <tdmackey@twitter.com>
+> Signed-off-by: Vinson Lee <vlee@twitter.com>
+> ---
+>  drivers/edac/edac_core.h   |    6 +++---
+>  drivers/edac/edac_device.c |   10 +++++-----
+>  drivers/edac/i7core_edac.c |   10 +++++-----
+>  drivers/edac/sb_edac.c     |    6 +++---
+>  4 files changed, 16 insertions(+), 16 deletions(-)
 
-  Linux 3.4-rc2 (2012-04-07 18:30:41 -0700)
 
-are available in the git repository at:
+Acked-by: Randy Dunlap <rdunlap@xenotime.net>
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/tytso/ext4.git tags/ext4_for_linus
+Thanks.
 
-for you to fetch changes up to 57f73c2c89a5d3b2ed87201c8100d1fa989a1a65:
-
-  ext4: fix handling of journalled quota options (2012-04-16 18:55:26 -0400)
-
-----------------------------------------------------------------
-Ext4 regression fixes for 3.4
-
-This fixes a scalability problem reported by Andi Kleen and Tim Chen;
-they were quite secretive about the precise nature of their workload,
-but they later admitted that it only showed up when they were using a
-large sparse file, so the amount of data I/O that was needed was close
-to zero.  I'm not sure how realistic this is and it's only a
-regression if you consider changes made since 2.6.39 to be a
-"regression" vis-a-vis the policy regarding post-merge window bug
-fixes, but Linus agreed it was worth fixing, so I'm including it in
-this pull request.
-
-This also fixes the journalled quota mount options, which I
-accidentally broke while I was cleaning up the mount option handling.
-
-----------------------------------------------------------------
-Theodore Ts'o (2):
-      ext4: address scalability issue by removing extent cache statistics
-      ext4: fix handling of journalled quota options
-
- fs/ext4/ext4.h    |    3 ---
- fs/ext4/extents.c |    4 ----
- fs/ext4/super.c   |   48 +++++++++++++++---------------------------------
- 3 files changed, 15 insertions(+), 40 deletions(-)
+-- 
+~Randy
