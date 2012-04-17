@@ -1,68 +1,159 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755181Ab2DQDed (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Apr 2012 23:34:33 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:60101 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752570Ab2DQDec (ORCPT
+	id S1755440Ab2DQDek (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Apr 2012 23:34:40 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:50409 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755313Ab2DQDeh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Apr 2012 23:34:32 -0400
-Date: Tue, 17 Apr 2012 13:34:18 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>,
-        <linux-arm-kernel@lists.infradead.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Peter Ujfalusi <peter.ujfalusi@ti.com>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        Benoit Cousson <b-cousson@ti.com>
-Subject: linux-next: manual merge of the arm-soc tree with the mfd tree
-Message-Id: <20120417133418.2280ccb3897436e6c8e82398@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0beta7 (GTK+ 2.24.10; i486-pc-linux-gnu)
+	Mon, 16 Apr 2012 23:34:37 -0400
+Message-ID: <1334633672.22293.3.camel@phoenix>
+Subject: [PATCH RFT 2/2] regulator: da9052: Use generic regmap
+ enable/disable operations
+From: Axel Lin <axel.lin@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: David Dajun Chen <dchen@diasemi.com>,
+        Ashish Jangam <ashish.jangam@kpitcummins.com>,
+        "Ying-Chun Liu (PaulLiu)" <paul.liu@linaro.org>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Liam Girdwood <lrg@ti.com>
+Date: Tue, 17 Apr 2012 11:34:32 +0800
+In-Reply-To: <1334633577.22293.1.camel@phoenix>
+References: <1334633577.22293.1.camel@phoenix>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2- 
+Content-Transfer-Encoding: 7bit
 Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Tue__17_Apr_2012_13_34_18_+1000_hlAC=RMhfGPZ.IsS"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Tue__17_Apr_2012_13_34_18_+1000_hlAC=RMhfGPZ.IsS
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Signed-off-by: Axel Lin <axel.lin@gmail.com>
+---
+ drivers/regulator/da9052-regulator.c |   56 +++++++---------------------------
+ 1 files changed, 11 insertions(+), 45 deletions(-)
 
-Hi all,
+diff --git a/drivers/regulator/da9052-regulator.c b/drivers/regulator/da9052-regulator.c
+index eaa91cc5..4f2e6f9 100644
+--- a/drivers/regulator/da9052-regulator.c
++++ b/drivers/regulator/da9052-regulator.c
+@@ -71,7 +71,6 @@ struct da9052_regulator_info {
+ 	int min_uV;
+ 	int max_uV;
+ 	unsigned char volt_shift;
+-	unsigned char en_bit;
+ 	unsigned char activate_bit;
+ };
+ 
+@@ -90,42 +89,6 @@ static int verify_range(struct da9052_regulator_info *info,
+ 	return 0;
+ }
+ 
+-static int da9052_regulator_enable(struct regulator_dev *rdev)
+-{
+-	struct da9052_regulator *regulator = rdev_get_drvdata(rdev);
+-	struct da9052_regulator_info *info = regulator->info;
+-	int offset = rdev_get_id(rdev);
+-
+-	return da9052_reg_update(regulator->da9052,
+-				 DA9052_BUCKCORE_REG + offset,
+-				 1 << info->en_bit, 1 << info->en_bit);
+-}
+-
+-static int da9052_regulator_disable(struct regulator_dev *rdev)
+-{
+-	struct da9052_regulator *regulator = rdev_get_drvdata(rdev);
+-	struct da9052_regulator_info *info = regulator->info;
+-	int offset = rdev_get_id(rdev);
+-
+-	return da9052_reg_update(regulator->da9052,
+-				 DA9052_BUCKCORE_REG + offset,
+-				 1 << info->en_bit, 0);
+-}
+-
+-static int da9052_regulator_is_enabled(struct regulator_dev *rdev)
+-{
+-	struct da9052_regulator *regulator = rdev_get_drvdata(rdev);
+-	struct da9052_regulator_info *info = regulator->info;
+-	int offset = rdev_get_id(rdev);
+-	int ret;
+-
+-	ret = da9052_reg_read(regulator->da9052, DA9052_BUCKCORE_REG + offset);
+-	if (ret < 0)
+-		return ret;
+-
+-	return ret & (1 << info->en_bit);
+-}
+-
+ static int da9052_dcdc_get_current_limit(struct regulator_dev *rdev)
+ {
+ 	struct da9052_regulator *regulator = rdev_get_drvdata(rdev);
+@@ -292,9 +255,9 @@ static struct regulator_ops da9052_dcdc_ops = {
+ 
+ 	.list_voltage = da9052_list_voltage,
+ 	.get_voltage_sel = da9052_get_regulator_voltage_sel,
+-	.is_enabled = da9052_regulator_is_enabled,
+-	.enable = da9052_regulator_enable,
+-	.disable = da9052_regulator_disable,
++	.is_enabled = regulator_is_enabled_regmap,
++	.enable = regulator_enable_regmap,
++	.disable = regulator_disable_regmap,
+ };
+ 
+ static struct regulator_ops da9052_ldo_ops = {
+@@ -302,9 +265,9 @@ static struct regulator_ops da9052_ldo_ops = {
+ 
+ 	.list_voltage = da9052_list_voltage,
+ 	.get_voltage_sel = da9052_get_regulator_voltage_sel,
+-	.is_enabled = da9052_regulator_is_enabled,
+-	.enable = da9052_regulator_enable,
+-	.disable = da9052_regulator_disable,
++	.is_enabled = regulator_is_enabled_regmap,
++	.enable = regulator_enable_regmap,
++	.disable = regulator_disable_regmap,
+ };
+ 
+ #define DA9052_LDO(_id, step, min, max, sbits, ebits, abits) \
+@@ -316,12 +279,13 @@ static struct regulator_ops da9052_ldo_ops = {
+ 		.id = DA9052_ID_##_id,\
+ 		.n_voltages = (max - min) / step + 1, \
+ 		.owner = THIS_MODULE,\
++		.enable_reg = DA9052_BUCKCORE_REG + DA9052_ID_##_id, \
++		.enable_mask = 1 << (ebits),\
+ 	},\
+ 	.min_uV = (min) * 1000,\
+ 	.max_uV = (max) * 1000,\
+ 	.step_uV = (step) * 1000,\
+ 	.volt_shift = (sbits),\
+-	.en_bit = (ebits),\
+ 	.activate_bit = (abits),\
+ }
+ 
+@@ -334,12 +298,13 @@ static struct regulator_ops da9052_ldo_ops = {
+ 		.id = DA9052_ID_##_id,\
+ 		.n_voltages = (max - min) / step + 1, \
+ 		.owner = THIS_MODULE,\
++		.enable_reg = DA9052_BUCKCORE_REG + DA9052_ID_##_id, \
++		.enable_mask = 1 << (ebits),\
+ 	},\
+ 	.min_uV = (min) * 1000,\
+ 	.max_uV = (max) * 1000,\
+ 	.step_uV = (step) * 1000,\
+ 	.volt_shift = (sbits),\
+-	.en_bit = (ebits),\
+ 	.activate_bit = (abits),\
+ }
+ 
+@@ -430,6 +395,7 @@ static int __devinit da9052_regulator_probe(struct platform_device *pdev)
+ 
+ 	config.dev = &pdev->dev;
+ 	config.driver_data = regulator;
++	config.regmap = da9052->regmap;
+ 	if (pdata && pdata->regulators) {
+ 		config.init_data = pdata->regulators[pdev->id];
+ 	} else {
+-- 
+1.7.5.4
 
-Today's linux-next merge of the arm-soc tree got a conflict in
-arch/arm/mach-omap2/board-generic.c between commit aa1d7775696c ("mfd:
-Convert twl6040 to i2c driver, and separate it from twl core") from the
-mfd tree and commit 93651b85bbd1 ("ARM: OMAP2+: board-generic: Remove i2c
-static init") from the arm-soc tree.
 
-The latter seems to supercede the former, so I used that.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
 
---Signature=_Tue__17_Apr_2012_13_34_18_+1000_hlAC=RMhfGPZ.IsS
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJPjOS6AAoJEECxmPOUX5FEluIP/0NcHeFr1FnOj/kti0tAy7lm
-/8qwMTPk2+7X2Yq6q9dJyf/QqqcgyPUxCceE9H2PBOhOHWTdMs7j7GH+I+9yx6F8
-cmX9CRQUreY68arqYr/8DSQUX8T0t4RIt59FDRhMsTt2ObUcaGDhMU2iDW4TpKcd
-AgaNmKSImw0y+HvYadsAnF83IrrbASykuRp07Md7J4QPkaLWGd8Lq9SmT842mFO+
-/pbos+3vIygw56/qdxCPnmWwO7qD0PapbSiuZCEChCNxmpfrc1ZAWT9w7qhUNeaR
-LBb7uzwyhGdg7zZMHkGy/b+uSWZFAm91vCHY4aQsc+hY3Y0s81Y7PunJDISAC/GV
-3bdex5H2Ekx8zESkSHT9n5lUmA68JvtV6sOIOz1IODtfNmPJukv1OcRGH4wViS1V
-RtO28pIhPNKkZoJmYES0xpo+mLg1JZB9jSvwHmRCYdFok9VHoZzLRtV9R9WUZn4D
-Q9mFfLN7gisihIh3b5r9cFXupP2xi2TPNJWF9IQoyx4QV/+frIX8UECkk4FaWHbk
-TLmPCuGqTr84KiNNwE6ysSGsSdJDilLdxegTpuMsZTWvGm/cFauila3YnLE12U3p
-CxwSMkEvklfxN4atHsgM3JQzV+vq+UecTRcoas1BZIyPyc4VGWX+31Ng0BTdu7nP
-yA+jMKgBP0lqg5VP9xef
-=OvcQ
------END PGP SIGNATURE-----
-
---Signature=_Tue__17_Apr_2012_13_34_18_+1000_hlAC=RMhfGPZ.IsS--
