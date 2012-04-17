@@ -1,100 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755934Ab2DQL7a (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Apr 2012 07:59:30 -0400
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:9946 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755174Ab2DQL73 (ORCPT
+	id S1755846Ab2DQMFH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Apr 2012 08:05:07 -0400
+Received: from bedivere.hansenpartnership.com ([66.63.167.143]:37339 "EHLO
+	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755240Ab2DQMFE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Apr 2012 07:59:29 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Tue, 17 Apr 2012 04:59:17 -0700
-Message-ID: <4F8D5B09.8080309@nvidia.com>
-Date: Tue, 17 Apr 2012 17:29:05 +0530
-From: Laxman Dewangan <ldewangan@nvidia.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101208 Thunderbird/3.1.7
-MIME-Version: 1.0
-To: Jonathan Cameron <jic23@cam.ac.uk>
-CC: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "max@stro.at" <max@stro.at>,
-        "jbrenner@taosinc.com" <jbrenner@taosinc.com>,
-        "bfreed@chromium.org" <bfreed@chromium.org>,
-        "lars@metafoo.de" <lars@metafoo.de>,
-        "grundler@chromium.org" <grundler@chromium.org>,
-        "linux-iio@vger.kernel.org" <linux-iio@vger.kernel.org>,
-        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] staging: iio: light: isl29018: use regmap for register
- access
-References: <1334652631-21032-1-git-send-email-ldewangan@nvidia.com> <4F8D5506.6070105@cam.ac.uk>
-In-Reply-To: <4F8D5506.6070105@cam.ac.uk>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+	Tue, 17 Apr 2012 08:05:04 -0400
+Message-ID: <1334664298.3766.62.camel@dabdike>
+Subject: Re: [PATCH 07/11] blkcg: make request_queue bypassing on allocation
+From: James Bottomley <James.Bottomley@HansenPartnership.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: Vivek Goyal <vgoyal@redhat.com>, axboe@kernel.dk, ctalbott@google.com,
+        rni@google.com, linux-kernel@vger.kernel.org, cgroups@vger.kernel.org,
+        containers@lists.linux-foundation.org
+Date: Tue, 17 Apr 2012 16:04:58 +0400
+In-Reply-To: <20120413211640.GH12233@google.com>
+References: <1334347895-6268-1-git-send-email-tj@kernel.org>
+	 <1334347895-6268-8-git-send-email-tj@kernel.org>
+	 <20120413203205.GI26383@redhat.com> <20120413203726.GE12233@google.com>
+	 <20120413204446.GK26383@redhat.com> <20120413204710.GF12233@google.com>
+	 <20120413205501.GL26383@redhat.com> <20120413210548.GG12233@google.com>
+	 <20120413211640.GH12233@google.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.1 
 Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, 2012-04-13 at 14:16 -0700, Tejun Heo wrote:
+> On Fri, Apr 13, 2012 at 02:05:48PM -0700, Tejun Heo wrote:
+> > On Fri, Apr 13, 2012 at 04:55:01PM -0400, Vivek Goyal wrote:
+> > > But neither seems to be the case here. So to make sure that blkg_lookup()
+> > > under rcu will see the updated value of queue flag (bypass), are we
+> > > relying on the fact that caller should see the DEAD flag and not go
+> > > ahead with blkg_lookup()?  If yes, atleast it is not obivious.
+> > 
+> > We're relying on the fact that it doesn't matter anymore because all
+> > blkgs will be shoot down in queue cleanup path which goes through rcu
+> > free, which is different from deactivating individual policies.  It
+> > indeed is subtle.  Umm... this is starting to get ridiculous.  Why the
+> > hell was megaraid messing with so many queues anyways?
+> 
+> I suppose megaraid depends on sequential LUN scan which SCSI
+> implements by creating sdev for each LUN, trying to see whether it
+> actually exists and then destroys the sdev if not.  Urgh.... so, we
+> seem to be stuck with it.
 
-HI Jonathan,
+Right, sorry ... it's not just megaraid, it's any SCSI-2 device.  The
+standard says we have to probe the LUNs one at a time to see if they're
+there.  SCSI-3 on supports the REPORT LUNS command which just returns a
+list which obviates the need to probe on every one but not all older
+(and USB to be frank) devices support this.
 
-Thanks for fast review.
+> So, the current code is technically correct although subtle like hell.
+> We can RCU defer blk_put_queue() from blk_cleanup_queue() using
+> call_rcu() to make clear that RCU grace period is necessary there.
+> Any better ideas?
 
-On Tuesday 17 April 2012 05:03 PM, Jonathan Cameron wrote:
-> On 4/17/2012 9:50 AM, Laxman Dewangan wrote:
->> Using regmap for accessing register through i2c bus. This will
->> remove the code for caching registers, read-modify-write logics.
->> Also it will provide the debugfs feature to dump register
->> through regmap debugfs.
-> I'd prefer the intial tab fixup for the kconfig file as a separate
-> patch, but other than that
-> all looks good.
->
+Not really ... except that perhaps we might redo LUN scanning to use
+just a single queue, so repurpose the LUN underneath, but not destroy
+the old queue and setup the new one?  It's a bit counter intuitive, but
+it shouldn't be impossible.
 
-Yes, this make sense. I will create fist patch for fixing this and then 
-next patch for actual my change.
+James
 
-> This will probably cause issues alongside the series I sent to Greg the
-> other day though
-> so you may want to sit on it for a day or two and rebase.
 
-I will wait for your change to be in linux-next and then I will create 
-next patches.
-
->> Signed-off-by: Laxman Dewangan<ldewangan@nvidia.com>
-> Acked-by: Jonathan Cameron<jic23@kernel.org>
->> ---
->>    drivers/staging/iio/light/Kconfig    |   19 ++--
->>    drivers/staging/iio/light/isl29018.c |  176 +++++++++++++++++-----------------
->>    2 files changed, 99 insertions(+), 96 deletions(-)
->>
->> diff --git a/drivers/staging/iio/light/Kconfig b/drivers/staging/iio/light/Kconfig
->> index 53b49f7..fd39f72 100644
->> --- a/drivers/staging/iio/light/Kconfig
->> +++ b/drivers/staging/iio/light/Kconfig
->> @@ -4,15 +4,16 @@
->>    menu "Light sensors"
->>
->>    config SENSORS_ISL29018
->> -        tristate "ISL 29018 light and proximity sensor"
->> -        depends on I2C
->> -        default n
->> -        help
->> -         If you say yes here you get support for ambient light sensing and
->> -         proximity infrared sensing from Intersil ISL29018.
->> -         This driver will provide the measurements of ambient light intensity
->> -         in lux, proximity infrared sensing and normal infrared sensing.
->> -         Data from sensor is accessible via sysfs.
->> +     tristate "ISL 29018 light and proximity sensor"
->> +     depends on I2C
->> +     select REGMAP_I2C
->> +     default n
->> +     help
->> +      If you say yes here you get support for ambient light sensing and
->> +      proximity infrared sensing from Intersil ISL29018.
->> +      This driver will provide the measurements of ambient light intensity
->> +      in lux, proximity infrared sensing and normal infrared sensing.
->> +      Data from sensor is accessible via sysfs.
-> Down to here is a valid but unconnected change.  Can you break this out
-> to a separate patch?
-
-Sure, I will do.
