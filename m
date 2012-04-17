@@ -1,85 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756184Ab2DQPCD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Apr 2012 11:02:03 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:21717 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753996Ab2DQPCA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Apr 2012 11:02:00 -0400
-Date: Tue, 17 Apr 2012 11:02:19 -0400
-From: Jeff Layton <jlayton@redhat.com>
-To: Miklos Szeredi <miklos@szeredi.hu>
-Cc: Steve Dickson <SteveD@redhat.com>,
-        "Myklebust\, Trond" <Trond.Myklebust@netapp.com>,
-        Bernd Schubert <bernd.schubert@itwm.fraunhofer.de>,
-        Malahal Naineni <malahal@us.ibm.com>,
-        "linux-nfs\@vger.kernel.org" <linux-nfs@vger.kernel.org>,
-        "linux-fsdevel\@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "pstaubach\@exagrid.com" <pstaubach@exagrid.com>,
-        "viro\@ZenIV.linux.org.uk" <viro@ZenIV.linux.org.uk>,
-        "hch\@infradead.org" <hch@infradead.org>,
-        "michael.brantley\@deshaw.com" <michael.brantley@deshaw.com>,
-        "sven.breuner\@itwm.fraunhofer.de" <sven.breuner@itwm.fraunhofer.de>
-Subject: Re: [PATCH RFC] vfs: make fstatat retry on ESTALE errors from
- getattr call
-Message-ID: <20120417110219.0db9bdee@corrin.poochiereds.net>
-In-Reply-To: <87k41eo2m3.fsf@tucsk.pomaz.szeredi.hu>
-References: <1334316311-22331-1-git-send-email-jlayton@redhat.com>
-	<20120413150518.GA1987@us.ibm.com>
-	<20120413114236.0e557e01@tlielax.poochiereds.net>
-	<4F8B1B7B.3040304@itwm.fraunhofer.de>
-	<20120416073655.7cdb90cf@corrin.poochiereds.net>
-	<4F8C3036.2030702@itwm.fraunhofer.de>
-	<20120416134642.1754cd3e@corrin.poochiereds.net>
-	<1334604785.2879.23.camel@lade.trondhjem.org>
-	<20120416154322.0d95e435@corrin.poochiereds.net>
-	<1334607906.2879.36.camel@lade.trondhjem.org>
-	<20120416190548.2463d1d0@corrin.poochiereds.net>
-	<4F8D580B.7060104@RedHat.com>
-	<20120417093643.7f172057@corrin.poochiereds.net>
-	<4F8D7ADF.9030709@RedHat.com>
-	<87k41eo2m3.fsf@tucsk.pomaz.szeredi.hu>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1756200Ab2DQPCO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Apr 2012 11:02:14 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:33610 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753996Ab2DQPCK convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Apr 2012 11:02:10 -0400
+MIME-Version: 1.0
+In-Reply-To: <20120417052511.GU6589@ZenIV.linux.org.uk>
+References: <20120417052511.GU6589@ZenIV.linux.org.uk>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Tue, 17 Apr 2012 08:01:48 -0700
+X-Google-Sender-Auth: DhoCHj3XOHv-apVsm2ty-lqeJIY
+Message-ID: <CA+55aFw75=Mtq1njQ9vNmNsGuTPbpUhLHnb7YBLmCZs4Q5ByMA@mail.gmail.com>
+Subject: Re: [git pull] vfs and fs fixes
+To: Al Viro <viro@zeniv.linux.org.uk>
+Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 17 Apr 2012 16:27:16 +0200
-Miklos Szeredi <miklos@szeredi.hu> wrote:
+On Mon, Apr 16, 2012 at 10:25 PM, Al Viro <viro@zeniv.linux.org.uk> wrote:
+>        A bunch of endianness fixes plus a patch from bfields untangling
+> dependencies between vfs and nfsd trees; in principle, we could keep it
+> in nfsd tree (along with a bunch of followups that definitely belong there),
+> but Miklos' stuff in fs/namei.c steps fairly close to it and overlayfs
+> and unionfs series - even closer, so that would create serious PITA for
+> both, whichever tree it would sit in.
 
-> Steve Dickson <SteveD@redhat.com> writes:
-> 
-> > True, but even so... Giving file systems an opt-out option with the 
-> > default being out, maybe still have some merit... Making file systems
-> > enable this new type of functionality would cut down on any of the
-> > "surprise" that might occur with this redo ;-) 
-> 
-> I've been arguing for something slightly different for quite some time:
-> I never liked errno values which have side effects in the kernel yet
-> might be visible to userspace.
-> 
-> So why not introduce ERETRYSTALE, a *kernel internal* errno value that
-> userspace will never see and filesystems never accidentally set.  The
-> VFS can turn this into ESTALE if it doesn't retry for some reason
-> (e.g. already retried).
-> 
+Why is that double mutex taking in vfs_rename_other() safe from ABBA?
 
-That's possible but it's certainly a lot more invasive. It's also far
-more difficult for filesystems to opt-in to this sort of behavior.
+We aren't guaranteed to hold the s_vfs_rename_mutex, since the parent
+directories may be the same.
 
-All of the places that call vfs_getattr, for instance will need to be
-fixed up to deal with that sort of error. That will also make it messy
-to do this in any sort of piecemeal fashion. We can't (for instance)
-convert NFSERR_STALE to -ESTALERETRY universally. We'll need to take
-great care only to return that to codepaths that are equipped to deal
-with it.
+And yes, we hold the i_mutex on that shared parent, but the inodes may
+exist (hardlinked) in another directory, so another rename could be
+doing the i_mutex in the reverse order.
 
-Personally, I'd prefer not to foist so much code churn on any filesystem
-that might want to do this sort of retry, but I'll live with it if
-that's the consensus opinion...
+Maybe there is some reason why that double lock is safe, but I don't
+see it, and I want it clearly documented. So I'm not pulling this.
 
--- 
-Jeff Layton <jlayton@redhat.com>
+                        Linus
