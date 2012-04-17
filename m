@@ -1,111 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752937Ab2DQFOF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Apr 2012 01:14:05 -0400
-Received: from e39.co.us.ibm.com ([32.97.110.160]:48750 "EHLO
-	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751201Ab2DQFOC (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Apr 2012 01:14:02 -0400
-Message-ID: <4F8CFC12.6050700@linaro.org>
-Date: Mon, 16 Apr 2012 22:13:54 -0700
-From: John Stultz <john.stultz@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120329 Thunderbird/11.0.1
-MIME-Version: 1.0
-To: Mark Lord <kernel@teksavvy.com>
-CC: richard -rw- weinberger <richard.weinberger@gmail.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        rtc-linux@googlegroups.com, Alessandro Zummo <a.zummo@towertech.it>,
-        Greg Kroah-Hartman <greg@kroah.com>, stable@vger.kernel.org,
-        Rabin Vincent <rabin.vincent@stericsson.com>
-Subject: Re: [REGRESSION] rtc/interface.c: kills suspend-to-ram
-References: <4F8BA1C1.4030804@teksavvy.com> <4F8C24E5.4020703@teksavvy.com> <CAFLxGvzkcYw-iUA1X8jK+Q8A2HFEG1SSXvfZ3Uj+OwKWgi+zAA@mail.gmail.com> <4F8C3DDF.8030103@teksavvy.com> <CAFLxGvy=3SHKFYoSfUcQrJKsCYWq5Fxpi4q_DTQjjFNDSSnJOw@mail.gmail.com> <4F8C415C.80806@teksavvy.com> <4F8C76EB.20709@linaro.org> <4F8C926D.2040503@linaro.org> <4F8CD5D3.8060006@teksavvy.com>
-In-Reply-To: <4F8CD5D3.8060006@teksavvy.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12041705-4242-0000-0000-0000015D9A05
+	id S1753140Ab2DQFYg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Apr 2012 01:24:36 -0400
+Received: from 1wt.eu ([62.212.114.60]:65240 "EHLO 1wt.eu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752339Ab2DQFYf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Apr 2012 01:24:35 -0400
+Date: Tue, 17 Apr 2012 07:24:01 +0200
+From: Willy Tarreau <w@1wt.eu>
+To: Felipe Contreras <felipe.contreras@gmail.com>
+Cc: Greg KH <gregkh@linuxfoundation.org>,
+        Stefan Richter <stefanr@s5r6.in-berlin.de>,
+        "ath9k-devel@lists.ath9k.org" <ath9k-devel@venema.h4ckr.net>,
+        linux-wireless Mailing List <linux-wireless@vger.kernel.org>,
+        linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        "John W. Linville" <linville@tuxdriver.com>, akpm@linux-foundation.org,
+        torvalds@linux-foundation.org, alan@lxorguk.ukuu.org.uk
+Subject: Re: [ath9k-devel] [ 00/78] 3.3.2-stable review
+Message-ID: <20120417052401.GB5522@1wt.eu>
+References: <20120413105746.10ffb120@stein> <CAMP44s0RohH9tPiM5qCDT57XBV=iO66PZkSjYVxA6Usg1qJPtw@mail.gmail.com> <20120413190819.9469.qmail@stuge.se> <CAMP44s02v_OhviaF12Y8LWBJygyVLZk00d3P69GVvKAeJwjiuw@mail.gmail.com> <20120416162710.GA24100@kroah.com> <CAMP44s1o9kBp8672oBnvna+qH4WpqSqGUsyNpc_C74cfNYcX_g@mail.gmail.com> <20120416205856.GA22298@kroah.com> <CAMP44s2OdH+1RG2O6+QXkik8Ww_ZSHN=yzEKwD1KvRAcceNSRA@mail.gmail.com> <20120416212718.GA22824@kroah.com> <CAMP44s2bg8AC+jMXRv-GoRaag2qDgttHoVWmKOxH7zTg4-qtLQ@mail.gmail.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CAMP44s2bg8AC+jMXRv-GoRaag2qDgttHoVWmKOxH7zTg4-qtLQ@mail.gmail.com>
+User-Agent: Mutt/1.4.2.3i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/16/2012 07:30 PM, Mark Lord wrote:
->
-> Thanks for looking into it, John.
->
-> I also spent many more hours digging away at it here today,
-> and I now understand (mostly) what is happening and why.
->
-> The code above introduces a new access to the RTC that never existed before.
-> For the case where the Alarm has never been enabled by software,
-> I believe the code above will still try to "disable" it.
-> That's the new behaviour we didn't have prior to this patch.
->
-> And.. on some of the systems I'm testing on, the BIOS setup has
-> the RTC Alarm "enabled", which means "under BIOS control",
-> as opposed to "disabled" which means "under software control".
->
-> It's the "under BIOS control" systems that the above patch breaks.
->
-> So I think the code may just need to be slightly more clever,
-> and not disable an Alarm that was never enabled by software in the first place.
+On Tue, Apr 17, 2012 at 12:44:25AM +0300, Felipe Contreras wrote:
+> >> Perhaps the current process will be continue to be OK, but I do
+> >> believe a tagged v3.3.1-rc1 would have catched the ath9k issue.
+> >
+> > How exactly would that have helped here?
+> 
+> More people would have given it a try. Not that many people read the
+> mailing list, and the ones that do certainly might want to avoid
+> applying a big series of patches; even if their mail client makes it
+> easy (mine (Gmail) doesn't). A tag, and an announcement to give a try
+> would make it *much* easier.
 
-Thanks for the extra info. Although I'm still a little perplexed why 
-that's causing trouble.
-When "under BIOS control" is the RTC unusable by the kernel? Will any 
-access cause problems? Or just the extra disable path?
+That's totally unrelated. A tag means that these changes would have been
+committed (with history etc...). This would not have changed anything of
+the running/broken code. It would have failed similarly without any way
+for you to revert. The rc1 was announced and was available on kernel.org.
+A tag would not have changed anything here, except by making the release
+process much more complex by basically having to revert every unsuitable
+patch instead of dropping it. It would mean that rc1 would in fact have
+been 3.3.1 and that 3.3.1 would have been 3.3.2. You just shift the release
+by one number and don't bring any value here.
 
-On a hunch, I wonder if your tripping over the alarmtimer initialization 
-issue that was recently fixed.
-Have you also seen this issue w/ 3.4-rc2+ ?
+> >> I used to compile my own kernels and use your stable tree, but this a
+> >> new laptop and I was using Arch Linux which automatically updated to
+> >> v3.3.1, and with no network I had no way to revert to v3.2.x.
+> >> Fortunately I had the kernel sources available, but I wonder how many
+> >> people were completely stuck.
+> >
+> > Arch wouldn't have included a -rc in their kernel (unless they are
+> > crazy), so this would not have helped your situation at all.
+> 
+> There's *a lot* of people that got affected by the 3.3.1 release; we
+> don't need to break a lot of boxes to figure out there's an issue,
+> only a few would suffice, even one.
 
-I still can't trigger anything similar playing with the BIOS options for 
-my system. If its not too much trouble, could you try the following two 
-changes?
+I'm sorry, but I don't buy this. There are *always* regressions caused by
+kernel updates, and even the beginners I know are used to keep a working
+kernel on their systems precisely because they know they can be left with
+something which does not boot anymore. So if you upgrade your *only* kernel
+without keeping a safe one, it's not a mistake, it's a fault, your fault. A
+beginner wouldn't have done this. You wouldn't have recovered from a hanging
+boot, a panic or a SATA timeout either. Drivers issues are the worst ones
+because nobody can exhaustively test them all, not even your distro vendor.
+The solution is always to keep a working kernel as an alternate boot.
 
-thanks
--john
+> >> If some other 3.x.1 release get broken this way, I would seriously
+> >> consider tagging v3.x.1-rc1 as well. It works for Linus' tree.
+> >
+> > "this way" was for a very tiny subset of hardware, so odds are, if this
+> > happens again, it wouldn't be caught this way either.  That subset just
+> > happened to show up in your machine, but, for example, not in the wide
+> > range of hardware I test with here, nor the machines that others test
+> > with.
+> 
+> It was certainly not just me. I have seen a lot of people mentioning
+> "their wifi is broken", a lot of them using Arch Linux,
+> coincidentally.
 
-I guess I'm curious why you're hitting the rtc_alarm_disable if you're 
-not using the alarm. If you use the following diff, can you provide the 
-resulting stack traces?
+Maybe because these are people you know and you taught to blindly update
+without keep a safe boot option ?
 
-diff --git a/drivers/rtc/interface.c b/drivers/rtc/interface.c
-index eb415bd..4c98ee5 100644
---- a/drivers/rtc/interface.c
-+++ b/drivers/rtc/interface.c
-@@ -786,7 +786,8 @@ static void rtc_alarm_disable(struct rtc_device *rtc)
-  	if (!rtc->ops || !rtc->ops->alarm_irq_enable)
-  		return;
+Now it becomes a lot clearer that you want a user fault to be covered by
+a development process. That will never ever work because the only way it
+will solve your behavioral issue is to release 100% safe and 100% compatible
+kernels each time, which by definition is not possible if anything changes.
 
--	rtc->ops->alarm_irq_enable(rtc->dev.parent, false);
-+	//rtc->ops->alarm_irq_enable(rtc->dev.parent, false);
-+	dump_stack();
-  }
-
-  /**
-
-
-
-
-Then un-comment/re-add the alarm_irq_enable() call above, and try the 
-following, to see if the behavior changes? Then re-add each line one by 
-one to see if you can isolate where things go wrong in the cmos code?
-
-diff --git a/drivers/rtc/rtc-cmos.c b/drivers/rtc/rtc-cmos.c
-index 7d5f56e..c500bce 100644
---- a/drivers/rtc/rtc-cmos.c
-+++ b/drivers/rtc/rtc-cmos.c
-@@ -318,9 +318,9 @@ static void cmos_irq_disable(struct cmos_rtc *cmos, unsigned char mask)
-  	rtc_control = CMOS_READ(RTC_CONTROL);
-  	rtc_control&= ~mask;
-  	CMOS_WRITE(rtc_control, RTC_CONTROL);
--	hpet_mask_rtc_irq_bit(mask);
-+	//hpet_mask_rtc_irq_bit(mask);
-
--	cmos_checkintr(cmos, rtc_control);
-+	//cmos_checkintr(cmos, rtc_control);
-  }
-
-  static int cmos_set_alarm(struct device *dev, struct rtc_wkalrm *t)
+Willy
 
