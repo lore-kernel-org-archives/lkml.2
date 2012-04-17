@@ -1,65 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756114Ab2DQOiz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Apr 2012 10:38:55 -0400
-Received: from mga14.intel.com ([143.182.124.37]:55447 "EHLO mga14.intel.com"
+	id S1756088Ab2DQOkq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Apr 2012 10:40:46 -0400
+Received: from frodo.hserus.net ([204.74.68.40]:39251 "EHLO frodo.hserus.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755153Ab2DQOiy convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Apr 2012 10:38:54 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="90032266"
-From: "Tu, Xiaobing" <xiaobing.tu@intel.com>
-To: Lin Ming <mlin@ss.pku.edu.cn>
-CC: "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "mingo@elte.hu" <mingo@elte.hu>,
-        "rusty@rustcorp.com.au" <rusty@rustcorp.com.au>,
-        "a.p.zijlstra@chello.nl" <a.p.zijlstra@chello.nl>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "yanmin_zhang@linux.intel.com" <yanmin_zhang@linux.intel.com>,
-        "rostedt@goodmis.org" <rostedt@goodmis.org>,
-        "Zuo, Jiao" <jiao.zuo@intel.com>
-Subject: RE: [RFC 1/2] kernel patch for dump user space stack tool
-Thread-Topic: [RFC 1/2] kernel patch for dump user space stack tool
-Thread-Index: AQHNHFTYRi+/E8vWAU248nte6/IJp5aeg2Og
-Date: Tue, 17 Apr 2012 14:38:50 +0000
-Message-ID: <EE928378561BF1449699C96571234A740FCED63D@SHSMSX101.ccr.corp.intel.com>
-References: <EE928378561BF1449699C96571234A740FCE3704@SHSMSX102.ccr.corp.intel.com>
- <CAF1ivSZpcrCt3_cJWZLu7f7Z-DMGhijO4gM+2MTLNQC1p8=A7g@mail.gmail.com>
-In-Reply-To: <CAF1ivSZpcrCt3_cJWZLu7f7Z-DMGhijO4gM+2MTLNQC1p8=A7g@mail.gmail.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.239.127.40]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1753064Ab2DQOkp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Apr 2012 10:40:45 -0400
+X-Greylist: delayed 1644 seconds by postgrey-1.27 at vger.kernel.org; Tue, 17 Apr 2012 10:40:45 EDT
+Date: Tue, 17 Apr 2012 11:13:09 -0300
+From: Christian Robottom Reis <kiko@linaro.org>
+To: Rob Lee <rob.lee@linaro.org>
+Cc: Sascha Hauer <s.hauer@pengutronix.de>, linaro-dev@lists.linaro.org,
+        patches@linaro.org, linux-kernel@vger.kernel.org,
+        kernel@pengutronix.de, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH 1/3] ARM: imx: Add common imx cpuidle init functionality.
+Message-ID: <20120417141309.GH11786@async.com.br>
+References: <1334620214-25803-1-git-send-email-rob.lee@linaro.org>
+ <1334620214-25803-2-git-send-email-rob.lee@linaro.org>
+ <20120417074301.GM20478@pengutronix.de>
+ <CAMXH7KH41kWMPu_dEpetZc8OUD3C0-mtxGbXX0Vqd4EODPWJUg@mail.gmail.com>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CAMXH7KH41kWMPu_dEpetZc8OUD3C0-mtxGbXX0Vqd4EODPWJUg@mail.gmail.com>
+Organization: http://www.linaro.org/
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Ming
-  Thank you for you kindly advice, I just resend the main for your suggestion. :)
+On Tue, Apr 17, 2012 at 08:54:03AM -0500, Rob Lee wrote:
+> >> +void __init imx_cpuidle_set_driver(struct cpuidle_driver *p)
+> >> +{
+> >> +     drv = p;
+> >> +}
+> >
+> > You like it complicated, eh? Why do you introduce a function which sets
+> > a variable...
+> 
+> This complication is used to deal with the timing of various levels of
+> init calls.  More explanation below.
 
-Br
-Xiaobing
+Regardless of how you end up solving this, it's probably a good idea
+to document the rationale, perhaps cribbing from what you describe
+below..
 
+> If I called imx_cpuidle_init directly from imx5 or imx6q init
+> routines, it would be getting called before the coreinit_call of core
+> cpuidle causing a failure.  There were various other directions to
+> take and all seemed less desirable than this one.
+> 
+> One alternative would be to add a function to return the pointer to
+> the cpuidle driver object based on the machine type.  Functionality
+> exists to identify imx5 as a machine type but not imx6q, so I couldn't
+> use that machine based method without adding that extra code.
+> 
+> Another alternative would be to add a general platform lateinit_call
+> function to each platforms that support cpuidle.
 
------Original Message-----
-From: Lin Ming [mailto:mlin@ss.pku.edu.cn] 
-Sent: Tuesday, April 17, 2012 12:43 PM
-To: Tu, Xiaobing
-Cc: akpm@linux-foundation.org; mingo@elte.hu; rusty@rustcorp.com.au; a.p.zijlstra@chello.nl; linux-kernel@vger.kernel.org; yanmin_zhang@linux.intel.com; rostedt@goodmis.org; Zuo, Jiao
-Subject: Re: [RFC 1/2] kernel patch for dump user space stack tool
-
-On Wed, Apr 11, 2012 at 4:07 PM, Tu, Xiaobing <xiaobing.tu@intel.com> wrote:
-> From: xiaobing tu <xiaobing.tu@intel.com>
->
-> Here is the kernel patch for this tool, The idea is to output user space stack call-chain from /proc/xxx/stack, currently, /proc/xxx/stack only output kernel stack call chain. We extend it to output user space call chain in hex format
-
-The log is too long on a single line.
-You should split it to multiple lines.
-
-Lin Ming
+..in a comment; without it, the code indeed looks bizarre.
+-- 
+Christian Robottom Reis, Engineering VP
+Brazil (GMT-3) | [+55] 16 9112 6430 | [+1] 612 216 4935
+Linaro.org: Open Source Software for ARM SoCs
