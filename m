@@ -1,86 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932165Ab2DQOEi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Apr 2012 10:04:38 -0400
-Received: from mx2.netapp.com ([216.240.18.37]:8597 "EHLO mx2.netapp.com"
+	id S932220Ab2DQOFz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Apr 2012 10:05:55 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:53826 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755605Ab2DQOEg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Apr 2012 10:04:36 -0400
-X-IronPort-AV: E=Sophos;i="4.75,434,1330934400"; 
-   d="scan'208";a="641523404"
-From: "Myklebust, Trond" <Trond.Myklebust@netapp.com>
-To: Jeff Layton <jlayton@redhat.com>
-CC: Miklos Szeredi <miklos@szeredi.hu>,
-        Bernd Schubert <bernd.schubert@itwm.fraunhofer.de>,
-        Malahal Naineni <malahal@us.ibm.com>,
-        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "pstaubach@exagrid.com" <pstaubach@exagrid.com>,
-        "viro@ZenIV.linux.org.uk" <viro@ZenIV.linux.org.uk>,
-        "hch@infradead.org" <hch@infradead.org>,
-        "michael.brantley@deshaw.com" <michael.brantley@deshaw.com>,
-        "sven.breuner@itwm.fraunhofer.de" <sven.breuner@itwm.fraunhofer.de>
-Subject: Re: [PATCH RFC] vfs: make fstatat retry on ESTALE errors from
- getattr call
-Thread-Topic: [PATCH RFC] vfs: make fstatat retry on ESTALE errors from
- getattr call
-Thread-Index: AQHNHJu4WFyXQNvYykq9RVAgdBQu35afeSoAgAAI/oA=
-Date: Tue, 17 Apr 2012 14:04:34 +0000
-Message-ID: <1334671473.2963.27.camel@lade.trondhjem.org.localdomain>
-References: <1334316311-22331-1-git-send-email-jlayton@redhat.com>
-	 <20120413150518.GA1987@us.ibm.com>
-	 <20120413114236.0e557e01@tlielax.poochiereds.net>
-	 <4F8B1B7B.3040304@itwm.fraunhofer.de>
-	 <20120416073655.7cdb90cf@corrin.poochiereds.net>
-	 <4F8C3036.2030702@itwm.fraunhofer.de>
-	 <20120416134642.1754cd3e@corrin.poochiereds.net>
-	 <1334604785.2879.23.camel@lade.trondhjem.org>
-	 <20120416154322.0d95e435@corrin.poochiereds.net>
-	 <1334607906.2879.36.camel@lade.trondhjem.org>
-	 <20120416190548.2463d1d0@corrin.poochiereds.net>
-	 <87sjg2o62z.fsf@tucsk.pomaz.szeredi.hu>
-	 <20120417093222.2ff5e1bd@corrin.poochiereds.net>
-In-Reply-To: <20120417093222.2ff5e1bd@corrin.poochiereds.net>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.104.60.115]
-Content-Type: text/plain; charset="utf-8"
-Content-ID: <841327280AE8DD469662F8BDEFDA69A8@tahoe.netapp.com>
+	id S1755605Ab2DQOFy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Apr 2012 10:05:54 -0400
+Date: Tue, 17 Apr 2012 15:05:49 +0100
+From: Mel Gorman <mgorman@suse.de>
+To: Konstantin Khlebnikov <khlebnikov@openvz.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH linux-next] mm/hugetlb: fix warning in
+ alloc_huge_page/dequeue_huge_page_vma
+Message-ID: <20120417140549.GJ2359@suse.de>
+References: <20120417122819.7438.26117.stgit@zurg>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <20120417122819.7438.26117.stgit@zurg>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id q3HE4jRn010790
 
-On Tue, 2012-04-17 at 09:32 -0400, Jeff Layton wrote:
-> On Tue, 17 Apr 2012 15:12:20 +0200
-> Miklos Szeredi <miklos@szeredi.hu> wrote:
+On Tue, Apr 17, 2012 at 04:28:19PM +0400, Konstantin Khlebnikov wrote:
+> This patch fixes gcc warning (and bug?) introduced in linux-next commit cc9a6c877
+> ("cpuset: mm: reduce large amounts of memory barrier related damage v3")
+> 
+> Local variable "page" can be uninitialized if nodemask from vma policy does not
+> intersects with nodemask from cpuset. Even if it wouldn't happens it's better to
+> initialize this variable explicitly than to introduce kernel oops on weird corner case.
+> 
+> mm/hugetlb.c: In function ???alloc_huge_page???:
+> mm/hugetlb.c:1135:5: warning: ???page??? may be used uninitialized in this function
+> 
+> Signed-off-by: Konstantin Khlebnikov <khlebnikov@openvz.org>
+> Cc: Mel Gorman <mgorman@suse.de>
 
-> To do that would require protocol support that we simply don't have. We
-> don't have a way to (for instance) say via NFS "give me the attributes
-> for this filename". Well, at least not for NFSv3...
-
-What's wrong with LOOKUP?
-
-> With v4 you could theoretically construct a compound that does that,
-> but you'd have to assume that the server won't release the reference to
-> the inode midway through the compound. That's a reasonably safe
-> assumption.
-
-Actually, NFSv4 is the one that has the problem: there are no atomicity
-guarantees within compounds, so you could theoretically get an ESTALE in
-the GETATTR part of our lookup compound.
+Acked-by: Mel Gorman <mgorman@suse.de>
 
 -- 
-Trond Myklebust
-Linux NFS client maintainer
-
-NetApp
-Trond.Myklebust@netapp.com
-www.netapp.com
-
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+Mel Gorman
+SUSE Labs
