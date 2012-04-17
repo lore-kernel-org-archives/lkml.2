@@ -1,94 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753060Ab2DQOUL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Apr 2012 10:20:11 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:42611 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751221Ab2DQOUJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Apr 2012 10:20:09 -0400
-Date: Tue, 17 Apr 2012 10:20:35 -0400
-From: Jeff Layton <jlayton@redhat.com>
-To: "Myklebust, Trond" <Trond.Myklebust@netapp.com>
-Cc: Miklos Szeredi <miklos@szeredi.hu>,
-        Bernd Schubert <bernd.schubert@itwm.fraunhofer.de>,
-        Malahal Naineni <malahal@us.ibm.com>,
-        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "pstaubach@exagrid.com" <pstaubach@exagrid.com>,
-        "viro@ZenIV.linux.org.uk" <viro@ZenIV.linux.org.uk>,
-        "hch@infradead.org" <hch@infradead.org>,
-        "michael.brantley@deshaw.com" <michael.brantley@deshaw.com>,
-        "sven.breuner@itwm.fraunhofer.de" <sven.breuner@itwm.fraunhofer.de>
-Subject: Re: [PATCH RFC] vfs: make fstatat retry on ESTALE errors from
- getattr call
-Message-ID: <20120417102035.2236e553@corrin.poochiereds.net>
-In-Reply-To: <1334671473.2963.27.camel@lade.trondhjem.org.localdomain>
-References: <1334316311-22331-1-git-send-email-jlayton@redhat.com>
-	<20120413150518.GA1987@us.ibm.com>
-	<20120413114236.0e557e01@tlielax.poochiereds.net>
-	<4F8B1B7B.3040304@itwm.fraunhofer.de>
-	<20120416073655.7cdb90cf@corrin.poochiereds.net>
-	<4F8C3036.2030702@itwm.fraunhofer.de>
-	<20120416134642.1754cd3e@corrin.poochiereds.net>
-	<1334604785.2879.23.camel@lade.trondhjem.org>
-	<20120416154322.0d95e435@corrin.poochiereds.net>
-	<1334607906.2879.36.camel@lade.trondhjem.org>
-	<20120416190548.2463d1d0@corrin.poochiereds.net>
-	<87sjg2o62z.fsf@tucsk.pomaz.szeredi.hu>
-	<20120417093222.2ff5e1bd@corrin.poochiereds.net>
-	<1334671473.2963.27.camel@lade.trondhjem.org.localdomain>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1753682Ab2DQOVJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Apr 2012 10:21:09 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:51408 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751811Ab2DQOVH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Apr 2012 10:21:07 -0400
+Date: Tue, 17 Apr 2012 16:21:05 +0200
+From: Wolfram Sang <w.sang@pengutronix.de>
+To: Zhao Chenhui <chenhui.zhao@freescale.com>
+Cc: linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Li Yang <leoli@freescale.com>
+Subject: Re: [PATCH] i2c-mpc: avoid I2C abnormal after resuming from deep
+ sleep
+Message-ID: <20120417142105.GA21802@pengutronix.de>
+References: <1330511961-22498-1-git-send-email-chenhui.zhao@freescale.com>
+ <20120229183436.GA30545@pengutronix.de>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="cNdxnHkX5QqsyA0e"
+Content-Disposition: inline
+In-Reply-To: <20120229183436.GA30545@pengutronix.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
+X-SA-Exim-Mail-From: wsa@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 17 Apr 2012 14:04:34 +0000
-"Myklebust, Trond" <Trond.Myklebust@netapp.com> wrote:
 
-> On Tue, 2012-04-17 at 09:32 -0400, Jeff Layton wrote:
-> > On Tue, 17 Apr 2012 15:12:20 +0200
-> > Miklos Szeredi <miklos@szeredi.hu> wrote:
-> 
-> > To do that would require protocol support that we simply don't have. We
-> > don't have a way to (for instance) say via NFS "give me the attributes
-> > for this filename". Well, at least not for NFSv3...
-> 
-> What's wrong with LOOKUP?
-> 
+--cNdxnHkX5QqsyA0e
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Some of this is due to my decision to use fstatat as an example, but we
-should bear in mind that I've just been using that as an example. We'll
-eventually have to do something similar for all path based syscalls in
-order to fix tihs comprehensively.
+On Wed, Feb 29, 2012 at 07:45:23PM +0100, Wolfram Sang wrote:
+> Hi,
+>=20
+> On Wed, Feb 29, 2012 at 06:39:21PM +0800, Zhao Chenhui wrote:
+> > When entering deep sleep, the value in the registers I2CFDR and
+> > I2CDFSRR are lost. This causes I2C access to fail after resuming.
+> >=20
+> > Add suspend/resume routines to save/restore the registers
+> > I2CFDR and I2CDFSRR.
+> >=20
+> > Signed-off-by: Zhao Chenhui <chenhui.zhao@freescale.com>
+> > Signed-off-by: Li Yang <leoli@freescale.com>
+> > ---
+> >  drivers/i2c/busses/i2c-mpc.c |   34 +++++++++++++++++++++++++++++++++-
+> >  1 files changed, 33 insertions(+), 1 deletions(-)
+> >=20
+> > diff --git a/drivers/i2c/busses/i2c-mpc.c b/drivers/i2c/busses/i2c-mpc.c
+> > index a8ebb84..f95a647 100644
+> > --- a/drivers/i2c/busses/i2c-mpc.c
+> > +++ b/drivers/i2c/busses/i2c-mpc.c
+> > @@ -1,7 +1,9 @@
+> >  /*
+> >   * (C) Copyright 2003-2004
+> >   * Humboldt Solutions Ltd, adrian@humboldt.co.uk.
+> > -
+> > + *
+> > + * Copyright 2012 Freescale Semiconductor, Inc.
+> > + *
+>=20
+> I'd think the change is too trivial to claim copyright on the file.
 
-While it may be possible to handle stat type calls atomically with a
-simple LOOKUP call, other operations may require more than one round
-trip. Consider chmod(), for instance...
+Do you want to resend with the comments addressed?
 
-> > With v4 you could theoretically construct a compound that does that,
-> > but you'd have to assume that the server won't release the reference to
-> > the inode midway through the compound. That's a reasonably safe
-> > assumption.
-> 
-> Actually, NFSv4 is the one that has the problem: there are no atomicity
-> guarantees within compounds, so you could theoretically get an ESTALE in
-> the GETATTR part of our lookup compound.
-> 
+Regards,
 
-Well, it's possible, but it seems pathological to me for a server to do
-that...
+   Wolfram
 
-Bruce and I were discussing this the other day. It would be good to add
-something like this to the RFCs:
+--=20
+Pengutronix e.K.                           | Wolfram Sang                |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
 
-"On a PUTFH, a server SHOULD hold a reference to the filehandle such
-that it does not go stale over the life of the compound."
+--cNdxnHkX5QqsyA0e
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-...or something along those lines. That's a different matter though and
-not directly related to this. :)
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
--- 
-Jeff Layton <jlayton@redhat.com>
+iEYEARECAAYFAk+NfFEACgkQD27XaX1/VRsRyQCePPnnlynynpq5hVQMeZDBMIWu
+crsAnA4Xgpuf089oXkaxypETfwVnrNg9
+=TAH2
+-----END PGP SIGNATURE-----
+
+--cNdxnHkX5QqsyA0e--
