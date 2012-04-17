@@ -1,90 +1,480 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755429Ab2DQCS5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Apr 2012 22:18:57 -0400
-Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:51519 "EHLO
-	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750869Ab2DQCSz (ORCPT
+	id S1755793Ab2DQCTP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Apr 2012 22:19:15 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:55939 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755094Ab2DQCTM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Apr 2012 22:18:55 -0400
-X-AuditID: 9c93016f-b7c47ae000007299-f1-4f8cd30dcb90
-Message-ID: <4F8CD310.4010609@kernel.org>
-Date: Tue, 17 Apr 2012 11:18:56 +0900
-From: Minchan Kim <minchan@kernel.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120410 Thunderbird/11.0.1
+	Mon, 16 Apr 2012 22:19:12 -0400
+Date: Mon, 16 Apr 2012 19:18:53 -0700
+From: Joel Becker <jlbec@evilplan.org>
+To: Jan Kara <jack@suse.cz>
+Cc: Al Viro <viro@ZenIV.linux.org.uk>, dchinner@redhat.com,
+        LKML <linux-kernel@vger.kernel.org>, linux-fsdevel@vger.kernel.org,
+        ocfs2-devel@oss.oracle.com, Mark Fasheh <mfasheh@suse.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: Re: [PATCH 09/27] fs: Push mnt_want_write() outside of i_mutex
+Message-ID: <20120417021850.GB31464@dhcp-172-17-9-228.mtv.corp.google.com>
+Mail-Followup-To: Jan Kara <jack@suse.cz>,
+	Al Viro <viro@ZenIV.linux.org.uk>, dchinner@redhat.com,
+	LKML <linux-kernel@vger.kernel.org>, linux-fsdevel@vger.kernel.org,
+	ocfs2-devel@oss.oracle.com, Mark Fasheh <mfasheh@suse.com>,
+	"David S. Miller" <davem@davemloft.net>
+References: <1334592845-22862-1-git-send-email-jack@suse.cz>
+ <1334592845-22862-10-git-send-email-jack@suse.cz>
 MIME-Version: 1.0
-Newsgroups: gmane.linux.kernel.mmc,gmane.comp.handhelds.android.kernel,gmane.linux.kernel.mm,gmane.linux.kernel
-To: Stephan Uphoff <ups@google.com>
-CC: Arnd Bergmann <arnd@arndb.de>, linaro-kernel@lists.linaro.org,
-        android-kernel@googlegroups.com, linux-mm@kvack.org,
-        "Luca Porzio (lporzio)" <lporzio@micron.com>,
-        Alex Lemberg <alex.lemberg@sandisk.com>, linux-kernel@vger.kernel.org,
-        Saugata Das <saugata.das@linaro.org>,
-        Venkatraman S <venkat@linaro.org>, Yejin Moon <yejin.moon@samsung.com>,
-        Hyojin Jeong <syr.jeong@samsung.com>,
-        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>
-Subject: Re: swap on eMMC and other flash
-References: <201203301744.16762.arnd@arndb.de> <201204111557.14153.arnd@arndb.de> <CAKL-ytsXbe4=u94PjqvhZo=ZLiChQ0FmZC84GNrFHa0N1mDjFw@mail.gmail.com> <201204161859.32436.arnd@arndb.de> <CAKL-ytvC3dw6p=R1G3GOCst_6B=uOqRK2kWOH9jso_=bgtNOXA@mail.gmail.com>
-In-Reply-To: <CAKL-ytvC3dw6p=R1G3GOCst_6B=uOqRK2kWOH9jso_=bgtNOXA@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Brightmail-Tracker: AAAAAA==
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1334592845-22862-10-git-send-email-jack@suse.cz>
+X-Burt-Line: Trees are cool.
+X-Red-Smith: Ninety feet between bases is perhaps as close as man has ever
+ come to perfection.
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/17/2012 06:12 AM, Stephan Uphoff wrote:
-> Hi Arnd,
->
-> On Mon, Apr 16, 2012 at 12:59 PM, Arnd Bergmann<arnd@arndb.de>  wrote:
->> On Monday 16 April 2012, Stephan Uphoff wrote:
->>> opportunity to plant a few ideas.
->>>
->>> In contrast to rotational disks read/write operation overhead and
->>> costs are not symmetric.
->>> While random reads are much faster on flash - the number of write
->>> operations is limited by wearout and garbage collection overhead.
->>> To further improve swapping on eMMC or similar flash media I believe
->>> that the following issues need to be addressed:
->>>
->>> 1) Limit average write bandwidth to eMMC to a configurable level to
->>> guarantee a minimum device lifetime
->>> 2) Aim for a low write amplification factor to maximize useable write bandwidth
->>> 3) Strongly favor read over write operations
->>>
->>> Lowering write amplification (2) has been discussed in this email
->>> thread - and the only observation I would like to add is that
->>> over-provisioning the internal swap space compared to the exported
->>> swap space significantly can guarantee a lower write amplification
->>> factor with the indirection and GC techniques discussed.
->>
->> Yes, good point.
->>
->>> I believe the swap functionality is currently optimized for storage
->>> media where read and write costs are nearly identical.
->>> As this is not the case on flash I propose splitting the anonymous
->>> inactive queue (at least conceptually) - keeping clean anonymous pages
->>> with swap slots on a separate queue as the cost of swapping them
->>> out/in is only an inexpensive read operation. A variable similar to
->>> swapiness (or a more dynamic algorithmn) could determine the
->>> preference for swapping out clean pages or dirty pages. ( A similar
->>> argument could be made for splitting up the file inactive queue )
->>
->> I'm not sure I understand yet how this would be different from swappiness.
->
-> As I see it swappiness determines the ratio for paging out file backed
-> as compared to anonymous, swap backed pages.
-> I would like to further be able to set the ratio for throwing away
-> clean anonymous pages with swap slots ( that are easy to read back in)
-> as compared to writing out dirty anonymous pages to swap.
+On Mon, Apr 16, 2012 at 06:13:47PM +0200, Jan Kara wrote:
+> Currently, mnt_want_write() is sometimes called with i_mutex held and sometimes
+> without it. This isn't really a problem because mnt_want_write() is a
+> non-blocking operation (essentially has a trylock semantics) but when the
+> function starts to handle also frozen filesystems, it will get a full lock
+> semantics and thus proper lock ordering has to be established. So move
+> all mnt_want_write() calls outside of i_mutex.
+> 
+> One non-trivial case needing conversion is kern_path_create() /
+> user_path_create() which didn't include mnt_want_write() but now needs to
+> because it acquires i_mutex.  Because there are virtual file systems which
+> don't bother with freeze / remount-ro protection we actually provide both
+> versions of the function - one which calls mnt_want_write() and one which does
+> not.
+> 
+> CC: ocfs2-devel@oss.oracle.com
+> CC: Mark Fasheh <mfasheh@suse.com>
+> CC: Joel Becker <jlbec@evilplan.org>
+> CC: "David S. Miller" <davem@davemloft.net>
+> BugLink: https://bugs.launchpad.net/bugs/897421
+> Tested-by: Kamal Mostafa <kamal@canonical.com>
+> Tested-by: Peter M. Petrakis <peter.petrakis@canonical.com>
+> Tested-by: Dann Frazier <dann.frazier@canonical.com>
+> Tested-by: Massimo Morana <massimo.morana@canonical.com>
+> Signed-off-by: Jan Kara <jack@suse.cz>
 
-We can apply the rule in file-lru list too and we already have 
-ISOLATE_CLEAN mode to select victim pages in LRU list so it should work.
+Acked-by: Joel Becker <jlbec@evilplan.org>
 
-For selecting clean anon pages with swap slot, we need more looking.
-Recent, Dan had a question about it and Hugh answered it.
-Look at the http://marc.info/?l=linux-mm&m=133462346928786&w=2
+> ---
+>  fs/namei.c              |  115 +++++++++++++++++++++++++++--------------------
+>  fs/ocfs2/refcounttree.c |   10 +---
+>  include/linux/namei.h   |    2 +
+>  net/unix/af_unix.c      |   13 ++----
+>  4 files changed, 74 insertions(+), 66 deletions(-)
+> 
+> diff --git a/fs/namei.c b/fs/namei.c
+> index 0062dd1..5417fa1 100644
+> --- a/fs/namei.c
+> +++ b/fs/namei.c
+> @@ -2460,7 +2460,9 @@ struct file *do_file_open_root(struct dentry *dentry, struct vfsmount *mnt,
+>  	return file;
+>  }
+>  
+> -struct dentry *kern_path_create(int dfd, const char *pathname, struct path *path, int is_dir)
+> +static struct dentry *do_kern_path_create(int dfd, const char *pathname,
+> +					  struct path *path, int is_dir,
+> +					  int freeze_protect)
+>  {
+>  	struct dentry *dentry = ERR_PTR(-EEXIST);
+>  	struct nameidata nd;
+> @@ -2478,6 +2480,14 @@ struct dentry *kern_path_create(int dfd, const char *pathname, struct path *path
+>  	nd.flags |= LOOKUP_CREATE | LOOKUP_EXCL;
+>  	nd.intent.open.flags = O_EXCL;
+>  
+> +	if (freeze_protect) {
+> +		error = mnt_want_write(nd.path.mnt);
+> +		if (error) {
+> +			dentry = ERR_PTR(error);
+> +			goto out;
+> +		}
+> +	}
+> +
+>  	/*
+>  	 * Do the final lookup.
+>  	 */
+> @@ -2506,24 +2516,49 @@ eexist:
+>  	dentry = ERR_PTR(-EEXIST);
+>  fail:
+>  	mutex_unlock(&nd.path.dentry->d_inode->i_mutex);
+> +	if (freeze_protect)
+> +		mnt_drop_write(nd.path.mnt);
+>  out:
+>  	path_put(&nd.path);
+>  	return dentry;
+>  }
+> +
+> +struct dentry *kern_path_create(int dfd, const char *pathname, struct path *path, int is_dir)
+> +{
+> +	return do_kern_path_create(dfd, pathname, path, is_dir, 0);
+> +}
+>  EXPORT_SYMBOL(kern_path_create);
+>  
+> +struct dentry *kern_path_create_thawed(int dfd, const char *pathname, struct path *path, int is_dir)
+> +{
+> +	return do_kern_path_create(dfd, pathname, path, is_dir, 1);
+> +}
+> +EXPORT_SYMBOL(kern_path_create_thawed);
+> +
+>  struct dentry *user_path_create(int dfd, const char __user *pathname, struct path *path, int is_dir)
+>  {
+>  	char *tmp = getname(pathname);
+>  	struct dentry *res;
+>  	if (IS_ERR(tmp))
+>  		return ERR_CAST(tmp);
+> -	res = kern_path_create(dfd, tmp, path, is_dir);
+> +	res = do_kern_path_create(dfd, tmp, path, is_dir, 0);
+>  	putname(tmp);
+>  	return res;
+>  }
+>  EXPORT_SYMBOL(user_path_create);
+>  
+> +struct dentry *user_path_create_thawed(int dfd, const char __user *pathname, struct path *path, int is_dir)
+> +{
+> +	char *tmp = getname(pathname);
+> +	struct dentry *res;
+> +	if (IS_ERR(tmp))
+> +		return ERR_CAST(tmp);
+> +	res = do_kern_path_create(dfd, tmp, path, is_dir, 1);
+> +	putname(tmp);
+> +	return res;
+> +}
+> +EXPORT_SYMBOL(user_path_create_thawed);
+> +
+>  int vfs_mknod(struct inode *dir, struct dentry *dentry, umode_t mode, dev_t dev)
+>  {
+>  	int error = may_create(dir, dentry);
+> @@ -2579,7 +2614,7 @@ SYSCALL_DEFINE4(mknodat, int, dfd, const char __user *, filename, umode_t, mode,
+>  	if (S_ISDIR(mode))
+>  		return -EPERM;
+>  
+> -	dentry = user_path_create(dfd, filename, &path, 0);
+> +	dentry = user_path_create_thawed(dfd, filename, &path, 0);
+>  	if (IS_ERR(dentry))
+>  		return PTR_ERR(dentry);
+>  
+> @@ -2588,12 +2623,9 @@ SYSCALL_DEFINE4(mknodat, int, dfd, const char __user *, filename, umode_t, mode,
+>  	error = may_mknod(mode);
+>  	if (error)
+>  		goto out_dput;
+> -	error = mnt_want_write(path.mnt);
+> -	if (error)
+> -		goto out_dput;
+>  	error = security_path_mknod(&path, dentry, mode, dev);
+>  	if (error)
+> -		goto out_drop_write;
+> +		goto out_dput;
+>  	switch (mode & S_IFMT) {
+>  		case 0: case S_IFREG:
+>  			error = vfs_create(path.dentry->d_inode,dentry,mode,NULL);
+> @@ -2606,11 +2638,10 @@ SYSCALL_DEFINE4(mknodat, int, dfd, const char __user *, filename, umode_t, mode,
+>  			error = vfs_mknod(path.dentry->d_inode,dentry,mode,0);
+>  			break;
+>  	}
+> -out_drop_write:
+> -	mnt_drop_write(path.mnt);
+>  out_dput:
+>  	dput(dentry);
+>  	mutex_unlock(&path.dentry->d_inode->i_mutex);
+> +	mnt_drop_write(path.mnt);
+>  	path_put(&path);
+>  
+>  	return error;
+> @@ -2652,24 +2683,20 @@ SYSCALL_DEFINE3(mkdirat, int, dfd, const char __user *, pathname, umode_t, mode)
+>  	struct path path;
+>  	int error;
+>  
+> -	dentry = user_path_create(dfd, pathname, &path, 1);
+> +	dentry = user_path_create_thawed(dfd, pathname, &path, 1);
+>  	if (IS_ERR(dentry))
+>  		return PTR_ERR(dentry);
+>  
+>  	if (!IS_POSIXACL(path.dentry->d_inode))
+>  		mode &= ~current_umask();
+> -	error = mnt_want_write(path.mnt);
+> -	if (error)
+> -		goto out_dput;
+>  	error = security_path_mkdir(&path, dentry, mode);
+>  	if (error)
+> -		goto out_drop_write;
+> +		goto out_dput;
+>  	error = vfs_mkdir(path.dentry->d_inode, dentry, mode);
+> -out_drop_write:
+> -	mnt_drop_write(path.mnt);
+>  out_dput:
+>  	dput(dentry);
+>  	mutex_unlock(&path.dentry->d_inode->i_mutex);
+> +	mnt_drop_write(path.mnt);
+>  	path_put(&path);
+>  	return error;
+>  }
+> @@ -2764,6 +2791,9 @@ static long do_rmdir(int dfd, const char __user *pathname)
+>  	}
+>  
+>  	nd.flags &= ~LOOKUP_PARENT;
+> +	error = mnt_want_write(nd.path.mnt);
+> +	if (error)
+> +		goto exit1;
+>  
+>  	mutex_lock_nested(&nd.path.dentry->d_inode->i_mutex, I_MUTEX_PARENT);
+>  	dentry = lookup_hash(&nd);
+> @@ -2774,19 +2804,15 @@ static long do_rmdir(int dfd, const char __user *pathname)
+>  		error = -ENOENT;
+>  		goto exit3;
+>  	}
+> -	error = mnt_want_write(nd.path.mnt);
+> -	if (error)
+> -		goto exit3;
+>  	error = security_path_rmdir(&nd.path, dentry);
+>  	if (error)
+> -		goto exit4;
+> +		goto exit3;
+>  	error = vfs_rmdir(nd.path.dentry->d_inode, dentry);
+> -exit4:
+> -	mnt_drop_write(nd.path.mnt);
+>  exit3:
+>  	dput(dentry);
+>  exit2:
+>  	mutex_unlock(&nd.path.dentry->d_inode->i_mutex);
+> +	mnt_drop_write(nd.path.mnt);
+>  exit1:
+>  	path_put(&nd.path);
+>  	putname(name);
+> @@ -2853,6 +2879,9 @@ static long do_unlinkat(int dfd, const char __user *pathname)
+>  		goto exit1;
+>  
+>  	nd.flags &= ~LOOKUP_PARENT;
+> +	error = mnt_want_write(nd.path.mnt);
+> +	if (error)
+> +		goto exit1;
+>  
+>  	mutex_lock_nested(&nd.path.dentry->d_inode->i_mutex, I_MUTEX_PARENT);
+>  	dentry = lookup_hash(&nd);
+> @@ -2865,21 +2894,17 @@ static long do_unlinkat(int dfd, const char __user *pathname)
+>  		if (!inode)
+>  			goto slashes;
+>  		ihold(inode);
+> -		error = mnt_want_write(nd.path.mnt);
+> -		if (error)
+> -			goto exit2;
+>  		error = security_path_unlink(&nd.path, dentry);
+>  		if (error)
+> -			goto exit3;
+> +			goto exit2;
+>  		error = vfs_unlink(nd.path.dentry->d_inode, dentry);
+> -exit3:
+> -		mnt_drop_write(nd.path.mnt);
+> -	exit2:
+> +exit2:
+>  		dput(dentry);
+>  	}
+>  	mutex_unlock(&nd.path.dentry->d_inode->i_mutex);
+>  	if (inode)
+>  		iput(inode);	/* truncate the inode here */
+> +	mnt_drop_write(nd.path.mnt);
+>  exit1:
+>  	path_put(&nd.path);
+>  	putname(name);
+> @@ -2939,23 +2964,19 @@ SYSCALL_DEFINE3(symlinkat, const char __user *, oldname,
+>  	if (IS_ERR(from))
+>  		return PTR_ERR(from);
+>  
+> -	dentry = user_path_create(newdfd, newname, &path, 0);
+> +	dentry = user_path_create_thawed(newdfd, newname, &path, 0);
+>  	error = PTR_ERR(dentry);
+>  	if (IS_ERR(dentry))
+>  		goto out_putname;
+>  
+> -	error = mnt_want_write(path.mnt);
+> -	if (error)
+> -		goto out_dput;
+>  	error = security_path_symlink(&path, dentry, from);
+>  	if (error)
+> -		goto out_drop_write;
+> +		goto out_dput;
+>  	error = vfs_symlink(path.dentry->d_inode, dentry, from);
+> -out_drop_write:
+> -	mnt_drop_write(path.mnt);
+>  out_dput:
+>  	dput(dentry);
+>  	mutex_unlock(&path.dentry->d_inode->i_mutex);
+> +	mnt_drop_write(path.mnt);
+>  	path_put(&path);
+>  out_putname:
+>  	putname(from);
+> @@ -3048,7 +3069,7 @@ SYSCALL_DEFINE5(linkat, int, olddfd, const char __user *, oldname,
+>  	if (error)
+>  		return error;
+>  
+> -	new_dentry = user_path_create(newdfd, newname, &new_path, 0);
+> +	new_dentry = user_path_create_thawed(newdfd, newname, &new_path, 0);
+>  	error = PTR_ERR(new_dentry);
+>  	if (IS_ERR(new_dentry))
+>  		goto out;
+> @@ -3056,18 +3077,14 @@ SYSCALL_DEFINE5(linkat, int, olddfd, const char __user *, oldname,
+>  	error = -EXDEV;
+>  	if (old_path.mnt != new_path.mnt)
+>  		goto out_dput;
+> -	error = mnt_want_write(new_path.mnt);
+> -	if (error)
+> -		goto out_dput;
+>  	error = security_path_link(old_path.dentry, &new_path, new_dentry);
+>  	if (error)
+> -		goto out_drop_write;
+> +		goto out_dput;
+>  	error = vfs_link(old_path.dentry, new_path.dentry->d_inode, new_dentry);
+> -out_drop_write:
+> -	mnt_drop_write(new_path.mnt);
+>  out_dput:
+>  	dput(new_dentry);
+>  	mutex_unlock(&new_path.dentry->d_inode->i_mutex);
+> +	mnt_drop_write(new_path.mnt);
+>  	path_put(&new_path);
+>  out:
+>  	path_put(&old_path);
+> @@ -3264,6 +3281,10 @@ SYSCALL_DEFINE4(renameat, int, olddfd, const char __user *, oldname,
+>  	if (newnd.last_type != LAST_NORM)
+>  		goto exit2;
+>  
+> +	error = mnt_want_write(oldnd.path.mnt);
+> +	if (error)
+> +		goto exit2;
+> +
+>  	oldnd.flags &= ~LOOKUP_PARENT;
+>  	newnd.flags &= ~LOOKUP_PARENT;
+>  	newnd.flags |= LOOKUP_RENAME_TARGET;
+> @@ -3299,23 +3320,19 @@ SYSCALL_DEFINE4(renameat, int, olddfd, const char __user *, oldname,
+>  	if (new_dentry == trap)
+>  		goto exit5;
+>  
+> -	error = mnt_want_write(oldnd.path.mnt);
+> -	if (error)
+> -		goto exit5;
+>  	error = security_path_rename(&oldnd.path, old_dentry,
+>  				     &newnd.path, new_dentry);
+>  	if (error)
+> -		goto exit6;
+> +		goto exit5;
+>  	error = vfs_rename(old_dir->d_inode, old_dentry,
+>  				   new_dir->d_inode, new_dentry);
+> -exit6:
+> -	mnt_drop_write(oldnd.path.mnt);
+>  exit5:
+>  	dput(new_dentry);
+>  exit4:
+>  	dput(old_dentry);
+>  exit3:
+>  	unlock_rename(new_dir, old_dir);
+> +	mnt_drop_write(oldnd.path.mnt);
+>  exit2:
+>  	path_put(&newnd.path);
+>  	putname(to);
+> diff --git a/fs/ocfs2/refcounttree.c b/fs/ocfs2/refcounttree.c
+> index cf78233..a99b8e2 100644
+> --- a/fs/ocfs2/refcounttree.c
+> +++ b/fs/ocfs2/refcounttree.c
+> @@ -4453,7 +4453,7 @@ int ocfs2_reflink_ioctl(struct inode *inode,
+>  		return error;
+>  	}
+>  
+> -	new_dentry = user_path_create(AT_FDCWD, newname, &new_path, 0);
+> +	new_dentry = user_path_create_thawed(AT_FDCWD, newname, &new_path, 0);
+>  	error = PTR_ERR(new_dentry);
+>  	if (IS_ERR(new_dentry)) {
+>  		mlog_errno(error);
+> @@ -4466,19 +4466,13 @@ int ocfs2_reflink_ioctl(struct inode *inode,
+>  		goto out_dput;
+>  	}
+>  
+> -	error = mnt_want_write(new_path.mnt);
+> -	if (error) {
+> -		mlog_errno(error);
+> -		goto out_dput;
+> -	}
+> -
+>  	error = ocfs2_vfs_reflink(old_path.dentry,
+>  				  new_path.dentry->d_inode,
+>  				  new_dentry, preserve);
+> -	mnt_drop_write(new_path.mnt);
+>  out_dput:
+>  	dput(new_dentry);
+>  	mutex_unlock(&new_path.dentry->d_inode->i_mutex);
+> +	mnt_drop_write(new_path.mnt);
+>  	path_put(&new_path);
+>  out:
+>  	path_put(&old_path);
+> diff --git a/include/linux/namei.h b/include/linux/namei.h
+> index ffc0213..432f6bb 100644
+> --- a/include/linux/namei.h
+> +++ b/include/linux/namei.h
+> @@ -77,7 +77,9 @@ extern int user_path_at_empty(int, const char __user *, unsigned, struct path *,
+>  extern int kern_path(const char *, unsigned, struct path *);
+>  
+>  extern struct dentry *kern_path_create(int, const char *, struct path *, int);
+> +extern struct dentry *kern_path_create_thawed(int, const char *, struct path *, int);
+>  extern struct dentry *user_path_create(int, const char __user *, struct path *, int);
+> +extern struct dentry *user_path_create_thawed(int, const char __user *, struct path *, int);
+>  extern int kern_path_parent(const char *, struct nameidata *);
+>  extern int vfs_path_lookup(struct dentry *, struct vfsmount *,
+>  			   const char *, unsigned int, struct path *);
+> diff --git a/net/unix/af_unix.c b/net/unix/af_unix.c
+> index d510353..c532632 100644
+> --- a/net/unix/af_unix.c
+> +++ b/net/unix/af_unix.c
+> @@ -865,7 +865,7 @@ static int unix_bind(struct socket *sock, struct sockaddr *uaddr, int addr_len)
+>  		 * Get the parent directory, calculate the hash for last
+>  		 * component.
+>  		 */
+> -		dentry = kern_path_create(AT_FDCWD, sun_path, &path, 0);
+> +		dentry = kern_path_create_thawed(AT_FDCWD, sun_path, &path, 0);
+>  		err = PTR_ERR(dentry);
+>  		if (IS_ERR(dentry))
+>  			goto out_mknod_parent;
+> @@ -875,19 +875,13 @@ static int unix_bind(struct socket *sock, struct sockaddr *uaddr, int addr_len)
+>  		 */
+>  		mode = S_IFSOCK |
+>  		       (SOCK_INODE(sock)->i_mode & ~current_umask());
+> -		err = mnt_want_write(path.mnt);
+> -		if (err)
+> -			goto out_mknod_dput;
+>  		err = security_path_mknod(&path, dentry, mode, 0);
+>  		if (err)
+> -			goto out_mknod_drop_write;
+> -		err = vfs_mknod(path.dentry->d_inode, dentry, mode, 0);
+> -out_mknod_drop_write:
+> -		mnt_drop_write(path.mnt);
+> -		if (err)
+>  			goto out_mknod_dput;
+> +		err = vfs_mknod(path.dentry->d_inode, dentry, mode, 0);
+>  		mutex_unlock(&path.dentry->d_inode->i_mutex);
+>  		dput(path.dentry);
+> +		mnt_drop_write(path.mnt);
+>  		path.dentry = dentry;
+>  
+>  		addr->hash = UNIX_HASH_SIZE;
+> @@ -924,6 +918,7 @@ out:
+>  out_mknod_dput:
+>  	dput(dentry);
+>  	mutex_unlock(&path.dentry->d_inode->i_mutex);
+> +	mnt_drop_write(path.mnt);
+>  	path_put(&path);
+>  out_mknod_parent:
+>  	if (err == -EEXIST)
+> -- 
+> 1.7.1
+> 
 
 -- 
-Kind regards,
-Minchan Kim
+
+"Hell is oneself, hell is alone, the other figures in it, merely projections."
+        - T. S. Eliot
+
+			http://www.jlbec.org/
+			jlbec@evilplan.org
