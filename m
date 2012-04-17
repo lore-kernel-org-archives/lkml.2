@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932184Ab2DQLVq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Apr 2012 07:21:46 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:1028 "EHLO mx1.redhat.com"
+	id S1755934Ab2DQLWO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Apr 2012 07:22:14 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:26934 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755821Ab2DQLSh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Apr 2012 07:18:37 -0400
+	id S1755748Ab2DQLSW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Apr 2012 07:18:22 -0400
 From: Jiri Olsa <jolsa@redhat.com>
 To: acme@redhat.com, a.p.zijlstra@chello.nl, mingo@elte.hu, paulus@samba.org,
         cjashfor@linux.vnet.ibm.com, fweisbec@gmail.com
@@ -14,191 +14,96 @@ Cc: eranian@google.com, gorcunov@openvz.org, tzanussi@gmail.com,
         fche@redhat.com, linux-kernel@vger.kernel.org,
         masami.hiramatsu.pt@hitachi.com, drepper@gmail.com,
         Jiri Olsa <jolsa@redhat.com>
-Subject: [PATCH 07/16] perf, tool: Add interface to read DSO image data
-Date: Tue, 17 Apr 2012 13:17:12 +0200
-Message-Id: <1334661441-4420-8-git-send-email-jolsa@redhat.com>
+Subject: [PATCH 05/16] perf: Add attribute to filter out user callchains
+Date: Tue, 17 Apr 2012 13:17:10 +0200
+Message-Id: <1334661441-4420-6-git-send-email-jolsa@redhat.com>
 In-Reply-To: <1334661441-4420-1-git-send-email-jolsa@redhat.com>
 References: <1334661441-4420-1-git-send-email-jolsa@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Adding following interface for DSO object to allow
-reading of DSO image data:
+Add the new exclude_user_callchain attribute to filter out
+frame pointer based user callchains. This is something we
+want to select when we use the dwarf cfi callchain mode,
+because frame pointer based user callchains are useless in
+this mode.
 
-  dso__data_fd
-    - opens DSO and returns file descriptor
-      Binary types are used to locate/open DSO in following order:
-        DSO_BINARY_TYPE__BUILD_ID_CACHE
-        DSO_BINARY_TYPE__SYSTEM_PATH_DSO
-      In other word we first try to open DSO build-id path,
-      and if that fails we try to open DSO system path.
-
-  dso__data_read_offset
-    - reads DSO data from specified offset
-
-  dso__data_read_addr
-    - reads DSO data from specified addres/map.
-
+Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
 Signed-off-by: Jiri Olsa <jolsa@redhat.com>
 ---
- tools/perf/util/symbol.c |  107 ++++++++++++++++++++++++++++++++++++++++++++++
- tools/perf/util/symbol.h |    8 +++
- 2 files changed, 115 insertions(+), 0 deletions(-)
+ include/linux/perf_event.h |    4 +++-
+ kernel/events/callchain.c  |    4 ++--
+ kernel/events/core.c       |    3 ++-
+ kernel/events/internal.h   |    3 ++-
+ 4 files changed, 9 insertions(+), 5 deletions(-)
 
-diff --git a/tools/perf/util/symbol.c b/tools/perf/util/symbol.c
-index 09b440c..1e42034 100644
---- a/tools/perf/util/symbol.c
-+++ b/tools/perf/util/symbol.c
-@@ -64,6 +64,14 @@ static enum dso_binary_type binary_type_symtab[] = {
+diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
+index e40bac5..b121c05 100644
+--- a/include/linux/perf_event.h
++++ b/include/linux/perf_event.h
+@@ -255,7 +255,9 @@ struct perf_event_attr {
+ 				exclude_host   :  1, /* don't count in host   */
+ 				exclude_guest  :  1, /* don't count in guest  */
  
- #define DSO_BINARY_TYPE__SYMTAB_CNT sizeof(binary_type_symtab)
- 
-+static enum dso_binary_type binary_type_data[] = {
-+	DSO_BINARY_TYPE__BUILD_ID_CACHE,
-+	DSO_BINARY_TYPE__SYSTEM_PATH_DSO,
-+	DSO_BINARY_TYPE__NOT_FOUND,
-+};
+-				__reserved_1   : 43;
++				exclude_user_callchain : 1, /* only record kernel callchains */
 +
-+#define DSO_BINARY_TYPE__DATA_CNT sizeof(binary_type_data)
-+
- int dso__name_len(const struct dso *dso)
- {
- 	if (!dso)
-@@ -335,6 +343,7 @@ struct dso *dso__new(const char *name)
- 		for (i = 0; i < MAP__NR_TYPES; ++i)
- 			dso->symbols[i] = dso->symbol_names[i] = RB_ROOT;
- 		dso->symtab_type = DSO_BINARY_TYPE__NOT_FOUND;
-+		dso->data_type   = DSO_BINARY_TYPE__NOT_FOUND;
- 		dso->loaded = 0;
- 		dso->sorted_by_name = 0;
- 		dso->has_build_id = 0;
-@@ -2823,3 +2832,101 @@ int machine__load_vmlinux_path(struct machine *machine, enum map_type type,
++				__reserved_1   : 42;
  
- 	return ret;
+ 	union {
+ 		__u32		wakeup_events;	  /* wakeup every n events */
+diff --git a/kernel/events/callchain.c b/kernel/events/callchain.c
+index 6581a04..884e997 100644
+--- a/kernel/events/callchain.c
++++ b/kernel/events/callchain.c
+@@ -153,7 +153,7 @@ put_callchain_entry(int rctx)
+ 	put_recursion_context(__get_cpu_var(callchain_recursion), rctx);
  }
-+
-+static int open_dso(struct dso *dso, struct machine *machine)
-+{
-+	char *root_dir = (char *) "";
-+	char *name;
-+	int fd;
-+
-+	name = malloc(PATH_MAX);
-+	if (!name)
-+		return -ENOMEM;
-+
-+	if (machine)
-+		root_dir = machine->root_dir;
-+
-+	if (dso__binary_type_file(dso, dso->data_type,
-+				  root_dir, name, PATH_MAX))
-+		return -EINVAL;
-+
-+	fd = open(name, O_RDONLY);
-+	free(name);
-+	return fd;
-+}
-+
-+int dso__data_fd(struct dso *dso, struct machine *machine)
-+{
-+	int i = 0;
-+
-+	if (dso->data_type != DSO_BINARY_TYPE__NOT_FOUND)
-+		return open_dso(dso, machine);
-+
-+	do {
-+		int fd;
-+
-+		dso->data_type = binary_type_data[i++];
-+
-+		fd = open_dso(dso, machine);
-+		if (fd >= 0)
-+			return fd;
-+
-+	} while (dso->data_type != DSO_BINARY_TYPE__NOT_FOUND);
-+
-+	return -EINVAL;
-+}
-+
-+static ssize_t dso_cache_read(struct dso *dso __used, u64 offset __used,
-+			      u8 *data __used, ssize_t size __used)
-+{
-+	return -EINVAL;
-+}
-+
-+static int dso_cache_add(struct dso *dso __used, u64 offset __used,
-+			 u8 *data __used, ssize_t size __used)
-+{
-+	return 0;
-+}
-+
-+static ssize_t read_dso_data(struct dso *dso, struct machine *machine,
-+		     u64 offset, u8 *data, ssize_t size)
-+{
-+	ssize_t rsize = -1;
-+	int fd;
-+
-+	fd = dso__data_fd(dso, machine);
-+	if (fd < 0)
-+		return -1;
-+
-+	do {
-+		if (-1 == lseek(fd, offset, SEEK_SET))
-+			break;
-+
-+		rsize = read(fd, data, size);
-+		if (-1 == rsize)
-+			break;
-+
-+		if (dso_cache_add(dso, offset, data, size))
-+			pr_err("Failed to add data int dso cache.");
-+
-+	} while (0);
-+
-+	close(fd);
-+	return rsize;
-+}
-+
-+ssize_t dso__data_read_offset(struct dso *dso, struct machine *machine,
-+			      u64 offset, u8 *data, ssize_t size)
-+{
-+	if (dso_cache_read(dso, offset, data, size))
-+		return read_dso_data(dso, machine, offset, data, size);
-+	return 0;
-+}
-+
-+ssize_t dso__data_read_addr(struct dso *dso, struct map *map,
-+			    struct machine *machine, u64 addr,
-+			    u8 *data, ssize_t size)
-+{
-+	u64 offset = map->map_ip(map, addr);
-+	return dso__data_read_offset(dso, machine, offset, data, size);
-+}
-diff --git a/tools/perf/util/symbol.h b/tools/perf/util/symbol.h
-index 13c3618..b62321f 100644
---- a/tools/perf/util/symbol.h
-+++ b/tools/perf/util/symbol.h
-@@ -175,6 +175,7 @@ struct dso {
- 	struct rb_root	 symbol_names[MAP__NR_TYPES];
- 	enum dso_kernel_type	kernel;
- 	enum dso_binary_type	symtab_type;
-+	enum dso_binary_type	data_type;
- 	u8		 adjust_symbols:1;
- 	u8		 has_build_id:1;
- 	u8		 hit:1;
-@@ -269,4 +270,11 @@ size_t machine__fprintf_vmlinux_path(struct machine *machine, FILE *fp);
  
- int dso__binary_type_file(struct dso *dso, enum dso_binary_type type,
- 			  char *root_dir, char *file, size_t size);
-+
-+int dso__data_fd(struct dso *dso, struct machine *machine);
-+ssize_t dso__data_read_offset(struct dso *dso, struct machine *machine,
-+			      u64 offset, u8 *data, ssize_t size);
-+ssize_t dso__data_read_addr(struct dso *dso, struct map *map,
-+			    struct machine *machine, u64 addr,
-+			    u8 *data, ssize_t size);
- #endif /* __PERF_SYMBOL */
+-struct perf_callchain_entry *perf_callchain(struct pt_regs *regs)
++struct perf_callchain_entry *perf_callchain(struct pt_regs *regs, int user)
+ {
+ 	int rctx;
+ 	struct perf_callchain_entry *entry;
+@@ -177,7 +177,7 @@ struct perf_callchain_entry *perf_callchain(struct pt_regs *regs)
+ 			regs = NULL;
+ 	}
+ 
+-	if (regs) {
++	if (user && regs) {
+ 		perf_callchain_store(entry, PERF_CONTEXT_USER);
+ 		perf_callchain_user(entry, regs);
+ 	}
+diff --git a/kernel/events/core.c b/kernel/events/core.c
+index 5bae705..35c28f5 100644
+--- a/kernel/events/core.c
++++ b/kernel/events/core.c
+@@ -4114,8 +4114,9 @@ void perf_prepare_sample(struct perf_event_header *header,
+ 
+ 	if (sample_type & PERF_SAMPLE_CALLCHAIN) {
+ 		int size = 1;
++		int user = !event->attr.exclude_user_callchain;
+ 
+-		data->callchain = perf_callchain(regs);
++		data->callchain = perf_callchain(regs, user);
+ 
+ 		if (data->callchain)
+ 			size += data->callchain->nr;
+diff --git a/kernel/events/internal.h b/kernel/events/internal.h
+index 1ae5270..b3ade19 100644
+--- a/kernel/events/internal.h
++++ b/kernel/events/internal.h
+@@ -115,7 +115,8 @@ DEFINE_PERF_OUTPUT_COPY(__output_copy, memcpy_common)
+ DEFINE_PERF_OUTPUT_COPY(__output_copy_user_gup, copy_from_user_gup)
+ 
+ /* Callchain handling */
+-extern struct perf_callchain_entry *perf_callchain(struct pt_regs *regs);
++extern struct perf_callchain_entry *perf_callchain(struct pt_regs *regs,
++						   int user);
+ extern int get_callchain_buffers(void);
+ extern void put_callchain_buffers(void);
+ 
 -- 
 1.7.7.6
 
