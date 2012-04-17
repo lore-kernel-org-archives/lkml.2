@@ -1,54 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932116Ab2DQLSi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Apr 2012 07:18:38 -0400
-Received: from goliath.siemens.de ([192.35.17.28]:29709 "EHLO
-	goliath.siemens.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754156Ab2DQLSf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Apr 2012 07:18:35 -0400
-Message-ID: <4F8D5186.7020801@siemens.com>
-Date: Tue, 17 Apr 2012 13:18:30 +0200
-From: Jan Kiszka <jan.kiszka@siemens.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); de; rv:1.8.1.12) Gecko/20080226 SUSE/2.0.0.12-1.1 Thunderbird/2.0.0.12 Mnenhy/0.7.5.666
-MIME-Version: 1.0
-To: Avi Kivity <avi@redhat.com>
-CC: Marcelo Tosatti <mtosatti@redhat.com>, kvm <kvm@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] KVM: x86: Run PIT work in own kthread
-References: <4F8C645C.7010302@siemens.com> <4F8D4598.5080902@redhat.com>
-In-Reply-To: <4F8D4598.5080902@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S932131Ab2DQLSp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Apr 2012 07:18:45 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:3375 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755617Ab2DQLSm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Apr 2012 07:18:42 -0400
+From: Jiri Olsa <jolsa@redhat.com>
+To: acme@redhat.com, a.p.zijlstra@chello.nl, mingo@elte.hu, paulus@samba.org,
+        cjashfor@linux.vnet.ibm.com, fweisbec@gmail.com
+Cc: eranian@google.com, gorcunov@openvz.org, tzanussi@gmail.com,
+        mhiramat@redhat.com, rostedt@goodmis.org, robert.richter@amd.com,
+        fche@redhat.com, linux-kernel@vger.kernel.org,
+        masami.hiramatsu.pt@hitachi.com, drepper@gmail.com,
+        Jiri Olsa <jolsa@redhat.com>
+Subject: [PATCH 08/16] perf, tool: Add '.note' check into search for NOTE section
+Date: Tue, 17 Apr 2012 13:17:13 +0200
+Message-Id: <1334661441-4420-9-git-send-email-jolsa@redhat.com>
+In-Reply-To: <1334661441-4420-1-git-send-email-jolsa@redhat.com>
+References: <1334661441-4420-1-git-send-email-jolsa@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2012-04-17 12:27, Avi Kivity wrote:
-> On 04/16/2012 09:26 PM, Jan Kiszka wrote:
->> We can't run PIT IRQ injection work in the interrupt context of the host
->> timer. This would allow the user to influence the handler complexity by
->> asking for a broadcast to a large number of VCPUs. Therefore, this work
->> was pushed into workqueue context in 9d244caf2e. However, this prevents
->> prioritizing the PIT injection over other task as workqueues share
->> kernel threads.
->>
->> This replaces the workqueue with a kthread worker and gives that thread
->> a name in the format "kvm-pit/<owner-process-pid>". That allows to
->> identify and adjust the kthread priority according to the VM process
->> parameters.
-> 
-> Is this a new ABI?
+Adding '.note' section name to be check when looking for notes
+section. The '.note' name is used by kernel VDSO.
 
-Yep. Scripts will use it, maybe even QEMU. Do you want this to appear in
-api.txt?
+Signed-off-by: Jiri Olsa <jolsa@redhat.com>
+---
+ tools/perf/util/symbol.c |   29 +++++++++++++++++++++++------
+ 1 files changed, 23 insertions(+), 6 deletions(-)
 
-> 
-> Patch looks reasonable.
-> 
-
-Jan
-
+diff --git a/tools/perf/util/symbol.c b/tools/perf/util/symbol.c
+index 1e42034..9c0fa32 100644
+--- a/tools/perf/util/symbol.c
++++ b/tools/perf/util/symbol.c
+@@ -1474,14 +1474,31 @@ static int elf_read_build_id(Elf *elf, void *bf, size_t size)
+ 		goto out;
+ 	}
+ 
+-	sec = elf_section_by_name(elf, &ehdr, &shdr,
+-				  ".note.gnu.build-id", NULL);
+-	if (sec == NULL) {
++	/*
++	 * Check following sections for notes:
++	 *   '.note.gnu.build-id'
++	 *   '.notes'
++	 *   '.note' (VDSO specific)
++	 */
++	do {
++		sec = elf_section_by_name(elf, &ehdr, &shdr,
++					  ".note.gnu.build-id", NULL);
++		if (sec)
++			break;
++
+ 		sec = elf_section_by_name(elf, &ehdr, &shdr,
+ 					  ".notes", NULL);
+-		if (sec == NULL)
+-			goto out;
+-	}
++		if (sec)
++			break;
++
++		sec = elf_section_by_name(elf, &ehdr, &shdr,
++					  ".note", NULL);
++		if (sec)
++			break;
++
++		return err;
++
++	} while (0);
+ 
+ 	data = elf_getdata(sec, NULL);
+ 	if (data == NULL)
 -- 
-Siemens AG, Corporate Technology, CT T DE IT 1
-Corporate Competence Center Embedded Linux
+1.7.7.6
+
