@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755913Ab2DQLUN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Apr 2012 07:20:13 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:23188 "EHLO mx1.redhat.com"
+	id S932275Ab2DQLUL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Apr 2012 07:20:11 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:24298 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932206Ab2DQLT3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S932212Ab2DQLT3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 17 Apr 2012 07:19:29 -0400
 From: Jiri Olsa <jolsa@redhat.com>
 To: acme@redhat.com, a.p.zijlstra@chello.nl, mingo@elte.hu, paulus@samba.org,
@@ -14,224 +14,220 @@ Cc: eranian@google.com, gorcunov@openvz.org, tzanussi@gmail.com,
         fche@redhat.com, linux-kernel@vger.kernel.org,
         masami.hiramatsu.pt@hitachi.com, drepper@gmail.com,
         Jiri Olsa <jolsa@redhat.com>
-Subject: [PATCH 16/16] perf, tool: Add dso data caching tests
-Date: Tue, 17 Apr 2012 13:17:21 +0200
-Message-Id: <1334661441-4420-17-git-send-email-jolsa@redhat.com>
+Subject: [PATCH 14/16] perf, tool: Support for dwarf mode callchain on perf record
+Date: Tue, 17 Apr 2012 13:17:19 +0200
+Message-Id: <1334661441-4420-15-git-send-email-jolsa@redhat.com>
 In-Reply-To: <1334661441-4420-1-git-send-email-jolsa@redhat.com>
 References: <1334661441-4420-1-git-send-email-jolsa@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Adding automated test for DSO data reading. Testing raw/cached
-reads from different file/cache locations.
+This patch enables perf to use the dwarf unwind code.
 
+It extends the perf record '-g' option with following arguments:
+  'fp'           - provides framepointer based user
+                   stack backtrace
+  'dwarf[,size]' - provides dwarf (libunwind) based user stack
+                   backtrace. The size specifies the size of the
+                   user stack dump. If ommited it is 8192 by default.
+
+If libunwind is found during the perf build, then the 'dwarf'
+argument becomes available for record command. The 'fp' stays as
+default option in any case.
+
+Examples: (perf compiled with libunwind)
+
+   perf record -g dwarf ls
+      - provides dwarf unwind with 8192 as stack dump size
+
+   perf record -g dwarf,4096 ls
+      - provides dwarf unwind with 4096 as stack dump size
+
+   perf record -g -- ls
+   perf record -g fp ls
+      - provides frame pointer unwind
+
+Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
 Signed-off-by: Jiri Olsa <jolsa@redhat.com>
 ---
- tools/perf/Makefile        |    1 +
- tools/perf/builtin-test.c  |    4 +
- tools/perf/util/dso-test.c |  154 ++++++++++++++++++++++++++++++++++++++++++++
- tools/perf/util/symbol.h   |    1 +
- 4 files changed, 160 insertions(+), 0 deletions(-)
- create mode 100644 tools/perf/util/dso-test.c
+ tools/perf/builtin-record.c |   86 ++++++++++++++++++++++++++++++++++++++++++-
+ tools/perf/perf.h           |    9 ++++-
+ tools/perf/util/evsel.c     |   10 ++++-
+ 3 files changed, 101 insertions(+), 4 deletions(-)
 
-diff --git a/tools/perf/Makefile b/tools/perf/Makefile
-index 3614b1a..dc56c8e 100644
---- a/tools/perf/Makefile
-+++ b/tools/perf/Makefile
-@@ -342,6 +342,7 @@ LIB_OBJS += $(OUTPUT)util/usage.o
- LIB_OBJS += $(OUTPUT)util/wrapper.o
- LIB_OBJS += $(OUTPUT)util/sigchain.o
- LIB_OBJS += $(OUTPUT)util/symbol.o
-+LIB_OBJS += $(OUTPUT)util/dso-test.o
- LIB_OBJS += $(OUTPUT)util/color.o
- LIB_OBJS += $(OUTPUT)util/pager.o
- LIB_OBJS += $(OUTPUT)util/header.o
-diff --git a/tools/perf/builtin-test.c b/tools/perf/builtin-test.c
-index a434aaa..83ff5ba 100644
---- a/tools/perf/builtin-test.c
-+++ b/tools/perf/builtin-test.c
-@@ -1662,6 +1662,10 @@ static struct test {
- 		.func = test__perf_pmu,
- 	},
- 	{
-+		.desc = "Test dso data interface",
-+		.func = dso__test_data,
-+	},
-+	{
- 		.func = NULL,
- 	},
- };
-diff --git a/tools/perf/util/dso-test.c b/tools/perf/util/dso-test.c
-new file mode 100644
-index 0000000..ec62977
---- /dev/null
-+++ b/tools/perf/util/dso-test.c
-@@ -0,0 +1,154 @@
+diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
+index 10b1f1f..ba01545 100644
+--- a/tools/perf/builtin-record.c
++++ b/tools/perf/builtin-record.c
+@@ -31,6 +31,15 @@
+ #include <sched.h>
+ #include <sys/mman.h>
+ 
++#define CALLCHAIN_HELP "do call-graph (stack chain/backtrace) recording: "
 +
-+#include <stdlib.h>
-+#include <sys/types.h>
-+#include <sys/stat.h>
-+#include <fcntl.h>
-+#include <string.h>
++#ifdef NO_LIBUNWIND_SUPPORT
++static char callchain_help[] = CALLCHAIN_HELP "[fp]";
++#else
++static unsigned long default_stack_dump_size = 8192;
++static char callchain_help[] = CALLCHAIN_HELP "[fp] dwarf";
++#endif
 +
-+#include "symbol.h"
-+
-+#define TEST_ASSERT_VAL(text, cond) \
-+do { \
-+	if (!(cond)) { \
-+		pr_debug("FAILED %s:%d %s\n", __FILE__, __LINE__, text); \
-+		return -1; \
-+	} \
-+} while (0)
-+
-+static char *test_file(int size)
+ enum write_mode_t {
+ 	WRITE_FORCE,
+ 	WRITE_APPEND
+@@ -725,6 +734,78 @@ error:
+ 	return ret;
+ }
+ 
++static int
++parse_callchain_opt(const struct option *opt __used, const char *arg,
++		    int unset)
 +{
-+	static char buf_templ[] = "/tmp/test-XXXXXX";
-+	char *templ = buf_templ;
-+	int fd, i;
-+	unsigned char *buf;
++	struct perf_record *rec = (struct perf_record *)opt->value;
++	char *tok, *name, *saveptr = NULL;
++	char buf[20];
++	int ret = -1;
 +
-+	fd = mkostemp(templ, O_CREAT|O_WRONLY|O_TRUNC);
++	/* --no-call-graph */
++	if (unset)
++		return 0;
 +
-+	buf = malloc(size);
-+	if (!buf) {
-+		close(fd);
-+		return NULL;
-+	}
++	/* We specified default option if none is provided. */
++	BUG_ON(!arg);
 +
-+	for (i = 0; i < size; i++)
-+		buf[i] = (unsigned char) ((int) i % 10);
++	/* We need buffer that we know we can write to. */
++	snprintf(buf, 20, "%s", arg);
 +
-+	if (size != write(fd, buf, size))
-+		templ = NULL;
++	tok = strtok_r((char *)buf, ",", &saveptr);
++	name = tok ? : (char *)buf;
 +
-+	close(fd);
-+	return templ;
-+}
++	do {
++		/* Framepointer style */
++		if (!strncmp(name, "fp", sizeof("fp"))) {
++			if (!strtok_r(NULL, ",", &saveptr)) {
++				rec->opts.call_graph = CALLCHAIN_FP;
++				ret = 0;
++			} else
++				pr_err("callchain: No more arguments "
++				       "needed for -g fp\n");
++			break;
 +
-+#define TEST_FILE_SIZE (DSO__DATA_CACHE_SIZE * 20)
++#ifndef NO_LIBUNWIND_SUPPORT
++		/* Dwarf style */
++		} else if (!strncmp(name, "dwarf", sizeof("dwarf"))) {
++			ret = 0;
++			rec->opts.call_graph = CALLCHAIN_DWARF;
++			rec->opts.stack_dump_size = default_stack_dump_size;
 +
-+struct test_data__offset {
-+	off_t offset;
-+	u8 data[10];
-+	int size;
-+};
++			tok = strtok_r(NULL, ",", &saveptr);
++			if (tok) {
++				char *endptr;
++				unsigned long size;
 +
-+struct test_data__offset offsets[] = {
-+	/* Fill first cache page. */
-+	{
-+		.offset = 10,
-+		.data   = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9 },
-+		.size   = 10,
-+	},
-+	/* Read first cache page. */
-+	{
-+		.offset = 10,
-+		.data   = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9 },
-+		.size   = 10,
-+	},
-+	/* Fill cache boundary pages. */
-+	{
-+		.offset = DSO__DATA_CACHE_SIZE - DSO__DATA_CACHE_SIZE % 10,
-+		.data   = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9 },
-+		.size   = 10,
-+	},
-+	/* Read cache boundary pages. */
-+	{
-+		.offset = DSO__DATA_CACHE_SIZE - DSO__DATA_CACHE_SIZE % 10,
-+		.data   = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9 },
-+		.size   = 10,
-+	},
-+	/* Fill final cache page. */
-+	{
-+		.offset = TEST_FILE_SIZE - 10,
-+		.data   = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9 },
-+		.size   = 10,
-+	},
-+	/* Read final cache page. */
-+	{
-+		.offset = TEST_FILE_SIZE - 10,
-+		.data   = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9 },
-+		.size   = 10,
-+	},
-+	/* Read final cache page. */
-+	{
-+		.offset = TEST_FILE_SIZE - 3,
-+		.data   = { 7, 8, 9, 0, 0, 0, 0, 0, 0, 0 },
-+		.size   = 3,
-+	},
-+};
++				size = strtoul(tok, &endptr, 0);
++				if (*endptr) {
++					pr_err("callchain: Incorrect stack "
++					       "dump size: %s\n", tok);
++					ret = -1;
++				}
 +
-+#define OFFSETS_CNT (sizeof(offsets) / sizeof(struct test_data__offset))
++				rec->opts.stack_dump_size = size;
++			}
 +
-+int dso__test_data(void)
-+{
-+	struct machine machine;
-+	struct dso *dso;
-+	char *file = test_file(TEST_FILE_SIZE);
-+	int i;
-+
-+	TEST_ASSERT_VAL("No test file", file);
-+
-+	memset(&machine, 0, sizeof(machine));
-+
-+	dso = dso__new((const char *)file);
-+
-+	/* Basic 10 bytes tests. */
-+	for (i = 0; i < (int) OFFSETS_CNT; i++) {
-+		struct test_data__offset *data = &offsets[i];
-+		ssize_t size;
-+		u8 buf[10];
-+
-+		memset(buf, 0, 10);
-+		size = dso__data_read_offset(dso, &machine, data->offset,
-+				     buf, 10);
-+
-+		TEST_ASSERT_VAL("Wrong size", size == data->size);
-+		TEST_ASSERT_VAL("Wrong data", !memcmp(buf, data->data, 10));
-+	}
-+
-+	/* Read cross multiple cache pages. */
-+	{
-+		ssize_t size;
-+		int c;
-+		u8 *buf;
-+
-+		buf = malloc(TEST_FILE_SIZE);
-+		TEST_ASSERT_VAL("ENOMEM\n", buf);
-+
-+		/* First iteration to fill caches, second one to read them. */
-+		for (c = 0; c < 2; c++) {
-+			memset(buf, 0, TEST_FILE_SIZE);
-+			size = dso__data_read_offset(dso, &machine, 10,
-+						     buf, TEST_FILE_SIZE);
-+
-+			TEST_ASSERT_VAL("Wrong size",
-+				size == (TEST_FILE_SIZE - 10));
-+
-+			for (i = 0; i < size; i++)
-+				TEST_ASSERT_VAL("Wrong data",
-+					buf[i] == (i % 10));
++			pr_debug("callchain: stack dump size %lu\n",
++				 rec->opts.stack_dump_size);
++#endif
++		} else {
++			pr_err("callchain: Unknown -g option "
++			       "value: %s\n", name);
++			break;
 +		}
 +
-+		free(buf);
++	} while (0);
++
++	if (!ret)
++		pr_debug("callchain: type %d\n", rec->opts.call_graph);
++
++	return ret;
++}
++
+ static const char * const record_usage[] = {
+ 	"perf record [<options>] [<command>]",
+ 	"perf record [<options>] -- <command> [<options>]",
+@@ -793,8 +874,9 @@ const struct option record_options[] = {
+ 		     "number of mmap data pages"),
+ 	OPT_BOOLEAN(0, "group", &record.opts.group,
+ 		    "put the counters into a counter group"),
+-	OPT_BOOLEAN('g', "call-graph", &record.opts.call_graph,
+-		    "do call-graph (stack chain/backtrace) recording"),
++	OPT_CALLBACK_DEFAULT('g', "call-graph", &record, "mode,dump_size",
++			     callchain_help, &parse_callchain_opt,
++			     "fp"),
+ 	OPT_INCR('v', "verbose", &verbose,
+ 		    "be more verbose (show counter open errors, etc)"),
+ 	OPT_BOOLEAN('q', "quiet", &quiet, "don't print any message"),
+diff --git a/tools/perf/perf.h b/tools/perf/perf.h
+index 89e3355..1b72438 100644
+--- a/tools/perf/perf.h
++++ b/tools/perf/perf.h
+@@ -207,11 +207,17 @@ extern const char perf_version_string[];
+ 
+ void pthread__unblock_sigwinch(void);
+ 
++enum perf_call_graph_mode {
++	CALLCHAIN_NONE,
++	CALLCHAIN_FP,
++	CALLCHAIN_DWARF
++};
++
+ struct perf_record_opts {
+ 	const char   *target_pid;
+ 	const char   *target_tid;
+ 	uid_t	     uid;
+-	bool	     call_graph;
++	int	     call_graph;
+ 	bool	     group;
+ 	bool	     inherit_stat;
+ 	bool	     no_delay;
+@@ -232,6 +238,7 @@ struct perf_record_opts {
+ 	u64	     default_interval;
+ 	u64	     user_interval;
+ 	const char   *cpu_list;
++	unsigned long stack_dump_size;
+ };
+ 
+ #endif
+diff --git a/tools/perf/util/evsel.c b/tools/perf/util/evsel.c
+index 7ee47c1..f2c4ca6 100644
+--- a/tools/perf/util/evsel.c
++++ b/tools/perf/util/evsel.c
+@@ -15,6 +15,7 @@
+ #include "util.h"
+ #include "cpumap.h"
+ #include "thread_map.h"
++#include "perf_regs.h"
+ 
+ #define FD(e, x, y) (*(int *)xyarray__entry(e->fd, x, y))
+ #define GROUP_FD(group_fd, cpu) (*(int *)xyarray__entry(group_fd, cpu, 0))
+@@ -104,9 +105,16 @@ void perf_evsel__config(struct perf_evsel *evsel, struct perf_record_opts *opts,
+ 		attr->mmap_data = track;
+ 	}
+ 
+-	if (opts->call_graph)
++	if (opts->call_graph) {
+ 		attr->sample_type	|= PERF_SAMPLE_CALLCHAIN;
+ 
++		if (opts->call_graph == CALLCHAIN_DWARF) {
++			attr->user_regs = PERF_REGS_MASK;
++			attr->ustack_dump_size = opts->stack_dump_size;
++			attr->exclude_user_callchain = 1;
++		}
 +	}
 +
-+	dso__delete(dso);
-+	unlink(file);
-+	return 0;
-+}
-diff --git a/tools/perf/util/symbol.h b/tools/perf/util/symbol.h
-index e5744c0..897b35e 100644
---- a/tools/perf/util/symbol.h
-+++ b/tools/perf/util/symbol.h
-@@ -288,4 +288,5 @@ ssize_t dso__data_read_offset(struct dso *dso, struct machine *machine,
- ssize_t dso__data_read_addr(struct dso *dso, struct map *map,
- 			    struct machine *machine, u64 addr,
- 			    u8 *data, ssize_t size);
-+int dso__test_data(void);
- #endif /* __PERF_SYMBOL */
+ 	if (opts->system_wide)
+ 		attr->sample_type	|= PERF_SAMPLE_CPU;
+ 
 -- 
 1.7.7.6
 
