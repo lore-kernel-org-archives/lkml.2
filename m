@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755248Ab2DPWBW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Apr 2012 18:01:22 -0400
-Received: from oproxy1-pub.bluehost.com ([66.147.249.253]:56227 "HELO
-	oproxy1-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1754824Ab2DPWBU (ORCPT
+	id S1755567Ab2DPWB1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Apr 2012 18:01:27 -0400
+Received: from oproxy7-pub.bluehost.com ([67.222.55.9]:35960 "HELO
+	oproxy7-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1755482Ab2DPWBY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Apr 2012 18:01:20 -0400
-Message-ID: <4F8CC0E4.5030706@xenotime.net>
-Date: Mon, 16 Apr 2012 18:01:24 -0700
+	Mon, 16 Apr 2012 18:01:24 -0400
+Message-ID: <4F8CC0E9.3010407@xenotime.net>
+Date: Mon, 16 Apr 2012 18:01:29 -0700
 From: Randy Dunlap <rdunlap@xenotime.net>
 User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
 MIME-Version: 1.0
 To: Stephen Rothwell <sfr@canb.auug.org.au>
 CC: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        Greg KH <greg@kroah.com>, Brian Swetland <swetland@google.com>,
-        Andrew Morton <akpm@linux-foundation.org>, devel@driverdev.osuosl.org
-Subject: [PATCH -next] staging: fix android alarm.c printk format warnings
+        Liam Girdwood <lrg@ti.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        alsa-devel@alsa-project.org, Andrew Morton <akpm@linux-foundation.org>
+Subject: [PATCH -next] soc: fix printk format in soc-dapm.c
 References: <20120416161121.261ba4e7e38989173accfb16@canb.auug.org.au>
 In-Reply-To: <20120416161121.261ba4e7e38989173accfb16@canb.auug.org.au>
 Content-Type: text/plain; charset=ISO-8859-1
@@ -28,35 +29,26 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Randy Dunlap <rdunlap@xenotime.net>
 
-Fix printk format warnings by using 't' modifier for ptrdiff_t.
+Fix printk format warning for 'formats':
 
-drivers/staging/android/alarm.c:344:2: warning: format '%ld' expects type 'long int', but argument 2 has type 'int'
-drivers/staging/android/alarm.c:367:3: warning: format '%ld' expects type 'long int', but argument 2 has type 'int'
+sound/soc/soc-dapm.c:2913:5: warning: format '%lx' expects type 'long unsigned int', but argument 3 has type 'u64'
 
 Signed-off-by: Randy Dunlap <rdunlap@xenotime.net>
-Cc: Greg KH <greg@kroah.com>
-Cc: Brian Swetland <swetland@google.com>
+Cc:	Liam Girdwood <lrg@ti.com>
+Cc:	Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc:	alsa-devel@alsa-project.org
 ---
- drivers/staging/android/alarm.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ sound/soc/soc-dapm.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- linux-next-20120416.orig/drivers/staging/android/alarm.c
-+++ linux-next-20120416/drivers/staging/android/alarm.c
-@@ -341,7 +341,7 @@ static enum hrtimer_restart alarm_timer_
- 	now = base->stopped ? base->stopped_time : hrtimer_cb_get_time(timer);
- 	now = ktime_sub(now, base->delta);
- 
--	pr_alarm(INT, "alarm_timer_triggered type %ld at %lld\n",
-+	pr_alarm(INT, "alarm_timer_triggered type %td at %lld\n",
- 		base - alarms, ktime_to_ns(now));
- 
- 	while (base->first) {
-@@ -364,7 +364,7 @@ static enum hrtimer_restart alarm_timer_
- 		spin_lock_irqsave(&alarm_slock, flags);
+--- linux-next-20120416.orig/sound/soc/soc-dapm.c
++++ linux-next-20120416/sound/soc/soc-dapm.c
+@@ -2909,7 +2909,7 @@ static int snd_soc_dai_link_event(struct
+ 	if (config->formats) {
+ 		fmt = ffs(config->formats) - 1;
+ 	} else {
+-		dev_warn(w->dapm->dev, "Invalid format %lx specified\n",
++		dev_warn(w->dapm->dev, "Invalid format %llx specified\n",
+ 			 config->formats);
+ 		fmt = 0;
  	}
- 	if (!base->first)
--		pr_alarm(FLOW, "no more alarms of type %ld\n", base - alarms);
-+		pr_alarm(FLOW, "no more alarms of type %td\n", base - alarms);
- 	update_timer_locked(base, true);
- 	spin_unlock_irqrestore(&alarm_slock, flags);
- 	return HRTIMER_NORESTART;
