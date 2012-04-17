@@ -1,102 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752372Ab2DQFKV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Apr 2012 01:10:21 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:45974 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751832Ab2DQFKA convert rfc822-to-8bit (ORCPT
+	id S1752520Ab2DQFNm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Apr 2012 01:13:42 -0400
+Received: from mail-vb0-f46.google.com ([209.85.212.46]:62548 "EHLO
+	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751201Ab2DQFNk convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Apr 2012 01:10:00 -0400
-Subject: Re: [PATCH 00/19 v5] Fix filesystem freezing deadlocks
-Mime-Version: 1.0 (Apple Message framework v1084)
-Content-Type: text/plain; charset=us-ascii
-From: Andreas Dilger <adilger@whamcloud.com>
-In-Reply-To: <20120417004329.GE6734@dastard>
-Date: Mon, 16 Apr 2012 22:10:50 -0700
-Cc: Jan Kara <jack@suse.cz>, Al Viro <viro@ZenIV.linux.org.uk>,
-        dchinner@redhat.com, LKML <linux-kernel@vger.kernel.org>,
-        linux-fsdevel@vger.kernel.org, Alex Elder <elder@kernel.org>,
-        Anton Altaparmakov <anton@tuxera.com>, Ben Myers <bpm@sgi.com>,
-        Chris Mason <chris.mason@oracle.com>, cluster-devel@redhat.com,
-        "David S. Miller" <davem@davemloft.net>,
-        fuse-devel@lists.sourceforge.net,
-        "J. Bruce Fields" <bfields@fieldses.org>,
-        Joel Becker <jlbec@evilplan.org>,
-        KONISHI Ryusuke <konishi.ryusuke@lab.ntt.co.jp>,
-        linux-btrfs@vger.kernel.org, linux-ext4@vger.kernel.org,
-        linux-nfs@vger.kernel.org, linux-nilfs@vger.kernel.org,
-        linux-ntfs-dev@lists.sourceforge.net, Mark Fasheh <mfasheh@suse.com>,
-        Miklos Szeredi <miklos@szeredi.hu>, ocfs2-devel@oss.oracle.com,
-        OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>,
-        Steven Whitehouse <swhiteho@redhat.com>,
-        "Theodore Ts'o" <tytso@mit.edu>, xfs@oss.sgi.com
+	Tue, 17 Apr 2012 01:13:40 -0400
+MIME-Version: 1.0
+In-Reply-To: <201204162330.12178.rjw@sisk.pl>
+References: <4F8790F6.5080408@intel.com>
+	<201204132141.58063.rjw@sisk.pl>
+	<CAC=cRTNYGGq2ncJr7mvEOm2udqXsAD3T9T=5Tafue_jrjAWCug@mail.gmail.com>
+	<201204162330.12178.rjw@sisk.pl>
+Date: Tue, 17 Apr 2012 13:13:39 +0800
+Message-ID: <CAC=cRTMXNnZQ_bDes9JFp9yreGC63b_i9fUX6apQzWrUHw2a0Q@mail.gmail.com>
+Subject: Re: [RFC PATCH] PCIe: Add PCIe runtime D3cold support
+From: huang ying <huang.ying.caritas@gmail.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: "Yan, Zheng" <zheng.z.yan@intel.com>, bhelgaas@google.com,
+        linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
+        linux-pm@vger.kernel.org, Lin Ming <ming.m.lin@intel.com>,
+        Zhang Rui <rui.zhang@intel.com>,
+        ACPI Devel Mailing List <linux-acpi@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8BIT
-Message-Id: <141752A3-EDF1-4ABC-919D-4170B0455948@whamcloud.com>
-References: <1334592845-22862-1-git-send-email-jack@suse.cz> <C9A0E2F0-ED57-40D6-9F75-5D72D45D21F0@dilger.ca> <20120417004329.GE6734@dastard>
-To: Dave Chinner <david@fromorbit.com>
-X-Mailer: Apple Mail (2.1084)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2012-04-16, at 5:43 PM, Dave Chinner wrote:
-> On Mon, Apr 16, 2012 at 03:02:50PM -0700, Andreas Dilger wrote:
->> On 2012-04-16, at 9:13 AM, Jan Kara wrote:
->>> Another potential contention point might be patch 19. In that patch
->>> we make freeze_super() refuse to freeze the filesystem when there
->>> are open but unlinked files which may be impractical in some cases.
->>> The main reason for this is the problem with handling of file deletion from fput() called with mmap_sem held (e.g. from munmap(2)),
->>> and then there's the fact that we cannot really force such filesystem
->>> into a consistent state... But if people think that freezing with
->>> open but unlinked files should happen, then I have some possible
->>> solutions in mind (maybe as a separate patchset since this is
->>> large enough).
->> 
->> Looking at a desktop system, I think it is very typical that there
->> are open-unlinked files present, so I don't know if this is really
->> an acceptable solution.  It isn't clear from your comments whether
->> this is a blanket refusal for all open-unlinked files, or only in
->> some particular cases...
-> 
-> Unlinked-but-open files are the reason that XFS dirties the log
-> after the freeze process is complete. This ensures that if the
-> system crashes while the filesystem is frozen then log recovery
-> during the next mount will process the unlinked (orphaned) inodes
-> and free the correctly. i.e. you can still freeze a filesystem with
-> inodes in this state successfully and have everythign behave as
-> you'd expect.
-> 
-> I'm not sure how other filesystems handle this problem, but perhaps
-> pushing this check down into filesystem specific code or adding a
-> superblock feature flag might be a way to allow filesystems to
-> handle this case in the way they think is best...
+On Tue, Apr 17, 2012 at 5:30 AM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+>> >> +     return 0;
+>> >> +}
+>> >> +
+>> >> +static int pcie_port_runtime_resume(struct device *dev)
+>> >> +{
+>> >> +     struct pci_dev *pdev = to_pci_dev(dev);
+>> >> +
+>> >> +     pci_restore_state(pdev);
+>> >> +     if (pdev->runtime_d3cold)
+>> >> +             msleep(100);
+>> >
+>> > What's _that_ supposed to do?
+>>
+>> When resume from d3cold, PCIe main link will be powered on again, it
+>> will take quite some time before the main link go into L0 state.
+>> Otherwise, accessing devices under the port may return wrong result.
+>
+> OK, but this is generic code and as per the standard the link should have been
+> reestablished at this point already.
+>
+> Please don't put some nonstandard-platform-specific quirks like this into
+> code that's supposed to handle _every_ PCIe system.
 
-The ext3/4 code has long been able to handle open-unlinked files
-properly after a crash (they are put into a singly-linked list from
-the superblock on disk that is processed after journal recovery).
+After checking PCIe spec, I found that the 100ms here has its standard origin :)
 
-The issue here is that blocking freeze from succeeding with open-
-unlinked files is an unreasonable assumption of this patch, and
-I don't think it is acceptable to land this patchset (which IMHO
-would prevent nearly every Gnome system from freezing unless these
-apps have changed their behaviour in more recent releases).
+In PCI Express Base Specification Revision 2.0:
 
-Like you suggest, filesystems that handle this correctly should be
-able to flag or otherwise indicate that this is OK, and allow the
-freeze to continue.  For other filesystems that do not handle
-open-unlinked file consistency during a filesystem freeze/snapshot
-whether this should even be considered a new case, or is something
-that has existed for ages already.
+Section 6.6.1 Conventional Reset
 
-The other question is whether this is still a problem even for
-filesystems handling the consistency issue, but from Jan's comment
-above there is a new locking issue related to mmap_sem being added?
+"
+To allow components to perform internal initialization, system
+software must wait for at least
+100 ms from the end of a Conventional Reset of one or more devices
+before it is permitted to
+issue Configuration Requests to those devices
+"
 
-Cheers, Andreas
---
-Andreas Dilger                       Whamcloud, Inc.
-Principal Lustre Engineer            http://www.whamcloud.com/
+But I think we should move the 100ms delay here to PCIe bus code or
+PCIe/ACPI code, because that is needed by all PCIe devices for D3cold
+support.
 
-
-
-
+Best Regards,
+Huang Ying
