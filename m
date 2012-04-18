@@ -1,72 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754267Ab2DRQUf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Apr 2012 12:20:35 -0400
-Received: from mail3.caviumnetworks.com ([12.108.191.235]:3922 "EHLO
-	mail3.caviumnetworks.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753464Ab2DRQUd (ORCPT
+	id S1754198Ab2DRQYm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Apr 2012 12:24:42 -0400
+Received: from e32.co.us.ibm.com ([32.97.110.150]:43261 "EHLO
+	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751013Ab2DRQYl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Apr 2012 12:20:33 -0400
-Message-ID: <4F8EE9CC.20000@cavium.com>
-Date: Wed, 18 Apr 2012 09:20:28 -0700
-From: David Daney <david.daney@cavium.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.15) Gecko/20101027 Fedora/3.0.10-1.fc12 Thunderbird/3.0.10
+	Wed, 18 Apr 2012 12:24:41 -0400
+Date: Wed, 18 Apr 2012 07:11:55 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Sasha Levin <levinsasha928@gmail.com>
+Cc: Dave Jones <davej@redhat.com>,
+        "linux-kernel@vger.kernel.org List" <linux-kernel@vger.kernel.org>
+Subject: Re: New RCU related warning due to rcu_preempt_depth() changes
+Message-ID: <20120418141155.GB6034@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <CA+1xoqdJjTe+BMe_ebMBSg57gs2FA60T_0WKhrHvfDoE8AvCuw@mail.gmail.com>
+ <20120417150556.GB2404@linux.vnet.ibm.com>
+ <CA+1xoqc=ssJmfMTogN8H_8yqNXys8-yJbx7=XVVSN3CvOPcyWA@mail.gmail.com>
+ <20120417155316.GE2404@linux.vnet.ibm.com>
+ <20120417164503.GA27031@linux.vnet.ibm.com>
+ <CA+1xoqc9ETMg3WxbNg_+KzEeYFVEgSwpWNPCdhEMDW2P=vQ+nQ@mail.gmail.com>
 MIME-Version: 1.0
-To: Wolfram Sang <w.sang@pengutronix.de>
-CC: Rob Herring <robherring2@gmail.com>, David Daney <ddaney.cavm@gmail.com>,
-        "linux-mips@linux-mips.org" <linux-mips@linux-mips.org>,
-        "ralf@linux-mips.org" <ralf@linux-mips.org>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>,
-        "Ben Dooks (embedded platforms)" <ben-linux@fluff.org>,
-        "Jean Delvare (PC drivers, core)" <khali@linux-fr.org>
-Subject: Re: [PATCH 1/5] i2c: Convert i2c-octeon.c to use device tree.
-References: <1332808075-8333-1-git-send-email-ddaney.cavm@gmail.com> <1332808075-8333-2-git-send-email-ddaney.cavm@gmail.com> <4F7115FA.6080507@gmail.com> <4F7117FD.7000700@cavium.com> <20120418151621.GF19802@pengutronix.de>
-In-Reply-To: <20120418151621.GF19802@pengutronix.de>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 18 Apr 2012 16:20:29.0551 (UTC) FILETIME=[2BBD97F0:01CD1D7F]
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CA+1xoqc9ETMg3WxbNg_+KzEeYFVEgSwpWNPCdhEMDW2P=vQ+nQ@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12041816-3270-0000-0000-000005A6E1DB
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/18/2012 08:16 AM, Wolfram Sang wrote:
->>>> -	if (i2c_data == NULL) {
->>>> -		dev_err(i2c->dev, "no I2C frequency data\n");
->>>> +	/*
->>>> +	 * "clock-rate" is a legacy binding, the official binding is
->>>> +	 * "clock-frequency".  Try the official one first and then
->>>> +	 * fall back if it doesn't exist.
->>>> +	 */
->>>> +	data = of_get_property(pdev->dev.of_node, "clock-frequency",&len);
->>>> +	if (!data || len != sizeof(*data))
->>>> +		data = of_get_property(pdev->dev.of_node, "clock-rate",&len);
->>>> +	if (data&&   len == sizeof(*data)) {
->>>> +		i2c->twsi_freq = be32_to_cpup(data);
->>>
->>> Can't you use of_property_read_u32?
->>
->> I will investigate, and use it if possible.
->
-> Any outcome?
+On Wed, Apr 18, 2012 at 07:29:19AM +0200, Sasha Levin wrote:
+> On Tue, Apr 17, 2012 at 6:45 PM, Paul E. McKenney
+> <paulmck@linux.vnet.ibm.com> wrote:
+> > On Tue, Apr 17, 2012 at 08:53:16AM -0700, Paul E. McKenney wrote:
+> >> On Tue, Apr 17, 2012 at 05:36:59PM +0200, Sasha Levin wrote:
+> >> > On Tue, Apr 17, 2012 at 5:05 PM, Paul E. McKenney
+> >> > <paulmck@linux.vnet.ibm.com> wrote:
+> >> > > On Tue, Apr 17, 2012 at 10:42:47AM +0200, Sasha Levin wrote:
+> >> > >> Hi Paul,
+> >> > >>
+> >> > >> It looks like commit 7298b03 ("rcu: Move __rcu_read_lock() and
+> >> > >> __rcu_read_unlock() to per-CPU variables") is causing the following
+> >> > >> warning (I've added the extra fields on the second line):
+> >> > >>
+> >> > >> [   77.330920] BUG: sleeping function called from invalid context at
+> >> > >> mm/memory.c:3933
+> >> > >> [   77.336571] in_atomic(): 0, irqs_disabled(): 0, preempt count: 0,
+> >> > >> preempt offset: 0, rcu depth: 1, pid: 5669, name: trinity
+> >> > >> [   77.344135] no locks held by trinity/5669.
+> >> > >> [   77.349644] Pid: 5669, comm: trinity Tainted: G        W
+> >> > >> 3.4.0-rc3-next-20120417-sasha-dirty #83
+> >> > >> [   77.354401] Call Trace:
+> >> > >> [   77.355956]  [<ffffffff810e83f3>] __might_sleep+0x1f3/0x210
+> >> > >> [   77.358811]  [<ffffffff81198eaf>] might_fault+0x2f/0xa0
+> >> > >> [   77.361997]  [<ffffffff810e3228>] schedule_tail+0x88/0xb0
+> >> > >> [   77.364671]  [<ffffffff826a01d3>] ret_from_fork+0x13/0x80
+> >> > >>
+> >> > >> As you can see, rcu_preempt_depth() returns 1 when running in that
+> >> > >> context, which looks pretty odd.
+> >> > >
+> >> > > Ouch!!!
+> >> > >
+> >> > > So it looks like I missed a place where I need to save and restore
+> >> > > the new per-CPU rcu_read_lock_nesting and rcu_read_unlock_special
+> >> > > variables.  My (probably hopelessly naive) guess is that I need to add
+> >> > > a rcu_switch_from() and rcu_switch_to() into schedule_tail(), but to
+> >> > > make rcu_switch_from() take the task_struct pointer as an argument,
+> >> > > passing in prev.
+> >> > >
+> >> > > Does this make sense, or am I still missing something here?
+> >> >
+> >> > I've let the test run for a bit more, and it appears that I'm getting
+> >> > this warning from lots of different sources, would this
+> >> > schedule_tail() fix all of them?
+> >>
+> >> If I understand the failure correctly, yes.  If the task switches without
+> >> RCU paying attention, the nesting count for both the outgoing and the
+> >> incoming tasks can get messed up.  The messed-up counts could easily
+> >> cause problems downstream.
+> >>
+> >> Of course, there might well be additional bugs.
+> >>
+> >> I will put a speculative patch together and send it along.
+> >
+> > And here it is, testing just started.
+> >
+> >                                                        Thanx, Paul
+> >
+> > ------------------------------------------------------------------------
+> >
+> > rcu: Add RCU context switching to schedule_tail()
+> >
+> > The new rcu_read_lock_nesting and rcu_read_unlock_special per-CPU
+> > variables must be saved and restored at every context switch, including
+> > those involving schedule_tail().  This commit therefore adds the saving
+> > and restoring to schedul_tail().
+> >
+> > Reported-by: Sasha Levin <levinsasha928@gmail.com>
+> > Signed-off-by: Paul E. McKenney <paul.mckenney@linaro.org>
+> > Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+> 
+> Looks good here.
 
-Yes, I have implemented Rob's suggestions.  A new patch set reflecting 
-this is coming soon.
+Very good!  I have added your Tested-by.
 
->
-> And shouldn't the bindings be documented? Or are they only standard and
-> we hide the legacy one?
->
+							Thanx, Paul
 
-Yes, they are documented here:
-
-http://patchwork.linux-mips.org/patch/3536/
-
-look in the cavium-i2c.txt file.
-
-Thanks,
-David Daney
