@@ -1,134 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752018Ab2DRIE2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Apr 2012 04:04:28 -0400
-Received: from mail-vx0-f174.google.com ([209.85.220.174]:35630 "EHLO
-	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751393Ab2DRIEX convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Apr 2012 04:04:23 -0400
+	id S1752152Ab2DRIEl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Apr 2012 04:04:41 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:53069 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751839Ab2DRIEb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Apr 2012 04:04:31 -0400
+Date: Wed, 18 Apr 2012 10:04:21 +0200 (CEST)
+From: Lukas Czerner <lczerner@redhat.com>
+X-X-Sender: lukas@dhcp-27-109.brq.redhat.com
+To: "Ted Ts'o" <tytso@mit.edu>
+cc: Ric Wheeler <rwheeler@redhat.com>, Zheng Liu <gnehzuil.liu@gmail.com>,
+        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        linux-ext4@vger.kernel.org, Zheng Liu <wenqing.lz@taobao.com>
+Subject: Re: [RFC][PATCH 0/3] add FALLOC_FL_NO_HIDE_STALE flag in fallocate
+In-Reply-To: <20120417184306.GA5916@thunk.org>
+Message-ID: <alpine.LFD.2.00.1204180951380.5310@dhcp-27-109.brq.redhat.com>
+References: <1334681618-9452-1-git-send-email-wenqing.lz@taobao.com> <4F8DAF89.5070805@redhat.com> <20120417184306.GA5916@thunk.org>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
-X-Originating-IP: [87.66.84.216]
-In-Reply-To: <1332173578-27422-1-git-send-email-j-pihet@ti.com>
-References: <1332173578-27422-1-git-send-email-j-pihet@ti.com>
-Date: Wed, 18 Apr 2012 10:04:22 +0200
-Message-ID: <CAORVsuV-GJAabY49G0fOgcBcg-CNdpNiTE+AcBN07wrWZH3qcQ@mail.gmail.com>
-Subject: Re: [PATCH v2 0/9] PM: Create the AVS class of drivers
-From: Jean Pihet <jean.pihet@newoldbits.com>
-To: akpm@linux-foundation.org, gregkh@linuxfoundation.org,
-        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Kevin Hilman <khilman@ti.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        LKML <linux-kernel@vger.kernel.org>, Tony Lindgren <tony@atomide.com>,
-        KEERTHY J <j-keerthy@ti.com>
-Cc: Jean Pihet <j-pihet@ti.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Andrew, Greg,
+On Tue, 17 Apr 2012, Ted Ts'o wrote:
 
-Can you please look at this patch set?
-The idea is to create a framework and drivers for the AVS class of
-devices. This patch set implements the first step by moving the
-existing code to drivers/power/avs. Next steps will be to implement
-class support and notifications, add more classes of operations for
-OMAP chips, etc.
+> On Tue, Apr 17, 2012 at 01:59:37PM -0400, Ric Wheeler wrote:
+> > 
+> > You could get both security and avoid the run time hit by fully
+> > writing the file or by having a variation that relied on "discard"
+> > (i.e., no need to zero data if we can discard or track it as
+> > unwritten).
+> 
+> It's certainly the case that if the device supports persistent
+> discard, something which we definitely *should* do is to send the
+> discard at fallocate time and then mark the space as initialized.
 
-Keerthy J is taking over the ownership of this code and will continue
-the development further.
+Yes using discard to avoid reading stale data might be partial solution
+on some hardware. Although it has its own problems like minimum discard
+range size, cache flush, slowness with some hardware and the fact that
+it might not actually zero all of the data, but all of that should get
+better in future I guess. Unfortunately this is definitely not a
+solution for now.
 
-What do you think?
+> 
+> Unfortunately, not all devices, and in particular no HDD's for which I
+> aware support persistent discard.  And, writing all zero's to the file
+> is in fact what a number of programs for which I am aware (including
+> an enterprise database) are doing, precisely because they tend to
+> write into the fallocated space in a somewhat random order, and the
+> extent conversion costs is in fact quite significant.  But writing all
+> zero's to the file before you can use it is quite costly; at the very
+> least it burns disk bandwidth --- one of the main motivations of
+> fallocate was to avoid needing to do a "write all zero pass", and
+> while it does solve the problem for some use cases (such as DVR's),
+> it's not a complete solution.
+> 
+> Whether or not it is a security issue is debateable.  If using the
+> fallocate flag requires CAP_SYS_RAWIO, and the process has to
+> explicitly ask for the privilege, a process with those privileges can
+> directly access memory and I/O ports directly, via the ioperm(2) and
+> iopl(2) system calls.  So I think it's possible to be a bit nuanced
+> over whether or not this is as horrible as you might think.
 
-Regards,
-Jean
+I do not think this is debatable at all. It _is_ security hole no matter
+what. What you're talking about is just the privilege to create such
+dangerous file. After it is created, it is protected _only_ by the
+application logic (and bug in the application can expose stale data to
+the regular use) or file permission which is even worse since people get
+this wrong all the time. So it is not like it is perfectly safe to let only
+root create such file, not at all.
 
-On Mon, Mar 19, 2012 at 5:12 PM,  <jean.pihet@newoldbits.com> wrote:
-> From: Jean Pihet <j-pihet@ti.com>
->
-> AVS is a power management technique which controls the operating
-> voltage of a device in order to optimize (i.e. reduce) its power
-> consumption. The voltage is adapted depending on static factors
-> (chip manufacturing process) and dynamic factors (temperature
-> depending performance).
-> AVS is also called SmartReflex on OMAP devices.
->
-> To that end, create the AVS framework in drivers/power/avs and
-> move the OMAP SmartReflex code to the new directory.
->
-> In preparation to the move of the OMAP code the following changes have been
-> made:
-> - split the include files into generic and platform specific code,
-> - fill in platform data from the device initialization code and pass
->  it to the driver,
-> - create CONFIG_AVS* config options accordingly.
->
-> The platform integration data for SmartReflex is passed from hwmod
-> and the voltage layer to the driver using pdata.
->
->
-> Tested on OMAP3 Beagleboard using omap2plus_defconfig with the
-> CONFIG_POWER_AVS* options set.
-> Based on master branch of the l-o git tree (3.3.0-rc6) [1], commit
-> 85244e0edd240da2004bb2ab7cbcbc67a336f20d.
->
-> [1] git://git.kernel.org/pub/scm/linux/kernel/git/tmlind/linux-omap.git
->
->
-> History:
-> v2: rework after the comments on MLs
->  . Keep the OMAP Kconfig options in the arch dir (Rafael),
->  . Move the shared header file from plat-omap to
->    include/linux/power/ (Tony)
->
-> v1: initial revision
->
->
-> Jean Pihet (9):
->  ARM: OMAP3+: voltage: export functions to plat/voltage.h
->  ARM: OMAP2+: SmartReflex: move the driver specific macros in
->    include/linux/power
->  ARM: OMAP3+: SmartReflex: class drivers should use struct omap_sr *
->  ARM: OMAP2+: smartreflex: Use the names from hwmod data instead of
->    voltage domains.
->  ARM: OMAP3: hwmod: rename the smartreflex entries
->  ARM: OMAP2+: SmartReflex: introduce a busy loop condition test macro
->  ARM: OMAP2+: SmartReflex: Use per-OPP data structure
->  ARM: OMAP2+: SmartReflex: add POWER_AVS Kconfig options
->  ARM: OMAP: SmartReflex: Move smartreflex driver to drivers/
->
->  arch/arm/mach-omap2/Makefile               |    4 +-
->  arch/arm/mach-omap2/omap_hwmod_3xxx_data.c |   12 +-
->  arch/arm/mach-omap2/omap_hwmod_44xx_data.c |    3 +-
->  arch/arm/mach-omap2/pm.h                   |    2 +-
->  arch/arm/mach-omap2/smartreflex-class3.c   |   60 --
->  arch/arm/mach-omap2/smartreflex.c          | 1165 ----------------------------
->  arch/arm/mach-omap2/smartreflex.h          |  256 ------
->  arch/arm/mach-omap2/sr_device.c            |   38 +-
->  arch/arm/mach-omap2/voltage.h              |    1 -
->  arch/arm/mach-omap2/vp.h                   |    2 -
->  arch/arm/plat-omap/Kconfig                 |   30 +-
->  arch/arm/plat-omap/include/plat/voltage.h  |    3 +
->  drivers/power/Kconfig                      |    2 +
->  drivers/power/Makefile                     |    2 +
->  drivers/power/avs/Kconfig                  |   12 +
->  drivers/power/avs/Makefile                 |    2 +
->  drivers/power/avs/smartreflex-class3.c     |   61 ++
->  drivers/power/avs/smartreflex.c            | 1118 ++++++++++++++++++++++++++
->  drivers/power/avs/smartreflex.h            |  238 ++++++
->  include/linux/power/smartreflex.h          |   97 +++
->  20 files changed, 1590 insertions(+), 1518 deletions(-)
->  delete mode 100644 arch/arm/mach-omap2/smartreflex-class3.c
->  delete mode 100644 arch/arm/mach-omap2/smartreflex.c
->  delete mode 100644 arch/arm/mach-omap2/smartreflex.h
->  create mode 100644 drivers/power/avs/Kconfig
->  create mode 100644 drivers/power/avs/Makefile
->  create mode 100644 drivers/power/avs/smartreflex-class3.c
->  create mode 100644 drivers/power/avs/smartreflex.c
->  create mode 100644 drivers/power/avs/smartreflex.h
->  create mode 100644 include/linux/power/smartreflex.h
->
+Moreover users will get this wrong, because they will not understand
+every corner case. And when you add the "performance boost" and the
+vague name of the flag (really FALLOC_FL_EXPOSE_USER_DATA would have
+been much better) into the mix you'll get a disaster.
+
+> 
+> Ultimately, if there are application programmers who are really
+> desperate for that the last bit of performance, they can always use
+> FIBMAP/FIEMAP and then read/write directly to the block device.  (And
+> no, that's not a theoretical example.)  I think it is a worthwhile
+> goal to provide file system interfaces that allow a trusted process
+> which has the appropriate security capabilities to do things in a
+> safer way than that.
+
+Well, then let them use xfs, since they do not have this problem, or
+rather let's fix the root cause.
+
+Regards
+-Lukas
+
+> 
+> Regards,
+> 
+> 						- Ted
 > --
-> 1.7.5.4
->
+> To unsubscribe from this list: send the line "unsubscribe linux-ext4" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> 
