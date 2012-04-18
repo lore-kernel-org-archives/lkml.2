@@ -1,99 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752509Ab2DRJaz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Apr 2012 05:30:55 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:51773 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751501Ab2DRJay (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Apr 2012 05:30:54 -0400
-From: Valentin Ilie <valentin.ilie@gmail.com>
-To: geoff@infradead.org
-Cc: linuxppc-dev@lists.ozlabs.org, cbe-oss-dev@lists.ozlabs.org,
-        linux-kernel@vger.kernel.org, Valentin Ilie <valentin.ilie@gmail.com>
-Subject: [PATCH] Drivers: ps3: ps3av.c: fixed checkpatch warnings
-Date: Wed, 18 Apr 2012 12:33:31 +0300
-Message-Id: <1334741611-3296-1-git-send-email-valentin.ilie@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
+	id S1752705Ab2DRJb3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Apr 2012 05:31:29 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:50242 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752018Ab2DRJb2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Apr 2012 05:31:28 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Sven Joachim <svenjoac@gmx.de>, Suresh Siddha <suresh.b.siddha@intel.com>
+Subject: Re: kernel panic after suspend/resume
+Date: Wed, 18 Apr 2012 11:36:05 +0200
+User-Agent: KMail/1.13.6 (Linux/3.4.0-rc3+; KDE/4.6.0; x86_64; ; )
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+References: <CA+55aFzsjpJt09b6e4NA0T50M3w0xtASSYXz_=UWVDqKRywo=A@mail.gmail.com> <201204172321.41095.rjw@sisk.pl> <87hawhtpo9.fsf@turtle.gmx.de>
+In-Reply-To: <87hawhtpo9.fsf@turtle.gmx.de>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-2"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201204181136.05521.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fixed some checkpatch warnings. (review)
-Last patch didn't compile.
+On Wednesday, April 18, 2012, Sven Joachim wrote:
+> On 2012-04-17 23:21 +0200, Rafael J. Wysocki wrote:
+> 
+> > Well, commit fa4da365bc7772c kind of looks like it might be the source of
+> > this trouble.  Sven, can you try to revert it, please?
+> 
+> This seems to do the trick, thanks.
 
-Signed-off-by: Valentin Ilie <valentin.ilie@gmail.com>
----
- drivers/ps3/ps3av.c |    9 +--------
- 1 file changed, 1 insertion(+), 8 deletions(-)
+OK, thanks.
 
-diff --git a/drivers/ps3/ps3av.c b/drivers/ps3/ps3av.c
-index a409fa0..636e618 100644
---- a/drivers/ps3/ps3av.c
-+++ b/drivers/ps3/ps3av.c
-@@ -338,7 +338,7 @@ int ps3av_do_pkt(u32 cid, u16 send_len, size_t usr_buf_size,
- 	mutex_unlock(&ps3av->mutex);
- 	return 0;
- 
--      err:
-+err:
- 	mutex_unlock(&ps3av->mutex);
- 	printk(KERN_ERR "%s: failed cid:%x res:%d\n", __func__, cid, res);
- 	return res;
-@@ -477,7 +477,6 @@ int ps3av_set_audio_mode(u32 ch, u32 fs, u32 word_bits, u32 format, u32 source)
- 
- 	return 0;
- }
--
- EXPORT_SYMBOL_GPL(ps3av_set_audio_mode);
- 
- static int ps3av_set_videomode(void)
-@@ -870,21 +869,18 @@ int ps3av_set_video_mode(int id)
- 
- 	return 0;
- }
--
- EXPORT_SYMBOL_GPL(ps3av_set_video_mode);
- 
- int ps3av_get_auto_mode(void)
- {
- 	return ps3av_auto_videomode(&ps3av->av_hw_conf);
- }
--
- EXPORT_SYMBOL_GPL(ps3av_get_auto_mode);
- 
- int ps3av_get_mode(void)
- {
- 	return ps3av ? ps3av->ps3av_mode : 0;
- }
--
- EXPORT_SYMBOL_GPL(ps3av_get_mode);
- 
- /* get resolution by video_mode */
-@@ -902,7 +898,6 @@ int ps3av_video_mode2res(u32 id, u32 *xres, u32 *yres)
- 	*yres = video_mode_table[id].y;
- 	return 0;
- }
--
- EXPORT_SYMBOL_GPL(ps3av_video_mode2res);
- 
- /* mute */
-@@ -911,7 +906,6 @@ int ps3av_video_mute(int mute)
- 	return ps3av_set_av_video_mute(mute ? PS3AV_CMD_MUTE_ON
- 					    : PS3AV_CMD_MUTE_OFF);
- }
--
- EXPORT_SYMBOL_GPL(ps3av_video_mute);
- 
- /* mute analog output only */
-@@ -935,7 +929,6 @@ int ps3av_audio_mute(int mute)
- 	return ps3av_set_audio_mute(mute ? PS3AV_CMD_MUTE_ON
- 					 : PS3AV_CMD_MUTE_OFF);
- }
--
- EXPORT_SYMBOL_GPL(ps3av_audio_mute);
- 
- static int __devinit ps3av_probe(struct ps3_system_bus_device *dev)
--- 
-1.7.9.5
+Suresh, your commit fa4da365bc7772c "clockevents: tTack broadcast device mode
+change in tick_broadcast_switch_to_oneshot()" introduced a system resume
+regression for Sven.  Can you have a look at this, please?
 
+Rafael
