@@ -1,138 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752015Ab2DRKj7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Apr 2012 06:39:59 -0400
-Received: from zene.cmpxchg.org ([85.214.230.12]:55187 "EHLO zene.cmpxchg.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751202Ab2DRKj5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Apr 2012 06:39:57 -0400
-Date: Wed, 18 Apr 2012 12:39:30 +0200
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>,
-        Glauber Costa <glommer@parallels.com>, Tejun Heo <tj@kernel.org>,
-        Hugh Dickins <hughd@google.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Daniel Walsh <dwalsh@redhat.com>,
-        "Daniel P. Berrange" <berrange@redhat.com>,
-        Li Zefan <lizf@cn.fujitsu.com>, LKML <linux-kernel@vger.kernel.org>,
-        Cgroups <cgroups@vger.kernel.org>,
-        Containers <containers@lists.linux-foundation.org>
-Subject: Re: [RFD] Merge task counter into memcg
-Message-ID: <20120418103930.GA1771@cmpxchg.org>
-References: <20120412153055.GL1787@cmpxchg.org>
- <20120412163825.GB13069@google.com>
- <20120412172309.GM1787@cmpxchg.org>
- <20120412174155.GC13069@google.com>
- <4F878480.60505@jp.fujitsu.com>
- <20120417154117.GE32402@google.com>
- <4F8D9FC4.3080800@parallels.com>
- <4F8E646B.1020807@jp.fujitsu.com>
- <CAFTL4hw3C4s6VS07pJzdBawv0ugKJJa+Vnb-Q_9FrWEq4=ka9Q@mail.gmail.com>
- <4F8E7E76.3020202@jp.fujitsu.com>
+	id S1752055Ab2DRKlt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Apr 2012 06:41:49 -0400
+Received: from 4607ds7-vby.0.fullrate.dk ([95.166.183.192]:60274 "EHLO
+	cow.netcompartner.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751202Ab2DRKlr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Apr 2012 06:41:47 -0400
+X-Greylist: delayed 2306 seconds by postgrey-1.27 at vger.kernel.org; Wed, 18 Apr 2012 06:41:47 EDT
+From: Lars Boegild Thomsen <lth@cow.dk>
+Organization: Call of the Wild BBS
+To: Jonathan Nieder <jrnieder@gmail.com>
+Subject: Re: [regression] Ideapad S10-3 does not wake up from suspend
+Date: Wed, 18 Apr 2012 18:03:00 +0800
+User-Agent: KMail/1.13.7 (Linux/3.2.0-2-amd64; KDE/4.7.4; x86_64; ; )
+Cc: Robert Scott <bugs@humanleg.org.uk>, Thomas Gleixner <tglx@linutronix.de>,
+        linux-kernel@vger.kernel.org, Kevin Tian <kevin.tian@intel.com>,
+        Fengzhe Zhang <fengzhe.zhang@intel.com>, mingo@redhat.com,
+        hpa@zytor.com, Ian Campbell <Ian.Campbell@eu.citrix.com>,
+        JBeulich@novell.com, xen-devel@lists.xensource.com,
+        e568b31a443d@6cc2cce7af2d.anonbox.net,
+        "Liu, Chuansheng" <chuansheng.liu@intel.com>
+References: <625BA99ED14B2D499DC4E29D8138F1505C8ED7F7E3@shsmsx502.ccr.corp.intel.com> <201204161905.13260.bugs@humanleg.org.uk> <20120417020433.GA15848@burratino>
+In-Reply-To: <20120417020433.GA15848@burratino>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4F8E7E76.3020202@jp.fujitsu.com>
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201204181803.00383.lth@cow.dk>
+X-Spam-Score: -2.9 (--)
+X-Spam-Report: Spam detection software, running on the system "cow.netcompartner.com", has
+ identified this incoming email as possible spam.  The original message
+ has been attached to this so you can view it (if it isn't spam) or label
+ similar future email.  If you have any questions, see
+ the administrator of that system for details.
+ Content preview:  On Tuesday 17 April 2012 10:04:33 Jonathan Nieder wrote: >
+    > Hmm, no, 3.4-rc2 seems to produce the same results I'm afraid. > Alas.
+   Does suspend-to-disk ("echo disk >/sys/power/state") have the > same problem?
+    Can you get a log of the failure with > "no_console_suspend" appended to
+   the kernel command line, for example > with a serial console or netconsole?
+    [...] 
+ Content analysis details:   (-2.9 points, 5.0 required)
+  pts rule name              description
+ ---- ---------------------- --------------------------------------------------
+ -1.0 ALL_TRUSTED            Passed through trusted hosts only via SMTP
+ -1.9 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+                             [score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 18, 2012 at 05:42:30PM +0900, KAMEZAWA Hiroyuki wrote:
-> (2012/04/18 16:53), Frederic Weisbecker wrote:
-> 
-> > 2012/4/18 KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>:
-> >> (2012/04/18 1:52), Glauber Costa wrote:
-> >>
-> >>>
-> >>>>> In short, I don't think it's better to have task-counting and fd-counting in memcg.
-> >>>>> It's kmem, but it's more than that, I think.
-> >>>>> Please provide subsys like ulimit.
-> >>>>
-> >>>> So, you think that while kmem would be enough to prevent fork-bombs,
-> >>>> it would still make sense to limit in more traditional ways
-> >>>> (ie. ulimit style object limits).  Hmmm....
-> >>>>
-> >>>
-> >>> I personally think this is namespaces business, not cgroups.
-> >>> If you have a process namespace, an interface that works to limit the
-> >>> number of processes should keep working given the constraints you are
-> >>> given.
-> >>>
-> >>> What doesn't make sense, is to create a *new* interface to limit
-> >>> something that doesn't really need to be limited, just because you
-> >>> limited a similar resource before.
-> >>>
-> >>
-> >>
-> >> Ok, limitiing forkbomb is unnecessary. ulimit+namespace should work.
-> >> What we need is user-id namespace, isn't it ? If we have that, ulimit
-> >> works enough fine, no overheads.
-> > 
-> > I have considered using NR_PROC rlimit on top of user namespaces to
-> > fight forkbombs inside a container.
-> > ie: one user namespace per container with its own rlimit.
-> > 
-> > But it doesn't work because we can have multiuser apps running in a
-> > single container.
-> > 
-> 
-> Ok, then, requirements is different from ulimit. ok, please forget my words.
-> 
-> My concern for using 'kmem' is that size of object can be changed, and set up
-> may be more complicated than limiting 'number' of tasks.
-> It's very architecture dependent....But hmm... 
+On Tuesday 17 April 2012 10:04:33 Jonathan Nieder wrote:
+> > Hmm, no, 3.4-rc2 seems to produce the same results I'm afraid.
+> Alas.  Does suspend-to-disk ("echo disk >/sys/power/state") have the
+> same problem?  Can you get a log of the failure with
+> "no_console_suspend" appended to the kernel command line, for example
+> with a serial console or netconsole?
 
-BECAUSE it is architecture/kernel version/runtime dependent how big a
-task really is, limiting available kernel memory is much more
-meaningful than limiting a container to a number of units of unknown
-and dynamically changing size.
+Using a serial console is a bit of a problem on this netbook as it hasn't got 
+a serial port.  Not sure how the netconsole works - will read up on that.
 
-How could this argument ever work IN FAVOR of limiting the number of
-tasks?
+And no - suspend to disk works fine.
 
-> If slab accounting can handle task_struct accounting, all you wants can be
-> done by it (maybe). And implementation can be duplicated.
-> (But another aspect of the problem will be speed of development..)
-> 
-> One idea is (I'm not sure good or bad)...having following control files.
-> 
->  - memory.kmem.task_struct.limit_in_bytes
->  - memory.kmem.task_struct.usage_in_bytes
->  - memory.kmem.task_struct.size_in_bytes   # size of task struct.
+I have by the way experimentally switched to 32bit version and it's the same 
+thing (originally I was running 64bit version but that really doesn't make 
+sense on a netbook - except doing it because it could be done).
 
-A task's memory impact is not just its task_struct.
-
-> At 1st, implement this by accounting task struct(or some) directly.
-> Later, if we can, replace the implementation with slab(kmem) cgroup..
-> and unify interfaces.....a long way to go.
-> 
-> 2nd idea is
-> 
->  - memory.object.task.limit_in_number	# limit the number of tasks.
->  - memory.object.task.usage_in_number   # usage
-> 
-> If I'm a user, I prefer #2.
-
-The memory controller is there to partition physical memory.  This is
-usually measured in bytes and that's why the user-visible object size
-in the memory controller is a byte.  When you add other types of
-objects, you force the user to know about them and give them a method
-of knowing the object size in bytes, which in case of a task, can vary
-at runtime.
-
-I will agree to this interface the moment I can buy RAM whose quantity
-is measured in number of tasks.
-
-> Hmm, 
->    global kmem limiting           -> done by bytes.
->    special kernel object limiting -> done by the number of objects.
-> 
-> is...complicated ?
-
-Yes, and you don't provide any arguments!
-
-What are you trying to do that would make limiting the number of tasks
-a useful mechanism?
-
-Why should some kernel objects be special?
+//Lars...
