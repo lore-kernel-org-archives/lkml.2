@@ -1,61 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754366Ab2DRRYj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Apr 2012 13:24:39 -0400
-Received: from ud10.udmedia.de ([194.117.254.50]:48595 "EHLO
-	mail.ud10.udmedia.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752881Ab2DRRXx (ORCPT
+	id S1754333Ab2DRRYi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Apr 2012 13:24:38 -0400
+Received: from mail-wi0-f178.google.com ([209.85.212.178]:59211 "EHLO
+	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753244Ab2DRRYf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Apr 2012 13:23:53 -0400
-Date: Wed, 18 Apr 2012 19:23:49 +0200
-From: Markus Trippelsdorf <markus@trippelsdorf.de>
-To: Lasse Collin <lasse.collin@tukaani.org>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, Randy Dunlap <rdunlap@xenotime.net>,
-        qasdfgtyuiop <qasdfgtyuiop@gmail.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>, alain@knaff.lu,
-        albin.tonnerre@free-electrons.com
-Subject: Re: [PATCH] kconfig: update compression algorithm info
-Message-ID: <20120418172349.GA6165@x4>
-References: <CAMtaSwTi=7rmG8diJ+K0c_CcV=0TcgXDjRFEdZGGiKE2K5x89A@mail.gmail.com>
- <4F8DF90B.1090002@xenotime.net>
- <20120418194055.2d929e58@tukaani.org>
- <4F8EEFB5.8040604@zytor.com>
- <20120418200929.086ce3a7@tukaani.org>
+	Wed, 18 Apr 2012 13:24:35 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120418200929.086ce3a7@tukaani.org>
+In-Reply-To: <alpine.LFD.2.02.1204181216380.2542@ionos>
+References: <CADDKRnBpGr=yzDftChA3xiaK9gK4D4UDV6HJiw8hcMo6159+Cw@mail.gmail.com>
+ <20120402235412.GD16303@tassilo.jf.intel.com> <alpine.LFD.2.02.1204031001510.2542@ionos>
+ <CADDKRnAOqfxTjrCp4E5eKFJvVTu6s0xF3Ca3jRJavFkyGpYLmQ@mail.gmail.com>
+ <alpine.LFD.2.02.1204121055200.2542@ionos> <20120412142904.GA4130@srcf.ucam.org>
+ <alpine.LFD.2.02.1204121903250.2542@ionos> <alpine.LFD.2.02.1204121907330.2542@ionos>
+ <4F872C7B.6000106@linux.intel.com> <alpine.LFD.2.02.1204122241460.2542@ionos>
+ <1334741105.1924.5.camel@x61.thuisdomein> <alpine.LFD.2.02.1204181216380.2542@ionos>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Wed, 18 Apr 2012 10:24:13 -0700
+X-Google-Sender-Auth: 60VTOmlR_KgN2h-yfI3gE_LcqtY
+Message-ID: <CA+55aFyHgQ8QgfLKaCaAJ2gLMrOkFMkQBtt4Bfo=dOzzxSpGHw@mail.gmail.com>
+Subject: Re: [v3.4-rc1] ACPI regression bisected
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: Paul Bolle <pebolle@tiscali.nl>, Andi Kleen <ak@linux.intel.com>,
+        Matthew Garrett <mjg59@srcf.ucam.org>,
+        =?ISO-8859-1?Q?J=F6rg_Otte?= <jrg.otte@googlemail.com>,
+        LKML <linux-kernel@vger.kernel.org>, Len Brown <lenb@kernel.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2012.04.18 at 20:09 +0300, Lasse Collin wrote:
-> On 2012-04-18 H. Peter Anvin wrote:
-> > On 04/18/2012 09:40 AM, Lasse Collin wrote:
-> > >   - LZO should give the fastest boot from a hard disk (desktop
-> > >     systems where file size doesn't matter much).
-> > 
-> > That really depends on the speed of your disk vs CPU.
-> 
-> Yes. Maybe it isn't good to give so clear recommendation for LZO over
-> gzip here.
-> 
-> I think it is still safe to say that gzip and LZO are better than
-> bzip2, XZ, or LZMA for compressing a kernel that will be loaded from a
-> normal hard disk. It would be unusual if reading the disk was so slow
-> that e.g. XZ would make the booting faster than gzip.
+On Wed, Apr 18, 2012 at 3:29 AM, Thomas Gleixner <tglx@linutronix.de> wrote:
+>
+> Linus, can you please apply directly?
 
-When btrfs will finally implement LZ4 compression this would be the obvious
-candidate for the fastest boot algo, because its decompression speed is
-amazing.
+Applied. Can we perhaps also make request_threaded_irq() noisily
+reject things that are not marked IRQF_ONESHOT and have a NULL
+low-level handler?
 
-For example here is a comparison with LZO on boot/compressed/vmlinux.bin:
+That still allows people to do IRQF_SHARED | IRQF_ONESHOT, and that
+won't be rejected until somebody else actually tries to share it. Then
+it breaks that somebody else ;(
 
-memcpy               = 75 ms (10251 MB/s), 13436968->13436968
-Codec         version    args       Size (Ratio)    C.Speed      D.Speed
-LZ4               r59      12    4952064 (x 2.71)   C: 518 MB/s  D:1472 MB/s
-LZO              2.05     1x1    4825088 (x 2.78)   C: 472 MB/s  D: 504 MB/s
+Sadly, that would tend to break fairly silently.
 
--- 
-Markus
+I wonder if we should make the mismatch error printout be
+unconditional (and make just the "dump_stack()" part be conditional on
+CONFIG_DEBUG_SHIRQ)?
+
+                 Linus
