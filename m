@@ -1,95 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752871Ab2DRDqs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Apr 2012 23:46:48 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:38166 "EHLO mx1.redhat.com"
+	id S1752690Ab2DRDuL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Apr 2012 23:50:11 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:27713 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751599Ab2DRDqr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Apr 2012 23:46:47 -0400
-From: Alex Williamson <alex.williamson@redhat.com>
-Subject: [PATCH] kvm: lock slots_lock around device assignment
-To: kvm@vger.kernel.org, mtosatti@redhat.com
-Cc: alex.williamson@redhat.com, linux-kernel@vger.kernel.org,
-        jbaron@redhat.com, jan.kiszka@siemens.com
-Date: Tue, 17 Apr 2012 21:46:44 -0600
-Message-ID: <20120418034537.26262.80743.stgit@bling.home>
-User-Agent: StGIT/0.14.3
+	id S1751398Ab2DRDuK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Apr 2012 23:50:10 -0400
+Date: Tue, 17 Apr 2012 23:50:04 -0400
+From: Dave Jones <davej@redhat.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [3.4-rc3] Thread overran stack, or stack corrupted
+Message-ID: <20120418035004.GA31465@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	Steven Rostedt <rostedt@goodmis.org>,
+	Linus Torvalds <torvalds@linux-foundation.org>,
+	Linux Kernel <linux-kernel@vger.kernel.org>
+References: <20120417172142.GA30237@redhat.com>
+ <CA+55aFy-uhOgEoEBr-LkOjFQBVh14wwr-20jTrtsg_2EnuNY5g@mail.gmail.com>
+ <20120417203223.GA31699@redhat.com>
+ <CA+55aFzWzhxaVHuPY_oB5PVhw2Gxiwr46vyHCHEsU0o-HFikTw@mail.gmail.com>
+ <20120418022705.GA23877@home.goodmis.org>
+ <20120418031557.GA29828@redhat.com>
+ <1334720611.28106.25.camel@gandalf.stny.rr.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1334720611.28106.25.camel@gandalf.stny.rr.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-As pointed out by Jason Baron, when assigning a device to a guest
-we first set the iommu domain pointer, which enables mapping
-and unmapping of memory slots to the iommu.  This leaves a window
-where this path is enabled, but we haven't synchronized the iommu
-mappings to the existing memory slots.  Thus a slot being removed
-at that point could send us down unexpected code paths removing
-non-existent pinnings and iommu mappings.  Take the slots_lock
-around creating the iommu domain and initial mappings as well as
-around iommu teardown to avoid this race.
+On Tue, Apr 17, 2012 at 11:43:31PM -0400, Steven Rostedt wrote:
+ > On Tue, 2012-04-17 at 23:15 -0400, Dave Jones wrote:
+ > 
+ > > That looks handy. Doesn't seem to work for me though on my test box.
+ > > (config option is enabled.)
+ > > 
+ > > # echo 1 > /proc/sys/kernel/stack_tracer_enabled
+ > > # cat /sys/kernel/debug/tracing/stack_trace
+ > >         Depth    Size   Location    (-1 entries)
+ > >         -----    ----   --------
+ > > 
+ > > That's all she wrote.
+ > 
+ > Hmm, was there any problems with the function tracer?
+ > Messages in dmesg?
 
-Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
----
+nope.
 
- virt/kvm/iommu.c |   23 +++++++++++++++--------
- 1 files changed, 15 insertions(+), 8 deletions(-)
+ > Just to make sure, what does
+ > 
+ >  /sys/kernel/debug/tracing/enabled_functions
+ > 
+ > have?
 
-diff --git a/virt/kvm/iommu.c b/virt/kvm/iommu.c
-index fec1723..e9fff98 100644
---- a/virt/kvm/iommu.c
-+++ b/virt/kvm/iommu.c
-@@ -240,9 +240,13 @@ int kvm_iommu_map_guest(struct kvm *kvm)
- 		return -ENODEV;
- 	}
+33503 lines.
  
-+	mutex_lock(&kvm->slots_lock);
-+
- 	kvm->arch.iommu_domain = iommu_domain_alloc(&pci_bus_type);
--	if (!kvm->arch.iommu_domain)
--		return -ENOMEM;
-+	if (!kvm->arch.iommu_domain) {
-+		r = -ENOMEM;
-+		goto out_unlock;
-+	}
- 
- 	if (!allow_unsafe_assigned_interrupts &&
- 	    !iommu_domain_has_cap(kvm->arch.iommu_domain,
-@@ -253,17 +257,16 @@ int kvm_iommu_map_guest(struct kvm *kvm)
- 		       " module option.\n", __func__);
- 		iommu_domain_free(kvm->arch.iommu_domain);
- 		kvm->arch.iommu_domain = NULL;
--		return -EPERM;
-+		r = -EPERM;
-+		goto out_unlock;
- 	}
- 
- 	r = kvm_iommu_map_memslots(kvm);
- 	if (r)
--		goto out_unmap;
--
--	return 0;
-+		kvm_iommu_unmap_memslots(kvm);
- 
--out_unmap:
--	kvm_iommu_unmap_memslots(kvm);
-+out_unlock:
-+	mutex_unlock(&kvm->slots_lock);
- 	return r;
- }
- 
-@@ -340,7 +343,11 @@ int kvm_iommu_unmap_guest(struct kvm *kvm)
- 	if (!domain)
- 		return 0;
- 
-+	mutex_lock(&kvm->slots_lock);
- 	kvm_iommu_unmap_memslots(kvm);
-+	kvm->arch.iommu_domain = NULL;
-+	mutex_unlock(&kvm->slots_lock);
-+
- 	iommu_domain_free(domain);
- 	return 0;
- }
+ > This would show what functions the stack tracer is using.
+ > 
+ > I just compiled the latest vanilla kernel and tried it out, and it
+ > worked for me.
 
+works on my other machines too with similar kernel configs, just not on the one I'm profiling.
+
+	Dave
