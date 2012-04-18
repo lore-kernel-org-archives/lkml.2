@@ -1,76 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754398Ab2DRVJ1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Apr 2012 17:09:27 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:48491 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752825Ab2DRVJZ (ORCPT
+	id S1754153Ab2DRVQ5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Apr 2012 17:16:57 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:33580 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751245Ab2DRVQ4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Apr 2012 17:09:25 -0400
-Message-ID: <4F8F2D7F.8090905@lwfinger.net>
-Date: Wed, 18 Apr 2012 16:09:19 -0500
-From: Larry Finger <Larry.Finger@lwfinger.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120312 Thunderbird/11.0
-MIME-Version: 1.0
-To: Marcos Paulo de Souza <marcos.souza.org@gmail.com>
-CC: linux-kernel@vger.kernel.org,
-        Florian Schilhabel <florian.c.schilhabel@googlemail.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        devel@driverdev.osuosl.org
-Subject: Re: [PATCH 11/12] drivers: staging: rtl8172: Remove unneeded include
- of version.h
-References: <1334723412-5034-1-git-send-email-marcos.souza.org@gmail.com> <1334723412-5034-12-git-send-email-marcos.souza.org@gmail.com>
-In-Reply-To: <1334723412-5034-12-git-send-email-marcos.souza.org@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	Wed, 18 Apr 2012 17:16:56 -0400
+X-Authority-Analysis: v=2.0 cv=V/z/IJbi c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=XQbtiDEiEegA:10 a=JomeGkWH5N8A:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=4gbOhSyqIKWju5T05RMA:9 a=PUjeQqilurYA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.80.29
+Message-ID: <1334783815.28106.56.camel@gandalf.stny.rr.com>
+Subject: Re: [sched/rt] Optimization of function pull_rt_task()
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Kirill Tkhai <tkhai@yandex.ru>
+Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>
+Date: Wed, 18 Apr 2012 17:16:55 -0400
+In-Reply-To: <1334773976.28106.49.camel@gandalf.stny.rr.com>
+References: <1334519122.8698.3.camel@hp>
+	 <1334592379.28106.4.camel@gandalf.stny.rr.com>
+	 <1334773976.28106.49.camel@gandalf.stny.rr.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.2.2-1 
 Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/17/2012 11:30 PM, Marcos Paulo de Souza wrote:
-> The output of "make versioncheck" told us that:
->
-> drivers/staging/rtl8712/osdep_service.h: 32 linux/version.h not needed.
-> drivers/staging/rtl8712/rtl871x_ioctl_linux.c: 46 linux/version.h not needed.
->
-> If we take a look at these files, we will agree to remove it.
->
-> Cc: Larry Finger<Larry.Finger@lwfinger.net>
-> Cc: Florian Schilhabel<florian.c.schilhabel@googlemail.com>
-> Cc: Greg Kroah-Hartman<gregkh@linuxfoundation.org>
-> Cc:<devel@driverdev.osuosl.org>
-> Signed-off-by: Marcos Paulo de Souza<marcos.souza.org@gmail.com>
-> ---
->   drivers/staging/rtl8712/osdep_service.h       |    1 -
->   drivers/staging/rtl8712/rtl871x_ioctl_linux.c |    1 -
->   2 files changed, 0 insertions(+), 2 deletions(-)
+On Wed, 2012-04-18 at 14:32 -0400, Steven Rostedt wrote:
+> On Mon, 2012-04-16 at 12:06 -0400, Steven Rostedt wrote:
+> > On Sun, 2012-04-15 at 23:45 +0400, Kirill Tkhai wrote:
+> > > The condition (src_rq->rt.rt_nr_running) is weak because it doesn't
+> > > consider the cases when src_rq has only processes bound to it (when
+> > > single cpu is allowed). It may be running kernel thread like
+> > > migration/x etc.
+> > > 
+> > > So it's better to use more stronger condition which is able to exclude
+> > > above conditions. The function has_pushable_tasks() complitely does
+> > > this. A task may be pullable for another cpu rq only if he is pushable
+> > > for his own queue.
+> > 
+> > I considered this before, and for some reason I never did the change.
+> > I'll have to think about it. It seems like this would be the obvious
+> > case, but I think there was something not so obvious that caused issues.
+> > But I don't remember what it was.
+> > 
+> > I'll have to rethink this again.
+> 
+> I can't find anything wrong with this change. Maybe things change, or I
+> was thinking of another change.
+> 
+> I'll apply it and start running my tests against it.
 
-ACKed-by: Larry Finger <Larry.Finger@lwfinger.net>
+Not only does this seem to work fine, I took it one step further :-)
 
+Peter, do you see anything wrong with this patch?
 
->
-> diff --git a/drivers/staging/rtl8712/osdep_service.h b/drivers/staging/rtl8712/osdep_service.h
-> index 9ba6033..cabf774 100644
-> --- a/drivers/staging/rtl8712/osdep_service.h
-> +++ b/drivers/staging/rtl8712/osdep_service.h
-> @@ -29,7 +29,6 @@
->   #define _SUCCESS	1
->   #define _FAIL		0
->
-> -#include<linux/version.h>
->   #include<linux/spinlock.h>
->
->   #include<linux/interrupt.h>
-> diff --git a/drivers/staging/rtl8712/rtl871x_ioctl_linux.c b/drivers/staging/rtl8712/rtl871x_ioctl_linux.c
-> index ef35bc2..a44d539 100644
-> --- a/drivers/staging/rtl8712/rtl871x_ioctl_linux.c
-> +++ b/drivers/staging/rtl8712/rtl871x_ioctl_linux.c
-> @@ -43,7 +43,6 @@
->   #include<linux/module.h>
->   #include<linux/kernel.h>
->   #include<linux/init.h>
-> -#include<linux/version.h>
->   #include<linux/io.h>
->   #include<linux/semaphore.h>
->   #include<net/iw_handler.h>
+-- Steve
+
+diff --git a/kernel/sched/rt.c b/kernel/sched/rt.c
+index 61e3086..b44fd1b 100644
+--- a/kernel/sched/rt.c
++++ b/kernel/sched/rt.c
+@@ -1416,39 +1416,15 @@ static int pick_rt_task(struct rq *rq, struct task_struct *p, int cpu)
+ /* Return the second highest RT task, NULL otherwise */
+ static struct task_struct *pick_next_highest_task_rt(struct rq *rq, int cpu)
+ {
+-	struct task_struct *next = NULL;
+-	struct sched_rt_entity *rt_se;
+-	struct rt_prio_array *array;
+-	struct rt_rq *rt_rq;
+-	int idx;
++	struct plist_head *head = &rq->rt.pushable_tasks;
++	struct task_struct *next;
+ 
+-	for_each_leaf_rt_rq(rt_rq, rq) {
+-		array = &rt_rq->active;
+-		idx = sched_find_first_bit(array->bitmap);
+-next_idx:
+-		if (idx >= MAX_RT_PRIO)
+-			continue;
+-		if (next && next->prio <= idx)
+-			continue;
+-		list_for_each_entry(rt_se, array->queue + idx, run_list) {
+-			struct task_struct *p;
+-
+-			if (!rt_entity_is_task(rt_se))
+-				continue;
+-
+-			p = rt_task_of(rt_se);
+-			if (pick_rt_task(rq, p, cpu)) {
+-				next = p;
+-				break;
+-			}
+-		}
+-		if (!next) {
+-			idx = find_next_bit(array->bitmap, MAX_RT_PRIO, idx+1);
+-			goto next_idx;
+-		}
++	plist_for_each_entry(next, head, pushable_tasks) {
++		if (pick_rt_task(rq, next, cpu))
++			return next;
+ 	}
+ 
+-	return next;
++	return NULL;
+ }
+ 
+ static DEFINE_PER_CPU(cpumask_var_t, local_cpu_mask);
+
 
