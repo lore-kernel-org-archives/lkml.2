@@ -1,109 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753429Ab2DRXKa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Apr 2012 19:10:30 -0400
-Received: from mga02.intel.com ([134.134.136.20]:10355 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751125Ab2DRXK2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Apr 2012 19:10:28 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
-   d="scan'208";a="131417578"
-Message-Id: <53cdc9cc093af9e4dfd191f7e4185e50f7fc9db3.1334790229.git.tony.luck@intel.com>
-From: "Luck, Tony" <tony.luck@intel.com>
-Date: Wed, 18 Apr 2012 15:19:40 -0700
-Subject: [PATCHv2] x86/mce: Avoid reading every machine check bank register
- twice.
-To: linux-kernel@vger.kernel.org
-Cc: Ingo Molnar <mingo@elte.hu>, Borislav Petkov <bp@amd64.org>,
-        Chen Gong <gong.chen@linux.intel.com>,
-        "Huang, Ying" <ying.huang@intel.com>,
-        Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>
+	id S1753562Ab2DRXMH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Apr 2012 19:12:07 -0400
+Received: from swampdragon.chaosbits.net ([90.184.90.115]:24144 "EHLO
+	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751765Ab2DRXME (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Apr 2012 19:12:04 -0400
+Date: Thu, 19 Apr 2012 01:12:03 +0200 (CEST)
+From: Jesper Juhl <jj@chaosbits.net>
+To: anirudh bhat <abhat38@gmail.com>
+cc: arve@android.com, dhowells@redhat.com, chris+android@zenthought.org,
+        hpa@zytor.com, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/2] staging:android:fix line over 80 characters issue
+ in binders.c this patch fixes line over 80 characters warning that was found
+ using checkpatch.pl tool Signed-off-by:Anirudh Bhat <abhat38@gmail.com>
+In-Reply-To: <alpine.LNX.2.00.1204190026110.14916@swampdragon.chaosbits.net>
+Message-ID: <alpine.LNX.2.00.1204190109200.14916@swampdragon.chaosbits.net>
+References: <1334769639-5914-1-git-send-email-abhat38@gmail.com> <alpine.LNX.2.00.1204190026110.14916@swampdragon.chaosbits.net>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Reading machine check bank registers is slow. There is a trend of
-increasing the number of banks, and the number of cores. The main section
-of do_machine_check() is a serialized section where each cpu in turn
-checks every bank. Even on a little two socket SandyBridge-EP system
-that multiplies out as:
+On Thu, 19 Apr 2012, Jesper Juhl wrote:
 
-	2 sockets * 8 cores * 2 hyperthreads * 20 banks = 640 MSRs
+> On Wed, 18 Apr 2012, anirudh bhat wrote:
+> 
+> > From: anirudh bhat <anirudhbhat@ubuntu.ubuntu-domain>
+> > 
+> Unless you are sending a patch on behalf of someone else, and need to 
+> preserve that person as the author of the patch, there's usually no need 
+> for a From: in the body of your patch submission email - the From: from 
+> the email headers will be used.
+> 
 
-We already scan the banks in parallel in mce_no_way_out() to see if there
-is a fatal error anywhere in the system. If we build a cache of VALID
-bits during this scan, we can avoid uselessly re-reading banks that have
-no data. Note that this cache is only a hint. If the valid bit is set in a
-shared bank, all cpus that share that bank will see it during the parallel
-scan, but the first to find it in the sequential scan will (usually) clear
-the bank.
+Ohh and I forgot to mention, that in case you do put a From: line (or any 
+other) you want to use a *real* email address.
 
-Signed-off-by: Tony Luck <tony.luck@intel.com>
----
+The same goes for the email Cc: list - "anirudhbhat@ubuntu.ubuntu-domain" 
+doesn't work so great there either, yet that is one of the addresses you 
+Cc'ed the original mail to..
 
-Version 2:
-	+ mce_no_way_out() now scans all banks to build the full bitmap (instead of
-	  breaking out early if it saw a fatal issue).
-	+ changed name of bitmap from "hint" to "valid_banks"
-
- arch/x86/kernel/cpu/mcheck/mce.c |   16 +++++++++++-----
- 1 files changed, 11 insertions(+), 5 deletions(-)
-
-diff --git a/arch/x86/kernel/cpu/mcheck/mce.c b/arch/x86/kernel/cpu/mcheck/mce.c
-index d086a09..66e1c51 100644
---- a/arch/x86/kernel/cpu/mcheck/mce.c
-+++ b/arch/x86/kernel/cpu/mcheck/mce.c
-@@ -641,16 +641,18 @@ EXPORT_SYMBOL_GPL(machine_check_poll);
-  * Do a quick check if any of the events requires a panic.
-  * This decides if we keep the events around or clear them.
-  */
--static int mce_no_way_out(struct mce *m, char **msg)
-+static int mce_no_way_out(struct mce *m, char **msg, unsigned long *validp)
- {
--	int i;
-+	int i, ret = 0;
- 
- 	for (i = 0; i < banks; i++) {
- 		m->status = mce_rdmsrl(MSR_IA32_MCx_STATUS(i));
-+		if (m->status & MCI_STATUS_VAL)
-+			__set_bit(i, validp);
- 		if (mce_severity(m, tolerant, msg) >= MCE_PANIC_SEVERITY)
--			return 1;
-+			ret = 1;
- 	}
--	return 0;
-+	return ret;
- }
- 
- /*
-@@ -1011,6 +1013,7 @@ void do_machine_check(struct pt_regs *regs, long error_code)
- 	 */
- 	int kill_it = 0;
- 	DECLARE_BITMAP(toclear, MAX_NR_BANKS);
-+	DECLARE_BITMAP(valid_banks, MAX_NR_BANKS);
- 	char *msg = "Unknown";
- 
- 	atomic_inc(&mce_entry);
-@@ -1025,7 +1028,8 @@ void do_machine_check(struct pt_regs *regs, long error_code)
- 	final = &__get_cpu_var(mces_seen);
- 	*final = m;
- 
--	no_way_out = mce_no_way_out(&m, &msg);
-+	memset(valid_banks, 0, sizeof(valid_banks));
-+	no_way_out = mce_no_way_out(&m, &msg, valid_banks);
- 
- 	barrier();
- 
-@@ -1045,6 +1049,8 @@ void do_machine_check(struct pt_regs *regs, long error_code)
- 	order = mce_start(&no_way_out);
- 	for (i = 0; i < banks; i++) {
- 		__clear_bit(i, toclear);
-+		if (!test_bit(i, valid_banks))
-+			continue;
- 		if (!mce_banks[i].ctl)
- 			continue;
- 
 -- 
-1.7.9.rc2.1.g69204
+Jesper Juhl <jj@chaosbits.net>       http://www.chaosbits.net/
+Don't top-post http://www.catb.org/jargon/html/T/top-post.html
+Plain text mails only, please.
 
