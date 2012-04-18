@@ -1,57 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752682Ab2DRKZM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Apr 2012 06:25:12 -0400
-Received: from mail-iy0-f194.google.com ([209.85.210.194]:53466 "EHLO
-	mail-iy0-f194.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751800Ab2DRKZK (ORCPT
+	id S1752893Ab2DRK3r (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Apr 2012 06:29:47 -0400
+Received: from www.linutronix.de ([62.245.132.108]:32818 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751751Ab2DRK3q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Apr 2012 06:25:10 -0400
+	Wed, 18 Apr 2012 06:29:46 -0400
+Date: Wed, 18 Apr 2012 12:29:32 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Paul Bolle <pebolle@tiscali.nl>
+cc: Andi Kleen <ak@linux.intel.com>, Matthew Garrett <mjg59@srcf.ucam.org>,
+        =?ISO-8859-15?Q?J=F6rg_Otte?= <jrg.otte@googlemail.com>,
+        LKML <linux-kernel@vger.kernel.org>, Len Brown <lenb@kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>
+Subject: Re: [v3.4-rc1] ACPI regression bisected
+In-Reply-To: <1334741105.1924.5.camel@x61.thuisdomein>
+Message-ID: <alpine.LFD.2.02.1204181216380.2542@ionos>
+References: <CADDKRnBpGr=yzDftChA3xiaK9gK4D4UDV6HJiw8hcMo6159+Cw@mail.gmail.com>  <20120402235412.GD16303@tassilo.jf.intel.com>  <alpine.LFD.2.02.1204031001510.2542@ionos>  <CADDKRnAOqfxTjrCp4E5eKFJvVTu6s0xF3Ca3jRJavFkyGpYLmQ@mail.gmail.com> 
+ <alpine.LFD.2.02.1204121055200.2542@ionos>  <20120412142904.GA4130@srcf.ucam.org>  <alpine.LFD.2.02.1204121903250.2542@ionos>  <alpine.LFD.2.02.1204121907330.2542@ionos>  <4F872C7B.6000106@linux.intel.com>  <alpine.LFD.2.02.1204122241460.2542@ionos>
+ <1334741105.1924.5.camel@x61.thuisdomein>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
 MIME-Version: 1.0
-Reply-To: wcix0001@gmail.com
-Date: Wed, 18 Apr 2012 09:40:16 +0100
-Message-ID: <CA+zKL5_O5cmQ+8z-NEeG6-evD5N8tg9mBu2ZSYKudTh-Fjj6fg@mail.gmail.com>
-Subject: Re: Project.
-From: Hassan Osman <jeffradebe001@gmail.com>
-To: undisclosed-recipients:;
-Content-Type: text/plain; charset=windows-1256
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id q3IAPNNF018153
 
-Assalamualaikum¡
+B1;2601;0cOn Wed, 18 Apr 2012, Paul Bolle wrote:
+> On Thu, 2012-04-12 at 22:42 +0200, Thomas Gleixner wrote:
+> > > For 3.4 I think reverting is the right approach.
+> > 
+> > Ack.
+> 
+> A revert of 6fe0d0628245fdcd6fad8b837c81e8f7ebc3364d ("ACPI: Make ACPI
+> interrupt threaded") wasn't included in v3.4-rc3. Has it been pushed
+> somewhere? Is testing needed before that revert can be pushed?
 
-ÈÚÏ ÇÓÊİÓÇÑí ãÓÄæá ãä ãßÊÈ ÇáÊÌÇÑÉ ÇáÎÇÑÌíÉ áÛÑİ ÇáÊÌÇÑÉ æÇáÕäÇÚÉ åäÇ¡
-İŞÏ ŞÑÑÊ Çä ÇÊÕá Èß áßäí áã íßÔİ Úä äíÉ áÔÎÕ ÂÎÑ ÈÓÈÈ ÇáØÈíÚÉ ÇáÍÓÇÓÉ
-ááãÔÑæÚ. áŞÏ æÌÏÊ ÇáÊÚÑíİ ÇáÎÇÕ Èß ãËíÑÉ ÌÏÇ ááÇåÊãÇã¡ æŞÑÑÊ Ãä ÊÕá
-Åáíß ãÈÇÔÑÉ áÇáÊãÇÓ áãÓÇÚÏÊßã. ãä İÖáß¡ áÇ ÈÏ áí Ãä äÏÇİÚ Úä ËŞÊßã İí
-åĞå ÇáÕİŞÉ. æÃäÇ ãÓÄæá ÑİíÚ æÖÚ ÇáÚãá ãÚ ÇáÑÆíÓ ãä áíÈíÇ (ÇáÚŞíÏ ãÚãÑ
-ÇáŞĞÇİí).
+Seems those who broke it are too busy to care.
 
-  ßäÊ ÃÚÊŞÏ Ãääí ÃÎÏã ßãÓÇÚÏÉ ááÑÆíÓ - Ïæ - ãÚÓßÑ (ADC)¡ æÃäÇ ÍÇáíÇ İí
-ÍÇÌÉ Çáì ÔÑíß ãä Ğæí ÇáÎÈÑÉ ÇáÃÌäÈíÉ ÇáÕãÊ ÇáĞí ÃÓÊØíÚ Ãä ÃËŞ áÏİÚ ÈÚÖ
-ÇáÃãæÇá ÇáÊí ÃæÏÚåÇ İí ÇÓãí İí ÇáÔÑßÇÊ ÇáãÇáíÉ ÇáãÎÊáİÉ İí ÈÚÖ ÇáÈáÏÇä
-ßÇä áÏíå Úãá ãÚ.
+Linus, can you please apply directly?
 
-İí ÇáæÇŞÚ¡ ÕÏíŞí ÇáÚÒíÒ¡ ÃäÇ ÃÏÎáÊ ãä ŞÈá ÇáÚŞíÏ ãÚãÑ ÇáŞĞÇİí ÈÚÏ ÑÄíÉ
-ËŞÊí. áŞÏ ßäÊ ãÓÄæáÇ Úä ÌãíÚ ÇáãÓÇÆá ÇáãÇáíÉ ÇáãÊÚáŞÉ ÃãæÇáå äÊíÌÉ
-áËŞÉ ÇáÑÆíÓ ãÈÇÑß áÏíå Úáì áí¡ æßãÇ ÊÚáãæä İí ÇáÌíÔ¡ ADC åæ ÔÎÕ íÌÈ Ãä
-äËŞ ÃßËÑ ãä Ãí ÃÍÏ ÂÎÑ.
+------------>
+Subject: ACPI: Revert 6fe0d06 ("ACPI: Make ACPI interrupt threaded")
+From: Thomas Gleixner <tglx@linutronix.de>
 
-ÃÑíÏ ãÓÇÚÏÊßã áäŞá ÈÚÖ ãä åĞå ÇáÃãæÇá áÈáÏßã ßãÇ ÊÚáãæä Ãä ãÏÑÈ ÈáÏí
-áŞæÇ ÍÊİåã. ÓÃÓãÍ áß Ãä ÊÓÊËãÑ Ğáß İí Úãáß Ãæ İí Ãí Úãá ÌíÏ. æÓæİ ÊÊÇÍ
-ÌãíÚ ÇáæËÇÆŞ ÇááÇÒãÉ ááÊËÈÊ İí ÇáæŞÊ ÇááÇÒã.
+Paul bisected this regression to 6fe0d06 ("ACPI: Make ACPI interrupt
+threaded"). 
 
-ÇÑÌæß íÇ Úáì ŞÖíÉ æÇÍÏÉ¡ ãÇ ÅĞÇ ßäÊ ãåÊãÇ Ãã áÇ¡ íÑÌì ÚÏã ßÔİ åĞå
-ÇáãÚáæãÇÊ Åáì Ãí ÔÎÕ ÂÎÑ. æÃÄßÏ Ãä åĞå ÇáÕİŞÉ ÛíÑ ÔÑÚíÉ æÈÏæä Ãí ÎØÑ
-ÓæÇÁ áí Ãæ áäİÓß. ãä İÖáß¡ ÃÚØäí ÑÏßã Úáì ÇáİæÑ ãä ŞÈá ÚæÏÉ åĞå
-ÇáÑÓÇáÉ ãä ÎáÇá ÚäæÇä ÈÑíÏí ÇáÇáßÊÑæäí.
+The conversion was done blindly and is wrong, as it does not provide a
+primary handler to disable the level type irq on the device
+level. Neither does it set the IRQF_ONESHOT flag which handles that at
+the irq line level. This can't be done as the interrupt might be
+shared, though we might extend the core to force it.
 
-http://uk.news.yahoo.com/gaddafi-offered-riches-begged-live-145341813.html
+So an interrupt on this line will wake up the thread, but immediately
+unmask the irq after that. Due to the interrupt being level type the
+hardware interrupt is raised over and over and prevents the irq thread
+from handling it. Fail.
 
-http://www.deccanherald.com/content/144251/libyas-first-lady-owns-airline.html
+request_irq() unfortunately does not refuse such a request and the
+patch was obviously never tested with real interrupts.
 
-ÍÓä ÚËãÇä
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+Bisected-by: Paul Bolle <pebolle@tiscali.nl>
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+
+diff --git b/drivers/acpi/osl.c a/drivers/acpi/osl.c
+index 02367a8..412a1e0 100644
+--- b/drivers/acpi/osl.c
++++ a/drivers/acpi/osl.c
+@@ -595,8 +595,7 @@ acpi_os_install_interrupt_handler(u32 gsi, acpi_osd_handler handler,
+ 
+ 	acpi_irq_handler = handler;
+ 	acpi_irq_context = context;
+-	if (request_threaded_irq(irq, NULL, acpi_irq, IRQF_SHARED, "acpi",
+-				 acpi_irq)) {
++	if (request_irq(irq, acpi_irq, IRQF_SHARED, "acpi", acpi_irq)) {
+ 		printk(KERN_ERR PREFIX "SCI (IRQ%d) allocation failed\n", irq);
+ 		acpi_irq_handler = NULL;
+ 		return AE_NOT_ACQUIRED;
+
