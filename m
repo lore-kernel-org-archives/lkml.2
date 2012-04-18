@@ -1,194 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754020Ab2DRNid (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Apr 2012 09:38:33 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:49930 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753740Ab2DRNi2 (ORCPT
+	id S1753692Ab2DRNhb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Apr 2012 09:37:31 -0400
+Received: from mail.work-microwave.de ([62.245.205.51]:36291 "EHLO
+	work-microwave.de" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752828Ab2DRNh2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Apr 2012 09:38:28 -0400
-Date: Wed, 18 Apr 2012 08:38:23 -0500
-From: Seth Forshee <seth.forshee@canonical.com>
-To: George Pantalos <gpantalos@gmail.com>
-Cc: dmitry.torokhov@gmail.com, rubini@cvml.unipv.it,
-        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Input: ALPS - Add semi-MT support for v4 protocol
-Message-ID: <20120418133823.GA31655@thinkpad-t410>
-Mail-Followup-To: George Pantalos <gpantalos@gmail.com>,
-	dmitry.torokhov@gmail.com, rubini@cvml.unipv.it,
-	linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
-References: <1753794.1syzYofK8B@vaio>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1753794.1syzYofK8B@vaio>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 18 Apr 2012 09:37:28 -0400
+From: Roland Stigge <stigge@antcom.de>
+To: arm@kernel.org, linux-arm-kernel@lists.infradead.org,
+        thierry.reding@avionic-design.de, gregkh@linuxfoundation.org,
+        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-input@vger.kernel.org, dmitry.torokhov@gmail.com,
+        axel.lin@gmail.com, broonie@opensource.wolfsonmicro.com,
+        marek.vasut@gmail.com, devel@driverdev.osuosl.org, kevin.wells@nxp.com,
+        srinivas.bakki@nxp.com, dan.carpenter@oracle.com
+Cc: Roland Stigge <stigge@antcom.de>
+Subject: [PATCH v3 0/10] Second patchset for LPC32xx device tree conversion
+Date: Wed, 18 Apr 2012 15:36:05 +0200
+Message-Id: <1334756176-25144-1-git-send-email-stigge@antcom.de>
+X-Mailer: git-send-email 1.7.9
+X-FEAS-SYSTEM-WL: rst@work-microwave.de, 192.168.11.78
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 18, 2012 at 02:02:14AM +0300, George Pantalos wrote:
-> This patch adds semi-MT support for ALPS v4 protocol touchpads.
-> It is based on the work by Seth Forshee for ALPS v3 and v4 protocol
-> support. Three packets are required to assemble and process the MT
-> data. ST events are reported at once to avoid latency. If there
-> were two contacts or more, report MT data instead of ST events.
-> 
-> Thanks to Seth Forshee for providing most of the code, guidance
-> and insight for producing this patch.
-> 
-> Signed-off-by: George Pantalos <gpantalos@gmail.com>
+This is the second patch set for device tree conversion of mach-lpc32xx. It
+builds upon and requires the previously posted first set of 8 plus the GPIO
+patch.
 
-Acked-by: Seth Forshee <seth.forshee@canonical.com>
+It touches different subsystems (USB/OHCI, input/touchscreen, iio/adc and
+mach-lpc32) to be picked by the respective subsystem maintainer and probably
+applied separately. (?)
 
-> ---
->  drivers/input/mouse/alps.c |   79 +++++++++++++++++++++++++++++++---
->  drivers/input/mouse/alps.h |    2 +
->  2 files changed, 75 insertions(+), 6 deletions(-)
-> 
-> diff --git a/drivers/input/mouse/alps.c b/drivers/input/mouse/alps.c
-> index 4c6a72d..6028e02 100644
-> --- a/drivers/input/mouse/alps.c
-> +++ b/drivers/input/mouse/alps.c
-> @@ -604,10 +604,54 @@ static void alps_process_packet_v3(struct 
-> psmouse *psmouse)
->  
->  static void alps_process_packet_v4(struct psmouse *psmouse)
->  {
-> +	struct alps_data *priv = psmouse->private;
->  	unsigned char *packet = psmouse->packet;
->  	struct input_dev *dev = psmouse->dev;
-> +	int offset;
->  	int x, y, z;
->  	int left, right;
-> +	int x1, y1, x2, y2;
-> +	int fingers = 0;
-> +	unsigned int x_bitmap, y_bitmap;
-> +
-> +	/*
-> +	 * v4 has a 6-byte encoding for bitmap data, but this data is
-> +	 * broken up between 3 normal packets. Use priv->multi_packet to
-> +	 * track our position in the bitmap packet.
-> +	 */
-> +	if (packet[6] & 0x40) {
-> +		/* sync, reset position */
-> +		priv->multi_packet = 0;
-> +	}
-> +
-> +	if (WARN_ON_ONCE(priv->multi_packet > 2))
-> +		return;
-> +
-> +	offset = 2 * priv->multi_packet;
-> +	priv->multi_data[offset] = packet[6];
-> +	priv->multi_data[offset + 1] = packet[7];
-> +
-> +	if (++priv->multi_packet > 2) {
-> +		priv->multi_packet = 0;
-> +
-> +		x_bitmap = ((priv->multi_data[2] & 0x1f) << 10) |
-> +			   ((priv->multi_data[3] & 0x60) << 3) |
-> +			   ((priv->multi_data[0] & 0x3f) << 2) |
-> +			   ((priv->multi_data[1] & 0x60) >> 5);
-> +		y_bitmap = ((priv->multi_data[5] & 0x01) << 10) |
-> +			   ((priv->multi_data[3] & 0x1f) << 5) |
-> +			   (priv->multi_data[1] & 0x1f);
-> +
-> +		fingers = alps_process_bitmap(x_bitmap, y_bitmap,
-> +					      &x1, &y1, &x2, &y2);
-> +
-> +		/* Store MT data.*/
-> +		priv->fingers = fingers;
-> +		priv->x1 = x1;
-> +		priv->x2 = x2;
-> +		priv->y1 = y1;
-> +		priv->y2 = y2;
-> +	}
->  
->  	left = packet[4] & 0x01;
->  	right = packet[4] & 0x02;
-> @@ -617,21 +661,44 @@ static void alps_process_packet_v4(struct psmouse 
-> *psmouse)
->  	y = ((packet[2] & 0x7f) << 4) | (packet[3] & 0x0f);
->  	z = packet[5] & 0x7f;
->  
-> +	/*
-> +	 * If there were no contacts in the bitmap, use ST
-> +	 * points in MT reports.
-> +	 * If there were two contacts or more, report MT data.
-> +	 */
-> +	if (priv->fingers < 2) {
-> +		x1 = x;
-> +		y1 = y;
-> +		fingers = z > 0 ? 1 : 0;
-> +	} else {
-> +		fingers = priv->fingers;
-> +		x1 = priv->x1;
-> +		x2 = priv->x2;
-> +		y1 = priv->y1;
-> +		y2 = priv->y2;
-> +	}
-> +
->  	if (z >= 64)
->  		input_report_key(dev, BTN_TOUCH, 1);
->  	else
->  		input_report_key(dev, BTN_TOUCH, 0);
->  
-> +	alps_report_semi_mt_data(dev, fingers, x1, y1, x2, y2);
-> +
-> +	input_report_key(dev, BTN_TOOL_FINGER, fingers == 1);
-> +	input_report_key(dev, BTN_TOOL_DOUBLETAP, fingers == 2);
-> +	input_report_key(dev, BTN_TOOL_TRIPLETAP, fingers == 3);
-> +	input_report_key(dev, BTN_TOOL_QUADTAP, fingers == 4);
-> +
-> +	input_report_key(dev, BTN_LEFT, left);
-> +	input_report_key(dev, BTN_RIGHT, right);
-> +
->  	if (z > 0) {
->  		input_report_abs(dev, ABS_X, x);
->  		input_report_abs(dev, ABS_Y, y);
->  	}
->  	input_report_abs(dev, ABS_PRESSURE, z);
->  
-> -	input_report_key(dev, BTN_TOOL_FINGER, z > 0);
-> -	input_report_key(dev, BTN_LEFT, left);
-> -	input_report_key(dev, BTN_RIGHT, right);
-> -
->  	input_sync(dev);
->  }
->  
-> @@ -1557,6 +1624,7 @@ int alps_init(struct psmouse *psmouse)
->  		input_set_abs_params(dev1, ABS_Y, 0, 767, 0, 0);
->  		break;
->  	case ALPS_PROTO_V3:
-> +	case ALPS_PROTO_V4:
->  		set_bit(INPUT_PROP_SEMI_MT, dev1->propbit);
->  		input_mt_init_slots(dev1, 2);
->  		input_set_abs_params(dev1, ABS_MT_POSITION_X, 0, 
-> ALPS_V3_X_MAX, 0, 0);
-> @@ -1565,8 +1633,7 @@ int alps_init(struct psmouse *psmouse)
->  		set_bit(BTN_TOOL_DOUBLETAP, dev1->keybit);
->  		set_bit(BTN_TOOL_TRIPLETAP, dev1->keybit);
->  		set_bit(BTN_TOOL_QUADTAP, dev1->keybit);
-> -		/* fall through */
-> -	case ALPS_PROTO_V4:
-> +
->  		input_set_abs_params(dev1, ABS_X, 0, ALPS_V3_X_MAX, 0, 0);
->  		input_set_abs_params(dev1, ABS_Y, 0, ALPS_V3_Y_MAX, 0, 0);
->  		break;
-> diff --git a/drivers/input/mouse/alps.h b/drivers/input/mouse/alps.h
-> index a00a4ab..ae1ac35 100644
-> --- a/drivers/input/mouse/alps.h
-> +++ b/drivers/input/mouse/alps.h
-> @@ -39,6 +39,8 @@ struct alps_data {
->  	int prev_fin;			/* Finger bit from previous packet */
->  	int multi_packet;		/* Multi-packet data in progress */
->  	unsigned char multi_data[6];	/* Saved multi-packet data */
-> +	int x1, x2, y1, y2;		/* Coordinates from last MT report */
-> +	int fingers;			/* Number of fingers from MT report */
->  	u8 quirks;
->  	struct timer_list timer;
->  };
-> --
-> 1.7.10
-> 
-> 
+Signed-off-by: Roland Stigge <stigge@antcom.de>
+
+--
+
+Applies to v3.4-rc3
+
+Changes since v2:
+* ohci-nxp: Fixed hcd->rsrc_start physical address
+* ohci-nxp: Remove USB host initialization hunk (USB_DEV_NEED_CLK_EN bit
+  already cleared)
+* ohci-nxp: Remove gratuitous parentheses
+* clock.c: Separated out dma clock adjustment (new patch)
+* lpc32xx.dtsi: Moved interrupt-parent property to top-level node
+* lpc32xx.dtsi: Removed chosen/bootargs
+* phy3250.dts: Added SLC NAND partitioning according to layout as shipped
+  previously
+* phy3250.c: Moved lpc32xx_display_uid() to common.c (leaving the rest in
+  phy3250 for now due to temporary platform_data passed via auxdata) - new
+  patch
+
+Thanks to Arnd Bergmann, Dan Carpenter and Thierry Reding for reviewing!
+
+Roland Stigge (10):
+ohci-nxp: Driver cleanup
+ohci-nxp: Device tree support
+ARM: LPC32xx: clock.c cleanup
+ARM: LPC32xx: clock.c dma adjustment
+ARM: LPC32xx: Remove obsolete platform Kconfig
+input: Device tree support for LPC32xx touchscreen
+iio: lpc32xx-adc: Remove driver conflict due to device tree
+ARM: LPC32xx: DTS files for device tree conversion
+ARM: LPC32xx: Device tree support
+ARM: LPC32xx: Move common code to common.c
+
+ Documentation/devicetree/bindings/arm/lpc32xx-mic.txt               |   38 +
+ Documentation/devicetree/bindings/arm/lpc32xx.txt                   |    8 
+ Documentation/devicetree/bindings/input/touchscreen/lpc32xx-tsc.txt |   16 
+ Documentation/devicetree/bindings/usb/ohci-nxp.txt                  |   16 
+ arch/arm/Kconfig                                                    |    1 
+ arch/arm/boot/dts/lpc32xx.dtsi                                      |  303 ++++++++++
+ arch/arm/boot/dts/phy3250.dts                                       |  115 +++
+ arch/arm/mach-lpc32xx/Kconfig                                       |   26 
+ arch/arm/mach-lpc32xx/clock.c                                       |   77 +-
+ arch/arm/mach-lpc32xx/common.c                                      |  192 ------
+ arch/arm/mach-lpc32xx/common.h                                      |   14 
+ arch/arm/mach-lpc32xx/irq.c                                         |   78 +-
+ arch/arm/mach-lpc32xx/phy3250.c                                     |  146 ++--
+ drivers/input/touchscreen/lpc32xx_ts.c                              |   10 
+ drivers/staging/iio/adc/Kconfig                                     |    8 
+ drivers/usb/host/ohci-nxp.c                                         |   55 +
+ 16 files changed, 704 insertions(+), 399 deletions(-)
