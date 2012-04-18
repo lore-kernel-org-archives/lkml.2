@@ -1,52 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753837Ab2DRRXy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Apr 2012 13:23:54 -0400
-Received: from acsinet15.oracle.com ([141.146.126.227]:23326 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751071Ab2DRRXv (ORCPT
+	id S1754366Ab2DRRYj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Apr 2012 13:24:39 -0400
+Received: from ud10.udmedia.de ([194.117.254.50]:48595 "EHLO
+	mail.ud10.udmedia.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752881Ab2DRRXx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Apr 2012 13:23:51 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: ming.m.lin@intel.com, linux-kernel@vger.kernel.org,
-        linux-pm@vger.kernel.org, lenb@kernel.org, linux-acpi@vger.kernel.org,
-        hpa@zytor.com, x86@kernel.org, rjw@sisk.pl
-Subject: [PATCH] gts and bfs fixes (v4).
-Date: Wed, 18 Apr 2012 13:18:36 -0400
-Message-Id: <1334769518-7660-1-git-send-email-konrad.wilk@oracle.com>
-X-Mailer: git-send-email 1.7.7.5
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
-X-CT-RefId: str=0001.0A090206.4F8EF89F.00B1,ss=1,re=0.000,fgs=0
+	Wed, 18 Apr 2012 13:23:53 -0400
+Date: Wed, 18 Apr 2012 19:23:49 +0200
+From: Markus Trippelsdorf <markus@trippelsdorf.de>
+To: Lasse Collin <lasse.collin@tukaani.org>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, Randy Dunlap <rdunlap@xenotime.net>,
+        qasdfgtyuiop <qasdfgtyuiop@gmail.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>, alain@knaff.lu,
+        albin.tonnerre@free-electrons.com
+Subject: Re: [PATCH] kconfig: update compression algorithm info
+Message-ID: <20120418172349.GA6165@x4>
+References: <CAMtaSwTi=7rmG8diJ+K0c_CcV=0TcgXDjRFEdZGGiKE2K5x89A@mail.gmail.com>
+ <4F8DF90B.1090002@xenotime.net>
+ <20120418194055.2d929e58@tukaani.org>
+ <4F8EEFB5.8040604@zytor.com>
+ <20120418200929.086ce3a7@tukaani.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120418200929.086ce3a7@tukaani.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-v2 [https://lkml.org/lkml/2012/4/9/474]
- - ditched the assembler version and used a C wrapper
+On 2012.04.18 at 20:09 +0300, Lasse Collin wrote:
+> On 2012-04-18 H. Peter Anvin wrote:
+> > On 04/18/2012 09:40 AM, Lasse Collin wrote:
+> > >   - LZO should give the fastest boot from a hard disk (desktop
+> > >     systems where file size doesn't matter much).
+> > 
+> > That really depends on the speed of your disk vs CPU.
+> 
+> Yes. Maybe it isn't good to give so clear recommendation for LZO over
+> gzip here.
+> 
+> I think it is still safe to say that gzip and LZO are better than
+> bzip2, XZ, or LZMA for compressing a kernel that will be loaded from a
+> normal hard disk. It would be unusual if reading the disk was so slow
+> that e.g. XZ would make the booting faster than gzip.
 
-With git commit a2ef5c4fd44ce3922435139393b89f2cce47f576
-"ACPI: Move module parameter gts and bfs to sleep.c" the
-sampling of gts/bfs module parameters flag by acpi_enter_sleep_state
-has been moved. It has been moved out of the inner ACPI code and
-out in the more x86 specific. This means that any caller of
-the exported acpi_enter_sleep_state function needs to provide
-two parameters now: sleep state and the bit flag whether to us _GTS|_BFS.
+When btrfs will finally implement LZ4 compression this would be the obvious
+candidate for the fastest boot algo, because its decompression speed is
+amazing.
 
-All of the callers of acpi_enter_sleep_state did that, with
-the exception of the assembler version and as well any
-third-party callers of acpi_enter_sleep_state.
+For example here is a comparison with LZO on boot/compressed/vmlinux.bin:
 
-These two patches expose 'wake_sleep_flags' as the product
-of the gts/bfs module parameter invocation. And also use said
-flag in the assembler 'do_suspend_lowlevel()' function.
+memcpy               = 75 ms (10251 MB/s), 13436968->13436968
+Codec         version    args       Size (Ratio)    C.Speed      D.Speed
+LZ4               r59      12    4952064 (x 2.71)   C: 518 MB/s  D:1472 MB/s
+LZO              2.05     1x1    4825088 (x 2.78)   C: 472 MB/s  D: 504 MB/s
 
-Konrad Rzeszutek Wilk (2):
-      ACPI: Convert wake_sleep_flags to a value instead of function (v4)
-      x86/acpi: Call acpi_enter_sleep_state via an asmlinkage C function from assembler.
-
- arch/x86/kernel/acpi/sleep.c     |    4 +++
- arch/x86/kernel/acpi/sleep.h     |    4 +++
- arch/x86/kernel/acpi/wakeup_32.S |    4 +--
- arch/x86/kernel/acpi/wakeup_64.S |    4 +--
- drivers/acpi/sleep.c             |   52 ++++++++++++++++++++-----------------
- 5 files changed, 38 insertions(+), 30 deletions(-)
+-- 
+Markus
