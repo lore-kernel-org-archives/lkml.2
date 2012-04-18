@@ -1,80 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753892Ab2DRV6I (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Apr 2012 17:58:08 -0400
-Received: from smtprelay-b12.telenor.se ([62.127.194.21]:51841 "EHLO
-	smtprelay-b12.telenor.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753670Ab2DRV6D (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Apr 2012 17:58:03 -0400
-X-SENDER-IP: [85.230.169.225]
-X-LISTENER: [smtp.bredband.net]
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AqRgAPU3j09V5qnhPGdsb2JhbABEiienGRkBAQEBNzSCCgEFJy8TAQ8QCBE4OQoUBhMbh3i7HBOKR4VbBJtxjSGBUg
-X-IronPort-AV: E=Sophos;i="4.75,444,1330902000"; 
-   d="scan'208";a="98044817"
-From: "Henrik Rydberg" <rydberg@euromail.se>
-To: Jiri Kosina <jkosina@suse.cz>
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Benjamin Tissoires <benjamin.tissoires@gmail.com>,
-        Stephane Chatty <chatty@enac.fr>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Henrik Rydberg <rydberg@euromail.se>
-Subject: [PATCH 2/5] hid: Parse the device before adding it
-Date: Thu, 19 Apr 2012 00:00:54 +0200
-Message-Id: <1334786457-2124-3-git-send-email-rydberg@euromail.se>
-X-Mailer: git-send-email 1.7.10
-In-Reply-To: <1334786457-2124-1-git-send-email-rydberg@euromail.se>
-References: <1334786457-2124-1-git-send-email-rydberg@euromail.se>
+	id S1754102Ab2DRV6r (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Apr 2012 17:58:47 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:42504 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753767Ab2DRV6p (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Apr 2012 17:58:45 -0400
+Message-ID: <4F8F3909.2050706@zytor.com>
+Date: Wed, 18 Apr 2012 14:58:33 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120329 Thunderbird/11.0.1
+MIME-Version: 1.0
+To: "H.J. Lu" <hjl.tools@gmail.com>
+CC: mingo@redhat.com, linux-kernel@vger.kernel.org, tglx@linutronix.de,
+        linux-tip-commits@vger.kernel.org
+Subject: Re: [tip:x86/x32] x32: Fix alignment fail in struct compat_siginfo
+References: <1329696488-16970-1-git-send-email-hpa@zytor.com> <tip-31796ac4e8f0e88f5c10f1ad6dab8f19bebe44a4@git.kernel.org> <CAMe9rOqF6Kh6-NK7oP0Fpzkd4SBAWU+G53hwBbSD4iA2UzyxuA@mail.gmail.com> <4F8EFE4D.2040201@zytor.com> <CAMe9rOpfPQghra1PQTUwsFOvjgNpzFDEGS5=BbFBjn=HZGL93g@mail.gmail.com> <4F8F0385.5090901@zytor.com> <CAMe9rOq7LduF4aLPe9qatedxps4WPCgOHTD=E_Lje4_tu6tyZw@mail.gmail.com> <4F8F0614.9010604@zytor.com> <CAMe9rOqBd29LKB==NaKscpedRMR1uL_ZhHqSw1HQj-3_d9PSCw@mail.gmail.com> <4F8F30F5.9030704@zytor.com> <CAMe9rOpPStV7+3hSMifVGcRXwF+X_DzjxgUCPBn_nSWyJiOYfg@mail.gmail.com>
+In-Reply-To: <CAMe9rOpPStV7+3hSMifVGcRXwF+X_DzjxgUCPBn_nSWyJiOYfg@mail.gmail.com>
+X-Enigmail-Version: 1.4
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The hid bus is populated by devices created by the usb and bluetooth
-subsystems. The hid device is then broadcast to userland via uevents.
-Currently, the parsing of the hid reports is done during probe of
-the hid device, after the device has been broadcast. In order to
-allow for the report descriptors to influence the device properties,
-it is desirable to parse the device _before_ it is broadcast to
-userland.
+On 04/18/2012 02:49 PM, H.J. Lu wrote:
+> 
+> I think you mentioned to me about this. Have you opened a gcc bug to
+> request to this feature?
+> 
 
-Specific device drivers, in particular those with report fixup
-routines, are not affected by this patch.
+I have not, I don't think.  I thought you said you would do it, but
+maybe I misremember.
 
-Signed-off-by: Henrik Rydberg <rydberg@euromail.se>
----
- drivers/hid/hid-core.c |   12 +++++++++++-
- 1 file changed, 11 insertions(+), 1 deletion(-)
+	-hpa
 
-diff --git a/drivers/hid/hid-core.c b/drivers/hid/hid-core.c
-index f5a9660..1c4db36 100644
---- a/drivers/hid/hid-core.c
-+++ b/drivers/hid/hid-core.c
-@@ -662,7 +662,7 @@ int hid_parse_report(struct hid_device *device, __u8 *start,
- 		hid_parser_reserved
- 	};
- 
--	if (device->driver->report_fixup)
-+	if (device->driver && device->driver->report_fixup)
- 		start = device->driver->report_fixup(device, start, &size);
- 
- 	device->rdesc = kmemdup(start, size, GFP_KERNEL);
-@@ -2093,6 +2093,16 @@ int hid_add_device(struct hid_device *hdev)
-             && (hid_ignore(hdev) || (hdev->quirks & HID_QUIRK_IGNORE)))
- 		return -ENODEV;
- 
-+	/*
-+	 * Parse generically handled devices early to allow for
-+	 * report-defined device groups.
-+	 */
-+	if (!hid_match_id(hdev, hid_have_special_driver)) {
-+		ret = hid_parse(hdev);
-+		if (ret)
-+			return ret;
-+	}
-+
- 	/* XXX hack, any other cleaner solution after the driver core
- 	 * is converted to allow more than 20 bytes as the device name? */
- 	dev_set_name(&hdev->dev, "%04X:%04X:%04X.%04X", hdev->bus,
+
 -- 
-1.7.10
+H. Peter Anvin, Intel Open Source Technology Center
+I work for Intel.  I don't speak on their behalf.
 
