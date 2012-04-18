@@ -1,36 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751501Ab2DRHqX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Apr 2012 03:46:23 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:58079 "EHLO
+	id S1751411Ab2DRHss (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Apr 2012 03:48:48 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:43188 "EHLO
 	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750891Ab2DRHqW convert rfc822-to-8bit (ORCPT
+	with ESMTP id S1751202Ab2DRHsq convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Apr 2012 03:46:22 -0400
+	Wed, 18 Apr 2012 03:48:46 -0400
 MIME-Version: 1.0
-In-Reply-To: <1334695036-19977-4-git-send-email-richard@nod.at>
-References: <1334695036-19977-1-git-send-email-richard@nod.at>
-	<1334695036-19977-4-git-send-email-richard@nod.at>
-Date: Wed, 18 Apr 2012 09:46:21 +0200
-X-Google-Sender-Auth: FJJV1mfBauKTrZgd4IFReB4lHnc
-Message-ID: <CAMuHMdXXGSyQN0U_KntTn3ydeZ7tAqJh2445ptvo+GYwV_SNMg@mail.gmail.com>
-Subject: Re: [uml-devel] [PATCH 4/4] irq: Remove irq_chip->release()
+In-Reply-To: <20120418030524.GD21302@windriver.com>
+References: <20120418030524.GD21302@windriver.com>
+Date: Wed, 18 Apr 2012 09:48:46 +0200
+X-Google-Sender-Auth: dbNAY4vsCfst1vg_420GSUKMUZI
+Message-ID: <CAMuHMdU2LR2xKNsdq6mPENSZsWU0MxExwbL9NK2x=6eTMr+k+w@mail.gmail.com>
+Subject: Re: linux-next: triage for April 17, 2012
 From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Richard Weinberger <richard@nod.at>
-Cc: user-mode-linux-devel@lists.sourceforge.net, tglx@linutronix.de,
-        linux-kernel@vger.kernel.org
+To: Paul Gortmaker <paul.gortmaker@windriver.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 17, 2012 at 22:37, Richard Weinberger <richard@nod.at> wrote:
-> As it's only user (UML) does no longer need it we can get
-> rid of it.
+On Wed, Apr 18, 2012 at 05:05, Paul Gortmaker
+<paul.gortmaker@windriver.com> wrote:
+> m68k:allmodconfig
+>        when:   Mar 16
+>        why:    persistent_ram.c: implicit declaration of 'memblock_reserve'
+>        status:
+>        fix:
+>        ref:    http://kisskb.ellerman.id.au/kisskb/buildresult/5884324/
+>        ref:    http://www.spinics.net/lists/linux-next/msg19343.html
 
-But now all drivers have to call um_free_irq() instead of free_irq()?
-Are there any generic drivers not specific to UML we do want to use on UML?
+This has been fixed since a while.
 
 Gr{oetje,eeting}s,
 
