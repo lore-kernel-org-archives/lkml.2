@@ -1,62 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753588Ab2DRAzg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Apr 2012 20:55:36 -0400
-Received: from csamuel.org ([74.50.50.137]:39200 "EHLO csamuel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752214Ab2DRAze (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Apr 2012 20:55:34 -0400
-X-Greylist: delayed 493 seconds by postgrey-1.27 at vger.kernel.org; Tue, 17 Apr 2012 20:55:34 EDT
-Message-ID: <4F8E0EFF.4090007@csamuel.org>
-Date: Wed, 18 Apr 2012 10:46:55 +1000
-From: Chris Samuel <chris@csamuel.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120329 Thunderbird/11.0.1
+	id S1753748Ab2DRA4s (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Apr 2012 20:56:48 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:54353 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752229Ab2DRA4r (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Apr 2012 20:56:47 -0400
 MIME-Version: 1.0
-To: Andreas Dilger <adilger@whamcloud.com>
-CC: Dave Chinner <david@fromorbit.com>, Jan Kara <jack@suse.cz>,
-        Al Viro <viro@ZenIV.linux.org.uk>, dchinner@redhat.com,
-        LKML <linux-kernel@vger.kernel.org>, linux-fsdevel@vger.kernel.org,
-        Alex Elder <elder@kernel.org>, Anton Altaparmakov <anton@tuxera.com>,
-        Ben Myers <bpm@sgi.com>, Chris Mason <chris.mason@oracle.com>,
-        cluster-devel@redhat.com, "David S. Miller" <davem@davemloft.net>,
-        fuse-devel@lists.sourceforge.net,
-        "J. Bruce Fields" <bfields@fieldses.org>,
-        Joel Becker <jlbec@evilplan.org>,
-        KONISHI Ryusuke <konishi.ryusuke@lab.ntt.co.jp>,
-        linux-btrfs@vger.kernel.org, linux-ext4@vger.kernel.org,
-        linux-nfs@vger.kernel.org, linux-nilfs@vger.kernel.org,
-        linux-ntfs-dev@lists.sourceforge.net, Mark Fasheh <mfasheh@suse.com>,
-        Miklos Szeredi <miklos@szeredi.hu>, ocfs2-devel@oss.oracle.com,
-        OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>,
-        Steven Whitehouse <swhiteho@redhat.com>,
-        "Theodore Ts'o" <tytso@mit.edu>, xfs@oss.sgi.com
-Subject: Re: [PATCH 00/19 v5] Fix filesystem freezing deadlocks
-References: <1334592845-22862-1-git-send-email-jack@suse.cz> <C9A0E2F0-ED57-40D6-9F75-5D72D45D21F0@dilger.ca> <20120417004329.GE6734@dastard> <141752A3-EDF1-4ABC-919D-4170B0455948@whamcloud.com>
-In-Reply-To: <141752A3-EDF1-4ABC-919D-4170B0455948@whamcloud.com>
+In-Reply-To: <20120417234423.GY6589@ZenIV.linux.org.uk>
+References: <20120417052511.GU6589@ZenIV.linux.org.uk> <CA+55aFw75=Mtq1njQ9vNmNsGuTPbpUhLHnb7YBLmCZs4Q5ByMA@mail.gmail.com>
+ <20120417180129.GW6589@ZenIV.linux.org.uk> <20120417182825.GX6589@ZenIV.linux.org.uk>
+ <20120417211419.GC27426@fieldses.org> <CA+55aFwdh_QWG-R2FQ71kDXiNYZ04qPANBsY_PssVUwEBH4uSw@mail.gmail.com>
+ <20120417234423.GY6589@ZenIV.linux.org.uk>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Tue, 17 Apr 2012 17:56:24 -0700
+X-Google-Sender-Auth: _dimqcQIXhBtd48_XJbwBBEm3JQ
+Message-ID: <CA+55aFw4ZUvqLKtNTrwfsXx0bVmgHWH+6BDeXGa4+EGY1xYQQw@mail.gmail.com>
+Subject: Re: [git pull] vfs and fs fixes
+To: Al Viro <viro@zeniv.linux.org.uk>
+Cc: "J. Bruce Fields" <bfields@fieldses.org>, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 17/04/12 15:10, Andreas Dilger wrote:
+On Tue, Apr 17, 2012 at 4:44 PM, Al Viro <viro@zeniv.linux.org.uk> wrote:
+>
+> In principle, yes, but have you tried to grep for i_mutex?
 
-> (which IMHO would prevent nearly every Gnome system from freezing unless these
-> apps have changed their behaviour in more recent releases).
+No, I hadn't, and right you are. That's a mess.
 
-It would also affect current KDE desktops as they tend to use MySQL for
-Akonadi & Nepomuk, plus anyone using Chromium (and presumably Chrome):
+It's not the i_mutex hits themselves that look scary, but there's 75
+hits on just the *nested* locking. That's way more than I would have
+guessed without the grep.
 
-samuel@eris:/tmp$ sudo lsof | grep deleted | awk '{print $1}' | sort |
-uniq -c
-[sudo] password for samuel:
-     32 chromium-
-      1 dovecot
-      5 imap-logi
-      5 mysqld
+The ext4 ones look pretty simple. But yeah, there's a lot of other
+noise there...
 
-I would be surprised if you could find many systems that didn't have
-files in this situation.
-
--- 
- Chris Samuel  :  http://www.csamuel.org/  :  Melbourne, VIC
+                    Linus
