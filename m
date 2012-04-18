@@ -1,104 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753968Ab2DRQKY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Apr 2012 12:10:24 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:3361 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752881Ab2DRQKX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Apr 2012 12:10:23 -0400
-Date: Wed, 18 Apr 2012 19:10:29 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Paolo Bonzini <pbonzini@redhat.com>
-Cc: linux-kernel@vger.kernel.org, virtualization@lists.linux-foundation.org,
-        Amit Shah <amit.shah@redhat.com>,
-        Rusty Russell <rusty@rustcorp.com.au>
-Subject: Re: [RFC PATCH] virtio_console: link vq to port with a private
- pointer in struct virtqueue
-Message-ID: <20120418161028.GB12815@redhat.com>
-References: <1334756013-11752-1-git-send-email-pbonzini@redhat.com>
- <20120418142146.GB11801@redhat.com>
- <4F8ED0E4.6000702@redhat.com>
+	id S1753649Ab2DRQM5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Apr 2012 12:12:57 -0400
+Received: from mail-vb0-f46.google.com ([209.85.212.46]:41079 "EHLO
+	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751320Ab2DRQMz convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Apr 2012 12:12:55 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4F8ED0E4.6000702@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Originating-IP: [69.196.158.137]
+In-Reply-To: <CADDKRnDJ_u7FkOHPDr0kJ+mh4k06wv2imVh8DV=GzDUQiKEWQw@mail.gmail.com>
+References: <CADDKRnALwHa=QteDDcMxBU24rfbKoTOGX=iTcfeE7=M7a+NFcw@mail.gmail.com>
+ <CADDKRnAhqi-fwFrr85QC-ZP2g0=_ZSb__jEbZqAekCKXs2CtCg@mail.gmail.com> <CADDKRnDJ_u7FkOHPDr0kJ+mh4k06wv2imVh8DV=GzDUQiKEWQw@mail.gmail.com>
+From: Sergio Correia <lists@uece.net>
+Date: Wed, 18 Apr 2012 12:12:33 -0400
+Message-ID: <CAJyhjX0QMf7FcDfx+KDggF7avBnRFcGX6KWy6hJZ_p=ceTFh+g@mail.gmail.com>
+Subject: Re: [v3.4-rc] regression: reboot not working
+To: =?ISO-8859-1?Q?J=F6rg_Otte?= <jrg.otte@googlemail.com>
+Cc: linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Len Brown <lenb@kernel.org>, hpa@zytor.com,
+        torvalds@linux-foundation.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 18, 2012 at 04:34:12PM +0200, Paolo Bonzini wrote:
-> Il 18/04/2012 16:21, Michael S. Tsirkin ha scritto:
-> >> @@ -1872,6 +1864,8 @@ static int virtcons_restore(struct virtio_device *vdev)
-> >>  	list_for_each_entry(port, &portdev->ports, list) {
-> >>  		port->in_vq = portdev->in_vqs[port->id];
-> >>  		port->out_vq = portdev->out_vqs[port->id];
-> >> +		port->in_vq->vdev_priv = port;
-> >> +		port->out_vq->vdev_priv = port;
-> >>  
-> >>  		fill_queue(port->in_vq, &port->inbuf_lock);
-> >>  
-> > 
-> > Let's add an API to set this pointer.
-> > Document that you must not set it after
-> > probe/restore returned.
-> 
-> Why?
+On Wed, Apr 18, 2012 at 12:00 PM, Jörg Otte <jrg.otte@googlemail.com> wrote:
+> 9 days and still no response. Maybe I addressed the wrong person(s).
+> I Cc to Linus.
+>
+> Who can help with this topic?
+>
 
-How would you prevent races if you do?
+CC'ing linux-acpi.
 
-> > With an API we can actually have a BUG_ON that checks it's not modified
-> > after probe.
-> > 
-> >> diff --git a/include/linux/virtio.h b/include/linux/virtio.h
-> >> index c193ccf..6b39c1a 100644
-> >> --- a/include/linux/virtio.h
-> >> +++ b/include/linux/virtio.h
-> >> @@ -14,6 +14,7 @@
-> >>   * @callback: the function to call when buffers are consumed (can be NULL).
-> >>   * @name: the name of this virtqueue (mainly for debugging)
-> >>   * @vdev: the virtio device this queue was created for.
-> >> + * @vdev_priv: a pointer for the virtio device to use.
-> > 
-> > It's for the driver actually.
-> 
-> Right.  However...
-
-pointer for a device can also be misunerstood as
-'pointer to a device'. Note priv below actually
-gets the correct meaning however you interpret 'for'.
-
-Better 'pointer for the virtqueue driver to use'.
-
-> 
-> >>   * @priv: a pointer for the virtqueue implementation to use.
-> >>   */
-> >>  struct virtqueue {
-> >> @@ -21,6 +22,7 @@ struct virtqueue {
-> >>  	void (*callback)(struct virtqueue *vq);
-> >>  	const char *name;
-> >>  	struct virtio_device *vdev;
-> >> +	void *vdev_priv;
-> >>  	void *priv;
-> > 
-> > The name is confusing: it seems to imply it's a device pointer.
-> 
-> ... it's private to the driver that owns vdev, hence the name.
-
-I own a car but I'm not called Michael Car :)
-driver_priv might be ok too. unfortunately virtio-pci
-is also a driver so it can be misunderstood.
-
-> > Maybe we should rename priv to something like __priv and make
-> > priv useful for devices?
-> 
-> I wanted to go for the smallest possible changes.  Right now we have 1
-> user for each member (virtio-ring vs. virtio-console) so neither member
-> is really dominating.
-> 
-> Paolo
-
-devices should dominate. ring is an implementation detail.
-
--- 
-MST
+> Thanks, Joerg
+>
+>
+>
+> Am 14. April 2012 12:46 schrieb Jörg Otte <jrg.otte@googlemail.com>:
+>> It's now bisected:
+>>
+>> cf450136bfde77c7f95065c91bffded4aa7fa731   ACPI: ignore FADT reset-reg-sup flag
+>>
+>> Thanks, Joerg
+>>
+>>
+>> Am 9. April 2012 17:19 schrieb Jörg Otte <jrg.otte@googlemail.com>:
+>>> Hi,
+>>>
+>>> On reboot it shuts down as normal.
+>>> The last lines displayed are:
+>>>
+>>>>.
+>>>>Unmounting temporary filesystems.. [OK]
+>>>>Deactivating swap...               [OK]
+>>>>Unmounting local filesystems...    [OK]
+>>>>Will now restart
+>>>>    Restarting system
+>>>
+>>> Then I hear it accessing the cd-drive, but then
+>>> it's being stuck.
+>>>
+>>> v3.3 was ok. HW is a Thinkpad T43.
+>>>
+>>> Please Cc me I'm not subscribed.
+>>>
+>>> Thanks,Joerg
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
