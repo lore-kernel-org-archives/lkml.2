@@ -1,64 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752788Ab2DRJuW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Apr 2012 05:50:22 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:35769 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1752506Ab2DRJuQ convert rfc822-to-8bit (ORCPT
+	id S1752344Ab2DRJyx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Apr 2012 05:54:53 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:58309 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751425Ab2DRJyw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Apr 2012 05:50:16 -0400
-X-IronPort-AV: E=Sophos;i="4.75,441,1330876800"; 
-   d="scan'208";a="4782477"
-Message-ID: <4F8E8E3D.8040707@cn.fujitsu.com>
-Date: Wed, 18 Apr 2012 17:49:49 +0800
-From: zhangyanfei <zhangyanfei@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100413 Fedora/3.0.4-2.fc13 Thunderbird/3.0.4
+	Wed, 18 Apr 2012 05:54:52 -0400
+Date: Wed, 18 Apr 2012 11:54:47 +0200
+From: Sascha Hauer <s.hauer@pengutronix.de>
+To: Rob Lee <rob.lee@linaro.org>
+Cc: kernel@pengutronix.de, shawn.guo@linaro.org, linaro-dev@lists.linaro.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        patches@linaro.org
+Subject: Re: [PATCH] ARM: imx: Fix imx5 idle logic bug
+Message-ID: <20120418095447.GP3852@pengutronix.de>
+References: <1334619468-25680-1-git-send-email-rob.lee@linaro.org>
+ <20120417081025.GN20478@pengutronix.de>
+ <CAMXH7KH6rdaUCsJxdj2pU0HrJ5ash5em2PMfyZHKTw+01Z=5nQ@mail.gmail.com>
 MIME-Version: 1.0
-To: Avi Kivity <avi@redhat.com>
-CC: mtosatti@redhat.com, ebiederm@xmission.com, luto@mit.edu,
-        joerg.roedel@amd.com, dzickus@redhat.com, paul.gortmaker@windriver.com,
-        gregkh@suse.de, ludwig.nussel@suse.de, linux-kernel@vger.kernel.org,
-        kvm@vger.kernel.org, kexec@lists.infradead.org
-Subject: Re: [PATCH 0/4] Export offsets of VMCS fields as note information
- for kdump
-References: <4F84E0DF.8040206@cn.fujitsu.com> <4F8D1F46.3090901@redhat.com> <4F8D4B4C.8070705@cn.fujitsu.com> <4F8D4D1C.4010400@redhat.com> <4F8E6DA5.8030503@cn.fujitsu.com> <4F8E7A5B.5030904@redhat.com>
-In-Reply-To: <4F8E7A5B.5030904@redhat.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/04/18 17:49:14,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/04/18 17:49:20
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CAMXH7KH6rdaUCsJxdj2pU0HrJ5ash5em2PMfyZHKTw+01Z=5nQ@mail.gmail.com>
+X-Sent-From: Pengutronix Hildesheim
+X-URL: http://www.pengutronix.de/
+X-IRC: #ptxdist @freenode
+X-Accept-Language: de,en
+X-Accept-Content-Type: text/plain
+X-Uptime: 11:54:33 up 157 days, 17:41, 94 users,  load average: 1.10, 0.92,
+ 0.68
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
+X-SA-Exim-Mail-From: sha@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-äºŽ 2012å¹´04æœˆ18æ—¥ 16:24, Avi Kivity å†™é“:
-> On 04/18/2012 10:30 AM, zhangyanfei wrote:
->>>
->>> Okay.  Do you expect it to help in debugging the crash?  Did you have
->>> cases where it would help?
->>>
->>
->> Yes, I do expect it to help in debugging the crash.
->> Looking into host machine's crash dump, if we figure out the fact that the crash
->> had happend when some host's resource was requested and used by some guset machine.
->> Then, we surely want to look into the situation from guest machine's view.
->>
->>
+On Tue, Apr 17, 2012 at 09:11:32AM -0500, Rob Lee wrote:
+> On Tue, Apr 17, 2012 at 3:10 AM, Sascha Hauer <s.hauer@pengutronix.de> wrote:
+> > On Mon, Apr 16, 2012 at 06:37:48PM -0500, Robert Lee wrote:
+> >> The imx5_idle() check of the tzic_eanble_wake() return value uses
+> >> incorrect (inverted) logic causing all attempt to idle to fail.
+> >>
+> >
+> > Does this have influence on current kernels or does this only trigger
+> > with your cpuidle patches?
 > 
-> What type of resource?  Can you give an example?
+> This influences non-cpuidle kernels also as imx5_idle is what
+> arm_pm_idle points to for imx51.
+
+Ok, Applied this one for -rc then
+
+Sascha
+
 > 
-Sorry. No concrete example for now.
+> >
+> > Sascha
+> >
+> >> Signed-off-by: Robert Lee <rob.lee@linaro.org>
+> >> ---
+> >>  arch/arm/mach-imx/mm-imx5.c |    2 +-
+> >>  1 file changed, 1 insertion(+), 1 deletion(-)
+> >>
+> >> diff --git a/arch/arm/mach-imx/mm-imx5.c b/arch/arm/mach-imx/mm-imx5.c
+> >> index 05250ae..e10f391 100644
+> >> --- a/arch/arm/mach-imx/mm-imx5.c
+> >> +++ b/arch/arm/mach-imx/mm-imx5.c
+> >> @@ -35,7 +35,7 @@ static void imx5_idle(void)
+> >>       }
+> >>       clk_enable(gpc_dvfs_clk);
+> >>       mx5_cpu_lp_set(WAIT_UNCLOCKED_POWER_OFF);
+> >> -     if (tzic_enable_wake() != 0)
+> >> +     if (!tzic_enable_wake())
+> >>               cpu_do_idle();
+> >>       clk_disable(gpc_dvfs_clk);
+> >>  }
+> >> --
+> >> 1.7.10
+> >>
+> >>
+> >> _______________________________________________
+> >> linux-arm-kernel mailing list
+> >> linux-arm-kernel@lists.infradead.org
+> >> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
+> >>
+> >
+> > --
+> > Pengutronix e.K.                           |                             |
+> > Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+> > Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
+> > Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
+> > --
+> > To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> > the body of a message to majordomo@vger.kernel.org
+> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> > Please read the FAQ at  http://www.tux.org/lkml/
+> 
 
-We are developing this on a conservative policy and I have put the vmcs processing
-in a new module in patch set v2 as you required. The new module is auto-loaded when
-the vmx cpufeature is detected and it depends on module kvm-intel. Loading and unloading
-this module will have no side effect on the running guests.
-
-And one thing I have to stress is that, we can see guest image as crash dump from
-guest machine's view if we have the vmcsinfo, this itself is useful.
-
-Thanks
-Zhang Yanfei
-
+-- 
+Pengutronix e.K.                           |                             |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
+Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
