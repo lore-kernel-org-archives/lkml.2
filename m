@@ -1,138 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751621Ab2DRG3w (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Apr 2012 02:29:52 -0400
-Received: from va3ehsobe006.messaging.microsoft.com ([216.32.180.16]:56250
-	"EHLO va3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750787Ab2DRG3v (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Apr 2012 02:29:51 -0400
-X-SpamScore: 1
-X-BigFish: VS1(zzzz1202hzz8275bhz2ei87h668h839hd24h)
-X-Forefront-Antispam-Report: CIP:193.138.13.20;KIP:(null);UIP:(null);IPV:NLI;H:oce-exbhcs03b.oce.net;RD:smtp02.oce.com;EFVD:NLI
-X-FB-DOMAIN-IP-MATCH: fail
-From: Ivo Sieben <meltedpianoman@gmail.com>
-To: Greg KH <gregkh@linuxfoundation.org>, Remy Bohmer <linux@bohmer.net>,
-        Chris Wright <chrisw@sous-sol.org>, <linux-kernel@vger.kernel.org>,
-        Jean Delvare <khali@linux-fr.org>,
-        Kevin Hilman <khilman@deeprootsystems.com>,
-        Wolfram Sang <w.sang@pengutronix.de>
-CC: Ivo Sieben <meltedpianoman@gmail.com>
-Subject: [PATCH-v4] Support M95040 SPI EEPROM
-Date: Wed, 18 Apr 2012 08:29:34 +0200
-Message-ID: <1334730574-31911-1-git-send-email-meltedpianoman@gmail.com>
-X-Mailer: git-send-email 1.7.0.4
-X-OriginalArrivalTime: 18 Apr 2012 06:29:39.0488 (UTC) FILETIME=[A1DB4200:01CD1D2C]
+	id S1752127Ab2DRGaJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Apr 2012 02:30:09 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:34453 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751478Ab2DRGaH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Apr 2012 02:30:07 -0400
+Date: Wed, 18 Apr 2012 08:30:00 +0200
+From: Jan Kara <jack@suse.cz>
+To: Tejun Heo <tj@kernel.org>
+Cc: Jan Kara <jack@suse.cz>, Vivek Goyal <vgoyal@redhat.com>,
+        Fengguang Wu <fengguang.wu@intel.com>, Jens Axboe <axboe@kernel.dk>,
+        linux-mm@kvack.org, sjayaraman@suse.com, andrea@betterlinux.com,
+        jmoyer@redhat.com, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, kamezawa.hiroyu@jp.fujitsu.com,
+        lizefan@huawei.com, containers@lists.linux-foundation.org,
+        cgroups@vger.kernel.org, ctalbott@google.com, rni@google.com,
+        lsf@lists.linux-foundation.org
+Subject: Re: [RFC] writeback and cgroup
+Message-ID: <20120418063000.GA21054@quack.suse.cz>
+References: <20120403183655.GA23106@dhcp-172-17-108-109.mtv.corp.google.com>
+ <20120404145134.GC12676@redhat.com>
+ <20120407080027.GA2584@quack.suse.cz>
+ <20120410180653.GJ21801@redhat.com>
+ <20120410210505.GE4936@quack.suse.cz>
+ <20120410212041.GP21801@redhat.com>
+ <20120410222425.GF4936@quack.suse.cz>
+ <20120411154005.GD16692@redhat.com>
+ <20120411192231.GF16008@quack.suse.cz>
+ <20120417220106.GF19975@google.com>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-OriginatorOrg: oce.com
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120417220106.GF19975@google.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Updated the generic SPI EEPROM driver AT25 for support of an additional address
-bit in the instruction byte. Certain EEPROMS have a size that is larger than the
-number of address bytes would allow (e.g. like M95040 from ST that has 512 Byte
-size but uses only one address byte (A0 to A7) for addressing.) For the extra
-address bit (A8, A16 or A24) bit 3 of the instruction byte is used. This
-instruction bit is normally defined as don't care for other AT25 like chips.
+  Hello,
 
-Reviewed-by: Wolfram Sang <w.sang@pengutronix.de>
-Signed-off-by: Ivo Sieben <meltedpianoman@gmail.com>
----
+On Tue 17-04-12 15:01:06, Tejun Heo wrote:
+> On Wed, Apr 11, 2012 at 09:22:31PM +0200, Jan Kara wrote:
+> > > So all the metadata IO will happen thorough journaling thread and that
+> > > will be in root group which should remain unthrottled. So any journal
+> > > IO going to disk should remain unthrottled.
+> >
+> >   Yes, that is true at least for ext3/ext4 or btrfs. In principle we don't
+> > have to have the journal thread (as is the case of reiserfs where random
+> > writer may end up doing commit) but let's not complicate things
+> > unnecessarily.
+> 
+> Why can't journal entries keep track of the originator so that bios
+> can be attributed to the originator while committing?  That shouldn't
+> be too difficult to implement, no?
+  I think I was just describing the current state but yes, in future we
+can track which cgroup first attached a buffer to a transaction.
 
-v4: Same patch as v3, only added the 'reviewed by' tag from Wolfram
+> > > Now, IIRC, fsync problem with throttling was that we had opened a
+> > > transaction but could not write it back to disk because we had to
+> > > wait for all the cached data to go to disk (which is throttled). So
+> > > my question is, can't we first wait for all the data to be flushed
+> > > to disk and then open a transaction for metadata. metadata will be
+> > > unthrottled so filesystem will not have to do any tricks like bdi is
+> > > congested or not.
+> >
+> >   Actually that's what's happening. We first do filemap_write_and_wait()
+> > which syncs all the data and then we go and force transaction commit to
+> > make sure all metadata got to stable storage. The problem is that writeout
+> > of data may need to allocate new blocks and that starts a transaction and
+> > while the transaction is started we may need to do some reads (e.g. of
+> > bitmaps etc.) which may be throttled and at that moment the whole
+> > filesystem is blocked. I don't remember the stack traces you showed me so
+> > I'm not sure it this is what your observed but it's certainly one possible
+> > scenario. The reason why fsync triggers problems is simply that it's the
+> > only place where process normally does significant amount of writing. In
+> > most cases flusher thread / journal thread do it so this effect is not
+> > visible. And to precede your question, it would be rather hard to avoid IO
+> > while the transaction is started due to locking.
+> 
+> Probably we should mark all IOs issued inside transaction as META (or
+> whatever which tells blkcg to avoid throttling it).  We're gonna need
+> overcharging for metadata writes anyway, so I don't think this will
+> make too much of a difference.
+  Agreed.
 
- drivers/misc/eeprom/at25.c |   19 ++++++++++++++++---
- include/linux/spi/eeprom.h |   10 ++++++++++
- 2 files changed, 26 insertions(+), 3 deletions(-)
-
-diff --git a/drivers/misc/eeprom/at25.c b/drivers/misc/eeprom/at25.c
-index c627e41..0d272c6 100644
---- a/drivers/misc/eeprom/at25.c
-+++ b/drivers/misc/eeprom/at25.c
-@@ -50,6 +50,7 @@ struct at25_data {
- #define	AT25_SR_BP1	0x08
- #define	AT25_SR_WPEN	0x80		/* writeprotect enable */
- 
-+#define	AT25_INSTR_BIT3	0x08		/* Additional address bit in instr */
- 
- #define EE_MAXADDRLEN	3		/* 24 bit addresses, up to 2 MBytes */
- 
-@@ -75,6 +76,7 @@ at25_ee_read(
- 	ssize_t			status;
- 	struct spi_transfer	t[2];
- 	struct spi_message	m;
-+	u8			instr;
- 
- 	if (unlikely(offset >= at25->bin.size))
- 		return 0;
-@@ -84,7 +86,12 @@ at25_ee_read(
- 		return count;
- 
- 	cp = command;
--	*cp++ = AT25_READ;
-+
-+	instr = AT25_READ;
-+	if (at25->chip.flags & EE_INSTR_BIT3_IS_ADDR)
-+		if (offset >= (1U << (at25->addrlen * 8)))
-+			instr |= AT25_INSTR_BIT3;
-+	*cp++ = instr;
- 
- 	/* 8/16/24-bit address is written MSB first */
- 	switch (at25->addrlen) {
-@@ -167,14 +174,14 @@ at25_ee_write(struct at25_data *at25, const char *buf, loff_t off,
- 	/* For write, rollover is within the page ... so we write at
- 	 * most one page, then manually roll over to the next page.
- 	 */
--	bounce[0] = AT25_WRITE;
- 	mutex_lock(&at25->lock);
- 	do {
- 		unsigned long	timeout, retries;
- 		unsigned	segment;
- 		unsigned	offset = (unsigned) off;
--		u8		*cp = bounce + 1;
-+		u8		*cp = bounce;
- 		int		sr;
-+		u8		instr;
- 
- 		*cp = AT25_WREN;
- 		status = spi_write(at25->spi, cp, 1);
-@@ -184,6 +191,12 @@ at25_ee_write(struct at25_data *at25, const char *buf, loff_t off,
- 			break;
- 		}
- 
-+		instr = AT25_WRITE;
-+		if (at25->chip.flags & EE_INSTR_BIT3_IS_ADDR)
-+			if (offset >= (1U << (at25->addrlen * 8)))
-+				instr |= AT25_INSTR_BIT3;
-+		*cp++ = instr;
-+
- 		/* 8/16/24-bit address is written MSB first */
- 		switch (at25->addrlen) {
- 		default:	/* case 3 */
-diff --git a/include/linux/spi/eeprom.h b/include/linux/spi/eeprom.h
-index 306e7b1..403e007 100644
---- a/include/linux/spi/eeprom.h
-+++ b/include/linux/spi/eeprom.h
-@@ -20,6 +20,16 @@ struct spi_eeprom {
- #define	EE_ADDR3	0x0004			/* 24 bit addrs */
- #define	EE_READONLY	0x0008			/* disallow writes */
- 
-+	/*
-+	 * Certain EEPROMS have a size that is larger than the number of address
-+	 * bytes would allow (e.g. like M95040 from ST that has 512 Byte size
-+	 * but uses only one address byte (A0 to A7) for addressing.) For
-+	 * the extra address bit (A8, A16 or A24) bit 3 of the instruction byte
-+	 * is used. This instruction bit is normally defined as don't care for
-+	 * other AT25 like chips.
-+	 */
-+#define EE_INSTR_BIT3_IS_ADDR	0x0010
-+
- 	/* for exporting this chip's data to other kernel code */
- 	void (*setup)(struct memory_accessor *mem, void *context);
- 	void *context;
--- 
-1.7.0.4
-
-
+								Honza
