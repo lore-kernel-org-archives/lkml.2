@@ -1,45 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752952Ab2DRDup (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Apr 2012 23:50:45 -0400
-Received: from tundra.namei.org ([65.99.196.166]:37612 "EHLO tundra.namei.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752148Ab2DRDuo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Apr 2012 23:50:44 -0400
-Date: Wed, 18 Apr 2012 13:50:43 +1000 (EST)
-From: James Morris <jmorris@namei.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-cc: linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [GIT] Security subsystem fixes for 3.4
-Message-ID: <alpine.LRH.2.02.1204181349550.24162@tundra.namei.org>
-User-Agent: Alpine 2.02 (LRH 1266 2009-07-14)
+	id S1752871Ab2DRDwn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Apr 2012 23:52:43 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:35343 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752523Ab2DRDwk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Apr 2012 23:52:40 -0400
+Date: Tue, 17 Apr 2012 20:52:21 -0700 (PDT)
+From: Hugh Dickins <hughd@google.com>
+X-X-Sender: hugh@eggly.anvils
+To: Mel Gorman <mgorman@suse.de>
+cc: Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Rik van Riel <riel@redhat.com>, Ken Chen <kenchen@google.com>,
+        Linux-MM <linux-mm@kvack.org>, Linux-S390 <linux-s390@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC PATCH] s390: mm: rmap: Transfer storage key to struct page
+ under the page lock
+In-Reply-To: <20120417122202.GF2359@suse.de>
+Message-ID: <alpine.LSU.2.00.1204172023390.1609@eggly.anvils>
+References: <20120416141423.GD2359@suse.de> <alpine.LSU.2.00.1204161332120.1675@eggly.anvils> <20120417122202.GF2359@suse.de>
+User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Please pull.
+On Tue, 17 Apr 2012, Mel Gorman wrote:
+> On Mon, Apr 16, 2012 at 02:14:09PM -0700, Hugh Dickins wrote:
+> > On Mon, 16 Apr 2012, Mel Gorman wrote:
+> > 
+> > > This patch is horribly ugly and there has to be a better way of doing
+> > > it. I'm looking for suggestions on what s390 can do here that is not
+> > > painful or broken. 
+> > > 
+> > > The following bug was reported on s390
+> > > 
+> > > kernel BUG at
+> > > /usr/src/packages/BUILD/kernel-default-3.0.13/linux-3.0/lib/radix-tree.c:477!
+>... 
+> > I'm confused as to whether you see this problem with file pages,
+> > or with anon-swap-cache pages, or with both, or not yet determined.
+> 
+> PageSwapCache pages only.
 
-The following changes since commit 592fe8980688e7cba46897685d014c7fb3018a67:
-  Linus Torvalds (1):
-        Merge tag 'ext4_for_linus' of git://git.kernel.org/.../tytso/ext4
+Oh good, thanks, that narrowed the search space a lot.
 
-are available in the git repository at:
+> > (You do remind me that I meant years ago to switch swapper_space over
+> > to the much simpler __set_page_dirty_no_writeback(), which shmem has
+> > used for ages; but as far as this problem goes, that would probably
+> > be at best a workaround, rather than the proper fix.)
+> 
+> It would be a workaround. If in the future we wanted to treat swapper
+> space more like a normal file inode and writeback dirty pages from
+> the flusher thread then this bug would just pop its head back up.
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/jmorris/linux-security.git for-linus
+It's a no-brainer workaround: patch and more explanation below.  I
+can double-fix it if you prefer, but the one-liner appeals more to me.
 
-Casey Schaufler (1):
-      Smack: move label list initialization
+> > Hmm, mm/migrate.c.
+> 
+> Migration moves the page mapping under the tree lock so
+> __set_page_dirty_nobuffers() I don't think that is it.
 
-Eric Paris (1):
-      fcaps: clear the same personality flags as suid when fcaps are used
+Yes, I was worried by the places that set page->mapping = NULL in
+migrate.c (later, not under the tree_lock), but those would not be able
+to generate this issue at all (ptes already replaced by migration entries).
 
-Jesper Juhl (1):
-      mpi: Avoid using freed pointer in mpi_lshift_limbs()
+> I think the race is against something like reuse_swap_page() which locks
+> the page and removes it from swap cache while page_remove_rmap() looks
+> up the same page.
 
- lib/mpi/mpi-bit.c          |    5 +++--
- security/commoncap.c       |    5 +++++
- security/smack/smack_lsm.c |   44 +++++++++++++++++++++++++++++++++-----------
- security/smack/smackfs.c   |   14 --------------
- 4 files changed, 41 insertions(+), 27 deletions(-)
+No, __delete_from_swap_cache() is always doing ClearPageSwapCache under
+tree_lock (which __set_page_dirty_no_buffers acquires before proceeding).
+
+
+[PATCH] mm: fix s390 BUG by using __set_page_dirty_no_writeback on swap
+
+Mel reports a BUG_ON(slot == NULL) in radix_tree_tag_set() on s390 3.0.13:
+called from __set_page_dirty_nobuffers() when page_remove_rmap() tries to
+transfer dirty flag from s390 storage key to struct page and radix_tree.
+
+That would be because of reclaim's shrink_page_list() calling add_to_swap()
+on this page at the same time: first PageSwapCache is set (causing
+page_mapping(page) to appear as &swapper_space), then page->private set,
+then tree_lock taken, then page inserted into radix_tree - so there's
+an interval before taking the lock when the radix_tree slot is empty.
+
+We could fix this by moving __add_to_swap_cache()'s spin_lock_irq up
+before SetPageSwapCache, with error case ClearPageSwapCache moved up
+under tree_lock too.
+
+But a better fix is just to do what's five years overdue.  Ken Chen
+added __set_page_dirty_no_writeback() (if !PageDirty TestSetPageDirty)
+for tmpfs to skip all that radix_tree overhead, and swap is just the same:
+it ignores the radix_tree tag, and does not participate in dirty page
+accounting, so should be using __set_page_dirty_no_writeback() too.
+
+Reported-by: Mel Gorman <mgorman@suse.de>
+Signed-off-by: Hugh Dickins <hughd@google.com>
+Cc: stable@kernel.org
+---
+
+ mm/swap_state.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+--- 3.4-rc2/mm/swap_state.c	2012-03-31 17:42:26.949729938 -0700
++++ linux/mm/swap_state.c	2012-04-17 15:34:05.732086663 -0700
+@@ -26,7 +26,7 @@
+  */
+ static const struct address_space_operations swap_aops = {
+ 	.writepage	= swap_writepage,
+-	.set_page_dirty	= __set_page_dirty_nobuffers,
++	.set_page_dirty	= __set_page_dirty_no_writeback,
+ 	.migratepage	= migrate_page,
+ };
+ 
