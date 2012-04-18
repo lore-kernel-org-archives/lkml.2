@@ -1,36 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753140Ab2DRLiw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Apr 2012 07:38:52 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:37125 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752064Ab2DRLiv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Apr 2012 07:38:51 -0400
+	id S1753221Ab2DRLjR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Apr 2012 07:39:17 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:55568 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752064Ab2DRLjQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Apr 2012 07:39:16 -0400
+Date: Wed, 18 Apr 2012 13:39:06 +0200 (CEST)
+From: Lukas Czerner <lczerner@redhat.com>
+X-X-Sender: lukas@dhcp-27-109.brq.redhat.com
+To: Zheng Liu <gnehzuil.liu@gmail.com>
+cc: Andreas Dilger <adilger@whamcloud.com>, Eric Sandeen <sandeen@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        "linux-ext4@vger.kernel.org" <linux-ext4@vger.kernel.org>,
+        Zheng Liu <wenqing.lz@taobao.com>
+Subject: Re: [RFC][PATCH 0/3] add FALLOC_FL_NO_HIDE_STALE flag in fallocate
+In-Reply-To: <20120418113810.GA3447@gmail.com>
+Message-ID: <alpine.LFD.2.00.1204181336440.5310@dhcp-27-109.brq.redhat.com>
+References: <1334681618-9452-1-git-send-email-wenqing.lz@taobao.com> <4F8DAAFE.40500@redhat.com> <D225F088-A53F-4962-97AD-13C850BBA722@whamcloud.com> <20120418113810.GA3447@gmail.com>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
-In-Reply-To: <1334646046-467-1-git-send-email-b29396@freescale.com>
-References: <1334646046-467-1-git-send-email-b29396@freescale.com>
-Date: Wed, 18 Apr 2012 13:38:51 +0200
-Message-ID: <CACRpkdaBUDmHhq=Cr17F9TTy=Qp+RQaVj=N2BCExZBTYsU9Z6Q@mail.gmail.com>
-Subject: Re: [PATCH v2 1/2] pinctrl: show pin name when request pins
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Dong Aisheng <b29396@freescale.com>
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linus.walleij@stericsson.com, swarren@wwwdotorg.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 17, 2012 at 9:00 AM, Dong Aisheng <b29396@freescale.com> wrote:
+On Wed, 18 Apr 2012, Zheng Liu wrote:
 
-> From: Dong Aisheng <dong.aisheng@linaro.org>
->
-> Pin name is more useful to users.
->
-> Signed-off-by: Dong Aisheng <dong.aisheng@linaro.org>
+> > I auspect the real problem may be the lazy inode table zeroing being done in the kernel. If the test is run immediately after formatting the filesystem, then the kernel thread is busy writing to the disk in the background and interfering with your benchmark.
+> > 
+> > Please format the filesystem with "-E lazy-itable-init=0", to avoid this behavior.  
+> 
+> I format the filesystem with this option, but it seems that it is
+> useless.
 
-Thanks, applied with Stephen's ACK.
+What do you mean by that ? It does not work as it's supposed to ?
+ext4lazyinit kernel thread is still running ? Or the slowdown was not
+caused by the lazy init in the first place ?
 
-Yours,
-Linus Walleij
+Thanks!
+-Lukas
