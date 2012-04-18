@@ -1,124 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754846Ab2DRThS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Apr 2012 15:37:18 -0400
-Received: from mgw2.diku.dk ([130.225.96.92]:39817 "EHLO mgw2.diku.dk"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754820Ab2DRThP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1754824Ab2DRThP (ORCPT <rfc822;w@1wt.eu>);
 	Wed, 18 Apr 2012 15:37:15 -0400
-From: Julia Lawall <Julia.Lawall@lip6.fr>
-To: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
-Cc: kernel-janitors@vger.kernel.org, linux-fbdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] drivers/video/ep93xx-fb.c: clean up error-handling code
-Date: Wed, 18 Apr 2012 21:37:08 +0200
-Message-Id: <1334777828-3557-1-git-send-email-Julia.Lawall@lip6.fr>
-X-Mailer: git-send-email 1.7.3.4
+Received: from shards.monkeyblade.net ([198.137.202.13]:40901 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753066Ab2DRThN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Apr 2012 15:37:13 -0400
+Date: Wed, 18 Apr 2012 15:37:10 -0400 (EDT)
+Message-Id: <20120418.153710.430492542259953028.davem@davemloft.net>
+To: xiong@qca.qualcomm.com
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        qca-linux-team@qualcomm.com, nic-devel@qualcomm.com
+Subject: Re: [PATCH 00/12] atl1c: update hardware settings - v1
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1334727156-6830-1-git-send-email-xiong@qca.qualcomm.com>
+References: <1334727156-6830-1-git-send-email-xiong@qca.qualcomm.com>
+X-Mailer: Mew version 6.4 on Emacs 24.0.95 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Wed, 18 Apr 2012 12:37:12 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Julia Lawall <Julia.Lawall@lip6.fr>
+From: xiong <xiong@qca.qualcomm.com>
+Date: Wed, 18 Apr 2012 13:32:24 +0800
 
-There were two problems in this code: failure of the setup function should
-free locally allocated resources like other nearby failures, and the test
-if (&info->cmap) can never be false.  To generally clean things up, this
-patch reorders the error handling code at the failed label and adds labels
-so that the conditionals are not necessary.
+> This update contains a serial of patches, most of them are hardware
+> settings related. register definitions are refined (or removed if 
+> meaningless) for each patch.
+> 
+> This is the first serial patches, after reviewed/applied the second
+> serial will be out.
+> 
+> These patches have addressed all sparse and checkpatch warnings.
+> 
+> Following NICs are tested:
+> AR8131/AR8132/AR8151A/AR8152A/AR8152B
+> Test item includes:
+> build/install/uninstall/dhcp/ping/iperf/wol/reboot/etc.
 
-Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
-
----
-Not tested.
-
- drivers/video/ep93xx-fb.c |   32 +++++++++++++++++---------------
- 1 file changed, 17 insertions(+), 15 deletions(-)
-
-diff --git a/drivers/video/ep93xx-fb.c b/drivers/video/ep93xx-fb.c
-index f8babbe..345d962 100644
---- a/drivers/video/ep93xx-fb.c
-+++ b/drivers/video/ep93xx-fb.c
-@@ -507,16 +507,16 @@ static int __devinit ep93xxfb_probe(struct platform_device *pdev)
- 
- 	err = fb_alloc_cmap(&info->cmap, 256, 0);
- 	if (err)
--		goto failed;
-+		goto failed_cmap;
- 
- 	err = ep93xxfb_alloc_videomem(info);
- 	if (err)
--		goto failed;
-+		goto failed_videomem;
- 
- 	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
- 	if (!res) {
- 		err = -ENXIO;
--		goto failed;
-+		goto failed_resource;
- 	}
- 
- 	/*
-@@ -532,7 +532,7 @@ static int __devinit ep93xxfb_probe(struct platform_device *pdev)
- 	fbi->mmio_base = ioremap(res->start, resource_size(res));
- 	if (!fbi->mmio_base) {
- 		err = -ENXIO;
--		goto failed;
-+		goto failed_resource;
- 	}
- 
- 	strcpy(info->fix.id, pdev->name);
-@@ -553,24 +553,24 @@ static int __devinit ep93xxfb_probe(struct platform_device *pdev)
- 	if (err == 0) {
- 		dev_err(info->dev, "No suitable video mode found\n");
- 		err = -EINVAL;
--		goto failed;
-+		goto failed_mode;
- 	}
- 
- 	if (mach_info->setup) {
- 		err = mach_info->setup(pdev);
- 		if (err)
--			return err;
-+			goto failed_mode;
- 	}
- 
- 	err = ep93xxfb_check_var(&info->var, info);
- 	if (err)
--		goto failed;
-+		goto failed_check;
- 
- 	fbi->clk = clk_get(info->dev, NULL);
- 	if (IS_ERR(fbi->clk)) {
- 		err = PTR_ERR(fbi->clk);
- 		fbi->clk = NULL;
--		goto failed;
-+		goto failed_check;
- 	}
- 
- 	ep93xxfb_set_par(info);
-@@ -585,15 +585,17 @@ static int __devinit ep93xxfb_probe(struct platform_device *pdev)
- 	return 0;
- 
- failed:
--	if (fbi->clk)
--		clk_put(fbi->clk);
--	if (fbi->mmio_base)
--		iounmap(fbi->mmio_base);
--	ep93xxfb_dealloc_videomem(info);
--	if (&info->cmap)
--		fb_dealloc_cmap(&info->cmap);
-+	clk_put(fbi->clk);
-+failed_check:
- 	if (fbi->mach_info->teardown)
- 		fbi->mach_info->teardown(pdev);
-+failed_mode:
-+	iounmap(fbi->mmio_base);
-+failed_resource:
-+	ep93xxfb_dealloc_videomem(info);
-+failed_videomem:
-+	fb_dealloc_cmap(&info->cmap);
-+failed_cmap:
- 	kfree(info);
- 	platform_set_drvdata(pdev, NULL);
- 
-
+All applied, thanks.
