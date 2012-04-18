@@ -1,51 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754105Ab2DRPpH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Apr 2012 11:45:07 -0400
-Received: from mail-wi0-f178.google.com ([209.85.212.178]:59573 "EHLO
-	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750856Ab2DRPpF (ORCPT
+	id S1754100Ab2DRPt4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Apr 2012 11:49:56 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:34011 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1753872Ab2DRPtz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Apr 2012 11:45:05 -0400
-Date: Wed, 18 Apr 2012 18:44:48 +0300
-From: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
-To: Catalin Marinas <catalin.marinas@arm.com>
-Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: [PATCH] kmemleak: do not leak object after tree insertion error (v3)
-Message-ID: <20120418154448.GA3617@swordfish.minsk.epam.com>
+	Wed, 18 Apr 2012 11:49:55 -0400
+Date: Wed, 18 Apr 2012 11:49:54 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Masanari Iida <standby24x7@gmail.com>
+cc: linux-usb@vger.kernel.org, <trivial@kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] [trivial] usb: Fix various typo within usb
+In-Reply-To: <1334761486-12817-1-git-send-email-standby24x7@gmail.com>
+Message-ID: <Pine.LNX.4.44L0.1204181134061.1548-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
- [PATCH] kmemleak: do not leak object after tree insertion error
+On Thu, 19 Apr 2012, Masanari Iida wrote:
 
- In case when tree insertion fails due to already existing object
- error, pointer to allocated object gets lost because of overwrite
- with lookup_object() return. Free allocated object before object
- lookup. 
+> Correct spelling typo within usb
 
- Signed-off-by: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+> --- a/drivers/usb/host/ehci-platform.c
+> +++ b/drivers/usb/host/ehci-platform.c
+> @@ -94,12 +94,12 @@ static int __devinit ehci_platform_probe(struct platform_device *dev)
+>  
+>  	irq = platform_get_irq(dev, 0);
+>  	if (irq < 0) {
+> -		pr_err("no irq provieded");
+> +		pr_err("no irq provided");
+>  		return irq;
+>  	}
+>  	res_mem = platform_get_resource(dev, IORESOURCE_MEM, 0);
+>  	if (!res_mem) {
+> -		pr_err("no memory recourse provieded");
+> +		pr_err("no memory recourse provided");
 
----
+This is a good thing to do, but you should fix the spelling of 
+"resource" as well.  Also in ohci-platform.c.
 
- mm/kmemleak.c |    1 +
- 1 file changed, 1 insertion(+)
+Alan Stern
 
-diff --git a/mm/kmemleak.c b/mm/kmemleak.c
-index 45eb621..5f05993 100644
---- a/mm/kmemleak.c
-+++ b/mm/kmemleak.c
-@@ -578,6 +578,7 @@ static struct kmemleak_object *create_object(unsigned long ptr, size_t size,
- 	if (node != &object->tree_node) {
- 		kmemleak_stop("Cannot insert 0x%lx into the object search tree "
- 			      "(already existing)\n", ptr);
-+		kmem_cache_free(object_cache, object);
- 		object = lookup_object(ptr, 1);
- 		spin_lock(&object->lock);
- 		dump_object_info(object);
 
