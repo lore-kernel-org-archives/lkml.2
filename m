@@ -1,121 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751268Ab2DRGZ4 (ORCPT <rfc822;w@1wt.eu>);
+	id S1751425Ab2DRG0J (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Apr 2012 02:26:09 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:42903 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751235Ab2DRGZ4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 18 Apr 2012 02:25:56 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:56851 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750781Ab2DRGZy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Apr 2012 02:25:54 -0400
 From: Venkatraman S <svenkatr@ti.com>
 To: <linux-kernel@vger.kernel.org>, <linux-mmc@vger.kernel.org>
 CC: <arnd.bergmann@linaro.org>, <cjb@laptop.org>, <alex.limberg@sandisk.com>,
         <ilan.smith@sandisk.com>, <lporzio@micron.com>,
-        Venkatraman S <svenkatr@ti.com>
-Subject: [RFC PATCH 00/11] [FS, MM, block, MMC]: eMMC High Priority Interrupt Feature
-Date: Wed, 18 Apr 2012 11:55:21 +0530
-Message-ID: <1334730332-22244-1-git-send-email-svenkatr@ti.com>
+        Venkatraman S <svenkatr@ti.com>,
+        Alex Lemberg <alex.lemberg@sandisk.com>
+Subject: [RFC PATCH 03/11] block: Add queue attributes to manage dpmg and swapin requests
+Date: Wed, 18 Apr 2012 11:55:24 +0530
+Message-ID: <1334730332-22244-4-git-send-email-svenkatr@ti.com>
 X-Mailer: git-send-email 1.7.10.rc2
+In-Reply-To: <1334730332-22244-1-git-send-email-svenkatr@ti.com>
+References: <1334730332-22244-1-git-send-email-svenkatr@ti.com>
 MIME-Version: 1.0
 Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(This is still work in progress. Posting for early review and suggestions)
+Add block queue properties to identify and manage demand paging
+and swap read requests differently. sysfs entries are included
+to enable or disable this feature at runtime.
 
-Standard eMMC (Embedded MultiMedia Card) specification expects to execute
-one request at a time. If some requests are more important than others, they
-can't be aborted while the flash procedure is in progress.
+Signed-off-by: Venkatraman S <svenkatr@ti.com>
+Signed-off-by: Ilan Smith <ilan.smith@sandisk.com>
+Signed-off-by: Alex Lemberg <alex.lemberg@sandisk.com>
+---
+ block/blk-sysfs.c      |   16 ++++++++++++++++
+ include/linux/blkdev.h |    8 ++++++++
+ 2 files changed, 24 insertions(+)
 
-New versions of the eMMC standard (4.41 and above) specfies a feature 
-called High Priority Interrupt (HPI). This enables an ongoing transaction
-to be aborted using a special command (HPI command) so that the card is ready
-to receive new commands immediately. Then the new request can be submitted
-to the card, and optionally the interrupted command can be resumed again.
-
-Some restrictions exist on when and how the command can be used. For example,
-only write and write-like commands (ERASE) can be preempted, and the urgent
-request must be a read.
-
-In order to support this in software,
-a) At the top level, some policy decisions have to be made on what is
-worth preempting for.
-	This implementation uses the demand paging requests and swap
-read requests as potential reads worth preempting an ongoing long write.
-	This is expected to provide improved responsiveness for smarphones
-with multitasking capabilities - example would be launch a email application
-while a video capture session (which causes long writes) is ongoing.
-b) At the block handler, the higher priority request should be queued
-  ahead of the pending requests in the elevator
-c) At the MMC block and core level, transactions have to executed to 
-enforce the rules of the MMC spec and make a reasonable tradeoff if the
-ongoing command is really worth preempting. (For example, is it too close
-to completing already ?).
-	The current implementation uses a fixed time logic. If 10ms has
-already elapsed since the first request was submitted, then a new high
-priority request would not cause a HPI, as it is expected that the first
-request would finish soon. Further work is needed to dynamically tune
-this value (maybe through sysfs) or automatically determine based on
-average write times of previous requests.
-d) At the lowest level (MMC host controllers), support interface to 
-provide a transition path for ongoing transactions to be aborted and the
-controller to be ready to receive next command.
-
-	More information about this feature can be found at
-Jedec Specification:-
-	http://www.jedec.org/standards-documents/docs/jesd84-a441
-Presentation on eMMC4.41 features:-
-	http://www.jedec.org/sites/.default/files/Victor_Tsai.pdf
-
-Still TODO:-
-	* Provide sysfs entry for tuning the threshold time for preemption
-	* Implement resuming of the preempted request by checking
-	  CORRECTLY_PROGRAMMED_SECTORS_NUM field.
-	* Provide implementation of abort_req for omap_hsmmc_driver
-		(This is almost done, needs a few tests)
-
-Acknowledgements:-	
-	In no particular order, thanks to Arnd Bergmann and  Saugata Das
-from Linaro, Ilan Smith and Alex Lemberg from Sandisk, Luca Porzio from Micron
-devices, Yejin Moon, Jae Hoon Chung from Samsung and others.
-
-----
-	This patch series depends on a few other related cleanups
-in MMC driver. All the patches and the dependent series can be
-pulled from 
-	git://github.com/svenkatr/linux.git my/mmc/3.4/foreground-hpiv1
-
-Ilan Smith (3):
-  fs: Add demand paging markers to filesystem
-  mm: Add page swapping markers to memory management
-  block: Expedite DMPG and SWAPIN requests ahead of the queue
-
-Venkatraman S (8):
-  block: Add queue attributes to manage dpmg and swapin requests
-  mmc: Add BKOPS field offsets
-  mmc: core: Helper function for finding preemptible command
-  mmc: core: add preemptibility tracking fields to mmc command
-  mmc: core: Add MMC abort interface
-  mmc: block: Detect HPI support in card and host controller
-  mmc: core: Utility function for mmc preemption sequence
-  mmc: block: Implement HPI invocation and handling for foreground
-    requests
-
- block/blk-core.c          |   18 ++++++
- block/blk-sysfs.c         |   16 ++++++
- drivers/mmc/card/block.c  |  138 ++++++++++++++++++++++++++++++++++++++++-----
- drivers/mmc/card/queue.h  |    1 +
- drivers/mmc/core/core.c   |   28 +++++++++
- fs/mpage.c                |    2 +
- include/linux/bio.h       |    8 +++
- include/linux/blk_types.h |    4 ++
- include/linux/blkdev.h    |    8 +++
- include/linux/mmc/core.h  |   19 +++++++
- include/linux/mmc/host.h  |    1 +
- include/linux/mmc/mmc.h   |    2 +
- mm/page_io.c              |    3 +-
- 13 files changed, 233 insertions(+), 15 deletions(-)
-
+diff --git a/block/blk-sysfs.c b/block/blk-sysfs.c
+index cf15001..764de9f 100644
+--- a/block/blk-sysfs.c
++++ b/block/blk-sysfs.c
+@@ -213,6 +213,8 @@ queue_store_##name(struct request_queue *q, const char *page, size_t count) \
+ }
+ 
+ QUEUE_SYSFS_BIT_FNS(nonrot, NONROT, 1);
++QUEUE_SYSFS_BIT_FNS(expedite_dmpg, EXP_DMPG, 0);
++QUEUE_SYSFS_BIT_FNS(expedite_swapin, EXP_SWAPIN, 0);
+ QUEUE_SYSFS_BIT_FNS(random, ADD_RANDOM, 0);
+ QUEUE_SYSFS_BIT_FNS(iostats, IO_STAT, 0);
+ #undef QUEUE_SYSFS_BIT_FNS
+@@ -387,6 +389,18 @@ static struct queue_sysfs_entry queue_random_entry = {
+ 	.store = queue_store_random,
+ };
+ 
++static struct queue_sysfs_entry queue_dmpg_entry = {
++	.attr = {.name = "expedite_demandpaging", .mode = S_IRUGO | S_IWUSR },
++	.show = queue_show_expedite_dmpg,
++	.store = queue_store_expedite_dmpg,
++};
++
++static struct queue_sysfs_entry queue_swapin_entry = {
++	.attr = {.name = "expedite_swapping", .mode = S_IRUGO | S_IWUSR },
++	.show = queue_show_expedite_swapin,
++	.store = queue_store_expedite_swapin,
++};
++
+ static struct attribute *default_attrs[] = {
+ 	&queue_requests_entry.attr,
+ 	&queue_ra_entry.attr,
+@@ -409,6 +423,8 @@ static struct attribute *default_attrs[] = {
+ 	&queue_rq_affinity_entry.attr,
+ 	&queue_iostats_entry.attr,
+ 	&queue_random_entry.attr,
++	&queue_dmpg_entry.attr,
++	&queue_swapin_entry.attr,
+ 	NULL,
+ };
+ 
+diff --git a/include/linux/blkdev.h b/include/linux/blkdev.h
+index 606cf33..fd620b9 100644
+--- a/include/linux/blkdev.h
++++ b/include/linux/blkdev.h
+@@ -420,6 +420,8 @@ struct request_queue {
+ #define QUEUE_FLAG_ADD_RANDOM  16	/* Contributes to random pool */
+ #define QUEUE_FLAG_SECDISCARD  17	/* supports SECDISCARD */
+ #define QUEUE_FLAG_SAME_FORCE  18	/* force complete on same CPU */
++#define QUEUE_FLAG_EXP_DMPG    19	/* Expedite Demand paging requests */
++#define QUEUE_FLAG_EXP_SWAPIN  20	/* Expedit page swapping */
+ 
+ #define QUEUE_FLAG_DEFAULT	((1 << QUEUE_FLAG_IO_STAT) |		\
+ 				 (1 << QUEUE_FLAG_STACKABLE)	|	\
+@@ -506,6 +508,12 @@ static inline void queue_flag_clear(unsigned int flag, struct request_queue *q)
+ #define blk_queue_secdiscard(q)	(blk_queue_discard(q) && \
+ 	test_bit(QUEUE_FLAG_SECDISCARD, &(q)->queue_flags))
+ 
++#define blk_queue_exp_dmpg(q) \
++	test_bit(QUEUE_FLAG_EXP_DMPG, &(q)->queue_flags)
++
++#define blk_queue_exp_swapin(q) \
++	test_bit(QUEUE_FLAG_EXP_SWAPIN, &(q)->queue_flags)
++
+ #define blk_noretry_request(rq) \
+ 	((rq)->cmd_flags & (REQ_FAILFAST_DEV|REQ_FAILFAST_TRANSPORT| \
+ 			     REQ_FAILFAST_DRIVER))
 -- 
 1.7.10.rc2
 
