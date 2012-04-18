@@ -1,47 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754384Ab2DRSaD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Apr 2012 14:30:03 -0400
-Received: from e6.ny.us.ibm.com ([32.97.182.146]:46239 "EHLO e6.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752473Ab2DRS3z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Apr 2012 14:29:55 -0400
-Message-ID: <4F8F0811.5060407@linaro.org>
-Date: Wed, 18 Apr 2012 11:29:37 -0700
-From: John Stultz <john.stultz@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120329 Thunderbird/11.0.1
-MIME-Version: 1.0
-To: Mark Lord <kernel@teksavvy.com>
-CC: richard -rw- weinberger <richard.weinberger@gmail.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        rtc-linux@googlegroups.com, Alessandro Zummo <a.zummo@towertech.it>,
-        Greg Kroah-Hartman <greg@kroah.com>, stable@vger.kernel.org,
-        Rabin Vincent <rabin.vincent@stericsson.com>
-Subject: Re: [REGRESSION] rtc/interface.c: kills suspend-to-ram
-References: <4F8BA1C1.4030804@teksavvy.com> <4F8C24E5.4020703@teksavvy.com> <CAFLxGvzkcYw-iUA1X8jK+Q8A2HFEG1SSXvfZ3Uj+OwKWgi+zAA@mail.gmail.com> <4F8C3DDF.8030103@teksavvy.com> <CAFLxGvy=3SHKFYoSfUcQrJKsCYWq5Fxpi4q_DTQjjFNDSSnJOw@mail.gmail.com> <4F8C415C.80806@teksavvy.com> <4F8C76EB.20709@linaro.org> <4F8C926D.2040503@linaro.org> <4F8CD5D3.8060006@teksavvy.com> <4F8CFC12.6050700@linaro.org> <4F8DCE74.2020906@teksavvy.com> <4F8DF673.8050605@linaro.org> <4F8E18FA.7040602@teksavvy.com>
-In-Reply-To: <4F8E18FA.7040602@teksavvy.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+	id S1754211Ab2DRSaB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Apr 2012 14:30:01 -0400
+Received: from e06smtp14.uk.ibm.com ([195.75.94.110]:43152 "EHLO
+	e06smtp14.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753391Ab2DRS36 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Apr 2012 14:29:58 -0400
+Date: Wed, 18 Apr 2012 20:29:49 +0200
+From: Martin Schwidefsky <schwidefsky@de.ibm.com>
+To: Mel Gorman <mgorman@suse.de>
+Cc: Hugh Dickins <hughd@google.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Rik van Riel <riel@redhat.com>, Ken Chen <kenchen@google.com>,
+        Linux-MM <linux-mm@kvack.org>, Linux-S390 <linux-s390@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC PATCH] s390: mm: rmap: Transfer storage key to struct page
+ under the page lock
+Message-ID: <20120418202949.13c484f1@de.ibm.com>
+In-Reply-To: <20120418152831.GK2359@suse.de>
+References: <20120416141423.GD2359@suse.de>
+	<alpine.LSU.2.00.1204161332120.1675@eggly.anvils>
+	<20120417122202.GF2359@suse.de>
+	<alpine.LSU.2.00.1204172023390.1609@eggly.anvils>
+	<20120418152831.GK2359@suse.de>
+Organization: IBM Corporation
+X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12041818-1976-0000-0000-00000C72803B
+x-cbid: 12041818-1948-0000-0000-0000018F2DF9
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/17/2012 06:29 PM, Mark Lord wrote:
-> I'll give the suggestions above a go when I get the system back.
-> Right now it's out on loan for application testing.
->
-> And there is a simple workaround for that system, which I'm now using:
-> just disable the RTC Alarm in the BIOS and the issue goes away.
-> And as you point out, hwclock does seem to be diddling with the Alarm
-> for some reason, so I'm feeling this isn't so important any more.
->
-> But as we've gone this far, I will instrument things as requested
-> when I get the system back in a few days.
-Once again, thanks so much for reporting the issue and help with 
-testing! I know going through remote diagnostics is a pain, especially 
-when you have a workaround. :)  Anyway, your help here is very much 
-appreciated.
--john
+On Wed, 18 Apr 2012 16:28:31 +0100
+Mel Gorman <mgorman@suse.de> wrote:
+
+> > <SNIP>
+> >
+> > [PATCH] mm: fix s390 BUG by using __set_page_dirty_no_writeback on swap
+> > 
+> > Mel reports a BUG_ON(slot == NULL) in radix_tree_tag_set() on s390 3.0.13:
+> > called from __set_page_dirty_nobuffers() when page_remove_rmap() tries to
+> > transfer dirty flag from s390 storage key to struct page and radix_tree.
+> > 
+> > That would be because of reclaim's shrink_page_list() calling add_to_swap()
+> > on this page at the same time: first PageSwapCache is set (causing
+> > page_mapping(page) to appear as &swapper_space), then page->private set,
+> > then tree_lock taken, then page inserted into radix_tree - so there's
+> > an interval before taking the lock when the radix_tree slot is empty.
+> > 
+> 
+> Yes, makes sense.
+> 
+> > We could fix this by moving __add_to_swap_cache()'s spin_lock_irq up
+> > before SetPageSwapCache, with error case ClearPageSwapCache moved up
+> > under tree_lock too.
+> > 
+> 
+> This can be done if/when swapper_space can make proper use of the dirty
+> tag information.
+> 
+> > But a better fix is just to do what's five years overdue.  Ken Chen
+> > added __set_page_dirty_no_writeback() (if !PageDirty TestSetPageDirty)
+> > for tmpfs to skip all that radix_tree overhead, and swap is just the same:
+> > it ignores the radix_tree tag, and does not participate in dirty page
+> > accounting, so should be using __set_page_dirty_no_writeback() too.
+> > 
+> > Reported-by: Mel Gorman <mgorman@suse.de>
+> > Signed-off-by: Hugh Dickins <hughd@google.com>
+> 
+> Acked-by: Mel Gorman <mgorman@suse.de>
+> 
+> I've sent a kernel based on this patch to the s390 folk that originally
+> reported the bug. Hopefully they'll test and get back to me in a few
+> days.
+> 
+> Thanks Hugh.
+
+Indeed, thanks Hugh. The patches so far were not pretty at all.. 
+
+
+-- 
+blue skies,
+   Martin.
+
+"Reality continues to ruin my life." - Calvin.
 
