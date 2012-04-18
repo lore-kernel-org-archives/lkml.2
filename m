@@ -1,100 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755163Ab2DRU61 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Apr 2012 16:58:27 -0400
-Received: from mail-pz0-f52.google.com ([209.85.210.52]:57556 "EHLO
-	mail-pz0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754340Ab2DRU6Z convert rfc822-to-8bit (ORCPT
+	id S1752986Ab2DRVIc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Apr 2012 17:08:32 -0400
+Received: from rcsinet15.oracle.com ([148.87.113.117]:26169 "EHLO
+	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752102Ab2DRVIb convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Apr 2012 16:58:25 -0400
+	Wed, 18 Apr 2012 17:08:31 -0400
+Date: Wed, 18 Apr 2012 17:03:09 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: "Zhang, Xiantao" <xiantao.zhang@intel.com>
+Cc: Lin Ming <mlin@ss.pku.edu.cn>, "mingo@elte.hu" <mingo@elte.hu>,
+        "Siddha, Suresh B" <suresh.b.siddha@intel.com>,
+        "jwboyer@redhat.com" <jwboyer@redhat.com>,
+        "hpa@zytor.com" <hpa@zytor.com>,
+        "yinghai@kernel.org" <yinghai@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 2/2] xen/x86: Implement x86_apic_ops
+Message-ID: <20120418210309.GD21970@phenom.dumpdata.com>
+References: <20120328092358.GD22885@gmail.com>
+ <1332956242-5352-1-git-send-email-konrad.wilk@oracle.com>
+ <1332956242-5352-3-git-send-email-konrad.wilk@oracle.com>
+ <CAF1ivSagwO9PLQwwbLmTZik8xpfDncY=aXdhugT5Rivuu14K9g@mail.gmail.com>
+ <20120416154746.GC4654@phenom.dumpdata.com>
+ <B6C2EB9186482D47BD0C5A9A483456440E05E7@SHSMSX101.ccr.corp.intel.com>
 MIME-Version: 1.0
-In-Reply-To: <4F8F243B.70906@fold.natur.cuni.cz>
-References: <4F6A483D.50702@fold.natur.cuni.cz>
-	<4F6A5A53.305@fold.natur.cuni.cz>
-	<CAE9FiQXP7fO9OGN557jdofFFiFj96wL--ZA8X3UPEJ6o9JLvBw@mail.gmail.com>
-	<4F8BEB1D.9080903@fold.natur.cuni.cz>
-	<CAE9FiQXoX3J6P_9Tun_XbkK3egvSeBZxAtC13HacFDO0fwmZaA@mail.gmail.com>
-	<4F8C6E4E.1000205@fold.natur.cuni.cz>
-	<CAE9FiQXikqikMw_LYGqAUsWqFqL-tLiresPhpkpDhb+AxwundQ@mail.gmail.com>
-	<CAE9FiQUFB=9zbP1yuBDH1RJrCCP=83kV_fH+TEtk80981-uP=w@mail.gmail.com>
-	<CAE9FiQUbzM_TVu+bbXa6LWiUt01QsFiGoyYd0qV=41dXx4J31g@mail.gmail.com>
-	<4F8D1B72.2000105@fold.natur.cuni.cz>
-	<CAE9FiQW2MAW_WT+sq8XVtMOx=uR8FAN8O2wL2AOxkFBfEM285g@mail.gmail.com>
-	<CAE9FiQWSw1h772ijZ6YL4EujwjgvZ84bbDx9VbF_cdE63D-41w@mail.gmail.com>
-	<4F8D390F.9050408@fold.natur.cuni.cz>
-	<CAE9FiQU-_BCCS1OKagVuj8YNrut8-6GH2_i86FsfS8UDWQ1pRA@mail.gmail.com>
-	<CAE9FiQUxoHvUWFXv5LLcBT9vVGnQKp1-Tg7M3XPPULWwtX1iUw@mail.gmail.com>
-	<4F8EFFA3.3050705@fold.natur.cuni.cz>
-	<CAE9FiQVcJbPub1O6nwyNsiijHFpHN0jMsGO4MmKugybPL7Wnug@mail.gmail.com>
-	<4F8F243B.70906@fold.natur.cuni.cz>
-Date: Wed, 18 Apr 2012 13:58:24 -0700
-X-Google-Sender-Auth: w1PvvsYLv85jzkWTZEr6UaKktJs
-Message-ID: <CAE9FiQXx1NcGY9cHDiM5isx7NyxWN--Exb-4Gfj0arr6vf5ghQ@mail.gmail.com>
-Subject: Re: 3.2.11: PCI Express card cannot be re-detected withing cca 60sec timeframe
-From: Yinghai Lu <yinghai@kernel.org>
-To: Martin Mokrejs <mmokrejs@fold.natur.cuni.cz>
-Cc: linux-pci@vger.kernel.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+In-Reply-To: <B6C2EB9186482D47BD0C5A9A483456440E05E7@SHSMSX101.ccr.corp.intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Content-Transfer-Encoding: 8BIT
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+X-CT-RefId: str=0001.0A090208.4F8F2D42.000C,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 18, 2012 at 1:29 PM, Martin Mokrejs
-<mmokrejs@fold.natur.cuni.cz> wrote:
-> Yinghai Lu wrote:
->> On Wed, Apr 18, 2012 at 10:53 AM, Martin Mokrejs
->> <mmokrejs@fold.natur.cuni.cz> wrote:
->>>> After you remove USB3 expresscard, you need to
->>>>
->>>> echo 1 > /sys/devices/pci0000\:00/0000\:00\:1c.7/pcie_link_disable
->>>> then
->>>> echo 0 > /sys/devices/pci0000\:00/0000\:00\:1c.7/pcie_link_disable
->>>
->>> So without these two echo commands the is no improvement/fix.
->>>
->>> [  686.701306] pciehp 0000:00:1c.7:pcie04: pcie_isr: intr_loc 8
->>> [  686.701316] pciehp 0000:00:1c.7:pcie04: Presence/Notify input change
->>> [  686.701319] pciehp 0000:00:1c.7:pcie04: Card present on Slot(7)
->>> [  686.701357] pciehp 0000:00:1c.7:pcie04: Surprise Removal
->>> [  686.701390] pciehp 0000:00:1c.7:pcie04: check_link_active: lnk_status = 7011
->>> [  686.809763] pciehp 0000:00:1c.7:pcie04: pciehp_check_link_status: lnk_status = 7011
->> ...
->>> [  686.833678] hub 6-0:1.0: 2 ports detected
->>>
->>> echo 1 > /sys/devices/pci0000\:00/0000\:00\:1c.7/pcie_link_disable
->>>
->>> [  716.999938] pcieport 0000:00:1c.7: pcie_link_disable_set: lnk_ctrl = 53
->>> [  717.024647] pciehp 0000:00:1c.7:pcie04: pcie_isr: intr_loc 8
->>> [  717.024657] pciehp 0000:00:1c.7:pcie04: Presence/Notify input change
->>> [  717.024665] pciehp 0000:00:1c.7:pcie04: Card not present on Slot(7)
->>> [  717.024723] pciehp 0000:00:1c.7:pcie04: Surprise Removal
->>> [  717.024753] pciehp 0000:00:1c.7:pcie04: Disabling domain:bus:device=0000:11:00
->>> [  717.024756] pciehp 0000:00:1c.7:pcie04: pciehp_unconfigure_device: domain:bus:dev = 0000:11:00
->> ..
->>> [  717.045197] pci 0000:11:00.0: freeing pci_dev info
->>>
->>> echo 0 > /sys/devices/pci0000\:00/0000\:00\:1c.7/pcie_link_disable
->>>
->>> [  748.456914] pcieport 0000:00:1c.7: pcie_link_disable_set: lnk_ctrl = 40
->>>
->>
->> so it is chipset problem, it does not detect and report the presence
->> of the card after that link is removed.
->
-> Why doesn't this happen with the FireWire express card?
+> > > > +unsigned int xen_io_apic_read(unsigned apic, unsigned reg) {
+> > > > +       if (reg == 0x1)
+> > > > +               return 0x00170020;
+> > > > +       else if (reg == 0x0)
+> > > > +               return apic << 24;
+> > >
+> > > Why is fixed value returned?
+> > >
+> > > Can't we implement it with hypercall(PHYSDEVOP_apic_read)?
+> > 
+> > We sure can. But this was meant to fix the regression - so I figured we would
+> > do that later on. But the more important question is - do we actually need to
+> > do the hypercall? We aren't using the IOAPIC for anything - we don't program
+> > the pins from dom0.
+> 
+>  Actually, dom0 doesn't programe ioapic pins directly as you said,  but the work is done by dom0 in the indirect way.  For dom0,  I added a hypercall PHYSDEVOP_setup_gsi before, and with this hypercall, we can get rid of programing IOAPIC pins from dom0 and hypervisor helps to do the ioapic programming, but we still need to get correct GSI information from hypervisor, otherwise, the hypercall may meet issues.  
 
-sometimes it report correctly. sometime it does not.
+The GSI information (I think of the polarity and trigger, and as well
+which PCI devices pins correspond to what interrupt) is retrieved via the ACPI _PRT.
 
->
->>
->> Can you try to use acpiphp instead of pciehp?
->
-> Umm. I do have acpiphp in my kernel already. I am rather attaching my .config,
-> please me know what you want me to do. My kernel command line could be seen
-> in my previous posts in the dmesg file.
+The IO-APIC isn't used at all - instead the code in arch/x86/pci/xen.c is utilized
+which does the appropiate lookup and invokes the proper hypercall to bind an
+PIRQ (GSI) to an event channel (and the event channel is then binded to the Linux
+IRQ subsystem).
 
-remove
-
-CONFIG_HOTPLUG_PCI_PCIE=y
+The hypercall - PHYSDEVOP_apic_read can be implemented here - and I am
+more than open for folks to submit a patch for it - but it does not affect
+how GSI/IO-APIC programming is done. This will just report proper IO-APIC
+information instead of the fabricated one.
