@@ -1,206 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752640Ab2DRBw4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Apr 2012 21:52:56 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:6488 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751046Ab2DRBwy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Apr 2012 21:52:54 -0400
-Date: Tue, 17 Apr 2012 22:47:57 -0300
-From: Marcelo Tosatti <mtosatti@redhat.com>
-To: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-Cc: Avi Kivity <avi@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        KVM <kvm@vger.kernel.org>
-Subject: Re: [PATCH v2 14/16] KVM: MMU: fast path of handling guest page fault
-Message-ID: <20120418014757.GA25133@amt.cnet>
-References: <4F87FA69.5060106@linux.vnet.ibm.com>
- <4F87FD01.1010600@linux.vnet.ibm.com>
+	id S1752808Ab2DRCBI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Apr 2012 22:01:08 -0400
+Received: from mail-vx0-f174.google.com ([209.85.220.174]:46064 "EHLO
+	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751990Ab2DRCBF convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Apr 2012 22:01:05 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4F87FD01.1010600@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <201204172310.38816.rjw@sisk.pl>
+References: <4F8790F6.5080408@intel.com>
+	<201204162330.12178.rjw@sisk.pl>
+	<CAC=cRTMXNnZQ_bDes9JFp9yreGC63b_i9fUX6apQzWrUHw2a0Q@mail.gmail.com>
+	<201204172310.38816.rjw@sisk.pl>
+Date: Wed, 18 Apr 2012 10:01:04 +0800
+Message-ID: <CAC=cRTNc3XeniOzttRVUTFEzZY1RY7Ds7m+hE8_86A-Ep-5Czw@mail.gmail.com>
+Subject: Re: [RFC PATCH] PCIe: Add PCIe runtime D3cold support
+From: huang ying <huang.ying.caritas@gmail.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: "Yan, Zheng" <zheng.z.yan@intel.com>, bhelgaas@google.com,
+        linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
+        linux-pm@vger.kernel.org, Lin Ming <ming.m.lin@intel.com>,
+        Zhang Rui <rui.zhang@intel.com>,
+        ACPI Devel Mailing List <linux-acpi@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 13, 2012 at 06:16:33PM +0800, Xiao Guangrong wrote:
-> If the the present bit of page fault error code is set, it indicates
-> the shadow page is populated on all levels, it means what we do is
-> only modify the access bit which can be done out of mmu-lock
-> 
-> Currently, in order to simplify the code, we only fix the page fault
-> caused by write-protect on the fast path
-> 
-> Signed-off-by: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-> ---
->  arch/x86/kvm/mmu.c         |  205 ++++++++++++++++++++++++++++++++++++++++----
->  arch/x86/kvm/paging_tmpl.h |    3 +
->  2 files changed, 192 insertions(+), 16 deletions(-)
-> 
-> diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
-> index efa5d59..fc91667 100644
-> --- a/arch/x86/kvm/mmu.c
-> +++ b/arch/x86/kvm/mmu.c
-> @@ -446,6 +446,13 @@ static bool __check_direct_spte_mmio_pf(u64 spte)
->  }
->  #endif
-> 
-> +static bool spte_wp_by_dirty_log(u64 spte)
-> +{
-> +	WARN_ON(is_writable_pte(spte));
-> +
-> +	return (spte & SPTE_ALLOW_WRITE) && !(spte & SPTE_WRITE_PROTECT);
-> +}
-> +
->  static bool spte_has_volatile_bits(u64 spte)
->  {
->  	if (!shadow_accessed_mask)
-> @@ -454,9 +461,18 @@ static bool spte_has_volatile_bits(u64 spte)
->  	if (!is_shadow_present_pte(spte))
->  		return false;
-> 
-> -	if ((spte & shadow_accessed_mask) &&
-> -	      (!is_writable_pte(spte) || (spte & shadow_dirty_mask)))
-> -		return false;
-> +	if (spte & shadow_accessed_mask) {
-> +		if (is_writable_pte(spte))
-> +			return !(spte & shadow_dirty_mask);
-> +
-> +		/*
-> +		 * If the spte is write-protected by dirty-log, it may
-> +		 * be marked writable on fast page fault path, then CPU
-> +		 * can modify the Dirty bit.
-> +		 */
-> +		if (!spte_wp_by_dirty_log(spte))
-> +			return false;
-> +	}
-> 
->  	return true;
->  }
-> @@ -1109,26 +1125,18 @@ static void drop_spte(struct kvm *kvm, u64 *sptep)
->  		rmap_remove(kvm, sptep);
->  }
-> 
-> -static bool spte_wp_by_dirty_log(u64 spte)
-> -{
-> -	WARN_ON(is_writable_pte(spte));
-> -
-> -	return (spte & SPTE_ALLOW_WRITE) && !(spte & SPTE_WRITE_PROTECT);
-> -}
-> -
->  static void spte_write_protect(struct kvm *kvm, u64 *sptep, bool large,
->  			       bool *flush, bool page_table_protect)
->  {
->  	u64 spte = *sptep;
-> 
->  	if (is_writable_pte(spte)) {
-> -		*flush |= true;
-> -
->  		if (large) {
->  			pgprintk("rmap_write_protect(large): spte %p %llx\n",
->  				 spte, *spte);
->  			BUG_ON(!is_large_pte(spte));
-> 
-> +			*flush |= true;
->  			drop_spte(kvm, sptep);
->  			--kvm->stat.lpages;
->  			return;
-> @@ -1137,6 +1145,9 @@ static void spte_write_protect(struct kvm *kvm, u64 *sptep, bool large,
->  		goto reset_spte;
->  	}
-> 
-> +	/* We need flush tlbs in this case: the fast page fault path
-> +	 * can mark the spte writable after we read the sptep.
-> +	 */
->  	if (page_table_protect && spte_wp_by_dirty_log(spte))
->  		goto reset_spte;
-> 
-> @@ -1144,6 +1155,8 @@ static void spte_write_protect(struct kvm *kvm, u64 *sptep, bool large,
-> 
->  reset_spte:
->  	rmap_printk("rmap_write_protect: spte %p %llx\n", spte, *spte);
-> +
-> +	*flush |= true;
->  	spte = spte & ~PT_WRITABLE_MASK;
->  	if (page_table_protect)
->  		spte |= SPTE_WRITE_PROTECT;
-> @@ -2767,18 +2780,172 @@ exit:
->  	return ret;
->  }
-> 
-> +static bool page_fault_can_be_fast(struct kvm_vcpu *vcpu, gfn_t gfn,
-> +				   u32 error_code)
-> +{
-> +	unsigned long *rmap;
-> +
-> +	/*
-> +	 * #PF can be fast only if the shadow page table is present and it
-> +	 * is caused by write-protect, that means we just need change the
-> +	 * W bit of the spte which can be done out of mmu-lock.
-> +	 */
-> +	if (!(error_code & PFERR_PRESENT_MASK) ||
-> +	      !(error_code & PFERR_WRITE_MASK))
-> +		return false;
-> +
-> +	rmap = gfn_to_rmap(vcpu->kvm, gfn, PT_PAGE_TABLE_LEVEL);
-> +
-> +	/* Quickly check the page can be writable. */
-> +	if (test_bit(PTE_LIST_WP_BIT, ACCESS_ONCE(rmap)))
-> +		return false;
-> +
-> +	return true;
-> +}
-> +
-> +static bool
-> +fast_pf_fix_indirect_spte(struct kvm_vcpu *vcpu, struct kvm_mmu_page *sp,
-> +			  u64 *sptep, u64 spte, gfn_t gfn)
-> +{
-> +	pfn_t pfn;
-> +	bool ret = false;
-> +
-> +	/*
-> +	 * For the indirect spte, it is hard to get a stable gfn since
-> +	 * we just use a cmpxchg to avoid all the races which is not
-> +	 * enough to avoid the ABA problem: the host can arbitrarily
-> +	 * change spte and the mapping from gfn to pfh.
-> +	 *
-> +	 * What we do is call gfn_to_pfn_atomic to bind the gfn and the
-> +	 * pfn because after the call:
-> +	 * - we have held the refcount of pfn that means the pfn can not
-> +	 *   be freed and be reused for another gfn.
-> +	 * - the pfn is writable that means it can not be shared by different
-> +	 *   gfn.
-> +	 */
-> +	pfn = gfn_to_pfn_atomic(vcpu->kvm, gfn);
+On Wed, Apr 18, 2012 at 5:10 AM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+> On Tuesday, April 17, 2012, huang ying wrote:
+>> On Tue, Apr 17, 2012 at 5:30 AM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+>> >> >> +     return 0;
+>> >> >> +}
+>> >> >> +
+>> >> >> +static int pcie_port_runtime_resume(struct device *dev)
+>> >> >> +{
+>> >> >> +     struct pci_dev *pdev = to_pci_dev(dev);
+>> >> >> +
+>> >> >> +     pci_restore_state(pdev);
+>> >> >> +     if (pdev->runtime_d3cold)
+>> >> >> +             msleep(100);
+>> >> >
+>> >> > What's _that_ supposed to do?
+>> >>
+>> >> When resume from d3cold, PCIe main link will be powered on again, it
+>> >> will take quite some time before the main link go into L0 state.
+>> >> Otherwise, accessing devices under the port may return wrong result.
+>> >
+>> > OK, but this is generic code and as per the standard the link should have been
+>> > reestablished at this point already.
+>> >
+>> > Please don't put some nonstandard-platform-specific quirks like this into
+>> > code that's supposed to handle _every_ PCIe system.
+>>
+>> After checking PCIe spec, I found that the 100ms here has its standard origin :)
+>>
+>> In PCI Express Base Specification Revision 2.0:
+>>
+>> Section 6.6.1 Conventional Reset
+>>
+>> "
+>> To allow components to perform internal initialization, system
+>> software must wait for at least
+>> 100 ms from the end of a Conventional Reset of one or more devices
+>> before it is permitted to
+>> issue Configuration Requests to those devices
+>> "
+>>
+>> But I think we should move the 100ms delay here to PCIe bus code or
+>> PCIe/ACPI code, because that is needed by all PCIe devices for D3cold
+>> support.
+>
+> I think it should be sufficient to wait for the PME message to arrive at
+> the root port (which will cause the PME interrupt to appear), at which
+> point the device that sent it should be able to receive configuration
+> requests.
 
-Please document what can happen in parallel whenever you manipulate
-sptes without mmu_lock held, convincing the reader that this is safe.
+For remote wake up, it is sufficient.  But for host wake up, we still
+need to wait 100ms.
 
-> +
-> +/*
-> + * Return value:
-> + * - true: let the vcpu to access on the same address again.
-> + * - false: let the real page fault path to fix it.
-> + */
-> +static bool fast_page_fault(struct kvm_vcpu *vcpu, gva_t gva, gfn_t gfn,
-> +			    int level, u32 error_code)
-> +{
-> +	struct kvm_shadow_walk_iterator iterator;
-> +	struct kvm_mmu_page *sp;
-> +	bool ret = false;
-> +	u64 spte = 0ull;
-> +
-> +	if (!page_fault_can_be_fast(vcpu, gfn, error_code))
-> +		return false;
+> At this point, I need to konw what exactly happens when the GPE is triggered
+> by WAKE#.
 
-What prevents kvm_mmu_commit_zap_page from nukeing the "shadow_page"
-here, again? At this point the faulting spte could be zero (!present), 
-and you have not yet increased reader_counter.
+- Lxx handler will be executed
+- in Lxx handler, Notify the ACPI handle PCIe port
+- Linux has registered a handler for the ACPI handle of PCIe port, in
+the handler, turn on _PR0 and execute _PS0, which will power on the
+link.
 
-Same with current users of walk_shadow_page_lockless_begin.
-
-I agree with Takuya, please reduce the size of the patchset to only to
-what is strictly necessary, it appears many of the first patches are
-not.
-
+Best Regards,
+Huang Ying
