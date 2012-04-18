@@ -1,84 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752828Ab2DRWQx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Apr 2012 18:16:53 -0400
-Received: from exprod7og102.obsmtp.com ([64.18.2.157]:57911 "EHLO
-	exprod7og102.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751009Ab2DRWQw (ORCPT
+	id S1752570Ab2DRWRH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Apr 2012 18:17:07 -0400
+Received: from www62.your-server.de ([213.133.104.62]:38252 "EHLO
+	www62.your-server.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752958Ab2DRWRF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Apr 2012 18:16:52 -0400
-X-Greylist: delayed 1980 seconds by postgrey-1.27 at vger.kernel.org; Wed, 18 Apr 2012 18:16:51 EDT
-Message-ID: <4F8F3C74.7040000@genband.com>
-Date: Wed, 18 Apr 2012 16:13:08 -0600
-From: Chris Friesen <chris.friesen@genband.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.24) Gecko/20111108 Fedora/3.1.16-1.fc14 Lightning/1.0b3pre Thunderbird/3.1.16
+	Wed, 18 Apr 2012 18:17:05 -0400
+X-Greylist: delayed 1308 seconds by postgrey-1.27 at vger.kernel.org; Wed, 18 Apr 2012 18:17:05 EDT
+Message-ID: <4F8F383C.1040002@iogearbox.net>
+Date: Wed, 18 Apr 2012 23:55:08 +0200
+From: Daniel Borkmann <danborkmann@iogearbox.net>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20111110 Icedove/3.0.11
 MIME-Version: 1.0
-To: LKML <linux-kernel@vger.kernel.org>, linux-hotplug@vger.kernel.org
-Subject: Re: "udevadm info --attribute-walk --path=/block/sda" doesn't show
- parents
-References: <4F8F3563.9020701@genband.com>
-In-Reply-To: <4F8F3563.9020701@genband.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+CC: Michal Simek <monstr@monstr.eu>, Arnd Bergmann <arnd@arndb.de>,
+        Ariane Keller <ariane.keller@tik.ee.ethz.ch>,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] xilinx_hwicap: add support for virtex6 FPGAs
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 18 Apr 2012 22:13:09.0286 (UTC) FILETIME=[6FECEC60:01CD1DB0]
-X-TM-AS-Product-Ver: SMEX-8.0.0.4160-6.500.1024-18848.002
-X-TM-AS-Result: No--20.489900-8.000000-31
-X-TM-AS-User-Approved-Sender: No
-X-TM-AS-User-Blocked-Sender: No
+X-Authenticated-Sender: danborkmann@iogearbox.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/18/2012 03:42 PM, Chris Friesen wrote:
-> 
-> I have a 2.6.34.10-based kernel with udev-161 (also tested with udevadm from udev-173).
-> 
-> When I run "udevadm info --attribute-walk --path=/block/sda" it just shows the device
-> itself, and doesn't walk the whole chain showing the parents.
-> 
-> Is there anything I can do, or am I caught with a kernel that isn't properly supported?
-> I'm not subscribed to the hotplug list, so cc'ing me would be appreciated.
-> 
-> 
-> I don't know what's causing the problem, but I find it suspicious that /sys/block/sda
-> is a directory rather than a symlink like it is on my 2.6.35.14 laptop.  I'm poking
-> around in the udevadm code now.
+This patch adds support for the virtex6 FPGA to the xilinx_hwicap driver.
 
-Looking at the udevadm code led me to the following:
+Tested on a Xilinx ML605 board. The patch is against the latest linus-tree.
 
-On the problematic 2.6.34 machine:
+Signed-off-by: Ariane Keller <ariane.keller@tik.ee.ethz.ch>
+Signed-off-by: Daniel Borkmann <daniel.borkmann@tik.ee.ethz.ch>
+---
+ drivers/char/xilinx_hwicap/xilinx_hwicap.c |   30 ++++++++++++++++++++++++++++
+ 1 files changed, 30 insertions(+), 0 deletions(-)
 
-root@typhoon-base-unit0:/root> ls -l /sys/dev/block/
-<snip>
-lrwxrwxrwx 1 root root 0 Apr 18 14:34 8:0 -> ../../block/sda
-
-
-
-On my 2.6.35 machine:
-
-[cfriesen@blah udev-173]$ ls -l /sys/dev/block/
-<snip>
-lrwxrwxrwx. 1 root root 0 Apr 18 15:54 8:0 -> ../../devices/pci0000:00/0000:00:1f.2/host0/target0:0:0/0:0:0:0/block/sda
-
-
-
-So where do I go from here?  Is there a simple kernel change to make my 2.6.34
-kernel behave more like the more recent one?  Would an older version of udev be
-able to parse my 2.6.34 /sys directory properly, or do I need to figure out a
-way to parse /sys manually?
-
-Thanks,
-Chris
-
-
-
-
-
-
-
--- 
-Chris Friesen
-Software Developer
-GENBAND
-chris.friesen@genband.com
-www.genband.com
+diff --git a/drivers/char/xilinx_hwicap/xilinx_hwicap.c b/drivers/char/xilinx_hwicap/xilinx_hwicap.c
+index 31ba11c..2c5d15b 100644
+--- a/drivers/char/xilinx_hwicap/xilinx_hwicap.c
++++ b/drivers/char/xilinx_hwicap/xilinx_hwicap.c
+@@ -167,6 +167,7 @@ static const struct config_registers v4_config_registers = {
+ 	.BOOTSTS = UNIMPLEMENTED,
+ 	.CTL_1 = UNIMPLEMENTED,
+ };
++
+ static const struct config_registers v5_config_registers = {
+ 	.CRC = 0,
+ 	.FAR = 1,
+@@ -192,6 +193,31 @@ static const struct config_registers v5_config_registers = {
+ 	.CTL_1 = 19,
+ };
+ 
++static const struct config_registers v6_config_registers = {
++	.CRC = 0,
++	.FAR = 1,
++	.FDRI = 2,
++	.FDRO = 3,
++	.CMD = 4,
++	.CTL = 5,
++	.MASK = 6,
++	.STAT = 7,
++	.LOUT = 8,
++	.COR = 9,
++	.MFWR = 10,
++	.FLR = UNIMPLEMENTED,
++	.KEY = UNIMPLEMENTED,
++	.CBC = 11,
++	.IDCODE = 12,
++	.AXSS = 13,
++	.C0R_1 = 14,
++	.CSOB = 15,
++	.WBSTAR = 16,
++	.TIMER = 17,
++	.BOOTSTS = 22,
++	.CTL_1 = 24,
++};
++
+ /**
+  * hwicap_command_desync - Send a DESYNC command to the ICAP port.
+  * @drvdata: a pointer to the drvdata.
+@@ -744,6 +770,8 @@ static int __devinit hwicap_of_probe(struct platform_device *op,
+ 			regs = &v4_config_registers;
+ 		} else if (!strcmp(family, "virtex5")) {
+ 			regs = &v5_config_registers;
++		} else if (!strcmp(family, "virtex6")) {
++			regs = &v6_config_registers;
+ 		}
+ 	}
+ 	return hwicap_setup(&op->dev, id ? *id : -1, &res, config,
+@@ -785,6 +813,8 @@ static int __devinit hwicap_drv_probe(struct platform_device *pdev)
+ 			regs = &v4_config_registers;
+ 		} else if (!strcmp(family, "virtex5")) {
+ 			regs = &v5_config_registers;
++		} else if (!strcmp(family, "virtex6")) {
++			regs = &v6_config_registers;
+ 		}
+ 	}
+ 
