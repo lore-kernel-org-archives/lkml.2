@@ -1,68 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753257Ab2DRCYa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Apr 2012 22:24:30 -0400
-Received: from smtp1.onthe.net.au ([203.22.196.249]:52186 "EHLO
-	smtp1.onthe.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753048Ab2DRCY2 (ORCPT
+	id S1752274Ab2DRC0J (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Apr 2012 22:26:09 -0400
+Received: from shards.monkeyblade.net ([198.137.202.13]:60947 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751021Ab2DRC0I (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Apr 2012 22:24:28 -0400
-Date: Wed, 18 Apr 2012 12:24:20 +1000
-From: Chris Dunlop <chris@onthe.net.au>
-To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: 3.3.1: hung task in __lock_page
-Message-ID: <20120418022420.GA5949@onthe.net.au>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Tue, 17 Apr 2012 22:26:08 -0400
+Date: Tue, 17 Apr 2012 22:24:14 -0400 (EDT)
+Message-Id: <20120417.222414.1021293399100195501.davem@davemloft.net>
+To: jkosina@suse.cz
+Cc: sdyoung@vt220.org, linux-kernel@vger.kernel.org, netdev@vger.kernel.org
+Subject: Re: [PATCH] arcnet: rimi: Fix device name in debug output
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <alpine.LNX.2.00.1204161335420.16373@pobox.suse.cz>
+References: <20120415153220.GA11631@vt220.org>
+	<alpine.LNX.2.00.1204161335420.16373@pobox.suse.cz>
+X-Mailer: Mew version 6.4 on Emacs 24.0.95 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Tue, 17 Apr 2012 19:24:18 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-G'day,
+From: Jiri Kosina <jkosina@suse.cz>
+Date: Mon, 16 Apr 2012 14:02:48 +0200 (CEST)
 
-Linux-3.3.1, x64, md/lvm, deadline scheduler. 3 LVs exported via
-aoe, 1 LV exported via iscsi. The machine had been running with this
-configuration for 19 hours with light to moderate load on the various
-exports. 20 min before the hung task message a large 'rm -r' was started
-on a different aoe export to the hung vblade task and was still
-running at the time of the hang. The hung vblade task caused the
-associated aoe export to have a conniption, but otherwise
-everything seems to be humming along fine.
+> From: Jiri Kosina <jkosina@suse.cz>
+> Subject: [PATCH] arcnet: rimi: Fix device name in debug output
+> 
+> arcrimi_probe() calls BUGMSG() before register_netdev() happens. BUGMSG()
+> itself prints dev->name, but as the format string hasn't been expanded by
+> register_netdev() yet, the output contains bogus device name such as
+> 
+> 	arc%d: Given: node 00h, shmem 0h, irq 0
+> 
+> As we don't know the device name yet, just drop the prefix completely from
+> the debugging messages.
+> 
+> Reported-by: Steven Young <sdyoung@vt220.org>
+> Signed-off-by: Jiri Kosina <jkosina@suse.cz>
 
-[69137.699722] INFO: task vblade:6826 blocked for more than 120 seconds.
-[69137.699759] "echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this message.
-[69137.699810] vblade          D 0000000000000002     0  6826   3881 0x00000000
-[69137.699852]  ffff880be9c1ba78 0000000000000046 ffff880c00a6c3c0 00000000001d38c0
-[69137.699909]  ffff880be9c1bfd8 ffff880be9c1a010 00000000001d38c0 00000000001d38c0
-[69137.699965]  ffff880be9c1bfd8 00000000001d38c0 ffff880c085a43c0 ffff880c00a6c3c0
-[69137.700021] Call Trace:
-[69137.700048]  [<ffffffff810f5400>] ? __lock_page+0x70/0x70
-[69137.700080]  [<ffffffff813ecadf>] schedule+0x3f/0x60
-[69137.700108]  [<ffffffff813ecb8c>] io_schedule+0x8c/0xd0
-[69137.700136]  [<ffffffff810f540e>] sleep_on_page+0xe/0x20
-[69137.700165]  [<ffffffff813ea65f>] __wait_on_bit+0x5f/0x90
-[69137.700195]  [<ffffffff810f5653>] wait_on_page_bit+0x73/0x80
-[69137.700226]  [<ffffffff81070190>] ? autoremove_wake_function+0x40/0x40
-[69137.700259]  [<ffffffff8108214d>] ? sched_clock_cpu+0xcd/0x110
-[69137.700289]  [<ffffffff810f61c1>] grab_cache_page_write_begin+0xa1/0xd0
-[69137.700323]  [<ffffffff81184360>] ? I_BDEV+0x10/0x10
-[69137.700351]  [<ffffffff81181768>] block_write_begin+0x38/0x90
-[69137.700383]  [<ffffffff812115ee>] ? do_raw_spin_unlock+0x5e/0xb0
-[69137.700413]  [<ffffffff81185193>] blkdev_write_begin+0x23/0x30
-[69137.700443]  [<ffffffff810f4b1b>] generic_file_buffered_write+0x11b/0x2a0
-[69137.700477]  [<ffffffff8104f567>] ? current_fs_time+0x27/0x30
-[69137.700507]  [<ffffffff810f791b>] __generic_file_aio_write+0x23b/0x470
-[69137.700539]  [<ffffffff81184826>] blkdev_aio_write+0x36/0x90
-[69137.700570]  [<ffffffff8114e1c2>] do_sync_write+0xe2/0x120
-[69137.700599]  [<ffffffff8118c663>] ? fsnotify+0x1f3/0x360
-[69137.700630]  [<ffffffff812f4cf1>] ? T.1251+0x51/0x60
-[69137.700658]  [<ffffffff8114e720>] vfs_write+0xd0/0x1a0
-[69137.700687]  [<ffffffff8114e88a>] sys_pwrite64+0x9a/0xb0
-[69137.700717]  [<ffffffff813f6469>] system_call_fastpath+0x16/0x1b
-[69137.700747] no locks held by vblade/6826.
-
-Cheers,
-
-Chris.
+Applied, thanks.
