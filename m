@@ -1,98 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754076Ab2DRPJl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Apr 2012 11:09:41 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:57923 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754027Ab2DRPJj convert rfc822-to-8bit (ORCPT
+	id S1754022Ab2DRPP4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Apr 2012 11:15:56 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:52189 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752022Ab2DRPPz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Apr 2012 11:09:39 -0400
-References: <1334681618-9452-1-git-send-email-wenqing.lz@taobao.com> <4F8DAAFE.40500@redhat.com> <D225F088-A53F-4962-97AD-13C850BBA722@whamcloud.com> <alpine.LFD.2.00.1204181015050.5310@dhcp-27-109.brq.redhat.com> <20120418124811.GD3447@gmail.com>
-In-Reply-To: <20120418124811.GD3447@gmail.com>
-Mime-Version: 1.0 (1.0)
-Content-Type: text/plain;
-	charset=us-ascii
-Message-Id: <341F6DCC-1788-4ACC-A86E-A5D99CC05320@whamcloud.com>
-Content-Transfer-Encoding: 8BIT
-Cc: Lukas Czerner <lczerner@redhat.com>, Eric Sandeen <sandeen@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        "linux-ext4@vger.kernel.org" <linux-ext4@vger.kernel.org>,
-        Zheng Liu <wenqing.lz@taobao.com>
-X-Mailer: iPhone Mail (9B176)
-From: Andreas Dilger <adilger@whamcloud.com>
-Subject: Re: [RFC][PATCH 0/3] add FALLOC_FL_NO_HIDE_STALE flag in fallocate
-Date: Wed, 18 Apr 2012 08:09:02 -0700
-To: Zheng Liu <gnehzuil.liu@gmail.com>
+	Wed, 18 Apr 2012 11:15:55 -0400
+Date: Wed, 18 Apr 2012 16:15:45 +0100
+From: Catalin Marinas <catalin.marinas@arm.com>
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        majianpeng <majianpeng@gmail.com>
+Subject: Re: Possible memory leaks in proc_sysctl.c
+Message-ID: <20120418151545.GI1505@arm.com>
+References: <20120418101231.GE1505@arm.com>
+ <m1wr5d18fy.fsf@fess.ebiederm.org>
+ <20120418141851.GG1505@arm.com>
+ <m1ipgxrt11.fsf@fess.ebiederm.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <m1ipgxrt11.fsf@fess.ebiederm.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2012-04-18, at 5:48, Zheng Liu <gnehzuil.liu@gmail.com> wrote:
-> I run a more detailed benchmark again.  The environment is as before,
-> and the machine has Intel(R) Core(TM)2 Duo CPU E8400, 4G memory and a
-> WDC WD1600AAJS-75M0A0 160G SATA disk.
+On Wed, Apr 18, 2012 at 03:52:58PM +0100, Eric W. Biederman wrote:
+> Catalin Marinas <catalin.marinas@arm.com> writes:
+> > On Wed, Apr 18, 2012 at 02:22:09PM +0100, Eric W. Biederman wrote:
+> >> Catalin Marinas <catalin.marinas@arm.com> writes:
+> >> > Following your commit f728019bb (sysctl: register only tables of sysctl
+> >> > files), I get several kmemleak reports. They all seem to be header
+> >> > allocations with kzalloc() in __register_sysctl_table() and
+> >> > __register_sysctl_paths(). The patch isn't simple to quickly figure out
+> >> > what may be wrong.
+> >> 
+> >> Due to a change in the data structure places where we register the
+> >> sysctl permanently and ignore the result from the register_sysctl_...
+> >> family of functions now report this leak.
+> >
+> > But is the header (or subheader, basically any pointer inside the
+> > kmalloc'ed object) never referenced from anywhere? I'm just trying to
+> > understand why kmemleak reports it as it seems that the header object is
+> > inserted in a ctl_dir.
 > 
-> I use 'fallocate' and 'dd' command to create a 256M file.  I compare
-> three cases, which are fallocate w/o new flag, fallocate w/ new flag,
-> and dd.  We use these commands to create a file.  Meanwhile w/ journal
-> and w/o journal are compared.  When I format the filesytem, I use
-> '-E lazy_itable_init=0' to avoid impact.  I use this command to do the
-> comparsion:
+> It is never reference from anywhere because we never free the structure.
+> The job of the header is to be the structure that tells us how to free
+> things.
 > 
-> time for((i=0;i<2000;i++)); \
->        do \
->        dd if=/dev/zero of=/mnt/sda1/testfile conv=notrunc bs=4k \
->        count=1 seek=`expr $i \* 16` oflag=sync,direct 2>/dev/null; \
->        done
+> I see a couple of things going on.
+> - For compatibility the header that is returned is a dummy that just
+>   points to the real headers.
 > 
+> - Even without the compatibility we can get the same symptom if
+>   we register an empty directory.
 > 
-> The result:
-> 
-> nojournal:
->        fallocte        dd              fallocate w/ new flag
-> real    0m4.196s        0m3.720s        0m3.782s
-> user    0m0.167s        0m0.194s        0m0.192s
-> sys     0m0.404s        0m0.393s        0m0.390s
-> 
-> data=journal:
->        fallocate       dd              fallocate w/ new flag
-> real    1m9.673s        1m10.241s       1m9.773s
-> user    0m0.183s        0m0.205s        0m0.192s
-> sys     0m0.397s        0m0.407s        0m0.398s
-> 
-> data=ordered
->        fallocate       dd              fallocate w/ new flag
-> real    1m16.006s       0m18.291s       0m18.449s
-> user    0m0.193s        0m0.193s        0m0.201s
-> sys     0m0.384s        0m0.387s        0m0.381s
-> 
-> data=writeback
->        fallocate       dd              fallocate w/ new flag
-> real    1m16.247s       0m18.133s       0m18.417s
-> user    0m0.187s        0m0.193s        0m0.205s
-> sys     0m0.401s        0m0.398s        0m0.387s
-> 
-> In journal mode, we can see, when data is set to 'journal', the result
-> is almost the same.  However, when data is set 'ordered' or 'writeback',
-> the slowdown in w/ conversion case is severe.  Then I do the same test
-> without 'oflag=sync,direct', and the result doesn't change.  IMHO, I
-> guess that journal is the *root cause*.  Until now, I don't have a
-> definitely conclusion, and I will go on traing this issue.  Please feel
-> free to comment it.
+> So simply saying kmemleak shut up this is deliberate in these few cases
+> where we don't intend to unregister the structure and have a deliberate
+> leak seems the clean and maintainable way to go.
 
-Looking at these performance numbers again, it would seem better if ext4 _was_ zero filling the whole file and converting the whole thing to initialized extents instead of leaving so many uninitialized extents behind.
+OK, I got it now, sounds fair. But please add a comment to the
+kmemleak_not_leak() annotations so that others know it's a deliberate
+leak (rather than a false positive).
 
-The file size is 256MB, and the disk would have to be doing only 3.5MB/s for linear streaming writes to match the performance that you report, so a modern disk doing 50MB/s should be able to zero the whole file in 5s.
+Also the patch should include the linux/kmemleak.h file for the
+kmemleak_not_leak() prototype as header changes in the future may cause
+problems (I think the one you posted did not include it).
 
-It seems the threshold for zeroing uninitialized extents is incorrect. EXT4_EXT_ZERO_LEN is only 7 blocks (28kB normally), but typical disks can write 64kB as easily as 4kB, so it would be interesting to change EXT4_EXT_ZERO_LEN to 16 and re-run your test. 
+Thanks.
 
-If that solves this particular test case, it wont necessarily the general case, but is still a useful fix.  If you submit a patch for this, please change this code to compare against 64kB instead of a block count, and also to take s_raid_stride into account if set, like:
-
-        ext_zero_len = max(EXT4_EXT_ZERO_LEN * 1024 >> inode->i_blkbits,
-                           EXT4_SB(inode->i_sb)->s_es->s_raid_stride);
-
-This would write up to 64kB, or a full RAID stripe (since it already needs to seek that spindle), whichever is larger.  It isn't perfect, since it should really align the zero-out to the RAID stripe to avoid seeking two spindles, but it is a starting point. 
-
-Cheers, Andreas
-
+-- 
+Catalin
