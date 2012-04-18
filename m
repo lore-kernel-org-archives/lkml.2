@@ -1,62 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753475Ab2DRNhX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Apr 2012 09:37:23 -0400
-Received: from mail.work-microwave.de ([62.245.205.51]:42402 "EHLO
-	work-microwave.de" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753015Ab2DRNhV (ORCPT
+	id S1753575Ab2DRNkn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Apr 2012 09:40:43 -0400
+Received: from eu1sys200aog120.obsmtp.com ([207.126.144.149]:54105 "EHLO
+	eu1sys200aog120.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753340Ab2DRNkj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Apr 2012 09:37:21 -0400
-From: Roland Stigge <stigge@antcom.de>
-To: arm@kernel.org, linux-arm-kernel@lists.infradead.org,
-        thierry.reding@avionic-design.de, gregkh@linuxfoundation.org,
-        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-input@vger.kernel.org, dmitry.torokhov@gmail.com,
-        axel.lin@gmail.com, broonie@opensource.wolfsonmicro.com,
-        marek.vasut@gmail.com, devel@driverdev.osuosl.org, kevin.wells@nxp.com,
-        srinivas.bakki@nxp.com, dan.carpenter@oracle.com
-Cc: Roland Stigge <stigge@antcom.de>
-Subject: [PATCH v3 7/10] iio: lpc32xx-adc: Remove driver conflict due to device tree
-Date: Wed, 18 Apr 2012 15:36:12 +0200
-Message-Id: <1334756176-25144-8-git-send-email-stigge@antcom.de>
-X-Mailer: git-send-email 1.7.9
-In-Reply-To: <1334756176-25144-1-git-send-email-stigge@antcom.de>
-References: <1334756176-25144-1-git-send-email-stigge@antcom.de>
-X-FEAS-SYSTEM-WL: rst@work-microwave.de, 192.168.11.78
+	Wed, 18 Apr 2012 09:40:39 -0400
+From: Linus Walleij <linus.walleij@stericsson.com>
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Grant Likely <grant.likely@secretlab.ca>
+Cc: <linux-kernel@vger.kernel.org>, Linus Walleij <linus.walleij@linaro.org>
+Subject: [PATCH] irqdomain: print a warning if domains contain IRQ 0
+Date: Wed, 18 Apr 2012 15:40:20 +0200
+Message-ID: <1334756420-12019-1-git-send-email-linus.walleij@stericsson.com>
+X-Mailer: git-send-email 1.7.9.2
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Previously, the touchscreen and ADC drivers of the LPC32xx SoC had a Kconfig
-conflict declared because they use the same hardware. Upon the introduction of
-device tree support in both drivers, the conflict must be removed to enable
-the same kernel to support different hardware (configured via the device tree).
+From: Linus Walleij <linus.walleij@linaro.org>
 
-Signed-off-by: Roland Stigge <stigge@antcom.de>
+Some of the clients using IRQ domains from the ARM VIC
+(arch/arm/common/vic.c) don't know that their (hardware) IRQ 0
+is silently ignored by the IRQ core, they will just notice
+that they're not getting this IRQ anymore. So print a warning
+if a domain contains IRQ 0 (NO_IRQ) so we get some noise about
+it atleast.
 
+Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
 ---
+ kernel/irq/irqdomain.c |    4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
-Applies to v3.4-rc3
-
- drivers/staging/iio/adc/Kconfig |    8 +++++---
- 1 file changed, 5 insertions(+), 3 deletions(-)
-
---- linux-2.6.orig/drivers/staging/iio/adc/Kconfig
-+++ linux-2.6/drivers/staging/iio/adc/Kconfig
-@@ -195,11 +195,13 @@ config MAX1363_RING_BUFFER
+diff --git a/kernel/irq/irqdomain.c b/kernel/irq/irqdomain.c
+index 0e0ba5f..1444454 100644
+--- a/kernel/irq/irqdomain.c
++++ b/kernel/irq/irqdomain.c
+@@ -136,8 +136,10 @@ struct irq_domain *irq_domain_add_legacy(struct device_node *of_node,
+ 		int hwirq = first_hwirq + i;
  
- config LPC32XX_ADC
- 	tristate "NXP LPC32XX ADC"
--	depends on ARCH_LPC32XX && !TOUCHSCREEN_LPC32XX
-+	depends on ARCH_LPC32XX
- 	help
- 	  Say yes here to build support for the integrated ADC inside the
- 	  LPC32XX SoC. Note that this feature uses the same hardware as the
--	  touchscreen driver, so you can only select one of the two drivers
--	  (lpc32xx_adc or lpc32xx_ts). Provides direct access via sysfs.
-+	  touchscreen driver, so you should either select only one of the two
-+	  drivers (lpc32xx_adc or lpc32xx_ts) or, in the OpenFirmware case,
-+	  activate only one via device tree selection.  Provides direct access
-+	  via sysfs.
+ 		/* IRQ0 gets ignored */
+-		if (!irq)
++		if (!irq) {
++			pr_warn("trying to register IRQ 0 (NO_IRQ) in an irq  domain\n");
+ 			continue;
++		}
  
- endmenu
+ 		/* Legacy flags are left to default at this point,
+ 		 * one can then use irq_create_mapping() to
+-- 
+1.7.9.2
+
