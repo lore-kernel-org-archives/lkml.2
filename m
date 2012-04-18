@@ -1,95 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752705Ab2DRIiQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Apr 2012 04:38:16 -0400
-Received: from mailout-de.gmx.net ([213.165.64.23]:46598 "HELO
-	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751766Ab2DRIiN (ORCPT
+	id S1751858Ab2DRIoe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Apr 2012 04:44:34 -0400
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:47730 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751411Ab2DRIob (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Apr 2012 04:38:13 -0400
-X-Authenticated: #14349625
-X-Provags-ID: V01U2FsdGVkX1+RijZoDxiRyvqsP+P3ErgtnV3hY2HcVmHjSnHBc0
-	nilAHbVJaLqWxm
-Message-ID: <1334738287.5542.67.camel@marge.simpson.net>
-Subject: Re: RFC [patch] sched,cgroup_sched: convince RT_GROUP_SCHED
- throttle to work
-From: Mike Galbraith <efault@gmx.de>
-To: Yong Zhang <yong.zhang0@gmail.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@redhat.com>
-Date: Wed, 18 Apr 2012 10:38:07 +0200
-In-Reply-To: <20120418074803.GB19328@zhy>
-References: <1333444788.9072.9.camel@marge.simpson.net>
-	 <1333789124.12677.15.camel@marge.simpson.net>
-	 <1333792489.12677.58.camel@marge.simpson.net>
-	 <1334048925.7524.21.camel@marge.simpson.net>
-	 <1334401847.2528.65.camel@twins>
-	 <1334461061.5751.15.camel@marge.simpson.net>
-	 <1334461470.5751.21.camel@marge.simpson.net>
-	 <1334465495.7802.6.camel@marge.simpson.net> <20120418052057.GA19328@zhy>
-	 <1334730470.5616.33.camel@marge.simpson.net> <20120418074803.GB19328@zhy>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.1 
+	Wed, 18 Apr 2012 04:44:31 -0400
+X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
+Message-ID: <4F8E7E76.3020202@jp.fujitsu.com>
+Date: Wed, 18 Apr 2012 17:42:30 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.0; rv:11.0) Gecko/20120327 Thunderbird/11.0.1
+MIME-Version: 1.0
+To: Frederic Weisbecker <fweisbec@gmail.com>
+CC: Glauber Costa <glommer@parallels.com>, Tejun Heo <tj@kernel.org>,
+        Johannes Weiner <hannes@cmpxchg.org>, Hugh Dickins <hughd@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Daniel Walsh <dwalsh@redhat.com>,
+        "Daniel P. Berrange" <berrange@redhat.com>,
+        Li Zefan <lizf@cn.fujitsu.com>, LKML <linux-kernel@vger.kernel.org>,
+        Cgroups <cgroups@vger.kernel.org>,
+        Containers <containers@lists.linux-foundation.org>
+Subject: Re: [RFD] Merge task counter into memcg
+References: <4F862851.3040208@jp.fujitsu.com> <20120412113217.GB11455@somewhere.redhat.com> <4F86BFC6.2050400@parallels.com> <20120412123256.GI1787@cmpxchg.org> <4F86D4BD.1040305@parallels.com> <20120412153055.GL1787@cmpxchg.org> <20120412163825.GB13069@google.com> <20120412172309.GM1787@cmpxchg.org> <20120412174155.GC13069@google.com> <4F878480.60505@jp.fujitsu.com> <20120417154117.GE32402@google.com> <4F8D9FC4.3080800@parallels.com> <4F8E646B.1020807@jp.fujitsu.com> <CAFTL4hw3C4s6VS07pJzdBawv0ugKJJa+Vnb-Q_9FrWEq4=ka9Q@mail.gmail.com>
+In-Reply-To: <CAFTL4hw3C4s6VS07pJzdBawv0ugKJJa+Vnb-Q_9FrWEq4=ka9Q@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
-X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-04-18 at 15:48 +0800, Yong Zhang wrote: 
-> On Wed, Apr 18, 2012 at 08:27:50AM +0200, Mike Galbraith wrote:
-> > On Wed, 2012-04-18 at 13:20 +0800, Yong Zhang wrote:
-> > 
-> > > > --- a/kernel/sched/core.c
-> > > > +++ b/kernel/sched/core.c
-> > > > @@ -5875,6 +5875,11 @@ cpu_attach_domain(struct sched_domain *s
-> > > >  			sd->child = NULL;
-> > > >  	}
-> > > >  
-> > > > +	if (sd)
-> > > > +		cpumask_clear_cpu(cpu, cpu_isolated_map);
-> > > > +	else
-> > > > +		cpumask_set_cpu(cpu, cpu_isolated_map);
-> > > > +
-> > > 
-> > > Do we allow this?
-> > 
-> > Yeah, isolating CPUS 2-3...
+(2012/04/18 16:53), Frederic Weisbecker wrote:
+
+> 2012/4/18 KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>:
+>> (2012/04/18 1:52), Glauber Costa wrote:
+>>
+>>>
+>>>>> In short, I don't think it's better to have task-counting and fd-counting in memcg.
+>>>>> It's kmem, but it's more than that, I think.
+>>>>> Please provide subsys like ulimit.
+>>>>
+>>>> So, you think that while kmem would be enough to prevent fork-bombs,
+>>>> it would still make sense to limit in more traditional ways
+>>>> (ie. ulimit style object limits).  Hmmm....
+>>>>
+>>>
+>>> I personally think this is namespaces business, not cgroups.
+>>> If you have a process namespace, an interface that works to limit the
+>>> number of processes should keep working given the constraints you are
+>>> given.
+>>>
+>>> What doesn't make sense, is to create a *new* interface to limit
+>>> something that doesn't really need to be limited, just because you
+>>> limited a similar resource before.
+>>>
+>>
+>>
+>> Ok, limitiing forkbomb is unnecessary. ulimit+namespace should work.
+>> What we need is user-id namespace, isn't it ? If we have that, ulimit
+>> works enough fine, no overheads.
 > 
-> Hmm...magic cpuset ;-)
-
-The _only_ cpuset if you have a low jitter requirement. 
-
-> > [ 3011.444345] CPU0 attaching NULL sched-domain.
-> > [ 3011.448719] CPU1 attaching NULL sched-domain.
-> > [ 3011.453107] CPU2 attaching NULL sched-domain.
-> > [ 3011.457466] CPU3 attaching NULL sched-domain.
-> > [ 3011.461892] CPU0 attaching sched-domain:
-> > [ 3011.465813]  domain 0: span 0-1 level MC
-> > [ 3011.469761]   groups: 0 1
-> > [ 3011.472415] CPU1 attaching sched-domain:
-> > [ 3011.476333]  domain 0: span 0-1 level MC
-> > [ 3011.480266]   groups: 1 0
-> > [ 3011.482988] CPU2 attaching sched-domain:
-> > [ 3011.486919]  domain 0: span 2-3 level MC
-> > [ 3011.490851]   groups: 2 3
-> > [ 3011.493502] CPU3 attaching sched-domain:
-> > [ 3011.497422]  domain 0: span 2-3 level MC
-> > [ 3011.501367]   groups: 3 2
-> > [ 3011.504214] CPU2 attaching NULL sched-domain.
-> > [ 3011.508569] CPU3 attaching NULL sched-domain.
+> I have considered using NR_PROC rlimit on top of user namespaces to
+> fight forkbombs inside a container.
+> ie: one user namespace per container with its own rlimit.
 > 
-> But another scenario comes into head:
-> What will happen when a rt_rq is throttled the very CPU is
-> attached to NULL domain?
+> But it doesn't work because we can have multiuser apps running in a
+> single container.
+> 
 
-Yup, _somebody_ will hit the throttle only once :)
+Ok, then, requirements is different from ulimit. ok, please forget my words.
 
-That's what gets fixed by either killing the throttle entirely for
-isolated CPUs, or making the throttle work until the guy who needed
-isolation turns noise maker off.  I prefer reconnect the dots, because
-that doesn't touch the fast path.
+My concern for using 'kmem' is that size of object can be changed, and set up
+may be more complicated than limiting 'number' of tasks.
+It's very architecture dependent....But hmm... 
 
--Mike
+If slab accounting can handle task_struct accounting, all you wants can be
+done by it (maybe). And implementation can be duplicated.
+(But another aspect of the problem will be speed of development..)
+
+One idea is (I'm not sure good or bad)...having following control files.
+
+ - memory.kmem.task_struct.limit_in_bytes
+ - memory.kmem.task_struct.usage_in_bytes
+ - memory.kmem.task_struct.size_in_bytes   # size of task struct.
+
+At 1st, implement this by accounting task struct(or some) directly.
+Later, if we can, replace the implementation with slab(kmem) cgroup..
+and unify interfaces.....a long way to go.
+
+2nd idea is
+
+ - memory.object.task.limit_in_number	# limit the number of tasks.
+ - memory.object.task.usage_in_number   # usage
+
+
+If I'm a user, I prefer #2.
+
+Hmm, 
+   global kmem limiting           -> done by bytes.
+   special kernel object limiting -> done by the number of objects.
+
+is...complicated ?
+
+Thanks,
+-Kame
 
