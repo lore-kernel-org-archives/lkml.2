@@ -1,60 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753276Ab2DRVrK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Apr 2012 17:47:10 -0400
-Received: from mail-pz0-f52.google.com ([209.85.210.52]:62489 "EHLO
-	mail-pz0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751537Ab2DRVrI (ORCPT
+	id S1753104Ab2DRVtQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Apr 2012 17:49:16 -0400
+Received: from mail-qa0-f53.google.com ([209.85.216.53]:47950 "EHLO
+	mail-qa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751839Ab2DRVtO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Apr 2012 17:47:08 -0400
-Date: Wed, 18 Apr 2012 14:47:03 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: MyungJoo Ham <myungjoo.ham@samsung.com>
-Cc: Arnd Bergmann <arnd@arndb.de>, LKML <linux-kernel@vger.kernel.org>,
-        NeilBrown <neilb@suse.de>, Randy Dunlap <rdunlap@xenotime.net>,
-        Mike Lockwood <lockwood@android.com>,
-        Arve =?iso-8859-1?Q?Hj=F8nnevag?= <arve@android.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Morten CHRISTIANSEN <morten.christiansen@stericsson.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        John Stultz <john.stultz@linaro.org>,
-        Joerg Roedel <joerg.roedel@amd.com>, myungjoo.ham@gmail.com,
-        cw00.choi@samsung.com
-Subject: Re: [PATCH v7 1/6] Extcon (external connector): import Android's
- switch class and modify.
-Message-ID: <20120418214703.GA31606@kroah.com>
-References: <1332492784-10526-1-git-send-email-myungjoo.ham@samsung.com>
- <1332492784-10526-2-git-send-email-myungjoo.ham@samsung.com>
+	Wed, 18 Apr 2012 17:49:14 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1332492784-10526-2-git-send-email-myungjoo.ham@samsung.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <4F8F30F5.9030704@zytor.com>
+References: <1329696488-16970-1-git-send-email-hpa@zytor.com>
+	<tip-31796ac4e8f0e88f5c10f1ad6dab8f19bebe44a4@git.kernel.org>
+	<CAMe9rOqF6Kh6-NK7oP0Fpzkd4SBAWU+G53hwBbSD4iA2UzyxuA@mail.gmail.com>
+	<4F8EFE4D.2040201@zytor.com>
+	<CAMe9rOpfPQghra1PQTUwsFOvjgNpzFDEGS5=BbFBjn=HZGL93g@mail.gmail.com>
+	<4F8F0385.5090901@zytor.com>
+	<CAMe9rOq7LduF4aLPe9qatedxps4WPCgOHTD=E_Lje4_tu6tyZw@mail.gmail.com>
+	<4F8F0614.9010604@zytor.com>
+	<CAMe9rOqBd29LKB==NaKscpedRMR1uL_ZhHqSw1HQj-3_d9PSCw@mail.gmail.com>
+	<4F8F30F5.9030704@zytor.com>
+Date: Wed, 18 Apr 2012 14:49:13 -0700
+Message-ID: <CAMe9rOpPStV7+3hSMifVGcRXwF+X_DzjxgUCPBn_nSWyJiOYfg@mail.gmail.com>
+Subject: Re: [tip:x86/x32] x32: Fix alignment fail in struct compat_siginfo
+From: "H.J. Lu" <hjl.tools@gmail.com>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: mingo@redhat.com, linux-kernel@vger.kernel.org, tglx@linutronix.de,
+        linux-tip-commits@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 23, 2012 at 05:52:58PM +0900, MyungJoo Ham wrote:
-> External connector class (extcon) is based on and an extension of
-> Android kernel's switch class located at linux/drivers/switch/.
+On Wed, Apr 18, 2012 at 2:24 PM, H. Peter Anvin <hpa@zytor.com> wrote:
+> Something like this works for you?
+>
+> Note: we should promote __compat_[us]64 to a global type when we do the
+> cleanup work requested by Linus (change __[us]64 to explicitly aligned
+> types, with all users that require the old types using __compat_[us]64),
 
-<snip>
+It looks good to me.
 
-This patch breaks the build:
-drivers/extcon/extcon_class.c:79:6: error: redefinition of ‘extcon_set_state’
-include/linux/extcon.h:80:20: note: previous definition of ‘extcon_set_state’ was here
-drivers/extcon/extcon_class.c:170:5: error: redefinition of ‘extcon_dev_register’
-include/linux/extcon.h:67:19: note: previous definition of ‘extcon_dev_register’ was here
-drivers/extcon/extcon_class.c:214:6: error: redefinition of ‘extcon_dev_unregister’
-include/linux/extcon.h:73:20: note: previous definition of ‘extcon_dev_unregister’ was here
+> but we need the compiler warning to do that, realistically.
+>
 
-So it obviously can't be applied to the tree :(
+I think you mentioned to me about this. Have you opened a gcc bug to
+request to this feature?
 
-Did you test it?
+Thanks.
 
-Care to redo this series and send it again?
-
-greg k-h
+-- 
+H.J.
