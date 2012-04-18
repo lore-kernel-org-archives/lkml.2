@@ -1,28 +1,30 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752808Ab2DRDVQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Apr 2012 23:21:16 -0400
-Received: from 50-56-35-84.static.cloud-ips.com ([50.56.35.84]:47532 "EHLO
+	id S1752690Ab2DRDXJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Apr 2012 23:23:09 -0400
+Received: from 50-56-35-84.static.cloud-ips.com ([50.56.35.84]:47546 "EHLO
 	mail.hallyn.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752148Ab2DRDVP (ORCPT
+	with ESMTP id S1751710Ab2DRDXI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Apr 2012 23:21:15 -0400
-Date: Wed, 18 Apr 2012 03:22:10 +0000
+	Tue, 17 Apr 2012 23:23:08 -0400
+Date: Wed, 18 Apr 2012 03:24:04 +0000
 From: "Serge E. Hallyn" <serge@hallyn.com>
 To: Doug Ledford <dledford@redhat.com>
 Cc: linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
         kosaki.motohiro@gmail.com,
         KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Amerigo Wang <amwang@redhat.com>, "Serge E. Hallyn" <serue@us.ibm.com>,
-        Jiri Slaby <jslaby@suse.cz>
-Subject: Re: [Patch 5/8] mqueue: revert bump up DFLT_*MAX
-Message-ID: <20120418032210.GB18830@mail.hallyn.com>
+        KOSAKI Motohiro <mkosaki@jp.fujitsu.com>,
+        Amerigo Wang <amwang@redhat.com>,
+        "Serge E. Hallyn" <serge.hallyn@canonical.com>,
+        Jiri Slaby <jslaby@suse.cz>, Dave Hansen <haveblue@us.ibm.com>
+Subject: Re: [Patch 6/8] mqueue: don't use kmalloc with KMALLOC_MAX_SIZE
+Message-ID: <20120418032404.GC18830@mail.hallyn.com>
 References: <cover.1334676645.git.dledford@redhat.com>
- <de8d761688dd34f312822db71ceed6753493933a.1334676645.git.dledford@redhat.com>
+ <a4466082257558adf6654facc633630c14b65033.1334676645.git.dledford@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <de8d761688dd34f312822db71ceed6753493933a.1334676645.git.dledford@redhat.com>
+In-Reply-To: <a4466082257558adf6654facc633630c14b65033.1334676645.git.dledford@redhat.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -31,58 +33,48 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 Quoting Doug Ledford (dledford@redhat.com):
 > From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
 > 
-> Mqueue limitation is slightly naieve parameter likes other ipcs
-> because unprivileged user can consume kernel memory by using ipcs.
+> KMALLOC_MAX_SIZE is no good threshold. It is extream high and
+> problematic. Unfortunately, some silly drivers depend on and
+> we can't change it. but any new code don't use such extream
+> ugly high order allocations. It bring us awful fragmentation
+> issue and system slowdown.
 > 
-> Thus, too aggressive raise bring us security issue. Example,
-> current setting allow evil unprivileged user use 256GB (= 256
-> * 1024 * 1024*1024) and it's enough large to system will belome
-> unresponsive. Don't do that.
-> 
-> Instead, every admin should adjust the knobs for their own systems.
-
-Would you be terribly averse to having a higher limit in init_ipc_ns,
-and the lower values by default in all child namespaces?
-
-Sorry it sounds from the intro like you've already had quite a bit of
-discussion on this...
-
-Of course I realize the values can just be raised by distro boot
-scripts...
-
-> Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+> Signed-off-by: KOSAKI Motohiro <mkosaki@jp.fujitsu.com>
 > Acked-by: Doug Ledford <dledford@redhat.com>
 > Acked-by: Joe Korty <joe.korty@ccur.com>
 > Cc: Amerigo Wang <amwang@redhat.com>
 > Cc: Serge E. Hallyn <serue@us.ibm.com>
 
-Acked-by: Serge E. Hallyn <serge.hallyn@canonical.com>
+Looks reasonable to me, but that doesn't mean much.  Cc:d Dave Hansen
+explicitly, he'd have a better idea.
 
 > Cc: Jiri Slaby <jslaby@suse.cz>
 > ---
->  include/linux/ipc_namespace.h |    6 +++---
->  1 files changed, 3 insertions(+), 3 deletions(-)
+>  ipc/mqueue.c |    4 ++--
+>  1 files changed, 2 insertions(+), 2 deletions(-)
 > 
-> diff --git a/include/linux/ipc_namespace.h b/include/linux/ipc_namespace.h
-> index 6e1dd08..2488535 100644
-> --- a/include/linux/ipc_namespace.h
-> +++ b/include/linux/ipc_namespace.h
-> @@ -118,12 +118,12 @@ extern int mq_init_ns(struct ipc_namespace *ns);
->  #define DFLT_QUEUESMAX		      256
->  #define HARD_QUEUESMAX		     1024
->  #define MIN_MSGMAX			1
-> -#define DFLT_MSG		       64U
-> -#define DFLT_MSGMAX		     1024
-> +#define DFLT_MSG		       10U
-> +#define DFLT_MSGMAX		       10
->  #define HARD_MSGMAX		    65536
->  #define MIN_MSGSIZEMAX		      128
->  #define DFLT_MSGSIZE		     8192U
-> -#define DFLT_MSGSIZEMAX	       (1024*1024)
-> +#define DFLT_MSGSIZEMAX		     8192
->  #define HARD_MSGSIZEMAX	    (16*1024*1024)
->  #else
->  static inline int mq_init_ns(struct ipc_namespace *ns) { return 0; }
+> diff --git a/ipc/mqueue.c b/ipc/mqueue.c
+> index 3ced596..f9f0782 100644
+> --- a/ipc/mqueue.c
+> +++ b/ipc/mqueue.c
+> @@ -150,7 +150,7 @@ static struct inode *mqueue_get_inode(struct super_block *sb,
+>  			info->attr.mq_msgsize = attr->mq_msgsize;
+>  		}
+>  		mq_msg_tblsz = info->attr.mq_maxmsg * sizeof(struct msg_msg *);
+> -		if (mq_msg_tblsz > KMALLOC_MAX_SIZE)
+> +		if (mq_msg_tblsz > PAGE_SIZE)
+>  			info->messages = vmalloc(mq_msg_tblsz);
+>  		else
+>  			info->messages = kmalloc(mq_msg_tblsz, GFP_KERNEL);
+> @@ -263,7 +263,7 @@ static void mqueue_evict_inode(struct inode *inode)
+>  	spin_lock(&info->lock);
+>  	for (i = 0; i < info->attr.mq_curmsgs; i++)
+>  		free_msg(info->messages[i]);
+> -	if (info->attr.mq_maxmsg * sizeof(struct msg_msg *) > KMALLOC_MAX_SIZE)
+> +	if (is_vmalloc_addr(info->messages))
+>  		vfree(info->messages);
+>  	else
+>  		kfree(info->messages);
 > -- 
 > 1.7.7.6
 > 
