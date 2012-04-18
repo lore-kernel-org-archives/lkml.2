@@ -1,147 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752416Ab2DRJuH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Apr 2012 05:50:07 -0400
-Received: from plane.gmane.org ([80.91.229.3]:59495 "EHLO plane.gmane.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751518Ab2DRJuF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Apr 2012 05:50:05 -0400
-X-Injected-Via-Gmane: http://gmane.org/
-To: linux-kernel@vger.kernel.org
-From: Tomasz Stanislawski <t.stanislaws@samsung.com>
-Subject: [PATCH] scatterlist: add sg_alloc_table_by_pages function
-Date: Wed, 18 Apr 2012 11:44:59 +0200
-Message-ID: <4F8E8D1B.7020901@samsung.com>
-Mime-Version: 1.0
+	id S1752788Ab2DRJuW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Apr 2012 05:50:22 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:35769 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1752506Ab2DRJuQ convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Apr 2012 05:50:16 -0400
+X-IronPort-AV: E=Sophos;i="4.75,441,1330876800"; 
+   d="scan'208";a="4782477"
+Message-ID: <4F8E8E3D.8040707@cn.fujitsu.com>
+Date: Wed, 18 Apr 2012 17:49:49 +0800
+From: zhangyanfei <zhangyanfei@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100413 Fedora/3.0.4-2.fc13 Thunderbird/3.0.4
+MIME-Version: 1.0
+To: Avi Kivity <avi@redhat.com>
+CC: mtosatti@redhat.com, ebiederm@xmission.com, luto@mit.edu,
+        joerg.roedel@amd.com, dzickus@redhat.com, paul.gortmaker@windriver.com,
+        gregkh@suse.de, ludwig.nussel@suse.de, linux-kernel@vger.kernel.org,
+        kvm@vger.kernel.org, kexec@lists.infradead.org
+Subject: Re: [PATCH 0/4] Export offsets of VMCS fields as note information
+ for kdump
+References: <4F84E0DF.8040206@cn.fujitsu.com> <4F8D1F46.3090901@redhat.com> <4F8D4B4C.8070705@cn.fujitsu.com> <4F8D4D1C.4010400@redhat.com> <4F8E6DA5.8030503@cn.fujitsu.com> <4F8E7A5B.5030904@redhat.com>
+In-Reply-To: <4F8E7A5B.5030904@redhat.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/04/18 17:49:14,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/04/18 17:49:20
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-Complaints-To: usenet@dough.gmane.org
-Cc: paul.gortmaker@windriver.com,
-        =?UTF-8?B?J+uwleqyveuvvCc=?= <kyungmin.park@samsung.com>,
-        amwang@redhat.com, dri-devel@lists.freedesktop.org,
-        "'???/Mobile S/W Platform Lab.(???)/E3(??)/????'" 
-	<inki.dae@samsung.com>,
-        prashanth.g@samsung.com, Marek Szyprowski <m.szyprowski@samsung.com>,
-        "linux-media@vger.kernel.org" <linux-media@vger.kernel.org>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Rob Clark <rob@ti.com>, Dave Airlie <airlied@redhat.com>,
-        "'???/Mobile S/W Platform Lab.(???)/E3(??)/????'" 
-	<inki.dae@samsung.com>
-X-Gmane-NNTP-Posting-Host: 217-67-201-162.itsa.net.pl
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120310 Thunderbird/11.0
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds a new constructor for an sg table. The table is constructed
-from an array of struct pages. All contiguous chunks of the pages are merged
-into a single sg nodes. A user may provide an offset and a size of a buffer if
-the buffer is not page-aligned.
+于 2012年04月18日 16:24, Avi Kivity 写道:
+> On 04/18/2012 10:30 AM, zhangyanfei wrote:
+>>>
+>>> Okay.  Do you expect it to help in debugging the crash?  Did you have
+>>> cases where it would help?
+>>>
+>>
+>> Yes, I do expect it to help in debugging the crash.
+>> Looking into host machine's crash dump, if we figure out the fact that the crash
+>> had happend when some host's resource was requested and used by some guset machine.
+>> Then, we surely want to look into the situation from guest machine's view.
+>>
+>>
+> 
+> What type of resource?  Can you give an example?
+> 
+Sorry. No concrete example for now.
 
-The function is dedicated for DMABUF exporters which often performs conversion
-from an page array to a scatterlist. Moreover the scatterlist should be
-squashed in order to save memory and to speed-up DMA mapping using dma_map_sg.
+We are developing this on a conservative policy and I have put the vmcs processing
+in a new module in patch set v2 as you required. The new module is auto-loaded when
+the vmx cpufeature is detected and it depends on module kvm-intel. Loading and unloading
+this module will have no side effect on the running guests.
 
-The code is based on the patch 'v4l: vb2-dma-contig: add support for
-scatterlist in userptr mode' and hints from Laurent Pinchart.
+And one thing I have to stress is that, we can see guest image as crash dump from
+guest machine's view if we have the vmcsinfo, this itself is useful.
 
-Signed-off-by: Tomasz Stanislawski <t.stanislaws@samsung.com>
-Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
----
- include/linux/scatterlist.h |    4 +++
- lib/scatterlist.c           |   63 +++++++++++++++++++++++++++++++++++++++++++
- 2 files changed, 67 insertions(+), 0 deletions(-)
-
-diff --git a/include/linux/scatterlist.h b/include/linux/scatterlist.h
-index ac9586d..8d9e6fe 100644
---- a/include/linux/scatterlist.h
-+++ b/include/linux/scatterlist.h
-@@ -214,6 +214,10 @@ void sg_free_table(struct sg_table *);
- int __sg_alloc_table(struct sg_table *, unsigned int, unsigned int, gfp_t,
- 		     sg_alloc_fn *);
- int sg_alloc_table(struct sg_table *, unsigned int, gfp_t);
-+int sg_alloc_table_by_pages(struct sg_table *sgt,
-+	struct page **pages, unsigned int n_pages,
-+	unsigned long offset, unsigned long size,
-+	gfp_t gfp_mask);
-
- size_t sg_copy_from_buffer(struct scatterlist *sgl, unsigned int nents,
- 			   void *buf, size_t buflen);
-diff --git a/lib/scatterlist.c b/lib/scatterlist.c
-index 6096e89..30b9def 100644
---- a/lib/scatterlist.c
-+++ b/lib/scatterlist.c
-@@ -319,6 +319,69 @@ int sg_alloc_table(struct sg_table *table, unsigned int nents, gfp_t gfp_mask)
- EXPORT_SYMBOL(sg_alloc_table);
-
- /**
-+ * sg_alloc_table_by_pages - Allocate and initialize an sg table from an array
-+ *			     of pages
-+ * @sgt:	The sg table header to use
-+ * @pages:	Pointer to an array of page pointers
-+ * @n_pages:	Number of pages in the pages array
-+ * @offset:     Offset from start of the first page to the start of a buffer
-+ * @size:       Number of valid bytes in the buffer (after offset)
-+ * @gfp_mask:	GFP allocation mask
-+ *
-+ *  Description:
-+ *    Allocate and initialize an sg table from a list of pages. Continuous
-+ *    ranges of the pages are squashed into a single scatterlist node. A user
-+ *    may provide an offset at a start and a size of valid data in a buffer
-+ *    specified by the page array. The returned sg table is released by
-+ *    sg_free_table.
-+ *
-+ * Returns:
-+ *   0 on success
-+ **/
-+int sg_alloc_table_by_pages(struct sg_table *sgt,
-+	struct page **pages, unsigned int n_pages,
-+	unsigned long offset, unsigned long size,
-+	gfp_t gfp_mask)
-+{
-+	unsigned int chunks;
-+	unsigned int i;
-+	unsigned int cur_page;
-+	int ret;
-+	struct scatterlist *s;
-+
-+	/* compute number of contiguous chunks */
-+	chunks = 1;
-+	for (i = 1; i < n_pages; ++i)
-+		if (pages[i] != pages[i - 1] + 1)
-+			++chunks;
-+
-+	ret = sg_alloc_table(sgt, chunks, gfp_mask);
-+	if (unlikely(ret))
-+		return ret;
-+
-+	/* merging chunks and putting them into the scatterlist */
-+	cur_page = 0;
-+	for_each_sg(sgt->sgl, s, sgt->orig_nents, i) {
-+		unsigned long chunk_size;
-+		unsigned int j;
-+
-+		/* looking for the end of the current chunk */
-+		for (j = cur_page + 1; j < n_pages; ++j)
-+			if (pages[j] != pages[j - 1] + 1)
-+				break;
-+
-+		chunk_size = ((j - cur_page) << PAGE_SHIFT) - offset;
-+		sg_set_page(s, pages[cur_page], min(size, chunk_size), offset);
-+		size -= chunk_size;
-+		offset = 0;
-+		cur_page = j;
-+	}
-+
-+	return 0;
-+}
-+EXPORT_SYMBOL(sg_alloc_table_by_pages);
-+
-+/**
-  * sg_miter_start - start mapping iteration over a sg list
-  * @miter: sg mapping iter to be started
-  * @sgl: sg list to iterate over
--- 
-1.7.5.4
-
+Thanks
+Zhang Yanfei
 
