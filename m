@@ -1,59 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753827Ab2DRAXv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Apr 2012 20:23:51 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:36409 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752055Ab2DRAXu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Apr 2012 20:23:50 -0400
-Date: Tue, 17 Apr 2012 20:23:36 -0400
-From: Josh Boyer <jwboyer@redhat.com>
-To: Takashi Iwai <tiwai@suse.de>
-Cc: Jaroslav Kysela <perex@perex.cz>, alsa-devel@alsa-project.org,
-        linux-kernel@vger.kernel.org, kernel-team@fedoraproject.org,
-        kevin@scrye.com, cwickert@fedoraproject.org
-Subject: Re: Thinkpad hda regression in 3.3
-Message-ID: <20120418002336.GK19507@zod.bos.redhat.com>
-References: <20120413124306.GC25425@zod.bos.redhat.com>
- <s5hpqbbvkzo.wl%tiwai@suse.de>
- <s5hk41jty24.wl%tiwai@suse.de>
- <20120413180814.GG25425@zod.bos.redhat.com>
+	id S1753690Ab2DRApd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Apr 2012 20:45:33 -0400
+Received: from mail9.hitachi.co.jp ([133.145.228.44]:39321 "EHLO
+	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751990Ab2DRApb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Apr 2012 20:45:31 -0400
+X-Greylist: delayed 152409 seconds by postgrey-1.27 at vger.kernel.org; Tue, 17 Apr 2012 20:45:31 EDT
+X-AuditID: b753bd60-99794ba000007b1b-c5-4f8e0ea8a204
+X-AuditID: b753bd60-99794ba000007b1b-c5-4f8e0ea8a204
+Message-ID: <4F8E0E31.6030404@hitachi.com>
+Date: Wed, 18 Apr 2012 09:43:29 +0900
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Organization: Hitachi, Ltd., Japan
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:11.0) Gecko/20120327 Thunderbird/11.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120413180814.GG25425@zod.bos.redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Ingo Molnar <mingo@kernel.org>, hpa@zytor.com, paulus@samba.org,
+        eranian@google.com, linux-kernel@vger.kernel.org, efault@gmx.de,
+        namhyung@gmail.com, fweisbec@gmail.com, dsahern@gmail.com,
+        tglx@linutronix.de, linux-tip-commits@vger.kernel.org,
+        yrl.pp-manager.tt@hitachi.com
+Subject: Re: [tip:perf/core] perf ui annotate browser: Allow toggling addr
+ offset view
+References: <tip-4zpgimmz8xv7b5c920el7s45@git.kernel.org>  <CA+55aFxnv5Wrix=uREQsEg+tSBE8SFvy0v_76csv3hrnmPYG2A@mail.gmail.com>  <CA+55aFwcf2uPCccCVrNdCENZVKyev=ARprNj=5zwp5vxD942pw@mail.gmail.com>  <20120414010410.GB22114@infradead.org> <20120414085519.GB28505@gmail.com>  <20120414162851.GD22114@infradead.org> <4F8BBB4D.5090409@hitachi.com>  <CA+55aFy5pfzKfaDCc0jbQ5_+_+MMso_XqRcR-KqkZMwcSXAbPQ@mail.gmail.com> <1334589710.28150.66.camel@twins>
+In-Reply-To: <1334589710.28150.66.camel@twins>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 13, 2012 at 02:08:14PM -0400, Josh Boyer wrote:
-> On Fri, Apr 13, 2012 at 06:07:47PM +0200, Takashi Iwai wrote:
-> > At Fri, 13 Apr 2012 15:07:07 +0200,
-> > Takashi Iwai wrote:
-> > (snip)
-> > > If the above seem work (again, make sure that you adjust the mixer
-> > > mutes and levels), I'll make kernel patches to add these fixups
-> > > statically in the driver so that it works without extra patching.
-> > 
-> > Looking through alsa-info.sh outputs from various ThinkPad models I've
-> > gathered, it seems that we can use the same pin setups for all.
+(2012/04/17 0:21), Peter Zijlstra wrote:
+> On Mon, 2012-04-16 at 08:02 -0700, Linus Torvalds wrote:
+>>
+>> It really would be *much* better if you could parse the
+>> 'altinstructions' section. You already have a lot of ELF parsing code.
+>>
+> altinstructions, altinstr_replacement, smp_locks, __jump_table,
+> parainstructions, __mcount_loc and maybe a few more.. and that doesn't
+> allow for kprobes.
 > 
-> We had a user try the alsa-tp-dock patch on an X201 and it didn't seem
-> to work for them.  See bug
-> https://bugzilla.redhat.com/show_bug.cgi?id=806217
+> But yeah, being able to grok some of that would be neat.
 > 
-> Perhaps the [codec] section isn't set properly for their configuration?
-> The alsa-info for their machine is in comment #9 of the bug.
-> 
-> > Below is a test patch for 3.3 kernel.  (Note that it'd give a merge
-> > conflict for 3.4 kernel.)
-> 
-> OK, I'll do a scratch build with this and get people to test.
 
-I built your patch in a scratch kernel and have at least one user with a
-t510 laptop report success.  Christoph reported the mixers showing up,
-but it wasn't clear to me if his sound actually worked on the x201.
-I've CC'd both users (Kevin t510, Christoph x201 in a dock).
+I sse. For the kprobes, at least live time, we can see where
+kprobes are put via /sys/kernel/debug/kprobes/list.
 
-josh
+Thank you,
+
+-- 
+Masami HIRAMATSU
+Software Platform Research Dept. Linux Technology Center
+Hitachi, Ltd., Yokohama Research Laboratory
+E-mail: masami.hiramatsu.pt@hitachi.com
