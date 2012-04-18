@@ -1,60 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754223Ab2DRQPV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Apr 2012 12:15:21 -0400
-Received: from li9-11.members.linode.com ([67.18.176.11]:36159 "EHLO
-	test.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752909Ab2DRQPU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Apr 2012 12:15:20 -0400
-Date: Wed, 18 Apr 2012 12:07:17 -0400
-From: "Ted Ts'o" <tytso@mit.edu>
-To: Dave Chinner <david@fromorbit.com>
-Cc: Eric Sandeen <sandeen@redhat.com>, Ric Wheeler <rwheeler@redhat.com>,
-        Zheng Liu <gnehzuil.liu@gmail.com>, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, linux-ext4@vger.kernel.org,
-        Zheng Liu <wenqing.lz@taobao.com>
-Subject: Re: [RFC][PATCH 0/3] add FALLOC_FL_NO_HIDE_STALE flag in fallocate
-Message-ID: <20120418160717.GE5916@thunk.org>
-Mail-Followup-To: Ted Ts'o <tytso@mit.edu>,
-	Dave Chinner <david@fromorbit.com>,
-	Eric Sandeen <sandeen@redhat.com>,
-	Ric Wheeler <rwheeler@redhat.com>,
-	Zheng Liu <gnehzuil.liu@gmail.com>, linux-kernel@vger.kernel.org,
-	linux-fsdevel@vger.kernel.org, linux-ext4@vger.kernel.org,
-	Zheng Liu <wenqing.lz@taobao.com>
-References: <1334681618-9452-1-git-send-email-wenqing.lz@taobao.com>
- <4F8DAF89.5070805@redhat.com>
- <20120417184306.GA5916@thunk.org>
- <4F8DBC20.5010401@redhat.com>
- <20120418030208.GO6734@dastard>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120418030208.GO6734@dastard>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on test.thunk.org); SAEximRunCond expanded to false
+	id S1754243Ab2DRQSF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Apr 2012 12:18:05 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:42944 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753464Ab2DRQSC (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Apr 2012 12:18:02 -0400
+Message-ID: <1334765995.1298.5.camel@fujitsu-laptop>
+Subject: Re: BUG: sleeping function called from invalid context at
+ kernel/mutex.c:271
+From: "Alexander E. Patrakov" <patrakov@gmail.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: paulmck@linux.vnet.ibm.com, linux-kernel@vger.kernel.org
+Date: Wed, 18 Apr 2012 22:19:55 +0600
+In-Reply-To: <1334762504.1595.2.camel@fujitsu-laptop>
+References: <1334561244.3339.7.camel@aep-desktop>
+	 <20120418025626.GB23877@home.goodmis.org>
+	 <20120418040636.GD2449@linux.vnet.ibm.com>
+	 <1334724679.2019.20.camel@aep-desktop>
+	 <1334750926.28106.36.camel@gandalf.stny.rr.com>
+	 <1334756757.1269.28.camel@fujitsu-laptop>
+	 <1334756901.28106.38.camel@gandalf.stny.rr.com>
+	 <1334762504.1595.2.camel@fujitsu-laptop>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 18, 2012 at 01:02:08PM +1000, Dave Chinner wrote:
-> In actual fact, on my 12 disk RAID0 array, XFS is faster with
-> unwritten extents *enabled* than when hacked to turn them off. 
+I wrote:
+> Steven Rostedt wrote:
+> > On Wed, 2012-04-18 at 19:45 +0600, Alexander E. Patrakov wrote:
+> > 
+> > > > Do you see the RT throttling message too? That's a bug with an RT task
+> > > > going haywire. If that is happening, an RT task may be preventing an RCU
+> > > > grace period to finish, and causing the RCU stalls.
+> > > 
+> > > I am currently at home, writing this from a laptop with 3.3.1, and there
+> > 
+> > Have you seen the memory leaks on your laptop?
+> > 
+> > > are no such messages in dmesg (yet?). Also I don't know any RT tasks
+> > > that may run on my computer, except pulseaudio, which has a built-in
+> > 
+> > There are kernel threads that run at RT priorities too.
+> > 
+> > > safeguard against this. As for the work computer, should I check
+> > > tomorrow, and with which kernel version?
+> > > 
+> > 
+> > I'm only interested in the kernel version that happens to leak. If other
+> > versions don't leak then we don't need to worry about them ;-)
+> 
+> Attached is a config and a full dmesg on 3.3.0 on the laptop. No obvious
+> memory leak - but this may be just the beginning, as the laptop still
+> responds well enough for me to send this email.
 
-Can you explain why this is the case?  It seems... counterintuitive.
+Given how short the time to trigger the BUG was on the laptop, the fact
+that it mentioned ipv6 in the trace and that the BUG is not triggered
+yet on 3.3.0 + 731184bff, I am confident that the BUG is dead now. Fixed
+by 731184bff, which is in 3.3.1.
 
-The only explanation I can think of is that your code paths when
-unwritten extents are disabled haven't been optimized, in which case
-the comparison between using and not using unwritten extents might not
-be valid.
+-- 
+Alexander E. Patrakov
 
-Is there anything going on other than _not_ mutating the extent tree
-(and all of the logical journaling that would go along with it)?
-Hacking to turn them off means it should be doing *less* work, so I
-would expect at worst it would be the same speed as using extent
-written extents.  If it's faster to use unwritten extents, something
-very wierd must be going on....
-
-					- Ted
