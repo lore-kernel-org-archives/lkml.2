@@ -1,128 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753566Ab2DROVr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Apr 2012 10:21:47 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:4989 "EHLO mx1.redhat.com"
+	id S1753639Ab2DROWG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Apr 2012 10:22:06 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:37530 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752533Ab2DROVp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Apr 2012 10:21:45 -0400
-Date: Wed, 18 Apr 2012 17:21:47 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Paolo Bonzini <pbonzini@redhat.com>
-Cc: linux-kernel@vger.kernel.org, virtualization@lists.linux-foundation.org,
-        Amit Shah <amit.shah@redhat.com>,
-        Rusty Russell <rusty@rustcorp.com.au>
-Subject: Re: [RFC PATCH] virtio_console: link vq to port with a private
- pointer in struct virtqueue
-Message-ID: <20120418142146.GB11801@redhat.com>
-References: <1334756013-11752-1-git-send-email-pbonzini@redhat.com>
+	id S1753607Ab2DROWE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Apr 2012 10:22:04 -0400
+Message-ID: <4F8ECE09.3050700@redhat.com>
+Date: Wed, 18 Apr 2012 10:22:01 -0400
+From: Doug Ledford <dledford@redhat.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:11.0) Gecko/20120327 Thunderbird/11.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1334756013-11752-1-git-send-email-pbonzini@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: KOSAKI Motohiro <kosaki.motohiro@gmail.com>, linux-kernel@vger.kernel.org
+Subject: Re: [Patch 2/8] ipc/mqueue: switch back to using non-max values on
+ create
+References: <cover.1334676645.git.dledford@redhat.com> <a9cfc656e665735e11606d452a536a9a9e6ebdde.1334676645.git.dledford@redhat.com> <20120417151729.e255188c.akpm@linux-foundation.org> <4F8DEF79.409@gmail.com> <20120417160055.f8e35101.akpm@linux-foundation.org>
+In-Reply-To: <20120417160055.f8e35101.akpm@linux-foundation.org>
+X-Enigmail-Version: 1.4
+OpenPGP: id=0E572FDD
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ protocol="application/pgp-signature";
+ boundary="------------enig70B826BA4FCE0AE0AF7FC583"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 18, 2012 at 03:33:33PM +0200, Paolo Bonzini wrote:
-> For virtio-scsi multiqueue support I would like to have an easy and
-> fast way to go from a virtqueue to the internal struct for that
-> queue.
-> 
-> It turns out that virtio-serial has the same need, but it gets
-> by with a simple list walk.
-> 
-> This patch adds a pointer to struct virtqueue that is reserved for
-> the virtio device, and uses it in virtio-serial.
-> 
-> Cc: Amit Shah <amit.shah@redhat.com>
-> Cc: Rusty Russell <rusty@rustcorp.com.au>
-> Cc: "Michael S. Tsirkin" <mst@redhat.com>
-> Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
-> ---
-> 	Untested; what do you think?  Would this patch be acceptable
-> 	as is, or only with a more pressing need in virtio-scsi, or never?
-> 
->  drivers/char/virtio_console.c |   16 +++++-----------
->  include/linux/virtio.h        |    2 ++
->  2 files changed, 7 insertions(+), 11 deletions(-)
-> 
-> diff --git a/drivers/char/virtio_console.c b/drivers/char/virtio_console.c
-> index 1c74734..cfc7a63 100644
-> --- a/drivers/char/virtio_console.c
-> +++ b/drivers/char/virtio_console.c
-> @@ -297,17 +297,7 @@ out:
->  static struct port *find_port_by_vq(struct ports_device *portdev,
->  				    struct virtqueue *vq)
->  {
-> -	struct port *port;
-> -	unsigned long flags;
-> -
-> -	spin_lock_irqsave(&portdev->ports_lock, flags);
-> -	list_for_each_entry(port, &portdev->ports, list)
-> -		if (port->in_vq == vq || port->out_vq == vq)
-> -			goto out;
-> -	port = NULL;
-> -out:
-> -	spin_unlock_irqrestore(&portdev->ports_lock, flags);
-> -	return port;
-> +	return vq->vdev_priv;
->  }
->  
->  static bool is_console_port(struct port *port)
-> @@ -1159,6 +1149,8 @@ static int add_port(struct ports_device *portdev, u32 id)
->  
->  	port->in_vq = portdev->in_vqs[port->id];
->  	port->out_vq = portdev->out_vqs[port->id];
-> +	port->in_vq->vdev_priv = port;
-> +	port->out_vq->vdev_priv = port;
->  
->  	port->cdev = cdev_alloc();
->  	if (!port->cdev) {
-> @@ -1872,6 +1864,8 @@ static int virtcons_restore(struct virtio_device *vdev)
->  	list_for_each_entry(port, &portdev->ports, list) {
->  		port->in_vq = portdev->in_vqs[port->id];
->  		port->out_vq = portdev->out_vqs[port->id];
-> +		port->in_vq->vdev_priv = port;
-> +		port->out_vq->vdev_priv = port;
->  
->  		fill_queue(port->in_vq, &port->inbuf_lock);
->  
+This is an OpenPGP/MIME signed message (RFC 2440 and 3156)
+--------------enig70B826BA4FCE0AE0AF7FC583
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: quoted-printable
 
-Let's add an API to set this pointer.
-Document that you must not set it after
-probe/restore returned.
-With an API we can actually have a BUG_ON that checks it's not modified
-after probe.
+On 4/17/2012 7:00 PM, Andrew Morton wrote:
+> On Tue, 17 Apr 2012 18:32:25 -0400
+> KOSAKI Motohiro <kosaki.motohiro@gmail.com> wrote:
+>=20
+>>> Here the "future patch" is "mqueue: separate mqueue default value fro=
+m
+>>> maximum value v2" in this series, yes?
+>>>
+>>> So people who have applications which are broken by this patch will
+>>> need to manually set /proc/sys/fs/mqueue/msg_default and/or
+>>> /proc/sys/fs/mqueue/msgsize_default to get those apps working again?
+>>>
+>>
+>> Yes, it works.
+>>
+>=20
+> OK, I updated the changelog for this patch to reflect that.
+>=20
+> I worry a bit that some people who we don't know about will hit this
+> problem and will have to spend a lot of time working out why it broke. =
 
-> diff --git a/include/linux/virtio.h b/include/linux/virtio.h
-> index c193ccf..6b39c1a 100644
-> --- a/include/linux/virtio.h
-> +++ b/include/linux/virtio.h
-> @@ -14,6 +14,7 @@
->   * @callback: the function to call when buffers are consumed (can be NULL).
->   * @name: the name of this virtqueue (mainly for debugging)
->   * @vdev: the virtio device this queue was created for.
-> + * @vdev_priv: a pointer for the virtio device to use.
+> Is there some way in which we can make it easier for them?  A little
+> printk_once() in a suitable place?
 
-It's for the driver actually.
+It might be doable, although rather tricky.  The deal is that we won't
+know on mq_open if they really wanted a default sized mq or a max sized
+mq.  And we wouldn't even know on send if they wanted default or max
+sized mqs.  The best we could do is flag an mq as being a
+no-attr-struct-used mq, then wait and see if they ever try to send too
+many or too large of a message to that mq, and then we could do a
+printk_once(), but we would almost need a printk_once_per_pid() because
+they could have more than one app guilty of this behavior (if any are
+guilty of it, something I doubt).  But even with all of this, we
+wouldn't necessarily know that the app was intending to get a max sized
+mq, it could simply be that the app expected a default sized mq but
+tried to send an overly large message because it is a poorly coded app,
+or it could have run out of space because the receiving app is blocked.
+ So, we could print something out, but personally I'm not entirely
+convinced that it's worth the extra lines of code in the kernel to make
+it happen properly.  This problem, if it existed in the real world,
+would be such poor programming practice that I'm having a hard time
+imagining that it really exists.  For a simple, whip it up in 20 minutes
+test program as part of a regression suite?  Sure, I can see that.  For
+anything intended to be robust and reliable?  No, I can't see this bad
+behavior being done there.  But, who knows, maybe I give programmers
+writing real programs too much credit...
 
->   * @priv: a pointer for the virtqueue implementation to use.
->   */
->  struct virtqueue {
-> @@ -21,6 +22,7 @@ struct virtqueue {
->  	void (*callback)(struct virtqueue *vq);
->  	const char *name;
->  	struct virtio_device *vdev;
-> +	void *vdev_priv;
->  	void *priv;
 
-The name is confusing: it seems to imply it's a device pointer.
-Maybe we should rename priv to something like __priv and make
-priv useful for devices?
+--=20
+Doug Ledford <dledford@redhat.com>
+              GPG KeyID: 0E572FDD
+	      http://people.redhat.com/dledford
 
->  };
->  
-> -- 
-> 1.7.9.3
+Infiniband specific RPMs available at
+	      http://people.redhat.com/dledford/Infiniband
+
+
+--------------enig70B826BA4FCE0AE0AF7FC583
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.17 (MingW32)
+Comment: Using GnuPG with Mozilla - http://enigmail.mozdev.org/
+
+iQIcBAEBAgAGBQJPjs4JAAoJELgmozMOVy/d+PgP/iCsUM/w7chXTT4sMaEdFRoM
+yIo13qt1OqWTx5UqM+h/9pVuxQWXVCfqR28ZLMVgUPl0Woubg0kpBOGzlU4O6WmN
+eaAwImPfvd34E+Xeg4sPB0cJGQJcHrZ+OQVVEysOxvQqFcZF9sm9ZfR9D3XV/BXT
+YaVIo4r3A7YbazilmB7CKqndDzSjtroVJHHUotiega5S2MlvTY6T7bTmOjVyEjfl
+vugdNQmPeX0RcTzrSD43H7lVoWveXZsyxEco7Fop5R/uEpgUgyRBoVnbJ+8hsa9T
+Zd0IQBGO6P2zfzpCvFDixoWXS+ruI/A06WTFns9AHE82hs60H0D2rtYpz0gAKS68
+YJ1ChyVVn8kncOb057S8uSyLa96Dd8fOlIh44w6jCrSiXY7eitzNLdd1ICgqEBh6
+gJrIobxGkeFpMKQd4q9Rwi0emL/H6Rjb3XSmfPWRvjX5h+Nv2UmFlaWPgFtxOzEi
+1SxZwHZ7EvN0wf9RNxH+nruTkul5gfdu2kvluEPPSUx12DptVgbo06a6P/47vfjb
+jm6FEBQymiiSvS4eM9P+AVuEHwS3BDHIbBQUI682w/R8GKfrQmMFFhRpTIGpHOQ6
+/O/Nd9G8i436lw4usZYyjOnopLOUVftka3D+rOyDZQQwIpk0oJGAS2mQUdO/jqIZ
+MELzmHCCRaVph6fzdaDb
+=SS2k
+-----END PGP SIGNATURE-----
+
+--------------enig70B826BA4FCE0AE0AF7FC583--
