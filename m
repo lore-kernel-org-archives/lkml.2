@@ -1,84 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754479Ab2DRXV7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Apr 2012 19:21:59 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:60634 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753850Ab2DRXVD (ORCPT
+	id S1754032Ab2DRXYa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Apr 2012 19:24:30 -0400
+Received: from outmail005.snc4.facebook.com ([66.220.144.139]:43763 "EHLO
+	intmgw001.snc4.facebook.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751456Ab2DRXY3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Apr 2012 19:21:03 -0400
-From: David Daney <ddaney.cavm@gmail.com>
-To: Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>,
-        devicetree-discuss@lists.ozlabs.org,
-        "David S. Miller" <davem@davemloft.net>, netdev@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, linux-mips@linux-mips.org,
-        afleming@gmail.com, galak@kernel.crashing.org,
-        David Daney <david.daney@cavium.com>
-Subject: [PATCH v5 0/3] netdev/of/phy: MDIO bus multiplexer support.
-Date: Wed, 18 Apr 2012 16:20:51 -0700
-Message-Id: <1334791254-15987-1-git-send-email-ddaney.cavm@gmail.com>
-X-Mailer: git-send-email 1.7.2.3
+	Wed, 18 Apr 2012 19:24:29 -0400
+From: Arun Sharma <asharma@fb.com>
+To: linux-kernel@vger.kernel.org
+Cc: Arun Sharma <asharma@fb.com>, Ingo Molnar <mingo@elte.hu>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Stephane Eranian <eranian@google.com>,
+        Namhyung Kim <namhyung.kim@lge.com>, Tom Zanussi <tzanussi@gmail.com>,
+        linux-perf-users@vger.kernel.org
+Subject: [PATCH] perf, x86: Disable sanity check
+Date: Wed, 18 Apr 2012 16:24:09 -0700
+Message-Id: <1334791449-402-1-git-send-email-asharma@fb.com>
+X-Mailer: git-send-email 1.7.8.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: David Daney <david.daney@cavium.com>
+Without this patch, applications with two different stack
+regions (eg: native stack vs JIT stack) get truncated 
+callchains even when RBP chaining is present. GDB shows proper
+stack traces and the frame pointer chaining is intact.
 
-This code has been working well for about six months on a couple of
-different configurations (boards), so I thought it would be a good
-time to send it out again, and I hope get it on the path towards
-merging.
+This patch disables the (fp < RSP) check, hoping that other checks
+in the code save the day for us. In our limited testing, this
+didn't seem to break anything.
 
-v5: Correct Kconfig depends in 3/3 as noticed by David Miller.
+In the long term, we could potentially have userspace advise
+the kernel on the range of valid stack addresses, so we don't 
+spend a lot of time unwinding from bogus addresses.
 
-v4: Correct some comment text and rename a couple of variables to
-    better reflect their purpose.
+Signed-off-by: Arun Sharma <asharma@fb.com>
+Cc: Ingo Molnar <mingo@elte.hu>
+CC: Arnaldo Carvalho de Melo <acme@redhat.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Mike Galbraith <efault@gmx.de>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Stephane Eranian <eranian@google.com>
+Cc: Namhyung Kim <namhyung.kim@lge.com>
+Cc: Tom Zanussi <tzanussi@gmail.com>
+Cc: linux-kernel@vger.kernel.org
+Cc: linux-perf-users@vger.kernel.org
 
-v3: Update binding to use "mdio-mux-gpio" compatible property.
-    Cleanups suggested by Grant Likely.  Now uses the driver probe
-    deferral mechanism if GPIOs or parent bus not available.
+---
+ arch/x86/kernel/cpu/perf_event.c |    3 ---
+ 1 files changed, 0 insertions(+), 3 deletions(-)
 
-v2: Update bindings to use "reg" and "mdio-parent-bus" instead of
-    "cell-index" and "parent-bus"
-
-v1:
-
-We have several different boards with a multiplexer in the MDIO bus.
-There is an MDIO bus controller connected to a switching device with
-several child MDIO busses.
-
-Everything is wired up using device tree bindings.
-
- 1/3 - New of_mdio_find_bus() function used to help configuring the
-       driver topology.
-
- 2/3 - MDIO bus multiplexer framework.
-
- 3/3 - A driver for a GPIO controlled multiplexer.
-
-David Daney (3):
-  netdev/of/phy: New function: of_mdio_find_bus().
-  netdev/of/phy: Add MDIO bus multiplexer support.
-  netdev/of/phy: Add MDIO bus multiplexer driven by GPIO lines.
-
- .../devicetree/bindings/net/mdio-mux-gpio.txt      |  127 +++++++++++++
- Documentation/devicetree/bindings/net/mdio-mux.txt |  136 ++++++++++++++
- drivers/net/phy/Kconfig                            |   18 ++
- drivers/net/phy/Makefile                           |    2 +
- drivers/net/phy/mdio-mux-gpio.c                    |  142 +++++++++++++++
- drivers/net/phy/mdio-mux.c                         |  192 ++++++++++++++++++++
- drivers/net/phy/mdio_bus.c                         |   32 ++++
- drivers/of/of_mdio.c                               |    2 +
- include/linux/mdio-mux.h                           |   21 ++
- include/linux/of_mdio.h                            |    2 +
- 10 files changed, 674 insertions(+), 0 deletions(-)
- create mode 100644 Documentation/devicetree/bindings/net/mdio-mux-gpio.txt
- create mode 100644 Documentation/devicetree/bindings/net/mdio-mux.txt
- create mode 100644 drivers/net/phy/mdio-mux-gpio.c
- create mode 100644 drivers/net/phy/mdio-mux.c
- create mode 100644 include/linux/mdio-mux.h
-
+diff --git a/arch/x86/kernel/cpu/perf_event.c b/arch/x86/kernel/cpu/perf_event.c
+index 07f46ba..87d9abd 100644
+--- a/arch/x86/kernel/cpu/perf_event.c
++++ b/arch/x86/kernel/cpu/perf_event.c
+@@ -1596,9 +1596,6 @@ perf_callchain_user(struct perf_callchain_entry *entry, struct pt_regs *regs)
+ 		if (bytes != sizeof(frame))
+ 			break;
+ 
+-		if ((unsigned long)fp < regs->sp)
+-			break;
+-
+ 		perf_callchain_store(entry, frame.return_address);
+ 		fp = frame.next_frame;
+ 	}
 -- 
-1.7.2.3
+1.7.8.4
 
