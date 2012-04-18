@@ -1,44 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754012Ab2DRXcK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Apr 2012 19:32:10 -0400
-Received: from mail-pz0-f52.google.com ([209.85.210.52]:61342 "EHLO
-	mail-pz0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752186Ab2DRXcI (ORCPT
+	id S1754215Ab2DRXhz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Apr 2012 19:37:55 -0400
+Received: from ipmail07.adl2.internode.on.net ([150.101.137.131]:57585 "EHLO
+	ipmail07.adl2.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752568Ab2DRXhx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Apr 2012 19:32:08 -0400
-Date: Wed, 18 Apr 2012 16:32:05 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Jonathan Cameron <jic23@cam.ac.uk>
-Cc: Laxman Dewangan <ldewangan@nvidia.com>, linux-iio@vger.kernel.org,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] staging: iio: light: isl29028: fix correct mask value
-Message-ID: <20120418233205.GA23280@kroah.com>
-References: <1334591862-5169-1-git-send-email-ldewangan@nvidia.com>
- <f9fb01a9-362a-4540-9547-63263a4ca10e@email.android.com>
+	Wed, 18 Apr 2012 19:37:53 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: ArYLABhPj095LbFO/2dsb2JhbABEDrApAYEIgQiCCQEBBAE6HCgLCAMYLhQlAyEBEogKBLsJE4xDg18ElW6JV4ZkgjBJ
+Date: Thu, 19 Apr 2012 09:37:49 +1000
+From: Dave Chinner <david@fromorbit.com>
+To: "Ted Ts'o" <tytso@mit.edu>, Eric Sandeen <sandeen@redhat.com>,
+        Ric Wheeler <rwheeler@redhat.com>, Zheng Liu <gnehzuil.liu@gmail.com>,
+        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        linux-ext4@vger.kernel.org, Zheng Liu <wenqing.lz@taobao.com>
+Subject: Re: [RFC][PATCH 0/3] add FALLOC_FL_NO_HIDE_STALE flag in fallocate
+Message-ID: <20120418233749.GP6734@dastard>
+References: <1334681618-9452-1-git-send-email-wenqing.lz@taobao.com>
+ <4F8DAF89.5070805@redhat.com>
+ <20120417184306.GA5916@thunk.org>
+ <4F8DBC20.5010401@redhat.com>
+ <20120418030208.GO6734@dastard>
+ <20120418160717.GE5916@thunk.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <f9fb01a9-362a-4540-9547-63263a4ca10e@email.android.com>
+In-Reply-To: <20120418160717.GE5916@thunk.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 16, 2012 at 05:08:07PM +0100, Jonathan Cameron wrote:
+On Wed, Apr 18, 2012 at 12:07:17PM -0400, Ted Ts'o wrote:
+> On Wed, Apr 18, 2012 at 01:02:08PM +1000, Dave Chinner wrote:
+> > In actual fact, on my 12 disk RAID0 array, XFS is faster with
+> > unwritten extents *enabled* than when hacked to turn them off. 
 > 
-> 
-> Laxman Dewangan <ldewangan@nvidia.com> wrote:
-> 
-> >The mask value in the read_raw/write_raw is absolute
-> >value, not the bit position value.
-> >Fixing this in the implemented function to check value,
-> >not with the bit position value.
-> Oops I should have caught that.
-> Sorry 
-> >
-> >Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
-> Acked-by: <jic23@kernel.org>
+> Can you explain why this is the case?  It seems... counterintuitive.
 
-You need to put your name here, not just an email address :)
+I'll admit that I was slightly surprised, too.
 
+> The only explanation I can think of is that your code paths when
+> unwritten extents are disabled haven't been optimized,
+
+When unwritten extents are disabled, the IO takes the normal
+overwrite/extending write path, which is as optimised as
+the unwritten path because it is more commonly used.
+
+> in which case
+> the comparison between using and not using unwritten extents might not
+> be valid.
+
+It's and apples to apples comparison.
+
+The code paths are identical on IO submission, the only difference
+is the IO completion path. In the case of unwritten extents, it has
+to do a transaction to convert the extents and update the file size.
+In the case of the stale extent, it has to modify the file size
+because the IO is beyond EOF.
+
+My point, however, is that despite the complexity of unwritten
+extent conversion it is not noticably more expensive than a file
+size update transaction on XFS. Hence the reasoning for exposing
+stale data due to unwritten conversion has too much overhead to be
+useful is demonstratably false.
+
+Cheers,
+
+Dave.
+-- 
+Dave Chinner
+david@fromorbit.com
