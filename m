@@ -1,195 +1,158 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752594Ab2DRBpz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Apr 2012 21:45:55 -0400
-Received: from mail-vx0-f174.google.com ([209.85.220.174]:58843 "EHLO
-	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751708Ab2DRBpw convert rfc822-to-8bit (ORCPT
+	id S1752570Ab2DRBqo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Apr 2012 21:46:44 -0400
+Received: from mail209.messagelabs.com ([216.82.255.3]:2701 "EHLO
+	mail209.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751708Ab2DRBqn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Apr 2012 21:45:52 -0400
+	Tue, 17 Apr 2012 21:46:43 -0400
+X-Env-Sender: hartleys@visionengravers.com
+X-Msg-Ref: server-7.tower-209.messagelabs.com!1334713601!3458348!2
+X-Originating-IP: [216.166.12.97]
+X-StarScan-Version: 6.5.7; banners=-,-,-
+X-VirusChecked: Checked
+From: H Hartley Sweeten <hartleys@visionengravers.com>
+To: Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: [PATCH] spi/spi-ep93xx.c: use dma_transfer_direction instead of dma_data_direction
+Date: Tue, 17 Apr 2012 18:46:36 -0700
+User-Agent: KMail/1.9.9
+CC: <spi-devel-general@lists.sourceforge.net>, <grant.likely@secretlab.ca>,
+        <vinod.koul@linux.intel.com>
 MIME-Version: 1.0
-In-Reply-To: <201204172303.07419.rjw@sisk.pl>
-References: <4F8790F6.5080408@intel.com>
-	<201204162330.12178.rjw@sisk.pl>
-	<CAC=cRTNL0R--5njYdWzvREx7fhebAhFW_sBJ4jt9n_c8rp_ZTQ@mail.gmail.com>
-	<201204172303.07419.rjw@sisk.pl>
-Date: Wed, 18 Apr 2012 09:45:50 +0800
-Message-ID: <CAC=cRTMR=axVV4x9Qa9vO+UXs_s73fOWkeW5mocUEkvKe9J+Dw@mail.gmail.com>
-Subject: Re: [RFC PATCH] PCIe: Add PCIe runtime D3cold support
-From: huang ying <huang.ying.caritas@gmail.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: "Yan, Zheng" <zheng.z.yan@intel.com>, bhelgaas@google.com,
-        linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
-        linux-pm@vger.kernel.org, Lin Ming <ming.m.lin@intel.com>,
-        Zhang Rui <rui.zhang@intel.com>,
-        ACPI Devel Mailing List <linux-acpi@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
+Message-ID: <201204171846.37245.hartleys@visionengravers.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 18, 2012 at 5:03 AM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
-> On Tuesday, April 17, 2012, huang ying wrote:
->> On Tue, Apr 17, 2012 at 5:30 AM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
->> > On Monday, April 16, 2012, huang ying wrote:
->> >> Hi,
->> >>
->> >> On Sat, Apr 14, 2012 at 3:41 AM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
->> >> > Hi,
->> >> >
->> >> > On Friday, April 13, 2012, Yan, Zheng wrote:
->> >> >> Hi all,
->> >> >>
->> >> >> This patch adds PCIe runtime D3cold support, namely cut power supply for functions
->> >> >> beneath a PCIe port when they all have entered D3. A device in D3cold can only
->> >> >> generate wake event through the WAKE# pin. Because we can not access to a device's
->> >> >> configure space while it's in D3cold, pme_poll is disabled for devices in D3cold.
->> >> >>
->> >> >> Any comment will be appreciated.
->> >> >>
->> >> >> Signed-off-by: Zheng Yan <zheng.z.yan@intel.com>
->> >> >> ---
->> >> >> diff --git a/drivers/pci/pci-acpi.c b/drivers/pci/pci-acpi.c
->> >> >> index 0f150f2..e210e8cb 100644
->> >> >> --- a/drivers/pci/pci-acpi.c
->> >> >> +++ b/drivers/pci/pci-acpi.c
->> >> >> @@ -224,7 +224,7 @@ static int acpi_pci_set_power_state(struct pci_dev *dev, pci_power_t state)
->> >> >>               [PCI_D1] = ACPI_STATE_D1,
->> >> >>               [PCI_D2] = ACPI_STATE_D2,
->> >> >>               [PCI_D3hot] = ACPI_STATE_D3,
->> >> >> -             [PCI_D3cold] = ACPI_STATE_D3
->> >> >> +             [PCI_D3cold] = ACPI_STATE_D3_COLD
->> >> >>       };
->> >> >>       int error = -EINVAL;
->> >> >>
->> >> >
->> >> > Please don't use that ACPI_STATE_D3_COLD thing, it's not defined correctly.
->> >> >
->> >> > We should define ACPI_STATE_D3_COLD == ACPI_STATE_D3 and add ACPI_STATE_D3_HOT
->> >> > instead.  I'll prepare a patch for that over the weekend if no one has done
->> >> > that already.
->> >> >
->> >> >> @@ -296,7 +296,8 @@ static void acpi_pci_propagate_run_wake(struct pci_bus *bus, bool enable)
->> >> >>
->> >> >>  static int acpi_pci_run_wake(struct pci_dev *dev, bool enable)
->> >> >>  {
->> >> >> -     if (dev->pme_interrupt)
->> >> >> +     /* PME interrupt isn't available in the D3cold case */
->> >> >> +     if (dev->pme_interrupt && !dev->runtime_d3cold)
->> >> >
->> >> > This whole thing is wrong.  First off, I don't think that the runtime_d3cold
->> >> > flag makes any sense.  We already cover that in dev->pme_support.
->> >>
->> >> PCIe devices and PCIe root port may have proper PME interrupt support
->> >> (that is, dev->pme_interrupt = true), but the process of remote wakeup
->> >> from D3cold is as follow:
->> >>
->> >> 1) In D3cold, the power of the main link is turned off, aux power is
->> >> provided (PCIe L2 link state)
->> >> 2) Device detect condition to resume, then assert #WAKE pin
->> >> 2) ACPI circuit linked with #WAKE pin, and will generate a GPE for that
->> >> 3) GPE handler will resume device with ACPI (via _PS3 and _PR0), the
->> >> power of the main link is turned on, after a while, link goes into L0
->> >> state
->> >> 4) The PME message is sent to root port, pme interrupt generated
->> >
->> > This isn't how it's supposed to work in theory.  If the device can signal PME
->> > from D3cold, it should be able to reestablish the link and send a PME
->> > message from there.  dev->pme_interrupt set means exactly that.
->> >
->> > ACPI is only supposed to be needed for things that don't send PME
->> > messages (in your case the PME interrupt generated by the port is essentially
->> > useless, because the wakeup event has already been signaled through ACPI).
->> >
->> >> So, for deivce, dev->pme_interrupt = true and dev->pme_support
->> >> advocate it support PME in D3cold.  But we still need ACPI to setup
->> >> run wake for the device.
->> >
->> > OK, so this is nonstandard.
->>
->> This is the standard behavior.  Please refer to PCI Express Base
->> Sepcification Revision 2.0, section 5.3.3.2 Link Wakeup.  In D1, D2
->> and D3hot state, PCIe device can transit the link from L1 to L0 state,
->> and send the PME message.  In D3cold, the main link is powered off,
->> PCIe device will use a STANDARD sideband signal WAKE# to signal wakeup
->> firstly, then platform (power controller in spec) will power on the
->> main link for the device, after main link is back to L0, the PME
->> message is send to root port, pme interrupt is generated.  So in
->> theory, the wake up process can be divided into platform part (which
->> power on the main link) and PCIe part (which send PME).
->
-> That's fine.  However, the platform part should be completely transparent
-> to the PCI bus type, then.  It just should power up the link to allow a
-> PME message to be transmitted through it.
+A new enum indicating the dma channel direction was introduced by:
 
-Yes.
+commit 49920bc66984a512f4bcc7735a61642cd0e4d6f2
+    dmaengine: add new enum dma_transfer_direction
 
->[...]
->
->> > So don't use pci_set_power_state() for that, because it's essentially
->> > a different operation.  You need a pci_platform_remove_power() helper or
->> > similar for that.
->> >
->> > What ACPI method exactly is used to remove power from the device?
->>
->> The ACPI method executed is as follow:
->>
->> - _PS3 (if exist)
->> - Power resources in _PR3 is turned on
->> - Power resources in _PR0 is turned off
->> - Power resources in _PR3 is turned off
->
-> I'd rather think
->
-> - make sure that _PR3 resources are referenced
-> - drop references (from this device) for all other power resources
-> - execute _PS3 (if any)
-> - drop references for _PR3 resources
->
-> if Section 7.2.11 of ACPI 5.0 is to be followed.
+The following commit changed spi-ep93xx to use the new enum:
 
-Yes.  You are right.
+commit a485df4b4404379786c4bdd258bc528b2617449d
+    spi, serial: move to dma_transfer_direction
 
->> I think the process can fit pci_set_power_state() quite well, so why
->> invent another helper for that?
->
-> OK, we can special case it, perhaps.
->
-> Suppose we have a "this device may be put into D3_cold" flag.
->
-> Who's going to decide whether to put it into D3_hot or D3_cold?
+In doing so a sparse warning was introduced: 
 
-In most cases, I think it is OK to put device into D3_cold if that is
-supported.  But there should be some special case where D3_cold is not
-desirable, for example, we can put SSD into D3_cold safely, but it is
-not quite safe to put HDD into D3_cold.  So we want to introduce a
-flag: "may_power_off" like in the following patch
+warning: mixing different enum types
+   int enum dma_data_direction  versus
+   int enum dma_transfer_direction
 
-https://lkml.org/lkml/2012/3/29/41
+This is produced because the 'dir' passed in ep93xx_spi_dma_prepare
+is an enum dma_data_direction and is being used to set the
+dma_slave_config 'direction' which is now an enum dma_transfer_direction.
 
-It gives device driver a chance to prevent the device to be put into D3_cold.
+Fix this by converting spi-ep93xx to use the new enum type in all
+places.
 
-> [...]
->
->> >> > So now please tell me what exactly you want to achieve and why you want to do
->> >> > that in the first place.
->> >
->> > Well, is there any chance to get that information?
->>
->> You mean the runtime_d3cold flag? That flag is used to tell
->> acpi_pci_run_wake() that we need ACPI wakeup setup for the device
->> because that is needed by D3cold.  The ACPI wakeup setup here means
->> turn on power resources needed by wake up (_PRW) and execute _DSW.
->>
->> If you mean the whole patch, we want to implement runtime D3cold
->> support, which can save more power than D3hot.
->
-> So, do I think correctly that you'd like to put devices into D3_cold
-> if that's possible via ACPI and to be able to wake it up from that state
-> using remote wakeup?
+Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
+Cc: Grant Likely <grant.likely@secretlab.ca>
+Cc: Vinod Koul <vinod.koul@linux.intel.com>
 
-Yes.  Support both remote wakeup and host wakeup.
+---
 
-Best Regards,
-Huang Ying
+diff --git a/drivers/spi/spi-ep93xx.c b/drivers/spi/spi-ep93xx.c
+index 6db2887..e805507 100644
+--- a/drivers/spi/spi-ep93xx.c
++++ b/drivers/spi/spi-ep93xx.c
+@@ -545,13 +545,12 @@ static void ep93xx_spi_pio_transfer(struct ep93xx_spi *espi)
+  * in case of failure.
+  */
+ static struct dma_async_tx_descriptor *
+-ep93xx_spi_dma_prepare(struct ep93xx_spi *espi, enum dma_data_direction dir)
++ep93xx_spi_dma_prepare(struct ep93xx_spi *espi, enum dma_transfer_direction dir)
+ {
+ 	struct spi_transfer *t = espi->current_msg->state;
+ 	struct dma_async_tx_descriptor *txd;
+ 	enum dma_slave_buswidth buswidth;
+ 	struct dma_slave_config conf;
+-	enum dma_transfer_direction slave_dirn;
+ 	struct scatterlist *sg;
+ 	struct sg_table *sgt;
+ 	struct dma_chan *chan;
+@@ -567,14 +566,13 @@ ep93xx_spi_dma_prepare(struct ep93xx_spi *espi, enum dma_data_direction dir)
+ 	memset(&conf, 0, sizeof(conf));
+ 	conf.direction = dir;
+ 
+-	if (dir == DMA_FROM_DEVICE) {
++	if (dir == DMA_DEV_TO_MEM) {
+ 		chan = espi->dma_rx;
+ 		buf = t->rx_buf;
+ 		sgt = &espi->rx_sgt;
+ 
+ 		conf.src_addr = espi->sspdr_phys;
+ 		conf.src_addr_width = buswidth;
+-		slave_dirn = DMA_DEV_TO_MEM;
+ 	} else {
+ 		chan = espi->dma_tx;
+ 		buf = t->tx_buf;
+@@ -582,7 +580,6 @@ ep93xx_spi_dma_prepare(struct ep93xx_spi *espi, enum dma_data_direction dir)
+ 
+ 		conf.dst_addr = espi->sspdr_phys;
+ 		conf.dst_addr_width = buswidth;
+-		slave_dirn = DMA_MEM_TO_DEV;
+ 	}
+ 
+ 	ret = dmaengine_slave_config(chan, &conf);
+@@ -633,8 +630,7 @@ ep93xx_spi_dma_prepare(struct ep93xx_spi *espi, enum dma_data_direction dir)
+ 	if (!nents)
+ 		return ERR_PTR(-ENOMEM);
+ 
+-	txd = dmaengine_prep_slave_sg(chan, sgt->sgl, nents,
+-					slave_dirn, DMA_CTRL_ACK);
++	txd = dmaengine_prep_slave_sg(chan, sgt->sgl, nents, dir, DMA_CTRL_ACK);
+ 	if (!txd) {
+ 		dma_unmap_sg(chan->device->dev, sgt->sgl, sgt->nents, dir);
+ 		return ERR_PTR(-ENOMEM);
+@@ -651,12 +647,12 @@ ep93xx_spi_dma_prepare(struct ep93xx_spi *espi, enum dma_data_direction dir)
+  * unmapped.
+  */
+ static void ep93xx_spi_dma_finish(struct ep93xx_spi *espi,
+-				  enum dma_data_direction dir)
++				  enum dma_transfer_direction dir)
+ {
+ 	struct dma_chan *chan;
+ 	struct sg_table *sgt;
+ 
+-	if (dir == DMA_FROM_DEVICE) {
++	if (dir == DMA_DEV_TO_MEM) {
+ 		chan = espi->dma_rx;
+ 		sgt = &espi->rx_sgt;
+ 	} else {
+@@ -677,16 +673,16 @@ static void ep93xx_spi_dma_transfer(struct ep93xx_spi *espi)
+ 	struct spi_message *msg = espi->current_msg;
+ 	struct dma_async_tx_descriptor *rxd, *txd;
+ 
+-	rxd = ep93xx_spi_dma_prepare(espi, DMA_FROM_DEVICE);
++	rxd = ep93xx_spi_dma_prepare(espi, DMA_DEV_TO_MEM);
+ 	if (IS_ERR(rxd)) {
+ 		dev_err(&espi->pdev->dev, "DMA RX failed: %ld\n", PTR_ERR(rxd));
+ 		msg->status = PTR_ERR(rxd);
+ 		return;
+ 	}
+ 
+-	txd = ep93xx_spi_dma_prepare(espi, DMA_TO_DEVICE);
++	txd = ep93xx_spi_dma_prepare(espi, DMA_MEM_TO_DEV);
+ 	if (IS_ERR(txd)) {
+-		ep93xx_spi_dma_finish(espi, DMA_FROM_DEVICE);
++		ep93xx_spi_dma_finish(espi, DMA_DEV_TO_MEM);
+ 		dev_err(&espi->pdev->dev, "DMA TX failed: %ld\n", PTR_ERR(rxd));
+ 		msg->status = PTR_ERR(txd);
+ 		return;
+@@ -705,8 +701,8 @@ static void ep93xx_spi_dma_transfer(struct ep93xx_spi *espi)
+ 
+ 	wait_for_completion(&espi->wait);
+ 
+-	ep93xx_spi_dma_finish(espi, DMA_TO_DEVICE);
+-	ep93xx_spi_dma_finish(espi, DMA_FROM_DEVICE);
++	ep93xx_spi_dma_finish(espi, DMA_MEM_TO_DEV);
++	ep93xx_spi_dma_finish(espi, DMA_DEV_TO_MEM);
+ }
+ 
+ /**
