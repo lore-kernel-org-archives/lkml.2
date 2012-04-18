@@ -1,73 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753298Ab2DRVwm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Apr 2012 17:52:42 -0400
-Received: from fieldses.org ([174.143.236.118]:39635 "EHLO fieldses.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751537Ab2DRVwk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Apr 2012 17:52:40 -0400
-Date: Wed, 18 Apr 2012 17:52:38 -0400
-From: "J. Bruce Fields" <bfields@fieldses.org>
-To: Al Viro <viro@ZenIV.linux.org.uk>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
-Subject: Re: [git pull] vfs and fs fixes
-Message-ID: <20120418215238.GA11959@fieldses.org>
-References: <20120417052511.GU6589@ZenIV.linux.org.uk>
- <CA+55aFw75=Mtq1njQ9vNmNsGuTPbpUhLHnb7YBLmCZs4Q5ByMA@mail.gmail.com>
- <20120417180129.GW6589@ZenIV.linux.org.uk>
- <20120417182825.GX6589@ZenIV.linux.org.uk>
- <20120417211419.GC27426@fieldses.org>
- <CA+55aFwdh_QWG-R2FQ71kDXiNYZ04qPANBsY_PssVUwEBH4uSw@mail.gmail.com>
- <20120417234423.GY6589@ZenIV.linux.org.uk>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120417234423.GY6589@ZenIV.linux.org.uk>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1753471Ab2DRV5y (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Apr 2012 17:57:54 -0400
+Received: from smtprelay-b11.telenor.se ([62.127.194.20]:57181 "EHLO
+	smtprelay-b11.telenor.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751238Ab2DRV5x (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Apr 2012 17:57:53 -0400
+X-SENDER-IP: [85.230.169.225]
+X-LISTENER: [smtp.bredband.net]
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: ApdgALc3j09V5qnhPGdsb2JhbABEiienGRkBAQEBNzSCZiMYEXEKGogmuxsTkCIEm3GNIQ
+X-IronPort-AV: E=Sophos;i="4.75,444,1330902000"; 
+   d="scan'208";a="20123695"
+From: "Henrik Rydberg" <rydberg@euromail.se>
+To: Jiri Kosina <jkosina@suse.cz>
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Benjamin Tissoires <benjamin.tissoires@gmail.com>,
+        Stephane Chatty <chatty@enac.fr>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Henrik Rydberg <rydberg@euromail.se>
+Subject: [PATCH 0/5] hid: Introduce device groups
+Date: Thu, 19 Apr 2012 00:00:52 +0200
+Message-Id: <1334786457-2124-1-git-send-email-rydberg@euromail.se>
+X-Mailer: git-send-email 1.7.10
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 18, 2012 at 12:44:24AM +0100, Al Viro wrote:
-> On Tue, Apr 17, 2012 at 03:08:26PM -0700, Linus Torvalds wrote:
-> > > Or I could increment that counter for all the conflicting operations and
-> > > rely on it instead of the i_mutex. ?I was trying to avoid adding
-> > > something like that (an inc, a dec, another error path) to every
-> > > operation. ?And hoping to avoid adding another field to struct inode.
-> > > Oh well.
-> > 
-> > We could just say that we can do a double inode lock, but then
-> > standardize on the order. And the only sane order is comparing inode
-> > pointers, not inode numbers like ext4 apparently does.
-> > 
-> > With a standard order, I don't think it would be at all wrong to just
-> > take the inode lock on rename.
-> 
-> In principle, yes, but have you tried to grep for i_mutex?  Note that
-> we have *another* place where multiple ->i_mutex might be held on
-> non-directories (and unless I'm missing something, ext4 move_extent.c
-> stuff doesn't play well with it): quota writes.  Which can, AFAICS,
-> happen while write(2) is holding ->i_mutex on a regular file.  So
-> it's not _that_ easy - we want something like "and quota file is goes
-> last"
+Hi all,
 
-So the idea would be to always take the i_mutex on non-quota files
-before taking it on quota files?
+Here is the proposed patchset for extending the device-driver matching
+mechanism. I believe the comments from Jiri and Benjamin have all been
+addressed. Auto-loading from boot as well as hotplugging seems to work
+well, and the bluetooth stack seems unaffected, at least I can still
+run the magic trackpad. I don't have any report-fixup devices to test,
+but I believe those should work too. Benjamin?
 
-I tried pulling the ext4 thing into fs/inode.c, modifying the order to
-do that, and then doing the rename change on top of that.
+The early parsing of reports has been moved as close to the actual
+device add as possible, leaving all special handling, such as ignored
+devices, still in effect. Also, since only devices not listed in the
+special drivers array are affected, report fixups should still apply.
+The rest of the devices are parsed and placed into a device group, of
+which there is currently only one (apart from the default). This
+handling is done automatically for all the bus drivers, BT, HID, and
+soon I2C.
 
-One thing I don't understand is how that interacts with
-quota_on/quota_off.  How do we decide the right lock ordering if files
-can go back and forth between being quota files?
+Based on the extended modalias of the device id, there can now be one
+generic hid driver per device group, and udev will load the
+appropriate one. Currently we only have usbhid and hid-multitouch, but
+more groups could likely be added to good advantage. The group
+assignment logic will not take up much space and will allow the
+generic event code to be broken down into smaller functional groups.
 
---b.
+The patches apply to 3.4-rc3.
 
-> , since there we don't get to change the locking order - the first
-> ->i_mutex is taken too far outside.
-> 
-> I really don't like how messy i_mutex had become these days.  Right now
-> I'm staring at 700-odd lines all over the place where it's taken/released
-> and it's a wastebucket lock - used to protect random bits and scraps, with a
-> lot of filesystems, etc. using it for purposes of their own ;-/
+Enjoy,
+Henrik
+
+Henrik Rydberg (5):
+  hid: Add device group to modalias
+  hid: Parse the device before adding it
+  hid-multitouch: Prepare driver for device groups
+  hid-multitouch: Switch to device groups
+  hid-multitouch: Remove remnant quirk handling
+
+ drivers/hid/hid-core.c          |  112 ++++++++++--------------------
+ drivers/hid/hid-input.c         |   11 ---
+ drivers/hid/hid-multitouch.c    |  146 ++++++++++++++++++++-------------------
+ include/linux/hid.h             |    8 ++-
+ include/linux/mod_devicetable.h |    2 +-
+ scripts/mod/file2alias.c        |    3 +-
+ 6 files changed, 123 insertions(+), 159 deletions(-)
+
+-- 
+1.7.10
+
