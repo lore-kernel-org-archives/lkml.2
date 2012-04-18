@@ -1,336 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751427Ab2DRNy3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Apr 2012 09:54:29 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:34148 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750996Ab2DRNy1 (ORCPT
+	id S1752665Ab2DRNyk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Apr 2012 09:54:40 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:26589 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751045Ab2DRNyh convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Apr 2012 09:54:27 -0400
-From: Rob Clark <rob.clark@linaro.org>
-To: linaro-mm-sig@lists.linaro.org
-Cc: patches@linaro.org, linux-kernel@vger.kernel.org, daniel.vetter@ffwll.ch,
-        dri-devel@lists.freedesktop.org, linux-media@vger.kernel.org,
-        rebecca@android.com, Rob Clark <rob@ti.com>
-Subject: [PATCH] WIP: staging: drm/omap: dmabuf/prime mmap support
-Date: Wed, 18 Apr 2012 08:54:20 -0500
-Message-Id: <1334757260-16351-1-git-send-email-rob.clark@linaro.org>
-X-Mailer: git-send-email 1.7.9.1
+	Wed, 18 Apr 2012 09:54:37 -0400
+Date: Wed, 18 Apr 2012 09:54:32 -0400
+From: Dave Jones <davej@redhat.com>
+To: Linux Kernel <linux-kernel@vger.kernel.org>
+Cc: linux-mm@kvack.org
+Subject: bdi_debug_stats_show oops.
+Message-ID: <20120418135432.GA4622@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	Linux Kernel <linux-kernel@vger.kernel.org>, linux-mm@kvack.org
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: 8BIT
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Rob Clark <rob@ti.com>
+Hit this during an overnight run of my syscall fuzzer.
 
-There are still a few places to cleanup, and possibly things can be
-made a bit easier for individual drm drivers by some helpers in drm
-core.  But this is enough for a proof of concept.
+	Dave
 
-With this, I can allocate cached buffers, fill them w/ software from
-userspace, and on kernel side with fault handling and PTE shootdown
-track which pages must be flushed to simulate coherency.
 
-Fyi, you can find my kernel branch, with this patch on top of Daniel's
-dmabuf mmap patch, here:
+general protection fault: 0000 [#1] PREEMPT SMP 
+CPU 1 
+Modules linked in: tun ipt_ULOG dccp_ipv6 dccp_ipv4 dccp l2tp_ppp l2tp_netlink l2tp_core nfnetlink scsi_transport_iscsi hidp ip_queue binfmt_misc bnep rfcomm sctp libcrc32c caif_socket caif af_802154 phonet bluetooth can pppoe pppox ppp_generic slhc irda crc_ccitt rds af_key rose ax25 x25 atm appletalk ipx p8022 psnap llc p8023 tcp_lp fuse nfs fscache auth_rpcgss nfs_acl lockd ip6t_REJECT nf_conntrack_ipv6 nf_defrag_ipv6 nf_conntrack_ipv4 nf_defrag_ipv4 ip6table_filter xt_state nf_conntrack ip6_tables xts gf128mul dm_crypt arc4 iwlwifi coretemp mac80211 dell_wmi sparse_keymap snd_hda_codec_hdmi snd_hda_codec_idt uvcvideo snd_hda_intel videobuf2_core snd_hda_codec videodev snd_hwdep media snd_seq videobuf2_vmalloc cdc_ether videobuf2_memops usbnet snd_seq_device cdc_acm mii cdc_wdm snd_pcm microcode cfg80211 joydev snd_timer tg3 pcspkr i2c_i801 snd rfkill iTCO_wdt iTCO_vendor_support soundcore snd_page_alloc wmi sunrpc i915 drm_kms_helper drm i2c_algo_bit i2c_core video [last unloaded: scsi_wait_scan]
 
-https://github.com/robclark/kernel-omap4/commits/dmabuf/mmap
----
- drivers/staging/omapdrm/omap_drv.h        |    4 +
- drivers/staging/omapdrm/omap_fb.c         |    6 +-
- drivers/staging/omapdrm/omap_gem.c        |   99 ++++++++++++++++++++++++++---
- drivers/staging/omapdrm/omap_gem_dmabuf.c |   45 +++++++++++++
- 4 files changed, 142 insertions(+), 12 deletions(-)
-
-diff --git a/drivers/staging/omapdrm/omap_drv.h b/drivers/staging/omapdrm/omap_drv.h
-index 2b41152..5812e20 100644
---- a/drivers/staging/omapdrm/omap_drv.h
-+++ b/drivers/staging/omapdrm/omap_drv.h
-@@ -138,6 +138,8 @@ int omap_gem_dumb_destroy(struct drm_file *file, struct drm_device *dev,
- int omap_gem_dumb_create(struct drm_file *file, struct drm_device *dev,
- 		struct drm_mode_create_dumb *args);
- int omap_gem_mmap(struct file *filp, struct vm_area_struct *vma);
-+int omap_gem_mmap_obj(struct drm_gem_object *obj,
-+		struct vm_area_struct *vma);
- int omap_gem_fault(struct vm_area_struct *vma, struct vm_fault *vmf);
- int omap_gem_op_start(struct drm_gem_object *obj, enum omap_gem_op op);
- int omap_gem_op_finish(struct drm_gem_object *obj, enum omap_gem_op op);
-@@ -145,6 +147,8 @@ int omap_gem_op_sync(struct drm_gem_object *obj, enum omap_gem_op op);
- int omap_gem_op_async(struct drm_gem_object *obj, enum omap_gem_op op,
- 		void (*fxn)(void *arg), void *arg);
- int omap_gem_roll(struct drm_gem_object *obj, uint32_t roll);
-+int omap_gem_dma_sync(struct drm_gem_object *obj,
-+		enum dma_data_direction dir);
- int omap_gem_get_paddr(struct drm_gem_object *obj,
- 		dma_addr_t *paddr, bool remap);
- int omap_gem_put_paddr(struct drm_gem_object *obj);
-diff --git a/drivers/staging/omapdrm/omap_fb.c b/drivers/staging/omapdrm/omap_fb.c
-index 04b235b..ac32b3d 100644
---- a/drivers/staging/omapdrm/omap_fb.c
-+++ b/drivers/staging/omapdrm/omap_fb.c
-@@ -197,8 +197,10 @@ int omap_framebuffer_replace(struct drm_framebuffer *a,
- 			pa->paddr = 0;
- 		}
- 
--		if (pb && !ret)
--			ret = omap_gem_get_paddr(pb->bo, &pb->paddr, true);
-+		if (pb && !ret) {
-+			ret = omap_gem_get_paddr(pb->bo, &pb->paddr, true) ||
-+					omap_gem_dma_sync(pb->bo, DMA_TO_DEVICE);
-+		}
- 	}
- 
- 	if (ret) {
-diff --git a/drivers/staging/omapdrm/omap_gem.c b/drivers/staging/omapdrm/omap_gem.c
-index c5ba334..be7f6c0 100644
---- a/drivers/staging/omapdrm/omap_gem.c
-+++ b/drivers/staging/omapdrm/omap_gem.c
-@@ -212,8 +212,11 @@ static DEFINE_SPINLOCK(sync_lock);
- /** ensure backing pages are allocated */
- static int omap_gem_attach_pages(struct drm_gem_object *obj)
- {
-+	struct drm_device *dev = obj->dev;
- 	struct omap_gem_object *omap_obj = to_omap_bo(obj);
- 	struct page **pages;
-+	int i, npages = obj->size >> PAGE_SHIFT;
-+	dma_addr_t *addrs;
- 
- 	WARN_ON(omap_obj->pages);
- 
-@@ -231,16 +234,18 @@ static int omap_gem_attach_pages(struct drm_gem_object *obj)
- 	 * DSS, GPU, etc. are not cache coherent:
- 	 */
- 	if (omap_obj->flags & (OMAP_BO_WC|OMAP_BO_UNCACHED)) {
--		int i, npages = obj->size >> PAGE_SHIFT;
--		dma_addr_t *addrs = kmalloc(npages * sizeof(addrs), GFP_KERNEL);
-+		addrs = kmalloc(npages * sizeof(addrs), GFP_KERNEL);
- 		for (i = 0; i < npages; i++) {
--			addrs[i] = dma_map_page(obj->dev->dev, pages[i],
-+			addrs[i] = dma_map_page(dev->dev, pages[i],
- 					0, PAGE_SIZE, DMA_BIDIRECTIONAL);
- 		}
--		omap_obj->addrs = addrs;
-+	} else {
-+		addrs = kzalloc(npages * sizeof(addrs), GFP_KERNEL);
- 	}
- 
-+	omap_obj->addrs = addrs;
- 	omap_obj->pages = pages;
-+
- 	return 0;
- }
- 
-@@ -258,10 +263,11 @@ static void omap_gem_detach_pages(struct drm_gem_object *obj)
- 			dma_unmap_page(obj->dev->dev, omap_obj->addrs[i],
- 					PAGE_SIZE, DMA_BIDIRECTIONAL);
- 		}
--		kfree(omap_obj->addrs);
--		omap_obj->addrs = NULL;
- 	}
- 
-+	kfree(omap_obj->addrs);
-+	omap_obj->addrs = NULL;
-+
- 	_drm_gem_put_pages(obj, omap_obj->pages, true, false);
- 	omap_obj->pages = NULL;
- }
-@@ -336,6 +342,13 @@ static int fault_1d(struct drm_gem_object *obj,
- 			vma->vm_start) >> PAGE_SHIFT;
- 
- 	if (omap_obj->pages) {
-+		if ((omap_obj->flags & OMAP_BO_CACHE_MASK) == OMAP_BO_CACHED) {
-+			if (omap_obj->addrs[pgoff]) {
-+				dma_unmap_page(obj->dev->dev, omap_obj->addrs[pgoff],
-+						PAGE_SIZE, DMA_BIDIRECTIONAL);
-+				omap_obj->addrs[pgoff] = 0;
-+			}
-+		}
- 		pfn = page_to_pfn(omap_obj->pages[pgoff]);
- 	} else {
- 		BUG_ON(!(omap_obj->flags & OMAP_BO_DMA));
-@@ -510,7 +523,6 @@ fail:
- /** We override mainly to fix up some of the vm mapping flags.. */
- int omap_gem_mmap(struct file *filp, struct vm_area_struct *vma)
- {
--	struct omap_gem_object *omap_obj;
- 	int ret;
- 
- 	ret = drm_gem_mmap(filp, vma);
-@@ -519,8 +531,14 @@ int omap_gem_mmap(struct file *filp, struct vm_area_struct *vma)
- 		return ret;
- 	}
- 
--	/* after drm_gem_mmap(), it is safe to access the obj */
--	omap_obj = to_omap_bo(vma->vm_private_data);
-+	return omap_gem_mmap_obj(vma->vm_private_data, vma);
-+}
-+
-+
-+int omap_gem_mmap_obj(struct drm_gem_object *obj,
-+		struct vm_area_struct *vma)
-+{
-+	struct omap_gem_object *omap_obj = to_omap_bo(obj);
- 
- 	vma->vm_flags &= ~VM_PFNMAP;
- 	vma->vm_flags |= VM_MIXEDMAP;
-@@ -530,12 +548,34 @@ int omap_gem_mmap(struct file *filp, struct vm_area_struct *vma)
- 	} else if (omap_obj->flags & OMAP_BO_UNCACHED) {
- 		vma->vm_page_prot = pgprot_noncached(vm_get_page_prot(vma->vm_flags));
- 	} else {
-+		/*
-+		 * We do have some private objects, at least for scanout buffers
-+		 * on hardware without DMM/TILER.  But these are allocated write-
-+		 * combine
-+		 */
-+		if (WARN_ON(!obj->filp))
-+			return -EINVAL;
-+
-+		// TODO quick hack to avoid needing to re-invent my own vmops:
-+		WARN_ON(obj->filp->private_data);
-+		obj->filp->private_data = vma->vm_file->private_data;
-+		fput(vma->vm_file);
-+		get_file(obj->filp);
-+
-+		/*
-+		 * Shunt off cached objs to shmem file so they have their own
-+		 * address_space (so unmap_mapping_range does what we want)
-+		 */
-+		vma->vm_pgoff = 0;
-+		vma->vm_file  = obj->filp;
-+
- 		vma->vm_page_prot = vm_get_page_prot(vma->vm_flags);
- 	}
- 
--	return ret;
-+	return 0;
- }
- 
-+
- /**
-  * omap_gem_dumb_create	-	create a dumb buffer
-  * @drm_file: our client file
-@@ -645,6 +685,44 @@ fail:
- 	return ret;
- }
- 
-+int omap_gem_dma_sync(struct drm_gem_object *obj,
-+		enum dma_data_direction dir)
-+{
-+	struct drm_device *dev = obj->dev;
-+	struct omap_gem_object *omap_obj = to_omap_bo(obj);
-+	int ret = 0;
-+
-+	// TODO not sure if I want this to be automagic or new flag set
-+	// when allocating buffer (or maybe instead a flag to explictly
-+	// disable?
-+
-+	if ((omap_obj->flags & OMAP_BO_CACHE_MASK) == OMAP_BO_CACHED) {
-+		int i, npages = obj->size >> PAGE_SHIFT;
-+		struct page **pages = omap_obj->pages;
-+		bool dirty = false;
-+
-+		if (WARN_ON(!obj->filp))
-+			return -EINVAL;
-+
-+		for (i = 0; i < npages; i++) {
-+			if (!omap_obj->addrs[i]) {
-+				// TODO using BIDIRECTIONAL for now because in the
-+				// fault handler we don't really know the direction..
-+				omap_obj->addrs[i] = dma_map_page(dev->dev, pages[i], 0,
-+						PAGE_SIZE, DMA_BIDIRECTIONAL);
-+				dirty = true;
-+			}
-+		}
-+
-+		if (dirty) {
-+			unmap_mapping_range(obj->filp->f_mapping, 0,
-+					omap_gem_mmap_size(obj), 1);
-+		}
-+	}
-+
-+	return ret;
-+}
-+
- /* Get physical address for DMA.. if 'remap' is true, and the buffer is not
-  * already contiguous, remap it to pin in physically contiguous memory.. (ie.
-  * map in TILER)
-@@ -709,6 +787,7 @@ int omap_gem_get_paddr(struct drm_gem_object *obj,
- 		*paddr = omap_obj->paddr;
- 	} else {
- 		ret = -EINVAL;
-+		goto fail;
- 	}
- 
- fail:
-diff --git a/drivers/staging/omapdrm/omap_gem_dmabuf.c b/drivers/staging/omapdrm/omap_gem_dmabuf.c
-index 2fa39e8..85a0b1c 100644
---- a/drivers/staging/omapdrm/omap_gem_dmabuf.c
-+++ b/drivers/staging/omapdrm/omap_gem_dmabuf.c
-@@ -34,6 +34,8 @@ static struct sg_table *omap_gem_map_dma_buf(
- 	if (!sg)
- 		return ERR_PTR(-ENOMEM);
- 
-+	omap_gem_dma_sync(obj, dir);
-+
- 	/* camera, etc, need physically contiguous.. but we need a
- 	 * better way to know this..
- 	 */
-@@ -131,6 +133,48 @@ static void omap_gem_dmabuf_kunmap(struct dma_buf *buffer,
- 	kunmap(pages[page_num]);
- }
- 
-+/* TODO: perhaps this could be a helper: */
-+static int omap_gem_dmabuf_mmap(struct dma_buf *buffer,
-+		struct vm_area_struct *vma)
-+{
-+	struct drm_gem_object *obj = buffer->priv;
-+	int ret = 0;
-+
-+	if (WARN_ON(!obj->filp))
-+		return -EINVAL;
-+
-+	// TODO maybe we can split up drm_gem_mmap to avoid duplicating
-+	// some here.. or at least have a drm_dmabuf helper..
-+
-+	/* Check for valid size. */
-+	if (omap_gem_mmap_size(obj) < vma->vm_end - vma->vm_start) {
-+		ret = -EINVAL;
-+		goto out_unlock;
-+	}
-+
-+	if (!obj->dev->driver->gem_vm_ops) {
-+		ret = -EINVAL;
-+		goto out_unlock;
-+	}
-+
-+	vma->vm_flags |= VM_RESERVED | VM_IO | VM_PFNMAP | VM_DONTEXPAND;
-+	vma->vm_ops = obj->dev->driver->gem_vm_ops;
-+	vma->vm_private_data = obj;
-+	vma->vm_page_prot =  pgprot_writecombine(vm_get_page_prot(vma->vm_flags));
-+
-+	/* Take a ref for this mapping of the object, so that the fault
-+	 * handler can dereference the mmap offset's pointer to the object.
-+	 * This reference is cleaned up by the corresponding vm_close
-+	 * (which should happen whether the vma was created by this call, or
-+	 * by a vm_open due to mremap or partial unmap or whatever).
-+	 */
-+	vma->vm_ops->open(vma);
-+
-+out_unlock:
-+
-+	return omap_gem_mmap_obj(obj, vma);
-+}
-+
- struct dma_buf_ops omap_dmabuf_ops = {
- 		.map_dma_buf = omap_gem_map_dma_buf,
- 		.unmap_dma_buf = omap_gem_unmap_dma_buf,
-@@ -141,6 +185,7 @@ struct dma_buf_ops omap_dmabuf_ops = {
- 		.kunmap_atomic = omap_gem_dmabuf_kunmap_atomic,
- 		.kmap = omap_gem_dmabuf_kmap,
- 		.kunmap = omap_gem_dmabuf_kunmap,
-+		.mmap = omap_gem_dmabuf_mmap,
- };
- 
- struct dma_buf * omap_gem_prime_export(struct drm_device *dev,
--- 
-1.7.9.1
-
+Pid: 562, comm: trinity Not tainted 3.4.0-rc3+ #83 Dell Inc. Adamo 13   /0N70T0
+RIP: 0010:[<ffffffff81177fd0>]  [<ffffffff81177fd0>] bdi_debug_stats_show+0x60/0x1f0
+RSP: 0018:ffff8801028b3838  EFLAGS: 00010296
+RAX: ffff88010fa45a70 RBX: ffff88004ff91da8 RCX: 48535441e58946ad
+RDX: 48535441e5894855 RSI: ffff88010fa45a40 RDI: 0000000000000246
+RBP: ffff8801028b38e8 R08: 0000000000000002 R09: 0000000000000000
+R10: 0000000000000000 R11: 0000000000000000 R12: 0000000000000001
+R13: 0000000000000001 R14: 0000000000000000 R15: ffff88010fa456b0
+FS:  00007f5430ee9700(0000) GS:ffff88013b400000(0000) knlGS:0000000000000000
+CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+CR2: 00007f5430ecaff8 CR3: 00000001087be000 CR4: 00000000000407e0
+DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+Process trinity (pid: 562, threadinfo ffff8801028b2000, task ffff88000b034d40)
+Stack:
+ ffff8801028b3858 ffffffff810e0fd3 ffff88004ff91e30 ffffffff811e9cdf
+ ffff88004ff91e58 ffff88013ffdac00 0000000000000000 0000000000000002
+ 2222222222222222 2222222222222222 2222222222222222 ffff88010fa45a70
+Call Trace:
+ [<ffffffff810e0fd3>] ? is_module_text_address+0x33/0x60
+ [<ffffffff811e9cdf>] ? seq_read+0x3f/0x420
+ [<ffffffff811e9e11>] seq_read+0x171/0x420
+ [<ffffffff811e9ca0>] ? seq_lseek+0x120/0x120
+ [<ffffffff811c4c59>] do_loop_readv_writev+0x59/0x90
+ [<ffffffff811c4f76>] do_readv_writev+0x1b6/0x1d0
+ [<ffffffff811c502c>] vfs_readv+0x3c/0x50
+ [<ffffffff811f5f36>] default_file_splice_read+0x236/0x360
+ [<ffffffff8108a180>] ? __kernel_text_address+0x60/0x90
+ [<ffffffff816a45b9>] ? sub_preempt_count+0xa9/0xe0
+ [<ffffffff816a01d5>] ? _raw_spin_unlock+0x35/0x60
+ [<ffffffff811a98ec>] ? deactivate_slab+0x54c/0x5f0
+ [<ffffffff811cfd7d>] ? alloc_pipe_info+0x4d/0xd0
+ [<ffffffff811cfd7d>] ? alloc_pipe_info+0x4d/0xd0
+ [<ffffffff811a6e7c>] ? set_track+0xac/0x1a0
+ [<ffffffff811cfd7d>] ? alloc_pipe_info+0x4d/0xd0
+ [<ffffffff810d14ed>] ? trace_hardirqs_on+0xd/0x10
+ [<ffffffff811f4a20>] ? page_cache_pipe_buf_release+0x30/0x30
+ [<ffffffff811f4dde>] do_splice_to+0x7e/0xa0
+ [<ffffffff811f5097>] splice_direct_to_actor+0xa7/0x1c0
+ [<ffffffff811f4d30>] ? do_splice_from+0xb0/0xb0
+ [<ffffffff811f67dd>] do_splice_direct+0x4d/0x60
+ [<ffffffff811c44dd>] do_sendfile+0x18d/0x220
+ [<ffffffff811c544c>] sys_sendfile64+0x5c/0xb0
+ [<ffffffff816a8569>] system_call_fastpath+0x16/0x1b
+Code: 97 7a 52 00 49 8b 97 90 03 00 00 49 8d b7 90 03 00 00 48 8b 45 a8 48 39 d6 48 8d 8a 58 fe ff ff 74 20 66 0f 1f 84 00 00 00 00 00 <48> 8b 91 a8 01 00 00 49 83 c4 01 48 39 d6 48 8d 8a 58 fe ff ff 
+RIP  [<ffffffff81177fd0>] bdi_debug_stats_show+0x60/0x1f0
+ RSP <ffff8801028b3838>
+---[ end trace 1e51b66fb215a455 ]---
