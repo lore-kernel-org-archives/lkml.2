@@ -1,158 +1,206 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752570Ab2DRBqo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Apr 2012 21:46:44 -0400
-Received: from mail209.messagelabs.com ([216.82.255.3]:2701 "EHLO
-	mail209.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751708Ab2DRBqn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Apr 2012 21:46:43 -0400
-X-Env-Sender: hartleys@visionengravers.com
-X-Msg-Ref: server-7.tower-209.messagelabs.com!1334713601!3458348!2
-X-Originating-IP: [216.166.12.97]
-X-StarScan-Version: 6.5.7; banners=-,-,-
-X-VirusChecked: Checked
-From: H Hartley Sweeten <hartleys@visionengravers.com>
-To: Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: [PATCH] spi/spi-ep93xx.c: use dma_transfer_direction instead of dma_data_direction
-Date: Tue, 17 Apr 2012 18:46:36 -0700
-User-Agent: KMail/1.9.9
-CC: <spi-devel-general@lists.sourceforge.net>, <grant.likely@secretlab.ca>,
-        <vinod.koul@linux.intel.com>
+	id S1752640Ab2DRBw4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Apr 2012 21:52:56 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:6488 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751046Ab2DRBwy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Apr 2012 21:52:54 -0400
+Date: Tue, 17 Apr 2012 22:47:57 -0300
+From: Marcelo Tosatti <mtosatti@redhat.com>
+To: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+Cc: Avi Kivity <avi@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        KVM <kvm@vger.kernel.org>
+Subject: Re: [PATCH v2 14/16] KVM: MMU: fast path of handling guest page fault
+Message-ID: <20120418014757.GA25133@amt.cnet>
+References: <4F87FA69.5060106@linux.vnet.ibm.com>
+ <4F87FD01.1010600@linux.vnet.ibm.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Message-ID: <201204171846.37245.hartleys@visionengravers.com>
+In-Reply-To: <4F87FD01.1010600@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-A new enum indicating the dma channel direction was introduced by:
+On Fri, Apr 13, 2012 at 06:16:33PM +0800, Xiao Guangrong wrote:
+> If the the present bit of page fault error code is set, it indicates
+> the shadow page is populated on all levels, it means what we do is
+> only modify the access bit which can be done out of mmu-lock
+> 
+> Currently, in order to simplify the code, we only fix the page fault
+> caused by write-protect on the fast path
+> 
+> Signed-off-by: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+> ---
+>  arch/x86/kvm/mmu.c         |  205 ++++++++++++++++++++++++++++++++++++++++----
+>  arch/x86/kvm/paging_tmpl.h |    3 +
+>  2 files changed, 192 insertions(+), 16 deletions(-)
+> 
+> diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
+> index efa5d59..fc91667 100644
+> --- a/arch/x86/kvm/mmu.c
+> +++ b/arch/x86/kvm/mmu.c
+> @@ -446,6 +446,13 @@ static bool __check_direct_spte_mmio_pf(u64 spte)
+>  }
+>  #endif
+> 
+> +static bool spte_wp_by_dirty_log(u64 spte)
+> +{
+> +	WARN_ON(is_writable_pte(spte));
+> +
+> +	return (spte & SPTE_ALLOW_WRITE) && !(spte & SPTE_WRITE_PROTECT);
+> +}
+> +
+>  static bool spte_has_volatile_bits(u64 spte)
+>  {
+>  	if (!shadow_accessed_mask)
+> @@ -454,9 +461,18 @@ static bool spte_has_volatile_bits(u64 spte)
+>  	if (!is_shadow_present_pte(spte))
+>  		return false;
+> 
+> -	if ((spte & shadow_accessed_mask) &&
+> -	      (!is_writable_pte(spte) || (spte & shadow_dirty_mask)))
+> -		return false;
+> +	if (spte & shadow_accessed_mask) {
+> +		if (is_writable_pte(spte))
+> +			return !(spte & shadow_dirty_mask);
+> +
+> +		/*
+> +		 * If the spte is write-protected by dirty-log, it may
+> +		 * be marked writable on fast page fault path, then CPU
+> +		 * can modify the Dirty bit.
+> +		 */
+> +		if (!spte_wp_by_dirty_log(spte))
+> +			return false;
+> +	}
+> 
+>  	return true;
+>  }
+> @@ -1109,26 +1125,18 @@ static void drop_spte(struct kvm *kvm, u64 *sptep)
+>  		rmap_remove(kvm, sptep);
+>  }
+> 
+> -static bool spte_wp_by_dirty_log(u64 spte)
+> -{
+> -	WARN_ON(is_writable_pte(spte));
+> -
+> -	return (spte & SPTE_ALLOW_WRITE) && !(spte & SPTE_WRITE_PROTECT);
+> -}
+> -
+>  static void spte_write_protect(struct kvm *kvm, u64 *sptep, bool large,
+>  			       bool *flush, bool page_table_protect)
+>  {
+>  	u64 spte = *sptep;
+> 
+>  	if (is_writable_pte(spte)) {
+> -		*flush |= true;
+> -
+>  		if (large) {
+>  			pgprintk("rmap_write_protect(large): spte %p %llx\n",
+>  				 spte, *spte);
+>  			BUG_ON(!is_large_pte(spte));
+> 
+> +			*flush |= true;
+>  			drop_spte(kvm, sptep);
+>  			--kvm->stat.lpages;
+>  			return;
+> @@ -1137,6 +1145,9 @@ static void spte_write_protect(struct kvm *kvm, u64 *sptep, bool large,
+>  		goto reset_spte;
+>  	}
+> 
+> +	/* We need flush tlbs in this case: the fast page fault path
+> +	 * can mark the spte writable after we read the sptep.
+> +	 */
+>  	if (page_table_protect && spte_wp_by_dirty_log(spte))
+>  		goto reset_spte;
+> 
+> @@ -1144,6 +1155,8 @@ static void spte_write_protect(struct kvm *kvm, u64 *sptep, bool large,
+> 
+>  reset_spte:
+>  	rmap_printk("rmap_write_protect: spte %p %llx\n", spte, *spte);
+> +
+> +	*flush |= true;
+>  	spte = spte & ~PT_WRITABLE_MASK;
+>  	if (page_table_protect)
+>  		spte |= SPTE_WRITE_PROTECT;
+> @@ -2767,18 +2780,172 @@ exit:
+>  	return ret;
+>  }
+> 
+> +static bool page_fault_can_be_fast(struct kvm_vcpu *vcpu, gfn_t gfn,
+> +				   u32 error_code)
+> +{
+> +	unsigned long *rmap;
+> +
+> +	/*
+> +	 * #PF can be fast only if the shadow page table is present and it
+> +	 * is caused by write-protect, that means we just need change the
+> +	 * W bit of the spte which can be done out of mmu-lock.
+> +	 */
+> +	if (!(error_code & PFERR_PRESENT_MASK) ||
+> +	      !(error_code & PFERR_WRITE_MASK))
+> +		return false;
+> +
+> +	rmap = gfn_to_rmap(vcpu->kvm, gfn, PT_PAGE_TABLE_LEVEL);
+> +
+> +	/* Quickly check the page can be writable. */
+> +	if (test_bit(PTE_LIST_WP_BIT, ACCESS_ONCE(rmap)))
+> +		return false;
+> +
+> +	return true;
+> +}
+> +
+> +static bool
+> +fast_pf_fix_indirect_spte(struct kvm_vcpu *vcpu, struct kvm_mmu_page *sp,
+> +			  u64 *sptep, u64 spte, gfn_t gfn)
+> +{
+> +	pfn_t pfn;
+> +	bool ret = false;
+> +
+> +	/*
+> +	 * For the indirect spte, it is hard to get a stable gfn since
+> +	 * we just use a cmpxchg to avoid all the races which is not
+> +	 * enough to avoid the ABA problem: the host can arbitrarily
+> +	 * change spte and the mapping from gfn to pfh.
+> +	 *
+> +	 * What we do is call gfn_to_pfn_atomic to bind the gfn and the
+> +	 * pfn because after the call:
+> +	 * - we have held the refcount of pfn that means the pfn can not
+> +	 *   be freed and be reused for another gfn.
+> +	 * - the pfn is writable that means it can not be shared by different
+> +	 *   gfn.
+> +	 */
+> +	pfn = gfn_to_pfn_atomic(vcpu->kvm, gfn);
 
-commit 49920bc66984a512f4bcc7735a61642cd0e4d6f2
-    dmaengine: add new enum dma_transfer_direction
+Please document what can happen in parallel whenever you manipulate
+sptes without mmu_lock held, convincing the reader that this is safe.
 
-The following commit changed spi-ep93xx to use the new enum:
+> +
+> +/*
+> + * Return value:
+> + * - true: let the vcpu to access on the same address again.
+> + * - false: let the real page fault path to fix it.
+> + */
+> +static bool fast_page_fault(struct kvm_vcpu *vcpu, gva_t gva, gfn_t gfn,
+> +			    int level, u32 error_code)
+> +{
+> +	struct kvm_shadow_walk_iterator iterator;
+> +	struct kvm_mmu_page *sp;
+> +	bool ret = false;
+> +	u64 spte = 0ull;
+> +
+> +	if (!page_fault_can_be_fast(vcpu, gfn, error_code))
+> +		return false;
 
-commit a485df4b4404379786c4bdd258bc528b2617449d
-    spi, serial: move to dma_transfer_direction
+What prevents kvm_mmu_commit_zap_page from nukeing the "shadow_page"
+here, again? At this point the faulting spte could be zero (!present), 
+and you have not yet increased reader_counter.
 
-In doing so a sparse warning was introduced: 
+Same with current users of walk_shadow_page_lockless_begin.
 
-warning: mixing different enum types
-   int enum dma_data_direction  versus
-   int enum dma_transfer_direction
+I agree with Takuya, please reduce the size of the patchset to only to
+what is strictly necessary, it appears many of the first patches are
+not.
 
-This is produced because the 'dir' passed in ep93xx_spi_dma_prepare
-is an enum dma_data_direction and is being used to set the
-dma_slave_config 'direction' which is now an enum dma_transfer_direction.
-
-Fix this by converting spi-ep93xx to use the new enum type in all
-places.
-
-Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
-Cc: Grant Likely <grant.likely@secretlab.ca>
-Cc: Vinod Koul <vinod.koul@linux.intel.com>
-
----
-
-diff --git a/drivers/spi/spi-ep93xx.c b/drivers/spi/spi-ep93xx.c
-index 6db2887..e805507 100644
---- a/drivers/spi/spi-ep93xx.c
-+++ b/drivers/spi/spi-ep93xx.c
-@@ -545,13 +545,12 @@ static void ep93xx_spi_pio_transfer(struct ep93xx_spi *espi)
-  * in case of failure.
-  */
- static struct dma_async_tx_descriptor *
--ep93xx_spi_dma_prepare(struct ep93xx_spi *espi, enum dma_data_direction dir)
-+ep93xx_spi_dma_prepare(struct ep93xx_spi *espi, enum dma_transfer_direction dir)
- {
- 	struct spi_transfer *t = espi->current_msg->state;
- 	struct dma_async_tx_descriptor *txd;
- 	enum dma_slave_buswidth buswidth;
- 	struct dma_slave_config conf;
--	enum dma_transfer_direction slave_dirn;
- 	struct scatterlist *sg;
- 	struct sg_table *sgt;
- 	struct dma_chan *chan;
-@@ -567,14 +566,13 @@ ep93xx_spi_dma_prepare(struct ep93xx_spi *espi, enum dma_data_direction dir)
- 	memset(&conf, 0, sizeof(conf));
- 	conf.direction = dir;
- 
--	if (dir == DMA_FROM_DEVICE) {
-+	if (dir == DMA_DEV_TO_MEM) {
- 		chan = espi->dma_rx;
- 		buf = t->rx_buf;
- 		sgt = &espi->rx_sgt;
- 
- 		conf.src_addr = espi->sspdr_phys;
- 		conf.src_addr_width = buswidth;
--		slave_dirn = DMA_DEV_TO_MEM;
- 	} else {
- 		chan = espi->dma_tx;
- 		buf = t->tx_buf;
-@@ -582,7 +580,6 @@ ep93xx_spi_dma_prepare(struct ep93xx_spi *espi, enum dma_data_direction dir)
- 
- 		conf.dst_addr = espi->sspdr_phys;
- 		conf.dst_addr_width = buswidth;
--		slave_dirn = DMA_MEM_TO_DEV;
- 	}
- 
- 	ret = dmaengine_slave_config(chan, &conf);
-@@ -633,8 +630,7 @@ ep93xx_spi_dma_prepare(struct ep93xx_spi *espi, enum dma_data_direction dir)
- 	if (!nents)
- 		return ERR_PTR(-ENOMEM);
- 
--	txd = dmaengine_prep_slave_sg(chan, sgt->sgl, nents,
--					slave_dirn, DMA_CTRL_ACK);
-+	txd = dmaengine_prep_slave_sg(chan, sgt->sgl, nents, dir, DMA_CTRL_ACK);
- 	if (!txd) {
- 		dma_unmap_sg(chan->device->dev, sgt->sgl, sgt->nents, dir);
- 		return ERR_PTR(-ENOMEM);
-@@ -651,12 +647,12 @@ ep93xx_spi_dma_prepare(struct ep93xx_spi *espi, enum dma_data_direction dir)
-  * unmapped.
-  */
- static void ep93xx_spi_dma_finish(struct ep93xx_spi *espi,
--				  enum dma_data_direction dir)
-+				  enum dma_transfer_direction dir)
- {
- 	struct dma_chan *chan;
- 	struct sg_table *sgt;
- 
--	if (dir == DMA_FROM_DEVICE) {
-+	if (dir == DMA_DEV_TO_MEM) {
- 		chan = espi->dma_rx;
- 		sgt = &espi->rx_sgt;
- 	} else {
-@@ -677,16 +673,16 @@ static void ep93xx_spi_dma_transfer(struct ep93xx_spi *espi)
- 	struct spi_message *msg = espi->current_msg;
- 	struct dma_async_tx_descriptor *rxd, *txd;
- 
--	rxd = ep93xx_spi_dma_prepare(espi, DMA_FROM_DEVICE);
-+	rxd = ep93xx_spi_dma_prepare(espi, DMA_DEV_TO_MEM);
- 	if (IS_ERR(rxd)) {
- 		dev_err(&espi->pdev->dev, "DMA RX failed: %ld\n", PTR_ERR(rxd));
- 		msg->status = PTR_ERR(rxd);
- 		return;
- 	}
- 
--	txd = ep93xx_spi_dma_prepare(espi, DMA_TO_DEVICE);
-+	txd = ep93xx_spi_dma_prepare(espi, DMA_MEM_TO_DEV);
- 	if (IS_ERR(txd)) {
--		ep93xx_spi_dma_finish(espi, DMA_FROM_DEVICE);
-+		ep93xx_spi_dma_finish(espi, DMA_DEV_TO_MEM);
- 		dev_err(&espi->pdev->dev, "DMA TX failed: %ld\n", PTR_ERR(rxd));
- 		msg->status = PTR_ERR(txd);
- 		return;
-@@ -705,8 +701,8 @@ static void ep93xx_spi_dma_transfer(struct ep93xx_spi *espi)
- 
- 	wait_for_completion(&espi->wait);
- 
--	ep93xx_spi_dma_finish(espi, DMA_TO_DEVICE);
--	ep93xx_spi_dma_finish(espi, DMA_FROM_DEVICE);
-+	ep93xx_spi_dma_finish(espi, DMA_MEM_TO_DEV);
-+	ep93xx_spi_dma_finish(espi, DMA_DEV_TO_MEM);
- }
- 
- /**
