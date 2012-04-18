@@ -1,58 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754208Ab2DRW4r (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Apr 2012 18:56:47 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:43459 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751375Ab2DRW4p (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Apr 2012 18:56:45 -0400
-Date: Wed, 18 Apr 2012 15:56:43 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Venkatraman S <svenkatr@ti.com>
-Cc: <linux-kernel@vger.kernel.org>, <santoshsy@gmail.com>,
-        <linkinjeon@gmail.com>,
-        James Bottomley <James.Bottomley@HansenPartnership.com>,
-        linux-scsi@vger.kernel.org
-Subject: Re: [PATCH RESEND 2/2] scsi/ufs: Fix evaluation of task_failed
- status
-Message-Id: <20120418155643.5b6eff01.akpm@linux-foundation.org>
-In-Reply-To: <1334734733-13640-1-git-send-email-svenkatr@ti.com>
-References: <1334734733-13640-1-git-send-email-svenkatr@ti.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1754085Ab2DRW62 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Apr 2012 18:58:28 -0400
+Received: from mga02.intel.com ([134.134.136.20]:7546 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751320Ab2DRW61 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Apr 2012 18:58:27 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
+   d="scan'208";a="134127951"
+From: Jim Kukunas <james.t.kukunas@linux.intel.com>
+To: neilb@suse.de
+Cc: hpa@zytor.com, linux-kernel@vger.kernel.org, linux-raid@vger.kernel.org
+Subject: arch/86: AVX RAID5 xor checksumming v1
+Date: Wed, 18 Apr 2012 15:58:47 -0700
+Message-Id: <1334789928-7238-1-git-send-email-james.t.kukunas@linux.intel.com>
+X-Mailer: git-send-email 1.7.8.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Folks,
 
-Please cc James and linux-scsi on drivers/scsi patches?
+The following patch adds an AVX implementation of the RAID5 xor checksumming
+functions.
 
-On Wed, 18 Apr 2012 13:08:53 +0530
-Venkatraman S <svenkatr@ti.com> wrote:
+This version differs from version 0, in that it:
+	0) checks whether assembler supports AVX
+	1) replaces __attribute__(aligned(32)) with __aligned(32)
+	2) adds do/while(0); to macro blocks
 
-> Else FAILED would be set even if task_result was
-> originally equal to UPIU_TASK_MANAGEMENT_FUNC_SUCCEEDED.
+Based on xor_speed, the AVX implementation appears to be ~32% faster than the
+SSE implementation on my i7 2600:
 
-This changelog is inadequate.  It failed to describe the end-user
-impact of the bug.  Without this information we cannot decide which
-kernel version(s) should be patched.  Please always fully describe a
-bug when fixing it.
+        generic_sse: 15088.000 MB/sec
+	avx: 19936.000 MB/sec
 
-> --- a/drivers/scsi/ufs/ufshcd.c
-> +++ b/drivers/scsi/ufs/ufshcd.c
-> @@ -1160,7 +1160,7 @@ static int ufshcd_task_req_compl(struct ufs_hba *hba, u32 index)
->  		task_result = be32_to_cpu(task_rsp_upiup->header.dword_1);
->  		task_result = ((task_result & MASK_TASK_RESPONSE) >> 8);
->  
-> -		if (task_result != UPIU_TASK_MANAGEMENT_FUNC_COMPL ||
-> +		if (task_result != UPIU_TASK_MANAGEMENT_FUNC_COMPL &&
->  		    task_result != UPIU_TASK_MANAGEMENT_FUNC_SUCCEEDED)
->  			task_result = FAILED;
->  	} else {
+Thanks.
 
-And the title of the patch is poor.  There is no "task_failed" here. 
-Something like "fix evaluation of task completion code" would be
-better?
+
