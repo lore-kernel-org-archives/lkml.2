@@ -1,74 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753550Ab2DROU3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Apr 2012 10:20:29 -0400
-Received: from mail-vx0-f174.google.com ([209.85.220.174]:59136 "EHLO
-	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753311Ab2DROU1 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Apr 2012 10:20:27 -0400
+	id S1753566Ab2DROVr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Apr 2012 10:21:47 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:4989 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752533Ab2DROVp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Apr 2012 10:21:45 -0400
+Date: Wed, 18 Apr 2012 17:21:47 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Paolo Bonzini <pbonzini@redhat.com>
+Cc: linux-kernel@vger.kernel.org, virtualization@lists.linux-foundation.org,
+        Amit Shah <amit.shah@redhat.com>,
+        Rusty Russell <rusty@rustcorp.com.au>
+Subject: Re: [RFC PATCH] virtio_console: link vq to port with a private
+ pointer in struct virtqueue
+Message-ID: <20120418142146.GB11801@redhat.com>
+References: <1334756013-11752-1-git-send-email-pbonzini@redhat.com>
 MIME-Version: 1.0
-In-Reply-To: <201204181406.14159.arnd@arndb.de>
-References: <1334757146-28335-1-git-send-email-daniel.vetter@ffwll.ch>
-	<201204181406.14159.arnd@arndb.de>
-Date: Wed, 18 Apr 2012 09:20:26 -0500
-X-Google-Sender-Auth: uObkf63SdNkvgDyix5ssy3jxgXQ
-Message-ID: <CAF6AEGujx1oN-xoSduSxmZxWv-GmTyw2JCS3kpXSSGLDUgPM6A@mail.gmail.com>
-Subject: Re: [PATCH] dma-buf: mmap support
-From: Rob Clark <rob.clark@linaro.org>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Daniel Vetter <daniel.vetter@ffwll.ch>, linaro-mm-sig@lists.linaro.org,
-        LKML <linux-kernel@vger.kernel.org>,
-        DRI Development <dri-devel@lists.freedesktop.org>,
-        linux-media@vger.kernel.org,
-        Rebecca Schultz Zavin <rebecca@android.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1334756013-11752-1-git-send-email-pbonzini@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 18, 2012 at 9:06 AM, Arnd Bergmann <arnd@arndb.de> wrote:
-> On Wednesday 18 April 2012, Daniel Vetter wrote:
->> +   Because existing importing subsystems might presume coherent mappings for
->> +   userspace, the exporter needs to set up a coherent mapping. If that's not
->> +   possible, it needs to fake coherency by manually shooting down ptes when
->> +   leaving the cpu domain and flushing caches at fault time. Note that all the
->> +   dma_buf files share the same anon inode, hence the exporter needs to replace
->> +   the dma_buf file stored in vma->vm_file with it's own if pte shootdown is
->> +   requred. This is because the kernel uses the underlying inode's address_space
->> +   for vma tracking (and hence pte tracking at shootdown time with
->> +   unmap_mapping_range).
->> +
->> +   If the above shootdown dance turns out to be too expensive in certain
->> +   scenarios, we can extend dma-buf with a more explicit cache tracking scheme
->> +   for userspace mappings. But the current assumption is that using mmap is
->> +   always a slower path, so some inefficiencies should be acceptable.
->> +
->> +   Exporters that shoot down mappings (for any reasons) shall not do any
->> +   synchronization at fault time with outstanding device operations.
->> +   Synchronization is an orthogonal issue to sharing the backing storage of a
->> +   buffer and hence should not be handled by dma-buf itself. This is explictly
->> +   mentioned here because many people seem to want something like this, but if
->> +   different exporters handle this differently, buffer sharing can fail in
->> +   interesting ways depending upong the exporter (if userspace starts depending
->> +   upon this implicit synchronization).
->
-> How do you ensure that no device can do DMA on the buffer while it's mapped
-> into user space in a noncoherent manner?
+On Wed, Apr 18, 2012 at 03:33:33PM +0200, Paolo Bonzini wrote:
+> For virtio-scsi multiqueue support I would like to have an easy and
+> fast way to go from a virtqueue to the internal struct for that
+> queue.
+> 
+> It turns out that virtio-serial has the same need, but it gets
+> by with a simple list walk.
+> 
+> This patch adds a pointer to struct virtqueue that is reserved for
+> the virtio device, and uses it in virtio-serial.
+> 
+> Cc: Amit Shah <amit.shah@redhat.com>
+> Cc: Rusty Russell <rusty@rustcorp.com.au>
+> Cc: "Michael S. Tsirkin" <mst@redhat.com>
+> Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
+> ---
+> 	Untested; what do you think?  Would this patch be acceptable
+> 	as is, or only with a more pressing need in virtio-scsi, or never?
+> 
+>  drivers/char/virtio_console.c |   16 +++++-----------
+>  include/linux/virtio.h        |    2 ++
+>  2 files changed, 7 insertions(+), 11 deletions(-)
+> 
+> diff --git a/drivers/char/virtio_console.c b/drivers/char/virtio_console.c
+> index 1c74734..cfc7a63 100644
+> --- a/drivers/char/virtio_console.c
+> +++ b/drivers/char/virtio_console.c
+> @@ -297,17 +297,7 @@ out:
+>  static struct port *find_port_by_vq(struct ports_device *portdev,
+>  				    struct virtqueue *vq)
+>  {
+> -	struct port *port;
+> -	unsigned long flags;
+> -
+> -	spin_lock_irqsave(&portdev->ports_lock, flags);
+> -	list_for_each_entry(port, &portdev->ports, list)
+> -		if (port->in_vq == vq || port->out_vq == vq)
+> -			goto out;
+> -	port = NULL;
+> -out:
+> -	spin_unlock_irqrestore(&portdev->ports_lock, flags);
+> -	return port;
+> +	return vq->vdev_priv;
+>  }
+>  
+>  static bool is_console_port(struct port *port)
+> @@ -1159,6 +1149,8 @@ static int add_port(struct ports_device *portdev, u32 id)
+>  
+>  	port->in_vq = portdev->in_vqs[port->id];
+>  	port->out_vq = portdev->out_vqs[port->id];
+> +	port->in_vq->vdev_priv = port;
+> +	port->out_vq->vdev_priv = port;
+>  
+>  	port->cdev = cdev_alloc();
+>  	if (!port->cdev) {
+> @@ -1872,6 +1864,8 @@ static int virtcons_restore(struct virtio_device *vdev)
+>  	list_for_each_entry(port, &portdev->ports, list) {
+>  		port->in_vq = portdev->in_vqs[port->id];
+>  		port->out_vq = portdev->out_vqs[port->id];
+> +		port->in_vq->vdev_priv = port;
+> +		port->out_vq->vdev_priv = port;
+>  
+>  		fill_queue(port->in_vq, &port->inbuf_lock);
+>  
 
-you do unmap_mapping_range() before DMA..
+Let's add an API to set this pointer.
+Document that you must not set it after
+probe/restore returned.
+With an API we can actually have a BUG_ON that checks it's not modified
+after probe.
 
-if you have userspace accessing buffer simultaneously with DMA then
-the results are undefined, as they always have been (even w/ uncached
-mappings)
+> diff --git a/include/linux/virtio.h b/include/linux/virtio.h
+> index c193ccf..6b39c1a 100644
+> --- a/include/linux/virtio.h
+> +++ b/include/linux/virtio.h
+> @@ -14,6 +14,7 @@
+>   * @callback: the function to call when buffers are consumed (can be NULL).
+>   * @name: the name of this virtqueue (mainly for debugging)
+>   * @vdev: the virtio device this queue was created for.
+> + * @vdev_priv: a pointer for the virtio device to use.
 
-BR,
--R
+It's for the driver actually.
 
->
->        Arnd
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-media" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>   * @priv: a pointer for the virtqueue implementation to use.
+>   */
+>  struct virtqueue {
+> @@ -21,6 +22,7 @@ struct virtqueue {
+>  	void (*callback)(struct virtqueue *vq);
+>  	const char *name;
+>  	struct virtio_device *vdev;
+> +	void *vdev_priv;
+>  	void *priv;
+
+The name is confusing: it seems to imply it's a device pointer.
+Maybe we should rename priv to something like __priv and make
+priv useful for devices?
+
+>  };
+>  
+> -- 
+> 1.7.9.3
