@@ -1,55 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755166Ab2DRUyS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Apr 2012 16:54:18 -0400
-Received: from shards.monkeyblade.net ([198.137.202.13]:41586 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754398Ab2DRUyQ (ORCPT
+	id S1755139Ab2DRUyR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Apr 2012 16:54:17 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:51882 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754340Ab2DRUyQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 18 Apr 2012 16:54:16 -0400
-Date: Wed, 18 Apr 2012 16:54:00 -0400 (EDT)
-Message-Id: <20120418.165400.980383816074286216.davem@davemloft.net>
-To: eric.dumazet@gmail.com
-Cc: a.beregalov@gmail.com, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, marc@merlins.org
-Subject: Re: [PATCH] tcp: fix retransmit of partially acked frames
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1334780063.2472.352.camel@edumazet-glaptop>
-References: <CAA1sL1TN+acPd4NAnFC0soeHzzcJe0ja3_zS5ZkFog11HSDAyA@mail.gmail.com>
-	<1334734196.2472.91.camel@edumazet-glaptop>
-	<1334780063.2472.352.camel@edumazet-glaptop>
-X-Mailer: Mew version 6.4 on Emacs 24.0.95 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Wed, 18 Apr 2012 13:54:04 -0700 (PDT)
+From: Luis Henriques <luis.henriques@canonical.com>
+To: Mauro Carvalho Chehab <mchehab@infradead.org>
+Cc: Jarod Wilson <jarod@redhat.com>, linux-media@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 1/1] [media] ite-cir: postpone ISR registration
+Date: Wed, 18 Apr 2012 21:54:07 +0100
+Message-Id: <1334782447-8742-1-git-send-email-luis.henriques@canonical.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Eric Dumazet <eric.dumazet@gmail.com>
-Date: Wed, 18 Apr 2012 22:14:23 +0200
+An early registration of an ISR was causing a crash to several users (for
+example here: http://bugs.launchpad.net/bugs/972723  The reason was that
+IRQs were being triggered before the driver initialisation was completed.
 
-> From: Eric Dumazet <edumazet@google.com>
-> 
-> Alexander Beregalov reported skb_over_panic errors and provided stack
-> trace.
-> 
-> I occurs commit a21d45726aca (tcp: avoid order-1 allocations on wifi and
-> tx path) added a regression, when a retransmit is done after a partial
-> ACK.
-> 
-> tcp_retransmit_skb() tries to aggregate several frames if the first one
-> has enough available room to hold the following ones payload. This is
-> controlled by /proc/sys/net/ipv4/tcp_retrans_collapse tunable (default :
-> enabled)
-> 
-> Problem is we must make sure _pskb_trim_head() doesnt fool
-> skb_availroom() when pulling some bytes from skb (this pull is done when
-> receiver ACK part of the frame).
-> 
-> Reported-by: Alexander Beregalov <a.beregalov@gmail.com>
-> Cc: Marc MERLIN <marc@merlins.org>
-> Signed-off-by: Eric Dumazet <edumazet@google.com>
+This patch fixes this by moving the invocation to request_irq() to a later
+stage on the driver probe function.
 
-Applied, thanks.
+Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
+---
+ drivers/media/rc/ite-cir.c |    8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
+
+diff --git a/drivers/media/rc/ite-cir.c b/drivers/media/rc/ite-cir.c
+index 682009d..98d8ccf 100644
+--- a/drivers/media/rc/ite-cir.c
++++ b/drivers/media/rc/ite-cir.c
+@@ -1521,10 +1521,6 @@ static int ite_probe(struct pnp_dev *pdev, const struct pnp_device_id
+ 				dev_desc->io_region_size, ITE_DRIVER_NAME))
+ 		goto failure;
+ 
+-	if (request_irq(itdev->cir_irq, ite_cir_isr, IRQF_SHARED,
+-			ITE_DRIVER_NAME, (void *)itdev))
+-		goto failure;
+-
+ 	/* set driver data into the pnp device */
+ 	pnp_set_drvdata(pdev, itdev);
+ 	itdev->pdev = pdev;
+@@ -1600,6 +1596,10 @@ static int ite_probe(struct pnp_dev *pdev, const struct pnp_device_id
+ 	rdev->driver_name = ITE_DRIVER_NAME;
+ 	rdev->map_name = RC_MAP_RC6_MCE;
+ 
++	if (request_irq(itdev->cir_irq, ite_cir_isr, IRQF_SHARED,
++			ITE_DRIVER_NAME, (void *)itdev))
++		goto failure;
++
+ 	ret = rc_register_device(rdev);
+ 	if (ret)
+ 		goto failure;
+-- 
+1.7.9.5
+
