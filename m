@@ -1,42 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753934Ab2DRNor (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Apr 2012 09:44:47 -0400
-Received: from smtp102.prem.mail.ac4.yahoo.com ([76.13.13.41]:39873 "HELO
-	smtp102.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1753692Ab2DRNon (ORCPT
+	id S1753852Ab2DRNqO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Apr 2012 09:46:14 -0400
+Received: from mail-pz0-f52.google.com ([209.85.210.52]:64194 "EHLO
+	mail-pz0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753616Ab2DRNqN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Apr 2012 09:44:43 -0400
-X-Yahoo-Newman-Property: ymail-3
-X-YMail-OSG: 5m1T5p4VM1l.oo1ZNWgW_QO2zdHMDXSfZf_jzJvxbWbvc9Q
- CzROwwA7PacD_x3YWr9sEL0LbDVfLEgM0UfX97SjW9Tn2XOzfmVXpjBUctYq
- 1kC2sQwVKx2mgN.5hCzkKxpJByJQfBNxCW99EajtKTAOpmtXrhzw..ALb5Hn
- G1yEjCL37hZDyxNbnPqUSZolqOE4AYhWqQuRe0dUT7SC1XPNorkD5KTeTtyv
- E62xzvpWjNEgY3JmgF9PvtQYxMqTG9ywpJbqcSVDtLdNV8RH91JtUOz_XfN.
- CQ9Se_.Wvrkm0yOJcNOz7zw9A4BhawCf..xM9.e2kINH16TzsbUV9UpN.Ow3
- NILGaSA009MU_EchNSR15DqH7WvktHaulETTozvn42edT3zxCbYMBmXbETic
- hq0wWI8iWPbEorT4PpjT7IBlYLw--
-X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
-Date: Wed, 18 Apr 2012 08:44:39 -0500 (CDT)
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@router.home
-To: Eric Dumazet <eric.dumazet@gmail.com>
-cc: Pablo Neira Ayuso <pablo@netfilter.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        netdev <netdev@vger.kernel.org>, Tejun Heo <tj@kernel.org>,
-        Patrick McHardy <kaber@trash.net>
-Subject: Re: [PATCH net-next] netfilter: nf_conntrack.h: use this_cpu_inc()
-In-Reply-To: <1334723800.2472.88.camel@edumazet-glaptop>
-Message-ID: <alpine.DEB.2.00.1204180843590.14709@router.home>
-References: <1334723800.2472.88.camel@edumazet-glaptop>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Wed, 18 Apr 2012 09:46:13 -0400
+From: Paolo Bonzini <pbonzini@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: James Bottomley <JBottomley@parallels.com>, linux-scsi@vger.kernel.org,
+        Hu Tao <hutao@cn.fujitsu.com>
+Subject: [PATCH for 3.4] virtio-scsi: fix TMF use-after-free
+Date: Wed, 18 Apr 2012 15:46:01 +0200
+Message-Id: <1334756761-12312-1-git-send-email-pbonzini@redhat.com>
+X-Mailer: git-send-email 1.7.9.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ok.
+Fix a race in TMF path, where cmd may have been already freed
+by virtscsi_complete_free after waking up from the completion.
 
-Reviewed-by: Christoph Lameter <cl@linux.com>
+Cc: James Bottomley <JBottomley@parallels.com>
+Cc: linux-scsi@vger.kernel.org
+Signed-off-by: Hu Tao <hutao@cn.fujitsu.com>
+Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
+---
+ drivers/scsi/virtio_scsi.c |   24 +++++++++++++-----------
+ 1 file changed, 13 insertions(+), 11 deletions(-)
+
+diff --git a/drivers/scsi/virtio_scsi.c b/drivers/scsi/virtio_scsi.c
+index efccd72..1b38431 100644
+--- a/drivers/scsi/virtio_scsi.c
++++ b/drivers/scsi/virtio_scsi.c
+@@ -175,7 +175,8 @@ static void virtscsi_complete_free(void *buf)
+ 
+ 	if (cmd->comp)
+ 		complete_all(cmd->comp);
+-	mempool_free(cmd, virtscsi_cmd_pool);
++	else
++		mempool_free(cmd, virtscsi_cmd_pool);
+ }
+ 
+ static void virtscsi_ctrl_done(struct virtqueue *vq)
+@@ -311,21 +312,22 @@ out:
+ static int virtscsi_tmf(struct virtio_scsi *vscsi, struct virtio_scsi_cmd *cmd)
+ {
+ 	DECLARE_COMPLETION_ONSTACK(comp);
+-	int ret;
++	int ret = FAILED;
+ 
+ 	cmd->comp = &comp;
+-	ret = virtscsi_kick_cmd(vscsi, vscsi->ctrl_vq, cmd,
+-			       sizeof cmd->req.tmf, sizeof cmd->resp.tmf,
+-			       GFP_NOIO);
+-	if (ret < 0)
+-		return FAILED;
++	if (virtscsi_kick_cmd(vscsi, vscsi->ctrl_vq, cmd,
++			      sizeof cmd->req.tmf, sizeof cmd->resp.tmf,
++			      GFP_NOIO) < 0)
++		goto out;
+ 
+ 	wait_for_completion(&comp);
+-	if (cmd->resp.tmf.response != VIRTIO_SCSI_S_OK &&
+-	    cmd->resp.tmf.response != VIRTIO_SCSI_S_FUNCTION_SUCCEEDED)
+-		return FAILED;
++	if (cmd->resp.tmf.response == VIRTIO_SCSI_S_OK ||
++	    cmd->resp.tmf.response == VIRTIO_SCSI_S_FUNCTION_SUCCEEDED)
++		ret = SUCCESS;
+ 
+-	return SUCCESS;
++out:
++	mempool_free(cmd, virtscsi_cmd_pool);
++	return ret;
+ }
+ 
+ static int virtscsi_device_reset(struct scsi_cmnd *sc)
+-- 
+1.7.9.3
 
