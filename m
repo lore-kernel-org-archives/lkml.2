@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753961Ab2DRNjE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Apr 2012 09:39:04 -0400
-Received: from mail.work-microwave.de ([62.245.205.51]:42439 "EHLO
+	id S1753539Ab2DRNhZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Apr 2012 09:37:25 -0400
+Received: from mail.work-microwave.de ([62.245.205.51]:44449 "EHLO
 	work-microwave.de" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753593Ab2DRNha (ORCPT
+	with ESMTP id S1752828Ab2DRNhV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Apr 2012 09:37:30 -0400
+	Wed, 18 Apr 2012 09:37:21 -0400
 From: Roland Stigge <stigge@antcom.de>
 To: arm@kernel.org, linux-arm-kernel@lists.infradead.org,
         thierry.reding@avionic-design.de, gregkh@linuxfoundation.org,
@@ -16,9 +16,9 @@ To: arm@kernel.org, linux-arm-kernel@lists.infradead.org,
         marek.vasut@gmail.com, devel@driverdev.osuosl.org, kevin.wells@nxp.com,
         srinivas.bakki@nxp.com, dan.carpenter@oracle.com
 Cc: Roland Stigge <stigge@antcom.de>
-Subject: [PATCH v3 3/10] ARM: LPC32xx: clock.c cleanup
-Date: Wed, 18 Apr 2012 15:36:08 +0200
-Message-Id: <1334756176-25144-4-git-send-email-stigge@antcom.de>
+Subject: [PATCH v3 2/10] ohci-nxp: Device tree support
+Date: Wed, 18 Apr 2012 15:36:07 +0200
+Message-Id: <1334756176-25144-3-git-send-email-stigge@antcom.de>
 X-Mailer: git-send-email 1.7.9
 In-Reply-To: <1334756176-25144-1-git-send-email-stigge@antcom.de>
 References: <1334756176-25144-1-git-send-email-stigge@antcom.de>
@@ -27,7 +27,7 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch makes use of the default macro CLKDEV_INIT() for clock registration.
+This patch adds device tree support to ohci-nxp.c
 
 Signed-off-by: Roland Stigge <stigge@antcom.de>
 
@@ -35,94 +35,56 @@ Signed-off-by: Roland Stigge <stigge@antcom.de>
 
 Applies to v3.4-rc3
 
----
- arch/arm/mach-lpc32xx/clock.c |   77 +++++++++++++++++++-----------------------
- 1 file changed, 35 insertions(+), 42 deletions(-)
+ Documentation/devicetree/bindings/usb/ohci-nxp.txt |   16 ++++++++++++++++
+ drivers/usb/host/ohci-nxp.c                        |   10 ++++++++++
+ 2 files changed, 26 insertions(+)
 
---- linux-2.6.orig/arch/arm/mach-lpc32xx/clock.c
-+++ linux-2.6/arch/arm/mach-lpc32xx/clock.c
-@@ -1095,49 +1095,42 @@ struct clk *clk_get_parent(struct clk *c
- }
- EXPORT_SYMBOL(clk_get_parent);
+--- /dev/null
++++ linux-2.6/Documentation/devicetree/bindings/usb/ohci-nxp.txt
+@@ -0,0 +1,16 @@
++* OHCI controller, NXP ohci-nxp variant
++
++Required properties:
++- compatible: must be "nxp,ohci-nxp"
++- reg: physical base address of the controller and length of memory mapped
++  region.
++- interrupts: The OHCI interrupt
++
++Example (LPC32xx):
++
++	ohci@31020000 {
++		compatible = "nxp,ohci-nxp";
++		reg = <0x31020000 0x300>;
++		interrupt-parent = <&mic>;
++		interrupts = <0x3b 0>;
++	};
+--- linux-2.6.orig/drivers/usb/host/ohci-nxp.c
++++ linux-2.6/drivers/usb/host/ohci-nxp.c
+@@ -22,6 +22,7 @@
+ #include <linux/clk.h>
+ #include <linux/platform_device.h>
+ #include <linux/i2c.h>
++#include <linux/of.h>
  
--#define _REGISTER_CLOCK(d, n, c) \
--	{ \
--		.dev_id = (d), \
--		.con_id = (n), \
--		.clk = &(c), \
--	},
--
- static struct clk_lookup lookups[] = {
--	_REGISTER_CLOCK(NULL, "osc_32KHz", osc_32KHz)
--	_REGISTER_CLOCK(NULL, "osc_pll397", osc_pll397)
--	_REGISTER_CLOCK(NULL, "osc_main", osc_main)
--	_REGISTER_CLOCK(NULL, "sys_ck", clk_sys)
--	_REGISTER_CLOCK(NULL, "arm_pll_ck", clk_armpll)
--	_REGISTER_CLOCK(NULL, "ck_pll5", clk_usbpll)
--	_REGISTER_CLOCK(NULL, "hclk_ck", clk_hclk)
--	_REGISTER_CLOCK(NULL, "pclk_ck", clk_pclk)
--	_REGISTER_CLOCK(NULL, "timer0_ck", clk_timer0)
--	_REGISTER_CLOCK(NULL, "timer1_ck", clk_timer1)
--	_REGISTER_CLOCK(NULL, "timer2_ck", clk_timer2)
--	_REGISTER_CLOCK(NULL, "timer3_ck", clk_timer3)
--	_REGISTER_CLOCK(NULL, "vfp9_ck", clk_vfp9)
--	_REGISTER_CLOCK(NULL, "clk_dmac", clk_dma)
--	_REGISTER_CLOCK("pnx4008-watchdog", NULL, clk_wdt)
--	_REGISTER_CLOCK(NULL, "uart3_ck", clk_uart3)
--	_REGISTER_CLOCK(NULL, "uart4_ck", clk_uart4)
--	_REGISTER_CLOCK(NULL, "uart5_ck", clk_uart5)
--	_REGISTER_CLOCK(NULL, "uart6_ck", clk_uart6)
--	_REGISTER_CLOCK("pnx-i2c.0", NULL, clk_i2c0)
--	_REGISTER_CLOCK("pnx-i2c.1", NULL, clk_i2c1)
--	_REGISTER_CLOCK("pnx-i2c.2", NULL, clk_i2c2)
--	_REGISTER_CLOCK("dev:ssp0", NULL, clk_ssp0)
--	_REGISTER_CLOCK("dev:ssp1", NULL, clk_ssp1)
--	_REGISTER_CLOCK("lpc32xx_keys.0", NULL, clk_kscan)
--	_REGISTER_CLOCK("lpc32xx-nand.0", "nand_ck", clk_nand)
--	_REGISTER_CLOCK("lpc32xx-adc", NULL, clk_adc)
--	_REGISTER_CLOCK(NULL, "i2s0_ck", clk_i2s0)
--	_REGISTER_CLOCK(NULL, "i2s1_ck", clk_i2s1)
--	_REGISTER_CLOCK("ts-lpc32xx", NULL, clk_tsc)
--	_REGISTER_CLOCK("dev:mmc0", NULL, clk_mmc)
--	_REGISTER_CLOCK("lpc-eth.0", NULL, clk_net)
--	_REGISTER_CLOCK("dev:clcd", NULL, clk_lcd)
--	_REGISTER_CLOCK("lpc32xx_udc", "ck_usbd", clk_usbd)
--	_REGISTER_CLOCK("lpc32xx_rtc", NULL, clk_rtc)
-+	CLKDEV_INIT(NULL, "osc_32KHz", &osc_32KHz),
-+	CLKDEV_INIT(NULL, "osc_pll397", &osc_pll397),
-+	CLKDEV_INIT(NULL, "osc_main", &osc_main),
-+	CLKDEV_INIT(NULL, "sys_ck", &clk_sys),
-+	CLKDEV_INIT(NULL, "arm_pll_ck", &clk_armpll),
-+	CLKDEV_INIT(NULL, "ck_pll5", &clk_usbpll),
-+	CLKDEV_INIT(NULL, "hclk_ck", &clk_hclk),
-+	CLKDEV_INIT(NULL, "pclk_ck", &clk_pclk),
-+	CLKDEV_INIT(NULL, "timer0_ck", &clk_timer0),
-+	CLKDEV_INIT(NULL, "timer1_ck", &clk_timer1),
-+	CLKDEV_INIT(NULL, "timer2_ck", &clk_timer2),
-+	CLKDEV_INIT(NULL, "timer3_ck", &clk_timer3),
-+	CLKDEV_INIT(NULL, "vfp9_ck", &clk_vfp9),
-+	CLKDEV_INIT(NULL, "clk_dmac", &clk_dma),
-+	CLKDEV_INIT("pnx4008-watchdog", NULL, &clk_wdt),
-+	CLKDEV_INIT(NULL, "uart3_ck", &clk_uart3),
-+	CLKDEV_INIT(NULL, "uart4_ck", &clk_uart4),
-+	CLKDEV_INIT(NULL, "uart5_ck", &clk_uart5),
-+	CLKDEV_INIT(NULL, "uart6_ck", &clk_uart6),
-+	CLKDEV_INIT("pnx-i2c.0", NULL, &clk_i2c0),
-+	CLKDEV_INIT("pnx-i2c.1", NULL, &clk_i2c1),
-+	CLKDEV_INIT("pnx-i2c.2", NULL, &clk_i2c2),
-+	CLKDEV_INIT("dev:ssp0", NULL, &clk_ssp0),
-+	CLKDEV_INIT("dev:ssp1", NULL, &clk_ssp1),
-+	CLKDEV_INIT("lpc32xx_keys.0", NULL, &clk_kscan),
-+	CLKDEV_INIT("lpc32xx-nand.0", "nand_ck", &clk_nand),
-+	CLKDEV_INIT("lpc32xx-adc", NULL, &clk_adc),
-+	CLKDEV_INIT(NULL, "i2s0_ck", &clk_i2s0),
-+	CLKDEV_INIT(NULL, "i2s1_ck", &clk_i2s1),
-+	CLKDEV_INIT("ts-lpc32xx", NULL, &clk_tsc),
-+	CLKDEV_INIT("dev:mmc0", NULL, &clk_mmc),
-+	CLKDEV_INIT("lpc-eth.0", NULL, &clk_net),
-+	CLKDEV_INIT("dev:clcd", NULL, &clk_lcd),
-+	CLKDEV_INIT("lpc32xx_udc", "ck_usbd", &clk_usbd),
-+	CLKDEV_INIT("lpc32xx_rtc", NULL, &clk_rtc),
- };
+ #include <mach/hardware.h>
+ #include <asm/mach-types.h>
+@@ -525,10 +526,19 @@ static int usb_hcd_nxp_remove(struct pla
+ /* work with hotplug and coldplug */
+ MODULE_ALIAS("platform:usb-ohci");
  
- static int __init clk_init(void)
++#ifdef CONFIG_OF
++static const struct of_device_id usb_hcd_nxp_match[] = {
++	{ .compatible = "nxp,ohci-nxp" },
++	{},
++};
++MODULE_DEVICE_TABLE(of, usb_hcd_nxp_match);
++#endif
++
+ static struct platform_driver usb_hcd_nxp_driver = {
+ 	.driver = {
+ 		.name = "usb-ohci",
+ 		.owner	= THIS_MODULE,
++		.of_match_table = of_match_ptr(usb_hcd_nxp_match),
+ 	},
+ 	.probe = usb_hcd_nxp_probe,
+ 	.remove = usb_hcd_nxp_remove,
