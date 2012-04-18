@@ -1,43 +1,195 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752795Ab2DRBgW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Apr 2012 21:36:22 -0400
-Received: from mail-wi0-f172.google.com ([209.85.212.172]:58027 "EHLO
-	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751318Ab2DRBgV (ORCPT
+	id S1752594Ab2DRBpz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Apr 2012 21:45:55 -0400
+Received: from mail-vx0-f174.google.com ([209.85.220.174]:58843 "EHLO
+	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751708Ab2DRBpw convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Apr 2012 21:36:21 -0400
+	Tue, 17 Apr 2012 21:45:52 -0400
 MIME-Version: 1.0
-In-Reply-To: <20120417203223.GA31699@redhat.com>
-References: <20120417172142.GA30237@redhat.com> <CA+55aFy-uhOgEoEBr-LkOjFQBVh14wwr-20jTrtsg_2EnuNY5g@mail.gmail.com>
- <20120417203223.GA31699@redhat.com>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Tue, 17 Apr 2012 18:36:00 -0700
-X-Google-Sender-Auth: ACg_wTZtg9kthenxi5nRjekovws
-Message-ID: <CA+55aFzWzhxaVHuPY_oB5PVhw2Gxiwr46vyHCHEsU0o-HFikTw@mail.gmail.com>
-Subject: Re: [3.4-rc3] Thread overran stack, or stack corrupted
-To: Dave Jones <davej@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+In-Reply-To: <201204172303.07419.rjw@sisk.pl>
+References: <4F8790F6.5080408@intel.com>
+	<201204162330.12178.rjw@sisk.pl>
+	<CAC=cRTNL0R--5njYdWzvREx7fhebAhFW_sBJ4jt9n_c8rp_ZTQ@mail.gmail.com>
+	<201204172303.07419.rjw@sisk.pl>
+Date: Wed, 18 Apr 2012 09:45:50 +0800
+Message-ID: <CAC=cRTMR=axVV4x9Qa9vO+UXs_s73fOWkeW5mocUEkvKe9J+Dw@mail.gmail.com>
+Subject: Re: [RFC PATCH] PCIe: Add PCIe runtime D3cold support
+From: huang ying <huang.ying.caritas@gmail.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: "Yan, Zheng" <zheng.z.yan@intel.com>, bhelgaas@google.com,
+        linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
+        linux-pm@vger.kernel.org, Lin Ming <ming.m.lin@intel.com>,
+        Zhang Rui <rui.zhang@intel.com>,
+        ACPI Devel Mailing List <linux-acpi@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 17, 2012 at 1:32 PM, Dave Jones <davej@redhat.com> wrote:
+On Wed, Apr 18, 2012 at 5:03 AM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+> On Tuesday, April 17, 2012, huang ying wrote:
+>> On Tue, Apr 17, 2012 at 5:30 AM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+>> > On Monday, April 16, 2012, huang ying wrote:
+>> >> Hi,
+>> >>
+>> >> On Sat, Apr 14, 2012 at 3:41 AM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+>> >> > Hi,
+>> >> >
+>> >> > On Friday, April 13, 2012, Yan, Zheng wrote:
+>> >> >> Hi all,
+>> >> >>
+>> >> >> This patch adds PCIe runtime D3cold support, namely cut power supply for functions
+>> >> >> beneath a PCIe port when they all have entered D3. A device in D3cold can only
+>> >> >> generate wake event through the WAKE# pin. Because we can not access to a device's
+>> >> >> configure space while it's in D3cold, pme_poll is disabled for devices in D3cold.
+>> >> >>
+>> >> >> Any comment will be appreciated.
+>> >> >>
+>> >> >> Signed-off-by: Zheng Yan <zheng.z.yan@intel.com>
+>> >> >> ---
+>> >> >> diff --git a/drivers/pci/pci-acpi.c b/drivers/pci/pci-acpi.c
+>> >> >> index 0f150f2..e210e8cb 100644
+>> >> >> --- a/drivers/pci/pci-acpi.c
+>> >> >> +++ b/drivers/pci/pci-acpi.c
+>> >> >> @@ -224,7 +224,7 @@ static int acpi_pci_set_power_state(struct pci_dev *dev, pci_power_t state)
+>> >> >>               [PCI_D1] = ACPI_STATE_D1,
+>> >> >>               [PCI_D2] = ACPI_STATE_D2,
+>> >> >>               [PCI_D3hot] = ACPI_STATE_D3,
+>> >> >> -             [PCI_D3cold] = ACPI_STATE_D3
+>> >> >> +             [PCI_D3cold] = ACPI_STATE_D3_COLD
+>> >> >>       };
+>> >> >>       int error = -EINVAL;
+>> >> >>
+>> >> >
+>> >> > Please don't use that ACPI_STATE_D3_COLD thing, it's not defined correctly.
+>> >> >
+>> >> > We should define ACPI_STATE_D3_COLD == ACPI_STATE_D3 and add ACPI_STATE_D3_HOT
+>> >> > instead.  I'll prepare a patch for that over the weekend if no one has done
+>> >> > that already.
+>> >> >
+>> >> >> @@ -296,7 +296,8 @@ static void acpi_pci_propagate_run_wake(struct pci_bus *bus, bool enable)
+>> >> >>
+>> >> >>  static int acpi_pci_run_wake(struct pci_dev *dev, bool enable)
+>> >> >>  {
+>> >> >> -     if (dev->pme_interrupt)
+>> >> >> +     /* PME interrupt isn't available in the D3cold case */
+>> >> >> +     if (dev->pme_interrupt && !dev->runtime_d3cold)
+>> >> >
+>> >> > This whole thing is wrong.  First off, I don't think that the runtime_d3cold
+>> >> > flag makes any sense.  We already cover that in dev->pme_support.
+>> >>
+>> >> PCIe devices and PCIe root port may have proper PME interrupt support
+>> >> (that is, dev->pme_interrupt = true), but the process of remote wakeup
+>> >> from D3cold is as follow:
+>> >>
+>> >> 1) In D3cold, the power of the main link is turned off, aux power is
+>> >> provided (PCIe L2 link state)
+>> >> 2) Device detect condition to resume, then assert #WAKE pin
+>> >> 2) ACPI circuit linked with #WAKE pin, and will generate a GPE for that
+>> >> 3) GPE handler will resume device with ACPI (via _PS3 and _PR0), the
+>> >> power of the main link is turned on, after a while, link goes into L0
+>> >> state
+>> >> 4) The PME message is sent to root port, pme interrupt generated
+>> >
+>> > This isn't how it's supposed to work in theory.  If the device can signal PME
+>> > from D3cold, it should be able to reestablish the link and send a PME
+>> > message from there.  dev->pme_interrupt set means exactly that.
+>> >
+>> > ACPI is only supposed to be needed for things that don't send PME
+>> > messages (in your case the PME interrupt generated by the port is essentially
+>> > useless, because the wakeup event has already been signaled through ACPI).
+>> >
+>> >> So, for deivce, dev->pme_interrupt = true and dev->pme_support
+>> >> advocate it support PME in D3cold.  But we still need ACPI to setup
+>> >> run wake for the device.
+>> >
+>> > OK, so this is nonstandard.
+>>
+>> This is the standard behavior.  Please refer to PCI Express Base
+>> Sepcification Revision 2.0, section 5.3.3.2 Link Wakeup.  In D1, D2
+>> and D3hot state, PCIe device can transit the link from L1 to L0 state,
+>> and send the PME message.  In D3cold, the main link is powered off,
+>> PCIe device will use a STANDARD sideband signal WAKE# to signal wakeup
+>> firstly, then platform (power controller in spec) will power on the
+>> main link for the device, after main link is back to L0, the PME
+>> message is send to root port, pme interrupt is generated.  So in
+>> theory, the wake up process can be divided into platform part (which
+>> power on the main link) and PCIe part (which send PME).
 >
-> Ok, this builds. I'll run with this for a while, and see what falls out.
+> That's fine.  However, the platform part should be completely transparent
+> to the PCI bus type, then.  It just should power up the link to allow a
+> PME message to be transmitted through it.
 
-So assuming that works and doesn't have some silly thinko in it, I
-think it is a worthwhile addition to the whole stack debugging thing.
-Right now, the message about "process xyz used most stack, x bytes
-free" really is pretty useless. If it were to actually show "hey, this
-was the deepest actual stack chain", that sounds quite interesting.
+Yes.
 
-Of course, if the stack is largely used by some leaf function that
-just has a big stack frame, that won't show up in the stack trace, but
-that's presumably not the worst worry. And hopefully the caller of
-that would still be pretty deep and show up without having been
-overwritten.
+>[...]
+>
+>> > So don't use pci_set_power_state() for that, because it's essentially
+>> > a different operation.  You need a pci_platform_remove_power() helper or
+>> > similar for that.
+>> >
+>> > What ACPI method exactly is used to remove power from the device?
+>>
+>> The ACPI method executed is as follow:
+>>
+>> - _PS3 (if exist)
+>> - Power resources in _PR3 is turned on
+>> - Power resources in _PR0 is turned off
+>> - Power resources in _PR3 is turned off
+>
+> I'd rather think
+>
+> - make sure that _PR3 resources are referenced
+> - drop references (from this device) for all other power resources
+> - execute _PS3 (if any)
+> - drop references for _PR3 resources
+>
+> if Section 7.2.11 of ACPI 5.0 is to be followed.
 
-                     Linus
+Yes.  You are right.
+
+>> I think the process can fit pci_set_power_state() quite well, so why
+>> invent another helper for that?
+>
+> OK, we can special case it, perhaps.
+>
+> Suppose we have a "this device may be put into D3_cold" flag.
+>
+> Who's going to decide whether to put it into D3_hot or D3_cold?
+
+In most cases, I think it is OK to put device into D3_cold if that is
+supported.  But there should be some special case where D3_cold is not
+desirable, for example, we can put SSD into D3_cold safely, but it is
+not quite safe to put HDD into D3_cold.  So we want to introduce a
+flag: "may_power_off" like in the following patch
+
+https://lkml.org/lkml/2012/3/29/41
+
+It gives device driver a chance to prevent the device to be put into D3_cold.
+
+> [...]
+>
+>> >> > So now please tell me what exactly you want to achieve and why you want to do
+>> >> > that in the first place.
+>> >
+>> > Well, is there any chance to get that information?
+>>
+>> You mean the runtime_d3cold flag? That flag is used to tell
+>> acpi_pci_run_wake() that we need ACPI wakeup setup for the device
+>> because that is needed by D3cold.  The ACPI wakeup setup here means
+>> turn on power resources needed by wake up (_PRW) and execute _DSW.
+>>
+>> If you mean the whole patch, we want to implement runtime D3cold
+>> support, which can save more power than D3hot.
+>
+> So, do I think correctly that you'd like to put devices into D3_cold
+> if that's possible via ACPI and to be able to wake it up from that state
+> using remote wakeup?
+
+Yes.  Support both remote wakeup and host wakeup.
+
+Best Regards,
+Huang Ying
