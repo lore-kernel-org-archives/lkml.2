@@ -1,33 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754710Ab2DRTvc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Apr 2012 15:51:32 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:34919 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753958Ab2DRTvb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Apr 2012 15:51:31 -0400
-Message-ID: <4F8F1B44.80109@suse.cz>
-Date: Wed, 18 Apr 2012 21:51:32 +0200
-From: Michal Marek <mmarek@suse.cz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120312 Thunderbird/11.0
-MIME-Version: 1.0
-To: David Miller <davem@davemloft.net>
-Cc: linux-kernel@vger.kernel.org, sam@ravnborg.org
-Subject: Re: [PATCH] Fix modpost failures in fedora 17
-References: <20120412.143730.258982831585270742.davem@davemloft.net> <20120418.153132.547432135869114399.davem@davemloft.net>
-In-Reply-To: <20120418.153132.547432135869114399.davem@davemloft.net>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1752988Ab2DRT7B (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Apr 2012 15:59:01 -0400
+Received: from mail.windriver.com ([147.11.1.11]:59962 "EHLO
+	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751238Ab2DRT7A (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Apr 2012 15:59:00 -0400
+From: Paul Gortmaker <paul.gortmaker@windriver.com>
+To: jesper.nilsson@axis.com
+Cc: starvik@axis.com, linux-cris-kernel@axis.com, linux-kernel@vger.kernel.org,
+        linux-next@vger.kernel.org,
+        Paul Gortmaker <paul.gortmaker@windriver.com>
+Subject: [PATCH] cris: Remove old legacy "-traditional" flag from arch-v10/lib/Makefile
+Date: Wed, 18 Apr 2012 15:58:43 -0400
+Message-Id: <1334779123-21957-1-git-send-email-paul.gortmaker@windriver.com>
+X-Mailer: git-send-email 1.7.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dne 18.4.2012 21:31, David Miller napsal(a):
-> From: David Miller <davem@davemloft.net>
-> Date: Thu, 12 Apr 2012 14:37:30 -0400 (EDT)
-> 
-> Ping?  Can we get this bug fixed merged some time soon?
+Most of these have been purged years ago.  This one silently lived
+on until commit 69349c2dc01c489eccaa4c472542c08e370c6d7e
 
-Applied to kbuild.git#rc-fixes now.
+    "kconfig: fix IS_ENABLED to not require all options to be defined"
 
-Michal
+In the above, we use some macro trickery to create a conditional that
+is valid in CPP and in C usage.  However that trickery doesn't sit
+well if you have the legacy "-traditional" flag enabled.  You'll get:
+
+  AS      arch/cris/arch-v10/lib/checksum.o
+In file included from <command-line>:4:0:
+include/linux/kconfig.h:23:0: error: syntax error in macro parameter list
+make[2]: *** [arch/cris/arch-v10/lib/checksum.o] Error 1
+
+Everything builds fine w/o "-traditional" so simply drop it from this
+location as well.
+
+Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
+
+diff --git a/arch/cris/arch-v10/lib/Makefile b/arch/cris/arch-v10/lib/Makefile
+index 36e9a9c..725153e 100644
+--- a/arch/cris/arch-v10/lib/Makefile
++++ b/arch/cris/arch-v10/lib/Makefile
+@@ -2,8 +2,5 @@
+ # Makefile for Etrax-specific library files..
+ #
+ 
+-
+-EXTRA_AFLAGS := -traditional
+-
+ lib-y  = checksum.o checksumcopy.o string.o usercopy.o memset.o csumcpfruser.o
+ 
+-- 
+1.7.9.1
+
