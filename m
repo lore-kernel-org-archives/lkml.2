@@ -1,56 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753697Ab2DRO4J (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Apr 2012 10:56:09 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:28152 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753066Ab2DRO4H (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Apr 2012 10:56:07 -0400
-X-Authority-Analysis: v=2.0 cv=V/z/IJbi c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=XQbtiDEiEegA:10 a=_2gBi4Ny9w4A:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=bcXUtIwdAAAA:8 a=0ntkVEJjt-uWl-rta7cA:9 a=PUjeQqilurYA:10 a=N-tvCOvsvcUA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.80.29
-Message-ID: <1334760965.28106.39.camel@gandalf.stny.rr.com>
-Subject: Re: [3.4-rc3] Thread overran stack, or stack corrupted
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Dave Jones <davej@redhat.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>
-Date: Wed, 18 Apr 2012 10:56:05 -0400
-In-Reply-To: <20120418135815.GA10798@redhat.com>
-References: <CA+55aFy-uhOgEoEBr-LkOjFQBVh14wwr-20jTrtsg_2EnuNY5g@mail.gmail.com>
-	 <20120417203223.GA31699@redhat.com>
-	 <CA+55aFzWzhxaVHuPY_oB5PVhw2Gxiwr46vyHCHEsU0o-HFikTw@mail.gmail.com>
-	 <20120418022705.GA23877@home.goodmis.org>
-	 <20120418031557.GA29828@redhat.com>
-	 <1334720611.28106.25.camel@gandalf.stny.rr.com>
-	 <20120418035004.GA31465@redhat.com>
-	 <1334721441.28106.28.camel@gandalf.stny.rr.com>
-	 <20120418040632.GB31465@redhat.com>
-	 <1334722164.28106.31.camel@gandalf.stny.rr.com>
-	 <20120418135815.GA10798@redhat.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.2.2-1 
+	id S1753865Ab2DRO5T (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Apr 2012 10:57:19 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:36194 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753802Ab2DRO5R (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Apr 2012 10:57:17 -0400
+Message-ID: <4F8ED646.1040100@redhat.com>
+Date: Wed, 18 Apr 2012 09:57:10 -0500
+From: Eric Sandeen <sandeen@redhat.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.6; rv:11.0) Gecko/20120327 Thunderbird/11.0.1
+MIME-Version: 1.0
+To: Andreas Dilger <adilger@whamcloud.com>
+CC: Zheng Liu <gnehzuil.liu@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        "linux-ext4@vger.kernel.org" <linux-ext4@vger.kernel.org>,
+        Zheng Liu <wenqing.lz@taobao.com>
+Subject: Re: [RFC][PATCH 0/3] add FALLOC_FL_NO_HIDE_STALE flag in fallocate
+References: <1334681618-9452-1-git-send-email-wenqing.lz@taobao.com> <4F8DAAFE.40500@redhat.com> <D225F088-A53F-4962-97AD-13C850BBA722@whamcloud.com>
+In-Reply-To: <D225F088-A53F-4962-97AD-13C850BBA722@whamcloud.com>
+X-Enigmail-Version: 1.4
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-04-18 at 09:58 -0400, Dave Jones wrote:
+On 4/17/12 11:59 PM, Andreas Dilger wrote:
 
->  > OK, function tracing is broken on your box. Could you send me your full
->  > config and I'll take a look at it tomorrow. Bed time for me now ;-)
+...
+
+> Secondly, your test program is not doing random writes to disk, but
+> rather doing writes at 64kB intervals. There is logic in the
+> uninitialized extent handling that will write zeros to an entire
+> extent, rather than create many fragmented uninitialized extents.  It
+> may be possible that you are zeroing out the entire file, and writing
+> 16x as much data as you expect.
 > 
-> http://fpaste.org/b8PN/raw/
+> Cheers, Andreas
 
-Hmm, I had no problems with this config. But that wasn't on my Xeon. I'm
-compiling for that box now.
+I don't think the testcase as written is triggering that behavior, though
+other similar testcases might.  In this case the left-over uninit extents
+are large enough that they don't get zeroed:
 
-Could you also paste your full dmesg.
+File size of /mnt/scratch/test is 268435456 (65536 blocks, blocksize 4096)
+ ext logical physical expected length flags
+   0       0    34816               1 
+   1       1    34817              15 unwritten
+   2      16    34832               1 
+   3      17    34833              15 unwritten
+   4      32    34848               1 
+   5      33    34849              15 unwritten
+...
 
-Thanks,
+Good guess though :)
 
--- Steve
-
-
+-Eric
