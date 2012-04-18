@@ -1,61 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751609Ab2DRId0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Apr 2012 04:33:26 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:38680 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751116Ab2DRIdX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Apr 2012 04:33:23 -0400
-Date: Wed, 18 Apr 2012 01:32:08 -0700
-From: Anton Vorontsov <anton.vorontsov@linaro.org>
-To: Pekka Enberg <penberg@kernel.org>
-Cc: Leonid Moiseichuk <leonid.moiseichuk@nokia.com>,
-        John Stultz <john.stultz@linaro.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, linaro-kernel@lists.linaro.org,
-        patches@linaro.org
-Subject: [PATCH v2 0/2] vmevent: Greater-than attribute + one-shot mode + a
- bugfix
-Message-ID: <20120418083208.GA24904@lizard>
+	id S1751775Ab2DRIeB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Apr 2012 04:34:01 -0400
+Received: from antcom.de ([188.40.178.216]:60922 "EHLO chuck.antcom.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751062Ab2DRId7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Apr 2012 04:33:59 -0400
+Message-ID: <4F8E7C70.6090900@antcom.de>
+Date: Wed, 18 Apr 2012 10:33:52 +0200
+From: Roland Stigge <stigge@antcom.de>
+Organization: ANTCOM IT Research & Development
+User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:8.0) Gecko/20120216 Icedove/8.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Dan Carpenter <dan.carpenter@oracle.com>
+CC: arm@kernel.org, linux-arm-kernel@lists.infradead.org,
+        thierry.reding@avionic-design.de, gregkh@linuxfoundation.org,
+        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-input@vger.kernel.org, dmitry.torokhov@gmail.com,
+        axel.lin@gmail.com, broonie@opensource.wolfsonmicro.com,
+        marek.vasut@gmail.com, devel@driverdev.osuosl.org, kevin.wells@nxp.com,
+        srinivas.bakki@nxp.com
+Subject: Re: [PATCH v2 3/8] ARM: LPC32xx: clock.c update
+References: <1334682507-15055-1-git-send-email-stigge@antcom.de> <1334682507-15055-4-git-send-email-stigge@antcom.de> <20120417210905.GJ6498@mwanda>
+In-Reply-To: <20120417210905.GJ6498@mwanda>
+X-Enigmail-Version: 1.3.4
+OpenPGP: url=subkeys.pgp.net
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all,
+On 04/17/2012 11:09 PM, Dan Carpenter wrote:
+> On Tue, Apr 17, 2012 at 07:08:22PM +0200, Roland Stigge wrote:
+>> Besides switching to the default macro CLKDEV_INIT() for clock registration,
+>> this patch actually updates the clock registrations of pl08xdmac.
+>>
+> 
+> When there is a cleanup and a new feature added in the same patch,
+> it makes it hard to read...  :/  So when we update pl08xdmac:
+> 
+> -       CLKDEV_INIT(NULL, "clk_dmac", &clk_dma),
+> +       CLKDEV_INIT("pl08xdmac", NULL, &clk_dma),
+> 
+> What does that actually do?  Is it a bug fix?
 
-That's a respin of the previous patchset that tried to add a new
-'cross' event type, which would trigger whenever value crosses a
-user-specified threshold both ways, i.e. from a lesser values side
-to a greater values side, and vice versa.
+The primecell DMA driver refers to this clock via "pl08xdmac", so it
+only works with the above line change. Will separate out to another patch.
 
-We use the event type in an userspace low-memory killer: we get a
-notification when memory becomes low, so we start freeing memory by
-killing unneeded processes, and we get notification when memory hits
-the threshold from another side, so we know that we freed enough of
-memory.
+Thanks,
 
-There's also a fix for a bug that makes kernel upset about sleeping
-in the atomic context.
-
-Per Pekka's comments here comes v2. Changes:
-
-- Added a one-shot mode plus a greater-than attribute, the two
-  additions makes the equivalent of the cross-event type.
-- In the bugfix patch I added some comments about implementation
-  details of the lock-free logic. Also, in the previous version of
-  the fix I forgot to remove 'struct mutex' form the
-  'struct vmevent_watch', this is now cleaned up.
-
-As usual, the patches are against
-
-	git://github.com/penberg/linux.git vmevent/core
-
-Thanks!
-
--- 
-Anton Vorontsov
-Email: cbouatmailru@gmail.com
+Roland
