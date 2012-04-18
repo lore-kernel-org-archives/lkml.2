@@ -1,45 +1,200 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754824Ab2DRThP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Apr 2012 15:37:15 -0400
-Received: from shards.monkeyblade.net ([198.137.202.13]:40901 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753066Ab2DRThN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Apr 2012 15:37:13 -0400
-Date: Wed, 18 Apr 2012 15:37:10 -0400 (EDT)
-Message-Id: <20120418.153710.430492542259953028.davem@davemloft.net>
-To: xiong@qca.qualcomm.com
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        qca-linux-team@qualcomm.com, nic-devel@qualcomm.com
-Subject: Re: [PATCH 00/12] atl1c: update hardware settings - v1
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1334727156-6830-1-git-send-email-xiong@qca.qualcomm.com>
-References: <1334727156-6830-1-git-send-email-xiong@qca.qualcomm.com>
-X-Mailer: Mew version 6.4 on Emacs 24.0.95 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+	id S1754800Ab2DRTmR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Apr 2012 15:42:17 -0400
+Received: from ogre.sisk.pl ([193.178.161.156]:51337 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753066Ab2DRTmQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Apr 2012 15:42:16 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Subject: Re: [PATCH 1/2] ACPI: Convert wake_sleep_flags to a value instead of function (v4)
+Date: Wed, 18 Apr 2012 21:46:51 +0200
+User-Agent: KMail/1.13.6 (Linux/3.4.0-rc3+; KDE/4.6.0; x86_64; ; )
+Cc: ming.m.lin@intel.com, linux-kernel@vger.kernel.org,
+        linux-pm@vger.kernel.org, lenb@kernel.org, linux-acpi@vger.kernel.org,
+        hpa@zytor.com, x86@kernel.org
+References: <1334769518-7660-1-git-send-email-konrad.wilk@oracle.com> <1334769518-7660-2-git-send-email-konrad.wilk@oracle.com>
+In-Reply-To: <1334769518-7660-2-git-send-email-konrad.wilk@oracle.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-2"
 Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Wed, 18 Apr 2012 12:37:12 -0700 (PDT)
+Message-Id: <201204182146.52046.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: xiong <xiong@qca.qualcomm.com>
-Date: Wed, 18 Apr 2012 13:32:24 +0800
+On Wednesday, April 18, 2012, Konrad Rzeszutek Wilk wrote:
+> With commit a2ef5c4fd44ce3922435139393b89f2cce47f576
+> "ACPI: Move module parameter gts and bfs to sleep.c" the
 
-> This update contains a serial of patches, most of them are hardware
-> settings related. register definitions are refined (or removed if 
-> meaningless) for each patch.
-> 
-> This is the first serial patches, after reviewed/applied the second
-> serial will be out.
-> 
-> These patches have addressed all sparse and checkpatch warnings.
-> 
-> Following NICs are tested:
-> AR8131/AR8132/AR8151A/AR8152A/AR8152B
-> Test item includes:
-> build/install/uninstall/dhcp/ping/iperf/wol/reboot/etc.
+Hmm.  I don't recall seeing that one before it was applied.
 
-All applied, thanks.
+> wake_sleep_flags is required when calling acpi_enter_sleep_state,
+> which means that if there are functions outside the sleep.c code
+> they can't get get the wake_sleep_flags values.
+
+s/get//
+
+> This converts the function in to a exported value and converts
+> the module config operands to a function.
+> 
+> Acked-by: Lin Ming <ming.m.lin@intel.com>
+> [v2: Parameters can be turned on/off dynamically]
+> [v3: unsigned char -> u8]
+> [v4: val -> kp->arg]
+> Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+
+Acked-by: Rafael J. Wysocki <rjw@sisk.pl>
+
+Or I can take it, depending on what's preferred by Len.
+
+Thanks,
+Rafael
+
+
+> ---
+>  arch/x86/kernel/acpi/sleep.h |    2 +
+>  drivers/acpi/sleep.c         |   52 ++++++++++++++++++++++-------------------
+>  2 files changed, 30 insertions(+), 24 deletions(-)
+> 
+> diff --git a/arch/x86/kernel/acpi/sleep.h b/arch/x86/kernel/acpi/sleep.h
+> index 416d4be..fe5fdda 100644
+> --- a/arch/x86/kernel/acpi/sleep.h
+> +++ b/arch/x86/kernel/acpi/sleep.h
+> @@ -9,6 +9,8 @@ extern long saved_magic;
+>  
+>  extern int wakeup_pmode_return;
+>  
+> +extern u8 wake_sleep_flags;
+> +
+>  extern unsigned long acpi_copy_wakeup_routine(unsigned long);
+>  extern void wakeup_long64(void);
+>  
+> diff --git a/drivers/acpi/sleep.c b/drivers/acpi/sleep.c
+> index 1d661b5..eb6fd23 100644
+> --- a/drivers/acpi/sleep.c
+> +++ b/drivers/acpi/sleep.c
+> @@ -28,23 +28,33 @@
+>  #include "internal.h"
+>  #include "sleep.h"
+>  
+> +u8 wake_sleep_flags = ACPI_NO_OPTIONAL_METHODS;
+>  static unsigned int gts, bfs;
+> -module_param(gts, uint, 0644);
+> -module_param(bfs, uint, 0644);
+> -MODULE_PARM_DESC(gts, "Enable evaluation of _GTS on suspend.");
+> -MODULE_PARM_DESC(bfs, "Enable evaluation of _BFS on resume".);
+> -
+> -static u8 wake_sleep_flags(void)
+> +static int set_param_wake_flag(const char *val, struct kernel_param *kp)
+>  {
+> -	u8 flags = ACPI_NO_OPTIONAL_METHODS;
+> +	int ret = param_set_int(val, kp);
+>  
+> -	if (gts)
+> -		flags |= ACPI_EXECUTE_GTS;
+> -	if (bfs)
+> -		flags |= ACPI_EXECUTE_BFS;
+> +	if (ret)
+> +		return ret;
+>  
+> -	return flags;
+> +	if (kp->arg == (const char *)&gts) {
+> +		if (gts)
+> +			wake_sleep_flags |= ACPI_EXECUTE_GTS;
+> +		else
+> +			wake_sleep_flags &= ~ACPI_EXECUTE_GTS;
+> +	}
+> +	if (kp->arg == (const char *)&bfs) {
+> +		if (bfs)
+> +			wake_sleep_flags |= ACPI_EXECUTE_BFS;
+> +		else
+> +			wake_sleep_flags &= ~ACPI_EXECUTE_BFS;
+> +	}
+> +	return ret;
+>  }
+> +module_param_call(gts, set_param_wake_flag, param_get_int, &gts, 0644);
+> +module_param_call(bfs, set_param_wake_flag, param_get_int, &bfs, 0644);
+> +MODULE_PARM_DESC(gts, "Enable evaluation of _GTS on suspend.");
+> +MODULE_PARM_DESC(bfs, "Enable evaluation of _BFS on resume".);
+>  
+>  static u8 sleep_states[ACPI_S_STATE_COUNT];
+>  
+> @@ -263,7 +273,6 @@ static int acpi_suspend_enter(suspend_state_t pm_state)
+>  {
+>  	acpi_status status = AE_OK;
+>  	u32 acpi_state = acpi_target_sleep_state;
+> -	u8 flags = wake_sleep_flags();
+>  	int error;
+>  
+>  	ACPI_FLUSH_CPU_CACHE();
+> @@ -271,7 +280,7 @@ static int acpi_suspend_enter(suspend_state_t pm_state)
+>  	switch (acpi_state) {
+>  	case ACPI_STATE_S1:
+>  		barrier();
+> -		status = acpi_enter_sleep_state(acpi_state, flags);
+> +		status = acpi_enter_sleep_state(acpi_state, wake_sleep_flags);
+>  		break;
+>  
+>  	case ACPI_STATE_S3:
+> @@ -286,7 +295,7 @@ static int acpi_suspend_enter(suspend_state_t pm_state)
+>  	acpi_write_bit_register(ACPI_BITREG_SCI_ENABLE, 1);
+>  
+>  	/* Reprogram control registers and execute _BFS */
+> -	acpi_leave_sleep_state_prep(acpi_state, flags);
+> +	acpi_leave_sleep_state_prep(acpi_state, wake_sleep_flags);
+>  
+>  	/* ACPI 3.0 specs (P62) says that it's the responsibility
+>  	 * of the OSPM to clear the status bit [ implying that the
+> @@ -550,30 +559,27 @@ static int acpi_hibernation_begin(void)
+>  
+>  static int acpi_hibernation_enter(void)
+>  {
+> -	u8 flags = wake_sleep_flags();
+>  	acpi_status status = AE_OK;
+>  
+>  	ACPI_FLUSH_CPU_CACHE();
+>  
+>  	/* This shouldn't return.  If it returns, we have a problem */
+> -	status = acpi_enter_sleep_state(ACPI_STATE_S4, flags);
+> +	status = acpi_enter_sleep_state(ACPI_STATE_S4, wake_sleep_flags);
+>  	/* Reprogram control registers and execute _BFS */
+> -	acpi_leave_sleep_state_prep(ACPI_STATE_S4, flags);
+> +	acpi_leave_sleep_state_prep(ACPI_STATE_S4, wake_sleep_flags);
+>  
+>  	return ACPI_SUCCESS(status) ? 0 : -EFAULT;
+>  }
+>  
+>  static void acpi_hibernation_leave(void)
+>  {
+> -	u8 flags = wake_sleep_flags();
+> -
+>  	/*
+>  	 * If ACPI is not enabled by the BIOS and the boot kernel, we need to
+>  	 * enable it here.
+>  	 */
+>  	acpi_enable();
+>  	/* Reprogram control registers and execute _BFS */
+> -	acpi_leave_sleep_state_prep(ACPI_STATE_S4, flags);
+> +	acpi_leave_sleep_state_prep(ACPI_STATE_S4, wake_sleep_flags);
+>  	/* Check the hardware signature */
+>  	if (facs && s4_hardware_signature != facs->hardware_signature) {
+>  		printk(KERN_EMERG "ACPI: Hardware changed while hibernated, "
+> @@ -828,12 +834,10 @@ static void acpi_power_off_prepare(void)
+>  
+>  static void acpi_power_off(void)
+>  {
+> -	u8 flags = wake_sleep_flags();
+> -
+>  	/* acpi_sleep_prepare(ACPI_STATE_S5) should have already been called */
+>  	printk(KERN_DEBUG "%s called\n", __func__);
+>  	local_irq_disable();
+> -	acpi_enter_sleep_state(ACPI_STATE_S5, flags);
+> +	acpi_enter_sleep_state(ACPI_STATE_S5, wake_sleep_flags);
+>  }
+>  
+>  /*
+> 
+
