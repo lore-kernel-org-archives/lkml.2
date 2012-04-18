@@ -1,70 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754085Ab2DRPcV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Apr 2012 11:32:21 -0400
-Received: from 50-56-35-84.static.cloud-ips.com ([50.56.35.84]:35551 "EHLO
-	mail.hallyn.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753882Ab2DRPcS (ORCPT
+	id S1754151Ab2DRPca (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Apr 2012 11:32:30 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:55098 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752828Ab2DRPc2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Apr 2012 11:32:18 -0400
-Date: Wed, 18 Apr 2012 15:33:12 +0000
-From: "Serge E. Hallyn" <serge@hallyn.com>
-To: Doug Ledford <dledford@redhat.com>
-Cc: "Serge E. Hallyn" <serge@hallyn.com>, linux-kernel@vger.kernel.org,
-        akpm@linux-foundation.org, kosaki.motohiro@gmail.com,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Amerigo Wang <amwang@redhat.com>, "Serge E. Hallyn" <serue@us.ibm.com>,
-        Jiri Slaby <jslaby@suse.cz>
-Subject: Re: [Patch 5/8] mqueue: revert bump up DFLT_*MAX
-Message-ID: <20120418153312.GE24399@mail.hallyn.com>
-References: <cover.1334676645.git.dledford@redhat.com>
- <de8d761688dd34f312822db71ceed6753493933a.1334676645.git.dledford@redhat.com>
- <20120418032210.GB18830@mail.hallyn.com>
- <4F8ECED3.5070909@redhat.com>
+	Wed, 18 Apr 2012 11:32:28 -0400
+Date: Wed, 18 Apr 2012 16:32:26 +0100
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Alex Elder <elder@dreamhost.com>
+Cc: Sage Weil <sage@newdream.net>, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org
+Subject: Re: osd_req_encode_op() breakage?
+Message-ID: <20120418153225.GA6589@ZenIV.linux.org.uk>
+References: <4F8ED911.90309@dreamhost.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4F8ECED3.5070909@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <4F8ED911.90309@dreamhost.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting Doug Ledford (dledford@redhat.com):
-> On 4/17/2012 11:22 PM, Serge E. Hallyn wrote:
-> > Quoting Doug Ledford (dledford@redhat.com):
-> >> From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-> >>
-> >> Mqueue limitation is slightly naieve parameter likes other ipcs
-> >> because unprivileged user can consume kernel memory by using ipcs.
-> >>
-> >> Thus, too aggressive raise bring us security issue. Example,
-> >> current setting allow evil unprivileged user use 256GB (= 256
-> >> * 1024 * 1024*1024) and it's enough large to system will belome
-> >> unresponsive. Don't do that.
-> >>
-> >> Instead, every admin should adjust the knobs for their own systems.
-> > 
-> > Would you be terribly averse to having a higher limit in init_ipc_ns,
-> > and the lower values by default in all child namespaces?
-> > 
-> > Sorry it sounds from the intro like you've already had quite a bit of
-> > discussion on this...
-> > 
-> > Of course I realize the values can just be raised by distro boot
-> > scripts...
+On Wed, Apr 18, 2012 at 10:09:05AM -0500, Alex Elder wrote:
+
+> Yes, you are absolutely correct.
 > 
-> The default maximums this patch put into place were in fact in place
-> from 2008 until my earlier patch in this same series, so in that regard
-> this is merely restoring an already established default maximum.  It
+> We have obviously not done endianness checks in this code for
+> some time.
+> 
+> I will commit a fix and credit you for it.  I'll also make sure
+> we are doing proper testing for this sort of thing on a regular
+> basis.
 
-Then never mind :)
+FWIW, that got caught by sparse, but I would really recommend _testing_
+on big-endian - getting an emulated headless e.g. mips box is fairly
+easy with qemu; I'd done that with debian big-endian mips userland on
+emulated malta and it didn't take much work to set up.
 
-(My ack stands)
-
-> *could* be raised, yes, but as Motohiro pointed out, this is pinned
-> memory that any user can allocate, so the smaller the default amount the
-> better.  The sysadmin can make changes as they see fit.
-
-Thanks,
--serge
+Speaking of sparse, I think we simply ought to add -D__CHECK_ENDIAN__
+to CHECKFLAGS in top-level Makefile.  It's not _that_ much noise
+these days...  Not sure which tree should that go through, though...
