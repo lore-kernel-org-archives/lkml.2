@@ -1,102 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754223Ab2DRRRt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Apr 2012 13:17:49 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:58077 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751083Ab2DRRRr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Apr 2012 13:17:47 -0400
-Message-ID: <1334697467.3920.5.camel@joe2Laptop>
-Subject: Re: [EDAC ABI v13 24/25] edac: change the mem allocation scheme to
- make Documentation/kobject.txt happy
-From: Joe Perches <joe@perches.com>
-To: Mauro Carvalho Chehab <mchehab@redhat.com>
-Cc: Linux Edac Mailing List <linux-edac@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Aristeu Rozanski <arozansk@redhat.com>,
-        Doug Thompson <norsk5@yahoo.com>,
-        Borislav Petkov <borislav.petkov@amd.com>,
-        Mark Gross <mark.gross@intel.com>,
-        Jason Uhlenkott <juhlenko@akamai.com>,
-        Tim Small <tim@buttersideup.com>,
-        Ranganathan Desikan <ravi@jetztechnologies.com>,
-        "Arvind R." <arvino55@gmail.com>, Olof Johansson <olof@lixom.net>,
-        Egor Martovetsky <egor@pasemi.com>,
-        Chris Metcalf <cmetcalf@tilera.com>, Michal Marek <mmarek@suse.cz>,
-        Jiri Kosina <jkosina@suse.cz>,
-        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Hitoshi Mitake <h.mitake@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Shaohui Xie <Shaohui.Xie@freescale.com>, linuxppc-dev@lists.ozlabs.org
-In-Reply-To: <1334608729-30803-25-git-send-email-mchehab@redhat.com>
-References: <1334608729-30803-1-git-send-email-mchehab@redhat.com>
-	 <1334608729-30803-25-git-send-email-mchehab@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 17 Apr 2012 15:17:47 -0600
-Mime-Version: 1.0
-X-Mailer: Evolution 3.2.2- 
-Content-Transfer-Encoding: 7bit
+	id S1753391Ab2DRRUU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Apr 2012 13:20:20 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:40463 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751071Ab2DRRUR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Apr 2012 13:20:17 -0400
+Date: Wed, 18 Apr 2012 10:19:53 -0700
+From: "tip-bot for Bryan O'Donoghue" <bryan.odonoghue@linux.intel.com>
+Message-ID: <tip-cbf2829b61c136edcba302a5e1b6b40e97d32c00@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        stable@vger.kernel.org, tglx@linutronix.de, hpa@linux.intel.com,
+        bryan.odonoghue@linux.intel.com
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        tglx@linutronix.de, stable@vger.kernel.org,
+        bryan.odonoghue@linux.intel.com, hpa@linux.intel.com
+In-Reply-To: <4F8EEDD3.1080404@linux.intel.com>
+References: <4F8EEDD3.1080404@linux.intel.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/urgent] x86, apic:
+  APIC code touches invalid MSR on P5 class machines
+Git-Commit-ID: cbf2829b61c136edcba302a5e1b6b40e97d32c00
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
+MIME-Version: 1.0
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Wed, 18 Apr 2012 10:20:03 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2012-04-16 at 17:38 -0300, Mauro Carvalho Chehab wrote:
-> Kernel kobjects have rigid rules: each container object should be
-> dynamically allocated, and can't be allocated into a single kmalloc.
-> 
-> EDAC never obeyed this rule: it has a single malloc function that
-> allocates all needed data into a single kzalloc.
-> 
-> As this is not accepted anymore, change the allocation schema of the
-> EDAC *_info structs to enforce this Kernel standard.
-[]
-> diff --git a/drivers/edac/amd64_edac.c b/drivers/edac/amd64_edac.c
-[]
-> @@ -2228,9 +2228,9 @@ static int init_csrows(struct mem_ctl_info *mci)
->  			edac_mode = EDAC_NONE;
->  
->  		for (j = 0; j < pvt->channel_count; j++) {
-> -			csrow->channels[j].dimm->mtype = mtype;
-> -			csrow->channels[j].dimm->edac_mode = edac_mode;
-> -			csrow->channels[j].dimm->nr_pages = nr_pages;
-> +			csrow->channels[j]->dimm->mtype = mtype;
-> +			csrow->channels[j]->dimm->edac_mode = edac_mode;
-> +			csrow->channels[j]->dimm->nr_pages = nr_pages;
+Commit-ID:  cbf2829b61c136edcba302a5e1b6b40e97d32c00
+Gitweb:     http://git.kernel.org/tip/cbf2829b61c136edcba302a5e1b6b40e97d32c00
+Author:     Bryan O'Donoghue <bryan.odonoghue@linux.intel.com>
+AuthorDate: Wed, 18 Apr 2012 17:37:39 +0100
+Committer:  H. Peter Anvin <hpa@linux.intel.com>
+CommitDate: Wed, 18 Apr 2012 09:44:31 -0700
 
-It might be better to use an automatic for
-	typeof foo dimm = csrow->channels[j]->dimm;
-	dimm->mtype = mtype;
-	etc...
-[]
-> @@ -293,39 +286,56 @@ struct mem_ctl_info *edac_mc_alloc(unsigned edac_index,
->  	mci->mem_is_per_rank = per_rank;
->  
->  	/*
-> -	 * Fills the csrow struct
-> +	 * Alocate and fill the csrow/channels structs
->  	 */
-> +	mci->csrows = kzalloc(sizeof(*mci->csrows) * tot_csrows, GFP_KERNEL);
+x86, apic: APIC code touches invalid MSR on P5 class machines
 
-kcalloc
+Current APIC code assumes MSR_IA32_APICBASE is present for all systems.
+Pentium Classic P5 and friends didn't have this MSR. MSR_IA32_APICBASE
+was introduced as an architectural MSR by Intel @ P6.
 
-[]
-> +		csr->channels = kzalloc(sizeof(*csr->channels) * tot_cschannels,
-> +					GFP_KERNEL);
+Code paths that can touch this MSR invalidly are when vendor == Intel &&
+cpu-family == 5 and APIC bit is set in CPUID - or when you simply pass
+lapic on the kernel command line, on a P5.
 
-here too
+The below patch stops Linux incorrectly interfering with the
+MSR_IA32_APICBASE for P5 class machines. Other code paths exist that
+touch the MSR - however those paths are not currently reachable for a
+conformant P5.
 
-> @@ -391,7 +401,31 @@ struct mem_ctl_info *edac_mc_alloc(unsigned edac_index,
->  
->  	trace_hw_event_init("edac", (unsigned)edac_index);
->  
-> +	debugf1("EDAC MCI allocated\n");
->  	return mci;
-> +
-> +error:
-> +	debugf1("Failed to allocate one or more EDAC MCI structs\n");
+Signed-off-by: Bryan O'Donoghue <bryan.odonoghue@linux.intel.com>
+Link: http://lkml.kernel.org/r/4F8EEDD3.1080404@linux.intel.com
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+Cc: <stable@vger.kernel.org>
+---
+ arch/x86/kernel/apic/apic.c |   34 ++++++++++++++++++++--------------
+ 1 files changed, 20 insertions(+), 14 deletions(-)
 
-Generally, it's not necessary to have specific "OOM" messages
-as allocations without GFP_NOWARN do dump_stack()s
-
-
+diff --git a/arch/x86/kernel/apic/apic.c b/arch/x86/kernel/apic/apic.c
+index 11544d8..edc2448 100644
+--- a/arch/x86/kernel/apic/apic.c
++++ b/arch/x86/kernel/apic/apic.c
+@@ -1637,9 +1637,11 @@ static int __init apic_verify(void)
+ 	mp_lapic_addr = APIC_DEFAULT_PHYS_BASE;
+ 
+ 	/* The BIOS may have set up the APIC at some other address */
+-	rdmsr(MSR_IA32_APICBASE, l, h);
+-	if (l & MSR_IA32_APICBASE_ENABLE)
+-		mp_lapic_addr = l & MSR_IA32_APICBASE_BASE;
++	if (boot_cpu_data.x86 >= 6) {
++		rdmsr(MSR_IA32_APICBASE, l, h);
++		if (l & MSR_IA32_APICBASE_ENABLE)
++			mp_lapic_addr = l & MSR_IA32_APICBASE_BASE;
++	}
+ 
+ 	pr_info("Found and enabled local APIC!\n");
+ 	return 0;
+@@ -1657,13 +1659,15 @@ int __init apic_force_enable(unsigned long addr)
+ 	 * MSR. This can only be done in software for Intel P6 or later
+ 	 * and AMD K7 (Model > 1) or later.
+ 	 */
+-	rdmsr(MSR_IA32_APICBASE, l, h);
+-	if (!(l & MSR_IA32_APICBASE_ENABLE)) {
+-		pr_info("Local APIC disabled by BIOS -- reenabling.\n");
+-		l &= ~MSR_IA32_APICBASE_BASE;
+-		l |= MSR_IA32_APICBASE_ENABLE | addr;
+-		wrmsr(MSR_IA32_APICBASE, l, h);
+-		enabled_via_apicbase = 1;
++	if (boot_cpu_data.x86 >= 6) {
++		rdmsr(MSR_IA32_APICBASE, l, h);
++		if (!(l & MSR_IA32_APICBASE_ENABLE)) {
++			pr_info("Local APIC disabled by BIOS -- reenabling.\n");
++			l &= ~MSR_IA32_APICBASE_BASE;
++			l |= MSR_IA32_APICBASE_ENABLE | addr;
++			wrmsr(MSR_IA32_APICBASE, l, h);
++			enabled_via_apicbase = 1;
++		}
+ 	}
+ 	return apic_verify();
+ }
+@@ -2209,10 +2213,12 @@ static void lapic_resume(void)
+ 		 * FIXME! This will be wrong if we ever support suspend on
+ 		 * SMP! We'll need to do this as part of the CPU restore!
+ 		 */
+-		rdmsr(MSR_IA32_APICBASE, l, h);
+-		l &= ~MSR_IA32_APICBASE_BASE;
+-		l |= MSR_IA32_APICBASE_ENABLE | mp_lapic_addr;
+-		wrmsr(MSR_IA32_APICBASE, l, h);
++		if (boot_cpu_data.x86 >= 6) {
++			rdmsr(MSR_IA32_APICBASE, l, h);
++			l &= ~MSR_IA32_APICBASE_BASE;
++			l |= MSR_IA32_APICBASE_ENABLE | mp_lapic_addr;
++			wrmsr(MSR_IA32_APICBASE, l, h);
++		}
+ 	}
+ 
+ 	maxlvt = lapic_get_maxlvt();
