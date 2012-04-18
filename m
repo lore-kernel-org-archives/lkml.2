@@ -1,98 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751396Ab2DRFmT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Apr 2012 01:42:19 -0400
-Received: from na3sys009aog108.obsmtp.com ([74.125.149.199]:33501 "EHLO
-	na3sys009aog108.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750769Ab2DRFmR convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Apr 2012 01:42:17 -0400
+	id S1751274Ab2DRFq0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Apr 2012 01:46:26 -0400
+Received: from moutng.kundenserver.de ([212.227.126.186]:58033 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750769Ab2DRFqY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Apr 2012 01:46:24 -0400
+Date: Wed, 18 Apr 2012 07:46:15 +0200
+From: Thierry Reding <thierry.reding@avionic-design.de>
+To: Roland Stigge <stigge@antcom.de>
+Cc: arm@kernel.org, linux-arm-kernel@lists.infradead.org,
+        gregkh@linuxfoundation.org, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-input@vger.kernel.org,
+        dmitry.torokhov@gmail.com, axel.lin@gmail.com,
+        broonie@opensource.wolfsonmicro.com, marek.vasut@gmail.com,
+        devel@driverdev.osuosl.org, kevin.wells@nxp.com,
+        srinivas.bakki@nxp.com
+Subject: Re: [PATCH v2 7/8] ARM: LPC32xx: DTS files for device tree conversion
+Message-ID: <20120418054615.GB17506@avionic-0098.adnet.avionic-design.de>
+References: <1334682507-15055-1-git-send-email-stigge@antcom.de>
+ <1334682507-15055-8-git-send-email-stigge@antcom.de>
 MIME-Version: 1.0
-In-Reply-To: <1334689888.28674.140.camel@sbsiddha-desk.sc.intel.com>
-References: <1333951423-27621-1-git-send-email-santosh.shilimkar@ti.com>
- <1334011304.12400.81.camel@sbsiddha-desk.sc.intel.com> <4F8AC59D.6070909@ti.com>
- <1334613816.28674.108.camel@sbsiddha-desk.sc.intel.com> <4F8D266D.4030207@ti.com>
- <1334689888.28674.140.camel@sbsiddha-desk.sc.intel.com>
-From: "Shilimkar, Santosh" <santosh.shilimkar@ti.com>
-Date: Wed, 18 Apr 2012 11:11:53 +0530
-Message-ID: <CAMQu2gw0gd6HBVWRRLATH=BfLwgJjgr-pwfQk-HJxuK3yovzgQ@mail.gmail.com>
-Subject: Re: [PATCH] clockevents: Leave broadcast device shtudown only if the
- current device is always running.
-To: Suresh Siddha <suresh.b.siddha@intel.com>
-Cc: tglx@linutronix.de, linux-kernel@vger.kernel.org, johnstul@us.ibm.com
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="MfFXiAuoTsnnDAfZ"
+Content-Disposition: inline
+In-Reply-To: <1334682507-15055-8-git-send-email-stigge@antcom.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Provags-ID: V02:K0:nTkknjzOR5TmG1gDNLZmNasx8zca17m6DsJSx+vOW0z
+ treavdjRKGgWm36mj67any40QADodh+xTQzyaCufkFE0Kx7Z2k
+ 1drDOrgHd2pGDOBXYg+2jSV6Bm8cIf+hyVMi6gNxbSqOKfeKjp
+ jfuD2SdaKrSgDONk0rXNBYjmo7VCSBJc2NATMKPS94n8N5xG+8
+ eus7MuU26dFT+2WEhoTQrf/1Cu5i3Jicm3TOlGvyjpm1pUUKVg
+ U4/peKehjAuTLmc3XZbTjAE6BIop/XOUlwWyx4enxavHjxzdYJ
+ HG8nhTls9e5QhoE/MxU0hv9BktArrxRd/B+v9/5dv0k+RzvITz
+ TnhUYWEISxCFhx/xmUezwWl5mGTBrq9E5eqZZmwyJkzahp0lWU
+ Fo1JHJz/OHc3lHLk8wUQx4MlF6jy1I5U5g=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 18, 2012 at 12:41 AM, Suresh Siddha
-<suresh.b.siddha@intel.com> wrote:
-> On Tue, 2012-04-17 at 13:44 +0530, Santosh Shilimkar wrote:
->> On Tuesday 17 April 2012 03:33 AM, Suresh Siddha wrote:
->> > On Sun, 2012-04-15 at 18:27 +0530, Santosh Shilimkar wrote:
->> >> The main issue is, you are not letting the one time setup
->> >> needed for the broadcast device. Even with above change,
->> >> the 'tick_broadcast_device.evtdev' is still in SHUTDOWN
->> >> mode and the event handler is pointing to clockevents_handle_noop()
->
-> If you see this, handler was not even set to the periodic mode handler.
-> So the periodic mode for the broadcast device also was not working
-> before (even with out the recent change).
->
-> In tick_check_broadcast_device(), we do this:
->
->        if (!cpumask_empty(tick_get_broadcast_mask()))
->                tick_broadcast_start_periodic(dev);
->
-> So with out the CLOCK_EVT_NOTIFY_BROADCAST_ON notification, we won't be
-> even setting up the periodic mode correctly.
->
-> I just extended this to the oneshot mode too, exposing the issue in your
-> cpuidle code.
->
-Periodic mode for broad-cast device was any way not much important and hence
-the issue was hidden I guess.
 
->> >
->> > On x86, idle driver (like drivers/idle/intel_idle.c:
->> > __setup_broadcast_timer()) calls clockevents_notify() with
->> > CLOCK_EVT_NOTIFY_BROADCAST_ON, during which we do
->> > tick_broadcast_setup_oneshot(). See tick_do_broadcast_on_off() which
->> > does this. That should setup the evtdev handler, mode etc.
->> >
->> > And during the next CLOCK_EVT_NOTIFY_BROADCAST_ENTER we program the next
->> > broadcast event.
->> >
->> I see.
->>
->> >
->> > Anyways, can you add CLOCK_EVT_NOTIFY_BROADCAST_ON/OFF notifications in
->> > your idle driver to see if it addresses the problem. That is the correct
->> > thing to do here.
->> >
->> Before your commit 77b0d60c{clockevents: Leave the broadcast device..},
->> my idle driver was working without CLOCK_EVT_NOTIFY_BROADCAST_ON
->> notifier. Now it's clear that it was relying on the default
->> 'tick_broadcast_setup_oneshot()' which was happening during boot.
->>
->> And ofcource notifying explicitly with BROADCAST_ON does the
->> tick setup. Will update my idle driver accordingly but can
->> you please explain me why the proposed patch [1] is not correct
->> approach ? It should be also do what you intended to do
->> with minimal change, right ?
->
-> Please see the above. Essentially irrespective of the recent change,
-> periodic mode was also broken. Probably no one cared about that mode and
-> we didn't notice that issue so far. Anyhow, the correct thing to do here
-> is to add those notifications to the cpuidle driver. Can you please
-> check if the appended/untested patch fixes your issue? If so, please
-> push this to your driver. thanks.
->
-As I mentioned earlier, I have already tried my driver  with
-CLOCK_EVT_NOTIFY_BROADCAST_ON update yesterday and pushed
-a patch for the same.
-Thanks for the periodic mode point which i missed previously.
+--MfFXiAuoTsnnDAfZ
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-Regards
-Santosh
+* Roland Stigge wrote:
+[...]
+> --- /dev/null
+> +++ linux-2.6/arch/arm/boot/dts/lpc32xx.dtsi
+> @@ -0,0 +1,303 @@
+> +/*
+> + * NXP LPC32xx SoC
+> + *
+> + * Copyright 2012 Roland Stigge <stigge@antcom.de>
+> + *
+> + * The code contained herein is licensed under the GNU General Public
+> + * License. You may obtain a copy of the GNU General Public License
+> + * Version 2 or later at the following locations:
+> + *
+> + * http://www.opensource.org/licenses/gpl-license.html
+> + * http://www.gnu.org/copyleft/gpl.html
+> + */
+> +
+> +/include/ "skeleton.dtsi"
+> +
+> +/ {
+> +	compatible = "nxp,lpc32xx";
+> +
+> +	cpus {
+> +		cpu@0 {
+> +			compatible = "arm,arm926ejs";
+> +		};
+> +	};
+> +
+> +	ahb {
+> +		#address-cells = <1>;
+> +		#size-cells = <1>;
+> +		compatible = "simple-bus";
+> +		ranges = <0x20000000 0x20000000 0x30000000>;
+> +
+> +		slc: flash@20020000 {
+> +			compatible = "nxp,nand-slc";
+> +			reg = <0x20020000 0x1000>;
+> +			status = "disable";
+> +		};
+> +
+> +		mlc: flash@200B0000 {
+> +			compatible = "nxp,nand-mlc";
+> +			reg = <0x200B0000 0x1000>;
+> +			status = "disable";
+> +		};
+> +
+> +		dma@31000000 {
+> +			compatible = "arm,pl080", "arm,primecell";
+> +			reg = <0x31000000 0x1000>;
+> +			interrupt-parent = <&mic>;
+
+Most platforms define the interrupt parent somewhere in the top-level node
+and have it inherited for child devices instead of having to repeat it for
+each device. But I guess it's also okay to make it explicit.
+
+[...]
+> +			/*
+> +			 * MIC Interrupt controller includes:
+> +			 *   MIC @40008000
+> +			 *   SIC1 @4000C000
+> +			 *   SIC2 @40010000
+> +			 */
+> +			mic: interrupt-controller@40008000 {
+> +				compatible = "nxp,lpc32xx-mic";
+> +				interrupt-controller;
+> +				interrupt-parent;
+
+I /think/ in this case you can leave this out. At least there doesn't seem to
+be any other such usage in the tree.
+
+Thierry
+
+--MfFXiAuoTsnnDAfZ
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.19 (GNU/Linux)
+
+iEYEARECAAYFAk+OVScACgkQZ+BJyKLjJp/+9wCgqaNqeJvdY9/+vc48JNRs3lGp
+josAnjaYrWXh5YY6WRM/mUHvVlIhj1kX
+=rxOt
+-----END PGP SIGNATURE-----
+
+--MfFXiAuoTsnnDAfZ--
