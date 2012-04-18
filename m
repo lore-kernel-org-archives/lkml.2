@@ -1,62 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752930Ab2DROoU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Apr 2012 10:44:20 -0400
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:39014 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750808Ab2DROoS convert rfc822-to-8bit (ORCPT
+	id S1753740Ab2DROtB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Apr 2012 10:49:01 -0400
+Received: from out03.mta.xmission.com ([166.70.13.233]:40682 "EHLO
+	out03.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750887Ab2DROs7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Apr 2012 10:44:18 -0400
+	Wed, 18 Apr 2012 10:48:59 -0400
+From: ebiederm@xmission.com (Eric W. Biederman)
+To: Catalin Marinas <catalin.marinas@arm.com>
+Cc: "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        majianpeng <majianpeng@gmail.com>
+References: <20120418101231.GE1505@arm.com> <m1wr5d18fy.fsf@fess.ebiederm.org>
+	<20120418141851.GG1505@arm.com>
+Date: Wed, 18 Apr 2012 07:52:58 -0700
+In-Reply-To: <20120418141851.GG1505@arm.com> (Catalin Marinas's message of
+	"Wed, 18 Apr 2012 15:18:52 +0100")
+Message-ID: <m1ipgxrt11.fsf@fess.ebiederm.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
 MIME-Version: 1.0
-In-Reply-To: <20120418103334.GD2232@pengutronix.de>
-References: <1330511961-22498-1-git-send-email-chenhui.zhao@freescale.com>
-	<20120229183436.GA30545@pengutronix.de>
-	<20120417142105.GA21802@pengutronix.de>
-	<94F013E7935FF44C83EBE7784D62AD3F092D1DC7@039-SN2MPN1-022.039d.mgd.msft.net>
-	<20120418103334.GD2232@pengutronix.de>
-Date: Wed, 18 Apr 2012 22:44:16 +0800
-X-Google-Sender-Auth: iU5UYadwT3fBoAItkQhmWI6xB7g
-Message-ID: <CADRPPNQRLyZK-zjeLUYCZtLe+8HhFzFALCMyPeaCGX+buaf+ug@mail.gmail.com>
-Subject: Re: [PATCH] i2c-mpc: avoid I2C abnormal after resuming from deep sleep
-From: Li Yang <leoli@freescale.com>
-To: Wolfram Sang <w.sang@pengutronix.de>
-Cc: Li Yang-R58472 <r58472@freescale.com>,
-        Zhao Chenhui-B35336 <B35336@freescale.com>,
-        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+X-XM-SPF: eid=;;;mid=;;;hst=in01.mta.xmission.com;;;ip=98.207.153.68;;;frm=ebiederm@xmission.com;;;spf=neutral
+X-XM-AID: U2FsdGVkX19ELXrkamPI4XCVfBpz6u8uzv4j7teb2/A=
+X-SA-Exim-Connect-IP: 98.207.153.68
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-Spam-Report: *  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
+	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
+	*      [score: 0.0010]
+	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
+	*      [sa02 1397; Body=1 Fuz1=1 Fuz2=1]
+	*  0.4 UNTRUSTED_Relay Comes from a non-trusted relay
+X-Spam-DCC: XMission; sa02 1397; Body=1 Fuz1=1 Fuz2=1 
+X-Spam-Combo: ;Catalin Marinas <catalin.marinas@arm.com>
+X-Spam-Relay-Country: **
+Subject: Re: Possible memory leaks in proc_sysctl.c
+X-Spam-Flag: No
+X-SA-Exim-Version: 4.2.1 (built Fri, 06 Aug 2010 16:31:04 -0600)
+X-SA-Exim-Scanned: Yes (on in01.mta.xmission.com)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 18, 2012 at 6:33 PM, Wolfram Sang <w.sang@pengutronix.de> wrote:
-> Hi,
->
->> We certainly don't want the policy to be against the common practice
->> of the community.  If it is we can consider changing our policy.
->
-> Nice, thanks for being open to discussion!
->
->> However I can't find a clear message stating the consensus of what the
->> Linux kernel community think of adding copyright claims.  I even found
->
-> Well, what I know, the consensus is "common sense". What is obviously
-> not "clear" in a way you could write it down. At least, Ben agrees.
->
+Catalin Marinas <catalin.marinas@arm.com> writes:
 
-We do honor your point and can be flexible on this.  I'm just not sure
-if our policy need to be changed to align with the common sense of the
-community.
-
->> some message that encourage adding copyright to maintain the GPL
->> license.
+> On Wed, Apr 18, 2012 at 02:22:09PM +0100, Eric W. Biederman wrote:
+>> Catalin Marinas <catalin.marinas@arm.com> writes:
+>> > Following your commit f728019bb (sysctl: register only tables of sysctl
+>> > files), I get several kmemleak reports. They all seem to be header
+>> > allocations with kzalloc() in __register_sysctl_table() and
+>> > __register_sysctl_paths(). The patch isn't simple to quickly figure out
+>> > what may be wrong.
+>> 
+>> Due to a change in the data structure places where we register the
+>> sysctl permanently and ignore the result from the register_sysctl_...
+>> family of functions now report this leak.
 >
-> I am interested. Do you have a link?
+> But is the header (or subheader, basically any pointer inside the
+> kmalloc'ed object) never referenced from anywhere? I'm just trying to
+> understand why kmemleak reports it as it seems that the header object is
+> inserted in a ctl_dir.
 
-Well.  I can't find the exact message.  I remember it is from an email
-discussion in which someone said by encouraging contributors to add
-copyright claims to a file it would be clear that no one can change
-the license of the file away from GPL.
+It is never reference from anywhere because we never free the structure.
+The job of the header is to be the structure that tells us how to free
+things.
 
-- Leo
+I see a couple of things going on.
+- For compatibility the header that is returned is a dummy that just
+  points to the real headers.
+
+- Even without the compatibility we can get the same symptom if
+  we register an empty directory.
+
+So simply saying kmemleak shut up this is deliberate in these few cases
+where we don't intend to unregister the structure and have a deliberate
+leak seems the clean and maintainable way to go.
+
+>> majianpeng has done a good of getting kmemleak_not_leak annotations into
+>> the net tree, and I have one of his patches pending to put into my
+>> sysctl tree (see below).
+>
+> If the header is referenced from somewhere, we can tell kmemleak where
+> it is referenced from and avoid the not_leak annotations. But I'm not
+> familiar with this code to be sure.
+
+Nope.  There honestly are no references.  We reference lower parts of
+the structure be we don't have a back pointer in all cases.
+
+If we were good citizens and kept a reference to the returned
+sysctl_header so we could unregister sysctls when our module unloads
+(as the api is designed to do) we wouldn't have these warnings.  As
+it is we have just been getting lucky in the past.   So I think just
+saying kmemleak shut up I know I am being bad is reasonable.
+
+I can change how we are registering things and get rid of the code that
+where we there are no references today.  But then someone might refactor
+the code tomorrow and problems might show up again.  Shrug.  So saying
+I mean to leak this things don't worry about it seems clean.
+
+Eric
