@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752499Ab2DRBek (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Apr 2012 21:34:40 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:33469 "EHLO
+	id S1752605Ab2DRBfk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Apr 2012 21:35:40 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:63570 "EHLO
 	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751046Ab2DRBej (ORCPT
+	with ESMTP id S1751046Ab2DRBfj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Apr 2012 21:34:39 -0400
-Message-ID: <1334712874.3020.5.camel@phoenix>
-Subject: [PATCH 1/2] regulator: userspace-consumer: Convert to use devm_*
- APIs
+	Tue, 17 Apr 2012 21:35:39 -0400
+Message-ID: <1334712935.3020.6.camel@phoenix>
+Subject: [PATCH 2/2] regulator: virtual: Convert to use devm_* APIs
 From: Axel Lin <axel.lin@gmail.com>
 To: linux-kernel@vger.kernel.org
 Cc: Liam Girdwood <lrg@ti.com>,
         Mark Brown <broonie@opensource.wolfsonmicro.com>
-Date: Wed, 18 Apr 2012 09:34:34 +0800
+Date: Wed, 18 Apr 2012 09:35:35 +0800
+In-Reply-To: <1334712874.3020.5.camel@phoenix>
+References: <1334712874.3020.5.camel@phoenix>
 Content-Type: text/plain; charset="UTF-8"
 X-Mailer: Evolution 3.2.2- 
 Content-Transfer-Encoding: 7bit
@@ -25,66 +26,67 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Axel Lin <axel.lin@gmail.com>
 ---
- drivers/regulator/userspace-consumer.c |   20 +++++++-------------
- 1 files changed, 7 insertions(+), 13 deletions(-)
+ drivers/regulator/virtual.c |   18 +++++-------------
+ 1 files changed, 5 insertions(+), 13 deletions(-)
 
-diff --git a/drivers/regulator/userspace-consumer.c b/drivers/regulator/userspace-consumer.c
-index 518667e..a7c8deb 100644
---- a/drivers/regulator/userspace-consumer.c
-+++ b/drivers/regulator/userspace-consumer.c
-@@ -115,7 +115,9 @@ static int regulator_userspace_consumer_probe(struct platform_device *pdev)
- 	if (!pdata)
- 		return -EINVAL;
+diff --git a/drivers/regulator/virtual.c b/drivers/regulator/virtual.c
+index ee0b161..f74a68f 100644
+--- a/drivers/regulator/virtual.c
++++ b/drivers/regulator/virtual.c
+@@ -291,18 +291,19 @@ static int __devinit regulator_virtual_probe(struct platform_device *pdev)
+ 	struct virtual_consumer_data *drvdata;
+ 	int ret;
  
--	drvdata = kzalloc(sizeof(struct userspace_consumer_data), GFP_KERNEL);
-+	drvdata = devm_kzalloc(&pdev->dev,
-+			       sizeof(struct userspace_consumer_data),
+-	drvdata = kzalloc(sizeof(struct virtual_consumer_data), GFP_KERNEL);
++	drvdata = devm_kzalloc(&pdev->dev, sizeof(struct virtual_consumer_data),
 +			       GFP_KERNEL);
  	if (drvdata == NULL)
  		return -ENOMEM;
  
-@@ -125,16 +127,16 @@ static int regulator_userspace_consumer_probe(struct platform_device *pdev)
- 
  	mutex_init(&drvdata->lock);
  
--	ret = regulator_bulk_get(&pdev->dev, drvdata->num_supplies,
--				 drvdata->supplies);
-+	ret = devm_regulator_bulk_get(&pdev->dev, drvdata->num_supplies,
-+				      drvdata->supplies);
- 	if (ret) {
- 		dev_err(&pdev->dev, "Failed to get supplies: %d\n", ret);
--		goto err_alloc_supplies;
+-	drvdata->regulator = regulator_get(&pdev->dev, reg_id);
++	drvdata->regulator = devm_regulator_get(&pdev->dev, reg_id);
+ 	if (IS_ERR(drvdata->regulator)) {
+ 		ret = PTR_ERR(drvdata->regulator);
+ 		dev_err(&pdev->dev, "Failed to obtain supply '%s': %d\n",
+ 			reg_id, ret);
+-		goto err;
 +		return ret;
  	}
  
- 	ret = sysfs_create_group(&pdev->dev.kobj, &attr_group);
- 	if (ret != 0)
--		goto err_create_attrs;
+ 	ret = sysfs_create_group(&pdev->dev.kobj,
+@@ -310,7 +311,7 @@ static int __devinit regulator_virtual_probe(struct platform_device *pdev)
+ 	if (ret != 0) {
+ 		dev_err(&pdev->dev,
+ 			"Failed to create attribute group: %d\n", ret);
+-		goto err_regulator;
 +		return ret;
+ 	}
  
- 	if (pdata->init_on) {
- 		ret = regulator_bulk_enable(drvdata->num_supplies,
-@@ -154,11 +156,6 @@ static int regulator_userspace_consumer_probe(struct platform_device *pdev)
- err_enable:
- 	sysfs_remove_group(&pdev->dev.kobj, &attr_group);
+ 	drvdata->mode = regulator_get_mode(drvdata->regulator);
+@@ -318,12 +319,6 @@ static int __devinit regulator_virtual_probe(struct platform_device *pdev)
+ 	platform_set_drvdata(pdev, drvdata);
  
--err_create_attrs:
--	regulator_bulk_free(drvdata->num_supplies, drvdata->supplies);
--
--err_alloc_supplies:
--	kfree(drvdata);
- 	return ret;
- }
- 
-@@ -171,9 +168,6 @@ static int regulator_userspace_consumer_remove(struct platform_device *pdev)
- 	if (data->enabled)
- 		regulator_bulk_disable(data->num_supplies, data->supplies);
- 
--	regulator_bulk_free(data->num_supplies, data->supplies);
--	kfree(data);
--
  	return 0;
+-
+-err_regulator:
+-	regulator_put(drvdata->regulator);
+-err:
+-	kfree(drvdata);
+-	return ret;
  }
+ 
+ static int __devexit regulator_virtual_remove(struct platform_device *pdev)
+@@ -334,9 +329,6 @@ static int __devexit regulator_virtual_remove(struct platform_device *pdev)
+ 
+ 	if (drvdata->enabled)
+ 		regulator_disable(drvdata->regulator);
+-	regulator_put(drvdata->regulator);
+-
+-	kfree(drvdata);
+ 
+ 	platform_set_drvdata(pdev, NULL);
  
 -- 
 1.7.5.4
