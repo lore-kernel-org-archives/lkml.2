@@ -1,118 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754290Ab2DRUlg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Apr 2012 16:41:36 -0400
-Received: from mail-vb0-f46.google.com ([209.85.212.46]:47631 "EHLO
-	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753780Ab2DRUle convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Apr 2012 16:41:34 -0400
+	id S1754304Ab2DRUrN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Apr 2012 16:47:13 -0400
+Received: from ogre.sisk.pl ([193.178.161.156]:51529 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752055Ab2DRUrL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Apr 2012 16:47:11 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: huang ying <huang.ying.caritas@gmail.com>
+Subject: Re: [RFC PATCH] PCIe: Add PCIe runtime D3cold support
+Date: Wed, 18 Apr 2012 22:51:46 +0200
+User-Agent: KMail/1.13.6 (Linux/3.4.0-rc3+; KDE/4.6.0; x86_64; ; )
+Cc: "Yan, Zheng" <zheng.z.yan@intel.com>, bhelgaas@google.com,
+        linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
+        linux-pm@vger.kernel.org, Lin Ming <ming.m.lin@intel.com>,
+        Zhang Rui <rui.zhang@intel.com>,
+        ACPI Devel Mailing List <linux-acpi@vger.kernel.org>
+References: <4F8790F6.5080408@intel.com> <201204172310.38816.rjw@sisk.pl> <CAC=cRTNc3XeniOzttRVUTFEzZY1RY7Ds7m+hE8_86A-Ep-5Czw@mail.gmail.com>
+In-Reply-To: <CAC=cRTNc3XeniOzttRVUTFEzZY1RY7Ds7m+hE8_86A-Ep-5Czw@mail.gmail.com>
 MIME-Version: 1.0
-X-Originating-IP: [87.66.84.216]
-In-Reply-To: <87k41dkks0.fsf@ti.com>
-References: <1332173578-27422-1-git-send-email-j-pihet@ti.com>
-	<1332173578-27422-6-git-send-email-j-pihet@ti.com>
-	<87k41dkks0.fsf@ti.com>
-Date: Wed, 18 Apr 2012 22:41:33 +0200
-Message-ID: <CAORVsuXO5jxBZOEjTpJ4NTwOugmkK2JdsPE6yU_HbJ6iSALSGg@mail.gmail.com>
-Subject: Re: [PATCH 5/9] ARM: OMAP3: hwmod: rename the smartreflex entries
-From: Jean Pihet <jean.pihet@newoldbits.com>
-To: Kevin Hilman <khilman@ti.com>
-Cc: linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        "Rafael J. Wysocki" <rjw@sisk.pl>, LKML <linux-kernel@vger.kernel.org>,
-        Jean Pihet <j-pihet@ti.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201204182251.46335.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Kevin,
+On Wednesday, April 18, 2012, huang ying wrote:
+> On Wed, Apr 18, 2012 at 5:10 AM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+> > On Tuesday, April 17, 2012, huang ying wrote:
+> >> On Tue, Apr 17, 2012 at 5:30 AM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+> >> >> >> +     return 0;
+> >> >> >> +}
+> >> >> >> +
+> >> >> >> +static int pcie_port_runtime_resume(struct device *dev)
+> >> >> >> +{
+> >> >> >> +     struct pci_dev *pdev = to_pci_dev(dev);
+> >> >> >> +
+> >> >> >> +     pci_restore_state(pdev);
+> >> >> >> +     if (pdev->runtime_d3cold)
+> >> >> >> +             msleep(100);
+> >> >> >
+> >> >> > What's _that_ supposed to do?
+> >> >>
+> >> >> When resume from d3cold, PCIe main link will be powered on again, it
+> >> >> will take quite some time before the main link go into L0 state.
+> >> >> Otherwise, accessing devices under the port may return wrong result.
+> >> >
+> >> > OK, but this is generic code and as per the standard the link should have been
+> >> > reestablished at this point already.
+> >> >
+> >> > Please don't put some nonstandard-platform-specific quirks like this into
+> >> > code that's supposed to handle _every_ PCIe system.
+> >>
+> >> After checking PCIe spec, I found that the 100ms here has its standard origin :)
+> >>
+> >> In PCI Express Base Specification Revision 2.0:
+> >>
+> >> Section 6.6.1 Conventional Reset
+> >>
+> >> "
+> >> To allow components to perform internal initialization, system
+> >> software must wait for at least
+> >> 100 ms from the end of a Conventional Reset of one or more devices
+> >> before it is permitted to
+> >> issue Configuration Requests to those devices
+> >> "
+> >>
+> >> But I think we should move the 100ms delay here to PCIe bus code or
+> >> PCIe/ACPI code, because that is needed by all PCIe devices for D3cold
+> >> support.
+> >
+> > I think it should be sufficient to wait for the PME message to arrive at
+> > the root port (which will cause the PME interrupt to appear), at which
+> > point the device that sent it should be able to receive configuration
+> > requests.
+> 
+> For remote wake up, it is sufficient.  But for host wake up, we still
+> need to wait 100ms.
 
-On Wed, Apr 18, 2012 at 7:33 PM, Kevin Hilman <khilman@ti.com> wrote:
-> +Benoit
->
-> jean.pihet@newoldbits.com writes:
->
->> From: Jean Pihet <j-pihet@ti.com>
->>
->> Change the name field value to better reflect the smartreflex
->> integration in the system
->>
->> Signed-off-by: Jean Pihet <j-pihet@ti.com>
->> ---
->>  arch/arm/mach-omap2/omap_hwmod_3xxx_data.c |    8 ++++----
->>  arch/arm/mach-omap2/smartreflex.c          |    2 +-
->>  2 files changed, 5 insertions(+), 5 deletions(-)
->>
->> diff --git a/arch/arm/mach-omap2/omap_hwmod_3xxx_data.c b/arch/arm/mach-omap2/omap_hwmod_3xxx_data.c
->> index d7d4c70..40f57c4 100644
->> --- a/arch/arm/mach-omap2/omap_hwmod_3xxx_data.c
->> +++ b/arch/arm/mach-omap2/omap_hwmod_3xxx_data.c
->> @@ -2751,7 +2751,7 @@ static struct omap_hwmod_ocp_if *omap34xx_sr1_slaves[] = {
->>  };
->>
->>  static struct omap_hwmod omap34xx_sr1_hwmod = {
->> -     .name           = "sr1",
->> +     .name           = "mpu_iva",
->
-> Should this be "smartreflex_mpu_iva"?
->
-> The OMAP4 SR hwmods have a 'smartreflex_' prefix which seems better.
->
->>       .class          = &omap34xx_smartreflex_hwmod_class,
->>       .main_clk       = "sr1_fck",
->>       .prcm           = {
->> @@ -2775,7 +2775,7 @@ static struct omap_hwmod_ocp_if *omap36xx_sr1_slaves[] = {
->>  };
->>
->>  static struct omap_hwmod omap36xx_sr1_hwmod = {
->> -     .name           = "sr1",
->> +     .name           = "mpu_iva",
->>       .class          = &omap36xx_smartreflex_hwmod_class,
->>       .main_clk       = "sr1_fck",
->>       .prcm           = {
->> @@ -2803,7 +2803,7 @@ static struct omap_hwmod_ocp_if *omap34xx_sr2_slaves[] = {
->>  };
->>
->>  static struct omap_hwmod omap34xx_sr2_hwmod = {
->> -     .name           = "sr2",
->> +     .name           = "core",
->>       .class          = &omap34xx_smartreflex_hwmod_class,
->>       .main_clk       = "sr2_fck",
->>       .prcm           = {
->> @@ -2827,7 +2827,7 @@ static struct omap_hwmod_ocp_if *omap36xx_sr2_slaves[] = {
->>  };
->>
->>  static struct omap_hwmod omap36xx_sr2_hwmod = {
->> -     .name           = "sr2",
->> +     .name           = "core",
->>       .class          = &omap36xx_smartreflex_hwmod_class,
->>       .main_clk       = "sr2_fck",
->>       .prcm           = {
->> diff --git a/arch/arm/mach-omap2/smartreflex.c b/arch/arm/mach-omap2/smartreflex.c
->> index c18d47d..b2728a5 100644
->> --- a/arch/arm/mach-omap2/smartreflex.c
->> +++ b/arch/arm/mach-omap2/smartreflex.c
->> @@ -184,7 +184,7 @@ static void sr_set_regfields(struct omap_sr *sr)
->>               sr->err_weight = OMAP3430_SR_ERRWEIGHT;
->>               sr->err_maxlimit = OMAP3430_SR_ERRMAXLIMIT;
->>               sr->accum_data = OMAP3430_SR_ACCUMDATA;
->> -             if (!(strcmp(sr->name, "sr1"))) {
->> +             if (!(strcmp(sr->name, "sr_mpu_iva"))) {
->
-> Why the 'sr_' prefix?
-Historically the sr instance name is generated from hwmod name
-prepended with "sr_".
-I agree it is better to change the hwmod name and remove the "sr_"
-prefix from the sr init code.
+Yes, we do.
 
->
->>                       sr->senn_avgweight = OMAP3430_SR1_SENNAVGWEIGHT;
->>                       sr->senp_avgweight = OMAP3430_SR1_SENPAVGWEIGHT;
->>               } else {
->
-> Kevin
+> > At this point, I need to konw what exactly happens when the GPE is triggered
+> > by WAKE#.
+> 
+> - Lxx handler will be executed
+> - in Lxx handler, Notify the ACPI handle PCIe port
+> - Linux has registered a handler for the ACPI handle of PCIe port, in
+> the handler, turn on _PR0 and execute _PS0, which will power on the
+> link.
+
+But the handler we have is not the handler we want here.
+
+In fact, there are two handlers, pci_acpi_wake_bus() and pci_acpi_wake_dev()
+and they only do useful things for ACPI_NOTIFY_DEVICE_WAKE.  Is that the
+event type we receive from that _Lxx?
+
+Even if so, these routines don't seem to be suitable to handle the case at hand.
 
 Thanks,
-Jean
+Rafael
