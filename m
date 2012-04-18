@@ -1,80 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754012Ab2DRPJI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Apr 2012 11:09:08 -0400
-Received: from mail.hq.newdream.net ([66.33.206.127]:46798 "EHLO
-	mail.hq.newdream.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753852Ab2DRPJG (ORCPT
+	id S1754076Ab2DRPJl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Apr 2012 11:09:41 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:57923 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754027Ab2DRPJj convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Apr 2012 11:09:06 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws; d=dreamhost.com; h=message-id:date
-	:from:mime-version:to:cc:subject:content-type:
-	content-transfer-encoding; q=dns; s=dreamhost.com; b=V9iwZQBkYbS
-	7Dvbij3uCccCk/+/gwM9aouWEy87Izb3N926wwlLr7Ge3We2QliWbLN9AwJGw8/K
-	uaXfIY0pjqQbA1mOx6Cg8r3VbUELb1kgz3aneXaDXBxmXN7xvXQHv0dTLXXRijFI
-	oeV+I1zyGIgtiYI6z8Db1I0ZIDxG+3VY=
-Message-ID: <4F8ED911.90309@dreamhost.com>
-Date: Wed, 18 Apr 2012 10:09:05 -0500
-From: Alex Elder <elder@dreamhost.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120329 Thunderbird/11.0.1
-MIME-Version: 1.0
-To: Al Viro <viro@ZenIV.linux.org.uk>
-CC: Sage Weil <sage@newdream.net>, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org
-Subject: Re: osd_req_encode_op() breakage?
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	Wed, 18 Apr 2012 11:09:39 -0400
+References: <1334681618-9452-1-git-send-email-wenqing.lz@taobao.com> <4F8DAAFE.40500@redhat.com> <D225F088-A53F-4962-97AD-13C850BBA722@whamcloud.com> <alpine.LFD.2.00.1204181015050.5310@dhcp-27-109.brq.redhat.com> <20120418124811.GD3447@gmail.com>
+In-Reply-To: <20120418124811.GD3447@gmail.com>
+Mime-Version: 1.0 (1.0)
+Content-Type: text/plain;
+	charset=us-ascii
+Message-Id: <341F6DCC-1788-4ACC-A86E-A5D99CC05320@whamcloud.com>
+Content-Transfer-Encoding: 8BIT
+Cc: Lukas Czerner <lczerner@redhat.com>, Eric Sandeen <sandeen@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        "linux-ext4@vger.kernel.org" <linux-ext4@vger.kernel.org>,
+        Zheng Liu <wenqing.lz@taobao.com>
+X-Mailer: iPhone Mail (9B176)
+From: Andreas Dilger <adilger@whamcloud.com>
+Subject: Re: [RFC][PATCH 0/3] add FALLOC_FL_NO_HIDE_STALE flag in fallocate
+Date: Wed, 18 Apr 2012 08:09:02 -0700
+To: Zheng Liu <gnehzuil.liu@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I got dropped off the kernel.org lists for a bit and didn't see
-this at first.  I don't know whether Sage responded to you or
-not.  I'm getting back to you, just to be sure.
+On 2012-04-18, at 5:48, Zheng Liu <gnehzuil.liu@gmail.com> wrote:
+> I run a more detailed benchmark again.  The environment is as before,
+> and the machine has Intel(R) Core(TM)2 Duo CPU E8400, 4G memory and a
+> WDC WD1600AAJS-75M0A0 160G SATA disk.
+> 
+> I use 'fallocate' and 'dd' command to create a 256M file.  I compare
+> three cases, which are fallocate w/o new flag, fallocate w/ new flag,
+> and dd.  We use these commands to create a file.  Meanwhile w/ journal
+> and w/o journal are compared.  When I format the filesytem, I use
+> '-E lazy_itable_init=0' to avoid impact.  I use this command to do the
+> comparsion:
+> 
+> time for((i=0;i<2000;i++)); \
+>        do \
+>        dd if=/dev/zero of=/mnt/sda1/testfile conv=notrunc bs=4k \
+>        count=1 seek=`expr $i \* 16` oflag=sync,direct 2>/dev/null; \
+>        done
+> 
+> 
+> The result:
+> 
+> nojournal:
+>        fallocte        dd              fallocate w/ new flag
+> real    0m4.196s        0m3.720s        0m3.782s
+> user    0m0.167s        0m0.194s        0m0.192s
+> sys     0m0.404s        0m0.393s        0m0.390s
+> 
+> data=journal:
+>        fallocate       dd              fallocate w/ new flag
+> real    1m9.673s        1m10.241s       1m9.773s
+> user    0m0.183s        0m0.205s        0m0.192s
+> sys     0m0.397s        0m0.407s        0m0.398s
+> 
+> data=ordered
+>        fallocate       dd              fallocate w/ new flag
+> real    1m16.006s       0m18.291s       0m18.449s
+> user    0m0.193s        0m0.193s        0m0.201s
+> sys     0m0.384s        0m0.387s        0m0.381s
+> 
+> data=writeback
+>        fallocate       dd              fallocate w/ new flag
+> real    1m16.247s       0m18.133s       0m18.417s
+> user    0m0.187s        0m0.193s        0m0.205s
+> sys     0m0.401s        0m0.398s        0m0.387s
+> 
+> In journal mode, we can see, when data is set to 'journal', the result
+> is almost the same.  However, when data is set 'ordered' or 'writeback',
+> the slowdown in w/ conversion case is severe.  Then I do the same test
+> without 'oflag=sync,direct', and the result doesn't change.  IMHO, I
+> guess that journal is the *root cause*.  Until now, I don't have a
+> definitely conclusion, and I will go on traing this issue.  Please feel
+> free to comment it.
 
- > Date: Sat, 14 Apr 2012 03:34:20 +0100
- > From: Al Viro <viro@ZenIV.linux.org.uk>
- > To: Sage Weil <sage@newdream.net>
- > Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
- > Subject: osd_req_encode_op() breakage?
- >
- > static void osd_req_encode_op(struct ceph_osd_request *req,
- >                               struct ceph_osd_op *dst,
- >                               struct ceph_osd_req_op *src)
- > {
- >         dst->op = cpu_to_le16(src->op);
- >
- >         switch (dst->op) {
- >         case CEPH_OSD_OP_READ:
- >         case CEPH_OSD_OP_WRITE:
- >
- > is an interesting thing to say, seeing that CEPH_OSD_OP_READ et.al. are
- > all host-endian...  Should that be "switch (src->op)" instead?
+Looking at these performance numbers again, it would seem better if ext4 _was_ zero filling the whole file and converting the whole thing to initialized extents instead of leaving so many uninitialized extents behind.
 
-Yes, you are absolutely correct.
+The file size is 256MB, and the disk would have to be doing only 3.5MB/s for linear streaming writes to match the performance that you report, so a modern disk doing 50MB/s should be able to zero the whole file in 5s.
 
-We have obviously not done endianness checks in this code for
-some time.
+It seems the threshold for zeroing uninitialized extents is incorrect. EXT4_EXT_ZERO_LEN is only 7 blocks (28kB normally), but typical disks can write 64kB as easily as 4kB, so it would be interesting to change EXT4_EXT_ZERO_LEN to 16 and re-run your test. 
 
-I will commit a fix and credit you for it.  I'll also make sure
-we are doing proper testing for this sort of thing on a regular
-basis.
+If that solves this particular test case, it wont necessarily the general case, but is still a useful fix.  If you submit a patch for this, please change this code to compare against 64kB instead of a block count, and also to take s_raid_stride into account if set, like:
 
-					-Alex
+        ext_zero_len = max(EXT4_EXT_ZERO_LEN * 1024 >> inode->i_blkbits,
+                           EXT4_SB(inode->i_sb)->s_es->s_raid_stride);
 
- >  AFAICS, that sucker had appeared in that form back in
- > commit 68b4476b0bc13fef18266b4140309a30e86739d2
- > Author: Yehuda Sadeh <yehuda@hq.newdream.net>
- > Date:   Tue Apr 6 15:01:27 2010 -0700
- >
- >     ceph: messenger and osdc changes for rbd
- >
- > and it seems to be broken on big-endian hosts.  Doesn't look like a 
-misspelled
- > le16_to_cpu() either, since dst->op ends up going on the wire...
- >
- > I'm really mystified by that - it looks like it must've shown up 
-immediately
- > on big-endian hosts; it's not like it was an obscure codepath, after 
-all...
- > Comments?
+This would write up to 64kB, or a full RAID stripe (since it already needs to seek that spindle), whichever is larger.  It isn't perfect, since it should really align the zero-out to the RAID stripe to avoid seeking two spindles, but it is a starting point. 
+
+Cheers, Andreas
+
