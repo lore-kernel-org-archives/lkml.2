@@ -1,45 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752941Ab2DRKDa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Apr 2012 06:03:30 -0400
-Received: from e28smtp01.in.ibm.com ([122.248.162.1]:52618 "EHLO
-	e28smtp01.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751968Ab2DRKD2 (ORCPT
+	id S1752275Ab2DRKIq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Apr 2012 06:08:46 -0400
+Received: from www.linutronix.de ([62.245.132.108]:60854 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751858Ab2DRKIp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Apr 2012 06:03:28 -0400
-Message-ID: <4F8E915E.2010705@linux.vnet.ibm.com>
-Date: Wed, 18 Apr 2012 18:03:10 +0800
-From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120216 Thunderbird/10.0.1
+	Wed, 18 Apr 2012 06:08:45 -0400
+Date: Wed, 18 Apr 2012 12:08:23 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Sven Joachim <svenjoac@gmx.de>
+cc: "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Suresh Siddha <suresh.b.siddha@intel.com>
+Subject: Re: kernel panic after suspend/resume
+In-Reply-To: <87hawhtpo9.fsf@turtle.gmx.de>
+Message-ID: <alpine.LFD.2.02.1204181205540.2542@ionos>
+References: <CA+55aFzsjpJt09b6e4NA0T50M3w0xtASSYXz_=UWVDqKRywo=A@mail.gmail.com> <87pqb6fkji.fsf@turtle.gmx.de> <CA+55aFxhb6hriqHHwVtNeYHmtcy5JCEJX-zABBcG2Zjw_gawPw@mail.gmail.com> <201204172321.41095.rjw@sisk.pl> <87hawhtpo9.fsf@turtle.gmx.de>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
 MIME-Version: 1.0
-To: Takuya Yoshikawa <takuya.yoshikawa@gmail.com>
-CC: Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
-        LKML <linux-kernel@vger.kernel.org>, KVM <kvm@vger.kernel.org>
-Subject: Re: [PATCH v2 07/16] KVM: MMU: introduce for_each_pte_list_spte
-References: <4F87FA69.5060106@linux.vnet.ibm.com> <4F87FC19.8080404@linux.vnet.ibm.com> <20120414114422.e3fe6e2abbfdcce61e6f69c8@gmail.com> <4F8B93B9.2030801@linux.vnet.ibm.com> <20120417234731.a19f270d5701b11ce95d13d4@gmail.com>
-In-Reply-To: <20120417234731.a19f270d5701b11ce95d13d4@gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-x-cbid: 12041810-4790-0000-0000-0000023BEBD3
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/17/2012 10:47 PM, Takuya Yoshikawa wrote:
+On Wed, 18 Apr 2012, Sven Joachim wrote:
 
-> On Mon, 16 Apr 2012 11:36:25 +0800
-> Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com> wrote:
+> On 2012-04-17 23:21 +0200, Rafael J. Wysocki wrote:
 > 
->> I tested it with kernbench, no regression is found.
+> > Well, commit fa4da365bc7772c kind of looks like it might be the source of
+> > this trouble.  Sven, can you try to revert it, please?
 > 
-> Because kernbench is not at all good test for this.
-> 
->> It is not a problem since the iter and spte should be in the cache.
-> 
-> I have checked dirty-log-perf myself with this patch [01-07].
-> 
-> GET_DIRTY_LOG for 1GB dirty pages has become more than 15% slower.
+> This seems to do the trick, thanks.
+
+Can you try the following patch instead?
+
+Thanks,
+
+	tglx
 
 
-By the way, what is the case did you test? ept = 1 ?
-
+diff --git a/kernel/time/tick-broadcast.c b/kernel/time/tick-broadcast.c
+index bf57abd..119aca5 100644
+--- a/kernel/time/tick-broadcast.c
++++ b/kernel/time/tick-broadcast.c
+@@ -531,7 +531,6 @@ void tick_broadcast_setup_oneshot(struct clock_event_device *bc)
+ 		int was_periodic = bc->mode == CLOCK_EVT_MODE_PERIODIC;
+ 
+ 		bc->event_handler = tick_handle_oneshot_broadcast;
+-		clockevents_set_mode(bc, CLOCK_EVT_MODE_ONESHOT);
+ 
+ 		/* Take the do_timer update */
+ 		tick_do_timer_cpu = cpu;
+@@ -549,6 +548,7 @@ void tick_broadcast_setup_oneshot(struct clock_event_device *bc)
+ 			   to_cpumask(tmpmask));
+ 
+ 		if (was_periodic && !cpumask_empty(to_cpumask(tmpmask))) {
++			clockevents_set_mode(bc, CLOCK_EVT_MODE_ONESHOT);
+ 			tick_broadcast_init_next_event(to_cpumask(tmpmask),
+ 						       tick_next_period);
+ 			tick_broadcast_set_event(tick_next_period, 1);
+@@ -577,15 +577,10 @@ void tick_broadcast_switch_to_oneshot(void)
+ 	raw_spin_lock_irqsave(&tick_broadcast_lock, flags);
+ 
+ 	tick_broadcast_device.mode = TICKDEV_MODE_ONESHOT;
+-
+-	if (cpumask_empty(tick_get_broadcast_mask()))
+-		goto end;
+-
+ 	bc = tick_broadcast_device.evtdev;
+ 	if (bc)
+ 		tick_broadcast_setup_oneshot(bc);
+ 
+-end:
+ 	raw_spin_unlock_irqrestore(&tick_broadcast_lock, flags);
+ }
+ 
