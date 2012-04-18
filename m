@@ -1,44 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753422Ab2DRMNb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Apr 2012 08:13:31 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:20474 "EHLO mx1.redhat.com"
+	id S1753484Ab2DRMNx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Apr 2012 08:13:53 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:40963 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752739Ab2DRMNa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Apr 2012 08:13:30 -0400
-Message-ID: <4F8EAFDF.5050406@redhat.com>
-Date: Wed, 18 Apr 2012 08:13:19 -0400
-From: Prarit Bhargava <prarit@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110419 Red Hat/3.1.10-1.el6_0 Thunderbird/3.1.10
+	id S1753429Ab2DRMNv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Apr 2012 08:13:51 -0400
+Message-ID: <4F8EAFF7.2040505@redhat.com>
+Date: Wed, 18 Apr 2012 15:13:43 +0300
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120329 Thunderbird/11.0.1
 MIME-Version: 1.0
-To: Thomas Gleixner <tglx@linutronix.de>
-CC: linux-kernel@vger.kernel.org, John Stultz <johnstul@us.ibm.com>
-Subject: Re: [PATCH] Fix CONFIG_CLOCKSOURCE_WATCHDOG=n compile
-References: <1334174480-16331-1-git-send-email-prarit@redhat.com> <alpine.LFD.2.02.1204181342560.2542@ionos>
-In-Reply-To: <alpine.LFD.2.02.1204181342560.2542@ionos>
+To: Anthony Liguori <anthony@codemonkey.ws>
+CC: kvm@vger.kernel.org, kexec@lists.infradead.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/4] Export offsets of VMCS fields as note information
+ for kdump
+References: <4F84E0DF.8040206@cn.fujitsu.com> <4F8D1F46.3090901@redhat.com> <4F8D9F20.9050507@codemonkey.ws>
+In-Reply-To: <4F8D9F20.9050507@codemonkey.ws>
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-
-On 04/18/2012 07:44 AM, Thomas Gleixner wrote:
-> On Wed, 11 Apr 2012, Prarit Bhargava wrote:
-> 
->> Noticed this while debugging -- compile fails with
+On 04/17/2012 07:49 PM, Anthony Liguori wrote:
+> On 04/17/2012 02:44 AM, Avi Kivity wrote:
+>> On 04/11/2012 04:39 AM, zhangyanfei wrote:
+>>> This patch set exports offsets of VMCS fields as note information for
+>>> kdump. We call it VMCSINFO. The purpose of VMCSINFO is to retrieve
+>>> runtime state of guest machine image, such as registers, in host
+>>> machine's crash dump as VMCS format. The problem is that VMCS
+>>> internal is hidden by Intel in its specification. So, we reverse
+>>> engineering it in the way implemented in this patch set. Please note
+>>> that this processing never affects any existing kvm logic. The
+>>> VMCSINFO is exported via sysfs to kexec-tools just like VMCOREINFO.
+>>>
+>>> Here is an example:
+>>> Processor: Intel(R) Core(TM)2 Duo CPU     E7500  @ 2.93GHz
+>>>
+>>> $cat /sys/kernel/vmcsinfo
+>>> 1cba8c0 2000
+>>>
+>>> crash>  rd -p 1cba8c0 1000
+>>>           1cba8c0:  0000127b00000009 53434d5600000000  
+>>> ....{.......VMCS
+>>>           1cba8d0:  000000004f464e49 4e4f495349564552  
+>>> INFO....REVISION
+>>>           1cba8e0:  49460a643d44495f 5f4e495028444c45  
+>>> _ID=d.FIELD(PIN_
+>>>           1cba8f0:  4d565f4445534142 4f435f434558455f  
+>>> BASED_VM_EXEC_CO
+>>>           1cba900:  303d294c4f52544e 0a30383130343831  
+>>> NTROL)=01840180.
+>>>           1cba910:  504328444c454946 5f44455341425f55  
+>>> FIELD(CPU_BASED_
+>>>           1cba920:  5f434558455f4d56 294c4f52544e4f43  
+>>> VM_EXEC_CONTROL)
+>>>           1cba930:  393130343931303d 28444c4549460a30  
+>>> =01940190.FIELD(
+>>>           1cba940:  5241444e4f434553 4558455f4d565f59  
+>>> SECONDARY_VM_EXE
+>>>           1cba950:  4f52544e4f435f43 30346566303d294c  
+>>> C_CONTROL)=0fe40
+>>>           1cba960:  4c4549460a306566 4958455f4d562844  
+>>> fe0.FIELD(VM_EXI
+>>>           1cba970:  4f52544e4f435f54 346531303d29534c  
+>>> T_CONTROLS)=01e4
+>>>           1cba980:  4549460a30653130 4e455f4d5628444c  
+>>> 01e0.FIELD(VM_EN
+>>>           1cba990:  544e4f435f595254 33303d29534c4f52  
+>>> TRY_CONTROLS)=03
+>>>           1cba9a0:  460a303133303431 45554728444c4549  
+>>> 140310.FIELD(GUE
+>>>           1cba9b0:  45535f53455f5453 3d29524f5443454c  
+>>> ST_ES_SELECTOR)=
+>>>           1cba9c0:  4549460a30303530 545345554728444c  
+>>> 0500.FIELD(GUEST
+>>>           1cba9d0:  454c45535f53435f 35303d29524f5443  
+>>> _CS_SELECTOR)=05
+>>>           ......
+>>>
+>>> TODO:
+>>>    1. In kexec-tools, get VMCSINFO via sysfs and dump it as note
+>>> information
+>>>       into vmcore.
+>>>    2. Dump VMCS region of each guest vcpu and VMCSINFO into
+>>> qemu-process
+>>>       core file. To do this, we will modify kernel core dumper, gdb
+>>> gcore
+>>>       and crash gcore.
+>>>    3. Dump guest image from the qemu-process core file into a vmcore.
+>>>
 >>
->> arch/x86/built-in.o: In function `mark_tsc_unstable':
->> /home/linux-2.6/arch/x86/kernel/tsc.c:791: undefined reference to
->> `clocksource_mark_unstable'
->> make: *** [.tmp_vmlinux1] Error 1
->>
->> Add in an empty function for the !CONFIG_CLOCKSOURCE_WATCHDOG case.
-> 
-> CONFIG_CLOCKSOURCE_WATCHDOG for x86 is always 'y', so what's the point?
+>> Taking a step back, can you describe the problem scenario you're fixing
+>> here?
+>
+> Note that assuming that VMCS fields map to offsets within memory is
+> not guaranteed to work for future processors.
+>
+> There is no guarantee that fields won't be compressed or stored with
+> inverted bit ordering.
+>
 
-Ah, I was playing around with the .config directly while debugging and I didn't
-notice that.  Sorry for the noise ...
+Right; they're also not required to be in memory at all - the processor
+can cache them, even for VMCSs that are not active at this time. 
+Running VMXOFF at panic time can fix that, but you have to broadcast it
+to all processors, probably using NMI...
 
-P.
+Still, some information is better than nothing.  What I doubt is whether
+that information will ever be used.
+
+-- 
+error compiling committee.c: too many arguments to function
+
