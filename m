@@ -1,454 +1,216 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754389Ab2DRSri (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Apr 2012 14:47:38 -0400
-Received: from charlotte.tuxdriver.com ([70.61.120.58]:41735 "EHLO
-	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751790Ab2DRSrf (ORCPT
+	id S1754485Ab2DRSry (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Apr 2012 14:47:54 -0400
+Received: from 50-56-35-84.static.cloud-ips.com ([50.56.35.84]:43422 "EHLO
+	mail.hallyn.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754436Ab2DRSru (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Apr 2012 14:47:35 -0400
-Date: Wed, 18 Apr 2012 14:43:20 -0400
-From: "John W. Linville" <linville@tuxdriver.com>
-To: davem@davemloft.net
-Cc: linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: pull request: wireless 2012-04-18
-Message-ID: <20120418184320.GA2436@tuxdriver.com>
+	Wed, 18 Apr 2012 14:47:50 -0400
+Date: Wed, 18 Apr 2012 18:48:47 +0000
+From: "Serge E. Hallyn" <serge@hallyn.com>
+To: "Eric W. Beiderman" <ebiederm@xmission.com>
+Cc: linux-kernel@vger.kernel.org,
+        Linux Containers <containers@lists.linux-foundation.org>,
+        Cyrill Gorcunov <gorcunov@openvz.org>,
+        linux-security-module@vger.kernel.org,
+        Al Viro <viro@ZenIV.linux.org.uk>, linux-fsdevel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [PATCH 16/43] userns: Simplify the user_namespace by making
+ userns->creator a kuid.
+Message-ID: <20120418184847.GA4984@mail.hallyn.com>
+References: <m11unyn70b.fsf@fess.ebiederm.org>
+ <1333862139-31737-16-git-send-email-ebiederm@xmission.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="82I3+IH0IqGh5yIs"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1333862139-31737-16-git-send-email-ebiederm@xmission.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Quoting Eric W. Beiderman (ebiederm@xmission.com):
+> From: Eric W. Biederman <ebiederm@xmission.com>
+> 
+> - Transform userns->creator from a user_struct reference to a simple
+>   kuid_t, kgid_t pair.
+> 
+>   In cap_capable this allows the check to see if we are the creator of
+>   a namespace to become the classic suser style euid permission check.
+> 
+>   This allows us to remove the need for a struct cred in the mapping
+>   functions and still be able to dispaly the user namespace creators
+>   uid and gid as 0.
+> 
+> - Remove the now unnecessary delayed_work in free_user_ns.
+> 
+>   All that is left for free_user_ns to do is to call kmem_cache_free
+>   and put_user_ns.  Those functions can be called in any context
+>   so call them directly from free_user_ns removing the need for delayed work.
+> 
+> Signed-off-by: Eric W. Biederman <ebiederm@xmission.com>
+> ---
+>  include/linux/user_namespace.h |    4 ++--
+>  kernel/user.c                  |    7 ++++---
+>  kernel/user_namespace.c        |   39 ++++++++++++++++++---------------------
+>  security/commoncap.c           |    5 +++--
+>  4 files changed, 27 insertions(+), 28 deletions(-)
+> 
+> diff --git a/include/linux/user_namespace.h b/include/linux/user_namespace.h
+> index d767508..8a391bd 100644
+> --- a/include/linux/user_namespace.h
+> +++ b/include/linux/user_namespace.h
+> @@ -9,8 +9,8 @@
+>  struct user_namespace {
+>  	struct kref		kref;
+>  	struct user_namespace	*parent;
+> -	struct user_struct	*creator;
+> -	struct work_struct	destroyer;
+> +	kuid_t			owner;
+> +	kgid_t			group;
+>  };
+>  
+>  extern struct user_namespace init_user_ns;
+> diff --git a/kernel/user.c b/kernel/user.c
+> index 025077e..cff3856 100644
+> --- a/kernel/user.c
+> +++ b/kernel/user.c
+> @@ -25,7 +25,8 @@ struct user_namespace init_user_ns = {
+>  	.kref = {
+>  		.refcount	= ATOMIC_INIT(3),
+>  	},
+> -	.creator = &root_user,
+> +	.owner = GLOBAL_ROOT_UID,
+> +	.group = GLOBAL_ROOT_GID,
+>  };
+>  EXPORT_SYMBOL_GPL(init_user_ns);
+>  
+> @@ -54,9 +55,9 @@ struct hlist_head uidhash_table[UIDHASH_SZ];
+>   */
+>  static DEFINE_SPINLOCK(uidhash_lock);
+>  
+> -/* root_user.__count is 2, 1 for init task cred, 1 for init_user_ns->user_ns */
+> +/* root_user.__count is 1, for init task cred */
+>  struct user_struct root_user = {
+> -	.__count	= ATOMIC_INIT(2),
+> +	.__count	= ATOMIC_INIT(1),
+>  	.processes	= ATOMIC_INIT(1),
+>  	.files		= ATOMIC_INIT(0),
+>  	.sigpending	= ATOMIC_INIT(0),
+> diff --git a/kernel/user_namespace.c b/kernel/user_namespace.c
+> index 898e973..f69741a 100644
+> --- a/kernel/user_namespace.c
+> +++ b/kernel/user_namespace.c
+> @@ -27,6 +27,16 @@ int create_user_ns(struct cred *new)
+>  {
+>  	struct user_namespace *ns, *parent_ns = new->user_ns;
+>  	struct user_struct *root_user;
+> +	kuid_t owner = make_kuid(new->user_ns, new->euid);
+> +	kgid_t group = make_kgid(new->user_ns, new->egid);
+> +
+> +	/* The creator needs a mapping in the parent user namespace
+> +	 * or else we won't be able to reasonably tell userspace who
+> +	 * created a user_namespace.
+> +	 */
+> +	if (!kuid_has_mapping(parent_ns, owner) ||
+> +	    !kgid_has_mapping(parent_ns, group))
+> +		return -EPERM;
+>  
+>  	ns = kmem_cache_alloc(user_ns_cachep, GFP_KERNEL);
+>  	if (!ns)
+> @@ -43,7 +53,9 @@ int create_user_ns(struct cred *new)
+>  
+>  	/* set the new root user in the credentials under preparation */
+>  	ns->parent = parent_ns;
 
---82I3+IH0IqGh5yIs
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+I think in the past the creator cred pinned the ns->parent.  Do you now
+need to explicitly pin ns->parent (and release it in free_user_ns())?
 
-commit dbd717e37bf1409fd250d13aef2cab07bcae8c88
-
-Dave,
-
-Another batch of fixes intended for 3.4...
-
-First up, we have a minor signedness fix for libertas from Amitkumar
-Karwar.  Next, Arend gives us a brcm80211 fix for correctly enabling
-Tx FIFOs on channels 12 and 13.  Bing Zhao gives us some register
-address corrections for mwifiex.  Felix give us a trio of fixes --
-one for ath9k to wake the hardware properly from full sleep, one for
-mac80211 to properly handle packets in cooked monitor mode, and one
-for ensuring that the proper HT mode selection is honored.
-
-Hauke gives us a bcma fix for handling the lack of an sprom.  Jonathon
-Bither gives us an ath5k fix for a missing THIS_MODULE build issue,
-and another ath5k fix for an io mapping leak.  Lukasz Kucharczyk
-fixes a bitwise check in cfg80211, and Sujith gives us an ath9k fix
-for assigning sequence numbers for fragmented frames.  Finally, we
-have a MAINTAINERS change from Wey-Yi Guy -- congrats to Johannes
-Berg for taking the lead on iwlwifi. :-)
-
-Please let me know if there are problems!
-
-John
-
----
-
-The following changes since commit 9fe5642f4a3b13beb43c2633db7df22dd9d99250:
-
-  Merge branch 'master' of git://git.kernel.org/pub/scm/linux/kernel/git/jk=
-irsher/net (2012-04-17 22:58:52 -0400)
-
-are available in the git repository at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/linville/wireless.git for-d=
-avem
-
-Amitkumar Karwar (1):
-      libertas: fix signedness bug in lbs_auth_to_authtype()
-
-Arend van Spriel (1):
-      brcm80211: smac: resume transmit fifo upon receiving frames
-
-Bing Zhao (1):
-      mwifiex: update pcie8766 scratch register addresses
-
-Felix Fietkau (3):
-      ath9k: wake up the hardware from full sleep when idle is turned off
-      mac80211: fix truncated packets in cooked monitor rx
-      mac80211: fix logic error in ibss channel type check
-
-Hauke Mehrtens (1):
-      bcma: use fallback sprom if no on chip sprom is available
-
-John W. Linville (1):
-      Merge branch 'master' of git://git.kernel.org/.../linville/wireless i=
-nto for-davem
-
-Jonathan Bither (2):
-      ath5k: fix undefined 'THIS_MODULE'
-      ath5k: unmap io memory on probe failure
-
-Lukasz Kucharczyk (1):
-      cfg80211: fix interface combinations check.
-
-Sujith Manoharan (1):
-      ath9k: Fix TX fragmentation
-
-Wey-Yi Guy (1):
-      MAINTAINERS: Add maintainer for iwlwifi
-
- MAINTAINERS                                    |    1 +
- drivers/bcma/sprom.c                           |    7 +++++--
- drivers/net/wireless/ath/ath5k/ahb.c           |    7 +++++--
- drivers/net/wireless/ath/ath9k/main.c          |    9 ++++++++-
- drivers/net/wireless/ath/ath9k/xmit.c          |   10 +++++++++-
- drivers/net/wireless/brcm80211/brcmsmac/main.c |    8 ++++++++
- drivers/net/wireless/libertas/cfg.c            |    9 +++++++--
- drivers/net/wireless/mwifiex/pcie.h            |   18 +++++++++---------
- net/mac80211/ibss.c                            |    4 ++--
- net/mac80211/rx.c                              |   10 ++++++----
- net/wireless/util.c                            |    2 +-
- 11 files changed, 61 insertions(+), 24 deletions(-)
-
-diff --git a/MAINTAINERS b/MAINTAINERS
-index 7cef7be..f11ac47 100644
---- a/MAINTAINERS
-+++ b/MAINTAINERS
-@@ -3592,6 +3592,7 @@ S:	Supported
- F:	drivers/net/wireless/iwlegacy/
-=20
- INTEL WIRELESS WIFI LINK (iwlwifi)
-+M:	Johannes Berg <johannes.berg@intel.com>
- M:	Wey-Yi Guy <wey-yi.w.guy@intel.com>
- M:	Intel Linux Wireless <ilw@linux.intel.com>
- L:	linux-wireless@vger.kernel.org
-diff --git a/drivers/bcma/sprom.c b/drivers/bcma/sprom.c
-index cdcf75c..3e2a600 100644
---- a/drivers/bcma/sprom.c
-+++ b/drivers/bcma/sprom.c
-@@ -404,16 +404,19 @@ int bcma_sprom_get(struct bcma_bus *bus)
- 		return -EOPNOTSUPP;
-=20
- 	if (!bcma_sprom_ext_available(bus)) {
-+		bool sprom_onchip;
-+
- 		/*
- 		 * External SPROM takes precedence so check
- 		 * on-chip OTP only when no external SPROM
- 		 * is present.
- 		 */
--		if (bcma_sprom_onchip_available(bus)) {
-+		sprom_onchip =3D bcma_sprom_onchip_available(bus);
-+		if (sprom_onchip) {
- 			/* determine offset */
- 			offset =3D bcma_sprom_onchip_offset(bus);
- 		}
--		if (!offset) {
-+		if (!offset || !sprom_onchip) {
- 			/*
- 			 * Maybe there is no SPROM on the device?
- 			 * Now we ask the arch code if there is some sprom
-diff --git a/drivers/net/wireless/ath/ath5k/ahb.c b/drivers/net/wireless/at=
-h/ath5k/ahb.c
-index 8faa129..8c50d9d 100644
---- a/drivers/net/wireless/ath/ath5k/ahb.c
-+++ b/drivers/net/wireless/ath/ath5k/ahb.c
-@@ -19,6 +19,7 @@
- #include <linux/nl80211.h>
- #include <linux/platform_device.h>
- #include <linux/etherdevice.h>
-+#include <linux/export.h>
- #include <ar231x_platform.h>
- #include "ath5k.h"
- #include "debug.h"
-@@ -119,7 +120,7 @@ static int ath_ahb_probe(struct platform_device *pdev)
- 	if (res =3D=3D NULL) {
- 		dev_err(&pdev->dev, "no IRQ resource found\n");
- 		ret =3D -ENXIO;
--		goto err_out;
-+		goto err_iounmap;
- 	}
-=20
- 	irq =3D res->start;
-@@ -128,7 +129,7 @@ static int ath_ahb_probe(struct platform_device *pdev)
- 	if (hw =3D=3D NULL) {
- 		dev_err(&pdev->dev, "no memory for ieee80211_hw\n");
- 		ret =3D -ENOMEM;
--		goto err_out;
-+		goto err_iounmap;
- 	}
-=20
- 	ah =3D hw->priv;
-@@ -185,6 +186,8 @@ static int ath_ahb_probe(struct platform_device *pdev)
-  err_free_hw:
- 	ieee80211_free_hw(hw);
- 	platform_set_drvdata(pdev, NULL);
-+ err_iounmap:
-+        iounmap(mem);
-  err_out:
- 	return ret;
- }
-diff --git a/drivers/net/wireless/ath/ath9k/main.c b/drivers/net/wireless/a=
-th/ath9k/main.c
-index 2504ab0..798ea57 100644
---- a/drivers/net/wireless/ath/ath9k/main.c
-+++ b/drivers/net/wireless/ath/ath9k/main.c
-@@ -1548,6 +1548,7 @@ static int ath9k_config(struct ieee80211_hw *hw, u32 =
-changed)
- 	struct ath_hw *ah =3D sc->sc_ah;
- 	struct ath_common *common =3D ath9k_hw_common(ah);
- 	struct ieee80211_conf *conf =3D &hw->conf;
-+	bool reset_channel =3D false;
-=20
- 	ath9k_ps_wakeup(sc);
- 	mutex_lock(&sc->mutex);
-@@ -1556,6 +1557,12 @@ static int ath9k_config(struct ieee80211_hw *hw, u32=
- changed)
- 		sc->ps_idle =3D !!(conf->flags & IEEE80211_CONF_IDLE);
- 		if (sc->ps_idle)
- 			ath_cancel_work(sc);
-+		else
-+			/*
-+			 * The chip needs a reset to properly wake up from
-+			 * full sleep
-+			 */
-+			reset_channel =3D ah->chip_fullsleep;
- 	}
-=20
- 	/*
-@@ -1584,7 +1591,7 @@ static int ath9k_config(struct ieee80211_hw *hw, u32 =
-changed)
- 		}
- 	}
-=20
--	if (changed & IEEE80211_CONF_CHANGE_CHANNEL) {
-+	if ((changed & IEEE80211_CONF_CHANGE_CHANNEL) || reset_channel) {
- 		struct ieee80211_channel *curchan =3D hw->conf.channel;
- 		int pos =3D curchan->hw_value;
- 		int old_pos =3D -1;
-diff --git a/drivers/net/wireless/ath/ath9k/xmit.c b/drivers/net/wireless/a=
-th/ath9k/xmit.c
-index 834e6bc..23eaa1b 100644
---- a/drivers/net/wireless/ath/ath9k/xmit.c
-+++ b/drivers/net/wireless/ath/ath9k/xmit.c
-@@ -1820,6 +1820,7 @@ static struct ath_buf *ath_tx_setup_buffer(struct ath=
-_softc *sc,
- 	struct ath_frame_info *fi =3D get_frame_info(skb);
- 	struct ieee80211_hdr *hdr =3D (struct ieee80211_hdr *)skb->data;
- 	struct ath_buf *bf;
-+	int fragno;
- 	u16 seqno;
-=20
- 	bf =3D ath_tx_get_buffer(sc);
-@@ -1831,9 +1832,16 @@ static struct ath_buf *ath_tx_setup_buffer(struct at=
-h_softc *sc,
- 	ATH_TXBUF_RESET(bf);
-=20
- 	if (tid) {
-+		fragno =3D le16_to_cpu(hdr->seq_ctrl) & IEEE80211_SCTL_FRAG;
- 		seqno =3D tid->seq_next;
- 		hdr->seq_ctrl =3D cpu_to_le16(tid->seq_next << IEEE80211_SEQ_SEQ_SHIFT);
--		INCR(tid->seq_next, IEEE80211_SEQ_MAX);
-+
-+		if (fragno)
-+			hdr->seq_ctrl |=3D cpu_to_le16(fragno);
-+
-+		if (!ieee80211_has_morefrags(hdr->frame_control))
-+			INCR(tid->seq_next, IEEE80211_SEQ_MAX);
-+
- 		bf->bf_state.seqno =3D seqno;
- 	}
-=20
-diff --git a/drivers/net/wireless/brcm80211/brcmsmac/main.c b/drivers/net/w=
-ireless/brcm80211/brcmsmac/main.c
-index 231ddf4..7083db7 100644
---- a/drivers/net/wireless/brcm80211/brcmsmac/main.c
-+++ b/drivers/net/wireless/brcm80211/brcmsmac/main.c
-@@ -7614,6 +7614,7 @@ brcms_c_recvctl(struct brcms_c_info *wlc, struct d11r=
-xhdr *rxh,
- {
- 	int len_mpdu;
- 	struct ieee80211_rx_status rx_status;
-+	struct ieee80211_hdr *hdr;
-=20
- 	memset(&rx_status, 0, sizeof(rx_status));
- 	prep_mac80211_status(wlc, rxh, p, &rx_status);
-@@ -7623,6 +7624,13 @@ brcms_c_recvctl(struct brcms_c_info *wlc, struct d11=
-rxhdr *rxh,
- 	skb_pull(p, D11_PHY_HDR_LEN);
- 	__skb_trim(p, len_mpdu);
-=20
-+	/* unmute transmit */
-+	if (wlc->hw->suspended_fifos) {
-+		hdr =3D (struct ieee80211_hdr *)p->data;
-+		if (ieee80211_is_beacon(hdr->frame_control))
-+			brcms_b_mute(wlc->hw, false);
-+	}
-+
- 	memcpy(IEEE80211_SKB_RXCB(p), &rx_status, sizeof(rx_status));
- 	ieee80211_rx_irqsafe(wlc->pub->ieee_hw, p);
- }
-diff --git a/drivers/net/wireless/libertas/cfg.c b/drivers/net/wireless/lib=
-ertas/cfg.c
-index 3fa1ece..2fa879b 100644
---- a/drivers/net/wireless/libertas/cfg.c
-+++ b/drivers/net/wireless/libertas/cfg.c
-@@ -103,7 +103,7 @@ static const u32 cipher_suites[] =3D {
-  * Convert NL80211's auth_type to the one from Libertas, see chapter 5.9.1
-  * in the firmware spec
-  */
--static u8 lbs_auth_to_authtype(enum nl80211_auth_type auth_type)
-+static int lbs_auth_to_authtype(enum nl80211_auth_type auth_type)
- {
- 	int ret =3D -ENOTSUPP;
-=20
-@@ -1411,7 +1411,12 @@ static int lbs_cfg_connect(struct wiphy *wiphy, stru=
-ct net_device *dev,
- 		goto done;
- 	}
-=20
--	lbs_set_authtype(priv, sme);
-+	ret =3D lbs_set_authtype(priv, sme);
-+	if (ret =3D=3D -ENOTSUPP) {
-+		wiphy_err(wiphy, "unsupported authtype 0x%x\n", sme->auth_type);
-+		goto done;
-+	}
-+
- 	lbs_set_radio(priv, preamble, 1);
-=20
- 	/* Do the actual association */
-diff --git a/drivers/net/wireless/mwifiex/pcie.h b/drivers/net/wireless/mwi=
-fiex/pcie.h
-index 445ff21..2f218f9 100644
---- a/drivers/net/wireless/mwifiex/pcie.h
-+++ b/drivers/net/wireless/mwifiex/pcie.h
-@@ -48,15 +48,15 @@
- #define PCIE_HOST_INT_STATUS_MASK			0xC3C
- #define PCIE_SCRATCH_2_REG				0xC40
- #define PCIE_SCRATCH_3_REG				0xC44
--#define PCIE_SCRATCH_4_REG				0xCC0
--#define PCIE_SCRATCH_5_REG				0xCC4
--#define PCIE_SCRATCH_6_REG				0xCC8
--#define PCIE_SCRATCH_7_REG				0xCCC
--#define PCIE_SCRATCH_8_REG				0xCD0
--#define PCIE_SCRATCH_9_REG				0xCD4
--#define PCIE_SCRATCH_10_REG				0xCD8
--#define PCIE_SCRATCH_11_REG				0xCDC
--#define PCIE_SCRATCH_12_REG				0xCE0
-+#define PCIE_SCRATCH_4_REG				0xCD0
-+#define PCIE_SCRATCH_5_REG				0xCD4
-+#define PCIE_SCRATCH_6_REG				0xCD8
-+#define PCIE_SCRATCH_7_REG				0xCDC
-+#define PCIE_SCRATCH_8_REG				0xCE0
-+#define PCIE_SCRATCH_9_REG				0xCE4
-+#define PCIE_SCRATCH_10_REG				0xCE8
-+#define PCIE_SCRATCH_11_REG				0xCEC
-+#define PCIE_SCRATCH_12_REG				0xCF0
-=20
- #define CPU_INTR_DNLD_RDY				BIT(0)
- #define CPU_INTR_DOOR_BELL				BIT(1)
-diff --git a/net/mac80211/ibss.c b/net/mac80211/ibss.c
-index 33fd8d9..cef7c29 100644
---- a/net/mac80211/ibss.c
-+++ b/net/mac80211/ibss.c
-@@ -457,8 +457,8 @@ static void ieee80211_rx_bss_info(struct ieee80211_sub_=
-if_data *sdata,
- 			 * fall back to HT20 if we don't use or use
- 			 * the other extension channel
- 			 */
--			if ((channel_type =3D=3D NL80211_CHAN_HT40MINUS ||
--			     channel_type =3D=3D NL80211_CHAN_HT40PLUS) &&
-+			if (!(channel_type =3D=3D NL80211_CHAN_HT40MINUS ||
-+			      channel_type =3D=3D NL80211_CHAN_HT40PLUS) ||
- 			    channel_type !=3D sdata->u.ibss.channel_type)
- 				sta_ht_cap_new.cap &=3D
- 					~IEEE80211_HT_CAP_SUP_WIDTH_20_40;
-diff --git a/net/mac80211/rx.c b/net/mac80211/rx.c
-index bcfe8c7..d64e285 100644
---- a/net/mac80211/rx.c
-+++ b/net/mac80211/rx.c
-@@ -103,7 +103,7 @@ static void
- ieee80211_add_rx_radiotap_header(struct ieee80211_local *local,
- 				 struct sk_buff *skb,
- 				 struct ieee80211_rate *rate,
--				 int rtap_len)
-+				 int rtap_len, bool has_fcs)
- {
- 	struct ieee80211_rx_status *status =3D IEEE80211_SKB_RXCB(skb);
- 	struct ieee80211_radiotap_header *rthdr;
-@@ -134,7 +134,7 @@ ieee80211_add_rx_radiotap_header(struct ieee80211_local=
- *local,
- 	}
-=20
- 	/* IEEE80211_RADIOTAP_FLAGS */
--	if (local->hw.flags & IEEE80211_HW_RX_INCLUDES_FCS)
-+	if (has_fcs && (local->hw.flags & IEEE80211_HW_RX_INCLUDES_FCS))
- 		*pos |=3D IEEE80211_RADIOTAP_F_FCS;
- 	if (status->flag & (RX_FLAG_FAILED_FCS_CRC | RX_FLAG_FAILED_PLCP_CRC))
- 		*pos |=3D IEEE80211_RADIOTAP_F_BADFCS;
-@@ -294,7 +294,8 @@ ieee80211_rx_monitor(struct ieee80211_local *local, str=
-uct sk_buff *origskb,
- 	}
-=20
- 	/* prepend radiotap information */
--	ieee80211_add_rx_radiotap_header(local, skb, rate, needed_headroom);
-+	ieee80211_add_rx_radiotap_header(local, skb, rate, needed_headroom,
-+					 true);
-=20
- 	skb_reset_mac_header(skb);
- 	skb->ip_summed =3D CHECKSUM_UNNECESSARY;
-@@ -2571,7 +2572,8 @@ static void ieee80211_rx_cooked_monitor(struct ieee80=
-211_rx_data *rx,
- 		goto out_free_skb;
-=20
- 	/* prepend radiotap information */
--	ieee80211_add_rx_radiotap_header(local, skb, rate, needed_headroom);
-+	ieee80211_add_rx_radiotap_header(local, skb, rate, needed_headroom,
-+					 false);
-=20
- 	skb_set_mac_header(skb, 0);
- 	skb->ip_summed =3D CHECKSUM_UNNECESSARY;
-diff --git a/net/wireless/util.c b/net/wireless/util.c
-index 1b7a08d..957f2562 100644
---- a/net/wireless/util.c
-+++ b/net/wireless/util.c
-@@ -989,7 +989,7 @@ int cfg80211_can_change_interface(struct cfg80211_regis=
-tered_device *rdev,
- 			if (rdev->wiphy.software_iftypes & BIT(iftype))
- 				continue;
- 			for (j =3D 0; j < c->n_limits; j++) {
--				if (!(limits[j].types & iftype))
-+				if (!(limits[j].types & BIT(iftype)))
- 					continue;
- 				if (limits[j].max < num[iftype])
- 					goto cont;
---=20
-John W. Linville		Someday the world will need a hero, and you
-linville@tuxdriver.com			might be all we have.  Be ready.
-
---82I3+IH0IqGh5yIs
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAEBAgAGBQJPjwtIAAoJEJctW/TcYTgGM1cQAIaKNU5bAY95C7zYMSa0Bw3T
-BohsfmhQWxsD0p8+2RDL5XhNiIUnCCwtciaRXO3D6/YcNW3ntxsqj82mguoRZEXs
-u/Gk1fBbCUA4PaM5Uexqq55HsA7LbGAY6g4hoj4i6ReP+hUFnkO77IB/2pXjo2VQ
-F+F1yn/o5VAzThhlgkiDFFrfeBVaqtfpxxgobxfwk8WYi/fPIMbcIbJXw6WNyyyd
-EXtPnDLfOZfFRxE4RilAs8ZjLiYR+5Rj0DZTtm7BulKV7y1V41M6BKLkou9r4pJT
-HUEKM99kcTeDBR9MNfp54Fs6lkSlvqu7ED39RNMEgni6I6D0d2L7ZMc/FmE+HiaT
-X03JC+mFjHVFTLzor2g2QIMZTQsMcG83b90NnJ9YYB4N4anmnszfF/HT+559IAE9
-u3stGG1ymy4yoyfJrQJHqp2qqOGKJA8shBoe8L0f41h23b6Z9crzk4p6n7BT5wtX
-RPVzKockmKsiPO8tO3PzoLCnNlKWn6+1syswJ/FnEUbOHxIQyBRY2/9bzH7enUW/
-s+GmgGPI9CQdRHWCnr5ZctPlBeuv2ffnj9cb+BZ5foJJs59jVRJdUuCdWsh5HXa1
-7DVcKsrjM4t7FzYE3t0+Gza/CJfs3XK2VKO6amHjrNRPLQ/qR8b8eXUzDkkh1I0J
-7i2+QBdNl/dF+9zqbxq5
-=Fc9d
------END PGP SIGNATURE-----
-
---82I3+IH0IqGh5yIs--
+> -	ns->creator = new->user;
+> +	ns->owner = owner;
+> +	ns->group = group;
+> +	free_uid(new->user);
+>  	new->user = root_user;
+>  	new->uid = new->euid = new->suid = new->fsuid = 0;
+>  	new->gid = new->egid = new->sgid = new->fsgid = 0;
+> @@ -69,29 +81,15 @@ int create_user_ns(struct cred *new)
+>  	return 0;
+>  }
+>  
+> -/*
+> - * Deferred destructor for a user namespace.  This is required because
+> - * free_user_ns() may be called with uidhash_lock held, but we need to call
+> - * back to free_uid() which will want to take the lock again.
+> - */
+> -static void free_user_ns_work(struct work_struct *work)
+> +void free_user_ns(struct kref *kref)
+>  {
+>  	struct user_namespace *parent, *ns =
+> -		container_of(work, struct user_namespace, destroyer);
+> +		container_of(kref, struct user_namespace, kref);
+> +
+>  	parent = ns->parent;
+> -	free_uid(ns->creator);
+>  	kmem_cache_free(user_ns_cachep, ns);
+>  	put_user_ns(parent);
+>  }
+> -
+> -void free_user_ns(struct kref *kref)
+> -{
+> -	struct user_namespace *ns =
+> -		container_of(kref, struct user_namespace, kref);
+> -
+> -	INIT_WORK(&ns->destroyer, free_user_ns_work);
+> -	schedule_work(&ns->destroyer);
+> -}
+>  EXPORT_SYMBOL(free_user_ns);
+>  
+>  uid_t user_ns_map_uid(struct user_namespace *to, const struct cred *cred, uid_t uid)
+> @@ -101,12 +99,11 @@ uid_t user_ns_map_uid(struct user_namespace *to, const struct cred *cred, uid_t
+>  	if (likely(to == cred->user_ns))
+>  		return uid;
+>  
+> -
+>  	/* Is cred->user the creator of the target user_ns
+>  	 * or the creator of one of it's parents?
+>  	 */
+>  	for ( tmp = to; tmp != &init_user_ns; tmp = tmp->parent ) {
+> -		if (cred->user == tmp->creator) {
+> +		if (uid_eq(cred->user->uid, tmp->owner)) {
+>  			return (uid_t)0;
+>  		}
+>  	}
+> @@ -126,7 +123,7 @@ gid_t user_ns_map_gid(struct user_namespace *to, const struct cred *cred, gid_t
+>  	 * or the creator of one of it's parents?
+>  	 */
+>  	for ( tmp = to; tmp != &init_user_ns; tmp = tmp->parent ) {
+> -		if (cred->user == tmp->creator) {
+> +		if (uid_eq(cred->user->uid, tmp->owner)) {
+>  			return (gid_t)0;
+>  		}
+>  	}
+> diff --git a/security/commoncap.c b/security/commoncap.c
+> index 435d074..f2399d8 100644
+> --- a/security/commoncap.c
+> +++ b/security/commoncap.c
+> @@ -76,8 +76,9 @@ int cap_capable(const struct cred *cred, struct user_namespace *targ_ns,
+>  		int cap, int audit)
+>  {
+>  	for (;;) {
+> -		/* The creator of the user namespace has all caps. */
+> -		if (targ_ns != &init_user_ns && targ_ns->creator == cred->user)
+> +		/* The owner of the user namespace has all caps. */
+> +		if (targ_ns != &init_user_ns && uid_eq(targ_ns->owner,
+> +						       make_kuid(cred->user_ns, cred->euid)))
+>  			return 0;
+>  
+>  		/* Do we have the necessary capabilities? */
+> -- 
+> 1.7.2.5
+> 
+> _______________________________________________
+> Containers mailing list
+> Containers@lists.linux-foundation.org
+> https://lists.linuxfoundation.org/mailman/listinfo/containers
