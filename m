@@ -1,52 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753215Ab2DRVYj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Apr 2012 17:24:39 -0400
-Received: from mail.windriver.com ([147.11.1.11]:41466 "EHLO
-	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752055Ab2DRVYh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Apr 2012 17:24:37 -0400
-From: Paul Gortmaker <paul.gortmaker@windriver.com>
-To: linux-pci@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        David Howells <dhowells@redhat.com>
-Subject: [PATCH] pci: frv architecture needs generic setup-bus infrastructure
-Date: Wed, 18 Apr 2012 17:24:14 -0400
-Message-Id: <1334784254-17603-1-git-send-email-paul.gortmaker@windriver.com>
-X-Mailer: git-send-email 1.7.9.1
+	id S1753103Ab2DRV0D (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Apr 2012 17:26:03 -0400
+Received: from ogre.sisk.pl ([193.178.161.156]:51657 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752442Ab2DRV0B (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Apr 2012 17:26:01 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Bojan Smojver <bojan@rexursive.com>
+Subject: Re: [PATCH v11]: Hibernation: fix the number of pages used for hibernate/thaw buffering
+Date: Wed, 18 Apr 2012 23:30:38 +0200
+User-Agent: KMail/1.13.6 (Linux/3.4.0-rc3+; KDE/4.6.0; x86_64; ; )
+Cc: Per Olofsson <pelle@debian.org>, linux-kernel@vger.kernel.org,
+        Linux PM list <linux-pm@vger.kernel.org>
+References: <1334267969.2573.14.camel@shrek.rexursive.com> <4F8C773C.2010902@debian.org> <6ab4e086-9f7b-4a3e-87ed-430e74333dcf@email.android.com>
+In-Reply-To: <6ab4e086-9f7b-4a3e-87ed-430e74333dcf@email.android.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201204182330.38156.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Otherwise we get this link failure for frv's defconfig:
+On Wednesday, April 18, 2012, Bojan Smojver wrote:
+> Per Olofsson <pelle@debian.org> wrote:
+> 
+> >OK, let's say Reviewed-by then.
+> >
+> >Reviewed-by: Per Olofsson <pelle@debian.org>
+> >
+> 
+> Rafael,
+> 
+> Anything you still need here?
 
-   LD      .tmp_vmlinux1
- drivers/built-in.o: In function `pci_assign_resource':
- (.text+0xbf0c): undefined reference to `pci_cardbus_resource_alignment'
- drivers/built-in.o: In function `pci_setup':
- pci.c:(.init.text+0x174): undefined reference to `pci_realloc_get_opt'
- pci.c:(.init.text+0x1a0): undefined reference to `pci_realloc_get_opt'
- make[1]: *** [.tmp_vmlinux1] Error 1
+No, thanks, I'm going to apply the patch.
 
-Cc: Bjorn Helgaas <bhelgaas@google.com>
-Cc: David Howells <dhowells@redhat.com>
-Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
-
-diff --git a/drivers/pci/Makefile b/drivers/pci/Makefile
-index 083a49f..165274c 100644
---- a/drivers/pci/Makefile
-+++ b/drivers/pci/Makefile
-@@ -42,6 +42,7 @@ obj-$(CONFIG_UNICORE32) += setup-bus.o setup-irq.o
- obj-$(CONFIG_PARISC) += setup-bus.o
- obj-$(CONFIG_SUPERH) += setup-bus.o setup-irq.o
- obj-$(CONFIG_PPC) += setup-bus.o
-+obj-$(CONFIG_FRV) += setup-bus.o
- obj-$(CONFIG_MIPS) += setup-bus.o setup-irq.o
- obj-$(CONFIG_X86_VISWS) += setup-irq.o
- obj-$(CONFIG_MN10300) += setup-bus.o
--- 
-1.7.9.1
-
+Rafael
