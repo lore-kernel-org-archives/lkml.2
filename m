@@ -1,90 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753631Ab2DRVJZ (ORCPT <rfc822;w@1wt.eu>);
+	id S1754398Ab2DRVJ1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Apr 2012 17:09:27 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:48491 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752825Ab2DRVJZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 18 Apr 2012 17:09:25 -0400
-Received: from ogre.sisk.pl ([193.178.161.156]:51614 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751342Ab2DRVJX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Apr 2012 17:09:23 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: huang ying <huang.ying.caritas@gmail.com>
-Subject: Re: [PATCH 1/6] ACPI: D3cold state is always valid
-Date: Wed, 18 Apr 2012 23:13:59 +0200
-User-Agent: KMail/1.13.6 (Linux/3.4.0-rc3+; KDE/4.6.0; x86_64; ; )
-Cc: Lin Ming <ming.m.lin@intel.com>, Len Brown <lenb@kernel.og>,
-        linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org,
-        Zhang Rui <rui.zhang@intel.com>, Aaron Lu <aaron.lu@amd.com>
-References: <1334641676-14566-1-git-send-email-ming.m.lin@intel.com> <1334641676-14566-2-git-send-email-ming.m.lin@intel.com> <CAC=cRTPkFM5=az2B0A22miqt_X+XxcWPLrqPfeeRabho9yx-1Q@mail.gmail.com>
-In-Reply-To: <CAC=cRTPkFM5=az2B0A22miqt_X+XxcWPLrqPfeeRabho9yx-1Q@mail.gmail.com>
+Message-ID: <4F8F2D7F.8090905@lwfinger.net>
+Date: Wed, 18 Apr 2012 16:09:19 -0500
+From: Larry Finger <Larry.Finger@lwfinger.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120312 Thunderbird/11.0
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
+To: Marcos Paulo de Souza <marcos.souza.org@gmail.com>
+CC: linux-kernel@vger.kernel.org,
+        Florian Schilhabel <florian.c.schilhabel@googlemail.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        devel@driverdev.osuosl.org
+Subject: Re: [PATCH 11/12] drivers: staging: rtl8172: Remove unneeded include
+ of version.h
+References: <1334723412-5034-1-git-send-email-marcos.souza.org@gmail.com> <1334723412-5034-12-git-send-email-marcos.souza.org@gmail.com>
+In-Reply-To: <1334723412-5034-12-git-send-email-marcos.souza.org@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-Message-Id: <201204182313.59916.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, April 17, 2012, huang ying wrote:
-> On Tue, Apr 17, 2012 at 1:47 PM, Lin Ming <ming.m.lin@intel.com> wrote:
-> > ACPI_STATE_D3 actually means ACPI D3hot which is not always valid.
-> > Instead, ACPI D3cold is always valid.
-> >
-> > Signed-off-by: Lin Ming <ming.m.lin@intel.com>
-> > ---
-> >  drivers/acpi/scan.c |   11 ++---------
-> >  1 files changed, 2 insertions(+), 9 deletions(-)
-> >
-> > diff --git a/drivers/acpi/scan.c b/drivers/acpi/scan.c
-> > index 767e2dc..fb56388 100644
-> > --- a/drivers/acpi/scan.c
-> > +++ b/drivers/acpi/scan.c
-> > @@ -884,13 +884,6 @@ static int acpi_bus_get_power_flags(struct acpi_device *device)
-> >                                acpi_bus_add_power_resource(ps->resources.handles[j]);
-> >                }
-> >
-> > -               /* The exist of _PR3 indicates D3Cold support */
-> > -               if (i == ACPI_STATE_D3) {
-> > -                       status = acpi_get_handle(device->handle, object_name, &handle);
-> > -                       if (ACPI_SUCCESS(status))
-> > -                               device->power.states[ACPI_STATE_D3_COLD].flags.valid = 1;
-> > -               }
-> > -
-> >                /* Evaluate "_PSx" to see if we can do explicit sets */
-> >                object_name[2] = 'S';
-> >                status = acpi_get_handle(device->handle, object_name, &handle);
-> > @@ -908,8 +901,8 @@ static int acpi_bus_get_power_flags(struct acpi_device *device)
-> >        /* Set defaults for D0 and D3 states (always valid) */
-> >        device->power.states[ACPI_STATE_D0].flags.valid = 1;
-> >        device->power.states[ACPI_STATE_D0].power = 100;
-> > -       device->power.states[ACPI_STATE_D3].flags.valid = 1;
-> > -       device->power.states[ACPI_STATE_D3].power = 0;
-> > +       device->power.states[ACPI_STATE_D3_COLD].flags.valid = 1;
-> > +       device->power.states[ACPI_STATE_D3_COLD].power = 0;
-> >
-> >        acpi_bus_init_power(device);
-> 
-> I think D3_HOT should be always valid, while D3_COLD should be valid
-> for some situation.
+On 04/17/2012 11:30 PM, Marcos Paulo de Souza wrote:
+> The output of "make versioncheck" told us that:
+>
+> drivers/staging/rtl8712/osdep_service.h: 32 linux/version.h not needed.
+> drivers/staging/rtl8712/rtl871x_ioctl_linux.c: 46 linux/version.h not needed.
+>
+> If we take a look at these files, we will agree to remove it.
+>
+> Cc: Larry Finger<Larry.Finger@lwfinger.net>
+> Cc: Florian Schilhabel<florian.c.schilhabel@googlemail.com>
+> Cc: Greg Kroah-Hartman<gregkh@linuxfoundation.org>
+> Cc:<devel@driverdev.osuosl.org>
+> Signed-off-by: Marcos Paulo de Souza<marcos.souza.org@gmail.com>
+> ---
+>   drivers/staging/rtl8712/osdep_service.h       |    1 -
+>   drivers/staging/rtl8712/rtl871x_ioctl_linux.c |    1 -
+>   2 files changed, 0 insertions(+), 2 deletions(-)
 
-This need not be PCI, mind you.
+ACKed-by: Larry Finger <Larry.Finger@lwfinger.net>
 
->  - has _PS3, no _PR3
->    - support D3_HOT, D3_COLD
 
-Nope.  D3_HOT cannot be supported in that case at the ACPI level.
+>
+> diff --git a/drivers/staging/rtl8712/osdep_service.h b/drivers/staging/rtl8712/osdep_service.h
+> index 9ba6033..cabf774 100644
+> --- a/drivers/staging/rtl8712/osdep_service.h
+> +++ b/drivers/staging/rtl8712/osdep_service.h
+> @@ -29,7 +29,6 @@
+>   #define _SUCCESS	1
+>   #define _FAIL		0
+>
+> -#include<linux/version.h>
+>   #include<linux/spinlock.h>
+>
+>   #include<linux/interrupt.h>
+> diff --git a/drivers/staging/rtl8712/rtl871x_ioctl_linux.c b/drivers/staging/rtl8712/rtl871x_ioctl_linux.c
+> index ef35bc2..a44d539 100644
+> --- a/drivers/staging/rtl8712/rtl871x_ioctl_linux.c
+> +++ b/drivers/staging/rtl8712/rtl871x_ioctl_linux.c
+> @@ -43,7 +43,6 @@
+>   #include<linux/module.h>
+>   #include<linux/kernel.h>
+>   #include<linux/init.h>
+> -#include<linux/version.h>
+>   #include<linux/io.h>
+>   #include<linux/semaphore.h>
+>   #include<net/iw_handler.h>
 
->    - set state
->      - D3_HOT: do nothing in ACPI
-
-That is not D3_HOT, then, from the ACPI point of view.  It is a different
-power state.
-
-Suppose you have a non-PCI device that can be only power-manageable via ACPI
-and that device has only _PS0 and _PS3.  How would you put it into D3_HOT,
-in particular?
-
->      - D3_COLD: _PS3
-
-Thanks,
-Rafael
