@@ -1,71 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753907Ab2DRPAY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Apr 2012 11:00:24 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:42229 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750808Ab2DRPAW (ORCPT
+	id S1753771Ab2DRPAV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Apr 2012 11:00:21 -0400
+Received: from smtp01.smtpout.orange.fr ([80.12.242.123]:24066 "EHLO
+	smtp.smtpout.orange.fr" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750808Ab2DRPAT convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Apr 2012 11:00:22 -0400
-Date: Wed, 18 Apr 2012 17:00:11 +0200
-From: Wolfram Sang <w.sang@pengutronix.de>
-To: Tomoya MORINAGA <tomoya.rohm@gmail.com>
-Cc: Jean Delvare <khali@linux-fr.org>, Ben Dooks <ben-linux@fluff.org>,
-        Feng Tang <feng.tang@intel.com>,
-        Alexander Stein <alexander.stein@systec-electronic.com>,
-        linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org,
-        qi.wang@intel.com, yong.y.wang@intel.com, joel.clark@intel.com,
-        kok.howg.ewe@intel.com
-Subject: Re: [PATCH 3/3] i2c-eg20t: change timeout value 50msec to 1000msec
-Message-ID: <20120418150011.GD19802@pengutronix.de>
-References: <1332741325-7746-1-git-send-email-tomoya.rohm@gmail.com>
- <1332741325-7746-3-git-send-email-tomoya.rohm@gmail.com>
+	Wed, 18 Apr 2012 11:00:19 -0400
+Message-ID: <4F8ED6FE.1000104@wanadoo.fr>
+Date: Wed, 18 Apr 2012 17:00:14 +0200
+From: Pascal Chapperon <pascal.chapperon@wanadoo.fr>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120329 Thunderbird/11.0.1
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="wULyF7TL5taEdwHz"
-Content-Disposition: inline
-In-Reply-To: <1332741325-7746-3-git-send-email-tomoya.rohm@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
-X-SA-Exim-Mail-From: wsa@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+To: paulmck@linux.vnet.ibm.com
+CC: Josh Boyer <jwboyer@redhat.com>, linux-kernel@vger.kernel.org,
+        kernel-team@fedoraproject.org
+Subject: Re: RCU related performance regression in 3.3
+References: <20120405123759.GE1963@zod.bos.redhat.com> <20120405140006.GB27672@linux.vnet.ibm.com> <1838583439.163624.1333635333132.JavaMail.www@wwinf1m19> <20120405143918.GE27672@linux.vnet.ibm.com> <588810225.17969.1333703883646.JavaMail.www@wwinf1g24> <20120410160706.GF2428@linux.vnet.ibm.com> <4F859E0E.8050408@wanadoo.fr> <20120412180432.GE2394@linux.vnet.ibm.com> <20120416210234.GA3490@linux.vnet.ibm.com> <4F8E8B58.1040203@wanadoo.fr> <20120418140108.GA6034@linux.vnet.ibm.com>
+In-Reply-To: <20120418140108.GA6034@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Le 18/04/2012 16:01, Paul E. McKenney a écrit :
+> On Wed, Apr 18, 2012 at 11:37:28AM +0200, Pascal Chapperon wrote:
+>> Mount and umount operations are not slower with RCU_FAST_NO_HZ during
+>> runtime; systemctl start and stop operations are also not slower. In
+>> fact, i couldn't find a single operation slower during runtime with
+>> RCU_FAST_NO_HZ.
+>
+> Your boot-time setup is such that all CPUs are online before the
+> boot-time mount operations take place, right?
+Yes :
+[    0.242697] Brought up 8 CPUs
+[    0.242699] Total of 8 processors activated (35118.33 BogoMIPS).
 
---wULyF7TL5taEdwHz
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+>  Struggling to understand
+> how RCU can tell the difference between post-CPU-bringup boot time
+> and run time...
+>
+systemd is controlling the whole boot process including mount
+operation (apart root filesystem) and as I can see, uses heavily
+sockets to do it (not to mention cpu-affinity). It controls also the
+major part of umount operations. Is it possible that your patch hits
+a systemd bug ?
+What I don't understand is that systemd coexists well with
+RCU_FAST_NO_HZ on a smaller laptop with older and much less powerful
+cpu.
+I'll do further tests on another machine.
 
-On Mon, Mar 26, 2012 at 02:55:25PM +0900, Tomoya MORINAGA wrote:
-> Currently, during i2c works alone, wait-event timeout is not occurred.
-> However, as CPU load increases, timeout occurs frequently.
-> So, I modified like this patch.
-> Modifying like this patch, I've never seen the timeout event with high
-> load test.
->=20
-> Signed-off-by: Tomoya MORINAGA <tomoya.rohm@gmail.com>
+Pascal
 
-Applied. (I think we need to clarify the timeouts in I2C, but for now
-this has to do.)
-
---=20
-Pengutronix e.K.                           | Wolfram Sang                |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
-
---wULyF7TL5taEdwHz
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iEYEARECAAYFAk+O1vsACgkQD27XaX1/VRv5ZgCgpC7xcmFq4Y0ODfB4lSyiBiMV
-qgUAoIY4zxqbvpENwaHFK2SJRkU/ajs2
-=cyZ8
------END PGP SIGNATURE-----
-
---wULyF7TL5taEdwHz--
