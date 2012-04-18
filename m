@@ -1,65 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754052Ab2DRQOq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Apr 2012 12:14:46 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:53774 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751065Ab2DRQOp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Apr 2012 12:14:45 -0400
-Date: Wed, 18 Apr 2012 17:14:35 +0100
-From: Catalin Marinas <catalin.marinas@arm.com>
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        majianpeng <majianpeng@gmail.com>
-Subject: Re: Possible memory leaks in proc_sysctl.c
-Message-ID: <20120418161435.GJ1505@arm.com>
-References: <20120418101231.GE1505@arm.com>
- <m1wr5d18fy.fsf@fess.ebiederm.org>
- <20120418141851.GG1505@arm.com>
- <m1ipgxrt11.fsf@fess.ebiederm.org>
- <20120418151545.GI1505@arm.com>
- <m1ehrloxic.fsf@fess.ebiederm.org>
+	id S1754223Ab2DRQPV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Apr 2012 12:15:21 -0400
+Received: from li9-11.members.linode.com ([67.18.176.11]:36159 "EHLO
+	test.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752909Ab2DRQPU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Apr 2012 12:15:20 -0400
+Date: Wed, 18 Apr 2012 12:07:17 -0400
+From: "Ted Ts'o" <tytso@mit.edu>
+To: Dave Chinner <david@fromorbit.com>
+Cc: Eric Sandeen <sandeen@redhat.com>, Ric Wheeler <rwheeler@redhat.com>,
+        Zheng Liu <gnehzuil.liu@gmail.com>, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org, linux-ext4@vger.kernel.org,
+        Zheng Liu <wenqing.lz@taobao.com>
+Subject: Re: [RFC][PATCH 0/3] add FALLOC_FL_NO_HIDE_STALE flag in fallocate
+Message-ID: <20120418160717.GE5916@thunk.org>
+Mail-Followup-To: Ted Ts'o <tytso@mit.edu>,
+	Dave Chinner <david@fromorbit.com>,
+	Eric Sandeen <sandeen@redhat.com>,
+	Ric Wheeler <rwheeler@redhat.com>,
+	Zheng Liu <gnehzuil.liu@gmail.com>, linux-kernel@vger.kernel.org,
+	linux-fsdevel@vger.kernel.org, linux-ext4@vger.kernel.org,
+	Zheng Liu <wenqing.lz@taobao.com>
+References: <1334681618-9452-1-git-send-email-wenqing.lz@taobao.com>
+ <4F8DAF89.5070805@redhat.com>
+ <20120417184306.GA5916@thunk.org>
+ <4F8DBC20.5010401@redhat.com>
+ <20120418030208.GO6734@dastard>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <m1ehrloxic.fsf@fess.ebiederm.org>
+In-Reply-To: <20120418030208.GO6734@dastard>
 User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on test.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 18, 2012 at 04:44:27PM +0100, Eric W. Biederman wrote:
-> Catalin Marinas <catalin.marinas@arm.com> writes:
-> > On Wed, Apr 18, 2012 at 03:52:58PM +0100, Eric W. Biederman wrote:
-> >> So simply saying kmemleak shut up this is deliberate in these few cases
-> >> where we don't intend to unregister the structure and have a deliberate
-> >> leak seems the clean and maintainable way to go.
-> >
-> > OK, I got it now, sounds fair. But please add a comment to the
-> > kmemleak_not_leak() annotations so that others know it's a deliberate
-> > leak (rather than a false positive).
-> >
-> > Also the patch should include the linux/kmemleak.h file for the
-> > kmemleak_not_leak() prototype as header changes in the future may cause
-> > problems (I think the one you posted did not include it).
-> 
-> I will take a look when I merge the patch.
-> 
-> Would something like kmemleak_ignore() be better?  What I want is
-> kmemleak_this_is_a_deliberate_leak_so_shut_up(), but the API doesn't
-> seem to exactly include that function.  I'm not certain what the proper
-> name is as I haven't worked much with kmemleak.
+On Wed, Apr 18, 2012 at 01:02:08PM +1000, Dave Chinner wrote:
+> In actual fact, on my 12 disk RAID0 array, XFS is faster with
+> unwritten extents *enabled* than when hacked to turn them off. 
 
-kmemleak_ignore() can be used as long as the object does not reference
-other objects since it won't even be scanned. In this case, it only
-hides the returned header object but there seem to be two more objects
-allocated during the register_sysctl_table() call and referenced from
-the returned header.
+Can you explain why this is the case?  It seems... counterintuitive.
 
-kmemleak_not_leak() would do the right thing here, though it was meant
-for annotating false positives rather than real leaks. I think a comment
-on the calling site would be enough.
+The only explanation I can think of is that your code paths when
+unwritten extents are disabled haven't been optimized, in which case
+the comparison between using and not using unwritten extents might not
+be valid.
 
--- 
-Catalin
+Is there anything going on other than _not_ mutating the extent tree
+(and all of the logical journaling that would go along with it)?
+Hacking to turn them off means it should be doing *less* work, so I
+would expect at worst it would be the same speed as using extent
+written extents.  If it's faster to use unwritten extents, something
+very wierd must be going on....
+
+					- Ted
