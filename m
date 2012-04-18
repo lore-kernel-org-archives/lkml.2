@@ -1,171 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752601Ab2DRD3g (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Apr 2012 23:29:36 -0400
-Received: from 50-56-35-84.static.cloud-ips.com ([50.56.35.84]:50942 "EHLO
-	mail.hallyn.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751981Ab2DRD3f (ORCPT
+	id S1752935Ab2DRD3x (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Apr 2012 23:29:53 -0400
+Received: from am1ehsobe001.messaging.microsoft.com ([213.199.154.204]:13291
+	"EHLO am1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752152Ab2DRD3w (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Apr 2012 23:29:35 -0400
-Date: Wed, 18 Apr 2012 03:30:31 +0000
-From: "Serge E. Hallyn" <serge@hallyn.com>
-To: Doug Ledford <dledford@redhat.com>
-Cc: linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
-        kosaki.motohiro@gmail.com,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Amerigo Wang <amwang@redhat.com>, "Serge E. Hallyn" <serue@us.ibm.com>,
-        Jiri Slaby <jslaby@suse.cz>
-Subject: Re: [Patch 7/8] mqueue: separate mqueue default value from maximum
- value v2
-Message-ID: <20120418033031.GD18830@mail.hallyn.com>
-References: <cover.1334676645.git.dledford@redhat.com>
- <3ec3acf3b66f655a05ab05c38fe3bd2762e2c8c4.1334676645.git.dledford@redhat.com>
+	Tue, 17 Apr 2012 23:29:52 -0400
+X-SpamScore: -13
+X-BigFish: VS-13(zcb8kzbb2dI9371I1432N98dK1447Mzz1202hzz8275dhz2dh2a8h668h839h944hd25h)
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+Date: Wed, 18 Apr 2012 11:40:28 +0800
+From: Dong Aisheng <aisheng.dong@freescale.com>
+To: Stephen Warren <swarren@wwwdotorg.org>
+CC: Dong Aisheng-B29396 <B29396@freescale.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "linus.walleij@stericsson.com" <linus.walleij@stericsson.com>,
+        "s.hauer@pengutronix.de" <s.hauer@pengutronix.de>,
+        Guo Shawn-R65073 <r65073@freescale.com>,
+        "kernel@pengutronix.de" <kernel@pengutronix.de>,
+        "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>
+Subject: Re: [PATCH 2/3] pinctrl: pinctrl-imx: add imx6q pinctrl driver
+Message-ID: <20120418034027.GB18021@shlinux2.ap.freescale.net>
+References: <1334333915-1174-1-git-send-email-b29396@freescale.com>
+ <1334333915-1174-2-git-send-email-b29396@freescale.com>
+ <4F8DCEC2.2060800@wwwdotorg.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset="us-ascii"
 Content-Disposition: inline
-In-Reply-To: <3ec3acf3b66f655a05ab05c38fe3bd2762e2c8c4.1334676645.git.dledford@redhat.com>
+In-Reply-To: <4F8DCEC2.2060800@wwwdotorg.org>
 User-Agent: Mutt/1.5.20 (2009-06-14)
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting Doug Ledford (dledford@redhat.com):
-> From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+On Wed, Apr 18, 2012 at 04:12:50AM +0800, Stephen Warren wrote:
+> On 04/13/2012 10:18 AM, Dong Aisheng wrote:
+> > From: Dong Aisheng <dong.aisheng@linaro.org>
+> > 
+> > Signed-off-by: Dong Aisheng <dong.aisheng@linaro.org>
 > 
-> commit b231cca438 (message queues: increase range limits)
-> changed mqueue default value when attr parameter is specified NULL
-> from hard coded value to fs.mqueue.{msg,msgsize}_max sysctl value.
+> > diff --git a/drivers/pinctrl/pinctrl-imx.c b/drivers/pinctrl/pinctrl-imx.c
 > 
-> This made large side effect. When user need to use two mqueue
-> applications 1) using !NULL attr parameter and it require big
-> message size and 2) using NULL attr parameter and only need small
-> size message, app (1) require to raise fs.mqueue.msgsize_max and
-> app (2) consume large memory size even though it doesn't need.
+> >  static const struct of_device_id imx_pmx_dt_ids[] = {
+> > +#ifdef CONFIG_PINCTRL_IMX6Q
+> > +	{ .compatible = "fsl,imx6q-iomuxc", .data = (void *) &imx6q_pinctrl_info, },
+> > +#endif
+> >  	{ /* sentinel */ }
+> >  };
+> >  MODULE_DEVICE_TABLE(of, imx_pmx_dt_ids);
 > 
-> Doug Ledford propsed to switch back it to static hard coded value.
-> However it also has a compatibility problem. Some applications might
-> started depend on the default value is tunable.
+> Sorry for the slow review.
 > 
-> The solution is to separate default value from maximum value.
+> Based on SPEAr pinctrl review comments, we shouldn't have a single
+> driver that knows about all the different SoCs that it could support,
+> but rather one driver per SoC, with each of those calling into some
+> utility code in the core driver to do all the probe/remove work.
 > 
-> Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-> Acked-by: Doug Ledford <dledford@redhat.com>
-> Acked-by: Joe Korty <joe.korty@ccur.com>
-> Cc: Amerigo Wang <amwang@redhat.com>
-> Cc: Serge E. Hallyn <serue@us.ibm.com>
+Sound like a good idea.
 
-Seems reasonable.  Thanks.
-
-Acked-by: Serge E. Hallyn <serge.hallyn@canonical.com>
-
-> Cc: Jiri Slaby <jslaby@suse.cz>
+> For more details, see commit a4c0738 "pinctrl: tegra: refactor probe
+> handling" in
+> git://git.kernel.org/pub/scm/linux/kernel/git/swarren/linux-tegra.git
+> (in branch for-3.5/gpio-pinmux).
 > 
-> v1->v2: Slightly modified because msgutil.c no longer needs mq
->   namespace initialization
-> 
-> Signed-off-by (v2): Doug Ledford <dledford@redhat.com>
-> ---
->  Documentation/sysctl/fs.txt   |    7 +++++++
->  include/linux/ipc_namespace.h |    2 ++
->  ipc/mq_sysctl.c               |   18 ++++++++++++++++++
->  ipc/mqueue.c                  |    9 ++++++---
->  4 files changed, 33 insertions(+), 3 deletions(-)
-> 
-> diff --git a/Documentation/sysctl/fs.txt b/Documentation/sysctl/fs.txt
-> index 88fd7f5..13d6166 100644
-> --- a/Documentation/sysctl/fs.txt
-> +++ b/Documentation/sysctl/fs.txt
-> @@ -225,6 +225,13 @@ a queue must be less or equal then msg_max.
->  maximum  message size value (it is every  message queue's attribute set during
->  its creation).
->  
-> +/proc/sys/fs/mqueue/msg_default is  a read/write  file for setting/getting the
-> +default number of messages in a queue value if attr parameter of mq_open(2) is
-> +NULL. If it exceed msg_max, the default value is initialized msg_max.
-> +
-> +/proc/sys/fs/mqueue/msgsize_default is a read/write file for setting/getting
-> +the default message size value if attr parameter of mq_open(2) is NULL. If it
-> +exceed msgsize_max, the default value is initialized msgsize_max.
->  
->  4. /proc/sys/fs/epoll - Configuration options for the epoll interface
->  --------------------------------------------------------
-> diff --git a/include/linux/ipc_namespace.h b/include/linux/ipc_namespace.h
-> index 2488535..5499c92 100644
-> --- a/include/linux/ipc_namespace.h
-> +++ b/include/linux/ipc_namespace.h
-> @@ -62,6 +62,8 @@ struct ipc_namespace {
->  	unsigned int    mq_queues_max;   /* initialized to DFLT_QUEUESMAX */
->  	unsigned int    mq_msg_max;      /* initialized to DFLT_MSGMAX */
->  	unsigned int    mq_msgsize_max;  /* initialized to DFLT_MSGSIZEMAX */
-> +	unsigned int    mq_msg_default;
-> +	unsigned int    mq_msgsize_default;
+I will check it.
+Thanks for the reminder.
 
-Mention here what they are initialized to, for completeness?
+Regards
+Dong Aisheng
 
->  
->  	/* user_ns which owns the ipc ns */
->  	struct user_namespace *user_ns;
-> diff --git a/ipc/mq_sysctl.c b/ipc/mq_sysctl.c
-> index e22336a..383d638 100644
-> --- a/ipc/mq_sysctl.c
-> +++ b/ipc/mq_sysctl.c
-> @@ -73,6 +73,24 @@ static ctl_table mq_sysctls[] = {
->  		.extra1		= &msg_maxsize_limit_min,
->  		.extra2		= &msg_maxsize_limit_max,
->  	},
-> +	{
-> +		.procname	= "msg_default",
-> +		.data		= &init_ipc_ns.mq_msg_default,
-> +		.maxlen		= sizeof(int),
-> +		.mode		= 0644,
-> +		.proc_handler	= proc_mq_dointvec_minmax,
-> +		.extra1		= &msg_max_limit_min,
-> +		.extra2		= &msg_max_limit_max,
-> +	},
-> +	{
-> +		.procname	= "msgsize_default",
-> +		.data		= &init_ipc_ns.mq_msgsize_default,
-> +		.maxlen		= sizeof(int),
-> +		.mode		= 0644,
-> +		.proc_handler	= proc_mq_dointvec_minmax,
-> +		.extra1		= &msg_maxsize_limit_min,
-> +		.extra2		= &msg_maxsize_limit_max,
-> +	},
->  	{}
->  };
->  
-> diff --git a/ipc/mqueue.c b/ipc/mqueue.c
-> index f9f0782..04cc77e 100644
-> --- a/ipc/mqueue.c
-> +++ b/ipc/mqueue.c
-> @@ -142,9 +142,10 @@ static struct inode *mqueue_get_inode(struct super_block *sb,
->  		info->qsize = 0;
->  		info->user = NULL;	/* set when all is ok */
->  		memset(&info->attr, 0, sizeof(info->attr));
-> -		info->attr.mq_maxmsg = min(ipc_ns->mq_msg_max, DFLT_MSG);
-> -		info->attr.mq_msgsize =
-> -			min(ipc_ns->mq_msgsize_max, DFLT_MSGSIZE);
-> +		info->attr.mq_maxmsg = min(ipc_ns->mq_msg_max,
-> +					   ipc_ns->mq_msg_default);
-> +		info->attr.mq_msgsize = min(ipc_ns->mq_msgsize_max,
-> +					    ipc_ns->mq_msgsize_default);
->  		if (attr) {
->  			info->attr.mq_maxmsg = attr->mq_maxmsg;
->  			info->attr.mq_msgsize = attr->mq_msgsize;
-> @@ -1254,6 +1255,8 @@ int mq_init_ns(struct ipc_namespace *ns)
->  	ns->mq_queues_max    = DFLT_QUEUESMAX;
->  	ns->mq_msg_max       = DFLT_MSGMAX;
->  	ns->mq_msgsize_max   = DFLT_MSGSIZEMAX;
-> +	ns->mq_msg_default   = DFLT_MSG;
-> +	ns->mq_msgsize_default  = DFLT_MSGSIZE;
->  
->  	ns->mq_mnt = kern_mount_data(&mqueue_fs_type, ns);
->  	if (IS_ERR(ns->mq_mnt)) {
-> -- 
-> 1.7.7.6
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
