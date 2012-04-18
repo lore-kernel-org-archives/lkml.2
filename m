@@ -1,71 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754068Ab2DRPQ1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Apr 2012 11:16:27 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:6426 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751042Ab2DRPQZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Apr 2012 11:16:25 -0400
-Date: Wed, 18 Apr 2012 11:16:38 -0400
-From: Jeff Layton <jlayton@redhat.com>
-To: Peter Staubach <pstaubach@exagrid.com>
-Cc: "Myklebust, Trond" <Trond.Myklebust@netapp.com>,
-        Bernd Schubert <bernd.schubert@itwm.fraunhofer.de>,
-        Malahal Naineni <malahal@us.ibm.com>,
-        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+	id S1754093Ab2DRPQp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Apr 2012 11:16:45 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:40609 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751151Ab2DRPQk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Apr 2012 11:16:40 -0400
+Date: Wed, 18 Apr 2012 17:16:21 +0200
+From: Wolfram Sang <w.sang@pengutronix.de>
+To: David Daney <david.daney@cavium.com>
+Cc: Rob Herring <robherring2@gmail.com>, David Daney <ddaney.cavm@gmail.com>,
+        "linux-mips@linux-mips.org" <linux-mips@linux-mips.org>,
+        "ralf@linux-mips.org" <ralf@linux-mips.org>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "miklos@szeredi.hu" <miklos@szeredi.hu>,
-        "viro@ZenIV.linux.org.uk" <viro@ZenIV.linux.org.uk>,
-        "hch@infradead.org" <hch@infradead.org>,
-        "michael.brantley@deshaw.com" <michael.brantley@deshaw.com>,
-        "sven.breuner@itwm.fraunhofer.de" <sven.breuner@itwm.fraunhofer.de>
-Subject: Re: [PATCH RFC] vfs: make fstatat retry on ESTALE errors from
- getattr call
-Message-ID: <20120418111638.457f9a74@corrin.poochiereds.net>
-In-Reply-To: <FA8A9A935BFD3A4D8F0CDA1C4F611BCC063CF8E132@IT-1874.Isys.com>
-References: <1334316311-22331-1-git-send-email-jlayton@redhat.com>
-	<20120413150518.GA1987@us.ibm.com>
-	<20120413114236.0e557e01@tlielax.poochiereds.net>
-	<4F8B1B7B.3040304@itwm.fraunhofer.de>
-	<20120416073655.7cdb90cf@corrin.poochiereds.net>
-	<4F8C3036.2030702@itwm.fraunhofer.de>
-	<20120416134642.1754cd3e@corrin.poochiereds.net>
-	<1334604785.2879.23.camel@lade.trondhjem.org>
-	<20120416154322.0d95e435@corrin.poochiereds.net>
-	<1334607906.2879.36.camel@lade.trondhjem.org>
-	<20120416190548.2463d1d0@corrin.poochiereds.net>
-	<FA8A9A935BFD3A4D8F0CDA1C4F611BCC063CF8E115@IT-1874.Isys.com>
-	<1334671736.2963.30.camel@lade.trondhjem.org.localdomain>
-	<FA8A9A935BFD3A4D8F0CDA1C4F611BCC063CF8E132@IT-1874.Isys.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>,
+        "Ben Dooks (embedded platforms)" <ben-linux@fluff.org>,
+        "Jean Delvare (PC drivers, core)" <khali@linux-fr.org>
+Subject: Re: [PATCH 1/5] i2c: Convert i2c-octeon.c to use device tree.
+Message-ID: <20120418151621.GF19802@pengutronix.de>
+References: <1332808075-8333-1-git-send-email-ddaney.cavm@gmail.com>
+ <1332808075-8333-2-git-send-email-ddaney.cavm@gmail.com>
+ <4F7115FA.6080507@gmail.com>
+ <4F7117FD.7000700@cavium.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="i3lJ51RuaGWuFYNw"
+Content-Disposition: inline
+In-Reply-To: <4F7117FD.7000700@cavium.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
+X-SA-Exim-Mail-From: wsa@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 17 Apr 2012 10:48:42 -0400
-Peter Staubach <pstaubach@exagrid.com> wrote:
 
-> I don't think that the code ends up being all that complex, actually.  I will have to dig out the patches that I had previously to look to see what they did.  I am pretty sure that they handled all of these cases.  I also had some tests which exercised the modified path based system calls and at least, at one point in time, they would run without returning ESTALE to the user level.
-> 
-> Let me see what I can find.  SteveD, you wouldn't have squirrelled away a copy of my stuff from Red Hat, would you?
-> 
-> 	Thanx...
-> 
-> 		ps
-> 
+--i3lJ51RuaGWuFYNw
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Yes, your original set was very comprehensive, AFAICT. I'm not sure if
-it'll apply to mainline well at this point, but I was definitely using
-it as a guideline for what to do here.
+> >>-	if (i2c_data =3D=3D NULL) {
+> >>-		dev_err(i2c->dev, "no I2C frequency data\n");
+> >>+	/*
+> >>+	 * "clock-rate" is a legacy binding, the official binding is
+> >>+	 * "clock-frequency".  Try the official one first and then
+> >>+	 * fall back if it doesn't exist.
+> >>+	 */
+> >>+	data =3D of_get_property(pdev->dev.of_node, "clock-frequency",&len);
+> >>+	if (!data || len !=3D sizeof(*data))
+> >>+		data =3D of_get_property(pdev->dev.of_node, "clock-rate",&len);
+> >>+	if (data&&  len =3D=3D sizeof(*data)) {
+> >>+		i2c->twsi_freq =3D be32_to_cpup(data);
+> >
+> >Can't you use of_property_read_u32?
+>=20
+> I will investigate, and use it if possible.
 
-The cover letter for the patchset that you sent out a few years ago had
-a testcase in it. I was planning to use that to test once I start
-broading this to other syscalls:
+Any outcome?
 
-    https://lkml.org/lkml/2008/3/10/267
+And shouldn't the bindings be documented? Or are they only standard and
+we hide the legacy one?
 
--- 
-Jeff Layton <jlayton@redhat.com>
+Regards,
+
+   Wolfram
+
+--=20
+Pengutronix e.K.                           | Wolfram Sang                |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+
+--i3lJ51RuaGWuFYNw
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iEYEARECAAYFAk+O2sUACgkQD27XaX1/VRv/CQCgl1wkMkth8GAy711B8Qinp3Ke
+rfsAoL2TfKfwpc5sEuiwNqyAxNWDIiS2
+=Qn9J
+-----END PGP SIGNATURE-----
+
+--i3lJ51RuaGWuFYNw--
