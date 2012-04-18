@@ -1,99 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753066Ab2DRMaZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Apr 2012 08:30:25 -0400
-Received: from antcom.de ([188.40.178.216]:60596 "EHLO chuck.antcom.de"
+	id S1753015Ab2DRMg4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Apr 2012 08:36:56 -0400
+Received: from relay.sigmatic.fi ([80.69.161.51]:37464 "EHLO relay.sigmatic.fi"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752022Ab2DRMaX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Apr 2012 08:30:23 -0400
-Message-ID: <4F8EB3DC.3060203@antcom.de>
-Date: Wed, 18 Apr 2012 14:30:20 +0200
-From: Roland Stigge <stigge@antcom.de>
-Organization: ANTCOM IT Research & Development
-User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:8.0) Gecko/20120216 Icedove/8.0
-MIME-Version: 1.0
-To: Thierry Reding <thierry.reding@avionic-design.de>
-CC: arm@kernel.org, linux-arm-kernel@lists.infradead.org,
-        gregkh@linuxfoundation.org, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-input@vger.kernel.org,
-        dmitry.torokhov@gmail.com, axel.lin@gmail.com,
-        broonie@opensource.wolfsonmicro.com, marek.vasut@gmail.com,
-        devel@driverdev.osuosl.org, kevin.wells@nxp.com,
-        srinivas.bakki@nxp.com
-Subject: Re: [PATCH v2 8/8] ARM: LPC32xx: Device tree support
-References: <1334682507-15055-1-git-send-email-stigge@antcom.de> <1334682507-15055-9-git-send-email-stigge@antcom.de> <20120418060230.GC17506@avionic-0098.adnet.avionic-design.de>
-In-Reply-To: <20120418060230.GC17506@avionic-0098.adnet.avionic-design.de>
-X-Enigmail-Version: 1.3.4
-OpenPGP: url=subkeys.pgp.net
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	id S1751917Ab2DRMgz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Apr 2012 08:36:55 -0400
+From: Hannu Heikkinen <hannuxx@iki.fi>
+To: spi-devel-general@lists.sourceforge.net, linux-kernel@vger.kernel.org
+Cc: grant.likely@secretlab.ca, mika.westerberg@iki.fi
+Subject: [PATCH] spi/ep93xx: clean probe/remove routines
+Date: Wed, 18 Apr 2012 15:36:11 +0300
+Message-Id: <1334752571-24627-1-git-send-email-hannuxx@iki.fi>
+X-Mailer: git-send-email 1.7.9.5
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Thierry,
+Use devm_* functions for managing devres resources.
 
-thanks for your suggestions.
+Also use local espi_irq and remove irq variable from
+struct ep93xx_spi.
 
-On 04/18/2012 08:02 AM, Thierry Reding wrote:
->> arch/arm/mach-lpc32xx/irq.c                           |   78
->> +++++--
-> 
-> Could this perhaps be split into another patch. Basically this is
-> a conversion to IRQ domain *and* device tree support. But maybe it
-> isn't worth the effort.
+Cc: mika.westerberg@iki.fi
+Cc: grant.likely@secretlab.ca
+Signed-off-by: Hannu Heikkinen <hannuxx@iki.fi>
+---
+ drivers/spi/spi-ep93xx.c |   36 ++++++++++--------------------------
+ 1 file changed, 10 insertions(+), 26 deletions(-)
 
-I was thinking the same. :-) Specifically, using
-irq_domain_add_legacy() already builds upon available DT nodes. DT for
-irq in turn seems to require irqdomain. So  would only split those two
-on explicit request of reviewers when we have a reasonable solution to
-this dilemma. Otherwise, I'd keep it in one patch.
+diff --git a/drivers/spi/spi-ep93xx.c b/drivers/spi/spi-ep93xx.c
+index 6db2887..2c5fb81 100644
+--- a/drivers/spi/spi-ep93xx.c
++++ b/drivers/spi/spi-ep93xx.c
+@@ -114,7 +114,6 @@ struct ep93xx_spi {
+ 	struct clk			*clk;
+ 	void __iomem			*regs_base;
+ 	unsigned long			sspdr_phys;
+-	int				irq;
+ 	unsigned long			min_rate;
+ 	unsigned long			max_rate;
+ 	bool				running;
+@@ -1035,6 +1034,7 @@ static int __devinit ep93xx_spi_probe(struct platform_device *pdev)
+ 	struct ep93xx_spi_info *info;
+ 	struct ep93xx_spi *espi;
+ 	struct resource *res;
++	int espi_irq;
+ 	int error;
+ 
+ 	info = pdev->dev.platform_data;
+@@ -1074,8 +1074,8 @@ static int __devinit ep93xx_spi_probe(struct platform_device *pdev)
+ 	espi->min_rate = clk_get_rate(espi->clk) / (254 * 256);
+ 	espi->pdev = pdev;
+ 
+-	espi->irq = platform_get_irq(pdev, 0);
+-	if (espi->irq < 0) {
++	espi_irq = platform_get_irq(pdev, 0);
++	if (espi_irq < 0) {
+ 		error = -EBUSY;
+ 		dev_err(&pdev->dev, "failed to get irq resources\n");
+ 		goto fail_put_clock;
+@@ -1088,26 +1088,20 @@ static int __devinit ep93xx_spi_probe(struct platform_device *pdev)
+ 		goto fail_put_clock;
+ 	}
+ 
+-	res = request_mem_region(res->start, resource_size(res), pdev->name);
+-	if (!res) {
+-		dev_err(&pdev->dev, "unable to request iomem resources\n");
+-		error = -EBUSY;
+-		goto fail_put_clock;
+-	}
+-
+ 	espi->sspdr_phys = res->start + SSPDR;
+-	espi->regs_base = ioremap(res->start, resource_size(res));
++
++	espi->regs_base = devm_request_and_ioremap(&pdev->dev, res);
+ 	if (!espi->regs_base) {
+ 		dev_err(&pdev->dev, "failed to map resources\n");
+ 		error = -ENODEV;
+-		goto fail_free_mem;
++		goto fail_put_clock;
+ 	}
+ 
+-	error = request_irq(espi->irq, ep93xx_spi_interrupt, 0,
+-			    "ep93xx-spi", espi);
++	error = devm_request_irq(&pdev->dev, espi_irq, ep93xx_spi_interrupt, 0,
++				"ep93xx-spi", espi);
+ 	if (error) {
+ 		dev_err(&pdev->dev, "failed to request irq\n");
+-		goto fail_unmap_regs;
++		goto fail_put_clock;
+ 	}
+ 
+ 	if (info->use_dma && ep93xx_spi_setup_dma(espi))
+@@ -1132,7 +1126,7 @@ static int __devinit ep93xx_spi_probe(struct platform_device *pdev)
+ 	}
+ 
+ 	dev_info(&pdev->dev, "EP93xx SPI Controller at 0x%08lx irq %d\n",
+-		 (unsigned long)res->start, espi->irq);
++		 (unsigned long)res->start, espi_irq);
+ 
+ 	return 0;
+ 
+@@ -1140,11 +1134,6 @@ fail_free_queue:
+ 	destroy_workqueue(espi->wq);
+ fail_free_dma:
+ 	ep93xx_spi_release_dma(espi);
+-	free_irq(espi->irq, espi);
+-fail_unmap_regs:
+-	iounmap(espi->regs_base);
+-fail_free_mem:
+-	release_mem_region(res->start, resource_size(res));
+ fail_put_clock:
+ 	clk_put(espi->clk);
+ fail_release_master:
+@@ -1158,7 +1147,6 @@ static int __devexit ep93xx_spi_remove(struct platform_device *pdev)
+ {
+ 	struct spi_master *master = platform_get_drvdata(pdev);
+ 	struct ep93xx_spi *espi = spi_master_get_devdata(master);
+-	struct resource *res;
+ 
+ 	spin_lock_irq(&espi->lock);
+ 	espi->running = false;
+@@ -1184,10 +1172,6 @@ static int __devexit ep93xx_spi_remove(struct platform_device *pdev)
+ 	spin_unlock_irq(&espi->lock);
+ 
+ 	ep93xx_spi_release_dma(espi);
+-	free_irq(espi->irq, espi);
+-	iounmap(espi->regs_base);
+-	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+-	release_mem_region(res->start, resource_size(res));
+ 	clk_put(espi->clk);
+ 	platform_set_drvdata(pdev, NULL);
+ 
+-- 
+1.7.9.5
 
->> arch/arm/mach-lpc32xx/phy3250.c                       |  146
->> +++++--------
-> 
-> While at it, this should probably be renamed board-dt.c or
-> something similar since it is no longer phy3250 specific.
-
-As Arnd wrote, there are board specific bits left (open questions
-about how to DT'ize spi's controller_data, and DT-conversion of AMBA
-CLCD). However, I will move board-independent stuff over to common.c.
-(Keeping lpc32xx_auxdata_lookup[] in phy3250.c due to remaining
-platform_data, though.)
-
->> -	platform_add_devices(phy3250_devs, ARRAY_SIZE(phy3250_devs)); -
->> for (i = 0; i < ARRAY_SIZE(amba_devs); i++) { -		struct
->> amba_device *d = amba_devs[i]; -		amba_device_register(d,
->> &iomem_resource); -	} +	tmp =
->> __raw_readl(LPC32XX_CLKPWR_DMA_CLK_CTRL); +	__raw_writel((tmp |
->> LPC32XX_CLKPWR_DMACLKCTRL_CLK_EN), +
->> LPC32XX_CLKPWR_DMA_CLK_CTRL); /* Test clock needed for UDA1380
->> initial init */ __raw_writel(LPC32XX_CLKPWR_TESTCLK2_SEL_MOSC | 
->> LPC32XX_CLKPWR_TESTCLK_TESTCLK2_EN, 
->> LPC32XX_CLKPWR_TEST_CLK_SEL);
-> 
-> A lot of these seem to be gratuitous here. Can control of these
-> clocks not be exposed via the clock framework? That would allow the
-> controllers to only activate them when actually needed. This could
-> also be done in follow up patches, though.
-
-Correct, clock framework is on my list of following patches.
-
-> 
-> [...]
->> +	/* Register GPIOs used on this board */ +	if
->> (gpio_request(SPI0_CS_GPIO, "spi0 cs")) +		printk(KERN_ERR "Error
->> requesting gpio %u", +			SPI0_CS_GPIO); +	else if
->> (gpio_direction_output(SPI0_CS_GPIO, 1)) +		printk(KERN_ERR
->> "Error setting gpio %u to output", +			SPI0_CS_GPIO);
-> 
-> This should be initialized based on data from the device tree.
-
-Correct. This will be done in the later patch regarding spi controller
-DT conversion. Still discussing this with Grant. For now, I'm
-considering the above hunk as just moving around the resp. lines
-without change. Please let me keep it until the SPI issue is solved.
-
-Thanks,
-
-Roland
