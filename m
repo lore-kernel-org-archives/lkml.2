@@ -1,61 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753522Ab2DRQAB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Apr 2012 12:00:01 -0400
-Received: from mga14.intel.com ([143.182.124.37]:10339 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752899Ab2DRQAA convert rfc822-to-8bit (ORCPT
+	id S1753992Ab2DRQAI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Apr 2012 12:00:08 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:42388 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753586Ab2DRQAE convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Apr 2012 12:00:00 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="132448140"
-From: "Heasley, Seth" <seth.heasley@intel.com>
-To: Samuel Ortiz <sameo@linux.intel.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Ralston, James D" <james.d.ralston@intel.com>
-Subject: RE: [PATCH 3/3] lpc_sch: Add Intel Centerton Multifunction Device
- support
-Thread-Topic: [PATCH 3/3] lpc_sch: Add Intel Centerton Multifunction Device
- support
-Thread-Index: AQHNHN7OVZLDEVRYmEOs38aIQI0D4Zag1K0A///ovoA=
-Date: Wed, 18 Apr 2012 15:59:49 +0000
-Message-ID: <DEC3922D1904474A8862C7BFF516EA9A41A5CB9B@ORSMSX102.amr.corp.intel.com>
-References: <1334696962-3642-1-git-send-email-seth.heasley@intel.com>
- <20120418101802.GD1204@sortiz-mobl>
-In-Reply-To: <20120418101802.GD1204@sortiz-mobl>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.22.254.139]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Wed, 18 Apr 2012 12:00:04 -0400
 MIME-Version: 1.0
+In-Reply-To: <CADDKRnAhqi-fwFrr85QC-ZP2g0=_ZSb__jEbZqAekCKXs2CtCg@mail.gmail.com>
+References: <CADDKRnALwHa=QteDDcMxBU24rfbKoTOGX=iTcfeE7=M7a+NFcw@mail.gmail.com>
+	<CADDKRnAhqi-fwFrr85QC-ZP2g0=_ZSb__jEbZqAekCKXs2CtCg@mail.gmail.com>
+Date: Wed, 18 Apr 2012 18:00:01 +0200
+Message-ID: <CADDKRnDJ_u7FkOHPDr0kJ+mh4k06wv2imVh8DV=GzDUQiKEWQw@mail.gmail.com>
+Subject: Re: [v3.4-rc] regression: reboot not working
+From: =?ISO-8859-1?Q?J=F6rg_Otte?= <jrg.otte@googlemail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Len Brown <lenb@kernel.org>, hpa@zytor.com, torvalds@linux-foundation.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Samuel,
+9 days and still no response. Maybe I addressed the wrong person(s).
+I Cc to Linus.
 
->Is the pci_ids.h change already in ? If not, I should take it at the
->same time so that we don't break compilation.
+Who can help with this topic?
 
-It was submitted just prior to my sending this patch.
+Thanks, Joerg
 
->> @@ -68,7 +69,7 @@ static struct resource wdt_sch_resource = {
+
+
+Am 14. April 2012 12:46 schrieb Jörg Otte <jrg.otte@googlemail.com>:
+> It's now bisected:
+>
+> cf450136bfde77c7f95065c91bffded4aa7fa731   ACPI: ignore FADT reset-reg-sup flag
+>
+> Thanks, Joerg
+>
+>
+> Am 9. April 2012 17:19 schrieb Jörg Otte <jrg.otte@googlemail.com>:
+>> Hi,
 >>
->>  static struct mfd_cell tunnelcreek_cells[] = {
->>  	{
->> -		.name = "tunnelcreek_wdt",
->> +		.name = "ie6xx_wdt",
->>  		.num_resources = 1,
->>  		.resources = &wdt_sch_resource,
->>  	},
->This one should be part of your upcoming watchdog driver patch (as a
->separate patch that I'd take).
-
-I'm actually not submitting a watchdog patch.  The maintainer already has code for this driver and is converting it to the new watchdog API.  In discussions with him, we agreed to the renaming of the driver, which was submitted for a previous platform.  He'll be committing the new code in the next couple of weeks, so I made this change in anticipation of the driver making it upstream.  I can certainly submit this separately, but my thinking was that it's all connected to Centerton enabling since it uses the same driver.  Let me know what you'd like me to do.
-
-Regards,
--Seth
+>> On reboot it shuts down as normal.
+>> The last lines displayed are:
+>>
+>>>.
+>>>Unmounting temporary filesystems.. [OK]
+>>>Deactivating swap...               [OK]
+>>>Unmounting local filesystems...    [OK]
+>>>Will now restart
+>>>    Restarting system
+>>
+>> Then I hear it accessing the cd-drive, but then
+>> it's being stuck.
+>>
+>> v3.3 was ok. HW is a Thinkpad T43.
+>>
+>> Please Cc me I'm not subscribed.
+>>
+>> Thanks,Joerg
