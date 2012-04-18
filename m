@@ -1,60 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753449Ab2DRVtz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Apr 2012 17:49:55 -0400
-Received: from ch1ehsobe006.messaging.microsoft.com ([216.32.181.186]:34198
-	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750721Ab2DRVtx convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Apr 2012 17:49:53 -0400
-X-SpamScore: -3
-X-BigFish: VS-3(zz9371I98dKzz1202hzz8275bhz2dh2a8h668h839h8e2h8e3hbe9i)
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-From: Tabi Timur-B04825 <B04825@freescale.com>
-To: Li Yang-R58472 <r58472@freescale.com>
-CC: Wolfram Sang <w.sang@pengutronix.de>,
-        Li Yang-R58472 <r58472@freescale.com>,
-        Zhao Chenhui-B35336 <B35336@freescale.com>,
-        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] i2c-mpc: avoid I2C abnormal after resuming from deep
- sleep
-Thread-Topic: [PATCH] i2c-mpc: avoid I2C abnormal after resuming from deep
- sleep
-Thread-Index: AQHNHa0stNALJ8ehf0yYSWGNyxqTUw==
-Date: Wed, 18 Apr 2012 21:49:48 +0000
-Message-ID: <CAOZdJXW7MKSzrY-s=KJ2bz-8RyMFDTnV-Yg1Dy5a+VYndT3qzw@mail.gmail.com>
-References: <1330511961-22498-1-git-send-email-chenhui.zhao@freescale.com>
-	<20120229183436.GA30545@pengutronix.de>
-	<20120417142105.GA21802@pengutronix.de>
-	<94F013E7935FF44C83EBE7784D62AD3F092D1DC7@039-SN2MPN1-022.039d.mgd.msft.net>
-	<20120418103334.GD2232@pengutronix.de>
-	<CADRPPNQRLyZK-zjeLUYCZtLe+8HhFzFALCMyPeaCGX+buaf+ug@mail.gmail.com>
-In-Reply-To: <CADRPPNQRLyZK-zjeLUYCZtLe+8HhFzFALCMyPeaCGX+buaf+ug@mail.gmail.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [107.22.165.113]
-Content-Type: text/plain; charset="iso-8859-1"
-Content-ID: <75AD2FC3A0E25D4894F56ECA09C0D731@mgd.freescale.com>
-Content-Transfer-Encoding: 8BIT
+	id S1753298Ab2DRVwm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Apr 2012 17:52:42 -0400
+Received: from fieldses.org ([174.143.236.118]:39635 "EHLO fieldses.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751537Ab2DRVwk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Apr 2012 17:52:40 -0400
+Date: Wed, 18 Apr 2012 17:52:38 -0400
+From: "J. Bruce Fields" <bfields@fieldses.org>
+To: Al Viro <viro@ZenIV.linux.org.uk>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
+Subject: Re: [git pull] vfs and fs fixes
+Message-ID: <20120418215238.GA11959@fieldses.org>
+References: <20120417052511.GU6589@ZenIV.linux.org.uk>
+ <CA+55aFw75=Mtq1njQ9vNmNsGuTPbpUhLHnb7YBLmCZs4Q5ByMA@mail.gmail.com>
+ <20120417180129.GW6589@ZenIV.linux.org.uk>
+ <20120417182825.GX6589@ZenIV.linux.org.uk>
+ <20120417211419.GC27426@fieldses.org>
+ <CA+55aFwdh_QWG-R2FQ71kDXiNYZ04qPANBsY_PssVUwEBH4uSw@mail.gmail.com>
+ <20120417234423.GY6589@ZenIV.linux.org.uk>
 MIME-Version: 1.0
-X-OriginatorOrg: freescale.com
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120417234423.GY6589@ZenIV.linux.org.uk>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 18, 2012 at 9:44 AM, Li Yang <leoli@freescale.com> wrote:
+On Wed, Apr 18, 2012 at 12:44:24AM +0100, Al Viro wrote:
+> On Tue, Apr 17, 2012 at 03:08:26PM -0700, Linus Torvalds wrote:
+> > > Or I could increment that counter for all the conflicting operations and
+> > > rely on it instead of the i_mutex. ?I was trying to avoid adding
+> > > something like that (an inc, a dec, another error path) to every
+> > > operation. ?And hoping to avoid adding another field to struct inode.
+> > > Oh well.
+> > 
+> > We could just say that we can do a double inode lock, but then
+> > standardize on the order. And the only sane order is comparing inode
+> > pointers, not inode numbers like ext4 apparently does.
+> > 
+> > With a standard order, I don't think it would be at all wrong to just
+> > take the inode lock on rename.
+> 
+> In principle, yes, but have you tried to grep for i_mutex?  Note that
+> we have *another* place where multiple ->i_mutex might be held on
+> non-directories (and unless I'm missing something, ext4 move_extent.c
+> stuff doesn't play well with it): quota writes.  Which can, AFAICS,
+> happen while write(2) is holding ->i_mutex on a regular file.  So
+> it's not _that_ easy - we want something like "and quota file is goes
+> last"
 
-> We do honor your point and can be flexible on this.  I'm just not sure
-> if our policy need to be changed to align with the common sense of the
-> community.
+So the idea would be to always take the i_mutex on non-quota files
+before taking it on quota files?
 
-It does need to be changed, and we are currently working on changing it.
+I tried pulling the ext4 thing into fs/inode.c, modifying the order to
+do that, and then doing the rename change on top of that.
 
-The patch should be resubmitted without the Copyright statement.
+One thing I don't understand is how that interacts with
+quota_on/quota_off.  How do we decide the right lock ordering if files
+can go back and forth between being quota files?
 
--- 
-Timur Tabi
-Linux kernel developer at Freescale
+--b.
+
+> , since there we don't get to change the locking order - the first
+> ->i_mutex is taken too far outside.
+> 
+> I really don't like how messy i_mutex had become these days.  Right now
+> I'm staring at 700-odd lines all over the place where it's taken/released
+> and it's a wastebucket lock - used to protect random bits and scraps, with a
+> lot of filesystems, etc. using it for purposes of their own ;-/
