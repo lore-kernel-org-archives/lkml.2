@@ -1,60 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753690Ab2DRApd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Apr 2012 20:45:33 -0400
-Received: from mail9.hitachi.co.jp ([133.145.228.44]:39321 "EHLO
-	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751990Ab2DRApb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Apr 2012 20:45:31 -0400
-X-Greylist: delayed 152409 seconds by postgrey-1.27 at vger.kernel.org; Tue, 17 Apr 2012 20:45:31 EDT
-X-AuditID: b753bd60-99794ba000007b1b-c5-4f8e0ea8a204
-X-AuditID: b753bd60-99794ba000007b1b-c5-4f8e0ea8a204
-Message-ID: <4F8E0E31.6030404@hitachi.com>
-Date: Wed, 18 Apr 2012 09:43:29 +0900
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Organization: Hitachi, Ltd., Japan
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:11.0) Gecko/20120327 Thunderbird/11.0.1
+	id S1753553Ab2DRArK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Apr 2012 20:47:10 -0400
+Received: from fieldses.org ([174.143.236.118]:46208 "EHLO fieldses.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752229Ab2DRArJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Apr 2012 20:47:09 -0400
+Date: Tue, 17 Apr 2012 20:47:06 -0400
+From: "J. Bruce Fields" <bfields@fieldses.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Al Viro <viro@zeniv.linux.org.uk>, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org
+Subject: Re: [git pull] vfs and fs fixes
+Message-ID: <20120418004706.GA1924@fieldses.org>
+References: <20120417052511.GU6589@ZenIV.linux.org.uk>
+ <CA+55aFw75=Mtq1njQ9vNmNsGuTPbpUhLHnb7YBLmCZs4Q5ByMA@mail.gmail.com>
+ <20120417180129.GW6589@ZenIV.linux.org.uk>
+ <20120417182825.GX6589@ZenIV.linux.org.uk>
+ <20120417211419.GC27426@fieldses.org>
+ <CA+55aFwdh_QWG-R2FQ71kDXiNYZ04qPANBsY_PssVUwEBH4uSw@mail.gmail.com>
 MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Ingo Molnar <mingo@kernel.org>, hpa@zytor.com, paulus@samba.org,
-        eranian@google.com, linux-kernel@vger.kernel.org, efault@gmx.de,
-        namhyung@gmail.com, fweisbec@gmail.com, dsahern@gmail.com,
-        tglx@linutronix.de, linux-tip-commits@vger.kernel.org,
-        yrl.pp-manager.tt@hitachi.com
-Subject: Re: [tip:perf/core] perf ui annotate browser: Allow toggling addr
- offset view
-References: <tip-4zpgimmz8xv7b5c920el7s45@git.kernel.org>  <CA+55aFxnv5Wrix=uREQsEg+tSBE8SFvy0v_76csv3hrnmPYG2A@mail.gmail.com>  <CA+55aFwcf2uPCccCVrNdCENZVKyev=ARprNj=5zwp5vxD942pw@mail.gmail.com>  <20120414010410.GB22114@infradead.org> <20120414085519.GB28505@gmail.com>  <20120414162851.GD22114@infradead.org> <4F8BBB4D.5090409@hitachi.com>  <CA+55aFy5pfzKfaDCc0jbQ5_+_+MMso_XqRcR-KqkZMwcSXAbPQ@mail.gmail.com> <1334589710.28150.66.camel@twins>
-In-Reply-To: <1334589710.28150.66.camel@twins>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Brightmail-Tracker: AAAAAA==
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CA+55aFwdh_QWG-R2FQ71kDXiNYZ04qPANBsY_PssVUwEBH4uSw@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2012/04/17 0:21), Peter Zijlstra wrote:
-> On Mon, 2012-04-16 at 08:02 -0700, Linus Torvalds wrote:
->>
->> It really would be *much* better if you could parse the
->> 'altinstructions' section. You already have a lot of ELF parsing code.
->>
-> altinstructions, altinstr_replacement, smp_locks, __jump_table,
-> parainstructions, __mcount_loc and maybe a few more.. and that doesn't
-> allow for kprobes.
+On Tue, Apr 17, 2012 at 03:08:26PM -0700, Linus Torvalds wrote:
+> On Tue, Apr 17, 2012 at 2:14 PM, J. Bruce Fields <bfields@fieldses.org> wrote:
+> > On Tue, Apr 17, 2012 at 07:28:26PM +0100, Al Viro wrote:>
+> > Maybe instead I could continue using the i_mutex but handle rename some
+> > other way; e.g. in delegation code:
+> >
+> >        if (!mutex_trylock(inode->i_mutex))
+> >                return -EAGAIN;
+> >        if (atomic_read(inode->i_renames_in_progress))
+> >                return -EAGAIN;
+> >
+> > and add an
+> >
+> >        atomic_inc(inode->i_renames_in_progress);
+> >        atomic_dec(inode->i_renames_in_progress);
+> >
+> > pair around rename.
 > 
-> But yeah, being able to grok some of that would be neat.
+> Please don't make up your own locking. Plus it's broken anyway, since
+> a rename could come in directly after your atomic_read (and this is
+> *why* people shouldn't make up their own locks - they are invariably
+> broken).
+
+Doh, yes, sounds like a good rule.  (I was misremembering some previous
+attempt at this--which admittedly may just have failed in some more
+complicated way.)
+
+--b.
+
+> > Or I could increment that counter for all the conflicting operations and
+> > rely on it instead of the i_mutex.  I was trying to avoid adding
+> > something like that (an inc, a dec, another error path) to every
+> > operation.  And hoping to avoid adding another field to struct inode.
+> > Oh well.
 > 
-
-I sse. For the kprobes, at least live time, we can see where
-kprobes are put via /sys/kernel/debug/kprobes/list.
-
-Thank you,
-
--- 
-Masami HIRAMATSU
-Software Platform Research Dept. Linux Technology Center
-Hitachi, Ltd., Yokohama Research Laboratory
-E-mail: masami.hiramatsu.pt@hitachi.com
+> We could just say that we can do a double inode lock, but then
+> standardize on the order. And the only sane order is comparing inode
+> pointers, not inode numbers like ext4 apparently does.
+> 
+> With a standard order, I don't think it would be at all wrong to just
+> take the inode lock on rename.
+> 
+>                         Linus
