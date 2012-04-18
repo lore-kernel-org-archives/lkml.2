@@ -1,48 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754311Ab2DRR2q (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Apr 2012 13:28:46 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:55656 "EHLO mx2.suse.de"
+	id S1754192Ab2DRR33 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Apr 2012 13:29:29 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:40553 "EHLO mail.zytor.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751790Ab2DRR2p (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Apr 2012 13:28:45 -0400
-Date: Wed, 18 Apr 2012 19:28:42 +0200 (CEST)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Matthew Garrett <mjg@redhat.com>
-Cc: Josh Boyer <jwboyer@redhat.com>, Bastien Nocera <hadess@hadess.net>,
-        Jeremy Fitzhardinge <jeremy@goop.org>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org, kernel-team@fedoraproject.org,
-        Richard Hughes <richard@hughsie.com>
-Subject: Re: [PATCH] HID: hid-input: default HID_BATTERY_STRENGTH to no
-In-Reply-To: <20120418142450.GA30083@srcf.ucam.org>
-Message-ID: <alpine.LNX.2.00.1204181926340.16373@pobox.suse.cz>
-References: <20120418140517.GM19507@zod.bos.redhat.com> <1334758134.8818.132.camel@novo.hadess.net> <20120418141131.GN19507@zod.bos.redhat.com> <20120418142450.GA30083@srcf.ucam.org>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1751790Ab2DRR32 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Apr 2012 13:29:28 -0400
+Message-ID: <4F8EF9E3.7030801@zytor.com>
+Date: Wed, 18 Apr 2012 10:29:07 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120329 Thunderbird/11.0.1
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Markus Trippelsdorf <markus@trippelsdorf.de>
+CC: Lasse Collin <lasse.collin@tukaani.org>,
+        Randy Dunlap <rdunlap@xenotime.net>,
+        qasdfgtyuiop <qasdfgtyuiop@gmail.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>, alain@knaff.lu,
+        albin.tonnerre@free-electrons.com
+Subject: Re: [PATCH] kconfig: update compression algorithm info
+References: <CAMtaSwTi=7rmG8diJ+K0c_CcV=0TcgXDjRFEdZGGiKE2K5x89A@mail.gmail.com> <4F8DF90B.1090002@xenotime.net> <20120418194055.2d929e58@tukaani.org> <4F8EEFB5.8040604@zytor.com> <20120418200929.086ce3a7@tukaani.org> <20120418172349.GA6165@x4>
+In-Reply-To: <20120418172349.GA6165@x4>
+X-Enigmail-Version: 1.4
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 18 Apr 2012, Matthew Garrett wrote:
-
-> > Matthew suggested that additional kernel patches were required to add a
-> > scope parameter so upower could understand that the battery is powering
-> > a device and not the system.
-> > 
-> > Also, when did it become OK to force-enable a new feature that is
-> > _known_ to not work properly on recent userspace?  That makes no sense
-> > to me.
+On 04/18/2012 10:23 AM, Markus Trippelsdorf wrote:
 > 
-> I agree. It's a great feature, but it shouldn't be default y if 
-> userspace isn't ready for it yet.
+> When btrfs will finally implement LZ4 compression this would be the obvious
+> candidate for the fastest boot algo, because its decompression speed is
+> amazing.
+> 
 
-Fully agreed, the 'default y' part escaped my attention. I will be 
-applying the patch and pushing out to Linus.
+Uh, no (and what does btrfs have to do with anything here?)
 
-I even wonder whether we shouldn't put a warning into the Kconfig entry, 
-explaining the consequences of having userspace not ready for the feature.
+The issue is that the ratio of I/O speed to CPU can mean that a slower
+decompression algorithm with better compression can still win,
+time-wise, if your media is slow and your CPU is fast.
 
--- 
-Jiri Kosina
-SUSE Labs
+	-hpa
+
