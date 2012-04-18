@@ -1,86 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752893Ab2DRK3r (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Apr 2012 06:29:47 -0400
-Received: from www.linutronix.de ([62.245.132.108]:32818 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751751Ab2DRK3q (ORCPT
+	id S1752500Ab2DRKdi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Apr 2012 06:33:38 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:49658 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751362Ab2DRKdh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Apr 2012 06:29:46 -0400
-Date: Wed, 18 Apr 2012 12:29:32 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Paul Bolle <pebolle@tiscali.nl>
-cc: Andi Kleen <ak@linux.intel.com>, Matthew Garrett <mjg59@srcf.ucam.org>,
-        =?ISO-8859-15?Q?J=F6rg_Otte?= <jrg.otte@googlemail.com>,
-        LKML <linux-kernel@vger.kernel.org>, Len Brown <lenb@kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>
-Subject: Re: [v3.4-rc1] ACPI regression bisected
-In-Reply-To: <1334741105.1924.5.camel@x61.thuisdomein>
-Message-ID: <alpine.LFD.2.02.1204181216380.2542@ionos>
-References: <CADDKRnBpGr=yzDftChA3xiaK9gK4D4UDV6HJiw8hcMo6159+Cw@mail.gmail.com>  <20120402235412.GD16303@tassilo.jf.intel.com>  <alpine.LFD.2.02.1204031001510.2542@ionos>  <CADDKRnAOqfxTjrCp4E5eKFJvVTu6s0xF3Ca3jRJavFkyGpYLmQ@mail.gmail.com> 
- <alpine.LFD.2.02.1204121055200.2542@ionos>  <20120412142904.GA4130@srcf.ucam.org>  <alpine.LFD.2.02.1204121903250.2542@ionos>  <alpine.LFD.2.02.1204121907330.2542@ionos>  <4F872C7B.6000106@linux.intel.com>  <alpine.LFD.2.02.1204122241460.2542@ionos>
- <1334741105.1924.5.camel@x61.thuisdomein>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+	Wed, 18 Apr 2012 06:33:37 -0400
+Date: Wed, 18 Apr 2012 12:33:34 +0200
+From: Wolfram Sang <w.sang@pengutronix.de>
+To: Li Yang-R58472 <r58472@freescale.com>
+Cc: Zhao Chenhui-B35336 <B35336@freescale.com>,
+        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] i2c-mpc: avoid I2C abnormal after resuming from deep
+ sleep
+Message-ID: <20120418103334.GD2232@pengutronix.de>
+References: <1330511961-22498-1-git-send-email-chenhui.zhao@freescale.com>
+ <20120229183436.GA30545@pengutronix.de>
+ <20120417142105.GA21802@pengutronix.de>
+ <94F013E7935FF44C83EBE7784D62AD3F092D1DC7@039-SN2MPN1-022.039d.mgd.msft.net>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="UfEAyuTBtIjiZzX6"
+Content-Disposition: inline
+In-Reply-To: <94F013E7935FF44C83EBE7784D62AD3F092D1DC7@039-SN2MPN1-022.039d.mgd.msft.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
+X-SA-Exim-Mail-From: wsa@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-B1;2601;0cOn Wed, 18 Apr 2012, Paul Bolle wrote:
-> On Thu, 2012-04-12 at 22:42 +0200, Thomas Gleixner wrote:
-> > > For 3.4 I think reverting is the right approach.
-> > 
-> > Ack.
-> 
-> A revert of 6fe0d0628245fdcd6fad8b837c81e8f7ebc3364d ("ACPI: Make ACPI
-> interrupt threaded") wasn't included in v3.4-rc3. Has it been pushed
-> somewhere? Is testing needed before that revert can be pushed?
 
-Seems those who broke it are too busy to care.
+--UfEAyuTBtIjiZzX6
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Linus, can you please apply directly?
+Hi,
 
------------->
-Subject: ACPI: Revert 6fe0d06 ("ACPI: Make ACPI interrupt threaded")
-From: Thomas Gleixner <tglx@linutronix.de>
+> We certainly don't want the policy to be against the common practice
+> of the community.  If it is we can consider changing our policy.
 
-Paul bisected this regression to 6fe0d06 ("ACPI: Make ACPI interrupt
-threaded"). 
+Nice, thanks for being open to discussion!
 
-The conversion was done blindly and is wrong, as it does not provide a
-primary handler to disable the level type irq on the device
-level. Neither does it set the IRQF_ONESHOT flag which handles that at
-the irq line level. This can't be done as the interrupt might be
-shared, though we might extend the core to force it.
+> However I can't find a clear message stating the consensus of what the
+> Linux kernel community think of adding copyright claims.  I even found
 
-So an interrupt on this line will wake up the thread, but immediately
-unmask the irq after that. Due to the interrupt being level type the
-hardware interrupt is raised over and over and prevents the irq thread
-from handling it. Fail.
+Well, what I know, the consensus is "common sense". What is obviously
+not "clear" in a way you could write it down. At least, Ben agrees.
 
-request_irq() unfortunately does not refuse such a request and the
-patch was obviously never tested with real interrupts.
+> some message that encourage adding copyright to maintain the GPL
+> license.
 
-Bisected-by: Paul Bolle <pebolle@tiscali.nl>
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+I am interested. Do you have a link?
 
-diff --git b/drivers/acpi/osl.c a/drivers/acpi/osl.c
-index 02367a8..412a1e0 100644
---- b/drivers/acpi/osl.c
-+++ a/drivers/acpi/osl.c
-@@ -595,8 +595,7 @@ acpi_os_install_interrupt_handler(u32 gsi, acpi_osd_handler handler,
- 
- 	acpi_irq_handler = handler;
- 	acpi_irq_context = context;
--	if (request_threaded_irq(irq, NULL, acpi_irq, IRQF_SHARED, "acpi",
--				 acpi_irq)) {
-+	if (request_irq(irq, acpi_irq, IRQF_SHARED, "acpi", acpi_irq)) {
- 		printk(KERN_ERR PREFIX "SCI (IRQ%d) allocation failed\n", irq);
- 		acpi_irq_handler = NULL;
- 		return AE_NOT_ACQUIRED;
+Regards,
 
+   Wolfram
+
+--=20
+Pengutronix e.K.                           | Wolfram Sang                |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+
+--UfEAyuTBtIjiZzX6
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iEYEARECAAYFAk+OmH4ACgkQD27XaX1/VRubswCfWX0Qu6/PjR7yzGUDfHwBiw05
+DAgAoLlVGb8xLugS8oGhajd5dFYBn2jO
+=eGmZ
+-----END PGP SIGNATURE-----
+
+--UfEAyuTBtIjiZzX6--
