@@ -1,55 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754421Ab2DRUf5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Apr 2012 16:35:57 -0400
-Received: from mail127.messagelabs.com ([216.82.250.115]:65186 "EHLO
-	mail127.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753007Ab2DRUf4 convert rfc822-to-8bit (ORCPT
+	id S1755105Ab2DRUgi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Apr 2012 16:36:38 -0400
+Received: from mail-vx0-f174.google.com ([209.85.220.174]:47015 "EHLO
+	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754565Ab2DRUgG convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Apr 2012 16:35:56 -0400
-X-Env-Sender: hartleys@visionengravers.com
-X-Msg-Ref: server-9.tower-127.messagelabs.com!1334781350!3436228!11
-X-Originating-IP: [216.166.12.32]
-X-StarScan-Version: 6.5.7; banners=-,-,-
-X-VirusChecked: Checked
-From: H Hartley Sweeten <hartleys@visionengravers.com>
-To: Julia Lawall <Julia.Lawall@lip6.fr>,
-        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
-CC: "kernel-janitors@vger.kernel.org" <kernel-janitors@vger.kernel.org>,
-        "linux-fbdev@vger.kernel.org" <linux-fbdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Wed, 18 Apr 2012 15:35:41 -0500
-Subject: RE: [PATCH] drivers/video/ep93xx-fb.c: clean up error-handling code
-Thread-Topic: [PATCH] drivers/video/ep93xx-fb.c: clean up error-handling code
-Thread-Index: Ac0dmtlFyxQlByiyTZSiTQ9y6DU+lQAB2Cgw
-Message-ID: <ADE657CA350FB648AAC2C43247A983F00206987A438B@AUSP01VMBX24.collaborationhost.net>
-References: <1334777828-3557-1-git-send-email-Julia.Lawall@lip6.fr>
-In-Reply-To: <1334777828-3557-1-git-send-email-Julia.Lawall@lip6.fr>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Wed, 18 Apr 2012 16:36:06 -0400
 MIME-Version: 1.0
+X-Originating-IP: [87.66.84.216]
+In-Reply-To: <87y5ptkl0u.fsf@ti.com>
+References: <1332173578-27422-1-git-send-email-j-pihet@ti.com>
+	<1332173578-27422-2-git-send-email-j-pihet@ti.com>
+	<87y5ptkl0u.fsf@ti.com>
+Date: Wed, 18 Apr 2012 22:36:05 +0200
+Message-ID: <CAORVsuWBHVhHnqBeKQ8hb2p+UsRP84O-Hq=bXYQv2wBJyfELGA@mail.gmail.com>
+Subject: Re: [PATCH 1/9] ARM: OMAP3+: voltage: export functions to plat/voltage.h
+From: Jean Pihet <jean.pihet@newoldbits.com>
+To: Kevin Hilman <khilman@ti.com>, KEERTHY J <j-keerthy@ti.com>
+Cc: linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        "Rafael J. Wysocki" <rjw@sisk.pl>, LKML <linux-kernel@vger.kernel.org>,
+        Jean Pihet <j-pihet@ti.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday, April 18, 2012 12:37 PM, Julia Lawall wrote:
-> From: Julia Lawall <Julia.Lawall@lip6.fr>
+Hi Kevin,
+
+Adding Keerthy J
+
+On Wed, Apr 18, 2012 at 7:27 PM, Kevin Hilman <khilman@ti.com> wrote:
+> Hi Jean,
 >
-> There were two problems in this code: failure of the setup function should
-> free locally allocated resources like other nearby failures, and the test
-> if (&info->cmap) can never be false.  To generally clean things up, this
-> patch reorders the error handling code at the failed label and adds labels
-> so that the conditionals are not necessary.
+> jean.pihet@newoldbits.com writes:
 >
-> Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
+>> From: Jean Pihet <j-pihet@ti.com>
+>>
+>> Move some functions from mach-omap2/ dir to the plat/ dir.
+>> The SmartReflex class driver is a user of the basic voltage domains
+>> functions (enable, disable, reset).
+>>
+>> Signed-off-by: Jean Pihet <j-pihet@ti.com>
+>> Cc: Kevin Hilman <khilman@ti.com>
+>
+> Rather than expose the VP functions directly, how about adding a new API
+> at the voltdm layer to start/stop AVS.  Maybe something like:
+>
+>  voltdm_avs_start(struct voltagedomain *voltdm)
+>  voltdm_avs_stop(struct voltagedomain *voltdm)
+>
+> These will internally just call VP enable/disable for now, but we may
+> have more to add to these in the future to support other SR classes.
+Agree.
+That would be a first step in the definition of the API between SR and
+VP. Implementing other SR classes might require more than that, this
+is still under investigation for now.
+
+>
+> Kevin
 >
 
-Thanks!
-
-Acked-by: H Hartley Sweeten <hsweeten@visionengravers.com>
-
+Thanks for reviewing,
+Jean
