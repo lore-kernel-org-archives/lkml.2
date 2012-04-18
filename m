@@ -1,116 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753484Ab2DRMNx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Apr 2012 08:13:53 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:40963 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753429Ab2DRMNv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Apr 2012 08:13:51 -0400
-Message-ID: <4F8EAFF7.2040505@redhat.com>
-Date: Wed, 18 Apr 2012 15:13:43 +0300
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120329 Thunderbird/11.0.1
+	id S1753327Ab2DRM2i (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Apr 2012 08:28:38 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:41130 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752021Ab2DRM2h (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Apr 2012 08:28:37 -0400
+Date: Wed, 18 Apr 2012 14:28:32 +0200
+From: Sascha Hauer <s.hauer@pengutronix.de>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: Dong Aisheng <aisheng.dong@freescale.com>,
+        "linus.walleij@stericsson.com" <linus.walleij@stericsson.com>,
+        Dong Aisheng-B29396 <B29396@freescale.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Stephen Warren <swarren@wwwdotorg.org>
+Subject: Re: [PATCH 1/1] pinctrl: handle dummy state in core
+Message-ID: <20120418122832.GP20478@pengutronix.de>
+References: <1334586289-13078-1-git-send-email-b29396@freescale.com>
+ <4F8C42D6.2000607@wwwdotorg.org>
+ <20120417034210.GD17173@shlinux2.ap.freescale.net>
+ <CACRpkdYH06_kGbSdozKPWZcOG0FvoOyHvjHwhz-xUL1pfSX9DQ@mail.gmail.com>
 MIME-Version: 1.0
-To: Anthony Liguori <anthony@codemonkey.ws>
-CC: kvm@vger.kernel.org, kexec@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/4] Export offsets of VMCS fields as note information
- for kdump
-References: <4F84E0DF.8040206@cn.fujitsu.com> <4F8D1F46.3090901@redhat.com> <4F8D9F20.9050507@codemonkey.ws>
-In-Reply-To: <4F8D9F20.9050507@codemonkey.ws>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CACRpkdYH06_kGbSdozKPWZcOG0FvoOyHvjHwhz-xUL1pfSX9DQ@mail.gmail.com>
+X-Sent-From: Pengutronix Hildesheim
+X-URL: http://www.pengutronix.de/
+X-IRC: #ptxdist @freenode
+X-Accept-Language: de,en
+X-Accept-Content-Type: text/plain
+X-Uptime: 13:35:55 up 157 days, 19:23, 93 users,  load average: 0.01, 0.04,
+ 0.13
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
+X-SA-Exim-Mail-From: sha@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/17/2012 07:49 PM, Anthony Liguori wrote:
-> On 04/17/2012 02:44 AM, Avi Kivity wrote:
->> On 04/11/2012 04:39 AM, zhangyanfei wrote:
->>> This patch set exports offsets of VMCS fields as note information for
->>> kdump. We call it VMCSINFO. The purpose of VMCSINFO is to retrieve
->>> runtime state of guest machine image, such as registers, in host
->>> machine's crash dump as VMCS format. The problem is that VMCS
->>> internal is hidden by Intel in its specification. So, we reverse
->>> engineering it in the way implemented in this patch set. Please note
->>> that this processing never affects any existing kvm logic. The
->>> VMCSINFO is exported via sysfs to kexec-tools just like VMCOREINFO.
->>>
->>> Here is an example:
->>> Processor: Intel(R) Core(TM)2 Duo CPU     E7500  @ 2.93GHz
->>>
->>> $cat /sys/kernel/vmcsinfo
->>> 1cba8c0 2000
->>>
->>> crash>  rd -p 1cba8c0 1000
->>>           1cba8c0:  0000127b00000009 53434d5600000000  
->>> ....{.......VMCS
->>>           1cba8d0:  000000004f464e49 4e4f495349564552  
->>> INFO....REVISION
->>>           1cba8e0:  49460a643d44495f 5f4e495028444c45  
->>> _ID=d.FIELD(PIN_
->>>           1cba8f0:  4d565f4445534142 4f435f434558455f  
->>> BASED_VM_EXEC_CO
->>>           1cba900:  303d294c4f52544e 0a30383130343831  
->>> NTROL)=01840180.
->>>           1cba910:  504328444c454946 5f44455341425f55  
->>> FIELD(CPU_BASED_
->>>           1cba920:  5f434558455f4d56 294c4f52544e4f43  
->>> VM_EXEC_CONTROL)
->>>           1cba930:  393130343931303d 28444c4549460a30  
->>> =01940190.FIELD(
->>>           1cba940:  5241444e4f434553 4558455f4d565f59  
->>> SECONDARY_VM_EXE
->>>           1cba950:  4f52544e4f435f43 30346566303d294c  
->>> C_CONTROL)=0fe40
->>>           1cba960:  4c4549460a306566 4958455f4d562844  
->>> fe0.FIELD(VM_EXI
->>>           1cba970:  4f52544e4f435f54 346531303d29534c  
->>> T_CONTROLS)=01e4
->>>           1cba980:  4549460a30653130 4e455f4d5628444c  
->>> 01e0.FIELD(VM_EN
->>>           1cba990:  544e4f435f595254 33303d29534c4f52  
->>> TRY_CONTROLS)=03
->>>           1cba9a0:  460a303133303431 45554728444c4549  
->>> 140310.FIELD(GUE
->>>           1cba9b0:  45535f53455f5453 3d29524f5443454c  
->>> ST_ES_SELECTOR)=
->>>           1cba9c0:  4549460a30303530 545345554728444c  
->>> 0500.FIELD(GUEST
->>>           1cba9d0:  454c45535f53435f 35303d29524f5443  
->>> _CS_SELECTOR)=05
->>>           ......
->>>
->>> TODO:
->>>    1. In kexec-tools, get VMCSINFO via sysfs and dump it as note
->>> information
->>>       into vmcore.
->>>    2. Dump VMCS region of each guest vcpu and VMCSINFO into
->>> qemu-process
->>>       core file. To do this, we will modify kernel core dumper, gdb
->>> gcore
->>>       and crash gcore.
->>>    3. Dump guest image from the qemu-process core file into a vmcore.
->>>
->>
->> Taking a step back, can you describe the problem scenario you're fixing
->> here?
->
-> Note that assuming that VMCS fields map to offsets within memory is
-> not guaranteed to work for future processors.
->
-> There is no guarantee that fields won't be compressed or stored with
-> inverted bit ordering.
->
+On Wed, Apr 18, 2012 at 01:31:17PM +0200, Linus Walleij wrote:
+> On Tue, Apr 17, 2012 at 5:42 AM, Dong Aisheng
+> <aisheng.dong@freescale.com> wrote:
+> 
+> > I think the main issue is for one platform neither supports dt nor using pinctrl
+> > subsystem, do you think it still makes too much sense to force that platform
+> > to define a _PINCTRL_ dummy state in their machine code?
+> >
+> > But the driver is commonly shared between these different platforms(using pinctrl
+> > or not).
+> 
+> So this is for the situation where some machines have pinctrl and some haven't.
+> 
+> And I think that's how some archs have used the regulator dummies earlier,
+> so I clearly see the point. So if converting a subset of machines in an
+> architecture you will need this for a transitional period.
+> 
+> Is this helpful to get i.MX support in place?
+> 
+> On one hand I'd say we merge it for that reason alone, instead of requiring
+> all i.MX machines to be converted at once.
+> 
+> On the other hand, I fear that this will be used to avoid *ever* migrating
+> the old machines to pinctrl. And it's a generic disease that people working
+> in the arch/arm/* tree want to ditch old hardware without actually deleting
+> the code.
 
-Right; they're also not required to be in memory at all - the processor
-can cache them, even for VMCSs that are not active at this time. 
-Running VMXOFF at panic time can fix that, but you have to broadcast it
-to all processors, probably using NMI...
+'existing' doesn't necessarily mean 'old'
 
-Still, some information is better than nothing.  What I doubt is whether
-that information will ever be used.
+> 
+> I'd like Sascha's view on this to make a good decision.
+
+Currently Dong Aisheng is working on i.MX6, we have i.MX31, i.MX35,
+i.MX51 and i.MX53 enabled in the same defconfig. Waiting for all
+machines turn over at once to pinctrl is illusionary. We have to make
+drivers work with and without pinctrl. We have a bunch of bad choices:
+
+- create a dummy pinctrl for all boards which do not have real pinmux
+  support
+- ignore pinctrl_request errors in drivers.
+- generate and return a dummy pinctrl in the core if no real pinctrl is
+  found.
+
+(replace pinctrl with regulators or clocks, it's the same situation, and
+it's not only i.MX specific)
+
+I don't have a good solution for this, only the idea that it should be
+possible to attach these kinds of resources to a device and then a
+driver would only call a make_me_work(dev).
+
+Sascha
 
 -- 
-error compiling committee.c: too many arguments to function
-
+Pengutronix e.K.                           |                             |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
+Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
