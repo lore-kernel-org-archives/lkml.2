@@ -1,34 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754708Ab2DRTDg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Apr 2012 15:03:36 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:41314 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754512Ab2DRTDe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Apr 2012 15:03:34 -0400
-Message-ID: <4F8F0FF4.7010701@zytor.com>
-Date: Wed, 18 Apr 2012 12:03:16 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120329 Thunderbird/11.0.1
+	id S1754679Ab2DRTES (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Apr 2012 15:04:18 -0400
+Received: from 50-56-35-84.static.cloud-ips.com ([50.56.35.84]:33796 "EHLO
+	mail.hallyn.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754512Ab2DRTEQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Apr 2012 15:04:16 -0400
+Date: Wed, 18 Apr 2012 19:05:14 +0000
+From: "Serge E. Hallyn" <serge@hallyn.com>
+To: "Eric W. Beiderman" <ebiederm@xmission.com>
+Cc: linux-kernel@vger.kernel.org,
+        Linux Containers <containers@lists.linux-foundation.org>,
+        Cyrill Gorcunov <gorcunov@openvz.org>,
+        linux-security-module@vger.kernel.org,
+        Al Viro <viro@ZenIV.linux.org.uk>, linux-fsdevel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [PATCH 30/43] userns: Fail exec for suid and sgid binaries
+ with ids outside our user namespace.
+Message-ID: <20120418190514.GH5186@mail.hallyn.com>
+References: <m11unyn70b.fsf@fess.ebiederm.org>
+ <1333862139-31737-30-git-send-email-ebiederm@xmission.com>
 MIME-Version: 1.0
-To: "H.J. Lu" <hjl.tools@gmail.com>
-CC: mingo@redhat.com, linux-kernel@vger.kernel.org, tglx@linutronix.de,
-        linux-tip-commits@vger.kernel.org
-Subject: Re: [tip:x86/x32] x32: Fix alignment fail in struct compat_siginfo
-References: <1329696488-16970-1-git-send-email-hpa@zytor.com> <tip-31796ac4e8f0e88f5c10f1ad6dab8f19bebe44a4@git.kernel.org> <CAMe9rOqF6Kh6-NK7oP0Fpzkd4SBAWU+G53hwBbSD4iA2UzyxuA@mail.gmail.com> <4F8EFE4D.2040201@zytor.com> <CAMe9rOpfPQghra1PQTUwsFOvjgNpzFDEGS5=BbFBjn=HZGL93g@mail.gmail.com> <4F8F0385.5090901@zytor.com> <CAMe9rOq7LduF4aLPe9qatedxps4WPCgOHTD=E_Lje4_tu6tyZw@mail.gmail.com> <4F8F0614.9010604@zytor.com> <CAMe9rOqBd29LKB==NaKscpedRMR1uL_ZhHqSw1HQj-3_d9PSCw@mail.gmail.com>
-In-Reply-To: <CAMe9rOqBd29LKB==NaKscpedRMR1uL_ZhHqSw1HQj-3_d9PSCw@mail.gmail.com>
-X-Enigmail-Version: 1.4
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1333862139-31737-30-git-send-email-ebiederm@xmission.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Looking at asm/siginfo.h it already has a bunch of __ARCH_SI_*_T macros,
-so I guess adding an __ARCH_SI_CLOCK_T would not be out of place.
+Quoting Eric W. Beiderman (ebiederm@xmission.com):
+> From: Eric W. Biederman <ebiederm@xmission.com>
+> 
+> Signed-off-by: Eric W. Biederman <ebiederm@xmission.com>
 
-The whole misaligned union in this structure is a complete facepalm, but
-there isn't much we can do about it now.
+Acked-by: Serge Hallyn <serge.hallyn@canonical.com>
 
-	-hpa
-
+> ---
+>  fs/exec.c |    5 +++++
+>  1 files changed, 5 insertions(+), 0 deletions(-)
+> 
+> diff --git a/fs/exec.c b/fs/exec.c
+> index 00ae2ef..e001bdf 100644
+> --- a/fs/exec.c
+> +++ b/fs/exec.c
+> @@ -1291,8 +1291,11 @@ int prepare_binprm(struct linux_binprm *bprm)
+>  	if (!(bprm->file->f_path.mnt->mnt_flags & MNT_NOSUID)) {
+>  		/* Set-uid? */
+>  		if (mode & S_ISUID) {
+> +			if (!kuid_has_mapping(bprm->cred->user_ns, inode->i_uid))
+> +				return -EPERM;
+>  			bprm->per_clear |= PER_CLEAR_ON_SETID;
+>  			bprm->cred->euid = inode->i_uid;
+> +
+>  		}
+>  
+>  		/* Set-gid? */
+> @@ -1302,6 +1305,8 @@ int prepare_binprm(struct linux_binprm *bprm)
+>  		 * executable.
+>  		 */
+>  		if ((mode & (S_ISGID | S_IXGRP)) == (S_ISGID | S_IXGRP)) {
+> +			if (!kgid_has_mapping(bprm->cred->user_ns, inode->i_gid))
+> +				return -EPERM;
+>  			bprm->per_clear |= PER_CLEAR_ON_SETID;
+>  			bprm->cred->egid = inode->i_gid;
+>  		}
+> -- 
+> 1.7.2.5
+> 
+> _______________________________________________
+> Containers mailing list
+> Containers@lists.linux-foundation.org
+> https://lists.linuxfoundation.org/mailman/listinfo/containers
