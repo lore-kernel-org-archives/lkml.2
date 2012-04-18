@@ -1,43 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753221Ab2DRLjR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Apr 2012 07:39:17 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:55568 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752064Ab2DRLjQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Apr 2012 07:39:16 -0400
-Date: Wed, 18 Apr 2012 13:39:06 +0200 (CEST)
-From: Lukas Czerner <lczerner@redhat.com>
-X-X-Sender: lukas@dhcp-27-109.brq.redhat.com
-To: Zheng Liu <gnehzuil.liu@gmail.com>
-cc: Andreas Dilger <adilger@whamcloud.com>, Eric Sandeen <sandeen@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        "linux-ext4@vger.kernel.org" <linux-ext4@vger.kernel.org>,
-        Zheng Liu <wenqing.lz@taobao.com>
-Subject: Re: [RFC][PATCH 0/3] add FALLOC_FL_NO_HIDE_STALE flag in fallocate
-In-Reply-To: <20120418113810.GA3447@gmail.com>
-Message-ID: <alpine.LFD.2.00.1204181336440.5310@dhcp-27-109.brq.redhat.com>
-References: <1334681618-9452-1-git-send-email-wenqing.lz@taobao.com> <4F8DAAFE.40500@redhat.com> <D225F088-A53F-4962-97AD-13C850BBA722@whamcloud.com> <20120418113810.GA3447@gmail.com>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	id S1753048Ab2DRLlW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Apr 2012 07:41:22 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:65455 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751200Ab2DRLlV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Apr 2012 07:41:21 -0400
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <1334646046-467-2-git-send-email-b29396@freescale.com>
+References: <1334646046-467-1-git-send-email-b29396@freescale.com>
+	<1334646046-467-2-git-send-email-b29396@freescale.com>
+Date: Wed, 18 Apr 2012 13:41:21 +0200
+Message-ID: <CACRpkdYhsOV-5FqXk3kesQaQtxE8it1QKq2jzcy3if4eQHYtUQ@mail.gmail.com>
+Subject: Re: [PATCH v2 2/2] pinctrl: show pin name for pingroups in sysfs
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Dong Aisheng <b29396@freescale.com>
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linus.walleij@stericsson.com, swarren@wwwdotorg.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 18 Apr 2012, Zheng Liu wrote:
+On Tue, Apr 17, 2012 at 9:00 AM, Dong Aisheng <b29396@freescale.com> wrote:
 
-> > I auspect the real problem may be the lazy inode table zeroing being done in the kernel. If the test is run immediately after formatting the filesystem, then the kernel thread is busy writing to the disk in the background and interfering with your benchmark.
-> > 
-> > Please format the filesystem with "-E lazy-itable-init=0", to avoid this behavior.  
-> 
-> I format the filesystem with this option, but it seems that it is
-> useless.
+> After change, when cat pingroups in sysfs, it becomes:
+> root@freescale /sys/kernel/debug/pinctrl/20e0000.iomuxc$ cat pingroups
+> registered pin groups:
+> group: uart4grp-1
+> pin 219 (MX6Q_PAD_KEY_ROW0)
+> pin 218 (MX6Q_PAD_KEY_COL0)
+>
+> group: usdhc4grp-1
+> pin 305 (MX6Q_PAD_SD4_CMD)
+> pin 306 (MX6Q_PAD_SD4_CLK)
+> pin 315 (MX6Q_PAD_SD4_DAT0)
+> pin 316 (MX6Q_PAD_SD4_DAT1)
+> pin 317 (MX6Q_PAD_SD4_DAT2)
+> pin 318 (MX6Q_PAD_SD4_DAT3)
+> pin 319 (MX6Q_PAD_SD4_DAT4)
+> pin 320 (MX6Q_PAD_SD4_DAT5)
+> pin 321 (MX6Q_PAD_SD4_DAT6)
+> pin 322 (MX6Q_PAD_SD4_DAT7)
 
-What do you mean by that ? It does not work as it's supposed to ?
-ext4lazyinit kernel thread is still running ? Or the slowdown was not
-caused by the lazy init in the first place ?
+Applied with this bit copied into the commit message and Stepgen's ACK.
 
 Thanks!
--Lukas
+Linus Walleij
