@@ -1,75 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753649Ab2DRQM5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Apr 2012 12:12:57 -0400
-Received: from mail-vb0-f46.google.com ([209.85.212.46]:41079 "EHLO
-	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751320Ab2DRQMz convert rfc822-to-8bit (ORCPT
+	id S1754052Ab2DRQOq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Apr 2012 12:14:46 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:53774 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751065Ab2DRQOp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Apr 2012 12:12:55 -0400
+	Wed, 18 Apr 2012 12:14:45 -0400
+Date: Wed, 18 Apr 2012 17:14:35 +0100
+From: Catalin Marinas <catalin.marinas@arm.com>
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        majianpeng <majianpeng@gmail.com>
+Subject: Re: Possible memory leaks in proc_sysctl.c
+Message-ID: <20120418161435.GJ1505@arm.com>
+References: <20120418101231.GE1505@arm.com>
+ <m1wr5d18fy.fsf@fess.ebiederm.org>
+ <20120418141851.GG1505@arm.com>
+ <m1ipgxrt11.fsf@fess.ebiederm.org>
+ <20120418151545.GI1505@arm.com>
+ <m1ehrloxic.fsf@fess.ebiederm.org>
 MIME-Version: 1.0
-X-Originating-IP: [69.196.158.137]
-In-Reply-To: <CADDKRnDJ_u7FkOHPDr0kJ+mh4k06wv2imVh8DV=GzDUQiKEWQw@mail.gmail.com>
-References: <CADDKRnALwHa=QteDDcMxBU24rfbKoTOGX=iTcfeE7=M7a+NFcw@mail.gmail.com>
- <CADDKRnAhqi-fwFrr85QC-ZP2g0=_ZSb__jEbZqAekCKXs2CtCg@mail.gmail.com> <CADDKRnDJ_u7FkOHPDr0kJ+mh4k06wv2imVh8DV=GzDUQiKEWQw@mail.gmail.com>
-From: Sergio Correia <lists@uece.net>
-Date: Wed, 18 Apr 2012 12:12:33 -0400
-Message-ID: <CAJyhjX0QMf7FcDfx+KDggF7avBnRFcGX6KWy6hJZ_p=ceTFh+g@mail.gmail.com>
-Subject: Re: [v3.4-rc] regression: reboot not working
-To: =?ISO-8859-1?Q?J=F6rg_Otte?= <jrg.otte@googlemail.com>
-Cc: linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Len Brown <lenb@kernel.org>, hpa@zytor.com,
-        torvalds@linux-foundation.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <m1ehrloxic.fsf@fess.ebiederm.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 18, 2012 at 12:00 PM, Jörg Otte <jrg.otte@googlemail.com> wrote:
-> 9 days and still no response. Maybe I addressed the wrong person(s).
-> I Cc to Linus.
->
-> Who can help with this topic?
->
+On Wed, Apr 18, 2012 at 04:44:27PM +0100, Eric W. Biederman wrote:
+> Catalin Marinas <catalin.marinas@arm.com> writes:
+> > On Wed, Apr 18, 2012 at 03:52:58PM +0100, Eric W. Biederman wrote:
+> >> So simply saying kmemleak shut up this is deliberate in these few cases
+> >> where we don't intend to unregister the structure and have a deliberate
+> >> leak seems the clean and maintainable way to go.
+> >
+> > OK, I got it now, sounds fair. But please add a comment to the
+> > kmemleak_not_leak() annotations so that others know it's a deliberate
+> > leak (rather than a false positive).
+> >
+> > Also the patch should include the linux/kmemleak.h file for the
+> > kmemleak_not_leak() prototype as header changes in the future may cause
+> > problems (I think the one you posted did not include it).
+> 
+> I will take a look when I merge the patch.
+> 
+> Would something like kmemleak_ignore() be better?  What I want is
+> kmemleak_this_is_a_deliberate_leak_so_shut_up(), but the API doesn't
+> seem to exactly include that function.  I'm not certain what the proper
+> name is as I haven't worked much with kmemleak.
 
-CC'ing linux-acpi.
+kmemleak_ignore() can be used as long as the object does not reference
+other objects since it won't even be scanned. In this case, it only
+hides the returned header object but there seem to be two more objects
+allocated during the register_sysctl_table() call and referenced from
+the returned header.
 
-> Thanks, Joerg
->
->
->
-> Am 14. April 2012 12:46 schrieb Jörg Otte <jrg.otte@googlemail.com>:
->> It's now bisected:
->>
->> cf450136bfde77c7f95065c91bffded4aa7fa731   ACPI: ignore FADT reset-reg-sup flag
->>
->> Thanks, Joerg
->>
->>
->> Am 9. April 2012 17:19 schrieb Jörg Otte <jrg.otte@googlemail.com>:
->>> Hi,
->>>
->>> On reboot it shuts down as normal.
->>> The last lines displayed are:
->>>
->>>>.
->>>>Unmounting temporary filesystems.. [OK]
->>>>Deactivating swap...               [OK]
->>>>Unmounting local filesystems...    [OK]
->>>>Will now restart
->>>>    Restarting system
->>>
->>> Then I hear it accessing the cd-drive, but then
->>> it's being stuck.
->>>
->>> v3.3 was ok. HW is a Thinkpad T43.
->>>
->>> Please Cc me I'm not subscribed.
->>>
->>> Thanks,Joerg
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+kmemleak_not_leak() would do the right thing here, though it was meant
+for annotating false positives rather than real leaks. I think a comment
+on the calling site would be enough.
+
+-- 
+Catalin
