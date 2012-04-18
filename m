@@ -1,91 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755019Ab2DRUN0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Apr 2012 16:13:26 -0400
-Received: from oproxy8-pub.bluehost.com ([69.89.22.20]:58746 "HELO
-	oproxy8-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1754272Ab2DRUNY (ORCPT
+	id S1755045Ab2DRUO3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Apr 2012 16:14:29 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:58509 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751125Ab2DRUO2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Apr 2012 16:13:24 -0400
-Message-ID: <4F8F2087.9090900@xenotime.net>
-Date: Wed, 18 Apr 2012 13:13:59 -0700
-From: Randy Dunlap <rdunlap@xenotime.net>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
-MIME-Version: 1.0
-To: Masanari Iida <standby24x7@gmail.com>
-CC: linux-usb@vger.kernel.org, stern@rowland.harvard.edu, trivial@kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] [trivial] usb: Fix various typo within usb
-References: <1334761486-12817-1-git-send-email-standby24x7@gmail.com>
-In-Reply-To: <1334761486-12817-1-git-send-email-standby24x7@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Wed, 18 Apr 2012 16:14:28 -0400
+Subject: [PATCH] tcp: fix retransmit of partially acked frames
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Alexander Beregalov <a.beregalov@gmail.com>,
+        David Miller <davem@davemloft.net>
+Cc: netdev <netdev@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Marc MERLIN <marc@merlins.org>
+In-Reply-To: <1334734196.2472.91.camel@edumazet-glaptop>
+References: <CAA1sL1QTRKnfvCnHWjbSJ-hq6dgZK+KGDPVTrOhsfZcFTs01Mw@mail.gmail.com>
+	 <1334502964.28012.1.camel@edumazet-glaptop>
+	 <CAA1sL1SJyY7fYJn7OKqo5Pa=b4-r9DW90-5WVGBf==tFjVEBpg@mail.gmail.com>
+	 <1334695506.2472.46.camel@edumazet-glaptop>
+	 <CAA1sL1TN+acPd4NAnFC0soeHzzcJe0ja3_zS5ZkFog11HSDAyA@mail.gmail.com>
+	 <1334734196.2472.91.camel@edumazet-glaptop>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 18 Apr 2012 22:14:23 +0200
+Message-ID: <1334780063.2472.352.camel@edumazet-glaptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Content-Transfer-Encoding: 7bit
-X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/18/2012 08:04 AM, Masanari Iida wrote:
+From: Eric Dumazet <edumazet@google.com>
 
-> Correct spelling typo within usb
-> 
-> Signed-off-by: Masanari Iida <standby24x7@gmail.com>
-> ---
->  drivers/usb/gadget/f_hid.c       |    2 +-
->  drivers/usb/host/ehci-platform.c |    4 ++--
->  drivers/usb/host/fhci-tds.c      |    2 +-
->  drivers/usb/host/ohci-platform.c |    4 ++--
->  drivers/usb/host/ohci-ppc-of.c   |    2 +-
->  5 files changed, 7 insertions(+), 7 deletions(-)
-> 
-> diff --git a/drivers/usb/host/ehci-platform.c b/drivers/usb/host/ehci-platform.c
-> index d238b4e2..23c530a 100644
-> --- a/drivers/usb/host/ehci-platform.c
-> +++ b/drivers/usb/host/ehci-platform.c
-> @@ -94,12 +94,12 @@ static int __devinit ehci_platform_probe(struct platform_device *dev)
->  
->  	irq = platform_get_irq(dev, 0);
->  	if (irq < 0) {
-> -		pr_err("no irq provieded");
-> +		pr_err("no irq provided");
->  		return irq;
->  	}
->  	res_mem = platform_get_resource(dev, IORESOURCE_MEM, 0);
->  	if (!res_mem) {
-> -		pr_err("no memory recourse provieded");
-> +		pr_err("no memory recourse provided");
+Alexander Beregalov reported skb_over_panic errors and provided stack
+trace.
 
+I occurs commit a21d45726aca (tcp: avoid order-1 allocations on wifi and
+tx path) added a regression, when a retransmit is done after a partial
+ACK.
 
-		                  resource
+tcp_retransmit_skb() tries to aggregate several frames if the first one
+has enough available room to hold the following ones payload. This is
+controlled by /proc/sys/net/ipv4/tcp_retrans_collapse tunable (default :
+enabled)
 
->  		return -ENXIO;
->  	}
->  
-> diff --git a/drivers/usb/host/ohci-platform.c b/drivers/usb/host/ohci-platform.c
-> index ec5c679..670c705 100644
-> --- a/drivers/usb/host/ohci-platform.c
-> +++ b/drivers/usb/host/ohci-platform.c
-> @@ -93,13 +93,13 @@ static int __devinit ohci_platform_probe(struct platform_device *dev)
->  
->  	irq = platform_get_irq(dev, 0);
->  	if (irq < 0) {
-> -		pr_err("no irq provieded");
-> +		pr_err("no irq provided");
->  		return irq;
->  	}
->  
->  	res_mem = platform_get_resource(dev, IORESOURCE_MEM, 0);
->  	if (!res_mem) {
-> -		pr_err("no memory recourse provieded");
-> +		pr_err("no memory recourse provided");
+Problem is we must make sure _pskb_trim_head() doesnt fool
+skb_availroom() when pulling some bytes from skb (this pull is done when
+receiver ACK part of the frame).
+
+Reported-by: Alexander Beregalov <a.beregalov@gmail.com>
+Cc: Marc MERLIN <marc@merlins.org>
+Signed-off-by: Eric Dumazet <edumazet@google.com>
+---
+ net/ipv4/tcp_output.c |    1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/net/ipv4/tcp_output.c b/net/ipv4/tcp_output.c
+index 376b2cf..7ac6423 100644
+--- a/net/ipv4/tcp_output.c
++++ b/net/ipv4/tcp_output.c
+@@ -1096,6 +1096,7 @@ static void __pskb_trim_head(struct sk_buff *skb, int len)
+ 	eat = min_t(int, len, skb_headlen(skb));
+ 	if (eat) {
+ 		__skb_pull(skb, eat);
++		skb->avail_size -= eat;
+ 		len -= eat;
+ 		if (!len)
+ 			return;
 
 
-		                  resource
-
->  		return -ENXIO;
->  	}
->  
-
-
--- 
-~Randy
