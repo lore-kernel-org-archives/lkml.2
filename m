@@ -1,87 +1,166 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753016Ab2DRLDq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Apr 2012 07:03:46 -0400
-Received: from mailout-de.gmx.net ([213.165.64.22]:57252 "HELO
-	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752868Ab2DRLDp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1752969Ab2DRLDp (ORCPT <rfc822;w@1wt.eu>);
 	Wed, 18 Apr 2012 07:03:45 -0400
-X-Authenticated: #28250155
-X-Provags-ID: V01U2FsdGVkX19dyLQiRT9djH9auuqaZYbTjcBvPp5/kXurrHydOj
-	41UPeJYQf9Pa9J
-From: Sven Joachim <svenjoac@gmx.de>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Suresh Siddha <suresh.b.siddha@intel.com>
-Subject: Re: kernel panic after suspend/resume
-References: <CA+55aFzsjpJt09b6e4NA0T50M3w0xtASSYXz_=UWVDqKRywo=A@mail.gmail.com>
-	<87pqb6fkji.fsf@turtle.gmx.de>
-	<CA+55aFxhb6hriqHHwVtNeYHmtcy5JCEJX-zABBcG2Zjw_gawPw@mail.gmail.com>
-	<201204172321.41095.rjw@sisk.pl> <87hawhtpo9.fsf@turtle.gmx.de>
-	<alpine.LFD.2.02.1204181205540.2542@ionos>
-Date: Wed, 18 Apr 2012 13:03:34 +0200
-In-Reply-To: <alpine.LFD.2.02.1204181205540.2542@ionos> (Thomas Gleixner's
-	message of "Wed, 18 Apr 2012 12:08:23 +0200 (CEST)")
-Message-ID: <87pqb55mk9.fsf@turtle.gmx.de>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.0.95 (gnu/linux)
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:45781 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752533Ab2DRLDn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Apr 2012 07:03:43 -0400
+X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
+Message-ID: <4F8E9EC9.3030003@jp.fujitsu.com>
+Date: Wed, 18 Apr 2012 20:00:25 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.0; rv:11.0) Gecko/20120327 Thunderbird/11.0.1
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Y-GMX-Trusted: 0
+To: Johannes Weiner <hannes@cmpxchg.org>
+CC: Frederic Weisbecker <fweisbec@gmail.com>,
+        Glauber Costa <glommer@parallels.com>, Tejun Heo <tj@kernel.org>,
+        Hugh Dickins <hughd@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Daniel Walsh <dwalsh@redhat.com>,
+        "Daniel P. Berrange" <berrange@redhat.com>,
+        Li Zefan <lizf@cn.fujitsu.com>, LKML <linux-kernel@vger.kernel.org>,
+        Cgroups <cgroups@vger.kernel.org>,
+        Containers <containers@lists.linux-foundation.org>
+Subject: Re: [RFD] Merge task counter into memcg
+References: <20120412153055.GL1787@cmpxchg.org> <20120412163825.GB13069@google.com> <20120412172309.GM1787@cmpxchg.org> <20120412174155.GC13069@google.com> <4F878480.60505@jp.fujitsu.com> <20120417154117.GE32402@google.com> <4F8D9FC4.3080800@parallels.com> <4F8E646B.1020807@jp.fujitsu.com> <CAFTL4hw3C4s6VS07pJzdBawv0ugKJJa+Vnb-Q_9FrWEq4=ka9Q@mail.gmail.com> <4F8E7E76.3020202@jp.fujitsu.com> <20120418103930.GA1771@cmpxchg.org>
+In-Reply-To: <20120418103930.GA1771@cmpxchg.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 18.04.2012 um 12:08 schrieb Thomas Gleixner:
+(2012/04/18 19:39), Johannes Weiner wrote:
 
-> On Wed, 18 Apr 2012, Sven Joachim wrote:
->
->> On 2012-04-17 23:21 +0200, Rafael J. Wysocki wrote:
->> 
->> > Well, commit fa4da365bc7772c kind of looks like it might be the source of
->> > this trouble.  Sven, can you try to revert it, please?
->> 
->> This seems to do the trick, thanks.
->
-> Can you try the following patch instead?
+> On Wed, Apr 18, 2012 at 05:42:30PM +0900, KAMEZAWA Hiroyuki wrote:
+>> (2012/04/18 16:53), Frederic Weisbecker wrote:
+>>
+>>> 2012/4/18 KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>:
+>>>> (2012/04/18 1:52), Glauber Costa wrote:
+>>>>
+>>>>>
+>>>>>>> In short, I don't think it's better to have task-counting and fd-counting in memcg.
+>>>>>>> It's kmem, but it's more than that, I think.
+>>>>>>> Please provide subsys like ulimit.
+>>>>>>
+>>>>>> So, you think that while kmem would be enough to prevent fork-bombs,
+>>>>>> it would still make sense to limit in more traditional ways
+>>>>>> (ie. ulimit style object limits).  Hmmm....
+>>>>>>
+>>>>>
+>>>>> I personally think this is namespaces business, not cgroups.
+>>>>> If you have a process namespace, an interface that works to limit the
+>>>>> number of processes should keep working given the constraints you are
+>>>>> given.
+>>>>>
+>>>>> What doesn't make sense, is to create a *new* interface to limit
+>>>>> something that doesn't really need to be limited, just because you
+>>>>> limited a similar resource before.
+>>>>>
+>>>>
+>>>>
+>>>> Ok, limitiing forkbomb is unnecessary. ulimit+namespace should work.
+>>>> What we need is user-id namespace, isn't it ? If we have that, ulimit
+>>>> works enough fine, no overheads.
+>>>
+>>> I have considered using NR_PROC rlimit on top of user namespaces to
+>>> fight forkbombs inside a container.
+>>> ie: one user namespace per container with its own rlimit.
+>>>
+>>> But it doesn't work because we can have multiuser apps running in a
+>>> single container.
+>>>
+>>
+>> Ok, then, requirements is different from ulimit. ok, please forget my words.
+>>
+>> My concern for using 'kmem' is that size of object can be changed, and set up
+>> may be more complicated than limiting 'number' of tasks.
+>> It's very architecture dependent....But hmm... 
+> 
+> BECAUSE it is architecture/kernel version/runtime dependent how big a
+> task really is, limiting available kernel memory is much more
+> meaningful than limiting a container to a number of units of unknown
+> and dynamically changing size.
+> 
+> How could this argument ever work IN FAVOR of limiting the number of
+> tasks?
 
-Appears to work fine, thanks.
 
-> diff --git a/kernel/time/tick-broadcast.c b/kernel/time/tick-broadcast.c
-> index bf57abd..119aca5 100644
-> --- a/kernel/time/tick-broadcast.c
-> +++ b/kernel/time/tick-broadcast.c
-> @@ -531,7 +531,6 @@ void tick_broadcast_setup_oneshot(struct clock_event_device *bc)
->  		int was_periodic = bc->mode == CLOCK_EVT_MODE_PERIODIC;
->  
->  		bc->event_handler = tick_handle_oneshot_broadcast;
-> -		clockevents_set_mode(bc, CLOCK_EVT_MODE_ONESHOT);
->  
->  		/* Take the do_timer update */
->  		tick_do_timer_cpu = cpu;
-> @@ -549,6 +548,7 @@ void tick_broadcast_setup_oneshot(struct clock_event_device *bc)
->  			   to_cpumask(tmpmask));
->  
->  		if (was_periodic && !cpumask_empty(to_cpumask(tmpmask))) {
-> +			clockevents_set_mode(bc, CLOCK_EVT_MODE_ONESHOT);
->  			tick_broadcast_init_next_event(to_cpumask(tmpmask),
->  						       tick_next_period);
->  			tick_broadcast_set_event(tick_next_period, 1);
-> @@ -577,15 +577,10 @@ void tick_broadcast_switch_to_oneshot(void)
->  	raw_spin_lock_irqsave(&tick_broadcast_lock, flags);
->  
->  	tick_broadcast_device.mode = TICKDEV_MODE_ONESHOT;
-> -
-> -	if (cpumask_empty(tick_get_broadcast_mask()))
-> -		goto end;
-> -
->  	bc = tick_broadcast_device.evtdev;
->  	if (bc)
->  		tick_broadcast_setup_oneshot(bc);
->  
-> -end:
->  	raw_spin_unlock_irqrestore(&tick_broadcast_lock, flags);
->  }
+I think this shows limiting the number of tasks (with memory limitation)
+is difficult. Ah, I realize I don't like limiting task numbers.
+
+> 
+>> If slab accounting can handle task_struct accounting, all you wants can be
+>> done by it (maybe). And implementation can be duplicated.
+>> (But another aspect of the problem will be speed of development..)
+>>
+>> One idea is (I'm not sure good or bad)...having following control files.
+>>
+>>  - memory.kmem.task_struct.limit_in_bytes
+>>  - memory.kmem.task_struct.usage_in_bytes
+>>  - memory.kmem.task_struct.size_in_bytes   # size of task struct.
+> 
+> A task's memory impact is not just its task_struct.
+> 
+
+Yes. It's a sum of several objects, including page tables, kernel stack, etc..
+
+
+>> At 1st, implement this by accounting task struct(or some) directly.
+>> Later, if we can, replace the implementation with slab(kmem) cgroup..
+>> and unify interfaces.....a long way to go.
+>>
+>> 2nd idea is
+>>
+>>  - memory.object.task.limit_in_number	# limit the number of tasks.
+>>  - memory.object.task.usage_in_number   # usage
+>>
+>> If I'm a user, I prefer #2.
+> 
+> The memory controller is there to partition physical memory.  This is
+> usually measured in bytes and that's why the user-visible object size
+> in the memory controller is a byte.  When you add other types of
+> objects, you force the user to know about them and give them a method
+> of knowing the object size in bytes, which in case of a task, can vary
+> at runtime.
+> 
+> I will agree to this interface the moment I can buy RAM whose quantity
+> is measured in number of tasks.
+> 
+>> Hmm, 
+>>    global kmem limiting           -> done by bytes.
+>>    special kernel object limiting -> done by the number of objects.
+>>
+>> is...complicated ?
+> 
+> Yes, and you don't provide any arguments!
+> 
+> What are you trying to do that would make limiting the number of tasks
+> a useful mechanism?
+
+
+Just considering what is easy to use and simple and meets requirements, finally.
+
+> 
+> Why should some kernel objects be special?
+> 
+
+I mentioned above because I remembered some guys proposed a feature to set
+limit per each slab types. I'm sorry if I remember wrong.
+
+And, 'task' has some other limitation than cgroup. ulimit, sysctl etc...
+someone may want to isolate them. (It's namespace problem ?)
+The number of task itself has some meaning in the system.
+
+If forkbomb's problem is just a problem of memory usage, it's simple.
+What's required is global kmem limit and not limiting tasks.
+
+Thanks,
+-Kame
+
+
+
+
+
