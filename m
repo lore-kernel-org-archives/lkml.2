@@ -1,53 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750998Ab2DREAr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Apr 2012 00:00:47 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:11632 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750841Ab2DREAp (ORCPT
+	id S1751094Ab2DREBN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Apr 2012 00:01:13 -0400
+Received: from e28smtp04.in.ibm.com ([122.248.162.4]:48084 "EHLO
+	e28smtp04.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750769Ab2DREBM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Apr 2012 00:00:45 -0400
-X-Authority-Analysis: v=2.0 cv=XbcLPfF5 c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=XQbtiDEiEegA:10 a=_2gBi4Ny9w4A:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=7aVDFLFgK8XbNmRxKp0A:9 a=PUjeQqilurYA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.80.29
-Message-ID: <1334721644.28106.30.camel@gandalf.stny.rr.com>
-Subject: Re: [3.4-rc3] Thread overran stack, or stack corrupted
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Dave Jones <davej@redhat.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>
-Date: Wed, 18 Apr 2012 00:00:44 -0400
-In-Reply-To: <1334721441.28106.28.camel@gandalf.stny.rr.com>
-References: <20120417172142.GA30237@redhat.com>
-	 <CA+55aFy-uhOgEoEBr-LkOjFQBVh14wwr-20jTrtsg_2EnuNY5g@mail.gmail.com>
-	 <20120417203223.GA31699@redhat.com>
-	 <CA+55aFzWzhxaVHuPY_oB5PVhw2Gxiwr46vyHCHEsU0o-HFikTw@mail.gmail.com>
-	 <20120418022705.GA23877@home.goodmis.org>
-	 <20120418031557.GA29828@redhat.com>
-	 <1334720611.28106.25.camel@gandalf.stny.rr.com>
-	 <20120418035004.GA31465@redhat.com>
-	 <1334721441.28106.28.camel@gandalf.stny.rr.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.2.2-1 
+	Wed, 18 Apr 2012 00:01:12 -0400
+Message-ID: <4F8E3C7F.5040601@linux.vnet.ibm.com>
+Date: Wed, 18 Apr 2012 12:01:03 +0800
+From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120216 Thunderbird/10.0.1
+MIME-Version: 1.0
+To: Takuya Yoshikawa <takuya.yoshikawa@gmail.com>
+CC: Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>, KVM <kvm@vger.kernel.org>
+Subject: Re: [PATCH v2 07/16] KVM: MMU: introduce for_each_pte_list_spte
+References: <4F87FA69.5060106@linux.vnet.ibm.com> <4F87FC19.8080404@linux.vnet.ibm.com> <20120414114422.e3fe6e2abbfdcce61e6f69c8@gmail.com> <4F8B93B9.2030801@linux.vnet.ibm.com> <20120417234731.a19f270d5701b11ce95d13d4@gmail.com>
+In-Reply-To: <20120417234731.a19f270d5701b11ce95d13d4@gmail.com>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+x-cbid: 12041804-5564-0000-0000-0000023F0C8E
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-04-17 at 23:57 -0400, Steven Rostedt wrote:
+On 04/17/2012 10:47 PM, Takuya Yoshikawa wrote:
 
-> Also, have you tested to see if function tracing works?
+> On Mon, 16 Apr 2012 11:36:25 +0800
+> Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com> wrote:
 > 
-> # cd /sys/kernel/debug/tracing
-> # echo function > current_tracer
-> # cat trace
+>> I tested it with kernbench, no regression is found.
+> 
+> Because kernbench is not at all good test for this.
+> 
+>> It is not a problem since the iter and spte should be in the cache.
+> 
+> I have checked dirty-log-perf myself with this patch [01-07].
+> 
+> GET_DIRTY_LOG for 1GB dirty pages has become more than 15% slower.
+> 
 
-Also make sure that the max is zero:
 
-# cat stack_max_size
-# echo 0 > stack_max_size
+Thanks for your test!
 
--- Steve
+Unbelievable, i will do more test and check it more carefully.
 
+Could you please open your tool, then i can reproduction it and find the
+real reason?
+
+> 
+> Note: if you had checked the worst case latency with this patch series,
+> you should have noticed this regression by yourself.
+> 
+> Auto-test and kernbench are not enough to see the effect of this work.
+> 
+
+
+I will check whether your tool is better then kernbench/autotest after
+review your tool.
 
