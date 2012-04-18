@@ -1,49 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753955Ab2DRPIc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Apr 2012 11:08:32 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:57295 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750839Ab2DRPIb (ORCPT
+	id S1754012Ab2DRPJI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Apr 2012 11:09:08 -0400
+Received: from mail.hq.newdream.net ([66.33.206.127]:46798 "EHLO
+	mail.hq.newdream.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753852Ab2DRPJG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Apr 2012 11:08:31 -0400
-Message-ID: <4F8ED8EA.5040506@lwfinger.net>
-Date: Wed, 18 Apr 2012 10:08:26 -0500
-From: Larry Finger <Larry.Finger@lwfinger.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120312 Thunderbird/11.0
+	Wed, 18 Apr 2012 11:09:06 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws; d=dreamhost.com; h=message-id:date
+	:from:mime-version:to:cc:subject:content-type:
+	content-transfer-encoding; q=dns; s=dreamhost.com; b=V9iwZQBkYbS
+	7Dvbij3uCccCk/+/gwM9aouWEy87Izb3N926wwlLr7Ge3We2QliWbLN9AwJGw8/K
+	uaXfIY0pjqQbA1mOx6Cg8r3VbUELb1kgz3aneXaDXBxmXN7xvXQHv0dTLXXRijFI
+	oeV+I1zyGIgtiYI6z8Db1I0ZIDxG+3VY=
+Message-ID: <4F8ED911.90309@dreamhost.com>
+Date: Wed, 18 Apr 2012 10:09:05 -0500
+From: Alex Elder <elder@dreamhost.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120329 Thunderbird/11.0.1
 MIME-Version: 1.0
-To: Dave Airlie <airlied@gmail.com>
-CC: LKML <linux-kernel@vger.kernel.org>,
-        Linux Wireless List <linux-wireless@vger.kernel.org>
-Subject: Re: oops on rmmod of rtl8192ce
-References: <CAPM=9tz-2bXahnfDK0-anxyZcqFUPOSEewJxh2+2U51xypmw-w@mail.gmail.com> <CAPM=9tzqwZpWP9Ea-UVWYFcoVY-fa+jCf5FOShiMTrY4roN-og@mail.gmail.com> <4F83359B.90103@lwfinger.net> <CAPM=9txG+jzKUtnAfJ4dHUBY7fted0vs9WcteZ6aB+yWNdzLYw@mail.gmail.com>
-In-Reply-To: <CAPM=9txG+jzKUtnAfJ4dHUBY7fted0vs9WcteZ6aB+yWNdzLYw@mail.gmail.com>
+To: Al Viro <viro@ZenIV.linux.org.uk>
+CC: Sage Weil <sage@newdream.net>, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org
+Subject: Re: osd_req_encode_op() breakage?
 Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/18/2012 09:16 AM, Dave Airlie wrote:
-> On Mon, Apr 9, 2012 at 8:16 PM, Larry Finger<Larry.Finger@lwfinger.net>  wrote:
->> On 04/09/2012 10:02 AM, Dave Airlie wrote:
->>>
->>> ping any ideas on this oops on unload?
->>
->>
->> Sorry about the delay.
->>
->> The oops looks like interrupts are not being disabled soon enough. Does the
->> following patch help?
->
-> Seems to help here alright, I did a few load/unload cycles this
-> morning on that laptop,
->
-> I'll keep testing it for the situations I need it for, i.e. resume
-> with wireless fail, which I haven't hit yet.
+I got dropped off the kernel.org lists for a bit and didn't see
+this at first.  I don't know whether Sage responded to you or
+not.  I'm getting back to you, just to be sure.
 
-OK, I'll push the patch upstream. Will it be OK to use your name in Reported-by: 
-and Tested-by: lines?
+ > Date: Sat, 14 Apr 2012 03:34:20 +0100
+ > From: Al Viro <viro@ZenIV.linux.org.uk>
+ > To: Sage Weil <sage@newdream.net>
+ > Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
+ > Subject: osd_req_encode_op() breakage?
+ >
+ > static void osd_req_encode_op(struct ceph_osd_request *req,
+ >                               struct ceph_osd_op *dst,
+ >                               struct ceph_osd_req_op *src)
+ > {
+ >         dst->op = cpu_to_le16(src->op);
+ >
+ >         switch (dst->op) {
+ >         case CEPH_OSD_OP_READ:
+ >         case CEPH_OSD_OP_WRITE:
+ >
+ > is an interesting thing to say, seeing that CEPH_OSD_OP_READ et.al. are
+ > all host-endian...  Should that be "switch (src->op)" instead?
 
-Larry
+Yes, you are absolutely correct.
 
+We have obviously not done endianness checks in this code for
+some time.
+
+I will commit a fix and credit you for it.  I'll also make sure
+we are doing proper testing for this sort of thing on a regular
+basis.
+
+					-Alex
+
+ >  AFAICS, that sucker had appeared in that form back in
+ > commit 68b4476b0bc13fef18266b4140309a30e86739d2
+ > Author: Yehuda Sadeh <yehuda@hq.newdream.net>
+ > Date:   Tue Apr 6 15:01:27 2010 -0700
+ >
+ >     ceph: messenger and osdc changes for rbd
+ >
+ > and it seems to be broken on big-endian hosts.  Doesn't look like a 
+misspelled
+ > le16_to_cpu() either, since dst->op ends up going on the wire...
+ >
+ > I'm really mystified by that - it looks like it must've shown up 
+immediately
+ > on big-endian hosts; it's not like it was an obscure codepath, after 
+all...
+ > Comments?
