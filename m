@@ -1,81 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752500Ab2DRKdi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Apr 2012 06:33:38 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:49658 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751362Ab2DRKdh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Apr 2012 06:33:37 -0400
-Date: Wed, 18 Apr 2012 12:33:34 +0200
-From: Wolfram Sang <w.sang@pengutronix.de>
-To: Li Yang-R58472 <r58472@freescale.com>
-Cc: Zhao Chenhui-B35336 <B35336@freescale.com>,
-        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] i2c-mpc: avoid I2C abnormal after resuming from deep
- sleep
-Message-ID: <20120418103334.GD2232@pengutronix.de>
-References: <1330511961-22498-1-git-send-email-chenhui.zhao@freescale.com>
- <20120229183436.GA30545@pengutronix.de>
- <20120417142105.GA21802@pengutronix.de>
- <94F013E7935FF44C83EBE7784D62AD3F092D1DC7@039-SN2MPN1-022.039d.mgd.msft.net>
+	id S1752015Ab2DRKj7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Apr 2012 06:39:59 -0400
+Received: from zene.cmpxchg.org ([85.214.230.12]:55187 "EHLO zene.cmpxchg.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751202Ab2DRKj5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Apr 2012 06:39:57 -0400
+Date: Wed, 18 Apr 2012 12:39:30 +0200
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>,
+        Glauber Costa <glommer@parallels.com>, Tejun Heo <tj@kernel.org>,
+        Hugh Dickins <hughd@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Daniel Walsh <dwalsh@redhat.com>,
+        "Daniel P. Berrange" <berrange@redhat.com>,
+        Li Zefan <lizf@cn.fujitsu.com>, LKML <linux-kernel@vger.kernel.org>,
+        Cgroups <cgroups@vger.kernel.org>,
+        Containers <containers@lists.linux-foundation.org>
+Subject: Re: [RFD] Merge task counter into memcg
+Message-ID: <20120418103930.GA1771@cmpxchg.org>
+References: <20120412153055.GL1787@cmpxchg.org>
+ <20120412163825.GB13069@google.com>
+ <20120412172309.GM1787@cmpxchg.org>
+ <20120412174155.GC13069@google.com>
+ <4F878480.60505@jp.fujitsu.com>
+ <20120417154117.GE32402@google.com>
+ <4F8D9FC4.3080800@parallels.com>
+ <4F8E646B.1020807@jp.fujitsu.com>
+ <CAFTL4hw3C4s6VS07pJzdBawv0ugKJJa+Vnb-Q_9FrWEq4=ka9Q@mail.gmail.com>
+ <4F8E7E76.3020202@jp.fujitsu.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="UfEAyuTBtIjiZzX6"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <94F013E7935FF44C83EBE7784D62AD3F092D1DC7@039-SN2MPN1-022.039d.mgd.msft.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
-X-SA-Exim-Mail-From: wsa@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+In-Reply-To: <4F8E7E76.3020202@jp.fujitsu.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, Apr 18, 2012 at 05:42:30PM +0900, KAMEZAWA Hiroyuki wrote:
+> (2012/04/18 16:53), Frederic Weisbecker wrote:
+> 
+> > 2012/4/18 KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>:
+> >> (2012/04/18 1:52), Glauber Costa wrote:
+> >>
+> >>>
+> >>>>> In short, I don't think it's better to have task-counting and fd-counting in memcg.
+> >>>>> It's kmem, but it's more than that, I think.
+> >>>>> Please provide subsys like ulimit.
+> >>>>
+> >>>> So, you think that while kmem would be enough to prevent fork-bombs,
+> >>>> it would still make sense to limit in more traditional ways
+> >>>> (ie. ulimit style object limits).  Hmmm....
+> >>>>
+> >>>
+> >>> I personally think this is namespaces business, not cgroups.
+> >>> If you have a process namespace, an interface that works to limit the
+> >>> number of processes should keep working given the constraints you are
+> >>> given.
+> >>>
+> >>> What doesn't make sense, is to create a *new* interface to limit
+> >>> something that doesn't really need to be limited, just because you
+> >>> limited a similar resource before.
+> >>>
+> >>
+> >>
+> >> Ok, limitiing forkbomb is unnecessary. ulimit+namespace should work.
+> >> What we need is user-id namespace, isn't it ? If we have that, ulimit
+> >> works enough fine, no overheads.
+> > 
+> > I have considered using NR_PROC rlimit on top of user namespaces to
+> > fight forkbombs inside a container.
+> > ie: one user namespace per container with its own rlimit.
+> > 
+> > But it doesn't work because we can have multiuser apps running in a
+> > single container.
+> > 
+> 
+> Ok, then, requirements is different from ulimit. ok, please forget my words.
+> 
+> My concern for using 'kmem' is that size of object can be changed, and set up
+> may be more complicated than limiting 'number' of tasks.
+> It's very architecture dependent....But hmm... 
 
---UfEAyuTBtIjiZzX6
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+BECAUSE it is architecture/kernel version/runtime dependent how big a
+task really is, limiting available kernel memory is much more
+meaningful than limiting a container to a number of units of unknown
+and dynamically changing size.
 
-Hi,
+How could this argument ever work IN FAVOR of limiting the number of
+tasks?
 
-> We certainly don't want the policy to be against the common practice
-> of the community.  If it is we can consider changing our policy.
+> If slab accounting can handle task_struct accounting, all you wants can be
+> done by it (maybe). And implementation can be duplicated.
+> (But another aspect of the problem will be speed of development..)
+> 
+> One idea is (I'm not sure good or bad)...having following control files.
+> 
+>  - memory.kmem.task_struct.limit_in_bytes
+>  - memory.kmem.task_struct.usage_in_bytes
+>  - memory.kmem.task_struct.size_in_bytes   # size of task struct.
 
-Nice, thanks for being open to discussion!
+A task's memory impact is not just its task_struct.
 
-> However I can't find a clear message stating the consensus of what the
-> Linux kernel community think of adding copyright claims.  I even found
+> At 1st, implement this by accounting task struct(or some) directly.
+> Later, if we can, replace the implementation with slab(kmem) cgroup..
+> and unify interfaces.....a long way to go.
+> 
+> 2nd idea is
+> 
+>  - memory.object.task.limit_in_number	# limit the number of tasks.
+>  - memory.object.task.usage_in_number   # usage
+> 
+> If I'm a user, I prefer #2.
 
-Well, what I know, the consensus is "common sense". What is obviously
-not "clear" in a way you could write it down. At least, Ben agrees.
+The memory controller is there to partition physical memory.  This is
+usually measured in bytes and that's why the user-visible object size
+in the memory controller is a byte.  When you add other types of
+objects, you force the user to know about them and give them a method
+of knowing the object size in bytes, which in case of a task, can vary
+at runtime.
 
-> some message that encourage adding copyright to maintain the GPL
-> license.
+I will agree to this interface the moment I can buy RAM whose quantity
+is measured in number of tasks.
 
-I am interested. Do you have a link?
+> Hmm, 
+>    global kmem limiting           -> done by bytes.
+>    special kernel object limiting -> done by the number of objects.
+> 
+> is...complicated ?
 
-Regards,
+Yes, and you don't provide any arguments!
 
-   Wolfram
+What are you trying to do that would make limiting the number of tasks
+a useful mechanism?
 
---=20
-Pengutronix e.K.                           | Wolfram Sang                |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
-
---UfEAyuTBtIjiZzX6
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iEYEARECAAYFAk+OmH4ACgkQD27XaX1/VRubswCfWX0Qu6/PjR7yzGUDfHwBiw05
-DAgAoLlVGb8xLugS8oGhajd5dFYBn2jO
-=eGmZ
------END PGP SIGNATURE-----
-
---UfEAyuTBtIjiZzX6--
+Why should some kernel objects be special?
