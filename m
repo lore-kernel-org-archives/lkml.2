@@ -1,52 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751888Ab2DRIAt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Apr 2012 04:00:49 -0400
-Received: from antcom.de ([188.40.178.216]:57605 "EHLO chuck.antcom.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751202Ab2DRIAs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Apr 2012 04:00:48 -0400
-Message-ID: <4F8E74AA.7030808@antcom.de>
-Date: Wed, 18 Apr 2012 10:00:42 +0200
-From: Roland Stigge <stigge@antcom.de>
-Organization: ANTCOM IT Research & Development
-User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:8.0) Gecko/20120216 Icedove/8.0
-MIME-Version: 1.0
-To: Dan Carpenter <dan.carpenter@oracle.com>
-CC: arm@kernel.org, linux-arm-kernel@lists.infradead.org,
-        thierry.reding@avionic-design.de, gregkh@linuxfoundation.org,
-        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-input@vger.kernel.org, dmitry.torokhov@gmail.com,
-        axel.lin@gmail.com, broonie@opensource.wolfsonmicro.com,
-        marek.vasut@gmail.com, devel@driverdev.osuosl.org, kevin.wells@nxp.com,
-        srinivas.bakki@nxp.com
-Subject: Re: [PATCH v2 0/8] Second patchset for LPC32xx device tree conversion
-References: <1334682507-15055-1-git-send-email-stigge@antcom.de> <20120417205001.GH6498@mwanda>
-In-Reply-To: <20120417205001.GH6498@mwanda>
-X-Enigmail-Version: 1.3.4
-OpenPGP: url=subkeys.pgp.net
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	id S1751624Ab2DRIDc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Apr 2012 04:03:32 -0400
+Received: from szxga03-in.huawei.com ([58.251.152.66]:52403 "EHLO
+	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751086Ab2DRID2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Apr 2012 04:03:28 -0400
+Date: Wed, 18 Apr 2012 15:57:23 +0800
+From: "Peter Huang(Peng)" <peter.huangpeng@huawei.com>
+Subject: Re: [PATCH] set fake_rtable's dst to NULL to avoid kernel Oops.
+In-reply-to: <1334681323.2472.43.camel@edumazet-glaptop>
+X-Originating-IP: [10.166.90.111]
+To: Eric Dumazet <eric.dumazet@gmail.com>,
+        Stephen Hemminger <shemminger@vyatta.com>
+Cc: "'David S. Miller'" <davem@davemloft.net>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, ctrix+debianbugs@navynet.it,
+        peter.huangpeng@gmail.com, harry.majun@huawei.com
+Message-id: <4F8E73E3.6080900@huawei.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=UTF-8; format=flowed
+Content-transfer-encoding: 7BIT
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:11.0) Gecko/20120327
+ Thunderbird/11.0.1
+X-CFilter-Loop: Reflected
+References: <000001cd1c62$75d10de0$617329a0$%huangpeng@huawei.com>
+ <20120417085248.3e642294@nehalam.linuxnetplumber.net>
+ <1334681323.2472.43.camel@edumazet-glaptop>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/17/2012 10:50 PM, Dan Carpenter wrote:
-> On Tue, Apr 17, 2012 at 07:08:19PM +0200, Roland Stigge wrote:
->> Applies to v3.4-rc3
->>
-> 
-> This probably applies fine (the previous version did a couple days
-> ago), but it's always best to submit patches against linux-next.
-> The 3.4 kernel is in -rc already so this is 3.5 material.
+On 2012/4/18 0:48, Eric Dumazet wrote:
+> On Tue, 2012-04-17 at 08:52 -0700, Stephen Hemminger wrote:
+>
+>> This check seems like a disaster waiting to happen when the next
+>> change to DST table happens.
+>
+> Please Peter Document this, adding a new DST_FAKE_RTABLE flag
+>
+> #define DST_FAKE_RTABLE DST_NOPEER
+>
+> or just use a bit, we have plenty of them available.
+>
 
-IIRC, I've been asked by Arnd to always build upon current rc tags.
-(Sounded reasonable, since this one will become a stable release upon
-which "my" patches will eventually be merged in the following merge window.)
 
-Please point me to what I got wrong where, or try to agree on one
-strategy here.
+Add DST_FAKE_RTABLE to dst_entry, this is the new patch.
+Is this ok?
 
-Thanks in advance,
+Acked-by: Eric Dumazet <eric.dumazet@gmail.com>
+Signed-off-by: Peter Huang <peter.huangpeng@huawei.com>
+---
+  include/linux/netfilter_bridge.h |    8 ++++++++
+  include/net/dst.h                |    1 +
+  net/bridge/br_forward.c          |    1 +
+  net/bridge/br_netfilter.c        |    8 ++------
+  4 files changed, 12 insertions(+), 6 deletions(-)
+diff --git a/include/linux/netfilter_bridge.h 
+b/include/linux/netfilter_bridge.h
+index 0ddd161..eb09e3b 100644
+--- a/include/linux/netfilter_bridge.h
++++ b/include/linux/netfilter_bridge.h
+@@ -104,9 +104,17 @@ struct bridge_skb_cb {
+         } daddr;
+  };
 
-Roland
++static inline void br_drop_fake_rtable(struct sk_buff *skb) {
++       struct dst_entry *dst = skb_dst(skb);
++       /* abuse fact that only fake_rtable has DST_FAKE_RTABLE set */
++       if (dst && (dst->flags & DST_FAKE_RTABLE))
++               skb_dst_drop(skb);
++}
++
+  #else
+  #define nf_bridge_maybe_copy_header(skb)       (0)
+  #define nf_bridge_pad(skb)                     (0)
++#define br_drop_fake_rtable(skb)               (0)
+  #endif /* CONFIG_BRIDGE_NETFILTER */
+
+  #endif /* __KERNEL__ */
+diff --git a/include/net/dst.h b/include/net/dst.h
+index 59c5d18..b094030 100644
+--- a/include/net/dst.h
++++ b/include/net/dst.h
+@@ -55,6 +55,7 @@ struct dst_entry {
+  #define DST_NOCACHE            0x0010
+  #define DST_NOCOUNT            0x0020
+  #define DST_NOPEER             0x0040
++#define DST_FAKE_RTABLE                0x0080
+
+         short                   error;
+         short                   obsolete;
+diff --git a/net/bridge/br_forward.c b/net/bridge/br_forward.c
+index 61f6534..a2098e3 100644
+--- a/net/bridge/br_forward.c
++++ b/net/bridge/br_forward.c
+@@ -47,6 +47,7 @@ int br_dev_queue_push_xmit(struct sk_buff *skb)
+                 kfree_skb(skb);
+         } else {
+                 skb_push(skb, ETH_HLEN);
++               br_drop_fake_rtable(skb);
+                 dev_queue_xmit(skb);
+         }
+
+diff --git a/net/bridge/br_netfilter.c b/net/bridge/br_netfilter.c
+index dec4f38..d7f49b6 100644
+--- a/net/bridge/br_netfilter.c
++++ b/net/bridge/br_netfilter.c
+@@ -156,7 +156,7 @@ void br_netfilter_rtable_init(struct net_bridge *br)
+         rt->dst.dev = br->dev;
+         rt->dst.path = &rt->dst;
+         dst_init_metrics(&rt->dst, br_dst_default_metrics, true);
+-       rt->dst.flags   = DST_NOXFRM | DST_NOPEER;
++       rt->dst.flags   = DST_NOXFRM | DST_NOPEER | DST_FAKE_RTABLE;
+         rt->dst.ops = &fake_dst_ops;
+  }
+
+@@ -694,11 +694,7 @@ static unsigned int br_nf_local_in(unsigned int 
+hook, struct sk_buff *skb,
+                                    const struct net_device *out,
+                                    int (*okfn)(struct sk_buff *))
+  {
+-       struct rtable *rt = skb_rtable(skb);
+-
+-       if (rt && rt == bridge_parent_rtable(in))
+-               skb_dst_drop(skb);
+-
++       br_drop_fake_rtable(skb);
+         return NF_ACCEPT;
+  }
+
