@@ -1,58 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754910Ab2DRUIG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Apr 2012 16:08:06 -0400
-Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:55602 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751065Ab2DRUIE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Apr 2012 16:08:04 -0400
-Date: Wed, 18 Apr 2012 21:10:32 +0100
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: richard -rw- weinberger <richard.weinberger@gmail.com>
-Cc: PINTU KUMAR <pintu_agarwal@yahoo.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "pintu.k@samsung.com" <pintu.k@samsung.com>
-Subject: Re: [NEW]: Introducing shrink_all_memory from user space
-Message-ID: <20120418211032.47b243da@pyramind.ukuu.org.uk>
-In-Reply-To: <CAFLxGvz5tmEi-39CZbJN+0zNd3ZpHXzZcNSFUpUWS_aMDJ4t6Q@mail.gmail.com>
-References: <1334483226.20721.YahooMailNeo@web162003.mail.bf1.yahoo.com>
-	<CAFLxGvwJCMoiXFn3OgwiX+B50FTzGZmo6eG3xQ1KaPsEVZVA1g@mail.gmail.com>
-	<1334490429.67558.YahooMailNeo@web162006.mail.bf1.yahoo.com>
-	<CAFLxGvz5tmEi-39CZbJN+0zNd3ZpHXzZcNSFUpUWS_aMDJ4t6Q@mail.gmail.com>
-X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1755000Ab2DRUIR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Apr 2012 16:08:17 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:15753 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754932Ab2DRUIN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Apr 2012 16:08:13 -0400
+Message-ID: <1334779677.3112.190.camel@bling.home>
+Subject: Re: [RFC PATCH 1/3] iommu: Introduce iommu_group
+From: Alex Williamson <alex.williamson@redhat.com>
+To: David Gibson <david@gibson.dropbear.id.au>
+Cc: dwmw2@infradead.org, iommu@lists.linux-foundation.org,
+        qemu-devel@nongnu.org, joerg.roedel@amd.com, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Date: Wed, 18 Apr 2012 14:07:57 -0600
+In-Reply-To: <20120418095824.GB5387@truffala.fritz.box>
+References: <20120402203721.28977.95285.stgit@bling.home>
+	 <20120402211440.28977.74440.stgit@bling.home>
+	 <20120418095824.GB5387@truffala.fritz.box>
+Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 15 Apr 2012 14:10:00 +0200
-richard -rw- weinberger <richard.weinberger@gmail.com> wrote:
-
-> On Sun, Apr 15, 2012 at 1:47 PM, PINTU KUMAR <pintu_agarwal@yahoo.com> wrote:
-> > Moreover, this is mainly meant for mobile phones where there is only *one* user.
+On Wed, 2012-04-18 at 19:58 +1000, David Gibson wrote:
+> On Mon, Apr 02, 2012 at 03:14:40PM -0600, Alex Williamson wrote:
+> > IOMMUs often do not have visibility of individual devices in the
+> > system.  Due to IOMMU design, bus topology, or device quirks, we
+> > can often only identify groups of devices.  Examples include
+> > Intel VT-d & AMD-Vi which often have function level visibility
+> > compared to POWER partitionable endpoints which have bridge level
+> > granularity.
 > 
-> I see. Jet another awful hack.
-> Mobile phones are nothing special. They are computers
+> That's a significant oversimplification of the situation on POWER,
+> although it doesn't really matter in this context.  On older (i.e. pre
+> PCI-E) hardware, PEs have either host bridge (i.e. domain)
+> granularity, or in IIUC in some cases p2p bridge granularity, using
+> special p2p bridges, since that's the only real way to do iommu
+> differentiation without the PCI-E requestor IDs.  This isn't as coarse
+> as it seems in practice, because the hardware is usually built with a
+> bridge per physical PCI slot.
+> 
+> On newer PCI-E hardware, the PE granularity is basically a firmware
+> decision, and can go down to function level.  I believe pHyp puts the
+> granularity at the bridge level.  Our non-virtualized Linux "firmware"
+> currently does put it at the function level, but Ben is thinking about
+> changing that to bridge level: again, because of the hardware design
+> that isn't as coarse as it seems, and at this level we can hardware
+> guarantee isolation to a degree that's not possible at the function
+> level.
 
-Correct - so if it is showing up useful situations then they are also
-useful beyond mobile phone.
+Ok, thanks for the clarification.  This should support either model and
+it will be up to the iommu driver to fill the groups with the right
+devices.
 
-> Every program which is allowed to use this interface will (ab)use it.
+> >  PCIe-to-PCI bridges also often cloud the IOMMU
+> > visibility as it cannot distiguish devices behind the bridge.
+> > Devices can also sometimes hurt themselves by initiating DMA using
+> > the wrong source ID on a multifunction PCI device.
+> > 
+> > IOMMU groups are meant to help solve these problems and hopefully
+> > become the working unit of the IOMMI API.
+> 
+> So far, so simple.  No objections here.  I am trying to work out what
+> the real difference in approach is in this seriers from either your or
+> my earlier isolation group series.  AFAICT it's just that this
+> approach is explicitly only about IOMMU identity, ignoring (here) any
+> other factors which might affect isolation.  Or am I missing
+> something?
 
-If you expose it to userspace then you would want it very tightly
-controlled and very much special case. Within the kernel using it
-internally within things like CMA allocators seems to make more sense.
+Yes, they are very similar and actually also similar to how VFIO manages
+groups.  It's easy to start some kind of group structure, the hard part
+is in the details and particularly where to stop.  My attempt to figure
+out where isolation groups stop went quite poorly, ending up with a
+ridiculously complicated mess of hierarchical groups that got worse as I
+tried to fill in the gaps.
 
-I think you overestimate the abuse. It's an interface which pushes clean
-pages that can be cheaply recovered out of memory. It doesn't guarantee
-the caller reaps the benefit of that, and the vm will continue to try and
-share out any new resource fairly.
+With iommu groups I try to take a step back and simplify.  I initially
+had a goal of describing only the minimum iommu granularity sets, this
+is where the dma_dev idea came from.  But the iommu granularity doesn't
+really guarantee all that much or allow any ability for the iommu driver
+to add additional policies that would be useful for userspace drivers
+(ex. multi-function devices and peer-to-peer isolation).  So again I've
+had to allow that a group might have multiple visible requestor IDs
+within the group.  This time though I'm trying to disallow hierarchies,
+which means that even kernel, dma_ops, usage of groups are restricted to
+a single, platform defined, level of isolation.  I'm also trying to stay
+out of the business of providing a group management interface.  I only
+want to describe groups.  Things like stopping driver probes should be
+device level problems.  In effect, this level should not be providing
+enforcement and ownership, something like VFIO will do that.  So the
+differences are subtle, but important.  Thanks,
 
-Alan
+Alex
+
