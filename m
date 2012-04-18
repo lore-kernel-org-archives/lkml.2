@@ -1,120 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752871Ab2DRDwn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Apr 2012 23:52:43 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:35343 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752523Ab2DRDwk (ORCPT
+	id S1752583Ab2DRD5X (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Apr 2012 23:57:23 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:8332 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751045Ab2DRD5W (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Apr 2012 23:52:40 -0400
-Date: Tue, 17 Apr 2012 20:52:21 -0700 (PDT)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hugh@eggly.anvils
-To: Mel Gorman <mgorman@suse.de>
-cc: Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Rik van Riel <riel@redhat.com>, Ken Chen <kenchen@google.com>,
-        Linux-MM <linux-mm@kvack.org>, Linux-S390 <linux-s390@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC PATCH] s390: mm: rmap: Transfer storage key to struct page
- under the page lock
-In-Reply-To: <20120417122202.GF2359@suse.de>
-Message-ID: <alpine.LSU.2.00.1204172023390.1609@eggly.anvils>
-References: <20120416141423.GD2359@suse.de> <alpine.LSU.2.00.1204161332120.1675@eggly.anvils> <20120417122202.GF2359@suse.de>
-User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Tue, 17 Apr 2012 23:57:22 -0400
+X-Authority-Analysis: v=2.0 cv=V/z/IJbi c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=XQbtiDEiEegA:10 a=_2gBi4Ny9w4A:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=NILeTfs2SIe9kG9bl3wA:9 a=PUjeQqilurYA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.80.29
+Message-ID: <1334721441.28106.28.camel@gandalf.stny.rr.com>
+Subject: Re: [3.4-rc3] Thread overran stack, or stack corrupted
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Dave Jones <davej@redhat.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>
+Date: Tue, 17 Apr 2012 23:57:21 -0400
+In-Reply-To: <20120418035004.GA31465@redhat.com>
+References: <20120417172142.GA30237@redhat.com>
+	 <CA+55aFy-uhOgEoEBr-LkOjFQBVh14wwr-20jTrtsg_2EnuNY5g@mail.gmail.com>
+	 <20120417203223.GA31699@redhat.com>
+	 <CA+55aFzWzhxaVHuPY_oB5PVhw2Gxiwr46vyHCHEsU0o-HFikTw@mail.gmail.com>
+	 <20120418022705.GA23877@home.goodmis.org>
+	 <20120418031557.GA29828@redhat.com>
+	 <1334720611.28106.25.camel@gandalf.stny.rr.com>
+	 <20120418035004.GA31465@redhat.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.2.2-1 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 17 Apr 2012, Mel Gorman wrote:
-> On Mon, Apr 16, 2012 at 02:14:09PM -0700, Hugh Dickins wrote:
-> > On Mon, 16 Apr 2012, Mel Gorman wrote:
-> > 
-> > > This patch is horribly ugly and there has to be a better way of doing
-> > > it. I'm looking for suggestions on what s390 can do here that is not
-> > > painful or broken. 
-> > > 
-> > > The following bug was reported on s390
-> > > 
-> > > kernel BUG at
-> > > /usr/src/packages/BUILD/kernel-default-3.0.13/linux-3.0/lib/radix-tree.c:477!
->... 
-> > I'm confused as to whether you see this problem with file pages,
-> > or with anon-swap-cache pages, or with both, or not yet determined.
+On Tue, 2012-04-17 at 23:50 -0400, Dave Jones wrote:
+
+>  > Just to make sure, what does
+>  > 
+>  >  /sys/kernel/debug/tracing/enabled_functions
+>  > 
+>  > have?
 > 
-> PageSwapCache pages only.
+> 33503 lines.
 
-Oh good, thanks, that narrowed the search space a lot.
+That sounds correct.
 
-> > (You do remind me that I meant years ago to switch swapper_space over
-> > to the much simpler __set_page_dirty_no_writeback(), which shmem has
-> > used for ages; but as far as this problem goes, that would probably
-> > be at best a workaround, rather than the proper fix.)
+>  
+>  > This would show what functions the stack tracer is using.
+>  > 
+>  > I just compiled the latest vanilla kernel and tried it out, and it
+>  > worked for me.
 > 
-> It would be a workaround. If in the future we wanted to treat swapper
-> space more like a normal file inode and writeback dirty pages from
-> the flusher thread then this bug would just pop its head back up.
+> works on my other machines too with similar kernel configs, just not on the one I'm profiling.
 
-It's a no-brainer workaround: patch and more explanation below.  I
-can double-fix it if you prefer, but the one-liner appeals more to me.
+I have to ask. Is this a x86 box?
 
-> > Hmm, mm/migrate.c.
-> 
-> Migration moves the page mapping under the tree lock so
-> __set_page_dirty_nobuffers() I don't think that is it.
+Also, have you tested to see if function tracing works?
 
-Yes, I was worried by the places that set page->mapping = NULL in
-migrate.c (later, not under the tree_lock), but those would not be able
-to generate this issue at all (ptes already replaced by migration entries).
+# cd /sys/kernel/debug/tracing
+# echo function > current_tracer
+# cat trace
 
-> I think the race is against something like reuse_swap_page() which locks
-> the page and removes it from swap cache while page_remove_rmap() looks
-> up the same page.
+If function tracing doesn't work this wouldn't either.
 
-No, __delete_from_swap_cache() is always doing ClearPageSwapCache under
-tree_lock (which __set_page_dirty_no_buffers acquires before proceeding).
+I'm also assuming you have CONFIG_STACKTRACE and
+CONFIG_STACKTRACE_SUPPORT enabled. They should be selected, but configs
+can always get screwed up.
+
+-- Steve
 
 
-[PATCH] mm: fix s390 BUG by using __set_page_dirty_no_writeback on swap
-
-Mel reports a BUG_ON(slot == NULL) in radix_tree_tag_set() on s390 3.0.13:
-called from __set_page_dirty_nobuffers() when page_remove_rmap() tries to
-transfer dirty flag from s390 storage key to struct page and radix_tree.
-
-That would be because of reclaim's shrink_page_list() calling add_to_swap()
-on this page at the same time: first PageSwapCache is set (causing
-page_mapping(page) to appear as &swapper_space), then page->private set,
-then tree_lock taken, then page inserted into radix_tree - so there's
-an interval before taking the lock when the radix_tree slot is empty.
-
-We could fix this by moving __add_to_swap_cache()'s spin_lock_irq up
-before SetPageSwapCache, with error case ClearPageSwapCache moved up
-under tree_lock too.
-
-But a better fix is just to do what's five years overdue.  Ken Chen
-added __set_page_dirty_no_writeback() (if !PageDirty TestSetPageDirty)
-for tmpfs to skip all that radix_tree overhead, and swap is just the same:
-it ignores the radix_tree tag, and does not participate in dirty page
-accounting, so should be using __set_page_dirty_no_writeback() too.
-
-Reported-by: Mel Gorman <mgorman@suse.de>
-Signed-off-by: Hugh Dickins <hughd@google.com>
-Cc: stable@kernel.org
----
-
- mm/swap_state.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
---- 3.4-rc2/mm/swap_state.c	2012-03-31 17:42:26.949729938 -0700
-+++ linux/mm/swap_state.c	2012-04-17 15:34:05.732086663 -0700
-@@ -26,7 +26,7 @@
-  */
- static const struct address_space_operations swap_aops = {
- 	.writepage	= swap_writepage,
--	.set_page_dirty	= __set_page_dirty_nobuffers,
-+	.set_page_dirty	= __set_page_dirty_no_writeback,
- 	.migratepage	= migrate_page,
- };
- 
