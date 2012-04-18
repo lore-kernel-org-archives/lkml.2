@@ -1,63 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753992Ab2DRQAI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Apr 2012 12:00:08 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:42388 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753586Ab2DRQAE convert rfc822-to-8bit (ORCPT
+	id S1753429Ab2DRQE3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Apr 2012 12:04:29 -0400
+Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:49401 "EHLO
+	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751065Ab2DRQE2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Apr 2012 12:00:04 -0400
-MIME-Version: 1.0
-In-Reply-To: <CADDKRnAhqi-fwFrr85QC-ZP2g0=_ZSb__jEbZqAekCKXs2CtCg@mail.gmail.com>
-References: <CADDKRnALwHa=QteDDcMxBU24rfbKoTOGX=iTcfeE7=M7a+NFcw@mail.gmail.com>
-	<CADDKRnAhqi-fwFrr85QC-ZP2g0=_ZSb__jEbZqAekCKXs2CtCg@mail.gmail.com>
-Date: Wed, 18 Apr 2012 18:00:01 +0200
-Message-ID: <CADDKRnDJ_u7FkOHPDr0kJ+mh4k06wv2imVh8DV=GzDUQiKEWQw@mail.gmail.com>
-Subject: Re: [v3.4-rc] regression: reboot not working
-From: =?ISO-8859-1?Q?J=F6rg_Otte?= <jrg.otte@googlemail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Len Brown <lenb@kernel.org>, hpa@zytor.com, torvalds@linux-foundation.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Wed, 18 Apr 2012 12:04:28 -0400
+Message-ID: <1334764921.3106.1.camel@brekeke>
+Subject: Re: [PATCH 1/1] Remove UBIFS_FS_XATTR config option.
+From: Artem Bityutskiy <dedekind1@gmail.com>
+Reply-To: dedekind1@gmail.com
+To: Subodh Nijsure <subodh.nijsure@gmail.com>
+Cc: Adrian Hunter <adrian.hunter@intel.com>, linux-kernel@vger.kernel.org,
+        Subodh Nijsure <snijsure@grid-net.com>
+Date: Wed, 18 Apr 2012 19:02:01 +0300
+In-Reply-To: <CALr9Q3ZmjjghkzGVVRuKQ-vMVVyH1qkXQ+CadoBiFARyrffGhQ@mail.gmail.com>
+References: <1334419797-28995-1-git-send-email-snijsure@grid-net.com>
+	 <CALr9Q3ZmjjghkzGVVRuKQ-vMVVyH1qkXQ+CadoBiFARyrffGhQ@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 (3.2.3-2.fc16) 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-9 days and still no response. Maybe I addressed the wrong person(s).
-I Cc to Linus.
+On Wed, 2012-04-18 at 08:40 -0700, Subodh Nijsure wrote:
+> Any chance I can get feedback on this, so I can send out V3 of my
+> extended attribute patch.
 
-Who can help with this topic?
+Looks good, I am having paternity leave now and only sporadically check
+my e-mail, but do not have time to test/apply patches so far. Assume it
+is applied and send the real functionality on top. I'll take it as soon
+as I leave.
 
-Thanks, Joerg
 
-
-
-Am 14. April 2012 12:46 schrieb Jörg Otte <jrg.otte@googlemail.com>:
-> It's now bisected:
->
-> cf450136bfde77c7f95065c91bffded4aa7fa731   ACPI: ignore FADT reset-reg-sup flag
->
-> Thanks, Joerg
->
->
-> Am 9. April 2012 17:19 schrieb Jörg Otte <jrg.otte@googlemail.com>:
->> Hi,
->>
->> On reboot it shuts down as normal.
->> The last lines displayed are:
->>
->>>.
->>>Unmounting temporary filesystems.. [OK]
->>>Deactivating swap...               [OK]
->>>Unmounting local filesystems...    [OK]
->>>Will now restart
->>>    Restarting system
->>
->> Then I hear it accessing the cd-drive, but then
->> it's being stuck.
->>
->> v3.3 was ok. HW is a Thinkpad T43.
->>
->> Please Cc me I'm not subscribed.
->>
->> Thanks,Joerg
