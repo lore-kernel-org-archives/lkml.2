@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752661Ab2DRG1B (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Apr 2012 02:27:01 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:56897 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751501Ab2DRG0f (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Apr 2012 02:26:35 -0400
+	id S1752533Ab2DRG1A (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Apr 2012 02:27:00 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:42958 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751484Ab2DRG0a (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Apr 2012 02:26:30 -0400
 From: Venkatraman S <svenkatr@ti.com>
 To: <linux-kernel@vger.kernel.org>, <linux-mmc@vger.kernel.org>
 CC: <arnd.bergmann@linaro.org>, <cjb@laptop.org>, <alex.limberg@sandisk.com>,
         <ilan.smith@sandisk.com>, <lporzio@micron.com>,
         Venkatraman S <svenkatr@ti.com>
-Subject: [RFC PATCH 10/11] mmc: core: Utility function for mmc preemption sequence
-Date: Wed, 18 Apr 2012 11:55:31 +0530
-Message-ID: <1334730332-22244-11-git-send-email-svenkatr@ti.com>
+Subject: [RFC PATCH 09/11] mmc: block: Detect HPI support in card and host controller
+Date: Wed, 18 Apr 2012 11:55:30 +0530
+Message-ID: <1334730332-22244-10-git-send-email-svenkatr@ti.com>
 X-Mailer: git-send-email 1.7.10.rc2
 In-Reply-To: <1334730332-22244-1-git-send-email-svenkatr@ti.com>
 References: <1334730332-22244-1-git-send-email-svenkatr@ti.com>
@@ -23,54 +24,46 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add a routine to invoke hpi command after invoking host
-controller abort.
+If both the card and host controller support HPI related
+operations, set a flag in MMC queue to remember it.
 
 Signed-off-by: Venkatraman S <svenkatr@ti.com>
 ---
- drivers/mmc/core/core.c  |   15 +++++++++++++++
- include/linux/mmc/core.h |    2 ++
- 2 files changed, 17 insertions(+)
+ drivers/mmc/card/block.c |   12 ++++++++----
+ 1 file changed, 8 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/mmc/core/core.c b/drivers/mmc/core/core.c
-index 1963305..7230a26 100644
---- a/drivers/mmc/core/core.c
-+++ b/drivers/mmc/core/core.c
-@@ -467,6 +467,21 @@ out:
- }
- EXPORT_SYMBOL(mmc_interrupt_hpi);
+diff --git a/drivers/mmc/card/block.c b/drivers/mmc/card/block.c
+index dabec55..11833e4 100644
+--- a/drivers/mmc/card/block.c
++++ b/drivers/mmc/card/block.c
+@@ -88,6 +88,7 @@ struct mmc_blk_data {
+ 	unsigned int	flags;
+ #define MMC_BLK_CMD23	(1 << 0)	/* Can do SET_BLOCK_COUNT for multiblock */
+ #define MMC_BLK_REL_WR	(1 << 1)	/* MMC Reliable write support */
++#define MMC_HPI_SUPPORT	(1 << 2)
  
-+int mmc_preempt_foreground_request(struct mmc_card *card,
-+	struct mmc_request *req)
-+{
-+	int ret;
-+
-+	ret = mmc_abort_req(card->host, req);
-+	if (ret)
-+		pr_err("%s: Host Abort failed %d\n",
-+			mmc_hostname(card->host), ret);
-+	else
-+		ret = mmc_interrupt_hpi(card);
-+	return ret;
-+}
-+EXPORT_SYMBOL(mmc_preempt_foreground_request);
-+
- /**
-  *	mmc_wait_for_cmd - start a command and wait for completion
-  *	@host: MMC host to start command
-diff --git a/include/linux/mmc/core.h b/include/linux/mmc/core.h
-index d86144e..e2d55c6 100644
---- a/include/linux/mmc/core.h
-+++ b/include/linux/mmc/core.h
-@@ -144,6 +144,8 @@ extern struct mmc_async_req *mmc_start_req(struct mmc_host *,
- extern int mmc_interrupt_hpi(struct mmc_card *);
- extern void mmc_wait_for_req(struct mmc_host *, struct mmc_request *);
- extern int mmc_wait_for_cmd(struct mmc_host *, struct mmc_command *, int);
-+extern int mmc_preempt_foreground_request(struct mmc_card *card,
-+	struct mmc_request *req);
- extern int mmc_app_cmd(struct mmc_host *, struct mmc_card *);
- extern int mmc_wait_for_app_cmd(struct mmc_host *, struct mmc_card *,
- 	struct mmc_command *, int);
+ 	unsigned int	usage;
+ 	unsigned int	read_only;
+@@ -1548,12 +1549,15 @@ static struct mmc_blk_data *mmc_blk_alloc_req(struct mmc_card *card,
+ 			md->flags |= MMC_BLK_CMD23;
+ 	}
+ 
+-	if (mmc_card_mmc(card) &&
+-	    md->flags & MMC_BLK_CMD23 &&
++	if (mmc_card_mmc(card)) {
++		if (md->flags & MMC_BLK_CMD23 &&
+ 	    ((card->ext_csd.rel_param & EXT_CSD_WR_REL_PARAM_EN) ||
+ 	     card->ext_csd.rel_sectors)) {
+-		md->flags |= MMC_BLK_REL_WR;
+-		blk_queue_flush(md->queue.queue, REQ_FLUSH | REQ_FUA);
++			md->flags |= MMC_BLK_REL_WR;
++			blk_queue_flush(md->queue.queue, REQ_FLUSH | REQ_FUA);
++		}
++		if (card->host->ops->abort_req && card->ext_csd.hpi_en)
++			md->flags |= MMC_HPI_SUPPORT;
+ 	}
+ 
+ 	return md;
 -- 
 1.7.10.rc2
 
