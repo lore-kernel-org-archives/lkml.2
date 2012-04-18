@@ -1,44 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754556Ab2DRXtN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Apr 2012 19:49:13 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:43218 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754093Ab2DRXtB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Apr 2012 19:49:01 -0400
-Message-ID: <4F8F52D5.3040109@zytor.com>
-Date: Wed, 18 Apr 2012 16:48:37 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120329 Thunderbird/11.0.1
+	id S1754341Ab2DRXtI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Apr 2012 19:49:08 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:62461 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754042Ab2DRXsg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Apr 2012 19:48:36 -0400
 MIME-Version: 1.0
-To: "H.J. Lu" <hjl.tools@gmail.com>
-CC: mingo@redhat.com, linux-kernel@vger.kernel.org, tglx@linutronix.de,
-        linux-tip-commits@vger.kernel.org
-Subject: Re: [tip:x86/x32] x32: Fix alignment fail in struct compat_siginfo
-References: <1329696488-16970-1-git-send-email-hpa@zytor.com> <tip-31796ac4e8f0e88f5c10f1ad6dab8f19bebe44a4@git.kernel.org> <CAMe9rOqF6Kh6-NK7oP0Fpzkd4SBAWU+G53hwBbSD4iA2UzyxuA@mail.gmail.com> <4F8EFE4D.2040201@zytor.com> <CAMe9rOpfPQghra1PQTUwsFOvjgNpzFDEGS5=BbFBjn=HZGL93g@mail.gmail.com> <4F8F0385.5090901@zytor.com> <CAMe9rOq7LduF4aLPe9qatedxps4WPCgOHTD=E_Lje4_tu6tyZw@mail.gmail.com> <4F8F0614.9010604@zytor.com> <CAMe9rOqBd29LKB==NaKscpedRMR1uL_ZhHqSw1HQj-3_d9PSCw@mail.gmail.com> <4F8F30F5.9030704@zytor.com> <CAMe9rOq-dEFtYDgpC2z3MPujCkOUtBU4byHC_aAOWLUK8u5ZDQ@mail.gmail.com>
-In-Reply-To: <CAMe9rOq-dEFtYDgpC2z3MPujCkOUtBU4byHC_aAOWLUK8u5ZDQ@mail.gmail.com>
-X-Enigmail-Version: 1.4
+In-Reply-To: <20120418234042.GB23221@kroah.com>
+References: <1332492784-10526-1-git-send-email-myungjoo.ham@samsung.com>
+	<1332492784-10526-2-git-send-email-myungjoo.ham@samsung.com>
+	<20120418214703.GA31606@kroah.com>
+	<CAH9JG2VRas6LWCZSF3BFEsJvOS+6AeYMe_BQh3H18kh_=8CNqg@mail.gmail.com>
+	<20120418234042.GB23221@kroah.com>
+Date: Thu, 19 Apr 2012 08:48:35 +0900
+X-Google-Sender-Auth: leYhL92V6iF7hMJsNck1LtM6mZ4
+Message-ID: <CAH9JG2VPhv-i43tx2TSejut39u25RYbHKFAhPiRQpH4DYEEg9g@mail.gmail.com>
+Subject: Re: [PATCH v7 1/6] Extcon (external connector): import Android's
+ switch class and modify.
+From: Kyungmin Park <kyungmin.park@samsung.com>
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: MyungJoo Ham <myungjoo.ham@samsung.com>, Arnd Bergmann <arnd@arndb.de>,
+        LKML <linux-kernel@vger.kernel.org>, NeilBrown <neilb@suse.de>,
+        Randy Dunlap <rdunlap@xenotime.net>,
+        Mike Lockwood <lockwood@android.com>,
+        =?ISO-8859-1?Q?Arve_Hj=F8nnevag?= <arve@android.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Morten CHRISTIANSEN <morten.christiansen@stericsson.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        John Stultz <john.stultz@linaro.org>,
+        Joerg Roedel <joerg.roedel@amd.com>, myungjoo.ham@gmail.com,
+        cw00.choi@samsung.com
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/18/2012 03:55 PM, H.J. Lu wrote:
-> On Wed, Apr 18, 2012 at 2:24 PM, H. Peter Anvin <hpa@zytor.com> wrote:
->> Something like this works for you?
+On 4/19/12, Greg KH <gregkh@linuxfoundation.org> wrote:
+> On Thu, Apr 19, 2012 at 08:38:06AM +0900, Kyungmin Park wrote:
+>> Hi Greg,
 >>
->> Note: we should promote __compat_[us]64 to a global type when we do the
->> cleanup work requested by Linus (change __[us]64 to explicitly aligned
->> types, with all users that require the old types using __compat_[us]64),
->> but we need the compiler warning to do that, realistically.
+>> Can you check the latest extcon at here?
 >>
-> 
-> Can we also align struct siginfo to 8byte for x32?
-> 
+>> http://git.infradead.org/users/kmpark/linux-samsung/shortlog/refs/heads/extcon
+>
+> No, please send me patches, that's what I need to have in order to apply
+> them.
+>
+> Always make sure that your patches do not break the build along the
+> series, which is what happened here.  Did you not test this?
 
-We could.  If we want to align the substructures then we need some major
-surgery to the compat_siginfo handling though.
+No, we tested it from kernel 3.2 and generate the patches against the
+latest kernel at that time.
 
-	-hpa
+Here's another patch based on 3.3-rc4.
+http://git.infradead.org/users/kmpark/linux-samsung/shortlog/refs/heads/extcon-for-next
 
+Anyway, as you want, we will send the extcon patches again without build break.
+
+Thank you,
+Kyungmin Park
