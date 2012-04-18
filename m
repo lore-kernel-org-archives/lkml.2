@@ -1,76 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753550Ab2DRSiJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Apr 2012 14:38:09 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:8693 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750721Ab2DRSiH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Apr 2012 14:38:07 -0400
-Message-ID: <4F8F0A08.8010900@redhat.com>
-Date: Wed, 18 Apr 2012 20:38:00 +0200
-From: Paolo Bonzini <pbonzini@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120329 Thunderbird/11.0.1
+	id S1754241Ab2DRSjp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Apr 2012 14:39:45 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:32985 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751618Ab2DRSjn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Apr 2012 14:39:43 -0400
+Date: Wed, 18 Apr 2012 19:39:38 +0100
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Mimi Zohar <zohar@linux.vnet.ibm.com>
+Cc: James Morris <jmorris@namei.org>, linux-security-module@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        David Safford <safford@linux.vnet.ibm.com>,
+        Dmitry Kasatkin <dmitry.kasatkin@intel.com>
+Subject: Re: [PULL REQUEST] : ima-appraisal patches
+Message-ID: <20120418183938.GH6589@ZenIV.linux.org.uk>
+References: <1334754302.2137.8.camel@falcor>
+ <alpine.LRH.2.02.1204190101380.30151@tundra.namei.org>
+ <1334772473.2137.22.camel@falcor>
 MIME-Version: 1.0
-To: "Michael S. Tsirkin" <mst@redhat.com>
-CC: linux-kernel@vger.kernel.org, virtualization@lists.linux-foundation.org,
-        Amit Shah <amit.shah@redhat.com>,
-        Rusty Russell <rusty@rustcorp.com.au>
-Subject: Re: [RFC PATCH] virtio_console: link vq to port with a private pointer
- in struct virtqueue
-References: <1334756013-11752-1-git-send-email-pbonzini@redhat.com> <20120418142146.GB11801@redhat.com> <4F8ED0E4.6000702@redhat.com> <20120418161028.GB12815@redhat.com>
-In-Reply-To: <20120418161028.GB12815@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1334772473.2137.22.camel@falcor>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Il 18/04/2012 18:10, Michael S. Tsirkin ha scritto:
-> On Wed, Apr 18, 2012 at 04:34:12PM +0200, Paolo Bonzini wrote:
->> Il 18/04/2012 16:21, Michael S. Tsirkin ha scritto:
->>>> @@ -1872,6 +1864,8 @@ static int virtcons_restore(struct virtio_device *vdev)
->>>>  	list_for_each_entry(port, &portdev->ports, list) {
->>>>  		port->in_vq = portdev->in_vqs[port->id];
->>>>  		port->out_vq = portdev->out_vqs[port->id];
->>>> +		port->in_vq->vdev_priv = port;
->>>> +		port->out_vq->vdev_priv = port;
->>>>  
->>>>  		fill_queue(port->in_vq, &port->inbuf_lock);
->>>>  
->>>
->>> Let's add an API to set this pointer.
->>> Document that you must not set it after
->>> probe/restore returned.
->>
->> Why?
+On Wed, Apr 18, 2012 at 02:07:52PM -0400, Mimi Zohar wrote:
+
+> >From the 'ima: defer calling __fput()' patch description:
 > 
-> How would you prevent races if you do?
-
-With some lock in the driver.  It's private to the driver, so the driver
-decides how to synchronize access.
-
->>>>   * @priv: a pointer for the virtqueue implementation to use.
->>>>   */
->>>>  struct virtqueue {
->>>> @@ -21,6 +22,7 @@ struct virtqueue {
->>>>  	void (*callback)(struct virtqueue *vq);
->>>>  	const char *name;
->>>>  	struct virtio_device *vdev;
->>>> +	void *vdev_priv;
->>>>  	void *priv;
->>>
->>> The name is confusing: it seems to imply it's a device pointer.
->>
->> ... it's private to the driver that owns vdev, hence the name.
+> ima_file_free(), which is called on __fput(), updates the file data
+> hash stored as an extended attribute to reflect file changes.  If a
+> file is closed before it is munmapped, __fput() is called with the
+> mmap_sem taken.  With IMA-appraisal enabled, this results in an
+> mmap_sem/i_mutex lockdep.  ima_defer_fput() increments the f_count to
+> defer the __fput() being called until after the mmap_sem is released.
 > 
-> I own a car but I'm not called Michael Car :)
-> driver_priv might be ok too. unfortunately virtio-pci
-> is also a driver so it can be misunderstood.
+> The number of __fput() calls needing to be deferred is minimal.  Only
+> those files in policy, that were closed prior to the munmap and were
+> mmapped write, need to defer the __fput().
+> 
+> With this patch, on a clean F16 install, from boot to login, only
+> 5 out of ~100,000 mmap_sem held fput() calls were deferred.
 
-Yes.  Is fixing the comment and keeping the vdev_priv name ok with you?
+Assuming that it's commit 3cee52ffe8ca925bb1e96f804daa87f7e2e34e46
+Author: Mimi Zohar <zohar@linux.vnet.ibm.com>
+Date:   Fri Feb 24 06:23:12 2012 -0500
 
-> devices should dominate. ring is an implementation detail.
+    ima: defer calling __fput()
+in your tree, the NAK still stands.  For starters, but you are creating a
+different locking rules for IMA-enabled builds and for everything else.
+Moreover, this deferral is done only for files opened for write; the
+rules are convoluted as hell *and* inviting abuses.  
 
-Ring came first, ring gets the nice name. :)
+NAKed at least until you come up with formal proof that there's no other
+lock where fput() would be possible and ->i_mutex was not allowed.  This
+is not a way to go; that kind of kludges leads to locking code that is
+impossible to reason about.
 
-Paolo
+PS: BTW, what the hell is "fput already scheduled" codepath about?
+Why is it pr_info() and not an outright BUG_ON()?
