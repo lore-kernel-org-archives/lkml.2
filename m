@@ -1,35 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752829Ab2DRLPs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Apr 2012 07:15:48 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:51526 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751730Ab2DRLPr (ORCPT
+	id S1752952Ab2DRLRb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Apr 2012 07:17:31 -0400
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:48962 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751730Ab2DRLRa convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Apr 2012 07:15:47 -0400
+	Wed, 18 Apr 2012 07:17:30 -0400
 MIME-Version: 1.0
-In-Reply-To: <1334585244-10249-2-git-send-email-b29396@freescale.com>
-References: <1334585244-10249-1-git-send-email-b29396@freescale.com>
-	<1334585244-10249-2-git-send-email-b29396@freescale.com>
-Date: Wed, 18 Apr 2012 13:15:46 +0200
-Message-ID: <CACRpkdbQr9-x_M067eGeMi+71eRKa1z9deS5T8VkWYVMHYTfLg@mail.gmail.com>
-Subject: Re: [PATCH 2/3] pinctrl: a minor fix of pin config debug information
+In-Reply-To: <1334595060-12178-1-git-send-email-swarren@wwwdotorg.org>
+References: <1334595060-12178-1-git-send-email-swarren@wwwdotorg.org>
+Date: Wed, 18 Apr 2012 13:17:29 +0200
+Message-ID: <CACRpkda0AqE4nS4YRMK3Us7dMf3ujy6V8TZB8deV9P6Kgaimmg@mail.gmail.com>
+Subject: Re: [PATCH V3] pinctrl: implement devm_pinctrl_get()/put()
 From: Linus Walleij <linus.walleij@linaro.org>
-To: Dong Aisheng <b29396@freescale.com>
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linus.walleij@stericsson.com, swarren@wwwdotorg.org
+To: Stephen Warren <swarren@wwwdotorg.org>
+Cc: Stephen Boyd <sboyd@codeaurora.org>, linux-kernel@vger.kernel.org,
+        Stephen Warren <swarren@nvidia.com>
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 16, 2012 at 4:07 PM, Dong Aisheng <b29396@freescale.com> wrote:
+On Mon, Apr 16, 2012 at 6:51 PM, Stephen Warren <swarren@wwwdotorg.org> wrote:
 
-> From: Dong Aisheng <dong.aisheng@linaro.org>
+> From: Stephen Warren <swarren@nvidia.com>
 >
-> Signed-off-by: Dong Aisheng <dong.aisheng@linaro.org>
+> These functions allow the driver core to automatically clean up any
+> allocations made by drivers, thus leading to simplified drivers.
+>
+> Signed-off-by: Stephen Warren <swarren@nvidia.com>
+> ---
+> v3: Update Documentation/driver-model/devres.txt.
+> v2:
+> * Updated documentation to describe and recommend using devm_* functions.
+> * Added devm_pinctrl_get_select() and devm_pinctrl_get_select_default() to
+>  consumer.h
 
-Obviously correct, so applied this.
+Nobody's complaining anymore and I like it, so applied it!
 
-Thanks,
+Yours,
 Linus Walleij
