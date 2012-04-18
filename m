@@ -1,227 +1,152 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751251Ab2DRFIB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Apr 2012 01:08:01 -0400
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:5279 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750830Ab2DRFIA (ORCPT
+	id S1751347Ab2DRFI3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Apr 2012 01:08:29 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:56017 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750808Ab2DRFI0 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Apr 2012 01:08:00 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Tue, 17 Apr 2012 22:07:53 -0700
-From: Venu Byravarasu <vbyravarasu@nvidia.com>
-To: Axel Lin <axel.lin@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-CC: Liam Girdwood <lrg@ti.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Samuel Ortiz <sameo@linux.intel.com>
-Date: Wed, 18 Apr 2012 10:37:40 +0530
-Subject: RE: [PATCH RFT] regulator: tps65090: Use generic regmap
- enable/disable operations
-Thread-Topic: [PATCH RFT] regulator: tps65090: Use generic regmap
- enable/disable operations
-Thread-Index: Ac0cecIvqfOw2yuISDKkbqYg49zsjAAp1OuA
-Message-ID: <D958900912E20642BCBC71664EFECE3E6DD6758B6D@BGMAIL02.nvidia.com>
-References: <1334653736.23427.7.camel@phoenix>
-In-Reply-To: <1334653736.23427.7.camel@phoenix>
-Accept-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-MIME-Version: 1.0
-Content-Language: en-US
-Content-Type: text/plain; charset="utf-8"
+	Wed, 18 Apr 2012 01:08:26 -0400
+References: <1334681618-9452-1-git-send-email-wenqing.lz@taobao.com> <4F8DAAFE.40500@redhat.com>
+In-Reply-To: <4F8DAAFE.40500@redhat.com>
+Mime-Version: 1.0 (1.0)
+Content-Type: text/plain;
+	charset=us-ascii
+Message-Id: <D225F088-A53F-4962-97AD-13C850BBA722@whamcloud.com>
+Content-Transfer-Encoding: 8BIT
+Cc: Zheng Liu <gnehzuil.liu@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        "linux-ext4@vger.kernel.org" <linux-ext4@vger.kernel.org>,
+        Zheng Liu <wenqing.lz@taobao.com>
+X-Mailer: iPhone Mail (9B176)
+From: Andreas Dilger <adilger@whamcloud.com>
+Subject: Re: [RFC][PATCH 0/3] add FALLOC_FL_NO_HIDE_STALE flag in fallocate
+Date: Tue, 17 Apr 2012 21:59:37 -0700
+To: Eric Sandeen <sandeen@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id q3I58BpI016203
 
-Looks good to me.
-Acked by: Venu Byravarasu <vbyravarasu@nvidia.com>
+On 2012-04-17, at 10:40, Eric Sandeen <sandeen@redhat.com> wrote:
+> On 4/17/12 11:53 AM, Zheng Liu wrote:
+>> 
+>> fallocate is a useful system call because it can preallocate some disk blocks
+>> for a file and keep blocks contiguous.  However, it has a defect that file
+>> system will convert an uninitialized extent to be an initialized when the user
+>> wants to write some data to this file, because file system create an
+>> unititalized extent while it preallocates some blocks in fallocate (e.g. ext4).
+> 
+> That's a security-driven design feature, not a defect.  :)
+> 
+>> I try to make ext4 support this new flag, and run a simple test in my own
+>> desktop to verify it.  The machine has a Intel(R) Core(TM)2 Duo CPU E8400, 4G
+>> memory and a WDC WD1600AAJS-75M0A0 160G SATA disk.  I use the following script
+>> to tset the performance.
+>> 
+>> #/bin/sh
+>> mkfs.ext4 ${DEVICE}
+>> mount -t ext4 ${DEVICE} ${TARGET}
+>> fallocate -l 27262976 ${TARGET}/test # the size of the file is 256M (*)
+> 
+> That's only 26MB, but the below loop writes to a max offset of around
+> 256M.
+> 
+>> time for((i=0;i<2000;i++)); do dd if=/dev/zero of=/mnt/sda1/test_256M \
+>>    conv=notrunc bs=4k count=1 seek=`expr $i \* 16` oflag=sync,direct \
+>>    2>/dev/null; done
+> 
+> You fallocate ${TARGET}/test but dd to /mnt/sda1/test_256M ?  I presume
+> those should be the same file.
+> 
+> So the testcase as shown above seems fairly wrong, no?  Is that what you
+> used for the numbers below?
 
-> -----Original Message-----
-> From: Axel Lin [mailto:axel.lin@gmail.com]
-> Sent: Tuesday, April 17, 2012 2:39 PM
-> To: linux-kernel@vger.kernel.org
-> Cc: Venu Byravarasu; Liam Girdwood; Mark Brown; Samuel Ortiz
-> Subject: [PATCH RFT] regulator: tps65090: Use generic regmap enable/disable
-> operations
+I auspect the real problem may be the lazy inode table zeroing being done in the kernel. If the test is run immediately after formatting the filesystem, then the kernel thread is busy writing to the disk in the background and interfering with your benchmark.
+
+Please format the filesystem with "-E lazy-itable-init=0", to avoid this behavior.  
+
+Secondly, your test program is not doing random writes to disk, but rather doing writes at 64kB intervals. There is logic in the uninitialized extent handling that will write zeros to an entire extent, rather than create many fragmented uninitialized extents.  It may be possible that you are zeroing out the entire file, and writing 16x as much data as you expect.
+
+Cheers, Andreas
+
+>> * I write a wrapper program to call fallocate(2) with FALLOC_FL_NO_HIDE_STALE
+>>  flag because the userspace tool doesn't support the new flag.
+>> 
+>> The result:
+>>    w/o        w/
+>> real    1m16.043s    0m17.946s    -76.4%
+>> user    0m0.195s    0m0.192s    -1.54%
+>> sys    0m0.468s    0m0.462s    -1.28%
 > 
-> This patch converts tps65090 regulator driver to use generic regmap
-> enable/disable operations.
+> I think that the missing information here is some profiling to show where
+> the time was spent in the "w/o" case.  What, exactly, in ext4 extent
+> management is so darned slow that we have to poke security holes in the
+> filesytem to get decent performance?
 > 
-> Also move struct tps65090 to include/linux/mfd/tps65090.h because
-> the regulator driver needs to access the rmap field of struct tps65090.
+> However,, the above also seems like an alarmingly large difference, and
+> one that I can't attribute to unwritten extent conversion overhead.
 > 
-> Signed-off-by: Axel Lin <axel.lin@gmail.com>
-> ---
->  drivers/mfd/tps65090.c                 |   11 -----
->  drivers/regulator/tps65090-regulator.c |   64 +++----------------------------
->  include/linux/mfd/tps65090.h           |   13 ++++++
->  3 files changed, 20 insertions(+), 68 deletions(-)
+> If I test the seeky dd to a prewritten file (to eliminate extent
+> conversion):
 > 
-> diff --git a/drivers/mfd/tps65090.c b/drivers/mfd/tps65090.c
-> index a66d4df..47f802b 100644
-> --- a/drivers/mfd/tps65090.c
-> +++ b/drivers/mfd/tps65090.c
-> @@ -78,17 +78,6 @@ static struct mfd_cell tps65090s[] = {
->  	},
->  };
+> # dd if=/dev/zero of=/mnt/scratch/test bs=1M count=256
+> # sync
 > 
-> -struct tps65090 {
-> -	struct mutex		lock;
-> -	struct device		*dev;
-> -	struct i2c_client	*client;
-> -	struct regmap		*rmap;
-> -	struct irq_chip		irq_chip;
-> -	struct mutex		irq_lock;
-> -	int			irq_base;
-> -	unsigned int		id;
-> -};
-> -
->  int tps65090_write(struct device *dev, int reg, uint8_t val)
->  {
->  	struct tps65090 *tps = dev_get_drvdata(dev);
-> diff --git a/drivers/regulator/tps65090-regulator.c
-> b/drivers/regulator/tps65090-regulator.c
-> index 6bbf760..299237d 100644
-> --- a/drivers/regulator/tps65090-regulator.c
-> +++ b/drivers/regulator/tps65090-regulator.c
-> @@ -29,10 +29,6 @@
+> vs. to a fallocated file (which requires extent conversion):
 > 
->  struct tps65090_regulator {
->  	int		id;
-> -	/* Regulator register address.*/
-> -	u8		reg_en_reg;
-> -	u8		en_bit;
-> -
->  	/* used by regulator core */
->  	struct regulator_desc	desc;
+> # fallocate -l 256m /mnt/scratch/test
 > 
-> @@ -40,64 +36,14 @@ struct tps65090_regulator {
->  	struct device		*dev;
->  };
+> and then do your seeky dd test after each of the above:
 > 
-> -static inline struct device *to_tps65090_dev(struct regulator_dev *rdev)
-> -{
-> -	return rdev_get_dev(rdev)->parent->parent;
-> -}
-> -
-> -static int tps65090_reg_is_enabled(struct regulator_dev *rdev)
-> -{
-> -	struct tps65090_regulator *ri = rdev_get_drvdata(rdev);
-> -	struct device *parent = to_tps65090_dev(rdev);
-> -	uint8_t control;
-> -	int ret;
-> -
-> -	ret = tps65090_read(parent, ri->reg_en_reg, &control);
-> -	if (ret < 0) {
-> -		dev_err(&rdev->dev, "Error in reading reg 0x%x\n",
-> -			ri->reg_en_reg);
-> -		return ret;
-> -	}
-> -	return (((control >> ri->en_bit) & 1) == 1);
-> -}
-> -
-> -static int tps65090_reg_enable(struct regulator_dev *rdev)
-> -{
-> -	struct tps65090_regulator *ri = rdev_get_drvdata(rdev);
-> -	struct device *parent = to_tps65090_dev(rdev);
-> -	int ret;
-> -
-> -	ret = tps65090_set_bits(parent, ri->reg_en_reg, ri->en_bit);
-> -	if (ret < 0)
-> -		dev_err(&rdev->dev, "Error in updating reg 0x%x\n",
-> -			ri->reg_en_reg);
-> -	return ret;
-> -}
-> -
-> -static int tps65090_reg_disable(struct regulator_dev *rdev)
-> -{
-> -	struct tps65090_regulator *ri = rdev_get_drvdata(rdev);
-> -	struct device *parent = to_tps65090_dev(rdev);
-> -	int ret;
-> -
-> -	ret = tps65090_clr_bits(parent, ri->reg_en_reg, ri->en_bit);
-> -	if (ret < 0)
-> -		dev_err(&rdev->dev, "Error in updating reg 0x%x\n",
-> -			ri->reg_en_reg);
-> -
-> -	return ret;
-> -}
-> -
->  static struct regulator_ops tps65090_ops = {
-> -	.enable		= tps65090_reg_enable,
-> -	.disable	= tps65090_reg_disable,
-> -	.is_enabled	= tps65090_reg_is_enabled,
-> +	.enable = regulator_enable_regmap,
-> +	.disable = regulator_disable_regmap,
-> +	.is_enabled = regulator_is_enabled_regmap,
->  };
+> # time for((i=0;i<2000;i++)); do dd if=/dev/zero of=/mnt/scratch/test \
+>    conv=notrunc bs=4k count=1 seek=`expr $i \* 16` oflag=sync,direct \
+>    2>/dev/null; done
 > 
->  #define tps65090_REG(_id)				\
->  {							\
-> -	.reg_en_reg	= (TPS65090_ID_##_id) + 12,	\
-> -	.en_bit		= 0,				\
->  	.id		= TPS65090_ID_##_id,		\
->  	.desc = {					\
->  		.name = tps65090_rails(_id),		\
-> @@ -105,6 +51,8 @@ static struct regulator_ops tps65090_ops = {
->  		.ops = &tps65090_ops,			\
->  		.type = REGULATOR_VOLTAGE,		\
->  		.owner = THIS_MODULE,			\
-> +		.enable_reg = (TPS65090_ID_##_id) + 12,	\
-> +		.enable_mask = BIT(0),			\
->  	},						\
->  }
+> On ext4, I get about 59.9 seconds in the pre-written case, 65.2 seconds in the fallocated case.
 > 
-> @@ -136,6 +84,7 @@ static inline struct tps65090_regulator
-> *find_regulator_info(int id)
+> On xfs, I get about 52.5 seconds in the pre-written case, 52.7 seconds in the fallocated case.
 > 
->  static int __devinit tps65090_regulator_probe(struct platform_device *pdev)
->  {
-> +	struct tps65090 *tps65090_mfd = dev_get_drvdata(pdev-
-> >dev.parent);
->  	struct tps65090_regulator *ri = NULL;
->  	struct regulator_config config = { };
->  	struct regulator_dev *rdev;
-> @@ -155,6 +104,7 @@ static int __devinit tps65090_regulator_probe(struct
-> platform_device *pdev)
->  	config.dev = &pdev->dev;
->  	config.init_data = &tps_pdata->regulator;
->  	config.driver_data = ri;
-> +	config.regmap = tps65090_mfd->rmap;
+> I don't see anywhere near the slowdown you show above, certainly
+> nothing bad enough to warrant opening the big security hole.
+> Am I missing something?
 > 
->  	rdev = regulator_register(&ri->desc, &config);
->  	if (IS_ERR(rdev)) {
-> diff --git a/include/linux/mfd/tps65090.h b/include/linux/mfd/tps65090.h
-> index 38e31c5..6bc31d8 100644
-> --- a/include/linux/mfd/tps65090.h
-> +++ b/include/linux/mfd/tps65090.h
-> @@ -22,6 +22,19 @@
->  #ifndef __LINUX_MFD_TPS65090_H
->  #define __LINUX_MFD_TPS65090_H
+> The ext4 delta is a bit larger, though, so it seems worth investigating
+> the *root cause* of the extra overhead if it's problematic in your
+> workloads...
 > 
-> +#include <linux/irq.h>
-> +
-> +struct tps65090 {
-> +	struct mutex		lock;
-> +	struct device		*dev;
-> +	struct i2c_client	*client;
-> +	struct regmap		*rmap;
-> +	struct irq_chip		irq_chip;
-> +	struct mutex		irq_lock;
-> +	int			irq_base;
-> +	unsigned int		id;
-> +};
-> +
->  struct tps65090_subdev_info {
->  	int		id;
->  	const char	*name;
+> -Eric
+> 
+> 
+>> Obviously, this flag will bring an secure issue because the malicious user
+>> could use this flag to get other user's data if (s)he doesn't do a
+>> initialization before reading this file.  Thus, a sysctl parameter
+>> 'fs.falloc_no_hide_stale' is defined in order to let administrator to determine
+>> whether or not this flag is enabled.  Currently, this flag is disabled by
+>> default.  I am not sure whether this is enough or not.  Another option is that
+>> a new Kconfig entry is created to remove this flag during the kernel is
+>> complied.  So any suggestions or comments are appreciated.
+>> 
+>> Regards,
+>> Zheng
+>> 
+>> Zheng Liu (3):
+>>      vfs: add FALLOC_FL_NO_HIDE_STALE flag in fallocate
+>>      vfs: add security check for _NO_HIDE_STALE flag
+>>      ext4: add FALLOC_FL_NO_HIDE_STALE support
+>> 
+>> fs/ext4/extents.c      |    7 +++++--
+>> fs/open.c              |   12 +++++++++++-
+>> include/linux/falloc.h |    5 +++++
+>> include/linux/sysctl.h |    1 +
+>> kernel/sysctl.c        |   10 ++++++++++
+>> 5 files changed, 32 insertions(+), 3 deletions(-)
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe linux-ext4" in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> 
 > --
-> 1.7.5.4
-> 
-> 
-
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éÝ¶¥Šwÿº{.nÇ+‰·¥Š{±þG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŽŠÝ¢j"ú¶m§ÿÿ¾«þG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+> To unsubscribe from this list: send the line "unsubscribe linux-fsdevel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
