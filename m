@@ -1,104 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752342Ab2DRJUY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Apr 2012 05:20:24 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:39241 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751251Ab2DRJUW (ORCPT
+	id S1752301Ab2DRJWY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Apr 2012 05:22:24 -0400
+Received: from mailout4.samsung.com ([203.254.224.34]:47241 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751251Ab2DRJWW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Apr 2012 05:20:22 -0400
-Date: Wed, 18 Apr 2012 11:20:19 +0200
-From: Wolfram Sang <w.sang@pengutronix.de>
-To: Dong Aisheng <aisheng.dong@freescale.com>
-Cc: Huang Shijie <b32955@freescale.com>, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>,
-        Shawn Guo <shawn.guo@linaro.org>
-Subject: Re: [PATCH V2 1/3] lib: add support for stmp-style devices
-Message-ID: <20120418092019.GB2232@pengutronix.de>
-References: <1332368519-22660-1-git-send-email-w.sang@pengutronix.de>
- <1332368519-22660-2-git-send-email-w.sang@pengutronix.de>
- <4F73CCC6.6000001@freescale.com>
- <20120329064320.GA20840@pengutronix.de>
- <20120418090551.GA30966@shlinux2.ap.freescale.net>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="98e8jtXdkpgskNou"
-Content-Disposition: inline
-In-Reply-To: <20120418090551.GA30966@shlinux2.ap.freescale.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
-X-SA-Exim-Mail-From: wsa@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+	Wed, 18 Apr 2012 05:22:22 -0400
+X-AuditID: cbfee61b-b7cb4ae000000d81-b7-4f8e87cd1112
+From: Thomas Abraham <thomas.abraham@linaro.org>
+To: linux-kernel@vger.kernel.org
+Cc: k.lewandowsk@samsung.com, devicetree-discuss@lists.ozlabs.org,
+        rob.herring@calxeda.com, grant.likely@secretlab.ca,
+        kgene.kim@samsung.com, broonie@opensource.wolfsonmicro.com,
+        myungjoo.ham@samsung.com, kyungmin.park@samsung.com,
+        linux-arm-kernel@lists.infradead.org,
+        linux-samsung-soc@vger.kernel.org, patches@linaro.org
+Subject: [PATCH v5 0/2] regulator: add irq domain and device tree support for
+ MAX8997
+Date: Wed, 18 Apr 2012 15:01:01 +0530
+Message-id: <1334741463-25058-1-git-send-email-thomas.abraham@linaro.org>
+X-Mailer: git-send-email 1.6.6.rc2
+X-Brightmail-Tracker: AAAAAA==
+X-TM-AS-MML: No
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Changes since v4:
+- Removed redundant irq_to_max8997_irq function.
+- Fixed the bug in lookup of regulator names
+- Inculded documentation of additional regulators supported.
+- Rebased to Mark's latest 'for-next' branch
 
---98e8jtXdkpgskNou
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Changes since v3:
+- Fixed all comments from Grant Likely.
+  - In patch 1/2, since linear mapping is used, the handle_nested_irq() is
+    called only for allocated irq's.
+  - In patch 2/2, the incorrect assignment of platform data pointer to
+    dev->platform_data is reworked and fixed.
 
-On Wed, Apr 18, 2012 at 05:05:52PM +0800, Dong Aisheng wrote:
-> Hi Wolfram,
->=20
-> On Thu, Mar 29, 2012 at 08:43:20AM +0200, Wolfram Sang wrote:
-> > Hi,
-> >=20
-> > > >  include/linux/stmp_device.h |   20 +++++++++++
-> > > IMHO, this header should be placed at include/linux/fsl/.
-> >=20
-> > Hmm, one never knows if somewhen in the future some other vendor decide=
-s to do
-> > do a device with this register layout. It is just a layout, not an IP c=
-ore per
-> > se. So, I'd prefer to leave it as is.
-> >=20
->=20
-> Acked-by: Dong Aisheng <dong.aisheng@linaro.org>
+Changes since v2:
+- Atleast one voltage level has to be specfied for Buck 1/2/5 even if GPIO
+  DVS option is not used (suggested by MyungJoo Ham).
+- Reworked the irq_domain support based the v5 of irq_domain generalization
+  patches.
 
-Thanks!
+MAX8997 is a multi-function device which includes support for regulators, rtc,
+battery charger and other sub-blocks. This patchset adds device tree support
+for the pmic (regulators) sub-block.
 
->=20
-> I'm converting mxs-dma driver to be mach-independent which also needs
-> this patch.
->=20
-> Do you know when this will be merged?
+The first patch adds irq domain support for the interrupts supported by max8997
+mainly for removing the need to pass a irq_base from the platform code. The
+irq_base could not anyway be passed in case of device tree based instantiation.
+The reverse mapping method used is linear since the sub-drivers of max8997 has
+access to the max8997 irq_domain from which the linux irq number can be
+obtained.
 
-Nope. I assumed it could go in via arm-soc, since it makes sense and
-Arnd used to comment this series. He is probably busy, currently.
+The second patch adds device tree support for max8997. This patch modifies both
+mfd and regulator portions of the max8997 code.
 
-> BTW, one small question:
-> Is it possible that stmp_reset_block also be used by other vendors?
+This patchset is based on the following tree.
+http://git.kernel.org/pub/scm/linux/kernel/git/kgene/linux-samsung.git [for-next]
 
-Sure, why not? I could ask a friend to to do an FPGA for me with this
-layout.
+with all patches merged from
+http://git.kernel.org/pub/scm/linux/kernel/git/broonie/regulator.git [for-next]
+http://git.secretlab.ca/git/linux-2.6.git [irqdomain/next]
 
-> If not, i guess include/linux/fsl which already exists may be the
-> right place.
+This patchset has been tested on Origen board.
 
-Which is a bad choice in my book. linux/dma would have been the proper
-thing for mxs-dma.h, I'd think.
+Thomas Abraham (2):
+  mfd: add irq domain support for max8997 interrupts
+  regulator: add device tree support for max8997
 
-Regards,
+ .../devicetree/bindings/regulator/max8997-pmic.txt |  147 +++++++++++++++++++
+ arch/arm/mach-exynos/mach-nuri.c                   |    4 -
+ arch/arm/mach-exynos/mach-origen.c                 |    1 -
+ drivers/mfd/max8997-irq.c                          |   70 +++++-----
+ drivers/mfd/max8997.c                              |   74 ++++++++++-
+ drivers/regulator/max8997.c                        |  148 +++++++++++++++++++-
+ include/linux/mfd/max8997-private.h                |    5 +-
+ include/linux/mfd/max8997.h                        |    2 +-
+ 8 files changed, 406 insertions(+), 45 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/regulator/max8997-pmic.txt
 
-   Wolfram
-
---=20
-Pengutronix e.K.                           | Wolfram Sang                |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
-
---98e8jtXdkpgskNou
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iEYEARECAAYFAk+Oh1MACgkQD27XaX1/VRvRUwCcD/NFORwblRRBZYZds0rL+UIv
-DXkAnRMvSlvqXTZUCGYddP6qLzmDCykW
-=v7eA
------END PGP SIGNATURE-----
-
---98e8jtXdkpgskNou--
