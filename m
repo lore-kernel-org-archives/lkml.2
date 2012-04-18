@@ -1,98 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753276Ab2DRLwP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Apr 2012 07:52:15 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:43302 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753178Ab2DRLwM (ORCPT
+	id S1753272Ab2DRLy6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Apr 2012 07:54:58 -0400
+Received: from mailout3.w1.samsung.com ([210.118.77.13]:22009 "EHLO
+	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752668Ab2DRLy4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Apr 2012 07:52:12 -0400
-From: Jeff Layton <jlayton@redhat.com>
-To: linux-fsdevel@vger.kernel.org, linux-nfs@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Cc: miklos@szeredi.hu, viro@ZenIV.linux.org.uk, hch@infradead.org,
-        michael.brantley@deshaw.com, sven.breuner@itwm.fraunhofer.de,
-        chuck.lever@oracle.com, pstaubach@exagrid.com, malahal@us.ibm.com,
-        bfields@fieldses.org, trond.myklebust@fys.uio.no, rees@umich.edu
-Subject: [PATCH RFC v3] vfs: make fstatat retry once on ESTALE errors from getattr call
-Date: Wed, 18 Apr 2012 07:52:07 -0400
-Message-Id: <1334749927-26138-1-git-send-email-jlayton@redhat.com>
-X-Mailer: git-send-email 1.7.7.6
-In-Reply-To: <1334316311-22331-1-git-send-email-jlayton@redhat.com>
-References: <1334316311-22331-1-git-send-email-jlayton@redhat.com>
+	Wed, 18 Apr 2012 07:54:56 -0400
+MIME-version: 1.0
+Content-transfer-encoding: 7BIT
+Content-type: text/plain; charset=ISO-8859-1
+Date: Wed, 18 Apr 2012 13:55:00 +0200
+From: Karol Lewandowski <k.lewandowsk@samsung.com>
+Subject: Re: [PATCH 2/3] i2c-s3c2410: Rework device type handling
+In-reply-to: <20120417173136.GB22406@pengutronix.de>
+To: Wolfram Sang <w.sang@pengutronix.de>
+Cc: ben-linux@fluff.org, m.szyprowski@samsung.com, thomas.abraham@linaro.org,
+        linux-kernel@vger.kernel.org, linux-i2c@vger.kernel.org,
+        devicetree-discuss@lists.ozlabs.org, linux-samsung-soc@vger.kernel.org,
+        t.stanislaws@samsung.com, kyungmin.park@samsung.com,
+        broonie@opensource.wolfsonmicro.com,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <robherring2@gmail.com>
+Message-id: <4F8EAB94.7080707@samsung.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111109 Icedove/8.0
+References: <1332357113-2973-1-git-send-email-k.lewandowsk@samsung.com>
+ <1332357113-2973-3-git-send-email-k.lewandowsk@samsung.com>
+ <20120417173136.GB22406@pengutronix.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-ESTALE errors are a source of pain for many users of NFS. Usually they
-occur when a file is removed from the server after a successful lookup
-against it.
+On 17.04.2012 19:31, Wolfram Sang wrote:
 
-Luckily, the remedy in these cases is usually simple. We should just
-redo the lookup, forcing revalidations all the way in and then retry the
-call. We of course cannot do this for syscalls that do not involve a
-path, but for path-based syscalls we can and should attempt to recover
-from an ESTALE.
+> Hi,
 
-This patch implements this by having the VFS reattempt the lookup (with
-LOOKUP_REVAL set) and call exactly once when it would ordinarily return
-ESTALE. This should catch the bulk of these cases under normal usage,
-without unduly inconveniencing other filesystems that return ESTALE on
-path-based syscalls.
 
-Note that it's possible to hit this race more than once, but a single
-retry should catch the bulk of these cases under normal circumstances.
+Hi Wolfram!
 
-This patch is just an example. We'll alter most path-based syscalls in a
-similar fashion to fix this correctly. At this point, I'm just trying to
-ensure that the retry semantics are acceptable before I being that work.
+> 
+> On Wed, Mar 21, 2012 at 08:11:52PM +0100, Karol Lewandowski wrote:
+>> Reorganize driver a bit to better handle device tree-based systems:
+>>
+>>  - move machine type to driver's private structure instead of
+>>    quering platform device variants in runtime
+>>
+>>  - replace s3c24xx_i2c_type enum with unsigned int that holds
+>>    bitmask with revision-specific quirks
+>>
+>> Signed-off-by: Karol Lewandowski <k.lewandowsk@samsung.com>
+>> Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
+> 
+> Okay, so this driver needs to the 'data' field from either
+> platform_device_id or of_device_id and implements a function for that,
+> namely s3c24xx_get_device_quirks(). Grant, Rob: I'd think there might be
+> more drivers in need of that, so maybe it makes sense to have a generic
+> of-helper function?
+> 
+>> ---
+>>  drivers/i2c/busses/i2c-s3c2410.c |   47 ++++++++++++++++++-------------------
+>>  1 files changed, 23 insertions(+), 24 deletions(-)
+>>
+>> diff --git a/drivers/i2c/busses/i2c-s3c2410.c b/drivers/i2c/busses/i2c-s3c2410.c
+>> index 85e3664..f7b6a14 100644
+>> --- a/drivers/i2c/busses/i2c-s3c2410.c
+>> +++ b/drivers/i2c/busses/i2c-s3c2410.c
+>> @@ -44,8 +44,14 @@
+>>  #include <plat/regs-iic.h>
+>>  #include <plat/iic.h>
+>>  
+>> -/* i2c controller state */
+>> +#ifdef CONFIG_OF
+>> +static const struct of_device_id s3c24xx_i2c_match[];
+>> +#endif
+> 
+> Uh, forward declaration with #ifdef. I'd think we should get this simply
+> to the front.
 
-Does anyone have strong objections to this patch? I'm aware that the
-retry mechanism is not as robust as many (e.g. Peter) would like, but it
-should at least improve the current situation.
 
-If no one has a strong objection, then I'll start going through and
-adding similar code to the other syscalls. And we can hopefully we can
-get at least some of them in for 3.5.
+Ok, as I think it's better to have dt and non-dt definitions together
+I'll move both of_device_id and platform_device_id to the top.
 
-Signed-off-by: Jeff Layton <jlayton@redhat.com>
----
- fs/stat.c |    9 ++++++++-
- 1 files changed, 8 insertions(+), 1 deletions(-)
+>> +/* Treat S3C2410 as baseline hardware, anything else is supported via quirks */
+>> +#define QUIRK_S3C2440		(1 << 0)
+> 
+> Minor: Is it really a quirk being s3c2440? Maybe FLAG_*, dunno.
 
-diff --git a/fs/stat.c b/fs/stat.c
-index c733dc5..0ee9cb4 100644
---- a/fs/stat.c
-+++ b/fs/stat.c
-@@ -73,7 +73,8 @@ int vfs_fstatat(int dfd, const char __user *filename, struct kstat *stat,
- {
- 	struct path path;
- 	int error = -EINVAL;
--	int lookup_flags = 0;
-+	bool retried = false;
-+	unsigned int lookup_flags = 0;
- 
- 	if ((flag & ~(AT_SYMLINK_NOFOLLOW | AT_NO_AUTOMOUNT |
- 		      AT_EMPTY_PATH)) != 0)
-@@ -84,12 +85,18 @@ int vfs_fstatat(int dfd, const char __user *filename, struct kstat *stat,
- 	if (flag & AT_EMPTY_PATH)
- 		lookup_flags |= LOOKUP_EMPTY;
- 
-+retry:
- 	error = user_path_at(dfd, filename, lookup_flags, &path);
- 	if (error)
- 		goto out;
- 
- 	error = vfs_getattr(path.mnt, path.dentry, stat);
- 	path_put(&path);
-+	if (error == -ESTALE && !retried) {
-+		retried = true;
-+		lookup_flags |= LOOKUP_REVAL;
-+		goto retry;
-+	}
- out:
- 	return error;
- }
+
+In first version[1] of this patch I've used TYPEs for device types
+and FLAGS for quirks. However, I've squashed these into "quirks" after
+discussion with Mark[2].
+
+[1] http://permalink.gmane.org/gmane.linux.kernel/1266759
+[2] http://permalink.gmane.org/gmane.linux.kernel.samsung-soc/10255
+
+
+>> -static inline int s3c24xx_i2c_is2440(struct s3c24xx_i2c *i2c)
+>> +static inline unsigned int s3c24xx_get_device_quirks(struct platform_device *pdev)
+>>  {
+>> -	struct platform_device *pdev = to_platform_device(i2c->dev);
+>> -	enum s3c24xx_i2c_type type;
+>> -
+>>  #ifdef CONFIG_OF
+>> -	if (i2c->dev->of_node)
+>> -		return of_device_is_compatible(i2c->dev->of_node,
+>> -				"samsung,s3c2440-i2c");
+>> +        if (pdev->dev.of_node) {
+>> +		const struct of_device_id *match;
+>> +		match = of_match_node(&s3c24xx_i2c_match[0], pdev->dev.of_node);
+> 
+> Minor: I think it is more readable to drop the [0]
+
+
+I prefer explicit version, but I'll drop [] as both you and Thomas
+found implicit version more readable.
+
+[ I'll also drop above CONFIG_OF ifdef, as of_match_node() seem
+  to be always defined since v3.2-rc1. ]
+
+Thanks for review!  I'll resubmit updated version shortly.
+
+Regards,
 -- 
-1.7.7.6
-
+Karol Lewandowski | Samsung Poland R&D Center | Linux/Platform
