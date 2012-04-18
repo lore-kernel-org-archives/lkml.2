@@ -1,112 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754013Ab2DRBFp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Apr 2012 21:05:45 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:4960 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753297Ab2DRBFn (ORCPT
+	id S1752558Ab2DRBT7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Apr 2012 21:19:59 -0400
+Received: from mail-vx0-f174.google.com ([209.85.220.174]:60614 "EHLO
+	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751651Ab2DRBT5 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Apr 2012 21:05:43 -0400
-X-Authority-Analysis: v=2.0 cv=XbcLPfF5 c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=XQbtiDEiEegA:10 a=Ciwy3NGCPMMA:10 a=ekSuxOojKg4A:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=20KFwNOVAAAA:8 a=meVymXHHAAAA:8 a=KCTpZHmJFqEIPncglpwA:9 a=QEXdDO2ut3YA:10 a=jEp0ucaQiEUA:10 a=jeBq3FmKZ4MA:10 a=zSwTCKdnOtiE2KHINVwA:9 a=ZycB6UtQUfgMyuk2+PxD7w==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.80.29
-Message-Id: <20120418010541.978906412@goodmis.org>
-User-Agent: quilt/0.60-1
-Date: Tue, 17 Apr 2012 21:05:07 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: linux-kernel@vger.kernel.org
-Cc: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Frederic Weisbecker <fweisbec@gmail.com>
-Subject: [PATCH 2/2] tracing: Fix regression with tracing_on
-References: <20120418010505.756823546@goodmis.org>
-Content-Disposition: inline; filename=0002-tracing-Fix-regression-with-tracing_on.patch
-Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature"; boundary="00GvhwF7k39YY"
+	Tue, 17 Apr 2012 21:19:57 -0400
+MIME-Version: 1.0
+In-Reply-To: <201204172220.45970.rjw@sisk.pl>
+References: <4F8790F6.5080408@intel.com>
+	<201204161907.13806.rjw@sisk.pl>
+	<CAC=cRTNdLu=A64YAEp78ENc1h2OJKusXY3Wm9LuY4drz9pbomg@mail.gmail.com>
+	<201204172220.45970.rjw@sisk.pl>
+Date: Wed, 18 Apr 2012 09:19:55 +0800
+Message-ID: <CAC=cRTN2QHWu1aD4AGyTB=wuHW-0oyLreZ2QiWSMvf_Ne_Nz0g@mail.gmail.com>
+Subject: Re: [RFC PATCH] PCIe: Add PCIe runtime D3cold support
+From: huang ying <huang.ying.caritas@gmail.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: "Yan, Zheng" <zheng.z.yan@intel.com>, bhelgaas@google.com,
+        linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
+        linux-pm@vger.kernel.org, Lin Ming <ming.m.lin@intel.com>,
+        Zhang Rui <rui.zhang@intel.com>,
+        ACPI Devel Mailing List <linux-acpi@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---00GvhwF7k39YY
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+On Wed, Apr 18, 2012 at 4:20 AM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+> On Tuesday, April 17, 2012, huang ying wrote:
+>> On Tue, Apr 17, 2012 at 1:07 AM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+>> > Moreover, I really don't think it's a good idea to put PCI Express ports into
+>> > low-power states in general.  It might work on your platform, whatever it is,
+>> > but that doesn't mean it's going to work on every PCI Express system out
+>> > there.  I actually know of a number of such systems where it surely won't
+>> > work at all.
+>>
+>> The runtime PM support for PCIe port is not turned on by default, we need
+>>
+>> # echo auto > /sys/devices/pcixxxx:xx/<pci id>/power/control
+>>
+>> to turn on it.  And we will turn on it on system it works.  Is this sufficient?
+>
+> No, it is not.  In some cases it shouldn't be enabled at all for PCI Express
+> ports, as far as I can say, so to be on the safe side we should only enable it
+> on platforms where PCI Express ports are known to work correctly with runtime PM.
 
-From: Steven Rostedt <srostedt@redhat.com>
+Sorry, I did not catch your idea exactly.  I think disable it by
+default and enable it by sysfs interface is what you suggested, isn't
+it?  Or you suggest something like "white list"?
 
-The change to make tracing_on affect only the ftrace ring buffer, caused
-a bug where it wont affect any ring buffer. The problem was that the buffer
-of the trace_array was passed to the write function and not the trace array
-itself.
-
-The trace_array can change the buffer when running a latency tracer. If this
-happens, then the buffer being disabled may not be the buffer currently used
-by ftrace. This will cause the tracing_on file to become useless.
-
-The simple fix is to pass the trace_array to the write function instead of
-the buffer. Then the actual buffer may be changed.
-
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
----
- kernel/trace/trace.c |    8 +++++---
- 1 file changed, 5 insertions(+), 3 deletions(-)
-
-diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
-index ed7b5d1..2a22255 100644
---- a/kernel/trace/trace.c
-+++ b/kernel/trace/trace.c
-@@ -4629,7 +4629,8 @@ static ssize_t
- rb_simple_read(struct file *filp, char __user *ubuf,
- 	       size_t cnt, loff_t *ppos)
- {
--	struct ring_buffer *buffer =3D filp->private_data;
-+	struct trace_array *tr =3D filp->private_data;
-+	struct ring_buffer *buffer =3D tr->buffer;
- 	char buf[64];
- 	int r;
-=20
-@@ -4647,7 +4648,8 @@ static ssize_t
- rb_simple_write(struct file *filp, const char __user *ubuf,
- 		size_t cnt, loff_t *ppos)
- {
--	struct ring_buffer *buffer =3D filp->private_data;
-+	struct trace_array *tr =3D filp->private_data;
-+	struct ring_buffer *buffer =3D tr->buffer;
- 	unsigned long val;
- 	int ret;
-=20
-@@ -4734,7 +4736,7 @@ static __init int tracer_init_debugfs(void)
- 			  &trace_clock_fops);
-=20
- 	trace_create_file("tracing_on", 0644, d_tracer,
--			    global_trace.buffer, &rb_simple_fops);
-+			    &global_trace, &rb_simple_fops);
-=20
- #ifdef CONFIG_DYNAMIC_FTRACE
- 	trace_create_file("dyn_ftrace_total_info", 0444, d_tracer,
---=20
-1.7.9.5
-
-
-
---00GvhwF7k39YY
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAABAgAGBQJPjhNmAAoJEIy3vGnGbaoAtA4P/jb0IIYU59vFakF9VHh1GINy
-Gaz5hB3ulDwEKp5ro/YHswjX2t399oopRLxTZ6fxPtcklDs2GeWiO0g4f1lWuKov
-+z8nuSsENhNDe984taoCPRA8w/ILi+kerTaZfOO+dpoRkxg1LD063G6hqtom3pVI
-uAYRd2zodxj62qPs1ndDJKbfC42NyA6ihjzBYzxZzUJU633HnDO8DtERVTIoJ2BQ
-l8C7QWeWYvUsGpqs+XK6vSnFTaU4q7oS0Rku9S5Z7IifNhIjP+o3bWGPrqv8KgvI
-0dM3OrJTnVvyWEHgSxDyttK3E6WZxAK9DoD7wWabrXna2JIB4wVqXbnXRVl77Kcw
-EAIO3QEwWf60OvvuxSJtbO8Vg/5tCzHrUVJFBV5L1TOx1SiVqUjQwmCC4PTvLN/1
-tXru+wuSFOp47coCV/SHLl+yAzascbz06739Lkvh71py9UHW0EROKCC5VwAocpzH
-klzV/NG0HZflqTjOsX7nu9nFJKES78OqRYIkwO82uXcUGd9APf0/kH7wGOZRBPOu
-p0ZGE11fbY2NyYqGdUsEdJXeozaixXJOdktxptsDXz+FZKimNz5KtpiU0aLd3oYr
-6GJfua1erK5E4SmgSXpgKl/LjkbuVbAfhCa39z7MoLGazuilhKTLYnzPXOPKgU39
-XmjPCpIbK9Zq5PrURqqH
-=yWjg
------END PGP SIGNATURE-----
-
---00GvhwF7k39YY--
+Best Regards,
+Huang Ying
