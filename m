@@ -1,77 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751609Ab2DRHxE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Apr 2012 03:53:04 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:55940 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751062Ab2DRHxB convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Apr 2012 03:53:01 -0400
+	id S1751865Ab2DRHx0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Apr 2012 03:53:26 -0400
+Received: from mx2.parallels.com ([64.131.90.16]:54877 "EHLO mx2.parallels.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751543Ab2DRHxY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Apr 2012 03:53:24 -0400
+From: James Bottomley <jbottomley@parallels.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: "Martin K. Petersen" <martin.petersen@oracle.com>,
+        Jens Axboe <jaxboe@fusionio.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: USB storage SCSI EH oops
+Thread-Topic: USB storage SCSI EH oops
+Thread-Index: AQHNGoyLQYsfnt9fzkSbpcIofu9OGJabXHwAgAAFVYCABU8SgA==
+Date: Wed, 18 Apr 2012 07:53:20 +0000
+Message-ID: <1334735599.4410.17.camel@dabdike>
+References: <CA+55aFxToKG2gMqHnUgjkGTr--X4FK9yzX7n0yc9xKuUGGRKmA@mail.gmail.com>
+	 <CA+55aFyq7fp2nDGJBT+9oPTBU+uCWpp_2JBfGB3HxBSwA=5TBw@mail.gmail.com>
+	 <CA+55aFyH-LCcDZmLhhctT2mz447aLMRShU-BOk7QnzAGGMzySA@mail.gmail.com>
+In-Reply-To: <CA+55aFyH-LCcDZmLhhctT2mz447aLMRShU-BOk7QnzAGGMzySA@mail.gmail.com>
+Accept-Language: en-GB, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [195.214.232.10]
+Content-Type: text/plain; charset="utf-8"
+Content-ID: <754F7A0A29A58843A6C900868200244A@sw.swsoft.com>
 MIME-Version: 1.0
-In-Reply-To: <4F8E646B.1020807@jp.fujitsu.com>
-References: <4F862851.3040208@jp.fujitsu.com>
-	<20120412113217.GB11455@somewhere.redhat.com>
-	<4F86BFC6.2050400@parallels.com>
-	<20120412123256.GI1787@cmpxchg.org>
-	<4F86D4BD.1040305@parallels.com>
-	<20120412153055.GL1787@cmpxchg.org>
-	<20120412163825.GB13069@google.com>
-	<20120412172309.GM1787@cmpxchg.org>
-	<20120412174155.GC13069@google.com>
-	<4F878480.60505@jp.fujitsu.com>
-	<20120417154117.GE32402@google.com>
-	<4F8D9FC4.3080800@parallels.com>
-	<4F8E646B.1020807@jp.fujitsu.com>
-Date: Wed, 18 Apr 2012 09:53:00 +0200
-Message-ID: <CAFTL4hw3C4s6VS07pJzdBawv0ugKJJa+Vnb-Q_9FrWEq4=ka9Q@mail.gmail.com>
-Subject: Re: [RFD] Merge task counter into memcg
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: Glauber Costa <glommer@parallels.com>, Tejun Heo <tj@kernel.org>,
-        Johannes Weiner <hannes@cmpxchg.org>, Hugh Dickins <hughd@google.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Daniel Walsh <dwalsh@redhat.com>,
-        "Daniel P. Berrange" <berrange@redhat.com>,
-        Li Zefan <lizf@cn.fujitsu.com>, LKML <linux-kernel@vger.kernel.org>,
-        Cgroups <cgroups@vger.kernel.org>,
-        Containers <containers@lists.linux-foundation.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by nfs id q3I7rUQZ017147
 
-2012/4/18 KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>:
-> (2012/04/18 1:52), Glauber Costa wrote:
->
->>
->>>> In short, I don't think it's better to have task-counting and fd-counting in memcg.
->>>> It's kmem, but it's more than that, I think.
->>>> Please provide subsys like ulimit.
->>>
->>> So, you think that while kmem would be enough to prevent fork-bombs,
->>> it would still make sense to limit in more traditional ways
->>> (ie. ulimit style object limits).  Hmmm....
->>>
->>
->> I personally think this is namespaces business, not cgroups.
->> If you have a process namespace, an interface that works to limit the
->> number of processes should keep working given the constraints you are
->> given.
->>
->> What doesn't make sense, is to create a *new* interface to limit
->> something that doesn't really need to be limited, just because you
->> limited a similar resource before.
->>
->
->
-> Ok, limitiing forkbomb is unnecessary. ulimit+namespace should work.
-> What we need is user-id namespace, isn't it ? If we have that, ulimit
-> works enough fine, no overheads.
+On Sat, 2012-04-14 at 15:49 -0700, Linus Torvalds wrote:
+> On Sat, Apr 14, 2012 at 3:29 PM, Linus Torvalds
+> <torvalds@linux-foundation.org> wrote:
+> >
+> > Confirmed.
+> >
+> > I tested twice: with that patch, the oops is repeatable, and happens
+> > something like 30 seconds after plugging in the USB thing into the
+> > monitor.
+> >
+> > With that patch reverted, the thing still doesn't *work*, but I don't
+> > get the oops. Instead, I get the appended noise in my dmesg..
+> 
+> .. and the reason that card reader has trouble seems to be that it's
+> just too damn old, and doesn't understand SD-HC cards. It works fine
+> with old SD cards.
+> 
+> So the reader is fine (well, apart from being too old), USB-storage is
+> fine, but the SCSI error handler is broken.
+> 
+> Even with that commit reverted, once the SCSI layer has decided to
+> off-line the device, you can't get it back, even if you remove the
+> media and insert a non-HC SD card. You have to unplug and re-plug the
+> reader. That seems to be a slight misfeature of SCSI error handling,
+> but compared to oopsing, it's minor.
 
-I have considered using NR_PROC rlimit on top of user namespaces to
-fight forkbombs inside a container.
-ie: one user namespace per container with its own rlimit.
+OK, will either queue the update or a revert.
 
-But it doesn't work because we can have multiuser apps running in a
-single container.
+Just on the offline device problem; after it's offlined, can you get it
+back with
+
+echo running > /sys/block/sd<x>/device/state
+
+?
+
+That would show we're failing to recognise the device as removable media
+which is gone.
+
+James
+
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
