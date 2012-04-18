@@ -1,73 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752568Ab2DRIhf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Apr 2012 04:37:35 -0400
-Received: from moutng.kundenserver.de ([212.227.126.171]:54879 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751293Ab2DRIh3 (ORCPT
+	id S1752705Ab2DRIiQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Apr 2012 04:38:16 -0400
+Received: from mailout-de.gmx.net ([213.165.64.23]:46598 "HELO
+	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751766Ab2DRIiN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Apr 2012 04:37:29 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Roland Stigge <stigge@antcom.de>
-Subject: Re: [PATCH v2 7/8] ARM: LPC32xx: DTS files for device tree conversion
-Date: Wed, 18 Apr 2012 08:36:53 +0000
-User-Agent: KMail/1.12.2 (Linux/3.3.0-rc1; KDE/4.3.2; x86_64; ; )
-Cc: arm@kernel.org, linux-arm-kernel@lists.infradead.org,
-        thierry.reding@avionic-design.de, gregkh@linuxfoundation.org,
-        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-input@vger.kernel.org, dmitry.torokhov@gmail.com,
-        axel.lin@gmail.com, broonie@opensource.wolfsonmicro.com,
-        marek.vasut@gmail.com, devel@driverdev.osuosl.org, kevin.wells@nxp.com,
-        srinivas.bakki@nxp.com
-References: <1334682507-15055-1-git-send-email-stigge@antcom.de> <1334682507-15055-8-git-send-email-stigge@antcom.de>
-In-Reply-To: <1334682507-15055-8-git-send-email-stigge@antcom.de>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
+	Wed, 18 Apr 2012 04:38:13 -0400
+X-Authenticated: #14349625
+X-Provags-ID: V01U2FsdGVkX1+RijZoDxiRyvqsP+P3ErgtnV3hY2HcVmHjSnHBc0
+	nilAHbVJaLqWxm
+Message-ID: <1334738287.5542.67.camel@marge.simpson.net>
+Subject: Re: RFC [patch] sched,cgroup_sched: convince RT_GROUP_SCHED
+ throttle to work
+From: Mike Galbraith <efault@gmx.de>
+To: Yong Zhang <yong.zhang0@gmail.com>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@redhat.com>
+Date: Wed, 18 Apr 2012 10:38:07 +0200
+In-Reply-To: <20120418074803.GB19328@zhy>
+References: <1333444788.9072.9.camel@marge.simpson.net>
+	 <1333789124.12677.15.camel@marge.simpson.net>
+	 <1333792489.12677.58.camel@marge.simpson.net>
+	 <1334048925.7524.21.camel@marge.simpson.net>
+	 <1334401847.2528.65.camel@twins>
+	 <1334461061.5751.15.camel@marge.simpson.net>
+	 <1334461470.5751.21.camel@marge.simpson.net>
+	 <1334465495.7802.6.camel@marge.simpson.net> <20120418052057.GA19328@zhy>
+	 <1334730470.5616.33.camel@marge.simpson.net> <20120418074803.GB19328@zhy>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.1 
 Content-Transfer-Encoding: 7bit
-Message-Id: <201204180836.53268.arnd@arndb.de>
-X-Provags-ID: V02:K0:g0f7ekUbzj/ifXmWqAxnHkK66xEIn2Ri9rBrbLY9r0R
- CP9uL/gVNUnc9DYEXY1thwzcpOpll6atvDDPXaG/CnU5lmtPY1
- 1qKjM7sv7p43M1TxKxihsWZzpBz8NXc52F5LnfrkD7Nx7VmavO
- xGqBqb6Icvd8Duk4Fyg2NGwb5sLsVZMIdjjUIUA6aPNR8ezDrX
- e5p1mDq2j+ph4A7sx/X9vlxSlhGPU+zz44ZI3hQkK2PBCRjrLQ
- QoD3uVuCo9uYF4en52Z9okwrU3k8QI386Li/4bf80H0Fdll9c2
- Y3tGykmvUJdXAceKj1L5qfAUjatkjnDTAxDK81JNze19dU0qOw
- PlX+MnvMwst6SBZ70GH0=
+Mime-Version: 1.0
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 17 April 2012, Roland Stigge wrote:
-> +	ahb {
-> +		#address-cells = <1>;
-> +		#size-cells = <1>;
-> +		compatible = "simple-bus";
-> +		ranges = <0x20000000 0x20000000 0x30000000>;
-> +
-> +		slc: flash@20020000 {
-> +			compatible = "nxp,nand-slc";
-> +			reg = <0x20020000 0x1000>;
-> +			status = "disable";
-> +		};
-> +
-> +		mlc: flash@200B0000 {
-> +			compatible = "nxp,nand-mlc";
-> +			reg = <0x200B0000 0x1000>;
-> +			status = "disable";
-> +		};
+On Wed, 2012-04-18 at 15:48 +0800, Yong Zhang wrote: 
+> On Wed, Apr 18, 2012 at 08:27:50AM +0200, Mike Galbraith wrote:
+> > On Wed, 2012-04-18 at 13:20 +0800, Yong Zhang wrote:
+> > 
+> > > > --- a/kernel/sched/core.c
+> > > > +++ b/kernel/sched/core.c
+> > > > @@ -5875,6 +5875,11 @@ cpu_attach_domain(struct sched_domain *s
+> > > >  			sd->child = NULL;
+> > > >  	}
+> > > >  
+> > > > +	if (sd)
+> > > > +		cpumask_clear_cpu(cpu, cpu_isolated_map);
+> > > > +	else
+> > > > +		cpumask_set_cpu(cpu, cpu_isolated_map);
+> > > > +
+> > > 
+> > > Do we allow this?
+> > 
+> > Yeah, isolating CPUS 2-3...
+> 
+> Hmm...magic cpuset ;-)
 
-You have the flash chips in here, which seem right, but I would expect
-to see the phy3250 file pick this up again and define partitions in
-it, at least if there is a well-defined partition layout for that
-board.
+The _only_ cpuset if you have a low jitter requirement. 
 
-> +
-> +	chosen {
-> +		bootargs = "console=ttyS0,115200n81 root=/dev/ram0";
-> +	};
+> > [ 3011.444345] CPU0 attaching NULL sched-domain.
+> > [ 3011.448719] CPU1 attaching NULL sched-domain.
+> > [ 3011.453107] CPU2 attaching NULL sched-domain.
+> > [ 3011.457466] CPU3 attaching NULL sched-domain.
+> > [ 3011.461892] CPU0 attaching sched-domain:
+> > [ 3011.465813]  domain 0: span 0-1 level MC
+> > [ 3011.469761]   groups: 0 1
+> > [ 3011.472415] CPU1 attaching sched-domain:
+> > [ 3011.476333]  domain 0: span 0-1 level MC
+> > [ 3011.480266]   groups: 1 0
+> > [ 3011.482988] CPU2 attaching sched-domain:
+> > [ 3011.486919]  domain 0: span 2-3 level MC
+> > [ 3011.490851]   groups: 2 3
+> > [ 3011.493502] CPU3 attaching sched-domain:
+> > [ 3011.497422]  domain 0: span 2-3 level MC
+> > [ 3011.501367]   groups: 3 2
+> > [ 3011.504214] CPU2 attaching NULL sched-domain.
+> > [ 3011.508569] CPU3 attaching NULL sched-domain.
+> 
+> But another scenario comes into head:
+> What will happen when a rt_rq is throttled the very CPU is
+> attached to NULL domain?
 
-I think in general it's better not to list a command line like this,
-it should instead get set by the boot loader or using ARM_ATAG_DTB_COMPAT.
+Yup, _somebody_ will hit the throttle only once :)
 
-	Arnd
+That's what gets fixed by either killing the throttle entirely for
+isolated CPUs, or making the throttle work until the guy who needed
+isolation turns noise maker off.  I prefer reconnect the dots, because
+that doesn't touch the fast path.
+
+-Mike
+
