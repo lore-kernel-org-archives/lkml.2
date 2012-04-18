@@ -1,45 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753744Ab2DRADM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Apr 2012 20:03:12 -0400
-Received: from oproxy7-pub.bluehost.com ([67.222.55.9]:59221 "HELO
-	oproxy7-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1753624Ab2DRADJ (ORCPT
+	id S1752612Ab2DRATH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Apr 2012 20:19:07 -0400
+Received: from filtteri5.pp.htv.fi ([213.243.153.188]:60964 "EHLO
+	filtteri5.pp.htv.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751816Ab2DRATF convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Apr 2012 20:03:09 -0400
-Message-ID: <4F8E04E2.3090607@xenotime.net>
-Date: Tue, 17 Apr 2012 17:03:46 -0700
-From: Randy Dunlap <rdunlap@xenotime.net>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
+	Tue, 17 Apr 2012 20:19:05 -0400
+Message-ID: <20120418031835.7ko7zlvfdwsw80cs@webmail.welho.com>
+Date: Wed, 18 Apr 2012 03:18:35 +0300
+From: BMW CUSTOMER SERVICE <info@bmw.org>
+Reply-to: dptforclaimsbmw12@shqiptar.eu
+To: undisclosed-recipients:;
+Subject: WINNING CLAIMS ALERT
 MIME-Version: 1.0
-To: LKML <linux-kernel@vger.kernel.org>, linux-input@vger.kernel.org,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Subject: [PATCH] input: fix input.h kernel-doc warning
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
+Content-Type: text/plain; charset=US-ASCII;
+	DelSp=Yes	format=flowed
+Content-Disposition: inline
+Content-Transfer-Encoding: 7BIT
+User-Agent: Internet Messaging Program (IMP) H3 (4.1.3)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Randy Dunlap <rdunlap@xenotime.net>
+THE BMW AUTOMOBILE PROMO
+Dear E-mail Owner,
 
-Fix kernel-doc warning in input.h:
+You are receiving this message because you are a Winner of 300,000 Pounds from
+BMW Automobile Online Lottery game.
 
-Warning(include/linux/input.h:140): No description found for parameter 'len'
+A random email balloting system selected your email address amongst a total of
+five (5) winners without the sale of any tickets.
 
-Signed-off-by: Randy Dunlap <rdunlap@xenotime.net>
----
- include/linux/input.h |    1 +
- 1 file changed, 1 insertion(+)
+Claim requirements are as follows:
+(1) Your full names
+(2) Contact Address
+(3) Age
+(4) Occupation
+(5) Telephone
+(6) Sex
+(7) Nationality
 
---- lnx-34-rc3.orig/include/linux/input.h
-+++ lnx-34-rc3/include/linux/input.h
-@@ -116,6 +116,7 @@ struct input_keymap_entry {
- 
- /**
-  * EVIOCGMTSLOTS(len) - get MT slot values
-+ * @len: size of the data buffer in bytes
-  *
-  * The ioctl buffer argument should be binary equivalent to
-  *
+Contact Mr. Thomas Hillary on (dptforclaimsbmw13@shqiptar.eu) OR
+(dptforclaimsbmw12@shqiptar.eu) Tel: +447024079137
+
+You will be furnished with details on how to receive your prize as soon as we
+receive your response to this mail. Be sure to check all incoming mail folders
+including your junk folder for subsequent mails from us.
+
+NB: You are to reply directly to this emails  
+(dptforclaimsbmw13@shqiptar.eu) OR
+(dptforclaimsbmw12@shqiptar.eu) because any mail sent to any other email
+address will not be attended to.
+
+Kayla Miller
+Annoucer For BMW Automobile Promo.
+
+
+
+
