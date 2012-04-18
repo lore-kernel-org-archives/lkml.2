@@ -1,93 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751609Ab2DRG0q (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Apr 2012 02:26:46 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:35518 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750781Ab2DRGZ6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Apr 2012 02:25:58 -0400
-From: Venkatraman S <svenkatr@ti.com>
-To: <linux-kernel@vger.kernel.org>, <linux-mmc@vger.kernel.org>
-CC: <arnd.bergmann@linaro.org>, <cjb@laptop.org>, <alex.limberg@sandisk.com>,
-        <ilan.smith@sandisk.com>, <lporzio@micron.com>,
-        Alex Lemberg <alex.lemberg@sandisk.com>,
-        Venkatraman S <svenkatr@ti.com>
-Subject: [RFC PATCH 01/11] fs: Add demand paging markers to filesystem
-Date: Wed, 18 Apr 2012 11:55:22 +0530
-Message-ID: <1334730332-22244-2-git-send-email-svenkatr@ti.com>
-X-Mailer: git-send-email 1.7.10.rc2
-In-Reply-To: <1334730332-22244-1-git-send-email-svenkatr@ti.com>
-References: <1334730332-22244-1-git-send-email-svenkatr@ti.com>
+	id S1751621Ab2DRG3w (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Apr 2012 02:29:52 -0400
+Received: from va3ehsobe006.messaging.microsoft.com ([216.32.180.16]:56250
+	"EHLO va3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750787Ab2DRG3v (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Apr 2012 02:29:51 -0400
+X-SpamScore: 1
+X-BigFish: VS1(zzzz1202hzz8275bhz2ei87h668h839hd24h)
+X-Forefront-Antispam-Report: CIP:193.138.13.20;KIP:(null);UIP:(null);IPV:NLI;H:oce-exbhcs03b.oce.net;RD:smtp02.oce.com;EFVD:NLI
+X-FB-DOMAIN-IP-MATCH: fail
+From: Ivo Sieben <meltedpianoman@gmail.com>
+To: Greg KH <gregkh@linuxfoundation.org>, Remy Bohmer <linux@bohmer.net>,
+        Chris Wright <chrisw@sous-sol.org>, <linux-kernel@vger.kernel.org>,
+        Jean Delvare <khali@linux-fr.org>,
+        Kevin Hilman <khilman@deeprootsystems.com>,
+        Wolfram Sang <w.sang@pengutronix.de>
+CC: Ivo Sieben <meltedpianoman@gmail.com>
+Subject: [PATCH-v4] Support M95040 SPI EEPROM
+Date: Wed, 18 Apr 2012 08:29:34 +0200
+Message-ID: <1334730574-31911-1-git-send-email-meltedpianoman@gmail.com>
+X-Mailer: git-send-email 1.7.0.4
+X-OriginalArrivalTime: 18 Apr 2012 06:29:39.0488 (UTC) FILETIME=[A1DB4200:01CD1D2C]
 MIME-Version: 1.0
 Content-Type: text/plain
+X-OriginatorOrg: oce.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Ilan Smith <ilan.smith@sandisk.com>
+Updated the generic SPI EEPROM driver AT25 for support of an additional address
+bit in the instruction byte. Certain EEPROMS have a size that is larger than the
+number of address bytes would allow (e.g. like M95040 from ST that has 512 Byte
+size but uses only one address byte (A0 to A7) for addressing.) For the extra
+address bit (A8, A16 or A24) bit 3 of the instruction byte is used. This
+instruction bit is normally defined as don't care for other AT25 like chips.
 
-Add attribute to identify demand paging requests.
-Mark readpages with demand paging attribute.
-
-Signed-off-by: Ilan Smith <ilan.smith@sandisk.com>
-Signed-off-by: Alex Lemberg <alex.lemberg@sandisk.com>
-Signed-off-by: Venkatraman S <svenkatr@ti.com>
+Reviewed-by: Wolfram Sang <w.sang@pengutronix.de>
+Signed-off-by: Ivo Sieben <meltedpianoman@gmail.com>
 ---
- fs/mpage.c                |    2 ++
- include/linux/bio.h       |    7 +++++++
- include/linux/blk_types.h |    2 ++
- 3 files changed, 11 insertions(+)
 
-diff --git a/fs/mpage.c b/fs/mpage.c
-index 0face1c..8b144f5 100644
---- a/fs/mpage.c
-+++ b/fs/mpage.c
-@@ -386,6 +386,8 @@ mpage_readpages(struct address_space *mapping, struct list_head *pages,
- 					&last_block_in_bio, &map_bh,
- 					&first_logical_block,
- 					get_block);
-+			if (bio)
-+				bio->bi_rw |= REQ_RW_DMPG;
+v4: Same patch as v3, only added the 'reviewed by' tag from Wolfram
+
+ drivers/misc/eeprom/at25.c |   19 ++++++++++++++++---
+ include/linux/spi/eeprom.h |   10 ++++++++++
+ 2 files changed, 26 insertions(+), 3 deletions(-)
+
+diff --git a/drivers/misc/eeprom/at25.c b/drivers/misc/eeprom/at25.c
+index c627e41..0d272c6 100644
+--- a/drivers/misc/eeprom/at25.c
++++ b/drivers/misc/eeprom/at25.c
+@@ -50,6 +50,7 @@ struct at25_data {
+ #define	AT25_SR_BP1	0x08
+ #define	AT25_SR_WPEN	0x80		/* writeprotect enable */
+ 
++#define	AT25_INSTR_BIT3	0x08		/* Additional address bit in instr */
+ 
+ #define EE_MAXADDRLEN	3		/* 24 bit addresses, up to 2 MBytes */
+ 
+@@ -75,6 +76,7 @@ at25_ee_read(
+ 	ssize_t			status;
+ 	struct spi_transfer	t[2];
+ 	struct spi_message	m;
++	u8			instr;
+ 
+ 	if (unlikely(offset >= at25->bin.size))
+ 		return 0;
+@@ -84,7 +86,12 @@ at25_ee_read(
+ 		return count;
+ 
+ 	cp = command;
+-	*cp++ = AT25_READ;
++
++	instr = AT25_READ;
++	if (at25->chip.flags & EE_INSTR_BIT3_IS_ADDR)
++		if (offset >= (1U << (at25->addrlen * 8)))
++			instr |= AT25_INSTR_BIT3;
++	*cp++ = instr;
+ 
+ 	/* 8/16/24-bit address is written MSB first */
+ 	switch (at25->addrlen) {
+@@ -167,14 +174,14 @@ at25_ee_write(struct at25_data *at25, const char *buf, loff_t off,
+ 	/* For write, rollover is within the page ... so we write at
+ 	 * most one page, then manually roll over to the next page.
+ 	 */
+-	bounce[0] = AT25_WRITE;
+ 	mutex_lock(&at25->lock);
+ 	do {
+ 		unsigned long	timeout, retries;
+ 		unsigned	segment;
+ 		unsigned	offset = (unsigned) off;
+-		u8		*cp = bounce + 1;
++		u8		*cp = bounce;
+ 		int		sr;
++		u8		instr;
+ 
+ 		*cp = AT25_WREN;
+ 		status = spi_write(at25->spi, cp, 1);
+@@ -184,6 +191,12 @@ at25_ee_write(struct at25_data *at25, const char *buf, loff_t off,
+ 			break;
  		}
- 		page_cache_release(page);
- 	}
-diff --git a/include/linux/bio.h b/include/linux/bio.h
-index 4d94eb8..264e0ef 100644
---- a/include/linux/bio.h
-+++ b/include/linux/bio.h
-@@ -57,6 +57,13 @@
- 	(bio)->bi_rw |= ((unsigned long) (prio) << BIO_PRIO_SHIFT);	\
- } while (0)
  
-+static inline bool bio_rw_flagged(struct bio *bio, unsigned long flag)
-+{
-+	return ((bio->bi_rw & flag)  != 0);
-+}
++		instr = AT25_WRITE;
++		if (at25->chip.flags & EE_INSTR_BIT3_IS_ADDR)
++			if (offset >= (1U << (at25->addrlen * 8)))
++				instr |= AT25_INSTR_BIT3;
++		*cp++ = instr;
 +
-+#define bio_dmpg(bio)	bio_rw_flagged(bio, REQ_RW_DMPG)
+ 		/* 8/16/24-bit address is written MSB first */
+ 		switch (at25->addrlen) {
+ 		default:	/* case 3 */
+diff --git a/include/linux/spi/eeprom.h b/include/linux/spi/eeprom.h
+index 306e7b1..403e007 100644
+--- a/include/linux/spi/eeprom.h
++++ b/include/linux/spi/eeprom.h
+@@ -20,6 +20,16 @@ struct spi_eeprom {
+ #define	EE_ADDR3	0x0004			/* 24 bit addrs */
+ #define	EE_READONLY	0x0008			/* disallow writes */
+ 
++	/*
++	 * Certain EEPROMS have a size that is larger than the number of address
++	 * bytes would allow (e.g. like M95040 from ST that has 512 Byte size
++	 * but uses only one address byte (A0 to A7) for addressing.) For
++	 * the extra address bit (A8, A16 or A24) bit 3 of the instruction byte
++	 * is used. This instruction bit is normally defined as don't care for
++	 * other AT25 like chips.
++	 */
++#define EE_INSTR_BIT3_IS_ADDR	0x0010
 +
- /*
-  * various member access, note that bio_data should of course not be used
-  * on highmem page vectors
-diff --git a/include/linux/blk_types.h b/include/linux/blk_types.h
-index 4053cbd..87feb80 100644
---- a/include/linux/blk_types.h
-+++ b/include/linux/blk_types.h
-@@ -150,6 +150,7 @@ enum rq_flag_bits {
- 	__REQ_FLUSH_SEQ,	/* request for flush sequence */
- 	__REQ_IO_STAT,		/* account I/O stat */
- 	__REQ_MIXED_MERGE,	/* merge of different types, fail separately */
-+	__REQ_RW_DMPG,
- 	__REQ_NR_BITS,		/* stops here */
- };
- 
-@@ -191,5 +192,6 @@ enum rq_flag_bits {
- #define REQ_IO_STAT		(1 << __REQ_IO_STAT)
- #define REQ_MIXED_MERGE		(1 << __REQ_MIXED_MERGE)
- #define REQ_SECURE		(1 << __REQ_SECURE)
-+#define REQ_RW_DMPG		(1 << __REQ_RW_DMPG)
- 
- #endif /* __LINUX_BLK_TYPES_H */
+ 	/* for exporting this chip's data to other kernel code */
+ 	void (*setup)(struct memory_accessor *mem, void *context);
+ 	void *context;
 -- 
-1.7.10.rc2
+1.7.0.4
+
 
