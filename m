@@ -1,100 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753472Ab2DRO0r (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Apr 2012 10:26:47 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:3487 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751274Ab2DRO0p (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Apr 2012 10:26:45 -0400
-Message-ID: <4F8ECED3.5070909@redhat.com>
-Date: Wed, 18 Apr 2012 10:25:23 -0400
-From: Doug Ledford <dledford@redhat.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:11.0) Gecko/20120327 Thunderbird/11.0.1
+	id S1753354Ab2DRO2J (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Apr 2012 10:28:09 -0400
+Received: from va3ehsobe006.messaging.microsoft.com ([216.32.180.16]:54852
+	"EHLO va3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751274Ab2DRO2I convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Apr 2012 10:28:08 -0400
+X-SpamScore: -10
+X-BigFish: VS-10(zz9371I1432N98dKzz1202hzzz2dh2a8h668h839hd25h)
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+Date: Wed, 18 Apr 2012 22:38:40 +0800
+From: Dong Aisheng <aisheng.dong@freescale.com>
+To: Sascha Hauer <s.hauer@pengutronix.de>
+CC: Linus Walleij <linus.walleij@linaro.org>,
+        Dong Aisheng-B29396 <B29396@freescale.com>,
+        "linus.walleij@stericsson.com" <linus.walleij@stericsson.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Stephen Warren <swarren@wwwdotorg.org>
+Subject: Re: [PATCH 1/1] pinctrl: handle dummy state in core
+Message-ID: <20120418143839.GB30966@shlinux2.ap.freescale.net>
+References: <1334586289-13078-1-git-send-email-b29396@freescale.com>
+ <4F8C42D6.2000607@wwwdotorg.org>
+ <20120417034210.GD17173@shlinux2.ap.freescale.net>
+ <CACRpkdYH06_kGbSdozKPWZcOG0FvoOyHvjHwhz-xUL1pfSX9DQ@mail.gmail.com>
+ <20120418122832.GP20478@pengutronix.de>
+ <CACRpkdZw6iv=PjvvU4s5L8yV6813gCD7t8Vk-S66v-nXPaf+=Q@mail.gmail.com>
+ <20120418140046.GU3852@pengutronix.de>
 MIME-Version: 1.0
-To: "Serge E. Hallyn" <serge@hallyn.com>
-CC: linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
-        kosaki.motohiro@gmail.com,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Amerigo Wang <amwang@redhat.com>, "Serge E. Hallyn" <serue@us.ibm.com>,
-        Jiri Slaby <jslaby@suse.cz>
-Subject: Re: [Patch 5/8] mqueue: revert bump up DFLT_*MAX
-References: <cover.1334676645.git.dledford@redhat.com> <de8d761688dd34f312822db71ceed6753493933a.1334676645.git.dledford@redhat.com> <20120418032210.GB18830@mail.hallyn.com>
-In-Reply-To: <20120418032210.GB18830@mail.hallyn.com>
-X-Enigmail-Version: 1.4
-OpenPGP: id=0E572FDD
-Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="------------enig87F6A8463E0AFBDB13138974"
+Content-Type: text/plain; charset="iso-8859-1"
+Content-Disposition: inline
+In-Reply-To: <20120418140046.GU3852@pengutronix.de>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Transfer-Encoding: 8BIT
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 2440 and 3156)
---------------enig87F6A8463E0AFBDB13138974
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: quoted-printable
+On Wed, Apr 18, 2012 at 10:00:46PM +0800, Sascha Hauer wrote:
+> On Wed, Apr 18, 2012 at 03:52:23PM +0200, Linus Walleij wrote:
+> > On Wed, Apr 18, 2012 at 2:28 PM, Sascha Hauer <s.hauer@pengutronix.de> wrote:
+> > 
+> > > Currently Dong Aisheng is working on i.MX6, we have i.MX31, i.MX35,
+> > > i.MX51 and i.MX53 enabled in the same defconfig. Waiting for all
+> > > machines turn over at once to pinctrl is illusionary. We have to make
+> > > drivers work with and without pinctrl. We have a bunch of bad choices:
+> > >
+> > > - create a dummy pinctrl for all boards which do not have real pinmux
+> > >  support
+> > 
+> > Viable compromise.
+> > 
+> > > - ignore pinctrl_request errors in drivers.
+> > 
+> > Ugh. Not good.
+> > 
+> > > - generate and return a dummy pinctrl in the core if no real pinctrl is
+> > >  found.
+> > >
+> > > (replace pinctrl with regulators or clocks, it's the same situation, and
+> > > it's not only i.MX specific)
+> > 
+> > Since we have dummy regulators, we should not break the design
+> > pattern creating more confusion.
+> > 
+> > Stephen can you live with dummy pinctrl handles emitted by the
+> > core, if explictly enabled by a Kconfig option?
+> 
+> I'd rather not make it a Kconfig option but a runtime option. With a
+> Kconfig option we can only chose in the defconfigs whether it won't
+> work on some boards or it will hide pinctrl errors on all other boards.
+> 
+> Create a pinctrl_provide_dummies() functions which boards can call when
+> they do not have pinctrl support.
+> 
+I think this is a feasible method and do better than Kconfig but it also
+needs more changes.
 
-On 4/17/2012 11:22 PM, Serge E. Hallyn wrote:
-> Quoting Doug Ledford (dledford@redhat.com):
->> From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
->>
->> Mqueue limitation is slightly naieve parameter likes other ipcs
->> because unprivileged user can consume kernel memory by using ipcs.
->>
->> Thus, too aggressive raise bring us security issue. Example,
->> current setting allow evil unprivileged user use 256GB (=3D 256
->> * 1024 * 1024*1024) and it's enough large to system will belome
->> unresponsive. Don't do that.
->>
->> Instead, every admin should adjust the knobs for their own systems.
->=20
-> Would you be terribly averse to having a higher limit in init_ipc_ns,
-> and the lower values by default in all child namespaces?
->=20
-> Sorry it sounds from the intro like you've already had quite a bit of
-> discussion on this...
->=20
-> Of course I realize the values can just be raised by distro boot
-> scripts...
+>From a long term view all SoC may migrate to pinctrl subsystem, we first need
+to change all board files that without pinctrl support to call this function
+although just for enable pinctrl for one of them and finally we need remove
+it again. (For imx, maybe more than 10 files and double if with dt enabled).
+I'm not sure it's worth.
 
-The default maximums this patch put into place were in fact in place
-from 2008 until my earlier patch in this same series, so in that regard
-this is merely restoring an already established default maximum.  It
-*could* be raised, yes, but as Motohiro pointed out, this is pinned
-memory that any user can allocate, so the smaller the default amount the
-better.  The sysadmin can make changes as they see fit.
+Turn on pinctrl debug information will tell us which devices are using
+dummy state.
 
---=20
-Doug Ledford <dledford@redhat.com>
-              GPG KeyID: 0E572FDD
-	      http://people.redhat.com/dledford
+Regards
+Dong Aisheng
 
-Infiniband specific RPMs available at
-	      http://people.redhat.com/dledford/Infiniband
-
-
---------------enig87F6A8463E0AFBDB13138974
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.17 (MingW32)
-Comment: Using GnuPG with Mozilla - http://enigmail.mozdev.org/
-
-iQIcBAEBAgAGBQJPjs7TAAoJELgmozMOVy/dzmQQAKfIoiAFB1KxZjPmdcHXbPyD
-ruSBACGzYzzNyyJkeRTfWR6TQpZHOoZtaCe6mtHzD1lGqZnLWFX5kqtTk7BVc+HD
-b3J2C26OGcgnyMNXkXZAz8kkVoynoTCLjbK1TplaKmrQwzI1kyWHJ3WBRrRC8cNE
-rLw+7d3Jsg3EhNAEKRg7UnSJYjoLlPELSC02UPVWYtMUtRy7ArnDf1T/ytIx7edm
-Pd8HP4JqhuC6+Vny+w3LzDc/kqMZ6tonq/dm/TydNoaF9ldxUZpRSNX4PPKUNN/K
-rYBJpHxrvOa5jfPesLiRD86B+nQPO4Fr3pqZ9wR9K5FJU776upWWcx5GFJIJlGB0
-1x2lz9eIc3k1oMQEIXqsCz9j1ZJLsmtWjnIwE/UyHICrAxkNN7XQ4JOWP8QR4eS3
-SQ8fUaDkuUGXyl/rlC67zqfdbSvSGEE2YCO/DUP3W6t9UolI9xrVOUoodVU2At3I
-lNRROPN/dedi+mE97IF4D/qvORp08Au1YS2ktOvM2tMuG5XgPOsjQpA8AyYB4kPb
-Bb4T6m7e2oSibxjNwyS/ibiRKIcjC7EqJqci/lpxQquN+dlpOUXxuWNsU1TetACk
-a23PBuMj6Vsg9EExa5aPG4x3LBN77qUwYbPZ65iUpZKlowtwcZU4nPv3k4YlQceC
-4NyTN6vRpg5hhIM+BKPQ
-=7rBX
------END PGP SIGNATURE-----
-
---------------enig87F6A8463E0AFBDB13138974--
