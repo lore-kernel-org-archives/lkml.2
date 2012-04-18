@@ -1,45 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754151Ab2DRPca (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Apr 2012 11:32:30 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:55098 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752828Ab2DRPc2 (ORCPT
+	id S1754172Ab2DRPdA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Apr 2012 11:33:00 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:45037 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753740Ab2DRPc6 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Apr 2012 11:32:28 -0400
-Date: Wed, 18 Apr 2012 16:32:26 +0100
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Alex Elder <elder@dreamhost.com>
-Cc: Sage Weil <sage@newdream.net>, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org
-Subject: Re: osd_req_encode_op() breakage?
-Message-ID: <20120418153225.GA6589@ZenIV.linux.org.uk>
-References: <4F8ED911.90309@dreamhost.com>
+	Wed, 18 Apr 2012 11:32:58 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4F8ED911.90309@dreamhost.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1334744560-28985-1-git-send-email-bbergenthal@cern.ch>
+References: <1334744560-28985-1-git-send-email-bbergenthal@cern.ch>
+From: Daniel Kurtz <djkurtz@google.com>
+Date: Wed, 18 Apr 2012 23:32:37 +0800
+Message-ID: <CAGS+omB6a+1+3D1ByU-rR6Xe4uWbeswFJip8rPO8UMj0Pg5Cww@mail.gmail.com>
+Subject: Re: [PATCH] Driver: HID: hid-apple: Fixed a tab width style issue
+To: Benedikt Bergenthal <bbergenthal@cern.ch>
+Cc: jkosina@suse.cz, linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Benedikt Bergenthal <benedikt@kdrennert.de>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 18, 2012 at 10:09:05AM -0500, Alex Elder wrote:
+On Wed, Apr 18, 2012 at 6:22 PM, Benedikt Bergenthal
+<bbergenthal@cern.ch> wrote:
+>
+> From: Benedikt <bbergenthal@cern.ch>
+>
+> Fixed a style issue.
+>
+> Signed-off-by: Benedikt Bergenthal <benedikt@kdrennert.de>
 
-> Yes, you are absolutely correct.
-> 
-> We have obviously not done endianness checks in this code for
-> some time.
-> 
-> I will commit a fix and credit you for it.  I'll also make sure
-> we are doing proper testing for this sort of thing on a regular
-> basis.
+Reviewed-by: Daniel Kurtz <djkurtz@chromium.org>
 
-FWIW, that got caught by sparse, but I would really recommend _testing_
-on big-endian - getting an emulated headless e.g. mips box is fairly
-easy with qemu; I'd done that with debian big-endian mips userland on
-emulated malta and it didn't take much work to set up.
+> ---
+>  drivers/hid/hid-apple.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+>
+> diff --git a/drivers/hid/hid-apple.c b/drivers/hid/hid-apple.c
+> index 299d238..7a79e39 100644
+> --- a/drivers/hid/hid-apple.c
+> +++ b/drivers/hid/hid-apple.c
+> @@ -234,7 +234,7 @@ static int hidinput_apple_event(struct hid_device
+> *hid, struct input_dev *input,
+>                }
+>        }
+>
+> -        if (iso_layout) {
+> +       if (iso_layout) {
+>                if (asc->quirks & APPLE_ISO_KEYBOARD) {
+>                        trans = apple_find_translation(apple_iso_keyboard,
+> usage->code);
+>                        if (trans) {
+> --
+> 1.7.5.4
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-input" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
-Speaking of sparse, I think we simply ought to add -D__CHECK_ENDIAN__
-to CHECKFLAGS in top-level Makefile.  It's not _that_ much noise
-these days...  Not sure which tree should that go through, though...
+--
+Daniel Kurtz | Software Engineer | djkurtz@google.com | 650.204.0722
