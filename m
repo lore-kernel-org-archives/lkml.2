@@ -1,166 +1,171 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752523Ab2DRD1f (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Apr 2012 23:27:35 -0400
-Received: from am1ehsobe005.messaging.microsoft.com ([213.199.154.208]:41039
-	"EHLO am1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751398Ab2DRD1e (ORCPT
+	id S1752601Ab2DRD3g (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Apr 2012 23:29:36 -0400
+Received: from 50-56-35-84.static.cloud-ips.com ([50.56.35.84]:50942 "EHLO
+	mail.hallyn.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751981Ab2DRD3f (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Apr 2012 23:27:34 -0400
-X-SpamScore: -13
-X-BigFish: VS-13(zz1dbaL1432N98dKzz1202hzzz2dh2a8h668h839h944hd25h)
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-Date: Wed, 18 Apr 2012 11:38:02 +0800
-From: Dong Aisheng <aisheng.dong@freescale.com>
-To: Sascha Hauer <s.hauer@pengutronix.de>
-CC: Dong Aisheng-B29396 <B29396@freescale.com>,
-        Shawn Guo <shawn.guo@linaro.org>, Dong Aisheng <dongas86@gmail.com>,
-        "linus.walleij@stericsson.com" <linus.walleij@stericsson.com>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        "kernel@pengutronix.de" <kernel@pengutronix.de>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH 1/3] pinctrl: pinctrl-imx: add imx pinctrl core driver
-Message-ID: <20120418033801.GA18021@shlinux2.ap.freescale.net>
-References: <1334333915-1174-1-git-send-email-b29396@freescale.com>
- <20120414134814.GA3852@pengutronix.de>
- <CAA+hA=T0FAfuGKcW0vAKO+OWyFdM-6vQqVo53xKf8y28m7gPOQ@mail.gmail.com>
- <20120415141736.GG24997@S2101-09.ap.freescale.net>
- <20120416034713.GB17173@shlinux2.ap.freescale.net>
- <20120416034646.GI24997@S2101-09.ap.freescale.net>
- <20120417095722.GF17173@shlinux2.ap.freescale.net>
- <20120417123006.GC3852@pengutronix.de>
+	Tue, 17 Apr 2012 23:29:35 -0400
+Date: Wed, 18 Apr 2012 03:30:31 +0000
+From: "Serge E. Hallyn" <serge@hallyn.com>
+To: Doug Ledford <dledford@redhat.com>
+Cc: linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
+        kosaki.motohiro@gmail.com,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Amerigo Wang <amwang@redhat.com>, "Serge E. Hallyn" <serue@us.ibm.com>,
+        Jiri Slaby <jslaby@suse.cz>
+Subject: Re: [Patch 7/8] mqueue: separate mqueue default value from maximum
+ value v2
+Message-ID: <20120418033031.GD18830@mail.hallyn.com>
+References: <cover.1334676645.git.dledford@redhat.com>
+ <3ec3acf3b66f655a05ab05c38fe3bd2762e2c8c4.1334676645.git.dledford@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120417123006.GC3852@pengutronix.de>
+In-Reply-To: <3ec3acf3b66f655a05ab05c38fe3bd2762e2c8c4.1334676645.git.dledford@redhat.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
-X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 17, 2012 at 08:30:06PM +0800, Sascha Hauer wrote:
-> On Tue, Apr 17, 2012 at 05:57:23PM +0800, Dong Aisheng wrote:
-> > Sascha & Shawn,
-> > 
-> > Just let you know:
-> > After changes the pinctrl table may look like:
-> > (i also removed fsl,* config properties since it was introduced for better
-> > readability before, but after dtc macro support is available, it could also
-> > be removed. So i removed now. Then the using is much similar as iomux-v3).
-> > 
-> > iomuxc@020e0000 {
-> >         compatible = "fsl,imx6q-iomuxc";
-> >         reg = <0x020e0000 0x4000>;
-> > 
-> >         /* shared pinctrl settings */
-> >         uart4 {
-> >                 pinctrl_uart4_1: uart4grp-1 {
-> >                         fsl,pins = <58 61>;
-> >                         fsl,configs = <0x12407>
+Quoting Doug Ledford (dledford@redhat.com):
+> From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
 > 
-> Why do we have a hex value for the config now? This should be
-> independent on how we describe the mux settings.
+> commit b231cca438 (message queues: increase range limits)
+> changed mqueue default value when attr parameter is specified NULL
+> from hard coded value to fs.mqueue.{msg,msgsize}_max sysctl value.
 > 
-Yes, that's independent on mux.
-Originally for config, it is like:
-fsl,pull = <2>;
-fsl,pue = <1>;
-fsl,pke = <1>;
-fsl,speed = <2>;
-fsl,drive-strength = <6>;
-fsl,slew-rate = <1>;
-fsl,hysteresis = <1>;
-
-But i think, as mux, after dtc supports macro, we do not need them any more.
-A macro seems enough to tell people what the config data means.
-Like:
-/define/ MX6Q_UART_PAD_CTRL 0x12407
-
-Since i have already changed mux to raw data, i also want to change config to
-raw data at the same time and this is also easy to use.
-
-> Also I think a single fsl,configs entry for a pin group is not
-> enough, what for example with I2C where the data line needs a pullup
-> whereas the clock line does not?
+> This made large side effect. When user need to use two mqueue
+> applications 1) using !NULL attr parameter and it require big
+> message size and 2) using NULL attr parameter and only need small
+> size message, app (1) require to raise fs.mqueue.msgsize_max and
+> app (2) consume large memory size even though it doesn't need.
 > 
-For this case, the hex value for fsl,configs has not difference as the original one.
+> Doug Ledford propsed to switch back it to static hard coded value.
+> However it also has a compatibility problem. Some applications might
+> started depend on the default value is tunable.
+> 
+> The solution is to separate default value from maximum value.
+> 
+> Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+> Acked-by: Doug Ledford <dledford@redhat.com>
+> Acked-by: Joe Korty <joe.korty@ccur.com>
+> Cc: Amerigo Wang <amwang@redhat.com>
+> Cc: Serge E. Hallyn <serue@us.ibm.com>
 
-The original purpose is put the same config pins in one group and the config value
-functions on all the pins in that group.
-But if we have a pin needs different config, we need separate it in another group.
-For example,
-i2c1 {
-	pinctrl_i2c_scl: i2c1clk-1 {
-		fsl,pins = <...>;
-		fsl,configs = <PULLUP..>;
-	};
-	pinctrl_i2c_sda: i2c1sda-1 {
-		fsl,pins = <...>;
-		fsl,configs = <NO_PULLUP...>;
-	};
-};
+Seems reasonable.  Thanks.
 
-I have ever also considered another approach for imx which can avoid this issue
-by dropping the fsl,configs property which is like:
-i2c1 {
-	pinctrl_i2c1: i2c1 {
-		fsl,pins = <MX6Q_PAD_EIM_D21__I2C1_SCL PULLUP..
-			    MX6Q_PAD_EIM_D28__I2C1_SDA PULLDOWN..>
-	};
-};
-Each pin can have its specific pad config setting.
-Without macro support, it is like:
-i2c1 {
-	pinctrl_i2c1: i2c1 {
-		/* the value is write randomly, just for showing example */
-		fsl,pins = <1001 0x13502 /* with pull up */
-			    1056 0x3502>; /* no pull up */
-	};
-};
-The benefit is that it can get better flexibility and the drawback is that
-for pins have no config, we still need write a dummy value
-to tell the core this pin have no config.
-For iomux v3, it's
-#define NO_PAD_CTRL                     (1 << 16)
-It works for mx5, but for mx6, it needs to be :
-#define NO_PAD_CTRL                     (1 << 17) /* bigger than 16 */
-(It seems it's not good enough since in the future it may need change again)
+Acked-by: Serge E. Hallyn <serge.hallyn@canonical.com>
 
-Then dts file will look like:
-pinctrl_i2c1: i2c1 {
-	fsl,pins = <1001 0x20000	/* no config */
-		    1056 0x20000>;	/* no config */
-};
-pinctrl_xxx: xxx1 {
-	fsl,pins = <1001 0x20000	/* no config */
-		    1056 0x20000	/* no config */
-		    1066 0x20000	/* no config */
-		    1076 0x20000	/* no config */
-		    1086 0x20000	/* no config */
-		    1096 0x20000	/* no config */
-		    1006 0x20000	/* no config */
-		    1016 0x20000	/* no config */
-		    1026 0x20000	/* no config */
-};
-First the 0x20000 cause confusing, second the 0x20000 data is a little redundancy
-and many pins may have the same config.
+> Cc: Jiri Slaby <jslaby@suse.cz>
+> 
+> v1->v2: Slightly modified because msgutil.c no longer needs mq
+>   namespace initialization
+> 
+> Signed-off-by (v2): Doug Ledford <dledford@redhat.com>
+> ---
+>  Documentation/sysctl/fs.txt   |    7 +++++++
+>  include/linux/ipc_namespace.h |    2 ++
+>  ipc/mq_sysctl.c               |   18 ++++++++++++++++++
+>  ipc/mqueue.c                  |    9 ++++++---
+>  4 files changed, 33 insertions(+), 3 deletions(-)
+> 
+> diff --git a/Documentation/sysctl/fs.txt b/Documentation/sysctl/fs.txt
+> index 88fd7f5..13d6166 100644
+> --- a/Documentation/sysctl/fs.txt
+> +++ b/Documentation/sysctl/fs.txt
+> @@ -225,6 +225,13 @@ a queue must be less or equal then msg_max.
+>  maximum  message size value (it is every  message queue's attribute set during
+>  its creation).
+>  
+> +/proc/sys/fs/mqueue/msg_default is  a read/write  file for setting/getting the
+> +default number of messages in a queue value if attr parameter of mq_open(2) is
+> +NULL. If it exceed msg_max, the default value is initialized msg_max.
+> +
+> +/proc/sys/fs/mqueue/msgsize_default is a read/write file for setting/getting
+> +the default message size value if attr parameter of mq_open(2) is NULL. If it
+> +exceed msgsize_max, the default value is initialized msgsize_max.
+>  
+>  4. /proc/sys/fs/epoll - Configuration options for the epoll interface
+>  --------------------------------------------------------
+> diff --git a/include/linux/ipc_namespace.h b/include/linux/ipc_namespace.h
+> index 2488535..5499c92 100644
+> --- a/include/linux/ipc_namespace.h
+> +++ b/include/linux/ipc_namespace.h
+> @@ -62,6 +62,8 @@ struct ipc_namespace {
+>  	unsigned int    mq_queues_max;   /* initialized to DFLT_QUEUESMAX */
+>  	unsigned int    mq_msg_max;      /* initialized to DFLT_MSGMAX */
+>  	unsigned int    mq_msgsize_max;  /* initialized to DFLT_MSGSIZEMAX */
+> +	unsigned int    mq_msg_default;
+> +	unsigned int    mq_msgsize_default;
 
-One way may add a property to tell core whether pins have config, but that seems
-does not work since it's possible some pins have config while others not.
+Mention here what they are initialized to, for completeness?
 
-This is unlike the current way, we can do not define fsl,configs property to tell
-driver no config need for these pins.
-And based on the assumption that most pins have the same pin config setting.
-I chosed the original approach.
-The is also the same way as Tegra does.
-
-What do you think of those two approaches? What's your suggestion?
-
-Regards
-Dong Aisheng
-
+>  
+>  	/* user_ns which owns the ipc ns */
+>  	struct user_namespace *user_ns;
+> diff --git a/ipc/mq_sysctl.c b/ipc/mq_sysctl.c
+> index e22336a..383d638 100644
+> --- a/ipc/mq_sysctl.c
+> +++ b/ipc/mq_sysctl.c
+> @@ -73,6 +73,24 @@ static ctl_table mq_sysctls[] = {
+>  		.extra1		= &msg_maxsize_limit_min,
+>  		.extra2		= &msg_maxsize_limit_max,
+>  	},
+> +	{
+> +		.procname	= "msg_default",
+> +		.data		= &init_ipc_ns.mq_msg_default,
+> +		.maxlen		= sizeof(int),
+> +		.mode		= 0644,
+> +		.proc_handler	= proc_mq_dointvec_minmax,
+> +		.extra1		= &msg_max_limit_min,
+> +		.extra2		= &msg_max_limit_max,
+> +	},
+> +	{
+> +		.procname	= "msgsize_default",
+> +		.data		= &init_ipc_ns.mq_msgsize_default,
+> +		.maxlen		= sizeof(int),
+> +		.mode		= 0644,
+> +		.proc_handler	= proc_mq_dointvec_minmax,
+> +		.extra1		= &msg_maxsize_limit_min,
+> +		.extra2		= &msg_maxsize_limit_max,
+> +	},
+>  	{}
+>  };
+>  
+> diff --git a/ipc/mqueue.c b/ipc/mqueue.c
+> index f9f0782..04cc77e 100644
+> --- a/ipc/mqueue.c
+> +++ b/ipc/mqueue.c
+> @@ -142,9 +142,10 @@ static struct inode *mqueue_get_inode(struct super_block *sb,
+>  		info->qsize = 0;
+>  		info->user = NULL;	/* set when all is ok */
+>  		memset(&info->attr, 0, sizeof(info->attr));
+> -		info->attr.mq_maxmsg = min(ipc_ns->mq_msg_max, DFLT_MSG);
+> -		info->attr.mq_msgsize =
+> -			min(ipc_ns->mq_msgsize_max, DFLT_MSGSIZE);
+> +		info->attr.mq_maxmsg = min(ipc_ns->mq_msg_max,
+> +					   ipc_ns->mq_msg_default);
+> +		info->attr.mq_msgsize = min(ipc_ns->mq_msgsize_max,
+> +					    ipc_ns->mq_msgsize_default);
+>  		if (attr) {
+>  			info->attr.mq_maxmsg = attr->mq_maxmsg;
+>  			info->attr.mq_msgsize = attr->mq_msgsize;
+> @@ -1254,6 +1255,8 @@ int mq_init_ns(struct ipc_namespace *ns)
+>  	ns->mq_queues_max    = DFLT_QUEUESMAX;
+>  	ns->mq_msg_max       = DFLT_MSGMAX;
+>  	ns->mq_msgsize_max   = DFLT_MSGSIZEMAX;
+> +	ns->mq_msg_default   = DFLT_MSG;
+> +	ns->mq_msgsize_default  = DFLT_MSGSIZE;
+>  
+>  	ns->mq_mnt = kern_mount_data(&mqueue_fs_type, ns);
+>  	if (IS_ERR(ns->mq_mnt)) {
+> -- 
+> 1.7.7.6
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
