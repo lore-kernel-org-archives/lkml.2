@@ -1,49 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753040Ab2DRL2c (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Apr 2012 07:28:32 -0400
-Received: from rcsinet15.oracle.com ([148.87.113.117]:20170 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752524Ab2DRL2a (ORCPT
+	id S1753012Ab2DRLbS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Apr 2012 07:31:18 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:48078 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751200Ab2DRLbR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Apr 2012 07:28:30 -0400
-Date: Wed, 18 Apr 2012 14:28:10 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
-        kernel-janitors@vger.kernel.org
-Subject: [patch] debugobjects: fill_pool() returns void now
-Message-ID: <20120418112810.GA2669@elgon.mountain>
+	Wed, 18 Apr 2012 07:31:17 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
-X-CT-RefId: str=0001.0A090207.4F8EA552.005D,ss=1,re=0.000,fgs=0
+In-Reply-To: <20120417034210.GD17173@shlinux2.ap.freescale.net>
+References: <1334586289-13078-1-git-send-email-b29396@freescale.com>
+	<4F8C42D6.2000607@wwwdotorg.org>
+	<20120417034210.GD17173@shlinux2.ap.freescale.net>
+Date: Wed, 18 Apr 2012 13:31:17 +0200
+Message-ID: <CACRpkdYH06_kGbSdozKPWZcOG0FvoOyHvjHwhz-xUL1pfSX9DQ@mail.gmail.com>
+Subject: Re: [PATCH 1/1] pinctrl: handle dummy state in core
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Dong Aisheng <aisheng.dong@freescale.com>,
+        Sascha Hauer <s.hauer@pengutronix.de>
+Cc: Stephen Warren <swarren@wwwdotorg.org>,
+        Dong Aisheng-B29396 <B29396@freescale.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linus.walleij@stericsson.com" <linus.walleij@stericsson.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There was a return missed in 1fda107d44 "debugobjects: Remove unused
-return value from fill_pool()".  It makes gcc complain:
+On Tue, Apr 17, 2012 at 5:42 AM, Dong Aisheng
+<aisheng.dong@freescale.com> wrote:
 
-	lib/debugobjects.c: In function ‘fill_pool’:
-	lib/debugobjects.c:98:4: warning: ‘return’ with a value, in
-		function returning void [enabled by default]
+> I think the main issue is for one platform neither supports dt nor using pinctrl
+> subsystem, do you think it still makes too much sense to force that platform
+> to define a _PINCTRL_ dummy state in their machine code?
+>
+> But the driver is commonly shared between these different platforms(using pinctrl
+> or not).
 
-Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+So this is for the situation where some machines have pinctrl and some haven't.
 
-diff --git a/lib/debugobjects.c b/lib/debugobjects.c
-index 1b6c00a..d11808c 100644
---- a/lib/debugobjects.c
-+++ b/lib/debugobjects.c
-@@ -95,7 +95,7 @@ static void fill_pool(void)
- 
- 		new = kmem_cache_zalloc(obj_cache, gfp);
- 		if (!new)
--			return obj_pool_free;
-+			return;
- 
- 		raw_spin_lock_irqsave(&pool_lock, flags);
- 		hlist_add_head(&new->node, &obj_pool);
+And I think that's how some archs have used the regulator dummies earlier,
+so I clearly see the point. So if converting a subset of machines in an
+architecture you will need this for a transitional period.
+
+Is this helpful to get i.MX support in place?
+
+On one hand I'd say we merge it for that reason alone, instead of requiring
+all i.MX machines to be converted at once.
+
+On the other hand, I fear that this will be used to avoid *ever* migrating
+the old machines to pinctrl. And it's a generic disease that people working
+in the arch/arm/* tree want to ditch old hardware without actually deleting
+the code.
+
+I'd like Sascha's view on this to make a good decision.
+
+Yours,
+Linus Walleij
