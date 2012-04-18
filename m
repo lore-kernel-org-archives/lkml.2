@@ -1,43 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753566Ab2DROvF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Apr 2012 10:51:05 -0400
-Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:58464 "EHLO
-	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750887Ab2DROvD (ORCPT
+	id S1753697Ab2DRO4J (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Apr 2012 10:56:09 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:28152 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753066Ab2DRO4H (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Apr 2012 10:51:03 -0400
-MIME-Version: 1.0
-Date: Wed, 18 Apr 2012 10:51:01 -0400
-Message-ID: <CAJoZ4U2tOsOCCn5qwRmBUytWei7gM+O3rTZch788DGOFe0apMQ@mail.gmail.com>
-Subject: MMU notifier callbacks and forking
-From: Kyle Hubert <khubert@gmail.com>
-To: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Wed, 18 Apr 2012 10:56:07 -0400
+X-Authority-Analysis: v=2.0 cv=V/z/IJbi c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=XQbtiDEiEegA:10 a=_2gBi4Ny9w4A:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=bcXUtIwdAAAA:8 a=0ntkVEJjt-uWl-rta7cA:9 a=PUjeQqilurYA:10 a=N-tvCOvsvcUA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.80.29
+Message-ID: <1334760965.28106.39.camel@gandalf.stny.rr.com>
+Subject: Re: [3.4-rc3] Thread overran stack, or stack corrupted
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Dave Jones <davej@redhat.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>
+Date: Wed, 18 Apr 2012 10:56:05 -0400
+In-Reply-To: <20120418135815.GA10798@redhat.com>
+References: <CA+55aFy-uhOgEoEBr-LkOjFQBVh14wwr-20jTrtsg_2EnuNY5g@mail.gmail.com>
+	 <20120417203223.GA31699@redhat.com>
+	 <CA+55aFzWzhxaVHuPY_oB5PVhw2Gxiwr46vyHCHEsU0o-HFikTw@mail.gmail.com>
+	 <20120418022705.GA23877@home.goodmis.org>
+	 <20120418031557.GA29828@redhat.com>
+	 <1334720611.28106.25.camel@gandalf.stny.rr.com>
+	 <20120418035004.GA31465@redhat.com>
+	 <1334721441.28106.28.camel@gandalf.stny.rr.com>
+	 <20120418040632.GB31465@redhat.com>
+	 <1334722164.28106.31.camel@gandalf.stny.rr.com>
+	 <20120418135815.GA10798@redhat.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.2.2-1 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Wed, 2012-04-18 at 09:58 -0400, Dave Jones wrote:
 
-I'm writing a driver that pins user memory and stores it in a page
-table so the device's own IOMMU can translate into host physical
-addresses. I built up the MMU notifier callbacks (invalidate_page and
-invalidate_range_start) to unpin the pages when the VM state changes.
-This works as I expect for mmap/munmap. However, when fork() occurs,
-copy_page_range will call invalidate_range_[start|end] if the range is
-a COW mapping. I think it makes sense because the page range of both
-the parent and child will be changed to remove VM_MAYWRITE. If anyone
-tries to write, we take a page fault, then copy and mark the page as
-VM_MAYWRITE in both MMs. Do I understand this correctly?
+>  > OK, function tracing is broken on your box. Could you send me your full
+>  > config and I'll take a look at it tomorrow. Bed time for me now ;-)
+> 
+> http://fpaste.org/b8PN/raw/
 
-My problem is, in my callbacks I can't distinguish between
-invalidate_range_start indicating the page should be freed or the
-pages permissions are changing. Is it sufficient to set the VM flags
-to VM_SHARED? What is the API to do this (or is it just find_vma and
-modify the vm_flags while holding the mmap_sem)? If I understand the
-code, this will prevent invalidate_range_[start|end] from being called
-when forking. Are there other side effects when setting this?
+Hmm, I had no problems with this config. But that wasn't on my Xeon. I'm
+compiling for that box now.
 
-Thanks for your help,
--Kyle Hubert
+Could you also paste your full dmesg.
+
+Thanks,
+
+-- Steve
+
+
