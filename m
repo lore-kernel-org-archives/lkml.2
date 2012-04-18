@@ -1,56 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753743Ab2DRXsa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Apr 2012 19:48:30 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:51240 "EHLO
-	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751370Ab2DRXs3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Apr 2012 19:48:29 -0400
-X-Sasl-enc: eRnudZgfFJVDebkpkvCELMvIkPDSoGU4uricFxvRImwf 1334792908
-Date: Wed, 18 Apr 2012 16:48:27 -0700
-From: Greg KH <greg@kroah.com>
-To: Valentin Ilie <valentin.ilie@gmail.com>
-Cc: arve@android.com, devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Staging: android: binder.c const char* smth TO const
- char * const smth
-Message-ID: <20120418234827.GA2227@kroah.com>
-References: <1334543494-13425-1-git-send-email-valentin.ilie@gmail.com>
+	id S1754556Ab2DRXtN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Apr 2012 19:49:13 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:43218 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754093Ab2DRXtB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Apr 2012 19:49:01 -0400
+Message-ID: <4F8F52D5.3040109@zytor.com>
+Date: Wed, 18 Apr 2012 16:48:37 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120329 Thunderbird/11.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1334543494-13425-1-git-send-email-valentin.ilie@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: "H.J. Lu" <hjl.tools@gmail.com>
+CC: mingo@redhat.com, linux-kernel@vger.kernel.org, tglx@linutronix.de,
+        linux-tip-commits@vger.kernel.org
+Subject: Re: [tip:x86/x32] x32: Fix alignment fail in struct compat_siginfo
+References: <1329696488-16970-1-git-send-email-hpa@zytor.com> <tip-31796ac4e8f0e88f5c10f1ad6dab8f19bebe44a4@git.kernel.org> <CAMe9rOqF6Kh6-NK7oP0Fpzkd4SBAWU+G53hwBbSD4iA2UzyxuA@mail.gmail.com> <4F8EFE4D.2040201@zytor.com> <CAMe9rOpfPQghra1PQTUwsFOvjgNpzFDEGS5=BbFBjn=HZGL93g@mail.gmail.com> <4F8F0385.5090901@zytor.com> <CAMe9rOq7LduF4aLPe9qatedxps4WPCgOHTD=E_Lje4_tu6tyZw@mail.gmail.com> <4F8F0614.9010604@zytor.com> <CAMe9rOqBd29LKB==NaKscpedRMR1uL_ZhHqSw1HQj-3_d9PSCw@mail.gmail.com> <4F8F30F5.9030704@zytor.com> <CAMe9rOq-dEFtYDgpC2z3MPujCkOUtBU4byHC_aAOWLUK8u5ZDQ@mail.gmail.com>
+In-Reply-To: <CAMe9rOq-dEFtYDgpC2z3MPujCkOUtBU4byHC_aAOWLUK8u5ZDQ@mail.gmail.com>
+X-Enigmail-Version: 1.4
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 16, 2012 at 05:31:34AM +0300, Valentin Ilie wrote:
-> Replaced static const char* var with static const char * var const smth because
-> smth doesn't need to be reassigned at any point else at runtime.
-
-"smth"?  What is that?
-
+On 04/18/2012 03:55 PM, H.J. Lu wrote:
+> On Wed, Apr 18, 2012 at 2:24 PM, H. Peter Anvin <hpa@zytor.com> wrote:
+>> Something like this works for you?
+>>
+>> Note: we should promote __compat_[us]64 to a global type when we do the
+>> cleanup work requested by Linus (change __[us]64 to explicitly aligned
+>> types, with all users that require the old types using __compat_[us]64),
+>> but we need the compiler warning to do that, realistically.
+>>
 > 
-> Signed-off-by: Valentin Ilie <valentin.ilie@gmail.com>
-> ---
->  drivers/staging/android/binder.c |    6 +++---
->  1 file changed, 3 insertions(+), 3 deletions(-)
+> Can we also align struct siginfo to 8byte for x32?
 > 
-> diff --git a/drivers/staging/android/binder.c b/drivers/staging/android/binder.c
-> index c283212..221bd3f 100644
-> --- a/drivers/staging/android/binder.c
-> +++ b/drivers/staging/android/binder.c
-> @@ -3303,7 +3303,7 @@ static void print_binder_proc(struct seq_file *m,
->  		m->count = start_pos;
->  }
->  
-> -static const char *binder_return_strings[] = {
-> +static const char * const binder_return_strings[] = {
 
-I don't understand, what's the advantage here?  Why is this needed?
-Does it save space?  Speed?  Compiler warnings?
+We could.  If we want to align the substructures then we need some major
+surgery to the compat_siginfo handling though.
 
-I need a better reason to apply it other than a word with no vowels...
+	-hpa
 
-greg k-h
