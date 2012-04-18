@@ -1,188 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751991Ab2DRIgk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Apr 2012 04:36:40 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:37391 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751293Ab2DRIgi (ORCPT
+	id S1752199Ab2DRIhJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Apr 2012 04:37:09 -0400
+Received: from moutng.kundenserver.de ([212.227.17.10]:62483 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751350Ab2DRIhG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Apr 2012 04:36:38 -0400
-Date: Wed, 18 Apr 2012 01:35:23 -0700
-From: Anton Vorontsov <anton.vorontsov@linaro.org>
-To: Pekka Enberg <penberg@kernel.org>
-Cc: Leonid Moiseichuk <leonid.moiseichuk@nokia.com>,
-        John Stultz <john.stultz@linaro.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, linaro-kernel@lists.linaro.org,
-        patches@linaro.org
-Subject: [PATCH 2/2] vmevent: Implement greater-than attribute and one-shot
- mode
-Message-ID: <20120418083523.GB31556@lizard>
-References: <20120418083208.GA24904@lizard>
+	Wed, 18 Apr 2012 04:37:06 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Thierry Reding <thierry.reding@avionic-design.de>
+Subject: Re: [PATCH v2 7/8] ARM: LPC32xx: DTS files for device tree conversion
+Date: Wed, 18 Apr 2012 08:10:02 +0000
+User-Agent: KMail/1.12.2 (Linux/3.3.0-rc1; KDE/4.3.2; x86_64; ; )
+Cc: Roland Stigge <stigge@antcom.de>, arm@kernel.org,
+        linux-arm-kernel@lists.infradead.org, gregkh@linuxfoundation.org,
+        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-input@vger.kernel.org, dmitry.torokhov@gmail.com,
+        axel.lin@gmail.com, broonie@opensource.wolfsonmicro.com,
+        marek.vasut@gmail.com, devel@driverdev.osuosl.org, kevin.wells@nxp.com,
+        srinivas.bakki@nxp.com
+References: <1334682507-15055-1-git-send-email-stigge@antcom.de> <1334682507-15055-8-git-send-email-stigge@antcom.de> <20120418054615.GB17506@avionic-0098.adnet.avionic-design.de>
+In-Reply-To: <20120418054615.GB17506@avionic-0098.adnet.avionic-design.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20120418083208.GA24904@lizard>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201204180810.02561.arnd@arndb.de>
+X-Provags-ID: V02:K0:9vBnyTLqZk2G8yZYZgHVmkHiOdaufH7zsd6FZM4rfRa
+ 6/dN5T7AyOdP5p6ug8dLF4KmIYivAPaqXQj/PV3zt2HKqK/W0R
+ sBT5h8fXiVuhcoRAH8HgIvKYsE2oHBOCzk0lqA5ZgCLYt2XDgc
+ O2XGITPmpdWqa8pBMGPCLdN7UXr6UM6VnHBALqA6EFJLyY4LyY
+ tzIMneRpNHQO0XhSLT/0iqsZDjA6By8sB8dx+uNi07C3mmLFM3
+ xnxAYbdO8C2G+B+sLhkEY7GO+zj1Qf3nHrRl0seknqPCu0uwz3
+ EkX7mv7Fu851dqZZqEa3JLUzNORskpU+Tb6GiLJNZZ2WP01K9f
+ x5lvIx5HLuJ/fJWcp1MM=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch implements a new event type, it will trigger whenever a
-value becomes greater than user-specified threshold, it complements
-the 'less-then' trigger type.
+On Wednesday 18 April 2012, Thierry Reding wrote:
+> [...]
+> > +                     /*
+> > +                      * MIC Interrupt controller includes:
+> > +                      *   MIC @40008000
+> > +                      *   SIC1 @4000C000
+> > +                      *   SIC2 @40010000
+> > +                      */
+> > +                     mic: interrupt-controller@40008000 {
+> > +                             compatible = "nxp,lpc32xx-mic";
+> > +                             interrupt-controller;
+> > +                             interrupt-parent;
+> 
+> I think in this case you can leave this out. At least there doesn't seem to
+> be any other such usage in the tree.
+> 
 
-Also, let's implement the one-shot mode for the events, when set,
-userspace will only receive one notification per crossing the
-boundaries.
+It's actually a bug and we're removing all empty "interrupt-parent"
+properties from the dts files now because they cause problems. Please don't
+introduce new ones.
 
-Now when both LT and GT are set on the same level, the event type
-works as a cross event type: it triggers whenever a value crosses
-the threshold from a lesser values side to a greater values side,
-and vice versa.
+	Arnd
 
-We use the event types in an userspace low-memory killer: we get a
-notification when memory becomes low, so we start freeing memory by
-killing unneeded processes, and we get notification when memory hits
-the threshold from another side, so we know that we freed enough of
-memory.
-
-Signed-off-by: Anton Vorontsov <anton.vorontsov@linaro.org>
----
- include/linux/vmevent.h              |   13 ++++++++++
- mm/vmevent.c                         |   44 +++++++++++++++++++++++++++++-----
- tools/testing/vmevent/vmevent-test.c |   22 +++++++++++++----
- 3 files changed, 68 insertions(+), 11 deletions(-)
-
-diff --git a/include/linux/vmevent.h b/include/linux/vmevent.h
-index 64357e4..ca97cf0 100644
---- a/include/linux/vmevent.h
-+++ b/include/linux/vmevent.h
-@@ -22,6 +22,19 @@ enum {
- 	 * Sample value is less than user-specified value
- 	 */
- 	VMEVENT_ATTR_STATE_VALUE_LT	= (1UL << 0),
-+	/*
-+	 * Sample value is greater than user-specified value
-+	 */
-+	VMEVENT_ATTR_STATE_VALUE_GT	= (1UL << 1),
-+	/*
-+	 * One-shot mode.
-+	 */
-+	VMEVENT_ATTR_STATE_ONE_SHOT	= (1UL << 2),
-+
-+	/* Saved state, used internally by the kernel for one-shot mode. */
-+	__VMEVENT_ATTR_STATE_VALUE_WAS_LT	= (1UL << 30),
-+	/* Saved state, used internally by the kernel for one-shot mode. */
-+	__VMEVENT_ATTR_STATE_VALUE_WAS_GT	= (1UL << 31),
- };
- 
- struct vmevent_attr {
-diff --git a/mm/vmevent.c b/mm/vmevent.c
-index 9ed6aca..3cce215 100644
---- a/mm/vmevent.c
-+++ b/mm/vmevent.c
-@@ -1,5 +1,6 @@
- #include <linux/anon_inodes.h>
- #include <linux/atomic.h>
-+#include <linux/compiler.h>
- #include <linux/vmevent.h>
- #include <linux/syscalls.h>
- #include <linux/timer.h>
-@@ -83,16 +84,47 @@ static bool vmevent_match(struct vmevent_watch *watch)
- 
- 	for (i = 0; i < config->counter; i++) {
- 		struct vmevent_attr *attr = &config->attrs[i];
--		u64 value;
-+		u32 state = attr->state;
-+		bool attr_lt = state & VMEVENT_ATTR_STATE_VALUE_LT;
-+		bool attr_gt = state & VMEVENT_ATTR_STATE_VALUE_GT;
- 
--		if (!attr->state)
-+		if (!state)
- 			continue;
- 
--		value = vmevent_sample_attr(watch, attr);
--
--		if (attr->state & VMEVENT_ATTR_STATE_VALUE_LT) {
--			if (value < attr->value)
-+		if (attr_lt || attr_gt) {
-+			bool one_shot = state & VMEVENT_ATTR_STATE_ONE_SHOT;
-+			u32 was_lt_mask = __VMEVENT_ATTR_STATE_VALUE_WAS_LT;
-+			u32 was_gt_mask = __VMEVENT_ATTR_STATE_VALUE_WAS_GT;
-+			u64 value = vmevent_sample_attr(watch, attr);
-+			bool lt = value < attr->value;
-+			bool gt = value > attr->value;
-+			bool was_lt = state & was_lt_mask;
-+			bool was_gt = state & was_gt_mask;
-+			bool ret = false;
-+
-+			if ((lt || gt) && !one_shot)
- 				return true;
-+
-+			if (attr_lt && lt && was_lt) {
-+				return false;
-+			} else if (attr_gt && gt && was_gt) {
-+				return false;
-+			} else if (lt) {
-+				state |= was_lt_mask;
-+				state &= ~was_gt_mask;
-+				if (attr_lt)
-+					ret = true;
-+			} else if (gt) {
-+				state |= was_gt_mask;
-+				state &= ~was_lt_mask;
-+				if (attr_gt)
-+					ret = true;
-+			} else {
-+				state &= ~was_lt_mask;
-+				state &= ~was_gt_mask;
-+			}
-+			attr->state = state;
-+			return ret;
- 		}
- 	}
- 
-diff --git a/tools/testing/vmevent/vmevent-test.c b/tools/testing/vmevent/vmevent-test.c
-index 534f827..fec7b57 100644
---- a/tools/testing/vmevent/vmevent-test.c
-+++ b/tools/testing/vmevent/vmevent-test.c
-@@ -33,20 +33,32 @@ int main(int argc, char *argv[])
- 
- 	config = (struct vmevent_config) {
- 		.sample_period_ns	= 1000000000L,
--		.counter		= 4,
-+		.counter		= 6,
- 		.attrs			= {
--			[0]			= {
-+			{
- 				.type	= VMEVENT_ATTR_NR_FREE_PAGES,
- 				.state	= VMEVENT_ATTR_STATE_VALUE_LT,
- 				.value	= phys_pages,
- 			},
--			[1]			= {
-+			{
-+				.type	= VMEVENT_ATTR_NR_FREE_PAGES,
-+				.state	= VMEVENT_ATTR_STATE_VALUE_GT,
-+				.value	= phys_pages,
-+			},
-+			{
-+				.type	= VMEVENT_ATTR_NR_FREE_PAGES,
-+				.state	= VMEVENT_ATTR_STATE_VALUE_LT |
-+					  VMEVENT_ATTR_STATE_VALUE_GT |
-+					  VMEVENT_ATTR_STATE_ONE_SHOT,
-+				.value	= phys_pages / 2,
-+			},
-+			{
- 				.type	= VMEVENT_ATTR_NR_AVAIL_PAGES,
- 			},
--			[2]			= {
-+			{
- 				.type	= VMEVENT_ATTR_NR_SWAP_PAGES,
- 			},
--			[3]			= {
-+			{
- 				.type	= 0xffff, /* invalid */
- 			},
- 		},
--- 
-1.7.9.2
