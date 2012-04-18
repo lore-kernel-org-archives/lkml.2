@@ -1,49 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754648Ab2DRUvS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Apr 2012 16:51:18 -0400
-Received: from mail.windriver.com ([147.11.1.11]:35213 "EHLO
-	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753047Ab2DRUvR (ORCPT
+	id S1754706Ab2DRUwd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Apr 2012 16:52:33 -0400
+Received: from mail-vb0-f46.google.com ([209.85.212.46]:44071 "EHLO
+	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753047Ab2DRUwb convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Apr 2012 16:51:17 -0400
-From: Paul Gortmaker <paul.gortmaker@windriver.com>
-To: linux-kernel@vger.kernel.org
-Cc: Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Matt Fleming <matt.fleming@intel.com>, Oleg Nesterov <oleg@redhat.com>,
-        Chris Zankel <chris@zankel.net>
-Subject: [PATCH] xtensa: fix build failure in xtensa/kernel/signal.c
-Date: Wed, 18 Apr 2012 16:50:56 -0400
-Message-Id: <1334782256-351-1-git-send-email-paul.gortmaker@windriver.com>
-X-Mailer: git-send-email 1.7.9.1
+	Wed, 18 Apr 2012 16:52:31 -0400
+MIME-Version: 1.0
+X-Originating-IP: [87.66.84.216]
+In-Reply-To: <87y5pskiis.fsf@ti.com>
+References: <1332173578-27422-1-git-send-email-j-pihet@ti.com>
+	<1332173578-27422-8-git-send-email-j-pihet@ti.com>
+	<87y5pskiis.fsf@ti.com>
+Date: Wed, 18 Apr 2012 22:52:31 +0200
+Message-ID: <CAORVsuXup38v0qhSSm7oeo5uzBN-Kd9T91_Zi4mtY_CG6L_QsA@mail.gmail.com>
+Subject: Re: [PATCH 7/9] ARM: OMAP2+: SmartReflex: Use per-OPP data structure
+From: Jean Pihet <jean.pihet@newoldbits.com>
+To: Kevin Hilman <khilman@ti.com>
+Cc: linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        "Rafael J. Wysocki" <rjw@sisk.pl>, LKML <linux-kernel@vger.kernel.org>,
+        Jean Pihet <j-pihet@ti.com>, Paul Walmsley <paul@pwsan.com>,
+        Thara Gopinath <thara@ti.com>, Nishanth Menon <nm@ti.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Caused by commit 3785006ac3c8941feb63097c416de92114a6bc39
+On Wed, Apr 18, 2012 at 8:21 PM, Kevin Hilman <khilman@ti.com> wrote:
+> jean.pihet@newoldbits.com writes:
+>
+>> From: Jean Pihet <j-pihet@ti.com>
+>>
+>> The SmartReflex driver incorrectly treats some per-OPP data as data
+>> common to all OPPs (e.g., ERRMINLIMIT).  Move this data into a per-OPP
+>> data structure.
+>
+> OK
+>
+>> The SmartReflex driver should not be dependent on whether the host SoC
+>> uses eFuses to store SmartReflex parameters or not.  (Even SoCs that
+>> do store SR data in eFuses often need to override that data with
+>> software-defined values.)  So, convert sr_retrieve_nvalue() to look up
+>> per-OPP data by the OPP's nominal voltage, rather than by the eFuse
+>> offset.
+>
+> Right.
+>
+>> While at it:
+>>  . tidy up the code wrt default values in the data tables,
+>>  . remove the global errminlimit debugfs entry and create per-voltage
+>>    entries from the data tables.
+>
+> OK
+>
+>> Furthermore, in order to make the SmartReflex implementation ready for
+>> the move to drivers/, remove the dependency from the SR driver code
+>> to the voltage layer by querying the data tables only from the SR device
+>> init code.
+>
+> So that's 4 relatively independent things going on in this patch which
+> makes it somewhat difficult to review and understand.
+>
+> I'd suggest breaking it up into smaller parts if possible.  If not, fix
+> up the changelog to describe why all of these need to go together, and
+> why it's necessary to do them before the move.
+Those changes are not independent from each other.
+However for improved readability the patch can be split up (e.g.
+efuse->opp, debugfs ...) and the changelog updated accordingly.
 
-    "xtensa: don't mask signals if we fail to setup signal stack"
+>
+> Thanks,
+>
+> Kevin
+>
 
-It assigns a return value to "ret", but there is no such variable
-anywhere in scope.  Create one.
-
-Cc: Matt Fleming <matt.fleming@intel.com>
-Cc: Oleg Nesterov <oleg@redhat.com>
-Cc: Chris Zankel <chris@zankel.net>
-Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
-
-diff --git a/arch/xtensa/kernel/signal.c b/arch/xtensa/kernel/signal.c
-index b69b000..d78869a 100644
---- a/arch/xtensa/kernel/signal.c
-+++ b/arch/xtensa/kernel/signal.c
-@@ -496,6 +496,7 @@ int do_signal(struct pt_regs *regs, sigset_t *oldset)
- 	signr = get_signal_to_deliver(&info, &ka, regs, NULL);
- 
- 	if (signr > 0) {
-+		int ret;
- 
- 		/* Are we from a system call? */
- 
--- 
-1.7.9.1
-
+Thanks,
+Jean
