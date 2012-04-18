@@ -1,55 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754345Ab2DRVTH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Apr 2012 17:19:07 -0400
-Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:44210 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751342Ab2DRVTG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Apr 2012 17:19:06 -0400
-Date: Wed, 18 Apr 2012 22:21:37 +0100
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: =?ISO-8859-1?B?SOV2YXIgTvh2aWs=?= <havar.novik@gmail.com>
-Cc: Kristoffer Eriksson <kristoffer.ericson@gmail.com>,
-        linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
-        alan@linux.intel.com
-Subject: Re: Bug reports on the psb-gfx driver
-Message-ID: <20120418222137.0303fe47@pyramind.ukuu.org.uk>
-In-Reply-To: <CAJqTQGFD=CCRQGFrhiVk5dEp0bCZ7KbSOsd0HSi_jeSQ4yd9bg@mail.gmail.com>
-References: <CAJqTQGEe6rGw4_f-7o2DUZs1J9a=pACuX4KYkLfA0_McMC2Ukg@mail.gmail.com>
-	<4F8D532E.4000305@gmail.com>
-	<CAJqTQGFD=CCRQGFrhiVk5dEp0bCZ7KbSOsd0HSi_jeSQ4yd9bg@mail.gmail.com>
-X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1752911Ab2DRVYT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Apr 2012 17:24:19 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:42318 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751370Ab2DRVYS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Apr 2012 17:24:18 -0400
+Message-ID: <4F8F30F5.9030704@zytor.com>
+Date: Wed, 18 Apr 2012 14:24:05 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120329 Thunderbird/11.0.1
+MIME-Version: 1.0
+To: "H.J. Lu" <hjl.tools@gmail.com>
+CC: mingo@redhat.com, linux-kernel@vger.kernel.org, tglx@linutronix.de,
+        linux-tip-commits@vger.kernel.org
+Subject: Re: [tip:x86/x32] x32: Fix alignment fail in struct compat_siginfo
+References: <1329696488-16970-1-git-send-email-hpa@zytor.com> <tip-31796ac4e8f0e88f5c10f1ad6dab8f19bebe44a4@git.kernel.org> <CAMe9rOqF6Kh6-NK7oP0Fpzkd4SBAWU+G53hwBbSD4iA2UzyxuA@mail.gmail.com> <4F8EFE4D.2040201@zytor.com> <CAMe9rOpfPQghra1PQTUwsFOvjgNpzFDEGS5=BbFBjn=HZGL93g@mail.gmail.com> <4F8F0385.5090901@zytor.com> <CAMe9rOq7LduF4aLPe9qatedxps4WPCgOHTD=E_Lje4_tu6tyZw@mail.gmail.com> <4F8F0614.9010604@zytor.com> <CAMe9rOqBd29LKB==NaKscpedRMR1uL_ZhHqSw1HQj-3_d9PSCw@mail.gmail.com>
+In-Reply-To: <CAMe9rOqBd29LKB==NaKscpedRMR1uL_ZhHqSw1HQj-3_d9PSCw@mail.gmail.com>
+X-Enigmail-Version: 1.4
+Content-Type: multipart/mixed;
+ boundary="------------040405000100070004070907"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> That frequency seems about the same as the one I'm experiences. All though
-> some times it's more often, but I can't say I've done anything special at
-> the same time.
-> 
-> 3.3.2-1-ARCH
-> Intel(R) Atom(TM) CPU Z520 @ 1.33GHz
-> 
-> Attachment: dmesg ouput
-> 
+This is a multi-part message in MIME format.
+--------------040405000100070004070907
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 
-What X display server are you using (fbdev or other ?). Also I see a few
-writes to the brightness in the log - did you fiddle with the brightness
-by hand at all ?
+Something like this works for you?
+
+Note: we should promote __compat_[us]64 to a global type when we do the
+cleanup work requested by Linus (change __[us]64 to explicitly aligned
+types, with all users that require the old types using __compat_[us]64),
+but we need the compiler warning to do that, realistically.
+
+	-hpa
 
 
-Either way I suspect the only way to find this is to verify a
-configuration it occurs on, go back a kernel, verify it doesn't happen
-there and then build a kernel to the point in the git tree before the
-gma500 patches were changed (to check its not caused by something else
-such as an ACPI change), then try and find which one caused it.
+--------------040405000100070004070907
+Content-Type: text/plain; charset=UTF-8;
+ name="diff"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: attachment;
+ filename="diff"
 
-That will be tedious but unfortunately I've got no documentation or other
-good ways to chase this down.
+diff --git a/arch/x86/include/asm/siginfo.h b/arch/x86/include/asm/siginfo.h
+index fc1aa55..eb91735 100644
+--- a/arch/x86/include/asm/siginfo.h
++++ b/arch/x86/include/asm/siginfo.h
+@@ -1,8 +1,14 @@
+ #ifndef _ASM_X86_SIGINFO_H
+ #define _ASM_X86_SIGINFO_H
+ 
++#include <linux/types.h>
++
+ #ifdef __x86_64__
+-# define __ARCH_SI_PREAMBLE_SIZE	(4 * sizeof(int))
++# ifdef __ILP32__
++#  define __ARCH_SI_CLOCK_T		__compat_s64  /* x32 */
++# else
++#  define __ARCH_SI_PREAMBLE_SIZE	(4 * sizeof(int))
++# endif
+ #endif
+ 
+ #include <asm-generic/siginfo.h>
+diff --git a/arch/x86/include/asm/types.h b/arch/x86/include/asm/types.h
+index 8e8c23f..89d461b 100644
+--- a/arch/x86/include/asm/types.h
++++ b/arch/x86/include/asm/types.h
+@@ -3,4 +3,7 @@
+ 
+ #include <asm-generic/types.h>
+ 
++typedef __u64 __attribute__((aligned(4))) __compat_u64;
++typedef __s64 __attribute__((aligned(4))) __compat_s64;
++
+ #endif /* _ASM_X86_TYPES_H */
+diff --git a/include/asm-generic/siginfo.h b/include/asm-generic/siginfo.h
+index 0dd4e87..4ed2ed0 100644
+--- a/include/asm-generic/siginfo.h
++++ b/include/asm-generic/siginfo.h
+@@ -35,6 +35,10 @@ typedef union sigval {
+ #define __ARCH_SI_BAND_T long
+ #endif
+ 
++#ifndef __ARCH_SI_CLOCK_T
++#define __ARCH_SI_CLOCK_T __kernel_clock_t
++#endif
++
+ #ifndef HAVE_ARCH_SIGINFO_T
+ 
+ typedef struct siginfo {
+@@ -72,8 +76,8 @@ typedef struct siginfo {
+ 			__kernel_pid_t _pid;	/* which child */
+ 			__ARCH_SI_UID_T _uid;	/* sender's uid */
+ 			int _status;		/* exit code */
+-			__kernel_clock_t _utime;
+-			__kernel_clock_t _stime;
++			__ARCH_SI_CLOCK_T _utime;
++			__ARCH_SI_CLOCK_T _stime;
+ 		} _sigchld;
+ 
+ 		/* SIGILL, SIGFPE, SIGSEGV, SIGBUS */
 
-Alan
+--------------040405000100070004070907--
