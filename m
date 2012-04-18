@@ -1,53 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754447Ab2DRSac (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Apr 2012 14:30:32 -0400
-Received: from na3sys009aog109.obsmtp.com ([74.125.149.201]:47637 "EHLO
-	na3sys009aog109.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753575Ab2DRSaA (ORCPT
+	id S1753855Ab2DRSdB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Apr 2012 14:33:01 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:33536 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751537Ab2DRSc6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Apr 2012 14:30:00 -0400
-From: Kevin Hilman <khilman@ti.com>
-To: jean.pihet@newoldbits.com
-Cc: linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        "Rafael J. Wysocki" <rjw@sisk.pl>, LKML <linux-kernel@vger.kernel.org>,
-        Jean Pihet <j-pihet@ti.com>
-Subject: Re: [PATCH v2 0/9] PM: Create the AVS class of drivers
-Organization: Texas Instruments, Inc.
-References: <1332173578-27422-1-git-send-email-j-pihet@ti.com>
-Date: Wed, 18 Apr 2012 11:30:00 -0700
-In-Reply-To: <1332173578-27422-1-git-send-email-j-pihet@ti.com> (jean pihet's
-	message of "Mon, 19 Mar 2012 17:12:49 +0100")
-Message-ID: <878vhski53.fsf@ti.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	Wed, 18 Apr 2012 14:32:58 -0400
+X-Authority-Analysis: v=2.0 cv=IaEFqBWa c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=XQbtiDEiEegA:10 a=JomeGkWH5N8A:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=NXGx4cpFtuKCEL7X5GYA:9 a=PUjeQqilurYA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.80.29
+Message-ID: <1334773976.28106.49.camel@gandalf.stny.rr.com>
+Subject: Re: [sched/rt] Optimization of function pull_rt_task()
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Kirill Tkhai <tkhai@yandex.ru>
+Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>
+Date: Wed, 18 Apr 2012 14:32:56 -0400
+In-Reply-To: <1334592379.28106.4.camel@gandalf.stny.rr.com>
+References: <1334519122.8698.3.camel@hp>
+	 <1334592379.28106.4.camel@gandalf.stny.rr.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.2.2-1 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Rafael,
+On Mon, 2012-04-16 at 12:06 -0400, Steven Rostedt wrote:
+> On Sun, 2012-04-15 at 23:45 +0400, Kirill Tkhai wrote:
+> > The condition (src_rq->rt.rt_nr_running) is weak because it doesn't
+> > consider the cases when src_rq has only processes bound to it (when
+> > single cpu is allowed). It may be running kernel thread like
+> > migration/x etc.
+> > 
+> > So it's better to use more stronger condition which is able to exclude
+> > above conditions. The function has_pushable_tasks() complitely does
+> > this. A task may be pullable for another cpu rq only if he is pushable
+> > for his own queue.
+> 
+> I considered this before, and for some reason I never did the change.
+> I'll have to think about it. It seems like this would be the obvious
+> case, but I think there was something not so obvious that caused issues.
+> But I don't remember what it was.
+> 
+> I'll have to rethink this again.
 
-jean.pihet@newoldbits.com writes:
+I can't find anything wrong with this change. Maybe things change, or I
+was thinking of another change.
 
-> From: Jean Pihet <j-pihet@ti.com>
->
-> AVS is a power management technique which controls the operating
-> voltage of a device in order to optimize (i.e. reduce) its power
-> consumption. The voltage is adapted depending on static factors
-> (chip manufacturing process) and dynamic factors (temperature
-> depending performance).
-> AVS is also called SmartReflex on OMAP devices.
->
-> To that end, create the AVS framework in drivers/power/avs and
-> move the OMAP SmartReflex code to the new directory.
+I'll apply it and start running my tests against it.
 
-I've done a review of this series and had a few very minor comments.
+Thanks!
 
-Once those are addressed, are you OK with us moving this AVS driver
-under drivers/power?
-
-Thanks,
-
-Kevin
+-- Steve
 
