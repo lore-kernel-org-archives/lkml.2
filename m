@@ -1,74 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754215Ab2DRXhz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Apr 2012 19:37:55 -0400
-Received: from ipmail07.adl2.internode.on.net ([150.101.137.131]:57585 "EHLO
-	ipmail07.adl2.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752568Ab2DRXhx (ORCPT
+	id S1754422Ab2DRXiJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Apr 2012 19:38:09 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:54275 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754294Ab2DRXiH convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Apr 2012 19:37:53 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: ArYLABhPj095LbFO/2dsb2JhbABEDrApAYEIgQiCCQEBBAE6HCgLCAMYLhQlAyEBEogKBLsJE4xDg18ElW6JV4ZkgjBJ
-Date: Thu, 19 Apr 2012 09:37:49 +1000
-From: Dave Chinner <david@fromorbit.com>
-To: "Ted Ts'o" <tytso@mit.edu>, Eric Sandeen <sandeen@redhat.com>,
-        Ric Wheeler <rwheeler@redhat.com>, Zheng Liu <gnehzuil.liu@gmail.com>,
-        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        linux-ext4@vger.kernel.org, Zheng Liu <wenqing.lz@taobao.com>
-Subject: Re: [RFC][PATCH 0/3] add FALLOC_FL_NO_HIDE_STALE flag in fallocate
-Message-ID: <20120418233749.GP6734@dastard>
-References: <1334681618-9452-1-git-send-email-wenqing.lz@taobao.com>
- <4F8DAF89.5070805@redhat.com>
- <20120417184306.GA5916@thunk.org>
- <4F8DBC20.5010401@redhat.com>
- <20120418030208.GO6734@dastard>
- <20120418160717.GE5916@thunk.org>
+	Wed, 18 Apr 2012 19:38:07 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120418160717.GE5916@thunk.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20120418214703.GA31606@kroah.com>
+References: <1332492784-10526-1-git-send-email-myungjoo.ham@samsung.com>
+	<1332492784-10526-2-git-send-email-myungjoo.ham@samsung.com>
+	<20120418214703.GA31606@kroah.com>
+Date: Thu, 19 Apr 2012 08:38:06 +0900
+X-Google-Sender-Auth: _CPazjHRgyXnHZ6fPhtBNR1kZNw
+Message-ID: <CAH9JG2VRas6LWCZSF3BFEsJvOS+6AeYMe_BQh3H18kh_=8CNqg@mail.gmail.com>
+Subject: Re: [PATCH v7 1/6] Extcon (external connector): import Android's
+ switch class and modify.
+From: Kyungmin Park <kyungmin.park@samsung.com>
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: MyungJoo Ham <myungjoo.ham@samsung.com>, Arnd Bergmann <arnd@arndb.de>,
+        LKML <linux-kernel@vger.kernel.org>, NeilBrown <neilb@suse.de>,
+        Randy Dunlap <rdunlap@xenotime.net>,
+        Mike Lockwood <lockwood@android.com>,
+        =?ISO-8859-1?Q?Arve_Hj=F8nnevag?= <arve@android.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Morten CHRISTIANSEN <morten.christiansen@stericsson.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        John Stultz <john.stultz@linaro.org>,
+        Joerg Roedel <joerg.roedel@amd.com>, myungjoo.ham@gmail.com,
+        cw00.choi@samsung.com
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 18, 2012 at 12:07:17PM -0400, Ted Ts'o wrote:
-> On Wed, Apr 18, 2012 at 01:02:08PM +1000, Dave Chinner wrote:
-> > In actual fact, on my 12 disk RAID0 array, XFS is faster with
-> > unwritten extents *enabled* than when hacked to turn them off. 
-> 
-> Can you explain why this is the case?  It seems... counterintuitive.
+Hi Greg,
 
-I'll admit that I was slightly surprised, too.
+Can you check the latest extcon at here?
 
-> The only explanation I can think of is that your code paths when
-> unwritten extents are disabled haven't been optimized,
+http://git.infradead.org/users/kmpark/linux-samsung/shortlog/refs/heads/extcon
 
-When unwritten extents are disabled, the IO takes the normal
-overwrite/extending write path, which is as optimised as
-the unwritten path because it is more commonly used.
+If any problem with it, please tell me again.
 
-> in which case
-> the comparison between using and not using unwritten extents might not
-> be valid.
+Thank you,
+Kyungmin Park
 
-It's and apples to apples comparison.
-
-The code paths are identical on IO submission, the only difference
-is the IO completion path. In the case of unwritten extents, it has
-to do a transaction to convert the extents and update the file size.
-In the case of the stale extent, it has to modify the file size
-because the IO is beyond EOF.
-
-My point, however, is that despite the complexity of unwritten
-extent conversion it is not noticably more expensive than a file
-size update transaction on XFS. Hence the reasoning for exposing
-stale data due to unwritten conversion has too much overhead to be
-useful is demonstratably false.
-
-Cheers,
-
-Dave.
--- 
-Dave Chinner
-david@fromorbit.com
+On 4/19/12, Greg KH <gregkh@linuxfoundation.org> wrote:
+> On Fri, Mar 23, 2012 at 05:52:58PM +0900, MyungJoo Ham wrote:
+>> External connector class (extcon) is based on and an extension of
+>> Android kernel's switch class located at linux/drivers/switch/.
+>
+> <snip>
+>
+> This patch breaks the build:
+> drivers/extcon/extcon_class.c:79:6: error: redefinition of
+> ‘extcon_set_state’
+> include/linux/extcon.h:80:20: note: previous definition of
+> ‘extcon_set_state’ was here
+> drivers/extcon/extcon_class.c:170:5: error: redefinition of
+> ‘extcon_dev_register’
+> include/linux/extcon.h:67:19: note: previous definition of
+> ‘extcon_dev_register’ was here
+> drivers/extcon/extcon_class.c:214:6: error: redefinition of
+> ‘extcon_dev_unregister’
+> include/linux/extcon.h:73:20: note: previous definition of
+> ‘extcon_dev_unregister’ was here
+>
+> So it obviously can't be applied to the tree :(
+>
+> Did you test it?
+>
+> Care to redo this series and send it again?
+>
+> greg k-h
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+>
