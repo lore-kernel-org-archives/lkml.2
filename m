@@ -1,67 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752986Ab2DRVIc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Apr 2012 17:08:32 -0400
-Received: from rcsinet15.oracle.com ([148.87.113.117]:26169 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752102Ab2DRVIb convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Apr 2012 17:08:31 -0400
-Date: Wed, 18 Apr 2012 17:03:09 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: "Zhang, Xiantao" <xiantao.zhang@intel.com>
-Cc: Lin Ming <mlin@ss.pku.edu.cn>, "mingo@elte.hu" <mingo@elte.hu>,
-        "Siddha, Suresh B" <suresh.b.siddha@intel.com>,
-        "jwboyer@redhat.com" <jwboyer@redhat.com>,
-        "hpa@zytor.com" <hpa@zytor.com>,
-        "yinghai@kernel.org" <yinghai@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 2/2] xen/x86: Implement x86_apic_ops
-Message-ID: <20120418210309.GD21970@phenom.dumpdata.com>
-References: <20120328092358.GD22885@gmail.com>
- <1332956242-5352-1-git-send-email-konrad.wilk@oracle.com>
- <1332956242-5352-3-git-send-email-konrad.wilk@oracle.com>
- <CAF1ivSagwO9PLQwwbLmTZik8xpfDncY=aXdhugT5Rivuu14K9g@mail.gmail.com>
- <20120416154746.GC4654@phenom.dumpdata.com>
- <B6C2EB9186482D47BD0C5A9A483456440E05E7@SHSMSX101.ccr.corp.intel.com>
+	id S1753631Ab2DRVJZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Apr 2012 17:09:25 -0400
+Received: from ogre.sisk.pl ([193.178.161.156]:51614 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751342Ab2DRVJX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Apr 2012 17:09:23 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: huang ying <huang.ying.caritas@gmail.com>
+Subject: Re: [PATCH 1/6] ACPI: D3cold state is always valid
+Date: Wed, 18 Apr 2012 23:13:59 +0200
+User-Agent: KMail/1.13.6 (Linux/3.4.0-rc3+; KDE/4.6.0; x86_64; ; )
+Cc: Lin Ming <ming.m.lin@intel.com>, Len Brown <lenb@kernel.og>,
+        linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org,
+        Zhang Rui <rui.zhang@intel.com>, Aaron Lu <aaron.lu@amd.com>
+References: <1334641676-14566-1-git-send-email-ming.m.lin@intel.com> <1334641676-14566-2-git-send-email-ming.m.lin@intel.com> <CAC=cRTPkFM5=az2B0A22miqt_X+XxcWPLrqPfeeRabho9yx-1Q@mail.gmail.com>
+In-Reply-To: <CAC=cRTPkFM5=az2B0A22miqt_X+XxcWPLrqPfeeRabho9yx-1Q@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-In-Reply-To: <B6C2EB9186482D47BD0C5A9A483456440E05E7@SHSMSX101.ccr.corp.intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-Content-Transfer-Encoding: 8BIT
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
-X-CT-RefId: str=0001.0A090208.4F8F2D42.000C,ss=1,re=0.000,fgs=0
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201204182313.59916.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > > > +unsigned int xen_io_apic_read(unsigned apic, unsigned reg) {
-> > > > +       if (reg == 0x1)
-> > > > +               return 0x00170020;
-> > > > +       else if (reg == 0x0)
-> > > > +               return apic << 24;
-> > >
-> > > Why is fixed value returned?
-> > >
-> > > Can't we implement it with hypercall(PHYSDEVOP_apic_read)?
-> > 
-> > We sure can. But this was meant to fix the regression - so I figured we would
-> > do that later on. But the more important question is - do we actually need to
-> > do the hypercall? We aren't using the IOAPIC for anything - we don't program
-> > the pins from dom0.
+On Tuesday, April 17, 2012, huang ying wrote:
+> On Tue, Apr 17, 2012 at 1:47 PM, Lin Ming <ming.m.lin@intel.com> wrote:
+> > ACPI_STATE_D3 actually means ACPI D3hot which is not always valid.
+> > Instead, ACPI D3cold is always valid.
+> >
+> > Signed-off-by: Lin Ming <ming.m.lin@intel.com>
+> > ---
+> >  drivers/acpi/scan.c |   11 ++---------
+> >  1 files changed, 2 insertions(+), 9 deletions(-)
+> >
+> > diff --git a/drivers/acpi/scan.c b/drivers/acpi/scan.c
+> > index 767e2dc..fb56388 100644
+> > --- a/drivers/acpi/scan.c
+> > +++ b/drivers/acpi/scan.c
+> > @@ -884,13 +884,6 @@ static int acpi_bus_get_power_flags(struct acpi_device *device)
+> >                                acpi_bus_add_power_resource(ps->resources.handles[j]);
+> >                }
+> >
+> > -               /* The exist of _PR3 indicates D3Cold support */
+> > -               if (i == ACPI_STATE_D3) {
+> > -                       status = acpi_get_handle(device->handle, object_name, &handle);
+> > -                       if (ACPI_SUCCESS(status))
+> > -                               device->power.states[ACPI_STATE_D3_COLD].flags.valid = 1;
+> > -               }
+> > -
+> >                /* Evaluate "_PSx" to see if we can do explicit sets */
+> >                object_name[2] = 'S';
+> >                status = acpi_get_handle(device->handle, object_name, &handle);
+> > @@ -908,8 +901,8 @@ static int acpi_bus_get_power_flags(struct acpi_device *device)
+> >        /* Set defaults for D0 and D3 states (always valid) */
+> >        device->power.states[ACPI_STATE_D0].flags.valid = 1;
+> >        device->power.states[ACPI_STATE_D0].power = 100;
+> > -       device->power.states[ACPI_STATE_D3].flags.valid = 1;
+> > -       device->power.states[ACPI_STATE_D3].power = 0;
+> > +       device->power.states[ACPI_STATE_D3_COLD].flags.valid = 1;
+> > +       device->power.states[ACPI_STATE_D3_COLD].power = 0;
+> >
+> >        acpi_bus_init_power(device);
 > 
->  Actually, dom0 doesn't programe ioapic pins directly as you said,  but the work is done by dom0 in the indirect way.  For dom0,  I added a hypercall PHYSDEVOP_setup_gsi before, and with this hypercall, we can get rid of programing IOAPIC pins from dom0 and hypervisor helps to do the ioapic programming, but we still need to get correct GSI information from hypervisor, otherwise, the hypercall may meet issues.  
+> I think D3_HOT should be always valid, while D3_COLD should be valid
+> for some situation.
 
-The GSI information (I think of the polarity and trigger, and as well
-which PCI devices pins correspond to what interrupt) is retrieved via the ACPI _PRT.
+This need not be PCI, mind you.
 
-The IO-APIC isn't used at all - instead the code in arch/x86/pci/xen.c is utilized
-which does the appropiate lookup and invokes the proper hypercall to bind an
-PIRQ (GSI) to an event channel (and the event channel is then binded to the Linux
-IRQ subsystem).
+>  - has _PS3, no _PR3
+>    - support D3_HOT, D3_COLD
 
-The hypercall - PHYSDEVOP_apic_read can be implemented here - and I am
-more than open for folks to submit a patch for it - but it does not affect
-how GSI/IO-APIC programming is done. This will just report proper IO-APIC
-information instead of the fabricated one.
+Nope.  D3_HOT cannot be supported in that case at the ACPI level.
+
+>    - set state
+>      - D3_HOT: do nothing in ACPI
+
+That is not D3_HOT, then, from the ACPI point of view.  It is a different
+power state.
+
+Suppose you have a non-PCI device that can be only power-manageable via ACPI
+and that device has only _PS0 and _PS3.  How would you put it into D3_HOT,
+in particular?
+
+>      - D3_COLD: _PS3
+
+Thanks,
+Rafael
