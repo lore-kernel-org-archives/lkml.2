@@ -1,59 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754311Ab2DRSTs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Apr 2012 14:19:48 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:52193 "EHLO mx1.redhat.com"
+	id S1752419Ab2DRSVV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Apr 2012 14:21:21 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:40942 "EHLO mail.zytor.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754027Ab2DRSTq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Apr 2012 14:19:46 -0400
-Date: Wed, 18 Apr 2012 14:18:36 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: Jan Kara <jack@suse.cz>, Fengguang Wu <fengguang.wu@intel.com>,
-        Jens Axboe <axboe@kernel.dk>, linux-mm@kvack.org, sjayaraman@suse.com,
-        andrea@betterlinux.com, jmoyer@redhat.com,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        kamezawa.hiroyu@jp.fujitsu.com, lizefan@huawei.com,
-        containers@lists.linux-foundation.org, cgroups@vger.kernel.org,
-        ctalbott@google.com, rni@google.com, lsf@lists.linux-foundation.org
-Subject: Re: [RFC] writeback and cgroup
-Message-ID: <20120418181836.GD2224@redhat.com>
-References: <20120404145134.GC12676@redhat.com>
- <20120407080027.GA2584@quack.suse.cz>
- <20120410180653.GJ21801@redhat.com>
- <20120410210505.GE4936@quack.suse.cz>
- <20120410212041.GP21801@redhat.com>
- <20120410222425.GF4936@quack.suse.cz>
- <20120411154005.GD16692@redhat.com>
- <20120411154531.GE16692@redhat.com>
- <20120411170542.GB16008@quack.suse.cz>
- <20120417214831.GE19975@google.com>
+	id S1751102Ab2DRSVU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Apr 2012 14:21:20 -0400
+Message-ID: <4F8F0614.9010604@zytor.com>
+Date: Wed, 18 Apr 2012 11:21:08 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120329 Thunderbird/11.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120417214831.GE19975@google.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: "H.J. Lu" <hjl.tools@gmail.com>
+CC: mingo@redhat.com, linux-kernel@vger.kernel.org, tglx@linutronix.de,
+        linux-tip-commits@vger.kernel.org
+Subject: Re: [tip:x86/x32] x32: Fix alignment fail in struct compat_siginfo
+References: <1329696488-16970-1-git-send-email-hpa@zytor.com> <tip-31796ac4e8f0e88f5c10f1ad6dab8f19bebe44a4@git.kernel.org> <CAMe9rOqF6Kh6-NK7oP0Fpzkd4SBAWU+G53hwBbSD4iA2UzyxuA@mail.gmail.com> <4F8EFE4D.2040201@zytor.com> <CAMe9rOpfPQghra1PQTUwsFOvjgNpzFDEGS5=BbFBjn=HZGL93g@mail.gmail.com> <4F8F0385.5090901@zytor.com> <CAMe9rOq7LduF4aLPe9qatedxps4WPCgOHTD=E_Lje4_tu6tyZw@mail.gmail.com>
+In-Reply-To: <CAMe9rOq7LduF4aLPe9qatedxps4WPCgOHTD=E_Lje4_tu6tyZw@mail.gmail.com>
+X-Enigmail-Version: 1.4
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 17, 2012 at 02:48:31PM -0700, Tejun Heo wrote:
-[..]
+On 04/18/2012 11:15 AM, H.J. Lu wrote:
+> 
+> In x32 glibc, I have
+> 
+> # if compile for X32
+> /* si_utime and si_stime must be 4 byte aligned for x32 to match the
+>    kernel.  We align siginfo_t to 8 bytes so that si_utime and si_stime
+>    are actually aligned to 8 bytes since their offsets are multiple of
+>    8 bytes.  */
+> typedef __clock_t __attribute__ ((__aligned__ (4))) __sigchld_clock_t;
+> #  define __SI_ALIGNMENT __attribute__ ((__aligned__ (8)))
+> # else
+> typedef __clock_t __sigchld_clock_t;
+> #  define __SI_ALIGNMENT
+> # endif
+> 
+> typedef struct siginfo
+>   {
+> ...
+> 	/* SIGCHLD.  */
+> 	struct
+> 	  {
+> 	    __pid_t si_pid;	/* Which child.  */
+> 	    __uid_t si_uid;	/* Real user ID of sending process.  */
+> 	    int si_status;	/* Exit value or signal.  */
+> 	    __sigchld_clock_t si_utime;
+> 	    __sigchld_clock_t si_stime;
+> 	  } _sigchld;
+> ...
+>   } siginfo_t __SI_ALIGNMENT;
+> 
 
-> As for priority inversion through shared request pool, it is a problem
-> which needs to be solved regardless of how async IOs are throttled.
-> I'm not determined to which extent yet tho.  Different cgroups
-> definitely need to be on separate pools but do we also want
-> distinguish sync and async and what about ioprio?  Maybe we need a
-> bybrid approach with larger common pool and reserved ones for each
-> class?
+So in other words, a separate type just for this.  However, the question
+still holds: could we simply change __kernel_clock_t for x32 and be done
+with it?  It would affect the alignment of struct tms, I guess; it
+wouldn't really affect the kernel directly since the kernel gets a
+pointer straight from userspace for times(2), but it would kind of mess
+up a userspace which uses __kernel_clock_t directly.
 
-currently we have global pool with separate limits for sync and async
-and there is no consideration of ioprio. I think to keep it simple we
-can just extend the same notion to keep per cgroup pool with internal
-limits on sync/async requests to make sure sync IO does not get
-serialized behind async IO. Personally I am not too worried about
-async IO prio. It has never worked.
+Urk, okay...
 
-Thanks
-Vivek
+	-hpa
