@@ -1,62 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754924Ab2DRUCH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Apr 2012 16:02:07 -0400
-Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:52287 "EHLO
-	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754865Ab2DRUCD (ORCPT
+	id S1754989Ab2DRUCP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Apr 2012 16:02:15 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:37772 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754938Ab2DRUCL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Apr 2012 16:02:03 -0400
-Date: Wed, 18 Apr 2012 23:01:58 +0300 (EEST)
-From: Pekka Enberg <penberg@kernel.org>
-X-X-Sender: penberg@tux.localdomain
-To: Anton Vorontsov <anton.vorontsov@linaro.org>
-cc: Leonid Moiseichuk <leonid.moiseichuk@nokia.com>,
-        John Stultz <john.stultz@linaro.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, linaro-kernel@lists.linaro.org,
-        patches@linaro.org
-Subject: Re: [PATCH 1/2] vmevent: Should not grab mutex in the atomic
- context
-In-Reply-To: <20120418083356.GA31556@lizard>
-Message-ID: <alpine.LFD.2.02.1204182301430.11868@tux.localdomain>
-References: <20120418083208.GA24904@lizard> <20120418083356.GA31556@lizard>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+	Wed, 18 Apr 2012 16:02:11 -0400
+Message-ID: <4F8F1DBD.8000009@wwwdotorg.org>
+Date: Wed, 18 Apr 2012 14:02:05 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.28) Gecko/20120313 Thunderbird/3.1.20
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Wolfram Sang <w.sang@pengutronix.de>
+CC: Alok Chauhan <alokc@nvidia.com>, khali@linux-fr.org, ben-linux@fluff.org,
+        swarren@nvidia.com, olof@lixom.net, bones@secretlab.ca,
+        omaplinuxkernel@gmail.com, ccross@android.com, ldewangan@nvidia.com,
+        linux-tegra@vger.kernel.org, linux-i2c@vger.kernel.org,
+        dgreid@chromium.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2] i2c: tegra: Add delay before reset the controller
+References: <1333345982-16595-1-git-send-email-alokc@nvidia.com> <20120418142758.GE19220@pengutronix.de>
+In-Reply-To: <20120418142758.GE19220@pengutronix.de>
+X-Enigmail-Version: 1.1.2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 18 Apr 2012, Anton Vorontsov wrote:
-> vmevent grabs a mutex in the atomic context, and so this pops up:
+On 04/18/2012 08:27 AM, Wolfram Sang wrote:
+> On Mon, Apr 02, 2012 at 11:23:02AM +0530, Alok Chauhan wrote:
+>> NACK interrupt generated before I2C controller generates
+>> the STOP condition on bus. In Software, because of this
+>> reset of controller is happening before I2C controller could
+>> complete STOP condition. So wait for some time before resetting
+>> the controller so that STOP condition has delivered properly on bus.
+>>
+>> Added delay of 2 clock period before reset the
+>> controller in case of NACK error.
+>>
+>> Signed-off-by: Alok Chauhan <alokc@nvidia.com>
 > 
-> BUG: sleeping function called from invalid context at kernel/mutex.c:271
-> in_atomic(): 1, irqs_disabled(): 0, pid: 0, name: swapper/0
-> 1 lock held by swapper/0/0:
->  #0:  (&watch->timer){+.-...}, at: [<ffffffff8103eb80>] call_timer_fn+0x0/0xf0
-> Pid: 0, comm: swapper/0 Not tainted 3.2.0+ #6
-> Call Trace:
->  <IRQ>  [<ffffffff8102f5da>] __might_sleep+0x12a/0x1e0
->  [<ffffffff810bd990>] ? vmevent_match+0xe0/0xe0
->  [<ffffffff81321f2c>] mutex_lock_nested+0x3c/0x340
->  [<ffffffff81064b33>] ? lock_acquire+0xa3/0xc0
->  [<ffffffff8103eb80>] ? internal_add_timer+0x110/0x110
->  [<ffffffff810bd990>] ? vmevent_match+0xe0/0xe0
->  [<ffffffff810bda21>] vmevent_timer_fn+0x91/0xf0
->  [<ffffffff810bd990>] ? vmevent_match+0xe0/0xe0
->  [<ffffffff8103ebf5>] call_timer_fn+0x75/0xf0
->  [<ffffffff8103eb80>] ? internal_add_timer+0x110/0x110
->  [<ffffffff81062fdd>] ? trace_hardirqs_on_caller+0x7d/0x120
->  [<ffffffff8103ee9f>] run_timer_softirq+0x10f/0x1e0
->  [<ffffffff810bd990>] ? vmevent_match+0xe0/0xe0
->  [<ffffffff81038d90>] __do_softirq+0xb0/0x160
->  [<ffffffff8105eb0f>] ? tick_program_event+0x1f/0x30
->  [<ffffffff8132642c>] call_softirq+0x1c/0x26
->  [<ffffffff810036d5>] do_softirq+0x85/0xc0
+> Applied with Stephen's ACK and slightly reworded comment and commit msg.
 > 
-> This patch fixes the issue by removing the mutex and making the logic
-> lock-free.
-> 
-> Signed-off-by: Anton Vorontsov <anton.vorontsov@linaro.org>
+> Wondering a bit that you want it for 3.5, not for 3.4. Looks like a
+> bugfix to me.
 
-Applied, thanks!
+Yes, applying this to 3.4 would make sense. When I said "for 3.5"
+earlier, I meant I'd like it to at least get into 3.5 not later.
+
+Thanks.
