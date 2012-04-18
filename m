@@ -1,179 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751558Ab2DRHgZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Apr 2012 03:36:25 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:51835 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751086Ab2DRHgY (ORCPT
+	id S1751425Ab2DRHoz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Apr 2012 03:44:55 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:5762 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1750891Ab2DRHoy convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Apr 2012 03:36:24 -0400
-X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
-Message-ID: <4F8E6E84.90608@jp.fujitsu.com>
-Date: Wed, 18 Apr 2012 16:34:28 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.0; rv:11.0) Gecko/20120327 Thunderbird/11.0.1
+	Wed, 18 Apr 2012 03:44:54 -0400
+X-IronPort-AV: E=Sophos;i="4.75,440,1330876800"; 
+   d="scan'208";a="4781169"
+Message-ID: <4F8E6DA5.8030503@cn.fujitsu.com>
+Date: Wed, 18 Apr 2012 15:30:45 +0800
+From: zhangyanfei <zhangyanfei@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100413 Fedora/3.0.4-2.fc13 Thunderbird/3.0.4
 MIME-Version: 1.0
-To: Ying Han <yinghan@google.com>
-CC: "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Michal Hocko <mhocko@suse.cz>, Johannes Weiner <hannes@cmpxchg.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Glauber Costa <glommer@parallels.com>,
-        Konstantin Khlebnikov <khlebnikov@openvz.org>,
-        Suleiman Souhlal <suleiman@google.com>
-Subject: Re: [RFC][PATCH 3/6] memcg: add PageCgroupReset()
-References: <4F72EB84.7080000@jp.fujitsu.com> <4F72EE86.9030005@jp.fujitsu.com> <CALWz4iy-TM_vHCmgZ4e+DEx6WqLJD6QRYut75L4Qz681pOgvkw@mail.gmail.com>
-In-Reply-To: <CALWz4iy-TM_vHCmgZ4e+DEx6WqLJD6QRYut75L4Qz681pOgvkw@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+To: Avi Kivity <avi@redhat.com>
+CC: mtosatti@redhat.com, ebiederm@xmission.com, luto@mit.edu,
+        joerg.roedel@amd.com, dzickus@redhat.com, paul.gortmaker@windriver.com,
+        gregkh@suse.de, ludwig.nussel@suse.de, linux-kernel@vger.kernel.org,
+        kvm@vger.kernel.org, kexec@lists.infradead.org
+Subject: Re: [PATCH 0/4] Export offsets of VMCS fields as note information
+ for kdump
+References: <4F84E0DF.8040206@cn.fujitsu.com> <4F8D1F46.3090901@redhat.com> <4F8D4B4C.8070705@cn.fujitsu.com> <4F8D4D1C.4010400@redhat.com>
+In-Reply-To: <4F8D4D1C.4010400@redhat.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/04/18 15:30:10,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/04/18 15:43:58
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2012/04/18 6:25), Ying Han wrote:
-
-> On Wed, Mar 28, 2012 at 3:57 AM, KAMEZAWA Hiroyuki
-> <kamezawa.hiroyu@jp.fujitsu.com> wrote:
+于 2012年04月17日 18:59, Avi Kivity 写道:
+> On 04/17/2012 01:51 PM, zhangyanfei wrote:
+>> 于 2012年04月17日 15:44, Avi Kivity 写道:
+>>> On 04/11/2012 04:39 AM, zhangyanfei wrote:
+>>>> This patch set exports offsets of VMCS fields as note information for
+>>>> kdump. We call it VMCSINFO. The purpose of VMCSINFO is to retrieve
+>>>> runtime state of guest machine image, such as registers, in host
+>>>> machine's crash dump as VMCS format. The problem is that VMCS
+>>>> internal is hidden by Intel in its specification. So, we reverse
+>>>> engineering it in the way implemented in this patch set. Please note
+>>>> that this processing never affects any existing kvm logic. The
+>>>> VMCSINFO is exported via sysfs to kexec-tools just like VMCOREINFO.
+>>>>
+>>>> Here is an example:
+>>>> Processor: Intel(R) Core(TM)2 Duo CPU     E7500  @ 2.93GHz
+>>>>
+>>>> $cat /sys/kernel/vmcsinfo
+>>>> 1cba8c0 2000
+>>>>
+>>>> crash> rd -p 1cba8c0 1000
+>>>>          1cba8c0:  0000127b00000009 53434d5600000000   ....{.......VMCS
+>>>>          1cba8d0:  000000004f464e49 4e4f495349564552   INFO....REVISION
+>>>>          1cba8e0:  49460a643d44495f 5f4e495028444c45   _ID=d.FIELD(PIN_
+>>>>          1cba8f0:  4d565f4445534142 4f435f434558455f   BASED_VM_EXEC_CO
+>>>>          1cba900:  303d294c4f52544e 0a30383130343831   NTROL)=01840180.
+>>>>          1cba910:  504328444c454946 5f44455341425f55   FIELD(CPU_BASED_
+>>>>          1cba920:  5f434558455f4d56 294c4f52544e4f43   VM_EXEC_CONTROL)
+>>>>          1cba930:  393130343931303d 28444c4549460a30   =01940190.FIELD(
+>>>>          1cba940:  5241444e4f434553 4558455f4d565f59   SECONDARY_VM_EXE
+>>>>          1cba950:  4f52544e4f435f43 30346566303d294c   C_CONTROL)=0fe40
+>>>>          1cba960:  4c4549460a306566 4958455f4d562844   fe0.FIELD(VM_EXI
+>>>>          1cba970:  4f52544e4f435f54 346531303d29534c   T_CONTROLS)=01e4
+>>>>          1cba980:  4549460a30653130 4e455f4d5628444c   01e0.FIELD(VM_EN
+>>>>          1cba990:  544e4f435f595254 33303d29534c4f52   TRY_CONTROLS)=03
+>>>>          1cba9a0:  460a303133303431 45554728444c4549   140310.FIELD(GUE
+>>>>          1cba9b0:  45535f53455f5453 3d29524f5443454c   ST_ES_SELECTOR)=
+>>>>          1cba9c0:  4549460a30303530 545345554728444c   0500.FIELD(GUEST
+>>>>          1cba9d0:  454c45535f53435f 35303d29524f5443   _CS_SELECTOR)=05
+>>>>          ......
+>>>>
+>>>> TODO:
+>>>>   1. In kexec-tools, get VMCSINFO via sysfs and dump it as note information
+>>>>      into vmcore.
+>>>>   2. Dump VMCS region of each guest vcpu and VMCSINFO into qemu-process
+>>>>      core file. To do this, we will modify kernel core dumper, gdb gcore
+>>>>      and crash gcore.
+>>>>   3. Dump guest image from the qemu-process core file into a vmcore.
+>>>>
+>>>
+>>> Taking a step back, can you describe the problem scenario you're fixing
+>>> here?
+>>>
+>> Considering two scenarios below:
+>> 1. Host panics, guests running on that host will also be dumped into
+>>    host's vmcore.
+>> 2. Qemu process is core dumped (by gdb gcore or kernel core dumper), and
+>>    its coresponding guest will be included in the core file.
 >>
->>  A commit "memcg: simplify LRU handling by new rule" removes PCG_ACCT_LRU.
->>  and the bug introduced by it was fixed by "memcg: fix GPF when cgroup removal
->>  races with last exit"
+>> We want to create the guest machine's crash dump from host machine's vmcore
+>> or qemu process's core file. Unfortunately, we cannot get the guest's registers
+>> values in both scenarios.
 >>
->> This was for reducing flags on pc->flags....Now, we have 3bits of flags.
->> but this patch adds a new flag, I'm sorry. (Considering alignment of
->> kmalloc(), we'll able to have 5 bits..)
->>
->> This patch adds PCG_RESET which is similar to PCG_ACCT_LRU.
+>> For scenario 1, some key registers (CR0, CR3...) of the guest machine are stored
+>> in VMCS region. But VMCS internal is hidden by Intel specification. So this
+>> patch set aims to get offsets of fields in VMCS region and export it as note
+>> information for kdump. 
 > 
-> 
-> 
-> This is set
->> when mem_cgroup_add_lru_list() finds we cannot trust the pc's mem_cgroup.
-> 
-> Do we still need the new flag? I assume some of the upcoming patches
-> will provide the guarantee of pc->mem_cgroup.
-> 
-
-
-If per-lruvec locking can do reference-count GC, memcg will never be freed
-there are pages which points to the memcg, and allows us to remove
-whole this 'move to root' logic, I agree. We'll not require a new flag.
-
-It means that memcg cannot be freed until there are not page(_cgroup) which
-points to dead memcg. mem_cgroup_reset_owner() is removed, now.
-
-We need to handle 2 cases.
-  - newly allocated pages which linked to memcg before use.
-  - unused pages but added to lru by some lazy logic.
-
-And make a guarantee
-  - pages added to LRU of dead memcg will be freed or moved to other cgroup, soon.
-
-I have no good idea.
-
-Thanks,
--Kame
-
-
-> --Ying
->>
->> The reason why this patch adds a (renamed) flag again is for merging
->> pc->flags and pc->mem_cgroup. Assume pc's mem_cgroup is encoded as
->>
->>        mem_cgroup = pc->flags & ~0x7
->>
->> Updating multiple bits of pc->flags without talking lock_page_cgroup()
->> is very dangerous. And mem_cgroup_add_lru_list() updates pc->mem_cgroup
->> without taking lock. Then I add RESET bit. After this, pc_to_mem_cgroup()
->> is written as
->>
->>        if (PageCgroupReset(pc))
->>                return root_mem_cgroup;
->>        return pc->mem_cgroup;
->>
->> This update of Reset bit can be done in atomic by set_bit(). And
->> cleared when USED bit is set.
->>
->> Considering kmalloc()'s alignment, having 4bits of flags will be ok....
->>
->> Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
->> ---
->>  include/linux/page_cgroup.h |   15 ++++++++-------
->>  mm/memcontrol.c             |    5 +++--
->>  2 files changed, 11 insertions(+), 9 deletions(-)
->>
->> diff --git a/include/linux/page_cgroup.h b/include/linux/page_cgroup.h
->> index 2707809..3f3b4ff 100644
->> --- a/include/linux/page_cgroup.h
->> +++ b/include/linux/page_cgroup.h
->> @@ -8,6 +8,7 @@ enum {
->>        PCG_LOCK,  /* Lock for pc->mem_cgroup and following bits. */
->>        PCG_USED, /* this object is in use. */
->>        PCG_MIGRATION, /* under page migration */
->> +       PCG_RESET,     /* have been reset to root_mem_cgroup */
->>        __NR_PCG_FLAGS,
->>  };
->>
->> @@ -70,6 +71,9 @@ SETPCGFLAG(Migration, MIGRATION)
->>  CLEARPCGFLAG(Migration, MIGRATION)
->>  TESTPCGFLAG(Migration, MIGRATION)
->>
->> +TESTPCGFLAG(Reset, RESET)
->> +SETPCGFLAG(Reset, RESET)
->> +
->>  static inline void lock_page_cgroup(struct page_cgroup *pc)
->>  {
->>        /*
->> @@ -84,16 +88,13 @@ static inline void unlock_page_cgroup(struct page_cgroup *pc)
->>        bit_spin_unlock(PCG_LOCK, &pc->flags);
->>  }
->>
->> +extern struct mem_cgroup*  root_mem_cgroup;
->>
->>  static inline struct mem_cgroup* pc_to_mem_cgroup(struct page_cgroup *pc)
->>  {
->> -       return pc->mem_cgroup;
->> -}
->> -
->> -static inline void
->> -pc_set_mem_cgroup(struct page_cgroup *pc, struct mem_cgroup *memcg)
->> -{
->> -       pc->mem_cgroup = memcg;
->> +       if (likely(!PageCgroupReset(pc)))
->> +               return pc->mem_cgroup;
->> +       return root_mem_cgroup;
->>  }
->>
->>  static inline void
->> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
->> index d366b60..622fd2e 100644
->> --- a/mm/memcontrol.c
->> +++ b/mm/memcontrol.c
->> @@ -1080,7 +1080,8 @@ struct lruvec *mem_cgroup_lru_add_list(struct zone *zone, struct page *page,
->>         * of pc's mem_cgroup safe.
->>         */
->>        if (!PageCgroupUsed(pc) && memcg != root_mem_cgroup) {
->> -               pc_set_mem_cgroup(pc, root_mem_cgroup);
->> +               /* this reset bit is cleared when the page is charged */
->> +               SetPageCgroupReset(pc);
->>                memcg = root_mem_cgroup;
->>        }
->>
->> @@ -2626,7 +2627,7 @@ static int mem_cgroup_move_account(struct page *page,
->>                __mem_cgroup_cancel_charge(from, nr_pages);
->>
->>        /* caller should have done css_get */
->> -       pc_set_mem_cgroup(pc, to);
->> +       pc_set_mem_cgroup_and_flags(pc, to, BIT(PCG_USED) | BIT(PCG_LOCK));
->>        mem_cgroup_charge_statistics(to, anon, nr_pages);
->>        /*
->>         * We charges against "to" which may not have any tasks. Then, "to"
->> --
->> 1.7.4.1
->>
->>
-> 
+> Okay.  Do you expect it to help in debugging the crash?  Did you have
+> cases where it would help?
 > 
 
+Yes, I do expect it to help in debugging the crash.
+Looking into host machine's crash dump, if we figure out the fact that the crash
+had happend when some host's resource was requested and used by some guset machine.
+Then, we surely want to look into the situation from guest machine's view.
 
+Thanks
+Zhang Yanfei
 
