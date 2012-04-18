@@ -1,112 +1,230 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751417Ab2DRG5a (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Apr 2012 02:57:30 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:36094 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750934Ab2DRG50 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Apr 2012 02:57:26 -0400
-Date: Wed, 18 Apr 2012 08:57:20 +0200
-From: Jan Kara <jack@suse.cz>
-To: Fengguang Wu <fengguang.wu@intel.com>
-Cc: Tejun Heo <tj@kernel.org>, Jan Kara <jack@suse.cz>, vgoyal@redhat.com,
-        Jens Axboe <axboe@kernel.dk>, linux-mm@kvack.org, sjayaraman@suse.com,
-        andrea@betterlinux.com, jmoyer@redhat.com,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        kamezawa.hiroyu@jp.fujitsu.com, lizefan@huawei.com,
-        containers@lists.linux-foundation.org, cgroups@vger.kernel.org,
-        ctalbott@google.com, rni@google.com, lsf@lists.linux-foundation.org
-Subject: Re: [RFC] writeback and cgroup
-Message-ID: <20120418065720.GA21485@quack.suse.cz>
-References: <20120403183655.GA23106@dhcp-172-17-108-109.mtv.corp.google.com>
- <20120404175124.GA8931@localhost>
- <20120404193355.GD29686@dhcp-172-17-108-109.mtv.corp.google.com>
- <20120406095934.GA10465@localhost>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120406095934.GA10465@localhost>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1751464Ab2DRHDY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Apr 2012 03:03:24 -0400
+Received: from idcmail-mo1so.shaw.ca ([24.71.223.10]:54691 "EHLO
+	idcmail-mo1so.shaw.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750891Ab2DRHDX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Apr 2012 03:03:23 -0400
+X-Cloudmark-SP-Filtered: true
+X-Cloudmark-SP-Result: v=1.1 cv=zu4PKjlF+9DoPrG/TPTQ4CC8dREy1gI1uGhqrRhVwqE= c=1 sm=1
+ a=WfSpWzy0sTQA:10 a=3762yOXauukA:10 a=BLceEmwcHowA:10
+ a=oaxjXb+On79cRBAvziGSJw==:17 a=47LbCVvxAAAA:8 a=t_UTetj8Tjv4-yJ4BZQA:9
+ a=Ca1vQv3fmSHPJCucvE0A:7 a=QhNQsjeWOoAA:10 a=HpAAvcLHHh0Zw7uRqdWCyQ==:117
+From: Simon Wood <simon@mungewell.org>
+To: linux-input@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, Jiri Kosina <jkosina@suse.cz>,
+        Michael Bauer <michael@m-bauer.org>,
+        Michal Maly <madcatxster@gmail.com>, Simon Wood <simon@mungewell.org>
+Subject: [PATCH 1/2] HID: hid-lg4ff: Add support for G27 LEDs
+Date: Wed, 18 Apr 2012 00:03:07 -0700
+Message-Id: <1334732588-9351-1-git-send-email-simon@mungewell.org>
+X-Mailer: git-send-email 1.7.4.1
+In-Reply-To: <alpine.LNX.2.00.1204131458290.16373@pobox.suse.cz>
+References: <alpine.LNX.2.00.1204131458290.16373@pobox.suse.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri 06-04-12 02:59:34, Wu Fengguang wrote:
-...
-> > > > Let's please keep the layering clear.  IO limitations will be applied
-> > > > at the block layer and pressure will be formed there and then
-> > > > propagated upwards eventually to the originator.  Sure, exposing the
-> > > > whole information might result in better behavior for certain
-> > > > workloads, but down the road, say, in three or five years, devices
-> > > > which can be shared without worrying too much about seeks might be
-> > > > commonplace and we could be swearing at a disgusting structural mess,
-> > > > and sadly various cgroup support seems to be a prominent source of
-> > > > such design failures.
-> > > 
-> > > Super fast storages are coming which will make us regret to make the
-> > > IO path over complex.  Spinning disks are not going away anytime soon.
-> > > I doubt Google is willing to afford the disk seek costs on its
-> > > millions of disks and has the patience to wait until switching all of
-> > > the spin disks to SSD years later (if it will ever happen).
-> > 
-> > This is new.  Let's keep the damn employer out of the discussion.
-> > While the area I work on is affected by my employment (writeback isn't
-> > even my area BTW), I'm not gonna do something adverse to upstream even
-> > if it's beneficial to google and I'm much more likely to do something
-> > which may hurt google a bit if it's gonna benefit upstream.
-> > 
-> > As for the faster / newer storage argument, that is *exactly* why we
-> > want to keep the layering proper.  Writeback works from the pressure
-> > from the IO stack.  If IO technology changes, we update the IO stack
-> > and writeback still works from the pressure.  It may need to be
-> > adjusted but the principles don't change.
-> 
-> To me, balance_dirty_pages() is *the* proper layer for buffered writes.
-> It's always there doing 1:1 proportional throttling. Then you try to
-> kick in to add *double* throttling in block/cfq layer. Now the low
-> layer may enforce 10:1 throttling and push balance_dirty_pages() away
-> from its balanced state, leading to large fluctuations and program
-> stalls.  This can be avoided by telling balance_dirty_pages(): "your
-> balance goal is no longer 1:1, but 10:1". With this information
-> balance_dirty_pages() will behave right. Then there is the question:
-> if balance_dirty_pages() will work just well provided the information,
-> why bother doing the throttling at low layer and "push back" the
-> pressure all the way up?
-  Fengguang, maybe we should first agree on some basics:
-  The two main goals of balance_dirty_pages() are (and always have been
-AFAIK) to limit amount of dirty pages in memory and keep enough dirty pages
-in memory to allow for efficient writeback. Secondary goals are to also
-keep amount of dirty pages somewhat fair among bdis and processes. Agreed?
+This patch adds supports for controlling the LED 'tachometer' on
+the G27 wheel, via the LED subsystem.
 
-Thus shift to trying to control *IO throughput* (or even just buffered
-write throughput) from balance_dirty_pages() is a fundamental shift in the
-goals of balance_dirty_pages(), not just some tweak (although technically,
-it might be relatively easy to do for buffered writes given the current
-implementation).
+The 5 LEDs are arranged from right (1=grn, 2=grn, 3=yel, 4=yel, 5=red)
+and 'mirrored' to the left (10 LEDs in total).
 
-...
-> > Well, I tried and I hope some of it got through.  I also wrote a lot
-> > of questions, mainly regarding how what you have in mind is supposed
-> > to work through what path.  Maybe I'm just not seeing what you're
-> > seeing but I just can't see where all the IOs would go through and
-> > come together.  Can you please elaborate more on that?
-> 
-> What I can see is, it looks pretty simple and nature to let
-> balance_dirty_pages() fill the gap towards a total solution :-)
-> 
-> - add direct IO accounting in some convenient point of the IO path
->   IO submission or completion point, either is fine.
-> 
-> - change several lines of the buffered write IO controller to
->   integrate the direct IO rate into the formula to fit the "total
->   IO" limit
-> 
-> - in future, add more accounting as well as feedback control to make
->   balance_dirty_pages() work with IOPS and disk time
-  Sorry Fengguang but I also think this is a wrong way to go.
-balance_dirty_pages() must primarily control the amount of dirty pages.
-Trying to bend it to control IO throughput by including direct IO and
-reads in the accounting will just make the logic even more complex than it
-already is.
+Signed-off-by: Simon Wood <simon@mungewell.org>
+---
+ drivers/hid/hid-lg4ff.c |  155 ++++++++++++++++++++++++++++++++++++++++++++++-
+ 1 files changed, 154 insertions(+), 1 deletions(-)
 
-								Honza
+diff --git a/drivers/hid/hid-lg4ff.c b/drivers/hid/hid-lg4ff.c
+index 32c173f..ab5232e 100644
+--- a/drivers/hid/hid-lg4ff.c
++++ b/drivers/hid/hid-lg4ff.c
+@@ -55,7 +55,8 @@ struct lg4ff_device_entry {
+ 	__u16 range;
+ 	__u16 min_range;
+ 	__u16 max_range;
+-	__u8  leds;
++	__u8  led_state;
++	struct led_classdev *led[5];
+ 	struct list_head list;
+ 	void (*set_range)(struct hid_device *hid, u16 range);
+ };
+@@ -335,6 +336,88 @@ static ssize_t lg4ff_range_store(struct device *dev, struct device_attribute *at
+ 	return count;
+ }
+ 
++#ifdef CONFIG_LEDS_CLASS
++static void lg4ff_set_leds(struct hid_device *hid, __u8 leds)
++{
++	struct list_head *report_list = &hid->report_enum[HID_OUTPUT_REPORT].report_list;
++	struct hid_report *report = list_entry(report_list->next, struct hid_report, list);
++
++	report->field[0]->value[0] = 0xf8;
++	report->field[0]->value[1] = 0x12;
++	report->field[0]->value[2] = leds;
++	report->field[0]->value[3] = 0x00;
++	report->field[0]->value[4] = 0x00;
++	report->field[0]->value[5] = 0x00;
++	report->field[0]->value[6] = 0x00;
++	usbhid_submit_report(hid, report, USB_DIR_OUT);
++}
++
++static void lg4ff_led_set_brightness(struct led_classdev *led_cdev,
++			enum led_brightness value)
++{
++	struct device *dev = led_cdev->dev->parent;
++	struct hid_device *hid = container_of(dev, struct hid_device, dev);
++	struct lg_drv_data *drv_data = (struct lg_drv_data *)hid_get_drvdata(hid);
++	struct lg4ff_device_entry *entry;
++	int i, state = 0;
++
++	if (!drv_data) {
++		hid_err(hid, "Device data not found.");
++		return;
++	}
++
++	entry = (struct lg4ff_device_entry *)drv_data->device_props;
++
++	if (!entry) {
++		hid_err(hid, "Device properties not found.");
++		return;
++	}
++
++	for (i = 0; i < 5; i++) {
++		if (led_cdev != entry->led[i])
++			continue;
++		state = (entry->led_state >> i) & 1;
++		if (value == LED_OFF && state) {
++			entry->led_state &= ~(1 << i);
++			lg4ff_set_leds(hid, entry->led_state);
++		} else if (value != LED_OFF && !state) {
++			entry->led_state |= 1 << i;
++			lg4ff_set_leds(hid, entry->led_state);
++		}
++		break;
++	}
++}
++
++static enum led_brightness lg4ff_led_get_brightness(struct led_classdev *led_cdev)
++{
++	struct device *dev = led_cdev->dev->parent;
++	struct hid_device *hid = container_of(dev, struct hid_device, dev);
++	struct lg_drv_data *drv_data = (struct lg_drv_data *)hid_get_drvdata(hid);
++	struct lg4ff_device_entry *entry;
++	int i, value = 0;
++
++	if (!drv_data) {
++		hid_err(hid, "Device data not found.");
++		return LED_OFF;
++	}
++
++	entry = (struct lg4ff_device_entry *)drv_data->device_props;
++
++	if (!entry) {
++		hid_err(hid, "Device properties not found.");
++		return LED_OFF;
++	}
++
++	for (i = 0; i < 5; i++)
++		if (led_cdev == entry->led[i]) {
++			value = (entry->led_state >> i) & 1;
++			break;
++		}
++
++	return value ? LED_FULL : LED_OFF;
++}
++#endif
++
+ int lg4ff_init(struct hid_device *hid)
+ {
+ 	struct hid_input *hidinput = list_entry(hid->inputs.next, struct hid_input, list);
+@@ -453,6 +536,57 @@ int lg4ff_init(struct hid_device *hid)
+ 	if (entry->set_range != NULL)
+ 		entry->set_range(hid, entry->range);
+ 
++	/* register led subsystem - G27 only */
++	entry->led_state = 0;
++	for (j = 0; j < 5; j++)
++		entry->led[j] = NULL;
++
++#ifdef CONFIG_LEDS_CLASS
++	if (lg4ff_devices[i].product_id == USB_DEVICE_ID_LOGITECH_G27_WHEEL) {
++		struct led_classdev *led;
++		size_t name_sz;
++		char *name;
++
++		lg4ff_set_leds(hid, 0);
++
++		name_sz = strlen(dev_name(&hid->dev)) + 8;
++
++		for (j = 0; j < 5; j++) {
++			led = kzalloc(sizeof(struct led_classdev)+name_sz, GFP_KERNEL);
++			if (!led) {
++				hid_err(hid, "can't allocate memory for LED %d\n", j);
++				goto err;
++			}
++
++			name = (void *)(&led[1]);
++			snprintf(name, name_sz, "%s::RPM%d", dev_name(&hid->dev), j+1);
++			led->name = name;
++			led->brightness = 0;
++			led->max_brightness = 1;
++			led->brightness_get = lg4ff_led_get_brightness;
++			led->brightness_set = lg4ff_led_set_brightness;
++
++			entry->led[j] = led;
++			error = led_classdev_register(&hid->dev, led);
++
++			if (error) {
++				hid_err(hid, "failed to register LED %d. Aborting.\n", j);
++err:
++				/* Deregister LEDs (if any) but let the driver continue */
++				for (j = 0; j < 5; j++) {
++					led = entry->led[j];
++					entry->led[j] = NULL;
++					if (!led)
++						continue;
++					led_classdev_unregister(led);
++				kfree(led);
++				}
++				break;	/* Don't create any more LEDs */
++			}
++		}
++	}
++#endif
++
+ 	hid_info(hid, "Force feedback for Logitech Speed Force Wireless by Simon Wood <simon@mungewell.org>\n");
+ 	return 0;
+ }
+@@ -474,6 +608,25 @@ int lg4ff_deinit(struct hid_device *hid)
+ 		hid_err(hid, "Error while deinitializing device, no device properties data.\n");
+ 		return -1;
+ 	}
++
++#ifdef CONFIG_LEDS_CLASS
++	{
++		int j;
++		struct led_classdev *led;
++
++		/* Deregister LEDs (if any) */
++		for (j = 0; j < 5; j++) {
++
++			led = entry->led[j];
++			entry->led[j] = NULL;
++			if (!led)
++				continue;
++			led_classdev_unregister(led);
++			kfree(led);
++		}
++	}
++#endif
++
+ 	/* Deallocate memory */
+ 	kfree(entry);
+ 
+-- 
+1.7.4.1
+
