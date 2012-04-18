@@ -1,41 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754389Ab2DRUKA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Apr 2012 16:10:00 -0400
-Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:37588 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751065Ab2DRUJ5 (ORCPT
+	id S1755019Ab2DRUN0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Apr 2012 16:13:26 -0400
+Received: from oproxy8-pub.bluehost.com ([69.89.22.20]:58746 "HELO
+	oproxy8-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1754272Ab2DRUNY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Apr 2012 16:09:57 -0400
-Date: Wed, 18 Apr 2012 21:12:35 +0100
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: KY Srinivasan <kys@microsoft.com>
-Cc: Andy Whitcroft <apw@canonical.com>, Jeff Garzik <jgarzik@pobox.com>,
-        "linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Mike Sterling <mike.sterling@microsoft.com>
-Subject: Re: [PATCH 0/2] Hyper-V disk support V3
-Message-ID: <20120418211235.55b9befc@pyramind.ukuu.org.uk>
-In-Reply-To: <426367E2313C2449837CD2DE46E7EAF92CE0B5@CH1PRD0310MB381.namprd03.prod.outlook.com>
-References: <20120414170223.24f6ea31@pyramind.ukuu.org.uk>
-	<1334575229-7493-1-git-send-email-apw@canonical.com>
-	<20120416122634.7d1357e1@ultron>
-	<20120416182927.GB3346@shadowen.org>
-	<426367E2313C2449837CD2DE46E7EAF92CE0B5@CH1PRD0310MB381.namprd03.prod.outlook.com>
-X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Wed, 18 Apr 2012 16:13:24 -0400
+Message-ID: <4F8F2087.9090900@xenotime.net>
+Date: Wed, 18 Apr 2012 13:13:59 -0700
+From: Randy Dunlap <rdunlap@xenotime.net>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
+MIME-Version: 1.0
+To: Masanari Iida <standby24x7@gmail.com>
+CC: linux-usb@vger.kernel.org, stern@rowland.harvard.edu, trivial@kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] [trivial] usb: Fix various typo within usb
+References: <1334761486-12817-1-git-send-email-standby24x7@gmail.com>
+In-Reply-To: <1334761486-12817-1-git-send-email-standby24x7@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
+X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> The notion of "pass through" in Hyper-V  is a little different. IDE devices can be configured
-> under either one of the supported controllers and these devices can either be virtual disks
-> (VHDs) or physical disks. In either case these will be presented to the guest as IDE devices.
+On 04/18/2012 08:04 AM, Masanari Iida wrote:
 
-So what ensures that by skipping it at the ATA device level we will
-always find it as a VHD ?
+> Correct spelling typo within usb
+> 
+> Signed-off-by: Masanari Iida <standby24x7@gmail.com>
+> ---
+>  drivers/usb/gadget/f_hid.c       |    2 +-
+>  drivers/usb/host/ehci-platform.c |    4 ++--
+>  drivers/usb/host/fhci-tds.c      |    2 +-
+>  drivers/usb/host/ohci-platform.c |    4 ++--
+>  drivers/usb/host/ohci-ppc-of.c   |    2 +-
+>  5 files changed, 7 insertions(+), 7 deletions(-)
+> 
+> diff --git a/drivers/usb/host/ehci-platform.c b/drivers/usb/host/ehci-platform.c
+> index d238b4e2..23c530a 100644
+> --- a/drivers/usb/host/ehci-platform.c
+> +++ b/drivers/usb/host/ehci-platform.c
+> @@ -94,12 +94,12 @@ static int __devinit ehci_platform_probe(struct platform_device *dev)
+>  
+>  	irq = platform_get_irq(dev, 0);
+>  	if (irq < 0) {
+> -		pr_err("no irq provieded");
+> +		pr_err("no irq provided");
+>  		return irq;
+>  	}
+>  	res_mem = platform_get_resource(dev, IORESOURCE_MEM, 0);
+>  	if (!res_mem) {
+> -		pr_err("no memory recourse provieded");
+> +		pr_err("no memory recourse provided");
 
-Alan
+
+		                  resource
+
+>  		return -ENXIO;
+>  	}
+>  
+> diff --git a/drivers/usb/host/ohci-platform.c b/drivers/usb/host/ohci-platform.c
+> index ec5c679..670c705 100644
+> --- a/drivers/usb/host/ohci-platform.c
+> +++ b/drivers/usb/host/ohci-platform.c
+> @@ -93,13 +93,13 @@ static int __devinit ohci_platform_probe(struct platform_device *dev)
+>  
+>  	irq = platform_get_irq(dev, 0);
+>  	if (irq < 0) {
+> -		pr_err("no irq provieded");
+> +		pr_err("no irq provided");
+>  		return irq;
+>  	}
+>  
+>  	res_mem = platform_get_resource(dev, IORESOURCE_MEM, 0);
+>  	if (!res_mem) {
+> -		pr_err("no memory recourse provieded");
+> +		pr_err("no memory recourse provided");
+
+
+		                  resource
+
+>  		return -ENXIO;
+>  	}
+>  
+
+
+-- 
+~Randy
