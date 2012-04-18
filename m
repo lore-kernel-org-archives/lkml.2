@@ -1,63 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751904Ab2DRHyS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Apr 2012 03:54:18 -0400
-Received: from mail-qa0-f42.google.com ([209.85.216.42]:41105 "EHLO
-	mail-qa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751062Ab2DRHyQ convert rfc822-to-8bit (ORCPT
+	id S1751676Ab2DRH5G (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Apr 2012 03:57:06 -0400
+Received: from casper.infradead.org ([85.118.1.10]:33828 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751086Ab2DRH5E (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Apr 2012 03:54:16 -0400
+	Wed, 18 Apr 2012 03:57:04 -0400
+Message-ID: <4F8E73BD.1040904@kernel.dk>
+Date: Wed, 18 Apr 2012 09:56:45 +0200
+From: Jens Axboe <axboe@kernel.dk>
 MIME-Version: 1.0
-In-Reply-To: <1334734196.2472.91.camel@edumazet-glaptop>
-References: <CAA1sL1QTRKnfvCnHWjbSJ-hq6dgZK+KGDPVTrOhsfZcFTs01Mw@mail.gmail.com>
-	<1334502964.28012.1.camel@edumazet-glaptop>
-	<CAA1sL1SJyY7fYJn7OKqo5Pa=b4-r9DW90-5WVGBf==tFjVEBpg@mail.gmail.com>
-	<1334695506.2472.46.camel@edumazet-glaptop>
-	<CAA1sL1TN+acPd4NAnFC0soeHzzcJe0ja3_zS5ZkFog11HSDAyA@mail.gmail.com>
-	<1334734196.2472.91.camel@edumazet-glaptop>
-Date: Wed, 18 Apr 2012 11:54:15 +0400
-Message-ID: <CAA1sL1SE1kDPsuMLHUV=MNYvyte1G1J-tQnJDj83Xc1qa6sADg@mail.gmail.com>
-Subject: Re: 3.4.0-rc2: skb_put() -> skb_over_panic
-From: Alexander Beregalov <a.beregalov@gmail.com>
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: netdev <netdev@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+To: James Bottomley <jbottomley@parallels.com>
+CC: Linus Torvalds <torvalds@linux-foundation.org>,
+        "Martin K. Petersen" <martin.petersen@oracle.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: USB storage SCSI EH oops
+References: <CA+55aFxToKG2gMqHnUgjkGTr--X4FK9yzX7n0yc9xKuUGGRKmA@mail.gmail.com>  <CA+55aFyq7fp2nDGJBT+9oPTBU+uCWpp_2JBfGB3HxBSwA=5TBw@mail.gmail.com>  <CA+55aFyH-LCcDZmLhhctT2mz447aLMRShU-BOk7QnzAGGMzySA@mail.gmail.com> <1334735599.4410.17.camel@dabdike>
+In-Reply-To: <1334735599.4410.17.camel@dabdike>
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->> > Thanks a lot, I belive I know where the problem is.
->> >
->> > Could you check if commit a21d45726acacc963d8baddf74607d9b74e2b723
->> > (tcp: avoid order-1 allocations on wifi and tx path)
->> > was in your tree ?
->> >
+On 04/18/2012 09:53 AM, James Bottomley wrote:
+> On Sat, 2012-04-14 at 15:49 -0700, Linus Torvalds wrote:
+>> On Sat, Apr 14, 2012 at 3:29 PM, Linus Torvalds
+>> <torvalds@linux-foundation.org> wrote:
+>>>
+>>> Confirmed.
+>>>
+>>> I tested twice: with that patch, the oops is repeatable, and happens
+>>> something like 30 seconds after plugging in the USB thing into the
+>>> monitor.
+>>>
+>>> With that patch reverted, the thing still doesn't *work*, but I don't
+>>> get the oops. Instead, I get the appended noise in my dmesg..
 >>
->> It was,
->> git show a21d4572 v3.4-rc2..668ce0a
->> shows it
->
-> Thansk for the confirmation.
->
-> Had you see the patch I sent some hours ago, and can you test it ?
->
-> If not, I probably can reproduce the problem in my lab.
->
-> diff --git a/net/ipv4/tcp_output.c b/net/ipv4/tcp_output.c
-> index 376b2cf..7ac6423 100644
-> --- a/net/ipv4/tcp_output.c
-> +++ b/net/ipv4/tcp_output.c
-> @@ -1096,6 +1096,7 @@ static void __pskb_trim_head(struct sk_buff *skb, int len)
->        eat = min_t(int, len, skb_headlen(skb));
->        if (eat) {
->                __skb_pull(skb, eat);
-> +               skb->avail_size -= eat;
->                len -= eat;
->                if (!len)
->                        return;
->
->
+>> .. and the reason that card reader has trouble seems to be that it's
+>> just too damn old, and doesn't understand SD-HC cards. It works fine
+>> with old SD cards.
+>>
+>> So the reader is fine (well, apart from being too old), USB-storage is
+>> fine, but the SCSI error handler is broken.
+>>
+>> Even with that commit reverted, once the SCSI layer has decided to
+>> off-line the device, you can't get it back, even if you remove the
+>> media and insert a non-HC SD card. You have to unplug and re-plug the
+>> reader. That seems to be a slight misfeature of SCSI error handling,
+>> but compared to oopsing, it's minor.
+> 
+> OK, will either queue the update or a revert.
 
-Yes, I am testing it.
+Martins patch went into -git 4 days ago. Since Linus didn't follow up in
+rage, I was assuming the issue had been resolved with that.
+
+-- 
+Jens Axboe
+
