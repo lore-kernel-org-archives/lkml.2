@@ -1,61 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752308Ab2DRIYA (ORCPT <rfc822;w@1wt.eu>);
+	id S1752440Ab2DRIYF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Apr 2012 04:24:05 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:51756 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751396Ab2DRIYA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 18 Apr 2012 04:24:00 -0400
-Received: from antcom.de ([188.40.178.216]:59867 "EHLO chuck.antcom.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751181Ab2DRIX6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Apr 2012 04:23:58 -0400
-Message-ID: <4F8E7A19.303@antcom.de>
-Date: Wed, 18 Apr 2012 10:23:53 +0200
-From: Roland Stigge <stigge@antcom.de>
-Organization: ANTCOM IT Research & Development
-User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:8.0) Gecko/20120216 Icedove/8.0
-MIME-Version: 1.0
-To: Dan Carpenter <dan.carpenter@oracle.com>
-CC: arm@kernel.org, linux-arm-kernel@lists.infradead.org,
-        thierry.reding@avionic-design.de, gregkh@linuxfoundation.org,
-        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-input@vger.kernel.org, dmitry.torokhov@gmail.com,
-        axel.lin@gmail.com, broonie@opensource.wolfsonmicro.com,
-        marek.vasut@gmail.com, devel@driverdev.osuosl.org, kevin.wells@nxp.com,
-        srinivas.bakki@nxp.com
-Subject: Re: [PATCH v2 1/8] ohci-nxp: Driver cleanup
-References: <1334682507-15055-1-git-send-email-stigge@antcom.de> <1334682507-15055-2-git-send-email-stigge@antcom.de> <20120417205740.GI6498@mwanda>
-In-Reply-To: <20120417205740.GI6498@mwanda>
-X-Enigmail-Version: 1.3.4
-OpenPGP: url=subkeys.pgp.net
-Content-Type: text/plain; charset=UTF-8
+Subject: Re: [PATCH] set fake_rtable's dst to NULL to avoid kernel Oops.
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: "Peter Huang(Peng)" <peter.huangpeng@huawei.com>
+Cc: Stephen Hemminger <shemminger@vyatta.com>,
+        "'David S. Miller'" <davem@davemloft.net>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, ctrix+debianbugs@navynet.it,
+        peter.huangpeng@gmail.com, harry.majun@huawei.com
+In-Reply-To: <4F8E73E3.6080900@huawei.com>
+References: <000001cd1c62$75d10de0$617329a0$%huangpeng@huawei.com>
+	 <20120417085248.3e642294@nehalam.linuxnetplumber.net>
+	 <1334681323.2472.43.camel@edumazet-glaptop>  <4F8E73E3.6080900@huawei.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 18 Apr 2012 10:23:54 +0200
+Message-ID: <1334737434.2472.95.camel@edumazet-glaptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/17/2012 10:57 PM, Dan Carpenter wrote:
-> On Tue, Apr 17, 2012 at 07:08:20PM +0200, Roland Stigge wrote:
->> @@ -435,6 +436,7 @@ static int __devinit usb_hcd_nxp_probe(s
->>  	}
->>  
->>  	__raw_writel(__raw_readl(USB_CTRL) | USB_HOST_NEED_CLK_EN, USB_CTRL);
->> +	__raw_writel(__raw_readl(USB_CTRL) & ~USB_DEV_NEED_CLK_EN, USB_CTRL);
->>  
->>  	/* Set to enable all needed USB clocks */
->>  	__raw_writel(USB_CLOCK_MASK, USB_OTG_CLK_CTRL);
+On Wed, 2012-04-18 at 15:57 +0800, Peter Huang(Peng) wrote:
+> On 2012/4/18 0:48, Eric Dumazet wrote:
+> > On Tue, 2012-04-17 at 08:52 -0700, Stephen Hemminger wrote:
+> >
+> >> This check seems like a disaster waiting to happen when the next
+> >> change to DST table happens.
+> >
+> > Please Peter Document this, adding a new DST_FAKE_RTABLE flag
+> >
+> > #define DST_FAKE_RTABLE DST_NOPEER
+> >
+> > or just use a bit, we have plenty of them available.
+> >
 > 
-> What does this chunk do?  Is this part of the "* Fixed controller
-> initialization (bits)" bullet point?  How does it affect the user?
-> Should it be included in the 3.4 kernel?
+> 
+> Add DST_FAKE_RTABLE to dst_entry, this is the new patch.
+> Is this ok?
+> 
 
-Thanks for the hint! I will drop this hunk. Originally, it made sure
-that USB_DEV_NEED_CLK_EN is disabled but due to another change:
+A full new patch is needed, with nice changelog, and proper formatting
+(your mail was mangled)
 
-usb_hcd_nxp_probe() {
-...
-__raw_writel(USB_SLAVE_HCLK_EN | PAD_CONTROL_LAST_DRIVEN, USB_CTRL);
 
-this bit is already cleared anyway.
+>   };
+> 
+> +static inline void br_drop_fake_rtable(struct sk_buff *skb) {
+> +       struct dst_entry *dst = skb_dst(skb);
+> +       /* abuse fact that only fake_rtable has DST_FAKE_RTABLE set */
 
-(Would have been uncritical for v3.4 anyway, relating only to the other
-changes introduced in my 3.5 patches.)
+Remove the comment, since we dont abuse NOPEER anymore, we use a
+dedicated flag. (keep an empty line)
 
-Roland
+> +       if (dst && (dst->flags & DST_FAKE_RTABLE))
+> +               skb_dst_drop(skb);
+> +}
+> +
+>   #else
+>   #define nf_bridge_maybe_copy_header(skb)       (0)
+>   #define nf_bridge_pad(skb)                     (0)
+> +#define br_drop_fake_rtable(skb)               (0)
+>   #endif /* CONFIG_BRIDGE_NETFILTER */
+> 
+>   #endif /* __KERNEL__ */
+> diff --git a/include/net/dst.h b/include/net/dst.h
+> index 59c5d18..b094030 100644
+> --- a/include/net/dst.h
+> +++ b/include/net/dst.h
+> @@ -55,6 +55,7 @@ struct dst_entry {
+>   #define DST_NOCACHE            0x0010
+>   #define DST_NOCOUNT            0x0020
+>   #define DST_NOPEER             0x0040
+> +#define DST_FAKE_RTABLE                0x0080
+
+
