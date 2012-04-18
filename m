@@ -1,122 +1,480 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754001Ab2DRXUc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Apr 2012 19:20:32 -0400
-Received: from e33.co.us.ibm.com ([32.97.110.151]:59286 "EHLO
-	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753540Ab2DRXU1 (ORCPT
+	id S1754500Ab2DRXVL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Apr 2012 19:21:11 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:41413 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753831Ab2DRXVD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Apr 2012 19:20:27 -0400
-Message-ID: <4F8F4C31.7010209@linaro.org>
-Date: Wed, 18 Apr 2012 16:20:17 -0700
-From: John Stultz <john.stultz@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120329 Thunderbird/11.0.1
-MIME-Version: 1.0
-To: Prarit Bhargava <prarit@redhat.com>
-CC: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
-        Salman Qazi <sqazi@google.com>, stable@kernel.org
-Subject: Re: [PATCH] clocksource, prevent overflow in clocksource_cyc2ns
-References: <1333552260-1170-1-git-send-email-prarit@redhat.com> <4F7C8C3E.1020203@us.ibm.com> <4F7C9402.3090602@redhat.com> <4F7CF094.5020201@us.ibm.com> <4F7D8FA1.1010107@redhat.com>
-In-Reply-To: <4F7D8FA1.1010107@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12041823-2398-0000-0000-000005EDB5E3
+	Wed, 18 Apr 2012 19:21:03 -0400
+From: David Daney <ddaney.cavm@gmail.com>
+To: Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>,
+        devicetree-discuss@lists.ozlabs.org,
+        "David S. Miller" <davem@davemloft.net>, netdev@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, linux-mips@linux-mips.org,
+        afleming@gmail.com, galak@kernel.crashing.org,
+        David Daney <david.daney@cavium.com>
+Subject: [PATCH v5 2/3] netdev/of/phy: Add MDIO bus multiplexer support.
+Date: Wed, 18 Apr 2012 16:20:53 -0700
+Message-Id: <1334791254-15987-3-git-send-email-ddaney.cavm@gmail.com>
+X-Mailer: git-send-email 1.7.2.3
+In-Reply-To: <1334791254-15987-1-git-send-email-ddaney.cavm@gmail.com>
+References: <1334791254-15987-1-git-send-email-ddaney.cavm@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/05/2012 05:27 AM, Prarit Bhargava wrote:
->> So what kernel version are you using?
-> I retested using top of the linux.git tree, running
->
-> echo 1>  /proc/sys/kernel/sysrq
-> for i in `seq 10000`; do sleep 1000&  done
-> echo t>  /proc/sysrq-trigger
->
-> and I no longer see a problem.  However, if I increase the number of threads to
-> 1000/cpu I get
->
-> Clocksource %s unstable (delta = -429565427)
-> Clocksource switching to hpet
->
->> to narrow down if you're  problem  is currently present in mainline or only in
->> older kernels, as that will help us find the proper fix.
-> If I hack in (sorry for the cut-and-paste)
->
-> diff --git a/kernel/time/clocksource.c b/kernel/time/clocksource.c
-> index c958338..f38b8d0 100644
-> --- a/kernel/time/clocksource.c
-> +++ b/kernel/time/clocksource.c
-> @@ -279,11 +279,16 @@ static void clocksource_watchdog(unsigned long data)
->                          continue;
->                  }
->
-> -               wd_nsec = clocksource_cyc2ns((wdnow - cs->wd_last)&  watchdog->m
-> -                                            watchdog->mult, watchdog->shift);
-> +               /*wd_nsec = clocksource_cyc2ns((wdnow - cs->wd_last)&  watchdog-
-> +                                            watchdog->mult, watchdog->shift);*/
-> +               wd_nsec = mult_frac(((wdnow - cs->wd_last), watchdog->mult,
-> +                                   1UL<<  watchdog->shift);
-> +
-> +               /*cs_nsec = clocksource_cyc2ns((csnow - cs->cs_last)&
-> +                                            cs->mask, cs->mult, cs->shift);*/
-> +               cs_nsec = mult_frac(((csnow - cs->cs_last), cs->mult,
-> +                                   1UL<<  cs->shift);
->
-> -               cs_nsec = clocksource_cyc2ns((csnow - cs->cs_last)&
-> -                                            cs->mask, cs->mult, cs->shift);
->                  cs->cs_last = csnow;
->                  cs->wd_last = wdnow;
->
->
-> then I don't see unstable messages.
->
-> I think the problem is still here but it only happens in extreme cases.
->
+From: David Daney <david.daney@cavium.com>
 
-Hey Prarit,
-     So at tglx's prodding I took a look at the sysrq code, and the 
-problem is the entire sysrq path runs with irqs disabled. As you 
-note,with many cores and many processes, it can take a while to spit all 
-that data out.
+This patch adds a somewhat generic framework for MDIO bus
+multiplexers.  It is modeled on the I2C multiplexer.
 
-Instead of the earlier hack I suggested, would you try the following 
-simpler one? I suspect we just need to touch the clocksource watchdog 
-before returning.  This should avoid the TSC disqualification you're 
-seeing. On systems using clocksources that wrap, we'll still lose time, 
-since no time accumulation occurred during the long irq off period, but 
-I think that's acceptable given this is not normal operation.
+The multiplexer is needed if there are multiple PHYs with the same
+address connected to the same MDIO bus adepter, or if there is
+insufficient electrical drive capability for all the connected PHY
+devices.
 
-Let me know if this helps.
+Conceptually it could look something like this:
 
-thanks
--john
+                   ------------------
+                   | Control Signal |
+                   --------+---------
+                           |
+ ---------------   --------+------
+ | MDIO MASTER |---| Multiplexer |
+ ---------------   --+-------+----
+                     |       |
+                     C       C
+                     h       h
+                     i       i
+                     l       l
+                     d       d
+                     |       |
+     ---------       A       B   ---------
+     |       |       |       |   |       |
+     | PHY@1 +-------+       +---+ PHY@1 |
+     |       |       |       |   |       |
+     ---------       |       |   ---------
+     ---------       |       |   ---------
+     |       |       |       |   |       |
+     | PHY@2 +-------+       +---+ PHY@2 |
+     |       |                   |       |
+     ---------                   ---------
 
-As irqs may be disabled for quite some time in the sysrq path, touch 
-clocksource
-watchdog before re-enabling interrupts.
+This framework configures the bus topology from device tree data.  The
+mechanics of switching the multiplexer is left to device specific
+drivers.
 
-Signed-off-by: John Stultz <john.stultz@linaro.org>
+The follow-on patch contains a multiplexer driven by GPIO lines.
 
-diff --git a/drivers/tty/sysrq.c b/drivers/tty/sysrq.c
-index 05728894..28fe2cb 100644
---- a/drivers/tty/sysrq.c
-+++ b/drivers/tty/sysrq.c
-@@ -41,6 +41,7 @@
-  #include<linux/slab.h>
-  #include<linux/input.h>
-  #include<linux/uaccess.h>
-+#include<linux/clocksource.h>
+Signed-off-by: David Daney <david.daney@cavium.com>
+---
+ Documentation/devicetree/bindings/net/mdio-mux.txt |  136 ++++++++++++++
+ drivers/net/phy/Kconfig                            |    8 +
+ drivers/net/phy/Makefile                           |    1 +
+ drivers/net/phy/mdio-mux.c                         |  192 ++++++++++++++++++++
+ include/linux/mdio-mux.h                           |   21 ++
+ 5 files changed, 358 insertions(+), 0 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/net/mdio-mux.txt
+ create mode 100644 drivers/net/phy/mdio-mux.c
+ create mode 100644 include/linux/mdio-mux.h
 
-  #include<asm/ptrace.h>
-  #include<asm/irq_regs.h>
-@@ -544,6 +545,7 @@ void __handle_sysrq(int key, bool check_mask)
-  		printk("\n");
-  		console_loglevel = orig_log_level;
-  	}
-+	clocksource_touch_watchdog();
-  	spin_unlock_irqrestore(&sysrq_key_table_lock, flags);
-  }
-
+diff --git a/Documentation/devicetree/bindings/net/mdio-mux.txt b/Documentation/devicetree/bindings/net/mdio-mux.txt
+new file mode 100644
+index 0000000..f65606f
+--- /dev/null
++++ b/Documentation/devicetree/bindings/net/mdio-mux.txt
+@@ -0,0 +1,136 @@
++Common MDIO bus multiplexer/switch properties.
++
++An MDIO bus multiplexer/switch will have several child busses that are
++numbered uniquely in a device dependent manner.  The nodes for an MDIO
++bus multiplexer/switch will have one child node for each child bus.
++
++Required properties:
++- mdio-parent-bus : phandle to the parent MDIO bus.
++- #address-cells = <1>;
++- #size-cells = <0>;
++
++Optional properties:
++- Other properties specific to the multiplexer/switch hardware.
++
++Required properties for child nodes:
++- #address-cells = <1>;
++- #size-cells = <0>;
++- reg : The sub-bus number.
++
++
++Example :
++
++	/* The parent MDIO bus. */
++	smi1: mdio@1180000001900 {
++		compatible = "cavium,octeon-3860-mdio";
++		#address-cells = <1>;
++		#size-cells = <0>;
++		reg = <0x11800 0x00001900 0x0 0x40>;
++	};
++
++	/*
++	   An NXP sn74cbtlv3253 dual 1-of-4 switch controlled by a
++	   pair of GPIO lines.  Child busses 2 and 3 populated with 4
++	   PHYs each.
++	 */
++	mdio-mux {
++		compatible = "mdio-mux-gpio";
++		gpios = <&gpio1 3 0>, <&gpio1 4 0>;
++		mdio-parent-bus = <&smi1>;
++		#address-cells = <1>;
++		#size-cells = <0>;
++
++		mdio@2 {
++			reg = <2>;
++			#address-cells = <1>;
++			#size-cells = <0>;
++
++			phy11: ethernet-phy@1 {
++				reg = <1>;
++				compatible = "marvell,88e1149r";
++				marvell,reg-init = <3 0x10 0 0x5777>,
++					<3 0x11 0 0x00aa>,
++					<3 0x12 0 0x4105>,
++					<3 0x13 0 0x0a60>;
++				interrupt-parent = <&gpio>;
++				interrupts = <10 8>; /* Pin 10, active low */
++			};
++			phy12: ethernet-phy@2 {
++				reg = <2>;
++				compatible = "marvell,88e1149r";
++				marvell,reg-init = <3 0x10 0 0x5777>,
++					<3 0x11 0 0x00aa>,
++					<3 0x12 0 0x4105>,
++					<3 0x13 0 0x0a60>;
++				interrupt-parent = <&gpio>;
++				interrupts = <10 8>; /* Pin 10, active low */
++			};
++			phy13: ethernet-phy@3 {
++				reg = <3>;
++				compatible = "marvell,88e1149r";
++				marvell,reg-init = <3 0x10 0 0x5777>,
++					<3 0x11 0 0x00aa>,
++					<3 0x12 0 0x4105>,
++					<3 0x13 0 0x0a60>;
++				interrupt-parent = <&gpio>;
++				interrupts = <10 8>; /* Pin 10, active low */
++			};
++			phy14: ethernet-phy@4 {
++				reg = <4>;
++				compatible = "marvell,88e1149r";
++				marvell,reg-init = <3 0x10 0 0x5777>,
++					<3 0x11 0 0x00aa>,
++					<3 0x12 0 0x4105>,
++					<3 0x13 0 0x0a60>;
++				interrupt-parent = <&gpio>;
++				interrupts = <10 8>; /* Pin 10, active low */
++			};
++		};
++
++		mdio@3 {
++			reg = <3>;
++			#address-cells = <1>;
++			#size-cells = <0>;
++
++			phy21: ethernet-phy@1 {
++				reg = <1>;
++				compatible = "marvell,88e1149r";
++				marvell,reg-init = <3 0x10 0 0x5777>,
++					<3 0x11 0 0x00aa>,
++					<3 0x12 0 0x4105>,
++					<3 0x13 0 0x0a60>;
++				interrupt-parent = <&gpio>;
++				interrupts = <12 8>; /* Pin 12, active low */
++			};
++			phy22: ethernet-phy@2 {
++				reg = <2>;
++				compatible = "marvell,88e1149r";
++				marvell,reg-init = <3 0x10 0 0x5777>,
++					<3 0x11 0 0x00aa>,
++					<3 0x12 0 0x4105>,
++					<3 0x13 0 0x0a60>;
++				interrupt-parent = <&gpio>;
++				interrupts = <12 8>; /* Pin 12, active low */
++			};
++			phy23: ethernet-phy@3 {
++				reg = <3>;
++				compatible = "marvell,88e1149r";
++				marvell,reg-init = <3 0x10 0 0x5777>,
++					<3 0x11 0 0x00aa>,
++					<3 0x12 0 0x4105>,
++					<3 0x13 0 0x0a60>;
++				interrupt-parent = <&gpio>;
++				interrupts = <12 8>; /* Pin 12, active low */
++			};
++			phy24: ethernet-phy@4 {
++				reg = <4>;
++				compatible = "marvell,88e1149r";
++				marvell,reg-init = <3 0x10 0 0x5777>,
++					<3 0x11 0 0x00aa>,
++					<3 0x12 0 0x4105>,
++					<3 0x13 0 0x0a60>;
++				interrupt-parent = <&gpio>;
++				interrupts = <12 8>; /* Pin 12, active low */
++			};
++		};
++	};
+diff --git a/drivers/net/phy/Kconfig b/drivers/net/phy/Kconfig
+index 0e01f4e..222b06b 100644
+--- a/drivers/net/phy/Kconfig
++++ b/drivers/net/phy/Kconfig
+@@ -135,6 +135,14 @@ config MDIO_OCTEON
+ 
+ 	  If in doubt, say Y.
+ 
++config MDIO_BUS_MUX
++	tristate
++	help
++	  This module provides a driver framework for MDIO bus
++	  multiplexers which connect one of several child MDIO busses
++	  to a parent bus.  Switching between child busses is done by
++	  device specific drivers.
++
+ endif # PHYLIB
+ 
+ config MICREL_KS8995MA
+diff --git a/drivers/net/phy/Makefile b/drivers/net/phy/Makefile
+index b7438b1..a6b50e7 100644
+--- a/drivers/net/phy/Makefile
++++ b/drivers/net/phy/Makefile
+@@ -25,3 +25,4 @@ obj-$(CONFIG_MICREL_PHY)	+= micrel.o
+ obj-$(CONFIG_MDIO_OCTEON)	+= mdio-octeon.o
+ obj-$(CONFIG_MICREL_KS8995MA)	+= spi_ks8995.o
+ obj-$(CONFIG_AMD_PHY)		+= amd.o
++obj-$(CONFIG_MDIO_BUS_MUX)	+= mdio-mux.o
+diff --git a/drivers/net/phy/mdio-mux.c b/drivers/net/phy/mdio-mux.c
+new file mode 100644
+index 0000000..39ea067
+--- /dev/null
++++ b/drivers/net/phy/mdio-mux.c
+@@ -0,0 +1,192 @@
++/*
++ * This file is subject to the terms and conditions of the GNU General Public
++ * License.  See the file "COPYING" in the main directory of this archive
++ * for more details.
++ *
++ * Copyright (C) 2011, 2012 Cavium, Inc.
++ */
++
++#include <linux/platform_device.h>
++#include <linux/mdio-mux.h>
++#include <linux/of_mdio.h>
++#include <linux/device.h>
++#include <linux/module.h>
++#include <linux/phy.h>
++
++#define DRV_VERSION "1.0"
++#define DRV_DESCRIPTION "MDIO bus multiplexer driver"
++
++struct mdio_mux_child_bus;
++
++struct mdio_mux_parent_bus {
++	struct mii_bus *mii_bus;
++	int current_child;
++	int parent_id;
++	void *switch_data;
++	int (*switch_fn)(int current_child, int desired_child, void *data);
++
++	/* List of our children linked through their next fields. */
++	struct mdio_mux_child_bus *children;
++};
++
++struct mdio_mux_child_bus {
++	struct mii_bus *mii_bus;
++	struct mdio_mux_parent_bus *parent;
++	struct mdio_mux_child_bus *next;
++	int bus_number;
++	int phy_irq[PHY_MAX_ADDR];
++};
++
++/*
++ * The parent bus' lock is used to order access to the switch_fn.
++ */
++static int mdio_mux_read(struct mii_bus *bus, int phy_id, int regnum)
++{
++	struct mdio_mux_child_bus *cb = bus->priv;
++	struct mdio_mux_parent_bus *pb = cb->parent;
++	int r;
++
++	mutex_lock(&pb->mii_bus->mdio_lock);
++	r = pb->switch_fn(pb->current_child, cb->bus_number, pb->switch_data);
++	if (r)
++		goto out;
++
++	pb->current_child = cb->bus_number;
++
++	r = pb->mii_bus->read(pb->mii_bus, phy_id, regnum);
++out:
++	mutex_unlock(&pb->mii_bus->mdio_lock);
++
++	return r;
++}
++
++/*
++ * The parent bus' lock is used to order access to the switch_fn.
++ */
++static int mdio_mux_write(struct mii_bus *bus, int phy_id,
++			  int regnum, u16 val)
++{
++	struct mdio_mux_child_bus *cb = bus->priv;
++	struct mdio_mux_parent_bus *pb = cb->parent;
++
++	int r;
++
++	mutex_lock(&pb->mii_bus->mdio_lock);
++	r = pb->switch_fn(pb->current_child, cb->bus_number, pb->switch_data);
++	if (r)
++		goto out;
++
++	pb->current_child = cb->bus_number;
++
++	r = pb->mii_bus->write(pb->mii_bus, phy_id, regnum, val);
++out:
++	mutex_unlock(&pb->mii_bus->mdio_lock);
++
++	return r;
++}
++
++static int parent_count;
++
++int mdio_mux_init(struct device *dev,
++		  int (*switch_fn)(int cur, int desired, void *data),
++		  void **mux_handle,
++		  void *data)
++{
++	struct device_node *parent_bus_node;
++	struct device_node *child_bus_node;
++	int r, ret_val;
++	struct mii_bus *parent_bus;
++	struct mdio_mux_parent_bus *pb;
++	struct mdio_mux_child_bus *cb;
++
++	if (!dev->of_node)
++		return -ENODEV;
++
++	parent_bus_node = of_parse_phandle(dev->of_node, "mdio-parent-bus", 0);
++
++	if (!parent_bus_node)
++		return -ENODEV;
++
++	parent_bus = of_mdio_find_bus(parent_bus_node);
++	if (parent_bus == NULL) {
++		ret_val = -EPROBE_DEFER;
++		goto err_parent_bus;
++	}
++
++	pb = devm_kzalloc(dev, sizeof(*pb), GFP_KERNEL);
++	if (pb == NULL) {
++		ret_val = -ENOMEM;
++		goto err_parent_bus;
++	}
++
++	pb->switch_data = data;
++	pb->switch_fn = switch_fn;
++	pb->current_child = -1;
++	pb->parent_id = parent_count++;
++	pb->mii_bus = parent_bus;
++
++	ret_val = -ENODEV;
++	for_each_child_of_node(dev->of_node, child_bus_node) {
++		u32 v;
++
++		r = of_property_read_u32(child_bus_node, "reg", &v);
++		if (r)
++			continue;
++
++		cb = devm_kzalloc(dev, sizeof(*cb), GFP_KERNEL);
++		if (cb == NULL) {
++			dev_err(dev,
++				"Error: Failed to allocate memory for child\n");
++			ret_val = -ENOMEM;
++			break;
++		}
++		cb->bus_number = v;
++		cb->parent = pb;
++		cb->mii_bus = mdiobus_alloc();
++		cb->mii_bus->priv = cb;
++
++		cb->mii_bus->irq = cb->phy_irq;
++		cb->mii_bus->name = "mdio_mux";
++		snprintf(cb->mii_bus->id, MII_BUS_ID_SIZE, "%x.%x",
++			 pb->parent_id, v);
++		cb->mii_bus->parent = dev;
++		cb->mii_bus->read = mdio_mux_read;
++		cb->mii_bus->write = mdio_mux_write;
++		r = of_mdiobus_register(cb->mii_bus, child_bus_node);
++		if (r) {
++			mdiobus_free(cb->mii_bus);
++			devm_kfree(dev, cb);
++		} else {
++			of_node_get(child_bus_node);
++			cb->next = pb->children;
++			pb->children = cb;
++		}
++	}
++	if (pb->children) {
++		*mux_handle = pb;
++		dev_info(dev, "Version " DRV_VERSION "\n");
++		return 0;
++	}
++err_parent_bus:
++	of_node_put(parent_bus_node);
++	return ret_val;
++}
++EXPORT_SYMBOL_GPL(mdio_mux_init);
++
++void mdio_mux_uninit(void *mux_handle)
++{
++	struct mdio_mux_parent_bus *pb = mux_handle;
++	struct mdio_mux_child_bus *cb = pb->children;
++
++	while (cb) {
++		mdiobus_unregister(cb->mii_bus);
++		mdiobus_free(cb->mii_bus);
++		cb = cb->next;
++	}
++}
++EXPORT_SYMBOL_GPL(mdio_mux_uninit);
++
++MODULE_DESCRIPTION(DRV_DESCRIPTION);
++MODULE_VERSION(DRV_VERSION);
++MODULE_AUTHOR("David Daney");
++MODULE_LICENSE("GPL");
+diff --git a/include/linux/mdio-mux.h b/include/linux/mdio-mux.h
+new file mode 100644
+index 0000000..a243dbb
+--- /dev/null
++++ b/include/linux/mdio-mux.h
+@@ -0,0 +1,21 @@
++/*
++ * MDIO bus multiplexer framwork.
++ *
++ * This file is subject to the terms and conditions of the GNU General Public
++ * License.  See the file "COPYING" in the main directory of this archive
++ * for more details.
++ *
++ * Copyright (C) 2011, 2012 Cavium, Inc.
++ */
++#ifndef __LINUX_MDIO_MUX_H
++#define __LINUX_MDIO_MUX_H
++#include <linux/device.h>
++
++int mdio_mux_init(struct device *dev,
++		  int (*switch_fn) (int cur, int desired, void *data),
++		  void **mux_handle,
++		  void *data);
++
++void mdio_mux_uninit(void *mux_handle);
++
++#endif /* __LINUX_MDIO_MUX_H */
+-- 
+1.7.2.3
 
