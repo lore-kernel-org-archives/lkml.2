@@ -1,47 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753184Ab2DRLnj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Apr 2012 07:43:39 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:10184 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752021Ab2DRLni (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Apr 2012 07:43:38 -0400
-Date: Wed, 18 Apr 2012 07:43:25 -0400
-From: Josh Boyer <jwboyer@redhat.com>
-To: Harald Hoyer <harald@redhat.com>
-Cc: Matt Carlson <mcarlson@broadcom.com>, Michael Chan <mchan@broadcom.com>,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Ben Hutchings <ben@decadent.org.uk>
-Subject: Re: tg3 'No PHY devices' loading issue
-Message-ID: <20120418114325.GL19507@zod.bos.redhat.com>
-References: <20120417141856.GA19507@zod.bos.redhat.com>
- <20120417185007.GA3742@mcarlson.broadcom.com>
- <20120417193908.GG19507@zod.bos.redhat.com>
- <20120417210549.GI19507@zod.bos.redhat.com>
- <4F8E77F7.3080300@redhat.com>
+	id S1753209Ab2DRLoW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Apr 2012 07:44:22 -0400
+Received: from www.linutronix.de ([62.245.132.108]:33104 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752344Ab2DRLoV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Apr 2012 07:44:21 -0400
+Date: Wed, 18 Apr 2012 13:44:17 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Prarit Bhargava <prarit@redhat.com>
+cc: linux-kernel@vger.kernel.org, John Stultz <johnstul@us.ibm.com>
+Subject: Re: [PATCH] Fix CONFIG_CLOCKSOURCE_WATCHDOG=n compile
+In-Reply-To: <1334174480-16331-1-git-send-email-prarit@redhat.com>
+Message-ID: <alpine.LFD.2.02.1204181342560.2542@ionos>
+References: <1334174480-16331-1-git-send-email-prarit@redhat.com>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4F8E77F7.3080300@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 18, 2012 at 10:14:47AM +0200, Harald Hoyer wrote:
-> Am 17.04.2012 23:05, schrieb Josh Boyer:
-> > So it seems my issue is basically because the initramfs isn't built with
-> > the broadcom module included.  I'll have to figure out a way to teach
-> > dracut what to do here, since it doesn't seem to be automatically
-> > picking it up (Harald CC'd).
-> > 
-> > Thanks much for the very quick response from everyone.
-> > 
-> > josh
+On Wed, 11 Apr 2012, Prarit Bhargava wrote:
+
+> Noticed this while debugging -- compile fails with
 > 
-> Ok, so we have to include all kernel/drivers/net/phy/*.ko in the initramfs?
+> arch/x86/built-in.o: In function `mark_tsc_unstable':
+> /home/linux-2.6/arch/x86/kernel/tsc.c:791: undefined reference to
+> `clocksource_mark_unstable'
+> make: *** [.tmp_vmlinux1] Error 1
+> 
+> Add in an empty function for the !CONFIG_CLOCKSOURCE_WATCHDOG case.
 
-I believe that is probably the safest and most expedient solution, yes.
-Ben said the Debian initramfs tool is doing just that.
+CONFIG_CLOCKSOURCE_WATCHDOG for x86 is always 'y', so what's the point?
+ 
+Thanks,
 
-josh
+	tglx
