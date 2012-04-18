@@ -1,75 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752256Ab2DRKtD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Apr 2012 06:49:03 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:44625 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751200Ab2DRKtB (ORCPT
+	id S1752739Ab2DRKwO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Apr 2012 06:52:14 -0400
+Received: from na3sys009aog118.obsmtp.com ([74.125.149.244]:49207 "EHLO
+	na3sys009aog118.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752566Ab2DRKwN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Apr 2012 06:49:01 -0400
-Date: Wed, 18 Apr 2012 11:48:58 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: Mike Turquette <mturquette@ti.com>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 1/2] clk: Provide dummy clk_unregister()
-Message-ID: <20120418104857.GI3021@opensource.wolfsonmicro.com>
-References: <1334736433-3402-1-git-send-email-broonie@opensource.wolfsonmicro.com>
- <20120418095435.GX24211@n2100.arm.linux.org.uk>
+	Wed, 18 Apr 2012 06:52:13 -0400
+Date: Wed, 18 Apr 2012 13:51:09 +0300
+From: Felipe Balbi <balbi@ti.com>
+To: Julia Lawall <Julia.Lawall@lip6.fr>
+Cc: Felipe Balbi <balbi@ti.com>, kernel-janitors@vger.kernel.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] drivers/usb/musb/davinci.c: add missing unregister
+Message-ID: <20120418105108.GZ13842@arwen.pp.htv.fi>
+Reply-To: balbi@ti.com
+References: <1334588590-23891-1-git-send-email-Julia.Lawall@lip6.fr>
 MIME-Version: 1.0
 Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="VkVuOCYP9O7H3CXI"
+	protocol="application/pgp-signature"; boundary="lPJ5i9rX1WvdYcWF"
 Content-Disposition: inline
-In-Reply-To: <20120418095435.GX24211@n2100.arm.linux.org.uk>
-X-Cookie: You should go home.
+In-Reply-To: <1334588590-23891-1-git-send-email-Julia.Lawall@lip6.fr>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---VkVuOCYP9O7H3CXI
+--lPJ5i9rX1WvdYcWF
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-On Wed, Apr 18, 2012 at 10:54:35AM +0100, Russell King - ARM Linux wrote:
+On Mon, Apr 16, 2012 at 05:03:10PM +0200, Julia Lawall wrote:
+> From: Julia Lawall <Julia.Lawall@lip6.fr>
+>=20
+> usb_nop_xceiv_unregister is needed on failure of usb_get_transceiver, as
+> done in other error-handling code in the same function.
+>=20
+> Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
 
-> Don't make unregister calls return values.  Think about this situation
-> for a moment:
+applied, thanks
 
-> 	You call an unregister function in a drivers ->remove function.
-> 	The unregister function fails.  However, the reason the ->remove
-> 	function is being called is because the module is being removed.
-> 	You can't stop the module being removed once the process has
-> 	started.  What do you do with this error?
+--=20
+balbi
 
-> To put it another way, if an unregister function fails, you're buggered.
-
-I absolutely agree, I think this is a stupid pattern for us to have
-(generally the return values just get ignored...) but sadly it appears
-to be the pattern that we have return values but ignore them probably
-because the driver model does this.
-
---VkVuOCYP9O7H3CXI
+--lPJ5i9rX1WvdYcWF
 Content-Type: application/pgp-signature; name="signature.asc"
 Content-Description: Digital signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.12 (GNU/Linux)
 
-iQIcBAEBAgAGBQJPjpwSAAoJEBus8iNuMP3dwbMP/A+GI+z3mAPzGhVrlbFVCdj2
-7kG3v93qIQJUU4ViMnqHCt2JtLg7LHVacRosLGURB5XdF/Jqsnti3XgojfgZq2xF
-A8+lfW8iRwNfHiKZ5ZuSVXEIkv34fdCvFTgDjEdAqe68uMMXSUPpVGEFLdhjDuSk
-0EGDkRoiWp0FEH1e4oE5GJH7QcESAhQpCToWEsuzJKWAP1obC1rbsR1Z4VeN7s4u
-GtBxkVIh/ak94F19241xdODq97bqOzzRcpL0XnkIIQNo5QJBPvi5QsnFyi3NY1Ti
-bSQn9uSHCmgaPUE4XBi1orsbcmQ96ymvpDG8UVLJ3ApGyGdb3pc/NQgMAaAnRQ8e
-B8oi1jb2RT73JvtC3tTIQrK3xWKhVDkb65YZrLiIIBnRJdDkPSRRSP+He173EN9T
-ci2sx/rDWep2LZ+yNxhI3o2q1ckmgdXcvDgBBw2AiCt+scQUOD9Wi+0CTMAc4svU
-2JoyDuR0Eevi06zIF1SUBJoocHv4NQ342BT4uFxoM5NFm18ehgXyegtPQRhMWnHP
-KHQcvk5lNpiCUxAM+bYQjTEI9WX7EBEGDIkbKTRLdiiWBx54Fm25wvJoO5GU/igK
-qnfMbANw3G5yjnCvIrFFHeT1i1d4ghhq01w/z8w3tqnDD9uFrzF4x2xm45o/FZuV
-6dS5uLmGFjUrCHfy3hN6
-=WHnc
+iQIcBAEBAgAGBQJPjpycAAoJEIaOsuA1yqRECnsP/2A/t17LUL22cDdiGqp2dYQe
+9aIBKzHGx1TsI5hGg5Q8tklKSGk7pq9HA4B8Za0Fchgk4a3b/xWxCBIAP0aBVkJN
+gB5UbCE3ik3PrT7+X7RuIZZQAONoS5ROmyCgi938qOh4jjpj2EhdZFpl/fwbdfjw
+SFEu9qS79DegFLLY19BgbIe/CrpUPwA9n81SZGyJv0QYFfID9m37/XFqVEd/06XX
+wwVdi7gITYvA/LNf9RcfwQtTdrOR6HJAbDatZS5YnLYUud6ynpwk/zljtcP/5J90
+2cuuXbAP7ueBh2K+kaiDDofk7Hqrp9tg0B18fiV3hLa7AtRix964JIpnodimG3ue
+JeC2GZ0AJDksbGrCiUc/sYNTzz04JDic54KvkhUxUbfU/DoMRXu9/tTwf6mlo8O3
+xOANKi1xKGeFyZ6fgS1nLTd8t1vV2XTTqCUzDhu37PBj3JbSOHkX/cGd/Ul0vbvz
+jJfa07W09H4tAkn+DPNOD7letmtlsz+oL0K9lgjSan9iomkCNpF6txYNpyLN7i1f
+P1JEF5+5ntwvnN+Ct17rEL0vjGa4GeYpzA0wocC4QKzG5sR7/qdZo+Fzn2X7guiK
+2GFh7O3oZ12/otFnS8jzk4I8LxFShQQbrnUVMDVJY3Vt0gJS6uU2pJS0veev4Ltr
+CpfVRmUInW7JU6jz7uCv
+=niyq
 -----END PGP SIGNATURE-----
 
---VkVuOCYP9O7H3CXI--
+--lPJ5i9rX1WvdYcWF--
