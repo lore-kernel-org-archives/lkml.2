@@ -1,161 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753193Ab2DRSYR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Apr 2012 14:24:17 -0400
-Received: from rcsinet15.oracle.com ([148.87.113.117]:43170 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751765Ab2DRSYP (ORCPT
+	id S1753833Ab2DRSZT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Apr 2012 14:25:19 -0400
+Received: from mail-wi0-f178.google.com ([209.85.212.178]:44230 "EHLO
+	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751386Ab2DRSZR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Apr 2012 14:24:15 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: linux-kernel@vger.kernel.org, xen-devel@lists.xensource.com,
-        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
-        Ian.Campbell@citrix.com
-Cc: konrad <konrad@localhost.localdomain>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>, konrad.wilk@oracle.com
-Subject: [PATCH] xen/xenbus: Add quirk to deal with misconfigured backends.
-Date: Wed, 18 Apr 2012 14:19:04 -0400
-Message-Id: <1334773144-2394-1-git-send-email-konrad.wilk@oracle.com>
-X-Mailer: git-send-email 1.7.7.5
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
-X-CT-RefId: str=0001.0A090201.4F8F06C8.0088,ss=1,re=0.000,fgs=0
+	Wed, 18 Apr 2012 14:25:17 -0400
+MIME-Version: 1.0
+In-Reply-To: <20120418171438.GA24290@redhat.com>
+References: <20120417172142.GA30237@redhat.com> <CA+55aFy-uhOgEoEBr-LkOjFQBVh14wwr-20jTrtsg_2EnuNY5g@mail.gmail.com>
+ <20120417203223.GA31699@redhat.com> <CA+55aFzWzhxaVHuPY_oB5PVhw2Gxiwr46vyHCHEsU0o-HFikTw@mail.gmail.com>
+ <20120418031935.GB29828@redhat.com> <CA+55aFwrARr4=ZztWseFbND1h6W=QV52r98qioL+bK6jKrehSA@mail.gmail.com>
+ <20120418171438.GA24290@redhat.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Wed, 18 Apr 2012 11:24:54 -0700
+X-Google-Sender-Auth: 0FvVnqbi8lxZ3LTWAXP1amx5khA
+Message-ID: <CA+55aFwwKZ2DrjX5Qp+rsOhkSTjt2RiadRMjr=njCRfeW+uXrQ@mail.gmail.com>
+Subject: Re: [3.4-rc3] Thread overran stack, or stack corrupted
+To: Dave Jones <davej@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: konrad <konrad@localhost.localdomain>
+On Wed, Apr 18, 2012 at 10:14 AM, Dave Jones <davej@redhat.com> wrote:
+>
+> One thing I'm curious about.. Some of the function names are repeated
+> for a reason that doesn't seem obvious to me, when the call chain doesn't
+> call them in a loop. What's that about ?
 
-A rather annoying and common case is when booting a PVonHVM guest
-and exposing the PV KBD and PV VFB - as both of those do not
-make any sense. The HVM guest is using the VGA driver and the emulated
-keyboard for this. So we provide a very basic quirk framework
-(can be expanded in the future) to not wait for 6 minutes for those devices
-to initialize - they never wont.
+In a "real" stack trace, it's usually due to a pointer to a function
+that just gets passed around as an argument.
 
-To trigger this, put this in your guest config:
+However, in this case, I think it's simply because you are seeing a
+lot of stack-traces "on top of each other", where the callers had
+slightly different stack offsets, but old stack traces "shine through"
+because the stack of the newer trace is not very dense.
 
-vfb = [ 'vnc=1, vnclisten=0.0.0.0 ,vncunused=1']
+Gcc often generates very sparse stack frames. Sometimes it is because
+of stack alignment issues, but more often it's because gcc generates
+the frame for all possible local variables, and then we took an early
+exit from the function (or are still in the middle of the call chain)
+and part of the stack simply hasn't been modified at all.
 
-instead of this:
-vnc=1
-vnclisten="0.0.0.0"
+And sometimes it is because gcc stack space allocation simply sucks.
+There was a time when gcc would never share stack space between local
+variables even when they had no overlap in lifetime. I know they fixed
+*some* of those cases, but I suspect it's still true that gcc just
+often allocates way more stack than it really needs, and then you see
+old stale stack contents shine through.
 
-[v3: Split delay in non-essential (30 seconds) and essential
- devices per Ian and Stefano suggestion]
-Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>quirk
----
- drivers/xen/xenbus/xenbus_probe_frontend.c |   69 +++++++++++++++++++++------
- 1 files changed, 53 insertions(+), 16 deletions(-)
-
-diff --git a/drivers/xen/xenbus/xenbus_probe_frontend.c b/drivers/xen/xenbus/xenbus_probe_frontend.c
-index f20c5f1..7422913 100644
---- a/drivers/xen/xenbus/xenbus_probe_frontend.c
-+++ b/drivers/xen/xenbus/xenbus_probe_frontend.c
-@@ -135,7 +135,7 @@ static int read_backend_details(struct xenbus_device *xendev)
- 	return xenbus_read_otherend_details(xendev, "backend-id", "backend");
- }
- 
--static int is_device_connecting(struct device *dev, void *data)
-+static int is_device_connecting(struct device *dev, void *data, bool ignore_vkbd)
- {
- 	struct xenbus_device *xendev = to_xenbus_device(dev);
- 	struct device_driver *drv = data;
-@@ -152,16 +152,41 @@ static int is_device_connecting(struct device *dev, void *data)
- 	if (drv && (dev->driver != drv))
- 		return 0;
- 
-+	if (ignore_vkbd) {
-+		/* With older QEMU, for PVonHVM guests the guest config files
-+		 * could contain: vfb = [ 'vnc=1, vnclisten=0.0.0.0']
-+		 * which is nonsensical as there is no PV FB (there can be
-+		 * a PVKB) running as HVM guest. */
-+
-+		if ((strncmp(xendev->nodename, "device/vkbd", 11) == 0))
-+			return 0;
-+
-+		if ((strncmp(xendev->nodename, "device/vfb", 10) == 0))
-+			return 0;
-+	}
- 	xendrv = to_xenbus_driver(dev->driver);
- 	return (xendev->state < XenbusStateConnected ||
- 		(xendev->state == XenbusStateConnected &&
- 		 xendrv->is_ready && !xendrv->is_ready(xendev)));
- }
-+static int essential_device_connecting(struct device *dev, void *data)
-+{
-+	return is_device_connecting(dev, data, true /* ignore PVKB+PVDB */);
-+}
-+static int non_essential_device_connecting(struct device *dev, void *data)
-+{
-+	return is_device_connecting(dev, data, false);
-+}
- 
--static int exists_connecting_device(struct device_driver *drv)
-+static int exists_essential_connecting_device(struct device_driver *drv)
- {
- 	return bus_for_each_dev(&xenbus_frontend.bus, NULL, drv,
--				is_device_connecting);
-+				essential_device_connecting);
-+}
-+static int exists_non_essential_connecting_device(struct device_driver *drv)
-+{
-+	return bus_for_each_dev(&xenbus_frontend.bus, NULL, drv,
-+				non_essential_device_connecting);
- }
- 
- static int print_device_status(struct device *dev, void *data)
-@@ -192,6 +217,23 @@ static int print_device_status(struct device *dev, void *data)
- /* We only wait for device setup after most initcalls have run. */
- static int ready_to_wait_for_devices;
- 
-+static bool wait_loop(unsigned long start, unsigned int max_delay,
-+		     unsigned int *seconds_waited)
-+{
-+	if (time_after(jiffies, start + (*seconds_waited+5)*HZ)) {
-+		if (!*seconds_waited)
-+			printk(KERN_WARNING "XENBUS: Waiting for "
-+			       "devices to initialise: ");
-+		*seconds_waited += 5;
-+		printk("%us...", max_delay - *seconds_waited);
-+		if (*seconds_waited == max_delay)
-+			return true;
-+	}
-+
-+	schedule_timeout_interruptible(HZ/10);
-+
-+	return false;
-+}
- /*
-  * On a 5-minute timeout, wait for all devices currently configured.  We need
-  * to do this to guarantee that the filesystems and / or network devices
-@@ -215,19 +257,14 @@ static void wait_for_devices(struct xenbus_driver *xendrv)
- 	if (!ready_to_wait_for_devices || !xen_domain())
- 		return;
- 
--	while (exists_connecting_device(drv)) {
--		if (time_after(jiffies, start + (seconds_waited+5)*HZ)) {
--			if (!seconds_waited)
--				printk(KERN_WARNING "XENBUS: Waiting for "
--				       "devices to initialise: ");
--			seconds_waited += 5;
--			printk("%us...", 300 - seconds_waited);
--			if (seconds_waited == 300)
--				break;
--		}
--
--		schedule_timeout_interruptible(HZ/10);
--	}
-+	while (exists_non_essential_connecting_device(drv))
-+		if (wait_loop(start, 30, &seconds_waited))
-+			break;
-+
-+	/* Skips PVKB and PVFB check.*/
-+	while (exists_essential_connecting_device(drv))
-+		if (wait_loop(start, 270, &seconds_waited))
-+			break;
- 
- 	if (seconds_waited)
- 		printk("\n");
--- 
-1.7.7.5
-
+                         Linus
