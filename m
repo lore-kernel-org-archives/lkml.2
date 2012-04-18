@@ -1,89 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752605Ab2DRKWp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Apr 2012 06:22:45 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:49291 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751533Ab2DRKWn convert rfc822-to-8bit (ORCPT
+	id S1752509Ab2DRKYe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Apr 2012 06:24:34 -0400
+Received: from caiajhbdcahe.dreamhost.com ([208.97.132.74]:47786 "EHLO
+	homiemail-a4.g.dreamhost.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751425Ab2DRKYd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Apr 2012 06:22:43 -0400
-MIME-Version: 1.0
-In-Reply-To: <Pine.LNX.4.44L0.1204101044490.1605-100000@iolanthe.rowland.org>
-References: <1334030835-4681-1-git-send-email-tomoya.rohm@gmail.com>
-	<Pine.LNX.4.44L0.1204101044490.1605-100000@iolanthe.rowland.org>
-Date: Wed, 18 Apr 2012 19:22:43 +0900
-Message-ID: <CANKRQni+vbu7S8=qX+sC_0Rb0OHEV+EyqULuevjr3jvsYgFJpQ@mail.gmail.com>
-Subject: Re: [PATCH 1/2] usb/ehci-hub: Add workaround for EG20T/ML7213/ML7223/ML7831
-From: Tomoya MORINAGA <tomoya.rohm@gmail.com>
-To: Alan Stern <stern@rowland.harvard.edu>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org, qi.wang@intel.com, yong.y.wang@intel.com,
-        joel.clark@intel.com, kok.howg.ewe@intel.com
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Wed, 18 Apr 2012 06:24:33 -0400
+Subject: [PATCH] KVM: MMU: use page table level macro
+From: Davidlohr Bueso <dave@gnu.org>
+Reply-To: dave@gnu.org
+To: Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>
+Cc: KVM <kvm@vger.kernel.org>, lkml <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset="UTF-8"
+Organization: GNU
+Date: Wed, 18 Apr 2012 12:24:29 +0200
+Message-ID: <1334744669.2601.1.camel@offbook>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 10, 2012 at 11:57 PM, Alan Stern <stern@rowland.harvard.edu> wrote:
-> On Tue, 10 Apr 2012, Tomoya MORINAGA wrote:
->
->> ISSUE: When a bit of EHCI status register (USBSTS) is set
->> as 1, if the corresponded bit of EHCI interrupt enable
->> register(USBINTR) is set as 1, an interrupt occurs.
->> After that, even if the bit of USBINTR is set as 0, the
->> interrupt continues occurring.
->> Workaround: Clear the bit 3 of USBSTS before enabling the
->> interrupt, at resume process.
->
-> These two patches do a lot more than is necessary.  At the same time,
-> they also seem to do a lot less.
->
-> You don't have to check for the faulty product IDs; clearing the
-> STS_FLR bit (bit 3 of USBSTS) is always okay because the driver doesn't
-> use it.
->
-> On the other hand, the STS_FLR bit will get set once every second (at
-> least) whenever the controller is running.  According to your
-> description above, this means the controller will cause an interrupt
-> storm as soon as its first interrupt occurs.  What you really need to
-> do is clear STS_FLR in ehci_irq().
->
-> Does the patch below fix your problem?
->
-> Alan Stern
->
->
->
->  drivers/usb/host/ehci-hcd.c |    7 ++++++-
->  1 file changed, 6 insertions(+), 1 deletion(-)
->
-> Index: usb-3.4/drivers/usb/host/ehci-hcd.c
-> ===================================================================
-> --- usb-3.4.orig/drivers/usb/host/ehci-hcd.c
-> +++ usb-3.4/drivers/usb/host/ehci-hcd.c
-> @@ -860,8 +860,13 @@ static irqreturn_t ehci_irq (struct usb_
->                goto dead;
->        }
->
-> +       /*
-> +        * We don't use STS_FLR, but some controllers don't like it to
-> +        * remain on, so mask it out along with the other status bits.
-> +        */
-> +       masked_status = status & (INTR_MASK | STS_FLR);
-> +
->        /* Shared IRQ? */
-> -       masked_status = status & INTR_MASK;
->        if (!masked_status || unlikely(ehci->rh_state == EHCI_RH_HALTED)) {
->                spin_unlock(&ehci->lock);
->                return IRQ_NONE;
->
+From: Davidlohr Bueso <dave@gnu.org>
 
-Your suggestion is very good for us.
-Your patch fixes our issue. I confirmed your patch worked well on our platform.
-I hope for that the patch is applied.
-Thanks a lot.
+Its much cleaner to use PT_PAGE_TABLE_LEVEL than its numeric value.
 
+Signed-off-by: Davidlohr Bueso <dave@gnu.org>
+---
+ arch/x86/kvm/mmu.c         |    2 +-
+ arch/x86/kvm/paging_tmpl.h |    2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
+index 4cb1642..163a008 100644
+--- a/arch/x86/kvm/mmu.c
++++ b/arch/x86/kvm/mmu.c
+@@ -3554,7 +3554,7 @@ static bool detect_write_flooding(struct kvm_mmu_page *sp)
+ 	 * Skip write-flooding detected for the sp whose level is 1, because
+ 	 * it can become unsync, then the guest page is not write-protected.
+ 	 */
+-	if (sp->role.level == 1)
++	if (sp->role.level == PT_PAGE_TABLE_LEVEL)
+ 		return false;
+ 
+ 	return ++sp->write_flooding_count >= 3;
+diff --git a/arch/x86/kvm/paging_tmpl.h b/arch/x86/kvm/paging_tmpl.h
+index df5a703..34f9709 100644
+--- a/arch/x86/kvm/paging_tmpl.h
++++ b/arch/x86/kvm/paging_tmpl.h
+@@ -658,7 +658,7 @@ static gpa_t FNAME(get_level1_sp_gpa)(struct kvm_mmu_page *sp)
+ {
+ 	int offset = 0;
+ 
+-	WARN_ON(sp->role.level != 1);
++	WARN_ON(sp->role.level != PT_PAGE_TABLE_LEVEL);
+ 
+ 	if (PTTYPE == 32)
+ 		offset = sp->role.quadrant << PT64_LEVEL_BITS;
 -- 
-ROHM Co., Ltd.
-tomoya
+1.7.4.1
+
+
+
