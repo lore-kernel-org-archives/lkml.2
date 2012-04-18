@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753934Ab2DRNX3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Apr 2012 09:23:29 -0400
-Received: from mail-qa0-f74.google.com ([209.85.216.74]:49942 "EHLO
-	mail-qa0-f74.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753479Ab2DRNWE (ORCPT
+	id S1753856Ab2DRNXZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Apr 2012 09:23:25 -0400
+Received: from mail-yx0-f202.google.com ([209.85.213.202]:51675 "EHLO
+	mail-yx0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753487Ab2DRNWE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 18 Apr 2012 09:22:04 -0400
 From: Daniel Kurtz <djkurtz@chromium.org>
@@ -15,9 +15,9 @@ To: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
         linux-kernel@vger.kernel.org
 Cc: Benson Leung <bleung@chromium.org>, Yufeng Shen <miletus@chromium.org>,
         Daniel Kurtz <djkurtz@chromium.org>
-Subject: [PATCH 12/14 v3] Input: atmel_mxt_ts - parse vector field of data packets
-Date: Wed, 18 Apr 2012 21:21:57 +0800
-Message-Id: <1334755319-21365-13-git-send-email-djkurtz@chromium.org>
+Subject: [PATCH 10/14 v3] Input: atmel_mxt_ts - simplify event reporting
+Date: Wed, 18 Apr 2012 21:21:55 +0800
+Message-Id: <1334755319-21365-11-git-send-email-djkurtz@chromium.org>
 X-Mailer: git-send-email 1.7.7.3
 In-Reply-To: <1334755319-21365-1-git-send-email-djkurtz@chromium.org>
 References: <1334755319-21365-1-git-send-email-djkurtz@chromium.org>
@@ -25,60 +25,193 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The atmel_mxt_ts T9 data contains orientation information in its 'vector'
-field. Parse and debug print its contents, although its value isn't
-actually used yet.
+Instead of carrying around per-finger state in the driver instance, just
+report each finger as it arrives to the input layer, and let the input
+layer (evdev) hold the event state (which it does anyway).
+
+Also, the atmel pad reports "amplitude", which is reported to userspace
+using the "PRESSURE" event type.  The variables now reflect this.
+
+Note: this driver does not really do MT-B properly. Each input report
+(a goup of input events followed by a SYN_REPORT) only contains data for
+a single contact.  When multiple fingers are present on a device, each is
+properly reported in its own MT_SLOT.  However, there is only ever one
+MT_SLOT per SYN_REPORT.  This is fixed in a subsequent patch.
+
+This patch was tested with an mXT224E.
 
 Signed-off-by: Daniel Kurtz <djkurtz@chromium.org>
-Reviewed-by: Joonyoung Shim <jy0922.shim@samsung.com>
-Acked-by: Nick Dyer <nick.dyer@itdev.co.uk>
 ---
- drivers/input/touchscreen/atmel_mxt_ts.c |   10 ++++++++--
- 1 files changed, 8 insertions(+), 2 deletions(-)
+ drivers/input/touchscreen/atmel_mxt_ts.c |  121 +++++++++---------------------
+ 1 files changed, 35 insertions(+), 86 deletions(-)
 
 diff --git a/drivers/input/touchscreen/atmel_mxt_ts.c b/drivers/input/touchscreen/atmel_mxt_ts.c
-index 77ea917..75e0108 100644
+index 13ecbb4..bac20ec 100644
 --- a/drivers/input/touchscreen/atmel_mxt_ts.c
 +++ b/drivers/input/touchscreen/atmel_mxt_ts.c
-@@ -497,6 +497,7 @@ static void mxt_input_touch(struct mxt_data *data, struct mxt_message *message)
+@@ -195,6 +195,7 @@
+ #define MXT_BOOT_STATUS_MASK	0x3f
+ 
+ /* Touch status */
++#define MXT_UNGRIP		(1 << 0)
+ #define MXT_SUPPRESS		(1 << 1)
+ #define MXT_AMP			(1 << 2)
+ #define MXT_VECTOR		(1 << 3)
+@@ -239,14 +240,6 @@ struct mxt_message {
+ 	u8 message[7];
+ };
+ 
+-struct mxt_finger {
+-	int status;
+-	int x;
+-	int y;
+-	int area;
+-	int pressure;
+-};
+-
+ /* Each client has this additional data */
+ struct mxt_data {
+ 	struct i2c_client *client;
+@@ -254,7 +247,6 @@ struct mxt_data {
+ 	const struct mxt_platform_data *pdata;
+ 	struct mxt_object *object_table;
+ 	struct mxt_info info;
+-	struct mxt_finger finger[MXT_MAX_FINGER];
+ 	unsigned int irq;
+ 	unsigned int max_x;
+ 	unsigned int max_y;
+@@ -503,97 +495,54 @@ static int mxt_write_object(struct mxt_data *data,
+ 	return mxt_write_reg(data->client, reg + offset, 1, &val);
+ }
+ 
+-static void mxt_input_report(struct mxt_data *data, int single_id)
+-{
+-	struct mxt_finger *finger = data->finger;
+-	struct input_dev *input_dev = data->input_dev;
+-	int status = finger[single_id].status;
+-	int finger_num = 0;
+-	int id;
+-
+-	for (id = 0; id < MXT_MAX_FINGER; id++) {
+-		if (!finger[id].status)
+-			continue;
+-
+-		input_mt_slot(input_dev, id);
+-		input_mt_report_slot_state(input_dev, MT_TOOL_FINGER,
+-				finger[id].status != MXT_RELEASE);
+-
+-		if (finger[id].status != MXT_RELEASE) {
+-			finger_num++;
+-			input_report_abs(input_dev, ABS_MT_TOUCH_MAJOR,
+-					finger[id].area);
+-			input_report_abs(input_dev, ABS_MT_POSITION_X,
+-					finger[id].x);
+-			input_report_abs(input_dev, ABS_MT_POSITION_Y,
+-					finger[id].y);
+-			input_report_abs(input_dev, ABS_MT_PRESSURE,
+-					finger[id].pressure);
+-		} else {
+-			finger[id].status = 0;
+-		}
+-	}
+-
+-	input_report_key(input_dev, BTN_TOUCH, finger_num > 0);
+-
+-	if (status != MXT_RELEASE) {
+-		input_report_abs(input_dev, ABS_X, finger[single_id].x);
+-		input_report_abs(input_dev, ABS_Y, finger[single_id].y);
+-		input_report_abs(input_dev,
+-				 ABS_PRESSURE, finger[single_id].pressure);
+-	}
+-
+-	input_sync(input_dev);
+-}
+-
+ static void mxt_input_touchevent(struct mxt_data *data,
+-				      struct mxt_message *message, int id)
++				 struct mxt_message *message, int id)
+ {
+-	struct mxt_finger *finger = data->finger;
+ 	struct device *dev = &data->client->dev;
+-	u8 status = message->message[0];
++	struct input_dev *input_dev = data->input_dev;
++	u8 status;
+ 	int x;
+ 	int y;
  	int area;
- 	int amplitude;
- 	int id;
-+	int vector1, vector2;
+-	int pressure;
+-
+-	/* Check the touch is present on the screen */
+-	if (!(status & MXT_DETECT)) {
+-		if (status & MXT_RELEASE) {
+-			dev_dbg(dev, "[%d] released\n", id);
+-
+-			finger[id].status = MXT_RELEASE;
+-			mxt_input_report(data, id);
+-		}
+-		return;
+-	}
+-
+-	/* Check only AMP detection */
+-	if (!(status & (MXT_PRESS | MXT_MOVE)))
+-		return;
++	int amplitude;
  
- 	id = message->reportid - data->T9_reportid_min;
++	status = message->message[0];
+ 	x = (message->message[1] << 4) | ((message->message[3] >> 4) & 0xf);
+ 	y = (message->message[2] << 4) | ((message->message[3] & 0xf));
+ 	if (data->max_x < 1024)
+-		x = x >> 2;
++		x >>= 2;
+ 	if (data->max_y < 1024)
+-		y = y >> 2;
++		y >>= 2;
  
-@@ -511,8 +512,12 @@ static void mxt_input_touch(struct mxt_data *data, struct mxt_message *message)
  	area = message->message[4];
- 	amplitude = message->message[5];
- 
-+	/* The two vector components are 4-bit signed ints (2s complement) */
-+	vector1 = (signed)((signed char)message->message[6]) >> 4;
-+	vector2 = (signed)((signed char)(message->message[6] << 4)) >> 4;
+-	pressure = message->message[5];
+-
+-	dev_dbg(dev, "[%d] %s x: %d, y: %d, area: %d\n", id,
+-		status & MXT_MOVE ? "moved" : "pressed",
+-		x, y, area);
+-
+-	finger[id].status = status & MXT_MOVE ?
+-				MXT_MOVE : MXT_PRESS;
+-	finger[id].x = x;
+-	finger[id].y = y;
+-	finger[id].area = area;
+-	finger[id].pressure = pressure;
++	amplitude = message->message[5];
 +
- 	dev_dbg(dev,
--		"[%d] %c%c%c%c%c%c%c%c x: %d y: %d area: %d amp: %d\n",
-+		"[%d] %c%c%c%c%c%c%c%c x: %d y: %d area: %d amp: %d vector: [%d,%d]\n",
- 		id,
- 		(status & MXT_DETECT) ? 'D' : '.',
- 		(status & MXT_PRESS) ? 'P' : '.',
-@@ -522,7 +527,7 @@ static void mxt_input_touch(struct mxt_data *data, struct mxt_message *message)
- 		(status & MXT_AMP) ? 'A' : '.',
- 		(status & MXT_SUPPRESS) ? 'S' : '.',
- 		(status & MXT_UNGRIP) ? 'U' : '.',
--		x, y, area, amplitude);
-+		x, y, area, amplitude, vector1, vector2);
++	dev_dbg(dev,
++		"[%d] %c%c%c%c%c%c%c%c x: %d y: %d area: %d amp: %d\n",
++		id,
++		(status & MXT_DETECT) ? 'D' : '.',
++		(status & MXT_PRESS) ? 'P' : '.',
++		(status & MXT_RELEASE) ? 'R' : '.',
++		(status & MXT_MOVE) ? 'M' : '.',
++		(status & MXT_VECTOR) ? 'V' : '.',
++		(status & MXT_AMP) ? 'A' : '.',
++		(status & MXT_SUPPRESS) ? 'S' : '.',
++		(status & MXT_UNGRIP) ? 'U' : '.',
++		x, y, area, amplitude);
++
++	input_mt_slot(input_dev, id);
++	input_mt_report_slot_state(input_dev, MT_TOOL_FINGER,
++				   status & MXT_DETECT);
++
++	if (status & MXT_DETECT) {
++		input_report_abs(input_dev, ABS_MT_POSITION_X, x);
++		input_report_abs(input_dev, ABS_MT_POSITION_Y, y);
++		input_report_abs(input_dev, ABS_MT_PRESSURE, amplitude);
++		input_report_abs(input_dev, ABS_MT_TOUCH_MAJOR, area);
++	}
  
- 	input_mt_slot(input_dev, id);
- 	input_mt_report_slot_state(input_dev, MT_TOOL_FINGER,
-@@ -533,6 +538,7 @@ static void mxt_input_touch(struct mxt_data *data, struct mxt_message *message)
- 		input_report_abs(input_dev, ABS_MT_POSITION_Y, y);
- 		input_report_abs(input_dev, ABS_MT_PRESSURE, amplitude);
- 		input_report_abs(input_dev, ABS_MT_TOUCH_MAJOR, area);
-+		/* TODO: Use vector to report ORIENTATION & TOUCH_MINOR */
- 	}
+-	mxt_input_report(data, id);
++	input_mt_report_pointer_emulation(input_dev, false);
++	input_sync(input_dev);
+ }
  
- 	input_mt_report_pointer_emulation(input_dev, false);
+ static irqreturn_t mxt_interrupt(int irq, void *dev_id)
 -- 
 1.7.7.3
 
