@@ -1,25 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751251Ab2DRFtv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Apr 2012 01:49:51 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:33308 "EHLO mx2.suse.de"
+	id S1751344Ab2DRFy6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Apr 2012 01:54:58 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:33436 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750769Ab2DRFtu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Apr 2012 01:49:50 -0400
-Date: Wed, 18 Apr 2012 07:49:47 +0200
-Message-ID: <s5hsjg1oah0.wl%tiwai@suse.de>
+	id S1751025Ab2DRFy4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Apr 2012 01:54:56 -0400
+Date: Wed, 18 Apr 2012 07:54:55 +0200
+Message-ID: <s5hr4vloa8g.wl%tiwai@suse.de>
 From: Takashi Iwai <tiwai@suse.de>
-To: Josh Boyer <jwboyer@redhat.com>
-Cc: Jaroslav Kysela <perex@perex.cz>, alsa-devel@alsa-project.org,
-        linux-kernel@vger.kernel.org, kernel-team@fedoraproject.org,
-        kevin@scrye.com, cwickert@fedoraproject.org
-Subject: Re: Thinkpad hda regression in 3.3
-In-Reply-To: <20120418002336.GK19507@zod.bos.redhat.com>
-References: <20120413124306.GC25425@zod.bos.redhat.com>
-	<s5hpqbbvkzo.wl%tiwai@suse.de>
-	<s5hk41jty24.wl%tiwai@suse.de>
-	<20120413180814.GG25425@zod.bos.redhat.com>
-	<20120418002336.GK19507@zod.bos.redhat.com>
+To: Ondrej Zary <linux@rainbow-software.org>
+Cc: Clemens Ladisch <clemens@ladisch.de>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org
+Subject: Re: [alsa-devel] [PATCH 3/4] Add Wolfson Microelectronics WM8776 codec ALSA driver
+In-Reply-To: <201204172307.58016.linux@rainbow-software.org>
+References: <1334611118-10301-1-git-send-email-linux@rainbow-software.org>
+	<201204172015.14582.linux@rainbow-software.org>
+	<s5hy5punpem.wl%tiwai@suse.de>
+	<201204172307.58016.linux@rainbow-software.org>
 User-Agent: Wanderlust/2.15.6 (Almost Unreal) SEMI/1.14.6 (Maruoka)
  FLIM/1.14.9 (=?UTF-8?B?R29qxY0=?=) APEL/10.7 Emacs/23.3
  (x86_64-suse-linux-gnu) MULE/6.0 (HANACHIRUSATO)
@@ -29,40 +28,65 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-At Tue, 17 Apr 2012 20:23:36 -0400,
-Josh Boyer wrote:
+At Tue, 17 Apr 2012 23:07:48 +0200,
+Ondrej Zary wrote:
 > 
-> On Fri, Apr 13, 2012 at 02:08:14PM -0400, Josh Boyer wrote:
-> > On Fri, Apr 13, 2012 at 06:07:47PM +0200, Takashi Iwai wrote:
-> > > At Fri, 13 Apr 2012 15:07:07 +0200,
-> > > Takashi Iwai wrote:
-> > > (snip)
-> > > > If the above seem work (again, make sure that you adjust the mixer
-> > > > mutes and levels), I'll make kernel patches to add these fixups
-> > > > statically in the driver so that it works without extra patching.
-> > > 
-> > > Looking through alsa-info.sh outputs from various ThinkPad models I've
-> > > gathered, it seems that we can use the same pin setups for all.
-> > 
-> > We had a user try the alsa-tp-dock patch on an X201 and it didn't seem
-> > to work for them.  See bug
-> > https://bugzilla.redhat.com/show_bug.cgi?id=806217
-> > 
-> > Perhaps the [codec] section isn't set properly for their configuration?
-> > The alsa-info for their machine is in comment #9 of the bug.
-> > 
-> > > Below is a test patch for 3.3 kernel.  (Note that it'd give a merge
-> > > conflict for 3.4 kernel.)
-> > 
-> > OK, I'll do a scratch build with this and get people to test.
+> On Tuesday 17 April 2012 21:12:33 you wrote:
+> > At Tue, 17 Apr 2012 20:15:06 +0200,
+> >
+> > Ondrej Zary wrote:
+> > > On Tuesday 17 April 2012 20:06:19 Takashi Iwai wrote:
+> > > > At Tue, 17 Apr 2012 18:04:31 +0100,
+> > > >
+> > > > Mark Brown wrote:
+> > > > > On Tue, Apr 17, 2012 at 06:52:49PM +0200, Takashi Iwai wrote:
+> > > > > > Mark Brown wrote:
+> > > > > > > This isn't just adding something into a specific driver which
+> > > > > > > fails at abstraction, it's adding generic code.  If it were
+> > > > > > > adding something to the ice17xx driver then that'd be one thing
+> > > > > > > but look at the subject line and location of the file...  this
+> > > > > > > stuff should be buried inside the driver if it's too painful to
+> > > > > > > make the driver sane.
+> > > > > >
+> > > > > > The codes in sound/i2c are mostly oly for ice1712/ice1724 drivers
+> > > > > > after all...  They could be used by others, but I don't think there
+> > > > > > will be any more at this point.
+> > > > >
+> > > > > If they're specific to that driver we should make them specific to
+> > > > > that driver and make sure the pain is confined there.  We really
+> > > > > don't want to end up going back to the bad old days of having to do
+> > > > > per-CPU/card drivers for CODECs because nobody had thought to
+> > > > > abstract this stuff, that just makes everyone miserable.
+> > > > >
+> > > > > Looking at these commits I'd not expect anyone to figure out that
+> > > > > this isn't how we want or expect people to add generic CODEC drivers.
+> > > >
+> > > > Yeah, these stuff can be better put in pci/ice1712/ directory only
+> > > > for ice1724 driver.  In that way, you can avoid unnecessary exported
+> > > > symbols, too.
+> > >
+> > > Xonar (oxygen) has a private version of these drivers too. It could be
+> > > converted to use common code instead.
+> >
+> > Hm, only if the generated controls do match with your case,..
+> > It's case by case, especally if there is only one another candidate.
 > 
-> I built your patch in a scratch kernel and have at least one user with a
-> t510 laptop report success.  Christoph reported the mixers showing up,
-> but it wasn't clear to me if his sound actually worked on the x201.
-> I've CC'd both users (Kevin t510, Christoph x201 in a dock).
+> Control names can be changed (and also disabled) by the driver. In fact, 
+> psc724 does exactly this as is needs the WM8776 controls to be named 
+> as "front" and WM8766 as "rear".
+> I don't see any problem if something needs to be changed for this code to be 
+> used by Xonar (or some other driver).
 
-Good.  Should I wait for a copule of days for the test results before
-merging the patch, or go for now?
+OK, it depends on Clemens, whether the shared code is preferred (and
+maintainable).
+
+If sharing your code between ice1724 and xonar is planned, sound/i2c
+is the best place to put indeed.  In that case, better to start from
+moving the code from xonar to sound/i2c, then reuse it in ice1724,
+instead of having double codes in xonar and ice1724.
+
+OTOH, if it isn't worthwhile, better to make all your code local to
+ice1724.
 
 
 thanks,
