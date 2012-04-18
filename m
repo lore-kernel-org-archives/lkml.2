@@ -1,73 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754109Ab2DRAVi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Apr 2012 20:21:38 -0400
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:14961 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754024Ab2DRAVY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Apr 2012 20:21:24 -0400
-Message-Id: <6e201a$5e4ium@wolverine01.qualcomm.com>
-X-IronPort-AV: E=McAfee;i="5400,1158,6684"; a="182602710"
-From: Richard Kuo <rkuo@codeaurora.org>
-Date: Tue, 17 Apr 2012 18:56:01 -0500
-Subject: [PATCH 00/10] Hexagon cleanup and misc patches
-To: linux-arch@vger.kernel.org, linux-hexagon@vger.kernel.org,
-        linux-kernel@vger.kernel.org
+	id S1753827Ab2DRAXv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Apr 2012 20:23:51 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:36409 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752055Ab2DRAXu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Apr 2012 20:23:50 -0400
+Date: Tue, 17 Apr 2012 20:23:36 -0400
+From: Josh Boyer <jwboyer@redhat.com>
+To: Takashi Iwai <tiwai@suse.de>
+Cc: Jaroslav Kysela <perex@perex.cz>, alsa-devel@alsa-project.org,
+        linux-kernel@vger.kernel.org, kernel-team@fedoraproject.org,
+        kevin@scrye.com, cwickert@fedoraproject.org
+Subject: Re: Thinkpad hda regression in 3.3
+Message-ID: <20120418002336.GK19507@zod.bos.redhat.com>
+References: <20120413124306.GC25425@zod.bos.redhat.com>
+ <s5hpqbbvkzo.wl%tiwai@suse.de>
+ <s5hk41jty24.wl%tiwai@suse.de>
+ <20120413180814.GG25425@zod.bos.redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120413180814.GG25425@zod.bos.redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a small collection of patches that I've been sitting on for probably
-too long that I'm getting ready to make a pull request for.  It's largely
-cleanup and fixes from the original Hexagon upstreaming, with a few
-additional enhancements to do_page_fault and SMP startup which have already
-been on the mailing lists for some time.
+On Fri, Apr 13, 2012 at 02:08:14PM -0400, Josh Boyer wrote:
+> On Fri, Apr 13, 2012 at 06:07:47PM +0200, Takashi Iwai wrote:
+> > At Fri, 13 Apr 2012 15:07:07 +0200,
+> > Takashi Iwai wrote:
+> > (snip)
+> > > If the above seem work (again, make sure that you adjust the mixer
+> > > mutes and levels), I'll make kernel patches to add these fixups
+> > > statically in the driver so that it works without extra patching.
+> > 
+> > Looking through alsa-info.sh outputs from various ThinkPad models I've
+> > gathered, it seems that we can use the same pin setups for all.
+> 
+> We had a user try the alsa-tp-dock patch on an X201 and it didn't seem
+> to work for them.  See bug
+> https://bugzilla.redhat.com/show_bug.cgi?id=806217
+> 
+> Perhaps the [codec] section isn't set properly for their configuration?
+> The alsa-info for their machine is in comment #9 of the bug.
+> 
+> > Below is a test patch for 3.3 kernel.  (Note that it'd give a merge
+> > conflict for 3.4 kernel.)
+> 
+> OK, I'll do a scratch build with this and get people to test.
 
-Please let me know if there are any issues, and thanks to everyone who sent
-patches.
+I built your patch in a scratch kernel and have at least one user with a
+t510 laptop report success.  Christoph reported the mixers showing up,
+but it wasn't clear to me if his sound actually worked on the x201.
+I've CC'd both users (Kevin t510, Christoph x201 in a dock).
 
-
-
-Jesper Juhl (1):
-  Remove unneeded include of version.h from
-    arch/hexagon/include/asm/spinlock_types.h
-
-Julia Lawall (1):
-  arch/hexagon/kernel/dma.c: make function static
-
-Kautuk Consul (1):
-  hexagon/mm/vm_fault.c: Port OOM changes to do_page_fault
-
-Paul Bolle (1):
-  hexagon: drop selects of bogus Kconfig symbols
-
-Richard Kuo (4):
-  various Kconfig cleanup and old platform build code removal
-  Hexagon: misc compile warning/error cleanup due to missing headers
-  hexagon:  use renamed tick_nohz_idle_* functions
-  hexagon: add missing cpu.h include
-
-Srivatsa S. Bhat (1):
-  hexagon/CPU hotplug: Add missing call to notify_cpu_starting()
-
-Thomas Meyer (1):
-  Hexagon: Use resource_size function
-
- arch/hexagon/Kconfig                      |   23 ++++-------------------
- arch/hexagon/Makefile                     |    5 -----
- arch/hexagon/include/asm/spinlock_types.h |    2 --
- arch/hexagon/kernel/dma.c                 |    3 ++-
- arch/hexagon/kernel/process.c             |    6 +++---
- arch/hexagon/kernel/ptrace.c              |    1 +
- arch/hexagon/kernel/smp.c                 |    8 +++++++-
- arch/hexagon/kernel/time.c                |    7 +++----
- arch/hexagon/kernel/vdso.c                |    1 +
- arch/hexagon/mm/vm_fault.c                |   22 +++++++++++++++++-----
- 10 files changed, 38 insertions(+), 40 deletions(-)
-
-
---
-
-Sent by an employee of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+josh
