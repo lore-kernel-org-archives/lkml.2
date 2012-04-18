@@ -1,66 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754345Ab2DRRhO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Apr 2012 13:37:14 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:56818 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754263Ab2DRRhM (ORCPT
+	id S1752020Ab2DRRiI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Apr 2012 13:38:08 -0400
+Received: from mail-qc0-f174.google.com ([209.85.216.174]:36722 "EHLO
+	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751252Ab2DRRiF convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Apr 2012 13:37:12 -0400
-Message-ID: <4F8EFBC5.1030607@wwwdotorg.org>
-Date: Wed, 18 Apr 2012 11:37:09 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.28) Gecko/20120313 Thunderbird/3.1.20
+	Wed, 18 Apr 2012 13:38:05 -0400
 MIME-Version: 1.0
-To: Linus Walleij <linus.walleij@linaro.org>
-CC: Sascha Hauer <s.hauer@pengutronix.de>,
-        Dong Aisheng <aisheng.dong@freescale.com>,
-        "linus.walleij@stericsson.com" <linus.walleij@stericsson.com>,
-        Dong Aisheng-B29396 <B29396@freescale.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH 1/1] pinctrl: handle dummy state in core
-References: <1334586289-13078-1-git-send-email-b29396@freescale.com>	<4F8C42D6.2000607@wwwdotorg.org>	<20120417034210.GD17173@shlinux2.ap.freescale.net>	<CACRpkdYH06_kGbSdozKPWZcOG0FvoOyHvjHwhz-xUL1pfSX9DQ@mail.gmail.com>	<20120418122832.GP20478@pengutronix.de> <CACRpkdZw6iv=PjvvU4s5L8yV6813gCD7t8Vk-S66v-nXPaf+=Q@mail.gmail.com>
-In-Reply-To: <CACRpkdZw6iv=PjvvU4s5L8yV6813gCD7t8Vk-S66v-nXPaf+=Q@mail.gmail.com>
-X-Enigmail-Version: 1.1.2
+In-Reply-To: <tip-31796ac4e8f0e88f5c10f1ad6dab8f19bebe44a4@git.kernel.org>
+References: <1329696488-16970-1-git-send-email-hpa@zytor.com>
+	<tip-31796ac4e8f0e88f5c10f1ad6dab8f19bebe44a4@git.kernel.org>
+Date: Wed, 18 Apr 2012 10:38:03 -0700
+Message-ID: <CAMe9rOqF6Kh6-NK7oP0Fpzkd4SBAWU+G53hwBbSD4iA2UzyxuA@mail.gmail.com>
+Subject: Re: [tip:x86/x32] x32: Fix alignment fail in struct compat_siginfo
+From: "H.J. Lu" <hjl.tools@gmail.com>
+To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        tglx@linutronix.de
+Cc: linux-tip-commits@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/18/2012 07:52 AM, Linus Walleij wrote:
-> On Wed, Apr 18, 2012 at 2:28 PM, Sascha Hauer <s.hauer@pengutronix.de> wrote:
-> 
->> Currently Dong Aisheng is working on i.MX6, we have i.MX31, i.MX35,
->> i.MX51 and i.MX53 enabled in the same defconfig. Waiting for all
->> machines turn over at once to pinctrl is illusionary. We have to make
->> drivers work with and without pinctrl. We have a bunch of bad choices:
->>
->> - create a dummy pinctrl for all boards which do not have real pinmux
->>  support
-> 
-> Viable compromise.
-> 
->> - ignore pinctrl_request errors in drivers.
-> 
-> Ugh. Not good.
-> 
->> - generate and return a dummy pinctrl in the core if no real pinctrl is
->>  found.
->>
->> (replace pinctrl with regulators or clocks, it's the same situation, and
->> it's not only i.MX specific)
-> 
-> Since we have dummy regulators, we should not break the design
-> pattern creating more confusion.
-> 
-> Stephen can you live with dummy pinctrl handles emitted by the
-> core, if explicitly enabled by a Kconfig option?
+On Wed, Mar 14, 2012 at 2:43 PM, tip-bot for H. Peter Anvin
+<hpa@zytor.com> wrote:
+> Commit-ID:  31796ac4e8f0e88f5c10f1ad6dab8f19bebe44a4
+> Gitweb:     http://git.kernel.org/tip/31796ac4e8f0e88f5c10f1ad6dab8f19bebe44a4
+> Author:     H. Peter Anvin <hpa@zytor.com>
+> AuthorDate: Wed, 14 Mar 2012 14:27:52 -0700
+> Committer:  H. Peter Anvin <hpa@zytor.com>
+> CommitDate: Wed, 14 Mar 2012 14:27:52 -0700
+>
+> x32: Fix alignment fail in struct compat_siginfo
+>
+> Adding struct _sigchld_x32 caused a misalignment cascade in struct
+> siginfo, because union _sifields is located on an 4-byte boundary
+> (8-byte misaligned.)
+>
+> Adding new fields that are 8-byte aligned caused the intermediate
+> structures to also be aligned to 8 bytes, thereby adding padding in
+> unexpected places.
+>
+> Thus, change s64 to compat_s64 here, which makes it "misaligned on
+> paper".  In reality these fields *are* actually aligned (there are 3
+> preceeding ints outside the union and 3 inside struct _sigchld_x32),
+> but because of the intervening union and struct it is not possible for
+> gcc to avoid padding without breaking the ABI.
+>
+> Reported-and-tested-by: H. J. Lu <hjl.tools@gmail.com>
+> Signed-off-by: H. Peter Anvin <hpa@zytor.com>
+> Link: http://lkml.kernel.org/r/1329696488-16970-1-git-send-email-hpa@zytor.com
+> ---
+>  arch/x86/include/asm/ia32.h |    4 ++--
+>  1 files changed, 2 insertions(+), 2 deletions(-)
+>
+> diff --git a/arch/x86/include/asm/ia32.h b/arch/x86/include/asm/ia32.h
+> index 7d0c185..ee52760 100644
+> --- a/arch/x86/include/asm/ia32.h
+> +++ b/arch/x86/include/asm/ia32.h
+> @@ -130,8 +130,8 @@ typedef struct compat_siginfo {
+>                        unsigned int _pid;      /* which child */
+>                        unsigned int _uid;      /* sender's uid */
+>                        int _status;            /* exit code */
+> -                       s64 _utime;
+> -                       s64 _stime;
+> +                       compat_s64 _utime;
+> +                       compat_s64 _stime;
+>                } _sigchld_x32;
+>
+>                /* SIGILL, SIGFPE, SIGSEGV, SIGBUS */
 
-Yes, I'm happy with the pinctrl core having the ability to "magically"
-work when the dummy mapping table entries (or DT entries) are missing,
-so long as there is a default-off Kconfig or runtime option that enables
-that feature, which I'd expect to be use only for boards/platforms/...
-that are "under conversion".
+It doesn't match struct siginfo in include/asm-generic/siginfo.h for
+x32.
+
+-- 
+H.J.
