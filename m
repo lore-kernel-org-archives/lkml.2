@@ -1,65 +1,148 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754241Ab2DRSjp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Apr 2012 14:39:45 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:32985 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751618Ab2DRSjn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Apr 2012 14:39:43 -0400
-Date: Wed, 18 Apr 2012 19:39:38 +0100
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Mimi Zohar <zohar@linux.vnet.ibm.com>
-Cc: James Morris <jmorris@namei.org>, linux-security-module@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        David Safford <safford@linux.vnet.ibm.com>,
-        Dmitry Kasatkin <dmitry.kasatkin@intel.com>
-Subject: Re: [PULL REQUEST] : ima-appraisal patches
-Message-ID: <20120418183938.GH6589@ZenIV.linux.org.uk>
-References: <1334754302.2137.8.camel@falcor>
- <alpine.LRH.2.02.1204190101380.30151@tundra.namei.org>
- <1334772473.2137.22.camel@falcor>
-MIME-Version: 1.0
+	id S1754090Ab2DRSq2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Apr 2012 14:46:28 -0400
+Received: from havoc.gtf.org ([69.61.125.42]:49419 "EHLO havoc.gtf.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751790Ab2DRSq0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Apr 2012 14:46:26 -0400
+Date: Wed, 18 Apr 2012 14:46:24 -0400
+From: Jeff Garzik <jeff@garzik.org>
+To: Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-ide@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
+Subject: [git patches] libata fixes
+Message-ID: <20120418184624.GA16313@havoc.gtf.org>
+Mime-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1334772473.2137.22.camel@falcor>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+User-Agent: Mutt/1.4.2.2i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 18, 2012 at 02:07:52PM -0400, Mimi Zohar wrote:
 
-> >From the 'ima: defer calling __fput()' patch description:
-> 
-> ima_file_free(), which is called on __fput(), updates the file data
-> hash stored as an extended attribute to reflect file changes.  If a
-> file is closed before it is munmapped, __fput() is called with the
-> mmap_sem taken.  With IMA-appraisal enabled, this results in an
-> mmap_sem/i_mutex lockdep.  ima_defer_fput() increments the f_count to
-> defer the __fput() being called until after the mmap_sem is released.
-> 
-> The number of __fput() calls needing to be deferred is minimal.  Only
-> those files in policy, that were closed prior to the munmap and were
-> mmapped write, need to defer the __fput().
-> 
-> With this patch, on a clean F16 install, from boot to login, only
-> 5 out of ~100,000 mmap_sem held fput() calls were deferred.
+NOTE: Includes important regression fix.  See signed tag message for more.
 
-Assuming that it's commit 3cee52ffe8ca925bb1e96f804daa87f7e2e34e46
-Author: Mimi Zohar <zohar@linux.vnet.ibm.com>
-Date:   Fri Feb 24 06:23:12 2012 -0500
+Please pull 0c8d32c27f5cf6e14ca14b4758d1e994eebd50fd from
+git://git.kernel.org/pub/scm/linux/kernel/git/jgarzik/libata-dev.git tag/upstream-linus
 
-    ima: defer calling __fput()
-in your tree, the NAK still stands.  For starters, but you are creating a
-different locking rules for IMA-enabled builds and for everything else.
-Moreover, this deferral is done only for files opened for write; the
-rules are convoluted as hell *and* inviting abuses.  
 
-NAKed at least until you come up with formal proof that there's no other
-lock where fput() would be possible and ->i_mutex was not allowed.  This
-is not a way to go; that kind of kludges leads to locking code that is
-impossible to reason about.
+to receive the following updates:
 
-PS: BTW, what the hell is "fput already scheduled" codepath about?
-Why is it pr_info() and not an outright BUG_ON()?
+ drivers/ata/ata_piix.c         |    2 ++
+ drivers/ata/libata-core.c      |    4 ++--
+ drivers/ata/libata-scsi.c      |    4 ++--
+ drivers/ata/libata-transport.c |    1 +
+ drivers/ata/libata.h           |    2 +-
+ drivers/ata/sata_mv.c          |    3 ++-
+ 6 files changed, 10 insertions(+), 6 deletions(-)
+
+Dan Carpenter (1):
+      sata_mv: silence an uninitialized variable warning
+
+Dan Williams (1):
+      libata: make ata_print_id atomic
+
+Lin Ming (1):
+      libata: forbid port runtime pm by default, fixing regression
+
+Seth Heasley (1):
+      ata_piix: IDE-mode SATA patch for Intel DH89xxCC DeviceIDs
+
+diff --git a/drivers/ata/ata_piix.c b/drivers/ata/ata_piix.c
+index 68013f9..7857e8f 100644
+--- a/drivers/ata/ata_piix.c
++++ b/drivers/ata/ata_piix.c
+@@ -329,6 +329,8 @@ static const struct pci_device_id piix_pci_tbl[] = {
+ 	{ 0x8086, 0x8c08, PCI_ANY_ID, PCI_ANY_ID, 0, 0, ich8_2port_sata },
+ 	/* SATA Controller IDE (Lynx Point) */
+ 	{ 0x8086, 0x8c09, PCI_ANY_ID, PCI_ANY_ID, 0, 0, ich8_2port_sata },
++	/* SATA Controller IDE (DH89xxCC) */
++	{ 0x8086, 0x2326, PCI_ANY_ID, PCI_ANY_ID, 0, 0, ich8_2port_sata },
+ 	{ }	/* terminate list */
+ };
+ 
+diff --git a/drivers/ata/libata-core.c b/drivers/ata/libata-core.c
+index e0bda9f..28db50b 100644
+--- a/drivers/ata/libata-core.c
++++ b/drivers/ata/libata-core.c
+@@ -95,7 +95,7 @@ static unsigned int ata_dev_set_xfermode(struct ata_device *dev);
+ static void ata_dev_xfermask(struct ata_device *dev);
+ static unsigned long ata_dev_blacklisted(const struct ata_device *dev);
+ 
+-unsigned int ata_print_id = 1;
++atomic_t ata_print_id = ATOMIC_INIT(1);
+ 
+ struct ata_force_param {
+ 	const char	*name;
+@@ -6029,7 +6029,7 @@ int ata_host_register(struct ata_host *host, struct scsi_host_template *sht)
+ 
+ 	/* give ports names and add SCSI hosts */
+ 	for (i = 0; i < host->n_ports; i++)
+-		host->ports[i]->print_id = ata_print_id++;
++		host->ports[i]->print_id = atomic_inc_return(&ata_print_id);
+ 
+ 
+ 	/* Create associated sysfs transport objects  */
+diff --git a/drivers/ata/libata-scsi.c b/drivers/ata/libata-scsi.c
+index 1ee00c8..93dabdc 100644
+--- a/drivers/ata/libata-scsi.c
++++ b/drivers/ata/libata-scsi.c
+@@ -3843,7 +3843,7 @@ int ata_sas_async_port_init(struct ata_port *ap)
+ 	int rc = ap->ops->port_start(ap);
+ 
+ 	if (!rc) {
+-		ap->print_id = ata_print_id++;
++		ap->print_id = atomic_inc_return(&ata_print_id);
+ 		__ata_port_probe(ap);
+ 	}
+ 
+@@ -3867,7 +3867,7 @@ int ata_sas_port_init(struct ata_port *ap)
+ 	int rc = ap->ops->port_start(ap);
+ 
+ 	if (!rc) {
+-		ap->print_id = ata_print_id++;
++		ap->print_id = atomic_inc_return(&ata_print_id);
+ 		rc = ata_port_probe(ap);
+ 	}
+ 
+diff --git a/drivers/ata/libata-transport.c b/drivers/ata/libata-transport.c
+index 74aaee3..c341904 100644
+--- a/drivers/ata/libata-transport.c
++++ b/drivers/ata/libata-transport.c
+@@ -294,6 +294,7 @@ int ata_tport_add(struct device *parent,
+ 	device_enable_async_suspend(dev);
+ 	pm_runtime_set_active(dev);
+ 	pm_runtime_enable(dev);
++	pm_runtime_forbid(dev);
+ 
+ 	transport_add_device(dev);
+ 	transport_configure_device(dev);
+diff --git a/drivers/ata/libata.h b/drivers/ata/libata.h
+index 2e26fca..9d0fd0b 100644
+--- a/drivers/ata/libata.h
++++ b/drivers/ata/libata.h
+@@ -53,7 +53,7 @@ enum {
+ 	ATA_DNXFER_QUIET	= (1 << 31),
+ };
+ 
+-extern unsigned int ata_print_id;
++extern atomic_t ata_print_id;
+ extern int atapi_passthru16;
+ extern int libata_fua;
+ extern int libata_noacpi;
+diff --git a/drivers/ata/sata_mv.c b/drivers/ata/sata_mv.c
+index 38950ea..7336d4a 100644
+--- a/drivers/ata/sata_mv.c
++++ b/drivers/ata/sata_mv.c
+@@ -4025,7 +4025,8 @@ static int mv_platform_probe(struct platform_device *pdev)
+ 	struct ata_host *host;
+ 	struct mv_host_priv *hpriv;
+ 	struct resource *res;
+-	int n_ports, rc;
++	int n_ports = 0;
++	int rc;
+ 
+ 	ata_print_version_once(&pdev->dev, DRV_VERSION);
+ 
