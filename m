@@ -1,69 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752055Ab2DRKlt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Apr 2012 06:41:49 -0400
-Received: from 4607ds7-vby.0.fullrate.dk ([95.166.183.192]:60274 "EHLO
-	cow.netcompartner.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751202Ab2DRKlr (ORCPT
+	id S1752480Ab2DRKpu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Apr 2012 06:45:50 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:37973 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751202Ab2DRKps (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Apr 2012 06:41:47 -0400
-X-Greylist: delayed 2306 seconds by postgrey-1.27 at vger.kernel.org; Wed, 18 Apr 2012 06:41:47 EDT
-From: Lars Boegild Thomsen <lth@cow.dk>
-Organization: Call of the Wild BBS
-To: Jonathan Nieder <jrnieder@gmail.com>
-Subject: Re: [regression] Ideapad S10-3 does not wake up from suspend
-Date: Wed, 18 Apr 2012 18:03:00 +0800
-User-Agent: KMail/1.13.7 (Linux/3.2.0-2-amd64; KDE/4.7.4; x86_64; ; )
-Cc: Robert Scott <bugs@humanleg.org.uk>, Thomas Gleixner <tglx@linutronix.de>,
-        linux-kernel@vger.kernel.org, Kevin Tian <kevin.tian@intel.com>,
-        Fengzhe Zhang <fengzhe.zhang@intel.com>, mingo@redhat.com,
-        hpa@zytor.com, Ian Campbell <Ian.Campbell@eu.citrix.com>,
-        JBeulich@novell.com, xen-devel@lists.xensource.com,
-        e568b31a443d@6cc2cce7af2d.anonbox.net,
-        "Liu, Chuansheng" <chuansheng.liu@intel.com>
-References: <625BA99ED14B2D499DC4E29D8138F1505C8ED7F7E3@shsmsx502.ccr.corp.intel.com> <201204161905.13260.bugs@humanleg.org.uk> <20120417020433.GA15848@burratino>
-In-Reply-To: <20120417020433.GA15848@burratino>
+	Wed, 18 Apr 2012 06:45:48 -0400
+Date: Wed, 18 Apr 2012 11:45:43 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Dan Carpenter <dan.carpenter@oracle.com>, Roland Stigge <stigge@antcom.de>,
+        arm@kernel.org, linux-arm-kernel@lists.infradead.org,
+        thierry.reding@avionic-design.de, gregkh@linuxfoundation.org,
+        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-input@vger.kernel.org, dmitry.torokhov@gmail.com,
+        axel.lin@gmail.com, marek.vasut@gmail.com, devel@driverdev.osuosl.org,
+        kevin.wells@nxp.com, srinivas.bakki@nxp.com
+Subject: Re: [PATCH v2 0/8] Second patchset for LPC32xx device tree conversion
+Message-ID: <20120418104543.GH3021@opensource.wolfsonmicro.com>
+References: <1334682507-15055-1-git-send-email-stigge@antcom.de>
+ <20120417205001.GH6498@mwanda>
+ <201204180806.16848.arnd@arndb.de>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201204181803.00383.lth@cow.dk>
-X-Spam-Score: -2.9 (--)
-X-Spam-Report: Spam detection software, running on the system "cow.netcompartner.com", has
- identified this incoming email as possible spam.  The original message
- has been attached to this so you can view it (if it isn't spam) or label
- similar future email.  If you have any questions, see
- the administrator of that system for details.
- Content preview:  On Tuesday 17 April 2012 10:04:33 Jonathan Nieder wrote: >
-    > Hmm, no, 3.4-rc2 seems to produce the same results I'm afraid. > Alas.
-   Does suspend-to-disk ("echo disk >/sys/power/state") have the > same problem?
-    Can you get a log of the failure with > "no_console_suspend" appended to
-   the kernel command line, for example > with a serial console or netconsole?
-    [...] 
- Content analysis details:   (-2.9 points, 5.0 required)
-  pts rule name              description
- ---- ---------------------- --------------------------------------------------
- -1.0 ALL_TRUSTED            Passed through trusted hosts only via SMTP
- -1.9 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-                             [score: 0.0000]
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="qM81t570OJUP5TU/"
+Content-Disposition: inline
+In-Reply-To: <201204180806.16848.arnd@arndb.de>
+X-Cookie: You should go home.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 17 April 2012 10:04:33 Jonathan Nieder wrote:
-> > Hmm, no, 3.4-rc2 seems to produce the same results I'm afraid.
-> Alas.  Does suspend-to-disk ("echo disk >/sys/power/state") have the
-> same problem?  Can you get a log of the failure with
-> "no_console_suspend" appended to the kernel command line, for example
-> with a serial console or netconsole?
 
-Using a serial console is a bit of a problem on this netbook as it hasn't got 
-a serial port.  Not sure how the netconsole works - will read up on that.
+--qM81t570OJUP5TU/
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-And no - suspend to disk works fine.
+On Wed, Apr 18, 2012 at 08:06:16AM +0000, Arnd Bergmann wrote:
+> On Tuesday 17 April 2012, Dan Carpenter wrote:
 
-I have by the way experimentally switched to 32bit version and it's the same 
-thing (originally I was running 64bit version but that really doesn't make 
-sense on a netbook - except doing it because it could be done).
+> > This probably applies fine (the previous version did a couple days
+> > ago), but it's always best to submit patches against linux-next.
+> > The 3.4 kernel is in -rc already so this is 3.5 material.
 
-//Lars...
+> I disagree. The patches won't get applied on -next, they get applied
+> on an -rc release, so they should be submitted against that version
+> as well. I agree that it makes sense to test patches against -next
+> when there is reason to believe there might be conflicts, but it's
+> not mandatory. When you know about conflicts against other patches
+> that are already in -next, I suggest listing them in the cover=20
+> letter (the patch 0/x) and suggest a resolution.
+
+Dan's advice is generally sensible for most subsystems - it's not so
+much that you should submit against -next itself but rather that you
+should be checking what you're submitting against the latest versions of
+the subsystems to make sure that you're up to date with the latest APIs
+and best practices.  -next is (or should be) a good proxy for this.
+
+If you know the relevant subsystem and driver are pretty stable then
+it's generally not going to be an issue to just use the -rcs but there's
+enough areas where there's rapid development of one form or another it's
+likely to save you at least one round trip of "that's nice but needs
+some updates because it won't apply/won't build/isn't using this new
+feature we want to convert everyone to" that it's a good default to
+check with -next first.
+
+--qM81t570OJUP5TU/
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJPjptQAAoJEBus8iNuMP3dJZ4P/iY16xk0BF5TE8v30mak6yNb
+z+aj2veBWNfWrLTsIeYbyvkgMBkBmPcbCjAZaPHGFNjd32vtakteiPbScetuG62J
+qZQSzUmjZjrKyAQypA0a6pOrGaKaLkSktRqXhNKty9nGg9v8dsXkaylr76SYqCDr
+yCHxO2qxgV60OCBe3GQ6CVcR+v8rAiTYrHZACAnB/of1Arf4dsddmfSKE+rfnqAI
+mwWlfgdXyeWoZUogG7DVJ7IQhMlLmeyvXXb+NG0qHiR0GpYFihEn30/kWgU08+Z3
+ijgO4fXuwRYg7dYctU1JvtKlCEq1ojqAmb4QFcIZzv5za0JudspoeZ0bkJwyuc7P
+0n6K6u0nX1uezAFmVR+foP0GQBBuel9j7trcMcU2akxgFdUV5pJ+CFCBnnWbGJrH
+MRJOkF5I/2edglA9t8w3M8Eb0NV7Oymcdt8+ianZ971C0cGuENpgJ1uUpXhw3fVw
+avZi1w7P2RJrihJ/6AhiTW31cDsd9SYFoUQUoLA/plPQ2Zn3vjF26h9jppSPVGPm
+bZj03SI9E3vL9zgFaPOr5+PoBgzbaE23K3Qtf8F8P0EXscspKQYjltzc7l5BxIcy
+GWaxAhaf+Hfy3tQgAJmDXyxXWxWPeyc0idRdnE52q31DeAQVcuqKYyWa74BKj5p6
+oZVUdwYxvTjst4UKLlRT
+=Gj5B
+-----END PGP SIGNATURE-----
+
+--qM81t570OJUP5TU/--
