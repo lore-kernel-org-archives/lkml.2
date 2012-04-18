@@ -1,54 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754833Ab2DRTol (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Apr 2012 15:44:41 -0400
-Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:45222 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753066Ab2DRToj (ORCPT
+	id S1754793Ab2DRTpy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Apr 2012 15:45:54 -0400
+Received: from mail-qa0-f42.google.com ([209.85.216.42]:42870 "EHLO
+	mail-qa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753123Ab2DRTpv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Apr 2012 15:44:39 -0400
-Date: Wed, 18 Apr 2012 20:47:01 +0100
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: "Shankarmurthy, Akshay" <akshay.s@ti.com>
-Cc: "linux-serial@vger.kernel.org" <linux-serial@vger.kernel.org>,
-        "alan@linux.intel.com" <alan@linux.intel.com>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "paul.gortmaker@windriver.com" <paul.gortmaker@windriver.com>,
-        "jamie@jamieiles.com" <jamie@jamieiles.com>,
-        "swarren@nvidia.com" <swarren@nvidia.com>,
-        "dianders@chromium.org" <dianders@chromium.org>,
-        "davinci-linux-open-source@linux.davincidsp.com" 
-	<davinci-linux-open-source@linux.davincidsp.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] serial: 8250: Add cpufreq support
-Message-ID: <20120418204701.31238fe7@pyramind.ukuu.org.uk>
-In-Reply-To: <6F6B80BD2E18844D97BB4B51FE3705C83E92A183@DBDE01.ent.ti.com>
-References: <1333433022-5455-1-git-send-email-akshay.s@ti.com>
-	<20120403105530.7fa3bce7@pyramind.ukuu.org.uk>
-	<6F6B80BD2E18844D97BB4B51FE3705C831790EA0@DBDE01.ent.ti.com>
-	<20120405115322.15e6088c@pyramind.ukuu.org.uk>
-	<6F6B80BD2E18844D97BB4B51FE3705C83179146B@DBDE01.ent.ti.com>
-	<20120412104758.3fc8085d@pyramind.ukuu.org.uk>
-	<6F6B80BD2E18844D97BB4B51FE3705C83E92A183@DBDE01.ent.ti.com>
-X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Wed, 18 Apr 2012 15:45:51 -0400
+Message-ID: <4F8F19EC.8000305@garzik.org>
+Date: Wed, 18 Apr 2012 15:45:48 -0400
+From: Jeff Garzik <jeff@garzik.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120329 Thunderbird/11.0.1
+MIME-Version: 1.0
+To: Josh Boyer <jwboyer@gmail.com>
+CC: Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-ide@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        stable <stable@kernel.org>
+Subject: Re: [git patches] libata fixes
+References: <20120418184624.GA16313@havoc.gtf.org> <CA+5PVA7zv2H-CQU3Grouk3KH5xA3XLijuO7TPX9zrMdj-7z43Q@mail.gmail.com>
+In-Reply-To: <CA+5PVA7zv2H-CQU3Grouk3KH5xA3XLijuO7TPX9zrMdj-7z43Q@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> As per my understanding, tty count keeps the count of tty_open and tty_release, that is
-> how many open and close happened on the tty device file(/dev/ttyS*).
-> The requirement here is a tty count check, if it is greater than zero then only it should
-> proceed for further execution. 
+On 04/18/2012 03:34 PM, Josh Boyer wrote:
+> On Wed, Apr 18, 2012 at 2:46 PM, Jeff Garzik<jeff@garzik.org>  wrote:
+>>
+>> NOTE: Includes important regression fix.  See signed tag message for more.
+>>
+>> Please pull 0c8d32c27f5cf6e14ca14b4758d1e994eebd50fd from
+>> git://git.kernel.org/pub/scm/linux/kernel/git/jgarzik/libata-dev.git tag/upstream-linus
+>>
+>>
+>> to receive the following updates:
+>>
+>>   drivers/ata/ata_piix.c         |    2 ++
+>>   drivers/ata/libata-core.c      |    4 ++--
+>>   drivers/ata/libata-scsi.c      |    4 ++--
+>>   drivers/ata/libata-transport.c |    1 +
+>>   drivers/ata/libata.h           |    2 +-
+>>   drivers/ata/sata_mv.c          |    3 ++-
+>>   6 files changed, 10 insertions(+), 6 deletions(-)
+>>
+>> Dan Carpenter (1):
+>>       sata_mv: silence an uninitialized variable warning
+>>
+>> Dan Williams (1):
+>>       libata: make ata_print_id atomic
+>>
+>> Lin Ming (1):
+>>       libata: forbid port runtime pm by default, fixing regression
+>
+> I noticed that this regression fix doesn't have the
+> CC: stable@vger.kernel.org tag in it, but it's needed on the 3.3
+> trees.  Should it be sent to the stable list separately?
 
-The physical port has a different lifetime to the struct tty_struct
-(which may change many times within the lifetime of the port). You can't
-simply go from the port to a tty struct and assume this is safe and will
-not change.
 
-> Kindly elaborate more on the same if it's not correct.
+Good catch.
 
-Look at how tty_port_tty_get is used
+Stable folks, commit 0c8d32c27f5cf6e14ca14b4758d1e994eebd50fd should be 
+merged into the 3.3 tree(s).
+
+	Jeff
+
+
+
