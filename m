@@ -1,46 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755093Ab2DRUx3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Apr 2012 16:53:29 -0400
-Received: from mail.windriver.com ([147.11.1.11]:35898 "EHLO
-	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753047Ab2DRUx2 (ORCPT
+	id S1755166Ab2DRUyS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Apr 2012 16:54:18 -0400
+Received: from shards.monkeyblade.net ([198.137.202.13]:41586 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754398Ab2DRUyQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Apr 2012 16:53:28 -0400
-From: Paul Gortmaker <paul.gortmaker@windriver.com>
-To: linux-kernel@vger.kernel.org
-Cc: Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Chris Zankel <chris@zankel.net>
-Subject: [PATCH] xtensa: fix build error in xtensa/include/asm/io.h
-Date: Wed, 18 Apr 2012 16:53:11 -0400
-Message-Id: <1334782391-468-1-git-send-email-paul.gortmaker@windriver.com>
-X-Mailer: git-send-email 1.7.9.1
+	Wed, 18 Apr 2012 16:54:16 -0400
+Date: Wed, 18 Apr 2012 16:54:00 -0400 (EDT)
+Message-Id: <20120418.165400.980383816074286216.davem@davemloft.net>
+To: eric.dumazet@gmail.com
+Cc: a.beregalov@gmail.com, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, marc@merlins.org
+Subject: Re: [PATCH] tcp: fix retransmit of partially acked frames
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1334780063.2472.352.camel@edumazet-glaptop>
+References: <CAA1sL1TN+acPd4NAnFC0soeHzzcJe0ja3_zS5ZkFog11HSDAyA@mail.gmail.com>
+	<1334734196.2472.91.camel@edumazet-glaptop>
+	<1334780063.2472.352.camel@edumazet-glaptop>
+X-Mailer: Mew version 6.4 on Emacs 24.0.95 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Wed, 18 Apr 2012 13:54:04 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Caused by commit 6c03438edeb5c359af35f060ea016ca65671c269
+From: Eric Dumazet <eric.dumazet@gmail.com>
+Date: Wed, 18 Apr 2012 22:14:23 +0200
 
-    kernel.h: doesn't explicitly use bug.h, so don't include it.
+> From: Eric Dumazet <edumazet@google.com>
+> 
+> Alexander Beregalov reported skb_over_panic errors and provided stack
+> trace.
+> 
+> I occurs commit a21d45726aca (tcp: avoid order-1 allocations on wifi and
+> tx path) added a regression, when a retransmit is done after a partial
+> ACK.
+> 
+> tcp_retransmit_skb() tries to aggregate several frames if the first one
+> has enough available room to hold the following ones payload. This is
+> controlled by /proc/sys/net/ipv4/tcp_retrans_collapse tunable (default :
+> enabled)
+> 
+> Problem is we must make sure _pskb_trim_head() doesnt fool
+> skb_availroom() when pulling some bytes from skb (this pull is done when
+> receiver ACK part of the frame).
+> 
+> Reported-by: Alexander Beregalov <a.beregalov@gmail.com>
+> Cc: Marc MERLIN <marc@merlins.org>
+> Signed-off-by: Eric Dumazet <edumazet@google.com>
 
-This header uses bug.h so explicitly include it now that the
-implicit presence was removed by 6c03438ed.
-
-Cc: Chris Zankel <chris@zankel.net>
-Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
-
-diff --git a/arch/xtensa/include/asm/io.h b/arch/xtensa/include/asm/io.h
-index d04cd3a..4beb43c 100644
---- a/arch/xtensa/include/asm/io.h
-+++ b/arch/xtensa/include/asm/io.h
-@@ -14,6 +14,7 @@
- #ifdef __KERNEL__
- #include <asm/byteorder.h>
- #include <asm/page.h>
-+#include <linux/bug.h>
- #include <linux/kernel.h>
- 
- #include <linux/types.h>
--- 
-1.7.9.1
-
+Applied, thanks.
