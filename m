@@ -1,60 +1,227 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751180Ab2DRFG0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Apr 2012 01:06:26 -0400
-Received: from sam.nabble.com ([216.139.236.26]:58922 "EHLO sam.nabble.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750730Ab2DRFGZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Apr 2012 01:06:25 -0400
-Message-ID: <33705797.post@talk.nabble.com>
-Date: Tue, 17 Apr 2012 22:06:23 -0700 (PDT)
-From: Akifumi Chikazawa <chikazawa.akifu@jp.fujitsu.com>
-To: linux-kernel@vger.kernel.org
-Subject: Re: kernel crash on P4080DS
-In-Reply-To: <33544993.post@talk.nabble.com>
+	id S1751251Ab2DRFIB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Apr 2012 01:08:01 -0400
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:5279 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750830Ab2DRFIA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Apr 2012 01:08:00 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Tue, 17 Apr 2012 22:07:53 -0700
+From: Venu Byravarasu <vbyravarasu@nvidia.com>
+To: Axel Lin <axel.lin@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+CC: Liam Girdwood <lrg@ti.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Samuel Ortiz <sameo@linux.intel.com>
+Date: Wed, 18 Apr 2012 10:37:40 +0530
+Subject: RE: [PATCH RFT] regulator: tps65090: Use generic regmap
+ enable/disable operations
+Thread-Topic: [PATCH RFT] regulator: tps65090: Use generic regmap
+ enable/disable operations
+Thread-Index: Ac0cecIvqfOw2yuISDKkbqYg49zsjAAp1OuA
+Message-ID: <D958900912E20642BCBC71664EFECE3E6DD6758B6D@BGMAIL02.nvidia.com>
+References: <1334653736.23427.7.camel@phoenix>
+In-Reply-To: <1334653736.23427.7.camel@phoenix>
+Accept-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Nabble-From: chikazawa.akifu@jp.fujitsu.com
-References: <33544993.post@talk.nabble.com>
+Content-Language: en-US
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by nfs id q3I58BpI016203
 
+Looks good to me.
+Acked by: Venu Byravarasu <vbyravarasu@nvidia.com>
 
-Continue investing, I found a mistake in my last report. 
-These sentences are not true.
-> This was due to BUG_ON. so I checked the condition.
-> But it is not true (it means pte_val(*pt) is 0). 
+> -----Original Message-----
+> From: Axel Lin [mailto:axel.lin@gmail.com]
+> Sent: Tuesday, April 17, 2012 2:39 PM
+> To: linux-kernel@vger.kernel.org
+> Cc: Venu Byravarasu; Liam Girdwood; Mark Brown; Samuel Ortiz
+> Subject: [PATCH RFT] regulator: tps65090: Use generic regmap enable/disable
+> operations
+> 
+> This patch converts tps65090 regulator driver to use generic regmap
+> enable/disable operations.
+> 
+> Also move struct tps65090 to include/linux/mfd/tps65090.h because
+> the regulator driver needs to access the rmap field of struct tps65090.
+> 
+> Signed-off-by: Axel Lin <axel.lin@gmail.com>
+> ---
+>  drivers/mfd/tps65090.c                 |   11 -----
+>  drivers/regulator/tps65090-regulator.c |   64 +++----------------------------
+>  include/linux/mfd/tps65090.h           |   13 ++++++
+>  3 files changed, 20 insertions(+), 68 deletions(-)
+> 
+> diff --git a/drivers/mfd/tps65090.c b/drivers/mfd/tps65090.c
+> index a66d4df..47f802b 100644
+> --- a/drivers/mfd/tps65090.c
+> +++ b/drivers/mfd/tps65090.c
+> @@ -78,17 +78,6 @@ static struct mfd_cell tps65090s[] = {
+>  	},
+>  };
+> 
+> -struct tps65090 {
+> -	struct mutex		lock;
+> -	struct device		*dev;
+> -	struct i2c_client	*client;
+> -	struct regmap		*rmap;
+> -	struct irq_chip		irq_chip;
+> -	struct mutex		irq_lock;
+> -	int			irq_base;
+> -	unsigned int		id;
+> -};
+> -
+>  int tps65090_write(struct device *dev, int reg, uint8_t val)
+>  {
+>  	struct tps65090 *tps = dev_get_drvdata(dev);
+> diff --git a/drivers/regulator/tps65090-regulator.c
+> b/drivers/regulator/tps65090-regulator.c
+> index 6bbf760..299237d 100644
+> --- a/drivers/regulator/tps65090-regulator.c
+> +++ b/drivers/regulator/tps65090-regulator.c
+> @@ -29,10 +29,6 @@
+> 
+>  struct tps65090_regulator {
+>  	int		id;
+> -	/* Regulator register address.*/
+> -	u8		reg_en_reg;
+> -	u8		en_bit;
+> -
+>  	/* used by regulator core */
+>  	struct regulator_desc	desc;
+> 
+> @@ -40,64 +36,14 @@ struct tps65090_regulator {
+>  	struct device		*dev;
+>  };
+> 
+> -static inline struct device *to_tps65090_dev(struct regulator_dev *rdev)
+> -{
+> -	return rdev_get_dev(rdev)->parent->parent;
+> -}
+> -
+> -static int tps65090_reg_is_enabled(struct regulator_dev *rdev)
+> -{
+> -	struct tps65090_regulator *ri = rdev_get_drvdata(rdev);
+> -	struct device *parent = to_tps65090_dev(rdev);
+> -	uint8_t control;
+> -	int ret;
+> -
+> -	ret = tps65090_read(parent, ri->reg_en_reg, &control);
+> -	if (ret < 0) {
+> -		dev_err(&rdev->dev, "Error in reading reg 0x%x\n",
+> -			ri->reg_en_reg);
+> -		return ret;
+> -	}
+> -	return (((control >> ri->en_bit) & 1) == 1);
+> -}
+> -
+> -static int tps65090_reg_enable(struct regulator_dev *rdev)
+> -{
+> -	struct tps65090_regulator *ri = rdev_get_drvdata(rdev);
+> -	struct device *parent = to_tps65090_dev(rdev);
+> -	int ret;
+> -
+> -	ret = tps65090_set_bits(parent, ri->reg_en_reg, ri->en_bit);
+> -	if (ret < 0)
+> -		dev_err(&rdev->dev, "Error in updating reg 0x%x\n",
+> -			ri->reg_en_reg);
+> -	return ret;
+> -}
+> -
+> -static int tps65090_reg_disable(struct regulator_dev *rdev)
+> -{
+> -	struct tps65090_regulator *ri = rdev_get_drvdata(rdev);
+> -	struct device *parent = to_tps65090_dev(rdev);
+> -	int ret;
+> -
+> -	ret = tps65090_clr_bits(parent, ri->reg_en_reg, ri->en_bit);
+> -	if (ret < 0)
+> -		dev_err(&rdev->dev, "Error in updating reg 0x%x\n",
+> -			ri->reg_en_reg);
+> -
+> -	return ret;
+> -}
+> -
+>  static struct regulator_ops tps65090_ops = {
+> -	.enable		= tps65090_reg_enable,
+> -	.disable	= tps65090_reg_disable,
+> -	.is_enabled	= tps65090_reg_is_enabled,
+> +	.enable = regulator_enable_regmap,
+> +	.disable = regulator_disable_regmap,
+> +	.is_enabled = regulator_is_enabled_regmap,
+>  };
+> 
+>  #define tps65090_REG(_id)				\
+>  {							\
+> -	.reg_en_reg	= (TPS65090_ID_##_id) + 12,	\
+> -	.en_bit		= 0,				\
+>  	.id		= TPS65090_ID_##_id,		\
+>  	.desc = {					\
+>  		.name = tps65090_rails(_id),		\
+> @@ -105,6 +51,8 @@ static struct regulator_ops tps65090_ops = {
+>  		.ops = &tps65090_ops,			\
+>  		.type = REGULATOR_VOLTAGE,		\
+>  		.owner = THIS_MODULE,			\
+> +		.enable_reg = (TPS65090_ID_##_id) + 12,	\
+> +		.enable_mask = BIT(0),			\
+>  	},						\
+>  }
+> 
+> @@ -136,6 +84,7 @@ static inline struct tps65090_regulator
+> *find_regulator_info(int id)
+> 
+>  static int __devinit tps65090_regulator_probe(struct platform_device *pdev)
+>  {
+> +	struct tps65090 *tps65090_mfd = dev_get_drvdata(pdev-
+> >dev.parent);
+>  	struct tps65090_regulator *ri = NULL;
+>  	struct regulator_config config = { };
+>  	struct regulator_dev *rdev;
+> @@ -155,6 +104,7 @@ static int __devinit tps65090_regulator_probe(struct
+> platform_device *pdev)
+>  	config.dev = &pdev->dev;
+>  	config.init_data = &tps_pdata->regulator;
+>  	config.driver_data = ri;
+> +	config.regmap = tps65090_mfd->rmap;
+> 
+>  	rdev = regulator_register(&ri->desc, &config);
+>  	if (IS_ERR(rdev)) {
+> diff --git a/include/linux/mfd/tps65090.h b/include/linux/mfd/tps65090.h
+> index 38e31c5..6bc31d8 100644
+> --- a/include/linux/mfd/tps65090.h
+> +++ b/include/linux/mfd/tps65090.h
+> @@ -22,6 +22,19 @@
+>  #ifndef __LINUX_MFD_TPS65090_H
+>  #define __LINUX_MFD_TPS65090_H
+> 
+> +#include <linux/irq.h>
+> +
+> +struct tps65090 {
+> +	struct mutex		lock;
+> +	struct device		*dev;
+> +	struct i2c_client	*client;
+> +	struct regmap		*rmap;
+> +	struct irq_chip		irq_chip;
+> +	struct mutex		irq_lock;
+> +	int			irq_base;
+> +	unsigned int		id;
+> +};
+> +
+>  struct tps65090_subdev_info {
+>  	int		id;
+>  	const char	*name;
+> --
+> 1.7.5.4
+> 
+> 
 
-I guess that the cause of BUG_ON are as follows. There are two cases.
-Could you advise me what would cause the kernel panic?
-
-Board       :P2020RDB,P4080DS
-Linux kernel:2.6.36.2
-
-Case 1
-When ioremap is executed, a part of data of vmap_area that consists of tree
-structure had been deleted,
-and then, process to find a empty area in ioremap tried to assign an address
-already being used.
-As the result of that, BUG_ON in mmap_page was executed and caused kernel
-panic.
-
-
-Case2
-When ioremap is executed, va_end in vmap_area structure can be 0. va_start
-is the correct value at that time.
-and process to find an empty area in ioremap did not caluculate accurately.
-then it led to an incorrect address.
-As the result of that, BUG_ON in mmap_page was executed and caused kernel
-panic.
-During execution of the immediately preceding ioremap, va_end is not 0.
-
-and I attached Test program for P2020RDB.
-http://old.nabble.com/file/p33705797/sample_driver.tar.gz
-sample_driver.tar.gz 
--- 
-View this message in context: http://old.nabble.com/kernel-crash-on-P4080DS-tp33544993p33705797.html
-Sent from the linux-kernel mailing list archive at Nabble.com.
-
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
