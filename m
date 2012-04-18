@@ -1,184 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753649Ab2DRRV5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Apr 2012 13:21:57 -0400
-Received: from mail-pz0-f52.google.com ([209.85.210.52]:62540 "EHLO
-	mail-pz0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751102Ab2DRRV4 (ORCPT
+	id S1754192Ab2DRRXz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Apr 2012 13:23:55 -0400
+Received: from rcsinet15.oracle.com ([148.87.113.117]:29005 "EHLO
+	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751083Ab2DRRXv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Apr 2012 13:21:56 -0400
-From: anirudh bhat <abhat38@gmail.com>
-To: arve@android.com, dhowells@redhat.com, chris+android@zenthought.org,
-        hpa@zytor.com
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        anirudh bhat <anirudhbhat@ubuntu.ubuntu-domain>
-Subject: [PATCH 2/2] staging:android:fix line over 80 characters issue in binders.c this patch fixes line over 80 characters warning that was found using checkpatch.pl tool Signed-off-by:Anirudh Bhat <abhat38@gmail.com>
-Date: Wed, 18 Apr 2012 22:50:39 +0530
-Message-Id: <1334769639-5914-1-git-send-email-abhat38@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
+	Wed, 18 Apr 2012 13:23:51 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: ming.m.lin@intel.com, linux-kernel@vger.kernel.org,
+        linux-pm@vger.kernel.org, lenb@kernel.org, linux-acpi@vger.kernel.org,
+        hpa@zytor.com, x86@kernel.org, rjw@sisk.pl
+Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Subject: [PATCH 2/2] x86/acpi: Call acpi_enter_sleep_state via an asmlinkage C function from assembler.
+Date: Wed, 18 Apr 2012 13:18:38 -0400
+Message-Id: <1334769518-7660-3-git-send-email-konrad.wilk@oracle.com>
+X-Mailer: git-send-email 1.7.7.5
+In-Reply-To: <1334769518-7660-1-git-send-email-konrad.wilk@oracle.com>
+References: <1334769518-7660-1-git-send-email-konrad.wilk@oracle.com>
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+X-CT-RefId: str=0001.0A090205.4F8EF89F.001F,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: anirudh bhat <anirudhbhat@ubuntu.ubuntu-domain>
+With commit a2ef5c4fd44ce3922435139393b89f2cce47f576
+"ACPI: Move module parameter gts and bfs to sleep.c" the
+wake_sleep_flags is required when calling acpi_enter_sleep_state.
 
+The assembler code in wakeup_*.S did not do that. One solution
+is to call it from assembler and stick the wake_sleep_flags on
+the stack (for 32-bit) or in %esi (for 64-bit). hpa and rafael
+both suggested however to create a wrapper function to call
+acpi_enter_sleep_state and call said wrapper function
+("acpi_enter_s3") from assembler.
+
+For 32-bit, the acpi_enter_s3 ends up looking as so:
+
+  push   %ebp
+  mov    %esp,%ebp
+  sub    $0x8,%esp
+  movzbl 0xc1809314,%eax [wake_sleep_flags]
+  movl   $0x3,(%esp)
+  mov    %eax,0x4(%esp)
+  call   0xc12d1fa0 <acpi_enter_sleep_state>
+  leave
+  ret
+
+And 64-bit:
+
+  movzbl 0x9afde1(%rip),%esi        [wake_sleep_flags]
+  push   %rbp
+  mov    $0x3,%edi
+  mov    %rsp,%rbp
+  callq  0xffffffff812e9800 <acpi_enter_sleep_state>
+  leaveq
+  retq
+
+Suggested-by: H. Peter Anvin <hpa@zytor.com>
+[v2: Remove extra assembler operations, per hpa review]
+Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 ---
- drivers/staging/android/binder.c |   59 +++++++++++++++++++-------------------
- 1 file changed, 30 insertions(+), 29 deletions(-)
+ arch/x86/kernel/acpi/sleep.c     |    4 ++++
+ arch/x86/kernel/acpi/sleep.h     |    2 ++
+ arch/x86/kernel/acpi/wakeup_32.S |    4 +---
+ arch/x86/kernel/acpi/wakeup_64.S |    4 +---
+ 4 files changed, 8 insertions(+), 6 deletions(-)
 
-diff --git a/drivers/staging/android/binder.c b/drivers/staging/android/binder.c
-index c283212..ae341e0 100644
---- a/drivers/staging/android/binder.c
-+++ b/drivers/staging/android/binder.c
-@@ -644,8 +644,8 @@ static int binder_update_page_range(struct binder_proc *proc, int allocate,
- 		goto free_range;
+diff --git a/arch/x86/kernel/acpi/sleep.c b/arch/x86/kernel/acpi/sleep.c
+index 103b6ab..146a49c 100644
+--- a/arch/x86/kernel/acpi/sleep.c
++++ b/arch/x86/kernel/acpi/sleep.c
+@@ -24,6 +24,10 @@ unsigned long acpi_realmode_flags;
+ static char temp_stack[4096];
+ #endif
  
- 	if (vma == NULL) {
--		printk(KERN_ERR "binder: %d: binder_alloc_buf failed to "
--		       "map pages in userspace, no vma\n", proc->pid);
-+		printk(KERN_ERR "binder: %d: binder_alloc_buf failed to map pages in userspace, no vma\n",
-+			proc->pid);
- 		goto err_no_vma;
- 	}
++asmlinkage void acpi_enter_s3(void)
++{
++	acpi_enter_sleep_state(3, wake_sleep_flags);
++}
+ /**
+  * acpi_suspend_lowlevel - save kernel state
+  *
+diff --git a/arch/x86/kernel/acpi/sleep.h b/arch/x86/kernel/acpi/sleep.h
+index fe5fdda..d68677a 100644
+--- a/arch/x86/kernel/acpi/sleep.h
++++ b/arch/x86/kernel/acpi/sleep.h
+@@ -3,6 +3,7 @@
+  */
  
-@@ -657,8 +657,8 @@ static int binder_update_page_range(struct binder_proc *proc, int allocate,
- 		BUG_ON(*page);
- 		*page = alloc_page(GFP_KERNEL | __GFP_ZERO);
- 		if (*page == NULL) {
--			printk(KERN_ERR "binder: %d: binder_alloc_buf failed "
--			       "for page at %p\n", proc->pid, page_addr);
-+			printk(KERN_ERR "binder: %d: binder_alloc_buf failed for page at %p\n",
-+				proc->pid, page_addr);
- 			goto err_alloc_page_failed;
- 		}
- 		tmp_area.addr = page_addr;
-@@ -666,18 +666,16 @@ static int binder_update_page_range(struct binder_proc *proc, int allocate,
- 		page_array_ptr = page;
- 		ret = map_vm_area(&tmp_area, PAGE_KERNEL, &page_array_ptr);
- 		if (ret) {
--			printk(KERN_ERR "binder: %d: binder_alloc_buf failed "
--			       "to map page at %p in kernel\n",
--			       proc->pid, page_addr);
-+			printk(KERN_ERR "binder: %d: binder_alloc_buf failed to map page at %p in kernel\n",
-+				proc->pid, page_addr);
- 			goto err_map_kernel_failed;
- 		}
- 		user_page_addr =
- 			(uintptr_t)page_addr + proc->user_buffer_offset;
- 		ret = vm_insert_page(vma, user_page_addr, page[0]);
- 		if (ret) {
--			printk(KERN_ERR "binder: %d: binder_alloc_buf failed "
--			       "to map page at %lx in userspace\n",
--			       proc->pid, user_page_addr);
-+			printk(KERN_ERR "binder: %d: binder_alloc_buf failed to map page at %lx in userspace\n",
-+				proc->pid, user_page_addr);
- 			goto err_vm_insert_page_failed;
- 		}
- 		/* vm_insert_page does not seem to increment the refcount */
-@@ -733,8 +731,8 @@ static struct binder_buffer *binder_alloc_buf(struct binder_proc *proc,
- 		ALIGN(offsets_size, sizeof(void *));
+ #include <asm/trampoline.h>
++#include <linux/linkage.h>
  
- 	if (size < data_size || size < offsets_size) {
--		binder_user_error("binder: %d: got transaction with invalid "
--			"size %zd-%zd\n", proc->pid, data_size, offsets_size);
-+		binder_user_error("binder:%d:transaction with invalid size %zd-%zd\n",
-+					proc->pid, data_size, offsets_size);
- 		return NULL;
- 	}
+ extern unsigned long saved_video_mode;
+ extern long saved_magic;
+@@ -10,6 +11,7 @@ extern long saved_magic;
+ extern int wakeup_pmode_return;
  
-@@ -762,8 +760,8 @@ static struct binder_buffer *binder_alloc_buf(struct binder_proc *proc,
- 		}
- 	}
- 	if (best_fit == NULL) {
--		printk(KERN_ERR "binder: %d: binder_alloc_buf size %zd failed, "
--		       "no address space\n", proc->pid, size);
-+		printk(KERN_ERR "binder: %d: binder_alloc_buf size %zd failed,no address space\n",
-+			proc->pid, size);
- 		return NULL;
- 	}
- 	if (n == NULL) {
-@@ -997,8 +995,8 @@ static int binder_inc_node(struct binder_node *node, int strong, int internal,
- 			    node->internal_strong_refs == 0 &&
- 			    !(node == binder_context_mgr_node &&
- 			    node->has_strong_ref)) {
--				printk(KERN_ERR "binder: invalid inc strong "
--					"node for %d\n", node->debug_id);
-+				printk(KERN_ERR "binder:invalid inc strong node for %d\n",
-+					node->debug_id);
- 				return -EINVAL;
- 			}
- 			node->internal_strong_refs++;
-@@ -1013,8 +1011,8 @@ static int binder_inc_node(struct binder_node *node, int strong, int internal,
- 			node->local_weak_refs++;
- 		if (!node->has_weak_ref && list_empty(&node->work.entry)) {
- 			if (target_list == NULL) {
--				printk(KERN_ERR "binder: invalid inc weak node "
--					"for %d\n", node->debug_id);
-+				printk(KERN_ERR "binder: invalid inc weak node for %d\n",
-+					node->debug_id);
- 				return -EINVAL;
- 			}
- 			list_add_tail(&node->work.entry, target_list);
-@@ -1206,10 +1204,11 @@ static int binder_dec_ref(struct binder_ref *ref, int strong)
- {
- 	if (strong) {
- 		if (ref->strong == 0) {
--			binder_user_error("binder: %d invalid dec strong, "
--					  "ref %d desc %d s %d w %d\n",
--					  ref->proc->pid, ref->debug_id,
--					  ref->desc, ref->strong, ref->weak);
-+			binder_user_error("binder:%d invalid dec strong,ref %d desc %d s %d w %d\n",
-+						ref->proc->pid, ref->debug_id,
-+						ref->desc,
-+						ref->strong,
-+						ref->weak);
- 			return -EINVAL;
- 		}
- 		ref->strong--;
-@@ -1221,10 +1220,12 @@ static int binder_dec_ref(struct binder_ref *ref, int strong)
- 		}
- 	} else {
- 		if (ref->weak == 0) {
--			binder_user_error("binder: %d invalid dec weak, "
--					  "ref %d desc %d s %d w %d\n",
--					  ref->proc->pid, ref->debug_id,
--					  ref->desc, ref->strong, ref->weak);
-+			binder_user_error("binder: %d invalid dec weak,ref %d desc %d s %d w %d\n",
-+						ref->proc->pid,
-+						ref->debug_id,
-+						ref->desc,
-+						ref->strong,
-+						ref->weak);
- 			return -EINVAL;
- 		}
- 		ref->weak--;
-@@ -3303,7 +3304,7 @@ static void print_binder_proc(struct seq_file *m,
- 		m->count = start_pos;
- }
+ extern u8 wake_sleep_flags;
++extern asmlinkage void acpi_enter_s3(void);
  
--static const char *binder_return_strings[] = {
-+static const char *const binder_return_strings[] = {
- 	"BR_ERROR",
- 	"BR_OK",
- 	"BR_TRANSACTION",
-@@ -3324,7 +3325,7 @@ static const char *binder_return_strings[] = {
- 	"BR_FAILED_REPLY"
- };
+ extern unsigned long acpi_copy_wakeup_routine(unsigned long);
+ extern void wakeup_long64(void);
+diff --git a/arch/x86/kernel/acpi/wakeup_32.S b/arch/x86/kernel/acpi/wakeup_32.S
+index 13ab720..7261083 100644
+--- a/arch/x86/kernel/acpi/wakeup_32.S
++++ b/arch/x86/kernel/acpi/wakeup_32.S
+@@ -74,9 +74,7 @@ restore_registers:
+ ENTRY(do_suspend_lowlevel)
+ 	call	save_processor_state
+ 	call	save_registers
+-	pushl	$3
+-	call	acpi_enter_sleep_state
+-	addl	$4, %esp
++	call	acpi_enter_s3
  
--static const char *binder_command_strings[] = {
-+static const char *const binder_command_strings[] = {
- 	"BC_TRANSACTION",
- 	"BC_REPLY",
- 	"BC_ACQUIRE_RESULT",
-@@ -3344,7 +3345,7 @@ static const char *binder_command_strings[] = {
- 	"BC_DEAD_BINDER_DONE"
- };
+ #	In case of S3 failure, we'll emerge here.  Jump
+ # 	to ret_point to recover
+diff --git a/arch/x86/kernel/acpi/wakeup_64.S b/arch/x86/kernel/acpi/wakeup_64.S
+index 8ea5164..014d1d2 100644
+--- a/arch/x86/kernel/acpi/wakeup_64.S
++++ b/arch/x86/kernel/acpi/wakeup_64.S
+@@ -71,9 +71,7 @@ ENTRY(do_suspend_lowlevel)
+ 	movq	%rsi, saved_rsi
  
--static const char *binder_objstat_strings[] = {
-+static const char *const binder_objstat_strings[] = {
- 	"proc",
- 	"thread",
- 	"node",
+ 	addq	$8, %rsp
+-	movl	$3, %edi
+-	xorl	%eax, %eax
+-	call	acpi_enter_sleep_state
++	call	acpi_enter_s3
+ 	/* in case something went wrong, restore the machine status and go on */
+ 	jmp	resume_point
+ 
 -- 
-1.7.9.5
+1.7.7.5
 
