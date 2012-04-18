@@ -1,42 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753748Ab2DRA4s (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Apr 2012 20:56:48 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:54353 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752229Ab2DRA4r (ORCPT
+	id S1753553Ab2DRBEQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Apr 2012 21:04:16 -0400
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:13448 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752195Ab2DRBEO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Apr 2012 20:56:47 -0400
+	Tue, 17 Apr 2012 21:04:14 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp06.nvidia.com on Tue, 17 Apr 2012 18:04:09 -0700
+From: Rhyland Klein <rklein@nvidia.com>
+To: Liam Girdwood <lrg@ti.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Samuel Ortiz <sameo@linux.intel.com>
+CC: <devicetree-discuss@lists.ozlabs.org>, <linux-kernel@vger.kernel.org>,
+        <linux-tegra@vger.kernel.org>, Rhyland Klein <rklein@nvidia.com>
+Subject: [PATCH 0/4] Update TPS65910 to boot using devicetree
+Date: Tue, 17 Apr 2012 18:00:25 -0700
+Message-ID: <1334710829-22777-1-git-send-email-rklein@nvidia.com>
+X-Mailer: git-send-email 1.7.0.4
+X-NVConfidentiality: public
 MIME-Version: 1.0
-In-Reply-To: <20120417234423.GY6589@ZenIV.linux.org.uk>
-References: <20120417052511.GU6589@ZenIV.linux.org.uk> <CA+55aFw75=Mtq1njQ9vNmNsGuTPbpUhLHnb7YBLmCZs4Q5ByMA@mail.gmail.com>
- <20120417180129.GW6589@ZenIV.linux.org.uk> <20120417182825.GX6589@ZenIV.linux.org.uk>
- <20120417211419.GC27426@fieldses.org> <CA+55aFwdh_QWG-R2FQ71kDXiNYZ04qPANBsY_PssVUwEBH4uSw@mail.gmail.com>
- <20120417234423.GY6589@ZenIV.linux.org.uk>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Tue, 17 Apr 2012 17:56:24 -0700
-X-Google-Sender-Auth: _dimqcQIXhBtd48_XJbwBBEm3JQ
-Message-ID: <CA+55aFw4ZUvqLKtNTrwfsXx0bVmgHWH+6BDeXGa4+EGY1xYQQw@mail.gmail.com>
-Subject: Re: [git pull] vfs and fs fixes
-To: Al Viro <viro@zeniv.linux.org.uk>
-Cc: "J. Bruce Fields" <bfields@fieldses.org>, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 17, 2012 at 4:44 PM, Al Viro <viro@zeniv.linux.org.uk> wrote:
->
-> In principle, yes, but have you tried to grep for i_mutex?
+This patch set updates the tps65910 driver to boot using devicetree.
 
-No, I hadn't, and right you are. That's a mess.
+One thing that is unfavorable is the addition of the use_dt_for_init_data
+flag. I added this as I wanted to split the parsing of the of nodes between
+the tps65910-regulator code and the main tps65910 code. This split was to
+maintain the list of regulator names solely inside the tps65910-regulator
+code as it already was.
 
-It's not the i_mutex hits themselves that look scary, but there's 75
-hits on just the *nested* locking. That's way more than I would have
-guessed without the grep.
+Rhyland Klein (4):
+  regulator: tps65910: update type for regmap
+  regulator: tps65910: Add device tree bindings
+  mfd: tps65910: Add device-tree support
+  ARM: Tegra: Add support for TPS65910 PMIC
 
-The ext4 ones look pretty simple. But yeah, there's a lot of other
-noise there...
+ Documentation/devicetree/bindings/mfd/tps65910.txt |  132 ++++++++++++++++++++
+ arch/arm/boot/dts/tegra-cardhu.dts                 |   92 ++++++++++++++
+ drivers/gpio/gpio-tps65910.c                       |   39 ++++++-
+ drivers/mfd/tps65910-irq.c                         |   21 +++-
+ drivers/mfd/tps65910.c                             |   78 ++++++++++++-
+ drivers/regulator/tps65910-regulator.c             |   86 +++++++++++++-
+ include/linux/mfd/tps65910.h                       |    3 +-
+ 7 files changed, 439 insertions(+), 12 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/mfd/tps65910.txt
 
-                    Linus
