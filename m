@@ -1,64 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752816Ab2DRLA4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Apr 2012 07:00:56 -0400
-Received: from moutng.kundenserver.de ([212.227.17.10]:59756 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751425Ab2DRLAy (ORCPT
+	id S1753016Ab2DRLDq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Apr 2012 07:03:46 -0400
+Received: from mailout-de.gmx.net ([213.165.64.22]:57252 "HELO
+	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752868Ab2DRLDp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Apr 2012 07:00:54 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Dan Carpenter <dan.carpenter@oracle.com>
-Subject: Re: [PATCH v2 0/8] Second patchset for LPC32xx device tree conversion
-Date: Wed, 18 Apr 2012 11:00:39 +0000
-User-Agent: KMail/1.12.2 (Linux/3.3.0-rc1; KDE/4.3.2; x86_64; ; )
-Cc: Roland Stigge <stigge@antcom.de>, devel@driverdev.osuosl.org,
-        srinivas.bakki@nxp.com, linux-usb@vger.kernel.org,
-        broonie@opensource.wolfsonmicro.com, gregkh@linuxfoundation.org,
-        thierry.reding@avionic-design.de, linux-kernel@vger.kernel.org,
-        kevin.wells@nxp.com, marek.vasut@gmail.com, arm@kernel.org,
-        linux-input@vger.kernel.org, axel.lin@gmail.com,
-        dmitry.torokhov@gmail.com, linux-arm-kernel@lists.infradead.org
-References: <1334682507-15055-1-git-send-email-stigge@antcom.de> <201204180806.16848.arnd@arndb.de> <20120418093604.GL6498@mwanda>
-In-Reply-To: <20120418093604.GL6498@mwanda>
+	Wed, 18 Apr 2012 07:03:45 -0400
+X-Authenticated: #28250155
+X-Provags-ID: V01U2FsdGVkX19dyLQiRT9djH9auuqaZYbTjcBvPp5/kXurrHydOj
+	41UPeJYQf9Pa9J
+From: Sven Joachim <svenjoac@gmx.de>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Suresh Siddha <suresh.b.siddha@intel.com>
+Subject: Re: kernel panic after suspend/resume
+References: <CA+55aFzsjpJt09b6e4NA0T50M3w0xtASSYXz_=UWVDqKRywo=A@mail.gmail.com>
+	<87pqb6fkji.fsf@turtle.gmx.de>
+	<CA+55aFxhb6hriqHHwVtNeYHmtcy5JCEJX-zABBcG2Zjw_gawPw@mail.gmail.com>
+	<201204172321.41095.rjw@sisk.pl> <87hawhtpo9.fsf@turtle.gmx.de>
+	<alpine.LFD.2.02.1204181205540.2542@ionos>
+Date: Wed, 18 Apr 2012 13:03:34 +0200
+In-Reply-To: <alpine.LFD.2.02.1204181205540.2542@ionos> (Thomas Gleixner's
+	message of "Wed, 18 Apr 2012 12:08:23 +0200 (CEST)")
+Message-ID: <87pqb55mk9.fsf@turtle.gmx.de>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.0.95 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201204181100.40123.arnd@arndb.de>
-X-Provags-ID: V02:K0:wntKdBcGSnGzdWP1NWOmmZF1muOEuI7sE0klPjv1K6Q
- uNkYtFZdKh1kSgpZtJkorvIVagLAQjekDTCUvePmtGK17SQ3w0
- XUk75RGw8zdOHuQCW9XEMz2ln9Mb53XII0UrYBtgjCNWDHt4rL
- 6fT7MZg8l0HGdlCszs1Y3hOIonZ3bGql8usy2FQwptet9ULyJZ
- UssAJHkdFaq7+oqeW7g5N8bO94rdR7HBbNE3VxT+Cjta88+ZIM
- GHDsmhcKKDEqSfr72uL2gmNlH7rFoiCRUwZHrfxM2AlJN/npR6
- app0z+fKS7nTtOGq5dGH4PZPNiJEKFYJ4FO7cc6gShgk1PbJym
- zuL22MHWJrcEBXfGTgM8=
+Content-Type: text/plain
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 18 April 2012, Dan Carpenter wrote:
-> I'm not sure I understand.  I thought everyone used the develop
-> against linux-next and backport the fixes model.  Are we going to
-> try merge these in 3.4?  It will still spend some time in linux-next
-> before we submit it, right?
+Am 18.04.2012 um 12:08 schrieb Thomas Gleixner:
 
-Correct, but the point is that you cannot add patches on top of -next
-and have them included in a future -next version, because they never
-merge cleanly.
+> On Wed, 18 Apr 2012, Sven Joachim wrote:
+>
+>> On 2012-04-17 23:21 +0200, Rafael J. Wysocki wrote:
+>> 
+>> > Well, commit fa4da365bc7772c kind of looks like it might be the source of
+>> > this trouble.  Sven, can you try to revert it, please?
+>> 
+>> This seems to do the trick, thanks.
+>
+> Can you try the following patch instead?
 
-The ideal workflow is:
+Appears to work fine, thanks.
 
-1. develop on -rc
-2. merge with latest -next, test and make sure it works there
-3. submit for review against -rc
-4. have patches included in -next once reviewed, but based on -rc
-5. when merge window opens, have patches sent for upstream inclusion
-
-The last two steps are slightly different for your own subsystem
-compared to someone else's subsystem: In this case, Roland is the
-author and sends the patches to me to have them included in -next
-and I send them to Linus in the next merge window.
-
-	Arnd
+> diff --git a/kernel/time/tick-broadcast.c b/kernel/time/tick-broadcast.c
+> index bf57abd..119aca5 100644
+> --- a/kernel/time/tick-broadcast.c
+> +++ b/kernel/time/tick-broadcast.c
+> @@ -531,7 +531,6 @@ void tick_broadcast_setup_oneshot(struct clock_event_device *bc)
+>  		int was_periodic = bc->mode == CLOCK_EVT_MODE_PERIODIC;
+>  
+>  		bc->event_handler = tick_handle_oneshot_broadcast;
+> -		clockevents_set_mode(bc, CLOCK_EVT_MODE_ONESHOT);
+>  
+>  		/* Take the do_timer update */
+>  		tick_do_timer_cpu = cpu;
+> @@ -549,6 +548,7 @@ void tick_broadcast_setup_oneshot(struct clock_event_device *bc)
+>  			   to_cpumask(tmpmask));
+>  
+>  		if (was_periodic && !cpumask_empty(to_cpumask(tmpmask))) {
+> +			clockevents_set_mode(bc, CLOCK_EVT_MODE_ONESHOT);
+>  			tick_broadcast_init_next_event(to_cpumask(tmpmask),
+>  						       tick_next_period);
+>  			tick_broadcast_set_event(tick_next_period, 1);
+> @@ -577,15 +577,10 @@ void tick_broadcast_switch_to_oneshot(void)
+>  	raw_spin_lock_irqsave(&tick_broadcast_lock, flags);
+>  
+>  	tick_broadcast_device.mode = TICKDEV_MODE_ONESHOT;
+> -
+> -	if (cpumask_empty(tick_get_broadcast_mask()))
+> -		goto end;
+> -
+>  	bc = tick_broadcast_device.evtdev;
+>  	if (bc)
+>  		tick_broadcast_setup_oneshot(bc);
+>  
+> -end:
+>  	raw_spin_unlock_irqrestore(&tick_broadcast_lock, flags);
+>  }
