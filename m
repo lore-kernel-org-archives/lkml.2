@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753539Ab2DRNhZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Apr 2012 09:37:25 -0400
-Received: from mail.work-microwave.de ([62.245.205.51]:44449 "EHLO
+	id S1753996Ab2DRNjf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Apr 2012 09:39:35 -0400
+Received: from mail.work-microwave.de ([62.245.205.51]:50628 "EHLO
 	work-microwave.de" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752828Ab2DRNhV (ORCPT
+	with ESMTP id S1753551Ab2DRNh2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Apr 2012 09:37:21 -0400
+	Wed, 18 Apr 2012 09:37:28 -0400
 From: Roland Stigge <stigge@antcom.de>
 To: arm@kernel.org, linux-arm-kernel@lists.infradead.org,
         thierry.reding@avionic-design.de, gregkh@linuxfoundation.org,
@@ -16,9 +16,9 @@ To: arm@kernel.org, linux-arm-kernel@lists.infradead.org,
         marek.vasut@gmail.com, devel@driverdev.osuosl.org, kevin.wells@nxp.com,
         srinivas.bakki@nxp.com, dan.carpenter@oracle.com
 Cc: Roland Stigge <stigge@antcom.de>
-Subject: [PATCH v3 2/10] ohci-nxp: Device tree support
-Date: Wed, 18 Apr 2012 15:36:07 +0200
-Message-Id: <1334756176-25144-3-git-send-email-stigge@antcom.de>
+Subject: [PATCH v3 10/10] ARM: LPC32xx: Move common code to common.c
+Date: Wed, 18 Apr 2012 15:36:15 +0200
+Message-Id: <1334756176-25144-11-git-send-email-stigge@antcom.de>
 X-Mailer: git-send-email 1.7.9
 In-Reply-To: <1334756176-25144-1-git-send-email-stigge@antcom.de>
 References: <1334756176-25144-1-git-send-email-stigge@antcom.de>
@@ -27,64 +27,54 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds device tree support to ohci-nxp.c
+This patch moves non-boardspecific LPC32xx code to common.c
 
 Signed-off-by: Roland Stigge <stigge@antcom.de>
 
 ---
+ arch/arm/mach-lpc32xx/common.c  |   14 ++++++++++++++
+ arch/arm/mach-lpc32xx/phy3250.c |   13 -------------
+ 2 files changed, 14 insertions(+), 13 deletions(-)
 
-Applies to v3.4-rc3
-
- Documentation/devicetree/bindings/usb/ohci-nxp.txt |   16 ++++++++++++++++
- drivers/usb/host/ohci-nxp.c                        |   10 ++++++++++
- 2 files changed, 26 insertions(+)
-
---- /dev/null
-+++ linux-2.6/Documentation/devicetree/bindings/usb/ohci-nxp.txt
-@@ -0,0 +1,16 @@
-+* OHCI controller, NXP ohci-nxp variant
+--- linux-2.6.orig/arch/arm/mach-lpc32xx/common.c
++++ linux-2.6/arch/arm/mach-lpc32xx/common.c
+@@ -223,3 +223,17 @@ void lpc23xx_restart(char mode, const ch
+ 	while (1)
+ 		;
+ }
 +
-+Required properties:
-+- compatible: must be "nxp,ohci-nxp"
-+- reg: physical base address of the controller and length of memory mapped
-+  region.
-+- interrupts: The OHCI interrupt
++static int __init lpc32xx_display_uid(void)
++{
++	u32 uid[4];
 +
-+Example (LPC32xx):
++	lpc32xx_get_uid(uid);
 +
-+	ohci@31020000 {
-+		compatible = "nxp,ohci-nxp";
-+		reg = <0x31020000 0x300>;
-+		interrupt-parent = <&mic>;
-+		interrupts = <0x3b 0>;
-+	};
---- linux-2.6.orig/drivers/usb/host/ohci-nxp.c
-+++ linux-2.6/drivers/usb/host/ohci-nxp.c
-@@ -22,6 +22,7 @@
- #include <linux/clk.h>
- #include <linux/platform_device.h>
- #include <linux/i2c.h>
-+#include <linux/of.h>
++	printk(KERN_INFO "LPC32XX unique ID: %08x%08x%08x%08x\n",
++		uid[3], uid[2], uid[1], uid[0]);
++
++	return 1;
++}
++arch_initcall(lpc32xx_display_uid);
++
+--- linux-2.6.orig/arch/arm/mach-lpc32xx/phy3250.c
++++ linux-2.6/arch/arm/mach-lpc32xx/phy3250.c
+@@ -322,19 +322,6 @@ static void __init lpc3250_machine_init(
+ 			SPI0_CS_GPIO);
+ }
  
- #include <mach/hardware.h>
- #include <asm/mach-types.h>
-@@ -525,10 +526,19 @@ static int usb_hcd_nxp_remove(struct pla
- /* work with hotplug and coldplug */
- MODULE_ALIAS("platform:usb-ohci");
- 
-+#ifdef CONFIG_OF
-+static const struct of_device_id usb_hcd_nxp_match[] = {
-+	{ .compatible = "nxp,ohci-nxp" },
-+	{},
-+};
-+MODULE_DEVICE_TABLE(of, usb_hcd_nxp_match);
-+#endif
-+
- static struct platform_driver usb_hcd_nxp_driver = {
- 	.driver = {
- 		.name = "usb-ohci",
- 		.owner	= THIS_MODULE,
-+		.of_match_table = of_match_ptr(usb_hcd_nxp_match),
- 	},
- 	.probe = usb_hcd_nxp_probe,
- 	.remove = usb_hcd_nxp_remove,
+-static int __init lpc32xx_display_uid(void)
+-{
+-	u32 uid[4];
+-
+-	lpc32xx_get_uid(uid);
+-
+-	printk(KERN_INFO "LPC32XX unique ID: %08x%08x%08x%08x\n",
+-		uid[3], uid[2], uid[1], uid[0]);
+-
+-	return 1;
+-}
+-arch_initcall(lpc32xx_display_uid);
+-
+ static char const *lpc32xx_dt_compat[] __initdata = {
+ 	"nxp,lpc32xx",
+ 	NULL
