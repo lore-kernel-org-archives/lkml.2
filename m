@@ -1,98 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753477Ab2DROJQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Apr 2012 10:09:16 -0400
-Received: from bedivere.hansenpartnership.com ([66.63.167.143]:40559 "EHLO
-	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753306Ab2DROJM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Apr 2012 10:09:12 -0400
-Message-ID: <1334758148.4410.51.camel@dabdike>
-Subject: Re: [PATCH for 3.4] virtio-scsi: fix TMF use-after-free
-From: James Bottomley <James.Bottomley@HansenPartnership.com>
-To: Paolo Bonzini <pbonzini@redhat.com>
-Cc: linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org,
-        Hu Tao <hutao@cn.fujitsu.com>
-Date: Wed, 18 Apr 2012 18:09:08 +0400
-In-Reply-To: <1334756761-12312-1-git-send-email-pbonzini@redhat.com>
-References: <1334756761-12312-1-git-send-email-pbonzini@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.1 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1753154Ab2DROMD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Apr 2012 10:12:03 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:34046 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751071Ab2DROMB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Apr 2012 10:12:01 -0400
+Date: Wed, 18 Apr 2012 10:11:31 -0400
+From: Josh Boyer <jwboyer@redhat.com>
+To: Bastien Nocera <hadess@hadess.net>
+Cc: Jiri Kosina <jkosina@suse.cz>, Jeremy Fitzhardinge <jeremy@goop.org>,
+        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
+        kernel-team@fedoraproject.org, Richard Hughes <richard@hughsie.com>,
+        mjg@redhat.com
+Subject: Re: [PATCH] HID: hid-input: default HID_BATTERY_STRENGTH to no
+Message-ID: <20120418141131.GN19507@zod.bos.redhat.com>
+References: <20120418140517.GM19507@zod.bos.redhat.com>
+ <1334758134.8818.132.camel@novo.hadess.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1334758134.8818.132.camel@novo.hadess.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-04-18 at 15:46 +0200, Paolo Bonzini wrote:
-> Fix a race in TMF path, where cmd may have been already freed
-> by virtscsi_complete_free after waking up from the completion.
-
-There's no may about this; the command will be freed long before the
-completion waiter is awoken.  The description could be clearer.
-
-The problem is a use after free in virtscsi_tmf because the
-virtio_scsi_command is freed before the completion returns.
-
-The fix is to make callers specifying a completion responsible for
-freeing the command in all cases.
-
-James
-
-> Cc: James Bottomley <JBottomley@parallels.com>
-> Cc: linux-scsi@vger.kernel.org
-> Signed-off-by: Hu Tao <hutao@cn.fujitsu.com>
-> Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
-> ---
->  drivers/scsi/virtio_scsi.c |   24 +++++++++++++-----------
->  1 file changed, 13 insertions(+), 11 deletions(-)
+On Wed, Apr 18, 2012 at 03:08:54PM +0100, Bastien Nocera wrote:
+> On Wed, 2012-04-18 at 10:05 -0400, Josh Boyer wrote:
+> > Commit 4f5ca836b "HID: hid-input: add support for HID devices reporting
+> > Battery Strength" added the CONFIG_HID_BATTERY_STRENGTH option to report
+> > the battery strength of HID devices.  The commit log explicitly mentions
+> > it not working properly with recent userspace, but it is default y
+> > anyway.  This is rather odd, and actually causes problems on real
+> > systems.
+> > 
+> > This works around Fedora bug
+> > https://bugzilla.redhat.com/show_bug.cgi?id=806295
 > 
-> diff --git a/drivers/scsi/virtio_scsi.c b/drivers/scsi/virtio_scsi.c
-> index efccd72..1b38431 100644
-> --- a/drivers/scsi/virtio_scsi.c
-> +++ b/drivers/scsi/virtio_scsi.c
-> @@ -175,7 +175,8 @@ static void virtscsi_complete_free(void *buf)
->  
->  	if (cmd->comp)
->  		complete_all(cmd->comp);
-> -	mempool_free(cmd, virtscsi_cmd_pool);
-> +	else
-> +		mempool_free(cmd, virtscsi_cmd_pool);
->  }
->  
->  static void virtscsi_ctrl_done(struct virtqueue *vq)
-> @@ -311,21 +312,22 @@ out:
->  static int virtscsi_tmf(struct virtio_scsi *vscsi, struct virtio_scsi_cmd *cmd)
->  {
->  	DECLARE_COMPLETION_ONSTACK(comp);
-> -	int ret;
-> +	int ret = FAILED;
->  
->  	cmd->comp = &comp;
-> -	ret = virtscsi_kick_cmd(vscsi, vscsi->ctrl_vq, cmd,
-> -			       sizeof cmd->req.tmf, sizeof cmd->resp.tmf,
-> -			       GFP_NOIO);
-> -	if (ret < 0)
-> -		return FAILED;
-> +	if (virtscsi_kick_cmd(vscsi, vscsi->ctrl_vq, cmd,
-> +			      sizeof cmd->req.tmf, sizeof cmd->resp.tmf,
-> +			      GFP_NOIO) < 0)
-> +		goto out;
->  
->  	wait_for_completion(&comp);
-> -	if (cmd->resp.tmf.response != VIRTIO_SCSI_S_OK &&
-> -	    cmd->resp.tmf.response != VIRTIO_SCSI_S_FUNCTION_SUCCEEDED)
-> -		return FAILED;
-> +	if (cmd->resp.tmf.response == VIRTIO_SCSI_S_OK ||
-> +	    cmd->resp.tmf.response == VIRTIO_SCSI_S_FUNCTION_SUCCEEDED)
-> +		ret = SUCCESS;
->  
-> -	return SUCCESS;
-> +out:
-> +	mempool_free(cmd, virtscsi_cmd_pool);
-> +	return ret;
->  }
->  
->  static int virtscsi_device_reset(struct scsi_cmnd *sc)
+> Don't. The only bit of user-space that's broken is upower, and it's
+> getting a fixed release shortly.
 
+Matthew suggested that additional kernel patches were required to add a
+scope parameter so upower could understand that the battery is powering
+a device and not the system.
 
+Also, when did it become OK to force-enable a new feature that is
+_known_ to not work properly on recent userspace?  That makes no sense
+to me.
+
+josh
