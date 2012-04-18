@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752558Ab2DRBT7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Apr 2012 21:19:59 -0400
-Received: from mail-vx0-f174.google.com ([209.85.220.174]:60614 "EHLO
-	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751651Ab2DRBT5 convert rfc822-to-8bit (ORCPT
+	id S1752656Ab2DRBWX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Apr 2012 21:22:23 -0400
+Received: from mail-vb0-f46.google.com ([209.85.212.46]:50888 "EHLO
+	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751651Ab2DRBWV convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Apr 2012 21:19:57 -0400
+	Tue, 17 Apr 2012 21:22:21 -0400
 MIME-Version: 1.0
-In-Reply-To: <201204172220.45970.rjw@sisk.pl>
+In-Reply-To: <201204172243.39525.rjw@sisk.pl>
 References: <4F8790F6.5080408@intel.com>
-	<201204161907.13806.rjw@sisk.pl>
-	<CAC=cRTNdLu=A64YAEp78ENc1h2OJKusXY3Wm9LuY4drz9pbomg@mail.gmail.com>
-	<201204172220.45970.rjw@sisk.pl>
-Date: Wed, 18 Apr 2012 09:19:55 +0800
-Message-ID: <CAC=cRTN2QHWu1aD4AGyTB=wuHW-0oyLreZ2QiWSMvf_Ne_Nz0g@mail.gmail.com>
+	<4F8CD18A.5080903@intel.com>
+	<CAC=cRTMk-NTvo+DJ2mAq6_ZeVLbeqiGx+ttZG6Hr_hQyyYkfLw@mail.gmail.com>
+	<201204172243.39525.rjw@sisk.pl>
+Date: Wed, 18 Apr 2012 09:22:20 +0800
+Message-ID: <CAC=cRTOTZ5Y-urtKLAbuyu8y1ttpG74u3AE0J0_eLg8_8C0PHA@mail.gmail.com>
 Subject: Re: [RFC PATCH] PCIe: Add PCIe runtime D3cold support
 From: huang ying <huang.ying.caritas@gmail.com>
 To: "Rafael J. Wysocki" <rjw@sisk.pl>
@@ -29,28 +29,37 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 18, 2012 at 4:20 AM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+On Wed, Apr 18, 2012 at 4:43 AM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
 > On Tuesday, April 17, 2012, huang ying wrote:
->> On Tue, Apr 17, 2012 at 1:07 AM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
->> > Moreover, I really don't think it's a good idea to put PCI Express ports into
->> > low-power states in general.  It might work on your platform, whatever it is,
->> > but that doesn't mean it's going to work on every PCI Express system out
->> > there.  I actually know of a number of such systems where it surely won't
->> > work at all.
+>> On Tue, Apr 17, 2012 at 10:12 AM, Yan, Zheng <zheng.z.yan@intel.com> wrote:
+>> > On 04/17/2012 01:07 AM, Rafael J. Wysocki wrote:
+>> >
+>> >> BTW, can you please explain to me what the #WAKE signal is and how it is
+>> >> different from PME#?
+>> >
+>> > #WAKE signal is triggered by a pin connected to the root complex or other
+>> > motherboard logic. PME# is triggered by PME message sent to the port.
 >>
->> The runtime PM support for PCIe port is not turned on by default, we need
->>
->> # echo auto > /sys/devices/pcixxxx:xx/<pci id>/power/control
->>
->> to turn on it.  And we will turn on it on system it works.  Is this sufficient?
+>> PME# is a PCI pin, while WAKE# is a PCI Express pin.  In PCI Express,
+>> there is no PME#, PME is delivered between end point device and root
+>> port or root complex event collector via PME message, and the PME
+>> message will trigger IRQ on root port or root complex event collector.
+>>  WAKE# is not used for PCI Express D1, D2 and D3hot, it is just used
+>> by D3cold.  When remote wakeup detected by end point device, it will
+>> assert WAKE# to notify power controller (implemented via ACPI on some
+>> platform), then power controller will turn on power for main link,
+>> after link goes back to L0, PME message will be sent to root port or
+>> root complex event collector by end point device.
 >
-> No, it is not.  In some cases it shouldn't be enabled at all for PCI Express
-> ports, as far as I can say, so to be on the safe side we should only enable it
-> on platforms where PCI Express ports are known to work correctly with runtime PM.
+> OK
+>
+> So do I understand correctly that the WAKE# signal here is the one described
+> in Section 5.3.3.2 Link Wakeup of PCI Express Base spec. 2.0?
+>
+> So what happens is that it triggers a GPE and that GPE has a _Lxx method
+> associated with it, I suppose.  Is that correct?
 
-Sorry, I did not catch your idea exactly.  I think disable it by
-default and enable it by sysfs interface is what you suggested, isn't
-it?  Or you suggest something like "white list"?
+Yes.
 
 Best Regards,
 Huang Ying
