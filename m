@@ -1,76 +1,188 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752152Ab2DRIfm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Apr 2012 04:35:42 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:50566 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751865Ab2DRIfe (ORCPT
+	id S1751991Ab2DRIgk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Apr 2012 04:36:40 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:37391 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751293Ab2DRIgi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Apr 2012 04:35:34 -0400
-Date: Wed, 18 Apr 2012 09:35:30 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Rhyland Klein <rklein@nvidia.com>
-Cc: Liam Girdwood <lrg@ti.com>, Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
-        linux-tegra@vger.kernel.org
-Subject: Re: [PATCH 2/4] regulator: tps65910: Add device tree bindings
-Message-ID: <20120418083529.GB3021@opensource.wolfsonmicro.com>
-References: <1334710829-22777-1-git-send-email-rklein@nvidia.com>
- <1334710829-22777-3-git-send-email-rklein@nvidia.com>
+	Wed, 18 Apr 2012 04:36:38 -0400
+Date: Wed, 18 Apr 2012 01:35:23 -0700
+From: Anton Vorontsov <anton.vorontsov@linaro.org>
+To: Pekka Enberg <penberg@kernel.org>
+Cc: Leonid Moiseichuk <leonid.moiseichuk@nokia.com>,
+        John Stultz <john.stultz@linaro.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, linaro-kernel@lists.linaro.org,
+        patches@linaro.org
+Subject: [PATCH 2/2] vmevent: Implement greater-than attribute and one-shot
+ mode
+Message-ID: <20120418083523.GB31556@lizard>
+References: <20120418083208.GA24904@lizard>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="eAbsdosE1cNLO4uF"
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <1334710829-22777-3-git-send-email-rklein@nvidia.com>
-X-Cookie: You should go home.
+In-Reply-To: <20120418083208.GA24904@lizard>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+This patch implements a new event type, it will trigger whenever a
+value becomes greater than user-specified threshold, it complements
+the 'less-then' trigger type.
 
---eAbsdosE1cNLO4uF
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Also, let's implement the one-shot mode for the events, when set,
+userspace will only receive one notification per crossing the
+boundaries.
 
-On Tue, Apr 17, 2012 at 06:00:27PM -0700, Rhyland Klein wrote:
-> Add device tree bindings for TI's tps65910 pmic.
->=20
-> Signed-off-by: Rhyland Klein <rklein@nvidia.com>
-> ---
->  Documentation/devicetree/bindings/mfd/tps65910.txt |  132 ++++++++++++++=
-++++++
->  1 files changed, 132 insertions(+), 0 deletions(-)
+Now when both LT and GT are set on the same level, the event type
+works as a cross event type: it triggers whenever a value crosses
+the threshold from a lesser values side to a greater values side,
+and vice versa.
 
-There's no actual code changes here, this should be part of the patch
-adding the code, especially since there's only one patch for the code
-change.  If there had been a series of changes it'd possibly have made
-sense to split the binding document but when it's just one patch it's
-easier to review together.
+We use the event types in an userspace low-memory killer: we get a
+notification when memory becomes low, so we start freeing memory by
+killing unneeded processes, and we get notification when memory hits
+the threshold from another side, so we know that we freed enough of
+memory.
 
---eAbsdosE1cNLO4uF
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+Signed-off-by: Anton Vorontsov <anton.vorontsov@linaro.org>
+---
+ include/linux/vmevent.h              |   13 ++++++++++
+ mm/vmevent.c                         |   44 +++++++++++++++++++++++++++++-----
+ tools/testing/vmevent/vmevent-test.c |   22 +++++++++++++----
+ 3 files changed, 68 insertions(+), 11 deletions(-)
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJPjnpxAAoJEBus8iNuMP3dCBYP/2hVPRPB4ekRf+/m6MYtDvCq
-Xq4QAxv9ZXyL4fE79FVxuFMwk5Svm/aqfg5j9GnUBJta9Ppb+XTbhFatDKO6shbj
-KCHxpflc7m6m9PfBl4sI7bAehrAr0UbgXB4l/r9YhdZ1fpHNq0S26EJeqS0T3QiT
-FH5apnI7TfkqeX/h4QhipTM/SiogLthVf7xpK8yinP6PMwiRHHzv4SlWQXfjyopq
-pIXu4eWFlgUAQFXefcAQM4zFIXeIVbsTCLLlw7sFYIrF1D+c5FVK1XySdY7OWBT4
-ZYpRoxLU2JpEZxYMKpZ3mwSDFXspmSp+I7UiCoiFdpswL+VdXagK5TSxEFY5Wdqp
-sFMOAbLpDxojLZ80f+BCOROmtVXAZZgnBgD6zT/qM9QYuzLQ9SU80XTCOH0DpzVm
-4G8HOXBuG7qx2ehF7z4a5n59ToYOLS6RDV2CIBJJQe18X0zT2nNenwuNzaHsWbj/
-vTKFBS1uV6Masj+IRKZoS/YjMexgtu9BpS62K+AOEBTFaNXJFdYwNpCjAbZnPfIQ
-un18gBGiCOPP2WPVRVV/EsGzsOjQJyCO4FNDRhjNA1dEudRDT30eAxIbjaecr3Ba
-5PQ2DmLIGZ+X1TwfhnGpfHU6d8rAh6ftrfDNnFi/zF0KtbE3HW5vRxD1khgBFIiK
-XEHqw8A/UtWJZYamvPXu
-=YUms
------END PGP SIGNATURE-----
-
---eAbsdosE1cNLO4uF--
+diff --git a/include/linux/vmevent.h b/include/linux/vmevent.h
+index 64357e4..ca97cf0 100644
+--- a/include/linux/vmevent.h
++++ b/include/linux/vmevent.h
+@@ -22,6 +22,19 @@ enum {
+ 	 * Sample value is less than user-specified value
+ 	 */
+ 	VMEVENT_ATTR_STATE_VALUE_LT	= (1UL << 0),
++	/*
++	 * Sample value is greater than user-specified value
++	 */
++	VMEVENT_ATTR_STATE_VALUE_GT	= (1UL << 1),
++	/*
++	 * One-shot mode.
++	 */
++	VMEVENT_ATTR_STATE_ONE_SHOT	= (1UL << 2),
++
++	/* Saved state, used internally by the kernel for one-shot mode. */
++	__VMEVENT_ATTR_STATE_VALUE_WAS_LT	= (1UL << 30),
++	/* Saved state, used internally by the kernel for one-shot mode. */
++	__VMEVENT_ATTR_STATE_VALUE_WAS_GT	= (1UL << 31),
+ };
+ 
+ struct vmevent_attr {
+diff --git a/mm/vmevent.c b/mm/vmevent.c
+index 9ed6aca..3cce215 100644
+--- a/mm/vmevent.c
++++ b/mm/vmevent.c
+@@ -1,5 +1,6 @@
+ #include <linux/anon_inodes.h>
+ #include <linux/atomic.h>
++#include <linux/compiler.h>
+ #include <linux/vmevent.h>
+ #include <linux/syscalls.h>
+ #include <linux/timer.h>
+@@ -83,16 +84,47 @@ static bool vmevent_match(struct vmevent_watch *watch)
+ 
+ 	for (i = 0; i < config->counter; i++) {
+ 		struct vmevent_attr *attr = &config->attrs[i];
+-		u64 value;
++		u32 state = attr->state;
++		bool attr_lt = state & VMEVENT_ATTR_STATE_VALUE_LT;
++		bool attr_gt = state & VMEVENT_ATTR_STATE_VALUE_GT;
+ 
+-		if (!attr->state)
++		if (!state)
+ 			continue;
+ 
+-		value = vmevent_sample_attr(watch, attr);
+-
+-		if (attr->state & VMEVENT_ATTR_STATE_VALUE_LT) {
+-			if (value < attr->value)
++		if (attr_lt || attr_gt) {
++			bool one_shot = state & VMEVENT_ATTR_STATE_ONE_SHOT;
++			u32 was_lt_mask = __VMEVENT_ATTR_STATE_VALUE_WAS_LT;
++			u32 was_gt_mask = __VMEVENT_ATTR_STATE_VALUE_WAS_GT;
++			u64 value = vmevent_sample_attr(watch, attr);
++			bool lt = value < attr->value;
++			bool gt = value > attr->value;
++			bool was_lt = state & was_lt_mask;
++			bool was_gt = state & was_gt_mask;
++			bool ret = false;
++
++			if ((lt || gt) && !one_shot)
+ 				return true;
++
++			if (attr_lt && lt && was_lt) {
++				return false;
++			} else if (attr_gt && gt && was_gt) {
++				return false;
++			} else if (lt) {
++				state |= was_lt_mask;
++				state &= ~was_gt_mask;
++				if (attr_lt)
++					ret = true;
++			} else if (gt) {
++				state |= was_gt_mask;
++				state &= ~was_lt_mask;
++				if (attr_gt)
++					ret = true;
++			} else {
++				state &= ~was_lt_mask;
++				state &= ~was_gt_mask;
++			}
++			attr->state = state;
++			return ret;
+ 		}
+ 	}
+ 
+diff --git a/tools/testing/vmevent/vmevent-test.c b/tools/testing/vmevent/vmevent-test.c
+index 534f827..fec7b57 100644
+--- a/tools/testing/vmevent/vmevent-test.c
++++ b/tools/testing/vmevent/vmevent-test.c
+@@ -33,20 +33,32 @@ int main(int argc, char *argv[])
+ 
+ 	config = (struct vmevent_config) {
+ 		.sample_period_ns	= 1000000000L,
+-		.counter		= 4,
++		.counter		= 6,
+ 		.attrs			= {
+-			[0]			= {
++			{
+ 				.type	= VMEVENT_ATTR_NR_FREE_PAGES,
+ 				.state	= VMEVENT_ATTR_STATE_VALUE_LT,
+ 				.value	= phys_pages,
+ 			},
+-			[1]			= {
++			{
++				.type	= VMEVENT_ATTR_NR_FREE_PAGES,
++				.state	= VMEVENT_ATTR_STATE_VALUE_GT,
++				.value	= phys_pages,
++			},
++			{
++				.type	= VMEVENT_ATTR_NR_FREE_PAGES,
++				.state	= VMEVENT_ATTR_STATE_VALUE_LT |
++					  VMEVENT_ATTR_STATE_VALUE_GT |
++					  VMEVENT_ATTR_STATE_ONE_SHOT,
++				.value	= phys_pages / 2,
++			},
++			{
+ 				.type	= VMEVENT_ATTR_NR_AVAIL_PAGES,
+ 			},
+-			[2]			= {
++			{
+ 				.type	= VMEVENT_ATTR_NR_SWAP_PAGES,
+ 			},
+-			[3]			= {
++			{
+ 				.type	= 0xffff, /* invalid */
+ 			},
+ 		},
+-- 
+1.7.9.2
