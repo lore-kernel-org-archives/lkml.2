@@ -1,74 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754630Ab2DSACE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Apr 2012 20:02:04 -0400
-Received: from mail-pz0-f52.google.com ([209.85.210.52]:33247 "EHLO
-	mail-pz0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753522Ab2DSACC (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Apr 2012 20:02:02 -0400
-Date: Wed, 18 Apr 2012 17:01:58 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Kyungmin Park <kyungmin.park@samsung.com>
-Cc: MyungJoo Ham <myungjoo.ham@samsung.com>, Arnd Bergmann <arnd@arndb.de>,
-        LKML <linux-kernel@vger.kernel.org>, NeilBrown <neilb@suse.de>,
-        Randy Dunlap <rdunlap@xenotime.net>,
-        Mike Lockwood <lockwood@android.com>,
-        Arve =?iso-8859-1?Q?Hj=F8nnevag?= <arve@android.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Morten CHRISTIANSEN <morten.christiansen@stericsson.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        John Stultz <john.stultz@linaro.org>,
-        Joerg Roedel <joerg.roedel@amd.com>, myungjoo.ham@gmail.com,
-        cw00.choi@samsung.com
-Subject: Re: [PATCH v7 1/6] Extcon (external connector): import Android's
- switch class and modify.
-Message-ID: <20120419000158.GB24271@kroah.com>
-References: <1332492784-10526-1-git-send-email-myungjoo.ham@samsung.com>
- <1332492784-10526-2-git-send-email-myungjoo.ham@samsung.com>
- <20120418214703.GA31606@kroah.com>
- <CAH9JG2VRas6LWCZSF3BFEsJvOS+6AeYMe_BQh3H18kh_=8CNqg@mail.gmail.com>
- <20120418234042.GB23221@kroah.com>
- <CAH9JG2VPhv-i43tx2TSejut39u25RYbHKFAhPiRQpH4DYEEg9g@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAH9JG2VPhv-i43tx2TSejut39u25RYbHKFAhPiRQpH4DYEEg9g@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1754674Ab2DSACi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Apr 2012 20:02:38 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:47487 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752656Ab2DSACg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Apr 2012 20:02:36 -0400
+Date: Thu, 19 Apr 2012 10:02:28 +1000
+From: NeilBrown <neilb@suse.de>
+To: Jim Kukunas <james.t.kukunas@linux.intel.com>
+Cc: hpa@zytor.com, linux-kernel@vger.kernel.org, linux-raid@vger.kernel.org
+Subject: Re: arch/86: AVX RAID5 xor checksumming v1
+Message-ID: <20120419100228.05112e58@notabene.brown>
+In-Reply-To: <1334789928-7238-1-git-send-email-james.t.kukunas@linux.intel.com>
+References: <1334789928-7238-1-git-send-email-james.t.kukunas@linux.intel.com>
+X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.7; x86_64-suse-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; micalg=PGP-SHA1;
+ boundary="Sig_/5GfBOCnFApxfNP.q=xmOMiN"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 19, 2012 at 08:48:35AM +0900, Kyungmin Park wrote:
-> On 4/19/12, Greg KH <gregkh@linuxfoundation.org> wrote:
-> > On Thu, Apr 19, 2012 at 08:38:06AM +0900, Kyungmin Park wrote:
-> >> Hi Greg,
-> >>
-> >> Can you check the latest extcon at here?
-> >>
-> >> http://git.infradead.org/users/kmpark/linux-samsung/shortlog/refs/heads/extcon
-> >
-> > No, please send me patches, that's what I need to have in order to apply
-> > them.
-> >
-> > Always make sure that your patches do not break the build along the
-> > series, which is what happened here.  Did you not test this?
-> 
-> No, we tested it from kernel 3.2 and generate the patches against the
-> latest kernel at that time.
+--Sig_/5GfBOCnFApxfNP.q=xmOMiN
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-It wasn't an issue about the kernel it was built against, it is a bug in
-this first patch, it just will not build.  That needs to be fixed,
-right?
+On Wed, 18 Apr 2012 15:58:47 -0700 Jim Kukunas
+<james.t.kukunas@linux.intel.com> wrote:
 
-> Here's another patch based on 3.3-rc4.
-> http://git.infradead.org/users/kmpark/linux-samsung/shortlog/refs/heads/extcon-for-next
-> 
-> Anyway, as you want, we will send the extcon patches again without build break.
+> Hi Folks,
+>=20
+> The following patch adds an AVX implementation of the RAID5 xor checksumm=
+ing
+> functions.
+>=20
+> This version differs from version 0, in that it:
+> 	0) checks whether assembler supports AVX
+> 	1) replaces __attribute__(aligned(32)) with __aligned(32)
+> 	2) adds do/while(0); to macro blocks
+>=20
+> Based on xor_speed, the AVX implementation appears to be ~32% faster than=
+ the
+> SSE implementation on my i7 2600:
+>=20
+>         generic_sse: 15088.000 MB/sec
+> 	avx: 19936.000 MB/sec
+>=20
 
-That's a requirement if you want them to be applied :)
+Applied, thanks.
+(though I remove the blank line at the end of the new file - the voices made
+me do it, I had no choice)
 
-thanks,
+NeilBrown
 
-greg k-h
+--Sig_/5GfBOCnFApxfNP.q=xmOMiN
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.18 (GNU/Linux)
+
+iQIVAwUBT49WFDnsnt1WYoG5AQJkYg/9HxGzSukJhYeZHX2LRUdk0+J5X0AkwmtT
+btBs6cBitEEebc2p4HF6AzZFuoIDg+X9WTEZWpX4/wWy0mFPTQ0M0WR6V4B1SrXz
+iqfyx66wdWN84xW1hUfn220nsvaThO0MJsBxmExF3+hUwVqy/tKlpgUkgKBJz4mc
+ZwjHHT89qIwypOquPc3nF+zGqfopgitbVBw4UR+1uMYHQ4aarbWsRnwGVwG8EnwS
+gdxt2hV07v4GbHQA9r3uvj7JzGjKoWULPMWK/+CTwE/0KQH+idoK3DQtgOEAet3B
+L5v73pzVbQwdWH0dPrSPXANQoQtDYaXGfgluazNyAWVXseKQdCc4itBj9B46gkId
+P7AvjWXvamuTV/gifxrSGHX1rZfbR6QH0BP/emGJg3APGHehzaKJIGfs6VNOoa6u
+dJ0SY6hXTCcuIZB9934a3RwgkUsvZL9kJP2E6rIDHDu4r1c7tJCBVZYtjapSqicd
++11GHBpYZq96YIpWNUJUTPIPNcXPCwRdTKKNm1FhIG5QOd9/hxHCL8KbMR3nGi2s
+ubTHdKydtCazAX6iRHf7Pzt2T3EUN5hLRCIhGbIUuUgRoNDc5kJe6R5f4WROzFJf
+5JRTw4qbWcYV21TPKSI0HWp5QXFrn83o0lRYEHcpJq2ng8UgRfZst3OTPNXJL5dy
+3/ypCnGb8w0=
+=g4ce
+-----END PGP SIGNATURE-----
+
+--Sig_/5GfBOCnFApxfNP.q=xmOMiN--
