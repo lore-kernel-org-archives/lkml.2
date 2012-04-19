@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755437Ab2DSND6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Apr 2012 09:03:58 -0400
-Received: from mail.work-microwave.de ([62.245.205.51]:51408 "EHLO
+	id S1755449Ab2DSNEV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Apr 2012 09:04:21 -0400
+Received: from mail.work-microwave.de ([62.245.205.51]:59615 "EHLO
 	work-microwave.de" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1755208Ab2DSNBO (ORCPT
+	with ESMTP id S1755248Ab2DSNBN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Apr 2012 09:01:14 -0400
+	Thu, 19 Apr 2012 09:01:13 -0400
 From: Roland Stigge <stigge@antcom.de>
 To: arm@kernel.org, thierry.reding@avionic-design.de, arnd@arndb.de,
         linux-arm-kernel@lists.infradead.org, gregkh@linuxfoundation.org,
@@ -16,151 +16,63 @@ To: arm@kernel.org, thierry.reding@avionic-design.de, arnd@arndb.de,
         marek.vasut@gmail.com, devel@driverdev.osuosl.org, kevin.wells@nxp.com,
         srinivas.bakki@nxp.com
 Cc: Roland Stigge <stigge@antcom.de>
-Subject: [PATCH v4 1/10] ohci-nxp: Driver cleanup
-Date: Thu, 19 Apr 2012 15:00:06 +0200
-Message-Id: <1334840415-14287-2-git-send-email-stigge@antcom.de>
+Subject: [PATCH v4 0/10] Second patchset for LPC32xx device tree conversion
+Date: Thu, 19 Apr 2012 15:00:05 +0200
+Message-Id: <1334840415-14287-1-git-send-email-stigge@antcom.de>
 X-Mailer: git-send-email 1.7.9
-In-Reply-To: <1334840415-14287-1-git-send-email-stigge@antcom.de>
-References: <1334840415-14287-1-git-send-email-stigge@antcom.de>
 X-FEAS-SYSTEM-WL: rst@work-microwave.de, 192.168.11.78
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Cleanup for ohci-nxp.c:
+This is the second patch set for device tree conversion of mach-lpc32xx. It
+builds upon and requires the previously posted first set of 8 plus the GPIO
+patch.
 
-* Cleanup of resource handling (mem and irq), use devm_request_and_ioremap()
-* Use DMA_BIT_MASK()
-* Don't remove __devinit
-* Removed obsolete gpio.h include
-* More consistent bit access symbols
-* Removed unused extern declaration ocpi_enable()
-* Added error handling on i2c_get_adapter()
-* Whitespace cleanup
+It touches different subsystems (USB/OHCI, input/touchscreen, iio/adc and
+mach-lpc32) to be picked by the respective subsystem maintainer and probably
+applied separately. (?)
 
 Signed-off-by: Roland Stigge <stigge@antcom.de>
 
----
+--
 
 Applies to v3.4-rc3
 
- drivers/usb/host/ohci-nxp.c |   44 ++++++++++++++++++++++++++------------------
- 1 file changed, 26 insertions(+), 18 deletions(-)
+Changes since v3:
+* phy3250.c, clock.c: Cleaned up auxdata table by using generated device
+  names in clock table
+* common.c: Removed trailing newline
+* lpc32xx.dtsi: Documented SLC vs. MLC activation
 
---- linux-2.6.orig/drivers/usb/host/ohci-nxp.c
-+++ linux-2.6/drivers/usb/host/ohci-nxp.c
-@@ -29,7 +29,6 @@
- 
- #include <mach/platform.h>
- #include <mach/irqs.h>
--#include <asm/gpio.h>
- 
- #define USB_CONFIG_BASE		0x31020000
- #define PWRMAN_BASE		0x40004000
-@@ -38,7 +37,9 @@
- 
- /* USB_CTRL bit defines */
- #define USB_SLAVE_HCLK_EN	(1 << 24)
-+#define USB_DEV_NEED_CLK_EN	(1 << 22)
- #define USB_HOST_NEED_CLK_EN	(1 << 21)
-+#define PAD_CONTROL_LAST_DRIVEN	(1 << 19)
- 
- #define USB_OTG_CLK_CTRL	IO_ADDRESS(USB_CONFIG_BASE + 0xFF4)
- #define USB_OTG_CLK_STAT	IO_ADDRESS(USB_CONFIG_BASE + 0xFF8)
-@@ -117,7 +118,6 @@ static struct i2c_driver isp1301_driver;
- static struct i2c_client *isp1301_i2c_client;
- 
- extern int usb_disabled(void);
--extern int ocpi_enable(void);
- 
- static struct clk *usb_clk;
- 
-@@ -220,7 +220,7 @@ static void isp1301_configure_lpc32xx(vo
- 		ISP1301_I2C_INTERRUPT_RISING | ISP1301_I2C_REG_CLEAR_ADDR, ~0);
- 
- 	/* Enable usb_need_clk clock after transceiver is initialized */
--	__raw_writel((__raw_readl(USB_CTRL) | (1 << 22)), USB_CTRL);
-+	__raw_writel(__raw_readl(USB_CTRL) | USB_HOST_NEED_CLK_EN, USB_CTRL);
- 
- 	printk(KERN_INFO "ISP1301 Vendor ID  : 0x%04x\n",
- 	      i2c_smbus_read_word_data(isp1301_i2c_client, 0x00));
-@@ -374,9 +374,13 @@ static int __devinit usb_hcd_nxp_probe(s
- 	const struct hc_driver *driver = &ohci_nxp_hc_driver;
- 	struct i2c_adapter *i2c_adap;
- 	struct i2c_board_info i2c_info;
-+	struct resource *res;
- 
- 	int ret = 0, irq;
- 
-+	pdev->dev.coherent_dma_mask = DMA_BIT_MASK(32);
-+	pdev->dev.dma_mask = &pdev->dev.coherent_dma_mask;
-+
- 	dev_dbg(&pdev->dev, "%s: " DRIVER_DESC " (nxp)\n", hcd_name);
- 	if (usb_disabled()) {
- 		err("USB is disabled");
-@@ -384,16 +388,8 @@ static int __devinit usb_hcd_nxp_probe(s
- 		goto out;
- 	}
- 
--	if (pdev->num_resources != 2
--	    || pdev->resource[0].flags != IORESOURCE_MEM
--	    || pdev->resource[1].flags != IORESOURCE_IRQ) {
--		err("Invalid resource configuration");
--		ret = -ENODEV;
--		goto out;
--	}
--
- 	/* Enable AHB slave USB clock, needed for further USB clock control */
--	__raw_writel(USB_SLAVE_HCLK_EN | (1 << 19), USB_CTRL);
-+	__raw_writel(USB_SLAVE_HCLK_EN | PAD_CONTROL_LAST_DRIVEN, USB_CTRL);
- 
- 	ret = i2c_add_driver(&isp1301_driver);
- 	if (ret < 0) {
-@@ -401,6 +397,11 @@ static int __devinit usb_hcd_nxp_probe(s
- 		goto out;
- 	}
- 	i2c_adap = i2c_get_adapter(2);
-+	if (!i2c_adap) {
-+		err("failed on i2c_get_adapter");
-+		goto out_i2c_driver;
-+	}
-+
- 	memset(&i2c_info, 0, sizeof(struct i2c_board_info));
- 	strlcpy(i2c_info.type, "isp1301_nxp", I2C_NAME_SIZE);
- 	isp1301_i2c_client = i2c_new_probed_device(i2c_adap, &i2c_info,
-@@ -442,7 +443,7 @@ static int __devinit usb_hcd_nxp_probe(s
- 	while ((__raw_readl(USB_OTG_CLK_STAT) & USB_CLOCK_MASK) !=
- 	       USB_CLOCK_MASK) ;
- 
--	hcd = usb_create_hcd (driver, &pdev->dev, dev_name(&pdev->dev));
-+	hcd = usb_create_hcd(driver, &pdev->dev, dev_name(&pdev->dev));
- 	if (!hcd) {
- 		err("Failed to allocate HC buffer");
- 		ret = -ENOMEM;
-@@ -452,14 +453,21 @@ static int __devinit usb_hcd_nxp_probe(s
- 	/* Set all USB bits in the Start Enable register */
- 	nxp_set_usb_bits();
- 
--	hcd->rsrc_start = pdev->resource[0].start;
--	hcd->rsrc_len = pdev->resource[0].end - pdev->resource[0].start + 1;
--	if (!request_mem_region(hcd->rsrc_start, hcd->rsrc_len, hcd_name)) {
--		dev_dbg(&pdev->dev, "request_mem_region failed\n");
-+	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-+	if (!res) {
-+		dev_err(&pdev->dev, "Failed to get MEM resource");
-+		ret =  -ENOMEM;
-+		goto out4;
-+	}
-+
-+	hcd->regs = devm_request_and_ioremap(&pdev->dev, res);
-+	if (!hcd->regs) {
-+		err("Failed to devm_request_and_ioremap");
- 		ret =  -ENOMEM;
- 		goto out4;
- 	}
--	hcd->regs = (void __iomem *)pdev->resource[0].start;
-+	hcd->rsrc_start = res->start;
-+	hcd->rsrc_len = resource_size(res);
- 
- 	irq = platform_get_irq(pdev, 0);
- 	if (irq < 0) {
+Thanks to Arnd Bergmann for reviewing!
+
+Roland Stigge (10):
+ohci-nxp: Driver cleanup
+ohci-nxp: Device tree support
+ARM: LPC32xx: clock.c cleanup
+ARM: LPC32xx: clock.c dma adjustment
+ARM: LPC32xx: Remove obsolete platform Kconfig
+input: Device tree support for LPC32xx touchscreen
+iio: lpc32xx-adc: Remove driver conflict due to device tree
+ARM: LPC32xx: DTS files for device tree conversion
+ARM: LPC32xx: Device tree support
+ARM: LPC32xx: Move common code to common.c
+
+ Documentation/devicetree/bindings/arm/lpc32xx-mic.txt               |   38 +
+ Documentation/devicetree/bindings/arm/lpc32xx.txt                   |    8 
+ Documentation/devicetree/bindings/input/touchscreen/lpc32xx-tsc.txt |   16 
+ Documentation/devicetree/bindings/usb/ohci-nxp.txt                  |   16 
+ arch/arm/Kconfig                                                    |    1 
+ arch/arm/boot/dts/lpc32xx.dtsi                                      |  303 ++++++++++
+ arch/arm/boot/dts/phy3250.dts                                       |  115 +++
+ arch/arm/mach-lpc32xx/Kconfig                                       |   26 
+ arch/arm/mach-lpc32xx/clock.c                                       |   77 +-
+ arch/arm/mach-lpc32xx/common.c                                      |  192 ------
+ arch/arm/mach-lpc32xx/common.h                                      |   14 
+ arch/arm/mach-lpc32xx/irq.c                                         |   78 +-
+ arch/arm/mach-lpc32xx/phy3250.c                                     |  146 ++--
+ drivers/input/touchscreen/lpc32xx_ts.c                              |   10 
+ drivers/staging/iio/adc/Kconfig                                     |    8 
+ drivers/usb/host/ohci-nxp.c                                         |   55 +
+ 16 files changed, 704 insertions(+), 399 deletions(-)
