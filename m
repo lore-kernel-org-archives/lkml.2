@@ -1,50 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932511Ab2DSU1S (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Apr 2012 16:27:18 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:51203 "EHLO mail.zytor.com"
+	id S932529Ab2DSU1c (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Apr 2012 16:27:32 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:60519 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932385Ab2DSU1P (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Apr 2012 16:27:15 -0400
-Message-ID: <4F907512.9060300@zytor.com>
-Date: Thu, 19 Apr 2012 13:26:58 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120329 Thunderbird/11.0.1
+	id S932385Ab2DSU1a (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Apr 2012 16:27:30 -0400
+Date: Thu, 19 Apr 2012 22:26:35 +0200
+From: Jan Kara <jack@suse.cz>
+To: Fengguang Wu <fengguang.wu@intel.com>
+Cc: Tejun Heo <tj@kernel.org>, Jan Kara <jack@suse.cz>, vgoyal@redhat.com,
+        Jens Axboe <axboe@kernel.dk>, linux-mm@kvack.org, sjayaraman@suse.com,
+        andrea@betterlinux.com, jmoyer@redhat.com,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        kamezawa.hiroyu@jp.fujitsu.com, lizefan@huawei.com,
+        containers@lists.linux-foundation.org, cgroups@vger.kernel.org,
+        ctalbott@google.com, rni@google.com, lsf@lists.linux-foundation.org
+Subject: Re: [RFC] writeback and cgroup
+Message-ID: <20120419202635.GA4795@quack.suse.cz>
+References: <20120403183655.GA23106@dhcp-172-17-108-109.mtv.corp.google.com>
+ <20120404175124.GA8931@localhost>
+ <20120404193355.GD29686@dhcp-172-17-108-109.mtv.corp.google.com>
+ <20120406095934.GA10465@localhost>
+ <20120417223854.GG19975@google.com>
+ <20120419142343.GA12684@localhost>
 MIME-Version: 1.0
-To: David Daney <ddaney.cavm@gmail.com>
-CC: Linus Torvalds <torvalds@linux-foundation.org>,
-        Borislav Petkov <bp@amd64.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
-        David Daney <ddaney@caviumnetworks.com>, ralf@linux-mips.org
-Subject: Re: [PATCH 3/3] x86, extable: Handle early exceptions
-References: <1334794610-5546-1-git-send-email-hpa@zytor.com> <20120419092255.GA29542@aftab> <20120419092630.GD29542@aftab> <4F904541.2030200@zytor.com> <CA+55aFwMsm7zVqPjKptm38zJAbJpF=9e51ew7BP6S5YnoJa3ig@mail.gmail.com> <20120419173802.GI3221@aftab.osrc.amd.com> <4F90527B.7020005@zytor.com> <CA+55aFxhY1Ug5esj==Sm=o1Epg+NFnvFs74syqRxbYDbPQJEFA@mail.gmail.com> <9ff2e09c-57e4-455e-8614-1b3b17b652f4@email.android.com> <4F9072CA.6030903@gmail.com> <4F9073A6.4030709@zytor.com>
-In-Reply-To: <4F9073A6.4030709@zytor.com>
-X-Enigmail-Version: 1.4
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120419142343.GA12684@localhost>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/19/2012 01:20 PM, H. Peter Anvin wrote:
-> On 04/19/2012 01:17 PM, David Daney wrote:
->> On 04/19/2012 11:55 AM, H. Peter Anvin wrote:
->>> Either way I suggest picking up David's presorting patchset since it
->>> is already done and use its infrastructure for any further improvements.
->>
->> It does have the advantage of already being implemented.  There was a
->> little feedback on the kbuild portions of the patch.
->>
->> If you would like, I will send an updated version of the patch.
+On Thu 19-04-12 22:23:43, Wu Fengguang wrote:
+> For one instance, splitting the request queues will give rise to
+> PG_writeback pages.  Those pages have been the biggest source of
+> latency issues in the various parts of the system.
+  Well, if we allow more requests to be in flight in total then yes, number
+of PG_Writeback pages can be higher as well.
+
+> It's not uncommon for me to see filesystems sleep on PG_writeback
+> pages during heavy writeback, within some lock or transaction, which in
+> turn stall many tasks that try to do IO or merely dirty some page in
+> memory. Random writes are especially susceptible to such stalls. The
+> stable page feature also vastly increase the chances of stalls by
+> locking the writeback pages. 
 > 
-> Please.  It gets us 90% of the way, and we need the infrastructure
-> anyway to do any further work.
+> Page reclaim may also block on PG_writeback and/or PG_dirty pages. In
+> the case of direct reclaim, it means blocking random tasks that are
+> allocating memory in the system.
 > 
+> PG_writeback pages are much worse than PG_dirty pages in that they are
+> not movable. This makes a big difference for high-order page allocations.
+> To make room for a 2MB huge page, vmscan has the option to migrate
+> PG_dirty pages, but for PG_writeback it has no better choices than to
+> wait for IO completion.
+> 
+> The difficulty of THP allocation goes up *exponentially* with the
+> number of PG_writeback pages. Assume PG_writeback pages are randomly
+> distributed in the physical memory space. Then we have formula
+> 
+>         P(reclaimable for THP) = 1 - P(hit PG_writeback)^256
+  Well, this implicitely assumes that PG_Writeback pages are scattered
+across memory uniformly at random. I'm not sure to which extent this is
+true... Also as a nitpick, this isn't really an exponential growth since
+the exponent is fixed (256 - actually it should be 512, right?). It's just
+a polynomial with a big exponent. But sure, growth in number of PG_Writeback
+pages will cause relatively steep drop in the number of available huge
+pages.
 
-Linus, it's not really an x86 patchset, but would you object if I queue
-up David's updated patchset in -tip?  I'll try to get an Ack from Ralf
-for the MIPS portion.
+...
+> It's worth to note that running multiple flusher threads per bdi means
+> not only disk seeks for spin disks, smaller IO size for SSD, but also
+> lock contentions and cache bouncing for metadata heavy workloads and
+> fast storage.
+  Well, this heavily depends on particular implementation (and chosen
+data structures). But yes, we should have that in mind.
 
-	-hpa
+...
+> > > To me, balance_dirty_pages() is *the* proper layer for buffered writes.
+> > > It's always there doing 1:1 proportional throttling. Then you try to
+> > > kick in to add *double* throttling in block/cfq layer. Now the low
+> > > layer may enforce 10:1 throttling and push balance_dirty_pages() away
+> > > from its balanced state, leading to large fluctuations and program
+> > > stalls.
+> > 
+> > Just do the same 1:1 inside each cgroup.
+> 
+> Sure. But the ratio mismatch I'm talking about is inter-cgroup.
+> For example there are only 2 dd tasks doing buffered writes in the
+> system. Now consider the mismatch that cfq is dispatching their IO
+> requests at 10:1 weights, while balance_dirty_pages() is throttling
+> the dd tasks at 1:1 equal split because it's not aware of the cgroup
+> weights.
+> 
+> What will happen in the end? The 1:1 ratio imposed by
+> balance_dirty_pages() will take effect and the dd tasks will progress
+> at the same pace. The cfq weights will be defeated because the async
+> queue for the second dd (and cgroup) constantly runs empty.
+  Yup. This just shows that you have to have per-cgroup dirty limits. Once
+you have those, things start working again.
 
+								Honza
+-- 
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
