@@ -1,66 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754849Ab2DSMug (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Apr 2012 08:50:36 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:34760 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752808Ab2DSMuf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Apr 2012 08:50:35 -0400
-Date: Thu, 19 Apr 2012 14:50:33 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: linux-mm@kvack.org, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: Weirdness in __alloc_bootmem_node_high
-Message-ID: <20120419125032.GB15634@tiehlicka.suse.cz>
-References: <20120417155502.GE22687@tiehlicka.suse.cz>
- <CAE9FiQXWKzv7Wo4iWGrKapmxQYtAGezghwup1UKoW2ghqUSr+A@mail.gmail.com>
- <20120417173203.GA32482@tiehlicka.suse.cz>
- <CAE9FiQXvZ4eSCwMSG2H7CC6suQe37TmQpmOEKW_082W3zz-6Fw@mail.gmail.com>
+	id S1755007Ab2DSMup (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Apr 2012 08:50:45 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:42086 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753826Ab2DSMun (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Apr 2012 08:50:43 -0400
+Date: Thu, 19 Apr 2012 13:50:41 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Rhyland Klein <rklein@nvidia.com>
+Cc: Liam Girdwood <lrg@ti.com>, Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
+Subject: Re: [PATCH 3/4] mfd: tps65910: Add device-tree support
+Message-ID: <20120419125041.GH3046@opensource.wolfsonmicro.com>
+References: <1334710829-22777-1-git-send-email-rklein@nvidia.com>
+ <1334710829-22777-4-git-send-email-rklein@nvidia.com>
+ <20120418090133.GC3021@opensource.wolfsonmicro.com>
+ <1334777758.32315.37.camel@rklein-linux>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="gKijDXBCEH69PxaN"
 Content-Disposition: inline
-In-Reply-To: <CAE9FiQXvZ4eSCwMSG2H7CC6suQe37TmQpmOEKW_082W3zz-6Fw@mail.gmail.com>
+In-Reply-To: <1334777758.32315.37.camel@rklein-linux>
+X-Cookie: You are always busy.
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue 17-04-12 11:07:10, Yinghai Lu wrote:
-> On Tue, Apr 17, 2012 at 10:32 AM, Michal Hocko <mhocko@suse.cz> wrote:
-> > On Tue 17-04-12 10:12:30, Yinghai Lu wrote:
-> >>
-> >> We are not using bootmem with x86 now, so could remove those workaround now.
-> >
-> > Could you be more specific about what the workaround is used for?
-> 
-> Don't bootmem allocating too low to use up all low memory. like for
-> system with lots of memory for sparse vmemmap.
 
-OK I see. Thanks for clarification.
-I guess it doesn't make much sense to fix this particular thing now and
-rather let it to a bigger clean up. If people think otherwise I can send
-a patch though.
+--gKijDXBCEH69PxaN
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
+On Wed, Apr 18, 2012 at 12:35:58PM -0700, Rhyland Klein wrote:
+> On Wed, 2012-04-18 at 02:01 -0700, Mark Brown wrote:
 
-> 
-> when nobootmem.c is used, __alloc_bootmem_node_high is the same as
-> __alloc_bootmem_node.
-> 
-> Thanks
-> 
-> Yinghai
-> 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Fight unfair telecom internet charges in Canada: sign http://stopthemeter.ca/
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+> > This is a really odd idiom - normally the pattern for device tree
+> > support is to just go and try to use the device tree data if it's there
+> > and there's no need for any flag to say if it should be used.
 
--- 
-Michal Hocko
-SUSE Labs
-SUSE LINUX s.r.o.
-Lihovarska 1060/12
-190 00 Praha 9    
-Czech Republic
+> I agree its odd. My concern was that the idiom is that is pdata assigned
+> from board files should override dt data. At this point, we don't know
+> where the tps65910->board_data is coming from, dt or board files.
+> Arbitrarily using dt breaks that idiom. We could do a check like this if
+> you prefer:
+
+No, just prefer the DT - what you're proposing is exactly the opposite
+idiom to what all the other DT drivers do so we'd need to go round
+changing the policy globally at which point we probably want to start
+having helpers for this.
+
+--gKijDXBCEH69PxaN
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJPkAobAAoJEBus8iNuMP3d0G8P/1ZuDSlYEuJ/Q6btReoR12ax
+Gzqe8XbLjiifIRKNHdO1Ozo3tw6wcvijajygtop4RXyj11Syp6hW4n/l5/thewDl
+Pnnm14qyr6HgNHNNcE2XNbB47ze/YeQXa+4E5q7UkjdnOQOWzlW90GxA3OXz+Sxx
+hFUJxiplGFV8RvXTdr1qU61a1bqD31dTTG+S6foSCSypAmAoFDEvphmL4KvHAZ3R
+GZeMgoV4AF5NhshR+2ECKyxcWlrCCdpX9VBbzLiCLqi5IZHoZY0FeBne2NuhpzyP
+E31pFIa7k+I4E2+Knt0TJprepZocTYLSK5B7klZML5Ro+1KOQXGAKP4YtEk9pbjM
+0M2ADOCwNHf8MsJWL9wfUkRP+TerWrO+Hq8f72HqZTIGJxlnsi+3vYdBGGdjO/wT
+nyWiePobKP4twUjeK4++WCtsCj2nmuzZ5kIwRFw51h137MM7TTmmSb1n0kKgIO94
+dPN4KLatXqw9eJoelstTMxJvRPHechn5vHvmvXK+9gifE6zCeJfUYhwMEinkgtQR
+CJLwFuPS6WyzuhK4vdejhH6Q8LaWBlYyhaKvniFOAWa3JlDtnMol2sakSCjBf+Vi
+7M0Yhn3aJ1gtaWTe6vG3D52xwkZTI6IVOWuIY4Q7oPOeHnMQpbvoqhff4vFn/TYe
+J6Kd5fqYCZf/hFpYFMTT
+=Npj9
+-----END PGP SIGNATURE-----
+
+--gKijDXBCEH69PxaN--
