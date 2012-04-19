@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933132Ab2DSVJx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Apr 2012 17:09:53 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:41537 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933116Ab2DSVJt (ORCPT
+	id S933176Ab2DSVKE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Apr 2012 17:10:04 -0400
+Received: from mail-pz0-f42.google.com ([209.85.210.42]:46047 "EHLO
+	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933163Ab2DSVKA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Apr 2012 17:09:49 -0400
-Message-Id: <20120419210612.310145115@linuxfoundation.org>
+	Thu, 19 Apr 2012 17:10:00 -0400
+X-Greylist: delayed 305 seconds by postgrey-1.27 at vger.kernel.org; Thu, 19 Apr 2012 17:08:29 EDT
+Message-Id: <20120419210611.803304777@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Thu, 19 Apr 2012 14:06:25 -0700
+Date: Thu, 19 Apr 2012 14:06:19 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk,
-        "Stephen M. Cameron" <scameron@beardog.cce.hp.com>,
-        Jens Axboe <axboe@kernel.dk>
-Subject: [ 14/59] cciss: Initialize scsi host max_sectors for tape drive support
+        alan@lxorguk.ukuu.org.uk, Linus Walleij <linus.walleij@linaro.org>,
+        Mian Yousaf Kaukab <mian.yousaf.kaukab@stericsson.com>,
+        Alessandro Rubini <rubini@unipv.it>
+Subject: [ 08/59] drivers/rtc/rtc-pl031.c: enable clock on all ST variants
 In-Reply-To: <20120419210623.GA12156@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,32 +27,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Stephen M. Cameron" <scameron@beardog.cce.hp.com>
+From: Linus Walleij <linus.walleij@linaro.org>
 
-commit 395d287526bb60411ff37b19ad9dd38b58ba8732 upstream.
+commit 2f3972168353d355854d6381f1f360ce83b723e5 upstream.
 
-The default is too small (1024 blocks), use h->cciss_max_sectors (8192 blocks)
-Without this change, if you try to set the block size of a tape drive above
-512*1024, via "mt -f /dev/st0 setblk nnn" where nnn is greater than 524288,
-it won't work right.
+The ST variants of the PL031 all require bit 26 in the control register
+to be set before they work properly.  Discovered this when testing on
+the Nomadik board where it would suprisingly just stand still.
 
-Signed-off-by: Stephen M. Cameron <scameron@beardog.cce.hp.com>
-Signed-off-by: Jens Axboe <axboe@kernel.dk>
+Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
+Cc: Mian Yousaf Kaukab <mian.yousaf.kaukab@stericsson.com>
+Cc: Alessandro Rubini <rubini@unipv.it>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/block/cciss_scsi.c |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/rtc/rtc-pl031.c |    3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
---- a/drivers/block/cciss_scsi.c
-+++ b/drivers/block/cciss_scsi.c
-@@ -866,6 +866,7 @@ cciss_scsi_detect(ctlr_info_t *h)
- 	sh->can_queue = cciss_tape_cmds;
- 	sh->sg_tablesize = h->maxsgentries;
- 	sh->max_cmd_len = MAX_COMMAND_SIZE;
-+	sh->max_sectors = h->cciss_max_sectors;
+--- a/drivers/rtc/rtc-pl031.c
++++ b/drivers/rtc/rtc-pl031.c
+@@ -339,8 +339,7 @@ static int pl031_probe(struct amba_devic
+ 	dev_dbg(&adev->dev, "revision = 0x%01x\n", ldata->hw_revision);
  
- 	((struct cciss_scsi_adapter_data_t *) 
- 		h->scsi_ctlr)->scsi_host = sh;
+ 	/* Enable the clockwatch on ST Variants */
+-	if ((ldata->hw_designer == AMBA_VENDOR_ST) &&
+-	    (ldata->hw_revision > 1))
++	if (ldata->hw_designer == AMBA_VENDOR_ST)
+ 		writel(readl(ldata->base + RTC_CR) | RTC_CR_CWEN,
+ 		       ldata->base + RTC_CR);
+ 
 
 
