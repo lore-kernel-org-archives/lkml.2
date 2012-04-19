@@ -1,223 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755363Ab2DSNDM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Apr 2012 09:03:12 -0400
-Received: from s15943758.onlinehome-server.info ([217.160.130.188]:51973 "EHLO
-	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754785Ab2DSNC4 (ORCPT
+	id S1755384Ab2DSND2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Apr 2012 09:03:28 -0400
+Received: from mga06.intel.com ([134.134.136.21]:28240 "EHLO
+	orsmga101.jf.intel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753040Ab2DSNDZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Apr 2012 09:02:56 -0400
-Date: Thu, 19 Apr 2012 15:02:40 +0200
-From: Borislav Petkov <bp@amd64.org>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
-        Borislav Petkov <bp@amd64.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [PATCH 4/5] x86-64: Handle exception table entries during early
- boot
-Message-ID: <20120419130240.GE30447@aftab>
-References: <1334794610-5546-1-git-send-email-hpa@zytor.com>
- <1334794610-5546-5-git-send-email-hpa@zytor.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1334794610-5546-5-git-send-email-hpa@zytor.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 19 Apr 2012 09:03:25 -0400
+Subject: Re: [PATCH] xtensa: fix build failure in xtensa/kernel/signal.c
+From: Matt Fleming <matt.fleming@intel.com>
+To: Paul Gortmaker <paul.gortmaker@windriver.com>
+Cc: linux-kernel@vger.kernel.org, Oleg Nesterov <oleg@redhat.com>,
+        Chris Zankel <chris@zankel.net>,
+        Andrew Morton <akpm@linux-foundation.org>
+In-Reply-To: <4F900919.7000800@windriver.com>
+References: <1334782256-351-1-git-send-email-paul.gortmaker@windriver.com>
+	 <1334821525.26997.39.camel@mfleming-mobl1.ger.corp.intel.com>
+	 <4F900919.7000800@windriver.com>
+Content-Type: text/plain; charset="UTF-8"
+Organization: Intel Corporation (UK) Ltd. - Registered No. 1134945 - Pipers
+ Way, Swindon SN3 1RJ
+Date: Thu, 19 Apr 2012 14:02:59 +0100
+Message-ID: <1334840579.26997.55.camel@mfleming-mobl1.ger.corp.intel.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 18, 2012 at 05:16:49PM -0700, H. Peter Anvin wrote:
-> From: "H. Peter Anvin" <hpa@zytor.com>
+On Thu, 2012-04-19 at 08:46 -0400, Paul Gortmaker wrote:
+> On 12-04-19 03:45 AM, Matt Fleming wrote:
+> > On Wed, 2012-04-18 at 16:50 -0400, Paul Gortmaker wrote:
+> >> Caused by commit 3785006ac3c8941feb63097c416de92114a6bc39
+> >>
+> >>     "xtensa: don't mask signals if we fail to setup signal stack"
+> >>
+> >> It assigns a return value to "ret", but there is no such variable
+> >> anywhere in scope.  Create one.
+> >>
+> >> Cc: Matt Fleming <matt.fleming@intel.com>
+> >> Cc: Oleg Nesterov <oleg@redhat.com>
+> >> Cc: Chris Zankel <chris@zankel.net>
+> >> Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
+> >>
+> >> diff --git a/arch/xtensa/kernel/signal.c b/arch/xtensa/kernel/signal.c
+> >> index b69b000..d78869a 100644
+> >> --- a/arch/xtensa/kernel/signal.c
+> >> +++ b/arch/xtensa/kernel/signal.c
+> >> @@ -496,6 +496,7 @@ int do_signal(struct pt_regs *regs, sigset_t *oldset)
+> >>  	signr = get_signal_to_deliver(&info, &ka, regs, NULL);
+> >>  
+> >>  	if (signr > 0) {
+> >> +		int ret;
+> >>  
+> >>  		/* Are we from a system call? */
+> >>  
+> > 
+> > Whoops! Thanks Paul, that's my bad. Looks like I went code-blind after
+> > making the same kinds of changes to lots of different architectures.
+> > 
+> > I've added Andrew to the Cc list since he picked up the last set of
+> > xtensa signal patches.
 > 
-> If we get an exception during early boot, walk the exception table to
-> see if we should intercept it.  The main use case for this is to allow
-> rdmsr_safe()/wrmsr_safe() during CPU initialization.
+> Looks like I'll have a queue of build fixes from various other less
+> common architectures, so I can carry this one in my for-3.4 queue
+> (since 3785006a is already in master).
 > 
-> Since the exception table is currently sorted at runtime, and fairly
-> late in startup, this code walks the exception table linearly.  We
-> obviously don't need to worry about modules, however: none have been
-> loaded at this point.
-> 
-> In the future it would be better to have the table sorted at compile
-> time, or even better, turned into a perfect hash.  At that point this
-> code should be changed out from doing a linear search.
-> ---
->  arch/x86/include/asm/segment.h |    2 +-
->  arch/x86/kernel/head_64.S      |   72 +++++++++++++++++++++++++++++----------
->  2 files changed, 54 insertions(+), 20 deletions(-)
-> 
-> diff --git a/arch/x86/include/asm/segment.h b/arch/x86/include/asm/segment.h
-> index 58c1e6c..c48a950 100644
-> --- a/arch/x86/include/asm/segment.h
-> +++ b/arch/x86/include/asm/segment.h
-> @@ -213,7 +213,7 @@
->  
->  #ifdef __KERNEL__
->  #ifndef __ASSEMBLY__
-> -extern const char early_idt_handlers[NUM_EXCEPTION_VECTORS][10];
-> +extern const char early_idt_handlers[NUM_EXCEPTION_VECTORS][2+2+5];
->  
->  /*
->   * Load a segment. Fall back on loading the zero
-> diff --git a/arch/x86/kernel/head_64.S b/arch/x86/kernel/head_64.S
-> index d1e112c..8b89239 100644
-> --- a/arch/x86/kernel/head_64.S
-> +++ b/arch/x86/kernel/head_64.S
-> @@ -19,6 +19,7 @@
->  #include <asm/cache.h>
->  #include <asm/processor-flags.h>
->  #include <asm/percpu.h>
-> +#include <asm/nops.h>
->  
->  #ifdef CONFIG_PARAVIRT
->  #include <asm/asm-offsets.h>
-> @@ -26,6 +27,7 @@
->  #define GET_CR2_INTO(reg) GET_CR2_INTO_RAX ; movq %rax, reg
->  #else
->  #define GET_CR2_INTO(reg) movq %cr2, reg
-> +#define INTERRUPT_RETURN iretq
->  #endif
->  
->  /* we are not able to switch in one step to the final KERNEL ADDRESS SPACE
-> @@ -271,35 +273,56 @@ bad_address:
->  	jmp bad_address
->  
->  	.section ".init.text","ax"
-> -#ifdef CONFIG_EARLY_PRINTK
->  	.globl early_idt_handlers
->  early_idt_handlers:
-> +	# 56(%rsp) %rflags
-> +	# 48(%rsp) %cs
-> +	# 40(%rsp) %rip
-> +	# 32(%rsp) error code
+> I'll add an acked-by from you.
 
-Just a question about understanding this: I was strugging with the
-exact interrupt-handler stack layout, so how do you know the exact
-offsets of rflags, cs et all? I've been staring at our APM v2, p. 144
-(http://support.amd.com/us/Processor_TechDocs/24593_APM_v2.pdf) which
-shows the interrupt stack with error code but it has different offsets
-than those above:
+Sure, that's fine by me.
 
-[Return SS]	40(%rsp)
-[Return RSP]	32(%rsp)
-[rFLAGS]	24(%rsp)
-[CS]		16(%rsp)
-[RIP]		 8(%rsp)
-[ErrorCode]	 0(%rsp)
-
-but I see below that we have room for %rax, %rcx and %rdx on the stack.
-
-Are we doing something different in Linux, or what am I missing?
-
-Thanks.
-
->  	i = 0
->  	.rept NUM_EXCEPTION_VECTORS
-> -	movl $i, %esi
-> +	.if (EXCEPTION_ERRCODE_MASK >> i) & 1
-> +	ASM_NOP2
-> +	.else
-> +	pushq $0		# Dummy error code, to make stack frame uniform
-> +	.endif
-> +	pushq $i		# 24(%rsp) Vector number
->  	jmp early_idt_handler
->  	i = i + 1
->  	.endr
-> -#endif
->  
->  ENTRY(early_idt_handler)
-> -#ifdef CONFIG_EARLY_PRINTK
-> +	cld
-> +
->  	cmpl $2,early_recursion_flag(%rip)
->  	jz  1f
->  	incl early_recursion_flag(%rip)
-> -	GET_CR2_INTO(%r9)
-> -	xorl %r8d,%r8d		# zero for error code
-> -	movl %esi,%ecx		# get vector number
-> -	# Test %ecx against mask of vectors that push error code.
-> -	cmpl $31,%ecx
-> -	ja 0f
-> -	movl $1,%eax
-> -	salq %cl,%rax
-> -	testl $EXCEPTION_ERRCODE_MASK,%eax
-> -	je 0f
-> -	popq %r8		# get error code
-> -0:	movq 0(%rsp),%rcx	# get ip
-> -	movq 8(%rsp),%rdx	# get cs
-> +
-> +	pushq %rax		# 16(%rsp)
-> +	pushq %rcx		#  8(%rsp)
-> +	pushq %rdx		#  0(%rsp)
-> +
-> +	cmpl $__KERNEL_CS,48(%rsp)
-> +	jne 10f
-> +
-> +	movq 40(%rsp),%rax	# %rip
-> +	leaq __start___ex_table(%rip),%rcx
-> +	leaq __stop___ex_table(%rip),%rdx
-> +
-> +11:
-> +	cmpq (%rcx),%rax
-> +	je 20f			# Found an exception entry
-> +	addq $16,%rcx
-> +	cmpq %rdx,%rcx
-> +	jb 11b
-> +
-> +10:
-> +#ifdef CONFIG_EARLY_PRINTK
-> +	GET_CR2_INTO(%r9)	# can clobber any volatile register if pv
-> +	movl 32(%rsp),%r8d	# error code
-> +	movl 24(%rsp),%esi	# vector number
-> +	movl 48(%rsp),%edx	# %cs
-> +	movq 40(%rsp),%rcx	# %rip
->  	xorl %eax,%eax
->  	leaq early_idt_msg(%rip),%rdi
->  	call early_printk
-> @@ -308,17 +331,28 @@ ENTRY(early_idt_handler)
->  	call dump_stack
->  #ifdef CONFIG_KALLSYMS	
->  	leaq early_idt_ripmsg(%rip),%rdi
-> -	movq 0(%rsp),%rsi	# get rip again
-> +	movq 40(%rsp),%rsi	# %rip again
->  	call __print_symbol
->  #endif
->  #endif /* EARLY_PRINTK */
->  1:	hlt
->  	jmp 1b
->  
-> -#ifdef CONFIG_EARLY_PRINTK
-> +20:	# Exception table entry found
-> +	movq 8(%rcx),%rax	# exception table target
-> +	movq %rax,40(%rsp)	# change %rip on stack
-> +	popq %rdx
-> +	popq %rcx
-> +	popq %rax
-> +	addq $16,%rsp		# drop vector number and error code
-> +	decl early_recursion_flag(%rip)
-> +	INTERRUPT_RETURN
-> +
-> +	.balign 4
->  early_recursion_flag:
->  	.long 0
->  
-> +#ifdef CONFIG_EARLY_PRINTK
->  early_idt_msg:
->  	.asciz "PANIC: early exception %02lx rip %lx:%lx error %lx cr2 %lx\n"
->  early_idt_ripmsg:
-> -- 
-> 1.7.6.5
-> 
-> 
-
--- 
-Regards/Gruss,
-Boris.
-
-Advanced Micro Devices GmbH
-Einsteinring 24, 85609 Dornach
-GM: Alberto Bozzo
-Reg: Dornach, Landkreis Muenchen
-HRB Nr. 43632 WEEE Registernr: 129 19551
