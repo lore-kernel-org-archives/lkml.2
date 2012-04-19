@@ -1,153 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754708Ab2DSD0P (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Apr 2012 23:26:15 -0400
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:26284 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751180Ab2DSD0L (ORCPT
+	id S1753448Ab2DSDeX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Apr 2012 23:34:23 -0400
+Received: from mailout2.w1.samsung.com ([210.118.77.12]:36734 "EHLO
+	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751388Ab2DSDeV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Apr 2012 23:26:11 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6685"; a="183001721"
-From: Stephen Boyd <sboyd@codeaurora.org>
-To: linux-kernel@vger.kernel.org
-Cc: netdev@vger.kernel.org, Tejun Heo <tj@kernel.org>,
-        Ben Dooks <ben-linux@fluff.org>
-Subject: [PATCH 2/2] ks8851: Fix mutex deadlock in ks8851_net_stop()
-Date: Wed, 18 Apr 2012 20:25:58 -0700
-Message-Id: <1334805958-29119-2-git-send-email-sboyd@codeaurora.org>
-X-Mailer: git-send-email 1.7.10.207.g0bb2e
-In-Reply-To: <1334805958-29119-1-git-send-email-sboyd@codeaurora.org>
-References: <1334805958-29119-1-git-send-email-sboyd@codeaurora.org>
+	Wed, 18 Apr 2012 23:34:21 -0400
+Date: Thu, 19 Apr 2012 07:34:15 +0400
+From: Alexander Nikiforov <a.nikiforov@samsung.com>
+Subject: Re: [RFD] Merge task counter into memcg
+In-reply-to: <20120417152350.GC32402@google.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>, Hugh Dickins <hughd@google.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Glauber Costa <glommer@parallels.com>,
+        Daniel Walsh <dwalsh@redhat.com>,
+        "Daniel P. Berrange" <berrange@redhat.com>,
+        Li Zefan <lizf@cn.fujitsu.com>, LKML <linux-kernel@vger.kernel.org>,
+        Cgroups <cgroups@vger.kernel.org>,
+        Containers <containers@lists.linux-foundation.org>,
+        d.solodkiy@samsung.com
+Message-id: <4F8F87B7.2000504@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=ISO-8859-1; format=flowed
+Content-transfer-encoding: 7BIT
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:11.0) Gecko/20120329
+ Thunderbird/11.0.1
+References: <20120411185715.GA4317@somewhere.redhat.com>
+ <4F86527C.2080507@samsung.com> <20120417010902.GA14646@somewhere.redhat.com>
+ <4F8D1171.1090504@samsung.com> <20120417152350.GC32402@google.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There is a potential deadlock scenario when the ks8851 driver
-is removed. The interrupt handler schedules a workqueue which
-acquires a mutex that ks8851_net_stop() also acquires before
-flushing the workqueue. Previously lockdep wouldn't be able
-to find this problem but now that it has the support we can
-trigger this lockdep warning by rmmoding the driver after
-an ifconfig up.
+On 04/17/2012 07:23 PM, Tejun Heo wrote:
+> Hello,
+>
+> On Tue, Apr 17, 2012 at 10:45:05AM +0400, Alexander Nikiforov wrote:
+>> between them. Now we have only 1 way to get notification about tasks
+>> file - inotify(), but this approach works only if you work from
+>> userspace with file (e.g. create struct file, for example with echo
+>> $$ /sys/abc/tasks), but when something happens from kernel side
+>> (do_fork()/do_exit) we cannot get any event about group of the
+>> process (we can scan tasks file and count number of PID, or work
+>> with
+>> waitpid(), but IMHO this is ugly solutions)
+> Wouldn't simply generating FS_MODIFY event on the tasks file do the
+> trick?
+>
+> Thanks.
+>
+Maybe it will, but in my mind it should be with event. I thought about 
+inotify before my RFD mail. Here we have file update, so FS_MODIFY very 
+natural.
+But on the other hand - we have event in memcg, so conventional approach 
+is event.
 
-Fix the possible deadlock by disabling the interrupts in 
-the chip and then release the lock across the workqueue
-flushing. The mutex is only there to proect the registers
-anyway so this should be ok.
+If this functionality is acceptable in cgroup and FS_MODIFY better, 
+we'll make new patch with this approach.
 
-=======================================================
-[ INFO: possible circular locking dependency detected ]
-3.0.21-00021-g8b33780-dirty #2911
--------------------------------------------------------
-rmmod/125 is trying to acquire lock:
- ((&ks->irq_work)){+.+...}, at: [<c019e0b8>] flush_work+0x0/0xac
-
-but task is already holding lock:
- (&ks->lock){+.+...}, at: [<bf00b850>] ks8851_net_stop+0x64/0x138 [ks8851]
-
-which lock already depends on the new lock.
-
-
-the existing dependency chain (in reverse order) is:
-
--> #1 (&ks->lock){+.+...}:
-       [<c01b89c8>] __lock_acquire+0x940/0x9f8
-       [<c01b9058>] lock_acquire+0x10c/0x130
-       [<c083dbec>] mutex_lock_nested+0x68/0x3dc
-       [<bf00bd48>] ks8851_irq_work+0x24/0x46c [ks8851]
-       [<c019c580>] process_one_work+0x2d8/0x518
-       [<c019cb98>] worker_thread+0x220/0x3a0
-       [<c01a2ad4>] kthread+0x88/0x94
-       [<c0107008>] kernel_thread_exit+0x0/0x8
-
--> #0 ((&ks->irq_work)){+.+...}:
-       [<c01b7984>] validate_chain+0x914/0x1018
-       [<c01b89c8>] __lock_acquire+0x940/0x9f8
-       [<c01b9058>] lock_acquire+0x10c/0x130
-       [<c019e104>] flush_work+0x4c/0xac
-       [<bf00b858>] ks8851_net_stop+0x6c/0x138 [ks8851]
-       [<c06b209c>] __dev_close_many+0x98/0xcc
-       [<c06b2174>] dev_close_many+0x68/0xd0
-       [<c06b22ec>] rollback_registered_many+0xcc/0x2b8
-       [<c06b2554>] rollback_registered+0x28/0x34
-       [<c06b25b8>] unregister_netdevice_queue+0x58/0x7c
-       [<c06b25f4>] unregister_netdev+0x18/0x20
-       [<bf00c1f4>] ks8851_remove+0x64/0xb4 [ks8851]
-       [<c049ddf0>] spi_drv_remove+0x18/0x1c
-       [<c0468e98>] __device_release_driver+0x7c/0xbc
-       [<c0468f64>] driver_detach+0x8c/0xb4
-       [<c0467f00>] bus_remove_driver+0xb8/0xe8
-       [<c01c1d20>] sys_delete_module+0x1e8/0x27c
-       [<c0105ec0>] ret_fast_syscall+0x0/0x3c
-
-other info that might help us debug this:
-
- Possible unsafe locking scenario:
-
-       CPU0                    CPU1
-       ----                    ----
-  lock(&ks->lock);
-                               lock((&ks->irq_work));
-                               lock(&ks->lock);
-  lock((&ks->irq_work));
-
- *** DEADLOCK ***
-
-4 locks held by rmmod/125:
- #0:  (&__lockdep_no_validate__){+.+.+.}, at: [<c0468f44>] driver_detach+0x6c/0xb4
- #1:  (&__lockdep_no_validate__){+.+.+.}, at: [<c0468f50>] driver_detach+0x78/0xb4
- #2:  (rtnl_mutex){+.+.+.}, at: [<c06b25e8>] unregister_netdev+0xc/0x20
- #3:  (&ks->lock){+.+...}, at: [<bf00b850>] ks8851_net_stop+0x64/0x138 [ks8851]
-
-Cc: Ben Dooks <ben-linux@fluff.org>
-Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
----
- drivers/net/ethernet/micrel/ks8851.c |   11 ++++++-----
- 1 file changed, 6 insertions(+), 5 deletions(-)
-
-diff --git a/drivers/net/ethernet/micrel/ks8851.c b/drivers/net/ethernet/micrel/ks8851.c
-index c722aa60..20f50ec 100644
---- a/drivers/net/ethernet/micrel/ks8851.c
-+++ b/drivers/net/ethernet/micrel/ks8851.c
-@@ -889,16 +889,17 @@ static int ks8851_net_stop(struct net_device *dev)
- 	netif_stop_queue(dev);
- 
- 	mutex_lock(&ks->lock);
-+	/* turn off the IRQs and ack any outstanding */
-+	ks8851_wrreg16(ks, KS_IER, 0x0000);
-+	ks8851_wrreg16(ks, KS_ISR, 0xffff);
-+	mutex_unlock(&ks->lock);
- 
- 	/* stop any outstanding work */
- 	flush_work(&ks->irq_work);
- 	flush_work(&ks->tx_work);
- 	flush_work(&ks->rxctrl_work);
- 
--	/* turn off the IRQs and ack any outstanding */
--	ks8851_wrreg16(ks, KS_IER, 0x0000);
--	ks8851_wrreg16(ks, KS_ISR, 0xffff);
--
-+	mutex_lock(&ks->lock);
- 	/* shutdown RX process */
- 	ks8851_wrreg16(ks, KS_RXCR1, 0x0000);
- 
-@@ -907,6 +908,7 @@ static int ks8851_net_stop(struct net_device *dev)
- 
- 	/* set powermode to soft power down to save power */
- 	ks8851_set_powermode(ks, PMECR_PM_SOFTDOWN);
-+	mutex_unlock(&ks->lock);
- 
- 	/* ensure any queued tx buffers are dumped */
- 	while (!skb_queue_empty(&ks->txq)) {
-@@ -918,7 +920,6 @@ static int ks8851_net_stop(struct net_device *dev)
- 		dev_kfree_skb(txb);
- 	}
- 
--	mutex_unlock(&ks->lock);
- 	return 0;
- }
- 
 -- 
-Sent by an employee of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+Best regards,
+      Alex Nikiforov,
+      Mobile SW, Advanced Software Group,
+      Moscow R&D center, Samsung Electronics
 
