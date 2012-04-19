@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932779Ab2DSVHf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Apr 2012 17:07:35 -0400
+	id S932852Ab2DSV4u (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Apr 2012 17:56:50 -0400
 Received: from mail-pb0-f46.google.com ([209.85.160.46]:38883 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932746Ab2DSVHc (ORCPT
+	with ESMTP id S932746Ab2DSVHi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Apr 2012 17:07:32 -0400
-Message-Id: <20120419210307.307074631@linuxfoundation.org>
+	Thu, 19 Apr 2012 17:07:38 -0400
+Message-Id: <20120419210307.478782491@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Thu, 19 Apr 2012 14:03:52 -0700
+Date: Thu, 19 Apr 2012 14:03:54 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Alan Stern <stern@rowland.harvard.edu>,
-        Chen Peter <B29397@freescale.com>,
-        Chen Peter <peter.chen@freescale.com>
-Subject: [ 49/75] USB: dont ignore suspend errors for root hubs
+        alan@lxorguk.ukuu.org.uk, Sarah Sharp <sarah.a.sharp@linux.intel.com>,
+        Elric Fu <elricfu1@gmail.com>
+Subject: [ 51/75] xhci: Dont write zeroed pointers to xHC registers.
 In-Reply-To: <20120419210322.GA6478@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,52 +25,76 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alan Stern <stern@rowland.harvard.edu>
+From: Sarah Sharp <sarah.a.sharp@linux.intel.com>
 
-commit cd4376e23a59a2adf3084cb5f4a523e6d5fd4e49 upstream.
+commit 159e1fcc9a60fc7daba23ee8fcdb99799de3fe84 upstream.
 
-This patch (as1532) fixes a mistake in the USB suspend code.  When the
-system is going to sleep, we should ignore errors in powering down USB
-devices, because they don't really matter.  The devices will go to low
-power anyway when the entire USB bus gets suspended (except for
-SuperSpeed devices; maybe they will need special treatment later).
+When xhci_mem_cleanup() is called, we can't be sure if the xHC is
+actually halted.  We can ask the xHC to halt by writing to the RUN bit
+in the command register, but that might timeout due to a HW hang.
 
-However we should not ignore errors in suspending root hubs,
-especially if the error indicates that the suspend raced with a wakeup
-request.  Doing so might leave the bus powered on while the system was
-supposed to be asleep, or it might cause the suspend of the root hub's
-parent controller device to fail, or it might cause a wakeup request
-to be ignored.
+If the host controller is still running, we should not write zeroed
+values to the event ring dequeue pointers or base tables, the DCBAA
+pointers, or the command ring pointers.  Eric Fu reports his VIA VL800
+host accesses the event ring pointers after a failed register restore on
+resume from suspend.  The hypothesis is that the host never actually
+halted before the register write to change the event ring pointer to
+zero.
 
-The patch fixes the problem by ignoring errors only when the device in
-question is not a root hub.
+Remove all writes of zeroed values to pointer registers in
+xhci_mem_cleanup().  Instead, make all callers of the function reset the
+host controller first, which will reset those registers to zero.
+xhci_mem_init() is the only caller that doesn't first halt and reset the
+host controller before calling xhci_mem_cleanup().
 
-Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
-Reported-by: Chen Peter <B29397@freescale.com>
-Tested-by: Chen Peter <peter.chen@freescale.com>
+This should be backported to kernels as old as 2.6.32.
+
+Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Tested-by: Elric Fu <elricfu1@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/core/driver.c |    9 +++++++--
- 1 file changed, 7 insertions(+), 2 deletions(-)
+ drivers/usb/host/xhci-mem.c |    9 ++-------
+ 1 file changed, 2 insertions(+), 7 deletions(-)
 
---- a/drivers/usb/core/driver.c
-+++ b/drivers/usb/core/driver.c
-@@ -1190,8 +1190,13 @@ static int usb_suspend_both(struct usb_d
- 	if (status == 0) {
- 		status = usb_suspend_device(udev, msg);
+--- a/drivers/usb/host/xhci-mem.c
++++ b/drivers/usb/host/xhci-mem.c
+@@ -1690,11 +1690,6 @@ void xhci_mem_cleanup(struct xhci_hcd *x
+ 	int i;
  
--		/* Again, ignore errors during system sleep transitions */
--		if (!PMSG_IS_AUTO(msg))
-+		/*
-+		 * Ignore errors from non-root-hub devices during
-+		 * system sleep transitions.  For the most part,
-+		 * these devices should go to low power anyway when
-+		 * the entire bus is suspended.
-+		 */
-+		if (udev->parent && !PMSG_IS_AUTO(msg))
- 			status = 0;
- 	}
+ 	/* Free the Event Ring Segment Table and the actual Event Ring */
+-	if (xhci->ir_set) {
+-		xhci_writel(xhci, 0, &xhci->ir_set->erst_size);
+-		xhci_write_64(xhci, 0, &xhci->ir_set->erst_base);
+-		xhci_write_64(xhci, 0, &xhci->ir_set->erst_dequeue);
+-	}
+ 	size = sizeof(struct xhci_erst_entry)*(xhci->erst.num_entries);
+ 	if (xhci->erst.entries)
+ 		dma_free_coherent(&pdev->dev, size,
+@@ -1706,7 +1701,6 @@ void xhci_mem_cleanup(struct xhci_hcd *x
+ 	xhci->event_ring = NULL;
+ 	xhci_dbg(xhci, "Freed event ring\n");
  
+-	xhci_write_64(xhci, 0, &xhci->op_regs->cmd_ring);
+ 	if (xhci->cmd_ring)
+ 		xhci_ring_free(xhci, xhci->cmd_ring);
+ 	xhci->cmd_ring = NULL;
+@@ -1735,7 +1729,6 @@ void xhci_mem_cleanup(struct xhci_hcd *x
+ 	xhci->medium_streams_pool = NULL;
+ 	xhci_dbg(xhci, "Freed medium stream array pool\n");
+ 
+-	xhci_write_64(xhci, 0, &xhci->op_regs->dcbaa_ptr);
+ 	if (xhci->dcbaa)
+ 		dma_free_coherent(&pdev->dev, sizeof(*xhci->dcbaa),
+ 				xhci->dcbaa, xhci->dcbaa->dma);
+@@ -2344,6 +2337,8 @@ int xhci_mem_init(struct xhci_hcd *xhci,
+ 
+ fail:
+ 	xhci_warn(xhci, "Couldn't initialize memory\n");
++	xhci_halt(xhci);
++	xhci_reset(xhci);
+ 	xhci_mem_cleanup(xhci);
+ 	return -ENOMEM;
+ }
 
 
