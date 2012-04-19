@@ -1,29 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965250Ab2DSVR5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Apr 2012 17:17:57 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:44451 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965240Ab2DSVRx (ORCPT
+	id S965312Ab2DSVSQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Apr 2012 17:18:16 -0400
+Received: from mail-pz0-f42.google.com ([209.85.210.42]:38471 "EHLO
+	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965279Ab2DSVSM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Apr 2012 17:17:53 -0400
-Message-Id: <20120419210823.509567584@linuxfoundation.org>
+	Thu, 19 Apr 2012 17:18:12 -0400
+Message-Id: <20120419210824.024639703@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Thu, 19 Apr 2012 14:09:15 -0700
+Date: Thu, 19 Apr 2012 14:09:21 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Darren Hart <dvhart@linux.intel.com>,
-        Arjan van de Ven <arjan@linux.intel.com>,
-        Alan Cox <alan@linux.intel.com>,
-        Tomoya MORINAGA <tomoya.rohm@gmail.com>,
-        Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Jon Mason <jdmason@kudzu.us>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        David Laight <David.Laight@ACULAB.COM>, Joe Perches <joe@perches.com>
-Subject: [ 57/68] pch_gbe: Do not abort probe on bad MAC
+        alan@lxorguk.ukuu.org.uk, "Cho, Yu-Chen" <acho@suse.com>,
+        Johan Hedberg <johan.hedberg@intel.com>,
+        Jonathan Nieder <jrnieder@gmail.com>
+Subject: [ 63/68] Bluetooth: Add Atheros maryann PIDVID support
 In-Reply-To: <20120419210923.GA18589@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -33,79 +26,115 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Darren Hart <dvhart@linux.intel.com>
+From: "Cho, Yu-Chen" <acho@suse.com>
 
-commit 2b53d07891630dead46d65c8f896955fd3ae0302 upstream.
+commit 07c0ea874d43c299d185948452945a361052b6e3 upstream.
 
-If the MAC is invalid or not implemented, do not abort the probe. Issue
-a warning and prevent bringing the interface up until a MAC is set manually
-(via ifconfig $IFACE hw ether $MAC).
+Add Atheros maryann 0cf3:311d PIDVID support
+This module is AR3012 Series.
 
-Tested on two platforms, one with a valid MAC, the other without a MAC. The real
-MAC is used if present, the interface fails to come up until the MAC is set on
-the other. They successfully get an IP over DHCP and pass a simple ping and
-login over ssh test.
+Include /sys/kernel/debug/usb/devices output here for reference
 
-This is meant to allow the Inforce SYS940X development board:
-http://www.inforcecomputing.com/SYS940X_ECX.html
-(and others suffering from a missing MAC) to work with the mainline kernel.
-Without this patch, the probe will fail and the interface will not be created,
-preventing the user from configuring the MAC manually.
+before:
+T:  Bus=04 Lev=01 Prnt=01 Port=01 Cnt=01 Dev#=  2 Spd=12   MxCh= 0
+D:  Ver= 1.10 Cls=e0(wlcon) Sub=01 Prot=01 MxPS=64 #Cfgs=  1
+P:  Vendor=0cf3 ProdID=311d Rev= 0.01
+S:  Manufacturer=Atheros Communications
+S:  Product=Bluetooth USB Host Controller
+S:  SerialNumber=Alaska Day 2006
+C:* #Ifs= 2 Cfg#= 1 Atr=e0 MxPwr=100mA
+I:* If#= 0 Alt= 0 #EPs= 3 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
+E:  Ad=81(I) Atr=03(Int.) MxPS=  16 Ivl=1ms
+E:  Ad=82(I) Atr=02(Bulk) MxPS=  64 Ivl=0ms
+E:  Ad=02(O) Atr=02(Bulk) MxPS=  64 Ivl=0ms
+I:* If#= 1 Alt= 0 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
+E:  Ad=83(I) Atr=01(Isoc) MxPS=   0 Ivl=1ms
+E:  Ad=03(O) Atr=01(Isoc) MxPS=   0 Ivl=1ms
+I:  If#= 1 Alt= 1 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
+E:  Ad=83(I) Atr=01(Isoc) MxPS=   9 Ivl=1ms
+E:  Ad=03(O) Atr=01(Isoc) MxPS=   9 Ivl=1ms
+I:  If#= 1 Alt= 2 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
+E:  Ad=83(I) Atr=01(Isoc) MxPS=  17 Ivl=1ms
+E:  Ad=03(O) Atr=01(Isoc) MxPS=  17 Ivl=1ms
+I:  If#= 1 Alt= 3 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
+E:  Ad=83(I) Atr=01(Isoc) MxPS=  25 Ivl=1ms
+E:  Ad=03(O) Atr=01(Isoc) MxPS=  25 Ivl=1ms
+I:  If#= 1 Alt= 4 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
+E:  Ad=83(I) Atr=01(Isoc) MxPS=  33 Ivl=1ms
+E:  Ad=03(O) Atr=01(Isoc) MxPS=  33 Ivl=1ms
+I:  If#= 1 Alt= 5 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
+E:  Ad=83(I) Atr=01(Isoc) MxPS=  49 Ivl=1ms
+E:  Ad=03(O) Atr=01(Isoc) MxPS=  49 Ivl=1ms
 
-This does not make any attempt to address a missing or invalid MAC for the
-pch_phub driver.
+after:
+T:  Bus=04 Lev=01 Prnt=01 Port=01 Cnt=01 Dev#=  2 Spd=12   MxCh= 0
+D:  Ver= 1.10 Cls=e0(wlcon) Sub=01 Prot=01 MxPS=64 #Cfgs=  1
+P:  Vendor=0cf3 ProdID=311d Rev= 0.02
+S:  Manufacturer=Atheros Communications
+S:  Product=Bluetooth USB Host Controller
+S:  SerialNumber=Alaska Day 2006
+C:* #Ifs= 2 Cfg#= 1 Atr=e0 MxPwr=100mA
+I:* If#= 0 Alt= 0 #EPs= 3 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
+E:  Ad=81(I) Atr=03(Int.) MxPS=  16 Ivl=1ms
+E:  Ad=82(I) Atr=02(Bulk) MxPS=  64 Ivl=0ms
+E:  Ad=02(O) Atr=02(Bulk) MxPS=  64 Ivl=0ms
+I:* If#= 1 Alt= 0 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
+E:  Ad=83(I) Atr=01(Isoc) MxPS=   0 Ivl=1ms
+E:  Ad=03(O) Atr=01(Isoc) MxPS=   0 Ivl=1ms
+I:  If#= 1 Alt= 1 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
+E:  Ad=83(I) Atr=01(Isoc) MxPS=   9 Ivl=1ms
+E:  Ad=03(O) Atr=01(Isoc) MxPS=   9 Ivl=1ms
+I:  If#= 1 Alt= 2 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
+E:  Ad=83(I) Atr=01(Isoc) MxPS=  17 Ivl=1ms
+E:  Ad=03(O) Atr=01(Isoc) MxPS=  17 Ivl=1ms
+I:  If#= 1 Alt= 3 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
+E:  Ad=83(I) Atr=01(Isoc) MxPS=  25 Ivl=1ms
+E:  Ad=03(O) Atr=01(Isoc) MxPS=  25 Ivl=1ms
+I:  If#= 1 Alt= 4 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
+E:  Ad=83(I) Atr=01(Isoc) MxPS=  33 Ivl=1ms
+E:  Ad=03(O) Atr=01(Isoc) MxPS=  33 Ivl=1ms
+I:  If#= 1 Alt= 5 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
+E:  Ad=83(I) Atr=01(Isoc) MxPS=  49 Ivl=1ms
+E:  Ad=03(O) Atr=01(Isoc) MxPS=  49 Ivl=1ms
 
-Signed-off-by: Darren Hart <dvhart@linux.intel.com>
-CC: Arjan van de Ven <arjan@linux.intel.com>
-CC: Alan Cox <alan@linux.intel.com>
-CC: Tomoya MORINAGA <tomoya.rohm@gmail.com>
-CC: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
-CC: "David S. Miller" <davem@davemloft.net>
-CC: Paul Gortmaker <paul.gortmaker@windriver.com>
-CC: Jon Mason <jdmason@kudzu.us>
-CC: Mark Brown <broonie@opensource.wolfsonmicro.com>
-CC: David Laight <David.Laight@ACULAB.COM>
-CC: Joe Perches <joe@perches.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
-Signed-off-by: Tomoya MORINAGA <tomoya.rohm@gmail.com>
+Signed-off-by: Cho, Yu-Chen <acho@suse.com>
+cked-by: Marcel Holtmann <marcel@holtmann.org>
+Signed-off-by: Johan Hedberg <johan.hedberg@intel.com>
+Cc: Jonathan Nieder <jrnieder@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/ethernet/oki-semi/pch_gbe/pch_gbe_main.c |   17 ++++++++++++++---
- 1 file changed, 14 insertions(+), 3 deletions(-)
+ drivers/bluetooth/ath3k.c |    2 ++
+ drivers/bluetooth/btusb.c |    1 +
+ 2 files changed, 3 insertions(+)
 
---- a/drivers/net/ethernet/oki-semi/pch_gbe/pch_gbe_main.c
-+++ b/drivers/net/ethernet/oki-semi/pch_gbe/pch_gbe_main.c
-@@ -1745,6 +1745,12 @@ int pch_gbe_up(struct pch_gbe_adapter *a
- 	struct pch_gbe_rx_ring *rx_ring = adapter->rx_ring;
- 	int err;
+--- a/drivers/bluetooth/ath3k.c
++++ b/drivers/bluetooth/ath3k.c
+@@ -71,6 +71,7 @@ static struct usb_device_id ath3k_table[
  
-+	/* Ensure we have a valid MAC */
-+	if (!is_valid_ether_addr(adapter->hw.mac.addr)) {
-+		pr_err("Error: Invalid MAC address\n");
-+		return -EINVAL;
-+	}
-+
- 	/* hardware has been reset, we need to reload some things */
- 	pch_gbe_set_multi(netdev);
+ 	/* Atheros AR3012 with sflash firmware*/
+ 	{ USB_DEVICE(0x0CF3, 0x3004) },
++	{ USB_DEVICE(0x0CF3, 0x311D) },
+ 	{ USB_DEVICE(0x13d3, 0x3375) },
  
-@@ -2467,9 +2473,14 @@ static int pch_gbe_probe(struct pci_dev
+ 	/* Atheros AR5BBU12 with sflash firmware */
+@@ -88,6 +89,7 @@ static struct usb_device_id ath3k_blist_
  
- 	memcpy(netdev->dev_addr, adapter->hw.mac.addr, netdev->addr_len);
- 	if (!is_valid_ether_addr(netdev->dev_addr)) {
--		dev_err(&pdev->dev, "Invalid MAC Address\n");
--		ret = -EIO;
--		goto err_free_adapter;
-+		/*
-+		 * If the MAC is invalid (or just missing), display a warning
-+		 * but do not abort setting up the device. pch_gbe_up will
-+		 * prevent the interface from being brought up until a valid MAC
-+		 * is set.
-+		 */
-+		dev_err(&pdev->dev, "Invalid MAC address, "
-+		                    "interface disabled.\n");
- 	}
- 	setup_timer(&adapter->watchdog_timer, pch_gbe_watchdog,
- 		    (unsigned long)adapter);
+ 	/* Atheros AR3012 with sflash firmware*/
+ 	{ USB_DEVICE(0x0cf3, 0x3004), .driver_info = BTUSB_ATH3012 },
++	{ USB_DEVICE(0x0cf3, 0x311D), .driver_info = BTUSB_ATH3012 },
+ 	{ USB_DEVICE(0x13d3, 0x3375), .driver_info = BTUSB_ATH3012 },
+ 
+ 	{ }	/* Terminating entry */
+--- a/drivers/bluetooth/btusb.c
++++ b/drivers/bluetooth/btusb.c
+@@ -126,6 +126,7 @@ static struct usb_device_id blacklist_ta
+ 
+ 	/* Atheros 3012 with sflash firmware */
+ 	{ USB_DEVICE(0x0cf3, 0x3004), .driver_info = BTUSB_ATH3012 },
++	{ USB_DEVICE(0x0cf3, 0x311d), .driver_info = BTUSB_ATH3012 },
+ 	{ USB_DEVICE(0x13d3, 0x3375), .driver_info = BTUSB_ATH3012 },
+ 
+ 	/* Atheros AR5BBU12 with sflash firmware */
 
 
