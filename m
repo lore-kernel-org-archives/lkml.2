@@ -1,65 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932159Ab2DSSZk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Apr 2012 14:25:40 -0400
-Received: from mail-wi0-f172.google.com ([209.85.212.172]:58582 "EHLO
-	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932143Ab2DSSZj (ORCPT
+	id S932143Ab2DSS3V (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Apr 2012 14:29:21 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:40202 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754454Ab2DSS3U (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Apr 2012 14:25:39 -0400
-MIME-Version: 1.0
-In-Reply-To: <4F90527B.7020005@zytor.com>
-References: <1334794610-5546-1-git-send-email-hpa@zytor.com>
- <20120419092255.GA29542@aftab> <20120419092630.GD29542@aftab>
- <4F904541.2030200@zytor.com> <CA+55aFwMsm7zVqPjKptm38zJAbJpF=9e51ew7BP6S5YnoJa3ig@mail.gmail.com>
- <20120419173802.GI3221@aftab.osrc.amd.com> <4F90527B.7020005@zytor.com>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Thu, 19 Apr 2012 11:25:17 -0700
-X-Google-Sender-Auth: vIQqKJHFC9rQtGAMiu_vCCJqIrg
-Message-ID: <CA+55aFxhY1Ug5esj==Sm=o1Epg+NFnvFs74syqRxbYDbPQJEFA@mail.gmail.com>
-Subject: Re: [PATCH 3/3] x86, extable: Handle early exceptions
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Borislav Petkov <bp@amd64.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>
-Content-Type: text/plain; charset=ISO-8859-1
+	Thu, 19 Apr 2012 14:29:20 -0400
+From: Grant Likely <grant.likely@secretlab.ca>
+Subject: Re: [PATCH] irqdomain: print a warning if domains contain IRQ 0
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Linus Walleij <linus.walleij@stericsson.com>
+Cc: linux-kernel@vger.kernel.org, Linus Walleij <linus.walleij@linaro.org>
+In-Reply-To: <1334787792.3143.19.camel@pasglop>
+References: <1334756420-12019-1-git-send-email-linus.walleij@stericsson.com> <1334787792.3143.19.camel@pasglop>
+Date: Thu, 19 Apr 2012 12:29:17 -0600
+Message-Id: <20120419182917.2F64E3E0700@localhost>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 19, 2012 at 10:59 AM, H. Peter Anvin <hpa@zytor.com> wrote:
->
-> I would argue that the O(1) hash makes things simpler as there is no
-> need to deal with collisions at all.
+On Thu, 19 Apr 2012 08:23:12 +1000, Benjamin Herrenschmidt <benh@kernel.crashing.org> wrote:
+> On Wed, 2012-04-18 at 15:40 +0200, Linus Walleij wrote:
+> > From: Linus Walleij <linus.walleij@linaro.org>
+> > 
+> > Some of the clients using IRQ domains from the ARM VIC
+> > (arch/arm/common/vic.c) don't know that their (hardware) IRQ 0
+> > is silently ignored by the IRQ core, they will just notice
+> > that they're not getting this IRQ anymore. So print a warning
+> > if a domain contains IRQ 0 (NO_IRQ) so we get some noise about
+> > it atleast.
+> 
+> I don't understand. HW IRQ 0 is not ignored and works perfectly
+> fine on "normal" remapped domains. Or is this specific to "legacy
+> domains" ? In this case pls make it clear in the subject :-)
 
-Most of the O(1) hashes I have seen more than made up for the trivial
-complexity of a few linear lookups by making the hash function way
-more complicated.
+This is indeed specific to the legacy domain.  I think the patch is
+good and it will help weed out unintended irq0 users.  However, it
+requires the following additional fix I think.  It will need to be
+tested to make sure it doesn't break PowerPC ISA users.
 
-A linear probe with a step of one really is pretty simple. Sure, you
-might want to make the initial hash "good enough" to not often hit the
-probing code, but doing a few linear probes is cheap.
+g.
 
-In contrast, the perfect linear hashes do crazy things like having
-table lookups *JUST TO COMPUTE THE HASH*.
+diff --git a/include/linux/irqdomain.h b/include/linux/irqdomain.h
+index d0995bd..31f1f88 100644
+--- a/include/linux/irqdomain.h
++++ b/include/linux/irqdomain.h
+@@ -138,7 +138,7 @@ static inline struct irq_domain *irq_domain_add_legacy_isa(
+ 				const struct irq_domain_ops *ops,
+ 				void *host_data)
+ {
+-	return irq_domain_add_legacy(of_node, NUM_ISA_INTERRUPTS, 0, 0, ops,
++	return irq_domain_add_legacy(of_node, NUM_ISA_INTERRUPTS-1, 1, 1, ops,
+ 				     host_data);
+ }
+ extern struct irq_domain *irq_find_host(struct device_node *node);
 
-Which is f*cking stupid, really. They'll miss in the cache just at
-hash compute time, never mind at hash lookup. The table-driven
-versions look beautiful in microbenchmarks that have the tables in the
-L1 cache, but for something like the exception handling, I can
-guarantee that *nothing* is in L1, and probably not even L2.
 
-So what you want is:
- - no table lookups for hashing
- - simple code (ie a normal "a multiply and a shift/mask or two") to
-keep the I$ footprint down too
- - you *will* take a cache miss on the actual hash table lookup, that
-cannot be avoided, but linear probing at least hopefully keeps it to
-that single cache miss even if you have to do a probe or two.
+> > ---
+> >  kernel/irq/irqdomain.c |    4 +++-
+> >  1 file changed, 3 insertions(+), 1 deletion(-)
+> > 
+> > diff --git a/kernel/irq/irqdomain.c b/kernel/irq/irqdomain.c
+> > index 0e0ba5f..1444454 100644
+> > --- a/kernel/irq/irqdomain.c
+> > +++ b/kernel/irq/irqdomain.c
+> > @@ -136,8 +136,10 @@ struct irq_domain *irq_domain_add_legacy(struct device_node *of_node,
+> >  		int hwirq = first_hwirq + i;
+> >  
+> >  		/* IRQ0 gets ignored */
+> > -		if (!irq)
+> > +		if (!irq) {
+> > +			pr_warn("trying to register IRQ 0 (NO_IRQ) in an irq  domain\n");
+> >  			continue;
+> > +		}
+> >  
+> >  		/* Legacy flags are left to default at this point,
+> >  		 * one can then use irq_create_mapping() to
+> 
+> 
 
-Remember: this is very much a "cold-cache behavior matters" case. We
-would never ever call this in a loop, at most we have loads that get a
-fair amount of exceptions (but will go through the exception code, so
-the L1 is probably blown even then).
-
-                         Linus
+-- 
+Grant Likely, B.Sc, P.Eng.
+Secret Lab Technologies,Ltd.
