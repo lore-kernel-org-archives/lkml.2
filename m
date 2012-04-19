@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932441Ab2DSVFH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Apr 2012 17:05:07 -0400
+	id S932495Ab2DSVFM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Apr 2012 17:05:12 -0400
 Received: from mail-pb0-f46.google.com ([209.85.160.46]:41537 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932185Ab2DSVFB (ORCPT
+	with ESMTP id S932185Ab2DSVFI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Apr 2012 17:05:01 -0400
-Message-Id: <20120419210303.480124440@linuxfoundation.org>
+	Thu, 19 Apr 2012 17:05:08 -0400
+Message-Id: <20120419210303.657294605@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Thu, 19 Apr 2012 14:03:07 -0700
+Date: Thu, 19 Apr 2012 14:03:09 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Chris Wilson <chris@chris-wilson.co.uk>,
+        alan@lxorguk.ukuu.org.uk, Adam Jackson <ajax@redhat.com>,
         Daniel Vetter <daniel.vetter@ffwll.ch>
-Subject: [ 04/75] drm/i915/ringbuffer: Exclude last 2 cachlines of ring on 845g
+Subject: [ 06/75] drm/i915: properly compute dp dithering for user-created modes
 In-Reply-To: <20120419210322.GA6478@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,31 +25,127 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Chris Wilson <chris@chris-wilson.co.uk>
+From: Daniel Vetter <daniel.vetter@ffwll.ch>
 
-commit 27c1cbd06a7620b354cbb363834f3bb8df4f410d upstream.
+commit c4867936474183332db4c19791a65fdad6474fd5 upstream.
 
-The 845g shares the errata with i830 whereby executing a command
-within 2 cachelines of the end of the ringbuffer may cause a GPU hang.
+We've only computed whether we need to fall back to 6bpc due to dp
+link bandwidth constrains in mode_valid, but not mode_fixup. Under
+various circumstances X likes to create new modes which then lack
+proper 6bpc flags (if required), resulting in mode_fixup failures and
+ultimately black screens.
 
-Signed-off-by: Chris Wilson <chris@chris-wilson.co.uk>
-Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+Chris Wilson pointed out that we still get things wrong for bpp > 24,
+but that should be fixed in another patch (and it'll be easier because
+this patch consolidates the logic).
+
+The likely culprit for this regression is
+
+commit 3d794f87238f74d80e78a7611c7fbde8a54c85c2
+Author: Keith Packard <keithp@keithp.com>
+Date:   Wed Jan 25 08:16:25 2012 -0800
+
+    drm/i915: Force explicit bpp selection for intel_dp_link_required
+
+v2: Fix indentation and tune down the too bold claim that this should
+fix the world. Both noticed by Chris Wilson.
+
+v3: Try to really git add things.
+
+Reported-and-tested-by: Brice Goglin <Brice.Goglin@ens-lyon.org>
+Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=48170
+Cc: stable@kernel.org
+Reviewed-by: Adam Jackson <ajax@redhat.com>
+Signed-Off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/i915/intel_ringbuffer.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/gpu/drm/i915/intel_dp.c |   49 ++++++++++++++++++++++++++++------------
+ 1 file changed, 35 insertions(+), 14 deletions(-)
 
---- a/drivers/gpu/drm/i915/intel_ringbuffer.c
-+++ b/drivers/gpu/drm/i915/intel_ringbuffer.c
-@@ -1057,7 +1057,7 @@ int intel_init_ring_buffer(struct drm_de
- 	 * of the buffer.
- 	 */
- 	ring->effective_size = ring->size;
--	if (IS_I830(ring->dev))
-+	if (IS_I830(ring->dev) || IS_845G(ring->dev))
- 		ring->effective_size -= 128;
+--- a/drivers/gpu/drm/i915/intel_dp.c
++++ b/drivers/gpu/drm/i915/intel_dp.c
+@@ -219,14 +219,38 @@ intel_dp_max_data_rate(int max_link_cloc
+ 	return (max_link_clock * max_lanes * 8) / 10;
+ }
  
- 	return 0;
++static bool
++intel_dp_adjust_dithering(struct intel_dp *intel_dp,
++			  struct drm_display_mode *mode,
++			  struct drm_display_mode *adjusted_mode)
++{
++	int max_link_clock = intel_dp_link_clock(intel_dp_max_link_bw(intel_dp));
++	int max_lanes = intel_dp_max_lane_count(intel_dp);
++	int max_rate, mode_rate;
++
++	mode_rate = intel_dp_link_required(mode->clock, 24);
++	max_rate = intel_dp_max_data_rate(max_link_clock, max_lanes);
++
++	if (mode_rate > max_rate) {
++		mode_rate = intel_dp_link_required(mode->clock, 18);
++		if (mode_rate > max_rate)
++			return false;
++
++		if (adjusted_mode)
++			adjusted_mode->private_flags
++				|= INTEL_MODE_DP_FORCE_6BPC;
++
++		return true;
++	}
++
++	return true;
++}
++
+ static int
+ intel_dp_mode_valid(struct drm_connector *connector,
+ 		    struct drm_display_mode *mode)
+ {
+ 	struct intel_dp *intel_dp = intel_attached_dp(connector);
+-	int max_link_clock = intel_dp_link_clock(intel_dp_max_link_bw(intel_dp));
+-	int max_lanes = intel_dp_max_lane_count(intel_dp);
+-	int max_rate, mode_rate;
+ 
+ 	if (is_edp(intel_dp) && intel_dp->panel_fixed_mode) {
+ 		if (mode->hdisplay > intel_dp->panel_fixed_mode->hdisplay)
+@@ -236,16 +260,8 @@ intel_dp_mode_valid(struct drm_connector
+ 			return MODE_PANEL;
+ 	}
+ 
+-	mode_rate = intel_dp_link_required(mode->clock, 24);
+-	max_rate = intel_dp_max_data_rate(max_link_clock, max_lanes);
+-
+-	if (mode_rate > max_rate) {
+-			mode_rate = intel_dp_link_required(mode->clock, 18);
+-			if (mode_rate > max_rate)
+-				return MODE_CLOCK_HIGH;
+-			else
+-				mode->private_flags |= INTEL_MODE_DP_FORCE_6BPC;
+-	}
++	if (!intel_dp_adjust_dithering(intel_dp, mode, NULL))
++		return MODE_CLOCK_HIGH;
+ 
+ 	if (mode->clock < 10000)
+ 		return MODE_CLOCK_LOW;
+@@ -673,7 +689,7 @@ intel_dp_mode_fixup(struct drm_encoder *
+ 	int lane_count, clock;
+ 	int max_lane_count = intel_dp_max_lane_count(intel_dp);
+ 	int max_clock = intel_dp_max_link_bw(intel_dp) == DP_LINK_BW_2_7 ? 1 : 0;
+-	int bpp = mode->private_flags & INTEL_MODE_DP_FORCE_6BPC ? 18 : 24;
++	int bpp;
+ 	static int bws[2] = { DP_LINK_BW_1_62, DP_LINK_BW_2_7 };
+ 
+ 	if (is_edp(intel_dp) && intel_dp->panel_fixed_mode) {
+@@ -687,6 +703,11 @@ intel_dp_mode_fixup(struct drm_encoder *
+ 		mode->clock = intel_dp->panel_fixed_mode->clock;
+ 	}
+ 
++	if (!intel_dp_adjust_dithering(intel_dp, mode, adjusted_mode))
++		return false;
++
++	bpp = adjusted_mode->private_flags & INTEL_MODE_DP_FORCE_6BPC ? 18 : 24;
++
+ 	for (lane_count = 1; lane_count <= max_lane_count; lane_count <<= 1) {
+ 		for (clock = 0; clock <= max_clock; clock++) {
+ 			int link_avail = intel_dp_max_data_rate(intel_dp_link_clock(bws[clock]), lane_count);
 
 
