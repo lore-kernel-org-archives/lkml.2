@@ -1,86 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755823Ab2DSXRG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Apr 2012 19:17:06 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:42868 "EHLO mx1.redhat.com"
+	id S1755724Ab2DSXVA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Apr 2012 19:21:00 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:36451 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754841Ab2DSXRD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Apr 2012 19:17:03 -0400
-Date: Fri, 20 Apr 2012 01:16:16 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Andrew Morton <akpm@linux-foundation.org>,
-        David Howells <dhowells@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Cc: Alexander Gordeev <agordeev@redhat.com>, Chris Zankel <chris@zankel.net>,
-        David Smith <dsmith@redhat.com>, "Frank Ch. Eigler" <fche@redhat.com>,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        Larry Woodman <lwoodman@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Richard Kuo <rkuo@codeaurora.org>, Tejun Heo <tj@kernel.org>,
-        linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH v6 6/6] keys: kill task_struct->replacement_session_keyring
-Message-ID: <20120419231616.GF15828@redhat.com>
-References: <20120419231431.GA15820@redhat.com>
+	id S1754533Ab2DSXU6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Apr 2012 19:20:58 -0400
+Message-ID: <4F909DD3.6000403@redhat.com>
+Date: Thu, 19 Apr 2012 20:20:51 -0300
+From: Mauro Carvalho Chehab <mchehab@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120329 Thunderbird/11.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120419231431.GA15820@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: Randy Dunlap <rdunlap@xenotime.net>
+CC: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>,
+        linux-media <linux-media@vger.kernel.org>
+Subject: Re: linux-next: Tree for Apr 19 (media/video/mt9m032.c)
+References: <20120419164643.d9f918d44c890722b7707508@canb.auug.org.au> <4F909111.9020708@xenotime.net>
+In-Reply-To: <4F909111.9020708@xenotime.net>
+X-Enigmail-Version: 1.4
+Content-Type: text/plain; charset=ISO-8859-15
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Kill the no longer used task_struct->replacement_session_keyring,
-update copy_creds() and exit_creds().
+Em 19-04-2012 19:26, Randy Dunlap escreveu:
+> On 04/18/2012 11:46 PM, Stephen Rothwell wrote:
+> 
+>> Hi all,
+>>
+>> Changes since 20120418:
+> 
+> 
+> 
+> on x86_64:
+> 
+>   CC      drivers/media/video/mt9m032.o
+> drivers/media/video/mt9m032.c: In function '__mt9m032_get_pad_crop':
+> drivers/media/video/mt9m032.c:337:3: error: implicit declaration of function 'v4l2_subdev_get_try_crop'
+> drivers/media/video/mt9m032.c:337:3: warning: return makes pointer from integer without a cast
+> drivers/media/video/mt9m032.c: In function '__mt9m032_get_pad_format':
+> drivers/media/video/mt9m032.c:359:3: error: implicit declaration of function 'v4l2_subdev_get_try_format'
+> drivers/media/video/mt9m032.c:359:3: warning: return makes pointer from integer without a cast
+> drivers/media/video/mt9m032.c: In function 'mt9m032_probe':
+> drivers/media/video/mt9m032.c:767:41: error: 'struct v4l2_subdev' has no member named 'entity'
+> drivers/media/video/mt9m032.c:826:38: error: 'struct v4l2_subdev' has no member named 'entity'
+> drivers/media/video/mt9m032.c: In function 'mt9m032_remove':
+> drivers/media/video/mt9m032.c:842:38: error: 'struct v4l2_subdev' has no member named 'entity'
+> make[4]: *** [drivers/media/video/mt9m032.o] Error 1
+> 
+> Full randconfig file is attached.
+> 
 
-Signed-off-by: Oleg Nesterov <oleg@redhat.com>
----
- include/linux/sched.h |    2 --
- kernel/cred.c         |    9 ---------
- 2 files changed, 0 insertions(+), 11 deletions(-)
+This patch should fix it:
 
-diff --git a/include/linux/sched.h b/include/linux/sched.h
-index e36edfb..ac04a02 100644
---- a/include/linux/sched.h
-+++ b/include/linux/sched.h
-@@ -1402,8 +1402,6 @@ struct task_struct {
- 					 * credentials (COW) */
- 	const struct cred __rcu *cred;	/* effective (overridable) subjective task
- 					 * credentials (COW) */
--	struct cred *replacement_session_keyring; /* for KEYCTL_SESSION_TO_PARENT */
--
- 	char comm[TASK_COMM_LEN]; /* executable name excluding path
- 				     - access with [gs]et_task_comm (which lock
- 				       it with task_lock())
-diff --git a/kernel/cred.c b/kernel/cred.c
-index e70683d..9570736 100644
---- a/kernel/cred.c
-+++ b/kernel/cred.c
-@@ -198,13 +198,6 @@ void exit_creds(struct task_struct *tsk)
- 	validate_creds(cred);
- 	alter_cred_subscribers(cred, -1);
- 	put_cred(cred);
--
--	cred = (struct cred *) tsk->replacement_session_keyring;
--	if (cred) {
--		tsk->replacement_session_keyring = NULL;
--		validate_creds(cred);
--		put_cred(cred);
--	}
- }
- 
- /**
-@@ -386,8 +379,6 @@ int copy_creds(struct task_struct *p, unsigned long clone_flags)
- 	struct cred *new;
- 	int ret;
- 
--	p->replacement_session_keyring = NULL;
--
- 	if (
- #ifdef CONFIG_KEYS
- 		!p->cred->thread_keyring &&
--- 
-1.5.5.1
+	http://git.linuxtv.org/mchehab/media-next.git/commit/18311c5395ca4d0c3fefa406da87a9d16efaca46
 
+It is on my linux-next tree so, if no new conflicts/problems arise, it should be available
+on tomorrow's next ;)
 
+Regards,
+Mauro
