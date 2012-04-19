@@ -1,45 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932381Ab2DSUHZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Apr 2012 16:07:25 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:35550 "EHLO
+	id S932396Ab2DSUHj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Apr 2012 16:07:39 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:34733 "EHLO
 	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932246Ab2DSUHX (ORCPT
+	by vger.kernel.org with ESMTP id S932246Ab2DSUHh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Apr 2012 16:07:23 -0400
-X-Sasl-enc: w82GOCMorZaozT4HSs10i4BkuI3QYiG+mO/TaGTYWatw 1334866042
-Date: Thu, 19 Apr 2012 13:07:21 -0700
+	Thu, 19 Apr 2012 16:07:37 -0400
+X-Sasl-enc: YG7Y223ojkYzWSF9L+ZPIvrg4+BWziJFwoCyL3auW1X+ 1334866056
+Date: Thu, 19 Apr 2012 13:07:35 -0700
 From: Greg KH <greg@kroah.com>
 To: Stephen Rothwell <sfr@canb.auug.org.au>
 Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Anatolij Gustschin <agust@denx.de>,
-        Ramneek Mehresh <ramneek.mehresh@freescale.com>
-Subject: Re: linux-next: manual merge of the usb tree with the usb.current
+        Tomoya MORINAGA <tomoya.rohm@gmail.com>
+Subject: Re: linux-next: manual merge of the tty tree with the tty.current
  tree
-Message-ID: <20120419200721.GB10059@kroah.com>
-References: <20120419151402.6f958fabc6bd96696b4cde3c@canb.auug.org.au>
+Message-ID: <20120419200735.GC10059@kroah.com>
+References: <20120419145951.4e1652ae5b1b80686892495d@canb.auug.org.au>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120419151402.6f958fabc6bd96696b4cde3c@canb.auug.org.au>
+In-Reply-To: <20120419145951.4e1652ae5b1b80686892495d@canb.auug.org.au>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 19, 2012 at 03:14:02PM +1000, Stephen Rothwell wrote:
+On Thu, Apr 19, 2012 at 02:59:51PM +1000, Stephen Rothwell wrote:
 > Hi Greg,
 > 
-> Today's linux-next merge of the usb tree got a conflict in
-> drivers/usb/host/ehci-fsl.c between commit f941f6922533 ("USB: ehci-fsl:
-> Fix kernel crash on mpc5121e") from the usb.current tree and commit
-> 58c559e6509f ("fsl/usb: Add controller version based ULPI and UTMI phy
-> support") from the usb tree.
+> Today's linux-next merge of the tty tree got a conflict in
+> drivers/tty/serial/pch_uart.c between commit af6d17cdc8c8 ("pch_uart: Fix
+> dma channel unallocated issue") from the tty.current tree and commit
+> 44db113212d8 ("pch_uart: Delete unused structure member") from the tty
+> tree.
 > 
-> I fixed it up (using the pdata assignment from the latter commit) and
-> can carry the fix as necessary.
+> Just context changes.  I fixed it up (see below) and can carry the fix as
+> necessary.
 
-Thanks, that sounds correct, I'll fix this up when the patches in
-usb.current get pushed to Linus.
+Looks correct, thanks.
 
 greg k-h
