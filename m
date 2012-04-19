@@ -1,117 +1,158 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965004Ab2DSVOu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Apr 2012 17:14:50 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:44451 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964945Ab2DSVOq (ORCPT
+	id S964984Ab2DSVOp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Apr 2012 17:14:45 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:61429 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S964945Ab2DSVOl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Apr 2012 17:14:46 -0400
-Date: Thu, 19 Apr 2012 14:09:23 -0700
+	Thu, 19 Apr 2012 17:14:41 -0400
+Message-Id: <20120419210615.399189799@linuxfoundation.org>
+User-Agent: quilt/0.60-19.1
+Date: Thu, 19 Apr 2012 14:07:01 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk
-Subject: [ 00/68] 3.2.16-stable review
-Message-ID: <20120419210923.GA18589@kroah.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+        alan@lxorguk.ukuu.org.uk,
+        Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>,
+        Vinod Koul <vinod.koul@intel.com>,
+        Tomoya MORINAGA <tomoya.rohm@gmail.com>
+Subject: [ 50/59] pch_dma: Fix CTL register access issue
+In-Reply-To: <20120419210623.GA12156@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-NOTE: This is going to be the last 3.2-stable kernel that I release.
-Someone else _might_ be picking it up, but that coordination is not
-finalized at this time, so be aware of this, and plan on this being the
-last 3.2-stable kernel that is released.
+3.0-stable review patch.  If anyone has any objections, please let me know.
 
-This is the start of the stable review cycle for the 3.2.16 release.
-There are 68 patches in this series, all will be posted as a response
-to this one.  If anyone has any issues with these being applied, please
-let me know.
+------------------
 
-Responses should be made by Sat Apr 21 21:08:16 UTC 2012.
-Anything received after that time might be too late.
+From: Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
 
-The whole patch series can be found in one patch at:
-	kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.2.16-rc1.gz
-and the diffstat can be found below.
+commit 0b052f4a088ddc47a5da23dd733522241314cfb4 upstream.
 
-thanks,
+Currently, Mode-Control register is accessed by read-modify-write.
 
-greg k-h
+According to DMA hardware specifications datasheet, prohibits this method.
+Because this register resets to 0 by DMA HW after DMA transfer completes.
+Thus, current read-modify-write processing can cause unexpected behavior.
 
--------------
- Makefile                                           |    4 +-
- arch/arm/boot/compressed/head.S                    |    2 +-
- arch/arm/mm/proc-v7.S                              |   12 +++
- arch/ia64/include/asm/futex.h                      |    9 +-
- arch/s390/Kconfig                                  |    1 -
- arch/s390/include/asm/pgalloc.h                    |    3 -
- arch/s390/include/asm/tlb.h                        |   22 +----
- arch/s390/mm/pgtable.c                             |   63 +++++++++++++-
- arch/sparc/kernel/ds.c                             |    2 +-
- arch/sparc/kernel/rtrap_64.S                       |    7 --
- drivers/acpi/acpica/acobject.h                     |    1 +
- drivers/acpi/acpica/dsargs.c                       |    2 +-
- drivers/acpi/acpica/excreate.c                     |    6 ++
- drivers/block/cciss_scsi.c                         |    3 +-
- drivers/bluetooth/ath3k.c                          |    4 +
- drivers/bluetooth/btusb.c                          |    3 +
- drivers/bluetooth/hci_ldisc.c                      |    4 +-
- drivers/dma/Kconfig                                |   13 ++-
- drivers/dma/pch_dma.c                              |    8 +-
- drivers/gpio/Kconfig                               |   11 +--
- drivers/gpio/gpio-pch.c                            |    2 +
- drivers/gpu/drm/i915/i915_drv.c                    |    2 +-
- drivers/gpu/drm/i915/intel_display.c               |   13 +--
- drivers/gpu/drm/i915/intel_dp.c                    |   49 ++++++++---
- drivers/gpu/drm/i915/intel_ringbuffer.c            |    2 +-
- drivers/gpu/drm/radeon/atombios_encoders.c         |    4 +
- drivers/gpu/drm/radeon/radeon_connectors.c         |    4 +-
- drivers/gpu/drm/radeon/radeon_i2c.c                |    4 +
- drivers/gpu/drm/radeon/radeon_irq_kms.c            |    6 ++
- drivers/md/bitmap.c                                |    2 +
- .../net/ethernet/oki-semi/pch_gbe/pch_gbe_main.c   |   17 +++-
- .../net/ethernet/oki-semi/pch_gbe/pch_gbe_param.c  |   15 ++--
- drivers/net/wireless/ath/ath9k/calib.c             |    5 +-
- drivers/net/wireless/rtlwifi/pci.c                 |    7 +-
- drivers/rtc/rtc-pl031.c                            |    3 +-
- drivers/spi/Kconfig                                |    6 +-
- drivers/spi/spi-topcliff-pch.c                     |   38 ++++----
- drivers/staging/iio/magnetometer/hmc5843.c         |    4 +-
- drivers/tty/serial/altera_uart.c                   |    4 +-
- drivers/tty/serial/amba-pl011.c                    |   15 +++-
- drivers/tty/serial/pch_uart.c                      |    1 +
- drivers/usb/core/driver.c                          |    9 +-
- drivers/usb/core/hub.c                             |   16 ++++
- drivers/usb/core/message.c                         |   11 +--
- drivers/usb/gadget/pch_udc.c                       |   91 ++++++++++++++++++--
- drivers/usb/host/pci-quirks.c                      |   10 ++-
- drivers/usb/host/xhci-ext-caps.h                   |    5 +-
- drivers/usb/host/xhci-mem.c                        |    9 +-
- drivers/usb/host/xhci-pci.c                        |    2 +
- drivers/usb/host/xhci-ring.c                       |    2 +-
- drivers/usb/host/xhci.c                            |    9 +-
- drivers/usb/host/xhci.h                            |    4 +
- drivers/usb/serial/ftdi_sio.c                      |   36 ++++----
- drivers/usb/serial/option.c                        |    1 +
- drivers/usb/serial/pl2303.c                        |    2 +-
- drivers/usb/serial/sierra.c                        |    1 +
- drivers/usb/serial/usb-serial.c                    |    8 ++
- drivers/video/uvesafb.c                            |   11 ++-
- fs/ext4/ext4.h                                     |    3 -
- fs/ext4/extents.c                                  |    4 -
- fs/ext4/super.c                                    |   16 ----
- include/net/bluetooth/hci.h                        |    1 +
- kernel/futex.c                                     |   36 +++-----
- kernel/futex_compat.c                              |   36 +++-----
- kernel/time/tick-sched.c                           |    4 +-
- mm/hugetlb.c                                       |    2 +
- net/bluetooth/hci_core.c                           |    7 ++
- security/commoncap.c                               |    6 ++
- tools/perf/util/hist.c                             |   12 +++
- 69 files changed, 489 insertions(+), 248 deletions(-)
+The datasheet says in case of writing Mode-Control register, set the value for only target channel, the others must set '11b'.
+e.g. Set DMA0=01b  DMA11=10b
+CTL0=33333331h
+CTL2=00002333h
+
+NOTE:
+CTL0 includes DMA0~7 Mode-Control register.
+CTL2 includes DMA8~11 Mode-Control register.
+
+This patch modifies the issue.
+
+Signed-off-by: Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
+Signed-off-by: Vinod Koul <vinod.koul@intel.com>
+Signed-off-by: Tomoya MORINAGA <tomoya.rohm@gmail.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ drivers/dma/pch_dma.c |   42 +++++++++++++++++++++++++++++++-----------
+ 1 file changed, 31 insertions(+), 11 deletions(-)
+
+--- a/drivers/dma/pch_dma.c
++++ b/drivers/dma/pch_dma.c
+@@ -62,6 +62,9 @@
+ 
+ #define MAX_CHAN_NR			8
+ 
++#define DMA_MASK_CTL0_MODE	0x33333333
++#define DMA_MASK_CTL2_MODE	0x00003333
++
+ static unsigned int init_nr_desc_per_channel = 64;
+ module_param(init_nr_desc_per_channel, uint, 0644);
+ MODULE_PARM_DESC(init_nr_desc_per_channel,
+@@ -210,10 +213,17 @@ static void pdc_set_dir(struct dma_chan
+ 	struct pch_dma_chan *pd_chan = to_pd_chan(chan);
+ 	struct pch_dma *pd = to_pd(chan->device);
+ 	u32 val;
++	u32 mask_mode;
++	u32 mask_ctl;
+ 
+ 	if (chan->chan_id < 8) {
+ 		val = dma_readl(pd, CTL0);
+ 
++		mask_mode = DMA_CTL0_MODE_MASK_BITS <<
++					(DMA_CTL0_BITS_PER_CH * chan->chan_id);
++		mask_ctl = DMA_MASK_CTL0_MODE & ~(DMA_CTL0_MODE_MASK_BITS <<
++				       (DMA_CTL0_BITS_PER_CH * chan->chan_id));
++		val &= mask_mode;
+ 		if (pd_chan->dir == DMA_TO_DEVICE)
+ 			val |= 0x1 << (DMA_CTL0_BITS_PER_CH * chan->chan_id +
+ 				       DMA_CTL0_DIR_SHIFT_BITS);
+@@ -221,18 +231,24 @@ static void pdc_set_dir(struct dma_chan
+ 			val &= ~(0x1 << (DMA_CTL0_BITS_PER_CH * chan->chan_id +
+ 					 DMA_CTL0_DIR_SHIFT_BITS));
+ 
++		val |= mask_ctl;
+ 		dma_writel(pd, CTL0, val);
+ 	} else {
+ 		int ch = chan->chan_id - 8; /* ch8-->0 ch9-->1 ... ch11->3 */
+ 		val = dma_readl(pd, CTL3);
+ 
++		mask_mode = DMA_CTL0_MODE_MASK_BITS <<
++						(DMA_CTL0_BITS_PER_CH * ch);
++		mask_ctl = DMA_MASK_CTL2_MODE & ~(DMA_CTL0_MODE_MASK_BITS <<
++						 (DMA_CTL0_BITS_PER_CH * ch));
++		val &= mask_mode;
+ 		if (pd_chan->dir == DMA_TO_DEVICE)
+ 			val |= 0x1 << (DMA_CTL0_BITS_PER_CH * ch +
+ 				       DMA_CTL0_DIR_SHIFT_BITS);
+ 		else
+ 			val &= ~(0x1 << (DMA_CTL0_BITS_PER_CH * ch +
+ 					 DMA_CTL0_DIR_SHIFT_BITS));
+-
++		val |= mask_ctl;
+ 		dma_writel(pd, CTL3, val);
+ 	}
+ 
+@@ -244,26 +260,30 @@ static void pdc_set_mode(struct dma_chan
+ {
+ 	struct pch_dma *pd = to_pd(chan->device);
+ 	u32 val;
++	u32 mask_ctl;
++	u32 mask_dir;
+ 
+ 	if (chan->chan_id < 8) {
++		mask_ctl = DMA_MASK_CTL0_MODE & ~(DMA_CTL0_MODE_MASK_BITS <<
++			   (DMA_CTL0_BITS_PER_CH * chan->chan_id));
++		mask_dir = 1 << (DMA_CTL0_BITS_PER_CH * chan->chan_id +\
++				 DMA_CTL0_DIR_SHIFT_BITS);
+ 		val = dma_readl(pd, CTL0);
+-
+-		val &= ~(DMA_CTL0_MODE_MASK_BITS <<
+-			(DMA_CTL0_BITS_PER_CH * chan->chan_id));
++		val &= mask_dir;
+ 		val |= mode << (DMA_CTL0_BITS_PER_CH * chan->chan_id);
+-
++		val |= mask_ctl;
+ 		dma_writel(pd, CTL0, val);
+ 	} else {
+ 		int ch = chan->chan_id - 8; /* ch8-->0 ch9-->1 ... ch11->3 */
+-
++		mask_ctl = DMA_MASK_CTL2_MODE & ~(DMA_CTL0_MODE_MASK_BITS <<
++						 (DMA_CTL0_BITS_PER_CH * ch));
++		mask_dir = 1 << (DMA_CTL0_BITS_PER_CH * ch +\
++				 DMA_CTL0_DIR_SHIFT_BITS);
+ 		val = dma_readl(pd, CTL3);
+-
+-		val &= ~(DMA_CTL0_MODE_MASK_BITS <<
+-			(DMA_CTL0_BITS_PER_CH * ch));
++		val &= mask_dir;
+ 		val |= mode << (DMA_CTL0_BITS_PER_CH * ch);
+-
++		val |= mask_ctl;
+ 		dma_writel(pd, CTL3, val);
+-
+ 	}
+ 
+ 	dev_dbg(chan2dev(chan), "pdc_set_mode: chan %d -> %x\n",
+
 
