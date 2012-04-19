@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933670Ab2DSVRF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Apr 2012 17:17:05 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:34108 "EHLO
+	id S965094Ab2DSVQt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Apr 2012 17:16:49 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:37406 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965110Ab2DSVQ7 (ORCPT
+	with ESMTP id S933660Ab2DSVQo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Apr 2012 17:16:59 -0400
-Message-Id: <20120419210822.153170338@linuxfoundation.org>
+	Thu, 19 Apr 2012 17:16:44 -0400
+Message-Id: <20120419210821.741596450@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Thu, 19 Apr 2012 14:08:59 -0700
+Date: Thu, 19 Apr 2012 14:08:54 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Martin Schwidefsky <schwidefsky@de.ibm.com>
-Subject: [ 41/68] [S390] fix tlb flushing for page table pages
+        alan@lxorguk.ukuu.org.uk, Sarah Sharp <sarah.a.sharp@linux.intel.com>,
+        Elric Fu <elricfu1@gmail.com>
+Subject: [ 36/68] xhci: Dont write zeroed pointers to xHC registers.
 In-Reply-To: <20120419210923.GA18589@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -24,232 +25,76 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Martin Schwidefsky <schwidefsky@de.ibm.com>
+From: Sarah Sharp <sarah.a.sharp@linux.intel.com>
 
-commit cd94154cc6a28dd9dc271042c1a59c08d26da886 upstream.
+commit 159e1fcc9a60fc7daba23ee8fcdb99799de3fe84 upstream.
 
-Git commit 36409f6353fc2d7b6516e631415f938eadd92ffa "use generic RCU
-page-table freeing code" introduced a tlb flushing bug. Partially revert
-the above git commit and go back to s390 specific page table flush code.
+When xhci_mem_cleanup() is called, we can't be sure if the xHC is
+actually halted.  We can ask the xHC to halt by writing to the RUN bit
+in the command register, but that might timeout due to a HW hang.
 
-For s390 the TLB can contain three types of entries, "normal" TLB
-page-table entries, TLB combined region-and-segment-table (CRST) entries
-and real-space entries. Linux does not use real-space entries which
-leaves normal TLB entries and CRST entries. The CRST entries are
-intermediate steps in the page-table translation called translation paths.
-For example a 4K page access in a three-level page table setup will
-create two CRST TLB entries and one page-table TLB entry. The advantage
-of that approach is that a page access next to the previous one can reuse
-the CRST entries and needs just a single read from memory to create the
-page-table TLB entry. The disadvantage is that the TLB flushing rules are
-more complicated, before any page-table may be freed the TLB needs to be
-flushed.
+If the host controller is still running, we should not write zeroed
+values to the event ring dequeue pointers or base tables, the DCBAA
+pointers, or the command ring pointers.  Eric Fu reports his VIA VL800
+host accesses the event ring pointers after a failed register restore on
+resume from suspend.  The hypothesis is that the host never actually
+halted before the register write to change the event ring pointer to
+zero.
 
-In short: the generic RCU page-table freeing code is incorrect for the
-CRST entries, in particular the check for mm_users < 2 is troublesome.
+Remove all writes of zeroed values to pointer registers in
+xhci_mem_cleanup().  Instead, make all callers of the function reset the
+host controller first, which will reset those registers to zero.
+xhci_mem_init() is the only caller that doesn't first halt and reset the
+host controller before calling xhci_mem_cleanup().
 
-This is applicable to 3.0+ kernels.
+This should be backported to kernels as old as 2.6.32.
 
-Signed-off-by: Martin Schwidefsky <schwidefsky@de.ibm.com>
+Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Tested-by: Elric Fu <elricfu1@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/s390/Kconfig               |    1 
- arch/s390/include/asm/pgalloc.h |    3 -
- arch/s390/include/asm/tlb.h     |   22 -------------
- arch/s390/mm/pgtable.c          |   63 ++++++++++++++++++++++++++++++++++++++--
- 4 files changed, 61 insertions(+), 28 deletions(-)
+ drivers/usb/host/xhci-mem.c |    9 ++-------
+ 1 file changed, 2 insertions(+), 7 deletions(-)
 
---- a/arch/s390/Kconfig
-+++ b/arch/s390/Kconfig
-@@ -90,7 +90,6 @@ config S390
- 	select HAVE_GET_USER_PAGES_FAST
- 	select HAVE_ARCH_MUTEX_CPU_RELAX
- 	select HAVE_ARCH_JUMP_LABEL if !MARCH_G5
--	select HAVE_RCU_TABLE_FREE if SMP
- 	select ARCH_SAVE_PAGE_KEYS if HIBERNATION
- 	select ARCH_INLINE_SPIN_TRYLOCK
- 	select ARCH_INLINE_SPIN_TRYLOCK_BH
---- a/arch/s390/include/asm/pgalloc.h
-+++ b/arch/s390/include/asm/pgalloc.h
-@@ -22,10 +22,7 @@ void crst_table_free(struct mm_struct *,
+--- a/drivers/usb/host/xhci-mem.c
++++ b/drivers/usb/host/xhci-mem.c
+@@ -1704,11 +1704,6 @@ void xhci_mem_cleanup(struct xhci_hcd *x
+ 	int i;
  
- unsigned long *page_table_alloc(struct mm_struct *, unsigned long);
- void page_table_free(struct mm_struct *, unsigned long *);
--#ifdef CONFIG_HAVE_RCU_TABLE_FREE
- void page_table_free_rcu(struct mmu_gather *, unsigned long *);
--void __tlb_remove_table(void *_table);
--#endif
+ 	/* Free the Event Ring Segment Table and the actual Event Ring */
+-	if (xhci->ir_set) {
+-		xhci_writel(xhci, 0, &xhci->ir_set->erst_size);
+-		xhci_write_64(xhci, 0, &xhci->ir_set->erst_base);
+-		xhci_write_64(xhci, 0, &xhci->ir_set->erst_dequeue);
+-	}
+ 	size = sizeof(struct xhci_erst_entry)*(xhci->erst.num_entries);
+ 	if (xhci->erst.entries)
+ 		dma_free_coherent(&pdev->dev, size,
+@@ -1720,7 +1715,6 @@ void xhci_mem_cleanup(struct xhci_hcd *x
+ 	xhci->event_ring = NULL;
+ 	xhci_dbg(xhci, "Freed event ring\n");
  
- static inline void clear_table(unsigned long *s, unsigned long val, size_t n)
- {
---- a/arch/s390/include/asm/tlb.h
-+++ b/arch/s390/include/asm/tlb.h
-@@ -30,14 +30,10 @@
+-	xhci_write_64(xhci, 0, &xhci->op_regs->cmd_ring);
+ 	if (xhci->cmd_ring)
+ 		xhci_ring_free(xhci, xhci->cmd_ring);
+ 	xhci->cmd_ring = NULL;
+@@ -1749,7 +1743,6 @@ void xhci_mem_cleanup(struct xhci_hcd *x
+ 	xhci->medium_streams_pool = NULL;
+ 	xhci_dbg(xhci, "Freed medium stream array pool\n");
  
- struct mmu_gather {
- 	struct mm_struct *mm;
--#ifdef CONFIG_HAVE_RCU_TABLE_FREE
- 	struct mmu_table_batch *batch;
--#endif
- 	unsigned int fullmm;
--	unsigned int need_flush;
- };
+-	xhci_write_64(xhci, 0, &xhci->op_regs->dcbaa_ptr);
+ 	if (xhci->dcbaa)
+ 		dma_free_coherent(&pdev->dev, sizeof(*xhci->dcbaa),
+ 				xhci->dcbaa, xhci->dcbaa->dma);
+@@ -2358,6 +2351,8 @@ int xhci_mem_init(struct xhci_hcd *xhci,
  
--#ifdef CONFIG_HAVE_RCU_TABLE_FREE
- struct mmu_table_batch {
- 	struct rcu_head		rcu;
- 	unsigned int		nr;
-@@ -49,7 +45,6 @@ struct mmu_table_batch {
- 
- extern void tlb_table_flush(struct mmu_gather *tlb);
- extern void tlb_remove_table(struct mmu_gather *tlb, void *table);
--#endif
- 
- static inline void tlb_gather_mmu(struct mmu_gather *tlb,
- 				  struct mm_struct *mm,
-@@ -57,29 +52,20 @@ static inline void tlb_gather_mmu(struct
- {
- 	tlb->mm = mm;
- 	tlb->fullmm = full_mm_flush;
--	tlb->need_flush = 0;
--#ifdef CONFIG_HAVE_RCU_TABLE_FREE
- 	tlb->batch = NULL;
--#endif
- 	if (tlb->fullmm)
- 		__tlb_flush_mm(mm);
+ fail:
+ 	xhci_warn(xhci, "Couldn't initialize memory\n");
++	xhci_halt(xhci);
++	xhci_reset(xhci);
+ 	xhci_mem_cleanup(xhci);
+ 	return -ENOMEM;
  }
- 
- static inline void tlb_flush_mmu(struct mmu_gather *tlb)
- {
--	if (!tlb->need_flush)
--		return;
--	tlb->need_flush = 0;
--	__tlb_flush_mm(tlb->mm);
--#ifdef CONFIG_HAVE_RCU_TABLE_FREE
- 	tlb_table_flush(tlb);
--#endif
- }
- 
- static inline void tlb_finish_mmu(struct mmu_gather *tlb,
- 				  unsigned long start, unsigned long end)
- {
--	tlb_flush_mmu(tlb);
-+	tlb_table_flush(tlb);
- }
- 
- /*
-@@ -105,10 +91,8 @@ static inline void tlb_remove_page(struc
- static inline void pte_free_tlb(struct mmu_gather *tlb, pgtable_t pte,
- 				unsigned long address)
- {
--#ifdef CONFIG_HAVE_RCU_TABLE_FREE
- 	if (!tlb->fullmm)
- 		return page_table_free_rcu(tlb, (unsigned long *) pte);
--#endif
- 	page_table_free(tlb->mm, (unsigned long *) pte);
- }
- 
-@@ -125,10 +109,8 @@ static inline void pmd_free_tlb(struct m
- #ifdef __s390x__
- 	if (tlb->mm->context.asce_limit <= (1UL << 31))
- 		return;
--#ifdef CONFIG_HAVE_RCU_TABLE_FREE
- 	if (!tlb->fullmm)
- 		return tlb_remove_table(tlb, pmd);
--#endif
- 	crst_table_free(tlb->mm, (unsigned long *) pmd);
- #endif
- }
-@@ -146,10 +128,8 @@ static inline void pud_free_tlb(struct m
- #ifdef __s390x__
- 	if (tlb->mm->context.asce_limit <= (1UL << 42))
- 		return;
--#ifdef CONFIG_HAVE_RCU_TABLE_FREE
- 	if (!tlb->fullmm)
- 		return tlb_remove_table(tlb, pud);
--#endif
- 	crst_table_free(tlb->mm, (unsigned long *) pud);
- #endif
- }
---- a/arch/s390/mm/pgtable.c
-+++ b/arch/s390/mm/pgtable.c
-@@ -687,8 +687,6 @@ void page_table_free(struct mm_struct *m
- 	}
- }
- 
--#ifdef CONFIG_HAVE_RCU_TABLE_FREE
--
- static void __page_table_free_rcu(void *table, unsigned bit)
- {
- 	struct page *page;
-@@ -742,7 +740,66 @@ void __tlb_remove_table(void *_table)
- 		free_pages((unsigned long) table, ALLOC_ORDER);
- }
- 
--#endif
-+static void tlb_remove_table_smp_sync(void *arg)
-+{
-+	/* Simply deliver the interrupt */
-+}
-+
-+static void tlb_remove_table_one(void *table)
-+{
-+	/*
-+	 * This isn't an RCU grace period and hence the page-tables cannot be
-+	 * assumed to be actually RCU-freed.
-+	 *
-+	 * It is however sufficient for software page-table walkers that rely
-+	 * on IRQ disabling. See the comment near struct mmu_table_batch.
-+	 */
-+	smp_call_function(tlb_remove_table_smp_sync, NULL, 1);
-+	__tlb_remove_table(table);
-+}
-+
-+static void tlb_remove_table_rcu(struct rcu_head *head)
-+{
-+	struct mmu_table_batch *batch;
-+	int i;
-+
-+	batch = container_of(head, struct mmu_table_batch, rcu);
-+
-+	for (i = 0; i < batch->nr; i++)
-+		__tlb_remove_table(batch->tables[i]);
-+
-+	free_page((unsigned long)batch);
-+}
-+
-+void tlb_table_flush(struct mmu_gather *tlb)
-+{
-+	struct mmu_table_batch **batch = &tlb->batch;
-+
-+	if (*batch) {
-+		__tlb_flush_mm(tlb->mm);
-+		call_rcu_sched(&(*batch)->rcu, tlb_remove_table_rcu);
-+		*batch = NULL;
-+	}
-+}
-+
-+void tlb_remove_table(struct mmu_gather *tlb, void *table)
-+{
-+	struct mmu_table_batch **batch = &tlb->batch;
-+
-+	if (*batch == NULL) {
-+		*batch = (struct mmu_table_batch *)
-+			__get_free_page(GFP_NOWAIT | __GFP_NOWARN);
-+		if (*batch == NULL) {
-+			__tlb_flush_mm(tlb->mm);
-+			tlb_remove_table_one(table);
-+			return;
-+		}
-+		(*batch)->nr = 0;
-+	}
-+	(*batch)->tables[(*batch)->nr++] = table;
-+	if ((*batch)->nr == MAX_TABLE_BATCH)
-+		tlb_table_flush(tlb);
-+}
- 
- /*
-  * switch on pgstes for its userspace process (for kvm)
 
 
