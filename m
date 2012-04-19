@@ -1,63 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933631Ab2DSV3q (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Apr 2012 17:29:46 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:37406 "EHLO
+	id S933788Ab2DSVaN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Apr 2012 17:30:13 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:34108 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756525Ab2DSVPs (ORCPT
+	with ESMTP id S933544Ab2DSVPl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Apr 2012 17:15:48 -0400
-Message-Id: <20120419210820.210159162@linuxfoundation.org>
+	Thu, 19 Apr 2012 17:15:41 -0400
+Message-Id: <20120419210307.140239015@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Thu, 19 Apr 2012 14:08:36 -0700
+Date: Thu, 19 Apr 2012 14:03:50 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Yuriy Kozlov <ykozlov@ptcusa.com>,
-        Tobias Klauser <tklauser@distanz.ch>
-Subject: [ 18/68] tty: serial: altera_uart: Check for NULL platform_data in probe.
-In-Reply-To: <20120419210923.GA18589@kroah.com>
+        alan@lxorguk.ukuu.org.uk, Anton Samokhvalov <pg83@yandex.ru>
+Subject: [ 47/75] USB: sierra: add support for Sierra Wireless MC7710
+In-Reply-To: <20120419210322.GA6478@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.2-stable review patch.  If anyone has any objections, please let me know.
+3.3-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Yuriy Kozlov <ykozlov@ptcusa.com>
+From: Anton Samokhvalov <pg83@yandex.ru>
 
-commit acede70d6561f2d042d9dbb153d9a3469479c0ed upstream.
+commit c5d703dcc776cb542b41665f2b7e2ba054efb4a7 upstream.
 
-Follow altera_jtag_uart.  This fixes a crash if there is a mistake in the DTS.
+Just add new device id. 3G works fine, LTE not tested.
 
-Signed-off-by: Yuriy Kozlov <ykozlov@ptcusa.com>
-Signed-off-by: Tobias Klauser <tklauser@distanz.ch>
+Signed-off-by: Anton Samokhvalov <pg83@yandex.ru>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/tty/serial/altera_uart.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/usb/serial/sierra.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/drivers/tty/serial/altera_uart.c
-+++ b/drivers/tty/serial/altera_uart.c
-@@ -555,7 +555,7 @@ static int __devinit altera_uart_probe(s
- 	res_mem = platform_get_resource(pdev, IORESOURCE_MEM, 0);
- 	if (res_mem)
- 		port->mapbase = res_mem->start;
--	else if (platp->mapbase)
-+	else if (platp)
- 		port->mapbase = platp->mapbase;
- 	else
- 		return -EINVAL;
-@@ -563,7 +563,7 @@ static int __devinit altera_uart_probe(s
- 	res_irq = platform_get_resource(pdev, IORESOURCE_IRQ, 0);
- 	if (res_irq)
- 		port->irq = res_irq->start;
--	else if (platp->irq)
-+	else if (platp)
- 		port->irq = platp->irq;
- 
- 	/* Check platform data first so we can override device node data */
+--- a/drivers/usb/serial/sierra.c
++++ b/drivers/usb/serial/sierra.c
+@@ -289,6 +289,7 @@ static const struct usb_device_id id_tab
+ 	{ USB_DEVICE(0x1199, 0x6856) },	/* Sierra Wireless AirCard 881 U */
+ 	{ USB_DEVICE(0x1199, 0x6859) },	/* Sierra Wireless AirCard 885 E */
+ 	{ USB_DEVICE(0x1199, 0x685A) },	/* Sierra Wireless AirCard 885 E */
++	{ USB_DEVICE(0x1199, 0x68A2) }, /* Sierra Wireless MC7710 */
+ 	/* Sierra Wireless C885 */
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(0x1199, 0x6880, 0xFF, 0xFF, 0xFF)},
+ 	/* Sierra Wireless C888, Air Card 501, USB 303, USB 304 */
 
 
