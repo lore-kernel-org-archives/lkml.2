@@ -1,55 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755315Ab2DSPP7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Apr 2012 11:15:59 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:46783 "EHLO
+	id S1755495Ab2DSPRH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Apr 2012 11:17:07 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:36727 "EHLO
 	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751211Ab2DSPP6 (ORCPT
+	by vger.kernel.org with ESMTP id S1751211Ab2DSPRF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Apr 2012 11:15:58 -0400
-X-Sasl-enc: qSY7PlkJu2s/K49IF7H1d1Vw1qcWPtggGyuZ1a2qVexR 1334848557
-Date: Thu, 19 Apr 2012 08:15:56 -0700
+	Thu, 19 Apr 2012 11:17:05 -0400
+X-Sasl-enc: mGF04ptUmxqpPkiDWT/5iwxhluvCXfZxHhtklci1Ob4T 1334848624
+Date: Thu, 19 Apr 2012 08:17:03 -0700
 From: Greg KH <greg@kroah.com>
 To: Carlos Chinea <carlos.chinea@nokia.com>
 Cc: linux-kernel@vger.kernel.org, linus.walleij@linaro.org,
         artem.bityutskiy@linux.intel.com, shubhrajyoti@ti.com
-Subject: Re: [PATCH 5/6] HSI: hsi_char: Remove max_data_size from sysfs
-Message-ID: <20120419151556.GA31543@kroah.com>
+Subject: Re: [PATCH 6/6] HSI: Add HSI ABI documentation
+Message-ID: <20120419151703.GB31543@kroah.com>
 References: <1334837127-12931-1-git-send-email-carlos.chinea@nokia.com>
- <1334837127-12931-6-git-send-email-carlos.chinea@nokia.com>
+ <1334837127-12931-7-git-send-email-carlos.chinea@nokia.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1334837127-12931-6-git-send-email-carlos.chinea@nokia.com>
+In-Reply-To: <1334837127-12931-7-git-send-email-carlos.chinea@nokia.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 19, 2012 at 03:05:26PM +0300, Carlos Chinea wrote:
-> Remove max_data_size sysfs entry. Otherwise is possible
-> to have a buffer overrun if its value is increased after
-> the device is open.
+On Thu, Apr 19, 2012 at 03:05:27PM +0300, Carlos Chinea wrote:
+> Adds sysfs HSI framework documentation
 > 
 > Signed-off-by: Carlos Chinea <carlos.chinea@nokia.com>
 > ---
->  drivers/hsi/clients/hsi_char.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
+>  Documentation/ABI/testing/sysfs-bus-hsi |   19 +++++++++++++++++++
+>  1 files changed, 19 insertions(+), 0 deletions(-)
+>  create mode 100644 Documentation/ABI/testing/sysfs-bus-hsi
 > 
-> diff --git a/drivers/hsi/clients/hsi_char.c b/drivers/hsi/clients/hsi_char.c
-> index 88a050d..3ad91f6 100644
-> --- a/drivers/hsi/clients/hsi_char.c
-> +++ b/drivers/hsi/clients/hsi_char.c
-> @@ -123,7 +123,7 @@ struct hsc_client_data {
->  static unsigned int hsc_major;
->  /* Maximum buffer size that hsi_char will accept from userspace */
->  static unsigned int max_data_size = 0x1000;
-> -module_param(max_data_size, uint, S_IRUSR | S_IWUSR);
-> +module_param(max_data_size, uint, 0);
+> diff --git a/Documentation/ABI/testing/sysfs-bus-hsi b/Documentation/ABI/testing/sysfs-bus-hsi
+> new file mode 100644
+> index 0000000..1b1b282
+> --- /dev/null
+> +++ b/Documentation/ABI/testing/sysfs-bus-hsi
+> @@ -0,0 +1,19 @@
+> +What:		/sys/bus/hsi
+> +Date:		April 2012
+> +KernelVersion:	3.4
+> +Contact:	Carlos Chinea <carlos.chinea@nokia.com>
+> +Description:
+> +		High Speed Synchronous Serial Interface (HSI) is a
+> +		serial interface mainly used for connecting application
+> +		engines (APE) with cellular modem engines (CMT) in cellular
+> +		handsets.
+> +		The bus will be populated with devices (hsi_clients) representing
+> +		the protocols available in the system. Bus drivers implement
+> +		those protocols.
+> +
+> +What:		/sys/bus/hsi/devices/.../modalias
+> +Date:		April 2012
+> +KernelVersion:	3.4
+> +Contact:	Carlos Chinea <carlos.chinea@nokia.com>
+> +Description:	Stores the same MODALIAS value emitted by uevent
+> +		Format: hsi:<hsi_client device name>
 
-You can just change this to be read-only, that way userspace can see
-what the value is, and it can't be changed.
-
-But that's up to you, not an issue at all.
+You don't have any files in the device directories at all that you
+create other than the modalias one?  If so, that's fine, just curious.
 
 greg k-h
