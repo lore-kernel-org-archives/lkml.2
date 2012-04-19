@@ -1,54 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932350Ab2DSUGa (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Apr 2012 16:06:30 -0400
-Received: from acsinet15.oracle.com ([141.146.126.227]:30448 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932246Ab2DSUG3 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Apr 2012 16:06:29 -0400
-Date: Thu, 19 Apr 2012 16:00:23 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Lin Ming <mlin@ss.pku.edu.cn>
-Cc: Jeremy Fitzhardinge <jeremy@goop.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Steven Noonan <steven@uplinklabs.net>, linux-kernel@vger.kernel.org,
-        Marcus Granado <marcus.granado@citrix.com>, xen-devel@lists.xen.org,
-        Ben Guthro <ben@guthro.net>
-Subject: Re: [Xen-devel] [PATCH 2/2] xen: implement IRQ_WORK_VECTOR handler
-Message-ID: <20120419200023.GD28211@phenom.dumpdata.com>
-References: <1334470172-3861-1-git-send-email-mlin@ss.pku.edu.cn>
- <1334470172-3861-3-git-send-email-mlin@ss.pku.edu.cn>
- <20120416203210.GD14982@phenom.dumpdata.com>
- <CAF1ivSZ8H2jp6sv=F8DXBAG9Wi87zCLh5Lbh+aeN66eJg_F1_Q@mail.gmail.com>
+	id S932369Ab2DSUGn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Apr 2012 16:06:43 -0400
+Received: from na3sys009aog136.obsmtp.com ([74.125.149.85]:56726 "EHLO
+	na3sys009aog136.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932246Ab2DSUGl convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Apr 2012 16:06:41 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-In-Reply-To: <CAF1ivSZ8H2jp6sv=F8DXBAG9Wi87zCLh5Lbh+aeN66eJg_F1_Q@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1334003101-17274-3-git-send-email-robherring2@gmail.com>
+References: <1334003101-17274-1-git-send-email-robherring2@gmail.com> <1334003101-17274-3-git-send-email-robherring2@gmail.com>
+From: "Turquette, Mike" <mturquette@ti.com>
+Date: Thu, 19 Apr 2012 13:06:18 -0700
+Message-ID: <CAJOA=zOGbttJwSs5n9LZQCjFzJMFZomP0CmzS3PZK0nayCy+Bw@mail.gmail.com>
+Subject: Re: [PATCH 2/4] clk: remove trailing whitespace from clk.h
+To: Rob Herring <robherring2@gmail.com>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        devicetree-discuss@lists.ozlabs.org,
+        Thierry Reding <thierry.reding@avionic-design.de>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Sascha Hauer <kernel@pengutronix.de>, shawn.guo@linaro.org
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
-X-CT-RefId: str=0001.0A090201.4F90700A.0100,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> >> +static irqreturn_t xen_irq_work_interrupt(int irq, void *dev_id)
-> >> +{
-> >> +     irq_enter();
-> >> +     inc_irq_stat(apic_irq_work_irqs);
-> >> +     irq_work_run();
-> >
-> > I think this usually done the other way around:
-> >
-> > irq_work_run()
-> > inc_irq_stat(apic_irq_work_irqs)
-> >
-> > Or is there an excellent reason for doing it this way?
-> 
-> Copy & paste from smp_irq_work_interrupt().
-> But I think there is no much difference.
-> 
-> Anyway, I can change it if needed.
+On Mon, Apr 9, 2012 at 1:24 PM, Rob Herring <robherring2@gmail.com> wrote:
+> From: Rob Herring <rob.herring@calxeda.com>
+>
+> Remove trailing whitespace from 2 lines.
+>
+> Signed-off-by: Rob Herring <rob.herring@calxeda.com>
 
-Please do. It looks at odds with the other usages in this file.
+Hi Rob,
+
+You asked me to take this patch in the mail thread for the first patch
+in this series.  The code being touched here is really Russell's
+territory but the change is trivial so I'll take it into my -next
+branch.
+
+Regards,
+Mike
+
+> ---
+>  include/linux/clk.h |    4 ++--
+>  1 files changed, 2 insertions(+), 2 deletions(-)
+>
+> diff --git a/include/linux/clk.h b/include/linux/clk.h
+> index b025272..e08bff1 100644
+> --- a/include/linux/clk.h
+> +++ b/include/linux/clk.h
+> @@ -220,7 +220,7 @@ void clk_put(struct clk *clk);
+>  * Returns rounded clock rate in Hz, or negative errno.
+>  */
+>  long clk_round_rate(struct clk *clk, unsigned long rate);
+> -
+> +
+>  /**
+>  * clk_set_rate - set the clock rate for a clock source
+>  * @clk: clock source
+> @@ -229,7 +229,7 @@ long clk_round_rate(struct clk *clk, unsigned long rate);
+>  * Returns success (0) or negative errno.
+>  */
+>  int clk_set_rate(struct clk *clk, unsigned long rate);
+> -
+> +
+>  /**
+>  * clk_set_parent - set the parent clock source for this clock
+>  * @clk: clock source
+> --
+> 1.7.5.4
+>
+>
+> _______________________________________________
+> linux-arm-kernel mailing list
+> linux-arm-kernel@lists.infradead.org
+> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
