@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754573Ab2DSClp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Apr 2012 22:41:45 -0400
-Received: from mailout2.samsung.com ([203.254.224.25]:28937 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752099Ab2DSCli (ORCPT
+	id S1754680Ab2DSClr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Apr 2012 22:41:47 -0400
+Received: from mailout3.samsung.com ([203.254.224.33]:64255 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753138Ab2DSClk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Apr 2012 22:41:38 -0400
-X-AuditID: cbfee61a-b7c0cae000001518-ae-4f8f7b5f6598
+	Wed, 18 Apr 2012 22:41:40 -0400
+X-AuditID: cbfee61b-b7cb4ae000000d81-5c-4f8f7b61ce89
 From: MyungJoo Ham <myungjoo.ham@samsung.com>
 To: Greg KH <gregkh@linuxfoundation.org>
 Cc: Arnd Bergmann <arnd@arndb.de>, LKML <linux-kernel@vger.kernel.org>,
@@ -22,9 +22,10 @@ Cc: Arnd Bergmann <arnd@arndb.de>, LKML <linux-kernel@vger.kernel.org>,
         John Stultz <john.stultz@linaro.org>,
         Joerg Roedel <joerg.roedel@amd.com>, myungjoo.ham@gmail.com,
         cw00.choi@samsung.com
-Subject: [PATCH v8 3/6] Extcon: support notification based on the state changes.
-Date: Thu, 19 Apr 2012 11:41:35 +0900
-Message-id: <1334803298-24260-4-git-send-email-myungjoo.ham@samsung.com>
+Subject: [PATCH v8 6/6] Documentation/extcon: porting guide for Android kernel
+ switch driver.
+Date: Thu, 19 Apr 2012 11:41:38 +0900
+Message-id: <1334803298-24260-7-git-send-email-myungjoo.ham@samsung.com>
 X-Mailer: git-send-email 1.7.4.1
 In-reply-to: <1334803298-24260-1-git-send-email-myungjoo.ham@samsung.com>
 References: <20120418214703.GA31606@kroah.com>
@@ -35,230 +36,143 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Donggeun Kim <dg77.kim@samsung.com>
-
-State changes of extcon devices have been notified via kobjet_uevent.
-This patch adds notifier interfaces in order to allow device drivers to
-get notified easily. Along with notifier interface,
-extcon_get_extcon_dev() function is added so that device drivers may
-discover a extcon_dev easily.
-
-Signed-off-by: Donggeun Kim <dg77.kim@samsung.com>
 Signed-off-by: MyungJoo Ham <myungjoo.ham@samsung.com>
 Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
-Reviewed-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
-
---
-Changes from RFC
-- Renamed switch to extcon
-- Bugfix: extcon_dev_unregister()
-- Bugfix: "edev->dev" is "internal" data.
-- Added kerneldoc comments.
-- Reworded comments.
 ---
- drivers/extcon/extcon_class.c |   66 +++++++++++++++++++++++++++++++++++++++++
- include/linux/extcon.h        |   38 +++++++++++++++++++++++
- 2 files changed, 104 insertions(+), 0 deletions(-)
+ Documentation/extcon/porting-android-switch-class |  124 +++++++++++++++++++++
+ 1 files changed, 124 insertions(+), 0 deletions(-)
+ create mode 100644 Documentation/extcon/porting-android-switch-class
 
-diff --git a/drivers/extcon/extcon_class.c b/drivers/extcon/extcon_class.c
-index 3c46368..83a088f 100644
---- a/drivers/extcon/extcon_class.c
-+++ b/drivers/extcon/extcon_class.c
-@@ -36,6 +36,9 @@ struct class *extcon_class;
- static struct class_compat *switch_class;
- #endif /* CONFIG_ANDROID && !defined(CONFIG_ANDROID_SWITCH) */
- 
-+static LIST_HEAD(extcon_dev_list);
-+static DEFINE_MUTEX(extcon_dev_list_lock);
+diff --git a/Documentation/extcon/porting-android-switch-class b/Documentation/extcon/porting-android-switch-class
+new file mode 100644
+index 0000000..eb0fa5f
+--- /dev/null
++++ b/Documentation/extcon/porting-android-switch-class
+@@ -0,0 +1,124 @@
 +
- static ssize_t state_show(struct device *dev, struct device_attribute *attr,
- 			  char *buf)
- {
-@@ -75,6 +78,9 @@ static ssize_t name_show(struct device *dev, struct device_attribute *attr,
-  * the name of extcon device (envp[0]) and the state output (envp[1]).
-  * Tizen uses this format for extcon device to get events from ports.
-  * Android uses this format as well.
-+ *
-+ * Note that notifier provides the which bits are changes in the state
-+ * variable with "val" to the callback.
-  */
- void extcon_set_state(struct extcon_dev *edev, u32 state)
- {
-@@ -84,10 +90,14 @@ void extcon_set_state(struct extcon_dev *edev, u32 state)
- 	char *envp[3];
- 	int env_offset = 0;
- 	int length;
-+	u32 old_state = edev->state;
- 
- 	if (edev->state != state) {
- 		edev->state = state;
- 
-+		raw_notifier_call_chain(&edev->nh, old_state ^ edev->state,
-+					edev);
++	Staging/Android Switch Class Porting Guide
++	(linux/drivers/staging/android/switch)
++	(c) Copyright 2012 Samsung Electronics
 +
- 		prop_buf = (char *)get_zeroed_page(GFP_KERNEL);
- 		if (prop_buf) {
- 			length = name_show(edev->dev, NULL, prop_buf);
-@@ -117,6 +127,51 @@ void extcon_set_state(struct extcon_dev *edev, u32 state)
- }
- EXPORT_SYMBOL_GPL(extcon_set_state);
- 
-+/**
-+ * extcon_get_extcon_dev() - Get the extcon device instance from the name
-+ * @extcon_name:	The extcon name provided with extcon_dev_register()
-+ */
-+struct extcon_dev *extcon_get_extcon_dev(const char *extcon_name)
-+{
-+	struct extcon_dev *sd;
++AUTHORS
++MyungJoo Ham <myungjoo.ham@samsung.com>
 +
-+	mutex_lock(&extcon_dev_list_lock);
-+	list_for_each_entry(sd, &extcon_dev_list, entry) {
-+		if (!strcmp(sd->name, extcon_name))
-+			goto out;
-+	}
-+	sd = NULL;
-+out:
-+	mutex_unlock(&extcon_dev_list_lock);
-+	return sd;
-+}
-+EXPORT_SYMBOL_GPL(extcon_get_extcon_dev);
++/*****************************************************************
++ * CHAPTER 1.                                                    *
++ * PORTING SWITCH CLASS DEVICE DRIVERS                           *
++ *****************************************************************/
 +
-+/**
-+ * extcon_register_notifier() - Register a notifee to get notified by
-+ *			      any attach status changes from the extcon.
-+ * @edev:	the extcon device.
-+ * @nb:		a notifier block to be registered.
-+ */
-+int extcon_register_notifier(struct extcon_dev *edev,
-+			struct notifier_block *nb)
-+{
-+	return raw_notifier_chain_register(&edev->nh, nb);
-+}
-+EXPORT_SYMBOL_GPL(extcon_register_notifier);
++****** STEP 1. Basic Functionality
++	No extcon extended feature, but switch features only.
 +
-+/**
-+ * extcon_unregister_notifier() - Unregister a notifee from the extcon device.
-+ * @edev:	the extcon device.
-+ * @nb:		a registered notifier block to be unregistered.
-+ */
-+int extcon_unregister_notifier(struct extcon_dev *edev,
-+			struct notifier_block *nb)
-+{
-+	return raw_notifier_chain_unregister(&edev->nh, nb);
-+}
-+EXPORT_SYMBOL_GPL(extcon_unregister_notifier);
++- struct switch_dev (fed to switch_dev_register/unregister)
++    @name: no change
++    @dev: no change
++    @index: drop (not used in switch device driver side anyway)
++    @state: no change
++	If you have used @state with magic numbers, keep it
++	at this step.
++    @print_name: no change but type change (switch_dev->extcon_dev)
++    @print_state: no change but type change (switch_dev->extcon_dev)
 +
- static struct device_attribute extcon_attrs[] = {
- 	__ATTR_RO(state),
- 	__ATTR_RO(name),
-@@ -142,6 +197,10 @@ static int create_extcon_class(void)
- 
- static void extcon_cleanup(struct extcon_dev *edev, bool skip)
- {
-+	mutex_lock(&extcon_dev_list_lock);
-+	list_del(&edev->entry);
-+	mutex_unlock(&extcon_dev_list_lock);
++- switch_dev_register(sdev, dev)
++	=> extcon_dev_register(edev, dev)
++	: no change but type change (sdev->edev)
++- switch_dev_unregister(sdev)
++	=> extcon_dev_unregister(edev)
++	: no change but type change (sdev->edev)
++- switch_get_state(sdev)
++	=> extcon_get_state(edev)
++	: no change but type change (sdev->edev) and (return: int->u32)
++- switch_set_state(sdev, state)
++	=> extcon_set_state(edev, state)
++	: no change but type change (sdev->edev) and (state: int->u32)
 +
- 	if (!skip && get_device(edev->dev)) {
- 		device_unregister(edev->dev);
- 		put_device(edev->dev);
-@@ -194,8 +253,15 @@ int extcon_dev_register(struct extcon_dev *edev, struct device *dev)
- 					       dev);
- #endif /* CONFIG_ANDROID && !defined(CONFIG_ANDROID_SWITCH) */
- 
-+	RAW_INIT_NOTIFIER_HEAD(&edev->nh);
++With this changes, the ex-switch extcon class device works as it once
++worked as switch class device. However, it will now have additional
++interfaces (both ABI and in-kernel API) and different ABI locations.
++However, if CONFIG_ANDROID is enabled without CONFIG_ANDROID_SWITCH,
++/sys/class/switch/* will be symbolically linked to /sys/class/extcon/
++so that they are still compatible with legacy userspace processes.
 +
- 	dev_set_drvdata(edev->dev, edev);
- 	edev->state = 0;
++****** STEP 2. Multistate (no more magic numbers in state value)
++	Extcon's extended features for switch device drivers with
++	complex features usually required magic numbers in state
++	value of switch_dev. With extcon, such magic numbers that
++	support multiple cables (
 +
-+	mutex_lock(&extcon_dev_list_lock);
-+	list_add(&edev->entry, &extcon_dev_list);
-+	mutex_unlock(&extcon_dev_list_lock);
++  1. Define cable names at edev->supported_cable.
++  2. (Recommended) remove print_state callback.
++  3. Use extcon_get_cable_state_(edev, index) or
++   extcon_get_cable_state(edev, cable_name) instead of
++   extcon_get_state(edev) if you intend to get a state of a specific
++   cable. Same for set_state. This way, you can remove the usage of
++   magic numbers in state value.
++  4. Use extcon_update_state() if you are updating specific bits of
++   the state value.
 +
- 	return 0;
- 
- err_dev:
-diff --git a/include/linux/extcon.h b/include/linux/extcon.h
-index cd732ab..50be845 100644
---- a/include/linux/extcon.h
-+++ b/include/linux/extcon.h
-@@ -23,6 +23,7 @@
- #ifndef __LINUX_EXTCON_H__
- #define __LINUX_EXTCON_H__
- 
-+#include <linux/notifier.h>
- /**
-  * struct extcon_dev - An extcon device represents one external connector.
-  * @name	The name of this extcon device. Parent device name is used
-@@ -34,6 +35,9 @@
-  * @dev		Device of this extcon. Do not provide at register-time.
-  * @state	Attach/detach state of this extcon. Do not provide at
-  *		register-time
-+ * @nh	Notifier for the state change events from this extcon
-+ * @entry	To support list of extcon devices so that uses can search
-+ *		for extcon devices based on the extcon name.
-  *
-  * In most cases, users only need to provide "User initializing data" of
-  * this struct when registering an extcon. In some exceptional cases,
-@@ -51,11 +55,19 @@ struct extcon_dev {
- 	/* --- Internal data. Please do not set. --- */
- 	struct device	*dev;
- 	u32		state;
-+	struct raw_notifier_head nh;
-+	struct list_head entry;
- };
- 
- #ifdef CONFIG_EXTCON
++Example: a switch device driver w/ magic numbers for two cables.
++	"0x00": no cables connected.
++	"0x01": cable 1 connected
++	"0x02": cable 2 connected
++	"0x03": cable 1 and 2 connected
++  1. edev->supported_cable = {"1", "2", NULL};
++  2. edev->print_state = NULL;
++  3. extcon_get_cable_state_(edev, 0) shows cable 1's state.
++     extcon_get_cable_state(edev, "1") shows cable 1's state.
++     extcon_set_cable_state_(edev, 1) sets cable 2's state.
++     extcon_set_cable_state(edev, "2") sets cable 2's state
++  4. extcon_update_state(edev, 0x01, 0) sets the least bit's 0.
 +
-+/*
-+ * Following APIs are for notifiers or configurations.
-+ * Notifiers are the external port and connection devices.
-+ */
- extern int extcon_dev_register(struct extcon_dev *edev, struct device *dev);
- extern void extcon_dev_unregister(struct extcon_dev *edev);
-+extern struct extcon_dev *extcon_get_extcon_dev(const char *extcon_name);
- 
- static inline u32 extcon_get_state(struct extcon_dev *edev)
- {
-@@ -63,6 +75,15 @@ static inline u32 extcon_get_state(struct extcon_dev *edev)
- }
- 
- extern void extcon_set_state(struct extcon_dev *edev, u32 state);
++****** STEP 3. Notify other device drivers
 +
-+/*
-+ * Following APIs are to monitor every action of a notifier.
-+ * Registerer gets notified for every external port of a connection device.
-+ */
-+extern int extcon_register_notifier(struct extcon_dev *edev,
-+				    struct notifier_block *nb);
-+extern int extcon_unregister_notifier(struct extcon_dev *edev,
-+				      struct notifier_block *nb);
- #else /* CONFIG_EXTCON */
- static inline int extcon_dev_register(struct extcon_dev *edev,
- 				      struct device *dev)
-@@ -78,5 +99,22 @@ static inline u32 extcon_get_state(struct extcon_dev *edev)
- }
- 
- static inline void extcon_set_state(struct extcon_dev *edev, u32 state) { }
-+static inline struct extcon_dev *extcon_get_extcon_dev(const char *extcon_name)
-+{
-+	return NULL;
-+}
++  You can notify others of the cable attach/detach events with
++notifier chains.
 +
-+static inline int extcon_register_notifier(struct extcon_dev *edev,
-+					   struct notifier_block *nb)
-+{
-+	return 0;
-+}
++  At the side of other device drivers (the extcon device itself
++does not need to get notified of its own events), there are two
++methods to register notifier_block for cable events:
++(a) for a specific cable or (b) for every cable.
 +
-+static inline int extcon_unregister_notifier(struct extcon_dev *edev,
-+					     struct notifier_block *nb)
-+{
-+	return 0;
-+}
++  (a) extcon_register_interest(obj, extcon_name, cable_name, nb)
++	Example: want to get news of "MAX8997_MUIC"'s "USB" cable
 +
- #endif /* CONFIG_EXTCON */
- #endif /* __LINUX_EXTCON_H__ */
++	obj = kzalloc(sizeof(struct extcon_specific_cable_nb),
++		      GFP_KERNEL);
++	nb->notifier_call = the_callback_to_handle_usb;
++
++	extcon_register_intereset(obj, "MAX8997_MUIC", "USB", nb);
++
++  (b) extcon_register_notifier(edev, nb)
++	Call nb for any changes in edev.
++
++  Please note that in order to properly behave with method (a),
++the extcon device driver should support multistate feature (STEP 2).
++
++****** STEP 4. Inter-cable relation (mutually exclusive)
++
++  You can provide inter-cable mutually exclusiveness information
++for an extcon device. When cables A and B are declared to be mutually
++exclusive, the two cables cannot be in ATTACHED state simulteneously.
++
++
++/*****************************************************************
++ * CHAPTER 2.                                                    *
++ * PORTING USERSPACE w/ SWITCH CLASS DEVICE SUPPORT              *
++ *****************************************************************/
++
++****** ABI Location
++
++  If "CONFIG_ANDROID" is enabled and "CONFIG_ANDROID_SWITCH" is
++disabled, /sys/class/switch/* are created as symbolic links to
++/sys/class/extcon/*. Because CONFIG_ANDROID_SWITCH creates
++/sys/class/switch directory, we disable symboling linking if
++CONFIG_ANDROID_SWITCH is enabled.
++
++  The two files of switch class, name and state, are provided with
++extcon, too. When the multistate support (STEP 2 of CHAPTER 1.) is
++not enabled or print_state callback is supplied, the output of
++state ABI is same with switch class.
 -- 
 1.7.4.1
 
