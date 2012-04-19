@@ -1,50 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755678Ab2DSPbR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Apr 2012 11:31:17 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:41751 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753929Ab2DSPbP (ORCPT
+	id S1755600Ab2DSPeb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Apr 2012 11:34:31 -0400
+Received: from smtp.snhosting.dk ([87.238.248.203]:50924 "EHLO
+	smtp.domainteam.dk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752335Ab2DSPe3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Apr 2012 11:31:15 -0400
-Message-ID: <4F902FBF.8010607@wwwdotorg.org>
-Date: Thu, 19 Apr 2012 09:31:11 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.28) Gecko/20120313 Thunderbird/3.1.20
+	Thu, 19 Apr 2012 11:34:29 -0400
+Date: Thu, 19 Apr 2012 17:34:28 +0200
+From: Sam Ravnborg <sam@ravnborg.org>
+To: Konrad Eisele <konrad@gaisler.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
+        lkml <linux-kernel@vger.kernel.org>
+Cc: sparclinux@vger.kernel.org, davem@davemloft.net, daniel@gaisler.com
+Subject: Re: [PATCH 1/1] sparc: task_cpu() for stopper thread on sparc32
+	returns 0
+Message-ID: <20120419153428.GB1120@merkur.ravnborg.org>
+References: <1334827362-3434-1-git-send-email-konrad@gaisler.com>
 MIME-Version: 1.0
-To: Laxman Dewangan <ldewangan@nvidia.com>
-CC: "olof@lixom.net" <olof@lixom.net>, Colin Cross <ccross@android.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-iio@vger.kernel.org" <linux-iio@vger.kernel.org>,
-        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Grant Likely <grant.likely@secretlab.ca>
-Subject: Re: [PATCH 3/3] ARM: dt: tegra_ventana: als and proximity sensor
- isl29018 support
-References: <1334645155-13799-1-git-send-email-ldewangan@nvidia.com> <1334645155-13799-4-git-send-email-ldewangan@nvidia.com> <4F8DF01D.9040900@wwwdotorg.org> <4F8FD709.60308@nvidia.com>
-In-Reply-To: <4F8FD709.60308@nvidia.com>
-X-Enigmail-Version: 1.1.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1334827362-3434-1-git-send-email-konrad@gaisler.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/19/2012 03:12 AM, Laxman Dewangan wrote:
-> On Wednesday 18 April 2012 04:05 AM, Stephen Warren wrote:
->> On 04/17/2012 12:45 AM, Laxman Dewangan wrote:
->>> Add the device info for ALS and proximity sensor isl29018.
->>
->> a) Perhaps the vendor prefix should be "isil" not "isl". Olof, can you
->> please comment here?
-> 
-> Any comments on this? I think "isil" is good as it is the symbol in
-> nasdaq also: Intersil Corporation (ISIL).
-> If no objection than I can send my next version of patch ;)
+Added a few more people - as this patch touches a core file.
 
-Yes, the idea is to use stock ticker symbols where possible, so it
-sounds like isil is the way to go.
+I expect we have an issue on sparc32 - that manifest
+in this bug. But I do not know this code at all.
+
+	Sam
+
+On Thu, Apr 19, 2012 at 11:22:42AM +0200, Konrad Eisele wrote:
+> The stopper thread for CPU > 0 (at least in sparc32)
+> has on initialization task_cpu() set to zero even
+> for CPUs > 0. The patch explicitly checks weather the
+> CPU is allowed to run on the cpu that task_cpu()
+> return or changes the return cpu.
+> 
+> Signed-off-by: Konrad Eisele <konrad@gaisler.com>
+> ---
+>  kernel/sched/stop_task.c |    9 ++++++++-
+>  1 files changed, 8 insertions(+), 1 deletions(-)
+> 
+> diff --git a/kernel/sched/stop_task.c b/kernel/sched/stop_task.c
+> index 7b386e8..9201866 100644
+> --- a/kernel/sched/stop_task.c
+> +++ b/kernel/sched/stop_task.c
+> @@ -13,7 +13,14 @@
+>  static int
+>  select_task_rq_stop(struct task_struct *p, int sd_flag, int flags)
+>  {
+> -	return task_cpu(p); /* stop tasks as never migrate */
+> +	int ccpu, cpu , dcpu;
+> +	ccpu = cpu = task_cpu(p);
+> +	if (unlikely(!cpumask_test_cpu(cpu, tsk_cpus_allowed(p)))) {
+> +		cpu = cpumask_first(tsk_cpus_allowed(p));
+> +		if (cpu >= nr_cpu_ids)
+> +			cpu = ccpu;
+> +	}
+> +	return cpu;
+>  }
+>  #endif /* CONFIG_SMP */
+>  
+> -- 
+> 1.6.1.3
+> 
