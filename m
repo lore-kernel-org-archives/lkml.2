@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964861Ab2DSVOH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Apr 2012 17:14:07 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:36240 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964810Ab2DSVOA (ORCPT
+	id S964876Ab2DSVOL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Apr 2012 17:14:11 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:61429 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933499Ab2DSVOE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Apr 2012 17:14:00 -0400
-Message-Id: <20120419210615.141181499@linuxfoundation.org>
+	Thu, 19 Apr 2012 17:14:04 -0400
+Message-Id: <20120419210615.232963710@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Thu, 19 Apr 2012 14:06:58 -0700
+Date: Thu, 19 Apr 2012 14:06:59 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
         alan@lxorguk.ukuu.org.uk,
-        Tomoya MORINAGA <tomoya-linux@dsn.lapis-semi.com>,
-        Alan Cox <alan@linux.intel.com>,
+        Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>,
+        Vinod Koul <vinod.koul@intel.com>,
         Tomoya MORINAGA <tomoya.rohm@gmail.com>
-Subject: [ 47/59] 8250_pci: Fix kernel panic when pch_uart is disabled
+Subject: [ 48/59] pch_dma: fix DMA issue(ch8-ch11)
 In-Reply-To: <20120419210623.GA12156@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,93 +27,172 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Tomoya MORINAGA <tomoya-linux@dsn.lapis-semi.com>
+From: Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
 
-commit 64d91cfaade2155ad048fe3b65238a052e29dde4 upstream.
+commit c3d4913cd4cd469cbf29d411293e937729e83f3a upstream.
 
-Currently, ".setup" function is not set.
-As a result, when detecting our IOH's uart device without pch_uart, kernel panic
-occurs at the following of pciserial_init_ports().
+ISSUE: In case PCH_DMA with I2S communications with ch8~ch11, sometimes I2S data
+is not send correctly.
+CAUSE: The following patch I submitted before was not enough modification for
+supporting DMA ch8~ch11. The modification for status register of ch8~11 was not
+enough.
 
-	for (i = 0; i < nr_ports; i++) {
-		if (quirk->setup(priv, board, &serial_port, i))
-			break;
+pch_dma: Support I2S for ML7213 IOH
+author	Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
+	Mon, 9 May 2011 07:09:38 +0000 (16:09 +0900)
+committer	Vinod Koul <vinod.koul@intel.com>
+	Mon, 9 May 2011 11:42:23 +0000 (16:42 +0530)
+commit	194f5f2706c7472f9c6bb2d17fa788993606581f
+tree	c9d4903ea02b18939a4f390956a48be1a3734517
+parent	60092d0bde4c8741198da4a69b693d3709385bf1
 
-So, this patch adds the ".setup" function.
-We can use pci_default_setup because our IOH's uart is compatible with 16550.
+This patch fixes the issue.
+We can confirm PCH_DMA with I2S communications with ch8~ch11 works well.
 
-Signed-off-by: Tomoya MORINAGA <tomoya-linux@dsn.lapis-semi.com>
-Acked-by: Alan Cox <alan@linux.intel.com>
+Signed-off-by: Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
+Signed-off-by: Vinod Koul <vinod.koul@intel.com>
 Signed-off-by: Tomoya MORINAGA <tomoya.rohm@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/tty/serial/8250_pci.c |   10 ++++++++++
- 1 file changed, 10 insertions(+)
+ drivers/dma/pch_dma.c |   71 +++++++++++++++++++++++++++++++++++++++-----------
+ 1 file changed, 56 insertions(+), 15 deletions(-)
 
---- a/drivers/tty/serial/8250_pci.c
-+++ b/drivers/tty/serial/8250_pci.c
-@@ -1459,51 +1459,61 @@ static struct pci_serial_quirk pci_seria
- 		.vendor         = PCI_VENDOR_ID_INTEL,
- 		.device         = 0x8811,
- 		.init		= pci_eg20t_init,
-+		.setup		= pci_default_setup,
- 	},
- 	{
- 		.vendor         = PCI_VENDOR_ID_INTEL,
- 		.device         = 0x8812,
- 		.init		= pci_eg20t_init,
-+		.setup		= pci_default_setup,
- 	},
- 	{
- 		.vendor         = PCI_VENDOR_ID_INTEL,
- 		.device         = 0x8813,
- 		.init		= pci_eg20t_init,
-+		.setup		= pci_default_setup,
- 	},
- 	{
- 		.vendor         = PCI_VENDOR_ID_INTEL,
- 		.device         = 0x8814,
- 		.init		= pci_eg20t_init,
-+		.setup		= pci_default_setup,
- 	},
- 	{
- 		.vendor         = 0x10DB,
- 		.device         = 0x8027,
- 		.init		= pci_eg20t_init,
-+		.setup		= pci_default_setup,
- 	},
- 	{
- 		.vendor         = 0x10DB,
- 		.device         = 0x8028,
- 		.init		= pci_eg20t_init,
-+		.setup		= pci_default_setup,
- 	},
- 	{
- 		.vendor         = 0x10DB,
- 		.device         = 0x8029,
- 		.init		= pci_eg20t_init,
-+		.setup		= pci_default_setup,
- 	},
- 	{
- 		.vendor         = 0x10DB,
- 		.device         = 0x800C,
- 		.init		= pci_eg20t_init,
-+		.setup		= pci_default_setup,
- 	},
- 	{
- 		.vendor         = 0x10DB,
- 		.device         = 0x800D,
- 		.init		= pci_eg20t_init,
-+		.setup		= pci_default_setup,
- 	},
- 	{
- 		.vendor         = 0x10DB,
- 		.device         = 0x800D,
- 		.init		= pci_eg20t_init,
-+		.setup		= pci_default_setup,
- 	},
- 	/*
- 	 * Cronyx Omega PCI (PLX-chip based)
+--- a/drivers/dma/pch_dma.c
++++ b/drivers/dma/pch_dma.c
+@@ -45,7 +45,8 @@
+ #define DMA_STATUS_MASK_BITS		0x3
+ #define DMA_STATUS_SHIFT_BITS		16
+ #define DMA_STATUS_IRQ(x)		(0x1 << (x))
+-#define DMA_STATUS_ERR(x)		(0x1 << ((x) + 8))
++#define DMA_STATUS0_ERR(x)		(0x1 << ((x) + 8))
++#define DMA_STATUS2_ERR(x)		(0x1 << (x))
+ 
+ #define DMA_DESC_WIDTH_SHIFT_BITS	12
+ #define DMA_DESC_WIDTH_1_BYTE		(0x3 << DMA_DESC_WIDTH_SHIFT_BITS)
+@@ -133,6 +134,7 @@ struct pch_dma {
+ #define PCH_DMA_CTL3	0x0C
+ #define PCH_DMA_STS0	0x10
+ #define PCH_DMA_STS1	0x14
++#define PCH_DMA_STS2	0x18
+ 
+ #define dma_readl(pd, name) \
+ 	readl((pd)->membase + PCH_DMA_##name)
+@@ -183,13 +185,19 @@ static void pdc_enable_irq(struct dma_ch
+ {
+ 	struct pch_dma *pd = to_pd(chan->device);
+ 	u32 val;
++	int pos;
++
++	if (chan->chan_id < 8)
++		pos = chan->chan_id;
++	else
++		pos = chan->chan_id + 8;
+ 
+ 	val = dma_readl(pd, CTL2);
+ 
+ 	if (enable)
+-		val |= 0x1 << chan->chan_id;
++		val |= 0x1 << pos;
+ 	else
+-		val &= ~(0x1 << chan->chan_id);
++		val &= ~(0x1 << pos);
+ 
+ 	dma_writel(pd, CTL2, val);
+ 
+@@ -262,7 +270,7 @@ static void pdc_set_mode(struct dma_chan
+ 		chan->chan_id, val);
+ }
+ 
+-static u32 pdc_get_status(struct pch_dma_chan *pd_chan)
++static u32 pdc_get_status0(struct pch_dma_chan *pd_chan)
+ {
+ 	struct pch_dma *pd = to_pd(pd_chan->chan.device);
+ 	u32 val;
+@@ -272,9 +280,27 @@ static u32 pdc_get_status(struct pch_dma
+ 			DMA_STATUS_BITS_PER_CH * pd_chan->chan.chan_id));
+ }
+ 
++static u32 pdc_get_status2(struct pch_dma_chan *pd_chan)
++{
++	struct pch_dma *pd = to_pd(pd_chan->chan.device);
++	u32 val;
++
++	val = dma_readl(pd, STS2);
++	return DMA_STATUS_MASK_BITS & (val >> (DMA_STATUS_SHIFT_BITS +
++			DMA_STATUS_BITS_PER_CH * (pd_chan->chan.chan_id - 8)));
++}
++
+ static bool pdc_is_idle(struct pch_dma_chan *pd_chan)
+ {
+-	if (pdc_get_status(pd_chan) == DMA_STATUS_IDLE)
++	u32 sts;
++
++	if (pd_chan->chan.chan_id < 8)
++		sts = pdc_get_status0(pd_chan);
++	else
++		sts = pdc_get_status2(pd_chan);
++
++
++	if (sts == DMA_STATUS_IDLE)
+ 		return true;
+ 	else
+ 		return false;
+@@ -693,30 +719,45 @@ static irqreturn_t pd_irq(int irq, void
+ 	struct pch_dma *pd = (struct pch_dma *)devid;
+ 	struct pch_dma_chan *pd_chan;
+ 	u32 sts0;
++	u32 sts2;
+ 	int i;
+-	int ret = IRQ_NONE;
++	int ret0 = IRQ_NONE;
++	int ret2 = IRQ_NONE;
+ 
+ 	sts0 = dma_readl(pd, STS0);
++	sts2 = dma_readl(pd, STS2);
+ 
+ 	dev_dbg(pd->dma.dev, "pd_irq sts0: %x\n", sts0);
+ 
+ 	for (i = 0; i < pd->dma.chancnt; i++) {
+ 		pd_chan = &pd->channels[i];
+ 
+-		if (sts0 & DMA_STATUS_IRQ(i)) {
+-			if (sts0 & DMA_STATUS_ERR(i))
+-				set_bit(0, &pd_chan->err_status);
+-
+-			tasklet_schedule(&pd_chan->tasklet);
+-			ret = IRQ_HANDLED;
++		if (i < 8) {
++			if (sts0 & DMA_STATUS_IRQ(i)) {
++				if (sts0 & DMA_STATUS0_ERR(i))
++					set_bit(0, &pd_chan->err_status);
++
++				tasklet_schedule(&pd_chan->tasklet);
++				ret0 = IRQ_HANDLED;
++			}
++		} else {
++			if (sts2 & DMA_STATUS_IRQ(i - 8)) {
++				if (sts2 & DMA_STATUS2_ERR(i))
++					set_bit(0, &pd_chan->err_status);
++
++				tasklet_schedule(&pd_chan->tasklet);
++				ret2 = IRQ_HANDLED;
++			}
+ 		}
+-
+ 	}
+ 
+ 	/* clear interrupt bits in status register */
+-	dma_writel(pd, STS0, sts0);
++	if (ret0)
++		dma_writel(pd, STS0, sts0);
++	if (ret2)
++		dma_writel(pd, STS2, sts2);
+ 
+-	return ret;
++	return ret0 | ret2;
+ }
+ 
+ #ifdef	CONFIG_PM
 
 
