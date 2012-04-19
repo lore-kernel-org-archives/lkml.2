@@ -1,52 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755222Ab2DSMIO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Apr 2012 08:08:14 -0400
-Received: from smtp.nokia.com ([147.243.1.47]:17725 "EHLO mgw-sa01.nokia.com"
+	id S1755307Ab2DSMIU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Apr 2012 08:08:20 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:65274 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754914Ab2DSMGk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Apr 2012 08:06:40 -0400
-From: Carlos Chinea <carlos.chinea@nokia.com>
-To: linux-kernel@vger.kernel.org
-Cc: greg@kroah.com, linus.walleij@linaro.org, artem.bityutskiy@linux.intel.com,
-        shubhrajyoti@ti.com
-Subject: [PATCH 0/6] HSI fixes for 3.4
-Date: Thu, 19 Apr 2012 15:05:21 +0300
-Message-Id: <1334837127-12931-1-git-send-email-carlos.chinea@nokia.com>
-X-Mailer: git-send-email 1.7.5.4
-X-Nokia-AV: Clean
+	id S1755240Ab2DSMIR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Apr 2012 08:08:17 -0400
+Message-ID: <4F900020.5010702@redhat.com>
+Date: Thu, 19 Apr 2012 15:08:00 +0300
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120329 Thunderbird/11.0.1
+MIME-Version: 1.0
+To: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>
+CC: zhangyanfei@cn.fujitsu.com, mtosatti@redhat.com, ebiederm@xmission.com,
+        luto@mit.edu, joerg.roedel@amd.com, dzickus@redhat.com,
+        paul.gortmaker@windriver.com, gregkh@suse.de, ludwig.nussel@suse.de,
+        linux-kernel@vger.kernel.org, kvm@vger.kernel.org,
+        kexec@lists.infradead.org
+Subject: Re: [PATCH 0/4] Export offsets of VMCS fields as note information
+ for kdump
+References: <4F8FEC22.400@redhat.com> <20120419.202707.276752866.d.hatayama@jp.fujitsu.com> <4F8FF7AC.1060309@redhat.com> <20120419.210119.246504497.d.hatayama@jp.fujitsu.com>
+In-Reply-To: <20120419.210119.246504497.d.hatayama@jp.fujitsu.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On 04/19/2012 03:01 PM, HATAYAMA Daisuke wrote:
+> >> It would be not helpful for the qemu crash case you are concerned
+> >> about. We want to use the guest state data to look into guest
+> >> machine's image in the crasshed qemu.
+> > 
+> > Why?
+> > 
+>
+> It seems natural to check the situation from guest machine's side when
+> qemu crashs. Suppose a service is running on the guest machine, and
+> then the qemu crash. Then, we may need to know the details of the
+> progress of the service if it's important. What has been successfully
+> done, and what has not yet.
 
-This patch set contains fixes for the issues found by Greg KH
+How can a service on the guest be related to a qemu crash?  And how
+would guest registers help?
 
-https://lkml.org/lkml/2012/4/2/511
-https://lkml.org/lkml/2012/4/2/512
-
-I would like to get feedback from those patches and specially
-from the hsi_event rework patch.
-
-Br,
-Carlos Chinea
-
-Carlos Chinea (6):
-  HSI: hsi: Rework hsi_controller release
-  HSI: hsi: Fix error path cleanup on client registration
-  HSI: hsi: Remove controllers and ports from the bus
-  HSI: hsi: Rework hsi_event interface
-  HSI: hsi_char: Remove max_data_size from sysfs
-  HSI: Add HSI ABI documentation
-
- Documentation/ABI/testing/sysfs-bus-hsi |   19 +++
- drivers/hsi/clients/hsi_char.c          |    2 +-
- drivers/hsi/hsi.c                       |  223 ++++++++++++++++---------------
- include/linux/hsi/hsi.h                 |   31 +++--
- 4 files changed, 155 insertions(+), 120 deletions(-)
- create mode 100644 Documentation/ABI/testing/sysfs-bus-hsi
+You can extract the list of running processes from a qemu crash dump
+without looking at guest registers.  And most vcpus are running
+asynchronously to qemu, so their register contents is irrelevant (if a
+vcpu is running synchronously with qemu - it just exited to qemu and is
+waiting for a response - then you'd see the details in qemu's call stack).
 
 -- 
-1.7.5.4
+error compiling committee.c: too many arguments to function
 
