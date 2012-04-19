@@ -1,59 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755636Ab2DSOdR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Apr 2012 10:33:17 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:55351 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755494Ab2DSOdO (ORCPT
+	id S1755650Ab2DSOe1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Apr 2012 10:34:27 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:58285 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753551Ab2DSOe0 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Apr 2012 10:33:14 -0400
-From: Andy Whitcroft <apw@canonical.com>
-To: Jeff Garzik <jgarzik@pobox.com>, linux-ide@vger.kernel.org
-Cc: Andy Whitcroft <apw@canonical.com>, linux-kernel@vger.kernel.org,
-        "K. Y. Srinivasan" <kys@microsoft.com>,
-        Mike Sterling <Mike.Sterling@microsoft.com>,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>
-Subject: [PATCH 0/2] Hyper-V disk support V4
-Date: Thu, 19 Apr 2012 15:33:08 +0100
-Message-Id: <1334845990-13418-1-git-send-email-apw@canonical.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <20120419074018.GA3342@shadowen.org>
-References: <20120419074018.GA3342@shadowen.org>
+	Thu, 19 Apr 2012 10:34:26 -0400
+MIME-Version: 1.0
+From: Lucas De Marchi <lucas.demarchi@profusion.mobi>
+Date: Thu, 19 Apr 2012 11:34:05 -0300
+Message-ID: <CAMOw1v6Q6_6g-4UKvixDLNkRvv0C_LdkHjYJynQUhJ6_sraf6A@mail.gmail.com>
+Subject: kmod 8
+To: linux-modules <linux-modules@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        linux-hotplug <linux-hotplug@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add support for ignoring disks devices on specific host controllers to
-libata.  Use this support to trigger us to ignore Hyper-V disk devices
-on the emulated SATA device based on the system DMI information.
+kmod 8 is out:
 
-I have cleaned up the Hyper-V detection so it is only included when the
-paravirtualised drivers are enabled.  I have also reintroduced the
-override which had mysteriously gone missing in V3.
+ftp://ftp.kernel.org/pub/linux/utils/kernel/kmod/kmod-8.tar.xz
+ftp://ftp.kernel.org/pub/linux/utils/kernel/kmod/kmod-8.tar.sign
 
-Comments?
+Very small, bug-fix release, nothing new. Last release I changed my
+laptop, which caused a wrong setup and kmod 7 got out with docs
+disabled. kmod 8 fixes as well.
 
--apw
+Check NEWS file for more information.
 
-V4
-  - only enable the quirk when the paravirtualised drivers are compiled
-  - fix up the command line flag to disable this support
+Shortlog is below.
 
-V3
-  - switch detection method to DMI information
 
-V2 
-  - create a generic libata quirk
-  - switch detection to piix_init_one
+Lucas De Marchi
 
-Andy Whitcroft (2):
-  libata: add a host flag to ignore detected ATA devices
-  ata_piix: defer disks to the Hyper-V drivers by default
+--
 
- drivers/ata/ata_piix.c    |   20 ++++++++++++++++++++
- drivers/ata/libata-core.c |    7 +++++++
- include/linux/libata.h    |    1 +
- 3 files changed, 28 insertions(+)
+Dave Reisner (1):
+      modprobe: handle -ENOENT return from init_module
 
--- 
-1.7.9.5
+Elan Ruusamäe (1):
+      modprobe: fix typo in config dump: option->options
+
+Kay Sievers (1):
+      doc: silent man page generation and fix gtk-doc warnings
+
+Lucas De Marchi (4):
+      README: note that there are more files to read
+      TODO: add item to implement actions in kmod
+      doc: remove links to NULL going nowhere
+      kmod 8
