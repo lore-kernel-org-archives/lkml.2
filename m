@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754488Ab2DSICg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Apr 2012 04:02:36 -0400
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:21475 "EHLO
+	id S1754760Ab2DSIEf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Apr 2012 04:04:35 -0400
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:19216 "EHLO
 	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752955Ab2DSIC1 (ORCPT
+	with ESMTP id S1754449Ab2DSICg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Apr 2012 04:02:27 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6685"; a="183042389"
+	Thu, 19 Apr 2012 04:02:36 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6685"; a="183042410"
 X-IronPort-AV: E=Sophos;i="4.75,445,1330934400"; 
-   d="scan'208";a="158757033"
+   d="scan'208";a="237830427"
 From: xiong <xiong@qca.qualcomm.com>
 To: <davem@davemloft.net>, <netdev@vger.kernel.org>,
         <linux-kernel@vger.kernel.org>
 CC: <qca-linux-team@qualcomm.com>, <nic-devel@qualcomm.com>,
         xiong <xiong@qca.qualcomm.com>
-Subject: [PATCH 06/11] atl1c: refine reg definition of REG_MASTER_CTRL
-Date: Thu, 19 Apr 2012 16:01:26 +0800
-Message-ID: <1334822491-30129-7-git-send-email-xiong@qca.qualcomm.com>
+Subject: [PATCH 07/11] atl1c: clear bit MASTER_CTRL_CLK_SEL_DIS in atl1c_pcie_patch
+Date: Thu, 19 Apr 2012 16:01:27 +0800
+Message-ID: <1334822491-30129-8-git-send-email-xiong@qca.qualcomm.com>
 X-Mailer: git-send-email 1.7.7
 In-Reply-To: <1334822491-30129-1-git-send-email-xiong@qca.qualcomm.com>
 References: <1334822491-30129-1-git-send-email-xiong@qca.qualcomm.com>
@@ -28,83 +28,34 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-refine/update register REG_MASTER_CTRL definition according with
-hardware spec.
+bit MASTER_CTRL_CLK_SEL_DIS could be set before enter suspend
+clear it after resume to enable pclk(PCIE clock) switch to
+low frequency(25M) in some circumstances to save power.
 
 Signed-off-by: xiong <xiong@qca.qualcomm.com>
 Tested-by: Liu David <dwliu@qca.qualcomm.com>
 ---
- drivers/net/ethernet/atheros/atl1c/atl1c_hw.h   |   41 +++++++++++++----------
- drivers/net/ethernet/atheros/atl1c/atl1c_main.c |    2 +-
- 2 files changed, 24 insertions(+), 19 deletions(-)
+ drivers/net/ethernet/atheros/atl1c/atl1c_main.c |    7 ++++++-
+ 1 files changed, 6 insertions(+), 1 deletions(-)
 
-diff --git a/drivers/net/ethernet/atheros/atl1c/atl1c_hw.h b/drivers/net/ethernet/atheros/atl1c/atl1c_hw.h
-index 6d73ac9..9779b83 100644
---- a/drivers/net/ethernet/atheros/atl1c/atl1c_hw.h
-+++ b/drivers/net/ethernet/atheros/atl1c/atl1c_hw.h
-@@ -148,26 +148,31 @@ int atl1c_phy_power_saving(struct atl1c_hw *hw);
- 
- #define REG_LTSSM_ID_CTRL		0x12FC
- #define LTSSM_ID_EN_WRO			0x1000
-+
-+
- /* Selene Master Control Register */
- #define REG_MASTER_CTRL			0x1400
--#define MASTER_CTRL_SOFT_RST            0x1
--#define MASTER_CTRL_TEST_MODE_MASK	0x3
--#define MASTER_CTRL_TEST_MODE_SHIFT	2
--#define MASTER_CTRL_BERT_START		0x10
--#define MASTER_CTRL_OOB_DIS_OFF		0x40
--#define MASTER_CTRL_SA_TIMER_EN		0x80
--#define MASTER_CTRL_MTIMER_EN           0x100
--#define MASTER_CTRL_MANUAL_INT          0x200
--#define MASTER_CTRL_TX_ITIMER_EN	0x400
--#define MASTER_CTRL_RX_ITIMER_EN	0x800
--#define MASTER_CTRL_CLK_SEL_DIS		0x1000
--#define MASTER_CTRL_CLK_SWH_MODE	0x2000
--#define MASTER_CTRL_INT_RDCLR		0x4000
--#define MASTER_CTRL_REV_NUM_SHIFT	16
--#define MASTER_CTRL_REV_NUM_MASK	0xff
--#define MASTER_CTRL_DEV_ID_SHIFT	24
--#define MASTER_CTRL_DEV_ID_MASK		0x7f
--#define MASTER_CTRL_OTP_SEL		0x80000000
-+#define MASTER_CTRL_OTP_SEL		BIT(31)
-+#define MASTER_DEV_NUM_MASK		0x7FUL
-+#define MASTER_DEV_NUM_SHIFT		24
-+#define MASTER_REV_NUM_MASK		0xFFUL
-+#define MASTER_REV_NUM_SHIFT		16
-+#define MASTER_CTRL_INT_RDCLR		BIT(14)
-+#define MASTER_CTRL_CLK_SEL_DIS		BIT(12)	/* 1:alwys sel pclk from
-+						 * serdes, not sw to 25M */
-+#define MASTER_CTRL_RX_ITIMER_EN	BIT(11)	/* IRQ MODURATION FOR RX */
-+#define MASTER_CTRL_TX_ITIMER_EN	BIT(10)	/* MODURATION FOR TX/RX */
-+#define MASTER_CTRL_MANU_INT		BIT(9)	/* SOFT MANUAL INT */
-+#define MASTER_CTRL_MANUTIMER_EN	BIT(8)
-+#define MASTER_CTRL_SA_TIMER_EN		BIT(7)	/* SYS ALIVE TIMER EN */
-+#define MASTER_CTRL_OOB_DIS		BIT(6)	/* OUT OF BOX DIS */
-+#define MASTER_CTRL_WAKEN_25M		BIT(5)	/* WAKE WO. PCIE CLK */
-+#define MASTER_CTRL_BERT_START		BIT(4)
-+#define MASTER_PCIE_TSTMOD_MASK		3UL
-+#define MASTER_PCIE_TSTMOD_SHIFT	2
-+#define MASTER_PCIE_RST			BIT(1)
-+#define MASTER_CTRL_SOFT_RST		BIT(0)	/* RST MAC & DMA */
-+#define DMA_MAC_RST_TO			50
- 
- /* Timer Initial Value Register */
- #define REG_MANUAL_TIMER_INIT       	0x1404
 diff --git a/drivers/net/ethernet/atheros/atl1c/atl1c_main.c b/drivers/net/ethernet/atheros/atl1c/atl1c_main.c
-index 729381a..796cc75 100644
+index 796cc75..9783afc 100644
 --- a/drivers/net/ethernet/atheros/atl1c/atl1c_main.c
 +++ b/drivers/net/ethernet/atheros/atl1c/atl1c_main.c
-@@ -1179,7 +1179,7 @@ static int atl1c_reset_mac(struct atl1c_hw *hw)
- 	 * clearing, and should clear within a microsecond.
- 	 */
- 	AT_READ_REG(hw, REG_MASTER_CTRL, &master_ctrl_data);
--	master_ctrl_data |= MASTER_CTRL_OOB_DIS_OFF;
-+	master_ctrl_data |= MASTER_CTRL_OOB_DIS;
- 	AT_WRITE_REGW(hw, REG_MASTER_CTRL, ((master_ctrl_data | MASTER_CTRL_SOFT_RST)
- 			& 0xFFFF));
+@@ -80,7 +80,12 @@ static const u32 atl1c_default_msg = NETIF_MSG_DRV | NETIF_MSG_PROBE |
+ 	NETIF_MSG_LINK | NETIF_MSG_TIMER | NETIF_MSG_IFDOWN | NETIF_MSG_IFUP;
+ static void atl1c_pcie_patch(struct atl1c_hw *hw)
+ {
+-	u32 data;
++	u32 mst_data, data;
++
++	/* pclk sel could switch to 25M */
++	AT_READ_REG(hw, REG_MASTER_CTRL, &mst_data);
++	mst_data &= ~MASTER_CTRL_CLK_SEL_DIS;
++	AT_WRITE_REG(hw, REG_MASTER_CTRL, mst_data);
  
+ 	AT_READ_REG(hw, REG_PCIE_PHYMISC, &data);
+ 	data |= PCIE_PHYMISC_FORCE_RCV_DET;
 -- 
 1.7.7
 
