@@ -1,100 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756683Ab2DSVnJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Apr 2012 17:43:09 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:36240 "EHLO
+	id S933414Ab2DSVNR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Apr 2012 17:13:17 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:33843 "EHLO
 	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933419Ab2DSVNS (ORCPT
+	with ESMTP id S933399Ab2DSVNO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Apr 2012 17:13:18 -0400
-Message-Id: <20120419210613.223955116@linuxfoundation.org>
+	Thu, 19 Apr 2012 17:13:14 -0400
+Message-Id: <20120419210304.917443070@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Thu, 19 Apr 2012 14:06:36 -0700
+Date: Thu, 19 Apr 2012 14:03:24 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Sarah Sharp <sarah.a.sharp@linux.intel.com>,
-        Elric Fu <elricfu1@gmail.com>
-Subject: [ 25/59] xhci: Dont write zeroed pointers to xHC registers.
-In-Reply-To: <20120419210623.GA12156@kroah.com>
+        alan@lxorguk.ukuu.org.uk, <emeric.maschino@gmail.com>,
+        Michel Lespinasse <walken@google.com>, Tony Luck <tony.luck@intel.com>
+Subject: [ 21/75] ia64: fix futex_atomic_cmpxchg_inatomic()
+In-Reply-To: <20120419210322.GA6478@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.0-stable review patch.  If anyone has any objections, please let me know.
+3.3-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+From: "Luck, Tony" <tony.luck@intel.com>
 
-commit 159e1fcc9a60fc7daba23ee8fcdb99799de3fe84 upstream.
+commit c76f39bddb84f93f70a5520d9253ec0317bec216 upstream.
 
-When xhci_mem_cleanup() is called, we can't be sure if the xHC is
-actually halted.  We can ask the xHC to halt by writing to the RUN bit
-in the command register, but that might timeout due to a HW hang.
+Michel Lespinasse cleaned up the futex calling conventions in commit
+37a9d912b24f ("futex: Sanitize cmpxchg_futex_value_locked API").
 
-If the host controller is still running, we should not write zeroed
-values to the event ring dequeue pointers or base tables, the DCBAA
-pointers, or the command ring pointers.  Eric Fu reports his VIA VL800
-host accesses the event ring pointers after a failed register restore on
-resume from suspend.  The hypothesis is that the host never actually
-halted before the register write to change the event ring pointer to
-zero.
+But the ia64 implementation was subtly broken.  Gcc does not know that
+register "r8" will be updated by the fault handler if the cmpxchg
+instruction takes an exception.  So it feels safe in letting the
+initialization of r8 slide to after the cmpxchg.  Result: we always
+return 0 whether the user address faulted or not.
 
-Remove all writes of zeroed values to pointer registers in
-xhci_mem_cleanup().  Instead, make all callers of the function reset the
-host controller first, which will reset those registers to zero.
-xhci_mem_init() is the only caller that doesn't first halt and reset the
-host controller before calling xhci_mem_cleanup().
+Fix by moving the initialization of r8 into the __asm__ code so gcc
+won't move it.
 
-This should be backported to kernels as old as 2.6.32.
-
-Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
-Tested-by: Elric Fu <elricfu1@gmail.com>
+Reported-by: <emeric.maschino@gmail.com>
+Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=42757
+Tested-by: <emeric.maschino@gmail.com>
+Acked-by: Michel Lespinasse <walken@google.com>
+Signed-off-by: Tony Luck <tony.luck@intel.com>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/host/xhci-mem.c |    9 ++-------
- 1 file changed, 2 insertions(+), 7 deletions(-)
+ arch/ia64/include/asm/futex.h |    9 +++++----
+ 1 file changed, 5 insertions(+), 4 deletions(-)
 
---- a/drivers/usb/host/xhci-mem.c
-+++ b/drivers/usb/host/xhci-mem.c
-@@ -1509,11 +1509,6 @@ void xhci_mem_cleanup(struct xhci_hcd *x
- 	int i;
+--- a/arch/ia64/include/asm/futex.h
++++ b/arch/ia64/include/asm/futex.h
+@@ -107,15 +107,16 @@ futex_atomic_cmpxchg_inatomic(u32 *uval,
+ 		return -EFAULT;
  
- 	/* Free the Event Ring Segment Table and the actual Event Ring */
--	if (xhci->ir_set) {
--		xhci_writel(xhci, 0, &xhci->ir_set->erst_size);
--		xhci_write_64(xhci, 0, &xhci->ir_set->erst_base);
--		xhci_write_64(xhci, 0, &xhci->ir_set->erst_dequeue);
--	}
- 	size = sizeof(struct xhci_erst_entry)*(xhci->erst.num_entries);
- 	if (xhci->erst.entries)
- 		pci_free_consistent(pdev, size,
-@@ -1525,7 +1520,6 @@ void xhci_mem_cleanup(struct xhci_hcd *x
- 	xhci->event_ring = NULL;
- 	xhci_dbg(xhci, "Freed event ring\n");
- 
--	xhci_write_64(xhci, 0, &xhci->op_regs->cmd_ring);
- 	if (xhci->cmd_ring)
- 		xhci_ring_free(xhci, xhci->cmd_ring);
- 	xhci->cmd_ring = NULL;
-@@ -1554,7 +1548,6 @@ void xhci_mem_cleanup(struct xhci_hcd *x
- 	xhci->medium_streams_pool = NULL;
- 	xhci_dbg(xhci, "Freed medium stream array pool\n");
- 
--	xhci_write_64(xhci, 0, &xhci->op_regs->dcbaa_ptr);
- 	if (xhci->dcbaa)
- 		pci_free_consistent(pdev, sizeof(*xhci->dcbaa),
- 				xhci->dcbaa, xhci->dcbaa->dma);
-@@ -2123,6 +2116,8 @@ int xhci_mem_init(struct xhci_hcd *xhci,
- 
- fail:
- 	xhci_warn(xhci, "Couldn't initialize memory\n");
-+	xhci_halt(xhci);
-+	xhci_reset(xhci);
- 	xhci_mem_cleanup(xhci);
- 	return -ENOMEM;
- }
+ 	{
+-		register unsigned long r8 __asm ("r8") = 0;
++		register unsigned long r8 __asm ("r8");
+ 		unsigned long prev;
+ 		__asm__ __volatile__(
+ 			"	mf;;					\n"
+-			"	mov ar.ccv=%3;;				\n"
+-			"[1:]	cmpxchg4.acq %0=[%1],%2,ar.ccv		\n"
++			"	mov %0=r0				\n"
++			"	mov ar.ccv=%4;;				\n"
++			"[1:]	cmpxchg4.acq %1=[%2],%3,ar.ccv		\n"
+ 			"	.xdata4 \"__ex_table\", 1b-., 2f-.	\n"
+ 			"[2:]"
+-			: "=r" (prev)
++			: "=r" (r8), "=r" (prev)
+ 			: "r" (uaddr), "r" (newval),
+ 			  "rO" ((long) (unsigned) oldval)
+ 			: "memory");
 
 
