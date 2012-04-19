@@ -1,135 +1,213 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753820Ab2DSJPd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Apr 2012 05:15:33 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:36064 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751245Ab2DSJPc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Apr 2012 05:15:32 -0400
+	id S1753673Ab2DSJT2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Apr 2012 05:19:28 -0400
+Received: from metasoft.pl ([195.149.224.191]:59248 "EHLO smtp.metasoft.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752574Ab2DSJT0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Apr 2012 05:19:26 -0400
+X-clamdmail: clamdmail 0.18a
+Message-ID: <4F8FD884.7090403@metasoft.pl>
+Date: Thu, 19 Apr 2012 11:19:00 +0200
+From: Rafal Prylowski <prylowski@metasoft.pl>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:11.0) Gecko/20120327 Thunderbird/11.0.1
 MIME-Version: 1.0
-Date: Thu, 19 Apr 2012 17:15:31 +0800
-Message-ID: <CA+dmLLeNG6Sb_k9sdE9QTMjbBJxd_r7ay5uNxLVV_E5u-=abrw@mail.gmail.com>
-Subject: 20120419 disk scheduler
-From: sunzixun <faye.zixun@gmail.com>
-To: linux-kernel mlist <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=GB2312
+To: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "vinod.koul@intel.com" <vinod.koul@intel.com>,
+        Mika Westerberg <mika.westerberg@iki.fi>,
+        H Hartley Sweeten <hartleys@visionengravers.com>,
+        "rmallon@gmail.com" <rmallon@gmail.com>
+Subject: [PATCH v2] dmaengine/ep93xx_dma: Implement double buffering for M2M
+ DMA channels
+Content-Type: text/plain; charset=ISO-8859-2
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id q3J9Fcve025455
 
- -Ğí¼ÓÇ¿(110781198) 3:33:12 PM
-ÎÊÒ»¸öÎÊÌâ£º ¶ÔÓÚÒ»¸öblock ÎÒÃÇ×öIO£¬ËäÈ»»á¾­¹ıdisk schedulerÄÇÒ»²ã£¬ÎÒÏëÎÊµÄ¾ÍÊÇ ÊÇ²»ÊÇ ËùÓĞÇé¿öÏÂIO
-scheduler¶¼¿ÉÒÔ±£Ö¤Õâ¸öblockÀïÃæ sectorµØÖ·ÔÚÇ°ÃæµÄ sectors Ò»¶¨±ÈÔÚºóÃæµÄÏÈ±»flushµ½´ÅÅÌÉÏ¡£
-eric(3251550) 3:33:31 PM
-²»ÄÜ°¡¡£
-Ëï×ÓÜ÷ (448981776) 3:36:36 PM
-ÎÒ¾õµÃÄÜµÄ°É£¿
--eric(3251550) 3:38:35 PM
-²»ÄÜ£¬ºÜ¸´ÔÓ¡£
-eric(3251550) 3:38:52 PM
-ioÊÜ¶àÖØ¿ØÖÆ¡£
--eric(3251550) 3:39:11 PM
-ÒªÏë±£Ğò¡£ÒªÓÃbarrier ioÕâÖÖ·½Ê½¡£
-Ëï×ÓÜ÷ (448981776) 3:39:13 PM
-¾Í¿´ block size Èç¹ûºÍsectorÒ»Ñù´ó
-Ëï×ÓÜ÷ (448981776) 3:40:04 PM
-ÎÒ¸Ğ¾õ»¹ÊÇÓ¦¸Ã¿ÉÒÔ°¡
--eric(3251550) 3:40:13 PM
-³ı·ÇÕâ¸öÒ»¸öio£¬¶øÇÒ²»ÄÜ±»²ğ·Ö¡£
-eric(3251550) 3:40:36 PM
-blockºÍsectorÒ»Ñù´ó¡£»¹Ì¸ºÎÇ°ÃæµÄsectorºÍºóÃæµÄsector
-Ëï×ÓÜ÷ (448981776) 3:41:22 PM
-¶Ô ÄãÈ»ºó·´¹ıÀ´Ïë
-Ëï×ÓÜ÷ (448981776) 3:41:39 PM
-Ò»Ñù´ó ÊÇ¿ÉÒÔ±£Ö¤µÄ ¡£¡£ÄÇ²»Ò»Ñù´ó ÔõÃ´²»±£Ö¤ÄØ
-eric(3251550) 3:43:09 PM
-²»Ò»Ñù´ó¡£¡£¾ÍÂé·³ÁË¡£¡£
-  -eric(3251550) 3:43:17 PM
-Òª±»²ğ·Ö¡£
-  -eric(3251550) 3:43:43 PM
-Ğ´io¶¼Òª±»²ğ³É4k£¬4k´¦Àí¡£
-  -eric(3251550) 3:44:02 PM
-±£Ö¤Ë³Ğò£¬ÄÚºË×¨ÃÅÓÃÁËÒ»ÖÖ½á¹¹À´´¦Àí¡£
-  -eric(3251550) 3:44:06 PM
-barrier io.
-  -Ëï×ÓÜ÷ (448981776) 3:44:20 PM
-¿´À´ÎÒ»¹ÒªÏëÏë
-  -eric(3251550) 3:44:55 PM
-¿´ÎÄµµ¡£
-  -Ëï×ÓÜ÷ (448981776) 3:49:05 PM
-¼ÓÇ¿ÊÇÎÊ ÄÚºË±£Ö¤°´sector £¬»¹ÊÇ°üÀ¨×îÖÕµÄÓ²ÅÌÂäµØ£¿
-  -Ëï×ÓÜ÷ (448981776) 3:49:29 PM
-Èç¹û¾­¹ıraid cache £¬´ÅÅÌ½»²æÒò×Ó  ÄÇÈ·Êµ¸´ÔÓÒ»Ğ©
-  -Ëï×ÓÜ÷ (448981776) 3:50:18 PM
+Add double buffering support for M2M DMA channels. Implement this by using EP93xx
+M2M DMA Buffer and Control Finite State Machines to be sure that we are not
+disabling the channel when it's actually operating.
 
-  -BJ-Ğí¼ÓÇ¿(110781198) 3:52:12 PM
-¶÷  Ó¦¸ÃÊÇ²»ÄÜ±£Ö¤µÄ£¬µÃ¿´´ÅÍ·µÄµ±Ç°Î»ÖÃ¾ö¶¨
-  -BJ-Ğí¼ÓÇ¿(110781198) 3:53:08 PM
-µ«Èç¹û²»ÊÇ¼òµ¥µÄ´ÅÅÌ£¬¶øÊÇSANµÄÄÇÖÖ£¬ IOÒª×ßfiber channel»òÕßinfinibandµ½Ô¶´¦µÄ´ÅÅÌ£¬ÊÇ²»ÊÇÒ²²»ÄÜ±£Ö¤
-  -eric(3251550) 3:53:20 PM
-¶¼²»ÄÜ¡£
-  -Ëï×ÓÜ÷ (448981776) 3:55:22 PM
-ÄãÎÊ io sched ÎÒ¾õµÃÕâ²ãÊÇ¿ÉÒÔµÄ
-  -Ëï×ÓÜ÷ (448981776) 3:55:30 PM
-µ«ÊÇÓ²¼ş ÄÇ¿Ï¶¨²»ÄÜ
-  -eric(3251550) 3:56:05 PM
-io schedÒ²²»ÄÜ¡£¡£
-  -BJ-Ğí¼ÓÇ¿(110781198) 3:56:06 PM
-ÎÒ¾õµÃÕâ²ã ÔÚÅÅ¶ÓµÄÊ±ºò  Ó¦¸ÃÒ²ÓĞ¿ÉÄÜÈÃºóÃæsectorµÄ²å¶Óµ½Ç°ÃæÀ´°É£¿
-  -eric(3251550) 3:56:38 PM
-ÅÅ¶ÓÊÇ°´ĞòµÄ¡£µ«ÊÇËæÊ±¿ÉÄÜ±»ÖØĞÂ¶¨Î»¡£
-  -eric(3251550) 3:56:58 PM
-µ÷¶ÈÒª¿¼ÂÇ¶öËÀµÄÇé¿ö¡£
-  -BJ-Ğí¼ÓÇ¿(110781198) 3:57:06 PM
-±»ÖØĞÂ¶¨Î»µÄÊ±ºò  ÊÇ¿¼ÂÇÄÄĞ©ÒòËØ£¿
-  -Ëï×ÓÜ÷ (448981776) 3:57:11 PM
-io sched ÎªÊ²Ã´²»ÄÜ£¿
-  -Ëï×ÓÜ÷ (448981776) 3:57:39 PM
-ÖØĞÂ¶¨Î» io sched ÊÇ²»ÖªµÀ´ÅÍ·ĞÅÏ¢µÄ
-  -eric(3251550) 3:57:39 PM
-¶öËÀ¡£¡£³¤Ê±µÈ´ı¡£¡£ÇëÇóºÏ²¢¡£µÈµÈ¡£
-  -Ëï×ÓÜ÷ (448981776) 3:57:49 PM
-¶Ô°¡ £¬µÈ´ı ºÍºÏ²¢ Ò²ÊÇË³ĞòµÄ
-  -eric(3251550) 3:57:51 PM
-Èí¼ş²»¹Ü ´ÅÍ·ĞÅÏ¢¡£
-  -eric(3251550) 3:57:56 PM
-ÄÇÊÇncqµÄÊµÏÖ¡£
-  -Ëï×ÓÜ÷ (448981776) 3:57:58 PM
-²»»áÌø»Ø
-  -Ëï×ÓÜ÷ (448981776) 3:58:27 PM
-±ÈÈç Ò»¸öblock ·Ö³Éscetor 1 2 3 4
-ÇëÎÊÊ²Ã´µ÷¶È»á ×ß³É 4 2 1 3
-  -eric(3251550) 3:59:04 PM
-Ö»ÊÇµ÷¶ÈÕâÒ»²ãÂğ£¿
-  -Ëï×ÓÜ÷ (448981776) 3:59:12 PM
-ÊÇ°¡
-  -eric(3251550) 3:59:58 PM
-µ÷¶ÈÕâ²ã²»»á¡£
-  -BJ-Ğí¼ÓÇ¿(110781198) 4:01:08 PM
-¼ÙÉèµ÷¶È²ã²»»á£¬ÄÇÃ´µ÷¶È²ãÏÂÃæ   ÄÄĞ©Çé¿ö»áµ¼ÖÂÂÒĞò£¿
-  -eric(3251550) 4:03:28 PM
-ºÜ¶àÇé¿ö¡£
-  -Ëï×ÓÜ÷ (448981776) 4:03:45 PM
-µ÷¶È¿ÉÒÔ¿´Ô´Âë ¡£ÎÒÍíÉÏ×ĞÏ¸¿´¿´¡£¡£
+Signed-off-by: Rafal Prylowski <prylowski@metasoft.pl>
+Tested-by: H Hartley Sweeten <hsweeten@visionengravers.com>
+Acked-by: H Hartley Sweeten <hsweeten@visionengravers.com>
 
-Ó²¼ş¾ÍÌ«¶àÁË£¬Ïñ¸Õ²ÅEMC¸çÃÇ¸æËßÎÒµÄ½»²æÒò×Ó
-  -eric(3251550) 4:03:48 PM
-ÉÏ²ãÓ¦ÓÃ»¹¿ÉÄÜ²¢·¢¡£
-  -eric(3251550) 4:04:17 PM
-I/O barrier requests are used to guarantee ordering around the barrier requests.
-  -eric(3251550) 4:04:39 PM
-All requests queued before a barrier request must be finished (made it
-to the physical medium) before the barrier request is started, and all
-requests queued after the barrier request must be started only after
-the barrier request is finished (again, made it to the physical
-medium).
-  -eric(3251550) 4:05:04 PM
-±£Ğò¡£¡£¡£Ç°ÃæµÄ±ØĞëÍê³É¡£ºóÃæµÄ±ØĞëµÈ±£ĞòioÍê³ÉÖ®ºóÔÙÍê³É¡£
-  -eric(3251550) 4:05:13 PM
-±»²åÈë ´ò¶ÏÒ²²»ĞĞ¡£
-  -eric(3251550) 4:05:51 PM
-Ö»±£Ö¤ 1£¬2£¬3£¬4£¬5Ò²²»ĞĞ¡£»¹±ØĞë²»ÄÜÖĞ¼ä±»²åÈëĞÂµÄio
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+---
+This version fixes issues with interrupt storm observed when dma is
+used with spi-ep93xx.c and mmc_spi.c drivers.
+Patch applies to v3.4rc3.
+
+ drivers/dma/ep93xx_dma.c |  117 +++++++++++++++++++++++++++++--------
+ 1 file changed, 93 insertions(+), 24 deletions(-)
+
+Index: linux-2.6/drivers/dma/ep93xx_dma.c
+===================================================================
+--- linux-2.6.orig/drivers/dma/ep93xx_dma.c
++++ linux-2.6/drivers/dma/ep93xx_dma.c
+@@ -71,6 +71,7 @@
+ #define M2M_CONTROL_TM_SHIFT		13
+ #define M2M_CONTROL_TM_TX		(1 << M2M_CONTROL_TM_SHIFT)
+ #define M2M_CONTROL_TM_RX		(2 << M2M_CONTROL_TM_SHIFT)
++#define M2M_CONTROL_NFBINT		BIT(21)
+ #define M2M_CONTROL_RSS_SHIFT		22
+ #define M2M_CONTROL_RSS_SSPRX		(1 << M2M_CONTROL_RSS_SHIFT)
+ #define M2M_CONTROL_RSS_SSPTX		(2 << M2M_CONTROL_RSS_SHIFT)
+@@ -79,7 +80,22 @@
+ #define M2M_CONTROL_PWSC_SHIFT		25
+ 
+ #define M2M_INTERRUPT			0x0004
+-#define M2M_INTERRUPT_DONEINT		BIT(1)
++#define M2M_INTERRUPT_MASK		6
++
++#define M2M_STATUS			0x000c
++#define M2M_STATUS_CTL_SHIFT		1
++#define M2M_STATUS_CTL_IDLE		(0 << M2M_STATUS_CTL_SHIFT)
++#define M2M_STATUS_CTL_STALL		(1 << M2M_STATUS_CTL_SHIFT)
++#define M2M_STATUS_CTL_MEMRD		(2 << M2M_STATUS_CTL_SHIFT)
++#define M2M_STATUS_CTL_MEMWR		(3 << M2M_STATUS_CTL_SHIFT)
++#define M2M_STATUS_CTL_BWCWAIT		(4 << M2M_STATUS_CTL_SHIFT)
++#define M2M_STATUS_CTL_MASK		(7 << M2M_STATUS_CTL_SHIFT)
++#define M2M_STATUS_BUF_SHIFT		4
++#define M2M_STATUS_BUF_NO		(0 << M2M_STATUS_BUF_SHIFT)
++#define M2M_STATUS_BUF_ON		(1 << M2M_STATUS_BUF_SHIFT)
++#define M2M_STATUS_BUF_NEXT		(2 << M2M_STATUS_BUF_SHIFT)
++#define M2M_STATUS_BUF_MASK		(3 << M2M_STATUS_BUF_SHIFT)
++#define M2M_STATUS_DONE			BIT(6)
+ 
+ #define M2M_BCR0			0x0010
+ #define M2M_BCR1			0x0014
+@@ -426,15 +442,6 @@ static int m2p_hw_interrupt(struct ep93x
+ 
+ /*
+  * M2M DMA implementation
+- *
+- * For the M2M transfers we don't use NFB at all. This is because it simply
+- * doesn't work well with memcpy transfers. When you submit both buffers it is
+- * extremely unlikely that you get an NFB interrupt, but it instead reports
+- * DONE interrupt and both buffers are already transferred which means that we
+- * weren't able to update the next buffer.
+- *
+- * So for now we "simulate" NFB by just submitting buffer after buffer
+- * without double buffering.
+  */
+ 
+ static int m2m_hw_setup(struct ep93xx_dma_chan *edmac)
+@@ -543,6 +550,11 @@ static void m2m_hw_submit(struct ep93xx_
+ 	m2m_fill_desc(edmac);
+ 	control |= M2M_CONTROL_DONEINT;
+ 
++	if (ep93xx_dma_advance_active(edmac)) {
++		m2m_fill_desc(edmac);
++		control |= M2M_CONTROL_NFBINT;
++	}
++
+ 	/*
+ 	 * Now we can finally enable the channel. For M2M channel this must be
+ 	 * done _after_ the BCRx registers are programmed.
+@@ -560,32 +572,89 @@ static void m2m_hw_submit(struct ep93xx_
+ 	}
+ }
+ 
++/*
++ * According to EP93xx User's Guide, we should receive DONE interrupt when all
++ * M2M DMA controller transactions complete normally. This is not always the
++ * case - sometimes EP93xx M2M DMA asserts DONE interrupt when the DMA channel
++ * is still running (channel Buffer FSM in DMA_BUF_ON state, and channel
++ * Control FSM in DMA_MEM_RD state, observed at least in IDE-DMA operation).
++ * In effect, disabling the channel when only DONE bit is set could stop
++ * currently running DMA transfer. To avoid this, we use Buffer FSM and
++ * Control FSM to check current state of DMA channel.
++ */
+ static int m2m_hw_interrupt(struct ep93xx_dma_chan *edmac)
+ {
++	u32 status = readl(edmac->regs + M2M_STATUS);
++	u32 ctl_fsm = status & M2M_STATUS_CTL_MASK;
++	u32 buf_fsm = status & M2M_STATUS_BUF_MASK;
++	bool done = status & M2M_STATUS_DONE;
++	bool last_done;
+ 	u32 control;
++	struct ep93xx_dma_desc *desc;
+ 
+-	if (!(readl(edmac->regs + M2M_INTERRUPT) & M2M_INTERRUPT_DONEINT))
++	/* Accept only DONE and NFB interrupts */
++	if (!(readl(edmac->regs + M2M_INTERRUPT) & M2M_INTERRUPT_MASK))
+ 		return INTERRUPT_UNKNOWN;
+ 
+-	/* Clear the DONE bit */
+-	writel(0, edmac->regs + M2M_INTERRUPT);
++	if (done) {
++		/* Clear the DONE bit */
++		writel(0, edmac->regs + M2M_INTERRUPT);
++	}
+ 
+-	/* Disable interrupts and the channel */
+-	control = readl(edmac->regs + M2M_CONTROL);
+-	control &= ~(M2M_CONTROL_DONEINT | M2M_CONTROL_ENABLE);
+-	writel(control, edmac->regs + M2M_CONTROL);
++	/*
++	 * Check whether we are done with descriptors or not. This, together
++	 * with DMA channel state, determines action to take in interrupt.
++	 */
++	desc = ep93xx_dma_get_active(edmac);
++	last_done = !desc || desc->txd.cookie;
+ 
+ 	/*
+-	 * Since we only get DONE interrupt we have to find out ourselves
+-	 * whether there still is something to process. So we try to advance
+-	 * the chain an see whether it succeeds.
++	 * Use M2M DMA Buffer FSM and Control FSM to check current state of
++	 * DMA channel. Using DONE and NFB bits from channel status register
++	 * or bits from channel interrupt register is not reliable.
+ 	 */
+-	if (ep93xx_dma_advance_active(edmac)) {
+-		edmac->edma->hw_submit(edmac);
+-		return INTERRUPT_NEXT_BUFFER;
++	if (!last_done &&
++	    (buf_fsm == M2M_STATUS_BUF_NO ||
++	     buf_fsm == M2M_STATUS_BUF_ON)) {
++		/*
++		 * Two buffers are ready for update when Buffer FSM is in
++		 * DMA_NO_BUF state. Only one buffer can be prepared without
++		 * disabling the channel or polling the DONE bit.
++		 * To simplify things, always prepare only one buffer.
++		 */
++		if (ep93xx_dma_advance_active(edmac)) {
++			m2m_fill_desc(edmac);
++			if (done && !edmac->chan.private) {
++				/* Software trigger for memcpy channel */
++				control = readl(edmac->regs + M2M_CONTROL);
++				control |= M2M_CONTROL_START;
++				writel(control, edmac->regs + M2M_CONTROL);
++			}
++			return INTERRUPT_NEXT_BUFFER;
++		} else {
++			last_done = true;
++		}
+ 	}
+ 
+-	return INTERRUPT_DONE;
++	/*
++	 * Disable the channel only when Buffer FSM is in DMA_NO_BUF state
++	 * and Control FSM is in DMA_STALL state.
++	 */
++	if (last_done &&
++	    buf_fsm == M2M_STATUS_BUF_NO &&
++	    ctl_fsm == M2M_STATUS_CTL_STALL) {
++		/* Disable interrupts and the channel */
++		control = readl(edmac->regs + M2M_CONTROL);
++		control &= ~(M2M_CONTROL_DONEINT | M2M_CONTROL_NFBINT
++			    | M2M_CONTROL_ENABLE);
++		writel(control, edmac->regs + M2M_CONTROL);
++		return INTERRUPT_DONE;
++	}
++
++	/*
++	 * Nothing to do this time.
++	 */
++	return INTERRUPT_NEXT_BUFFER;
+ }
+ 
+ /*
