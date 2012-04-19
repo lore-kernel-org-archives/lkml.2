@@ -1,113 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753928Ab2DSIKh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Apr 2012 04:10:37 -0400
-Received: from mail-qc0-f174.google.com ([209.85.216.174]:35380 "EHLO
-	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752475Ab2DSIKQ (ORCPT
+	id S1754277Ab2DSILS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Apr 2012 04:11:18 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:57517 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754068Ab2DSIK4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Apr 2012 04:10:16 -0400
-Date: Thu, 19 Apr 2012 16:10:02 +0800
-From: Yong Zhang <yong.zhang0@gmail.com>
-To: Stephen Boyd <sboyd@codeaurora.org>
-Cc: linux-kernel@vger.kernel.org, Tejun Heo <tj@kernel.org>,
-        netdev@vger.kernel.org, Ben Dooks <ben-linux@fluff.org>
-Subject: Re: [PATCH 1/2] workqueue: Catch more locking problems with
- flush_work()
-Message-ID: <20120419081002.GB3963@zhy>
-Reply-To: Yong Zhang <yong.zhang0@gmail.com>
-References: <1334805958-29119-1-git-send-email-sboyd@codeaurora.org>
+	Thu, 19 Apr 2012 04:10:56 -0400
+Message-ID: <4F8FC88C.7080603@gmail.com>
+Date: Thu, 19 Apr 2012 16:10:52 +0800
+From: Sha Zhengju <handai.szj@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.23) Gecko/20110922 Thunderbird/3.1.15
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <1334805958-29119-1-git-send-email-sboyd@codeaurora.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: Sha Zhengju <handai.szj@gmail.com>, linux-kernel@vger.kernel.org,
+        davidel@xmailserver.org, avi@redhat.com
+Subject: Re: [PATCH V2] eventfd: change int to __u64 in eventfd_signal()
+References: <1334634276-5186-1-git-send-email-handai.szj@taobao.com> <20120418165332.3561032d.akpm@linux-foundation.org>
+In-Reply-To: <20120418165332.3561032d.akpm@linux-foundation.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 18, 2012 at 08:25:57PM -0700, Stephen Boyd wrote:
-> If a workqueue is flushed but the work item is not scheduled to
-> run, lockdep checking will be circumvented. For example:
-> 
->  static DEFINE_MUTEX(mutex);
-> 
->  static void my_work(struct work_struct *w)
->  {
->          mutex_lock(&mutex);
->          mutex_unlock(&mutex);
->  }
-> 
->  static DECLARE_WORK(work, my_work);
-> 
->  static int __init start_test_module(void)
->  {
->          schedule_work(&work);
->          return 0;
->  }
->  module_init(start_test_module);
-> 
->  static void __exit stop_test_module(void)
->  {
->          mutex_lock(&mutex);
->          flush_work(&work);
->          mutex_unlock(&mutex);
->  }
->  module_exit(stop_test_module);
-> 
-> would only print a warning if the work item was actively running
-> when flush_work() was called. Otherwise flush_work() returns
-> early. In this trivial example nothing could go wrong, but if the
-> work item is schedule via an interrupt we could potentially have a
-> scenario where the work item is running just at the time flush_work()
+On 04/19/2012 07:53 AM, Andrew Morton wrote:
+> On Tue, 17 Apr 2012 11:44:36 +0800
+> Sha Zhengju<handai.szj@gmail.com>  wrote:
+>
+>> From: Sha Zhengju<handai.szj@taobao.com>
+>>
+>> eventfd_ctx->count is an __u64 counter which is allowed to reach ULLONG_MAX.
+>> Now eventfd_write() add an __u64 value to "count", but kernel side
+>> eventfd_signal() only add an int value to it. So make them consistent.
+>>
+>> ...
+>>
+>> --- a/fs/eventfd.c
+>> +++ b/fs/eventfd.c
+>> @@ -51,15 +51,13 @@ struct eventfd_ctx {
+>>    *
+>>    * -EINVAL    : The value of @n is negative.
+>>    */
+>> -int eventfd_signal(struct eventfd_ctx *ctx, int n)
+>> +__u64 eventfd_signal(struct eventfd_ctx *ctx, __u64 n)
+>>   {
+>>   	unsigned long flags;
+>>
+>> -	if (n<  0)
+>> -		return -EINVAL;
+>>   	spin_lock_irqsave(&ctx->wqh.lock, flags);
+>>   	if (ULLONG_MAX - ctx->count<  n)
+>> -		n = (int) (ULLONG_MAX - ctx->count);
+>> +		n = ULLONG_MAX - ctx->count;
+>>   	ctx->count += n;
+>>   	if (waitqueue_active(&ctx->wqh))
+>>   		wake_up_locked_poll(&ctx->wqh, POLLIN);
+> The comment needs updating:
+>
+> --- a/fs/eventfd.c~eventfd-change-int-to-__u64-in-eventfd_signal-fix
+> +++ a/fs/eventfd.c
+> @@ -46,10 +46,8 @@ struct eventfd_ctx {
+>    * value, and we signal this as overflow condition by returining a POLLERR
+>    * to poll(2).
+>    *
+> - * Returns @n in case of success, a non-negative number lower than @n in case
+> - * of overflow, or the following error codes:
+> - *
+> - * -EINVAL    : The value of @n is negative.
+> + * Returns the amount by which the counter was incrememnted.  This will be less
+> + * than @n if the counter has overflowed.
+>    */
+>   __u64 eventfd_signal(struct eventfd_ctx *ctx, __u64 n)
+>   {
+>
+> This doesn't seem a very useful return value.  Shouldn't it inform the
+> user about overflow?  I guess the caller compares the return value to
+> `n'.  Of course, no callers bother doing this :(
+>
+> What happens if the counter overflows?  It stops being updated.  What
+> is the user-visible effect of that?
+>
 
-You mean flush_work() could be called in interupt? I don't it is
-possible.
+yeah... If callers check the return value, there is no difference to
+return a subtracted value or an error code in case of overflow.
+But even if the counter overflows, someone still will be wakeup
+but get the incorrect number(depending on whether it cares the
+value or not).
+We can only inform about overflow but don't wake up waiters just
+as eventfd_write() does.
 
-> is called. This could become a classic AB-BA locking problem.
+> (It's presumably not an issue at present with a 64-bit counter, but
+> might be a problem with your unexplained proposal of permitting
+> userspace to add to the counter)
+> .
+>
 
-I don't see how the deadlock happen, could you please be more
-specific?
-
-Thanks,
-Yong
-
-
-> 
-> Add a lockdep hint in flush_work() in the "work not running" case
-> so that we always catch this potential deadlock scenario.
-> 
-> Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
-> ---
->  kernel/workqueue.c |    5 ++++-
->  1 file changed, 4 insertions(+), 1 deletion(-)
-> 
-> diff --git a/kernel/workqueue.c b/kernel/workqueue.c
-> index 66ec08d..eb800df 100644
-> --- a/kernel/workqueue.c
-> +++ b/kernel/workqueue.c
-> @@ -2513,8 +2513,11 @@ bool flush_work(struct work_struct *work)
->  		wait_for_completion(&barr.done);
->  		destroy_work_on_stack(&barr.work);
->  		return true;
-> -	} else
-> +	} else {
-> +		lock_map_acquire(&work->lockdep_map);
-> +		lock_map_release(&work->lockdep_map);
->  		return false;
-> +	}
->  }
->  EXPORT_SYMBOL_GPL(flush_work);
->  
-> -- 
-> Sent by an employee of the Qualcomm Innovation Center, Inc.
-> The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-
--- 
-Only stand for myself
