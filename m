@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932760Ab2DSVH0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Apr 2012 17:07:26 -0400
+	id S932744Ab2DSVHV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Apr 2012 17:07:21 -0400
 Received: from mail-pb0-f46.google.com ([209.85.160.46]:38883 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932746Ab2DSVHW (ORCPT
+	with ESMTP id S932715Ab2DSVHP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Apr 2012 17:07:22 -0400
-Message-Id: <20120419210307.059005582@linuxfoundation.org>
+	Thu, 19 Apr 2012 17:07:15 -0400
+Message-Id: <20120419210306.899131358@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Thu, 19 Apr 2012 14:03:49 -0700
+Date: Thu, 19 Apr 2012 14:03:47 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Simon Arlott <simon@fire.lp0.eu>
-Subject: [ 46/75] USB: ftdi_sio: fix race condition in TIOCMIWAIT, and abort of TIOCMIWAIT when the device is removed
+        alan@lxorguk.ukuu.org.uk, Santiago Garcia Mantinan <manty@debian.org>
+Subject: [ 44/75] USB: option: re-add NOVATELWIRELESS_PRODUCT_HSPA_HIGHSPEED to option_id array
 In-Reply-To: <20120419210322.GA6478@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -24,105 +24,28 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Simon Arlott <simon@fire.lp0.eu>
+From: Santiago Garcia Mantinan <manty@debian.org>
 
-commit 876ae50d94b02f3f523aa451b45ec5fb9c25d221 upstream.
+commit 9ac2feb22b5b821d81463bef92698ef7682a3145 upstream.
 
-There are two issues here, one is that the device is generating
-spurious very fast modem status line changes somewhere:
+Re-add NOVATELWIRELESS_PRODUCT_HSPA_HIGHSPEED to option_id array
 
-CTS becomes high then low 18µs later:
-[121226.924373] ftdi_process_packet: prev rng=0 dsr=10 dcd=0 cts=6
-[121226.924378] ftdi_process_packet: status=10 prev=00 diff=10
-[121226.924382] ftdi_process_packet: now rng=0 dsr=10 dcd=0 cts=7
-(wake_up_interruptible is called)
-[121226.924391] ftdi_process_packet: prev rng=0 dsr=10 dcd=0 cts=7
-[121226.924394] ftdi_process_packet: status=00 prev=10 diff=10
-[121226.924397] ftdi_process_packet: now rng=0 dsr=10 dcd=0 cts=8
-(wake_up_interruptible is called)
-
-This wakes up the task in TIOCMIWAIT:
-[121226.924405] ftdi_ioctl: 19451 rng=0->0 dsr=10->10 dcd=0->0 cts=6->8
-(wait from 20:51:46 returns and observes both changes)
-
-Which then calls TIOCMIWAIT again:
-20:51:46.400239 ioctl(3, TIOCMIWAIT, 0x20) = 0
-22:11:09.441818 ioctl(3, TIOCMGET, [TIOCM_DTR|TIOCM_RTS]) = 0
-22:11:09.442812 ioctl(3, TIOCMIWAIT, 0x20) = -1 EIO (Input/output error)
-(the second wake_up_interruptible takes effect and an I/O error occurs)
-
-The other issue is that TIOCMIWAIT will wait forever (unless the task is
-interrupted) if the device is removed.
-
-This change removes the -EIO return that occurs if the counts don't
-appear to have changed. Multiple counts may have been processed as
-one or the waiting task may have started waiting after recording the
-current count.
-
-It adds a bool to indicate that the device has been removed so that
-TIOCMIWAIT doesn't wait forever, and wakes up any tasks so that they can
-return -EIO.
-
-Signed-off-by: Simon Arlott <simon@fire.lp0.eu>
+Signed-off-by: Santiago Garcia Mantinan <manty@debian.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/serial/ftdi_sio.c |   12 +++++++-----
- 1 file changed, 7 insertions(+), 5 deletions(-)
+ drivers/usb/serial/option.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/drivers/usb/serial/ftdi_sio.c
-+++ b/drivers/usb/serial/ftdi_sio.c
-@@ -76,6 +76,7 @@ struct ftdi_private {
- 	struct async_icount	icount;
- 	wait_queue_head_t delta_msr_wait; /* Used for TIOCMIWAIT */
- 	char prev_status;        /* Used for TIOCMIWAIT */
-+	bool dev_gone;        /* Used to abort TIOCMIWAIT */
- 	char transmit_empty;	/* If transmitter is empty or not */
- 	struct usb_serial_port *port;
- 	__u16 interface;	/* FT2232C, FT2232H or FT4232H port interface
-@@ -1679,6 +1680,7 @@ static int ftdi_sio_port_probe(struct us
- 	init_waitqueue_head(&priv->delta_msr_wait);
- 
- 	priv->flags = ASYNC_LOW_LATENCY;
-+	priv->dev_gone = false;
- 
- 	if (quirk && quirk->port_probe)
- 		quirk->port_probe(priv);
-@@ -1836,6 +1838,9 @@ static int ftdi_sio_port_remove(struct u
- 
- 	dbg("%s", __func__);
- 
-+	priv->dev_gone = true;
-+	wake_up_interruptible_all(&priv->delta_msr_wait);
-+
- 	remove_sysfs_attrs(port);
- 
- 	kref_put(&priv->kref, ftdi_sio_priv_release);
-@@ -2394,15 +2399,12 @@ static int ftdi_ioctl(struct tty_struct
- 	 */
- 	case TIOCMIWAIT:
- 		cprev = priv->icount;
--		while (1) {
-+		while (!priv->dev_gone) {
- 			interruptible_sleep_on(&priv->delta_msr_wait);
- 			/* see if a signal did it */
- 			if (signal_pending(current))
- 				return -ERESTARTSYS;
- 			cnow = priv->icount;
--			if (cnow.rng == cprev.rng && cnow.dsr == cprev.dsr &&
--			    cnow.dcd == cprev.dcd && cnow.cts == cprev.cts)
--				return -EIO; /* no change => error */
- 			if (((arg & TIOCM_RNG) && (cnow.rng != cprev.rng)) ||
- 			    ((arg & TIOCM_DSR) && (cnow.dsr != cprev.dsr)) ||
- 			    ((arg & TIOCM_CD)  && (cnow.dcd != cprev.dcd)) ||
-@@ -2411,7 +2413,7 @@ static int ftdi_ioctl(struct tty_struct
- 			}
- 			cprev = cnow;
- 		}
--		/* not reached */
-+		return -EIO;
- 		break;
- 	case TIOCSERGETLSR:
- 		return get_lsr_info(port, (struct serial_struct __user *)arg);
+--- a/drivers/usb/serial/option.c
++++ b/drivers/usb/serial/option.c
+@@ -708,6 +708,7 @@ static const struct usb_device_id option
+ 	{ USB_DEVICE(NOVATELWIRELESS_VENDOR_ID, NOVATELWIRELESS_PRODUCT_EVDO_EMBEDDED_FULLSPEED) },
+ 	{ USB_DEVICE(NOVATELWIRELESS_VENDOR_ID, NOVATELWIRELESS_PRODUCT_HSPA_EMBEDDED_FULLSPEED) },
+ 	{ USB_DEVICE(NOVATELWIRELESS_VENDOR_ID, NOVATELWIRELESS_PRODUCT_EVDO_HIGHSPEED) },
++	{ USB_DEVICE(NOVATELWIRELESS_VENDOR_ID, NOVATELWIRELESS_PRODUCT_HSPA_HIGHSPEED) },
+ 	{ USB_DEVICE(NOVATELWIRELESS_VENDOR_ID, NOVATELWIRELESS_PRODUCT_HSPA_HIGHSPEED3) },
+ 	{ USB_DEVICE(NOVATELWIRELESS_VENDOR_ID, NOVATELWIRELESS_PRODUCT_HSPA_HIGHSPEED4) },
+ 	{ USB_DEVICE(NOVATELWIRELESS_VENDOR_ID, NOVATELWIRELESS_PRODUCT_HSPA_HIGHSPEED5) },
 
 
