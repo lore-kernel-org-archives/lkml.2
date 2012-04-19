@@ -1,72 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756224Ab2DSSK6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Apr 2012 14:10:58 -0400
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:40609 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753919Ab2DSSK5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Apr 2012 14:10:57 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6686"; a="183215700"
-Message-ID: <4F905521.9020901@codeaurora.org>
-Date: Thu, 19 Apr 2012 11:10:41 -0700
-From: Stephen Boyd <sboyd@codeaurora.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:8.0) Gecko/20111105 Thunderbird/8.0
+	id S932108Ab2DSSLN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Apr 2012 14:11:13 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:1364 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756230Ab2DSSLL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Apr 2012 14:11:11 -0400
+Date: Thu, 19 Apr 2012 20:10:10 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: David Howells <dhowells@redhat.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Alexander Gordeev <agordeev@redhat.com>,
+        Chris Zankel <chris@zankel.net>, David Smith <dsmith@redhat.com>,
+        "Frank Ch. Eigler" <fche@redhat.com>,
+        Geert Uytterhoeven <geert@linux-m68k.org>,
+        Larry Woodman <lwoodman@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>, Tejun Heo <tj@kernel.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v4 3/3] cred: change keyctl_session_to_parent() to use
+	task_work_add()
+Message-ID: <20120419181010.GA29793@redhat.com>
+References: <20120419173431.GA27066@redhat.com> <20120417193409.GA20312@redhat.com> <20120414021252.GC23393@redhat.com> <20120414021201.GA23385@redhat.com> <27037.1334672580@redhat.com> <20120417163606.GC14527@redhat.com> <23383.1334854333@redhat.com> <25695.1334858133@redhat.com>
 MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
-        Ben Dooks <ben-linux@fluff.org>
-Subject: Re: [PATCH 1/2] workqueue: Catch more locking problems with flush_work()
-References: <1334805958-29119-1-git-send-email-sboyd@codeaurora.org> <20120419152841.GA10553@google.com>
-In-Reply-To: <20120419152841.GA10553@google.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <25695.1334858133@redhat.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/19/12 08:28, Tejun Heo wrote:
-> On Wed, Apr 18, 2012 at 08:25:57PM -0700, Stephen Boyd wrote:
->> @@ -2513,8 +2513,11 @@ bool flush_work(struct work_struct *work)
->>  		wait_for_completion(&barr.done);
->>  		destroy_work_on_stack(&barr.work);
->>  		return true;
->> -	} else
->> +	} else {
->> +		lock_map_acquire(&work->lockdep_map);
->> +		lock_map_release(&work->lockdep_map);
->>  		return false;
-> We don't have this annotation when start_flush_work() succeeds either,
-> right?  IOW, would lockdep trigger when an actual deadlock happens?
-
-I believe it does although I haven't tested it.
-
-> If not, why not add the acquire/release() before flush_work() does
-> anything?
+On 04/19, David Howells wrote:
 >
+> Oleg Nesterov <oleg@redhat.com> wrote:
+>
+> > But I certainly do not want to put these changes in 3/3 or in this series.
+>
+> Why not?  It seems the correct place for them.
 
-I was worried about causing false positive lockdep warnings in the case
-that start_flush_work() succeeds and returns true. In that case, lockdep
-is told about the cwq lockdep map:
+I wanted to discuss the functional changes first, then send the trivial
+cleanups. And the changes in arch/ are always painful. And, "remove
+tracehook_notify_resume" is a bit off-topic, but I do not want to change
+the same code in arch/ twice.
 
-static bool start_flush_work(struct work_struct *work, struct wq_barrier *barr,
-                             bool wait_executing)
-{
-
-        .....
-
-        if (cwq->wq->saved_max_active == 1 || cwq->wq->flags & WQ_RESCUER)
-                lock_map_acquire(&cwq->wq->lockdep_map);
-        else
-                lock_map_acquire_read(&cwq->wq->lockdep_map);
-
-
-and so if we acquired the work->lockdep_map before the
-cwq->wq->lockdep_map we would get a warning about ABBA between these two
-lockdep maps. At least that is what I'm lead to believe when I look at
-what process_one_work() is doing. Please correct me if I'm wrong.
-
--- 
-Sent by an employee of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+Oleg.
 
