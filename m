@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933185Ab2DSVLm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Apr 2012 17:11:42 -0400
+	id S1756546Ab2DSVME (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Apr 2012 17:12:04 -0400
 Received: from mail-pb0-f46.google.com ([209.85.160.46]:34108 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756495Ab2DSVLk (ORCPT
+	with ESMTP id S1752259Ab2DSVMA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Apr 2012 17:11:40 -0400
-Message-Id: <20120419210305.679571778@linuxfoundation.org>
+	Thu, 19 Apr 2012 17:12:00 -0400
+Message-Id: <20120419210303.825240769@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Thu, 19 Apr 2012 14:03:33 -0700
+Date: Thu, 19 Apr 2012 14:03:11 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Yuriy Kozlov <ykozlov@ptcusa.com>,
-        Tobias Klauser <tklauser@distanz.ch>
-Subject: [ 30/75] tty: serial: altera_uart: Check for NULL platform_data in probe.
+        alan@lxorguk.ukuu.org.uk, Larry Finger <Larry.Finger@lwfinger.net>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [ 08/75] rtlwifi: Preallocate USB read buffers and eliminate kalloc in read routine
 In-Reply-To: <20120419210322.GA6478@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,39 +25,130 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Yuriy Kozlov <ykozlov@ptcusa.com>
+From: Larry Finger <Larry.Finger@lwfinger.net>
 
-commit acede70d6561f2d042d9dbb153d9a3469479c0ed upstream.
+commit a7959c1394d4126a70a53b914ce4105f5173d0aa upstream.
 
-Follow altera_jtag_uart.  This fixes a crash if there is a mistake in the DTS.
+The current version of rtlwifi for USB operations uses kmalloc to
+acquire a 32-bit buffer for each read of the device. When
+_usb_read_sync() is called with the rcu_lock held, the result is
+a "sleeping function called from invalid context" BUG. This is
+reported for two cases in https://bugzilla.kernel.org/show_bug.cgi?id=42775.
+The first case has the lock originating from within rtlwifi and could
+be fixed by rearranging the locking; however, the second originates from
+within mac80211. The kmalloc() call is removed from _usb_read_sync()
+by creating a ring buffer pointer in the private area and
+allocating the buffer data in the probe routine.
 
-Signed-off-by: Yuriy Kozlov <ykozlov@ptcusa.com>
-Signed-off-by: Tobias Klauser <tklauser@distanz.ch>
+Signed-off-by: Larry Finger <Larry.Finger@lwfinger.net>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/tty/serial/altera_uart.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/net/wireless/rtlwifi/usb.c  |   34 ++++++++++++++++------------------
+ drivers/net/wireless/rtlwifi/wifi.h |    6 +++++-
+ 2 files changed, 21 insertions(+), 19 deletions(-)
 
---- a/drivers/tty/serial/altera_uart.c
-+++ b/drivers/tty/serial/altera_uart.c
-@@ -555,7 +555,7 @@ static int __devinit altera_uart_probe(s
- 	res_mem = platform_get_resource(pdev, IORESOURCE_MEM, 0);
- 	if (res_mem)
- 		port->mapbase = res_mem->start;
--	else if (platp->mapbase)
-+	else if (platp)
- 		port->mapbase = platp->mapbase;
- 	else
- 		return -EINVAL;
-@@ -563,7 +563,7 @@ static int __devinit altera_uart_probe(s
- 	res_irq = platform_get_resource(pdev, IORESOURCE_IRQ, 0);
- 	if (res_irq)
- 		port->irq = res_irq->start;
--	else if (platp->irq)
-+	else if (platp)
- 		port->irq = platp->irq;
+--- a/drivers/net/wireless/rtlwifi/usb.c
++++ b/drivers/net/wireless/rtlwifi/usb.c
+@@ -127,46 +127,38 @@ static int _usbctrl_vendorreq_sync_read(
+ 	return status;
+ }
  
- 	/* Check platform data first so we can override device node data */
+-static u32 _usb_read_sync(struct usb_device *udev, u32 addr, u16 len)
++static u32 _usb_read_sync(struct rtl_priv *rtlpriv, u32 addr, u16 len)
+ {
++	struct device *dev = rtlpriv->io.dev;
++	struct usb_device *udev = to_usb_device(dev);
+ 	u8 request;
+ 	u16 wvalue;
+ 	u16 index;
+-	u32 *data;
+-	u32 ret;
++	__le32 *data = &rtlpriv->usb_data[rtlpriv->usb_data_index];
+ 
+-	data = kmalloc(sizeof(u32), GFP_KERNEL);
+-	if (!data)
+-		return -ENOMEM;
+ 	request = REALTEK_USB_VENQT_CMD_REQ;
+ 	index = REALTEK_USB_VENQT_CMD_IDX; /* n/a */
+ 
+ 	wvalue = (u16)addr;
+ 	_usbctrl_vendorreq_sync_read(udev, request, wvalue, index, data, len);
+-	ret = le32_to_cpu(*data);
+-	kfree(data);
+-	return ret;
++	if (++rtlpriv->usb_data_index >= RTL_USB_MAX_RX_COUNT)
++		rtlpriv->usb_data_index = 0;
++	return le32_to_cpu(*data);
+ }
+ 
+ static u8 _usb_read8_sync(struct rtl_priv *rtlpriv, u32 addr)
+ {
+-	struct device *dev = rtlpriv->io.dev;
+-
+-	return (u8)_usb_read_sync(to_usb_device(dev), addr, 1);
++	return (u8)_usb_read_sync(rtlpriv, addr, 1);
+ }
+ 
+ static u16 _usb_read16_sync(struct rtl_priv *rtlpriv, u32 addr)
+ {
+-	struct device *dev = rtlpriv->io.dev;
+-
+-	return (u16)_usb_read_sync(to_usb_device(dev), addr, 2);
++	return (u16)_usb_read_sync(rtlpriv, addr, 2);
+ }
+ 
+ static u32 _usb_read32_sync(struct rtl_priv *rtlpriv, u32 addr)
+ {
+-	struct device *dev = rtlpriv->io.dev;
+-
+-	return _usb_read_sync(to_usb_device(dev), addr, 4);
++	return _usb_read_sync(rtlpriv, addr, 4);
+ }
+ 
+ static void _usb_write_async(struct usb_device *udev, u32 addr, u32 val,
+@@ -954,6 +946,11 @@ int __devinit rtl_usb_probe(struct usb_i
+ 		return -ENOMEM;
+ 	}
+ 	rtlpriv = hw->priv;
++	rtlpriv->usb_data = kzalloc(RTL_USB_MAX_RX_COUNT * sizeof(u32),
++				    GFP_KERNEL);
++	if (!rtlpriv->usb_data)
++		return -ENOMEM;
++	rtlpriv->usb_data_index = 0;
+ 	init_completion(&rtlpriv->firmware_loading_complete);
+ 	SET_IEEE80211_DEV(hw, &intf->dev);
+ 	udev = interface_to_usbdev(intf);
+@@ -1023,6 +1020,7 @@ void rtl_usb_disconnect(struct usb_inter
+ 	/* rtl_deinit_rfkill(hw); */
+ 	rtl_usb_deinit(hw);
+ 	rtl_deinit_core(hw);
++	kfree(rtlpriv->usb_data);
+ 	rtlpriv->cfg->ops->deinit_sw_leds(hw);
+ 	rtlpriv->cfg->ops->deinit_sw_vars(hw);
+ 	_rtl_usb_io_handler_release(hw);
+--- a/drivers/net/wireless/rtlwifi/wifi.h
++++ b/drivers/net/wireless/rtlwifi/wifi.h
+@@ -65,7 +65,7 @@
+ #define QOS_QUEUE_NUM				4
+ #define RTL_MAC80211_NUM_QUEUE			5
+ #define REALTEK_USB_VENQT_MAX_BUF_SIZE		254
+-
++#define RTL_USB_MAX_RX_COUNT			100
+ #define QBSS_LOAD_SIZE				5
+ #define MAX_WMMELE_LENGTH			64
+ 
+@@ -1627,6 +1627,10 @@ struct rtl_priv {
+ 	   interface or hardware */
+ 	unsigned long status;
+ 
++	/* data buffer pointer for USB reads */
++	__le32 *usb_data;
++	int usb_data_index;
++
+ 	/*This must be the last item so
+ 	   that it points to the data allocated
+ 	   beyond  this structure like:
 
 
