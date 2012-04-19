@@ -1,70 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751365Ab2DSEsb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Apr 2012 00:48:31 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:41467 "EHLO
+	id S1751482Ab2DSFAE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Apr 2012 01:00:04 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:54601 "EHLO
 	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750850Ab2DSEs2 (ORCPT
+	with ESMTP id S1751038Ab2DSFAA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Apr 2012 00:48:28 -0400
-Date: Thu, 19 Apr 2012 14:48:15 +1000
+	Thu, 19 Apr 2012 01:00:00 -0400
+Date: Thu, 19 Apr 2012 14:59:51 +1000
 From: Stephen Rothwell <sfr@canb.auug.org.au>
 To: Greg KH <greg@kroah.com>
 Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Hannes Reinecke <hare@suse.de>
-Subject: linux-next: build failure after merge of the driver-core tree
-Message-Id: <20120419144815.50f7c3d30d88e6259665313d@canb.auug.org.au>
+        Tomoya MORINAGA <tomoya.rohm@gmail.com>
+Subject: linux-next: manual merge of the tty tree with the tty.current tree
+Message-Id: <20120419145951.4e1652ae5b1b80686892495d@canb.auug.org.au>
 X-Mailer: Sylpheed 3.2.0beta7 (GTK+ 2.24.10; i486-pc-linux-gnu)
 Mime-Version: 1.0
 Content-Type: multipart/signed; protocol="application/pgp-signature";
  micalg="PGP-SHA256";
- boundary="Signature=_Thu__19_Apr_2012_14_48_15_+1000_2kCm4KdWNc+vYxBB"
+ boundary="Signature=_Thu__19_Apr_2012_14_59_51_+1000_RZf47=l6OrTEEbuN"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Thu__19_Apr_2012_14_48_15_+1000_2kCm4KdWNc+vYxBB
+--Signature=_Thu__19_Apr_2012_14_59_51_+1000_RZf47=l6OrTEEbuN
 Content-Type: text/plain; charset=US-ASCII
 Content-Disposition: inline
 Content-Transfer-Encoding: quoted-printable
 
 Hi Greg,
 
-After merging the driver-core tree, today's linux-next build (powerpc
-ppc64_defconfig) failed like this:
+Today's linux-next merge of the tty tree got a conflict in
+drivers/tty/serial/pch_uart.c between commit af6d17cdc8c8 ("pch_uart: Fix
+dma channel unallocated issue") from the tty.current tree and commit
+44db113212d8 ("pch_uart: Delete unused structure member") from the tty
+tree.
 
-lib/klist.c: In function 'klist_iter_init_node':
-lib/klist.c:287:4: error: too few arguments to function 'kref_put'
-include/linux/kref.h:92:19: note: declared here
-
-Caused by commit a15d49fd3094 ("driver core: check start node in
-klist_iter_init_node").  That really hasn't been build tested, has it?
-
-I have used the driver-core tree from next-20120418 for today.
+Just context changes.  I fixed it up (see below) and can carry the fix as
+necessary.
 --=20
 Cheers,
 Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
 
---Signature=_Thu__19_Apr_2012_14_48_15_+1000_2kCm4KdWNc+vYxBB
+diff --cc drivers/tty/serial/pch_uart.c
+index c2816f4,a5e6343..0000000
+--- a/drivers/tty/serial/pch_uart.c
++++ b/drivers/tty/serial/pch_uart.c
+@@@ -1447,11 -1455,8 +1455,10 @@@ static int pch_uart_verify_port(struct=20
+  			__func__);
+  		return -EOPNOTSUPP;
+  #endif
+- 		priv->use_dma_flag =3D 1;
+ -		priv->use_dma =3D 1;
+  		dev_info(priv->port.dev, "PCH UART : Use DMA Mode\n");
+ +		if (!priv->use_dma)
+ +			pch_request_dma(port);
+ +		priv->use_dma =3D 1;
+  	}
+ =20
+  	return 0;
+
+--Signature=_Thu__19_Apr_2012_14_59_51_+1000_RZf47=l6OrTEEbuN
 Content-Type: application/pgp-signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.12 (GNU/Linux)
 
-iQIcBAEBCAAGBQJPj5kPAAoJEECxmPOUX5FEJT8P/iUuTU8eGDpBxh1DoRIPYSiL
-wC8c0Md/PwSVzPmvgsx/FIa35FJsV79vRvYbfGRBNQ/XTsbq8X3f7ys+gjeQjZlm
-VlxazM497woK3U1HRi94E/g/M3pAp1dJK15+kftPgBRXimgmUyqZR5WGoVW50YVt
-1KSzUzW6SJb0aLDqkECcLb1o0GoWVjt2EY+uAPITH79v6saYA4+3JyhoPHJn93pE
-o0M4tKezkpwP0SzcCJ8vSiSqz6c+oqMplOZNmhT69AEtrGiU9LZTZX4bimmhyoX/
-Z7DtlPLz2AmashyAIjRNBB/evJR37rXcPb6KCu8EzkriY8Ocmj6bCITYMI/PUbCI
-T/NtAdbytXw4Hmb7JvUOGpvHsMTubLWzWoyXSN5pI/JN9mM+ZLCsDjnlGOuZ4Uma
-uZiVzkmI/UZOJS5scrNmCthtMTv6GPhP7IZmeXBHqSZPW43+rYzXOupeI2pVtMea
-swiwiLh0g6LjNgYKqbogkZSlB+Ff8MMQexDdO+iFmkZ8kj1tBeuc7XlOUuWd1E8C
-U5a4wjakJasSkw5eMb0RHA1tOA6PRM4hDPmMIkgM+8R+pj2wkpSsbAZMZoWUAs0+
-2xKLAv7T685WUPG2F2Ozg9m6FGhhNzpbhcOjNyNiyi7O5IQRHDSeB/x4h18uhJmw
-F5y9DAYiKLKuv3+xG8xw
-=BGht
+iQIcBAEBCAAGBQJPj5vHAAoJEECxmPOUX5FEfusP+QHz/ozpQCXsjG1vSiavwMsq
+5NTb3hTdLMZV6kEpxri3cW36XZz0SHLfCMorcO+j4AOWF6+8bNn22aHXLq7WBcWT
+QCp/DtCpmr5loTWSjnlEHWATTZ5MtEIRyeVYXdk3bdzlamrnPjq/N+RBxmSH2h2v
+ASJ6UXCO1oCikXBPV0zcHWZUrN63kLG+E4c9fBY/Ed9LzDxPiom40V8uGpRIilDE
+cNw7uv3TB262dmj2Wn7oLwzHJL+e+L3HMhKfIVzPtOH3M4qLu57atn2mCIq7Bnhh
+DoJCzm8vp3kyVrY3zGfPEAP9EYiPrsLAKZWcYzRAntTTL8nwdtNl9zrbPpCM0VRC
++NZ0nam272BDYlGAc8Lo13QGm8sl/zy3DbJ+e7e+R++QffY73zlQCZ5RGkp7hKS0
+GKoMrHs1kh5DutD2bXKR3pn+IHlr2/f1dUwP66iN33xUWJ7bIcNAeT1p/I8U6tzV
+J+HxIMhAugrKwbRRBW+QUSV/y94VNEp//VAgozsr8QXZ3GKupC7qBfMUi8TryTG7
+KktOUCIa7DIDnny0Hf/q20abb7jhdtaydadOmGdF6A4B69uz6r6FDreRvjmPRZB2
+nU27R+pxac4pxBWcZsd/L20go8Bw5wqlPiZEjAitEqrigrfDTNyHnSObAuf0DAck
+VXSz2TewN3mmXdeU1F6X
+=Xn9p
 -----END PGP SIGNATURE-----
 
---Signature=_Thu__19_Apr_2012_14_48_15_+1000_2kCm4KdWNc+vYxBB--
+--Signature=_Thu__19_Apr_2012_14_59_51_+1000_RZf47=l6OrTEEbuN--
