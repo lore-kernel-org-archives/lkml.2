@@ -1,97 +1,182 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754991Ab2DSLlB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Apr 2012 07:41:01 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:37058 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754873Ab2DSLk5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1754959Ab2DSLk5 (ORCPT <rfc822;w@1wt.eu>);
 	Thu, 19 Apr 2012 07:40:57 -0400
-Date: Thu, 19 Apr 2012 12:40:54 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: MyungJoo Ham <myungjoo.ham@samsung.com>
-Cc: Greg KH <gregkh@linuxfoundation.org>, Arnd Bergmann <arnd@arndb.de>,
-        LKML <linux-kernel@vger.kernel.org>, NeilBrown <neilb@suse.de>,
-        Randy Dunlap <rdunlap@xenotime.net>,
-        Mike Lockwood <lockwood@android.com>,
-        Arve =?iso-8859-1?Q?Hj=F8nnevag?= <arve@android.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Morten CHRISTIANSEN <morten.christiansen@stericsson.com>,
-        John Stultz <john.stultz@linaro.org>,
-        Joerg Roedel <joerg.roedel@amd.com>, myungjoo.ham@gmail.com,
-        cw00.choi@samsung.com
-Subject: Re: [PATCH v8 2/6] Extcon: support generic GPIO extcon driver
-Message-ID: <20120419114053.GB3046@opensource.wolfsonmicro.com>
-References: <20120418214703.GA31606@kroah.com>
- <1334803298-24260-1-git-send-email-myungjoo.ham@samsung.com>
- <1334803298-24260-3-git-send-email-myungjoo.ham@samsung.com>
+Received: from e28smtp07.in.ibm.com ([122.248.162.7]:57236 "EHLO
+	e28smtp07.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754849Ab2DSLk4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Apr 2012 07:40:56 -0400
+Message-ID: <4F8FF399.3000308@linux.vnet.ibm.com>
+Date: Thu, 19 Apr 2012 16:44:33 +0530
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120329 Thunderbird/11.0.1
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="U+BazGySraz5kW0T"
-Content-Disposition: inline
-In-Reply-To: <1334803298-24260-3-git-send-email-myungjoo.ham@samsung.com>
-X-Cookie: You are always busy.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Borislav Petkov <bp@amd64.org>
+CC: Dan Carpenter <dan.carpenter@oracle.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
+        Frank Arnold <frank.arnold@amd.com>, linux-kernel@vger.kernel.org,
+        kernel-janitors@vger.kernel.org
+Subject: Re: [patch] cpu: remove some dead code in store_cache_disable()
+References: <20120419070053.GB16645@elgon.mountain> <4F8FCA3A.5060504@linux.vnet.ibm.com> <20120419110229.GB30447@aftab>
+In-Reply-To: <20120419110229.GB30447@aftab>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+x-cbid: 12041911-8878-0000-0000-00000216662E
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 04/19/2012 04:32 PM, Borislav Petkov wrote:
 
---U+BazGySraz5kW0T
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+> On Thu, Apr 19, 2012 at 01:48:02PM +0530, Srivatsa S. Bhat wrote:
+>> On 04/19/2012 12:30 PM, Dan Carpenter wrote:
+>>
+>>> amd_set_l3_disable_slot() never returns -EEXIST, it only returns -EINVAL
+>>> or zero.
+>>>
+>>> Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+>>>
+>>> diff --git a/arch/x86/kernel/cpu/intel_cacheinfo.c b/arch/x86/kernel/cpu/intel_cacheinfo.c
+>>> index 73d08ed..7b4e294 100644
+>>> --- a/arch/x86/kernel/cpu/intel_cacheinfo.c
+>>> +++ b/arch/x86/kernel/cpu/intel_cacheinfo.c
+>>> @@ -466,12 +466,9 @@ static ssize_t store_cache_disable(struct _cpuid4_info *this_leaf,
+>>>  		return -EINVAL;
+>>>
+>>>  	err = amd_set_l3_disable_slot(this_leaf->base.nb, cpu, slot, val);
+>>> -	if (err) {
+>>> -		if (err == -EEXIST)
+>>> -			printk(KERN_WARNING "L3 disable slot %d in use!\n",
+>>> -					    slot);
+>>> +	if (err)
+>>>  		return err;
+>>> -	}
+>>> +
+>>>  	return count;
+>>>  }
+>>>
+>>
+>>
+>> Looking at the comments around the code and the print statement your patch
+>> is trying to remove, I wonder if it would be more appropriate to return
+>> -EEXIST in amd_set_l3_disable_slot(), like this:
+>>
+>> ---
+>> From: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
+>> Subject: [PATCH] cpu: Fix error return code in amd_set_l3_disable_slot()
+>>
+>> If the L3 disable slot is already in use, return -EEXIST instead of -EINVAL.
+>> The caller, store_cache_disable(), checks this return value to print an
+>> appropriate warning.
+>>
+>> Reported-by: Dan Carpenter <dan.carpenter@oracle.com>
+>> Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
+>> ---
+>>
+>>  arch/x86/kernel/cpu/intel_cacheinfo.c |    2 +-
+>>  1 files changed, 1 insertions(+), 1 deletions(-)
+>>
+>> diff --git a/arch/x86/kernel/cpu/intel_cacheinfo.c b/arch/x86/kernel/cpu/intel_cacheinfo.c
+>> index 73d08ed..0b49e29 100644
+>> --- a/arch/x86/kernel/cpu/intel_cacheinfo.c
+>> +++ b/arch/x86/kernel/cpu/intel_cacheinfo.c
+>> @@ -433,7 +433,7 @@ int amd_set_l3_disable_slot(struct amd_northbridge *nb, int cpu, unsigned slot,
+>>  	/*  check if @slot is already used or the index is already disabled */
+>>  	ret = amd_get_l3_disable_slot(nb, slot);
+>>  	if (ret >= 0)
+>> -		return -EINVAL;
+>> +		return -EEXIST;
+>>  
+>>  	if (index > nb->l3_cache.indices)
+>>  		return -EINVAL;
+> 
+> Well, let's see, there's 8cc1176e5de534d55cb26ff0cef3fd0d6ad8c3c0 which
+> was intending at looking at -EEXIST when it gets returned but forgot to
+> return it at the end. Crap. Somebody should b*tchslap its author... oh,
+> that's me.
+> 
+> Good catch guys, thanks. I'll take a bit enhanced version of Srivatsa's
+> patch because it goes in the way of what was originally intended. The
+> enhanced version returns -EEXIST for the other slot too when we're
+> disabling the same index, see below:
+> 
 
-On Thu, Apr 19, 2012 at 11:41:34AM +0900, MyungJoo Ham wrote:
-> The generic GPIO extcon driver (an external connector device based on
-> GPIO control) and imported from Android kernel.
+> --
 
-Reviwed-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+> From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+> Date: Thu, 19 Apr 2012 12:35:08 +0200
+> Subject: [PATCH] x86, intel_cacheinfo: Fix error return code in amd_set_l3_disable_slot()
+> 
+> If the L3 disable slot is already in use, return -EEXIST instead of
+> -EINVAL. The caller, store_cache_disable(), checks this return value to
+> print an appropriate warning.
+> 
+> Also, we want to signal with -EEXIST that the current index we're
+> disabling has actually been already disabled on the node:
+> 
+> $ echo 12 > /sys/devices/system/cpu/cpu3/cache/index3/cache_disable_0
+> $ echo 12 > /sys/devices/system/cpu/cpu3/cache/index3/cache_disable_0
+> -bash: echo: write error: File exists
+> $ echo 12 > /sys/devices/system/cpu/cpu3/cache/index3/cache_disable_1
+> -bash: echo: write error: File exists
+> $ echo 12 > /sys/devices/system/cpu/cpu5/cache/index3/cache_disable_1
+> -bash: echo: write error: File exists
+> 
+> The old code would say
+> 
+> -bash: echo: write error: Invalid argument
+> 
+> for disable slot 1 when playing the example above with no output in
+> dmesg, which is clearly misleading.
+> 
+> Cc: <stable@vger.kernel.org>
+> Reported-by: Dan Carpenter <dan.carpenter@oracle.com>
+> Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
+> Link: http://lkml.kernel.org/r/20120419070053.GB16645@elgon.mountain
+> [Boris: add testing for the other index too]
+> Signed-off-by: Borislav Petkov <borislav.petkov@amd.com>
+> ---
+>  arch/x86/kernel/cpu/intel_cacheinfo.c |    8 ++++----
+>  1 file changed, 4 insertions(+), 4 deletions(-)
+> 
+> diff --git a/arch/x86/kernel/cpu/intel_cacheinfo.c b/arch/x86/kernel/cpu/intel_cacheinfo.c
+> index 73d08ed98a64..b8f3653dddbc 100644
+> --- a/arch/x86/kernel/cpu/intel_cacheinfo.c
+> +++ b/arch/x86/kernel/cpu/intel_cacheinfo.c
+> @@ -433,14 +433,14 @@ int amd_set_l3_disable_slot(struct amd_northbridge *nb, int cpu, unsigned slot,
+>  	/*  check if @slot is already used or the index is already disabled */
+>  	ret = amd_get_l3_disable_slot(nb, slot);
+>  	if (ret >= 0)
+> -		return -EINVAL;
+> +		return -EEXIST;
+> 
+>  	if (index > nb->l3_cache.indices)
+>  		return -EINVAL;
+> 
+>  	/* check whether the other slot has disabled the same index already */
+>  	if (index == amd_get_l3_disable_slot(nb, !slot))
+> -		return -EINVAL;
+> +		return -EEXIST;
+> 
+>  	amd_l3_disable_index(nb, cpu, slot, index);
+> 
+> @@ -468,8 +468,8 @@ static ssize_t store_cache_disable(struct _cpuid4_info *this_leaf,
+>  	err = amd_set_l3_disable_slot(this_leaf->base.nb, cpu, slot, val);
+>  	if (err) {
+>  		if (err == -EEXIST)
+> -			printk(KERN_WARNING "L3 disable slot %d in use!\n",
+> -					    slot);
+> +			pr_warning("L3 slot %d in use/index already disabled!\n",
+> +				   slot);
+>  		return err;
+>  	}
+>  	return count;
 
-> +	ret = gpio_request(extcon_data->gpio, pdev->name);
-> +	if (ret < 0)
-> +		goto err_request_gpio;
-> +
-> +	ret = gpio_direction_input(extcon_data->gpio);
-> +	if (ret < 0)
-> +		goto err_set_gpio_input;
 
-Incrementally (or in future versions) I'd suggest replacing with
-gpio_request_one() which combines the above and is generally nicer.
+Wow, that's even better! Thanks :-)
 
-> +static int __devexit gpio_extcon_remove(struct platform_device *pdev)
-> +{
-> +	struct gpio_extcon_data *extcon_data = platform_get_drvdata(pdev);
-> +
-> +	cancel_delayed_work_sync(&extcon_data->work);
-> +	gpio_free(extcon_data->gpio);
-> +	extcon_dev_unregister(&extcon_data->edev);
-> +	devm_kfree(&pdev->dev, extcon_data);
+Regards,
+Srivatsa S. Bhat
 
-The whole point of using devm_ is that you don't need to explicitly free
-for this usage pattern.  On the other hand it does no harm.
-
---U+BazGySraz5kW0T
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJPj/m/AAoJEBus8iNuMP3dW2UP/2Mw7jmUPjOYM04LxOe8NarM
-vYxZr2GX6bCTRRFa2VbZF/AlxmxKwdW7A8u4r+0cik9QlHeQNW5s0degErYLxmy/
-wiCrjA9HTPBReB8WPdzUeegHx+XM6wnF4GZ6zDEyv/iSWvRJq3ZydY+/syg/gEO1
-3JMRzf9vryebAbCTWlqpTaX5xK6I7NzYMsW6IZA8SFHZWBWBh/n9Jk0FDf3KvdPb
-1NACdeTBTOvxaVFZjOP0GaPikIBUMOHiJKAd9PEFGh2CjDedipQOVnSQB5Z50VTe
-31RfsHbSVJGCUMRBO+N4sTXWT+gnI2E2JvSmUg6J0qZmtTo2AIYLXGejEolRxitH
-NtsSsVitKPxNcsS4OyCxk1zlSuSm+9AZa6pBx1i/jrDGZd6uqdksn+hT2pXm3eb4
-SqDJ/bGnLTomXzVkNNoKJOYn+L9QgBfQTuX+s7FDFrR8X4u/MGTrFzq7X06HdvUO
-zH82OLw4EE7uG0GGnI6yoS5nweIYYB2zto/xuKMzCHdbYAOEPrT0E8Bz9RkYeIZ3
-wuLFh2bptvC4JAlEFwGaskM9Rcj6OWWudWdL5IRNKH6bA9gatK3Mle6fm3ap8MU+
-Eh+KqqxipILmt2ao/29vqTftYmivB+sQBR/0jG9v6LHdC+MX/+qN0rk5ZPeLbPQk
-V9w2xLbutR5Bsq3ogR/0
-=BqSJ
------END PGP SIGNATURE-----
-
---U+BazGySraz5kW0T--
