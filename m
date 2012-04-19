@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932728Ab2DSVHO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Apr 2012 17:07:14 -0400
+	id S932760Ab2DSVH0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Apr 2012 17:07:26 -0400
 Received: from mail-pb0-f46.google.com ([209.85.160.46]:38883 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932715Ab2DSVHJ (ORCPT
+	with ESMTP id S932746Ab2DSVHW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Apr 2012 17:07:09 -0400
-Message-Id: <20120419210306.718805103@linuxfoundation.org>
+	Thu, 19 Apr 2012 17:07:22 -0400
+Message-Id: <20120419210307.059005582@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Thu, 19 Apr 2012 14:03:45 -0700
+Date: Thu, 19 Apr 2012 14:03:49 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Johan Hovold <jhovold@gmail.com>
-Subject: [ 42/75] USB: serial: fix race between probe and open
+        alan@lxorguk.ukuu.org.uk, Simon Arlott <simon@fire.lp0.eu>
+Subject: [ 46/75] USB: ftdi_sio: fix race condition in TIOCMIWAIT, and abort of TIOCMIWAIT when the device is removed
 In-Reply-To: <20120419210322.GA6478@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -24,95 +24,105 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Johan Hovold <jhovold@gmail.com>
+From: Simon Arlott <simon@fire.lp0.eu>
 
-commit a65a6f14dc24a90bde3f5d0073ba2364476200bf upstream.
+commit 876ae50d94b02f3f523aa451b45ec5fb9c25d221 upstream.
 
-Fix race between probe and open by making sure that the disconnected
-flag is not cleared until all ports have been registered.
+There are two issues here, one is that the device is generating
+spurious very fast modem status line changes somewhere:
 
-A call to tty_open while probe is running may get a reference to the
-serial structure in serial_install before its ports have been
-registered. This may lead to usb_serial_core calling driver open before
-port is fully initialised.
+CTS becomes high then low 18µs later:
+[121226.924373] ftdi_process_packet: prev rng=0 dsr=10 dcd=0 cts=6
+[121226.924378] ftdi_process_packet: status=10 prev=00 diff=10
+[121226.924382] ftdi_process_packet: now rng=0 dsr=10 dcd=0 cts=7
+(wake_up_interruptible is called)
+[121226.924391] ftdi_process_packet: prev rng=0 dsr=10 dcd=0 cts=7
+[121226.924394] ftdi_process_packet: status=00 prev=10 diff=10
+[121226.924397] ftdi_process_packet: now rng=0 dsr=10 dcd=0 cts=8
+(wake_up_interruptible is called)
 
-With ftdi_sio this result in the following NULL-pointer dereference as
-the private data has not been initialised at open:
+This wakes up the task in TIOCMIWAIT:
+[121226.924405] ftdi_ioctl: 19451 rng=0->0 dsr=10->10 dcd=0->0 cts=6->8
+(wait from 20:51:46 returns and observes both changes)
 
-[  199.698286] IP: [<f811a089>] ftdi_open+0x59/0xe0 [ftdi_sio]
-[  199.698297] *pde = 00000000
-[  199.698303] Oops: 0000 [#1] PREEMPT SMP
-[  199.698313] Modules linked in: ftdi_sio usbserial
-[  199.698323]
-[  199.698327] Pid: 1146, comm: ftdi_open Not tainted 3.2.11 #70 Dell Inc. Vostro 1520/0T816J
-[  199.698339] EIP: 0060:[<f811a089>] EFLAGS: 00010286 CPU: 0
-[  199.698344] EIP is at ftdi_open+0x59/0xe0 [ftdi_sio]
-[  199.698348] EAX: 0000003e EBX: f5067000 ECX: 00000000 EDX: 80000600
-[  199.698352] ESI: f48d8800 EDI: 00000001 EBP: f515dd54 ESP: f515dcfc
-[  199.698356]  DS: 007b ES: 007b FS: 00d8 GS: 0033 SS: 0068
-[  199.698361] Process ftdi_open (pid: 1146, ti=f515c000 task=f481e040 task.ti=f515c000)
-[  199.698364] Stack:
-[  199.698368]  f811a9fe f811a9e0 f811b3ef 00000000 00000000 00001388 00000000 f4a86800
-[  199.698387]  00000002 00000000 f806e68e 00000000 f532765c f481e040 00000246 22222222
-[  199.698479]  22222222 22222222 22222222 f5067004 f5327600 f5327638 f515dd74 f806e6ab
-[  199.698496] Call Trace:
-[  199.698504]  [<f806e68e>] ? serial_activate+0x2e/0x70 [usbserial]
-[  199.698511]  [<f806e6ab>] serial_activate+0x4b/0x70 [usbserial]
-[  199.698521]  [<c126380c>] tty_port_open+0x7c/0xd0
-[  199.698527]  [<f806e660>] ? serial_set_termios+0xa0/0xa0 [usbserial]
-[  199.698534]  [<f806e76f>] serial_open+0x2f/0x70 [usbserial]
-[  199.698540]  [<c125d07c>] tty_open+0x20c/0x510
-[  199.698546]  [<c10e9eb7>] chrdev_open+0xe7/0x230
-[  199.698553]  [<c10e48f2>] __dentry_open+0x1f2/0x390
-[  199.698559]  [<c144bfec>] ? _raw_spin_unlock+0x2c/0x50
-[  199.698565]  [<c10e4b76>] nameidata_to_filp+0x66/0x80
-[  199.698570]  [<c10e9dd0>] ? cdev_put+0x20/0x20
-[  199.698576]  [<c10f3e08>] do_last+0x198/0x730
-[  199.698581]  [<c10f4440>] path_openat+0xa0/0x350
-[  199.698587]  [<c10f47d5>] do_filp_open+0x35/0x80
-[  199.698593]  [<c144bfec>] ? _raw_spin_unlock+0x2c/0x50
-[  199.698599]  [<c10ff110>] ? alloc_fd+0xc0/0x100
-[  199.698605]  [<c10f0b72>] ? getname_flags+0x72/0x120
-[  199.698611]  [<c10e4450>] do_sys_open+0xf0/0x1c0
-[  199.698617]  [<c11fcc08>] ? trace_hardirqs_on_thunk+0xc/0x10
-[  199.698623]  [<c10e458e>] sys_open+0x2e/0x40
-[  199.698628]  [<c144c990>] sysenter_do_call+0x12/0x36
-[  199.698632] Code: 85 89 00 00 00 8b 16 8b 4d c0 c1 e2 08 c7 44 24 14 88 13 00 00 81 ca 00 00 00 80 c7 44 24 10 00 00 00 00 c7 44 24 0c 00 00 00 00 <0f> b7 41 78 31 c9 89 44 24 08 c7 44 24 04 00 00 00 00 c7 04 24
-[  199.698884] EIP: [<f811a089>] ftdi_open+0x59/0xe0 [ftdi_sio] SS:ESP 0068:f515dcfc
-[  199.698893] CR2: 0000000000000078
-[  199.698925] ---[ end trace 77c43ec023940cff ]---
+Which then calls TIOCMIWAIT again:
+20:51:46.400239 ioctl(3, TIOCMIWAIT, 0x20) = 0
+22:11:09.441818 ioctl(3, TIOCMGET, [TIOCM_DTR|TIOCM_RTS]) = 0
+22:11:09.442812 ioctl(3, TIOCMIWAIT, 0x20) = -1 EIO (Input/output error)
+(the second wake_up_interruptible takes effect and an I/O error occurs)
 
-Reported-and-tested-by: Ken Huang <csuhgw@gmail.com>
-Signed-off-by: Johan Hovold <jhovold@gmail.com>
+The other issue is that TIOCMIWAIT will wait forever (unless the task is
+interrupted) if the device is removed.
+
+This change removes the -EIO return that occurs if the counts don't
+appear to have changed. Multiple counts may have been processed as
+one or the waiting task may have started waiting after recording the
+current count.
+
+It adds a bool to indicate that the device has been removed so that
+TIOCMIWAIT doesn't wait forever, and wakes up any tasks so that they can
+return -EIO.
+
+Signed-off-by: Simon Arlott <simon@fire.lp0.eu>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/serial/usb-serial.c |    8 ++++++++
- 1 file changed, 8 insertions(+)
+ drivers/usb/serial/ftdi_sio.c |   12 +++++++-----
+ 1 file changed, 7 insertions(+), 5 deletions(-)
 
---- a/drivers/usb/serial/usb-serial.c
-+++ b/drivers/usb/serial/usb-serial.c
-@@ -1063,6 +1063,12 @@ int usb_serial_probe(struct usb_interfac
- 		serial->attached = 1;
- 	}
+--- a/drivers/usb/serial/ftdi_sio.c
++++ b/drivers/usb/serial/ftdi_sio.c
+@@ -76,6 +76,7 @@ struct ftdi_private {
+ 	struct async_icount	icount;
+ 	wait_queue_head_t delta_msr_wait; /* Used for TIOCMIWAIT */
+ 	char prev_status;        /* Used for TIOCMIWAIT */
++	bool dev_gone;        /* Used to abort TIOCMIWAIT */
+ 	char transmit_empty;	/* If transmitter is empty or not */
+ 	struct usb_serial_port *port;
+ 	__u16 interface;	/* FT2232C, FT2232H or FT4232H port interface
+@@ -1679,6 +1680,7 @@ static int ftdi_sio_port_probe(struct us
+ 	init_waitqueue_head(&priv->delta_msr_wait);
  
-+	/* Avoid race with tty_open and serial_install by setting the
-+	 * disconnected flag and not clearing it until all ports have been
-+	 * registered.
-+	 */
-+	serial->disconnected = 1;
+ 	priv->flags = ASYNC_LOW_LATENCY;
++	priv->dev_gone = false;
+ 
+ 	if (quirk && quirk->port_probe)
+ 		quirk->port_probe(priv);
+@@ -1836,6 +1838,9 @@ static int ftdi_sio_port_remove(struct u
+ 
+ 	dbg("%s", __func__);
+ 
++	priv->dev_gone = true;
++	wake_up_interruptible_all(&priv->delta_msr_wait);
 +
- 	if (get_free_serial(serial, num_ports, &minor) == NULL) {
- 		dev_err(&interface->dev, "No more free serial devices\n");
- 		goto probe_error;
-@@ -1087,6 +1093,8 @@ int usb_serial_probe(struct usb_interfac
+ 	remove_sysfs_attrs(port);
+ 
+ 	kref_put(&priv->kref, ftdi_sio_priv_release);
+@@ -2394,15 +2399,12 @@ static int ftdi_ioctl(struct tty_struct
+ 	 */
+ 	case TIOCMIWAIT:
+ 		cprev = priv->icount;
+-		while (1) {
++		while (!priv->dev_gone) {
+ 			interruptible_sleep_on(&priv->delta_msr_wait);
+ 			/* see if a signal did it */
+ 			if (signal_pending(current))
+ 				return -ERESTARTSYS;
+ 			cnow = priv->icount;
+-			if (cnow.rng == cprev.rng && cnow.dsr == cprev.dsr &&
+-			    cnow.dcd == cprev.dcd && cnow.cts == cprev.cts)
+-				return -EIO; /* no change => error */
+ 			if (((arg & TIOCM_RNG) && (cnow.rng != cprev.rng)) ||
+ 			    ((arg & TIOCM_DSR) && (cnow.dsr != cprev.dsr)) ||
+ 			    ((arg & TIOCM_CD)  && (cnow.dcd != cprev.dcd)) ||
+@@ -2411,7 +2413,7 @@ static int ftdi_ioctl(struct tty_struct
+ 			}
+ 			cprev = cnow;
  		}
- 	}
- 
-+	serial->disconnected = 0;
-+
- 	usb_serial_console_init(debug, minor);
- 
- exit:
+-		/* not reached */
++		return -EIO;
+ 		break;
+ 	case TIOCSERGETLSR:
+ 		return get_lsr_info(port, (struct serial_struct __user *)arg);
 
 
