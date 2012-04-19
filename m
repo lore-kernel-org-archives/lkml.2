@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933772Ab2DSV1N (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Apr 2012 17:27:13 -0400
+	id S933776Ab2DSV1e (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Apr 2012 17:27:34 -0400
 Received: from mail-pb0-f46.google.com ([209.85.160.46]:34108 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756574Ab2DSVQZ (ORCPT
+	with ESMTP id S933615Ab2DSVQT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Apr 2012 17:16:25 -0400
-Message-Id: <20120419210821.238939037@linuxfoundation.org>
+	Thu, 19 Apr 2012 17:16:19 -0400
+Message-Id: <20120419210821.066012140@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Thu, 19 Apr 2012 14:08:48 -0700
+Date: Thu, 19 Apr 2012 14:08:46 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Simon Arlott <simon@fire.lp0.eu>,
-        Uwe Bonnes <bon@elektron.ikp.physik.tu-darmstadt.de>
-Subject: [ 30/68] USB: ftdi_sio: fix status line change handling for TIOCMIWAIT and TIOCGICOUNT
+        alan@lxorguk.ukuu.org.uk, =?UTF-8?q?S=C3=B8ren=20Holm?= <sgh@sgh.dk>,
+        Johan Hovold <jhovold@gmail.com>
+Subject: [ 28/68] USB: pl2303: fix DTR/RTS being raised on baud rate change
 In-Reply-To: <20120419210923.GA18589@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,76 +25,31 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Simon Arlott <simon@fire.lp0.eu>
+From: Johan Hovold <jhovold@gmail.com>
 
-commit fca5430d48d53eaf103498c33fd0d1984b9f448b upstream.
+commit ce5c9851855bab190c9a142761d54ba583ab094c upstream.
 
-Handling of TIOCMIWAIT was changed by commit 1d749f9afa657f6ee9336b2bc1fcd750a647d157
- USB: ftdi_sio.c: Use ftdi async_icount structure for TIOCMIWAIT, as in other drivers
+DTR/RTS should only be raised when changing baudrate from B0 and not on
+any baud rate change (> B0).
 
-FTDI_STATUS_B0_MASK does not indicate the changed modem status lines,
-it indicates the value of the current modem status lines. An xor is
-still required to determine which lines have changed.
-
-The count was only being incremented if the line was high. The only
-reason TIOCMIWAIT still worked was because the status packet is
-repeated every 1ms, so the count was always changing. The wakeup
-itself still ran based on the status lines changing.
-
-This change fixes handling of updates to the modem status lines and
-allows multiple processes to use TIOCMIWAIT concurrently.
-
-Tested with two processes waiting on different status lines being
-toggled independently.
-
-Signed-off-by: Simon Arlott <simon@fire.lp0.eu>
-Cc: Uwe Bonnes <bon@elektron.ikp.physik.tu-darmstadt.de>
+Reported-by: Søren Holm <sgh@sgh.dk>
+Signed-off-by: Johan Hovold <jhovold@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/serial/ftdi_sio.c |   24 +++++++++++++-----------
- 1 file changed, 13 insertions(+), 11 deletions(-)
+ drivers/usb/serial/pl2303.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/usb/serial/ftdi_sio.c
-+++ b/drivers/usb/serial/ftdi_sio.c
-@@ -75,7 +75,7 @@ struct ftdi_private {
- 	unsigned long last_dtr_rts;	/* saved modem control outputs */
- 	struct async_icount	icount;
- 	wait_queue_head_t delta_msr_wait; /* Used for TIOCMIWAIT */
--	char prev_status, diff_status;        /* Used for TIOCMIWAIT */
-+	char prev_status;        /* Used for TIOCMIWAIT */
- 	char transmit_empty;	/* If transmitter is empty or not */
- 	struct usb_serial_port *port;
- 	__u16 interface;	/* FT2232C, FT2232H or FT4232H port interface
-@@ -1979,17 +1979,19 @@ static int ftdi_process_packet(struct tt
- 	   N.B. packet may be processed more than once, but differences
- 	   are only processed once.  */
- 	status = packet[0] & FTDI_STATUS_B0_MASK;
--	if (status & FTDI_RS0_CTS)
--		priv->icount.cts++;
--	if (status & FTDI_RS0_DSR)
--		priv->icount.dsr++;
--	if (status & FTDI_RS0_RI)
--		priv->icount.rng++;
--	if (status & FTDI_RS0_RLSD)
--		priv->icount.dcd++;
- 	if (status != priv->prev_status) {
--		priv->diff_status |= status ^ priv->prev_status;
--		wake_up_interruptible(&priv->delta_msr_wait);
-+		char diff_status = status ^ priv->prev_status;
-+
-+		if (diff_status & FTDI_RS0_CTS)
-+			priv->icount.cts++;
-+		if (diff_status & FTDI_RS0_DSR)
-+			priv->icount.dsr++;
-+		if (diff_status & FTDI_RS0_RI)
-+			priv->icount.rng++;
-+		if (diff_status & FTDI_RS0_RLSD)
-+			priv->icount.dcd++;
-+
-+		wake_up_interruptible_all(&priv->delta_msr_wait);
- 		priv->prev_status = status;
- 	}
- 
+--- a/drivers/usb/serial/pl2303.c
++++ b/drivers/usb/serial/pl2303.c
+@@ -421,7 +421,7 @@ static void pl2303_set_termios(struct tt
+ 	control = priv->line_control;
+ 	if ((cflag & CBAUD) == B0)
+ 		priv->line_control &= ~(CONTROL_DTR | CONTROL_RTS);
+-	else
++	else if ((old_termios->c_cflag & CBAUD) == B0)
+ 		priv->line_control |= (CONTROL_DTR | CONTROL_RTS);
+ 	if (control != priv->line_control) {
+ 		control = priv->line_control;
 
 
