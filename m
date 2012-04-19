@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932952Ab2DSVJ2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Apr 2012 17:09:28 -0400
+	id S933032Ab2DSVJo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Apr 2012 17:09:44 -0400
 Received: from mail-pb0-f46.google.com ([209.85.160.46]:41537 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933026Ab2DSVJX (ORCPT
+	with ESMTP id S933091Ab2DSVJi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Apr 2012 17:09:23 -0400
-Message-Id: <20120419210611.719538386@linuxfoundation.org>
+	Thu, 19 Apr 2012 17:09:38 -0400
+Message-Id: <20120419210612.047642263@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Thu, 19 Apr 2012 14:06:18 -0700
+Date: Thu, 19 Apr 2012 14:06:22 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, <emeric.maschino@gmail.com>,
-        Michel Lespinasse <walken@google.com>, Tony Luck <tony.luck@intel.com>
-Subject: [ 07/59] ia64: fix futex_atomic_cmpxchg_inatomic()
+        alan@lxorguk.ukuu.org.uk, Yuriy Kozlov <ykozlov@ptcusa.com>,
+        Tobias Klauser <tklauser@distanz.ch>
+Subject: [ 11/59] tty: serial: altera_uart: Check for NULL platform_data in probe.
 In-Reply-To: <20120419210623.GA12156@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,56 +25,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Luck, Tony" <tony.luck@intel.com>
+From: Yuriy Kozlov <ykozlov@ptcusa.com>
 
-commit c76f39bddb84f93f70a5520d9253ec0317bec216 upstream.
+commit acede70d6561f2d042d9dbb153d9a3469479c0ed upstream.
 
-Michel Lespinasse cleaned up the futex calling conventions in commit
-37a9d912b24f ("futex: Sanitize cmpxchg_futex_value_locked API").
+Follow altera_jtag_uart.  This fixes a crash if there is a mistake in the DTS.
 
-But the ia64 implementation was subtly broken.  Gcc does not know that
-register "r8" will be updated by the fault handler if the cmpxchg
-instruction takes an exception.  So it feels safe in letting the
-initialization of r8 slide to after the cmpxchg.  Result: we always
-return 0 whether the user address faulted or not.
-
-Fix by moving the initialization of r8 into the __asm__ code so gcc
-won't move it.
-
-Reported-by: <emeric.maschino@gmail.com>
-Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=42757
-Tested-by: <emeric.maschino@gmail.com>
-Acked-by: Michel Lespinasse <walken@google.com>
-Signed-off-by: Tony Luck <tony.luck@intel.com>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Yuriy Kozlov <ykozlov@ptcusa.com>
+Signed-off-by: Tobias Klauser <tklauser@distanz.ch>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/ia64/include/asm/futex.h |    9 +++++----
- 1 file changed, 5 insertions(+), 4 deletions(-)
+ drivers/tty/serial/altera_uart.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/arch/ia64/include/asm/futex.h
-+++ b/arch/ia64/include/asm/futex.h
-@@ -107,15 +107,16 @@ futex_atomic_cmpxchg_inatomic(u32 *uval,
- 		return -EFAULT;
+--- a/drivers/tty/serial/altera_uart.c
++++ b/drivers/tty/serial/altera_uart.c
+@@ -555,7 +555,7 @@ static int __devinit altera_uart_probe(s
+ 	res_mem = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+ 	if (res_mem)
+ 		port->mapbase = res_mem->start;
+-	else if (platp->mapbase)
++	else if (platp)
+ 		port->mapbase = platp->mapbase;
+ 	else
+ 		return -EINVAL;
+@@ -563,7 +563,7 @@ static int __devinit altera_uart_probe(s
+ 	res_irq = platform_get_resource(pdev, IORESOURCE_IRQ, 0);
+ 	if (res_irq)
+ 		port->irq = res_irq->start;
+-	else if (platp->irq)
++	else if (platp)
+ 		port->irq = platp->irq;
  
- 	{
--		register unsigned long r8 __asm ("r8") = 0;
-+		register unsigned long r8 __asm ("r8");
- 		unsigned long prev;
- 		__asm__ __volatile__(
- 			"	mf;;					\n"
--			"	mov ar.ccv=%3;;				\n"
--			"[1:]	cmpxchg4.acq %0=[%1],%2,ar.ccv		\n"
-+			"	mov %0=r0				\n"
-+			"	mov ar.ccv=%4;;				\n"
-+			"[1:]	cmpxchg4.acq %1=[%2],%3,ar.ccv		\n"
- 			"	.xdata4 \"__ex_table\", 1b-., 2f-.	\n"
- 			"[2:]"
--			: "=r" (prev)
-+			: "=r" (r8), "=r" (prev)
- 			: "r" (uaddr), "r" (newval),
- 			  "rO" ((long) (unsigned) oldval)
- 			: "memory");
+ 	/* Check platform data first so we can override device node data */
 
 
