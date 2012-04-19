@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933215Ab2DSVMK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Apr 2012 17:12:10 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:34108 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752259Ab2DSVMF (ORCPT
+	id S1756570Ab2DSVMQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Apr 2012 17:12:16 -0400
+Received: from mail-pz0-f42.google.com ([209.85.210.42]:44862 "EHLO
+	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752259Ab2DSVMN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Apr 2012 17:12:05 -0400
-Message-Id: <20120419210303.221572189@linuxfoundation.org>
+	Thu, 19 Apr 2012 17:12:13 -0400
+Message-Id: <20120419210303.569477922@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Thu, 19 Apr 2012 14:03:04 -0700
+Date: Thu, 19 Apr 2012 14:03:08 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Jan Schmidt <list.btrfs@jan-o-sch.net>,
-        Chris Mason <chris.mason@oracle.com>
-Subject: [ 01/75] Btrfs: fix regression in scrub path resolving
+        alan@lxorguk.ukuu.org.uk, Alex Deucher <alexander.deucher@amd.com>,
+        Jean Delvare <khali@linux-fr.org>, Dave Airlie <airlied@redhat.com>
+Subject: [ 05/75] drm/radeon: only add the mm i2c bus if the hw_i2c module param is set
 In-Reply-To: <20120419210322.GA6478@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,310 +25,38 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jan Schmidt <list.btrfs@jan-o-sch.net>
+From: Alex Deucher <alexander.deucher@amd.com>
 
-commit 7a3ae2f8c8c8432e65467b7fc84d5deab04061a0 upstream.
+commit 46783150a6552f9513f08e62cfcc07125d6e502b upstream.
 
-In commit 4692cf58 we introduced new backref walking code for btrfs. This
-assumes we're searching live roots, which requires a transaction context.
-While scrubbing, however, we must not join a transaction because this could
-deadlock with the commit path. Additionally, what scrub really wants to do
-is resolving a logical address in the commit root it's currently checking.
+It seems it can corrupt the monitor EDID in certain cases on certain
+boards when running sensors detect.  It's rarely used anyway outside
+of AIW boards.
 
-This patch adds support for logical to path resolving on commit roots and
-makes scrub use that.
+http://lists.lm-sensors.org/pipermail/lm-sensors/2012-April/035847.html
+http://lists.freedesktop.org/archives/xorg/2011-January/052239.html
 
-Signed-off-by: Jan Schmidt <list.btrfs@jan-o-sch.net>
-Signed-off-by: Chris Mason <chris.mason@oracle.com>
+Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
+Acked-by: Jean Delvare <khali@linux-fr.org>
+Signed-off-by: Dave Airlie <airlied@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/btrfs/backref.c |  115 ++++++++++++++++++++++++++++++-----------------------
- fs/btrfs/backref.h |    5 +-
- fs/btrfs/ioctl.c   |    4 -
- fs/btrfs/scrub.c   |    4 -
- 4 files changed, 73 insertions(+), 55 deletions(-)
+ drivers/gpu/drm/radeon/radeon_i2c.c |    4 ++++
+ 1 file changed, 4 insertions(+)
 
---- a/fs/btrfs/backref.c
-+++ b/fs/btrfs/backref.c
-@@ -116,6 +116,7 @@ add_parent:
-  * to a logical address
-  */
- static int __resolve_indirect_ref(struct btrfs_fs_info *fs_info,
-+					int search_commit_root,
- 					struct __prelim_ref *ref,
- 					struct ulist *parents)
- {
-@@ -131,6 +132,7 @@ static int __resolve_indirect_ref(struct
- 	path = btrfs_alloc_path();
- 	if (!path)
- 		return -ENOMEM;
-+	path->search_commit_root = !!search_commit_root;
- 
- 	root_key.objectid = ref->root_id;
- 	root_key.type = BTRFS_ROOT_ITEM_KEY;
-@@ -188,6 +190,7 @@ out:
-  * resolve all indirect backrefs from the list
-  */
- static int __resolve_indirect_refs(struct btrfs_fs_info *fs_info,
-+				   int search_commit_root,
- 				   struct list_head *head)
- {
- 	int err;
-@@ -212,7 +215,8 @@ static int __resolve_indirect_refs(struc
- 			continue;
- 		if (ref->count == 0)
- 			continue;
--		err = __resolve_indirect_ref(fs_info, ref, parents);
-+		err = __resolve_indirect_ref(fs_info, search_commit_root,
-+					     ref, parents);
- 		if (err) {
- 			if (ret == 0)
- 				ret = err;
-@@ -586,6 +590,7 @@ static int find_parent_nodes(struct btrf
- 	struct btrfs_delayed_ref_head *head;
- 	int info_level = 0;
+--- a/drivers/gpu/drm/radeon/radeon_i2c.c
++++ b/drivers/gpu/drm/radeon/radeon_i2c.c
+@@ -890,6 +890,10 @@ struct radeon_i2c_chan *radeon_i2c_creat
+ 	struct radeon_i2c_chan *i2c;
  	int ret;
-+	int search_commit_root = (trans == BTRFS_BACKREF_SEARCH_COMMIT_ROOT);
- 	struct list_head prefs_delayed;
- 	struct list_head prefs;
- 	struct __prelim_ref *ref;
-@@ -600,6 +605,7 @@ static int find_parent_nodes(struct btrf
- 	path = btrfs_alloc_path();
- 	if (!path)
- 		return -ENOMEM;
-+	path->search_commit_root = !!search_commit_root;
  
- 	/*
- 	 * grab both a lock on the path and a lock on the delayed ref head.
-@@ -614,35 +620,39 @@ again:
- 		goto out;
- 	BUG_ON(ret == 0);
- 
--	/*
--	 * look if there are updates for this ref queued and lock the head
--	 */
--	delayed_refs = &trans->transaction->delayed_refs;
--	spin_lock(&delayed_refs->lock);
--	head = btrfs_find_delayed_ref_head(trans, bytenr);
--	if (head) {
--		if (!mutex_trylock(&head->mutex)) {
--			atomic_inc(&head->node.refs);
--			spin_unlock(&delayed_refs->lock);
--
--			btrfs_release_path(path);
--
--			/*
--			 * Mutex was contended, block until it's
--			 * released and try again
--			 */
--			mutex_lock(&head->mutex);
--			mutex_unlock(&head->mutex);
--			btrfs_put_delayed_ref(&head->node);
--			goto again;
--		}
--		ret = __add_delayed_refs(head, seq, &info_key, &prefs_delayed);
--		if (ret) {
--			spin_unlock(&delayed_refs->lock);
--			goto out;
-+	if (trans != BTRFS_BACKREF_SEARCH_COMMIT_ROOT) {
-+		/*
-+		 * look if there are updates for this ref queued and lock the
-+		 * head
-+		 */
-+		delayed_refs = &trans->transaction->delayed_refs;
-+		spin_lock(&delayed_refs->lock);
-+		head = btrfs_find_delayed_ref_head(trans, bytenr);
-+		if (head) {
-+			if (!mutex_trylock(&head->mutex)) {
-+				atomic_inc(&head->node.refs);
-+				spin_unlock(&delayed_refs->lock);
++	/* don't add the mm_i2c bus unless hw_i2c is enabled */
++	if (rec->mm_i2c && (radeon_hw_i2c == 0))
++		return NULL;
 +
-+				btrfs_release_path(path);
-+
-+				/*
-+				 * Mutex was contended, block until it's
-+				 * released and try again
-+				 */
-+				mutex_lock(&head->mutex);
-+				mutex_unlock(&head->mutex);
-+				btrfs_put_delayed_ref(&head->node);
-+				goto again;
-+			}
-+			ret = __add_delayed_refs(head, seq, &info_key,
-+						 &prefs_delayed);
-+			if (ret) {
-+				spin_unlock(&delayed_refs->lock);
-+				goto out;
-+			}
- 		}
-+		spin_unlock(&delayed_refs->lock);
- 	}
--	spin_unlock(&delayed_refs->lock);
- 
- 	if (path->slots[0]) {
- 		struct extent_buffer *leaf;
-@@ -679,7 +689,7 @@ again:
- 	if (ret)
- 		goto out;
- 
--	ret = __resolve_indirect_refs(fs_info, &prefs);
-+	ret = __resolve_indirect_refs(fs_info, search_commit_root, &prefs);
- 	if (ret)
- 		goto out;
- 
-@@ -1074,8 +1084,7 @@ int tree_backref_for_extent(unsigned lon
- 	return 0;
- }
- 
--static int iterate_leaf_refs(struct btrfs_fs_info *fs_info,
--				struct btrfs_path *path, u64 logical,
-+static int iterate_leaf_refs(struct btrfs_fs_info *fs_info, u64 logical,
- 				u64 orig_extent_item_objectid,
- 				u64 extent_item_pos, u64 root,
- 				iterate_extent_inodes_t *iterate, void *ctx)
-@@ -1143,35 +1152,38 @@ static int iterate_leaf_refs(struct btrf
-  * calls iterate() for every inode that references the extent identified by
-  * the given parameters.
-  * when the iterator function returns a non-zero value, iteration stops.
-- * path is guaranteed to be in released state when iterate() is called.
-  */
- int iterate_extent_inodes(struct btrfs_fs_info *fs_info,
--				struct btrfs_path *path,
- 				u64 extent_item_objectid, u64 extent_item_pos,
-+				int search_commit_root,
- 				iterate_extent_inodes_t *iterate, void *ctx)
- {
- 	int ret;
- 	struct list_head data_refs = LIST_HEAD_INIT(data_refs);
- 	struct list_head shared_refs = LIST_HEAD_INIT(shared_refs);
- 	struct btrfs_trans_handle *trans;
--	struct ulist *refs;
--	struct ulist *roots;
-+	struct ulist *refs = NULL;
-+	struct ulist *roots = NULL;
- 	struct ulist_node *ref_node = NULL;
- 	struct ulist_node *root_node = NULL;
- 	struct seq_list seq_elem;
--	struct btrfs_delayed_ref_root *delayed_refs;
--
--	trans = btrfs_join_transaction(fs_info->extent_root);
--	if (IS_ERR(trans))
--		return PTR_ERR(trans);
-+	struct btrfs_delayed_ref_root *delayed_refs = NULL;
- 
- 	pr_debug("resolving all inodes for extent %llu\n",
- 			extent_item_objectid);
- 
--	delayed_refs = &trans->transaction->delayed_refs;
--	spin_lock(&delayed_refs->lock);
--	btrfs_get_delayed_seq(delayed_refs, &seq_elem);
--	spin_unlock(&delayed_refs->lock);
-+	if (search_commit_root) {
-+		trans = BTRFS_BACKREF_SEARCH_COMMIT_ROOT;
-+	} else {
-+		trans = btrfs_join_transaction(fs_info->extent_root);
-+		if (IS_ERR(trans))
-+			return PTR_ERR(trans);
-+
-+		delayed_refs = &trans->transaction->delayed_refs;
-+		spin_lock(&delayed_refs->lock);
-+		btrfs_get_delayed_seq(delayed_refs, &seq_elem);
-+		spin_unlock(&delayed_refs->lock);
-+	}
- 
- 	ret = btrfs_find_all_leafs(trans, fs_info, extent_item_objectid,
- 				   extent_item_pos, seq_elem.seq,
-@@ -1188,7 +1200,7 @@ int iterate_extent_inodes(struct btrfs_f
- 		while (!ret && (root_node = ulist_next(roots, root_node))) {
- 			pr_debug("root %llu references leaf %llu\n",
- 					root_node->val, ref_node->val);
--			ret = iterate_leaf_refs(fs_info, path, ref_node->val,
-+			ret = iterate_leaf_refs(fs_info, ref_node->val,
- 						extent_item_objectid,
- 						extent_item_pos, root_node->val,
- 						iterate, ctx);
-@@ -1198,8 +1210,11 @@ int iterate_extent_inodes(struct btrfs_f
- 	ulist_free(refs);
- 	ulist_free(roots);
- out:
--	btrfs_put_delayed_seq(delayed_refs, &seq_elem);
--	btrfs_end_transaction(trans, fs_info->extent_root);
-+	if (!search_commit_root) {
-+		btrfs_put_delayed_seq(delayed_refs, &seq_elem);
-+		btrfs_end_transaction(trans, fs_info->extent_root);
-+	}
-+
- 	return ret;
- }
- 
-@@ -1210,6 +1225,7 @@ int iterate_inodes_from_logical(u64 logi
- 	int ret;
- 	u64 extent_item_pos;
- 	struct btrfs_key found_key;
-+	int search_commit_root = path->search_commit_root;
- 
- 	ret = extent_from_logical(fs_info, logical, path,
- 					&found_key);
-@@ -1220,8 +1236,9 @@ int iterate_inodes_from_logical(u64 logi
- 		return ret;
- 
- 	extent_item_pos = logical - found_key.objectid;
--	ret = iterate_extent_inodes(fs_info, path, found_key.objectid,
--					extent_item_pos, iterate, ctx);
-+	ret = iterate_extent_inodes(fs_info, found_key.objectid,
-+					extent_item_pos, search_commit_root,
-+					iterate, ctx);
- 
- 	return ret;
- }
---- a/fs/btrfs/backref.h
-+++ b/fs/btrfs/backref.h
-@@ -22,6 +22,8 @@
- #include "ioctl.h"
- #include "ulist.h"
- 
-+#define BTRFS_BACKREF_SEARCH_COMMIT_ROOT ((struct btrfs_trans_handle *)0)
-+
- struct inode_fs_paths {
- 	struct btrfs_path		*btrfs_path;
- 	struct btrfs_root		*fs_root;
-@@ -44,9 +46,8 @@ int tree_backref_for_extent(unsigned lon
- 				u64 *out_root, u8 *out_level);
- 
- int iterate_extent_inodes(struct btrfs_fs_info *fs_info,
--				struct btrfs_path *path,
- 				u64 extent_item_objectid,
--				u64 extent_offset,
-+				u64 extent_offset, int search_commit_root,
- 				iterate_extent_inodes_t *iterate, void *ctx);
- 
- int iterate_inodes_from_logical(u64 logical, struct btrfs_fs_info *fs_info,
---- a/fs/btrfs/ioctl.c
-+++ b/fs/btrfs/ioctl.c
-@@ -3066,8 +3066,8 @@ static long btrfs_ioctl_logical_to_ino(s
- 		goto out;
- 
- 	extent_item_pos = loi->logical - key.objectid;
--	ret = iterate_extent_inodes(root->fs_info, path, key.objectid,
--					extent_item_pos, build_ino_list,
-+	ret = iterate_extent_inodes(root->fs_info, key.objectid,
-+					extent_item_pos, 0, build_ino_list,
- 					inodes);
- 
- 	if (ret < 0)
---- a/fs/btrfs/scrub.c
-+++ b/fs/btrfs/scrub.c
-@@ -352,8 +352,8 @@ static void scrub_print_warning(const ch
- 		} while (ret != 1);
- 	} else {
- 		swarn.path = path;
--		iterate_extent_inodes(fs_info, path, found_key.objectid,
--					extent_item_pos,
-+		iterate_extent_inodes(fs_info, found_key.objectid,
-+					extent_item_pos, 1,
- 					scrub_print_warning_inode, &swarn);
- 	}
- 
+ 	i2c = kzalloc(sizeof(struct radeon_i2c_chan), GFP_KERNEL);
+ 	if (i2c == NULL)
+ 		return NULL;
 
 
