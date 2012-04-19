@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965156Ab2DSVRS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Apr 2012 17:17:18 -0400
+	id S965172Ab2DSVRZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Apr 2012 17:17:25 -0400
 Received: from mail-pb0-f46.google.com ([209.85.160.46]:37406 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965121Ab2DSVRP (ORCPT
+	with ESMTP id S965159Ab2DSVRT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Apr 2012 17:17:15 -0400
-Message-Id: <20120419210822.574896129@linuxfoundation.org>
+	Thu, 19 Apr 2012 17:17:19 -0400
+Message-Id: <20120419210821.983914688@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Thu, 19 Apr 2012 14:09:04 -0700
+Date: Thu, 19 Apr 2012 14:08:57 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Sarah Sharp <sarah.a.sharp@linux.intel.com>,
-        Elric Fu <elricfu1@gmail.com>, Andiry Xu <andiry.xu@amd.com>
-Subject: [ 46/68] xhci: Fix register save/restore order.
+        alan@lxorguk.ukuu.org.uk, Elric Fu <elricfu1@gmail.com>,
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Subject: [ 39/68] xHCI: add XHCI_RESET_ON_RESUME quirk for VIA xHCI host
 In-Reply-To: <20120419210923.GA18589@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,60 +25,41 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+From: Elric Fu <elricfu1@gmail.com>
 
-commit c7713e736526d8c9f6f87716fb90562a8ffaff2c upstream.
+commit 457a4f61f9bfc3ae76e5b49f30f25d86bb696f67 upstream.
 
-The xHCI 1.0 spec errata released on June 13, 2011, changes the ordering
-that the xHCI registers are saved and restored in.  It moves the
-interrupt pending (IMAN) and interrupt control (IMOD) registers to be
-saved and restored last.  I believe that's because the host controller
-may attempt to fetch the event ring table when interrupts are
-re-enabled.  Therefore we need to restore the event ring registers
-before we re-enable interrupts.
+The suspend operation of VIA xHCI host have some issues and
+hibernate operation works fine, so The XHCI_RESET_ON_RESUME
+quirk is added for it.
 
-This should be backported to kernels as old as 2.6.37, that contain the
-commit 5535b1d5f8885695c6ded783c692e3c0d0eda8ca "USB: xHCI: PCI power
-management implementation"
+This patch should base on "xHCI: Don't write zeroed pointer
+to xHC registers" that is released by Sarah. Otherwise, the
+host system error will ocurr in the hibernate operation
+process.
 
+This should be backported to stable kernels as old as 2.6.37,
+that contain the commit c877b3b2ad5cb9d4fe523c5496185cc328ff3ae9
+"xhci: Add reset on resume quirk for asrock p67 host".
+
+Signed-off-by: Elric Fu <elricfu1@gmail.com>
 Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
-Tested-by: Elric Fu <elricfu1@gmail.com>
-Cc: Andiry Xu <andiry.xu@amd.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/host/xhci.c |    8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+ drivers/usb/host/xhci-pci.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
---- a/drivers/usb/host/xhci.c
-+++ b/drivers/usb/host/xhci.c
-@@ -664,11 +664,11 @@ static void xhci_save_registers(struct x
- 	xhci->s3.dev_nt = xhci_readl(xhci, &xhci->op_regs->dev_notification);
- 	xhci->s3.dcbaa_ptr = xhci_read_64(xhci, &xhci->op_regs->dcbaa_ptr);
- 	xhci->s3.config_reg = xhci_readl(xhci, &xhci->op_regs->config_reg);
--	xhci->s3.irq_pending = xhci_readl(xhci, &xhci->ir_set->irq_pending);
--	xhci->s3.irq_control = xhci_readl(xhci, &xhci->ir_set->irq_control);
- 	xhci->s3.erst_size = xhci_readl(xhci, &xhci->ir_set->erst_size);
- 	xhci->s3.erst_base = xhci_read_64(xhci, &xhci->ir_set->erst_base);
- 	xhci->s3.erst_dequeue = xhci_read_64(xhci, &xhci->ir_set->erst_dequeue);
-+	xhci->s3.irq_pending = xhci_readl(xhci, &xhci->ir_set->irq_pending);
-+	xhci->s3.irq_control = xhci_readl(xhci, &xhci->ir_set->irq_control);
+--- a/drivers/usb/host/xhci-pci.c
++++ b/drivers/usb/host/xhci-pci.c
+@@ -95,6 +95,8 @@ static void xhci_pci_quirks(struct devic
+ 		xhci->quirks |= XHCI_RESET_ON_RESUME;
+ 		xhci_dbg(xhci, "QUIRK: Resetting on resume\n");
+ 	}
++	if (pdev->vendor == PCI_VENDOR_ID_VIA)
++		xhci->quirks |= XHCI_RESET_ON_RESUME;
  }
  
- static void xhci_restore_registers(struct xhci_hcd *xhci)
-@@ -677,11 +677,11 @@ static void xhci_restore_registers(struc
- 	xhci_writel(xhci, xhci->s3.dev_nt, &xhci->op_regs->dev_notification);
- 	xhci_write_64(xhci, xhci->s3.dcbaa_ptr, &xhci->op_regs->dcbaa_ptr);
- 	xhci_writel(xhci, xhci->s3.config_reg, &xhci->op_regs->config_reg);
--	xhci_writel(xhci, xhci->s3.irq_pending, &xhci->ir_set->irq_pending);
--	xhci_writel(xhci, xhci->s3.irq_control, &xhci->ir_set->irq_control);
- 	xhci_writel(xhci, xhci->s3.erst_size, &xhci->ir_set->erst_size);
- 	xhci_write_64(xhci, xhci->s3.erst_base, &xhci->ir_set->erst_base);
- 	xhci_write_64(xhci, xhci->s3.erst_dequeue, &xhci->ir_set->erst_dequeue);
-+	xhci_writel(xhci, xhci->s3.irq_pending, &xhci->ir_set->irq_pending);
-+	xhci_writel(xhci, xhci->s3.irq_control, &xhci->ir_set->irq_control);
- }
- 
- static void xhci_set_cmd_ring_deq(struct xhci_hcd *xhci)
+ /* called during probe() after chip reset completes */
 
 
