@@ -1,62 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933138Ab2DSVv4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Apr 2012 17:51:56 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:14456 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933043Ab2DSVvx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Apr 2012 17:51:53 -0400
-Date: Thu, 19 Apr 2012 23:51:09 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Konstantin Khlebnikov <khlebnikov@openvz.org>
-Cc: Cyrill Gorcunov <gorcunov@openvz.org>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "keescook@chromium.org" <keescook@chromium.org>,
-        "kosaki.motohiro@jp.fujitsu.com" <kosaki.motohiro@jp.fujitsu.com>,
-        "matthltc@us.ibm.com" <matthltc@us.ibm.com>,
-        "tj@kernel.org" <tj@kernel.org>, Pavel Emelianov <xemul@parallels.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: +
-	c-r-prctl-add-ability-to-set-new-mm_struct-exe_file-update-after-mm-
-	num_exe_file_vmas-removal.patch added to -mm tree
-Message-ID: <20120419215109.GA4896@redhat.com>
-References: <20120419185221.E8ED6A055E@akpm.mtv.corp.google.com> <20120419192005.GA13558@redhat.com> <20120419210033.GO1893@moon> <20120419211216.GA2200@redhat.com> <4F9087D0.60709@openvz.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4F9087D0.60709@openvz.org>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S933005Ab2DSVJS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Apr 2012 17:09:18 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:41537 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933006Ab2DSVJJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Apr 2012 17:09:09 -0400
+Message-Id: <20120419210611.389921911@linuxfoundation.org>
+User-Agent: quilt/0.60-19.1
+Date: Thu, 19 Apr 2012 14:06:14 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        alan@lxorguk.ukuu.org.uk, Larry Finger <Larry.Finger@lwfinger.net>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [ 03/59] rtlwifi: Add missing DMA buffer unmapping for PCI drivers
+In-Reply-To: <20120419210623.GA12156@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/20, Konstantin Khlebnikov wrote:
->
-> Oleg Nesterov wrote:
->>
->> You misunderstood. I am not arguing with "one-shot", I do not really
->> care.
->>
->> My question is: unless I missed something "it can't be changed again"
->> is not actually true. A task does PR_SET_MM_EXE_FILE, then it forks
->> the new child. The child can do PR_SET_MM_EXE_FILE again. Is this
->> by design?
->>
->> Oleg.
->>
->
-> I found more weird case: child thread (with CLONE_THREAD and without CLONE_VM)
-> changes its exe_file...
+3.0-stable review patch.  If anyone has any objections, please let me know.
 
-No. copy_process() does:
+------------------
 
-	if ((clone_flags & CLONE_THREAD) && !(clone_flags & CLONE_SIGHAND))
-		return ERR_PTR(-EINVAL);
+From: Larry Finger <Larry.Finger@lwfinger.net>
 
-	if ((clone_flags & CLONE_SIGHAND) && !(clone_flags & CLONE_VM))
-		return ERR_PTR(-EINVAL);
+commit 673f7786e205c87b5d978c62827b9a66d097bebb upstream.
 
-IOW, CLONE_THREAD => CLONE_SIGHAND => CLONE_VM
+In https://bugzilla.kernel.org/show_bug.cgi?id=42976, a system with driver
+rtl8192se used as an AP suffers from "Out of SW-IOMMU space" errors. These
+are caused by the DMA buffers used for beacons never being unmapped.
 
-Oleg.
+This bug was also reported at
+https://bugs.launchpad.net/ubuntu/+source/linux/+bug/961618
+
+Reported-and-Tested-by: Da Xue <da@lessconfused.com>
+Signed-off-by: Larry Finger <Larry.Finger@lwfinger.net>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ drivers/net/wireless/rtlwifi/pci.c |    7 ++++++-
+ 1 file changed, 6 insertions(+), 1 deletion(-)
+
+--- a/drivers/net/wireless/rtlwifi/pci.c
++++ b/drivers/net/wireless/rtlwifi/pci.c
+@@ -954,8 +954,13 @@ static void _rtl_pci_prepare_bcn_tasklet
+ 	memset(&tcb_desc, 0, sizeof(struct rtl_tcb_desc));
+ 	ring = &rtlpci->tx_ring[BEACON_QUEUE];
+ 	pskb = __skb_dequeue(&ring->queue);
+-	if (pskb)
++	if (pskb) {
++		struct rtl_tx_desc *entry = &ring->desc[ring->idx];
++		pci_unmap_single(rtlpci->pdev, rtlpriv->cfg->ops->get_desc(
++				 (u8 *) entry, true, HW_DESC_TXBUFF_ADDR),
++				 pskb->len, PCI_DMA_TODEVICE);
+ 		kfree_skb(pskb);
++	}
+ 
+ 	/*NB: the beacon data buffer must be 32-bit aligned. */
+ 	pskb = ieee80211_beacon_get(hw, mac->vif);
+
 
