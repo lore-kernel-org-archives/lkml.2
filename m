@@ -1,109 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756575Ab2DSVbx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Apr 2012 17:31:53 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:34108 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933507Ab2DSVPb (ORCPT
+	id S1756607Ab2DSVcN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Apr 2012 17:32:13 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:59819 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756561Ab2DSVcJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Apr 2012 17:15:31 -0400
-Message-Id: <20120419210819.790144092@linuxfoundation.org>
-User-Agent: quilt/0.60-19.1
-Date: Thu, 19 Apr 2012 14:08:31 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, "Theodore Tso" <tytso@mit.edu>
-Subject: [ 13/68] ext4: address scalability issue by removing extent cache statistics
-In-Reply-To: <20120419210923.GA18589@kroah.com>
+	Thu, 19 Apr 2012 17:32:09 -0400
+Date: Fri, 20 Apr 2012 01:32:04 +0400
+From: Cyrill Gorcunov <gorcunov@openvz.org>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: akpm@linux-foundation.org, khlebnikov@openvz.org, keescook@chromium.org,
+        kosaki.motohiro@jp.fujitsu.com, matthltc@us.ibm.com, tj@kernel.org,
+        xemul@parallels.com, linux-kernel@vger.kernel.org
+Subject: Re: +
+ c-r-prctl-add-ability-to-set-new-mm_struct-exe_file-update-after-mm-
+ num_exe_file_vmas-removal.patch added to -mm tree
+Message-ID: <20120419213204.GP1893@moon>
+References: <20120419185221.E8ED6A055E@akpm.mtv.corp.google.com>
+ <20120419192005.GA13558@redhat.com>
+ <20120419210033.GO1893@moon>
+ <20120419211216.GA2200@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120419211216.GA2200@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.2-stable review patch.  If anyone has any objections, please let me know.
+On Thu, Apr 19, 2012 at 11:12:16PM +0200, Oleg Nesterov wrote:
+> > Heh :) Oleg, it was actually your idea to make this feature "one-shot".
+> 
+> Heh, no ;)
+> 
+> IIRC, I only asked you what do you actually want,
+> 
+> 	Just one note for the record, prctl_set_mm_exe_file() does
+> 
+> 		if (mm->num_exe_file_vmas)
+> 			return -EBUSY;
+> 
+> 	We could do
+> 
+> 		if (mm->exe_file)
+> 			return -EBUSY;
+> 
+> 	This way "because this feature is a special to C/R" becomes
+> 	really true. IOW, you can't do PR_SET_MM_EXE_FILE twice.
+> 
+> 	I am fine either way, just I want to ensure you really want
+> 	the current version.
+> 
+> and only because it was documented as "feature is a special to C/R".
 
-------------------
+ok, ubedil :)
 
-From: Theodore Ts'o <tytso@mit.edu>
+> > Once exe-file changed to a new value, it can't be changed again. The
+> > reason was to bring at least minimum disturbance in sysadmins life.
+> 
+> You misunderstood. I am not arguing with "one-shot", I do not really
+> care.
+> 
+> My question is: unless I missed something "it can't be changed again"
+> is not actually true. A task does PR_SET_MM_EXE_FILE, then it forks
+> the new child. The child can do PR_SET_MM_EXE_FILE again. Is this
+> by design?
 
-commit 9cd70b347e9761ea2d2ac3d758c529a48a8193e6 upstream.
+Hmm, not sure, Konstantin?
 
-Andi Kleen and Tim Chen have reported that under certain circumstances
-the extent cache statistics are causing scalability problems due to
-cache line bounces.
-
-Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- fs/ext4/ext4.h    |    3 ---
- fs/ext4/extents.c |    4 ----
- fs/ext4/super.c   |   16 ----------------
- 3 files changed, 23 deletions(-)
-
---- a/fs/ext4/ext4.h
-+++ b/fs/ext4/ext4.h
-@@ -1185,9 +1185,6 @@ struct ext4_sb_info {
- 	unsigned long s_ext_blocks;
- 	unsigned long s_ext_extents;
- #endif
--	/* ext4 extent cache stats */
--	unsigned long extent_cache_hits;
--	unsigned long extent_cache_misses;
- 
- 	/* for buddy allocator */
- 	struct ext4_group_info ***s_group_info;
---- a/fs/ext4/extents.c
-+++ b/fs/ext4/extents.c
-@@ -2052,10 +2052,6 @@ static int ext4_ext_check_cache(struct i
- 		ret = 1;
- 	}
- errout:
--	if (!ret)
--		sbi->extent_cache_misses++;
--	else
--		sbi->extent_cache_hits++;
- 	trace_ext4_ext_in_cache(inode, block, ret);
- 	spin_unlock(&EXT4_I(inode)->i_block_reservation_lock);
- 	return ret;
---- a/fs/ext4/super.c
-+++ b/fs/ext4/super.c
-@@ -2504,18 +2504,6 @@ static ssize_t lifetime_write_kbytes_sho
- 			  EXT4_SB(sb)->s_sectors_written_start) >> 1)));
- }
- 
--static ssize_t extent_cache_hits_show(struct ext4_attr *a,
--				      struct ext4_sb_info *sbi, char *buf)
--{
--	return snprintf(buf, PAGE_SIZE, "%lu\n", sbi->extent_cache_hits);
--}
--
--static ssize_t extent_cache_misses_show(struct ext4_attr *a,
--					struct ext4_sb_info *sbi, char *buf)
--{
--	return snprintf(buf, PAGE_SIZE, "%lu\n", sbi->extent_cache_misses);
--}
--
- static ssize_t inode_readahead_blks_store(struct ext4_attr *a,
- 					  struct ext4_sb_info *sbi,
- 					  const char *buf, size_t count)
-@@ -2573,8 +2561,6 @@ static struct ext4_attr ext4_attr_##name
- EXT4_RO_ATTR(delayed_allocation_blocks);
- EXT4_RO_ATTR(session_write_kbytes);
- EXT4_RO_ATTR(lifetime_write_kbytes);
--EXT4_RO_ATTR(extent_cache_hits);
--EXT4_RO_ATTR(extent_cache_misses);
- EXT4_ATTR_OFFSET(inode_readahead_blks, 0644, sbi_ui_show,
- 		 inode_readahead_blks_store, s_inode_readahead_blks);
- EXT4_RW_ATTR_SBI_UI(inode_goal, s_inode_goal);
-@@ -2590,8 +2576,6 @@ static struct attribute *ext4_attrs[] =
- 	ATTR_LIST(delayed_allocation_blocks),
- 	ATTR_LIST(session_write_kbytes),
- 	ATTR_LIST(lifetime_write_kbytes),
--	ATTR_LIST(extent_cache_hits),
--	ATTR_LIST(extent_cache_misses),
- 	ATTR_LIST(inode_readahead_blks),
- 	ATTR_LIST(inode_goal),
- 	ATTR_LIST(mb_stats),
-
-
+	Cyrill
