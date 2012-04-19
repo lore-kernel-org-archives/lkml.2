@@ -1,69 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755525Ab2DSOV4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Apr 2012 10:21:56 -0400
-Received: from moutng.kundenserver.de ([212.227.17.9]:53389 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754271Ab2DSOVy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Apr 2012 10:21:54 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Subject: Re: [PATCH v2 0/8] Second patchset for LPC32xx device tree conversion
-Date: Thu, 19 Apr 2012 14:21:29 +0000
-User-Agent: KMail/1.12.2 (Linux/3.3.0-rc1; KDE/4.3.2; x86_64; ; )
-Cc: Dan Carpenter <dan.carpenter@oracle.com>, Roland Stigge <stigge@antcom.de>,
-        devel@driverdev.osuosl.org, srinivas.bakki@nxp.com,
-        linux-usb@vger.kernel.org, gregkh@linuxfoundation.org,
-        thierry.reding@avionic-design.de, linux-kernel@vger.kernel.org,
-        kevin.wells@nxp.com, marek.vasut@gmail.com, arm@kernel.org,
-        linux-input@vger.kernel.org, axel.lin@gmail.com,
-        dmitry.torokhov@gmail.com, linux-arm-kernel@lists.infradead.org
-References: <1334682507-15055-1-git-send-email-stigge@antcom.de> <201204181100.40123.arnd@arndb.de> <20120418165650.GD3099@opensource.wolfsonmicro.com>
-In-Reply-To: <20120418165650.GD3099@opensource.wolfsonmicro.com>
+	id S1755596Ab2DSOWh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Apr 2012 10:22:37 -0400
+Received: from isrv.corpit.ru ([86.62.121.231]:37670 "EHLO isrv.corpit.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753758Ab2DSOWf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Apr 2012 10:22:35 -0400
+Message-ID: <4F901FA9.90107@msgid.tls.msk.ru>
+Date: Thu, 19 Apr 2012 18:22:33 +0400
+From: Michael Tokarev <mjt@tls.msk.ru>
+User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:10.0.3) Gecko/20120329 Icedove/10.0.3
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
+To: Kernel Mailing List <linux-kernel@vger.kernel.org>
+CC: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Subject: A very old issue: stalling serial ports
+X-Enigmail-Version: 1.4
+Content-Type: text/plain; charset=KOI8-R
 Content-Transfer-Encoding: 7bit
-Message-Id: <201204191421.29558.arnd@arndb.de>
-X-Provags-ID: V02:K0:7tD/GXDAiAMHNhQIUCQ2k8tcA0t7syqDvC+RHhD4yga
- 3PydItmgrbW9ezyeo/wdGN2LiGIwZVLJD3um6PsBPXwUa5R3hp
- 4F6x0q7VMg0/qlPrrr1AqmERL4xI5tICOcjb+4Iz01p5o4cmwJ
- QcTVhQBnalyL8NDkbJ0zSqOlTPqABAiZ5rcQozvRLxZ4D9HLyl
- +pqdPHbSs3PuhBaI+jnfi65yA651Vn9Kh+Aq/OFNitHtEJ9Qv0
- 8Ecyzp46fLLwrxUvIyxigUCKMKMN8//Lty3MajxBYQvNYRXhgm
- EKLAc5rjXIWQcxq/YkybQ5E5ExrTpT/xo+Sw6uaEhS7Z4u28rM
- YWS0ynaFSH20AqrrYgPg=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 18 April 2012, Mark Brown wrote:
-> On Wed, Apr 18, 2012 at 11:00:39AM +0000, Arnd Bergmann wrote:
-> 
-> > 1. develop on -rc
-> > 2. merge with latest -next, test and make sure it works there
-> > 3. submit for review against -rc
-> > 4. have patches included in -next once reviewed, but based on -rc
-> > 5. when merge window opens, have patches sent for upstream inclusion
-> 
-> Steps 3 and 4 should be to submit against whatever branch is appropriate
-> for the subsystem and driver - if people follow this process they're
-> going to get bounced back by a fair proportion of maintainers, -rc isn't
-> universally what people are looking for so people should be aware that
-> they need to pay attention here.  
-> 
-> Generally I'd say the development version is a safer bet than -rc for
-> most subsystems.
+This is something that exists since 2.4 kernel I think.
 
-Right. The description above was mostly done for the lpc32xx case,
-which is going to get merged through the arm-soc tree and that doesn't
-have a single development branch but instead has lots of them.
+When any regular serial port is written, but no device
+is connected to the port, the application which does
+write becomes stuck in kernel mode somewhere, and may
+be there for a very long time, unkillable.
 
-For subsystems that have just one branch, I agree that it makes sense
-to develop against that one. Also for arm-soc, it can make sense
-to base on one of the existing branches, but I prefer the default
-to be to base on the -rc release so I can mix and match incoming
-branches as needed.
+Just a trivial
 
-	Arnd
+ echo foo > /dev/ttyS0
+
+will sleep for a long time, unkillable.
+
+This happens on close of the device.
+
+Here's a typical call trace of this:
+
+[  591.497867] bash            S c1218130     0  1457   1453 0x00000000
+[  591.497965]  f6c725e0 00000082 c14d77c0 c1218130 00000246 c121a4ed 00000287 f65080f0
+[  591.498229]  f7005b40 c145cb40 c145cb40 ec834119 00000087 c145cb40 f65080f0 c145cb40
+[  591.498492]  f6feb008 00000000 c1218735 c1216302 00000000 f6feb000 00000000 f65080f0
+[  591.498755] Call Trace:
+[  591.498797]  [<c1218130>] ? serial8250_set_mctrl+0x60/0x70
+[  591.498844]  [<c121a4ed>] ? serial8250_do_set_termios+0x2ad/0x3c0
+[  591.498891]  [<c1218735>] ? serial8250_get_mctrl+0x5/0x40
+[  591.498937]  [<c1216302>] ? uart_startup+0xe2/0x190
+[  591.498983]  [<c105f850>] ? wake_up_bit+0x60/0x60
+[  591.499028]  [<c12edf8a>] ? tty_lock+0x1a/0x33
+[  591.499072]  [<c104ffe7>] ? lock_timer_base+0x27/0x50
+[  591.499119]  [<c12ec856>] ? schedule_timeout+0x126/0x250
+[  591.499164]  [<c10501a0>] ? del_timer+0xa0/0xa0
+[  591.499210]  [<c1216fd0>] ? uart_close+0x170/0x2f0
+[  591.499255]  [<c105f850>] ? wake_up_bit+0x60/0x60
+[  591.499300]  [<c11feba0>] ? tty_release+0xf0/0x4e0
+[  591.499345]  [<c12153d4>] ? uart_start+0x24/0x90
+[  591.499391]  [<c105fb07>] ? remove_wait_queue+0x17/0x50
+[  591.499436]  [<c1034bc2>] ? __wake_up+0x42/0x60
+[  591.499482]  [<c10febfd>] ? fput+0xad/0x220
+[  591.499526]  [<c10fb41d>] ? filp_close+0x4d/0x80
+
+Now, depending on the kernel and/or on actual sequence of events --
+I don't really know yet -- sometimes the app is stuck but is actually
+killable, sometimes it "unstucks" by its own after some time (a
+minute or two), sometimes it becomes unkillable forever.
+
+To me it does not look like a feature, but I might be wrong.
+
+Is it a rigth behavour?
+
+Thank you!
+
+/mjt
