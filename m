@@ -1,68 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755721Ab2DSPeo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Apr 2012 11:34:44 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:30629 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755673Ab2DSPen (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Apr 2012 11:34:43 -0400
-Date: Thu, 19 Apr 2012 11:34:35 -0400
-From: Jason Baron <jbaron@redhat.com>
-To: "Alexandra N. Kossovsky" <Alexandra.Kossovsky@oktetlabs.ru>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Yurij.Plotnikov@oktetlabs.ru,
-        davidel@xmailserver.org, nelhage@nelhage.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] epoll: clear the tfile_check_list on -ELOOP
-Message-ID: <20120419153428.GA1596@redhat.com>
-References: <201204171434.q3HEYqrq007242@int-mx09.intmail.prod.int.phx2.redhat.com>
- <20120417141315.703056a6.akpm@linux-foundation.org>
- <20120418045615.GU29100@oktetlabs.ru>
+	id S1755762Ab2DSPfK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Apr 2012 11:35:10 -0400
+Received: from 2481.rev.megiteam.pl ([91.227.36.129]:56945 "EHLO
+	vk1001.megiteam.com.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755262Ab2DSPfI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Apr 2012 11:35:08 -0400
+X-Greylist: delayed 328 seconds by postgrey-1.27 at vger.kernel.org; Thu, 19 Apr 2012 11:35:08 EDT
+Message-ID: <4F902F60.4080709@localdomain.pl>
+Date: Thu, 19 Apr 2012 17:29:36 +0200
+From: Grzegorz Nosek <root@localdomain.pl>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:9.0) Gecko/20111220 Thunderbird/9.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120418045615.GU29100@oktetlabs.ru>
-User-Agent: Mutt/1.5.20 (2009-12-10)
+To: stern@rowland.harvard.edu, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+CC: support@supermicro.com
+Subject: EHCI software retries break Supermicro IPKVM
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 18, 2012 at 08:56:15AM +0400, Alexandra N. Kossovsky wrote:
-> On Tue, Apr 17, 2012 at 02:13:15PM -0700, Andrew Morton wrote:
-> > On Tue, 17 Apr 2012 10:34:52 -0400
-> > Jason Baron <jbaron@redhat.com> wrote:
-> > 
-> > > An epoll_ctl(,EPOLL_CTL_ADD,,) operation can return '-ELOOP' to prevent
-> > > circular epoll dependencies from being created. However, in that case
-> > > we do not properly clear the 'tfile_check_list'. Thus, add a call to
-> > > clear_tfile_check_list() for the -ELOOP case.
-> > 
-> > So here I am wondering what effect this bug has upon our users, so I
-> > can decide which kernel versions should be fixed.  Jason didn't tell me
-> > so I went to read the description of clear_tfile_check_list().  After a
-> > brief chuckle, I stopped.
-> > 
-> > I then found Yurij's original report, so I know what's going on.  But I
-> > still can't write your changelog because I don't know whether this is a
-> > regression and if it is, which patch caused the regression.
-> 
-> It is a regression, somewhere between 3.2.6 and 3.2.9.
-> Yurij and me blame
-> commit 203aa5260edca2ab1872ad8b08386d874f7132f3
-> Author: Jason Baron <jbaron@redhat.com>
-> Date:   Thu Jan 12 17:17:43 2012 -0800
-> but we have not tested it.
-> 
+Hi,
 
-Right, I introduced this with the upstream commit:
+(Supermicro support: cc'd as you might be interested)
 
-commit 28d82dc1c4edbc352129f97f4ca22624d1fe61de
-Author: Jason Baron <jbaron@redhat.com>
-Date:   Thu Jan 12 17:17:43 2012 -0800
+Commit a2c2706e1043c17139c2dafd171c4a5cf008ef7e introduced software retries for transient USB errors. Unfortunately, it turns out that this change breaks the Supermicro AOC SIMSO IPKVM board plugged into a SYS-6015B-3R server, X7DBR-3 board. It renders unusable both the keyboard and media redirection as soon as the kernel boots (display works fine). An excerpt from dmesg:
 
-    epoll: limit paths
+[   76.587521] ehci_hcd 0000:00:1d.7: detected XactErr len 0/8 retry 1
+[   76.587646] ehci_hcd 0000:00:1d.7: detected XactErr len 0/8 retry 2
+[   76.587772] ehci_hcd 0000:00:1d.7: detected XactErr len 0/8 retry 3
+[   76.587896] ehci_hcd 0000:00:1d.7: detected XactErr len 0/8 retry 4
+[   76.588020] ehci_hcd 0000:00:1d.7: detected XactErr len 0/8 retry 5
+[   76.588144] ehci_hcd 0000:00:1d.7: detected XactErr len 0/8 retry 6
+[   76.588271] ehci_hcd 0000:00:1d.7: detected XactErr len 0/8 retry 7
+[   76.588395] ehci_hcd 0000:00:1d.7: detected XactErr len 0/8 retry 8
+[   76.588518] ehci_hcd 0000:00:1d.7: detected XactErr len 0/8 retry 9
+[   76.588644] ehci_hcd 0000:00:1d.7: detected XactErr len 0/8 retry 10
+[   76.588770] ehci_hcd 0000:00:1d.7: detected XactErr len 0/8 retry 11
+[   76.588893] ehci_hcd 0000:00:1d.7: detected XactErr len 0/8 retry 12
+[   76.589017] ehci_hcd 0000:00:1d.7: detected XactErr len 0/8 retry 13
+[   76.589142] ehci_hcd 0000:00:1d.7: detected XactErr len 0/8 retry 14
+[   76.589268] ehci_hcd 0000:00:1d.7: detected XactErr len 0/8 retry 15
+[   76.589391] ehci_hcd 0000:00:1d.7: detected XactErr len 0/8 retry 16
+[   76.589516] ehci_hcd 0000:00:1d.7: detected XactErr len 0/8 retry 17
+[   76.589641] ehci_hcd 0000:00:1d.7: detected XactErr len 0/8 retry 18
+[   76.589767] ehci_hcd 0000:00:1d.7: detected XactErr len 0/8 retry 19
+[   76.589891] ehci_hcd 0000:00:1d.7: detected XactErr len 0/8 retry 20
+[   76.590015] ehci_hcd 0000:00:1d.7: detected XactErr len 0/8 retry 21
+[   76.590140] ehci_hcd 0000:00:1d.7: detected XactErr len 0/8 retry 22
+[   76.590266] ehci_hcd 0000:00:1d.7: detected XactErr len 0/8 retry 23
+[   76.590390] ehci_hcd 0000:00:1d.7: detected XactErr len 0/8 retry 24
+[   76.590514] ehci_hcd 0000:00:1d.7: detected XactErr len 0/8 retry 25
+[   76.590639] ehci_hcd 0000:00:1d.7: detected XactErr len 0/8 retry 26
+[   76.590765] ehci_hcd 0000:00:1d.7: detected XactErr len 0/8 retry 27
+[   76.590889] ehci_hcd 0000:00:1d.7: detected XactErr len 0/8 retry 28
+[   76.591013] ehci_hcd 0000:00:1d.7: detected XactErr len 0/8 retry 29
+[   76.591138] ehci_hcd 0000:00:1d.7: detected XactErr len 0/8 retry 30
+[   76.591264] ehci_hcd 0000:00:1d.7: detected XactErr len 0/8 retry 31
+[   76.591388] ehci_hcd 0000:00:1d.7: devpath 7 ep0out 3strikes
+[   76.591402] usb 1-7: can't set config #1, error -71
+[   76.596519] drivers/usb/core/inode.c: creating file '007'
+[   76.596542] hub 1-0:1.0: state 7 ports 8 chg 0000 evt fe80
 
-So yes, this is a newly introduced regression.
+After disarming the retry logic with the patch below, the KVM works fine again. Now, this is certainly a crude hack but apparently some better checks are needed to determine whether to retry the transaction.
 
-Thanks,
+Best regards,
+ Grzegorz Nosek
 
--Jason
+---
+ drivers/usb/host/ehci.h |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/drivers/usb/host/ehci.h b/drivers/usb/host/ehci.h
+index 0a5fda7..aa3a09e 100644
+--- a/drivers/usb/host/ehci.h
++++ b/drivers/usb/host/ehci.h
+@@ -373,7 +373,7 @@ struct ehci_qh {
+ #define	QH_STATE_COMPLETING	5		/* don't touch token.HALT */
+ 
+ 	u8			xacterrs;	/* XactErr retry counter */
+-#define	QH_XACTERR_MAX		32		/* XactErr retry limit */
++#define	QH_XACTERR_MAX		1		/* XactErr retry limit */
+ 
+ 	/* periodic schedule info */
+ 	u8			usecs;		/* intr bandwidth */
+-- 
+1.7.2.3
