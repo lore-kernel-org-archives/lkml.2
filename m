@@ -1,160 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755709Ab2DSQjH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Apr 2012 12:39:07 -0400
+	id S932076Ab2DSQjS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Apr 2012 12:39:18 -0400
 Received: from mail-pz0-f52.google.com ([209.85.210.52]:40744 "EHLO
 	mail-pz0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752335Ab2DSQjF (ORCPT
+	with ESMTP id S1755884Ab2DSQjL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Apr 2012 12:39:05 -0400
+	Thu, 19 Apr 2012 12:39:11 -0400
 From: "Ying-Chun Liu (PaulLiu)" <paul.liu@linaro.org>
 To: linux-arm-kernel@lists.infradead.org
 Cc: linux-kernel@vger.kernel.org, linaro-dev@lists.linaro.org,
         patches@linaro.org, "Ying-Chun Liu (PaulLiu)" <paul.liu@linaro.org>,
-        Robin Gong <B38343@freescale.com>,
-        Samuel Ortiz <sameo@linux.intel.com>,
+        Robin Gong <B38343@freescale.com>, Liam Girdwood <lrg@ti.com>,
         Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Shawn Guo <shawn.guo@linaro.org>
-Subject: [PATCH 1/2] mfd: Add Freescale's PMIC MC34708 support
-Date: Fri, 20 Apr 2012 00:38:40 +0800
-Message-Id: <1334853521-23792-1-git-send-email-paul.liu@linaro.org>
+        Samuel Ortiz <sameo@linux.intel.com>, Shawn Guo <shawn.guo@linaro.org>
+Subject: [PATCH 2/2] regulator: Add Freescale's MC34708 regulators
+Date: Fri, 20 Apr 2012 00:38:41 +0800
+Message-Id: <1334853521-23792-2-git-send-email-paul.liu@linaro.org>
 X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1334853521-23792-1-git-send-email-paul.liu@linaro.org>
+References: <1334853521-23792-1-git-send-email-paul.liu@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "Ying-Chun Liu (PaulLiu)" <paul.liu@linaro.org>
 
-Freescale MC34708 is a PMIC which supports the following features:
- * 6 multi-mode buck regulators
- * Boost regulator for USB OTG.
- * 8 regulators for thermal budget optimization
- * 10-bit ADC
- * Real time clock
+This patch adds the support of MC34708 regulators.
 
 Signed-off-by: Robin Gong <B38343@freescale.com>
 Signed-off-by: Ying-Chun Liu (PaulLiu) <paul.liu@linaro.org>
-Cc: Samuel Ortiz <sameo@linux.intel.com>
+Cc: Liam Girdwood <lrg@ti.com>
 Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: Samuel Ortiz <sameo@linux.intel.com>
 Cc: Shawn Guo <shawn.guo@linaro.org>
 ---
- Documentation/devicetree/bindings/mfd/mc34708.txt |   61 ++
- drivers/mfd/Kconfig                               |   11 +
- drivers/mfd/Makefile                              |    1 +
- drivers/mfd/mc34708-core.c                        |  634 +++++++++++++++++++++
- include/linux/mfd/mc34708.h                       |  134 +++++
- 5 files changed, 841 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/mfd/mc34708.txt
- create mode 100644 drivers/mfd/mc34708-core.c
- create mode 100644 include/linux/mfd/mc34708.h
+ drivers/regulator/Kconfig             |    7 +
+ drivers/regulator/Makefile            |    1 +
+ drivers/regulator/mc34708-regulator.c |  729 +++++++++++++++++++++++++++++++++
+ drivers/regulator/mc34708.h           |   79 ++++
+ 4 files changed, 816 insertions(+)
+ create mode 100644 drivers/regulator/mc34708-regulator.c
+ create mode 100644 drivers/regulator/mc34708.h
 
-diff --git a/Documentation/devicetree/bindings/mfd/mc34708.txt b/Documentation/devicetree/bindings/mfd/mc34708.txt
-new file mode 100644
-index 0000000..2bb5c9e
---- /dev/null
-+++ b/Documentation/devicetree/bindings/mfd/mc34708.txt
-@@ -0,0 +1,61 @@
-+* Freescale MC34708 Power Management Integrated Circuit (PMIC)
-+
-+Required properties:
-+- compatible : Must be "fsl,mc34708"
-+
-+Optional properties:
-+- fsl,mc34708-uses-adc   : Indicate the ADC is being used
-+- fsl,mc34708-uses-rtc   : Indicate the RTC is being used
-+- fsl,mc34708-uses-ts    : Indicate the touchscreen controller is being used
-+
-+Sub-nodes:
-+- regulators : Contain the regulator nodes.  The MC34708 regulators are
-+  bound using their names as listed below for enabling.
-+
-+    mc34708__sw1a    : regulator SW1A
-+    mc34708__sw1b    : regulator SW1B
-+    mc34708__sw2     : regulator SW2
-+    mc34708__sw3     : regulator SW3
-+    mc34708__sw4A    : regulator SW4A
-+    mc34708__sw4b    : regulator SW4B
-+    mc34708__swbst   : regulator SWBST
-+    mc34708__vpll    : regulator VPLL
-+    mc34708__vrefddr : regulator VREFDDR
-+    mc34708__vusb    : regulator VUSB
-+    mc34708__vusb2   : regulator VUSB2
-+    mc34708__vdac    : regulator VDAC
-+    mc34708__vgen1   : regulator VGEN1
-+    mc34708__vgen2   : regulator VGEN2
-+
-+  The bindings details of individual regulator device can be found in:
-+  Documentation/devicetree/bindings/regulator/regulator.txt
-+
-+Examples:
-+
-+i2c@63fc8000 {
-+	#address-cells = <1>;
-+	#size-cells = <0>;
-+	compatible = "fsl,imx53-i2c", "fsl,imx1-i2c";
-+	reg = <0x63fc8000 0x4000>;
-+	interrupts = <62>;
-+	status = "okay";
-+
-+	pmic: mc34708@8 {
-+		compatible = "fsl,mc34708";
-+		reg = <0x08>;
-+
-+		regulators {
-+			mc34708__sw1a {
-+				regulator-min-microvolt = <650000>;
-+				regulator-max-microvolt = <1437500>;
-+				regulator-boot-on;
-+				regulator-always-on;
-+			};
-+
-+			mc34708__vusb {
-+				regulator-boot-on;
-+				regulator-always-on;
-+			};
-+		};
-+	};
-+};
-diff --git a/drivers/mfd/Kconfig b/drivers/mfd/Kconfig
-index 29f463c..17b6cc5 100644
---- a/drivers/mfd/Kconfig
-+++ b/drivers/mfd/Kconfig
-@@ -600,6 +600,17 @@ config MFD_MC13XXX
- 	  additional drivers must be enabled in order to use the
- 	  functionality of the device.
+diff --git a/drivers/regulator/Kconfig b/drivers/regulator/Kconfig
+index 36db5a4..ca63e7f 100644
+--- a/drivers/regulator/Kconfig
++++ b/drivers/regulator/Kconfig
+@@ -129,6 +129,13 @@ config REGULATOR_MC13892
+ 	  Say y here to support the regulators found on the Freescale MC13892
+ 	  PMIC.
  
-+config MFD_MC34708
-+	tristate "Support for Freescale's PMIC MC34708"
-+	depends on I2C
-+	depends on OF
-+	select MFD_CORE
++config REGULATOR_MC34708
++	tristate "Freescale MC34708 regulator driver"
++	depends on MFD_MC34708
 +	help
-+	  Support for the Freescale's PMIC MC34708
-+	  This driver provides common support for accessing the device,
-+	  additional drivers must be enabled in order to use the
-+	  functionality of the device.
++	  Say y here to support the regulators found on the Freescale MC34708
++	  PMIC.
 +
- config ABX500_CORE
- 	bool "ST-Ericsson ABX500 Mixed Signal Circuit register functions"
- 	default y if ARCH_U300 || ARCH_U8500
-diff --git a/drivers/mfd/Makefile b/drivers/mfd/Makefile
-index 05fa538..b98d943 100644
---- a/drivers/mfd/Makefile
-+++ b/drivers/mfd/Makefile
-@@ -54,6 +54,7 @@ obj-$(CONFIG_TWL6030_PWM)	+= twl6030-pwm.o
- obj-$(CONFIG_TWL6040_CORE)	+= twl6040-core.o twl6040-irq.o
- 
- obj-$(CONFIG_MFD_MC13XXX)	+= mc13xxx-core.o
-+obj-$(CONFIG_MFD_MC34708)       += mc34708-core.o
- 
- obj-$(CONFIG_MFD_CORE)		+= mfd-core.o
- 
-diff --git a/drivers/mfd/mc34708-core.c b/drivers/mfd/mc34708-core.c
+ config REGULATOR_ISL6271A
+ 	tristate "Intersil ISL6271A Power regulator"
+ 	depends on I2C
+diff --git a/drivers/regulator/Makefile b/drivers/regulator/Makefile
+index 94b5274..435fb6b 100644
+--- a/drivers/regulator/Makefile
++++ b/drivers/regulator/Makefile
+@@ -33,6 +33,7 @@ obj-$(CONFIG_REGULATOR_MAX8998) += max8998.o
+ obj-$(CONFIG_REGULATOR_MC13783) += mc13783-regulator.o
+ obj-$(CONFIG_REGULATOR_MC13892) += mc13892-regulator.o
+ obj-$(CONFIG_REGULATOR_MC13XXX_CORE) +=  mc13xxx-regulator-core.o
++obj-$(CONFIG_REGULATOR_MC34708) += mc34708-regulator.o
+ obj-$(CONFIG_REGULATOR_PCAP) += pcap-regulator.o
+ obj-$(CONFIG_REGULATOR_PCF50633) += pcf50633-regulator.o
+ obj-$(CONFIG_REGULATOR_S5M8767) += s5m8767.o
+diff --git a/drivers/regulator/mc34708-regulator.c b/drivers/regulator/mc34708-regulator.c
 new file mode 100644
-index 0000000..54f469b
+index 0000000..d306e6e
 --- /dev/null
-+++ b/drivers/mfd/mc34708-core.c
-@@ -0,0 +1,634 @@
++++ b/drivers/regulator/mc34708-regulator.c
+@@ -0,0 +1,729 @@
 +/*
 + * Copyright (C) 2011 Freescale Semiconductor, Inc. All Rights Reserved.
 + *
@@ -168,767 +92,807 @@ index 0000000..54f469b
 + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 + * GNU General Public License for more details.
 + *
-+ * You should have received a copy of the GNU General Public License along
-+ * with this program; if not, write to the Free Software Foundation, Inc.,
-+ * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307 USA
 + */
-+
-+#include <linux/slab.h>
 +#include <linux/module.h>
-+#include <linux/platform_device.h>
-+#include <linux/mutex.h>
-+#include <linux/interrupt.h>
-+#include <linux/i2c.h>
-+#include <linux/mfd/core.h>
++#include <linux/moduleparam.h>
 +#include <linux/mfd/mc34708.h>
-+#include <linux/delay.h>
++#include <linux/regulator/machine.h>
++#include <linux/regulator/driver.h>
++#include <linux/platform_device.h>
++#include <linux/kernel.h>
++#include <linux/slab.h>
++#include <linux/init.h>
++#include <linux/err.h>
++#include <linux/regulator/of_regulator.h>
 +#include <linux/of.h>
-+#include <linux/of_device.h>
++#include "mc34708.h"
 +
-+struct mc34708 {
-+	struct i2c_client *i2c_client;
-+	struct mutex lock;
-+	int irq;
-+
-+	irq_handler_t irqhandler[MC34708_NUM_IRQ];
-+	void *irqdata[MC34708_NUM_IRQ];
++static const int mc34708_sw1A[] = {
++	650000, 662500, 675000, 687500, 700000, 712500,
++	725000, 737500, 750000, 762500, 775000, 787500,
++	800000, 812500, 825000, 837500, 850000, 862500,
++	875000, 887500, 900000, 912500, 925000, 937500,
++	950000, 962500, 975000, 987500, 1000000, 1012500,
++	1025000, 1037500, 1050000, 1062500, 1075000, 1087500,
++	1100000, 1112500, 1125000, 1137500, 1150000, 1162500,
++	1175000, 1187500, 1200000, 1212500, 1225000, 1237500,
++	1250000, 1262500, 1275000, 1287500, 1300000, 1312500,
++	1325000, 1337500, 1350000, 1362500, 1375000, 1387500,
++	1400000, 1412500, 1425000, 1437500,
 +};
 +
-+/*!
-+ * This is the enumeration of versions of PMIC
-+ */
-+enum mc34708_id {
-+	MC_PMIC_ID_MC34708,
-+	MC_PMIC_ID_INVALID,
++
++static const int mc34708_sw2[] = {
++	650000, 662500, 675000, 687500, 700000, 712500,
++	725000, 737500, 750000, 762500, 775000, 787500,
++	800000, 812500, 825000, 837500, 850000, 862500,
++	875000, 887500, 900000, 912500, 925000, 937500,
++	950000, 962500, 975000, 987500, 1000000, 1012500,
++	1025000, 1037500, 1050000, 1062500, 1075000, 1087500,
++	1100000, 1112500, 1125000, 1137500, 1150000, 1162500,
++	1175000, 1187500, 1200000, 1212500, 1225000, 1237500,
++	1250000, 1262500, 1275000, 1287500, 1300000, 1312500,
++	1325000, 1337500, 1350000, 1362500, 1375000, 1387500,
++	1400000, 1412500, 1425000, 1437500,
 +};
 +
-+struct mc34708_version_t {
-+	/*!
-+	 * PMIC version identifier.
-+	 */
-+	enum mc34708_id id;
-+	/*!
-+	 * Revision of the PMIC.
-+	 */
-+	int revision;
++static const int mc34708_sw3[] = {
++	650000, 675000, 700000, 725000, 750000, 775000,
++	800000, 825000, 850000, 875000, 900000, 925000,
++	950000, 975000, 1000000, 1025000, 1050000, 1075000,
++	1100000, 1125000, 1150000, 1175000, 1200000, 1225000,
++	1250000, 1275000, 1300000, 1325000, 1350000, 1375000,
++	1400000, 1425000,
 +};
 +
-+#define PMIC_I2C_RETRY_TIMES		10
-+
-+static const struct i2c_device_id mc34708_device_id[] = {
-+	{"mc34708", MC_PMIC_ID_MC34708},
-+	{},
++static const int mc34708_sw4A[] = {
++	1200000, 1225000, 1250000, 1275000, 1300000, 1325000,
++	1350000, 1375000, 1400000, 1425000, 1450000, 1475000,
++	1500000, 1525000, 1550000, 1575000, 1600000, 1625000,
++	1650000, 1675000, 1700000, 1725000, 1750000, 1775000,
++	1800000, 1825000, 1850000, 2500000, 3150000,
 +};
 +
-+static const char * const mc34708_chipname[] = {
-+	[MC_PMIC_ID_MC34708] = "mc34708",
++
++static const int mc34708_sw5[] = {
++	1200000, 1225000, 1250000, 1275000, 1300000, 1325000,
++	1350000, 1375000, 1400000, 1425000, 1450000, 1475000,
++	1500000, 1525000, 1550000, 1575000, 1600000, 1625000,
++	1650000, 1675000, 1700000, 1725000, 1750000, 1775000,
++	1800000, 1825000, 1850000,
 +};
 +
-+void mc34708_lock(struct mc34708 *mc_pmic)
++static const int mc34708_swbst[] = {
++	5000000, 5050000, 5100000, 5150000,
++};
++
++static const int mc34708_vpll[] = {
++	1200000, 1250000, 1500000, 1800000,
++};
++
++static const int mc34708_vrefddr[] = {
++	600000,
++};
++
++static const int mc34708_vusb[] = {
++	3300000,
++};
++
++static const int mc34708_vusb2[] = {
++	2500000, 2600000, 2750000, 3000000,
++};
++
++static const int mc34708_vdac[] = {
++	2500000, 2600000, 2750000, 2775000,
++};
++
++static const int mc34708_vgen1[] = {
++	1200000, 1250000, 1300000, 1350000,
++	1400000, 1450000, 1500000, 1550000,
++};
++
++static const int mc34708_vgen2[] = {
++	2500000, 2700000, 2800000, 2900000,
++	3000000, 3100000, 3150000, 3300000,
++};
++
++static struct regulator_ops mc34708_regulator_ops;
++static struct regulator_ops mc34708_fixed_regulator_ops;
++/* sw regulators need special care due to the "hi bit" */
++static struct regulator_ops mc34708_sw_regulator_ops;
++static struct regulator_ops mc34708_sw4_regulator_ops;
++
++#define MC34708_FIXED_VOL_DEFINE(name, reg, voltages)		\
++	MC34708_FIXED_DEFINE(MC34708_, name, reg, voltages,	\
++			mc34708_fixed_regulator_ops)
++
++#define MC34708_SW_DEFINE(name, reg, vsel_reg, voltages)	\
++	MC34708_DEFINE(MC34708_, name, reg, vsel_reg, voltages, \
++			mc34708_sw_regulator_ops)
++
++#define MC34708_DEFINE_REGU(name, reg, vsel_reg, voltages)	\
++	MC34708_DEFINE(MC34708_, name, reg, vsel_reg, voltages, \
++			mc34708_regulator_ops)
++
++#define MC34708_SW4_DEFINE(name, reg, vsel_reg, voltages)	\
++	MC34708_DEFINE(MC34708_, name, reg, vsel_reg, voltages, \
++			mc34708_sw4_regulator_ops)
++
++#define MC34708_REVISION	7
++
++#define MC34708_SW1ABVOL	24
++#define MC34708_SW1ABVOL_SW1AVSEL	0
++#define MC34708_SW1ABVOL_SW1AVSEL_M	(0x3f<<0)
++#define MC34708_SW1ABVOL_SW1AEN	0
++#define MC34708_SW1ABVOL_SW1BVSEL	0
++#define MC34708_SW1ABVOL_SW1BVSEL_M	(0x3f<<0)
++#define MC34708_SW1ABVOL_SW1BEN	0
++
++#define MC34708_SW23VOL	25
++#define MC34708_SW23VOL_SW2VSEL	0
++#define MC34708_SW23VOL_SW2VSEL_M	(0x3f<<0)
++#define MC34708_SW23VOL_SW2EN	0
++#define MC34708_SW23VOL_SW3VSEL	12
++#define MC34708_SW23VOL_SW3VSEL_M	(0x3f<<12)
++#define MC34708_SW23VOL_SW3EN	0
++
++#define MC34708_SW4ABVOL	26
++#define MC34708_SW4ABVOL_SW4AVSEL	0
++#define MC34708_SW4ABVOL_SW4AVSEL_M	(0x1f<<0)
++#define MC34708_SW4ABVOL_SW4AHI	10
++#define MC34708_SW4ABVOL_SW4AHI_M	(0x3<<10)
++#define MC34708_SW4ABVOL_SW4AEN	0
++#define	MC34708_SW4ABVOL_SW4BVSEL	12
++#define MC34708_SW4ABVOL_SW4BVSEL_M	(0x1f<<12)
++#define MC34708_SW4ABVOL_SW4BHI	22
++#define MC34708_SW4ABVOL_SW4BHI_M	(0x3<<22)
++#define MC34708_SW4ABVOL_SW4BEN	0
++
++#define MC34708_SW5VOL	27
++#define MC34708_SW5VOL_SW5VSEL	0
++#define MC34708_SW5VOL_SW5VSEL_M	(0x1f<<0)
++#define MC34708_SW5VOL_SW5EN	0
++
++#define MC34708_SW12OP	28
++#define MC34708_SW12OP_SW1AMODE_M	(0xf<<0)
++#define MC34708_SW12OP_SW1AMODE_VALUE	(0xc<<0) /*Normal:APS,Standby:PFM */
++#define MC34708_SW12OP_SW2MODE_M	(0xf<<14)
++#define MC34708_SW12OP_SW2MODE_VALUE	(0xc<<14) /*Normal:APS,Standby:PFM */
++
++#define MC34708_SW345OP	29
++#define MC34708_SW345OP_SW3MODE_M	(0xf<<0)
++#define MC34708_SW345OP_SW3MODE_VALUE	(0x0<<0) /*Normal:OFF,Standby:OFF */
++#define MC34708_SW345OP_SW4AMODE_M	(0xf<<6)
++#define MC34708_SW345OP_SW4AMODE_VALUE	(0xc<<6) /*Normal:APS,Standby:PFM */
++#define MC34708_SW345OP_SW4BMODE_M	(0xf<<12)
++#define MC34708_SW345OP_SW4BMODE_VALUE	(0xc<<12) /*Normal:APS,Standby:PFM */
++#define MC34708_SW345OP_SW5MODE_M	(0xf<<18)
++#define MC34708_SW345OP_SW5MODE_VALUE	(0xc<<18) /*Normal:APS,Standby:PFM */
++
++#define MC34708_REGULATORSET0	30
++#define MC34708_REGULATORSET0_VGEN1VSEL	0
++#define MC34708_REGULATORSET0_VGEN1VSEL_M	(0x7<<0)
++#define MC34708_REGULATORSET0_VDACVSEL	4
++#define MC34708_REGULATORSET0_VDACVSEL_M	(0x3<<4)
++#define MC34708_REGULATORSET0_VGEN2VSEL	6
++#define MC34708_REGULATORSET0_VGEN2VSEL_M	(0x7<<6)
++#define MC34708_REGULATORSET0_VPLLVSEL	9
++#define MC34708_REGULATORSET0_VPLLVSEL_M	(0x3<<9)
++#define MC34708_REGULATORSET0_VUSB2VSEL	11
++#define MC34708_REGULATORSET0_VUSB2VSEL_M	(0x3<<9)
++
++#define MC34708_SWBSTCONTROL	31
++#define MC34708_SWBSTCONTROL_SWBSTVSEL	0
++#define MC34708_SWBSTCONTROL_SWBSTVSEL_M	(0x3<<0)
++#define MC34708_SWBSTCONTROL_SWBSTMODE_M	(0x3<<5)
++#define MC34708_SWBSTCONTROL_SWBSTMODE_VALUE	(0x2<<5)	/*auto mode */
++#define MC34708_SWBSTCONTROL_SWBSTEN	0
++
++#define MC34708_REGULATORMODE0	32
++#define MC34708_REGULATORMODE0_VGEN1EN	0
++#define MC34708_REGULATORMODE0_VUSBEN	3
++#define MC34708_REGULATORMODE0_VDACEN	4
++#define MC34708_REGULATORMODE0_VREFDDREN	10
++#define MC34708_REGULATORMODE0_VGEN2EN	12
++#define MC34708_REGULATORMODE0_VPLLEN	15
++#define MC34708_REGULATORMODE0_VUSB2EN	18
++
++#define MC34708_USBCONTROL	39
++#define MC34708_USBCONTROL_SWHOLD_M	(0x1<<12)
++#define MC34708_USBCONTROL_SWHOLD_NORM	(0x0<<12)
++
++static struct mc34708_regulator mc34708_regulators[] = {
++	MC34708_SW_DEFINE(SW1A, SW1ABVOL, SW1ABVOL, mc34708_sw1A),
++	MC34708_SW_DEFINE(SW1B, SW1ABVOL, SW1ABVOL, mc34708_sw1A),
++	MC34708_SW_DEFINE(SW2, SW23VOL, SW23VOL, mc34708_sw2),
++	MC34708_SW_DEFINE(SW3, SW23VOL, SW23VOL, mc34708_sw3),
++	MC34708_SW4_DEFINE(SW4A, SW4ABVOL, SW4ABVOL, mc34708_sw4A),
++	MC34708_SW4_DEFINE(SW4B, SW4ABVOL, SW4ABVOL, mc34708_sw4A),
++	MC34708_SW_DEFINE(SW5, SW5VOL, SW5VOL, mc34708_sw5),
++	MC34708_SW_DEFINE(SWBST, SWBSTCONTROL, SWBSTCONTROL, mc34708_swbst),
++	MC34708_DEFINE_REGU(VPLL, REGULATORMODE0, REGULATORSET0, mc34708_vpll),
++	MC34708_FIXED_VOL_DEFINE(VREFDDR, REGULATORMODE0, mc34708_vrefddr),
++	MC34708_FIXED_VOL_DEFINE(VUSB, REGULATORMODE0, mc34708_vusb),
++	MC34708_DEFINE_REGU(VUSB2, REGULATORMODE0, REGULATORSET0,
++			    mc34708_vusb2),
++	MC34708_DEFINE_REGU(VDAC, REGULATORMODE0, REGULATORSET0, mc34708_vdac),
++	MC34708_DEFINE_REGU(VGEN1, REGULATORMODE0, REGULATORSET0,
++			    mc34708_vgen1),
++	MC34708_DEFINE_REGU(VGEN2, REGULATORMODE0, REGULATORSET0,
++			    mc34708_vgen2),
++};
++
++static int mc34708_regulator_enable(struct regulator_dev *rdev)
 +{
-+	if (!mutex_trylock(&mc_pmic->lock)) {
-+		dev_dbg(&mc_pmic->i2c_client->dev, "wait for %s from %pf\n",
-+			__func__, __builtin_return_address(0));
-+
-+		mutex_lock(&mc_pmic->lock);
-+	}
-+	dev_dbg(&mc_pmic->i2c_client->dev, "%s from %pf\n",
-+		__func__, __builtin_return_address(0));
-+}
-+EXPORT_SYMBOL(mc34708_lock);
-+
-+void mc34708_unlock(struct mc34708 *mc_pmic)
-+{
-+	dev_dbg(&mc_pmic->i2c_client->dev, "%s from %pf\n",
-+		__func__, __builtin_return_address(0));
-+	mutex_unlock(&mc_pmic->lock);
-+}
-+EXPORT_SYMBOL(mc34708_unlock);
-+
-+static int mc34708_i2c_24bit_read(struct i2c_client *client,
-+				  unsigned int offset,
-+				  unsigned int *value)
-+{
-+	unsigned char buf[3];
++	struct mc34708_regulator_priv *priv = rdev_get_drvdata(rdev);
++	struct mc34708_regulator *mc34708_regulators = priv->mc34708_regulators;
++	int id = rdev_get_id(rdev);
 +	int ret;
-+	int i;
 +
-+	memset(buf, 0, 3);
-+	for (i = 0; i < PMIC_I2C_RETRY_TIMES; i++) {
-+		ret = i2c_smbus_read_i2c_block_data(client, offset, 3, buf);
-+		if (ret == 3)
-+			break;
-+		usleep_range(1000, 1500);
-+	}
++	dev_dbg(rdev_get_dev(rdev), "%s id: %d\n", __func__, id);
 +
-+	if (ret == 3) {
-+		*value = buf[0] << 16 | buf[1] << 8 | buf[2];
-+		return ret;
-+	} else {
-+		dev_err(&client->dev, "24bit read error, ret = %d\n", ret);
-+		return -1;	/* return -1 on failure */
-+	}
-+}
-+
-+int mc34708_reg_read(struct mc34708 *mc_pmic, unsigned int offset,
-+		     u32 *val)
-+{
-+	BUG_ON(!mutex_is_locked(&mc_pmic->lock));
-+
-+	if (offset > MC34708_NUMREGS)
-+		return -EINVAL;
-+
-+	if (mc34708_i2c_24bit_read(mc_pmic->i2c_client, offset, val) == -1)
-+		return -1;
-+	*val &= 0xffffff;
-+
-+	dev_vdbg(&mc_pmic->i2c_client->dev, "mc_pmic read [%02d] -> 0x%06x\n",
-+		 offset, *val);
-+
-+	return 0;
-+}
-+EXPORT_SYMBOL(mc34708_reg_read);
-+
-+static int mc34708_i2c_24bit_write(struct i2c_client *client,
-+				   unsigned int offset, unsigned int reg_val)
-+{
-+	char buf[3];
-+	int ret;
-+	int i;
-+
-+	buf[0] = (reg_val >> 16) & 0xff;
-+	buf[1] = (reg_val >> 8) & 0xff;
-+	buf[2] = (reg_val) & 0xff;
-+
-+	for (i = 0; i < PMIC_I2C_RETRY_TIMES; i++) {
-+		ret = i2c_smbus_write_i2c_block_data(client, offset, 3, buf);
-+		if (ret == 0)
-+			break;
-+		usleep_range(1000, 1500);
-+	}
-+	if (i == PMIC_I2C_RETRY_TIMES)
-+		dev_err(&client->dev, "24bit write error, ret = %d\n", ret);
++	mc34708_lock(priv->mc34708);
++	ret = mc34708_reg_rmw(priv->mc34708, mc34708_regulators[id].reg,
++			      mc34708_regulators[id].enable_bit,
++			      mc34708_regulators[id].enable_bit);
++	mc34708_unlock(priv->mc34708);
 +
 +	return ret;
 +}
 +
-+int mc34708_reg_write(struct mc34708 *mc_pmic, unsigned int offset, u32 val)
++static int mc34708_regulator_disable(struct regulator_dev *rdev)
 +{
-+	BUG_ON(!mutex_is_locked(&mc_pmic->lock));
-+
-+	if (offset > MC34708_NUMREGS)
-+		return -EINVAL;
-+
-+	if (mc34708_i2c_24bit_write(mc_pmic->i2c_client, offset, val))
-+		return -1;
-+	val &= 0xffffff;
-+
-+	dev_vdbg(&mc_pmic->i2c_client->dev, "mc_pmic write[%02d] -> 0x%06x\n",
-+		 offset, val);
-+
-+	return 0;
-+}
-+EXPORT_SYMBOL(mc34708_reg_write);
-+
-+int mc34708_reg_rmw(struct mc34708 *mc_pmic, unsigned int offset, u32 mask,
-+		    u32 val)
-+{
-+	int ret;
-+	u32 valread;
-+
-+	BUG_ON(val & ~mask);
-+
-+	ret = mc34708_reg_read(mc_pmic, offset, &valread);
-+	if (ret)
-+		return ret;
-+
-+	valread = (valread & ~mask) | val;
-+
-+	return mc34708_reg_write(mc_pmic, offset, valread);
-+}
-+EXPORT_SYMBOL(mc34708_reg_rmw);
-+
-+int mc34708_irq_mask(struct mc34708 *mc_pmic, int irq)
-+{
-+	int ret;
-+	unsigned int offmask =
-+	    irq < 24 ? MC34708_REG_INT_MASK0 : MC34708_REG_INT_MASK1;
-+	u32 irqbit = 1 << (irq < 24 ? irq : irq - 24);
-+	u32 mask;
-+
-+	if (irq < 0 || irq >= MC34708_NUM_IRQ)
-+		return -EINVAL;
-+
-+	ret = mc34708_reg_read(mc_pmic, offmask, &mask);
-+	if (ret)
-+		return ret;
-+
-+	if (mask & irqbit)
-+		/* already masked */
-+		return 0;
-+
-+	return mc34708_reg_write(mc_pmic, offmask, mask | irqbit);
-+}
-+EXPORT_SYMBOL(mc34708_irq_mask);
-+
-+int mc34708_irq_unmask(struct mc34708 *mc_pmic, int irq)
-+{
-+	int ret;
-+	unsigned int offmask =
-+	    irq < 24 ? MC34708_REG_INT_MASK0 : MC34708_REG_INT_MASK1;
-+	u32 irqbit = 1 << (irq < 24 ? irq : irq - 24);
-+	u32 mask;
-+
-+	if (irq < 0 || irq >= MC34708_NUM_IRQ)
-+		return -EINVAL;
-+
-+	ret = mc34708_reg_read(mc_pmic, offmask, &mask);
-+	if (ret)
-+		return ret;
-+
-+	if (!(mask & irqbit))
-+		/* already unmasked */
-+		return 0;
-+
-+	return mc34708_reg_write(mc_pmic, offmask, mask & ~irqbit);
-+}
-+EXPORT_SYMBOL(mc34708_irq_unmask);
-+
-+int mc34708_irq_status(struct mc34708 *mc_pmic, int irq, int *enabled,
-+		       int *pending)
-+{
-+	int ret;
-+	unsigned int offmask =
-+	    irq < 24 ? MC34708_REG_INT_MASK0 : MC34708_REG_INT_MASK1;
-+	unsigned int offstat =
-+	    irq < 24 ? MC34708_REG_INT_STATUS0 : MC34708_REG_INT_STATUS1;
-+	u32 irqbit = 1 << (irq < 24 ? irq : irq - 24);
-+
-+	if (irq < 0 || irq >= MC34708_NUM_IRQ)
-+		return -EINVAL;
-+
-+	if (enabled) {
-+		u32 mask;
-+
-+		ret = mc34708_reg_read(mc_pmic, offmask, &mask);
-+		if (ret)
-+			return ret;
-+
-+		*enabled = mask & irqbit;
-+	}
-+
-+	if (pending) {
-+		u32 stat;
-+
-+		ret = mc34708_reg_read(mc_pmic, offstat, &stat);
-+		if (ret)
-+			return ret;
-+
-+		*pending = stat & irqbit;
-+	}
-+
-+	return 0;
-+}
-+EXPORT_SYMBOL(mc34708_irq_status);
-+
-+int mc34708_irq_ack(struct mc34708 *mc_pmic, int irq)
-+{
-+	unsigned int offstat =
-+	    irq < 24 ? MC34708_REG_INT_STATUS0 : MC34708_REG_INT_STATUS1;
-+	unsigned int val = 1 << (irq < 24 ? irq : irq - 24);
-+
-+	BUG_ON(irq < 0 || irq >= MC34708_NUM_IRQ);
-+
-+	return mc34708_reg_write(mc_pmic, offstat, val);
-+}
-+EXPORT_SYMBOL(mc34708_irq_ack);
-+
-+int mc34708_irq_request_nounmask(struct mc34708 *mc_pmic, int irq,
-+				 irq_handler_t handler, const char *name,
-+				 void *dev)
-+{
-+	BUG_ON(!mutex_is_locked(&mc_pmic->lock));
-+	BUG_ON(!handler);
-+
-+	if (irq < 0 || irq >= MC34708_NUM_IRQ)
-+		return -EINVAL;
-+
-+	if (mc_pmic->irqhandler[irq])
-+		return -EBUSY;
-+
-+	mc_pmic->irqhandler[irq] = handler;
-+	mc_pmic->irqdata[irq] = dev;
-+
-+	return 0;
-+}
-+EXPORT_SYMBOL(mc34708_irq_request_nounmask);
-+
-+int mc34708_irq_request(struct mc34708 *mc_pmic, int irq,
-+			irq_handler_t handler, const char *name, void *dev)
-+{
++	struct mc34708_regulator_priv *priv = rdev_get_drvdata(rdev);
++	struct mc34708_regulator *mc34708_regulators = priv->mc34708_regulators;
++	int id = rdev_get_id(rdev);
 +	int ret;
 +
-+	ret = mc34708_irq_request_nounmask(mc_pmic, irq, handler, name, dev);
++	dev_dbg(rdev_get_dev(rdev), "%s id: %d\n", __func__, id);
++
++	mc34708_lock(priv->mc34708);
++	ret = mc34708_reg_rmw(priv->mc34708, mc34708_regulators[id].reg,
++			      mc34708_regulators[id].enable_bit, 0);
++	mc34708_unlock(priv->mc34708);
++
++	return ret;
++}
++
++static int mc34708_regulator_is_enabled(struct regulator_dev *rdev)
++{
++	struct mc34708_regulator_priv *priv = rdev_get_drvdata(rdev);
++	struct mc34708_regulator *mc34708_regulators = priv->mc34708_regulators;
++	int ret, id = rdev_get_id(rdev);
++	unsigned int val;
++
++	mc34708_lock(priv->mc34708);
++	ret = mc34708_reg_read(priv->mc34708, mc34708_regulators[id].reg, &val);
++	mc34708_unlock(priv->mc34708);
++
 +	if (ret)
 +		return ret;
 +
-+	ret = mc34708_irq_unmask(mc_pmic, irq);
-+	if (ret) {
-+		mc_pmic->irqhandler[irq] = NULL;
-+		mc_pmic->irqdata[irq] = NULL;
-+		return ret;
-+	}
-+
-+	return 0;
++	return (val & mc34708_regulators[id].enable_bit) != 0;
 +}
-+EXPORT_SYMBOL(mc34708_irq_request);
 +
-+int mc34708_irq_free(struct mc34708 *mc_pmic, int irq, void *dev)
++int
++mc34708_regulator_list_voltage(struct regulator_dev *rdev, unsigned selector)
 +{
-+	int ret;
-+	BUG_ON(!mutex_is_locked(&mc_pmic->lock));
++	int id = rdev_get_id(rdev);
++	struct mc34708_regulator_priv *priv = rdev_get_drvdata(rdev);
++	struct mc34708_regulator *mc34708_regulators = priv->mc34708_regulators;
 +
-+	if (irq < 0 || irq >= MC34708_NUM_IRQ || !mc_pmic->irqhandler[irq] ||
-+	    mc_pmic->irqdata[irq] != dev)
++	if (selector >= mc34708_regulators[id].desc.n_voltages)
 +		return -EINVAL;
 +
-+	ret = mc34708_irq_mask(mc_pmic, irq);
-+	if (ret)
-+		return ret;
-+
-+	mc_pmic->irqhandler[irq] = NULL;
-+	mc_pmic->irqdata[irq] = NULL;
-+
-+	return 0;
++	return mc34708_regulators[id].voltages[selector];
 +}
-+EXPORT_SYMBOL(mc34708_irq_free);
++EXPORT_SYMBOL_GPL(mc34708_regulator_list_voltage);
 +
-+static inline irqreturn_t mc34708_irqhandler(struct mc34708 *mc_pmic, int irq)
++int
++mc34708_get_best_voltage_index(struct regulator_dev *rdev,
++			       int min_uV, int max_uV)
 +{
-+	return mc_pmic->irqhandler[irq] (irq, mc_pmic->irqdata[irq]);
-+}
++	struct mc34708_regulator_priv *priv = rdev_get_drvdata(rdev);
++	struct mc34708_regulator *mc34708_regulators = priv->mc34708_regulators;
++	int reg_id = rdev_get_id(rdev);
++	int i;
++	int bestmatch;
++	int bestindex;
 +
-+/*
-+ * returns: number of handled irqs or negative error
-+ * locking: holds mc_pmic->lock
-+ */
-+static int mc34708_irq_handle(struct mc34708 *mc_pmic,
-+			      unsigned int offstat, unsigned int offmask,
-+			      int baseirq)
-+{
-+	u32 stat, mask;
-+	int ret = mc34708_reg_read(mc_pmic, offstat, &stat);
-+	int num_handled = 0;
-+
-+	if (ret)
-+		return ret;
-+
-+	ret = mc34708_reg_read(mc_pmic, offmask, &mask);
-+	if (ret)
-+		return ret;
-+
-+	while (stat & ~mask) {
-+		int irq = __ffs(stat & ~mask);
-+
-+		stat &= ~(1 << irq);
-+
-+		if (likely(mc_pmic->irqhandler[baseirq + irq])) {
-+			irqreturn_t handled;
-+
-+			handled = mc34708_irqhandler(mc_pmic, baseirq + irq);
-+			if (handled == IRQ_HANDLED)
-+				num_handled++;
-+		} else {
-+			dev_err(&mc_pmic->i2c_client->dev,
-+				"BUG: irq %u but no handler\n", baseirq + irq);
-+
-+			mask |= 1 << irq;
-+
-+			ret = mc34708_reg_write(mc_pmic, offmask, mask);
++	/*
++	 * Locate the minimum voltage fitting the criteria on
++	 * this regulator. The switchable voltages are not
++	 * in strict falling order so we need to check them
++	 * all for the best match.
++	 */
++	bestmatch = INT_MAX;
++	bestindex = -1;
++	for (i = 0; i < mc34708_regulators[reg_id].desc.n_voltages; i++) {
++		if (mc34708_regulators[reg_id].voltages[i] >= min_uV &&
++		    mc34708_regulators[reg_id].voltages[i] < bestmatch) {
++			bestmatch = mc34708_regulators[reg_id].voltages[i];
++			bestindex = i;
 +		}
 +	}
 +
-+	return num_handled;
-+}
-+
-+static irqreturn_t mc34708_irq_thread(int irq, void *data)
-+{
-+	struct mc34708 *mc_pmic = data;
-+	irqreturn_t ret;
-+	int handled = 0;
-+
-+	mc34708_lock(mc_pmic);
-+
-+	ret = mc34708_irq_handle(mc_pmic, MC34708_REG_INT_STATUS0,
-+				 MC34708_REG_INT_MASK0, 0);
-+	if (ret > 0)
-+		handled = 1;
-+
-+	ret = mc34708_irq_handle(mc_pmic, MC34708_REG_INT_STATUS1,
-+				 MC34708_REG_INT_MASK1, 24);
-+	if (ret > 0)
-+		handled = 1;
-+
-+	mc34708_unlock(mc_pmic);
-+
-+	return IRQ_RETVAL(handled);
-+}
-+
-+#define maskval(reg, mask)	(((reg) & (mask)) >> __ffs(mask))
-+static int mc34708_identify(struct mc34708 *mc_pmic,
-+			    struct mc34708_version_t *ver)
-+{
-+	int rev_id = 0;
-+	int rev1 = 0;
-+	int rev2 = 0;
-+	int finid = 0;
-+	int icid = 0;
-+	int ret;
-+	ret = mc34708_reg_read(mc_pmic, MC34708_REG_IDENTIFICATION, &rev_id);
-+	if (ret) {
-+		dev_dbg(&mc_pmic->i2c_client->dev, "read ID error!%x\n", ret);
-+		return ret;
++	if (bestindex < 0 || bestmatch > max_uV) {
++		dev_warn(&rdev->dev, "no possible value for %d<=x<=%d uV\n",
++			 min_uV, max_uV);
++		return -EINVAL;
 +	}
-+	rev1 = (rev_id & 0x018) >> 3;
-+	rev2 = (rev_id & 0x007);
-+	icid = (rev_id & 0x01C0) >> 6;
-+	finid = (rev_id & 0x01E00) >> 9;
-+	ver->id = MC_PMIC_ID_MC34708;
-+
-+	ver->revision = ((rev1 * 10) + rev2);
-+	dev_dbg(&mc_pmic->i2c_client->dev,
-+		"mc_pmic Rev %d.%d FinVer %x detected\n", rev1, rev2, finid);
-+
-+	return 0;
++	return bestindex;
 +}
++EXPORT_SYMBOL_GPL(mc34708_get_best_voltage_index);
 +
-+static const struct i2c_device_id *i2c_match_id(const struct i2c_device_id *id,
-+						const struct i2c_client *client)
++static int
++mc34708_regulator_set_voltage(struct regulator_dev *rdev, int min_uV,
++			      int max_uV, unsigned *selector)
 +{
-+	while (id->name[0]) {
-+		if (strcmp(client->name, id->name) == 0)
-+			return id;
-+		id++;
-+	}
-+
-+	return NULL;
-+}
-+
-+static const struct i2c_device_id *i2c_get_device_id(const struct i2c_client
-+						     *idev)
-+{
-+	const struct i2c_driver *idrv = to_i2c_driver(idev->dev.driver);
-+
-+	return i2c_match_id(idrv->id_table, idev);
-+}
-+
-+static const char *mc34708_get_chipname(struct mc34708 *mc_pmic)
-+{
-+	const struct i2c_device_id *devid =
-+	    i2c_get_device_id(mc_pmic->i2c_client);
-+
-+	if (!devid)
-+		return NULL;
-+
-+	return mc34708_chipname[devid->driver_data];
-+}
-+
-+int mc34708_get_flags(struct mc34708 *mc_pmic)
-+{
-+	struct mc34708_platform_data *pdata =
-+	    dev_get_platdata(&mc_pmic->i2c_client->dev);
-+
-+	return pdata->flags;
-+}
-+EXPORT_SYMBOL(mc34708_get_flags);
-+
-+static int mc34708_add_subdevice_pdata(struct mc34708 *mc_pmic,
-+				       const char *format, void *pdata,
-+				       size_t pdata_size)
-+{
-+	char buf[30];
-+	const char *name = mc34708_get_chipname(mc_pmic);
-+
-+	struct mfd_cell cell = {
-+		.platform_data = pdata,
-+		.pdata_size = pdata_size,
-+	};
-+
-+	/* there is no asnprintf in the kernel :-( */
-+	if (snprintf(buf, sizeof(buf), format, name) > sizeof(buf))
-+		return -E2BIG;
-+
-+	cell.name = kmemdup(buf, strlen(buf) + 1, GFP_KERNEL);
-+	if (!cell.name)
-+		return -ENOMEM;
-+
-+	return mfd_add_devices(&mc_pmic->i2c_client->dev, -1, &cell, 1, NULL,
-+			       0);
-+}
-+
-+static int mc34708_add_subdevice(struct mc34708 *mc_pmic, const char *format)
-+{
-+	return mc34708_add_subdevice_pdata(mc_pmic, format, NULL, 0);
-+}
-+
-+static int mc34708_probe(struct i2c_client *client,
-+			 const struct i2c_device_id *id)
-+{
-+	struct mc34708 *mc_pmic;
-+	struct mc34708_version_t version;
-+	struct mc34708_platform_data *pdata = client->dev.platform_data;
-+	struct device_node *np = client->dev.of_node;
++	struct mc34708_regulator_priv *priv = rdev_get_drvdata(rdev);
++	struct mc34708_regulator *mc34708_regulators = priv->mc34708_regulators;
++	int value, id = rdev_get_id(rdev);
 +	int ret;
 +
-+	mc_pmic = kzalloc(sizeof(*mc_pmic), GFP_KERNEL);
-+	if (!mc_pmic)
-+		return -ENOMEM;
-+	i2c_set_clientdata(client, mc_pmic);
-+	mc_pmic->i2c_client = client;
++	dev_dbg(rdev_get_dev(rdev), "%s id: %d min_uV: %d max_uV: %d\n",
++		__func__, id, min_uV, max_uV);
 +
-+	mutex_init(&mc_pmic->lock);
-+	mc34708_lock(mc_pmic);
-+	mc34708_identify(mc_pmic, &version);
-+	/* mask all irqs */
-+	ret = mc34708_reg_write(mc_pmic, MC34708_REG_INT_MASK0, 0x00ffffff);
-+	if (ret)
-+		goto err_mask;
++	/* Find the best index */
++	value = mc34708_get_best_voltage_index(rdev, min_uV, max_uV);
++	dev_dbg(rdev_get_dev(rdev), "%s best value: %d\n", __func__, value);
++	if (value < 0)
++		return value;
 +
-+	ret = mc34708_reg_write(mc_pmic, MC34708_REG_INT_MASK1, 0x00ffffff);
-+	if (ret)
-+		goto err_mask;
++	mc34708_lock(priv->mc34708);
++	ret = mc34708_reg_rmw(priv->mc34708, mc34708_regulators[id].vsel_reg,
++			      mc34708_regulators[id].vsel_mask,
++			      value << mc34708_regulators[id].vsel_shift);
++	mc34708_unlock(priv->mc34708);
 +
-+	ret = request_threaded_irq(client->irq, NULL, mc34708_irq_thread,
-+				   IRQF_ONESHOT | IRQF_TRIGGER_HIGH, "mc_pmic",
-+				   mc_pmic);
-+
-+	if (ret) {
-+ err_mask:
-+		mc34708_unlock(mc_pmic);
-+		dev_set_drvdata(&client->dev, NULL);
-+		kfree(mc_pmic);
-+		return ret;
-+	}
-+
-+	mc34708_unlock(mc_pmic);
-+
-+	if (pdata && pdata->flags & MC34708_USE_ADC)
-+		mc34708_add_subdevice(mc_pmic, "%s-adc");
-+	else if (of_get_property(np, "fsl,mc34708-uses-adc", NULL))
-+		mc34708_add_subdevice(mc_pmic, "%s-adc");
-+
-+
-+	if (pdata && pdata->flags & MC34708_USE_REGULATOR) {
-+		struct mc34708_regulator_platform_data regulator_pdata = {
-+			.num_regulators = pdata->num_regulators,
-+			.regulators = pdata->regulators,
-+		};
-+
-+		mc34708_add_subdevice_pdata(mc_pmic, "%s-regulator",
-+					    &regulator_pdata,
-+					    sizeof(regulator_pdata));
-+	} else if (of_find_node_by_name(np, "regulators")) {
-+		mc34708_add_subdevice(mc_pmic, "%s-regulator");
-+	}
-+
-+	if (pdata && pdata->flags & MC34708_USE_RTC)
-+		mc34708_add_subdevice(mc_pmic, "%s-rtc");
-+	else if (of_get_property(np, "fsl,mc34708-uses-rtc", NULL))
-+		mc34708_add_subdevice(mc_pmic, "%s-rtc");
-+
-+	if (pdata && pdata->flags & MC34708_USE_TOUCHSCREEN)
-+		mc34708_add_subdevice(mc_pmic, "%s-ts");
-+	else if (of_get_property(np, "fsl,mc34708-uses-ts", NULL))
-+		mc34708_add_subdevice(mc_pmic, "%s-ts");
-+
-+	return 0;
++	return ret;
 +}
 +
-+static int __devexit mc34708_remove(struct i2c_client *client)
++static int mc34708_regulator_get_voltage(struct regulator_dev *rdev)
 +{
-+	struct mc34708 *mc_pmic = dev_get_drvdata(&client->dev);
++	struct mc34708_regulator_priv *priv = rdev_get_drvdata(rdev);
++	struct mc34708_regulator *mc34708_regulators = priv->mc34708_regulators;
++	int ret, id = rdev_get_id(rdev);
++	unsigned int val;
 +
-+	free_irq(mc_pmic->i2c_client->irq, mc_pmic);
++	dev_dbg(rdev_get_dev(rdev), "%s id: %d\n", __func__, id);
 +
-+	mfd_remove_devices(&client->dev);
++	mc34708_lock(priv->mc34708);
++	ret = mc34708_reg_read(priv->mc34708,
++			       mc34708_regulators[id].vsel_reg, &val);
++	mc34708_unlock(priv->mc34708);
 +
-+	kfree(mc_pmic);
++	if (ret)
++		return ret;
 +
-+	return 0;
++	val = (val & mc34708_regulators[id].vsel_mask)
++	    >> mc34708_regulators[id].vsel_shift;
++
++	dev_dbg(rdev_get_dev(rdev), "%s id: %d val: %d\n", __func__, id, val);
++
++	BUG_ON(val > mc34708_regulators[id].desc.n_voltages);
++
++	return mc34708_regulators[id].voltages[val];
 +}
 +
-+static const struct of_device_id mc34708_dt_ids[] = {
-+	{ .compatible = "fsl,mc34708" },
-+	{ /* sentinel */ }
++static struct regulator_ops mc34708_regulator_ops = {
++	.enable = mc34708_regulator_enable,
++	.disable = mc34708_regulator_disable,
++	.is_enabled = mc34708_regulator_is_enabled,
++	.list_voltage = mc34708_regulator_list_voltage,
++	.set_voltage = mc34708_regulator_set_voltage,
++	.get_voltage = mc34708_regulator_get_voltage,
++};
++EXPORT_SYMBOL_GPL(mc34708_regulator_ops);
++
++int
++mc34708_fixed_regulator_set_voltage(struct regulator_dev *rdev, int min_uV,
++				    int max_uV, unsigned *selector)
++{
++	struct mc34708_regulator_priv *priv = rdev_get_drvdata(rdev);
++	struct mc34708_regulator *mc34708_regulators = priv->mc34708_regulators;
++	int id = rdev_get_id(rdev);
++
++	dev_dbg(rdev_get_dev(rdev), "%s id: %d min_uV: %d max_uV: %d\n",
++		__func__, id, min_uV, max_uV);
++
++	if (min_uV >= mc34708_regulators[id].voltages[0] &&
++	    max_uV <= mc34708_regulators[id].voltages[0])
++		return 0;
++	else
++		return -EINVAL;
++}
++EXPORT_SYMBOL_GPL(mc34708_fixed_regulator_set_voltage);
++
++int mc34708_fixed_regulator_get_voltage(struct regulator_dev *rdev)
++{
++	struct mc34708_regulator_priv *priv = rdev_get_drvdata(rdev);
++	struct mc34708_regulator *mc34708_regulators = priv->mc34708_regulators;
++	int id = rdev_get_id(rdev);
++
++	dev_dbg(rdev_get_dev(rdev), "%s id: %d\n", __func__, id);
++
++	return mc34708_regulators[id].voltages[0];
++}
++EXPORT_SYMBOL_GPL(mc34708_fixed_regulator_get_voltage);
++
++static struct regulator_ops mc34708_fixed_regulator_ops = {
++	.enable = mc34708_regulator_enable,
++	.disable = mc34708_regulator_disable,
++	.is_enabled = mc34708_regulator_is_enabled,
++	.list_voltage = mc34708_regulator_list_voltage,
++	.set_voltage = mc34708_fixed_regulator_set_voltage,
++	.get_voltage = mc34708_fixed_regulator_get_voltage,
++};
++EXPORT_SYMBOL_GPL(mc34708_fixed_regulator_ops);
++
++int mc34708_sw_regulator_is_enabled(struct regulator_dev *rdev)
++{
++	return 1;
++}
++EXPORT_SYMBOL_GPL(mc34708_sw_regulator_is_enabled);
++
++static int mc34708_sw4_regulator_get_voltage(struct regulator_dev *rdev)
++{
++	struct mc34708_regulator_priv *priv = rdev_get_drvdata(rdev);
++	struct mc34708_regulator *mc34708_regulators = priv->mc34708_regulators;
++	int ret, id = rdev_get_id(rdev);
++	unsigned int val, hi;
++
++	dev_dbg(rdev_get_dev(rdev), "%s id: %d\n", __func__, id);
++
++	mc34708_lock(priv->mc34708);
++	ret = mc34708_reg_read(priv->mc34708,
++			       mc34708_regulators[id].vsel_reg, &val);
++	mc34708_unlock(priv->mc34708);
++
++	if (ret)
++		return ret;
++	hi = (val & MC34708_SW4ABVOL_SW4BHI_M) >> MC34708_SW4ABVOL_SW4BHI;
++	val = (val & mc34708_regulators[id].vsel_mask)
++	    >> mc34708_regulators[id].vsel_shift;
++	dev_dbg(rdev_get_dev(rdev), "%s id: %d val: %d\n", __func__, id, val);
++
++	if (hi == 0x1)		/*2500000 */
++		val = 27;
++	else if (hi == 0x2)	/*3150000 */
++		val = 28;
++
++	return mc34708_regulators[id].voltages[val];
++}
++
++static int
++mc34708_sw4_regulator_set_voltage(struct regulator_dev *rdev,
++				  int min_uV, int max_uV, unsigned *selector)
++{
++	struct mc34708_regulator_priv *priv = rdev_get_drvdata(rdev);
++	struct mc34708_regulator *mc34708_regulators = priv->mc34708_regulators;
++	int value, id = rdev_get_id(rdev);
++	int ret, hi;
++
++	dev_dbg(rdev_get_dev(rdev), "%s id: %d min_uV: %d max_uV: %d\n",
++		__func__, id, min_uV, max_uV);
++
++	/* Find the best index */
++	value = mc34708_get_best_voltage_index(rdev, min_uV, max_uV);
++	dev_dbg(rdev_get_dev(rdev), "%s best value: %d\n", __func__, value);
++	if (value < 0)
++		return value;
++	if (value <= 26)
++		hi = 0x0;
++	else if (value == 27)
++		hi = 0x1;
++	else
++		hi = 0x2;
++	mc34708_lock(priv->mc34708);
++	ret = mc34708_reg_rmw(priv->mc34708, mc34708_regulators[id].vsel_reg,
++			      mc34708_regulators[id].vsel_mask |
++			      MC34708_SW4ABVOL_SW4BHI_M,
++			      value << mc34708_regulators[id].vsel_shift |
++			      (hi << MC34708_SW4ABVOL_SW4BHI));
++	mc34708_unlock(priv->mc34708);
++
++	return ret;
++}
++
++static struct regulator_ops mc34708_sw4_regulator_ops = {
++	.is_enabled = mc34708_sw_regulator_is_enabled,
++	.list_voltage = mc34708_regulator_list_voltage,
++	.set_voltage = mc34708_sw4_regulator_set_voltage,
++	.get_voltage = mc34708_sw4_regulator_get_voltage,
 +};
 +
-+static struct i2c_driver mc34708_driver = {
-+	.id_table = mc34708_device_id,
++static struct regulator_ops mc34708_sw_regulator_ops = {
++	.is_enabled = mc34708_sw_regulator_is_enabled,
++	.list_voltage = mc34708_regulator_list_voltage,
++	.set_voltage = mc34708_regulator_set_voltage,
++	.get_voltage = mc34708_regulator_get_voltage,
++};
++
++static struct mc34708_regulator_platform_data *
++mc34708_get_pdata_from_dt(struct platform_device *pdev)
++{
++	struct mc34708_regulator_platform_data *pdata;
++	struct device_node *nproot = pdev->dev.parent->of_node;
++	struct device_node *np;
++	int i, j;
++
++	if (!nproot)
++		return ERR_PTR(-ENODEV);
++
++	pdata = devm_kzalloc(&pdev->dev, sizeof(*pdata), GFP_KERNEL);
++	if (!pdata) {
++		dev_err(&pdev->dev, "cannot allocate memory for pdata\n");
++		return ERR_PTR(-ENOMEM);
++	}
++
++	nproot = of_find_node_by_name(nproot, "regulators");
++	if (!nproot)
++		return pdata;
++
++	for (np = of_get_next_child(nproot, NULL); np;
++	     np = of_get_next_child(nproot, np)) {
++		pdata->num_regulators++;
++	}
++	pdata->regulators = devm_kzalloc(&pdev->dev,
++		sizeof(*pdata->regulators) * pdata->num_regulators,
++		GFP_KERNEL);
++	if (!pdata->regulators) {
++		dev_err(&pdev->dev, "cannot allocate memory for regulators\n");
++		return ERR_PTR(-ENOMEM);
++	}
++
++	j = 0;
++	for (np = of_get_next_child(nproot, NULL); np;
++	     np = of_get_next_child(nproot, np)) {
++		for (i = 0; i < ARRAY_SIZE(mc34708_regulators); i++) {
++			if (!of_node_cmp(np->name,
++					 mc34708_regulators[i].desc.name)) {
++				pdata->regulators[j].id = i;
++				pdata->regulators[j].init_data =
++					of_get_regulator_init_data(&pdev->dev,
++								   np);
++				j++;
++				break;
++			}
++		}
++		if (i >= ARRAY_SIZE(mc34708_regulators))
++			dev_warn(&pdev->dev, "can't find regulator %s\n",
++				 np->name);
++	}
++	pdata->num_regulators = j;
++
++	return pdata;
++}
++
++static int __devinit mc34708_regulator_probe(struct platform_device *pdev)
++{
++	struct mc34708_regulator_priv *priv;
++	struct mc34708 *mc34708 = dev_get_drvdata(pdev->dev.parent);
++	struct mc34708_regulator_platform_data *pdata =
++	    dev_get_platdata(&pdev->dev);
++	struct mc34708_regulator_init_data *init_data;
++	int i, ret;
++	u32 val = 0;
++
++	if (!pdata) {
++		pdata = mc34708_get_pdata_from_dt(pdev);
++		if (IS_ERR(pdata))
++			return PTR_ERR(pdata);
++	}
++
++	priv = kzalloc(sizeof(*priv) +
++		       pdata->num_regulators * sizeof(priv->regulators[0]),
++		       GFP_KERNEL);
++	if (!priv)
++		return -ENOMEM;
++
++	priv->mc34708_regulators = mc34708_regulators;
++	priv->mc34708 = mc34708;
++
++	mc34708_lock(mc34708);
++	ret = mc34708_reg_read(mc34708, MC34708_REVISION, &val);
++	if (ret)
++		goto err_free;
++
++	ret = mc34708_reg_rmw(mc34708, MC34708_SW12OP,
++			      MC34708_SW12OP_SW1AMODE_M |
++			      MC34708_SW12OP_SW2MODE_M,
++			      MC34708_SW12OP_SW1AMODE_VALUE |
++			      MC34708_SW12OP_SW2MODE_VALUE);
++	if (ret)
++		goto err_free;
++
++	ret = mc34708_reg_rmw(mc34708, MC34708_SW345OP,
++			      MC34708_SW345OP_SW3MODE_M |
++			      MC34708_SW345OP_SW4AMODE_M |
++			      MC34708_SW345OP_SW4BMODE_M |
++			      MC34708_SW345OP_SW5MODE_M,
++			      MC34708_SW345OP_SW3MODE_VALUE |
++			      MC34708_SW345OP_SW4AMODE_VALUE |
++			      MC34708_SW345OP_SW4BMODE_VALUE |
++			      MC34708_SW345OP_SW5MODE_VALUE);
++	if (ret)
++		goto err_free;
++
++	ret = mc34708_reg_rmw(mc34708, MC34708_SWBSTCONTROL,
++			      MC34708_SWBSTCONTROL_SWBSTMODE_M,
++			      MC34708_SWBSTCONTROL_SWBSTMODE_VALUE);
++	if (ret)
++		goto err_free;
++
++	ret = mc34708_reg_rmw(mc34708, MC34708_USBCONTROL,
++			      MC34708_USBCONTROL_SWHOLD_M,
++			      MC34708_USBCONTROL_SWHOLD_NORM);
++	if (ret)
++		goto err_free;
++
++	mc34708_unlock(mc34708);
++	dev_dbg(&pdev->dev, "PMIC MC34708 ID:0x%x\n", val);
++
++	for (i = 0; i < pdata->num_regulators; i++) {
++		init_data = &pdata->regulators[i];
++		priv->regulators[i] =
++			regulator_register(
++				&mc34708_regulators[init_data->id].desc,
++				&pdev->dev, init_data->init_data, priv,
++				NULL);
++
++		if (IS_ERR(priv->regulators[i])) {
++			dev_err(&pdev->dev, "fail to register regulator %s\n",
++				mc34708_regulators[i].desc.name);
++			ret = PTR_ERR(priv->regulators[i]);
++			goto err;
++		}
++	}
++
++	platform_set_drvdata(pdev, priv);
++
++	return 0;
++ err:
++	while (--i >= 0)
++		regulator_unregister(priv->regulators[i]);
++
++ err_free:
++	mc34708_unlock(mc34708);
++	kfree(priv);
++
++	return ret;
++}
++
++static int __devexit mc34708_regulator_remove(struct platform_device *pdev)
++{
++	struct mc34708_regulator_priv *priv = platform_get_drvdata(pdev);
++	struct mc34708_regulator_platform_data *pdata =
++		dev_get_platdata(&pdev->dev);
++	int i;
++
++	platform_set_drvdata(pdev, NULL);
++
++	for (i = 0; i < pdata->num_regulators; i++)
++		regulator_unregister(priv->regulators[i]);
++
++	kfree(priv);
++	return 0;
++}
++
++static struct platform_driver mc34708_regulator_driver = {
 +	.driver = {
-+		   .name = "mc34708",
++		   .name = "mc34708-regulator",
 +		   .owner = THIS_MODULE,
-+		   .of_match_table = mc34708_dt_ids,
 +		   },
-+	.probe = mc34708_probe,
-+	.remove = __devexit_p(mc34708_remove),
++	.remove = __devexit_p(mc34708_regulator_remove),
++	.probe = mc34708_regulator_probe,
 +};
 +
-+static int __init mc34708_init(void)
++static int __init mc34708_regulator_init(void)
 +{
-+	return i2c_add_driver(&mc34708_driver);
++	return platform_driver_register(&mc34708_regulator_driver);
 +}
-+subsys_initcall(mc34708_init);
++subsys_initcall(mc34708_regulator_init);
 +
-+static void __exit mc34708_exit(void)
++static void __exit mc34708_regulator_exit(void)
 +{
-+	i2c_del_driver(&mc34708_driver);
++	platform_driver_unregister(&mc34708_regulator_driver);
 +}
-+module_exit(mc34708_exit);
++module_exit(mc34708_regulator_exit);
 +
-+MODULE_DESCRIPTION("Core driver for Freescale MC34708 PMIC");
++MODULE_LICENSE("GPL v2");
 +MODULE_AUTHOR("Robin Gong <B38343@freescale.com>, "
 +	      "Ying-Chun Liu (PaulLiu) <paul.liu@linaro.org>");
-+MODULE_LICENSE("GPL v2");
-diff --git a/include/linux/mfd/mc34708.h b/include/linux/mfd/mc34708.h
++MODULE_DESCRIPTION("Regulator Driver for Freescale MC34708 PMIC");
++MODULE_ALIAS("platform:mc34708-regulator");
+diff --git a/drivers/regulator/mc34708.h b/drivers/regulator/mc34708.h
 new file mode 100644
-index 0000000..505813d
+index 0000000..f765086
 --- /dev/null
-+++ b/include/linux/mfd/mc34708.h
-@@ -0,0 +1,134 @@
-+/* For mc34708's pmic driver
++++ b/drivers/regulator/mc34708.h
+@@ -0,0 +1,79 @@
++/*
++ * mc34708.h - regulators for the Freescale mc34708 PMIC
 + * Copyright (C) 2004-2011 Freescale Semiconductor, Inc.
++ *  based on:
++ *  Copyright (C) 2010 Yong Shen <yong.shen@linaro.org>
 + *
-+ * based on:
-+ * Copyright 2009-2010 Pengutronix, Uwe Kleine-Koenig
-+ * <u.kleine-koenig@pengutronix.de>
-+ *
-+ * This program is free software; you can redistribute it and/or modify it under
-+ * the terms of the GNU General Public License version 2 as published by the
-+ * Free Software Foundation.
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2 of the License, or
++ * (at your option) any later version.
 + */
-+#ifndef __LINUX_MFD_MC_34708_H
-+#define __LINUX_MFD_MC_34708_H
 +
-+#include <linux/interrupt.h>
++#ifndef __LINUX_REGULATOR_MC34708_H
++#define __LINUX_REGULATOR_MC34708_H
++
 +#include <linux/regulator/driver.h>
 +
-+struct mc34708;
-+
-+void mc34708_lock(struct mc34708 *mc_pmic);
-+void mc34708_unlock(struct mc34708 *mc_pmic);
-+
-+int mc34708_reg_read(struct mc34708 *mc_pmic, unsigned int offset, u32 *val);
-+int mc34708_reg_write(struct mc34708 *mc_pmic, unsigned int offset, u32 val);
-+int mc34708_reg_rmw(struct mc34708 *mc_pmic, unsigned int offset,
-+		    u32 mask, u32 val);
-+
-+int mc34708_get_flags(struct mc34708 *mc_pmic);
-+
-+int mc34708_irq_request(struct mc34708 *mc_pmic, int irq,
-+			irq_handler_t handler, const char *name, void *dev);
-+int mc34708_irq_request_nounmask(struct mc34708 *mc_pmic, int irq,
-+				 irq_handler_t handler, const char *name,
-+				 void *dev);
-+int mc34708_irq_free(struct mc34708 *mc_pmic, int irq, void *dev);
-+int mc34708_irq_mask(struct mc34708 *mc_pmic, int irq);
-+int mc34708_irq_unmask(struct mc34708 *mc_pmic, int irq);
-+int mc34708_irq_status(struct mc34708 *mc_pmic, int irq,
-+		       int *enabled, int *pending);
-+int mc34708_irq_ack(struct mc34708 *mc_pmic, int irq);
-+
-+int mc34708_get_flags(struct mc34708 *mc_pmic);
-+
-+#define MC34708_SW1A		0
-+#define MC34708_SW1B		1
-+#define MC34708_SW2		2
-+#define MC34708_SW3		3
-+#define MC34708_SW4A		4
-+#define MC34708_SW4B		5
-+#define MC34708_SW5		6
-+#define MC34708_SWBST		7
-+#define MC34708_VPLL		8
-+#define MC34708_VREFDDR		9
-+#define MC34708_VUSB		10
-+#define MC34708_VUSB2		11
-+#define MC34708_VDAC		12
-+#define MC34708_VGEN1		13
-+#define MC34708_VGEN2		14
-+#define MC34708_REGU_NUM	15
-+
-+#define MC34708_REG_INT_STATUS0		0
-+#define MC34708_REG_INT_MASK0		1
-+#define MC34708_REG_INT_STATUS1		3
-+#define MC34708_REG_INT_MASK1		4
-+#define MC34708_REG_IDENTIFICATION	7
-+
-+#define MC34708_IRQ_ADCDONE	0
-+#define MC34708_IRQ_TSDONE	1
-+#define MC34708_IRQ_TSPENDET	2
-+#define MC34708_IRQ_USBDET	3
-+#define MC34708_IRQ_AUXDET	4
-+#define MC34708_IRQ_USBOVP	5
-+#define MC34708_IRQ_AUXOVP	6
-+#define MC34708_IRQ_CHRTIMEEXP	7
-+#define MC34708_IRQ_BATTOTP	8
-+#define MC34708_IRQ_BATTOVP	9
-+#define MC34708_IRQ_CHRCMPL	10
-+#define MC34708_IRQ_WKVBUSDET	11
-+#define MC34708_IRQ_WKAUXDET	12
-+#define MC34708_IRQ_LOWBATT	13
-+#define MC34708_IRQ_VBUSREGMI	14
-+#define MC34708_IRQ_ATTACH	15
-+#define MC34708_IRQ_DETACH	16
-+#define MC34708_IRQ_KP		17
-+#define MC34708_IRQ_LKP		18
-+#define MC34708_IRQ_LKR		19
-+#define MC34708_IRQ_UKNOW_ATTA	20
-+#define MC34708_IRQ_ADC_CHANGE	21
-+#define MC34708_IRQ_STUCK_KEY	22
-+#define MC34708_IRQ_STUCK_KEY_RCV	23
-+#define MC34708_IRQ_1HZ		24
-+#define MC34708_IRQ_TODA	25
-+#define MC34708_IRQ_UNUSED1	26
-+#define MC34708_IRQ_PWRON1	27
-+#define MC34708_IRQ_PWRON2	28
-+#define MC34708_IRQ_WDIRESET	29
-+#define MC34708_IRQ_SYSRST	30
-+#define MC34708_IRQ_RTCRST	31
-+#define MC34708_IRQ_PCI		32
-+#define MC34708_IRQ_WARM	33
-+#define MC34708_IRQ_MEMHLD	34
-+#define MC34708_IRQ_UNUSED2	35
-+#define MC34708_IRQ_THWARNL	36
-+#define MC34708_IRQ_THWARNH	37
-+#define MC34708_IRQ_CLK		38
-+#define MC34708_IRQ_UNUSED3	39
-+#define MC34708_IRQ_SCP		40
-+#define MC34708_NUMREGS		0x3f
-+#define MC34708_NUM_IRQ		46
-+
-+struct mc34708_regulator_init_data {
-+	int id;
-+	struct regulator_init_data *init_data;
++struct mc34708_regulator {
++	struct regulator_desc desc;
++	int reg;
++	int enable_bit;
++	int vsel_reg;
++	int vsel_shift;
++	int vsel_mask;
++	int hi_bit;
++	int const *voltages;
 +};
 +
-+struct mc34708_regulator_platform_data {
-+	int num_regulators;
-+	struct mc34708_regulator_init_data *regulators;
++struct mc34708_regulator_priv {
++	struct mc34708 *mc34708;
++	struct mc34708_regulator *mc34708_regulators;
++	struct regulator_dev *regulators[];
 +};
 +
-+struct mc34708_platform_data {
-+#define MC34708_USE_TOUCHSCREEN (1 << 0)
-+#define MC34708_USE_CODEC	(1 << 1)
-+#define MC34708_USE_ADC		(1 << 2)
-+#define MC34708_USE_RTC		(1 << 3)
-+#define MC34708_USE_REGULATOR	(1 << 4)
-+#define MC34708_USE_LED		(1 << 5)
-+	unsigned int flags;
++int mc34708_sw_regulator(struct regulator_dev *rdev);
++int mc34708_sw_regulator_is_enabled(struct regulator_dev *rdev);
++int mc34708_get_best_voltage_index(struct regulator_dev *rdev,
++				   int min_uV, int max_uV);
++int mc34708_regulator_list_voltage(struct regulator_dev *rdev,
++				   unsigned selector);
++int mc34708_fixed_regulator_set_voltage(struct regulator_dev *rdev,
++					int min_uV, int max_uV,
++					unsigned *selector);
++int mc34708_fixed_regulator_get_voltage(struct regulator_dev *rdev);
 +
-+	int num_regulators;
-+	struct mc34708_regulator_init_data *regulators;
-+};
++#define MC34708_DEFINE(prefix, _name, _reg, _vsel_reg, _voltages, _ops)	\
++	[prefix ## _name] = {				\
++		.desc = {						\
++			.name = #prefix "_" #_name,			\
++			.n_voltages = ARRAY_SIZE(_voltages),		\
++			.ops = &_ops,			\
++			.type = REGULATOR_VOLTAGE,			\
++			.id = prefix ## _name,		\
++			.owner = THIS_MODULE,			\
++		},							\
++		.reg = prefix ## _reg,				\
++		.enable_bit = prefix ## _reg ## _ ## _name ## EN,	\
++		.vsel_reg = prefix ## _vsel_reg,			\
++		.vsel_shift = prefix ## _vsel_reg ## _ ## _name ## VSEL,\
++		.vsel_mask = prefix ## _vsel_reg ## _ ## _name ## VSEL_M,\
++		.voltages =  _voltages,					\
++	}
 +
-+#endif				/* ifndef __LINUX_MFD_MC_PMIC_H */
++#define MC34708_FIXED_DEFINE(prefix, _name, _reg, _voltages, _ops)	\
++	[prefix ## _name] = {				\
++		.desc = {						\
++			.name = #prefix "_" #_name,			\
++			.n_voltages = ARRAY_SIZE(_voltages),		\
++			.ops = &_ops,		\
++			.type = REGULATOR_VOLTAGE,			\
++			.id = prefix ## _name,		\
++			.owner = THIS_MODULE,				\
++		},							\
++		.reg = prefix ## _reg,				\
++		.enable_bit = prefix ## _reg ## _ ## _name ## EN,	\
++		.voltages =  _voltages,					\
++	}
++
++#endif
 -- 
 1.7.9.5
 
