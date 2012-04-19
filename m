@@ -1,96 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754723Ab2DSASQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Apr 2012 20:18:16 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:43454 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753748Ab2DSARq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Apr 2012 20:17:46 -0400
-From: "H. Peter Anvin" <hpa@zytor.com>
-To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Cc: Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
-        Borislav Petkov <bp@amd64.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Glauber de Oliveira Costa <gcosta@redhat.com>
-Subject: [PATCH 3/5] x86, paravirt: Replace GET_CR2_INTO_RCX with GET_CR2_INTO_RAX
-Date: Wed, 18 Apr 2012 17:16:48 -0700
-Message-Id: <1334794610-5546-4-git-send-email-hpa@zytor.com>
-X-Mailer: git-send-email 1.7.6.5
-In-Reply-To: <1334794610-5546-1-git-send-email-hpa@zytor.com>
-References: <1334794610-5546-1-git-send-email-hpa@zytor.com>
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Wed, 18 Apr 2012 17:17:26 -0700 (PDT)
+	id S1754660Ab2DSASw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Apr 2012 20:18:52 -0400
+Received: from e1.ny.us.ibm.com ([32.97.182.141]:37046 "EHLO e1.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753085Ab2DSASu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Apr 2012 20:18:50 -0400
+Message-ID: <4F8F59E2.4080301@linaro.org>
+Date: Wed, 18 Apr 2012 17:18:42 -0700
+From: John Stultz <john.stultz@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120329 Thunderbird/11.0.1
+MIME-Version: 1.0
+To: Prarit Bhargava <prarit@redhat.com>
+CC: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
+        Salman Qazi <sqazi@google.com>, stable@kernel.org
+Subject: Re: [PATCH] clocksource, prevent overflow in clocksource_cyc2ns
+References: <1333552260-1170-1-git-send-email-prarit@redhat.com> <4F7C8C3E.1020203@us.ibm.com> <4F7C9402.3090602@redhat.com> <4F7CF094.5020201@us.ibm.com> <4F7D8FA1.1010107@redhat.com> <4F8F4C31.7010209@linaro.org> <4F8F555F.7040404@redhat.com>
+In-Reply-To: <4F8F555F.7040404@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12041900-6078-0000-0000-00000A28133D
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "H. Peter Anvin" <hpa@zytor.com>
+On 04/18/2012 04:59 PM, Prarit Bhargava wrote:
+>
+> Hey John,
+>
+> Thanks for continuing to work on this.  Coincidentally that exact patch was my
+> first attempt at resolving the problem as well.  The problem is that even after
+> touching the clocksource watchdog and restoring irqs the printk buffer can take
+> a LONG time to flush -- and that still will cause an overflow comparison.  So
+> fixing it with just a touch_clocksource_watchdog() isn't the right thing to do
+> IMO.  Maybe a combination of the printk() patch you suggested earlier and the
+> touch_clocksource_watchdog() is the right way to go but I'll leave that up to
+> tglx and yourself to decide on a correct fix.
+:( That's a bummer. Something similar may be useful on the printk side 
+as well.
 
-GET_CR2_INTO_RCX is asinine: it is only used in one place, the actual
-paravirt call returns the value in %rax, not %rcx; and the one place
-that wants it wants the result in %r9.  We actually generate as a
-result of this call:
 
-       call ...
-       movq %rax, %rcx
-       xorq %rax, %rax		/* this value isn't even used... */
-       movq %rcx, %r9
+> There's also some additional information that I've been gathering on this issue;
+> I have seen *idle* systems switch to the hpet because the clocksource watchdog
+> hits the overflow comparison.  As expected it happens much less frequently on
+> newer kernels (linux.git top of tree) than older stable kernels (2.6.32 based)
+> due to the difference in shift values but it is happening in both cases.
 
-At least make the macro do what the paravirt call does, which is put
-the value into %rax.
+Some of the recent adjustments for more robust shift calculations may 
+partially be responsible for the improvement. Although I'm not sure why 
+idle systems (that don't halt the TSC in idle) would trip this.  Do let 
+me know if you find any particular way of reproducing this.
 
-Nevermind the fact that the macro clobbers all the volatile registers.
+> The odd thing about this behaviour is that I would expect it to occur with the
+> same frequency on small systems as it does on large systems with linux.git as
+> the watchdog fires once/second.  AFAICT I do not see this on small systems but
+> see it only on systems with greater than 24 cpus (both Intel and AMD).
+Hrm.
 
-Signed-off-by: H. Peter Anvin <hpa@zytor.com>
-Cc: Glauber de Oliveira Costa <gcosta@redhat.com>
----
- arch/x86/include/asm/paravirt.h |    6 ++----
- arch/x86/kernel/head_64.S       |    6 +++---
- 2 files changed, 5 insertions(+), 7 deletions(-)
+> Using debug code similar to the dump code I previously provided, I can see that
+> every so often these large systems can hit a case where the tsc wraps and the
+> hpet is still monotonically increasing.  When the unstable calculation is
+> performed the result is obviously affected by the overflow.  Sometimes this
+> comparison overflow happens within 18 minutes, other times it can take hours or
+> days.
+TSC wraps? Are you sure that's what you see? Or do you have that 
+switched? With the HPET wrapping?
 
-diff --git a/arch/x86/include/asm/paravirt.h b/arch/x86/include/asm/paravirt.h
-index aa0f913..6cbbabf 100644
---- a/arch/x86/include/asm/paravirt.h
-+++ b/arch/x86/include/asm/paravirt.h
-@@ -1023,10 +1023,8 @@ extern void default_banner(void);
- 		  call PARA_INDIRECT(pv_cpu_ops+PV_CPU_swapgs)		\
- 		 )
- 
--#define GET_CR2_INTO_RCX				\
--	call PARA_INDIRECT(pv_mmu_ops+PV_MMU_read_cr2);	\
--	movq %rax, %rcx;				\
--	xorq %rax, %rax;
-+#define GET_CR2_INTO_RAX				\
-+	call PARA_INDIRECT(pv_mmu_ops+PV_MMU_read_cr2)
- 
- #define PARAVIRT_ADJUST_EXCEPTION_FRAME					\
- 	PARA_SITE(PARA_PATCH(pv_irq_ops, PV_IRQ_adjust_exception_frame), \
-diff --git a/arch/x86/kernel/head_64.S b/arch/x86/kernel/head_64.S
-index adf52e8..d1e112c 100644
---- a/arch/x86/kernel/head_64.S
-+++ b/arch/x86/kernel/head_64.S
-@@ -23,8 +23,9 @@
- #ifdef CONFIG_PARAVIRT
- #include <asm/asm-offsets.h>
- #include <asm/paravirt.h>
-+#define GET_CR2_INTO(reg) GET_CR2_INTO_RAX ; movq %rax, reg
- #else
--#define GET_CR2_INTO_RCX movq %cr2, %rcx
-+#define GET_CR2_INTO(reg) movq %cr2, reg
- #endif
- 
- /* we are not able to switch in one step to the final KERNEL ADDRESS SPACE
-@@ -286,8 +287,7 @@ ENTRY(early_idt_handler)
- 	cmpl $2,early_recursion_flag(%rip)
- 	jz  1f
- 	incl early_recursion_flag(%rip)
--	GET_CR2_INTO_RCX
--	movq %rcx,%r9
-+	GET_CR2_INTO(%r9)
- 	xorl %r8d,%r8d		# zero for error code
- 	movl %esi,%ecx		# get vector number
- 	# Test %ecx against mask of vectors that push error code.
--- 
-1.7.6.5
+
+> The other part of this puzzle is that if switch between the tsc and hpet every
+> 10 seconds, and run a gettimeofday() comparison program, the gettimeofday()
+> program will return a backwards time[1] event usually within half-an-hour.  [I'm
+> just including this info here to point out that switching between clocksources
+> seems to cause some momentary instability.  Before anyone points this out I will
+> say that this not a "real world" bug.  I'm trying to find out if anyone actually
+> does switch from the tsc to hpet (and back) on multi-purposed systems.  I'm
+> hoping the answer to that is "no" :) ].
+So, there were some recent fixes for 3.4 to address an issue 
+specifically around inconsistencies at clocksource switch time:
+http://git.kernel.org/?p=linux/kernel/git/torvalds/linux-2.6.git;a=commitdiff;h=a939e817aa7e199d2fff05a67cb745be32dd5c2d
+http://git.kernel.org/?p=linux/kernel/git/torvalds/linux-2.6.git;a=commitdiff;h=f695cf94837de53864180400cbac42cfa370426f
+
+I definitely want to make sure any sort of inconsistencies like that are 
+resolved. So let me know if you can still trigger anything like that 
+with the latest 3.4 kernel.
+
+thanks
+-john
 
