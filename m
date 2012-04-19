@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933722Ab2DSV2c (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Apr 2012 17:28:32 -0400
-Received: from mail-pz0-f42.google.com ([209.85.210.42]:44862 "EHLO
+	id S933769Ab2DSV2u (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Apr 2012 17:28:50 -0400
+Received: from mail-pz0-f42.google.com ([209.85.210.42]:38471 "EHLO
 	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932863Ab2DSVQD (ORCPT
+	with ESMTP id S933585Ab2DSVP4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Apr 2012 17:16:03 -0400
-Message-Id: <20120419210820.641155178@linuxfoundation.org>
+	Thu, 19 Apr 2012 17:15:56 -0400
+Message-Id: <20120419210820.459082771@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Thu, 19 Apr 2012 14:08:41 -0700
+Date: Thu, 19 Apr 2012 14:08:39 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, "David S. Miller" <davem@davemloft.net>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [ 23/68] perf hists: Catch and handle out-of-date hist entry maps.
+        alan@lxorguk.ukuu.org.uk,
+        "Stephen M. Cameron" <scameron@beardog.cce.hp.com>,
+        Jens Axboe <axboe@kernel.dk>
+Subject: [ 21/68] cciss: Initialize scsi host max_sectors for tape drive support
 In-Reply-To: <20120419210923.GA18589@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,56 +26,32 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: David Miller <davem@davemloft.net>
+From: "Stephen M. Cameron" <scameron@beardog.cce.hp.com>
 
-commit 63fa471dd49e9c9ce029d910d1024330d9b1b145 upstream.
+commit 395d287526bb60411ff37b19ad9dd38b58ba8732 upstream.
 
-When a process exec()'s, all the maps are retired, but we keep the hist
-entries around which hold references to those outdated maps.
+The default is too small (1024 blocks), use h->cciss_max_sectors (8192 blocks)
+Without this change, if you try to set the block size of a tape drive above
+512*1024, via "mt -f /dev/st0 setblk nnn" where nnn is greater than 524288,
+it won't work right.
 
-If the same library gets mapped in for which we have hist entries, a new
-map will be created.  But when we take a perf entry hit within that map,
-we'll find the existing hist entry with the older map.
-
-This causes symbol translations to be done incorrectly.  For example,
-the perf entry processing will lookup the correct uptodate map entry and
-use that to calculate the symbol and DSO relative address.  But later
-when we update the histogram we'll translate the address using the
-outdated map file instead leading to conditions such as out-of-range
-offsets in symbol__inc_addr_samples().
-
-Therefore, update the map of the hist_entry dynamically at lookup/
-creation time.
-
-Signed-off-by: David S. Miller <davem@davemloft.net>
-Link: http://lkml.kernel.org/r/20120327.031418.1220315351537060808.davem@davemloft.net
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+Signed-off-by: Stephen M. Cameron <scameron@beardog.cce.hp.com>
+Signed-off-by: Jens Axboe <axboe@kernel.dk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- tools/perf/util/hist.c |   12 ++++++++++++
- 1 file changed, 12 insertions(+)
+ drivers/block/cciss_scsi.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/tools/perf/util/hist.c
-+++ b/tools/perf/util/hist.c
-@@ -230,6 +230,18 @@ struct hist_entry *__hists__add_entry(st
- 		if (!cmp) {
- 			he->period += period;
- 			++he->nr_events;
-+
-+			/* If the map of an existing hist_entry has
-+			 * become out-of-date due to an exec() or
-+			 * similar, update it.  Otherwise we will
-+			 * mis-adjust symbol addresses when computing
-+			 * the history counter to increment.
-+			 */
-+			if (he->ms.map != entry->ms.map) {
-+				he->ms.map = entry->ms.map;
-+				if (he->ms.map)
-+					he->ms.map->referenced = true;
-+			}
- 			goto out;
- 		}
+--- a/drivers/block/cciss_scsi.c
++++ b/drivers/block/cciss_scsi.c
+@@ -866,6 +866,7 @@ cciss_scsi_detect(ctlr_info_t *h)
+ 	sh->can_queue = cciss_tape_cmds;
+ 	sh->sg_tablesize = h->maxsgentries;
+ 	sh->max_cmd_len = MAX_COMMAND_SIZE;
++	sh->max_sectors = h->cciss_max_sectors;
  
+ 	((struct cciss_scsi_adapter_data_t *) 
+ 		h->scsi_ctlr)->scsi_host = sh;
 
 
