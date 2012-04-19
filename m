@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932939Ab2DSVIh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Apr 2012 17:08:37 -0400
-Received: from mail-pz0-f42.google.com ([209.85.210.42]:46047 "EHLO
-	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932638Ab2DSVIc (ORCPT
+	id S932624Ab2DSVIp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Apr 2012 17:08:45 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:41537 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932942Ab2DSVIj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Apr 2012 17:08:32 -0400
-X-Greylist: delayed 305 seconds by postgrey-1.27 at vger.kernel.org; Thu, 19 Apr 2012 17:08:29 EDT
-Message-Id: <20120419210308.904256990@linuxfoundation.org>
+	Thu, 19 Apr 2012 17:08:39 -0400
+Message-Id: <20120419210309.071104062@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Thu, 19 Apr 2012 14:04:11 -0700
+Date: Thu, 19 Apr 2012 14:04:13 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Danny Kukawka <danny.kukawka@bisect.de>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Tomoya MORINAGA <tomoya.rohm@gmail.com>
-Subject: [ 68/75] spi-topcliff-pch: fix -Wuninitialized warning
+        alan@lxorguk.ukuu.org.uk, "Cho, Yu-Chen" <acho@suse.com>,
+        Johan Hedberg <johan.hedberg@intel.com>,
+        Jonathan Nieder <jrnieder@gmail.com>
+Subject: [ 70/75] Bluetooth: Add Atheros maryann PIDVID support
 In-Reply-To: <20120419210322.GA6478@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,76 +26,115 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Danny Kukawka <danny.kukawka@bisect.de>
+From: "Cho, Yu-Chen" <acho@suse.com>
 
-commit de3bd7e6de25141c466773c2e0fa319b2fa93655 upstream.
+commit 07c0ea874d43c299d185948452945a361052b6e3 upstream.
 
-Fix for:
-drivers/spi/spi-topcliff-pch.c: In function ‘pch_spi_handler_sub’:
-drivers/spi/spi-topcliff-pch.c:325:17: warning: ‘bpw_len’ may be
-  used uninitialized in this function [-Wuninitialized]
-drivers/spi/spi-topcliff-pch.c:325:42: warning: ‘rx_index’ may be
-  used uninitialized in this function [-Wuninitialized]
-drivers/spi/spi-topcliff-pch.c:325:42: warning: ‘tx_index’ may be
-  used uninitialized in this function [-Wuninitialized]
+Add Atheros maryann 0cf3:311d PIDVID support
+This module is AR3012 Series.
 
-Move usage of tx_index, rx_index and bpw_len into the same
-block as where they are set to prevent uninitialized usage.
+Include /sys/kernel/debug/usb/devices output here for reference
 
-v2: instead of init variables with 0 move the whole block
+before:
+T:  Bus=04 Lev=01 Prnt=01 Port=01 Cnt=01 Dev#=  2 Spd=12   MxCh= 0
+D:  Ver= 1.10 Cls=e0(wlcon) Sub=01 Prot=01 MxPS=64 #Cfgs=  1
+P:  Vendor=0cf3 ProdID=311d Rev= 0.01
+S:  Manufacturer=Atheros Communications
+S:  Product=Bluetooth USB Host Controller
+S:  SerialNumber=Alaska Day 2006
+C:* #Ifs= 2 Cfg#= 1 Atr=e0 MxPwr=100mA
+I:* If#= 0 Alt= 0 #EPs= 3 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
+E:  Ad=81(I) Atr=03(Int.) MxPS=  16 Ivl=1ms
+E:  Ad=82(I) Atr=02(Bulk) MxPS=  64 Ivl=0ms
+E:  Ad=02(O) Atr=02(Bulk) MxPS=  64 Ivl=0ms
+I:* If#= 1 Alt= 0 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
+E:  Ad=83(I) Atr=01(Isoc) MxPS=   0 Ivl=1ms
+E:  Ad=03(O) Atr=01(Isoc) MxPS=   0 Ivl=1ms
+I:  If#= 1 Alt= 1 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
+E:  Ad=83(I) Atr=01(Isoc) MxPS=   9 Ivl=1ms
+E:  Ad=03(O) Atr=01(Isoc) MxPS=   9 Ivl=1ms
+I:  If#= 1 Alt= 2 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
+E:  Ad=83(I) Atr=01(Isoc) MxPS=  17 Ivl=1ms
+E:  Ad=03(O) Atr=01(Isoc) MxPS=  17 Ivl=1ms
+I:  If#= 1 Alt= 3 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
+E:  Ad=83(I) Atr=01(Isoc) MxPS=  25 Ivl=1ms
+E:  Ad=03(O) Atr=01(Isoc) MxPS=  25 Ivl=1ms
+I:  If#= 1 Alt= 4 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
+E:  Ad=83(I) Atr=01(Isoc) MxPS=  33 Ivl=1ms
+E:  Ad=03(O) Atr=01(Isoc) MxPS=  33 Ivl=1ms
+I:  If#= 1 Alt= 5 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
+E:  Ad=83(I) Atr=01(Isoc) MxPS=  49 Ivl=1ms
+E:  Ad=03(O) Atr=01(Isoc) MxPS=  49 Ivl=1ms
 
-[This patch title "warnings" makes you think "This patch is not
-for bug fix".  However, this patch surely patch for bug fix.]
+after:
+T:  Bus=04 Lev=01 Prnt=01 Port=01 Cnt=01 Dev#=  2 Spd=12   MxCh= 0
+D:  Ver= 1.10 Cls=e0(wlcon) Sub=01 Prot=01 MxPS=64 #Cfgs=  1
+P:  Vendor=0cf3 ProdID=311d Rev= 0.02
+S:  Manufacturer=Atheros Communications
+S:  Product=Bluetooth USB Host Controller
+S:  SerialNumber=Alaska Day 2006
+C:* #Ifs= 2 Cfg#= 1 Atr=e0 MxPwr=100mA
+I:* If#= 0 Alt= 0 #EPs= 3 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
+E:  Ad=81(I) Atr=03(Int.) MxPS=  16 Ivl=1ms
+E:  Ad=82(I) Atr=02(Bulk) MxPS=  64 Ivl=0ms
+E:  Ad=02(O) Atr=02(Bulk) MxPS=  64 Ivl=0ms
+I:* If#= 1 Alt= 0 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
+E:  Ad=83(I) Atr=01(Isoc) MxPS=   0 Ivl=1ms
+E:  Ad=03(O) Atr=01(Isoc) MxPS=   0 Ivl=1ms
+I:  If#= 1 Alt= 1 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
+E:  Ad=83(I) Atr=01(Isoc) MxPS=   9 Ivl=1ms
+E:  Ad=03(O) Atr=01(Isoc) MxPS=   9 Ivl=1ms
+I:  If#= 1 Alt= 2 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
+E:  Ad=83(I) Atr=01(Isoc) MxPS=  17 Ivl=1ms
+E:  Ad=03(O) Atr=01(Isoc) MxPS=  17 Ivl=1ms
+I:  If#= 1 Alt= 3 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
+E:  Ad=83(I) Atr=01(Isoc) MxPS=  25 Ivl=1ms
+E:  Ad=03(O) Atr=01(Isoc) MxPS=  25 Ivl=1ms
+I:  If#= 1 Alt= 4 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
+E:  Ad=83(I) Atr=01(Isoc) MxPS=  33 Ivl=1ms
+E:  Ad=03(O) Atr=01(Isoc) MxPS=  33 Ivl=1ms
+I:  If#= 1 Alt= 5 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
+E:  Ad=83(I) Atr=01(Isoc) MxPS=  49 Ivl=1ms
+E:  Ad=03(O) Atr=01(Isoc) MxPS=  49 Ivl=1ms
 
-Signed-off-by: Danny Kukawka <danny.kukawka@bisect.de>
-Signed-off-by: Grant Likely <grant.likely@secretlab.ca>
-Signed-off-by: Tomoya MORINAGA <tomoya.rohm@gmail.com>
+Signed-off-by: Cho, Yu-Chen <acho@suse.com>
+cked-by: Marcel Holtmann <marcel@holtmann.org>
+Signed-off-by: Johan Hedberg <johan.hedberg@intel.com>
+Cc: Jonathan Nieder <jrnieder@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/spi/spi-topcliff-pch.c |   31 ++++++++++++++++---------------
- 1 file changed, 16 insertions(+), 15 deletions(-)
+ drivers/bluetooth/ath3k.c |    2 ++
+ drivers/bluetooth/btusb.c |    1 +
+ 2 files changed, 3 insertions(+)
 
---- a/drivers/spi/spi-topcliff-pch.c
-+++ b/drivers/spi/spi-topcliff-pch.c
-@@ -318,22 +318,23 @@ static void pch_spi_handler_sub(struct p
- 		data->tx_index = tx_index;
- 		data->rx_index = rx_index;
+--- a/drivers/bluetooth/ath3k.c
++++ b/drivers/bluetooth/ath3k.c
+@@ -72,6 +72,7 @@ static struct usb_device_id ath3k_table[
  
--	}
--
--	/* if transfer complete interrupt */
--	if (reg_spsr_val & SPSR_FI_BIT) {
--		if ((tx_index == bpw_len) && (rx_index == tx_index)) {
--			/* disable interrupts */
--			pch_spi_setclr_reg(data->master, PCH_SPCR, 0, PCH_ALL);
-+		/* if transfer complete interrupt */
-+		if (reg_spsr_val & SPSR_FI_BIT) {
-+			if ((tx_index == bpw_len) && (rx_index == tx_index)) {
-+				/* disable interrupts */
-+				pch_spi_setclr_reg(data->master, PCH_SPCR, 0,
-+						   PCH_ALL);
+ 	/* Atheros AR3012 with sflash firmware*/
+ 	{ USB_DEVICE(0x0CF3, 0x3004) },
++	{ USB_DEVICE(0x0CF3, 0x311D) },
+ 	{ USB_DEVICE(0x13d3, 0x3375) },
  
--			/* transfer is completed;
--			   inform pch_spi_process_messages */
--			data->transfer_complete = true;
--			data->transfer_active = false;
--			wake_up(&data->wait);
--		} else {
--			dev_err(&data->master->dev,
--				"%s : Transfer is not completed", __func__);
-+				/* transfer is completed;
-+				   inform pch_spi_process_messages */
-+				data->transfer_complete = true;
-+				data->transfer_active = false;
-+				wake_up(&data->wait);
-+			} else {
-+				dev_err(&data->master->dev,
-+					"%s : Transfer is not completed",
-+					__func__);
-+			}
- 		}
- 	}
- }
+ 	/* Atheros AR5BBU12 with sflash firmware */
+@@ -89,6 +90,7 @@ static struct usb_device_id ath3k_blist_
+ 
+ 	/* Atheros AR3012 with sflash firmware*/
+ 	{ USB_DEVICE(0x0cf3, 0x3004), .driver_info = BTUSB_ATH3012 },
++	{ USB_DEVICE(0x0cf3, 0x311D), .driver_info = BTUSB_ATH3012 },
+ 	{ USB_DEVICE(0x13d3, 0x3375), .driver_info = BTUSB_ATH3012 },
+ 
+ 	{ }	/* Terminating entry */
+--- a/drivers/bluetooth/btusb.c
++++ b/drivers/bluetooth/btusb.c
+@@ -128,6 +128,7 @@ static struct usb_device_id blacklist_ta
+ 
+ 	/* Atheros 3012 with sflash firmware */
+ 	{ USB_DEVICE(0x0cf3, 0x3004), .driver_info = BTUSB_ATH3012 },
++	{ USB_DEVICE(0x0cf3, 0x311d), .driver_info = BTUSB_ATH3012 },
+ 	{ USB_DEVICE(0x13d3, 0x3375), .driver_info = BTUSB_ATH3012 },
+ 
+ 	/* Atheros AR5BBU12 with sflash firmware */
 
 
