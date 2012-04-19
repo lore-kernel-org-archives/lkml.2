@@ -1,55 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755650Ab2DSOe1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Apr 2012 10:34:27 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:58285 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753551Ab2DSOe0 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Apr 2012 10:34:26 -0400
+	id S1755420Ab2DSOuP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Apr 2012 10:50:15 -0400
+Received: from li9-11.members.linode.com ([67.18.176.11]:45916 "EHLO
+	test.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754101Ab2DSOuN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Apr 2012 10:50:13 -0400
+Date: Thu, 19 Apr 2012 10:50:07 -0400
+From: "Ted Ts'o" <tytso@mit.edu>
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Cc: Al Viro <viro@ZenIV.linux.org.uk>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        Anton Blanchard <anton@au1.ibm.com>
+Subject: Re: [git pull] vfs and fs fixes
+Message-ID: <20120419145007.GD6317@thunk.org>
+Mail-Followup-To: Ted Ts'o <tytso@mit.edu>,
+	Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+	Al Viro <viro@ZenIV.linux.org.uk>,
+	Linus Torvalds <torvalds@linux-foundation.org>,
+	linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+	Anton Blanchard <anton@au1.ibm.com>
+References: <20120417052511.GU6589@ZenIV.linux.org.uk>
+ <1334805798.3143.25.camel@pasglop>
 MIME-Version: 1.0
-From: Lucas De Marchi <lucas.demarchi@profusion.mobi>
-Date: Thu, 19 Apr 2012 11:34:05 -0300
-Message-ID: <CAMOw1v6Q6_6g-4UKvixDLNkRvv0C_LdkHjYJynQUhJ6_sraf6A@mail.gmail.com>
-Subject: kmod 8
-To: linux-modules <linux-modules@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        linux-hotplug <linux-hotplug@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1334805798.3143.25.camel@pasglop>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on test.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-kmod 8 is out:
+On Thu, Apr 19, 2012 at 01:23:18PM +1000, Benjamin Herrenschmidt wrote:
+> >       ext4: fix endianness breakage in ext4_split_extent_at()
+> 
+> That smells like something we'd want in -stable no ?
 
-ftp://ftp.kernel.org/pub/linux/utils/kernel/kmod/kmod-8.tar.xz
-ftp://ftp.kernel.org/pub/linux/utils/kernel/kmod/kmod-8.tar.sign
-
-Very small, bug-fix release, nothing new. Last release I changed my
-laptop, which caused a wrong setup and kmod 7 got out with docs
-disabled. kmod 8 fixes as well.
-
-Check NEWS file for more information.
-
-Shortlog is below.
+Yes, commit af1584f5 is something that should definitely go into
+-stable.
 
 
-Lucas De Marchi
-
---
-
-Dave Reisner (1):
-      modprobe: handle -ENOENT return from init_module
-
-Elan Ruusamäe (1):
-      modprobe: fix typo in config dump: option->options
-
-Kay Sievers (1):
-      doc: silent man page generation and fix gtk-doc warnings
-
-Lucas De Marchi (4):
-      README: note that there are more files to read
-      TODO: add item to implement actions in kmod
-      doc: remove links to NULL going nowhere
-      kmod 8
+					- Ted
