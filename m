@@ -1,68 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754720Ab2DSD65 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Apr 2012 23:58:57 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:42768 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753427Ab2DSD6z (ORCPT
+	id S1750903Ab2DSETR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Apr 2012 00:19:17 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:34175 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1749667Ab2DSETQ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Apr 2012 23:58:55 -0400
-Date: Thu, 19 Apr 2012 13:58:43 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Jiri Kosina <jkosina@suse.cz>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Shawn Guo <shawn.guo@linaro.org>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Liam Girdwood <lrg@ti.com>, Masanari Iida <standby24x7@gmail.com>
-Subject: linux-next: manual merge of the trivial tree with the sound-asoc
- tree
-Message-Id: <20120419135843.80ae7f770cb0b2bc426a2c62@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0beta7 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Thu__19_Apr_2012_13_58_43_+1000_1X_l_BxlW3htDKcg"
+	Thu, 19 Apr 2012 00:19:16 -0400
+MIME-Version: 1.0
+In-Reply-To: <CAMXH7KFYA24sPUcwgKfwVLNPA0jWQ-QG02y+SfPNnAqdiv0+gg@mail.gmail.com>
+References: <1334620214-25803-1-git-send-email-rob.lee@linaro.org>
+ <1334620214-25803-2-git-send-email-rob.lee@linaro.org> <20120417074301.GM20478@pengutronix.de>
+ <CAMXH7KH41kWMPu_dEpetZc8OUD3C0-mtxGbXX0Vqd4EODPWJUg@mail.gmail.com>
+ <20120417174213.GD3852@pengutronix.de> <CAMXH7KFYA24sPUcwgKfwVLNPA0jWQ-QG02y+SfPNnAqdiv0+gg@mail.gmail.com>
+From: Rob Lee <rob.lee@linaro.org>
+Date: Wed, 18 Apr 2012 23:18:55 -0500
+Message-ID: <CAMXH7KGgSmvfqUTC1bufBz0QXbt01dHsPo1cbRA9jLj9mGmfjg@mail.gmail.com>
+Subject: Re: [PATCH 1/3] ARM: imx: Add common imx cpuidle init functionality.
+To: Amit Kucheria <amit.kucheria@linaro.org>, shawn.guo@linaro.org
+Cc: kernel@pengutronix.de, linaro-dev@lists.linaro.org, patches@linaro.org,
+        daniel.lezcano@linaro.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Thu__19_Apr_2012_13_58_43_+1000_1X_l_BxlW3htDKcg
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+>>> If I called imx_cpuidle_init directly from imx5 or imx6q init
+>>> routines, it would be getting called before the coreinit_call of core
+>>> cpuidle causing a failure.  There were various other directions to
+>>> take and all seemed less desirable than this one.
+>>>
+>>> One alternative would be to add a function to return the pointer to
+>>> the cpuidle driver object based on the machine type.  Functionality
+>>> exists to identify imx5 as a machine type but not imx6q, so I couldn't
+>>> use that machine based method without adding that extra code.
+>>>
+>>> Another alternative would be to add a general platform lateinit_call
+>>> function to each platforms that support cpuidle.
+>>
+>> Just put the initcall into mm-imx5.c and check the cpu type. Then you
+>> also don't have to make imx5_idle global.
+>
+> That solution is currently available for imx5 but for imx6q it implies
+> adding the cpu type support for imx6q.  Are you ok with that?
 
-Hi Jiri,
+Sascha or Shawn, any further comments on my question?
 
-Today's linux-next merge of the trivial tree got a conflict in
-sound/soc/imx/Kconfig between commit a23dc694828e ("ASoC: imx: merge
-sound/soc/imx into sound/soc/fsl") from the sound-asoc tree and commit
-59bf89640647 ("Fix "the the" in various Kconfig") from the trivial tree.
-
-The former merged the file into sound/soc/fsl/Kconfig (where the "the
-the" now needs fixing).  I have just removed sound/soc/imx/Kconfig.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
---Signature=_Thu__19_Apr_2012_13_58_43_+1000_1X_l_BxlW3htDKcg
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJPj41zAAoJEECxmPOUX5FEYTkP/3sJaZm8deP/ne9AOpajWmHe
-JHLzw69K5PllIqCR2KnJmPRuBEooTrqgBGWe4S5fAOX4xlOWpuVZk01DiFIKfp8C
-tmwvLVXi7p1mVOU58KFEwiC19lOHgEMoa5SF2UkJ5RpdTZOpNVWUB1BCo3fo1spz
-s6wBLa0HkRym7bH6XRGFlig+0ozA1QhiS2suHBHWioVYXg/s7pAVl7xS3x/zQS4d
-IA4/ZLgyX/2EJQDGSa/T8M4ab+lc2V8gTFdnTP988R7i0WGSAHHow+2ZR/KxG0CY
-nrFKx0Lb37BbyJYWfEP0X7O1fKM/Np+KQeu75VC5kSxaH9oiIQCxtc8n1XyGnhK7
-oyX2ouDSchU1GgJ4Z6kAYs3dhlMa/+O84kmEp+u/bj4lPOGceCAf/pTMOcOujtE4
-ZGXzM6SL0Xk2Hkls9UGyClU2Yexn0W1JoDGu024b2eFTeFWPDRxBE0kCDb2+uB2x
-3UTyogKgvF6oTY7PT3flPzphjMRD+YVF01IJk/NrOaFLIHphsq5Y/G/4faNY9O5Q
-Kza7+/3ZiKkec/FaRscjoIfetp5n8VDSOb/0yjF5Aza1kR0VEGNAx6K4rObl4LJl
-3yagTTh5CjwqiGlF9CVugdcScxGLUD1n9g/eBFjeGAdcJQYi+qftJK2SHxZR7R8z
-EuwOxjFQezJh8dxpQ7d4
-=AZc9
------END PGP SIGNATURE-----
-
---Signature=_Thu__19_Apr_2012_13_58_43_+1000_1X_l_BxlW3htDKcg--
+Thanks,
+Rob
