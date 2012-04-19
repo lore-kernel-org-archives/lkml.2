@@ -1,57 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932454Ab2DSUR0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Apr 2012 16:17:26 -0400
-Received: from e28smtp05.in.ibm.com ([122.248.162.5]:38750 "EHLO
-	e28smtp05.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751577Ab2DSURW (ORCPT
+	id S932484Ab2DSUT1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Apr 2012 16:19:27 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:60768 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932356Ab2DSUTZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Apr 2012 16:17:22 -0400
-From: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
-To: "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>
-Cc: Attilio Rao <attilio.rao@citrix.com>,
-        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
-        the arch/x86 maintainers <x86@kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Virtualization <virtualization@lists.linux-foundation.org>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        KVM <kvm@vger.kernel.org>,
-        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
-        Andi Kleen <andi@firstfloor.org>,
-        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
-        Xen Devel <xen-devel@lists.xensource.com>,
-        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
-        Marcelo Tosatti <mtosatti@redhat.com>,
-        Andrew Jones <drjones@redhat.com>, Avi Kivity <avi@redhat.com>,
-        Stephan Diestelhorst <stephan.diestelhorst@amd.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Date: Fri, 20 Apr 2012 01:47:00 +0530
-Message-Id: <20120419201656.5411.94590.sendpatchset@codeblue>
-In-Reply-To: <20120419201209.5411.43877.sendpatchset@codeblue>
-References: <20120419201209.5411.43877.sendpatchset@codeblue>
-Subject: [PATCH RFC V7 12/12]  xen: enable PV ticketlocks on HVM Xen
-x-cbid: 12041920-8256-0000-0000-0000020F83DD
+	Thu, 19 Apr 2012 16:19:25 -0400
+Message-ID: <4F907348.9060201@suse.cz>
+Date: Thu, 19 Apr 2012 22:19:20 +0200
+From: Jiri Slaby <jslaby@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120404 Thunderbird/13.0a2
+MIME-Version: 1.0
+To: Julia Lawall <Julia.Lawall@lip6.fr>
+CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        kernel-janitors@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] drivers/tty/amiserial.c: add missing tty_unlock
+References: <1334851960-29409-1-git-send-email-Julia.Lawall@lip6.fr>
+In-Reply-To: <1334851960-29409-1-git-send-email-Julia.Lawall@lip6.fr>
+X-Enigmail-Version: 1.4
+Content-Type: text/plain; charset=ISO-8859-2
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+On 04/19/2012 06:12 PM, Julia Lawall wrote:
+> From: Julia Lawall <Julia.Lawall@lip6.fr>
+> 
+> tty_unlock is used on all other exits from the function.
+> 
+> Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
 
-Signed-off-by: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
-Reviewed-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Signed-off-by: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
----
- arch/x86/xen/smp.c |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
-diff --git a/arch/x86/xen/smp.c b/arch/x86/xen/smp.c
-index 9ac931b..2192f76 100644
---- a/arch/x86/xen/smp.c
-+++ b/arch/x86/xen/smp.c
-@@ -574,4 +574,5 @@ void __init xen_hvm_smp_init(void)
- 	smp_ops.cpu_die = xen_hvm_cpu_die;
- 	smp_ops.send_call_func_ipi = xen_smp_send_call_function_ipi;
- 	smp_ops.send_call_func_single_ipi = xen_smp_send_call_function_single_ipi;
-+	xen_init_spinlocks();
- }
+Acked-by: Jiri Slaby <jslaby@suse.cz>
+
+This is broken since 2008 BTW.
+
+> ---
+>  drivers/tty/amiserial.c |    4 +++-
+>  1 file changed, 3 insertions(+), 1 deletion(-)
+> 
+> diff --git a/drivers/tty/amiserial.c b/drivers/tty/amiserial.c
+> index 24145c3..6cc4358 100644
+> --- a/drivers/tty/amiserial.c
+> +++ b/drivers/tty/amiserial.c
+> @@ -1073,8 +1073,10 @@ static int set_serial_info(struct tty_struct *tty, struct serial_state *state,
+>  		    (new_serial.close_delay != port->close_delay) ||
+>  		    (new_serial.xmit_fifo_size != state->xmit_fifo_size) ||
+>  		    ((new_serial.flags & ~ASYNC_USR_MASK) !=
+> -		     (port->flags & ~ASYNC_USR_MASK)))
+> +		     (port->flags & ~ASYNC_USR_MASK))) {
+> +			tty_unlock();
+>  			return -EPERM;
+> +		}
+>  		port->flags = ((port->flags & ~ASYNC_USR_MASK) |
+>  			       (new_serial.flags & ASYNC_USR_MASK));
+>  		state->custom_divisor = new_serial.custom_divisor;
+
+
+-- 
+js
+suse labs
 
