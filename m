@@ -1,98 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754744Ab2DSJwD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Apr 2012 05:52:03 -0400
-Received: from va3ehsobe002.messaging.microsoft.com ([216.32.180.12]:33877
-	"EHLO va3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754541Ab2DSJv5 (ORCPT
+	id S1754626Ab2DSJz0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Apr 2012 05:55:26 -0400
+Received: from smtp-out-011.synserver.de ([212.40.185.11]:1033 "EHLO
+	smtp-out-011.synserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753058Ab2DSJzY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Apr 2012 05:51:57 -0400
-X-SpamScore: 0
-X-BigFish: VS0(zzzz1202hzz8275bhz2dh2a8h668h839hd24h)
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-From: Zhao Chenhui <chenhui.zhao@freescale.com>
-To: <linux-i2c@vger.kernel.org>
-CC: <w.sang@pengutronix.de>, <leoli@freescale.com>,
-        <linux-kernel@vger.kernel.org>
-Subject: [PATCH v2] i2c-mpc: avoid I2C abnormal after resuming from deep sleep
-Date: Thu, 19 Apr 2012 17:51:34 +0800
-Message-ID: <1334829094-22048-1-git-send-email-chenhui.zhao@freescale.com>
-X-Mailer: git-send-email 1.6.4.1
+	Thu, 19 Apr 2012 05:55:24 -0400
+X-SynServer-TrustedSrc: 1
+X-SynServer-AuthUser: lars@metafoo.de
+X-SynServer-PPID: 27385
+Message-ID: <4F8FE14D.6010005@metafoo.de>
+Date: Thu, 19 Apr 2012 11:56:29 +0200
+From: Lars-Peter Clausen <lars@metafoo.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.3) Gecko/20120329 Icedove/10.0.3
 MIME-Version: 1.0
-Content-Type: text/plain
-X-OriginatorOrg: freescale.com
+To: Laxman Dewangan <ldewangan@nvidia.com>
+CC: jic23@cam.ac.uk, gregkh@linuxfoundation.org, max@stro.at,
+        jbrenner@taosinc.com, bfreed@chromium.org, grundler@chromium.org,
+        linux-iio@vger.kernel.org, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH V2 2/2] staging: iio: light: isl29018: use regmap for
+ register access
+References: <1334825975-7062-1-git-send-email-ldewangan@nvidia.com> <1334825975-7062-3-git-send-email-ldewangan@nvidia.com>
+In-Reply-To: <1334825975-7062-3-git-send-email-ldewangan@nvidia.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When entering deep sleep, the value in the registers I2CFDR and
-I2CDFSRR are lost. This causes I2C access to fail after resuming.
+On 04/19/2012 10:59 AM, Laxman Dewangan wrote:
+> [...]
+> -static int isl29018_read_sensor_input(struct i2c_client *client, int mode)
+> +static int isl29018_read_sensor_input(struct isl29018_chip *chip, int mode)
+>  {
+>  [...]
+> -		dev_err(&client->dev, "Error in reading MSB DATA\n");
+> +	status = regmap_read(chip->regmap, ISL29018_REG_ADD_DATA_MSB, &msb);
+> +	if (status < 0) {
+> +		dev_err(chip->dev,
+> +			"Error in reading MSB DATA with error %d\n", status);
+>  		return msb;
 
-Add suspend/resume routines to save/restore the registers
-I2CFDR and I2CDFSRR.
+should return status instead of msb.
 
-Signed-off-by: Zhao Chenhui <chenhui.zhao@freescale.com>
-Signed-off-by: Li Yang <leoli@freescale.com>
----
- drivers/i2c/busses/i2c-mpc.c |   30 ++++++++++++++++++++++++++++++
- 1 files changed, 30 insertions(+), 0 deletions(-)
-
-diff --git a/drivers/i2c/busses/i2c-mpc.c b/drivers/i2c/busses/i2c-mpc.c
-index a8ebb84..fb2627b 100644
---- a/drivers/i2c/busses/i2c-mpc.c
-+++ b/drivers/i2c/busses/i2c-mpc.c
-@@ -64,6 +64,9 @@ struct mpc_i2c {
- 	struct i2c_adapter adap;
- 	int irq;
- 	u32 real_clk;
-+#ifdef CONFIG_PM
-+	u8 fdr, dfsrr;
-+#endif
- };
- 
- struct mpc_i2c_divider {
-@@ -668,6 +671,30 @@ static int __devexit fsl_i2c_remove(struct platform_device *op)
- 	return 0;
- };
- 
-+#ifdef CONFIG_PM
-+static int mpc_i2c_suspend(struct device *dev)
-+{
-+	struct mpc_i2c *i2c = dev_get_drvdata(dev);
-+
-+	i2c->fdr = readb(i2c->base + MPC_I2C_FDR);
-+	i2c->dfsrr = readb(i2c->base + MPC_I2C_DFSRR);
-+
-+	return 0;
-+}
-+
-+static int mpc_i2c_resume(struct device *dev)
-+{
-+	struct mpc_i2c *i2c = dev_get_drvdata(dev);
-+
-+	writeb(i2c->fdr, i2c->base + MPC_I2C_FDR);
-+	writeb(i2c->dfsrr, i2c->base + MPC_I2C_DFSRR);
-+
-+	return 0;
-+}
-+
-+SIMPLE_DEV_PM_OPS(mpc_i2c_pm_ops, mpc_i2c_suspend, mpc_i2c_resume);
-+#endif
-+
- static struct mpc_i2c_data mpc_i2c_data_512x __devinitdata = {
- 	.setup = mpc_i2c_setup_512x,
- };
-@@ -712,6 +739,9 @@ static struct platform_driver mpc_i2c_driver = {
- 		.owner = THIS_MODULE,
- 		.name = DRV_NAME,
- 		.of_match_table = mpc_i2c_of_match,
-+#ifdef CONFIG_PM
-+		.pm = &mpc_i2c_pm_ops,
-+#endif
- 	},
- };
- 
--- 
-1.6.4.1
-
-
+> [...]
