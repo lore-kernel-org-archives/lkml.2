@@ -1,75 +1,255 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933503Ab2DSVPF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Apr 2012 17:15:05 -0400
+	id S965077Ab2DSVPU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Apr 2012 17:15:20 -0400
 Received: from mail-pb0-f46.google.com ([209.85.160.46]:34108 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964951Ab2DSVO7 (ORCPT
+	with ESMTP id S964998Ab2DSVPQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Apr 2012 17:14:59 -0400
-Message-Id: <20120419210818.756744436@linuxfoundation.org>
+	Thu, 19 Apr 2012 17:15:16 -0400
+Message-Id: <20120419210307.899074250@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Thu, 19 Apr 2012 14:08:19 -0700
+Date: Thu, 19 Apr 2012 14:03:59 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk,
-        Vincent Vanackere <vincent.vanackere@gmail.com>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>,
-        Keith Packard <keithp@keithp.com>,
-        Jonathan Nieder <jrnieder@gmail.com>
-Subject: [ 01/68] drm/i915: mask transcoder select bits before setting them on LVDS
-In-Reply-To: <20120419210923.GA18589@kroah.com>
+        alan@lxorguk.ukuu.org.uk, Martin Schwidefsky <schwidefsky@de.ibm.com>
+Subject: [ 56/75] [S390] fix tlb flushing for page table pages
+In-Reply-To: <20120419210322.GA6478@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.2-stable review patch.  If anyone has any objections, please let me know.
+3.3-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Jesse Barnes <jbarnes@virtuousgeek.org>
+From: Martin Schwidefsky <schwidefsky@de.ibm.com>
 
-commit 7885d2052bd94395e337709cfba093a41f273ff1 upstream.
+commit cd94154cc6a28dd9dc271042c1a59c08d26da886 upstream.
 
-The transcoder port may changed from mode set to mode set, so make sure
-to mask out the selection bits before setting the right ones or we'll
-get black screens when going from transcoder B to A.
+Git commit 36409f6353fc2d7b6516e631415f938eadd92ffa "use generic RCU
+page-table freeing code" introduced a tlb flushing bug. Partially revert
+the above git commit and go back to s390 specific page table flush code.
 
-Tested-by: Vincent Vanackere <vincent.vanackere@gmail.com>
-Signed-off-by: Jesse Barnes <jbarnes@virtuousgeek.org>
-Reviewed-by: Keith Packard <keithp@keithp.com>
-Signed-off-by: Keith Packard <keithp@keithp.com>
-Cc: Jonathan Nieder <jrnieder@gmail.com>
+For s390 the TLB can contain three types of entries, "normal" TLB
+page-table entries, TLB combined region-and-segment-table (CRST) entries
+and real-space entries. Linux does not use real-space entries which
+leaves normal TLB entries and CRST entries. The CRST entries are
+intermediate steps in the page-table translation called translation paths.
+For example a 4K page access in a three-level page table setup will
+create two CRST TLB entries and one page-table TLB entry. The advantage
+of that approach is that a page access next to the previous one can reuse
+the CRST entries and needs just a single read from memory to create the
+page-table TLB entry. The disadvantage is that the TLB flushing rules are
+more complicated, before any page-table may be freed the TLB needs to be
+flushed.
+
+In short: the generic RCU page-table freeing code is incorrect for the
+CRST entries, in particular the check for mm_users < 2 is troublesome.
+
+This is applicable to 3.0+ kernels.
+
+Signed-off-by: Martin Schwidefsky <schwidefsky@de.ibm.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
-
 ---
- drivers/gpu/drm/i915/intel_display.c |   13 ++++++++-----
- 1 file changed, 8 insertions(+), 5 deletions(-)
+ arch/s390/Kconfig               |    1 
+ arch/s390/include/asm/pgalloc.h |    3 -
+ arch/s390/include/asm/tlb.h     |   22 -------------
+ arch/s390/mm/pgtable.c          |   63 ++++++++++++++++++++++++++++++++++++++--
+ 4 files changed, 61 insertions(+), 28 deletions(-)
 
---- a/drivers/gpu/drm/i915/intel_display.c
-+++ b/drivers/gpu/drm/i915/intel_display.c
-@@ -5646,12 +5646,15 @@ static int ironlake_crtc_mode_set(struct
- 	if (is_lvds) {
- 		temp = I915_READ(PCH_LVDS);
- 		temp |= LVDS_PORT_EN | LVDS_A0A2_CLKA_POWER_UP;
--		if (HAS_PCH_CPT(dev))
-+		if (HAS_PCH_CPT(dev)) {
-+			temp &= ~PORT_TRANS_SEL_MASK;
- 			temp |= PORT_TRANS_SEL_CPT(pipe);
--		else if (pipe == 1)
--			temp |= LVDS_PIPEB_SELECT;
--		else
--			temp &= ~LVDS_PIPEB_SELECT;
-+		} else {
-+			if (pipe == 1)
-+				temp |= LVDS_PIPEB_SELECT;
-+			else
-+				temp &= ~LVDS_PIPEB_SELECT;
-+		}
+--- a/arch/s390/Kconfig
++++ b/arch/s390/Kconfig
+@@ -89,7 +89,6 @@ config S390
+ 	select HAVE_KERNEL_XZ
+ 	select HAVE_ARCH_MUTEX_CPU_RELAX
+ 	select HAVE_ARCH_JUMP_LABEL if !MARCH_G5
+-	select HAVE_RCU_TABLE_FREE if SMP
+ 	select ARCH_SAVE_PAGE_KEYS if HIBERNATION
+ 	select HAVE_MEMBLOCK
+ 	select HAVE_MEMBLOCK_NODE_MAP
+--- a/arch/s390/include/asm/pgalloc.h
++++ b/arch/s390/include/asm/pgalloc.h
+@@ -22,10 +22,7 @@ void crst_table_free(struct mm_struct *,
  
- 		/* set the corresponsding LVDS_BORDER bit */
- 		temp |= dev_priv->lvds_border_bits;
+ unsigned long *page_table_alloc(struct mm_struct *, unsigned long);
+ void page_table_free(struct mm_struct *, unsigned long *);
+-#ifdef CONFIG_HAVE_RCU_TABLE_FREE
+ void page_table_free_rcu(struct mmu_gather *, unsigned long *);
+-void __tlb_remove_table(void *_table);
+-#endif
+ 
+ static inline void clear_table(unsigned long *s, unsigned long val, size_t n)
+ {
+--- a/arch/s390/include/asm/tlb.h
++++ b/arch/s390/include/asm/tlb.h
+@@ -30,14 +30,10 @@
+ 
+ struct mmu_gather {
+ 	struct mm_struct *mm;
+-#ifdef CONFIG_HAVE_RCU_TABLE_FREE
+ 	struct mmu_table_batch *batch;
+-#endif
+ 	unsigned int fullmm;
+-	unsigned int need_flush;
+ };
+ 
+-#ifdef CONFIG_HAVE_RCU_TABLE_FREE
+ struct mmu_table_batch {
+ 	struct rcu_head		rcu;
+ 	unsigned int		nr;
+@@ -49,7 +45,6 @@ struct mmu_table_batch {
+ 
+ extern void tlb_table_flush(struct mmu_gather *tlb);
+ extern void tlb_remove_table(struct mmu_gather *tlb, void *table);
+-#endif
+ 
+ static inline void tlb_gather_mmu(struct mmu_gather *tlb,
+ 				  struct mm_struct *mm,
+@@ -57,29 +52,20 @@ static inline void tlb_gather_mmu(struct
+ {
+ 	tlb->mm = mm;
+ 	tlb->fullmm = full_mm_flush;
+-	tlb->need_flush = 0;
+-#ifdef CONFIG_HAVE_RCU_TABLE_FREE
+ 	tlb->batch = NULL;
+-#endif
+ 	if (tlb->fullmm)
+ 		__tlb_flush_mm(mm);
+ }
+ 
+ static inline void tlb_flush_mmu(struct mmu_gather *tlb)
+ {
+-	if (!tlb->need_flush)
+-		return;
+-	tlb->need_flush = 0;
+-	__tlb_flush_mm(tlb->mm);
+-#ifdef CONFIG_HAVE_RCU_TABLE_FREE
+ 	tlb_table_flush(tlb);
+-#endif
+ }
+ 
+ static inline void tlb_finish_mmu(struct mmu_gather *tlb,
+ 				  unsigned long start, unsigned long end)
+ {
+-	tlb_flush_mmu(tlb);
++	tlb_table_flush(tlb);
+ }
+ 
+ /*
+@@ -105,10 +91,8 @@ static inline void tlb_remove_page(struc
+ static inline void pte_free_tlb(struct mmu_gather *tlb, pgtable_t pte,
+ 				unsigned long address)
+ {
+-#ifdef CONFIG_HAVE_RCU_TABLE_FREE
+ 	if (!tlb->fullmm)
+ 		return page_table_free_rcu(tlb, (unsigned long *) pte);
+-#endif
+ 	page_table_free(tlb->mm, (unsigned long *) pte);
+ }
+ 
+@@ -125,10 +109,8 @@ static inline void pmd_free_tlb(struct m
+ #ifdef __s390x__
+ 	if (tlb->mm->context.asce_limit <= (1UL << 31))
+ 		return;
+-#ifdef CONFIG_HAVE_RCU_TABLE_FREE
+ 	if (!tlb->fullmm)
+ 		return tlb_remove_table(tlb, pmd);
+-#endif
+ 	crst_table_free(tlb->mm, (unsigned long *) pmd);
+ #endif
+ }
+@@ -146,10 +128,8 @@ static inline void pud_free_tlb(struct m
+ #ifdef __s390x__
+ 	if (tlb->mm->context.asce_limit <= (1UL << 42))
+ 		return;
+-#ifdef CONFIG_HAVE_RCU_TABLE_FREE
+ 	if (!tlb->fullmm)
+ 		return tlb_remove_table(tlb, pud);
+-#endif
+ 	crst_table_free(tlb->mm, (unsigned long *) pud);
+ #endif
+ }
+--- a/arch/s390/mm/pgtable.c
++++ b/arch/s390/mm/pgtable.c
+@@ -679,8 +679,6 @@ void page_table_free(struct mm_struct *m
+ 	}
+ }
+ 
+-#ifdef CONFIG_HAVE_RCU_TABLE_FREE
+-
+ static void __page_table_free_rcu(void *table, unsigned bit)
+ {
+ 	struct page *page;
+@@ -734,7 +732,66 @@ void __tlb_remove_table(void *_table)
+ 		free_pages((unsigned long) table, ALLOC_ORDER);
+ }
+ 
+-#endif
++static void tlb_remove_table_smp_sync(void *arg)
++{
++	/* Simply deliver the interrupt */
++}
++
++static void tlb_remove_table_one(void *table)
++{
++	/*
++	 * This isn't an RCU grace period and hence the page-tables cannot be
++	 * assumed to be actually RCU-freed.
++	 *
++	 * It is however sufficient for software page-table walkers that rely
++	 * on IRQ disabling. See the comment near struct mmu_table_batch.
++	 */
++	smp_call_function(tlb_remove_table_smp_sync, NULL, 1);
++	__tlb_remove_table(table);
++}
++
++static void tlb_remove_table_rcu(struct rcu_head *head)
++{
++	struct mmu_table_batch *batch;
++	int i;
++
++	batch = container_of(head, struct mmu_table_batch, rcu);
++
++	for (i = 0; i < batch->nr; i++)
++		__tlb_remove_table(batch->tables[i]);
++
++	free_page((unsigned long)batch);
++}
++
++void tlb_table_flush(struct mmu_gather *tlb)
++{
++	struct mmu_table_batch **batch = &tlb->batch;
++
++	if (*batch) {
++		__tlb_flush_mm(tlb->mm);
++		call_rcu_sched(&(*batch)->rcu, tlb_remove_table_rcu);
++		*batch = NULL;
++	}
++}
++
++void tlb_remove_table(struct mmu_gather *tlb, void *table)
++{
++	struct mmu_table_batch **batch = &tlb->batch;
++
++	if (*batch == NULL) {
++		*batch = (struct mmu_table_batch *)
++			__get_free_page(GFP_NOWAIT | __GFP_NOWARN);
++		if (*batch == NULL) {
++			__tlb_flush_mm(tlb->mm);
++			tlb_remove_table_one(table);
++			return;
++		}
++		(*batch)->nr = 0;
++	}
++	(*batch)->tables[(*batch)->nr++] = table;
++	if ((*batch)->nr == MAX_TABLE_BATCH)
++		tlb_table_flush(tlb);
++}
+ 
+ /*
+  * switch on pgstes for its userspace process (for kvm)
 
 
