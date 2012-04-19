@@ -1,72 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753511Ab2DSGkp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Apr 2012 02:40:45 -0400
-Received: from relay.sigmatic.fi ([80.69.161.51]:41182 "EHLO relay.sigmatic.fi"
+	id S1753837Ab2DSGkx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Apr 2012 02:40:53 -0400
+Received: from mgw2.diku.dk ([130.225.96.92]:42970 "EHLO mgw2.diku.dk"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751838Ab2DSGko (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Apr 2012 02:40:44 -0400
-Date: Thu, 19 Apr 2012 09:39:22 +0300
-From: Hannu Heikkinen <hannuxx@iki.fi>
-To: Mika Westerberg <mika.westerberg@iki.fi>
-Cc: spi-devel-general@lists.sourceforge.net, linux-kernel@vger.kernel.org,
-        grant.likely@secretlab.ca
-Subject: Re: [PATCH] spi/ep93xx: clean probe/remove routines
-Message-ID: <20120419063922.GA3437@beyadr.localdomain>
-References: <1334752571-24627-1-git-send-email-hannuxx@iki.fi>
- <20120419061609.GC18520@mwesterb-mobl.lan>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120419061609.GC18520@mwesterb-mobl.lan>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1751775Ab2DSGks (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Apr 2012 02:40:48 -0400
+From: Julia Lawall <Julia.Lawall@lip6.fr>
+To: Jaroslav Kysela <perex@perex.cz>
+Cc: kernel-janitors@vger.kernel.org, Takashi Iwai <tiwai@suse.de>,
+        alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] sound/isa/sc6000.c: add missing sc6000_setup_board
+Date: Thu, 19 Apr 2012 08:40:40 +0200
+Message-Id: <1334817640-15426-1-git-send-email-Julia.Lawall@lip6.fr>
+X-Mailer: git-send-email 1.7.3.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 19/04/12 09:16 +0300, Mika Westerberg wrote:
-> On Wed, Apr 18, 2012 at 03:36:11PM +0300, Hannu Heikkinen wrote:
-> > Use devm_* functions for managing devres resources.
-> > 
-> > Also use local espi_irq and remove irq variable from
-> > struct ep93xx_spi.
-> > 
-> > Cc: mika.westerberg@iki.fi
-> > Cc: grant.likely@secretlab.ca
-> > Signed-off-by: Hannu Heikkinen <hannuxx@iki.fi>
-> > ---
-> >  drivers/spi/spi-ep93xx.c |   36 ++++++++++--------------------------
-> >  1 file changed, 10 insertions(+), 26 deletions(-)
-> > 
-> > diff --git a/drivers/spi/spi-ep93xx.c b/drivers/spi/spi-ep93xx.c
-> > index 6db2887..2c5fb81 100644
-> > --- a/drivers/spi/spi-ep93xx.c
-> > +++ b/drivers/spi/spi-ep93xx.c
-> > @@ -114,7 +114,6 @@ struct ep93xx_spi {
-> >  	struct clk			*clk;
-> >  	void __iomem			*regs_base;
-> >  	unsigned long			sspdr_phys;
-> > -	int				irq;
-> >  	unsigned long			min_rate;
-> >  	unsigned long			max_rate;
-> >  	bool				running;
-> > @@ -1035,6 +1034,7 @@ static int __devinit ep93xx_spi_probe(struct platform_device *pdev)
-> >  	struct ep93xx_spi_info *info;
-> >  	struct ep93xx_spi *espi;
-> >  	struct resource *res;
-> > +	int espi_irq;
-> 
-> Since you are going to make a new version of the patch anyway, can you rename
-> 'espi_irq' to just plain 'irq'?
+From: Julia Lawall <Julia.Lawall@lip6.fr>
 
-Will do.
+There seems to be no interaction between *port and the requested region, so
+the clearing of *vport should take place if the request_region fails.
 
-> After that you can add my
-> 
-> Acked-by: Mika Westerberg <mika.westerberg@iki.fi>
+Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
 
-I will do the changes needed addressed by you and Hartley.
+---
+Not tested.  sc6000_setup_board seems rather complicated, so my reasoning
+could be completely wrong.
 
-Thanks,
-Hannu
+ sound/isa/sc6000.c |    5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
+
+diff --git a/sound/isa/sc6000.c b/sound/isa/sc6000.c
+index d97d0f3..57679cb 100644
+--- a/sound/isa/sc6000.c
++++ b/sound/isa/sc6000.c
+@@ -594,7 +594,7 @@ static int __devinit snd_sc6000_probe(struct device *devptr, unsigned int dev)
+ 		snd_printk(KERN_ERR PFX
+ 			   "I/O port cannot be iomaped.\n");
+ 		err = -EBUSY;
+-		goto err_unmap1;
++		goto err_unmap0;
+ 	}
+ 
+ 	/* to make it marked as used */
+@@ -678,9 +678,10 @@ static int __devinit snd_sc6000_probe(struct device *devptr, unsigned int dev)
+ 	return 0;
+ 
+ err_unmap2:
+-	sc6000_setup_board(*vport, 0);
+ 	release_region(mss_port[dev], 4);
+ err_unmap1:
++	sc6000_setup_board(*vport, 0);
++err_unmap0:
+ 	release_region(port[dev], 0x10);
+ err_exit:
+ 	snd_card_free(card);
 
