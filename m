@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754445Ab2DSIGG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Apr 2012 04:06:06 -0400
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:7700 "EHLO
+	id S1754054Ab2DSICK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Apr 2012 04:02:10 -0400
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:5661 "EHLO
 	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752900Ab2DSICL (ORCPT
+	with ESMTP id S1753339Ab2DSIBr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Apr 2012 04:02:11 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6685"; a="183042379"
-X-IronPort-AV: E=Sophos;i="4.75,443,1330934400"; 
-   d="scan'208";a="120483903"
+	Thu, 19 Apr 2012 04:01:47 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6685"; a="183042221"
+X-IronPort-AV: E=Sophos;i="4.75,445,1330934400"; 
+   d="scan'208";a="158757017"
 From: xiong <xiong@qca.qualcomm.com>
 To: <davem@davemloft.net>, <netdev@vger.kernel.org>,
         <linux-kernel@vger.kernel.org>
 CC: <qca-linux-team@qualcomm.com>, <nic-devel@qualcomm.com>,
         xiong <xiong@qca.qualcomm.com>
-Subject: [PATCH 04/11] atl1c: remove dmar_dly_cnt and dmaw_dly_cnt
-Date: Thu, 19 Apr 2012 16:01:24 +0800
-Message-ID: <1334822491-30129-5-git-send-email-xiong@qca.qualcomm.com>
+Subject: [PATCH 01/11] atl1c: threshold for ASPM is changed based on chip capability
+Date: Thu, 19 Apr 2012 16:01:21 +0800
+Message-ID: <1334822491-30129-2-git-send-email-xiong@qca.qualcomm.com>
 X-Mailer: git-send-email 1.7.7
 In-Reply-To: <1334822491-30129-1-git-send-email-xiong@qca.qualcomm.com>
 References: <1334822491-30129-1-git-send-email-xiong@qca.qualcomm.com>
@@ -28,41 +28,34 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-dmar_dly_cnt and dmaw_dly_cnt aren't used by hardware/driver any more.
+threshold setting to control ASPM for diff chips are different.
+currently, all gigabit-capability chips have limited-ASPM under
+100M throughput.
 
 Signed-off-by: xiong <xiong@qca.qualcomm.com>
 Tested-by: Liu David <dwliu@qca.qualcomm.com>
 ---
- drivers/net/ethernet/atheros/atl1c/atl1c.h      |    2 --
- drivers/net/ethernet/atheros/atl1c/atl1c_main.c |    2 --
- 2 files changed, 0 insertions(+), 4 deletions(-)
+ drivers/net/ethernet/atheros/atl1c/atl1c_main.c |    7 ++++---
+ 1 files changed, 4 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/net/ethernet/atheros/atl1c/atl1c.h b/drivers/net/ethernet/atheros/atl1c/atl1c.h
-index fa31551..acc2956 100644
---- a/drivers/net/ethernet/atheros/atl1c/atl1c.h
-+++ b/drivers/net/ethernet/atheros/atl1c/atl1c.h
-@@ -382,8 +382,6 @@ struct atl1c_hw {
- 	u16 phy_id2;
- 
- 	u32 intr_mask;
--	u8 dmaw_dly_cnt;
--	u8 dmar_dly_cnt;
- 
- 	u8 preamble_len;
- 	u16 max_frame_size;
 diff --git a/drivers/net/ethernet/atheros/atl1c/atl1c_main.c b/drivers/net/ethernet/atheros/atl1c/atl1c_main.c
-index e8e9c10..12b4725 100644
+index 02754ac..2e1c9f3 100644
 --- a/drivers/net/ethernet/atheros/atl1c/atl1c_main.c
 +++ b/drivers/net/ethernet/atheros/atl1c/atl1c_main.c
-@@ -745,8 +745,6 @@ static int __devinit atl1c_sw_init(struct atl1c_adapter *adapter)
- 	hw->rfd_burst = 8;
- 	hw->dma_order = atl1c_dma_ord_out;
- 	hw->dmar_block = atl1c_dma_req_1024;
--	hw->dmar_dly_cnt = 15;
--	hw->dmaw_dly_cnt = 4;
+@@ -1080,9 +1080,10 @@ static void atl1c_configure_rx(struct atl1c_adapter *adapter)
+ 	if (hw->ctrl_flags & ATL1C_RX_IPV6_CHKSUM)
+ 		rxq_ctrl_data |= IPV6_CHKSUM_CTRL_EN;
  
- 	if (atl1c_alloc_queues(adapter)) {
- 		dev_err(&pdev->dev, "Unable to allocate memory for queues\n");
+-	if (hw->ctrl_flags & ATL1C_ASPM_CTRL_MON)
+-		rxq_ctrl_data |= (ASPM_THRUPUT_LIMIT_1M &
+-			ASPM_THRUPUT_LIMIT_MASK) << ASPM_THRUPUT_LIMIT_SHIFT;
++	/* aspm for gigabit */
++	if (hw->nic_type != athr_l1d_2 && (hw->device_id & 1) != 0)
++		rxq_ctrl_data = FIELD_SETX(rxq_ctrl_data, ASPM_THRUPUT_LIMIT,
++			ASPM_THRUPUT_LIMIT_100M);
+ 
+ 	AT_WRITE_REG(hw, REG_RXQ_CTRL, rxq_ctrl_data);
+ }
 -- 
 1.7.7
 
