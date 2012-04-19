@@ -1,49 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755927Ab2DSX0g (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Apr 2012 19:26:36 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:63090 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753529Ab2DSX0f convert rfc822-to-8bit (ORCPT
+	id S1756276Ab2DSX3h (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Apr 2012 19:29:37 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:42641 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756107Ab2DSX3g (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Apr 2012 19:26:35 -0400
-MIME-Version: 1.0
-In-Reply-To: <4F909B56.60001@zytor.com>
-References: <1334794610-5546-1-git-send-email-hpa@zytor.com>
-	<20120419092255.GA29542@aftab>
-	<20120419092630.GD29542@aftab>
-	<4F904541.2030200@zytor.com>
-	<CA+55aFwMsm7zVqPjKptm38zJAbJpF=9e51ew7BP6S5YnoJa3ig@mail.gmail.com>
-	<20120419173802.GI3221@aftab.osrc.amd.com>
-	<4F90527B.7020005@zytor.com>
-	<CA+55aFxhY1Ug5esj==Sm=o1Epg+NFnvFs74syqRxbYDbPQJEFA@mail.gmail.com>
-	<9ff2e09c-57e4-455e-8614-1b3b17b652f4@email.android.com>
-	<4F9072CA.6030903@gmail.com>
-	<4F908EA5.4060507@zytor.com>
-	<CA+8MBbKz4GNs-mFj5=dCpRe_XLgoKZZz-8GM+FqTMTDBKqJNJw@mail.gmail.com>
-	<CA+55aFx8EDb3MOrpky7aBf28=5XQ41ebuunO5aYrnUY1haVzcA@mail.gmail.com>
-	<4F909B56.60001@zytor.com>
-Date: Thu, 19 Apr 2012 16:26:35 -0700
-Message-ID: <CA+8MBbLdq4YYFJXO5HT-=MExO_s-eFkxFigHD0H=Zj5BvHtSVA@mail.gmail.com>
-Subject: Re: [PATCH 3/3] x86, extable: Handle early exceptions
-From: Tony Luck <tony.luck@gmail.com>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        David Daney <ddaney.cavm@gmail.com>, Borislav Petkov <bp@amd64.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
-        David Daney <ddaney@caviumnetworks.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Thu, 19 Apr 2012 19:29:36 -0400
+From: Tejun Heo <tj@kernel.org>
+To: axboe@kernel.dk
+Cc: vgoyal@redhat.com, ctalbott@google.com, rni@google.com,
+        cgroups@vger.kernel.org, containers@lists.linux-foundation.org,
+        linux-kernel@vger.kernel.org, Tejun Heo <tj@kernel.org>
+Subject: [PATCH 3/4] blkcg: fix blkcg->css ref leak in __blkg_lookup_create()
+Date: Thu, 19 Apr 2012 16:29:23 -0700
+Message-Id: <1334878164-24788-4-git-send-email-tj@kernel.org>
+X-Mailer: git-send-email 1.7.7.3
+In-Reply-To: <1334878164-24788-1-git-send-email-tj@kernel.org>
+References: <1334878164-24788-1-git-send-email-tj@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 19, 2012 at 4:10 PM, H. Peter Anvin <hpa@zytor.com> wrote:
-> be better.  That being said, some distros are complaining about the
-> amount of time it takes to load modules on boot...
+__blkg_lookup_create() leaked blkcg->css ref if blkg allocation
+failed.  Fix it.
 
-That could be fixed in the installer for the distribution by rebuilding a kernel
-with the target set of modules for the system built in.
+Signed-off-by: Tejun Heo <tj@kernel.org>
+Cc: Vivek Goyal <vgoyal@redhat.com>
+---
+ block/blk-cgroup.c |   19 +++++++++----------
+ 1 files changed, 9 insertions(+), 10 deletions(-)
 
--Tony
+diff --git a/block/blk-cgroup.c b/block/blk-cgroup.c
+index 8228385..30a7a9c 100644
+--- a/block/blk-cgroup.c
++++ b/block/blk-cgroup.c
+@@ -174,6 +174,7 @@ static struct blkcg_gq *__blkg_lookup_create(struct blkcg *blkcg,
+ 	__releases(q->queue_lock) __acquires(q->queue_lock)
+ {
+ 	struct blkcg_gq *blkg;
++	int ret;
+ 
+ 	WARN_ON_ONCE(!rcu_read_lock_held());
+ 	lockdep_assert_held(q->queue_lock);
+@@ -186,24 +187,22 @@ static struct blkcg_gq *__blkg_lookup_create(struct blkcg *blkcg,
+ 	if (!css_tryget(&blkcg->css))
+ 		return ERR_PTR(-EINVAL);
+ 
+-	/*
+-	 * Allocate and initialize.
+-	 */
++	/* allocate */
++	ret = -ENOMEM;
+ 	blkg = blkg_alloc(blkcg, q);
+-
+-	/* did alloc fail? */
+-	if (unlikely(!blkg)) {
+-		blkg = ERR_PTR(-ENOMEM);
+-		goto out;
+-	}
++	if (unlikely(!blkg))
++		goto err_put;
+ 
+ 	/* insert */
+ 	spin_lock(&blkcg->lock);
+ 	hlist_add_head_rcu(&blkg->blkcg_node, &blkcg->blkg_list);
+ 	list_add(&blkg->q_node, &q->blkg_list);
+ 	spin_unlock(&blkcg->lock);
+-out:
+ 	return blkg;
++
++err_put:
++	css_put(&blkcg->css);
++	return ERR_PTR(ret);
+ }
+ 
+ struct blkcg_gq *blkg_lookup_create(struct blkcg *blkcg,
+-- 
+1.7.7.3
+
