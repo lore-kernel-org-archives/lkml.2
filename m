@@ -1,108 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933607Ab2DSV32 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Apr 2012 17:29:28 -0400
-Received: from mail-pz0-f42.google.com ([209.85.210.42]:38471 "EHLO
-	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933567Ab2DSVPu (ORCPT
+	id S933631Ab2DSV3q (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Apr 2012 17:29:46 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:37406 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756525Ab2DSVPs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Apr 2012 17:15:50 -0400
-Message-Id: <20120419210308.068208531@linuxfoundation.org>
+	Thu, 19 Apr 2012 17:15:48 -0400
+Message-Id: <20120419210820.210159162@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Thu, 19 Apr 2012 14:04:01 -0700
+Date: Thu, 19 Apr 2012 14:08:36 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk,
-        Shreshtha Kumar Sahu <shreshthakumar.sahu@stericsson.com>,
-        Chanho Min <chanho0207@gmail.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Jong-Sung Kim <neidhard.kim@lge.com>
-Subject: [ 58/75] serial: PL011: clear pending interrupts
-In-Reply-To: <20120419210322.GA6478@kroah.com>
+        alan@lxorguk.ukuu.org.uk, Yuriy Kozlov <ykozlov@ptcusa.com>,
+        Tobias Klauser <tklauser@distanz.ch>
+Subject: [ 18/68] tty: serial: altera_uart: Check for NULL platform_data in probe.
+In-Reply-To: <20120419210923.GA18589@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.3-stable review patch.  If anyone has any objections, please let me know.
+3.2-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Linus Walleij <linus.walleij@linaro.org>
+From: Yuriy Kozlov <ykozlov@ptcusa.com>
 
-commit 9b96fbacda34079dea0638ee1e92c56286f6114a upstream.
+commit acede70d6561f2d042d9dbb153d9a3469479c0ed upstream.
 
-Chanho Min reported that when the boot loader transfers
-control to the kernel, there may be pending interrupts
-causing the UART to lock up in an eternal loop trying to
-pick tokens from the FIFO (since the RX interrupt flag
-indicates there are tokens) while in practice there are
-no tokens - in fact there is only a pending IRQ flag.
+Follow altera_jtag_uart.  This fixes a crash if there is a mistake in the DTS.
 
-This patch address the issue with a combination of two
-patches suggested by Russell King that clears and mask
-all interrupts at probe() and clears any pending error
-and RX interrupts at port startup time.
-
-We suspect the spurious interrupts are a side-effect of
-switching the UART from FIFO to non-FIFO mode.
-
-Cc: Shreshtha Kumar Sahu <shreshthakumar.sahu@stericsson.com>
-Reported-by: Chanho Min <chanho0207@gmail.com>
-Suggested-by: Russell King <linux@arm.linux.org.uk>
-Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
-Reviewed-by: Jong-Sung Kim <neidhard.kim@lge.com>
+Signed-off-by: Yuriy Kozlov <ykozlov@ptcusa.com>
+Signed-off-by: Tobias Klauser <tklauser@distanz.ch>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/tty/serial/amba-pl011.c |   15 +++++++++++----
- 1 file changed, 11 insertions(+), 4 deletions(-)
+ drivers/tty/serial/altera_uart.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/drivers/tty/serial/amba-pl011.c
-+++ b/drivers/tty/serial/amba-pl011.c
-@@ -1381,6 +1381,10 @@ static int pl011_startup(struct uart_por
+--- a/drivers/tty/serial/altera_uart.c
++++ b/drivers/tty/serial/altera_uart.c
+@@ -555,7 +555,7 @@ static int __devinit altera_uart_probe(s
+ 	res_mem = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+ 	if (res_mem)
+ 		port->mapbase = res_mem->start;
+-	else if (platp->mapbase)
++	else if (platp)
+ 		port->mapbase = platp->mapbase;
+ 	else
+ 		return -EINVAL;
+@@ -563,7 +563,7 @@ static int __devinit altera_uart_probe(s
+ 	res_irq = platform_get_resource(pdev, IORESOURCE_IRQ, 0);
+ 	if (res_irq)
+ 		port->irq = res_irq->start;
+-	else if (platp->irq)
++	else if (platp)
+ 		port->irq = platp->irq;
  
- 	uap->port.uartclk = clk_get_rate(uap->clk);
- 
-+	/* Clear pending error and receive interrupts */
-+	writew(UART011_OEIS | UART011_BEIS | UART011_PEIS | UART011_FEIS |
-+	       UART011_RTIS | UART011_RXIS, uap->port.membase + UART011_ICR);
-+
- 	/*
- 	 * Allocate the IRQ
- 	 */
-@@ -1417,10 +1421,6 @@ static int pl011_startup(struct uart_por
- 	cr |= UART01x_CR_UARTEN | UART011_CR_RXE | UART011_CR_TXE;
- 	writew(cr, uap->port.membase + UART011_CR);
- 
--	/* Clear pending error interrupts */
--	writew(UART011_OEIS | UART011_BEIS | UART011_PEIS | UART011_FEIS,
--	       uap->port.membase + UART011_ICR);
--
- 	/*
- 	 * initialise the old status of the modem signals
- 	 */
-@@ -1435,6 +1435,9 @@ static int pl011_startup(struct uart_por
- 	 * as well.
- 	 */
- 	spin_lock_irq(&uap->port.lock);
-+	/* Clear out any spuriously appearing RX interrupts */
-+	 writew(UART011_RTIS | UART011_RXIS,
-+		uap->port.membase + UART011_ICR);
- 	uap->im = UART011_RTIM;
- 	if (!pl011_dma_rx_running(uap))
- 		uap->im |= UART011_RXIM;
-@@ -1927,6 +1930,10 @@ static int pl011_probe(struct amba_devic
- 		goto unmap;
- 	}
- 
-+	/* Ensure interrupts from this UART are masked and cleared */
-+	writew(0, uap->port.membase + UART011_IMSC);
-+	writew(0xffff, uap->port.membase + UART011_ICR);
-+
- 	uap->vendor = vendor;
- 	uap->lcrh_rx = vendor->lcrh_rx;
- 	uap->lcrh_tx = vendor->lcrh_tx;
+ 	/* Check platform data first so we can override device node data */
 
 
