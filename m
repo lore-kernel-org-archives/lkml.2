@@ -1,116 +1,192 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752014Ab2DSCIL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Apr 2012 22:08:11 -0400
-Received: from mail-vb0-f46.google.com ([209.85.212.46]:49449 "EHLO
-	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751180Ab2DSCIJ convert rfc822-to-8bit (ORCPT
+	id S1751965Ab2DSCQK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Apr 2012 22:16:10 -0400
+Received: from mailout1.samsung.com ([203.254.224.24]:46953 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751180Ab2DSCQI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Apr 2012 22:08:09 -0400
-MIME-Version: 1.0
-In-Reply-To: <201204182251.46335.rjw@sisk.pl>
-References: <4F8790F6.5080408@intel.com>
-	<201204172310.38816.rjw@sisk.pl>
-	<CAC=cRTNc3XeniOzttRVUTFEzZY1RY7Ds7m+hE8_86A-Ep-5Czw@mail.gmail.com>
-	<201204182251.46335.rjw@sisk.pl>
-Date: Thu, 19 Apr 2012 10:08:08 +0800
-Message-ID: <CAC=cRTMPrSsK5Y8uVxVrtGNqJAGFyRMLU7WsYm185siZd-V_8w@mail.gmail.com>
-Subject: Re: [RFC PATCH] PCIe: Add PCIe runtime D3cold support
-From: huang ying <huang.ying.caritas@gmail.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: "Yan, Zheng" <zheng.z.yan@intel.com>, bhelgaas@google.com,
-        linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
-        linux-pm@vger.kernel.org, Lin Ming <ming.m.lin@intel.com>,
-        Zhang Rui <rui.zhang@intel.com>,
-        ACPI Devel Mailing List <linux-acpi@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Wed, 18 Apr 2012 22:16:08 -0400
+X-AuditID: cbfee61b-b7cb4ae000000d81-63-4f8f7564e06b
+From: Jingoo Han <jg1.han@samsung.com>
+To: "'Ryan Mallon'" <rmallon@gmail.com>
+Cc: "'Florian Tobias Schandinat'" <FlorianSchandinat@gmx.de>,
+        kernel-janitors@vger.kernel.org, linux-fbdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, "'Julia Lawall'" <Julia.Lawall@lip6.fr>,
+        "'Jingoo Han'" <jg1.han@samsung.com>
+References: <1334777828-3557-1-git-send-email-Julia.Lawall@lip6.fr>
+ <4F8F5938.2000207@gmail.com>
+In-reply-to: <4F8F5938.2000207@gmail.com>
+Subject: RE: [PATCH] drivers/video/ep93xx-fb.c: clean up error-handling code
+Date: Thu, 19 Apr 2012 11:16:04 +0900
+Message-id: <000401cd1dd2$5f8ee3b0$1eacab10$%han@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=us-ascii
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Office Outlook 12.0
+Thread-index: Ac0dwZk2rkkuQ7xrSSqxTWqZ645NDwAD60Mw
+Content-language: ko
+X-Brightmail-Tracker: AAAAAA==
+X-TM-AS-MML: No
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 19, 2012 at 4:51 AM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
-> On Wednesday, April 18, 2012, huang ying wrote:
->> On Wed, Apr 18, 2012 at 5:10 AM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
->> > On Tuesday, April 17, 2012, huang ying wrote:
->> >> On Tue, Apr 17, 2012 at 5:30 AM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
->> >> >> >> +     return 0;
->> >> >> >> +}
->> >> >> >> +
->> >> >> >> +static int pcie_port_runtime_resume(struct device *dev)
->> >> >> >> +{
->> >> >> >> +     struct pci_dev *pdev = to_pci_dev(dev);
->> >> >> >> +
->> >> >> >> +     pci_restore_state(pdev);
->> >> >> >> +     if (pdev->runtime_d3cold)
->> >> >> >> +             msleep(100);
->> >> >> >
->> >> >> > What's _that_ supposed to do?
->> >> >>
->> >> >> When resume from d3cold, PCIe main link will be powered on again, it
->> >> >> will take quite some time before the main link go into L0 state.
->> >> >> Otherwise, accessing devices under the port may return wrong result.
->> >> >
->> >> > OK, but this is generic code and as per the standard the link should have been
->> >> > reestablished at this point already.
->> >> >
->> >> > Please don't put some nonstandard-platform-specific quirks like this into
->> >> > code that's supposed to handle _every_ PCIe system.
->> >>
->> >> After checking PCIe spec, I found that the 100ms here has its standard origin :)
->> >>
->> >> In PCI Express Base Specification Revision 2.0:
->> >>
->> >> Section 6.6.1 Conventional Reset
->> >>
->> >> "
->> >> To allow components to perform internal initialization, system
->> >> software must wait for at least
->> >> 100 ms from the end of a Conventional Reset of one or more devices
->> >> before it is permitted to
->> >> issue Configuration Requests to those devices
->> >> "
->> >>
->> >> But I think we should move the 100ms delay here to PCIe bus code or
->> >> PCIe/ACPI code, because that is needed by all PCIe devices for D3cold
->> >> support.
->> >
->> > I think it should be sufficient to wait for the PME message to arrive at
->> > the root port (which will cause the PME interrupt to appear), at which
->> > point the device that sent it should be able to receive configuration
->> > requests.
->>
->> For remote wake up, it is sufficient.  But for host wake up, we still
->> need to wait 100ms.
->
-> Yes, we do.
->
->> > At this point, I need to konw what exactly happens when the GPE is triggered
->> > by WAKE#.
->>
->> - Lxx handler will be executed
->> - in Lxx handler, Notify the ACPI handle PCIe port
->> - Linux has registered a handler for the ACPI handle of PCIe port, in
->> the handler, turn on _PR0 and execute _PS0, which will power on the
->> link.
->
-> But the handler we have is not the handler we want here.
->
-> In fact, there are two handlers, pci_acpi_wake_bus() and pci_acpi_wake_dev()
-> and they only do useful things for ACPI_NOTIFY_DEVICE_WAKE.  Is that the
-> event type we receive from that _Lxx?
+> -----Original Message-----
+> From: Ryan Mallon
+> Sent: Thursday, April 19, 2012 9:16 AM
+> To: Julia Lawall
+> Cc: Florian Tobias Schandinat; kernel-janitors@vger.kernel.org; linux-fbdev@vger.kernel.org; linux-
+> kernel@vger.kernel.org
+> Subject: Re: [PATCH] drivers/video/ep93xx-fb.c: clean up error-handling code
+> 
+> On 19/04/12 05:37, Julia Lawall wrote:
+> 
+> > From: Julia Lawall <Julia.Lawall@lip6.fr>
+> >
+> > There were two problems in this code: failure of the setup function should
+> > free locally allocated resources like other nearby failures, and the test
+> > if (&info->cmap) can never be false.  To generally clean things up, this
+> > patch reorders the error handling code at the failed label and adds labels
+> > so that the conditionals are not necessary.
+> >
+> > Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
+> 
+> Reviewed-by: Ryan Mallon <rmallon@gmail.com>
+> 
+> Oddly, scripts/get_maintainer.pl on this file doesn't return me, even
+> though, according to git blame, I am the author of 90% of the commits.
+> Should I have an entry in the MAINTAINERS file, or is
+> scripts/get_maintainer.pl not working properly?
 
-I check the DSDT, in _Lxx, there is
+There are optional differences in using scripts/get_maintainer.pl.
+If you use './' ahead of file path, you will see your name.
 
-Notify (\_SB.PCI0.RP03, 0x02)
+Without './' ahead of 'drivers/video/ep93xx-fb.c':
+./scripts/get_maintainer.pl --file drivers/video/ep93xx-fb.c
+Florian Tobias Schandinat <FlorianSchandinat@gmx.de> (maintainer:FRAMEBUFFER LAYER)
+linux-fbdev@vger.kernel.org (open list:FRAMEBUFFER LAYER)
+linux-kernel@vger.kernel.org (open list)
 
-That is, the event type is ACPI_NOTIFY_DEVICE_WAKE.
+With './' ahead of 'drivers/video/ep93xx-fb.c':
+./scripts/get_maintainer.pl --file ./drivers/video/ep93xx-fb.c
+Ryan Mallon <rmallon@gmail.com> (commit_signer:2/3=67%)
+Paul Gortmaker <paul.gortmaker@windriver.com> (commit_signer:1/3=33%)
+H Hartley Sweeten <hsweeten@visionengravers.com> (commit_signer:1/3=33%)
+Jesper Juhl <jj@chaosbits.net> (commit_signer:1/3=33%)
+Jiri Kosina <jkosina@suse.cz> (commit_signer:1/3=33%)
+linux-kernel@vger.kernel.org (open list)
 
-> Even if so, these routines don't seem to be suitable to handle the case at hand.
 
-Yes.  Maybe add a flag named like "come_from_d3cold", and if
-come_from_d3cold == true, resume the dev itself without checking pme
-bits, because the PCIe main link is not available now.
+Best regards,
+Jingoo Han
 
-Best Regards,
-Huang Ying
+> 
+> ~Ryan
+> 
+> > ---
+> > Not tested.
+> >
+> >  drivers/video/ep93xx-fb.c |   32 +++++++++++++++++---------------
+> >  1 file changed, 17 insertions(+), 15 deletions(-)
+> >
+> > diff --git a/drivers/video/ep93xx-fb.c b/drivers/video/ep93xx-fb.c
+> > index f8babbe..345d962 100644
+> > --- a/drivers/video/ep93xx-fb.c
+> > +++ b/drivers/video/ep93xx-fb.c
+> > @@ -507,16 +507,16 @@ static int __devinit ep93xxfb_probe(struct platform_device *pdev)
+> >
+> >  	err = fb_alloc_cmap(&info->cmap, 256, 0);
+> >  	if (err)
+> > -		goto failed;
+> > +		goto failed_cmap;
+> >
+> >  	err = ep93xxfb_alloc_videomem(info);
+> >  	if (err)
+> > -		goto failed;
+> > +		goto failed_videomem;
+> >
+> >  	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+> >  	if (!res) {
+> >  		err = -ENXIO;
+> > -		goto failed;
+> > +		goto failed_resource;
+> >  	}
+> >
+> >  	/*
+> > @@ -532,7 +532,7 @@ static int __devinit ep93xxfb_probe(struct platform_device *pdev)
+> >  	fbi->mmio_base = ioremap(res->start, resource_size(res));
+> >  	if (!fbi->mmio_base) {
+> >  		err = -ENXIO;
+> > -		goto failed;
+> > +		goto failed_resource;
+> >  	}
+> >
+> >  	strcpy(info->fix.id, pdev->name);
+> > @@ -553,24 +553,24 @@ static int __devinit ep93xxfb_probe(struct platform_device *pdev)
+> >  	if (err == 0) {
+> >  		dev_err(info->dev, "No suitable video mode found\n");
+> >  		err = -EINVAL;
+> > -		goto failed;
+> > +		goto failed_mode;
+> >  	}
+> >
+> >  	if (mach_info->setup) {
+> >  		err = mach_info->setup(pdev);
+> >  		if (err)
+> > -			return err;
+> > +			goto failed_mode;
+> >  	}
+> >
+> >  	err = ep93xxfb_check_var(&info->var, info);
+> >  	if (err)
+> > -		goto failed;
+> > +		goto failed_check;
+> >
+> >  	fbi->clk = clk_get(info->dev, NULL);
+> >  	if (IS_ERR(fbi->clk)) {
+> >  		err = PTR_ERR(fbi->clk);
+> >  		fbi->clk = NULL;
+> > -		goto failed;
+> > +		goto failed_check;
+> >  	}
+> >
+> >  	ep93xxfb_set_par(info);
+> > @@ -585,15 +585,17 @@ static int __devinit ep93xxfb_probe(struct platform_device *pdev)
+> >  	return 0;
+> >
+> >  failed:
+> > -	if (fbi->clk)
+> > -		clk_put(fbi->clk);
+> > -	if (fbi->mmio_base)
+> > -		iounmap(fbi->mmio_base);
+> > -	ep93xxfb_dealloc_videomem(info);
+> > -	if (&info->cmap)
+> > -		fb_dealloc_cmap(&info->cmap);
+> > +	clk_put(fbi->clk);
+> > +failed_check:
+> >  	if (fbi->mach_info->teardown)
+> >  		fbi->mach_info->teardown(pdev);
+> > +failed_mode:
+> > +	iounmap(fbi->mmio_base);
+> > +failed_resource:
+> > +	ep93xxfb_dealloc_videomem(info);
+> > +failed_videomem:
+> > +	fb_dealloc_cmap(&info->cmap);
+> > +failed_cmap:
+> >  	kfree(info);
+> >  	platform_set_drvdata(pdev, NULL);
+> >
+> >
+> > --
+> > To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> > the body of a message to majordomo@vger.kernel.org
+> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> > Please read the FAQ at  http://www.tux.org/lkml/
+> 
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-fbdev" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+
