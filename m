@@ -1,129 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754485Ab2DSIzA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Apr 2012 04:55:00 -0400
+	id S1753388Ab2DSIzx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Apr 2012 04:55:53 -0400
 Received: from mail-pz0-f52.google.com ([209.85.210.52]:58137 "EHLO
 	mail-pz0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753015Ab2DSIy6 (ORCPT
+	with ESMTP id S1754690Ab2DSIzU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Apr 2012 04:54:58 -0400
-Date: Thu, 19 Apr 2012 16:54:40 +0800
-From: Yong Zhang <yong.zhang0@gmail.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Kirill Tkhai <tkhai@yandex.ru>, linux-kernel@vger.kernel.org,
-        Ingo Molnar <mingo@redhat.com>, Peter Zijlstra <peterz@infradead.org>
-Subject: Re: [sched/rt] Optimization of function pull_rt_task()
-Message-ID: <20120419085440.GC3963@zhy>
-Reply-To: Yong Zhang <yong.zhang0@gmail.com>
-References: <1334519122.8698.3.camel@hp>
- <1334592379.28106.4.camel@gandalf.stny.rr.com>
- <1334773976.28106.49.camel@gandalf.stny.rr.com>
- <1334783815.28106.56.camel@gandalf.stny.rr.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <1334783815.28106.56.camel@gandalf.stny.rr.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 19 Apr 2012 04:55:20 -0400
+From: Sha Zhengju <handai.szj@gmail.com>
+To: akpm@linux-foundation.org, linux-kernel@vger.kernel.org
+Cc: linux-mm@kvack.org, cgroups@vger.kernel.org,
+        Sha Zhengju <handai.szj@taobao.com>
+Subject: [PATCH RESEND] memcg: Free spare array to avoid memory leak
+Date: Thu, 19 Apr 2012 16:54:50 +0800
+Message-Id: <1334825690-9065-1-git-send-email-handai.szj@taobao.com>
+X-Mailer: git-send-email 1.7.4.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 18, 2012 at 05:16:55PM -0400, Steven Rostedt wrote:
-> On Wed, 2012-04-18 at 14:32 -0400, Steven Rostedt wrote:
-> > On Mon, 2012-04-16 at 12:06 -0400, Steven Rostedt wrote:
-> > > On Sun, 2012-04-15 at 23:45 +0400, Kirill Tkhai wrote:
-> > > > The condition (src_rq->rt.rt_nr_running) is weak because it doesn't
-> > > > consider the cases when src_rq has only processes bound to it (when
-> > > > single cpu is allowed). It may be running kernel thread like
-> > > > migration/x etc.
-> > > > 
-> > > > So it's better to use more stronger condition which is able to exclude
-> > > > above conditions. The function has_pushable_tasks() complitely does
-> > > > this. A task may be pullable for another cpu rq only if he is pushable
-> > > > for his own queue.
-> > > 
-> > > I considered this before, and for some reason I never did the change.
-> > > I'll have to think about it. It seems like this would be the obvious
-> > > case, but I think there was something not so obvious that caused issues.
-> > > But I don't remember what it was.
-> > > 
-> > > I'll have to rethink this again.
-> > 
-> > I can't find anything wrong with this change. Maybe things change, or I
-> > was thinking of another change.
-> > 
-> > I'll apply it and start running my tests against it.
-> 
-> Not only does this seem to work fine, I took it one step further :-)
+From: Sha Zhengju <handai.szj@taobao.com>
 
-Hmm... throttle doesn't handle the pushable list, so we may find a
-throttled task by pick_next_pushable_task().
+When the last event is unregistered, there is no need to keep the spare
+array anymore. So free it to avoid memory leak.
+
+Signed-off-by: Sha Zhengju <handai.szj@taobao.com>
+Acked-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Reviewed-by: Kirill A. Shutemov <kirill@shutemov.name>
+
+---
+Hi, Andrew
+
+This patch has been reviewed days ago. Do you have any comments about it?
 
 Thanks,
-Yong
+Sha
+ 
+ mm/memcontrol.c |    6 ++++++
+ 1 files changed, 6 insertions(+), 0 deletions(-)
 
-> 
-> Peter, do you see anything wrong with this patch?
-> 
-> -- Steve
-> 
-> diff --git a/kernel/sched/rt.c b/kernel/sched/rt.c
-> index 61e3086..b44fd1b 100644
-> --- a/kernel/sched/rt.c
-> +++ b/kernel/sched/rt.c
-> @@ -1416,39 +1416,15 @@ static int pick_rt_task(struct rq *rq, struct task_struct *p, int cpu)
->  /* Return the second highest RT task, NULL otherwise */
->  static struct task_struct *pick_next_highest_task_rt(struct rq *rq, int cpu)
->  {
-> -	struct task_struct *next = NULL;
-> -	struct sched_rt_entity *rt_se;
-> -	struct rt_prio_array *array;
-> -	struct rt_rq *rt_rq;
-> -	int idx;
-> +	struct plist_head *head = &rq->rt.pushable_tasks;
-> +	struct task_struct *next;
->  
-> -	for_each_leaf_rt_rq(rt_rq, rq) {
-> -		array = &rt_rq->active;
-> -		idx = sched_find_first_bit(array->bitmap);
-> -next_idx:
-> -		if (idx >= MAX_RT_PRIO)
-> -			continue;
-> -		if (next && next->prio <= idx)
-> -			continue;
-> -		list_for_each_entry(rt_se, array->queue + idx, run_list) {
-> -			struct task_struct *p;
-> -
-> -			if (!rt_entity_is_task(rt_se))
-> -				continue;
-> -
-> -			p = rt_task_of(rt_se);
-> -			if (pick_rt_task(rq, p, cpu)) {
-> -				next = p;
-> -				break;
-> -			}
-> -		}
-> -		if (!next) {
-> -			idx = find_next_bit(array->bitmap, MAX_RT_PRIO, idx+1);
-> -			goto next_idx;
-> -		}
-> +	plist_for_each_entry(next, head, pushable_tasks) {
-> +		if (pick_rt_task(rq, next, cpu))
-> +			return next;
->  	}
->  
-> -	return next;
-> +	return NULL;
->  }
->  
->  static DEFINE_PER_CPU(cpumask_var_t, local_cpu_mask);
-> 
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-
+diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+index 22d94f5..3c09a84 100644
+--- a/mm/memcontrol.c
++++ b/mm/memcontrol.c
+@@ -4412,6 +4412,12 @@ static void mem_cgroup_usage_unregister_event(struct cgroup *cgrp,
+ swap_buffers:
+ 	/* Swap primary and spare array */
+ 	thresholds->spare = thresholds->primary;
++	/* If all events are unregistered, free the spare array */
++	if (!new) {
++		kfree(thresholds->spare);
++		thresholds->spare = NULL;
++	}
++
+ 	rcu_assign_pointer(thresholds->primary, new);
+ 
+ 	/* To be sure that nobody uses thresholds */
 -- 
-Only stand for myself
+1.7.4.1
+
