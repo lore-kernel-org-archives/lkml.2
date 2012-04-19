@@ -1,94 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755733Ab2DSPzZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Apr 2012 11:55:25 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:36430 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754012Ab2DSPzY (ORCPT
+	id S1755623Ab2DSQCr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Apr 2012 12:02:47 -0400
+Received: from mail-vb0-f46.google.com ([209.85.212.46]:55995 "EHLO
+	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754343Ab2DSQCp convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Apr 2012 11:55:24 -0400
-Message-ID: <4F903529.40800@mvista.com>
-Date: Thu, 19 Apr 2012 19:54:17 +0400
-From: Sergei Shtylyov <sshtylyov@mvista.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:11.0) Gecko/20120327 Thunderbird/11.0.1
+	Thu, 19 Apr 2012 12:02:45 -0400
 MIME-Version: 1.0
-To: Andy Whitcroft <apw@canonical.com>
-CC: Jeff Garzik <jgarzik@pobox.com>, linux-ide@vger.kernel.org,
-        linux-kernel@vger.kernel.org, "K. Y. Srinivasan" <kys@microsoft.com>,
-        Mike Sterling <Mike.Sterling@microsoft.com>,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>
-Subject: Re: [PATCH 2/2] ata_piix: defer disks to the Hyper-V drivers by default
-References: <20120419074018.GA3342@shadowen.org> <1334845990-13418-1-git-send-email-apw@canonical.com> <1334845990-13418-3-git-send-email-apw@canonical.com>
-In-Reply-To: <1334845990-13418-3-git-send-email-apw@canonical.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+X-Originating-IP: [87.66.84.216]
+In-Reply-To: <201204191354.38874.arnd@arndb.de>
+References: <1332173578-27422-1-git-send-email-j-pihet@ti.com>
+	<CAORVsuVt5uj5NAsqsce+7f=xMXC9-nck5cPUCOEC8QP3VkxYyA@mail.gmail.com>
+	<4F7D6746.9020504@codeaurora.org>
+	<201204191354.38874.arnd@arndb.de>
+Date: Thu, 19 Apr 2012 18:02:44 +0200
+Message-ID: <CAORVsuUbW+n=xwRzNuUz17viWiTSbdqTLoPAzLr3Np9ws_K6xA@mail.gmail.com>
+Subject: Re: [PATCH 2/9] ARM: OMAP2+: SmartReflex: move the driver specific
+ macros in include/linux/power
+From: Jean Pihet <jean.pihet@newoldbits.com>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: linux-arm-kernel@lists.infradead.org, Trilok Soni <tsoni@codeaurora.org>,
+        Kevin Hilman <khilman@ti.com>, "Cousson, Benoit" <b-cousson@ti.com>,
+        gregkh@linuxfoundation.org, LKML <linux-kernel@vger.kernel.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>, linux-omap@vger.kernel.org,
+        Jean Pihet <j-pihet@ti.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello.
+Hi Arnd,
 
-On 04/19/2012 06:33 PM, Andy Whitcroft wrote:
-
-> When we are hosted on a Microsoft Hyper-V hypervisor the guest disks
-> are exposed both via the Hyper-V paravirtualised drivers and via an
-> emulated SATA disk drive.  In this case we want to use the paravirtualised
-> drivers if we can as they are much more efficient.  Note that the Hyper-V
-> paravirtualised drivers only expose the virtual hard disk devices, the
-> CDROM/DVD devices must still be enumerated.
-
-> Mark the host controller ATA_HOST_IGNORE_ATA to prevent enumeration of
-> disk devices.
-
-> BugLink: http://bugs.launchpad.net/bugs/929545
-> BugLink: http://bugs.launchpad.net/bugs/942316
-> Signed-off-by: Andy Whitcroft<apw@canonical.com>
-> ---
->   drivers/ata/ata_piix.c |   36 ++++++++++++++++++++++++++++++++++++
->   1 file changed, 36 insertions(+)
-
-> diff --git a/drivers/ata/ata_piix.c b/drivers/ata/ata_piix.c
-> index 68013f9..c410ba9 100644
-> --- a/drivers/ata/ata_piix.c
-> +++ b/drivers/ata/ata_piix.c
-> @@ -1552,6 +1552,39 @@ static bool piix_broken_system_poweroff(struct pci_dev *pdev)
->   	return false;
->   }
+On Thu, Apr 19, 2012 at 3:54 PM, Arnd Bergmann <arnd@arndb.de> wrote:
+> On Thursday 05 April 2012, Trilok Soni wrote:
+>> >> Couple of suggestions:
+>> >>
+>> >> drivers/platform/omap/avs?
+>> >> drivers/misc/omap/avs?
+>> >>
 >
-> +static int prefer_ms_hyperv = 1;
-> +module_param(prefer_ms_hyperv, int, 0);
-> +
-> +static void piix_ignore_devices_quirk(struct ata_host *host)
-> +{
-> +#if defined(CONFIG_HYPERV_STORAGE) || defined(CONFIG_HYPERV_STORAGE_MODULE)
+> I would definitely prefer something under drivers/power,
+> drivers/regulators or a new top-level directory under
+> drivers.
+Can I take this as an OK for drivers/power/avs as suggested?
 
-    You could instead use:
+>
+>> >>> IIRC, David Brownell was referring to the rule of three for such case.
+>> >>> Meaning that it worth having a generic fmwk when at least three
+>> >>> different drivers are doing the same kind of things.
+>> >
+>> > Do OMAP v1 and OMAP v2 implementations count as 2 drivers? ;-)
+>> > More seriously, the OMAP code for SmartReflex is far from complete in
+>> > mainline. There is a plan to provide the following features:
+>> > - OMAP v1 IP,
+>> > - OMAP v2 IP,
+>> > - class 1.5,
+>> > - class 3,
+>> > - class 3.5,
+>> > - and more support for the upcoming chipsets.
+>>
+>> I don't understand much of these versions right now, but hopefully after
+>> going through all these docs. My only contention point is to not create
+>> any directory into the drivers/power, unless it is generic fwk and then
+>> build up "client" drivers on top of it. Meanwhile we could move this
+>> driver into above options as I have suggested.
+>
+> I think creating the directory in the place where we want the files
+> to stay in the long run is ok, if the plan is to add more drivers and
+> make the base code more generic. We don't have to wait until it's too
+> late and we absolutely need a framework ;-)
+Agree! That is the intention to provide a fwk.
 
-#if IS_ENABLED(CONFIG_HYPERV_STORAGE)
+> The part I don't understand is how this relates to the regulator framework.
+> Is there any overlap between the functionality provided by the
+> smartreflex framework and the regulator framework? If so, would it be
+> better to extend the existing framework so it can do smartreflex as well?
+The link with regulator has indeed an impact on the target dir, this
+is still unknown and discussed internally.
 
-> +	static const struct dmi_system_id ignore_hyperv[] = {
-> +		{
-> +			/* On Hyper-V hypervisors the disks are exposed on
-> +			 * both the emulated SATA controller and on the
-> +			 * paravirtualised drivers.  The CD/DVD devices
-> +			 * are only exposed on the emulated controller.
-> +			 * Request we ignore ATA devices on this host.
-> +			 */
-> +			.ident = "Hyper-V Virtual Machine",
-> +			.matches = {
-> +				DMI_MATCH(DMI_SYS_VENDOR,
-> +						"Microsoft Corporation"),
-> +				DMI_MATCH(DMI_PRODUCT_NAME, "Virtual Machine"),
-> +			},
-> +		},
-> +		{ }	/* terminate list */
-> +	};
-> +	const struct dmi_system_id *dmi = dmi_first_match(ignore_hyperv);
-> +
-> +	if (dmi&&  prefer_ms_hyperv) {
-> +		host->flags |= ATA_HOST_IGNORE_ATA;
-> +		dev_info(host->dev, "%s detected, SATA device ignore set\n",
+>
+>        Arnd
 
-    s/SATA/ATA/.
-
-MBR, Sergei
+Thanks,
+Jean
