@@ -1,131 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756743Ab2DSWL5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Apr 2012 18:11:57 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:51545 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753414Ab2DSWL4 (ORCPT
+	id S932548Ab2DSWMj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Apr 2012 18:12:39 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:52258 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756460Ab2DSWMh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Apr 2012 18:11:56 -0400
-From: Ido Yariv <ido@wizery.com>
-To: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>
-Cc: Shai Fultheim <shai@scalemp.com>, Ido Yariv <ido@wizery.com>
-Subject: [PATCH RESEND] x86: Avoid contention on cpa_lock if possible
-Date: Fri, 20 Apr 2012 01:11:32 +0300
-Message-Id: <1334873492-31255-1-git-send-email-ido@wizery.com>
-X-Mailer: git-send-email 1.7.7.6
-In-Reply-To: <1333716049-26122-1-git-send-email-ido@wizery.com>
-References: <1333716049-26122-1-git-send-email-ido@wizery.com>
+	Thu, 19 Apr 2012 18:12:37 -0400
+From: Grant Likely <grant.likely@secretlab.ca>
+Subject: Re: linux-next: build failure after merge of the final tree (devicetree tree related)
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Thomas Abraham <thomas.abraham@linaro.org>
+In-Reply-To: <20120418104819.289b5bd6ec0c8575fbeeb5be@canb.auug.org.au>
+References: <20120411151155.b1a614f174442a592d1c1561@canb.auug.org.au> <20120412103157.70669ff82b81d5d926c36d4d@canb.auug.org.au> <CACxGe6tDa+AzK0O=E+EPZ90Ek_C-rM-G4fHSnsdL0S+fNcmzmw@mail.gmail.com> <20120417132357.b38685ea31582e638623961c@canb.auug.org.au> <CACxGe6ugOsCNRD2Jqyv-gf8X4Dvd012Gn5RyBq4TQBBb86W1qg@mail.gmail.com> <CACxGe6ua4ev7-8Mvmvu4UKfGY12g0mTY-uAmRqcZnpFZnA_70w@mail.gmail.com> <20120418104819.289b5bd6ec0c8575fbeeb5be@canb.auug.org.au>
+Date: Thu, 19 Apr 2012 16:12:33 -0600
+Message-Id: <20120419221233.E1BCF3E0700@localhost>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Shai Fultheim <shai@scalemp.com>
+On Wed, 18 Apr 2012 10:48:19 +1000, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+> Hi Grant,
+> 
+> On Tue, 17 Apr 2012 16:39:16 -0600 Grant Likely <grant.likely@secretlab.ca> wrote:
+> >
+> > Should be fixed now.
+> 
+> Did you forget to push it out?
 
-Some architectures (e.g. vSMP) do not require to serialize cpa, for
-instance, by guaranteeing that the most recent TLB entry will always be
-used.
+Apparantly so.  Pushed out now.
 
-To avoid needless contention on cpa_lock, do not lock/unlock it on such
-architectures.
-
-Signed-off-by: Shai Fultheim <shai@scalemp.com>
-[ido@wizery.com: added should_serialize_cpa, handled potential race, and
-                 reworded the commit message]
-Signed-off-by: Ido Yariv <ido@wizery.com>
----
- arch/x86/mm/pageattr.c |   36 ++++++++++++++++++++++++++++--------
- 1 files changed, 28 insertions(+), 8 deletions(-)
-
-diff --git a/arch/x86/mm/pageattr.c b/arch/x86/mm/pageattr.c
-index e1ebde3..4d606ee 100644
---- a/arch/x86/mm/pageattr.c
-+++ b/arch/x86/mm/pageattr.c
-@@ -501,7 +501,7 @@ out_unlock:
- 	return do_split;
- }
- 
--static int split_large_page(pte_t *kpte, unsigned long address)
-+static int split_large_page(pte_t *kpte, unsigned long address, bool cpa_locked)
- {
- 	unsigned long pfn, pfninc = 1;
- 	unsigned int i, level;
-@@ -509,10 +509,10 @@ static int split_large_page(pte_t *kpte, unsigned long address)
- 	pgprot_t ref_prot;
- 	struct page *base;
- 
--	if (!debug_pagealloc)
-+	if (cpa_locked)
- 		spin_unlock(&cpa_lock);
- 	base = alloc_pages(GFP_KERNEL | __GFP_NOTRACK, 0);
--	if (!debug_pagealloc)
-+	if (cpa_locked)
- 		spin_lock(&cpa_lock);
- 	if (!base)
- 		return -ENOMEM;
-@@ -624,7 +624,8 @@ static int __cpa_process_fault(struct cpa_data *cpa, unsigned long vaddr,
- 	}
- }
- 
--static int __change_page_attr(struct cpa_data *cpa, int primary)
-+static int __change_page_attr(struct cpa_data *cpa, int primary,
-+			      bool cpa_locked)
- {
- 	unsigned long address;
- 	int do_split, err;
-@@ -693,7 +694,7 @@ repeat:
- 	/*
- 	 * We have to split the large page:
- 	 */
--	err = split_large_page(kpte, address);
-+	err = split_large_page(kpte, address, cpa_locked);
- 	if (!err) {
- 		/*
- 	 	 * Do a global flush tlb after splitting the large page
-@@ -787,9 +788,20 @@ static int cpa_process_alias(struct cpa_data *cpa)
- 	return 0;
- }
- 
-+static inline bool should_serialize_cpa(void)
-+{
-+	/*
-+	 * Some architectures do not require cpa() to be serialized, for
-+	 * instance, by guaranteeing that the most recent TLB entry will be
-+	 * used.
-+	 */
-+	return !debug_pagealloc && !is_vsmp_box();
-+}
-+
- static int __change_page_attr_set_clr(struct cpa_data *cpa, int checkalias)
- {
- 	int ret, numpages = cpa->numpages;
-+	bool cpa_locked = false;
- 
- 	while (numpages) {
- 		/*
-@@ -801,10 +813,18 @@ static int __change_page_attr_set_clr(struct cpa_data *cpa, int checkalias)
- 		if (cpa->flags & (CPA_ARRAY | CPA_PAGES_ARRAY))
- 			cpa->numpages = 1;
- 
--		if (!debug_pagealloc)
-+		if (should_serialize_cpa()) {
- 			spin_lock(&cpa_lock);
--		ret = __change_page_attr(cpa, checkalias);
--		if (!debug_pagealloc)
-+			/*
-+			 * In order to avoid any race conditions in which
-+			 * should_serialize_cpa() returns a different value
-+			 * after the lock was acquired, make sure locking is
-+			 * consitent and don't ever leave the lock acquired.
-+			 */
-+			cpa_locked = true;
-+		}
-+		ret = __change_page_attr(cpa, checkalias, cpa_locked);
-+		if (cpa_locked)
- 			spin_unlock(&cpa_lock);
- 		if (ret)
- 			return ret;
--- 
-1.7.7.6
+g.
 
