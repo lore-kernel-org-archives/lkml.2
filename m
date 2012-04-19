@@ -1,21 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933008Ab2DSVJJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Apr 2012 17:09:09 -0400
-Received: from mail-pz0-f42.google.com ([209.85.210.42]:41811 "EHLO
+	id S932993Ab2DSVJG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Apr 2012 17:09:06 -0400
+Received: from mail-pz0-f42.google.com ([209.85.210.42]:46047 "EHLO
 	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932973Ab2DSVI4 (ORCPT
+	with ESMTP id S932967Ab2DSVI7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Apr 2012 17:08:56 -0400
-Message-Id: <20120419210309.497360759@linuxfoundation.org>
+	Thu, 19 Apr 2012 17:08:59 -0400
+X-Greylist: delayed 305 seconds by postgrey-1.27 at vger.kernel.org; Thu, 19 Apr 2012 17:08:29 EDT
+Message-Id: <20120419210309.154428894@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Thu, 19 Apr 2012 14:04:18 -0700
+Date: Thu, 19 Apr 2012 14:04:14 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Alex Deucher <alexander.deucher@amd.com>,
-        Dave Airlie <airlied@redhat.com>
-Subject: [ 75/75] drm/radeon: fix load detect on rn50 with hardcoded EDIDs.
+        alan@lxorguk.ukuu.org.uk, Kees Cook <keescook@chromium.org>,
+        Darren Hart <dvhart@linux.intel.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, Jiri Kosina <jkosina@suse.cz>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        David Howells <dhowells@redhat.com>,
+        "Serge E. Hallyn" <serge.hallyn@canonical.com>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: [ 71/75] futex: Do not leak robust list to unprivileged process
 In-Reply-To: <20120419210322.GA6478@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,43 +31,166 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dave Airlie <airlied@redhat.com>
+From: Kees Cook <keescook@chromium.org>
 
-commit a09d431f344d854e4fe9cfac44f78cb8202f3eb7 upstream.
+commit bdbb776f882f5ad431aa1e694c69c1c3d6a4a5b8 upstream.
 
-When the force changes went in back in 3.3.0, we ended up returning
-disconnected in the !force case, and the connected in when forced,
-as it hit the hardcoded check.
+It was possible to extract the robust list head address from a setuid
+process if it had used set_robust_list(), allowing an ASLR info leak. This
+changes the permission checks to be the same as those used for similar
+info that comes out of /proc.
 
-Fix it so all exits go via the hardcoded check and stop spurious
-modesets on platforms with hardcoded EDIDs.
+Running a setuid program that uses robust futexes would have had:
+  cred->euid != pcred->euid
+  cred->euid == pcred->uid
+so the old permissions check would allow it. I'm not aware of any setuid
+programs that use robust futexes, so this is just a preventative measure.
 
-Reported-by: Evan McNabb (Red Hat)
-Reviewed-by: Alex Deucher <alexander.deucher@amd.com>
-Signed-off-by: Dave Airlie <airlied@redhat.com>
+(This patch is based on changes from grsecurity.)
+
+Signed-off-by: Kees Cook <keescook@chromium.org>
+Cc: Darren Hart <dvhart@linux.intel.com>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Jiri Kosina <jkosina@suse.cz>
+Cc: Eric W. Biederman <ebiederm@xmission.com>
+Cc: David Howells <dhowells@redhat.com>
+Cc: Serge E. Hallyn <serge.hallyn@canonical.com>
+Cc: kernel-hardening@lists.openwall.com
+Cc: spender@grsecurity.net
+Link: http://lkml.kernel.org/r/20120319231253.GA20893@www.outflux.net
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/radeon/radeon_connectors.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ kernel/futex.c        |   36 +++++++++++++-----------------------
+ kernel/futex_compat.c |   36 +++++++++++++-----------------------
+ 2 files changed, 26 insertions(+), 46 deletions(-)
 
---- a/drivers/gpu/drm/radeon/radeon_connectors.c
-+++ b/drivers/gpu/drm/radeon/radeon_connectors.c
-@@ -976,6 +976,7 @@ radeon_dvi_detect(struct drm_connector *
- 	 * cases the DVI port is actually a virtual KVM port connected to the service
- 	 * processor.
- 	 */
-+out:
- 	if ((!rdev->is_atom_bios) &&
- 	    (ret == connector_status_disconnected) &&
- 	    rdev->mode_info.bios_hardcoded_edid_size) {
-@@ -983,7 +984,6 @@ radeon_dvi_detect(struct drm_connector *
- 		ret = connector_status_connected;
+--- a/kernel/futex.c
++++ b/kernel/futex.c
+@@ -59,6 +59,7 @@
+ #include <linux/magic.h>
+ #include <linux/pid.h>
+ #include <linux/nsproxy.h>
++#include <linux/ptrace.h>
+ 
+ #include <asm/futex.h>
+ 
+@@ -2443,40 +2444,29 @@ SYSCALL_DEFINE3(get_robust_list, int, pi
+ {
+ 	struct robust_list_head __user *head;
+ 	unsigned long ret;
+-	const struct cred *cred = current_cred(), *pcred;
++	struct task_struct *p;
+ 
+ 	if (!futex_cmpxchg_enabled)
+ 		return -ENOSYS;
+ 
++	rcu_read_lock();
++
++	ret = -ESRCH;
+ 	if (!pid)
+-		head = current->robust_list;
++		p = current;
+ 	else {
+-		struct task_struct *p;
+-
+-		ret = -ESRCH;
+-		rcu_read_lock();
+ 		p = find_task_by_vpid(pid);
+ 		if (!p)
+ 			goto err_unlock;
+-		ret = -EPERM;
+-		pcred = __task_cred(p);
+-		/* If victim is in different user_ns, then uids are not
+-		   comparable, so we must have CAP_SYS_PTRACE */
+-		if (cred->user->user_ns != pcred->user->user_ns) {
+-			if (!ns_capable(pcred->user->user_ns, CAP_SYS_PTRACE))
+-				goto err_unlock;
+-			goto ok;
+-		}
+-		/* If victim is in same user_ns, then uids are comparable */
+-		if (cred->euid != pcred->euid &&
+-		    cred->euid != pcred->uid &&
+-		    !ns_capable(pcred->user->user_ns, CAP_SYS_PTRACE))
+-			goto err_unlock;
+-ok:
+-		head = p->robust_list;
+-		rcu_read_unlock();
  	}
  
--out:
- 	/* updated in get modes as well since we need to know if it's analog or digital */
- 	radeon_connector_update_scratch_regs(connector, ret);
- 	return ret;
++	ret = -EPERM;
++	if (!ptrace_may_access(p, PTRACE_MODE_READ))
++		goto err_unlock;
++
++	head = p->robust_list;
++	rcu_read_unlock();
++
+ 	if (put_user(sizeof(*head), len_ptr))
+ 		return -EFAULT;
+ 	return put_user(head, head_ptr);
+--- a/kernel/futex_compat.c
++++ b/kernel/futex_compat.c
+@@ -10,6 +10,7 @@
+ #include <linux/compat.h>
+ #include <linux/nsproxy.h>
+ #include <linux/futex.h>
++#include <linux/ptrace.h>
+ 
+ #include <asm/uaccess.h>
+ 
+@@ -136,40 +137,29 @@ compat_sys_get_robust_list(int pid, comp
+ {
+ 	struct compat_robust_list_head __user *head;
+ 	unsigned long ret;
+-	const struct cred *cred = current_cred(), *pcred;
++	struct task_struct *p;
+ 
+ 	if (!futex_cmpxchg_enabled)
+ 		return -ENOSYS;
+ 
++	rcu_read_lock();
++
++	ret = -ESRCH;
+ 	if (!pid)
+-		head = current->compat_robust_list;
++		p = current;
+ 	else {
+-		struct task_struct *p;
+-
+-		ret = -ESRCH;
+-		rcu_read_lock();
+ 		p = find_task_by_vpid(pid);
+ 		if (!p)
+ 			goto err_unlock;
+-		ret = -EPERM;
+-		pcred = __task_cred(p);
+-		/* If victim is in different user_ns, then uids are not
+-		   comparable, so we must have CAP_SYS_PTRACE */
+-		if (cred->user->user_ns != pcred->user->user_ns) {
+-			if (!ns_capable(pcred->user->user_ns, CAP_SYS_PTRACE))
+-				goto err_unlock;
+-			goto ok;
+-		}
+-		/* If victim is in same user_ns, then uids are comparable */
+-		if (cred->euid != pcred->euid &&
+-		    cred->euid != pcred->uid &&
+-		    !ns_capable(pcred->user->user_ns, CAP_SYS_PTRACE))
+-			goto err_unlock;
+-ok:
+-		head = p->compat_robust_list;
+-		rcu_read_unlock();
+ 	}
+ 
++	ret = -EPERM;
++	if (!ptrace_may_access(p, PTRACE_MODE_READ))
++		goto err_unlock;
++
++	head = p->compat_robust_list;
++	rcu_read_unlock();
++
+ 	if (put_user(sizeof(*head), len_ptr))
+ 		return -EFAULT;
+ 	return put_user(ptr_to_compat(head), head_ptr);
 
 
