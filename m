@@ -1,123 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752780Ab2DSGNf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Apr 2012 02:13:35 -0400
-Received: from mail-pz0-f52.google.com ([209.85.210.52]:36395 "EHLO
-	mail-pz0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751242Ab2DSGNd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Apr 2012 02:13:33 -0400
-Message-ID: <4F8FACFF.9070107@gmail.com>
-Date: Thu, 19 Apr 2012 14:13:19 +0800
-From: Cong Wang <xiyou.wangcong@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120329 Thunderbird/11.0.1
+	id S1752969Ab2DSGQt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Apr 2012 02:16:49 -0400
+Received: from smtp.outflux.net ([198.145.64.163]:32800 "EHLO smtp.outflux.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751242Ab2DSGQs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Apr 2012 02:16:48 -0400
+Date: Wed, 18 Apr 2012 23:16:45 -0700
+From: Kees Cook <keescook@chromium.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Randy Dunlap <rdunlap@xenotime.net>, linux-doc@vger.kernel.org
+Subject: [PATCH] docs: update HOWTO for 2.6.x -> 3.x versioning
+Message-ID: <20120419061645.GA25127@www.outflux.net>
 MIME-Version: 1.0
-To: Yanmin Zhang <yanmin_zhang@linux.intel.com>
-CC: "Tu, Xiaobing" <xiaobing.tu@intel.com>, Lin Ming <mlin@ss.pku.edu.cn>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "mingo@elte.hu" <mingo@elte.hu>,
-        "rusty@rustcorp.com.au" <rusty@rustcorp.com.au>,
-        "a.p.zijlstra@chello.nl" <a.p.zijlstra@chello.nl>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "rostedt@goodmis.org" <rostedt@goodmis.org>,
-        "Zuo, Jiao" <jiao.zuo@intel.com>
-Subject: Re: [RFC 1/2] kernel patch for dump user space stack tool
-References: <EE928378561BF1449699C96571234A740FCED62F@SHSMSX101.ccr.corp.intel.com>  <4F8F8B9E.3040107@gmail.com> <1334812653.14538.29.camel@ymzhang.sh.intel.com>
-In-Reply-To: <1334812653.14538.29.camel@ymzhang.sh.intel.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-HELO: www.outflux.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/19/2012 01:17 PM, Yanmin Zhang wrote:
-> On Thu, 2012-04-19 at 11:50 +0800, Cong Wang wrote:
->> On 04/17/2012 10:37 PM, Tu, Xiaobing wrote:
->>> Resend the patch because of the log is too long on a single line.
->>>
->>> From: xiaobing tu<xiaobing.tu@intel.com>
->>>
->>> Here is the kernel patch for this tool, The idea is to output user space stack call-chain from
->>> /proc/xxx/stack, currently, /proc/xxx/stack only output kernel stack call chain. We extend
->>> it to output user space call chain in hex format
->>>
->>
->> Can you teach me why we still need this as we have pstack?
-> Cong,
->
-> Sorry for replying so late. Xiaobing told me you sent him email and I
-> didn't receive the 1st one you sent out.
+The HOWTO document needed updating for the new kernel versioning. The
+git URI for -next was updated as well.
 
+Signed-off-by: Kees Cook <keescook@chromium.org>
+---
+ Documentation/HOWTO |   32 ++++++++++++++++----------------
+ 1 files changed, 16 insertions(+), 16 deletions(-)
 
-Based on the length of your reply and the description of the patch, you 
-hide lots of information in your patch description.
+diff --git a/Documentation/HOWTO b/Documentation/HOWTO
+index f7ade3b..59c080f 100644
+--- a/Documentation/HOWTO
++++ b/Documentation/HOWTO
+@@ -218,16 +218,16 @@ The development process
+ Linux kernel development process currently consists of a few different
+ main kernel "branches" and lots of different subsystem-specific kernel
+ branches.  These different branches are:
+-  - main 2.6.x kernel tree
+-  - 2.6.x.y -stable kernel tree
+-  - 2.6.x -git kernel patches
++  - main 3.x kernel tree
++  - 3.x.y -stable kernel tree
++  - 3.x -git kernel patches
+   - subsystem specific kernel trees and patches
+-  - the 2.6.x -next kernel tree for integration tests
++  - the 3.x -next kernel tree for integration tests
+ 
+-2.6.x kernel tree
++3.x kernel tree
+ -----------------
+-2.6.x kernels are maintained by Linus Torvalds, and can be found on
+-kernel.org in the pub/linux/kernel/v2.6/ directory.  Its development
++3.x kernels are maintained by Linus Torvalds, and can be found on
++kernel.org in the pub/linux/kernel/v3.x/ directory.  Its development
+ process is as follows:
+   - As soon as a new kernel is released a two weeks window is open,
+     during this period of time maintainers can submit big diffs to
+@@ -262,20 +262,20 @@ mailing list about kernel releases:
+ 	released according to perceived bug status, not according to a
+ 	preconceived timeline."
+ 
+-2.6.x.y -stable kernel tree
++3.x.y -stable kernel tree
+ ---------------------------
+-Kernels with 4-part versions are -stable kernels. They contain
++Kernels with 3-part versions are -stable kernels. They contain
+ relatively small and critical fixes for security problems or significant
+-regressions discovered in a given 2.6.x kernel.
++regressions discovered in a given 3.x kernel.
+ 
+ This is the recommended branch for users who want the most recent stable
+ kernel and are not interested in helping test development/experimental
+ versions.
+ 
+-If no 2.6.x.y kernel is available, then the highest numbered 2.6.x
++If no 3.x.y kernel is available, then the highest numbered 3.x
+ kernel is the current stable kernel.
+ 
+-2.6.x.y are maintained by the "stable" team <stable@vger.kernel.org>, and
++3.x.y are maintained by the "stable" team <stable@vger.kernel.org>, and
+ are released as needs dictate.  The normal release period is approximately
+ two weeks, but it can be longer if there are no pressing problems.  A
+ security-related problem, instead, can cause a release to happen almost
+@@ -285,7 +285,7 @@ The file Documentation/stable_kernel_rules.txt in the kernel tree
+ documents what kinds of changes are acceptable for the -stable tree, and
+ how the release process works.
+ 
+-2.6.x -git patches
++3.x -git patches
+ ------------------
+ These are daily snapshots of Linus' kernel tree which are managed in a
+ git repository (hence the name.) These patches are usually released
+@@ -317,13 +317,13 @@ revisions to it, and maintainers can mark patches as under review,
+ accepted, or rejected.  Most of these patchwork sites are listed at
+ http://patchwork.kernel.org/.
+ 
+-2.6.x -next kernel tree for integration tests
++3.x -next kernel tree for integration tests
+ ---------------------------------------------
+-Before updates from subsystem trees are merged into the mainline 2.6.x
++Before updates from subsystem trees are merged into the mainline 3.x
+ tree, they need to be integration-tested.  For this purpose, a special
+ testing repository exists into which virtually all subsystem trees are
+ pulled on an almost daily basis:
+-	http://git.kernel.org/?p=linux/kernel/git/sfr/linux-next.git
++	http://git.kernel.org/?p=linux/kernel/git/next/linux-next.git
+ 	http://linux.f-seidel.de/linux-next/pmwiki/
+ 
+ This way, the -next kernel gives a summary outlook onto what will be
+-- 
+1.7.0.4
 
->
-> I tried pstack and it does work. It means developers in the world wanted
-> the tool long long ago.
->
-> Although not checking the source codes of pstack (sorry, I'm busy in debugging
-> many critical issues), I think pstack is based on ptrace interface, which means:
-> 1) It need traps into system for many times to collect call frames of one
-> task.
-> 2) It need send signal to the ptraced process to stop it. Such behavior
-> might have some impact if the ptraced process also processes many signals.
-> 3) The data parsing to get symbols might not be split from data collection.
-> I mean, it collects call frames of one process, then parses it; then collects the 2nd
-> task's. If there are many processes, it couldn't collect the data just at the monitor
-> time point.
-
-
-Yet another one who wants to "fix" ptrace. ;-)
-
->
-> Why do we work out the tools? The original requirement is from real work.
-> We are enabling Android on Medfield. One typical error of Android is ANR.
-> When a process couldn't respond in 5 seconds, Android reports an ANR error,
-> and dumps JAVA call stack. However, it couldn't dump userspace lib (such like
-> bionic, written by C or C++). In addition, Android just dumps the stack of
-> the non-responding process. It doesn't dump stack of others. As binder is basic
-> framework in Android, processes communicate by binder in the model of client/server.
-> When one process is not responding quickly, maybe another process blocks it. We
-> need dump that process status.
->
-> Many teams complained it's hard to debug such ANR issues, especially the ones which
-> are triggered at MTBF testing. Sometimes, an ANR happens after MTBF testing runs
-> for one week. Developers ask us to implement such tool over and over again.
->
-> Besides ANR, sometimes, system might not respond to any user operation. Usually,
-> kernel or firmware would reset system. At that time, we also need get the call
-> chains of all the user space processes before system is reset.
-
-
-I am not familiar with Andriod at all, so a quick question is if this is 
-only for Andriod, why you introduce this for all? IOW, why not provide a 
-Kconfig?
-
-BTW, I am sure you need to put the above paragraphs into your patch 
-description, to make it clear why the patch is needed.
-
->
-> With our tool,
-> 1) We could collect the HEX-format call chain data and /proc/XXX/maps
-> of all the processes quickly, then parse them either after rebooting, or
-> after the issue is reported. It could catch the scene just at the time point
-> when the error happens. Our experiments shows the tool could collect the data
-> of all processes within 200ms.
-> 2) The new tool won't stop the processes and have less impact on them.
-> Considering a scenario of performance bottleneck investigation, statistics collection
-> shouldn't have big impact on running processes.
-> 3) It could support both i386 and x86-64. I tried pstack and it doesn't work
-> with x86-64.
-> 4) It follows /proc/XXX/stack interface and it's easy to use it.
->
-> Besides this tool, we are considering to extend it to collect user space
-> call chain of current process from kernel when kernel detects some other
-> abnormal behavior.
->
-
-In my previous reply, I ran 'pstrack' on my x86-64 machine, don't 
-understand why you said it doesn't work with x86-64? I guess pstack 
-supports more than just x86, as ptrace is available in other arch's too.
-
-Thanks.
+-- 
+Kees Cook
+Chrome OS Security
