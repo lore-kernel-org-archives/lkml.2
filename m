@@ -1,80 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932369Ab2DSUGn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Apr 2012 16:06:43 -0400
-Received: from na3sys009aog136.obsmtp.com ([74.125.149.85]:56726 "EHLO
-	na3sys009aog136.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932246Ab2DSUGl convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Apr 2012 16:06:41 -0400
+	id S932381Ab2DSUHZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Apr 2012 16:07:25 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:35550 "EHLO
+	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932246Ab2DSUHX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Apr 2012 16:07:23 -0400
+X-Sasl-enc: w82GOCMorZaozT4HSs10i4BkuI3QYiG+mO/TaGTYWatw 1334866042
+Date: Thu, 19 Apr 2012 13:07:21 -0700
+From: Greg KH <greg@kroah.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Anatolij Gustschin <agust@denx.de>,
+        Ramneek Mehresh <ramneek.mehresh@freescale.com>
+Subject: Re: linux-next: manual merge of the usb tree with the usb.current
+ tree
+Message-ID: <20120419200721.GB10059@kroah.com>
+References: <20120419151402.6f958fabc6bd96696b4cde3c@canb.auug.org.au>
 MIME-Version: 1.0
-In-Reply-To: <1334003101-17274-3-git-send-email-robherring2@gmail.com>
-References: <1334003101-17274-1-git-send-email-robherring2@gmail.com> <1334003101-17274-3-git-send-email-robherring2@gmail.com>
-From: "Turquette, Mike" <mturquette@ti.com>
-Date: Thu, 19 Apr 2012 13:06:18 -0700
-Message-ID: <CAJOA=zOGbttJwSs5n9LZQCjFzJMFZomP0CmzS3PZK0nayCy+Bw@mail.gmail.com>
-Subject: Re: [PATCH 2/4] clk: remove trailing whitespace from clk.h
-To: Rob Herring <robherring2@gmail.com>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        devicetree-discuss@lists.ozlabs.org,
-        Thierry Reding <thierry.reding@avionic-design.de>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Sascha Hauer <kernel@pengutronix.de>, shawn.guo@linaro.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120419151402.6f958fabc6bd96696b4cde3c@canb.auug.org.au>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 9, 2012 at 1:24 PM, Rob Herring <robherring2@gmail.com> wrote:
-> From: Rob Herring <rob.herring@calxeda.com>
->
-> Remove trailing whitespace from 2 lines.
->
-> Signed-off-by: Rob Herring <rob.herring@calxeda.com>
+On Thu, Apr 19, 2012 at 03:14:02PM +1000, Stephen Rothwell wrote:
+> Hi Greg,
+> 
+> Today's linux-next merge of the usb tree got a conflict in
+> drivers/usb/host/ehci-fsl.c between commit f941f6922533 ("USB: ehci-fsl:
+> Fix kernel crash on mpc5121e") from the usb.current tree and commit
+> 58c559e6509f ("fsl/usb: Add controller version based ULPI and UTMI phy
+> support") from the usb tree.
+> 
+> I fixed it up (using the pdata assignment from the latter commit) and
+> can carry the fix as necessary.
 
-Hi Rob,
+Thanks, that sounds correct, I'll fix this up when the patches in
+usb.current get pushed to Linus.
 
-You asked me to take this patch in the mail thread for the first patch
-in this series.  The code being touched here is really Russell's
-territory but the change is trivial so I'll take it into my -next
-branch.
-
-Regards,
-Mike
-
-> ---
->  include/linux/clk.h |    4 ++--
->  1 files changed, 2 insertions(+), 2 deletions(-)
->
-> diff --git a/include/linux/clk.h b/include/linux/clk.h
-> index b025272..e08bff1 100644
-> --- a/include/linux/clk.h
-> +++ b/include/linux/clk.h
-> @@ -220,7 +220,7 @@ void clk_put(struct clk *clk);
->  * Returns rounded clock rate in Hz, or negative errno.
->  */
->  long clk_round_rate(struct clk *clk, unsigned long rate);
-> -
-> +
->  /**
->  * clk_set_rate - set the clock rate for a clock source
->  * @clk: clock source
-> @@ -229,7 +229,7 @@ long clk_round_rate(struct clk *clk, unsigned long rate);
->  * Returns success (0) or negative errno.
->  */
->  int clk_set_rate(struct clk *clk, unsigned long rate);
-> -
-> +
->  /**
->  * clk_set_parent - set the parent clock source for this clock
->  * @clk: clock source
-> --
-> 1.7.5.4
->
->
-> _______________________________________________
-> linux-arm-kernel mailing list
-> linux-arm-kernel@lists.infradead.org
-> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
+greg k-h
