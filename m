@@ -1,142 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932489Ab2DSUeY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Apr 2012 16:34:24 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:33512 "EHLO
+	id S932303Ab2DSUeW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Apr 2012 16:34:22 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:33511 "EHLO
 	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756326Ab2DSUeU (ORCPT
+	with ESMTP id S1756292Ab2DSUeU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 19 Apr 2012 16:34:20 -0400
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
+Cc: linux-kernel@vger.kernel.org,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
         David Ahern <dsahern@gmail.com>,
         Frederic Weisbecker <fweisbec@gmail.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
         Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
         Paul Mackerras <paulus@samba.org>,
         Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@google.com>
-Subject: [PATCH 05/13] perf annotate: Parse call targets earlier
-Date: Thu, 19 Apr 2012 17:34:00 -0300
-Message-Id: <1334867644-2722-6-git-send-email-acme@infradead.org>
+        Stephane Eranian <eranian@google.com>, arnaldo.melo@gmail.com,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: =?y?q?=5BGIT=20PULL=2000/13=5D=20Annotation=20improvements=20=28G+=20edition=29?=
+Date: Thu, 19 Apr 2012 17:33:55 -0300
+Message-Id: <1334867644-2722-1-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.7.9.2.358.g22243
-In-Reply-To: <1334867644-2722-1-git-send-email-acme@infradead.org>
-References: <1334867644-2722-1-git-send-email-acme@infradead.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=y
+Content-Transfer-Encoding: 8bit
 X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by canuck.infradead.org
 	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Arnaldo Carvalho de Melo <acme@redhat.com>
+Hi Ingo,
 
-No need to do it everytime the user presses enter/-> on a call
-instruction.
+	Please consider pulling,
 
-Cc: David Ahern <dsahern@gmail.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Mike Galbraith <efault@gmx.de>
-Cc: Namhyung Kim <namhyung@gmail.com>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/n/tip-ybgss44m5ycry8mk7b1qdbre@git.kernel.org
+- Arnaldo
+
+The following changes since commit a385ec4f11bdcf81af094c03e2444ee9b7fad2e5:
+
+  Merge tag 'v3.4-rc2' into perf/core (2012-04-13 09:57:10 +0200)
+
+are available in the git repository at:
+
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux perf/annotate
+
+for you to fetch changes up to 3f862fd076275c442dfe295eddb5650a6e0aecd4:
+
+  perf annotate: Add missing jump variants (2012-04-19 17:10:12 -0300)
+
+----------------------------------------------------------------
+Annotate improvements
+
+Now the default annotate browser uses a much more compact format, implementing
+suggestions made made by several people, notably Linus.
+
+Here is part of the new __list_del_entry annotation:
+
+__list_del_entry
+    8.47 │      push   %rbp
+    8.47 │      mov    (%rdi),%rdx
+   20.34 │      mov    $0xdead000000100100,%rcx
+    3.39 │      mov    0x8(%rdi),%rax
+    0.00 │      mov    %rsp,%rbp
+    1.69 │      cmp    %rcx,%rdx
+    0.00 │      je     43
+    1.69 │      mov    $0xdead000000200200,%rcx
+    3.39 │      cmp    %rcx,%rax
+    0.00 │      je     a3
+    5.08 │      mov    (%rax),%r8
+   18.64 │      cmp    %r8,%rdi
+    0.00 │      jne    84
+    1.69 │      mov    0x8(%rdx),%r8
+   25.42 │      cmp    %r8,%rdi
+    0.00 │      jne    65
+    1.69 │      mov    %rax,0x8(%rdx)
+    0.00 │      mov    %rdx,(%rax)
+    0.00 │      leaveq
+    0.00 │      retq
+    0.00 │ 43:  mov    %rdx,%r8
+    0.00 │      mov    %rdi,%rcx
+    0.00 │      mov    $0xffffffff817cd6a8,%rdx
+    0.00 │      mov    $0x31,%esi
+    0.00 │      mov    $0xffffffff817cd6e0,%rdi
+    0.00 │      xor    %eax,%eax
+    0.00 │      callq  ffffffff8104eab0 <warn_slowpath_fmt>
+    0.00 │      leaveq
+    0.00 │      retq
+    0.00 │ 65:  mov    %rdi,%rcx
+    0.00 │      mov    $0xffffffff817cd780,%rdx
+    0.00 │      mov    $0x3a,%esi
+    0.00 │      mov    $0xffffffff817cd6e0,%rdi
+    0.00 │      xor    %eax,%eax
+    0.00 │      callq  ffffffff8104eab0 <warn_slowpath_fmt>
+    0.00 │      leaveq
+    0.00 │      retq
+
+The infrastructure is there to provide formatters for any instruction,
+like the one I'll do for call functions to elide the address.
+
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
----
- tools/perf/ui/browsers/annotate.c |   10 +++++-----
- tools/perf/util/annotate.c        |   18 +++++++++++++++++-
- tools/perf/util/annotate.h        |    1 +
- 3 files changed, 23 insertions(+), 6 deletions(-)
 
-diff --git a/tools/perf/ui/browsers/annotate.c b/tools/perf/ui/browsers/annotate.c
-index bdbb54f..46ef966 100644
---- a/tools/perf/ui/browsers/annotate.c
-+++ b/tools/perf/ui/browsers/annotate.c
-@@ -266,11 +266,10 @@ static bool annotate_browser__callq(struct annotate_browser *browser,
- 	struct symbol *target;
- 	u64 ip;
- 
--	if (strcmp(dl->name, "callq"))
-+	if (!ins__is_call(dl->ins))
- 		return false;
- 
--	ip = strtoull(dl->operands, NULL, 16);
--	ip = ms->map->map_ip(ms->map, ip);
-+	ip = ms->map->map_ip(ms->map, dl->target);
- 	target = map__find_symbol(ms->map, ip, NULL);
- 	if (target == NULL) {
- 		ui_helpline__puts("The called function was not found.");
-@@ -318,7 +317,7 @@ static bool annotate_browser__jump(struct annotate_browser *browser)
- 	struct disasm_line *dl = browser->selection;
- 	s64 idx;
- 
--	if (!dl->ins || !ins__is_jump(dl->ins))
-+	if (!ins__is_jump(dl->ins))
- 		return false;
- 
- 	dl = annotate_browser__find_offset(browser, dl->target, &idx);
-@@ -556,7 +555,8 @@ show_help:
- 				ui_helpline__puts("Huh? No selection. Report to linux-kernel@vger.kernel.org");
- 			else if (self->selection->offset == -1)
- 				ui_helpline__puts("Actions are only available for assembly lines.");
--			else if (!(annotate_browser__jump(self) ||
-+			else if (!self->selection->ins ||
-+				 !(annotate_browser__jump(self) ||
- 				   annotate_browser__callq(self, evidx, timer, arg, delay_secs)))
- 				ui_helpline__puts("Actions are only available for the 'callq' and jump instructions.");
- 			continue;
-diff --git a/tools/perf/util/annotate.c b/tools/perf/util/annotate.c
-index 4ee2c07..a4296fd 100644
---- a/tools/perf/util/annotate.c
-+++ b/tools/perf/util/annotate.c
-@@ -18,6 +18,21 @@
- 
- const char 	*disassembler_style;
- 
-+static int call_ops__parse_target(const char *operands, u64 *target)
-+{
-+	*target = strtoull(operands, NULL, 16);
-+	return 0;
-+}
-+
-+static struct ins_ops call_ops = {
-+	.parse_target = call_ops__parse_target,
-+};
-+
-+bool ins__is_call(const struct ins *ins)
-+{
-+	return ins->ops == &call_ops;
-+}
-+
- static int jump_ops__parse_target(const char *operands, u64 *target)
- {
- 	const char *s = strchr(operands, '+');
-@@ -38,11 +53,12 @@ bool ins__is_jump(const struct ins *ins)
- 	return ins->ops == &jump_ops;
- }
- 
--
- /*
-  * Must be sorted by name!
-  */
- static struct ins instructions[] = {
-+	{ .name = "call",  .ops  = &call_ops, },
-+	{ .name = "callq", .ops  = &call_ops, },
- 	{ .name = "ja",	   .ops  = &jump_ops, },
- 	{ .name = "je",	   .ops  = &jump_ops, },
- 	{ .name = "jmp",   .ops  = &jump_ops, },
-diff --git a/tools/perf/util/annotate.h b/tools/perf/util/annotate.h
-index 934c6fe..a2105f2 100644
---- a/tools/perf/util/annotate.h
-+++ b/tools/perf/util/annotate.h
-@@ -17,6 +17,7 @@ struct ins {
- };
- 
- bool ins__is_jump(const struct ins *ins);
-+bool ins__is_call(const struct ins *ins);
- 
- struct disasm_line {
- 	struct list_head node;
--- 
-1.7.9.2.358.g22243
+----------------------------------------------------------------
+Arnaldo Carvalho de Melo (13):
+      perf annotate: Rename objdump_line to disasm_line
+      perf annotate: Parse instruction
+      perf annotate browser: Use the disasm_line instruction name and operand fields
+      perf annotate: Disassembler instruction parsing
+      perf annotate: Parse call targets earlier
+      perf annotate: Introduce scnprintf ins_ops method
+      perf annotate browser: Rename disasm_line_rb_node
+      perf symbols: Introduce symbol__size method
+      perf annotate browser: Hide non jump target addresses in offset mode
+      perf annotate browser: Align jump labels
+      perf annotate browser: Make lines more compact
+      perf annotate browser: Use a vertical line as percentage separator
+      perf annotate: Add missing jump variants
 
+ tools/perf/ui/browsers/annotate.c |  323 +++++++++++++++++++++----------------
+ tools/perf/util/annotate.c        |  263 +++++++++++++++++++++++++-----
+ tools/perf/util/annotate.h        |   32 +++-
+ tools/perf/util/symbol.h          |    5 +
+ tools/perf/util/util.c            |   10 ++
+ tools/perf/util/util.h            |    2 +
+ 6 files changed, 446 insertions(+), 189 deletions(-)
