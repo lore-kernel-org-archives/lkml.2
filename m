@@ -1,156 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753181Ab2DSG2V (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Apr 2012 02:28:21 -0400
-Received: from mga02.intel.com ([134.134.136.20]:6499 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751918Ab2DSG2U (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Apr 2012 02:28:20 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
-   d="scan'208";a="134238986"
-Message-ID: <1334816911.14538.39.camel@ymzhang.sh.intel.com>
-Subject: Re: [RFC 1/2] kernel patch for dump user space stack tool
-From: Yanmin Zhang <yanmin_zhang@linux.intel.com>
-To: Cong Wang <xiyou.wangcong@gmail.com>
-Cc: "Tu, Xiaobing" <xiaobing.tu@intel.com>, Lin Ming <mlin@ss.pku.edu.cn>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "mingo@elte.hu" <mingo@elte.hu>,
-        "rusty@rustcorp.com.au" <rusty@rustcorp.com.au>,
-        "a.p.zijlstra@chello.nl" <a.p.zijlstra@chello.nl>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "rostedt@goodmis.org" <rostedt@goodmis.org>,
-        "Zuo, Jiao" <jiao.zuo@intel.com>
-Date: Thu, 19 Apr 2012 14:28:31 +0800
-In-Reply-To: <4F8FACFF.9070107@gmail.com>
-References: <EE928378561BF1449699C96571234A740FCED62F@SHSMSX101.ccr.corp.intel.com>
-	 <4F8F8B9E.3040107@gmail.com>
-	 <1334812653.14538.29.camel@ymzhang.sh.intel.com>
-	 <4F8FACFF.9070107@gmail.com>
-Organization: MCG
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2- 
-Content-Transfer-Encoding: 7bit
+	id S1753599Ab2DSG3M (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Apr 2012 02:29:12 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:59968 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752608Ab2DSG3J (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Apr 2012 02:29:09 -0400
+Date: Thu, 19 Apr 2012 16:28:59 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        majianpeng <majianpeng@gmail.com>
+Subject: linux-next: build failure after merge of the final tree (net-next
+ tree related)
+Message-Id: <20120419162859.904574e2518c5a904802efbc@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0beta7 (GTK+ 2.24.10; i486-pc-linux-gnu)
 Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Thu__19_Apr_2012_16_28_59_+1000_+ND=i_BVMY_QzusZ"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-04-19 at 14:13 +0800, Cong Wang wrote:
-> On 04/19/2012 01:17 PM, Yanmin Zhang wrote:
-> > On Thu, 2012-04-19 at 11:50 +0800, Cong Wang wrote:
-> >> On 04/17/2012 10:37 PM, Tu, Xiaobing wrote:
-> >>> Resend the patch because of the log is too long on a single line.
-> >>>
-> >>> From: xiaobing tu<xiaobing.tu@intel.com>
-> >>>
-> >>> Here is the kernel patch for this tool, The idea is to output user space stack call-chain from
-> >>> /proc/xxx/stack, currently, /proc/xxx/stack only output kernel stack call chain. We extend
-> >>> it to output user space call chain in hex format
-> >>>
-> >>
-> >> Can you teach me why we still need this as we have pstack?
-> > Cong,
-> >
-> > Sorry for replying so late. Xiaobing told me you sent him email and I
-> > didn't receive the 1st one you sent out.
-> 
-> 
-> Based on the length of your reply and the description of the patch, you 
-> hide lots of information in your patch description.
-Indeed, we need add more info there.
+--Signature=_Thu__19_Apr_2012_16_28_59_+1000_+ND=i_BVMY_QzusZ
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> 
-> >
-> > I tried pstack and it does work. It means developers in the world wanted
-> > the tool long long ago.
-> >
-> > Although not checking the source codes of pstack (sorry, I'm busy in debugging
-> > many critical issues), I think pstack is based on ptrace interface, which means:
-> > 1) It need traps into system for many times to collect call frames of one
-> > task.
-> > 2) It need send signal to the ptraced process to stop it. Such behavior
-> > might have some impact if the ptraced process also processes many signals.
-> > 3) The data parsing to get symbols might not be split from data collection.
-> > I mean, it collects call frames of one process, then parses it; then collects the 2nd
-> > task's. If there are many processes, it couldn't collect the data just at the monitor
-> > time point.
-> 
-> 
-> Yet another one who wants to "fix" ptrace. ;-)
-Agree. But usually, it's hard to fix very old codes. Ptrace is used by gdb
-and people don't touch the kernel part.
+Hi all,
 
-> 
-> >
-> > Why do we work out the tools? The original requirement is from real work.
-> > We are enabling Android on Medfield. One typical error of Android is ANR.
-> > When a process couldn't respond in 5 seconds, Android reports an ANR error,
-> > and dumps JAVA call stack. However, it couldn't dump userspace lib (such like
-> > bionic, written by C or C++). In addition, Android just dumps the stack of
-> > the non-responding process. It doesn't dump stack of others. As binder is basic
-> > framework in Android, processes communicate by binder in the model of client/server.
-> > When one process is not responding quickly, maybe another process blocks it. We
-> > need dump that process status.
-> >
-> > Many teams complained it's hard to debug such ANR issues, especially the ones which
-> > are triggered at MTBF testing. Sometimes, an ANR happens after MTBF testing runs
-> > for one week. Developers ask us to implement such tool over and over again.
-> >
-> > Besides ANR, sometimes, system might not respond to any user operation. Usually,
-> > kernel or firmware would reset system. At that time, we also need get the call
-> > chains of all the user space processes before system is reset.
-> 
-> 
-> I am not familiar with Andriod at all, so a quick question is if this is 
-> only for Andriod, why you introduce this for all? IOW, why not provide a 
-> Kconfig?
-Although working on Android, we think it might be useful to use the tool to resolve similar
-issue. For example, I worked on performance tuning years ago and got headache why
-there was performance drop on a large-scale server. From kernel part, I couldn't
-find enough info to debug it. Eventually, I root caused some issues by gdb attach,
-then manually checking the user space call chain. It's painful.
+After merging the final tree, today's linux-next build (sparc64 defconfig)
+failed like this:
 
-In addition, the new tool consists of kernel patch and user space parse tool.
-The kernel patch is quite simple and shouldn't hurt system. It reuses
-existing CONFIG_USER_STACKTRACE_SUPPORT.
+net/ipv4/route.c: In function 'ip_static_sysctl_init':
+net/ipv4/route.c:3517:2: error: implicit declaration of function 'kmemleak_=
+not_leak' [-Werror=3Dimplicit-function-declaration]
 
-> 
-> BTW, I am sure you need to put the above paragraphs into your patch 
-> description, to make it clear why the patch is needed.
-It's a good idea definitely.
+Caused by commit 7f5938810890 ("net/ipv4:Remove two memleak reports by
+kmemleak_not_leak").
 
-> 
-> >
-> > With our tool,
-> > 1) We could collect the HEX-format call chain data and /proc/XXX/maps
-> > of all the processes quickly, then parse them either after rebooting, or
-> > after the issue is reported. It could catch the scene just at the time point
-> > when the error happens. Our experiments shows the tool could collect the data
-> > of all processes within 200ms.
-> > 2) The new tool won't stop the processes and have less impact on them.
-> > Considering a scenario of performance bottleneck investigation, statistics collection
-> > shouldn't have big impact on running processes.
-> > 3) It could support both i386 and x86-64. I tried pstack and it doesn't work
-> > with x86-64.
-> > 4) It follows /proc/XXX/stack interface and it's easy to use it.
-> >
-> > Besides this tool, we are considering to extend it to collect user space
-> > call chain of current process from kernel when kernel detects some other
-> > abnormal behavior.
-> >
-> 
-> In my previous reply, I ran 'pstrack' on my x86-64 machine, don't 
-> understand why you said it doesn't work with x86-64? I guess pstack 
-> supports more than just x86, as ptrace is available in other arch's too.
-Ok. I use the latest ubuntu on my workstation and apt-get to install
-pstack without recompiling it. The default pstack executable reported
-failure on 64bit os. I was wrong and might check pstack again.
+net/core/sysctl_net_core.c: In function 'sysctl_core_init':
+net/core/sysctl_net_core.c:259:2: error: implicit declaration of function '=
+kmemleak_not_leak' [-Werror=3Dimplicit-function-declaration]
 
-Thanks for the information.
+Caused by commit 798ec84d4575 ("net/core:Remove memleak reports by
+kmemleak_not_leak").
 
-Yanmin
+I added this patch for today:
 
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+Date: Thu, 19 Apr 2012 16:25:16 +1000
+Subject: [PATCH] net: using kmemleak_not_leak requires including kmemleak.h
 
+fixes these build errors:
 
+net/ipv4/route.c: In function 'ip_static_sysctl_init':
+net/ipv4/route.c:3517:2: error: implicit declaration of function 'kmemleak_=
+not_leak' [-Werror=3Dimplicit-function-declaration]
+net/core/sysctl_net_core.c: In function 'sysctl_core_init':
+net/core/sysctl_net_core.c:259:2: error: implicit declaration of function '=
+kmemleak_not_leak' [-Werror=3Dimplicit-function-declaration]
 
+Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
+---
+ net/core/sysctl_net_core.c |    1 +
+ net/ipv4/route.c           |    1 +
+ 2 files changed, 2 insertions(+)
+
+diff --git a/net/core/sysctl_net_core.c b/net/core/sysctl_net_core.c
+index cee5991..247c69b 100644
+--- a/net/core/sysctl_net_core.c
++++ b/net/core/sysctl_net_core.c
+@@ -14,6 +14,7 @@
+ #include <linux/vmalloc.h>
+ #include <linux/init.h>
+ #include <linux/slab.h>
++#include <linux/kmemleak.h>
+=20
+ #include <net/ip.h>
+ #include <net/sock.h>
+diff --git a/net/ipv4/route.c b/net/ipv4/route.c
+index bcd4744..dcb4205 100644
+--- a/net/ipv4/route.c
++++ b/net/ipv4/route.c
+@@ -93,6 +93,7 @@
+ #include <linux/times.h>
+ #include <linux/slab.h>
+ #include <linux/prefetch.h>
++#include <linux/kmemleak.h>
+ #include <net/dst.h>
+ #include <net/net_namespace.h>
+ #include <net/protocol.h>
+--=20
+1.7.10.rc3
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Signature=_Thu__19_Apr_2012_16_28_59_+1000_+ND=i_BVMY_QzusZ
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCAAGBQJPj7CrAAoJEECxmPOUX5FEFxEP/1r6QprImkxH88071MmYWJ05
+ktOAZBeeBSklibTVcjGoIxzy7uxaaWS8fkcsiC+I6a7mCgAlwyVrhWelM/d8DzrQ
+arqfaHGqW8LOnDs3G893Ny2X/sX3+YKQVdiKWeJ3YuP+qYYYdKJWzj7mu5i/3p9N
+Kw/y3qIk4ZWw44mATd6Sa1w/VmbK6OXDHlwiZeEWeedXqOkthL6cMD0/lPzsH8QQ
+TBWKgto9sU59DE2pytRBjfWFArj0smyV2WSNoTJlUS9nJMVyAz8w0DrZ08P3paWz
+DZlsELnPQxQ7aP3fPsrbDkGnPik6MdlvbFa3Wv4mG7iqhoCc2n6CHXwe9upONh2R
+5nfw52+X9M/+sOfQIaUwzZ8NRWsnDIX6vbc7r6o7OK3EbWgxAhl5DmBXT4aurJxW
+wUOvjd2X7MSrVKFfuZsy/7Q1XMLjsy7hNhKlYNXMELcAgGJtX2brkHVkrhJTcbty
+LicZ+d2928NfEIik9CYemhhFdOJ3CYcoFxCmTbcQ2RD7pIyNUpM4Y7NFHznbjpow
+pzfACltqh+FPoHZhj9ZBc3PRkr8DRxV4kKRKM+mkaFaa9pa9rim+UGigRoG3qAGP
+fneHxKWvSE4DNjsuIpc5VyocGJw8BqDJkNJuLZW4sF1kyrHhPIrcdYy2nJt6Af43
+tyA31jiQ1fK4Ri2cS093
+=MFQ2
+-----END PGP SIGNATURE-----
+
+--Signature=_Thu__19_Apr_2012_16_28_59_+1000_+ND=i_BVMY_QzusZ--
