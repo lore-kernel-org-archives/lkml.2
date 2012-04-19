@@ -1,99 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756366Ab2DSTCp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Apr 2012 15:02:45 -0400
-Received: from gir.skynet.ie ([193.1.99.77]:43808 "EHLO gir.skynet.ie"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756344Ab2DSTCo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Apr 2012 15:02:44 -0400
-Date: Thu, 19 Apr 2012 20:02:42 +0100 (IST)
-From: Dave Airlie <airlied@linux.ie>
-X-X-Sender: airlied@skynet.skynet.ie
-To: torvalds@linux-foundation.org
-cc: DRI mailing list <dri-devel@lists.freedesktop.org>,
-        linux-kernel@vger.kernel.org
-Subject: [git pull] drm fixes
-Message-ID: <alpine.DEB.2.00.1204191958450.28930@skynet.skynet.ie>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	id S932195Ab2DSTC5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Apr 2012 15:02:57 -0400
+Received: from www.linutronix.de ([62.245.132.108]:40694 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932086Ab2DSTCz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Apr 2012 15:02:55 -0400
+Date: Thu, 19 Apr 2012 21:02:53 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Grant Likely <grant.likely@secretlab.ca>
+cc: Andreas Schwab <schwab@linux-m68k.org>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] irqdomain: fix typo in IRQ_BITMAP_BITS definition
+In-Reply-To: <CACxGe6sKrO8U4JPKs0cvB24ZTsPNx430FhiE--JFAQzNb_=1og@mail.gmail.com>
+Message-ID: <alpine.LFD.2.02.1204192102070.2542@ionos>
+References: <m2pqb31yxk.fsf@igel.home> <CACxGe6sKrO8U4JPKs0cvB24ZTsPNx430FhiE--JFAQzNb_=1og@mail.gmail.com>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, 19 Apr 2012, Grant Likely wrote:
 
-Hi Linus,
+> On Thu, Apr 19, 2012 at 10:14 AM, Andreas Schwab <schwab@linux-m68k.org> wrote:
+> > 8196 is an odd number, change it to the intended 8192.
+> >
+> > Signed-off-by: Andreas Schwab <schwab@linux-m68k.org>
+> > ---
+> > Shouldn't it actually be just 8192 or maybe max(NR_IRQS, 8192)?
+> 
+> The number is completely arbitrary.  It doesn't actually matter.
 
-its like a grab bag of one liners,
+Right, it just makes sure that the bitmap is way larger than the
+NR_IRQS value, so we can deal with all the dynamic allocated
+interrupts.
 
-core: fix page flip error path, reorder object teardown.
-usb: fix the drm_usb module license.
-i915: VT switch on SNB with non-native modes fix, and a regression fix 
-from 3.3.
-radeon: missing unreserve on SI, AGP/VRAM setup fix (fixes radeon on IA64, 
-but its a generic bug), an rn50 regression from 3.3, turn off MSIs on 
-rv515 (it loses rearms every so often).
+Thanks,
 
-Dave.
+	tglx
 
-The following changes since commit e816b57a337ea3b755de72bec38c10c864f23015:
-
-  Linux 3.4-rc3 (2012-04-15 18:28:29 -0700)
-
-are available in the git repository at:
-  git://people.freedesktop.org/~airlied/linux drm-fixes
-
-Alex Deucher (1):
-      drm/radeon/si: add missing radeon_bo_unreserve in si_rlc_init() v2
-
-Chris Wilson (2):
-      drm/i915: Hold mode_config lock whilst changing mode for lastclose()
-      drm/i915: Do not set "Enable Panel Fitter" on SNB pageflips
-
-Daniel Vetter (1):
-      drm/i915: don't clobber the special upscaling lvds timings
-
-Dave Airlie (4):
-      drm/radeon: disable MSI on RV515
-      drm/usb: fix module license on drm/usb layer.
-      Merge branch 'drm-intel-fixes' of git://people.freedesktop.org/~danvet/drm-intel into drm-fixes
-      drm/radeon: fix load detect on rn50 with hardcoded EDIDs.
-
-Henrik Rydberg (1):
-      nouveau: Set special lane map for the right chipset
-
-Jerome Glisse (1):
-      radeon: fix r600/agp when vram is after AGP (v3)
-
-Jim Meyering (1):
-      drm/nouveau/pm: don't read/write beyond end of stack buffer
-
-Joonyoung Shim (1):
-      drm: fix page_flip error handling
-
-Marcos Paulo de Souza (1):
-      drivers: gpu: drm: gma500: mdfld_dsi_output.h: Remove not unneeded include of version.h
-
-Prathyush (1):
-      drm: Releasing FBs before releasing GEM objects during drm_release
-
-Takashi Iwai (1):
-      drm/radeon/kms: fix the regression of DVI connector check
-
- drivers/gpu/drm/drm_crtc.c                 |   10 ++++++----
- drivers/gpu/drm/drm_fops.c                 |    6 +++---
- drivers/gpu/drm/drm_usb.c                  |    6 +++++-
- drivers/gpu/drm/gma500/mdfld_dsi_output.h  |    1 -
- drivers/gpu/drm/i915/intel_display.c       |   15 ++++++++++++---
- drivers/gpu/drm/i915/intel_drv.h           |    4 ++++
- drivers/gpu/drm/i915/intel_fb.c            |    4 ++++
- drivers/gpu/drm/i915/intel_lvds.c          |    6 ++++++
- drivers/gpu/drm/i915/intel_panel.c         |    2 --
- drivers/gpu/drm/nouveau/nouveau_pm.c       |    1 +
- drivers/gpu/drm/nouveau/nv50_sor.c         |    2 +-
- drivers/gpu/drm/radeon/r600.c              |    4 ++--
- drivers/gpu/drm/radeon/radeon_connectors.c |    4 ++--
- drivers/gpu/drm/radeon/radeon_irq_kms.c    |    6 ++++++
- drivers/gpu/drm/radeon/rv770.c             |    4 ++--
- drivers/gpu/drm/radeon/si.c                |    5 ++---
- 16 files changed, 56 insertions(+), 24 deletions(-)
