@@ -1,141 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755094Ab2DSMfh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Apr 2012 08:35:37 -0400
-Received: from mga11.intel.com ([192.55.52.93]:62560 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751639Ab2DSMfg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Apr 2012 08:35:36 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="143603829"
-From: Ramakrishna Pallala <ramakrishna.pallala@intel.com>
-To: linux-kernel@vger.kernel.org
-Cc: Anton Vorontsov <cbouatmailru@gmail.com>,
-        Anton Vorontsov <anton.vorontsov@linaro.org>,
-        Ramakrishna Pallala <ramakrishna.pallala@intel.com>,
-        Mika Westerberg <mika.westerberg@iki.fi>
-Subject: [PATCH v2] smb347_charger: Cleanup power supply registration code in probe
-Date: Thu, 19 Apr 2012 10:00:18 +0530
-Message-Id: <1334809818-5958-1-git-send-email-ramakrishna.pallala@intel.com>
-X-Mailer: git-send-email 1.7.0.4
+	id S1755163Ab2DSMhv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Apr 2012 08:37:51 -0400
+Received: from www.linutronix.de ([62.245.132.108]:38957 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752808Ab2DSMhu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Apr 2012 08:37:50 -0400
+Date: Thu, 19 Apr 2012 14:37:41 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Prarit Bhargava <prarit@redhat.com>
+cc: John Stultz <john.stultz@linaro.org>, linux-kernel@vger.kernel.org,
+        Salman Qazi <sqazi@google.com>, stable@kernel.org
+Subject: Re: [PATCH] clocksource, prevent overflow in clocksource_cyc2ns
+In-Reply-To: <4F8F555F.7040404@redhat.com>
+Message-ID: <alpine.LFD.2.02.1204191416130.2542@ionos>
+References: <1333552260-1170-1-git-send-email-prarit@redhat.com> <4F7C8C3E.1020203@us.ibm.com> <4F7C9402.3090602@redhat.com> <4F7CF094.5020201@us.ibm.com> <4F7D8FA1.1010107@redhat.com> <4F8F4C31.7010209@linaro.org> <4F8F555F.7040404@redhat.com>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch checks if the usb or mains charging is enabled by the
-platform before registering with the power supply class.
+On Wed, 18 Apr 2012, Prarit Bhargava wrote:
+> There's also some additional information that I've been gathering on this issue;
+> I have seen *idle* systems switch to the hpet because the clocksource watchdog
+> hits the overflow comparison.  As expected it happens much less frequently on
+> newer kernels (linux.git top of tree) than older stable kernels (2.6.32 based)
+> due to the difference in shift values but it is happening in both cases.
+> 
+> The odd thing about this behaviour is that I would expect it to occur with the
+> same frequency on small systems as it does on large systems with linux.git as
+> the watchdog fires once/second.  AFAICT I do not see this on small systems but
+> see it only on systems with greater than 24 cpus (both Intel and AMD).
+>
+> Using debug code similar to the dump code I previously provided, I can see that
+> every so often these large systems can hit a case where the tsc wraps and the
+> hpet is still monotonically increasing.  When the unstable calculation is
+> performed the result is obviously affected by the overflow.  Sometimes this
+> comparison overflow happens within 18 minutes, other times it can take hours or
+> days.
 
-Signed-off-by: Ramakrishna Pallala <ramakrishna.pallala@intel.com>
----
- drivers/power/smb347-charger.c |   70 +++++++++++++++++++++++-----------------
- 1 files changed, 40 insertions(+), 30 deletions(-)
+You are describing symptoms, but the root cause is obviously that the
+watchdog does not get invoked in time. The question is why.
 
-diff --git a/drivers/power/smb347-charger.c b/drivers/power/smb347-charger.c
-index ce1694d..3e9df6e 100644
---- a/drivers/power/smb347-charger.c
-+++ b/drivers/power/smb347-charger.c
-@@ -816,8 +816,10 @@ static irqreturn_t smb347_interrupt(int irq, void *data)
- 	if (irqstat_e & (IRQSTAT_E_USBIN_UV_IRQ | IRQSTAT_E_DCIN_UV_IRQ)) {
- 		if (smb347_update_status(smb) > 0) {
- 			smb347_update_online(smb);
--			power_supply_changed(&smb->mains);
--			power_supply_changed(&smb->usb);
-+			if (smb->pdata->use_mains)
-+				power_supply_changed(&smb->mains);
-+			if (smb->pdata->use_usb)
-+				power_supply_changed(&smb->usb);
- 		}
- 		ret = IRQ_HANDLED;
- 	}
-@@ -1185,21 +1187,34 @@ static int smb347_probe(struct i2c_client *client,
- 	if (ret < 0)
- 		return ret;
- 
--	smb->mains.name = "smb347-mains";
--	smb->mains.type = POWER_SUPPLY_TYPE_MAINS;
--	smb->mains.get_property = smb347_mains_get_property;
--	smb->mains.properties = smb347_mains_properties;
--	smb->mains.num_properties = ARRAY_SIZE(smb347_mains_properties);
--	smb->mains.supplied_to = battery;
--	smb->mains.num_supplicants = ARRAY_SIZE(battery);
--
--	smb->usb.name = "smb347-usb";
--	smb->usb.type = POWER_SUPPLY_TYPE_USB;
--	smb->usb.get_property = smb347_usb_get_property;
--	smb->usb.properties = smb347_usb_properties;
--	smb->usb.num_properties = ARRAY_SIZE(smb347_usb_properties);
--	smb->usb.supplied_to = battery;
--	smb->usb.num_supplicants = ARRAY_SIZE(battery);
-+	if (smb->pdata->use_mains) {
-+		smb->mains.name = "smb347-mains";
-+		smb->mains.type = POWER_SUPPLY_TYPE_MAINS;
-+		smb->mains.get_property = smb347_mains_get_property;
-+		smb->mains.properties = smb347_mains_properties;
-+		smb->mains.num_properties = ARRAY_SIZE(smb347_mains_properties);
-+		smb->mains.supplied_to = battery;
-+		smb->mains.num_supplicants = ARRAY_SIZE(battery);
-+		ret = power_supply_register(dev, &smb->mains);
-+		if (ret < 0)
-+			return ret;
-+	}
-+
-+	if (smb->pdata->use_usb) {
-+		smb->usb.name = "smb347-usb";
-+		smb->usb.type = POWER_SUPPLY_TYPE_USB;
-+		smb->usb.get_property = smb347_usb_get_property;
-+		smb->usb.properties = smb347_usb_properties;
-+		smb->usb.num_properties = ARRAY_SIZE(smb347_usb_properties);
-+		smb->usb.supplied_to = battery;
-+		smb->usb.num_supplicants = ARRAY_SIZE(battery);
-+		ret = power_supply_register(dev, &smb->usb);
-+		if (ret < 0) {
-+			if (smb->pdata->use_mains)
-+				power_supply_unregister(&smb->mains);
-+			return ret;
-+		}
-+	}
- 
- 	smb->battery.name = "smb347-battery";
- 	smb->battery.type = POWER_SUPPLY_TYPE_BATTERY;
-@@ -1207,20 +1222,13 @@ static int smb347_probe(struct i2c_client *client,
- 	smb->battery.properties = smb347_battery_properties;
- 	smb->battery.num_properties = ARRAY_SIZE(smb347_battery_properties);
- 
--	ret = power_supply_register(dev, &smb->mains);
--	if (ret < 0)
--		return ret;
--
--	ret = power_supply_register(dev, &smb->usb);
--	if (ret < 0) {
--		power_supply_unregister(&smb->mains);
--		return ret;
--	}
- 
- 	ret = power_supply_register(dev, &smb->battery);
- 	if (ret < 0) {
--		power_supply_unregister(&smb->usb);
--		power_supply_unregister(&smb->mains);
-+		if (smb->pdata->use_usb)
-+			power_supply_unregister(&smb->usb);
-+		if (smb->pdata->use_mains)
-+			power_supply_unregister(&smb->mains);
- 		return ret;
- 	}
- 
-@@ -1255,8 +1263,10 @@ static int smb347_remove(struct i2c_client *client)
- 	}
- 
- 	power_supply_unregister(&smb->battery);
--	power_supply_unregister(&smb->usb);
--	power_supply_unregister(&smb->mains);
-+	if (smb->pdata->use_usb)
-+		power_supply_unregister(&smb->usb);
-+	if (smb->pdata->use_mains)
-+		power_supply_unregister(&smb->mains);
- 	return 0;
- }
- 
--- 
-1.7.0.4
+Can you please add the patch below and enable scheduler, timer and irq
+events in the tracer. Tracing will stop once the watchdog triggers.
 
+Please provide the traces. We need to understand the root cause of
+this idle wreckage.
+
+Thanks,
+
+	tglx
