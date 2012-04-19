@@ -1,80 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933414Ab2DSVNR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Apr 2012 17:13:17 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:33843 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933399Ab2DSVNO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S933351Ab2DSVNO (ORCPT <rfc822;w@1wt.eu>);
 	Thu, 19 Apr 2012 17:13:14 -0400
-Message-Id: <20120419210304.917443070@linuxfoundation.org>
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:44451 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933365Ab2DSVNF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Apr 2012 17:13:05 -0400
+Message-Id: <20120419210613.643739833@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Thu, 19 Apr 2012 14:03:24 -0700
+Date: Thu, 19 Apr 2012 14:06:41 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, <emeric.maschino@gmail.com>,
-        Michel Lespinasse <walken@google.com>, Tony Luck <tony.luck@intel.com>
-Subject: [ 21/75] ia64: fix futex_atomic_cmpxchg_inatomic()
-In-Reply-To: <20120419210322.GA6478@kroah.com>
+        alan@lxorguk.ukuu.org.uk,
+        Shreshtha Kumar Sahu <shreshthakumar.sahu@stericsson.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Nicolas Pitre <nico@fluxnic.net>, Viresh Kumar <viresh.kumar@st.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Grant Likely <grant.likely@secretlab.ca>
+Subject: [ 30/59] serial: PL011: move interrupt clearing
+In-Reply-To: <20120419210623.GA12156@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.3-stable review patch.  If anyone has any objections, please let me know.
+3.0-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: "Luck, Tony" <tony.luck@intel.com>
+From: Linus Walleij <linus.walleij@linaro.org>
 
-commit c76f39bddb84f93f70a5520d9253ec0317bec216 upstream.
+commit c3d8b76f61586714cdc5f219ba45592a54caaa55 upstream.
 
-Michel Lespinasse cleaned up the futex calling conventions in commit
-37a9d912b24f ("futex: Sanitize cmpxchg_futex_value_locked API").
+Commit 360f748b204275229f8398cb2f9f53955db1503b
+"serial: PL011: clear pending interrupts"
+attempts to clear interrupts by writing to a
+yet-unassigned memory address. This fixes the issue.
 
-But the ia64 implementation was subtly broken.  Gcc does not know that
-register "r8" will be updated by the fault handler if the cmpxchg
-instruction takes an exception.  So it feels safe in letting the
-initialization of r8 slide to after the cmpxchg.  Result: we always
-return 0 whether the user address faulted or not.
+The breaking patch is marked for stable so should be
+carried along with the other patch.
 
-Fix by moving the initialization of r8 into the __asm__ code so gcc
-won't move it.
-
-Reported-by: <emeric.maschino@gmail.com>
-Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=42757
-Tested-by: <emeric.maschino@gmail.com>
-Acked-by: Michel Lespinasse <walken@google.com>
-Signed-off-by: Tony Luck <tony.luck@intel.com>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Shreshtha Kumar Sahu <shreshthakumar.sahu@stericsson.com>
+Cc: Russell King <linux@arm.linux.org.uk>
+Cc: Nicolas Pitre <nico@fluxnic.net>
+Reported-by: Viresh Kumar <viresh.kumar@st.com>
+Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
+Tested-by: Grant Likely <grant.likely@secretlab.ca>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/ia64/include/asm/futex.h |    9 +++++----
- 1 file changed, 5 insertions(+), 4 deletions(-)
+ drivers/tty/serial/amba-pl011.c |    8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
 
---- a/arch/ia64/include/asm/futex.h
-+++ b/arch/ia64/include/asm/futex.h
-@@ -107,15 +107,16 @@ futex_atomic_cmpxchg_inatomic(u32 *uval,
- 		return -EFAULT;
+--- a/drivers/tty/serial/amba-pl011.c
++++ b/drivers/tty/serial/amba-pl011.c
+@@ -1907,10 +1907,6 @@ static int pl011_probe(struct amba_devic
+ 		goto unmap;
+ 	}
  
- 	{
--		register unsigned long r8 __asm ("r8") = 0;
-+		register unsigned long r8 __asm ("r8");
- 		unsigned long prev;
- 		__asm__ __volatile__(
- 			"	mf;;					\n"
--			"	mov ar.ccv=%3;;				\n"
--			"[1:]	cmpxchg4.acq %0=[%1],%2,ar.ccv		\n"
-+			"	mov %0=r0				\n"
-+			"	mov ar.ccv=%4;;				\n"
-+			"[1:]	cmpxchg4.acq %1=[%2],%3,ar.ccv		\n"
- 			"	.xdata4 \"__ex_table\", 1b-., 2f-.	\n"
- 			"[2:]"
--			: "=r" (prev)
-+			: "=r" (r8), "=r" (prev)
- 			: "r" (uaddr), "r" (newval),
- 			  "rO" ((long) (unsigned) oldval)
- 			: "memory");
+-	/* Ensure interrupts from this UART are masked and cleared */
+-	writew(0, uap->port.membase + UART011_IMSC);
+-	writew(0xffff, uap->port.membase + UART011_ICR);
+-
+ 	uap->vendor = vendor;
+ 	uap->lcrh_rx = vendor->lcrh_rx;
+ 	uap->lcrh_tx = vendor->lcrh_tx;
+@@ -1927,6 +1923,10 @@ static int pl011_probe(struct amba_devic
+ 	uap->port.line = i;
+ 	pl011_dma_probe(uap);
+ 
++	/* Ensure interrupts from this UART are masked and cleared */
++	writew(0, uap->port.membase + UART011_IMSC);
++	writew(0xffff, uap->port.membase + UART011_ICR);
++
+ 	snprintf(uap->type, sizeof(uap->type), "PL011 rev%u", amba_rev(dev));
+ 
+ 	amba_ports[i] = uap;
 
 
