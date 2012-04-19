@@ -1,63 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754699Ab2DSJal (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Apr 2012 05:30:41 -0400
-Received: from www.linutronix.de ([62.245.132.108]:38321 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754453Ab2DSJah (ORCPT
+	id S1754759Ab2DSJat (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Apr 2012 05:30:49 -0400
+Received: from s15943758.onlinehome-server.info ([217.160.130.188]:51248 "EHLO
+	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754138Ab2DSJas (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Apr 2012 05:30:37 -0400
-Date: Thu, 19 Apr 2012 11:30:31 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Andi Kleen <ak@linux.intel.com>
-cc: Matthew Garrett <mjg59@srcf.ucam.org>,
-        =?ISO-8859-15?Q?J=F6rg_Otte?= <jrg.otte@googlemail.com>,
-        linux-kernel@vger.kernel.org, Len Brown <lenb@kernel.org>
-Subject: Re: [v3.4-rc1] ACPI regression bisected
-In-Reply-To: <4F872C7B.6000106@linux.intel.com>
-Message-ID: <alpine.LFD.2.02.1204191125520.2542@ionos>
-References: <CADDKRnBpGr=yzDftChA3xiaK9gK4D4UDV6HJiw8hcMo6159+Cw@mail.gmail.com> <20120402235412.GD16303@tassilo.jf.intel.com> <alpine.LFD.2.02.1204031001510.2542@ionos> <CADDKRnAOqfxTjrCp4E5eKFJvVTu6s0xF3Ca3jRJavFkyGpYLmQ@mail.gmail.com>
- <alpine.LFD.2.02.1204121055200.2542@ionos> <20120412142904.GA4130@srcf.ucam.org> <alpine.LFD.2.02.1204121903250.2542@ionos> <alpine.LFD.2.02.1204121907330.2542@ionos> <4F872C7B.6000106@linux.intel.com>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+	Thu, 19 Apr 2012 05:30:48 -0400
+Date: Thu, 19 Apr 2012 11:30:32 +0200
+From: Borislav Petkov <bp@amd64.org>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [PATCH 2/5] x86: Add symbolic constant for exceptions with error
+ code
+Message-ID: <20120419093032.GF29542@aftab>
+References: <1334794610-5546-1-git-send-email-hpa@zytor.com>
+ <1334794610-5546-3-git-send-email-hpa@zytor.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1334794610-5546-3-git-send-email-hpa@zytor.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 12 Apr 2012, Andi Kleen wrote:
-
+On Wed, Apr 18, 2012 at 05:16:47PM -0700, H. Peter Anvin wrote:
+> From: "H. Peter Anvin" <hpa@zytor.com>
 > 
-> > > I feared that. So now is the question whether there is a way to mask
-> > > the interrupt at the "device" level.
+> Add a symbolic constant for the bitmask which states which exceptions
+> carry an error code.
 > 
-> Probably not. Len?
-> 
-> > If not, I could be persuaded to provide a mechanism to force thread
-> > all interrupts which are on that line, if there's a good argument to
-> > do so.
-> 
-> Hmm, we could probably just use a work queue for this instead. I guess i drank
-> the threaded
-> interrupt kool aid too much when I did the patch :-)
-> 
-> I'll switch over to a workqueue.
+> Signed-off-by: H. Peter Anvin <hpa@zytor.com>
 
-That still requires that you can silence the interrupt at the device
-level in the first place unless you play silly games with
-disable_irq_nosync(), which is even worse than having a
-IRQF_FORCE_ONESHOT mechanism in the core.
+Acked-by: Borislav Petkov <borislav.petkov@amd.com>
 
-If you go the workqueue way, then you basically split the interrupt
-into a hard irq context and a thread handler. So it's the same to
-request a real threaded interrupt with a primary and a thread handler
-and return IRQF_WAKE_THREAD conditionally from the primary handler,
-when you need the thread context for further processing.
+-- 
+Regards/Gruss,
+Boris.
 
-Thoughts?
-
-	tglx
-
+Advanced Micro Devices GmbH
+Einsteinring 24, 85609 Dornach
+GM: Alberto Bozzo
+Reg: Dornach, Landkreis Muenchen
+HRB Nr. 43632 WEEE Registernr: 129 19551
