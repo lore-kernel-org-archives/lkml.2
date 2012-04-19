@@ -1,25 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933746Ab2DSVXr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Apr 2012 17:23:47 -0400
-Received: from mail-pz0-f42.google.com ([209.85.210.42]:44862 "EHLO
-	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965129Ab2DSVRM (ORCPT
+	id S965125Ab2DSVRK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Apr 2012 17:17:10 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:34108 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933674Ab2DSVRG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Apr 2012 17:17:12 -0400
-Message-Id: <20120419210822.491470013@linuxfoundation.org>
+	Thu, 19 Apr 2012 17:17:06 -0400
+Message-Id: <20120419210822.323013396@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Thu, 19 Apr 2012 14:09:03 -0700
+Date: Thu, 19 Apr 2012 14:09:01 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Paul Stewart <pstew@google.com>,
-        Gary Morain <gmorain@google.com>,
-        Madhan Jaganathan <madhanj@qca.qualcomm.com>,
-        Rajkumar Manoharan <rmanohar@qca.qualcomm.com>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        Ben Hutchings <ben@decadent.org.uk>
-Subject: [ 45/68] [PATCH] ath9k: fix max noise floor threshold
+        alan@lxorguk.ukuu.org.uk,
+        Shreshtha Kumar Sahu <shreshthakumar.sahu@stericsson.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Nicolas Pitre <nico@fluxnic.net>, Viresh Kumar <viresh.kumar@st.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Grant Likely <grant.likely@secretlab.ca>
+Subject: [ 43/68] serial: PL011: move interrupt clearing
 In-Reply-To: <20120419210923.GA18589@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -29,53 +29,53 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Rajkumar Manoharan <rmanohar@qca.qualcomm.com>
+From: Linus Walleij <linus.walleij@linaro.org>
 
-commit 2ee0a07028d2cde6e131b73f029dae2b93c50f3a upstream.
+commit c3d8b76f61586714cdc5f219ba45592a54caaa55 upstream.
 
-Currently the maximum noise floor limit is set as too high (-60dB). The
-assumption of having a higher threshold limit is that it would help
-de-sensitize the receiver (reduce phy errors) from continuous
-interference. But when we have a bursty interference where there are
-collisions and then free air time and if the receiver is desensitized too
-much, it will miss the normal packets too. Lets make use of chips
-specific min, nom and max limits always. This patch helps to improve the
-connection stability in congested networks.
+Commit 360f748b204275229f8398cb2f9f53955db1503b
+"serial: PL011: clear pending interrupts"
+attempts to clear interrupts by writing to a
+yet-unassigned memory address. This fixes the issue.
 
-Cc: Paul Stewart <pstew@google.com>
-Tested-by: Gary Morain <gmorain@google.com>
-Signed-off-by: Madhan Jaganathan <madhanj@qca.qualcomm.com>
-Signed-off-by: Rajkumar Manoharan <rmanohar@qca.qualcomm.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
-[bwh: Backported to 3.0/3.2: adjust context]
-Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+The breaking patch is marked for stable so should be
+carried along with the other patch.
+
+Cc: Shreshtha Kumar Sahu <shreshthakumar.sahu@stericsson.com>
+Cc: Russell King <linux@arm.linux.org.uk>
+Cc: Nicolas Pitre <nico@fluxnic.net>
+Reported-by: Viresh Kumar <viresh.kumar@st.com>
+Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
+Tested-by: Grant Likely <grant.likely@secretlab.ca>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- drivers/net/wireless/ath/ath9k/calib.c |    5 ++---
- 1 file changed, 2 insertions(+), 3 deletions(-)
 
---- a/drivers/net/wireless/ath/ath9k/calib.c
-+++ b/drivers/net/wireless/ath/ath9k/calib.c
-@@ -20,7 +20,6 @@
+---
+ drivers/tty/serial/amba-pl011.c |    8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
+
+--- a/drivers/tty/serial/amba-pl011.c
++++ b/drivers/tty/serial/amba-pl011.c
+@@ -1919,10 +1919,6 @@ static int pl011_probe(struct amba_devic
+ 		goto unmap;
+ 	}
  
- /* Common calibration code */
+-	/* Ensure interrupts from this UART are masked and cleared */
+-	writew(0, uap->port.membase + UART011_IMSC);
+-	writew(0xffff, uap->port.membase + UART011_ICR);
+-
+ 	uap->vendor = vendor;
+ 	uap->lcrh_rx = vendor->lcrh_rx;
+ 	uap->lcrh_tx = vendor->lcrh_tx;
+@@ -1939,6 +1935,10 @@ static int pl011_probe(struct amba_devic
+ 	uap->port.line = i;
+ 	pl011_dma_probe(uap);
  
--#define ATH9K_NF_TOO_HIGH	-60
++	/* Ensure interrupts from this UART are masked and cleared */
++	writew(0, uap->port.membase + UART011_IMSC);
++	writew(0xffff, uap->port.membase + UART011_ICR);
++
+ 	snprintf(uap->type, sizeof(uap->type), "PL011 rev%u", amba_rev(dev));
  
- static int16_t ath9k_hw_get_nf_hist_mid(int16_t *nfCalBuffer)
- {
-@@ -348,10 +347,10 @@ static void ath9k_hw_nf_sanitize(struct
- 			"NF calibrated [%s] [chain %d] is %d\n",
- 			(i >= 3 ? "ext" : "ctl"), i % 3, nf[i]);
- 
--		if (nf[i] > ATH9K_NF_TOO_HIGH) {
-+		if (nf[i] > limit->max) {
- 			ath_dbg(common, ATH_DBG_CALIBRATE,
- 				"NF[%d] (%d) > MAX (%d), correcting to MAX\n",
--				i, nf[i], ATH9K_NF_TOO_HIGH);
-+				i, nf[i], limit->max);
- 			nf[i] = limit->max;
- 		} else if (nf[i] < limit->min) {
- 			ath_dbg(common, ATH_DBG_CALIBRATE,
+ 	amba_ports[i] = uap;
 
 
