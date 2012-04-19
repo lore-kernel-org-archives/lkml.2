@@ -1,270 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754554Ab2DSD6X (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Apr 2012 23:58:23 -0400
-Received: from mail.windriver.com ([147.11.1.11]:53682 "EHLO
-	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751460Ab2DSD6W (ORCPT
+	id S1754720Ab2DSD65 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Apr 2012 23:58:57 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:42768 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753427Ab2DSD6z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Apr 2012 23:58:22 -0400
-From: Paul Gortmaker <paul.gortmaker@windriver.com>
-To: uclinux-dist-devel@blackfin.uclinux.org
-Cc: linux-kernel@vger.kernel.org,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Mike Frysinger <vapier@gentoo.org>,
-        Sonic Zhang <sonic.zhang@analog.com>, Bob Liu <lliubbo@gmail.com>
-Subject: [PATCH] blackfin: fix ifdef fustercluck in mach-bf538/boards/ezkit.c
-Date: Wed, 18 Apr 2012 23:57:18 -0400
-Message-Id: <1334807838-3006-1-git-send-email-paul.gortmaker@windriver.com>
-X-Mailer: git-send-email 1.7.9.1
+	Wed, 18 Apr 2012 23:58:55 -0400
+Date: Thu, 19 Apr 2012 13:58:43 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Jiri Kosina <jkosina@suse.cz>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Shawn Guo <shawn.guo@linaro.org>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Liam Girdwood <lrg@ti.com>, Masanari Iida <standby24x7@gmail.com>
+Subject: linux-next: manual merge of the trivial tree with the sound-asoc
+ tree
+Message-Id: <20120419135843.80ae7f770cb0b2bc426a2c62@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0beta7 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Thu__19_Apr_2012_13_58_43_+1000_1X_l_BxlW3htDKcg"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This file has lots and lots of ifdef, around structure decls
-and structure usages.  The failure issue was that we would
-build the BF538-EZKIT_defconfig and get:
+--Signature=_Thu__19_Apr_2012_13_58_43_+1000_1X_l_BxlW3htDKcg
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
- arch/blackfin/mach-bf538/boards/ezkit.c:924:3: error: 'bfin_lq035q1_device'
- undeclared here (not in a function)
+Hi Jiri,
 
-even though the same ifdef _appeared_ to enable both the struct
-declaration and the code that used it.  Yet cpp was telling us we
-didn't have the struct, but we still had the usage of it.
+Today's linux-next merge of the trivial tree got a conflict in
+sound/soc/imx/Kconfig between commit a23dc694828e ("ASoC: imx: merge
+sound/soc/imx into sound/soc/fsl") from the sound-asoc tree and commit
+59bf89640647 ("Fix "the the" in various Kconfig") from the trivial tree.
 
-However, _appeared_ is the operative word.  After marking all the
-anonymous #endif with their parent #ifdef config options, it was
-_then_ clear that there was a misplaced #endif that was hiding
-the struct declaration.
+The former merged the file into sound/soc/fsl/Kconfig (where the "the
+the" now needs fixing).  I have just removed sound/soc/imx/Kconfig.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-The real guts of the patch boils down to this:
+--Signature=_Thu__19_Apr_2012_13_58_43_+1000_1X_l_BxlW3htDKcg
+Content-Type: application/pgp-signature
 
--#endif
-+#endif /* CONFIG_MTD_M25P80 */
-+#endif /* CONFIG_SPI_BFIN5XX */
- [...]
--#endif  /* spi master and devices */
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
-but since I had to tag the #endif with their respective #ifdef
-options to find this misplaced SPI endif, it would be silly to
-then go and delete them all.  So they stay.
+iQIcBAEBCAAGBQJPj41zAAoJEECxmPOUX5FEYTkP/3sJaZm8deP/ne9AOpajWmHe
+JHLzw69K5PllIqCR2KnJmPRuBEooTrqgBGWe4S5fAOX4xlOWpuVZk01DiFIKfp8C
+tmwvLVXi7p1mVOU58KFEwiC19lOHgEMoa5SF2UkJ5RpdTZOpNVWUB1BCo3fo1spz
+s6wBLa0HkRym7bH6XRGFlig+0ozA1QhiS2suHBHWioVYXg/s7pAVl7xS3x/zQS4d
+IA4/ZLgyX/2EJQDGSa/T8M4ab+lc2V8gTFdnTP988R7i0WGSAHHow+2ZR/KxG0CY
+nrFKx0Lb37BbyJYWfEP0X7O1fKM/Np+KQeu75VC5kSxaH9oiIQCxtc8n1XyGnhK7
+oyX2ouDSchU1GgJ4Z6kAYs3dhlMa/+O84kmEp+u/bj4lPOGceCAf/pTMOcOujtE4
+ZGXzM6SL0Xk2Hkls9UGyClU2Yexn0W1JoDGu024b2eFTeFWPDRxBE0kCDb2+uB2x
+3UTyogKgvF6oTY7PT3flPzphjMRD+YVF01IJk/NrOaFLIHphsq5Y/G/4faNY9O5Q
+Kza7+/3ZiKkec/FaRscjoIfetp5n8VDSOb/0yjF5Aza1kR0VEGNAx6K4rObl4LJl
+3yagTTh5CjwqiGlF9CVugdcScxGLUD1n9g/eBFjeGAdcJQYi+qftJK2SHxZR7R8z
+EuwOxjFQezJh8dxpQ7d4
+=AZc9
+-----END PGP SIGNATURE-----
 
-Cc: Mike Frysinger <vapier@gentoo.org>
-Cc: Sonic Zhang <sonic.zhang@analog.com>
-Cc: Bob Liu <lliubbo@gmail.com>
-Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
-
-diff --git a/arch/blackfin/mach-bf538/boards/ezkit.c b/arch/blackfin/mach-bf538/boards/ezkit.c
-index 1633a6f..85038f5 100644
---- a/arch/blackfin/mach-bf538/boards/ezkit.c
-+++ b/arch/blackfin/mach-bf538/boards/ezkit.c
-@@ -38,7 +38,7 @@ static struct platform_device rtc_device = {
- 	.name = "rtc-bfin",
- 	.id   = -1,
- };
--#endif
-+#endif	/* CONFIG_RTC_DRV_BFIN */
- 
- #if defined(CONFIG_SERIAL_BFIN) || defined(CONFIG_SERIAL_BFIN_MODULE)
- #ifdef CONFIG_SERIAL_BFIN_UART0
-@@ -100,7 +100,7 @@ static struct platform_device bfin_uart0_device = {
- 		.platform_data = &bfin_uart0_peripherals, /* Passed to driver */
- 	},
- };
--#endif
-+#endif	/* CONFIG_SERIAL_BFIN_UART0 */
- #ifdef CONFIG_SERIAL_BFIN_UART1
- static struct resource bfin_uart1_resources[] = {
- 	{
-@@ -148,7 +148,7 @@ static struct platform_device bfin_uart1_device = {
- 		.platform_data = &bfin_uart1_peripherals, /* Passed to driver */
- 	},
- };
--#endif
-+#endif	/* CONFIG_SERIAL_BFIN_UART1 */
- #ifdef CONFIG_SERIAL_BFIN_UART2
- static struct resource bfin_uart2_resources[] = {
- 	{
-@@ -196,8 +196,8 @@ static struct platform_device bfin_uart2_device = {
- 		.platform_data = &bfin_uart2_peripherals, /* Passed to driver */
- 	},
- };
--#endif
--#endif
-+#endif	/* CONFIG_SERIAL_BFIN_UART2 */
-+#endif	/* CONFIG_SERIAL_BFIN */
- 
- #if defined(CONFIG_BFIN_SIR) || defined(CONFIG_BFIN_SIR_MODULE)
- #ifdef CONFIG_BFIN_SIR0
-@@ -224,7 +224,7 @@ static struct platform_device bfin_sir0_device = {
- 	.num_resources = ARRAY_SIZE(bfin_sir0_resources),
- 	.resource = bfin_sir0_resources,
- };
--#endif
-+#endif	/* CONFIG_BFIN_SIR0 */
- #ifdef CONFIG_BFIN_SIR1
- static struct resource bfin_sir1_resources[] = {
- 	{
-@@ -249,7 +249,7 @@ static struct platform_device bfin_sir1_device = {
- 	.num_resources = ARRAY_SIZE(bfin_sir1_resources),
- 	.resource = bfin_sir1_resources,
- };
--#endif
-+#endif	/* CONFIG_BFIN_SIR1 */
- #ifdef CONFIG_BFIN_SIR2
- static struct resource bfin_sir2_resources[] = {
- 	{
-@@ -274,8 +274,8 @@ static struct platform_device bfin_sir2_device = {
- 	.num_resources = ARRAY_SIZE(bfin_sir2_resources),
- 	.resource = bfin_sir2_resources,
- };
--#endif
--#endif
-+#endif	/* CONFIG_BFIN_SIR2 */
-+#endif	/* CONFIG_BFIN_SIR */
- 
- #if defined(CONFIG_SERIAL_BFIN_SPORT) || defined(CONFIG_SERIAL_BFIN_SPORT_MODULE)
- #ifdef CONFIG_SERIAL_BFIN_SPORT0_UART
-@@ -311,7 +311,7 @@ static struct platform_device bfin_sport0_uart_device = {
- 		.platform_data = &bfin_sport0_peripherals, /* Passed to driver */
- 	},
- };
--#endif
-+#endif	/* CONFIG_SERIAL_BFIN_SPORT0_UART */
- #ifdef CONFIG_SERIAL_BFIN_SPORT1_UART
- static struct resource bfin_sport1_uart_resources[] = {
- 	{
-@@ -345,7 +345,7 @@ static struct platform_device bfin_sport1_uart_device = {
- 		.platform_data = &bfin_sport1_peripherals, /* Passed to driver */
- 	},
- };
--#endif
-+#endif	/* CONFIG_SERIAL_BFIN_SPORT1_UART */
- #ifdef CONFIG_SERIAL_BFIN_SPORT2_UART
- static struct resource bfin_sport2_uart_resources[] = {
- 	{
-@@ -379,7 +379,7 @@ static struct platform_device bfin_sport2_uart_device = {
- 		.platform_data = &bfin_sport2_peripherals, /* Passed to driver */
- 	},
- };
--#endif
-+#endif	/* CONFIG_SERIAL_BFIN_SPORT2_UART */
- #ifdef CONFIG_SERIAL_BFIN_SPORT3_UART
- static struct resource bfin_sport3_uart_resources[] = {
- 	{
-@@ -413,8 +413,8 @@ static struct platform_device bfin_sport3_uart_device = {
- 		.platform_data = &bfin_sport3_peripherals, /* Passed to driver */
- 	},
- };
--#endif
--#endif
-+#endif	/* CONFIG_SERIAL_BFIN_SPORT3_UART */
-+#endif	/* CONFIG_SERIAL_BFIN_SPORT */
- 
- #if defined(CONFIG_CAN_BFIN) || defined(CONFIG_CAN_BFIN_MODULE)
- static unsigned short bfin_can_peripherals[] = {
-@@ -452,7 +452,7 @@ static struct platform_device bfin_can_device = {
- 		.platform_data = &bfin_can_peripherals, /* Passed to driver */
- 	},
- };
--#endif
-+#endif	/* CONFIG_CAN_BFIN */
- 
- /*
-  *  USB-LAN EzExtender board
-@@ -488,7 +488,7 @@ static struct platform_device smc91x_device = {
- 		.platform_data	= &smc91x_info,
- 	},
- };
--#endif
-+#endif	/* CONFIG_SMC91X */
- 
- #if defined(CONFIG_SPI_BFIN5XX) || defined(CONFIG_SPI_BFIN5XX_MODULE)
- /* all SPI peripherals info goes here */
-@@ -518,7 +518,8 @@ static struct flash_platform_data bfin_spi_flash_data = {
- static struct bfin5xx_spi_chip spi_flash_chip_info = {
- 	.enable_dma = 0,         /* use dma transfer with this chip*/
- };
--#endif
-+#endif	/* CONFIG_MTD_M25P80 */
-+#endif	/* CONFIG_SPI_BFIN5XX */
- 
- #if defined(CONFIG_TOUCHSCREEN_AD7879) || defined(CONFIG_TOUCHSCREEN_AD7879_MODULE)
- #include <linux/spi/ad7879.h>
-@@ -535,7 +536,7 @@ static const struct ad7879_platform_data bfin_ad7879_ts_info = {
- 	.gpio_export		= 1,	/* Export GPIO to gpiolib */
- 	.gpio_base		= -1,	/* Dynamic allocation */
- };
--#endif
-+#endif	/* CONFIG_TOUCHSCREEN_AD7879 */
- 
- #if defined(CONFIG_FB_BFIN_LQ035Q1) || defined(CONFIG_FB_BFIN_LQ035Q1_MODULE)
- #include <asm/bfin-lq035q1.h>
-@@ -564,7 +565,7 @@ static struct platform_device bfin_lq035q1_device = {
- 		.platform_data = &bfin_lq035q1_data,
- 	},
- };
--#endif
-+#endif	/* CONFIG_FB_BFIN_LQ035Q1 */
- 
- static struct spi_board_info bf538_spi_board_info[] __initdata = {
- #if defined(CONFIG_MTD_M25P80) \
-@@ -579,7 +580,7 @@ static struct spi_board_info bf538_spi_board_info[] __initdata = {
- 		.controller_data = &spi_flash_chip_info,
- 		.mode = SPI_MODE_3,
- 	},
--#endif
-+#endif	/* CONFIG_MTD_M25P80 */
- #if defined(CONFIG_TOUCHSCREEN_AD7879_SPI) || defined(CONFIG_TOUCHSCREEN_AD7879_SPI_MODULE)
- 	{
- 		.modalias = "ad7879",
-@@ -590,7 +591,7 @@ static struct spi_board_info bf538_spi_board_info[] __initdata = {
- 		.chip_select = 1,
- 		.mode = SPI_CPHA | SPI_CPOL,
- 	},
--#endif
-+#endif	/* CONFIG_TOUCHSCREEN_AD7879_SPI */
- #if defined(CONFIG_FB_BFIN_LQ035Q1) || defined(CONFIG_FB_BFIN_LQ035Q1_MODULE)
- 	{
- 		.modalias = "bfin-lq035q1-spi",
-@@ -599,7 +600,7 @@ static struct spi_board_info bf538_spi_board_info[] __initdata = {
- 		.chip_select = 2,
- 		.mode = SPI_CPHA | SPI_CPOL,
- 	},
--#endif
-+#endif	/* CONFIG_FB_BFIN_LQ035Q1 */
- #if defined(CONFIG_SPI_SPIDEV) || defined(CONFIG_SPI_SPIDEV_MODULE)
- 	{
- 		.modalias = "spidev",
-@@ -607,7 +608,7 @@ static struct spi_board_info bf538_spi_board_info[] __initdata = {
- 		.bus_num = 0,
- 		.chip_select = 1,
- 	},
--#endif
-+#endif	/* CONFIG_SPI_SPIDEV */
- };
- 
- /* SPI (0) */
-@@ -716,8 +717,6 @@ static struct platform_device bf538_spi_master2 = {
- 		},
- };
- 
--#endif  /* spi master and devices */
--
- #if defined(CONFIG_I2C_BLACKFIN_TWI) || defined(CONFIG_I2C_BLACKFIN_TWI_MODULE)
- static struct resource bfin_twi0_resource[] = {
- 	[0] = {
-@@ -759,8 +758,8 @@ static struct platform_device i2c_bfin_twi1_device = {
- 	.num_resources = ARRAY_SIZE(bfin_twi1_resource),
- 	.resource = bfin_twi1_resource,
- };
--#endif
--#endif
-+#endif	/* CONFIG_BF542 */
-+#endif	/* CONFIG_I2C_BLACKFIN_TWI */
- 
- #if defined(CONFIG_KEYBOARD_GPIO) || defined(CONFIG_KEYBOARD_GPIO_MODULE)
- #include <linux/gpio_keys.h>
--- 
-1.7.9.1
-
+--Signature=_Thu__19_Apr_2012_13_58_43_+1000_1X_l_BxlW3htDKcg--
