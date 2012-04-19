@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933776Ab2DSV1e (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Apr 2012 17:27:34 -0400
+	id S965099Ab2DSV1u (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Apr 2012 17:27:50 -0400
 Received: from mail-pb0-f46.google.com ([209.85.160.46]:34108 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933615Ab2DSVQT (ORCPT
+	with ESMTP id S1756527Ab2DSVQN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Apr 2012 17:16:19 -0400
-Message-Id: <20120419210821.066012140@linuxfoundation.org>
+	Thu, 19 Apr 2012 17:16:13 -0400
+Message-Id: <20120419210820.901366605@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Thu, 19 Apr 2012 14:08:46 -0700
+Date: Thu, 19 Apr 2012 14:08:44 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, =?UTF-8?q?S=C3=B8ren=20Holm?= <sgh@sgh.dk>,
-        Johan Hovold <jhovold@gmail.com>
-Subject: [ 28/68] USB: pl2303: fix DTR/RTS being raised on baud rate change
+        alan@lxorguk.ukuu.org.uk,
+        Alexander Stein <alexander.stein@systec-electronic.com>,
+        Tomoya MORINAGA <tomoya.rohm@gmail.com>
+Subject: [ 26/68] pch_uart: Fix MSI setting issue
 In-Reply-To: <20120419210923.GA18589@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,31 +26,41 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Johan Hovold <jhovold@gmail.com>
+From: Tomoya MORINAGA <tomoya.rohm@gmail.com>
 
-commit ce5c9851855bab190c9a142761d54ba583ab094c upstream.
+commit 867c902e07d5677e2a5b54c0435e589513abde48 upstream.
 
-DTR/RTS should only be raised when changing baudrate from B0 and not on
-any baud rate change (> B0).
+The following patch (MSI setting) is not enough.
 
-Reported-by: Søren Holm <sgh@sgh.dk>
-Signed-off-by: Johan Hovold <jhovold@gmail.com>
+commit e463595fd9c752fa4bf06b47df93ef9ade3c7cf0
+Author: Alexander Stein <alexander.stein@systec-electronic.com>
+Date:   Mon Jul 4 08:58:31 2011 +0200
+
+    pch_uart: Add MSI support
+
+    Signed-off-by: Alexander Stein <alexander.stein@systec-electronic.com>
+    Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+
+To enable MSI mode, PCI bus-mastering must be enabled.
+This patch enables the setting.
+
+cc: Alexander Stein <alexander.stein@systec-electronic.com>
+Signed-off-by: Tomoya MORINAGA <tomoya.rohm@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/serial/pl2303.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/tty/serial/pch_uart.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/drivers/usb/serial/pl2303.c
-+++ b/drivers/usb/serial/pl2303.c
-@@ -421,7 +421,7 @@ static void pl2303_set_termios(struct tt
- 	control = priv->line_control;
- 	if ((cflag & CBAUD) == B0)
- 		priv->line_control &= ~(CONTROL_DTR | CONTROL_RTS);
--	else
-+	else if ((old_termios->c_cflag & CBAUD) == B0)
- 		priv->line_control |= (CONTROL_DTR | CONTROL_RTS);
- 	if (control != priv->line_control) {
- 		control = priv->line_control;
+--- a/drivers/tty/serial/pch_uart.c
++++ b/drivers/tty/serial/pch_uart.c
+@@ -1438,6 +1438,7 @@ static struct eg20t_port *pch_uart_init_
+ 	}
+ 
+ 	pci_enable_msi(pdev);
++	pci_set_master(pdev);
+ 
+ 	iobase = pci_resource_start(pdev, 0);
+ 	mapbase = pci_resource_start(pdev, 1);
 
 
