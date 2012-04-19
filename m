@@ -1,131 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756657Ab2DSVjU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Apr 2012 17:39:20 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:34108 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964838Ab2DSVN6 (ORCPT
+	id S964857Ab2DSVjk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Apr 2012 17:39:40 -0400
+Received: from mail-pz0-f42.google.com ([209.85.210.42]:38471 "EHLO
+	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933494Ab2DSVN5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Apr 2012 17:13:58 -0400
-Message-Id: <20120419210305.510631471@linuxfoundation.org>
+	Thu, 19 Apr 2012 17:13:57 -0400
+Message-Id: <20120419210614.960878231@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Thu, 19 Apr 2012 14:03:31 -0700
+Date: Thu, 19 Apr 2012 14:06:56 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Alan Cox <alan@linux.intel.com>,
-        Sudhakar Mamillapalli <sudhakar@fb.com>,
-        Nhan H Mai <nhan.h.mai@intel.com>,
-        Dan Williams <dan.j.williams@intel.com>
-Subject: [ 28/75] Revert "serial/8250_pci: setup-quirk workaround for the kt serial controller"
-In-Reply-To: <20120419210322.GA6478@kroah.com>
+        alan@lxorguk.ukuu.org.uk, Jonghwan Choi <jhbird.choi@samsung.com>,
+        Serge Hallyn <serge.hallyn@canonical.com>,
+        James Morris <james.l.morris@oracle.com>,
+        Eric Paris <eparis@redhat.com>
+Subject: [ 45/59] security: fix compile error in commoncap.c
+In-Reply-To: <20120419210623.GA12156@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.3-stable review patch.  If anyone has any objections, please let me know.
+3.0-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Dan Williams <dan.j.williams@intel.com>
+From: Jonghwan Choi <jhbird.choi@samsung.com>
 
-commit 49b532f96fda23663f8be35593d1c1372c0f91e0 upstream.
+commit 51b79bee627d526199b2f6a6bef8ee0c0739b6d1 upstream.
 
-This reverts commit 448ac154c957c4580531fa0c8f2045816fe2f0e7.
+Add missing "personality.h"
+security/commoncap.c: In function 'cap_bprm_set_creds':
+security/commoncap.c:510: error: 'PER_CLEAR_ON_SETID' undeclared (first use in this function)
+security/commoncap.c:510: error: (Each undeclared identifier is reported only once
+security/commoncap.c:510: error: for each function it appears in.)
 
-The semantic of UPF_IIR_ONCE is only guaranteed to workaround the race
-condition in the kt serial's iir register if the only source of
-interrupts is THRE (fifo-empty) events.  An modem status event at the
-wrong time can again cause an iir read to drop the 'empty' status
-leading to a hang.  So, revert this in preparation for using the
-existing "I don't trust my iir register" workaround in the 8250 core
-(UART_BUG_THRE).
-
-Acked-by: Alan Cox <alan@linux.intel.com>
-Cc: Sudhakar Mamillapalli <sudhakar@fb.com>
-Reported-by: Nhan H Mai <nhan.h.mai@intel.com>
-Signed-off-by: Dan Williams <dan.j.williams@intel.com>
+Signed-off-by: Jonghwan Choi <jhbird.choi@samsung.com>
+Acked-by: Serge Hallyn <serge.hallyn@canonical.com>
+Signed-off-by: James Morris <james.l.morris@oracle.com>
+Cc: Eric Paris <eparis@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/tty/serial/8250/8250.c     |    4 +---
- drivers/tty/serial/8250/8250_pci.c |   17 +----------------
- include/linux/serial_core.h        |    1 -
- 3 files changed, 2 insertions(+), 20 deletions(-)
+ security/commoncap.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/drivers/tty/serial/8250/8250.c
-+++ b/drivers/tty/serial/8250/8250.c
-@@ -1592,13 +1592,11 @@ static irqreturn_t serial8250_interrupt(
- 	do {
- 		struct uart_8250_port *up;
- 		struct uart_port *port;
--		bool skip;
+--- a/security/commoncap.c
++++ b/security/commoncap.c
+@@ -28,6 +28,7 @@
+ #include <linux/prctl.h>
+ #include <linux/securebits.h>
+ #include <linux/user_namespace.h>
++#include <linux/personality.h>
  
- 		up = list_entry(l, struct uart_8250_port, list);
- 		port = &up->port;
--		skip = pass_counter && up->port.flags & UPF_IIR_ONCE;
- 
--		if (!skip && port->handle_irq(port)) {
-+		if (port->handle_irq(port)) {
- 			handled = 1;
- 			end = NULL;
- 		} else if (end == NULL)
---- a/drivers/tty/serial/8250/8250_pci.c
-+++ b/drivers/tty/serial/8250/8250_pci.c
-@@ -1092,14 +1092,6 @@ static int skip_tx_en_setup(struct seria
- 	return pci_default_setup(priv, board, port, idx);
- }
- 
--static int kt_serial_setup(struct serial_private *priv,
--			   const struct pciserial_board *board,
--			   struct uart_port *port, int idx)
--{
--	port->flags |= UPF_IIR_ONCE;
--	return skip_tx_en_setup(priv, board, port, idx);
--}
--
- static int pci_eg20t_init(struct pci_dev *dev)
- {
- #if defined(CONFIG_SERIAL_PCH_UART) || defined(CONFIG_SERIAL_PCH_UART_MODULE)
-@@ -1118,6 +1110,7 @@ pci_xr17c154_setup(struct serial_private
- 	return pci_default_setup(priv, board, port, idx);
- }
- 
-+/* This should be in linux/pci_ids.h */
- #define PCI_VENDOR_ID_SBSMODULARIO	0x124B
- #define PCI_SUBVENDOR_ID_SBSMODULARIO	0x124B
- #define PCI_DEVICE_ID_OCTPRO		0x0001
-@@ -1147,7 +1140,6 @@ pci_xr17c154_setup(struct serial_private
- #define PCI_DEVICE_ID_OXSEMI_16PCI958	0x9538
- #define PCIE_DEVICE_ID_NEO_2_OX_IBM	0x00F6
- #define PCI_DEVICE_ID_PLX_CRONYX_OMEGA	0xc001
--#define PCI_DEVICE_ID_INTEL_PATSBURG_KT 0x1d3d
- 
- /* Unknown vendors/cards - this should not be in linux/pci_ids.h */
- #define PCI_SUBDEVICE_ID_UNKNOWN_0x1584	0x1584
-@@ -1232,13 +1224,6 @@ static struct pci_serial_quirk pci_seria
- 		.subdevice	= PCI_ANY_ID,
- 		.setup		= ce4100_serial_setup,
- 	},
--	{
--		.vendor		= PCI_VENDOR_ID_INTEL,
--		.device		= PCI_DEVICE_ID_INTEL_PATSBURG_KT,
--		.subvendor	= PCI_ANY_ID,
--		.subdevice	= PCI_ANY_ID,
--		.setup		= kt_serial_setup,
--	},
- 	/*
- 	 * ITE
- 	 */
---- a/include/linux/serial_core.h
-+++ b/include/linux/serial_core.h
-@@ -355,7 +355,6 @@ struct uart_port {
- #define UPF_CONS_FLOW		((__force upf_t) (1 << 23))
- #define UPF_SHARE_IRQ		((__force upf_t) (1 << 24))
- #define UPF_EXAR_EFR		((__force upf_t) (1 << 25))
--#define UPF_IIR_ONCE		((__force upf_t) (1 << 26))
- /* The exact UART type is known and should not be probed.  */
- #define UPF_FIXED_TYPE		((__force upf_t) (1 << 27))
- #define UPF_BOOT_AUTOCONF	((__force upf_t) (1 << 28))
+ /*
+  * If a non-root user executes a setuid-root binary in
 
 
