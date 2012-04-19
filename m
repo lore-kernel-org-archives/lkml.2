@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932607Ab2DSVFv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Apr 2012 17:05:51 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:41537 "EHLO
+	id S932622Ab2DSVGD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Apr 2012 17:06:03 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:38883 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932469Ab2DSVFq (ORCPT
+	with ESMTP id S932254Ab2DSVF7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Apr 2012 17:05:46 -0400
-Message-Id: <20120419210304.500919367@linuxfoundation.org>
+	Thu, 19 Apr 2012 17:05:59 -0400
+Message-Id: <20120419210304.835633969@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Thu, 19 Apr 2012 14:03:19 -0700
+Date: Thu, 19 Apr 2012 14:03:23 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Johan Hovold <jhovold@gmail.com>,
-        Marcel Holtmann <marcel@holtmann.org>,
-        Johan Hedberg <johan.hedberg@intel.com>
-Subject: [ 16/75] Bluetooth: hci_core: fix NULL-pointer dereference at unregister
+        alan@lxorguk.ukuu.org.uk, "Theodore Tso" <tytso@mit.edu>
+Subject: [ 20/75] ext4: address scalability issue by removing extent cache statistics
 In-Reply-To: <20120419210322.GA6478@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,128 +24,86 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Johan Hovold <jhovold@gmail.com>
+From: Theodore Ts'o <tytso@mit.edu>
 
-commit 94324962066231a938564bebad0f941cd2d06bb2 upstream.
+commit 9cd70b347e9761ea2d2ac3d758c529a48a8193e6 upstream.
 
-Make sure hci_dev_open returns immediately if hci_dev_unregister has
-been called.
+Andi Kleen and Tim Chen have reported that under certain circumstances
+the extent cache statistics are causing scalability problems due to
+cache line bounces.
 
-This fixes a race between hci_dev_open and hci_dev_unregister which can
-lead to a NULL-pointer dereference.
-
-Bug is 100% reproducible using hciattach and a disconnected serial port:
-
-0. # hciattach -n /dev/ttyO1 any noflow
-
-1. hci_dev_open called from hci_power_on grabs req lock
-2. hci_init_req executes but device fails to initialise (times out
-   eventually)
-3. hci_dev_open is called from hci_sock_ioctl and sleeps on req lock
-4. hci_uart_tty_close calls hci_dev_unregister and sleeps on req lock in
-   hci_dev_do_close
-5. hci_dev_open (1) releases req lock
-6. hci_dev_do_close grabs req lock and returns as device is not up
-7. hci_dev_unregister sleeps in destroy_workqueue
-8. hci_dev_open (3) grabs req lock, calls hci_init_req and eventually sleeps
-9. hci_dev_unregister finishes, while hci_dev_open is still running...
-
-[   79.627136] INFO: trying to register non-static key.
-[   79.632354] the code is fine but needs lockdep annotation.
-[   79.638122] turning off the locking correctness validator.
-[   79.643920] [<c00188bc>] (unwind_backtrace+0x0/0xf8) from [<c00729c4>] (__lock_acquire+0x1590/0x1ab0)
-[   79.653594] [<c00729c4>] (__lock_acquire+0x1590/0x1ab0) from [<c00733f8>] (lock_acquire+0x9c/0x128)
-[   79.663085] [<c00733f8>] (lock_acquire+0x9c/0x128) from [<c0040a88>] (run_timer_softirq+0x150/0x3ac)
-[   79.672668] [<c0040a88>] (run_timer_softirq+0x150/0x3ac) from [<c003a3b8>] (__do_softirq+0xd4/0x22c)
-[   79.682281] [<c003a3b8>] (__do_softirq+0xd4/0x22c) from [<c003a924>] (irq_exit+0x8c/0x94)
-[   79.690856] [<c003a924>] (irq_exit+0x8c/0x94) from [<c0013a50>] (handle_IRQ+0x34/0x84)
-[   79.699157] [<c0013a50>] (handle_IRQ+0x34/0x84) from [<c0008530>] (omap3_intc_handle_irq+0x48/0x4c)
-[   79.708648] [<c0008530>] (omap3_intc_handle_irq+0x48/0x4c) from [<c037499c>] (__irq_usr+0x3c/0x60)
-[   79.718048] Exception stack(0xcf281fb0 to 0xcf281ff8)
-[   79.723358] 1fa0:                                     0001e6a0 be8dab00 0001e698 00036698
-[   79.731933] 1fc0: 0002df98 0002df38 0000001f 00000000 b6f234d0 00000000 00000004 00000000
-[   79.740509] 1fe0: 0001e6f8 be8d6aa0 be8dac50 0000aab8 80000010 ffffffff
-[   79.747497] Unable to handle kernel NULL pointer dereference at virtual address 00000000
-[   79.756011] pgd = cf3b4000
-[   79.758850] [00000000] *pgd=8f0c7831, *pte=00000000, *ppte=00000000
-[   79.765502] Internal error: Oops: 80000007 [#1]
-[   79.770294] Modules linked in:
-[   79.773529] CPU: 0    Tainted: G        W     (3.3.0-rc6-00002-gb5d5c87 #421)
-[   79.781066] PC is at 0x0
-[   79.783721] LR is at run_timer_softirq+0x16c/0x3ac
-[   79.788787] pc : [<00000000>]    lr : [<c0040aa4>]    psr: 60000113
-[   79.788787] sp : cf281ee0  ip : 00000000  fp : cf280000
-[   79.800903] r10: 00000004  r9 : 00000100  r8 : b6f234d0
-[   79.806427] r7 : c0519c28  r6 : cf093488  r5 : c0561a00  r4 : 00000000
-[   79.813323] r3 : 00000000  r2 : c054eee0  r1 : 00000001  r0 : 00000000
-[   79.820190] Flags: nZCv  IRQs on  FIQs on  Mode SVC_32  ISA ARM  Segment user
-[   79.827728] Control: 10c5387d  Table: 8f3b4019  DAC: 00000015
-[   79.833801] Process gpsd (pid: 1265, stack limit = 0xcf2802e8)
-[   79.839965] Stack: (0xcf281ee0 to 0xcf282000)
-[   79.844573] 1ee0: 00000002 00000000 c0040a24 00000000 00000002 cf281f08 00200200 00000000
-[   79.853210] 1f00: 00000000 cf281f18 cf281f08 00000000 00000000 00000000 cf281f18 cf281f18
-[   79.861816] 1f20: 00000000 00000001 c056184c 00000000 00000001 b6f234d0 c0561848 00000004
-[   79.870452] 1f40: cf280000 c003a3b8 c051e79c 00000001 00000000 00000100 3fa9e7b8 0000000a
-[   79.879089] 1f60: 00000025 cf280000 00000025 00000000 00000000 b6f234d0 00000000 00000004
-[   79.887756] 1f80: 00000000 c003a924 c053ad38 c0013a50 fa200000 cf281fb0 ffffffff c0008530
-[   79.896362] 1fa0: 0001e6a0 0000aab8 80000010 c037499c 0001e6a0 be8dab00 0001e698 00036698
-[   79.904998] 1fc0: 0002df98 0002df38 0000001f 00000000 b6f234d0 00000000 00000004 00000000
-[   79.913665] 1fe0: 0001e6f8 be8d6aa0 be8dac50 0000aab8 80000010 ffffffff 00fbf700 04ffff00
-[   79.922302] [<c0040aa4>] (run_timer_softirq+0x16c/0x3ac) from [<c003a3b8>] (__do_softirq+0xd4/0x22c)
-[   79.931945] [<c003a3b8>] (__do_softirq+0xd4/0x22c) from [<c003a924>] (irq_exit+0x8c/0x94)
-[   79.940582] [<c003a924>] (irq_exit+0x8c/0x94) from [<c0013a50>] (handle_IRQ+0x34/0x84)
-[   79.948913] [<c0013a50>] (handle_IRQ+0x34/0x84) from [<c0008530>] (omap3_intc_handle_irq+0x48/0x4c)
-[   79.958404] [<c0008530>] (omap3_intc_handle_irq+0x48/0x4c) from [<c037499c>] (__irq_usr+0x3c/0x60)
-[   79.967773] Exception stack(0xcf281fb0 to 0xcf281ff8)
-[   79.973083] 1fa0:                                     0001e6a0 be8dab00 0001e698 00036698
-[   79.981658] 1fc0: 0002df98 0002df38 0000001f 00000000 b6f234d0 00000000 00000004 00000000
-[   79.990234] 1fe0: 0001e6f8 be8d6aa0 be8dac50 0000aab8 80000010 ffffffff
-[   79.997161] Code: bad PC value
-[   80.000396] ---[ end trace 6f6739840475f9ee ]---
-[   80.005279] Kernel panic - not syncing: Fatal exception in interrupt
-
-Signed-off-by: Johan Hovold <jhovold@gmail.com>
-Acked-by: Marcel Holtmann <marcel@holtmann.org>
-Signed-off-by: Johan Hedberg <johan.hedberg@intel.com>
+Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- include/net/bluetooth/hci.h |    1 +
- net/bluetooth/hci_core.c    |    7 +++++++
- 2 files changed, 8 insertions(+)
+ fs/ext4/ext4.h    |    3 ---
+ fs/ext4/extents.c |    4 ----
+ fs/ext4/super.c   |   16 ----------------
+ 3 files changed, 23 deletions(-)
 
---- a/include/net/bluetooth/hci.h
-+++ b/include/net/bluetooth/hci.h
-@@ -84,6 +84,7 @@ enum {
- 	HCI_SERVICE_CACHE,
- 	HCI_LINK_KEYS,
- 	HCI_DEBUG_KEYS,
-+	HCI_UNREGISTER,
+--- a/fs/ext4/ext4.h
++++ b/fs/ext4/ext4.h
+@@ -1195,9 +1195,6 @@ struct ext4_sb_info {
+ 	unsigned long s_ext_blocks;
+ 	unsigned long s_ext_extents;
+ #endif
+-	/* ext4 extent cache stats */
+-	unsigned long extent_cache_hits;
+-	unsigned long extent_cache_misses;
  
- 	HCI_RESET,
- };
---- a/net/bluetooth/hci_core.c
-+++ b/net/bluetooth/hci_core.c
-@@ -525,6 +525,11 @@ int hci_dev_open(__u16 dev)
+ 	/* for buddy allocator */
+ 	struct ext4_group_info ***s_group_info;
+--- a/fs/ext4/extents.c
++++ b/fs/ext4/extents.c
+@@ -2051,10 +2051,6 @@ static int ext4_ext_check_cache(struct i
+ 		ret = 1;
+ 	}
+ errout:
+-	if (!ret)
+-		sbi->extent_cache_misses++;
+-	else
+-		sbi->extent_cache_hits++;
+ 	trace_ext4_ext_in_cache(inode, block, ret);
+ 	spin_unlock(&EXT4_I(inode)->i_block_reservation_lock);
+ 	return ret;
+--- a/fs/ext4/super.c
++++ b/fs/ext4/super.c
+@@ -2503,18 +2503,6 @@ static ssize_t lifetime_write_kbytes_sho
+ 			  EXT4_SB(sb)->s_sectors_written_start) >> 1)));
+ }
  
- 	hci_req_lock(hdev);
- 
-+	if (test_bit(HCI_UNREGISTER, &hdev->dev_flags)) {
-+		ret = -ENODEV;
-+		goto done;
-+	}
-+
- 	if (hdev->rfkill && rfkill_blocked(hdev->rfkill)) {
- 		ret = -ERFKILL;
- 		goto done;
-@@ -1577,6 +1582,8 @@ void hci_unregister_dev(struct hci_dev *
- 
- 	BT_DBG("%p name %s bus %d", hdev, hdev->name, hdev->bus);
- 
-+	set_bit(HCI_UNREGISTER, &hdev->dev_flags);
-+
- 	write_lock(&hci_dev_list_lock);
- 	list_del(&hdev->list);
- 	write_unlock(&hci_dev_list_lock);
+-static ssize_t extent_cache_hits_show(struct ext4_attr *a,
+-				      struct ext4_sb_info *sbi, char *buf)
+-{
+-	return snprintf(buf, PAGE_SIZE, "%lu\n", sbi->extent_cache_hits);
+-}
+-
+-static ssize_t extent_cache_misses_show(struct ext4_attr *a,
+-					struct ext4_sb_info *sbi, char *buf)
+-{
+-	return snprintf(buf, PAGE_SIZE, "%lu\n", sbi->extent_cache_misses);
+-}
+-
+ static ssize_t inode_readahead_blks_store(struct ext4_attr *a,
+ 					  struct ext4_sb_info *sbi,
+ 					  const char *buf, size_t count)
+@@ -2572,8 +2560,6 @@ static struct ext4_attr ext4_attr_##name
+ EXT4_RO_ATTR(delayed_allocation_blocks);
+ EXT4_RO_ATTR(session_write_kbytes);
+ EXT4_RO_ATTR(lifetime_write_kbytes);
+-EXT4_RO_ATTR(extent_cache_hits);
+-EXT4_RO_ATTR(extent_cache_misses);
+ EXT4_ATTR_OFFSET(inode_readahead_blks, 0644, sbi_ui_show,
+ 		 inode_readahead_blks_store, s_inode_readahead_blks);
+ EXT4_RW_ATTR_SBI_UI(inode_goal, s_inode_goal);
+@@ -2589,8 +2575,6 @@ static struct attribute *ext4_attrs[] =
+ 	ATTR_LIST(delayed_allocation_blocks),
+ 	ATTR_LIST(session_write_kbytes),
+ 	ATTR_LIST(lifetime_write_kbytes),
+-	ATTR_LIST(extent_cache_hits),
+-	ATTR_LIST(extent_cache_misses),
+ 	ATTR_LIST(inode_readahead_blks),
+ 	ATTR_LIST(inode_goal),
+ 	ATTR_LIST(mb_stats),
 
 
