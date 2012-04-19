@@ -1,81 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933351Ab2DSVNO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Apr 2012 17:13:14 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:44451 "EHLO
+	id S1756696Ab2DSVnn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Apr 2012 17:43:43 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:34108 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933365Ab2DSVNF (ORCPT
+	with ESMTP id S933394Ab2DSVNN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Apr 2012 17:13:05 -0400
-Message-Id: <20120419210613.643739833@linuxfoundation.org>
+	Thu, 19 Apr 2012 17:13:13 -0400
+Message-Id: <20120419210304.162007403@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Thu, 19 Apr 2012 14:06:41 -0700
+Date: Thu, 19 Apr 2012 14:03:15 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk,
-        Shreshtha Kumar Sahu <shreshthakumar.sahu@stericsson.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Nicolas Pitre <nico@fluxnic.net>, Viresh Kumar <viresh.kumar@st.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Grant Likely <grant.likely@secretlab.ca>
-Subject: [ 30/59] serial: PL011: move interrupt clearing
-In-Reply-To: <20120419210623.GA12156@kroah.com>
+        alan@lxorguk.ukuu.org.uk, majianpeng <majianpeng@gmail.com>,
+        NeilBrown <neilb@suse.de>
+Subject: [ 12/75] md/raid1,raid10: Fix calculation of vcnt when processing error recovery.
+In-Reply-To: <20120419210322.GA6478@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.0-stable review patch.  If anyone has any objections, please let me know.
+3.3-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Linus Walleij <linus.walleij@linaro.org>
+From: majianpeng <majianpeng@gmail.com>
 
-commit c3d8b76f61586714cdc5f219ba45592a54caaa55 upstream.
+commit f4380a915823dbed0bf8e3cf502ebcf2b7c7f833 upstream.
 
-Commit 360f748b204275229f8398cb2f9f53955db1503b
-"serial: PL011: clear pending interrupts"
-attempts to clear interrupts by writing to a
-yet-unassigned memory address. This fixes the issue.
+If r1bio->sectors % 8 != 0,then the memcmp and a later
+memcpy will omit the last bio_vec.
 
-The breaking patch is marked for stable so should be
-carried along with the other patch.
+This is suitable for any stable kernel since 3.1 when bad-block
+management was introduced.
 
-Cc: Shreshtha Kumar Sahu <shreshthakumar.sahu@stericsson.com>
-Cc: Russell King <linux@arm.linux.org.uk>
-Cc: Nicolas Pitre <nico@fluxnic.net>
-Reported-by: Viresh Kumar <viresh.kumar@st.com>
-Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
-Tested-by: Grant Likely <grant.likely@secretlab.ca>
+Signed-off-by: majianpeng <majianpeng@gmail.com>
+Signed-off-by: NeilBrown <neilb@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/tty/serial/amba-pl011.c |    8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+ drivers/md/raid1.c  |    3 ++-
+ drivers/md/raid10.c |    4 ++--
+ 2 files changed, 4 insertions(+), 3 deletions(-)
 
---- a/drivers/tty/serial/amba-pl011.c
-+++ b/drivers/tty/serial/amba-pl011.c
-@@ -1907,10 +1907,6 @@ static int pl011_probe(struct amba_devic
- 		goto unmap;
- 	}
+--- a/drivers/md/raid1.c
++++ b/drivers/md/raid1.c
+@@ -1669,6 +1669,7 @@ static int process_checks(struct r1bio *
+ 	struct r1conf *conf = mddev->private;
+ 	int primary;
+ 	int i;
++	int vcnt;
  
--	/* Ensure interrupts from this UART are masked and cleared */
--	writew(0, uap->port.membase + UART011_IMSC);
--	writew(0xffff, uap->port.membase + UART011_ICR);
--
- 	uap->vendor = vendor;
- 	uap->lcrh_rx = vendor->lcrh_rx;
- 	uap->lcrh_tx = vendor->lcrh_tx;
-@@ -1927,6 +1923,10 @@ static int pl011_probe(struct amba_devic
- 	uap->port.line = i;
- 	pl011_dma_probe(uap);
+ 	for (primary = 0; primary < conf->raid_disks * 2; primary++)
+ 		if (r1_bio->bios[primary]->bi_end_io == end_sync_read &&
+@@ -1678,9 +1679,9 @@ static int process_checks(struct r1bio *
+ 			break;
+ 		}
+ 	r1_bio->read_disk = primary;
++	vcnt = (r1_bio->sectors + PAGE_SIZE / 512 - 1) >> (PAGE_SHIFT - 9);
+ 	for (i = 0; i < conf->raid_disks * 2; i++) {
+ 		int j;
+-		int vcnt = r1_bio->sectors >> (PAGE_SHIFT- 9);
+ 		struct bio *pbio = r1_bio->bios[primary];
+ 		struct bio *sbio = r1_bio->bios[i];
+ 		int size;
+--- a/drivers/md/raid10.c
++++ b/drivers/md/raid10.c
+@@ -1742,6 +1742,7 @@ static void sync_request_write(struct md
+ 	struct r10conf *conf = mddev->private;
+ 	int i, first;
+ 	struct bio *tbio, *fbio;
++	int vcnt;
  
-+	/* Ensure interrupts from this UART are masked and cleared */
-+	writew(0, uap->port.membase + UART011_IMSC);
-+	writew(0xffff, uap->port.membase + UART011_ICR);
-+
- 	snprintf(uap->type, sizeof(uap->type), "PL011 rev%u", amba_rev(dev));
+ 	atomic_set(&r10_bio->remaining, 1);
  
- 	amba_ports[i] = uap;
+@@ -1756,10 +1757,10 @@ static void sync_request_write(struct md
+ 	first = i;
+ 	fbio = r10_bio->devs[i].bio;
+ 
++	vcnt = (r10_bio->sectors + (PAGE_SIZE >> 9) - 1) >> (PAGE_SHIFT - 9);
+ 	/* now find blocks with errors */
+ 	for (i=0 ; i < conf->copies ; i++) {
+ 		int  j, d;
+-		int vcnt = r10_bio->sectors >> (PAGE_SHIFT-9);
+ 
+ 		tbio = r10_bio->devs[i].bio;
+ 
+@@ -1825,7 +1826,6 @@ static void sync_request_write(struct md
+ 	 */
+ 	for (i = 0; i < conf->copies; i++) {
+ 		int j, d;
+-		int vcnt = r10_bio->sectors >> (PAGE_SHIFT-9);
+ 
+ 		tbio = r10_bio->devs[i].repl_bio;
+ 		if (!tbio || !tbio->bi_end_io)
 
 
