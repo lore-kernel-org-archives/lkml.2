@@ -1,48 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754475Ab2DSAIs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Apr 2012 20:08:48 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:50214 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751370Ab2DSAIq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Apr 2012 20:08:46 -0400
-Date: Wed, 18 Apr 2012 17:08:42 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Jean Pihet <jean.pihet@newoldbits.com>
-Cc: akpm@linux-foundation.org, linux-omap@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, Kevin Hilman <khilman@ti.com>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>, LKML <linux-kernel@vger.kernel.org>,
-        Tony Lindgren <tony@atomide.com>, KEERTHY J <j-keerthy@ti.com>,
-        Jean Pihet <j-pihet@ti.com>
-Subject: Re: [PATCH v2 0/9] PM: Create the AVS class of drivers
-Message-ID: <20120419000842.GA24575@kroah.com>
-References: <1332173578-27422-1-git-send-email-j-pihet@ti.com>
- <CAORVsuV-GJAabY49G0fOgcBcg-CNdpNiTE+AcBN07wrWZH3qcQ@mail.gmail.com>
+	id S1754105Ab2DSAKC (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Apr 2012 20:10:02 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:43369 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751375Ab2DSAJ7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Apr 2012 20:09:59 -0400
+Message-ID: <4F8F57CE.3070705@zytor.com>
+Date: Wed, 18 Apr 2012 17:09:50 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120329 Thunderbird/11.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAORVsuV-GJAabY49G0fOgcBcg-CNdpNiTE+AcBN07wrWZH3qcQ@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: "H.J. Lu" <hjl.tools@gmail.com>
+CC: mingo@redhat.com, linux-kernel@vger.kernel.org, tglx@linutronix.de,
+        linux-tip-commits@vger.kernel.org
+Subject: Re: [tip:x86/x32] x32: Fix alignment fail in struct compat_siginfo
+References: <1329696488-16970-1-git-send-email-hpa@zytor.com> <tip-31796ac4e8f0e88f5c10f1ad6dab8f19bebe44a4@git.kernel.org> <CAMe9rOqF6Kh6-NK7oP0Fpzkd4SBAWU+G53hwBbSD4iA2UzyxuA@mail.gmail.com> <4F8EFE4D.2040201@zytor.com> <CAMe9rOpfPQghra1PQTUwsFOvjgNpzFDEGS5=BbFBjn=HZGL93g@mail.gmail.com> <4F8F0385.5090901@zytor.com> <CAMe9rOq7LduF4aLPe9qatedxps4WPCgOHTD=E_Lje4_tu6tyZw@mail.gmail.com> <4F8F0614.9010604@zytor.com> <CAMe9rOqBd29LKB==NaKscpedRMR1uL_ZhHqSw1HQj-3_d9PSCw@mail.gmail.com> <4F8F30F5.9030704@zytor.com> <CAMe9rOq-dEFtYDgpC2z3MPujCkOUtBU4byHC_aAOWLUK8u5ZDQ@mail.gmail.com> <4F8F52D5.3040109@zytor.com> <CAMe9rOofzJg+Q1M8cDw0ebVLZodq_0BN=A-ytpmdHZzE9LORtg@mail.gmail.com>
+In-Reply-To: <CAMe9rOofzJg+Q1M8cDw0ebVLZodq_0BN=A-ytpmdHZzE9LORtg@mail.gmail.com>
+X-Enigmail-Version: 1.4
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 18, 2012 at 10:04:22AM +0200, Jean Pihet wrote:
-> Hi Andrew, Greg,
+On 04/18/2012 04:54 PM, H.J. Lu wrote:
+>>
+>> We could.  If we want to align the substructures then we need some major
+>> surgery to the compat_siginfo handling though.
+>>
 > 
-> Can you please look at this patch set?
-> The idea is to create a framework and drivers for the AVS class of
-> devices. This patch set implements the first step by moving the
-> existing code to drivers/power/avs. Next steps will be to implement
-> class support and notifications, add more classes of operations for
-> OMAP chips, etc.
+> Since there will be no x32 kernel, align struct siginfo to 8byte for x32
+> will only be for user space code.  It shouldn't be a problem for kernel.
 > 
-> Keerthy J is taking over the ownership of this code and will continue
-> the development further.
-> 
-> What do you think?
 
-I think Kevin and Rafael's comments need to be addressed.
+Well, for aligning the whole structure I don't think there is any change
+to the kernel at all...
 
-greg k-h
+	-hpa
+
+-- 
+H. Peter Anvin, Intel Open Source Technology Center
+I work for Intel.  I don't speak on their behalf.
+
