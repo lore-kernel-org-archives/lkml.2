@@ -1,95 +1,151 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933543Ab2DSVPk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Apr 2012 17:15:40 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:34108 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756491Ab2DSVPg (ORCPT
+	id S933561Ab2DSVPo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Apr 2012 17:15:44 -0400
+Received: from mail-pz0-f42.google.com ([209.85.210.42]:38471 "EHLO
+	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756463Ab2DSVPf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Apr 2012 17:15:36 -0400
-Message-Id: <20120419210307.646387464@linuxfoundation.org>
+	Thu, 19 Apr 2012 17:15:35 -0400
+Message-Id: <20120419210819.120235243@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Thu, 19 Apr 2012 14:03:56 -0700
+Date: Thu, 19 Apr 2012 14:08:23 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Elric Fu <elricfu1@gmail.com>,
-        Andiry Xu <Andiry.Xu@amd.com>, Sergei Shtylyov <sshtylyov@mvista.com>,
-        Sarah Sharp <sarah.a.sharp@linux.intel.com>
-Subject: [ 53/75] USB: fix bug of device descriptor got from superspeed device
-In-Reply-To: <20120419210322.GA6478@kroah.com>
+        alan@lxorguk.ukuu.org.uk, Adam Jackson <ajax@redhat.com>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>
+Subject: [ 05/68] drm/i915: properly compute dp dithering for user-created modes
+In-Reply-To: <20120419210923.GA18589@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.3-stable review patch.  If anyone has any objections, please let me know.
+3.2-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Elric Fu <elricfu1@gmail.com>
+From: Daniel Vetter <daniel.vetter@ffwll.ch>
 
-commit d8aec3dbdfd02627e198e7956ab4aaeba2a349fa upstream.
+commit c4867936474183332db4c19791a65fdad6474fd5 upstream.
 
-When the Seagate Goflex USB3.0 device is attached to VIA xHCI
-host, sometimes the device will downgrade mode to high speed.
-By the USB analyzer, I found the device finished the link
-training process and worked at superspeed mode. But the device
-descriptor got from the device shows the device works at 2.1.
-It is very strange and seems like the device controller of
-Seagate Goflex has a little confusion.
+We've only computed whether we need to fall back to 6bpc due to dp
+link bandwidth constrains in mode_valid, but not mode_fixup. Under
+various circumstances X likes to create new modes which then lack
+proper 6bpc flags (if required), resulting in mode_fixup failures and
+ultimately black screens.
 
-The first 8 bytes of device descriptor should be:
-12 01 00 03 00 00 00 09
+Chris Wilson pointed out that we still get things wrong for bpp > 24,
+but that should be fixed in another patch (and it'll be easier because
+this patch consolidates the logic).
 
-But the first 8 bytes of wrong device descriptor are:
-12 01 10 02 00 00 00 40
+The likely culprit for this regression is
 
-The wrong device descriptor caused the initialization of mass
-storage failed. After a while, the device would be recognized
-as a high speed device and works fine.
+commit 3d794f87238f74d80e78a7611c7fbde8a54c85c2
+Author: Keith Packard <keithp@keithp.com>
+Date:   Wed Jan 25 08:16:25 2012 -0800
 
-This patch will warm reset the device to fix the issue after
-finding the bcdUSB field of device descriptor isn't 0x0300
-but the speed mode of device is superspeed.
+    drm/i915: Force explicit bpp selection for intel_dp_link_required
 
-This patch should be backported to kernels as old as 3.2, or ones that
-contain the commit 75d7cf72ab9fa01dc70877aa5c68e8ef477229dc "usbcore:
-refine warm reset logic".
+v2: Fix indentation and tune down the too bold claim that this should
+fix the world. Both noticed by Chris Wilson.
 
-Signed-off-by: Elric Fu <elricfu1@gmail.com>
-Acked-by: Andiry Xu <Andiry.Xu@amd.com>
-Acked-by: Sergei Shtylyov <sshtylyov@mvista.com>
-Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+v3: Try to really git add things.
+
+Reported-and-tested-by: Brice Goglin <Brice.Goglin@ens-lyon.org>
+Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=48170
+Cc: stable@kernel.org
+Reviewed-by: Adam Jackson <ajax@redhat.com>
+Signed-Off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/core/hub.c |   16 ++++++++++++++++
- 1 file changed, 16 insertions(+)
+ drivers/gpu/drm/i915/intel_dp.c |   49 ++++++++++++++++++++++++++++------------
+ 1 file changed, 35 insertions(+), 14 deletions(-)
 
---- a/drivers/usb/core/hub.c
-+++ b/drivers/usb/core/hub.c
-@@ -3071,6 +3071,22 @@ hub_port_init (struct usb_hub *hub, stru
- 	if (retval)
- 		goto fail;
+--- a/drivers/gpu/drm/i915/intel_dp.c
++++ b/drivers/gpu/drm/i915/intel_dp.c
+@@ -219,14 +219,38 @@ intel_dp_max_data_rate(int max_link_cloc
+ 	return (max_link_clock * max_lanes * 8) / 10;
+ }
  
-+	/*
-+	 * Some superspeed devices have finished the link training process
-+	 * and attached to a superspeed hub port, but the device descriptor
-+	 * got from those devices show they aren't superspeed devices. Warm
-+	 * reset the port attached by the devices can fix them.
-+	 */
-+	if ((udev->speed == USB_SPEED_SUPER) &&
-+			(le16_to_cpu(udev->descriptor.bcdUSB) < 0x0300)) {
-+		dev_err(&udev->dev, "got a wrong device descriptor, "
-+				"warm reset device\n");
-+		hub_port_reset(hub, port1, udev,
-+				HUB_BH_RESET_TIME, true);
-+		retval = -EINVAL;
-+		goto fail;
++static bool
++intel_dp_adjust_dithering(struct intel_dp *intel_dp,
++			  struct drm_display_mode *mode,
++			  struct drm_display_mode *adjusted_mode)
++{
++	int max_link_clock = intel_dp_link_clock(intel_dp_max_link_bw(intel_dp));
++	int max_lanes = intel_dp_max_lane_count(intel_dp);
++	int max_rate, mode_rate;
++
++	mode_rate = intel_dp_link_required(mode->clock, 24);
++	max_rate = intel_dp_max_data_rate(max_link_clock, max_lanes);
++
++	if (mode_rate > max_rate) {
++		mode_rate = intel_dp_link_required(mode->clock, 18);
++		if (mode_rate > max_rate)
++			return false;
++
++		if (adjusted_mode)
++			adjusted_mode->private_flags
++				|= INTEL_MODE_DP_FORCE_6BPC;
++
++		return true;
 +	}
 +
- 	if (udev->descriptor.bMaxPacketSize0 == 0xff ||
- 			udev->speed == USB_SPEED_SUPER)
- 		i = 512;
++	return true;
++}
++
+ static int
+ intel_dp_mode_valid(struct drm_connector *connector,
+ 		    struct drm_display_mode *mode)
+ {
+ 	struct intel_dp *intel_dp = intel_attached_dp(connector);
+-	int max_link_clock = intel_dp_link_clock(intel_dp_max_link_bw(intel_dp));
+-	int max_lanes = intel_dp_max_lane_count(intel_dp);
+-	int max_rate, mode_rate;
+ 
+ 	if (is_edp(intel_dp) && intel_dp->panel_fixed_mode) {
+ 		if (mode->hdisplay > intel_dp->panel_fixed_mode->hdisplay)
+@@ -236,16 +260,8 @@ intel_dp_mode_valid(struct drm_connector
+ 			return MODE_PANEL;
+ 	}
+ 
+-	mode_rate = intel_dp_link_required(mode->clock, 24);
+-	max_rate = intel_dp_max_data_rate(max_link_clock, max_lanes);
+-
+-	if (mode_rate > max_rate) {
+-			mode_rate = intel_dp_link_required(mode->clock, 18);
+-			if (mode_rate > max_rate)
+-				return MODE_CLOCK_HIGH;
+-			else
+-				mode->private_flags |= INTEL_MODE_DP_FORCE_6BPC;
+-	}
++	if (!intel_dp_adjust_dithering(intel_dp, mode, NULL))
++		return MODE_CLOCK_HIGH;
+ 
+ 	if (mode->clock < 10000)
+ 		return MODE_CLOCK_LOW;
+@@ -673,7 +689,7 @@ intel_dp_mode_fixup(struct drm_encoder *
+ 	int lane_count, clock;
+ 	int max_lane_count = intel_dp_max_lane_count(intel_dp);
+ 	int max_clock = intel_dp_max_link_bw(intel_dp) == DP_LINK_BW_2_7 ? 1 : 0;
+-	int bpp = mode->private_flags & INTEL_MODE_DP_FORCE_6BPC ? 18 : 24;
++	int bpp;
+ 	static int bws[2] = { DP_LINK_BW_1_62, DP_LINK_BW_2_7 };
+ 
+ 	if (is_edp(intel_dp) && intel_dp->panel_fixed_mode) {
+@@ -687,6 +703,11 @@ intel_dp_mode_fixup(struct drm_encoder *
+ 		mode->clock = intel_dp->panel_fixed_mode->clock;
+ 	}
+ 
++	if (!intel_dp_adjust_dithering(intel_dp, mode, adjusted_mode))
++		return false;
++
++	bpp = adjusted_mode->private_flags & INTEL_MODE_DP_FORCE_6BPC ? 18 : 24;
++
+ 	for (lane_count = 1; lane_count <= max_lane_count; lane_count <<= 1) {
+ 		for (clock = 0; clock <= max_clock; clock++) {
+ 			int link_avail = intel_dp_max_data_rate(intel_dp_link_clock(bws[clock]), lane_count);
 
 
