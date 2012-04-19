@@ -1,46 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756878Ab2DSXKd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Apr 2012 19:10:33 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:52438 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753591Ab2DSXKc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Apr 2012 19:10:32 -0400
-Message-ID: <4F909B56.60001@zytor.com>
-Date: Thu, 19 Apr 2012 16:10:14 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120329 Thunderbird/11.0.1
+	id S1753569Ab2DSXOb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Apr 2012 19:14:31 -0400
+Received: from oproxy8-pub.bluehost.com ([69.89.22.20]:60479 "HELO
+	oproxy8-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751771Ab2DSXOa (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Apr 2012 19:14:30 -0400
+Message-ID: <4F909C78.7000008@xenotime.net>
+Date: Thu, 19 Apr 2012 16:15:04 -0700
+From: Randy Dunlap <rdunlap@xenotime.net>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
 MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: Tony Luck <tony.luck@gmail.com>, David Daney <ddaney.cavm@gmail.com>,
-        Borislav Petkov <bp@amd64.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
-        David Daney <ddaney@caviumnetworks.com>
-Subject: Re: [PATCH 3/3] x86, extable: Handle early exceptions
-References: <1334794610-5546-1-git-send-email-hpa@zytor.com> <20120419092255.GA29542@aftab> <20120419092630.GD29542@aftab> <4F904541.2030200@zytor.com> <CA+55aFwMsm7zVqPjKptm38zJAbJpF=9e51ew7BP6S5YnoJa3ig@mail.gmail.com> <20120419173802.GI3221@aftab.osrc.amd.com> <4F90527B.7020005@zytor.com> <CA+55aFxhY1Ug5esj==Sm=o1Epg+NFnvFs74syqRxbYDbPQJEFA@mail.gmail.com> <9ff2e09c-57e4-455e-8614-1b3b17b652f4@email.android.com> <4F9072CA.6030903@gmail.com> <4F908EA5.4060507@zytor.com> <CA+8MBbKz4GNs-mFj5=dCpRe_XLgoKZZz-8GM+FqTMTDBKqJNJw@mail.gmail.com> <CA+55aFx8EDb3MOrpky7aBf28=5XQ41ebuunO5aYrnUY1haVzcA@mail.gmail.com>
-In-Reply-To: <CA+55aFx8EDb3MOrpky7aBf28=5XQ41ebuunO5aYrnUY1haVzcA@mail.gmail.com>
-X-Enigmail-Version: 1.4
-Content-Type: text/plain; charset=UTF-8
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+CC: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        "J. Bruce Fields" <bfields@fieldses.org>, linux-nfs@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: [PATCH -next] nfsd: fix nfs4recover.f printk format warning
+References: <20120419164643.d9f918d44c890722b7707508@canb.auug.org.au>
+In-Reply-To: <20120419164643.d9f918d44c890722b7707508@canb.auug.org.au>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
+X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/19/2012 03:58 PM, Linus Torvalds wrote:
-> 
-> In fact, doing an "objdump" on the few modules I have, I didn't find a
-> *single* exception table entry. Maybe I did something wrong? Isn't it
-> the __ex_table in modules too?
-> 
+From: Randy Dunlap <rdunlap@xenotime.net>
 
-It is, but I suspect a lot of modules don't end up with any exception
-table entries, as the common forms of user space access are out of line.
+Fix printk format warnings -- both items are size_t,
+so use %zu to print them.
 
-I suspect that just finding the module we're in or not in before
-searching its ex_table is probably good enough, but a global hash would
-be better.  That being said, some distros are complaining about the
-amount of time it takes to load modules on boot...
+fs/nfsd/nfs4recover.c:580:3: warning: format '%lu' expects type 'long unsigned int', but argument 3 has type 'size_t'
+fs/nfsd/nfs4recover.c:580:3: warning: format '%lu' expects type 'long unsigned int', but argument 4 has type 'unsigned int'
 
-	-hpa
+Signed-off-by: Randy Dunlap <rdunlap@xenotime.net>
+Cc:	"J. Bruce Fields" <bfields@fieldses.org>
+Cc:	linux-nfs@vger.kernel.org
+---
+ fs/nfsd/nfs4recover.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
+--- linux-next-20120419.orig/fs/nfsd/nfs4recover.c
++++ linux-next-20120419/fs/nfsd/nfs4recover.c
+@@ -577,7 +577,7 @@ cld_pipe_downcall(struct file *filp, con
+ 	struct cld_net *cn = nn->cld_net;
+ 
+ 	if (mlen != sizeof(*cmsg)) {
+-		dprintk("%s: got %lu bytes, expected %lu\n", __func__, mlen,
++		dprintk("%s: got %zu bytes, expected %zu\n", __func__, mlen,
+ 			sizeof(*cmsg));
+ 		return -EINVAL;
+ 	}
