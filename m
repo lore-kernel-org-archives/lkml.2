@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754606Ab2DSXPt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Apr 2012 19:15:49 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:13108 "EHLO mx1.redhat.com"
+	id S1755235Ab2DSXQH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Apr 2012 19:16:07 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:43687 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751865Ab2DSXPp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Apr 2012 19:15:45 -0400
-Date: Fri, 20 Apr 2012 01:14:55 +0200
+	id S1753860Ab2DSXQC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Apr 2012 19:16:02 -0400
+Date: Fri, 20 Apr 2012 01:15:11 +0200
 From: Oleg Nesterov <oleg@redhat.com>
 To: Andrew Morton <akpm@linux-foundation.org>,
         David Howells <dhowells@redhat.com>,
@@ -19,8 +19,9 @@ Cc: Alexander Gordeev <agordeev@redhat.com>, Chris Zankel <chris@zankel.net>,
         Peter Zijlstra <peterz@infradead.org>,
         Richard Kuo <rkuo@codeaurora.org>, Tejun Heo <tj@kernel.org>,
         linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH v6 1/6] task_work_add: generic process-context callbacks
-Message-ID: <20120419231455.GA15828@redhat.com>
+Subject: [PATCH v6 2/6] genirq: reimplement exit_irq_thread() hook via
+	task_work_add()
+Message-ID: <20120419231511.GB15828@redhat.com>
 References: <20120419231431.GA15820@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
@@ -31,307 +32,208 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Provide a simple mechanism that allows running code in the
-(nonatomic) context of the arbitrary task.
+exit_irq_thread() and task->irq_thread are needed to handle
+the unexpected (and unlikely) exit of irq-thread.
 
-The caller does task_work_add(task, task_work) and this task
-executes task_work->func() either from do_notify_resume() or
-from do_exit(). The callback can rely on PF_EXITING to detect
-the latter case.
+We can use task_work instead and make this all private to
+kernel/irq/manage.c, cleanup plus micro-optimization.
 
-"struct task_work" can be embedded in another struct, still it
-has "void *data" to handle the most common/simple case.
+1. rename exit_irq_thread() to irq_thread_dtor(), make it
+   static, and move it up before irq_thread().
 
-This allows us to kill the ->replacement_session_keyring hack,
-and potentially this can have more users.
+2. change irq_thread() to do task_work_add(irq_thread_dtor)
+   at the start and task_work_cancel() before return.
 
-Performance-wise, this adds 2 "unlikely(!hlist_empty())" checks
-into tracehook_notify_resume() and do_exit(). But at the same
-time we can remove the "replacement_session_keyring != NULL"
-checks from arch/*/signal.c and exit_creds().
+   tracehook_notify_resume() can never play with kthreads,
+   only do_exit()->exit_task_work() can call the callback
+   and this is what we want.
 
-Note: task_work_add/task_work_run abuses ->pi_lock. This is
-only because this lock is already used by lookup_pi_state() to
-synchronize with do_exit() setting PF_EXITING. Fortunately the
-scope of this lock in task_work.c is really tiny, and the code
-is unlikely anyway.
-
-v2:
-	- implement task_work_cancel(func), it removes the first
-	  task_work with the same callback.
-v3:
-	- task_work_add() gets the new arg, "bool notify" to
-	  conditionalize set_notify_resume(), this makes it useable
-	  for kthreads and task_work_add(notify => false) can
-	  work without TIF_NOTIFY_RESUME.
-
-	- don't add the dummy "ifndef TIF_NOTIFY_RESUME" inlines,
-	  just add the simple check in task_work_add().
-v4:
-	- s/task_work_queue/task_work_add/
-v5:
-	- task_work_run() uses current explicitely
-
-Todo:
-	- move clear_thread_flag(TIF_NOTIFY_RESUME) from arch/
-	  to tracehook_notify_resume()
-
-	- rename tracehook_notify_resume() and move it into
-	  linux/task_work.h
-
-	- m68k and xtensa don't have TIF_NOTIFY_RESUME and thus
-	  task_work_add(notify => true) fails with -ENOTSUPP.
-
-	  However, ->replacement_session_keyring equally needs
-	  this flag, task_work_add() is not worse.
+3. remove task_struct->irq_thread and the special hook
+   in do_exit().
 
 Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+Reviewed-by: Thomas Gleixner <tglx@linutronix.de>
 ---
- include/linux/sched.h     |    2 +
- include/linux/task_work.h |   33 +++++++++++++++++
- include/linux/tracehook.h |   13 ++++++-
- kernel/Makefile           |    2 +-
- kernel/exit.c             |    5 ++-
- kernel/fork.c             |    1 +
- kernel/task_work.c        |   84 +++++++++++++++++++++++++++++++++++++++++++++
- 7 files changed, 136 insertions(+), 4 deletions(-)
- create mode 100644 include/linux/task_work.h
- create mode 100644 kernel/task_work.c
+ include/linux/interrupt.h |    4 --
+ include/linux/sched.h     |   10 +-----
+ kernel/exit.c             |    2 -
+ kernel/irq/manage.c       |   69 +++++++++++++++++++++-----------------------
+ 4 files changed, 35 insertions(+), 50 deletions(-)
 
+diff --git a/include/linux/interrupt.h b/include/linux/interrupt.h
+index 2aea5d2..1cdd4d0 100644
+--- a/include/linux/interrupt.h
++++ b/include/linux/interrupt.h
+@@ -142,8 +142,6 @@ request_any_context_irq(unsigned int irq, irq_handler_t handler,
+ extern int __must_check
+ request_percpu_irq(unsigned int irq, irq_handler_t handler,
+ 		   const char *devname, void __percpu *percpu_dev_id);
+-
+-extern void exit_irq_thread(void);
+ #else
+ 
+ extern int __must_check
+@@ -177,8 +175,6 @@ request_percpu_irq(unsigned int irq, irq_handler_t handler,
+ {
+ 	return request_irq(irq, handler, 0, devname, percpu_dev_id);
+ }
+-
+-static inline void exit_irq_thread(void) { }
+ #endif
+ 
+ extern void free_irq(unsigned int, void *);
 diff --git a/include/linux/sched.h b/include/linux/sched.h
-index 81a173c..be004ac 100644
+index be004ac..e36edfb 100644
 --- a/include/linux/sched.h
 +++ b/include/linux/sched.h
-@@ -1445,6 +1445,8 @@ struct task_struct {
- 	int (*notifier)(void *priv);
- 	void *notifier_data;
- 	sigset_t *notifier_mask;
-+	struct hlist_head task_works;
-+
- 	struct audit_context *audit_context;
- #ifdef CONFIG_AUDITSYSCALL
- 	uid_t loginuid;
-diff --git a/include/linux/task_work.h b/include/linux/task_work.h
-new file mode 100644
-index 0000000..294d5d5
---- /dev/null
-+++ b/include/linux/task_work.h
-@@ -0,0 +1,33 @@
-+#ifndef _LINUX_TASK_WORK_H
-+#define _LINUX_TASK_WORK_H
-+
-+#include <linux/list.h>
-+#include <linux/sched.h>
-+
-+struct task_work;
-+typedef void (*task_work_func_t)(struct task_work *);
-+
-+struct task_work {
-+	struct hlist_node hlist;
-+	task_work_func_t func;
-+	void *data;
-+};
-+
-+static inline void
-+init_task_work(struct task_work *twork, task_work_func_t func, void *data)
-+{
-+	twork->func = func;
-+	twork->data = data;
-+}
-+
-+int task_work_add(struct task_struct *task, struct task_work *twork, bool);
-+struct task_work *task_work_cancel(struct task_struct *, task_work_func_t);
-+void task_work_run(void);
-+
-+static inline void exit_task_work(struct task_struct *task)
-+{
-+	if (unlikely(!hlist_empty(&task->task_works)))
-+		task_work_run();
-+}
-+
-+#endif	/* _LINUX_TASK_WORK_H */
-diff --git a/include/linux/tracehook.h b/include/linux/tracehook.h
-index 51bd91d..6a4d82b 100644
---- a/include/linux/tracehook.h
-+++ b/include/linux/tracehook.h
-@@ -49,6 +49,7 @@
- #include <linux/sched.h>
- #include <linux/ptrace.h>
- #include <linux/security.h>
-+#include <linux/task_work.h>
- struct linux_binprm;
+@@ -1346,11 +1346,6 @@ struct task_struct {
+ 	unsigned sched_reset_on_fork:1;
+ 	unsigned sched_contributes_to_load:1;
  
- /*
-@@ -153,7 +154,6 @@ static inline void tracehook_signal_handler(int sig, siginfo_t *info,
- 		ptrace_notify(SIGTRAP);
- }
+-#ifdef CONFIG_GENERIC_HARDIRQS
+-	/* IRQ handler threads */
+-	unsigned irq_thread:1;
+-#endif
+-
+ 	pid_t pid;
+ 	pid_t tgid;
  
--#ifdef TIF_NOTIFY_RESUME
- /**
-  * set_notify_resume - cause tracehook_notify_resume() to be called
-  * @task:		task that will call tracehook_notify_resume()
-@@ -165,8 +165,10 @@ static inline void tracehook_signal_handler(int sig, siginfo_t *info,
-  */
- static inline void set_notify_resume(struct task_struct *task)
- {
-+#ifdef TIF_NOTIFY_RESUME
- 	if (!test_and_set_tsk_thread_flag(task, TIF_NOTIFY_RESUME))
- 		kick_process(task);
-+#endif
- }
- 
- /**
-@@ -184,7 +186,14 @@ static inline void set_notify_resume(struct task_struct *task)
-  */
- static inline void tracehook_notify_resume(struct pt_regs *regs)
- {
+@@ -1358,10 +1353,9 @@ struct task_struct {
+ 	/* Canary value for the -fstack-protector gcc feature */
+ 	unsigned long stack_canary;
+ #endif
+-
+-	/* 
 +	/*
-+	 * The caller just cleared TIF_NOTIFY_RESUME. This barrier
-+	 * pairs with task_work_add()->set_notify_resume() after
-+	 * hlist_add_head(task->task_works);
-+	 */
-+	smp_mb__after_clear_bit();
-+	if (unlikely(!hlist_empty(&current->task_works)))
-+		task_work_run();
- }
--#endif	/* TIF_NOTIFY_RESUME */
- 
- #endif	/* <linux/tracehook.h> */
-diff --git a/kernel/Makefile b/kernel/Makefile
-index cb41b95..5790f8b 100644
---- a/kernel/Makefile
-+++ b/kernel/Makefile
-@@ -10,7 +10,7 @@ obj-y     = fork.o exec_domain.o panic.o printk.o \
- 	    kthread.o wait.o kfifo.o sys_ni.o posix-cpu-timers.o mutex.o \
- 	    hrtimer.o rwsem.o nsproxy.o srcu.o semaphore.o \
- 	    notifier.o ksysfs.o cred.o \
--	    async.o range.o groups.o
-+	    async.o range.o groups.o task_work.o
- 
- ifdef CONFIG_FUNCTION_TRACER
- # Do not trace debug files and internal ftrace files
+ 	 * pointers to (original) parent process, youngest child, younger sibling,
+-	 * older sibling, respectively.  (p->father can be replaced with 
++	 * older sibling, respectively.  (p->father can be replaced with
+ 	 * p->real_parent->pid)
+ 	 */
+ 	struct task_struct __rcu *real_parent; /* real parent process */
 diff --git a/kernel/exit.c b/kernel/exit.c
-index d8bd3b4..b82c38e 100644
+index b82c38e..8135243 100644
 --- a/kernel/exit.c
 +++ b/kernel/exit.c
-@@ -946,11 +946,14 @@ void do_exit(long code)
- 	exit_signals(tsk);  /* sets PF_EXITING */
- 	/*
- 	 * tsk->flags are checked in the futex code to protect against
--	 * an exiting task cleaning up the robust pi futexes.
-+	 * an exiting task cleaning up the robust pi futexes, and in
-+	 * task_work_add() to avoid the race with exit_task_work().
- 	 */
- 	smp_mb();
- 	raw_spin_unlock_wait(&tsk->pi_lock);
+@@ -954,8 +954,6 @@ void do_exit(long code)
  
-+	exit_task_work(tsk);
-+
- 	exit_irq_thread();
+ 	exit_task_work(tsk);
  
+-	exit_irq_thread();
+-
  	if (unlikely(in_atomic()))
-diff --git a/kernel/fork.c b/kernel/fork.c
-index b9372a0..d1108ac 100644
---- a/kernel/fork.c
-+++ b/kernel/fork.c
-@@ -1380,6 +1380,7 @@ static struct task_struct *copy_process(unsigned long clone_flags,
- 	 */
- 	p->group_leader = p;
- 	INIT_LIST_HEAD(&p->thread_group);
-+	INIT_HLIST_HEAD(&p->task_works);
- 
- 	/* Now that the task is set up, run cgroup callbacks if
- 	 * necessary. We need to run them before the task is visible
-diff --git a/kernel/task_work.c b/kernel/task_work.c
-new file mode 100644
-index 0000000..82d1c79
---- /dev/null
-+++ b/kernel/task_work.c
-@@ -0,0 +1,84 @@
-+#include <linux/spinlock.h>
+ 		printk(KERN_INFO "note: %s[%d] exited with preempt_count %d\n",
+ 				current->comm, task_pid_nr(current),
+diff --git a/kernel/irq/manage.c b/kernel/irq/manage.c
+index 89a3ea8..525391c 100644
+--- a/kernel/irq/manage.c
++++ b/kernel/irq/manage.c
+@@ -14,6 +14,7 @@
+ #include <linux/interrupt.h>
+ #include <linux/slab.h>
+ #include <linux/sched.h>
 +#include <linux/task_work.h>
-+#include <linux/tracehook.h>
-+
-+int
-+task_work_add(struct task_struct *task, struct task_work *twork, bool notify)
+ 
+ #include "internals.h"
+ 
+@@ -773,11 +774,39 @@ static void wake_threads_waitq(struct irq_desc *desc)
+ 		wake_up(&desc->wait_for_threads);
+ }
+ 
++static void irq_thread_dtor(struct task_work *unused)
 +{
-+	unsigned long flags;
-+	int err = -ESRCH;
++	struct task_struct *tsk = current;
++	struct irq_desc *desc;
++	struct irqaction *action;
 +
-+#ifndef TIF_NOTIFY_RESUME
-+	if (notify)
-+		return -ENOTSUPP;
-+#endif
-+	/*
-+	 * We must not insert the new work if the task has already passed
-+	 * exit_task_work(). We rely on do_exit()->raw_spin_unlock_wait()
-+	 * and check PF_EXITING under pi_lock.
-+	 */
-+	raw_spin_lock_irqsave(&task->pi_lock, flags);
-+	if (likely(!(task->flags & PF_EXITING))) {
-+		hlist_add_head(&twork->hlist, &task->task_works);
-+		err = 0;
-+	}
-+	raw_spin_unlock_irqrestore(&task->pi_lock, flags);
-+
-+	/* test_and_set_bit() implies mb(), see tracehook_notify_resume(). */
-+	if (likely(!err) && notify)
-+		set_notify_resume(task);
-+	return err;
-+}
-+
-+struct task_work *
-+task_work_cancel(struct task_struct *task, task_work_func_t func)
-+{
-+	unsigned long flags;
-+	struct task_work *twork;
-+	struct hlist_node *pos;
-+
-+	raw_spin_lock_irqsave(&task->pi_lock, flags);
-+	hlist_for_each_entry(twork, pos, &task->task_works, hlist) {
-+		if (twork->func == func) {
-+			hlist_del(&twork->hlist);
-+			goto found;
-+		}
-+	}
-+	twork = NULL;
-+ found:
-+	raw_spin_unlock_irqrestore(&task->pi_lock, flags);
-+
-+	return twork;
-+}
-+
-+void task_work_run(void)
-+{
-+	struct task_struct *task = current;
-+	struct hlist_head task_works;
-+	struct hlist_node *pos;
-+
-+	raw_spin_lock_irq(&task->pi_lock);
-+	hlist_move_list(&task->task_works, &task_works);
-+	raw_spin_unlock_irq(&task->pi_lock);
-+
-+	if (unlikely(hlist_empty(&task_works)))
++	if (WARN_ON_ONCE(!(current->flags & PF_EXITING)))
 +		return;
++
++	action = kthread_data(tsk);
++
++	printk(KERN_ERR
++	       "exiting task \"%s\" (%d) is an active IRQ thread (irq %d)\n",
++	       tsk->comm ? tsk->comm : "", tsk->pid, action->irq);
++
++	desc = irq_to_desc(action->irq);
 +	/*
-+	 * We use hlist to save the space in task_struct, but we want fifo.
-+	 * Find the last entry, the list should be short, then process them
-+	 * in reverse order.
++	 * If IRQTF_RUNTHREAD is set, we need to decrement
++	 * desc->threads_active and wake possible waiters.
 +	 */
-+	for (pos = task_works.first; pos->next; pos = pos->next)
-+		;
++	if (test_and_clear_bit(IRQTF_RUNTHREAD, &action->thread_flags))
++		wake_threads_waitq(desc);
 +
-+	for (;;) {
-+		struct hlist_node **pprev = pos->pprev;
-+		struct task_work *twork = container_of(pos, struct task_work,
-+							hlist);
-+		twork->func(twork);
-+
-+		if (pprev == &task_works.first)
-+			break;
-+		pos = container_of(pprev, struct hlist_node, next);
-+	}
++	/* Prevent a stale desc->threads_oneshot */
++	irq_finalize_oneshot(desc, action);
 +}
++
+ /*
+  * Interrupt handler thread
+  */
+ static int irq_thread(void *data)
+ {
++	struct task_work on_exit_work;
+ 	static const struct sched_param param = {
+ 		.sched_priority = MAX_USER_RT_PRIO/2,
+ 	};
+@@ -793,7 +822,9 @@ static int irq_thread(void *data)
+ 		handler_fn = irq_thread_fn;
+ 
+ 	sched_setscheduler(current, SCHED_FIFO, &param);
+-	current->irq_thread = 1;
++
++	init_task_work(&on_exit_work, irq_thread_dtor, NULL);
++	task_work_add(current, &on_exit_work, false);
+ 
+ 	while (!irq_wait_for_interrupt(action)) {
+ 		irqreturn_t action_ret;
+@@ -815,45 +846,11 @@ static int irq_thread(void *data)
+ 	 * cannot touch the oneshot mask at this point anymore as
+ 	 * __setup_irq() might have given out currents thread_mask
+ 	 * again.
+-	 *
+-	 * Clear irq_thread. Otherwise exit_irq_thread() would make
+-	 * fuzz about an active irq thread going into nirvana.
+ 	 */
+-	current->irq_thread = 0;
++	task_work_cancel(current, irq_thread_dtor);
+ 	return 0;
+ }
+ 
+-/*
+- * Called from do_exit()
+- */
+-void exit_irq_thread(void)
+-{
+-	struct task_struct *tsk = current;
+-	struct irq_desc *desc;
+-	struct irqaction *action;
+-
+-	if (!tsk->irq_thread)
+-		return;
+-
+-	action = kthread_data(tsk);
+-
+-	printk(KERN_ERR
+-	       "exiting task \"%s\" (%d) is an active IRQ thread (irq %d)\n",
+-	       tsk->comm ? tsk->comm : "", tsk->pid, action->irq);
+-
+-	desc = irq_to_desc(action->irq);
+-
+-	/*
+-	 * If IRQTF_RUNTHREAD is set, we need to decrement
+-	 * desc->threads_active and wake possible waiters.
+-	 */
+-	if (test_and_clear_bit(IRQTF_RUNTHREAD, &action->thread_flags))
+-		wake_threads_waitq(desc);
+-
+-	/* Prevent a stale desc->threads_oneshot */
+-	irq_finalize_oneshot(desc, action);
+-}
+-
+ static void irq_setup_forced_threading(struct irqaction *new)
+ {
+ 	if (!force_irqthreads)
 -- 
 1.5.5.1
 
