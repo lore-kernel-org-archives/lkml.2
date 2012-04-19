@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932678Ab2DSVP6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Apr 2012 17:15:58 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:44451 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933562Ab2DSVPx (ORCPT
+	id S933599Ab2DSVQF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Apr 2012 17:16:05 -0400
+Received: from mail-pz0-f42.google.com ([209.85.210.42]:44862 "EHLO
+	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932781Ab2DSVQA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Apr 2012 17:15:53 -0400
-Message-Id: <20120419210820.369200083@linuxfoundation.org>
+	Thu, 19 Apr 2012 17:16:00 -0400
+Message-Id: <20120419210819.881537516@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Thu, 19 Apr 2012 14:08:38 -0700
+Date: Thu, 19 Apr 2012 14:08:32 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, "David S. Miller" <davem@davemloft.net>
-Subject: [ 20/68] sparc64: Fix bootup crash on sun4v.
+        alan@lxorguk.ukuu.org.uk, <emeric.maschino@gmail.com>,
+        Michel Lespinasse <walken@google.com>, Tony Luck <tony.luck@intel.com>
+Subject: [ 14/68] ia64: fix futex_atomic_cmpxchg_inatomic()
 In-Reply-To: <20120419210923.GA18589@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -24,31 +25,56 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "David S. Miller" <davem@davemloft.net>
+From: "Luck, Tony" <tony.luck@intel.com>
 
-commit 9e0daff30fd7ecf698e5d20b0fa7f851e427cca5 upstream.
+commit c76f39bddb84f93f70a5520d9253ec0317bec216 upstream.
 
-The DS driver registers as a subsys_initcall() but this can be too
-early, in particular this risks registering before we've had a chance
-to allocate and setup module_kset in kernel/params.c which is
-performed also as a subsyts_initcall().
+Michel Lespinasse cleaned up the futex calling conventions in commit
+37a9d912b24f ("futex: Sanitize cmpxchg_futex_value_locked API").
 
-Register DS using device_initcall() insteal.
+But the ia64 implementation was subtly broken.  Gcc does not know that
+register "r8" will be updated by the fault handler if the cmpxchg
+instruction takes an exception.  So it feels safe in letting the
+initialization of r8 slide to after the cmpxchg.  Result: we always
+return 0 whether the user address faulted or not.
 
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Fix by moving the initialization of r8 into the __asm__ code so gcc
+won't move it.
+
+Reported-by: <emeric.maschino@gmail.com>
+Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=42757
+Tested-by: <emeric.maschino@gmail.com>
+Acked-by: Michel Lespinasse <walken@google.com>
+Signed-off-by: Tony Luck <tony.luck@intel.com>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/sparc/kernel/ds.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ arch/ia64/include/asm/futex.h |    9 +++++----
+ 1 file changed, 5 insertions(+), 4 deletions(-)
 
---- a/arch/sparc/kernel/ds.c
-+++ b/arch/sparc/kernel/ds.c
-@@ -1267,4 +1267,4 @@ static int __init ds_init(void)
- 	return vio_register_driver(&ds_driver);
- }
+--- a/arch/ia64/include/asm/futex.h
++++ b/arch/ia64/include/asm/futex.h
+@@ -107,15 +107,16 @@ futex_atomic_cmpxchg_inatomic(u32 *uval,
+ 		return -EFAULT;
  
--subsys_initcall(ds_init);
-+fs_initcall(ds_init);
+ 	{
+-		register unsigned long r8 __asm ("r8") = 0;
++		register unsigned long r8 __asm ("r8");
+ 		unsigned long prev;
+ 		__asm__ __volatile__(
+ 			"	mf;;					\n"
+-			"	mov ar.ccv=%3;;				\n"
+-			"[1:]	cmpxchg4.acq %0=[%1],%2,ar.ccv		\n"
++			"	mov %0=r0				\n"
++			"	mov ar.ccv=%4;;				\n"
++			"[1:]	cmpxchg4.acq %1=[%2],%3,ar.ccv		\n"
+ 			"	.xdata4 \"__ex_table\", 1b-., 2f-.	\n"
+ 			"[2:]"
+-			: "=r" (prev)
++			: "=r" (r8), "=r" (prev)
+ 			: "r" (uaddr), "r" (newval),
+ 			  "rO" ((long) (unsigned) oldval)
+ 			: "memory");
 
 
