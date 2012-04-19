@@ -1,64 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756875Ab2DSWvt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Apr 2012 18:51:49 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:32804 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753366Ab2DSWvq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Apr 2012 18:51:46 -0400
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
-	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
-	Kingdom.
-	Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-In-Reply-To: <20120419194734.GA16740@redhat.com>
-References: <20120419194734.GA16740@redhat.com> <20120419173431.GA27066@redhat.com> <20120417193409.GA20312@redhat.com> <20120414021252.GC23393@redhat.com> <20120414021201.GA23385@redhat.com> <27037.1334672580@redhat.com> <20120417163606.GC14527@redhat.com> <23383.1334854333@redhat.com> <25695.1334858133@redhat.com> <20120419181010.GA29793@redhat.com> <27773.1334864058@redhat.com> 
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: dhowells@redhat.com, Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Alexander Gordeev <agordeev@redhat.com>,
-        Chris Zankel <chris@zankel.net>, David Smith <dsmith@redhat.com>,
-        "Frank Ch. Eigler" <fche@redhat.com>,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        Larry Woodman <lwoodman@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>, Tejun Heo <tj@kernel.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v4 3/3] cred: change keyctl_session_to_parent() to use task_work_add()
-Date: Thu, 19 Apr 2012 23:26:54 +0100
-Message-ID: <31674.1334874414@redhat.com>
+	id S932586Ab2DSW6m (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Apr 2012 18:58:42 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:48998 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753955Ab2DSW6l convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Apr 2012 18:58:41 -0400
+MIME-Version: 1.0
+In-Reply-To: <CA+8MBbKz4GNs-mFj5=dCpRe_XLgoKZZz-8GM+FqTMTDBKqJNJw@mail.gmail.com>
+References: <1334794610-5546-1-git-send-email-hpa@zytor.com>
+ <20120419092255.GA29542@aftab> <20120419092630.GD29542@aftab>
+ <4F904541.2030200@zytor.com> <CA+55aFwMsm7zVqPjKptm38zJAbJpF=9e51ew7BP6S5YnoJa3ig@mail.gmail.com>
+ <20120419173802.GI3221@aftab.osrc.amd.com> <4F90527B.7020005@zytor.com>
+ <CA+55aFxhY1Ug5esj==Sm=o1Epg+NFnvFs74syqRxbYDbPQJEFA@mail.gmail.com>
+ <9ff2e09c-57e4-455e-8614-1b3b17b652f4@email.android.com> <4F9072CA.6030903@gmail.com>
+ <4F908EA5.4060507@zytor.com> <CA+8MBbKz4GNs-mFj5=dCpRe_XLgoKZZz-8GM+FqTMTDBKqJNJw@mail.gmail.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Thu, 19 Apr 2012 15:58:20 -0700
+X-Google-Sender-Auth: TeCPKAVbHaZS2jtQsGcxxoAq-Ww
+Message-ID: <CA+55aFx8EDb3MOrpky7aBf28=5XQ41ebuunO5aYrnUY1haVzcA@mail.gmail.com>
+Subject: Re: [PATCH 3/3] x86, extable: Handle early exceptions
+To: Tony Luck <tony.luck@gmail.com>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, David Daney <ddaney.cavm@gmail.com>,
+        Borislav Petkov <bp@amd64.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
+        David Daney <ddaney@caviumnetworks.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Oleg Nesterov <oleg@redhat.com> wrote:
+On Thu, Apr 19, 2012 at 3:47 PM, Tony Luck <tony.luck@gmail.com> wrote:
+>
+> How many entries are in the extable for a typical module?  Perhaps it might
+> make sense to bundle them all into one sorted combined table? Of course
+> you would have to have a way to squeeze them back out of the combined
+> table at module unload time.
+>
+> This moves the cost to module load/unload time ... which is hopefully rare
+> compared to table lookup.
 
-> On 04/19, David Howells wrote:
-> >
-> > Oleg Nesterov <oleg@redhat.com> wrote:
-> >
-> > > I am not going to argue, but honestly I don't think it is a good
-> > > idea to mix the functional changes in keyctl.c and the simple
-> > > (but obviously untested) cleanups.
-> >
-> > I meant add the cleanup as patch 4.  That way they are still separate.  I'll
-> > let you change the name of the function to make it easier;-)
-> 
-> OK.
-> 
-> I'd like to avoid the unnecessary resends, lets discuss this before
-> I send the patch(es).
-> 
-> At least I'd like to split this into 2 patches:
-> 
-> 	4/3: only removes the dead code from arch/*
-> 
-> 	5/3: updates copy_creds/exit_creds and kills
-> 	     ->replacement_session_keyring, plus renames
-> 	     key_change_ back to key_replace_
-> 
-> Do you agree?
+Using a traditional chained hash-table might be very amenable to this
+kind of situation. It's much easier to populate and doesn't have the
+size issues. And realistically, we can probably size the hash table
+for just the built-in kernel, because modules seldom have nearly as
+many exception table entries, so adding them later to a fixed-size
+table likely won't be too painful.
 
-Well, don't bother renaming the function back, but apart from that, okay.
+In fact, doing an "objdump" on the few modules I have, I didn't find a
+*single* exception table entry. Maybe I did something wrong? Isn't it
+the __ex_table in modules too?
 
-David
+(Admittedly, I avoid modules like the plague, so I don't tend to have
+very many modules, and the ones I do have tend to be pretty limited.
+So my module usage is absolutely not representative even if I think it
+should be ;^).
+
+                   Linus
