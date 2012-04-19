@@ -1,74 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753272Ab2DSDPd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Apr 2012 23:15:33 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:53605 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751388Ab2DSDPc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Apr 2012 23:15:32 -0400
-Date: Thu, 19 Apr 2012 13:15:24 +1000
-From: NeilBrown <neilb@suse.de>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: linux-next: build failure after merge of the md tree
-Message-ID: <20120419131524.019346fd@notabene.brown>
-In-Reply-To: <20120419125502.bd9b7dcbe9497c8319035793@canb.auug.org.au>
-References: <20120419125502.bd9b7dcbe9497c8319035793@canb.auug.org.au>
-X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.7; x86_64-suse-linux-gnu)
+	id S1753656Ab2DSDQO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Apr 2012 23:16:14 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:50279 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751460Ab2DSDQN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Apr 2012 23:16:13 -0400
+Message-ID: <1334805358.22839.2.camel@phoenix>
+Subject: [PATCH] regulator: 88pm8607: Fix writting value to vol_reg in
+ pm8607_set_voltage_sel
+From: Axel Lin <axel.lin@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Haojian Zhuang <haojian.zhuang@marvell.com>, Liam Girdwood <lrg@ti.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        "Jett.Zhou" <jtzhou@marvell.com>
+Date: Thu, 19 Apr 2012 11:15:58 +0800
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2- 
+Content-Transfer-Encoding: 7bit
 Mime-Version: 1.0
-Content-Type: multipart/signed; micalg=PGP-SHA1;
- boundary="Sig_/sMwB8IHQ95T=L_m=NAoZoKt"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/sMwB8IHQ95T=L_m=NAoZoKt
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+commit 4ca1e1d "regulator: Convert 88pm8607 to set_voltage_sel" accidentally
+changed the value writing to vol_reg.
+What we want is to write val instead of selector to vol_reg.
 
-On Thu, 19 Apr 2012 12:55:02 +1000 Stephen Rothwell <sfr@canb.auug.org.au>
-wrote:
+Signed-off-by: Axel Lin <axel.lin@gmail.com>
+---
+This only impact is setting LDO13, for other LDOs/BUCKs the shift is 0.
 
-> Hi Neil,
->=20
-> After merging the md tree, today's linux-next build (powerpc
-> ppc64_defconfig) failed like this:
->=20
-> ERROR: ".bitmap_resize" [drivers/md/raid456.ko] undefined!
-> ERROR: ".bitmap_resize" [drivers/md/raid10.ko] undefined!
->=20
-> Caused by commit 89efe2ab3a8c ("md/bitmap: add bitmap_resize function to
-> allow bitmap resizing") and followups.
->=20
-> I have used the md tree form next-20120418 for today.
+ drivers/regulator/88pm8607.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-Thanks a lot Stephen.
+diff --git a/drivers/regulator/88pm8607.c b/drivers/regulator/88pm8607.c
+index d04fbe9..06d9c4b 100644
+--- a/drivers/regulator/88pm8607.c
++++ b/drivers/regulator/88pm8607.c
+@@ -232,7 +232,7 @@ static int pm8607_set_voltage_sel(struct regulator_dev *rdev, unsigned selector)
+ 	val = (uint8_t)(selector << info->vol_shift);
+ 	mask = (rdev->desc->n_voltages - 1)  << info->vol_shift;
+ 
+-	ret = pm860x_set_bits(info->i2c, info->vol_reg, mask, selector);
++	ret = pm860x_set_bits(info->i2c, info->vol_reg, mask, val);
+ 	if (ret)
+ 		return ret;
+ 	switch (info->desc.id) {
+-- 
+1.7.5.4
 
-I've add the missing EXPORT_SYMBOL_GPL(), so should be fine for next time
-round.
 
-NeilBrown
 
---Sig_/sMwB8IHQ95T=L_m=NAoZoKt
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.18 (GNU/Linux)
-
-iQIVAwUBT4+DTDnsnt1WYoG5AQJeoA//SmVxOPIlsQafmRM7XVSyrXBziyHlZL/v
-fFJAU7voBfD/XfISxaUdNhqRYcYvxVkWgWxPxkO5pHNUAouGnHyhj9XuqvkE59rP
-H//lmydalw/WKFIDWghuqiIUM2lb46ZBM6ADwyScfjegLcmvsEGF9kF18qhm7UQL
-dZsFTf5lKvSB9KxZT1v93/MUq8HTtYA0SvKFd61bexluooZCCS3ijdEA9sJAOeNZ
-BpWTcP0jWi5/KUyOUoR0gmRUuIbaZuIJxp4um/vvz5dXJOAw7teZ3jQDY8/A9L4v
-cbumxcPStKLeeYuqtMjZWci8pJlrfCOuDmUo89JPf138SObu34uKx0U0ciPFO56c
-hFdC5WpeGYiTrMvTCGGpzpWV1hMAj5JJDIBC/ulN5PcZZKcHI1E8LhwMsa9M+mE2
-L+X2V0WNdpflqi/Ya6LaJBCBq/ArWfTWXsVKfx22vA8ZfKDh1u9QDB7PdmjDqRcZ
-nu4+zKKk8eCwHXoHX+/4N++Vq1gONmaQyHRCIAMWpaHjZJfFcS5xi9uZ+m1RjvOB
-DAICblzFeL9OQMPOS53rbvw7GZKTArFxNu35SKSfwYLktT2trpwS4HIb/1/gcgAP
-u70nvZs7dlvPnQHUhd8jVbXOHcHyWefhb9VdVWZgjrHKbVVUJuNiB/Lyp6k8Ks2O
-Gp2OzqbHg0I=
-=kH0w
------END PGP SIGNATURE-----
-
---Sig_/sMwB8IHQ95T=L_m=NAoZoKt--
