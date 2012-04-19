@@ -1,35 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756376Ab2DSTJT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Apr 2012 15:09:19 -0400
-Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:46577 "EHLO
-	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752063Ab2DSTJS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Apr 2012 15:09:18 -0400
-Date: Thu, 19 Apr 2012 22:08:20 +0300
-From: Mika Westerberg <mika.westerberg@iki.fi>
-To: Ramakrishna Pallala <ramakrishna.pallala@intel.com>
-Cc: linux-kernel@vger.kernel.org, Anton Vorontsov <cbouatmailru@gmail.com>,
-        Anton Vorontsov <anton.vorontsov@linaro.org>
-Subject: Re: [PATCH v2] smb347_charger: Cleanup power supply registration
- code in probe
-Message-ID: <20120419190820.GB877@mwesterb-mobl.lan>
-References: <1334809818-5958-1-git-send-email-ramakrishna.pallala@intel.com>
+	id S932154Ab2DSTMu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Apr 2012 15:12:50 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:14280 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752063Ab2DSTMr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Apr 2012 15:12:47 -0400
+Date: Thu, 19 Apr 2012 15:12:06 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Fengguang Wu <fengguang.wu@intel.com>
+Cc: linux-fsdevel@vger.kernel.org, Tejun Heo <tj@kernel.org>,
+        Jan Kara <jack@suse.cz>, Jens Axboe <axboe@kernel.dk>,
+        linux-mm@kvack.org, sjayaraman@suse.com, andrea@betterlinux.com,
+        jmoyer@redhat.com, linux-kernel@vger.kernel.org,
+        kamezawa.hiroyu@jp.fujitsu.com, lizefan@huawei.com,
+        containers@lists.linux-foundation.org, cgroups@vger.kernel.org,
+        ctalbott@google.com, rni@google.com, lsf@lists.linux-foundation.org
+Subject: Re: Integrated IO controller for buffered+direct writes
+Message-ID: <20120419191206.GN10216@redhat.com>
+References: <20120419052811.GA11543@localhost>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1334809818-5958-1-git-send-email-ramakrishna.pallala@intel.com>
+In-Reply-To: <20120419052811.GA11543@localhost>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 19, 2012 at 10:00:18AM +0530, Ramakrishna Pallala wrote:
-> This patch checks if the usb or mains charging is enabled by the
-> platform before registering with the power supply class.
+On Thu, Apr 19, 2012 at 01:28:11PM +0800, Fengguang Wu wrote:
+[..]
+> The key ideas and comments can be found in two functions in the patch:
+> - cfq_scale_slice()
+> - blkcg_update_dirty_ratelimit()
+> The other changes are mainly supporting bits.
+> 
+> It adapts the existing interfaces
+> - blkio.throttle.write_bps_device 
+> - blkio.weight
+> from the semantics "for direct IO" to "for direct+buffered IO" (it
+> now handles write IO only, but should be trivial to cover reads). It
+> tries to do 1:1 split of direct:buffered writes inside the cgroup
+> which essentially implements intra-cgroup proportional weights.
 
-I still don't like the idea of having the power-supplies registered
-conditionally. Now you need to check in every place whether the corresponding
-power-supply is registered or not which makes the code uglier and more prone
-to errors.
+Hey, if you can explain in few lines the design and what's the objective
+its much easier to understand then going through the patch and first
+trying to understand the internals of writeback.
+
+Regarding upper limit (blkio.throttle_write_bps_device) thre are only
+two problems with doing it a device layer.
+
+- We lose context information for buffered writes.
+	- This can be solved by per inode cgroup association.
+
+	- Or solve it by throttling writer synchronously in
+	  balance_dirty_pages(). I had done that by exporting a hook from
+	  blk-throttle so that writeback layer does not have to worry
+	  about all the details.
+
+- Filesystems can get seriliazed.
+	- This needs to be solved by filesystems.
+
+	- Or again, invoke blk-throttle hook from balance_dirty_pages. It
+	  will solve the problem for buffered writes but direct writes
+	  will still have filesystem serialization issue. So it needs to
+	  be solved by filesystems anyway.  
+
+- Throttling for network file systems.
+	- This would be the only advantage or implementing things at
+	  higher layer so that we don't have to build special knowledge
+	  of throttling in lower layers.
+
+So which of the above problem you are exactly solving by throttling
+by writes in writeback layer and why exporting a throttling hook from
+blk-throttle to balance_drity_pages()is not a good idea?
+
+Thanks
+Vivek
