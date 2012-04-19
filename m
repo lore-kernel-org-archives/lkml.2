@@ -1,58 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932109Ab2DSRkQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Apr 2012 13:40:16 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:46800 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1754674Ab2DSRkO (ORCPT
+	id S1756075Ab2DSRw0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Apr 2012 13:52:26 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:59235 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755575Ab2DSRwY convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Apr 2012 13:40:14 -0400
-Date: Thu, 19 Apr 2012 13:40:13 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Grzegorz Nosek <root@localdomain.pl>
-cc: linux-usb@vger.kernel.org, <linux-kernel@vger.kernel.org>,
-        <support@supermicro.com>
-Subject: Re: EHCI software retries break Supermicro IPKVM
-In-Reply-To: <4F902F60.4080709@localdomain.pl>
-Message-ID: <Pine.LNX.4.44L0.1204191337520.2070-100000@iolanthe.rowland.org>
+	Thu, 19 Apr 2012 13:52:24 -0400
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <1334834109-30183-3-git-send-email-ldewangan@nvidia.com>
+References: <1334834109-30183-1-git-send-email-ldewangan@nvidia.com>
+	<1334834109-30183-3-git-send-email-ldewangan@nvidia.com>
+Date: Thu, 19 Apr 2012 10:52:23 -0700
+X-Google-Sender-Auth: bw2ZIG_FxHGJPpWnLGNPlxOr61Q
+Message-ID: <CANEJEGtvfwUmtXjsu_PTWP2zCRAbYMJh_jJp-c6Ex2ca=Sietg@mail.gmail.com>
+Subject: Re: [PATCH v3 2/2] staging: iio: light: isl29018: use regmap for
+ register access
+From: Grant Grundler <grundler@chromium.org>
+To: Laxman Dewangan <ldewangan@nvidia.com>
+Cc: jic23@cam.ac.uk, gregkh@linuxfoundation.org, max@stro.at,
+        jbrenner@taosinc.com, bfreed@chromium.org, lars@metafoo.de,
+        linux-iio@vger.kernel.org, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 19 Apr 2012, Grzegorz Nosek wrote:
+On Thu, Apr 19, 2012 at 4:15 AM, Laxman Dewangan <ldewangan@nvidia.com> wrote:
+> Using regmap for accessing register through i2c bus. This will
+> remove the code for caching registers, read-modify-write logics.
+> Also it will provide the debugfs feature to dump register
+> through regmap debugfs.
+>
+> Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
 
-> Hi,
-> 
-> (Supermicro support: cc'd as you might be interested)
-> 
-> Commit a2c2706e1043c17139c2dafd171c4a5cf008ef7e introduced software
-> retries for transient USB errors. Unfortunately, it turns out that
-> this change breaks the Supermicro AOC SIMSO IPKVM board plugged into
-> a SYS-6015B-3R server, X7DBR-3 board. It renders unusable both the
-> keyboard and media redirection as soon as the kernel boots (display
-> works fine). An excerpt from dmesg:
-> 
-> [   76.587521] ehci_hcd 0000:00:1d.7: detected XactErr len 0/8 retry 1
+Reviewed-by: Grant Grundler <grundler@chromium.org>
+
+Laxman,
+Thanks for reposting this patch. I was talking with Bryan Freed and it
+looks like the caching of registers will change the usage of
+ADD_COMMAND1. More details below.
+
 ...
-> [   76.591264] ehci_hcd 0000:00:1d.7: detected XactErr len 0/8 retry 31
-> [   76.591388] ehci_hcd 0000:00:1d.7: devpath 7 ep0out 3strikes
-> [   76.591402] usb 1-7: can't set config #1, error -71
-> [   76.596519] drivers/usb/core/inode.c: creating file '007'
-> [   76.596542] hub 1-0:1.0: state 7 ports 8 chg 0000 evt fe80
-> 
-> After disarming the retry logic with the patch below, the KVM works
-> fine again. Now, this is certainly a crude hack but apparently some
-> better checks are needed to determine whether to retry the
-> transaction.
+> -static int isl29018_write_data(struct i2c_client *client, u8 reg,
+> -                       u8 val, u8 mask, u8 shift)
+> -{
+> -       u8 regval = val;
+> -       int ret;
+> -       struct isl29018_chip *chip = iio_priv(i2c_get_clientdata(client));
+> -
+> -       /* don't cache or mask REG_TEST */
+> -       if (reg < ISL29018_MAX_REGS) {
+> -               regval = chip->reg_cache[reg];
+> -               regval &= ~mask;
+> -               regval |= val << shift;
+> -       }
 
-Do you have any idea what's going wrong?
+Note the only REG_TEST isn't cached. Everything else updates the cache
+on write.
 
-Can you provide complete dmesg logs for kernels both with and without
-your patch (and with CONFIG_USB_DEBUG enabled)?  Maybe also usbmon 
-traces too.
+> -
+> -       ret = i2c_smbus_write_byte_data(client, reg, regval);
+> -       if (ret) {
+> -               dev_err(&client->dev, "Write to device fails status %x\n", ret);
+> -       } else {
+> -               /* don't update cache on err */
+> -               if (reg < ISL29018_MAX_REGS)
+> -                       chip->reg_cache[reg] = regval;
+> -       }
+> -
+> -       return ret;
+> -}
 
-Alan Stern
+...
+> -static int isl29018_read_sensor_input(struct i2c_client *client, int mode)
+> +static int isl29018_read_sensor_input(struct isl29018_chip *chip, int mode)
+>  {
+>        int status;
+> -       int lsb;
+> -       int msb;
+> +       unsigned int lsb;
+> +       unsigned int msb;
+>
+>        /* Set mode */
+> -       status = isl29018_write_data(client, ISL29018_REG_ADD_COMMAND1,
+> -                       mode, COMMMAND1_OPMODE_MASK, COMMMAND1_OPMODE_SHIFT);
+> +       status = regmap_update_bits(chip->regmap, ISL29018_REG_ADD_COMMAND1,
+> +                       COMMMAND1_OPMODE_MASK, mode << COMMMAND1_OPMODE_SHIFT);
 
+The old code will do a single I2C write. The new code will do a
+read+write for ADD_COMMAND1 register. I reviewed the behaviors in
+drivers/base/regmap/regmap.c and regcache.c.
+
+I can't judge if this is a "real" problem. Given the limited BW on
+I2C, someone with more I2C experience should carefully consider and
+share their opinion.
+
+>        if (status) {
+> -               dev_err(&client->dev, "Error in setting operating mode\n");
+> +               dev_err(chip->dev,
+> +                       "Error in setting operating mode err %d\n", status);
+>                return status;
+>        }
+>        msleep(CONVERSION_TIME_MS);
+> -       lsb = i2c_smbus_read_byte_data(client, ISL29018_REG_ADD_DATA_LSB);
+
+Old code for DATA_LSB and DATA_MSB ignored the "write cache" for reads
+- so marking these as volatile looks correct to me.
+
+...
+> +static bool is_volatile_reg(struct device *dev, unsigned int reg)
+> +{
+> +       switch (reg) {
+> +       case ISL29018_REG_ADD_DATA_LSB:
+> +       case ISL29018_REG_ADD_DATA_MSB:
+> +       case ISL29018_REG_ADD_COMMAND1:
+> +       case ISL29018_REG_TEST:
+
+Of these four, I think only ADD_COMMAND1 wasn't treated as volatile in
+the old code. Am I overlooking something?
+
+My concern is only about the additional I2C read traffic this patch
+might generate. It's possible *some* bits in that register are
+volatile and we could previously ignore them.
+
+cheers,
+grant
