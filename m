@@ -1,245 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754164Ab2DSAR5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Apr 2012 20:17:57 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:43457 "EHLO
+	id S1754723Ab2DSASQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Apr 2012 20:18:16 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:43454 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753529Ab2DSARy (ORCPT
+	with ESMTP id S1753748Ab2DSARq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Apr 2012 20:17:54 -0400
+	Wed, 18 Apr 2012 20:17:46 -0400
 From: "H. Peter Anvin" <hpa@zytor.com>
 To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
 Cc: Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
         Borislav Petkov <bp@amd64.org>,
         Linus Torvalds <torvalds@linux-foundation.org>,
-        "H. Peter Anvin" <hpa@zytor.com>
-Subject: [PATCH 5/5] x86-32: Handle exception table entries during early boot
-Date: Wed, 18 Apr 2012 17:16:50 -0700
-Message-Id: <1334794610-5546-6-git-send-email-hpa@zytor.com>
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Glauber de Oliveira Costa <gcosta@redhat.com>
+Subject: [PATCH 3/5] x86, paravirt: Replace GET_CR2_INTO_RCX with GET_CR2_INTO_RAX
+Date: Wed, 18 Apr 2012 17:16:48 -0700
+Message-Id: <1334794610-5546-4-git-send-email-hpa@zytor.com>
 X-Mailer: git-send-email 1.7.6.5
 In-Reply-To: <1334794610-5546-1-git-send-email-hpa@zytor.com>
 References: <1334794610-5546-1-git-send-email-hpa@zytor.com>
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Wed, 18 Apr 2012 17:17:42 -0700 (PDT)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Wed, 18 Apr 2012 17:17:26 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "H. Peter Anvin" <hpa@zytor.com>
 
-If we get an exception during early boot, walk the exception table to
-see if we should intercept it.  The main use case for this is to allow
-rdmsr_safe()/wrmsr_safe() during CPU initialization.
+GET_CR2_INTO_RCX is asinine: it is only used in one place, the actual
+paravirt call returns the value in %rax, not %rcx; and the one place
+that wants it wants the result in %r9.  We actually generate as a
+result of this call:
 
-Since the exception table is currently sorted at runtime, and fairly
-late in startup, this code walks the exception table linearly.  We
-obviously don't need to worry about modules, however: none have been
-loaded at this point.
+       call ...
+       movq %rax, %rcx
+       xorq %rax, %rax		/* this value isn't even used... */
+       movq %rcx, %r9
 
-In the future it would be better to have the table sorted at compile
-time, or even better, turned into a perfect hash.  At that point this
-code should be changed out from doing a linear search.
+At least make the macro do what the paravirt call does, which is put
+the value into %rax.
 
-This patch changes the early IDT setup to look a lot more like x86-64:
-we now install handlers for all 32 exception vectors.  The output of
-the early exception handler has changed somewhat as it directly
-reflects the stack frame of the exception handler, and the stack frame
-has been somewhat restructured.
+Nevermind the fact that the macro clobbers all the volatile registers.
 
 Signed-off-by: H. Peter Anvin <hpa@zytor.com>
+Cc: Glauber de Oliveira Costa <gcosta@redhat.com>
 ---
- arch/x86/kernel/head_32.S |  142 +++++++++++++++++++++++++++++----------------
- 1 files changed, 91 insertions(+), 51 deletions(-)
+ arch/x86/include/asm/paravirt.h |    6 ++----
+ arch/x86/kernel/head_64.S       |    6 +++---
+ 2 files changed, 5 insertions(+), 7 deletions(-)
 
-diff --git a/arch/x86/kernel/head_32.S b/arch/x86/kernel/head_32.S
-index ce0be7c..3a3cd0d 100644
---- a/arch/x86/kernel/head_32.S
-+++ b/arch/x86/kernel/head_32.S
-@@ -21,6 +21,7 @@
- #include <asm/msr-index.h>
- #include <asm/cpufeature.h>
- #include <asm/percpu.h>
-+#include <asm/nops.h>
+diff --git a/arch/x86/include/asm/paravirt.h b/arch/x86/include/asm/paravirt.h
+index aa0f913..6cbbabf 100644
+--- a/arch/x86/include/asm/paravirt.h
++++ b/arch/x86/include/asm/paravirt.h
+@@ -1023,10 +1023,8 @@ extern void default_banner(void);
+ 		  call PARA_INDIRECT(pv_cpu_ops+PV_CPU_swapgs)		\
+ 		 )
  
- /* Physical address */
- #define pa(X) ((X) - __PAGE_OFFSET)
-@@ -508,68 +509,94 @@ check_x87:
-  *  Warning: %esi is live across this function.
-  */
- setup_idt:
--	lea ignore_int,%edx
-+	movl $idt_table,%edi
-+	movl $early_idt_handlers,%eax
-+	movl $NUM_EXCEPTION_VECTORS,%ecx
-+1:
-+	movl %eax,(%edi)
-+	movl %eax,4(%edi)
-+	/* interrupt gate, dpl=0, present */
-+	movl $(0x8E000000 + __KERNEL_CS),2(%edi)
-+	addl $9,%eax
-+	addl $8,%edi
-+	loop 1b
-+
-+	movl $256 - NUM_EXCEPTION_VECTORS,%ecx
-+	movl $ignore_int,%edx
- 	movl $(__KERNEL_CS << 16),%eax
- 	movw %dx,%ax		/* selector = 0x0010 = cs */
- 	movw $0x8E00,%dx	/* interrupt gate - dpl=0, present */
--
--	lea idt_table,%edi
--	mov $256,%ecx
--rp_sidt:
-+2:
- 	movl %eax,(%edi)
- 	movl %edx,4(%edi)
- 	addl $8,%edi
--	dec %ecx
--	jne rp_sidt
--
--.macro	set_early_handler handler,trapno
--	lea \handler,%edx
--	movl $(__KERNEL_CS << 16),%eax
--	movw %dx,%ax
--	movw $0x8E00,%dx	/* interrupt gate - dpl=0, present */
--	lea idt_table,%edi
--	movl %eax,8*\trapno(%edi)
--	movl %edx,8*\trapno+4(%edi)
--.endm
--
--	set_early_handler handler=early_divide_err,trapno=0
--	set_early_handler handler=early_illegal_opcode,trapno=6
--	set_early_handler handler=early_protection_fault,trapno=13
--	set_early_handler handler=early_page_fault,trapno=14
--
-+	loop 2b
-+	
- 	ret
+-#define GET_CR2_INTO_RCX				\
+-	call PARA_INDIRECT(pv_mmu_ops+PV_MMU_read_cr2);	\
+-	movq %rax, %rcx;				\
+-	xorq %rax, %rax;
++#define GET_CR2_INTO_RAX				\
++	call PARA_INDIRECT(pv_mmu_ops+PV_MMU_read_cr2)
  
--early_divide_err:
--	xor %edx,%edx
--	pushl $0	/* fake errcode */
--	jmp early_fault
-+	.globl early_idt_handlers
-+early_idt_handlers:
-+	# 36(%esp) %eflags
-+	# 32(%esp) %cs
-+	# 28(%esp) %eip
-+	# 24(%rsp) error code
-+	i = 0
-+	.rept NUM_EXCEPTION_VECTORS
-+	.if (EXCEPTION_ERRCODE_MASK >> i) & 1
-+	ASM_NOP2
-+	.else
-+	pushl $0		# Dummy error code, to make stack frame uniform
-+	.endif
-+	pushl $i		# 20(%esp) Vector number
-+	jmp early_idt_handler
-+	i = i + 1
-+	.endr
-+
-+	/* This is global to keep gas from relaxing the jumps */
-+	.globl	early_idt_handler
-+early_idt_handler:
-+	cld
-+	cmpl $2,%ss:early_recursion_flag
-+	je hlt_loop
-+	incl %ss:early_recursion_flag
- 
--early_illegal_opcode:
--	movl $6,%edx
--	pushl $0	/* fake errcode */
--	jmp early_fault
-+	push %eax		# 16(%esp)
-+	push %ecx		# 12(%esp)
-+	push %edx		#  8(%esp)
-+	push %ds		#  4(%esp)
-+	push %es		#  0(%esp)
-+	movl $(__KERNEL_DS),%eax
-+	movl %eax,%ds
-+	movl %eax,%es
- 
--early_protection_fault:
--	movl $13,%edx
--	jmp early_fault
-+	cmpl $(__KERNEL_CS),32(%esp)
-+	jne 10f
- 
--early_page_fault:
--	movl $14,%edx
--	jmp early_fault
-+	movl 28(%esp),%eax	# %eip
-+	movl $__start___ex_table,%ecx
-+	movl $__stop___ex_table,%edx
-+11:
-+	cmpl (%ecx),%eax
-+	je ex_entry		/* found an exception entry */
-+	addl $8,%ecx
-+	cmpl %edx,%ecx
-+	jb 11b
- 
--early_fault:
--	cld
-+10:
- #ifdef CONFIG_PRINTK
--	pusha
--	movl $(__KERNEL_DS),%eax
--	movl %eax,%ds
--	movl %eax,%es
--	cmpl $2,early_recursion_flag
--	je hlt_loop
--	incl early_recursion_flag
-+	xorl %eax,%eax
-+	movw %ax,2(%esp)	/* clean up the segment values on some cpus */
-+	movw %ax,6(%esp)
-+	movw %ax,34(%esp)
-+	leal  40(%esp),%eax
-+	pushl %eax		/* %esp before the exception */
-+	pushl %ebx
-+	pushl %ebp
-+	pushl %esi
-+	pushl %edi
- 	movl %cr2,%eax
- 	pushl %eax
--	pushl %edx		/* trapno */
-+	pushl (20+6*4)(%esp)	/* trapno */
- 	pushl $fault_msg
- 	call printk
+ #define PARAVIRT_ADJUST_EXCEPTION_FRAME					\
+ 	PARA_SITE(PARA_PATCH(pv_irq_ops, PV_IRQ_adjust_exception_frame), \
+diff --git a/arch/x86/kernel/head_64.S b/arch/x86/kernel/head_64.S
+index adf52e8..d1e112c 100644
+--- a/arch/x86/kernel/head_64.S
++++ b/arch/x86/kernel/head_64.S
+@@ -23,8 +23,9 @@
+ #ifdef CONFIG_PARAVIRT
+ #include <asm/asm-offsets.h>
+ #include <asm/paravirt.h>
++#define GET_CR2_INTO(reg) GET_CR2_INTO_RAX ; movq %rax, reg
+ #else
+-#define GET_CR2_INTO_RCX movq %cr2, %rcx
++#define GET_CR2_INTO(reg) movq %cr2, reg
  #endif
-@@ -578,6 +605,18 @@ hlt_loop:
- 	hlt
- 	jmp hlt_loop
  
-+ex_entry:
-+	movl 4(%ecx),%eax
-+	movl %eax,28(%esp)	/* change %eip on the stack */
-+	pop %es
-+	pop %ds
-+	pop %edx
-+	pop %ecx
-+	pop %eax
-+	addl $8,%esp		/* drop vector number and error code */
-+	decl %ss:early_recursion_flag
-+	iret
-+
- /* This is the default interrupt "handler" :-) */
- 	ALIGN
- ignore_int:
-@@ -681,11 +720,12 @@ int_msg:
- fault_msg:
- /* fault info: */
- 	.ascii "BUG: Int %d: CR2 %p\n"
--/* pusha regs: */
--	.ascii "     EDI %p  ESI %p  EBP %p  ESP %p\n"
--	.ascii "     EBX %p  EDX %p  ECX %p  EAX %p\n"
-+/* regs pushed in early_idt_handler: */
-+	.ascii "     EDI %p  ESI %p  EBP %p  EBX %p\n"
-+	.ascii "     ESP %p   ES %p   DS %p\n"
-+	.ascii "     EDX %p  ECX %p  EAX %p\n"
- /* fault frame: */
--	.ascii "     err %p  EIP %p   CS %p  flg %p\n"
-+	.ascii "     vec %p  err %p  EIP %p   CS %p  flg %p\n"
- 	.ascii "Stack: %p %p %p %p %p %p %p %p\n"
- 	.ascii "       %p %p %p %p %p %p %p %p\n"
- 	.asciz "       %p %p %p %p %p %p %p %p\n"
+ /* we are not able to switch in one step to the final KERNEL ADDRESS SPACE
+@@ -286,8 +287,7 @@ ENTRY(early_idt_handler)
+ 	cmpl $2,early_recursion_flag(%rip)
+ 	jz  1f
+ 	incl early_recursion_flag(%rip)
+-	GET_CR2_INTO_RCX
+-	movq %rcx,%r9
++	GET_CR2_INTO(%r9)
+ 	xorl %r8d,%r8d		# zero for error code
+ 	movl %esi,%ecx		# get vector number
+ 	# Test %ecx against mask of vectors that push error code.
 -- 
 1.7.6.5
 
