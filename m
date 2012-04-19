@@ -1,63 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932190Ab2DST5k (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Apr 2012 15:57:40 -0400
-Received: from e31.co.us.ibm.com ([32.97.110.149]:44727 "EHLO
-	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756208Ab2DST5i (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Apr 2012 15:57:38 -0400
-Subject: Re: [PULL REQUEST] : ima-appraisal patches
-From: Mimi Zohar <zohar@linux.vnet.ibm.com>
-To: Al Viro <viro@ZenIV.linux.org.uk>
-Cc: James Morris <jmorris@namei.org>, linux-security-module@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        David Safford <safford@linux.vnet.ibm.com>,
-        Dmitry Kasatkin <dmitry.kasatkin@intel.com>
-Date: Thu, 19 Apr 2012 15:57:28 -0400
-In-Reply-To: <20120418183938.GH6589@ZenIV.linux.org.uk>
-References: <1334754302.2137.8.camel@falcor>
-	 <alpine.LRH.2.02.1204190101380.30151@tundra.namei.org>
-	 <1334772473.2137.22.camel@falcor>
-	 <20120418183938.GH6589@ZenIV.linux.org.uk>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.0.3 (3.0.3-1.fc15) 
-Content-Transfer-Encoding: 7bit
-Message-ID: <1334865448.2429.35.camel@falcor>
-Mime-Version: 1.0
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12041919-7282-0000-0000-000008546104
+	id S932218Ab2DSUBj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Apr 2012 16:01:39 -0400
+Received: from na3sys009aog138.obsmtp.com ([74.125.149.19]:54562 "EHLO
+	na3sys009aog138.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756251Ab2DSUBi convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Apr 2012 16:01:38 -0400
+MIME-Version: 1.0
+In-Reply-To: <4F902858.9040905@gmail.com>
+References: <1334003101-17274-1-git-send-email-robherring2@gmail.com>
+ <1334003101-17274-2-git-send-email-robherring2@gmail.com> <CAJOA=zMPqiH2fQJ5JWJ=COnju7Cmur6J2ATYUTcx41C4WMjFQQ@mail.gmail.com>
+ <20120418070721.GL3852@pengutronix.de> <4F902858.9040905@gmail.com>
+From: "Turquette, Mike" <mturquette@ti.com>
+Date: Thu, 19 Apr 2012 13:01:15 -0700
+Message-ID: <CAJOA=zNwueCeSjT2F-M1+Ffu49t5tMBow=8baGrvZdGjrUCMrA@mail.gmail.com>
+Subject: Re: [PATCH 1/4] clk: select CLKDEV_LOOKUP for COMMON_CLK
+To: Rob Herring <robherring2@gmail.com>
+Cc: Sascha Hauer <s.hauer@pengutronix.de>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        devicetree-discuss@lists.ozlabs.org,
+        Thierry Reding <thierry.reding@avionic-design.de>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Sascha Hauer <kernel@pengutronix.de>, shawn.guo@linaro.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-04-18 at 19:39 +0100, Al Viro wrote:
-> On Wed, Apr 18, 2012 at 02:07:52PM -0400, Mimi Zohar wrote:
+On Thu, Apr 19, 2012 at 7:59 AM, Rob Herring <robherring2@gmail.com> wrote:
+> On 04/18/2012 02:07 AM, Sascha Hauer wrote:
+>> On Tue, Apr 17, 2012 at 03:13:49PM -0700, Turquette, Mike wrote:
+>>> On Mon, Apr 9, 2012 at 1:24 PM, Rob Herring <robherring2@gmail.com> wrote:
+>>>> From: Rob Herring <rob.herring@calxeda.com>
+>>>>
+>>>> Using the common clock infrastructure without the common clkdev code makes
+>>>> little sense, so select CLKDEV_LOOKUP for COMMON_CLK.
+>>>>
+>>>> Signed-off-by: Rob Herring <rob.herring@calxeda.com>
+>>>> ---
+>>>>  drivers/clk/Kconfig |    1 +
+>>>>  1 files changed, 1 insertions(+), 0 deletions(-)
+>>>>
+>>>> diff --git a/drivers/clk/Kconfig b/drivers/clk/Kconfig
+>>>> index 165e1fe..f05a60d 100644
+>>>> --- a/drivers/clk/Kconfig
+>>>> +++ b/drivers/clk/Kconfig
+>>>> @@ -12,6 +12,7 @@ config HAVE_MACH_CLKDEV
+>>>>  config COMMON_CLK
+>>>>        bool
+>>>>        select HAVE_CLK_PREPARE
+>>>> +       select CLKDEV_LOOKUP
+>>>>        ---help---
+>>>>          The common clock framework is a single definition of struct
+>>>>          clk, useful across many platforms, as well as an
+>>>
+>>> Hi Rob,
+>>>
+>>> I agree that the common clk framework is not particularly useful
+>>> without clkdev.  However the core code has no dependency on clkdev.
+>>> Why not just select it from an arch Kconfig, or even make it a
+>>> dependency based on your own platform clock data/code?
+>>
+>> Selecting it from COMMON_CLK means that the compiler/linker will point
+>> everybody trying to implement it without CLKDEV into the right
+>> direction.
+>
+> Right. That was part of my rationale as well.
+>
+> The DT clock support is dependent on both options, so without this patch
+> we'll have to add an otherwise unneeded OF_CLOCK option to select both.
 
-> NAKed at least until you come up with formal proof that there's no other
-> lock where fput() would be possible and ->i_mutex was not allowed.  
+Ok.  I'll take this into my -next branch.
 
-Has the discussion here moved from deferring the __fput() for the
-mmap_sem/i_mutex lockdep side case, to taking the i_mutex in __fput() in
-general?  Lockdep has not reported any problems, other than for the
-mmap_sem/i_mutex scenario.
-
-> This
-> is not a way to go; that kind of kludges leads to locking code that is
-> impossible to reason about.
-
-Are you referring to defering the __fput() or taking the i_mutex in
-__fput() in general?
-
-The i_mutex is currently used to protect file data and metadata (eg.
-chown, chmod, xattrs).  After the last file data change, the file
-metadata needs to be updated to reflect the file data changes.  As
-i_mutex is used for protecting both the file data and file metadata, why
-would taking the i_mutex in __fput() be kludgie.
-
-I'd really appreciate any help, suggestions.
-
-thanks,
-
-Mimi
-
+Thanks,
+Mike
