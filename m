@@ -1,110 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751599Ab2DSBbs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Apr 2012 21:31:48 -0400
-Received: from vms173003pub.verizon.net ([206.46.173.3]:26687 "EHLO
-	vms173003pub.verizon.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750943Ab2DSBbg (ORCPT
+	id S1751473Ab2DSBft (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Apr 2012 21:35:49 -0400
+Received: from mail-vb0-f46.google.com ([209.85.212.46]:48919 "EHLO
+	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750943Ab2DSBfr convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Apr 2012 21:31:36 -0400
-From: "W. Trevor King" <wking@tremily.us>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: "W. Trevor King" <wking@tremily.us>, Ian Abbott <abbotti@mev.co.uk>,
-        Mori Hess <fmhess@users.sourceforge.net>, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH v2 1/2] staging: comedi: ni_tio_internal.h: checkpatch.pl line
- wrapping
-Date: Wed, 18 Apr 2012 21:30:27 -0400
-Message-id: <da507480807811edbf19306d405bc2af371ef029.1334798829.git.wking@tremily.us>
-X-Mailer: git-send-email 1.7.3.4
-In-reply-to: <20120418235714.GC5163@kroah.com>
-References: <20120418235714.GC5163@kroah.com>
-In-reply-to: <cover.1334798829.git.wking@tremily.us>
-References: <cover.1334798829.git.wking@tremily.us>
+	Wed, 18 Apr 2012 21:35:47 -0400
+MIME-Version: 1.0
+In-Reply-To: <201204182313.59916.rjw@sisk.pl>
+References: <1334641676-14566-1-git-send-email-ming.m.lin@intel.com>
+	<1334641676-14566-2-git-send-email-ming.m.lin@intel.com>
+	<CAC=cRTPkFM5=az2B0A22miqt_X+XxcWPLrqPfeeRabho9yx-1Q@mail.gmail.com>
+	<201204182313.59916.rjw@sisk.pl>
+Date: Thu, 19 Apr 2012 09:35:46 +0800
+Message-ID: <CAC=cRTMts3q4s2qYr0Ds3W98WhXXXMa8P2qCAqm-fQcT+HFfDw@mail.gmail.com>
+Subject: Re: [PATCH 1/6] ACPI: D3cold state is always valid
+From: huang ying <huang.ying.caritas@gmail.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Lin Ming <ming.m.lin@intel.com>, Len Brown <lenb@kernel.og>,
+        linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org,
+        Zhang Rui <rui.zhang@intel.com>, Aaron Lu <aaron.lu@amd.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: W. Trevor King <wking@tremily.us>
----
- drivers/staging/comedi/drivers/ni_tio_internal.h |   31 ++++++++++++++--------
- 1 files changed, 20 insertions(+), 11 deletions(-)
+On Thu, Apr 19, 2012 at 5:13 AM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+> On Tuesday, April 17, 2012, huang ying wrote:
+>> On Tue, Apr 17, 2012 at 1:47 PM, Lin Ming <ming.m.lin@intel.com> wrote:
+>> > ACPI_STATE_D3 actually means ACPI D3hot which is not always valid.
+>> > Instead, ACPI D3cold is always valid.
+>> >
+>> > Signed-off-by: Lin Ming <ming.m.lin@intel.com>
+>> > ---
+>> >  drivers/acpi/scan.c |   11 ++---------
+>> >  1 files changed, 2 insertions(+), 9 deletions(-)
+>> >
+>> > diff --git a/drivers/acpi/scan.c b/drivers/acpi/scan.c
+>> > index 767e2dc..fb56388 100644
+>> > --- a/drivers/acpi/scan.c
+>> > +++ b/drivers/acpi/scan.c
+>> > @@ -884,13 +884,6 @@ static int acpi_bus_get_power_flags(struct acpi_device *device)
+>> >                                acpi_bus_add_power_resource(ps->resources.handles[j]);
+>> >                }
+>> >
+>> > -               /* The exist of _PR3 indicates D3Cold support */
+>> > -               if (i == ACPI_STATE_D3) {
+>> > -                       status = acpi_get_handle(device->handle, object_name, &handle);
+>> > -                       if (ACPI_SUCCESS(status))
+>> > -                               device->power.states[ACPI_STATE_D3_COLD].flags.valid = 1;
+>> > -               }
+>> > -
+>> >                /* Evaluate "_PSx" to see if we can do explicit sets */
+>> >                object_name[2] = 'S';
+>> >                status = acpi_get_handle(device->handle, object_name, &handle);
+>> > @@ -908,8 +901,8 @@ static int acpi_bus_get_power_flags(struct acpi_device *device)
+>> >        /* Set defaults for D0 and D3 states (always valid) */
+>> >        device->power.states[ACPI_STATE_D0].flags.valid = 1;
+>> >        device->power.states[ACPI_STATE_D0].power = 100;
+>> > -       device->power.states[ACPI_STATE_D3].flags.valid = 1;
+>> > -       device->power.states[ACPI_STATE_D3].power = 0;
+>> > +       device->power.states[ACPI_STATE_D3_COLD].flags.valid = 1;
+>> > +       device->power.states[ACPI_STATE_D3_COLD].power = 0;
+>> >
+>> >        acpi_bus_init_power(device);
+>>
+>> I think D3_HOT should be always valid, while D3_COLD should be valid
+>> for some situation.
+>
+> This need not be PCI, mind you.
+>
+>>  - has _PS3, no _PR3
+>>    - support D3_HOT, D3_COLD
+>
+> Nope.  D3_HOT cannot be supported in that case at the ACPI level.
+>
+>>    - set state
+>>      - D3_HOT: do nothing in ACPI
+>
+> That is not D3_HOT, then, from the ACPI point of view.  It is a different
+> power state.
+>
+> Suppose you have a non-PCI device that can be only power-manageable via ACPI
+> and that device has only _PS0 and _PS3.  How would you put it into D3_HOT,
+> in particular?
 
-diff --git a/drivers/staging/comedi/drivers/ni_tio_internal.h b/drivers/staging/comedi/drivers/ni_tio_internal.h
-index c4ca537..f9295ec 100644
---- a/drivers/staging/comedi/drivers/ni_tio_internal.h
-+++ b/drivers/staging/comedi/drivers/ni_tio_internal.h
-@@ -362,8 +362,8 @@ static inline enum ni_gpct_register NITIO_Gi_ABZ_Reg(int counter_index)
- 	return 0;
- }
- 
--static inline enum ni_gpct_register NITIO_Gi_Interrupt_Acknowledge_Reg(int
--								       counter_index)
-+static inline enum ni_gpct_register NITIO_Gi_Interrupt_Acknowledge_Reg(
-+	int counter_index)
- {
- 	switch (counter_index) {
- 	case 0:
-@@ -407,8 +407,8 @@ static inline enum ni_gpct_register NITIO_Gi_Status_Reg(int counter_index)
- 	return 0;
- }
- 
--static inline enum ni_gpct_register NITIO_Gi_Interrupt_Enable_Reg(int
--								  counter_index)
-+static inline enum ni_gpct_register NITIO_Gi_Interrupt_Enable_Reg(
-+	int counter_index)
- {
- 	switch (counter_index) {
- 	case 0:
-@@ -472,15 +472,22 @@ enum Gi_Counting_Mode_Reg_Bits {
- 	Gi_Index_Phase_LowA_HighB = 0x1 << Gi_Index_Phase_Bitshift,
- 	Gi_Index_Phase_HighA_LowB = 0x2 << Gi_Index_Phase_Bitshift,
- 	Gi_Index_Phase_HighA_HighB = 0x3 << Gi_Index_Phase_Bitshift,
--	Gi_HW_Arm_Enable_Bit = 0x80,	/* from m-series example code, not documented in 660x register level manual */
--	Gi_660x_HW_Arm_Select_Mask = 0x7 << Gi_HW_Arm_Select_Shift,	/* from m-series example code, not documented in 660x register level manual */
-+	/* from m-series example code, not documented in 660x register level
-+	 * manual */
-+	Gi_HW_Arm_Enable_Bit = 0x80,
-+	/* from m-series example code, not documented in 660x register level
-+	 * manual */
-+	Gi_660x_HW_Arm_Select_Mask = 0x7 << Gi_HW_Arm_Select_Shift,
- 	Gi_660x_Prescale_X8_Bit = 0x1000,
- 	Gi_M_Series_Prescale_X8_Bit = 0x2000,
- 	Gi_M_Series_HW_Arm_Select_Mask = 0x1f << Gi_HW_Arm_Select_Shift,
--	/* must be set for clocks over 40MHz, which includes synchronous counting and quadrature modes */
-+	/* must be set for clocks over 40MHz, which includes synchronous
-+	 * counting and quadrature modes */
- 	Gi_660x_Alternate_Sync_Bit = 0x2000,
- 	Gi_M_Series_Alternate_Sync_Bit = 0x4000,
--	Gi_660x_Prescale_X2_Bit = 0x4000,	/* from m-series example code, not documented in 660x register level manual */
-+	/* from m-series example code, not documented in 660x register level
-+	 * manual */
-+	Gi_660x_Prescale_X2_Bit = 0x4000,
- 	Gi_M_Series_Prescale_X2_Bit = 0x8000,
- };
- 
-@@ -503,7 +510,8 @@ enum Gi_Mode_Bits {
- 	Gi_Level_Gating_Bits = 0x1,
- 	Gi_Rising_Edge_Gating_Bits = 0x2,
- 	Gi_Falling_Edge_Gating_Bits = 0x3,
--	Gi_Gate_On_Both_Edges_Bit = 0x4,	/* used in conjunction with rising edge gating mode */
-+	Gi_Gate_On_Both_Edges_Bit = 0x4,	/* used in conjunction with
-+						 * rising edge gating mode */
- 	Gi_Trigger_Mode_for_Edge_Gate_Mask = 0x18,
- 	Gi_Edge_Gate_Starts_Stops_Bits = 0x0,
- 	Gi_Edge_Gate_Stops_Starts_Bits = 0x8,
-@@ -748,8 +756,9 @@ static inline void ni_tio_set_bits_transient(struct ni_gpct *counter,
- }
- 
- /* ni_tio_set_bits( ) is for safely writing to registers whose bits may be
--twiddled in interrupt context, or whose software copy may be read in interrupt context.
--*/
-+ * twiddled in interrupt context, or whose software copy may be read in
-+ * interrupt context.
-+ */
- static inline void ni_tio_set_bits(struct ni_gpct *counter,
- 				   enum ni_gpct_register register_index,
- 				   unsigned bit_mask, unsigned bit_values)
--- 
-1.7.3.4
+Normally, we will put it into D3_COLD (via _PS3).
 
+If it is prevented to be put in D3_COLD,
+  - If D3_HOT is not marked as supported, we will keep it in D0
+  - otherwise, we advocate we put it into D3_HOT, but in fact, it is in D0.
+
+The result is same, but with wrong name.
+
+But there will be some real problem if we have something like CPU
+governor.  Because governor may choose D3_HOT for device.
+
+But for PCI device, D3_HOT is supported for the device.
+
+So the bus layer should combine the information from native power
+state supported and ACPI power state supported to determine which
+power states are supported?  For example, for a PCI device, ACPI
+advocates D0 and D3_COLD are supported, and PCI layer may advocate D0,
+D3_HOT and D3_COLD are supported.
+
+Best Regards,
+Huang Ying
