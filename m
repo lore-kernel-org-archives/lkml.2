@@ -1,72 +1,322 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753121Ab2DSGfq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Apr 2012 02:35:46 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:40684 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751242Ab2DSGfn (ORCPT
+	id S1752287Ab2DSGkE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Apr 2012 02:40:04 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:54830 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751046Ab2DSGkB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Apr 2012 02:35:43 -0400
-Date: Thu, 19 Apr 2012 16:35:35 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Alexander Graf <agraf@suse.de>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Eric B Munson <emunson@mgebm.net>,
-        Marcelo Tosatti <mtosatti@redhat.com>, Avi Kivity <avi@redhat.com>
-Subject: linux-next: build failure after merge of the final tree (kvm-ppc
- tree related)
-Message-Id: <20120419163535.52c99a34e2664063d654ac4d@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0beta7 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Thu__19_Apr_2012_16_35_35_+1000_/2qZTjoJlpczuqUM"
+	Thu, 19 Apr 2012 02:40:01 -0400
+From: Tomoya MORINAGA <tomoya.rohm@gmail.com>
+To: Jean Delvare <khali@linux-fr.org>, Ben Dooks <ben-linux@fluff.org>,
+        Wolfram Sang <w.sang@pengutronix.de>, Feng Tang <feng.tang@intel.com>,
+        Alexander Stein <alexander.stein@systec-electronic.com>,
+        linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org
+Cc: qi.wang@intel.com, yong.y.wang@intel.com, joel.clark@intel.com,
+        kok.howg.ewe@intel.com, Tomoya MORINAGA <tomoya.rohm@gmail.com>
+Subject: [PATCH 1/2] i2c-eg20t: add helper function for xfer check
+Date: Thu, 19 Apr 2012 15:38:04 +0900
+Message-Id: <1334817485-7121-1-git-send-email-tomoya.rohm@gmail.com>
+X-Mailer: git-send-email 1.7.4.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Thu__19_Apr_2012_16_35_35_+1000_/2qZTjoJlpczuqUM
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Currently, there are the same code for xfer complete check processing.
+So, I add helper function pch_i2c_wait_for_check_xfer.
 
-Hi all,
+Reported-by: Wolfram Sang <w.sang@pengutronix.de>
+Signed-off-by: Tomoya MORINAGA <tomoya.rohm@gmail.com>
+---
+ drivers/i2c/busses/i2c-eg20t.c |  226 ++++++++++++----------------------------
+ 1 files changed, 66 insertions(+), 160 deletions(-)
 
-After merging the final tree, today's linux-next build (sparc64 defconfig)
-failed like this:
+diff --git a/drivers/i2c/busses/i2c-eg20t.c b/drivers/i2c/busses/i2c-eg20t.c
+index ca9e579..72bd23c 100644
+--- a/drivers/i2c/busses/i2c-eg20t.c
++++ b/drivers/i2c/busses/i2c-eg20t.c
+@@ -366,6 +366,34 @@ static void pch_i2c_stop(struct i2c_algo_pch_data *adap)
+ 	pch_clrbit(adap->pch_base_address, PCH_I2CCTL, PCH_START);
+ }
+ 
++static int pch_i2c_wait_for_check_xfer(struct i2c_algo_pch_data *adap)
++{
++	int rtn;
++
++	rtn = pch_i2c_wait_for_xfer_complete(adap);
++	if (rtn == 0) {
++		if (pch_i2c_getack(adap)) {
++			pch_dbg(adap, "Receive NACK for slave address"
++				"setting\n");
++			return -EIO;
++		}
++	} else if (rtn == -EIO) { /* Arbitration Lost */
++		pch_err(adap, "Lost Arbitration\n");
++		pch_clrbit(adap->pch_base_address, PCH_I2CSR, I2CMAL_BIT);
++		pch_clrbit(adap->pch_base_address, PCH_I2CSR, I2CMIF_BIT);
++		pch_i2c_init(adap);
++		return -EAGAIN;
++	} else { /* wait-event timeout */
++		pch_err(adap, "%s(L.%d):wait-event timeout\n",
++			__func__, __LINE__);
++		pch_i2c_stop(adap);
++		pch_i2c_init(adap);
++		return -ETIME;
++	}
++
++	return 0;
++}
++
+ /**
+  * pch_i2c_repstart() - generate repeated start condition in normal mode
+  * @adap:	Pointer to struct i2c_algo_pch_data.
+@@ -420,30 +448,12 @@ static s32 pch_i2c_writebytes(struct i2c_adapter *i2c_adap,
+ 		if (first)
+ 			pch_i2c_start(adap);
+ 
+-		rtn = pch_i2c_wait_for_xfer_complete(adap);
+-		if (rtn == 0) {
+-			if (pch_i2c_getack(adap)) {
+-				pch_dbg(adap, "Receive NACK for slave address"
+-					"setting\n");
+-				return -EIO;
+-			}
+-			addr_8_lsb = (addr & I2C_ADDR_MSK);
+-			iowrite32(addr_8_lsb, p + PCH_I2CDR);
+-		} else if (rtn == -EIO) { /* Arbitration Lost */
+-			pch_err(adap, "Lost Arbitration\n");
+-			pch_clrbit(adap->pch_base_address, PCH_I2CSR,
+-				   I2CMAL_BIT);
+-			pch_clrbit(adap->pch_base_address, PCH_I2CSR,
+-				   I2CMIF_BIT);
+-			pch_i2c_init(adap);
+-			return -EAGAIN;
+-		} else { /* wait-event timeout */
+-			pch_err(adap, "%s(L.%d):wait-event timeout\n",
+-				__func__, __LINE__);
+-			pch_i2c_stop(adap);
+-			pch_i2c_init(adap);
+-			return -ETIME;
+-		}
++		rtn = pch_i2c_wait_for_check_xfer(adap);
++		if (rtn)
++			return rtn;
++
++		addr_8_lsb = (addr & I2C_ADDR_MSK);
++		iowrite32(addr_8_lsb, p + PCH_I2CDR);
+ 	} else {
+ 		/* set 7 bit slave address and R/W bit as 0 */
+ 		iowrite32(addr << 1, p + PCH_I2CDR);
+@@ -451,50 +461,21 @@ static s32 pch_i2c_writebytes(struct i2c_adapter *i2c_adap,
+ 			pch_i2c_start(adap);
+ 	}
+ 
+-	rtn = pch_i2c_wait_for_xfer_complete(adap);
+-	if (rtn == 0) {
+-		if (pch_i2c_getack(adap)) {
+-			pch_dbg(adap, "Receive NACK for slave address"
+-				"setting\n");
+-			return -EIO;
+-		}
+-	} else if (rtn == -EIO) { /* Arbitration Lost */
+-		pch_err(adap, "Lost Arbitration\n");
+-		pch_clrbit(adap->pch_base_address, PCH_I2CSR, I2CMAL_BIT);
+-		pch_clrbit(adap->pch_base_address, PCH_I2CSR, I2CMIF_BIT);
+-		pch_i2c_init(adap);
+-		return -EAGAIN;
+-	} else { /* wait-event timeout */
+-		pch_err(adap, "%s(L.%d):wait-event timeout\n",
+-			__func__, __LINE__);
+-		pch_i2c_stop(adap);
+-		pch_i2c_init(adap);
+-		return -ETIME;
+-	}
++	rtn = pch_i2c_wait_for_check_xfer(adap);
++	if (rtn)
++		return rtn;
+ 
+ 	for (wrcount = 0; wrcount < length; ++wrcount) {
+ 		/* write buffer value to I2C data register */
+ 		iowrite32(buf[wrcount], p + PCH_I2CDR);
+ 		pch_dbg(adap, "writing %x to Data register\n", buf[wrcount]);
+ 
+-		rtn = pch_i2c_wait_for_xfer_complete(adap);
+-		if (rtn == 0) {
+-			if (pch_i2c_getack(adap)) {
+-				pch_dbg(adap, "Receive NACK for slave address"
+-					"setting\n");
+-				return -EIO;
+-			}
+-			pch_clrbit(adap->pch_base_address, PCH_I2CSR,
+-				   I2CMCF_BIT);
+-			pch_clrbit(adap->pch_base_address, PCH_I2CSR,
+-				   I2CMIF_BIT);
+-		} else { /* wait-event timeout */
+-			pch_err(adap, "%s(L.%d):wait-event timeout\n",
+-				__func__, __LINE__);
+-			pch_i2c_stop(adap);
+-			pch_i2c_init(adap);
+-			return -ETIME;
+-		}
++		rtn = pch_i2c_wait_for_check_xfer(adap);
++		if (rtn)
++			return rtn;
++
++		pch_clrbit(adap->pch_base_address, PCH_I2CSR, I2CMCF_BIT);
++		pch_clrbit(adap->pch_base_address, PCH_I2CSR, I2CMIF_BIT);
+ 	}
+ 
+ 	/* check if this is the last message */
+@@ -582,56 +563,21 @@ static s32 pch_i2c_readbytes(struct i2c_adapter *i2c_adap, struct i2c_msg *msgs,
+ 		if (first)
+ 			pch_i2c_start(adap);
+ 
+-		rtn = pch_i2c_wait_for_xfer_complete(adap);
+-		if (rtn == 0) {
+-			if (pch_i2c_getack(adap)) {
+-				pch_dbg(adap, "Receive NACK for slave address"
+-					"setting\n");
+-				return -EIO;
+-			}
+-			addr_8_lsb = (addr & I2C_ADDR_MSK);
+-			iowrite32(addr_8_lsb, p + PCH_I2CDR);
+-		} else if (rtn == -EIO) { /* Arbitration Lost */
+-			pch_err(adap, "Lost Arbitration\n");
+-			pch_clrbit(adap->pch_base_address, PCH_I2CSR,
+-				   I2CMAL_BIT);
+-			pch_clrbit(adap->pch_base_address, PCH_I2CSR,
+-				   I2CMIF_BIT);
+-			pch_i2c_init(adap);
+-			return -EAGAIN;
+-		} else { /* wait-event timeout */
+-			pch_err(adap, "%s(L.%d):wait-event timeout\n",
+-				__func__, __LINE__);
+-			pch_i2c_stop(adap);
+-			pch_i2c_init(adap);
+-			return -ETIME;
+-		}
++		rtn = pch_i2c_wait_for_check_xfer(adap);
++		if (rtn)
++			return rtn;
++
++		addr_8_lsb = (addr & I2C_ADDR_MSK);
++		iowrite32(addr_8_lsb, p + PCH_I2CDR);
++
+ 		pch_i2c_restart(adap);
+-		rtn = pch_i2c_wait_for_xfer_complete(adap);
+-		if (rtn == 0) {
+-			if (pch_i2c_getack(adap)) {
+-				pch_dbg(adap, "Receive NACK for slave address"
+-					"setting\n");
+-				return -EIO;
+-			}
+-			addr_2_msb |= I2C_RD;
+-			iowrite32(addr_2_msb | TEN_BIT_ADDR_MASK,
+-				  p + PCH_I2CDR);
+-		} else if (rtn == -EIO) { /* Arbitration Lost */
+-			pch_err(adap, "Lost Arbitration\n");
+-			pch_clrbit(adap->pch_base_address, PCH_I2CSR,
+-				   I2CMAL_BIT);
+-			pch_clrbit(adap->pch_base_address, PCH_I2CSR,
+-				   I2CMIF_BIT);
+-			pch_i2c_init(adap);
+-			return -EAGAIN;
+-		} else { /* wait-event timeout */
+-			pch_err(adap, "%s(L.%d):wait-event timeout\n",
+-				__func__, __LINE__);
+-			pch_i2c_stop(adap);
+-			pch_i2c_init(adap);
+-			return -ETIME;
+-		}
++
++		rtn = pch_i2c_wait_for_check_xfer(adap);
++		if (rtn)
++			return rtn;
++
++		addr_2_msb |= I2C_RD;
++		iowrite32(addr_2_msb | TEN_BIT_ADDR_MASK, p + PCH_I2CDR);
+ 	} else {
+ 		/* 7 address bits + R/W bit */
+ 		addr = (((addr) << 1) | (I2C_RD));
+@@ -642,26 +588,9 @@ static s32 pch_i2c_readbytes(struct i2c_adapter *i2c_adap, struct i2c_msg *msgs,
+ 	if (first)
+ 		pch_i2c_start(adap);
+ 
+-	rtn = pch_i2c_wait_for_xfer_complete(adap);
+-	if (rtn == 0) {
+-		if (pch_i2c_getack(adap)) {
+-			pch_dbg(adap, "Receive NACK for slave address"
+-				"setting\n");
+-			return -EIO;
+-		}
+-	} else if (rtn == -EIO) { /* Arbitration Lost */
+-		pch_err(adap, "Lost Arbitration\n");
+-		pch_clrbit(adap->pch_base_address, PCH_I2CSR, I2CMAL_BIT);
+-		pch_clrbit(adap->pch_base_address, PCH_I2CSR, I2CMIF_BIT);
+-		pch_i2c_init(adap);
+-		return -EAGAIN;
+-	} else { /* wait-event timeout */
+-		pch_err(adap, "%s(L.%d):wait-event timeout\n",
+-			__func__, __LINE__);
+-		pch_i2c_stop(adap);
+-		pch_i2c_init(adap);
+-		return -ETIME;
+-	}
++	rtn = pch_i2c_wait_for_check_xfer(adap);
++	if (rtn)
++		return rtn;
+ 
+ 	if (length == 0) {
+ 		pch_i2c_stop(adap);
+@@ -680,21 +609,9 @@ static s32 pch_i2c_readbytes(struct i2c_adapter *i2c_adap, struct i2c_msg *msgs,
+ 			if (loop != 1)
+ 				read_index++;
+ 
+-			rtn = pch_i2c_wait_for_xfer_complete(adap);
+-			if (rtn == 0) {
+-				if (pch_i2c_getack(adap)) {
+-					pch_dbg(adap, "Receive NACK for slave"
+-						"address setting\n");
+-					return -EIO;
+-				}
+-			} else { /* wait-event timeout */
+-				pch_err(adap, "%s(L.%d):wait-event timeout\n",
+-					__func__, __LINE__);
+-				pch_i2c_stop(adap);
+-				pch_i2c_init(adap);
+-				return -ETIME;
+-			}
+-
++			rtn = pch_i2c_wait_for_check_xfer(adap);
++			if (rtn)
++				return rtn;
+ 		}	/* end for */
+ 
+ 		pch_i2c_sendnack(adap);
+@@ -704,20 +621,9 @@ static s32 pch_i2c_readbytes(struct i2c_adapter *i2c_adap, struct i2c_msg *msgs,
+ 		if (length != 1)
+ 			read_index++;
+ 
+-		rtn = pch_i2c_wait_for_xfer_complete(adap);
+-		if (rtn == 0) {
+-			if (pch_i2c_getack(adap)) {
+-				pch_dbg(adap, "Receive NACK for slave"
+-					"address setting\n");
+-				return -EIO;
+-			}
+-		} else { /* wait-event timeout */
+-			pch_err(adap, "%s(L.%d):wait-event timeout\n",
+-				__func__, __LINE__);
+-			pch_i2c_stop(adap);
+-			pch_i2c_init(adap);
+-			return -ETIME;
+-		}
++		rtn = pch_i2c_wait_for_check_xfer(adap);
++		if (rtn)
++			return rtn;
+ 
+ 		if (last)
+ 			pch_i2c_stop(adap);
+-- 
+1.7.4.4
 
-In file included from kernel/watchdog.c:27:0:
-include/linux/kvm_para.h: In function 'kvm_para_has_feature':
-include/linux/kvm_para.h:32:2: error: implicit declaration of function 'kvm=
-_arch_para_features' [-Werror=3Dimplicit-function-declaration]
-
-Caused by commit 5d1c0f4a80a6 ("watchdog: add check for suspended vm in
-softlockup detector").  This build has no KVM related CONFIG options set.
-
-I have reverted that commit for today.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
---Signature=_Thu__19_Apr_2012_16_35_35_+1000_/2qZTjoJlpczuqUM
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJPj7I3AAoJEECxmPOUX5FEjDAQAIrqabJ8YPUifZwuPhNlkB+J
-I6DMOiYAg7JI9AZjEPM5NiYmXM+RTixpLDoJUzNKjonuOBH/uUVauNH0voyc98GX
-v2zBfA9yud/Y50Umr/VJNSDd/y5DW/OHaCsc+Sx0oTh95iKcSzkJoX3AAjhejwLy
-8Vy1NiBQxsvtfGd2yTl/9D2paKtq6Ll6fjhU07szI24fMkJWGmxRke6+NsIT+wFf
-s9bHkBlWAxVEeozWX6TL9f5XxmhtDtHgidwst+AEbTmkhq5Oa0BPsF6G7iFOucwD
-pKMjB4zP2wbEjzrSSmM/VOF7GFgMNwepw6qvVMypBIi44ZIq+Ml5CBJTgz5lq75H
-5ikFe/rEVzb7DHev9NiZ/moJs9t21DkvF1hpMR5GGhn6t1FHvqVz2L9DURno/ozJ
-t456HapGHJRCLSSnhtk0jyLAJ9FfZ+7wEg9/bDFVuoqqPANlL3m+bbhgG3eae/cO
-ftkhBWueCCy3v8X+PCPaiD6/jOpdDKfaGA6m63VOcYz9pVQYUM3gHLYuf7olg4M/
-d3yRST83WeV8Ny0AVHKzC9aHLZ+GmzY0IQJWw7EkgZsYLlDsziQRISvj9RmtPkZN
-/Yfndim3vxR1+jWDbEKoiGiyHNSfUoWlrmUJcIHvF8mwNA5iywZFCLXz/0Q1nWvd
-F3ShTw/Se0pxu2cgyQZf
-=n5vH
------END PGP SIGNATURE-----
-
---Signature=_Thu__19_Apr_2012_16_35_35_+1000_/2qZTjoJlpczuqUM--
