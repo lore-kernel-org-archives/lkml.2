@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754939Ab2DSLiZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Apr 2012 07:38:25 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:37044 "EHLO
+	id S1754991Ab2DSLlB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Apr 2012 07:41:01 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:37058 "EHLO
 	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752868Ab2DSLiX (ORCPT
+	by vger.kernel.org with ESMTP id S1754873Ab2DSLk5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Apr 2012 07:38:23 -0400
-Date: Thu, 19 Apr 2012 12:38:19 +0100
+	Thu, 19 Apr 2012 07:40:57 -0400
+Date: Thu, 19 Apr 2012 12:40:54 +0100
 From: Mark Brown <broonie@opensource.wolfsonmicro.com>
 To: MyungJoo Ham <myungjoo.ham@samsung.com>
 Cc: Greg KH <gregkh@linuxfoundation.org>, Arnd Bergmann <arnd@arndb.de>,
@@ -22,17 +22,16 @@ Cc: Greg KH <gregkh@linuxfoundation.org>, Arnd Bergmann <arnd@arndb.de>,
         John Stultz <john.stultz@linaro.org>,
         Joerg Roedel <joerg.roedel@amd.com>, myungjoo.ham@gmail.com,
         cw00.choi@samsung.com
-Subject: Re: [PATCH v8 1/6] Extcon (external connector): import Android's
- switch class and modify.
-Message-ID: <20120419113818.GA3046@opensource.wolfsonmicro.com>
+Subject: Re: [PATCH v8 2/6] Extcon: support generic GPIO extcon driver
+Message-ID: <20120419114053.GB3046@opensource.wolfsonmicro.com>
 References: <20120418214703.GA31606@kroah.com>
  <1334803298-24260-1-git-send-email-myungjoo.ham@samsung.com>
- <1334803298-24260-2-git-send-email-myungjoo.ham@samsung.com>
+ <1334803298-24260-3-git-send-email-myungjoo.ham@samsung.com>
 MIME-Version: 1.0
 Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="/9DWx/yDrRhgMJTb"
+	protocol="application/pgp-signature"; boundary="U+BazGySraz5kW0T"
 Content-Disposition: inline
-In-Reply-To: <1334803298-24260-2-git-send-email-myungjoo.ham@samsung.com>
+In-Reply-To: <1334803298-24260-3-git-send-email-myungjoo.ham@samsung.com>
 X-Cookie: You are always busy.
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
@@ -40,58 +39,59 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---/9DWx/yDrRhgMJTb
+--U+BazGySraz5kW0T
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
 
-On Thu, Apr 19, 2012 at 11:41:33AM +0900, MyungJoo Ham wrote:
-> External connector class (extcon) is based on and an extension of
-> Android kernel's switch class located at linux/drivers/switch/.
+On Thu, Apr 19, 2012 at 11:41:34AM +0900, MyungJoo Ham wrote:
+> The generic GPIO extcon driver (an external connector device based on
+> GPIO control) and imported from Android kernel.
 
-Reviewed-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Reviwed-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
 
-> +comment "Extcon Class Configuration"
+> +	ret = gpio_request(extcon_data->gpio, pdev->name);
+> +	if (ret < 0)
+> +		goto err_request_gpio;
 > +
-> +config EXTCON_ANDROID_COMPATIBLE
-> +	bool "Class name uses 'switch' to be compatible with Android kernel"
-> +	depends on ANDROID
-> +	help
-> +	  The class name of extcon device drivers are set 'switch' in order
-> +	  to be compatible with Android kernel switch framework. With this
-> +	  option enabled, Android userspace platform may use extcon device
-> +	  drivers as if they are switch device drivers.
+> +	ret = gpio_direction_input(extcon_data->gpio);
+> +	if (ret < 0)
+> +		goto err_set_gpio_input;
 
-Though I think this is out of date now?  Not a big deal and could be
-fixed up later.
+Incrementally (or in future versions) I'd suggest replacing with
+gpio_request_one() which combines the above and is generally nicer.
 
-> +#if defined(CONFIG_ANDROID) && !defined(CONFIG_ANDROID_SWITCH)
-> +		switch_class = class_compat_register("switch");
-> +		if (WARN(!switch_class, "cannot allocate"))
-> +			return -ENOMEM;
-> +#endif /* CONFIG_ANDROID && !defined(CONFIG_ANDROID_SWITCH) */
+> +static int __devexit gpio_extcon_remove(struct platform_device *pdev)
+> +{
+> +	struct gpio_extcon_data *extcon_data = platform_get_drvdata(pdev);
+> +
+> +	cancel_delayed_work_sync(&extcon_data->work);
+> +	gpio_free(extcon_data->gpio);
+> +	extcon_dev_unregister(&extcon_data->edev);
+> +	devm_kfree(&pdev->dev, extcon_data);
 
-This does the above but differently.
+The whole point of using devm_ is that you don't need to explicitly free
+for this usage pattern.  On the other hand it does no harm.
 
---/9DWx/yDrRhgMJTb
+--U+BazGySraz5kW0T
 Content-Type: application/pgp-signature; name="signature.asc"
 Content-Description: Digital signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.12 (GNU/Linux)
 
-iQIcBAEBAgAGBQJPj/kjAAoJEBus8iNuMP3dkVsP/ityE2CVp6nOxyu3/vc65rP5
-1V8e0uCujqPPDJLPDl3K4hb9SRzJDXzD3AETq58CPdaEmZ22MktC+tJ0Lx9AMAKQ
-AoYJekaY2GDHrYQuR64WzIPmFENsUWiy6/9fXnqVK0Z/ogKqJju9E+yrGwta2PIt
-DnvSWxwKHsBmCw073bEHC3ZOtk3YcntzFDHFc22LshitojFB9ZD/e7oBNyEbshKi
-eGix0aY9TEsH+JIcURWPr63/V5FCwKTBA70y7oDYqdAXODvjHwvwe2Jqf3VPzQkx
-ZiLIAXuUgRxTnQdQAoT9wAZAVYxGZjWgpEFYMZTRgWWj10wbOnjkQBllmQAnwcYT
-/mosr6wVaNsCodxdpmKdabfmShWf3pB1Zh14j0KjjXGp6FueMFHZqmBglkbG8eYB
-0IR6MCoOGuvFd/xCpWzHZufCsh3NuxVlGa/TiO+3FzXfQm9fO+rR3PM73Qc8il9o
-kngx7FDutmrgJj8jld0iDufal3OKW1Da8xvaIwNBGcKPTz0Qz1D1Bi2ml6Bimfk5
-jCtAyMfhggpmrhM4g2SD7WArG2KJGNVmTH0DAeIdYrXEnY54PyMcBlF10G2Dwdck
-toEDLnPOPYB7oN/3ICI/SdESIrpeF7q1Aug2kmxDziNDflsCYajkW9NtmatsvfxB
-cbIfZrDl1+rpkKsIYuOL
-=VfRo
+iQIcBAEBAgAGBQJPj/m/AAoJEBus8iNuMP3dW2UP/2Mw7jmUPjOYM04LxOe8NarM
+vYxZr2GX6bCTRRFa2VbZF/AlxmxKwdW7A8u4r+0cik9QlHeQNW5s0degErYLxmy/
+wiCrjA9HTPBReB8WPdzUeegHx+XM6wnF4GZ6zDEyv/iSWvRJq3ZydY+/syg/gEO1
+3JMRzf9vryebAbCTWlqpTaX5xK6I7NzYMsW6IZA8SFHZWBWBh/n9Jk0FDf3KvdPb
+1NACdeTBTOvxaVFZjOP0GaPikIBUMOHiJKAd9PEFGh2CjDedipQOVnSQB5Z50VTe
+31RfsHbSVJGCUMRBO+N4sTXWT+gnI2E2JvSmUg6J0qZmtTo2AIYLXGejEolRxitH
+NtsSsVitKPxNcsS4OyCxk1zlSuSm+9AZa6pBx1i/jrDGZd6uqdksn+hT2pXm3eb4
+SqDJ/bGnLTomXzVkNNoKJOYn+L9QgBfQTuX+s7FDFrR8X4u/MGTrFzq7X06HdvUO
+zH82OLw4EE7uG0GGnI6yoS5nweIYYB2zto/xuKMzCHdbYAOEPrT0E8Bz9RkYeIZ3
+wuLFh2bptvC4JAlEFwGaskM9Rcj6OWWudWdL5IRNKH6bA9gatK3Mle6fm3ap8MU+
+Eh+KqqxipILmt2ao/29vqTftYmivB+sQBR/0jG9v6LHdC+MX/+qN0rk5ZPeLbPQk
+V9w2xLbutR5Bsq3ogR/0
+=BqSJ
 -----END PGP SIGNATURE-----
 
---/9DWx/yDrRhgMJTb--
+--U+BazGySraz5kW0T--
