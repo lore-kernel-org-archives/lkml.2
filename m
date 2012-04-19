@@ -1,24 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756496Ab2DSVzJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Apr 2012 17:55:09 -0400
-Received: from mail-pz0-f42.google.com ([209.85.210.42]:46047 "EHLO
-	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932232Ab2DSVI3 (ORCPT
+	id S932914Ab2DSVz5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Apr 2012 17:55:57 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:38883 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932847Ab2DSVIG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Apr 2012 17:08:29 -0400
-X-Greylist: delayed 305 seconds by postgrey-1.27 at vger.kernel.org; Thu, 19 Apr 2012 17:08:29 EDT
-Message-Id: <20120419210308.820295108@linuxfoundation.org>
+	Thu, 19 Apr 2012 17:08:06 -0400
+Message-Id: <20120419210308.240114572@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Thu, 19 Apr 2012 14:04:10 -0700
+Date: Thu, 19 Apr 2012 14:04:03 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Jonghwan Choi <jhbird.choi@samsung.com>,
+        alan@lxorguk.ukuu.org.uk, Eric Paris <eparis@redhat.com>,
         Serge Hallyn <serge.hallyn@canonical.com>,
-        James Morris <james.l.morris@oracle.com>,
-        Eric Paris <eparis@redhat.com>
-Subject: [ 67/75] security: fix compile error in commoncap.c
+        James Morris <james.l.morris@oracle.com>
+Subject: [ 60/75] fcaps: clear the same personality flags as suid when fcaps are used
 In-Reply-To: <20120419210322.GA6478@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -28,35 +26,38 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jonghwan Choi <jhbird.choi@samsung.com>
+From: Eric Paris <eparis@redhat.com>
 
-commit 51b79bee627d526199b2f6a6bef8ee0c0739b6d1 upstream.
+commit d52fc5dde171f030170a6cb78034d166b13c9445 upstream.
 
-Add missing "personality.h"
-security/commoncap.c: In function 'cap_bprm_set_creds':
-security/commoncap.c:510: error: 'PER_CLEAR_ON_SETID' undeclared (first use in this function)
-security/commoncap.c:510: error: (Each undeclared identifier is reported only once
-security/commoncap.c:510: error: for each function it appears in.)
+If a process increases permissions using fcaps all of the dangerous
+personality flags which are cleared for suid apps should also be cleared.
+Thus programs given priviledge with fcaps will continue to have address space
+randomization enabled even if the parent tried to disable it to make it
+easier to attack.
 
-Signed-off-by: Jonghwan Choi <jhbird.choi@samsung.com>
-Acked-by: Serge Hallyn <serge.hallyn@canonical.com>
+Signed-off-by: Eric Paris <eparis@redhat.com>
+Reviewed-by: Serge Hallyn <serge.hallyn@canonical.com>
 Signed-off-by: James Morris <james.l.morris@oracle.com>
-Cc: Eric Paris <eparis@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- security/commoncap.c |    1 +
- 1 file changed, 1 insertion(+)
+ security/commoncap.c |    5 +++++
+ 1 file changed, 5 insertions(+)
 
 --- a/security/commoncap.c
 +++ b/security/commoncap.c
-@@ -28,6 +28,7 @@
- #include <linux/prctl.h>
- #include <linux/securebits.h>
- #include <linux/user_namespace.h>
-+#include <linux/personality.h>
+@@ -504,6 +504,11 @@ int cap_bprm_set_creds(struct linux_binp
+ 	}
+ skip:
  
- /*
-  * If a non-root user executes a setuid-root binary in
++	/* if we have fs caps, clear dangerous personality flags */
++	if (!cap_issubset(new->cap_permitted, old->cap_permitted))
++		bprm->per_clear |= PER_CLEAR_ON_SETID;
++
++
+ 	/* Don't let someone trace a set[ug]id/setpcap binary with the revised
+ 	 * credentials unless they have the appropriate permit
+ 	 */
 
 
