@@ -1,53 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754776Ab2DSIFA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Apr 2012 04:05:00 -0400
-Received: from host188-6-static.238-77-b.business.telecomitalia.it ([77.238.6.188]:51451
-	"EHLO max.ctrix.it" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752574Ab2DSIEs (ORCPT
+	id S1754281Ab2DSICP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Apr 2012 04:02:15 -0400
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:5678 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753698Ab2DSIB4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Apr 2012 04:04:48 -0400
-X-Greylist: delayed 337 seconds by postgrey-1.27 at vger.kernel.org; Thu, 19 Apr 2012 04:04:48 EDT
-X-NM-Malware-Status: Clean
-X-NM-Auth: m.cetra@ctrix.it
-Message-ID: <4F8FC5AF.7020403@navynet.it>
-Date: Thu, 19 Apr 2012 09:58:39 +0200
-From: Massimo Cetra <mcetra@navynet.it>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.24) Gecko/20111120 Icedove/3.1.16
+	Thu, 19 Apr 2012 04:01:56 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6685"; a="183042245"
+X-IronPort-AV: E=Sophos;i="4.75,445,1330934400"; 
+   d="scan'208";a="237830177"
+From: xiong <xiong@qca.qualcomm.com>
+To: <davem@davemloft.net>, <netdev@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+CC: <qca-linux-team@qualcomm.com>, <nic-devel@qualcomm.com>,
+        xiong <xiong@qca.qualcomm.com>
+Subject: [PATCH 02/11] atl1c: add module parameter for l1c_wait_until_idle
+Date: Thu, 19 Apr 2012 16:01:22 +0800
+Message-ID: <1334822491-30129-3-git-send-email-xiong@qca.qualcomm.com>
+X-Mailer: git-send-email 1.7.7
+In-Reply-To: <1334822491-30129-1-git-send-email-xiong@qca.qualcomm.com>
+References: <1334822491-30129-1-git-send-email-xiong@qca.qualcomm.com>
 MIME-Version: 1.0
-To: Jonathan Nieder <jrnieder@gmail.com>
-CC: "Peter Huang (Peng)" <peter.huangpeng@huawei.com>, shemminger@vyatta.com,
-        "'David S. Miller'" <davem@davemloft.net>, netdev@vger.kernel.org,
-        eric.dumazet@gmail.com, linux-kernel@vger.kernel.org,
-        ctrix+debianbugs@navynet.it, peter.huangpeng@gmail.com,
-        harry.majun@huawei.com
-Subject: Re: [PATCH] set fake_rtable's dst to NULL to avoid kernel Oops.
-References: <000001cd1c62$75d10de0$617329a0$%huangpeng@huawei.com> <20120418190450.GA30185@burratino>
-In-Reply-To: <20120418190450.GA30185@burratino>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
+X-Originating-IP: [172.30.48.1]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 18/04/2012 21:04, Jonathan Nieder wrote:
->
-> Massimo Cetra (cc-ed) tested the patch against a 3.2.y kernel and wrote[1]:
->
->> The patch i applied yesterday to the debian kernel has been installed
->> and the kernel is not panic-ing anymore.
->>
->> I'll try to keep this bug up to date.
->
-> So it seems to work.  Dave, please consider queuing this for stable@
-> when the final patch is ready.
+l1c_wait_until_idle is called for serval modules (TXQ/RXQ/TXMAC/RXMAC).
+specific moudle have specific idle/busy status in reg REG_IDLE_STATUS.
+the previous code return wrongly if all modules are in idle status,
+regardless the 'stop' action is applied on individual module.
+Refine the reg REG_IDLE_STATUS definition as well.
 
-Also please consider that the bridge problems are not over and the 
-kernel keeps panicing in a different way...
+Signed-off-by: xiong <xiong@qca.qualcomm.com>
+Tested-by: Liu David <dwliu@qca.qualcomm.com>
+---
+ drivers/net/ethernet/atheros/atl1c/atl1c_hw.h   |   28 ++++++++++++++--------
+ drivers/net/ethernet/atheros/atl1c/atl1c_main.c |   11 +++++----
+ 2 files changed, 24 insertions(+), 15 deletions(-)
 
-- http://marc.info/?t=133474395500004&r=1&w=2
-
-Thanks,
-Massimo
-
+diff --git a/drivers/net/ethernet/atheros/atl1c/atl1c_hw.h b/drivers/net/ethernet/atheros/atl1c/atl1c_hw.h
+index a37c82f..c1aa3ba 100644
+--- a/drivers/net/ethernet/atheros/atl1c/atl1c_hw.h
++++ b/drivers/net/ethernet/atheros/atl1c/atl1c_hw.h
+@@ -227,17 +227,25 @@ int atl1c_phy_power_saving(struct atl1c_hw *hw);
+ 		GPHY_CTRL_HIB_PULSE	|\
+ 		GPHY_CTRL_PWDOWN_HW	|\
+ 		GPHY_CTRL_PHY_IDDQ)
++
+ /* Block IDLE Status Register */
+-#define REG_IDLE_STATUS  		0x1410
+-#define IDLE_STATUS_MASK		0x00FF
+-#define IDLE_STATUS_RXMAC_NO_IDLE      	0x1
+-#define IDLE_STATUS_TXMAC_NO_IDLE      	0x2
+-#define IDLE_STATUS_RXQ_NO_IDLE        	0x4
+-#define IDLE_STATUS_TXQ_NO_IDLE        	0x8
+-#define IDLE_STATUS_DMAR_NO_IDLE       	0x10
+-#define IDLE_STATUS_DMAW_NO_IDLE       	0x20
+-#define IDLE_STATUS_SMB_NO_IDLE        	0x40
+-#define IDLE_STATUS_CMB_NO_IDLE        	0x80
++#define REG_IDLE_STATUS			0x1410
++#define IDLE_STATUS_SFORCE_MASK		0xFUL
++#define IDLE_STATUS_SFORCE_SHIFT	14
++#define IDLE_STATUS_CALIB_DONE		BIT(13)
++#define IDLE_STATUS_CALIB_RES_MASK	0x1FUL
++#define IDLE_STATUS_CALIB_RES_SHIFT	8
++#define IDLE_STATUS_CALIBERR_MASK	0xFUL
++#define IDLE_STATUS_CALIBERR_SHIFT	4
++#define IDLE_STATUS_TXQ_BUSY		BIT(3)
++#define IDLE_STATUS_RXQ_BUSY		BIT(2)
++#define IDLE_STATUS_TXMAC_BUSY		BIT(1)
++#define IDLE_STATUS_RXMAC_BUSY		BIT(0)
++#define IDLE_STATUS_MASK		(\
++	IDLE_STATUS_TXQ_BUSY		|\
++	IDLE_STATUS_RXQ_BUSY		|\
++	IDLE_STATUS_TXMAC_BUSY		|\
++	IDLE_STATUS_RXMAC_BUSY)
+ 
+ /* MDIO Control Register */
+ #define REG_MDIO_CTRL           	0x1414
+diff --git a/drivers/net/ethernet/atheros/atl1c/atl1c_main.c b/drivers/net/ethernet/atheros/atl1c/atl1c_main.c
+index 2e1c9f3..d2f89f0 100644
+--- a/drivers/net/ethernet/atheros/atl1c/atl1c_main.c
++++ b/drivers/net/ethernet/atheros/atl1c/atl1c_main.c
+@@ -185,14 +185,14 @@ static inline void atl1c_irq_reset(struct atl1c_adapter *adapter)
+  * atl1c_wait_until_idle - wait up to AT_HW_MAX_IDLE_DELAY reads
+  * of the idle status register until the device is actually idle
+  */
+-static u32 atl1c_wait_until_idle(struct atl1c_hw *hw)
++static u32 atl1c_wait_until_idle(struct atl1c_hw *hw, u32 modu_ctrl)
+ {
+ 	int timeout;
+ 	u32 data;
+ 
+ 	for (timeout = 0; timeout < AT_HW_MAX_IDLE_DELAY; timeout++) {
+ 		AT_READ_REG(hw, REG_IDLE_STATUS, &data);
+-		if ((data & IDLE_STATUS_MASK) == 0)
++		if ((data & modu_ctrl) == 0)
+ 			return 0;
+ 		msleep(1);
+ 	}
+@@ -1119,13 +1119,14 @@ static int atl1c_stop_mac(struct atl1c_hw *hw)
+ 	data &= ~TXQ_CTRL_EN;
+ 	AT_WRITE_REG(hw, REG_TXQ_CTRL, data);
+ 
+-	atl1c_wait_until_idle(hw);
++	atl1c_wait_until_idle(hw, IDLE_STATUS_RXQ_BUSY | IDLE_STATUS_TXQ_BUSY);
+ 
+ 	AT_READ_REG(hw, REG_MAC_CTRL, &data);
+ 	data &= ~(MAC_CTRL_TX_EN | MAC_CTRL_RX_EN);
+ 	AT_WRITE_REG(hw, REG_MAC_CTRL, data);
+ 
+-	return (int)atl1c_wait_until_idle(hw);
++	return (int)atl1c_wait_until_idle(hw,
++		IDLE_STATUS_TXMAC_BUSY | IDLE_STATUS_RXMAC_BUSY);
+ }
+ 
+ static void atl1c_enable_rx_ctrl(struct atl1c_hw *hw)
+@@ -1176,7 +1177,7 @@ static int atl1c_reset_mac(struct atl1c_hw *hw)
+ 	msleep(10);
+ 	/* Wait at least 10ms for All module to be Idle */
+ 
+-	if (atl1c_wait_until_idle(hw)) {
++	if (atl1c_wait_until_idle(hw, IDLE_STATUS_MASK)) {
+ 		dev_err(&pdev->dev,
+ 			"MAC state machine can't be idle since"
+ 			" disabled for 10ms second\n");
+-- 
+1.7.7
 
