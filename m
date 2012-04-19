@@ -1,71 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932705Ab2DSWKD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Apr 2012 18:10:03 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:32525 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932375Ab2DSWKA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Apr 2012 18:10:00 -0400
-Date: Fri, 20 Apr 2012 00:09:19 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Cyrill Gorcunov <gorcunov@openvz.org>
-Cc: Konstantin Khlebnikov <khlebnikov@openvz.org>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "keescook@chromium.org" <keescook@chromium.org>,
-        "kosaki.motohiro@jp.fujitsu.com" <kosaki.motohiro@jp.fujitsu.com>,
-        "matthltc@us.ibm.com" <matthltc@us.ibm.com>,
-        "tj@kernel.org" <tj@kernel.org>, Pavel Emelianov <xemul@parallels.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: +
-	c-r-prctl-add-ability-to-set-new-mm_struct-exe_file-update-after-mm-
-	num_exe_file_vmas-removal.patch added to -mm tree
-Message-ID: <20120419220918.GA5474@redhat.com>
-References: <20120419185221.E8ED6A055E@akpm.mtv.corp.google.com> <20120419192005.GA13558@redhat.com> <20120419210033.GO1893@moon> <20120419211216.GA2200@redhat.com> <4F9087D0.60709@openvz.org> <20120419215109.GA4896@redhat.com> <20120419220201.GR1893@moon>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120419220201.GR1893@moon>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1756743Ab2DSWL5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Apr 2012 18:11:57 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:51545 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753414Ab2DSWL4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Apr 2012 18:11:56 -0400
+From: Ido Yariv <ido@wizery.com>
+To: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>
+Cc: Shai Fultheim <shai@scalemp.com>, Ido Yariv <ido@wizery.com>
+Subject: [PATCH RESEND] x86: Avoid contention on cpa_lock if possible
+Date: Fri, 20 Apr 2012 01:11:32 +0300
+Message-Id: <1334873492-31255-1-git-send-email-ido@wizery.com>
+X-Mailer: git-send-email 1.7.7.6
+In-Reply-To: <1333716049-26122-1-git-send-email-ido@wizery.com>
+References: <1333716049-26122-1-git-send-email-ido@wizery.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/20, Cyrill Gorcunov wrote:
->
-> Guys, while I more-less agree with Matt about single-shot behaviour
->
-> [ let me copy my and his email
->
->   >> With mm->exe_file this prctl option become a one-shot
->   >> only, and while at moment our user-space tool can perfectly
->   >> live with that I thought that there is no strict need to
->   >> limit the option this way from the very beginning.
->   >>
->   > As far as backward compatibility, isn't it better to lift that restriction
->   > later rather than add it? I think the latter would very likely "break"
->   > things whereas the former would not.
->   >
->   > I also prefer that restriction because it establishes a bound on how
->   > frequently the symlink can change. Keeping it a one-shot deal makes the
->   > values that show up in tools like top more reliable for admins.
-> ]
->
-> I guess maybe it's time to drop one-shot requirement and as result
-> we can drop MMF_EXE_FILE_CHANGED bit completely,
+From: Shai Fultheim <shai@scalemp.com>
 
-Plus perhaps we can remove this for_each_vma check?
+Some architectures (e.g. vSMP) do not require to serialize cpa, for
+instance, by guaranteeing that the most recent TLB entry will always be
+used.
 
-> making overall code
-> simplier?
+To avoid needless contention on cpa_lock, do not lock/unlock it on such
+architectures.
 
-Personally I'd certainly prefer this ;)
+Signed-off-by: Shai Fultheim <shai@scalemp.com>
+[ido@wizery.com: added should_serialize_cpa, handled potential race, and
+                 reworded the commit message]
+Signed-off-by: Ido Yariv <ido@wizery.com>
+---
+ arch/x86/mm/pageattr.c |   36 ++++++++++++++++++++++++++++--------
+ 1 files changed, 28 insertions(+), 8 deletions(-)
 
-
-
-But let me repeat to avoid the confusion. I am fine either way,
-I am not going to discuss this again unless I see something which
-looks technically wrong. And the current MMF_EXE_FILE_CHANGED
-doesn't look right even if the problem is minor.
-
-Oleg.
+diff --git a/arch/x86/mm/pageattr.c b/arch/x86/mm/pageattr.c
+index e1ebde3..4d606ee 100644
+--- a/arch/x86/mm/pageattr.c
++++ b/arch/x86/mm/pageattr.c
+@@ -501,7 +501,7 @@ out_unlock:
+ 	return do_split;
+ }
+ 
+-static int split_large_page(pte_t *kpte, unsigned long address)
++static int split_large_page(pte_t *kpte, unsigned long address, bool cpa_locked)
+ {
+ 	unsigned long pfn, pfninc = 1;
+ 	unsigned int i, level;
+@@ -509,10 +509,10 @@ static int split_large_page(pte_t *kpte, unsigned long address)
+ 	pgprot_t ref_prot;
+ 	struct page *base;
+ 
+-	if (!debug_pagealloc)
++	if (cpa_locked)
+ 		spin_unlock(&cpa_lock);
+ 	base = alloc_pages(GFP_KERNEL | __GFP_NOTRACK, 0);
+-	if (!debug_pagealloc)
++	if (cpa_locked)
+ 		spin_lock(&cpa_lock);
+ 	if (!base)
+ 		return -ENOMEM;
+@@ -624,7 +624,8 @@ static int __cpa_process_fault(struct cpa_data *cpa, unsigned long vaddr,
+ 	}
+ }
+ 
+-static int __change_page_attr(struct cpa_data *cpa, int primary)
++static int __change_page_attr(struct cpa_data *cpa, int primary,
++			      bool cpa_locked)
+ {
+ 	unsigned long address;
+ 	int do_split, err;
+@@ -693,7 +694,7 @@ repeat:
+ 	/*
+ 	 * We have to split the large page:
+ 	 */
+-	err = split_large_page(kpte, address);
++	err = split_large_page(kpte, address, cpa_locked);
+ 	if (!err) {
+ 		/*
+ 	 	 * Do a global flush tlb after splitting the large page
+@@ -787,9 +788,20 @@ static int cpa_process_alias(struct cpa_data *cpa)
+ 	return 0;
+ }
+ 
++static inline bool should_serialize_cpa(void)
++{
++	/*
++	 * Some architectures do not require cpa() to be serialized, for
++	 * instance, by guaranteeing that the most recent TLB entry will be
++	 * used.
++	 */
++	return !debug_pagealloc && !is_vsmp_box();
++}
++
+ static int __change_page_attr_set_clr(struct cpa_data *cpa, int checkalias)
+ {
+ 	int ret, numpages = cpa->numpages;
++	bool cpa_locked = false;
+ 
+ 	while (numpages) {
+ 		/*
+@@ -801,10 +813,18 @@ static int __change_page_attr_set_clr(struct cpa_data *cpa, int checkalias)
+ 		if (cpa->flags & (CPA_ARRAY | CPA_PAGES_ARRAY))
+ 			cpa->numpages = 1;
+ 
+-		if (!debug_pagealloc)
++		if (should_serialize_cpa()) {
+ 			spin_lock(&cpa_lock);
+-		ret = __change_page_attr(cpa, checkalias);
+-		if (!debug_pagealloc)
++			/*
++			 * In order to avoid any race conditions in which
++			 * should_serialize_cpa() returns a different value
++			 * after the lock was acquired, make sure locking is
++			 * consitent and don't ever leave the lock acquired.
++			 */
++			cpa_locked = true;
++		}
++		ret = __change_page_attr(cpa, checkalias, cpa_locked);
++		if (cpa_locked)
+ 			spin_unlock(&cpa_lock);
+ 		if (ret)
+ 			return ret;
+-- 
+1.7.7.6
 
