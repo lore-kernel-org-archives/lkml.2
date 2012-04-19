@@ -1,51 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933276Ab2DSVMl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Apr 2012 17:12:41 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:34108 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932605Ab2DSVMi (ORCPT
+	id S933324Ab2DSVMu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Apr 2012 17:12:50 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:36240 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933292Ab2DSVMp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Apr 2012 17:12:38 -0400
-Message-Id: <20120419210612.969483574@linuxfoundation.org>
+	Thu, 19 Apr 2012 17:12:45 -0400
+Message-Id: <20120419210304.334188467@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Thu, 19 Apr 2012 14:06:33 -0700
+Date: Thu, 19 Apr 2012 14:03:17 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Anton Samokhvalov <pg83@yandex.ru>
-Subject: [ 22/59] USB: sierra: add support for Sierra Wireless MC7710
-In-Reply-To: <20120419210623.GA12156@kroah.com>
+        alan@lxorguk.ukuu.org.uk, David Herrmann <dh.herrmann@googlemail.com>,
+        Marcel Holtmann <marcel@holtmann.org>,
+        Johan Hedberg <johan.hedberg@intel.com>,
+        Johan Hovold <jhovold@gmail.com>
+Subject: [ 14/75] [PATCH] Bluetooth: uart-ldisc: Fix memory leak
+In-Reply-To: <20120419210322.GA6478@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.0-stable review patch.  If anyone has any objections, please let me know.
+3.3-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Anton Samokhvalov <pg83@yandex.ru>
+From: Johan Hovold <jhovold@gmail.com>
 
-commit c5d703dcc776cb542b41665f2b7e2ba054efb4a7 upstream.
+This is a partial, self-contained, minimal backport of commit
+797fe796c4335b35d95d5326824513befdb5d1e9 upstream which fixes the memory
+leak:
 
-Just add new device id. 3G works fine, LTE not tested.
+Bluetooth: uart-ldisc: Fix memory leak and remove destruct cb
 
-Signed-off-by: Anton Samokhvalov <pg83@yandex.ru>
+We currently leak the hci_uart object if HCI_UART_PROTO_SET is never set
+because the hci-destruct callback will then never be called.  This fix
+removes the hci-destruct callback and frees the driver internal private
+hci_uart object directly on tty-close. We call hci_unregister_dev() here
+so the hci-core will never call our callbacks again (except destruct).
+Therefore, we can safely free the driver internal data right away and
+set the destruct callback to NULL.
+
+Signed-off-by: David Herrmann <dh.herrmann@googlemail.com>
+Acked-by: Marcel Holtmann <marcel@holtmann.org>
+Signed-off-by: Johan Hedberg <johan.hedberg@intel.com>
+Signed-off-by: Johan Hovold <jhovold@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- drivers/usb/serial/sierra.c |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/bluetooth/hci_ldisc.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/usb/serial/sierra.c
-+++ b/drivers/usb/serial/sierra.c
-@@ -289,6 +289,7 @@ static const struct usb_device_id id_tab
- 	{ USB_DEVICE(0x1199, 0x6856) },	/* Sierra Wireless AirCard 881 U */
- 	{ USB_DEVICE(0x1199, 0x6859) },	/* Sierra Wireless AirCard 885 E */
- 	{ USB_DEVICE(0x1199, 0x685A) },	/* Sierra Wireless AirCard 885 E */
-+	{ USB_DEVICE(0x1199, 0x68A2) }, /* Sierra Wireless MC7710 */
- 	/* Sierra Wireless C885 */
- 	{ USB_DEVICE_AND_INTERFACE_INFO(0x1199, 0x6880, 0xFF, 0xFF, 0xFF)},
- 	/* Sierra Wireless C888, Air Card 501, USB 303, USB 304 */
+--- a/drivers/bluetooth/hci_ldisc.c
++++ b/drivers/bluetooth/hci_ldisc.c
+@@ -237,7 +237,6 @@ static void hci_uart_destruct(struct hci
+ 		return;
+ 
+ 	BT_DBG("%s", hdev->name);
+-	kfree(hdev->driver_data);
+ }
+ 
+ /* ------ LDISC part ------ */
+@@ -316,6 +315,7 @@ static void hci_uart_tty_close(struct tt
+ 				hci_free_dev(hdev);
+ 			}
+ 		}
++		kfree(hu);
+ 	}
+ }
+ 
 
 
