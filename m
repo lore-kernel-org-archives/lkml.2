@@ -1,129 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933083Ab2DSVvo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Apr 2012 17:51:44 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:38883 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933043Ab2DSVJT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Apr 2012 17:09:19 -0400
-Message-Id: <20120419210611.627972076@linuxfoundation.org>
-User-Agent: quilt/0.60-19.1
-Date: Thu, 19 Apr 2012 14:06:17 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Johan Hovold <jhovold@gmail.com>,
-        Marcel Holtmann <marcel@holtmann.org>,
-        Johan Hedberg <johan.hedberg@intel.com>
-Subject: [ 06/59] Bluetooth: hci_ldisc: fix NULL-pointer dereference on tty_close
-In-Reply-To: <20120419210623.GA12156@kroah.com>
+	id S933138Ab2DSVv4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Apr 2012 17:51:56 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:14456 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933043Ab2DSVvx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Apr 2012 17:51:53 -0400
+Date: Thu, 19 Apr 2012 23:51:09 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Konstantin Khlebnikov <khlebnikov@openvz.org>
+Cc: Cyrill Gorcunov <gorcunov@openvz.org>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "keescook@chromium.org" <keescook@chromium.org>,
+        "kosaki.motohiro@jp.fujitsu.com" <kosaki.motohiro@jp.fujitsu.com>,
+        "matthltc@us.ibm.com" <matthltc@us.ibm.com>,
+        "tj@kernel.org" <tj@kernel.org>, Pavel Emelianov <xemul@parallels.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: +
+	c-r-prctl-add-ability-to-set-new-mm_struct-exe_file-update-after-mm-
+	num_exe_file_vmas-removal.patch added to -mm tree
+Message-ID: <20120419215109.GA4896@redhat.com>
+References: <20120419185221.E8ED6A055E@akpm.mtv.corp.google.com> <20120419192005.GA13558@redhat.com> <20120419210033.GO1893@moon> <20120419211216.GA2200@redhat.com> <4F9087D0.60709@openvz.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4F9087D0.60709@openvz.org>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.0-stable review patch.  If anyone has any objections, please let me know.
+On 04/20, Konstantin Khlebnikov wrote:
+>
+> Oleg Nesterov wrote:
+>>
+>> You misunderstood. I am not arguing with "one-shot", I do not really
+>> care.
+>>
+>> My question is: unless I missed something "it can't be changed again"
+>> is not actually true. A task does PR_SET_MM_EXE_FILE, then it forks
+>> the new child. The child can do PR_SET_MM_EXE_FILE again. Is this
+>> by design?
+>>
+>> Oleg.
+>>
+>
+> I found more weird case: child thread (with CLONE_THREAD and without CLONE_VM)
+> changes its exe_file...
 
-------------------
+No. copy_process() does:
 
-From: Johan Hovold <jhovold@gmail.com>
+	if ((clone_flags & CLONE_THREAD) && !(clone_flags & CLONE_SIGHAND))
+		return ERR_PTR(-EINVAL);
 
-commit 33b69bf80a3704d45341928e4ff68b6ebd470686 upstream.
+	if ((clone_flags & CLONE_SIGHAND) && !(clone_flags & CLONE_VM))
+		return ERR_PTR(-EINVAL);
 
-Do not close protocol driver until device has been unregistered.
+IOW, CLONE_THREAD => CLONE_SIGHAND => CLONE_VM
 
-This fixes a race between tty_close and hci_dev_open which can result in
-a NULL-pointer dereference.
-
-The line discipline closes the protocol driver while we may still have
-hci_dev_open sleeping on the req_lock mutex resulting in a NULL-pointer
-dereference when lock is acquired and hci_init_req called.
-
-Bug is 100% reproducible using hciattach and a disconnected serial port:
-
-0. # hciattach -n ttyO1 any noflow
-
-1. hci_dev_open called from hci_power_on grabs req lock
-2. hci_init_req executes but device fails to initialise (times out
-   eventually)
-3. hci_dev_open is called from hci_sock_ioctl and sleeps on req lock
-4. hci_uart_tty_close detaches protocol driver and cancels init req
-5. hci_dev_open (1) releases req lock
-6. hci_dev_open (3) grabs req lock, calls hci_init_req, which triggers oops
-   when request is prepared in hci_uart_send_frame
-
-[  137.201263] Unable to handle kernel NULL pointer dereference at virtual address 00000028
-[  137.209838] pgd = c0004000
-[  137.212677] [00000028] *pgd=00000000
-[  137.216430] Internal error: Oops: 17 [#1]
-[  137.220642] Modules linked in:
-[  137.223846] CPU: 0    Tainted: G        W     (3.3.0-rc6-dirty #406)
-[  137.230529] PC is at __lock_acquire+0x5c/0x1ab0
-[  137.235290] LR is at lock_acquire+0x9c/0x128
-[  137.239776] pc : [<c0071490>]    lr : [<c00733f8>]    psr: 20000093
-[  137.239776] sp : cf869dd8  ip : c0529554  fp : c051c730
-[  137.251800] r10: 00000000  r9 : cf8673c0  r8 : 00000080
-[  137.257293] r7 : 00000028  r6 : 00000002  r5 : 00000000  r4 : c053fd70
-[  137.264129] r3 : 00000000  r2 : 00000000  r1 : 00000000  r0 : 00000001
-[  137.270965] Flags: nzCv  IRQs off  FIQs on  Mode SVC_32  ISA ARM  Segment kernel
-[  137.278717] Control: 10c5387d  Table: 8f0f4019  DAC: 00000015
-[  137.284729] Process kworker/u:1 (pid: 7, stack limit = 0xcf8682e8)
-[  137.291229] Stack: (0xcf869dd8 to 0xcf86a000)
-[  137.295776] 9dc0:                                                       c0529554 00000000
-[  137.304351] 9de0: cf8673c0 cf868000 d03ea1ef cf868000 000001ef 00000470 00000000 00000002
-[  137.312927] 9e00: cf8673c0 00000001 c051c730 c00716ec 0000000c 00000440 c0529554 00000001
-[  137.321533] 9e20: c051c730 cf868000 d03ea1f3 00000000 c053b978 00000000 00000028 cf868000
-[  137.330078] 9e40: 00000000 00000000 00000002 00000000 00000000 c00733f8 00000002 00000080
-[  137.338684] 9e60: 00000000 c02a1d50 00000000 00000001 60000013 c0969a1c 60000093 c053b96c
-[  137.347259] 9e80: 00000002 00000018 20000013 c02a1d50 cf0ac000 00000000 00000002 cf868000
-[  137.355834] 9ea0: 00000089 c0374130 00000002 00000000 c02a1d50 cf0ac000 0000000c cf0fc540
-[  137.364410] 9ec0: 00000018 c02a1d50 cf0fc540 00000000 cf0fc540 c0282238 c028220c cf178d80
-[  137.372985] 9ee0: 127525d8 c02821cc 9a1fa451 c032727c 9a1fa451 127525d8 cf0fc540 cf0ac4ec
-[  137.381561] 9f00: cf0ac000 cf0fc540 cf0ac584 c03285f4 c0328580 cf0ac4ec cf85c740 c05510cc
-[  137.390136] 9f20: ce825400 c004c914 00000002 00000000 c004c884 ce8254f5 cf869f48 00000000
-[  137.398712] 9f40: c0328580 ce825415 c0a7f914 c061af64 00000000 c048cf3c cf8673c0 cf85c740
-[  137.407287] 9f60: c05510cc c051a66c c05510ec c05510c4 cf85c750 cf868000 00000089 c004d6ac
-[  137.415863] 9f80: 00000000 c0073d14 00000001 cf853ed8 cf85c740 c004d558 00000013 00000000
-[  137.424438] 9fa0: 00000000 00000000 00000000 c00516b0 00000000 00000000 cf85c740 00000000
-[  137.433013] 9fc0: 00000001 dead4ead ffffffff ffffffff c0551674 00000000 00000000 c0450aa4
-[  137.441589] 9fe0: cf869fe0 cf869fe0 cf853ed8 c005162c c0013b30 c0013b30 00ffff00 00ffff00
-[  137.450164] [<c0071490>] (__lock_acquire+0x5c/0x1ab0) from [<c00733f8>] (lock_acquire+0x9c/0x128)
-[  137.459503] [<c00733f8>] (lock_acquire+0x9c/0x128) from [<c0374130>] (_raw_spin_lock_irqsave+0x44/0x58)
-[  137.469360] [<c0374130>] (_raw_spin_lock_irqsave+0x44/0x58) from [<c02a1d50>] (skb_queue_tail+0x18/0x48)
-[  137.479339] [<c02a1d50>] (skb_queue_tail+0x18/0x48) from [<c0282238>] (h4_enqueue+0x2c/0x34)
-[  137.488189] [<c0282238>] (h4_enqueue+0x2c/0x34) from [<c02821cc>] (hci_uart_send_frame+0x34/0x68)
-[  137.497497] [<c02821cc>] (hci_uart_send_frame+0x34/0x68) from [<c032727c>] (hci_send_frame+0x50/0x88)
-[  137.507171] [<c032727c>] (hci_send_frame+0x50/0x88) from [<c03285f4>] (hci_cmd_work+0x74/0xd4)
-[  137.516204] [<c03285f4>] (hci_cmd_work+0x74/0xd4) from [<c004c914>] (process_one_work+0x1a0/0x4ec)
-[  137.525604] [<c004c914>] (process_one_work+0x1a0/0x4ec) from [<c004d6ac>] (worker_thread+0x154/0x344)
-[  137.535278] [<c004d6ac>] (worker_thread+0x154/0x344) from [<c00516b0>] (kthread+0x84/0x90)
-[  137.543975] [<c00516b0>] (kthread+0x84/0x90) from [<c0013b30>] (kernel_thread_exit+0x0/0x8)
-[  137.552734] Code: e59f4e5c e5941000 e3510000 0a000031 (e5971000)
-[  137.559234] ---[ end trace 1b75b31a2719ed1e ]---
-
-Signed-off-by: Johan Hovold <jhovold@gmail.com>
-Acked-by: Marcel Holtmann <marcel@holtmann.org>
-Signed-off-by: Johan Hedberg <johan.hedberg@intel.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- drivers/bluetooth/hci_ldisc.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
---- a/drivers/bluetooth/hci_ldisc.c
-+++ b/drivers/bluetooth/hci_ldisc.c
-@@ -309,11 +309,11 @@ static void hci_uart_tty_close(struct tt
- 			hci_uart_close(hdev);
- 
- 		if (test_and_clear_bit(HCI_UART_PROTO_SET, &hu->flags)) {
--			hu->proto->close(hu);
- 			if (hdev) {
- 				hci_unregister_dev(hdev);
- 				hci_free_dev(hdev);
- 			}
-+			hu->proto->close(hu);
- 		}
- 		kfree(hu);
- 	}
-
+Oleg.
 
