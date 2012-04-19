@@ -1,289 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932338Ab2DSVhX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Apr 2012 17:37:23 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:57263 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933523Ab2DSVhV (ORCPT
+	id S933793Ab2DSVh6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Apr 2012 17:37:58 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:55440 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S964870Ab2DSVOK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Apr 2012 17:37:21 -0400
-From: Luis Henriques <luis.henriques@canonical.com>
-To: Mauro Carvalho Chehab <mchehab@infradead.org>
-Cc: Jarod Wilson <jarod@redhat.com>, linux-media@vger.kernel.org,
-        linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        luis.henriques@canonical.com
-Subject: [PATCH v2] [media] rc: Postpone ISR registration
-Date: Thu, 19 Apr 2012 22:37:17 +0100
-Message-Id: <1334871437-26514-1-git-send-email-luis.henriques@canonical.com>
-X-Mailer: git-send-email 1.7.9.5
+	Thu, 19 Apr 2012 17:14:10 -0400
+Message-Id: <20120419210614.708129417@linuxfoundation.org>
+User-Agent: quilt/0.60-19.1
+Date: Thu, 19 Apr 2012 14:06:53 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        alan@lxorguk.ukuu.org.uk, Tomoya MORINAGA <tomoya.rohm@gmail.com>,
+        Felipe Balbi <balbi@ti.com>
+Subject: [ 42/59] usb: gadget: pch_udc: Reduce redundant interrupt
+In-Reply-To: <20120419210623.GA12156@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-An early registration of an ISR was causing a crash to several users (for
-example, with the ite-cir driver: http://bugs.launchpad.net/bugs/972723).
-The reason was that IRQs were being triggered before a driver
-initialisation was completed.
+3.0-stable review patch.  If anyone has any objections, please let me know.
 
-This patch fixes this by moving the invocation to request_irq() and to
-request_region() to a later stage on the driver probe function.
+------------------
 
-Cc: <stable@vger.kernel.org>
-Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
+From: Tomoya MORINAGA <tomoya.rohm@gmail.com>
+
+commit 833310402c54ad9b676b465fc53ad276b13d36be upstream.
+
+ISSUE:
+USB Suspend interrupts occur frequently.
+
+CAUSE:
+When it is called pch_udc_reconnect() in USB Suspend, it repeats reset and
+Suspend.
+
+SOLUTION:
+pch_udc_reconnect() does not enable all interrupts.  When an enumeration event
+occurred the driver enables all interrupts.
+
+Signed-off-by: Tomoya MORINAGA <tomoya.rohm@gmail.com>
+Signed-off-by: Felipe Balbi <balbi@ti.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
 ---
- drivers/media/rc/ene_ir.c      |   29 ++++++++++----------
- drivers/media/rc/fintek-cir.c  |   17 ++++++------
- drivers/media/rc/ite-cir.c     |   18 ++++++-------
- drivers/media/rc/nuvoton-cir.c |   33 ++++++++++++-----------
- drivers/media/rc/winbond-cir.c |   58 ++++++++++++++++++++--------------------
- 5 files changed, 79 insertions(+), 76 deletions(-)
+ drivers/usb/gadget/pch_udc.c |    9 ++++++---
+ 1 file changed, 6 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/media/rc/ene_ir.c b/drivers/media/rc/ene_ir.c
-index 860c112..b38c5c7 100644
---- a/drivers/media/rc/ene_ir.c
-+++ b/drivers/media/rc/ene_ir.c
-@@ -1018,21 +1018,7 @@ static int ene_probe(struct pnp_dev *pnp_dev, const struct pnp_device_id *id)
+--- a/drivers/usb/gadget/pch_udc.c
++++ b/drivers/usb/gadget/pch_udc.c
+@@ -576,9 +576,7 @@ static void pch_udc_reconnect(struct pch
+ 	/* enable device interrupts */
+ 	/* pch_udc_enable_interrupts() */
+ 	pch_udc_bit_clr(dev, UDC_DEVIRQMSK_ADDR,
+-			UDC_DEVINT_UR | UDC_DEVINT_US |
+-			UDC_DEVINT_ENUM |
+-			UDC_DEVINT_SI | UDC_DEVINT_SC);
++			UDC_DEVINT_UR | UDC_DEVINT_ENUM);
  
- 	spin_lock_init(&dev->hw_lock);
+ 	/* Clear the disconnect */
+ 	pch_udc_bit_set(dev, UDC_DEVCTL_ADDR, UDC_DEVCTL_RES);
+@@ -2422,6 +2420,11 @@ static void pch_udc_svc_enum_interrupt(s
+ 	pch_udc_set_dma(dev, DMA_DIR_TX);
+ 	pch_udc_set_dma(dev, DMA_DIR_RX);
+ 	pch_udc_ep_set_rrdy(&(dev->ep[UDC_EP0OUT_IDX]));
++
++	/* enable device interrupts */
++	pch_udc_enable_interrupts(dev, UDC_DEVINT_UR | UDC_DEVINT_US |
++					UDC_DEVINT_ES | UDC_DEVINT_ENUM |
++					UDC_DEVINT_SI | UDC_DEVINT_SC);
+ }
  
--	/* claim the resources */
- 	error = -EBUSY;
--	dev->hw_io = pnp_port_start(pnp_dev, 0);
--	if (!request_region(dev->hw_io, ENE_IO_SIZE, ENE_DRIVER_NAME)) {
--		dev->hw_io = -1;
--		dev->irq = -1;
--		goto error;
--	}
--
--	dev->irq = pnp_irq(pnp_dev, 0);
--	if (request_irq(dev->irq, ene_isr,
--			IRQF_SHARED, ENE_DRIVER_NAME, (void *)dev)) {
--		dev->irq = -1;
--		goto error;
--	}
- 
- 	pnp_set_drvdata(pnp_dev, dev);
- 	dev->pnp_dev = pnp_dev;
-@@ -1086,6 +1072,21 @@ static int ene_probe(struct pnp_dev *pnp_dev, const struct pnp_device_id *id)
- 	device_set_wakeup_capable(&pnp_dev->dev, true);
- 	device_set_wakeup_enable(&pnp_dev->dev, true);
- 
-+	/* claim the resources */
-+	dev->hw_io = pnp_port_start(pnp_dev, 0);
-+	if (!request_region(dev->hw_io, ENE_IO_SIZE, ENE_DRIVER_NAME)) {
-+		dev->hw_io = -1;
-+		dev->irq = -1;
-+		goto error;
-+	}
-+
-+	dev->irq = pnp_irq(pnp_dev, 0);
-+	if (request_irq(dev->irq, ene_isr,
-+			IRQF_SHARED, ENE_DRIVER_NAME, (void *)dev)) {
-+		dev->irq = -1;
-+		goto error;
-+	}
-+
- 	error = rc_register_device(rdev);
- 	if (error < 0)
- 		goto error;
-diff --git a/drivers/media/rc/fintek-cir.c b/drivers/media/rc/fintek-cir.c
-index 392d4be..c6273c5 100644
---- a/drivers/media/rc/fintek-cir.c
-+++ b/drivers/media/rc/fintek-cir.c
-@@ -515,14 +515,6 @@ static int fintek_probe(struct pnp_dev *pdev, const struct pnp_device_id *dev_id
- 	spin_lock_init(&fintek->fintek_lock);
- 
- 	ret = -EBUSY;
--	/* now claim resources */
--	if (!request_region(fintek->cir_addr,
--			    fintek->cir_port_len, FINTEK_DRIVER_NAME))
--		goto failure;
--
--	if (request_irq(fintek->cir_irq, fintek_cir_isr, IRQF_SHARED,
--			FINTEK_DRIVER_NAME, (void *)fintek))
--		goto failure;
- 
- 	pnp_set_drvdata(pdev, fintek);
- 	fintek->pdev = pdev;
-@@ -558,6 +550,15 @@ static int fintek_probe(struct pnp_dev *pdev, const struct pnp_device_id *dev_id
- 	/* rx resolution is hardwired to 50us atm, 1, 25, 100 also possible */
- 	rdev->rx_resolution = US_TO_NS(CIR_SAMPLE_PERIOD);
- 
-+	/* now claim resources */
-+	if (!request_region(fintek->cir_addr,
-+			    fintek->cir_port_len, FINTEK_DRIVER_NAME))
-+		goto failure;
-+
-+	if (request_irq(fintek->cir_irq, fintek_cir_isr, IRQF_SHARED,
-+			FINTEK_DRIVER_NAME, (void *)fintek))
-+		goto failure;
-+
- 	ret = rc_register_device(rdev);
- 	if (ret)
- 		goto failure;
-diff --git a/drivers/media/rc/ite-cir.c b/drivers/media/rc/ite-cir.c
-index 682009d..d88b304 100644
---- a/drivers/media/rc/ite-cir.c
-+++ b/drivers/media/rc/ite-cir.c
-@@ -1516,15 +1516,6 @@ static int ite_probe(struct pnp_dev *pdev, const struct pnp_device_id
- 	init_ir_raw_event(&itdev->rawir);
- 
- 	ret = -EBUSY;
--	/* now claim resources */
--	if (!request_region(itdev->cir_addr,
--				dev_desc->io_region_size, ITE_DRIVER_NAME))
--		goto failure;
--
--	if (request_irq(itdev->cir_irq, ite_cir_isr, IRQF_SHARED,
--			ITE_DRIVER_NAME, (void *)itdev))
--		goto failure;
--
- 	/* set driver data into the pnp device */
- 	pnp_set_drvdata(pdev, itdev);
- 	itdev->pdev = pdev;
-@@ -1600,6 +1591,15 @@ static int ite_probe(struct pnp_dev *pdev, const struct pnp_device_id
- 	rdev->driver_name = ITE_DRIVER_NAME;
- 	rdev->map_name = RC_MAP_RC6_MCE;
- 
-+	/* now claim resources */
-+	if (!request_region(itdev->cir_addr,
-+				dev_desc->io_region_size, ITE_DRIVER_NAME))
-+		goto failure;
-+
-+	if (request_irq(itdev->cir_irq, ite_cir_isr, IRQF_SHARED,
-+			ITE_DRIVER_NAME, (void *)itdev))
-+		goto failure;
-+
- 	ret = rc_register_device(rdev);
- 	if (ret)
- 		goto failure;
-diff --git a/drivers/media/rc/nuvoton-cir.c b/drivers/media/rc/nuvoton-cir.c
-index 144f3f5..8afe549 100644
---- a/drivers/media/rc/nuvoton-cir.c
-+++ b/drivers/media/rc/nuvoton-cir.c
-@@ -1022,22 +1022,6 @@ static int nvt_probe(struct pnp_dev *pdev, const struct pnp_device_id *dev_id)
- 	spin_lock_init(&nvt->tx.lock);
- 
- 	ret = -EBUSY;
--	/* now claim resources */
--	if (!request_region(nvt->cir_addr,
--			    CIR_IOREG_LENGTH, NVT_DRIVER_NAME))
--		goto failure;
--
--	if (request_irq(nvt->cir_irq, nvt_cir_isr, IRQF_SHARED,
--			NVT_DRIVER_NAME, (void *)nvt))
--		goto failure;
--
--	if (!request_region(nvt->cir_wake_addr,
--			    CIR_IOREG_LENGTH, NVT_DRIVER_NAME))
--		goto failure;
--
--	if (request_irq(nvt->cir_wake_irq, nvt_cir_wake_isr, IRQF_SHARED,
--			NVT_DRIVER_NAME, (void *)nvt))
--		goto failure;
- 
- 	pnp_set_drvdata(pdev, nvt);
- 	nvt->pdev = pdev;
-@@ -1085,6 +1069,23 @@ static int nvt_probe(struct pnp_dev *pdev, const struct pnp_device_id *dev_id)
- 	rdev->tx_resolution = XYZ;
- #endif
- 
-+	/* now claim resources */
-+	if (!request_region(nvt->cir_addr,
-+			    CIR_IOREG_LENGTH, NVT_DRIVER_NAME))
-+		goto failure;
-+
-+	if (request_irq(nvt->cir_irq, nvt_cir_isr, IRQF_SHARED,
-+			NVT_DRIVER_NAME, (void *)nvt))
-+		goto failure;
-+
-+	if (!request_region(nvt->cir_wake_addr,
-+			    CIR_IOREG_LENGTH, NVT_DRIVER_NAME))
-+		goto failure;
-+
-+	if (request_irq(nvt->cir_wake_irq, nvt_cir_wake_isr, IRQF_SHARED,
-+			NVT_DRIVER_NAME, (void *)nvt))
-+		goto failure;
-+
- 	ret = rc_register_device(rdev);
- 	if (ret)
- 		goto failure;
-diff --git a/drivers/media/rc/winbond-cir.c b/drivers/media/rc/winbond-cir.c
-index b09c5fa..8e88c96 100644
---- a/drivers/media/rc/winbond-cir.c
-+++ b/drivers/media/rc/winbond-cir.c
-@@ -991,35 +991,6 @@ wbcir_probe(struct pnp_dev *device, const struct pnp_device_id *dev_id)
- 		"(w: 0x%lX, e: 0x%lX, s: 0x%lX, i: %u)\n",
- 		data->wbase, data->ebase, data->sbase, data->irq);
- 
--	if (!request_region(data->wbase, WAKEUP_IOMEM_LEN, DRVNAME)) {
--		dev_err(dev, "Region 0x%lx-0x%lx already in use!\n",
--			data->wbase, data->wbase + WAKEUP_IOMEM_LEN - 1);
--		err = -EBUSY;
--		goto exit_free_data;
--	}
--
--	if (!request_region(data->ebase, EHFUNC_IOMEM_LEN, DRVNAME)) {
--		dev_err(dev, "Region 0x%lx-0x%lx already in use!\n",
--			data->ebase, data->ebase + EHFUNC_IOMEM_LEN - 1);
--		err = -EBUSY;
--		goto exit_release_wbase;
--	}
--
--	if (!request_region(data->sbase, SP_IOMEM_LEN, DRVNAME)) {
--		dev_err(dev, "Region 0x%lx-0x%lx already in use!\n",
--			data->sbase, data->sbase + SP_IOMEM_LEN - 1);
--		err = -EBUSY;
--		goto exit_release_ebase;
--	}
--
--	err = request_irq(data->irq, wbcir_irq_handler,
--			  IRQF_DISABLED, DRVNAME, device);
--	if (err) {
--		dev_err(dev, "Failed to claim IRQ %u\n", data->irq);
--		err = -EBUSY;
--		goto exit_release_sbase;
--	}
--
- 	led_trigger_register_simple("cir-tx", &data->txtrigger);
- 	if (!data->txtrigger) {
- 		err = -ENOMEM;
-@@ -1061,6 +1032,35 @@ wbcir_probe(struct pnp_dev *device, const struct pnp_device_id *dev_id)
- 	data->dev->priv = data;
- 	data->dev->dev.parent = &device->dev;
- 
-+	if (!request_region(data->wbase, WAKEUP_IOMEM_LEN, DRVNAME)) {
-+		dev_err(dev, "Region 0x%lx-0x%lx already in use!\n",
-+			data->wbase, data->wbase + WAKEUP_IOMEM_LEN - 1);
-+		err = -EBUSY;
-+		goto exit_free_data;
-+	}
-+
-+	if (!request_region(data->ebase, EHFUNC_IOMEM_LEN, DRVNAME)) {
-+		dev_err(dev, "Region 0x%lx-0x%lx already in use!\n",
-+			data->ebase, data->ebase + EHFUNC_IOMEM_LEN - 1);
-+		err = -EBUSY;
-+		goto exit_release_wbase;
-+	}
-+
-+	if (!request_region(data->sbase, SP_IOMEM_LEN, DRVNAME)) {
-+		dev_err(dev, "Region 0x%lx-0x%lx already in use!\n",
-+			data->sbase, data->sbase + SP_IOMEM_LEN - 1);
-+		err = -EBUSY;
-+		goto exit_release_ebase;
-+	}
-+
-+	err = request_irq(data->irq, wbcir_irq_handler,
-+			  IRQF_DISABLED, DRVNAME, device);
-+	if (err) {
-+		dev_err(dev, "Failed to claim IRQ %u\n", data->irq);
-+		err = -EBUSY;
-+		goto exit_release_sbase;
-+	}
-+
- 	err = rc_register_device(data->dev);
- 	if (err)
- 		goto exit_free_rc;
--- 
-1.7.9.5
+ /**
+
 
