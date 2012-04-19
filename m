@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933634Ab2DSVQ2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Apr 2012 17:16:28 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:44451 "EHLO
+	id S933772Ab2DSV1N (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Apr 2012 17:27:13 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:34108 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933629Ab2DSVQW (ORCPT
+	with ESMTP id S1756574Ab2DSVQZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Apr 2012 17:16:22 -0400
-Message-Id: <20120419210821.149406058@linuxfoundation.org>
+	Thu, 19 Apr 2012 17:16:25 -0400
+Message-Id: <20120419210821.238939037@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Thu, 19 Apr 2012 14:08:47 -0700
+Date: Thu, 19 Apr 2012 14:08:48 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Santiago Garcia Mantinan <manty@debian.org>
-Subject: [ 29/68] USB: option: re-add NOVATELWIRELESS_PRODUCT_HSPA_HIGHSPEED to option_id array
+        alan@lxorguk.ukuu.org.uk, Simon Arlott <simon@fire.lp0.eu>,
+        Uwe Bonnes <bon@elektron.ikp.physik.tu-darmstadt.de>
+Subject: [ 30/68] USB: ftdi_sio: fix status line change handling for TIOCMIWAIT and TIOCGICOUNT
 In-Reply-To: <20120419210923.GA18589@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -24,28 +25,76 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Santiago Garcia Mantinan <manty@debian.org>
+From: Simon Arlott <simon@fire.lp0.eu>
 
-commit 9ac2feb22b5b821d81463bef92698ef7682a3145 upstream.
+commit fca5430d48d53eaf103498c33fd0d1984b9f448b upstream.
 
-Re-add NOVATELWIRELESS_PRODUCT_HSPA_HIGHSPEED to option_id array
+Handling of TIOCMIWAIT was changed by commit 1d749f9afa657f6ee9336b2bc1fcd750a647d157
+ USB: ftdi_sio.c: Use ftdi async_icount structure for TIOCMIWAIT, as in other drivers
 
-Signed-off-by: Santiago Garcia Mantinan <manty@debian.org>
+FTDI_STATUS_B0_MASK does not indicate the changed modem status lines,
+it indicates the value of the current modem status lines. An xor is
+still required to determine which lines have changed.
+
+The count was only being incremented if the line was high. The only
+reason TIOCMIWAIT still worked was because the status packet is
+repeated every 1ms, so the count was always changing. The wakeup
+itself still ran based on the status lines changing.
+
+This change fixes handling of updates to the modem status lines and
+allows multiple processes to use TIOCMIWAIT concurrently.
+
+Tested with two processes waiting on different status lines being
+toggled independently.
+
+Signed-off-by: Simon Arlott <simon@fire.lp0.eu>
+Cc: Uwe Bonnes <bon@elektron.ikp.physik.tu-darmstadt.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/serial/option.c |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/usb/serial/ftdi_sio.c |   24 +++++++++++++-----------
+ 1 file changed, 13 insertions(+), 11 deletions(-)
 
---- a/drivers/usb/serial/option.c
-+++ b/drivers/usb/serial/option.c
-@@ -708,6 +708,7 @@ static const struct usb_device_id option
- 	{ USB_DEVICE(NOVATELWIRELESS_VENDOR_ID, NOVATELWIRELESS_PRODUCT_EVDO_EMBEDDED_FULLSPEED) },
- 	{ USB_DEVICE(NOVATELWIRELESS_VENDOR_ID, NOVATELWIRELESS_PRODUCT_HSPA_EMBEDDED_FULLSPEED) },
- 	{ USB_DEVICE(NOVATELWIRELESS_VENDOR_ID, NOVATELWIRELESS_PRODUCT_EVDO_HIGHSPEED) },
-+	{ USB_DEVICE(NOVATELWIRELESS_VENDOR_ID, NOVATELWIRELESS_PRODUCT_HSPA_HIGHSPEED) },
- 	{ USB_DEVICE(NOVATELWIRELESS_VENDOR_ID, NOVATELWIRELESS_PRODUCT_HSPA_HIGHSPEED3) },
- 	{ USB_DEVICE(NOVATELWIRELESS_VENDOR_ID, NOVATELWIRELESS_PRODUCT_HSPA_HIGHSPEED4) },
- 	{ USB_DEVICE(NOVATELWIRELESS_VENDOR_ID, NOVATELWIRELESS_PRODUCT_HSPA_HIGHSPEED5) },
+--- a/drivers/usb/serial/ftdi_sio.c
++++ b/drivers/usb/serial/ftdi_sio.c
+@@ -75,7 +75,7 @@ struct ftdi_private {
+ 	unsigned long last_dtr_rts;	/* saved modem control outputs */
+ 	struct async_icount	icount;
+ 	wait_queue_head_t delta_msr_wait; /* Used for TIOCMIWAIT */
+-	char prev_status, diff_status;        /* Used for TIOCMIWAIT */
++	char prev_status;        /* Used for TIOCMIWAIT */
+ 	char transmit_empty;	/* If transmitter is empty or not */
+ 	struct usb_serial_port *port;
+ 	__u16 interface;	/* FT2232C, FT2232H or FT4232H port interface
+@@ -1979,17 +1979,19 @@ static int ftdi_process_packet(struct tt
+ 	   N.B. packet may be processed more than once, but differences
+ 	   are only processed once.  */
+ 	status = packet[0] & FTDI_STATUS_B0_MASK;
+-	if (status & FTDI_RS0_CTS)
+-		priv->icount.cts++;
+-	if (status & FTDI_RS0_DSR)
+-		priv->icount.dsr++;
+-	if (status & FTDI_RS0_RI)
+-		priv->icount.rng++;
+-	if (status & FTDI_RS0_RLSD)
+-		priv->icount.dcd++;
+ 	if (status != priv->prev_status) {
+-		priv->diff_status |= status ^ priv->prev_status;
+-		wake_up_interruptible(&priv->delta_msr_wait);
++		char diff_status = status ^ priv->prev_status;
++
++		if (diff_status & FTDI_RS0_CTS)
++			priv->icount.cts++;
++		if (diff_status & FTDI_RS0_DSR)
++			priv->icount.dsr++;
++		if (diff_status & FTDI_RS0_RI)
++			priv->icount.rng++;
++		if (diff_status & FTDI_RS0_RLSD)
++			priv->icount.dcd++;
++
++		wake_up_interruptible_all(&priv->delta_msr_wait);
+ 		priv->prev_status = status;
+ 	}
+ 
 
 
