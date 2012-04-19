@@ -1,68 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753438Ab2DSJXN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Apr 2012 05:23:13 -0400
-Received: from s15943758.onlinehome-server.info ([217.160.130.188]:51180 "EHLO
+	id S1753905Ab2DSJZJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Apr 2012 05:25:09 -0400
+Received: from s15943758.onlinehome-server.info ([217.160.130.188]:51197 "EHLO
 	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751699Ab2DSJXL (ORCPT
+	with ESMTP id S1752974Ab2DSJZI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Apr 2012 05:23:11 -0400
-Date: Thu, 19 Apr 2012 11:22:55 +0200
+	Thu, 19 Apr 2012 05:25:08 -0400
+Date: Thu, 19 Apr 2012 11:24:51 +0200
 From: Borislav Petkov <bp@amd64.org>
 To: "H. Peter Anvin" <hpa@zytor.com>
 Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
         Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
-        Borislav Petkov <bp@amd64.org>,
         Linus Torvalds <torvalds@linux-foundation.org>,
         Glauber de Oliveira Costa <gcosta@redhat.com>
-Subject: Re: [PATCH 0/5] RFC: x86: Early exception table support
-Message-ID: <20120419092255.GA29542@aftab>
+Subject: [PATCH 1/3] x86, extable: Cleanup fixup_exception
+Message-ID: <20120419092451.GB29542@aftab>
 References: <1334794610-5546-1-git-send-email-hpa@zytor.com>
+ <20120419092255.GA29542@aftab>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1334794610-5546-1-git-send-email-hpa@zytor.com>
+In-Reply-To: <20120419092255.GA29542@aftab>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Haha,
+>From 74643bebf6b592f179974caa033f2f095d28bb74 Mon Sep 17 00:00:00 2001
+From: Borislav Petkov <bp@alien8.de>
+Date: Sat, 31 Mar 2012 16:29:03 +0200
+Subject: [PATCH 1/3] x86, extable: Cleanup fixup_exception
 
-I was looking into that too and you beat me to it. Now isn't that great!
-:-)
+And especially, fork out the CONFIG_PNPBIOS lump into its own function
+and salvage a tab by inverting error code checking.
 
-On Wed, Apr 18, 2012 at 05:16:45PM -0700, H. Peter Anvin wrote:
-> If we get an exception during early boot, walk the exception table to
-> see if we should intercept it.  The main use case for this is to allow
-> rdmsr_safe()/wrmsr_safe() during CPU initialization.
-> 
-> Since the exception table is currently sorted at runtime, and fairly
-> late in startup, this code walks the exception table linearly.  We
-> obviously don't need to worry about modules, however: none have been
-> loaded at this point.
-> 
-> In the future it would be better to have the table sorted at compile
-> time, or even better, turned into a perfect hash.  At that point this
-> code should be changed out from doing a linear search.
+No functionality change.
 
-FWIW, I was thinking that maybe we could sort the main extable
-(i.e., no modules) before we assign the early idt handlers in
-x86_64_start_kernel() and this way use the binary search through it in
-search_extable().
+Signed-off-by: Borislav Petkov <bp@alien8.de>
+---
+ arch/x86/mm/extable.c |   33 ++++++++++++++++++---------------
+ 1 files changed, 18 insertions(+), 15 deletions(-)
 
-I'm sending the patches I had as a reply to this mail so that you can
-get a better idea of what I mean. They're rough and the asm is f*cked
-up so don't look at that - I was still figuring out the exception frame
-layout to do it properly.
-
-> This patchset also makes the early exception handling a little more
-> similar between x86-64 and i386, but a lot of unification could (and
-> should) still be done: in particular, setup done in C as in x86-64,
-> and verbose error dump as in i386.
-
-Yeah, I'll look through those and give them a test drive on my boxes
-here.
+diff --git a/arch/x86/mm/extable.c b/arch/x86/mm/extable.c
+index 1fb85dbe390a..08aecb0d3132 100644
+--- a/arch/x86/mm/extable.c
++++ b/arch/x86/mm/extable.c
+@@ -2,13 +2,10 @@
+ #include <linux/spinlock.h>
+ #include <asm/uaccess.h>
+ 
+-
+-int fixup_exception(struct pt_regs *regs)
++static void pnp_bios_is_crap(unsigned long cs)
+ {
+-	const struct exception_table_entry *fixup;
+-
+ #ifdef CONFIG_PNPBIOS
+-	if (unlikely(SEGMENT_IS_PNP_CODE(regs->cs))) {
++	if (unlikely(SEGMENT_IS_PNP_CODE(cs))) {
+ 		extern u32 pnp_bios_fault_eip, pnp_bios_fault_esp;
+ 		extern u32 pnp_bios_is_utter_crap;
+ 		pnp_bios_is_utter_crap = 1;
+@@ -20,18 +17,24 @@ int fixup_exception(struct pt_regs *regs)
+ 		panic("do_trap: can't hit this");
+ 	}
+ #endif
++}
++
++int fixup_exception(struct pt_regs *regs)
++{
++	const struct exception_table_entry *fixup;
++
++	pnp_bios_is_crap(regs->cs);
+ 
+ 	fixup = search_exception_tables(regs->ip);
+-	if (fixup) {
+-		/* If fixup is less than 16, it means uaccess error */
+-		if (fixup->fixup < 16) {
+-			current_thread_info()->uaccess_err = 1;
+-			regs->ip += fixup->fixup;
+-			return 1;
+-		}
+-		regs->ip = fixup->fixup;
++	if (!fixup)
++		return 0;
++
++	/* If fixup is less than 16, it means uaccess error */
++	if (fixup->fixup < 16) {
++		current_thread_info()->uaccess_err = 1;
++		regs->ip += fixup->fixup;
+ 		return 1;
+ 	}
+-
+-	return 0;
++	regs->ip = fixup->fixup;
++	return 1;
+ }
+-- 
+1.7.5.3.401.gfb674
 
 -- 
 Regards/Gruss,
