@@ -1,52 +1,190 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754908Ab2DSLcR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Apr 2012 07:32:17 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:33470 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753040Ab2DSLcP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Apr 2012 07:32:15 -0400
-Message-ID: <4F8FF7AC.1060309@redhat.com>
-Date: Thu, 19 Apr 2012 14:31:56 +0300
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120329 Thunderbird/11.0.1
+	id S1754922Ab2DSLcu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Apr 2012 07:32:50 -0400
+Received: from smtp.eu.citrix.com ([62.200.22.115]:12155 "EHLO
+	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754835Ab2DSLcr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Apr 2012 07:32:47 -0400
+X-IronPort-AV: E=Sophos;i="4.75,446,1330905600"; 
+   d="scan'208";a="12024999"
+Date: Thu, 19 Apr 2012 12:37:42 +0100
+From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+X-X-Sender: sstabellini@kaball-desktop
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
+        Ian Campbell <Ian.Campbell@citrix.com>,
+        konrad <konrad@localhost.localdomain>
+Subject: Re: [PATCH] xen/xenbus: Add quirk to deal with misconfigured
+ backends.
+In-Reply-To: <1334773144-2394-1-git-send-email-konrad.wilk@oracle.com>
+Message-ID: <alpine.DEB.2.00.1204191232590.26786@kaball-desktop>
+References: <1334773144-2394-1-git-send-email-konrad.wilk@oracle.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-To: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>
-CC: zhangyanfei@cn.fujitsu.com, mtosatti@redhat.com, ebiederm@xmission.com,
-        luto@mit.edu, joerg.roedel@amd.com, dzickus@redhat.com,
-        paul.gortmaker@windriver.com, gregkh@suse.de, ludwig.nussel@suse.de,
-        linux-kernel@vger.kernel.org, kvm@vger.kernel.org,
-        kexec@lists.infradead.org
-Subject: Re: [PATCH 0/4] Export offsets of VMCS fields as note information
- for kdump
-References: <4F8EABF7.805@redhat.com> <20120419.193640.59653378.d.hatayama@jp.fujitsu.com> <4F8FEC22.400@redhat.com> <20120419.202707.276752866.d.hatayama@jp.fujitsu.com>
-In-Reply-To: <20120419.202707.276752866.d.hatayama@jp.fujitsu.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset="US-ASCII"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/19/2012 02:27 PM, HATAYAMA Daisuke wrote:
-> >> The reason why we want to retrieve guest machine's memory image as
-> >> crash dump is that then we can debug guest machine's status using
-> >> symbolic debugger such as gdb and crash utility.
-> >>
-> >> This is very useful. Please consider the situation where engineers are
-> >> forced to look into guest machine's memory image through qemu-kvm's
-> >> process core dump using gdb without any symbolic information. It's
-> >> very inefficient.
-> > 
-> > I still don't follow.  If qemu crashed, the values in guest registers
-> > are irrelevant.  In what way can the help debug the qemu crash?
-> > 
->
-> It would be not helpful for the qemu crash case you are concerned
-> about. We want to use the guest state data to look into guest
-> machine's image in the crasshed qemu.
+On Wed, 18 Apr 2012, Konrad Rzeszutek Wilk wrote:
+> From: konrad <konrad@localhost.localdomain>
 
-Why?
+wrong email address
 
--- 
-error compiling committee.c: too many arguments to function
+
+> A rather annoying and common case is when booting a PVonHVM guest
+> and exposing the PV KBD and PV VFB - as both of those do not
+> make any sense.
+
+I would rather write: "as broken toolstacks don't always initialize the
+backends correctly."
+
+
+> The HVM guest is using the VGA driver and the emulated
+> keyboard for this. So we provide a very basic quirk framework
+> (can be expanded in the future) to not wait for 6 minutes for those devices
+> to initialize - they never wont.
+> 
+> To trigger this, put this in your guest config:
+> 
+> vfb = [ 'vnc=1, vnclisten=0.0.0.0 ,vncunused=1']
+> 
+> instead of this:
+> vnc=1
+> vnclisten="0.0.0.0"
+> 
+> [v3: Split delay in non-essential (30 seconds) and essential
+>  devices per Ian and Stefano suggestion]
+> Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>quirk
+> ---
+>  drivers/xen/xenbus/xenbus_probe_frontend.c |   69 +++++++++++++++++++++------
+>  1 files changed, 53 insertions(+), 16 deletions(-)
+> 
+> diff --git a/drivers/xen/xenbus/xenbus_probe_frontend.c b/drivers/xen/xenbus/xenbus_probe_frontend.c
+> index f20c5f1..7422913 100644
+> --- a/drivers/xen/xenbus/xenbus_probe_frontend.c
+> +++ b/drivers/xen/xenbus/xenbus_probe_frontend.c
+> @@ -135,7 +135,7 @@ static int read_backend_details(struct xenbus_device *xendev)
+>  	return xenbus_read_otherend_details(xendev, "backend-id", "backend");
+>  }
+>  
+> -static int is_device_connecting(struct device *dev, void *data)
+> +static int is_device_connecting(struct device *dev, void *data, bool ignore_vkbd)
+>  {
+>  	struct xenbus_device *xendev = to_xenbus_device(dev);
+>  	struct device_driver *drv = data;
+> @@ -152,16 +152,41 @@ static int is_device_connecting(struct device *dev, void *data)
+>  	if (drv && (dev->driver != drv))
+>  		return 0;
+>  
+> +	if (ignore_vkbd) {
+
+I would name the parameter ignore_nonessential, just to make it clearer
+that is not just about vkbd
+
+
+> +		/* With older QEMU, for PVonHVM guests the guest config files
+> +		 * could contain: vfb = [ 'vnc=1, vnclisten=0.0.0.0']
+> +		 * which is nonsensical as there is no PV FB (there can be
+> +		 * a PVKB) running as HVM guest. */
+> +
+> +		if ((strncmp(xendev->nodename, "device/vkbd", 11) == 0))
+> +			return 0;
+> +
+> +		if ((strncmp(xendev->nodename, "device/vfb", 10) == 0))
+> +			return 0;
+> +	}
+>  	xendrv = to_xenbus_driver(dev->driver);
+>  	return (xendev->state < XenbusStateConnected ||
+>  		(xendev->state == XenbusStateConnected &&
+>  		 xendrv->is_ready && !xendrv->is_ready(xendev)));
+>  }
+> +static int essential_device_connecting(struct device *dev, void *data)
+> +{
+> +	return is_device_connecting(dev, data, true /* ignore PVKB+PVDB */);
+> +}
+
+the comment is wrong
+
+
+> +static int non_essential_device_connecting(struct device *dev, void *data)
+> +{
+> +	return is_device_connecting(dev, data, false);
+> +}
+>  
+> -static int exists_connecting_device(struct device_driver *drv)
+> +static int exists_essential_connecting_device(struct device_driver *drv)
+>  {
+>  	return bus_for_each_dev(&xenbus_frontend.bus, NULL, drv,
+> -				is_device_connecting);
+> +				essential_device_connecting);
+> +}
+> +static int exists_non_essential_connecting_device(struct device_driver *drv)
+> +{
+> +	return bus_for_each_dev(&xenbus_frontend.bus, NULL, drv,
+> +				non_essential_device_connecting);
+>  }
+>  
+>  static int print_device_status(struct device *dev, void *data)
+> @@ -192,6 +217,23 @@ static int print_device_status(struct device *dev, void *data)
+>  /* We only wait for device setup after most initcalls have run. */
+>  static int ready_to_wait_for_devices;
+>  
+> +static bool wait_loop(unsigned long start, unsigned int max_delay,
+> +		     unsigned int *seconds_waited)
+> +{
+> +	if (time_after(jiffies, start + (*seconds_waited+5)*HZ)) {
+> +		if (!*seconds_waited)
+> +			printk(KERN_WARNING "XENBUS: Waiting for "
+> +			       "devices to initialise: ");
+> +		*seconds_waited += 5;
+> +		printk("%us...", max_delay - *seconds_waited);
+> +		if (*seconds_waited == max_delay)
+> +			return true;
+> +	}
+> +
+> +	schedule_timeout_interruptible(HZ/10);
+> +
+> +	return false;
+> +}
+>  /*
+>   * On a 5-minute timeout, wait for all devices currently configured.  We need
+>   * to do this to guarantee that the filesystems and / or network devices
+> @@ -215,19 +257,14 @@ static void wait_for_devices(struct xenbus_driver *xendrv)
+>  	if (!ready_to_wait_for_devices || !xen_domain())
+>  		return;
+>  
+> -	while (exists_connecting_device(drv)) {
+> -		if (time_after(jiffies, start + (seconds_waited+5)*HZ)) {
+> -			if (!seconds_waited)
+> -				printk(KERN_WARNING "XENBUS: Waiting for "
+> -				       "devices to initialise: ");
+> -			seconds_waited += 5;
+> -			printk("%us...", 300 - seconds_waited);
+> -			if (seconds_waited == 300)
+> -				break;
+> -		}
+> -
+> -		schedule_timeout_interruptible(HZ/10);
+> -	}
+> +	while (exists_non_essential_connecting_device(drv))
+> +		if (wait_loop(start, 30, &seconds_waited))
+> +			break;
+> +
+> +	/* Skips PVKB and PVFB check.*/
+> +	while (exists_essential_connecting_device(drv))
+> +		if (wait_loop(start, 270, &seconds_waited))
+> +			break;
+>  
+>  	if (seconds_waited)
+>  		printk("\n");
+> -- 
+> 1.7.7.5
+> 
+
+Other than the comments I wrote above, I think the patch is good
 
