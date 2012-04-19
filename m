@@ -1,61 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754054Ab2DSICK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Apr 2012 04:02:10 -0400
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:5661 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753339Ab2DSIBr (ORCPT
+	id S1753928Ab2DSIKh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Apr 2012 04:10:37 -0400
+Received: from mail-qc0-f174.google.com ([209.85.216.174]:35380 "EHLO
+	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752475Ab2DSIKQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Apr 2012 04:01:47 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6685"; a="183042221"
-X-IronPort-AV: E=Sophos;i="4.75,445,1330934400"; 
-   d="scan'208";a="158757017"
-From: xiong <xiong@qca.qualcomm.com>
-To: <davem@davemloft.net>, <netdev@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-CC: <qca-linux-team@qualcomm.com>, <nic-devel@qualcomm.com>,
-        xiong <xiong@qca.qualcomm.com>
-Subject: [PATCH 01/11] atl1c: threshold for ASPM is changed based on chip capability
-Date: Thu, 19 Apr 2012 16:01:21 +0800
-Message-ID: <1334822491-30129-2-git-send-email-xiong@qca.qualcomm.com>
-X-Mailer: git-send-email 1.7.7
-In-Reply-To: <1334822491-30129-1-git-send-email-xiong@qca.qualcomm.com>
-References: <1334822491-30129-1-git-send-email-xiong@qca.qualcomm.com>
+	Thu, 19 Apr 2012 04:10:16 -0400
+Date: Thu, 19 Apr 2012 16:10:02 +0800
+From: Yong Zhang <yong.zhang0@gmail.com>
+To: Stephen Boyd <sboyd@codeaurora.org>
+Cc: linux-kernel@vger.kernel.org, Tejun Heo <tj@kernel.org>,
+        netdev@vger.kernel.org, Ben Dooks <ben-linux@fluff.org>
+Subject: Re: [PATCH 1/2] workqueue: Catch more locking problems with
+ flush_work()
+Message-ID: <20120419081002.GB3963@zhy>
+Reply-To: Yong Zhang <yong.zhang0@gmail.com>
+References: <1334805958-29119-1-git-send-email-sboyd@codeaurora.org>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [172.30.48.1]
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <1334805958-29119-1-git-send-email-sboyd@codeaurora.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-threshold setting to control ASPM for diff chips are different.
-currently, all gigabit-capability chips have limited-ASPM under
-100M throughput.
+On Wed, Apr 18, 2012 at 08:25:57PM -0700, Stephen Boyd wrote:
+> If a workqueue is flushed but the work item is not scheduled to
+> run, lockdep checking will be circumvented. For example:
+> 
+>  static DEFINE_MUTEX(mutex);
+> 
+>  static void my_work(struct work_struct *w)
+>  {
+>          mutex_lock(&mutex);
+>          mutex_unlock(&mutex);
+>  }
+> 
+>  static DECLARE_WORK(work, my_work);
+> 
+>  static int __init start_test_module(void)
+>  {
+>          schedule_work(&work);
+>          return 0;
+>  }
+>  module_init(start_test_module);
+> 
+>  static void __exit stop_test_module(void)
+>  {
+>          mutex_lock(&mutex);
+>          flush_work(&work);
+>          mutex_unlock(&mutex);
+>  }
+>  module_exit(stop_test_module);
+> 
+> would only print a warning if the work item was actively running
+> when flush_work() was called. Otherwise flush_work() returns
+> early. In this trivial example nothing could go wrong, but if the
+> work item is schedule via an interrupt we could potentially have a
+> scenario where the work item is running just at the time flush_work()
 
-Signed-off-by: xiong <xiong@qca.qualcomm.com>
-Tested-by: Liu David <dwliu@qca.qualcomm.com>
----
- drivers/net/ethernet/atheros/atl1c/atl1c_main.c |    7 ++++---
- 1 files changed, 4 insertions(+), 3 deletions(-)
+You mean flush_work() could be called in interupt? I don't it is
+possible.
 
-diff --git a/drivers/net/ethernet/atheros/atl1c/atl1c_main.c b/drivers/net/ethernet/atheros/atl1c/atl1c_main.c
-index 02754ac..2e1c9f3 100644
---- a/drivers/net/ethernet/atheros/atl1c/atl1c_main.c
-+++ b/drivers/net/ethernet/atheros/atl1c/atl1c_main.c
-@@ -1080,9 +1080,10 @@ static void atl1c_configure_rx(struct atl1c_adapter *adapter)
- 	if (hw->ctrl_flags & ATL1C_RX_IPV6_CHKSUM)
- 		rxq_ctrl_data |= IPV6_CHKSUM_CTRL_EN;
- 
--	if (hw->ctrl_flags & ATL1C_ASPM_CTRL_MON)
--		rxq_ctrl_data |= (ASPM_THRUPUT_LIMIT_1M &
--			ASPM_THRUPUT_LIMIT_MASK) << ASPM_THRUPUT_LIMIT_SHIFT;
-+	/* aspm for gigabit */
-+	if (hw->nic_type != athr_l1d_2 && (hw->device_id & 1) != 0)
-+		rxq_ctrl_data = FIELD_SETX(rxq_ctrl_data, ASPM_THRUPUT_LIMIT,
-+			ASPM_THRUPUT_LIMIT_100M);
- 
- 	AT_WRITE_REG(hw, REG_RXQ_CTRL, rxq_ctrl_data);
- }
+> is called. This could become a classic AB-BA locking problem.
+
+I don't see how the deadlock happen, could you please be more
+specific?
+
+Thanks,
+Yong
+
+
+> 
+> Add a lockdep hint in flush_work() in the "work not running" case
+> so that we always catch this potential deadlock scenario.
+> 
+> Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
+> ---
+>  kernel/workqueue.c |    5 ++++-
+>  1 file changed, 4 insertions(+), 1 deletion(-)
+> 
+> diff --git a/kernel/workqueue.c b/kernel/workqueue.c
+> index 66ec08d..eb800df 100644
+> --- a/kernel/workqueue.c
+> +++ b/kernel/workqueue.c
+> @@ -2513,8 +2513,11 @@ bool flush_work(struct work_struct *work)
+>  		wait_for_completion(&barr.done);
+>  		destroy_work_on_stack(&barr.work);
+>  		return true;
+> -	} else
+> +	} else {
+> +		lock_map_acquire(&work->lockdep_map);
+> +		lock_map_release(&work->lockdep_map);
+>  		return false;
+> +	}
+>  }
+>  EXPORT_SYMBOL_GPL(flush_work);
+>  
+> -- 
+> Sent by an employee of the Qualcomm Innovation Center, Inc.
+> The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+
 -- 
-1.7.7
-
+Only stand for myself
