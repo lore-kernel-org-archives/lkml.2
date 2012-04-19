@@ -1,50 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933507Ab2DSVcl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Apr 2012 17:32:41 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:57246 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756525Ab2DSVcb (ORCPT
+	id S1756649Ab2DSVcc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Apr 2012 17:32:32 -0400
+Received: from mail-pz0-f42.google.com ([209.85.210.42]:44862 "EHLO
+	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965057Ab2DSVPS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Apr 2012 17:32:31 -0400
-Date: Thu, 19 Apr 2012 22:32:26 +0100
-From: Luis Henriques <luis.henriques@canonical.com>
-To: Jarod Wilson <jarod@redhat.com>
-Cc: Mauro Carvalho Chehab <mchehab@infradead.org>, linux-media@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/1] [media] ite-cir: postpone ISR registration
-Message-ID: <20120419213226.GC22948@zeus>
-References: <1334782447-8742-1-git-send-email-luis.henriques@canonical.com>
- <20120419204444.GB5165@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120419204444.GB5165@redhat.com>
+	Thu, 19 Apr 2012 17:15:18 -0400
+Message-Id: <20120419210819.625318298@linuxfoundation.org>
+User-Agent: quilt/0.60-19.1
+Date: Thu, 19 Apr 2012 14:08:29 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        alan@lxorguk.ukuu.org.uk, David Herrmann <dh.herrmann@googlemail.com>,
+        Marcel Holtmann <marcel@holtmann.org>,
+        Johan Hedberg <johan.hedberg@intel.com>,
+        Johan Hovold <jhovold@gmail.com>
+Subject: [ 11/68] [PATCH] Bluetooth: uart-ldisc: Fix memory leak
+In-Reply-To: <20120419210923.GA18589@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 19, 2012 at 04:44:44PM -0400, Jarod Wilson wrote:
-> On Wed, Apr 18, 2012 at 09:54:07PM +0100, Luis Henriques wrote:
-> > An early registration of an ISR was causing a crash to several users (for
-> > example here: http://bugs.launchpad.net/bugs/972723  The reason was that
-> > IRQs were being triggered before the driver initialisation was completed.
-> > 
-> > This patch fixes this by moving the invocation to request_irq() to a later
-> > stage on the driver probe function.
-> 
-> Ugh. Looks like we actually have a similar problem with multiple lpc super
-> i/o based CIR drivers. I'd probably move both the irq and io region
-> requests in ite-cir, fintek-cir, nuvoton-cir, ene_ir and winbond-cir. If
-> I'm thinking clearly, I've actually seen a very similar report for one of
-> the other CIR drivers recently. Good catch. But yeah, lets do the same for
-> all the drivers, and move request_region as well.
+3.2-stable review patch.  If anyone has any objections, please let me know.
 
-Yeah, I've realised the other drivers had the same issue.  ite-cir was
-just for one that bit us first.
+------------------
 
-Anyway, I'll be sending in a minute another patch with your comments.
+From: Johan Hovold <jhovold@gmail.com>
 
-Cheers,
---
-Luis
+This is a partial, self-contained, minimal backport of commit
+797fe796c4335b35d95d5326824513befdb5d1e9 upstream which fixes the memory
+leak:
+
+Bluetooth: uart-ldisc: Fix memory leak and remove destruct cb
+
+We currently leak the hci_uart object if HCI_UART_PROTO_SET is never set
+because the hci-destruct callback will then never be called.  This fix
+removes the hci-destruct callback and frees the driver internal private
+hci_uart object directly on tty-close. We call hci_unregister_dev() here
+so the hci-core will never call our callbacks again (except destruct).
+Therefore, we can safely free the driver internal data right away and
+set the destruct callback to NULL.
+
+Signed-off-by: David Herrmann <dh.herrmann@googlemail.com>
+Acked-by: Marcel Holtmann <marcel@holtmann.org>
+Signed-off-by: Johan Hedberg <johan.hedberg@intel.com>
+Signed-off-by: Johan Hovold <jhovold@gmail.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+---
+ drivers/bluetooth/hci_ldisc.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+--- a/drivers/bluetooth/hci_ldisc.c
++++ b/drivers/bluetooth/hci_ldisc.c
+@@ -237,7 +237,6 @@ static void hci_uart_destruct(struct hci
+ 		return;
+ 
+ 	BT_DBG("%s", hdev->name);
+-	kfree(hdev->driver_data);
+ }
+ 
+ /* ------ LDISC part ------ */
+@@ -316,6 +315,7 @@ static void hci_uart_tty_close(struct tt
+ 				hci_free_dev(hdev);
+ 			}
+ 		}
++		kfree(hu);
+ 	}
+ }
+ 
+
+
