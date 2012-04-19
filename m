@@ -1,155 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755286Ab2DSMch (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Apr 2012 08:32:37 -0400
-Received: from rcsinet15.oracle.com ([148.87.113.117]:19133 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755161Ab2DSMcf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Apr 2012 08:32:35 -0400
-Date: Thu, 19 Apr 2012 15:33:14 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: volokh <my84@bk.ru>
-Cc: volokh@telros.ru, devel@driverdev.osuosl.org,
-        Jiri Kosina <trivial@kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org,
-        Mauro Carvalho Chehab <mchehab@infradead.org>,
-        Pradheep Shrinivasan <pradheep.sh@gmail.com>,
-        linux-media@vger.kernel.org
-Subject: Re: Subject: [PATCH] [Trivial] Staging: go7007: wis-tw2804 upstyle
- to v4l2
-Message-ID: <20120419123314.GP6498@mwanda>
-References: <1334834777.9633.4.camel@VPir>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1334834777.9633.4.camel@VPir>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
-X-CT-RefId: str=0001.0A090206.4F900573.00FD,ss=1,re=0.000,fgs=0
+	id S1755094Ab2DSMfh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Apr 2012 08:35:37 -0400
+Received: from mga11.intel.com ([192.55.52.93]:62560 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751639Ab2DSMfg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Apr 2012 08:35:36 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="143603829"
+From: Ramakrishna Pallala <ramakrishna.pallala@intel.com>
+To: linux-kernel@vger.kernel.org
+Cc: Anton Vorontsov <cbouatmailru@gmail.com>,
+        Anton Vorontsov <anton.vorontsov@linaro.org>,
+        Ramakrishna Pallala <ramakrishna.pallala@intel.com>,
+        Mika Westerberg <mika.westerberg@iki.fi>
+Subject: [PATCH v2] smb347_charger: Cleanup power supply registration code in probe
+Date: Thu, 19 Apr 2012 10:00:18 +0530
+Message-Id: <1334809818-5958-1-git-send-email-ramakrishna.pallala@intel.com>
+X-Mailer: git-send-email 1.7.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 19, 2012 at 03:26:17PM +0400, volokh wrote:
->  static int write_reg(struct i2c_client *client, u8 reg, u8 value, int channel)
->  {
-> -	return i2c_smbus_write_byte_data(client, reg | (channel << 6), value);
-> +	int i;
-> +
-> +	for (i = 0; i < 10; i++)
-> +		/*return */if (i2c_smbus_write_byte_data(client,
-> +				reg|(channel<<6), value) < 0)
-> +			return -1;
-> +	return 0;
->  }
+This patch checks if the usb or mains charging is enabled by the
+platform before registering with the power supply class.
 
-There are several style problems with this function.
-1) Bogus comment doesn't add any information.
-2) Multi-line indents get curly parens, for stlye reasons even
-   though it's not needed for semantic reasons.
-3) Preserve the return codes from lower levels.
-4) Don't return -1.  -1 means -EPERM and this is not a permision
-   issue.
-5) Put spaces around math operators.  These were correct in the
-   original code.
+Signed-off-by: Ramakrishna Pallala <ramakrishna.pallala@intel.com>
+---
+ drivers/power/smb347-charger.c |   70 +++++++++++++++++++++++-----------------
+ 1 files changed, 40 insertions(+), 30 deletions(-)
 
-This function should look like:
-
-static int write_reg(struct i2c_client *client, u8 reg, u8 value, int channel)
-{
-	int ret;
-	int i;
-
-	for (i = 0; i < 10; i++) {
-		ret = i2c_smbus_write_byte_data(client,	reg | (channel << 6),
-						value);
-		if (ret)
-			return ret;
-	}
-	return 0;
-}
-
-Now that the function is readable, why are we writing to the
-register 10 times?
-
->  
-> +/**static u8 read_reg(struct i2c_client *client, u8 reg, int channel)
-> +{
-> +  return i2c_smbus_read_byte_data(client,reg|(channel<<6));
-> +}*/
-> +
-
-Bogus comment adds nothing.
-
->  static int write_regs(struct i2c_client *client, u8 *regs, int channel)
->  {
->  	int i;
->  
->  	for (i = 0; regs[i] != 0xff; i += 2)
-> -		if (i2c_smbus_write_byte_data(client,
-> -				regs[i] | (channel << 6), regs[i + 1]) < 0)
-> +		if (i2c_smbus_write_byte_data(client
-> +				, regs[i] | (channel << 6), regs[i + 1]) < 0)
-
-The comma was in the correct place in the original code...  This
-change is wrong.
-
->  			return -1;
->  	return 0;
->  }
->  
-> -static int wis_tw2804_command(struct i2c_client *client,
-> -				unsigned int cmd, void *arg)
-> +static int wis_tw2804_command(
-> +	struct i2c_client *client,
-> +	unsigned int cmd,
-> +	void *arg)
-
-The style was correct in the original code.  This change is wrong.
-
->  {
-> -	struct wis_tw2804 *dec = i2c_get_clientdata(client);
-> +	struct v4l2_subdev *sd = i2c_get_clientdata(client);
-> +	struct wis_tw2804 *dec = to_state(sd);
-> +	int *input;
-> +
-> +	printk(KERN_INFO"wis-tw2804: call command %d\n", cmd);
-
-This seems like a very spammy printk().  :/  Put a space after the
-KERN_INFO.
-
->  
->  	if (cmd == DECODER_SET_CHANNEL) {
-> -		int *input = arg;
-
-The input was better here, where it was declared originally.
-
-> +		printk(KERN_INFO"wis-tw2804: DecoderSetChannel call command %d\n", cmd);
-> +
-> +		input = arg;
->  
->  		if (*input < 0 || *input > 3) {
-> -			printk(KERN_ERR "wis-tw2804: channel %d is not "
-> -					"between 0 and 3!\n", *input);
-> +			printk(KERN_ERR"wis-tw2804: channel %d is not between 0 and 3!\n", *input);
-
-These kinds of unrelated changes don't belong in a new feature
-patch.  Cleanups, fixes, and features don't mix.  In this situation,
-I would just leave it as is.  I know checkpatch.pl complains, but
-it's up to the maintainer to decide what to do.  If you decide to
-change it (in a separate patch) the format would be:
-
-			printk(KERN_ERR
-			       "wis-tw2804: channel %d is not between 0 and 3!\n",
-			       *input);
-
-When people submit big patches there is a lot to complain about and
-they don't get merged.  I'm a hundred lines into the review and I
-haven't even got to any changes which matter or are improvements.
-
-regards,
-dan carpenter
-
+diff --git a/drivers/power/smb347-charger.c b/drivers/power/smb347-charger.c
+index ce1694d..3e9df6e 100644
+--- a/drivers/power/smb347-charger.c
++++ b/drivers/power/smb347-charger.c
+@@ -816,8 +816,10 @@ static irqreturn_t smb347_interrupt(int irq, void *data)
+ 	if (irqstat_e & (IRQSTAT_E_USBIN_UV_IRQ | IRQSTAT_E_DCIN_UV_IRQ)) {
+ 		if (smb347_update_status(smb) > 0) {
+ 			smb347_update_online(smb);
+-			power_supply_changed(&smb->mains);
+-			power_supply_changed(&smb->usb);
++			if (smb->pdata->use_mains)
++				power_supply_changed(&smb->mains);
++			if (smb->pdata->use_usb)
++				power_supply_changed(&smb->usb);
+ 		}
+ 		ret = IRQ_HANDLED;
+ 	}
+@@ -1185,21 +1187,34 @@ static int smb347_probe(struct i2c_client *client,
+ 	if (ret < 0)
+ 		return ret;
+ 
+-	smb->mains.name = "smb347-mains";
+-	smb->mains.type = POWER_SUPPLY_TYPE_MAINS;
+-	smb->mains.get_property = smb347_mains_get_property;
+-	smb->mains.properties = smb347_mains_properties;
+-	smb->mains.num_properties = ARRAY_SIZE(smb347_mains_properties);
+-	smb->mains.supplied_to = battery;
+-	smb->mains.num_supplicants = ARRAY_SIZE(battery);
+-
+-	smb->usb.name = "smb347-usb";
+-	smb->usb.type = POWER_SUPPLY_TYPE_USB;
+-	smb->usb.get_property = smb347_usb_get_property;
+-	smb->usb.properties = smb347_usb_properties;
+-	smb->usb.num_properties = ARRAY_SIZE(smb347_usb_properties);
+-	smb->usb.supplied_to = battery;
+-	smb->usb.num_supplicants = ARRAY_SIZE(battery);
++	if (smb->pdata->use_mains) {
++		smb->mains.name = "smb347-mains";
++		smb->mains.type = POWER_SUPPLY_TYPE_MAINS;
++		smb->mains.get_property = smb347_mains_get_property;
++		smb->mains.properties = smb347_mains_properties;
++		smb->mains.num_properties = ARRAY_SIZE(smb347_mains_properties);
++		smb->mains.supplied_to = battery;
++		smb->mains.num_supplicants = ARRAY_SIZE(battery);
++		ret = power_supply_register(dev, &smb->mains);
++		if (ret < 0)
++			return ret;
++	}
++
++	if (smb->pdata->use_usb) {
++		smb->usb.name = "smb347-usb";
++		smb->usb.type = POWER_SUPPLY_TYPE_USB;
++		smb->usb.get_property = smb347_usb_get_property;
++		smb->usb.properties = smb347_usb_properties;
++		smb->usb.num_properties = ARRAY_SIZE(smb347_usb_properties);
++		smb->usb.supplied_to = battery;
++		smb->usb.num_supplicants = ARRAY_SIZE(battery);
++		ret = power_supply_register(dev, &smb->usb);
++		if (ret < 0) {
++			if (smb->pdata->use_mains)
++				power_supply_unregister(&smb->mains);
++			return ret;
++		}
++	}
+ 
+ 	smb->battery.name = "smb347-battery";
+ 	smb->battery.type = POWER_SUPPLY_TYPE_BATTERY;
+@@ -1207,20 +1222,13 @@ static int smb347_probe(struct i2c_client *client,
+ 	smb->battery.properties = smb347_battery_properties;
+ 	smb->battery.num_properties = ARRAY_SIZE(smb347_battery_properties);
+ 
+-	ret = power_supply_register(dev, &smb->mains);
+-	if (ret < 0)
+-		return ret;
+-
+-	ret = power_supply_register(dev, &smb->usb);
+-	if (ret < 0) {
+-		power_supply_unregister(&smb->mains);
+-		return ret;
+-	}
+ 
+ 	ret = power_supply_register(dev, &smb->battery);
+ 	if (ret < 0) {
+-		power_supply_unregister(&smb->usb);
+-		power_supply_unregister(&smb->mains);
++		if (smb->pdata->use_usb)
++			power_supply_unregister(&smb->usb);
++		if (smb->pdata->use_mains)
++			power_supply_unregister(&smb->mains);
+ 		return ret;
+ 	}
+ 
+@@ -1255,8 +1263,10 @@ static int smb347_remove(struct i2c_client *client)
+ 	}
+ 
+ 	power_supply_unregister(&smb->battery);
+-	power_supply_unregister(&smb->usb);
+-	power_supply_unregister(&smb->mains);
++	if (smb->pdata->use_usb)
++		power_supply_unregister(&smb->usb);
++	if (smb->pdata->use_mains)
++		power_supply_unregister(&smb->mains);
+ 	return 0;
+ }
+ 
+-- 
+1.7.0.4
 
