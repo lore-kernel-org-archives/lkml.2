@@ -1,75 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755331Ab2DSNHa (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Apr 2012 09:07:30 -0400
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:34331 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753818Ab2DSNH3 (ORCPT
+	id S1755299Ab2DSNJA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Apr 2012 09:09:00 -0400
+Received: from 50-56-35-84.static.cloud-ips.com ([50.56.35.84]:43265 "EHLO
+	mail.hallyn.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754816Ab2DSNI7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Apr 2012 09:07:29 -0400
-Date: Thu, 19 Apr 2012 15:08:27 +0200
-From: Daniel Vetter <daniel@ffwll.ch>
-To: Dave Airlie <airlied@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        DRI Development <dri-devel@lists.freedesktop.org>,
-        Intel Graphics Development <intel-gfx@lists.freedesktop.org>
-Subject: [pull] drm-intel-fixes for 3.4-rc4
-Message-ID: <20120419130827.GE4256@phenom.ffwll.local>
-Mail-Followup-To: Dave Airlie <airlied@gmail.com>,
-	LKML <linux-kernel@vger.kernel.org>,
-	DRI Development <dri-devel@lists.freedesktop.org>,
-	Intel Graphics Development <intel-gfx@lists.freedesktop.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-X-Operating-System: Linux phenom 3.2.0-2-amd64
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 19 Apr 2012 09:08:59 -0400
+From: Serge Hallyn <serge@hallyn.com>
+Reply-To: Serge Hallyn <serge@hallyn.com>
+To: Tony Luck <tony.luck@intel.com>, Eric Paris <eparis@redhat.com>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Serge Hallyn <serge.hallyn@canonical.com>,
+        James Morris <james.l.morris@oracle.com>
+Subject: Re: ia64 build broken by patch to security/commoncap.c
+X-Mailer: Modest 3.2
+References: <CA+8MBbKYXV6e0u5bOgr1GUs0ng0F-vGv5rVxnM26B8Dv+2RyLw@mail.gmail.com>
+In-Reply-To: <CA+8MBbKYXV6e0u5bOgr1GUs0ng0F-vGv5rVxnM26B8Dv+2RyLw@mail.gmail.com>
+Content-Type: text/plain; charset=utf-8
+Content-ID: <1334796505.1457.4.camel@Nokia-N900-51-1>
+Date: Wed, 18 Apr 2012 19:48:25 -0500
+Message-Id: <1334796505.1457.5.camel@Nokia-N900-51-1>
+Mime-Version: 1.0
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Dave,
+Thanks, it's been repolrted (and the fix acked) but i guess that wasn't cc:d to lkml?
 
-Just 3 fixes this time around:
-- Regression fix for upscaled lvds modes on older machines, the clean-up
-  of our crtc timing handling from the interlaced patches screwed things
-  up there.
-- Locking fix in lastclose, prevents an oops.
-- Black panel on vt switch due to pageflip when upscaling fix for snb.
+----- Original message -----
+> commit d52fc5dde171f030170a6cb78034d166b13c9445
+> fcaps: clear the same personality flags as suid when fcaps are used
+> 
+> just appeared in Linus's tree and broke the ia64 build with:
+> 
+> security/commoncap.c: In function ‘cap_bprm_set_creds’:
+> security/commoncap.c:510: error: ‘PER_CLEAR_ON_SETID’ undeclared
+> (first use in this function)
+> 
+> Cause seems to be a missing:
+> 
+> #include <linux/personality.h>
+> 
+> -Tony
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel"
+> in the body of a message to majordomo@vger.kernel.org
+> More majordomo info at   http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at   http://www.tux.org/lkml/
 
-Wrt regressions from 3.4 I'm only aware of a funky report that might
-implies rc6 in sometimes causing resume failures, but it's not yet clear
-what's going on there.
-
-Yours, Daniel
-on vt switch 
-The following changes since commit e816b57a337ea3b755de72bec38c10c864f23015:
-
-  Linux 3.4-rc3 (2012-04-15 18:28:29 -0700)
-
-are available in the git repository at:
-
-  git://people.freedesktop.org/~danvet/drm-intel drm-intel-fixes
-
-for you to fetch changes up to 99d9acdd0c5ce970eaf8e8671c0bc4cb7c6fb0c1:
-
-  drm/i915: Do not set "Enable Panel Fitter" on SNB pageflips (2012-04-18 10:30:47 +0200)
-
-----------------------------------------------------------------
-Chris Wilson (2):
-      drm/i915: Hold mode_config lock whilst changing mode for lastclose()
-      drm/i915: Do not set "Enable Panel Fitter" on SNB pageflips
-
-Daniel Vetter (1):
-      drm/i915: don't clobber the special upscaling lvds timings
-
- drivers/gpu/drm/i915/intel_display.c |   15 ++++++++++++---
- drivers/gpu/drm/i915/intel_drv.h     |    4 ++++
- drivers/gpu/drm/i915/intel_fb.c      |    4 ++++
- drivers/gpu/drm/i915/intel_lvds.c    |    6 ++++++
- drivers/gpu/drm/i915/intel_panel.c   |    2 --
- 5 files changed, 26 insertions(+), 5 deletions(-)
--- 
-Daniel Vetter
-Mail: daniel@ffwll.ch
-Mobile: +41 (0)79 365 57 48
