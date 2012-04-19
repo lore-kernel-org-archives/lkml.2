@@ -1,23 +1,29 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965236Ab2DSVRu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Apr 2012 17:17:50 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:37406 "EHLO
+	id S965250Ab2DSVR5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Apr 2012 17:17:57 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:44451 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965220Ab2DSVRp (ORCPT
+	with ESMTP id S965240Ab2DSVRx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Apr 2012 17:17:45 -0400
-Message-Id: <20120419210823.330819467@linuxfoundation.org>
+	Thu, 19 Apr 2012 17:17:53 -0400
+Message-Id: <20120419210823.509567584@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Thu, 19 Apr 2012 14:09:13 -0700
+Date: Thu, 19 Apr 2012 14:09:15 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Jim Green <student.northwestern@gmail.com>,
-        Lin Ming <ming.m.lin@intel.com>, Bob Moore <robert.moore@intel.com>,
-        Len Brown <len.brown@intel.com>,
-        Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-Subject: [ 55/68] ACPICA: Fix to allow region arguments to reference other scopes
+        alan@lxorguk.ukuu.org.uk, Darren Hart <dvhart@linux.intel.com>,
+        Arjan van de Ven <arjan@linux.intel.com>,
+        Alan Cox <alan@linux.intel.com>,
+        Tomoya MORINAGA <tomoya.rohm@gmail.com>,
+        Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Jon Mason <jdmason@kudzu.us>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        David Laight <David.Laight@ACULAB.COM>, Joe Perches <joe@perches.com>
+Subject: [ 57/68] pch_gbe: Do not abort probe on bad MAC
 In-Reply-To: <20120419210923.GA18589@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,75 +33,79 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Lin Ming <ming.m.lin@intel.com>
+From: Darren Hart <dvhart@linux.intel.com>
 
-commit 8931d9ea78848b073bf299594f148b83abde4a5e upstream.
+commit 2b53d07891630dead46d65c8f896955fd3ae0302 upstream.
 
-Allow referenced objects to be in a different scope.
+If the MAC is invalid or not implemented, do not abort the probe. Issue
+a warning and prevent bringing the interface up until a MAC is set manually
+(via ifconfig $IFACE hw ether $MAC).
 
-http://www.acpica.org/bugzilla/show_bug.cgi?id=937
-http://marc.info/?l=linux-acpi&m=131636632718222&w=2
+Tested on two platforms, one with a valid MAC, the other without a MAC. The real
+MAC is used if present, the interface fails to come up until the MAC is set on
+the other. They successfully get an IP over DHCP and pass a simple ping and
+login over ssh test.
 
-ACPI Error: [RAMB] Namespace lookup failure, AE_NOT_FOUND (20110112/psargs-359)
-ACPI Exception: AE_NOT_FOUND, Could not execute arguments for [RAMW] (Region) (20110112/nsinit-349)
+This is meant to allow the Inforce SYS940X development board:
+http://www.inforcecomputing.com/SYS940X_ECX.html
+(and others suffering from a missing MAC) to work with the mainline kernel.
+Without this patch, the probe will fail and the interface will not be created,
+preventing the user from configuring the MAC manually.
 
-    Scope (_SB)
-    {
-        Name (RAMB, 0xDF5A1018)
-        OperationRegion (\RAMW, SystemMemory, RAMB, 0x00010000)
-    }
+This does not make any attempt to address a missing or invalid MAC for the
+pch_phub driver.
 
-For above ASL code, we need to save scope node(\_SB) to lookup
-the argument node(\_SB.RAMB).
-
-Reported-by: Jim Green <student.northwestern@gmail.com>
-Signed-off-by: Lin Ming <ming.m.lin@intel.com>
-Signed-off-by: Bob Moore <robert.moore@intel.com>
-Signed-off-by: Len Brown <len.brown@intel.com>
-Cc: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
+Signed-off-by: Darren Hart <dvhart@linux.intel.com>
+CC: Arjan van de Ven <arjan@linux.intel.com>
+CC: Alan Cox <alan@linux.intel.com>
+CC: Tomoya MORINAGA <tomoya.rohm@gmail.com>
+CC: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
+CC: "David S. Miller" <davem@davemloft.net>
+CC: Paul Gortmaker <paul.gortmaker@windriver.com>
+CC: Jon Mason <jdmason@kudzu.us>
+CC: Mark Brown <broonie@opensource.wolfsonmicro.com>
+CC: David Laight <David.Laight@ACULAB.COM>
+CC: Joe Perches <joe@perches.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Tomoya MORINAGA <tomoya.rohm@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/acpi/acpica/acobject.h |    1 +
- drivers/acpi/acpica/dsargs.c   |    2 +-
- drivers/acpi/acpica/excreate.c |    6 ++++++
- 3 files changed, 8 insertions(+), 1 deletion(-)
+ drivers/net/ethernet/oki-semi/pch_gbe/pch_gbe_main.c |   17 ++++++++++++++---
+ 1 file changed, 14 insertions(+), 3 deletions(-)
 
---- a/drivers/acpi/acpica/acobject.h
-+++ b/drivers/acpi/acpica/acobject.h
-@@ -358,6 +358,7 @@ typedef enum {
-  */
- struct acpi_object_extra {
- 	ACPI_OBJECT_COMMON_HEADER struct acpi_namespace_node *method_REG;	/* _REG method for this region (if any) */
-+	struct acpi_namespace_node *scope_node;
- 	void *region_context;	/* Region-specific data */
- 	u8 *aml_start;
- 	u32 aml_length;
---- a/drivers/acpi/acpica/dsargs.c
-+++ b/drivers/acpi/acpica/dsargs.c
-@@ -384,7 +384,7 @@ acpi_status acpi_ds_get_region_arguments
+--- a/drivers/net/ethernet/oki-semi/pch_gbe/pch_gbe_main.c
++++ b/drivers/net/ethernet/oki-semi/pch_gbe/pch_gbe_main.c
+@@ -1745,6 +1745,12 @@ int pch_gbe_up(struct pch_gbe_adapter *a
+ 	struct pch_gbe_rx_ring *rx_ring = adapter->rx_ring;
+ 	int err;
  
- 	/* Execute the argument AML */
- 
--	status = acpi_ds_execute_arguments(node, node->parent,
-+	status = acpi_ds_execute_arguments(node, extra_desc->extra.scope_node,
- 					   extra_desc->extra.aml_length,
- 					   extra_desc->extra.aml_start);
- 	if (ACPI_FAILURE(status)) {
---- a/drivers/acpi/acpica/excreate.c
-+++ b/drivers/acpi/acpica/excreate.c
-@@ -330,6 +330,12 @@ acpi_ex_create_region(u8 * aml_start,
- 	region_obj2 = obj_desc->common.next_object;
- 	region_obj2->extra.aml_start = aml_start;
- 	region_obj2->extra.aml_length = aml_length;
-+	if (walk_state->scope_info) {
-+		region_obj2->extra.scope_node =
-+		    walk_state->scope_info->scope.node;
-+	} else {
-+		region_obj2->extra.scope_node = node;
++	/* Ensure we have a valid MAC */
++	if (!is_valid_ether_addr(adapter->hw.mac.addr)) {
++		pr_err("Error: Invalid MAC address\n");
++		return -EINVAL;
 +	}
++
+ 	/* hardware has been reset, we need to reload some things */
+ 	pch_gbe_set_multi(netdev);
  
- 	/* Init the region from the operands */
+@@ -2467,9 +2473,14 @@ static int pch_gbe_probe(struct pci_dev
  
+ 	memcpy(netdev->dev_addr, adapter->hw.mac.addr, netdev->addr_len);
+ 	if (!is_valid_ether_addr(netdev->dev_addr)) {
+-		dev_err(&pdev->dev, "Invalid MAC Address\n");
+-		ret = -EIO;
+-		goto err_free_adapter;
++		/*
++		 * If the MAC is invalid (or just missing), display a warning
++		 * but do not abort setting up the device. pch_gbe_up will
++		 * prevent the interface from being brought up until a valid MAC
++		 * is set.
++		 */
++		dev_err(&pdev->dev, "Invalid MAC address, "
++		                    "interface disabled.\n");
+ 	}
+ 	setup_timer(&adapter->watchdog_timer, pch_gbe_watchdog,
+ 		    (unsigned long)adapter);
 
 
