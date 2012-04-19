@@ -1,61 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753536Ab2DSHpn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Apr 2012 03:45:43 -0400
-Received: from mga06.intel.com ([134.134.136.21]:29681 "EHLO
-	orsmga101.jf.intel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753086Ab2DSHpk (ORCPT
+	id S1753253Ab2DSIBm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Apr 2012 04:01:42 -0400
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:56040 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752226Ab2DSIBi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Apr 2012 03:45:40 -0400
-Subject: Re: [PATCH] xtensa: fix build failure in xtensa/kernel/signal.c
-From: Matt Fleming <matt.fleming@intel.com>
-To: Paul Gortmaker <paul.gortmaker@windriver.com>
-Cc: linux-kernel@vger.kernel.org, Oleg Nesterov <oleg@redhat.com>,
-        Chris Zankel <chris@zankel.net>,
-        Andrew Morton <akpm@linux-foundation.org>
-In-Reply-To: <1334782256-351-1-git-send-email-paul.gortmaker@windriver.com>
-References: <1334782256-351-1-git-send-email-paul.gortmaker@windriver.com>
-Content-Type: text/plain; charset="UTF-8"
-Organization: Intel Corporation (UK) Ltd. - Registered No. 1134945 - Pipers
- Way, Swindon SN3 1RJ
-Date: Thu, 19 Apr 2012 08:45:25 +0100
-Message-ID: <1334821525.26997.39.camel@mfleming-mobl1.ger.corp.intel.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
-Content-Transfer-Encoding: 7bit
+	Thu, 19 Apr 2012 04:01:38 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6685"; a="180737304"
+X-IronPort-AV: E=Sophos;i="4.75,445,1330934400"; 
+   d="scan'208";a="200014416"
+From: xiong <xiong@qca.qualcomm.com>
+To: <davem@davemloft.net>, <netdev@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+CC: <qca-linux-team@qualcomm.com>, <nic-devel@qualcomm.com>,
+        xiong <xiong@qca.qualcomm.com>
+Subject: [PATCH 00/11] atl1c: update hardware settings - v2
+Date: Thu, 19 Apr 2012 16:01:20 +0800
+Message-ID: <1334822491-30129-1-git-send-email-xiong@qca.qualcomm.com>
+X-Mailer: git-send-email 1.7.7
+MIME-Version: 1.0
+Content-Type: text/plain
+X-Originating-IP: [172.30.48.1]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-04-18 at 16:50 -0400, Paul Gortmaker wrote:
-> Caused by commit 3785006ac3c8941feb63097c416de92114a6bc39
-> 
->     "xtensa: don't mask signals if we fail to setup signal stack"
-> 
-> It assigns a return value to "ret", but there is no such variable
-> anywhere in scope.  Create one.
-> 
-> Cc: Matt Fleming <matt.fleming@intel.com>
-> Cc: Oleg Nesterov <oleg@redhat.com>
-> Cc: Chris Zankel <chris@zankel.net>
-> Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
-> 
-> diff --git a/arch/xtensa/kernel/signal.c b/arch/xtensa/kernel/signal.c
-> index b69b000..d78869a 100644
-> --- a/arch/xtensa/kernel/signal.c
-> +++ b/arch/xtensa/kernel/signal.c
-> @@ -496,6 +496,7 @@ int do_signal(struct pt_regs *regs, sigset_t *oldset)
->  	signr = get_signal_to_deliver(&info, &ka, regs, NULL);
->  
->  	if (signr > 0) {
-> +		int ret;
->  
->  		/* Are we from a system call? */
->  
+This update contains a serial of patches, most of them are hardware
+settings related. register definitions are refined (or removed if
+meaningless) for each patch.
 
-Whoops! Thanks Paul, that's my bad. Looks like I went code-blind after
-making the same kinds of changes to lots of different architectures.
+This is the second serial patches, after reviewed/applied the third
+serial will be out.
 
-I've added Andrew to the Cc list since he picked up the last set of
-xtensa signal patches.
+The patches have addressed all sparse and checkpatch warnings.
+
+Following NICs are tested:
+AR8131/AR8132/AR8151A/AR8152A/AR8152B
+Test item includes:
+build/install/uninstall/dhcp/ping/iperf/wol/reboot/etc.
+
+
+xiong (11):
+  atl1c: threshold for ASPM is changed based on chip capability
+  atl1c: add module parameter for l1c_wait_until_idle
+  atl1c: update right threshold for TSO
+  atl1c: remove dmar_dly_cnt and dmaw_dly_cnt
+  atl1c: clear PCIE error status in atl1c_reset_pcie
+  atl1c: refine reg definition of REG_MASTER_CTRL
+  atl1c: clear bit MASTER_CTRL_CLK_SEL_DIS in atl1c_pcie_patch
+  atl1c: refine/update ASPM configuration
+  atl1c: refine atl1c_pcie_patch
+  atl1c: fix WoL(magic) issue for l2cb 1.1
+  atl1c: remove MDIO_REG_ADDR_MASK in atl1c_mdio_read/write
+
+ drivers/net/ethernet/atheros/atl1c/atl1c.h      |    4 -
+ drivers/net/ethernet/atheros/atl1c/atl1c_hw.h   |  237 ++++++++++++--------
+ drivers/net/ethernet/atheros/atl1c/atl1c_main.c |  282 ++++++++++++-----------
+ 3 files changed, 290 insertions(+), 233 deletions(-)
+
+-- 
+1.7.7
 
