@@ -1,398 +1,239 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753330Ab2DSCnG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Apr 2012 22:43:06 -0400
-Received: from mailout3.samsung.com ([203.254.224.33]:64255 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752123Ab2DSClj (ORCPT
+	id S1752937Ab2DSCpU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Apr 2012 22:45:20 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:56746 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751129Ab2DSCpS convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Apr 2012 22:41:39 -0400
-X-AuditID: cbfee61b-b7cb4ae000000d81-57-4f8f7b60a6dd
-From: MyungJoo Ham <myungjoo.ham@samsung.com>
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: Arnd Bergmann <arnd@arndb.de>, LKML <linux-kernel@vger.kernel.org>,
-        NeilBrown <neilb@suse.de>, Randy Dunlap <rdunlap@xenotime.net>,
-        Mike Lockwood <lockwood@android.com>,
-        =?UTF-8?q?Arve=20Hj=C3=B8nnevag?= <arve@android.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Morten CHRISTIANSEN <morten.christiansen@stericsson.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        John Stultz <john.stultz@linaro.org>,
-        Joerg Roedel <joerg.roedel@amd.com>, myungjoo.ham@gmail.com,
-        cw00.choi@samsung.com
-Subject: [PATCH v8 5/6] Extcon: support mutually exclusive relation between
- cables.
-Date: Thu, 19 Apr 2012 11:41:37 +0900
-Message-id: <1334803298-24260-6-git-send-email-myungjoo.ham@samsung.com>
-X-Mailer: git-send-email 1.7.4.1
-In-reply-to: <1334803298-24260-1-git-send-email-myungjoo.ham@samsung.com>
-References: <20120418214703.GA31606@kroah.com>
- <1334803298-24260-1-git-send-email-myungjoo.ham@samsung.com>
-X-Brightmail-Tracker: AAAAAA==
-X-TM-AS-MML: No
+	Wed, 18 Apr 2012 22:45:18 -0400
+MIME-Version: 1.0
+In-Reply-To: <20120417155241.0f619a9a.akpm@linux-foundation.org>
+References: <1334660025-20442-1-git-send-email-bryan.wu@canonical.com>
+ <1334660025-20442-2-git-send-email-bryan.wu@canonical.com> <20120417155241.0f619a9a.akpm@linux-foundation.org>
+From: Bryan Wu <bryan.wu@canonical.com>
+Date: Thu, 19 Apr 2012 10:44:57 +0800
+X-Google-Sender-Auth: sYdo-wv9gj-IrmunxSNlUq_GTWc
+Message-ID: <CAK5ve-+mw=PDs9diahCPNyYQhMYxdKZU-2LAL5rxkWMNRk4zHQ@mail.gmail.com>
+Subject: Re: [PATCH 01/18] led-triggers: create a trigger for CPU activity
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: nicolas.pitre@linaro.org, linux@arm.linux.org.uk, linus.walleij@linaro.org,
+        linux-kernel@vger.kernel.org, rpurdie@rpsys.net,
+        arnd.bergmann@linaro.org, tim.gardner@canonical.com,
+        linux-arm-kernel@lists.infradead.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There could be cables that t recannot be attaches simulatenously. Extcon
-device drivers may express such information via mutually_exclusive in
-struct extcon_dev.
+On Wed, Apr 18, 2012 at 6:52 AM, Andrew Morton
+<akpm@linux-foundation.org> wrote:
+> On Tue, 17 Apr 2012 18:53:28 +0800
+> Bryan Wu <bryan.wu@canonical.com> wrote:
+>
+>> Attempting to consolidate the ARM LED code, this removes the
+>> custom RealView LED trigger code to turn LEDs on and off in
+>> response to CPU activity and replace it with a standard trigger.
+>>
+>> (bryan.wu@canonical.com:
+>> It moves arch/arm/kernel/leds.c syscore stubs into this trigger.
+>
+> No, the patch doesn't alter arch/arm/kernel/leds.c at all.  This text
+> is either misleadingly phrased, or stale or something.
+>
 
-For example, for an extcon device with 16 cables (bits 0 to 15 are
-available), if mutually_exclusive = { 0x7, 0xC0, 0x81, 0 }, then, the
-following attachments are prohibitted.
-{0, 1}
-{0, 2}
-{1, 2}
-{6, 7}
-{0, 7}
-and every attachment set that are superset of one of the above.
-For the detail, please refer to linux/include/linux/extcon.h.
+OK, Fixed
 
-The concept is suggested by NeilBrown <neilb@suse.de>
+>> It also provides ledtrig_cpu trigger event stub in <linux/leds.h>.
+>> Although it was inspired by ARM work, it can be used in other arch.)
+>>
+>> Cc: Richard Purdie <rpurdie@rpsys.net>
+>> Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
+>> Signed-off-by: Bryan Wu <bryan.wu@canonical.com>
+>>
+>
+> A spurious newline.
+>
 
-Signed-off-by: MyungJoo Ham <myungjoo.ham@samsung.com>
-Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
+OK, Fixed
 
---
-Changes from V5:
-- Updated sysfs format
----
- Documentation/ABI/testing/sysfs-class-extcon |   22 +++++
- drivers/extcon/extcon_class.c                |  123 ++++++++++++++++++++++++--
- include/linux/extcon.h                       |   28 +++++-
- 3 files changed, 160 insertions(+), 13 deletions(-)
+>> Reviewed-by: Jamie Iles <jamie@jamieiles.com>
+>> Tested-by: Jochen Friedrich <jochen@scram.de>
+>>
+>> ...
+>>
+>> +config LEDS_TRIGGER_CPU
+>> +     tristate "LED CPU Trigger"
+>> +     depends on LEDS_TRIGGERS
+>> +     help
+>> +       This allows LEDs to be controlled by active CPUs. This shows
+>> +       the active CPUs across an array of LEDs so you can see what
+>
+> s/what/which/   (I think ;))
+>
 
-diff --git a/Documentation/ABI/testing/sysfs-class-extcon b/Documentation/ABI/testing/sysfs-class-extcon
-index 19b18e9..20ab361 100644
---- a/Documentation/ABI/testing/sysfs-class-extcon
-+++ b/Documentation/ABI/testing/sysfs-class-extcon
-@@ -15,6 +15,10 @@ Description:
- 		may have both HDMI and Charger attached, or analog audio,
- 		video, and USB cables attached simulteneously.
- 
-+		If there are cables mutually exclusive with each other,
-+		such binary relations may be expressed with extcon_dev's
-+		mutually_exclusive array.
-+
- What:		/sys/class/extcon/.../name
- Date:		February 2012
- Contact:	MyungJoo Ham <myungjoo.ham@samsung.com>
-@@ -73,3 +77,21 @@ Description:
- 		state of cable "x" (integer between 0 and 31) of an extcon
- 		device. The state value is either 0 (detached) or 1
- 		(attached).
-+
-+What:		/sys/class/extcon/.../mutually_exclusive/...
-+Date:		December 2011
-+Contact:	MyungJoo Ham <myungjoo.ham@samsung.com>
-+Description:
-+		Shows the relations of mutually exclusiveness. For example,
-+		if the mutually_exclusive array of extcon_dev is
-+		{0x3, 0x5, 0xC, 0x0}, the, the output is:
-+		# ls mutually_exclusive/
-+		0x3
-+		0x5
-+		0xc
-+		#
-+
-+		Note that mutually_exclusive is a sub-directory of the extcon
-+		device and the file names under the mutually_exclusive
-+		directory show the mutually-exclusive sets, not the contents
-+		of the files.
-diff --git a/drivers/extcon/extcon_class.c b/drivers/extcon/extcon_class.c
-index 403933b..3bc4b8a 100644
---- a/drivers/extcon/extcon_class.c
-+++ b/drivers/extcon/extcon_class.c
-@@ -72,6 +72,39 @@ static struct class_compat *switch_class;
- static LIST_HEAD(extcon_dev_list);
- static DEFINE_MUTEX(extcon_dev_list_lock);
- 
-+/**
-+ * check_mutually_exclusive - Check if new_state violates mutually_exclusive
-+ *			    condition.
-+ * @edev:	the extcon device
-+ * @new_state:	new cable attach status for @edev
-+ *
-+ * Returns 0 if nothing violates. Returns the index + 1 for the first
-+ * violated condition.
-+ */
-+static int check_mutually_exclusive(struct extcon_dev *edev, u32 new_state)
-+{
-+	int i = 0;
-+
-+	if (!edev->mutually_exclusive)
-+		return 0;
-+
-+	for (i = 0; edev->mutually_exclusive[i]; i++) {
-+		int count = 0, j;
-+		u32 correspondants = new_state & edev->mutually_exclusive[i];
-+		u32 exp = 1;
-+
-+		for (j = 0; j < 32; j++) {
-+			if (exp & correspondants)
-+				count++;
-+			if (count > 1)
-+				return i + 1;
-+			exp <<= 1;
-+		}
-+	}
-+
-+	return 0;
-+}
-+
- static ssize_t state_show(struct device *dev, struct device_attribute *attr,
- 			  char *buf)
- {
-@@ -100,7 +133,7 @@ static ssize_t state_show(struct device *dev, struct device_attribute *attr,
- 	return count;
- }
- 
--void extcon_set_state(struct extcon_dev *edev, u32 state);
-+int extcon_set_state(struct extcon_dev *edev, u32 state);
- static ssize_t state_store(struct device *dev, struct device_attribute *attr,
- 			   const char *buf, size_t count)
- {
-@@ -112,7 +145,7 @@ static ssize_t state_store(struct device *dev, struct device_attribute *attr,
- 	if (ret == 0)
- 		ret = -EINVAL;
- 	else
--		extcon_set_state(edev, state);
-+		ret = extcon_set_state(edev, state);
- 
- 	if (ret < 0)
- 		return ret;
-@@ -191,7 +224,7 @@ static ssize_t cable_state_store(struct device *dev,
-  * Note that the notifier provides which bits are changed in the state
-  * variable with the val parameter (second) to the callback.
-  */
--void extcon_update_state(struct extcon_dev *edev, u32 mask, u32 state)
-+int extcon_update_state(struct extcon_dev *edev, u32 mask, u32 state)
- {
- 	char name_buf[120];
- 	char state_buf[120];
-@@ -206,6 +239,12 @@ void extcon_update_state(struct extcon_dev *edev, u32 mask, u32 state)
- 	if (edev->state != ((edev->state & ~mask) | (state & mask))) {
- 		u32 old_state = edev->state;
- 
-+		if (check_mutually_exclusive(edev, (edev->state & ~mask) |
-+						   (state & mask))) {
-+			spin_unlock_irqrestore(&edev->lock, flags);
-+			return -EPERM;
-+		}
-+
- 		edev->state &= ~mask;
- 		edev->state |= state & mask;
- 
-@@ -247,6 +286,8 @@ void extcon_update_state(struct extcon_dev *edev, u32 mask, u32 state)
- 		/* No changes */
- 		spin_unlock_irqrestore(&edev->lock, flags);
- 	}
-+
-+	return 0;
- }
- EXPORT_SYMBOL_GPL(extcon_update_state);
- 
-@@ -258,9 +299,9 @@ EXPORT_SYMBOL_GPL(extcon_update_state);
-  * Note that notifier provides which bits are changed in the state
-  * variable with the val parameter (second) to the callback.
-  */
--void extcon_set_state(struct extcon_dev *edev, u32 state)
-+int extcon_set_state(struct extcon_dev *edev, u32 state)
- {
--	extcon_update_state(edev, 0xffffffff, state);
-+	return extcon_update_state(edev, 0xffffffff, state);
- }
- EXPORT_SYMBOL_GPL(extcon_set_state);
- 
-@@ -334,8 +375,7 @@ int extcon_set_cable_state_(struct extcon_dev *edev,
- 		return -EINVAL;
- 
- 	state = cable_state ? (1 << index) : 0;
--	extcon_update_state(edev, 1 << index, state);
--	return 0;
-+	return extcon_update_state(edev, 1 << index, state);
- }
- EXPORT_SYMBOL_GPL(extcon_set_cable_state_);
- 
-@@ -511,6 +551,14 @@ static void extcon_cleanup(struct extcon_dev *edev, bool skip)
- 	if (!skip && get_device(edev->dev)) {
- 		int index;
- 
-+		if (edev->mutually_exclusive && edev->max_supported) {
-+			for (index = 0; edev->mutually_exclusive[index];
-+			     index++)
-+				kfree(edev->d_attrs_muex[index].attr.name);
-+			kfree(edev->d_attrs_muex);
-+			kfree(edev->attrs_muex);
-+		}
-+
- 		for (index = 0; index < edev->max_supported; index++)
- 			kfree(edev->cables[index].attr_g.name);
- 
-@@ -533,6 +581,7 @@ static void extcon_dev_release(struct device *dev)
- 	extcon_cleanup(edev, true);
- }
- 
-+static const char *muex_name = "mutually_exclusive";
- static void dummy_sysfs_dev_release(struct device *dev)
- {
- }
-@@ -625,10 +674,58 @@ int extcon_dev_register(struct extcon_dev *edev, struct device *dev)
- 		}
- 	}
- 
-+	if (edev->max_supported && edev->mutually_exclusive) {
-+		char buf[80];
-+		char *name;
-+
-+		/* Count the size of mutually_exclusive array */
-+		for (index = 0; edev->mutually_exclusive[index]; index++)
-+			;
-+
-+		edev->attrs_muex = kzalloc(sizeof(struct attribute *) *
-+					   (index + 1), GFP_KERNEL);
-+		if (!edev->attrs_muex) {
-+			ret = -ENOMEM;
-+			goto err_muex;
-+		}
-+
-+		edev->d_attrs_muex = kzalloc(sizeof(struct device_attribute) *
-+					     index, GFP_KERNEL);
-+		if (!edev->d_attrs_muex) {
-+			ret = -ENOMEM;
-+			kfree(edev->attrs_muex);
-+			goto err_muex;
-+		}
-+
-+		for (index = 0; edev->mutually_exclusive[index]; index++) {
-+			sprintf(buf, "0x%x", edev->mutually_exclusive[index]);
-+			name = kzalloc(sizeof(char) * (strlen(buf) + 1),
-+				       GFP_KERNEL);
-+			if (!name) {
-+				for (index--; index >= 0; index--) {
-+					kfree(edev->d_attrs_muex[index].attr.
-+					      name);
-+				}
-+				kfree(edev->d_attrs_muex);
-+				kfree(edev->attrs_muex);
-+				ret = -ENOMEM;
-+				goto err_muex;
-+			}
-+			strcpy(name, buf);
-+			edev->d_attrs_muex[index].attr.name = name;
-+			edev->d_attrs_muex[index].attr.mode = 0000;
-+			edev->attrs_muex[index] = &edev->d_attrs_muex[index]
-+							.attr;
-+		}
-+		edev->attr_g_muex.name = muex_name;
-+		edev->attr_g_muex.attrs = edev->attrs_muex;
-+
-+	}
-+
- 	if (edev->max_supported) {
- 		edev->extcon_dev_type.groups =
- 			kzalloc(sizeof(struct attribute_group *) *
--				(edev->max_supported + 1), GFP_KERNEL);
-+				(edev->max_supported + 2), GFP_KERNEL);
- 		if (!edev->extcon_dev_type.groups) {
- 			ret = -ENOMEM;
- 			goto err_alloc_groups;
-@@ -640,6 +737,9 @@ int extcon_dev_register(struct extcon_dev *edev, struct device *dev)
- 		for (index = 0; index < edev->max_supported; index++)
- 			edev->extcon_dev_type.groups[index] =
- 				&edev->cables[index].attr_g;
-+		if (edev->mutually_exclusive)
-+			edev->extcon_dev_type.groups[index] =
-+				&edev->attr_g_muex;
- 
- 		edev->dev->type = &edev->extcon_dev_type;
- 	}
-@@ -672,6 +772,13 @@ err_dev:
- 	if (edev->max_supported)
- 		kfree(edev->extcon_dev_type.groups);
- err_alloc_groups:
-+	if (edev->max_supported && edev->mutually_exclusive) {
-+		for (index = 0; edev->mutually_exclusive[index]; index++)
-+			kfree(edev->d_attrs_muex[index].attr.name);
-+		kfree(edev->d_attrs_muex);
-+		kfree(edev->attrs_muex);
-+	}
-+err_muex:
- 	for (index = 0; index < edev->max_supported; index++)
- 		kfree(edev->cables[index].attr_g.name);
- err_alloc_cables:
-diff --git a/include/linux/extcon.h b/include/linux/extcon.h
-index 6ed1967..f8c7c73 100644
---- a/include/linux/extcon.h
-+++ b/include/linux/extcon.h
-@@ -78,6 +78,14 @@ struct extcon_cable;
-  * @supported_cable	Array of supported cable name ending with NULL.
-  *			If supported_cable is NULL, cable name related APIs
-  *			are disabled.
-+ * @mutually_exclusive	Array of mutually exclusive set of cables that cannot
-+ *			be attached simultaneously. The array should be
-+ *			ending with NULL or be NULL (no mutually exclusive
-+ *			cables). For example, if it is { 0x7, 0x30, 0}, then,
-+ *			{0, 1}, {0, 1, 2}, {0, 2}, {1, 2}, or {4, 5} cannot
-+ *			be attached simulataneously. {0x7, 0} is equivalent to
-+ *			{0x3, 0x6, 0x5, 0}. If it is {0xFFFFFFFF, 0}, there
-+ *			can be no simultaneous connections.
-  * @print_name	An optional callback to override the method to print the
-  *		name of the extcon device.
-  * @print_state	An optional callback to override the method to print the
-@@ -103,6 +111,7 @@ struct extcon_dev {
- 	/* --- Optional user initializing data --- */
- 	const char	*name;
- 	const char **supported_cable;
-+	const u32	*mutually_exclusive;
- 
- 	/* --- Optional callbacks to override class functions --- */
- 	ssize_t	(*print_name)(struct extcon_dev *edev, char *buf);
-@@ -119,6 +128,10 @@ struct extcon_dev {
- 	/* /sys/class/extcon/.../cable.n/... */
- 	struct device_type extcon_dev_type;
- 	struct extcon_cable *cables;
-+	/* /sys/class/extcon/.../mutually_exclusive/... */
-+	struct attribute_group attr_g_muex;
-+	struct attribute **attrs_muex;
-+	struct device_attribute *d_attrs_muex;
- };
- 
- /**
-@@ -179,8 +192,8 @@ static inline u32 extcon_get_state(struct extcon_dev *edev)
- 	return edev->state;
- }
- 
--extern void extcon_set_state(struct extcon_dev *edev, u32 state);
--extern void extcon_update_state(struct extcon_dev *edev, u32 mask, u32 state);
-+extern int extcon_set_state(struct extcon_dev *edev, u32 state);
-+extern int extcon_update_state(struct extcon_dev *edev, u32 mask, u32 state);
- 
- /*
-  * get/set_cable_state access each bit of the 32b encoded state value.
-@@ -235,11 +248,16 @@ static inline u32 extcon_get_state(struct extcon_dev *edev)
- 	return 0;
- }
- 
--static inline void extcon_set_state(struct extcon_dev *edev, u32 state) { }
-+static inline int extcon_set_state(struct extcon_dev *edev, u32 state)
-+{
-+	return 0;
-+}
- 
--static inline void extcon_update_state(struct extcon_dev *edev, u32 mask,
-+static inline int extcon_update_state(struct extcon_dev *edev, u32 mask,
- 				       u32 state)
--{ }
-+{
-+	return 0;
-+}
- 
- static inline int extcon_find_cable_index(struct extcon_dev *edev,
- 					  const char *cable_name)
+Fixed
+
+>> +       CPUs are active on the system at any given moment.
+>> +
+>> +       If unsure, say N.
+>> +
+>>
+>> ...
+>>
+>> +static int __init ledtrig_cpu_init(void)
+>> +{
+>> +     int cpu;
+>> +
+>> +     /* Supports up to 9999 cpu cores */
+>> +     BUILD_BUG_ON(CONFIG_NR_CPUS > 9999);
+>
+> hm, I wonder if this can be prevented in Kconfig logic.  I guess
+> "depends on NR_CPUS <= 9999" isn't available.
+>
+
+"default N if (NR_CPUS > 9999)" isn't available, either.
+
+>> +     /*
+>> +      * Registering CPU led trigger for each CPU cores here
+>
+> s/cores/core/
+>
+
+Fixed
+
+>> +      * ignores CPU hotplug, but after this CPU hotplug works
+>> +      * fine with this trigger.
+>> +      */
+>> +     for_each_possible_cpu(cpu) {
+>> +             struct led_trigger *trig;
+>> +             char *name = per_cpu(trig_name, cpu);
+>> +             struct rw_semaphore *lock = &per_cpu(trig_lock, cpu);
+>> +
+>> +             init_rwsem(lock);
+>> +
+>> +             snprintf(name, MAX_NAME_LEN, "cpu%d", cpu);
+>> +
+>> +             down_write(lock);
+>> +             led_trigger_register_simple(name, &trig);
+>
+> OK, problem.
+>
+> led_trigger_register_simple() calls kzalloc() and
+> led_trigger_register(), both of which can fail.
+> led_trigger_register_simple() just returns void, failing to propagate
+> the error back.  This is bad, and we (ie you ;)) should fix
+> led_trigger_register_simple() before proceeding to use it.  If at all
+> possible.  Please.  Let us not propagate the badness further.  Sorry.
+>
+>> +             per_cpu(cpu_trig, cpu) = trig;
+>> +             up_write(lock);
+>> +     }
+>> +
+>> +     register_syscore_ops(&ledtrig_cpu_syscore_ops);
+>> +
+>> +     pr_info("ledtrig-cpu: registered to indicate activity on CPUs\n");
+>> +
+>> +     return 0;
+>> +}
+>> +module_init(ledtrig_cpu_init);
+>> +
+>> +static void __exit ledtrig_cpu_exit(void)
+>> +{
+>> +     int cpu;
+>> +
+>> +     for_each_possible_cpu(cpu) {
+>> +             struct led_trigger *trig = per_cpu(cpu_trig, cpu);
+>
+> grr.  drivers/leds/led-triggers.c sometimes does
+>
+>        struct led_trigger trigger;
+>
+> and sometimes
+>
+>        struct led_trigger trig;
+>
+> which makes the code needlessly more difficult to follow.  So if you're
+> fiddling with drivers/leds/led-triggers.c, please fix that up - use
+> "trig" everywhere?
+>
+
+If Richard has no objection, I will do this.
+
+>> +             char *name = per_cpu(trig_name, cpu);
+>> +
+>> +             led_trigger_unregister_simple(trig);
+>
+> And what happens if led_trigger_register_simple() had silently failed
+> to register this trigger?  afacit, nothing: your code handles the
+> trig==NULL case OK.  Still, we should be checking for those failures!
+>
+>> +             per_cpu(cpu_trig, cpu) = NULL;
+>> +             memset(name, 0, MAX_NAME_LEN);
+>> +     }
+>> +
+>> +     unregister_syscore_ops(&ledtrig_cpu_syscore_ops);
+>> +}
+>> +module_exit(ledtrig_cpu_exit);
+>> +
+>> +MODULE_AUTHOR("Linus Walleij <linus.walleij@linaro.org>");
+>> +MODULE_AUTHOR("Bryan Wu <bryan.wu@canonical.com>");
+>> +MODULE_DESCRIPTION("CPU LED trigger");
+>> +MODULE_LICENSE("GPL");
+>> diff --git a/include/linux/leds.h b/include/linux/leds.h
+>> index 5884def..1215b94 100644
+>> --- a/include/linux/leds.h
+>> +++ b/include/linux/leds.h
+>> @@ -210,4 +210,27 @@ struct gpio_led_platform_data {
+>>  struct platform_device *gpio_led_register_device(
+>>               int id, const struct gpio_led_platform_data *pdata);
+>>
+>> +enum cpu_led_event {
+>> +     CPU_LED_IDLE_START,     /* CPU enters idle */
+>> +     CPU_LED_IDLE_END,       /* CPU idle ends */
+>> +     CPU_LED_START,          /* Machine starts, especially resume */
+>> +     CPU_LED_STOP,           /* Machine stops, especially suspend */
+>> +     CPU_LED_HALTED,         /* Machine shutdown */
+>> +};
+>> +#if defined(CONFIG_LEDS_TRIGGER_CPU) || defined(CONFIG_LEDS_TRIGGER_CPU_MODULE)
+>
+> See lkml subject "RFC: strip 15,000 lines from a typical autoconf.h".
+> We might be able to simplify this.  But the above is OK for now.
+>
+>> +/**
+>> + * ledtrig_cpu - emit a CPU event as a trigger
+>> + * @evt: CPU event to be emitted
+>> + *
+>> + * Emit a CPU event on a CPU core, which will trigger a
+>> + * binded LED to turn on or turn off.
+>> + */
+>
+> It's conventional to add kerneldoc at the function definition site, not
+> at the declaration.  Nobody thinks to look in the .h file for
+> documentation.
+>
+Fixed.
+
+>> +extern void ledtrig_cpu(enum cpu_led_event evt);
+>> +#else
+>> +static inline void ledtrig_cpu(enum cpu_led_event evt)
+>> +{
+>> +     return;
+>> +}
+>> +#endif
+>> +
+>
+>
+> _______________________________________________
+> linux-arm-kernel mailing list
+> linux-arm-kernel@lists.infradead.org
+> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
+
+
+
 -- 
-1.7.4.1
-
+Bryan Wu <bryan.wu@canonical.com>
+Kernel Developer    +86.186-168-78255 Mobile
+Canonical Ltd.      www.canonical.com
+Ubuntu - Linux for human beings | www.ubuntu.com
