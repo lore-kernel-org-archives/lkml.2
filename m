@@ -1,168 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755232Ab2DSMah (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Apr 2012 08:30:37 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:44443 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752963Ab2DSMag (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Apr 2012 08:30:36 -0400
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Liam Girdwood <lrg@ti.com>, Jassi Brar <jaswinder.singh@linaro.org>
-Cc: linux-kernel@vger.kernel.org,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-Subject: [PATCH] regulator: core: Optimise enable/disable path for always on regulators
-Date: Thu, 19 Apr 2012 13:30:18 +0100
-Message-Id: <1334838618-27924-1-git-send-email-broonie@opensource.wolfsonmicro.com>
-X-Mailer: git-send-email 1.7.10
+	id S1755211Ab2DSMcV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Apr 2012 08:32:21 -0400
+Received: from ogre.sisk.pl ([193.178.161.156]:52849 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751639Ab2DSMcT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Apr 2012 08:32:19 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: huang ying <huang.ying.caritas@gmail.com>
+Subject: Re: [RFC PATCH] PCIe: Add PCIe runtime D3cold support
+Date: Thu, 19 Apr 2012 14:36:57 +0200
+User-Agent: KMail/1.13.6 (Linux/3.4.0-rc3+; KDE/4.6.0; x86_64; ; )
+Cc: "Yan, Zheng" <zheng.z.yan@intel.com>, bhelgaas@google.com,
+        linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
+        linux-pm@vger.kernel.org, Lin Ming <ming.m.lin@intel.com>,
+        Zhang Rui <rui.zhang@intel.com>,
+        ACPI Devel Mailing List <linux-acpi@vger.kernel.org>
+References: <4F8790F6.5080408@intel.com> <201204182251.46335.rjw@sisk.pl> <CAC=cRTMPrSsK5Y8uVxVrtGNqJAGFyRMLU7WsYm185siZd-V_8w@mail.gmail.com>
+In-Reply-To: <CAC=cRTMPrSsK5Y8uVxVrtGNqJAGFyRMLU7WsYm185siZd-V_8w@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201204191436.57495.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If a regulator is always on for any reason then cache that when the
-consumer is created and use it to optimise away the need to take locks
-or recurse up the supply tree when consumers do enable or disable calls.
-The scheduling of asynchronous work for bulk enables is also skipped.
+On Thursday, April 19, 2012, huang ying wrote:
+> On Thu, Apr 19, 2012 at 4:51 AM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+> > On Wednesday, April 18, 2012, huang ying wrote:
+> >> On Wed, Apr 18, 2012 at 5:10 AM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+> >> > On Tuesday, April 17, 2012, huang ying wrote:
+> >> >> On Tue, Apr 17, 2012 at 5:30 AM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+> >> >> >> >> +     return 0;
+> >> >> >> >> +}
+> >> >> >> >> +
+> >> >> >> >> +static int pcie_port_runtime_resume(struct device *dev)
+> >> >> >> >> +{
+> >> >> >> >> +     struct pci_dev *pdev = to_pci_dev(dev);
+> >> >> >> >> +
+> >> >> >> >> +     pci_restore_state(pdev);
+> >> >> >> >> +     if (pdev->runtime_d3cold)
+> >> >> >> >> +             msleep(100);
+> >> >> >> >
+> >> >> >> > What's _that_ supposed to do?
+> >> >> >>
+> >> >> >> When resume from d3cold, PCIe main link will be powered on again, it
+> >> >> >> will take quite some time before the main link go into L0 state.
+> >> >> >> Otherwise, accessing devices under the port may return wrong result.
+> >> >> >
+> >> >> > OK, but this is generic code and as per the standard the link should have been
+> >> >> > reestablished at this point already.
+> >> >> >
+> >> >> > Please don't put some nonstandard-platform-specific quirks like this into
+> >> >> > code that's supposed to handle _every_ PCIe system.
+> >> >>
+> >> >> After checking PCIe spec, I found that the 100ms here has its standard origin :)
+> >> >>
+> >> >> In PCI Express Base Specification Revision 2.0:
+> >> >>
+> >> >> Section 6.6.1 Conventional Reset
+> >> >>
+> >> >> "
+> >> >> To allow components to perform internal initialization, system
+> >> >> software must wait for at least
+> >> >> 100 ms from the end of a Conventional Reset of one or more devices
+> >> >> before it is permitted to
+> >> >> issue Configuration Requests to those devices
+> >> >> "
+> >> >>
+> >> >> But I think we should move the 100ms delay here to PCIe bus code or
+> >> >> PCIe/ACPI code, because that is needed by all PCIe devices for D3cold
+> >> >> support.
+> >> >
+> >> > I think it should be sufficient to wait for the PME message to arrive at
+> >> > the root port (which will cause the PME interrupt to appear), at which
+> >> > point the device that sent it should be able to receive configuration
+> >> > requests.
+> >>
+> >> For remote wake up, it is sufficient.  But for host wake up, we still
+> >> need to wait 100ms.
+> >
+> > Yes, we do.
+> >
+> >> > At this point, I need to konw what exactly happens when the GPE is triggered
+> >> > by WAKE#.
+> >>
+> >> - Lxx handler will be executed
+> >> - in Lxx handler, Notify the ACPI handle PCIe port
+> >> - Linux has registered a handler for the ACPI handle of PCIe port, in
+> >> the handler, turn on _PR0 and execute _PS0, which will power on the
+> >> link.
+> >
+> > But the handler we have is not the handler we want here.
+> >
+> > In fact, there are two handlers, pci_acpi_wake_bus() and pci_acpi_wake_dev()
+> > and they only do useful things for ACPI_NOTIFY_DEVICE_WAKE.  Is that the
+> > event type we receive from that _Lxx?
+> 
+> I check the DSDT, in _Lxx, there is
+> 
+> Notify (\_SB.PCI0.RP03, 0x02)
+> 
+> That is, the event type is ACPI_NOTIFY_DEVICE_WAKE.
+> 
+> > Even if so, these routines don't seem to be suitable to handle the case at hand.
+> 
+> Yes.  Maybe add a flag named like "come_from_d3cold", and if
+> come_from_d3cold == true, resume the dev itself without checking pme
+> bits, because the PCIe main link is not available now.
 
-We don't actually check if the device physically supports control on the
-basis that constraints allowing status changes on physically always on
-regulators are nonsensical anyway.
+Actually, I think we can do the full resume (however with the 100 ms wait)
+in that case, because we're going to resume the device shortly anyway.
 
-This is a very common pattern in hardware - it's normal to have some
-power supplies that have either no software control or are critical to
-system function - so many systems should be able to benefit.
+The PME would only be useful as a kind of handshake with the device, so we
+know we can access its registers, but as you pointed that out, we need the
+100 ms delay in the host wakeup case anyway, so perhaps it's better to make
+remote wakeup and host wakeup behave identically in that respect.
 
-Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
----
-
-I've only compile tested this so far, will do so later today or
-tomorrow, but I'm fairly optimistic it'll be OK so pushing out now for
-review.
-
- drivers/regulator/core.c |   54 ++++++++++++++++++++++++++++++++++------------
- 1 file changed, 40 insertions(+), 14 deletions(-)
-
-diff --git a/drivers/regulator/core.c b/drivers/regulator/core.c
-index db79987..1caada2 100644
---- a/drivers/regulator/core.c
-+++ b/drivers/regulator/core.c
-@@ -75,6 +75,7 @@ struct regulator_map {
- struct regulator {
- 	struct device *dev;
- 	struct list_head list;
-+	unsigned int always_on:1;
- 	int uA_load;
- 	int min_uV;
- 	int max_uV;
-@@ -156,6 +157,17 @@ static struct device_node *of_get_regulator(struct device *dev, const char *supp
- 	return regnode;
- }
- 
-+static int _regulator_can_change_status(struct regulator_dev *rdev)
-+{
-+	if (!rdev->constraints)
-+		return 0;
-+
-+	if (rdev->constraints->valid_ops_mask & REGULATOR_CHANGE_STATUS)
-+		return 1;
-+	else
-+		return 0;
-+}
-+
- /* Platform voltage constraint check */
- static int regulator_check_voltage(struct regulator_dev *rdev,
- 				   int *min_uV, int *max_uV)
-@@ -1142,6 +1154,15 @@ static struct regulator *create_regulator(struct regulator_dev *rdev,
- 				   &regulator->max_uV);
- 	}
- 
-+	/*
-+	 * Check now if the regulator is an always on regulator - if
-+	 * it is then we don't need to do nearly so much work for
-+	 * enable/disable calls.
-+	 */
-+	if (!_regulator_can_change_status(rdev) &&
-+	    _regulator_is_enabled(rdev))
-+		regulator->always_on = true;
-+
- 	mutex_unlock(&rdev->mutex);
- 	return regulator;
- link_name_err:
-@@ -1444,17 +1465,6 @@ void devm_regulator_put(struct regulator *regulator)
- }
- EXPORT_SYMBOL_GPL(devm_regulator_put);
- 
--static int _regulator_can_change_status(struct regulator_dev *rdev)
--{
--	if (!rdev->constraints)
--		return 0;
--
--	if (rdev->constraints->valid_ops_mask & REGULATOR_CHANGE_STATUS)
--		return 1;
--	else
--		return 0;
--}
--
- /* locks held by regulator_enable() */
- static int _regulator_enable(struct regulator_dev *rdev)
- {
-@@ -1534,6 +1544,9 @@ int regulator_enable(struct regulator *regulator)
- 	struct regulator_dev *rdev = regulator->rdev;
- 	int ret = 0;
- 
-+	if (regulator->always_on)
-+		return 0;
-+
- 	if (rdev->supply) {
- 		ret = regulator_enable(rdev->supply);
- 		if (ret != 0)
-@@ -1612,6 +1625,9 @@ int regulator_disable(struct regulator *regulator)
- 	struct regulator_dev *rdev = regulator->rdev;
- 	int ret = 0;
- 
-+	if (regulator->always_on)
-+		return 0;
-+
- 	mutex_lock(&rdev->mutex);
- 	ret = _regulator_disable(rdev);
- 	mutex_unlock(&rdev->mutex);
-@@ -1720,6 +1736,9 @@ int regulator_disable_deferred(struct regulator *regulator, int ms)
- 	struct regulator_dev *rdev = regulator->rdev;
- 	int ret;
- 
-+	if (regulator->always_on)
-+		return 0;
-+
- 	mutex_lock(&rdev->mutex);
- 	rdev->deferred_disables++;
- 	mutex_unlock(&rdev->mutex);
-@@ -1813,6 +1832,9 @@ int regulator_is_enabled(struct regulator *regulator)
- {
- 	int ret;
- 
-+	if (regulator->always_on)
-+		return 1;
-+
- 	mutex_lock(&regulator->rdev->mutex);
- 	ret = _regulator_is_enabled(regulator->rdev);
- 	mutex_unlock(&regulator->rdev->mutex);
-@@ -2639,9 +2661,13 @@ int regulator_bulk_enable(int num_consumers,
- 	int i;
- 	int ret = 0;
- 
--	for (i = 0; i < num_consumers; i++)
--		async_schedule_domain(regulator_bulk_enable_async,
--				      &consumers[i], &async_domain);
-+	for (i = 0; i < num_consumers; i++) {
-+		if (consumers[i].consumer->always_on)
-+			consumers[i].ret = 0;
-+		else
-+			async_schedule_domain(regulator_bulk_enable_async,
-+					      &consumers[i], &async_domain);
-+	}
- 
- 	async_synchronize_full_domain(&async_domain);
- 
--- 
-1.7.10
-
+Thanks,
+Rafael
