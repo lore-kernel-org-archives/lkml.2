@@ -1,21 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932755Ab2DSV6E (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Apr 2012 17:58:04 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:41537 "EHLO
+	id S932737Ab2DSV63 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Apr 2012 17:58:29 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:38883 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932680Ab2DSVHM (ORCPT
+	with ESMTP id S932634Ab2DSVHC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Apr 2012 17:07:12 -0400
-Message-Id: <20120419210306.806241195@linuxfoundation.org>
+	Thu, 19 Apr 2012 17:07:02 -0400
+Message-Id: <20120419210306.541037055@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Thu, 19 Apr 2012 14:03:46 -0700
+Date: Thu, 19 Apr 2012 14:03:43 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, =?UTF-8?q?S=C3=B8ren=20Holm?= <sgh@sgh.dk>,
-        Johan Hovold <jhovold@gmail.com>
-Subject: [ 43/75] USB: pl2303: fix DTR/RTS being raised on baud rate change
+        alan@lxorguk.ukuu.org.uk, Jeremy Fitzhardinge <jeremy@goop.org>,
+        Leigh Scott <leigh123linux@googlemail.com>,
+        Thomas Reitmayr <treitmayr@devbase.at>,
+        "H. Peter Anvin" <hpa@zytor.com>
+Subject: [ 40/75] x86: Use correct byte-sized register constraint in
+ __xchg_op()
 In-Reply-To: <20120419210322.GA6478@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,31 +28,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Johan Hovold <jhovold@gmail.com>
+From: Jeremy Fitzhardinge <jeremy@goop.org>
 
-commit ce5c9851855bab190c9a142761d54ba583ab094c upstream.
+commit 2ca052a3710fac208eee690faefdeb8bbd4586a1 upstream.
 
-DTR/RTS should only be raised when changing baudrate from B0 and not on
-any baud rate change (> B0).
+x86-64 can access the low half of any register, but i386 can only do
+it with a subset of registers.  'r' causes compilation failures on i386,
+but 'q' expresses the constraint properly.
 
-Reported-by: Søren Holm <sgh@sgh.dk>
-Signed-off-by: Johan Hovold <jhovold@gmail.com>
+Signed-off-by: Jeremy Fitzhardinge <jeremy@goop.org>
+Link: http://lkml.kernel.org/r/4F7A3315.501@goop.org
+Reported-by: Leigh Scott <leigh123linux@googlemail.com>
+Tested-by: Thomas Reitmayr <treitmayr@devbase.at>
+Signed-off-by: H. Peter Anvin <hpa@zytor.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/serial/pl2303.c |    2 +-
+ arch/x86/include/asm/cmpxchg.h |    2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/usb/serial/pl2303.c
-+++ b/drivers/usb/serial/pl2303.c
-@@ -421,7 +421,7 @@ static void pl2303_set_termios(struct tt
- 	control = priv->line_control;
- 	if ((cflag & CBAUD) == B0)
- 		priv->line_control &= ~(CONTROL_DTR | CONTROL_RTS);
--	else
-+	else if ((old_termios->c_cflag & CBAUD) == B0)
- 		priv->line_control |= (CONTROL_DTR | CONTROL_RTS);
- 	if (control != priv->line_control) {
- 		control = priv->line_control;
+--- a/arch/x86/include/asm/cmpxchg.h
++++ b/arch/x86/include/asm/cmpxchg.h
+@@ -43,7 +43,7 @@ extern void __add_wrong_size(void)
+ 		switch (sizeof(*(ptr))) {				\
+ 		case __X86_CASE_B:					\
+ 			asm volatile (lock #op "b %b0, %1\n"		\
+-				      : "+r" (__ret), "+m" (*(ptr))	\
++				      : "+q" (__ret), "+m" (*(ptr))	\
+ 				      : : "memory", "cc");		\
+ 			break;						\
+ 		case __X86_CASE_W:					\
 
 
