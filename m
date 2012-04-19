@@ -1,103 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755552Ab2DSOJ6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Apr 2012 10:09:58 -0400
-Received: from nm17-vm1.bullet.mail.ird.yahoo.com ([77.238.189.206]:40873 "HELO
-	nm17-vm1.bullet.mail.ird.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1752363Ab2DSOJ4 convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Apr 2012 10:09:56 -0400
-X-Yahoo-Newman-Property: ymail-5
-X-Yahoo-Newman-Id: 917624.25381.bm@omp1007.mail.ird.yahoo.com
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
-  s=s1024; d=yahoo.com;
-  h=X-YMail-OSG:Received:X-Mailer:Message-ID:Date:From:Subject:To:Cc:MIME-Version:Content-Type:Content-Transfer-Encoding;
-  b=CJQGW+9FDBj6ZNtPawu/rtfdCWSgSvDt5dn1K3tNEZ6i3F0IPWprbOtosbjYJP9yBsnZcnfl78SNMlfYOeXa9G3sJHdQKowVdZq/F+BU3AVzN7GreOVxP++rI6uvjJIWzOzvsYlBqLk5mhk0LTeqs3BGH/42fqV+V7QUZ/BKrQU=;
-X-YMail-OSG: lwzE.3gVM1m3uUVyy4dcQ7IKNh4ywkhpY3PMDCR517z8ITu
- lQFH9EgjXR2kChMwxAMAYLR_kyhzCqtYSCbSGY29H68HYRV7nGC_nMS9jXLo
- mmyTa1_YHM4wM9d3nL1dzjurMvYihd5U6a2NvtPczwOjkp7rltj5xqSJhuUJ
- 9plxu.hURnDy37OQOC7RF8q01q8BRo8Xay0n9ZbJYIxAprHqCB5zZF8r4aRB
- z2gI_j_rNlnP4o.N0U3wLhQqZA109.RBmPEZrFTxVjeZuUoavuK79.rrjUcZ
- u14frDo9GDPik7gc_95X2.Ol_LPQQPFArrTiYwYK1tCijySNRCCj0azq.KJL
- w_kfzvjlorqCPwz40X7AR7ibqKUmYhR53JBaI1xPo8sxoQ5XQz.2QcZTxQRJ
- kX.UWNGs.OFvvaDfmaNBczKxEgkp44Tju6jF5ltdNsihc3OrcTsPVzsaIyeQ
- oxZRvlYBEFcrZHcFeRhKSFo0VT13lG85ZfqJL4fef2QipIyH8M63kMWizLYd
- w7ISAmmX2duj8R9ndpqxd6pZpTw50v0xQEZv7TXEsl7hPjMPcD.0U7CrbjGr
- ENupvBSG8Z4ZyblyhYa_1sCkH0TARluWwVoFsyzGiNq6twbLeHTA0waLSWxl
- vkHY4CwwRf2gimZhkmfSbn1eNWjbczv3ZzTcSAd0omlczKaLdEkTl019bNSE
- xxyYZTmtdTbpS6hH9HElHGCFRwti6BDADuYpqlXf16dgOUMf7EyuXvZNBsTl
- V1IoGIALn6Nw5ItUH9aEfXbSvcX3zAQU-
-X-Mailer: YahooMailClassic/15.0.5 YahooMailWebService/0.8.117.340979
-Message-ID: <1334844594.62458.YahooMailClassic@web29011.mail.ird.yahoo.com>
-Date: Thu, 19 Apr 2012 15:09:54 +0100 (BST)
-From: Paul Parsons <lost.distance@yahoo.com>
-Subject: [PATCH] video: w100fb: Reduce sleep mode battery discharge
-To: FlorianSchandinat@gmx.de
-Cc: mreimer@sdgsystems.com, philipp.zabel@gmail.com,
-        linux-kernel@vger.kernel.org
+	id S1755525Ab2DSOV4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Apr 2012 10:21:56 -0400
+Received: from moutng.kundenserver.de ([212.227.17.9]:53389 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754271Ab2DSOVy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Apr 2012 10:21:54 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Subject: Re: [PATCH v2 0/8] Second patchset for LPC32xx device tree conversion
+Date: Thu, 19 Apr 2012 14:21:29 +0000
+User-Agent: KMail/1.12.2 (Linux/3.3.0-rc1; KDE/4.3.2; x86_64; ; )
+Cc: Dan Carpenter <dan.carpenter@oracle.com>, Roland Stigge <stigge@antcom.de>,
+        devel@driverdev.osuosl.org, srinivas.bakki@nxp.com,
+        linux-usb@vger.kernel.org, gregkh@linuxfoundation.org,
+        thierry.reding@avionic-design.de, linux-kernel@vger.kernel.org,
+        kevin.wells@nxp.com, marek.vasut@gmail.com, arm@kernel.org,
+        linux-input@vger.kernel.org, axel.lin@gmail.com,
+        dmitry.torokhov@gmail.com, linux-arm-kernel@lists.infradead.org
+References: <1334682507-15055-1-git-send-email-stigge@antcom.de> <201204181100.40123.arnd@arndb.de> <20120418165650.GD3099@opensource.wolfsonmicro.com>
+In-Reply-To: <20120418165650.GD3099@opensource.wolfsonmicro.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201204191421.29558.arnd@arndb.de>
+X-Provags-ID: V02:K0:7tD/GXDAiAMHNhQIUCQ2k8tcA0t7syqDvC+RHhD4yga
+ 3PydItmgrbW9ezyeo/wdGN2LiGIwZVLJD3um6PsBPXwUa5R3hp
+ 4F6x0q7VMg0/qlPrrr1AqmERL4xI5tICOcjb+4Iz01p5o4cmwJ
+ QcTVhQBnalyL8NDkbJ0zSqOlTPqABAiZ5rcQozvRLxZ4D9HLyl
+ +pqdPHbSs3PuhBaI+jnfi65yA651Vn9Kh+Aq/OFNitHtEJ9Qv0
+ 8Ecyzp46fLLwrxUvIyxigUCKMKMN8//Lty3MajxBYQvNYRXhgm
+ EKLAc5rjXIWQcxq/YkybQ5E5ExrTpT/xo+Sw6uaEhS7Z4u28rM
+ YWS0ynaFSH20AqrrYgPg=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In 2006 and 2007 the handhelds.org kernel w100fb driver was patched to
-reduce sleep mode battery discharge. Unfortunately those two patches
-never migrated to the mainline kernel.
+On Wednesday 18 April 2012, Mark Brown wrote:
+> On Wed, Apr 18, 2012 at 11:00:39AM +0000, Arnd Bergmann wrote:
+> 
+> > 1. develop on -rc
+> > 2. merge with latest -next, test and make sure it works there
+> > 3. submit for review against -rc
+> > 4. have patches included in -next once reviewed, but based on -rc
+> > 5. when merge window opens, have patches sent for upstream inclusion
+> 
+> Steps 3 and 4 should be to submit against whatever branch is appropriate
+> for the subsystem and driver - if people follow this process they're
+> going to get bounced back by a fair proportion of maintainers, -rc isn't
+> universally what people are looking for so people should be aware that
+> they need to pay attention here.  
+> 
+> Generally I'd say the development version is a safer bet than -rc for
+> most subsystems.
 
-Fortunately the function affected - w100_suspend() - has not changed
-since; thus those patches still apply cleanly.
+Right. The description above was mostly done for the lpc32xx case,
+which is going to get merged through the arm-soc tree and that doesn't
+have a single development branch but instead has lots of them.
 
-Applying those patches to linux-3.4-rc3 running on an HP iPAQ hx4700
-reduces the sleep mode battery discharge from approximately 26 mA to
-approximately 11 mA.
+For subsystems that have just one branch, I agree that it makes sense
+to develop against that one. Also for arm-soc, it can make sense
+to base on one of the existing branches, but I prefer the default
+to be to base on the -rc release so I can mix and match incoming
+branches as needed.
 
-This patch combines those two patches into a single unified patch.
-
-Signed-off-by: Paul Parsons <lost.distance@yahoo.com>
-Cc: Matt Reimer <mreimer@sdgsystems.com>
-Cc: Philipp Zabel <philipp.zabel@gmail.com>
----
-
-Many thanks to Matt Reimer for suggesting this.
-
-The seeming demise of handhelds.org has removed any formal patch logs.
-However the patches can still be viewed online:
-2006 patch:
-http://paste.lisp.org/display/31700
-2007 patch:
-http://osdir.com/ml/handhelds.linux.kernel/2007-02/msg00020.html
-
-And the fully patched handhelds.org kernel is still available, e.g.:
-http://www.linuxtogo.org/~goxboxlive/htcuniversal/Kernel/linux-2.6.21-hh20.tar.bz2
-
- drivers/video/w100fb.c |   12 ++++++++++++
- 1 files changed, 12 insertions(+), 0 deletions(-)
-
-diff --git a/drivers/video/w100fb.c b/drivers/video/w100fb.c
-index 90a2e30..2f6b2b8 100644
---- a/drivers/video/w100fb.c
-+++ b/drivers/video/w100fb.c
-@@ -1567,6 +1567,18 @@ static void w100_suspend(u32 mode)
- 		val = readl(remapped_regs + mmPLL_CNTL);
- 		val |= 0x00000004;  /* bit2=1 */
- 		writel(val, remapped_regs + mmPLL_CNTL);
-+
-+		writel(0x00000000, remapped_regs + mmLCDD_CNTL1);
-+		writel(0x00000000, remapped_regs + mmLCDD_CNTL2);
-+		writel(0x00000000, remapped_regs + mmGENLCD_CNTL1);
-+		writel(0x00000000, remapped_regs + mmGENLCD_CNTL2);
-+		writel(0x00000000, remapped_regs + mmGENLCD_CNTL3);
-+
-+		val = readl(remapped_regs + mmMEM_EXT_CNTL);
-+		val |= 0xF0000000;
-+		val &= ~(0x00000001);
-+		writel(val, remapped_regs + mmMEM_EXT_CNTL);
-+
- 		writel(0x0000001d, remapped_regs + mmPWRMGT_CNTL);
- 	}
- }
--- 
-1.7.3.4
-
+	Arnd
