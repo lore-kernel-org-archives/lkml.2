@@ -1,65 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933666Ab2DSVij (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Apr 2012 17:38:39 -0400
-Received: from mail-pz0-f42.google.com ([209.85.210.42]:38471 "EHLO
-	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964810Ab2DSVOI (ORCPT
+	id S964847Ab2DSVN7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Apr 2012 17:13:59 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:44451 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S964810Ab2DSVNv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Apr 2012 17:14:08 -0400
-Message-Id: <20120419210307.733422457@linuxfoundation.org>
+	Thu, 19 Apr 2012 17:13:51 -0400
+Message-Id: <20120419210614.880140572@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Thu, 19 Apr 2012 14:03:57 -0700
+Date: Thu, 19 Apr 2012 14:06:55 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Elric Fu <elricfu1@gmail.com>,
-        Sarah Sharp <sarah.a.sharp@linux.intel.com>
-Subject: [ 54/75] xHCI: add XHCI_RESET_ON_RESUME quirk for VIA xHCI host
-In-Reply-To: <20120419210322.GA6478@kroah.com>
+        alan@lxorguk.ukuu.org.uk, Jim Green <student.northwestern@gmail.com>,
+        Lin Ming <ming.m.lin@intel.com>, Bob Moore <robert.moore@intel.com>,
+        Len Brown <len.brown@intel.com>,
+        Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
+Subject: [ 44/59] ACPICA: Fix to allow region arguments to reference other scopes
+In-Reply-To: <20120419210623.GA12156@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.3-stable review patch.  If anyone has any objections, please let me know.
+3.0-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Elric Fu <elricfu1@gmail.com>
+From: Lin Ming <ming.m.lin@intel.com>
 
-commit 457a4f61f9bfc3ae76e5b49f30f25d86bb696f67 upstream.
+commit 8931d9ea78848b073bf299594f148b83abde4a5e upstream.
 
-The suspend operation of VIA xHCI host have some issues and
-hibernate operation works fine, so The XHCI_RESET_ON_RESUME
-quirk is added for it.
+Allow referenced objects to be in a different scope.
 
-This patch should base on "xHCI: Don't write zeroed pointer
-to xHC registers" that is released by Sarah. Otherwise, the
-host system error will ocurr in the hibernate operation
-process.
+http://www.acpica.org/bugzilla/show_bug.cgi?id=937
+http://marc.info/?l=linux-acpi&m=131636632718222&w=2
 
-This should be backported to stable kernels as old as 2.6.37,
-that contain the commit c877b3b2ad5cb9d4fe523c5496185cc328ff3ae9
-"xhci: Add reset on resume quirk for asrock p67 host".
+ACPI Error: [RAMB] Namespace lookup failure, AE_NOT_FOUND (20110112/psargs-359)
+ACPI Exception: AE_NOT_FOUND, Could not execute arguments for [RAMW] (Region) (20110112/nsinit-349)
 
-Signed-off-by: Elric Fu <elricfu1@gmail.com>
-Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+    Scope (_SB)
+    {
+        Name (RAMB, 0xDF5A1018)
+        OperationRegion (\RAMW, SystemMemory, RAMB, 0x00010000)
+    }
+
+For above ASL code, we need to save scope node(\_SB) to lookup
+the argument node(\_SB.RAMB).
+
+Reported-by: Jim Green <student.northwestern@gmail.com>
+Signed-off-by: Lin Ming <ming.m.lin@intel.com>
+Signed-off-by: Bob Moore <robert.moore@intel.com>
+Signed-off-by: Len Brown <len.brown@intel.com>
+Cc: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/host/xhci-pci.c |    2 ++
- 1 file changed, 2 insertions(+)
+ drivers/acpi/acpica/acobject.h |    1 +
+ drivers/acpi/acpica/dsargs.c   |    2 +-
+ drivers/acpi/acpica/excreate.c |    6 ++++++
+ 3 files changed, 8 insertions(+), 1 deletion(-)
 
---- a/drivers/usb/host/xhci-pci.c
-+++ b/drivers/usb/host/xhci-pci.c
-@@ -95,6 +95,8 @@ static void xhci_pci_quirks(struct devic
- 		xhci->quirks |= XHCI_RESET_ON_RESUME;
- 		xhci_dbg(xhci, "QUIRK: Resetting on resume\n");
- 	}
-+	if (pdev->vendor == PCI_VENDOR_ID_VIA)
-+		xhci->quirks |= XHCI_RESET_ON_RESUME;
- }
+--- a/drivers/acpi/acpica/acobject.h
++++ b/drivers/acpi/acpica/acobject.h
+@@ -358,6 +358,7 @@ typedef enum {
+  */
+ struct acpi_object_extra {
+ 	ACPI_OBJECT_COMMON_HEADER struct acpi_namespace_node *method_REG;	/* _REG method for this region (if any) */
++	struct acpi_namespace_node *scope_node;
+ 	void *region_context;	/* Region-specific data */
+ 	u8 *aml_start;
+ 	u32 aml_length;
+--- a/drivers/acpi/acpica/dsargs.c
++++ b/drivers/acpi/acpica/dsargs.c
+@@ -384,7 +384,7 @@ acpi_status acpi_ds_get_region_arguments
  
- /* called during probe() after chip reset completes */
+ 	/* Execute the argument AML */
+ 
+-	status = acpi_ds_execute_arguments(node, node->parent,
++	status = acpi_ds_execute_arguments(node, extra_desc->extra.scope_node,
+ 					   extra_desc->extra.aml_length,
+ 					   extra_desc->extra.aml_start);
+ 	if (ACPI_FAILURE(status)) {
+--- a/drivers/acpi/acpica/excreate.c
++++ b/drivers/acpi/acpica/excreate.c
+@@ -330,6 +330,12 @@ acpi_ex_create_region(u8 * aml_start,
+ 	region_obj2 = obj_desc->common.next_object;
+ 	region_obj2->extra.aml_start = aml_start;
+ 	region_obj2->extra.aml_length = aml_length;
++	if (walk_state->scope_info) {
++		region_obj2->extra.scope_node =
++		    walk_state->scope_info->scope.node;
++	} else {
++		region_obj2->extra.scope_node = node;
++	}
+ 
+ 	/* Init the region from the operands */
+ 
 
 
