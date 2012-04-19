@@ -1,22 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964924Ab2DSVO3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Apr 2012 17:14:29 -0400
-Received: from mail-pz0-f42.google.com ([209.85.210.42]:44862 "EHLO
-	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964880Ab2DSVO0 (ORCPT
+	id S964940Ab2DSVOe (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Apr 2012 17:14:34 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:44451 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S964880Ab2DSVO3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Apr 2012 17:14:26 -0400
-Message-Id: <20120419210615.844727283@linuxfoundation.org>
+	Thu, 19 Apr 2012 17:14:29 -0400
+Message-Id: <20120419210615.921535484@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Thu, 19 Apr 2012 14:07:06 -0700
+Date: Thu, 19 Apr 2012 14:07:07 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, "Cho, Yu-Chen" <acho@suse.com>,
-        Johan Hedberg <johan.hedberg@intel.com>,
-        Jonathan Nieder <jrnieder@gmail.com>
-Subject: [ 55/59] Bluetooth: Add Atheros maryann PIDVID support
+        alan@lxorguk.ukuu.org.uk, Kees Cook <keescook@chromium.org>,
+        Darren Hart <dvhart@linux.intel.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, Jiri Kosina <jkosina@suse.cz>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        David Howells <dhowells@redhat.com>,
+        "Serge E. Hallyn" <serge.hallyn@canonical.com>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: [ 56/59] futex: Do not leak robust list to unprivileged process
 In-Reply-To: <20120419210623.GA12156@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,115 +30,166 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Cho, Yu-Chen" <acho@suse.com>
+From: Kees Cook <keescook@chromium.org>
 
-commit 07c0ea874d43c299d185948452945a361052b6e3 upstream.
+commit bdbb776f882f5ad431aa1e694c69c1c3d6a4a5b8 upstream.
 
-Add Atheros maryann 0cf3:311d PIDVID support
-This module is AR3012 Series.
+It was possible to extract the robust list head address from a setuid
+process if it had used set_robust_list(), allowing an ASLR info leak. This
+changes the permission checks to be the same as those used for similar
+info that comes out of /proc.
 
-Include /sys/kernel/debug/usb/devices output here for reference
+Running a setuid program that uses robust futexes would have had:
+  cred->euid != pcred->euid
+  cred->euid == pcred->uid
+so the old permissions check would allow it. I'm not aware of any setuid
+programs that use robust futexes, so this is just a preventative measure.
 
-before:
-T:  Bus=04 Lev=01 Prnt=01 Port=01 Cnt=01 Dev#=  2 Spd=12   MxCh= 0
-D:  Ver= 1.10 Cls=e0(wlcon) Sub=01 Prot=01 MxPS=64 #Cfgs=  1
-P:  Vendor=0cf3 ProdID=311d Rev= 0.01
-S:  Manufacturer=Atheros Communications
-S:  Product=Bluetooth USB Host Controller
-S:  SerialNumber=Alaska Day 2006
-C:* #Ifs= 2 Cfg#= 1 Atr=e0 MxPwr=100mA
-I:* If#= 0 Alt= 0 #EPs= 3 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
-E:  Ad=81(I) Atr=03(Int.) MxPS=  16 Ivl=1ms
-E:  Ad=82(I) Atr=02(Bulk) MxPS=  64 Ivl=0ms
-E:  Ad=02(O) Atr=02(Bulk) MxPS=  64 Ivl=0ms
-I:* If#= 1 Alt= 0 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
-E:  Ad=83(I) Atr=01(Isoc) MxPS=   0 Ivl=1ms
-E:  Ad=03(O) Atr=01(Isoc) MxPS=   0 Ivl=1ms
-I:  If#= 1 Alt= 1 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
-E:  Ad=83(I) Atr=01(Isoc) MxPS=   9 Ivl=1ms
-E:  Ad=03(O) Atr=01(Isoc) MxPS=   9 Ivl=1ms
-I:  If#= 1 Alt= 2 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
-E:  Ad=83(I) Atr=01(Isoc) MxPS=  17 Ivl=1ms
-E:  Ad=03(O) Atr=01(Isoc) MxPS=  17 Ivl=1ms
-I:  If#= 1 Alt= 3 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
-E:  Ad=83(I) Atr=01(Isoc) MxPS=  25 Ivl=1ms
-E:  Ad=03(O) Atr=01(Isoc) MxPS=  25 Ivl=1ms
-I:  If#= 1 Alt= 4 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
-E:  Ad=83(I) Atr=01(Isoc) MxPS=  33 Ivl=1ms
-E:  Ad=03(O) Atr=01(Isoc) MxPS=  33 Ivl=1ms
-I:  If#= 1 Alt= 5 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
-E:  Ad=83(I) Atr=01(Isoc) MxPS=  49 Ivl=1ms
-E:  Ad=03(O) Atr=01(Isoc) MxPS=  49 Ivl=1ms
+(This patch is based on changes from grsecurity.)
 
-after:
-T:  Bus=04 Lev=01 Prnt=01 Port=01 Cnt=01 Dev#=  2 Spd=12   MxCh= 0
-D:  Ver= 1.10 Cls=e0(wlcon) Sub=01 Prot=01 MxPS=64 #Cfgs=  1
-P:  Vendor=0cf3 ProdID=311d Rev= 0.02
-S:  Manufacturer=Atheros Communications
-S:  Product=Bluetooth USB Host Controller
-S:  SerialNumber=Alaska Day 2006
-C:* #Ifs= 2 Cfg#= 1 Atr=e0 MxPwr=100mA
-I:* If#= 0 Alt= 0 #EPs= 3 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
-E:  Ad=81(I) Atr=03(Int.) MxPS=  16 Ivl=1ms
-E:  Ad=82(I) Atr=02(Bulk) MxPS=  64 Ivl=0ms
-E:  Ad=02(O) Atr=02(Bulk) MxPS=  64 Ivl=0ms
-I:* If#= 1 Alt= 0 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
-E:  Ad=83(I) Atr=01(Isoc) MxPS=   0 Ivl=1ms
-E:  Ad=03(O) Atr=01(Isoc) MxPS=   0 Ivl=1ms
-I:  If#= 1 Alt= 1 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
-E:  Ad=83(I) Atr=01(Isoc) MxPS=   9 Ivl=1ms
-E:  Ad=03(O) Atr=01(Isoc) MxPS=   9 Ivl=1ms
-I:  If#= 1 Alt= 2 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
-E:  Ad=83(I) Atr=01(Isoc) MxPS=  17 Ivl=1ms
-E:  Ad=03(O) Atr=01(Isoc) MxPS=  17 Ivl=1ms
-I:  If#= 1 Alt= 3 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
-E:  Ad=83(I) Atr=01(Isoc) MxPS=  25 Ivl=1ms
-E:  Ad=03(O) Atr=01(Isoc) MxPS=  25 Ivl=1ms
-I:  If#= 1 Alt= 4 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
-E:  Ad=83(I) Atr=01(Isoc) MxPS=  33 Ivl=1ms
-E:  Ad=03(O) Atr=01(Isoc) MxPS=  33 Ivl=1ms
-I:  If#= 1 Alt= 5 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
-E:  Ad=83(I) Atr=01(Isoc) MxPS=  49 Ivl=1ms
-E:  Ad=03(O) Atr=01(Isoc) MxPS=  49 Ivl=1ms
-
-Signed-off-by: Cho, Yu-Chen <acho@suse.com>
-cked-by: Marcel Holtmann <marcel@holtmann.org>
-Signed-off-by: Johan Hedberg <johan.hedberg@intel.com>
-Cc: Jonathan Nieder <jrnieder@gmail.com>
+Signed-off-by: Kees Cook <keescook@chromium.org>
+Cc: Darren Hart <dvhart@linux.intel.com>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Jiri Kosina <jkosina@suse.cz>
+Cc: Eric W. Biederman <ebiederm@xmission.com>
+Cc: David Howells <dhowells@redhat.com>
+Cc: Serge E. Hallyn <serge.hallyn@canonical.com>
+Cc: kernel-hardening@lists.openwall.com
+Cc: spender@grsecurity.net
+Link: http://lkml.kernel.org/r/20120319231253.GA20893@www.outflux.net
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/bluetooth/ath3k.c |    2 ++
- drivers/bluetooth/btusb.c |    1 +
- 2 files changed, 3 insertions(+)
+ kernel/futex.c        |   36 +++++++++++++-----------------------
+ kernel/futex_compat.c |   36 +++++++++++++-----------------------
+ 2 files changed, 26 insertions(+), 46 deletions(-)
 
---- a/drivers/bluetooth/ath3k.c
-+++ b/drivers/bluetooth/ath3k.c
-@@ -71,6 +71,7 @@ static struct usb_device_id ath3k_table[
+--- a/kernel/futex.c
++++ b/kernel/futex.c
+@@ -59,6 +59,7 @@
+ #include <linux/magic.h>
+ #include <linux/pid.h>
+ #include <linux/nsproxy.h>
++#include <linux/ptrace.h>
  
- 	/* Atheros AR3012 with sflash firmware*/
- 	{ USB_DEVICE(0x0CF3, 0x3004) },
-+	{ USB_DEVICE(0x0CF3, 0x311D) },
- 	{ USB_DEVICE(0x13d3, 0x3375) },
+ #include <asm/futex.h>
  
- 	/* Atheros AR5BBU12 with sflash firmware */
-@@ -88,6 +89,7 @@ static struct usb_device_id ath3k_blist_
+@@ -2443,40 +2444,29 @@ SYSCALL_DEFINE3(get_robust_list, int, pi
+ {
+ 	struct robust_list_head __user *head;
+ 	unsigned long ret;
+-	const struct cred *cred = current_cred(), *pcred;
++	struct task_struct *p;
  
- 	/* Atheros AR3012 with sflash firmware*/
- 	{ USB_DEVICE(0x0cf3, 0x3004), .driver_info = BTUSB_ATH3012 },
-+	{ USB_DEVICE(0x0cf3, 0x311D), .driver_info = BTUSB_ATH3012 },
- 	{ USB_DEVICE(0x13d3, 0x3375), .driver_info = BTUSB_ATH3012 },
+ 	if (!futex_cmpxchg_enabled)
+ 		return -ENOSYS;
  
- 	{ }	/* Terminating entry */
---- a/drivers/bluetooth/btusb.c
-+++ b/drivers/bluetooth/btusb.c
-@@ -123,6 +123,7 @@ static struct usb_device_id blacklist_ta
++	rcu_read_lock();
++
++	ret = -ESRCH;
+ 	if (!pid)
+-		head = current->robust_list;
++		p = current;
+ 	else {
+-		struct task_struct *p;
+-
+-		ret = -ESRCH;
+-		rcu_read_lock();
+ 		p = find_task_by_vpid(pid);
+ 		if (!p)
+ 			goto err_unlock;
+-		ret = -EPERM;
+-		pcred = __task_cred(p);
+-		/* If victim is in different user_ns, then uids are not
+-		   comparable, so we must have CAP_SYS_PTRACE */
+-		if (cred->user->user_ns != pcred->user->user_ns) {
+-			if (!ns_capable(pcred->user->user_ns, CAP_SYS_PTRACE))
+-				goto err_unlock;
+-			goto ok;
+-		}
+-		/* If victim is in same user_ns, then uids are comparable */
+-		if (cred->euid != pcred->euid &&
+-		    cred->euid != pcred->uid &&
+-		    !ns_capable(pcred->user->user_ns, CAP_SYS_PTRACE))
+-			goto err_unlock;
+-ok:
+-		head = p->robust_list;
+-		rcu_read_unlock();
+ 	}
  
- 	/* Atheros 3012 with sflash firmware */
- 	{ USB_DEVICE(0x0cf3, 0x3004), .driver_info = BTUSB_ATH3012 },
-+	{ USB_DEVICE(0x0cf3, 0x311d), .driver_info = BTUSB_ATH3012 },
- 	{ USB_DEVICE(0x13d3, 0x3375), .driver_info = BTUSB_ATH3012 },
++	ret = -EPERM;
++	if (!ptrace_may_access(p, PTRACE_MODE_READ))
++		goto err_unlock;
++
++	head = p->robust_list;
++	rcu_read_unlock();
++
+ 	if (put_user(sizeof(*head), len_ptr))
+ 		return -EFAULT;
+ 	return put_user(head, head_ptr);
+--- a/kernel/futex_compat.c
++++ b/kernel/futex_compat.c
+@@ -10,6 +10,7 @@
+ #include <linux/compat.h>
+ #include <linux/nsproxy.h>
+ #include <linux/futex.h>
++#include <linux/ptrace.h>
  
- 	/* Atheros AR5BBU12 with sflash firmware */
+ #include <asm/uaccess.h>
+ 
+@@ -136,40 +137,29 @@ compat_sys_get_robust_list(int pid, comp
+ {
+ 	struct compat_robust_list_head __user *head;
+ 	unsigned long ret;
+-	const struct cred *cred = current_cred(), *pcred;
++	struct task_struct *p;
+ 
+ 	if (!futex_cmpxchg_enabled)
+ 		return -ENOSYS;
+ 
++	rcu_read_lock();
++
++	ret = -ESRCH;
+ 	if (!pid)
+-		head = current->compat_robust_list;
++		p = current;
+ 	else {
+-		struct task_struct *p;
+-
+-		ret = -ESRCH;
+-		rcu_read_lock();
+ 		p = find_task_by_vpid(pid);
+ 		if (!p)
+ 			goto err_unlock;
+-		ret = -EPERM;
+-		pcred = __task_cred(p);
+-		/* If victim is in different user_ns, then uids are not
+-		   comparable, so we must have CAP_SYS_PTRACE */
+-		if (cred->user->user_ns != pcred->user->user_ns) {
+-			if (!ns_capable(pcred->user->user_ns, CAP_SYS_PTRACE))
+-				goto err_unlock;
+-			goto ok;
+-		}
+-		/* If victim is in same user_ns, then uids are comparable */
+-		if (cred->euid != pcred->euid &&
+-		    cred->euid != pcred->uid &&
+-		    !ns_capable(pcred->user->user_ns, CAP_SYS_PTRACE))
+-			goto err_unlock;
+-ok:
+-		head = p->compat_robust_list;
+-		rcu_read_unlock();
+ 	}
+ 
++	ret = -EPERM;
++	if (!ptrace_may_access(p, PTRACE_MODE_READ))
++		goto err_unlock;
++
++	head = p->compat_robust_list;
++	rcu_read_unlock();
++
+ 	if (put_user(sizeof(*head), len_ptr))
+ 		return -EFAULT;
+ 	return put_user(ptr_to_compat(head), head_ptr);
 
 
