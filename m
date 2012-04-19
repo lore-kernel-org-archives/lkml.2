@@ -1,239 +1,252 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752937Ab2DSCpU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Apr 2012 22:45:20 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:56746 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751129Ab2DSCpS convert rfc822-to-8bit (ORCPT
+	id S1753957Ab2DSCrc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Apr 2012 22:47:32 -0400
+Received: from mail-vx0-f174.google.com ([209.85.220.174]:55585 "EHLO
+	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752566Ab2DSCra convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Apr 2012 22:45:18 -0400
+	Wed, 18 Apr 2012 22:47:30 -0400
 MIME-Version: 1.0
-In-Reply-To: <20120417155241.0f619a9a.akpm@linux-foundation.org>
-References: <1334660025-20442-1-git-send-email-bryan.wu@canonical.com>
- <1334660025-20442-2-git-send-email-bryan.wu@canonical.com> <20120417155241.0f619a9a.akpm@linux-foundation.org>
-From: Bryan Wu <bryan.wu@canonical.com>
-Date: Thu, 19 Apr 2012 10:44:57 +0800
-X-Google-Sender-Auth: sYdo-wv9gj-IrmunxSNlUq_GTWc
-Message-ID: <CAK5ve-+mw=PDs9diahCPNyYQhMYxdKZU-2LAL5rxkWMNRk4zHQ@mail.gmail.com>
-Subject: Re: [PATCH 01/18] led-triggers: create a trigger for CPU activity
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: nicolas.pitre@linaro.org, linux@arm.linux.org.uk, linus.walleij@linaro.org,
-        linux-kernel@vger.kernel.org, rpurdie@rpsys.net,
-        arnd.bergmann@linaro.org, tim.gardner@canonical.com,
-        linux-arm-kernel@lists.infradead.org
-Content-Type: text/plain; charset=ISO-8859-1
+In-Reply-To: <201204182300.48882.rjw@sisk.pl>
+References: <4F8790F6.5080408@intel.com>
+	<201204172303.07419.rjw@sisk.pl>
+	<CAC=cRTMR=axVV4x9Qa9vO+UXs_s73fOWkeW5mocUEkvKe9J+Dw@mail.gmail.com>
+	<201204182300.48882.rjw@sisk.pl>
+Date: Thu, 19 Apr 2012 10:47:29 +0800
+Message-ID: <CAC=cRTOJEyfou68Lt3x0Ro8YLsKkQTri1Hd1g4usL+3eXbUGCQ@mail.gmail.com>
+Subject: Re: [RFC PATCH] PCIe: Add PCIe runtime D3cold support
+From: huang ying <huang.ying.caritas@gmail.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: "Yan, Zheng" <zheng.z.yan@intel.com>, bhelgaas@google.com,
+        linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
+        linux-pm@vger.kernel.org, Lin Ming <ming.m.lin@intel.com>,
+        Zhang Rui <rui.zhang@intel.com>,
+        ACPI Devel Mailing List <linux-acpi@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 18, 2012 at 6:52 AM, Andrew Morton
-<akpm@linux-foundation.org> wrote:
-> On Tue, 17 Apr 2012 18:53:28 +0800
-> Bryan Wu <bryan.wu@canonical.com> wrote:
->
->> Attempting to consolidate the ARM LED code, this removes the
->> custom RealView LED trigger code to turn LEDs on and off in
->> response to CPU activity and replace it with a standard trigger.
+On Thu, Apr 19, 2012 at 5:00 AM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+> On Wednesday, April 18, 2012, huang ying wrote:
+>> On Wed, Apr 18, 2012 at 5:03 AM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+>> > On Tuesday, April 17, 2012, huang ying wrote:
+>> >> On Tue, Apr 17, 2012 at 5:30 AM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+>> >> > On Monday, April 16, 2012, huang ying wrote:
+>> >> >> Hi,
+>> >> >>
+>> >> >> On Sat, Apr 14, 2012 at 3:41 AM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+>> >> >> > Hi,
+>> >> >> >
+>> >> >> > On Friday, April 13, 2012, Yan, Zheng wrote:
+>> >> >> >> Hi all,
+>> >> >> >>
+>> >> >> >> This patch adds PCIe runtime D3cold support, namely cut power supply for functions
+>> >> >> >> beneath a PCIe port when they all have entered D3. A device in D3cold can only
+>> >> >> >> generate wake event through the WAKE# pin. Because we can not access to a device's
+>> >> >> >> configure space while it's in D3cold, pme_poll is disabled for devices in D3cold.
+>> >> >> >>
+>> >> >> >> Any comment will be appreciated.
+>> >> >> >>
+>> >> >> >> Signed-off-by: Zheng Yan <zheng.z.yan@intel.com>
+>> >> >> >> ---
+>> >> >> >> diff --git a/drivers/pci/pci-acpi.c b/drivers/pci/pci-acpi.c
+>> >> >> >> index 0f150f2..e210e8cb 100644
+>> >> >> >> --- a/drivers/pci/pci-acpi.c
+>> >> >> >> +++ b/drivers/pci/pci-acpi.c
+>> >> >> >> @@ -224,7 +224,7 @@ static int acpi_pci_set_power_state(struct pci_dev *dev, pci_power_t state)
+>> >> >> >> Â  Â  Â  Â  Â  Â  Â  [PCI_D1] = ACPI_STATE_D1,
+>> >> >> >> Â  Â  Â  Â  Â  Â  Â  [PCI_D2] = ACPI_STATE_D2,
+>> >> >> >> Â  Â  Â  Â  Â  Â  Â  [PCI_D3hot] = ACPI_STATE_D3,
+>> >> >> >> - Â  Â  Â  Â  Â  Â  [PCI_D3cold] = ACPI_STATE_D3
+>> >> >> >> + Â  Â  Â  Â  Â  Â  [PCI_D3cold] = ACPI_STATE_D3_COLD
+>> >> >> >> Â  Â  Â  };
+>> >> >> >> Â  Â  Â  int error = -EINVAL;
+>> >> >> >>
+>> >> >> >
+>> >> >> > Please don't use that ACPI_STATE_D3_COLD thing, it's not defined correctly.
+>> >> >> >
+>> >> >> > We should define ACPI_STATE_D3_COLD == ACPI_STATE_D3 and add ACPI_STATE_D3_HOT
+>> >> >> > instead. Â I'll prepare a patch for that over the weekend if no one has done
+>> >> >> > that already.
+>> >> >> >
+>> >> >> >> @@ -296,7 +296,8 @@ static void acpi_pci_propagate_run_wake(struct pci_bus *bus, bool enable)
+>> >> >> >>
+>> >> >> >> Â static int acpi_pci_run_wake(struct pci_dev *dev, bool enable)
+>> >> >> >> Â {
+>> >> >> >> - Â  Â  if (dev->pme_interrupt)
+>> >> >> >> + Â  Â  /* PME interrupt isn't available in the D3cold case */
+>> >> >> >> + Â  Â  if (dev->pme_interrupt && !dev->runtime_d3cold)
+>> >> >> >
+>> >> >> > This whole thing is wrong. Â First off, I don't think that the runtime_d3cold
+>> >> >> > flag makes any sense. Â We already cover that in dev->pme_support.
+>> >> >>
+>> >> >> PCIe devices and PCIe root port may have proper PME interrupt support
+>> >> >> (that is, dev->pme_interrupt = true), but the process of remote wakeup
+>> >> >> from D3cold is as follow:
+>> >> >>
+>> >> >> 1) In D3cold, the power of the main link is turned off, aux power is
+>> >> >> provided (PCIe L2 link state)
+>> >> >> 2) Device detect condition to resume, then assert #WAKE pin
+>> >> >> 2) ACPI circuit linked with #WAKE pin, and will generate a GPE for that
+>> >> >> 3) GPE handler will resume device with ACPI (via _PS3 and _PR0), the
+>> >> >> power of the main link is turned on, after a while, link goes into L0
+>> >> >> state
+>> >> >> 4) The PME message is sent to root port, pme interrupt generated
+>> >> >
+>> >> > This isn't how it's supposed to work in theory. Â If the device can signal PME
+>> >> > from D3cold, it should be able to reestablish the link and send a PME
+>> >> > message from there. Â dev->pme_interrupt set means exactly that.
+>> >> >
+>> >> > ACPI is only supposed to be needed for things that don't send PME
+>> >> > messages (in your case the PME interrupt generated by the port is essentially
+>> >> > useless, because the wakeup event has already been signaled through ACPI).
+>> >> >
+>> >> >> So, for deivce, dev->pme_interrupt = true and dev->pme_support
+>> >> >> advocate it support PME in D3cold. Â But we still need ACPI to setup
+>> >> >> run wake for the device.
+>> >> >
+>> >> > OK, so this is nonstandard.
+>> >>
+>> >> This is the standard behavior. Â Please refer to PCI Express Base
+>> >> Sepcification Revision 2.0, section 5.3.3.2 Link Wakeup. Â In D1, D2
+>> >> and D3hot state, PCIe device can transit the link from L1 to L0 state,
+>> >> and send the PME message. Â In D3cold, the main link is powered off,
+>> >> PCIe device will use a STANDARD sideband signal WAKE# to signal wakeup
+>> >> firstly, then platform (power controller in spec) will power on the
+>> >> main link for the device, after main link is back to L0, the PME
+>> >> message is send to root port, pme interrupt is generated. Â So in
+>> >> theory, the wake up process can be divided into platform part (which
+>> >> power on the main link) and PCIe part (which send PME).
+>> >
+>> > That's fine. Â However, the platform part should be completely transparent
+>> > to the PCI bus type, then. Â It just should power up the link to allow a
+>> > PME message to be transmitted through it.
 >>
->> (bryan.wu@canonical.com:
->> It moves arch/arm/kernel/leds.c syscore stubs into this trigger.
->
-> No, the patch doesn't alter arch/arm/kernel/leds.c at all.  This text
-> is either misleadingly phrased, or stale or something.
->
-
-OK, Fixed
-
->> It also provides ledtrig_cpu trigger event stub in <linux/leds.h>.
->> Although it was inspired by ARM work, it can be used in other arch.)
+>> Yes.
 >>
->> Cc: Richard Purdie <rpurdie@rpsys.net>
->> Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
->> Signed-off-by: Bryan Wu <bryan.wu@canonical.com>
+>> >[...]
+>> >
+>> >> > So don't use pci_set_power_state() for that, because it's essentially
+>> >> > a different operation. Â You need a pci_platform_remove_power() helper or
+>> >> > similar for that.
+>> >> >
+>> >> > What ACPI method exactly is used to remove power from the device?
+>> >>
+>> >> The ACPI method executed is as follow:
+>> >>
+>> >> - _PS3 (if exist)
+>> >> - Power resources in _PR3 is turned on
+>> >> - Power resources in _PR0 is turned off
+>> >> - Power resources in _PR3 is turned off
+>> >
+>> > I'd rather think
+>> >
+>> > - make sure that _PR3 resources are referenced
+>> > - drop references (from this device) for all other power resources
+>> > - execute _PS3 (if any)
+>> > - drop references for _PR3 resources
+>> >
+>> > if Section 7.2.11 of ACPI 5.0 is to be followed.
 >>
->
-> A spurious newline.
->
-
-OK, Fixed
-
->> Reviewed-by: Jamie Iles <jamie@jamieiles.com>
->> Tested-by: Jochen Friedrich <jochen@scram.de>
+>> Yes. Â You are right.
 >>
->> ...
+>> >> I think the process can fit pci_set_power_state() quite well, so why
+>> >> invent another helper for that?
+>> >
+>> > OK, we can special case it, perhaps.
+>> >
+>> > Suppose we have a "this device may be put into D3_cold" flag.
+>> >
+>> > Who's going to decide whether to put it into D3_hot or D3_cold?
 >>
->> +config LEDS_TRIGGER_CPU
->> +     tristate "LED CPU Trigger"
->> +     depends on LEDS_TRIGGERS
->> +     help
->> +       This allows LEDs to be controlled by active CPUs. This shows
->> +       the active CPUs across an array of LEDs so you can see what
+>> In most cases, I think it is OK to put device into D3_cold if that is
+>> supported.
 >
-> s/what/which/   (I think ;))
->
+> Well, there may be PM QoS latency requirements preventing us from doing so.
 
-Fixed
+Yes.
 
->> +       CPUs are active on the system at any given moment.
->> +
->> +       If unsure, say N.
->> +
+>> But there should be some special case where D3_cold is not
+>> desirable, for example, we can put SSD into D3_cold safely, but it is
+>> not quite safe to put HDD into D3_cold. Â So we want to introduce a
+>> flag: "may_power_off" like in the following patch
 >>
->> ...
+>> https://lkml.org/lkml/2012/3/29/41
 >>
->> +static int __init ledtrig_cpu_init(void)
->> +{
->> +     int cpu;
->> +
->> +     /* Supports up to 9999 cpu cores */
->> +     BUILD_BUG_ON(CONFIG_NR_CPUS > 9999);
+>> It gives device driver a chance to prevent the device to be put into D3_cold.
 >
-> hm, I wonder if this can be prevented in Kconfig logic.  I guess
-> "depends on NR_CPUS <= 9999" isn't available.
->
+> I see. Â So your proposal is that the flag might be used to indicate to
+> whoever carries out power transitions of devices that power must not be
+> removed from this particular device, right?
 
-"default N if (NR_CPUS > 9999)" isn't available, either.
+Yes.
 
->> +     /*
->> +      * Registering CPU led trigger for each CPU cores here
->
-> s/cores/core/
->
+> In that case we can put that flag into struct dev_pm_info after all, but
+> perhaps the name should indicate more precisely what it is about. Â Something
+> like "power_must_be_on" maybe?
 
-Fixed
+I am not good at naming in English :)
+I will accept your proposal.
 
->> +      * ignores CPU hotplug, but after this CPU hotplug works
->> +      * fine with this trigger.
->> +      */
->> +     for_each_possible_cpu(cpu) {
->> +             struct led_trigger *trig;
->> +             char *name = per_cpu(trig_name, cpu);
->> +             struct rw_semaphore *lock = &per_cpu(trig_lock, cpu);
->> +
->> +             init_rwsem(lock);
->> +
->> +             snprintf(name, MAX_NAME_LEN, "cpu%d", cpu);
->> +
->> +             down_write(lock);
->> +             led_trigger_register_simple(name, &trig);
->
-> OK, problem.
->
-> led_trigger_register_simple() calls kzalloc() and
-> led_trigger_register(), both of which can fail.
-> led_trigger_register_simple() just returns void, failing to propagate
-> the error back.  This is bad, and we (ie you ;)) should fix
-> led_trigger_register_simple() before proceeding to use it.  If at all
-> possible.  Please.  Let us not propagate the badness further.  Sorry.
->
->> +             per_cpu(cpu_trig, cpu) = trig;
->> +             up_write(lock);
->> +     }
->> +
->> +     register_syscore_ops(&ledtrig_cpu_syscore_ops);
->> +
->> +     pr_info("ledtrig-cpu: registered to indicate activity on CPUs\n");
->> +
->> +     return 0;
->> +}
->> +module_init(ledtrig_cpu_init);
->> +
->> +static void __exit ledtrig_cpu_exit(void)
->> +{
->> +     int cpu;
->> +
->> +     for_each_possible_cpu(cpu) {
->> +             struct led_trigger *trig = per_cpu(cpu_trig, cpu);
->
-> grr.  drivers/leds/led-triggers.c sometimes does
->
->        struct led_trigger trigger;
->
-> and sometimes
->
->        struct led_trigger trig;
->
-> which makes the code needlessly more difficult to follow.  So if you're
-> fiddling with drivers/leds/led-triggers.c, please fix that up - use
-> "trig" everywhere?
->
-
-If Richard has no objection, I will do this.
-
->> +             char *name = per_cpu(trig_name, cpu);
->> +
->> +             led_trigger_unregister_simple(trig);
->
-> And what happens if led_trigger_register_simple() had silently failed
-> to register this trigger?  afacit, nothing: your code handles the
-> trig==NULL case OK.  Still, we should be checking for those failures!
->
->> +             per_cpu(cpu_trig, cpu) = NULL;
->> +             memset(name, 0, MAX_NAME_LEN);
->> +     }
->> +
->> +     unregister_syscore_ops(&ledtrig_cpu_syscore_ops);
->> +}
->> +module_exit(ledtrig_cpu_exit);
->> +
->> +MODULE_AUTHOR("Linus Walleij <linus.walleij@linaro.org>");
->> +MODULE_AUTHOR("Bryan Wu <bryan.wu@canonical.com>");
->> +MODULE_DESCRIPTION("CPU LED trigger");
->> +MODULE_LICENSE("GPL");
->> diff --git a/include/linux/leds.h b/include/linux/leds.h
->> index 5884def..1215b94 100644
->> --- a/include/linux/leds.h
->> +++ b/include/linux/leds.h
->> @@ -210,4 +210,27 @@ struct gpio_led_platform_data {
->>  struct platform_device *gpio_led_register_device(
->>               int id, const struct gpio_led_platform_data *pdata);
+>> > [...]
+>> >
+>> >> >> > So now please tell me what exactly you want to achieve and why you want to do
+>> >> >> > that in the first place.
+>> >> >
+>> >> > Well, is there any chance to get that information?
+>> >>
+>> >> You mean the runtime_d3cold flag? That flag is used to tell
+>> >> acpi_pci_run_wake() that we need ACPI wakeup setup for the device
+>> >> because that is needed by D3cold. Â The ACPI wakeup setup here means
+>> >> turn on power resources needed by wake up (_PRW) and execute _DSW.
+>> >>
+>> >> If you mean the whole patch, we want to implement runtime D3cold
+>> >> support, which can save more power than D3hot.
+>> >
+>> > So, do I think correctly that you'd like to put devices into D3_cold
+>> > if that's possible via ACPI and to be able to wake it up from that state
+>> > using remote wakeup?
 >>
->> +enum cpu_led_event {
->> +     CPU_LED_IDLE_START,     /* CPU enters idle */
->> +     CPU_LED_IDLE_END,       /* CPU idle ends */
->> +     CPU_LED_START,          /* Machine starts, especially resume */
->> +     CPU_LED_STOP,           /* Machine stops, especially suspend */
->> +     CPU_LED_HALTED,         /* Machine shutdown */
->> +};
->> +#if defined(CONFIG_LEDS_TRIGGER_CPU) || defined(CONFIG_LEDS_TRIGGER_CPU_MODULE)
+>> Yes. Â Support both remote wakeup and host wakeup.
 >
-> See lkml subject "RFC: strip 15,000 lines from a typical autoconf.h".
-> We might be able to simplify this.  But the above is OK for now.
+> OK, so we need to clean up the ACPI D3_HOT/D3_COLD mess first. Â Then, we need
+> to change PCI so that devices are not put into D3cold (by ACPI) if only D3hot
+> is requested by the caller of pci_set_power_state().
 >
->> +/**
->> + * ledtrig_cpu - emit a CPU event as a trigger
->> + * @evt: CPU event to be emitted
->> + *
->> + * Emit a CPU event on a CPU core, which will trigger a
->> + * binded LED to turn on or turn off.
->> + */
->
-> It's conventional to add kerneldoc at the function definition site, not
-> at the declaration.  Nobody thinks to look in the .h file for
-> documentation.
->
-Fixed.
+> Having done that, we can modify pci_set_power_state() to handle D3cold as
+> a special case (essentially, it should check that case before doing anything
+> else). Â Finally, we need to teach the ACPI notify handler about the WAKE#
+> event and we need to add the 100 ms wait to the device resume code path
+> somewhere (I guess in pci_set_power_state() for the D3cold->D0 transition).
 
->> +extern void ledtrig_cpu(enum cpu_led_event evt);
->> +#else
->> +static inline void ledtrig_cpu(enum cpu_led_event evt)
->> +{
->> +     return;
->> +}
->> +#endif
->> +
->
->
-> _______________________________________________
-> linux-arm-kernel mailing list
-> linux-arm-kernel@lists.infradead.org
-> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
+Yes.  Sound good to me.
 
+> Now, there's one more thing to consider. Â Namely, if a PCIe endpoint is put
+> into D3hot (via native PM) and then the port it is connected to is put into
+> D3_hot (via native PM), does that transfer the endpoint into D3cold?
 
+No.
 
--- 
-Bryan Wu <bryan.wu@canonical.com>
-Kernel Developer    +86.186-168-78255 Mobile
-Canonical Ltd.      www.canonical.com
-Ubuntu - Linux for human beings | www.ubuntu.com
+But if a PCIe endpoint is put into D3hot and then the port it is
+connected is put into D3_cold (via ACPI), this will transfer the
+endpoint into D3_cold, and if the port is put into D0 afterwards, all
+subordinate endpoint devices will be put into D0 (because of power on
+reset).  I think what we need to do here is:
+
+- when choose power state, if any subordinate device has
+power_must_be_on set, will not choose D3_cold
+
+- when put PCIe port from D3_cold to D0, resume all subordinate
+devices too.  We design a method to do that in following patch:
+
+https://lkml.org/lkml/2012/3/29/38
+
+Where we will register all subordinate devices via
+acpi_power_resource_register_device(endpoint_device,
+bridget_acpi_handle).
+
+Best Regards,
+Huang Ying
