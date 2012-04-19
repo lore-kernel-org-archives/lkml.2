@@ -1,83 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754265Ab2DSJvv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Apr 2012 05:51:51 -0400
-Received: from mail-pz0-f52.google.com ([209.85.210.52]:59890 "EHLO
-	mail-pz0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752618Ab2DSJvu (ORCPT
+	id S1754744Ab2DSJwD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Apr 2012 05:52:03 -0400
+Received: from va3ehsobe002.messaging.microsoft.com ([216.32.180.12]:33877
+	"EHLO va3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754541Ab2DSJv5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Apr 2012 05:51:50 -0400
-From: Jassi Brar <jaswinder.singh@linaro.org>
-To: linux-kernel@vger.kernel.org
-Cc: lrg@ti.com, broonie@opensource.wolfsonmicro.com,
-        Jassi Brar <jaswinder.singh@linaro.org>
-Subject: [PATCH] regulator: Provide a check for dummy regulator
-Date: Thu, 19 Apr 2012 15:21:37 +0530
-Message-Id: <1334829097-32084-1-git-send-email-jaswinder.singh@linaro.org>
-X-Mailer: git-send-email 1.7.4.1
+	Thu, 19 Apr 2012 05:51:57 -0400
+X-SpamScore: 0
+X-BigFish: VS0(zzzz1202hzz8275bhz2dh2a8h668h839hd24h)
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+From: Zhao Chenhui <chenhui.zhao@freescale.com>
+To: <linux-i2c@vger.kernel.org>
+CC: <w.sang@pengutronix.de>, <leoli@freescale.com>,
+        <linux-kernel@vger.kernel.org>
+Subject: [PATCH v2] i2c-mpc: avoid I2C abnormal after resuming from deep sleep
+Date: Thu, 19 Apr 2012 17:51:34 +0800
+Message-ID: <1334829094-22048-1-git-send-email-chenhui.zhao@freescale.com>
+X-Mailer: git-send-email 1.6.4.1
+MIME-Version: 1.0
+Content-Type: text/plain
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Usually changing the regulator output involves delays before/after the
-operation.
-There are consumer drivers shared by platforms, where some may
-not really have a regulator in the path. Which causes the consumer
-to unnecessarily (sometimes disruptively) incur delays for the
-"dummy" regulator.
-Since the 'struct regulator' is opaque outside of the core,
-provide a function to check if the given regulator is a dummy one.
+When entering deep sleep, the value in the registers I2CFDR and
+I2CDFSRR are lost. This causes I2C access to fail after resuming.
 
-Signed-off-by: Jassi Brar <jaswinder.singh@linaro.org>
+Add suspend/resume routines to save/restore the registers
+I2CFDR and I2CDFSRR.
+
+Signed-off-by: Zhao Chenhui <chenhui.zhao@freescale.com>
+Signed-off-by: Li Yang <leoli@freescale.com>
 ---
- drivers/regulator/core.c           |    9 +++++++++
- include/linux/regulator/consumer.h |    6 ++++++
- 2 files changed, 15 insertions(+), 0 deletions(-)
+ drivers/i2c/busses/i2c-mpc.c |   30 ++++++++++++++++++++++++++++++
+ 1 files changed, 30 insertions(+), 0 deletions(-)
 
-diff --git a/drivers/regulator/core.c b/drivers/regulator/core.c
-index e70dd38..2fb6e5b 100644
---- a/drivers/regulator/core.c
-+++ b/drivers/regulator/core.c
-@@ -3115,6 +3115,15 @@ void regulator_use_dummy_regulator(void)
- EXPORT_SYMBOL_GPL(regulator_use_dummy_regulator);
+diff --git a/drivers/i2c/busses/i2c-mpc.c b/drivers/i2c/busses/i2c-mpc.c
+index a8ebb84..fb2627b 100644
+--- a/drivers/i2c/busses/i2c-mpc.c
++++ b/drivers/i2c/busses/i2c-mpc.c
+@@ -64,6 +64,9 @@ struct mpc_i2c {
+ 	struct i2c_adapter adap;
+ 	int irq;
+ 	u32 real_clk;
++#ifdef CONFIG_PM
++	u8 fdr, dfsrr;
++#endif
+ };
  
- /**
-+ * regulator_is_dummy - Check if the regulator is the placeholder 'dummy'
-+ */
-+bool regulator_is_dummy(struct regulator *regulator)
-+{
-+	return !strcmp(regulator->rdev->desc->name, "dummy");
-+}
-+EXPORT_SYMBOL_GPL(regulator_is_dummy);
-+
-+/**
-  * rdev_get_drvdata - get rdev regulator driver data
-  * @rdev: regulator
-  *
-diff --git a/include/linux/regulator/consumer.h b/include/linux/regulator/consumer.h
-index 4ed1b30..7b0360c 100644
---- a/include/linux/regulator/consumer.h
-+++ b/include/linux/regulator/consumer.h
-@@ -141,6 +141,7 @@ void regulator_put(struct regulator *regulator);
- void devm_regulator_put(struct regulator *regulator);
- 
- /* regulator output control and status */
-+bool regulator_is_dummy(struct regulator *regulator);
- int regulator_enable(struct regulator *regulator);
- int regulator_disable(struct regulator *regulator);
- int regulator_force_disable(struct regulator *regulator);
-@@ -221,6 +222,11 @@ static inline void devm_regulator_put(struct regulator *regulator)
- {
- }
- 
-+static bool regulator_is_dummy(struct regulator *regulator)
-+{
-+	return true;
-+}
-+
- static inline int regulator_enable(struct regulator *regulator)
- {
+ struct mpc_i2c_divider {
+@@ -668,6 +671,30 @@ static int __devexit fsl_i2c_remove(struct platform_device *op)
  	return 0;
+ };
+ 
++#ifdef CONFIG_PM
++static int mpc_i2c_suspend(struct device *dev)
++{
++	struct mpc_i2c *i2c = dev_get_drvdata(dev);
++
++	i2c->fdr = readb(i2c->base + MPC_I2C_FDR);
++	i2c->dfsrr = readb(i2c->base + MPC_I2C_DFSRR);
++
++	return 0;
++}
++
++static int mpc_i2c_resume(struct device *dev)
++{
++	struct mpc_i2c *i2c = dev_get_drvdata(dev);
++
++	writeb(i2c->fdr, i2c->base + MPC_I2C_FDR);
++	writeb(i2c->dfsrr, i2c->base + MPC_I2C_DFSRR);
++
++	return 0;
++}
++
++SIMPLE_DEV_PM_OPS(mpc_i2c_pm_ops, mpc_i2c_suspend, mpc_i2c_resume);
++#endif
++
+ static struct mpc_i2c_data mpc_i2c_data_512x __devinitdata = {
+ 	.setup = mpc_i2c_setup_512x,
+ };
+@@ -712,6 +739,9 @@ static struct platform_driver mpc_i2c_driver = {
+ 		.owner = THIS_MODULE,
+ 		.name = DRV_NAME,
+ 		.of_match_table = mpc_i2c_of_match,
++#ifdef CONFIG_PM
++		.pm = &mpc_i2c_pm_ops,
++#endif
+ 	},
+ };
+ 
 -- 
-1.7.4.1
+1.6.4.1
+
 
