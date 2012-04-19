@@ -1,70 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753174Ab2DSAdb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Apr 2012 20:33:31 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:50087 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751125Ab2DSAda (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Apr 2012 20:33:30 -0400
-Date: Thu, 19 Apr 2012 10:33:21 +1000
-From: NeilBrown <neilb@suse.de>
-To: Jim Kukunas <james.t.kukunas@linux.intel.com>
-Cc: linux-raid@vger.kernel.org, linux-kernel@vger.kernel.org, hpa@zytor.com
-Subject: Re: [PATCH 1/4] lib/raid6: fix test program build
-Message-ID: <20120419103321.4f261da3@notabene.brown>
-In-Reply-To: <1334261073-14781-2-git-send-email-james.t.kukunas@linux.intel.com>
-References: <20120412161805.133c4ad0@notabene.brown>
-	<1334261073-14781-1-git-send-email-james.t.kukunas@linux.intel.com>
-	<1334261073-14781-2-git-send-email-james.t.kukunas@linux.intel.com>
-X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.7; x86_64-suse-linux-gnu)
+	id S1753547Ab2DSAl4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Apr 2012 20:41:56 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:49994 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751125Ab2DSAly (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Apr 2012 20:41:54 -0400
+Date: Thu, 19 Apr 2012 10:41:45 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Linus <torvalds@linux-foundation.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Eric Paris <eparis@redhat.com>,
+        James Morris <james.l.morris@oracle.com>
+Subject: linux-next: build failure in Linus' tree
+Message-Id: <20120419104145.2b8ffe08e9982048f5c0f5f1@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0beta7 (GTK+ 2.24.10; i486-pc-linux-gnu)
 Mime-Version: 1.0
-Content-Type: multipart/signed; micalg=PGP-SHA1;
- boundary="Sig_/3k_3o14y=wPcp5nF9yJo5eE"; protocol="application/pgp-signature"
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Thu__19_Apr_2012_10_41_45_+1000_Ec.uz/DAbIGGI1Gc"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/3k_3o14y=wPcp5nF9yJo5eE
+--Signature=_Thu__19_Apr_2012_10_41_45_+1000_Ec.uz/DAbIGGI1Gc
 Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
 Content-Transfer-Encoding: quoted-printable
 
-On Thu, 12 Apr 2012 13:04:30 -0700 Jim Kukunas
-<james.t.kukunas@linux.intel.com> wrote:
+Hi Linus,
 
-> <linux/module.h> drags in headers which are not visible to userspace,
-> thus breaking the build for the test program.
->=20
-> Signed-off-by: Jim Kukunas <james.t.kukunas@linux.intel.com>
+While building Linus' tree, today's linux-next build (powerpc
+ppc64_defconfig) failed like this:
 
-I've applied this and the following three.
-They should be visible in
-   git://neil.brown.name/md/ for-next
-   git://github.com/neilbrown/linux md/for-next
-(a fair way down the list from HEAD).
+security/commoncap.c: In function 'cap_bprm_set_creds':
+security/commoncap.c:510:22: error: 'PER_CLEAR_ON_SETID' undeclared (first =
+use in this function)
 
-Thanks,
-NeilBrown
+Caused by commit d52fc5dde171 ("fcaps: clear the same personality flags as =
+suid when fcaps are used").
 
---Sig_/3k_3o14y=wPcp5nF9yJo5eE
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
+I added this patch for today:
+
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+Date: Thu, 19 Apr 2012 10:38:26 +1000
+Subject: [PATCH] security: commoncap.c needs to include personality.h
+
+fixes this build error on PowerPC:
+
+security/commoncap.c: In function 'cap_bprm_set_creds':
+security/commoncap.c:510:22: error: 'PER_CLEAR_ON_SETID' undeclared (first =
+use in this function)
+
+Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
+---
+ security/commoncap.c |    1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/security/commoncap.c b/security/commoncap.c
+index 0ecf4ba..71a166a 100644
+--- a/security/commoncap.c
++++ b/security/commoncap.c
+@@ -29,6 +29,7 @@
+ #include <linux/securebits.h>
+ #include <linux/user_namespace.h>
+ #include <linux/binfmts.h>
++#include <linux/personality.h>
+=20
+ /*
+  * If a non-root user executes a setuid-root binary in
+--=20
+1.7.10.rc3
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
+
+--Signature=_Thu__19_Apr_2012_10_41_45_+1000_Ec.uz/DAbIGGI1Gc
+Content-Type: application/pgp-signature
 
 -----BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.18 (GNU/Linux)
+Version: GnuPG v1.4.12 (GNU/Linux)
 
-iQIVAwUBT49dUTnsnt1WYoG5AQJeehAAjkq4AQnj182XPs5taL7h60bpsXcQUaU1
-rgTKcQuBGq4CQC2/giVPYpHF0Q5x+UBko82z+oPi58sYnHHXy5l+2Vz0PmAqR4T4
-GYDBWwSm5mkl5wudFV+BrsxrUguQ5YbIlYXCT1EeH3H1fo1N76pDedQnYrxtMNMh
-df2F+r4cbS5T1ik+F5ZGUw6qQHXIskfJiNueuNwwUyIVX7mSu3A0LwqYBaFsyXg7
-QZR3SgjKXON9CXq3h0yQMKWzmQ1Z6gvx0tSiphz0/J5EmP1402fIrO06N5WsXXdI
-FnJuf+aiJX9sOIo/1GSeIao0a8mySlySWGQMhS+hBz+iRmObfiWKTexrOpYA/1o1
-RpoObPaQDTlrVfS0KOp5AYTOOQf9cpUv2CrvTFAWI6+6WnNJ9NJ4oF4JaURHrMYh
-5+sCLCk8RP+/Viv9y/bw5qyIdG95VuQzd18sXGnEQxk3KgbIuU3GYJGK76iMpLez
-uz1NlFDV7YKFu+Y++58O31Gy8Og+Ls0GVXVYEY9Y01UBnmdRWBO7E/xw5CP9/RKb
-Sxs1CX643nnSMwK2daK8xdMVX5nnSYIc3mUmaHHpqLowbDvYn/OmI1iU9IxN/6B+
-4gETtolwsRTyS/alvPeV6a3aD9b7TM1eVDpLrN6Ah8B+9T8DQwwoHlZ/zVasyrl/
-IgNnGMBChro=
-=4Cis
+iQIcBAEBCAAGBQJPj19JAAoJEECxmPOUX5FEP9wP/iry6lTlH2X7lcK16ax8cPgS
+Ml07oVQqPQ5txKCkcwpjmaIJtvCOaCjiDYpJXaSpDyqn+YTi/GrBI+3ZuVIn+mix
+tj+W1NIN29NrC7NpczU1X9rFZfcWRSmIjNR85zTWmTn4IaGVRVX0zz70kcbzb3ka
+9ny3+Nnk3IB09xacBvv3rqdWQWWifFliQ3+MVnRUCRL5sKjVZDAdKcAWudXtMthy
+4RzK/kA49smrXHhiuu5xBxM0pcaZnVd8f1/2Zmc72w4dWA/z+GJqh1sTyt58Ek84
+c94P47neuuLhHHPoE7cuyVvQJ8L/tbUNCr+LzlTwT8OEYTTXoQ7pvmYifkJUAtcI
+dZvN+PnagDA77YaySHaAdzUmGEJBaHrdnRP0y+S7Dg1KD1hGcA3/aVhUb6Tew0EG
+Z5wM0VtAbjFvK8fLCezzgShCDnI/RpBR7j3ZEQmbosA0Fm+VK4Qhb/7XAGi/1iNW
+A+/M80x14QKD4A4flgrNDyautk9QLsrNLyQmEbsikTU2AFQoIQtt/jd3BGJoI7oN
+lpI3OCJUfsGAqzhNforhH9yJT8xLnDlsGQL9hCYJBdlhpckNabbO7BsOisfRawjo
+5KgT8f6L1fCPZ6VVRG/Tf5Y97WLdvYm3lqDoERqtZknqEJ7RpeQ+kMIlu/STSMJf
+hMsR7DUz8xpZddUDWSuL
+=W/Ry
 -----END PGP SIGNATURE-----
 
---Sig_/3k_3o14y=wPcp5nF9yJo5eE--
+--Signature=_Thu__19_Apr_2012_10_41_45_+1000_Ec.uz/DAbIGGI1Gc--
