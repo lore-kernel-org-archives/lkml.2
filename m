@@ -1,81 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933354Ab2DSVNA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Apr 2012 17:13:00 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:39415 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933340Ab2DSVM4 (ORCPT
+	id S933463Ab2DSVN0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Apr 2012 17:13:26 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:33843 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933428Ab2DSVNU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Apr 2012 17:12:56 -0400
-Message-Id: <20120419210613.386927504@linuxfoundation.org>
+	Thu, 19 Apr 2012 17:13:20 -0400
+Message-Id: <20120419210304.675970146@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Thu, 19 Apr 2012 14:06:38 -0700
+Date: Thu, 19 Apr 2012 14:03:21 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Alex He <alex.he@amd.com>,
-        Sarah Sharp <sarah.a.sharp@linux.intel.com>
-Subject: [ 27/59] xHCI: Correct the #define XHCI_LEGACY_DISABLE_SMI
-In-Reply-To: <20120419210623.GA12156@kroah.com>
+        alan@lxorguk.ukuu.org.uk, Chris Mason <chris.mason@oracle.com>
+Subject: [ 18/75] Revert "Btrfs: increase the global block reserve estimates"
+In-Reply-To: <20120419210322.GA6478@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.0-stable review patch.  If anyone has any objections, please let me know.
+3.3-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Alex He <alex.he@amd.com>
+From: Chris Mason <chris.mason@oracle.com>
 
-commit 95018a53f7653e791bba1f54c8d75d9cb700d1bd upstream.
+commit 8e62c2de6e23e5c1fee04f59de51b54cc2868ca5 upstream.
 
-Re-define XHCI_LEGACY_DISABLE_SMI and used it in right way. All SMI enable
-bits will be cleared to zero and flag bits 29:31 are also cleared to zero.
-Other bits should be presvered as Table 146.
+This reverts commit 5500cdbe14d7435e04f66ff3cfb8ecd8b8e44ebf.
 
-This patch should be backported to kernels as old as 2.6.31.
+We've had a number of complaints of early enospc that bisect down
+to this patch.  We'll hae to fix the reservations differently.
 
-Signed-off-by: Alex He <alex.he@amd.com>
-Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Signed-off-by: Chris Mason <chris.mason@oracle.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/host/pci-quirks.c    |   10 +++++++---
- drivers/usb/host/xhci-ext-caps.h |    5 +++--
- 2 files changed, 10 insertions(+), 5 deletions(-)
+ fs/btrfs/extent-tree.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/usb/host/pci-quirks.c
-+++ b/drivers/usb/host/pci-quirks.c
-@@ -824,9 +824,13 @@ static void __devinit quirk_usb_handoff_
- 		}
- 	}
+--- a/fs/btrfs/extent-tree.c
++++ b/fs/btrfs/extent-tree.c
+@@ -4110,7 +4110,7 @@ static u64 calc_global_metadata_size(str
+ 	num_bytes += div64_u64(data_used + meta_used, 50);
  
--	/* Disable any BIOS SMIs */
--	writel(XHCI_LEGACY_DISABLE_SMI,
--			base + ext_cap_offset + XHCI_LEGACY_CONTROL_OFFSET);
-+	val = readl(base + ext_cap_offset + XHCI_LEGACY_CONTROL_OFFSET);
-+	/* Mask off (turn off) any enabled SMIs */
-+	val &= XHCI_LEGACY_DISABLE_SMI;
-+	/* Mask all SMI events bits, RW1C */
-+	val |= XHCI_LEGACY_SMI_EVENTS;
-+	/* Disable any BIOS SMIs and clear all SMI events*/
-+	writel(val, base + ext_cap_offset + XHCI_LEGACY_CONTROL_OFFSET);
+ 	if (num_bytes * 3 > meta_used)
+-		num_bytes = div64_u64(meta_used, 3) * 2;
++		num_bytes = div64_u64(meta_used, 3);
  
- 	if (usb_is_intel_switchable_xhci(pdev))
- 		usb_enable_xhci_ports(pdev);
---- a/drivers/usb/host/xhci-ext-caps.h
-+++ b/drivers/usb/host/xhci-ext-caps.h
-@@ -62,8 +62,9 @@
- /* USB Legacy Support Control and Status Register  - section 7.1.2 */
- /* Add this offset, plus the value of xECP in HCCPARAMS to the base address */
- #define XHCI_LEGACY_CONTROL_OFFSET	(0x04)
--/* bits 1:2, 5:12, and 17:19 need to be preserved; bits 21:28 should be zero */
--#define	XHCI_LEGACY_DISABLE_SMI		((0x3 << 1) + (0xff << 5) + (0x7 << 17))
-+/* bits 1:3, 5:12, and 17:19 need to be preserved; bits 21:28 should be zero */
-+#define	XHCI_LEGACY_DISABLE_SMI		((0x7 << 1) + (0xff << 5) + (0x7 << 17))
-+#define XHCI_LEGACY_SMI_EVENTS		(0x7 << 29)
- 
- /* command register values to disable interrupts and halt the HC */
- /* start/stop HC execution - do not write unless HC is halted*/
+ 	return ALIGN(num_bytes, fs_info->extent_root->leafsize << 10);
+ }
 
 
