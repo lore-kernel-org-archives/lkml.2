@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756611Ab2DSVQ4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Apr 2012 17:16:56 -0400
-Received: from mail-pz0-f42.google.com ([209.85.210.42]:38471 "EHLO
-	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756585Ab2DSVQu (ORCPT
+	id S933676Ab2DSVZy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Apr 2012 17:25:54 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:44451 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933623Ab2DSVQr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Apr 2012 17:16:50 -0400
-Message-Id: <20120419210821.900488612@linuxfoundation.org>
+	Thu, 19 Apr 2012 17:16:47 -0400
+Message-Id: <20120419210821.821373189@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Thu, 19 Apr 2012 14:08:56 -0700
+Date: Thu, 19 Apr 2012 14:08:55 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Elric Fu <elricfu1@gmail.com>,
-        Andiry Xu <Andiry.Xu@amd.com>, Sergei Shtylyov <sshtylyov@mvista.com>,
-        Sarah Sharp <sarah.a.sharp@linux.intel.com>
-Subject: [ 38/68] USB: fix bug of device descriptor got from superspeed device
+        alan@lxorguk.ukuu.org.uk, Sarah Sharp <sarah.a.sharp@linux.intel.com>,
+        Elric Fu <elricfu1@gmail.com>, Andiry Xu <andiry.xu@amd.com>
+Subject: [ 37/68] xhci: Restore event ring dequeue pointer on resume.
 In-Reply-To: <20120419210923.GA18589@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,70 +25,37 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Elric Fu <elricfu1@gmail.com>
+From: Sarah Sharp <sarah.a.sharp@linux.intel.com>
 
-commit d8aec3dbdfd02627e198e7956ab4aaeba2a349fa upstream.
+commit fb3d85bc7193f23c9a564502df95564c49a32c91 upstream.
 
-When the Seagate Goflex USB3.0 device is attached to VIA xHCI
-host, sometimes the device will downgrade mode to high speed.
-By the USB analyzer, I found the device finished the link
-training process and worked at superspeed mode. But the device
-descriptor got from the device shows the device works at 2.1.
-It is very strange and seems like the device controller of
-Seagate Goflex has a little confusion.
+The xhci_save_registers() function saved the event ring dequeue pointer
+in the s3 register structure, but xhci_restore_registers() never
+restored it.  No other code in the xHCI successful resume path would
+ever restore it either.  Fix that.
 
-The first 8 bytes of device descriptor should be:
-12 01 00 03 00 00 00 09
+This should be backported to kernels as old as 2.6.37, that contain the
+commit 5535b1d5f8885695c6ded783c692e3c0d0eda8ca "USB: xHCI: PCI power
+management implementation".
 
-But the first 8 bytes of wrong device descriptor are:
-12 01 10 02 00 00 00 40
-
-The wrong device descriptor caused the initialization of mass
-storage failed. After a while, the device would be recognized
-as a high speed device and works fine.
-
-This patch will warm reset the device to fix the issue after
-finding the bcdUSB field of device descriptor isn't 0x0300
-but the speed mode of device is superspeed.
-
-This patch should be backported to kernels as old as 3.2, or ones that
-contain the commit 75d7cf72ab9fa01dc70877aa5c68e8ef477229dc "usbcore:
-refine warm reset logic".
-
-Signed-off-by: Elric Fu <elricfu1@gmail.com>
-Acked-by: Andiry Xu <Andiry.Xu@amd.com>
-Acked-by: Sergei Shtylyov <sshtylyov@mvista.com>
 Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Tested-by: Elric Fu <elricfu1@gmail.com>
+Cc: Andiry Xu <andiry.xu@amd.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/core/hub.c |   16 ++++++++++++++++
- 1 file changed, 16 insertions(+)
+ drivers/usb/host/xhci.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/drivers/usb/core/hub.c
-+++ b/drivers/usb/core/hub.c
-@@ -3072,6 +3072,22 @@ hub_port_init (struct usb_hub *hub, stru
- 	if (retval)
- 		goto fail;
+--- a/drivers/usb/host/xhci.c
++++ b/drivers/usb/host/xhci.c
+@@ -681,6 +681,7 @@ static void xhci_restore_registers(struc
+ 	xhci_writel(xhci, xhci->s3.irq_control, &xhci->ir_set->irq_control);
+ 	xhci_writel(xhci, xhci->s3.erst_size, &xhci->ir_set->erst_size);
+ 	xhci_write_64(xhci, xhci->s3.erst_base, &xhci->ir_set->erst_base);
++	xhci_write_64(xhci, xhci->s3.erst_dequeue, &xhci->ir_set->erst_dequeue);
+ }
  
-+	/*
-+	 * Some superspeed devices have finished the link training process
-+	 * and attached to a superspeed hub port, but the device descriptor
-+	 * got from those devices show they aren't superspeed devices. Warm
-+	 * reset the port attached by the devices can fix them.
-+	 */
-+	if ((udev->speed == USB_SPEED_SUPER) &&
-+			(le16_to_cpu(udev->descriptor.bcdUSB) < 0x0300)) {
-+		dev_err(&udev->dev, "got a wrong device descriptor, "
-+				"warm reset device\n");
-+		hub_port_reset(hub, port1, udev,
-+				HUB_BH_RESET_TIME, true);
-+		retval = -EINVAL;
-+		goto fail;
-+	}
-+
- 	if (udev->descriptor.bMaxPacketSize0 == 0xff ||
- 			udev->speed == USB_SPEED_SUPER)
- 		i = 512;
+ static void xhci_set_cmd_ring_deq(struct xhci_hcd *xhci)
 
 
