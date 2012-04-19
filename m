@@ -1,86 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933373Ab2DSVNG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Apr 2012 17:13:06 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:54627 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933355Ab2DSVNA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Apr 2012 17:13:00 -0400
-Date: Thu, 19 Apr 2012 23:12:16 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Cyrill Gorcunov <gorcunov@openvz.org>
-Cc: akpm@linux-foundation.org, khlebnikov@openvz.org, keescook@chromium.org,
-        kosaki.motohiro@jp.fujitsu.com, matthltc@us.ibm.com, tj@kernel.org,
-        xemul@parallels.com, linux-kernel@vger.kernel.org
-Subject: Re: +
-	c-r-prctl-add-ability-to-set-new-mm_struct-exe_file-update-after-mm-
-	num_exe_file_vmas-removal.patch added to -mm tree
-Message-ID: <20120419211216.GA2200@redhat.com>
-References: <20120419185221.E8ED6A055E@akpm.mtv.corp.google.com> <20120419192005.GA13558@redhat.com> <20120419210033.GO1893@moon>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120419210033.GO1893@moon>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1756720Ab2DSVpY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Apr 2012 17:45:24 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:34108 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933343Ab2DSVM7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Apr 2012 17:12:59 -0400
+Message-Id: <20120419210613.478048450@linuxfoundation.org>
+User-Agent: quilt/0.60-19.1
+Date: Thu, 19 Apr 2012 14:06:39 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        alan@lxorguk.ukuu.org.uk, Elric Fu <elricfu1@gmail.com>,
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Subject: [ 28/59] xHCI: add XHCI_RESET_ON_RESUME quirk for VIA xHCI host
+In-Reply-To: <20120419210623.GA12156@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/20, Cyrill Gorcunov wrote:
->
-> On Thu, Apr 19, 2012 at 09:20:05PM +0200, Oleg Nesterov wrote:
-> > On 04/19, Andrew Morton wrote:
-> > >
-> > > From: Konstantin Khlebnikov <khlebnikov@openvz.org>
-> > > Subject: c/r: prctl: update prctl_set_mm_exe_file() after mm->num_exe_file_vmas removal
-> > >
-> > > [ fix for "c-r-prctl-add-ability-to-set-new-mm_struct-exe_file-v2" from mm tree ]
-> > >
-> > > After removing mm->num_exe_file_vmas kernel keeps mm->exe_file until final
-> > > mmput(), it never becomes NULL while task is alive.
-> > >
-> > > We can check for other mapped files in mm instead of checking
-> > > mm->num_exe_file_vmas, and mark mm with flag MMF_EXE_FILE_CHANGED in order
-> > > to forbid second changing of mm->exe_file.
-> >
-> > I lost the track a long ago.
-> >
-> > Just one question, what does this "forbid second changing" actually mean?
->
-> Heh :) Oleg, it was actually your idea to make this feature "one-shot".
+3.0-stable review patch.  If anyone has any objections, please let me know.
 
-Heh, no ;)
+------------------
 
-IIRC, I only asked you what do you actually want,
+From: Elric Fu <elricfu1@gmail.com>
 
-	Just one note for the record, prctl_set_mm_exe_file() does
+commit 457a4f61f9bfc3ae76e5b49f30f25d86bb696f67 upstream.
 
-		if (mm->num_exe_file_vmas)
-			return -EBUSY;
+The suspend operation of VIA xHCI host have some issues and
+hibernate operation works fine, so The XHCI_RESET_ON_RESUME
+quirk is added for it.
 
-	We could do
+This patch should base on "xHCI: Don't write zeroed pointer
+to xHC registers" that is released by Sarah. Otherwise, the
+host system error will ocurr in the hibernate operation
+process.
 
-		if (mm->exe_file)
-			return -EBUSY;
+This should be backported to stable kernels as old as 2.6.37,
+that contain the commit c877b3b2ad5cb9d4fe523c5496185cc328ff3ae9
+"xhci: Add reset on resume quirk for asrock p67 host".
 
-	This way "because this feature is a special to C/R" becomes
-	really true. IOW, you can't do PR_SET_MM_EXE_FILE twice.
+Signed-off-by: Elric Fu <elricfu1@gmail.com>
+Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
-	I am fine either way, just I want to ensure you really want
-	the current version.
+---
+ drivers/usb/host/xhci-pci.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
-and only because it was documented as "feature is a special to C/R".
+--- a/drivers/usb/host/xhci-pci.c
++++ b/drivers/usb/host/xhci-pci.c
+@@ -145,6 +145,8 @@ static int xhci_pci_setup(struct usb_hcd
+ 		xhci->quirks |= XHCI_RESET_ON_RESUME;
+ 		xhci_dbg(xhci, "QUIRK: Resetting on resume\n");
+ 	}
++	if (pdev->vendor == PCI_VENDOR_ID_VIA)
++		xhci->quirks |= XHCI_RESET_ON_RESUME;
+ 
+ 	/* Make sure the HC is halted. */
+ 	retval = xhci_halt(xhci);
 
-> Once exe-file changed to a new value, it can't be changed again. The
-> reason was to bring at least minimum disturbance in sysadmins life.
-
-You misunderstood. I am not arguing with "one-shot", I do not really
-care.
-
-My question is: unless I missed something "it can't be changed again"
-is not actually true. A task does PR_SET_MM_EXE_FILE, then it forks
-the new child. The child can do PR_SET_MM_EXE_FILE again. Is this
-by design?
-
-Oleg.
 
