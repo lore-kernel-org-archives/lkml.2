@@ -1,246 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932536Ab2DSUfn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Apr 2012 16:35:43 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:33515 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756300Ab2DSUeU (ORCPT
+	id S932541Ab2DSUjf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Apr 2012 16:39:35 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:49178 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932281Ab2DSUje (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Apr 2012 16:34:20 -0400
-From: Arnaldo Carvalho de Melo <acme@infradead.org>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@google.com>
-Subject: [PATCH 09/13] perf annotate browser: Hide non jump target addresses in offset mode
-Date: Thu, 19 Apr 2012 17:34:04 -0300
-Message-Id: <1334867644-2722-10-git-send-email-acme@infradead.org>
-X-Mailer: git-send-email 1.7.9.2.358.g22243
-In-Reply-To: <1334867644-2722-1-git-send-email-acme@infradead.org>
-References: <1334867644-2722-1-git-send-email-acme@infradead.org>
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by canuck.infradead.org
-	See http://www.infradead.org/rpr.html
+	Thu, 19 Apr 2012 16:39:34 -0400
+Date: Thu, 19 Apr 2012 22:39:15 +0200
+From: Wolfram Sang <w.sang@pengutronix.de>
+To: Roland Stigge <stigge@antcom.de>
+Cc: Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <robherring2@gmail.com>, vitalywool@gmail.com,
+        khali@linux-fr.org, ben-linux@fluff.org, rob.herring@calxeda.com,
+        linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org,
+        devicetree-discuss@lists.ozlabs.org, arm@kernel.org,
+        linux-arm-kernel@lists.infradead.org, kevin.wells@nxp.com,
+        srinivas.bakki@nxp.com
+Subject: Re: [PATCH v4] i2c: Add device tree support to i2c-pnx.c
+Message-ID: <20120419203915.GB28005@pengutronix.de>
+References: <1334850612-24151-1-git-send-email-stigge@antcom.de>
+ <20120419160715.GD24987@pengutronix.de>
+ <4F903E0C.6010604@antcom.de>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="neYutvxvOLaeuPCA"
+Content-Disposition: inline
+In-Reply-To: <4F903E0C.6010604@antcom.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
+X-SA-Exim-Mail-From: wsa@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Arnaldo Carvalho de Melo <acme@redhat.com>
 
-This:
+--neYutvxvOLaeuPCA
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-    0.00 :         ffffffff8116bd00:       lock btsl $0x0,(%r12)
-  100.00 :         ffffffff8116bd07:       sbb    %eax,%eax
-    0.00 :         ffffffff8116bd09:       test   %eax,%eax
-    0.00 :         ffffffff8116bd0b:       jne    ffffffff8116bf5f <__mem_cgroup_commit_charge+0x28f>
-    0.00 :         ffffffff8116bd11:       mov    (%r12),%rax
-    0.00 :         ffffffff8116bd15:       test   $0x2,%al
-    0.00 :         ffffffff8116bd17:       jne    ffffffff8116bf6e <__mem_cgroup_commit_charge+0x29e>
-    0.00 :         ffffffff8116bd1d:       test   %r9b,%r9b
-    0.00 :         ffffffff8116bd20:       jne    ffffffff8116be30 <__mem_cgroup_commit_charge+0x160>
-    0.00 :         ffffffff8116bd26:       xor    %eax,%eax
-    0.00 :         ffffffff8116bd28:       mov    %r13,0x8(%r12)
-    0.00 :         ffffffff8116bd2d:       lock orb $0x2,(%r12)
-    0.00 :         ffffffff8116bd33:       test   %r9b,%r9b
-    0.00 :         ffffffff8116bd36:       je     ffffffff8116bdf3 <__mem_cgroup_commit_charge+0x123>
+On Thu, Apr 19, 2012 at 06:32:12PM +0200, Roland Stigge wrote:
+> Hi,
+>=20
+> On 04/19/2012 06:07 PM, Wolfram Sang wrote:
+> >> + - clock-frequency: desired I2C bus clock frequency in Hz,
+> >> Default: 100000 Hz + - pnx,timeout: I2C bus timeout in
+> >> milliseconds, Default: 10 ms
+> >=20
+> > I'd like to repeat my question to the devicetree folks here: Can we
+> > have timeout generic? It doesn't make sense to me to have that per
+> > vendor again and again.
+>=20
+> Sounds completely reasonable.
+>=20
+> To help make the devicetree conversion into 3.5, I would prefer to
+> integrate the "vendor,timeout" as-is if a longish standardization
+> process would block this, considering that we luckily only have 2-3 of
+> such timeout definitions currently.
 
-Becomes:
+The "blocking" argument will be true for most dt-conversions. Only thing
+that might change is that the argument will then be "we already have
+9-10 of such timeouts, so we can have another one" ;)
 
-    0.00 :         30:       lock btsl $0x0,(%r12)
-  100.00 :                   sbb    %eax,%eax
-    0.00 :                   test   %eax,%eax
-    0.00 :                   jne    28f
-    0.00 :                   mov    (%r12),%rax
-    0.00 :                   test   $0x2,%al
-    0.00 :                   jne    29e
-    0.00 :                   test   %r9b,%r9b
-    0.00 :                   jne    160
-    0.00 :         56:       xor    %eax,%eax
-    0.00 :         58:       mov    %r13,0x8(%r12)
-    0.00 :                   lock orb $0x2,(%r12)
-    0.00 :                   test   %r9b,%r9b
-    0.00 :                   je     123
+I've been there before, if you make one exception once, other people
+will nail you on that. I'd like to avoid that.
 
-I.e. We trow away all those useless addresses and keep just jump labels.
+Let's just hope we can agree on "timeout" quickly and all will be fine.
 
-Suggested-by: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: David Ahern <dsahern@gmail.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Mike Galbraith <efault@gmx.de>
-Cc: Namhyung Kim <namhyung@gmail.com>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/n/tip-r2vmbtgz0l8coluj8flztgrn@git.kernel.org
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
----
- tools/perf/ui/browsers/annotate.c |   71 ++++++++++++++++++++++++++++++-------
- 1 file changed, 58 insertions(+), 13 deletions(-)
+> I'd volunteer to clean up later by preparing a patch when there is a
+> standard timeout defined.
 
-diff --git a/tools/perf/ui/browsers/annotate.c b/tools/perf/ui/browsers/annotate.c
-index 58ebfd0..a1e942b 100644
---- a/tools/perf/ui/browsers/annotate.c
-+++ b/tools/perf/ui/browsers/annotate.c
-@@ -11,11 +11,20 @@
- #include <pthread.h>
- #include <newt.h>
- 
-+struct browser_disasm_line {
-+	struct rb_node	rb_node;
-+	double		percent;
-+	u32		idx;
-+	int		idx_asm;
-+	bool		jump_target;
-+};
-+
- struct annotate_browser {
- 	struct ui_browser b;
- 	struct rb_root	  entries;
- 	struct rb_node	  *curr_hot;
- 	struct disasm_line	  *selection;
-+	struct disasm_line  **offsets;
- 	u64		    start;
- 	int		    nr_asm_entries;
- 	int		    nr_entries;
-@@ -25,13 +34,6 @@ struct annotate_browser {
- 	char		    search_bf[128];
- };
- 
--struct browser_disasm_line {
--	struct rb_node	rb_node;
--	double		percent;
--	u32		idx;
--	int		idx_asm;
--};
--
- static inline struct browser_disasm_line *disasm_line__browser(struct disasm_line *dl)
- {
- 	return (struct browser_disasm_line *)(dl + 1);
-@@ -53,6 +55,7 @@ static void annotate_browser__write(struct ui_browser *self, void *entry, int ro
- {
- 	struct annotate_browser *ab = container_of(self, struct annotate_browser, b);
- 	struct disasm_line *dl = list_entry(entry, struct disasm_line, node);
-+	struct browser_disasm_line *bdl = disasm_line__browser(dl);
- 	bool current_entry = ui_browser__is_current_entry(self, row);
- 	bool change_color = (!ab->hide_src_code &&
- 			     (!current_entry || (self->use_navkeypressed &&
-@@ -60,7 +63,6 @@ static void annotate_browser__write(struct ui_browser *self, void *entry, int ro
- 	int width = self->width;
- 
- 	if (dl->offset != -1) {
--		struct browser_disasm_line *bdl = disasm_line__browser(dl);
- 		ui_browser__set_percent_color(self, bdl->percent, current_entry);
- 		slsmg_printf(" %7.2f ", bdl->percent);
- 	} else {
-@@ -90,7 +92,11 @@ static void annotate_browser__write(struct ui_browser *self, void *entry, int ro
- 		if (!ab->use_offset)
- 			addr += ab->start;
- 
--		printed = scnprintf(bf, sizeof(bf), " %" PRIx64 ":", addr);
-+		if (bdl->jump_target || !ab->use_offset)
-+			printed = scnprintf(bf, sizeof(bf), " %" PRIx64 ":", addr);
-+		else
-+			printed = scnprintf(bf, sizeof(bf), "    ");
-+
- 		if (change_color)
- 			color = ui_browser__set_color(self, HE_COLORSET_ADDR);
- 		slsmg_write_nstring(bf, printed);
-@@ -593,12 +599,39 @@ int hist_entry__tui_annotate(struct hist_entry *he, int evidx,
- 				    timer, arg, delay_secs);
- }
- 
-+static void annotate_browser__mark_jump_targets(struct annotate_browser *browser,
-+						size_t size)
-+{
-+	u64 offset;
-+
-+	for (offset = 0; offset < size; ++offset) {
-+		struct disasm_line *dl = browser->offsets[offset], *dlt;
-+		struct browser_disasm_line *bdlt;
-+
-+		if (!dl || !dl->ins || !ins__is_jump(dl->ins))
-+			continue;
-+
-+		if (dl->target >= size) {
-+			ui__error("jump to after symbol!\n"
-+				  "size: %zx, jump target: %" PRIx64,
-+				  size, dl->target);
-+			continue;
-+		}
-+
-+		dlt = browser->offsets[dl->target];
-+		bdlt = disasm_line__browser(dlt);
-+		bdlt->jump_target = true;
-+	}
-+		
-+}
-+
- int symbol__tui_annotate(struct symbol *sym, struct map *map, int evidx,
- 			 void(*timer)(void *arg), void *arg,
- 			 int delay_secs)
- {
- 	struct disasm_line *pos, *n;
- 	struct annotation *notes;
-+	const size_t size = symbol__size(sym);
- 	struct map_symbol ms = {
- 		.map = map,
- 		.sym = sym,
-@@ -613,7 +646,7 @@ int symbol__tui_annotate(struct symbol *sym, struct map *map, int evidx,
- 			.use_navkeypressed = true,
- 		},
- 	};
--	int ret;
-+	int ret = -1;
- 
- 	if (sym == NULL)
- 		return -1;
-@@ -621,9 +654,15 @@ int symbol__tui_annotate(struct symbol *sym, struct map *map, int evidx,
- 	if (map->dso->annotate_warned)
- 		return -1;
- 
-+	browser.offsets = zalloc(size * sizeof(struct disasm_line *));
-+	if (browser.offsets == NULL) {
-+		ui__error("Not enough memory!");
-+		return -1;
-+	}
-+
- 	if (symbol__annotate(sym, map, sizeof(struct browser_disasm_line)) < 0) {
- 		ui__error("%s", ui_helpline__last_msg);
--		return -1;
-+		goto out_free_offsets;
- 	}
- 
- 	ui_helpline__push("Press <- or ESC to exit");
-@@ -639,12 +678,15 @@ int symbol__tui_annotate(struct symbol *sym, struct map *map, int evidx,
- 			browser.b.width = line_len;
- 		bpos = disasm_line__browser(pos);
- 		bpos->idx = browser.nr_entries++;
--		if (pos->offset != -1)
-+		if (pos->offset != -1) {
- 			bpos->idx_asm = browser.nr_asm_entries++;
--		else
-+			browser.offsets[pos->offset] = pos;
-+		} else
- 			bpos->idx_asm = -1;
- 	}
- 
-+	annotate_browser__mark_jump_targets(&browser, size);
-+
- 	browser.b.nr_entries = browser.nr_entries;
- 	browser.b.entries = &notes->src->source,
- 	browser.b.width += 18; /* Percentage */
-@@ -653,5 +695,8 @@ int symbol__tui_annotate(struct symbol *sym, struct map *map, int evidx,
- 		list_del(&pos->node);
- 		disasm_line__free(pos);
- 	}
-+
-+out_free_offsets:
-+	free(browser.offsets);
- 	return ret;
- }
--- 
-1.7.9.2.358.g22243
+The problem with bindings is that you must support them forever once
+introduced. Old device-trees should still work with newer kernels.
+=20
+> If we have a solution soon, I will prepare a new version of the patch,
+> of course, in the next days.
 
+Thanks. One question, though: Will it really block dt-conversion? The
+whole conversion should not be depending on the i2c-driver?
+
+> > Did you change this, too? Timeouts are better readable in dec :)
+>=20
+> Right. But even when removing the "0x" in the timeout line above, it's
+> still hex, see Documentation/devicetree/booting-without-of.txt
+>=20
+> Or did I get sth. wrong?
+
+I think the document is probably outdated :( "clock-frequency" is also
+without 0x and dec.
+
+Regards,
+
+   Wolfram
+
+--=20
+Pengutronix e.K.                           | Wolfram Sang                |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+
+--neYutvxvOLaeuPCA
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iEYEARECAAYFAk+Qd/MACgkQD27XaX1/VRv68wCfSlP1dTj/oNt9iMmleHyCHsL6
+crMAnjv0xGzqCNgsyufi6nkcftUxbfpm
+=16eA
+-----END PGP SIGNATURE-----
+
+--neYutvxvOLaeuPCA--
