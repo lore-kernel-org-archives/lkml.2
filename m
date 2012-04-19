@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932684Ab2DSVG0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Apr 2012 17:06:26 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:41537 "EHLO
+	id S932700Ab2DSVGk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Apr 2012 17:06:40 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:38883 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932669Ab2DSVGY (ORCPT
+	with ESMTP id S932689Ab2DSVGg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Apr 2012 17:06:24 -0400
-Message-Id: <20120419210304.754401116@linuxfoundation.org>
+	Thu, 19 Apr 2012 17:06:36 -0400
+Message-Id: <20120419210305.843441633@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Thu, 19 Apr 2012 14:03:22 -0700
+Date: Thu, 19 Apr 2012 14:03:35 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Takashi Iwai <tiwai@suse.de>
-Subject: [ 19/75] ALSA: hda/realtek - Add a fixup entry for Acer Aspire 8940G
+        alan@lxorguk.ukuu.org.uk, "David S. Miller" <davem@davemloft.net>
+Subject: [ 32/75] sparc64: Fix bootup crash on sun4v.
 In-Reply-To: <20120419210322.GA6478@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -24,30 +24,31 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Takashi Iwai <tiwai@suse.de>
+From: "David S. Miller" <davem@davemloft.net>
 
-commit fe97da1f7001ca0f572358462606eb3d1bde3f23 upstream.
+commit 9e0daff30fd7ecf698e5d20b0fa7f851e427cca5 upstream.
 
-It's compatible with 8930G.
-Using the same fixup gives the proper 5.1 sound back.
+The DS driver registers as a subsys_initcall() but this can be too
+early, in particular this risks registering before we've had a chance
+to allocate and setup module_kset in kernel/params.c which is
+performed also as a subsyts_initcall().
 
-Reported-and-tested-by: Dany Martineau <dany.luc.martineau@gmail.com>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Register DS using device_initcall() insteal.
+
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/pci/hda/patch_realtek.c |    1 +
- 1 file changed, 1 insertion(+)
+ arch/sparc/kernel/ds.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/sound/pci/hda/patch_realtek.c
-+++ b/sound/pci/hda/patch_realtek.c
-@@ -4649,6 +4649,7 @@ static const struct snd_pci_quirk alc882
- 		      ALC882_FIXUP_ACER_ASPIRE_4930G),
- 	SND_PCI_QUIRK(0x1025, 0x0155, "Packard-Bell M5120", ALC882_FIXUP_PB_M5210),
- 	SND_PCI_QUIRK(0x1025, 0x0259, "Acer Aspire 5935", ALC889_FIXUP_DAC_ROUTE),
-+	SND_PCI_QUIRK(0x1025, 0x026b, "Acer Aspire 8940G", ALC882_FIXUP_ACER_ASPIRE_8930G),
- 	SND_PCI_QUIRK(0x1025, 0x0296, "Acer Aspire 7736z", ALC882_FIXUP_ACER_ASPIRE_7736),
- 	SND_PCI_QUIRK(0x1043, 0x13c2, "Asus A7M", ALC882_FIXUP_EAPD),
- 	SND_PCI_QUIRK(0x1043, 0x1873, "ASUS W90V", ALC882_FIXUP_ASUS_W90V),
+--- a/arch/sparc/kernel/ds.c
++++ b/arch/sparc/kernel/ds.c
+@@ -1267,4 +1267,4 @@ static int __init ds_init(void)
+ 	return vio_register_driver(&ds_driver);
+ }
+ 
+-subsys_initcall(ds_init);
++fs_initcall(ds_init);
 
 
