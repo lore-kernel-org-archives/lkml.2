@@ -1,81 +1,264 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752240Ab2DSCgr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Apr 2012 22:36:47 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:55610 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751235Ab2DSCgq convert rfc822-to-8bit (ORCPT
+	id S1754573Ab2DSClp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Apr 2012 22:41:45 -0400
+Received: from mailout2.samsung.com ([203.254.224.25]:28937 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752099Ab2DSCli (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Apr 2012 22:36:46 -0400
-MIME-Version: 1.0
-Reply-To: myungjoo.ham@gmail.com
-In-Reply-To: <20120418214703.GA31606@kroah.com>
-References: <1332492784-10526-1-git-send-email-myungjoo.ham@samsung.com>
-	<1332492784-10526-2-git-send-email-myungjoo.ham@samsung.com>
-	<20120418214703.GA31606@kroah.com>
-Date: Thu, 19 Apr 2012 11:36:45 +0900
-X-Google-Sender-Auth: 3gHuKPb0DFyH7CZfyNYni0-xhcQ
-Message-ID: <CAJ0PZbQ2Q9p9NpJfJtAGDzNv-aq2cKswgLq5Q9op3UDJjQAG6w@mail.gmail.com>
-Subject: Re: [PATCH v7 1/6] Extcon (external connector): import Android's
- switch class and modify.
+	Wed, 18 Apr 2012 22:41:38 -0400
+X-AuditID: cbfee61a-b7c0cae000001518-ae-4f8f7b5f6598
 From: MyungJoo Ham <myungjoo.ham@samsung.com>
 To: Greg KH <gregkh@linuxfoundation.org>
 Cc: Arnd Bergmann <arnd@arndb.de>, LKML <linux-kernel@vger.kernel.org>,
         NeilBrown <neilb@suse.de>, Randy Dunlap <rdunlap@xenotime.net>,
         Mike Lockwood <lockwood@android.com>,
-        =?ISO-8859-1?Q?Arve_Hj=F8nnevag?= <arve@android.com>,
+        =?UTF-8?q?Arve=20Hj=C3=B8nnevag?= <arve@android.com>,
         Kyungmin Park <kyungmin.park@samsung.com>,
         Linus Walleij <linus.walleij@linaro.org>,
         Dmitry Torokhov <dmitry.torokhov@gmail.com>,
         Morten CHRISTIANSEN <morten.christiansen@stericsson.com>,
         Mark Brown <broonie@opensource.wolfsonmicro.com>,
         John Stultz <john.stultz@linaro.org>,
-        Joerg Roedel <joerg.roedel@amd.com>, cw00.choi@samsung.com
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 8BIT
+        Joerg Roedel <joerg.roedel@amd.com>, myungjoo.ham@gmail.com,
+        cw00.choi@samsung.com
+Subject: [PATCH v8 3/6] Extcon: support notification based on the state changes.
+Date: Thu, 19 Apr 2012 11:41:35 +0900
+Message-id: <1334803298-24260-4-git-send-email-myungjoo.ham@samsung.com>
+X-Mailer: git-send-email 1.7.4.1
+In-reply-to: <1334803298-24260-1-git-send-email-myungjoo.ham@samsung.com>
+References: <20120418214703.GA31606@kroah.com>
+ <1334803298-24260-1-git-send-email-myungjoo.ham@samsung.com>
+X-Brightmail-Tracker: AAAAAA==
+X-TM-AS-MML: No
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 19, 2012 at 6:47 AM, Greg KH <gregkh@linuxfoundation.org> wrote:
-> On Fri, Mar 23, 2012 at 05:52:58PM +0900, MyungJoo Ham wrote:
->> External connector class (extcon) is based on and an extension of
->> Android kernel's switch class located at linux/drivers/switch/.
->
-> <snip>
->
-> This patch breaks the build:
-> drivers/extcon/extcon_class.c:79:6: error: redefinition of ‘extcon_set_state’
-> include/linux/extcon.h:80:20: note: previous definition of ‘extcon_set_state’ was here
-> drivers/extcon/extcon_class.c:170:5: error: redefinition of ‘extcon_dev_register’
-> include/linux/extcon.h:67:19: note: previous definition of ‘extcon_dev_register’ was here
-> drivers/extcon/extcon_class.c:214:6: error: redefinition of ‘extcon_dev_unregister’
-> include/linux/extcon.h:73:20: note: previous definition of ‘extcon_dev_unregister’ was here
->
-> So it obviously can't be applied to the tree :(
->
-> Did you test it?
->
-> Care to redo this series and send it again?
->
-> greg k-h
+From: Donggeun Kim <dg77.kim@samsung.com>
 
-Hello,
+State changes of extcon devices have been notified via kobjet_uevent.
+This patch adds notifier interfaces in order to allow device drivers to
+get notified easily. Along with notifier interface,
+extcon_get_extcon_dev() function is added so that device drivers may
+discover a extcon_dev easily.
 
-That error is very wierd. It implies that CONFIG_EXTCON is "not
-defined" in extcon.h and CONFIG_EXTCON is "defined" in Makefile so
-that extcon_class.c is compiled.
+Signed-off-by: Donggeun Kim <dg77.kim@samsung.com>
+Signed-off-by: MyungJoo Ham <myungjoo.ham@samsung.com>
+Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
+Reviewed-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
 
-However, the patchset v8 (some bugfixes over patchset v7) that is
-tested on the base of Linux 3.4-rc3 w/ and w/o CONFIG_EXTCON and has
-been used with MAX77693-MUIC devices is on the way.
+--
+Changes from RFC
+- Renamed switch to extcon
+- Bugfix: extcon_dev_unregister()
+- Bugfix: "edev->dev" is "internal" data.
+- Added kerneldoc comments.
+- Reworded comments.
+---
+ drivers/extcon/extcon_class.c |   66 +++++++++++++++++++++++++++++++++++++++++
+ include/linux/extcon.h        |   38 +++++++++++++++++++++++
+ 2 files changed, 104 insertions(+), 0 deletions(-)
 
-Thanks.
-
-
-Cheers!
-MyungJoo.
-
+diff --git a/drivers/extcon/extcon_class.c b/drivers/extcon/extcon_class.c
+index 3c46368..83a088f 100644
+--- a/drivers/extcon/extcon_class.c
++++ b/drivers/extcon/extcon_class.c
+@@ -36,6 +36,9 @@ struct class *extcon_class;
+ static struct class_compat *switch_class;
+ #endif /* CONFIG_ANDROID && !defined(CONFIG_ANDROID_SWITCH) */
+ 
++static LIST_HEAD(extcon_dev_list);
++static DEFINE_MUTEX(extcon_dev_list_lock);
++
+ static ssize_t state_show(struct device *dev, struct device_attribute *attr,
+ 			  char *buf)
+ {
+@@ -75,6 +78,9 @@ static ssize_t name_show(struct device *dev, struct device_attribute *attr,
+  * the name of extcon device (envp[0]) and the state output (envp[1]).
+  * Tizen uses this format for extcon device to get events from ports.
+  * Android uses this format as well.
++ *
++ * Note that notifier provides the which bits are changes in the state
++ * variable with "val" to the callback.
+  */
+ void extcon_set_state(struct extcon_dev *edev, u32 state)
+ {
+@@ -84,10 +90,14 @@ void extcon_set_state(struct extcon_dev *edev, u32 state)
+ 	char *envp[3];
+ 	int env_offset = 0;
+ 	int length;
++	u32 old_state = edev->state;
+ 
+ 	if (edev->state != state) {
+ 		edev->state = state;
+ 
++		raw_notifier_call_chain(&edev->nh, old_state ^ edev->state,
++					edev);
++
+ 		prop_buf = (char *)get_zeroed_page(GFP_KERNEL);
+ 		if (prop_buf) {
+ 			length = name_show(edev->dev, NULL, prop_buf);
+@@ -117,6 +127,51 @@ void extcon_set_state(struct extcon_dev *edev, u32 state)
+ }
+ EXPORT_SYMBOL_GPL(extcon_set_state);
+ 
++/**
++ * extcon_get_extcon_dev() - Get the extcon device instance from the name
++ * @extcon_name:	The extcon name provided with extcon_dev_register()
++ */
++struct extcon_dev *extcon_get_extcon_dev(const char *extcon_name)
++{
++	struct extcon_dev *sd;
++
++	mutex_lock(&extcon_dev_list_lock);
++	list_for_each_entry(sd, &extcon_dev_list, entry) {
++		if (!strcmp(sd->name, extcon_name))
++			goto out;
++	}
++	sd = NULL;
++out:
++	mutex_unlock(&extcon_dev_list_lock);
++	return sd;
++}
++EXPORT_SYMBOL_GPL(extcon_get_extcon_dev);
++
++/**
++ * extcon_register_notifier() - Register a notifee to get notified by
++ *			      any attach status changes from the extcon.
++ * @edev:	the extcon device.
++ * @nb:		a notifier block to be registered.
++ */
++int extcon_register_notifier(struct extcon_dev *edev,
++			struct notifier_block *nb)
++{
++	return raw_notifier_chain_register(&edev->nh, nb);
++}
++EXPORT_SYMBOL_GPL(extcon_register_notifier);
++
++/**
++ * extcon_unregister_notifier() - Unregister a notifee from the extcon device.
++ * @edev:	the extcon device.
++ * @nb:		a registered notifier block to be unregistered.
++ */
++int extcon_unregister_notifier(struct extcon_dev *edev,
++			struct notifier_block *nb)
++{
++	return raw_notifier_chain_unregister(&edev->nh, nb);
++}
++EXPORT_SYMBOL_GPL(extcon_unregister_notifier);
++
+ static struct device_attribute extcon_attrs[] = {
+ 	__ATTR_RO(state),
+ 	__ATTR_RO(name),
+@@ -142,6 +197,10 @@ static int create_extcon_class(void)
+ 
+ static void extcon_cleanup(struct extcon_dev *edev, bool skip)
+ {
++	mutex_lock(&extcon_dev_list_lock);
++	list_del(&edev->entry);
++	mutex_unlock(&extcon_dev_list_lock);
++
+ 	if (!skip && get_device(edev->dev)) {
+ 		device_unregister(edev->dev);
+ 		put_device(edev->dev);
+@@ -194,8 +253,15 @@ int extcon_dev_register(struct extcon_dev *edev, struct device *dev)
+ 					       dev);
+ #endif /* CONFIG_ANDROID && !defined(CONFIG_ANDROID_SWITCH) */
+ 
++	RAW_INIT_NOTIFIER_HEAD(&edev->nh);
++
+ 	dev_set_drvdata(edev->dev, edev);
+ 	edev->state = 0;
++
++	mutex_lock(&extcon_dev_list_lock);
++	list_add(&edev->entry, &extcon_dev_list);
++	mutex_unlock(&extcon_dev_list_lock);
++
+ 	return 0;
+ 
+ err_dev:
+diff --git a/include/linux/extcon.h b/include/linux/extcon.h
+index cd732ab..50be845 100644
+--- a/include/linux/extcon.h
++++ b/include/linux/extcon.h
+@@ -23,6 +23,7 @@
+ #ifndef __LINUX_EXTCON_H__
+ #define __LINUX_EXTCON_H__
+ 
++#include <linux/notifier.h>
+ /**
+  * struct extcon_dev - An extcon device represents one external connector.
+  * @name	The name of this extcon device. Parent device name is used
+@@ -34,6 +35,9 @@
+  * @dev		Device of this extcon. Do not provide at register-time.
+  * @state	Attach/detach state of this extcon. Do not provide at
+  *		register-time
++ * @nh	Notifier for the state change events from this extcon
++ * @entry	To support list of extcon devices so that uses can search
++ *		for extcon devices based on the extcon name.
+  *
+  * In most cases, users only need to provide "User initializing data" of
+  * this struct when registering an extcon. In some exceptional cases,
+@@ -51,11 +55,19 @@ struct extcon_dev {
+ 	/* --- Internal data. Please do not set. --- */
+ 	struct device	*dev;
+ 	u32		state;
++	struct raw_notifier_head nh;
++	struct list_head entry;
+ };
+ 
+ #ifdef CONFIG_EXTCON
++
++/*
++ * Following APIs are for notifiers or configurations.
++ * Notifiers are the external port and connection devices.
++ */
+ extern int extcon_dev_register(struct extcon_dev *edev, struct device *dev);
+ extern void extcon_dev_unregister(struct extcon_dev *edev);
++extern struct extcon_dev *extcon_get_extcon_dev(const char *extcon_name);
+ 
+ static inline u32 extcon_get_state(struct extcon_dev *edev)
+ {
+@@ -63,6 +75,15 @@ static inline u32 extcon_get_state(struct extcon_dev *edev)
+ }
+ 
+ extern void extcon_set_state(struct extcon_dev *edev, u32 state);
++
++/*
++ * Following APIs are to monitor every action of a notifier.
++ * Registerer gets notified for every external port of a connection device.
++ */
++extern int extcon_register_notifier(struct extcon_dev *edev,
++				    struct notifier_block *nb);
++extern int extcon_unregister_notifier(struct extcon_dev *edev,
++				      struct notifier_block *nb);
+ #else /* CONFIG_EXTCON */
+ static inline int extcon_dev_register(struct extcon_dev *edev,
+ 				      struct device *dev)
+@@ -78,5 +99,22 @@ static inline u32 extcon_get_state(struct extcon_dev *edev)
+ }
+ 
+ static inline void extcon_set_state(struct extcon_dev *edev, u32 state) { }
++static inline struct extcon_dev *extcon_get_extcon_dev(const char *extcon_name)
++{
++	return NULL;
++}
++
++static inline int extcon_register_notifier(struct extcon_dev *edev,
++					   struct notifier_block *nb)
++{
++	return 0;
++}
++
++static inline int extcon_unregister_notifier(struct extcon_dev *edev,
++					     struct notifier_block *nb)
++{
++	return 0;
++}
++
+ #endif /* CONFIG_EXTCON */
+ #endif /* __LINUX_EXTCON_H__ */
 -- 
-MyungJoo Ham, Ph.D.
-Mobile Software Platform Lab, DMC Business, Samsung Electronics
+1.7.4.1
+
