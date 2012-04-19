@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965085Ab2DSV0p (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Apr 2012 17:26:45 -0400
-Received: from mail-pz0-f42.google.com ([209.85.210.42]:44862 "EHLO
-	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933644Ab2DSVQc (ORCPT
+	id S933634Ab2DSVQ2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Apr 2012 17:16:28 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:44451 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933629Ab2DSVQW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Apr 2012 17:16:32 -0400
-Message-Id: <20120419210821.412020499@linuxfoundation.org>
+	Thu, 19 Apr 2012 17:16:22 -0400
+Message-Id: <20120419210821.149406058@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Thu, 19 Apr 2012 14:08:50 -0700
+Date: Thu, 19 Apr 2012 14:08:47 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Anton Samokhvalov <pg83@yandex.ru>
-Subject: [ 32/68] USB: sierra: add support for Sierra Wireless MC7710
+        alan@lxorguk.ukuu.org.uk, Santiago Garcia Mantinan <manty@debian.org>
+Subject: [ 29/68] USB: option: re-add NOVATELWIRELESS_PRODUCT_HSPA_HIGHSPEED to option_id array
 In-Reply-To: <20120419210923.GA18589@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -24,28 +24,28 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Anton Samokhvalov <pg83@yandex.ru>
+From: Santiago Garcia Mantinan <manty@debian.org>
 
-commit c5d703dcc776cb542b41665f2b7e2ba054efb4a7 upstream.
+commit 9ac2feb22b5b821d81463bef92698ef7682a3145 upstream.
 
-Just add new device id. 3G works fine, LTE not tested.
+Re-add NOVATELWIRELESS_PRODUCT_HSPA_HIGHSPEED to option_id array
 
-Signed-off-by: Anton Samokhvalov <pg83@yandex.ru>
+Signed-off-by: Santiago Garcia Mantinan <manty@debian.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/serial/sierra.c |    1 +
+ drivers/usb/serial/option.c |    1 +
  1 file changed, 1 insertion(+)
 
---- a/drivers/usb/serial/sierra.c
-+++ b/drivers/usb/serial/sierra.c
-@@ -289,6 +289,7 @@ static const struct usb_device_id id_tab
- 	{ USB_DEVICE(0x1199, 0x6856) },	/* Sierra Wireless AirCard 881 U */
- 	{ USB_DEVICE(0x1199, 0x6859) },	/* Sierra Wireless AirCard 885 E */
- 	{ USB_DEVICE(0x1199, 0x685A) },	/* Sierra Wireless AirCard 885 E */
-+	{ USB_DEVICE(0x1199, 0x68A2) }, /* Sierra Wireless MC7710 */
- 	/* Sierra Wireless C885 */
- 	{ USB_DEVICE_AND_INTERFACE_INFO(0x1199, 0x6880, 0xFF, 0xFF, 0xFF)},
- 	/* Sierra Wireless C888, Air Card 501, USB 303, USB 304 */
+--- a/drivers/usb/serial/option.c
++++ b/drivers/usb/serial/option.c
+@@ -708,6 +708,7 @@ static const struct usb_device_id option
+ 	{ USB_DEVICE(NOVATELWIRELESS_VENDOR_ID, NOVATELWIRELESS_PRODUCT_EVDO_EMBEDDED_FULLSPEED) },
+ 	{ USB_DEVICE(NOVATELWIRELESS_VENDOR_ID, NOVATELWIRELESS_PRODUCT_HSPA_EMBEDDED_FULLSPEED) },
+ 	{ USB_DEVICE(NOVATELWIRELESS_VENDOR_ID, NOVATELWIRELESS_PRODUCT_EVDO_HIGHSPEED) },
++	{ USB_DEVICE(NOVATELWIRELESS_VENDOR_ID, NOVATELWIRELESS_PRODUCT_HSPA_HIGHSPEED) },
+ 	{ USB_DEVICE(NOVATELWIRELESS_VENDOR_ID, NOVATELWIRELESS_PRODUCT_HSPA_HIGHSPEED3) },
+ 	{ USB_DEVICE(NOVATELWIRELESS_VENDOR_ID, NOVATELWIRELESS_PRODUCT_HSPA_HIGHSPEED4) },
+ 	{ USB_DEVICE(NOVATELWIRELESS_VENDOR_ID, NOVATELWIRELESS_PRODUCT_HSPA_HIGHSPEED5) },
 
 
