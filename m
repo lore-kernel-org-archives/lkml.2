@@ -1,24 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755545Ab2DSPNo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Apr 2012 11:13:44 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:37611 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755333Ab2DSPNm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Apr 2012 11:13:42 -0400
+	id S1754405Ab2DSPLj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Apr 2012 11:11:39 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:46107 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751386Ab2DSPLh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Apr 2012 11:11:37 -0400
 From: Sourav Poddar <sourav.poddar@ti.com>
 To: <devicetree-discuss@lists.ozlabs.org>
 CC: <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        <linux-input@vger.kernel.org>, Sourav Poddar <sourav.poddar@ti.com>,
-        Benoit Cousson <b-cousson@ti.com>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Grant Likely <grant.likely@secretlab.ca>, Felipe Balbi <balbi@ti.com>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Randy Dunlap <rdunlap@xenotime.net>
+        <linux-input@vger.kernel.org>
 Subject: [PATCHv2 1/2] drivers: input: keypad: Add device tree support
-Date: Thu, 19 Apr 2012 20:47:57 +0530
-Message-ID: <1334848679-882-1-git-send-email-sourav.poddar@ti.com>
+Date: Thu, 19 Apr 2012 20:45:36 +0530
+Message-ID: <1334848537-823-1-git-send-email-sourav.poddar@ti.com>
 X-Mailer: git-send-email 1.7.1
 MIME-Version: 1.0
 Content-Type: text/plain
