@@ -1,741 +1,229 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932525Ab2DSUej (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Apr 2012 16:34:39 -0400
-Received: from casper.infradead.org ([85.118.1.10]:35006 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932324Ab2DSUeX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Apr 2012 16:34:23 -0400
-From: Arnaldo Carvalho de Melo <acme@infradead.org>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@google.com>
-Subject: [PATCH 01/13] perf annotate: Rename objdump_line to disasm_line
-Date: Thu, 19 Apr 2012 17:33:56 -0300
-Message-Id: <1334867644-2722-2-git-send-email-acme@infradead.org>
-X-Mailer: git-send-email 1.7.9.2.358.g22243
-In-Reply-To: <1334867644-2722-1-git-send-email-acme@infradead.org>
-References: <1334867644-2722-1-git-send-email-acme@infradead.org>
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by casper.infradead.org
-	See http://www.infradead.org/rpr.html
+	id S932533Ab2DSUfU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Apr 2012 16:35:20 -0400
+Received: from ogre.sisk.pl ([193.178.161.156]:53580 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932183Ab2DSUfS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Apr 2012 16:35:18 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Lin Ming <ming.m.lin@intel.com>
+Subject: Re: [PATCH 1/6] ACPI: D3cold state is always valid
+Date: Thu, 19 Apr 2012 22:39:54 +0200
+User-Agent: KMail/1.13.6 (Linux/3.4.0-rc3+; KDE/4.6.0; x86_64; ; )
+Cc: huang ying <huang.ying.caritas@gmail.com>, Len Brown <lenb@kernel.og>,
+        linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org,
+        Zhang Rui <rui.zhang@intel.com>, Aaron Lu <aaron.lu@amd.com>
+References: <1334641676-14566-1-git-send-email-ming.m.lin@intel.com> <201204191351.41875.rjw@sisk.pl> <1334849015.4067.1.camel@hp6530s>
+In-Reply-To: <1334849015.4067.1.camel@hp6530s>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201204192239.55048.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Arnaldo Carvalho de Melo <acme@redhat.com>
+On Thursday, April 19, 2012, Lin Ming wrote:
+> On Thu, 2012-04-19 at 13:51 +0200, Rafael J. Wysocki wrote:
+> > On Thursday, April 19, 2012, huang ying wrote:
+> > > On Thu, Apr 19, 2012 at 5:13 AM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+> > > > On Tuesday, April 17, 2012, huang ying wrote:
+> > > >> On Tue, Apr 17, 2012 at 1:47 PM, Lin Ming <ming.m.lin@intel.com> wrote:
+> > > >> > ACPI_STATE_D3 actually means ACPI D3hot which is not always valid.
+> > > >> > Instead, ACPI D3cold is always valid.
+> > > >> >
+> > > >> > Signed-off-by: Lin Ming <ming.m.lin@intel.com>
+> > > >> > ---
+> > > >> >  drivers/acpi/scan.c |   11 ++---------
+> > > >> >  1 files changed, 2 insertions(+), 9 deletions(-)
+> > > >> >
+> > > >> > diff --git a/drivers/acpi/scan.c b/drivers/acpi/scan.c
+> > > >> > index 767e2dc..fb56388 100644
+> > > >> > --- a/drivers/acpi/scan.c
+> > > >> > +++ b/drivers/acpi/scan.c
+> > > >> > @@ -884,13 +884,6 @@ static int acpi_bus_get_power_flags(struct acpi_device *device)
+> > > >> >                                acpi_bus_add_power_resource(ps->resources.handles[j]);
+> > > >> >                }
+> > > >> >
+> > > >> > -               /* The exist of _PR3 indicates D3Cold support */
+> > > >> > -               if (i == ACPI_STATE_D3) {
+> > > >> > -                       status = acpi_get_handle(device->handle, object_name, &handle);
+> > > >> > -                       if (ACPI_SUCCESS(status))
+> > > >> > -                               device->power.states[ACPI_STATE_D3_COLD].flags.valid = 1;
+> > > >> > -               }
+> > > >> > -
+> > > >> >                /* Evaluate "_PSx" to see if we can do explicit sets */
+> > > >> >                object_name[2] = 'S';
+> > > >> >                status = acpi_get_handle(device->handle, object_name, &handle);
+> > > >> > @@ -908,8 +901,8 @@ static int acpi_bus_get_power_flags(struct acpi_device *device)
+> > > >> >        /* Set defaults for D0 and D3 states (always valid) */
+> > > >> >        device->power.states[ACPI_STATE_D0].flags.valid = 1;
+> > > >> >        device->power.states[ACPI_STATE_D0].power = 100;
+> > > >> > -       device->power.states[ACPI_STATE_D3].flags.valid = 1;
+> > > >> > -       device->power.states[ACPI_STATE_D3].power = 0;
+> > > >> > +       device->power.states[ACPI_STATE_D3_COLD].flags.valid = 1;
+> > > >> > +       device->power.states[ACPI_STATE_D3_COLD].power = 0;
+> > > >> >
+> > > >> >        acpi_bus_init_power(device);
+> > > >>
+> > > >> I think D3_HOT should be always valid, while D3_COLD should be valid
+> > > >> for some situation.
+> > > >
+> > > > This need not be PCI, mind you.
+> > > >
+> > > >>  - has _PS3, no _PR3
+> > > >>    - support D3_HOT, D3_COLD
+> > > >
+> > > > Nope.  D3_HOT cannot be supported in that case at the ACPI level.
+> > > >
+> > > >>    - set state
+> > > >>      - D3_HOT: do nothing in ACPI
+> > > >
+> > > > That is not D3_HOT, then, from the ACPI point of view.  It is a different
+> > > > power state.
+> > > >
+> > > > Suppose you have a non-PCI device that can be only power-manageable via ACPI
+> > > > and that device has only _PS0 and _PS3.  How would you put it into D3_HOT,
+> > > > in particular?
+> > > 
+> > > Normally, we will put it into D3_COLD (via _PS3).
+> > > 
+> > > If it is prevented to be put in D3_COLD,
+> > >   - If D3_HOT is not marked as supported, we will keep it in D0
+> > >   - otherwise, we advocate we put it into D3_HOT, but in fact, it is in D0.
+> > > 
+> > > The result is same, but with wrong name.
+> > > 
+> > > But there will be some real problem if we have something like CPU
+> > > governor.  Because governor may choose D3_HOT for device.
+> > 
+> > In that case the ACPI layer should simply return an error code indicating
+> > that the requested state is not available _from_ _it_.  If there are
+> > more layers, however, they may be able to change the power state of
+> > the device.
+> > 
+> > > But for PCI device, D3_HOT is supported for the device.
+> > 
+> > Yes, if the device supports native PM.  However, PCI D-states and ACPI D-states
+> > are different things.  We kind of combine them in our PCI bus type.
+> > 
+> > > So the bus layer should combine the information from native power
+> > > state supported and ACPI power state supported to determine which
+> > > power states are supported?
+> > 
+> > Yes, we do that all the time, with the exception of D3 cold/hot.
+> > 
+> > > For example, for a PCI device, ACPI advocates D0 and D3_COLD are supported,
+> > > and PCI layer may advocate D0, D3_HOT and D3_COLD are supported.
+> > 
+> > Exactly.  All of the available power states of the device depend on both
+> > the device's own capabilities (ie. what PCI D-states the device may be
+> > programmed into by register writes) and whatever is available from ACPI.
+> > 
+> > On embedded systems there are other factors as well.
+> 
+> So seems the patch is much simpler.
 
-We want to move away from using 'objdump -dS' as the only disassembler
-supported.
+Yes, it should be simpler.
 
-Cc: David Ahern <dsahern@gmail.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Mike Galbraith <efault@gmx.de>
-Cc: Namhyung Kim <namhyung@gmail.com>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/n/tip-lsn9pjuxxm5ezsubyhkmprw7@git.kernel.org
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
----
- tools/perf/ui/browsers/annotate.c |  179 ++++++++++++++++++-------------------
- tools/perf/util/annotate.c        |   72 ++++++++-------
- tools/perf/util/annotate.h        |   11 ++-
- 3 files changed, 128 insertions(+), 134 deletions(-)
+> How about below?
 
-diff --git a/tools/perf/ui/browsers/annotate.c b/tools/perf/ui/browsers/annotate.c
-index 4db5186..bc540b1 100644
---- a/tools/perf/ui/browsers/annotate.c
-+++ b/tools/perf/ui/browsers/annotate.c
-@@ -15,7 +15,7 @@ struct annotate_browser {
- 	struct ui_browser b;
- 	struct rb_root	  entries;
- 	struct rb_node	  *curr_hot;
--	struct objdump_line *selection;
-+	struct disasm_line	  *selection;
- 	u64		    start;
- 	int		    nr_asm_entries;
- 	int		    nr_entries;
-@@ -25,26 +25,25 @@ struct annotate_browser {
- 	char		    search_bf[128];
- };
- 
--struct objdump_line_rb_node {
-+struct disasm_line_rb_node {
- 	struct rb_node	rb_node;
- 	double		percent;
- 	u32		idx;
- 	int		idx_asm;
- };
- 
--static inline
--struct objdump_line_rb_node *objdump_line__rb(struct objdump_line *self)
-+static inline struct disasm_line_rb_node *disasm_line__rb(struct disasm_line *dl)
- {
--	return (struct objdump_line_rb_node *)(self + 1);
-+	return (struct disasm_line_rb_node *)(dl + 1);
- }
- 
--static bool objdump_line__filter(struct ui_browser *browser, void *entry)
-+static bool disasm_line__filter(struct ui_browser *browser, void *entry)
- {
- 	struct annotate_browser *ab = container_of(browser, struct annotate_browser, b);
- 
- 	if (ab->hide_src_code) {
--		struct objdump_line *ol = list_entry(entry, struct objdump_line, node);
--		return ol->offset == -1;
-+		struct disasm_line *dl = list_entry(entry, struct disasm_line, node);
-+		return dl->offset == -1;
- 	}
- 
- 	return false;
-@@ -53,17 +52,17 @@ static bool objdump_line__filter(struct ui_browser *browser, void *entry)
- static void annotate_browser__write(struct ui_browser *self, void *entry, int row)
- {
- 	struct annotate_browser *ab = container_of(self, struct annotate_browser, b);
--	struct objdump_line *ol = list_entry(entry, struct objdump_line, node);
-+	struct disasm_line *dl = list_entry(entry, struct disasm_line, node);
- 	bool current_entry = ui_browser__is_current_entry(self, row);
- 	bool change_color = (!ab->hide_src_code &&
- 			     (!current_entry || (self->use_navkeypressed &&
- 					         !self->navkeypressed)));
- 	int width = self->width;
- 
--	if (ol->offset != -1) {
--		struct objdump_line_rb_node *olrb = objdump_line__rb(ol);
--		ui_browser__set_percent_color(self, olrb->percent, current_entry);
--		slsmg_printf(" %7.2f ", olrb->percent);
-+	if (dl->offset != -1) {
-+		struct disasm_line_rb_node *dlrb = disasm_line__rb(dl);
-+		ui_browser__set_percent_color(self, dlrb->percent, current_entry);
-+		slsmg_printf(" %7.2f ", dlrb->percent);
- 	} else {
- 		ui_browser__set_percent_color(self, 0, current_entry);
- 		slsmg_write_nstring(" ", 9);
-@@ -76,16 +75,16 @@ static void annotate_browser__write(struct ui_browser *self, void *entry, int ro
- 	if (!self->navkeypressed)
- 		width += 1;
- 
--	if (ol->offset != -1 && change_color)
-+	if (dl->offset != -1 && change_color)
- 		ui_browser__set_color(self, HE_COLORSET_CODE);
- 
--	if (!*ol->line)
-+	if (!*dl->line)
- 		slsmg_write_nstring(" ", width - 18);
--	else if (ol->offset == -1)
--		slsmg_write_nstring(ol->line, width - 18);
-+	else if (dl->offset == -1)
-+		slsmg_write_nstring(dl->line, width - 18);
- 	else {
- 		char bf[64];
--		u64 addr = ol->offset;
-+		u64 addr = dl->offset;
- 		int printed, color = -1;
- 
- 		if (!ab->use_offset)
-@@ -97,28 +96,27 @@ static void annotate_browser__write(struct ui_browser *self, void *entry, int ro
- 		slsmg_write_nstring(bf, printed);
- 		if (change_color)
- 			ui_browser__set_color(self, color);
--		slsmg_write_nstring(ol->line, width - 18 - printed);
-+		slsmg_write_nstring(dl->line, width - 18 - printed);
- 	}
- 
- 	if (current_entry)
--		ab->selection = ol;
-+		ab->selection = dl;
- }
- 
--static double objdump_line__calc_percent(struct objdump_line *self,
--					 struct symbol *sym, int evidx)
-+static double disasm_line__calc_percent(struct disasm_line *dl, struct symbol *sym, int evidx)
- {
- 	double percent = 0.0;
- 
--	if (self->offset != -1) {
-+	if (dl->offset != -1) {
- 		int len = sym->end - sym->start;
- 		unsigned int hits = 0;
- 		struct annotation *notes = symbol__annotation(sym);
- 		struct source_line *src_line = notes->src->lines;
- 		struct sym_hist *h = annotation__histogram(notes, evidx);
--		s64 offset = self->offset;
--		struct objdump_line *next;
-+		s64 offset = dl->offset;
-+		struct disasm_line *next;
- 
--		next = objdump__get_next_ip_line(&notes->src->source, self);
-+		next = disasm__get_next_ip_line(&notes->src->source, dl);
- 		while (offset < (s64)len &&
- 		       (next == NULL || offset < next->offset)) {
- 			if (src_line) {
-@@ -139,27 +137,26 @@ static double objdump_line__calc_percent(struct objdump_line *self,
- 	return percent;
- }
- 
--static void objdump__insert_line(struct rb_root *self,
--				 struct objdump_line_rb_node *line)
-+static void disasm_rb_tree__insert(struct rb_root *root, struct disasm_line_rb_node *dlrb)
- {
--	struct rb_node **p = &self->rb_node;
-+	struct rb_node **p = &root->rb_node;
- 	struct rb_node *parent = NULL;
--	struct objdump_line_rb_node *l;
-+	struct disasm_line_rb_node *l;
- 
- 	while (*p != NULL) {
- 		parent = *p;
--		l = rb_entry(parent, struct objdump_line_rb_node, rb_node);
--		if (line->percent < l->percent)
-+		l = rb_entry(parent, struct disasm_line_rb_node, rb_node);
-+		if (dlrb->percent < l->percent)
- 			p = &(*p)->rb_left;
- 		else
- 			p = &(*p)->rb_right;
- 	}
--	rb_link_node(&line->rb_node, parent, p);
--	rb_insert_color(&line->rb_node, self);
-+	rb_link_node(&dlrb->rb_node, parent, p);
-+	rb_insert_color(&dlrb->rb_node, root);
- }
- 
- static void annotate_browser__set_top(struct annotate_browser *self,
--				      struct objdump_line *pos, u32 idx)
-+				      struct disasm_line *pos, u32 idx)
- {
- 	unsigned back;
- 
-@@ -168,9 +165,9 @@ static void annotate_browser__set_top(struct annotate_browser *self,
- 	self->b.top_idx = self->b.index = idx;
- 
- 	while (self->b.top_idx != 0 && back != 0) {
--		pos = list_entry(pos->node.prev, struct objdump_line, node);
-+		pos = list_entry(pos->node.prev, struct disasm_line, node);
- 
--		if (objdump_line__filter(&self->b, &pos->node))
-+		if (disasm_line__filter(&self->b, &pos->node))
- 			continue;
- 
- 		--self->b.top_idx;
-@@ -184,11 +181,11 @@ static void annotate_browser__set_top(struct annotate_browser *self,
- static void annotate_browser__set_rb_top(struct annotate_browser *browser,
- 					 struct rb_node *nd)
- {
--	struct objdump_line_rb_node *rbpos;
--	struct objdump_line *pos;
-+	struct disasm_line_rb_node *rbpos;
-+	struct disasm_line *pos;
- 
--	rbpos = rb_entry(nd, struct objdump_line_rb_node, rb_node);
--	pos = ((struct objdump_line *)rbpos) - 1;
-+	rbpos = rb_entry(nd, struct disasm_line_rb_node, rb_node);
-+	pos = ((struct disasm_line *)rbpos) - 1;
- 	annotate_browser__set_top(browser, pos, rbpos->idx);
- 	browser->curr_hot = nd;
- }
-@@ -199,20 +196,20 @@ static void annotate_browser__calc_percent(struct annotate_browser *browser,
- 	struct map_symbol *ms = browser->b.priv;
- 	struct symbol *sym = ms->sym;
- 	struct annotation *notes = symbol__annotation(sym);
--	struct objdump_line *pos;
-+	struct disasm_line *pos;
- 
- 	browser->entries = RB_ROOT;
- 
- 	pthread_mutex_lock(&notes->lock);
- 
- 	list_for_each_entry(pos, &notes->src->source, node) {
--		struct objdump_line_rb_node *rbpos = objdump_line__rb(pos);
--		rbpos->percent = objdump_line__calc_percent(pos, sym, evidx);
-+		struct disasm_line_rb_node *rbpos = disasm_line__rb(pos);
-+		rbpos->percent = disasm_line__calc_percent(pos, sym, evidx);
- 		if (rbpos->percent < 0.01) {
- 			RB_CLEAR_NODE(&rbpos->rb_node);
- 			continue;
- 		}
--		objdump__insert_line(&browser->entries, rbpos);
-+		disasm_rb_tree__insert(&browser->entries, rbpos);
- 	}
- 	pthread_mutex_unlock(&notes->lock);
- 
-@@ -221,38 +218,38 @@ static void annotate_browser__calc_percent(struct annotate_browser *browser,
- 
- static bool annotate_browser__toggle_source(struct annotate_browser *browser)
- {
--	struct objdump_line *ol;
--	struct objdump_line_rb_node *olrb;
-+	struct disasm_line *dl;
-+	struct disasm_line_rb_node *dlrb;
- 	off_t offset = browser->b.index - browser->b.top_idx;
- 
- 	browser->b.seek(&browser->b, offset, SEEK_CUR);
--	ol = list_entry(browser->b.top, struct objdump_line, node);
--	olrb = objdump_line__rb(ol);
-+	dl = list_entry(browser->b.top, struct disasm_line, node);
-+	dlrb = disasm_line__rb(dl);
- 
- 	if (browser->hide_src_code) {
--		if (olrb->idx_asm < offset)
--			offset = olrb->idx;
-+		if (dlrb->idx_asm < offset)
-+			offset = dlrb->idx;
- 
- 		browser->b.nr_entries = browser->nr_entries;
- 		browser->hide_src_code = false;
- 		browser->b.seek(&browser->b, -offset, SEEK_CUR);
--		browser->b.top_idx = olrb->idx - offset;
--		browser->b.index = olrb->idx;
-+		browser->b.top_idx = dlrb->idx - offset;
-+		browser->b.index = dlrb->idx;
- 	} else {
--		if (olrb->idx_asm < 0) {
-+		if (dlrb->idx_asm < 0) {
- 			ui_helpline__puts("Only available for assembly lines.");
- 			browser->b.seek(&browser->b, -offset, SEEK_CUR);
- 			return false;
- 		}
- 
--		if (olrb->idx_asm < offset)
--			offset = olrb->idx_asm;
-+		if (dlrb->idx_asm < offset)
-+			offset = dlrb->idx_asm;
- 
- 		browser->b.nr_entries = browser->nr_asm_entries;
- 		browser->hide_src_code = true;
- 		browser->b.seek(&browser->b, -offset, SEEK_CUR);
--		browser->b.top_idx = olrb->idx_asm - offset;
--		browser->b.index = olrb->idx_asm;
-+		browser->b.top_idx = dlrb->idx_asm - offset;
-+		browser->b.index = dlrb->idx_asm;
- 	}
- 
- 	return true;
-@@ -302,20 +299,20 @@ static bool annotate_browser__callq(struct annotate_browser *browser,
- 	return true;
- }
- 
--static struct objdump_line *
--	annotate_browser__find_offset(struct annotate_browser *browser,
--				      s64 offset, s64 *idx)
-+static
-+struct disasm_line *annotate_browser__find_offset(struct annotate_browser *browser,
-+					  s64 offset, s64 *idx)
- {
- 	struct map_symbol *ms = browser->b.priv;
- 	struct symbol *sym = ms->sym;
- 	struct annotation *notes = symbol__annotation(sym);
--	struct objdump_line *pos;
-+	struct disasm_line *pos;
- 
- 	*idx = 0;
- 	list_for_each_entry(pos, &notes->src->source, node) {
- 		if (pos->offset == offset)
- 			return pos;
--		if (!objdump_line__filter(&browser->b, &pos->node))
-+		if (!disasm_line__filter(&browser->b, &pos->node))
- 			++*idx;
- 	}
- 
-@@ -325,7 +322,7 @@ static struct objdump_line *
- static bool annotate_browser__jump(struct annotate_browser *browser)
- {
- 	const char *jumps[] = { "je ", "jne ", "ja ", "jmpq ", "js ", "jmp ", NULL };
--	struct objdump_line *line;
-+	struct disasm_line *dl;
- 	s64 idx, offset;
- 	char *s = NULL;
- 	int i = 0;
-@@ -346,29 +343,29 @@ static bool annotate_browser__jump(struct annotate_browser *browser)
- 	}
- 
- 	offset = strtoll(s, NULL, 16);
--	line = annotate_browser__find_offset(browser, offset, &idx);
--	if (line == NULL) {
-+	dl = annotate_browser__find_offset(browser, offset, &idx);
-+	if (dl == NULL) {
- 		ui_helpline__puts("Invallid jump offset");
- 		return true;
- 	}
- 
--	annotate_browser__set_top(browser, line, idx);
-+	annotate_browser__set_top(browser, dl, idx);
- 	
- 	return true;
- }
- 
--static struct objdump_line *
--	annotate_browser__find_string(struct annotate_browser *browser,
--				      char *s, s64 *idx)
-+static
-+struct disasm_line *annotate_browser__find_string(struct annotate_browser *browser,
-+					  char *s, s64 *idx)
- {
- 	struct map_symbol *ms = browser->b.priv;
- 	struct symbol *sym = ms->sym;
- 	struct annotation *notes = symbol__annotation(sym);
--	struct objdump_line *pos = browser->selection;
-+	struct disasm_line *pos = browser->selection;
- 
- 	*idx = browser->b.index;
- 	list_for_each_entry_continue(pos, &notes->src->source, node) {
--		if (objdump_line__filter(&browser->b, &pos->node))
-+		if (disasm_line__filter(&browser->b, &pos->node))
- 			continue;
- 
- 		++*idx;
-@@ -382,32 +379,32 @@ static struct objdump_line *
- 
- static bool __annotate_browser__search(struct annotate_browser *browser)
- {
--	struct objdump_line *line;
-+	struct disasm_line *dl;
- 	s64 idx;
- 
--	line = annotate_browser__find_string(browser, browser->search_bf, &idx);
--	if (line == NULL) {
-+	dl = annotate_browser__find_string(browser, browser->search_bf, &idx);
-+	if (dl == NULL) {
- 		ui_helpline__puts("String not found!");
- 		return false;
- 	}
- 
--	annotate_browser__set_top(browser, line, idx);
-+	annotate_browser__set_top(browser, dl, idx);
- 	browser->searching_backwards = false;
- 	return true;
- }
- 
--static struct objdump_line *
--	annotate_browser__find_string_reverse(struct annotate_browser *browser,
--					      char *s, s64 *idx)
-+static
-+struct disasm_line *annotate_browser__find_string_reverse(struct annotate_browser *browser,
-+						  char *s, s64 *idx)
- {
- 	struct map_symbol *ms = browser->b.priv;
- 	struct symbol *sym = ms->sym;
- 	struct annotation *notes = symbol__annotation(sym);
--	struct objdump_line *pos = browser->selection;
-+	struct disasm_line *pos = browser->selection;
- 
- 	*idx = browser->b.index;
- 	list_for_each_entry_continue_reverse(pos, &notes->src->source, node) {
--		if (objdump_line__filter(&browser->b, &pos->node))
-+		if (disasm_line__filter(&browser->b, &pos->node))
- 			continue;
- 
- 		--*idx;
-@@ -421,16 +418,16 @@ static struct objdump_line *
- 
- static bool __annotate_browser__search_reverse(struct annotate_browser *browser)
- {
--	struct objdump_line *line;
-+	struct disasm_line *dl;
- 	s64 idx;
- 
--	line = annotate_browser__find_string_reverse(browser, browser->search_bf, &idx);
--	if (line == NULL) {
-+	dl = annotate_browser__find_string_reverse(browser, browser->search_bf, &idx);
-+	if (dl == NULL) {
- 		ui_helpline__puts("String not found!");
- 		return false;
- 	}
- 
--	annotate_browser__set_top(browser, line, idx);
-+	annotate_browser__set_top(browser, dl, idx);
- 	browser->searching_backwards = true;
- 	return true;
- }
-@@ -613,7 +610,7 @@ int symbol__tui_annotate(struct symbol *sym, struct map *map, int evidx,
- 			 void(*timer)(void *arg), void *arg,
- 			 int delay_secs)
- {
--	struct objdump_line *pos, *n;
-+	struct disasm_line *pos, *n;
- 	struct annotation *notes;
- 	struct map_symbol ms = {
- 		.map = map,
-@@ -624,7 +621,7 @@ int symbol__tui_annotate(struct symbol *sym, struct map *map, int evidx,
- 			.refresh = ui_browser__list_head_refresh,
- 			.seek	 = ui_browser__list_head_seek,
- 			.write	 = annotate_browser__write,
--			.filter  = objdump_line__filter,
-+			.filter  = disasm_line__filter,
- 			.priv	 = &ms,
- 			.use_navkeypressed = true,
- 		},
-@@ -637,7 +634,7 @@ int symbol__tui_annotate(struct symbol *sym, struct map *map, int evidx,
- 	if (map->dso->annotate_warned)
- 		return -1;
- 
--	if (symbol__annotate(sym, map, sizeof(struct objdump_line_rb_node)) < 0) {
-+	if (symbol__annotate(sym, map, sizeof(struct disasm_line_rb_node)) < 0) {
- 		ui__error("%s", ui_helpline__last_msg);
- 		return -1;
- 	}
-@@ -648,12 +645,12 @@ int symbol__tui_annotate(struct symbol *sym, struct map *map, int evidx,
- 	browser.start = map__rip_2objdump(map, sym->start);
- 
- 	list_for_each_entry(pos, &notes->src->source, node) {
--		struct objdump_line_rb_node *rbpos;
-+		struct disasm_line_rb_node *rbpos;
- 		size_t line_len = strlen(pos->line);
- 
- 		if (browser.b.width < line_len)
- 			browser.b.width = line_len;
--		rbpos = objdump_line__rb(pos);
-+		rbpos = disasm_line__rb(pos);
- 		rbpos->idx = browser.nr_entries++;
- 		if (pos->offset != -1)
- 			rbpos->idx_asm = browser.nr_asm_entries++;
-@@ -667,7 +664,7 @@ int symbol__tui_annotate(struct symbol *sym, struct map *map, int evidx,
- 	ret = annotate_browser__run(&browser, evidx, timer, arg, delay_secs);
- 	list_for_each_entry_safe(pos, n, &notes->src->source, node) {
- 		list_del(&pos->node);
--		objdump_line__free(pos);
-+		disasm_line__free(pos);
- 	}
- 	return ret;
- }
-diff --git a/tools/perf/util/annotate.c b/tools/perf/util/annotate.c
-index 1e7fd52..ef1d57d 100644
---- a/tools/perf/util/annotate.c
-+++ b/tools/perf/util/annotate.c
-@@ -78,36 +78,35 @@ int symbol__inc_addr_samples(struct symbol *sym, struct map *map,
- 	return 0;
- }
- 
--static struct objdump_line *objdump_line__new(s64 offset, char *line, size_t privsize)
-+static struct disasm_line *disasm_line__new(s64 offset, char *line, size_t privsize)
- {
--	struct objdump_line *self = malloc(sizeof(*self) + privsize);
-+	struct disasm_line *dl = malloc(sizeof(*dl) + privsize);
- 
--	if (self != NULL) {
--		self->offset = offset;
--		self->line = strdup(line);
--		if (self->line == NULL)
-+	if (dl != NULL) {
-+		dl->offset = offset;
-+		dl->line = strdup(line);
-+		if (dl->line == NULL)
- 			goto out_delete;
- 	}
- 
--	return self;
-+	return dl;
- out_delete:
--	free(self);
-+	free(dl);
- 	return NULL;
- }
- 
--void objdump_line__free(struct objdump_line *self)
-+void disasm_line__free(struct disasm_line *dl)
- {
--	free(self->line);
--	free(self);
-+	free(dl->line);
-+	free(dl);
- }
- 
--static void objdump__add_line(struct list_head *head, struct objdump_line *line)
-+static void disasm__add(struct list_head *head, struct disasm_line *line)
- {
- 	list_add_tail(&line->node, head);
- }
- 
--struct objdump_line *objdump__get_next_ip_line(struct list_head *head,
--					       struct objdump_line *pos)
-+struct disasm_line *disasm__get_next_ip_line(struct list_head *head, struct disasm_line *pos)
- {
- 	list_for_each_entry_continue(pos, head, node)
- 		if (pos->offset >= 0)
-@@ -116,15 +115,14 @@ struct objdump_line *objdump__get_next_ip_line(struct list_head *head,
- 	return NULL;
- }
- 
--static int objdump_line__print(struct objdump_line *oline, struct symbol *sym,
--			       u64 start, int evidx, u64 len, int min_pcnt,
--			       int printed, int max_lines,
--			       struct objdump_line *queue)
-+static int disasm_line__print(struct disasm_line *dl, struct symbol *sym, u64 start,
-+		      int evidx, u64 len, int min_pcnt, int printed,
-+		      int max_lines, struct disasm_line *queue)
- {
- 	static const char *prev_line;
- 	static const char *prev_color;
- 
--	if (oline->offset != -1) {
-+	if (dl->offset != -1) {
- 		const char *path = NULL;
- 		unsigned int hits = 0;
- 		double percent = 0.0;
-@@ -132,11 +130,11 @@ static int objdump_line__print(struct objdump_line *oline, struct symbol *sym,
- 		struct annotation *notes = symbol__annotation(sym);
- 		struct source_line *src_line = notes->src->lines;
- 		struct sym_hist *h = annotation__histogram(notes, evidx);
--		s64 offset = oline->offset;
-+		s64 offset = dl->offset;
- 		const u64 addr = start + offset;
--		struct objdump_line *next;
-+		struct disasm_line *next;
- 
--		next = objdump__get_next_ip_line(&notes->src->source, oline);
-+		next = disasm__get_next_ip_line(&notes->src->source, dl);
- 
- 		while (offset < (s64)len &&
- 		       (next == NULL || offset < next->offset)) {
-@@ -161,9 +159,9 @@ static int objdump_line__print(struct objdump_line *oline, struct symbol *sym,
- 
- 		if (queue != NULL) {
- 			list_for_each_entry_from(queue, &notes->src->source, node) {
--				if (queue == oline)
-+				if (queue == dl)
- 					break;
--				objdump_line__print(queue, sym, start, evidx, len,
-+				disasm_line__print(queue, sym, start, evidx, len,
- 						    0, 0, 1, NULL);
- 			}
- 		}
-@@ -187,17 +185,17 @@ static int objdump_line__print(struct objdump_line *oline, struct symbol *sym,
- 		color_fprintf(stdout, color, " %7.2f", percent);
- 		printf(" :	");
- 		color_fprintf(stdout, PERF_COLOR_MAGENTA, "  %" PRIx64 ":", addr);
--		color_fprintf(stdout, PERF_COLOR_BLUE, "%s\n", oline->line);
-+		color_fprintf(stdout, PERF_COLOR_BLUE, "%s\n", dl->line);
- 	} else if (max_lines && printed >= max_lines)
- 		return 1;
- 	else {
- 		if (queue)
- 			return -1;
- 
--		if (!*oline->line)
-+		if (!*dl->line)
- 			printf("         :\n");
- 		else
--			printf("         :	%s\n", oline->line);
-+			printf("         :	%s\n", dl->line);
- 	}
- 
- 	return 0;
-@@ -207,7 +205,7 @@ static int symbol__parse_objdump_line(struct symbol *sym, struct map *map,
- 				      FILE *file, size_t privsize)
- {
- 	struct annotation *notes = symbol__annotation(sym);
--	struct objdump_line *objdump_line;
-+	struct disasm_line *dl;
- 	char *line = NULL, *parsed_line, *tmp, *tmp2, *c;
- 	size_t line_len;
- 	s64 line_ip, offset = -1;
-@@ -258,13 +256,13 @@ static int symbol__parse_objdump_line(struct symbol *sym, struct map *map,
- 			parsed_line = tmp2 + 1;
- 	}
- 
--	objdump_line = objdump_line__new(offset, parsed_line, privsize);
-+	dl = disasm_line__new(offset, parsed_line, privsize);
- 	free(line);
- 
--	if (objdump_line == NULL)
-+	if (dl == NULL)
- 		return -1;
- 
--	objdump__add_line(&notes->src->source, objdump_line);
-+	disasm__add(&notes->src->source, dl);
- 
- 	return 0;
- }
-@@ -503,7 +501,7 @@ int symbol__annotate_printf(struct symbol *sym, struct map *map, int evidx,
- 	struct dso *dso = map->dso;
- 	const char *filename = dso->long_name, *d_filename;
- 	struct annotation *notes = symbol__annotation(sym);
--	struct objdump_line *pos, *queue = NULL;
-+	struct disasm_line *pos, *queue = NULL;
- 	u64 start = map__rip_2objdump(map, sym->start);
- 	int printed = 2, queue_len = 0;
- 	int more = 0;
-@@ -528,7 +526,7 @@ int symbol__annotate_printf(struct symbol *sym, struct map *map, int evidx,
- 			queue_len = 0;
- 		}
- 
--		switch (objdump_line__print(pos, sym, start, evidx, len,
-+		switch (disasm_line__print(pos, sym, start, evidx, len,
- 					    min_pcnt, printed, max_lines,
- 					    queue)) {
- 		case 0:
-@@ -583,13 +581,13 @@ void symbol__annotate_decay_histogram(struct symbol *sym, int evidx)
- 	}
- }
- 
--void objdump_line_list__purge(struct list_head *head)
-+void disasm__purge(struct list_head *head)
- {
--	struct objdump_line *pos, *n;
-+	struct disasm_line *pos, *n;
- 
- 	list_for_each_entry_safe(pos, n, head, node) {
- 		list_del(&pos->node);
--		objdump_line__free(pos);
-+		disasm_line__free(pos);
- 	}
- }
- 
-@@ -618,7 +616,7 @@ int symbol__tty_annotate(struct symbol *sym, struct map *map, int evidx,
- 	if (print_lines)
- 		symbol__free_source_line(sym, len);
- 
--	objdump_line_list__purge(&symbol__annotation(sym)->src->source);
-+	disasm__purge(&symbol__annotation(sym)->src->source);
- 
- 	return 0;
- }
-diff --git a/tools/perf/util/annotate.h b/tools/perf/util/annotate.h
-index efa5dc8..8bb68bb 100644
---- a/tools/perf/util/annotate.h
-+++ b/tools/perf/util/annotate.h
-@@ -7,15 +7,14 @@
- #include <linux/list.h>
- #include <linux/rbtree.h>
- 
--struct objdump_line {
-+struct disasm_line {
- 	struct list_head node;
- 	s64		 offset;
- 	char		 *line;
- };
- 
--void objdump_line__free(struct objdump_line *self);
--struct objdump_line *objdump__get_next_ip_line(struct list_head *head,
--					       struct objdump_line *pos);
-+void disasm_line__free(struct disasm_line *dl);
-+struct disasm_line *disasm__get_next_ip_line(struct list_head *head, struct disasm_line *pos);
- 
- struct sym_hist {
- 	u64		sum;
-@@ -32,7 +31,7 @@ struct source_line {
-  *
-  * @histogram: Array of addr hit histograms per event being monitored
-  * @lines: If 'print_lines' is specified, per source code line percentages
-- * @source: source parsed from objdump -dS
-+ * @source: source parsed from a disassembler like objdump -dS
-  *
-  * lines is allocated, percentages calculated and all sorted by percentage
-  * when the annotation is about to be presented, so the percentages are for
-@@ -82,7 +81,7 @@ int symbol__annotate_printf(struct symbol *sym, struct map *map, int evidx,
- 			    int context);
- void symbol__annotate_zero_histogram(struct symbol *sym, int evidx);
- void symbol__annotate_decay_histogram(struct symbol *sym, int evidx);
--void objdump_line_list__purge(struct list_head *head);
-+void disasm__purge(struct list_head *head);
- 
- int symbol__tty_annotate(struct symbol *sym, struct map *map, int evidx,
- 			 bool print_lines, bool full_paths, int min_pcnt,
--- 
-1.7.9.2.358.g22243
+It looks good to me.  Feel free to add my ACK to the final version.
+
+Thanks,
+Rafael
+
+
+>  drivers/acpi/power.c   |    2 +-
+>  drivers/acpi/scan.c    |    9 +--------
+>  drivers/pci/pci-acpi.c |    4 ++--
+>  include/acpi/actypes.h |    7 ++++---
+>  4 files changed, 8 insertions(+), 14 deletions(-)
+> 
+> diff --git a/drivers/acpi/power.c b/drivers/acpi/power.c
+> index 7049a7d..330bb4d 100644
+> --- a/drivers/acpi/power.c
+> +++ b/drivers/acpi/power.c
+> @@ -631,7 +631,7 @@ int acpi_power_get_inferred_state(struct acpi_device *device, int *state)
+>  	 * We know a device's inferred power state when all the resources
+>  	 * required for a given D-state are 'on'.
+>  	 */
+> -	for (i = ACPI_STATE_D0; i < ACPI_STATE_D3; i++) {
+> +	for (i = ACPI_STATE_D0; i < ACPI_STATE_D3_HOT; i++) {
+>  		list = &device->power.states[i].resources;
+>  		if (list->count < 1)
+>  			continue;
+> diff --git a/drivers/acpi/scan.c b/drivers/acpi/scan.c
+> index 767e2dc..fbf38ad 100644
+> --- a/drivers/acpi/scan.c
+> +++ b/drivers/acpi/scan.c
+> @@ -869,7 +869,7 @@ static int acpi_bus_get_power_flags(struct acpi_device *device)
+>  	/*
+>  	 * Enumerate supported power management states
+>  	 */
+> -	for (i = ACPI_STATE_D0; i <= ACPI_STATE_D3; i++) {
+> +	for (i = ACPI_STATE_D0; i <= ACPI_STATE_D3_HOT; i++) {
+>  		struct acpi_device_power_state *ps = &device->power.states[i];
+>  		char object_name[5] = { '_', 'P', 'R', '0' + i, '\0' };
+>  
+> @@ -884,13 +884,6 @@ static int acpi_bus_get_power_flags(struct acpi_device *device)
+>  				acpi_bus_add_power_resource(ps->resources.handles[j]);
+>  		}
+>  
+> -		/* The exist of _PR3 indicates D3Cold support */
+> -		if (i == ACPI_STATE_D3) {
+> -			status = acpi_get_handle(device->handle, object_name, &handle);
+> -			if (ACPI_SUCCESS(status))
+> -				device->power.states[ACPI_STATE_D3_COLD].flags.valid = 1;
+> -		}
+> -
+>  		/* Evaluate "_PSx" to see if we can do explicit sets */
+>  		object_name[2] = 'S';
+>  		status = acpi_get_handle(device->handle, object_name, &handle);
+> diff --git a/drivers/pci/pci-acpi.c b/drivers/pci/pci-acpi.c
+> index 0f150f2..1929c0c 100644
+> --- a/drivers/pci/pci-acpi.c
+> +++ b/drivers/pci/pci-acpi.c
+> @@ -200,7 +200,7 @@ static pci_power_t acpi_pci_choose_state(struct pci_dev *pdev)
+>  		return PCI_D1;
+>  	case ACPI_STATE_D2:
+>  		return PCI_D2;
+> -	case ACPI_STATE_D3:
+> +	case ACPI_STATE_D3_HOT:
+>  		return PCI_D3hot;
+>  	case ACPI_STATE_D3_COLD:
+>  		return PCI_D3cold;
+> @@ -223,7 +223,7 @@ static int acpi_pci_set_power_state(struct pci_dev *dev, pci_power_t state)
+>  		[PCI_D0] = ACPI_STATE_D0,
+>  		[PCI_D1] = ACPI_STATE_D1,
+>  		[PCI_D2] = ACPI_STATE_D2,
+> -		[PCI_D3hot] = ACPI_STATE_D3,
+> +		[PCI_D3hot] = ACPI_STATE_D3_HOT,
+>  		[PCI_D3cold] = ACPI_STATE_D3
+>  	};
+>  	int error = -EINVAL;
+> diff --git a/include/acpi/actypes.h b/include/acpi/actypes.h
+> index eba6604..e8bcc47 100644
+> --- a/include/acpi/actypes.h
+> +++ b/include/acpi/actypes.h
+> @@ -499,9 +499,10 @@ typedef u64 acpi_integer;
+>  #define ACPI_STATE_D0                   (u8) 0
+>  #define ACPI_STATE_D1                   (u8) 1
+>  #define ACPI_STATE_D2                   (u8) 2
+> -#define ACPI_STATE_D3                   (u8) 3
+> -#define ACPI_STATE_D3_COLD              (u8) 4
+> -#define ACPI_D_STATES_MAX               ACPI_STATE_D3_COLD
+> +#define ACPI_STATE_D3_HOT               (u8) 3
+> +#define ACPI_STATE_D3                   (u8) 4
+> +#define ACPI_STATE_D3_COLD              ACPI_STATE_D3
+> +#define ACPI_D_STATES_MAX               ACPI_STATE_D3
+>  #define ACPI_D_STATE_COUNT              5
+>  
+>  #define ACPI_STATE_C0                   (u8) 0
+> 
+> 
+> 
+> 
 
