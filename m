@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932552Ab2DSUfo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Apr 2012 16:35:44 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:33518 "EHLO
+	id S932536Ab2DSUfn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Apr 2012 16:35:43 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:33515 "EHLO
 	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756347Ab2DSUeU (ORCPT
+	with ESMTP id S1756300Ab2DSUeU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 19 Apr 2012 16:34:20 -0400
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
@@ -16,9 +16,9 @@ Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
         Paul Mackerras <paulus@samba.org>,
         Peter Zijlstra <peterz@infradead.org>,
         Stephane Eranian <eranian@google.com>
-Subject: [PATCH 04/13] perf annotate: Disassembler instruction parsing
-Date: Thu, 19 Apr 2012 17:33:59 -0300
-Message-Id: <1334867644-2722-5-git-send-email-acme@infradead.org>
+Subject: [PATCH 09/13] perf annotate browser: Hide non jump target addresses in offset mode
+Date: Thu, 19 Apr 2012 17:34:04 -0300
+Message-Id: <1334867644-2722-10-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.7.9.2.358.g22243
 In-Reply-To: <1334867644-2722-1-git-send-email-acme@infradead.org>
 References: <1334867644-2722-1-git-send-email-acme@infradead.org>
@@ -30,10 +30,43 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Arnaldo Carvalho de Melo <acme@redhat.com>
 
-So that at disassembly time we parse targets, etc.
+This:
 
-Supporting jump instructions initially, call functions are next.
+    0.00 :         ffffffff8116bd00:       lock btsl $0x0,(%r12)
+  100.00 :         ffffffff8116bd07:       sbb    %eax,%eax
+    0.00 :         ffffffff8116bd09:       test   %eax,%eax
+    0.00 :         ffffffff8116bd0b:       jne    ffffffff8116bf5f <__mem_cgroup_commit_charge+0x28f>
+    0.00 :         ffffffff8116bd11:       mov    (%r12),%rax
+    0.00 :         ffffffff8116bd15:       test   $0x2,%al
+    0.00 :         ffffffff8116bd17:       jne    ffffffff8116bf6e <__mem_cgroup_commit_charge+0x29e>
+    0.00 :         ffffffff8116bd1d:       test   %r9b,%r9b
+    0.00 :         ffffffff8116bd20:       jne    ffffffff8116be30 <__mem_cgroup_commit_charge+0x160>
+    0.00 :         ffffffff8116bd26:       xor    %eax,%eax
+    0.00 :         ffffffff8116bd28:       mov    %r13,0x8(%r12)
+    0.00 :         ffffffff8116bd2d:       lock orb $0x2,(%r12)
+    0.00 :         ffffffff8116bd33:       test   %r9b,%r9b
+    0.00 :         ffffffff8116bd36:       je     ffffffff8116bdf3 <__mem_cgroup_commit_charge+0x123>
 
+Becomes:
+
+    0.00 :         30:       lock btsl $0x0,(%r12)
+  100.00 :                   sbb    %eax,%eax
+    0.00 :                   test   %eax,%eax
+    0.00 :                   jne    28f
+    0.00 :                   mov    (%r12),%rax
+    0.00 :                   test   $0x2,%al
+    0.00 :                   jne    29e
+    0.00 :                   test   %r9b,%r9b
+    0.00 :                   jne    160
+    0.00 :         56:       xor    %eax,%eax
+    0.00 :         58:       mov    %r13,0x8(%r12)
+    0.00 :                   lock orb $0x2,(%r12)
+    0.00 :                   test   %r9b,%r9b
+    0.00 :                   je     123
+
+I.e. We trow away all those useless addresses and keep just jump labels.
+
+Suggested-by: Linus Torvalds <torvalds@linux-foundation.org>
 Cc: David Ahern <dsahern@gmail.com>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: Mike Galbraith <efault@gmx.de>
@@ -41,165 +74,173 @@ Cc: Namhyung Kim <namhyung@gmail.com>
 Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <peterz@infradead.org>
 Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/n/tip-7vzlh66n5or46n27ji658cnl@git.kernel.org
+Link: http://lkml.kernel.org/n/tip-r2vmbtgz0l8coluj8flztgrn@git.kernel.org
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/ui/browsers/annotate.c |   19 ++---------
- tools/perf/util/annotate.c        |   63 +++++++++++++++++++++++++++++++++++++
- tools/perf/util/annotate.h        |   13 ++++++++
- 3 files changed, 79 insertions(+), 16 deletions(-)
+ tools/perf/ui/browsers/annotate.c |   71 ++++++++++++++++++++++++++++++-------
+ 1 file changed, 58 insertions(+), 13 deletions(-)
 
 diff --git a/tools/perf/ui/browsers/annotate.c b/tools/perf/ui/browsers/annotate.c
-index 0bc3e65..bdbb54f 100644
+index 58ebfd0..a1e942b 100644
 --- a/tools/perf/ui/browsers/annotate.c
 +++ b/tools/perf/ui/browsers/annotate.c
-@@ -315,26 +315,13 @@ struct disasm_line *annotate_browser__find_offset(struct annotate_browser *brows
+@@ -11,11 +11,20 @@
+ #include <pthread.h>
+ #include <newt.h>
  
- static bool annotate_browser__jump(struct annotate_browser *browser)
- {
--	const char *jumps[] = { "je", "jne", "ja", "jmpq", "js", "jmp", NULL };
- 	struct disasm_line *dl = browser->selection;
--	s64 idx, offset;
--	char *s;
--	int i = 0;
--
--	while (jumps[i] && strcmp(dl->name, jumps[i]))
--		++i;
-+	s64 idx;
- 
--	if (jumps[i] == NULL)
-+	if (!dl->ins || !ins__is_jump(dl->ins))
- 		return false;
- 
--	s = strchr(dl->operands, '+');
--	if (s++ == NULL) {
--		ui_helpline__puts("Invallid jump instruction.");
--		return true;
--	}
--
--	offset = strtoll(s, NULL, 16);
--	dl = annotate_browser__find_offset(browser, offset, &idx);
-+	dl = annotate_browser__find_offset(browser, dl->target, &idx);
- 	if (dl == NULL) {
- 		ui_helpline__puts("Invallid jump offset");
- 		return true;
-diff --git a/tools/perf/util/annotate.c b/tools/perf/util/annotate.c
-index a72585a..4ee2c07 100644
---- a/tools/perf/util/annotate.c
-+++ b/tools/perf/util/annotate.c
-@@ -18,6 +18,53 @@
- 
- const char 	*disassembler_style;
- 
-+static int jump_ops__parse_target(const char *operands, u64 *target)
-+{
-+	const char *s = strchr(operands, '+');
-+
-+	if (s++ == NULL)
-+		return -1;
-+
-+	*target = strtoll(s, NULL, 16);
-+	return 0;
-+}
-+
-+static struct ins_ops jump_ops = {
-+	.parse_target = jump_ops__parse_target,
++struct browser_disasm_line {
++	struct rb_node	rb_node;
++	double		percent;
++	u32		idx;
++	int		idx_asm;
++	bool		jump_target;
 +};
 +
-+bool ins__is_jump(const struct ins *ins)
-+{
-+	return ins->ops == &jump_ops;
-+}
-+
-+
-+/*
-+ * Must be sorted by name!
-+ */
-+static struct ins instructions[] = {
-+	{ .name = "ja",	   .ops  = &jump_ops, },
-+	{ .name = "je",	   .ops  = &jump_ops, },
-+	{ .name = "jmp",   .ops  = &jump_ops, },
-+	{ .name = "jmpq",  .ops  = &jump_ops, },
-+	{ .name = "jne",   .ops  = &jump_ops, },
-+	{ .name = "js",	   .ops  = &jump_ops, },
-+};
-+
-+static int ins__cmp(const void *name, const void *insp)
-+{
-+	const struct ins *ins = insp;
-+
-+	return strcmp(name, ins->name);
-+}
-+
-+static struct ins *ins__find(const char *name)
-+{
-+	const int nmemb = ARRAY_SIZE(instructions);
-+
-+	return bsearch(name, instructions, nmemb, sizeof(struct ins), ins__cmp);
-+}
-+
- int symbol__annotate_init(struct map *map __used, struct symbol *sym)
- {
- 	struct annotation *notes = symbol__annotation(sym);
-@@ -78,6 +125,20 @@ int symbol__inc_addr_samples(struct symbol *sym, struct map *map,
- 	return 0;
- }
- 
-+static void disasm_line__init_ins(struct disasm_line *dl)
-+{
-+	dl->ins = ins__find(dl->name);
-+
-+	if (dl->ins == NULL)
-+		return;
-+
-+	if (!dl->ins->ops)
-+		return;
-+
-+	if (dl->ins->ops->parse_target)
-+		dl->ins->ops->parse_target(dl->operands, &dl->target);
-+}
-+
- static struct disasm_line *disasm_line__new(s64 offset, char *line, size_t privsize)
- {
- 	struct disasm_line *dl = zalloc(sizeof(*dl) + privsize);
-@@ -117,6 +178,8 @@ static struct disasm_line *disasm_line__new(s64 offset, char *line, size_t privs
- 				while (isspace(dl->operands[0]))
- 					++dl->operands;
- 			}
-+
-+			disasm_line__init_ins(dl);
- 		}
- 	}
- 
-diff --git a/tools/perf/util/annotate.h b/tools/perf/util/annotate.h
-index dd7636d..934c6fe 100644
---- a/tools/perf/util/annotate.h
-+++ b/tools/perf/util/annotate.h
-@@ -7,11 +7,24 @@
- #include <linux/list.h>
- #include <linux/rbtree.h>
- 
-+struct ins_ops {
-+	int (*parse_target)(const char *operands, u64 *target);
-+};
-+
-+struct ins {
-+	const char     *name;
-+	struct ins_ops *ops;
-+};
-+
-+bool ins__is_jump(const struct ins *ins);
-+
- struct disasm_line {
- 	struct list_head node;
- 	s64		 offset;
-+	u64		 target;
- 	char		 *line;
- 	char		 *name;
-+	struct ins	 *ins;
- 	char		 *operands;
+ struct annotate_browser {
+ 	struct ui_browser b;
+ 	struct rb_root	  entries;
+ 	struct rb_node	  *curr_hot;
+ 	struct disasm_line	  *selection;
++	struct disasm_line  **offsets;
+ 	u64		    start;
+ 	int		    nr_asm_entries;
+ 	int		    nr_entries;
+@@ -25,13 +34,6 @@ struct annotate_browser {
+ 	char		    search_bf[128];
  };
  
+-struct browser_disasm_line {
+-	struct rb_node	rb_node;
+-	double		percent;
+-	u32		idx;
+-	int		idx_asm;
+-};
+-
+ static inline struct browser_disasm_line *disasm_line__browser(struct disasm_line *dl)
+ {
+ 	return (struct browser_disasm_line *)(dl + 1);
+@@ -53,6 +55,7 @@ static void annotate_browser__write(struct ui_browser *self, void *entry, int ro
+ {
+ 	struct annotate_browser *ab = container_of(self, struct annotate_browser, b);
+ 	struct disasm_line *dl = list_entry(entry, struct disasm_line, node);
++	struct browser_disasm_line *bdl = disasm_line__browser(dl);
+ 	bool current_entry = ui_browser__is_current_entry(self, row);
+ 	bool change_color = (!ab->hide_src_code &&
+ 			     (!current_entry || (self->use_navkeypressed &&
+@@ -60,7 +63,6 @@ static void annotate_browser__write(struct ui_browser *self, void *entry, int ro
+ 	int width = self->width;
+ 
+ 	if (dl->offset != -1) {
+-		struct browser_disasm_line *bdl = disasm_line__browser(dl);
+ 		ui_browser__set_percent_color(self, bdl->percent, current_entry);
+ 		slsmg_printf(" %7.2f ", bdl->percent);
+ 	} else {
+@@ -90,7 +92,11 @@ static void annotate_browser__write(struct ui_browser *self, void *entry, int ro
+ 		if (!ab->use_offset)
+ 			addr += ab->start;
+ 
+-		printed = scnprintf(bf, sizeof(bf), " %" PRIx64 ":", addr);
++		if (bdl->jump_target || !ab->use_offset)
++			printed = scnprintf(bf, sizeof(bf), " %" PRIx64 ":", addr);
++		else
++			printed = scnprintf(bf, sizeof(bf), "    ");
++
+ 		if (change_color)
+ 			color = ui_browser__set_color(self, HE_COLORSET_ADDR);
+ 		slsmg_write_nstring(bf, printed);
+@@ -593,12 +599,39 @@ int hist_entry__tui_annotate(struct hist_entry *he, int evidx,
+ 				    timer, arg, delay_secs);
+ }
+ 
++static void annotate_browser__mark_jump_targets(struct annotate_browser *browser,
++						size_t size)
++{
++	u64 offset;
++
++	for (offset = 0; offset < size; ++offset) {
++		struct disasm_line *dl = browser->offsets[offset], *dlt;
++		struct browser_disasm_line *bdlt;
++
++		if (!dl || !dl->ins || !ins__is_jump(dl->ins))
++			continue;
++
++		if (dl->target >= size) {
++			ui__error("jump to after symbol!\n"
++				  "size: %zx, jump target: %" PRIx64,
++				  size, dl->target);
++			continue;
++		}
++
++		dlt = browser->offsets[dl->target];
++		bdlt = disasm_line__browser(dlt);
++		bdlt->jump_target = true;
++	}
++		
++}
++
+ int symbol__tui_annotate(struct symbol *sym, struct map *map, int evidx,
+ 			 void(*timer)(void *arg), void *arg,
+ 			 int delay_secs)
+ {
+ 	struct disasm_line *pos, *n;
+ 	struct annotation *notes;
++	const size_t size = symbol__size(sym);
+ 	struct map_symbol ms = {
+ 		.map = map,
+ 		.sym = sym,
+@@ -613,7 +646,7 @@ int symbol__tui_annotate(struct symbol *sym, struct map *map, int evidx,
+ 			.use_navkeypressed = true,
+ 		},
+ 	};
+-	int ret;
++	int ret = -1;
+ 
+ 	if (sym == NULL)
+ 		return -1;
+@@ -621,9 +654,15 @@ int symbol__tui_annotate(struct symbol *sym, struct map *map, int evidx,
+ 	if (map->dso->annotate_warned)
+ 		return -1;
+ 
++	browser.offsets = zalloc(size * sizeof(struct disasm_line *));
++	if (browser.offsets == NULL) {
++		ui__error("Not enough memory!");
++		return -1;
++	}
++
+ 	if (symbol__annotate(sym, map, sizeof(struct browser_disasm_line)) < 0) {
+ 		ui__error("%s", ui_helpline__last_msg);
+-		return -1;
++		goto out_free_offsets;
+ 	}
+ 
+ 	ui_helpline__push("Press <- or ESC to exit");
+@@ -639,12 +678,15 @@ int symbol__tui_annotate(struct symbol *sym, struct map *map, int evidx,
+ 			browser.b.width = line_len;
+ 		bpos = disasm_line__browser(pos);
+ 		bpos->idx = browser.nr_entries++;
+-		if (pos->offset != -1)
++		if (pos->offset != -1) {
+ 			bpos->idx_asm = browser.nr_asm_entries++;
+-		else
++			browser.offsets[pos->offset] = pos;
++		} else
+ 			bpos->idx_asm = -1;
+ 	}
+ 
++	annotate_browser__mark_jump_targets(&browser, size);
++
+ 	browser.b.nr_entries = browser.nr_entries;
+ 	browser.b.entries = &notes->src->source,
+ 	browser.b.width += 18; /* Percentage */
+@@ -653,5 +695,8 @@ int symbol__tui_annotate(struct symbol *sym, struct map *map, int evidx,
+ 		list_del(&pos->node);
+ 		disasm_line__free(pos);
+ 	}
++
++out_free_offsets:
++	free(browser.offsets);
+ 	return ret;
+ }
 -- 
 1.7.9.2.358.g22243
 
