@@ -1,34 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932068Ab2DSQ4M (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Apr 2012 12:56:12 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:37734 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756101Ab2DSQ4D (ORCPT
+	id S1756124Ab2DSQ45 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Apr 2012 12:56:57 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:61388 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755647Ab2DSQ44 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Apr 2012 12:56:03 -0400
+	Thu, 19 Apr 2012 12:56:56 -0400
 MIME-Version: 1.0
-In-Reply-To: <m2pqb31yxk.fsf@igel.home>
-References: <m2pqb31yxk.fsf@igel.home>
-From: Grant Likely <grant.likely@secretlab.ca>
-Date: Thu, 19 Apr 2012 10:55:40 -0600
-X-Google-Sender-Auth: b6r5NqxWzNpgDTUh_grxr3eTL3c
-Message-ID: <CACxGe6sKrO8U4JPKs0cvB24ZTsPNx430FhiE--JFAQzNb_=1og@mail.gmail.com>
-Subject: Re: [PATCH] irqdomain: fix typo in IRQ_BITMAP_BITS definition
-To: Andreas Schwab <schwab@linux-m68k.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org
+In-Reply-To: <20120419095516.595649b3@jbarnes-desktop>
+References: <1334852525-14950-1-git-send-email-apw@canonical.com>
+	<CAPM=9tzWO46u5L1jnRvi_zhgOhmzH1df7cQTnP6+0Kh4Znpn7g@mail.gmail.com>
+	<20120419164113.GA3467@shadowen.org>
+	<CAPM=9twXZyo6qkwunuYARVsZM8EDX4O0Dja6Kgp7ofXH2Gys3Q@mail.gmail.com>
+	<CAPM=9txduppN_R9brXm8haattUn=jEOvQUaynN-vgxNerD7qUw@mail.gmail.com>
+	<20120419095516.595649b3@jbarnes-desktop>
+Date: Thu, 19 Apr 2012 17:56:55 +0100
+Message-ID: <CAPM=9tzbAMYqAHKURRneuLqAoE2=YScq7NNFmTjC1F9pHeWE6Q@mail.gmail.com>
+Subject: Re: [PATCH 0/1] [RFC] DRM locking issues during early open
+From: Dave Airlie <airlied@gmail.com>
+To: Jesse Barnes <jbarnes@virtuousgeek.org>
+Cc: Andy Whitcroft <apw@canonical.com>, David Airlie <airlied@linux.ie>,
+        dri-devel@lists.freedesktop.org,
+        Bryce Harrington <bryce@canonical.com>, linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 19, 2012 at 10:14 AM, Andreas Schwab <schwab@linux-m68k.org> wrote:
-> 8196 is an odd number, change it to the intended 8192.
+On Thu, Apr 19, 2012 at 5:55 PM, Jesse Barnes <jbarnes@virtuousgeek.org> wrote:
+> On Thu, 19 Apr 2012 17:52:39 +0100
+> Dave Airlie <airlied@gmail.com> wrote:
 >
-> Signed-off-by: Andreas Schwab <schwab@linux-m68k.org>
-> ---
-> Shouldn't it actually be just 8192 or maybe max(NR_IRQS, 8192)?
+>> On Thu, Apr 19, 2012 at 5:47 PM, Dave Airlie <airlied@gmail.com> wrote:
+>> > On Thu, Apr 19, 2012 at 5:41 PM, Andy Whitcroft <apw@canonical.com> wrote:
+>> >> On Thu, Apr 19, 2012 at 05:30:03PM +0100, Dave Airlie wrote:
+>> >>> On Thu, Apr 19, 2012 at 5:22 PM, Andy Whitcroft <apw@canonical.com> wrote:
+>> >>> > We have been carrying a (rather poor) patch for an issue we identified in
+>> >>> > the DRM driver.  This issue is triggered when a DRM device is initialising
+>> >>> > and userspace attempts to open it, typically in response to the sysfs
+>> >>> > device added event.  Basically we allocate the minor numbers making
+>> >>> > the device available, and then call the drm load callback.  Until this
+>> >>> > completes the device is really not ready and these early opens typically
+>> >>> > lead to oopses.
+>> >>> >
+>> >>> > We have been using the following patch to avoid this by marking the minors
+>> >>> > as in error until the load method has completed.  This avoids the early
+>> >>> > open by simply erroring out the opens with EAGAIN.  Obviously we should
+>> >>> > be delaying the open until the load method complete.
+>> >>> >
+>> >>> > I include the existing patch for completness (it is not really ready for
+>> >>> > merging) to illustrate the issue.  I think it is logical that the wait
+>> >>> > should simply be delayed until the load has completed.  I am proposing
+>> >>> > to include a wait queue associated with the idr cache for the drm minors
+>> >>> > which we can use to allow open callers to wait_event_interruptible() on.
+>> >>> > I'll be putting together a prototype shortly and will follow up with it.
+>> >>> >
+>> >>> > Thoughts?
+>> >>>
+>> >>> Couldn't we just delay registering things until the driver is ready to
+>> >>> accept an open?
+>> >>>
+>> >>> Granted the midlayer of drm doesn't make that easy,
+>> >>
+>> >> It seems that we need the dri minor allocated before we hit the load
+>> >> function as things are done right now.
+>> >>
+>> >>> thanks for sending this out, it keeps falling off my radar, I don't
+>> >>> think I've ever seen this reported on RHEL/Fedora, which makes me
+>> >>> wonder what we are doing that makes us lucky.
+>> >>
+>> >> We never hit it until we started doing things earlier and quicker.  I first
+>> >> found it in the prettification of boot so we were keen to get plymouth
+>> >> running as soon as possible.  That lead to random panics and me finding
+>> >> this bug.  The window is tiny as far as I know and it tends to be specific
+>> >> machines and specific package combinations which trigger it reliably.
+>> >>
+>> >> I suspect that a proper fix would allow delaying the registration as you
+>> >> suggest but in the interim a wait would at least avoid the issues we are
+>> >> seeing.  I will see how awful it looks.
+>> >
+>> > Just to confirm its the drm_sysfs_device_add that causes the race we care about.
+>> >
+>> > it needs to happen after the driver is happy. Since it calls
+>> > device_register and that is what triggers udev magic to load the
+>> > userspace.
+>> >
+>> > If you have a userspace app banging on a static device node that might
+>> > need another set of fun fixes.
+>>
+>> Okay the sysfs add and the idr_replace are the things we need to delay.
+>
+> Since you can still get at things with a static node, it seems like
+> locking is the real issue here?  Is there no mutex we can take across
+> init to block any openers until we're done?
 
-The number is completely arbitrary.  It doesn't actually matter.
+well the idr replace should be the thing that matters, since before
+that openers get -ENODEV, after it they end up success.
+we may need a lock around that once we fix the logic.
 
-g.
+Dave.
