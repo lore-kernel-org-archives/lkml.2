@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965035Ab2DSVO5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Apr 2012 17:14:57 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:61429 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965007Ab2DSVOx (ORCPT
+	id S965044Ab2DSVPO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Apr 2012 17:15:14 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:36240 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933507Ab2DSVPJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Apr 2012 17:14:53 -0400
-Message-Id: <20120419210818.949062525@linuxfoundation.org>
+	Thu, 19 Apr 2012 17:15:09 -0400
+Message-Id: <20120419210819.368219186@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Thu, 19 Apr 2012 14:08:21 -0700
+Date: Thu, 19 Apr 2012 14:08:26 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Chris Wilson <chris@chris-wilson.co.uk>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>
-Subject: [ 03/68] drm/i915/ringbuffer: Exclude last 2 cachlines of ring on 845g
+        alan@lxorguk.ukuu.org.uk, Nicolas Pitre <nicolas.pitre@linaro.org>,
+        Marc Zyngier <marc.zyngier@arm.com>,
+        Russell King <rmk+kernel@arm.linux.org.uk>
+Subject: [ 08/68] ARM: 7379/1: DT: fix atags_to_fdt() second call site
 In-Reply-To: <20120419210923.GA18589@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,31 +26,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Chris Wilson <chris@chris-wilson.co.uk>
+From: Marc Zyngier <Marc.Zyngier@arm.com>
 
-commit 27c1cbd06a7620b354cbb363834f3bb8df4f410d upstream.
+commit 9c5fd9e85f574d9d0361b2b878f55732290afe5b upstream.
 
-The 845g shares the errata with i830 whereby executing a command
-within 2 cachelines of the end of the ringbuffer may cause a GPU hang.
+atags_to_fdt() returns 1 when it fails to find a valid FDT signature.
+The CONFIG_ARM_ATAG_DTB_COMPAT code is supposed to retry with another
+location, but only does so when the initial call doesn't fail.
 
-Signed-off-by: Chris Wilson <chris@chris-wilson.co.uk>
-Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+Fix this by using the correct condition in the assembly code.
+
+Acked-by: Nicolas Pitre <nicolas.pitre@linaro.org>
+Signed-off-by: Marc Zyngier <marc.zyngier@arm.com>
+Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/i915/intel_ringbuffer.c |    2 +-
+ arch/arm/boot/compressed/head.S |    2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/gpu/drm/i915/intel_ringbuffer.c
-+++ b/drivers/gpu/drm/i915/intel_ringbuffer.c
-@@ -1052,7 +1052,7 @@ int intel_init_ring_buffer(struct drm_de
- 	 * of the buffer.
- 	 */
- 	ring->effective_size = ring->size;
--	if (IS_I830(ring->dev))
-+	if (IS_I830(ring->dev) || IS_845G(ring->dev))
- 		ring->effective_size -= 128;
+--- a/arch/arm/boot/compressed/head.S
++++ b/arch/arm/boot/compressed/head.S
+@@ -273,7 +273,7 @@ restart:	adr	r0, LC0
+ 		add	r0, r0, #0x100
+ 		mov	r1, r6
+ 		sub	r2, sp, r6
+-		blne	atags_to_fdt
++		bleq	atags_to_fdt
  
- 	return 0;
+ 		ldmfd	sp!, {r0-r3, ip, lr}
+ 		sub	sp, sp, #0x10000
 
 
