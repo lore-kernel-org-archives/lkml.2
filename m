@@ -1,80 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755488Ab2DSNyx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Apr 2012 09:54:53 -0400
-Received: from moutng.kundenserver.de ([212.227.126.171]:62564 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752965Ab2DSNyv (ORCPT
+	id S1755477Ab2DSOFH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Apr 2012 10:05:07 -0400
+Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:57092 "EHLO
+	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752965Ab2DSOFF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Apr 2012 09:54:51 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 2/9] ARM: OMAP2+: SmartReflex: move the driver specific macros in include/linux/power
-Date: Thu, 19 Apr 2012 13:54:38 +0000
-User-Agent: KMail/1.12.2 (Linux/3.3.0-rc1; KDE/4.3.2; x86_64; ; )
-Cc: Trilok Soni <tsoni@codeaurora.org>, Jean Pihet <jean.pihet@newoldbits.com>,
-        Kevin Hilman <khilman@ti.com>, "Cousson, Benoit" <b-cousson@ti.com>,
-        gregkh@linuxfoundation.org, LKML <linux-kernel@vger.kernel.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>, linux-omap@vger.kernel.org,
-        Jean Pihet <j-pihet@ti.com>
-References: <1332173578-27422-1-git-send-email-j-pihet@ti.com> <CAORVsuVt5uj5NAsqsce+7f=xMXC9-nck5cPUCOEC8QP3VkxYyA@mail.gmail.com> <4F7D6746.9020504@codeaurora.org>
-In-Reply-To: <4F7D6746.9020504@codeaurora.org>
+	Thu, 19 Apr 2012 10:05:05 -0400
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201204191354.38874.arnd@arndb.de>
-X-Provags-ID: V02:K0:RHluUbO3HvXG3MjHkXMK3ghiYH75oYHYLVm03cqQRB6
- m2X8UXvBKGUGOLkfi+zBrXIUkQz22BIae81HAdsLpqhwjIJDLq
- TByDX063xRsCVFc/wzliCyiaquLAHOknCWla31ItAPUXVPzhYv
- VWx4TFzRoDimE7AxAliIFQ8dBVmw8bTBo+/rxdD65f6c0JciPE
- 0nUZrgSc5lB7LGTX3kjUkO3f7IFKC2Yms+xU0vQeeKBLS5BJLa
- ijG4h20vKfJ0upJzXHShdlXHFxBYyymFstsR83kUkGzJX7Qdkh
- Ov8vy1EME2KqejC0JUUe/7VH9U0/tKpdmxrkaTRpb2fVCA8hYl
- oKNDFXGRK+GgLNriciAk=
+In-Reply-To: <20120419124204.GE3046@opensource.wolfsonmicro.com>
+References: <1334829097-32084-1-git-send-email-jaswinder.singh@linaro.org>
+	<20120419124204.GE3046@opensource.wolfsonmicro.com>
+Date: Thu, 19 Apr 2012 19:35:03 +0530
+Message-ID: <CAJe_ZhfbFq98fT56CS-q4VoU8wnybj-+swfB+Jrknd3Zmt9V8g@mail.gmail.com>
+Subject: Re: [PATCH] regulator: Provide a check for dummy regulator
+From: Jassi Brar <jaswinder.singh@linaro.org>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: linux-kernel@vger.kernel.org, lrg@ti.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 05 April 2012, Trilok Soni wrote:
-> >> Couple of suggestions:
-> >>
-> >> drivers/platform/omap/avs?
-> >> drivers/misc/omap/avs?
-> >>
+On 19 April 2012 18:12, Mark Brown <broonie@opensource.wolfsonmicro.com> wrote:
+> On Thu, Apr 19, 2012 at 03:21:37PM +0530, Jassi Brar wrote:
+>> Usually changing the regulator output involves delays before/after the
+>> operation.
+>> There are consumer drivers shared by platforms, where some may
+>> not really have a regulator in the path. Which causes the consumer
+>> to unnecessarily (sometimes disruptively) incur delays for the
+>> "dummy" regulator.
+>
+> This analysis doesn't sound quite right - if it's the dummy regulator
+> then obviously these delays don't happen so presumably the cost is
+> actually coming from the rdev mutex and recursion up the regulator tree
+> - the basic overheads of calling into the regulator API.
+>
+Sorry, I didn't explain well.
 
-I would definitely prefer something under drivers/power,
-drivers/regulators or a new top-level directory under
-drivers.
+I am not talking about the time the regulator output needs to stabilize or the
+time taken by control to traverse the regulator tree for "dummy".
 
-> >>> IIRC, David Brownell was referring to the rule of three for such case.
-> >>> Meaning that it worth having a generic fmwk when at least three
-> >>> different drivers are doing the same kind of things.
-> >
-> > Do OMAP v1 and OMAP v2 implementations count as 2 drivers? ;-)
-> > More seriously, the OMAP code for SmartReflex is far from complete in
-> > mainline. There is a plan to provide the following features:
-> > - OMAP v1 IP,
-> > - OMAP v2 IP,
-> > - class 1.5,
-> > - class 3,
-> > - class 3.5,
-> > - and more support for the upcoming chipsets.
-> 
-> I don't understand much of these versions right now, but hopefully after 
-> going through all these docs. My only contention point is to not create 
-> any directory into the drivers/power, unless it is generic fwk and then 
-> build up "client" drivers on top of it. Meanwhile we could move this 
-> driver into above options as I have suggested.
+I am talking about the delay the consumer driver might want after
+enabling the regulator for the end device to, say, initialize itself or
+perform POST or whatever.
+Now the consumer driver is shared by two platforms - one that has
+direct supply to the device that turns on with main power supply
+and another platform that has indeed a regulator that is turned
+off by default and the consumer driver enables it during probe
+and then has to wait tens of millisecs for end device's POST (say).
 
-I think creating the directory in the place where we want the files
-to stay in the long run is ok, if the plan is to add more drivers and
-make the base code more generic. We don't have to wait until it's too
-late and we absolutely need a framework ;-)
+I do realize that such consumer drivers ought to know about the
+presence of the real regulator via platform_data(PD) or DT, but
+if we already don't expect consumers to know from PD/DT that
+a regulator doesn't exist and hence never even need a "dummy",
+maybe the regulator core could lessen the number of PD/DT
+nodes by also telling if a given regulator is a real or a dummy one.
 
-The part I don't understand is how this relates to the regulator framework.
-Is there any overlap between the functionality provided by the
-smartreflex framework and the regulator framework? If so, would it be
-better to extend the existing framework so it can do smartreflex as well?
+That way dummy could actually play a 'positive' role - right now
+it only excuses platforms that are lazy to neither define a regulator
+nor tell consumer via PD/DT that there is none.
 
-	Arnd
+Another POV is :
+  Is a consumer's need, to know if the gotten regulator is a real
+or a dummy one, reasonable ?
+
+>
+> I've just sent out an untested patch (you're CCed) which should give a
+> substantial win for the enable/disable case which will hopefully address
+> the issue for you.
+>
+The patch does address an issue, but not mine :)
+
+Regards,
+Jassi
