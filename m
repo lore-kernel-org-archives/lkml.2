@@ -1,73 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754430Ab2DSIaG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Apr 2012 04:30:06 -0400
-Received: from www.linutronix.de ([62.245.132.108]:38027 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753946Ab2DSIaB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Apr 2012 04:30:01 -0400
-Date: Thu, 19 Apr 2012 10:29:46 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Suresh Siddha <suresh.b.siddha@intel.com>
-cc: Santosh Shilimkar <santosh.shilimkar@ti.com>, mingo@kernel.org,
-        hpa@zytor.com, linux-kernel@vger.kernel.org,
-        torvalds@linux-foundation.org, svenjoac@gmx.de, rjw@sisk.pl,
-        linux-tip-commits@vger.kernel.org
-Subject: Re: [tip:timers/urgent] tick: Fix oneshot broadcast setup really
-In-Reply-To: <1334802459.28674.209.camel@sbsiddha-desk.sc.intel.com>
-Message-ID: <alpine.LFD.2.02.1204191028510.2542@ionos>
-References: <alpine.LFD.2.02.1204181205540.2542@ionos>  <tip-b435092f70ec5ebbfb6d075d5bf3c631b49a51de@git.kernel.org>  <CAMQu2gx4-4kbgEHXUbU0SR=Xj6pe5FxjYJJ_dZD5D=jZs7f03A@mail.gmail.com>  <4F8ECD39.3080900@ti.com> <alpine.LFD.2.02.1204181723350.2542@ionos>
- <1334802459.28674.209.camel@sbsiddha-desk.sc.intel.com>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+	id S1754726Ab2DSIan (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Apr 2012 04:30:43 -0400
+Received: from mailhub.sw.ru ([195.214.232.25]:13876 "EHLO relay.sw.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754604Ab2DSIal (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Apr 2012 04:30:41 -0400
+Message-ID: <4F8FCD20.1070103@openvz.org>
+Date: Thu, 19 Apr 2012 12:30:24 +0400
+From: Kinsbursky Stanislav <skinsbursky@openvz.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.28) Gecko/20120313 Lightning/1.0b2 Thunderbird/3.1.20
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+To: "bfields@fieldses.org" <bfields@fieldses.org>,
+        "Trond.Myklebust@netapp.com" <Trond.Myklebust@netapp.com>
+CC: "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devel@openvz.org" <devel@openvz.org>
+Subject: Re: [PATCH] LockD: call per-net shutdown on every global shutdown
+ call
+References: <20120418131827.16800.33207.stgit@localhost6.localdomain6>
+In-Reply-To: <20120418131827.16800.33207.stgit@localhost6.localdomain6>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 18 Apr 2012, Suresh Siddha wrote:
-> On Wed, 2012-04-18 at 17:31 +0200, Thomas Gleixner wrote:
-> From: Suresh Siddha <suresh.b.siddha@intel.com>
-> Subject: tick: Fix the spurious broadcast timer ticks
-> 
-> During resume, tick_resume_broadcast() programs the broadcast timer
-> in oneshot mode unconditionally. On the platforms where broadcast timer
-> is not really required, this will generate spurious broadcast timer ticks
-> upon resume. For example, on the always running apic timer platforms with
-> HPET, I see spurious hpet tick once every ~5minutes (which is the 32-bit
-> hpet counter wraparound time).
-> 
-> Similar to boot time, during resume make the oneshot mode setting of
-> the broadcast clock event device conditional on the state of active broadcast
-> users. 
-> 
-> Signed-off-by: Suresh Siddha <suresh.b.siddha@intel.com>
+Please, ignore this patch.
+The idea is correct, but current implementation hides few more things to be 
+modified.
+Otherwise kernel oopses.
+Sorry.
 
-Sven, Santosh, can you confirm that this works for you on top of the
-other two patches?
-
+18.04.2012 17:18, Stanislav Kinsbursky пишет:
+> Per-net LockD shutdown call must be called regardless of global nlm users
+> counter.
+>
+> Signed-off-by: Stanislav Kinsbursky<skinsbursky@parallels.com>
+>
 > ---
->  kernel/time/tick-broadcast.c |    3 ++-
->  1 files changed, 2 insertions(+), 1 deletions(-)
-> 
-> diff --git a/kernel/time/tick-broadcast.c b/kernel/time/tick-broadcast.c
-> index bf57abd..766cd82 100644
-> --- a/kernel/time/tick-broadcast.c
-> +++ b/kernel/time/tick-broadcast.c
-> @@ -346,7 +346,8 @@ int tick_resume_broadcast(void)
->  						     tick_get_broadcast_mask());
->  			break;
->  		case TICKDEV_MODE_ONESHOT:
-> -			broadcast = tick_resume_broadcast_oneshot(bc);
-> +			if (!cpumask_empty(tick_get_broadcast_mask()))
-> +				broadcast = tick_resume_broadcast_oneshot(bc);
->  			break;
->  		}
->  	}
-> 
-> 
-> 
+>   fs/lockd/svc.c |    5 ++---
+>   1 files changed, 2 insertions(+), 3 deletions(-)
+>
+> diff --git a/fs/lockd/svc.c b/fs/lockd/svc.c
+> index 1ead075..2ad3715 100644
+> --- a/fs/lockd/svc.c
+> +++ b/fs/lockd/svc.c
+> @@ -381,10 +381,9 @@ lockd_down(struct net *net)
+>   {
+>   	mutex_lock(&nlmsvc_mutex);
+>   	if (nlmsvc_users) {
+> -		if (--nlmsvc_users) {
+> -			lockd_down_net(net);
+> +		lockd_down_net(net);
+> +		if (--nlmsvc_users)
+>   			goto out;
+> -		}
+>   	} else {
+>   		printk(KERN_ERR "lockd_down: no users! task=%p\n",
+>   			nlmsvc_task);
+>
+
+
+-- 
+Best regards,
+Stanislav Kinsbursky
+
