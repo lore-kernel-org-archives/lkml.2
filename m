@@ -1,43 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756385Ab2DSXfy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Apr 2012 19:35:54 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:52623 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756193Ab2DSXfx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Apr 2012 19:35:53 -0400
-Message-ID: <4F90A141.5060601@zytor.com>
-Date: Thu, 19 Apr 2012 16:35:29 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120329 Thunderbird/11.0.1
-MIME-Version: 1.0
-To: Tony Luck <tony.luck@gmail.com>
-CC: Linus Torvalds <torvalds@linux-foundation.org>,
-        David Daney <ddaney.cavm@gmail.com>, Borislav Petkov <bp@amd64.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
-        David Daney <ddaney@caviumnetworks.com>
-Subject: Re: [PATCH 3/3] x86, extable: Handle early exceptions
-References: <1334794610-5546-1-git-send-email-hpa@zytor.com> <20120419092255.GA29542@aftab> <20120419092630.GD29542@aftab> <4F904541.2030200@zytor.com> <CA+55aFwMsm7zVqPjKptm38zJAbJpF=9e51ew7BP6S5YnoJa3ig@mail.gmail.com> <20120419173802.GI3221@aftab.osrc.amd.com> <4F90527B.7020005@zytor.com> <CA+55aFxhY1Ug5esj==Sm=o1Epg+NFnvFs74syqRxbYDbPQJEFA@mail.gmail.com> <9ff2e09c-57e4-455e-8614-1b3b17b652f4@email.android.com> <4F9072CA.6030903@gmail.com> <4F908EA5.4060507@zytor.com> <CA+8MBbKz4GNs-mFj5=dCpRe_XLgoKZZz-8GM+FqTMTDBKqJNJw@mail.gmail.com> <CA+55aFx8EDb3MOrpky7aBf28=5XQ41ebuunO5aYrnUY1haVzcA@mail.gmail.com> <4F909B56.60001@zytor.com> <CA+8MBbLdq4YYFJXO5HT-=MExO_s-eFkxFigHD0H=Zj5BvHtSVA@mail.gmail.com>
-In-Reply-To: <CA+8MBbLdq4YYFJXO5HT-=MExO_s-eFkxFigHD0H=Zj5BvHtSVA@mail.gmail.com>
-X-Enigmail-Version: 1.4
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	id S1756783Ab2DSXf7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Apr 2012 19:35:59 -0400
+Received: from mail-pz0-f42.google.com ([209.85.210.42]:41177 "EHLO
+	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756193Ab2DSXf4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Apr 2012 19:35:56 -0400
+X-Greylist: delayed 386 seconds by postgrey-1.27 at vger.kernel.org; Thu, 19 Apr 2012 19:35:56 EDT
+From: Tejun Heo <tj@kernel.org>
+To: axboe@kernel.dk
+Cc: vgoyal@redhat.com, ctalbott@google.com, rni@google.com,
+        cgroups@vger.kernel.org, containers@lists.linux-foundation.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCHSET] block: fixes for long standing issues
+Date: Thu, 19 Apr 2012 16:29:20 -0700
+Message-Id: <1334878164-24788-1-git-send-email-tj@kernel.org>
+X-Mailer: git-send-email 1.7.7.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/19/2012 04:26 PM, Tony Luck wrote:
-> On Thu, Apr 19, 2012 at 4:10 PM, H. Peter Anvin <hpa@zytor.com> wrote:
->> be better.  That being said, some distros are complaining about the
->> amount of time it takes to load modules on boot...
-> 
-> That could be fixed in the installer for the distribution by rebuilding a kernel
-> with the target set of modules for the system built in.
-> 
+Hello,
 
-... assuming you have a well-defined "the system".  It isn't always you
-will boot on the same hardware every time.
+This patchset fixes two long standing issues and one relatively new
+css ref leak.
 
-	-hpa
+a. elvpriv alloc failure, including ioc and icq failures, fails
+   request allocation.  As those aren't mempool backed and may fail
+   indefinitely, this can lead to deadlock under memory pressure.
 
+b. blkgs don't have proper indexing.  With enough number of
+   request_queues and blk-throttle enabled, block layer can spend
+   considerable amount of cpu cycles walking the same list over and
+   over again.
+
+c. __blkg_lookup_create() was leaking a css ref on failure path.
+
+This patchset contains the following four patches.
+
+ 0001-block-collapse-blk_alloc_request-into-get_request.patch
+ 0002-block-fix-elvpriv-allocation-failure-handling.patch
+ 0003-blkcg-fix-blkcg-css-ref-leak-in-__blkg_lookup_create.patch
+ 0004-blkcg-use-radix-tree-to-index-blkgs-from-blkcg.patch
+
+0001-0002 fix #a.  0003 fixes #c.  0004 fixes #b.
+
+This patchset is on top of
+
+  block/for-3.5/core 5bc4afb1ec "blkcg: drop BLKCG_STAT_{PRIV|POL|OFF} macros"
++ [1] [PATCHSET] block: per-queue policy activation, take#2
++ [2] [PATCHSET] block: cosmetic updates to blkcg API
+
+and available in the following git branch.
+
+ git://git.kernel.org/pub/scm/linux/kernel/git/tj/misc.git blk-misc-fixes
+
+diffstat follows.
+
+ block/blk-cgroup.c |   71 ++++++++++++++++++++++++++++++++-----------
+ block/blk-cgroup.h |    6 +++
+ block/blk-core.c   |   87 ++++++++++++++++++++++++++++-------------------------
+ 3 files changed, 106 insertions(+), 58 deletions(-)
+
+Thanks.
+
+--
+tejun
+
+[1] https://lkml.org/lkml/2012/4/13/380
+[2] http://www.spinics.net/lists/cgroups/msg01748.html
