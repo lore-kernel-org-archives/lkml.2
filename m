@@ -1,76 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933085Ab2DSVw3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Apr 2012 17:52:29 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:38883 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933016Ab2DSVJM (ORCPT
+	id S933008Ab2DSVJJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Apr 2012 17:09:09 -0400
+Received: from mail-pz0-f42.google.com ([209.85.210.42]:41811 "EHLO
+	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932973Ab2DSVI4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Apr 2012 17:09:12 -0400
-Message-Id: <20120419210611.466002518@linuxfoundation.org>
+	Thu, 19 Apr 2012 17:08:56 -0400
+Message-Id: <20120419210309.497360759@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Thu, 19 Apr 2012 14:06:15 -0700
+Date: Thu, 19 Apr 2012 14:04:18 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Will Deacon <will.deacon@arm.com>,
-        Jonathan Austin <jonathan.austin@arm.com>,
-        Russell King <rmk+kernel@arm.linux.org.uk>
-Subject: [ 04/59] ARM: 7384/1: ThumbEE: Disable userspace TEEHBR access for !CONFIG_ARM_THUMBEE
-In-Reply-To: <20120419210623.GA12156@kroah.com>
+        alan@lxorguk.ukuu.org.uk, Alex Deucher <alexander.deucher@amd.com>,
+        Dave Airlie <airlied@redhat.com>
+Subject: [ 75/75] drm/radeon: fix load detect on rn50 with hardcoded EDIDs.
+In-Reply-To: <20120419210322.GA6478@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.0-stable review patch.  If anyone has any objections, please let me know.
+3.3-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Jonathan Austin <Jonathan.Austin@arm.com>
+From: Dave Airlie <airlied@redhat.com>
 
-commit 078c04545ba56da21567728a909a496df5ff730d upstream.
+commit a09d431f344d854e4fe9cfac44f78cb8202f3eb7 upstream.
 
-Currently when ThumbEE is not enabled (!CONFIG_ARM_THUMBEE) the ThumbEE
-register states are not saved/restored at context switch. The default state
-of the ThumbEE Ctrl register (TEECR) allows userspace accesses to the
-ThumbEE Base Handler register (TEEHBR). This can cause unexpected behaviour
-when people use ThumbEE on !CONFIG_ARM_THUMBEE kernels, as well as allowing
-covert communication - eg between userspace tasks running inside chroot
-jails.
+When the force changes went in back in 3.3.0, we ended up returning
+disconnected in the !force case, and the connected in when forced,
+as it hit the hardcoded check.
 
-This patch sets up TEECR in order to prevent user-space access to TEEHBR
-when !CONFIG_ARM_THUMBEE. In this case, tasks are sent SIGILL if they try to
-access TEEHBR.
+Fix it so all exits go via the hardcoded check and stop spurious
+modesets on platforms with hardcoded EDIDs.
 
-Reviewed-by: Will Deacon <will.deacon@arm.com>
-Signed-off-by: Jonathan Austin <jonathan.austin@arm.com>
-Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
+Reported-by: Evan McNabb (Red Hat)
+Reviewed-by: Alex Deucher <alexander.deucher@amd.com>
+Signed-off-by: Dave Airlie <airlied@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/arm/mm/proc-v7.S |   12 ++++++++++++
- 1 file changed, 12 insertions(+)
+ drivers/gpu/drm/radeon/radeon_connectors.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/arch/arm/mm/proc-v7.S
-+++ b/arch/arm/mm/proc-v7.S
-@@ -372,6 +372,18 @@ __v7_setup:
- 	mcr	p15, 0, r5, c10, c2, 0		@ write PRRR
- 	mcr	p15, 0, r6, c10, c2, 1		@ write NMRR
- #endif
-+#ifndef CONFIG_ARM_THUMBEE
-+	mrc	p15, 0, r0, c0, c1, 0		@ read ID_PFR0 for ThumbEE
-+	and	r0, r0, #(0xf << 12)		@ ThumbEE enabled field
-+	teq	r0, #(1 << 12)			@ check if ThumbEE is present
-+	bne	1f
-+	mov	r5, #0
-+	mcr	p14, 6, r5, c1, c0, 0		@ Initialize TEEHBR to 0
-+	mrc	p14, 6, r0, c0, c0, 0		@ load TEECR
-+	orr	r0, r0, #1			@ set the 1st bit in order to
-+	mcr	p14, 6, r0, c0, c0, 0		@ stop userspace TEEHBR access
-+1:
-+#endif
- 	adr	r5, v7_crval
- 	ldmia	r5, {r5, r6}
- #ifdef CONFIG_CPU_ENDIAN_BE8
+--- a/drivers/gpu/drm/radeon/radeon_connectors.c
++++ b/drivers/gpu/drm/radeon/radeon_connectors.c
+@@ -976,6 +976,7 @@ radeon_dvi_detect(struct drm_connector *
+ 	 * cases the DVI port is actually a virtual KVM port connected to the service
+ 	 * processor.
+ 	 */
++out:
+ 	if ((!rdev->is_atom_bios) &&
+ 	    (ret == connector_status_disconnected) &&
+ 	    rdev->mode_info.bios_hardcoded_edid_size) {
+@@ -983,7 +984,6 @@ radeon_dvi_detect(struct drm_connector *
+ 		ret = connector_status_connected;
+ 	}
+ 
+-out:
+ 	/* updated in get modes as well since we need to know if it's analog or digital */
+ 	radeon_connector_update_scratch_regs(connector, ret);
+ 	return ret;
 
 
