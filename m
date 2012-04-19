@@ -1,62 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933050Ab2DSVxE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Apr 2012 17:53:04 -0400
-Received: from mail-pz0-f42.google.com ([209.85.210.42]:41811 "EHLO
+	id S933031Ab2DSVxh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Apr 2012 17:53:37 -0400
+Received: from mail-pz0-f42.google.com ([209.85.210.42]:46047 "EHLO
 	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932989Ab2DSVJG (ORCPT
+	with ESMTP id S932956Ab2DSVIu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Apr 2012 17:09:06 -0400
-Message-Id: <20120419210611.305558349@linuxfoundation.org>
+	Thu, 19 Apr 2012 17:08:50 -0400
+X-Greylist: delayed 305 seconds by postgrey-1.27 at vger.kernel.org; Thu, 19 Apr 2012 17:08:29 EDT
+Message-Id: <20120419210309.324843290@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Thu, 19 Apr 2012 14:06:13 -0700
+Date: Thu, 19 Apr 2012 14:04:16 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Alex Deucher <alexander.deucher@amd.com>,
-        Jean Delvare <khali@linux-fr.org>, Dave Airlie <airlied@redhat.com>
-Subject: [ 02/59] drm/radeon: only add the mm i2c bus if the hw_i2c module param is set
-In-Reply-To: <20120419210623.GA12156@kroah.com>
+        alan@lxorguk.ukuu.org.uk, Takashi Iwai <tiwai@suse.de>,
+        Alex Deucher <alexander.deucher@amd.com>,
+        Dave Airlie <airlied@redhat.com>
+Subject: [ 73/75] drm/radeon/kms: fix the regression of DVI connector check
+In-Reply-To: <20120419210322.GA6478@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.0-stable review patch.  If anyone has any objections, please let me know.
+3.3-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Alex Deucher <alexander.deucher@amd.com>
+From: Takashi Iwai <tiwai@suse.de>
 
-commit 46783150a6552f9513f08e62cfcc07125d6e502b upstream.
+commit e36325071832f1ba96ac54fb8ba1459f08b05dd8 upstream.
 
-It seems it can corrupt the monitor EDID in certain cases on certain
-boards when running sensors detect.  It's rarely used anyway outside
-of AIW boards.
+The check of the encoder type in the commit [e00e8b5e: drm/radeon/kms:
+fix analog load detection on DVI-I connectors] is obviously wrong, and
+it's the culprit of the regression on my workstation with DVI-analog
+connection resulting in the blank output.
 
-http://lists.lm-sensors.org/pipermail/lm-sensors/2012-April/035847.html
-http://lists.freedesktop.org/archives/xorg/2011-January/052239.html
+Fixed the typo now.
 
-Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
-Acked-by: Jean Delvare <khali@linux-fr.org>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Reviewed-by: Alex Deucher <alexander.deucher@amd.com>
 Signed-off-by: Dave Airlie <airlied@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/radeon/radeon_i2c.c |    4 ++++
- 1 file changed, 4 insertions(+)
+ drivers/gpu/drm/radeon/radeon_connectors.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/gpu/drm/radeon/radeon_i2c.c
-+++ b/drivers/gpu/drm/radeon/radeon_i2c.c
-@@ -898,6 +898,10 @@ struct radeon_i2c_chan *radeon_i2c_creat
- 	struct radeon_i2c_chan *i2c;
- 	int ret;
+--- a/drivers/gpu/drm/radeon/radeon_connectors.c
++++ b/drivers/gpu/drm/radeon/radeon_connectors.c
+@@ -946,7 +946,7 @@ radeon_dvi_detect(struct drm_connector *
  
-+	/* don't add the mm_i2c bus unless hw_i2c is enabled */
-+	if (rec->mm_i2c && (radeon_hw_i2c == 0))
-+		return NULL;
-+
- 	i2c = kzalloc(sizeof(struct radeon_i2c_chan), GFP_KERNEL);
- 	if (i2c == NULL)
- 		return NULL;
+ 			encoder = obj_to_encoder(obj);
+ 
+-			if (encoder->encoder_type != DRM_MODE_ENCODER_DAC ||
++			if (encoder->encoder_type != DRM_MODE_ENCODER_DAC &&
+ 			    encoder->encoder_type != DRM_MODE_ENCODER_TVDAC)
+ 				continue;
+ 
 
 
