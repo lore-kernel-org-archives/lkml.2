@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965099Ab2DSV1u (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Apr 2012 17:27:50 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:34108 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756527Ab2DSVQN (ORCPT
+	id S933602Ab2DSV2N (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Apr 2012 17:28:13 -0400
+Received: from mail-pz0-f42.google.com ([209.85.210.42]:38471 "EHLO
+	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933595Ab2DSVQK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Apr 2012 17:16:13 -0400
-Message-Id: <20120419210820.901366605@linuxfoundation.org>
+	Thu, 19 Apr 2012 17:16:10 -0400
+Message-Id: <20120419210820.821668869@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Thu, 19 Apr 2012 14:08:44 -0700
+Date: Thu, 19 Apr 2012 14:08:43 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk,
-        Alexander Stein <alexander.stein@systec-electronic.com>,
-        Tomoya MORINAGA <tomoya.rohm@gmail.com>
-Subject: [ 26/68] pch_uart: Fix MSI setting issue
+        alan@lxorguk.ukuu.org.uk, Neal Cardwell <ncardwell@google.com>,
+        Ben Segall <bsegall@google.com>, Ingo Molnar <mingo@elte.hu>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: [ 25/68] nohz: Fix stale jiffies update in tick_nohz_restart()
 In-Reply-To: <20120419210923.GA18589@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,41 +26,51 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Tomoya MORINAGA <tomoya.rohm@gmail.com>
+From: Neal Cardwell <ncardwell@google.com>
 
-commit 867c902e07d5677e2a5b54c0435e589513abde48 upstream.
+commit 6f103929f8979d2638e58d7f7fda0beefcb8ee7e upstream.
 
-The following patch (MSI setting) is not enough.
+Fix tick_nohz_restart() to not use a stale ktime_t "now" value when
+calling tick_do_update_jiffies64(now).
 
-commit e463595fd9c752fa4bf06b47df93ef9ade3c7cf0
-Author: Alexander Stein <alexander.stein@systec-electronic.com>
-Date:   Mon Jul 4 08:58:31 2011 +0200
+If we reach this point in the loop it means that we crossed a tick
+boundary since we grabbed the "now" timestamp, so at this point "now"
+refers to a time in the old jiffy, so using the old value for "now" is
+incorrect, and is likely to give us a stale jiffies value.
 
-    pch_uart: Add MSI support
+In particular, the first time through the loop the
+tick_do_update_jiffies64(now) call is always a no-op, since the
+caller, tick_nohz_restart_sched_tick(), will have already called
+tick_do_update_jiffies64(now) with that "now" value.
 
-    Signed-off-by: Alexander Stein <alexander.stein@systec-electronic.com>
-    Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+Note that tick_nohz_stop_sched_tick() already uses the correct
+approach: when we notice we cross a jiffy boundary, grab a new
+timestamp with ktime_get(), and *then* update jiffies.
 
-To enable MSI mode, PCI bus-mastering must be enabled.
-This patch enables the setting.
-
-cc: Alexander Stein <alexander.stein@systec-electronic.com>
-Signed-off-by: Tomoya MORINAGA <tomoya.rohm@gmail.com>
+Signed-off-by: Neal Cardwell <ncardwell@google.com>
+Cc: Ben Segall <bsegall@google.com>
+Cc: Ingo Molnar <mingo@elte.hu>
+Link: http://lkml.kernel.org/r/1332875377-23014-1-git-send-email-ncardwell@google.com
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/tty/serial/pch_uart.c |    1 +
- 1 file changed, 1 insertion(+)
+ kernel/time/tick-sched.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/drivers/tty/serial/pch_uart.c
-+++ b/drivers/tty/serial/pch_uart.c
-@@ -1438,6 +1438,7 @@ static struct eg20t_port *pch_uart_init_
+--- a/kernel/time/tick-sched.c
++++ b/kernel/time/tick-sched.c
+@@ -508,9 +508,9 @@ static void tick_nohz_restart(struct tic
+ 				hrtimer_get_expires(&ts->sched_timer), 0))
+ 				break;
+ 		}
+-		/* Update jiffies and reread time */
+-		tick_do_update_jiffies64(now);
++		/* Reread time and update jiffies */
+ 		now = ktime_get();
++		tick_do_update_jiffies64(now);
  	}
+ }
  
- 	pci_enable_msi(pdev);
-+	pci_set_master(pdev);
- 
- 	iobase = pci_resource_start(pdev, 0);
- 	mapbase = pci_resource_start(pdev, 1);
 
 
