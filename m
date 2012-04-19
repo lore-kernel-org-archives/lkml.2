@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933309Ab2DSVMs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Apr 2012 17:12:48 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:44451 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933293Ab2DSVMp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S933295Ab2DSVMp (ORCPT <rfc822;w@1wt.eu>);
 	Thu, 19 Apr 2012 17:12:45 -0400
-Message-Id: <20120419210613.140095552@linuxfoundation.org>
+Received: from mail-pz0-f42.google.com ([209.85.210.42]:38471 "EHLO
+	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932605Ab2DSVMl (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Apr 2012 17:12:41 -0400
+Message-Id: <20120419210613.048759732@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Thu, 19 Apr 2012 14:06:35 -0700
+Date: Thu, 19 Apr 2012 14:06:34 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Felipe Balbi <balbi@ti.com>,
-        Sarah Sharp <sarah.a.sharp@linux.intel.com>
-Subject: [ 24/59] xhci: dont re-enable IE constantly
+        alan@lxorguk.ukuu.org.uk, Alan Stern <stern@rowland.harvard.edu>,
+        Ming Lei <tom.leiming@gmail.com>
+Subject: [ 23/59] USB: dont clear urb->dev in scatter-gather library
 In-Reply-To: <20120419210623.GA12156@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,54 +25,83 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Felipe Balbi <balbi@ti.com>
+From: Alan Stern <stern@rowland.harvard.edu>
 
-commit 4e833c0b87a30798e67f06120cecebef6ee9644c upstream.
+commit bcf398537630bf20b4dbe59ba855b69f404c93cf upstream.
 
-While we're at that, define IMAN bitfield to aid readability.
+This patch (as1517b) fixes an error in the USB scatter-gather library.
+The library code uses urb->dev to determine whether or nor an URB is
+currently active; the completion handler sets urb->dev to NULL.
+However the core unlinking routines need to use urb->dev.  Since
+unlinking always racing with completion, the completion handler must
+not clear urb->dev -- it can lead to invalid memory accesses when a
+transfer has to be cancelled.
 
-The interrupt enable bit should be set once on driver init, and we
-shouldn't need to continually re-enable it.  Commit c21599a3 introduced
-a read of the irq_pending register, and that allows us to preserve the
-state of the IE bit.  Before that commit, we were blindly writing 0x3 to
-the register.
+This patch fixes the problem by getting rid of the lines that clear
+urb->dev after urb has been submitted.  As a result we may end up
+trying to unlink an URB that failed in submission or that has already
+completed, so an extra check is added after each unlink to avoid
+printing an error message when this happens.  The checks are updated
+in both sg_complete() and sg_cancel(), and the second is updated to
+match the first (currently it prints out unnecessary warning messages
+if a device is unplugged while a transfer is in progress).
 
-This patch should be backported to kernels as old as 2.6.36, or ones
-that contain the commit c21599a36165dbc78b380846b254017a548b9de5 "USB:
-xhci: Reduce reads and writes of interrupter registers".
-
-Signed-off-by: Felipe Balbi <balbi@ti.com>
-Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
+Reported-and-tested-by: Illia Zaitsev <I.Zaitsev@adbglobal.com>
+CC: Ming Lei <tom.leiming@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/host/xhci-ring.c |    2 +-
- drivers/usb/host/xhci.h      |    4 ++++
- 2 files changed, 5 insertions(+), 1 deletion(-)
+ drivers/usb/core/message.c |   11 ++++++-----
+ 1 file changed, 6 insertions(+), 5 deletions(-)
 
---- a/drivers/usb/host/xhci-ring.c
-+++ b/drivers/usb/host/xhci-ring.c
-@@ -2352,7 +2352,7 @@ hw_died:
- 		u32 irq_pending;
- 		/* Acknowledge the PCI interrupt */
- 		irq_pending = xhci_readl(xhci, &xhci->ir_set->irq_pending);
--		irq_pending |= 0x3;
-+		irq_pending |= IMAN_IP;
- 		xhci_writel(xhci, irq_pending, &xhci->ir_set->irq_pending);
+--- a/drivers/usb/core/message.c
++++ b/drivers/usb/core/message.c
+@@ -308,7 +308,8 @@ static void sg_complete(struct urb *urb)
+ 				retval = usb_unlink_urb(io->urbs [i]);
+ 				if (retval != -EINPROGRESS &&
+ 				    retval != -ENODEV &&
+-				    retval != -EBUSY)
++				    retval != -EBUSY &&
++				    retval != -EIDRM)
+ 					dev_err(&io->dev->dev,
+ 						"%s, unlink --> %d\n",
+ 						__func__, retval);
+@@ -317,7 +318,6 @@ static void sg_complete(struct urb *urb)
+ 		}
+ 		spin_lock(&io->lock);
  	}
+-	urb->dev = NULL;
  
---- a/drivers/usb/host/xhci.h
-+++ b/drivers/usb/host/xhci.h
-@@ -205,6 +205,10 @@ struct xhci_op_regs {
- #define CMD_PM_INDEX	(1 << 11)
- /* bits 12:31 are reserved (and should be preserved on writes). */
+ 	/* on the last completion, signal usb_sg_wait() */
+ 	io->bytes += urb->actual_length;
+@@ -524,7 +524,6 @@ void usb_sg_wait(struct usb_sg_request *
+ 		case -ENXIO:	/* hc didn't queue this one */
+ 		case -EAGAIN:
+ 		case -ENOMEM:
+-			io->urbs[i]->dev = NULL;
+ 			retval = 0;
+ 			yield();
+ 			break;
+@@ -542,7 +541,6 @@ void usb_sg_wait(struct usb_sg_request *
  
-+/* IMAN - Interrupt Management Register */
-+#define IMAN_IP		(1 << 1)
-+#define IMAN_IE		(1 << 0)
-+
- /* USBSTS - USB status - status bitmasks */
- /* HC not running - set to 1 when run/stop bit is cleared. */
- #define STS_HALT	XHCI_STS_HALT
+ 			/* fail any uncompleted urbs */
+ 		default:
+-			io->urbs[i]->dev = NULL;
+ 			io->urbs[i]->status = retval;
+ 			dev_dbg(&io->dev->dev, "%s, submit --> %d\n",
+ 				__func__, retval);
+@@ -593,7 +591,10 @@ void usb_sg_cancel(struct usb_sg_request
+ 			if (!io->urbs [i]->dev)
+ 				continue;
+ 			retval = usb_unlink_urb(io->urbs [i]);
+-			if (retval != -EINPROGRESS && retval != -EBUSY)
++			if (retval != -EINPROGRESS
++					&& retval != -ENODEV
++					&& retval != -EBUSY
++					&& retval != -EIDRM)
+ 				dev_warn(&io->dev->dev, "%s, unlink --> %d\n",
+ 					__func__, retval);
+ 		}
 
 
