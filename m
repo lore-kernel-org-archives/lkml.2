@@ -1,73 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755384Ab2DSND2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Apr 2012 09:03:28 -0400
-Received: from mga06.intel.com ([134.134.136.21]:28240 "EHLO
-	orsmga101.jf.intel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753040Ab2DSNDZ (ORCPT
+	id S1755409Ab2DSNDn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Apr 2012 09:03:43 -0400
+Received: from mail.work-microwave.de ([62.245.205.51]:47314 "EHLO
+	work-microwave.de" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1755256Ab2DSNBO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Apr 2012 09:03:25 -0400
-Subject: Re: [PATCH] xtensa: fix build failure in xtensa/kernel/signal.c
-From: Matt Fleming <matt.fleming@intel.com>
-To: Paul Gortmaker <paul.gortmaker@windriver.com>
-Cc: linux-kernel@vger.kernel.org, Oleg Nesterov <oleg@redhat.com>,
-        Chris Zankel <chris@zankel.net>,
-        Andrew Morton <akpm@linux-foundation.org>
-In-Reply-To: <4F900919.7000800@windriver.com>
-References: <1334782256-351-1-git-send-email-paul.gortmaker@windriver.com>
-	 <1334821525.26997.39.camel@mfleming-mobl1.ger.corp.intel.com>
-	 <4F900919.7000800@windriver.com>
-Content-Type: text/plain; charset="UTF-8"
-Organization: Intel Corporation (UK) Ltd. - Registered No. 1134945 - Pipers
- Way, Swindon SN3 1RJ
-Date: Thu, 19 Apr 2012 14:02:59 +0100
-Message-ID: <1334840579.26997.55.camel@mfleming-mobl1.ger.corp.intel.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
-Content-Transfer-Encoding: 7bit
+	Thu, 19 Apr 2012 09:01:14 -0400
+From: Roland Stigge <stigge@antcom.de>
+To: arm@kernel.org, thierry.reding@avionic-design.de, arnd@arndb.de,
+        linux-arm-kernel@lists.infradead.org, gregkh@linuxfoundation.org,
+        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-input@vger.kernel.org, dmitry.torokhov@gmail.com,
+        axel.lin@gmail.com, broonie@opensource.wolfsonmicro.com,
+        marek.vasut@gmail.com, devel@driverdev.osuosl.org, kevin.wells@nxp.com,
+        srinivas.bakki@nxp.com
+Cc: Roland Stigge <stigge@antcom.de>
+Subject: [PATCH v4 6/10] input: Device tree support for LPC32xx touchscreen
+Date: Thu, 19 Apr 2012 15:00:11 +0200
+Message-Id: <1334840415-14287-7-git-send-email-stigge@antcom.de>
+X-Mailer: git-send-email 1.7.9
+In-Reply-To: <1334840415-14287-1-git-send-email-stigge@antcom.de>
+References: <1334840415-14287-1-git-send-email-stigge@antcom.de>
+X-FEAS-SYSTEM-WL: rst@work-microwave.de, 192.168.11.78
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-04-19 at 08:46 -0400, Paul Gortmaker wrote:
-> On 12-04-19 03:45 AM, Matt Fleming wrote:
-> > On Wed, 2012-04-18 at 16:50 -0400, Paul Gortmaker wrote:
-> >> Caused by commit 3785006ac3c8941feb63097c416de92114a6bc39
-> >>
-> >>     "xtensa: don't mask signals if we fail to setup signal stack"
-> >>
-> >> It assigns a return value to "ret", but there is no such variable
-> >> anywhere in scope.  Create one.
-> >>
-> >> Cc: Matt Fleming <matt.fleming@intel.com>
-> >> Cc: Oleg Nesterov <oleg@redhat.com>
-> >> Cc: Chris Zankel <chris@zankel.net>
-> >> Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
-> >>
-> >> diff --git a/arch/xtensa/kernel/signal.c b/arch/xtensa/kernel/signal.c
-> >> index b69b000..d78869a 100644
-> >> --- a/arch/xtensa/kernel/signal.c
-> >> +++ b/arch/xtensa/kernel/signal.c
-> >> @@ -496,6 +496,7 @@ int do_signal(struct pt_regs *regs, sigset_t *oldset)
-> >>  	signr = get_signal_to_deliver(&info, &ka, regs, NULL);
-> >>  
-> >>  	if (signr > 0) {
-> >> +		int ret;
-> >>  
-> >>  		/* Are we from a system call? */
-> >>  
-> > 
-> > Whoops! Thanks Paul, that's my bad. Looks like I went code-blind after
-> > making the same kinds of changes to lots of different architectures.
-> > 
-> > I've added Andrew to the Cc list since he picked up the last set of
-> > xtensa signal patches.
-> 
-> Looks like I'll have a queue of build fixes from various other less
-> common architectures, so I can carry this one in my for-3.4 queue
-> (since 3785006a is already in master).
-> 
-> I'll add an acked-by from you.
+This patch adds device tree support for the LPC32xx SoC's touchscreen
+controller.
 
-Sure, that's fine by me.
+Signed-off-by: Roland Stigge <stigge@antcom.de>
+Reviewed-by: Thierry Reding <thierry.reding@avionic-design.de>
 
+---
+
+Applies to v3.4-rc3
+
+ Documentation/devicetree/bindings/input/touchscreen/lpc32xx-tsc.txt |   16 ++++++++++
+ drivers/input/touchscreen/lpc32xx_ts.c                              |   10 ++++++
+ 2 files changed, 26 insertions(+)
+
+--- /dev/null
++++ linux-2.6/Documentation/devicetree/bindings/input/touchscreen/lpc32xx-tsc.txt
+@@ -0,0 +1,16 @@
++* NXP LPC32xx SoC Touchscreen Controller (TSC)
++
++Required properties:
++- compatible: must be "nxp,lpc32xx-tsc"
++- reg: physical base address of the controller and length of memory mapped
++  region.
++- interrupts: The TSC/ADC interrupt
++
++Example:
++
++	tsc@40048000 {
++		compatible = "nxp,lpc32xx-tsc";
++		reg = <0x40048000 0x1000>;
++		interrupt-parent = <&mic>;
++		interrupts = <39 0>;
++	};
+--- linux-2.6.orig/drivers/input/touchscreen/lpc32xx_ts.c
++++ linux-2.6/drivers/input/touchscreen/lpc32xx_ts.c
+@@ -22,6 +22,7 @@
+ #include <linux/clk.h>
+ #include <linux/io.h>
+ #include <linux/slab.h>
++#include <linux/of.h>
+ 
+ /*
+  * Touchscreen controller register offsets
+@@ -383,6 +384,14 @@ static const struct dev_pm_ops lpc32xx_t
+ #define LPC32XX_TS_PM_OPS NULL
+ #endif
+ 
++#ifdef CONFIG_OF
++static struct of_device_id lpc32xx_tsc_of_match[] = {
++	{ .compatible = "nxp,lpc32xx-tsc", },
++	{ },
++};
++MODULE_DEVICE_TABLE(of, lpc32xx_tsc_of_match);
++#endif
++
+ static struct platform_driver lpc32xx_ts_driver = {
+ 	.probe		= lpc32xx_ts_probe,
+ 	.remove		= __devexit_p(lpc32xx_ts_remove),
+@@ -390,6 +399,7 @@ static struct platform_driver lpc32xx_ts
+ 		.name	= MOD_NAME,
+ 		.owner	= THIS_MODULE,
+ 		.pm	= LPC32XX_TS_PM_OPS,
++		.of_match_table = of_match_ptr(lpc32xx_tsc_of_match),
+ 	},
+ };
+ module_platform_driver(lpc32xx_ts_driver);
