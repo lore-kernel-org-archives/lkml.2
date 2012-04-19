@@ -1,25 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933730Ab2DSVYn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Apr 2012 17:24:43 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:44451 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756599Ab2DSVRD (ORCPT
+	id S933719Ab2DSVZK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Apr 2012 17:25:10 -0400
+Received: from mail-pz0-f42.google.com ([209.85.210.42]:38471 "EHLO
+	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756615Ab2DSVQ4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Apr 2012 17:17:03 -0400
-Message-Id: <20120419210822.239393606@linuxfoundation.org>
+	Thu, 19 Apr 2012 17:16:56 -0400
+Message-Id: <20120419210822.070984365@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Thu, 19 Apr 2012 14:09:00 -0700
+Date: Thu, 19 Apr 2012 14:08:58 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk,
-        Shreshtha Kumar Sahu <shreshthakumar.sahu@stericsson.com>,
-        Chanho Min <chanho0207@gmail.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Jong-Sung Kim <neidhard.kim@lge.com>
-Subject: [ 42/68] serial: PL011: clear pending interrupts
+        alan@lxorguk.ukuu.org.uk, Alex He <alex.he@amd.com>,
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Subject: [ 40/68] xHCI: Correct the #define XHCI_LEGACY_DISABLE_SMI
 In-Reply-To: <20120419210923.GA18589@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -29,80 +25,57 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Linus Walleij <linus.walleij@linaro.org>
+From: Alex He <alex.he@amd.com>
 
-commit 9b96fbacda34079dea0638ee1e92c56286f6114a upstream.
+commit 95018a53f7653e791bba1f54c8d75d9cb700d1bd upstream.
 
-Chanho Min reported that when the boot loader transfers
-control to the kernel, there may be pending interrupts
-causing the UART to lock up in an eternal loop trying to
-pick tokens from the FIFO (since the RX interrupt flag
-indicates there are tokens) while in practice there are
-no tokens - in fact there is only a pending IRQ flag.
+Re-define XHCI_LEGACY_DISABLE_SMI and used it in right way. All SMI enable
+bits will be cleared to zero and flag bits 29:31 are also cleared to zero.
+Other bits should be presvered as Table 146.
 
-This patch address the issue with a combination of two
-patches suggested by Russell King that clears and mask
-all interrupts at probe() and clears any pending error
-and RX interrupts at port startup time.
+This patch should be backported to kernels as old as 2.6.31.
 
-We suspect the spurious interrupts are a side-effect of
-switching the UART from FIFO to non-FIFO mode.
-
-Cc: Shreshtha Kumar Sahu <shreshthakumar.sahu@stericsson.com>
-Reported-by: Chanho Min <chanho0207@gmail.com>
-Suggested-by: Russell King <linux@arm.linux.org.uk>
-Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
-Reviewed-by: Jong-Sung Kim <neidhard.kim@lge.com>
+Signed-off-by: Alex He <alex.he@amd.com>
+Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/tty/serial/amba-pl011.c |   15 +++++++++++----
- 1 file changed, 11 insertions(+), 4 deletions(-)
+ drivers/usb/host/pci-quirks.c    |   10 +++++++---
+ drivers/usb/host/xhci-ext-caps.h |    5 +++--
+ 2 files changed, 10 insertions(+), 5 deletions(-)
 
---- a/drivers/tty/serial/amba-pl011.c
-+++ b/drivers/tty/serial/amba-pl011.c
-@@ -1380,6 +1380,10 @@ static int pl011_startup(struct uart_por
- 
- 	uap->port.uartclk = clk_get_rate(uap->clk);
- 
-+	/* Clear pending error and receive interrupts */
-+	writew(UART011_OEIS | UART011_BEIS | UART011_PEIS | UART011_FEIS |
-+	       UART011_RTIS | UART011_RXIS, uap->port.membase + UART011_ICR);
-+
- 	/*
- 	 * Allocate the IRQ
- 	 */
-@@ -1414,10 +1418,6 @@ static int pl011_startup(struct uart_por
- 	cr = UART01x_CR_UARTEN | UART011_CR_RXE | UART011_CR_TXE;
- 	writew(cr, uap->port.membase + UART011_CR);
- 
--	/* Clear pending error interrupts */
--	writew(UART011_OEIS | UART011_BEIS | UART011_PEIS | UART011_FEIS,
--	       uap->port.membase + UART011_ICR);
--
- 	/*
- 	 * initialise the old status of the modem signals
- 	 */
-@@ -1432,6 +1432,9 @@ static int pl011_startup(struct uart_por
- 	 * as well.
- 	 */
- 	spin_lock_irq(&uap->port.lock);
-+	/* Clear out any spuriously appearing RX interrupts */
-+	 writew(UART011_RTIS | UART011_RXIS,
-+		uap->port.membase + UART011_ICR);
- 	uap->im = UART011_RTIM;
- 	if (!pl011_dma_rx_running(uap))
- 		uap->im |= UART011_RXIM;
-@@ -1916,6 +1919,10 @@ static int pl011_probe(struct amba_devic
- 		goto unmap;
+--- a/drivers/usb/host/pci-quirks.c
++++ b/drivers/usb/host/pci-quirks.c
+@@ -825,9 +825,13 @@ static void __devinit quirk_usb_handoff_
+ 		}
  	}
  
-+	/* Ensure interrupts from this UART are masked and cleared */
-+	writew(0, uap->port.membase + UART011_IMSC);
-+	writew(0xffff, uap->port.membase + UART011_ICR);
-+
- 	uap->vendor = vendor;
- 	uap->lcrh_rx = vendor->lcrh_rx;
- 	uap->lcrh_tx = vendor->lcrh_tx;
+-	/* Disable any BIOS SMIs */
+-	writel(XHCI_LEGACY_DISABLE_SMI,
+-			base + ext_cap_offset + XHCI_LEGACY_CONTROL_OFFSET);
++	val = readl(base + ext_cap_offset + XHCI_LEGACY_CONTROL_OFFSET);
++	/* Mask off (turn off) any enabled SMIs */
++	val &= XHCI_LEGACY_DISABLE_SMI;
++	/* Mask all SMI events bits, RW1C */
++	val |= XHCI_LEGACY_SMI_EVENTS;
++	/* Disable any BIOS SMIs and clear all SMI events*/
++	writel(val, base + ext_cap_offset + XHCI_LEGACY_CONTROL_OFFSET);
+ 
+ 	if (usb_is_intel_switchable_xhci(pdev))
+ 		usb_enable_xhci_ports(pdev);
+--- a/drivers/usb/host/xhci-ext-caps.h
++++ b/drivers/usb/host/xhci-ext-caps.h
+@@ -62,8 +62,9 @@
+ /* USB Legacy Support Control and Status Register  - section 7.1.2 */
+ /* Add this offset, plus the value of xECP in HCCPARAMS to the base address */
+ #define XHCI_LEGACY_CONTROL_OFFSET	(0x04)
+-/* bits 1:2, 5:12, and 17:19 need to be preserved; bits 21:28 should be zero */
+-#define	XHCI_LEGACY_DISABLE_SMI		((0x3 << 1) + (0xff << 5) + (0x7 << 17))
++/* bits 1:3, 5:12, and 17:19 need to be preserved; bits 21:28 should be zero */
++#define	XHCI_LEGACY_DISABLE_SMI		((0x7 << 1) + (0xff << 5) + (0x7 << 17))
++#define XHCI_LEGACY_SMI_EVENTS		(0x7 << 29)
+ 
+ /* USB 2.0 xHCI 0.96 L1C capability - section 7.2.2.1.3.2 */
+ #define XHCI_L1C               (1 << 16)
 
 
