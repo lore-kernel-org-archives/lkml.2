@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933190Ab2DSVKO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Apr 2012 17:10:14 -0400
-Received: from mail-pz0-f42.google.com ([209.85.210.42]:41811 "EHLO
-	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933163Ab2DSVKJ (ORCPT
+	id S1756500Ab2DSVLL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Apr 2012 17:11:11 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:38883 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932998Ab2DSVKM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Apr 2012 17:10:09 -0400
-Message-Id: <20120419210612.640275945@linuxfoundation.org>
+	Thu, 19 Apr 2012 17:10:12 -0400
+Message-Id: <20120419210612.721548600@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Thu, 19 Apr 2012 14:06:29 -0700
+Date: Thu, 19 Apr 2012 14:06:30 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Neal Cardwell <ncardwell@google.com>,
-        Ben Segall <bsegall@google.com>, Ingo Molnar <mingo@elte.hu>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: [ 18/59] nohz: Fix stale jiffies update in tick_nohz_restart()
+        alan@lxorguk.ukuu.org.uk, Johan Hovold <jhovold@gmail.com>
+Subject: [ 19/59] USB: serial: fix race between probe and open
 In-Reply-To: <20120419210623.GA12156@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,51 +24,95 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Neal Cardwell <ncardwell@google.com>
+From: Johan Hovold <jhovold@gmail.com>
 
-commit 6f103929f8979d2638e58d7f7fda0beefcb8ee7e upstream.
+commit a65a6f14dc24a90bde3f5d0073ba2364476200bf upstream.
 
-Fix tick_nohz_restart() to not use a stale ktime_t "now" value when
-calling tick_do_update_jiffies64(now).
+Fix race between probe and open by making sure that the disconnected
+flag is not cleared until all ports have been registered.
 
-If we reach this point in the loop it means that we crossed a tick
-boundary since we grabbed the "now" timestamp, so at this point "now"
-refers to a time in the old jiffy, so using the old value for "now" is
-incorrect, and is likely to give us a stale jiffies value.
+A call to tty_open while probe is running may get a reference to the
+serial structure in serial_install before its ports have been
+registered. This may lead to usb_serial_core calling driver open before
+port is fully initialised.
 
-In particular, the first time through the loop the
-tick_do_update_jiffies64(now) call is always a no-op, since the
-caller, tick_nohz_restart_sched_tick(), will have already called
-tick_do_update_jiffies64(now) with that "now" value.
+With ftdi_sio this result in the following NULL-pointer dereference as
+the private data has not been initialised at open:
 
-Note that tick_nohz_stop_sched_tick() already uses the correct
-approach: when we notice we cross a jiffy boundary, grab a new
-timestamp with ktime_get(), and *then* update jiffies.
+[  199.698286] IP: [<f811a089>] ftdi_open+0x59/0xe0 [ftdi_sio]
+[  199.698297] *pde = 00000000
+[  199.698303] Oops: 0000 [#1] PREEMPT SMP
+[  199.698313] Modules linked in: ftdi_sio usbserial
+[  199.698323]
+[  199.698327] Pid: 1146, comm: ftdi_open Not tainted 3.2.11 #70 Dell Inc. Vostro 1520/0T816J
+[  199.698339] EIP: 0060:[<f811a089>] EFLAGS: 00010286 CPU: 0
+[  199.698344] EIP is at ftdi_open+0x59/0xe0 [ftdi_sio]
+[  199.698348] EAX: 0000003e EBX: f5067000 ECX: 00000000 EDX: 80000600
+[  199.698352] ESI: f48d8800 EDI: 00000001 EBP: f515dd54 ESP: f515dcfc
+[  199.698356]  DS: 007b ES: 007b FS: 00d8 GS: 0033 SS: 0068
+[  199.698361] Process ftdi_open (pid: 1146, ti=f515c000 task=f481e040 task.ti=f515c000)
+[  199.698364] Stack:
+[  199.698368]  f811a9fe f811a9e0 f811b3ef 00000000 00000000 00001388 00000000 f4a86800
+[  199.698387]  00000002 00000000 f806e68e 00000000 f532765c f481e040 00000246 22222222
+[  199.698479]  22222222 22222222 22222222 f5067004 f5327600 f5327638 f515dd74 f806e6ab
+[  199.698496] Call Trace:
+[  199.698504]  [<f806e68e>] ? serial_activate+0x2e/0x70 [usbserial]
+[  199.698511]  [<f806e6ab>] serial_activate+0x4b/0x70 [usbserial]
+[  199.698521]  [<c126380c>] tty_port_open+0x7c/0xd0
+[  199.698527]  [<f806e660>] ? serial_set_termios+0xa0/0xa0 [usbserial]
+[  199.698534]  [<f806e76f>] serial_open+0x2f/0x70 [usbserial]
+[  199.698540]  [<c125d07c>] tty_open+0x20c/0x510
+[  199.698546]  [<c10e9eb7>] chrdev_open+0xe7/0x230
+[  199.698553]  [<c10e48f2>] __dentry_open+0x1f2/0x390
+[  199.698559]  [<c144bfec>] ? _raw_spin_unlock+0x2c/0x50
+[  199.698565]  [<c10e4b76>] nameidata_to_filp+0x66/0x80
+[  199.698570]  [<c10e9dd0>] ? cdev_put+0x20/0x20
+[  199.698576]  [<c10f3e08>] do_last+0x198/0x730
+[  199.698581]  [<c10f4440>] path_openat+0xa0/0x350
+[  199.698587]  [<c10f47d5>] do_filp_open+0x35/0x80
+[  199.698593]  [<c144bfec>] ? _raw_spin_unlock+0x2c/0x50
+[  199.698599]  [<c10ff110>] ? alloc_fd+0xc0/0x100
+[  199.698605]  [<c10f0b72>] ? getname_flags+0x72/0x120
+[  199.698611]  [<c10e4450>] do_sys_open+0xf0/0x1c0
+[  199.698617]  [<c11fcc08>] ? trace_hardirqs_on_thunk+0xc/0x10
+[  199.698623]  [<c10e458e>] sys_open+0x2e/0x40
+[  199.698628]  [<c144c990>] sysenter_do_call+0x12/0x36
+[  199.698632] Code: 85 89 00 00 00 8b 16 8b 4d c0 c1 e2 08 c7 44 24 14 88 13 00 00 81 ca 00 00 00 80 c7 44 24 10 00 00 00 00 c7 44 24 0c 00 00 00 00 <0f> b7 41 78 31 c9 89 44 24 08 c7 44 24 04 00 00 00 00 c7 04 24
+[  199.698884] EIP: [<f811a089>] ftdi_open+0x59/0xe0 [ftdi_sio] SS:ESP 0068:f515dcfc
+[  199.698893] CR2: 0000000000000078
+[  199.698925] ---[ end trace 77c43ec023940cff ]---
 
-Signed-off-by: Neal Cardwell <ncardwell@google.com>
-Cc: Ben Segall <bsegall@google.com>
-Cc: Ingo Molnar <mingo@elte.hu>
-Link: http://lkml.kernel.org/r/1332875377-23014-1-git-send-email-ncardwell@google.com
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Reported-and-tested-by: Ken Huang <csuhgw@gmail.com>
+Signed-off-by: Johan Hovold <jhovold@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- kernel/time/tick-sched.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/usb/serial/usb-serial.c |    8 ++++++++
+ 1 file changed, 8 insertions(+)
 
---- a/kernel/time/tick-sched.c
-+++ b/kernel/time/tick-sched.c
-@@ -484,9 +484,9 @@ static void tick_nohz_restart(struct tic
- 				hrtimer_get_expires(&ts->sched_timer), 0))
- 				break;
- 		}
--		/* Update jiffies and reread time */
--		tick_do_update_jiffies64(now);
-+		/* Reread time and update jiffies */
- 		now = ktime_get();
-+		tick_do_update_jiffies64(now);
+--- a/drivers/usb/serial/usb-serial.c
++++ b/drivers/usb/serial/usb-serial.c
+@@ -1059,6 +1059,12 @@ int usb_serial_probe(struct usb_interfac
+ 		serial->attached = 1;
  	}
- }
  
++	/* Avoid race with tty_open and serial_install by setting the
++	 * disconnected flag and not clearing it until all ports have been
++	 * registered.
++	 */
++	serial->disconnected = 1;
++
+ 	if (get_free_serial(serial, num_ports, &minor) == NULL) {
+ 		dev_err(&interface->dev, "No more free serial devices\n");
+ 		goto probe_error;
+@@ -1083,6 +1089,8 @@ int usb_serial_probe(struct usb_interfac
+ 		}
+ 	}
+ 
++	serial->disconnected = 0;
++
+ 	usb_serial_console_init(debug, minor);
+ 
+ exit:
 
 
