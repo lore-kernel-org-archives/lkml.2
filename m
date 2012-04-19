@@ -1,121 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755095Ab2DSLtI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Apr 2012 07:49:08 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:15243 "EHLO mx1.redhat.com"
+	id S1754957Ab2DSL4s (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Apr 2012 07:56:48 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:13914 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754985Ab2DSLtG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Apr 2012 07:49:06 -0400
-Date: Thu, 19 Apr 2012 13:49:01 +0200 (CEST)
-From: Lukas Czerner <lczerner@redhat.com>
-X-X-Sender: lukas@dhcp-27-109.brq.redhat.com
-To: Karel Zak <kzak@redhat.com>
-cc: Lukas Czerner <lczerner@redhat.com>, linux-kernel@vger.kernel.org,
-        mbroz@redhat.com, linux-fsdevel@vger.kernel.org,
-        Al Viro <viro@zeniv.linux.org.uk>
-Subject: Re: [PATCH] fs: print warning when mount flags was ignored
-In-Reply-To: <20120419102857.GA13436@x2.net.home>
-Message-ID: <alpine.LFD.2.00.1204191253490.21613@dhcp-27-109.brq.redhat.com>
-References: <1334826475-11606-1-git-send-email-lczerner@redhat.com> <20120419102857.GA13436@x2.net.home>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	id S1753730Ab2DSL4r (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Apr 2012 07:56:47 -0400
+Message-ID: <4F8FFD77.4060503@redhat.com>
+Date: Thu, 19 Apr 2012 07:56:39 -0400
+From: Prarit Bhargava <prarit@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110419 Red Hat/3.1.10-1.el6_0 Thunderbird/3.1.10
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: John Stultz <john.stultz@linaro.org>
+CC: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
+        Salman Qazi <sqazi@google.com>, stable@kernel.org
+Subject: Re: [PATCH] clocksource, prevent overflow in clocksource_cyc2ns
+References: <1333552260-1170-1-git-send-email-prarit@redhat.com> <4F7C8C3E.1020203@us.ibm.com> <4F7C9402.3090602@redhat.com> <4F7CF094.5020201@us.ibm.com> <4F7D8FA1.1010107@redhat.com> <4F8F4C31.7010209@linaro.org> <4F8F555F.7040404@redhat.com> <4F8F59E2.4080301@linaro.org>
+In-Reply-To: <4F8F59E2.4080301@linaro.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 19 Apr 2012, Karel Zak wrote:
 
-> On Thu, Apr 19, 2012 at 11:07:55AM +0200, Lukas Czerner wrote:
-> > Some mount flags can conflict with each other so they can not be
-> > handled together. Currently when conflicting flags are specified,
-> > some of them are silently ignored putting user in believe that
-> > they was handled correctly.
-> 
-> Unfortunately, it's not so simple ;-)
-> 
-> > -	if (flags & MS_REMOUNT)
-> > +	if (flags & MS_REMOUNT) {
-> >  		retval = do_remount(&path, flags & ~MS_REMOUNT, mnt_flags,
-> >  				    data_page);
-> > -	else if (flags & MS_BIND)
-> > +		flags &= ~MS_REMOUNT;
-> 
-> This is incorrect, the flags may also include many others flags. For
-> example MS_REMOUNT|MS_BIND|MS_RDONLY is valid (see do_remoun() code).
 
-ah, right we can specify more flags to be consumed by do_remount and
-others. Well, then we can just mask them all out like this:
+On 04/18/2012 08:18 PM, John Stultz wrote:
+> On 04/18/2012 04:59 PM, Prarit Bhargava wrote:
+>>
+>> Hey John,
+>>
+>> Thanks for continuing to work on this.  Coincidentally that exact patch was my
+>> first attempt at resolving the problem as well.  The problem is that even after
+>> touching the clocksource watchdog and restoring irqs the printk buffer can take
+>> a LONG time to flush -- and that still will cause an overflow comparison.  So
+>> fixing it with just a touch_clocksource_watchdog() isn't the right thing to do
+>> IMO.  Maybe a combination of the printk() patch you suggested earlier and the
+>> touch_clocksource_watchdog() is the right way to go but I'll leave that up to
+>> tglx and yourself to decide on a correct fix.
+> :( That's a bummer. Something similar may be useful on the printk side as well.
 
-	flags &= ~(MS_REMOUNT | MS_BIND );
+Hmm ... I'll give that a shot.
 
 > 
-> And it's normal that for "mount -o remount" the mount command reads
-> flags from mtab/fstab so it includes for example MS_RELATIME, ...
+> 
+>> There's also some additional information that I've been gathering on this issue;
+>> I have seen *idle* systems switch to the hpet because the clocksource watchdog
+>> hits the overflow comparison.  As expected it happens much less frequently on
+>> newer kernels (linux.git top of tree) than older stable kernels (2.6.32 based)
+>> due to the difference in shift values but it is happening in both cases.
+> 
+> Some of the recent adjustments for more robust shift calculations may partially
+> be responsible for the improvement. Although I'm not sure why idle systems (that
+> don't halt the TSC in idle) would trip this.  Do let me know if you find any
+> particular way of reproducing this.
+> 
+>> The odd thing about this behaviour is that I would expect it to occur with the
+>> same frequency on small systems as it does on large systems with linux.git as
+>> the watchdog fires once/second.  AFAICT I do not see this on small systems but
+>> see it only on systems with greater than 24 cpus (both Intel and AMD).
+> Hrm.
 
-Yes, but MS_RELATIME is masked out from flags and it is used in
-mnt_flags which are handled by remount. That makes me wonder why we even
-have MS_RELATIME flag, since it is not used anywhere.
+Yeah, it's odd.  I have no idea why more cpus makes any difference :/
 
 > 
-> > +	} else if (flags & MS_BIND) {
-> >  		retval = do_loopback(&path, dev_name, flags & MS_REC);
-> > -	else if (flags & (MS_SHARED | MS_PRIVATE | MS_SLAVE | MS_UNBINDABLE))
-> > +		flags &= ~MS_BIND;
-> 
->  what about MS_REC ?
+>> Using debug code similar to the dump code I previously provided, I can see that
+>> every so often these large systems can hit a case where the tsc wraps and the
+>> hpet is still monotonically increasing.  When the unstable calculation is
+>> performed the result is obviously affected by the overflow.  Sometimes this
+>> comparison overflow happens within 18 minutes, other times it can take hours or
+>> days.
+> TSC wraps? Are you sure that's what you see? Or do you have that switched? With
+> the HPET wrapping?
 
-Ok, we should put MS_REC into the mix since the do_remount does not use
-it.
-
-	flags &= ~(MS_BIND | MS_REC);
-
-> 
-> > +	} else if (flags & (MS_SHARED | MS_PRIVATE |
-> > +			    MS_SLAVE | MS_UNBINDABLE)) {
-> >  		retval = do_change_type(&path, flags);
-> > -	else if (flags & MS_MOVE)
-> > +		flags &= ~(MS_SHARED | MS_PRIVATE | MS_SLAVE | MS_UNBINDABLE);
-> 
->  what about MS_REC ?
-
-	flags &= ~(MS_SHARED | MS_PRIVATE | MS_SLAVE | MS_UNBINDABLE |
-		   MS_REC);
-> 
->  Note that do_change_type() already checks for unexpected flags and
->  returns -EINVAL if more flags are specified.
-
-I am not sure how this is related. Each of those function should
-probably do that but do_change_type() is actually the only one
-doing so.
+Sorry, you're right -- the HPET wraps.  I mistyped that.
 
 > 
-> > +	} else if (flags & MS_MOVE) {
-> >  		retval = do_move_mount(&path, dev_name);
-> > -	else
-> > +		flags &= ~MS_MOVE;
-> > +	} else
-> >  		retval = do_new_mount(&path, type_page, flags, mnt_flags,
-> >  				      dev_name, data_page);
-> > +
-> > +	flags &= (MS_REMOUNT | MS_BIND | MS_SHARED | MS_PRIVATE |
-> > +		  MS_SLAVE | MS_UNBINDABLE | MS_MOVE);
+> 
+>> The other part of this puzzle is that if switch between the tsc and hpet every
+>> 10 seconds, and run a gettimeofday() comparison program, the gettimeofday()
+>> program will return a backwards time[1] event usually within half-an-hour.  [I'm
+>> just including this info here to point out that switching between clocksources
+>> seems to cause some momentary instability.  Before anyone points this out I will
+>> say that this not a "real world" bug.  I'm trying to find out if anyone actually
+>> does switch from the tsc to hpet (and back) on multi-purposed systems.  I'm
+>> hoping the answer to that is "no" :) ].
+> So, there were some recent fixes for 3.4 to address an issue specifically around
+> inconsistencies at clocksource switch time:
+> http://git.kernel.org/?p=linux/kernel/git/torvalds/linux-2.6.git;a=commitdiff;h=a939e817aa7e199d2fff05a67cb745be32dd5c2d
+> 
+> http://git.kernel.org/?p=linux/kernel/git/torvalds/linux-2.6.git;a=commitdiff;h=f695cf94837de53864180400cbac42cfa370426f
+> 
 
-	flags &= (MS_REMOUNT | MS_BIND | MS_SHARED | MS_PRIVATE |
-		  MS_SLAVE | MS_UNBINDABLE | MS_MOVE | MS_REC);
+AFAICT I have both of these in my tree.  It is linux-2.6.git as of
+592fe8980688e7cba46897685d014c7fb3018a67.
 
-> > +
-> > +	if (!retval && flags)
-> > +		printk(KERN_WARNING "%s(%u): (%s -> %s) Conflicting mount flags"
-> > +				    " specified. These flags has been "
-> > +				    "ignored: %#.8lx\n", __func__, current->pid,
-> > +				    dev_name, dir_name, flags);
+I am doing
 
-But then, we'll might ignoring mnt_flags silently since they are masked
-out earlier. Well, maybe we could mas them out only do_remount() and
-do_new_mount().
+while (true)
+do
+        val=`ps aux | egrep $1 | wc -l`
+        if [ $val -ne 2 ]; then
+                exit 1
+        fi
+        echo "switching to tsc"
+        echo tsc > /sys/devices/system/clocksource/clocksource0/current_clocksource
 
->     Karel
+        sleep 10
+        val=`ps aux | egrep $1 | wc -l`
+        if [ $val -ne 2 ]; then
+                exit 1
+        fi
+        echo "switching to hpet"
+        echo hpet > /sys/devices/system/clocksource/clocksource0/current_clocksource
+        sleep 10
+done
 
-Thanks!
--Lukas
+where $1 is the pid of my gettimeofday() comparison test.  As I said, the test
+exists when a "backwards" time event occurs so the script above also bails.
+
+> 
+> I definitely want to make sure any sort of inconsistencies like that are
+> resolved. So let me know if you can still trigger anything like that with the
+> latest 3.4 kernel.
+
+I'll dig into this a bit more then -- I have a few things I want to investigate.
+ I'll also try the touch_clocksource_watchdog() in the printk() code and get
+back to in a few days.
+
+P.
