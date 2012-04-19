@@ -1,47 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754794Ab2DSKUo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Apr 2012 06:20:44 -0400
-Received: from mail2.gnudd.com ([213.203.150.91]:64100 "EHLO mail.gnudd.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753408Ab2DSKUk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Apr 2012 06:20:40 -0400
-From: ciminaghi@gnudd.com
-To: vinod.koul@intel.com, linux-kernel@vger.kernel.org
-Cc: dan.j.williams@intel.com, pgeninatti@soft-in.com, acolosimo@soft-in.com,
-        alarosa@openintellect.eu, Davide Ciminaghi <ciminaghi@gnudd.com>
-Subject: [PATCH] dmaengine/amba-pl08x : reset phychan_hold on terminate all
-Date: Thu, 19 Apr 2012 12:20:24 +0200
-Message-Id: <1334830824-10908-1-git-send-email-ciminaghi@gnudd.com>
-X-Mailer: git-send-email 1.6.0.2
+	id S1754188Ab2DSKY4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Apr 2012 06:24:56 -0400
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:6833 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751108Ab2DSKYx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Apr 2012 06:24:53 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp05.nvidia.com on Thu, 19 Apr 2012 03:24:30 -0700
+Date: Thu, 19 Apr 2012 13:23:57 +0300
+From: Peter De Schrijver <pdeschrijver@nvidia.com>
+To: Daniel Lezcano <daniel.lezcano@linaro.org>
+CC: "Shilimkar, Santosh" <santosh.shilimkar@ti.com>,
+        Kevin Hilman <khilman@ti.com>, Len Brown <len.brown@intel.com>,
+        Trinabh Gupta <g.trinabh@gmail.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Deepthi Dharwar <deepthi@linux.vnet.ibm.com>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        Colin Cross <ccross@android.com>, Olof Johansson <olof@lixom.net>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Arjan van de Ven <arjan@linux.intel.com>, Rob Lee <rob.lee@linaro.org>,
+        Ricardo Salveti <ricardo.salveti@linaro.org>
+Subject: Re: [RFC PATCH] cpuidle: allow per cpu latencies
+Message-ID: <20120419102357.GJ514@tbergstrom-lnx.Nvidia.com>
+References: <1333619620-21201-1-git-send-email-pdeschrijver@nvidia.com>
+ <4F7DA009.4010802@linux.intel.com>
+ <CAMQu2gzwe0F3qcaTqASEPUASdG1SjpUxrBrSp-RrYLgy3W24OQ@mail.gmail.com>
+ <4F7F0D52.8080305@linaro.org>
+ <20120410102857.GA22721@tbergstrom-lnx.Nvidia.com>
+ <20120416153456.GB514@tbergstrom-lnx.Nvidia.com>
+ <4F8FD773.5030500@linaro.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <4F8FD773.5030500@linaro.org>
+X-NVConfidentiality: public
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Davide Ciminaghi <ciminaghi@gnudd.com>
+On Thu, Apr 19, 2012 at 11:14:27AM +0200, Daniel Lezcano wrote:
+> On 04/16/2012 05:34 PM, Peter De Schrijver wrote:
+> >>
+> >> Maybe we also want to make the 'disabled' flag per CPU then or provide some
+> >> other way the number of C states can be different per CPU?
+> >
+> > What do you think about this? Do we also want to make the disabled flag per
+> > CPU? Or how should we deal with a different number of C states per CPU?
+> 
+> Hi Peter,
+> 
+> yes, that could makes sense. But in most of the architecture, this is 
+> not needed, so duplicating the state's array and latencies is unneeded 
+> memory consumption.
+> 
+> Maybe we can look for a COW approach, similar to what is done for the 
+> nsproxy structure, no ?
+> 
 
-When a client calls pl08x_control with DMA_TERMINATE_ALL, it is correct
-to terminate and release the phy channel currently in use (if one is in use),
-but the phychan_hold counter must also be reset (otherwise it could get
-trapped in an unbalanced state).
+That could be easily solved by just having a pointer to the state table in the
+per CPU datastructure I think?
 
-Signed-off-by: Davide Ciminaghi <ciminaghi@gnudd.com>
----
- drivers/dma/amba-pl08x.c |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
 
-diff --git a/drivers/dma/amba-pl08x.c b/drivers/dma/amba-pl08x.c
-index c301a8e..3d704ab 100644
---- a/drivers/dma/amba-pl08x.c
-+++ b/drivers/dma/amba-pl08x.c
-@@ -1429,6 +1429,7 @@ static int pl08x_control(struct dma_chan *chan, enum dma_ctrl_cmd cmd,
- 			 * signal
- 			 */
- 			release_phy_channel(plchan);
-+			plchan->phychan_hold = 0;
- 		}
- 		/* Dequeue jobs and free LLIs */
- 		if (plchan->at) {
--- 
-1.7.9.1
+Cheers,
 
+Peter.
