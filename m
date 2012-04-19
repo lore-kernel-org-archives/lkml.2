@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933683Ab2DSVVF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Apr 2012 17:21:05 -0400
-Received: from mail-pz0-f42.google.com ([209.85.210.42]:38471 "EHLO
-	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965256Ab2DSVSD (ORCPT
+	id S1756637Ab2DSVVa (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Apr 2012 17:21:30 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:34108 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965216Ab2DSVRz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Apr 2012 17:18:03 -0400
-Message-Id: <20120419210823.766608999@linuxfoundation.org>
+	Thu, 19 Apr 2012 17:17:55 -0400
+Message-Id: <20120419210823.601296675@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Thu, 19 Apr 2012 14:09:18 -0700
+Date: Thu, 19 Apr 2012 14:09:16 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Danny Kukawka <danny.kukawka@bisect.de>,
-        Grant Likely <grant.likely@secretlab.ca>,
+        alan@lxorguk.ukuu.org.uk, Dan Carpenter <dan.carpenter@oracle.com>,
+        "David S. Miller" <davem@davemloft.net>,
         Tomoya MORINAGA <tomoya.rohm@gmail.com>
-Subject: [ 60/68] spi-topcliff-pch: fix -Wuninitialized warning
+Subject: [ 58/68] pch_gbe: memory corruption calling pch_gbe_validate_option()
 In-Reply-To: <20120419210923.GA18589@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,76 +26,53 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Danny Kukawka <danny.kukawka@bisect.de>
+From: Dan Carpenter <dan.carpenter@oracle.com>
 
-commit de3bd7e6de25141c466773c2e0fa319b2fa93655 upstream.
+commit 73f98eab9b9e0bab492ca06add5657d9e702ddb1 upstream.
 
-Fix for:
-drivers/spi/spi-topcliff-pch.c: In function ‘pch_spi_handler_sub’:
-drivers/spi/spi-topcliff-pch.c:325:17: warning: ‘bpw_len’ may be
-  used uninitialized in this function [-Wuninitialized]
-drivers/spi/spi-topcliff-pch.c:325:42: warning: ‘rx_index’ may be
-  used uninitialized in this function [-Wuninitialized]
-drivers/spi/spi-topcliff-pch.c:325:42: warning: ‘tx_index’ may be
-  used uninitialized in this function [-Wuninitialized]
+pch_gbe_validate_option() modifies 32 bits of memory but we pass
+&hw->phy.autoneg_advertised which only has 16 bits and &hw->mac.fc
+which only has 8 bits.
 
-Move usage of tx_index, rx_index and bpw_len into the same
-block as where they are set to prevent uninitialized usage.
-
-v2: instead of init variables with 0 move the whole block
-
-[This patch title "warnings" makes you think "This patch is not
-for bug fix".  However, this patch surely patch for bug fix.]
-
-Signed-off-by: Danny Kukawka <danny.kukawka@bisect.de>
-Signed-off-by: Grant Likely <grant.likely@secretlab.ca>
+Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Tomoya MORINAGA <tomoya.rohm@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/spi/spi-topcliff-pch.c |   31 ++++++++++++++++---------------
- 1 file changed, 16 insertions(+), 15 deletions(-)
+ drivers/net/ethernet/oki-semi/pch_gbe/pch_gbe_param.c |   15 ++++++++-------
+ 1 file changed, 8 insertions(+), 7 deletions(-)
 
---- a/drivers/spi/spi-topcliff-pch.c
-+++ b/drivers/spi/spi-topcliff-pch.c
-@@ -315,22 +315,23 @@ static void pch_spi_handler_sub(struct p
- 		data->tx_index = tx_index;
- 		data->rx_index = rx_index;
- 
--	}
--
--	/* if transfer complete interrupt */
--	if (reg_spsr_val & SPSR_FI_BIT) {
--		if ((tx_index == bpw_len) && (rx_index == tx_index)) {
--			/* disable interrupts */
--			pch_spi_setclr_reg(data->master, PCH_SPCR, 0, PCH_ALL);
-+		/* if transfer complete interrupt */
-+		if (reg_spsr_val & SPSR_FI_BIT) {
-+			if ((tx_index == bpw_len) && (rx_index == tx_index)) {
-+				/* disable interrupts */
-+				pch_spi_setclr_reg(data->master, PCH_SPCR, 0,
-+						   PCH_ALL);
- 
--			/* transfer is completed;
--			   inform pch_spi_process_messages */
--			data->transfer_complete = true;
--			data->transfer_active = false;
--			wake_up(&data->wait);
--		} else {
--			dev_err(&data->master->dev,
--				"%s : Transfer is not completed", __func__);
-+				/* transfer is completed;
-+				   inform pch_spi_process_messages */
-+				data->transfer_complete = true;
-+				data->transfer_active = false;
-+				wake_up(&data->wait);
-+			} else {
-+				dev_err(&data->master->dev,
-+					"%s : Transfer is not completed",
-+					__func__);
-+			}
+--- a/drivers/net/ethernet/oki-semi/pch_gbe/pch_gbe_param.c
++++ b/drivers/net/ethernet/oki-semi/pch_gbe/pch_gbe_param.c
+@@ -321,10 +321,10 @@ static void pch_gbe_check_copper_options
+ 			pr_debug("AutoNeg specified along with Speed or Duplex, AutoNeg parameter ignored\n");
+ 			hw->phy.autoneg_advertised = opt.def;
+ 		} else {
+-			hw->phy.autoneg_advertised = AutoNeg;
+-			pch_gbe_validate_option(
+-				(int *)(&hw->phy.autoneg_advertised),
+-				&opt, adapter);
++			int tmp = AutoNeg;
++
++			pch_gbe_validate_option(&tmp, &opt, adapter);
++			hw->phy.autoneg_advertised = tmp;
  		}
  	}
- }
+ 
+@@ -495,9 +495,10 @@ void pch_gbe_check_options(struct pch_gb
+ 			.arg  = { .l = { .nr = (int)ARRAY_SIZE(fc_list),
+ 					 .p = fc_list } }
+ 		};
+-		hw->mac.fc = FlowControl;
+-		pch_gbe_validate_option((int *)(&hw->mac.fc),
+-						&opt, adapter);
++		int tmp = FlowControl;
++
++		pch_gbe_validate_option(&tmp, &opt, adapter);
++		hw->mac.fc = tmp;
+ 	}
+ 
+ 	pch_gbe_check_copper_options(adapter);
 
 
