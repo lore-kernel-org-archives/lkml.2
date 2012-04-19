@@ -1,70 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753448Ab2DSDeX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Apr 2012 23:34:23 -0400
-Received: from mailout2.w1.samsung.com ([210.118.77.12]:36734 "EHLO
-	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751388Ab2DSDeV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Apr 2012 23:34:21 -0400
-Date: Thu, 19 Apr 2012 07:34:15 +0400
-From: Alexander Nikiforov <a.nikiforov@samsung.com>
-Subject: Re: [RFD] Merge task counter into memcg
-In-reply-to: <20120417152350.GC32402@google.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>, Hugh Dickins <hughd@google.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Glauber Costa <glommer@parallels.com>,
-        Daniel Walsh <dwalsh@redhat.com>,
-        "Daniel P. Berrange" <berrange@redhat.com>,
-        Li Zefan <lizf@cn.fujitsu.com>, LKML <linux-kernel@vger.kernel.org>,
-        Cgroups <cgroups@vger.kernel.org>,
-        Containers <containers@lists.linux-foundation.org>,
-        d.solodkiy@samsung.com
-Message-id: <4F8F87B7.2000504@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=ISO-8859-1; format=flowed
-Content-transfer-encoding: 7BIT
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:11.0) Gecko/20120329
- Thunderbird/11.0.1
-References: <20120411185715.GA4317@somewhere.redhat.com>
- <4F86527C.2080507@samsung.com> <20120417010902.GA14646@somewhere.redhat.com>
- <4F8D1171.1090504@samsung.com> <20120417152350.GC32402@google.com>
+	id S1754236Ab2DSDkq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Apr 2012 23:40:46 -0400
+Received: from tundra.namei.org ([65.99.196.166]:58306 "EHLO tundra.namei.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751388Ab2DSDkp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Apr 2012 23:40:45 -0400
+Date: Thu, 19 Apr 2012 13:40:25 +1000 (EST)
+From: James Morris <jmorris@namei.org>
+To: kernel-hardening@lists.openwall.com
+cc: linux-kernel@vger.kernel.org, James Morris <james.l.morris@oracle.com>,
+        Randy Dunlap <rdunlap@xenotime.net>,
+        John Johansen <john.johansen@canonical.com>, linux-doc@vger.kernel.org,
+        linux-security-module@vger.kernel.org, spender@grsecurity.net
+Subject: Re: [kernel-hardening] [PATCH] Yama: add additional ptrace scopes
+In-Reply-To: <20120416185645.GA13667@www.outflux.net>
+Message-ID: <alpine.LRH.2.02.1204191340020.563@tundra.namei.org>
+References: <20120416185645.GA13667@www.outflux.net>
+User-Agent: Alpine 2.02 (LRH 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/17/2012 07:23 PM, Tejun Heo wrote:
-> Hello,
->
-> On Tue, Apr 17, 2012 at 10:45:05AM +0400, Alexander Nikiforov wrote:
->> between them. Now we have only 1 way to get notification about tasks
->> file - inotify(), but this approach works only if you work from
->> userspace with file (e.g. create struct file, for example with echo
->> $$ /sys/abc/tasks), but when something happens from kernel side
->> (do_fork()/do_exit) we cannot get any event about group of the
->> process (we can scan tasks file and count number of PID, or work
->> with
->> waitpid(), but IMHO this is ugly solutions)
-> Wouldn't simply generating FS_MODIFY event on the tasks file do the
-> trick?
->
-> Thanks.
->
-Maybe it will, but in my mind it should be with event. I thought about 
-inotify before my RFD mail. Here we have file update, so FS_MODIFY very 
-natural.
-But on the other hand - we have event in memcg, so conventional approach 
-is event.
+On Mon, 16 Apr 2012, Kees Cook wrote:
 
-If this functionality is acceptable in cgroup and FS_MODIFY better, 
-we'll make new patch with this approach.
+> This expands the available Yama ptrace restrictions to include two more
+> modes. Mode 2 requires CAP_SYS_PTRACE for PTRACE_ATTACH, and mode 3
+> completely disables PTRACE_ATTACH (and locks the sysctl).
+> 
+> Signed-off-by: Kees Cook <keescook@chromium.org>
+
+Applied to
+git://git.kernel.org/pub/scm/linux/kernel/git/jmorris/linux-security.git next
+
 
 -- 
-Best regards,
-      Alex Nikiforov,
-      Mobile SW, Advanced Software Group,
-      Moscow R&D center, Samsung Electronics
-
+James Morris
+<jmorris@namei.org>
