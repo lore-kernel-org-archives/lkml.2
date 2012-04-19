@@ -1,54 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756417Ab2DSVAk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Apr 2012 17:00:40 -0400
-Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:59657 "EHLO
-	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751685Ab2DSVAi (ORCPT
+	id S1756470Ab2DSVFA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Apr 2012 17:05:00 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:41537 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751484Ab2DSVE6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Apr 2012 17:00:38 -0400
-Date: Fri, 20 Apr 2012 01:00:33 +0400
-From: Cyrill Gorcunov <gorcunov@openvz.org>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: akpm@linux-foundation.org, khlebnikov@openvz.org, keescook@chromium.org,
-        kosaki.motohiro@jp.fujitsu.com, matthltc@us.ibm.com, tj@kernel.org,
-        xemul@parallels.com, linux-kernel@vger.kernel.org
-Subject: Re: +
- c-r-prctl-add-ability-to-set-new-mm_struct-exe_file-update-after-mm-
- num_exe_file_vmas-removal.patch added to -mm tree
-Message-ID: <20120419210033.GO1893@moon>
-References: <20120419185221.E8ED6A055E@akpm.mtv.corp.google.com>
- <20120419192005.GA13558@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120419192005.GA13558@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 19 Apr 2012 17:04:58 -0400
+Message-Id: <20120419210303.390155360@linuxfoundation.org>
+User-Agent: quilt/0.60-19.1
+Date: Thu, 19 Apr 2012 14:03:06 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        alan@lxorguk.ukuu.org.uk, Armin Reese <armin.c.reese@intel.com>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>
+Subject: [ 03/75] drm/i915: Removed IVB forced enable of sprite dest key.
+In-Reply-To: <20120419210322.GA6478@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 19, 2012 at 09:20:05PM +0200, Oleg Nesterov wrote:
-> On 04/19, Andrew Morton wrote:
-> >
-> > From: Konstantin Khlebnikov <khlebnikov@openvz.org>
-> > Subject: c/r: prctl: update prctl_set_mm_exe_file() after mm->num_exe_file_vmas removal
-> >
-> > [ fix for "c-r-prctl-add-ability-to-set-new-mm_struct-exe_file-v2" from mm tree ]
-> >
-> > After removing mm->num_exe_file_vmas kernel keeps mm->exe_file until final
-> > mmput(), it never becomes NULL while task is alive.
-> >
-> > We can check for other mapped files in mm instead of checking
-> > mm->num_exe_file_vmas, and mark mm with flag MMF_EXE_FILE_CHANGED in order
-> > to forbid second changing of mm->exe_file.
-> 
-> I lost the track a long ago.
-> 
-> Just one question, what does this "forbid second changing" actually mean?
+3.3-stable review patch.  If anyone has any objections, please let me know.
 
-Heh :) Oleg, it was actually your idea to make this feature "one-shot".
-Once exe-file changed to a new value, it can't be changed again. The
-reason was to bring at least minimum disturbance in sysadmins life.
+------------------
 
-	Cyrill
+From: acreese <armin.c.reese@intel.com>
+
+commit b2a71642b8bfa1965700ba248a99016e4d6b685d upstream.
+
+The destination color key is always enabled for IVB.  Removed
+the line that does this.
+
+Signed-off-by: Armin Reese <armin.c.reese@intel.com>
+Acked-by: Jesse Barnes <jbarnes@virtuousgeek.org>
+Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ drivers/gpu/drm/i915/intel_sprite.c |    1 -
+ 1 file changed, 1 deletion(-)
+
+--- a/drivers/gpu/drm/i915/intel_sprite.c
++++ b/drivers/gpu/drm/i915/intel_sprite.c
+@@ -95,7 +95,6 @@ ivb_update_plane(struct drm_plane *plane
+ 	/* must disable */
+ 	sprctl |= SPRITE_TRICKLE_FEED_DISABLE;
+ 	sprctl |= SPRITE_ENABLE;
+-	sprctl |= SPRITE_DEST_KEY;
+ 
+ 	/* Sizes are 0 based */
+ 	src_w--;
+
+
