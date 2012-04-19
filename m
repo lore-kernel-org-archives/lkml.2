@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933561Ab2DSVPo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Apr 2012 17:15:44 -0400
-Received: from mail-pz0-f42.google.com ([209.85.210.42]:38471 "EHLO
-	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756463Ab2DSVPf (ORCPT
+	id S933579Ab2DSVPw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Apr 2012 17:15:52 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:34108 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933562Ab2DSVPo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Apr 2012 17:15:35 -0400
-Message-Id: <20120419210819.120235243@linuxfoundation.org>
+	Thu, 19 Apr 2012 17:15:44 -0400
+Message-Id: <20120419210820.126932116@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Thu, 19 Apr 2012 14:08:23 -0700
+Date: Thu, 19 Apr 2012 14:08:35 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Adam Jackson <ajax@redhat.com>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>
-Subject: [ 05/68] drm/i915: properly compute dp dithering for user-created modes
+        alan@lxorguk.ukuu.org.uk,
+        Marek Belisko <marek.belisko@open-nandra.com>,
+        Jonathan Cameron <jic23@kernel.org>
+Subject: [ 17/68] staging: iio: hmc5843: Fix crash in probe function.
 In-Reply-To: <20120419210923.GA18589@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,127 +26,105 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Daniel Vetter <daniel.vetter@ffwll.ch>
+From: Marek Belisko <marek.belisko@open-nandra.com>
 
-commit c4867936474183332db4c19791a65fdad6474fd5 upstream.
+commit 62d2feb9803f18c4e3c8a1a2c7e30a54df8a1d72 upstream.
 
-We've only computed whether we need to fall back to 6bpc due to dp
-link bandwidth constrains in mode_valid, but not mode_fixup. Under
-various circumstances X likes to create new modes which then lack
-proper 6bpc flags (if required), resulting in mode_fixup failures and
-ultimately black screens.
+Fix crash after issuing:
+	echo hmc5843 0x1e > /sys/class/i2c-dev/i2c-2/device/new_device
 
-Chris Wilson pointed out that we still get things wrong for bpp > 24,
-but that should be fixed in another patch (and it'll be easier because
-this patch consolidates the logic).
+	[   37.180999] device: '2-001e': device_add
+	[   37.188293] bus: 'i2c': add device 2-001e
+	[   37.194549] PM: Adding info for i2c:2-001e
+	[   37.200958] bus: 'i2c': driver_probe_device: matched device 2-001e with driver hmc5843
+	[   37.210815] bus: 'i2c': really_probe: probing driver hmc5843 with device 2-001e
+	[   37.224884] HMC5843 initialized
+	[   37.228759] ------------[ cut here ]------------
+	[   37.233612] kernel BUG at mm/slab.c:505!
+	[   37.237701] Internal error: Oops - BUG: 0 [#1] PREEMPT
+	[   37.243103] Modules linked in:
+	[   37.246337] CPU: 0    Not tainted  (3.3.1-gta04+ #28)
+	[   37.251647] PC is at kfree+0x84/0x144
+	[   37.255493] LR is at kfree+0x20/0x144
+	[   37.259338] pc : [<c00b408c>]    lr : [<c00b4028>]    psr: 40000093
+	[   37.259368] sp : de249cd8  ip : 0000000c  fp : 00000090
+	[   37.271362] r10: 0000000a  r9 : de229eac  r8 : c0236274
+	[   37.276855] r7 : c09d6490  r6 : a0000013  r5 : de229c00  r4 : de229c10
+	[   37.283691] r3 : c0f00218  r2 : 00000400  r1 : c0eea000  r0 : c00b4028
+	[   37.290527] Flags: nZcv  IRQs off  FIQs on  Mode SVC_32  ISA ARM  Segment user
+	[   37.298095] Control: 10c5387d  Table: 9e1d0019  DAC: 00000015
+	[   37.304107] Process sh (pid: 91, stack limit = 0xde2482f0)
+	[   37.309844] Stack: (0xde249cd8 to 0xde24a000)
+	[   37.314422] 9cc0:                                                       de229c10 de229c00
+	[   37.322998] 9ce0: de229c10 ffffffea 00000005 c0236274 de140a80 c00b4798 dec00080 de140a80
+	[   37.331573] 9d00: c032f37c dec00080 000080d0 00000001 de229c00 de229c10 c048d578 00000005
+	[   37.340148] 9d20: de229eac 0000000a 00000090 c032fa40 00000001 00000000 00000001 de229c10
+	[   37.348724] 9d40: de229eac 00000029 c075b558 00000001 00000003 00000004 de229c10 c048d594
+	[   37.357299] 9d60: 00000000 60000013 00000018 205b0007 37332020 3432322e 5d343838 c0060020
+	[   37.365905] 9d80: de251600 00000001 00000000 de251600 00000001 c0065a84 de229c00 de229c48
+	[   37.374481] 9da0: 00000006 0048d62c de229c38 de229c00 de229c00 de1f6c00 de1f6c20 00000001
+	[   37.383056] 9dc0: 00000000 c048d62c 00000000 de229c00 de229c00 de1f6c00 de1f6c20 00000001
+	[   37.391632] 9de0: 00000000 c048d62c 00000000 c0330164 00000000 de1f6c20 c048d62c de1f6c00
+	[   37.400207] 9e00: c0330078 de1f6c04 c078d714 de189b58 00000000 c02ccfd8 de1f6c20 c0795f40
+	[   37.408782] 9e20: c0238330 00000000 00000000 c02381a8 de1b9fc0 de1f6c20 de1f6c20 de249e48
+	[   37.417358] 9e40: c0238330 c0236bb0 decdbed8 de7d0f14 de1f6c20 de1f6c20 de1f6c54 de1f6c20
+	[   37.425933] 9e60: 00000000 c0238030 de1f6c20 c078d7bc de1f6c20 c02377ec de1f6c20 de1f6c28
+	[   37.434509] 9e80: dee64cb0 c0236138 c047c554 de189b58 00000000 c004b45c de1f6c20 de1f6cd8
+	[   37.443084] 9ea0: c0edfa6c de1f6c00 dee64c68 de1f6c04 de1f6c20 dee64cb8 c047c554 de189b58
+	[   37.451690] 9ec0: 00000000 c02cd634 dee64c68 de249ef4 de23b008 dee64cb0 0000000d de23b000
+	[   37.460266] 9ee0: de23b007 c02cd78c 00000002 00000000 00000000 35636d68 00333438 00000000
+	[   37.468841] 9f00: 00000000 00000000 001e0000 00000000 00000000 00000000 00000000 0a10cec0
+	[   37.477416] 9f20: 00000002 de249f80 0000000d dee62990 de189b40 c0234d88 0000000d c010c354
+	[   37.485992] 9f40: 0000000d de210f28 000acc88 de249f80 0000000d de248000 00000000 c00b7bf8
+	[   37.494567] 9f60: de210f28 000acc88 de210f28 000acc88 00000000 00000000 0000000d c00b7ed8
+	[   37.503143] 9f80: 00000000 00000000 0000000d 00000000 0007fa28 0000000d 000acc88 00000004
+	[   37.511718] 9fa0: c000e544 c000e380 0007fa28 0000000d 00000001 000acc88 0000000d 00000000
+	[   37.520294] 9fc0: 0007fa28 0000000d 000acc88 00000004 00000001 00000020 00000002 00000000
+	[   37.528869] 9fe0: 00000000 beab8624 0000ea05 b6eaebac 600d0010 00000001 00000000 00000000
+	[   37.537475] [<c00b408c>] (kfree+0x84/0x144) from [<c0236274>] (device_add+0x530/0x57c)
+	[   37.545806] [<c0236274>] (device_add+0x530/0x57c) from [<c032fa40>] (iio_device_register+0x8c8/0x990)
+	[   37.555480] [<c032fa40>] (iio_device_register+0x8c8/0x990) from [<c0330164>] (hmc5843_probe+0xec/0x114)
+	[   37.565338] [<c0330164>] (hmc5843_probe+0xec/0x114) from [<c02ccfd8>] (i2c_device_probe+0xc4/0xf8)
+	[   37.574737] [<c02ccfd8>] (i2c_device_probe+0xc4/0xf8) from [<c02381a8>] (driver_probe_device+0x118/0x218)
+	[   37.584777] [<c02381a8>] (driver_probe_device+0x118/0x218) from [<c0236bb0>] (bus_for_each_drv+0x4c/0x84)
+	[   37.594818] [<c0236bb0>] (bus_for_each_drv+0x4c/0x84) from [<c0238030>] (device_attach+0x78/0xa4)
+	[   37.604125] [<c0238030>] (device_attach+0x78/0xa4) from [<c02377ec>] (bus_probe_device+0x28/0x9c)
+	[   37.613433] [<c02377ec>] (bus_probe_device+0x28/0x9c) from [<c0236138>] (device_add+0x3f4/0x57c)
+	[   37.622650] [<c0236138>] (device_add+0x3f4/0x57c) from [<c02cd634>] (i2c_new_device+0xf8/0x19c)
+	[   37.631805] [<c02cd634>] (i2c_new_device+0xf8/0x19c) from [<c02cd78c>] (i2c_sysfs_new_device+0xb4/0x130)
+	[   37.641754] [<c02cd78c>] (i2c_sysfs_new_device+0xb4/0x130) from [<c0234d88>] (dev_attr_store+0x18/0x24)
+	[   37.651611] [<c0234d88>] (dev_attr_store+0x18/0x24) from [<c010c354>] (sysfs_write_file+0x10c/0x140)
+	[   37.661193] [<c010c354>] (sysfs_write_file+0x10c/0x140) from [<c00b7bf8>] (vfs_write+0xb0/0x178)
+	[   37.670410] [<c00b7bf8>] (vfs_write+0xb0/0x178) from [<c00b7ed8>] (sys_write+0x3c/0x68)
+	[   37.678833] [<c00b7ed8>] (sys_write+0x3c/0x68) from [<c000e380>] (ret_fast_syscall+0x0/0x3c)
+	[   37.687683] Code: 1593301c e5932000 e3120080 1a000000 (e7f001f2)
+	[   37.700775] ---[ end trace aaf805debdb69390 ]---
 
-The likely culprit for this regression is
+Client data was assigned to iio_dev structure in probe but in
+hmc5843_init_client function casted to private driver data structure which
+is wrong. Possibly calling mutex_init(&data->lock); corrupt data
+which the lead to above crash.
 
-commit 3d794f87238f74d80e78a7611c7fbde8a54c85c2
-Author: Keith Packard <keithp@keithp.com>
-Date:   Wed Jan 25 08:16:25 2012 -0800
-
-    drm/i915: Force explicit bpp selection for intel_dp_link_required
-
-v2: Fix indentation and tune down the too bold claim that this should
-fix the world. Both noticed by Chris Wilson.
-
-v3: Try to really git add things.
-
-Reported-and-tested-by: Brice Goglin <Brice.Goglin@ens-lyon.org>
-Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=48170
-Cc: stable@kernel.org
-Reviewed-by: Adam Jackson <ajax@redhat.com>
-Signed-Off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+Signed-off-by: Marek Belisko <marek.belisko@open-nandra.com>
+Acked-by: Jonathan Cameron <jic23@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/i915/intel_dp.c |   49 ++++++++++++++++++++++++++++------------
- 1 file changed, 35 insertions(+), 14 deletions(-)
+ drivers/staging/iio/magnetometer/hmc5843.c |    4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
---- a/drivers/gpu/drm/i915/intel_dp.c
-+++ b/drivers/gpu/drm/i915/intel_dp.c
-@@ -219,14 +219,38 @@ intel_dp_max_data_rate(int max_link_cloc
- 	return (max_link_clock * max_lanes * 8) / 10;
- }
- 
-+static bool
-+intel_dp_adjust_dithering(struct intel_dp *intel_dp,
-+			  struct drm_display_mode *mode,
-+			  struct drm_display_mode *adjusted_mode)
-+{
-+	int max_link_clock = intel_dp_link_clock(intel_dp_max_link_bw(intel_dp));
-+	int max_lanes = intel_dp_max_lane_count(intel_dp);
-+	int max_rate, mode_rate;
-+
-+	mode_rate = intel_dp_link_required(mode->clock, 24);
-+	max_rate = intel_dp_max_data_rate(max_link_clock, max_lanes);
-+
-+	if (mode_rate > max_rate) {
-+		mode_rate = intel_dp_link_required(mode->clock, 18);
-+		if (mode_rate > max_rate)
-+			return false;
-+
-+		if (adjusted_mode)
-+			adjusted_mode->private_flags
-+				|= INTEL_MODE_DP_FORCE_6BPC;
-+
-+		return true;
-+	}
-+
-+	return true;
-+}
-+
- static int
- intel_dp_mode_valid(struct drm_connector *connector,
- 		    struct drm_display_mode *mode)
+--- a/drivers/staging/iio/magnetometer/hmc5843.c
++++ b/drivers/staging/iio/magnetometer/hmc5843.c
+@@ -521,7 +521,9 @@ static int hmc5843_detect(struct i2c_cli
+ /* Called when we have found a new HMC5843. */
+ static void hmc5843_init_client(struct i2c_client *client)
  {
- 	struct intel_dp *intel_dp = intel_attached_dp(connector);
--	int max_link_clock = intel_dp_link_clock(intel_dp_max_link_bw(intel_dp));
--	int max_lanes = intel_dp_max_lane_count(intel_dp);
--	int max_rate, mode_rate;
- 
- 	if (is_edp(intel_dp) && intel_dp->panel_fixed_mode) {
- 		if (mode->hdisplay > intel_dp->panel_fixed_mode->hdisplay)
-@@ -236,16 +260,8 @@ intel_dp_mode_valid(struct drm_connector
- 			return MODE_PANEL;
- 	}
- 
--	mode_rate = intel_dp_link_required(mode->clock, 24);
--	max_rate = intel_dp_max_data_rate(max_link_clock, max_lanes);
--
--	if (mode_rate > max_rate) {
--			mode_rate = intel_dp_link_required(mode->clock, 18);
--			if (mode_rate > max_rate)
--				return MODE_CLOCK_HIGH;
--			else
--				mode->private_flags |= INTEL_MODE_DP_FORCE_6BPC;
--	}
-+	if (!intel_dp_adjust_dithering(intel_dp, mode, NULL))
-+		return MODE_CLOCK_HIGH;
- 
- 	if (mode->clock < 10000)
- 		return MODE_CLOCK_LOW;
-@@ -673,7 +689,7 @@ intel_dp_mode_fixup(struct drm_encoder *
- 	int lane_count, clock;
- 	int max_lane_count = intel_dp_max_lane_count(intel_dp);
- 	int max_clock = intel_dp_max_link_bw(intel_dp) == DP_LINK_BW_2_7 ? 1 : 0;
--	int bpp = mode->private_flags & INTEL_MODE_DP_FORCE_6BPC ? 18 : 24;
-+	int bpp;
- 	static int bws[2] = { DP_LINK_BW_1_62, DP_LINK_BW_2_7 };
- 
- 	if (is_edp(intel_dp) && intel_dp->panel_fixed_mode) {
-@@ -687,6 +703,11 @@ intel_dp_mode_fixup(struct drm_encoder *
- 		mode->clock = intel_dp->panel_fixed_mode->clock;
- 	}
- 
-+	if (!intel_dp_adjust_dithering(intel_dp, mode, adjusted_mode))
-+		return false;
+-	struct hmc5843_data *data = i2c_get_clientdata(client);
++	struct iio_dev *indio_dev = i2c_get_clientdata(client);
++	struct hmc5843_data *data = iio_priv(indio_dev);
 +
-+	bpp = adjusted_mode->private_flags & INTEL_MODE_DP_FORCE_6BPC ? 18 : 24;
-+
- 	for (lane_count = 1; lane_count <= max_lane_count; lane_count <<= 1) {
- 		for (clock = 0; clock <= max_clock; clock++) {
- 			int link_avail = intel_dp_max_data_rate(intel_dp_link_clock(bws[clock]), lane_count);
+ 	hmc5843_set_meas_conf(client, data->meas_conf);
+ 	hmc5843_set_rate(client, data->rate);
+ 	hmc5843_configure(client, data->operating_mode);
 
 
