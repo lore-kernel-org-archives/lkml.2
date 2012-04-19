@@ -1,16 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753856Ab2DSCln (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Apr 2012 22:41:43 -0400
-Received: from mailout2.samsung.com ([203.254.224.25]:28937 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752059Ab2DSClh (ORCPT
+	id S1753167Ab2DSClk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Apr 2012 22:41:40 -0400
+Received: from mailout3.samsung.com ([203.254.224.33]:64255 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751997Ab2DSClg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Apr 2012 22:41:37 -0400
-MIME-version: 1.0
-Content-transfer-encoding: 8BIT
-Content-type: text/plain; charset=UTF-8
-X-AuditID: cbfee61a-b7c0cae000001518-a7-4f8f7b5f6e8b
+	Wed, 18 Apr 2012 22:41:36 -0400
+X-AuditID: cbfee61b-b7cb4ae000000d81-38-4f8f7b5edcfb
 From: MyungJoo Ham <myungjoo.ham@samsung.com>
 To: Greg KH <gregkh@linuxfoundation.org>
 Cc: Arnd Bergmann <arnd@arndb.de>, LKML <linux-kernel@vger.kernel.org>,
@@ -25,316 +22,161 @@ Cc: Arnd Bergmann <arnd@arndb.de>, LKML <linux-kernel@vger.kernel.org>,
         John Stultz <john.stultz@linaro.org>,
         Joerg Roedel <joerg.roedel@amd.com>, myungjoo.ham@gmail.com,
         cw00.choi@samsung.com
-Subject: [PATCH v8 2/6] Extcon: support generic GPIO extcon driver
-Date: Thu, 19 Apr 2012 11:41:34 +0900
-Message-id: <1334803298-24260-3-git-send-email-myungjoo.ham@samsung.com>
+Subject: [PATCH v8 0/6] Introduce External Connector Class (extcon)
+Date: Thu, 19 Apr 2012 11:41:32 +0900
+Message-id: <1334803298-24260-1-git-send-email-myungjoo.ham@samsung.com>
 X-Mailer: git-send-email 1.7.4.1
-In-reply-to: <1334803298-24260-1-git-send-email-myungjoo.ham@samsung.com>
+In-reply-to: <20120418214703.GA31606@kroah.com>
 References: <20120418214703.GA31606@kroah.com>
- <1334803298-24260-1-git-send-email-myungjoo.ham@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=UTF-8
+Content-transfer-encoding: 8bit
 X-Brightmail-Tracker: AAAAAA==
 X-TM-AS-MML: No
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The generic GPIO extcon driver (an external connector device based on
-GPIO control) and imported from Android kernel.
+For external connectors, which may have different types of cables attached
+(USB, TA, HDMI, Analog A/V, and others), we often have seperated device
+drivers that detect the state changes at the port and device drivers that
+do something according to the state changes.
 
-switch: switch class and GPIO drivers. (splitted)
-Author: Mike Lockwood <lockwood@android.com>
+An example is a 4-pin (or more pins?) analog audio connector
+(usually referred as "3.5-pi" jacks). It can be implemented with the 5/5
+patch, "adc-jack", supplied with information about IRQ, a method to get
+ADC values, and ADC value ranges. With a 4-pin 3.5-pi port and adc-jack
+driver with proper ADC configurations, the following modes may be
+detected: "standard mono cable", "standard stereo cable",
+"standard stereo + remote cable", "standard stereo + mic + remote cable",
+"standard stereo + different-spec mic + remote cable", and such.
+Note that for 4-pin cables with mic and remote, there are multiple
+standards (at least Samsung and Apple use different configurations for
+those 4-pin earphones although the pins looks exactly same.)
+and they often can be distinguished with ADC values.
 
-switch: gpio: Don't call request_irq with interrupts disabled
-Author: Arve Hjønnevåg <arve@android.com>
+Although we may have simply given different "cable id" for "stereo" and
+"stereo + mic". However, for those userspace processes or other device
+drivers that are interested only in "stereo" part of possible combinations,
+having seperated mode/id for "stereo" and "mic" is more desirable.
+For example, if we do not have multistate capabilities, those who want
+to know "stereo" is attached or not should monitor everything:
+"standard stereo cable", "standard stereo + remove cable",
+"standard stereo + mic + remote cable", and others. However, with
+multistate capabilities, they only need to monitor the bit associated
+with "standard stero".
 
-switch_gpio: Add missing #include <linux/interrupt.h>
-Author: Mike Lockwood <lockwood@android.com>
+For another example, when MAX8997-MUIC detects a Charger cable insertion,
+another device driver (such as MAX8903 charger, MAX8997 charger, Charger
+Manager, or board file) needs to set charger current limit accordingly
+and when MAX8997-MUIC detects a HDMI cable insertion, multimedia device
+drivers need to do some operations accordingly.
 
-Signed-off-by: MyungJoo Ham <myungjoo.ham@samsung.com>
-Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
 
---
-Changed from v7:
-- Style updates mentioned by Stephen Boyd
-Changed from v5:
-- Splitted at v5 from the main extcon patch.
-- Added debounce time for irq handlers.
-- Use request_any_context_irq instead of request_irq
-- User needs to specify irq flags for GPIO interrupts (was fixed to
-IRQF_TRIGGER_LOW before)
-- Use module_platform_driver().
----
- drivers/extcon/Kconfig             |    7 ++
- drivers/extcon/Makefile            |    1 +
- drivers/extcon/extcon_gpio.c       |  174 ++++++++++++++++++++++++++++++++++++
- include/linux/extcon/extcon_gpio.h |   52 +++++++++++
- 4 files changed, 234 insertions(+), 0 deletions(-)
+This patchset supports the usage of notifier for passing such information
+between device drivers.
+
+Another issue is that at a single switch port, there might be multiple
+and heterogeneous cables attached at the same time. Besides the state
+(Attached or Detached) of each cable may alter independently. Such extcon
+devices that support simultaneous mult-cable attachment include, bot not
+limited to, docks, cradles, and 30-pin-like ports (like that of NURI board
+in linux/arch/arm/mach-exynos, which resembles Samsung Galaxy Tab series).
+For example, the 30-pin port of NURI board may be used to connect analog
+audio cables, analog video cable, and a USB or a charger. Because such
+cables coonnect part of the 30 pins to external devices/cables, the
+possible combinations of external devices/cables vary significantly and
+users may fabricate their own design; e.g., an 30-pin adaptor connecting
+USB, AC-DC adaptor, HDMI, analog audio, analog video, USB-host, SD-card,
+and so on.
+
+In order to address such issues, Android kernel's "Switch" class seems to
+be a good basis and we have implemented "Multistate Switch Class" based on
+it. The "Switch" class code of Android kernel is GPL as well.
+
+
+Though there can be synchronization delay (up to 12hours), you can see
+the extcon-for-next branch at
+http://git.infradead.org/users/kmpark/linux-samsung/shortlog/refs/heads/extcon-for-next
+
+Along with the 6 patches (1/6 ... 6/6), there is one additional RFC patch
+that suggests to remove drivers/staging/android/switch.
+
+Summary of changes from v7 patchset
+- Rebased over Linux 3.4 rc3
+- Bugfix (parameters given to register-interest callbacks)
+- Bugfix (header file definitions w/ !CONFIG_EXTCON)
+
+Summary of changes from v6 patchset
+- Added documentation, "porting guide for Android switch device drivers"
+- Usage of class_compat to create /sys/class/switch/* along with
+/sys/class/extcon/* if CONFIG_ANDROID is enabled. However, we cannot
+enable "switch" class_compat if CONFIG_ANDROID_SWITCH is enabled because
+we cannot create two classes with the same name.
+
+Summary of changes from v5 patchset
+- Excluded adc-jack from the "default" patchset. Adc-jack will be later
+added after Extcon is finalized.
+- Sysfs style updated
+- Bugfixes after using at Exynos4412 boards with userspace processes
+- Code stype updated
+
+Summary of changes from v4 patchset
+- Bugfixes after testing at Exynos4412 boards with userspace processes
+- Added adc-jack to support 3.5-pi jack and other ADC-based cable detection
+ports.
+
+Summary of changes from v3 patchset
+- Bugfixes after testing at Exynos4412 boards.
+
+Summary of changes from v2 patchset
+- Support to express mutually exclusive set of cables
+- Revised device/class/sysfs-entries add/removal methods
+- Added sysfs entries
+- Revised documentation and comments
+- Some bugfixes
+- Compatible with Android (for extcon devices with "use_class_name_switch" set)
+
+Summary of changes from RFC
+- ABI documentation added
+- Notifees may get notified for a state change of a specific cable, not
+every cable of the corresponding extcon.
+- Added kerneldoc comments
+- Moved to /drivers/extcon/
+- Added helper functions
+- Some bugfixes
+
+Donggeun Kim (1):
+  Extcon: support notification based on the state changes.
+
+MyungJoo Ham (5):
+  Extcon (external connector): import Android's switch class and
+    modify.
+  Extcon: support generic GPIO extcon driver
+  Extcon: support multiple states at a device.
+  Extcon: support mutually exclusive relation between cables.
+  Documentation/extcon: porting guide for Android kernel switch driver.
+
+ Documentation/ABI/testing/sysfs-class-extcon      |   97 +++
+ Documentation/extcon/porting-android-switch-class |  124 +++
+ drivers/Kconfig                                   |    2 +
+ drivers/Makefile                                  |    1 +
+ drivers/extcon/Kconfig                            |   35 +
+ drivers/extcon/Makefile                           |    6 +
+ drivers/extcon/extcon_class.c                     |  822 +++++++++++++++++++++
+ drivers/extcon/extcon_gpio.c                      |  174 +++++
+ include/linux/extcon.h                            |  322 ++++++++
+ include/linux/extcon/extcon_gpio.h                |   52 ++
+ 10 files changed, 1635 insertions(+), 0 deletions(-)
+ create mode 100644 Documentation/ABI/testing/sysfs-class-extcon
+ create mode 100644 Documentation/extcon/porting-android-switch-class
+ create mode 100644 drivers/extcon/Kconfig
+ create mode 100644 drivers/extcon/Makefile
+ create mode 100644 drivers/extcon/extcon_class.c
  create mode 100644 drivers/extcon/extcon_gpio.c
+ create mode 100644 include/linux/extcon.h
  create mode 100644 include/linux/extcon/extcon_gpio.h
 
-diff --git a/drivers/extcon/Kconfig b/drivers/extcon/Kconfig
-index 11db865..cc3f5eb 100644
---- a/drivers/extcon/Kconfig
-+++ b/drivers/extcon/Kconfig
-@@ -25,4 +25,11 @@ config EXTCON_ANDROID_COMPATIBLE
- 
- comment "Extcon Device Drivers"
- 
-+config EXTCON_GPIO
-+	tristate "GPIO extcon support"
-+	depends on GENERIC_GPIO
-+	help
-+	  Say Y here to enable GPIO based extcon support. Note that GPIO
-+	  extcon supports single state per extcon instance.
-+
- endif # MULTISTATE_SWITCH
-diff --git a/drivers/extcon/Makefile b/drivers/extcon/Makefile
-index 6bc6921..2c46d41 100644
---- a/drivers/extcon/Makefile
-+++ b/drivers/extcon/Makefile
-@@ -3,3 +3,4 @@
- #
- 
- obj-$(CONFIG_EXTCON)		+= extcon_class.o
-+obj-$(CONFIG_EXTCON_GPIO)	+= extcon_gpio.o
-diff --git a/drivers/extcon/extcon_gpio.c b/drivers/extcon/extcon_gpio.c
-new file mode 100644
-index 0000000..ade2c9b
---- /dev/null
-+++ b/drivers/extcon/extcon_gpio.c
-@@ -0,0 +1,174 @@
-+/*
-+ *  drivers/extcon/extcon_gpio.c
-+ *
-+ *  Single-state GPIO extcon driver based on extcon class
-+ *
-+ * Copyright (C) 2008 Google, Inc.
-+ * Author: Mike Lockwood <lockwood@android.com>
-+ *
-+ * Modified by MyungJoo Ham <myungjoo.ham@samsung.com> to support extcon
-+ * (originally switch class is supported)
-+ *
-+ * This software is licensed under the terms of the GNU General Public
-+ * License version 2, as published by the Free Software Foundation, and
-+ * may be copied, distributed, and modified under those terms.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+*/
-+
-+#include <linux/module.h>
-+#include <linux/kernel.h>
-+#include <linux/init.h>
-+#include <linux/interrupt.h>
-+#include <linux/platform_device.h>
-+#include <linux/slab.h>
-+#include <linux/extcon.h>
-+#include <linux/workqueue.h>
-+#include <linux/gpio.h>
-+#include <linux/extcon.h>
-+#include <linux/extcon/extcon_gpio.h>
-+
-+struct gpio_extcon_data {
-+	struct extcon_dev edev;
-+	unsigned gpio;
-+	const char *state_on;
-+	const char *state_off;
-+	int irq;
-+	struct delayed_work work;
-+	unsigned long debounce_jiffies;
-+};
-+
-+static void gpio_extcon_work(struct work_struct *work)
-+{
-+	int state;
-+	struct gpio_extcon_data	*data =
-+		container_of(to_delayed_work(work), struct gpio_extcon_data,
-+			     work);
-+
-+	state = gpio_get_value(data->gpio);
-+	extcon_set_state(&data->edev, state);
-+}
-+
-+static irqreturn_t gpio_irq_handler(int irq, void *dev_id)
-+{
-+	struct gpio_extcon_data *extcon_data = dev_id;
-+
-+	schedule_delayed_work(&extcon_data->work,
-+			      extcon_data->debounce_jiffies);
-+	return IRQ_HANDLED;
-+}
-+
-+static ssize_t extcon_gpio_print_state(struct extcon_dev *edev, char *buf)
-+{
-+	struct gpio_extcon_data	*extcon_data =
-+		container_of(edev, struct gpio_extcon_data, edev);
-+	const char *state;
-+	if (extcon_get_state(edev))
-+		state = extcon_data->state_on;
-+	else
-+		state = extcon_data->state_off;
-+
-+	if (state)
-+		return sprintf(buf, "%s\n", state);
-+	return -EINVAL;
-+}
-+
-+static int __devinit gpio_extcon_probe(struct platform_device *pdev)
-+{
-+	struct gpio_extcon_platform_data *pdata = pdev->dev.platform_data;
-+	struct gpio_extcon_data *extcon_data;
-+	int ret = 0;
-+
-+	if (!pdata)
-+		return -EBUSY;
-+	if (!pdata->irq_flags) {
-+		dev_err(&pdev->dev, "IRQ flag is not specified.\n");
-+		return -EINVAL;
-+	}
-+
-+	extcon_data = devm_kzalloc(&pdev->dev, sizeof(struct gpio_extcon_data),
-+				   GFP_KERNEL);
-+	if (!extcon_data)
-+		return -ENOMEM;
-+
-+	extcon_data->edev.name = pdata->name;
-+	extcon_data->gpio = pdata->gpio;
-+	extcon_data->state_on = pdata->state_on;
-+	extcon_data->state_off = pdata->state_off;
-+	if (pdata->state_on && pdata->state_off)
-+		extcon_data->edev.print_state = extcon_gpio_print_state;
-+	extcon_data->debounce_jiffies = msecs_to_jiffies(pdata->debounce);
-+
-+	ret = extcon_dev_register(&extcon_data->edev, &pdev->dev);
-+	if (ret < 0)
-+		goto err_extcon_dev_register;
-+
-+	ret = gpio_request(extcon_data->gpio, pdev->name);
-+	if (ret < 0)
-+		goto err_request_gpio;
-+
-+	ret = gpio_direction_input(extcon_data->gpio);
-+	if (ret < 0)
-+		goto err_set_gpio_input;
-+
-+	INIT_DELAYED_WORK(&extcon_data->work, gpio_extcon_work);
-+
-+	extcon_data->irq = gpio_to_irq(extcon_data->gpio);
-+	if (extcon_data->irq < 0) {
-+		ret = extcon_data->irq;
-+		goto err_detect_irq_num_failed;
-+	}
-+
-+	ret = request_any_context_irq(extcon_data->irq, gpio_irq_handler,
-+				      pdata->irq_flags, pdev->name,
-+				      extcon_data);
-+	if (ret < 0)
-+		goto err_request_irq;
-+
-+	/* Perform initial detection */
-+	gpio_extcon_work(&extcon_data->work.work);
-+
-+	return 0;
-+
-+err_request_irq:
-+err_detect_irq_num_failed:
-+err_set_gpio_input:
-+	gpio_free(extcon_data->gpio);
-+err_request_gpio:
-+	extcon_dev_unregister(&extcon_data->edev);
-+err_extcon_dev_register:
-+	devm_kfree(&pdev->dev, extcon_data);
-+
-+	return ret;
-+}
-+
-+static int __devexit gpio_extcon_remove(struct platform_device *pdev)
-+{
-+	struct gpio_extcon_data *extcon_data = platform_get_drvdata(pdev);
-+
-+	cancel_delayed_work_sync(&extcon_data->work);
-+	gpio_free(extcon_data->gpio);
-+	extcon_dev_unregister(&extcon_data->edev);
-+	devm_kfree(&pdev->dev, extcon_data);
-+
-+	return 0;
-+}
-+
-+static struct platform_driver gpio_extcon = {
-+	.probe		= gpio_extcon_probe,
-+	.remove		= __devexit_p(gpio_extcon_remove),
-+	.driver		= {
-+		.name	= "extcon-gpio",
-+		.owner	= THIS_MODULE,
-+	},
-+};
-+
-+module_platform_driver(gpio_extcon);
-+
-+MODULE_AUTHOR("Mike Lockwood <lockwood@android.com>");
-+MODULE_DESCRIPTION("GPIO extcon driver");
-+MODULE_LICENSE("GPL");
-diff --git a/include/linux/extcon/extcon_gpio.h b/include/linux/extcon/extcon_gpio.h
-new file mode 100644
-index 0000000..a2129b7
---- /dev/null
-+++ b/include/linux/extcon/extcon_gpio.h
-@@ -0,0 +1,52 @@
-+/*
-+ *  External connector (extcon) class generic GPIO driver
-+ *
-+ * Copyright (C) 2012 Samsung Electronics
-+ * Author: MyungJoo Ham <myungjoo.ham@samsung.com>
-+ *
-+ * based on switch class driver
-+ * Copyright (C) 2008 Google, Inc.
-+ * Author: Mike Lockwood <lockwood@android.com>
-+ *
-+ * This software is licensed under the terms of the GNU General Public
-+ * License version 2, as published by the Free Software Foundation, and
-+ * may be copied, distributed, and modified under those terms.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+*/
-+#ifndef __EXTCON_GPIO_H__
-+#define __EXTCON_GPIO_H__ __FILE__
-+
-+#include <linux/extcon.h>
-+
-+/**
-+ * struct gpio_extcon_platform_data - A simple GPIO-controlled extcon device.
-+ * @name	The name of this GPIO extcon device.
-+ * @gpio	Corresponding GPIO.
-+ * @debounce	Debounce time for GPIO IRQ in ms.
-+ * @irq_flags	IRQ Flags (e.g., IRQF_TRIGGER_LOW).
-+ * @state_on	print_state is overriden with state_on if attached. If Null,
-+ *		default method of extcon class is used.
-+ * @state_off	print_state is overriden with state_on if dettached. If Null,
-+ *		default method of extcon class is used.
-+ *
-+ * Note that in order for state_on or state_off to be valid, both state_on
-+ * and state_off should be not NULL. If at least one of them is NULL,
-+ * the print_state is not overriden.
-+ */
-+struct gpio_extcon_platform_data {
-+	const char *name;
-+	unsigned gpio;
-+	unsigned long debounce;
-+	unsigned long irq_flags;
-+
-+	/* if NULL, "0" or "1" will be printed */
-+	const char *state_on;
-+	const char *state_off;
-+};
-+
-+#endif /* __EXTCON_GPIO_H__ */
 -- 
 1.7.4.1
 
