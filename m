@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933649Ab2DSVQd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Apr 2012 17:16:33 -0400
+	id S965082Ab2DSVQk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Apr 2012 17:16:40 -0400
 Received: from mail-pb0-f46.google.com ([209.85.160.46]:44451 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933629Ab2DSVQ2 (ORCPT
+	with ESMTP id S933652Ab2DSVQf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Apr 2012 17:16:28 -0400
-Message-Id: <20120419210820.548049126@linuxfoundation.org>
+	Thu, 19 Apr 2012 17:16:35 -0400
+Message-Id: <20120419210821.503803292@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Thu, 19 Apr 2012 14:08:40 -0700
+Date: Thu, 19 Apr 2012 14:08:51 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk,
-        "Stephen M. Cameron" <scameron@beardog.cce.hp.com>,
-        Jens Axboe <axboe@kernel.dk>
-Subject: [ 22/68] cciss: Fix scsi tape io with more than 255 scatter gather elements
+        alan@lxorguk.ukuu.org.uk, Alan Stern <stern@rowland.harvard.edu>,
+        Ming Lei <tom.leiming@gmail.com>
+Subject: [ 33/68] USB: dont clear urb->dev in scatter-gather library
 In-Reply-To: <20120419210923.GA18589@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,35 +25,83 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Stephen M. Cameron" <scameron@beardog.cce.hp.com>
+From: Alan Stern <stern@rowland.harvard.edu>
 
-commit bc67f63650fad6b3478d9ddfd5406d45a95987c9 upstream.
+commit bcf398537630bf20b4dbe59ba855b69f404c93cf upstream.
 
-The total number of scatter gather elements in the CISS command
-used by the scsi tape code was being cast to a u8, which can hold
-at most 255 scatter gather elements.  It should have been cast to
-a u16.  Without this patch the command gets rejected by the controller
-since the total scatter gather count did not add up to the right
-value resulting in an i/o error.
+This patch (as1517b) fixes an error in the USB scatter-gather library.
+The library code uses urb->dev to determine whether or nor an URB is
+currently active; the completion handler sets urb->dev to NULL.
+However the core unlinking routines need to use urb->dev.  Since
+unlinking always racing with completion, the completion handler must
+not clear urb->dev -- it can lead to invalid memory accesses when a
+transfer has to be cancelled.
 
-Signed-off-by: Stephen M. Cameron <scameron@beardog.cce.hp.com>
-Signed-off-by: Jens Axboe <axboe@kernel.dk>
+This patch fixes the problem by getting rid of the lines that clear
+urb->dev after urb has been submitted.  As a result we may end up
+trying to unlink an URB that failed in submission or that has already
+completed, so an extra check is added after each unlink to avoid
+printing an error message when this happens.  The checks are updated
+in both sg_complete() and sg_cancel(), and the second is updated to
+match the first (currently it prints out unnecessary warning messages
+if a device is unplugged while a transfer is in progress).
+
+Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
+Reported-and-tested-by: Illia Zaitsev <I.Zaitsev@adbglobal.com>
+CC: Ming Lei <tom.leiming@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/block/cciss_scsi.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/usb/core/message.c |   11 ++++++-----
+ 1 file changed, 6 insertions(+), 5 deletions(-)
 
---- a/drivers/block/cciss_scsi.c
-+++ b/drivers/block/cciss_scsi.c
-@@ -1411,7 +1411,7 @@ static void cciss_scatter_gather(ctlr_in
- 	/* track how many SG entries we are using */
- 	if (request_nsgs > h->maxSG)
- 		h->maxSG = request_nsgs;
--	c->Header.SGTotal = (__u8) request_nsgs + chained;
-+	c->Header.SGTotal = (u16) request_nsgs + chained;
- 	if (request_nsgs > h->max_cmd_sgentries)
- 		c->Header.SGList = h->max_cmd_sgentries;
- 	else
+--- a/drivers/usb/core/message.c
++++ b/drivers/usb/core/message.c
+@@ -308,7 +308,8 @@ static void sg_complete(struct urb *urb)
+ 				retval = usb_unlink_urb(io->urbs [i]);
+ 				if (retval != -EINPROGRESS &&
+ 				    retval != -ENODEV &&
+-				    retval != -EBUSY)
++				    retval != -EBUSY &&
++				    retval != -EIDRM)
+ 					dev_err(&io->dev->dev,
+ 						"%s, unlink --> %d\n",
+ 						__func__, retval);
+@@ -317,7 +318,6 @@ static void sg_complete(struct urb *urb)
+ 		}
+ 		spin_lock(&io->lock);
+ 	}
+-	urb->dev = NULL;
+ 
+ 	/* on the last completion, signal usb_sg_wait() */
+ 	io->bytes += urb->actual_length;
+@@ -524,7 +524,6 @@ void usb_sg_wait(struct usb_sg_request *
+ 		case -ENXIO:	/* hc didn't queue this one */
+ 		case -EAGAIN:
+ 		case -ENOMEM:
+-			io->urbs[i]->dev = NULL;
+ 			retval = 0;
+ 			yield();
+ 			break;
+@@ -542,7 +541,6 @@ void usb_sg_wait(struct usb_sg_request *
+ 
+ 			/* fail any uncompleted urbs */
+ 		default:
+-			io->urbs[i]->dev = NULL;
+ 			io->urbs[i]->status = retval;
+ 			dev_dbg(&io->dev->dev, "%s, submit --> %d\n",
+ 				__func__, retval);
+@@ -593,7 +591,10 @@ void usb_sg_cancel(struct usb_sg_request
+ 			if (!io->urbs [i]->dev)
+ 				continue;
+ 			retval = usb_unlink_urb(io->urbs [i]);
+-			if (retval != -EINPROGRESS && retval != -EBUSY)
++			if (retval != -EINPROGRESS
++					&& retval != -ENODEV
++					&& retval != -EBUSY
++					&& retval != -EIDRM)
+ 				dev_warn(&io->dev->dev, "%s, unlink --> %d\n",
+ 					__func__, retval);
+ 		}
 
 
