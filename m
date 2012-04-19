@@ -1,67 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932561Ab2DSWJu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Apr 2012 18:09:50 -0400
-Received: from mail-wi0-f172.google.com ([209.85.212.172]:39358 "EHLO
-	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932375Ab2DSWJt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Apr 2012 18:09:49 -0400
-From: Ido Yariv <ido@wizery.com>
-To: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>
-Cc: Shai Fultheim <shai@scalemp.com>, Ido Yariv <ido@wizery.com>
-Subject: [PATCH RESEND] x86: cache_info: Fix setup of l2/l3 ids
-Date: Fri, 20 Apr 2012 01:09:11 +0300
-Message-Id: <1334873351-31142-1-git-send-email-ido@wizery.com>
-X-Mailer: git-send-email 1.7.7.6
-In-Reply-To: <1333715894-25995-1-git-send-email-ido@wizery.com>
-References: <1333715894-25995-1-git-send-email-ido@wizery.com>
+	id S932705Ab2DSWKD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Apr 2012 18:10:03 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:32525 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932375Ab2DSWKA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Apr 2012 18:10:00 -0400
+Date: Fri, 20 Apr 2012 00:09:19 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Cyrill Gorcunov <gorcunov@openvz.org>
+Cc: Konstantin Khlebnikov <khlebnikov@openvz.org>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "keescook@chromium.org" <keescook@chromium.org>,
+        "kosaki.motohiro@jp.fujitsu.com" <kosaki.motohiro@jp.fujitsu.com>,
+        "matthltc@us.ibm.com" <matthltc@us.ibm.com>,
+        "tj@kernel.org" <tj@kernel.org>, Pavel Emelianov <xemul@parallels.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: +
+	c-r-prctl-add-ability-to-set-new-mm_struct-exe_file-update-after-mm-
+	num_exe_file_vmas-removal.patch added to -mm tree
+Message-ID: <20120419220918.GA5474@redhat.com>
+References: <20120419185221.E8ED6A055E@akpm.mtv.corp.google.com> <20120419192005.GA13558@redhat.com> <20120419210033.GO1893@moon> <20120419211216.GA2200@redhat.com> <4F9087D0.60709@openvz.org> <20120419215109.GA4896@redhat.com> <20120419220201.GR1893@moon>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120419220201.GR1893@moon>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Shai Fultheim <shai@scalemp.com>
+On 04/20, Cyrill Gorcunov wrote:
+>
+> Guys, while I more-less agree with Matt about single-shot behaviour
+>
+> [ let me copy my and his email
+>
+>   >> With mm->exe_file this prctl option become a one-shot
+>   >> only, and while at moment our user-space tool can perfectly
+>   >> live with that I thought that there is no strict need to
+>   >> limit the option this way from the very beginning.
+>   >>
+>   > As far as backward compatibility, isn't it better to lift that restriction
+>   > later rather than add it? I think the latter would very likely "break"
+>   > things whereas the former would not.
+>   >
+>   > I also prefer that restriction because it establishes a bound on how
+>   > frequently the symlink can change. Keeping it a one-shot deal makes the
+>   > values that show up in tools like top more reliable for admins.
+> ]
+>
+> I guess maybe it's time to drop one-shot requirement and as result
+> we can drop MMF_EXE_FILE_CHANGED bit completely,
 
-On some architectures (such as vSMP), it is possible to have CPUs with a
-different number of cores sharing the same cache.
+Plus perhaps we can remove this for_each_vma check?
 
-The current implementation implicitly assumes that all CPUs will have
-the same number of cores sharing caches, and as a result, different CPUs
-can end up with the same l2/l3 ids.
+> making overall code
+> simplier?
 
-Fix this by masking out the shared cache bits, instead of shifting the
-APICID. By doing so, it is guaranteed that the generated cache ids are
-always unique.
+Personally I'd certainly prefer this ;)
 
-Signed-off-by: Shai Fultheim <shai@scalemp.com>
-[ido@wizery.com: rebased, simplified, and reworded the commit message]
-Signed-off-by: Ido Yariv <ido@wizery.com>
----
- arch/x86/kernel/cpu/intel_cacheinfo.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/arch/x86/kernel/cpu/intel_cacheinfo.c b/arch/x86/kernel/cpu/intel_cacheinfo.c
-index 73d08ed..caa6cb0 100644
---- a/arch/x86/kernel/cpu/intel_cacheinfo.c
-+++ b/arch/x86/kernel/cpu/intel_cacheinfo.c
-@@ -615,14 +615,14 @@ unsigned int __cpuinit init_intel_cacheinfo(struct cpuinfo_x86 *c)
- 					new_l2 = this_leaf.size/1024;
- 					num_threads_sharing = 1 + this_leaf.eax.split.num_threads_sharing;
- 					index_msb = get_count_order(num_threads_sharing);
--					l2_id = c->apicid >> index_msb;
-+					l2_id = c->apicid & ~((1 << index_msb) - 1);
- 					break;
- 				case 3:
- 					new_l3 = this_leaf.size/1024;
- 					num_threads_sharing = 1 + this_leaf.eax.split.num_threads_sharing;
- 					index_msb = get_count_order(
- 							num_threads_sharing);
--					l3_id = c->apicid >> index_msb;
-+					l3_id = c->apicid & ~((1 << index_msb) - 1);
- 					break;
- 				default:
- 					break;
--- 
-1.7.7.6
+
+But let me repeat to avoid the confusion. I am fine either way,
+I am not going to discuss this again unless I see something which
+looks technically wrong. And the current MMF_EXE_FILE_CHANGED
+doesn't look right even if the problem is minor.
+
+Oleg.
 
