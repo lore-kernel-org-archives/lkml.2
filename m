@@ -1,53 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756770Ab2DSWRy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Apr 2012 18:17:54 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60286 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753167Ab2DSWRx (ORCPT
+	id S1756790Ab2DSWZM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Apr 2012 18:25:12 -0400
+Received: from moutng.kundenserver.de ([212.227.126.187]:59055 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756580Ab2DSWZJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Apr 2012 18:17:53 -0400
-Date: Thu, 19 Apr 2012 15:17:46 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Chris Metcalf <cmetcalf@tilera.com>
-Cc: Pawel Moll <pawel.moll@arm.com>, Ingo Molnar <mingo@elte.hu>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        Stanislaw Gruszka <sgruszka@redhat.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] init: fix bug where environment vars can't be passed
- via boot args
-Message-Id: <20120419151746.8c765ea7.akpm@linux-foundation.org>
-In-Reply-To: <201204061711.q36HBpAh015060@lab-41.internal.tilera.com>
-References: <201204061711.q36HBpAh015060@lab-41.internal.tilera.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Thu, 19 Apr 2012 18:25:09 -0400
+Date: Fri, 20 Apr 2012 00:24:54 +0200 (CEST)
+From: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+X-X-Sender: lyakh@axis700.grange
+To: Chris Ball <cjb@laptop.org>
+cc: Paul Gortmaker <paul.gortmaker@windriver.com>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Magnus Damm <magnus.damm@gmail.com>
+Subject: Re: linux-next: triage for April 18, 2012
+In-Reply-To: <878vhrjs6x.fsf@laptop.org>
+Message-ID: <Pine.LNX.4.64.1204200023500.2110@axis700.grange>
+References: <20120419020136.GB3443@windriver.com> <878vhrjs6x.fsf@laptop.org>
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Provags-ID: V02:K0:yaDS4DASHLZdmMlCKVZuFoZvbakpcewwjVptEAvarBk
+ rfbmLJcnHzG4ek3f9GQy3bQvINOOBYxJhgEeZqqatzLB/ANZHt
+ Ga0oEuzKWa3sksa9Rnq+Y0lTKyNZNlonKZGfJFkWY0J9LMH50m
+ 5UR8NoIqZPWH0zm0gRmpCWQNRonOpGd8HOeSo0H0q/Inc/clxE
+ moVWLpYKTVz1PETMDwyEf9EE/AsqEU6A/m3RXAd1fBH6S5K46L
+ cVpNUqwvpwKkP3+mpOOwcv4bVYP0HxaIRHKvYkiWBpvbpbttiZ
+ NjsYsjV1yhRvoOENfbspF6xSgcOCjeFZm6cXEYO3Z8DiFOKRxP
+ FJoqEmg1YdiVvkKJjx7OCk5e4/qs2/tEGJ2Sa7uq138G39/X6n
+ EF/1LrY5Vv7dQ==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 6 Apr 2012 12:53:50 -0400
-Chris Metcalf <cmetcalf@tilera.com> wrote:
+On Thu, 19 Apr 2012, Chris Ball wrote:
 
-> Commit 026cee0086f had the side-effect of dropping the '=' from
-> the unknown boot arguments that are passed to init as environment
-> variables.  This is because parse_args() puts a NUL in the string
-> where the '=' was when it passes the "param" and "val" pointers
-> to the parsing subfunctions.  Previously, unknown_bootoption() was
-> the last parse_args() subfunction to run, and it carefully put back
-> the '=' character.  Now ignore_unknown_bootoption() is the last
-> one to run, and it wasn't doing the necessary repair, so the
-> envp params ended up with the embedded NUL and were no longer
-> seen as valid environment variables by init.
+> Hi,
+> 
+> On Wed, Apr 18 2012, Paul Gortmaker wrote:
+> > ARM:mackerel_defconfig,ag5evm_defconfig
+> > 	when:	Apr 19 (possibly earlier?)
+> > 	why:	pfc-sh7372.c: undefined reference to `mmc_detect_change'
+> > 	why:	pfc-sh73a0.c: undefined reference to `mmc_detect_change'
+> > 	status:	
+> > 	fix:	
+> > 	ref:	http://kisskb.ellerman.id.au/kisskb/buildresult/6131930/
+> > 	ref:	http://kisskb.ellerman.id.au/kisskb/buildresult/6131908/
+> 
+> Adding Guennadi and Magnus to CC for this error (which is coming from
+> tmio_mmc_cd_wakeup).
 
-This patch has been stuck in your tree for a week or two.  The copy
-there is missing Woody's Tested-by and (I suspect) his Reported-by and
-Pawel's Acked-by.
+...waiting for these patches to make it in:
 
-And because that patch is already in linux-next, I can't (or rather
-don't want to) merge it myself.
+http://article.gmane.org/gmane.linux.ports.sh.devel/14412
+http://article.gmane.org/gmane.linux.ports.sh.devel/14413
 
-It needs to be merged into 3.4.  Please fix up the changelog data and
-send it in?
-
+Thanks
+Guennadi
+---
+Guennadi Liakhovetski, Ph.D.
+Freelance Open-Source Software Developer
+http://www.open-technology.de/
