@@ -1,107 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933573Ab2DSVa4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Apr 2012 17:30:56 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:44451 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933533Ab2DSVPj (ORCPT
+	id S933620Ab2DSVbR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Apr 2012 17:31:17 -0400
+Received: from mail-pz0-f42.google.com ([209.85.210.42]:38471 "EHLO
+	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933529Ab2DSVPi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Apr 2012 17:15:39 -0400
-Message-Id: <20120419210307.228454246@linuxfoundation.org>
+	Thu, 19 Apr 2012 17:15:38 -0400
+Message-Id: <20120419210819.964332956@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Thu, 19 Apr 2012 14:03:51 -0700
+Date: Thu, 19 Apr 2012 14:08:33 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Alan Stern <stern@rowland.harvard.edu>,
-        Ming Lei <tom.leiming@gmail.com>
-Subject: [ 48/75] USB: dont clear urb->dev in scatter-gather library
-In-Reply-To: <20120419210322.GA6478@kroah.com>
+        alan@lxorguk.ukuu.org.uk, Linus Walleij <linus.walleij@linaro.org>,
+        Mian Yousaf Kaukab <mian.yousaf.kaukab@stericsson.com>,
+        Alessandro Rubini <rubini@unipv.it>
+Subject: [ 15/68] drivers/rtc/rtc-pl031.c: enable clock on all ST variants
+In-Reply-To: <20120419210923.GA18589@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.3-stable review patch.  If anyone has any objections, please let me know.
+3.2-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Alan Stern <stern@rowland.harvard.edu>
+From: Linus Walleij <linus.walleij@linaro.org>
 
-commit bcf398537630bf20b4dbe59ba855b69f404c93cf upstream.
+commit 2f3972168353d355854d6381f1f360ce83b723e5 upstream.
 
-This patch (as1517b) fixes an error in the USB scatter-gather library.
-The library code uses urb->dev to determine whether or nor an URB is
-currently active; the completion handler sets urb->dev to NULL.
-However the core unlinking routines need to use urb->dev.  Since
-unlinking always racing with completion, the completion handler must
-not clear urb->dev -- it can lead to invalid memory accesses when a
-transfer has to be cancelled.
+The ST variants of the PL031 all require bit 26 in the control register
+to be set before they work properly.  Discovered this when testing on
+the Nomadik board where it would suprisingly just stand still.
 
-This patch fixes the problem by getting rid of the lines that clear
-urb->dev after urb has been submitted.  As a result we may end up
-trying to unlink an URB that failed in submission or that has already
-completed, so an extra check is added after each unlink to avoid
-printing an error message when this happens.  The checks are updated
-in both sg_complete() and sg_cancel(), and the second is updated to
-match the first (currently it prints out unnecessary warning messages
-if a device is unplugged while a transfer is in progress).
-
-Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
-Reported-and-tested-by: Illia Zaitsev <I.Zaitsev@adbglobal.com>
-CC: Ming Lei <tom.leiming@gmail.com>
+Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
+Cc: Mian Yousaf Kaukab <mian.yousaf.kaukab@stericsson.com>
+Cc: Alessandro Rubini <rubini@unipv.it>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/core/message.c |   11 ++++++-----
- 1 file changed, 6 insertions(+), 5 deletions(-)
+ drivers/rtc/rtc-pl031.c |    3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
---- a/drivers/usb/core/message.c
-+++ b/drivers/usb/core/message.c
-@@ -308,7 +308,8 @@ static void sg_complete(struct urb *urb)
- 				retval = usb_unlink_urb(io->urbs [i]);
- 				if (retval != -EINPROGRESS &&
- 				    retval != -ENODEV &&
--				    retval != -EBUSY)
-+				    retval != -EBUSY &&
-+				    retval != -EIDRM)
- 					dev_err(&io->dev->dev,
- 						"%s, unlink --> %d\n",
- 						__func__, retval);
-@@ -317,7 +318,6 @@ static void sg_complete(struct urb *urb)
- 		}
- 		spin_lock(&io->lock);
- 	}
--	urb->dev = NULL;
+--- a/drivers/rtc/rtc-pl031.c
++++ b/drivers/rtc/rtc-pl031.c
+@@ -339,8 +339,7 @@ static int pl031_probe(struct amba_devic
+ 	dev_dbg(&adev->dev, "revision = 0x%01x\n", ldata->hw_revision);
  
- 	/* on the last completion, signal usb_sg_wait() */
- 	io->bytes += urb->actual_length;
-@@ -524,7 +524,6 @@ void usb_sg_wait(struct usb_sg_request *
- 		case -ENXIO:	/* hc didn't queue this one */
- 		case -EAGAIN:
- 		case -ENOMEM:
--			io->urbs[i]->dev = NULL;
- 			retval = 0;
- 			yield();
- 			break;
-@@ -542,7 +541,6 @@ void usb_sg_wait(struct usb_sg_request *
+ 	/* Enable the clockwatch on ST Variants */
+-	if ((ldata->hw_designer == AMBA_VENDOR_ST) &&
+-	    (ldata->hw_revision > 1))
++	if (ldata->hw_designer == AMBA_VENDOR_ST)
+ 		writel(readl(ldata->base + RTC_CR) | RTC_CR_CWEN,
+ 		       ldata->base + RTC_CR);
  
- 			/* fail any uncompleted urbs */
- 		default:
--			io->urbs[i]->dev = NULL;
- 			io->urbs[i]->status = retval;
- 			dev_dbg(&io->dev->dev, "%s, submit --> %d\n",
- 				__func__, retval);
-@@ -593,7 +591,10 @@ void usb_sg_cancel(struct usb_sg_request
- 			if (!io->urbs [i]->dev)
- 				continue;
- 			retval = usb_unlink_urb(io->urbs [i]);
--			if (retval != -EINPROGRESS && retval != -EBUSY)
-+			if (retval != -EINPROGRESS
-+					&& retval != -ENODEV
-+					&& retval != -EBUSY
-+					&& retval != -EIDRM)
- 				dev_warn(&io->dev->dev, "%s, unlink --> %d\n",
- 					__func__, retval);
- 		}
 
 
