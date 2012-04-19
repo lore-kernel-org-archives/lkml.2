@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933172Ab2DSVMI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Apr 2012 17:12:08 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:44451 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752456Ab2DSVMF (ORCPT
+	id S933226Ab2DSVtT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Apr 2012 17:49:19 -0400
+Received: from mail-pz0-f42.google.com ([209.85.210.42]:44862 "EHLO
+	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756481Ab2DSVMD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Apr 2012 17:12:05 -0400
-Message-Id: <20120419210306.019101976@linuxfoundation.org>
+	Thu, 19 Apr 2012 17:12:03 -0400
+Message-Id: <20120419210303.906875611@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Thu, 19 Apr 2012 14:03:37 -0700
+Date: Thu, 19 Apr 2012 14:03:12 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk,
-        "Stephen M. Cameron" <scameron@beardog.cce.hp.com>,
-        Jens Axboe <axboe@kernel.dk>
-Subject: [ 34/75] cciss: Fix scsi tape io with more than 255 scatter gather elements
+        alan@lxorguk.ukuu.org.uk, Larry Finger <Larry.Finger@lwfinger.net>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [ 09/75] rtlwifi: Add missing DMA buffer unmapping for PCI drivers
 In-Reply-To: <20120419210322.GA6478@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,35 +25,42 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Stephen M. Cameron" <scameron@beardog.cce.hp.com>
+From: Larry Finger <Larry.Finger@lwfinger.net>
 
-commit bc67f63650fad6b3478d9ddfd5406d45a95987c9 upstream.
+commit 673f7786e205c87b5d978c62827b9a66d097bebb upstream.
 
-The total number of scatter gather elements in the CISS command
-used by the scsi tape code was being cast to a u8, which can hold
-at most 255 scatter gather elements.  It should have been cast to
-a u16.  Without this patch the command gets rejected by the controller
-since the total scatter gather count did not add up to the right
-value resulting in an i/o error.
+In https://bugzilla.kernel.org/show_bug.cgi?id=42976, a system with driver
+rtl8192se used as an AP suffers from "Out of SW-IOMMU space" errors. These
+are caused by the DMA buffers used for beacons never being unmapped.
 
-Signed-off-by: Stephen M. Cameron <scameron@beardog.cce.hp.com>
-Signed-off-by: Jens Axboe <axboe@kernel.dk>
+This bug was also reported at
+https://bugs.launchpad.net/ubuntu/+source/linux/+bug/961618
+
+Reported-and-Tested-by: Da Xue <da@lessconfused.com>
+Signed-off-by: Larry Finger <Larry.Finger@lwfinger.net>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/block/cciss_scsi.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/net/wireless/rtlwifi/pci.c |    7 ++++++-
+ 1 file changed, 6 insertions(+), 1 deletion(-)
 
---- a/drivers/block/cciss_scsi.c
-+++ b/drivers/block/cciss_scsi.c
-@@ -1411,7 +1411,7 @@ static void cciss_scatter_gather(ctlr_in
- 	/* track how many SG entries we are using */
- 	if (request_nsgs > h->maxSG)
- 		h->maxSG = request_nsgs;
--	c->Header.SGTotal = (__u8) request_nsgs + chained;
-+	c->Header.SGTotal = (u16) request_nsgs + chained;
- 	if (request_nsgs > h->max_cmd_sgentries)
- 		c->Header.SGList = h->max_cmd_sgentries;
- 	else
+--- a/drivers/net/wireless/rtlwifi/pci.c
++++ b/drivers/net/wireless/rtlwifi/pci.c
+@@ -921,8 +921,13 @@ static void _rtl_pci_prepare_bcn_tasklet
+ 	memset(&tcb_desc, 0, sizeof(struct rtl_tcb_desc));
+ 	ring = &rtlpci->tx_ring[BEACON_QUEUE];
+ 	pskb = __skb_dequeue(&ring->queue);
+-	if (pskb)
++	if (pskb) {
++		struct rtl_tx_desc *entry = &ring->desc[ring->idx];
++		pci_unmap_single(rtlpci->pdev, rtlpriv->cfg->ops->get_desc(
++				 (u8 *) entry, true, HW_DESC_TXBUFF_ADDR),
++				 pskb->len, PCI_DMA_TODEVICE);
+ 		kfree_skb(pskb);
++	}
+ 
+ 	/*NB: the beacon data buffer must be 32-bit aligned. */
+ 	pskb = ieee80211_beacon_get(hw, mac->vif);
 
 
