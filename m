@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756570Ab2DSVMQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Apr 2012 17:12:16 -0400
+	id S933249Ab2DSVM0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Apr 2012 17:12:26 -0400
 Received: from mail-pz0-f42.google.com ([209.85.210.42]:44862 "EHLO
 	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752259Ab2DSVMN (ORCPT
+	with ESMTP id S933235Ab2DSVMX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Apr 2012 17:12:13 -0400
-Message-Id: <20120419210303.569477922@linuxfoundation.org>
+	Thu, 19 Apr 2012 17:12:23 -0400
+Message-Id: <20120419210306.100893952@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Thu, 19 Apr 2012 14:03:08 -0700
+Date: Thu, 19 Apr 2012 14:03:38 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Alex Deucher <alexander.deucher@amd.com>,
-        Jean Delvare <khali@linux-fr.org>, Dave Airlie <airlied@redhat.com>
-Subject: [ 05/75] drm/radeon: only add the mm i2c bus if the hw_i2c module param is set
+        alan@lxorguk.ukuu.org.uk, "David S. Miller" <davem@davemloft.net>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: [ 35/75] perf hists: Catch and handle out-of-date hist entry maps.
 In-Reply-To: <20120419210322.GA6478@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,38 +25,56 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alex Deucher <alexander.deucher@amd.com>
+From: David Miller <davem@davemloft.net>
 
-commit 46783150a6552f9513f08e62cfcc07125d6e502b upstream.
+commit 63fa471dd49e9c9ce029d910d1024330d9b1b145 upstream.
 
-It seems it can corrupt the monitor EDID in certain cases on certain
-boards when running sensors detect.  It's rarely used anyway outside
-of AIW boards.
+When a process exec()'s, all the maps are retired, but we keep the hist
+entries around which hold references to those outdated maps.
 
-http://lists.lm-sensors.org/pipermail/lm-sensors/2012-April/035847.html
-http://lists.freedesktop.org/archives/xorg/2011-January/052239.html
+If the same library gets mapped in for which we have hist entries, a new
+map will be created.  But when we take a perf entry hit within that map,
+we'll find the existing hist entry with the older map.
 
-Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
-Acked-by: Jean Delvare <khali@linux-fr.org>
-Signed-off-by: Dave Airlie <airlied@redhat.com>
+This causes symbol translations to be done incorrectly.  For example,
+the perf entry processing will lookup the correct uptodate map entry and
+use that to calculate the symbol and DSO relative address.  But later
+when we update the histogram we'll translate the address using the
+outdated map file instead leading to conditions such as out-of-range
+offsets in symbol__inc_addr_samples().
+
+Therefore, update the map of the hist_entry dynamically at lookup/
+creation time.
+
+Signed-off-by: David S. Miller <davem@davemloft.net>
+Link: http://lkml.kernel.org/r/20120327.031418.1220315351537060808.davem@davemloft.net
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/radeon/radeon_i2c.c |    4 ++++
- 1 file changed, 4 insertions(+)
+ tools/perf/util/hist.c |   12 ++++++++++++
+ 1 file changed, 12 insertions(+)
 
---- a/drivers/gpu/drm/radeon/radeon_i2c.c
-+++ b/drivers/gpu/drm/radeon/radeon_i2c.c
-@@ -890,6 +890,10 @@ struct radeon_i2c_chan *radeon_i2c_creat
- 	struct radeon_i2c_chan *i2c;
- 	int ret;
- 
-+	/* don't add the mm_i2c bus unless hw_i2c is enabled */
-+	if (rec->mm_i2c && (radeon_hw_i2c == 0))
-+		return NULL;
+--- a/tools/perf/util/hist.c
++++ b/tools/perf/util/hist.c
+@@ -230,6 +230,18 @@ struct hist_entry *__hists__add_entry(st
+ 		if (!cmp) {
+ 			he->period += period;
+ 			++he->nr_events;
 +
- 	i2c = kzalloc(sizeof(struct radeon_i2c_chan), GFP_KERNEL);
- 	if (i2c == NULL)
- 		return NULL;
++			/* If the map of an existing hist_entry has
++			 * become out-of-date due to an exec() or
++			 * similar, update it.  Otherwise we will
++			 * mis-adjust symbol addresses when computing
++			 * the history counter to increment.
++			 */
++			if (he->ms.map != entry->ms.map) {
++				he->ms.map = entry->ms.map;
++				if (he->ms.map)
++					he->ms.map->referenced = true;
++			}
+ 			goto out;
+ 		}
+ 
 
 
