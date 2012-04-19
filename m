@@ -1,85 +1,934 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755835Ab2DSQeJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Apr 2012 12:34:09 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:45848 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753860Ab2DSQeH (ORCPT
+	id S1755709Ab2DSQjH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Apr 2012 12:39:07 -0400
+Received: from mail-pz0-f52.google.com ([209.85.210.52]:40744 "EHLO
+	mail-pz0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752335Ab2DSQjF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Apr 2012 12:34:07 -0400
-Date: Thu, 19 Apr 2012 17:34:02 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Stephen Warren <swarren@wwwdotorg.org>
-Cc: Rhyland Klein <rklein@nvidia.com>, Liam Girdwood <lrg@ti.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>,
+	Thu, 19 Apr 2012 12:39:05 -0400
+From: "Ying-Chun Liu (PaulLiu)" <paul.liu@linaro.org>
+To: linux-arm-kernel@lists.infradead.org
+Cc: linux-kernel@vger.kernel.org, linaro-dev@lists.linaro.org,
+        patches@linaro.org, "Ying-Chun Liu (PaulLiu)" <paul.liu@linaro.org>,
+        Robin Gong <B38343@freescale.com>,
         Samuel Ortiz <sameo@linux.intel.com>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
-Subject: Re: [PATCH 3/4] mfd: tps65910: Add device-tree support
-Message-ID: <20120419163400.GB3084@opensource.wolfsonmicro.com>
-References: <1334710829-22777-1-git-send-email-rklein@nvidia.com>
- <1334710829-22777-4-git-send-email-rklein@nvidia.com>
- <20120418090133.GC3021@opensource.wolfsonmicro.com>
- <1334777758.32315.37.camel@rklein-linux>
- <20120419125041.GH3046@opensource.wolfsonmicro.com>
- <4F9030D5.2050601@wwwdotorg.org>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="gatW/ieO32f1wygP"
-Content-Disposition: inline
-In-Reply-To: <4F9030D5.2050601@wwwdotorg.org>
-X-Cookie: You have no real enemies.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Shawn Guo <shawn.guo@linaro.org>
+Subject: [PATCH 1/2] mfd: Add Freescale's PMIC MC34708 support
+Date: Fri, 20 Apr 2012 00:38:40 +0800
+Message-Id: <1334853521-23792-1-git-send-email-paul.liu@linaro.org>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: "Ying-Chun Liu (PaulLiu)" <paul.liu@linaro.org>
 
---gatW/ieO32f1wygP
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Freescale MC34708 is a PMIC which supports the following features:
+ * 6 multi-mode buck regulators
+ * Boost regulator for USB OTG.
+ * 8 regulators for thermal budget optimization
+ * 10-bit ADC
+ * Real time clock
 
-On Thu, Apr 19, 2012 at 09:35:49AM -0600, Stephen Warren wrote:
+Signed-off-by: Robin Gong <B38343@freescale.com>
+Signed-off-by: Ying-Chun Liu (PaulLiu) <paul.liu@linaro.org>
+Cc: Samuel Ortiz <sameo@linux.intel.com>
+Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: Shawn Guo <shawn.guo@linaro.org>
+---
+ Documentation/devicetree/bindings/mfd/mc34708.txt |   61 ++
+ drivers/mfd/Kconfig                               |   11 +
+ drivers/mfd/Makefile                              |    1 +
+ drivers/mfd/mc34708-core.c                        |  634 +++++++++++++++++++++
+ include/linux/mfd/mc34708.h                       |  134 +++++
+ 5 files changed, 841 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/mfd/mc34708.txt
+ create mode 100644 drivers/mfd/mc34708-core.c
+ create mode 100644 include/linux/mfd/mc34708.h
 
-> That's not right - the idea is that pdata should override device tree so
-> that if there's a platform where the DT is known to contain incorrect
-> data, then some early platform code can add pdata to the device to fix
-> the problem, and that will be used in preference to the DT data.
+diff --git a/Documentation/devicetree/bindings/mfd/mc34708.txt b/Documentation/devicetree/bindings/mfd/mc34708.txt
+new file mode 100644
+index 0000000..2bb5c9e
+--- /dev/null
++++ b/Documentation/devicetree/bindings/mfd/mc34708.txt
+@@ -0,0 +1,61 @@
++* Freescale MC34708 Power Management Integrated Circuit (PMIC)
++
++Required properties:
++- compatible : Must be "fsl,mc34708"
++
++Optional properties:
++- fsl,mc34708-uses-adc   : Indicate the ADC is being used
++- fsl,mc34708-uses-rtc   : Indicate the RTC is being used
++- fsl,mc34708-uses-ts    : Indicate the touchscreen controller is being used
++
++Sub-nodes:
++- regulators : Contain the regulator nodes.  The MC34708 regulators are
++  bound using their names as listed below for enabling.
++
++    mc34708__sw1a    : regulator SW1A
++    mc34708__sw1b    : regulator SW1B
++    mc34708__sw2     : regulator SW2
++    mc34708__sw3     : regulator SW3
++    mc34708__sw4A    : regulator SW4A
++    mc34708__sw4b    : regulator SW4B
++    mc34708__swbst   : regulator SWBST
++    mc34708__vpll    : regulator VPLL
++    mc34708__vrefddr : regulator VREFDDR
++    mc34708__vusb    : regulator VUSB
++    mc34708__vusb2   : regulator VUSB2
++    mc34708__vdac    : regulator VDAC
++    mc34708__vgen1   : regulator VGEN1
++    mc34708__vgen2   : regulator VGEN2
++
++  The bindings details of individual regulator device can be found in:
++  Documentation/devicetree/bindings/regulator/regulator.txt
++
++Examples:
++
++i2c@63fc8000 {
++	#address-cells = <1>;
++	#size-cells = <0>;
++	compatible = "fsl,imx53-i2c", "fsl,imx1-i2c";
++	reg = <0x63fc8000 0x4000>;
++	interrupts = <62>;
++	status = "okay";
++
++	pmic: mc34708@8 {
++		compatible = "fsl,mc34708";
++		reg = <0x08>;
++
++		regulators {
++			mc34708__sw1a {
++				regulator-min-microvolt = <650000>;
++				regulator-max-microvolt = <1437500>;
++				regulator-boot-on;
++				regulator-always-on;
++			};
++
++			mc34708__vusb {
++				regulator-boot-on;
++				regulator-always-on;
++			};
++		};
++	};
++};
+diff --git a/drivers/mfd/Kconfig b/drivers/mfd/Kconfig
+index 29f463c..17b6cc5 100644
+--- a/drivers/mfd/Kconfig
++++ b/drivers/mfd/Kconfig
+@@ -600,6 +600,17 @@ config MFD_MC13XXX
+ 	  additional drivers must be enabled in order to use the
+ 	  functionality of the device.
+ 
++config MFD_MC34708
++	tristate "Support for Freescale's PMIC MC34708"
++	depends on I2C
++	depends on OF
++	select MFD_CORE
++	help
++	  Support for the Freescale's PMIC MC34708
++	  This driver provides common support for accessing the device,
++	  additional drivers must be enabled in order to use the
++	  functionality of the device.
++
+ config ABX500_CORE
+ 	bool "ST-Ericsson ABX500 Mixed Signal Circuit register functions"
+ 	default y if ARCH_U300 || ARCH_U8500
+diff --git a/drivers/mfd/Makefile b/drivers/mfd/Makefile
+index 05fa538..b98d943 100644
+--- a/drivers/mfd/Makefile
++++ b/drivers/mfd/Makefile
+@@ -54,6 +54,7 @@ obj-$(CONFIG_TWL6030_PWM)	+= twl6030-pwm.o
+ obj-$(CONFIG_TWL6040_CORE)	+= twl6040-core.o twl6040-irq.o
+ 
+ obj-$(CONFIG_MFD_MC13XXX)	+= mc13xxx-core.o
++obj-$(CONFIG_MFD_MC34708)       += mc34708-core.o
+ 
+ obj-$(CONFIG_MFD_CORE)		+= mfd-core.o
+ 
+diff --git a/drivers/mfd/mc34708-core.c b/drivers/mfd/mc34708-core.c
+new file mode 100644
+index 0000000..54f469b
+--- /dev/null
++++ b/drivers/mfd/mc34708-core.c
+@@ -0,0 +1,634 @@
++/*
++ * Copyright (C) 2011 Freescale Semiconductor, Inc. All Rights Reserved.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2 of the License, or
++ * (at your option) any later version.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License along
++ * with this program; if not, write to the Free Software Foundation, Inc.,
++ * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
++ */
++
++#include <linux/slab.h>
++#include <linux/module.h>
++#include <linux/platform_device.h>
++#include <linux/mutex.h>
++#include <linux/interrupt.h>
++#include <linux/i2c.h>
++#include <linux/mfd/core.h>
++#include <linux/mfd/mc34708.h>
++#include <linux/delay.h>
++#include <linux/of.h>
++#include <linux/of_device.h>
++
++struct mc34708 {
++	struct i2c_client *i2c_client;
++	struct mutex lock;
++	int irq;
++
++	irq_handler_t irqhandler[MC34708_NUM_IRQ];
++	void *irqdata[MC34708_NUM_IRQ];
++};
++
++/*!
++ * This is the enumeration of versions of PMIC
++ */
++enum mc34708_id {
++	MC_PMIC_ID_MC34708,
++	MC_PMIC_ID_INVALID,
++};
++
++struct mc34708_version_t {
++	/*!
++	 * PMIC version identifier.
++	 */
++	enum mc34708_id id;
++	/*!
++	 * Revision of the PMIC.
++	 */
++	int revision;
++};
++
++#define PMIC_I2C_RETRY_TIMES		10
++
++static const struct i2c_device_id mc34708_device_id[] = {
++	{"mc34708", MC_PMIC_ID_MC34708},
++	{},
++};
++
++static const char * const mc34708_chipname[] = {
++	[MC_PMIC_ID_MC34708] = "mc34708",
++};
++
++void mc34708_lock(struct mc34708 *mc_pmic)
++{
++	if (!mutex_trylock(&mc_pmic->lock)) {
++		dev_dbg(&mc_pmic->i2c_client->dev, "wait for %s from %pf\n",
++			__func__, __builtin_return_address(0));
++
++		mutex_lock(&mc_pmic->lock);
++	}
++	dev_dbg(&mc_pmic->i2c_client->dev, "%s from %pf\n",
++		__func__, __builtin_return_address(0));
++}
++EXPORT_SYMBOL(mc34708_lock);
++
++void mc34708_unlock(struct mc34708 *mc_pmic)
++{
++	dev_dbg(&mc_pmic->i2c_client->dev, "%s from %pf\n",
++		__func__, __builtin_return_address(0));
++	mutex_unlock(&mc_pmic->lock);
++}
++EXPORT_SYMBOL(mc34708_unlock);
++
++static int mc34708_i2c_24bit_read(struct i2c_client *client,
++				  unsigned int offset,
++				  unsigned int *value)
++{
++	unsigned char buf[3];
++	int ret;
++	int i;
++
++	memset(buf, 0, 3);
++	for (i = 0; i < PMIC_I2C_RETRY_TIMES; i++) {
++		ret = i2c_smbus_read_i2c_block_data(client, offset, 3, buf);
++		if (ret == 3)
++			break;
++		usleep_range(1000, 1500);
++	}
++
++	if (ret == 3) {
++		*value = buf[0] << 16 | buf[1] << 8 | buf[2];
++		return ret;
++	} else {
++		dev_err(&client->dev, "24bit read error, ret = %d\n", ret);
++		return -1;	/* return -1 on failure */
++	}
++}
++
++int mc34708_reg_read(struct mc34708 *mc_pmic, unsigned int offset,
++		     u32 *val)
++{
++	BUG_ON(!mutex_is_locked(&mc_pmic->lock));
++
++	if (offset > MC34708_NUMREGS)
++		return -EINVAL;
++
++	if (mc34708_i2c_24bit_read(mc_pmic->i2c_client, offset, val) == -1)
++		return -1;
++	*val &= 0xffffff;
++
++	dev_vdbg(&mc_pmic->i2c_client->dev, "mc_pmic read [%02d] -> 0x%06x\n",
++		 offset, *val);
++
++	return 0;
++}
++EXPORT_SYMBOL(mc34708_reg_read);
++
++static int mc34708_i2c_24bit_write(struct i2c_client *client,
++				   unsigned int offset, unsigned int reg_val)
++{
++	char buf[3];
++	int ret;
++	int i;
++
++	buf[0] = (reg_val >> 16) & 0xff;
++	buf[1] = (reg_val >> 8) & 0xff;
++	buf[2] = (reg_val) & 0xff;
++
++	for (i = 0; i < PMIC_I2C_RETRY_TIMES; i++) {
++		ret = i2c_smbus_write_i2c_block_data(client, offset, 3, buf);
++		if (ret == 0)
++			break;
++		usleep_range(1000, 1500);
++	}
++	if (i == PMIC_I2C_RETRY_TIMES)
++		dev_err(&client->dev, "24bit write error, ret = %d\n", ret);
++
++	return ret;
++}
++
++int mc34708_reg_write(struct mc34708 *mc_pmic, unsigned int offset, u32 val)
++{
++	BUG_ON(!mutex_is_locked(&mc_pmic->lock));
++
++	if (offset > MC34708_NUMREGS)
++		return -EINVAL;
++
++	if (mc34708_i2c_24bit_write(mc_pmic->i2c_client, offset, val))
++		return -1;
++	val &= 0xffffff;
++
++	dev_vdbg(&mc_pmic->i2c_client->dev, "mc_pmic write[%02d] -> 0x%06x\n",
++		 offset, val);
++
++	return 0;
++}
++EXPORT_SYMBOL(mc34708_reg_write);
++
++int mc34708_reg_rmw(struct mc34708 *mc_pmic, unsigned int offset, u32 mask,
++		    u32 val)
++{
++	int ret;
++	u32 valread;
++
++	BUG_ON(val & ~mask);
++
++	ret = mc34708_reg_read(mc_pmic, offset, &valread);
++	if (ret)
++		return ret;
++
++	valread = (valread & ~mask) | val;
++
++	return mc34708_reg_write(mc_pmic, offset, valread);
++}
++EXPORT_SYMBOL(mc34708_reg_rmw);
++
++int mc34708_irq_mask(struct mc34708 *mc_pmic, int irq)
++{
++	int ret;
++	unsigned int offmask =
++	    irq < 24 ? MC34708_REG_INT_MASK0 : MC34708_REG_INT_MASK1;
++	u32 irqbit = 1 << (irq < 24 ? irq : irq - 24);
++	u32 mask;
++
++	if (irq < 0 || irq >= MC34708_NUM_IRQ)
++		return -EINVAL;
++
++	ret = mc34708_reg_read(mc_pmic, offmask, &mask);
++	if (ret)
++		return ret;
++
++	if (mask & irqbit)
++		/* already masked */
++		return 0;
++
++	return mc34708_reg_write(mc_pmic, offmask, mask | irqbit);
++}
++EXPORT_SYMBOL(mc34708_irq_mask);
++
++int mc34708_irq_unmask(struct mc34708 *mc_pmic, int irq)
++{
++	int ret;
++	unsigned int offmask =
++	    irq < 24 ? MC34708_REG_INT_MASK0 : MC34708_REG_INT_MASK1;
++	u32 irqbit = 1 << (irq < 24 ? irq : irq - 24);
++	u32 mask;
++
++	if (irq < 0 || irq >= MC34708_NUM_IRQ)
++		return -EINVAL;
++
++	ret = mc34708_reg_read(mc_pmic, offmask, &mask);
++	if (ret)
++		return ret;
++
++	if (!(mask & irqbit))
++		/* already unmasked */
++		return 0;
++
++	return mc34708_reg_write(mc_pmic, offmask, mask & ~irqbit);
++}
++EXPORT_SYMBOL(mc34708_irq_unmask);
++
++int mc34708_irq_status(struct mc34708 *mc_pmic, int irq, int *enabled,
++		       int *pending)
++{
++	int ret;
++	unsigned int offmask =
++	    irq < 24 ? MC34708_REG_INT_MASK0 : MC34708_REG_INT_MASK1;
++	unsigned int offstat =
++	    irq < 24 ? MC34708_REG_INT_STATUS0 : MC34708_REG_INT_STATUS1;
++	u32 irqbit = 1 << (irq < 24 ? irq : irq - 24);
++
++	if (irq < 0 || irq >= MC34708_NUM_IRQ)
++		return -EINVAL;
++
++	if (enabled) {
++		u32 mask;
++
++		ret = mc34708_reg_read(mc_pmic, offmask, &mask);
++		if (ret)
++			return ret;
++
++		*enabled = mask & irqbit;
++	}
++
++	if (pending) {
++		u32 stat;
++
++		ret = mc34708_reg_read(mc_pmic, offstat, &stat);
++		if (ret)
++			return ret;
++
++		*pending = stat & irqbit;
++	}
++
++	return 0;
++}
++EXPORT_SYMBOL(mc34708_irq_status);
++
++int mc34708_irq_ack(struct mc34708 *mc_pmic, int irq)
++{
++	unsigned int offstat =
++	    irq < 24 ? MC34708_REG_INT_STATUS0 : MC34708_REG_INT_STATUS1;
++	unsigned int val = 1 << (irq < 24 ? irq : irq - 24);
++
++	BUG_ON(irq < 0 || irq >= MC34708_NUM_IRQ);
++
++	return mc34708_reg_write(mc_pmic, offstat, val);
++}
++EXPORT_SYMBOL(mc34708_irq_ack);
++
++int mc34708_irq_request_nounmask(struct mc34708 *mc_pmic, int irq,
++				 irq_handler_t handler, const char *name,
++				 void *dev)
++{
++	BUG_ON(!mutex_is_locked(&mc_pmic->lock));
++	BUG_ON(!handler);
++
++	if (irq < 0 || irq >= MC34708_NUM_IRQ)
++		return -EINVAL;
++
++	if (mc_pmic->irqhandler[irq])
++		return -EBUSY;
++
++	mc_pmic->irqhandler[irq] = handler;
++	mc_pmic->irqdata[irq] = dev;
++
++	return 0;
++}
++EXPORT_SYMBOL(mc34708_irq_request_nounmask);
++
++int mc34708_irq_request(struct mc34708 *mc_pmic, int irq,
++			irq_handler_t handler, const char *name, void *dev)
++{
++	int ret;
++
++	ret = mc34708_irq_request_nounmask(mc_pmic, irq, handler, name, dev);
++	if (ret)
++		return ret;
++
++	ret = mc34708_irq_unmask(mc_pmic, irq);
++	if (ret) {
++		mc_pmic->irqhandler[irq] = NULL;
++		mc_pmic->irqdata[irq] = NULL;
++		return ret;
++	}
++
++	return 0;
++}
++EXPORT_SYMBOL(mc34708_irq_request);
++
++int mc34708_irq_free(struct mc34708 *mc_pmic, int irq, void *dev)
++{
++	int ret;
++	BUG_ON(!mutex_is_locked(&mc_pmic->lock));
++
++	if (irq < 0 || irq >= MC34708_NUM_IRQ || !mc_pmic->irqhandler[irq] ||
++	    mc_pmic->irqdata[irq] != dev)
++		return -EINVAL;
++
++	ret = mc34708_irq_mask(mc_pmic, irq);
++	if (ret)
++		return ret;
++
++	mc_pmic->irqhandler[irq] = NULL;
++	mc_pmic->irqdata[irq] = NULL;
++
++	return 0;
++}
++EXPORT_SYMBOL(mc34708_irq_free);
++
++static inline irqreturn_t mc34708_irqhandler(struct mc34708 *mc_pmic, int irq)
++{
++	return mc_pmic->irqhandler[irq] (irq, mc_pmic->irqdata[irq]);
++}
++
++/*
++ * returns: number of handled irqs or negative error
++ * locking: holds mc_pmic->lock
++ */
++static int mc34708_irq_handle(struct mc34708 *mc_pmic,
++			      unsigned int offstat, unsigned int offmask,
++			      int baseirq)
++{
++	u32 stat, mask;
++	int ret = mc34708_reg_read(mc_pmic, offstat, &stat);
++	int num_handled = 0;
++
++	if (ret)
++		return ret;
++
++	ret = mc34708_reg_read(mc_pmic, offmask, &mask);
++	if (ret)
++		return ret;
++
++	while (stat & ~mask) {
++		int irq = __ffs(stat & ~mask);
++
++		stat &= ~(1 << irq);
++
++		if (likely(mc_pmic->irqhandler[baseirq + irq])) {
++			irqreturn_t handled;
++
++			handled = mc34708_irqhandler(mc_pmic, baseirq + irq);
++			if (handled == IRQ_HANDLED)
++				num_handled++;
++		} else {
++			dev_err(&mc_pmic->i2c_client->dev,
++				"BUG: irq %u but no handler\n", baseirq + irq);
++
++			mask |= 1 << irq;
++
++			ret = mc34708_reg_write(mc_pmic, offmask, mask);
++		}
++	}
++
++	return num_handled;
++}
++
++static irqreturn_t mc34708_irq_thread(int irq, void *data)
++{
++	struct mc34708 *mc_pmic = data;
++	irqreturn_t ret;
++	int handled = 0;
++
++	mc34708_lock(mc_pmic);
++
++	ret = mc34708_irq_handle(mc_pmic, MC34708_REG_INT_STATUS0,
++				 MC34708_REG_INT_MASK0, 0);
++	if (ret > 0)
++		handled = 1;
++
++	ret = mc34708_irq_handle(mc_pmic, MC34708_REG_INT_STATUS1,
++				 MC34708_REG_INT_MASK1, 24);
++	if (ret > 0)
++		handled = 1;
++
++	mc34708_unlock(mc_pmic);
++
++	return IRQ_RETVAL(handled);
++}
++
++#define maskval(reg, mask)	(((reg) & (mask)) >> __ffs(mask))
++static int mc34708_identify(struct mc34708 *mc_pmic,
++			    struct mc34708_version_t *ver)
++{
++	int rev_id = 0;
++	int rev1 = 0;
++	int rev2 = 0;
++	int finid = 0;
++	int icid = 0;
++	int ret;
++	ret = mc34708_reg_read(mc_pmic, MC34708_REG_IDENTIFICATION, &rev_id);
++	if (ret) {
++		dev_dbg(&mc_pmic->i2c_client->dev, "read ID error!%x\n", ret);
++		return ret;
++	}
++	rev1 = (rev_id & 0x018) >> 3;
++	rev2 = (rev_id & 0x007);
++	icid = (rev_id & 0x01C0) >> 6;
++	finid = (rev_id & 0x01E00) >> 9;
++	ver->id = MC_PMIC_ID_MC34708;
++
++	ver->revision = ((rev1 * 10) + rev2);
++	dev_dbg(&mc_pmic->i2c_client->dev,
++		"mc_pmic Rev %d.%d FinVer %x detected\n", rev1, rev2, finid);
++
++	return 0;
++}
++
++static const struct i2c_device_id *i2c_match_id(const struct i2c_device_id *id,
++						const struct i2c_client *client)
++{
++	while (id->name[0]) {
++		if (strcmp(client->name, id->name) == 0)
++			return id;
++		id++;
++	}
++
++	return NULL;
++}
++
++static const struct i2c_device_id *i2c_get_device_id(const struct i2c_client
++						     *idev)
++{
++	const struct i2c_driver *idrv = to_i2c_driver(idev->dev.driver);
++
++	return i2c_match_id(idrv->id_table, idev);
++}
++
++static const char *mc34708_get_chipname(struct mc34708 *mc_pmic)
++{
++	const struct i2c_device_id *devid =
++	    i2c_get_device_id(mc_pmic->i2c_client);
++
++	if (!devid)
++		return NULL;
++
++	return mc34708_chipname[devid->driver_data];
++}
++
++int mc34708_get_flags(struct mc34708 *mc_pmic)
++{
++	struct mc34708_platform_data *pdata =
++	    dev_get_platdata(&mc_pmic->i2c_client->dev);
++
++	return pdata->flags;
++}
++EXPORT_SYMBOL(mc34708_get_flags);
++
++static int mc34708_add_subdevice_pdata(struct mc34708 *mc_pmic,
++				       const char *format, void *pdata,
++				       size_t pdata_size)
++{
++	char buf[30];
++	const char *name = mc34708_get_chipname(mc_pmic);
++
++	struct mfd_cell cell = {
++		.platform_data = pdata,
++		.pdata_size = pdata_size,
++	};
++
++	/* there is no asnprintf in the kernel :-( */
++	if (snprintf(buf, sizeof(buf), format, name) > sizeof(buf))
++		return -E2BIG;
++
++	cell.name = kmemdup(buf, strlen(buf) + 1, GFP_KERNEL);
++	if (!cell.name)
++		return -ENOMEM;
++
++	return mfd_add_devices(&mc_pmic->i2c_client->dev, -1, &cell, 1, NULL,
++			       0);
++}
++
++static int mc34708_add_subdevice(struct mc34708 *mc_pmic, const char *format)
++{
++	return mc34708_add_subdevice_pdata(mc_pmic, format, NULL, 0);
++}
++
++static int mc34708_probe(struct i2c_client *client,
++			 const struct i2c_device_id *id)
++{
++	struct mc34708 *mc_pmic;
++	struct mc34708_version_t version;
++	struct mc34708_platform_data *pdata = client->dev.platform_data;
++	struct device_node *np = client->dev.of_node;
++	int ret;
++
++	mc_pmic = kzalloc(sizeof(*mc_pmic), GFP_KERNEL);
++	if (!mc_pmic)
++		return -ENOMEM;
++	i2c_set_clientdata(client, mc_pmic);
++	mc_pmic->i2c_client = client;
++
++	mutex_init(&mc_pmic->lock);
++	mc34708_lock(mc_pmic);
++	mc34708_identify(mc_pmic, &version);
++	/* mask all irqs */
++	ret = mc34708_reg_write(mc_pmic, MC34708_REG_INT_MASK0, 0x00ffffff);
++	if (ret)
++		goto err_mask;
++
++	ret = mc34708_reg_write(mc_pmic, MC34708_REG_INT_MASK1, 0x00ffffff);
++	if (ret)
++		goto err_mask;
++
++	ret = request_threaded_irq(client->irq, NULL, mc34708_irq_thread,
++				   IRQF_ONESHOT | IRQF_TRIGGER_HIGH, "mc_pmic",
++				   mc_pmic);
++
++	if (ret) {
++ err_mask:
++		mc34708_unlock(mc_pmic);
++		dev_set_drvdata(&client->dev, NULL);
++		kfree(mc_pmic);
++		return ret;
++	}
++
++	mc34708_unlock(mc_pmic);
++
++	if (pdata && pdata->flags & MC34708_USE_ADC)
++		mc34708_add_subdevice(mc_pmic, "%s-adc");
++	else if (of_get_property(np, "fsl,mc34708-uses-adc", NULL))
++		mc34708_add_subdevice(mc_pmic, "%s-adc");
++
++
++	if (pdata && pdata->flags & MC34708_USE_REGULATOR) {
++		struct mc34708_regulator_platform_data regulator_pdata = {
++			.num_regulators = pdata->num_regulators,
++			.regulators = pdata->regulators,
++		};
++
++		mc34708_add_subdevice_pdata(mc_pmic, "%s-regulator",
++					    &regulator_pdata,
++					    sizeof(regulator_pdata));
++	} else if (of_find_node_by_name(np, "regulators")) {
++		mc34708_add_subdevice(mc_pmic, "%s-regulator");
++	}
++
++	if (pdata && pdata->flags & MC34708_USE_RTC)
++		mc34708_add_subdevice(mc_pmic, "%s-rtc");
++	else if (of_get_property(np, "fsl,mc34708-uses-rtc", NULL))
++		mc34708_add_subdevice(mc_pmic, "%s-rtc");
++
++	if (pdata && pdata->flags & MC34708_USE_TOUCHSCREEN)
++		mc34708_add_subdevice(mc_pmic, "%s-ts");
++	else if (of_get_property(np, "fsl,mc34708-uses-ts", NULL))
++		mc34708_add_subdevice(mc_pmic, "%s-ts");
++
++	return 0;
++}
++
++static int __devexit mc34708_remove(struct i2c_client *client)
++{
++	struct mc34708 *mc_pmic = dev_get_drvdata(&client->dev);
++
++	free_irq(mc_pmic->i2c_client->irq, mc_pmic);
++
++	mfd_remove_devices(&client->dev);
++
++	kfree(mc_pmic);
++
++	return 0;
++}
++
++static const struct of_device_id mc34708_dt_ids[] = {
++	{ .compatible = "fsl,mc34708" },
++	{ /* sentinel */ }
++};
++
++static struct i2c_driver mc34708_driver = {
++	.id_table = mc34708_device_id,
++	.driver = {
++		   .name = "mc34708",
++		   .owner = THIS_MODULE,
++		   .of_match_table = mc34708_dt_ids,
++		   },
++	.probe = mc34708_probe,
++	.remove = __devexit_p(mc34708_remove),
++};
++
++static int __init mc34708_init(void)
++{
++	return i2c_add_driver(&mc34708_driver);
++}
++subsys_initcall(mc34708_init);
++
++static void __exit mc34708_exit(void)
++{
++	i2c_del_driver(&mc34708_driver);
++}
++module_exit(mc34708_exit);
++
++MODULE_DESCRIPTION("Core driver for Freescale MC34708 PMIC");
++MODULE_AUTHOR("Robin Gong <B38343@freescale.com>, "
++	      "Ying-Chun Liu (PaulLiu) <paul.liu@linaro.org>");
++MODULE_LICENSE("GPL v2");
+diff --git a/include/linux/mfd/mc34708.h b/include/linux/mfd/mc34708.h
+new file mode 100644
+index 0000000..505813d
+--- /dev/null
++++ b/include/linux/mfd/mc34708.h
+@@ -0,0 +1,134 @@
++/* For mc34708's pmic driver
++ * Copyright (C) 2004-2011 Freescale Semiconductor, Inc.
++ *
++ * based on:
++ * Copyright 2009-2010 Pengutronix, Uwe Kleine-Koenig
++ * <u.kleine-koenig@pengutronix.de>
++ *
++ * This program is free software; you can redistribute it and/or modify it under
++ * the terms of the GNU General Public License version 2 as published by the
++ * Free Software Foundation.
++ */
++#ifndef __LINUX_MFD_MC_34708_H
++#define __LINUX_MFD_MC_34708_H
++
++#include <linux/interrupt.h>
++#include <linux/regulator/driver.h>
++
++struct mc34708;
++
++void mc34708_lock(struct mc34708 *mc_pmic);
++void mc34708_unlock(struct mc34708 *mc_pmic);
++
++int mc34708_reg_read(struct mc34708 *mc_pmic, unsigned int offset, u32 *val);
++int mc34708_reg_write(struct mc34708 *mc_pmic, unsigned int offset, u32 val);
++int mc34708_reg_rmw(struct mc34708 *mc_pmic, unsigned int offset,
++		    u32 mask, u32 val);
++
++int mc34708_get_flags(struct mc34708 *mc_pmic);
++
++int mc34708_irq_request(struct mc34708 *mc_pmic, int irq,
++			irq_handler_t handler, const char *name, void *dev);
++int mc34708_irq_request_nounmask(struct mc34708 *mc_pmic, int irq,
++				 irq_handler_t handler, const char *name,
++				 void *dev);
++int mc34708_irq_free(struct mc34708 *mc_pmic, int irq, void *dev);
++int mc34708_irq_mask(struct mc34708 *mc_pmic, int irq);
++int mc34708_irq_unmask(struct mc34708 *mc_pmic, int irq);
++int mc34708_irq_status(struct mc34708 *mc_pmic, int irq,
++		       int *enabled, int *pending);
++int mc34708_irq_ack(struct mc34708 *mc_pmic, int irq);
++
++int mc34708_get_flags(struct mc34708 *mc_pmic);
++
++#define MC34708_SW1A		0
++#define MC34708_SW1B		1
++#define MC34708_SW2		2
++#define MC34708_SW3		3
++#define MC34708_SW4A		4
++#define MC34708_SW4B		5
++#define MC34708_SW5		6
++#define MC34708_SWBST		7
++#define MC34708_VPLL		8
++#define MC34708_VREFDDR		9
++#define MC34708_VUSB		10
++#define MC34708_VUSB2		11
++#define MC34708_VDAC		12
++#define MC34708_VGEN1		13
++#define MC34708_VGEN2		14
++#define MC34708_REGU_NUM	15
++
++#define MC34708_REG_INT_STATUS0		0
++#define MC34708_REG_INT_MASK0		1
++#define MC34708_REG_INT_STATUS1		3
++#define MC34708_REG_INT_MASK1		4
++#define MC34708_REG_IDENTIFICATION	7
++
++#define MC34708_IRQ_ADCDONE	0
++#define MC34708_IRQ_TSDONE	1
++#define MC34708_IRQ_TSPENDET	2
++#define MC34708_IRQ_USBDET	3
++#define MC34708_IRQ_AUXDET	4
++#define MC34708_IRQ_USBOVP	5
++#define MC34708_IRQ_AUXOVP	6
++#define MC34708_IRQ_CHRTIMEEXP	7
++#define MC34708_IRQ_BATTOTP	8
++#define MC34708_IRQ_BATTOVP	9
++#define MC34708_IRQ_CHRCMPL	10
++#define MC34708_IRQ_WKVBUSDET	11
++#define MC34708_IRQ_WKAUXDET	12
++#define MC34708_IRQ_LOWBATT	13
++#define MC34708_IRQ_VBUSREGMI	14
++#define MC34708_IRQ_ATTACH	15
++#define MC34708_IRQ_DETACH	16
++#define MC34708_IRQ_KP		17
++#define MC34708_IRQ_LKP		18
++#define MC34708_IRQ_LKR		19
++#define MC34708_IRQ_UKNOW_ATTA	20
++#define MC34708_IRQ_ADC_CHANGE	21
++#define MC34708_IRQ_STUCK_KEY	22
++#define MC34708_IRQ_STUCK_KEY_RCV	23
++#define MC34708_IRQ_1HZ		24
++#define MC34708_IRQ_TODA	25
++#define MC34708_IRQ_UNUSED1	26
++#define MC34708_IRQ_PWRON1	27
++#define MC34708_IRQ_PWRON2	28
++#define MC34708_IRQ_WDIRESET	29
++#define MC34708_IRQ_SYSRST	30
++#define MC34708_IRQ_RTCRST	31
++#define MC34708_IRQ_PCI		32
++#define MC34708_IRQ_WARM	33
++#define MC34708_IRQ_MEMHLD	34
++#define MC34708_IRQ_UNUSED2	35
++#define MC34708_IRQ_THWARNL	36
++#define MC34708_IRQ_THWARNH	37
++#define MC34708_IRQ_CLK		38
++#define MC34708_IRQ_UNUSED3	39
++#define MC34708_IRQ_SCP		40
++#define MC34708_NUMREGS		0x3f
++#define MC34708_NUM_IRQ		46
++
++struct mc34708_regulator_init_data {
++	int id;
++	struct regulator_init_data *init_data;
++};
++
++struct mc34708_regulator_platform_data {
++	int num_regulators;
++	struct mc34708_regulator_init_data *regulators;
++};
++
++struct mc34708_platform_data {
++#define MC34708_USE_TOUCHSCREEN (1 << 0)
++#define MC34708_USE_CODEC	(1 << 1)
++#define MC34708_USE_ADC		(1 << 2)
++#define MC34708_USE_RTC		(1 << 3)
++#define MC34708_USE_REGULATOR	(1 << 4)
++#define MC34708_USE_LED		(1 << 5)
++	unsigned int flags;
++
++	int num_regulators;
++	struct mc34708_regulator_init_data *regulators;
++};
++
++#endif				/* ifndef __LINUX_MFD_MC_PMIC_H */
+-- 
+1.7.9.5
 
-> At least, that's the last I heard Grant say on the subject, and that's
-> how I've been writing all the Tegra-related drivers, and I've seen
-> others do the same for other platforms.
-
-Ugh, this is just leading to horrible code here (and why on earth aren't
-we just implementing fixups for DT data?).  Though that said I don't
-understand why the code here isn't just checking that there's platform
-data rather than setting a flag that says there's platform data, the
-driver already needs to use the presence of platform data as a check
-anyway.
-
---gatW/ieO32f1wygP
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJPkD5xAAoJEBus8iNuMP3dcskP/016oe0W0ouqqMi2OIsR1NEp
-RELcbSsTHgnhTu3DNl9dM/gl5kGStII69D5H4cdDXhNpsnCidVpGQ8pIy4D5/0jz
-UkPXYCASSRL5ki+sjxxGw55C1MxkCXxp1DyhN6m812A7Ms7cQEQBG93wYeRz8KrP
-jX6vSsUKMYIf0xx0Zl4RYFbw/mSfzdc2gL4Zl/mQYgl63lhACmKufh9wTwy5p4Gk
-apDk9ttqd58/vMO8jdTCSJnS1dRwrehzlfQAKo2Nq0GG3T8Zx9B7QfEca6kSM/cq
-o995VNut6iOaTd6gbvB8hqavICRYBd6xIgxKJcrM4GMJhFbT4VNwye6mdnNZLe1m
-7gCcv/nG/GVSq+1rRxl3aumFLfN0feoWyQu5e6kLpNMIM5sl/XJwe2R45LCF3qB0
-O55CFSnRlSETGPU/qGVpWc/6Yq82/Oe4H1+a1weJMHE9Aj9ojrJExviQuBf7V6aI
-JxDeyBG8/Ynveffo+utOtZ7JArTD/ra+JzUmyylzXMuXuPenhU/5saSuIBd4S8N/
-M+y+yY7ZyxYVh6H4WwohkZqbnvspXHeCMTPVQbtmpvYmK6exZDnJMHgMJuTBRJd9
-pF3gPKuaExc9SF8vVvIpZAhDdvJ9QEIprbeEUtLTghXx8HMw8JMDK4xUxv2qHkc1
-Wte5X+6fCcjqKhYRCaWD
-=ukjw
------END PGP SIGNATURE-----
-
---gatW/ieO32f1wygP--
