@@ -1,66 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965062Ab2DSVPS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Apr 2012 17:15:18 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:36240 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933501Ab2DSVPF (ORCPT
+	id S933507Ab2DSVcl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Apr 2012 17:32:41 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:57246 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756525Ab2DSVcb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Apr 2012 17:15:05 -0400
-Message-Id: <20120419210819.285518196@linuxfoundation.org>
-User-Agent: quilt/0.60-19.1
-Date: Thu, 19 Apr 2012 14:08:25 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Larry Finger <Larry.Finger@lwfinger.net>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [ 07/68] rtlwifi: Add missing DMA buffer unmapping for PCI drivers
-In-Reply-To: <20120419210923.GA18589@kroah.com>
+	Thu, 19 Apr 2012 17:32:31 -0400
+Date: Thu, 19 Apr 2012 22:32:26 +0100
+From: Luis Henriques <luis.henriques@canonical.com>
+To: Jarod Wilson <jarod@redhat.com>
+Cc: Mauro Carvalho Chehab <mchehab@infradead.org>, linux-media@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/1] [media] ite-cir: postpone ISR registration
+Message-ID: <20120419213226.GC22948@zeus>
+References: <1334782447-8742-1-git-send-email-luis.henriques@canonical.com>
+ <20120419204444.GB5165@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120419204444.GB5165@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.2-stable review patch.  If anyone has any objections, please let me know.
+On Thu, Apr 19, 2012 at 04:44:44PM -0400, Jarod Wilson wrote:
+> On Wed, Apr 18, 2012 at 09:54:07PM +0100, Luis Henriques wrote:
+> > An early registration of an ISR was causing a crash to several users (for
+> > example here: http://bugs.launchpad.net/bugs/972723  The reason was that
+> > IRQs were being triggered before the driver initialisation was completed.
+> > 
+> > This patch fixes this by moving the invocation to request_irq() to a later
+> > stage on the driver probe function.
+> 
+> Ugh. Looks like we actually have a similar problem with multiple lpc super
+> i/o based CIR drivers. I'd probably move both the irq and io region
+> requests in ite-cir, fintek-cir, nuvoton-cir, ene_ir and winbond-cir. If
+> I'm thinking clearly, I've actually seen a very similar report for one of
+> the other CIR drivers recently. Good catch. But yeah, lets do the same for
+> all the drivers, and move request_region as well.
 
-------------------
+Yeah, I've realised the other drivers had the same issue.  ite-cir was
+just for one that bit us first.
 
-From: Larry Finger <Larry.Finger@lwfinger.net>
+Anyway, I'll be sending in a minute another patch with your comments.
 
-commit 673f7786e205c87b5d978c62827b9a66d097bebb upstream.
-
-In https://bugzilla.kernel.org/show_bug.cgi?id=42976, a system with driver
-rtl8192se used as an AP suffers from "Out of SW-IOMMU space" errors. These
-are caused by the DMA buffers used for beacons never being unmapped.
-
-This bug was also reported at
-https://bugs.launchpad.net/ubuntu/+source/linux/+bug/961618
-
-Reported-and-Tested-by: Da Xue <da@lessconfused.com>
-Signed-off-by: Larry Finger <Larry.Finger@lwfinger.net>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- drivers/net/wireless/rtlwifi/pci.c |    7 ++++++-
- 1 file changed, 6 insertions(+), 1 deletion(-)
-
---- a/drivers/net/wireless/rtlwifi/pci.c
-+++ b/drivers/net/wireless/rtlwifi/pci.c
-@@ -926,8 +926,13 @@ static void _rtl_pci_prepare_bcn_tasklet
- 	memset(&tcb_desc, 0, sizeof(struct rtl_tcb_desc));
- 	ring = &rtlpci->tx_ring[BEACON_QUEUE];
- 	pskb = __skb_dequeue(&ring->queue);
--	if (pskb)
-+	if (pskb) {
-+		struct rtl_tx_desc *entry = &ring->desc[ring->idx];
-+		pci_unmap_single(rtlpci->pdev, rtlpriv->cfg->ops->get_desc(
-+				 (u8 *) entry, true, HW_DESC_TXBUFF_ADDR),
-+				 pskb->len, PCI_DMA_TODEVICE);
- 		kfree_skb(pskb);
-+	}
- 
- 	/*NB: the beacon data buffer must be 32-bit aligned. */
- 	pskb = ieee80211_beacon_get(hw, mac->vif);
-
-
+Cheers,
+--
+Luis
