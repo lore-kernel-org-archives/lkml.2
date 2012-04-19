@@ -1,82 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755007Ab2DSMup (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Apr 2012 08:50:45 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:42086 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753826Ab2DSMun (ORCPT
+	id S1755169Ab2DSMvG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Apr 2012 08:51:06 -0400
+Received: from www.linutronix.de ([62.245.132.108]:39057 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754755Ab2DSMvD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Apr 2012 08:50:43 -0400
-Date: Thu, 19 Apr 2012 13:50:41 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Rhyland Klein <rklein@nvidia.com>
-Cc: Liam Girdwood <lrg@ti.com>, Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
-Subject: Re: [PATCH 3/4] mfd: tps65910: Add device-tree support
-Message-ID: <20120419125041.GH3046@opensource.wolfsonmicro.com>
-References: <1334710829-22777-1-git-send-email-rklein@nvidia.com>
- <1334710829-22777-4-git-send-email-rklein@nvidia.com>
- <20120418090133.GC3021@opensource.wolfsonmicro.com>
- <1334777758.32315.37.camel@rklein-linux>
+	Thu, 19 Apr 2012 08:51:03 -0400
+Date: Thu, 19 Apr 2012 14:50:52 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: John Stultz <john.stultz@linaro.org>
+cc: Prarit Bhargava <prarit@redhat.com>, linux-kernel@vger.kernel.org,
+        Salman Qazi <sqazi@google.com>, stable@kernel.org
+Subject: Re: [PATCH] clocksource, prevent overflow in clocksource_cyc2ns
+In-Reply-To: <4F8F59E2.4080301@linaro.org>
+Message-ID: <alpine.LFD.2.02.1204191437560.2542@ionos>
+References: <1333552260-1170-1-git-send-email-prarit@redhat.com> <4F7C8C3E.1020203@us.ibm.com> <4F7C9402.3090602@redhat.com> <4F7CF094.5020201@us.ibm.com> <4F7D8FA1.1010107@redhat.com> <4F8F4C31.7010209@linaro.org> <4F8F555F.7040404@redhat.com>
+ <4F8F59E2.4080301@linaro.org>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="gKijDXBCEH69PxaN"
-Content-Disposition: inline
-In-Reply-To: <1334777758.32315.37.camel@rklein-linux>
-X-Cookie: You are always busy.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, 18 Apr 2012, John Stultz wrote:
+> On 04/18/2012 04:59 PM, Prarit Bhargava wrote:
+> > 
+> > Hey John,
+> > 
+> > Thanks for continuing to work on this.  Coincidentally that exact patch was
+> > my
+> > first attempt at resolving the problem as well.  The problem is that even
+> > after
+> > touching the clocksource watchdog and restoring irqs the printk buffer can
+> > take
+> > a LONG time to flush -- and that still will cause an overflow comparison.
+> > So
+> > fixing it with just a touch_clocksource_watchdog() isn't the right thing to
+> > do
+> > IMO.  Maybe a combination of the printk() patch you suggested earlier and
+> > the
+> > touch_clocksource_watchdog() is the right way to go but I'll leave that up
+> > to
+> > tglx and yourself to decide on a correct fix.
+> :( That's a bummer. Something similar may be useful on the printk side as
+> well.
 
---gKijDXBCEH69PxaN
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+No. The show_state() part prints into the buffer. But it's not
+guaranteed that the buffer is flushed right away. It could be flushed
+later as well in a different context. And of course the flush code
+runs with interrupts disabled and dumping out a gazillion of lines
+over serial will cause the same hickup. Just planting random
+touch_watchdog() calls into the code is not the right approach,
+really.
 
-On Wed, Apr 18, 2012 at 12:35:58PM -0700, Rhyland Klein wrote:
-> On Wed, 2012-04-18 at 02:01 -0700, Mark Brown wrote:
+We should think about the reasons why we have interrupts disabled for
+so much time. Is that really, really necessary ?
 
-> > This is a really odd idiom - normally the pattern for device tree
-> > support is to just go and try to use the device tree data if it's there
-> > and there's no need for any flag to say if it should be used.
+Thanks,
 
-> I agree its odd. My concern was that the idiom is that is pdata assigned
-> from board files should override dt data. At this point, we don't know
-> where the tps65910->board_data is coming from, dt or board files.
-> Arbitrarily using dt breaks that idiom. We could do a check like this if
-> you prefer:
-
-No, just prefer the DT - what you're proposing is exactly the opposite
-idiom to what all the other DT drivers do so we'd need to go round
-changing the policy globally at which point we probably want to start
-having helpers for this.
-
---gKijDXBCEH69PxaN
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJPkAobAAoJEBus8iNuMP3d0G8P/1ZuDSlYEuJ/Q6btReoR12ax
-Gzqe8XbLjiifIRKNHdO1Ozo3tw6wcvijajygtop4RXyj11Syp6hW4n/l5/thewDl
-Pnnm14qyr6HgNHNNcE2XNbB47ze/YeQXa+4E5q7UkjdnOQOWzlW90GxA3OXz+Sxx
-hFUJxiplGFV8RvXTdr1qU61a1bqD31dTTG+S6foSCSypAmAoFDEvphmL4KvHAZ3R
-GZeMgoV4AF5NhshR+2ECKyxcWlrCCdpX9VBbzLiCLqi5IZHoZY0FeBne2NuhpzyP
-E31pFIa7k+I4E2+Knt0TJprepZocTYLSK5B7klZML5Ro+1KOQXGAKP4YtEk9pbjM
-0M2ADOCwNHf8MsJWL9wfUkRP+TerWrO+Hq8f72HqZTIGJxlnsi+3vYdBGGdjO/wT
-nyWiePobKP4twUjeK4++WCtsCj2nmuzZ5kIwRFw51h137MM7TTmmSb1n0kKgIO94
-dPN4KLatXqw9eJoelstTMxJvRPHechn5vHvmvXK+9gifE6zCeJfUYhwMEinkgtQR
-CJLwFuPS6WyzuhK4vdejhH6Q8LaWBlYyhaKvniFOAWa3JlDtnMol2sakSCjBf+Vi
-7M0Yhn3aJ1gtaWTe6vG3D52xwkZTI6IVOWuIY4Q7oPOeHnMQpbvoqhff4vFn/TYe
-J6Kd5fqYCZf/hFpYFMTT
-=Npj9
------END PGP SIGNATURE-----
-
---gKijDXBCEH69PxaN--
+	tglx
