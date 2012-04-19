@@ -1,41 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754628Ab2DSAvY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Apr 2012 20:51:24 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:43147 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753163Ab2DSAvX convert rfc822-to-8bit (ORCPT
+	id S1754583Ab2DSAxd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Apr 2012 20:53:33 -0400
+Received: from szxga01-in.huawei.com ([58.251.152.64]:38949 "EHLO
+	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752521Ab2DSAxc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Apr 2012 20:51:23 -0400
-MIME-Version: 1.0
-In-Reply-To: <CAOMZO5BL8bKauB6-srbZCLapHJNAVRqB0g0uw+17_h1wy3_9-g@mail.gmail.com>
-References: <alpine.DEB.2.00.1204151350450.13924@eristoteles.iwoars.net>
-	<CAOMZO5BL8bKauB6-srbZCLapHJNAVRqB0g0uw+17_h1wy3_9-g@mail.gmail.com>
-Date: Wed, 18 Apr 2012 21:51:21 -0300
-Message-ID: <CAOMZO5Cc0hWobNW4y-Di7F3D_LHS1cj+c4w-gNaK9t2NxKpE3A@mail.gmail.com>
-Subject: Re: mtdchar kernel oops
-From: Fabio Estevam <festevam@gmail.com>
-To: Joel Reardon <joel@clambassador.com>
-Cc: Artem Bityutskiy <dedekind1@gmail.com>, linux-mtd@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Wed, 18 Apr 2012 20:53:32 -0400
+Date: Thu, 19 Apr 2012 08:52:57 +0800
+From: "Peter Huang(Peng)" <peter.huangpeng@huawei.com>
+Subject: [PATCH v2] set fake_rtable's dst to NULL to avoid kernel Oops.
+X-Originating-IP: [10.166.90.111]
+To: Stephen Hemminger <shemminger@vyatta.com>,
+        "'David S. Miller'" <davem@davemloft.net>, netdev@vger.kernel.org
+Cc: ctrix+debianbugs@navynet.it, peter.huangpeng@gmail.com,
+        harry.majun@huawei.com, linux-kernel@vger.kernel.org,
+        Eric Dumazet <eric.dumazet@gmail.com>, peter.huangpeng@huawei.com
+Message-id: <4F8F61E9.202@huawei.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=ISO-8859-1; format=flowed
+Content-transfer-encoding: 7BIT
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:11.0) Gecko/20120327
+ Thunderbird/11.0.1
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Apr 15, 2012 at 11:19 AM, Fabio Estevam <festevam@gmail.com> wrote:
-> On Sun, Apr 15, 2012 at 8:58 AM, Joel Reardon <joel@clambassador.com> wrote:
->> I think that this patch:
->> "mtdchar: kill persistently held vfsmount"
->> http://permalink.gmane.org/gmane.linux.kernel.commits.head/314175
->>
->> has started causing kernel oops's when running ubiformat. The oops is
->> occuring in fs/namespace.c's mnt_add_count() line:
->>        this_cpu_add(mnt->mnt_pcp->mnt_count, n);
->
-> I also see kernel oops when running flash_eraseall on a SPI NOR flash.
->
-> If this patch is reverted the flash_eraseall operation is successful.
+Compared with the patch sent before I added a new flag DST_FAKE_RTABLE 
+to dst_entry struct.
 
-I am no longer getting kernel oops on 3.4.0-rc3-next-20120418.
+
+Acked-by: Eric Dumazet <eric.dumazet@gmail.com>
+Signed-off-by: Peter Huang <peter.huangpeng@huawei.com>
+---
+  include/linux/netfilter_bridge.h |    8 ++++++++
+  include/net/dst.h                |    1 +
+  net/bridge/br_forward.c          |    1 +
+  net/bridge/br_netfilter.c        |    8 ++------
+  4 files changed, 12 insertions(+), 6 deletions(-)
+diff --git a/include/linux/netfilter_bridge.h 
+b/include/linux/netfilter_bridge.h
+index 0ddd161..51745df 100644
+--- a/include/linux/netfilter_bridge.h
++++ b/include/linux/netfilter_bridge.h
+@@ -104,9 +104,17 @@ struct bridge_skb_cb {
+         } daddr;
+  };
+
++static inline void br_drop_fake_rtable(struct sk_buff *skb) {
++       struct dst_entry *dst = skb_dst(skb);
++
++       if (dst && (dst->flags & DST_FAKE_RTABLE))
++               skb_dst_drop(skb);
++}
++
+  #else
+  #define nf_bridge_maybe_copy_header(skb)       (0)
+  #define nf_bridge_pad(skb)                     (0)
++#define br_drop_fake_rtable(skb)               (0)
+  #endif /* CONFIG_BRIDGE_NETFILTER */
+
+  #endif /* __KERNEL__ */
+diff --git a/include/net/dst.h b/include/net/dst.h
+index 59c5d18..b094030 100644
+--- a/include/net/dst.h
++++ b/include/net/dst.h
+@@ -55,6 +55,7 @@ struct dst_entry {
+  #define DST_NOCACHE            0x0010
+  #define DST_NOCOUNT            0x0020
+  #define DST_NOPEER             0x0040
++#define DST_FAKE_RTABLE                0x0080
+
+         short                   error;
+         short                   obsolete;
+diff --git a/net/bridge/br_forward.c b/net/bridge/br_forward.c
+index 61f6534..a2098e3 100644
+--- a/net/bridge/br_forward.c
++++ b/net/bridge/br_forward.c
+@@ -47,6 +47,7 @@ int br_dev_queue_push_xmit(struct sk_buff *skb)
+                 kfree_skb(skb);
+         } else {
+                 skb_push(skb, ETH_HLEN);
++               br_drop_fake_rtable(skb);
+                 dev_queue_xmit(skb);
+         }
+
+diff --git a/net/bridge/br_netfilter.c b/net/bridge/br_netfilter.c
+index dec4f38..d7f49b6 100644
+--- a/net/bridge/br_netfilter.c
++++ b/net/bridge/br_netfilter.c
+@@ -156,7 +156,7 @@ void br_netfilter_rtable_init(struct net_bridge *br)
+         rt->dst.dev = br->dev;
+         rt->dst.path = &rt->dst;
+         dst_init_metrics(&rt->dst, br_dst_default_metrics, true);
+-       rt->dst.flags   = DST_NOXFRM | DST_NOPEER;
++       rt->dst.flags   = DST_NOXFRM | DST_NOPEER | DST_FAKE_RTABLE;
+         rt->dst.ops = &fake_dst_ops;
+  }
+
+@@ -694,11 +694,7 @@ static unsigned int br_nf_local_in(unsigned int 
+hook, struct sk_buff *skb,
+                                    const struct net_device *out,
+                                    int (*okfn)(struct sk_buff *))
+  {
+-       struct rtable *rt = skb_rtable(skb);
+-
+-       if (rt && rt == bridge_parent_rtable(in))
+-               skb_dst_drop(skb);
+-
++       br_drop_fake_rtable(skb);
+         return NF_ACCEPT;
+  }
