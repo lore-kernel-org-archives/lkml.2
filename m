@@ -1,77 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754400Ab2DSBD5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Apr 2012 21:03:57 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:51323 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752799Ab2DSBD4 (ORCPT
+	id S1751417Ab2DSBbe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Apr 2012 21:31:34 -0400
+Received: from vms173021pub.verizon.net ([206.46.173.21]:52302 "EHLO
+	vms173021pub.verizon.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750943Ab2DSBb1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Apr 2012 21:03:56 -0400
-Message-ID: <1334797425.2707.1.camel@phoenix>
-Subject: [PATCH] regulator: virtual: Replace strict_strtol with kstrtol
-From: Axel Lin <axel.lin@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Liam Girdwood <lrg@ti.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-Date: Thu, 19 Apr 2012 09:03:45 +0800
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2- 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Wed, 18 Apr 2012 21:31:27 -0400
+From: "W. Trevor King" <wking@tremily.us>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: "W. Trevor King" <wking@tremily.us>, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH v2 0/2] staging: comedi: ni_tio_internal.h: checkpatch.pl
+ cleanups
+Date: Wed, 18 Apr 2012 21:30:26 -0400
+Message-id: <cover.1334798829.git.wking@tremily.us>
+X-Mailer: git-send-email 1.7.3.4
+In-reply-to: <20120418235714.GC5163@kroah.com>
+References: <20120418235714.GC5163@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-strict_strtol is deprecated and results in a checkpatch warning.
-Replace it with kstrtol.
+On Wed, Apr 18, 2012 at 04:57:14PM -0700, Greg Kroah-Hartman wrote:
+> On Tue, Apr 17, 2012 at 09:59:35AM -0400, W. Trevor King wrote:
+> > * Line wrapping to stay under 80 characters.
+> > * No braces for single statement blocks.
+>
+> Please break this into 2 different patches.
 
-Signed-off-by: Axel Lin <axel.lin@gmail.com>
----
- drivers/regulator/virtual.c |    8 ++++----
- 1 files changed, 4 insertions(+), 4 deletions(-)
+Here you go.
 
-diff --git a/drivers/regulator/virtual.c b/drivers/regulator/virtual.c
-index ee0b161..f2f693e 100644
---- a/drivers/regulator/virtual.c
-+++ b/drivers/regulator/virtual.c
-@@ -121,7 +121,7 @@ static ssize_t set_min_uV(struct device *dev, struct device_attribute *attr,
- 	struct virtual_consumer_data *data = dev_get_drvdata(dev);
- 	long val;
- 
--	if (strict_strtol(buf, 10, &val) != 0)
-+	if (kstrtol(buf, 10, &val) != 0)
- 		return count;
- 
- 	mutex_lock(&data->lock);
-@@ -147,7 +147,7 @@ static ssize_t set_max_uV(struct device *dev, struct device_attribute *attr,
- 	struct virtual_consumer_data *data = dev_get_drvdata(dev);
- 	long val;
- 
--	if (strict_strtol(buf, 10, &val) != 0)
-+	if (kstrtol(buf, 10, &val) != 0)
- 		return count;
- 
- 	mutex_lock(&data->lock);
-@@ -173,7 +173,7 @@ static ssize_t set_min_uA(struct device *dev, struct device_attribute *attr,
- 	struct virtual_consumer_data *data = dev_get_drvdata(dev);
- 	long val;
- 
--	if (strict_strtol(buf, 10, &val) != 0)
-+	if (kstrtol(buf, 10, &val) != 0)
- 		return count;
- 
- 	mutex_lock(&data->lock);
-@@ -199,7 +199,7 @@ static ssize_t set_max_uA(struct device *dev, struct device_attribute *attr,
- 	struct virtual_consumer_data *data = dev_get_drvdata(dev);
- 	long val;
- 
--	if (strict_strtol(buf, 10, &val) != 0)
-+	if (kstrtol(buf, 10, &val) != 0)
- 		return count;
- 
- 	mutex_lock(&data->lock);
+> Only do one thing per patch, that's the correct thing to do.
+
+Sorry, I was thinking "fix checkpatch.pl issues" was a single thing.  I
+was also thinking that this is the kind of dumb change that has to happen,
+but makes walking backwards with `git blame` annoying, so it would be
+better to compress it into fewer commits ;).
+
+
+W. Trevor King (2):
+  staging: comedi: ni_tio_internal.h: checkpatch.pl line wrapping
+  staging: comedi: ni_tio_internal.h: checkpatch.pl cleanups
+
+ drivers/staging/comedi/drivers/ni_tio_internal.h |   36 +++++++++++++--------
+ 1 files changed, 22 insertions(+), 14 deletions(-)
+
 -- 
-1.7.5.4
-
-
+1.7.3.4
 
