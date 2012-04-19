@@ -1,107 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933295Ab2DSVMp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Apr 2012 17:12:45 -0400
-Received: from mail-pz0-f42.google.com ([209.85.210.42]:38471 "EHLO
-	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932605Ab2DSVMl (ORCPT
+	id S1756736Ab2DSVqp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Apr 2012 17:46:45 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:44451 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933254Ab2DSVMb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Apr 2012 17:12:41 -0400
-Message-Id: <20120419210613.048759732@linuxfoundation.org>
+	Thu, 19 Apr 2012 17:12:31 -0400
+Message-Id: <20120419210306.357709074@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Thu, 19 Apr 2012 14:06:34 -0700
+Date: Thu, 19 Apr 2012 14:03:41 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Alan Stern <stern@rowland.harvard.edu>,
-        Ming Lei <tom.leiming@gmail.com>
-Subject: [ 23/59] USB: dont clear urb->dev in scatter-gather library
-In-Reply-To: <20120419210623.GA12156@kroah.com>
+        alan@lxorguk.ukuu.org.uk, Neal Cardwell <ncardwell@google.com>,
+        Ben Segall <bsegall@google.com>, Ingo Molnar <mingo@elte.hu>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: [ 38/75] nohz: Fix stale jiffies update in tick_nohz_restart()
+In-Reply-To: <20120419210322.GA6478@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.0-stable review patch.  If anyone has any objections, please let me know.
+3.3-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Alan Stern <stern@rowland.harvard.edu>
+From: Neal Cardwell <ncardwell@google.com>
 
-commit bcf398537630bf20b4dbe59ba855b69f404c93cf upstream.
+commit 6f103929f8979d2638e58d7f7fda0beefcb8ee7e upstream.
 
-This patch (as1517b) fixes an error in the USB scatter-gather library.
-The library code uses urb->dev to determine whether or nor an URB is
-currently active; the completion handler sets urb->dev to NULL.
-However the core unlinking routines need to use urb->dev.  Since
-unlinking always racing with completion, the completion handler must
-not clear urb->dev -- it can lead to invalid memory accesses when a
-transfer has to be cancelled.
+Fix tick_nohz_restart() to not use a stale ktime_t "now" value when
+calling tick_do_update_jiffies64(now).
 
-This patch fixes the problem by getting rid of the lines that clear
-urb->dev after urb has been submitted.  As a result we may end up
-trying to unlink an URB that failed in submission or that has already
-completed, so an extra check is added after each unlink to avoid
-printing an error message when this happens.  The checks are updated
-in both sg_complete() and sg_cancel(), and the second is updated to
-match the first (currently it prints out unnecessary warning messages
-if a device is unplugged while a transfer is in progress).
+If we reach this point in the loop it means that we crossed a tick
+boundary since we grabbed the "now" timestamp, so at this point "now"
+refers to a time in the old jiffy, so using the old value for "now" is
+incorrect, and is likely to give us a stale jiffies value.
 
-Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
-Reported-and-tested-by: Illia Zaitsev <I.Zaitsev@adbglobal.com>
-CC: Ming Lei <tom.leiming@gmail.com>
+In particular, the first time through the loop the
+tick_do_update_jiffies64(now) call is always a no-op, since the
+caller, tick_nohz_restart_sched_tick(), will have already called
+tick_do_update_jiffies64(now) with that "now" value.
+
+Note that tick_nohz_stop_sched_tick() already uses the correct
+approach: when we notice we cross a jiffy boundary, grab a new
+timestamp with ktime_get(), and *then* update jiffies.
+
+Signed-off-by: Neal Cardwell <ncardwell@google.com>
+Cc: Ben Segall <bsegall@google.com>
+Cc: Ingo Molnar <mingo@elte.hu>
+Link: http://lkml.kernel.org/r/1332875377-23014-1-git-send-email-ncardwell@google.com
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/core/message.c |   11 ++++++-----
- 1 file changed, 6 insertions(+), 5 deletions(-)
+ kernel/time/tick-sched.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/drivers/usb/core/message.c
-+++ b/drivers/usb/core/message.c
-@@ -308,7 +308,8 @@ static void sg_complete(struct urb *urb)
- 				retval = usb_unlink_urb(io->urbs [i]);
- 				if (retval != -EINPROGRESS &&
- 				    retval != -ENODEV &&
--				    retval != -EBUSY)
-+				    retval != -EBUSY &&
-+				    retval != -EIDRM)
- 					dev_err(&io->dev->dev,
- 						"%s, unlink --> %d\n",
- 						__func__, retval);
-@@ -317,7 +318,6 @@ static void sg_complete(struct urb *urb)
+--- a/kernel/time/tick-sched.c
++++ b/kernel/time/tick-sched.c
+@@ -538,9 +538,9 @@ static void tick_nohz_restart(struct tic
+ 				hrtimer_get_expires(&ts->sched_timer), 0))
+ 				break;
  		}
- 		spin_lock(&io->lock);
+-		/* Update jiffies and reread time */
+-		tick_do_update_jiffies64(now);
++		/* Reread time and update jiffies */
+ 		now = ktime_get();
++		tick_do_update_jiffies64(now);
  	}
--	urb->dev = NULL;
+ }
  
- 	/* on the last completion, signal usb_sg_wait() */
- 	io->bytes += urb->actual_length;
-@@ -524,7 +524,6 @@ void usb_sg_wait(struct usb_sg_request *
- 		case -ENXIO:	/* hc didn't queue this one */
- 		case -EAGAIN:
- 		case -ENOMEM:
--			io->urbs[i]->dev = NULL;
- 			retval = 0;
- 			yield();
- 			break;
-@@ -542,7 +541,6 @@ void usb_sg_wait(struct usb_sg_request *
- 
- 			/* fail any uncompleted urbs */
- 		default:
--			io->urbs[i]->dev = NULL;
- 			io->urbs[i]->status = retval;
- 			dev_dbg(&io->dev->dev, "%s, submit --> %d\n",
- 				__func__, retval);
-@@ -593,7 +591,10 @@ void usb_sg_cancel(struct usb_sg_request
- 			if (!io->urbs [i]->dev)
- 				continue;
- 			retval = usb_unlink_urb(io->urbs [i]);
--			if (retval != -EINPROGRESS && retval != -EBUSY)
-+			if (retval != -EINPROGRESS
-+					&& retval != -ENODEV
-+					&& retval != -EBUSY
-+					&& retval != -EIDRM)
- 				dev_warn(&io->dev->dev, "%s, unlink --> %d\n",
- 					__func__, retval);
- 		}
 
 
