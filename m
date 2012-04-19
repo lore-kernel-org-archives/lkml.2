@@ -1,123 +1,155 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755211Ab2DSMcV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Apr 2012 08:32:21 -0400
-Received: from ogre.sisk.pl ([193.178.161.156]:52849 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751639Ab2DSMcT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Apr 2012 08:32:19 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: huang ying <huang.ying.caritas@gmail.com>
-Subject: Re: [RFC PATCH] PCIe: Add PCIe runtime D3cold support
-Date: Thu, 19 Apr 2012 14:36:57 +0200
-User-Agent: KMail/1.13.6 (Linux/3.4.0-rc3+; KDE/4.6.0; x86_64; ; )
-Cc: "Yan, Zheng" <zheng.z.yan@intel.com>, bhelgaas@google.com,
-        linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
-        linux-pm@vger.kernel.org, Lin Ming <ming.m.lin@intel.com>,
-        Zhang Rui <rui.zhang@intel.com>,
-        ACPI Devel Mailing List <linux-acpi@vger.kernel.org>
-References: <4F8790F6.5080408@intel.com> <201204182251.46335.rjw@sisk.pl> <CAC=cRTMPrSsK5Y8uVxVrtGNqJAGFyRMLU7WsYm185siZd-V_8w@mail.gmail.com>
-In-Reply-To: <CAC=cRTMPrSsK5Y8uVxVrtGNqJAGFyRMLU7WsYm185siZd-V_8w@mail.gmail.com>
+	id S1755286Ab2DSMch (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Apr 2012 08:32:37 -0400
+Received: from rcsinet15.oracle.com ([148.87.113.117]:19133 "EHLO
+	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755161Ab2DSMcf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Apr 2012 08:32:35 -0400
+Date: Thu, 19 Apr 2012 15:33:14 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: volokh <my84@bk.ru>
+Cc: volokh@telros.ru, devel@driverdev.osuosl.org,
+        Jiri Kosina <trivial@kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org,
+        Mauro Carvalho Chehab <mchehab@infradead.org>,
+        Pradheep Shrinivasan <pradheep.sh@gmail.com>,
+        linux-media@vger.kernel.org
+Subject: Re: Subject: [PATCH] [Trivial] Staging: go7007: wis-tw2804 upstyle
+ to v4l2
+Message-ID: <20120419123314.GP6498@mwanda>
+References: <1334834777.9633.4.camel@VPir>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201204191436.57495.rjw@sisk.pl>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1334834777.9633.4.camel@VPir>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+X-CT-RefId: str=0001.0A090206.4F900573.00FD,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday, April 19, 2012, huang ying wrote:
-> On Thu, Apr 19, 2012 at 4:51 AM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
-> > On Wednesday, April 18, 2012, huang ying wrote:
-> >> On Wed, Apr 18, 2012 at 5:10 AM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
-> >> > On Tuesday, April 17, 2012, huang ying wrote:
-> >> >> On Tue, Apr 17, 2012 at 5:30 AM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
-> >> >> >> >> +     return 0;
-> >> >> >> >> +}
-> >> >> >> >> +
-> >> >> >> >> +static int pcie_port_runtime_resume(struct device *dev)
-> >> >> >> >> +{
-> >> >> >> >> +     struct pci_dev *pdev = to_pci_dev(dev);
-> >> >> >> >> +
-> >> >> >> >> +     pci_restore_state(pdev);
-> >> >> >> >> +     if (pdev->runtime_d3cold)
-> >> >> >> >> +             msleep(100);
-> >> >> >> >
-> >> >> >> > What's _that_ supposed to do?
-> >> >> >>
-> >> >> >> When resume from d3cold, PCIe main link will be powered on again, it
-> >> >> >> will take quite some time before the main link go into L0 state.
-> >> >> >> Otherwise, accessing devices under the port may return wrong result.
-> >> >> >
-> >> >> > OK, but this is generic code and as per the standard the link should have been
-> >> >> > reestablished at this point already.
-> >> >> >
-> >> >> > Please don't put some nonstandard-platform-specific quirks like this into
-> >> >> > code that's supposed to handle _every_ PCIe system.
-> >> >>
-> >> >> After checking PCIe spec, I found that the 100ms here has its standard origin :)
-> >> >>
-> >> >> In PCI Express Base Specification Revision 2.0:
-> >> >>
-> >> >> Section 6.6.1 Conventional Reset
-> >> >>
-> >> >> "
-> >> >> To allow components to perform internal initialization, system
-> >> >> software must wait for at least
-> >> >> 100 ms from the end of a Conventional Reset of one or more devices
-> >> >> before it is permitted to
-> >> >> issue Configuration Requests to those devices
-> >> >> "
-> >> >>
-> >> >> But I think we should move the 100ms delay here to PCIe bus code or
-> >> >> PCIe/ACPI code, because that is needed by all PCIe devices for D3cold
-> >> >> support.
-> >> >
-> >> > I think it should be sufficient to wait for the PME message to arrive at
-> >> > the root port (which will cause the PME interrupt to appear), at which
-> >> > point the device that sent it should be able to receive configuration
-> >> > requests.
-> >>
-> >> For remote wake up, it is sufficient.  But for host wake up, we still
-> >> need to wait 100ms.
-> >
-> > Yes, we do.
-> >
-> >> > At this point, I need to konw what exactly happens when the GPE is triggered
-> >> > by WAKE#.
-> >>
-> >> - Lxx handler will be executed
-> >> - in Lxx handler, Notify the ACPI handle PCIe port
-> >> - Linux has registered a handler for the ACPI handle of PCIe port, in
-> >> the handler, turn on _PR0 and execute _PS0, which will power on the
-> >> link.
-> >
-> > But the handler we have is not the handler we want here.
-> >
-> > In fact, there are two handlers, pci_acpi_wake_bus() and pci_acpi_wake_dev()
-> > and they only do useful things for ACPI_NOTIFY_DEVICE_WAKE.  Is that the
-> > event type we receive from that _Lxx?
-> 
-> I check the DSDT, in _Lxx, there is
-> 
-> Notify (\_SB.PCI0.RP03, 0x02)
-> 
-> That is, the event type is ACPI_NOTIFY_DEVICE_WAKE.
-> 
-> > Even if so, these routines don't seem to be suitable to handle the case at hand.
-> 
-> Yes.  Maybe add a flag named like "come_from_d3cold", and if
-> come_from_d3cold == true, resume the dev itself without checking pme
-> bits, because the PCIe main link is not available now.
+On Thu, Apr 19, 2012 at 03:26:17PM +0400, volokh wrote:
+>  static int write_reg(struct i2c_client *client, u8 reg, u8 value, int channel)
+>  {
+> -	return i2c_smbus_write_byte_data(client, reg | (channel << 6), value);
+> +	int i;
+> +
+> +	for (i = 0; i < 10; i++)
+> +		/*return */if (i2c_smbus_write_byte_data(client,
+> +				reg|(channel<<6), value) < 0)
+> +			return -1;
+> +	return 0;
+>  }
 
-Actually, I think we can do the full resume (however with the 100 ms wait)
-in that case, because we're going to resume the device shortly anyway.
+There are several style problems with this function.
+1) Bogus comment doesn't add any information.
+2) Multi-line indents get curly parens, for stlye reasons even
+   though it's not needed for semantic reasons.
+3) Preserve the return codes from lower levels.
+4) Don't return -1.  -1 means -EPERM and this is not a permision
+   issue.
+5) Put spaces around math operators.  These were correct in the
+   original code.
 
-The PME would only be useful as a kind of handshake with the device, so we
-know we can access its registers, but as you pointed that out, we need the
-100 ms delay in the host wakeup case anyway, so perhaps it's better to make
-remote wakeup and host wakeup behave identically in that respect.
+This function should look like:
 
-Thanks,
-Rafael
+static int write_reg(struct i2c_client *client, u8 reg, u8 value, int channel)
+{
+	int ret;
+	int i;
+
+	for (i = 0; i < 10; i++) {
+		ret = i2c_smbus_write_byte_data(client,	reg | (channel << 6),
+						value);
+		if (ret)
+			return ret;
+	}
+	return 0;
+}
+
+Now that the function is readable, why are we writing to the
+register 10 times?
+
+>  
+> +/**static u8 read_reg(struct i2c_client *client, u8 reg, int channel)
+> +{
+> +  return i2c_smbus_read_byte_data(client,reg|(channel<<6));
+> +}*/
+> +
+
+Bogus comment adds nothing.
+
+>  static int write_regs(struct i2c_client *client, u8 *regs, int channel)
+>  {
+>  	int i;
+>  
+>  	for (i = 0; regs[i] != 0xff; i += 2)
+> -		if (i2c_smbus_write_byte_data(client,
+> -				regs[i] | (channel << 6), regs[i + 1]) < 0)
+> +		if (i2c_smbus_write_byte_data(client
+> +				, regs[i] | (channel << 6), regs[i + 1]) < 0)
+
+The comma was in the correct place in the original code...  This
+change is wrong.
+
+>  			return -1;
+>  	return 0;
+>  }
+>  
+> -static int wis_tw2804_command(struct i2c_client *client,
+> -				unsigned int cmd, void *arg)
+> +static int wis_tw2804_command(
+> +	struct i2c_client *client,
+> +	unsigned int cmd,
+> +	void *arg)
+
+The style was correct in the original code.  This change is wrong.
+
+>  {
+> -	struct wis_tw2804 *dec = i2c_get_clientdata(client);
+> +	struct v4l2_subdev *sd = i2c_get_clientdata(client);
+> +	struct wis_tw2804 *dec = to_state(sd);
+> +	int *input;
+> +
+> +	printk(KERN_INFO"wis-tw2804: call command %d\n", cmd);
+
+This seems like a very spammy printk().  :/  Put a space after the
+KERN_INFO.
+
+>  
+>  	if (cmd == DECODER_SET_CHANNEL) {
+> -		int *input = arg;
+
+The input was better here, where it was declared originally.
+
+> +		printk(KERN_INFO"wis-tw2804: DecoderSetChannel call command %d\n", cmd);
+> +
+> +		input = arg;
+>  
+>  		if (*input < 0 || *input > 3) {
+> -			printk(KERN_ERR "wis-tw2804: channel %d is not "
+> -					"between 0 and 3!\n", *input);
+> +			printk(KERN_ERR"wis-tw2804: channel %d is not between 0 and 3!\n", *input);
+
+These kinds of unrelated changes don't belong in a new feature
+patch.  Cleanups, fixes, and features don't mix.  In this situation,
+I would just leave it as is.  I know checkpatch.pl complains, but
+it's up to the maintainer to decide what to do.  If you decide to
+change it (in a separate patch) the format would be:
+
+			printk(KERN_ERR
+			       "wis-tw2804: channel %d is not between 0 and 3!\n",
+			       *input);
+
+When people submit big patches there is a lot to complain about and
+they don't get merged.  I'm a hundred lines into the review and I
+haven't even got to any changes which matter or are improvements.
+
+regards,
+dan carpenter
+
+
