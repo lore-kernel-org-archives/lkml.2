@@ -1,72 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756783Ab2DSXf7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Apr 2012 19:35:59 -0400
-Received: from mail-pz0-f42.google.com ([209.85.210.42]:41177 "EHLO
-	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756193Ab2DSXf4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Apr 2012 19:35:56 -0400
-X-Greylist: delayed 386 seconds by postgrey-1.27 at vger.kernel.org; Thu, 19 Apr 2012 19:35:56 EDT
-From: Tejun Heo <tj@kernel.org>
-To: axboe@kernel.dk
-Cc: vgoyal@redhat.com, ctalbott@google.com, rni@google.com,
-        cgroups@vger.kernel.org, containers@lists.linux-foundation.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCHSET] block: fixes for long standing issues
-Date: Thu, 19 Apr 2012 16:29:20 -0700
-Message-Id: <1334878164-24788-1-git-send-email-tj@kernel.org>
-X-Mailer: git-send-email 1.7.7.3
+	id S1756531Ab2DSXhV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Apr 2012 19:37:21 -0400
+Received: from na3sys010aog112.obsmtp.com ([74.125.245.92]:49057 "HELO
+	na3sys010aog112.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1753314Ab2DSXhT convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Apr 2012 19:37:19 -0400
+MIME-Version: 1.0
+In-Reply-To: <20120419114811.9e77accb.akpm@linux-foundation.org>
+References: <1334859173-9446-1-git-send-email-roland@kernel.org> <20120419114811.9e77accb.akpm@linux-foundation.org>
+From: Roland Dreier <roland@kernel.org>
+Date: Thu, 19 Apr 2012 16:36:56 -0700
+X-Google-Sender-Auth: aYl04qIAH0IgfmOwm-X8Sesk6ws
+Message-ID: <CAL1RGDXQ9NPKaNxBcNAYKknpSSScwXVa+gr8jXOFFU4ZjjSJ=A@mail.gmail.com>
+Subject: Re: [PATCH] dma-debug: Fix deadlock with netconsole or other drivers
+ that use the DMA API
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Joerg Roedel <joerg.roedel@amd.com>, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On Thu, Apr 19, 2012 at 11:48 AM, Andrew Morton
+<akpm@linux-foundation.org> wrote:
+> So *any* printk can deadlock if free_entries_lock is held and
+> global_disable==false?
 
-This patchset fixes two long standing issues and one relatively new
-css ref leak.
+apparently.
 
-a. elvpriv alloc failure, including ioc and icq failures, fails
-   request allocation.  As those aren't mempool backed and may fail
-   indefinitely, this can lead to deadlock under memory pressure.
+> In that case we're going to need much sterner fixes.  Any list_head
+> operation can do a printk if list_head debugging is enabled.
+> dma_debug_resize_entries() does a kfree() under free_entries_lock(!).
+>
+> Methinks we need a more general fix?
 
-b. blkgs don't have proper indexing.  With enough number of
-   request_queues and blk-throttle enabled, block layer can spend
-   considerable amount of cpu cycles walking the same list over and
-   over again.
+sigh... no good deed goes unpunished.
 
-c. __blkg_lookup_create() was leaking a css ref on failure path.
+OK, will look at it.  Just to make things even more fun, all the
+err_printk() stuff can potentially deadlock on the hash bucket
+lock, although that requires enough bad luck a collision to happen.
 
-This patchset contains the following four patches.
-
- 0001-block-collapse-blk_alloc_request-into-get_request.patch
- 0002-block-fix-elvpriv-allocation-failure-handling.patch
- 0003-blkcg-fix-blkcg-css-ref-leak-in-__blkg_lookup_create.patch
- 0004-blkcg-use-radix-tree-to-index-blkgs-from-blkcg.patch
-
-0001-0002 fix #a.  0003 fixes #c.  0004 fixes #b.
-
-This patchset is on top of
-
-  block/for-3.5/core 5bc4afb1ec "blkcg: drop BLKCG_STAT_{PRIV|POL|OFF} macros"
-+ [1] [PATCHSET] block: per-queue policy activation, take#2
-+ [2] [PATCHSET] block: cosmetic updates to blkcg API
-
-and available in the following git branch.
-
- git://git.kernel.org/pub/scm/linux/kernel/git/tj/misc.git blk-misc-fixes
-
-diffstat follows.
-
- block/blk-cgroup.c |   71 ++++++++++++++++++++++++++++++++-----------
- block/blk-cgroup.h |    6 +++
- block/blk-core.c   |   87 ++++++++++++++++++++++++++++-------------------------
- 3 files changed, 106 insertions(+), 58 deletions(-)
-
-Thanks.
-
---
-tejun
-
-[1] https://lkml.org/lkml/2012/4/13/380
-[2] http://www.spinics.net/lists/cgroups/msg01748.html
+ - R.
