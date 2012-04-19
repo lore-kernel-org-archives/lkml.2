@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933705Ab2DSVVu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Apr 2012 17:21:50 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:44451 "EHLO
+	id S933715Ab2DSVWX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Apr 2012 17:22:23 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:34108 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965102Ab2DSVRs (ORCPT
+	with ESMTP id S965195Ab2DSVRh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Apr 2012 17:17:48 -0400
-Message-Id: <20120419210822.663274280@linuxfoundation.org>
+	Thu, 19 Apr 2012 17:17:37 -0400
+Message-Id: <20120419210823.164555335@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Thu, 19 Apr 2012 14:09:05 -0700
+Date: Thu, 19 Apr 2012 14:09:11 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Johan Hovold <jhovold@gmail.com>,
-        Marcel Holtmann <marcel@holtmann.org>,
-        Johan Hedberg <johan.hedberg@intel.com>
-Subject: [ 47/68] Bluetooth: hci_core: fix NULL-pointer dereference at
- unregister
+        alan@lxorguk.ukuu.org.uk, Tomoya MORINAGA <tomoya.rohm@gmail.com>,
+        Felipe Balbi <balbi@ti.com>
+Subject: [ 53/68] usb: gadget: pch_udc: Fix usb/gadget/pch_udc: Fix ether gadget connect/disconnect issue
 In-Reply-To: <20120419210923.GA18589@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,128 +25,150 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Johan Hovold <jhovold@gmail.com>
+From: Tomoya MORINAGA <tomoya.rohm@gmail.com>
 
-commit 94324962066231a938564bebad0f941cd2d06bb2 upstream.
+commit 1c575d2d2e3ff2a7cb3c2e2165064199cfd8ad32 upstream.
 
-Make sure hci_dev_open returns immediately if hci_dev_unregister has
-been called.
+ISSUE:
+After a USB cable is connect/disconnected, the system rarely freezes.
 
-This fixes a race between hci_dev_open and hci_dev_unregister which can
-lead to a NULL-pointer dereference.
+CAUSE:
+Since the USB device controller cannot know to disconnect the USB cable, when
+it is used without detecting VBUS by GPIO, the UDC driver does not notify to
+USB Gadget.
 
-Bug is 100% reproducible using hciattach and a disconnected serial port:
+Since USB Gadget cannot know to disconnect, a false setting occurred when the
+USB cable is connected/disconnect repeatedly.
 
-0. # hciattach -n /dev/ttyO1 any noflow
-
-1. hci_dev_open called from hci_power_on grabs req lock
-2. hci_init_req executes but device fails to initialise (times out
-   eventually)
-3. hci_dev_open is called from hci_sock_ioctl and sleeps on req lock
-4. hci_uart_tty_close calls hci_dev_unregister and sleeps on req lock in
-   hci_dev_do_close
-5. hci_dev_open (1) releases req lock
-6. hci_dev_do_close grabs req lock and returns as device is not up
-7. hci_dev_unregister sleeps in destroy_workqueue
-8. hci_dev_open (3) grabs req lock, calls hci_init_req and eventually sleeps
-9. hci_dev_unregister finishes, while hci_dev_open is still running...
-
-[   79.627136] INFO: trying to register non-static key.
-[   79.632354] the code is fine but needs lockdep annotation.
-[   79.638122] turning off the locking correctness validator.
-[   79.643920] [<c00188bc>] (unwind_backtrace+0x0/0xf8) from [<c00729c4>] (__lock_acquire+0x1590/0x1ab0)
-[   79.653594] [<c00729c4>] (__lock_acquire+0x1590/0x1ab0) from [<c00733f8>] (lock_acquire+0x9c/0x128)
-[   79.663085] [<c00733f8>] (lock_acquire+0x9c/0x128) from [<c0040a88>] (run_timer_softirq+0x150/0x3ac)
-[   79.672668] [<c0040a88>] (run_timer_softirq+0x150/0x3ac) from [<c003a3b8>] (__do_softirq+0xd4/0x22c)
-[   79.682281] [<c003a3b8>] (__do_softirq+0xd4/0x22c) from [<c003a924>] (irq_exit+0x8c/0x94)
-[   79.690856] [<c003a924>] (irq_exit+0x8c/0x94) from [<c0013a50>] (handle_IRQ+0x34/0x84)
-[   79.699157] [<c0013a50>] (handle_IRQ+0x34/0x84) from [<c0008530>] (omap3_intc_handle_irq+0x48/0x4c)
-[   79.708648] [<c0008530>] (omap3_intc_handle_irq+0x48/0x4c) from [<c037499c>] (__irq_usr+0x3c/0x60)
-[   79.718048] Exception stack(0xcf281fb0 to 0xcf281ff8)
-[   79.723358] 1fa0:                                     0001e6a0 be8dab00 0001e698 00036698
-[   79.731933] 1fc0: 0002df98 0002df38 0000001f 00000000 b6f234d0 00000000 00000004 00000000
-[   79.740509] 1fe0: 0001e6f8 be8d6aa0 be8dac50 0000aab8 80000010 ffffffff
-[   79.747497] Unable to handle kernel NULL pointer dereference at virtual address 00000000
-[   79.756011] pgd = cf3b4000
-[   79.758850] [00000000] *pgd=8f0c7831, *pte=00000000, *ppte=00000000
-[   79.765502] Internal error: Oops: 80000007 [#1]
-[   79.770294] Modules linked in:
-[   79.773529] CPU: 0    Tainted: G        W     (3.3.0-rc6-00002-gb5d5c87 #421)
-[   79.781066] PC is at 0x0
-[   79.783721] LR is at run_timer_softirq+0x16c/0x3ac
-[   79.788787] pc : [<00000000>]    lr : [<c0040aa4>]    psr: 60000113
-[   79.788787] sp : cf281ee0  ip : 00000000  fp : cf280000
-[   79.800903] r10: 00000004  r9 : 00000100  r8 : b6f234d0
-[   79.806427] r7 : c0519c28  r6 : cf093488  r5 : c0561a00  r4 : 00000000
-[   79.813323] r3 : 00000000  r2 : c054eee0  r1 : 00000001  r0 : 00000000
-[   79.820190] Flags: nZCv  IRQs on  FIQs on  Mode SVC_32  ISA ARM  Segment user
-[   79.827728] Control: 10c5387d  Table: 8f3b4019  DAC: 00000015
-[   79.833801] Process gpsd (pid: 1265, stack limit = 0xcf2802e8)
-[   79.839965] Stack: (0xcf281ee0 to 0xcf282000)
-[   79.844573] 1ee0: 00000002 00000000 c0040a24 00000000 00000002 cf281f08 00200200 00000000
-[   79.853210] 1f00: 00000000 cf281f18 cf281f08 00000000 00000000 00000000 cf281f18 cf281f18
-[   79.861816] 1f20: 00000000 00000001 c056184c 00000000 00000001 b6f234d0 c0561848 00000004
-[   79.870452] 1f40: cf280000 c003a3b8 c051e79c 00000001 00000000 00000100 3fa9e7b8 0000000a
-[   79.879089] 1f60: 00000025 cf280000 00000025 00000000 00000000 b6f234d0 00000000 00000004
-[   79.887756] 1f80: 00000000 c003a924 c053ad38 c0013a50 fa200000 cf281fb0 ffffffff c0008530
-[   79.896362] 1fa0: 0001e6a0 0000aab8 80000010 c037499c 0001e6a0 be8dab00 0001e698 00036698
-[   79.904998] 1fc0: 0002df98 0002df38 0000001f 00000000 b6f234d0 00000000 00000004 00000000
-[   79.913665] 1fe0: 0001e6f8 be8d6aa0 be8dac50 0000aab8 80000010 ffffffff 00fbf700 04ffff00
-[   79.922302] [<c0040aa4>] (run_timer_softirq+0x16c/0x3ac) from [<c003a3b8>] (__do_softirq+0xd4/0x22c)
-[   79.931945] [<c003a3b8>] (__do_softirq+0xd4/0x22c) from [<c003a924>] (irq_exit+0x8c/0x94)
-[   79.940582] [<c003a924>] (irq_exit+0x8c/0x94) from [<c0013a50>] (handle_IRQ+0x34/0x84)
-[   79.948913] [<c0013a50>] (handle_IRQ+0x34/0x84) from [<c0008530>] (omap3_intc_handle_irq+0x48/0x4c)
-[   79.958404] [<c0008530>] (omap3_intc_handle_irq+0x48/0x4c) from [<c037499c>] (__irq_usr+0x3c/0x60)
-[   79.967773] Exception stack(0xcf281fb0 to 0xcf281ff8)
-[   79.973083] 1fa0:                                     0001e6a0 be8dab00 0001e698 00036698
-[   79.981658] 1fc0: 0002df98 0002df38 0000001f 00000000 b6f234d0 00000000 00000004 00000000
-[   79.990234] 1fe0: 0001e6f8 be8d6aa0 be8dac50 0000aab8 80000010 ffffffff
-[   79.997161] Code: bad PC value
-[   80.000396] ---[ end trace 6f6739840475f9ee ]---
-[   80.005279] Kernel panic - not syncing: Fatal exception in interrupt
-
-Signed-off-by: Johan Hovold <jhovold@gmail.com>
-Acked-by: Marcel Holtmann <marcel@holtmann.org>
-Signed-off-by: Johan Hedberg <johan.hedberg@intel.com>
+Signed-off-by: Tomoya MORINAGA <tomoya.rohm@gmail.com>
+Signed-off-by: Felipe Balbi <balbi@ti.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- include/net/bluetooth/hci.h |    1 +
- net/bluetooth/hci_core.c    |    7 +++++++
- 2 files changed, 8 insertions(+)
+ drivers/usb/gadget/pch_udc.c |   70 ++++++++++++++++++++++++++++++++++++++++---
+ 1 file changed, 66 insertions(+), 4 deletions(-)
 
---- a/include/net/bluetooth/hci.h
-+++ b/include/net/bluetooth/hci.h
-@@ -84,6 +84,7 @@ enum {
- 	HCI_SERVICE_CACHE,
- 	HCI_LINK_KEYS,
- 	HCI_DEBUG_KEYS,
-+	HCI_UNREGISTER,
+--- a/drivers/usb/gadget/pch_udc.c
++++ b/drivers/usb/gadget/pch_udc.c
+@@ -311,6 +311,7 @@ struct pch_udc_ep {
+  * @registered:		driver regsitered with system
+  * @suspended:		driver in suspended state
+  * @connected:		gadget driver associated
++ * @vbus_session:	required vbus_session state
+  * @set_cfg_not_acked:	pending acknowledgement 4 setup
+  * @waiting_zlp_ack:	pending acknowledgement 4 ZLP
+  * @data_requests:	DMA pool for data requests
+@@ -337,6 +338,7 @@ struct pch_udc_dev {
+ 			registered:1,
+ 			suspended:1,
+ 			connected:1,
++			vbus_session:1,
+ 			set_cfg_not_acked:1,
+ 			waiting_zlp_ack:1;
+ 	struct pci_pool		*data_requests;
+@@ -554,6 +556,31 @@ static void pch_udc_clear_disconnect(str
+ }
  
- 	HCI_RESET,
- };
---- a/net/bluetooth/hci_core.c
-+++ b/net/bluetooth/hci_core.c
-@@ -510,6 +510,11 @@ int hci_dev_open(__u16 dev)
+ /**
++ * pch_udc_reconnect() - This API initializes usb device controller,
++ *						and clear the disconnect status.
++ * @dev:		Reference to pch_udc_regs structure
++ */
++static void pch_udc_init(struct pch_udc_dev *dev);
++static void pch_udc_reconnect(struct pch_udc_dev *dev)
++{
++	pch_udc_init(dev);
++
++	/* enable device interrupts */
++	/* pch_udc_enable_interrupts() */
++	pch_udc_bit_clr(dev, UDC_DEVIRQMSK_ADDR,
++			UDC_DEVINT_UR | UDC_DEVINT_US |
++			UDC_DEVINT_ENUM |
++			UDC_DEVINT_SI | UDC_DEVINT_SC);
++
++	/* Clear the disconnect */
++	pch_udc_bit_set(dev, UDC_DEVCTL_ADDR, UDC_DEVCTL_RES);
++	pch_udc_bit_clr(dev, UDC_DEVCTL_ADDR, UDC_DEVCTL_SD);
++	mdelay(1);
++	/* Resume USB signalling */
++	pch_udc_bit_clr(dev, UDC_DEVCTL_ADDR, UDC_DEVCTL_RES);
++}
++
++/**
+  * pch_udc_vbus_session() - set or clearr the disconnect status.
+  * @dev:	Reference to pch_udc_regs structure
+  * @is_active:	Parameter specifying the action
+@@ -563,10 +590,18 @@ static void pch_udc_clear_disconnect(str
+ static inline void pch_udc_vbus_session(struct pch_udc_dev *dev,
+ 					  int is_active)
+ {
+-	if (is_active)
+-		pch_udc_clear_disconnect(dev);
+-	else
++	if (is_active) {
++		pch_udc_reconnect(dev);
++		dev->vbus_session = 1;
++	} else {
++		if (dev->driver && dev->driver->disconnect) {
++			spin_unlock(&dev->lock);
++			dev->driver->disconnect(&dev->gadget);
++			spin_lock(&dev->lock);
++		}
+ 		pch_udc_set_disconnect(dev);
++		dev->vbus_session = 0;
++	}
+ }
  
- 	hci_req_lock(hdev);
- 
-+	if (test_bit(HCI_UNREGISTER, &hdev->flags)) {
-+		ret = -ENODEV;
-+		goto done;
+ /**
+@@ -1126,7 +1161,17 @@ static int pch_udc_pcd_pullup(struct usb
+ 	if (!gadget)
+ 		return -EINVAL;
+ 	dev = container_of(gadget, struct pch_udc_dev, gadget);
+-	pch_udc_vbus_session(dev, is_on);
++	if (is_on) {
++		pch_udc_reconnect(dev);
++	} else {
++		if (dev->driver && dev->driver->disconnect) {
++			spin_unlock(&dev->lock);
++			dev->driver->disconnect(&dev->gadget);
++			spin_lock(&dev->lock);
++		}
++		pch_udc_set_disconnect(dev);
 +	}
 +
- 	if (hdev->rfkill && rfkill_blocked(hdev->rfkill)) {
- 		ret = -ERFKILL;
- 		goto done;
-@@ -1540,6 +1545,8 @@ int hci_unregister_dev(struct hci_dev *h
+ 	return 0;
+ }
  
- 	BT_DBG("%p name %s bus %d", hdev, hdev->name, hdev->bus);
- 
-+	set_bit(HCI_UNREGISTER, &hdev->flags);
+@@ -2482,6 +2527,15 @@ static void pch_udc_dev_isr(struct pch_u
+ 			dev->driver->suspend(&dev->gadget);
+ 			spin_lock(&dev->lock);
+ 		}
 +
- 	write_lock_bh(&hci_dev_list_lock);
- 	list_del(&hdev->list);
- 	write_unlock_bh(&hci_dev_list_lock);
++		if (dev->vbus_session == 0) {
++			if (dev->driver && dev->driver->disconnect) {
++				spin_unlock(&dev->lock);
++				dev->driver->disconnect(&dev->gadget);
++				spin_lock(&dev->lock);
++			}
++			pch_udc_reconnect(dev);
++		}
+ 		dev_dbg(&dev->pdev->dev, "USB_SUSPEND\n");
+ 	}
+ 	/* Clear the SOF interrupt, if enabled */
+@@ -2509,6 +2563,14 @@ static irqreturn_t pch_udc_isr(int irq,
+ 	dev_intr = pch_udc_read_device_interrupts(dev);
+ 	ep_intr = pch_udc_read_ep_interrupts(dev);
+ 
++	/* For a hot plug, this find that the controller is hung up. */
++	if (dev_intr == ep_intr)
++		if (dev_intr == pch_udc_readl(dev, UDC_DEVCFG_ADDR)) {
++			dev_dbg(&dev->pdev->dev, "UDC: Hung up\n");
++			/* The controller is reset */
++			pch_udc_writel(dev, UDC_SRST, UDC_SRST_ADDR);
++			return IRQ_HANDLED;
++		}
+ 	if (dev_intr)
+ 		/* Clear device interrupts */
+ 		pch_udc_write_device_interrupts(dev, dev_intr);
 
 
