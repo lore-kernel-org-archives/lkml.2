@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933182Ab2DSVLd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Apr 2012 17:11:33 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:61369 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756497Ab2DSVLa (ORCPT
+	id S1756537Ab2DSVLp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Apr 2012 17:11:45 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:34108 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756519Ab2DSVLm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Apr 2012 17:11:30 -0400
-Message-Id: <20120419210305.263670572@linuxfoundation.org>
+	Thu, 19 Apr 2012 17:11:42 -0400
+Message-Id: <20120419210304.418483855@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Thu, 19 Apr 2012 14:03:28 -0700
+Date: Thu, 19 Apr 2012 14:03:18 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk,
-        Marek Belisko <marek.belisko@open-nandra.com>,
-        Jonathan Cameron <jic23@kernel.org>
-Subject: [ 25/75] staging: iio: hmc5843: Fix crash in probe function.
+        alan@lxorguk.ukuu.org.uk, Johan Hovold <jhovold@gmail.com>,
+        Marcel Holtmann <marcel@holtmann.org>,
+        Johan Hedberg <johan.hedberg@intel.com>
+Subject: [ 15/75] Bluetooth: hci_ldisc: fix NULL-pointer dereference on tty_close
 In-Reply-To: <20120419210322.GA6478@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,105 +26,104 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Marek Belisko <marek.belisko@open-nandra.com>
+From: Johan Hovold <jhovold@gmail.com>
 
-commit 62d2feb9803f18c4e3c8a1a2c7e30a54df8a1d72 upstream.
+commit 33b69bf80a3704d45341928e4ff68b6ebd470686 upstream.
 
-Fix crash after issuing:
-	echo hmc5843 0x1e > /sys/class/i2c-dev/i2c-2/device/new_device
+Do not close protocol driver until device has been unregistered.
 
-	[   37.180999] device: '2-001e': device_add
-	[   37.188293] bus: 'i2c': add device 2-001e
-	[   37.194549] PM: Adding info for i2c:2-001e
-	[   37.200958] bus: 'i2c': driver_probe_device: matched device 2-001e with driver hmc5843
-	[   37.210815] bus: 'i2c': really_probe: probing driver hmc5843 with device 2-001e
-	[   37.224884] HMC5843 initialized
-	[   37.228759] ------------[ cut here ]------------
-	[   37.233612] kernel BUG at mm/slab.c:505!
-	[   37.237701] Internal error: Oops - BUG: 0 [#1] PREEMPT
-	[   37.243103] Modules linked in:
-	[   37.246337] CPU: 0    Not tainted  (3.3.1-gta04+ #28)
-	[   37.251647] PC is at kfree+0x84/0x144
-	[   37.255493] LR is at kfree+0x20/0x144
-	[   37.259338] pc : [<c00b408c>]    lr : [<c00b4028>]    psr: 40000093
-	[   37.259368] sp : de249cd8  ip : 0000000c  fp : 00000090
-	[   37.271362] r10: 0000000a  r9 : de229eac  r8 : c0236274
-	[   37.276855] r7 : c09d6490  r6 : a0000013  r5 : de229c00  r4 : de229c10
-	[   37.283691] r3 : c0f00218  r2 : 00000400  r1 : c0eea000  r0 : c00b4028
-	[   37.290527] Flags: nZcv  IRQs off  FIQs on  Mode SVC_32  ISA ARM  Segment user
-	[   37.298095] Control: 10c5387d  Table: 9e1d0019  DAC: 00000015
-	[   37.304107] Process sh (pid: 91, stack limit = 0xde2482f0)
-	[   37.309844] Stack: (0xde249cd8 to 0xde24a000)
-	[   37.314422] 9cc0:                                                       de229c10 de229c00
-	[   37.322998] 9ce0: de229c10 ffffffea 00000005 c0236274 de140a80 c00b4798 dec00080 de140a80
-	[   37.331573] 9d00: c032f37c dec00080 000080d0 00000001 de229c00 de229c10 c048d578 00000005
-	[   37.340148] 9d20: de229eac 0000000a 00000090 c032fa40 00000001 00000000 00000001 de229c10
-	[   37.348724] 9d40: de229eac 00000029 c075b558 00000001 00000003 00000004 de229c10 c048d594
-	[   37.357299] 9d60: 00000000 60000013 00000018 205b0007 37332020 3432322e 5d343838 c0060020
-	[   37.365905] 9d80: de251600 00000001 00000000 de251600 00000001 c0065a84 de229c00 de229c48
-	[   37.374481] 9da0: 00000006 0048d62c de229c38 de229c00 de229c00 de1f6c00 de1f6c20 00000001
-	[   37.383056] 9dc0: 00000000 c048d62c 00000000 de229c00 de229c00 de1f6c00 de1f6c20 00000001
-	[   37.391632] 9de0: 00000000 c048d62c 00000000 c0330164 00000000 de1f6c20 c048d62c de1f6c00
-	[   37.400207] 9e00: c0330078 de1f6c04 c078d714 de189b58 00000000 c02ccfd8 de1f6c20 c0795f40
-	[   37.408782] 9e20: c0238330 00000000 00000000 c02381a8 de1b9fc0 de1f6c20 de1f6c20 de249e48
-	[   37.417358] 9e40: c0238330 c0236bb0 decdbed8 de7d0f14 de1f6c20 de1f6c20 de1f6c54 de1f6c20
-	[   37.425933] 9e60: 00000000 c0238030 de1f6c20 c078d7bc de1f6c20 c02377ec de1f6c20 de1f6c28
-	[   37.434509] 9e80: dee64cb0 c0236138 c047c554 de189b58 00000000 c004b45c de1f6c20 de1f6cd8
-	[   37.443084] 9ea0: c0edfa6c de1f6c00 dee64c68 de1f6c04 de1f6c20 dee64cb8 c047c554 de189b58
-	[   37.451690] 9ec0: 00000000 c02cd634 dee64c68 de249ef4 de23b008 dee64cb0 0000000d de23b000
-	[   37.460266] 9ee0: de23b007 c02cd78c 00000002 00000000 00000000 35636d68 00333438 00000000
-	[   37.468841] 9f00: 00000000 00000000 001e0000 00000000 00000000 00000000 00000000 0a10cec0
-	[   37.477416] 9f20: 00000002 de249f80 0000000d dee62990 de189b40 c0234d88 0000000d c010c354
-	[   37.485992] 9f40: 0000000d de210f28 000acc88 de249f80 0000000d de248000 00000000 c00b7bf8
-	[   37.494567] 9f60: de210f28 000acc88 de210f28 000acc88 00000000 00000000 0000000d c00b7ed8
-	[   37.503143] 9f80: 00000000 00000000 0000000d 00000000 0007fa28 0000000d 000acc88 00000004
-	[   37.511718] 9fa0: c000e544 c000e380 0007fa28 0000000d 00000001 000acc88 0000000d 00000000
-	[   37.520294] 9fc0: 0007fa28 0000000d 000acc88 00000004 00000001 00000020 00000002 00000000
-	[   37.528869] 9fe0: 00000000 beab8624 0000ea05 b6eaebac 600d0010 00000001 00000000 00000000
-	[   37.537475] [<c00b408c>] (kfree+0x84/0x144) from [<c0236274>] (device_add+0x530/0x57c)
-	[   37.545806] [<c0236274>] (device_add+0x530/0x57c) from [<c032fa40>] (iio_device_register+0x8c8/0x990)
-	[   37.555480] [<c032fa40>] (iio_device_register+0x8c8/0x990) from [<c0330164>] (hmc5843_probe+0xec/0x114)
-	[   37.565338] [<c0330164>] (hmc5843_probe+0xec/0x114) from [<c02ccfd8>] (i2c_device_probe+0xc4/0xf8)
-	[   37.574737] [<c02ccfd8>] (i2c_device_probe+0xc4/0xf8) from [<c02381a8>] (driver_probe_device+0x118/0x218)
-	[   37.584777] [<c02381a8>] (driver_probe_device+0x118/0x218) from [<c0236bb0>] (bus_for_each_drv+0x4c/0x84)
-	[   37.594818] [<c0236bb0>] (bus_for_each_drv+0x4c/0x84) from [<c0238030>] (device_attach+0x78/0xa4)
-	[   37.604125] [<c0238030>] (device_attach+0x78/0xa4) from [<c02377ec>] (bus_probe_device+0x28/0x9c)
-	[   37.613433] [<c02377ec>] (bus_probe_device+0x28/0x9c) from [<c0236138>] (device_add+0x3f4/0x57c)
-	[   37.622650] [<c0236138>] (device_add+0x3f4/0x57c) from [<c02cd634>] (i2c_new_device+0xf8/0x19c)
-	[   37.631805] [<c02cd634>] (i2c_new_device+0xf8/0x19c) from [<c02cd78c>] (i2c_sysfs_new_device+0xb4/0x130)
-	[   37.641754] [<c02cd78c>] (i2c_sysfs_new_device+0xb4/0x130) from [<c0234d88>] (dev_attr_store+0x18/0x24)
-	[   37.651611] [<c0234d88>] (dev_attr_store+0x18/0x24) from [<c010c354>] (sysfs_write_file+0x10c/0x140)
-	[   37.661193] [<c010c354>] (sysfs_write_file+0x10c/0x140) from [<c00b7bf8>] (vfs_write+0xb0/0x178)
-	[   37.670410] [<c00b7bf8>] (vfs_write+0xb0/0x178) from [<c00b7ed8>] (sys_write+0x3c/0x68)
-	[   37.678833] [<c00b7ed8>] (sys_write+0x3c/0x68) from [<c000e380>] (ret_fast_syscall+0x0/0x3c)
-	[   37.687683] Code: 1593301c e5932000 e3120080 1a000000 (e7f001f2)
-	[   37.700775] ---[ end trace aaf805debdb69390 ]---
+This fixes a race between tty_close and hci_dev_open which can result in
+a NULL-pointer dereference.
 
-Client data was assigned to iio_dev structure in probe but in
-hmc5843_init_client function casted to private driver data structure which
-is wrong. Possibly calling mutex_init(&data->lock); corrupt data
-which the lead to above crash.
+The line discipline closes the protocol driver while we may still have
+hci_dev_open sleeping on the req_lock mutex resulting in a NULL-pointer
+dereference when lock is acquired and hci_init_req called.
 
-Signed-off-by: Marek Belisko <marek.belisko@open-nandra.com>
-Acked-by: Jonathan Cameron <jic23@kernel.org>
+Bug is 100% reproducible using hciattach and a disconnected serial port:
+
+0. # hciattach -n ttyO1 any noflow
+
+1. hci_dev_open called from hci_power_on grabs req lock
+2. hci_init_req executes but device fails to initialise (times out
+   eventually)
+3. hci_dev_open is called from hci_sock_ioctl and sleeps on req lock
+4. hci_uart_tty_close detaches protocol driver and cancels init req
+5. hci_dev_open (1) releases req lock
+6. hci_dev_open (3) grabs req lock, calls hci_init_req, which triggers oops
+   when request is prepared in hci_uart_send_frame
+
+[  137.201263] Unable to handle kernel NULL pointer dereference at virtual address 00000028
+[  137.209838] pgd = c0004000
+[  137.212677] [00000028] *pgd=00000000
+[  137.216430] Internal error: Oops: 17 [#1]
+[  137.220642] Modules linked in:
+[  137.223846] CPU: 0    Tainted: G        W     (3.3.0-rc6-dirty #406)
+[  137.230529] PC is at __lock_acquire+0x5c/0x1ab0
+[  137.235290] LR is at lock_acquire+0x9c/0x128
+[  137.239776] pc : [<c0071490>]    lr : [<c00733f8>]    psr: 20000093
+[  137.239776] sp : cf869dd8  ip : c0529554  fp : c051c730
+[  137.251800] r10: 00000000  r9 : cf8673c0  r8 : 00000080
+[  137.257293] r7 : 00000028  r6 : 00000002  r5 : 00000000  r4 : c053fd70
+[  137.264129] r3 : 00000000  r2 : 00000000  r1 : 00000000  r0 : 00000001
+[  137.270965] Flags: nzCv  IRQs off  FIQs on  Mode SVC_32  ISA ARM  Segment kernel
+[  137.278717] Control: 10c5387d  Table: 8f0f4019  DAC: 00000015
+[  137.284729] Process kworker/u:1 (pid: 7, stack limit = 0xcf8682e8)
+[  137.291229] Stack: (0xcf869dd8 to 0xcf86a000)
+[  137.295776] 9dc0:                                                       c0529554 00000000
+[  137.304351] 9de0: cf8673c0 cf868000 d03ea1ef cf868000 000001ef 00000470 00000000 00000002
+[  137.312927] 9e00: cf8673c0 00000001 c051c730 c00716ec 0000000c 00000440 c0529554 00000001
+[  137.321533] 9e20: c051c730 cf868000 d03ea1f3 00000000 c053b978 00000000 00000028 cf868000
+[  137.330078] 9e40: 00000000 00000000 00000002 00000000 00000000 c00733f8 00000002 00000080
+[  137.338684] 9e60: 00000000 c02a1d50 00000000 00000001 60000013 c0969a1c 60000093 c053b96c
+[  137.347259] 9e80: 00000002 00000018 20000013 c02a1d50 cf0ac000 00000000 00000002 cf868000
+[  137.355834] 9ea0: 00000089 c0374130 00000002 00000000 c02a1d50 cf0ac000 0000000c cf0fc540
+[  137.364410] 9ec0: 00000018 c02a1d50 cf0fc540 00000000 cf0fc540 c0282238 c028220c cf178d80
+[  137.372985] 9ee0: 127525d8 c02821cc 9a1fa451 c032727c 9a1fa451 127525d8 cf0fc540 cf0ac4ec
+[  137.381561] 9f00: cf0ac000 cf0fc540 cf0ac584 c03285f4 c0328580 cf0ac4ec cf85c740 c05510cc
+[  137.390136] 9f20: ce825400 c004c914 00000002 00000000 c004c884 ce8254f5 cf869f48 00000000
+[  137.398712] 9f40: c0328580 ce825415 c0a7f914 c061af64 00000000 c048cf3c cf8673c0 cf85c740
+[  137.407287] 9f60: c05510cc c051a66c c05510ec c05510c4 cf85c750 cf868000 00000089 c004d6ac
+[  137.415863] 9f80: 00000000 c0073d14 00000001 cf853ed8 cf85c740 c004d558 00000013 00000000
+[  137.424438] 9fa0: 00000000 00000000 00000000 c00516b0 00000000 00000000 cf85c740 00000000
+[  137.433013] 9fc0: 00000001 dead4ead ffffffff ffffffff c0551674 00000000 00000000 c0450aa4
+[  137.441589] 9fe0: cf869fe0 cf869fe0 cf853ed8 c005162c c0013b30 c0013b30 00ffff00 00ffff00
+[  137.450164] [<c0071490>] (__lock_acquire+0x5c/0x1ab0) from [<c00733f8>] (lock_acquire+0x9c/0x128)
+[  137.459503] [<c00733f8>] (lock_acquire+0x9c/0x128) from [<c0374130>] (_raw_spin_lock_irqsave+0x44/0x58)
+[  137.469360] [<c0374130>] (_raw_spin_lock_irqsave+0x44/0x58) from [<c02a1d50>] (skb_queue_tail+0x18/0x48)
+[  137.479339] [<c02a1d50>] (skb_queue_tail+0x18/0x48) from [<c0282238>] (h4_enqueue+0x2c/0x34)
+[  137.488189] [<c0282238>] (h4_enqueue+0x2c/0x34) from [<c02821cc>] (hci_uart_send_frame+0x34/0x68)
+[  137.497497] [<c02821cc>] (hci_uart_send_frame+0x34/0x68) from [<c032727c>] (hci_send_frame+0x50/0x88)
+[  137.507171] [<c032727c>] (hci_send_frame+0x50/0x88) from [<c03285f4>] (hci_cmd_work+0x74/0xd4)
+[  137.516204] [<c03285f4>] (hci_cmd_work+0x74/0xd4) from [<c004c914>] (process_one_work+0x1a0/0x4ec)
+[  137.525604] [<c004c914>] (process_one_work+0x1a0/0x4ec) from [<c004d6ac>] (worker_thread+0x154/0x344)
+[  137.535278] [<c004d6ac>] (worker_thread+0x154/0x344) from [<c00516b0>] (kthread+0x84/0x90)
+[  137.543975] [<c00516b0>] (kthread+0x84/0x90) from [<c0013b30>] (kernel_thread_exit+0x0/0x8)
+[  137.552734] Code: e59f4e5c e5941000 e3510000 0a000031 (e5971000)
+[  137.559234] ---[ end trace 1b75b31a2719ed1e ]---
+
+Signed-off-by: Johan Hovold <jhovold@gmail.com>
+Acked-by: Marcel Holtmann <marcel@holtmann.org>
+Signed-off-by: Johan Hedberg <johan.hedberg@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/staging/iio/magnetometer/hmc5843.c |    4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+ drivers/bluetooth/hci_ldisc.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/staging/iio/magnetometer/hmc5843.c
-+++ b/drivers/staging/iio/magnetometer/hmc5843.c
-@@ -521,7 +521,9 @@ static int hmc5843_detect(struct i2c_cli
- /* Called when we have found a new HMC5843. */
- static void hmc5843_init_client(struct i2c_client *client)
- {
--	struct hmc5843_data *data = i2c_get_clientdata(client);
-+	struct iio_dev *indio_dev = i2c_get_clientdata(client);
-+	struct hmc5843_data *data = iio_priv(indio_dev);
-+
- 	hmc5843_set_meas_conf(client, data->meas_conf);
- 	hmc5843_set_rate(client, data->rate);
- 	hmc5843_configure(client, data->operating_mode);
+--- a/drivers/bluetooth/hci_ldisc.c
++++ b/drivers/bluetooth/hci_ldisc.c
+@@ -309,11 +309,11 @@ static void hci_uart_tty_close(struct tt
+ 			hci_uart_close(hdev);
+ 
+ 		if (test_and_clear_bit(HCI_UART_PROTO_SET, &hu->flags)) {
+-			hu->proto->close(hu);
+ 			if (hdev) {
+ 				hci_unregister_dev(hdev);
+ 				hci_free_dev(hdev);
+ 			}
++			hu->proto->close(hu);
+ 		}
+ 		kfree(hu);
+ 	}
 
 
