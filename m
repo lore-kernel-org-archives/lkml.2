@@ -1,67 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964805Ab2DSVNn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Apr 2012 17:13:43 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:65069 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933487Ab2DSVNi (ORCPT
+	id S964778Ab2DSVNg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Apr 2012 17:13:36 -0400
+Received: from mail-pz0-f42.google.com ([209.85.210.42]:44862 "EHLO
+	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933318Ab2DSVN2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Apr 2012 17:13:38 -0400
-Message-Id: <20120419210614.537507564@linuxfoundation.org>
+	Thu, 19 Apr 2012 17:13:28 -0400
+Message-Id: <20120419210304.079488674@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Thu, 19 Apr 2012 14:06:51 -0700
+Date: Thu, 19 Apr 2012 14:03:14 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Tomoya MORINAGA <tomoya.rohm@gmail.com>,
-        Felipe Balbi <balbi@ti.com>
-Subject: [ 40/59] usb: gadget: pch_udc: Fix USB suspend issue
-In-Reply-To: <20120419210623.GA12156@kroah.com>
+        alan@lxorguk.ukuu.org.uk, Will Deacon <will.deacon@arm.com>,
+        Jonathan Austin <jonathan.austin@arm.com>,
+        Russell King <rmk+kernel@arm.linux.org.uk>
+Subject: [ 11/75] ARM: 7384/1: ThumbEE: Disable userspace TEEHBR access for !CONFIG_ARM_THUMBEE
+In-Reply-To: <20120419210322.GA6478@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.0-stable review patch.  If anyone has any objections, please let me know.
+3.3-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Tomoya MORINAGA <tomoya.rohm@gmail.com>
+From: Jonathan Austin <Jonathan.Austin@arm.com>
 
-commit 84566abba058b2aae8d603dfa90b5a3778a6714f upstream.
+commit 078c04545ba56da21567728a909a496df5ff730d upstream.
 
-ISSUE:
-After USB Suspend, a system rarely freezes.
+Currently when ThumbEE is not enabled (!CONFIG_ARM_THUMBEE) the ThumbEE
+register states are not saved/restored at context switch. The default state
+of the ThumbEE Ctrl register (TEECR) allows userspace accesses to the
+ThumbEE Base Handler register (TEEHBR). This can cause unexpected behaviour
+when people use ThumbEE on !CONFIG_ARM_THUMBEE kernels, as well as allowing
+covert communication - eg between userspace tasks running inside chroot
+jails.
 
-CAUSE:
-When USB Suspend occurred, the driver is not notifying
-a gadget of the event.
+This patch sets up TEECR in order to prevent user-space access to TEEHBR
+when !CONFIG_ARM_THUMBEE. In this case, tasks are sent SIGILL if they try to
+access TEEHBR.
 
-Signed-off-by: Tomoya MORINAGA <tomoya.rohm@gmail.com>
-Signed-off-by: Felipe Balbi <balbi@ti.com>
+Reviewed-by: Will Deacon <will.deacon@arm.com>
+Signed-off-by: Jonathan Austin <jonathan.austin@arm.com>
+Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/gadget/pch_udc.c |    9 ++++++++-
- 1 file changed, 8 insertions(+), 1 deletion(-)
+ arch/arm/mm/proc-v7.S |   12 ++++++++++++
+ 1 file changed, 12 insertions(+)
 
---- a/drivers/usb/gadget/pch_udc.c
-+++ b/drivers/usb/gadget/pch_udc.c
-@@ -2478,8 +2478,15 @@ static void pch_udc_dev_isr(struct pch_u
- 	if (dev_intr & UDC_DEVINT_SC)
- 		pch_udc_svc_cfg_interrupt(dev);
- 	/* USB Suspend interrupt */
--	if (dev_intr & UDC_DEVINT_US)
-+	if (dev_intr & UDC_DEVINT_US) {
-+		if (dev->driver
-+			&& dev->driver->suspend) {
-+			spin_unlock(&dev->lock);
-+			dev->driver->suspend(&dev->gadget);
-+			spin_lock(&dev->lock);
-+		}
- 		dev_dbg(&dev->pdev->dev, "USB_SUSPEND\n");
-+	}
- 	/* Clear the SOF interrupt, if enabled */
- 	if (dev_intr & UDC_DEVINT_SOF)
- 		dev_dbg(&dev->pdev->dev, "SOF\n");
+--- a/arch/arm/mm/proc-v7.S
++++ b/arch/arm/mm/proc-v7.S
+@@ -255,6 +255,18 @@ __v7_setup:
+ 	mcr	p15, 0, r5, c10, c2, 0		@ write PRRR
+ 	mcr	p15, 0, r6, c10, c2, 1		@ write NMRR
+ #endif
++#ifndef CONFIG_ARM_THUMBEE
++	mrc	p15, 0, r0, c0, c1, 0		@ read ID_PFR0 for ThumbEE
++	and	r0, r0, #(0xf << 12)		@ ThumbEE enabled field
++	teq	r0, #(1 << 12)			@ check if ThumbEE is present
++	bne	1f
++	mov	r5, #0
++	mcr	p14, 6, r5, c1, c0, 0		@ Initialize TEEHBR to 0
++	mrc	p14, 6, r0, c0, c0, 0		@ load TEECR
++	orr	r0, r0, #1			@ set the 1st bit in order to
++	mcr	p14, 6, r0, c0, c0, 0		@ stop userspace TEEHBR access
++1:
++#endif
+ 	adr	r5, v7_crval
+ 	ldmia	r5, {r5, r6}
+ #ifdef CONFIG_CPU_ENDIAN_BE8
 
 
