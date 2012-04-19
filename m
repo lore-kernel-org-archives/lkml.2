@@ -1,85 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756663Ab2DSXvE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Apr 2012 19:51:04 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:33141 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751516Ab2DSXvC (ORCPT
+	id S1756416Ab2DSX4G (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Apr 2012 19:56:06 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:47125 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751370Ab2DSX4E (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Apr 2012 19:51:02 -0400
-Date: Thu, 19 Apr 2012 16:50:59 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Roland Dreier <roland@kernel.org>
-Cc: Joerg Roedel <joerg.roedel@amd.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] dma-debug: Fix deadlock with netconsole or other
- drivers that use the DMA API
-Message-Id: <20120419165059.c4ca4e1f.akpm@linux-foundation.org>
-In-Reply-To: <CAL1RGDXQ9NPKaNxBcNAYKknpSSScwXVa+gr8jXOFFU4ZjjSJ=A@mail.gmail.com>
-References: <1334859173-9446-1-git-send-email-roland@kernel.org>
-	<20120419114811.9e77accb.akpm@linux-foundation.org>
-	<CAL1RGDXQ9NPKaNxBcNAYKknpSSScwXVa+gr8jXOFFU4ZjjSJ=A@mail.gmail.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Thu, 19 Apr 2012 19:56:04 -0400
+Message-ID: <4F90A60D.6090701@gmail.com>
+Date: Thu, 19 Apr 2012 17:55:57 -0600
+From: David Ahern <dsahern@gmail.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:11.0) Gecko/20120327 Thunderbird/11.0.1
+MIME-Version: 1.0
+To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+CC: Ingo Molnar <mingo@kernel.org>, linux-kernel@vger.kernel.org,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
+        Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Stephane Eranian <eranian@google.com>
+Subject: Re: [PATCH 02/13] perf annotate: Parse instruction
+References: <1334867644-2722-1-git-send-email-acme@infradead.org> <1334867644-2722-3-git-send-email-acme@infradead.org>
+In-Reply-To: <1334867644-2722-3-git-send-email-acme@infradead.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 19 Apr 2012 16:36:56 -0700
-Roland Dreier <roland@kernel.org> wrote:
+On 4/19/12 2:33 PM, Arnaldo Carvalho de Melo wrote:
+> From: Arnaldo Carvalho de Melo<acme@redhat.com>
+>
+> For lines with instructions find the name and operands, breaking those
+> tokens for consumption by the browser.
+>
+> Cc: David Ahern<dsahern@gmail.com>
+> Cc: Frederic Weisbecker<fweisbec@gmail.com>
+> Cc: Mike Galbraith<efault@gmx.de>
+> Cc: Namhyung Kim<namhyung@gmail.com>
+> Cc: Paul Mackerras<paulus@samba.org>
+> Cc: Peter Zijlstra<peterz@infradead.org>
+> Cc: Stephane Eranian<eranian@google.com>
+> Link: http://lkml.kernel.org/n/tip-6aazb9f5o3d9zi28e6rruv12@git.kernel.org
+> Signed-off-by: Arnaldo Carvalho de Melo<acme@redhat.com>
+> ---
+>   tools/perf/util/annotate.c |   65 +++++++++++++++++++++++++++++++++++++++++++-
+>   tools/perf/util/annotate.h |    3 ++
+>   2 files changed, 67 insertions(+), 1 deletion(-)
+>
+> diff --git a/tools/perf/util/annotate.c b/tools/perf/util/annotate.c
+> index ef1d57d..a72585a 100644
+> --- a/tools/perf/util/annotate.c
+> +++ b/tools/perf/util/annotate.c
+> @@ -80,16 +80,50 @@ int symbol__inc_addr_samples(struct symbol *sym, struct map *map,
+>
+>   static struct disasm_line *disasm_line__new(s64 offset, char *line, size_t privsize)
+>   {
+> -	struct disasm_line *dl = malloc(sizeof(*dl) + privsize);
+> +	struct disasm_line *dl = zalloc(sizeof(*dl) + privsize);
+>
+>   	if (dl != NULL) {
+>   		dl->offset = offset;
+>   		dl->line = strdup(line);
+>   		if (dl->line == NULL)
+>   			goto out_delete;
+> +
+> +		if (offset != -1) {
+> +			char *name = dl->line, tmp;
+> +
+> +			while (isspace(name[0]))
+> +				++name;
+> +
+> +			if (name[0] == '\0')
+> +				goto out_delete;
+> +
+> +			dl->operands = name + 1;
+> +
+> +			while (dl->operands[0] != '\0'&&
+> +			       !isspace(dl->operands[0]))
+> +				++dl->operands;
+> +
+> +			tmp = dl->operands[0];
+> +			dl->operands[0] = '\0';
+> +			dl->name = strdup(name);
 
-> On Thu, Apr 19, 2012 at 11:48 AM, Andrew Morton
-> <akpm@linux-foundation.org> wrote:
-> > So *any* printk can deadlock if free_entries_lock is held and
-> > global_disable==false?
-> 
-> apparently.
-> 
-> > In that case we're going to need much sterner fixes. __Any list_head
-> > operation can do a printk if list_head debugging is enabled.
-> > dma_debug_resize_entries() does a kfree() under free_entries_lock(!).
-> >
-> > Methinks we need a more general fix?
-> 
-> sigh... no good deed goes unpunished.
-> 
-> OK, will look at it.  Just to make things even more fun, all the
-> err_printk() stuff can potentially deadlock on the hash bucket
-> lock, although that requires enough bad luck a collision to happen.
+This strdup seems unnecessary. The parsing seems to be:
 
-I suppose one could do something like
+dl->line = "\W*name\W*operands"
+    dl->name = -^    ^- = dl_operands
 
-static DEFINE_SPINLOCK(lock);
-static struct task_struct *owner;
-static unsigned depth;
+so name and operands are 2 different parts of the same buffer.
 
-/*
- * Nice comments go here
- */
-static unsigned long free_entries_lock(void)
-{
-	unsigned long flags = 0;
-
-	if (owner == current) {
-		depth++;
-	} else {
-		/* Permit recursive locking */
-		spin_lock_irqsave(&lock, flags);
-		BUG_ON(depth != 0);
-		BUG_ON(owner != NULL);
-		owner = current;
-	}
-	return flags;
-}
-
-static void free_entries_unlock(unsigned long flags)
-{
-	BUG_ON(owner != current);
-	if (!--depth) {
-		owner = NULL;
-		spin_lock_irqrestore(&lock, flags);
-	}
-}
-
-After removing the bugs, I think that's safe wrt interrupts?
+David
