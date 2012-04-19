@@ -1,49 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932108Ab2DSSLN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Apr 2012 14:11:13 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:1364 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756230Ab2DSSLL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Apr 2012 14:11:11 -0400
-Date: Thu, 19 Apr 2012 20:10:10 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: David Howells <dhowells@redhat.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Alexander Gordeev <agordeev@redhat.com>,
-        Chris Zankel <chris@zankel.net>, David Smith <dsmith@redhat.com>,
-        "Frank Ch. Eigler" <fche@redhat.com>,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        Larry Woodman <lwoodman@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>, Tejun Heo <tj@kernel.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v4 3/3] cred: change keyctl_session_to_parent() to use
-	task_work_add()
-Message-ID: <20120419181010.GA29793@redhat.com>
-References: <20120419173431.GA27066@redhat.com> <20120417193409.GA20312@redhat.com> <20120414021252.GC23393@redhat.com> <20120414021201.GA23385@redhat.com> <27037.1334672580@redhat.com> <20120417163606.GC14527@redhat.com> <23383.1334854333@redhat.com> <25695.1334858133@redhat.com>
+	id S932116Ab2DSSL7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Apr 2012 14:11:59 -0400
+Received: from mail-wi0-f178.google.com ([209.85.212.178]:45677 "EHLO
+	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753919Ab2DSSL5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Apr 2012 14:11:57 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <25695.1334858133@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <20120419173802.GI3221@aftab.osrc.amd.com>
+References: <1334794610-5546-1-git-send-email-hpa@zytor.com>
+ <20120419092255.GA29542@aftab> <20120419092630.GD29542@aftab>
+ <4F904541.2030200@zytor.com> <CA+55aFwMsm7zVqPjKptm38zJAbJpF=9e51ew7BP6S5YnoJa3ig@mail.gmail.com>
+ <20120419173802.GI3221@aftab.osrc.amd.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Thu, 19 Apr 2012 11:11:00 -0700
+X-Google-Sender-Auth: oZrA6mp16dJQXvs6MHcGpxm0HLY
+Message-ID: <CA+55aFywgsZsxRpYeY2TCHUuK6uRvp8fp8GZEVk50qNc=WS=dw@mail.gmail.com>
+Subject: Re: [PATCH 3/3] x86, extable: Handle early exceptions
+To: Borislav Petkov <bp@amd64.org>
+Cc: "H. Peter Anvin" <hpa@zytor.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/19, David Howells wrote:
+On Thu, Apr 19, 2012 at 10:38 AM, Borislav Petkov <bp@amd64.org> wrote:
 >
-> Oleg Nesterov <oleg@redhat.com> wrote:
->
-> > But I certainly do not want to put these changes in 3/3 or in this series.
->
-> Why not?  It seems the correct place for them.
+> OTOH, if we can share early and normal exception handling lookup code, then a
+> perfect hash would make sense as those exceptions would pile up.
 
-I wanted to discuss the functional changes first, then send the trivial
-cleanups. And the changes in arch/ are always painful. And, "remove
-tracehook_notify_resume" is a bit off-topic, but I do not want to change
-the same code in arch/ twice.
+Oh, any of this only makes sense if we can share it with the runtime
+exception lookup.
 
-Oleg.
+They are *seldom* hugely performance-critical, but there are some
+unusual loads where you do get a fair number of exceptions.
 
+               Linus
