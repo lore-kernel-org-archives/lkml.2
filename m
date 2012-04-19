@@ -1,57 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752996Ab2DSGLS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Apr 2012 02:11:18 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:35837 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751576Ab2DSGLR (ORCPT
+	id S1752780Ab2DSGNf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Apr 2012 02:13:35 -0400
+Received: from mail-pz0-f52.google.com ([209.85.210.52]:36395 "EHLO
+	mail-pz0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751242Ab2DSGNd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Apr 2012 02:11:17 -0400
-Date: Thu, 19 Apr 2012 09:10:21 +0300
-From: Mika Westerberg <mika.westerberg@iki.fi>
-To: H Hartley Sweeten <hartleys@visionengravers.com>
-Cc: Linux Kernel <linux-kernel@vger.kernel.org>,
-        spi-devel-general@lists.sourceforge.net, grant.likely@secretlab.ca,
-        vinod.koul@linux.intel.com
-Subject: Re: [PATCH] spi/spi-ep93xx.c: use dma_transfer_direction instead of
- dma_data_direction
-Message-ID: <20120419061020.GB18520@mwesterb-mobl.lan>
-References: <201204171846.37245.hartleys@visionengravers.com>
+	Thu, 19 Apr 2012 02:13:33 -0400
+Message-ID: <4F8FACFF.9070107@gmail.com>
+Date: Thu, 19 Apr 2012 14:13:19 +0800
+From: Cong Wang <xiyou.wangcong@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120329 Thunderbird/11.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201204171846.37245.hartleys@visionengravers.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Yanmin Zhang <yanmin_zhang@linux.intel.com>
+CC: "Tu, Xiaobing" <xiaobing.tu@intel.com>, Lin Ming <mlin@ss.pku.edu.cn>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "mingo@elte.hu" <mingo@elte.hu>,
+        "rusty@rustcorp.com.au" <rusty@rustcorp.com.au>,
+        "a.p.zijlstra@chello.nl" <a.p.zijlstra@chello.nl>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "rostedt@goodmis.org" <rostedt@goodmis.org>,
+        "Zuo, Jiao" <jiao.zuo@intel.com>
+Subject: Re: [RFC 1/2] kernel patch for dump user space stack tool
+References: <EE928378561BF1449699C96571234A740FCED62F@SHSMSX101.ccr.corp.intel.com>  <4F8F8B9E.3040107@gmail.com> <1334812653.14538.29.camel@ymzhang.sh.intel.com>
+In-Reply-To: <1334812653.14538.29.camel@ymzhang.sh.intel.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 17, 2012 at 06:46:36PM -0700, H Hartley Sweeten wrote:
-> A new enum indicating the dma channel direction was introduced by:
-> 
-> commit 49920bc66984a512f4bcc7735a61642cd0e4d6f2
->     dmaengine: add new enum dma_transfer_direction
-> 
-> The following commit changed spi-ep93xx to use the new enum:
-> 
-> commit a485df4b4404379786c4bdd258bc528b2617449d
->     spi, serial: move to dma_transfer_direction
-> 
-> In doing so a sparse warning was introduced: 
-> 
-> warning: mixing different enum types
->    int enum dma_data_direction  versus
->    int enum dma_transfer_direction
-> 
-> This is produced because the 'dir' passed in ep93xx_spi_dma_prepare
-> is an enum dma_data_direction and is being used to set the
-> dma_slave_config 'direction' which is now an enum dma_transfer_direction.
-> 
-> Fix this by converting spi-ep93xx to use the new enum type in all
-> places.
-> 
-> Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
-> Cc: Grant Likely <grant.likely@secretlab.ca>
-> Cc: Vinod Koul <vinod.koul@linux.intel.com>
+On 04/19/2012 01:17 PM, Yanmin Zhang wrote:
+> On Thu, 2012-04-19 at 11:50 +0800, Cong Wang wrote:
+>> On 04/17/2012 10:37 PM, Tu, Xiaobing wrote:
+>>> Resend the patch because of the log is too long on a single line.
+>>>
+>>> From: xiaobing tu<xiaobing.tu@intel.com>
+>>>
+>>> Here is the kernel patch for this tool, The idea is to output user space stack call-chain from
+>>> /proc/xxx/stack, currently, /proc/xxx/stack only output kernel stack call chain. We extend
+>>> it to output user space call chain in hex format
+>>>
+>>
+>> Can you teach me why we still need this as we have pstack?
+> Cong,
+>
+> Sorry for replying so late. Xiaobing told me you sent him email and I
+> didn't receive the 1st one you sent out.
 
-Acked-by: Mika Westerberg <mika.westerberg@iki.fi>
+
+Based on the length of your reply and the description of the patch, you 
+hide lots of information in your patch description.
+
+>
+> I tried pstack and it does work. It means developers in the world wanted
+> the tool long long ago.
+>
+> Although not checking the source codes of pstack (sorry, I'm busy in debugging
+> many critical issues), I think pstack is based on ptrace interface, which means:
+> 1) It need traps into system for many times to collect call frames of one
+> task.
+> 2) It need send signal to the ptraced process to stop it. Such behavior
+> might have some impact if the ptraced process also processes many signals.
+> 3) The data parsing to get symbols might not be split from data collection.
+> I mean, it collects call frames of one process, then parses it; then collects the 2nd
+> task's. If there are many processes, it couldn't collect the data just at the monitor
+> time point.
+
+
+Yet another one who wants to "fix" ptrace. ;-)
+
+>
+> Why do we work out the tools? The original requirement is from real work.
+> We are enabling Android on Medfield. One typical error of Android is ANR.
+> When a process couldn't respond in 5 seconds, Android reports an ANR error,
+> and dumps JAVA call stack. However, it couldn't dump userspace lib (such like
+> bionic, written by C or C++). In addition, Android just dumps the stack of
+> the non-responding process. It doesn't dump stack of others. As binder is basic
+> framework in Android, processes communicate by binder in the model of client/server.
+> When one process is not responding quickly, maybe another process blocks it. We
+> need dump that process status.
+>
+> Many teams complained it's hard to debug such ANR issues, especially the ones which
+> are triggered at MTBF testing. Sometimes, an ANR happens after MTBF testing runs
+> for one week. Developers ask us to implement such tool over and over again.
+>
+> Besides ANR, sometimes, system might not respond to any user operation. Usually,
+> kernel or firmware would reset system. At that time, we also need get the call
+> chains of all the user space processes before system is reset.
+
+
+I am not familiar with Andriod at all, so a quick question is if this is 
+only for Andriod, why you introduce this for all? IOW, why not provide a 
+Kconfig?
+
+BTW, I am sure you need to put the above paragraphs into your patch 
+description, to make it clear why the patch is needed.
+
+>
+> With our tool,
+> 1) We could collect the HEX-format call chain data and /proc/XXX/maps
+> of all the processes quickly, then parse them either after rebooting, or
+> after the issue is reported. It could catch the scene just at the time point
+> when the error happens. Our experiments shows the tool could collect the data
+> of all processes within 200ms.
+> 2) The new tool won't stop the processes and have less impact on them.
+> Considering a scenario of performance bottleneck investigation, statistics collection
+> shouldn't have big impact on running processes.
+> 3) It could support both i386 and x86-64. I tried pstack and it doesn't work
+> with x86-64.
+> 4) It follows /proc/XXX/stack interface and it's easy to use it.
+>
+> Besides this tool, we are considering to extend it to collect user space
+> call chain of current process from kernel when kernel detects some other
+> abnormal behavior.
+>
+
+In my previous reply, I ran 'pstrack' on my x86-64 machine, don't 
+understand why you said it doesn't work with x86-64? I guess pstack 
+supports more than just x86, as ptrace is available in other arch's too.
+
+Thanks.
