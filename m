@@ -1,25 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933418Ab2DSVoA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Apr 2012 17:44:00 -0400
+	id S933385Ab2DSVNK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Apr 2012 17:13:10 -0400
 Received: from mail-pz0-f42.google.com ([209.85.210.42]:44862 "EHLO
 	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933260Ab2DSVNM (ORCPT
+	with ESMTP id S933286Ab2DSVND (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Apr 2012 17:13:12 -0400
-Message-Id: <20120419210613.832368777@linuxfoundation.org>
+	Thu, 19 Apr 2012 17:13:03 -0400
+Message-Id: <20120419210613.556538250@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Thu, 19 Apr 2012 14:06:43 -0700
+Date: Thu, 19 Apr 2012 14:06:40 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Paul Stewart <pstew@google.com>,
-        Gary Morain <gmorain@google.com>,
-        Madhan Jaganathan <madhanj@qca.qualcomm.com>,
-        Rajkumar Manoharan <rmanohar@qca.qualcomm.com>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        Ben Hutchings <ben@decadent.org.uk>
-Subject: [ 32/59] [PATCH] ath9k: fix max noise floor threshold
+        alan@lxorguk.ukuu.org.uk,
+        Shreshtha Kumar Sahu <shreshthakumar.sahu@stericsson.com>,
+        Chanho Min <chanho0207@gmail.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Jong-Sung Kim <neidhard.kim@lge.com>
+Subject: [ 29/59] serial: PL011: clear pending interrupts
 In-Reply-To: <20120419210623.GA12156@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -29,53 +29,80 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Rajkumar Manoharan <rmanohar@qca.qualcomm.com>
+From: Linus Walleij <linus.walleij@linaro.org>
 
-commit 2ee0a07028d2cde6e131b73f029dae2b93c50f3a upstream.
+commit 9b96fbacda34079dea0638ee1e92c56286f6114a upstream.
 
-Currently the maximum noise floor limit is set as too high (-60dB). The
-assumption of having a higher threshold limit is that it would help
-de-sensitize the receiver (reduce phy errors) from continuous
-interference. But when we have a bursty interference where there are
-collisions and then free air time and if the receiver is desensitized too
-much, it will miss the normal packets too. Lets make use of chips
-specific min, nom and max limits always. This patch helps to improve the
-connection stability in congested networks.
+Chanho Min reported that when the boot loader transfers
+control to the kernel, there may be pending interrupts
+causing the UART to lock up in an eternal loop trying to
+pick tokens from the FIFO (since the RX interrupt flag
+indicates there are tokens) while in practice there are
+no tokens - in fact there is only a pending IRQ flag.
 
-Cc: Paul Stewart <pstew@google.com>
-Tested-by: Gary Morain <gmorain@google.com>
-Signed-off-by: Madhan Jaganathan <madhanj@qca.qualcomm.com>
-Signed-off-by: Rajkumar Manoharan <rmanohar@qca.qualcomm.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
-[bwh: Backported to 3.0/3.2: adjust context]
-Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+This patch address the issue with a combination of two
+patches suggested by Russell King that clears and mask
+all interrupts at probe() and clears any pending error
+and RX interrupts at port startup time.
+
+We suspect the spurious interrupts are a side-effect of
+switching the UART from FIFO to non-FIFO mode.
+
+Cc: Shreshtha Kumar Sahu <shreshthakumar.sahu@stericsson.com>
+Reported-by: Chanho Min <chanho0207@gmail.com>
+Suggested-by: Russell King <linux@arm.linux.org.uk>
+Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
+Reviewed-by: Jong-Sung Kim <neidhard.kim@lge.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- drivers/net/wireless/ath/ath9k/calib.c |    5 ++---
- 1 file changed, 2 insertions(+), 3 deletions(-)
 
---- a/drivers/net/wireless/ath/ath9k/calib.c
-+++ b/drivers/net/wireless/ath/ath9k/calib.c
-@@ -19,7 +19,6 @@
+---
+ drivers/tty/serial/amba-pl011.c |   15 +++++++++++----
+ 1 file changed, 11 insertions(+), 4 deletions(-)
+
+--- a/drivers/tty/serial/amba-pl011.c
++++ b/drivers/tty/serial/amba-pl011.c
+@@ -1376,6 +1376,10 @@ static int pl011_startup(struct uart_por
  
- /* Common calibration code */
+ 	uap->port.uartclk = clk_get_rate(uap->clk);
  
--#define ATH9K_NF_TOO_HIGH	-60
++	/* Clear pending error and receive interrupts */
++	writew(UART011_OEIS | UART011_BEIS | UART011_PEIS | UART011_FEIS |
++	       UART011_RTIS | UART011_RXIS, uap->port.membase + UART011_ICR);
++
+ 	/*
+ 	 * Allocate the IRQ
+ 	 */
+@@ -1410,10 +1414,6 @@ static int pl011_startup(struct uart_por
+ 	cr = UART01x_CR_UARTEN | UART011_CR_RXE | UART011_CR_TXE;
+ 	writew(cr, uap->port.membase + UART011_CR);
  
- static int16_t ath9k_hw_get_nf_hist_mid(int16_t *nfCalBuffer)
- {
-@@ -335,10 +334,10 @@ static void ath9k_hw_nf_sanitize(struct
- 			"NF calibrated [%s] [chain %d] is %d\n",
- 			(i >= 3 ? "ext" : "ctl"), i % 3, nf[i]);
+-	/* Clear pending error interrupts */
+-	writew(UART011_OEIS | UART011_BEIS | UART011_PEIS | UART011_FEIS,
+-	       uap->port.membase + UART011_ICR);
+-
+ 	/*
+ 	 * initialise the old status of the modem signals
+ 	 */
+@@ -1428,6 +1428,9 @@ static int pl011_startup(struct uart_por
+ 	 * as well.
+ 	 */
+ 	spin_lock_irq(&uap->port.lock);
++	/* Clear out any spuriously appearing RX interrupts */
++	 writew(UART011_RTIS | UART011_RXIS,
++		uap->port.membase + UART011_ICR);
+ 	uap->im = UART011_RTIM;
+ 	if (!pl011_dma_rx_running(uap))
+ 		uap->im |= UART011_RXIM;
+@@ -1904,6 +1907,10 @@ static int pl011_probe(struct amba_devic
+ 		goto unmap;
+ 	}
  
--		if (nf[i] > ATH9K_NF_TOO_HIGH) {
-+		if (nf[i] > limit->max) {
- 			ath_dbg(common, ATH_DBG_CALIBRATE,
- 				"NF[%d] (%d) > MAX (%d), correcting to MAX\n",
--				i, nf[i], ATH9K_NF_TOO_HIGH);
-+				i, nf[i], limit->max);
- 			nf[i] = limit->max;
- 		} else if (nf[i] < limit->min) {
- 			ath_dbg(common, ATH_DBG_CALIBRATE,
++	/* Ensure interrupts from this UART are masked and cleared */
++	writew(0, uap->port.membase + UART011_IMSC);
++	writew(0xffff, uap->port.membase + UART011_ICR);
++
+ 	uap->vendor = vendor;
+ 	uap->lcrh_rx = vendor->lcrh_rx;
+ 	uap->lcrh_tx = vendor->lcrh_tx;
 
 
