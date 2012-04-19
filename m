@@ -1,85 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965112Ab2DSV3L (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Apr 2012 17:29:11 -0400
-Received: from mail-pz0-f42.google.com ([209.85.210.42]:44862 "EHLO
+	id S933607Ab2DSV32 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Apr 2012 17:29:28 -0400
+Received: from mail-pz0-f42.google.com ([209.85.210.42]:38471 "EHLO
 	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933570Ab2DSVPv (ORCPT
+	with ESMTP id S933567Ab2DSVPu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Apr 2012 17:15:51 -0400
-Message-Id: <20120419210820.293146495@linuxfoundation.org>
+	Thu, 19 Apr 2012 17:15:50 -0400
+Message-Id: <20120419210308.068208531@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Thu, 19 Apr 2012 14:08:37 -0700
+Date: Thu, 19 Apr 2012 14:04:01 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Meelis Roos <mroos@linux.ee>,
-        David Miller <davem@davemloft.net>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: [ 19/68] sparc64: Eliminate obsolete __handle_softirq() function
-In-Reply-To: <20120419210923.GA18589@kroah.com>
+        alan@lxorguk.ukuu.org.uk,
+        Shreshtha Kumar Sahu <shreshthakumar.sahu@stericsson.com>,
+        Chanho Min <chanho0207@gmail.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Jong-Sung Kim <neidhard.kim@lge.com>
+Subject: [ 58/75] serial: PL011: clear pending interrupts
+In-Reply-To: <20120419210322.GA6478@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.2-stable review patch.  If anyone has any objections, please let me know.
+3.3-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+From: Linus Walleij <linus.walleij@linaro.org>
 
-commit 3d3eeb2ef26112a200785e5fca58ec58dd33bf1e upstream.
+commit 9b96fbacda34079dea0638ee1e92c56286f6114a upstream.
 
-The invocation of softirq is now handled by irq_exit(), so there is no
-need for sparc64 to invoke it on the trap-return path.  In fact, doing so
-is a bug because if the trap occurred in the idle loop, this invocation
-can result in lockdep-RCU failures.  The problem is that RCU ignores idle
-CPUs, and the sparc64 trap-return path to the softirq handlers fails to
-tell RCU that the CPU must be considered non-idle while those handlers
-are executing.  This means that RCU is ignoring any RCU read-side critical
-sections in those handlers, which in turn means that RCU-protected data
-can be yanked out from under those read-side critical sections.
+Chanho Min reported that when the boot loader transfers
+control to the kernel, there may be pending interrupts
+causing the UART to lock up in an eternal loop trying to
+pick tokens from the FIFO (since the RX interrupt flag
+indicates there are tokens) while in practice there are
+no tokens - in fact there is only a pending IRQ flag.
 
-The shiny new lockdep-RCU ability to detect RCU read-side critical sections
-that RCU is ignoring located this problem.
+This patch address the issue with a combination of two
+patches suggested by Russell King that clears and mask
+all interrupts at probe() and clears any pending error
+and RX interrupts at port startup time.
 
-The fix is straightforward: Make sparc64 stop manually invoking the
-softirq handlers.
+We suspect the spurious interrupts are a side-effect of
+switching the UART from FIFO to non-FIFO mode.
 
-Reported-by: Meelis Roos <mroos@linux.ee>
-Suggested-by: David Miller <davem@davemloft.net>
-Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-Tested-by: Meelis Roos <mroos@linux.ee>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Cc: Shreshtha Kumar Sahu <shreshthakumar.sahu@stericsson.com>
+Reported-by: Chanho Min <chanho0207@gmail.com>
+Suggested-by: Russell King <linux@arm.linux.org.uk>
+Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
+Reviewed-by: Jong-Sung Kim <neidhard.kim@lge.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/sparc/kernel/rtrap_64.S |    7 -------
- 1 file changed, 7 deletions(-)
+ drivers/tty/serial/amba-pl011.c |   15 +++++++++++----
+ 1 file changed, 11 insertions(+), 4 deletions(-)
 
---- a/arch/sparc/kernel/rtrap_64.S
-+++ b/arch/sparc/kernel/rtrap_64.S
-@@ -20,11 +20,6 @@
+--- a/drivers/tty/serial/amba-pl011.c
++++ b/drivers/tty/serial/amba-pl011.c
+@@ -1381,6 +1381,10 @@ static int pl011_startup(struct uart_por
  
- 		.text
- 		.align			32
--__handle_softirq:
--		call			do_softirq
--		 nop
--		ba,a,pt			%xcc, __handle_softirq_continue
--		 nop
- __handle_preemption:
- 		call			schedule
- 		 wrpr			%g0, RTRAP_PSTATE, %pstate
-@@ -89,9 +84,7 @@ rtrap:
- 		cmp			%l1, 0
+ 	uap->port.uartclk = clk_get_rate(uap->clk);
  
- 		/* mm/ultra.S:xcall_report_regs KNOWS about this load. */
--		bne,pn			%icc, __handle_softirq
- 		 ldx			[%sp + PTREGS_OFF + PT_V9_TSTATE], %l1
--__handle_softirq_continue:
- rtrap_xcall:
- 		sethi			%hi(0xf << 20), %l4
- 		and			%l1, %l4, %l4
++	/* Clear pending error and receive interrupts */
++	writew(UART011_OEIS | UART011_BEIS | UART011_PEIS | UART011_FEIS |
++	       UART011_RTIS | UART011_RXIS, uap->port.membase + UART011_ICR);
++
+ 	/*
+ 	 * Allocate the IRQ
+ 	 */
+@@ -1417,10 +1421,6 @@ static int pl011_startup(struct uart_por
+ 	cr |= UART01x_CR_UARTEN | UART011_CR_RXE | UART011_CR_TXE;
+ 	writew(cr, uap->port.membase + UART011_CR);
+ 
+-	/* Clear pending error interrupts */
+-	writew(UART011_OEIS | UART011_BEIS | UART011_PEIS | UART011_FEIS,
+-	       uap->port.membase + UART011_ICR);
+-
+ 	/*
+ 	 * initialise the old status of the modem signals
+ 	 */
+@@ -1435,6 +1435,9 @@ static int pl011_startup(struct uart_por
+ 	 * as well.
+ 	 */
+ 	spin_lock_irq(&uap->port.lock);
++	/* Clear out any spuriously appearing RX interrupts */
++	 writew(UART011_RTIS | UART011_RXIS,
++		uap->port.membase + UART011_ICR);
+ 	uap->im = UART011_RTIM;
+ 	if (!pl011_dma_rx_running(uap))
+ 		uap->im |= UART011_RXIM;
+@@ -1927,6 +1930,10 @@ static int pl011_probe(struct amba_devic
+ 		goto unmap;
+ 	}
+ 
++	/* Ensure interrupts from this UART are masked and cleared */
++	writew(0, uap->port.membase + UART011_IMSC);
++	writew(0xffff, uap->port.membase + UART011_ICR);
++
+ 	uap->vendor = vendor;
+ 	uap->lcrh_rx = vendor->lcrh_rx;
+ 	uap->lcrh_tx = vendor->lcrh_tx;
 
 
