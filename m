@@ -1,290 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755859Ab2DSPxB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Apr 2012 11:53:01 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:39161 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755832Ab2DSPw7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Apr 2012 11:52:59 -0400
-Date: Thu, 19 Apr 2012 17:52:11 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Andrew Morton <akpm@linux-foundation.org>,
-        David Howells <dhowells@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Cc: Alexander Gordeev <agordeev@redhat.com>, Chris Zankel <chris@zankel.net>,
-        David Smith <dsmith@redhat.com>, "Frank Ch. Eigler" <fche@redhat.com>,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        Larry Woodman <lwoodman@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>, Tejun Heo <tj@kernel.org>,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH v5 3/3] cred: change keyctl_session_to_parent() to use
-	task_work_add()
-Message-ID: <20120419155211.GC22307@redhat.com>
-References: <20120419155111.GA22299@redhat.com>
+	id S1755733Ab2DSPzZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Apr 2012 11:55:25 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:36430 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754012Ab2DSPzY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Apr 2012 11:55:24 -0400
+Message-ID: <4F903529.40800@mvista.com>
+Date: Thu, 19 Apr 2012 19:54:17 +0400
+From: Sergei Shtylyov <sshtylyov@mvista.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:11.0) Gecko/20120327 Thunderbird/11.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120419155111.GA22299@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: Andy Whitcroft <apw@canonical.com>
+CC: Jeff Garzik <jgarzik@pobox.com>, linux-ide@vger.kernel.org,
+        linux-kernel@vger.kernel.org, "K. Y. Srinivasan" <kys@microsoft.com>,
+        Mike Sterling <Mike.Sterling@microsoft.com>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>
+Subject: Re: [PATCH 2/2] ata_piix: defer disks to the Hyper-V drivers by default
+References: <20120419074018.GA3342@shadowen.org> <1334845990-13418-1-git-send-email-apw@canonical.com> <1334845990-13418-3-git-send-email-apw@canonical.com>
+In-Reply-To: <1334845990-13418-3-git-send-email-apw@canonical.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Change keyctl_session_to_parent() to use task_work_add() and
-move key_replace_session_keyring() logic into task_work->func().
+Hello.
 
-Note that we do task_work_cancel() before task_work_add() to
-ensure that only one work can be pending at any time. This is
-important, we must not allow user-space to abuse the parent's
-->task_works list.
+On 04/19/2012 06:33 PM, Andy Whitcroft wrote:
 
-The callback, replace_session_keyring(), checks PF_EXITING.
-I guess this is not really needed but looks better.
+> When we are hosted on a Microsoft Hyper-V hypervisor the guest disks
+> are exposed both via the Hyper-V paravirtualised drivers and via an
+> emulated SATA disk drive.  In this case we want to use the paravirtualised
+> drivers if we can as they are much more efficient.  Note that the Hyper-V
+> paravirtualised drivers only expose the virtual hard disk devices, the
+> CDROM/DVD devices must still be enumerated.
 
-As a side effect, this fixes the (unlikely) race. The callers
-of key_replace_session_keyring() and keyctl_session_to_parent()
-lack the necessary barriers, the parent can miss the request.
+> Mark the host controller ATA_HOST_IGNORE_ATA to prevent enumeration of
+> disk devices.
 
-Now we can remove task_struct->replacement_session_keyring and
-related code.
+> BugLink: http://bugs.launchpad.net/bugs/929545
+> BugLink: http://bugs.launchpad.net/bugs/942316
+> Signed-off-by: Andy Whitcroft<apw@canonical.com>
+> ---
+>   drivers/ata/ata_piix.c |   36 ++++++++++++++++++++++++++++++++++++
+>   1 file changed, 36 insertions(+)
 
-Signed-off-by: Oleg Nesterov <oleg@redhat.com>
----
- include/linux/key.h          |    6 +--
- security/keys/internal.h     |    2 +
- security/keys/keyctl.c       |   73 ++++++++++++++++++++----------------------
- security/keys/process_keys.c |   20 ++++-------
- 4 files changed, 46 insertions(+), 55 deletions(-)
+> diff --git a/drivers/ata/ata_piix.c b/drivers/ata/ata_piix.c
+> index 68013f9..c410ba9 100644
+> --- a/drivers/ata/ata_piix.c
+> +++ b/drivers/ata/ata_piix.c
+> @@ -1552,6 +1552,39 @@ static bool piix_broken_system_poweroff(struct pci_dev *pdev)
+>   	return false;
+>   }
+>
+> +static int prefer_ms_hyperv = 1;
+> +module_param(prefer_ms_hyperv, int, 0);
+> +
+> +static void piix_ignore_devices_quirk(struct ata_host *host)
+> +{
+> +#if defined(CONFIG_HYPERV_STORAGE) || defined(CONFIG_HYPERV_STORAGE_MODULE)
 
-diff --git a/include/linux/key.h b/include/linux/key.h
-index 96933b1..0c263d6 100644
---- a/include/linux/key.h
-+++ b/include/linux/key.h
-@@ -33,6 +33,8 @@ typedef uint32_t key_perm_t;
- 
- struct key;
- 
-+#define key_replace_session_keyring()	do { } while (0)
-+
- #ifdef CONFIG_KEYS
- 
- #undef KEY_DEBUGGING
-@@ -302,9 +304,6 @@ static inline bool key_is_instantiated(const struct key *key)
- #ifdef CONFIG_SYSCTL
- extern ctl_table key_sysctls[];
- #endif
--
--extern void key_replace_session_keyring(void);
--
- /*
-  * the userspace interface
-  */
-@@ -327,7 +326,6 @@ extern void key_init(void);
- #define key_fsuid_changed(t)		do { } while(0)
- #define key_fsgid_changed(t)		do { } while(0)
- #define key_init()			do { } while(0)
--#define key_replace_session_keyring()	do { } while(0)
- 
- #endif /* CONFIG_KEYS */
- #endif /* __KERNEL__ */
-diff --git a/security/keys/internal.h b/security/keys/internal.h
-index 65647f8..c2986da 100644
---- a/security/keys/internal.h
-+++ b/security/keys/internal.h
-@@ -14,6 +14,7 @@
- 
- #include <linux/sched.h>
- #include <linux/key-type.h>
-+#include <linux/task_work.h>
- 
- #ifdef __KDEBUG
- #define kenter(FMT, ...) \
-@@ -148,6 +149,7 @@ extern key_ref_t lookup_user_key(key_serial_t id, unsigned long flags,
- #define KEY_LOOKUP_FOR_UNLINK	0x04
- 
- extern long join_session_keyring(const char *name);
-+extern void key_change_session_keyring(struct task_work *twork);
- 
- extern struct work_struct key_gc_work;
- extern unsigned key_gc_delay;
-diff --git a/security/keys/keyctl.c b/security/keys/keyctl.c
-index fb767c6..55a451b 100644
---- a/security/keys/keyctl.c
-+++ b/security/keys/keyctl.c
-@@ -1423,50 +1423,57 @@ long keyctl_get_security(key_serial_t keyid,
-  */
- long keyctl_session_to_parent(void)
- {
--#ifdef TIF_NOTIFY_RESUME
- 	struct task_struct *me, *parent;
- 	const struct cred *mycred, *pcred;
--	struct cred *cred, *oldcred;
-+	struct task_work *newwork, *oldwork;
- 	key_ref_t keyring_r;
-+	struct cred *cred;
- 	int ret;
- 
- 	keyring_r = lookup_user_key(KEY_SPEC_SESSION_KEYRING, 0, KEY_LINK);
- 	if (IS_ERR(keyring_r))
- 		return PTR_ERR(keyring_r);
- 
-+	ret = -ENOMEM;
-+	newwork = kmalloc(sizeof(struct task_work), GFP_KERNEL);
-+	if (!newwork)
-+		goto error_keyring;
-+
- 	/* our parent is going to need a new cred struct, a new tgcred struct
- 	 * and new security data, so we allocate them here to prevent ENOMEM in
- 	 * our parent */
--	ret = -ENOMEM;
- 	cred = cred_alloc_blank();
- 	if (!cred)
--		goto error_keyring;
-+		goto error_newwork;
- 
- 	cred->tgcred->session_keyring = key_ref_to_ptr(keyring_r);
--	keyring_r = NULL;
-+	init_task_work(newwork, key_change_session_keyring, cred);
- 
- 	me = current;
- 	rcu_read_lock();
- 	write_lock_irq(&tasklist_lock);
- 
--	parent = me->real_parent;
- 	ret = -EPERM;
-+	oldwork = NULL;
-+	parent = me->real_parent;
- 
- 	/* the parent mustn't be init and mustn't be a kernel thread */
- 	if (parent->pid <= 1 || !parent->mm)
--		goto not_permitted;
-+		goto unlock;
- 
- 	/* the parent must be single threaded */
- 	if (!thread_group_empty(parent))
--		goto not_permitted;
-+		goto unlock;
- 
- 	/* the parent and the child must have different session keyrings or
- 	 * there's no point */
- 	mycred = current_cred();
- 	pcred = __task_cred(parent);
- 	if (mycred == pcred ||
--	    mycred->tgcred->session_keyring == pcred->tgcred->session_keyring)
--		goto already_same;
-+	    mycred->tgcred->session_keyring == pcred->tgcred->session_keyring) {
-+		ret = 0;
-+		goto unlock;
-+	}
- 
- 	/* the parent must have the same effective ownership and mustn't be
- 	 * SUID/SGID */
-@@ -1476,50 +1483,40 @@ long keyctl_session_to_parent(void)
- 	    pcred->gid	!= mycred->egid	||
- 	    pcred->egid	!= mycred->egid	||
- 	    pcred->sgid	!= mycred->egid)
--		goto not_permitted;
-+		goto unlock;
- 
- 	/* the keyrings must have the same UID */
- 	if ((pcred->tgcred->session_keyring &&
- 	     pcred->tgcred->session_keyring->uid != mycred->euid) ||
- 	    mycred->tgcred->session_keyring->uid != mycred->euid)
--		goto not_permitted;
-+		goto unlock;
- 
--	/* if there's an already pending keyring replacement, then we replace
--	 * that */
--	oldcred = parent->replacement_session_keyring;
-+	/* cancel an already pending keyring replacement */
-+	oldwork = task_work_cancel(parent, key_change_session_keyring);
- 
- 	/* the replacement session keyring is applied just prior to userspace
- 	 * restarting */
--	parent->replacement_session_keyring = cred;
--	cred = NULL;
--	set_ti_thread_flag(task_thread_info(parent), TIF_NOTIFY_RESUME);
--
-+	ret = task_work_add(parent, newwork, true);
-+	if (!ret)
-+		newwork = NULL;
-+unlock:
- 	write_unlock_irq(&tasklist_lock);
- 	rcu_read_unlock();
--	if (oldcred)
--		put_cred(oldcred);
--	return 0;
--
--already_same:
--	ret = 0;
--not_permitted:
--	write_unlock_irq(&tasklist_lock);
--	rcu_read_unlock();
--	put_cred(cred);
-+	if (oldwork) {
-+		put_cred(oldwork->data);
-+		kfree(oldwork);
-+	}
-+	if (newwork) {
-+		put_cred(newwork->data);
-+		kfree(newwork);
-+	}
- 	return ret;
- 
-+error_newwork:
-+	kfree(newwork);
- error_keyring:
- 	key_ref_put(keyring_r);
- 	return ret;
--
--#else /* !TIF_NOTIFY_RESUME */
--	/*
--	 * To be removed when TIF_NOTIFY_RESUME has been implemented on
--	 * m68k/xtensa
--	 */
--#warning TIF_NOTIFY_RESUME not implemented
--	return -EOPNOTSUPP;
--#endif /* !TIF_NOTIFY_RESUME */
- }
- 
- /*
-diff --git a/security/keys/process_keys.c b/security/keys/process_keys.c
-index be7ecb2..7ab0d8b 100644
---- a/security/keys/process_keys.c
-+++ b/security/keys/process_keys.c
-@@ -832,23 +832,17 @@ error:
-  * Replace a process's session keyring on behalf of one of its children when
-  * the target  process is about to resume userspace execution.
-  */
--void key_replace_session_keyring(void)
-+void key_change_session_keyring(struct task_work *twork)
- {
--	const struct cred *old;
--	struct cred *new;
--
--	if (!current->replacement_session_keyring)
--		return;
-+	const struct cred *old = current_cred();
-+	struct cred *new = twork->data;
- 
--	write_lock_irq(&tasklist_lock);
--	new = current->replacement_session_keyring;
--	current->replacement_session_keyring = NULL;
--	write_unlock_irq(&tasklist_lock);
--
--	if (!new)
-+	kfree(twork);
-+	if (unlikely(current->flags & PF_EXITING)) {
-+		put_cred(new);
- 		return;
-+	}
- 
--	old = current_cred();
- 	new->  uid	= old->  uid;
- 	new-> euid	= old-> euid;
- 	new-> suid	= old-> suid;
--- 
-1.5.5.1
+    You could instead use:
 
+#if IS_ENABLED(CONFIG_HYPERV_STORAGE)
 
+> +	static const struct dmi_system_id ignore_hyperv[] = {
+> +		{
+> +			/* On Hyper-V hypervisors the disks are exposed on
+> +			 * both the emulated SATA controller and on the
+> +			 * paravirtualised drivers.  The CD/DVD devices
+> +			 * are only exposed on the emulated controller.
+> +			 * Request we ignore ATA devices on this host.
+> +			 */
+> +			.ident = "Hyper-V Virtual Machine",
+> +			.matches = {
+> +				DMI_MATCH(DMI_SYS_VENDOR,
+> +						"Microsoft Corporation"),
+> +				DMI_MATCH(DMI_PRODUCT_NAME, "Virtual Machine"),
+> +			},
+> +		},
+> +		{ }	/* terminate list */
+> +	};
+> +	const struct dmi_system_id *dmi = dmi_first_match(ignore_hyperv);
+> +
+> +	if (dmi&&  prefer_ms_hyperv) {
+> +		host->flags |= ATA_HOST_IGNORE_ATA;
+> +		dev_info(host->dev, "%s detected, SATA device ignore set\n",
+
+    s/SATA/ATA/.
+
+MBR, Sergei
