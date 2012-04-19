@@ -1,80 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932079Ab2DSReu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Apr 2012 13:34:50 -0400
-Received: from mx0a-00082601.pphosted.com ([67.231.145.42]:59977 "EHLO
-	mx0a-00082601.pphosted.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754630Ab2DSRes (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Apr 2012 13:34:48 -0400
-Message-ID: <4F904C6C.7020407@fb.com>
-Date: Thu, 19 Apr 2012 10:33:32 -0700
-From: Arun Sharma <asharma@fb.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:11.0) Gecko/20120327 Thunderbird/11.0.1
+	id S932096Ab2DSRfX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Apr 2012 13:35:23 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:40406 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755562Ab2DSRfW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Apr 2012 13:35:22 -0400
+Date: Thu, 19 Apr 2012 19:34:31 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: David Howells <dhowells@redhat.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Alexander Gordeev <agordeev@redhat.com>,
+        Chris Zankel <chris@zankel.net>, David Smith <dsmith@redhat.com>,
+        "Frank Ch. Eigler" <fche@redhat.com>,
+        Geert Uytterhoeven <geert@linux-m68k.org>,
+        Larry Woodman <lwoodman@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>, Tejun Heo <tj@kernel.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v4 3/3] cred: change keyctl_session_to_parent() to use
+	task_work_add()
+Message-ID: <20120419173431.GA27066@redhat.com>
+References: <20120417193409.GA20312@redhat.com> <20120414021252.GC23393@redhat.com> <20120414021201.GA23385@redhat.com> <27037.1334672580@redhat.com> <20120417163606.GC14527@redhat.com> <23383.1334854333@redhat.com>
 MIME-Version: 1.0
-To: Frederic Weisbecker <fweisbec@gmail.com>
-CC: <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>,
-        "Arnaldo Carvalho de Melo" <acme@redhat.com>,
-        Mike Galbraith <efault@gmx.de>, "Paul Mackerras" <paulus@samba.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        "Stephane Eranian" <eranian@google.com>,
-        Namhyung Kim <namhyung.kim@lge.com>,
-        "Tom Zanussi" <tzanussi@gmail.com>, <linux-perf-users@vger.kernel.org>
-Subject: Re: [PATCH] perf, x86: Disable sanity check
-References: <1334791449-402-1-git-send-email-asharma@fb.com> <20120419052208.GA29875@somewhere.redhat.com>
-In-Reply-To: <20120419052208.GA29875@somewhere.redhat.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [192.168.18.252]
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.6.7580,1.0.260,0.0.0000
- definitions=2012-04-19_05:2012-04-19,2012-04-19,1970-01-01 signatures=0
-X-Proofpoint-Spam-Reason: safe
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <23383.1334854333@redhat.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 4/18/12 10:22 PM, Frederic Weisbecker wrote:
+On 04/19, David Howells wrote:
+>
+> Oleg Nesterov <oleg@redhat.com> wrote:
+>
+> > +#define key_replace_session_keyring()	do { } while (0)
+> > +
+>
+> Ummm... Why?  You've made the function no longer exist and so this shouldn't be
+> there anymore.  You shouldn't just leave the call sites in place.
 
-> So rbp is part of the JIT stack but not rsp?
-> Do you have a practical example of that? I must confess I don't know
-> much about JIT stack.
+Sure!
 
-Nothing specific to JITs here. Any time an app has two stacks S1 and S2 
-(with S1 at a lower address and S2 at a higher address) and %rsp at the 
-time of a perf event is pointing to S2, we don't get traces beyond S2.
+I'll send the (trivial) patches to cleanup the code in arch/ (24 callers),
+plus we should kill the no longer used task ->replacement_session_keyring
+and update copy_creds/exit_creds.
 
-               |                 |
-               |                 |
-               |   0x1000000     |  <-- %rbp
-               |                 |
-               |                 |
-S2: 0x2000000 |                 |  <-- %rsp
-               |                 |
-               |                 |
-               |                 |
-               |    frame3       |
-               |                 |
-               |    frame2       |
-               |                 |
-S1: 0x1000000 |    frame1       |
-               |                 |
-               |                 |
-               |                 |
-               |                 |
+But I certainly do not want to put these changes in 3/3 or in this series.
+I'll send the patches to Andrew once (I hope ;) he takes 1-3.
 
-gdb is able to show:
+Oleg.
 
-(gdb) bt
-<frame at 0x2000000>
-frame1
-frame2
-frame3
-frame4
-..
-
-just fine.
-
-In our use case, there may be multiple transitions between S1 and S2. 
-For eg: frame4 could be on S2 (i.e 0x2xxxxxx range).
-
-  -Arun
