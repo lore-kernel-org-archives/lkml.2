@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751460Ab2DSFL0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Apr 2012 01:11:26 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:52884 "EHLO
+	id S1751603Ab2DSFNR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Apr 2012 01:13:17 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:62819 "EHLO
 	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750979Ab2DSFLY (ORCPT
+	with ESMTP id S1750979Ab2DSFNN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Apr 2012 01:11:24 -0400
+	Thu, 19 Apr 2012 01:13:13 -0400
 MIME-Version: 1.0
-In-Reply-To: <1334765203-31844-3-git-send-email-manjunatha_halli@ti.com>
+In-Reply-To: <1334765203-31844-5-git-send-email-manjunatha_halli@ti.com>
 References: <1334765203-31844-1-git-send-email-manjunatha_halli@ti.com>
-	<1334765203-31844-3-git-send-email-manjunatha_halli@ti.com>
-Date: Thu, 19 Apr 2012 14:11:23 +0900
-X-Google-Sender-Auth: -M8ytGvcM3R8e8oggbWETGKAgnY
-Message-ID: <CAH9JG2XcMcS1gf_HN_M8=aMhn6EBwU6Ka7Vzr+Q2ZG9EYJL3=A@mail.gmail.com>
-Subject: Re: [PATCH V2 2/5] [Media] New control class and features for FM RX
+	<1334765203-31844-5-git-send-email-manjunatha_halli@ti.com>
+Date: Thu, 19 Apr 2012 14:13:12 +0900
+X-Google-Sender-Auth: pX1kXl1YRlUvq4xrZtXpd97NxVs
+Message-ID: <CAH9JG2We=7mD=--0on6_iUC8wPESP2OzNji8t1QuZpENHKyotA@mail.gmail.com>
+Subject: Re: [PATCH V2 4/5] [Documentation] Media: Update docs for V4L2 FM new features
 From: Kyungmin Park <kmpark@infradead.org>
 To: manjunatha_halli@ti.com
 Cc: linux-media@vger.kernel.org, benzyg@ti.com, linux-kernel@vger.kernel.org,
@@ -24,134 +24,199 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We're using similar one internally.
-
 Acked-by: Kyungmin Park <kyungmin.park@samsung.com>
 
 On 4/19/12, manjunatha_halli@ti.com <manjunatha_halli@ti.com> wrote:
 > From: Manjunatha Halli <x0130808@ti.com>
 >
-> This patch creates new ctrl class for FM RX and adds new CID's for
-> below FM features,
->         1) De-Emphasis filter mode
-> 	2) RDS AF switch
->
-> Also this patch adds a field for band selection in struct v4l2_hw_freq_seek
+> The list of new features -
+> 	1) New control class for FM RX
+> 	2) New FM RX CID's - De-Emphasis filter mode and RDS AF switch
+> 	3) New FM TX CID - RDS Alternate frequency set.
 >
 > Signed-off-by: Manjunatha Halli <x0130808@ti.com>
 > ---
->  drivers/media/video/v4l2-ctrls.c |   17 +++++++++++++++++
->  include/linux/videodev2.h        |   16 +++++++++++++++-
->  2 files changed, 32 insertions(+), 1 deletions(-)
+>  Documentation/DocBook/media/v4l/compat.xml         |    3 +
+>  Documentation/DocBook/media/v4l/controls.xml       |   78
+> ++++++++++++++++++++
+>  Documentation/DocBook/media/v4l/dev-rds.xml        |    5 +-
+>  .../DocBook/media/v4l/vidioc-g-ext-ctrls.xml       |    7 ++
+>  4 files changed, 91 insertions(+), 2 deletions(-)
 >
-> diff --git a/drivers/media/video/v4l2-ctrls.c
-> b/drivers/media/video/v4l2-ctrls.c
-> index 18015c0..e1bba7d 100644
-> --- a/drivers/media/video/v4l2-ctrls.c
-> +++ b/drivers/media/video/v4l2-ctrls.c
-> @@ -372,6 +372,12 @@ const char * const *v4l2_ctrl_get_menu(u32 id)
->  		NULL,
->  	};
+> diff --git a/Documentation/DocBook/media/v4l/compat.xml
+> b/Documentation/DocBook/media/v4l/compat.xml
+> index bce97c5..df1f345 100644
+> --- a/Documentation/DocBook/media/v4l/compat.xml
+> +++ b/Documentation/DocBook/media/v4l/compat.xml
+> @@ -2311,6 +2311,9 @@ more information.</para>
+>  	  <para>Added FM Modulator (FM TX) Extended Control Class:
+> <constant>V4L2_CTRL_CLASS_FM_TX</constant> and their Control IDs.</para>
+>  	</listitem>
+>  	<listitem>
+> +	<para>Added FM Receiver (FM RX) Extended Control Class:
+> <constant>V4L2_CTRL_CLASS_FM_RX</constant> and their Control IDs.</para>
+> +	</listitem>
+> +	<listitem>
+>  	  <para>Added Remote Controller chapter, describing the default Remote
+> Controller mapping for media devices.</para>
+>  	</listitem>
+>        </orderedlist>
+> diff --git a/Documentation/DocBook/media/v4l/controls.xml
+> b/Documentation/DocBook/media/v4l/controls.xml
+> index b84f25e..f6c8034 100644
+> --- a/Documentation/DocBook/media/v4l/controls.xml
+> +++ b/Documentation/DocBook/media/v4l/controls.xml
+> @@ -3018,6 +3018,12 @@ to find receivers which can scroll strings sized as
+> 32 x N or 64 x N characters.
+>  with steps of 32 or 64 characters. The result is it must always contain a
+> string with size multiple of 32 or 64. </entry>
+>  	  </row>
+>  	  <row>
+> +	  <entry
+> spanname="id"><constant>V4L2_CID_RDS_TX_AF_FREQ</constant>&nbsp;</entry>
+> +	  <entry>integer</entry>
+> +	  </row>
+> +	  <row><entry spanname="descr">Sets the RDS Alternate Frequency value
+> which allows a receiver to re-tune to a different frequency providing the
+> same station when the first signal becomes too weak (e.g., when moving out
+> of range). </entry>
+> +	  </row>
+> +	  <row>
+>  	    <entry
+> spanname="id"><constant>V4L2_CID_AUDIO_LIMITER_ENABLED</constant>&nbsp;</entry>
+>  	    <entry>boolean</entry>
+>  	  </row>
+> @@ -3146,6 +3152,78 @@ manually or automatically if set to zero. Unit, range
+> and step are driver-specif
+>  <xref linkend="en50067" /> document, from CENELEC.</para>
+>      </section>
 >
-> +	static const char * const tune_deemphasis[] = {
-> +		"No deemphasis",
-> +		"50 useconds",
-> +		"75 useconds",
-> +		NULL,
-> +	};
->  	switch (id) {
->  	case V4L2_CID_MPEG_AUDIO_SAMPLING_FREQ:
->  		return mpeg_audio_sampling_freq;
-> @@ -414,6 +420,8 @@ const char * const *v4l2_ctrl_get_menu(u32 id)
->  		return colorfx;
->  	case V4L2_CID_TUNE_PREEMPHASIS:
->  		return tune_preemphasis;
-> +	case V4L2_CID_TUNE_DEEMPHASIS:
-> +		return tune_deemphasis;
->  	case V4L2_CID_FLASH_LED_MODE:
->  		return flash_led_mode;
->  	case V4L2_CID_FLASH_STROBE_SOURCE:
-> @@ -644,6 +652,12 @@ const char *v4l2_ctrl_get_name(u32 id)
->  	case V4L2_CID_JPEG_COMPRESSION_QUALITY:	return "Compression Quality";
->  	case V4L2_CID_JPEG_ACTIVE_MARKER:	return "Active Markers";
->
-> +	/* FM Radio Receiver control */
-> +	/* Keep the order of the 'case's the same as in videodev2.h! */
-> +	case V4L2_CID_FM_RX_CLASS:		return "FM Radio Receiver Controls";
-> +	case V4L2_CID_RDS_AF_SWITCH:		return "FM RX RDS AF switch";
-> +	case V4L2_CID_TUNE_DEEMPHASIS:		return "FM RX De-emphasis settings";
+> +    <section id="fm-rx-controls">
+> +      <title>FM Receiver Control Reference</title>
 > +
->  	default:
->  		return NULL;
->  	}
-> @@ -688,6 +702,7 @@ void v4l2_ctrl_fill(u32 id, const char **name, enum
-> v4l2_ctrl_type *type,
->  	case V4L2_CID_MPEG_VIDEO_H264_8X8_TRANSFORM:
->  	case V4L2_CID_MPEG_VIDEO_H264_VUI_SAR_ENABLE:
->  	case V4L2_CID_MPEG_VIDEO_MPEG4_QPEL:
-> +	case V4L2_CID_RDS_AF_SWITCH:
->  		*type = V4L2_CTRL_TYPE_BOOLEAN;
->  		*min = 0;
->  		*max = *step = 1;
-> @@ -733,6 +748,7 @@ void v4l2_ctrl_fill(u32 id, const char **name, enum
-> v4l2_ctrl_type *type,
->  	case V4L2_CID_MPEG_VIDEO_MPEG4_LEVEL:
->  	case V4L2_CID_MPEG_VIDEO_MPEG4_PROFILE:
->  	case V4L2_CID_JPEG_CHROMA_SUBSAMPLING:
-> +	case V4L2_CID_TUNE_DEEMPHASIS:
->  		*type = V4L2_CTRL_TYPE_MENU;
->  		break;
->  	case V4L2_CID_RDS_TX_PS_NAME:
-> @@ -745,6 +761,7 @@ void v4l2_ctrl_fill(u32 id, const char **name, enum
-> v4l2_ctrl_type *type,
->  	case V4L2_CID_FM_TX_CLASS:
->  	case V4L2_CID_FLASH_CLASS:
->  	case V4L2_CID_JPEG_CLASS:
-> +	case V4L2_CID_FM_RX_CLASS:
->  		*type = V4L2_CTRL_TYPE_CTRL_CLASS;
->  		/* You can neither read not write these */
->  		*flags |= V4L2_CTRL_FLAG_READ_ONLY | V4L2_CTRL_FLAG_WRITE_ONLY;
-> diff --git a/include/linux/videodev2.h b/include/linux/videodev2.h
-> index c9c9a46..00ac1b7 100644
-> --- a/include/linux/videodev2.h
-> +++ b/include/linux/videodev2.h
-> @@ -1137,6 +1137,7 @@ struct v4l2_ext_controls {
->  #define V4L2_CTRL_CLASS_FM_TX 0x009b0000	/* FM Modulator control class */
->  #define V4L2_CTRL_CLASS_FLASH 0x009c0000	/* Camera flash controls */
->  #define V4L2_CTRL_CLASS_JPEG 0x009d0000		/* JPEG-compression controls */
-> +#define V4L2_CTRL_CLASS_FM_RX 0x009e0000	/* FM Receiver control class */
->
->  #define V4L2_CTRL_ID_MASK      	  (0x0fffffff)
->  #define V4L2_CTRL_ID2CLASS(id)    ((id) & 0x0fff0000UL)
-> @@ -1782,6 +1783,18 @@ enum v4l2_jpeg_chroma_subsampling {
->  #define	V4L2_JPEG_ACTIVE_MARKER_DQT		(1 << 17)
->  #define	V4L2_JPEG_ACTIVE_MARKER_DHT		(1 << 18)
->
-> +/* FM Receiver class control IDs */
-> +#define V4L2_CID_FM_RX_CLASS_BASE		(V4L2_CTRL_CLASS_FM_RX | 0x900)
-> +#define V4L2_CID_FM_RX_CLASS			(V4L2_CTRL_CLASS_FM_RX | 1)
+> +      <para>The FM Receiver (FM_RX) class includes controls for common
+> features of
+> +FM Reception capable devices. Currently this class includes parameter for
+> Alternate
+> +frequency.</para>
 > +
-> +#define V4L2_CID_RDS_AF_SWITCH			(V4L2_CID_FM_RX_CLASS_BASE + 1)
-> +#define V4L2_CID_TUNE_DEEMPHASIS		(V4L2_CID_FM_RX_CLASS_BASE + 2)
-> +enum v4l2_deemphasis {
-> +	V4L2_DEEMPHASIS_DISABLED	= 0,
-> +	V4L2_DEEMPHASIS_50_uS		= 1,
-> +	V4L2_DEEMPHASIS_75_uS		= 2,
-> +};
+> +      <table pgwide="1" frame="none" id="fm-rx-control-id">
+> +      <title>FM_RX Control IDs</title>
 > +
->  /*
->   *	T U N I N G
->   */
-> @@ -1849,7 +1862,8 @@ struct v4l2_hw_freq_seek {
->  	__u32		      seek_upward;
->  	__u32		      wrap_around;
->  	__u32		      spacing;
-> -	__u32		      reserved[7];
-> +	__u32		      fm_band;
-> +	__u32		      reserved[6];
->  };
+> +      <tgroup cols="4">
+> +        <colspec colname="c1" colwidth="1*" />
+> +        <colspec colname="c2" colwidth="6*" />
+> +        <colspec colname="c3" colwidth="2*" />
+> +        <colspec colname="c4" colwidth="6*" />
+> +        <spanspec namest="c1" nameend="c2" spanname="id" />
+> +        <spanspec namest="c2" nameend="c4" spanname="descr" />
+> +        <thead>
+> +          <row>
+> +            <entry spanname="id" align="left">ID</entry>
+> +            <entry align="left">Type</entry>
+> +          </row><row rowsep="1"><entry spanname="descr"
+> align="left">Description</entry>
+> +          </row>
+> +        </thead>
+> +        <tbody valign="top">
+> +          <row><entry></entry></row>
+> +          <row>
+> +            <entry
+> spanname="id"><constant>V4L2_CID_FM_RX_CLASS</constant>&nbsp;</entry>
+> +            <entry>class</entry>
+> +          </row><row><entry spanname="descr">The FM_RX class
+> +descriptor. Calling &VIDIOC-QUERYCTRL; for this control will return a
+> +description of this control class.</entry>
+> +          </row>
+> +          <row>
+> +            <entry
+> spanname="id"><constant>V4L2_CID_RDS_AF_SWITCH</constant>&nbsp;</entry>
+> +            <entry>boolean</entry>
+> +          </row>
+> +          <row><entry spanname="descr">Enable or Disable's FM RX RDS
+> Alternate frequency feature.</entry>
+> +          </row>
+> +          <row>
+> +	    <entry
+> spanname="id"><constant>V4L2_CID_TUNE_DEEMPHASIS</constant>&nbsp;</entry>
+> +	    <entry>integer</entry>
+> +	  </row>
+> +	  <row id="v4l2-deemphasis"><entry spanname="descr">Configures the
+> de-emphasis value for reception.
+> +A pre-emphasis filter is applied to the broadcast to accentuate the high
+> audio frequencies.
+> +Depending on the region, a time constant of either 50 or 75 useconds is
+> used. The enum&nbsp;v4l2_deemphasis
+> +defines possible values for pre-emphasis. Here they are:</entry>
+> +	</row><row>
+> +	<entrytbl spanname="descr" cols="2">
+> +		  <tbody valign="top">
+> +		    <row>
+> +		      <entry><constant>V4L2_DEEMPHASIS_DISABLED</constant>&nbsp;</entry>
+> +		      <entry>No de-emphasis is applied.</entry>
+> +		    </row>
+> +		    <row>
+> +		      <entry><constant>V4L2_DEEMPHASIS_50_uS</constant>&nbsp;</entry>
+> +		      <entry>A de-emphasis of 50 uS is used.</entry>
+> +		    </row>
+> +		    <row>
+> +		      <entry><constant>V4L2_DEEMPHASIS_75_uS</constant>&nbsp;</entry>
+> +		      <entry>A de-emphasis of 75 uS is used.</entry>
+> +		    </row>
+> +		  </tbody>
+> +		</entrytbl>
+> +
+> +	  </row>
+> +          <row><entry></entry></row>
+> +        </tbody>
+> +      </tgroup>
+> +      </table>
+> +
+> +      </section>
+>      <section id="flash-controls">
+>        <title>Flash Control Reference</title>
 >
->  /*
+> diff --git a/Documentation/DocBook/media/v4l/dev-rds.xml
+> b/Documentation/DocBook/media/v4l/dev-rds.xml
+> index 38883a4..8188161 100644
+> --- a/Documentation/DocBook/media/v4l/dev-rds.xml
+> +++ b/Documentation/DocBook/media/v4l/dev-rds.xml
+> @@ -55,8 +55,9 @@ If the driver only passes RDS blocks without interpreting
+> the data
+>  the <constant>V4L2_TUNER_CAP_RDS_BLOCK_IO</constant> flag has to be set. If
+> the
+>  tuner is capable of handling RDS entities like program identification codes
+> and radio
+>  text, the flag <constant>V4L2_TUNER_CAP_RDS_CONTROLS</constant> should be
+> set,
+> -see <link linkend="writing-rds-data">Writing RDS data</link> and
+> -<link linkend="fm-tx-controls">FM Transmitter Control
+> Reference</link>.</para>
+> +see <link linkend="writing-rds-data">Writing RDS data</link>,
+> +<link linkend="fm-tx-controls">FM Transmitter Control Reference</link>
+> +<link linkend="fm-rx-controls">FM Receiver Control Reference</link>.</para>
+>    </section>
+>
+>    <section  id="reading-rds-data">
+> diff --git a/Documentation/DocBook/media/v4l/vidioc-g-ext-ctrls.xml
+> b/Documentation/DocBook/media/v4l/vidioc-g-ext-ctrls.xml
+> index b17a7aa..2a8b44e 100644
+> --- a/Documentation/DocBook/media/v4l/vidioc-g-ext-ctrls.xml
+> +++ b/Documentation/DocBook/media/v4l/vidioc-g-ext-ctrls.xml
+> @@ -258,6 +258,13 @@ These controls are described in <xref
+>  These controls are described in <xref
+>  		linkend="fm-tx-controls" />.</entry>
+>  	  </row>
+> +          <row>
+> +            <entry><constant>V4L2_CTRL_CLASS_FM_RX</constant></entry>
+> +             <entry>0x9c0000</entry>
+> +             <entry>The class containing FM Receiver (FM RX) controls.
+> +These controls are described in <xref
+> +                 linkend="fm-rx-controls" />.</entry>
+> +           </row>
+>  	  <row>
+>  	    <entry><constant>V4L2_CTRL_CLASS_FLASH</constant></entry>
+>  	    <entry>0x9c0000</entry>
 > --
 > 1.7.4.1
 >
