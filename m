@@ -1,61 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755265Ab2DSNGl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Apr 2012 09:06:41 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:40368 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752632Ab2DSNGk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Apr 2012 09:06:40 -0400
-Message-ID: <4F900DD6.50105@redhat.com>
-Date: Thu, 19 Apr 2012 09:06:30 -0400
-From: Prarit Bhargava <prarit@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110419 Red Hat/3.1.10-1.el6_0 Thunderbird/3.1.10
+	id S1755331Ab2DSNHa (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Apr 2012 09:07:30 -0400
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:34331 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753818Ab2DSNH3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Apr 2012 09:07:29 -0400
+Date: Thu, 19 Apr 2012 15:08:27 +0200
+From: Daniel Vetter <daniel@ffwll.ch>
+To: Dave Airlie <airlied@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        DRI Development <dri-devel@lists.freedesktop.org>,
+        Intel Graphics Development <intel-gfx@lists.freedesktop.org>
+Subject: [pull] drm-intel-fixes for 3.4-rc4
+Message-ID: <20120419130827.GE4256@phenom.ffwll.local>
+Mail-Followup-To: Dave Airlie <airlied@gmail.com>,
+	LKML <linux-kernel@vger.kernel.org>,
+	DRI Development <dri-devel@lists.freedesktop.org>,
+	Intel Graphics Development <intel-gfx@lists.freedesktop.org>
 MIME-Version: 1.0
-To: Thomas Gleixner <tglx@linutronix.de>
-CC: John Stultz <john.stultz@linaro.org>, linux-kernel@vger.kernel.org,
-        Salman Qazi <sqazi@google.com>, stable@kernel.org
-Subject: Re: [PATCH] clocksource, prevent overflow in clocksource_cyc2ns
-References: <1333552260-1170-1-git-send-email-prarit@redhat.com> <4F7C8C3E.1020203@us.ibm.com> <4F7C9402.3090602@redhat.com> <4F7CF094.5020201@us.ibm.com> <4F7D8FA1.1010107@redhat.com> <4F8F4C31.7010209@linaro.org> <4F8F555F.7040404@redhat.com> <4F8F59E2.4080301@linaro.org> <alpine.LFD.2.02.1204191437560.2542@ionos> <alpine.LFD.2.02.1204191451350.2542@ionos>
-In-Reply-To: <alpine.LFD.2.02.1204191451350.2542@ionos>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+X-Operating-System: Linux phenom 3.2.0-2-amd64
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Dave,
 
+Just 3 fixes this time around:
+- Regression fix for upscaled lvds modes on older machines, the clean-up
+  of our crtc timing handling from the interlaced patches screwed things
+  up there.
+- Locking fix in lastclose, prevents an oops.
+- Black panel on vt switch due to pageflip when upscaling fix for snb.
 
-On 04/19/2012 08:52 AM, Thomas Gleixner wrote:
-> On Thu, 19 Apr 2012, Thomas Gleixner wrote:
-> 
->> On Wed, 18 Apr 2012, John Stultz wrote:
->>> On 04/18/2012 04:59 PM, Prarit Bhargava wrote:
->>>>
+Wrt regressions from 3.4 I'm only aware of a funky report that might
+implies rc6 in sometimes causing resume failures, but it's not yet clear
+what's going on there.
 
->> No. The show_state() part prints into the buffer. But it's not
->> guaranteed that the buffer is flushed right away. It could be flushed
->> later as well in a different context. And of course the flush code
->> runs with interrupts disabled and dumping out a gazillion of lines
->> over serial will cause the same hickup. Just planting random
->> touch_watchdog() calls into the code is not the right approach,
->> really.
->>
->> We should think about the reasons why we have interrupts disabled for
->> so much time. Is that really, really necessary ?
+Yours, Daniel
+on vt switch 
+The following changes since commit e816b57a337ea3b755de72bec38c10c864f23015:
 
-In the case of the sysrq-t, I would argue that it is.  The whole point behind
-the sysrq-t is that we're capturing the *current* state of the system.  Having
-that output effected by interrupts seems like a bad idea.
+  Linux 3.4-rc3 (2012-04-15 18:28:29 -0700)
 
-> 
-> I'm not against making the clocksource code more robust, but I don't
-> want to add crap there just to cope with complete madness elsewhere.
+are available in the git repository at:
 
-Maybe I came off the wrong way but I completely agree with that sentiment.  Like
-yourself, I'm looking for a correct fix rather than a fast fix.
+  git://people.freedesktop.org/~danvet/drm-intel drm-intel-fixes
 
-Sorry that I haven't provided any debug info but I'm still in the gathering data
-stage atm.  It was just John's ping that made me "brain dump" the current info I
-had.
+for you to fetch changes up to 99d9acdd0c5ce970eaf8e8671c0bc4cb7c6fb0c1:
 
-P.
+  drm/i915: Do not set "Enable Panel Fitter" on SNB pageflips (2012-04-18 10:30:47 +0200)
+
+----------------------------------------------------------------
+Chris Wilson (2):
+      drm/i915: Hold mode_config lock whilst changing mode for lastclose()
+      drm/i915: Do not set "Enable Panel Fitter" on SNB pageflips
+
+Daniel Vetter (1):
+      drm/i915: don't clobber the special upscaling lvds timings
+
+ drivers/gpu/drm/i915/intel_display.c |   15 ++++++++++++---
+ drivers/gpu/drm/i915/intel_drv.h     |    4 ++++
+ drivers/gpu/drm/i915/intel_fb.c      |    4 ++++
+ drivers/gpu/drm/i915/intel_lvds.c    |    6 ++++++
+ drivers/gpu/drm/i915/intel_panel.c   |    2 --
+ 5 files changed, 26 insertions(+), 5 deletions(-)
+-- 
+Daniel Vetter
+Mail: daniel@ffwll.ch
+Mobile: +41 (0)79 365 57 48
