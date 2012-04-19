@@ -1,227 +1,203 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751603Ab2DSFNR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Apr 2012 01:13:17 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:62819 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750979Ab2DSFNN (ORCPT
+	id S1751923Ab2DSFOL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Apr 2012 01:14:11 -0400
+Received: from mail1-relais-roc.national.inria.fr ([192.134.164.82]:11640 "EHLO
+	mail1-relais-roc.national.inria.fr" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751085Ab2DSFOK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Apr 2012 01:13:13 -0400
+	Thu, 19 Apr 2012 01:14:10 -0400
+X-IronPort-AV: E=Sophos;i="4.75,445,1330902000"; 
+   d="scan'208";a="154658664"
+Date: Thu, 19 Apr 2012 07:14:05 +0200 (CEST)
+From: Julia Lawall <julia.lawall@lip6.fr>
+X-X-Sender: jll@localhost6.localdomain6
+To: Jingoo Han <jg1.han@samsung.com>
+cc: "'Ryan Mallon'" <rmallon@gmail.com>,
+        "'Florian Tobias Schandinat'" <FlorianSchandinat@gmx.de>,
+        kernel-janitors@vger.kernel.org, linux-fbdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, "'Julia Lawall'" <Julia.Lawall@lip6.fr>,
+        joe@perches.com
+Subject: RE: [PATCH] drivers/video/ep93xx-fb.c: clean up error-handling
+ code
+In-Reply-To: <000401cd1dd2$5f8ee3b0$1eacab10$%han@samsung.com>
+Message-ID: <alpine.DEB.2.02.1204190713200.1954@localhost6.localdomain6>
+References: <1334777828-3557-1-git-send-email-Julia.Lawall@lip6.fr> <4F8F5938.2000207@gmail.com> <000401cd1dd2$5f8ee3b0$1eacab10$%han@samsung.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-In-Reply-To: <1334765203-31844-5-git-send-email-manjunatha_halli@ti.com>
-References: <1334765203-31844-1-git-send-email-manjunatha_halli@ti.com>
-	<1334765203-31844-5-git-send-email-manjunatha_halli@ti.com>
-Date: Thu, 19 Apr 2012 14:13:12 +0900
-X-Google-Sender-Auth: pX1kXl1YRlUvq4xrZtXpd97NxVs
-Message-ID: <CAH9JG2We=7mD=--0on6_iUC8wPESP2OzNji8t1QuZpENHKyotA@mail.gmail.com>
-Subject: Re: [PATCH V2 4/5] [Documentation] Media: Update docs for V4L2 FM new features
-From: Kyungmin Park <kmpark@infradead.org>
-To: manjunatha_halli@ti.com
-Cc: linux-media@vger.kernel.org, benzyg@ti.com, linux-kernel@vger.kernel.org,
-        Manjunatha Halli <x0130808@ti.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Acked-by: Kyungmin Park <kyungmin.park@samsung.com>
+I don't know thw impact of the ./.  I use the options
 
-On 4/19/12, manjunatha_halli@ti.com <manjunatha_halli@ti.com> wrote:
-> From: Manjunatha Halli <x0130808@ti.com>
+--nokeywords --nogit-fallback --subsystem --norolestats -f
+
+julia
+
+On Thu, 19 Apr 2012, Jingoo Han wrote:
+
+>> -----Original Message-----
+>> From: Ryan Mallon
+>> Sent: Thursday, April 19, 2012 9:16 AM
+>> To: Julia Lawall
+>> Cc: Florian Tobias Schandinat; kernel-janitors@vger.kernel.org; linux-fbdev@vger.kernel.org; linux-
+>> kernel@vger.kernel.org
+>> Subject: Re: [PATCH] drivers/video/ep93xx-fb.c: clean up error-handling code
+>>
+>> On 19/04/12 05:37, Julia Lawall wrote:
+>>
+>>> From: Julia Lawall <Julia.Lawall@lip6.fr>
+>>>
+>>> There were two problems in this code: failure of the setup function should
+>>> free locally allocated resources like other nearby failures, and the test
+>>> if (&info->cmap) can never be false.  To generally clean things up, this
+>>> patch reorders the error handling code at the failed label and adds labels
+>>> so that the conditionals are not necessary.
+>>>
+>>> Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
+>>
+>> Reviewed-by: Ryan Mallon <rmallon@gmail.com>
+>>
+>> Oddly, scripts/get_maintainer.pl on this file doesn't return me, even
+>> though, according to git blame, I am the author of 90% of the commits.
+>> Should I have an entry in the MAINTAINERS file, or is
+>> scripts/get_maintainer.pl not working properly?
 >
-> The list of new features -
-> 	1) New control class for FM RX
-> 	2) New FM RX CID's - De-Emphasis filter mode and RDS AF switch
-> 	3) New FM TX CID - RDS Alternate frequency set.
+> There are optional differences in using scripts/get_maintainer.pl.
+> If you use './' ahead of file path, you will see your name.
 >
-> Signed-off-by: Manjunatha Halli <x0130808@ti.com>
-> ---
->  Documentation/DocBook/media/v4l/compat.xml         |    3 +
->  Documentation/DocBook/media/v4l/controls.xml       |   78
-> ++++++++++++++++++++
->  Documentation/DocBook/media/v4l/dev-rds.xml        |    5 +-
->  .../DocBook/media/v4l/vidioc-g-ext-ctrls.xml       |    7 ++
->  4 files changed, 91 insertions(+), 2 deletions(-)
+> Without './' ahead of 'drivers/video/ep93xx-fb.c':
+> ./scripts/get_maintainer.pl --file drivers/video/ep93xx-fb.c
+> Florian Tobias Schandinat <FlorianSchandinat@gmx.de> (maintainer:FRAMEBUFFER LAYER)
+> linux-fbdev@vger.kernel.org (open list:FRAMEBUFFER LAYER)
+> linux-kernel@vger.kernel.org (open list)
 >
-> diff --git a/Documentation/DocBook/media/v4l/compat.xml
-> b/Documentation/DocBook/media/v4l/compat.xml
-> index bce97c5..df1f345 100644
-> --- a/Documentation/DocBook/media/v4l/compat.xml
-> +++ b/Documentation/DocBook/media/v4l/compat.xml
-> @@ -2311,6 +2311,9 @@ more information.</para>
->  	  <para>Added FM Modulator (FM TX) Extended Control Class:
-> <constant>V4L2_CTRL_CLASS_FM_TX</constant> and their Control IDs.</para>
->  	</listitem>
->  	<listitem>
-> +	<para>Added FM Receiver (FM RX) Extended Control Class:
-> <constant>V4L2_CTRL_CLASS_FM_RX</constant> and their Control IDs.</para>
-> +	</listitem>
-> +	<listitem>
->  	  <para>Added Remote Controller chapter, describing the default Remote
-> Controller mapping for media devices.</para>
->  	</listitem>
->        </orderedlist>
-> diff --git a/Documentation/DocBook/media/v4l/controls.xml
-> b/Documentation/DocBook/media/v4l/controls.xml
-> index b84f25e..f6c8034 100644
-> --- a/Documentation/DocBook/media/v4l/controls.xml
-> +++ b/Documentation/DocBook/media/v4l/controls.xml
-> @@ -3018,6 +3018,12 @@ to find receivers which can scroll strings sized as
-> 32 x N or 64 x N characters.
->  with steps of 32 or 64 characters. The result is it must always contain a
-> string with size multiple of 32 or 64. </entry>
->  	  </row>
->  	  <row>
-> +	  <entry
-> spanname="id"><constant>V4L2_CID_RDS_TX_AF_FREQ</constant>&nbsp;</entry>
-> +	  <entry>integer</entry>
-> +	  </row>
-> +	  <row><entry spanname="descr">Sets the RDS Alternate Frequency value
-> which allows a receiver to re-tune to a different frequency providing the
-> same station when the first signal becomes too weak (e.g., when moving out
-> of range). </entry>
-> +	  </row>
-> +	  <row>
->  	    <entry
-> spanname="id"><constant>V4L2_CID_AUDIO_LIMITER_ENABLED</constant>&nbsp;</entry>
->  	    <entry>boolean</entry>
->  	  </row>
-> @@ -3146,6 +3152,78 @@ manually or automatically if set to zero. Unit, range
-> and step are driver-specif
->  <xref linkend="en50067" /> document, from CENELEC.</para>
->      </section>
+> With './' ahead of 'drivers/video/ep93xx-fb.c':
+> ./scripts/get_maintainer.pl --file ./drivers/video/ep93xx-fb.c
+> Ryan Mallon <rmallon@gmail.com> (commit_signer:2/3=67%)
+> Paul Gortmaker <paul.gortmaker@windriver.com> (commit_signer:1/3=33%)
+> H Hartley Sweeten <hsweeten@visionengravers.com> (commit_signer:1/3=33%)
+> Jesper Juhl <jj@chaosbits.net> (commit_signer:1/3=33%)
+> Jiri Kosina <jkosina@suse.cz> (commit_signer:1/3=33%)
+> linux-kernel@vger.kernel.org (open list)
 >
-> +    <section id="fm-rx-controls">
-> +      <title>FM Receiver Control Reference</title>
-> +
-> +      <para>The FM Receiver (FM_RX) class includes controls for common
-> features of
-> +FM Reception capable devices. Currently this class includes parameter for
-> Alternate
-> +frequency.</para>
-> +
-> +      <table pgwide="1" frame="none" id="fm-rx-control-id">
-> +      <title>FM_RX Control IDs</title>
-> +
-> +      <tgroup cols="4">
-> +        <colspec colname="c1" colwidth="1*" />
-> +        <colspec colname="c2" colwidth="6*" />
-> +        <colspec colname="c3" colwidth="2*" />
-> +        <colspec colname="c4" colwidth="6*" />
-> +        <spanspec namest="c1" nameend="c2" spanname="id" />
-> +        <spanspec namest="c2" nameend="c4" spanname="descr" />
-> +        <thead>
-> +          <row>
-> +            <entry spanname="id" align="left">ID</entry>
-> +            <entry align="left">Type</entry>
-> +          </row><row rowsep="1"><entry spanname="descr"
-> align="left">Description</entry>
-> +          </row>
-> +        </thead>
-> +        <tbody valign="top">
-> +          <row><entry></entry></row>
-> +          <row>
-> +            <entry
-> spanname="id"><constant>V4L2_CID_FM_RX_CLASS</constant>&nbsp;</entry>
-> +            <entry>class</entry>
-> +          </row><row><entry spanname="descr">The FM_RX class
-> +descriptor. Calling &VIDIOC-QUERYCTRL; for this control will return a
-> +description of this control class.</entry>
-> +          </row>
-> +          <row>
-> +            <entry
-> spanname="id"><constant>V4L2_CID_RDS_AF_SWITCH</constant>&nbsp;</entry>
-> +            <entry>boolean</entry>
-> +          </row>
-> +          <row><entry spanname="descr">Enable or Disable's FM RX RDS
-> Alternate frequency feature.</entry>
-> +          </row>
-> +          <row>
-> +	    <entry
-> spanname="id"><constant>V4L2_CID_TUNE_DEEMPHASIS</constant>&nbsp;</entry>
-> +	    <entry>integer</entry>
-> +	  </row>
-> +	  <row id="v4l2-deemphasis"><entry spanname="descr">Configures the
-> de-emphasis value for reception.
-> +A pre-emphasis filter is applied to the broadcast to accentuate the high
-> audio frequencies.
-> +Depending on the region, a time constant of either 50 or 75 useconds is
-> used. The enum&nbsp;v4l2_deemphasis
-> +defines possible values for pre-emphasis. Here they are:</entry>
-> +	</row><row>
-> +	<entrytbl spanname="descr" cols="2">
-> +		  <tbody valign="top">
-> +		    <row>
-> +		      <entry><constant>V4L2_DEEMPHASIS_DISABLED</constant>&nbsp;</entry>
-> +		      <entry>No de-emphasis is applied.</entry>
-> +		    </row>
-> +		    <row>
-> +		      <entry><constant>V4L2_DEEMPHASIS_50_uS</constant>&nbsp;</entry>
-> +		      <entry>A de-emphasis of 50 uS is used.</entry>
-> +		    </row>
-> +		    <row>
-> +		      <entry><constant>V4L2_DEEMPHASIS_75_uS</constant>&nbsp;</entry>
-> +		      <entry>A de-emphasis of 75 uS is used.</entry>
-> +		    </row>
-> +		  </tbody>
-> +		</entrytbl>
-> +
-> +	  </row>
-> +          <row><entry></entry></row>
-> +        </tbody>
-> +      </tgroup>
-> +      </table>
-> +
-> +      </section>
->      <section id="flash-controls">
->        <title>Flash Control Reference</title>
 >
-> diff --git a/Documentation/DocBook/media/v4l/dev-rds.xml
-> b/Documentation/DocBook/media/v4l/dev-rds.xml
-> index 38883a4..8188161 100644
-> --- a/Documentation/DocBook/media/v4l/dev-rds.xml
-> +++ b/Documentation/DocBook/media/v4l/dev-rds.xml
-> @@ -55,8 +55,9 @@ If the driver only passes RDS blocks without interpreting
-> the data
->  the <constant>V4L2_TUNER_CAP_RDS_BLOCK_IO</constant> flag has to be set. If
-> the
->  tuner is capable of handling RDS entities like program identification codes
-> and radio
->  text, the flag <constant>V4L2_TUNER_CAP_RDS_CONTROLS</constant> should be
-> set,
-> -see <link linkend="writing-rds-data">Writing RDS data</link> and
-> -<link linkend="fm-tx-controls">FM Transmitter Control
-> Reference</link>.</para>
-> +see <link linkend="writing-rds-data">Writing RDS data</link>,
-> +<link linkend="fm-tx-controls">FM Transmitter Control Reference</link>
-> +<link linkend="fm-rx-controls">FM Receiver Control Reference</link>.</para>
->    </section>
+> Best regards,
+> Jingoo Han
 >
->    <section  id="reading-rds-data">
-> diff --git a/Documentation/DocBook/media/v4l/vidioc-g-ext-ctrls.xml
-> b/Documentation/DocBook/media/v4l/vidioc-g-ext-ctrls.xml
-> index b17a7aa..2a8b44e 100644
-> --- a/Documentation/DocBook/media/v4l/vidioc-g-ext-ctrls.xml
-> +++ b/Documentation/DocBook/media/v4l/vidioc-g-ext-ctrls.xml
-> @@ -258,6 +258,13 @@ These controls are described in <xref
->  These controls are described in <xref
->  		linkend="fm-tx-controls" />.</entry>
->  	  </row>
-> +          <row>
-> +            <entry><constant>V4L2_CTRL_CLASS_FM_RX</constant></entry>
-> +             <entry>0x9c0000</entry>
-> +             <entry>The class containing FM Receiver (FM RX) controls.
-> +These controls are described in <xref
-> +                 linkend="fm-rx-controls" />.</entry>
-> +           </row>
->  	  <row>
->  	    <entry><constant>V4L2_CTRL_CLASS_FLASH</constant></entry>
->  	    <entry>0x9c0000</entry>
-> --
-> 1.7.4.1
+>>
+>> ~Ryan
+>>
+>>> ---
+>>> Not tested.
+>>>
+>>>  drivers/video/ep93xx-fb.c |   32 +++++++++++++++++---------------
+>>>  1 file changed, 17 insertions(+), 15 deletions(-)
+>>>
+>>> diff --git a/drivers/video/ep93xx-fb.c b/drivers/video/ep93xx-fb.c
+>>> index f8babbe..345d962 100644
+>>> --- a/drivers/video/ep93xx-fb.c
+>>> +++ b/drivers/video/ep93xx-fb.c
+>>> @@ -507,16 +507,16 @@ static int __devinit ep93xxfb_probe(struct platform_device *pdev)
+>>>
+>>>  	err = fb_alloc_cmap(&info->cmap, 256, 0);
+>>>  	if (err)
+>>> -		goto failed;
+>>> +		goto failed_cmap;
+>>>
+>>>  	err = ep93xxfb_alloc_videomem(info);
+>>>  	if (err)
+>>> -		goto failed;
+>>> +		goto failed_videomem;
+>>>
+>>>  	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+>>>  	if (!res) {
+>>>  		err = -ENXIO;
+>>> -		goto failed;
+>>> +		goto failed_resource;
+>>>  	}
+>>>
+>>>  	/*
+>>> @@ -532,7 +532,7 @@ static int __devinit ep93xxfb_probe(struct platform_device *pdev)
+>>>  	fbi->mmio_base = ioremap(res->start, resource_size(res));
+>>>  	if (!fbi->mmio_base) {
+>>>  		err = -ENXIO;
+>>> -		goto failed;
+>>> +		goto failed_resource;
+>>>  	}
+>>>
+>>>  	strcpy(info->fix.id, pdev->name);
+>>> @@ -553,24 +553,24 @@ static int __devinit ep93xxfb_probe(struct platform_device *pdev)
+>>>  	if (err == 0) {
+>>>  		dev_err(info->dev, "No suitable video mode found\n");
+>>>  		err = -EINVAL;
+>>> -		goto failed;
+>>> +		goto failed_mode;
+>>>  	}
+>>>
+>>>  	if (mach_info->setup) {
+>>>  		err = mach_info->setup(pdev);
+>>>  		if (err)
+>>> -			return err;
+>>> +			goto failed_mode;
+>>>  	}
+>>>
+>>>  	err = ep93xxfb_check_var(&info->var, info);
+>>>  	if (err)
+>>> -		goto failed;
+>>> +		goto failed_check;
+>>>
+>>>  	fbi->clk = clk_get(info->dev, NULL);
+>>>  	if (IS_ERR(fbi->clk)) {
+>>>  		err = PTR_ERR(fbi->clk);
+>>>  		fbi->clk = NULL;
+>>> -		goto failed;
+>>> +		goto failed_check;
+>>>  	}
+>>>
+>>>  	ep93xxfb_set_par(info);
+>>> @@ -585,15 +585,17 @@ static int __devinit ep93xxfb_probe(struct platform_device *pdev)
+>>>  	return 0;
+>>>
+>>>  failed:
+>>> -	if (fbi->clk)
+>>> -		clk_put(fbi->clk);
+>>> -	if (fbi->mmio_base)
+>>> -		iounmap(fbi->mmio_base);
+>>> -	ep93xxfb_dealloc_videomem(info);
+>>> -	if (&info->cmap)
+>>> -		fb_dealloc_cmap(&info->cmap);
+>>> +	clk_put(fbi->clk);
+>>> +failed_check:
+>>>  	if (fbi->mach_info->teardown)
+>>>  		fbi->mach_info->teardown(pdev);
+>>> +failed_mode:
+>>> +	iounmap(fbi->mmio_base);
+>>> +failed_resource:
+>>> +	ep93xxfb_dealloc_videomem(info);
+>>> +failed_videomem:
+>>> +	fb_dealloc_cmap(&info->cmap);
+>>> +failed_cmap:
+>>>  	kfree(info);
+>>>  	platform_set_drvdata(pdev, NULL);
+>>>
+>>>
+>>> --
+>>> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+>>> the body of a message to majordomo@vger.kernel.org
+>>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>>> Please read the FAQ at  http://www.tux.org/lkml/
+>>
+>>
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe linux-fbdev" in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 >
 > --
-> To unsubscribe from this list: send the line "unsubscribe linux-media" in
+> To unsubscribe from this list: send the line "unsubscribe kernel-janitors" in
 > the body of a message to majordomo@vger.kernel.org
 > More majordomo info at  http://vger.kernel.org/majordomo-info.html
 >
