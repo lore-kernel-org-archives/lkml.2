@@ -1,62 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932292Ab2DSTsW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Apr 2012 15:48:22 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:16375 "EHLO mx1.redhat.com"
+	id S932329Ab2DSTs5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Apr 2012 15:48:57 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:46982 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932124Ab2DSTsV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Apr 2012 15:48:21 -0400
-Date: Thu, 19 Apr 2012 21:47:34 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: David Howells <dhowells@redhat.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Alexander Gordeev <agordeev@redhat.com>,
-        Chris Zankel <chris@zankel.net>, David Smith <dsmith@redhat.com>,
-        "Frank Ch. Eigler" <fche@redhat.com>,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        Larry Woodman <lwoodman@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>, Tejun Heo <tj@kernel.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v4 3/3] cred: change keyctl_session_to_parent() to use
-	task_work_add()
-Message-ID: <20120419194734.GA16740@redhat.com>
-References: <20120419173431.GA27066@redhat.com> <20120417193409.GA20312@redhat.com> <20120414021252.GC23393@redhat.com> <20120414021201.GA23385@redhat.com> <27037.1334672580@redhat.com> <20120417163606.GC14527@redhat.com> <23383.1334854333@redhat.com> <25695.1334858133@redhat.com> <20120419181010.GA29793@redhat.com> <27773.1334864058@redhat.com>
+	id S932124Ab2DSTs4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Apr 2012 15:48:56 -0400
+Message-ID: <4F906C22.6090101@redhat.com>
+Date: Thu, 19 Apr 2012 16:48:50 -0300
+From: Mauro Carvalho Chehab <mchehab@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120329 Thunderbird/11.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <27773.1334864058@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: Marcos Paulo de Souza <marcos.souza.org@gmail.com>
+CC: linux-kernel@vger.kernel.org,
+        Mauro Carvalho Chehab <mchehab@infradead.org>,
+        linux-media@vger.kernel.org
+Subject: Re: [PATCH 07/12] drivers: media: video: tm6000: tm6000.h: Include
+ version.h header
+References: <1334723412-5034-1-git-send-email-marcos.souza.org@gmail.com> <1334723412-5034-8-git-send-email-marcos.souza.org@gmail.com>
+In-Reply-To: <1334723412-5034-8-git-send-email-marcos.souza.org@gmail.com>
+X-Enigmail-Version: 1.4
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/19, David Howells wrote:
->
-> Oleg Nesterov <oleg@redhat.com> wrote:
->
-> > I am not going to argue, but honestly I don't think it is a good
-> > idea to mix the functional changes in keyctl.c and the simple
-> > (but obviously untested) cleanups.
->
-> I meant add the cleanup as patch 4.  That way they are still separate.  I'll
-> let you change the name of the function to make it easier;-)
+Em 18-04-2012 01:30, Marcos Paulo de Souza escreveu:
+> The output of "make versioncheck" told us that:
+> 
+> drivers/media/video/tm6000/tm6000.h: 401: need linux/version.h
+> 
+> If we take a look at the code, we can see the use of the macro
+> KERNEL_VERSION. So, we need this include.
+> 
+> In this patch too, the headers of the file were reordered in alphabetic
+> order. No functional changes here.
+> 
+> Cc: Mauro Carvalho Chehab <mchehab@infradead.org>
+> Cc: <linux-media@vger.kernel.org >
+> Signed-off-by: Marcos Paulo de Souza <marcos.souza.org@gmail.com>
 
-OK.
+Nack. See enclosed.
 
-I'd like to avoid the unnecessary resends, lets discuss this before
-I send the patch(es).
+commit d8a9c01484b258573587a52c3226bbdf6d11cda6
+Author: Mauro Carvalho Chehab <mchehab@redhat.com>
+Date:   Thu Apr 19 16:35:27 2012 -0300
 
-At least I'd like to split this into 2 patches:
+    [media] tlg2300: Remove usage of KERNEL_VERSION()
+    
+    As reported by Marcos:
+    
+    On 04-18-2012 01:30, Marcos Paulo de Souza wrote:
+    > The output of "make versioncheck" told us that:
+    >
+    > drivers/media/video/tlg2300/pd-video.c: 1669: need linux/version.h
+    >
+    > If we take a look at the code, we can see that this file uses the macro
+    > KERNEL_VERSION.
+    
+    The V4L2 core now fills it automatically, so drivers shouldn't touch on
+    cap->version anymore.
+    
+    Reported by: Marcos Paulo de Souza <marcos.souza.org@gmail.com>
+    Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
 
-	4/3: only removes the dead code from arch/*
-
-	5/3: updates copy_creds/exit_creds and kills
-	     ->replacement_session_keyring, plus renames
-	     key_change_ back to key_replace_
-
-Do you agree?
-
-Oleg.
-
+diff --git a/drivers/media/video/tlg2300/pd-video.c b/drivers/media/video/tlg2300/pd-video.c
+index a794ae6..bfbf9e5 100644
+--- a/drivers/media/video/tlg2300/pd-video.c
++++ b/drivers/media/video/tlg2300/pd-video.c
+@@ -150,7 +150,6 @@ static int vidioc_querycap(struct file *file, void *fh,
+ 	strcpy(cap->driver, "tele-video");
+ 	strcpy(cap->card, "Telegent Poseidon");
+ 	usb_make_path(p->udev, cap->bus_info, sizeof(cap->bus_info));
+-	cap->version = KERNEL_VERSION(0, 0, 1);
+ 	cap->capabilities = V4L2_CAP_VIDEO_CAPTURE | V4L2_CAP_TUNER |
+ 				V4L2_CAP_AUDIO | V4L2_CAP_STREAMING |
+ 				V4L2_CAP_READWRITE | V4L2_CAP_VBI_CAPTURE;
