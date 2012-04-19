@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753905Ab2DSJZJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Apr 2012 05:25:09 -0400
-Received: from s15943758.onlinehome-server.info ([217.160.130.188]:51197 "EHLO
+	id S1754398Ab2DSJ0D (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Apr 2012 05:26:03 -0400
+Received: from s15943758.onlinehome-server.info ([217.160.130.188]:51206 "EHLO
 	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752974Ab2DSJZI (ORCPT
+	with ESMTP id S1752970Ab2DSJ0A (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Apr 2012 05:25:08 -0400
-Date: Thu, 19 Apr 2012 11:24:51 +0200
+	Thu, 19 Apr 2012 05:26:00 -0400
+Date: Thu, 19 Apr 2012 11:25:44 +0200
 From: Borislav Petkov <bp@amd64.org>
 To: "H. Peter Anvin" <hpa@zytor.com>
 Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
         Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
         Linus Torvalds <torvalds@linux-foundation.org>,
         Glauber de Oliveira Costa <gcosta@redhat.com>
-Subject: [PATCH 1/3] x86, extable: Cleanup fixup_exception
-Message-ID: <20120419092451.GB29542@aftab>
+Subject: [PATCH 2/3] x86, extable: Carve out the main extable searching
+ routine
+Message-ID: <20120419092544.GC29542@aftab>
 References: <1334794610-5546-1-git-send-email-hpa@zytor.com>
  <20120419092255.GA29542@aftab>
 MIME-Version: 1.0
@@ -27,78 +28,58 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->From 74643bebf6b592f179974caa033f2f095d28bb74 Mon Sep 17 00:00:00 2001
 From: Borislav Petkov <bp@alien8.de>
-Date: Sat, 31 Mar 2012 16:29:03 +0200
-Subject: [PATCH 1/3] x86, extable: Cleanup fixup_exception
+Date: Mon, 26 Mar 2012 23:11:11 +0200
+Subject: [PATCH 2/3] x86, extable: Carve out the main extable searching
+ routine
 
-And especially, fork out the CONFIG_PNPBIOS lump into its own function
-and salvage a tab by inverting error code checking.
-
-No functionality change.
+For early exception handling and fixup we don't need the modules extable
+so fork out the routine that searches the kernel's main extable.
 
 Signed-off-by: Borislav Petkov <bp@alien8.de>
 ---
- arch/x86/mm/extable.c |   33 ++++++++++++++++++---------------
- 1 files changed, 18 insertions(+), 15 deletions(-)
+ arch/x86/include/asm/uaccess.h |    1 +
+ kernel/extable.c               |    7 ++++++-
+ 2 files changed, 7 insertions(+), 1 deletions(-)
 
-diff --git a/arch/x86/mm/extable.c b/arch/x86/mm/extable.c
-index 1fb85dbe390a..08aecb0d3132 100644
---- a/arch/x86/mm/extable.c
-+++ b/arch/x86/mm/extable.c
-@@ -2,13 +2,10 @@
- #include <linux/spinlock.h>
- #include <asm/uaccess.h>
+diff --git a/arch/x86/include/asm/uaccess.h b/arch/x86/include/asm/uaccess.h
+index 8be5f54d9360..66ef1c1d4087 100644
+--- a/arch/x86/include/asm/uaccess.h
++++ b/arch/x86/include/asm/uaccess.h
+@@ -96,6 +96,7 @@ struct exception_table_entry {
+ };
  
--
--int fixup_exception(struct pt_regs *regs)
-+static void pnp_bios_is_crap(unsigned long cs)
- {
--	const struct exception_table_entry *fixup;
--
- #ifdef CONFIG_PNPBIOS
--	if (unlikely(SEGMENT_IS_PNP_CODE(regs->cs))) {
-+	if (unlikely(SEGMENT_IS_PNP_CODE(cs))) {
- 		extern u32 pnp_bios_fault_eip, pnp_bios_fault_esp;
- 		extern u32 pnp_bios_is_utter_crap;
- 		pnp_bios_is_utter_crap = 1;
-@@ -20,18 +17,24 @@ int fixup_exception(struct pt_regs *regs)
- 		panic("do_trap: can't hit this");
- 	}
- #endif
+ extern int fixup_exception(struct pt_regs *regs);
++extern const struct exception_table_entry *search_main_extable(unsigned long);
+ 
+ /*
+  * These are the main single-value transfer routines.  They automatically
+diff --git a/kernel/extable.c b/kernel/extable.c
+index 5339705b8241..d95188c2f723 100644
+--- a/kernel/extable.c
++++ b/kernel/extable.c
+@@ -41,12 +41,17 @@ void __init sort_main_extable(void)
+ 	sort_extable(__start___ex_table, __stop___ex_table);
+ }
+ 
++const struct exception_table_entry *search_main_extable(unsigned long addr)
++{
++	return search_extable(__start___ex_table, __stop___ex_table-1, addr);
 +}
 +
-+int fixup_exception(struct pt_regs *regs)
-+{
-+	const struct exception_table_entry *fixup;
-+
-+	pnp_bios_is_crap(regs->cs);
+ /* Given an address, look for it in the exception tables. */
+ const struct exception_table_entry *search_exception_tables(unsigned long addr)
+ {
+ 	const struct exception_table_entry *e;
  
- 	fixup = search_exception_tables(regs->ip);
--	if (fixup) {
--		/* If fixup is less than 16, it means uaccess error */
--		if (fixup->fixup < 16) {
--			current_thread_info()->uaccess_err = 1;
--			regs->ip += fixup->fixup;
--			return 1;
--		}
--		regs->ip = fixup->fixup;
-+	if (!fixup)
-+		return 0;
-+
-+	/* If fixup is less than 16, it means uaccess error */
-+	if (fixup->fixup < 16) {
-+		current_thread_info()->uaccess_err = 1;
-+		regs->ip += fixup->fixup;
- 		return 1;
- 	}
--
--	return 0;
-+	regs->ip = fixup->fixup;
-+	return 1;
- }
+-	e = search_extable(__start___ex_table, __stop___ex_table-1, addr);
++	e = search_main_extable(addr);
+ 	if (!e)
+ 		e = search_module_extables(addr);
+ 	return e;
 -- 
 1.7.5.3.401.gfb674
+
 
 -- 
 Regards/Gruss,
