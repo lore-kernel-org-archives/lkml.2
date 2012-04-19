@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965082Ab2DSVQk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Apr 2012 17:16:40 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:44451 "EHLO
+	id S965107Ab2DSVQ6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Apr 2012 17:16:58 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:34108 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933652Ab2DSVQf (ORCPT
+	with ESMTP id S1756599Ab2DSVQx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Apr 2012 17:16:35 -0400
-Message-Id: <20120419210821.503803292@linuxfoundation.org>
+	Thu, 19 Apr 2012 17:16:53 -0400
+Message-Id: <20120419210821.331694824@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Thu, 19 Apr 2012 14:08:51 -0700
+Date: Thu, 19 Apr 2012 14:08:49 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Alan Stern <stern@rowland.harvard.edu>,
-        Ming Lei <tom.leiming@gmail.com>
-Subject: [ 33/68] USB: dont clear urb->dev in scatter-gather library
+        alan@lxorguk.ukuu.org.uk, Simon Arlott <simon@fire.lp0.eu>
+Subject: [ 31/68] USB: ftdi_sio: fix race condition in TIOCMIWAIT, and abort of TIOCMIWAIT when the device is removed
 In-Reply-To: <20120419210923.GA18589@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,83 +24,105 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alan Stern <stern@rowland.harvard.edu>
+From: Simon Arlott <simon@fire.lp0.eu>
 
-commit bcf398537630bf20b4dbe59ba855b69f404c93cf upstream.
+commit 876ae50d94b02f3f523aa451b45ec5fb9c25d221 upstream.
 
-This patch (as1517b) fixes an error in the USB scatter-gather library.
-The library code uses urb->dev to determine whether or nor an URB is
-currently active; the completion handler sets urb->dev to NULL.
-However the core unlinking routines need to use urb->dev.  Since
-unlinking always racing with completion, the completion handler must
-not clear urb->dev -- it can lead to invalid memory accesses when a
-transfer has to be cancelled.
+There are two issues here, one is that the device is generating
+spurious very fast modem status line changes somewhere:
 
-This patch fixes the problem by getting rid of the lines that clear
-urb->dev after urb has been submitted.  As a result we may end up
-trying to unlink an URB that failed in submission or that has already
-completed, so an extra check is added after each unlink to avoid
-printing an error message when this happens.  The checks are updated
-in both sg_complete() and sg_cancel(), and the second is updated to
-match the first (currently it prints out unnecessary warning messages
-if a device is unplugged while a transfer is in progress).
+CTS becomes high then low 18µs later:
+[121226.924373] ftdi_process_packet: prev rng=0 dsr=10 dcd=0 cts=6
+[121226.924378] ftdi_process_packet: status=10 prev=00 diff=10
+[121226.924382] ftdi_process_packet: now rng=0 dsr=10 dcd=0 cts=7
+(wake_up_interruptible is called)
+[121226.924391] ftdi_process_packet: prev rng=0 dsr=10 dcd=0 cts=7
+[121226.924394] ftdi_process_packet: status=00 prev=10 diff=10
+[121226.924397] ftdi_process_packet: now rng=0 dsr=10 dcd=0 cts=8
+(wake_up_interruptible is called)
 
-Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
-Reported-and-tested-by: Illia Zaitsev <I.Zaitsev@adbglobal.com>
-CC: Ming Lei <tom.leiming@gmail.com>
+This wakes up the task in TIOCMIWAIT:
+[121226.924405] ftdi_ioctl: 19451 rng=0->0 dsr=10->10 dcd=0->0 cts=6->8
+(wait from 20:51:46 returns and observes both changes)
+
+Which then calls TIOCMIWAIT again:
+20:51:46.400239 ioctl(3, TIOCMIWAIT, 0x20) = 0
+22:11:09.441818 ioctl(3, TIOCMGET, [TIOCM_DTR|TIOCM_RTS]) = 0
+22:11:09.442812 ioctl(3, TIOCMIWAIT, 0x20) = -1 EIO (Input/output error)
+(the second wake_up_interruptible takes effect and an I/O error occurs)
+
+The other issue is that TIOCMIWAIT will wait forever (unless the task is
+interrupted) if the device is removed.
+
+This change removes the -EIO return that occurs if the counts don't
+appear to have changed. Multiple counts may have been processed as
+one or the waiting task may have started waiting after recording the
+current count.
+
+It adds a bool to indicate that the device has been removed so that
+TIOCMIWAIT doesn't wait forever, and wakes up any tasks so that they can
+return -EIO.
+
+Signed-off-by: Simon Arlott <simon@fire.lp0.eu>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/core/message.c |   11 ++++++-----
- 1 file changed, 6 insertions(+), 5 deletions(-)
+ drivers/usb/serial/ftdi_sio.c |   12 +++++++-----
+ 1 file changed, 7 insertions(+), 5 deletions(-)
 
---- a/drivers/usb/core/message.c
-+++ b/drivers/usb/core/message.c
-@@ -308,7 +308,8 @@ static void sg_complete(struct urb *urb)
- 				retval = usb_unlink_urb(io->urbs [i]);
- 				if (retval != -EINPROGRESS &&
- 				    retval != -ENODEV &&
--				    retval != -EBUSY)
-+				    retval != -EBUSY &&
-+				    retval != -EIDRM)
- 					dev_err(&io->dev->dev,
- 						"%s, unlink --> %d\n",
- 						__func__, retval);
-@@ -317,7 +318,6 @@ static void sg_complete(struct urb *urb)
- 		}
- 		spin_lock(&io->lock);
- 	}
--	urb->dev = NULL;
+--- a/drivers/usb/serial/ftdi_sio.c
++++ b/drivers/usb/serial/ftdi_sio.c
+@@ -76,6 +76,7 @@ struct ftdi_private {
+ 	struct async_icount	icount;
+ 	wait_queue_head_t delta_msr_wait; /* Used for TIOCMIWAIT */
+ 	char prev_status;        /* Used for TIOCMIWAIT */
++	bool dev_gone;        /* Used to abort TIOCMIWAIT */
+ 	char transmit_empty;	/* If transmitter is empty or not */
+ 	struct usb_serial_port *port;
+ 	__u16 interface;	/* FT2232C, FT2232H or FT4232H port interface
+@@ -1679,6 +1680,7 @@ static int ftdi_sio_port_probe(struct us
+ 	init_waitqueue_head(&priv->delta_msr_wait);
  
- 	/* on the last completion, signal usb_sg_wait() */
- 	io->bytes += urb->actual_length;
-@@ -524,7 +524,6 @@ void usb_sg_wait(struct usb_sg_request *
- 		case -ENXIO:	/* hc didn't queue this one */
- 		case -EAGAIN:
- 		case -ENOMEM:
--			io->urbs[i]->dev = NULL;
- 			retval = 0;
- 			yield();
- 			break;
-@@ -542,7 +541,6 @@ void usb_sg_wait(struct usb_sg_request *
+ 	priv->flags = ASYNC_LOW_LATENCY;
++	priv->dev_gone = false;
  
- 			/* fail any uncompleted urbs */
- 		default:
--			io->urbs[i]->dev = NULL;
- 			io->urbs[i]->status = retval;
- 			dev_dbg(&io->dev->dev, "%s, submit --> %d\n",
- 				__func__, retval);
-@@ -593,7 +591,10 @@ void usb_sg_cancel(struct usb_sg_request
- 			if (!io->urbs [i]->dev)
- 				continue;
- 			retval = usb_unlink_urb(io->urbs [i]);
--			if (retval != -EINPROGRESS && retval != -EBUSY)
-+			if (retval != -EINPROGRESS
-+					&& retval != -ENODEV
-+					&& retval != -EBUSY
-+					&& retval != -EIDRM)
- 				dev_warn(&io->dev->dev, "%s, unlink --> %d\n",
- 					__func__, retval);
+ 	if (quirk && quirk->port_probe)
+ 		quirk->port_probe(priv);
+@@ -1836,6 +1838,9 @@ static int ftdi_sio_port_remove(struct u
+ 
+ 	dbg("%s", __func__);
+ 
++	priv->dev_gone = true;
++	wake_up_interruptible_all(&priv->delta_msr_wait);
++
+ 	remove_sysfs_attrs(port);
+ 
+ 	kref_put(&priv->kref, ftdi_sio_priv_release);
+@@ -2390,15 +2395,12 @@ static int ftdi_ioctl(struct tty_struct
+ 	 */
+ 	case TIOCMIWAIT:
+ 		cprev = priv->icount;
+-		while (1) {
++		while (!priv->dev_gone) {
+ 			interruptible_sleep_on(&priv->delta_msr_wait);
+ 			/* see if a signal did it */
+ 			if (signal_pending(current))
+ 				return -ERESTARTSYS;
+ 			cnow = priv->icount;
+-			if (cnow.rng == cprev.rng && cnow.dsr == cprev.dsr &&
+-			    cnow.dcd == cprev.dcd && cnow.cts == cprev.cts)
+-				return -EIO; /* no change => error */
+ 			if (((arg & TIOCM_RNG) && (cnow.rng != cprev.rng)) ||
+ 			    ((arg & TIOCM_DSR) && (cnow.dsr != cprev.dsr)) ||
+ 			    ((arg & TIOCM_CD)  && (cnow.dcd != cprev.dcd)) ||
+@@ -2407,7 +2409,7 @@ static int ftdi_ioctl(struct tty_struct
+ 			}
+ 			cprev = cnow;
  		}
+-		/* not reached */
++		return -EIO;
+ 		break;
+ 	case TIOCSERGETLSR:
+ 		return get_lsr_info(port, (struct serial_struct __user *)arg);
 
 
