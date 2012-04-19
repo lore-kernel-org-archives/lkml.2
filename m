@@ -1,114 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754583Ab2DSAxd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Apr 2012 20:53:33 -0400
-Received: from szxga01-in.huawei.com ([58.251.152.64]:38949 "EHLO
-	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752521Ab2DSAxc (ORCPT
+	id S1754400Ab2DSBD5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Apr 2012 21:03:57 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:51323 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752799Ab2DSBD4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Apr 2012 20:53:32 -0400
-Date: Thu, 19 Apr 2012 08:52:57 +0800
-From: "Peter Huang(Peng)" <peter.huangpeng@huawei.com>
-Subject: [PATCH v2] set fake_rtable's dst to NULL to avoid kernel Oops.
-X-Originating-IP: [10.166.90.111]
-To: Stephen Hemminger <shemminger@vyatta.com>,
-        "'David S. Miller'" <davem@davemloft.net>, netdev@vger.kernel.org
-Cc: ctrix+debianbugs@navynet.it, peter.huangpeng@gmail.com,
-        harry.majun@huawei.com, linux-kernel@vger.kernel.org,
-        Eric Dumazet <eric.dumazet@gmail.com>, peter.huangpeng@huawei.com
-Message-id: <4F8F61E9.202@huawei.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=ISO-8859-1; format=flowed
-Content-transfer-encoding: 7BIT
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:11.0) Gecko/20120327
- Thunderbird/11.0.1
-X-CFilter-Loop: Reflected
+	Wed, 18 Apr 2012 21:03:56 -0400
+Message-ID: <1334797425.2707.1.camel@phoenix>
+Subject: [PATCH] regulator: virtual: Replace strict_strtol with kstrtol
+From: Axel Lin <axel.lin@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Liam Girdwood <lrg@ti.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Date: Thu, 19 Apr 2012 09:03:45 +0800
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2- 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Compared with the patch sent before I added a new flag DST_FAKE_RTABLE 
-to dst_entry struct.
+strict_strtol is deprecated and results in a checkpatch warning.
+Replace it with kstrtol.
 
-
-Acked-by: Eric Dumazet <eric.dumazet@gmail.com>
-Signed-off-by: Peter Huang <peter.huangpeng@huawei.com>
+Signed-off-by: Axel Lin <axel.lin@gmail.com>
 ---
-  include/linux/netfilter_bridge.h |    8 ++++++++
-  include/net/dst.h                |    1 +
-  net/bridge/br_forward.c          |    1 +
-  net/bridge/br_netfilter.c        |    8 ++------
-  4 files changed, 12 insertions(+), 6 deletions(-)
-diff --git a/include/linux/netfilter_bridge.h 
-b/include/linux/netfilter_bridge.h
-index 0ddd161..51745df 100644
---- a/include/linux/netfilter_bridge.h
-+++ b/include/linux/netfilter_bridge.h
-@@ -104,9 +104,17 @@ struct bridge_skb_cb {
-         } daddr;
-  };
+ drivers/regulator/virtual.c |    8 ++++----
+ 1 files changed, 4 insertions(+), 4 deletions(-)
 
-+static inline void br_drop_fake_rtable(struct sk_buff *skb) {
-+       struct dst_entry *dst = skb_dst(skb);
-+
-+       if (dst && (dst->flags & DST_FAKE_RTABLE))
-+               skb_dst_drop(skb);
-+}
-+
-  #else
-  #define nf_bridge_maybe_copy_header(skb)       (0)
-  #define nf_bridge_pad(skb)                     (0)
-+#define br_drop_fake_rtable(skb)               (0)
-  #endif /* CONFIG_BRIDGE_NETFILTER */
+diff --git a/drivers/regulator/virtual.c b/drivers/regulator/virtual.c
+index ee0b161..f2f693e 100644
+--- a/drivers/regulator/virtual.c
++++ b/drivers/regulator/virtual.c
+@@ -121,7 +121,7 @@ static ssize_t set_min_uV(struct device *dev, struct device_attribute *attr,
+ 	struct virtual_consumer_data *data = dev_get_drvdata(dev);
+ 	long val;
+ 
+-	if (strict_strtol(buf, 10, &val) != 0)
++	if (kstrtol(buf, 10, &val) != 0)
+ 		return count;
+ 
+ 	mutex_lock(&data->lock);
+@@ -147,7 +147,7 @@ static ssize_t set_max_uV(struct device *dev, struct device_attribute *attr,
+ 	struct virtual_consumer_data *data = dev_get_drvdata(dev);
+ 	long val;
+ 
+-	if (strict_strtol(buf, 10, &val) != 0)
++	if (kstrtol(buf, 10, &val) != 0)
+ 		return count;
+ 
+ 	mutex_lock(&data->lock);
+@@ -173,7 +173,7 @@ static ssize_t set_min_uA(struct device *dev, struct device_attribute *attr,
+ 	struct virtual_consumer_data *data = dev_get_drvdata(dev);
+ 	long val;
+ 
+-	if (strict_strtol(buf, 10, &val) != 0)
++	if (kstrtol(buf, 10, &val) != 0)
+ 		return count;
+ 
+ 	mutex_lock(&data->lock);
+@@ -199,7 +199,7 @@ static ssize_t set_max_uA(struct device *dev, struct device_attribute *attr,
+ 	struct virtual_consumer_data *data = dev_get_drvdata(dev);
+ 	long val;
+ 
+-	if (strict_strtol(buf, 10, &val) != 0)
++	if (kstrtol(buf, 10, &val) != 0)
+ 		return count;
+ 
+ 	mutex_lock(&data->lock);
+-- 
+1.7.5.4
 
-  #endif /* __KERNEL__ */
-diff --git a/include/net/dst.h b/include/net/dst.h
-index 59c5d18..b094030 100644
---- a/include/net/dst.h
-+++ b/include/net/dst.h
-@@ -55,6 +55,7 @@ struct dst_entry {
-  #define DST_NOCACHE            0x0010
-  #define DST_NOCOUNT            0x0020
-  #define DST_NOPEER             0x0040
-+#define DST_FAKE_RTABLE                0x0080
 
-         short                   error;
-         short                   obsolete;
-diff --git a/net/bridge/br_forward.c b/net/bridge/br_forward.c
-index 61f6534..a2098e3 100644
---- a/net/bridge/br_forward.c
-+++ b/net/bridge/br_forward.c
-@@ -47,6 +47,7 @@ int br_dev_queue_push_xmit(struct sk_buff *skb)
-                 kfree_skb(skb);
-         } else {
-                 skb_push(skb, ETH_HLEN);
-+               br_drop_fake_rtable(skb);
-                 dev_queue_xmit(skb);
-         }
 
-diff --git a/net/bridge/br_netfilter.c b/net/bridge/br_netfilter.c
-index dec4f38..d7f49b6 100644
---- a/net/bridge/br_netfilter.c
-+++ b/net/bridge/br_netfilter.c
-@@ -156,7 +156,7 @@ void br_netfilter_rtable_init(struct net_bridge *br)
-         rt->dst.dev = br->dev;
-         rt->dst.path = &rt->dst;
-         dst_init_metrics(&rt->dst, br_dst_default_metrics, true);
--       rt->dst.flags   = DST_NOXFRM | DST_NOPEER;
-+       rt->dst.flags   = DST_NOXFRM | DST_NOPEER | DST_FAKE_RTABLE;
-         rt->dst.ops = &fake_dst_ops;
-  }
-
-@@ -694,11 +694,7 @@ static unsigned int br_nf_local_in(unsigned int 
-hook, struct sk_buff *skb,
-                                    const struct net_device *out,
-                                    int (*okfn)(struct sk_buff *))
-  {
--       struct rtable *rt = skb_rtable(skb);
--
--       if (rt && rt == bridge_parent_rtable(in))
--               skb_dst_drop(skb);
--
-+       br_drop_fake_rtable(skb);
-         return NF_ACCEPT;
-  }
