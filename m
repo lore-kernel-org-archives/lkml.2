@@ -1,129 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933526Ab2DSVPd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Apr 2012 17:15:33 -0400
+	id S933543Ab2DSVPk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Apr 2012 17:15:40 -0400
 Received: from mail-pb0-f46.google.com ([209.85.160.46]:34108 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933501Ab2DSVP2 (ORCPT
+	with ESMTP id S1756491Ab2DSVPg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Apr 2012 17:15:28 -0400
-Message-Id: <20120419210819.705728081@linuxfoundation.org>
+	Thu, 19 Apr 2012 17:15:36 -0400
+Message-Id: <20120419210307.646387464@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Thu, 19 Apr 2012 14:08:30 -0700
+Date: Thu, 19 Apr 2012 14:03:56 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Johan Hovold <jhovold@gmail.com>,
-        Marcel Holtmann <marcel@holtmann.org>,
-        Johan Hedberg <johan.hedberg@intel.com>
-Subject: [ 12/68] Bluetooth: hci_ldisc: fix NULL-pointer dereference on tty_close
-In-Reply-To: <20120419210923.GA18589@kroah.com>
+        alan@lxorguk.ukuu.org.uk, Elric Fu <elricfu1@gmail.com>,
+        Andiry Xu <Andiry.Xu@amd.com>, Sergei Shtylyov <sshtylyov@mvista.com>,
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Subject: [ 53/75] USB: fix bug of device descriptor got from superspeed device
+In-Reply-To: <20120419210322.GA6478@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.2-stable review patch.  If anyone has any objections, please let me know.
+3.3-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Johan Hovold <jhovold@gmail.com>
+From: Elric Fu <elricfu1@gmail.com>
 
-commit 33b69bf80a3704d45341928e4ff68b6ebd470686 upstream.
+commit d8aec3dbdfd02627e198e7956ab4aaeba2a349fa upstream.
 
-Do not close protocol driver until device has been unregistered.
+When the Seagate Goflex USB3.0 device is attached to VIA xHCI
+host, sometimes the device will downgrade mode to high speed.
+By the USB analyzer, I found the device finished the link
+training process and worked at superspeed mode. But the device
+descriptor got from the device shows the device works at 2.1.
+It is very strange and seems like the device controller of
+Seagate Goflex has a little confusion.
 
-This fixes a race between tty_close and hci_dev_open which can result in
-a NULL-pointer dereference.
+The first 8 bytes of device descriptor should be:
+12 01 00 03 00 00 00 09
 
-The line discipline closes the protocol driver while we may still have
-hci_dev_open sleeping on the req_lock mutex resulting in a NULL-pointer
-dereference when lock is acquired and hci_init_req called.
+But the first 8 bytes of wrong device descriptor are:
+12 01 10 02 00 00 00 40
 
-Bug is 100% reproducible using hciattach and a disconnected serial port:
+The wrong device descriptor caused the initialization of mass
+storage failed. After a while, the device would be recognized
+as a high speed device and works fine.
 
-0. # hciattach -n ttyO1 any noflow
+This patch will warm reset the device to fix the issue after
+finding the bcdUSB field of device descriptor isn't 0x0300
+but the speed mode of device is superspeed.
 
-1. hci_dev_open called from hci_power_on grabs req lock
-2. hci_init_req executes but device fails to initialise (times out
-   eventually)
-3. hci_dev_open is called from hci_sock_ioctl and sleeps on req lock
-4. hci_uart_tty_close detaches protocol driver and cancels init req
-5. hci_dev_open (1) releases req lock
-6. hci_dev_open (3) grabs req lock, calls hci_init_req, which triggers oops
-   when request is prepared in hci_uart_send_frame
+This patch should be backported to kernels as old as 3.2, or ones that
+contain the commit 75d7cf72ab9fa01dc70877aa5c68e8ef477229dc "usbcore:
+refine warm reset logic".
 
-[  137.201263] Unable to handle kernel NULL pointer dereference at virtual address 00000028
-[  137.209838] pgd = c0004000
-[  137.212677] [00000028] *pgd=00000000
-[  137.216430] Internal error: Oops: 17 [#1]
-[  137.220642] Modules linked in:
-[  137.223846] CPU: 0    Tainted: G        W     (3.3.0-rc6-dirty #406)
-[  137.230529] PC is at __lock_acquire+0x5c/0x1ab0
-[  137.235290] LR is at lock_acquire+0x9c/0x128
-[  137.239776] pc : [<c0071490>]    lr : [<c00733f8>]    psr: 20000093
-[  137.239776] sp : cf869dd8  ip : c0529554  fp : c051c730
-[  137.251800] r10: 00000000  r9 : cf8673c0  r8 : 00000080
-[  137.257293] r7 : 00000028  r6 : 00000002  r5 : 00000000  r4 : c053fd70
-[  137.264129] r3 : 00000000  r2 : 00000000  r1 : 00000000  r0 : 00000001
-[  137.270965] Flags: nzCv  IRQs off  FIQs on  Mode SVC_32  ISA ARM  Segment kernel
-[  137.278717] Control: 10c5387d  Table: 8f0f4019  DAC: 00000015
-[  137.284729] Process kworker/u:1 (pid: 7, stack limit = 0xcf8682e8)
-[  137.291229] Stack: (0xcf869dd8 to 0xcf86a000)
-[  137.295776] 9dc0:                                                       c0529554 00000000
-[  137.304351] 9de0: cf8673c0 cf868000 d03ea1ef cf868000 000001ef 00000470 00000000 00000002
-[  137.312927] 9e00: cf8673c0 00000001 c051c730 c00716ec 0000000c 00000440 c0529554 00000001
-[  137.321533] 9e20: c051c730 cf868000 d03ea1f3 00000000 c053b978 00000000 00000028 cf868000
-[  137.330078] 9e40: 00000000 00000000 00000002 00000000 00000000 c00733f8 00000002 00000080
-[  137.338684] 9e60: 00000000 c02a1d50 00000000 00000001 60000013 c0969a1c 60000093 c053b96c
-[  137.347259] 9e80: 00000002 00000018 20000013 c02a1d50 cf0ac000 00000000 00000002 cf868000
-[  137.355834] 9ea0: 00000089 c0374130 00000002 00000000 c02a1d50 cf0ac000 0000000c cf0fc540
-[  137.364410] 9ec0: 00000018 c02a1d50 cf0fc540 00000000 cf0fc540 c0282238 c028220c cf178d80
-[  137.372985] 9ee0: 127525d8 c02821cc 9a1fa451 c032727c 9a1fa451 127525d8 cf0fc540 cf0ac4ec
-[  137.381561] 9f00: cf0ac000 cf0fc540 cf0ac584 c03285f4 c0328580 cf0ac4ec cf85c740 c05510cc
-[  137.390136] 9f20: ce825400 c004c914 00000002 00000000 c004c884 ce8254f5 cf869f48 00000000
-[  137.398712] 9f40: c0328580 ce825415 c0a7f914 c061af64 00000000 c048cf3c cf8673c0 cf85c740
-[  137.407287] 9f60: c05510cc c051a66c c05510ec c05510c4 cf85c750 cf868000 00000089 c004d6ac
-[  137.415863] 9f80: 00000000 c0073d14 00000001 cf853ed8 cf85c740 c004d558 00000013 00000000
-[  137.424438] 9fa0: 00000000 00000000 00000000 c00516b0 00000000 00000000 cf85c740 00000000
-[  137.433013] 9fc0: 00000001 dead4ead ffffffff ffffffff c0551674 00000000 00000000 c0450aa4
-[  137.441589] 9fe0: cf869fe0 cf869fe0 cf853ed8 c005162c c0013b30 c0013b30 00ffff00 00ffff00
-[  137.450164] [<c0071490>] (__lock_acquire+0x5c/0x1ab0) from [<c00733f8>] (lock_acquire+0x9c/0x128)
-[  137.459503] [<c00733f8>] (lock_acquire+0x9c/0x128) from [<c0374130>] (_raw_spin_lock_irqsave+0x44/0x58)
-[  137.469360] [<c0374130>] (_raw_spin_lock_irqsave+0x44/0x58) from [<c02a1d50>] (skb_queue_tail+0x18/0x48)
-[  137.479339] [<c02a1d50>] (skb_queue_tail+0x18/0x48) from [<c0282238>] (h4_enqueue+0x2c/0x34)
-[  137.488189] [<c0282238>] (h4_enqueue+0x2c/0x34) from [<c02821cc>] (hci_uart_send_frame+0x34/0x68)
-[  137.497497] [<c02821cc>] (hci_uart_send_frame+0x34/0x68) from [<c032727c>] (hci_send_frame+0x50/0x88)
-[  137.507171] [<c032727c>] (hci_send_frame+0x50/0x88) from [<c03285f4>] (hci_cmd_work+0x74/0xd4)
-[  137.516204] [<c03285f4>] (hci_cmd_work+0x74/0xd4) from [<c004c914>] (process_one_work+0x1a0/0x4ec)
-[  137.525604] [<c004c914>] (process_one_work+0x1a0/0x4ec) from [<c004d6ac>] (worker_thread+0x154/0x344)
-[  137.535278] [<c004d6ac>] (worker_thread+0x154/0x344) from [<c00516b0>] (kthread+0x84/0x90)
-[  137.543975] [<c00516b0>] (kthread+0x84/0x90) from [<c0013b30>] (kernel_thread_exit+0x0/0x8)
-[  137.552734] Code: e59f4e5c e5941000 e3510000 0a000031 (e5971000)
-[  137.559234] ---[ end trace 1b75b31a2719ed1e ]---
-
-Signed-off-by: Johan Hovold <jhovold@gmail.com>
-Acked-by: Marcel Holtmann <marcel@holtmann.org>
-Signed-off-by: Johan Hedberg <johan.hedberg@intel.com>
+Signed-off-by: Elric Fu <elricfu1@gmail.com>
+Acked-by: Andiry Xu <Andiry.Xu@amd.com>
+Acked-by: Sergei Shtylyov <sshtylyov@mvista.com>
+Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/bluetooth/hci_ldisc.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/usb/core/hub.c |   16 ++++++++++++++++
+ 1 file changed, 16 insertions(+)
 
---- a/drivers/bluetooth/hci_ldisc.c
-+++ b/drivers/bluetooth/hci_ldisc.c
-@@ -309,11 +309,11 @@ static void hci_uart_tty_close(struct tt
- 			hci_uart_close(hdev);
+--- a/drivers/usb/core/hub.c
++++ b/drivers/usb/core/hub.c
+@@ -3071,6 +3071,22 @@ hub_port_init (struct usb_hub *hub, stru
+ 	if (retval)
+ 		goto fail;
  
- 		if (test_and_clear_bit(HCI_UART_PROTO_SET, &hu->flags)) {
--			hu->proto->close(hu);
- 			if (hdev) {
- 				hci_unregister_dev(hdev);
- 				hci_free_dev(hdev);
- 			}
-+			hu->proto->close(hu);
- 		}
- 		kfree(hu);
- 	}
++	/*
++	 * Some superspeed devices have finished the link training process
++	 * and attached to a superspeed hub port, but the device descriptor
++	 * got from those devices show they aren't superspeed devices. Warm
++	 * reset the port attached by the devices can fix them.
++	 */
++	if ((udev->speed == USB_SPEED_SUPER) &&
++			(le16_to_cpu(udev->descriptor.bcdUSB) < 0x0300)) {
++		dev_err(&udev->dev, "got a wrong device descriptor, "
++				"warm reset device\n");
++		hub_port_reset(hub, port1, udev,
++				HUB_BH_RESET_TIME, true);
++		retval = -EINVAL;
++		goto fail;
++	}
++
+ 	if (udev->descriptor.bMaxPacketSize0 == 0xff ||
+ 			udev->speed == USB_SPEED_SUPER)
+ 		i = 512;
 
 
