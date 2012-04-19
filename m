@@ -1,86 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756027Ab2DSQ3U (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Apr 2012 12:29:20 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:50624 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751865Ab2DSQ3T (ORCPT
+	id S1756003Ab2DSQaF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Apr 2012 12:30:05 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:62445 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753123Ab2DSQaD convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Apr 2012 12:29:19 -0400
-Date: Thu, 19 Apr 2012 17:29:13 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Jassi Brar <jaswinder.singh@linaro.org>
-Cc: linux-kernel@vger.kernel.org, lrg@ti.com
-Subject: Re: [PATCH] regulator: Provide a check for dummy regulator
-Message-ID: <20120419162905.GA3084@opensource.wolfsonmicro.com>
-References: <1334829097-32084-1-git-send-email-jaswinder.singh@linaro.org>
- <20120419124204.GE3046@opensource.wolfsonmicro.com>
- <CAJe_ZhfbFq98fT56CS-q4VoU8wnybj-+swfB+Jrknd3Zmt9V8g@mail.gmail.com>
+	Thu, 19 Apr 2012 12:30:03 -0400
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="LZvS9be/3tNcYl/X"
-Content-Disposition: inline
-In-Reply-To: <CAJe_ZhfbFq98fT56CS-q4VoU8wnybj-+swfB+Jrknd3Zmt9V8g@mail.gmail.com>
-X-Cookie: You have no real enemies.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1334852525-14950-1-git-send-email-apw@canonical.com>
+References: <1334852525-14950-1-git-send-email-apw@canonical.com>
+Date: Thu, 19 Apr 2012 17:30:03 +0100
+Message-ID: <CAPM=9tzWO46u5L1jnRvi_zhgOhmzH1df7cQTnP6+0Kh4Znpn7g@mail.gmail.com>
+Subject: Re: [PATCH 0/1] [RFC] DRM locking issues during early open
+From: Dave Airlie <airlied@gmail.com>
+To: Andy Whitcroft <apw@canonical.com>
+Cc: David Airlie <airlied@linux.ie>, dri-devel@lists.freedesktop.org,
+        Jesse Barnes <jbarnes@virtuousgeek.org>,
+        Bryce Harrington <bryce@canonical.com>, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, Apr 19, 2012 at 5:22 PM, Andy Whitcroft <apw@canonical.com> wrote:
+> We have been carrying a (rather poor) patch for an issue we identified in
+> the DRM driver.  This issue is triggered when a DRM device is initialising
+> and userspace attempts to open it, typically in response to the sysfs
+> device added event.  Basically we allocate the minor numbers making
+> the device available, and then call the drm load callback.  Until this
+> completes the device is really not ready and these early opens typically
+> lead to oopses.
+>
+> We have been using the following patch to avoid this by marking the minors
+> as in error until the load method has completed.  This avoids the early
+> open by simply erroring out the opens with EAGAIN.  Obviously we should
+> be delaying the open until the load method complete.
+>
+> I include the existing patch for completness (it is not really ready for
+> merging) to illustrate the issue.  I think it is logical that the wait
+> should simply be delayed until the load has completed.  I am proposing
+> to include a wait queue associated with the idr cache for the drm minors
+> which we can use to allow open callers to wait_event_interruptible() on.
+> I'll be putting together a prototype shortly and will follow up with it.
+>
+> Thoughts?
 
---LZvS9be/3tNcYl/X
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Couldn't we just delay registering things until the driver is ready to
+accept an open?
 
-On Thu, Apr 19, 2012 at 07:35:03PM +0530, Jassi Brar wrote:
+Granted the midlayer of drm doesn't make that easy,
 
-> I am talking about the delay the consumer driver might want after
-> enabling the regulator for the end device to, say, initialize itself or
-> perform POST or whatever.
+thanks for sending this out, it keeps falling off my radar, I don't
+think I've ever seen this reported on RHEL/Fedora, which makes me
+wonder what we are doing that makes us lucky.
 
-> I do realize that such consumer drivers ought to know about the
-> presence of the real regulator via platform_data(PD) or DT, but
-
-No!  You're *completely* failing to understand the usage model of the
-regulator API here, any driver doing this is clearly buggy.
-
-> Another POV is :
->   Is a consumer's need, to know if the gotten regulator is a real
-> or a dummy one, reasonable ?
-
-Absolutely not, you're completely failing to understand what I said
-about abstraction here.  *Nothing* about this is anything to do with
-dummy regulators in the slightest, it's about supplies which are already
-on at the time the driver powers the device up.  Doing this for dummy
-regulators is not helpful, being enabled isn't in the slightest bit tied
-to the fact that the regulator is a dummy regulator and it's silly to
-optimise this only in the specific case where a dummy regulator (which
-is in the first place only a crutch to keep systems with buggy regulator
-setups going) is being used is silly.
-
-I'd suggest checking with regulator_is_enabled() prior to power up, or
-adding a notifier for physical enable events and using that.
-
---LZvS9be/3tNcYl/X
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIbBAEBAgAGBQJPkD1JAAoJEBus8iNuMP3dkfgP+MvPT5stoS+cc9EVo+AGyrBH
-5h2XtYhoPe+s0hhmOxZoFqji+raEY29WSrS21Ij+xF8/ddA29fstbzvlKhBT5/xj
-EPZ8Rp1X/r1LCR8crLekiADfP9DZiQ26QD2kn+Wzh5/JAu3n3OWkQqPSIrRQrp5/
-5IvLu3gtmtJhKTkCWJOwh+pvRgkucmcjnZy8tSTxyjBZ4hRdS2nqlOoK0yH8tw/F
-ycIt5h5AQmQd8toex2wqoOt4bxV3Gsjlwj93Tj1QzBI13jb91PNTJj3I9ukzp/pN
-zmNRlzXKq+Oa0uhb47TQGKeVKhFmMnMJIMEoEGXmSXxuu98fhqCjCxKBtF+6IQG2
-Q/hWL4t/urdrqkxNHtWdw6IOJVhfD235lrvy/clHnkwhEJxqjuxyMeZWmLNKUYKd
-W2xoHc95Oo2jPIKo1i/oosmlULvjMDT2apzi/6/44f9zg/kLZTioCV/HaaiZq+ms
-xHUi3Ahvu1pBNk690VknTak3Fms/fB/PvR3i7NMet4hP7FOtkiM0vve1OZH9c1RI
-c46A/AKO3GZ8xYvM+Zhp87umwiRdPe1Q4nmgQtRa656nEB2U6sarskJ1SDcmLkXt
-FQArt8ImkY4c/GHM545WEzMjtsbDAd9ZJMPZGhhnx/6+GxTvJ9Pdtj2r/Hipkby4
-p57sptDt2nAvkdqywCM=
-=eCIe
------END PGP SIGNATURE-----
-
---LZvS9be/3tNcYl/X--
+Dave.
