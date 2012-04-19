@@ -1,61 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933620Ab2DSVbR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Apr 2012 17:31:17 -0400
-Received: from mail-pz0-f42.google.com ([209.85.210.42]:38471 "EHLO
-	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933529Ab2DSVPi (ORCPT
+	id S933587Ab2DSVbg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Apr 2012 17:31:36 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:59578 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932307Ab2DSVbd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Apr 2012 17:15:38 -0400
-Message-Id: <20120419210819.964332956@linuxfoundation.org>
-User-Agent: quilt/0.60-19.1
-Date: Thu, 19 Apr 2012 14:08:33 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Linus Walleij <linus.walleij@linaro.org>,
-        Mian Yousaf Kaukab <mian.yousaf.kaukab@stericsson.com>,
-        Alessandro Rubini <rubini@unipv.it>
-Subject: [ 15/68] drivers/rtc/rtc-pl031.c: enable clock on all ST variants
-In-Reply-To: <20120419210923.GA18589@kroah.com>
+	Thu, 19 Apr 2012 17:31:33 -0400
+Date: Thu, 19 Apr 2012 14:31:31 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Dave Chinner <david@fromorbit.com>
+Cc: Andi Kleen <andi@firstfloor.org>, Christoph Hellwig <hch@infradead.org>,
+        linux-kernel@vger.kernel.org, Andi Kleen <ak@linux.intel.com>,
+        xfs-masters@oss.sgi.com
+Subject: Re: [PATCH 05/13] XFS: Fix lock ASSERT on UP
+Message-Id: <20120419143131.651abe44.akpm@linux-foundation.org>
+In-Reply-To: <20120330041348.GF18323@dastard>
+References: <1332895637-32572-1-git-send-email-andi@firstfloor.org>
+	<1332895637-32572-6-git-send-email-andi@firstfloor.org>
+	<20120329232114.GA26342@infradead.org>
+	<20120329235201.GF17822@one.firstfloor.org>
+	<20120330041348.GF18323@dastard>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.2-stable review patch.  If anyone has any objections, please let me know.
+On Fri, 30 Mar 2012 15:13:48 +1100
+Dave Chinner <david@fromorbit.com> wrote:
 
-------------------
+> On Fri, Mar 30, 2012 at 01:52:01AM +0200, Andi Kleen wrote:
+> > On Thu, Mar 29, 2012 at 07:21:14PM -0400, Christoph Hellwig wrote:
+> > > On Tue, Mar 27, 2012 at 05:47:09PM -0700, Andi Kleen wrote:
+> > > > From: Andi Kleen <ak@linux.intel.com>
+> > > > 
+> > > > ASSERT(!spin_is_locked()) doesn't work on UP builds. Replace with a standard
+> > > > lockdep_assert_held()
+> > > 
+> > > The "standard" is assert_spin_locked() - which not only is much cheaper
+> > > but also has the advantage of working in non-lockdep builds.
+> > 
+> > But then you have it unconditional, not just on debug builds.
+> 
+> And the problem with that is what? There is so little overhead to the
+> check it doesn't matter that it is enabled in production kernels...
+> 
 
-From: Linus Walleij <linus.walleij@linaro.org>
+(old thread)
 
-commit 2f3972168353d355854d6381f1f360ce83b723e5 upstream.
+Perhaps assert_spin_locked() would be better - any advantages of
+lockdep_assert_held() don't seem to outweigh the cost of using a new
+interface.
 
-The ST variants of the PL031 all require bit 26 in the control register
-to be set before they work properly.  Discovered this when testing on
-the Nomadik board where it would suprisingly just stand still.
+And I'm not sure that I buy the performance argument - if an assertion
+is in such a hot path, just remove the dang thing.
 
-Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
-Cc: Mian Yousaf Kaukab <mian.yousaf.kaukab@stericsson.com>
-Cc: Alessandro Rubini <rubini@unipv.it>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
----
- drivers/rtc/rtc-pl031.c |    3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+OTOH, one argument in favour of using lockdep_assert_held() is that
+(afaict) it applies to spinlocks and to mutexes and to rw_semaphores. 
+Not sure about rwlocks?
 
---- a/drivers/rtc/rtc-pl031.c
-+++ b/drivers/rtc/rtc-pl031.c
-@@ -339,8 +339,7 @@ static int pl031_probe(struct amba_devic
- 	dev_dbg(&adev->dev, "revision = 0x%01x\n", ldata->hw_revision);
- 
- 	/* Enable the clockwatch on ST Variants */
--	if ((ldata->hw_designer == AMBA_VENDOR_ST) &&
--	    (ldata->hw_revision > 1))
-+	if (ldata->hw_designer == AMBA_VENDOR_ST)
- 		writel(readl(ldata->base + RTC_CR) | RTC_CR_CWEN,
- 		       ldata->base + RTC_CR);
- 
+Now, having an API which can apply to different types is a bit
+unpleasant - this ain't C++.  I think we should overlay
+lockdep_assert_held() with a properly-typed API written in C and slap
+the lockdep guys.  But the fact that this mechanism applies to all(?)
+lock types is attractive.
 
+Anyway, these patches are still floating around in my tree so please
+let's finish this off one way or another.
 
