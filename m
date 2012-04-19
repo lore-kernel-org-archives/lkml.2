@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965094Ab2DSVQt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Apr 2012 17:16:49 -0400
+	id S965156Ab2DSVRS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Apr 2012 17:17:18 -0400
 Received: from mail-pb0-f46.google.com ([209.85.160.46]:37406 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933660Ab2DSVQo (ORCPT
+	with ESMTP id S965121Ab2DSVRP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Apr 2012 17:16:44 -0400
-Message-Id: <20120419210821.741596450@linuxfoundation.org>
+	Thu, 19 Apr 2012 17:17:15 -0400
+Message-Id: <20120419210822.574896129@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Thu, 19 Apr 2012 14:08:54 -0700
+Date: Thu, 19 Apr 2012 14:09:04 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
         alan@lxorguk.ukuu.org.uk, Sarah Sharp <sarah.a.sharp@linux.intel.com>,
-        Elric Fu <elricfu1@gmail.com>
-Subject: [ 36/68] xhci: Dont write zeroed pointers to xHC registers.
+        Elric Fu <elricfu1@gmail.com>, Andiry Xu <andiry.xu@amd.com>
+Subject: [ 46/68] xhci: Fix register save/restore order.
 In-Reply-To: <20120419210923.GA18589@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,74 +27,58 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Sarah Sharp <sarah.a.sharp@linux.intel.com>
 
-commit 159e1fcc9a60fc7daba23ee8fcdb99799de3fe84 upstream.
+commit c7713e736526d8c9f6f87716fb90562a8ffaff2c upstream.
 
-When xhci_mem_cleanup() is called, we can't be sure if the xHC is
-actually halted.  We can ask the xHC to halt by writing to the RUN bit
-in the command register, but that might timeout due to a HW hang.
+The xHCI 1.0 spec errata released on June 13, 2011, changes the ordering
+that the xHCI registers are saved and restored in.  It moves the
+interrupt pending (IMAN) and interrupt control (IMOD) registers to be
+saved and restored last.  I believe that's because the host controller
+may attempt to fetch the event ring table when interrupts are
+re-enabled.  Therefore we need to restore the event ring registers
+before we re-enable interrupts.
 
-If the host controller is still running, we should not write zeroed
-values to the event ring dequeue pointers or base tables, the DCBAA
-pointers, or the command ring pointers.  Eric Fu reports his VIA VL800
-host accesses the event ring pointers after a failed register restore on
-resume from suspend.  The hypothesis is that the host never actually
-halted before the register write to change the event ring pointer to
-zero.
-
-Remove all writes of zeroed values to pointer registers in
-xhci_mem_cleanup().  Instead, make all callers of the function reset the
-host controller first, which will reset those registers to zero.
-xhci_mem_init() is the only caller that doesn't first halt and reset the
-host controller before calling xhci_mem_cleanup().
-
-This should be backported to kernels as old as 2.6.32.
+This should be backported to kernels as old as 2.6.37, that contain the
+commit 5535b1d5f8885695c6ded783c692e3c0d0eda8ca "USB: xHCI: PCI power
+management implementation"
 
 Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
 Tested-by: Elric Fu <elricfu1@gmail.com>
+Cc: Andiry Xu <andiry.xu@amd.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/host/xhci-mem.c |    9 ++-------
- 1 file changed, 2 insertions(+), 7 deletions(-)
+ drivers/usb/host/xhci.c |    8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
 
---- a/drivers/usb/host/xhci-mem.c
-+++ b/drivers/usb/host/xhci-mem.c
-@@ -1704,11 +1704,6 @@ void xhci_mem_cleanup(struct xhci_hcd *x
- 	int i;
- 
- 	/* Free the Event Ring Segment Table and the actual Event Ring */
--	if (xhci->ir_set) {
--		xhci_writel(xhci, 0, &xhci->ir_set->erst_size);
--		xhci_write_64(xhci, 0, &xhci->ir_set->erst_base);
--		xhci_write_64(xhci, 0, &xhci->ir_set->erst_dequeue);
--	}
- 	size = sizeof(struct xhci_erst_entry)*(xhci->erst.num_entries);
- 	if (xhci->erst.entries)
- 		dma_free_coherent(&pdev->dev, size,
-@@ -1720,7 +1715,6 @@ void xhci_mem_cleanup(struct xhci_hcd *x
- 	xhci->event_ring = NULL;
- 	xhci_dbg(xhci, "Freed event ring\n");
- 
--	xhci_write_64(xhci, 0, &xhci->op_regs->cmd_ring);
- 	if (xhci->cmd_ring)
- 		xhci_ring_free(xhci, xhci->cmd_ring);
- 	xhci->cmd_ring = NULL;
-@@ -1749,7 +1743,6 @@ void xhci_mem_cleanup(struct xhci_hcd *x
- 	xhci->medium_streams_pool = NULL;
- 	xhci_dbg(xhci, "Freed medium stream array pool\n");
- 
--	xhci_write_64(xhci, 0, &xhci->op_regs->dcbaa_ptr);
- 	if (xhci->dcbaa)
- 		dma_free_coherent(&pdev->dev, sizeof(*xhci->dcbaa),
- 				xhci->dcbaa, xhci->dcbaa->dma);
-@@ -2358,6 +2351,8 @@ int xhci_mem_init(struct xhci_hcd *xhci,
- 
- fail:
- 	xhci_warn(xhci, "Couldn't initialize memory\n");
-+	xhci_halt(xhci);
-+	xhci_reset(xhci);
- 	xhci_mem_cleanup(xhci);
- 	return -ENOMEM;
+--- a/drivers/usb/host/xhci.c
++++ b/drivers/usb/host/xhci.c
+@@ -664,11 +664,11 @@ static void xhci_save_registers(struct x
+ 	xhci->s3.dev_nt = xhci_readl(xhci, &xhci->op_regs->dev_notification);
+ 	xhci->s3.dcbaa_ptr = xhci_read_64(xhci, &xhci->op_regs->dcbaa_ptr);
+ 	xhci->s3.config_reg = xhci_readl(xhci, &xhci->op_regs->config_reg);
+-	xhci->s3.irq_pending = xhci_readl(xhci, &xhci->ir_set->irq_pending);
+-	xhci->s3.irq_control = xhci_readl(xhci, &xhci->ir_set->irq_control);
+ 	xhci->s3.erst_size = xhci_readl(xhci, &xhci->ir_set->erst_size);
+ 	xhci->s3.erst_base = xhci_read_64(xhci, &xhci->ir_set->erst_base);
+ 	xhci->s3.erst_dequeue = xhci_read_64(xhci, &xhci->ir_set->erst_dequeue);
++	xhci->s3.irq_pending = xhci_readl(xhci, &xhci->ir_set->irq_pending);
++	xhci->s3.irq_control = xhci_readl(xhci, &xhci->ir_set->irq_control);
  }
+ 
+ static void xhci_restore_registers(struct xhci_hcd *xhci)
+@@ -677,11 +677,11 @@ static void xhci_restore_registers(struc
+ 	xhci_writel(xhci, xhci->s3.dev_nt, &xhci->op_regs->dev_notification);
+ 	xhci_write_64(xhci, xhci->s3.dcbaa_ptr, &xhci->op_regs->dcbaa_ptr);
+ 	xhci_writel(xhci, xhci->s3.config_reg, &xhci->op_regs->config_reg);
+-	xhci_writel(xhci, xhci->s3.irq_pending, &xhci->ir_set->irq_pending);
+-	xhci_writel(xhci, xhci->s3.irq_control, &xhci->ir_set->irq_control);
+ 	xhci_writel(xhci, xhci->s3.erst_size, &xhci->ir_set->erst_size);
+ 	xhci_write_64(xhci, xhci->s3.erst_base, &xhci->ir_set->erst_base);
+ 	xhci_write_64(xhci, xhci->s3.erst_dequeue, &xhci->ir_set->erst_dequeue);
++	xhci_writel(xhci, xhci->s3.irq_pending, &xhci->ir_set->irq_pending);
++	xhci_writel(xhci, xhci->s3.irq_control, &xhci->ir_set->irq_control);
+ }
+ 
+ static void xhci_set_cmd_ring_deq(struct xhci_hcd *xhci)
 
 
