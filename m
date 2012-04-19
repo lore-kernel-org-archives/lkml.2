@@ -1,192 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751965Ab2DSCQK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Apr 2012 22:16:10 -0400
-Received: from mailout1.samsung.com ([203.254.224.24]:46953 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751180Ab2DSCQI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Apr 2012 22:16:08 -0400
-X-AuditID: cbfee61b-b7cb4ae000000d81-63-4f8f7564e06b
-From: Jingoo Han <jg1.han@samsung.com>
-To: "'Ryan Mallon'" <rmallon@gmail.com>
-Cc: "'Florian Tobias Schandinat'" <FlorianSchandinat@gmx.de>,
-        kernel-janitors@vger.kernel.org, linux-fbdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, "'Julia Lawall'" <Julia.Lawall@lip6.fr>,
-        "'Jingoo Han'" <jg1.han@samsung.com>
-References: <1334777828-3557-1-git-send-email-Julia.Lawall@lip6.fr>
- <4F8F5938.2000207@gmail.com>
-In-reply-to: <4F8F5938.2000207@gmail.com>
-Subject: RE: [PATCH] drivers/video/ep93xx-fb.c: clean up error-handling code
-Date: Thu, 19 Apr 2012 11:16:04 +0900
-Message-id: <000401cd1dd2$5f8ee3b0$1eacab10$%han@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=us-ascii
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac0dwZk2rkkuQ7xrSSqxTWqZ645NDwAD60Mw
-Content-language: ko
-X-Brightmail-Tracker: AAAAAA==
-X-TM-AS-MML: No
+	id S1752259Ab2DSCZL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Apr 2012 22:25:11 -0400
+Received: from mga11.intel.com ([192.55.52.93]:24268 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751395Ab2DSCZK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Apr 2012 22:25:10 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="143436416"
+Subject: Re: [tip:timers/urgent] tick: Fix oneshot broadcast setup really
+From: Suresh Siddha <suresh.b.siddha@intel.com>
+Reply-To: Suresh Siddha <suresh.b.siddha@intel.com>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: Santosh Shilimkar <santosh.shilimkar@ti.com>, mingo@kernel.org,
+        hpa@zytor.com, linux-kernel@vger.kernel.org,
+        torvalds@linux-foundation.org, svenjoac@gmx.de, rjw@sisk.pl,
+        linux-tip-commits@vger.kernel.org
+Date: Wed, 18 Apr 2012 19:27:39 -0700
+In-Reply-To: <alpine.LFD.2.02.1204181723350.2542@ionos>
+References: <alpine.LFD.2.02.1204181205540.2542@ionos>
+	 <tip-b435092f70ec5ebbfb6d075d5bf3c631b49a51de@git.kernel.org>
+	 <CAMQu2gx4-4kbgEHXUbU0SR=Xj6pe5FxjYJJ_dZD5D=jZs7f03A@mail.gmail.com>
+	 <4F8ECD39.3080900@ti.com> <alpine.LFD.2.02.1204181723350.2542@ionos>
+Organization: Intel Corp
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.0.3 (3.0.3-1.fc15) 
+Content-Transfer-Encoding: 7bit
+Message-ID: <1334802459.28674.209.camel@sbsiddha-desk.sc.intel.com>
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> -----Original Message-----
-> From: Ryan Mallon
-> Sent: Thursday, April 19, 2012 9:16 AM
-> To: Julia Lawall
-> Cc: Florian Tobias Schandinat; kernel-janitors@vger.kernel.org; linux-fbdev@vger.kernel.org; linux-
-> kernel@vger.kernel.org
-> Subject: Re: [PATCH] drivers/video/ep93xx-fb.c: clean up error-handling code
+On Wed, 2012-04-18 at 17:31 +0200, Thomas Gleixner wrote:
+> On Wed, 18 Apr 2012, Santosh Shilimkar wrote:
+> > >>                if (was_periodic && !cpumask_empty(to_cpumask(tmpmask))) {
+> > >> +                       clockevents_set_mode(bc, CLOCK_EVT_MODE_ONESHOT);
+> > 
+> > For some reason above if() check fails in my case, so broadcast device
+> > never set to ONESHOT mode. That explains the problem I am seeing on
+> > OMAP with the $subject patch. At this point of time bc->mode is
+> > CLOCK_EVT_MODE_UNUSED.
 > 
-> On 19/04/12 05:37, Julia Lawall wrote:
+> Darn, crap. I wonder how that works on x86
 > 
-> > From: Julia Lawall <Julia.Lawall@lip6.fr>
-> >
-> > There were two problems in this code: failure of the setup function should
-> > free locally allocated resources like other nearby failures, and the test
-> > if (&info->cmap) can never be false.  To generally clean things up, this
-> > patch reorders the error handling code at the failed label and adds labels
-> > so that the conditionals are not necessary.
-> >
-> > Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
-> 
-> Reviewed-by: Ryan Mallon <rmallon@gmail.com>
-> 
-> Oddly, scripts/get_maintainer.pl on this file doesn't return me, even
-> though, according to git blame, I am the author of 90% of the commits.
-> Should I have an entry in the MAINTAINERS file, or is
-> scripts/get_maintainer.pl not working properly?
+> diff --git a/kernel/time/tick-broadcast.c b/kernel/time/tick-broadcast.c
+> index bf57abd..e8f5479 100644
+> --- a/kernel/time/tick-broadcast.c
+> +++ b/kernel/time/tick-broadcast.c
+> @@ -373,6 +373,9 @@ static int tick_broadcast_set_event(ktime_t expires, int force)
+>  {
+>  	struct clock_event_device *bc = tick_broadcast_device.evtdev;
+>  
+> +	if (bc->mode != CLOCK_EVT_MODE_ONESHOT)
+> +		clockevents_set_mode(bc, CLOCK_EVT_MODE_ONESHOT);
+> +
+>  	return clockevents_program_event(bc, expires, force);
+>  }
+>  
 
-There are optional differences in using scripts/get_maintainer.pl.
-If you use './' ahead of file path, you will see your name.
+So Here is my understanding of the issue why only Sven saw the resume
+issue and what Santosh has seen with the first fix that Thomas tried.
 
-Without './' ahead of 'drivers/video/ep93xx-fb.c':
-./scripts/get_maintainer.pl --file drivers/video/ep93xx-fb.c
-Florian Tobias Schandinat <FlorianSchandinat@gmx.de> (maintainer:FRAMEBUFFER LAYER)
-linux-fbdev@vger.kernel.org (open list:FRAMEBUFFER LAYER)
-linux-kernel@vger.kernel.org (open list)
+>From the review, most likely Sven's system we are force enabling the
+hpet using the pci quirk's method very late. And in this case,
+hpet_clockevent (which will be global_clock_event) handler can be null,
+specifically as this platform might not be using deeper c-states and
+using the reliable APIC timer.
 
-With './' ahead of 'drivers/video/ep93xx-fb.c':
-./scripts/get_maintainer.pl --file ./drivers/video/ep93xx-fb.c
-Ryan Mallon <rmallon@gmail.com> (commit_signer:2/3=67%)
-Paul Gortmaker <paul.gortmaker@windriver.com> (commit_signer:1/3=33%)
-H Hartley Sweeten <hsweeten@visionengravers.com> (commit_signer:1/3=33%)
-Jesper Juhl <jj@chaosbits.net> (commit_signer:1/3=33%)
-Jiri Kosina <jkosina@suse.cz> (commit_signer:1/3=33%)
-linux-kernel@vger.kernel.org (open list)
+Prior to commit 'fa4da365bc7772c', that handler will be set to
+'tick_handle_oneshot_broadcast' when we switch the broadcast timer to
+oneshot mode, even though we don't use it. Post commit
+'fa4da365bc7772c', we stopped switching the broadcast mode to oneshot as
+this is not really needed and his platform's global_clock_event's
+handler will remain null. While on my SNB laptop, same is set to
+'clockevents_handle_noop' because hpet gets enabled very early. (noop
+handler on my platform set when the early enabled hpet timer gets
+replaced by the lapic timer).
 
+But the commit 'fa4da365bc7772c' tracked the broadcast timer mode in the
+SW as oneshot, even though it didn't touch the HW timer. During resume
+however, tick_resume_broadcast() saw the SW broadcast mode as oneshot
+and actually programmed the broadcast device also into oneshot mode. So
+this triggered the null pointer de-reference after the hpet wraps around
+and depending on what the hpet counter is set to. On the normal
+platforms where hpet gets enabled early we should be seeing a spurious
+interrupt (in my SNB laptop I see one spurious interrupt after around 5
+minutes ;) which is 32-bit hpet counter wraparound time).
 
-Best regards,
-Jingoo Han
+So thomas even with your current proposed fix, we should address this
+spurious interrupt once in 5 minutes after resume!
 
-> 
-> ~Ryan
-> 
-> > ---
-> > Not tested.
-> >
-> >  drivers/video/ep93xx-fb.c |   32 +++++++++++++++++---------------
-> >  1 file changed, 17 insertions(+), 15 deletions(-)
-> >
-> > diff --git a/drivers/video/ep93xx-fb.c b/drivers/video/ep93xx-fb.c
-> > index f8babbe..345d962 100644
-> > --- a/drivers/video/ep93xx-fb.c
-> > +++ b/drivers/video/ep93xx-fb.c
-> > @@ -507,16 +507,16 @@ static int __devinit ep93xxfb_probe(struct platform_device *pdev)
-> >
-> >  	err = fb_alloc_cmap(&info->cmap, 256, 0);
-> >  	if (err)
-> > -		goto failed;
-> > +		goto failed_cmap;
-> >
-> >  	err = ep93xxfb_alloc_videomem(info);
-> >  	if (err)
-> > -		goto failed;
-> > +		goto failed_videomem;
-> >
-> >  	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-> >  	if (!res) {
-> >  		err = -ENXIO;
-> > -		goto failed;
-> > +		goto failed_resource;
-> >  	}
-> >
-> >  	/*
-> > @@ -532,7 +532,7 @@ static int __devinit ep93xxfb_probe(struct platform_device *pdev)
-> >  	fbi->mmio_base = ioremap(res->start, resource_size(res));
-> >  	if (!fbi->mmio_base) {
-> >  		err = -ENXIO;
-> > -		goto failed;
-> > +		goto failed_resource;
-> >  	}
-> >
-> >  	strcpy(info->fix.id, pdev->name);
-> > @@ -553,24 +553,24 @@ static int __devinit ep93xxfb_probe(struct platform_device *pdev)
-> >  	if (err == 0) {
-> >  		dev_err(info->dev, "No suitable video mode found\n");
-> >  		err = -EINVAL;
-> > -		goto failed;
-> > +		goto failed_mode;
-> >  	}
-> >
-> >  	if (mach_info->setup) {
-> >  		err = mach_info->setup(pdev);
-> >  		if (err)
-> > -			return err;
-> > +			goto failed_mode;
-> >  	}
-> >
-> >  	err = ep93xxfb_check_var(&info->var, info);
-> >  	if (err)
-> > -		goto failed;
-> > +		goto failed_check;
-> >
-> >  	fbi->clk = clk_get(info->dev, NULL);
-> >  	if (IS_ERR(fbi->clk)) {
-> >  		err = PTR_ERR(fbi->clk);
-> >  		fbi->clk = NULL;
-> > -		goto failed;
-> > +		goto failed_check;
-> >  	}
-> >
-> >  	ep93xxfb_set_par(info);
-> > @@ -585,15 +585,17 @@ static int __devinit ep93xxfb_probe(struct platform_device *pdev)
-> >  	return 0;
-> >
-> >  failed:
-> > -	if (fbi->clk)
-> > -		clk_put(fbi->clk);
-> > -	if (fbi->mmio_base)
-> > -		iounmap(fbi->mmio_base);
-> > -	ep93xxfb_dealloc_videomem(info);
-> > -	if (&info->cmap)
-> > -		fb_dealloc_cmap(&info->cmap);
-> > +	clk_put(fbi->clk);
-> > +failed_check:
-> >  	if (fbi->mach_info->teardown)
-> >  		fbi->mach_info->teardown(pdev);
-> > +failed_mode:
-> > +	iounmap(fbi->mmio_base);
-> > +failed_resource:
-> > +	ep93xxfb_dealloc_videomem(info);
-> > +failed_videomem:
-> > +	fb_dealloc_cmap(&info->cmap);
-> > +failed_cmap:
-> >  	kfree(info);
-> >  	platform_set_drvdata(pdev, NULL);
-> >
-> >
-> > --
-> > To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> > the body of a message to majordomo@vger.kernel.org
-> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> > Please read the FAQ at  http://www.tux.org/lkml/
-> 
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-fbdev" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+And now coming to the Santosh's bc mode in not used mode, Thomas in
+tick_check_broadcast_device() we do this.
+
+       if (!cpumask_empty(tick_get_broadcast_mask()))
+                tick_broadcast_start_periodic(dev);
+
+Typically during boot on a regular platform, broadcast mask is NULL,
+resulting in the bc timer mode as 'CLOCK_EVT_MODE_UNUSED'. This is the
+case even on regular x86.
+
+In essence, feel free to add my
+"Acked-by: Suresh Siddha <suresh.b.siddha@intel.com>" to your updated
+fix.
+
+Also, please review and consider the appended patch which addresses the
+spurious timer interrupt every 5 minutes up on resume in the platforms
+where broadcast timer is really not used. Thanks.
+---
+From: Suresh Siddha <suresh.b.siddha@intel.com>
+Subject: tick: Fix the spurious broadcast timer ticks
+
+During resume, tick_resume_broadcast() programs the broadcast timer
+in oneshot mode unconditionally. On the platforms where broadcast timer
+is not really required, this will generate spurious broadcast timer ticks
+upon resume. For example, on the always running apic timer platforms with
+HPET, I see spurious hpet tick once every ~5minutes (which is the 32-bit
+hpet counter wraparound time).
+
+Similar to boot time, during resume make the oneshot mode setting of
+the broadcast clock event device conditional on the state of active broadcast
+users. 
+
+Signed-off-by: Suresh Siddha <suresh.b.siddha@intel.com>
+---
+ kernel/time/tick-broadcast.c |    3 ++-
+ 1 files changed, 2 insertions(+), 1 deletions(-)
+
+diff --git a/kernel/time/tick-broadcast.c b/kernel/time/tick-broadcast.c
+index bf57abd..766cd82 100644
+--- a/kernel/time/tick-broadcast.c
++++ b/kernel/time/tick-broadcast.c
+@@ -346,7 +346,8 @@ int tick_resume_broadcast(void)
+ 						     tick_get_broadcast_mask());
+ 			break;
+ 		case TICKDEV_MODE_ONESHOT:
+-			broadcast = tick_resume_broadcast_oneshot(bc);
++			if (!cpumask_empty(tick_get_broadcast_mask()))
++				broadcast = tick_resume_broadcast_oneshot(bc);
+ 			break;
+ 		}
+ 	}
+
 
