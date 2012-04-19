@@ -1,91 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755762Ab2DSPfK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Apr 2012 11:35:10 -0400
-Received: from 2481.rev.megiteam.pl ([91.227.36.129]:56945 "EHLO
-	vk1001.megiteam.com.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755262Ab2DSPfI (ORCPT
+	id S1755725Ab2DSPfy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Apr 2012 11:35:54 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:33310 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753883Ab2DSPfw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Apr 2012 11:35:08 -0400
-X-Greylist: delayed 328 seconds by postgrey-1.27 at vger.kernel.org; Thu, 19 Apr 2012 11:35:08 EDT
-Message-ID: <4F902F60.4080709@localdomain.pl>
-Date: Thu, 19 Apr 2012 17:29:36 +0200
-From: Grzegorz Nosek <root@localdomain.pl>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:9.0) Gecko/20111220 Thunderbird/9.0
+	Thu, 19 Apr 2012 11:35:52 -0400
+Message-ID: <4F9030D5.2050601@wwwdotorg.org>
+Date: Thu, 19 Apr 2012 09:35:49 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.28) Gecko/20120313 Thunderbird/3.1.20
 MIME-Version: 1.0
-To: stern@rowland.harvard.edu, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-CC: support@supermicro.com
-Subject: EHCI software retries break Supermicro IPKVM
-Content-Type: text/plain; charset=UTF-8
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+CC: Rhyland Klein <rklein@nvidia.com>, Liam Girdwood <lrg@ti.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
+Subject: Re: [PATCH 3/4] mfd: tps65910: Add device-tree support
+References: <1334710829-22777-1-git-send-email-rklein@nvidia.com> <1334710829-22777-4-git-send-email-rklein@nvidia.com> <20120418090133.GC3021@opensource.wolfsonmicro.com> <1334777758.32315.37.camel@rklein-linux> <20120419125041.GH3046@opensource.wolfsonmicro.com>
+In-Reply-To: <20120419125041.GH3046@opensource.wolfsonmicro.com>
+X-Enigmail-Version: 1.1.2
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On 04/19/2012 06:50 AM, Mark Brown wrote:
+> On Wed, Apr 18, 2012 at 12:35:58PM -0700, Rhyland Klein wrote:
+>> On Wed, 2012-04-18 at 02:01 -0700, Mark Brown wrote:
+> 
+>>> This is a really odd idiom - normally the pattern for device tree
+>>> support is to just go and try to use the device tree data if it's there
+>>> and there's no need for any flag to say if it should be used.
+> 
+>> I agree its odd. My concern was that the idiom is that is pdata assigned
+>> from board files should override dt data. At this point, we don't know
+>> where the tps65910->board_data is coming from, dt or board files.
+>> Arbitrarily using dt breaks that idiom. We could do a check like this if
+>> you prefer:
+> 
+> No, just prefer the DT - what you're proposing is exactly the opposite
+> idiom to what all the other DT drivers do so we'd need to go round
+> changing the policy globally at which point we probably want to start
+> having helpers for this.
 
-(Supermicro support: cc'd as you might be interested)
+That's not right - the idea is that pdata should override device tree so
+that if there's a platform where the DT is known to contain incorrect
+data, then some early platform code can add pdata to the device to fix
+the problem, and that will be used in preference to the DT data.
 
-Commit a2c2706e1043c17139c2dafd171c4a5cf008ef7e introduced software retries for transient USB errors. Unfortunately, it turns out that this change breaks the Supermicro AOC SIMSO IPKVM board plugged into a SYS-6015B-3R server, X7DBR-3 board. It renders unusable both the keyboard and media redirection as soon as the kernel boots (display works fine). An excerpt from dmesg:
-
-[   76.587521] ehci_hcd 0000:00:1d.7: detected XactErr len 0/8 retry 1
-[   76.587646] ehci_hcd 0000:00:1d.7: detected XactErr len 0/8 retry 2
-[   76.587772] ehci_hcd 0000:00:1d.7: detected XactErr len 0/8 retry 3
-[   76.587896] ehci_hcd 0000:00:1d.7: detected XactErr len 0/8 retry 4
-[   76.588020] ehci_hcd 0000:00:1d.7: detected XactErr len 0/8 retry 5
-[   76.588144] ehci_hcd 0000:00:1d.7: detected XactErr len 0/8 retry 6
-[   76.588271] ehci_hcd 0000:00:1d.7: detected XactErr len 0/8 retry 7
-[   76.588395] ehci_hcd 0000:00:1d.7: detected XactErr len 0/8 retry 8
-[   76.588518] ehci_hcd 0000:00:1d.7: detected XactErr len 0/8 retry 9
-[   76.588644] ehci_hcd 0000:00:1d.7: detected XactErr len 0/8 retry 10
-[   76.588770] ehci_hcd 0000:00:1d.7: detected XactErr len 0/8 retry 11
-[   76.588893] ehci_hcd 0000:00:1d.7: detected XactErr len 0/8 retry 12
-[   76.589017] ehci_hcd 0000:00:1d.7: detected XactErr len 0/8 retry 13
-[   76.589142] ehci_hcd 0000:00:1d.7: detected XactErr len 0/8 retry 14
-[   76.589268] ehci_hcd 0000:00:1d.7: detected XactErr len 0/8 retry 15
-[   76.589391] ehci_hcd 0000:00:1d.7: detected XactErr len 0/8 retry 16
-[   76.589516] ehci_hcd 0000:00:1d.7: detected XactErr len 0/8 retry 17
-[   76.589641] ehci_hcd 0000:00:1d.7: detected XactErr len 0/8 retry 18
-[   76.589767] ehci_hcd 0000:00:1d.7: detected XactErr len 0/8 retry 19
-[   76.589891] ehci_hcd 0000:00:1d.7: detected XactErr len 0/8 retry 20
-[   76.590015] ehci_hcd 0000:00:1d.7: detected XactErr len 0/8 retry 21
-[   76.590140] ehci_hcd 0000:00:1d.7: detected XactErr len 0/8 retry 22
-[   76.590266] ehci_hcd 0000:00:1d.7: detected XactErr len 0/8 retry 23
-[   76.590390] ehci_hcd 0000:00:1d.7: detected XactErr len 0/8 retry 24
-[   76.590514] ehci_hcd 0000:00:1d.7: detected XactErr len 0/8 retry 25
-[   76.590639] ehci_hcd 0000:00:1d.7: detected XactErr len 0/8 retry 26
-[   76.590765] ehci_hcd 0000:00:1d.7: detected XactErr len 0/8 retry 27
-[   76.590889] ehci_hcd 0000:00:1d.7: detected XactErr len 0/8 retry 28
-[   76.591013] ehci_hcd 0000:00:1d.7: detected XactErr len 0/8 retry 29
-[   76.591138] ehci_hcd 0000:00:1d.7: detected XactErr len 0/8 retry 30
-[   76.591264] ehci_hcd 0000:00:1d.7: detected XactErr len 0/8 retry 31
-[   76.591388] ehci_hcd 0000:00:1d.7: devpath 7 ep0out 3strikes
-[   76.591402] usb 1-7: can't set config #1, error -71
-[   76.596519] drivers/usb/core/inode.c: creating file '007'
-[   76.596542] hub 1-0:1.0: state 7 ports 8 chg 0000 evt fe80
-
-After disarming the retry logic with the patch below, the KVM works fine again. Now, this is certainly a crude hack but apparently some better checks are needed to determine whether to retry the transaction.
-
-Best regards,
- Grzegorz Nosek
-
----
- drivers/usb/host/ehci.h |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
-
-diff --git a/drivers/usb/host/ehci.h b/drivers/usb/host/ehci.h
-index 0a5fda7..aa3a09e 100644
---- a/drivers/usb/host/ehci.h
-+++ b/drivers/usb/host/ehci.h
-@@ -373,7 +373,7 @@ struct ehci_qh {
- #define	QH_STATE_COMPLETING	5		/* don't touch token.HALT */
- 
- 	u8			xacterrs;	/* XactErr retry counter */
--#define	QH_XACTERR_MAX		32		/* XactErr retry limit */
-+#define	QH_XACTERR_MAX		1		/* XactErr retry limit */
- 
- 	/* periodic schedule info */
- 	u8			usecs;		/* intr bandwidth */
--- 
-1.7.2.3
+At least, that's the last I heard Grant say on the subject, and that's
+how I've been writing all the Tegra-related drivers, and I've seen
+others do the same for other platforms.
