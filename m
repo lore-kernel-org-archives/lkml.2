@@ -1,25 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933385Ab2DSVNK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Apr 2012 17:13:10 -0400
-Received: from mail-pz0-f42.google.com ([209.85.210.42]:44862 "EHLO
+	id S1756700Ab2DSVoa (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Apr 2012 17:44:30 -0400
+Received: from mail-pz0-f42.google.com ([209.85.210.42]:38471 "EHLO
 	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933286Ab2DSVND (ORCPT
+	with ESMTP id S933369Ab2DSVNJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Apr 2012 17:13:03 -0400
-Message-Id: <20120419210613.556538250@linuxfoundation.org>
+	Thu, 19 Apr 2012 17:13:09 -0400
+Message-Id: <20120419210613.745592080@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Thu, 19 Apr 2012 14:06:40 -0700
+Date: Thu, 19 Apr 2012 14:06:42 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk,
-        Shreshtha Kumar Sahu <shreshthakumar.sahu@stericsson.com>,
-        Chanho Min <chanho0207@gmail.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Jong-Sung Kim <neidhard.kim@lge.com>
-Subject: [ 29/59] serial: PL011: clear pending interrupts
+        alan@lxorguk.ukuu.org.uk, Eric Paris <eparis@redhat.com>,
+        Serge Hallyn <serge.hallyn@canonical.com>,
+        James Morris <james.l.morris@oracle.com>
+Subject: [ 31/59] fcaps: clear the same personality flags as suid when fcaps are used
 In-Reply-To: <20120419210623.GA12156@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -29,80 +26,38 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Linus Walleij <linus.walleij@linaro.org>
+From: Eric Paris <eparis@redhat.com>
 
-commit 9b96fbacda34079dea0638ee1e92c56286f6114a upstream.
+commit d52fc5dde171f030170a6cb78034d166b13c9445 upstream.
 
-Chanho Min reported that when the boot loader transfers
-control to the kernel, there may be pending interrupts
-causing the UART to lock up in an eternal loop trying to
-pick tokens from the FIFO (since the RX interrupt flag
-indicates there are tokens) while in practice there are
-no tokens - in fact there is only a pending IRQ flag.
+If a process increases permissions using fcaps all of the dangerous
+personality flags which are cleared for suid apps should also be cleared.
+Thus programs given priviledge with fcaps will continue to have address space
+randomization enabled even if the parent tried to disable it to make it
+easier to attack.
 
-This patch address the issue with a combination of two
-patches suggested by Russell King that clears and mask
-all interrupts at probe() and clears any pending error
-and RX interrupts at port startup time.
-
-We suspect the spurious interrupts are a side-effect of
-switching the UART from FIFO to non-FIFO mode.
-
-Cc: Shreshtha Kumar Sahu <shreshthakumar.sahu@stericsson.com>
-Reported-by: Chanho Min <chanho0207@gmail.com>
-Suggested-by: Russell King <linux@arm.linux.org.uk>
-Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
-Reviewed-by: Jong-Sung Kim <neidhard.kim@lge.com>
+Signed-off-by: Eric Paris <eparis@redhat.com>
+Reviewed-by: Serge Hallyn <serge.hallyn@canonical.com>
+Signed-off-by: James Morris <james.l.morris@oracle.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/tty/serial/amba-pl011.c |   15 +++++++++++----
- 1 file changed, 11 insertions(+), 4 deletions(-)
+ security/commoncap.c |    5 +++++
+ 1 file changed, 5 insertions(+)
 
---- a/drivers/tty/serial/amba-pl011.c
-+++ b/drivers/tty/serial/amba-pl011.c
-@@ -1376,6 +1376,10 @@ static int pl011_startup(struct uart_por
- 
- 	uap->port.uartclk = clk_get_rate(uap->clk);
- 
-+	/* Clear pending error and receive interrupts */
-+	writew(UART011_OEIS | UART011_BEIS | UART011_PEIS | UART011_FEIS |
-+	       UART011_RTIS | UART011_RXIS, uap->port.membase + UART011_ICR);
-+
- 	/*
- 	 * Allocate the IRQ
- 	 */
-@@ -1410,10 +1414,6 @@ static int pl011_startup(struct uart_por
- 	cr = UART01x_CR_UARTEN | UART011_CR_RXE | UART011_CR_TXE;
- 	writew(cr, uap->port.membase + UART011_CR);
- 
--	/* Clear pending error interrupts */
--	writew(UART011_OEIS | UART011_BEIS | UART011_PEIS | UART011_FEIS,
--	       uap->port.membase + UART011_ICR);
--
- 	/*
- 	 * initialise the old status of the modem signals
- 	 */
-@@ -1428,6 +1428,9 @@ static int pl011_startup(struct uart_por
- 	 * as well.
- 	 */
- 	spin_lock_irq(&uap->port.lock);
-+	/* Clear out any spuriously appearing RX interrupts */
-+	 writew(UART011_RTIS | UART011_RXIS,
-+		uap->port.membase + UART011_ICR);
- 	uap->im = UART011_RTIM;
- 	if (!pl011_dma_rx_running(uap))
- 		uap->im |= UART011_RXIM;
-@@ -1904,6 +1907,10 @@ static int pl011_probe(struct amba_devic
- 		goto unmap;
+--- a/security/commoncap.c
++++ b/security/commoncap.c
+@@ -510,6 +510,11 @@ int cap_bprm_set_creds(struct linux_binp
  	}
+ skip:
  
-+	/* Ensure interrupts from this UART are masked and cleared */
-+	writew(0, uap->port.membase + UART011_IMSC);
-+	writew(0xffff, uap->port.membase + UART011_ICR);
++	/* if we have fs caps, clear dangerous personality flags */
++	if (!cap_issubset(new->cap_permitted, old->cap_permitted))
++		bprm->per_clear |= PER_CLEAR_ON_SETID;
 +
- 	uap->vendor = vendor;
- 	uap->lcrh_rx = vendor->lcrh_rx;
- 	uap->lcrh_tx = vendor->lcrh_tx;
++
+ 	/* Don't let someone trace a set[ug]id/setpcap binary with the revised
+ 	 * credentials unless they have the appropriate permit
+ 	 */
 
 
