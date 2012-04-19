@@ -1,71 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754969Ab2DSMw1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Apr 2012 08:52:27 -0400
-Received: from www.linutronix.de ([62.245.132.108]:39074 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752868Ab2DSMw0 (ORCPT
+	id S1755064Ab2DSMyr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Apr 2012 08:54:47 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:36400 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753607Ab2DSMyq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Apr 2012 08:52:26 -0400
-Date: Thu, 19 Apr 2012 14:52:24 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: John Stultz <john.stultz@linaro.org>
-cc: Prarit Bhargava <prarit@redhat.com>, linux-kernel@vger.kernel.org,
-        Salman Qazi <sqazi@google.com>, stable@kernel.org
-Subject: Re: [PATCH] clocksource, prevent overflow in clocksource_cyc2ns
-In-Reply-To: <alpine.LFD.2.02.1204191437560.2542@ionos>
-Message-ID: <alpine.LFD.2.02.1204191451350.2542@ionos>
-References: <1333552260-1170-1-git-send-email-prarit@redhat.com> <4F7C8C3E.1020203@us.ibm.com> <4F7C9402.3090602@redhat.com> <4F7CF094.5020201@us.ibm.com> <4F7D8FA1.1010107@redhat.com> <4F8F4C31.7010209@linaro.org> <4F8F555F.7040404@redhat.com>
- <4F8F59E2.4080301@linaro.org> <alpine.LFD.2.02.1204191437560.2542@ionos>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+	Thu, 19 Apr 2012 08:54:46 -0400
+Date: Thu, 19 Apr 2012 13:54:43 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Rhyland Klein <rklein@nvidia.com>
+Cc: Samuel Ortiz <sameo@linux.intel.com>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Rob Herring <rob.herring@calxeda.com>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        Liam Girdwood <lrg@ti.com>
+Subject: Re: [PATCH 1/4] regulator: tps65910: update type for regmap
+Message-ID: <20120419125443.GI3046@opensource.wolfsonmicro.com>
+References: <1334710829-22777-1-git-send-email-rklein@nvidia.com>
+ <1334710829-22777-2-git-send-email-rklein@nvidia.com>
+ <20120418092547.GE3021@opensource.wolfsonmicro.com>
+ <1334779402.32315.63.camel@rklein-linux>
+ <1334780371.32315.66.camel@rklein-linux>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="Li7ckgedzMh1NgdW"
+Content-Disposition: inline
+In-Reply-To: <1334780371.32315.66.camel@rklein-linux>
+X-Cookie: You are always busy.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 19 Apr 2012, Thomas Gleixner wrote:
 
-> On Wed, 18 Apr 2012, John Stultz wrote:
-> > On 04/18/2012 04:59 PM, Prarit Bhargava wrote:
-> > > 
-> > > Hey John,
-> > > 
-> > > Thanks for continuing to work on this.  Coincidentally that exact patch was
-> > > my
-> > > first attempt at resolving the problem as well.  The problem is that even
-> > > after
-> > > touching the clocksource watchdog and restoring irqs the printk buffer can
-> > > take
-> > > a LONG time to flush -- and that still will cause an overflow comparison.
-> > > So
-> > > fixing it with just a touch_clocksource_watchdog() isn't the right thing to
-> > > do
-> > > IMO.  Maybe a combination of the printk() patch you suggested earlier and
-> > > the
-> > > touch_clocksource_watchdog() is the right way to go but I'll leave that up
-> > > to
-> > > tglx and yourself to decide on a correct fix.
-> > :( That's a bummer. Something similar may be useful on the printk side as
-> > well.
-> 
-> No. The show_state() part prints into the buffer. But it's not
-> guaranteed that the buffer is flushed right away. It could be flushed
-> later as well in a different context. And of course the flush code
-> runs with interrupts disabled and dumping out a gazillion of lines
-> over serial will cause the same hickup. Just planting random
-> touch_watchdog() calls into the code is not the right approach,
-> really.
-> 
-> We should think about the reasons why we have interrupts disabled for
-> so much time. Is that really, really necessary ?
+--Li7ckgedzMh1NgdW
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-I'm not against making the clocksource code more robust, but I don't
-want to add crap there just to cope with complete madness elsewhere.
+On Wed, Apr 18, 2012 at 01:19:31PM -0700, Rhyland Klein wrote:
+> On Wed, 2012-04-18 at 13:03 -0700, Rhyland Klein wrote:
 
-Thanks,
+> > Which interface are you saying is broken? The regmap interface or the
+> > one internal to the tps65910 code?=20
 
-	tglx
+This driver is broken.
+
+> > So to be clear... Your recommendation is to change the tps65910 code to
+> > remove the common read/write callbacks and to use regmap directly in
+> > each component, and then when using regmap, do use the regmap raw
+> > functions instead of the bulkread/write?
+
+> Looking at the code, I would think it makes more sense use regmap_read
+> which enforces types since the tps65910 code only ever seems to use
+> regmap to access a single register at a time. Do you agree?
+
+Yes, for single register I/O the drivers should just be using the
+per-register APIs regmap has if they're using regmap directly.  Having
+wrappers for this in the header would be fine also, the things that are
+really problematic about the current code are the void * usage and the
+fact that individual drivers are writing register read/write functions.
+
+If the driver wasn't using void * this bug would've been caught by the
+compiler.
+
+--Li7ckgedzMh1NgdW
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJPkAsMAAoJEBus8iNuMP3dVEwP/1X+vJVv+E0gjzLKX2vjZrPU
+wDMlK32CjnlUFK+sh6o3SXvYT/BV9MSQ6JwKdkudGqV1Vr2uhzY0ES/ut5gaRejJ
+vlNwG6V3g0rwTvjbF/Yscv4VpdeFSoLc4daoETFa5X7iBNe8cIYaWl4gU++QsOPx
+tp36Ergw/OxAX4g2k5FjqsdZjULtXrPj5K777mtR8wGCKm5P3aGIkxT2jG3wqoxd
+PbA3rCnwFJa2cOQtQM+m6uX/bDFVAkBQaYEiBFGVCEHSIVZuidm6cF260+6wBdEv
+FlKhiGsgVUme8nowgBygg+LJTBiQD2IPmGABngqugw13QpTxQJtINtjeYkg1+9+S
+NkUxrhdKm2RhI97PlPLG0eIWsBJsfxSuCjNfj9INYZdDmwNfwwrWSw6cYePCIN2J
+xLea8XC/Kv/JzZuJjAKMOem87jeIbWYNxyfYnUM5lxt43R4xuo2sgJI3e5Q1UGy3
+lGdutqAo/igLnF0nq3Gt4cQr/zLrnVM+g5rUuFc70ognL15aDnaUOqS23NOOnf90
+5XSobgUefS9lc3NNT7Herplho8Tj92zkZGflMkw24W754SxKDyQxalJBbHAVPdG6
+QWC8BsAc2i9Q7/M6mVR7oV7gvRmZwJZABTIh+QRJ9gauFQOkTsTVw1B09xTVS5PU
+Am8j2QqWWiDR9N6+IJce
+=srMh
+-----END PGP SIGNATURE-----
+
+--Li7ckgedzMh1NgdW--
