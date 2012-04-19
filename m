@@ -1,58 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753044Ab2DSGKa (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Apr 2012 02:10:30 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:53204 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752608Ab2DSGK0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Apr 2012 02:10:26 -0400
-From: Venkatraman S <svenkatr@ti.com>
-To: <akpm@linux-foundation.org>
-CC: <linux-kernel@vger.kernel.org>, <linux-scsi@vger.kernel.org>,
-        Venkatraman S <svenkatr@ti.com>,
-        James Bottomley <James.Bottomley@hansenpartnership.com>
-Subject: [PATCH v2] scsi/ufs: Fix evaluation of UTP task completion code
-Date: Thu, 19 Apr 2012 11:46:22 +0530
-Message-ID: <1334816182-16268-1-git-send-email-svenkatr@ti.com>
-X-Mailer: git-send-email 1.7.5.4
+	id S1752996Ab2DSGLS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Apr 2012 02:11:18 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:35837 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751576Ab2DSGLR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Apr 2012 02:11:17 -0400
+Date: Thu, 19 Apr 2012 09:10:21 +0300
+From: Mika Westerberg <mika.westerberg@iki.fi>
+To: H Hartley Sweeten <hartleys@visionengravers.com>
+Cc: Linux Kernel <linux-kernel@vger.kernel.org>,
+        spi-devel-general@lists.sourceforge.net, grant.likely@secretlab.ca,
+        vinod.koul@linux.intel.com
+Subject: Re: [PATCH] spi/spi-ep93xx.c: use dma_transfer_direction instead of
+ dma_data_direction
+Message-ID: <20120419061020.GB18520@mwesterb-mobl.lan>
+References: <201204171846.37245.hartleys@visionengravers.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201204171846.37245.hartleys@visionengravers.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-While interpreting the result of UTP task completion status,
-by using boolean &&, the evaluation would fail when the
-UPIU_TASK_MANAGEMENT_FUNC_SUCCEEDED was received.
+On Tue, Apr 17, 2012 at 06:46:36PM -0700, H Hartley Sweeten wrote:
+> A new enum indicating the dma channel direction was introduced by:
+> 
+> commit 49920bc66984a512f4bcc7735a61642cd0e4d6f2
+>     dmaengine: add new enum dma_transfer_direction
+> 
+> The following commit changed spi-ep93xx to use the new enum:
+> 
+> commit a485df4b4404379786c4bdd258bc528b2617449d
+>     spi, serial: move to dma_transfer_direction
+> 
+> In doing so a sparse warning was introduced: 
+> 
+> warning: mixing different enum types
+>    int enum dma_data_direction  versus
+>    int enum dma_transfer_direction
+> 
+> This is produced because the 'dir' passed in ep93xx_spi_dma_prepare
+> is an enum dma_data_direction and is being used to set the
+> dma_slave_config 'direction' which is now an enum dma_transfer_direction.
+> 
+> Fix this by converting spi-ep93xx to use the new enum type in all
+> places.
+> 
+> Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
+> Cc: Grant Likely <grant.likely@secretlab.ca>
+> Cc: Vinod Koul <vinod.koul@linux.intel.com>
 
-Either UPIU_TASK_MANAGEMENT_FUNC_COMPL or
-UPIU_TASK_MANAGEMENT_FUNC_SUCCEEDED should be
-considered as a success result.
-
-Reported-by: Joe Perches <joe@perches.com>
-Signed-off-by: Venkatraman S <svenkatr@ti.com>
-Reviewed-by: Namjae Jeon <linkinjeon@gmail.com>
-Acked-by: Santosh Y <santoshsy@gmail.com>
-CC: Andrew Morton <akpm@linux-foundation.org>
-CC: James Bottomley <James.Bottomley@hansenpartnership.com>
----
-	v1 -> v2: Update subject, description as suggested by Andrew Morton
- drivers/scsi/ufs/ufshcd.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
-
-diff --git a/drivers/scsi/ufs/ufshcd.c b/drivers/scsi/ufs/ufshcd.c
-index aa97200..cd59f6f 100644
---- a/drivers/scsi/ufs/ufshcd.c
-+++ b/drivers/scsi/ufs/ufshcd.c
-@@ -1160,7 +1160,7 @@ static int ufshcd_task_req_compl(struct ufs_hba *hba, u32 index)
- 		task_result = be32_to_cpu(task_rsp_upiup->header.dword_1);
- 		task_result = ((task_result & MASK_TASK_RESPONSE) >> 8);
- 
--		if (task_result != UPIU_TASK_MANAGEMENT_FUNC_COMPL ||
-+		if (task_result != UPIU_TASK_MANAGEMENT_FUNC_COMPL &&
- 		    task_result != UPIU_TASK_MANAGEMENT_FUNC_SUCCEEDED)
- 			task_result = FAILED;
- 	} else {
--- 
-1.7.5.4
-
+Acked-by: Mika Westerberg <mika.westerberg@iki.fi>
