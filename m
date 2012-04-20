@@ -1,73 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753749Ab2DTTTH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Apr 2012 15:19:07 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:52275 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751938Ab2DTTTF (ORCPT
+	id S1753549Ab2DTTXg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Apr 2012 15:23:36 -0400
+Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:65274 "EHLO
+	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751756Ab2DTTXf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Apr 2012 15:19:05 -0400
+	Fri, 20 Apr 2012 15:23:35 -0400
+Message-ID: <4F91B7AF.8040203@openvz.org>
+Date: Fri, 20 Apr 2012 23:23:27 +0400
+From: Konstantin Khlebnikov <khlebnikov@openvz.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.2) Gecko/20120217 Firefox/10.0.2 Iceape/2.7.2
 MIME-Version: 1.0
-In-Reply-To: <20120420190418.GK6871@ZenIV.linux.org.uk>
-References: <1334754302.2137.8.camel@falcor> <alpine.LRH.2.02.1204190101380.30151@tundra.namei.org>
- <1334772473.2137.22.camel@falcor> <20120418183938.GH6589@ZenIV.linux.org.uk>
- <1334865448.2429.35.camel@falcor> <20120420004303.GB6871@ZenIV.linux.org.uk>
- <alpine.LSU.2.00.1204201133340.1450@eggly.anvils> <20120420190418.GK6871@ZenIV.linux.org.uk>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Fri, 20 Apr 2012 12:18:43 -0700
-X-Google-Sender-Auth: -XQyy4MkBP5tOaoh33kHYbgto84
-Message-ID: <CA+55aFwVJ7SFbb3ZVxnon-Vv19pbNvUN4oungH479q7DUjBtwQ@mail.gmail.com>
-Subject: Re: [RFC] situation with fput() locking (was Re: [PULL REQUEST] :
- ima-appraisal patches)
-To: Al Viro <viro@zeniv.linux.org.uk>
-Cc: Hugh Dickins <hughd@google.com>, linux-fsdevel@vger.kernel.org,
-        James Morris <jmorris@namei.org>,
-        linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org,
-        David Safford <safford@linux.vnet.ibm.com>,
-        Dmitry Kasatkin <dmitry.kasatkin@intel.com>,
-        Mimi Zohar <zohar@linux.vnet.ibm.com>,
-        David Miller <davem@davemloft.net>,
-        Andrew Morton <akpm@linux-foundation.org>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Oleg Nesterov <oleg@redhat.com>
+CC: Andrew Morton <akpm@linux-foundation.org>, Hugh Dickins <hughd@google.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        Markus Trippelsdorf <markus@trippelsdorf.de>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Subject: Re: [PATCH 1/2] mm: set task exit code before complete_vfork_done()
+References: <20120409200336.8368.63793.stgit@zurg> <20120412080948.26401.23572.stgit@zurg> <20120412235446.GA4815@redhat.com> <20120420175934.GA31905@redhat.com>
+In-Reply-To: <20120420175934.GA31905@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 20, 2012 at 12:04 PM, Al Viro <viro@zeniv.linux.org.uk> wrote:
+Oleg Nesterov wrote:
+> On 04/13, Oleg Nesterov wrote:
+>>
+>> Damn, Konstantin I have to admit, I'll try to find another technical
+>> reason against mm-correctly-synchronize-rss-counters-at-exit-exec.patch
+>> even with this fix ;)
+>>
+>> Most probably I am wrong, but it looks overcomplicated. Somehow I
+>> dislike irrationally the fact you moved mm_release() from exit_mm().
 >
-> Deferring the final pass after dropping ->mmap_sem is going to be
-> interesting; what would protect ->vm_next on those suckers?
+> And perhaps you can help me to discredit your patch?
+>
+> It turns out, I do not really understand this code in do_exit:
+>
+> 	/* sync mm's RSS info before statistics gathering */
+> 	if (tsk->mm)
+> 		sync_mm_rss(tsk->mm);
+>
+> Which "statistics gathering" ? Probably I missed something, but
+> after the quick grep it seems to me that this is only needed for
+> taskstats_exit()->xacct_add_tsk().
+>
+> So why we can't simply add sync_mm_rss() into xacct_add_tsk() ?
 
-Just remove them from the active list, and keep them linked to each
-other using vm_next.
+> Yes, this way we do not "account" put_user(clear_child_tid) but
+> I think we do not care.
 
-After all, the only case we care about is the case where the vma gets
-removed entirely, so we just put them on their own list.
+Why we don't care? Each thread can corrupt these counters by one.
+I do not think that we are satisfied with nearly accurate rss accounting.
++/- one page for each clone()-exit().
 
-In fact, that's what we already do for other reasons. See
-detach_vmas_to_be_unmapped().
+Actually I don't really like this per-task rss-delta.
+Probably it would be better to use per-cpu counters.
 
-So vm_next is actually entirely *private* by this time, and needs no
-locking at all.
+>
+> IOW, what do you think about the trivial patch below? Uncompiled,
+> untested, probably incomplete. acct_update_integrals() looks
+> suspicious too.
 
-As far as I can tell, we could just make do_munmap() return that
-private list, and then do the fput's and freeing of the list outside
-the mmap_sem lock.
+what a mess! =)
 
-That actually looks pretty simple. There are a fair number of callers,
-which looks to be the main annoyance. But fixing it up with some
-pattern of "do finish_munmap after drooping the mmap_sem" doesn't look
-*complicated*, just slightly annoying.
+>
+> Oleg.
+>
+> --- a/kernel/tsacct.c
+> +++ b/kernel/tsacct.c
+> @@ -91,6 +91,7 @@ void xacct_add_tsk(struct taskstats *sta
+>   	stats->virtmem = p->acct_vm_mem1 * PAGE_SIZE / MB;
+>   	mm = get_task_mm(p);
+>   	if (mm) {
+> +		sync_mm_rss(mm);
+>   		/* adjust to KB unit */
+>   		stats->hiwater_rss   = get_mm_hiwater_rss(mm) * PAGE_SIZE / KB;
+>   		stats->hiwater_vm    = get_mm_hiwater_vm(mm)  * PAGE_SIZE / KB;
+> --- a/kernel/exit.c
+> +++ b/kernel/exit.c
+> @@ -643,6 +643,8 @@ static void exit_mm(struct task_struct *
+>   	mm_release(tsk, mm);
+>   	if (!mm)
+>   		return;
+> +
+> +	sync_mm_rss(mm);
+>   	/*
+>   	 * Serialize with any possible pending coredump.
+>   	 * We must hold mmap_sem around checking core_state
+> @@ -960,9 +962,6 @@ void do_exit(long code)
+>   				preempt_count());
+>
+>   	acct_update_integrals(tsk);
+> -	/* sync mm's RSS info before statistics gathering */
+> -	if (tsk->mm)
+> -		sync_mm_rss(tsk->mm);
+>   	group_dead = atomic_dec_and_test(&tsk->signal->live);
+>   	if (group_dead) {
+>   		hrtimer_cancel(&tsk->signal->real_timer);
+> --- a/fs/exec.c
+> +++ b/fs/exec.c
+> @@ -823,10 +823,10 @@ static int exec_mmap(struct mm_struct *m
+>   	/* Notify parent that we're no longer interested in the old VM */
+>   	tsk = current;
+>   	old_mm = current->mm;
+> -	sync_mm_rss(old_mm);
+>   	mm_release(tsk, old_mm);
+>
+>   	if (old_mm) {
+> +		sync_mm_rss(old_mm);
+>   		/*
+>   		 * Make sure that if there is a core dump in progress
+>   		 * for the old mm, we get out and die instead of going
+>
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Fight unfair telecom internet charges in Canada: sign http://stopthemeter.ca/
+> Don't email:<a href=mailto:"dont@kvack.org">  email@kvack.org</a>
 
-The *bigger* annoyance is actually "do_mmap()", which does a
-do_munmap() as part of it, so it needs the same cleanup too.
-
-There might be other cases that do munmap as part of their operation
-(and that have the mmap_sem held outside of the caller), but
-do_munmap() and do_mmap() seem to be the two obvious ones.
-
-Many of the callers seem to do the mmap_sem() right around the call,
-though (see binfmt_elf.c for example), so it really would be a rather
-local fixup.
-
-                   Linus
