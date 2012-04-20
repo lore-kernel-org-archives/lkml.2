@@ -1,73 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751549Ab2DTUG4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Apr 2012 16:06:56 -0400
-Received: from g4t0015.houston.hp.com ([15.201.24.18]:2466 "EHLO
-	g4t0015.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751232Ab2DTUGz (ORCPT
+	id S1752073Ab2DTUHU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Apr 2012 16:07:20 -0400
+Received: from mail-pz0-f52.google.com ([209.85.210.52]:56396 "EHLO
+	mail-pz0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751349Ab2DTUHR convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Apr 2012 16:06:55 -0400
-Date: Fri, 20 Apr 2012 15:06:52 -0500
-From: scameron@beardog.cce.hp.com
-To: Khalid Aziz <khalid.aziz@hp.com>
-Cc: james.bottomley@hansenpartnership.com, linux-scsi@vger.kernel.org,
-        linux-kernel@vger.kernel.org, matthew.gates@hp.com,
-        stephenmcameron@gmail.com, thenzl@redhat.com,
-        akpm@linux-foundation.org, mikem@beardog.cce.hp.com,
-        scameron@beardog.cce.hp.com
-Subject: Re: [PATCH 03/17] hpsa: enable bus master bit after pci_enable_device
-Message-ID: <20120420200652.GA11802@beardog.cce.hp.com>
-References: <20120420150349.10596.73732.stgit@beardog.cce.hp.com> <20120420150629.10596.51923.stgit@beardog.cce.hp.com> <1334947310.10129.124.camel@lyra>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1334947310.10129.124.camel@lyra>
-User-Agent: Mutt/1.4.2.2i
+	Fri, 20 Apr 2012 16:07:17 -0400
+MIME-Version: 1.0
+In-Reply-To: <20120420124557.035417523@linutronix.de>
+References: <20120420122120.097464672@linutronix.de>
+	<20120420124557.035417523@linutronix.de>
+Date: Fri, 20 Apr 2012 13:07:16 -0700
+X-Google-Sender-Auth: JuJohKRaBvEZs8fnaTpkbPpKl20
+Message-ID: <CAE9FiQWpcD_GAtmnowTpAEW+6hRqxjokHKf4Nb2K92sm=SUGNQ@mail.gmail.com>
+Subject: Re: [patch 03/18] smp: Add generic smpboot facility
+From: Yinghai Lu <yinghai@kernel.org>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: LKML <linux-kernel@vger.kernel.org>, linux-arch@vger.kernel.org,
+        Peter Zijlstra <peterz@infradead.org>,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Ingo Molnar <mingo@kernel.org>,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        Matt Turner <mattst88@gmail.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Mike Frysinger <vapier@gentoo.org>,
+        Jesper Nilsson <jesper.nilsson@axis.com>,
+        Richard Kuo <rkuo@codeaurora.org>, Tony Luck <tony.luck@intel.com>,
+        Hirokazu Takata <takata@linux-m32r.org>,
+        Ralf Baechle <ralf@linux-mips.org>,
+        David Howells <dhowells@redhat.com>,
+        "James E.J. Bottomley" <jejb@parisc-linux.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Paul Mundt <lethal@linux-sh.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        Chris Metcalf <cmetcalf@tilera.com>,
+        Richard Weinberger <richard@nod.at>, x86@kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 20, 2012 at 12:41:50PM -0600, Khalid Aziz wrote:
-> On Fri, 2012-04-20 at 10:06 -0500, Stephen M. Cameron wrote:
-> > From: Stephen M. Cameron <scameron@beardog.cce.hp.com>
-> > 
-> > pci_disable_device() disables the bus master bit and pci_enable_device does
-> > not re-enable it.  It needs to be enabled.
-> > 
-> > Signed-off-by: Stephen M. Cameron <scameron@beardog.cce.hp.com>
-> > ---
-> >  drivers/scsi/hpsa.c |    6 ++++++
-> >  1 files changed, 6 insertions(+), 0 deletions(-)
-> > 
-> > diff --git a/drivers/scsi/hpsa.c b/drivers/scsi/hpsa.c
-> > index 5119ce6..363619d 100644
-> > --- a/drivers/scsi/hpsa.c
-> > +++ b/drivers/scsi/hpsa.c
-> > @@ -3917,6 +3917,7 @@ static int __devinit hpsa_enter_simple_mode(struct ctlr_info *h)
-> >  static int __devinit hpsa_pci_init(struct ctlr_info *h)
-> >  {
-> >  	int prod_index, err;
-> > +	u16 command_register;
-> >  
-> >  	prod_index = hpsa_lookup_board_id(h->pdev, &h->board_id);
-> >  	if (prod_index < 0)
-> > @@ -3933,6 +3934,11 @@ static int __devinit hpsa_pci_init(struct ctlr_info *h)
-> >  		return err;
-> >  	}
-> >  
-> > +	/* Enable bus mastering (pci_disable_device may disable this) */
-> > +	pci_read_config_word(h->pdev, PCI_COMMAND, &command_register);
-> > +	command_register |= PCI_COMMAND_MASTER;
-> > +	pci_write_config_word(h->pdev, PCI_COMMAND, command_register);
-> > +
-> >  	err = pci_request_regions(h->pdev, HPSA);
-> >  	if (err) {
-> >  		dev_err(&h->pdev->dev,
-> 
-> Wouldn't it be better to use pci_set_master(h->pdev) to enable bus
-> mastering?
-
-Yes.  Thanks.
-
--- steve
-
+On Fri, Apr 20, 2012 at 6:05 AM, Thomas Gleixner <tglx@linutronix.de> wrote:
+> Start a new file, which will hold SMP and CPU hotplug related generic
+> infrastructure.
+>
+===================================================================
+> --- linux-2.6.orig/kernel/cpu.c
+> +++ linux-2.6/kernel/cpu.c
+> @@ -17,6 +17,8 @@
+>  #include <linux/gfp.h>
+>  #include <linux/suspend.h>
+>
+> +#include "smpboot.h"
+> +
+>  #ifdef CONFIG_SMP
+>  /* Serializes the updates to cpu_online_mask, cpu_present_mask */
+>  static DEFINE_MUTEX(cpu_add_remove_lock);
+> @@ -300,6 +302,11 @@ static int __cpuinit _cpu_up(unsigned in
+>                return -EINVAL;
+>
+>        cpu_hotplug_begin();
+> +
+> +       ret = smpboot_prepare(cpu);
+> +       if (ret)
+> +               goto out;
+> +
+>        ret = __cpu_notify(CPU_UP_PREPARE | mod, hcpu, -1, &nr_calls);
+>        if (ret) {
+>                nr_calls--;
+> @@ -320,6 +327,7 @@ static int __cpuinit _cpu_up(unsigned in
+>  out_notify:
+>        if (ret != 0)
+>                __cpu_notify(CPU_UP_CANCELED | mod, hcpu, nr_calls, NULL);
+> +out:
+>        cpu_hotplug_done();
+>
+>        return ret;
+> Index: linux-2.6/kernel/smpboot.c
+> ===================================================================
+> --- /dev/null
+> +++ linux-2.6/kernel/smpboot.c
+> @@ -0,0 +1,12 @@
+> +/*
+> + * Common SMP CPU bringup/teardown functions
+> + */
+> +
+> +#include "smpboot.h"
+> +
+> +/**
+> + * smpboot_prepare - generic smpboot preparation
+> + */
+> +int __cpuinit smpboot_prepare(unsigned int cpu)
+> +{
+         return 0;
+> +}
