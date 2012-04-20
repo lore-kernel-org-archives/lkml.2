@@ -1,28 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754565Ab2DTKaJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Apr 2012 06:30:09 -0400
-Received: from demokritos1.cytanet.com.cy ([195.14.130.216]:40804 "EHLO
-	demokritos1.cytanet.com.cy" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754412Ab2DTKaH (ORCPT
+	id S1754622Ab2DTKbP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Apr 2012 06:31:15 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:59304 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752226Ab2DTKbO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Apr 2012 06:30:07 -0400
-X-Greylist: delayed 301 seconds by postgrey-1.27 at vger.kernel.org; Fri, 20 Apr 2012 06:30:07 EDT
-X-Spam-Flag: NO
-X-Spam-Score: 0.281
-From: "HEINEKEN=?ISO-8859-7?B?rg==?=" <heinekenonlone@rocketmail.com>
-Reply-to: heinekenonlone@rocketmail.com
-Subject: HHS5877
-X-Mailer: CYTANET Webmail
-X-Originating-IP: 12.170.91.242
-Date: Fri, 20 Apr 2012 13:24:56 +0300
-Message-id: <4f913978.36a.44d8.1528539263@cytanet.com.cy>
+	Fri, 20 Apr 2012 06:31:14 -0400
+Date: Fri, 20 Apr 2012 11:31:10 +0100
+From: Andy Whitcroft <apw@canonical.com>
+To: Dave Airlie <airlied@gmail.com>
+Cc: David Airlie <airlied@linux.ie>, dri-devel@lists.freedesktop.org,
+        Jesse Barnes <jbarnes@virtuousgeek.org>,
+        Bryce Harrington <bryce@canonical.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/1] [RFC] DRM locking issues during early open
+Message-ID: <20120420103110.GD3467@shadowen.org>
+References: <1334852525-14950-1-git-send-email-apw@canonical.com>
+ <CAPM=9tzC5M-K-irN=Dw3Ai+2ExUj_vSCVYUj-qpmccHLAeaifA@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="iso-8859-7"
-To: unlisted-recipients:; (no To-header on input)
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAPM=9tzC5M-K-irN=Dw3Ai+2ExUj_vSCVYUj-qpmccHLAeaifA@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dear Internet User, you just won  1,000,000GBP from Heineken Star Prize Offer, for more details, reply to enable us verify you are the owner of your email address. 
-**Info Dept.**
+On Fri, Apr 20, 2012 at 10:40:35AM +0100, Dave Airlie wrote:
+
+> I've just revisited this, maybe I'm going insane but why does
+> drm_global_mutex not stop this?
+> 
+> drm_get_pci_dev takes drm_global_mutex before calling drm_fill_in_dev
+> and drm_get_minor.
+> 
+> Now the fops should be pointing at stub_open at this point, as we
+> won't have switched to the per device fops yet,
+> and one of the first things drm_stub_open does is take the
+> drm_global_mutex before doing the idr lookup.
+> 
+> So is the problem opening some sysfs or proc file early?
+
+I may be reading things wrong but the initialisation does indeed hold
+drm_global_mutex, but and back when this first occured we would have
+been using kernel_lock() which was at least partially reentrant right?
+
+Anyhow, I will go back to the reporter and try and get a proper
+reproduce by, there is no point in fixing something which is something
+else.
+
+-apw
