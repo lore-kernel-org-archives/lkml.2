@@ -1,353 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750853Ab2DTEEj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Apr 2012 00:04:39 -0400
-Received: from g1t0028.austin.hp.com ([15.216.28.35]:11918 "EHLO
-	g1t0028.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750702Ab2DTEEi (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Apr 2012 00:04:38 -0400
-Message-ID: <1334894674.3051.18.camel@lorien2>
-Subject: [PATCH ] leds: add new transient trigger for one shot timer support
-From: Shuah Khan <shuahkhan@gmail.com>
-Reply-To: shuahkhan@gmail.com
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: shuahkhan@gmail.com, neilb@suse.de, LKML <linux-kernel@vger.kernel.org>,
-        Jonas Bonn <jonas@southpole.se>,
-        Richard Purdie <richard.purdie@linuxfoundation.org>
-Date: Thu, 19 Apr 2012 22:04:34 -0600
-In-Reply-To: <1334507752.2723.3.camel@lorien2>
-References: <1333310039.2879.4.camel@lorien2> <1334064283.10826.6.camel@ted>
-	 <1334507752.2723.3.camel@lorien2>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2- 
+	id S1751056Ab2DTEHi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Apr 2012 00:07:38 -0400
+Received: from smtp.gentoo.org ([140.211.166.183]:41655 "EHLO smtp.gentoo.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750761Ab2DTEHh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Apr 2012 00:07:37 -0400
+From: Mike Frysinger <vapier@gentoo.org>
+Organization: wh0rd.org
+To: Paul Gortmaker <paul.gortmaker@windriver.com>
+Subject: Re: [PATCH] blackfin: fix ifdef fustercluck in mach-bf538/boards/ezkit.c
+Date: Fri, 20 Apr 2012 00:08:34 -0400
+User-Agent: KMail/1.13.7 (Linux/3.4.0-rc1; KDE/4.6.5; x86_64; ; )
+Cc: uclinux-dist-devel@blackfin.uclinux.org, linux-kernel@vger.kernel.org,
+        Sonic Zhang <sonic.zhang@analog.com>, Bob Liu <lliubbo@gmail.com>
+References: <1334807838-3006-1-git-send-email-paul.gortmaker@windriver.com>
+In-Reply-To: <1334807838-3006-1-git-send-email-paul.gortmaker@windriver.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed;
+  boundary="nextPart1799793.pIRqn5DR7R";
+  protocol="application/pgp-signature";
+  micalg=pgp-sha1
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+Message-Id: <201204200008.36915.vapier@gentoo.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds a new transient trigger for one shot timer support and is
-to be used for the following example use cases:
+--nextPart1799793.pIRqn5DR7R
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: quoted-printable
 
-- Control of vibrate (phones, tablets etc.) hardware by userspace app.
-- Use of LED by userspace app as activity indicator.
-- Use of LED by userspace app as a kind of watchdog indicator -- as
-       long as the app is alive, it can keep the LED illuminated, if it dies
-       the LED will be extinguished automatically.
-- Use by any userspace app that needs a transient GPIO output
+On Wednesday 18 April 2012 23:57:18 Paul Gortmaker wrote:
+> This file has lots and lots of ifdef, around structure decls
+> and structure usages.
 
-Transient trigger exports two attributes:
-       transient_enabled -     one shot timer enable mechanism.
-                               1 when enabled, 0 when disabled.
-                               enabled state indicates a timer
-                               with a value of transient_time running.
-                               disabled state indicates no active timer
-                               running.
-       transient_time -        one shot timer value. When transient_enabled
-                               is set, transient_time value is used to start
-                               a timer that runs once.
-       When timer expires transient_enabled goes back to disabled state,
-       transient_time is left at the set value to be used when transient
-       is enabled at a future time. This will allow user app to set the
-       time once and enable it to run it once for the specified value as
-       needed.
+yeah.  we killed some off, and there probably is room for more, but some of=
+ the=20
+subsystems are not friendly to dynamic resource management, so we need some=
+ of=20
+the ifdefs.  SPI doesn't like it if you declare resources for different dev=
+ices=20
+on the same CS even if you never actually use the device in question.  be n=
+ice=20
+if the detection could be delayed until "open" time.
 
->From 80a15b18f6758d2890dfa6b266f2ea4e30338e3c Mon Sep 17 00:00:00 2001
-From: Shuah Khan <shuahkhan@gmail.com>
-Date: Thu, 19 Apr 2012 21:05:36 -0600
-Subject: [PATCH 2/2] leds: add new transient trigger for one shot timer
- support
+> but since I had to tag the #endif with their respective #ifdef
+> options to find this misplaced SPI endif, it would be silly to
+> then go and delete them all.  So they stay.
 
+Acked-by: Mike Frysinger <vapier@gentoo.org>
+=2Dmike
 
-Signed-off-by: Shuah Khan <shuahkhan@gmail.com>
----
- drivers/leds/Kconfig             |    8 ++
- drivers/leds/Makefile            |    1 +
- drivers/leds/ledtrig-transient.c |  246 ++++++++++++++++++++++++++++++++++++++
- 3 files changed, 255 insertions(+), 0 deletions(-)
- create mode 100644 drivers/leds/ledtrig-transient.c
+--nextPart1799793.pIRqn5DR7R
+Content-Type: application/pgp-signature; name=signature.asc 
+Content-Description: This is a digitally signed message part.
 
-diff --git a/drivers/leds/Kconfig b/drivers/leds/Kconfig
-index 589ba02..c6d8006 100644
---- a/drivers/leds/Kconfig
-+++ b/drivers/leds/Kconfig
-@@ -478,4 +478,12 @@ config LEDS_TRIGGER_DEFAULT_ON
- comment "iptables trigger is under Netfilter config (LED target)"
- 	depends on LEDS_TRIGGERS
- 
-+config LEDS_TRIGGER_TRANSIENT
-+	tristate "LED Transient Trigger"
-+	depends on LEDS_TRIGGERS
-+	help
-+	  This allows one time enable of a transient state on GPIO/PWM based
-+	  hadrware.
-+	  If unsure, say Y.
-+
- endif # NEW_LEDS
-diff --git a/drivers/leds/Makefile b/drivers/leds/Makefile
-index fa0f428..48d5af7 100644
---- a/drivers/leds/Makefile
-+++ b/drivers/leds/Makefile
-@@ -57,3 +57,4 @@ obj-$(CONFIG_LEDS_TRIGGER_HEARTBEAT)	+= ledtrig-heartbeat.o
- obj-$(CONFIG_LEDS_TRIGGER_BACKLIGHT)	+= ledtrig-backlight.o
- obj-$(CONFIG_LEDS_TRIGGER_GPIO)		+= ledtrig-gpio.o
- obj-$(CONFIG_LEDS_TRIGGER_DEFAULT_ON)	+= ledtrig-default-on.o
-+obj-$(CONFIG_LEDS_TRIGGER_TRANSIENT)	+= ledtrig-transient.o
-diff --git a/drivers/leds/ledtrig-transient.c b/drivers/leds/ledtrig-transient.c
-new file mode 100644
-index 0000000..e829124
---- /dev/null
-+++ b/drivers/leds/ledtrig-transient.c
-@@ -0,0 +1,246 @@
-+/*
-+ * LED Kernel Transient Trigger
-+ *
-+ * Copyright (C) 2012 Shuah Khan <shuahkhan@gmail.com>
-+ *
-+ * Based on Richard Purdie's ledtrig-timer.c and Atsushi Nemoto's
-+ * ledtrig-heartbeat.c
-+ * Design and use-case input from Jonas Bonn <jonas@southpole.se>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ *
-+ */
-+/*
-+* This trigger is intended to be used for the following example use cases:
-+
-+* - Control of vibrate (phones, tablets etc.) hardware by userspace app.
-+* - Use of LED by userspace app as activity indicator.
-+* - Use of LED by userspace app as a kind of watchdog indicator -- as
-+*	long as the app is alive, it can keep the LED illuminated, if it dies
-+*	the LED will be extinguished automatically.
-+* - Use by any userspace app that needs a transient GPIO output.
-+*
-+* Transient trigger exports two attributes:
-+*	transient_enabled -	one shot timer enable mechanism.
-+*				1 when enabled, 0 when disabled.
-+*				enabled state indicates a timer
-+*				with a value of transient_time running.
-+*				disabled state indicates no active timer
-+*				running.
-+*	transient_time -	one shot timer value. When transient_enabled
-+*				is set, transient_time value is used to start
-+*				a timer that runs once.
-+*	When timer expires transient_enabled goes back to disabled state,
-+*	transient_time is left at the set value to be used when transient
-+*	is enabled at a future time. This will allow user app to set the
-+*	time once and enable it to run it once for the specified value as
-+*	needed.
-+*
-+*	echo 1 > transient_enabled - starts timer = transient_time when
-+*				     transient_time is not 0.
-+*	echo 0 > transient_enabled - cancels currently running timer.
-+*	echo n > transient_time	   - stores timer value to be used upon next
-+*				     enable. Currently active timer if any,
-+*				     continues to run for the specified time.
-+*	echo 0 > transient_time	   - stores timer value to be used upon next
-+*				     enable. Currently active timer if any,
-+*				     continues to run for the specified time.
-+*
-+*	Future enhancements:
-+*	1. extending and shortening the timer could be supported either by
-+*	   simply modifying the running timer transient_timer is set when
-+*	   transient_enabled is in enabled state. For example:
-+*	   echo n > transient_time will extend/shorten timer, however this
-+*	   could lead race condtions with timer expiry.
-+*	2. The same could be done using a third attribute to control
-+*	   extending and shortening the timer.
-+*
-+*	Example use-cases:
-+*	echo transient > trigger
-+*	echo n > transient_time
-+*	repeat the following step as needed:
-+*	echo 1 > transient_enabled - start timer = transient_time to run once
-+*	echo 1 > transient_enabled - start timer = transient_time to run once
-+*	echo none > trigger
-+*/
-+
-+#include <linux/module.h>
-+#include <linux/kernel.h>
-+#include <linux/init.h>
-+#include <linux/device.h>
-+#include <linux/slab.h>
-+#include <linux/timer.h>
-+#include <linux/leds.h>
-+#include "leds.h"
-+
-+struct transient_trig_data {
-+	int transient_enabled;
-+	unsigned long transient_time;
-+	struct timer_list timer;
-+};
-+
-+static void transient_timer_function(unsigned long data)
-+{
-+	struct led_classdev *led_cdev = (struct led_classdev *) data;
-+	struct transient_trig_data *transient_data = led_cdev->trigger_data;
-+
-+	if (transient_data->transient_enabled) {
-+		transient_data->transient_enabled = 0;
-+		led_cdev->brightness_set(led_cdev, LED_OFF);
-+		del_timer(&transient_data->timer);
-+	}
-+}
-+
-+static ssize_t led_transient_enabled_show(struct device *dev,
-+		struct device_attribute *attr, char *buf)
-+{
-+	struct led_classdev *led_cdev = dev_get_drvdata(dev);
-+	struct transient_trig_data *transient_data = led_cdev->trigger_data;
-+
-+	return sprintf(buf, "%d\n", transient_data->transient_enabled);
-+}
-+
-+static ssize_t led_transient_enabled_store(struct device *dev,
-+		struct device_attribute *attr, const char *buf, size_t size)
-+{
-+	struct led_classdev *led_cdev = dev_get_drvdata(dev);
-+	struct transient_trig_data *transient_data = led_cdev->trigger_data;
-+	unsigned long state;
-+	ssize_t ret = -EINVAL;
-+
-+	ret = kstrtoul(buf, 10, &state);
-+	if (ret)
-+		return ret;
-+
-+	if (state != 1 && state != 0)
-+		return ret;
-+
-+	/* cancel the running timer */
-+	if (state == 0) {
-+		transient_timer_function((unsigned long) led_cdev);
-+		return size;
-+	}
-+
-+	transient_data->transient_enabled = (int) state;
-+
-+	/* start timer with transient_time value */
-+	if (state == 1 && transient_data->transient_time != 0) {
-+		led_cdev->brightness_set(led_cdev, LED_FULL);
-+		mod_timer(&transient_data->timer,
-+			  jiffies + transient_data->transient_time);
-+	}
-+
-+	return size;
-+}
-+
-+static ssize_t led_transient_time_show(struct device *dev,
-+		struct device_attribute *attr, char *buf)
-+{
-+	struct led_classdev *led_cdev = dev_get_drvdata(dev);
-+	struct transient_trig_data *transient_data = led_cdev->trigger_data;
-+
-+	return sprintf(buf, "%lu\n", transient_data->transient_time);
-+}
-+
-+static ssize_t led_transient_time_store(struct device *dev,
-+		struct device_attribute *attr, const char *buf, size_t size)
-+{
-+	struct led_classdev *led_cdev = dev_get_drvdata(dev);
-+	struct transient_trig_data *transient_data = led_cdev->trigger_data;
-+	unsigned long state;
-+	ssize_t ret = -EINVAL;
-+
-+	ret = kstrtoul(buf, 10, &state);
-+	if (ret)
-+		return ret;
-+
-+	transient_data->transient_time = state;
-+
-+	return size;
-+}
-+
-+static DEVICE_ATTR(transient_enabled, 0644, led_transient_enabled_show,
-+		   led_transient_enabled_store);
-+static DEVICE_ATTR(transient_time, 0644, led_transient_time_show,
-+		   led_transient_time_store);
-+
-+static void transient_trig_activate(struct led_classdev *led_cdev)
-+{
-+	int rc;
-+	struct transient_trig_data *tdata;
-+
-+	tdata = kzalloc(sizeof(struct transient_trig_data), GFP_KERNEL);
-+	if (!tdata) {
-+		dev_err(led_cdev->dev,
-+			"unable to allocate transient trigger\n");
-+		return;
-+	}
-+	led_cdev->trigger_data = tdata;
-+
-+	rc = device_create_file(led_cdev->dev, &dev_attr_transient_enabled);
-+	if (rc)
-+		goto err_out;
-+
-+	rc = device_create_file(led_cdev->dev, &dev_attr_transient_time);
-+	if (rc)
-+		goto err_out_time;
-+
-+	setup_timer(&tdata->timer, transient_timer_function,
-+		    (unsigned long) led_cdev);
-+	led_cdev->activated = true;
-+
-+	printk(KERN_DEBUG "Ativated led transient trigger %s\n",
-+		led_cdev->name);
-+
-+	return;
-+
-+err_out_time:
-+	device_remove_file(led_cdev->dev, &dev_attr_transient_enabled);
-+err_out:
-+	dev_err(led_cdev->dev, "unable to register transient trigger\n");
-+	led_cdev->trigger_data = NULL;
-+	kfree(tdata);
-+}
-+
-+static void transient_trig_deactivate(struct led_classdev *led_cdev)
-+{
-+	struct transient_trig_data *transient_data = led_cdev->trigger_data;
-+
-+	if (led_cdev->activated) {
-+		device_remove_file(led_cdev->dev, &dev_attr_transient_enabled);
-+		device_remove_file(led_cdev->dev, &dev_attr_transient_time);
-+		del_timer_sync(&transient_data->timer);
-+		led_cdev->trigger_data = NULL;
-+		led_cdev->activated = false;
-+		kfree(transient_data);
-+	}
-+	printk(KERN_DEBUG "Deativated led transient trigger %s\n",
-+		led_cdev->name);
-+}
-+
-+static struct led_trigger transient_trigger = {
-+	.name     = "transient",
-+	.activate = transient_trig_activate,
-+	.deactivate = transient_trig_deactivate,
-+};
-+
-+static int __init transient_trig_init(void)
-+{
-+	printk(KERN_DEBUG "Registered led transient trigger\n");
-+	return led_trigger_register(&transient_trigger);
-+}
-+
-+static void __exit transient_trig_exit(void)
-+{
-+	led_trigger_unregister(&transient_trigger);
-+	printk(KERN_DEBUG "Unregistered led transient trigger\n");
-+}
-+
-+module_init(transient_trig_init);
-+module_exit(transient_trig_exit);
-+
-+MODULE_AUTHOR("Shuah Khan <shuahkhan@gmail.com>");
-+MODULE_DESCRIPTION("Transient LED trigger");
-+MODULE_LICENSE("GPL");
--- 
-1.7.5.4
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.17 (GNU/Linux)
 
+iQIcBAABAgAGBQJPkOFEAAoJEEFjO5/oN/WBnYEP/Reihl79EYyn1JxL9xoG14sl
+hZQDtlggxwAvsq3Ep1s0fYhAybwxW1PR7pFmmtpT8PMk1kbqtsabJnRfRaj+Xiqz
+aoaMrQ8n79Q2xI9cTVFtong74QT3GbcxhLoNQyYL7rJC0qvrVIcCrvaf4f/Dk4Ck
+jWVaBR6G1B/hvwyj7ymE0HcSgO425ERke/L4pW76Z6Vdj5dG1PX4hu1ReoD4B1TC
+/oWwHh7vxva67TPZKZOF9xCQ+OPN2Z0Opo8N4OWrjYc3Tzr3OH7PAsvATkksUzTh
+d1dmnnhnqxD8i94wEgJOUFnHV7ijMaRdl45H7MMB2lnkPLLT/8MDsmR97gU+DiY/
+ZatvASSAN3q+Gg8GjXBU2DkMnJjbAweIZKQ3Jh4QpEodfXqcqL3SnJ7oRZ+GT2RC
+fMqNqAd7U4JnrenxFEVfYSmtaeHHvFV6aBfS+yd90N8j1Fq9y+hPogIC74HuzzZP
+cT1UNluJxNOydi5mkksffzN7bDTuyIgKiORdvbbqRalM34lBNRG1By1G28dx2NeG
+v+DTSgpdW6F2S4lbSCyPrd+0lCBps9LdNDXDgAnb5p9vpuXb0+rK1g5CpLB83X8F
+2DdVxdfPuZxuTru00iS1VyfyREwQhMXV/CYlukc+oamohGbR/1Mr1zVsrQQOa+fT
+j+4FVYvTgPMNb/+qQRfW
+=HH11
+-----END PGP SIGNATURE-----
 
-
+--nextPart1799793.pIRqn5DR7R--
