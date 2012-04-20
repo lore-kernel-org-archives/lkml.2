@@ -1,75 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753865Ab2DTJjV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Apr 2012 05:39:21 -0400
-Received: from grania.neolocation.net ([91.149.189.243]:39562 "EHLO
-	grania.neolocation.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752267Ab2DTJjU (ORCPT
+	id S1753613Ab2DTJkh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Apr 2012 05:40:37 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:64498 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750814Ab2DTJkg convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Apr 2012 05:39:20 -0400
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=tekinsoft.com;
-	h=Received:From:To:Cc:Subject:Date:Message-Id:X-Mailer:In-Reply-To:References:DomainKey-Status;
-	b=KEkV14rsr9q8Vy5I0IJUF5bVCL6ivhFbyJdicsjZo6XW9HoL05X0/AtNTjHfpFhJSdlNmZ0N785HFMt1dh3bhis0NPTRrklSwu5V69eZiwokUbuo9Tx2HhZ251NpYlnMaLRyBE4ggP2+SqynnP2cAtXC9oOtyI7hTwEdun2bJQY=;
-From: Yuri Matylitski <ym@tekinsoft.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Johan Hovold <jhovold@gmail.com>,
-        Preston Fick <preston.fick@silabs.com>,
-        Yuri Matylitski <ym@tekinsoft.com>,
-        Rusty Russell <rusty@rustcorp.com.au>, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Cc: kirill@shutemov.name, Yuri Matylitski <ym@tekinsoft.com>
-Subject: [PATCH] Fixed usb_control_msg timeout values in cp210x driver
-Date: Fri, 20 Apr 2012 12:38:32 +0300
-Message-Id: <1334914712-7642-1-git-send-email-ym@tekinsoft.com>
-X-Mailer: git-send-email 1.7.0.4
-In-Reply-To: <1334910722-7357-1-git-send-email-ym@tekinsoft.com>
-References: <1334910722-7357-1-git-send-email-ym@tekinsoft.com>
-DomainKey-Status: 
+	Fri, 20 Apr 2012 05:40:36 -0400
+MIME-Version: 1.0
+In-Reply-To: <1334852525-14950-1-git-send-email-apw@canonical.com>
+References: <1334852525-14950-1-git-send-email-apw@canonical.com>
+Date: Fri, 20 Apr 2012 10:40:35 +0100
+Message-ID: <CAPM=9tzC5M-K-irN=Dw3Ai+2ExUj_vSCVYUj-qpmccHLAeaifA@mail.gmail.com>
+Subject: Re: [PATCH 0/1] [RFC] DRM locking issues during early open
+From: Dave Airlie <airlied@gmail.com>
+To: Andy Whitcroft <apw@canonical.com>
+Cc: David Airlie <airlied@linux.ie>, dri-devel@lists.freedesktop.org,
+        Jesse Barnes <jbarnes@virtuousgeek.org>,
+        Bryce Harrington <bryce@canonical.com>, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fixed too small hardcoded timeout values for usb_control_msg
-in driver for SiliconLabs cp210x-based usb-to-serial adapters.
-Replaced with USB_CTRL_GET_TIMEOUT/USB_CTRL_SET_TIMEOUT.
+On Thu, Apr 19, 2012 at 5:22 PM, Andy Whitcroft <apw@canonical.com> wrote:
+> We have been carrying a (rather poor) patch for an issue we identified in
+> the DRM driver.  This issue is triggered when a DRM device is initialising
+> and userspace attempts to open it, typically in response to the sysfs
+> device added event.  Basically we allocate the minor numbers making
+> the device available, and then call the drm load callback.  Until this
+> completes the device is really not ready and these early opens typically
+> lead to oopses.
+>
+> We have been using the following patch to avoid this by marking the minors
+> as in error until the load method has completed.  This avoids the early
+> open by simply erroring out the opens with EAGAIN.  Obviously we should
+> be delaying the open until the load method complete.
+>
+> I include the existing patch for completness (it is not really ready for
+> merging) to illustrate the issue.  I think it is logical that the wait
+> should simply be delayed until the load has completed.  I am proposing
+> to include a wait queue associated with the idr cache for the drm minors
+> which we can use to allow open callers to wait_event_interruptible() on.
+> I'll be putting together a prototype shortly and will follow up with it.
+>
+> Thoughts?
 
-Signed-off-by: Yuri Matylitski <ym@tekinsoft.com>
-Acked-by: Kirill A. Shutemov <kirill@shutemov.name>
----
- drivers/usb/serial/cp210x.c |    9 ++++++---
- 1 files changed, 6 insertions(+), 3 deletions(-)
+I've just revisited this, maybe I'm going insane but why does
+drm_global_mutex not stop this?
 
-diff --git a/drivers/usb/serial/cp210x.c b/drivers/usb/serial/cp210x.c
-index 0310e2d..e56066b 100644
---- a/drivers/usb/serial/cp210x.c
-+++ b/drivers/usb/serial/cp210x.c
-@@ -287,7 +287,8 @@ static int cp210x_get_config(struct usb_serial_port *port, u8 request,
- 	/* Issue the request, attempting to read 'size' bytes */
- 	result = usb_control_msg(serial->dev, usb_rcvctrlpipe(serial->dev, 0),
- 				request, REQTYPE_DEVICE_TO_HOST, 0x0000,
--				port_priv->bInterfaceNumber, buf, size, 300);
-+				port_priv->bInterfaceNumber, buf, size, 
-+				USB_CTRL_GET_TIMEOUT);
- 
- 	/* Convert data into an array of integers */
- 	for (i = 0; i < length; i++)
-@@ -340,12 +341,14 @@ static int cp210x_set_config(struct usb_serial_port *port, u8 request,
- 		result = usb_control_msg(serial->dev,
- 				usb_sndctrlpipe(serial->dev, 0),
- 				request, REQTYPE_HOST_TO_DEVICE, 0x0000,
--				port_priv->bInterfaceNumber, buf, size, 300);
-+				port_priv->bInterfaceNumber, buf, size, 
-+				USB_CTRL_SET_TIMEOUT);
- 	} else {
- 		result = usb_control_msg(serial->dev,
- 				usb_sndctrlpipe(serial->dev, 0),
- 				request, REQTYPE_HOST_TO_DEVICE, data[0],
--				port_priv->bInterfaceNumber, NULL, 0, 300);
-+				port_priv->bInterfaceNumber, NULL, 0, 
-+				USB_CTRL_SET_TIMEOUT);
- 	}
- 
- 	kfree(buf);
--- 
-1.7.0.4
+drm_get_pci_dev takes drm_global_mutex before calling drm_fill_in_dev
+and drm_get_minor.
 
+Now the fops should be pointing at stub_open at this point, as we
+won't have switched to the per device fops yet,
+and one of the first things drm_stub_open does is take the
+drm_global_mutex before doing the idr lookup.
+
+So is the problem opening some sysfs or proc file early?
+
+Dave.
+
+
+>
+> -apw
+>
+> Andy Whitcroft (1):
+>  drm -- stop early access to drm devices
+>
+>  drivers/gpu/drm/drm_fops.c     |    8 ++++++--
+>  drivers/gpu/drm/drm_pci.c      |    4 ++++
+>  drivers/gpu/drm/drm_platform.c |    4 ++++
+>  drivers/gpu/drm/drm_stub.c     |    2 +-
+>  4 files changed, 15 insertions(+), 3 deletions(-)
+>
+> --
+> 1.7.9.5
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
