@@ -1,52 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754622Ab2DTKbP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Apr 2012 06:31:15 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:59304 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752226Ab2DTKbO (ORCPT
+	id S1754558Ab2DTKeD (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Apr 2012 06:34:03 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:63379 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752226Ab2DTKeB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Apr 2012 06:31:14 -0400
-Date: Fri, 20 Apr 2012 11:31:10 +0100
-From: Andy Whitcroft <apw@canonical.com>
-To: Dave Airlie <airlied@gmail.com>
-Cc: David Airlie <airlied@linux.ie>, dri-devel@lists.freedesktop.org,
-        Jesse Barnes <jbarnes@virtuousgeek.org>,
-        Bryce Harrington <bryce@canonical.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/1] [RFC] DRM locking issues during early open
-Message-ID: <20120420103110.GD3467@shadowen.org>
-References: <1334852525-14950-1-git-send-email-apw@canonical.com>
- <CAPM=9tzC5M-K-irN=Dw3Ai+2ExUj_vSCVYUj-qpmccHLAeaifA@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAPM=9tzC5M-K-irN=Dw3Ai+2ExUj_vSCVYUj-qpmccHLAeaifA@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Fri, 20 Apr 2012 06:34:01 -0400
+Message-ID: <1334918032.11252.1.camel@phoenix>
+Subject: [PATCH 1/2] regulator: tps6507x: Convert to get_voltage_sel
+From: Axel Lin <axel.lin@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Anuj Aggarwal <anuj.aggarwal@ti.com>, Liam Girdwood <lrg@ti.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Date: Fri, 20 Apr 2012 18:33:52 +0800
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2- 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 20, 2012 at 10:40:35AM +0100, Dave Airlie wrote:
+Signed-off-by: Axel Lin <axel.lin@gmail.com>
+---
+ drivers/regulator/tps6507x-regulator.c |    6 +++---
+ 1 files changed, 3 insertions(+), 3 deletions(-)
 
-> I've just revisited this, maybe I'm going insane but why does
-> drm_global_mutex not stop this?
-> 
-> drm_get_pci_dev takes drm_global_mutex before calling drm_fill_in_dev
-> and drm_get_minor.
-> 
-> Now the fops should be pointing at stub_open at this point, as we
-> won't have switched to the per device fops yet,
-> and one of the first things drm_stub_open does is take the
-> drm_global_mutex before doing the idr lookup.
-> 
-> So is the problem opening some sysfs or proc file early?
+diff --git a/drivers/regulator/tps6507x-regulator.c b/drivers/regulator/tps6507x-regulator.c
+index 8e432004b..ef885ac 100644
+--- a/drivers/regulator/tps6507x-regulator.c
++++ b/drivers/regulator/tps6507x-regulator.c
+@@ -283,7 +283,7 @@ static int tps6507x_pmic_disable(struct regulator_dev *dev)
+ 					1 << shift);
+ }
+ 
+-static int tps6507x_pmic_get_voltage(struct regulator_dev *dev)
++static int tps6507x_pmic_get_voltage_sel(struct regulator_dev *dev)
+ {
+ 	struct tps6507x_pmic *tps = rdev_get_drvdata(dev);
+ 	int data, rid = rdev_get_id(dev);
+@@ -325,7 +325,7 @@ static int tps6507x_pmic_get_voltage(struct regulator_dev *dev)
+ 		return data;
+ 
+ 	data &= mask;
+-	return tps->info[rid]->table[data] * 1000;
++	return data;
+ }
+ 
+ static int tps6507x_pmic_set_voltage_sel(struct regulator_dev *dev,
+@@ -395,7 +395,7 @@ static struct regulator_ops tps6507x_pmic_ops = {
+ 	.is_enabled = tps6507x_pmic_is_enabled,
+ 	.enable = tps6507x_pmic_enable,
+ 	.disable = tps6507x_pmic_disable,
+-	.get_voltage = tps6507x_pmic_get_voltage,
++	.get_voltage_sel = tps6507x_pmic_get_voltage_sel,
+ 	.set_voltage_sel = tps6507x_pmic_set_voltage_sel,
+ 	.list_voltage = tps6507x_pmic_list_voltage,
+ };
+-- 
+1.7.5.4
 
-I may be reading things wrong but the initialisation does indeed hold
-drm_global_mutex, but and back when this first occured we would have
-been using kernel_lock() which was at least partially reentrant right?
 
-Anyhow, I will go back to the reporter and try and get a proper
-reproduce by, there is no point in fixing something which is something
-else.
 
--apw
