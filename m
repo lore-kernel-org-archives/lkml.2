@@ -1,85 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757544Ab2DTTgG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Apr 2012 15:36:06 -0400
-Received: from intmgw001.ash2.facebook.com ([66.220.155.178]:55688 "EHLO
-	intmgw003.ash2.facebook.com" rhost-flags-OK-FAIL-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1757486Ab2DTTf5 (ORCPT
+	id S1757558Ab2DTTh3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Apr 2012 15:37:29 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:46802 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751768Ab2DTTh1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Apr 2012 15:35:57 -0400
-From: Arun Sharma <asharma@fb.com>
-To: linux-kernel@vger.kernel.org
-Cc: Arun Sharma <asharma@fb.com>, Ingo Molnar <mingo@elte.hu>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@google.com>,
-        Namhyung Kim <namhyung.kim@lge.com>, Tom Zanussi <tzanussi@gmail.com>,
-        linux-perf-users@vger.kernel.org
-Subject: [PATCH 1/3] perf, x86: Allow multiple stacks
-Date: Fri, 20 Apr 2012 12:35:25 -0700
-Message-Id: <1334950527-5050-2-git-send-email-asharma@fb.com>
-X-Mailer: git-send-email 1.7.8.4
-In-Reply-To: <1334950527-5050-1-git-send-email-asharma@fb.com>
-References: <1334950527-5050-1-git-send-email-asharma@fb.com>
+	Fri, 20 Apr 2012 15:37:27 -0400
+Date: Fri, 20 Apr 2012 20:37:19 +0100
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Hugh Dickins <hughd@google.com>
+Cc: linux-fsdevel@vger.kernel.org, James Morris <jmorris@namei.org>,
+        linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org,
+        David Safford <safford@linux.vnet.ibm.com>,
+        Dmitry Kasatkin <dmitry.kasatkin@intel.com>,
+        Mimi Zohar <zohar@linux.vnet.ibm.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        David Miller <davem@davemloft.net>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [RFC] situation with fput() locking (was Re: [PULL REQUEST] :
+ ima-appraisal patches)
+Message-ID: <20120420193719.GL6871@ZenIV.linux.org.uk>
+References: <1334754302.2137.8.camel@falcor>
+ <alpine.LRH.2.02.1204190101380.30151@tundra.namei.org>
+ <1334772473.2137.22.camel@falcor>
+ <20120418183938.GH6589@ZenIV.linux.org.uk>
+ <1334865448.2429.35.camel@falcor>
+ <20120420004303.GB6871@ZenIV.linux.org.uk>
+ <alpine.LSU.2.00.1204201133340.1450@eggly.anvils>
+ <20120420190418.GK6871@ZenIV.linux.org.uk>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120420190418.GK6871@ZenIV.linux.org.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Without this patch, applications with two different stack
-regions (eg: native stack vs JIT stack) get truncated
-callchains even when RBP chaining is present. GDB shows proper
-stack traces and the frame pointer chaining is intact.
+On Fri, Apr 20, 2012 at 08:04:18PM +0100, Al Viro wrote:
 
-This patch disables the (fp < RSP) check, hoping that other checks
-in the code save the day for us. In our limited testing, this
-didn't seem to break anything.
+> Deferring the final pass after dropping ->mmap_sem is going to be
+> interesting; what would protect ->vm_next on those suckers?  Locking
+> rules are already bloody complicated in mm/*; this will only add more
+> subtle fun.  Note that right now both the dissolution of ->vm_next
+> list and freeing of VMAs happen under ->mmap_sem; changing that might
+> cost us a lot of headache...
 
-In the long term, we could potentially have userspace advise
-the kernel on the range of valid stack addresses, so we don't
-spend a lot of time unwinding from bogus addresses.
+BTW, even leaving that aside, we have at least one definite deadlock
+(mainline, not on ->mmap_sem - see the mess in drivers/video/msm/mdp.c)
+and a possibility of other fun (e.g. any network filesystem that
+ends up triggering rtnl_lock() during umount is going to deadlock if
+you combine it with sch_atm.c mess where we do fget()/check/fput()
+in netlink message handling, close() from another thread racing with
+it and descriptor being the only thing that keeps that network fs
+alive past lazy umount or namespace dissolution).  And then there's
+SCM_RIGHTS vs. drivers/vhost/net.c, which might or might not be
+deadlockable - I'm not familiar enough with that driver to tell
+right now.
 
-Signed-off-by: Arun Sharma <asharma@fb.com>
-Cc: Ingo Molnar <mingo@elte.hu>
-CC: Arnaldo Carvalho de Melo <acme@redhat.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Mike Galbraith <efault@gmx.de>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Stephane Eranian <eranian@google.com>
-Cc: Namhyung Kim <namhyung.kim@lge.com>
-Cc: Tom Zanussi <tzanussi@gmail.com>
-Cc: linux-kernel@vger.kernel.org
-Cc: linux-perf-users@vger.kernel.org
----
- arch/x86/kernel/cpu/perf_event.c |    6 ------
- 1 files changed, 0 insertions(+), 6 deletions(-)
-
-diff --git a/arch/x86/kernel/cpu/perf_event.c b/arch/x86/kernel/cpu/perf_event.c
-index bb8e034..9f98636 100644
---- a/arch/x86/kernel/cpu/perf_event.c
-+++ b/arch/x86/kernel/cpu/perf_event.c
-@@ -1785,9 +1785,6 @@ perf_callchain_user32(struct pt_regs *regs, struct perf_callchain_entry *entry)
- 		if (bytes != sizeof(frame))
- 			break;
- 
--		if (fp < compat_ptr(regs->sp))
--			break;
--
- 		perf_callchain_store(entry, frame.return_address);
- 		fp = compat_ptr(frame.next_frame);
- 	}
-@@ -1831,9 +1828,6 @@ perf_callchain_user(struct perf_callchain_entry *entry, struct pt_regs *regs)
- 		if (bytes != sizeof(frame))
- 			break;
- 
--		if ((unsigned long)fp < regs->sp)
--			break;
--
- 		perf_callchain_store(entry, frame.return_address);
- 		fp = frame.next_frame;
- 	}
--- 
-1.7.8.4
-
+_If_ it had been ->mmap_sem alone, the things would be much simpler.
+There wouldn't be a problem, to start with - IMA stuff is not in the
+mainline and that's the only thing that really wants ->i_mutex in
+fput(); the few existing places that grab it in ->release() are racy
+anyway and need to be fixed with proper locking.
