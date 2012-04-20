@@ -1,79 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932646Ab2DTIJh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Apr 2012 04:09:37 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:54709 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932388Ab2DTIJX (ORCPT
+	id S1756572Ab2DTIKF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Apr 2012 04:10:05 -0400
+Received: from casper.infradead.org ([85.118.1.10]:41693 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753006Ab2DTIJv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Apr 2012 04:09:23 -0400
-Date: Fri, 20 Apr 2012 09:09:14 +0100
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-fsdevel@vger.kernel.org, James Morris <jmorris@namei.org>,
-        linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org,
-        David Safford <safford@linux.vnet.ibm.com>,
-        Dmitry Kasatkin <dmitry.kasatkin@intel.com>,
-        Mimi Zohar <zohar@linux.vnet.ibm.com>,
-        David Miller <davem@davemloft.net>
-Subject: Re: [RFC] situation with fput() locking (was Re: [PULL REQUEST] :
- ima-appraisal patches)
-Message-ID: <20120420080914.GF6871@ZenIV.linux.org.uk>
-References: <1334754302.2137.8.camel@falcor>
- <alpine.LRH.2.02.1204190101380.30151@tundra.namei.org>
- <1334772473.2137.22.camel@falcor>
- <20120418183938.GH6589@ZenIV.linux.org.uk>
- <1334865448.2429.35.camel@falcor>
- <20120420004303.GB6871@ZenIV.linux.org.uk>
- <CA+55aFxQR8g3TycW7nOVjjnnsaWWW-Gh74-bV6rUm+7SRTm25g@mail.gmail.com>
- <20120420025438.GD6871@ZenIV.linux.org.uk>
- <CA+55aFzinX_6DVvDTyxrsP6VEHVY2Q+Y=e+qksnAjR+oT3GZew@mail.gmail.com>
+	Fri, 20 Apr 2012 04:09:51 -0400
+Date: Fri, 20 Apr 2012 10:09:43 +0200
+From: Jens Axboe <axboe@kernel.dk>
+To: Tejun Heo <tj@kernel.org>
+Cc: vgoyal@redhat.com, ctalbott@google.com, rni@google.com,
+        linux-kernel@vger.kernel.org, cgroups@vger.kernel.org,
+        containers@lists.linux-foundation.org
+Subject: Re: [PATCHSET] block: per-queue policy activation, take#2
+Message-ID: <20120420080943.GG7505@kernel.dk>
+References: <1334347895-6268-1-git-send-email-tj@kernel.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CA+55aFzinX_6DVvDTyxrsP6VEHVY2Q+Y=e+qksnAjR+oT3GZew@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1334347895-6268-1-git-send-email-tj@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 19, 2012 at 07:58:57PM -0700, Linus Torvalds wrote:
-> On Thu, Apr 19, 2012 at 7:54 PM, Al Viro <viro@zeniv.linux.org.uk> wrote:
-> >
-> > Umm... ?I really wonder if we *want* filp_close() under any kind of
-> > locks. ?You are right - it should not be deferred. ?I haven't finished
-> > checking the callers of that puppy, but if we really do it while holding
-> > any kind of lock, we are asking for trouble. ?So I'd rather switch
-> > filp_close() to use of fput_nodefer() if that turns out to be possible.
+On Fri, Apr 13 2012, Tejun Heo wrote:
+> Hello,
 > 
-> Ok, fair enough, looks like a reasonable plan to me.
+> Upto now, blkcg assumed that all policies are active on all queues
+> which simply isn't true - cfq policy is only applicable to queues
+> which are using cfq as the elevator.  Also, for transition purposes,
+> the current implementation clears all !root blkgs blkgs across
+> elevator switch and policy [de]registration in racy manner.
+> 
+> This patchset implements per-queue policy activation.  Static policy
+> ID is replaced with dynamic registration and each policy should be
+> activated and deactivated explicitly on each queue.  On activation,
+> the matching policy data are created on all existing blkgs.  On
+> deactivation, the matching policy data are removed from all existing
+> blkgs.  blkg printing skips blkg-policy combination which is disabled
+> and trying to configure a policy on a blkg which doesn't have the
+> policy enabled would return -EINVAL instead of creating an unused
+> dummy configuration.
+> 
+> Changes from the last take[L] are
+> 
+> * 0001 to fix config dependent build error / warnings added.
+> 
+> * More comments added to 0006 as suggested by Vivek.
+> 
+> * 0007 added to avoid boot time bypass delays.
+> 
+> * 0009 made cfq_init_queue() return garbage after alloc failure if
+>   !CONFIG_CFQ_GROUP_IOSCHED.  Fixed.
+> 
+> * 0011 which shoots down all blkgs if no policy is activated added.
+>   Suggested by Vivek.
+> 
+>  0001-cfq-fix-build-breakage-warnings.patch
+>  0002-blkcg-kill-blkio_list-and-replace-blkio_list_lock-wi.patch
+>  0003-blkcg-use-pol-instead-of-plid-in-update_root_blkg_pd.patch
+>  0004-blkcg-remove-static-policy-ID-enums.patch
+>  0005-blkcg-make-blkg_conf_prep-take-pol-and-return-with-q.patch
+>  0006-blkcg-make-sure-blkg_lookup-returns-NULL-if-q-is-byp.patch
+>  0007-blkcg-make-request_queue-bypassing-on-allocation.patch
+>  0008-blkcg-add-request_queue-root_blkg.patch
+>  0009-blkcg-implement-per-queue-policy-activation.patch
+>  0010-blkcg-drop-stuff-unused-after-per-queue-policy-activ.patch
+>  0011-blkcg-shoot-down-blkgs-if-all-policies-are-deactivat.patch
+> 
+> This patchset is on top of the current block/for-3.5/core 5bc4afb1ec
+> "blkcg: drop BLKCG_STAT_{PRIV|POL|OFF} macros" and also available in
+> the following git branch.
 
-Actually, scratch that; I think I have a better variant
-	* switch to fget_light/fput_light where possible; it's not needed
-for the rest, but is useful anyway
-	* move the guts of filp_close() (everything prior to fput() it does
-in the end) into a new helper, turning filp_close() into a couple of calls
-(inlined, at that).  Equivalent transformation.
-	* add fput_nodefer(); does the same thing fput() does now.  Make
-fput() defer the call of __fput().  Add a filp_close_nodefer() - same as
-filp_close(), but the second call in it is fput_nodefer(), not fput().  And
-switch the callers that are known to be done outside of any locks to
-filp_close_nodefer().  Switch accept4()/socketpair() to fput_nodefer()
-(for freshly created struct file in case of cleanup on failure exit).
+Applied. Even if we need a bit more churn on this one, we should get
+things in gear and for-next updated at least.
 
-Note that we do *not* need to bother with fput_light() - even if it does
-fput(), that fput() won't usually be the final one.  We'd need it to
-race with close() or dup2() from another thread for that to happen.  So
-we only need to review the callers of filp_close() and there are much
-fewer of those.
+-- 
+Jens Axboe
 
-We also get something else out of that - AFAICS, the kludge in __scm_destroy()
-can be killed after that.  We did it to prevent recursion on fput(), right?
-Now that recursion will be gone...
-
-I'd probably not bother with trying to be clever in doing the deferral itself -
-the point is to make it rare, so it's not a hot path anyway.  We can play
-with per-CPU lists, etc., but in this case dumber is better.
-
-Comments?  I'm half-asleep right now, so I might be missing something
-obvious...
