@@ -1,62 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757231Ab2DTP7d (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Apr 2012 11:59:33 -0400
-Received: from lulu.zabbo.net ([69.168.54.52]:58827 "EHLO lulu.zabbo.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754959Ab2DTP7c (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Apr 2012 11:59:32 -0400
-X-Greylist: delayed 434 seconds by postgrey-1.27 at vger.kernel.org; Fri, 20 Apr 2012 11:59:32 EDT
-Message-ID: <4F91862F.2030502@zabbo.net>
-Date: Fri, 20 Apr 2012 11:52:15 -0400
-From: Zach Brown <zab@zabbo.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120329 Thunderbird/11.0.1
+	id S1757255Ab2DTQBt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Apr 2012 12:01:49 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:54717 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755032Ab2DTQBr convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Apr 2012 12:01:47 -0400
 MIME-Version: 1.0
-To: Jeff Moyer <jmoyer@redhat.com>
-CC: Dave Kleikamp <dave.kleikamp@oracle.com>,
-        "Maxim V. Patlasov" <mpatlasov@parallels.com>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC PATCH v2 15/21] loop: use aio to perform io on the underlying
- file
-References: <1333122228-13633-1-git-send-email-dave.kleikamp@oracle.com> <1333122228-13633-16-git-send-email-dave.kleikamp@oracle.com> <4F917751.9040600@parallels.com> <4F917C2F.4020805@oracle.com> <x49mx66whty.fsf@segfault.boston.devel.redhat.com>
-In-Reply-To: <x49mx66whty.fsf@segfault.boston.devel.redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <4F91473A.1080007@fold.natur.cuni.cz>
+References: <4F6A483D.50702@fold.natur.cuni.cz>
+	<CAE9FiQXikqikMw_LYGqAUsWqFqL-tLiresPhpkpDhb+AxwundQ@mail.gmail.com>
+	<CAE9FiQUFB=9zbP1yuBDH1RJrCCP=83kV_fH+TEtk80981-uP=w@mail.gmail.com>
+	<CAE9FiQUbzM_TVu+bbXa6LWiUt01QsFiGoyYd0qV=41dXx4J31g@mail.gmail.com>
+	<4F8D1B72.2000105@fold.natur.cuni.cz>
+	<CAE9FiQW2MAW_WT+sq8XVtMOx=uR8FAN8O2wL2AOxkFBfEM285g@mail.gmail.com>
+	<CAE9FiQWSw1h772ijZ6YL4EujwjgvZ84bbDx9VbF_cdE63D-41w@mail.gmail.com>
+	<4F8D390F.9050408@fold.natur.cuni.cz>
+	<CAE9FiQU-_BCCS1OKagVuj8YNrut8-6GH2_i86FsfS8UDWQ1pRA@mail.gmail.com>
+	<CAE9FiQUxoHvUWFXv5LLcBT9vVGnQKp1-Tg7M3XPPULWwtX1iUw@mail.gmail.com>
+	<4F8EFFA3.3050705@fold.natur.cuni.cz>
+	<CAE9FiQVcJbPub1O6nwyNsiijHFpHN0jMsGO4MmKugybPL7Wnug@mail.gmail.com>
+	<4F8F243B.70906@fold.natur.cuni.cz>
+	<CAE9FiQXx1NcGY9cHDiM5isx7NyxWN--Exb-4Gfj0arr6vf5ghQ@mail.gmail.com>
+	<4F909CEB.3060407@fold.natur.cuni.cz>
+	<CAE9FiQU7gnKiwazN_2ykbXSkcuDqWMZNt0CHiGvae2L+rTVGug@mail.gmail.com>
+	<CAE9FiQUk8D20mEFPE0ahwfigbEOHpbRp-X0wt4DC+293msw=4Q@mail.gmail.com>
+	<4F91473A.1080007@fold.natur.cuni.cz>
+Date: Fri, 20 Apr 2012 09:01:46 -0700
+X-Google-Sender-Auth: ePUN_GZ9lyShL4VXrx2ePMQcoTE
+Message-ID: <CAE9FiQUQRAfdG1J6XUVcOVkeR00vyqnCrBg1O3S_ByC3dKOUog@mail.gmail.com>
+Subject: Re: 3.2.11: PCI Express card cannot be re-detected withing cca 60sec timeframe
+From: Yinghai Lu <yinghai@kernel.org>
+To: Martin Mokrejs <mmokrejs@fold.natur.cuni.cz>
+Cc: Sarah Sharp <sarah.a.sharp@linux.intel.com>, linux-pci@vger.kernel.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/20/2012 11:20 AM, Jeff Moyer wrote:
-> Dave Kleikamp<dave.kleikamp@oracle.com>  writes:
->
->> On 04/20/2012 09:48 AM, Maxim V. Patlasov wrote:
->>> On 03/30/2012 07:43 PM, Dave Kleikamp wrote:
->>>> From: Zach Brown<zab@zabbo.net>
->>>>
->>>> This uses the new kernel aio interface to process loopback IO by
->>>> submitting concurrent direct aio.  Previously loop's IO was serialized
->>>> by synchronous processing in a thread.
->>>>
+On Fri, Apr 20, 2012 at 4:23 AM, Martin Mokrejs
+<mmokrejs@fold.natur.cuni.cz> wrote:
+> Yinghai Lu wrote:
+>> On Thu, Apr 19, 2012 at 2:48 PM, Yinghai Lu <yinghai@kernel.org> wrote:
+>>> On Thu, Apr 19, 2012 at 4:16 PM, Martin Mokrejs
+>>>> I just tried something similar under linux, with all the patches I accumulated for 3.4-rc3
+>>>> and posted in my previous emails. It seems linux flips some value so on every second card
+>>>> removal it really does realize it was just unplugged.
 >>>
->>> The patch ignores REQ_FLUSH bit of bi_rw. Is it simply overlook?
->>
->> Good question. Since the loop device is sending only direct IO requests,
->> it shouldn't be necessary to explicitly flush page cache, but REQ_FLUSH
+>>> that is really looks like silicon problem.
+>>>
+>> please check attached patch. Hope link change bit is flip around...
+>> if there is change, we could add some logic:
+>>    check if the device is there, or will reset link to normal state.
 >
-> REQ_FLUSH isn't about the page cache, it's about flushing the volatile
-> disk write cache.  You need to handle that.
+> I don't think it helped but maybe you will see some difference:
 
-I guess O_DIRECT doesn't routinely issue flushes simply because it's too
-expensive?  Apps that care about consistent IO and O_DIRECT are expected
-to not have writeback caching enabled?  'cause there's no way they're
-issuing syncs themselves.
+No, the interrupt still get delayed.
 
-So yeah, I'd agree that the loop code should be reworked a bit so that
-both the filebacked and aio methods call vfs_sync() when they see
-REQ_FLUSH.
+>
+> Complete dmesg is attached. OK, the "60sec" delay is when xhci_hcd gives away its attempts.
+> I am not knowlegeable of the kernel at all but it is my impression that because of the
+> card presence detection there is no way to prevent that. But, if I get it right, now when I
+> pluging the card+USB disk in it into the computer before those "60sec" it gets detected,
+> so my problem is gone (xhci cancels the timeout because a "new card" was popped in with a "new"
+> device.
+>
+> So, although I am now not sure whether I need your last patch, for the practical purpose that
+> I want to plugin a new card with a device into my computer, it works now. (added Sarah Sharp
+> into CC: just to make her aware of this scenario, no problem with xhci_hcd in my eyes)
+> ;)
 
-Bleh.
+please try to "safely remove the card" before removing the card physically like:
 
-- z
-(Sorry, no real time to dig into this now. Lots more time in two months!)
+echo 1 > /sys/bus/pci/devices/0000:11:00.0/remove
+
+that will stop the drivers and remove pci device in the kernel.
+
+Yinghai
