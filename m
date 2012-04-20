@@ -1,88 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932689Ab2DTPkp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Apr 2012 11:40:45 -0400
-Received: from [124.207.24.138] ([124.207.24.138]:45479 "EHLO
-	mail.ss.pku.edu.cn" rhost-flags-FAIL-FAIL-OK-OK) by vger.kernel.org
-	with ESMTP id S1756697Ab2DTPko (ORCPT
+	id S932732Ab2DTPmK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Apr 2012 11:42:10 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:35235 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932110Ab2DTPmI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Apr 2012 11:40:44 -0400
-Subject: Re: [Xen-devel] [PATCH] xen/apic: implement io apic read with
- hypercall
-From: Lin Ming <mlin@ss.pku.edu.cn>
-To: Ian Campbell <Ian.Campbell@citrix.com>
-Cc: Andrew Cooper <Andrew.Cooper3@citrix.com>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-In-Reply-To: <1334934367.28331.99.camel@zakaz.uk.xensource.com>
-References: <1334913957.2863.1.camel@hp6530s>	<4F913340.4000202@citrix.com>
-	 <1334920396.2863.16.camel@hp6530s>
-	 <1334925508.28331.63.camel@zakaz.uk.xensource.com>
-	 <4F915C43.4020207@citrix.com>
-	 <1334927566.28331.80.camel@zakaz.uk.xensource.com>
-	 <CAF1ivSaPshQf=BZ1gKLUq1yRF_MWeyjjVWkfv+E_jT+K5CFmAA@mail.gmail.com>
-	 <1334934367.28331.99.camel@zakaz.uk.xensource.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Date: Fri, 20 Apr 2012 23:39:24 +0800
-Message-ID: <1334936364.2863.24.camel@hp6530s>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	Fri, 20 Apr 2012 11:42:08 -0400
+Date: Fri, 20 Apr 2012 08:42:02 -0700
+From: Tejun Heo <tj@kernel.org>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>, LKML <linux-kernel@vger.kernel.org>,
+        linux-arch@vger.kernel.org, Rusty Russell <rusty@rustcorp.com.au>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Ingo Molnar <mingo@kernel.org>,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        David Rientjes <rientjes@google.com>
+Subject: Re: [patch 00/18] SMP: Boot and CPU hotplug refactoring - Part 1
+Message-ID: <20120420154202.GB32324@google.com>
+References: <20120420122120.097464672@linutronix.de>
+ <1334928098.2463.56.camel@laptop>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1334928098.2463.56.camel@laptop>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2012-04-20 at 16:06 +0100, Ian Campbell wrote:
-> On Fri, 2012-04-20 at 15:50 +0100, Lin Ming wrote:
-> > On Fri, Apr 20, 2012 at 9:12 PM, Ian Campbell <Ian.Campbell@citrix.com> wrote:
-> > > On Fri, 2012-04-20 at 13:53 +0100, Andrew Cooper wrote:
-> > >> >
-> > >> > Under what circumstances can these hypercalls fail? Would a BUG_ON be
-> > >> > appropriate/
-> > >>
-> > >> -EFAULT, -EPERM, anything xsm_apic() could return (which looks only to
-> > >> be -EPERM).
-> > >
-> > > So either the guest has called a hypercall which it is not permitted to
-> > > or it has called it with invalid parameters of one sort or another. Both
-> > > of these would be a code bug in the guest and therefore asserting that
-> > > no failure occurred is reasonable?
-> > >
-> > > What could the caller do with the error other than log it and collapse?
-> > >
-> > >> The call into Xen itself will return 0 as a value if an
-> > >> invalid physbase is passed in the hypercall.
+Hello,
 
-Just checked ioapic_guest_read.
-It will return -EINVAL if an invalid physbase is passed in.
-
-> > >
-> > >> So a BUG_ON() is not safe/sensible for domU.
-> > >
-> > > I think you have successfully argued that it is ;-)
-> > 
-> > BUG_ON is too severe.
+On Fri, Apr 20, 2012 at 03:21:38PM +0200, Peter Zijlstra wrote:
+> On Fri, 2012-04-20 at 13:05 +0000, Thomas Gleixner wrote:
+> > This first part moves the idle thread management for non-boot cpus
+> > into the core. fork_idle() is called in a workqueue as it is
+> > implemented in a few architectures already. This is necessary when not
+> > all cpus are brought up by the early boot code as otherwise we would
+> > take a ref on the user task VM of the thread which brings the cpu up
+> > via the sysfs interface. 
 > 
-> Why? Under what circumstances can this be correctly called in a way
-> which would result in the hypercall failing?
+> So I was thinking about this and I think we should make that kthreadd
+> instead of a random workqueue thread due to all that cgroup crap. People
+> are wanting to place all sorts of kernel threads in cgroups and I'm
+> still arguing that kthreadd should not be allowed in cgroups.
+>
+> Tejun, what's the status of that patch? Afaict David Rientjes's use-case
+> is insane and mostly a side effect of memcg broken-ness.
 
-Is BUG_ON() reasonable if invalid physbase passed in?
+I'm still leaning towards restricting kthreadd and any PF_THREAD_BOUND
+threads in the root cgroup.  I'm not sure about !BOUND kthreads tho.
+It doesn't make sense for the most part but there are cases
+(e.g. crypto kthreads) which might make some sense.
 
-> 
-> >  How about WARN_ON?
-> > 
-> > ret = hypercall(...)
-> > 
-> > if (ret) {
-> >    WARN_ON(1);
-> >    return -1;
-> > }
-> > 
-> > 
-> > >
-> > > Ian.
-> 
-> 
+Thanks.
 
-
+-- 
+tejun
