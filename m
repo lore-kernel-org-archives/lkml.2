@@ -1,88 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757287Ab2DTRfg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Apr 2012 13:35:36 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:42230 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754457Ab2DTRfe (ORCPT
+	id S1757308Ab2DTRhm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Apr 2012 13:37:42 -0400
+Received: from relay.parallels.com ([195.214.232.42]:57814 "EHLO
+	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753310Ab2DTRhk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Apr 2012 13:35:34 -0400
-Date: Fri, 20 Apr 2012 10:35:29 -0700
-From: Tejun Heo <tj@kernel.org>
-To: Stephen Boyd <sboyd@codeaurora.org>
-Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
-        Ben Dooks <ben-linux@fluff.org>
-Subject: Re: [PATCH 1/2] workqueue: Catch more locking problems with
- flush_work()
-Message-ID: <20120420173529.GD32324@google.com>
-References: <1334805958-29119-1-git-send-email-sboyd@codeaurora.org>
- <20120419152841.GA10553@google.com>
- <4F905521.9020901@codeaurora.org>
+	Fri, 20 Apr 2012 13:37:40 -0400
+Message-ID: <4F919EEB.8020807@parallels.com>
+Date: Fri, 20 Apr 2012 21:37:47 +0400
+From: "Maxim V. Patlasov" <mpatlasov@parallels.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc14 Lightning/1.0b3pre Thunderbird/3.1.10
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4F905521.9020901@codeaurora.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Dave Kleikamp <dave.kleikamp@oracle.com>
+CC: Zach Brown <zab@zabbo.net>, Jeff Moyer <jmoyer@redhat.com>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC PATCH v2 15/21] loop: use aio to perform io on the underlying
+ file
+References: <1333122228-13633-1-git-send-email-dave.kleikamp@oracle.com> <1333122228-13633-16-git-send-email-dave.kleikamp@oracle.com> <4F917751.9040600@parallels.com> <4F917C2F.4020805@oracle.com> <x49mx66whty.fsf@segfault.boston.devel.redhat.com> <4F91862F.2030502@zabbo.net> <4F918758.8020001@oracle.com> <4F918B64.5030602@parallels.com> <4F919AA5.2030402@oracle.com>
+In-Reply-To: <4F919AA5.2030402@oracle.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On 04/20/2012 09:19 PM, Dave Kleikamp wrote:
+>> 1. Could we use fdatasync there? (otherwise it can hurt performance very
+>> badly)
+> I don't see why not.
+Great.
 
-On Thu, Apr 19, 2012 at 11:10:41AM -0700, Stephen Boyd wrote:
-> On 04/19/12 08:28, Tejun Heo wrote:
-> > On Wed, Apr 18, 2012 at 08:25:57PM -0700, Stephen Boyd wrote:
-> >> @@ -2513,8 +2513,11 @@ bool flush_work(struct work_struct *work)
-> >>  		wait_for_completion(&barr.done);
-> >>  		destroy_work_on_stack(&barr.work);
-> >>  		return true;
-> >> -	} else
-> >> +	} else {
-> >> +		lock_map_acquire(&work->lockdep_map);
-> >> +		lock_map_release(&work->lockdep_map);
-> >>  		return false;
-> > We don't have this annotation when start_flush_work() succeeds either,
-> > right?  IOW, would lockdep trigger when an actual deadlock happens?
-> 
-> I believe it does although I haven't tested it.
+>> 2. vfs_sync() is synchronous. loop_thread() will be blocked till it's
+>> completed. Would it be better to perform vfs_sync in another thread (to
+>> allow other bio-s in loop queue proceed)? Also, if there are more than
+>> one REQ_FLUSH bio in lo->lo_bio_list, we could call vfs_sync() only
+>> once. Make sense?
+> If more than one REQ_FLUSH bio is in the list, they should be performed
+> in order. We must call vfs_fsync() between each of them to guarantee that.
+yes, my bad
 
-How does it do that?  While wq->lockdep_map would be able to detect
-some of the chaining, the read acquire paths probably would miss some
-other.  In general, wq->lockdep_map is used to express dependencies
-regarding workqueue flushing (and the self flushing) and it would
-probably be better to express work item dependencies explicitly using
-work->lockdep_map even if it becomes redundant through wq->lockdep_map
-sometimes.
+> A less complex tradeoff would be to move the vfs_fsync() call to
+> loop_make_request() so it is called in the context of the thread making
+> the request. That would make those threads requesting ordered IO to pay
+> the price while others would be able to proceed.
+>
+> This is something I can re-visit. I don't want to hold up progress on
+> the patchset for something that can be improved later.
+Completely agree, it can be done later.
 
-> > If not, why not add the acquire/release() before flush_work() does
-> > anything?
-> 
-> I was worried about causing false positive lockdep warnings in the case
-> that start_flush_work() succeeds and returns true. In that case, lockdep
-> is told about the cwq lockdep map:
-> 
-> static bool start_flush_work(struct work_struct *work, struct wq_barrier *barr,
->                              bool wait_executing)
-> {
-> 
->         .....
-> 
->         if (cwq->wq->saved_max_active == 1 || cwq->wq->flags & WQ_RESCUER)
->                 lock_map_acquire(&cwq->wq->lockdep_map);
->         else
->                 lock_map_acquire_read(&cwq->wq->lockdep_map);
-> 
-> 
-> and so if we acquired the work->lockdep_map before the
-> cwq->wq->lockdep_map we would get a warning about ABBA between these two
-> lockdep maps. At least that is what I'm lead to believe when I look at
-> what process_one_work() is doing. Please correct me if I'm wrong.
+Thanks,
+Maxim
 
-All that's necessary is acquiring and releasing work->lockdep_map.
-There's no need to nest start_flush_work() inside it.  Without
-nesting, there's nothing to worry about ABBA lockdeps.
-
-Thanks.
-
--- 
-tejun
