@@ -1,63 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932811Ab2DTP5W (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Apr 2012 11:57:22 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:64466 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754959Ab2DTP5T convert rfc822-to-8bit (ORCPT
+	id S932658Ab2DTP5U (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Apr 2012 11:57:20 -0400
+Received: from acsinet15.oracle.com ([141.146.126.227]:33489 "EHLO
+	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754987Ab2DTP5T (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 20 Apr 2012 11:57:19 -0400
+Message-ID: <4F918758.8020001@oracle.com>
+Date: Fri, 20 Apr 2012 10:57:12 -0500
+From: Dave Kleikamp <dave.kleikamp@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120406 Thunderbird/11.0.1
 MIME-Version: 1.0
-In-Reply-To: <20120420080914.GF6871@ZenIV.linux.org.uk>
-References: <1334754302.2137.8.camel@falcor> <alpine.LRH.2.02.1204190101380.30151@tundra.namei.org>
- <1334772473.2137.22.camel@falcor> <20120418183938.GH6589@ZenIV.linux.org.uk>
- <1334865448.2429.35.camel@falcor> <20120420004303.GB6871@ZenIV.linux.org.uk>
- <CA+55aFxQR8g3TycW7nOVjjnnsaWWW-Gh74-bV6rUm+7SRTm25g@mail.gmail.com>
- <20120420025438.GD6871@ZenIV.linux.org.uk> <CA+55aFzinX_6DVvDTyxrsP6VEHVY2Q+Y=e+qksnAjR+oT3GZew@mail.gmail.com>
- <20120420080914.GF6871@ZenIV.linux.org.uk>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Fri, 20 Apr 2012 08:56:57 -0700
-X-Google-Sender-Auth: whSKeGZyf-8B8NNGoRcr-lRmy7w
-Message-ID: <CA+55aFxia+u3VAf0qN-2wv7DyAQZK-Z8=n=cqUvo--+C905aFg@mail.gmail.com>
-Subject: Re: [RFC] situation with fput() locking (was Re: [PULL REQUEST] :
- ima-appraisal patches)
-To: Al Viro <viro@zeniv.linux.org.uk>
-Cc: linux-fsdevel@vger.kernel.org, James Morris <jmorris@namei.org>,
-        linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org,
-        David Safford <safford@linux.vnet.ibm.com>,
-        Dmitry Kasatkin <dmitry.kasatkin@intel.com>,
-        Mimi Zohar <zohar@linux.vnet.ibm.com>,
-        David Miller <davem@davemloft.net>
+To: Zach Brown <zab@zabbo.net>
+CC: Jeff Moyer <jmoyer@redhat.com>,
+        "Maxim V. Patlasov" <mpatlasov@parallels.com>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC PATCH v2 15/21] loop: use aio to perform io on the underlying
+ file
+References: <1333122228-13633-1-git-send-email-dave.kleikamp@oracle.com> <1333122228-13633-16-git-send-email-dave.kleikamp@oracle.com> <4F917751.9040600@parallels.com> <4F917C2F.4020805@oracle.com> <x49mx66whty.fsf@segfault.boston.devel.redhat.com> <4F91862F.2030502@zabbo.net>
+In-Reply-To: <4F91862F.2030502@zabbo.net>
+X-Enigmail-Version: 1.4
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Transfer-Encoding: 7bit
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090209.4F91875B.005F,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 20, 2012 at 1:09 AM, Al Viro <viro@zeniv.linux.org.uk> wrote:
->
-> Note that we do *not* need to bother with fput_light() - even if it does
-> fput(), that fput() won't usually be the final one.
+On 04/20/2012 10:52 AM, Zach Brown wrote:
+> On 04/20/2012 11:20 AM, Jeff Moyer wrote:
+>> Dave Kleikamp<dave.kleikamp@oracle.com>  writes:
+>>
+>>> On 04/20/2012 09:48 AM, Maxim V. Patlasov wrote:
+>>>> On 03/30/2012 07:43 PM, Dave Kleikamp wrote:
+>>>>> From: Zach Brown<zab@zabbo.net>
+>>>>>
+>>>>> This uses the new kernel aio interface to process loopback IO by
+>>>>> submitting concurrent direct aio.  Previously loop's IO was serialized
+>>>>> by synchronous processing in a thread.
+>>>>>
+>>>>
+>>>> The patch ignores REQ_FLUSH bit of bi_rw. Is it simply overlook?
+>>>
+>>> Good question. Since the loop device is sending only direct IO requests,
+>>> it shouldn't be necessary to explicitly flush page cache, but REQ_FLUSH
+>>
+>> REQ_FLUSH isn't about the page cache, it's about flushing the volatile
+>> disk write cache.  You need to handle that.
+> 
+> I guess O_DIRECT doesn't routinely issue flushes simply because it's too
+> expensive?  Apps that care about consistent IO and O_DIRECT are expected
+> to not have writeback caching enabled?  'cause there's no way they're
+> issuing syncs themselves.
 
-Ack. Most of the time the fput_light()->fput will just decrement the use count.
+If we weren't using aio, we might be okay, but we don't know that any
+prior asynchronous request has completed.
+> 
+> So yeah, I'd agree that the loop code should be reworked a bit so that
+> both the filebacked and aio methods call vfs_sync() when they see
+> REQ_FLUSH.
 
-> We also get something else out of that - AFAICS, the kludge in __scm_destroy()
-> can be killed after that.  We did it to prevent recursion on fput(), right?
-> Now that recursion will be gone...
+It's an easy fix. I don't anticipate that it will hurt performance too
+badly.
 
-Hmm.. That points out that we may have a *lot* of these pending final
-fput's, though. So the deferral queueing should be fairly light. What
-were your particular plans for it?
-
-This actually sounds like a fairly good usage-case for Oleg's new
-task_work_add() thing. That would defer the final fput, but at the
-same time guarantee that it gets done before returning to user space -
-in case there are any issues with synchronous actions. Have you looked
-at Oleg's series? You weren't cc'd because it didn't affect you, but
-look at lkml for "task_work_add()" to find it.
-
-NOTE! If pure kernel threads do fput() deferral (and maybe they do -
-I'm thinking nfsd etc), then the task-work thing might need some extra
-thought.
-
-                     Linus
+> 
+> Bleh.
+> 
+> - z
+> (Sorry, no real time to dig into this now. Lots more time in two months!)
