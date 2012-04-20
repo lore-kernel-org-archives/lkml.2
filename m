@@ -1,80 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755937Ab2DTHgE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Apr 2012 03:36:04 -0400
-Received: from mail176c2.megamailservers.com ([69.49.111.76]:57815 "EHLO
-	mail176c2.megamailservers.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754649Ab2DTHgB (ORCPT
+	id S932564Ab2DTHk1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Apr 2012 03:40:27 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:35607 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932343Ab2DTHk0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Apr 2012 03:36:01 -0400
-X-Greylist: delayed 3447 seconds by postgrey-1.27 at vger.kernel.org; Fri, 20 Apr 2012 03:36:01 EDT
-X-Authenticated-User: konrad.gaisler.com
-Message-ID: <4F910312.3010900@gaisler.com>
-Date: Fri, 20 Apr 2012 08:32:50 +0200
-From: Konrad Eisele <konrad@gaisler.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:11.0) Gecko/20120312 Firefox/11.0 SeaMonkey/2.8
+	Fri, 20 Apr 2012 03:40:26 -0400
+Date: Fri, 20 Apr 2012 09:40:15 +0200
+From: Robert Schwebel <r.schwebel@pengutronix.de>
+To: "Ying-Chun Liu (PaulLiu)" <paul.liu@linaro.org>
+Cc: linux-arm-kernel@lists.infradead.org, linaro-dev@lists.linaro.org,
+        Samuel Ortiz <sameo@linux.intel.com>, patches@linaro.org,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Robin Gong <B38343@freescale.com>, linux-kernel@vger.kernel.org,
+        Shawn Guo <shawn.guo@linaro.org>
+Subject: Re: [PATCH 1/2] mfd: Add Freescale's PMIC MC34708 support
+Message-ID: <20120420074015.GD31760@pengutronix.de>
+References: <1334853521-23792-1-git-send-email-paul.liu@linaro.org>
 MIME-Version: 1.0
-To: yong.zhang0@gmail.com
-CC: sam@ravnborg.org, a.p.zijlstra@chello.nl, mingo@elte.hu,
-        linux-kernel@vger.kernel.org, sparclinux@vger.kernel.org,
-        davem@davemloft.net, daniel@gaisler.com,
-        Yong Zhang <yong.zhang@windriver.com>
-Subject: Re: [PATCH 1/1] sparc32,leon: add notify_cpu_starting()
-References: <20120420033634.GA13068@zhy> <1334903312-18526-1-git-send-email-konrad@gaisler.com>
-In-Reply-To: <1334903312-18526-1-git-send-email-konrad@gaisler.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-CSC: 0
-X-CHA: v=1.1 cv=r1DLTJ6I4WNtNSDbWOfumzxcbMy5NL/NTCl1I6dcIeE= c=1 sm=1
-		a=WtivZnh1UKgA:10 a=0Wa5ieas-ecA:10 a=U62ajLuCel8A:10 a=8nJEP1OIZ-IA:10
-		a=jXKJviUpWSOlMmIvGrHOfw==:17 a=t7CeM3EgAAAA:8 a=pGLkceISAAAA:8
-		a=ebG-ZW-8AAAA:8 a=Q_KVjGDA7x4jA4h9jjsA:9 a=wPNLvfGTeEIA:10
-		a=2e6ZYRoF4I4A:10 a=MSl-tDqOz04A:10 a=cCYF7-FHeg4A:10
-		a=jXKJviUpWSOlMmIvGrHOfw==:117
-X-CTCH-Spam: Unknown
-X-CTCH-RefID: str=0001.0A020203.4F91055B.001F,ss=1,re=0.000,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
-X-WHL: SLR
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1334853521-23792-1-git-send-email-paul.liu@linaro.org>
+X-Sent-From: Pengutronix Hildesheim
+X-URL: http://www.pengutronix.de/
+X-IRC: #ptxdist @freenode
+X-Accept-Language: de,en
+X-Accept-Content-Type: text/plain
+X-Uptime: 09:37:31 up 159 days, 15:24, 87 users,  load average: 1,03, 3,00,
+ 2,08
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
+X-SA-Exim-Mail-From: rsc@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Yong,
-Thank you for the patch, it works. The SMP is fully
-functional again for sparc-leon. I just added a "#include<linux/cpu.h>"
-to avoid compiler warning.
-Please someone in the cc-list, apply.
--- Greetings Konrad
-
-Konrad Eisele wrote:
-> From: Yong Zhang<yong.zhang@windriver.com>
->
-> Otherwise cpu_active_mask will not set, which lead to other issue.
->
-> Signed-off-by: Yong Zhang<yong.zhang0@gmail.com>
-> Signed-off-by: Konrad Eisele<konrad@gaisler.com>
-> ---
->   arch/sparc/kernel/leon_smp.c |    3 +++
->   1 files changed, 3 insertions(+), 0 deletions(-)
->
-> diff --git a/arch/sparc/kernel/leon_smp.c b/arch/sparc/kernel/leon_smp.c
-> index 1210fde..160cac9 100644
-> --- a/arch/sparc/kernel/leon_smp.c
-> +++ b/arch/sparc/kernel/leon_smp.c
-> @@ -23,6 +23,7 @@
->   #include<linux/pm.h>
->   #include<linux/delay.h>
->   #include<linux/gfp.h>
-> +#include<linux/cpu.h>
->
->   #include<asm/cacheflush.h>
->   #include<asm/tlbflush.h>
-> @@ -78,6 +79,8 @@ void __cpuinit leon_callin(void)
->   	local_flush_tlb_all();
->   	leon_configure_cache_smp();
->
-> +	notify_cpu_starting(cpuid);
+On Fri, Apr 20, 2012 at 12:38:40AM +0800, Ying-Chun Liu (PaulLiu) wrote:
+> diff --git a/Documentation/devicetree/bindings/mfd/mc34708.txt b/Documentation/devicetree/bindings/mfd/mc34708.txt
+> new file mode 100644
+> index 0000000..2bb5c9e
+> --- /dev/null
+> +++ b/Documentation/devicetree/bindings/mfd/mc34708.txt
+> @@ -0,0 +1,61 @@
+> +* Freescale MC34708 Power Management Integrated Circuit (PMIC)
 > +
->   	/* Get our local ticker going. */
->   	smp_setup_percpu_timer();
->
+> +Required properties:
+> +- compatible : Must be "fsl,mc34708"
+> +
+> +Optional properties:
+> +- fsl,mc34708-uses-adc   : Indicate the ADC is being used
+> +- fsl,mc34708-uses-rtc   : Indicate the RTC is being used
+> +- fsl,mc34708-uses-ts    : Indicate the touchscreen controller is being used
+> +
+> +Sub-nodes:
+> +- regulators : Contain the regulator nodes.  The MC34708 regulators are
+> +  bound using their names as listed below for enabling.
+> +
+> +    mc34708__sw1a    : regulator SW1A
+> +    mc34708__sw1b    : regulator SW1B
+> +    mc34708__sw2     : regulator SW2
+> +    mc34708__sw3     : regulator SW3
+> +    mc34708__sw4A    : regulator SW4A
+> +    mc34708__sw4b    : regulator SW4B
+> +    mc34708__swbst   : regulator SWBST
+> +    mc34708__vpll    : regulator VPLL
+> +    mc34708__vrefddr : regulator VREFDDR
+> +    mc34708__vusb    : regulator VUSB
+> +    mc34708__vusb2   : regulator VUSB2
+> +    mc34708__vdac    : regulator VDAC
+> +    mc34708__vgen1   : regulator VGEN1
+> +    mc34708__vgen2   : regulator VGEN2
+> +
+> +  The bindings details of individual regulator device can be found in:
+> +  Documentation/devicetree/bindings/regulator/regulator.txt
+> +
+> +Examples:
+> +
+> +i2c@63fc8000 {
+> +	#address-cells = <1>;
+> +	#size-cells = <0>;
+> +	compatible = "fsl,imx53-i2c", "fsl,imx1-i2c";
+> +	reg = <0x63fc8000 0x4000>;
+> +	interrupts = <62>;
+> +	status = "okay";
+> +
+> +	pmic: mc34708@8 {
+> +		compatible = "fsl,mc34708";
+> +		reg = <0x08>;
+> +
+> +		regulators {
+> +			mc34708__sw1a {
+> +				regulator-min-microvolt = <650000>;
+> +				regulator-max-microvolt = <1437500>;
+> +				regulator-boot-on;
+> +				regulator-always-on;
+> +			};
+> +
+> +			mc34708__vusb {
+> +				regulator-boot-on;
+> +				regulator-always-on;
+> +			};
+> +		};
+> +	};
+> +};
 
+The oftree parts should be discussed on devicetree-discuss.
+
+rsc
+-- 
+Pengutronix e.K.                           |                             |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
+Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
