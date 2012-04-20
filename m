@@ -1,50 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756589Ab2DTOTO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Apr 2012 10:19:14 -0400
-Received: from www.linutronix.de ([62.245.132.108]:45268 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754372Ab2DTOTL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Apr 2012 10:19:11 -0400
-Date: Fri, 20 Apr 2012 16:19:09 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: richard -rw- weinberger <richard.weinberger@gmail.com>
-cc: LKML <linux-kernel@vger.kernel.org>, linux-arch@vger.kernel.org,
-        Peter Zijlstra <peterz@infradead.org>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Ingo Molnar <mingo@kernel.org>,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Subject: Re: [patch 00/18] SMP: Boot and CPU hotplug refactoring - Part 1
-In-Reply-To: <CAFLxGvzgRpJq_BRrfgGh-V-k9XQmSvSN6hmK+6jm86Vy7v3EVg@mail.gmail.com>
-Message-ID: <alpine.LFD.2.02.1204201618320.2542@ionos>
-References: <20120420122120.097464672@linutronix.de> <CAFLxGvzgRpJq_BRrfgGh-V-k9XQmSvSN6hmK+6jm86Vy7v3EVg@mail.gmail.com>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+	id S1756629Ab2DTOTb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Apr 2012 10:19:31 -0400
+Received: from mailhub.sw.ru ([195.214.232.25]:41983 "EHLO relay.sw.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754372Ab2DTOTa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Apr 2012 10:19:30 -0400
+Subject: [PATCH 1/3] SUNRPC: skip clients with program without PipeFS entries
+To: bfields@fieldses.org, Trond.Myklebust@netapp.com
+From: Stanislav Kinsbursky <skinsbursky@parallels.com>
+Cc: linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org, devel@openvz.org
+Date: Fri, 20 Apr 2012 18:19:18 +0400
+Message-ID: <20120420141907.10848.74388.stgit@localhost6.localdomain6>
+In-Reply-To: <20120420141419.10848.84280.stgit@localhost6.localdomain6>
+References: <20120420141419.10848.84280.stgit@localhost6.localdomain6>
+User-Agent: StGit/0.15
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 20 Apr 2012, richard -rw- weinberger wrote:
+1) This is sane.
+2) Otherwise there will be soft lockup:
 
-> On Fri, Apr 20, 2012 at 3:05 PM, Thomas Gleixner <tglx@linutronix.de> wrote:
-> > This converts all architectures except m32r, mn10300, tile and UM to
-> > the new core facility. These architecture are calling fork_idle() in
-> > the very early boot code in smp_prepare_cpus() for unknown reasons.
-> > I haven't analyzed yet, whether this is on purpose or can be moved
-> > over to the generic facility. It'd be nice if the responsible maintainers
-> > could look into that as well.
-> 
-> SMP is marked as broken on UM, so I don't have any objections. :-)
+do {
+	rpc_get_client_for_event (clnt->cl_dentry == NULL ==> choose)
+	__rpc_pipefs_event (clnt->cl_program->pipe_dir_name == NULL ==> return)
+} while (1)
 
-Great. So we can break it some more and let the poor sod who tries to
-fix UM SMP deal with it :)
 
-Thanks,
+Signed-off-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
 
-	tglx
+---
+ net/sunrpc/clnt.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/net/sunrpc/clnt.c b/net/sunrpc/clnt.c
+index d10ebc4..8a19849 100644
+--- a/net/sunrpc/clnt.c
++++ b/net/sunrpc/clnt.c
+@@ -184,8 +184,6 @@ static int __rpc_pipefs_event(struct rpc_clnt *clnt, unsigned long event,
+ 
+ 	switch (event) {
+ 	case RPC_PIPEFS_MOUNT:
+-		if (clnt->cl_program->pipe_dir_name == NULL)
+-			break;
+ 		dentry = rpc_setup_pipedir_sb(sb, clnt,
+ 					      clnt->cl_program->pipe_dir_name);
+ 		BUG_ON(dentry == NULL);
+@@ -215,6 +213,8 @@ static struct rpc_clnt *rpc_get_client_for_event(struct net *net, int event)
+ 
+ 	spin_lock(&sn->rpc_client_lock);
+ 	list_for_each_entry(clnt, &sn->all_clients, cl_clients) {
++		if (clnt->cl_program->pipe_dir_name == NULL)
++			break;
+ 		if (((event == RPC_PIPEFS_MOUNT) && clnt->cl_dentry) ||
+ 		    ((event == RPC_PIPEFS_UMOUNT) && !clnt->cl_dentry))
+ 			continue;
+
