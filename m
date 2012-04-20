@@ -1,132 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756970Ab2DTBTQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Apr 2012 21:19:16 -0400
-Received: from mga09.intel.com ([134.134.136.24]:59870 "EHLO mga09.intel.com"
+	id S1757030Ab2DTBUA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Apr 2012 21:20:00 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:11439 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1749667Ab2DTBTN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Apr 2012 21:19:13 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
-   d="scan'208";a="131919996"
-Subject: [PATCH v2] ACPI: D3 states cleanup
-From: Lin Ming <ming.m.lin@intel.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>, lenb <lenb@kernel.org>
-Cc: linux-acpi <linux-acpi@vger.kernel.org>, linux-kernel@vger.kernel.org,
-        Zhang Rui <rui.zhang@intel.com>, "Huang, Ying" <ying.huang@intel.com>,
-        Aaron Lu <aaron.lu@amd.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 20 Apr 2012 09:19:09 +0800
-Message-ID: <1334884749.4927.6.camel@minggr>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	id S932263Ab2DTBTi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Apr 2012 21:19:38 -0400
+Date: Thu, 19 Apr 2012 22:14:13 -0300
+From: Marcelo Tosatti <mtosatti@redhat.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: Avi Kivity <avi@redhat.com>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Eric B Munson <emunson@mgebm.net>,
+        Alexander Graf <agraf@suse.de>
+Subject: Re: linux-next: build failure after merge of the final tree (kvm-ppc
+ tree related)
+Message-ID: <20120420011413.GA12235@amt.cnet>
+References: <20120419163535.52c99a34e2664063d654ac4d@canb.auug.org.au>
+ <20120420101012.591b5e64a8939135bf5cd167@canb.auug.org.au>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120420101012.591b5e64a8939135bf5cd167@canb.auug.org.au>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There are two ACPI D3 states defined now:
-ACPI_STATE_D3 and ACPI_STATE_D3_COLD.
+On Fri, Apr 20, 2012 at 10:10:12AM +1000, Stephen Rothwell wrote:
+> Hi all,
+> 
+> On Thu, 19 Apr 2012 16:35:35 +1000 Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+> >
+> > After merging the final tree, today's linux-next build (sparc64 defconfig)
+> > failed like this:
+> > 
+> > In file included from kernel/watchdog.c:27:0:
+> > include/linux/kvm_para.h: In function 'kvm_para_has_feature':
+> > include/linux/kvm_para.h:32:2: error: implicit declaration of function 'kvm_arch_para_features' [-Werror=implicit-function-declaration]
+> > 
+> > Caused by commit 5d1c0f4a80a6 ("watchdog: add check for suspended vm in
+> > softlockup detector").  This build has no KVM related CONFIG options set.
+> > 
+> > I have reverted that commit for today.
+> 
+> This build failure now belongs to the kvm tree ...
+> 
+> -- 
+> Cheers,
+> Stephen Rothwell                    sfr@canb.auug.org.au
 
-But the uses of these states are not clear/correct in some code.
-For example, some code refer ACPI_STATE_D3 as D3hot and others refer
-it as D3cold.
 
-This patch introduces ACPI_STATE_D3_HOT to refer to ACPI D3hot state.
-And changes ACPI_STATE_D3 to refer to ACPI D3cold state only.
-Also redefines ACPI_STATE_D3_COLD the same as ACPI_STATE_D3.
+Stephen,
 
-Acked-by: Rafael J. Wysocki <rjw@sisk.pl>
-Signed-off-by: Lin Ming <ming.m.lin@intel.com>
----
- drivers/acpi/power.c   |    2 +-
- drivers/acpi/scan.c    |    9 +--------
- drivers/pci/pci-acpi.c |    4 ++--
- include/acpi/actypes.h |    7 ++++---
- 4 files changed, 8 insertions(+), 14 deletions(-)
+Can you try the patch below please?
 
-diff --git a/drivers/acpi/power.c b/drivers/acpi/power.c
-index 7049a7d..330bb4d 100644
---- a/drivers/acpi/power.c
-+++ b/drivers/acpi/power.c
-@@ -631,7 +631,7 @@ int acpi_power_get_inferred_state(struct acpi_device *device, int *state)
- 	 * We know a device's inferred power state when all the resources
- 	 * required for a given D-state are 'on'.
- 	 */
--	for (i = ACPI_STATE_D0; i < ACPI_STATE_D3; i++) {
-+	for (i = ACPI_STATE_D0; i < ACPI_STATE_D3_HOT; i++) {
- 		list = &device->power.states[i].resources;
- 		if (list->count < 1)
- 			continue;
-diff --git a/drivers/acpi/scan.c b/drivers/acpi/scan.c
-index 767e2dc..fbf38ad 100644
---- a/drivers/acpi/scan.c
-+++ b/drivers/acpi/scan.c
-@@ -869,7 +869,7 @@ static int acpi_bus_get_power_flags(struct acpi_device *device)
- 	/*
- 	 * Enumerate supported power management states
- 	 */
--	for (i = ACPI_STATE_D0; i <= ACPI_STATE_D3; i++) {
-+	for (i = ACPI_STATE_D0; i <= ACPI_STATE_D3_HOT; i++) {
- 		struct acpi_device_power_state *ps = &device->power.states[i];
- 		char object_name[5] = { '_', 'P', 'R', '0' + i, '\0' };
+
+
+KVM: add kvm_arch_para_features stub to asm-generic/kvm_para.h
+
+Needed by kvm_para_has_feature().
+
+Reported-by: Stephen Rothwell <sfr@canb.auug.org.au>
+
+diff --git a/include/asm-generic/kvm_para.h b/include/asm-generic/kvm_para.h
+index 05ef7e7..9a7bbad 100644
+--- a/include/asm-generic/kvm_para.h
++++ b/include/asm-generic/kvm_para.h
+@@ -11,4 +11,9 @@ static inline bool kvm_check_and_clear_guest_paused(void)
+ 	return false;
+ }
  
-@@ -884,13 +884,6 @@ static int acpi_bus_get_power_flags(struct acpi_device *device)
- 				acpi_bus_add_power_resource(ps->resources.handles[j]);
- 		}
- 
--		/* The exist of _PR3 indicates D3Cold support */
--		if (i == ACPI_STATE_D3) {
--			status = acpi_get_handle(device->handle, object_name, &handle);
--			if (ACPI_SUCCESS(status))
--				device->power.states[ACPI_STATE_D3_COLD].flags.valid = 1;
--		}
--
- 		/* Evaluate "_PSx" to see if we can do explicit sets */
- 		object_name[2] = 'S';
- 		status = acpi_get_handle(device->handle, object_name, &handle);
-diff --git a/drivers/pci/pci-acpi.c b/drivers/pci/pci-acpi.c
-index 0f150f2..1929c0c 100644
---- a/drivers/pci/pci-acpi.c
-+++ b/drivers/pci/pci-acpi.c
-@@ -200,7 +200,7 @@ static pci_power_t acpi_pci_choose_state(struct pci_dev *pdev)
- 		return PCI_D1;
- 	case ACPI_STATE_D2:
- 		return PCI_D2;
--	case ACPI_STATE_D3:
-+	case ACPI_STATE_D3_HOT:
- 		return PCI_D3hot;
- 	case ACPI_STATE_D3_COLD:
- 		return PCI_D3cold;
-@@ -223,7 +223,7 @@ static int acpi_pci_set_power_state(struct pci_dev *dev, pci_power_t state)
- 		[PCI_D0] = ACPI_STATE_D0,
- 		[PCI_D1] = ACPI_STATE_D1,
- 		[PCI_D2] = ACPI_STATE_D2,
--		[PCI_D3hot] = ACPI_STATE_D3,
-+		[PCI_D3hot] = ACPI_STATE_D3_HOT,
- 		[PCI_D3cold] = ACPI_STATE_D3
- 	};
- 	int error = -EINVAL;
-diff --git a/include/acpi/actypes.h b/include/acpi/actypes.h
-index eba6604..e8bcc47 100644
---- a/include/acpi/actypes.h
-+++ b/include/acpi/actypes.h
-@@ -499,9 +499,10 @@ typedef u64 acpi_integer;
- #define ACPI_STATE_D0                   (u8) 0
- #define ACPI_STATE_D1                   (u8) 1
- #define ACPI_STATE_D2                   (u8) 2
--#define ACPI_STATE_D3                   (u8) 3
--#define ACPI_STATE_D3_COLD              (u8) 4
--#define ACPI_D_STATES_MAX               ACPI_STATE_D3_COLD
-+#define ACPI_STATE_D3_HOT               (u8) 3
-+#define ACPI_STATE_D3                   (u8) 4
-+#define ACPI_STATE_D3_COLD              ACPI_STATE_D3
-+#define ACPI_D_STATES_MAX               ACPI_STATE_D3
- #define ACPI_D_STATE_COUNT              5
- 
- #define ACPI_STATE_C0                   (u8) 0
--- 
-1.7.2.5
-
-
-
++static inline unsigned int kvm_arch_para_features(void)
++{
++	return 0;
++}
++
+ #endif
