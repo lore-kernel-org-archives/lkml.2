@@ -1,56 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756222Ab2DTHxx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Apr 2012 03:53:53 -0400
-Received: from antcom.de ([188.40.178.216]:52330 "EHLO chuck.antcom.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752199Ab2DTHxw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Apr 2012 03:53:52 -0400
-Message-ID: <4F91160B.5070802@antcom.de>
-Date: Fri, 20 Apr 2012 09:53:47 +0200
-From: Roland Stigge <stigge@antcom.de>
-Organization: ANTCOM IT Research & Development
-User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:8.0) Gecko/20120216 Icedove/8.0
-MIME-Version: 1.0
-To: Wolfram Sang <w.sang@pengutronix.de>
-CC: Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <robherring2@gmail.com>, vitalywool@gmail.com,
-        khali@linux-fr.org, ben-linux@fluff.org, rob.herring@calxeda.com,
-        linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org,
-        devicetree-discuss@lists.ozlabs.org, arm@kernel.org,
-        linux-arm-kernel@lists.infradead.org, kevin.wells@nxp.com,
-        srinivas.bakki@nxp.com
-Subject: Re: [PATCH v4] i2c: Add device tree support to i2c-pnx.c
-References: <1334850612-24151-1-git-send-email-stigge@antcom.de> <20120419160715.GD24987@pengutronix.de> <4F903E0C.6010604@antcom.de> <20120419203915.GB28005@pengutronix.de> <4F90812F.5090106@antcom.de> <20120420072811.GA9769@pengutronix.de>
-In-Reply-To: <20120420072811.GA9769@pengutronix.de>
-X-Enigmail-Version: 1.3.4
-OpenPGP: url=subkeys.pgp.net
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	id S1756341Ab2DTH4k (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Apr 2012 03:56:40 -0400
+Received: from mail176c2.megamailservers.com ([69.49.111.76]:46254 "EHLO
+	mail176c2.megamailservers.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754106Ab2DTH4j (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Apr 2012 03:56:39 -0400
+X-Authenticated-User: konrad.gaisler.com
+From: Konrad Eisele <konrad@gaisler.com>
+To: davem@davemloft.net
+Cc: konrad@gaisler.com, yong.zhang0@gmail.com, sam@ravnborg.org,
+        a.p.zijlstra@chello.nl, mingo@elte.hu, linux-kernel@vger.kernel.org,
+        sparclinux@vger.kernel.org, daniel@gaisler.com
+Subject: [PATCH] sparc32,leon: add notify_cpu_starting()
+Date: Fri, 20 Apr 2012 09:46:35 +0200
+Message-Id: <1334907995-6971-1-git-send-email-konrad@gaisler.com>
+X-Mailer: git-send-email 1.6.1.3
+In-Reply-To: <20120420.030607.1891260321280604674.davem@davemloft.net>
+References: <20120420.030607.1891260321280604674.davem@davemloft.net>
+X-CSC: 0
+X-CHA: v=1.1 cv=r1DLTJ6I4WNtNSDbWOfumzxcbMy5NL/NTCl1I6dcIeE= c=1 sm=1
+		a=KMaK_M7OBq0A:10 a=U62ajLuCel8A:10 a=jXKJviUpWSOlMmIvGrHOfw==:17
+		a=pGLkceISAAAA:8 a=ebG-ZW-8AAAA:8 a=z61PzK8tF3umnaiE55kA:9
+		a=MSl-tDqOz04A:10 a=cCYF7-FHeg4A:10 a=jXKJviUpWSOlMmIvGrHOfw==:117
+X-CTCH-Spam: Unknown
+X-CTCH-RefID: str=0001.0A020207.4F9116A7.0015,ss=1,re=0.000,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
+X-WHL: SLR
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/20/2012 09:28 AM, Wolfram Sang wrote:
->> Another solution would be to not use timeout with the dt enabled 
->> i2c-pnx for now (using the hard coded default timeout as the
->> current i2c-pnx.c does) and possibly introduce the (anyway
->> optional) "timeout" later.
-> 
-> Yeah, let's do it like this.
+Otherwise cpu_active_mask will not set, which lead to other issue.
 
-Good, will do!
+Signed-off-by: Yong Zhang <yong.zhang0@gmail.com>
+Signed-off-by: Konrad Eisele <konrad@gaisler.com>
+---
+ arch/sparc/kernel/leon_smp.c |    2 ++
+ 1 files changed, 2 insertions(+), 0 deletions(-)
 
->> Interesting! When the documentation is outdated - how does the
->> parser actually decide between hex (e.g. regs/addresses) and dec
->> (e.g. clock-frequency) in the absence of "0x"?
-> 
-> Are there regs without 0x?
+diff --git a/arch/sparc/kernel/leon_smp.c b/arch/sparc/kernel/leon_smp.c
+index 6173f4d..356dfc4 100644
+--- a/arch/sparc/kernel/leon_smp.c
++++ b/arch/sparc/kernel/leon_smp.c
+@@ -79,6 +79,8 @@ void __cpuinit leon_callin(void)
+ 	local_flush_tlb_all();
+ 	leon_configure_cache_smp();
+ 
++	notify_cpu_starting(cpuid);
++
+ 	/* Get our local ticker going. */
+ 	register_percpu_ce(cpuid);
+ 
+-- 
+1.6.1.3
 
-Lots of, in Documentation/devicetree/booting-without-of.txt ;-)
-Admittedly, not in arch/arm/boot/dts/*...
-
-I would like to clarify the hex/dec issue and the various examples to
-prevent confusion of others. Will post a patch.
-
-Roland
