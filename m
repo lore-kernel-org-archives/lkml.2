@@ -1,60 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932426Ab2DTS3R (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Apr 2012 14:29:17 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:38237 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932213Ab2DTS3M (ORCPT
+	id S932551Ab2DTSaP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Apr 2012 14:30:15 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:59206 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757410Ab2DTSaM convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Apr 2012 14:29:12 -0400
-Date: Fri, 20 Apr 2012 11:29:07 -0700
-From: Tejun Heo <tj@kernel.org>
-To: Michal Hocko <mhocko@suse.cz>
-Cc: yinghai@kernel.org, linux-mm@kvack.org,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: Weirdness in __alloc_bootmem_node_high
-Message-ID: <20120420182907.GG32324@google.com>
-References: <20120417155502.GE22687@tiehlicka.suse.cz>
+	Fri, 20 Apr 2012 14:30:12 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120417155502.GE22687@tiehlicka.suse.cz>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <CAJyhjX0QMf7FcDfx+KDggF7avBnRFcGX6KWy6hJZ_p=ceTFh+g@mail.gmail.com>
+References: <CADDKRnALwHa=QteDDcMxBU24rfbKoTOGX=iTcfeE7=M7a+NFcw@mail.gmail.com>
+ <CADDKRnAhqi-fwFrr85QC-ZP2g0=_ZSb__jEbZqAekCKXs2CtCg@mail.gmail.com>
+ <CADDKRnDJ_u7FkOHPDr0kJ+mh4k06wv2imVh8DV=GzDUQiKEWQw@mail.gmail.com> <CAJyhjX0QMf7FcDfx+KDggF7avBnRFcGX6KWy6hJZ_p=ceTFh+g@mail.gmail.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Fri, 20 Apr 2012 11:29:50 -0700
+X-Google-Sender-Auth: -LvQz52K5kvgEwXkanSST-GvpNQ
+Message-ID: <CA+55aFzjxrOGejBoMNbQxN=tri08ZZVG9DM3mA-3_uU+pMumtA@mail.gmail.com>
+Subject: Re: [v3.4-rc] regression: reboot not working
+To: Sergio Correia <lists@uece.net>
+Cc: =?ISO-8859-1?Q?J=F6rg_Otte?= <jrg.otte@googlemail.com>,
+        linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Len Brown <lenb@kernel.org>, hpa@zytor.com
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 17, 2012 at 05:55:02PM +0200, Michal Hocko wrote:
-> Hi,
-> I just come across the following condition in __alloc_bootmem_node_high
-> which I have hard times to understand. I guess it is a bug and we need
-> something like the following. But, to be honest, I have no idea why we
-> care about those 128MB above MAX_DMA32_PFN.
-> ---
->  mm/bootmem.c |    2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> diff --git a/mm/bootmem.c b/mm/bootmem.c
-> index 0131170..5adb072 100644
-> --- a/mm/bootmem.c
-> +++ b/mm/bootmem.c
-> @@ -737,7 +737,7 @@ void * __init __alloc_bootmem_node_high(pg_data_t *pgdat, unsigned long size,
->  	/* update goal according ...MAX_DMA32_PFN */
->  	end_pfn = pgdat->node_start_pfn + pgdat->node_spanned_pages;
->  
-> -	if (end_pfn > MAX_DMA32_PFN + (128 >> (20 - PAGE_SHIFT)) &&
-> +	if (end_pfn > MAX_DMA32_PFN + (128 << (20 - PAGE_SHIFT)) &&
->  	    (goal >> PAGE_SHIFT) < MAX_DMA32_PFN) {
->  		void *ptr;
->  		unsigned long new_goal;
+Since nothing ever happened on this, and since the original bugzilla
+entry that caused the commit indicates that there were other
+workarounds for the problem, I have reverted the offending commit in
+my tree.
 
-Regardless of x86 not using it, this is a bug fix and this code path
-seems to be used by mips at least.  Michal, can you please post proper
-signed-off patch?  The code is simply trying to use memory above DMA32
-limit if there seems to be enough space (128M) to avoid unnecessarily
-using DMA32 memory.
+Jörg, can you please verify that current -git works for you again?
 
-Thanks.
+                   Linus
 
--- 
-tejun
+On Wed, Apr 18, 2012 at 9:12 AM, Sergio Correia <lists@uece.net> wrote:
+> On Wed, Apr 18, 2012 at 12:00 PM, Jörg Otte <jrg.otte@googlemail.com> wrote:
+>> 9 days and still no response. Maybe I addressed the wrong person(s).
+>> I Cc to Linus.
+>>
+>> Who can help with this topic?
+>>
+>
+> CC'ing linux-acpi.
+>
+>> Thanks, Joerg
+>>
+>>
+>>
+>> Am 14. April 2012 12:46 schrieb Jörg Otte <jrg.otte@googlemail.com>:
+>>> It's now bisected:
+>>>
+>>> cf450136bfde77c7f95065c91bffded4aa7fa731   ACPI: ignore FADT reset-reg-sup flag
+>>>
+>>> Thanks, Joerg
+>>>
+>>>
+>>> Am 9. April 2012 17:19 schrieb Jörg Otte <jrg.otte@googlemail.com>:
+>>>> Hi,
+>>>>
+>>>> On reboot it shuts down as normal.
+>>>> The last lines displayed are:
+>>>>
+>>>>>.
+>>>>>Unmounting temporary filesystems.. [OK]
+>>>>>Deactivating swap...               [OK]
+>>>>>Unmounting local filesystems...    [OK]
+>>>>>Will now restart
+>>>>>    Restarting system
+>>>>
+>>>> Then I hear it accessing the cd-drive, but then
+>>>> it's being stuck.
+>>>>
+>>>> v3.3 was ok. HW is a Thinkpad T43.
+>>>>
+>>>> Please Cc me I'm not subscribed.
+>>>>
+>>>> Thanks,Joerg
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>> Please read the FAQ at  http://www.tux.org/lkml/
