@@ -1,66 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757558Ab2DTTh3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Apr 2012 15:37:29 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:46802 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751768Ab2DTTh1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Apr 2012 15:37:27 -0400
-Date: Fri, 20 Apr 2012 20:37:19 +0100
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Hugh Dickins <hughd@google.com>
-Cc: linux-fsdevel@vger.kernel.org, James Morris <jmorris@namei.org>,
-        linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org,
-        David Safford <safford@linux.vnet.ibm.com>,
-        Dmitry Kasatkin <dmitry.kasatkin@intel.com>,
-        Mimi Zohar <zohar@linux.vnet.ibm.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        David Miller <davem@davemloft.net>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [RFC] situation with fput() locking (was Re: [PULL REQUEST] :
- ima-appraisal patches)
-Message-ID: <20120420193719.GL6871@ZenIV.linux.org.uk>
-References: <1334754302.2137.8.camel@falcor>
- <alpine.LRH.2.02.1204190101380.30151@tundra.namei.org>
- <1334772473.2137.22.camel@falcor>
- <20120418183938.GH6589@ZenIV.linux.org.uk>
- <1334865448.2429.35.camel@falcor>
- <20120420004303.GB6871@ZenIV.linux.org.uk>
- <alpine.LSU.2.00.1204201133340.1450@eggly.anvils>
- <20120420190418.GK6871@ZenIV.linux.org.uk>
+	id S1757587Ab2DTTlY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Apr 2012 15:41:24 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:36971 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751018Ab2DTTlX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Apr 2012 15:41:23 -0400
+Date: Fri, 20 Apr 2012 21:41:21 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: Sam Ravnborg <sam@ravnborg.org>, Tejun Heo <tj@kernel.org>,
+        linux-mm@kvack.org, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: Weirdness in __alloc_bootmem_node_high
+Message-ID: <20120420194121.GF15021@tiehlicka.suse.cz>
+References: <20120417155502.GE22687@tiehlicka.suse.cz>
+ <20120420182907.GG32324@google.com>
+ <20120420191418.GA3569@merkur.ravnborg.org>
+ <20120420192937.GE15021@tiehlicka.suse.cz>
+ <CAE9FiQUytfCvr8c++im+DignUwZvHmnu8gPNDG6SOJzrF_FsNg@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <20120420190418.GK6871@ZenIV.linux.org.uk>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CAE9FiQUytfCvr8c++im+DignUwZvHmnu8gPNDG6SOJzrF_FsNg@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 20, 2012 at 08:04:18PM +0100, Al Viro wrote:
+On Fri 20-04-12 12:32:38, Yinghai Lu wrote:
+> On Fri, Apr 20, 2012 at 12:29 PM, Michal Hocko <mhocko@suse.cz> wrote:
+> > This is what I can see in the current (Linus) git:
+> > ./arch/sparc/Kconfig:   select SPARSEMEM_VMEMMAP_ENABLE
+> > ./arch/powerpc/Kconfig: select SPARSEMEM_VMEMMAP_ENABLE
+> > ./arch/ia64/Kconfig:    select SPARSEMEM_VMEMMAP_ENABLE
+> > ./arch/s390/Kconfig:    select SPARSEMEM_VMEMMAP_ENABLE
+> > ./arch/s390/Kconfig:    select SPARSEMEM_VMEMMAP
+> > ./arch/x86/Kconfig:     select SPARSEMEM_VMEMMAP_ENABLE if X86_64
+> >
+> > So there are more arches which enable SPARSEMEM_VMEMMAP so the function
+> > is used. Or am I missing something?
+> 
+> MAX_DMA32_PFN is not defined for them.
 
-> Deferring the final pass after dropping ->mmap_sem is going to be
-> interesting; what would protect ->vm_next on those suckers?  Locking
-> rules are already bloody complicated in mm/*; this will only add more
-> subtle fun.  Note that right now both the dissolution of ->vm_next
-> list and freeing of VMAs happen under ->mmap_sem; changing that might
-> cost us a lot of headache...
+Ahh, you are right except that it is defined for x86 but that one uses
+nobootmem. I missed that point.
 
-BTW, even leaving that aside, we have at least one definite deadlock
-(mainline, not on ->mmap_sem - see the mess in drivers/video/msm/mdp.c)
-and a possibility of other fun (e.g. any network filesystem that
-ends up triggering rtnl_lock() during umount is going to deadlock if
-you combine it with sch_atm.c mess where we do fget()/check/fput()
-in netlink message handling, close() from another thread racing with
-it and descriptor being the only thing that keeps that network fs
-alive past lazy umount or namespace dissolution).  And then there's
-SCM_RIGHTS vs. drivers/vhost/net.c, which might or might not be
-deadlockable - I'm not familiar enough with that driver to tell
-right now.
-
-_If_ it had been ->mmap_sem alone, the things would be much simpler.
-There wouldn't be a problem, to start with - IMA stuff is not in the
-mainline and that's the only thing that really wants ->i_mutex in
-fput(); the few existing places that grab it in ->release() are racy
-anyway and need to be fixed with proper locking.
+Thanks
+-- 
+Michal Hocko
+SUSE Labs
+SUSE LINUX s.r.o.
+Lihovarska 1060/12
+190 00 Praha 9    
+Czech Republic
