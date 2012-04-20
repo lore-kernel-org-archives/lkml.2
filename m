@@ -1,60 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754365Ab2DTNsS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Apr 2012 09:48:18 -0400
-Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:57076 "EHLO
-	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752500Ab2DTNsR convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Apr 2012 09:48:17 -0400
-MIME-Version: 1.0
-In-Reply-To: <20120420130134.GA5957@opensource.wolfsonmicro.com>
-References: <1334829097-32084-1-git-send-email-jaswinder.singh@linaro.org>
-	<20120419124204.GE3046@opensource.wolfsonmicro.com>
-	<CAJe_ZhfbFq98fT56CS-q4VoU8wnybj-+swfB+Jrknd3Zmt9V8g@mail.gmail.com>
-	<20120419162905.GA3084@opensource.wolfsonmicro.com>
-	<CAJe_Zhd0H6kXBhqdynuZqhbcPq8ARWu5SMbs=hQT2n8stzRvXQ@mail.gmail.com>
-	<20120420114602.GB3259@opensource.wolfsonmicro.com>
-	<CAJe_ZhdKv_7fTj9ZhJE0JzmuhxEZn-JmSbHu615YMXoWZUei9A@mail.gmail.com>
-	<20120420130134.GA5957@opensource.wolfsonmicro.com>
-Date: Fri, 20 Apr 2012 19:18:15 +0530
-Message-ID: <CAJe_ZhdKtK8YKo1qc8g18XrdnrQRZw2aFSkW8x3koELU10EsHw@mail.gmail.com>
-Subject: Re: [PATCH] regulator: Provide a check for dummy regulator
-From: Jassi Brar <jaswinder.singh@linaro.org>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: linux-kernel@vger.kernel.org, lrg@ti.com
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	id S1754297Ab2DTNvZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Apr 2012 09:51:25 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:11263 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751543Ab2DTNvY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Apr 2012 09:51:24 -0400
+X-Authority-Analysis: v=2.0 cv=XbcLPfF5 c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=XQbtiDEiEegA:10 a=O9SDWPecf0MA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=zrfWMziO8bEgIQt9m90A:9 a=PUjeQqilurYA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.80.29
+Message-ID: <1334929881.28106.77.camel@gandalf.stny.rr.com>
+Subject: Re: [patch] tracing: Remove an unneeded check
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Dan Carpenter <dan.carpenter@oracle.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>,
+        Eduard - Gabriel Munteanu <eduard.munteanu@linux360.ro>,
+        Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
+        kernel-janitors@vger.kernel.org
+Date: Fri, 20 Apr 2012 09:51:21 -0400
+In-Reply-To: <20120420063145.GA22649@elgon.mountain>
+References: <20120420063145.GA22649@elgon.mountain>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.2.2-1 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 20 April 2012 18:31, Mark Brown <broonie@opensource.wolfsonmicro.com> wrote:
-> On Fri, Apr 20, 2012 at 05:59:42PM +0530, Jassi Brar wrote:
->
->> That's what I have been trying to fix. My example might be fictitious but
->> I have a real scenario with omap_hsmmc (I was avoiding getting into that).
->
->> The dummy not just provide a place holder data structure for missing definition
->> of an available supply, but it also masks the fact that there might indeed be no
->> supply at all on the given machine.
->
->> As I said, atm the only option for a consumer is to know it via PD/DT.
->
-> No.  You're failing to understand what dummy regulators are for.
->
-I think I do understand what dummy regulators are for and also that
-they are meant to go away some time in future.
+On Fri, 2012-04-20 at 09:31 +0300, Dan Carpenter wrote:
+> memcpy() returns a pointer to "bug".  Hopefully, it's not NULL here or
+> we would already have Oopsed.
 
->  To repeat yet again you're not supposed to actually use dummy regulators,
-> you're supposed to fully specify the regulators on your platform.
->
-I use dummy regulators for what they are meant for - until every platform
-completely define supplies for every consumer.
-We are not there yet, yet one 'ideal' consumer suffers because of that.
+You're right that the ret is useless, and the real bug was already fixed
+(the possibility that buf could be an invalid pointer).
 
-If you ask me to go away and disable dummy and update all consumers
-and their platforms, then I say why not remove the concept of dummy
-altogether which only delays full compliance to the regulator api ?
+Not only is this needed, but also get rid of the ret < 0 check in
+tracing_splice_read_pipe().
 
--j
+-- Steve
+
+
