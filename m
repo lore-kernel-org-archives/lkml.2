@@ -1,59 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754111Ab2DTNMu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Apr 2012 09:12:50 -0400
-Received: from smtp.ctxuk.citrix.com ([62.200.22.115]:2185 "EHLO
-	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751925Ab2DTNMt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Apr 2012 09:12:49 -0400
-X-IronPort-AV: E=Sophos;i="4.75,454,1330905600"; 
-   d="scan'208";a="12048713"
-Message-ID: <1334927566.28331.80.camel@zakaz.uk.xensource.com>
-Subject: Re: [Xen-devel] [PATCH] xen/apic: implement io apic read with
- hypercall
-From: Ian Campbell <Ian.Campbell@citrix.com>
-To: Andrew Cooper <Andrew.Cooper3@citrix.com>
-CC: Lin Ming <mlin@ss.pku.edu.cn>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Date: Fri, 20 Apr 2012 14:12:46 +0100
-In-Reply-To: <4F915C43.4020207@citrix.com>
-References: <1334913957.2863.1.camel@hp6530s>  <4F913340.4000202@citrix.com>
-	 <1334920396.2863.16.camel@hp6530s>
-	 <1334925508.28331.63.camel@zakaz.uk.xensource.com>
-	 <4F915C43.4020207@citrix.com>
-Organization: Citrix Systems, Inc.
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2-1 
-Content-Transfer-Encoding: 7bit
+	id S1754532Ab2DTNOx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Apr 2012 09:14:53 -0400
+Received: from antcom.de ([188.40.178.216]:34628 "EHLO chuck.antcom.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751991Ab2DTNOv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Apr 2012 09:14:51 -0400
+Message-ID: <4F916146.1080904@antcom.de>
+Date: Fri, 20 Apr 2012 15:14:46 +0200
+From: Roland Stigge <stigge@antcom.de>
+Organization: ANTCOM IT Research & Development
+User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:8.0) Gecko/20120216 Icedove/8.0
 MIME-Version: 1.0
+To: Wolfram Sang <w.sang@pengutronix.de>
+CC: grant.likely@secretlab.ca, robherring2@gmail.com, vitalywool@gmail.com,
+        khali@linux-fr.org, ben-linux@fluff.org, rob.herring@calxeda.com,
+        linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org,
+        devicetree-discuss@lists.ozlabs.org, arm@kernel.org,
+        linux-arm-kernel@lists.infradead.org, kevin.wells@nxp.com,
+        Srinivas Bakki <srinivas.bakki@nxp.com>
+Subject: Re: [PATCH v5] i2c: Add device tree support to i2c-pnx.c
+References: <1334913755-10466-1-git-send-email-stigge@antcom.de> <20120420120950.GA15613@pengutronix.de>
+In-Reply-To: <20120420120950.GA15613@pengutronix.de>
+X-Enigmail-Version: 1.3.4
+OpenPGP: url=subkeys.pgp.net
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2012-04-20 at 13:53 +0100, Andrew Cooper wrote:
-> >
-> > Under what circumstances can these hypercalls fail? Would a BUG_ON be
-> > appropriate/
+Hi,
+
+On 04/20/2012 02:09 PM, Wolfram Sang wrote:
+>> Signed-off-by: Roland Stigge <stigge@antcom.de> Reviewed-by: Arnd
+>> Bergmann <arnd@arndb.de> Acked-by: Wolfram Sang
+>> <w.sang@pengutronix.de>
 > 
-> -EFAULT, -EPERM, anything xsm_apic() could return (which looks only to
-> be -EPERM).
+> NACK! I said the approach of dropping "timeout" is OK, but unless I
+> say "you may add my ack after changing this and that", please do
+> not automatically add my ack. Doesn't hurt here, since I have to
+> pick it up anyway.
 
-So either the guest has called a hypercall which it is not permitted to
-or it has called it with invalid parameters of one sort or another. Both
-of these would be a code bug in the guest and therefore asserting that
-no failure occurred is reasonable?
+Sorry - my apologies! Removing for next re-post.
 
-What could the caller do with the error other than log it and collapse?
+>> Changes since v4: * Removed OF timeout property (to be added
+>> later when there is consensus about how to call and handle it) *
+>> Changed clock-frequency example to decimal
+> 
+> Thanks, I just noticed. Please drop (more precise: remove) the 
+> "slave-addr" for the same reasons as "timeout".
 
-> The call into Xen itself will return 0 as a value if an
-> invalid physbase is passed in the hypercall.
+OK, will do.
 
-> So a BUG_ON() is not safe/sensible for domU.
+>> ret = request_irq(alg_data->irq, i2c_pnx_interrupt, -			0,
+>> pdev->name, alg_data); +			  0, pdev->name, alg_data);
+> 
+> I know that checkpatch complains about this, but I'd prefer to
+> avoid such changes unless the code before was really unreadable.
 
-I think you have successfully argued that it is ;-)
+OK!
 
-Ian.
-
+Roland
