@@ -1,51 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754663Ab2DTVdK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Apr 2012 17:33:10 -0400
-Received: from mail-pz0-f52.google.com ([209.85.210.52]:48928 "EHLO
-	mail-pz0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753088Ab2DTVdG (ORCPT
+	id S1754665Ab2DTVeb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Apr 2012 17:34:31 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41003 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752394Ab2DTVe3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Apr 2012 17:33:06 -0400
-Date: Fri, 20 Apr 2012 14:33:01 -0700
-From: Tejun Heo <tj@kernel.org>
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: Fengguang Wu <fengguang.wu@intel.com>, Jan Kara <jack@suse.cz>,
-        Jens Axboe <axboe@kernel.dk>, linux-mm@kvack.org, sjayaraman@suse.com,
-        andrea@betterlinux.com, jmoyer@redhat.com,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        kamezawa.hiroyu@jp.fujitsu.com, lizefan@huawei.com,
-        containers@lists.linux-foundation.org, cgroups@vger.kernel.org,
-        ctalbott@google.com, rni@google.com, lsf@lists.linux-foundation.org
-Subject: Re: [RFC] writeback and cgroup
-Message-ID: <20120420213301.GA29134@google.com>
-References: <20120403183655.GA23106@dhcp-172-17-108-109.mtv.corp.google.com>
- <20120404175124.GA8931@localhost>
- <20120404193355.GD29686@dhcp-172-17-108-109.mtv.corp.google.com>
- <20120406095934.GA10465@localhost>
- <20120417223854.GG19975@google.com>
- <20120419142343.GA12684@localhost>
- <20120419183118.GM10216@redhat.com>
- <20120420124518.GA7133@localhost>
- <20120420192930.GR22419@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120420192930.GR22419@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Fri, 20 Apr 2012 17:34:29 -0400
+Date: Fri, 20 Apr 2012 14:34:27 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Nicolas Ferre <nicolas.ferre@atmel.com>
+Cc: linux-arm-kernel@lists.infradead.org, arnd@arndb.de, olof@lixom.net,
+        plagnioj@jcrosoft.com, ludovic.desroches@atmel.com,
+        linux-kernel@vger.kernel.org,
+        Richard Purdie <richard.purdie@linuxfoundation.org>
+Subject: Re: [PATCH 10/12] leds-atmel-pwm.c: Make pwmled_probe() __devinit
+Message-Id: <20120420143427.97c08ee5.akpm@linux-foundation.org>
+In-Reply-To: <23f8dba8a3e1ae21a5953747b63dc0a21fcba868.1334567594.git.nicolas.ferre@atmel.com>
+References: <cover.1334567594.git.nicolas.ferre@atmel.com>
+	<23f8dba8a3e1ae21a5953747b63dc0a21fcba868.1334567594.git.nicolas.ferre@atmel.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 20, 2012 at 03:29:30PM -0400, Vivek Goyal wrote:
-> I am personally is not too excited about the case of putting async IO
-> in separate groups due to the reason that async IO of one group will
-> start impacting latencies of sync IO of another group and in practice
-> it might not be desirable. But there are others who have use cases for
-> separate async IO queue. So as long as switch is there to change the
-> behavior, I am not too worried.
+On Mon, 16 Apr 2012 11:20:54 +0200
+Nicolas Ferre <nicolas.ferre@atmel.com> wrote:
 
-Why not just fix cfq so that it prefers groups w/ sync IOs?
+> Commit 892a884 (leds: convert led platform drivers to module_platform_driver)
+> is omitting the section mismatch error: so change annotation of the probe
+> function to __devinit instead of __init.
+> 
+> ...
+>
+> --- a/drivers/leds/leds-atmel-pwm.c
+> +++ b/drivers/leds/leds-atmel-pwm.c
+> @@ -35,7 +35,7 @@ static void pwmled_brightness(struct led_classdev *cdev, enum led_brightness b)
+>   * NOTE:  we reuse the platform_data structure of GPIO leds,
+>   * but repurpose its "gpio" number as a PWM channel number.
+>   */
+> -static int __init pwmled_probe(struct platform_device *pdev)
+> +static int __devinit pwmled_probe(struct platform_device *pdev)
+>  {
+>  	const struct gpio_led_platform_data	*pdata;
+>  	struct pwmled				*leds;
 
--- 
-tejun
+This is theoretically oopsable and the patch is probably needed in 3.4
+and 3.3.x.
+
+But you've applied it to linu-next via your own tree so I won't be
+merging it.
