@@ -1,399 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755413Ab2DTVtp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Apr 2012 17:49:45 -0400
-Received: from rcsinet15.oracle.com ([148.87.113.117]:45910 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755219Ab2DTVtk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Apr 2012 17:49:40 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: linux-mm@kvack.org, akpm@linux-foundation.org,
-        linux-kernel@vger.kernel.org, ngupta@vflare.org,
-        sjenning@linux.vnet.ibm.com, rcj@linux.vnet.ibm.com,
-        aarcange@redhat.com, dhowells@redhat.com, riel@redhat.com,
-        JBeulich@novell.com
-Cc: Dan Magenheimer <dan.magenheimer@oracle.com>,
-        Konrad Wilk <konrad.wilk@oracle.com>,
-        Jeremy Fitzhardinge <jeremy@goop.org>, Hugh Dickins <hughd@google.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Matthew Wilcox <matthew@wil.cx>,
-        Chris Mason <chris.mason@oracle.com>
-Subject: [PATCH 3/6] mm: frontswap: core frontswap functionality
-Date: Fri, 20 Apr 2012 17:44:12 -0400
-Message-Id: <1334958255-6612-4-git-send-email-konrad.wilk@oracle.com>
-X-Mailer: git-send-email 1.7.7.5
-In-Reply-To: <1334958255-6612-1-git-send-email-konrad.wilk@oracle.com>
-References: <1334958255-6612-1-git-send-email-konrad.wilk@oracle.com>
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
-X-CT-RefId: str=0001.0A090203.4F91D9E2.0022,ss=1,re=-2.300,fgs=0
+	id S1755263Ab2DTVuB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Apr 2012 17:50:01 -0400
+Received: from mailhub.sw.ru ([195.214.232.25]:12331 "EHLO relay.sw.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754819Ab2DTVt6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Apr 2012 17:49:58 -0400
+From: Glauber Costa <glommer@parallels.com>
+To: <cgroups@vger.kernel.org>
+Cc: <linux-mm@kvack.org>, <linux-kernel@vger.kernel.org>, <devel@openvz.org>,
+        <kamezawa.hiroyu@jp.fujitsu.com>, Michal Hocko <mhocko@suse.cz>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Greg Thelen <gthelen@google.com>,
+        Suleiman Souhlal <suleiman@google.com>,
+        Glauber Costa <glommer@parallels.com>
+Subject: [PATCH 02/23] slub: always get the cache from its page in kfree
+Date: Fri, 20 Apr 2012 18:48:59 -0300
+Message-Id: <1334958560-18076-3-git-send-email-glommer@parallels.com>
+X-Mailer: git-send-email 1.7.7.6
+In-Reply-To: <1334958560-18076-1-git-send-email-glommer@parallels.com>
+References: <1334958560-18076-1-git-send-email-glommer@parallels.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Dan Magenheimer <dan.magenheimer@oracle.com>
+struct page already have this information. If we start chaining
+caches, this information will always be more trustworthy than
+whatever is passed into the function
 
-This patch, 3of4, provides the core frontswap code that interfaces between
-the hooks in the swap subsystem and a frontswap backend via frontswap_ops.
-
+Signed-off-by: Glauber Costa <glommer@parallels.com>
 ---
-New file added: mm/frontswap.c
+ mm/slub.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-[v14: add support for writethrough, per suggestion by aarcange@redhat.com]
-[v11: sjenning@linux.vnet.ibm.com: s/puts/failed_puts/]
-[v10: sjenning@linux.vnet.ibm.com: fix debugfs calls on 32-bit]
-[v9: akpm@linux-foundation.org: change "flush" to "invalidate", part 1]
-[v9: akpm@linux-foundation.org: mark some statics __read_mostly]
-[v9: akpm@linux-foundation.org: add clarifying comments]
-[v9: akpm@linux-foundation.org: no need to loop repeating try_to_unuse]
-[v9: error27@gmail.com: remove superfluous check for NULL]
-[v8: rebase to 3.0-rc4]
-[v8: kamezawa.hiroyu@jp.fujitsu.com: add comment to clarify find_next_to_unuse]
-[v7: rebase to 3.0-rc3]
-[v7: JBeulich@novell.com: use new static inlines, no-ops if not config'd]
-[v6: rebase to 3.1-rc1]
-[v6: lliubbo@gmail.com: use vzalloc]
-[v6: lliubbo@gmail.com: fix null pointer deref if vzalloc fails]
-[v6: konrad.wilk@oracl.com: various checks and code clarifications/comments]
-[v4: rebase to 2.6.39]
-Signed-off-by: Dan Magenheimer <dan.magenheimer@oracle.com>
-[v12: Squashed s/flush/invalidate/ in]
-[v15: A bit of cleanup and seperate DEBUGFS]
-Signed-off-by: Konrad Wilk <konrad.wilk@oracle.com>
-Acked-by: Jan Beulich <JBeulich@novell.com>
-Acked-by: Seth Jennings <sjenning@linux.vnet.ibm.com>
-Cc: Jeremy Fitzhardinge <jeremy@goop.org>
-Cc: Hugh Dickins <hughd@google.com>
-Cc: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Nitin Gupta <ngupta@vflare.org>
-Cc: Matthew Wilcox <matthew@wil.cx>
-Cc: Chris Mason <chris.mason@oracle.com>
-Cc: Rik Riel <riel@redhat.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>
----
- mm/frontswap.c |  314 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++
- 1 files changed, 314 insertions(+), 0 deletions(-)
- create mode 100644 mm/frontswap.c
-
-diff --git a/mm/frontswap.c b/mm/frontswap.c
-new file mode 100644
-index 0000000..8c0a5f8
---- /dev/null
-+++ b/mm/frontswap.c
-@@ -0,0 +1,314 @@
-+/*
-+ * Frontswap frontend
-+ *
-+ * This code provides the generic "frontend" layer to call a matching
-+ * "backend" driver implementation of frontswap.  See
-+ * Documentation/vm/frontswap.txt for more information.
-+ *
-+ * Copyright (C) 2009-2012 Oracle Corp.  All rights reserved.
-+ * Author: Dan Magenheimer
-+ *
-+ * This work is licensed under the terms of the GNU GPL, version 2.
-+ */
-+
-+#include <linux/mm.h>
-+#include <linux/mman.h>
-+#include <linux/swap.h>
-+#include <linux/swapops.h>
-+#include <linux/proc_fs.h>
-+#include <linux/security.h>
-+#include <linux/capability.h>
-+#include <linux/module.h>
-+#include <linux/uaccess.h>
-+#include <linux/debugfs.h>
-+#include <linux/frontswap.h>
-+#include <linux/swapfile.h>
-+
-+/*
-+ * frontswap_ops is set by frontswap_register_ops to contain the pointers
-+ * to the frontswap "backend" implementation functions.
-+ */
-+static struct frontswap_ops frontswap_ops __read_mostly;
-+
-+/*
-+ * This global enablement flag reduces overhead on systems where frontswap_ops
-+ * has not been registered, so is preferred to the slower alternative: a
-+ * function call that checks a non-global.
-+ */
-+bool frontswap_enabled __read_mostly;
-+EXPORT_SYMBOL(frontswap_enabled);
-+
-+/*
-+ * If enabled, frontswap_put will return failure even on success.  As
-+ * a result, the swap subsystem will always write the page to swap, in
-+ * effect converting frontswap into a writethrough cache.  In this mode,
-+ * there is no direct reduction in swap writes, but a frontswap backend
-+ * can unilaterally "reclaim" any pages in use with no data loss, thus
-+ * providing increases control over maximum memory usage due to frontswap.
-+ */
-+static bool frontswap_writethrough_enabled __read_mostly;
-+
-+#ifdef CONFIG_DEBUG_FS
-+/*
-+ * Counters available via /sys/kernel/debug/frontswap (if debugfs is
-+ * properly configured).  These are for information only so are not protected
-+ * against increment races.
-+ */
-+static u64 frontswap_gets;
-+static u64 frontswap_succ_puts;
-+static u64 frontswap_failed_puts;
-+static u64 frontswap_invalidates;
-+
-+static inline void inc_frontswap_gets(void) {
-+	frontswap_gets++;
-+}
-+static inline void inc_frontswap_succ_puts(void) {
-+	frontswap_succ_puts++;
-+}
-+static inline void inc_frontswap_failed_puts(void) {
-+	frontswap_failed_puts++;
-+}
-+static inline void inc_frontswap_invalidates(void) {
-+	frontswap_invalidates++;
-+}
-+#else
-+static inline void inc_frontswap_gets(void) { }
-+static inline void inc_frontswap_succ_puts(void) { }
-+static inline void inc_frontswap_failed_puts(void) { }
-+static inline void inc_frontswap_invalidates(void) { }
-+#endif
-+/*
-+ * Register operations for frontswap, returning previous thus allowing
-+ * detection of multiple backends and possible nesting.
-+ */
-+struct frontswap_ops frontswap_register_ops(struct frontswap_ops *ops)
-+{
-+	struct frontswap_ops old = frontswap_ops;
-+
-+	frontswap_ops = *ops;
-+	frontswap_enabled = true;
-+	return old;
-+}
-+EXPORT_SYMBOL(frontswap_register_ops);
-+
-+/*
-+ * Enable/disable frontswap writethrough (see above).
-+ */
-+void frontswap_writethrough(bool enable)
-+{
-+	frontswap_writethrough_enabled = enable;
-+}
-+EXPORT_SYMBOL(frontswap_writethrough);
-+
-+/*
-+ * Called when a swap device is swapon'd.
-+ */
-+void __frontswap_init(unsigned type)
-+{
-+	struct swap_info_struct *sis = swap_info[type];
-+
-+	BUG_ON(sis == NULL);
-+	if (sis->frontswap_map == NULL)
-+		return;
-+	if (frontswap_enabled)
-+		(*frontswap_ops.init)(type);
-+}
-+EXPORT_SYMBOL(__frontswap_init);
-+
-+/*
-+ * "Put" data from a page to frontswap and associate it with the page's
-+ * swaptype and offset.  Page must be locked and in the swap cache.
-+ * If frontswap already contains a page with matching swaptype and
-+ * offset, the frontswap implmentation may either overwrite the data and
-+ * return success or invalidate the page from frontswap and return failure.
-+ */
-+int __frontswap_put_page(struct page *page)
-+{
-+	int ret = -1, dup = 0;
-+	swp_entry_t entry = { .val = page_private(page), };
-+	int type = swp_type(entry);
-+	struct swap_info_struct *sis = swap_info[type];
-+	pgoff_t offset = swp_offset(entry);
-+
-+	BUG_ON(!PageLocked(page));
-+	BUG_ON(sis == NULL);
-+	if (frontswap_test(sis, offset))
-+		dup = 1;
-+	ret = (*frontswap_ops.put_page)(type, offset, page);
-+	if (ret == 0) {
-+		frontswap_set(sis, offset);
-+		inc_frontswap_succ_puts();
-+		if (!dup)
-+			atomic_inc(&sis->frontswap_pages);
-+	} else if (dup) {
-+		/*
-+		  failed dup always results in automatic invalidate of
-+		  the (older) page from frontswap
-+		 */
-+		frontswap_clear(sis, offset);
-+		atomic_dec(&sis->frontswap_pages);
-+		inc_frontswap_failed_puts();
-+	} else
-+		inc_frontswap_failed_puts();
-+	if (frontswap_writethrough_enabled)
-+		/* report failure so swap also writes to swap device */
-+		ret = -1;
-+	return ret;
-+}
-+EXPORT_SYMBOL(__frontswap_put_page);
-+
-+/*
-+ * "Get" data from frontswap associated with swaptype and offset that were
-+ * specified when the data was put to frontswap and use it to fill the
-+ * specified page with data. Page must be locked and in the swap cache.
-+ */
-+int __frontswap_get_page(struct page *page)
-+{
-+	int ret = -1;
-+	swp_entry_t entry = { .val = page_private(page), };
-+	int type = swp_type(entry);
-+	struct swap_info_struct *sis = swap_info[type];
-+	pgoff_t offset = swp_offset(entry);
-+
-+	BUG_ON(!PageLocked(page));
-+	BUG_ON(sis == NULL);
-+	if (frontswap_test(sis, offset))
-+		ret = (*frontswap_ops.get_page)(type, offset, page);
-+	if (ret == 0)
-+		inc_frontswap_gets();
-+	return ret;
-+}
-+EXPORT_SYMBOL(__frontswap_get_page);
-+
-+/*
-+ * Invalidate any data from frontswap associated with the specified swaptype
-+ * and offset so that a subsequent "get" will fail.
-+ */
-+void __frontswap_invalidate_page(unsigned type, pgoff_t offset)
-+{
-+	struct swap_info_struct *sis = swap_info[type];
-+
-+	BUG_ON(sis == NULL);
-+	if (frontswap_test(sis, offset)) {
-+		(*frontswap_ops.invalidate_page)(type, offset);
-+		atomic_dec(&sis->frontswap_pages);
-+		frontswap_clear(sis, offset);
-+		inc_frontswap_invalidates();
-+	}
-+}
-+EXPORT_SYMBOL(__frontswap_invalidate_page);
-+
-+/*
-+ * Invalidate all data from frontswap associated with all offsets for the
-+ * specified swaptype.
-+ */
-+void __frontswap_invalidate_area(unsigned type)
-+{
-+	struct swap_info_struct *sis = swap_info[type];
-+
-+	BUG_ON(sis == NULL);
-+	if (sis->frontswap_map == NULL)
-+		return;
-+	(*frontswap_ops.invalidate_area)(type);
-+	atomic_set(&sis->frontswap_pages, 0);
-+	memset(sis->frontswap_map, 0, sis->max / sizeof(long));
-+}
-+EXPORT_SYMBOL(__frontswap_invalidate_area);
-+
-+/*
-+ * Frontswap, like a true swap device, may unnecessarily retain pages
-+ * under certain circumstances; "shrink" frontswap is essentially a
-+ * "partial swapoff" and works by calling try_to_unuse to attempt to
-+ * unuse enough frontswap pages to attempt to -- subject to memory
-+ * constraints -- reduce the number of pages in frontswap to the
-+ * number given in the parameter target_pages.
-+ */
-+void frontswap_shrink(unsigned long target_pages)
-+{
-+	struct swap_info_struct *si = NULL;
-+	int si_frontswap_pages;
-+	unsigned long total_pages = 0, total_pages_to_unuse;
-+	unsigned long pages = 0, pages_to_unuse = 0;
-+	int type;
-+	bool locked = false;
-+
-+	/*
-+	 * we don't want to hold swap_lock while doing a very
-+	 * lengthy try_to_unuse, but swap_list may change
-+	 * so restart scan from swap_list.head each time
-+	 */
-+	spin_lock(&swap_lock);
-+	locked = true;
-+	total_pages = 0;
-+	for (type = swap_list.head; type >= 0; type = si->next) {
-+		si = swap_info[type];
-+		total_pages += atomic_read(&si->frontswap_pages);
-+	}
-+	if (total_pages <= target_pages)
-+		goto out;
-+	total_pages_to_unuse = total_pages - target_pages;
-+	for (type = swap_list.head; type >= 0; type = si->next) {
-+		si = swap_info[type];
-+		si_frontswap_pages = atomic_read(&si->frontswap_pages);
-+		if (total_pages_to_unuse < si_frontswap_pages)
-+			pages = pages_to_unuse = total_pages_to_unuse;
-+		else {
-+			pages = si_frontswap_pages;
-+			pages_to_unuse = 0; /* unuse all */
-+		}
-+		/* ensure there is enough RAM to fetch pages from frontswap */
-+		if (security_vm_enough_memory_mm(current->mm, pages))
-+			continue;
-+		vm_unacct_memory(pages);
-+		break;
-+	}
-+	if (type < 0)
-+		goto out;
-+	locked = false;
-+	spin_unlock(&swap_lock);
-+	try_to_unuse(type, true, pages_to_unuse);
-+out:
-+	if (locked)
-+		spin_unlock(&swap_lock);
-+	return;
-+}
-+EXPORT_SYMBOL(frontswap_shrink);
-+
-+/*
-+ * Count and return the number of frontswap pages across all
-+ * swap devices.  This is exported so that backend drivers can
-+ * determine current usage without reading debugfs.
-+ */
-+unsigned long frontswap_curr_pages(void)
-+{
-+	int type;
-+	unsigned long totalpages = 0;
-+	struct swap_info_struct *si = NULL;
-+
-+	spin_lock(&swap_lock);
-+	for (type = swap_list.head; type >= 0; type = si->next) {
-+		si = swap_info[type];
-+		totalpages += atomic_read(&si->frontswap_pages);
-+	}
-+	spin_unlock(&swap_lock);
-+	return totalpages;
-+}
-+EXPORT_SYMBOL(frontswap_curr_pages);
-+
-+static int __init init_frontswap(void)
-+{
-+#ifdef CONFIG_DEBUG_FS
-+	struct dentry *root = debugfs_create_dir("frontswap", NULL);
-+	if (root == NULL)
-+		return -ENXIO;
-+	debugfs_create_u64("gets", S_IRUGO, root, &frontswap_gets);
-+	debugfs_create_u64("succ_puts", S_IRUGO, root, &frontswap_succ_puts);
-+	debugfs_create_u64("failed_puts", S_IRUGO, root,
-+				&frontswap_failed_puts);
-+	debugfs_create_u64("invalidates", S_IRUGO,
-+				root, &frontswap_invalidates);
-+#endif
-+	return 0;
-+}
-+
-+module_init(init_frontswap);
+diff --git a/mm/slub.c b/mm/slub.c
+index af8cee9..2652e7c 100644
+--- a/mm/slub.c
++++ b/mm/slub.c
+@@ -2600,7 +2600,7 @@ void kmem_cache_free(struct kmem_cache *s, void *x)
+ 
+ 	page = virt_to_head_page(x);
+ 
+-	slab_free(s, page, x, _RET_IP_);
++	slab_free(page->slab, page, x, _RET_IP_);
+ 
+ 	trace_kmem_cache_free(_RET_IP_, x);
+ }
 -- 
-1.7.7.5
+1.7.7.6
 
