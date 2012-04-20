@@ -1,99 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756071Ab2DTR2y (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Apr 2012 13:28:54 -0400
-Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:44985 "EHLO
-	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752137Ab2DTR2w (ORCPT
+	id S1755618Ab2DTRd0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Apr 2012 13:33:26 -0400
+Received: from casper.infradead.org ([85.118.1.10]:50512 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752033Ab2DTRdZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Apr 2012 13:28:52 -0400
-Date: Fri, 20 Apr 2012 19:28:49 +0200
-From: Johan Hovold <jhovold@gmail.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Richard Purdie <rpurdie@rpsys.net>, Samuel Ortiz <sameo@linux.intel.com>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, linux-fbdev@vger.kernel.org
-Subject: Re: [PATCH 2/4] misc: add LM3533 ambient light sensor driver
-Message-ID: <20120420172849.GB12376@localhost>
-References: <1334935826-12527-1-git-send-email-jhovold@gmail.com>
- <1334935826-12527-3-git-send-email-jhovold@gmail.com>
- <20120420155734.GE8327@kroah.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120420155734.GE8327@kroah.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Fri, 20 Apr 2012 13:33:25 -0400
+Subject: Re: load balancing regression since commit 367456c7
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Tim Chen <tim.c.chen@linux.intel.com>
+Cc: Suresh Siddha <suresh.b.siddha@intel.com>, Alex Shi <alex.shi@intel.com>,
+        Ying <ying.huang@intel.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+In-Reply-To: <1334942012.3796.50.camel@schen9-DESK>
+References: <1334106376.19157.89.camel@schen9-DESK>
+	 <1334664553.28150.87.camel@twins>  <1334681054.3796.28.camel@schen9-DESK>
+	 <1334930421.2463.60.camel@laptop>  <1334940042.3796.48.camel@schen9-DESK>
+	 <1334940837.2463.70.camel@laptop>  <1334942012.3796.50.camel@schen9-DESK>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 20 Apr 2012 19:33:22 +0200
+Message-ID: <1334943202.2463.71.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 20, 2012 at 08:57:34AM -0700, Greg Kroah-Hartman wrote:
-> On Fri, Apr 20, 2012 at 05:30:24PM +0200, Johan Hovold wrote:
-> > Add sub-driver for the ambient light sensor in National Semiconductor /
-> > TI LM3533 lighting power chips.
+On Fri, 2012-04-20 at 10:13 -0700, Tim Chen wrote:
+> On Fri, 2012-04-20 at 18:53 +0200, Peter Zijlstra wrote:
+> > On Fri, 2012-04-20 at 09:40 -0700, Tim Chen wrote:
+> > > We also do not see regression for hackbench on WSM-EP, but only 
+> > > on machines with Sandy-Bridge EP (2 socket, 8 cores/socket, HT enabled).  
 > > 
-> > Raw ADC values as well as current ALS zone can be retrieved through
-> > sysfs. The ALS zone can also be read using a character device
-> > (/dev/lm3533-als) which is updated on zone changes (interrupt driven or
-> > polled).
+> > Argh, Suresh, any idea what could be different and relevant to this
+> > issue between WSM and SNB -EP ?
 > > 
-> > The driver provides a configuration interface through sysfs.
+> > Tim, can you see the problem on the desktop SNB part? That's the only
+> > SNB I have available.
+> > 
+> > > We are not running hackbench in cgroup for this test.
+> > > 
+> > > The Sandy Bridge EP machines installed has FC16, so I think it uses 
+> > > systemd. The machine on our WSM EP has FC15, which also has systemd.
+> > 
+> > Ah, but your .config has:
+> > 
+> > CONFIG_CGROUP_SCHED=y
+> > CONFIG_SCHED_AUTOGROUP=y
+> > 
+> > and systemd, when cpu-cgroup is available, will automagically use it.
+> > 
+> > Could you disable those two CONFIG knobs and see if it persists?
+> > 
 > 
-> Which seems to not be documented at all :(
+> Turning those off did recover the regression.
 
-There are the following sysfs entries for configuring ALS control:
+OK, I'll go stare at the cgroup part then.. Thanks!
 
-boundary0_high
-boundary0_low
-boundary1_high
-boundary1_low
-boundary2_high
-boundary2_low
-boundary3_high
-boundary3_low
-
-gain
-
-target1_0
-target1_1
-target1_2
-target1_3
-target1_4
-
-target2_0
-target2_1
-target2_2
-target2_3
-target2_4
-
-target3_0
-target3_1
-target3_2
-target3_3
-target3_4
-
-These define the "five light zones and three sets of corresponding
-brightness target levels" mentioned in the Kconfig entry and provides a
-gain setting.
-
-Each entry also corresponds to an 8-bit register, which is documented
-along with the overall ALS functionality in the datasheets (which will
-be published on the TI web page soon). So I think anyone integrating
-this IC (or anyone who has access to the datasheets) will have no
-problem with this interface, but I'd be happy to write something to put
-under Documentation as well.
-
-The end-customer insisted on sysfs configurability, but I'll probably
-add these settings to the platform data later as well. 
-
-> What about using the iio interface for this instead?  Doesn't that
-> already provide this standard interface you are looking for?
-
-I had a look at iio last fall and decided not to use it at the time. I
-can't remember exactly what the reasons were right now, so I'll have
-to get back to you on this.
-
-Thanks,
-Johan
