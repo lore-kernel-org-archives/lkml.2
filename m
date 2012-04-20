@@ -1,75 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757580Ab2DTTdP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Apr 2012 15:33:15 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:58594 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751657Ab2DTTdH (ORCPT
+	id S1757511Ab2DTTck (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Apr 2012 15:32:40 -0400
+Received: from mail-pz0-f52.google.com ([209.85.210.52]:64835 "EHLO
+	mail-pz0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752608Ab2DTTcj convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Apr 2012 15:33:07 -0400
-Date: Fri, 20 Apr 2012 12:32:45 -0700 (PDT)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hugh@eggly.anvils
-To: Linus Torvalds <torvalds@linux-foundation.org>
-cc: Al Viro <viro@zeniv.linux.org.uk>, linux-fsdevel@vger.kernel.org,
-        James Morris <jmorris@namei.org>,
-        linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org,
-        David Safford <safford@linux.vnet.ibm.com>,
-        Dmitry Kasatkin <dmitry.kasatkin@intel.com>,
-        Mimi Zohar <zohar@linux.vnet.ibm.com>,
-        David Miller <davem@davemloft.net>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [RFC] situation with fput() locking (was Re: [PULL REQUEST] :
- ima-appraisal patches)
-In-Reply-To: <CA+55aFwVJ7SFbb3ZVxnon-Vv19pbNvUN4oungH479q7DUjBtwQ@mail.gmail.com>
-Message-ID: <alpine.LSU.2.00.1204201229020.1614@eggly.anvils>
-References: <1334754302.2137.8.camel@falcor> <alpine.LRH.2.02.1204190101380.30151@tundra.namei.org> <1334772473.2137.22.camel@falcor> <20120418183938.GH6589@ZenIV.linux.org.uk> <1334865448.2429.35.camel@falcor> <20120420004303.GB6871@ZenIV.linux.org.uk>
- <alpine.LSU.2.00.1204201133340.1450@eggly.anvils> <20120420190418.GK6871@ZenIV.linux.org.uk> <CA+55aFwVJ7SFbb3ZVxnon-Vv19pbNvUN4oungH479q7DUjBtwQ@mail.gmail.com>
-User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
+	Fri, 20 Apr 2012 15:32:39 -0400
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <20120420192937.GE15021@tiehlicka.suse.cz>
+References: <20120417155502.GE22687@tiehlicka.suse.cz>
+	<20120420182907.GG32324@google.com>
+	<20120420191418.GA3569@merkur.ravnborg.org>
+	<20120420192937.GE15021@tiehlicka.suse.cz>
+Date: Fri, 20 Apr 2012 12:32:38 -0700
+X-Google-Sender-Auth: rZC6S8WuiwzSgEMFcxY20cXI-TA
+Message-ID: <CAE9FiQUytfCvr8c++im+DignUwZvHmnu8gPNDG6SOJzrF_FsNg@mail.gmail.com>
+Subject: Re: Weirdness in __alloc_bootmem_node_high
+From: Yinghai Lu <yinghai@kernel.org>
+To: Michal Hocko <mhocko@suse.cz>
+Cc: Sam Ravnborg <sam@ravnborg.org>, Tejun Heo <tj@kernel.org>,
+        linux-mm@kvack.org, LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 20 Apr 2012, Linus Torvalds wrote:
-> On Fri, Apr 20, 2012 at 12:04 PM, Al Viro <viro@zeniv.linux.org.uk> wrote:
-> >
-> > Deferring the final pass after dropping ->mmap_sem is going to be
-> > interesting; what would protect ->vm_next on those suckers?
-> 
-> Just remove them from the active list, and keep them linked to each
-> other using vm_next.
-> 
-> After all, the only case we care about is the case where the vma gets
-> removed entirely, so we just put them on their own list.
-> 
-> In fact, that's what we already do for other reasons. See
-> detach_vmas_to_be_unmapped().
-> 
-> So vm_next is actually entirely *private* by this time, and needs no
-> locking at all.
-> 
-> As far as I can tell, we could just make do_munmap() return that
-> private list, and then do the fput's and freeing of the list outside
-> the mmap_sem lock.
-> 
-> That actually looks pretty simple. There are a fair number of callers,
-> which looks to be the main annoyance. But fixing it up with some
-> pattern of "do finish_munmap after drooping the mmap_sem" doesn't look
-> *complicated*, just slightly annoying.
-> 
-> The *bigger* annoyance is actually "do_mmap()", which does a
-> do_munmap() as part of it, so it needs the same cleanup too.
-> 
-> There might be other cases that do munmap as part of their operation
-> (and that have the mmap_sem held outside of the caller), but
-> do_munmap() and do_mmap() seem to be the two obvious ones.
-> 
-> Many of the callers seem to do the mmap_sem() right around the call,
-> though (see binfmt_elf.c for example), so it really would be a rather
-> local fixup.
+On Fri, Apr 20, 2012 at 12:29 PM, Michal Hocko <mhocko@suse.cz> wrote:
+> This is what I can see in the current (Linus) git:
+> ./arch/sparc/Kconfig:   select SPARSEMEM_VMEMMAP_ENABLE
+> ./arch/powerpc/Kconfig: select SPARSEMEM_VMEMMAP_ENABLE
+> ./arch/ia64/Kconfig:    select SPARSEMEM_VMEMMAP_ENABLE
+> ./arch/s390/Kconfig:    select SPARSEMEM_VMEMMAP_ENABLE
+> ./arch/s390/Kconfig:    select SPARSEMEM_VMEMMAP
+> ./arch/x86/Kconfig:     select SPARSEMEM_VMEMMAP_ENABLE if X86_64
+>
+> So there are more arches which enable SPARSEMEM_VMEMMAP so the function
+> is used. Or am I missing something?
 
-Yes, that's exactly how I was thinking of it.
+MAX_DMA32_PFN is not defined for them.
 
-Hugh
+I was think only x86 have that define. Actually mips have that defined too.
+
+Yinghai
