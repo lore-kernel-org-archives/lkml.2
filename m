@@ -1,109 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754659Ab2DTQxU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Apr 2012 12:53:20 -0400
-Received: from casper.infradead.org ([85.118.1.10]:49974 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751497Ab2DTQxR (ORCPT
+	id S1755890Ab2DTQx2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Apr 2012 12:53:28 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:41477 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751497Ab2DTQxZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Apr 2012 12:53:17 -0400
+	Fri, 20 Apr 2012 12:53:25 -0400
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Gleb Natapov <gleb@redhat.com>,
-        Avi Kivity <avi@redhat.com>, Ingo Molnar <mingo@redhat.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, Jiri Olsa <jolsa@redhat.com>,
+Cc: linux-kernel@vger.kernel.org, David Ahern <dsahern@gmail.com>,
+        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
+        Stephane Eranian <eranian@google.com>,
+        Namhyung Kim <namhyung.kim@lge.com>,
         Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 3/4] perf tools: Add 'G' and 'H' modifiers to event parsing
-Date: Fri, 20 Apr 2012 13:53:06 -0300
-Message-Id: <1334940787-16174-4-git-send-email-acme@infradead.org>
+Subject: [PATCH 1/4] perf report: Fix crash showing warning related to kernel maps
+Date: Fri, 20 Apr 2012 13:53:04 -0300
+Message-Id: <1334940787-16174-2-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.7.9.2.358.g22243
 In-Reply-To: <1334940787-16174-1-git-send-email-acme@infradead.org>
 References: <1334940787-16174-1-git-send-email-acme@infradead.org>
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by casper.infradead.org
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by canuck.infradead.org
 	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Gleb Natapov <gleb@redhat.com>
+From: David Ahern <dsahern@gmail.com>
 
-They were dropped during conversion of event parser. Add test case to
-make sure this will not happen again.
+While testing https://lkml.org/lkml/2012/4/10/123 I hit this crash:
 
-Signed-off-by: Gleb Natapov <gleb@redhat.com>
-Acked-by: Jiri Olsa <jolsa@redhat.com>
-Cc: Avi Kivity <avi@redhat.com>
-Cc: Ingo Molnar <mingo@redhat.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Jiri Olsa <jolsa@redhat.com>
-Link: http://lkml.kernel.org/r/20120417111345.GK11918@redhat.com
+(gdb) bt
+ 0  0x000000000042000f in __cmd_report (rep=0x7fff80cec580) at builtin-report.c:380
+ 1  cmd_report (argc=0, argv=<optimized out>, prefix=<optimized out>) at builtin-report.c:759
+ 2  0x0000000000414513 in run_builtin (p=0x7724a8, argc=3, argv=0x7fff80ceca70) at perf.c:273
+ 3  0x0000000000413d41 in handle_internal_command (argv=0x7fff80ceca70, argc=3) at perf.c:345
+ 4  run_argv (argv=0x7fff80cec880, argcp=0x7fff80cec88c) at perf.c:389
+ 5  main (argc=3, argv=0x7fff80ceca70) at perf.c:487
+
+kernel_map can be NULL, so need to handle it while dumping a warning
+to user.
+
+v2:
+- fixed RB_EMPTY_ROOT check -- desc takes the altnerative output when RB_EMPTY_ROOT is false.
+
+Signed-off-by: David Ahern <dsahern@gmail.com>
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Stephane Eranian <eranian@google.com>
+Cc: Namhyung Kim <namhyung.kim@lge.com>
+Link: http://lkml.kernel.org/r/1334544855-55021-1-git-send-email-dsahern@gmail.com
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/builtin-test.c      |   30 ++++++++++++++++++++++++++++++
- tools/perf/util/parse-events.l |    2 +-
- 2 files changed, 31 insertions(+), 1 deletion(-)
+ tools/perf/builtin-report.c |   17 ++++++++++++-----
+ 1 file changed, 12 insertions(+), 5 deletions(-)
 
-diff --git a/tools/perf/builtin-test.c b/tools/perf/builtin-test.c
-index 1c5b980..223ffdc 100644
---- a/tools/perf/builtin-test.c
-+++ b/tools/perf/builtin-test.c
-@@ -851,6 +851,28 @@ static int test__checkevent_symbolic_name_modifier(struct perf_evlist *evlist)
- 	return test__checkevent_symbolic_name(evlist);
- }
+diff --git a/tools/perf/builtin-report.c b/tools/perf/builtin-report.c
+index 2e31743..cdae9b2 100644
+--- a/tools/perf/builtin-report.c
++++ b/tools/perf/builtin-report.c
+@@ -374,16 +374,23 @@ static int __cmd_report(struct perf_report *rep)
+ 	    (kernel_map->dso->hit &&
+ 	     (kernel_kmap->ref_reloc_sym == NULL ||
+ 	      kernel_kmap->ref_reloc_sym->addr == 0))) {
+-		const struct dso *kdso = kernel_map->dso;
++		const char *desc =
++		    "As no suitable kallsyms nor vmlinux was found, kernel samples\n"
++		    "can't be resolved.";
++
++		if (kernel_map) {
++			const struct dso *kdso = kernel_map->dso;
++			if (!RB_EMPTY_ROOT(&kdso->symbols[MAP__FUNCTION])) {
++				desc = "If some relocation was applied (e.g. "
++				       "kexec) symbols may be misresolved.";
++			}
++		}
  
-+static int test__checkevent_exclude_host_modifier(struct perf_evlist *evlist)
-+{
-+	struct perf_evsel *evsel = list_entry(evlist->entries.next,
-+					      struct perf_evsel, node);
-+
-+	TEST_ASSERT_VAL("wrong exclude guest", !evsel->attr.exclude_guest);
-+	TEST_ASSERT_VAL("wrong exclude host", evsel->attr.exclude_host);
-+
-+	return test__checkevent_symbolic_name(evlist);
-+}
-+
-+static int test__checkevent_exclude_guest_modifier(struct perf_evlist *evlist)
-+{
-+	struct perf_evsel *evsel = list_entry(evlist->entries.next,
-+					      struct perf_evsel, node);
-+
-+	TEST_ASSERT_VAL("wrong exclude guest", evsel->attr.exclude_guest);
-+	TEST_ASSERT_VAL("wrong exclude host", !evsel->attr.exclude_host);
-+
-+	return test__checkevent_symbolic_name(evlist);
-+}
-+
- static int test__checkevent_symbolic_alias_modifier(struct perf_evlist *evlist)
- {
- 	struct perf_evsel *evsel = list_entry(evlist->entries.next,
-@@ -1091,6 +1113,14 @@ static struct test__event_st {
- 		.name  = "r1,syscalls:sys_enter_open:k,1:1:hp",
- 		.check = test__checkevent_list,
- 	},
-+	{
-+		.name  = "instructions:G",
-+		.check = test__checkevent_exclude_host_modifier,
-+	},
-+	{
-+		.name  = "instructions:H",
-+		.check = test__checkevent_exclude_guest_modifier,
-+	},
- };
+ 		ui__warning(
+ "Kernel address maps (/proc/{kallsyms,modules}) were restricted.\n\n"
+ "Check /proc/sys/kernel/kptr_restrict before running 'perf record'.\n\n%s\n\n"
+ "Samples in kernel modules can't be resolved as well.\n\n",
+-			    RB_EMPTY_ROOT(&kdso->symbols[MAP__FUNCTION]) ?
+-"As no suitable kallsyms nor vmlinux was found, kernel samples\n"
+-"can't be resolved." :
+-"If some relocation was applied (e.g. kexec) symbols may be misresolved.");
++		desc);
+ 	}
  
- #define TEST__EVENTS_CNT (sizeof(test__events) / sizeof(struct test__event_st))
-diff --git a/tools/perf/util/parse-events.l b/tools/perf/util/parse-events.l
-index 05d766e..1fcf1bb 100644
---- a/tools/perf/util/parse-events.l
-+++ b/tools/perf/util/parse-events.l
-@@ -54,7 +54,7 @@ num_dec		[0-9]+
- num_hex		0x[a-fA-F0-9]+
- num_raw_hex	[a-fA-F0-9]+
- name		[a-zA-Z_*?][a-zA-Z0-9_*?]*
--modifier_event	[ukhp]{1,5}
-+modifier_event	[ukhpGH]{1,8}
- modifier_bp	[rwx]
- 
- %%
+ 	if (dump_trace) {
 -- 
 1.7.9.2.358.g22243
 
