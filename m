@@ -1,90 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757524Ab2DTTIz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Apr 2012 15:08:55 -0400
-Received: from mail-pz0-f52.google.com ([209.85.210.52]:49605 "EHLO
-	mail-pz0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757465Ab2DTTIu (ORCPT
+	id S932582Ab2DTTLV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Apr 2012 15:11:21 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:44574 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757421Ab2DTTLU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Apr 2012 15:08:50 -0400
-Date: Fri, 20 Apr 2012 12:08:44 -0700
-From: Tejun Heo <tj@kernel.org>
-To: Fengguang Wu <fengguang.wu@intel.com>
-Cc: Jan Kara <jack@suse.cz>, vgoyal@redhat.com, Jens Axboe <axboe@kernel.dk>,
-        linux-mm@kvack.org, sjayaraman@suse.com, andrea@betterlinux.com,
-        jmoyer@redhat.com, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, kamezawa.hiroyu@jp.fujitsu.com,
-        lizefan@huawei.com, containers@lists.linux-foundation.org,
-        cgroups@vger.kernel.org, ctalbott@google.com, rni@google.com,
-        lsf@lists.linux-foundation.org, Mel Gorman <mgorman@suse.de>
-Subject: Re: [RFC] writeback and cgroup
-Message-ID: <20120420190844.GH32324@google.com>
-References: <20120403183655.GA23106@dhcp-172-17-108-109.mtv.corp.google.com>
- <20120404175124.GA8931@localhost>
- <20120404193355.GD29686@dhcp-172-17-108-109.mtv.corp.google.com>
- <20120406095934.GA10465@localhost>
- <20120417223854.GG19975@google.com>
- <20120419142343.GA12684@localhost>
- <20120419202635.GA4795@quack.suse.cz>
- <20120420133441.GA7035@localhost>
+	Fri, 20 Apr 2012 15:11:20 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120420133441.GA7035@localhost>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20120420184806.GA3092@opensource.wolfsonmicro.com>
+References: <20120419124204.GE3046@opensource.wolfsonmicro.com>
+	<CAJe_ZhfbFq98fT56CS-q4VoU8wnybj-+swfB+Jrknd3Zmt9V8g@mail.gmail.com>
+	<20120419162905.GA3084@opensource.wolfsonmicro.com>
+	<CAJe_Zhd0H6kXBhqdynuZqhbcPq8ARWu5SMbs=hQT2n8stzRvXQ@mail.gmail.com>
+	<20120420114602.GB3259@opensource.wolfsonmicro.com>
+	<CAJe_ZhdKv_7fTj9ZhJE0JzmuhxEZn-JmSbHu615YMXoWZUei9A@mail.gmail.com>
+	<20120420130134.GA5957@opensource.wolfsonmicro.com>
+	<CAJe_ZhdKtK8YKo1qc8g18XrdnrQRZw2aFSkW8x3koELU10EsHw@mail.gmail.com>
+	<20120420144256.GA6828@opensource.wolfsonmicro.com>
+	<CAJe_ZhdzuHo8P5WHguKMaikht8aN4RU-j_Q9FB+xOSw=roFZ=w@mail.gmail.com>
+	<20120420184806.GA3092@opensource.wolfsonmicro.com>
+Date: Sat, 21 Apr 2012 00:41:18 +0530
+Message-ID: <CAJe_ZhcfcTGjmy-n1hrVjvQ-8+Si4VAWaCf18cpap3NW5b+M=g@mail.gmail.com>
+Subject: Re: [PATCH] regulator: Provide a check for dummy regulator
+From: Jassi Brar <jaswinder.singh@linaro.org>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: linux-kernel@vger.kernel.org, lrg@ti.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Fengguang.
+On 21 April 2012 00:18, Mark Brown <broonie@opensource.wolfsonmicro.com> wrote:
 
-On Fri, Apr 20, 2012 at 09:34:41PM +0800, Fengguang Wu wrote:
-> >   Yup. This just shows that you have to have per-cgroup dirty limits. Once
-> > you have those, things start working again.
-> 
-> Right. I think Tejun was more of less aware of this.
+Going for the closure.
+I have a last nail. Don't know whose coffin is it for ;)
 
-I'm fairly sure I'm on the "less" side of it.
+>
+> In any case, the solution is very clear - just do proper regulator
+> support and turn off dummy regulators and everything is fine.
+>
+You earlier said there are always going to be 'new' platforms that would
+need dummy enabled.
+Now just imagine if one of those platforms happen to share the consumer
+due to which you suggest disabling the dummy (omap_hsmmc in this case).
+If we re-enable dummy, then your's isn't really a solution.
+If we require that platform to come with full compliance, why can't we
+ask every platform to do the same?
 
-> I was rather upset by this per-memcg dirty_limit idea indeed. I never
-> expect it to work well when used extensively. My plan was to set the
-> default memcg dirty_limit high enough, so that it's not hit in normal.
-> Then Tejun came and proposed to (mis-)use dirty_limit as the way to
-> convert the dirty pages' backpressure into real dirty throttling rate.
-> No, that's just crazy idea!
-
-I'll tell you what's crazy.
-
-We're not gonna cut three more kernel releases and then change jobs.
-Some of the stuff we put in the kernel ends up staying there for over
-a decade.  While ignoring fundamental designs and violating layers may
-look like rendering a quick solution.  They tend to come back and bite
-our collective asses.  Ask Vivek.  The iosched / blkcg API was messed
-up to the extent that bugs were so difficult to track down and it was
-nearly impossible to add new features, let alone new blkcg policy or
-elevator and people did suffer for that for long time.  I ended up
-cleaning up the mess.  It took me longer than three months and even
-then we have to carry on with a lot of ugly stuff for compatibility.
-
-Unfortunately, your proposed solution is far worse than blkcg was or
-ever could be.  It's not even contained in a single subsystem and it's
-not even clear what it achieves.  Neither weight or hard limit can be
-properly enforced without another layer of controlling at the block
-layer (some use cases do expect strict enforcement) and we're baking
-assumptions about use cases, interfaces and underlying hardware across
-multiple subsystems (some ssds work fine with per-iops switching).
-For your suggested solution, the moment it's best fit is now and it'll
-be a long painful way down until someone snaps and reimplements the
-whole thing.
-
-The kernel is larger than balance_dirty_pages() or writeback.  Each
-subsystem should do what it's supposed to do.  Let's solve problems
-where they belong and pay overheads where they're due.  Let's not
-contort the whole stack for the short term goal of shoving writeback
-support into the existing, still-developing, blkcg cfq proportional IO
-implementation.  Because that's pure insanity.
-
-Thanks.
-
--- 
-tejun
+Thanks,
+-Jassi
