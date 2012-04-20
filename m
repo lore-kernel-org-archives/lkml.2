@@ -1,88 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754243Ab2DTKLz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Apr 2012 06:11:55 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:42958 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753833Ab2DTKLx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Apr 2012 06:11:53 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Fri, 20 Apr 2012 19:11:33 +0900 (JST)
-Message-Id: <20120420.191133.488341439.d.hatayama@jp.fujitsu.com>
-To: avi@redhat.com
-Cc: dzickus@redhat.com, luto@mit.edu, gregkh@suse.de, kvm@vger.kernel.org,
-        joerg.roedel@amd.com, mtosatti@redhat.com, kexec@lists.infradead.org,
-        linux-kernel@vger.kernel.org, paul.gortmaker@windriver.com,
-        zhangyanfei@cn.fujitsu.com, ebiederm@xmission.com,
-        ludwig.nussel@suse.de
-Subject: Re: [PATCH 0/4] Export offsets of VMCS fields as note information
- for kdump
-From: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>
-In-Reply-To: <4F900020.5010702@redhat.com>
-References: <4F8FF7AC.1060309@redhat.com>
-	<20120419.210119.246504497.d.hatayama@jp.fujitsu.com>
-	<4F900020.5010702@redhat.com>
-X-Mailer: Mew version 6.3 on Emacs 23.4 / Mule 6.0 (HANACHIRUSATO)
+	id S1754301Ab2DTKM3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Apr 2012 06:12:29 -0400
+Received: from mga09.intel.com ([134.134.136.24]:6696 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754144Ab2DTKM1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Apr 2012 06:12:27 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
+   d="scan'208";a="132030537"
+Subject: Re: [PATCH] spi/spi-ep93xx.c: use dma_transfer_direction instead
+ of dma_data_direction
+From: Vinod Koul <vinod.koul@linux.intel.com>
+To: Mika Westerberg <mika.westerberg@iki.fi>
+Cc: H Hartley Sweeten <hartleys@visionengravers.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        spi-devel-general@lists.sourceforge.net, grant.likely@secretlab.ca
+In-Reply-To: <20120419061020.GB18520@mwesterb-mobl.lan>
+References: <201204171846.37245.hartleys@visionengravers.com>
+	 <20120419061020.GB18520@mwesterb-mobl.lan>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 20 Apr 2012 15:39:51 +0530
+Message-ID: <1334916592.31825.35.camel@vkoul-udesk3>
 Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+X-Mailer: Evolution 2.28.3 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Avi Kivity <avi@redhat.com>
-Subject: Re: [PATCH 0/4] Export offsets of VMCS fields as note information for kdump
-Date: Thu, 19 Apr 2012 15:08:00 +0300
-
-> On 04/19/2012 03:01 PM, HATAYAMA Daisuke wrote:
->> >> It would be not helpful for the qemu crash case you are concerned
->> >> about. We want to use the guest state data to look into guest
->> >> machine's image in the crasshed qemu.
->> > 
->> > Why?
->> > 
->>
->> It seems natural to check the situation from guest machine's side when
->> qemu crashs. Suppose a service is running on the guest machine, and
->> then the qemu crash. Then, we may need to know the details of the
->> progress of the service if it's important. What has been successfully
->> done, and what has not yet.
+On Thu, 2012-04-19 at 09:10 +0300, Mika Westerberg wrote:
+> On Tue, Apr 17, 2012 at 06:46:36PM -0700, H Hartley Sweeten wrote:
+> > A new enum indicating the dma channel direction was introduced by:
+> > 
+> > commit 49920bc66984a512f4bcc7735a61642cd0e4d6f2
+> >     dmaengine: add new enum dma_transfer_direction
+> > 
+> > The following commit changed spi-ep93xx to use the new enum:
+> > 
+> > commit a485df4b4404379786c4bdd258bc528b2617449d
+> >     spi, serial: move to dma_transfer_direction
+> > 
+> > In doing so a sparse warning was introduced: 
+> > 
+> > warning: mixing different enum types
+> >    int enum dma_data_direction  versus
+> >    int enum dma_transfer_direction
+> > 
+> > This is produced because the 'dir' passed in ep93xx_spi_dma_prepare
+> > is an enum dma_data_direction and is being used to set the
+> > dma_slave_config 'direction' which is now an enum dma_transfer_direction.
+> > 
+> > Fix this by converting spi-ep93xx to use the new enum type in all
+> > places.
+> > 
+> > Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
+> > Cc: Grant Likely <grant.likely@secretlab.ca>
+> > Cc: Vinod Koul <vinod.koul@linux.intel.com>
 > 
-> How can a service on the guest be related to a qemu crash?  And how
-> would guest registers help?
+> Acked-by: Mika Westerberg <mika.westerberg@iki.fi>
+Acked-by: Vinod Koul <vinod.koul@intel.com>
 
-I don't mean the service is related to qemu's crash. When qemu
-crashes, then the guest machine also crashes (although it doesn't
-notice anything). What I'm interested in here is guest machine side,
-not qemu side. I want to debug guest machine, not qemu.
-
-> 
-> You can extract the list of running processes from a qemu crash dump
-> without looking at guest registers.  And most vcpus are running
-> asynchronously to qemu, so their register contents is irrelevant (if a
-> vcpu is running synchronously with qemu - it just exited to qemu and is
-> waiting for a response - then you'd see the details in qemu's call stack).
-> 
-
-Just as you say, we can refer to guest machine's memory without guest
-registers.
-
-The definitely necessary data in vmcs are RSP and RIP, which are not
-saved in anywhare of kvm module. The two registers are needed for back
-tracing to determine what processsing is being done on the guest
-machine at qemu crash.
-
-There are other useful data in vmcs, but even if we don't have them,
-we can do what we want to do in exchange of usability.
-
-For example, we want IA32_EFER.LMA to determine whether guest machine
-is in 32-bit or 64-bit mode. But there are only two modes, we can
-perhaps try these in order in an ad-hoc way.
-
-Other control registers are also useful, but they are not so important
-than definitely needed.
-
-Thanks.
-HATAYAMA, Daisuke
+-- 
+~Vinod
 
