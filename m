@@ -1,78 +1,189 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754059Ab2DTJ62 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Apr 2012 05:58:28 -0400
-Received: from smtp.citrix.com ([66.165.176.89]:1526 "EHLO SMTP.CITRIX.COM"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753670Ab2DTJ60 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Apr 2012 05:58:26 -0400
-X-IronPort-AV: E=Sophos;i="4.75,452,1330923600"; 
-   d="scan'208";a="24358205"
-Message-ID: <4F913340.4000202@citrix.com>
-Date: Fri, 20 Apr 2012 10:58:24 +0100
-From: Andrew Cooper <andrew.cooper3@citrix.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120329 Thunderbird/11.0.1
-MIME-Version: 1.0
-To: Lin Ming <mlin@ss.pku.edu.cn>
-CC: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [Xen-devel] [PATCH] xen/apic: implement io apic read with hypercall
-References: <1334913957.2863.1.camel@hp6530s>
-In-Reply-To: <1334913957.2863.1.camel@hp6530s>
-X-Enigmail-Version: 1.4
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+	id S1754112Ab2DTKCq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Apr 2012 06:02:46 -0400
+Received: from mail.work-microwave.de ([62.245.205.51]:57380 "EHLO
+	work-microwave.de" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753670Ab2DTKCp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Apr 2012 06:02:45 -0400
+From: Roland Stigge <stigge@antcom.de>
+To: devicetree-discuss@lists.ozlabs.org, grant.likely@secretlab.ca,
+        rob.herring@calxeda.com, rdunlap@xenotime.net,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        w.sang@pengutronix.de
+Cc: Roland Stigge <stigge@antcom.de>
+Subject: [PATCH] Documentation: devicetree: Fix value format description
+Date: Fri, 20 Apr 2012 12:02:22 +0200
+Message-Id: <1334916142-11309-1-git-send-email-stigge@antcom.de>
+X-Mailer: git-send-email 1.7.9
+X-FEAS-SYSTEM-WL: rst@work-microwave.de, 192.168.11.78
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 20/04/12 10:25, Lin Ming wrote:
-> Implements xen_io_apic_read with hypercall, so it returns proper IO-APIC
-> information instead of fabricated one.
->
-> Signed-off-by: Lin Ming <mlin@ss.pku.edu.cn>
-> ---
->  arch/x86/xen/apic.c |   16 +++++++++++-----
->  1 files changed, 11 insertions(+), 5 deletions(-)
->
-> diff --git a/arch/x86/xen/apic.c b/arch/x86/xen/apic.c
-> index aee16ab..f1f392d 100644
-> --- a/arch/x86/xen/apic.c
-> +++ b/arch/x86/xen/apic.c
-> @@ -1,14 +1,20 @@
->  #include <linux/init.h>
->  #include <asm/x86_init.h>
-> +#include <asm/apic.h>
-> +#include <xen/interface/physdev.h>
-> +#include <asm/xen/hypercall.h>
->  
->  unsigned int xen_io_apic_read(unsigned apic, unsigned reg)
->  {
-> -	if (reg == 0x1)
-> -		return 0x00170020;
-> -	else if (reg == 0x0)
-> -		return apic << 24;
-> +	struct physdev_apic apic_op;
-> +	int ret;
->  
-> -	return 0xff;
-> +	apic_op.apic_physbase = mpc_ioapic_addr(apic);
-> +	apic_op.reg = reg;
-> +	ret = HYPERVISOR_physdev_op(PHYSDEVOP_apic_read, &apic_op);
-> +	if (ret)
-> +		return ret;
-> +	return apic_op.value;
+Numeric values in dts files can be specified in decimal and hex (the latter
+prefixed 0x). The current documentation is updated with this patch to prevent
+confusion about what is meant with values without "0x" (previously hex, now
+dec).
 
-Hypercall ret errors are negative, yet this function is unsigned.  Given
-that the previous function had no possible way to fail, perhaps on error
-you should fake up the values as before.
+Signed-off-by: Roland Stigge <stigge@antcom.de>
 
->  }
->  
->  void __init xen_init_apic(void)
+---
+Applies to v3.4-rc3
 
--- 
-Andrew Cooper - Dom0 Kernel Engineer, Citrix XenServer
-T: +44 (0)1223 225 900, http://www.citrix.com
+ Documentation/devicetree/booting-without-of.txt |   55 ++++++++++++------------
+ 1 file changed, 28 insertions(+), 27 deletions(-)
 
+--- linux-2.6.orig/Documentation/devicetree/booting-without-of.txt
++++ linux-2.6/Documentation/devicetree/booting-without-of.txt
+@@ -551,12 +551,13 @@ Here is an example of a simple device-tr
+ designates a node followed by the node unit name. Properties are
+ presented with their name followed by their content. "content"
+ represents an ASCII string (zero terminated) value, while <content>
+-represents a 32-bit hexadecimal value. The various nodes in this
+-example will be discussed in a later chapter. At this point, it is
+-only meant to give you a idea of what a device-tree looks like. I have
+-purposefully kept the "name" and "linux,phandle" properties which
+-aren't necessary in order to give you a better idea of what the tree
+-looks like in practice.
++represents a 32-bit value, specified in decimal or hexadecimal (the
++latter prefixed 0x). The various nodes in this example will be
++discussed in a later chapter. At this point, it is only meant to give
++you a idea of what a device-tree looks like. I have purposefully kept
++the "name" and "linux,phandle" properties which aren't necessary in
++order to give you a better idea of what the tree looks like in
++practice.
+ 
+   / o device-tree
+       |- name = "device-tree"
+@@ -576,14 +577,14 @@ looks like in practice.
+       |   |- name = "PowerPC,970"
+       |   |- device_type = "cpu"
+       |   |- reg = <0>
+-      |   |- clock-frequency = <5f5e1000>
++      |   |- clock-frequency = <0x5f5e1000>
+       |   |- 64-bit
+       |   |- linux,phandle = <2>
+       |
+       o memory@0
+       | |- name = "memory"
+       | |- device_type = "memory"
+-      | |- reg = <00000000 00000000 00000000 20000000>
++      | |- reg = <0x00000000 0x00000000 0x00000000 0x20000000>
+       | |- linux,phandle = <3>
+       |
+       o chosen
+@@ -1010,8 +1011,8 @@ compatibility.
+ 		#size-cells = <1>;
+ 		#interrupt-cells = <2>;
+ 		device_type = "soc";
+-		ranges = <00000000 e0000000 00100000>
+-		reg = <e0000000 00003000>;
++		ranges = <0x00000000 0xe0000000 0x00100000>
++		reg = <0xe0000000 0x00003000>;
+ 		bus-frequency = <0>;
+ 	}
+ 
+@@ -1085,16 +1086,16 @@ supported currently at the toplevel.
+                                  * terminated string
+ 				 */
+ 
+-  property2 = <1234abcd>;	/* define a property containing a
++  property2 = <0x1234abcd>;	/* define a property containing a
+                                  * numerical 32-bit value (hexadecimal)
+ 				 */
+ 
+-  property3 = <12345678 12345678 deadbeef>;
++  property3 = <0x12345678 0x12345678 0xdeadbeef>;
+                                 /* define a property containing 3
+                                  * numerical 32-bit values (cells) in
+                                  * hexadecimal
+ 				 */
+-  property4 = [0a 0b 0c 0d de ea ad be ef];
++  property4 = [0x0a 0x0b 0x0c 0x0d 0xde 0xea 0xad 0xbe 0xef];
+                                 /* define a property whose content is
+                                  * an arbitrary array of bytes
+                                  */
+@@ -1350,10 +1351,10 @@ Appendix A - Sample SOC node for MPC8540
+ 			model = "TSEC";
+ 			compatible = "gianfar", "simple-bus";
+ 			reg = <0x24000 0x1000>;
+-			local-mac-address = [ 00 E0 0C 00 73 00 ];
+-			interrupts = <29 2 30 2 34 2>;
++			local-mac-address = [ 0x00 0xE0 0x0C 0x00 0x73 0x00 ];
++			interrupts = <0x29 2 0x30 2 0x34 2>;
+ 			phy-handle = <&phy0>;
+-			sleep = <&pmc 00000080>;
++			sleep = <&pmc 0x00000080>;
+ 			ranges;
+ 
+ 			mdio@24520 {
+@@ -1385,10 +1386,10 @@ Appendix A - Sample SOC node for MPC8540
+ 			model = "TSEC";
+ 			compatible = "gianfar";
+ 			reg = <0x25000 0x1000>;
+-			local-mac-address = [ 00 E0 0C 00 73 01 ];
+-			interrupts = <13 2 14 2 18 2>;
++			local-mac-address = [ 0x00 0xE0 0x0C 0x00 0x73 0x01 ];
++			interrupts = <0x13 2 0x14 2 0x18 2>;
+ 			phy-handle = <&phy1>;
+-			sleep = <&pmc 00000040>;
++			sleep = <&pmc 0x00000040>;
+ 		};
+ 
+ 		ethernet@26000 {
+@@ -1396,17 +1397,17 @@ Appendix A - Sample SOC node for MPC8540
+ 			model = "FEC";
+ 			compatible = "gianfar";
+ 			reg = <0x26000 0x1000>;
+-			local-mac-address = [ 00 E0 0C 00 73 02 ];
+-			interrupts = <41 2>;
++			local-mac-address = [ 0x00 0xE0 0x0C 0x00 0x73 0x02 ];
++			interrupts = <0x41 2>;
+ 			phy-handle = <&phy3>;
+-			sleep = <&pmc 00000020>;
++			sleep = <&pmc 0x00000020>;
+ 		};
+ 
+ 		serial@4500 {
+ 			#address-cells = <1>;
+ 			#size-cells = <1>;
+ 			compatible = "fsl,mpc8540-duart", "simple-bus";
+-			sleep = <&pmc 00000002>;
++			sleep = <&pmc 0x00000002>;
+ 			ranges;
+ 
+ 			serial@4500 {
+@@ -1414,7 +1415,7 @@ Appendix A - Sample SOC node for MPC8540
+ 				compatible = "ns16550";
+ 				reg = <0x4500 0x100>;
+ 				clock-frequency = <0>;
+-				interrupts = <42 2>;
++				interrupts = <0x42 2>;
+ 			};
+ 
+ 			serial@4600 {
+@@ -1422,7 +1423,7 @@ Appendix A - Sample SOC node for MPC8540
+ 				compatible = "ns16550";
+ 				reg = <0x4600 0x100>;
+ 				clock-frequency = <0>;
+-				interrupts = <42 2>;
++				interrupts = <0x42 2>;
+ 			};
+ 		};
+ 
+@@ -1436,11 +1437,11 @@ Appendix A - Sample SOC node for MPC8540
+ 		};
+ 
+ 		i2c@3000 {
+-			interrupts = <43 2>;
++			interrupts = <0x43 2>;
+ 			reg = <0x3000 0x100>;
+ 			compatible  = "fsl-i2c";
+ 			dfsrr;
+-			sleep = <&pmc 00000004>;
++			sleep = <&pmc 0x00000004>;
+ 		};
+ 
+ 		pmc: power@e0070 {
