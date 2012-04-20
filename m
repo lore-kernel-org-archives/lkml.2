@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755468Ab2DTVtx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Apr 2012 17:49:53 -0400
-Received: from mailhub.sw.ru ([195.214.232.25]:46058 "EHLO relay.sw.ru"
+	id S1755525Ab2DTVuI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Apr 2012 17:50:08 -0400
+Received: from mailhub.sw.ru ([195.214.232.25]:44737 "EHLO relay.sw.ru"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755432Ab2DTVtv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Apr 2012 17:49:51 -0400
+	id S1754819Ab2DTVuF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Apr 2012 17:50:05 -0400
 From: Glauber Costa <glommer@parallels.com>
 To: <cgroups@vger.kernel.org>
 Cc: <linux-mm@kvack.org>, <linux-kernel@vger.kernel.org>, <devel@openvz.org>,
@@ -14,12 +14,10 @@ Cc: <linux-mm@kvack.org>, <linux-kernel@vger.kernel.org>, <devel@openvz.org>,
         Frederic Weisbecker <fweisbec@gmail.com>,
         Greg Thelen <gthelen@google.com>,
         Suleiman Souhlal <suleiman@google.com>,
-        Glauber Costa <glommer@parallels.com>,
-        Christoph Lameter <cl@linux.com>,
-        Pekka Enberg <penberg@cs.helsinki.fi>
-Subject: [PATCH 01/23] slub: don't create a copy of the name string in kmem_cache_create
-Date: Fri, 20 Apr 2012 18:48:58 -0300
-Message-Id: <1334958560-18076-2-git-send-email-glommer@parallels.com>
+        Glauber Costa <glommer@parallels.com>
+Subject: [PATCH 03/23] slab: rename gfpflags to allocflags
+Date: Fri, 20 Apr 2012 18:49:00 -0300
+Message-Id: <1334958560-18076-4-git-send-email-glommer@parallels.com>
 X-Mailer: git-send-email 1.7.7.6
 In-Reply-To: <1334958560-18076-1-git-send-email-glommer@parallels.com>
 References: <1334958560-18076-1-git-send-email-glommer@parallels.com>
@@ -27,89 +25,64 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When creating a cache, slub keeps a copy of the cache name through
-strdup. The slab however, doesn't do that. This means that everyone
-registering caches have to keep a copy themselves anyway, since code
-needs to work on all allocators.
-
-Having slab create a copy of it as well may very well be the right
-thing to do: but at this point, the callers are already there
-
-My motivation for it comes from the kmem slab cache controller for
-memcg. Because we create duplicate caches, having a more consistent
-behavior here really helps.
-
-I am sending the patch, however, more to probe on your opinion about
-it. If you guys agree, but don't want to merge it - since it is not
-fixing anything, nor improving any situation etc, I am more than happy
-to carry it in my series until it gets merged (fingers crossed).
+A consistent name with slub saves us an acessor function.
+In both caches, this field represents the same thing. We would
+like to use it from the mem_cgroup code.
 
 Signed-off-by: Glauber Costa <glommer@parallels.com>
-CC: Christoph Lameter <cl@linux.com>
-CC: Pekka Enberg <penberg@cs.helsinki.fi>
 ---
- mm/slub.c |   14 ++------------
- 1 files changed, 2 insertions(+), 12 deletions(-)
+ include/linux/slab_def.h |    2 +-
+ mm/slab.c                |   10 +++++-----
+ 2 files changed, 6 insertions(+), 6 deletions(-)
 
-diff --git a/mm/slub.c b/mm/slub.c
-index ffe13fd..af8cee9 100644
---- a/mm/slub.c
-+++ b/mm/slub.c
-@@ -3925,7 +3925,6 @@ struct kmem_cache *kmem_cache_create(const char *name, size_t size,
- 		size_t align, unsigned long flags, void (*ctor)(void *))
+diff --git a/include/linux/slab_def.h b/include/linux/slab_def.h
+index fbd1117..d41effe 100644
+--- a/include/linux/slab_def.h
++++ b/include/linux/slab_def.h
+@@ -39,7 +39,7 @@ struct kmem_cache {
+ 	unsigned int gfporder;
+ 
+ 	/* force GFP flags, e.g. GFP_DMA */
+-	gfp_t gfpflags;
++	gfp_t allocflags;
+ 
+ 	size_t colour;			/* cache colouring range */
+ 	unsigned int colour_off;	/* colour offset */
+diff --git a/mm/slab.c b/mm/slab.c
+index e901a36..c6e5ab8 100644
+--- a/mm/slab.c
++++ b/mm/slab.c
+@@ -1798,7 +1798,7 @@ static void *kmem_getpages(struct kmem_cache *cachep, gfp_t flags, int nodeid)
+ 	flags |= __GFP_COMP;
+ #endif
+ 
+-	flags |= cachep->gfpflags;
++	flags |= cachep->allocflags;
+ 	if (cachep->flags & SLAB_RECLAIM_ACCOUNT)
+ 		flags |= __GFP_RECLAIMABLE;
+ 
+@@ -2508,9 +2508,9 @@ kmem_cache_create (const char *name, size_t size, size_t align,
+ 	cachep->colour = left_over / cachep->colour_off;
+ 	cachep->slab_size = slab_size;
+ 	cachep->flags = flags;
+-	cachep->gfpflags = 0;
++	cachep->allocflags = 0;
+ 	if (CONFIG_ZONE_DMA_FLAG && (flags & SLAB_CACHE_DMA))
+-		cachep->gfpflags |= GFP_DMA;
++		cachep->allocflags |= GFP_DMA;
+ 	cachep->buffer_size = size;
+ 	cachep->reciprocal_buffer_size = reciprocal_value(size);
+ 
+@@ -2857,9 +2857,9 @@ static void kmem_flagcheck(struct kmem_cache *cachep, gfp_t flags)
  {
- 	struct kmem_cache *s;
--	char *n;
- 
- 	if (WARN_ON(!name))
- 		return NULL;
-@@ -3949,26 +3948,20 @@ struct kmem_cache *kmem_cache_create(const char *name, size_t size,
- 		return s;
+ 	if (CONFIG_ZONE_DMA_FLAG) {
+ 		if (flags & GFP_DMA)
+-			BUG_ON(!(cachep->gfpflags & GFP_DMA));
++			BUG_ON(!(cachep->allocflags & GFP_DMA));
+ 		else
+-			BUG_ON(cachep->gfpflags & GFP_DMA);
++			BUG_ON(cachep->allocflags & GFP_DMA);
  	}
- 
--	n = kstrdup(name, GFP_KERNEL);
--	if (!n)
--		goto err;
--
- 	s = kmalloc(kmem_size, GFP_KERNEL);
- 	if (s) {
--		if (kmem_cache_open(s, n,
-+		if (kmem_cache_open(s, name,
- 				size, align, flags, ctor)) {
- 			list_add(&s->list, &slab_caches);
- 			up_write(&slub_lock);
- 			if (sysfs_slab_add(s)) {
- 				down_write(&slub_lock);
- 				list_del(&s->list);
--				kfree(n);
- 				kfree(s);
- 				goto err;
- 			}
- 			return s;
- 		}
--		kfree(n);
- 		kfree(s);
- 	}
- err:
-@@ -5212,7 +5205,6 @@ static void kmem_cache_release(struct kobject *kobj)
- {
- 	struct kmem_cache *s = to_slab(kobj);
- 
--	kfree(s->name);
- 	kfree(s);
- }
- 
-@@ -5318,11 +5310,9 @@ static int sysfs_slab_add(struct kmem_cache *s)
- 		return err;
- 	}
- 	kobject_uevent(&s->kobj, KOBJ_ADD);
--	if (!unmergeable) {
-+	if (!unmergeable)
- 		/* Setup first alias */
- 		sysfs_slab_alias(s, s->name);
--		kfree(name);
--	}
- 	return 0;
  }
  
 -- 
