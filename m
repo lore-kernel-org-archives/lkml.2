@@ -1,16 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752039Ab2DTFRz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Apr 2012 01:17:55 -0400
-Received: from mailout3.samsung.com ([203.254.224.33]:32122 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751518Ab2DTFQ1 (ORCPT
+	id S1752149Ab2DTFSQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Apr 2012 01:18:16 -0400
+Received: from mailout4.samsung.com ([203.254.224.34]:51146 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751465Ab2DTFQ0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Apr 2012 01:16:27 -0400
-MIME-version: 1.0
-Content-transfer-encoding: 8BIT
-Content-type: text/plain; charset=UTF-8
-X-AuditID: cbfee61b-b7cb4ae000000d81-6c-4f90f128fdd8
+	Fri, 20 Apr 2012 01:16:26 -0400
+X-AuditID: cbfee61b-b7cb4ae000000d81-76-4f90f128623c
 From: MyungJoo Ham <myungjoo.ham@samsung.com>
 To: Greg KH <gregkh@linuxfoundation.org>
 Cc: Arnd Bergmann <arnd@arndb.de>, LKML <linux-kernel@vger.kernel.org>,
@@ -22,9 +19,10 @@ Cc: Arnd Bergmann <arnd@arndb.de>, LKML <linux-kernel@vger.kernel.org>,
         Mark Brown <broonie@opensource.wolfsonmicro.com>,
         John Stultz <john.stultz@linaro.org>, myungjoo.ham@gmail.com,
         cw00.choi@samsung.com
-Subject: [PATCH v8 resend 2/6] Extcon: support generic GPIO extcon driver
-Date: Fri, 20 Apr 2012 14:16:23 +0900
-Message-id: <1334898987-7800-3-git-send-email-myungjoo.ham@samsung.com>
+Subject: [PATCH v8 resend 3/6] Extcon: support notification based on the state
+ changes.
+Date: Fri, 20 Apr 2012 14:16:24 +0900
+Message-id: <1334898987-7800-4-git-send-email-myungjoo.ham@samsung.com>
 X-Mailer: git-send-email 1.7.4.1
 In-reply-to: <1334898987-7800-1-git-send-email-myungjoo.ham@samsung.com>
 References: <20120420033209.GA17930@kroah.com>
@@ -35,299 +33,230 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The generic GPIO extcon driver (an external connector device based on
-GPIO control) and imported from Android kernel.
+From: Donggeun Kim <dg77.kim@samsung.com>
 
-switch: switch class and GPIO drivers. (splitted)
-Author: Mike Lockwood <lockwood@android.com>
+State changes of extcon devices have been notified via kobjet_uevent.
+This patch adds notifier interfaces in order to allow device drivers to
+get notified easily. Along with notifier interface,
+extcon_get_extcon_dev() function is added so that device drivers may
+discover a extcon_dev easily.
 
-switch: gpio: Don't call request_irq with interrupts disabled
-Author: Arve Hjønnevåg <arve@android.com>
-
-switch_gpio: Add missing #include <linux/interrupt.h>
-Author: Mike Lockwood <lockwood@android.com>
-
+Signed-off-by: Donggeun Kim <dg77.kim@samsung.com>
 Signed-off-by: MyungJoo Ham <myungjoo.ham@samsung.com>
 Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
 Reviewed-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
 
 --
-Changed from v7:
-- Style updates mentioned by Stephen Boyd and Mark Brown
-Changed from v5:
-- Splitted at v5 from the main extcon patch.
-- Added debounce time for irq handlers.
-- Use request_any_context_irq instead of request_irq
-- User needs to specify irq flags for GPIO interrupts (was fixed to
-IRQF_TRIGGER_LOW before)
-- Use module_platform_driver().
+Changes from RFC
+- Renamed switch to extcon
+- Bugfix: extcon_dev_unregister()
+- Bugfix: "edev->dev" is "internal" data.
+- Added kerneldoc comments.
+- Reworded comments.
 ---
- drivers/extcon/Kconfig             |    7 ++
- drivers/extcon/Makefile            |    1 +
- drivers/extcon/extcon_gpio.c       |  169 ++++++++++++++++++++++++++++++++++++
- include/linux/extcon/extcon_gpio.h |   52 +++++++++++
- 4 files changed, 229 insertions(+), 0 deletions(-)
- create mode 100644 drivers/extcon/extcon_gpio.c
- create mode 100644 include/linux/extcon/extcon_gpio.h
+ drivers/extcon/extcon_class.c |   66 +++++++++++++++++++++++++++++++++++++++++
+ include/linux/extcon.h        |   38 +++++++++++++++++++++++
+ 2 files changed, 104 insertions(+), 0 deletions(-)
 
-diff --git a/drivers/extcon/Kconfig b/drivers/extcon/Kconfig
-index 7932e1b..85cecff 100644
---- a/drivers/extcon/Kconfig
-+++ b/drivers/extcon/Kconfig
-@@ -14,4 +14,11 @@ if EXTCON
+diff --git a/drivers/extcon/extcon_class.c b/drivers/extcon/extcon_class.c
+index 3c46368..83a088f 100644
+--- a/drivers/extcon/extcon_class.c
++++ b/drivers/extcon/extcon_class.c
+@@ -36,6 +36,9 @@ struct class *extcon_class;
+ static struct class_compat *switch_class;
+ #endif /* CONFIG_ANDROID && !defined(CONFIG_ANDROID_SWITCH) */
  
- comment "Extcon Device Drivers"
++static LIST_HEAD(extcon_dev_list);
++static DEFINE_MUTEX(extcon_dev_list_lock);
++
+ static ssize_t state_show(struct device *dev, struct device_attribute *attr,
+ 			  char *buf)
+ {
+@@ -75,6 +78,9 @@ static ssize_t name_show(struct device *dev, struct device_attribute *attr,
+  * the name of extcon device (envp[0]) and the state output (envp[1]).
+  * Tizen uses this format for extcon device to get events from ports.
+  * Android uses this format as well.
++ *
++ * Note that notifier provides the which bits are changes in the state
++ * variable with "val" to the callback.
+  */
+ void extcon_set_state(struct extcon_dev *edev, u32 state)
+ {
+@@ -84,10 +90,14 @@ void extcon_set_state(struct extcon_dev *edev, u32 state)
+ 	char *envp[3];
+ 	int env_offset = 0;
+ 	int length;
++	u32 old_state = edev->state;
  
-+config EXTCON_GPIO
-+	tristate "GPIO extcon support"
-+	depends on GENERIC_GPIO
-+	help
-+	  Say Y here to enable GPIO based extcon support. Note that GPIO
-+	  extcon supports single state per extcon instance.
-+
- endif # MULTISTATE_SWITCH
-diff --git a/drivers/extcon/Makefile b/drivers/extcon/Makefile
-index 6bc6921..2c46d41 100644
---- a/drivers/extcon/Makefile
-+++ b/drivers/extcon/Makefile
-@@ -3,3 +3,4 @@
- #
+ 	if (edev->state != state) {
+ 		edev->state = state;
  
- obj-$(CONFIG_EXTCON)		+= extcon_class.o
-+obj-$(CONFIG_EXTCON_GPIO)	+= extcon_gpio.o
-diff --git a/drivers/extcon/extcon_gpio.c b/drivers/extcon/extcon_gpio.c
-new file mode 100644
-index 0000000..5c0f085
---- /dev/null
-+++ b/drivers/extcon/extcon_gpio.c
-@@ -0,0 +1,169 @@
-+/*
-+ *  drivers/extcon/extcon_gpio.c
-+ *
-+ *  Single-state GPIO extcon driver based on extcon class
-+ *
-+ * Copyright (C) 2008 Google, Inc.
-+ * Author: Mike Lockwood <lockwood@android.com>
-+ *
-+ * Modified by MyungJoo Ham <myungjoo.ham@samsung.com> to support extcon
-+ * (originally switch class is supported)
-+ *
-+ * This software is licensed under the terms of the GNU General Public
-+ * License version 2, as published by the Free Software Foundation, and
-+ * may be copied, distributed, and modified under those terms.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+*/
++		raw_notifier_call_chain(&edev->nh, old_state ^ edev->state,
++					edev);
 +
-+#include <linux/module.h>
-+#include <linux/kernel.h>
-+#include <linux/init.h>
-+#include <linux/interrupt.h>
-+#include <linux/platform_device.h>
-+#include <linux/slab.h>
-+#include <linux/extcon.h>
-+#include <linux/workqueue.h>
-+#include <linux/gpio.h>
-+#include <linux/extcon.h>
-+#include <linux/extcon/extcon_gpio.h>
-+
-+struct gpio_extcon_data {
-+	struct extcon_dev edev;
-+	unsigned gpio;
-+	const char *state_on;
-+	const char *state_off;
-+	int irq;
-+	struct delayed_work work;
-+	unsigned long debounce_jiffies;
-+};
-+
-+static void gpio_extcon_work(struct work_struct *work)
+ 		prop_buf = (char *)get_zeroed_page(GFP_KERNEL);
+ 		if (prop_buf) {
+ 			length = name_show(edev->dev, NULL, prop_buf);
+@@ -117,6 +127,51 @@ void extcon_set_state(struct extcon_dev *edev, u32 state)
+ }
+ EXPORT_SYMBOL_GPL(extcon_set_state);
+ 
++/**
++ * extcon_get_extcon_dev() - Get the extcon device instance from the name
++ * @extcon_name:	The extcon name provided with extcon_dev_register()
++ */
++struct extcon_dev *extcon_get_extcon_dev(const char *extcon_name)
 +{
-+	int state;
-+	struct gpio_extcon_data	*data =
-+		container_of(to_delayed_work(work), struct gpio_extcon_data,
-+			     work);
++	struct extcon_dev *sd;
 +
-+	state = gpio_get_value(data->gpio);
-+	extcon_set_state(&data->edev, state);
-+}
-+
-+static irqreturn_t gpio_irq_handler(int irq, void *dev_id)
-+{
-+	struct gpio_extcon_data *extcon_data = dev_id;
-+
-+	schedule_delayed_work(&extcon_data->work,
-+			      extcon_data->debounce_jiffies);
-+	return IRQ_HANDLED;
-+}
-+
-+static ssize_t extcon_gpio_print_state(struct extcon_dev *edev, char *buf)
-+{
-+	struct gpio_extcon_data	*extcon_data =
-+		container_of(edev, struct gpio_extcon_data, edev);
-+	const char *state;
-+	if (extcon_get_state(edev))
-+		state = extcon_data->state_on;
-+	else
-+		state = extcon_data->state_off;
-+
-+	if (state)
-+		return sprintf(buf, "%s\n", state);
-+	return -EINVAL;
-+}
-+
-+static int __devinit gpio_extcon_probe(struct platform_device *pdev)
-+{
-+	struct gpio_extcon_platform_data *pdata = pdev->dev.platform_data;
-+	struct gpio_extcon_data *extcon_data;
-+	int ret = 0;
-+
-+	if (!pdata)
-+		return -EBUSY;
-+	if (!pdata->irq_flags) {
-+		dev_err(&pdev->dev, "IRQ flag is not specified.\n");
-+		return -EINVAL;
++	mutex_lock(&extcon_dev_list_lock);
++	list_for_each_entry(sd, &extcon_dev_list, entry) {
++		if (!strcmp(sd->name, extcon_name))
++			goto out;
 +	}
-+
-+	extcon_data = devm_kzalloc(&pdev->dev, sizeof(struct gpio_extcon_data),
-+				   GFP_KERNEL);
-+	if (!extcon_data)
-+		return -ENOMEM;
-+
-+	extcon_data->edev.name = pdata->name;
-+	extcon_data->gpio = pdata->gpio;
-+	extcon_data->state_on = pdata->state_on;
-+	extcon_data->state_off = pdata->state_off;
-+	if (pdata->state_on && pdata->state_off)
-+		extcon_data->edev.print_state = extcon_gpio_print_state;
-+	extcon_data->debounce_jiffies = msecs_to_jiffies(pdata->debounce);
-+
-+	ret = extcon_dev_register(&extcon_data->edev, &pdev->dev);
-+	if (ret < 0)
-+		goto err_extcon_dev_register;
-+
-+	ret = gpio_request_one(extcon_data->gpio, GPIOF_DIR_IN, pdev->name);
-+	if (ret < 0)
-+		goto err_request_gpio;
-+
-+	INIT_DELAYED_WORK(&extcon_data->work, gpio_extcon_work);
-+
-+	extcon_data->irq = gpio_to_irq(extcon_data->gpio);
-+	if (extcon_data->irq < 0) {
-+		ret = extcon_data->irq;
-+		goto err_detect_irq_num_failed;
-+	}
-+
-+	ret = request_any_context_irq(extcon_data->irq, gpio_irq_handler,
-+				      pdata->irq_flags, pdev->name,
-+				      extcon_data);
-+	if (ret < 0)
-+		goto err_request_irq;
-+
-+	/* Perform initial detection */
-+	gpio_extcon_work(&extcon_data->work.work);
-+
-+	return 0;
-+
-+err_request_irq:
-+err_detect_irq_num_failed:
-+	gpio_free(extcon_data->gpio);
-+err_request_gpio:
-+	extcon_dev_unregister(&extcon_data->edev);
-+err_extcon_dev_register:
-+	devm_kfree(&pdev->dev, extcon_data);
-+
-+	return ret;
++	sd = NULL;
++out:
++	mutex_unlock(&extcon_dev_list_lock);
++	return sd;
 +}
-+
-+static int __devexit gpio_extcon_remove(struct platform_device *pdev)
-+{
-+	struct gpio_extcon_data *extcon_data = platform_get_drvdata(pdev);
-+
-+	cancel_delayed_work_sync(&extcon_data->work);
-+	gpio_free(extcon_data->gpio);
-+	extcon_dev_unregister(&extcon_data->edev);
-+	devm_kfree(&pdev->dev, extcon_data);
-+
-+	return 0;
-+}
-+
-+static struct platform_driver gpio_extcon = {
-+	.probe		= gpio_extcon_probe,
-+	.remove		= __devexit_p(gpio_extcon_remove),
-+	.driver		= {
-+		.name	= "extcon-gpio",
-+		.owner	= THIS_MODULE,
-+	},
-+};
-+
-+module_platform_driver(gpio_extcon);
-+
-+MODULE_AUTHOR("Mike Lockwood <lockwood@android.com>");
-+MODULE_DESCRIPTION("GPIO extcon driver");
-+MODULE_LICENSE("GPL");
-diff --git a/include/linux/extcon/extcon_gpio.h b/include/linux/extcon/extcon_gpio.h
-new file mode 100644
-index 0000000..a2129b7
---- /dev/null
-+++ b/include/linux/extcon/extcon_gpio.h
-@@ -0,0 +1,52 @@
-+/*
-+ *  External connector (extcon) class generic GPIO driver
-+ *
-+ * Copyright (C) 2012 Samsung Electronics
-+ * Author: MyungJoo Ham <myungjoo.ham@samsung.com>
-+ *
-+ * based on switch class driver
-+ * Copyright (C) 2008 Google, Inc.
-+ * Author: Mike Lockwood <lockwood@android.com>
-+ *
-+ * This software is licensed under the terms of the GNU General Public
-+ * License version 2, as published by the Free Software Foundation, and
-+ * may be copied, distributed, and modified under those terms.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+*/
-+#ifndef __EXTCON_GPIO_H__
-+#define __EXTCON_GPIO_H__ __FILE__
-+
-+#include <linux/extcon.h>
++EXPORT_SYMBOL_GPL(extcon_get_extcon_dev);
 +
 +/**
-+ * struct gpio_extcon_platform_data - A simple GPIO-controlled extcon device.
-+ * @name	The name of this GPIO extcon device.
-+ * @gpio	Corresponding GPIO.
-+ * @debounce	Debounce time for GPIO IRQ in ms.
-+ * @irq_flags	IRQ Flags (e.g., IRQF_TRIGGER_LOW).
-+ * @state_on	print_state is overriden with state_on if attached. If Null,
-+ *		default method of extcon class is used.
-+ * @state_off	print_state is overriden with state_on if dettached. If Null,
-+ *		default method of extcon class is used.
-+ *
-+ * Note that in order for state_on or state_off to be valid, both state_on
-+ * and state_off should be not NULL. If at least one of them is NULL,
-+ * the print_state is not overriden.
++ * extcon_register_notifier() - Register a notifee to get notified by
++ *			      any attach status changes from the extcon.
++ * @edev:	the extcon device.
++ * @nb:		a notifier block to be registered.
 + */
-+struct gpio_extcon_platform_data {
-+	const char *name;
-+	unsigned gpio;
-+	unsigned long debounce;
-+	unsigned long irq_flags;
++int extcon_register_notifier(struct extcon_dev *edev,
++			struct notifier_block *nb)
++{
++	return raw_notifier_chain_register(&edev->nh, nb);
++}
++EXPORT_SYMBOL_GPL(extcon_register_notifier);
 +
-+	/* if NULL, "0" or "1" will be printed */
-+	const char *state_on;
-+	const char *state_off;
-+};
++/**
++ * extcon_unregister_notifier() - Unregister a notifee from the extcon device.
++ * @edev:	the extcon device.
++ * @nb:		a registered notifier block to be unregistered.
++ */
++int extcon_unregister_notifier(struct extcon_dev *edev,
++			struct notifier_block *nb)
++{
++	return raw_notifier_chain_unregister(&edev->nh, nb);
++}
++EXPORT_SYMBOL_GPL(extcon_unregister_notifier);
 +
-+#endif /* __EXTCON_GPIO_H__ */
+ static struct device_attribute extcon_attrs[] = {
+ 	__ATTR_RO(state),
+ 	__ATTR_RO(name),
+@@ -142,6 +197,10 @@ static int create_extcon_class(void)
+ 
+ static void extcon_cleanup(struct extcon_dev *edev, bool skip)
+ {
++	mutex_lock(&extcon_dev_list_lock);
++	list_del(&edev->entry);
++	mutex_unlock(&extcon_dev_list_lock);
++
+ 	if (!skip && get_device(edev->dev)) {
+ 		device_unregister(edev->dev);
+ 		put_device(edev->dev);
+@@ -194,8 +253,15 @@ int extcon_dev_register(struct extcon_dev *edev, struct device *dev)
+ 					       dev);
+ #endif /* CONFIG_ANDROID && !defined(CONFIG_ANDROID_SWITCH) */
+ 
++	RAW_INIT_NOTIFIER_HEAD(&edev->nh);
++
+ 	dev_set_drvdata(edev->dev, edev);
+ 	edev->state = 0;
++
++	mutex_lock(&extcon_dev_list_lock);
++	list_add(&edev->entry, &extcon_dev_list);
++	mutex_unlock(&extcon_dev_list_lock);
++
+ 	return 0;
+ 
+ err_dev:
+diff --git a/include/linux/extcon.h b/include/linux/extcon.h
+index 9cb3aaa..c9c9afe 100644
+--- a/include/linux/extcon.h
++++ b/include/linux/extcon.h
+@@ -23,6 +23,7 @@
+ #ifndef __LINUX_EXTCON_H__
+ #define __LINUX_EXTCON_H__
+ 
++#include <linux/notifier.h>
+ /**
+  * struct extcon_dev - An extcon device represents one external connector.
+  * @name	The name of this extcon device. Parent device name is used
+@@ -34,6 +35,9 @@
+  * @dev		Device of this extcon. Do not provide at register-time.
+  * @state	Attach/detach state of this extcon. Do not provide at
+  *		register-time
++ * @nh	Notifier for the state change events from this extcon
++ * @entry	To support list of extcon devices so that uses can search
++ *		for extcon devices based on the extcon name.
+  *
+  * In most cases, users only need to provide "User initializing data" of
+  * this struct when registering an extcon. In some exceptional cases,
+@@ -51,11 +55,19 @@ struct extcon_dev {
+ 	/* --- Internal data. Please do not set. --- */
+ 	struct device	*dev;
+ 	u32		state;
++	struct raw_notifier_head nh;
++	struct list_head entry;
+ };
+ 
+ #if IS_ENABLED(CONFIG_EXTCON)
++
++/*
++ * Following APIs are for notifiers or configurations.
++ * Notifiers are the external port and connection devices.
++ */
+ extern int extcon_dev_register(struct extcon_dev *edev, struct device *dev);
+ extern void extcon_dev_unregister(struct extcon_dev *edev);
++extern struct extcon_dev *extcon_get_extcon_dev(const char *extcon_name);
+ 
+ static inline u32 extcon_get_state(struct extcon_dev *edev)
+ {
+@@ -63,6 +75,15 @@ static inline u32 extcon_get_state(struct extcon_dev *edev)
+ }
+ 
+ extern void extcon_set_state(struct extcon_dev *edev, u32 state);
++
++/*
++ * Following APIs are to monitor every action of a notifier.
++ * Registerer gets notified for every external port of a connection device.
++ */
++extern int extcon_register_notifier(struct extcon_dev *edev,
++				    struct notifier_block *nb);
++extern int extcon_unregister_notifier(struct extcon_dev *edev,
++				      struct notifier_block *nb);
+ #else /* CONFIG_EXTCON */
+ static inline int extcon_dev_register(struct extcon_dev *edev,
+ 				      struct device *dev)
+@@ -78,5 +99,22 @@ static inline u32 extcon_get_state(struct extcon_dev *edev)
+ }
+ 
+ static inline void extcon_set_state(struct extcon_dev *edev, u32 state) { }
++static inline struct extcon_dev *extcon_get_extcon_dev(const char *extcon_name)
++{
++	return NULL;
++}
++
++static inline int extcon_register_notifier(struct extcon_dev *edev,
++					   struct notifier_block *nb)
++{
++	return 0;
++}
++
++static inline int extcon_unregister_notifier(struct extcon_dev *edev,
++					     struct notifier_block *nb)
++{
++	return 0;
++}
++
+ #endif /* CONFIG_EXTCON */
+ #endif /* __LINUX_EXTCON_H__ */
 -- 
 1.7.4.1
 
