@@ -1,49 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754776Ab2DTRRt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Apr 2012 13:17:49 -0400
-Received: from mail-pz0-f52.google.com ([209.85.210.52]:44181 "EHLO
-	mail-pz0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753310Ab2DTRRr (ORCPT
+	id S1754846Ab2DTRTq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Apr 2012 13:19:46 -0400
+Received: from acsinet15.oracle.com ([141.146.126.227]:27739 "EHLO
+	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752637Ab2DTRTo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Apr 2012 13:17:47 -0400
-Date: Fri, 20 Apr 2012 10:17:42 -0700
-From: Tejun Heo <tj@kernel.org>
-To: Jens Axboe <axboe@kernel.dk>
-Cc: vgoyal@redhat.com, ctalbott@google.com, rni@google.com,
-        linux-kernel@vger.kernel.org, cgroups@vger.kernel.org,
-        containers@lists.linux-foundation.org
-Subject: Re: [PATCHSET] block: per-queue policy activation, take#2
-Message-ID: <20120420171742.GC32324@google.com>
-References: <1334347895-6268-1-git-send-email-tj@kernel.org>
- <20120420080943.GG7505@kernel.dk>
- <4F91503D.2060402@kernel.dk>
+	Fri, 20 Apr 2012 13:19:44 -0400
+Message-ID: <4F919AA5.2030402@oracle.com>
+Date: Fri, 20 Apr 2012 12:19:33 -0500
+From: Dave Kleikamp <dave.kleikamp@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120406 Thunderbird/11.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4F91503D.2060402@kernel.dk>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: "Maxim V. Patlasov" <mpatlasov@parallels.com>
+CC: Zach Brown <zab@zabbo.net>, Jeff Moyer <jmoyer@redhat.com>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC PATCH v2 15/21] loop: use aio to perform io on the underlying
+ file
+References: <1333122228-13633-1-git-send-email-dave.kleikamp@oracle.com> <1333122228-13633-16-git-send-email-dave.kleikamp@oracle.com> <4F917751.9040600@parallels.com> <4F917C2F.4020805@oracle.com> <x49mx66whty.fsf@segfault.boston.devel.redhat.com> <4F91862F.2030502@zabbo.net> <4F918758.8020001@oracle.com> <4F918B64.5030602@parallels.com>
+In-Reply-To: <4F918B64.5030602@parallels.com>
+X-Enigmail-Version: 1.4
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090201.4F919AAD.003E,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Jens.
-
-On Fri, Apr 20, 2012 at 02:02:05PM +0200, Jens Axboe wrote:
-> Tejun, everything merged in cleanly. A boot test didn't not go so well,
-> I'm afraid. It complains about stuck RCU. Even with extra RCU
-> debugging/info turned on, it doesn't give my any extra info.
+On 04/20/2012 11:14 AM, Maxim V. Patlasov wrote:
+> On 04/20/2012 07:57 PM, Dave Kleikamp wrote:
+>>> So yeah, I'd agree that the loop code should be reworked a bit so that
+>>> both the filebacked and aio methods call vfs_sync() when they see
+>>> REQ_FLUSH.
+>> It's an easy fix. I don't anticipate that it will hurt performance too
+>> badly.
 > 
-> Config is attached. I can try and debug this on Monday, for now I've
-> pulled it out of for-next again.
+> Two questions:
+> 
+> 1. Could we use fdatasync there? (otherwise it can hurt performance very
+> badly)
 
-Hmmm... it works fine with the same config here (qemu w/ 4 cpus
-configured).  Doesn't stuck RCU usually come from unbalanced RCU
-lock/unlocking?  That should trigger context or RCU warnings before
-anything else, weird.  Anyways, it would be great if you can provide
-more info on how to reproduce the problem.
+I don't see why not.
 
-Thanks.
+> 2. vfs_sync() is synchronous. loop_thread() will be blocked till it's
+> completed. Would it be better to perform vfs_sync in another thread (to
+> allow other bio-s in loop queue proceed)? Also, if there are more than
+> one REQ_FLUSH bio in lo->lo_bio_list, we could call vfs_sync() only
+> once. Make sense?
 
--- 
-tejun
+If more than one REQ_FLUSH bio is in the list, they should be performed
+in order. We must call vfs_fsync() between each of them to guarantee that.
+
+A less complex tradeoff would be to move the vfs_fsync() call to
+loop_make_request() so it is called in the context of the thread making
+the request. That would make those threads requesting ordered IO to pay
+the price while others would be able to proceed.
+
+This is something I can re-visit. I don't want to hold up progress on
+the patchset for something that can be improved later.
+
+> 
+> Thanks,
+> Maxim
