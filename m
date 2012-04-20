@@ -1,83 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753258Ab2DTRBk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Apr 2012 13:01:40 -0400
-Received: from mail-pz0-f52.google.com ([209.85.210.52]:63410 "EHLO
-	mail-pz0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750967Ab2DTRBj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Apr 2012 13:01:39 -0400
-Date: Fri, 20 Apr 2012 10:01:32 -0700
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Daniel Drake <dsd@laptop.org>
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Peter Hutterer <peter.hutterer@who-t.net>,
-        "X.Org Devel List" <xorg-devel@lists.freedesktop.org>,
-        Linux Kernel list <linux-kernel@vger.kernel.org>
-Subject: Re: Multitouch regression in 3.3 on thinkpad X220 clickpad
-Message-ID: <20120420170132.GA32261@core.coreip.homeip.net>
-References: <1334906476.3197.11.camel@pasglop>
- <CAMLZHHTpNPbbMwrNmZf5Japk2b3gNZ7eAhU5xoG+a1jEPk96ig@mail.gmail.com>
+	id S1753746Ab2DTREQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Apr 2012 13:04:16 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:65029 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751113Ab2DTREP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Apr 2012 13:04:15 -0400
+Date: Fri, 20 Apr 2012 13:03:56 -0400
+From: Dave Jones <davej@redhat.com>
+To: Linux Kernel <linux-kernel@vger.kernel.org>, laijs@cn.fujitsu.com,
+        fweisbec@gmail.com, srostedt@redhat.com, mingo@elte.hu
+Subject: Re: remove unnecessary ftrace WARN_ONCE's.
+Message-ID: <20120420170356.GC2168@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	Linux Kernel <linux-kernel@vger.kernel.org>, laijs@cn.fujitsu.com,
+	fweisbec@gmail.com, srostedt@redhat.com, mingo@elte.hu
+References: <20120412023132.GA7035@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAMLZHHTpNPbbMwrNmZf5Japk2b3gNZ7eAhU5xoG+a1jEPk96ig@mail.gmail.com>
+In-Reply-To: <20120412023132.GA7035@redhat.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 20, 2012 at 08:27:37AM -0600, Daniel Drake wrote:
-> On Fri, Apr 20, 2012 at 1:21 AM, Benjamin Herrenschmidt
-> <benh@kernel.crashing.org> wrote:
-> > So Peter and I have been discussing a problem I observed on my brand new
-> > ThinkPad X220 and it's multitouch "clickpad". I've been digging a bit
-> > more today and bisected the regression to:
-> >
-> > commit 7968a5dd492ccc38345013e534ad4c8d6eb60ed1
-> > Input: synaptics - add support for Relative mode
-> >
-> > Without that commit, I can draw two "traces" when using two fingers in
-> > mtview (after removing the device from X), each follow one finger.
-> >
-> > With that commit applied, this doesn't work anymore: it appears to be
-> > unable to track more than one finger. IE. If i put a finger on the
-> > touchpad, I can draw, but a second finger is then ignored (or causes one
-> > or two spots in a random place to appear but that's about it).
-> >
-> > Now other multitouch operations such as two finger scrolling seem to
-> > work in X. I'm not familiar with the inner workings of the input layer
-> > or the synaptic touchpads. I'll dig a bit more this week-end if I have
-> > time, but it would save me plenty of that precious time if you guys
-> > could hint me at things to look at :-)
-> 
-> Sorry to cause you this trouble.
-> It's the first I've heard of issues with this patch, and unfortunately
-> I don't have any immediate diagnosis for you.
-> The patch isn't supposed to change behaviour of the existing default
-> mode which is called "absolute mode".
-> 
-> What I would suggest looking at is
-> synaptics_set_advanced_gesture_mode(). Is this being called, does it
-> run to completion?
+On Wed, Apr 11, 2012 at 10:31:32PM -0400, Dave Jones wrote:
+ > These warnings are trivially triggerable by any user, and serve no useful purpose afaics
+ > Just -EINVAL and be done.
+ > 
+ > Signed-off-by: Dave Jones <davej@redhat.com>
+ > 
+ > diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
+ > index ed7b5d1..a745317 100644
+ > --- a/kernel/trace/trace.c
+ > +++ b/kernel/trace/trace.c
+ > @@ -4136,13 +4136,11 @@ tracing_buffers_splice_read(struct file *file, loff_t *ppos,
+ >  		return -ENOMEM;
+ >  
+ >  	if (*ppos & (PAGE_SIZE - 1)) {
+ > -		WARN_ONCE(1, "Ftrace: previous read must page-align\n");
+ >  		ret = -EINVAL;
+ >  		goto out;
+ >  	}
+ >  
+ >  	if (len & (PAGE_SIZE - 1)) {
+ > -		WARN_ONCE(1, "Ftrace: splice_read should page-align\n");
+ >  		if (len < PAGE_SIZE) {
+ >  			ret = -EINVAL;
+ >  			goto out;
+ > --
 
-It looks we lost a condition in synaptics_set_advanced_gesture_mode().
-It used to be:
+Anyone want to pick this up, or shall I just send it to Linus myself ?
 
-
-	if (!(SYN_CAP_ADV_GESTURE(priv->ext_cap_0c) ||
-			SYN_CAP_IMAGE_SENSOR(priv->ext_cap_0c)))
-		return 0;
-
-and now simply is:
-
-	if (!SYN_CAP_ADV_GESTURE(priv->ext_cap_0c))
-		return 0;
-
-Could you try restoring the condition and see if it fixes the
-regression?
-
-Thanks.
-
--- 
-Dmitry
+	Dave
