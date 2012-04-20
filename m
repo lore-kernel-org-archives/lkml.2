@@ -1,108 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932459Ab2DTXeV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Apr 2012 19:34:21 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:51088 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932289Ab2DTXeU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Apr 2012 19:34:20 -0400
-Date: Fri, 20 Apr 2012 19:34:06 -0400
-From: Mike Snitzer <snitzer@redhat.com>
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Cc: James.Bottomley@hansenpartnership.com, linux-scsi@vger.kernel.org,
-        Hannes Reinecke <hare@suse.de>,
-        Chandra Seetharaman <sekharan@us.ibm.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2] [SCSI] scsi_dh: change scsi_dh_detach export to
- EXPORT_SYMBOL
-Message-ID: <20120420233406.GA11183@redhat.com>
-References: <20111215214440.GA17677@redhat.com>
- <4EF039D5.5010201@suse.de>
- <20120405144721.GA18437@redhat.com>
- <20120420144538.GB8155@redhat.com>
- <20120420173405.GA8846@redhat.com>
- <20120420214120.159e2690@pyramind.ukuu.org.uk>
- <20120420215825.GA10406@redhat.com>
- <20120420232043.40ddc3c4@pyramind.ukuu.org.uk>
- <20120420225822.GA10769@redhat.com>
- <20120421001433.2955abd4@pyramind.ukuu.org.uk>
+	id S1756538Ab2DTXnI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Apr 2012 19:43:08 -0400
+Received: from mail-pz0-f52.google.com ([209.85.210.52]:33098 "EHLO
+	mail-pz0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752241Ab2DTXnG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Apr 2012 19:43:06 -0400
+Date: Fri, 20 Apr 2012 16:43:00 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: John Stultz <john.stultz@linaro.org>
+Cc: Linux Kernel <linux-kernel@vger.kernel.org>,
+        Colin Cross <ccross@android.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Android Kernel Team <kernel-team@android.com>
+Subject: Re: [PATCH 0/4] Android Alarm Driver Cleanups (for staging-next/3.5)
+Message-ID: <20120420234300.GB27780@kroah.com>
+References: <1334950307-403-1-git-send-email-john.stultz@linaro.org>
+ <20120420220849.GA5642@kroah.com>
+ <4F91E9C1.4050102@linaro.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120421001433.2955abd4@pyramind.ukuu.org.uk>
+In-Reply-To: <4F91E9C1.4050102@linaro.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 20 2012 at  7:14pm -0400,
-Alan Cox <alan@lxorguk.ukuu.org.uk> wrote:
+On Fri, Apr 20, 2012 at 03:57:05PM -0700, John Stultz wrote:
+> On 04/20/2012 03:08 PM, Greg KH wrote:
+> >On Fri, Apr 20, 2012 at 12:31:43PM -0700, John Stultz wrote:
+> >>Greg: Would you mind applying this set to staging-next for 3.5?
+> >It took some messing with (due to some over-eager people fixing spelling
+> >mistakes and compiler warnings that you didn't have in your tree), but
+> >I've applied these now.  Thanks for doing this work.
+> >
+> >But, as I already said, this patch set produces some big compiler
+> >warnings, can you please fix them up before I get nasty messages from
+> >the linux-next maintainer?
+> Ok. So I manged to trigger the warning at patch 3/4 too. However,
+> patch 4/4 resolves it.
 
-> > Sure Alan, seize on "proprietary" and "EXPORT_SYMBOL_GPL".. and gloss
-> > right over the fact that what is being proposed is reasonable.
-> 
-> I suggest you read the licence document.
-> 
-> > Any multipath driver should be able to detach a scsi_dh module.  As is
-> > evidenced by the fact that they can already make use of sysfs to do so.
-> 
-> They can call the _GPL version if they are GPL, so there is no problem.
-> 
-> > Relaxing the scsi_dh_detach interface makes it easier for a long
-> > standing proprietary driver to get out of Linux's way.
-> 
-> So we are back to this being for a proprietary driver trying to link with
-> GPL code.
-> 
-> > _Upstream_ has kept it that way because we've been concerned about
-> > breaking PowerPath in enterprises where Linux is deployed.  Upstream has
-> > been good citizens to the fault of Linux.
-> 
-> Not from where I am standing. It sounds like upstream has suffered for
-> the benefit of a dubious proprietary module.
-> 
-> > > I'm a rights holder. Domain expertise isn't relevant here. The code I
-> > > provided is licensed under the GPL. Whether the symbol is EXPORT_SYMBOL
-> > > or EXPORT_SYMBOL_GPL any derivative code (eg code that requires the
-> > > kernel be modified to match it) cannot call it.
-> > 
-> > Remind me again when you ever developed anything to do with scsi_dh?
-> 
-> It's part of the same kernel. It's GPL code. You can take your own code
-> and relicense it to be non GPL if you wish, but not mine nor Greg's nor
-> anyone elses.
+Ah, I didn't notice that, you are right, nice.
 
-The scsi_dh maintainer (Chandra) acked the change.  Hannes, the author of
-scsi_dh_attach, acked the change.  You don't have a leg to stand on.
-Time for you to face that fact.
+> The problem is the android alarm driver and the alarmtimer code have
+> a naming collision with "struct alarm", and there were some macros
+> (see CONFIG_ANDROID_ALARM_OLDDRV_COMPAT in
+> staging/android/android_alarm.h before these patches) that allow a
+> easier transition over to the new code for out of tree drivers.
+> 
+> Ideally I would have yanked those macros in 3/4 instead of 4/4.  But
+> after 4/4 is applied the issue should not longer be present (at
+> least I've not been able to trigger it)
+> 
+> Do you want me to respin the last two patches?
 
-> > To be clear: PowerPath doesn't _need_ this.  Not even close.
-> 
-> Then we don't need to apply it ? Thank you for clarifying that.
-> 
-> > Linux is improved by not having to walk on egg shells that attaching a
-> > helpful linux-only layer in kernel will somehow screw up some 3rd party
-> > software that a customer values.
-> 
-> That's a problem for Red Hat. Don't dump it on upstream. If the kernel
-> would work better with scsi_dh always attached we should always attach
-> it. It's the problem of the out of tree people how they cope. They'll
-> figure something out.
-> 
-> And you still have the same confusion
-> 
-> There is no "Linux only" magic in _GPL. Any derivative work of a GPL work
-> must be distributed under the GPL.
+No, they are both applied now, so all is good, sorry for the noise.
 
-You asserting something doesn't make it so.
-
-> > You still don't get it... yet you'll saber rattle behind generic GPL
-> > lawyer-up nonsense.
-> 
-> This has gone far enough but it seems your management has already jumped
-> on it. Not my preferred way of handling such matters but Red Hat legal and
-> PR need to rein you in before you cause some serious damage.
-
-What the hell are you talking about?
-
-Please stop the insanity.
+greg k-h
