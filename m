@@ -1,59 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932732Ab2DTPmK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Apr 2012 11:42:10 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:35235 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932110Ab2DTPmI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Apr 2012 11:42:08 -0400
-Date: Fri, 20 Apr 2012 08:42:02 -0700
-From: Tejun Heo <tj@kernel.org>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>, LKML <linux-kernel@vger.kernel.org>,
-        linux-arch@vger.kernel.org, Rusty Russell <rusty@rustcorp.com.au>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Ingo Molnar <mingo@kernel.org>,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        David Rientjes <rientjes@google.com>
-Subject: Re: [patch 00/18] SMP: Boot and CPU hotplug refactoring - Part 1
-Message-ID: <20120420154202.GB32324@google.com>
-References: <20120420122120.097464672@linutronix.de>
- <1334928098.2463.56.camel@laptop>
+	id S932491Ab2DTPrC (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Apr 2012 11:47:02 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:55105 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753686Ab2DTPrA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Apr 2012 11:47:00 -0400
+Date: Fri, 20 Apr 2012 11:46:54 -0400
+From: Mike Snitzer <snitzer@redhat.com>
+To: James Bottomley <James.Bottomley@HansenPartnership.com>
+Cc: linux-scsi@vger.kernel.org, Hannes Reinecke <hare@suse.de>,
+        Chandra Seetharaman <sekharan@us.ibm.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [RESEND][PATCH] [SCSI] scsi_dh: allow 3rd party multipath
+ drivers to use scsi_dh_detach
+Message-ID: <20120420154654.GB8608@redhat.com>
+References: <20111215214440.GA17677@redhat.com>
+ <4EF039D5.5010201@suse.de>
+ <20120405144721.GA18437@redhat.com>
+ <20120420144538.GB8155@redhat.com>
+ <1334935036.13001.27.camel@dabdike>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1334928098.2463.56.camel@laptop>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1334935036.13001.27.camel@dabdike>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On Fri, Apr 20 2012 at 11:17am -0400,
+James Bottomley <James.Bottomley@HansenPartnership.com> wrote:
 
-On Fri, Apr 20, 2012 at 03:21:38PM +0200, Peter Zijlstra wrote:
-> On Fri, 2012-04-20 at 13:05 +0000, Thomas Gleixner wrote:
-> > This first part moves the idle thread management for non-boot cpus
-> > into the core. fork_idle() is called in a workqueue as it is
-> > implemented in a few architectures already. This is necessary when not
-> > all cpus are brought up by the early boot code as otherwise we would
-> > take a ref on the user task VM of the thread which brings the cpu up
-> > via the sysfs interface. 
+> On Fri, 2012-04-20 at 10:45 -0400, Mike Snitzer wrote:
+> > Allow 3rd party multipath drivers to programatically detach a scsi_dh
+> > using the scsi_dh_detach() interface.  This is as improvement over
+> > requiring them to write 'detach' to /sys/block/sdX/queue/dh_state
+> > 
+> > End result is both Linux and 3rd party multipath drivers can coexist
+> > without compromising Linux's default handling of multipath LUNs.
+> > 
+> > Linux has suffered from races associated with attaching a scsi_dh to a
+> > device too late (after an HBA driver has started the SCSI device scan).
+> > Attaching a scsi_dh too late results in default sense handling that does
+> > not silently fail IO to passive paths, which creates excessive delays
+> > and IO errors during normal boot on a system with hundreds of LUNs.
+> > 
+> > To fix this the appropriate scsi_dh must be attached before the HBA
+> > driver(s) are even loaded.  But some scsi_dh are known to conflict with
+> > 3rd party multipath drivers (e.g. both scsi_dh_alua and scsi_dh_emc
+> > conflict with EMC PowerPath).  This patch allows 3rd party drivers to
+> > resolve the conflict by detaching an attached scsi_dh.
 > 
-> So I was thinking about this and I think we should make that kthreadd
-> instead of a random workqueue thread due to all that cgroup crap. People
-> are wanting to place all sorts of kernel threads in cgroups and I'm
-> still arguing that kthreadd should not be allowed in cgroups.
+> This changelog is a bit misleading, isn't it?
 >
-> Tejun, what's the status of that patch? Afaict David Rientjes's use-case
-> is insane and mostly a side effect of memcg broken-ness.
+> The basic problem is that binary only third party drivers can't use the
+> scsi_dh_detach callback because it's GPL only.  The only module I know
+> which suffers this problem is powerpath, is that right?
+> 
+> So this patch actually relaxes our GPL only policy to allow powerpath to
+> detach correctly. I really don't like the characterisation in the
+> current proposed changelog of this being a "third party" problem because
+> quite a few third party modules actually provide source and are thus GPL
+> compliant.
+>
+> The whole point of GPL only symbols is to make life difficult for binary
+> modules, so I could just say this might be indicative of the success of
+> that policy.  On the other hand, I'm not going to be religious about
+> this.  If you get the ack of the dh handler maintainer (Chandra
+> Seetharaman) I'll apply this policy relaxation with a proper changelog
+> that says what we're doing (allowing powerpath to bind to the symbol).
 
-I'm still leaning towards restricting kthreadd and any PF_THREAD_BOUND
-threads in the root cgroup.  I'm not sure about !BOUND kthreads tho.
-It doesn't make sense for the most part but there are cases
-(e.g. crypto kthreads) which might make some sense.
+Would s/3rd party/proprietary/ be OK?
 
-Thanks.
+There are other proprietary multipath drivers (e.g. veritas DMP).  So
+the issue is theoretically more generic than powerpath.  But in practice
+powerpath is the most widely deployed conflict that motivated this
+change.
 
--- 
-tejun
+Though I could easily imagine our policy to treat Powerpath with kid
+gloves has made us unaware of the potential for other proprietary
+multipath drivers having the same conflict with scsi_dh.
+
+FYI, I'm looking to have RHEL7 blaze trails and shake things up by
+forcing proprietary multipath drivers to detach scsi_dh (EMC is aware of
+this).
+
+Mike
