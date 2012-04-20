@@ -1,62 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754519Ab2DTRNd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Apr 2012 13:13:33 -0400
-Received: from mga09.intel.com ([134.134.136.24]:24513 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752692Ab2DTRNc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Apr 2012 13:13:32 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
-   d="scan'208";a="132155019"
-Subject: Re: load balancing regression since commit 367456c7
-From: Tim Chen <tim.c.chen@linux.intel.com>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Suresh Siddha <suresh.b.siddha@intel.com>, Alex Shi <alex.shi@intel.com>,
-        Ying <ying.huang@intel.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-In-Reply-To: <1334940837.2463.70.camel@laptop>
-References: <1334106376.19157.89.camel@schen9-DESK>
-	 <1334664553.28150.87.camel@twins>  <1334681054.3796.28.camel@schen9-DESK>
-	 <1334930421.2463.60.camel@laptop>  <1334940042.3796.48.camel@schen9-DESK>
-	 <1334940837.2463.70.camel@laptop>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 20 Apr 2012 10:13:32 -0700
-Message-ID: <1334942012.3796.50.camel@schen9-DESK>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
-Content-Transfer-Encoding: 7bit
+	id S1754669Ab2DTRPk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Apr 2012 13:15:40 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:55088 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753792Ab2DTRPi (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Apr 2012 13:15:38 -0400
+Date: Fri, 20 Apr 2012 10:15:34 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: MyungJoo Ham <myungjoo.ham@samsung.com>, Arnd Bergmann <arnd@arndb.de>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Arve =?iso-8859-1?Q?Hj=F8nnevag?= <arve@android.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Morten CHRISTIANSEN <morten.christiansen@stericsson.com>,
+        John Stultz <john.stultz@linaro.org>, myungjoo.ham@gmail.com,
+        cw00.choi@samsung.com
+Subject: Re: [PATCH v8 resend 6/6] Documentation/extcon: porting guide for
+ Android kernel switch driver.
+Message-ID: <20120420171534.GA29519@kroah.com>
+References: <20120420033209.GA17930@kroah.com>
+ <1334898987-7800-1-git-send-email-myungjoo.ham@samsung.com>
+ <1334898987-7800-7-git-send-email-myungjoo.ham@samsung.com>
+ <20120420162529.GA31744@kroah.com>
+ <20120420170519.GB3080@opensource.wolfsonmicro.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120420170519.GB3080@opensource.wolfsonmicro.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2012-04-20 at 18:53 +0200, Peter Zijlstra wrote:
-> On Fri, 2012-04-20 at 09:40 -0700, Tim Chen wrote:
-> > We also do not see regression for hackbench on WSM-EP, but only 
-> > on machines with Sandy-Bridge EP (2 socket, 8 cores/socket, HT enabled).  
+On Fri, Apr 20, 2012 at 06:05:20PM +0100, Mark Brown wrote:
+> On Fri, Apr 20, 2012 at 09:25:29AM -0700, Greg KH wrote:
 > 
-> Argh, Suresh, any idea what could be different and relevant to this
-> issue between WSM and SNB -EP ?
+> > Ok, I've applied this, but I don't know if we really need this in the
+> > kernel tree.  How many out-of-tree android switch drivers are there?
+> > Who needs to know this information?
 > 
-> Tim, can you see the problem on the desktop SNB part? That's the only
-> SNB I have available.
-> 
-> > We are not running hackbench in cgroup for this test.
-> > 
-> > The Sandy Bridge EP machines installed has FC16, so I think it uses 
-> > systemd. The machine on our WSM EP has FC15, which also has systemd.
-> 
-> Ah, but your .config has:
-> 
-> CONFIG_CGROUP_SCHED=y
-> CONFIG_SCHED_AUTOGROUP=y
-> 
-> and systemd, when cpu-cgroup is available, will automagically use it.
-> 
-> Could you disable those two CONFIG knobs and see if it persists?
-> 
+> Every phone with a headset jack will have at least one switch if it's
+> running on Android.  People doing system integration will generally need
+> to know about this, at least until we've got the ALSA detection stuff
+> integrated with extcon.
 
-Turning those off did recover the regression.
+Ok, but where are those drivers at?  Any pointers to them so I can start
+sucking them into the tree and doing this conversion?
 
-Tim
+Is this, and the wakelock stuff, holding back a torrent of drivers to be
+submitted somewhere?  Or are they buried in vendor trees, never to be
+seen?
 
+thanks,
+
+greg k-h
