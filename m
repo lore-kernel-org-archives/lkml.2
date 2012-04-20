@@ -1,263 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932104Ab2DTV7t (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Apr 2012 17:59:49 -0400
-Received: from mailhub.sw.ru ([195.214.232.25]:26749 "EHLO relay.sw.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755360Ab2DTV7F (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Apr 2012 17:59:05 -0400
-From: Glauber Costa <glommer@parallels.com>
-To: <cgroups@vger.kernel.org>
-Cc: <linux-mm@kvack.org>, <linux-kernel@vger.kernel.org>, <devel@openvz.org>,
-        <kamezawa.hiroyu@jp.fujitsu.com>, Michal Hocko <mhocko@suse.cz>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Greg Thelen <gthelen@google.com>,
-        Suleiman Souhlal <suleiman@google.com>,
-        Glauber Costa <glommer@parallels.com>,
-        Christoph Lameter <cl@linux.com>,
-        Pekka Enberg <penberg@cs.helsinki.fi>
-Subject: [PATCH 11/23] slub: consider a memcg parameter in kmem_create_cache
-Date: Fri, 20 Apr 2012 18:57:19 -0300
-Message-Id: <1334959051-18203-12-git-send-email-glommer@parallels.com>
-X-Mailer: git-send-email 1.7.7.6
-In-Reply-To: <1334959051-18203-1-git-send-email-glommer@parallels.com>
-References: <1334959051-18203-1-git-send-email-glommer@parallels.com>
+	id S932129Ab2DTV76 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Apr 2012 17:59:58 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:34048 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752970Ab2DTV7w (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Apr 2012 17:59:52 -0400
+Date: Fri, 20 Apr 2012 14:59:41 -0700
+From: "tip-bot for H. Peter Anvin" <hpa@zytor.com>
+Message-ID: <tip-5f2e8a84f07bb43f9c0ce317d7e0c5e541db00e3@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        david.daney@cavium.com, tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        david.daney@cavium.com, tglx@linutronix.de
+In-Reply-To: <CA+55aFyijf43qSu3N9nWHEBwaGbb7T2Oq9A=9EyR=Jtyqfq_cQ@mail.gmail.com>
+References: <CA+55aFyijf43qSu3N9nWHEBwaGbb7T2Oq9A=9EyR=Jtyqfq_cQ@mail.gmail.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/extable] x86, extable:
+  Remove open-coded exception table entries in arch/x86/lib/checksum_32.S
+Git-Commit-ID: 5f2e8a84f07bb43f9c0ce317d7e0c5e541db00e3
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
+MIME-Version: 1.0
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Fri, 20 Apr 2012 14:59:46 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Allow a memcg parameter to be passed during cache creation.
-The slub allocator will only merge caches that belong to
-the same memcg.
+Commit-ID:  5f2e8a84f07bb43f9c0ce317d7e0c5e541db00e3
+Gitweb:     http://git.kernel.org/tip/5f2e8a84f07bb43f9c0ce317d7e0c5e541db00e3
+Author:     H. Peter Anvin <hpa@zytor.com>
+AuthorDate: Fri, 20 Apr 2012 12:19:50 -0700
+Committer:  H. Peter Anvin <hpa@zytor.com>
+CommitDate: Fri, 20 Apr 2012 13:51:38 -0700
 
-Default function is created as a wrapper, passing NULL
-to the memcg version. We only merge caches that belong
-to the same memcg.
+x86, extable: Remove open-coded exception table entries in arch/x86/lib/checksum_32.S
 
->From the memcontrol.c side, 3 helper functions are created:
+Remove open-coded exception table entries in arch/x86/lib/checksum_32.S,
+and replace them with _ASM_EXTABLE() macros; this will allow us to
+change the format and type of the exception table entries.
 
- 1) memcg_css_id: because slub needs a unique cache name
-    for sysfs. Since this is visible, but not the canonical
-    location for slab data, the cache name is not used, the
-    css_id should suffice.
-
- 2) mem_cgroup_register_cache: is responsible for assigning
-    a unique index to each cache, and other general purpose
-    setup. The index is only assigned for the root caches. All
-    others are assigned index == -1.
-
- 3) mem_cgroup_release_cache: can be called from the root cache
-    destruction, and will release the index for other caches.
-
-This index mechanism was developed by Suleiman Souhlal.
-
-Signed-off-by: Glauber Costa <glommer@parallels.com>
-CC: Christoph Lameter <cl@linux.com>
-CC: Pekka Enberg <penberg@cs.helsinki.fi>
-CC: Michal Hocko <mhocko@suse.cz>
-CC: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-CC: Johannes Weiner <hannes@cmpxchg.org>
-CC: Suleiman Souhlal <suleiman@google.com>
+Signed-off-by: H. Peter Anvin <hpa@zytor.com>
+Cc: David Daney <david.daney@cavium.com>
+Link: http://lkml.kernel.org/r/CA%2B55aFyijf43qSu3N9nWHEBwaGbb7T2Oq9A=9EyR=Jtyqfq_cQ@mail.gmail.com
 ---
- include/linux/memcontrol.h |   14 ++++++++++++++
- include/linux/slab.h       |    6 ++++++
- mm/memcontrol.c            |   29 +++++++++++++++++++++++++++++
- mm/slub.c                  |   31 +++++++++++++++++++++++++++----
- 4 files changed, 76 insertions(+), 4 deletions(-)
+ arch/x86/lib/checksum_32.S |    9 +++------
+ 1 files changed, 3 insertions(+), 6 deletions(-)
 
-diff --git a/include/linux/memcontrol.h b/include/linux/memcontrol.h
-index f94efd2..99e14b9 100644
---- a/include/linux/memcontrol.h
-+++ b/include/linux/memcontrol.h
-@@ -26,6 +26,7 @@ struct mem_cgroup;
- struct page_cgroup;
- struct page;
- struct mm_struct;
-+struct kmem_cache;
- 
- /* Stats that can be updated by kernel. */
- enum mem_cgroup_page_stat_item {
-@@ -440,7 +441,20 @@ struct sock;
- #ifdef CONFIG_CGROUP_MEM_RES_CTLR_KMEM
- void sock_update_memcg(struct sock *sk);
- void sock_release_memcg(struct sock *sk);
-+int memcg_css_id(struct mem_cgroup *memcg);
-+void mem_cgroup_register_cache(struct mem_cgroup *memcg,
-+				      struct kmem_cache *s);
-+void mem_cgroup_release_cache(struct kmem_cache *cachep);
- #else
-+static inline void mem_cgroup_register_cache(struct mem_cgroup *memcg,
-+					     struct kmem_cache *s)
-+{
-+}
-+
-+static inline void mem_cgroup_release_cache(struct kmem_cache *cachep)
-+{
-+}
-+
- static inline void sock_update_memcg(struct sock *sk)
- {
- }
-diff --git a/include/linux/slab.h b/include/linux/slab.h
-index a5127e1..c7a7e05 100644
---- a/include/linux/slab.h
-+++ b/include/linux/slab.h
-@@ -321,6 +321,12 @@ extern void *__kmalloc_track_caller(size_t, gfp_t, unsigned long);
- 	__kmalloc(size, flags)
- #endif /* DEBUG_SLAB */
- 
-+#ifdef CONFIG_CGROUP_MEM_RES_CTLR_KMEM
-+#define MAX_KMEM_CACHE_TYPES 400
-+#else
-+#define MAX_KMEM_CACHE_TYPES 0
-+#endif /* CONFIG_CGROUP_MEM_RES_CTLR_KMEM */
-+
- #ifdef CONFIG_NUMA
+diff --git a/arch/x86/lib/checksum_32.S b/arch/x86/lib/checksum_32.S
+index 78d16a5..2af5df3 100644
+--- a/arch/x86/lib/checksum_32.S
++++ b/arch/x86/lib/checksum_32.S
+@@ -28,6 +28,7 @@
+ #include <linux/linkage.h>
+ #include <asm/dwarf2.h>
+ #include <asm/errno.h>
++#include <asm/asm.h>
+ 				
  /*
-  * kmalloc_node_track_caller is a special version of kmalloc_node that
-diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index 36f1e6b..0015ed0 100644
---- a/mm/memcontrol.c
-+++ b/mm/memcontrol.c
-@@ -323,6 +323,11 @@ struct mem_cgroup {
- #endif
- };
+  * computes a partial checksum, e.g. for TCP/UDP fragments
+@@ -282,15 +283,11 @@ unsigned int csum_partial_copy_generic (const char *src, char *dst,
  
-+int memcg_css_id(struct mem_cgroup *memcg)
-+{
-+	return css_id(&memcg->css);
-+}
-+
- /* Stuffs for move charges at task migration. */
- /*
-  * Types of charges to be moved. "move_charge_at_immitgrate" is treated as a
-@@ -461,6 +466,30 @@ struct cg_proto *tcp_proto_cgroup(struct mem_cgroup *memcg)
- }
- EXPORT_SYMBOL(tcp_proto_cgroup);
- #endif /* CONFIG_INET */
-+
-+/* Bitmap used for allocating the cache id numbers. */
-+static DECLARE_BITMAP(cache_types, MAX_KMEM_CACHE_TYPES);
-+
-+void mem_cgroup_register_cache(struct mem_cgroup *memcg,
-+			       struct kmem_cache *cachep)
-+{
-+	int id = -1;
-+
-+	cachep->memcg_params.memcg = memcg;
-+
-+	if (!memcg) {
-+		id = find_first_zero_bit(cache_types, MAX_KMEM_CACHE_TYPES);
-+		BUG_ON(id < 0 || id >= MAX_KMEM_CACHE_TYPES);
-+		__set_bit(id, cache_types);
-+	} else
-+		INIT_LIST_HEAD(&cachep->memcg_params.destroyed_list);
-+	cachep->memcg_params.id = id;
-+}
-+
-+void mem_cgroup_release_cache(struct kmem_cache *cachep)
-+{
-+	__clear_bit(cachep->memcg_params.id, cache_types);
-+}
- #endif /* CONFIG_CGROUP_MEM_RES_CTLR_KMEM */
+ #define SRC(y...)			\
+ 	9999: y;			\
+-	.section __ex_table, "a";	\
+-	.long 9999b, 6001f	;	\
+-	.previous
++	_ASM_EXTABLE(9999b, 6001f)
  
- static void drain_all_stock_async(struct mem_cgroup *memcg);
-diff --git a/mm/slub.c b/mm/slub.c
-index 2652e7c..86e40cc 100644
---- a/mm/slub.c
-+++ b/mm/slub.c
-@@ -32,6 +32,7 @@
- #include <linux/prefetch.h>
+ #define DST(y...)			\
+ 	9999: y;			\
+-	.section __ex_table, "a";	\
+-	.long 9999b, 6002f	;	\
+-	.previous
++	_ASM_EXTABLE(9999b, 6002f)
  
- #include <trace/events/kmem.h>
-+#include <linux/memcontrol.h>
+ #ifndef CONFIG_X86_USE_PPRO_CHECKSUM
  
- /*
-  * Lock order:
-@@ -3880,7 +3881,7 @@ static int slab_unmergeable(struct kmem_cache *s)
- 	return 0;
- }
- 
--static struct kmem_cache *find_mergeable(size_t size,
-+static struct kmem_cache *find_mergeable(struct mem_cgroup *memcg, size_t size,
- 		size_t align, unsigned long flags, const char *name,
- 		void (*ctor)(void *))
- {
-@@ -3916,21 +3917,29 @@ static struct kmem_cache *find_mergeable(size_t size,
- 		if (s->size - size >= sizeof(void *))
- 			continue;
- 
-+		if (memcg && s->memcg_params.memcg != memcg)
-+			continue;
-+
- 		return s;
- 	}
- 	return NULL;
- }
- 
--struct kmem_cache *kmem_cache_create(const char *name, size_t size,
--		size_t align, unsigned long flags, void (*ctor)(void *))
-+struct kmem_cache *
-+kmem_cache_create_memcg(struct mem_cgroup *memcg, const char *name, size_t size,
-+			size_t align, unsigned long flags, void (*ctor)(void *))
- {
- 	struct kmem_cache *s;
- 
- 	if (WARN_ON(!name))
- 		return NULL;
- 
-+#ifndef CONFIG_CGROUP_MEM_RES_CTLR_KMEM
-+	WARN_ON(memcg != NULL);
-+#endif
-+
- 	down_write(&slub_lock);
--	s = find_mergeable(size, align, flags, name, ctor);
-+	s = find_mergeable(memcg, size, align, flags, name, ctor);
- 	if (s) {
- 		s->refcount++;
- 		/*
-@@ -3954,12 +3963,15 @@ struct kmem_cache *kmem_cache_create(const char *name, size_t size,
- 				size, align, flags, ctor)) {
- 			list_add(&s->list, &slab_caches);
- 			up_write(&slub_lock);
-+			mem_cgroup_register_cache(memcg, s);
- 			if (sysfs_slab_add(s)) {
- 				down_write(&slub_lock);
- 				list_del(&s->list);
- 				kfree(s);
- 				goto err;
- 			}
-+			if (memcg)
-+				s->refcount++;
- 			return s;
- 		}
- 		kfree(s);
-@@ -3973,6 +3985,12 @@ err:
- 		s = NULL;
- 	return s;
- }
-+
-+struct kmem_cache *kmem_cache_create(const char *name, size_t size,
-+		size_t align, unsigned long flags, void (*ctor)(void *))
-+{
-+	return kmem_cache_create_memcg(NULL, name, size, align, flags, ctor);
-+}
- EXPORT_SYMBOL(kmem_cache_create);
- 
- #ifdef CONFIG_SMP
-@@ -5265,6 +5283,11 @@ static char *create_unique_id(struct kmem_cache *s)
- 	if (p != name + 1)
- 		*p++ = '-';
- 	p += sprintf(p, "%07d", s->size);
-+
-+#ifdef CONFIG_CGROUP_MEM_RES_CTLR_KMEM
-+	if (s->memcg_params.memcg)
-+		p += sprintf(p, "-%08d", memcg_css_id(s->memcg_params.memcg));
-+#endif
- 	BUG_ON(p > name + ID_STR_LENGTH - 1);
- 	return name;
- }
--- 
-1.7.7.6
-
