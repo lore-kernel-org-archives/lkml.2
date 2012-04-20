@@ -1,74 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754223Ab2DTKF1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Apr 2012 06:05:27 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:33362 "EHLO mx2.suse.de"
+	id S1754209Ab2DTKHF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Apr 2012 06:07:05 -0400
+Received: from e2.ny.us.ibm.com ([32.97.182.142]:56569 "EHLO e2.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752475Ab2DTKFY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Apr 2012 06:05:24 -0400
-Date: Fri, 20 Apr 2012 12:05:21 +0200 (CEST)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Simon Wood <simon@mungewell.org>
-Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Michael Bauer <michael@m-bauer.org>,
-        Michal Maly <madcatxster@gmail.com>
-Subject: Re: [PATCH 1/2] HID: hid-lg4ff: Add support for G27 LEDs
-In-Reply-To: <2702029527a38f9e28882007b36eaf73.squirrel@mungewell.org>
-Message-ID: <alpine.LNX.2.00.1204201156300.29484@pobox.suse.cz>
-References: <alpine.LNX.2.00.1204131458290.16373@pobox.suse.cz>    <1334732588-9351-1-git-send-email-simon@mungewell.org>    <alpine.LNX.2.00.1204181320180.16373@pobox.suse.cz> <2702029527a38f9e28882007b36eaf73.squirrel@mungewell.org>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1753694Ab2DTKHC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Apr 2012 06:07:02 -0400
+Date: Fri, 20 Apr 2012 15:27:30 +0530
+From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: Steven Rostedt <rostedt@goodmis.org>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
+        LKML <linux-kernel@vger.kernel.org>, Linux-mm <linux-mm@kvack.org>,
+        Oleg Nesterov <oleg@redhat.com>, Andi Kleen <andi@firstfloor.org>,
+        Christoph Hellwig <hch@infradead.org>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Anton Arapov <anton@redhat.com>
+Subject: Re: [PATCH UPDATED 3/3] tracing: Provide trace events interface
+ for uprobes
+Message-ID: <20120420095730.GB8357@linux.vnet.ibm.com>
+Reply-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+References: <20120409091133.8343.65289.sendpatchset@srdronam.in.ibm.com>
+ <20120409091154.8343.50489.sendpatchset@srdronam.in.ibm.com>
+ <20120411103043.GB29437@linux.vnet.ibm.com>
+ <1334236456.23924.333.camel@gandalf.stny.rr.com>
+ <20120414111206.GA24688@gmail.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+In-Reply-To: <20120414111206.GA24688@gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12042010-5112-0000-0000-0000073DFE52
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 18 Apr 2012, simon@mungewell.org wrote:
 
-> > Putting the whole err: label outside the outer for cycle would make the
-> > whole thing much more readable (and would save you the break). Could you
-> > please redo this?
+Hi Ingo, 
+
+
+* Ingo Molnar <mingo@kernel.org> [2012-04-14 13:12:06]:
+
 > 
-> The 'break' is actually not needed as 'j' has reached maximum value and
-> the outer for loop would be at completion. 
-
-Ah, right, I have even missed this fact, that you are using the same index 
-in the inner loop as in the outter loop.
-
-Quite unreadable indeed :)
-
-> I put the 'break' there just to highlight this fact.
+> * Steven Rostedt <rostedt@goodmis.org> wrote:
 > 
-> Maybe just a comment would be OK, such as 'on error fall though to driver
-> completion'.
+> > I'm fine with what I see here (still need to fix what Masami 
+> > suggested).
+> > 
+> > Acked-by: Steven Rostedt <rostedt@goodmis.org>
 > 
-> The reason I'd like this code here is that it seems traditional to output
-> the following 'hid_info' line once the driver is fully active.
+> Ok - Srikar, mind sending the latest (3-patch?) series again, 
+> with all suggestions and acks incorporated?
 > 
-> >>  	hid_info(hid, "Force feedback for Logitech Speed Force Wireless by
-> >> Simon Wood <simon@mungewell.org>\n");
-> 
-> Moving the 'err:' code would have to:
-> 1). Jump back to hit this hid_info line
-> 2). Duplicate the hid_info line
-> 3). Have err code called as a function
 
-I am not getting it. Why can't you do just something like
+I had re-posted the tracing bits http://lkml.org/lkml/2012/4/16/109
+Masami has added his ack to the last patch. So all the three patches are
+acked by Masami and Steven Rostedt. 
 
+Also the perf bits  were posted here http://lkml.org/lkml/2012/4/16/175. 
 
-	for ( .... ) {
-		/* outter loop */
-		if (error) {
-			for ( ... ) {
-				/* inner loop */
-			}
-			goto out;
-		}
-	}
-out:
-	hid_info(....);
-	return;
+Any reason why these arent pulled in?
 
 -- 
-Jiri Kosina
-SUSE Labs
+thanks and regards
+Srikar
+
