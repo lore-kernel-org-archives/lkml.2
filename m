@@ -1,134 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757294Ab2DTQKW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Apr 2012 12:10:22 -0400
-Received: from mail-pz0-f52.google.com ([209.85.210.52]:64138 "EHLO
-	mail-pz0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757276Ab2DTQKT (ORCPT
+	id S1757312Ab2DTQKb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Apr 2012 12:10:31 -0400
+Received: from moutng.kundenserver.de ([212.227.17.9]:63862 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757276Ab2DTQKZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Apr 2012 12:10:19 -0400
-From: Lin Ming <mlin@ss.pku.edu.cn>
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Steven Noonan <steven@uplinklabs.net>, Ben Guthro <ben@guthro.net>,
-        Jeremy Fitzhardinge <jeremy@goop.org>,
-        Marcus Granado <marcus.granado@citrix.com>, xen-devel@lists.xen.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH v2 2/2] xen: implement IRQ_WORK_VECTOR handler
-Date: Sat, 21 Apr 2012 00:11:05 +0800
-Message-Id: <1334938265-3844-3-git-send-email-mlin@ss.pku.edu.cn>
-X-Mailer: git-send-email 1.7.2.5
-In-Reply-To: <1334938265-3844-1-git-send-email-mlin@ss.pku.edu.cn>
-References: <1334938265-3844-1-git-send-email-mlin@ss.pku.edu.cn>
+	Fri, 20 Apr 2012 12:10:25 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Johan Hovold <jhovold@gmail.com>
+Subject: Re: [PATCH 3/4] leds: add LM3533 LED driver
+Date: Fri, 20 Apr 2012 16:10:15 +0000
+User-Agent: KMail/1.12.2 (Linux/3.3.0-rc1; KDE/4.3.2; x86_64; ; )
+Cc: Richard Purdie <rpurdie@rpsys.net>, Samuel Ortiz <sameo@linux.intel.com>,
+        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
+        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, linux-fbdev@vger.kernel.org
+References: <1334935826-12527-1-git-send-email-jhovold@gmail.com> <1334935826-12527-4-git-send-email-jhovold@gmail.com>
+In-Reply-To: <1334935826-12527-4-git-send-email-jhovold@gmail.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201204201610.15758.arnd@arndb.de>
+X-Provags-ID: V02:K0:N7OM7OUXGo+bCQqc/iDwCHJBsK+S72GdRZRwJszd6oH
+ eKaY0omCUFX684NaIXAF0zrUz0amZCHOdbvf9+xhLBBe06AMoG
+ KWlFIzxWN4vGiLYdVr626GBGeTsb97y2ojWaNvg5nbqGSCxkMO
+ adQZiSn6PpqgsBA96mGhDqrVIoOY14zX6Igtu0nnLVk2kxl1Vv
+ 7bSoW5QIuWj9oHWq6IZnCkZ742KxTqtKz7AVqE/NBwi2FWW6mH
+ KZ1FxXfdAO5igFAUNOw2BtXQ473ePqDMCy9hhHc/qLAdvv+OM4
+ yFIV8uXj3mpzZ2HTLK16yrqQdfKk8rfShOUCm/CaugYbFpwPY5
+ Sw0Nr482jf9PdaBNmIKg=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Lin Ming <mlin@ss.pku.edu.cn>
----
- arch/x86/include/asm/xen/events.h |    1 +
- arch/x86/xen/smp.c                |   30 ++++++++++++++++++++++++++++++
- 2 files changed, 31 insertions(+), 0 deletions(-)
+On Friday 20 April 2012, Johan Hovold wrote:
+> Add sub-driver for the LEDs in National Semiconductor / TI LM3533
+> lighting power chips.
+> 
+> The chip provides 256 brightness levels, hardware accelerated blinking
+> as well as ambient-light-sensor and pwm input control.
+> 
+> Signed-off-by: Johan Hovold <jhovold@gmail.com>
 
-diff --git a/arch/x86/include/asm/xen/events.h b/arch/x86/include/asm/xen/events.h
-index 1df3541..cc146d5 100644
---- a/arch/x86/include/asm/xen/events.h
-+++ b/arch/x86/include/asm/xen/events.h
-@@ -6,6 +6,7 @@ enum ipi_vector {
- 	XEN_CALL_FUNCTION_VECTOR,
- 	XEN_CALL_FUNCTION_SINGLE_VECTOR,
- 	XEN_SPIN_UNLOCK_VECTOR,
-+	XEN_IRQ_WORK_VECTOR,
- 
- 	XEN_NR_IPIS,
- };
-diff --git a/arch/x86/xen/smp.c b/arch/x86/xen/smp.c
-index 2dc6628..3ec3f8e 100644
---- a/arch/x86/xen/smp.c
-+++ b/arch/x86/xen/smp.c
-@@ -16,6 +16,7 @@
- #include <linux/err.h>
- #include <linux/slab.h>
- #include <linux/smp.h>
-+#include <linux/irq_work.h>
- 
- #include <asm/paravirt.h>
- #include <asm/desc.h>
-@@ -41,10 +42,12 @@ cpumask_var_t xen_cpu_initialized_map;
- static DEFINE_PER_CPU(int, xen_resched_irq);
- static DEFINE_PER_CPU(int, xen_callfunc_irq);
- static DEFINE_PER_CPU(int, xen_callfuncsingle_irq);
-+static DEFINE_PER_CPU(int, xen_irq_work);
- static DEFINE_PER_CPU(int, xen_debug_irq) = -1;
- 
- static irqreturn_t xen_call_function_interrupt(int irq, void *dev_id);
- static irqreturn_t xen_call_function_single_interrupt(int irq, void *dev_id);
-+static irqreturn_t xen_irq_work_interrupt(int irq, void *dev_id);
- 
- /*
-  * Reschedule call back.
-@@ -143,6 +146,17 @@ static int xen_smp_intr_init(unsigned int cpu)
- 		goto fail;
- 	per_cpu(xen_callfuncsingle_irq, cpu) = rc;
- 
-+	callfunc_name = kasprintf(GFP_KERNEL, "irqwork%d", cpu);
-+	rc = bind_ipi_to_irqhandler(XEN_IRQ_WORK_VECTOR,
-+				    cpu,
-+				    xen_irq_work_interrupt,
-+				    IRQF_DISABLED|IRQF_PERCPU|IRQF_NOBALANCING,
-+				    callfunc_name,
-+				    NULL);
-+	if (rc < 0)
-+		goto fail;
-+	per_cpu(xen_irq_work, cpu) = rc;
-+
- 	return 0;
- 
-  fail:
-@@ -155,6 +169,8 @@ static int xen_smp_intr_init(unsigned int cpu)
- 	if (per_cpu(xen_callfuncsingle_irq, cpu) >= 0)
- 		unbind_from_irqhandler(per_cpu(xen_callfuncsingle_irq, cpu),
- 				       NULL);
-+	if (per_cpu(xen_irq_work, cpu) >= 0)
-+		unbind_from_irqhandler(per_cpu(xen_irq_work, cpu), NULL);
- 
- 	return rc;
- }
-@@ -509,6 +525,9 @@ static inline int xen_map_vector(int vector)
- 	case CALL_FUNCTION_SINGLE_VECTOR:
- 		xen_vector = XEN_CALL_FUNCTION_SINGLE_VECTOR;
- 		break;
-+	case IRQ_WORK_VECTOR:
-+		xen_vector = XEN_IRQ_WORK_VECTOR;
-+		break;
- 	default:
- 		xen_vector = -1;
- 		printk(KERN_ERR "xen: vector 0x%x is not implemented\n",
-@@ -588,6 +607,16 @@ static irqreturn_t xen_call_function_single_interrupt(int irq, void *dev_id)
- 	return IRQ_HANDLED;
- }
- 
-+static irqreturn_t xen_irq_work_interrupt(int irq, void *dev_id)
-+{
-+	irq_enter();
-+	irq_work_run();
-+	inc_irq_stat(apic_irq_work_irqs);
-+	irq_exit();
-+
-+	return IRQ_HANDLED;
-+}
-+
- static const struct smp_ops xen_smp_ops __initconst = {
- 	.smp_prepare_boot_cpu = xen_smp_prepare_boot_cpu,
- 	.smp_prepare_cpus = xen_smp_prepare_cpus,
-@@ -634,6 +663,7 @@ static void xen_hvm_cpu_die(unsigned int cpu)
- 	unbind_from_irqhandler(per_cpu(xen_callfunc_irq, cpu), NULL);
- 	unbind_from_irqhandler(per_cpu(xen_debug_irq, cpu), NULL);
- 	unbind_from_irqhandler(per_cpu(xen_callfuncsingle_irq, cpu), NULL);
-+	unbind_from_irqhandler(per_cpu(xen_irq_work, cpu), NULL);
- 	native_cpu_die(cpu);
- }
- 
--- 
-1.7.2.5
+I notice that there is already driver for lm3530, which sounds related.
+Is there an opportunity to share code between these, or are they completely
+different devices?
 
+> +
+> +#define show_ctrlbank_attr(_name)					\
+> +static ssize_t show_##_name(struct device *dev,				\
+> +				struct device_attribute *attr,		\
+> +				char *buf)				\
+> +{									\
+> +	struct led_classdev *led_cdev = dev_get_drvdata(dev);		\
+> +	struct lm3533_led *led = to_lm3533_led(led_cdev);		\
+> +	u8 val;								\
+> +	int ret;							\
+> +									\
+> +	ret = lm3533_ctrlbank_get_##_name(&led->cb, &val);		\
+> +	if (ret)							\
+> +		return ret;						\
+> +									\
+> +	return scnprintf(buf, PAGE_SIZE, "%d\n", val);			\
+> +}
+
+IMHO this macro adds more in terms of complexity than it saves in terms
+of lines of code, and it would be better to open-code the two instances.
+If you need more than two or three instances, I would recommend creating
+keying the number off of the attribute pointer, either by comparing the
+pointer or by adding a data structure derived from device_attribute and
+using container_of to get at the other data.
+
+	Arnd
