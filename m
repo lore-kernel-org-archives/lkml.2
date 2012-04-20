@@ -1,100 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752073Ab2DTUHU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Apr 2012 16:07:20 -0400
-Received: from mail-pz0-f52.google.com ([209.85.210.52]:56396 "EHLO
-	mail-pz0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751349Ab2DTUHR convert rfc822-to-8bit (ORCPT
+	id S1751976Ab2DTUOk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Apr 2012 16:14:40 -0400
+Received: from g4t0014.houston.hp.com ([15.201.24.17]:37910 "EHLO
+	g4t0014.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750724Ab2DTUOi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Apr 2012 16:07:17 -0400
-MIME-Version: 1.0
-In-Reply-To: <20120420124557.035417523@linutronix.de>
-References: <20120420122120.097464672@linutronix.de>
-	<20120420124557.035417523@linutronix.de>
-Date: Fri, 20 Apr 2012 13:07:16 -0700
-X-Google-Sender-Auth: JuJohKRaBvEZs8fnaTpkbPpKl20
-Message-ID: <CAE9FiQWpcD_GAtmnowTpAEW+6hRqxjokHKf4Nb2K92sm=SUGNQ@mail.gmail.com>
-Subject: Re: [patch 03/18] smp: Add generic smpboot facility
-From: Yinghai Lu <yinghai@kernel.org>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: LKML <linux-kernel@vger.kernel.org>, linux-arch@vger.kernel.org,
-        Peter Zijlstra <peterz@infradead.org>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Ingo Molnar <mingo@kernel.org>,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        Matt Turner <mattst88@gmail.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Mike Frysinger <vapier@gentoo.org>,
-        Jesper Nilsson <jesper.nilsson@axis.com>,
-        Richard Kuo <rkuo@codeaurora.org>, Tony Luck <tony.luck@intel.com>,
-        Hirokazu Takata <takata@linux-m32r.org>,
-        Ralf Baechle <ralf@linux-mips.org>,
-        David Howells <dhowells@redhat.com>,
-        "James E.J. Bottomley" <jejb@parisc-linux.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Paul Mundt <lethal@linux-sh.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        Chris Metcalf <cmetcalf@tilera.com>,
-        Richard Weinberger <richard@nod.at>, x86@kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Fri, 20 Apr 2012 16:14:38 -0400
+Message-ID: <1334952876.3255.14.camel@lorien2>
+Subject: [PATCH ] leds: change existing triggers to use activated flag
+From: Shuah Khan <shuahkhan@gmail.com>
+Reply-To: shuahkhan@gmail.com
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: shuahkhan@gmail.com, LKML <linux-kernel@vger.kernel.org>,
+        Richard Purdie <richard.purdie@linuxfoundation.org>
+Date: Fri, 20 Apr 2012 14:14:36 -0600
+In-Reply-To: <1334893688.3051.5.camel@lorien2>
+References: <1334703911.2655.9.camel@lorien2>
+	 <20120417161239.57c41966.akpm@linux-foundation.org>
+	 <1334893688.3051.5.camel@lorien2>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2- 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 20, 2012 at 6:05 AM, Thomas Gleixner <tglx@linutronix.de> wrote:
-> Start a new file, which will hold SMP and CPU hotplug related generic
-> infrastructure.
->
-===================================================================
-> --- linux-2.6.orig/kernel/cpu.c
-> +++ linux-2.6/kernel/cpu.c
-> @@ -17,6 +17,8 @@
->  #include <linux/gfp.h>
->  #include <linux/suspend.h>
->
-> +#include "smpboot.h"
-> +
->  #ifdef CONFIG_SMP
->  /* Serializes the updates to cpu_online_mask, cpu_present_mask */
->  static DEFINE_MUTEX(cpu_add_remove_lock);
-> @@ -300,6 +302,11 @@ static int __cpuinit _cpu_up(unsigned in
->                return -EINVAL;
->
->        cpu_hotplug_begin();
-> +
-> +       ret = smpboot_prepare(cpu);
-> +       if (ret)
-> +               goto out;
-> +
->        ret = __cpu_notify(CPU_UP_PREPARE | mod, hcpu, -1, &nr_calls);
->        if (ret) {
->                nr_calls--;
-> @@ -320,6 +327,7 @@ static int __cpuinit _cpu_up(unsigned in
->  out_notify:
->        if (ret != 0)
->                __cpu_notify(CPU_UP_CANCELED | mod, hcpu, nr_calls, NULL);
-> +out:
->        cpu_hotplug_done();
->
->        return ret;
-> Index: linux-2.6/kernel/smpboot.c
-> ===================================================================
-> --- /dev/null
-> +++ linux-2.6/kernel/smpboot.c
-> @@ -0,0 +1,12 @@
-> +/*
-> + * Common SMP CPU bringup/teardown functions
-> + */
-> +
-> +#include "smpboot.h"
-> +
-> +/**
-> + * smpboot_prepare - generic smpboot preparation
-> + */
-> +int __cpuinit smpboot_prepare(unsigned int cpu)
-> +{
-         return 0;
-> +}
+Changed existing triggers backlight, gpio, and heartbeat to use 
+activated flag to set activate successful status in their activate
+routines and check it in their deactivate routines to do cleanup.
+
+>From c0afeb736a5cb23d4212ac5900e2b514d0e75e90 Mon Sep 17 00:00:00 2001
+From: Shuah Khan <shuahkhan@gmail.com>
+Date: Fri, 20 Apr 2012 12:41:00 -0600
+Subject: [PATCH] leds: change existing triggers to use activated flag
+
+
+Signed-off-by: Shuah Khan <shuahkhan@gmail.com>
+---
+ drivers/leds/ledtrig-backlight.c |    4 +++-
+ drivers/leds/ledtrig-gpio.c      |    4 +++-
+ drivers/leds/ledtrig-heartbeat.c |    4 +++-
+ 3 files changed, 9 insertions(+), 3 deletions(-)
+
+diff --git a/drivers/leds/ledtrig-backlight.c b/drivers/leds/ledtrig-backlight.c
+index 2b513a2..e272686 100644
+--- a/drivers/leds/ledtrig-backlight.c
++++ b/drivers/leds/ledtrig-backlight.c
+@@ -120,6 +120,7 @@ static void bl_trig_activate(struct led_classdev *led)
+ 	ret = fb_register_client(&n->notifier);
+ 	if (ret)
+ 		dev_err(led->dev, "unable to register backlight trigger\n");
++	led->activated = true;
+ 
+ 	return;
+ 
+@@ -133,10 +134,11 @@ static void bl_trig_deactivate(struct led_classdev *led)
+ 	struct bl_trig_notifier *n =
+ 		(struct bl_trig_notifier *) led->trigger_data;
+ 
+-	if (n) {
++	if (led->activated) {
+ 		device_remove_file(led->dev, &dev_attr_inverted);
+ 		fb_unregister_client(&n->notifier);
+ 		kfree(n);
++		led->activated = false;
+ 	}
+ }
+ 
+diff --git a/drivers/leds/ledtrig-gpio.c b/drivers/leds/ledtrig-gpio.c
+index ecc4bf3..f057c10 100644
+--- a/drivers/leds/ledtrig-gpio.c
++++ b/drivers/leds/ledtrig-gpio.c
+@@ -200,6 +200,7 @@ static void gpio_trig_activate(struct led_classdev *led)
+ 	gpio_data->led = led;
+ 	led->trigger_data = gpio_data;
+ 	INIT_WORK(&gpio_data->work, gpio_trig_work);
++	led->activated = true;
+ 
+ 	return;
+ 
+@@ -217,7 +218,7 @@ static void gpio_trig_deactivate(struct led_classdev *led)
+ {
+ 	struct gpio_trig_data *gpio_data = led->trigger_data;
+ 
+-	if (gpio_data) {
++	if (led->activated) {
+ 		device_remove_file(led->dev, &dev_attr_gpio);
+ 		device_remove_file(led->dev, &dev_attr_inverted);
+ 		device_remove_file(led->dev, &dev_attr_desired_brightness);
+@@ -225,6 +226,7 @@ static void gpio_trig_deactivate(struct led_classdev *led)
+ 		if (gpio_data->gpio != 0)
+ 			free_irq(gpio_to_irq(gpio_data->gpio), led);
+ 		kfree(gpio_data);
++		led->activated = false;
+ 	}
+ }
+ 
+diff --git a/drivers/leds/ledtrig-heartbeat.c b/drivers/leds/ledtrig-heartbeat.c
+index 759c0bb..1aacf4c 100644
+--- a/drivers/leds/ledtrig-heartbeat.c
++++ b/drivers/leds/ledtrig-heartbeat.c
+@@ -83,15 +83,17 @@ static void heartbeat_trig_activate(struct led_classdev *led_cdev)
+ 		    led_heartbeat_function, (unsigned long) led_cdev);
+ 	heartbeat_data->phase = 0;
+ 	led_heartbeat_function(heartbeat_data->timer.data);
++	led_cdev->activated = true;
+ }
+ 
+ static void heartbeat_trig_deactivate(struct led_classdev *led_cdev)
+ {
+ 	struct heartbeat_trig_data *heartbeat_data = led_cdev->trigger_data;
+ 
+-	if (heartbeat_data) {
++	if (led_cdev->activated) {
+ 		del_timer_sync(&heartbeat_data->timer);
+ 		kfree(heartbeat_data);
++		led_cdev->activated = false;
+ 	}
+ }
+ 
+-- 
+1.7.5.4
+
+
+
