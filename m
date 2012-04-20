@@ -1,50 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756624Ab2DTR0v (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Apr 2012 13:26:51 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:32902 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753539Ab2DTR0u (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Apr 2012 13:26:50 -0400
-Date: Fri, 20 Apr 2012 13:26:39 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: axboe@kernel.dk, ctalbott@google.com, rni@google.com,
-        cgroups@vger.kernel.org, containers@lists.linux-foundation.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 4/4] blkcg: use radix tree to index blkgs from blkcg
-Message-ID: <20120420172639.GM22419@redhat.com>
-References: <1334878164-24788-1-git-send-email-tj@kernel.org>
- <1334878164-24788-5-git-send-email-tj@kernel.org>
+	id S1756071Ab2DTR2y (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Apr 2012 13:28:54 -0400
+Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:44985 "EHLO
+	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752137Ab2DTR2w (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Apr 2012 13:28:52 -0400
+Date: Fri, 20 Apr 2012 19:28:49 +0200
+From: Johan Hovold <jhovold@gmail.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Richard Purdie <rpurdie@rpsys.net>, Samuel Ortiz <sameo@linux.intel.com>,
+        Arnd Bergmann <arnd@arndb.de>,
+        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, linux-fbdev@vger.kernel.org
+Subject: Re: [PATCH 2/4] misc: add LM3533 ambient light sensor driver
+Message-ID: <20120420172849.GB12376@localhost>
+References: <1334935826-12527-1-git-send-email-jhovold@gmail.com>
+ <1334935826-12527-3-git-send-email-jhovold@gmail.com>
+ <20120420155734.GE8327@kroah.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1334878164-24788-5-git-send-email-tj@kernel.org>
+In-Reply-To: <20120420155734.GE8327@kroah.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 19, 2012 at 04:29:24PM -0700, Tejun Heo wrote:
-> blkg lookup is currently performed by traversing linked list anchored
-> at blkcg->blkg_list.  This is very unscalable and with blk-throttle
-> enabled and enough request queues on the system, this can get very
-> ugly quickly (blk-throttle performs look up on every bio submission).
+On Fri, Apr 20, 2012 at 08:57:34AM -0700, Greg Kroah-Hartman wrote:
+> On Fri, Apr 20, 2012 at 05:30:24PM +0200, Johan Hovold wrote:
+> > Add sub-driver for the ambient light sensor in National Semiconductor /
+> > TI LM3533 lighting power chips.
+> > 
+> > Raw ADC values as well as current ALS zone can be retrieved through
+> > sysfs. The ALS zone can also be read using a character device
+> > (/dev/lm3533-als) which is updated on zone changes (interrupt driven or
+> > polled).
+> > 
+> > The driver provides a configuration interface through sysfs.
 > 
-> This patch makes blkcg use radix tree to index blkgs combined with
-> simple last-looked-up hint.  This is mostly identical to how icqs are
-> indexed from ioc.
-> 
-> Note that because __blkg_lookup() may be invoked without holding queue
-> lock, hint is only updated from __blkg_lookup_create().  Due to cfq's
-> cfqq caching, this makes hint updates overly lazy.  This will be
-> improved with scheduled blkcg aware request allocation.
-> 
-> Signed-off-by: Tejun Heo <tj@kernel.org>
-> Cc: Vivek Goyal <vgoyal@redhat.com>
+> Which seems to not be documented at all :(
 
-Nice to see radix tree lookup and caching hint. Helps with scalability.
+There are the following sysfs entries for configuring ALS control:
 
-Acked-by: Vivek Goyal <vgoyal@redhat.com>
+boundary0_high
+boundary0_low
+boundary1_high
+boundary1_low
+boundary2_high
+boundary2_low
+boundary3_high
+boundary3_low
 
-Vivek
+gain
+
+target1_0
+target1_1
+target1_2
+target1_3
+target1_4
+
+target2_0
+target2_1
+target2_2
+target2_3
+target2_4
+
+target3_0
+target3_1
+target3_2
+target3_3
+target3_4
+
+These define the "five light zones and three sets of corresponding
+brightness target levels" mentioned in the Kconfig entry and provides a
+gain setting.
+
+Each entry also corresponds to an 8-bit register, which is documented
+along with the overall ALS functionality in the datasheets (which will
+be published on the TI web page soon). So I think anyone integrating
+this IC (or anyone who has access to the datasheets) will have no
+problem with this interface, but I'd be happy to write something to put
+under Documentation as well.
+
+The end-customer insisted on sysfs configurability, but I'll probably
+add these settings to the platform data later as well. 
+
+> What about using the iio interface for this instead?  Doesn't that
+> already provide this standard interface you are looking for?
+
+I had a look at iio last fall and decided not to use it at the time. I
+can't remember exactly what the reasons were right now, so I'll have
+to get back to you on this.
+
+Thanks,
+Johan
