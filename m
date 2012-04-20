@@ -1,53 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755475Ab2DTHSL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Apr 2012 03:18:11 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:45707 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752557Ab2DTHSJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Apr 2012 03:18:09 -0400
-Date: Fri, 20 Apr 2012 15:18:00 +0800
-From: Yong Zhang <yong.zhang0@gmail.com>
-To: Stephen Boyd <sboyd@codeaurora.org>
-Cc: linux-kernel@vger.kernel.org, Tejun Heo <tj@kernel.org>,
-        netdev@vger.kernel.org, Ben Dooks <ben-linux@fluff.org>
-Subject: Re: [PATCH 1/2] workqueue: Catch more locking problems with
- flush_work()
-Message-ID: <20120420071759.GA17846@zhy>
-Reply-To: Yong Zhang <yong.zhang0@gmail.com>
-References: <1334805958-29119-1-git-send-email-sboyd@codeaurora.org>
- <20120419081002.GB3963@zhy>
- <4F905B30.4080501@codeaurora.org>
- <20120420052633.GA16219@zhy>
- <20120420060101.GA16563@zhy>
- <4F9101A7.5010100@codeaurora.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <4F9101A7.5010100@codeaurora.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1755537Ab2DTHVl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Apr 2012 03:21:41 -0400
+Received: from gate.crashing.org ([63.228.1.57]:56776 "EHLO gate.crashing.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753805Ab2DTHVk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Apr 2012 03:21:40 -0400
+Message-ID: <1334906476.3197.11.camel@pasglop>
+Subject: Multitouch regression in 3.3 on thinkpad X220 clickpad
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: Daniel Drake <dsd@laptop.org>
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Peter Hutterer <peter.hutterer@who-t.net>,
+        "X.Org Devel List" <xorg-devel@lists.freedesktop.org>,
+        Linux Kernel list <linux-kernel@vger.kernel.org>
+Date: Fri, 20 Apr 2012 17:21:16 +1000
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 19, 2012 at 11:26:47PM -0700, Stephen Boyd wrote:
-> complain in the case where the work is not queued. That case is not a
-> false positive. We will get a lockdep warning if the work is running
+Hi folks !
 
-IIRC, flush_work() is just a nop when a work is not queued nor running.
+So Peter and I have been discussing a problem I observed on my brand new
+ThinkPad X220 and it's multitouch "clickpad". I've been digging a bit
+more today and bisected the regression to:
 
-> (when start_flush_work() returns true) solely with the
-> lock_map_acquire() on cwq->wq->lockdep_map.
+commit 7968a5dd492ccc38345013e534ad4c8d6eb60ed1
+Input: synaptics - add support for Relative mode
 
-Yeah, that is the point we use lockdep to detect deadlock for workqueue.
+Without that commit, I can draw two "traces" when using two fingers in
+mtview (after removing the device from X), each follow one finger.
 
-But when looking at start_flush_work(), for some case
-!(cwq->wq->saved_max_active == 1 || cwq->wq->flags & WQ_RESCUER),
-lock_map_acquire_read() is called, but recursive read is not added to
-the chain list. So when lock_map_acquire_read(&cwq->wq->lockdep_map)
-is called, deadlock will not be detected. I hope you don't hit that
-special case.
+With that commit applied, this doesn't work anymore: it appears to be
+unable to track more than one finger. IE. If i put a finger on the
+touchpad, I can draw, but a second finger is then ignored (or causes one
+or two spots in a random place to appear but that's about it).
 
-Thanks,
-Yong
+Now other multitouch operations such as two finger scrolling seem to
+work in X. I'm not familiar with the inner workings of the input layer
+or the synaptic touchpads. I'll dig a bit more this week-end if I have
+time, but it would save me plenty of that precious time if you guys
+could hint me at things to look at :-)
+
+I have a couple more bits of interesting info.
+
+If I boot with a "bad" driver. rmmod it. insmod a "good" one (one build
+from the same kernel tree set to the commit right before the one above)
+then things work fine. The interesting bit is that if I then rmmod it
+and insmod the "bad" one again ... it still works. So it looks like it
+might have something to do with how the touchpad is initialized.
+
+Some more info about the touchpad itself from dmesg:
+
+psmouse serio1: synaptics: Touchpad model: 1, fw: 8.0, id: 0x1e2b1, caps: 0xd001a3/0x940300/0x120c00
+psmouse serio1: synaptics: serio: Synaptics pass-through port at isa0060/serio1/input0
+input: SynPS/2 Synaptics TouchPad as /devices/platform/i8042/serio1/input/input13
+
+Let me know if there's any other info of value I can collect. 
+
+Cheers,
+Ben.
+
+
