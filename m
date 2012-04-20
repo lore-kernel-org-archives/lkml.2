@@ -1,104 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932545Ab2DTDch (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Apr 2012 23:32:37 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:51662 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932268Ab2DTDcP (ORCPT
+	id S1757101Ab2DTDgL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Apr 2012 23:36:11 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:50166 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752599Ab2DTDgI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Apr 2012 23:32:15 -0400
-Date: Thu, 19 Apr 2012 20:32:09 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Kyungmin Park <kyungmin.park@samsung.com>
-Cc: MyungJoo Ham <myungjoo.ham@samsung.com>, Arnd Bergmann <arnd@arndb.de>,
-        LKML <linux-kernel@vger.kernel.org>, NeilBrown <neilb@suse.de>,
-        Randy Dunlap <rdunlap@xenotime.net>,
-        Mike Lockwood <lockwood@android.com>,
-        Arve =?iso-8859-1?Q?Hj=F8nnevag?= <arve@android.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Morten CHRISTIANSEN <morten.christiansen@stericsson.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        John Stultz <john.stultz@linaro.org>,
-        Joerg Roedel <joerg.roedel@amd.com>, myungjoo.ham@gmail.com,
-        cw00.choi@samsung.com
-Subject: Re: [PATCH v8 1/6] Extcon (external connector): import Android's
- switch class and modify.
-Message-ID: <20120420033209.GA17930@kroah.com>
-References: <20120418214703.GA31606@kroah.com>
- <1334803298-24260-1-git-send-email-myungjoo.ham@samsung.com>
- <1334803298-24260-2-git-send-email-myungjoo.ham@samsung.com>
- <20120420023704.GA1399@kroah.com>
- <CAH9JG2WRXPVuJz2mDYB+r=6n1FOwzSRwAFiJ35oTVz8E59dp7w@mail.gmail.com>
- <20120420024920.GA17151@kroah.com>
- <CAH9JG2X6KUhPyKkTVgwG5grdmxoyPM4xGVn3J+cRG-KzPOHL_g@mail.gmail.com>
- <20120420030046.GA17274@kroah.com>
- <CAH9JG2XvYqa7W-PTbq6JrY3LGoFqKkdBfcGJ73HbynqM9ZvhjQ@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CAH9JG2XvYqa7W-PTbq6JrY3LGoFqKkdBfcGJ73HbynqM9ZvhjQ@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 19 Apr 2012 23:36:08 -0400
+Date: Fri, 20 Apr 2012 13:35:55 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Marcelo Tosatti <mtosatti@redhat.com>
+Cc: Avi Kivity <avi@redhat.com>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Eric B Munson <emunson@mgebm.net>,
+        Alexander Graf <agraf@suse.de>
+Subject: Re: linux-next: build failure after merge of the final tree
+ (kvm-ppc tree related)
+Message-Id: <20120420133555.4343c7fc785ed6132a37a9df@canb.auug.org.au>
+In-Reply-To: <20120420011413.GA12235@amt.cnet>
+References: <20120419163535.52c99a34e2664063d654ac4d@canb.auug.org.au>
+	<20120420101012.591b5e64a8939135bf5cd167@canb.auug.org.au>
+	<20120420011413.GA12235@amt.cnet>
+X-Mailer: Sylpheed 3.2.0beta7 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Fri__20_Apr_2012_13_35_55_+1000_.N/o/ZyfcFIRSK1f"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 20, 2012 at 12:08:32PM +0900, Kyungmin Park wrote:
-> On 4/20/12, Greg KH <gregkh@linuxfoundation.org> wrote:
-> > On Fri, Apr 20, 2012 at 11:57:26AM +0900, Kyungmin Park wrote:
-> >> On 4/20/12, Greg KH <gregkh@linuxfoundation.org> wrote:
-> >> > On Fri, Apr 20, 2012 at 11:46:25AM +0900, Kyungmin Park wrote:
-> >> >> On 4/20/12, Greg KH <gregkh@linuxfoundation.org> wrote:
-> >> >> > On Thu, Apr 19, 2012 at 11:41:33AM +0900, MyungJoo Ham wrote:
-> >> >> >> External connector class (extcon) is based on and an extension of
-> >> >> >> Android kernel's switch class located at linux/drivers/switch/.
-> >> >> >
-> >> >> > Oh come on, this still breaks the build, it is as if you didn't even
-> >> >> > test this at all, or modify anything since I reported it as a problem
-> >> >> > to
-> >> >> > you yesterday:
-> >> >> >
-> >> >> > drivers/extcon/extcon_class.c:79:6: error: redefinition of
-> >> >> > ‘extcon_set_state’
-> >> >> > include/linux/extcon.h:80:20: note: previous definition of
-> >> >> > ‘extcon_set_state’ was here
-> >> >> > drivers/extcon/extcon_class.c:170:5: error: redefinition of
-> >> >> > ‘extcon_dev_register’
-> >> >> > include/linux/extcon.h:67:19: note: previous definition of
-> >> >> > ‘extcon_dev_register’ was here
-> >> >> > drivers/extcon/extcon_class.c:214:6: error: redefinition of
-> >> >> > ‘extcon_dev_unregister’
-> >> >> > include/linux/extcon.h:73:20: note: previous definition of
-> >> >> > ‘extcon_dev_unregister’ was here
-> >> >> >
-> >> >> > You can do better than this, I know you can.
-> >> >>
-> >> >> Umm. can you show your EXTCON config? I think you build it as module.
-> >> >> it's tested it extcon on or not. anyway I'll test it as module and
-> >> >> check it.
-> >> >
-> >> > Yes, I selected to build it as a module, which, according to your patch,
-> >> > is a valid selection.
-> >>
-> >> Found, need to add CONFIG_EXTCON_MODULE at below.
-> >
-> > You do know we have a new macro that handles all of this for you,
-> > IS_ENABLED().  It handles the _MODULE stuff and the other stuff as well,
-> > and you can put it in a .c expression also.
-> >
-> > Try using that instead.
-> 
-> No problem, send patches with it.
-> 
-> BTW, can we post it after one hour?
+--Signature=_Fri__20_Apr_2012_13_35_55_+1000_.N/o/ZyfcFIRSK1f
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-You can send it whenever you want, I do not impose any deadlines.
+Hi Marcelo,
 
-But note, I'll not be reading email for at least 10 more hours, it's
-getting late in my timezone, so take your time and get it right, no
-rush.
+On Thu, 19 Apr 2012 22:14:13 -0300 Marcelo Tosatti <mtosatti@redhat.com> wr=
+ote:
+>
+> Can you try the patch below please?
+>=20
+> KVM: add kvm_arch_para_features stub to asm-generic/kvm_para.h
+>=20
+> Needed by kvm_para_has_feature().
+>=20
+> Reported-by: Stephen Rothwell <sfr@canb.auug.org.au>
 
-thanks,
+That fixes the compilation for me
 
-greg k-h
+Tested-by: Stephen Rothwell <sfr@canb.auug.org.au>
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Signature=_Fri__20_Apr_2012_13_35_55_+1000_.N/o/ZyfcFIRSK1f
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCAAGBQJPkNmbAAoJEECxmPOUX5FEeGMP+wf34rBQAPcEq57b0GResF59
+7QZ7cLN/IO8Ukia1RTPlBvFf9zG52bsY5d0e9tWeOhsr6OTuFnquDhxAlJQOm3Pv
+poonPzlh4hqs6PdyHupUGdxgQzr4DupXLHyqqffL38otlh6dgK089FVbif85S58a
+KSZkf/DF9GF3xpvOfOsmeAtbhM6cVnDw2rmXK7xVoo73Wp+PCRPioI6Z0qCgJes0
+IZnfiv1qxNF6FRAmHrG820+13KKQtiFuaWNVT2dx1VDbDmIv/5kb/3mPOb6+IjM2
+qC5xszEKDRdNq9YTnYJuPX0cWPjWjxnZ5YxbgXnhvXXgSo4x5ecE6zUE30p76WPn
+zxx31qwWCwXaaiLVjFqeApYgzaAHWytY9F/k8tcch1PQQWjRVqf5SS4mgroH6eGe
+0VzIZydeEicA75rcSG+QAcG6M8n1vUY6s0LkoTzmr/AwtFsLzG2XWe4Ez6lxUrpv
+9OJHC+0nqg/LZZhPhzpQS/LPunnb0kxuNUttsQOk1Ie74XutIMAQFj3Q2388EOIs
+wA/IbyzR3gEzsH9GpP/OvG4JT2sPMi8jK321PWpCsuQWneSzxh275nEp/OzrkR9p
+EJaW6noz6eOqHEb+n3+IUnzC/82XRHf8vH2iVMqpiGhpjZfjgYeE8riSlst+V6B/
+RogTT9vEcLTxzZ2IFwMS
+=9Pq/
+-----END PGP SIGNATURE-----
+
+--Signature=_Fri__20_Apr_2012_13_35_55_+1000_.N/o/ZyfcFIRSK1f--
