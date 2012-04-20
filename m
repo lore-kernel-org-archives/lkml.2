@@ -1,58 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754032Ab2DTNr3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Apr 2012 09:47:29 -0400
-Received: from www.linutronix.de ([62.245.132.108]:45147 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751543Ab2DTNr2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Apr 2012 09:47:28 -0400
-Date: Fri, 20 Apr 2012 15:47:17 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Peter Zijlstra <peterz@infradead.org>
-cc: LKML <linux-kernel@vger.kernel.org>, linux-arch@vger.kernel.org,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Ingo Molnar <mingo@kernel.org>,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        Tejun Heo <tj@kernel.org>, David Rientjes <rientjes@google.com>
-Subject: Re: [patch 00/18] SMP: Boot and CPU hotplug refactoring - Part 1
-In-Reply-To: <1334928098.2463.56.camel@laptop>
-Message-ID: <alpine.LFD.2.02.1204201540400.2542@ionos>
-References: <20120420122120.097464672@linutronix.de> <1334928098.2463.56.camel@laptop>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+	id S1754365Ab2DTNsS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Apr 2012 09:48:18 -0400
+Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:57076 "EHLO
+	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752500Ab2DTNsR convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Apr 2012 09:48:17 -0400
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+In-Reply-To: <20120420130134.GA5957@opensource.wolfsonmicro.com>
+References: <1334829097-32084-1-git-send-email-jaswinder.singh@linaro.org>
+	<20120419124204.GE3046@opensource.wolfsonmicro.com>
+	<CAJe_ZhfbFq98fT56CS-q4VoU8wnybj-+swfB+Jrknd3Zmt9V8g@mail.gmail.com>
+	<20120419162905.GA3084@opensource.wolfsonmicro.com>
+	<CAJe_Zhd0H6kXBhqdynuZqhbcPq8ARWu5SMbs=hQT2n8stzRvXQ@mail.gmail.com>
+	<20120420114602.GB3259@opensource.wolfsonmicro.com>
+	<CAJe_ZhdKv_7fTj9ZhJE0JzmuhxEZn-JmSbHu615YMXoWZUei9A@mail.gmail.com>
+	<20120420130134.GA5957@opensource.wolfsonmicro.com>
+Date: Fri, 20 Apr 2012 19:18:15 +0530
+Message-ID: <CAJe_ZhdKtK8YKo1qc8g18XrdnrQRZw2aFSkW8x3koELU10EsHw@mail.gmail.com>
+Subject: Re: [PATCH] regulator: Provide a check for dummy regulator
+From: Jassi Brar <jaswinder.singh@linaro.org>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: linux-kernel@vger.kernel.org, lrg@ti.com
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 20 Apr 2012, Peter Zijlstra wrote:
+On 20 April 2012 18:31, Mark Brown <broonie@opensource.wolfsonmicro.com> wrote:
+> On Fri, Apr 20, 2012 at 05:59:42PM +0530, Jassi Brar wrote:
+>
+>> That's what I have been trying to fix. My example might be fictitious but
+>> I have a real scenario with omap_hsmmc (I was avoiding getting into that).
+>
+>> The dummy not just provide a place holder data structure for missing definition
+>> of an available supply, but it also masks the fact that there might indeed be no
+>> supply at all on the given machine.
+>
+>> As I said, atm the only option for a consumer is to know it via PD/DT.
+>
+> No.  You're failing to understand what dummy regulators are for.
+>
+I think I do understand what dummy regulators are for and also that
+they are meant to go away some time in future.
 
-> On Fri, 2012-04-20 at 13:05 +0000, Thomas Gleixner wrote:
-> > This first part moves the idle thread management for non-boot cpus
-> > into the core. fork_idle() is called in a workqueue as it is
-> > implemented in a few architectures already. This is necessary when not
-> > all cpus are brought up by the early boot code as otherwise we would
-> > take a ref on the user task VM of the thread which brings the cpu up
-> > via the sysfs interface. 
-> 
-> So I was thinking about this and I think we should make that kthreadd
-> instead of a random workqueue thread due to all that cgroup crap. People
-> are wanting to place all sorts of kernel threads in cgroups and I'm
-> still arguing that kthreadd should not be allowed in cgroups.
+>  To repeat yet again you're not supposed to actually use dummy regulators,
+> you're supposed to fully specify the regulators on your platform.
+>
+I use dummy regulators for what they are meant for - until every platform
+completely define supplies for every consumer.
+We are not there yet, yet one 'ideal' consumer suffers because of that.
 
-So your fear is that the idle_thread will end up in some random cgroup
-because some illdesigned user space code decided to stick kernel
-threads into cgroups.
+If you ask me to go away and disable dummy and update all consumers
+and their platforms, then I say why not remove the concept of dummy
+altogether which only delays full compliance to the regulator api ?
 
-Can we please have some sanity restrictions on this cgroup muck? I
-don't care when user space creates cgroups in circles, but holding the
-whole kernel hostage of this madness is going too far.
-
-Thanks,
-
-	tglx
+-j
