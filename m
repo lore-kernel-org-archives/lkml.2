@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932599Ab2DTPGo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Apr 2012 11:06:44 -0400
-Received: from g6t0186.atlanta.hp.com ([15.193.32.63]:4386 "EHLO
-	g6t0186.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756844Ab2DTPGl (ORCPT
+	id S1757155Ab2DTPG7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Apr 2012 11:06:59 -0400
+Received: from g4t0015.houston.hp.com ([15.201.24.18]:11830 "EHLO
+	g4t0015.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757134Ab2DTPG5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Apr 2012 11:06:41 -0400
-Subject: [PATCH 05/17] hpsa: do not read from controller unnecessarily in
-	completion code
+	Fri, 20 Apr 2012 11:06:57 -0400
+Subject: [PATCH 07/17] hpsa: remove unused parameter from finish_cmd
 To: james.bottomley@hansenpartnership.com
 From: "Stephen M. Cameron" <scameron@beardog.cce.hp.com>
 Cc: linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
         matthew.gates@hp.com, stephenmcameron@gmail.com, thenzl@redhat.com,
         akpm@linux-foundation.org, mikem@beardog.cce.hp.com
-Date: Fri, 20 Apr 2012 10:06:40 -0500
-Message-ID: <20120420150640.10596.43679.stgit@beardog.cce.hp.com>
+Date: Fri, 20 Apr 2012 10:06:56 -0500
+Message-ID: <20120420150656.10596.49932.stgit@beardog.cce.hp.com>
 In-Reply-To: <20120420150349.10596.73732.stgit@beardog.cce.hp.com>
 References: <20120420150349.10596.73732.stgit@beardog.cce.hp.com>
 User-Agent: StGit/0.15
@@ -28,34 +27,49 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Stephen M. Cameron <scameron@beardog.cce.hp.com>
 
-MSI/MSI-X interrupts can't race the DMA completion they are communicating
-so no need to read from controller to flush the DMA to the host if
-MSI or MSI-X interrupts are being used.
-
 Signed-off-by: Stephen M. Cameron <scameron@beardog.cce.hp.com>
 ---
- drivers/scsi/hpsa.h |    8 ++++----
+ drivers/scsi/hpsa.c |    8 ++++----
  1 files changed, 4 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/scsi/hpsa.h b/drivers/scsi/hpsa.h
-index 7b28d54..48f7812 100644
---- a/drivers/scsi/hpsa.h
-+++ b/drivers/scsi/hpsa.h
-@@ -258,12 +258,12 @@ static unsigned long SA5_performant_completed(struct ctlr_info *h)
- {
- 	unsigned long register_value = FIFO_EMPTY;
+diff --git a/drivers/scsi/hpsa.c b/drivers/scsi/hpsa.c
+index 7355891..e45bfda 100644
+--- a/drivers/scsi/hpsa.c
++++ b/drivers/scsi/hpsa.c
+@@ -3055,7 +3055,7 @@ static inline int bad_tag(struct ctlr_info *h, u32 tag_index,
+ 	return 0;
+ }
  
--	/* flush the controller write of the reply queue by reading
--	 * outbound doorbell status register.
--	 */
--	register_value = readl(h->vaddr + SA5_OUTDB_STATUS);
- 	/* msi auto clears the interrupt pending bit. */
- 	if (!(h->msi_vector || h->msix_vector)) {
-+		/* flush the controller write of the reply queue by reading
-+		 * outbound doorbell status register.
-+		 */
-+		register_value = readl(h->vaddr + SA5_OUTDB_STATUS);
- 		writel(SA5_OUTDB_CLEAR_PERF_BIT, h->vaddr + SA5_OUTDB_CLEAR);
- 		/* Do a read in order to flush the write to the controller
- 		 * (as per spec.)
+-static inline void finish_cmd(struct CommandList *c, u32 raw_tag)
++static inline void finish_cmd(struct CommandList *c)
+ {
+ 	removeQ(c);
+ 	if (likely(c->cmd_type == CMD_SCSI))
+@@ -3095,7 +3095,7 @@ static inline u32 process_indexed_cmd(struct ctlr_info *h,
+ 	if (bad_tag(h, tag_index, raw_tag))
+ 		return next_command(h);
+ 	c = h->cmd_pool + tag_index;
+-	finish_cmd(c, raw_tag);
++	finish_cmd(c);
+ 	return next_command(h);
+ }
+ 
+@@ -3109,7 +3109,7 @@ static inline u32 process_nonindexed_cmd(struct ctlr_info *h,
+ 	tag = hpsa_tag_discard_error_bits(h, raw_tag);
+ 	list_for_each_entry(c, &h->cmpQ, list) {
+ 		if ((c->busaddr & 0xFFFFFFE0) == (tag & 0xFFFFFFE0)) {
+-			finish_cmd(c, raw_tag);
++			finish_cmd(c);
+ 			return next_command(h);
+ 		}
+ 	}
+@@ -4165,7 +4165,7 @@ static void fail_all_cmds_on_list(struct ctlr_info *h, struct list_head *list)
+ 	while (!list_empty(list)) {
+ 		c = list_entry(list->next, struct CommandList, list);
+ 		c->err_info->CommandStatus = CMD_HARDWARE_ERR;
+-		finish_cmd(c, c->Header.Tag.lower);
++		finish_cmd(c);
+ 	}
+ }
+ 
 
