@@ -1,45 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932375Ab2DTC7V (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Apr 2012 22:59:21 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:59032 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932106Ab2DTC7T convert rfc822-to-8bit (ORCPT
+	id S1757066Ab2DTDBH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Apr 2012 23:01:07 -0400
+Received: from szxga03-in.huawei.com ([58.251.152.66]:51385 "EHLO
+	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757048Ab2DTDBF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Apr 2012 22:59:19 -0400
-MIME-Version: 1.0
-In-Reply-To: <20120420025438.GD6871@ZenIV.linux.org.uk>
-References: <1334754302.2137.8.camel@falcor> <alpine.LRH.2.02.1204190101380.30151@tundra.namei.org>
- <1334772473.2137.22.camel@falcor> <20120418183938.GH6589@ZenIV.linux.org.uk>
- <1334865448.2429.35.camel@falcor> <20120420004303.GB6871@ZenIV.linux.org.uk>
- <CA+55aFxQR8g3TycW7nOVjjnnsaWWW-Gh74-bV6rUm+7SRTm25g@mail.gmail.com> <20120420025438.GD6871@ZenIV.linux.org.uk>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Thu, 19 Apr 2012 19:58:57 -0700
-X-Google-Sender-Auth: PIkrCWgG7UASxy9z-4CIy9UiCes
-Message-ID: <CA+55aFzinX_6DVvDTyxrsP6VEHVY2Q+Y=e+qksnAjR+oT3GZew@mail.gmail.com>
-Subject: Re: [RFC] situation with fput() locking (was Re: [PULL REQUEST] :
- ima-appraisal patches)
-To: Al Viro <viro@zeniv.linux.org.uk>
-Cc: linux-fsdevel@vger.kernel.org, James Morris <jmorris@namei.org>,
-        linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org,
-        David Safford <safford@linux.vnet.ibm.com>,
-        Dmitry Kasatkin <dmitry.kasatkin@intel.com>,
-        Mimi Zohar <zohar@linux.vnet.ibm.com>,
-        David Miller <davem@davemloft.net>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Thu, 19 Apr 2012 23:01:05 -0400
+Date: Fri, 20 Apr 2012 08:29:25 +0530
+From: Shyju PV <shyju.pv@huawei.com>
+Subject: bnx2 driver loading error : Can't load firmware file
+ "bnx2/bnx2-mips-09-6.2.1b.fw
+In-reply-to: 
+X-Originating-IP: [10.18.1.45]
+To: linux-kernel@vger.kernel.org
+Reply-to: shyju.pv@huawei.com
+Message-id: <A49C75C4810A4DD7AAED96B4A5F1A2D4@china.huawei.com>
+Organization: Htipl
+MIME-version: 1.0
+X-MIMEOLE: Produced By Microsoft MimeOLE V6.00.3790.4862
+X-Mailer: Microsoft Office Outlook 11
+Content-type: text/plain; charset=US-ASCII
+Content-transfer-encoding: 7BIT
+Thread-index: Ac0eDhujnEU1B0RiTYK+9gWJL2SFdAAk2Msg
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 19, 2012 at 7:54 PM, Al Viro <viro@zeniv.linux.org.uk> wrote:
->
-> Umm...  I really wonder if we *want* filp_close() under any kind of
-> locks.  You are right - it should not be deferred.  I haven't finished
-> checking the callers of that puppy, but if we really do it while holding
-> any kind of lock, we are asking for trouble.  So I'd rather switch
-> filp_close() to use of fput_nodefer() if that turns out to be possible.
+  
+Hi
+Logged a bug on 3rd april on 3.4-rc1 kernel. 
+Bug ID : 43036
+Short descreption : bnx2 driver loading error : Can't load firmware file
+"bnx2/bnx2-mips-09-6.2.1b.fw Bugzila url :
+https://bugzilla.kernel.org/show_bug.cgi?id=43036
+The status of the bug is "new" in the bugzila.
+Please update.
+Shyju
 
-Ok, fair enough, looks like a reasonable plan to me.
-
-                  Linus
