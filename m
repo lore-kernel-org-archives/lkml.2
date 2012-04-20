@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755506Ab2DTV55 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Apr 2012 17:57:57 -0400
-Received: from mailhub.sw.ru ([195.214.232.25]:22367 "EHLO relay.sw.ru"
+	id S1755626Ab2DTV6F (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Apr 2012 17:58:05 -0400
+Received: from mailhub.sw.ru ([195.214.232.25]:7017 "EHLO relay.sw.ru"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755195Ab2DTV5y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Apr 2012 17:57:54 -0400
+	id S1755064Ab2DTV6A (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Apr 2012 17:58:00 -0400
 From: Glauber Costa <glommer@parallels.com>
 To: <cgroups@vger.kernel.org>
 Cc: <linux-mm@kvack.org>, <linux-kernel@vger.kernel.org>, <devel@openvz.org>,
@@ -14,12 +14,10 @@ Cc: <linux-mm@kvack.org>, <linux-kernel@vger.kernel.org>, <devel@openvz.org>,
         Frederic Weisbecker <fweisbec@gmail.com>,
         Greg Thelen <gthelen@google.com>,
         Suleiman Souhlal <suleiman@google.com>,
-        Glauber Costa <glommer@parallels.com>,
-        Christoph Lameter <cl@linux.com>,
-        Pekka Enberg <penberg@cs.helsinki.fi>
-Subject: [PATCH 01/23] slub: don't create a copy of the name string in kmem_cache_create
-Date: Fri, 20 Apr 2012 18:57:09 -0300
-Message-Id: <1334959051-18203-2-git-send-email-glommer@parallels.com>
+        Glauber Costa <glommer@parallels.com>
+Subject: [PATCH 02/23] slub: always get the cache from its page in kfree
+Date: Fri, 20 Apr 2012 18:57:10 -0300
+Message-Id: <1334959051-18203-3-git-send-email-glommer@parallels.com>
 X-Mailer: git-send-email 1.7.7.6
 In-Reply-To: <1334959051-18203-1-git-send-email-glommer@parallels.com>
 References: <1334959051-18203-1-git-send-email-glommer@parallels.com>
@@ -27,91 +25,28 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When creating a cache, slub keeps a copy of the cache name through
-strdup. The slab however, doesn't do that. This means that everyone
-registering caches have to keep a copy themselves anyway, since code
-needs to work on all allocators.
-
-Having slab create a copy of it as well may very well be the right
-thing to do: but at this point, the callers are already there
-
-My motivation for it comes from the kmem slab cache controller for
-memcg. Because we create duplicate caches, having a more consistent
-behavior here really helps.
-
-I am sending the patch, however, more to probe on your opinion about
-it. If you guys agree, but don't want to merge it - since it is not
-fixing anything, nor improving any situation etc, I am more than happy
-to carry it in my series until it gets merged (fingers crossed).
+struct page already have this information. If we start chaining
+caches, this information will always be more trustworthy than
+whatever is passed into the function
 
 Signed-off-by: Glauber Costa <glommer@parallels.com>
-CC: Christoph Lameter <cl@linux.com>
-CC: Pekka Enberg <penberg@cs.helsinki.fi>
 ---
- mm/slub.c |   14 ++------------
- 1 files changed, 2 insertions(+), 12 deletions(-)
+ mm/slub.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
 diff --git a/mm/slub.c b/mm/slub.c
-index ffe13fd..af8cee9 100644
+index af8cee9..2652e7c 100644
 --- a/mm/slub.c
 +++ b/mm/slub.c
-@@ -3925,7 +3925,6 @@ struct kmem_cache *kmem_cache_create(const char *name, size_t size,
- 		size_t align, unsigned long flags, void (*ctor)(void *))
- {
- 	struct kmem_cache *s;
--	char *n;
+@@ -2600,7 +2600,7 @@ void kmem_cache_free(struct kmem_cache *s, void *x)
  
- 	if (WARN_ON(!name))
- 		return NULL;
-@@ -3949,26 +3948,20 @@ struct kmem_cache *kmem_cache_create(const char *name, size_t size,
- 		return s;
- 	}
+ 	page = virt_to_head_page(x);
  
--	n = kstrdup(name, GFP_KERNEL);
--	if (!n)
--		goto err;
--
- 	s = kmalloc(kmem_size, GFP_KERNEL);
- 	if (s) {
--		if (kmem_cache_open(s, n,
-+		if (kmem_cache_open(s, name,
- 				size, align, flags, ctor)) {
- 			list_add(&s->list, &slab_caches);
- 			up_write(&slub_lock);
- 			if (sysfs_slab_add(s)) {
- 				down_write(&slub_lock);
- 				list_del(&s->list);
--				kfree(n);
- 				kfree(s);
- 				goto err;
- 			}
- 			return s;
- 		}
--		kfree(n);
- 		kfree(s);
- 	}
- err:
-@@ -5212,7 +5205,6 @@ static void kmem_cache_release(struct kobject *kobj)
- {
- 	struct kmem_cache *s = to_slab(kobj);
+-	slab_free(s, page, x, _RET_IP_);
++	slab_free(page->slab, page, x, _RET_IP_);
  
--	kfree(s->name);
- 	kfree(s);
+ 	trace_kmem_cache_free(_RET_IP_, x);
  }
- 
-@@ -5318,11 +5310,9 @@ static int sysfs_slab_add(struct kmem_cache *s)
- 		return err;
- 	}
- 	kobject_uevent(&s->kobj, KOBJ_ADD);
--	if (!unmergeable) {
-+	if (!unmergeable)
- 		/* Setup first alias */
- 		sysfs_slab_alias(s, s->name);
--		kfree(name);
--	}
- 	return 0;
- }
- 
 -- 
 1.7.7.6
 
