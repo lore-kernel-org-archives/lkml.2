@@ -1,78 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754114Ab2DTRF0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Apr 2012 13:05:26 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:55988 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751976Ab2DTRFZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Apr 2012 13:05:25 -0400
-Date: Fri, 20 Apr 2012 18:05:20 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: MyungJoo Ham <myungjoo.ham@samsung.com>, Arnd Bergmann <arnd@arndb.de>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Arve =?iso-8859-1?Q?Hj=F8nnevag?= <arve@android.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Morten CHRISTIANSEN <morten.christiansen@stericsson.com>,
-        John Stultz <john.stultz@linaro.org>, myungjoo.ham@gmail.com,
-        cw00.choi@samsung.com
-Subject: Re: [PATCH v8 resend 6/6] Documentation/extcon: porting guide for
- Android kernel switch driver.
-Message-ID: <20120420170519.GB3080@opensource.wolfsonmicro.com>
-References: <20120420033209.GA17930@kroah.com>
- <1334898987-7800-1-git-send-email-myungjoo.ham@samsung.com>
- <1334898987-7800-7-git-send-email-myungjoo.ham@samsung.com>
- <20120420162529.GA31744@kroah.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="7iMSBzlTiPOCCT2k"
-Content-Disposition: inline
-In-Reply-To: <20120420162529.GA31744@kroah.com>
-X-Cookie: Be careful!  UGLY strikes 9 out of 10!
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1754519Ab2DTRNd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Apr 2012 13:13:33 -0400
+Received: from mga09.intel.com ([134.134.136.24]:24513 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752692Ab2DTRNc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Apr 2012 13:13:32 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
+   d="scan'208";a="132155019"
+Subject: Re: load balancing regression since commit 367456c7
+From: Tim Chen <tim.c.chen@linux.intel.com>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Suresh Siddha <suresh.b.siddha@intel.com>, Alex Shi <alex.shi@intel.com>,
+        Ying <ying.huang@intel.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+In-Reply-To: <1334940837.2463.70.camel@laptop>
+References: <1334106376.19157.89.camel@schen9-DESK>
+	 <1334664553.28150.87.camel@twins>  <1334681054.3796.28.camel@schen9-DESK>
+	 <1334930421.2463.60.camel@laptop>  <1334940042.3796.48.camel@schen9-DESK>
+	 <1334940837.2463.70.camel@laptop>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 20 Apr 2012 10:13:32 -0700
+Message-ID: <1334942012.3796.50.camel@schen9-DESK>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, 2012-04-20 at 18:53 +0200, Peter Zijlstra wrote:
+> On Fri, 2012-04-20 at 09:40 -0700, Tim Chen wrote:
+> > We also do not see regression for hackbench on WSM-EP, but only 
+> > on machines with Sandy-Bridge EP (2 socket, 8 cores/socket, HT enabled).  
+> 
+> Argh, Suresh, any idea what could be different and relevant to this
+> issue between WSM and SNB -EP ?
+> 
+> Tim, can you see the problem on the desktop SNB part? That's the only
+> SNB I have available.
+> 
+> > We are not running hackbench in cgroup for this test.
+> > 
+> > The Sandy Bridge EP machines installed has FC16, so I think it uses 
+> > systemd. The machine on our WSM EP has FC15, which also has systemd.
+> 
+> Ah, but your .config has:
+> 
+> CONFIG_CGROUP_SCHED=y
+> CONFIG_SCHED_AUTOGROUP=y
+> 
+> and systemd, when cpu-cgroup is available, will automagically use it.
+> 
+> Could you disable those two CONFIG knobs and see if it persists?
+> 
 
---7iMSBzlTiPOCCT2k
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Turning those off did recover the regression.
 
-On Fri, Apr 20, 2012 at 09:25:29AM -0700, Greg KH wrote:
+Tim
 
-> Ok, I've applied this, but I don't know if we really need this in the
-> kernel tree.  How many out-of-tree android switch drivers are there?
-> Who needs to know this information?
-
-Every phone with a headset jack will have at least one switch if it's
-running on Android.  People doing system integration will generally need
-to know about this, at least until we've got the ALSA detection stuff
-integrated with extcon.
-
---7iMSBzlTiPOCCT2k
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJPkZc7AAoJEBus8iNuMP3dfVYQAIgto9RwhbXDN8t5kmS0+TJ6
-BOhC90xbE+ZL1T8LTJHVwT+/f2JAuG3iFGIEejS6vlwVpuDR0d93WNzmeILCStaT
-Jgle3fD4VrQV71iDsHWdd1FLeiLPrOeepJQqCcO2lBZnF5tUePXWNV11CNGPArop
-BLOa6oye3RPrQkiqjnOzTiMYPeCiSUisodZEsb9gicvq4hawTD4xntx7LqTqwboH
-mxb1UXjXJ6ASHFa9Zws1oLDlyN0B/cUFhmjTZN/ds5JXHANmk3bLwRabWO7CE4xj
-XiSOPykP2CIwx2uEal9u3zwKhxbGYPtphdbCHAbUHHOWGBCwbdn4aq5ntjOPx4A/
-/G0hT5sq+ulk8nLgiDJyvFKxLPGj4O/j6o6+knETTt7IDwCeCErga5aB7Zr8w5iD
-fd+21mN4e6D8W/rPGunMDF+qYtyGnjAIqkWUSuxHWThy03ezx7K7CdR1koTLTiRo
-yjTUcjPCaOjM+n/GMZKJH1ilPZQMQiDVaO+pcUBvgKzXOFiIaneMXxw9JGxHZTMZ
-VUdb/hpKmb9XRgmgwxbg1qD3Z1uHStBIrgD0ZTCBVghKI/Ibc0A8z14q5hJ7lZka
-n5pwHvVAC6WEd+Ib3h/UOO+hFNlAekBmp6qCGTLdo0O8XJtm69VT1sFVssNptxDN
-k2h8uQk5eh5JT6mi4QI+
-=24/1
------END PGP SIGNATURE-----
-
---7iMSBzlTiPOCCT2k--
