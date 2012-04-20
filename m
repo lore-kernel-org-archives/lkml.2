@@ -1,130 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756206Ab2DTWBf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Apr 2012 18:01:35 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:34101 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755458Ab2DTWBc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Apr 2012 18:01:32 -0400
-Date: Fri, 20 Apr 2012 15:01:22 -0700
-From: "tip-bot for H. Peter Anvin" <hpa@zytor.com>
-Message-ID: <tip-0d8559feafbc9dc5a2c17ba42aea7de824b18308@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        david.daney@cavium.com, tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        david.daney@cavium.com, tglx@linutronix.de
-In-Reply-To: <CA+55aFyijf43qSu3N9nWHEBwaGbb7T2Oq9A=9EyR=Jtyqfq_cQ@mail.gmail.com>
-References: <CA+55aFyijf43qSu3N9nWHEBwaGbb7T2Oq9A=9EyR=Jtyqfq_cQ@mail.gmail.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/extable] x86, extable:
-  Remove open-coded exception table entries in arch/x86/lib/
- copy_user_nocache_64.S
-Git-Commit-ID: 0d8559feafbc9dc5a2c17ba42aea7de824b18308
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
-MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Fri, 20 Apr 2012 15:01:27 -0700 (PDT)
+	id S932116Ab2DTWCW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Apr 2012 18:02:22 -0400
+Received: from mailhub.sw.ru ([195.214.232.25]:36491 "EHLO relay.sw.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755782Ab2DTV6O (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Apr 2012 17:58:14 -0400
+From: Glauber Costa <glommer@parallels.com>
+To: <cgroups@vger.kernel.org>
+Cc: <linux-mm@kvack.org>, <linux-kernel@vger.kernel.org>, <devel@openvz.org>,
+        <kamezawa.hiroyu@jp.fujitsu.com>, Michal Hocko <mhocko@suse.cz>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Greg Thelen <gthelen@google.com>,
+        Suleiman Souhlal <suleiman@google.com>,
+        Suleiman Souhlal <ssouhlal@FreeBSD.org>
+Subject: [PATCH 04/23] memcg: Make it possible to use the stock for more than one page.
+Date: Fri, 20 Apr 2012 18:57:12 -0300
+Message-Id: <1334959051-18203-5-git-send-email-glommer@parallels.com>
+X-Mailer: git-send-email 1.7.7.6
+In-Reply-To: <1334959051-18203-1-git-send-email-glommer@parallels.com>
+References: <1334959051-18203-1-git-send-email-glommer@parallels.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  0d8559feafbc9dc5a2c17ba42aea7de824b18308
-Gitweb:     http://git.kernel.org/tip/0d8559feafbc9dc5a2c17ba42aea7de824b18308
-Author:     H. Peter Anvin <hpa@zytor.com>
-AuthorDate: Fri, 20 Apr 2012 12:19:51 -0700
-Committer:  H. Peter Anvin <hpa@zytor.com>
-CommitDate: Fri, 20 Apr 2012 13:51:38 -0700
+From: Suleiman Souhlal <ssouhlal@FreeBSD.org>
 
-x86, extable: Remove open-coded exception table entries in arch/x86/lib/copy_user_nocache_64.S
-
-Remove open-coded exception table entries in arch/x86/lib/copy_user_nocache_64.S,
-and replace them with _ASM_EXTABLE() macros; this will allow us to
-change the format and type of the exception table entries.
-
-Signed-off-by: H. Peter Anvin <hpa@zytor.com>
-Cc: David Daney <david.daney@cavium.com>
-Link: http://lkml.kernel.org/r/CA%2B55aFyijf43qSu3N9nWHEBwaGbb7T2Oq9A=9EyR=Jtyqfq_cQ@mail.gmail.com
+Signed-off-by: Suleiman Souhlal <suleiman@google.com>
 ---
- arch/x86/lib/copy_user_nocache_64.S |   50 ++++++++++++++++-------------------
- 1 files changed, 23 insertions(+), 27 deletions(-)
+ mm/memcontrol.c |   18 +++++++++---------
+ 1 files changed, 9 insertions(+), 9 deletions(-)
 
-diff --git a/arch/x86/lib/copy_user_nocache_64.S b/arch/x86/lib/copy_user_nocache_64.S
-index cb0c112..cacddc7 100644
---- a/arch/x86/lib/copy_user_nocache_64.S
-+++ b/arch/x86/lib/copy_user_nocache_64.S
-@@ -14,6 +14,7 @@
- #include <asm/current.h>
- #include <asm/asm-offsets.h>
- #include <asm/thread_info.h>
-+#include <asm/asm.h>
+diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+index 932a734..4b94b2d 100644
+--- a/mm/memcontrol.c
++++ b/mm/memcontrol.c
+@@ -1998,19 +1998,19 @@ static DEFINE_PER_CPU(struct memcg_stock_pcp, memcg_stock);
+ static DEFINE_MUTEX(percpu_charge_mutex);
  
- 	.macro ALIGN_DESTINATION
- #ifdef FIX_ALIGNMENT
-@@ -36,11 +37,8 @@
- 	jmp copy_user_handle_tail
- 	.previous
+ /*
+- * Try to consume stocked charge on this cpu. If success, one page is consumed
+- * from local stock and true is returned. If the stock is 0 or charges from a
+- * cgroup which is not current target, returns false. This stock will be
+- * refilled.
++ * Try to consume stocked charge on this cpu. If success, nr_pages pages are
++ * consumed from local stock and true is returned. If the stock is 0 or
++ * charges from a cgroup which is not current target, returns false.
++ * This stock will be refilled.
+  */
+-static bool consume_stock(struct mem_cgroup *memcg)
++static bool consume_stock(struct mem_cgroup *memcg, int nr_pages)
+ {
+ 	struct memcg_stock_pcp *stock;
+ 	bool ret = true;
  
--	.section __ex_table,"a"
--	.align 8
--	.quad 100b,103b
--	.quad 101b,103b
--	.previous
-+	_ASM_EXTABLE(100b,103b)
-+	_ASM_EXTABLE(101b,103b)
- #endif
- 	.endm
- 
-@@ -111,27 +109,25 @@ ENTRY(__copy_user_nocache)
- 	jmp copy_user_handle_tail
- 	.previous
- 
--	.section __ex_table,"a"
--	.quad 1b,30b
--	.quad 2b,30b
--	.quad 3b,30b
--	.quad 4b,30b
--	.quad 5b,30b
--	.quad 6b,30b
--	.quad 7b,30b
--	.quad 8b,30b
--	.quad 9b,30b
--	.quad 10b,30b
--	.quad 11b,30b
--	.quad 12b,30b
--	.quad 13b,30b
--	.quad 14b,30b
--	.quad 15b,30b
--	.quad 16b,30b
--	.quad 18b,40b
--	.quad 19b,40b
--	.quad 21b,50b
--	.quad 22b,50b
--	.previous
-+	_ASM_EXTABLE(1b,30b)
-+	_ASM_EXTABLE(2b,30b)
-+	_ASM_EXTABLE(3b,30b)
-+	_ASM_EXTABLE(4b,30b)
-+	_ASM_EXTABLE(5b,30b)
-+	_ASM_EXTABLE(6b,30b)
-+	_ASM_EXTABLE(7b,30b)
-+	_ASM_EXTABLE(8b,30b)
-+	_ASM_EXTABLE(9b,30b)
-+	_ASM_EXTABLE(10b,30b)
-+	_ASM_EXTABLE(11b,30b)
-+	_ASM_EXTABLE(12b,30b)
-+	_ASM_EXTABLE(13b,30b)
-+	_ASM_EXTABLE(14b,30b)
-+	_ASM_EXTABLE(15b,30b)
-+	_ASM_EXTABLE(16b,30b)
-+	_ASM_EXTABLE(18b,40b)
-+	_ASM_EXTABLE(19b,40b)
-+	_ASM_EXTABLE(21b,50b)
-+	_ASM_EXTABLE(22b,50b)
- 	CFI_ENDPROC
- ENDPROC(__copy_user_nocache)
+ 	stock = &get_cpu_var(memcg_stock);
+-	if (memcg == stock->cached && stock->nr_pages)
+-		stock->nr_pages--;
++	if (memcg == stock->cached && stock->nr_pages >= nr_pages)
++		stock->nr_pages -= nr_pages;
+ 	else /* need to call res_counter_charge */
+ 		ret = false;
+ 	put_cpu_var(memcg_stock);
+@@ -2309,7 +2309,7 @@ again:
+ 		VM_BUG_ON(css_is_removed(&memcg->css));
+ 		if (mem_cgroup_is_root(memcg))
+ 			goto done;
+-		if (nr_pages == 1 && consume_stock(memcg))
++		if (consume_stock(memcg, nr_pages))
+ 			goto done;
+ 		css_get(&memcg->css);
+ 	} else {
+@@ -2334,7 +2334,7 @@ again:
+ 			rcu_read_unlock();
+ 			goto done;
+ 		}
+-		if (nr_pages == 1 && consume_stock(memcg)) {
++		if (consume_stock(memcg, nr_pages)) {
+ 			/*
+ 			 * It seems dagerous to access memcg without css_get().
+ 			 * But considering how consume_stok works, it's not
+-- 
+1.7.7.6
+
