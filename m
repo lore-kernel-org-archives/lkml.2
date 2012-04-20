@@ -1,126 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753549Ab2DTTXg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Apr 2012 15:23:36 -0400
-Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:65274 "EHLO
-	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751756Ab2DTTXf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Apr 2012 15:23:35 -0400
-Message-ID: <4F91B7AF.8040203@openvz.org>
-Date: Fri, 20 Apr 2012 23:23:27 +0400
-From: Konstantin Khlebnikov <khlebnikov@openvz.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.2) Gecko/20120217 Firefox/10.0.2 Iceape/2.7.2
-MIME-Version: 1.0
-To: Oleg Nesterov <oleg@redhat.com>
-CC: Andrew Morton <akpm@linux-foundation.org>, Hugh Dickins <hughd@google.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        Markus Trippelsdorf <markus@trippelsdorf.de>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Subject: Re: [PATCH 1/2] mm: set task exit code before complete_vfork_done()
-References: <20120409200336.8368.63793.stgit@zurg> <20120412080948.26401.23572.stgit@zurg> <20120412235446.GA4815@redhat.com> <20120420175934.GA31905@redhat.com>
-In-Reply-To: <20120420175934.GA31905@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1754267Ab2DTTZG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Apr 2012 15:25:06 -0400
+Received: from mail.df.lth.se ([194.47.250.12]:16217 "EHLO mail.df.lth.se"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752665Ab2DTTZE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Apr 2012 15:25:04 -0400
+From: "Linus Walleij" <linus.walleij@linaro.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, Linus Walleij <linus.walleij@linaro.org>
+Subject: [GIT PULL] pinctrl fixes for v3.4
+Date: Fri, 20 Apr 2012 21:24:42 +0200
+Message-Id: <1334949882-5617-1-git-send-email-linus.walleij@linaro.org>
+X-Mailer: git-send-email 1.7.7.6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Oleg Nesterov wrote:
-> On 04/13, Oleg Nesterov wrote:
->>
->> Damn, Konstantin I have to admit, I'll try to find another technical
->> reason against mm-correctly-synchronize-rss-counters-at-exit-exec.patch
->> even with this fix ;)
->>
->> Most probably I am wrong, but it looks overcomplicated. Somehow I
->> dislike irrationally the fact you moved mm_release() from exit_mm().
->
-> And perhaps you can help me to discredit your patch?
->
-> It turns out, I do not really understand this code in do_exit:
->
-> 	/* sync mm's RSS info before statistics gathering */
-> 	if (tsk->mm)
-> 		sync_mm_rss(tsk->mm);
->
-> Which "statistics gathering" ? Probably I missed something, but
-> after the quick grep it seems to me that this is only needed for
-> taskstats_exit()->xacct_add_tsk().
->
-> So why we can't simply add sync_mm_rss() into xacct_add_tsk() ?
 
-> Yes, this way we do not "account" put_user(clear_child_tid) but
-> I think we do not care.
+-----BEGIN PGP SIGNED MESSAGE-----
+Hash: SHA1
 
-Why we don't care? Each thread can corrupt these counters by one.
-I do not think that we are satisfied with nearly accurate rss accounting.
-+/- one page for each clone()-exit().
+Hi Linus,
 
-Actually I don't really like this per-task rss-delta.
-Probably it would be better to use per-cpu counters.
+Here is a signed tag of the latest pin control fixes.
 
->
-> IOW, what do you think about the trivial patch below? Uncompiled,
-> untested, probably incomplete. acct_update_integrals() looks
-> suspicious too.
+- - Fixed compilation errors and warnings
+- - Stricter checks on the ops vtable
 
-what a mess! =)
+Not much, still something.
 
->
-> Oleg.
->
-> --- a/kernel/tsacct.c
-> +++ b/kernel/tsacct.c
-> @@ -91,6 +91,7 @@ void xacct_add_tsk(struct taskstats *sta
->   	stats->virtmem = p->acct_vm_mem1 * PAGE_SIZE / MB;
->   	mm = get_task_mm(p);
->   	if (mm) {
-> +		sync_mm_rss(mm);
->   		/* adjust to KB unit */
->   		stats->hiwater_rss   = get_mm_hiwater_rss(mm) * PAGE_SIZE / KB;
->   		stats->hiwater_vm    = get_mm_hiwater_vm(mm)  * PAGE_SIZE / KB;
-> --- a/kernel/exit.c
-> +++ b/kernel/exit.c
-> @@ -643,6 +643,8 @@ static void exit_mm(struct task_struct *
->   	mm_release(tsk, mm);
->   	if (!mm)
->   		return;
-> +
-> +	sync_mm_rss(mm);
->   	/*
->   	 * Serialize with any possible pending coredump.
->   	 * We must hold mmap_sem around checking core_state
-> @@ -960,9 +962,6 @@ void do_exit(long code)
->   				preempt_count());
->
->   	acct_update_integrals(tsk);
-> -	/* sync mm's RSS info before statistics gathering */
-> -	if (tsk->mm)
-> -		sync_mm_rss(tsk->mm);
->   	group_dead = atomic_dec_and_test(&tsk->signal->live);
->   	if (group_dead) {
->   		hrtimer_cancel(&tsk->signal->real_timer);
-> --- a/fs/exec.c
-> +++ b/fs/exec.c
-> @@ -823,10 +823,10 @@ static int exec_mmap(struct mm_struct *m
->   	/* Notify parent that we're no longer interested in the old VM */
->   	tsk = current;
->   	old_mm = current->mm;
-> -	sync_mm_rss(old_mm);
->   	mm_release(tsk, old_mm);
->
->   	if (old_mm) {
-> +		sync_mm_rss(old_mm);
->   		/*
->   		 * Make sure that if there is a core dump in progress
->   		 * for the old mm, we get out and die instead of going
->
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Fight unfair telecom internet charges in Canada: sign http://stopthemeter.ca/
-> Don't email:<a href=mailto:"dont@kvack.org">  email@kvack.org</a>
+The following changes since commit 0034102808e0dbbf3a2394b82b1bb40b5778de9e:
 
+  Linux 3.4-rc2 (2012-04-07 18:30:41 -0700)
+
+are available in the git repository at:
+  git://git.kernel.org/pub/scm/linux/kernel/git/linusw/linux-pinctrl.git for-torvalds-20120418
+
+Dong Aisheng (1):
+      pinctrl: fix compile error if not select PINMUX support
+
+Stephen Warren (2):
+      pinctrl: include <linux/bug.h> to prevent compile errors
+      pinctrl: implement pinctrl_check_ops
+
+ drivers/pinctrl/core.c          |   25 +++++++++++++++++++++----
+ include/linux/pinctrl/machine.h |    4 +++-
+ 2 files changed, 24 insertions(+), 5 deletions(-)
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJPkbdQAAoJEEEQszewGV1zyd8P/3BYsv8yjt/rJh41DMtD1GE+
+smk4KY986oC0y/q/0H/OFFlbcVm7qCcojDY2X25q7G1ct4fQYUG3GqACk+EMfpl5
+JX9wkI1ABYL1vpYO+SPELMUMcu1LKB6CHukPy2Fz/oMyKZX50AyTr+hkvtpUkEZx
+tn7ldfloDOIPDS6a/ryUtNma6NM3qsFc26Z+20uypMJz4NMrPbEE71PObmMHhfnH
+cXuztL2a4h1jwO/y8sNVUM19ZZwxw/gLfbMnWAUeww0zj4pEcvLyvzy4IWW4KmVC
+nzJ5XvBw+mlymcvJBB2XaM/xqkpOFkUfBDx4CrnpewMdRzHTGxmeGecKB8UI+Yar
+yfz5DxwhaJGquRKp2m/JFPyHxRRU+TE2R7dxUbSaQ0zmdxv6+LukNNVSmgcZbjm9
+kHlB4nRWRXX4KOpMbFvUqmF0YIs2Cc7/QN6+P6ZJSYvGjwdQYkuRS3ZgxertBa7E
+/aAGETXKjgmq+iWa+sNRF9OkW4jc1nRZGvrLL9BHLH4QiZeZPtL179KwvhYsBQq4
+hypiU6q4GulArX5a1TsPNF6eJpRWvp7A5iS2wGEbpg3uBKpf11hlzJ86ONhcq1Pt
+vp4EUIoY50NhuaxqR48UKXcGO8mJdZ+kVp3YOguEroXb/JqjVLPQYJUe91M2hVSm
+tb3rBGX+f+URQr1ZE72z
+=VOD4
+-----END PGP SIGNATURE-----
