@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932462Ab2DTPGS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Apr 2012 11:06:18 -0400
-Received: from g4t0015.houston.hp.com ([15.201.24.18]:11670 "EHLO
-	g4t0015.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932127Ab2DTPGP (ORCPT
+	id S932501Ab2DTPG1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Apr 2012 11:06:27 -0400
+Received: from g1t0029.austin.hp.com ([15.216.28.36]:32115 "EHLO
+	g1t0029.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932127Ab2DTPGZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Apr 2012 11:06:15 -0400
-Subject: [PATCH 00/17] hpsa updates for April, 2012 
+	Fri, 20 Apr 2012 11:06:25 -0400
+Subject: [PATCH 02/17] hpsa: do not skip disabled devices
 To: james.bottomley@hansenpartnership.com
 From: "Stephen M. Cameron" <scameron@beardog.cce.hp.com>
 Cc: linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
         matthew.gates@hp.com, stephenmcameron@gmail.com, thenzl@redhat.com,
         akpm@linux-foundation.org, mikem@beardog.cce.hp.com
-Date: Fri, 20 Apr 2012 10:06:11 -0500
-Message-ID: <20120420150349.10596.73732.stgit@beardog.cce.hp.com>
+Date: Fri, 20 Apr 2012 10:06:24 -0500
+Message-ID: <20120420150624.10596.53288.stgit@beardog.cce.hp.com>
+In-Reply-To: <20120420150349.10596.73732.stgit@beardog.cce.hp.com>
+References: <20120420150349.10596.73732.stgit@beardog.cce.hp.com>
 User-Agent: StGit/0.15
 MIME-Version: 1.0
 Content-Type: text/plain; charset="utf-8"
@@ -23,40 +25,50 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The two big changes here are adding an abort handler, and using multiple
-reply queues for command completions.  
+From: Stephen M. Cameron <scameron@beardog.cce.hp.com>
 
-Matt Bondurant (1):
-      hpsa: retry driver initiated commands on busy status
+There was code to skip "disabled" devices which was intended to
+skip devices disabled in the BIOS, but it really just checks to
+see if the device can write to host memory, which this is disabled
+by pci_disable_device on driver unload, so this check has the effect
+of preventing subsequent load of the driver.  And devices disabled in
+the BIOS don't show up at all anyway, so this check never made any
+sense to begin with, and should be removed.
 
-Matt Gates (2):
-      hpsa: use multiple reply queues
-      hpsa: refine interrupt handler locking for greater concurrency
+Signed-off-by: Stephen M. Cameron <scameron@beardog.cce.hp.com>
+---
+ drivers/scsi/hpsa.c |   13 -------------
+ 1 files changed, 0 insertions(+), 13 deletions(-)
 
-Mike Miller (1):
-      hpsa: add new RAID level "1(ADM)"
+diff --git a/drivers/scsi/hpsa.c b/drivers/scsi/hpsa.c
+index 1a6c319..5119ce6 100644
+--- a/drivers/scsi/hpsa.c
++++ b/drivers/scsi/hpsa.c
+@@ -3705,14 +3705,6 @@ static int __devinit hpsa_lookup_board_id(struct pci_dev *pdev, u32 *board_id)
+ 	return ARRAY_SIZE(products) - 1; /* generic unknown smart array */
+ }
+ 
+-static inline bool hpsa_board_disabled(struct pci_dev *pdev)
+-{
+-	u16 command;
+-
+-	(void) pci_read_config_word(pdev, PCI_COMMAND, &command);
+-	return ((command & PCI_COMMAND_MEMORY) == 0);
+-}
+-
+ static int __devinit hpsa_pci_find_memory_BAR(struct pci_dev *pdev,
+ 	unsigned long *memory_bar)
+ {
+@@ -3932,11 +3924,6 @@ static int __devinit hpsa_pci_init(struct ctlr_info *h)
+ 	h->product_name = products[prod_index].product_name;
+ 	h->access = *(products[prod_index].access);
+ 
+-	if (hpsa_board_disabled(h->pdev)) {
+-		dev_warn(&h->pdev->dev, "controller appears to be disabled\n");
+-		return -ENODEV;
+-	}
+-
+ 	pci_disable_link_state(h->pdev, PCIE_LINK_STATE_L0S |
+ 			       PCIE_LINK_STATE_L1 | PCIE_LINK_STATE_CLKPM);
+ 
 
-Stephen M. Cameron (13):
-      hpsa: call pci_disable_device on driver unload
-      hpsa: do not skip disabled devices
-      hpsa: enable bus master bit after pci_enable_device
-      hpsa: suppress excessively chatty error messages
-      hpsa: do not read from controller unnecessarily in completion code
-      hpsa: remove unused parameter from finish_cmd
-      hpsa: add abort error handler function
-      hpsa: do aborts two ways
-      hpsa: factor out tail calls to next_command() in process_(non)indexed_cmd()
-      hpsa: factor out hpsa_free_irqs_and_disable_msix
-      hpsa: use new IS_ENABLED macro
-      hpsa: removed unused member maxQsinceinit
-      hpsa: dial down lockup detection during firmware flash
-
-
- drivers/block/cciss.c   |    2 
- drivers/scsi/hpsa.c     |  689 +++++++++++++++++++++++++++++++++++++----------
- drivers/scsi/hpsa.h     |   85 ++++--
- drivers/scsi/hpsa_cmd.h |   37 ++-
- 4 files changed, 643 insertions(+), 170 deletions(-)
-
--- 
--- steve
