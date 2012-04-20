@@ -1,125 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754488Ab2DTKZY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Apr 2012 06:25:24 -0400
-Received: from e7.ny.us.ibm.com ([32.97.182.137]:38406 "EHLO e7.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754374Ab2DTKZX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Apr 2012 06:25:23 -0400
-Date: Fri, 20 Apr 2012 15:46:44 +0530
-From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Oleg Nesterov <oleg@redhat.com>, Ingo Molnar <mingo@elte.hu>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
-        LKML <linux-kernel@vger.kernel.org>, Linux-mm <linux-mm@kvack.org>,
-        Andi Kleen <andi@firstfloor.org>,
-        Christoph Hellwig <hch@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Anton Arapov <anton@redhat.com>
-Subject: Re: [RFC 0/6] uprobes: kill uprobes_srcu/uprobe_srcu_id
-Message-ID: <20120420101644.GA17994@linux.vnet.ibm.com>
-Reply-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-References: <20120405222024.GA19154@redhat.com>
- <1334409396.2528.100.camel@twins>
- <20120414205200.GA9083@redhat.com>
- <1334487062.2528.113.camel@twins>
- <20120415195351.GA22095@redhat.com>
- <1334526513.28150.23.camel@twins>
- <20120415234401.GA32662@redhat.com>
- <1334571419.28150.30.camel@twins>
- <20120416214707.GA27639@redhat.com>
- <1334916861.2463.50.camel@laptop>
+	id S1754515Ab2DTK0t (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Apr 2012 06:26:49 -0400
+Received: from eu1sys200aog117.obsmtp.com ([207.126.144.143]:50014 "EHLO
+	eu1sys200aog117.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754272Ab2DTK0r convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Apr 2012 06:26:47 -0400
+From: Shreshtha Kumar SAHU <shreshthakumar.sahu@stericsson.com>
+To: "Kim, Milo" <Milo.Kim@ti.com>
+Cc: "linus.walleij@linaro.org" <linus.walleij@linaro.org>,
+        Richard Purdie <rpurdie@rpsys.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Date: Fri, 20 Apr 2012 12:24:56 +0200
+Subject: RE: [PATCH 1/2] leds-lm3530: comment correction about the range of
+ brightness
+Thread-Topic: [PATCH 1/2] leds-lm3530: comment correction about the range of
+ brightness
+Thread-Index: Ac0d91aE61uKSG1fTRa0ziODJqgpzAAz8gZwAAIA82AAAOgBUA==
+Message-ID: <2E48302EED53D048A7BA72B0A307FB511FB8D43D09@EXDCVYMBSTM005.EQ1STM.local>
+References: <DD6B9D658496A2488636C8C75B9C0CB601CD3224@EXMAIL04.scwf.nsc.com>
+ <2E48302EED53D048A7BA72B0A307FB511FB8D43B52@EXDCVYMBSTM005.EQ1STM.local>
+ <DD6B9D658496A2488636C8C75B9C0CB601CD382F@EXMAIL04.scwf.nsc.com>
+In-Reply-To: <DD6B9D658496A2488636C8C75B9C0CB601CD382F@EXMAIL04.scwf.nsc.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-In-Reply-To: <1334916861.2463.50.camel@laptop>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12042010-5806-0000-0000-0000147175AE
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Peter Zijlstra <peterz@infradead.org> [2012-04-20 12:14:21]:
+IMHO it should be hidden inside driver. For example if hardware supports >8 bits for 
+brightness then too we scale/map 0-255 to supported range in hardware.
 
-> On Mon, 2012-04-16 at 23:47 +0200, Oleg Nesterov wrote:
-> > On 04/16, Peter Zijlstra wrote:
-> > >
-> > > On Mon, 2012-04-16 at 01:44 +0200, Oleg Nesterov wrote:
-> > >
-> > > > And. I have another reason for down_write() in register/unregister.
-> > > > I am still not sure this is possible (I had no time to try to
-> > > > implement), but it seems to me we can kill the uprobe counter in
-> > > > mm_struct.
-> > >
-> > > You mean by making register/unregister down_write, you're exclusive with
-> > > munmap()
-> > 
-> > .. and with register/unregister.
-> > 
-> > Why do we need mm->uprobes_state.count? It is writeonly, except we
-> > check it in the DIE_INT3 notifier before anything else to avoid the
-> > unnecessary uprobes overhead.
-> 
-> and uprobe_munmap().
+BR
+Shreshtha
 
-If we can kill mm->uprobs_state.count, we can do away with
-uprobe_munmap. Because uprobe_munmap is only around to manage
-mm->uprobes_state.count.
+-----Original Message-----
+From: Kim, Milo [mailto:Milo.Kim@ti.com] 
+Sent: Friday, April 20, 2012 2:14 PM
+To: Shreshtha Kumar SAHU
+Cc: linus.walleij@linaro.org; Richard Purdie; linux-kernel@vger.kernel.org; Andrew Morton
+Subject: RE: [PATCH 1/2] leds-lm3530: comment correction about the range of brightness
 
-> 
-> > Suppose we kill it, and add the new MMF_HAS_UPROBE flag instead.
-> > install_breakpoint() sets it unconditionally,
-> > uprobe_pre_sstep_notifier() checks it.
-> 
-> Argh, why are MMF_flags part of sched.h.. one would expect those to be
-> in mm.h or mm_types.h.. somewhere near struct mm.
-> 
-> > (And perhaps we can stop right here? I mean how often this can
-> >  slow down the debugger which installs int3 in the same mm?)
-> > 
-> > Now we need to clear MMF_HAS_UPROBE somehowe, when the last
-> > uprobe goes away. Lets ignore uprobe_map/unmap for simplicity.
-> >
-> > 	- We add another flag, MMF_UPROBE_RECALC, it is set by
-> > 	  remove_breakpoint().
-> > 
-> > 	- We change handle_swbp(). Ignoring all details it does:
-> > 
-> > 		if (find_uprobe(vaddr))
-> > 			process_uprobe();
-> > 		else if (test_bit(MMF_HAS_UPROBE) && test_bit(MMF_UPROBE_RECALC))
-> > 			recalc_mmf_uprobe_flag();
-> > 
-> > 	  where recalc_mmf_uprobe_flag() checks all vmas and either
-> > 	  clears both flags or MMF_UPROBE_RECALC only.
-> > 
-> > 	  This is the really slow O(n) path, but it can only happen after
-> > 	  unregister, and only if we hit another non-uprobe breakpoint
-> > 	  in the same mm.
-> > 
-> > Something like this. What do you think?
-> 
-> I think I can live with the simple set MMF_HAS_UPROBE and leave it at
-> that. The better optimization seems to be to not install breakpoints
-> when ->filter() excludes the task..
-> 
-> It looks like we currently install the breakpoint unconditionally and
-> only ->filter() once we hit the breakpoint, which is somewhat
-> sub-optimal.
-> 
 
-Yes, We install breakpoints unconditionally, I think we had already
-discussed this and Oleg had proposed a solution too.
-http://lkml.org/lkml/2011/6/16/470 where we move the mm struct from task
-struct to signal struct.
+In the previous patch, max brightness was limited to 127 because only 7 bits are used in the brightness register.
 
--- 
-Thanks and Regards
-Srikar
+http://git.kernel.org/?p=linux/kernel/git/torvalds/linux.git;a=commit;h=bbe6453204c568723679212f6d0653b92b3d6244
+
+With this patch, 128 ~ 255 is invalid range of brightness, so comment needs to be corrected.
+(Even if the brt_val is greater than 127, the brightness will be set as max_brightness - 127)
+
+Thanks & BR
+Milo -
+
+> -----Original Message-----
+> From: Shreshtha Kumar SAHU [mailto:shreshthakumar.sahu@stericsson.com]
+> Sent: Friday, April 20, 2012 4:29 PM
+> To: Kim, Milo
+> Cc: linus.walleij@linaro.org; Richard Purdie; linux-
+> kernel@vger.kernel.org; Andrew Morton
+> Subject: RE: [PATCH 1/2] leds-lm3530: comment correction about the
+> range of brightness
+> 
+> I feel driver should take care of range provided by hardware by
+> scaling the value provided by user, instead of limiting the max
+> brightness to user.
+> 
+> For .e.g. here it can be something like this -
+>                 err = i2c_smbus_write_byte_data(drvdata->client,
+>                                 LM3530_BRT_CTRL_REG, brt_val / 2);
+> 
+> I am not sure if application really use/check max brightness in before
+> calculating/setting new brightness values.
+> 
+> -----Original Message-----
+> From: Kim, Milo [mailto:Milo.Kim@ti.com]
+> Sent: Thursday, April 19, 2012 12:11 PM
+> To: Andrew Morton
+> Cc: Shreshtha Kumar SAHU; linus.walleij@linaro.org; Richard Purdie;
+> linux-kernel@vger.kernel.org
+> Subject: [PATCH 1/2] leds-lm3530: comment correction about the range of
+> brightness
+> 
+> max brightness is 127, so the range of brt_val should be from 0 to 127
+> 
+> Signed-off-by: Milo(Woogyom) Kim <milo.kim@ti.com>
+> ---
+>  include/linux/led-lm3530.h |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+> 
+> diff --git a/include/linux/led-lm3530.h b/include/linux/led-lm3530.h
+> index eeae6e7..4b13347 100644
+> --- a/include/linux/led-lm3530.h
+> +++ b/include/linux/led-lm3530.h
+> @@ -92,7 +92,7 @@ struct lm3530_pwm_data {
+>   * @als2_resistor_sel: internal resistance from ALS2 input to ground
+>   * @als_vmin: als input voltage calibrated for max brightness in mV
+>   * @als_vmax: als input voltage calibrated for min brightness in mV
+> - * @brt_val: brightness value (0-255)
+> + * @brt_val: brightness value (0-127)
+>   * @pwm_data: PWM control functions (only valid when the mode is PWM)
+>   */
+>  struct lm3530_platform_data {
+> --
+> 1.7.4.1
+> 
+> 
+> Best Regards,
+> Milo (Woogyom) Kim
+> 
 
