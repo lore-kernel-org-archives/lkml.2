@@ -1,60 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752541Ab2DTUTT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Apr 2012 16:19:19 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:63451 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751670Ab2DTUTS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Apr 2012 16:19:18 -0400
-Message-ID: <4F91C49D.8070908@RedHat.com>
-Date: Fri, 20 Apr 2012 16:18:37 -0400
-From: Steve Dickson <SteveD@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120210 Thunderbird/10.0.1
+	id S1752495Ab2DTU2p (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Apr 2012 16:28:45 -0400
+Received: from mail160.messagelabs.com ([216.82.253.99]:43493 "EHLO
+	mail160.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751087Ab2DTU2o (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Apr 2012 16:28:44 -0400
+X-Env-Sender: hartleys@visionengravers.com
+X-Msg-Ref: server-8.tower-160.messagelabs.com!1334953719!4381908!5
+X-Originating-IP: [216.166.12.72]
+X-StarScan-Version: 6.5.7; banners=-,-,-
+X-VirusChecked: Checked
+From: H Hartley Sweeten <hartleys@visionengravers.com>
+To: Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: [PATCH] watchdog_dev: include private header to pickup global symbol prototypes
+Date: Fri, 20 Apr 2012 13:28:24 -0700
+User-Agent: KMail/1.9.9
+CC: <linux-watchdog@vger.kernel.org>, <wim@iguana.be>
 MIME-Version: 1.0
-To: Jeff Layton <jlayton@redhat.com>
-CC: linux-fsdevel@vger.kernel.org, linux-nfs@vger.kernel.org,
-        linux-kernel@vger.kernel.org, miklos@szeredi.hu,
-        viro@ZenIV.linux.org.uk, hch@infradead.org,
-        michael.brantley@deshaw.com, sven.breuner@itwm.fraunhofer.de,
-        chuck.lever@oracle.com, pstaubach@exagrid.com, malahal@us.ibm.com,
-        bfields@fieldses.org, trond.myklebust@fys.uio.no, rees@umich.edu
-Subject: Re: [PATCH RFC v3] vfs: make fstatat retry once on ESTALE errors
- from getattr call
-References: <1334316311-22331-1-git-send-email-jlayton@redhat.com> <1334749927-26138-1-git-send-email-jlayton@redhat.com> <20120420104055.511e15bc@tlielax.poochiereds.net>
-In-Reply-To: <20120420104055.511e15bc@tlielax.poochiereds.net>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
+Message-ID: <201204201328.25057.hartleys@visionengravers.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/20/2012 10:40 AM, Jeff Layton wrote:
-> I guess the questions at this point is:
-> 
-> 1) How representative is Peter's mkdir_test() of a real-world workload?
-Reading your email I had to wonder the same thing... What application 
-removes hierarchy of directories in a loop from two different clients?
-I would suspect not many, if any... esp over NFS... 
- 
-> 
-> 2) if we assume that it is fairly representative of one, how can we
-> achieve retrying indefinitely with NFS, or at least some large finite
-> amount?
-The amount of looping would be peer speculation. If the problem can
-not be handled by one simple retry I would say we simply pass the
-error up to the app... Its an application issue... 
- 
-> 
-> I have my doubts as to whether it would really be as big a problem for
-> other filesystems as Miklos and others have asserted, but I'll take
-> their word for it at the moment. What's the best way to contain this
-> behavior to just those filesystems that want to retry indefinitely when
-> they get an ESTALE? Would we need to go with an entirely new
-> ESTALERETRY after all?
-> 
-Introducing a new errno to handle this problem would be overkill IMHO...
+Include the private watchdog_dev.h header to pickup the prototypes for the
+watchdog_dev_register/unregister functions.
 
-If we have to go to the looping approach, I would strong suggest we
-make the file systems register for this type of behavior...
+This quiets the following sparse warnings:
 
-steved. 
+warning: symbol 'watchdog_dev_register' was not declared. Should it be static?
+warning: symbol 'watchdog_dev_unregister' was not declared. Should it be static?
+
+Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
+Cc: Wim Van Sebroeck <wim@iguana.be>
+
+---
+
+diff --git a/drivers/watchdog/watchdog_dev.c b/drivers/watchdog/watchdog_dev.c
+index 8558da9..6c18a58 100644
+--- a/drivers/watchdog/watchdog_dev.c
++++ b/drivers/watchdog/watchdog_dev.c
+@@ -42,6 +42,8 @@
+ #include <linux/init.h>		/* For __init/__exit/... */
+ #include <linux/uaccess.h>	/* For copy_to_user/put_user/... */
+ 
++#include "watchdog_dev.h"
++
+ /* make sure we only register one /dev/watchdog device */
+ static unsigned long watchdog_dev_busy;
+ /* the watchdog device behind /dev/watchdog */
