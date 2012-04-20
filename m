@@ -1,130 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752821Ab2DTQnn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Apr 2012 12:43:43 -0400
-Received: from rcsinet15.oracle.com ([148.87.113.117]:38416 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751645Ab2DTQnm (ORCPT
+	id S1753504Ab2DTQp6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Apr 2012 12:45:58 -0400
+Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:52323 "EHLO
+	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752432Ab2DTQp5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Apr 2012 12:43:42 -0400
-Date: Fri, 20 Apr 2012 12:37:46 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Seth Jennings <sjenning@linux.vnet.ibm.com>
-Cc: Dan Magenheimer <dan.magenheimer@oracle.com>,
-        Nitin Gupta <nitingupta910@gmail.com>, linux-next@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>,
-        Randy Dunlap <rdunlap@xenotime.net>,
-        Stephen Rothwell <sfr@canb.auug.org.au>
-Subject: Re: linux-next: Tree for Apr 19 (zcache)
-Message-ID: <20120420163745.GB31062@phenom.dumpdata.com>
-References: <20120419164643.d9f918d44c890722b7707508@canb.auug.org.au>
- <4F909200.6070104@xenotime.net>
- <0b74f96b-8450-4dfb-8798-36edd0e06a64@default>
- <4F90E7CA.6080201@linux.vnet.ibm.com>
+	Fri, 20 Apr 2012 12:45:57 -0400
+Date: Fri, 20 Apr 2012 18:45:53 +0200
+From: Johan Hovold <jhovold@gmail.com>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Richard Purdie <rpurdie@rpsys.net>, Samuel Ortiz <sameo@linux.intel.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, linux-fbdev@vger.kernel.org
+Subject: Re: [PATCH 3/4] leds: add LM3533 LED driver
+Message-ID: <20120420164553.GA12376@localhost>
+References: <1334935826-12527-1-git-send-email-jhovold@gmail.com>
+ <1334935826-12527-4-git-send-email-jhovold@gmail.com>
+ <201204201610.15758.arnd@arndb.de>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4F90E7CA.6080201@linux.vnet.ibm.com>
+In-Reply-To: <201204201610.15758.arnd@arndb.de>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
-X-CT-RefId: str=0001.0A090202.4F919208.0063,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 19, 2012 at 11:36:26PM -0500, Seth Jennings wrote:
-> On 04/19/2012 05:36 PM, Dan Magenheimer wrote:
-> >> From: Randy Dunlap [mailto:rdunlap@xenotime.net]
-> >> Sent: Thursday, April 19, 2012 4:30 PM
-> >> To: Stephen Rothwell
-> >> Cc: linux-next@vger.kernel.org; LKML; Dan Magenheimer
-> >> Subject: Re: linux-next: Tree for Apr 19 (zcache)
-> >>
-> >> On 04/18/2012 11:46 PM, Stephen Rothwell wrote:
-> >>
-> >>> Hi all,
-> >>>
-> >>> Changes since 20120418:
-> >>
-> >>
-> >> on x86_64:
-> >>
-> >> drivers/built-in.o: In function `zv_free':
-> >> zcache-main.c:(.text+0x5e1c9): undefined reference to `zs_map_object'
-> >> zcache-main.c:(.text+0x5e238): undefined reference to `zs_unmap_object'
-> >> zcache-main.c:(.text+0x5e29a): undefined reference to `zs_free'
-> >> drivers/built-in.o: In function `zv_create':
-> >> zcache-main.c:(.text+0x5e6b3): undefined reference to `zs_malloc'
-> >> zcache-main.c:(.text+0x5e6f0): undefined reference to `zs_map_object'
-> >> zcache-main.c:(.text+0x5e72c): undefined reference to `zs_unmap_object'
-> >> drivers/built-in.o: In function `zcache_comp_init':
-> >> zcache-main.c:(.text+0x5e831): undefined reference to `crypto_has_alg'
-> >> zcache-main.c:(.text+0x5e8a5): undefined reference to `crypto_has_alg'
-> >> drivers/built-in.o: In function `zcache_cpu_notifier':
-> >> zcache-main.c:(.text+0x5e94f): undefined reference to `crypto_alloc_base'
-> >> zcache-main.c:(.text+0x5e9f2): undefined reference to `crypto_destroy_tfm'
-> >> drivers/built-in.o: In function `zv_decompress':
-> >> zcache-main.c:(.text+0x5ee40): undefined reference to `zs_map_object'
-> >> zcache-main.c:(.text+0x5ef06): undefined reference to `zs_unmap_object'
-> >> drivers/built-in.o: In function `zcache_pampd_create':
-> >> zcache-main.c:(.text+0x5f614): undefined reference to `zs_get_total_size_bytes'
-> >> make[1]: *** [.tmp_vmlinux1] Error 1
+On Fri, Apr 20, 2012 at 04:10:15PM +0000, Arnd Bergmann wrote:
+> On Friday 20 April 2012, Johan Hovold wrote:
+> > Add sub-driver for the LEDs in National Semiconductor / TI LM3533
+> > lighting power chips.
+> > 
+> > The chip provides 256 brightness levels, hardware accelerated blinking
+> > as well as ambient-light-sensor and pwm input control.
+> > 
+> > Signed-off-by: Johan Hovold <jhovold@gmail.com>
 > 
-> The problem is that zsmalloc is being built as a module and zcache is
-> builtin.  It seems that because CRYPTO=m, kbuild is forcing zsmalloc
-> to be built, just not forcing it to be builtin.
-> 
-> The zcache Kconfig has:
-> 	bool "Dynamic compression of swap pages and clean pagecache pages"
-> 	depends on (CLEANCACHE || FRONTSWAP) && CRYPTO && X86
-> 	select ZSMALLOC
-> 	select CRYPTO_LZO
-> 
-> Seems to be a nuance of kbuild I didn't know before.  If a
-> "selected by" (sub)condition is met, if any of the conditionals are
-> built as modules, then the entry can be built as a module.
-> 
-> For example, if zsmalloc is selected by:
-> ...(CLEANCACHE [=y] || FRONTSWAP [=n]) && CRYPTO [=m] && X86 [=y]
-> then it can be built as a module or builtin.
-> 
-> If zsmalloc is selected by:
-> ...(CLEANCACHE [=y] || FRONTSWAP [=n]) && CRYPTO [=y] && X86 [=y]
-> then it must be builtin.
-> 
-> One fix is this:
-> 
-> diff --git a/drivers/staging/zcache/Kconfig b/drivers/staging/zcache/Kconfig
-> index 3ed2c8f..7048e01 100644
-> --- a/drivers/staging/zcache/Kconfig
-> +++ b/drivers/staging/zcache/Kconfig
-> @@ -2,7 +2,7 @@ config ZCACHE
->         bool "Dynamic compression of swap pages and clean pagecache pages"
->         # X86 dependency is because zsmalloc uses non-portable pte/tlb
->         # functions
-> -       depends on (CLEANCACHE || FRONTSWAP) && CRYPTO && X86
-> +       depends on (CLEANCACHE || FRONTSWAP) && CRYPTO=y && X86
->         select ZSMALLOC
->         select CRYPTO_LZO
->         default n
-> 
-> I think this is the best way since ZCACHE is a bool and CRYPTO is the only
-> one of the dependencies that is a tristate.  This forces both ZSMALLOC and
-> CRYPTO_LZO to be builtin if ZCACHE is selected.
-> 
-> Any other suggestions?
+> I notice that there is already driver for lm3530, which sounds related.
+> Is there an opportunity to share code between these, or are they completely
+> different devices?
 
-Could you do:
+Unfortunately not. They are really very different devices despite
+similar naming and terminology.
 
-default y if (CRYPTO=y || ZSMALLOC=m)
-default m if (CRYPTO=m || ZSMALLOC=y)
+> > +
+> > +#define show_ctrlbank_attr(_name)					\
+> > +static ssize_t show_##_name(struct device *dev,				\
+> > +				struct device_attribute *attr,		\
+> > +				char *buf)				\
+> > +{									\
+> > +	struct led_classdev *led_cdev = dev_get_drvdata(dev);		\
+> > +	struct lm3533_led *led = to_lm3533_led(led_cdev);		\
+> > +	u8 val;								\
+> > +	int ret;							\
+> > +									\
+> > +	ret = lm3533_ctrlbank_get_##_name(&led->cb, &val);		\
+> > +	if (ret)							\
+> > +		return ret;						\
+> > +									\
+> > +	return scnprintf(buf, PAGE_SIZE, "%d\n", val);			\
+> > +}
+> 
+> IMHO this macro adds more in terms of complexity than it saves in terms
+> of lines of code, and it would be better to open-code the two instances.
+> If you need more than two or three instances, I would recommend creating
+> keying the number off of the attribute pointer, either by comparing the
+> pointer or by adding a data structure derived from device_attribute and
+> using container_of to get at the other data.
 
-?
-> 
-> Thanks,
-> Seth
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-next" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+Agreed. I'll simply open-code them for now, and do the same with the
+equivalent instances in the backlight driver.
+
+Thanks,
+Johan
