@@ -1,199 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757428Ab2DTSrQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Apr 2012 14:47:16 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:62277 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755030Ab2DTSrP convert rfc822-to-8bit (ORCPT
+	id S932770Ab2DTSsP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Apr 2012 14:48:15 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:38380 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757421Ab2DTSsK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Apr 2012 14:47:15 -0400
+	Fri, 20 Apr 2012 14:48:10 -0400
+Date: Fri, 20 Apr 2012 19:48:07 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Jassi Brar <jaswinder.singh@linaro.org>
+Cc: linux-kernel@vger.kernel.org, lrg@ti.com
+Subject: Re: [PATCH] regulator: Provide a check for dummy regulator
+Message-ID: <20120420184806.GA3092@opensource.wolfsonmicro.com>
+References: <20120419124204.GE3046@opensource.wolfsonmicro.com>
+ <CAJe_ZhfbFq98fT56CS-q4VoU8wnybj-+swfB+Jrknd3Zmt9V8g@mail.gmail.com>
+ <20120419162905.GA3084@opensource.wolfsonmicro.com>
+ <CAJe_Zhd0H6kXBhqdynuZqhbcPq8ARWu5SMbs=hQT2n8stzRvXQ@mail.gmail.com>
+ <20120420114602.GB3259@opensource.wolfsonmicro.com>
+ <CAJe_ZhdKv_7fTj9ZhJE0JzmuhxEZn-JmSbHu615YMXoWZUei9A@mail.gmail.com>
+ <20120420130134.GA5957@opensource.wolfsonmicro.com>
+ <CAJe_ZhdKtK8YKo1qc8g18XrdnrQRZw2aFSkW8x3koELU10EsHw@mail.gmail.com>
+ <20120420144256.GA6828@opensource.wolfsonmicro.com>
+ <CAJe_ZhdzuHo8P5WHguKMaikht8aN4RU-j_Q9FB+xOSw=roFZ=w@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <4F919CD5.7070004@fold.natur.cuni.cz>
-References: <4F6A483D.50702@fold.natur.cuni.cz>
-	<4F8D1B72.2000105@fold.natur.cuni.cz>
-	<CAE9FiQW2MAW_WT+sq8XVtMOx=uR8FAN8O2wL2AOxkFBfEM285g@mail.gmail.com>
-	<CAE9FiQWSw1h772ijZ6YL4EujwjgvZ84bbDx9VbF_cdE63D-41w@mail.gmail.com>
-	<4F8D390F.9050408@fold.natur.cuni.cz>
-	<CAE9FiQU-_BCCS1OKagVuj8YNrut8-6GH2_i86FsfS8UDWQ1pRA@mail.gmail.com>
-	<CAE9FiQUxoHvUWFXv5LLcBT9vVGnQKp1-Tg7M3XPPULWwtX1iUw@mail.gmail.com>
-	<4F8EFFA3.3050705@fold.natur.cuni.cz>
-	<CAE9FiQVcJbPub1O6nwyNsiijHFpHN0jMsGO4MmKugybPL7Wnug@mail.gmail.com>
-	<4F8F243B.70906@fold.natur.cuni.cz>
-	<CAE9FiQXx1NcGY9cHDiM5isx7NyxWN--Exb-4Gfj0arr6vf5ghQ@mail.gmail.com>
-	<4F909CEB.3060407@fold.natur.cuni.cz>
-	<CAE9FiQU7gnKiwazN_2ykbXSkcuDqWMZNt0CHiGvae2L+rTVGug@mail.gmail.com>
-	<CAE9FiQUk8D20mEFPE0ahwfigbEOHpbRp-X0wt4DC+293msw=4Q@mail.gmail.com>
-	<4F91473A.1080007@fold.natur.cuni.cz>
-	<CAE9FiQUQRAfdG1J6XUVcOVkeR00vyqnCrBg1O3S_ByC3dKOUog@mail.gmail.com>
-	<4F919C22.1070608@fold.natur.cuni.cz>
-	<4F919CD5.7070004@fold.natur.cuni.cz>
-Date: Fri, 20 Apr 2012 11:47:14 -0700
-X-Google-Sender-Auth: av69eBo4sO_a5ya3wtsBhThi_4c
-Message-ID: <CAE9FiQV_cRTDTBmQwNLJtT-N=HTAxBiphBLDmKxM-N0JKyoR-w@mail.gmail.com>
-Subject: Re: 3.2.11: PCI Express card cannot be re-detected withing cca 60sec timeframe
-From: Yinghai Lu <yinghai@kernel.org>
-To: Martin Mokrejs <mmokrejs@fold.natur.cuni.cz>
-Cc: Sarah Sharp <sarah.a.sharp@linux.intel.com>, linux-pci@vger.kernel.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="BXVAT5kNtrzKuDFl"
+Content-Disposition: inline
+In-Reply-To: <CAJe_ZhdzuHo8P5WHguKMaikht8aN4RU-j_Q9FB+xOSw=roFZ=w@mail.gmail.com>
+X-Cookie: You will soon forget this.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 20, 2012 at 10:28 AM, Martin Mokrejs
-<mmokrejs@fold.natur.cuni.cz> wrote:
->
->
-> [30595.338466] pciehp 0000:00:1c.7:pcie04: pcie_isr: intr_loc 108
-> [30595.338468] pciehp 0000:00:1c.7:pcie04: LinkState change
-> [30595.338471] pciehp 0000:00:1c.7:pcie04: lnk_status = 7011
-> [30595.338483] pciehp 0000:00:1c.7:pcie04: Presence/Notify input change
-> [30595.338486] pciehp 0000:00:1c.7:pcie04: Card present on Slot(7)
-> [30595.338491] pciehp 0000:00:1c.7:pcie04: Surprise Removal
-> [30595.338525] pciehp 0000:00:1c.7:pcie04: check_link_active: lnk_status = 7011
-> [30595.439441] pciehp 0000:00:1c.7:pcie04: pciehp_check_link_status: lnk_status = 7011
-> [30595.439543] pci 0000:11:00.0: [1033:0194] type 00 class 0x0c0330
-> [30595.439597] pci 0000:11:00.0: reg 10: [mem 0x00000000-0x00001fff 64bit]
-> [30595.439840] pci 0000:11:00.0: PME# supported from D0 D3hot
-> [30595.459499] pci 0000:11:00.0: BAR 0: assigned [mem 0xf6c00000-0xf6c01fff 64bit]
-> [30595.459542] pcieport 0000:00:1c.7: PCI bridge to [bus 11-16]
-> [30595.459545] pcieport 0000:00:1c.7:   bridge window [io  0xc000-0xdfff]
-> [30595.459550] pcieport 0000:00:1c.7:   bridge window [mem 0xf6c00000-0xf7cfffff]
-> [30595.459554] pcieport 0000:00:1c.7:   bridge window [mem 0xf0000000-0xf10fffff 64bit pref]
-> [30595.459688] xhci_hcd 0000:11:00.0: enabling device (0100 -> 0102)
-> [30595.459894] xhci_hcd 0000:11:00.0: xHCI Host Controller
-> [30595.459900] xhci_hcd 0000:11:00.0: new USB bus registered, assigned bus number 5
-> [30595.460199] xhci_hcd 0000:11:00.0: irq 19, io mem 0xf6c00000
-> [30595.460306] xhci_hcd 0000:11:00.0: irq 54 for MSI/MSI-X
-> [30595.460310] xhci_hcd 0000:11:00.0: irq 55 for MSI/MSI-X
-> [30595.460314] xhci_hcd 0000:11:00.0: irq 56 for MSI/MSI-X
-> [30595.460318] xhci_hcd 0000:11:00.0: irq 57 for MSI/MSI-X
-> [30595.460321] xhci_hcd 0000:11:00.0: irq 58 for MSI/MSI-X
-> [30595.460472] usb usb5: New USB device found, idVendor=1d6b, idProduct=0002
-> [30595.460474] usb usb5: New USB device strings: Mfr=3, Product=2, SerialNumber=1
-> [30595.460475] usb usb5: Product: xHCI Host Controller
-> [30595.460476] usb usb5: Manufacturer: Linux 3.4.0-rc3-default xhci_hcd
-> [30595.460477] usb usb5: SerialNumber: 0000:11:00.0
-> [30595.460569] xHCI xhci_add_endpoint called for root hub
-> [30595.460579] xHCI xhci_check_bandwidth called for root hub
-> [30595.460600] hub 5-0:1.0: USB hub found
-> [30595.460611] hub 5-0:1.0: 2 ports detected
-> [30595.460706] xhci_hcd 0000:11:00.0: xHCI Host Controller
-> [30595.460711] xhci_hcd 0000:11:00.0: new USB bus registered, assigned bus number 6
-> [30595.463431] usb usb6: New USB device found, idVendor=1d6b, idProduct=0003
-> [30595.463433] usb usb6: New USB device strings: Mfr=3, Product=2, SerialNumber=1
-> [30595.463434] usb usb6: Product: xHCI Host Controller
-> [30595.463435] usb usb6: Manufacturer: Linux 3.4.0-rc3-default xhci_hcd
-> [30595.463437] usb usb6: SerialNumber: 0000:11:00.0
-> [30595.463506] xHCI xhci_add_endpoint called for root hub
-> [30595.463507] xHCI xhci_check_bandwidth called for root hub
-> [30595.463534] hub 6-0:1.0: USB hub found
-> [30595.463547] hub 6-0:1.0: 2 ports detected
 
-echo 1 > /sys/..../remove
+--BXVAT5kNtrzKuDFl
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> [30607.046714] xhci_hcd 0000:11:00.0: remove, state 4
-> [30607.046719] usb usb6: USB disconnect, device number 1
-> [30607.046764] xHCI xhci_drop_endpoint called for root hub
-> [30607.046766] xHCI xhci_check_bandwidth called for root hub
-> [30607.065341] xhci_hcd 0000:11:00.0: USB bus 6 deregistered
-> [30607.065350] xhci_hcd 0000:11:00.0: remove, state 4
-> [30607.065353] usb usb5: USB disconnect, device number 1
-> [30607.065393] xHCI xhci_drop_endpoint called for root hub
-> [30607.065394] xHCI xhci_check_bandwidth called for root hub
-> [30607.065692] xhci_hcd 0000:11:00.0: USB bus 5 deregistered
-> [30607.065764] pci 0000:11:00.0: freeing pci_dev info
+On Fri, Apr 20, 2012 at 11:55:22PM +0530, Jassi Brar wrote:
+> On 20 April 2012 20:12, Mark Brown <broonie@opensource.wolfsonmicro.com> =
+wrote:
 
-physically remove that express card
+> > No, they're here to stay - people will always be bringing up new boards
+> > after all - but they're not supposed to be used on platforms.
 
-> [30616.630810] pciehp 0000:00:1c.7:pcie04: pcie_isr: intr_loc 108
-> [30616.630813] pciehp 0000:00:1c.7:pcie04: LinkState change
-> [30616.630816] pciehp 0000:00:1c.7:pcie04: lnk_status = 5011
-> [30616.630817] pciehp 0000:00:1c.7:pcie04: Presence/Notify input change
-> [30616.630820] pciehp 0000:00:1c.7:pcie04: Card not present on Slot(7)
-> [30616.630858] pciehp 0000:00:1c.7:pcie04: Surprise Removal
-> [30616.630888] pciehp 0000:00:1c.7:pcie04: Disabling domain:bus:device=0000:11:00
-> [30616.630891] pciehp 0000:00:1c.7:pcie04: pciehp_unconfigure_device: domain:bus:dev = 0000:11:00
+> "some time in future" means utopia.... whenever that be. The longer that =
+is
+> to more important is it for dummy support to be 'complete'.
 
-physical add...
+Well, for any given board it's very quick to resolve.  It's just that
+=66rom time to time people will break things and then they'll get annoyed
+(and probably spend forever complaining on the lists rather than the
+brief time taken to make the patch).
 
-> [30708.233725] pciehp 0000:00:1c.7:pcie04: pcie_isr: intr_loc 108
-> [30708.233727] pciehp 0000:00:1c.7:pcie04: LinkState change
-> [30708.233738] pciehp 0000:00:1c.7:pcie04: lnk_status = 7011
-> [30708.233739] pciehp 0000:00:1c.7:pcie04: Presence/Notify input change
-> [30708.233742] pciehp 0000:00:1c.7:pcie04: Card present on Slot(7)
-> [30708.233781] pciehp 0000:00:1c.7:pcie04: Surprise Removal
-> [30708.233796] pciehp 0000:00:1c.7:pcie04: check_link_active: lnk_status = 7011
-> [30708.338477] pciehp 0000:00:1c.7:pcie04: pciehp_check_link_status: lnk_status = 7011
-> [30708.338581] pci 0000:11:00.0: [1033:0194] type 00 class 0x0c0330
-> [30708.338632] pci 0000:11:00.0: reg 10: [mem 0x00000000-0x00001fff 64bit]
-> [30708.338876] pci 0000:11:00.0: PME# supported from D0 D3hot
-> [30708.358538] pci 0000:11:00.0: BAR 0: assigned [mem 0xf6c00000-0xf6c01fff 64bit]
-> [30708.358575] pcieport 0000:00:1c.7: PCI bridge to [bus 11-16]
-> [30708.358588] pcieport 0000:00:1c.7:   bridge window [io  0xc000-0xdfff]
-> [30708.358593] pcieport 0000:00:1c.7:   bridge window [mem 0xf6c00000-0xf7cfffff]
-> [30708.358597] pcieport 0000:00:1c.7:   bridge window [mem 0xf0000000-0xf10fffff 64bit pref]
-> [30708.358737] xhci_hcd 0000:11:00.0: enabling device (0100 -> 0102)
-> [30708.358791] xhci_hcd 0000:11:00.0: xHCI Host Controller
-> [30708.358799] xhci_hcd 0000:11:00.0: new USB bus registered, assigned bus number 5
-> [30708.359090] xhci_hcd 0000:11:00.0: irq 19, io mem 0xf6c00000
-> [30708.359192] xhci_hcd 0000:11:00.0: irq 54 for MSI/MSI-X
-> [30708.359196] xhci_hcd 0000:11:00.0: irq 55 for MSI/MSI-X
-> [30708.359199] xhci_hcd 0000:11:00.0: irq 56 for MSI/MSI-X
-> [30708.359203] xhci_hcd 0000:11:00.0: irq 57 for MSI/MSI-X
-> [30708.359207] xhci_hcd 0000:11:00.0: irq 58 for MSI/MSI-X
-> [30708.359357] usb usb5: New USB device found, idVendor=1d6b, idProduct=0002
-> [30708.359359] usb usb5: New USB device strings: Mfr=3, Product=2, SerialNumber=1
-> [30708.359360] usb usb5: Product: xHCI Host Controller
-> [30708.359361] usb usb5: Manufacturer: Linux 3.4.0-rc3-default xhci_hcd
-> [30708.359363] usb usb5: SerialNumber: 0000:11:00.0
-> [30708.359453] xHCI xhci_add_endpoint called for root hub
-> [30708.359456] xHCI xhci_check_bandwidth called for root hub
-> [30708.359496] hub 5-0:1.0: USB hub found
-> [30708.359509] hub 5-0:1.0: 2 ports detected
-> [30708.359571] xhci_hcd 0000:11:00.0: xHCI Host Controller
-> [30708.359574] xhci_hcd 0000:11:00.0: new USB bus registered, assigned bus number 6
-> [30708.362332] usb usb6: New USB device found, idVendor=1d6b, idProduct=0003
-> [30708.362335] usb usb6: New USB device strings: Mfr=3, Product=2, SerialNumber=1
-> [30708.362337] usb usb6: Product: xHCI Host Controller
-> [30708.362338] usb usb6: Manufacturer: Linux 3.4.0-rc3-default xhci_hcd
-> [30708.362340] usb usb6: SerialNumber: 0000:11:00.0
-> [30708.362443] xHCI xhci_add_endpoint called for root hub
-> [30708.362445] xHCI xhci_check_bandwidth called for root hub
-> [30708.362472] hub 6-0:1.0: USB hub found
-> [30708.362490] hub 6-0:1.0: 2 ports detected
+> > In any case, as I've said it's not the fact that you've got a dummy
+> > supply that's an issue for most of the cases you mention - it's the fact
+> > that the supply is always on.
 
-echo 1 /sys/.../remove
+> I am not sure anymore you read my posts :(
+> I am more bothered by the case where the supply is always off i.e,
+> physically absent.
 
-> [30716.380693] xhci_hcd 0000:11:00.0: remove, state 4
-> [30716.380699] usb usb6: USB disconnect, device number 1
-> [30716.380752] xHCI xhci_drop_endpoint called for root hub
-> [30716.380754] xHCI xhci_check_bandwidth called for root hub
-> [30716.400795] xhci_hcd 0000:11:00.0: USB bus 6 deregistered
-> [30716.400803] xhci_hcd 0000:11:00.0: remove, state 4
-> [30716.400807] usb usb5: USB disconnect, device number 1
-> [30716.400846] xHCI xhci_drop_endpoint called for root hub
-> [30716.400848] xHCI xhci_check_bandwidth called for root hub
-> [30716.401134] xhci_hcd 0000:11:00.0: USB bus 5 deregistered
-> [30716.401207] pci 0000:11:00.0: freeing pci_dev info
+It's not what you first mentioned...  In any case, the solution is very
+clear - just do proper regulator support and turn off dummy regulators
+and everything is fine.
 
-physically remove
+> > Even in the case where a supply might genuinely be missing (which are
+> > very unusual, it's more effort in silicon to cope with missing supplies)
 
-> [30720.175637] pciehp 0000:00:1c.7:pcie04: pcie_isr: intr_loc 108
-> [30720.175639] pciehp 0000:00:1c.7:pcie04: LinkState change
-> [30720.175643] pciehp 0000:00:1c.7:pcie04: lnk_status = 5011
-> [30720.175644] pciehp 0000:00:1c.7:pcie04: Presence/Notify input change
-> [30720.175648] pciehp 0000:00:1c.7:pcie04: Card not present on Slot(7)
-> [30720.175687] pciehp 0000:00:1c.7:pcie04: Surprise Removal
-> [30720.175718] pciehp 0000:00:1c.7:pcie04: Disabling domain:bus:device=0000:11:00
-> [30720.175721] pciehp 0000:00:1c.7:pcie04: pciehp_unconfigure_device: domain:bus:dev = 0000:11:00
->
+> It's not that unusual.  See vcc_aux at line 150 of omap_hsmmc.c
 
-So the USB host control driver xhci put that 11:00.0 in strange power state.
+No, really - that's exceptionally unusual and quite honestly given the
+"discussion" surrounding the addition of the regulator support there I'm
+not convinced that anything the driver is doing here is sane; the whole
+stuff with regulator_get_exclusive() never made any sense for MMC in the
+first place (and has now been removed).
 
-please try to boot the system with pcie_aspm=off
+> See how dummy fools the driver throughout into stuff like toggling vcc
+> even for platforms that don't really provide vcc_aux.
+> In practice, see how dummy affects (negatively because of unnecessary
+> toggles) the vcc too.  Not every platform with omap_hsmmc might afford
+> having dummy disabled (I don't know all to tell for sure).
 
-and don't use echo 1 before physically removing the expresscard.
+The fix here is in the boards, not with the dummy code.  Open coding
+handling of this sort of stuff in individual consumers is just insane,
+and you're always going to run into the situation where you don't know
+if the dummy regulator is there because the board setup is incomplete or
+because someone left the option turned on when it shouldn't be.
 
-Yinghai
+What you want here is something like regulator_get_real_no_really()
+which never returns a dummy regulator but the whole thing is just adding
+fragility onto bodge.  I'm not overly concerned if systems don't run as
+efficiently as they might when using dummy regulators because (like I
+say) they're just a crutch to keep systems running.
+
+Note also that the performance improvement stuff I sent the other day
+will help here, the bounces will be very cheap now.
+
+I'd much rather remove the feature than start going down this rabbit
+hole, it's just going to be a world of pain and fragility.  But then a
+whole different bunch of people will complain.
+
+--BXVAT5kNtrzKuDFl
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJPka9gAAoJEBus8iNuMP3dAB0P/ixmwMF8zEtfRi9ayLB4Cu8F
+/JKjjuIRG1aA/os9zqiQa5lEiJjslA6GjebZAXkRBoYSartY6YeYTE5ip5RLwAFn
+4kJLIp9LAX5f6mGH5ju078ddnW0/KZJuJD1S0OC4bYcJYUzrE/aEEx8i2ZHF0ukx
+QJLqXV2F/zyaP8q0llIYPethuGltoEr1jHWyO+xYAhdGfRvpoOKEIvAJQmp1BzKz
+3yN/5fV4Rj8V+CnCqUW4YT91QGIyvUNtPbMN89z6FYtnayBu3eLsDpw4d0byckiP
+gqJrBNThEWXPzOaZbrBPzUt3RFZXa19GTCe0FjnrEFE10CuauQGW/sliAIWLeS90
+i9CMk2Q4gLaLt6Po0+8MbJk7eJqHW0TGl1x1PmKiWmjLajtGs179FCup7dGh+qI3
+/F0D/uHoKfsyxupJEdMo+cGHyT8EsXbBYEyCiJ0YjsbhS2+vdwbDXUBj0ZuqCqDa
+0qaSGHgIsW5atyXZCQ8/SS+OoeKzGMdlbIfEX3od871kylOQxxBM1eYX/KfzbaC1
+8qH6h7o+TV/ZVSWDXDhmgd46hZGgZsgEaMwClVpJQMJboVSmlbE4uk+gkoce+84q
+Fkzo72UKOA6Xq1Vyf3jiZbawvpgpPodtk5PGUmwxxaMF54Fn1nA3NWcB+jnGfNOg
+h5JgobZXe+yWUfLuKXrU
+=ZK6U
+-----END PGP SIGNATURE-----
+
+--BXVAT5kNtrzKuDFl--
