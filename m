@@ -1,161 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932494Ab2DTDTR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Apr 2012 23:19:17 -0400
-Received: from mga09.intel.com ([134.134.136.24]:8300 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752739Ab2DTDTQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Apr 2012 23:19:16 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
-   d="scan'208";a="131942509"
-Subject: Re: [PATCH v2] ACPI: D3 states cleanup
-From: Lin Ming <ming.m.lin@intel.com>
-To: Aaron Lu <aaron.lu@amd.com>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, lenb <lenb@kernel.org>,
-        linux-acpi <linux-acpi@vger.kernel.org>, linux-kernel@vger.kernel.org,
-        Zhang Rui <rui.zhang@intel.com>, "Huang, Ying" <ying.huang@intel.com>
-In-Reply-To: <20120420022304.GA3001@localhost.amd.com>
-References: <1334884749.4927.6.camel@minggr>
-	 <20120420022304.GA3001@localhost.amd.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 20 Apr 2012 11:19:13 +0800
-Message-ID: <1334891953.4927.19.camel@minggr>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	id S1757085Ab2DTDbt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Apr 2012 23:31:49 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:60314 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751547Ab2DTDbs convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Apr 2012 23:31:48 -0400
+MIME-Version: 1.0
+In-Reply-To: <4F90D564.3090508@gmail.com>
+References: <1334872799-14589-1-git-send-email-ddaney.cavm@gmail.com>
+ <1334872799-14589-2-git-send-email-ddaney.cavm@gmail.com> <4F90BF8D.7030209@zytor.com>
+ <4F90D564.3090508@gmail.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Thu, 19 Apr 2012 20:31:26 -0700
+X-Google-Sender-Auth: USVa9jjoSVK7eSDuOJ-VMhazYAM
+Message-ID: <CA+55aFyijf43qSu3N9nWHEBwaGbb7T2Oq9A=9EyR=Jtyqfq_cQ@mail.gmail.com>
+Subject: Re: [PATCH v1 1/5] scripts: Add sortextable to sort the kernel's
+ exception table.
+To: David Daney <david.s.daney@gmail.com>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, David Daney <ddaney.cavm@gmail.com>,
+        Ralf Baechle <ralf@linux-mips.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        x86@kernel.org, Michal Marek <mmarek@suse.cz>,
+        linux-kernel@vger.kernel.org, linux-mips@linux-mips.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        David Daney <david.daney@cavium.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2012-04-20 at 10:23 +0800, Aaron Lu wrote:
-> Hi,
-> 
-> On Fri, Apr 20, 2012 at 09:19:09AM +0800, Lin Ming wrote:
-> > There are two ACPI D3 states defined now:
-> > ACPI_STATE_D3 and ACPI_STATE_D3_COLD.
-> > 
-> > But the uses of these states are not clear/correct in some code.
-> > For example, some code refer ACPI_STATE_D3 as D3hot and others refer
-> > it as D3cold.
-> > 
-> > This patch introduces ACPI_STATE_D3_HOT to refer to ACPI D3hot state.
-> > And changes ACPI_STATE_D3 to refer to ACPI D3cold state only.
-> > Also redefines ACPI_STATE_D3_COLD the same as ACPI_STATE_D3.
-> > 
-> 
-> With this patch now, if a device has _PS3, then we will set its D3hot
-> flag valid. This doesn't feel right to me, since per our discussion the
-> other day, we should assume _PS3 will put the device into D3cold.
-> 
-> Or do you mean: if _PS3 is available, then both D3hot and D3cold is
-> valid from the perspective of acpi, it is the individual driver's
-> responsibility to decide which state is actually valid and will be used.
+On Thu, Apr 19, 2012 at 8:17 PM, David Daney <david.s.daney@gmail.com> wrote:
+>
+> I hadn't considered that the image was relocatable.  Our MIPS kernels never
+> have relocations.
+>
+> I am working on a version of this that handles the relocations.  It
+> shouldn't be too difficult.
 
-Right.
+It might be better to just make the rule be that we don't have
+relocations there - make everything relative to the start of the code
+segment or something.
 
-ACPI_STATE_D3(same as ACPI_STATE_D3_COLD now) is always valid.
+On x86, we already use that _ASM_EXTABLE() macro to hide the
+differences between x86-64 and x86-32. So it should be be somewhat
+easy to make that same macro make it relative to the code start, and
+at the same time also make the exception table perhaps be two 32-bit
+words rather than two pointers.
 
-Lin Ming
+So it would shrink the exception table and avoid relocations at the
+same time. Win-win. No?
 
-> 
-> -Aaron
-> 
-> > Acked-by: Rafael J. Wysocki <rjw@sisk.pl>
-> > Signed-off-by: Lin Ming <ming.m.lin@intel.com>
-> > ---
-> >  drivers/acpi/power.c   |    2 +-
-> >  drivers/acpi/scan.c    |    9 +--------
-> >  drivers/pci/pci-acpi.c |    4 ++--
-> >  include/acpi/actypes.h |    7 ++++---
-> >  4 files changed, 8 insertions(+), 14 deletions(-)
-> > 
-> > diff --git a/drivers/acpi/power.c b/drivers/acpi/power.c
-> > index 7049a7d..330bb4d 100644
-> > --- a/drivers/acpi/power.c
-> > +++ b/drivers/acpi/power.c
-> > @@ -631,7 +631,7 @@ int acpi_power_get_inferred_state(struct acpi_device *device, int *state)
-> >  	 * We know a device's inferred power state when all the resources
-> >  	 * required for a given D-state are 'on'.
-> >  	 */
-> > -	for (i = ACPI_STATE_D0; i < ACPI_STATE_D3; i++) {
-> > +	for (i = ACPI_STATE_D0; i < ACPI_STATE_D3_HOT; i++) {
-> >  		list = &device->power.states[i].resources;
-> >  		if (list->count < 1)
-> >  			continue;
-> > diff --git a/drivers/acpi/scan.c b/drivers/acpi/scan.c
-> > index 767e2dc..fbf38ad 100644
-> > --- a/drivers/acpi/scan.c
-> > +++ b/drivers/acpi/scan.c
-> > @@ -869,7 +869,7 @@ static int acpi_bus_get_power_flags(struct acpi_device *device)
-> >  	/*
-> >  	 * Enumerate supported power management states
-> >  	 */
-> > -	for (i = ACPI_STATE_D0; i <= ACPI_STATE_D3; i++) {
-> > +	for (i = ACPI_STATE_D0; i <= ACPI_STATE_D3_HOT; i++) {
-> >  		struct acpi_device_power_state *ps = &device->power.states[i];
-> >  		char object_name[5] = { '_', 'P', 'R', '0' + i, '\0' };
-> >  
-> > @@ -884,13 +884,6 @@ static int acpi_bus_get_power_flags(struct acpi_device *device)
-> >  				acpi_bus_add_power_resource(ps->resources.handles[j]);
-> >  		}
-> >  
-> > -		/* The exist of _PR3 indicates D3Cold support */
-> > -		if (i == ACPI_STATE_D3) {
-> > -			status = acpi_get_handle(device->handle, object_name, &handle);
-> > -			if (ACPI_SUCCESS(status))
-> > -				device->power.states[ACPI_STATE_D3_COLD].flags.valid = 1;
-> > -		}
-> > -
-> >  		/* Evaluate "_PSx" to see if we can do explicit sets */
-> >  		object_name[2] = 'S';
-> >  		status = acpi_get_handle(device->handle, object_name, &handle);
-> > diff --git a/drivers/pci/pci-acpi.c b/drivers/pci/pci-acpi.c
-> > index 0f150f2..1929c0c 100644
-> > --- a/drivers/pci/pci-acpi.c
-> > +++ b/drivers/pci/pci-acpi.c
-> > @@ -200,7 +200,7 @@ static pci_power_t acpi_pci_choose_state(struct pci_dev *pdev)
-> >  		return PCI_D1;
-> >  	case ACPI_STATE_D2:
-> >  		return PCI_D2;
-> > -	case ACPI_STATE_D3:
-> > +	case ACPI_STATE_D3_HOT:
-> >  		return PCI_D3hot;
-> >  	case ACPI_STATE_D3_COLD:
-> >  		return PCI_D3cold;
-> > @@ -223,7 +223,7 @@ static int acpi_pci_set_power_state(struct pci_dev *dev, pci_power_t state)
-> >  		[PCI_D0] = ACPI_STATE_D0,
-> >  		[PCI_D1] = ACPI_STATE_D1,
-> >  		[PCI_D2] = ACPI_STATE_D2,
-> > -		[PCI_D3hot] = ACPI_STATE_D3,
-> > +		[PCI_D3hot] = ACPI_STATE_D3_HOT,
-> >  		[PCI_D3cold] = ACPI_STATE_D3
-> >  	};
-> >  	int error = -EINVAL;
-> > diff --git a/include/acpi/actypes.h b/include/acpi/actypes.h
-> > index eba6604..e8bcc47 100644
-> > --- a/include/acpi/actypes.h
-> > +++ b/include/acpi/actypes.h
-> > @@ -499,9 +499,10 @@ typedef u64 acpi_integer;
-> >  #define ACPI_STATE_D0                   (u8) 0
-> >  #define ACPI_STATE_D1                   (u8) 1
-> >  #define ACPI_STATE_D2                   (u8) 2
-> > -#define ACPI_STATE_D3                   (u8) 3
-> > -#define ACPI_STATE_D3_COLD              (u8) 4
-> > -#define ACPI_D_STATES_MAX               ACPI_STATE_D3_COLD
-> > +#define ACPI_STATE_D3_HOT               (u8) 3
-> > +#define ACPI_STATE_D3                   (u8) 4
-> > +#define ACPI_STATE_D3_COLD              ACPI_STATE_D3
-> > +#define ACPI_D_STATES_MAX               ACPI_STATE_D3
-> >  #define ACPI_D_STATE_COUNT              5
-> >  
-> >  #define ACPI_STATE_C0                   (u8) 0
-> > -- 
-> > 1.7.2.5
-> > 
-> > 
-> > 
-> > 
-> 
-
-
+                      Linus
