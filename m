@@ -1,69 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932584Ab2DTPhb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Apr 2012 11:37:31 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:45017 "EHLO
-	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754928Ab2DTPh3 (ORCPT
+	id S932689Ab2DTPkp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Apr 2012 11:40:45 -0400
+Received: from [124.207.24.138] ([124.207.24.138]:45479 "EHLO
+	mail.ss.pku.edu.cn" rhost-flags-FAIL-FAIL-OK-OK) by vger.kernel.org
+	with ESMTP id S1756697Ab2DTPko (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Apr 2012 11:37:29 -0400
-X-Sasl-enc: ydw2VssuvupH8UE1Zh+WGT00dtIuvmVL0Pwz/jdb4j07 1334936248
-Date: Fri, 20 Apr 2012 08:37:27 -0700
-From: Greg KH <greg@kroah.com>
-To: Wang YanQing <Udknight@gmail.com>, lkml <linux-kernel@vger.kernel.org>,
-        linux-usb@vger.kernel.org
-Subject: Re: [RFC]Is usb port number fixed?
-Message-ID: <20120420153727.GA29331@kroah.com>
-References: <20120420092525.GA12660@udknight>
- <20120420093738.GA12755@udknight>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120420093738.GA12755@udknight>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Fri, 20 Apr 2012 11:40:44 -0400
+Subject: Re: [Xen-devel] [PATCH] xen/apic: implement io apic read with
+ hypercall
+From: Lin Ming <mlin@ss.pku.edu.cn>
+To: Ian Campbell <Ian.Campbell@citrix.com>
+Cc: Andrew Cooper <Andrew.Cooper3@citrix.com>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+In-Reply-To: <1334934367.28331.99.camel@zakaz.uk.xensource.com>
+References: <1334913957.2863.1.camel@hp6530s>	<4F913340.4000202@citrix.com>
+	 <1334920396.2863.16.camel@hp6530s>
+	 <1334925508.28331.63.camel@zakaz.uk.xensource.com>
+	 <4F915C43.4020207@citrix.com>
+	 <1334927566.28331.80.camel@zakaz.uk.xensource.com>
+	 <CAF1ivSaPshQf=BZ1gKLUq1yRF_MWeyjjVWkfv+E_jT+K5CFmAA@mail.gmail.com>
+	 <1334934367.28331.99.camel@zakaz.uk.xensource.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Date: Fri, 20 Apr 2012 23:39:24 +0800
+Message-ID: <1334936364.2863.24.camel@hp6530s>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 20, 2012 at 05:37:38PM +0800, Wang YanQing wrote:
-> On Fri, Apr 20, 2012 at 05:25:25PM +0800, Wang YanQing wrote:
-> > Hi!
-> > when I execute the command below:
+On Fri, 2012-04-20 at 16:06 +0100, Ian Campbell wrote:
+> On Fri, 2012-04-20 at 15:50 +0100, Lin Ming wrote:
+> > On Fri, Apr 20, 2012 at 9:12 PM, Ian Campbell <Ian.Campbell@citrix.com> wrote:
+> > > On Fri, 2012-04-20 at 13:53 +0100, Andrew Cooper wrote:
+> > >> >
+> > >> > Under what circumstances can these hypercalls fail? Would a BUG_ON be
+> > >> > appropriate/
+> > >>
+> > >> -EFAULT, -EPERM, anything xsm_apic() could return (which looks only to
+> > >> be -EPERM).
+> > >
+> > > So either the guest has called a hypercall which it is not permitted to
+> > > or it has called it with invalid parameters of one sort or another. Both
+> > > of these would be a code bug in the guest and therefore asserting that
+> > > no failure occurred is reasonable?
+> > >
+> > > What could the caller do with the error other than log it and collapse?
+> > >
+> > >> The call into Xen itself will return 0 as a value if an
+> > >> invalid physbase is passed in the hypercall.
+
+Just checked ioapic_guest_read.
+It will return -EINVAL if an invalid physbase is passed in.
+
+> > >
+> > >> So a BUG_ON() is not safe/sensible for domU.
+> > >
+> > > I think you have successfully argued that it is ;-)
 > > 
-> > "ls /sys/bus/usb/devices/"
-> > 
-> > I get:
-> > "1-0:1.0 1-1 1-1:1.0 2-0:1.0 2-1 2-1.1 2-1:1.0 2-1.1:1.0 2-1.5 2-1.5:1.0 2-1.5:1.1  usb1  usb2"
-> > 
-> > the output format is bus-port.port:config.interface
-> > I want to know whether the port number is fixed after I reboot machine time by time.
-> > And if it is fixed, then what make it.
-> > 
-> > Thanks!
+> > BUG_ON is too severe.
 > 
-> Make the question precise.
-> I assme there are two usb ports in my notebook at left and right separately.
-> When I plug mouse into 
-> left usb port, I get 2-1.1:1.0
-> right usb port, I get 2-1.2:1.0
+> Why? Under what circumstances can this be correctly called in a way
+> which would result in the hypercall failing?
+
+Is BUG_ON() reasonable if invalid physbase passed in?
+
 > 
-> I want to know whether it is right that no matter how many times I reboot the machine,
+> >  How about WARN_ON?
+> > 
+> > ret = hypercall(...)
+> > 
+> > if (ret) {
+> >    WARN_ON(1);
+> >    return -1;
+> > }
+> > 
+> > 
+> > >
+> > > Ian.
+> 
+> 
 
-Not always.
 
-> the test result above will be the same.And if it will be the same, then why it will be the same.
-
-You got lucky :)
-
-USB ports on a hub are all enumerated the same, but the root hubs
-aren't, and sometimes hubs on the same bus are not as well.
-
-But usually, things do come up in the same way all the time, so
-depending on your use case, you can rely on this, but it is recommended
-that you look for something else a bit more unique, like a serial number
-on a device (if it is present), if you wish to uniquely identify a
-device all the time.
-
-good luck,
-
-greg k-h
