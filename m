@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756708Ab2DTOT4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Apr 2012 10:19:56 -0400
-Received: from mailhub.sw.ru ([195.214.232.25]:30970 "EHLO relay.sw.ru"
+	id S1756754Ab2DTOUK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Apr 2012 10:20:10 -0400
+Received: from mailhub.sw.ru ([195.214.232.25]:34095 "EHLO relay.sw.ru"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755167Ab2DTOTz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Apr 2012 10:19:55 -0400
-Subject: [PATCH 2/3] SUNRPC: traverse clients tree on PipeFS event
+	id S1756600Ab2DTOUH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Apr 2012 10:20:07 -0400
+Subject: [PATCH 3/3] SUNRPC: set per-net PipeFS superblock before notification
 To: bfields@fieldses.org, Trond.Myklebust@netapp.com
 From: Stanislav Kinsbursky <skinsbursky@parallels.com>
 Cc: linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org, devel@openvz.org
-Date: Fri, 20 Apr 2012 18:19:43 +0400
-Message-ID: <20120420141925.10848.90395.stgit@localhost6.localdomain6>
+Date: Fri, 20 Apr 2012 18:19:56 +0400
+Message-ID: <20120420141950.10848.46577.stgit@localhost6.localdomain6>
 In-Reply-To: <20120420141419.10848.84280.stgit@localhost6.localdomain6>
 References: <20120420141419.10848.84280.stgit@localhost6.localdomain6>
 User-Agent: StGit/0.15
@@ -22,70 +22,41 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If client is a clone, then it's parent can not be in the list.
-But parent's PipeFS dentries have to be created and destroyed as well.
-
-Note: event skip helper for clients introduced
+There can be a case, when on MOUNT event RPC client (after it's dentries were
+created) is not longer hold by anyone except notification callback.
+I.e. on release this client will be destoroyed. And it's dentries have to be
+destroyed as well. Which in turn requires per-net PipeFS superblock to be set.
 
 Signed-off-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
 
 ---
- net/sunrpc/clnt.c |   30 ++++++++++++++++++++++++++----
- 1 files changed, 26 insertions(+), 4 deletions(-)
+ net/sunrpc/rpc_pipe.c |    3 ++-
+ 1 files changed, 2 insertions(+), 1 deletions(-)
 
-diff --git a/net/sunrpc/clnt.c b/net/sunrpc/clnt.c
-index 8a19849..80b59f1 100644
---- a/net/sunrpc/clnt.c
-+++ b/net/sunrpc/clnt.c
-@@ -176,8 +176,16 @@ rpc_setup_pipedir(struct rpc_clnt *clnt, const char *dir_name)
+diff --git a/net/sunrpc/rpc_pipe.c b/net/sunrpc/rpc_pipe.c
+index 0af37fc..3b62cf2 100644
+--- a/net/sunrpc/rpc_pipe.c
++++ b/net/sunrpc/rpc_pipe.c
+@@ -1126,19 +1126,20 @@ rpc_fill_super(struct super_block *sb, void *data, int silent)
+ 		return -ENOMEM;
+ 	dprintk("RPC:	sending pipefs MOUNT notification for net %p%s\n", net,
+ 								NET_NAME(net));
++	sn->pipefs_sb = sb;
+ 	err = blocking_notifier_call_chain(&rpc_pipefs_notifier_list,
+ 					   RPC_PIPEFS_MOUNT,
+ 					   sb);
+ 	if (err)
+ 		goto err_depopulate;
+ 	sb->s_fs_info = get_net(net);
+-	sn->pipefs_sb = sb;
  	return 0;
- }
  
--static int __rpc_pipefs_event(struct rpc_clnt *clnt, unsigned long event,
--				struct super_block *sb)
-+static inline int rpc_clnt_skip_event(struct rpc_clnt *clnt, unsigned long event)
-+{
-+	if (((event == RPC_PIPEFS_MOUNT) && clnt->cl_dentry) ||
-+	    ((event == RPC_PIPEFS_UMOUNT) && !clnt->cl_dentry))
-+		return 1;
-+	return 0;
-+}
-+
-+static int __rpc_clnt_handle_event(struct rpc_clnt *clnt, unsigned long event,
-+				   struct super_block *sb)
- {
- 	struct dentry *dentry;
- 	int err = 0;
-@@ -206,6 +214,21 @@ static int __rpc_pipefs_event(struct rpc_clnt *clnt, unsigned long event,
+ err_depopulate:
+ 	blocking_notifier_call_chain(&rpc_pipefs_notifier_list,
+ 					   RPC_PIPEFS_UMOUNT,
+ 					   sb);
++	sn->pipefs_sb = NULL;
+ 	__rpc_depopulate(root, files, RPCAUTH_lockd, RPCAUTH_RootEOF);
  	return err;
  }
- 
-+static int __rpc_pipefs_event(struct rpc_clnt *clnt, unsigned long event,
-+				struct super_block *sb)
-+{
-+	int error;
-+
-+	if (!rpc_clnt_skip_event(clnt, event)) {
-+		error = __rpc_clnt_handle_event(clnt, event, sb);
-+		if (error)
-+			return error;
-+	}
-+	if (clnt != clnt->cl_parent)
-+		return __rpc_pipefs_event(clnt->cl_parent, event, sb);
-+	return 0;
-+}
-+
- static struct rpc_clnt *rpc_get_client_for_event(struct net *net, int event)
- {
- 	struct sunrpc_net *sn = net_generic(net, sunrpc_net_id);
-@@ -215,8 +238,7 @@ static struct rpc_clnt *rpc_get_client_for_event(struct net *net, int event)
- 	list_for_each_entry(clnt, &sn->all_clients, cl_clients) {
- 		if (clnt->cl_program->pipe_dir_name == NULL)
- 			break;
--		if (((event == RPC_PIPEFS_MOUNT) && clnt->cl_dentry) ||
--		    ((event == RPC_PIPEFS_UMOUNT) && !clnt->cl_dentry))
-+		if (rpc_clnt_skip_event(clnt, event))
- 			continue;
- 		if (atomic_inc_not_zero(&clnt->cl_count) == 0)
- 			continue;
 
