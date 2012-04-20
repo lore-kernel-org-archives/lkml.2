@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755126Ab2DTVcJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Apr 2012 17:32:09 -0400
-Received: from mail1.windriver.com ([147.11.146.13]:62742 "EHLO
+	id S1755208Ab2DTVc2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Apr 2012 17:32:28 -0400
+Received: from mail1.windriver.com ([147.11.146.13]:62740 "EHLO
 	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754750Ab2DTVaJ (ORCPT
+	with ESMTP id S1754727Ab2DTVaJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 20 Apr 2012 17:30:09 -0400
 From: Jason Wessel <jason.wessel@windriver.com>
 To: <linux-kernel@vger.kernel.org>
 CC: <mingo@redhat.com>, <masami.hiramatsu.pt@hitachi.com>,
         <rusty@rustcorp.com.au>
-Subject: [RFC PATCH 6/8] kallsyms: Add kallsyms kallsyms_line_loc_lookup and print function
-Date: Fri, 20 Apr 2012 16:29:52 -0500
-Message-ID: <1334957394-12086-7-git-send-email-jason.wessel@windriver.com>
+Subject: [RFC PATCH 5/8] kallsyms: convert the kallsyms storage to store the type separately
+Date: Fri, 20 Apr 2012 16:29:51 -0500
+Message-ID: <1334957394-12086-6-git-send-email-jason.wessel@windriver.com>
 X-Mailer: git-send-email 1.7.10
 In-Reply-To: <1334957394-12086-1-git-send-email-jason.wessel@windriver.com>
 References: <1334957394-12086-1-git-send-email-jason.wessel@windriver.com>
@@ -23,317 +23,215 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds a new kallsyms symbol type called a line location.  A
-line location will get encoded as a symbol with the type '0xff'.  Line
-locations will be excluded from the /proc/kallsyms such that the user
-space interface will remain unchanged.
+In order to quickly access the symbol type field it must be stored in
+its own character array.  Historically the kallsysms symbol type field
+was stored as the first character of the name.
 
-The line locations come from:
-   scripts/readelf -q --debug-dump=line vmlinux
-
-The output is processed by scripts/kallsyms in a similar manner to the
-output from nm -n vmlinux in order to construct the assembly file
-which has all original kallsyms data.
-
-In order to make all the original kallsyms functions return the same
-expected values while allowing extra data in the kallsyms tables, the
-get_symbol_pos() was modified to take an additional argument.  The new
-4th argument is called "is_line_loc". That argument controls if
-get_symbol_pos() should return a symbol or a line location.
-
-kallsyms_line_loc_lookup() was added for the purpose of looking up a
-line location and will call get_symbol_pos() with the 4th argument
-being true.  This function was introduced in order to call it from
-__sprint_symbol() so that the kernel can emit a file and line number
-when providing a backtrace / oops output to an end user.
+This patch introduces the kallsyms_type_table for looking up a symbol
+type immediately.  This new table will be used for fast comparisons to
+determine if a kallsym reference is a symbol or a line location.
 
 Signed-off-by: Jason Wessel <jason.wessel@windriver.com>
 ---
- Makefile                 |    9 +++-
- include/linux/kallsyms.h |   12 +++++
- init/Kconfig             |   11 +++++
- kernel/kallsyms.c        |  112 +++++++++++++++++++++++++++++++++++++++++-----
- 4 files changed, 131 insertions(+), 13 deletions(-)
+ kernel/kallsyms.c    |   26 +++++---------------------
+ scripts/kallsyms.c   |   49 +++++++++++++++++++++++++++++++++++++++++--------
+ scripts/namespace.pl |    1 +
+ 3 files changed, 47 insertions(+), 29 deletions(-)
 
-diff --git a/Makefile b/Makefile
-index f6578f4..ea87304 100644
---- a/Makefile
-+++ b/Makefile
-@@ -342,6 +342,7 @@ GENKSYMS	= scripts/genksyms/genksyms
- INSTALLKERNEL  := installkernel
- DEPMOD		= /sbin/depmod
- KALLSYMS	= scripts/kallsyms
-+READELF		= scripts/readelf
- PERL		= perl
- CHECK		= sparse
- 
-@@ -857,10 +858,14 @@ define rule_ksym_ld
- 	$(Q)echo 'cmd_$@ := $(cmd_vmlinux__)' > $(@D)/.$(@F).cmd
- endef
- 
-+KALLSYMS_INPUT_CMD = ($(NM) -n $<; \
-+	$(if $(CONFIG_KALLSYMS_LINE_LOCATIONS), \
-+	 $(READELF) --debug-dump=line -q $<))
- # Generate .S file with all kernel symbols
- quiet_cmd_kallsyms = KSYM    $@
--      cmd_kallsyms = $(NM) -n $< | $(KALLSYMS) \
--                     $(if $(CONFIG_KALLSYMS_ALL),--all-symbols) > $@
-+      cmd_kallsyms = $(KALLSYMS_INPUT_CMD) | $(KALLSYMS) \
-+                     $(if $(CONFIG_KALLSYMS_ALL),--all-symbols) \
-+		     $(if $(CONFIG_KALLSYMS_LINE_LOCATIONS), --ll-symbols) > $@
- 
- .tmp_kallsyms1.o .tmp_kallsyms2.o .tmp_kallsyms3.o: %.o: %.S scripts FORCE
- 	$(call if_changed_dep,as_o_S)
-diff --git a/include/linux/kallsyms.h b/include/linux/kallsyms.h
-index 3875719..39125d0 100644
---- a/include/linux/kallsyms.h
-+++ b/include/linux/kallsyms.h
-@@ -33,6 +33,10 @@ const char *kallsyms_lookup(unsigned long addr,
- 			    unsigned long *symbolsize,
- 			    unsigned long *offset,
- 			    char **modname, char *namebuf);
-+const char *kallsyms_line_loc_lookup(unsigned long addr,
-+			    unsigned long *symbolsize,
-+			    unsigned long *offset,
-+			    char **modname, char *namebuf);
- 
- /* Look up a kernel symbol and return it in a text buffer. */
- extern int sprint_symbol(char *buffer, unsigned long address);
-@@ -73,6 +77,14 @@ static inline const char *kallsyms_lookup(unsigned long addr,
- {
- 	return NULL;
- }
-+static inline const char *kallsyms_line_loc_lookup(unsigned long addr,
-+					  unsigned long *symbolsize,
-+					  unsigned long *offset,
-+					  char **modname, char *namebuf)
-+{
-+	return NULL;
-+}
-+
- 
- static inline int sprint_symbol(char *buffer, unsigned long addr)
- {
-diff --git a/init/Kconfig b/init/Kconfig
-index 6cfd71d..20f537a 100644
---- a/init/Kconfig
-+++ b/init/Kconfig
-@@ -1012,6 +1012,17 @@ config KALLSYMS_ALL
- 
- 	   Say N unless you really need all symbols.
- 
-+config KALLSYMS_LINE_LOCATIONS
-+	bool "Load source line information debugging kernel with kallsyms"
-+	depends on DEBUG_KERNEL && KALLSYMS
-+	default n
-+	help
-+	   Say Y here to let the kernel print out symbolic crash
-+	   information which also contains source line information.
-+	   This increases the size of the kernel somewhat, as all the
-+	   lines for locations tables have to be loaded into the
-+	   kernel image to allow address to line lookups.
-+
- config HOTPLUG
- 	bool "Support for hot-pluggable devices" if EXPERT
- 	default y
 diff --git a/kernel/kallsyms.c b/kernel/kallsyms.c
-index 550f273..921f2b3 100644
+index 079f1d3..550f273 100644
 --- a/kernel/kallsyms.c
 +++ b/kernel/kallsyms.c
-@@ -32,6 +32,9 @@
- #define all_var 0
- #endif
+@@ -38,6 +38,7 @@
+  */
+ extern const unsigned long kallsyms_addresses[] __attribute__((weak));
+ extern const u8 kallsyms_names[] __attribute__((weak));
++extern const u8 kallsyms_type_table[] __attribute__((weak));
  
-+/* Is this a line location type? */
-+#define IS_LLOC(pos) (kallsyms_type_table[pos] == 0xff)
-+
  /*
-  * These will be re-linked against their real values
-  * during the second link stage.
-@@ -188,9 +191,39 @@ int kallsyms_on_each_symbol(int (*fn)(void *, const char *, struct module *,
- }
- EXPORT_SYMBOL_GPL(kallsyms_on_each_symbol);
- 
-+static void first_aliased_symbol(unsigned long *low)
-+{
-+find_alias:
-+	while (*low && kallsyms_addresses[*low-1] == kallsyms_addresses[*low])
-+		--*low;
-+
-+	if (*low) {
-+		if (*low < kallsyms_num_syms && IS_LLOC(*low) &&
-+		    kallsyms_addresses[*low+1] == kallsyms_addresses[*low]) {
-+			++*low;
-+		} else if (IS_LLOC(*low)) {
-+			while (*low && IS_LLOC(*low))
-+				--*low;
-+			goto find_alias;
-+		}
-+	}
-+}
-+
-+static void first_aliased_line_loc(unsigned long *low)
-+{
-+	while (*low && kallsyms_addresses[*low-1] == kallsyms_addresses[*low])
-+		--*low;
-+	while (*low < kallsyms_num_syms && !IS_LLOC(*low) &&
-+	       kallsyms_addresses[*low] == kallsyms_addresses[*low+1])
-+		++*low;
-+	while (*low && !(IS_LLOC(*low)))
-+		--*low;
-+}
-+
- static unsigned long get_symbol_pos(unsigned long addr,
- 				    unsigned long *symbolsize,
--				    unsigned long *offset)
-+				    unsigned long *offset,
-+				    bool is_line_loc)
+  * Tell the compiler that the count isn't in the small data section if the arch
+@@ -88,7 +89,7 @@ static int is_ksym_addr(unsigned long addr)
+  */
+ static unsigned int kallsyms_expand_symbol(unsigned int off, char *result)
  {
- 	unsigned long symbol_start = 0, symbol_end = 0;
- 	unsigned long i, low, high, mid;
-@@ -214,14 +247,16 @@ static unsigned long get_symbol_pos(unsigned long addr,
- 	 * Search for the first aliased symbol. Aliased
- 	 * symbols are symbols with the same address.
- 	 */
--	while (low && kallsyms_addresses[low-1] == kallsyms_addresses[low])
--		--low;
-+	if (is_line_loc)
-+		first_aliased_line_loc(&low);
-+	else
-+		first_aliased_symbol(&low);
+-	int len, skipped_first = 0;
++	int len;
+ 	const u8 *tptr, *data;
  
- 	symbol_start = kallsyms_addresses[low];
+ 	/* Get the compressed symbol length from the first symbol byte. */
+@@ -112,11 +113,8 @@ static unsigned int kallsyms_expand_symbol(unsigned int off, char *result)
+ 		len--;
  
- 	/* Search for next non-aliased symbol. */
- 	for (i = low + 1; i < kallsyms_num_syms; i++) {
--		if (kallsyms_addresses[i] > symbol_start) {
-+		if (kallsyms_addresses[i] > symbol_start && !IS_LLOC(low)) {
- 			symbol_end = kallsyms_addresses[i];
- 			break;
+ 		while (*tptr) {
+-			if (skipped_first) {
+-				*result = *tptr;
+-				result++;
+-			} else
+-				skipped_first = 1;
++			*result = *tptr;
++			result++;
+ 			tptr++;
  		}
-@@ -253,11 +288,52 @@ int kallsyms_lookup_size_offset(unsigned long addr, unsigned long *symbolsize,
- {
- 	char namebuf[KSYM_NAME_LEN];
- 	if (is_ksym_addr(addr))
--		return !!get_symbol_pos(addr, symbolsize, offset);
-+		return !!get_symbol_pos(addr, symbolsize, offset, false);
- 
- 	return !!module_address_lookup(addr, symbolsize, offset, NULL, namebuf);
+ 	}
+@@ -128,20 +126,6 @@ static unsigned int kallsyms_expand_symbol(unsigned int off, char *result)
  }
  
-+#ifdef CONFIG_KALLSYMS_LINE_LOCATIONS
-+/*
-+ * Lookup an address
-+ * - modname is set to NULL if it's in the kernel.
-+ * - We guarantee that the returned name is valid until we reschedule even if.
-+ *   It resides in a module.
-+ * - We also guarantee that modname will be valid until rescheduled.
-+ */
-+const char *kallsyms_line_loc_lookup(unsigned long addr,
-+			    unsigned long *symbolsize,
-+			    unsigned long *offset,
-+			    char **modname, char *namebuf)
-+{
-+	namebuf[KSYM_NAME_LEN - 1] = 0;
-+	namebuf[0] = 0;
-+
-+	if (modname)
-+		*modname = NULL;
-+	if (is_ksym_addr(addr)) {
-+		unsigned long pos;
-+
-+		pos = get_symbol_pos(addr, symbolsize, offset, true);
-+		if (!IS_LLOC(pos))
-+			return NULL;
-+		/* Grab name */
-+		kallsyms_expand_symbol(get_symbol_offset(pos), namebuf);
-+		return namebuf;
-+	}
-+
-+	return NULL;
-+}
-+#else /* !CONFIG_KALLSYMS_LINE_LOCATIONS */
-+const char *kallsyms_line_loc_lookup(unsigned long addr,
-+			    unsigned long *symbolsize,
-+			    unsigned long *offset,
-+			    char **modname, char *namebuf)
-+{
-+	return NULL;
-+}
-+#endif /* CONFIG_KALLSYMS_LINE_LOCATIONS */
-+
  /*
-  * Lookup an address
-  * - modname is set to NULL if it's in the kernel.
-@@ -276,7 +352,7 @@ const char *kallsyms_lookup(unsigned long addr,
- 	if (is_ksym_addr(addr)) {
- 		unsigned long pos;
+- * Get symbol type information. This is encoded as a single char at the
+- * beginning of the symbol name.
+- */
+-static char kallsyms_get_symbol_type(unsigned int off)
+-{
+-	/*
+-	 * Get just the first code, look it up in the token table,
+-	 * and return the first char from this token.
+-	 */
+-	return kallsyms_token_table[kallsyms_token_index[kallsyms_names[off + 1]]];
+-}
+-
+-
+-/*
+  * Find the offset on the compressed stream given and index in the
+  * kallsyms array.
+  */
+@@ -445,7 +429,7 @@ static unsigned long get_ksymbol_core(struct kallsym_iter *iter)
+ 	iter->module_name[0] = '\0';
+ 	iter->value = kallsyms_addresses[iter->pos];
  
--		pos = get_symbol_pos(addr, symbolsize, offset);
-+		pos = get_symbol_pos(addr, symbolsize, offset, false);
- 		/* Grab name */
- 		kallsyms_expand_symbol(get_symbol_offset(pos), namebuf);
- 		if (modname)
-@@ -297,7 +373,7 @@ int lookup_symbol_name(unsigned long addr, char *symname)
- 	if (is_ksym_addr(addr)) {
- 		unsigned long pos;
+-	iter->type = kallsyms_get_symbol_type(off);
++	iter->type = kallsyms_type_table[iter->pos];
  
--		pos = get_symbol_pos(addr, NULL, NULL);
-+		pos = get_symbol_pos(addr, NULL, NULL, false);
- 		/* Grab name */
- 		kallsyms_expand_symbol(get_symbol_offset(pos), symname);
- 		return 0;
-@@ -315,7 +391,7 @@ int lookup_symbol_attrs(unsigned long addr, unsigned long *size,
- 	if (is_ksym_addr(addr)) {
- 		unsigned long pos;
+ 	off = kallsyms_expand_symbol(off, iter->name);
  
--		pos = get_symbol_pos(addr, size, offset);
-+		pos = get_symbol_pos(addr, size, offset, false);
- 		/* Grab name */
- 		kallsyms_expand_symbol(get_symbol_offset(pos), name);
- 		modname[0] = '\0';
-@@ -332,7 +408,7 @@ static int __sprint_symbol(char *buffer, unsigned long address,
- 	char *modname;
- 	const char *name;
- 	unsigned long offset, size;
--	int len;
-+	int len, extra;
+diff --git a/scripts/kallsyms.c b/scripts/kallsyms.c
+index 487ac6f..0516416 100644
+--- a/scripts/kallsyms.c
++++ b/scripts/kallsyms.c
+@@ -34,6 +34,7 @@ struct sym_entry {
+ 	unsigned int len;
+ 	unsigned int start_pos;
+ 	unsigned char *sym;
++	unsigned char stype;
+ };
  
- 	address += symbol_offset;
- 	name = kallsyms_lookup(address, &size, &offset, &modname, buffer);
-@@ -346,9 +422,19 @@ static int __sprint_symbol(char *buffer, unsigned long address,
- 	offset -= symbol_offset;
+ struct text_range {
+@@ -54,6 +55,7 @@ static struct text_range text_ranges[] = {
+ static struct sym_entry *table;
+ static unsigned int table_size, table_cnt;
+ static int all_symbols = 0;
++static int lineloc_symbols = 0;
+ static char symbol_prefix_char = '\0';
  
- 	if (modname)
--		len += sprintf(buffer, "+%#lx/%#lx [%s]", offset, size, modname);
-+		extra = sprintf(buffer, "+%#lx/%#lx [%s]", offset,
-+				size, modname);
- 	else
--		len += sprintf(buffer, "+%#lx/%#lx", offset, size);
-+		extra = sprintf(buffer, "+%#lx/%#lx", offset, size);
-+	buffer += extra;
-+	len += extra;
-+	name = kallsyms_line_loc_lookup(address - symbol_offset, &size,
-+					&offset, &modname, buffer + 1);
+ int token_profit[0x10000];
+@@ -101,17 +103,33 @@ static int read_symbol_tr(const char *sym, unsigned long long addr)
+ 
+ static int read_symbol(FILE *in, struct sym_entry *s)
+ {
+-	char str[500];
++	static char str[500];
++	static char tstr[500];
+ 	char *sym, stype;
+ 	int rc;
++	static int read_elf_time = 0;
 +
-+	if (name) {
-+		*buffer = ' ';
-+		len = strlen(buffer);
-+	}
++	if (!fgets(tstr, 500, in))
++		return -1;
++	if (!read_elf_time)
++		rc = sscanf(tstr, "%llx %c %499s\n", &s->addr, &stype, str);
++	else
++		goto do_read_elf;
  
- 	return len;
+-	rc = fscanf(in, "%llx %c %499s\n", &s->addr, &stype, str);
+ 	if (rc != 3) {
+-		if (rc != EOF && fgets(str, 500, in) == NULL)
+-			fprintf(stderr, "Read error or end of file.\n");
++		if (lineloc_symbols)
++do_read_elf:
++			rc = sscanf(tstr, "%499s %llx\n", str, &s->addr);
++		if (rc == 2) {
++			stype = 0xff;
++			sym = str;
++			read_elf_time = 1;
++			goto got_sym;
++		}
+ 		return -1;
+ 	}
+ 
++got_sym:
+ 	sym = str;
+ 	/* skip prefix char */
+ 	if (symbol_prefix_char && str[0] == symbol_prefix_char)
+@@ -151,8 +169,8 @@ static int read_symbol(FILE *in, struct sym_entry *s)
+ 			"unable to allocate required amount of memory\n");
+ 		exit(EXIT_FAILURE);
+ 	}
+-	strcpy((char *)s->sym + 1, str);
+-	s->sym[0] = stype;
++	s->stype = stype;
++	strcpy((char *)s->sym, str);
+ 
+ 	return 0;
  }
-@@ -490,6 +576,10 @@ static int s_show(struct seq_file *m, void *p)
- 	if (!iter->name[0])
- 		return 0;
+@@ -186,16 +204,17 @@ static int symbol_valid(struct sym_entry *s)
+ 		"kallsyms_markers",
+ 		"kallsyms_token_table",
+ 		"kallsyms_token_index",
++		"kallsyms_type_table",
  
-+	/* Ignore any src/line information */
-+	if (iter->type == (char)0xff)
-+		return 0;
+ 	/* Exclude linker generated symbols which vary between passes */
+ 		"_SDA_BASE_",		/* ppc */
+ 		"_SDA2_BASE_",		/* ppc */
+ 		NULL };
+ 	int i;
+-	int offset = 1;
++	int offset = 0;
+ 
+ 	/* skip prefix char */
+-	if (symbol_prefix_char && *(s->sym + 1) == symbol_prefix_char)
++	if (symbol_prefix_char && *(s->sym) == symbol_prefix_char)
+ 		offset++;
+ 
+ 	/* if --all-symbols is not specified, then symbols outside the text
+@@ -353,6 +372,18 @@ static void write_src(void)
+ 	}
+ 	printf("\n");
+ 
++	output_label("kallsyms_type_table");
++	off = 0;
++	for (i = 0; i < table_cnt; i++) {
++		printf("\t.byte 0x%02x", table[i].stype);
++		for (k = 0; k < 15 && i < table_cnt; k++) {
++			i++;
++			printf(", 0x%02x", table[i].stype);
++		}
++		printf("\n");
++	}
++	printf("\n");
 +
- 	if (iter->module_name[0]) {
- 		char type;
- 
+ 	output_label("kallsyms_markers");
+ 	for (i = 0; i < ((table_cnt + 255) >> 8); i++)
+ 		printf("\tPTR\t%d\n", markers[i]);
+@@ -640,6 +671,8 @@ int main(int argc, char **argv)
+ 		for (i = 1; i < argc; i++) {
+ 			if(strcmp(argv[i], "--all-symbols") == 0)
+ 				all_symbols = 1;
++			else if (strcmp(argv[i], "--ll-symbols") == 0)
++				lineloc_symbols = 1;
+ 			else if (strncmp(argv[i], "--symbol-prefix=", 16) == 0) {
+ 				char *p = &argv[i][16];
+ 				/* skip quote */
+diff --git a/scripts/namespace.pl b/scripts/namespace.pl
+index a71be6b..1809f4e 100755
+--- a/scripts/namespace.pl
++++ b/scripts/namespace.pl
+@@ -116,6 +116,7 @@ my %nameexception = (
+     '_sinittext'	=> 1,
+     'kallsyms_names'	=> 1,
+     'kallsyms_num_syms'	=> 1,
++    'kallsyms_type_table' => 1,
+     'kallsyms_addresses'=> 1,
+     '__this_module'	=> 1,
+     '_etext'		=> 1,
 -- 
 1.7.10
 
