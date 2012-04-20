@@ -1,155 +1,148 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753279Ab2DTJok (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Apr 2012 05:44:40 -0400
-Received: from casper.infradead.org ([85.118.1.10]:43204 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751493Ab2DTJoj (ORCPT
+	id S1753859Ab2DTJqQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Apr 2012 05:46:16 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:58022 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752453Ab2DTJqN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Apr 2012 05:44:39 -0400
-Subject: Re: [RFC 1/2] kernel patch for dump user space stack tool
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: "Tu, Xiaobing" <xiaobing.tu@intel.com>
-Cc: "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "mingo@elte.hu" <mingo@elte.hu>,
-        "rusty@rustcorp.com.au" <rusty@rustcorp.com.au>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "yanmin_zhang@linux.intel.com" <yanmin_zhang@linux.intel.com>,
-        "rostedt@goodmis.org" <rostedt@goodmis.org>,
-        "Zuo, Jiao" <jiao.zuo@intel.com>
-In-Reply-To: <EE928378561BF1449699C96571234A740FCE3704@SHSMSX102.ccr.corp.intel.com>
-References: <EE928378561BF1449699C96571234A740FCE3704@SHSMSX102.ccr.corp.intel.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 20 Apr 2012 11:44:33 +0200
-Message-ID: <1334915073.2463.36.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 7bit
+	Fri, 20 Apr 2012 05:46:13 -0400
+Date: Fri, 20 Apr 2012 17:52:47 +0800
+From: Zheng Liu <gnehzuil.liu@gmail.com>
+To: Lukas Czerner <lczerner@redhat.com>
+Cc: Eric Sandeen <sandeen@redhat.com>, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org, linux-ext4@vger.kernel.org,
+        Zheng Liu <wenqing.lz@taobao.com>, Ric Wheeler <rwheeler@redhat.com>,
+        "Ted Ts'o" <tytso@mit.edu>, Andreas Dilger <adilger@whamcloud.com>,
+        Dave Chinner <david@fromorbit.com>
+Subject: Re: [RFC][PATCH 0/3] add FALLOC_FL_NO_HIDE_STALE flag in fallocate
+Message-ID: <20120420095247.GA30070@gmail.com>
+Mail-Followup-To: Lukas Czerner <lczerner@redhat.com>,
+	Eric Sandeen <sandeen@redhat.com>, linux-kernel@vger.kernel.org,
+	linux-fsdevel@vger.kernel.org, linux-ext4@vger.kernel.org,
+	Zheng Liu <wenqing.lz@taobao.com>,
+	Ric Wheeler <rwheeler@redhat.com>, Ted Ts'o <tytso@mit.edu>,
+	Andreas Dilger <adilger@whamcloud.com>,
+	Dave Chinner <david@fromorbit.com>
+References: <1334681618-9452-1-git-send-email-wenqing.lz@taobao.com>
+ <4F8DAAFE.40500@redhat.com>
+ <20120418040842.GA11684@gmail.com>
+ <alpine.LFD.2.00.1204180919500.5310@dhcp-27-109.brq.redhat.com>
+ <20120418120307.GB3447@gmail.com>
+ <alpine.LFD.2.00.1204181402550.5310@dhcp-27-109.brq.redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.LFD.2.00.1204181402550.5310@dhcp-27-109.brq.redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-04-11 at 08:07 +0000, Tu, Xiaobing wrote:
-> From: xiaobing tu <xiaobing.tu@intel.com> 
-> 
-> Here is the kernel patch for this tool, The idea is to output user
-> space stack call-chain from /proc/xxx/stack,
-> currently, /proc/xxx/stack only output kernel stack call chain. We
-> extend it to output user space call chain in hex format
-> 
-> Signed-off-by: yanmin zhang <yanmin_zhang@linux.intel.com>
-> Signed-off-by: xiaobing tu <xiaobing.tu@intel.com>
+Hi all,
 
-Ok, so I don't like it.. for one I really don't see the need for this,
-secondly the implementation is crappy, thirdly the interface is poor.
+These days I dig this slowdown and find that the *root cause* might be
+journal.  I use blktrace to grab a detailed behaviour and find the below
+phenonmenon.  I post the blktrace's result in here.
 
-> ---
->  arch/x86/kernel/stacktrace.c |   55 ++++++++++++++++++++++++++++++++++++++++++
->  fs/proc/base.c               |   19 +++++++++++++-
->  include/linux/stacktrace.h   |    5 +++-
->  3 files changed, 77 insertions(+), 2 deletions(-)
-> 
-> diff --git a/arch/x86/kernel/stacktrace.c b/arch/x86/kernel/stacktrace.c index fdd0c64..d802f05 100644
-> --- a/arch/x86/kernel/stacktrace.c
-> +++ b/arch/x86/kernel/stacktrace.c
-> @@ -7,6 +7,7 @@
->  #include <linux/stacktrace.h>
->  #include <linux/module.h>
->  #include <linux/uaccess.h>
-> +#include <linux/mm.h>
->  #include <asm/stacktrace.h>
->  
->  static int save_stack_stack(void *data, char *name) @@ -144,3 +145,57 @@ void save_stack_trace_user(struct stack_trace *trace)
->  		trace->entries[trace->nr_entries++] = ULONG_MAX;  }
->  
-> +static inline void __save_stack_trace_user_task(struct task_struct *task,
-> +		struct stack_trace *trace)
-> +{
-> +	const struct pt_regs *regs = task_pt_regs(task);
-> +	const void __user *fp;
-> +	unsigned long addr;
-> +
-> +	if (task != current && task->state == TASK_RUNNING && task->on_cpu) {
-> +		/* To trap into kernel at least once */
-> +		smp_send_reschedule(task_cpu(task));
-> +	}
+[Test command]
+time for((i=0;i<2000;i++)); do \
+	dd if=/dev/zero of=/mnt/sda1/testfile conv=notrunc bs=4k count=1 \
+	seek=`expr $i \* 16` oflag=sync,direct 2>/dev/null; \
+	done
 
-This doesn't make any sense at all..
+[scripts]
+blktrace -d /dev/sda1
+blkparse -i sda1.* -o blktrace.log
+cat blktrace.log | grep 'D' | grep 'W' > result.log
 
-> +
-> +	fp = (const void __user *)regs->bp;
-> +	if (trace->nr_entries < trace->max_entries)
-> +		trace->entries[trace->nr_entries++] = regs->ip;
-> +
-> +	while (trace->nr_entries < trace->max_entries) {
-> +		struct stack_frame_user frame;
-> +
-> +		frame.next_fp = NULL;
-> +		frame.ret_addr = 0;
-> +
-> +		addr = (unsigned long)fp;
-> +		if (!access_process_vm(task, addr, (void *)&frame,
-> +				sizeof(frame), 0))
-> +			break;
-> +		if ((unsigned long)fp < regs->sp)
-> +			break;
-> +		if (frame.ret_addr) {
-> +			trace->entries[trace->nr_entries++] =
-> +				frame.ret_addr;
-> +		}
-> +		if (fp == frame.next_fp)
-> +			break;
-> +		fp = frame.next_fp;
-> +	}
-> +}
-> +
-> +void save_stack_trace_user_task(struct task_struct *task,
-> +		struct stack_trace *trace)
-> +{
-> +	if (task == current || !task) {
-> +		save_stack_trace_user(trace);
-> +		return;
-> +	}
-> +
-> +	if (task->mm)
-> +		__save_stack_trace_user_task(task, trace);
-> +
-> +	if (trace->nr_entries < trace->max_entries)
-> +		trace->entries[trace->nr_entries++] = ULONG_MAX; } 
-> +EXPORT_SYMBOL_GPL(save_stack_trace_user_task);
+[result (ext4)]
+[cut]
+  8,1    0       14    49.969995286    10  D  WS 38011023 + 40 [kworker/0:1]
+  8,1    0       20    49.996170768     0  D  WS 38011063 + 8 [swapper/0]
+  8,1    0       29    50.006811878 10011  D  WS 278719 + 8 [dd] 
+  8,1    0       31    50.013996421    10  D  WS 38011071 + 24 [kworker/0:1]
+  8,1    0       37    50.029656811     0  D  WS 38011095 + 8 [swapper/0]
+  8,1    1       70    50.039768259 10013  D  WS 278847 + 8 [dd] 
+  8,1    0       41    50.046996403    10  D  WS 38011103 + 24 [kworker/0:1]
+  8,1    0       47    50.071458802     0  D  WS 38011127 + 8 [swapper/0]
+  8,1    1       89    50.081529060 10015  D  WS 278975 + 8 [dd] 
+  8,1    0       51    50.088996276    10  D  WS 38011135 + 24 [kworker/0:1]
+  8,1    0       57    50.113247880     0  D  WS 38011159 + 8 [swapper/0]
+  8,1    1      108    50.123329330 10017  D  WS 279103 + 8 [dd] 
+  8,1    0       61    50.130995672    10  D  WS 38011167 + 24 [kworker/0:1]
+  8,1    0       67    50.155052076     0  D  WS 38011191 + 8 [swapper/0]
+  8,1    1      126    50.165154127 10019  D  WS 279231 + 8 [dd] 
+  8,1    0       71    50.172995678    10  D  WS 38011199 + 24 [kworker/0:1]
+  8,1    0       77    50.196855020     0  D  WS 38011223 + 8 [swapper/0]
+  8,1    1      145    50.206945237 10021  D  WS 279359 + 8 [dd] 
+  8,1    0       81    50.214997236    10  D  WS 38011231 + 24 [kworker/0:1]
+  8,1    0       87    50.238643778     0  D  WS 38011255 + 8 [swapper/0]
+  8,1    1      164    50.248738960 10023  D  WS 279487 + 8 [dd] 
+  8,1    0       91    50.255996776    10  D  WS 38011263 + 24 [kworker/0:1]
+  8,1    0       97    50.280447549     0  D  WS 38011287 + 8 [swapper/0]
+  8,1    1      183    50.290550957 10025  D  WS 279615 + 8 [dd] 
+[cut]
 
-There's already userspace stack walkers, don't reimplement them yet
-again.
+We can see that every one write operation needs to do two journal
+writes, one writes journal header and data, and another writes commit.
 
-> diff --git a/fs/proc/base.c b/fs/proc/base.c index d4548dd..603e708 100644
-> --- a/fs/proc/base.c
-> +++ b/fs/proc/base.c
-> @@ -327,8 +327,25 @@ static int proc_pid_stack(struct seq_file *m, struct pid_namespace *ns,
->  			seq_printf(m, "[<%pK>] %pS\n",
->  				   (void *)entries[i], (void *)entries[i]);
->  		}
-> -		unlock_trace(task);
-> +	} else
-> +		goto out;
-> +
-> +	trace.nr_entries	= 0;
-> +	trace.max_entries	= MAX_STACK_TRACE_DEPTH;
-> +	trace.entries		= entries;
-> +	trace.skip		= 0;
-> +
-> +	seq_printf(m, "userspace\n");
-> +
-> +	save_stack_trace_user_task(task, &trace);
-> +
-> +	for (i = 0; i < trace.nr_entries; i++) {
-> +		if (entries[i] != ULONG_MAX)
-> +			seq_printf(m, "%p\n", (void *)entries[i]);
->  	}
-> +	unlock_trace(task);
-> +
-> +out:
+Then I run the same benchmark in xfs to do a comparison.  This
+comparison just aims to explain why the slowdown occurs in ext4.
 
-Writing out just the IPs means you have to have a stored snapshot
-of /proc/$PID/maps around to make any sense of them. This seems a
-relatively poor interface.
+[result (xfs)]
+[cut]
+  8,1    0       70     0.256951000     0  D WSM 40162600 + 3 [swapper/0]
+  8,1    1       50     0.271551873 12575  D  WS 1311 + 8 [dd] 
+  8,1    0       78     0.282466586     0  D WSM 40162603 + 3 [swapper/0]
+  8,1    1       55     0.296547264 12577  D  WS 1439 + 8 [dd] 
+  8,1    0       86     0.307978442     0  D WSM 40162606 + 3 [swapper/0]
+  8,1    1       60     0.321578789 12579  D  WS 1567 + 8 [dd] 
+  8,1    0       94     0.333494988     0  D WSM 40162609 + 3 [swapper/0]
+  8,1    1       65     0.346582549 12581  D  WS 1695 + 8 [dd] 
+  8,1    0      102     0.359005937     0  D WSM 40162612 + 3 [swapper/0]
+  8,1    1       70     0.371613387 12583  D  WS 1823 + 8 [dd] 
+  8,1    0      110     0.384552158     0  D WSM 40162615 + 3 [swapper/0]
+  8,1    1       75     0.396604067 12585  D  WS 1951 + 8 [dd] 
+  8,1    0      118     0.410062404     0  D WSM 40162618 + 3 [swapper/0]
+  8,1    1       80     0.421614702 12587  D  WS 2079 + 8 [dd] 
+  8,1    0      126     0.436783655     0  D WSM 40162621 + 3 [swapper/0]
+  8,1    1       85     0.454989457 12589  D  WS 2207 + 8 [dd] 
+  8,1    0      134     0.470633321     0  D WSM 40162624 + 3 [swapper/0]
+  8,1    1       90     0.488311574 12591  D  WS 2335 + 8 [dd] 
+  8,1    0      142     0.504477295     0  D WSM 40162627 + 3 [swapper/0]
+  8,1    1       95     0.521675622 12593  D  WS 2463 + 8 [dd] 
+  8,1    0      150     0.538326978     0  D WSM 40162630 + 3 [swapper/0]
+  8,1    1      100     0.555016257 12595  D  WS 2591 + 8 [dd] 
+  8,1    0      158     0.563839349     0  D WSM 40162633 + 4 [swapper/0]
+  8,1    1      105     0.580049767 12597  D  WS 2719 + 8 [dd] 
+  8,1    0      166     0.589336947     0  D WSM 40162637 + 4 [swapper/0]
+  8,1    1      110     0.605037173 12599  D  WS 2847 + 8 [dd] 
+  8,1    0      174     0.614850369     0  D WSM 40162641 + 4 [swapper/0]
+  8,1    1      115     0.630078920 12601  D  WS 2975 + 8 [dd] 
+[cut]
 
+The result shows that every one write in xfs only needs to do one
+journal write.  Meanwhile the size of journal write is smaller than the
+size of ext4.  Certainly, in modern disk, I believe that the disk writes
+64k as easily as 4k.  So, IMO, twice journal writes is the *root
+*cause*.  I use 'wc -l' to roughly count the number of I/Os.
+
+$ wc -l result.log
+ext4:	6018
+xfs:	4021
+ratio:	1.5:1
+
+The benchmark result:
+ext4:	75.615s
+xfs:	54.395s
+ratio:	1.4:1
+
+Now, in JBD2, it at least needs to do two journal writes.  I have an
+idea to solve this problem, and I will send a new RFC to the mailing
+list.
+
+Please feel free to review it.  Any comments are welcome.  Thank you.
+
+Regards,
+Zheng
