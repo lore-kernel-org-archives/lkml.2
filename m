@@ -1,300 +1,162 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756528Ab2DTNf0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Apr 2012 09:35:26 -0400
-Received: from mail.work-microwave.de ([62.245.205.51]:34656 "EHLO
-	work-microwave.de" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754608Ab2DTNfZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Apr 2012 09:35:25 -0400
-From: Roland Stigge <stigge@antcom.de>
-To: w.sang@pengutronix.de, grant.likely@secretlab.ca, robherring2@gmail.com,
-        vitalywool@gmail.com, khali@linux-fr.org, ben-linux@fluff.org,
-        rob.herring@calxeda.com, linux-i2c@vger.kernel.org,
-        linux-kernel@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
-        arm@kernel.org, linux-arm-kernel@lists.infradead.org,
-        kevin.wells@nxp.com, srinivas.bakki@nxp.com
-Cc: Roland Stigge <stigge@antcom.de>
-Subject: [PATCH v6] i2c: Add device tree support to i2c-pnx.c
-Date: Fri, 20 Apr 2012 15:34:09 +0200
-Message-Id: <1334928849-18079-1-git-send-email-stigge@antcom.de>
-X-Mailer: git-send-email 1.7.9
-X-FEAS-SYSTEM-WL: rst@work-microwave.de, 192.168.11.78
+	id S1755555Ab2DTNkF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Apr 2012 09:40:05 -0400
+Received: from mga01.intel.com ([192.55.52.88]:34600 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752137Ab2DTNkB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Apr 2012 09:40:01 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="144047305"
+Date: Fri, 20 Apr 2012 21:34:41 +0800
+From: Fengguang Wu <fengguang.wu@intel.com>
+To: Jan Kara <jack@suse.cz>
+Cc: Tejun Heo <tj@kernel.org>, vgoyal@redhat.com, Jens Axboe <axboe@kernel.dk>,
+        linux-mm@kvack.org, sjayaraman@suse.com, andrea@betterlinux.com,
+        jmoyer@redhat.com, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, kamezawa.hiroyu@jp.fujitsu.com,
+        lizefan@huawei.com, containers@lists.linux-foundation.org,
+        cgroups@vger.kernel.org, ctalbott@google.com, rni@google.com,
+        lsf@lists.linux-foundation.org, Mel Gorman <mgorman@suse.de>
+Subject: Re: [RFC] writeback and cgroup
+Message-ID: <20120420133441.GA7035@localhost>
+References: <20120403183655.GA23106@dhcp-172-17-108-109.mtv.corp.google.com>
+ <20120404175124.GA8931@localhost>
+ <20120404193355.GD29686@dhcp-172-17-108-109.mtv.corp.google.com>
+ <20120406095934.GA10465@localhost>
+ <20120417223854.GG19975@google.com>
+ <20120419142343.GA12684@localhost>
+ <20120419202635.GA4795@quack.suse.cz>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120419202635.GA4795@quack.suse.cz>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds device tree support to the pnx-i2c driver by using platform
-resources for memory region and irq and removing dependency on mach includes.
+On Thu, Apr 19, 2012 at 10:26:35PM +0200, Jan Kara wrote:
+> On Thu 19-04-12 22:23:43, Wu Fengguang wrote:
+> > For one instance, splitting the request queues will give rise to
+> > PG_writeback pages.  Those pages have been the biggest source of
+> > latency issues in the various parts of the system.
+>   Well, if we allow more requests to be in flight in total then yes, number
+> of PG_Writeback pages can be higher as well.
 
-The following platforms are affected:
+Exactly.  
 
-* PNX
-* LPC31xx (WIP)
-* LPC32xx
+> > It's not uncommon for me to see filesystems sleep on PG_writeback
+> > pages during heavy writeback, within some lock or transaction, which in
+> > turn stall many tasks that try to do IO or merely dirty some page in
+> > memory. Random writes are especially susceptible to such stalls. The
+> > stable page feature also vastly increase the chances of stalls by
+> > locking the writeback pages. 
+> > 
+> > Page reclaim may also block on PG_writeback and/or PG_dirty pages. In
+> > the case of direct reclaim, it means blocking random tasks that are
+> > allocating memory in the system.
+> > 
+> > PG_writeback pages are much worse than PG_dirty pages in that they are
+> > not movable. This makes a big difference for high-order page allocations.
+> > To make room for a 2MB huge page, vmscan has the option to migrate
+> > PG_dirty pages, but for PG_writeback it has no better choices than to
+> > wait for IO completion.
+> > 
+> > The difficulty of THP allocation goes up *exponentially* with the
+> > number of PG_writeback pages. Assume PG_writeback pages are randomly
+> > distributed in the physical memory space. Then we have formula
+> > 
+> >         P(reclaimable for THP) = 1 - P(hit PG_writeback)^256
+>   Well, this implicitely assumes that PG_Writeback pages are scattered
+> across memory uniformly at random. I'm not sure to which extent this is
+> true...
 
-The patch is based on a patch by Jon Smirl, working on lpc31xx integration
+Yeah, when describing the problem I was also thinking about the
+possibilities of optimization (it would be a very good general
+improvements). Or maybe Mel already has some solutions :)
 
-Signed-off-by: Roland Stigge <stigge@antcom.de>
+> Also as a nitpick, this isn't really an exponential growth since
+> the exponent is fixed (256 - actually it should be 512, right?). It's just
 
----
+Right, 512 4k pages to form one x86_64 2MB huge pages.
 
-Applies to v3.4-rc3 + already applied i2c-pnx.c patches from this series
+> a polynomial with a big exponent. But sure, growth in number of PG_Writeback
+> pages will cause relatively steep drop in the number of available huge
+> pages.
 
-NOTE: I separated out this patch from the first patch series of the LPC32xx
-device tree conversion because most of those patches are already applied to
--next. This is the last patch of this first series, a precondition for the
-LPC32xx device tree switch.
+It's exponential indeed, because "1 - p(x)" here means "p(!x)".
+It's exponential for a 10x increase in x resulting in 100x drop of y.
 
-Changes since v5:
-* Removed OF slave-addr property
-* Removed whitespace fix
+> ...
+> > It's worth to note that running multiple flusher threads per bdi means
+> > not only disk seeks for spin disks, smaller IO size for SSD, but also
+> > lock contentions and cache bouncing for metadata heavy workloads and
+> > fast storage.
+>   Well, this heavily depends on particular implementation (and chosen
+> data structures). But yes, we should have that in mind.
 
-Thanks to Wolfram Sang for reviewing!
+The lock contentions and cache bouncing actually mainly happen in fs
+code due to concurrent IO submissions. Also when replying Vivek's
+email I realized that the disk seeks and/or smaller IO size are more
+fundamentally tied to the split async queues in cfq which makes it
+switch inodes on every async slice time (typically 40ms).
 
- Documentation/devicetree/bindings/i2c/pnx.txt |   36 ++++++++++++++
- drivers/i2c/busses/i2c-pnx.c                  |   63 +++++++++++++++++++-------
- include/linux/i2c-pnx.h                       |    1 
- 3 files changed, 84 insertions(+), 16 deletions(-)
+> ...
+> > > > To me, balance_dirty_pages() is *the* proper layer for buffered writes.
+> > > > It's always there doing 1:1 proportional throttling. Then you try to
+> > > > kick in to add *double* throttling in block/cfq layer. Now the low
+> > > > layer may enforce 10:1 throttling and push balance_dirty_pages() away
+> > > > from its balanced state, leading to large fluctuations and program
+> > > > stalls.
+> > > 
+> > > Just do the same 1:1 inside each cgroup.
+> > 
+> > Sure. But the ratio mismatch I'm talking about is inter-cgroup.
+> > For example there are only 2 dd tasks doing buffered writes in the
+> > system. Now consider the mismatch that cfq is dispatching their IO
+> > requests at 10:1 weights, while balance_dirty_pages() is throttling
+> > the dd tasks at 1:1 equal split because it's not aware of the cgroup
+> > weights.
+> > 
+> > What will happen in the end? The 1:1 ratio imposed by
+> > balance_dirty_pages() will take effect and the dd tasks will progress
+> > at the same pace. The cfq weights will be defeated because the async
+> > queue for the second dd (and cgroup) constantly runs empty.
+>   Yup. This just shows that you have to have per-cgroup dirty limits. Once
+> you have those, things start working again.
 
---- /dev/null
-+++ linux-2.6/Documentation/devicetree/bindings/i2c/pnx.txt
-@@ -0,0 +1,36 @@
-+* NXP PNX I2C Controller
-+
-+Required properties:
-+
-+ - reg: Offset and length of the register set for the device
-+ - compatible: should be "nxp,pnx-i2c"
-+ - interrupts: configure one interrupt line
-+ - #address-cells: always 1 (for i2c addresses)
-+ - #size-cells: always 0
-+ - interrupt-parent: the phandle for the interrupt controller that
-+   services interrupts for this device.
-+
-+Optional properties:
-+
-+ - clock-frequency: desired I2C bus clock frequency in Hz, Default: 100000 Hz
-+
-+Examples:
-+
-+	i2c1: i2c@400a0000 {
-+		compatible = "nxp,pnx-i2c";
-+		reg = <0x400a0000 0x100>;
-+		interrupt-parent = <&mic>;
-+		interrupts = <51 0>;
-+		#address-cells = <1>;
-+		#size-cells = <0>;
-+	};
-+
-+	i2c2: i2c@400a8000 {
-+		compatible = "nxp,pnx-i2c";
-+		reg = <0x400a8000 0x100>;
-+		interrupt-parent = <&mic>;
-+		interrupts = <50 0>;
-+		#address-cells = <1>;
-+		#size-cells = <0>;
-+		clock-frequency = <100000>;
-+	};
---- linux-2.6.orig/drivers/i2c/busses/i2c-pnx.c
-+++ linux-2.6/drivers/i2c/busses/i2c-pnx.c
-@@ -23,10 +23,11 @@
- #include <linux/err.h>
- #include <linux/clk.h>
- #include <linux/slab.h>
-+#include <linux/of_i2c.h>
- 
--#define I2C_PNX_TIMEOUT		10 /* msec */
--#define I2C_PNX_SPEED_KHZ	100
--#define I2C_PNX_REGION_SIZE	0x100
-+#define I2C_PNX_TIMEOUT_DEFAULT		10 /* msec */
-+#define I2C_PNX_SPEED_KHZ_DEFAULT	100
-+#define I2C_PNX_REGION_SIZE		0x100
- 
- enum {
- 	mstatus_tdi = 0x00000001,
-@@ -74,8 +75,9 @@ enum {
- #define I2C_REG_TXS(a)	((a)->ioaddr + 0x28)	/* Tx slave FIFO (RO) */
- #define I2C_REG_STFL(a)	((a)->ioaddr + 0x2c)	/* Tx slave FIFO level (RO) */
- 
--static inline int wait_timeout(long timeout, struct i2c_pnx_algo_data *data)
-+static inline int wait_timeout(struct i2c_pnx_algo_data *data)
- {
-+	long timeout = data->timeout;
- 	while (timeout > 0 &&
- 			(ioread32(I2C_REG_STS(data)) & mstatus_active)) {
- 		mdelay(1);
-@@ -84,8 +86,9 @@ static inline int wait_timeout(long time
- 	return (timeout <= 0);
- }
- 
--static inline int wait_reset(long timeout, struct i2c_pnx_algo_data *data)
-+static inline int wait_reset(struct i2c_pnx_algo_data *data)
- {
-+	long timeout = data->timeout;
- 	while (timeout > 0 &&
- 			(ioread32(I2C_REG_CTL(data)) & mcntrl_reset)) {
- 		mdelay(1);
-@@ -97,7 +100,7 @@ static inline int wait_reset(long timeou
- static inline void i2c_pnx_arm_timer(struct i2c_pnx_algo_data *alg_data)
- {
- 	struct timer_list *timer = &alg_data->mif.timer;
--	unsigned long expires = msecs_to_jiffies(I2C_PNX_TIMEOUT);
-+	unsigned long expires = msecs_to_jiffies(alg_data->timeout);
- 
- 	if (expires <= 1)
- 		expires = 2;
-@@ -135,7 +138,7 @@ static int i2c_pnx_start(unsigned char s
- 	}
- 
- 	/* First, make sure bus is idle */
--	if (wait_timeout(I2C_PNX_TIMEOUT, alg_data)) {
-+	if (wait_timeout(alg_data)) {
- 		/* Somebody else is monopolizing the bus */
- 		dev_err(&alg_data->adapter.dev,
- 			"%s: Bus busy. Slave addr = %02x, cntrl = %x, stat = %x\n",
-@@ -228,7 +231,7 @@ static int i2c_pnx_master_xmit(struct i2
- 		if (alg_data->mif.len == 0) {
- 			if (alg_data->last) {
- 				/* Wait until the STOP is seen. */
--				if (wait_timeout(I2C_PNX_TIMEOUT, alg_data))
-+				if (wait_timeout(alg_data))
- 					dev_err(&alg_data->adapter.dev,
- 						"The bus is still active after timeout\n");
- 			}
-@@ -326,7 +329,7 @@ static int i2c_pnx_master_rcv(struct i2c
- 		if (alg_data->mif.len == 0) {
- 			if (alg_data->last)
- 				/* Wait until the STOP is seen. */
--				if (wait_timeout(I2C_PNX_TIMEOUT, alg_data))
-+				if (wait_timeout(alg_data))
- 					dev_err(&alg_data->adapter.dev,
- 						"The bus is still active after timeout\n");
- 
-@@ -442,7 +445,7 @@ static void i2c_pnx_timeout(unsigned lon
- 
- 	ctl |= mcntrl_reset;
- 	iowrite32(ctl, I2C_REG_CTL(alg_data));
--	wait_reset(I2C_PNX_TIMEOUT, alg_data);
-+	wait_reset(alg_data);
- 	alg_data->mif.ret = -EIO;
- 	complete(&alg_data->mif.complete);
- }
-@@ -457,18 +460,18 @@ static inline void bus_reset_if_active(s
- 			alg_data->adapter.name);
- 		iowrite32(ioread32(I2C_REG_CTL(alg_data)) | mcntrl_reset,
- 			  I2C_REG_CTL(alg_data));
--		wait_reset(I2C_PNX_TIMEOUT, alg_data);
-+		wait_reset(alg_data);
- 	} else if (!(stat & mstatus_rfe) || !(stat & mstatus_tfe)) {
- 		/* If there is data in the fifo's after transfer,
- 		 * flush fifo's by reset.
- 		 */
- 		iowrite32(ioread32(I2C_REG_CTL(alg_data)) | mcntrl_reset,
- 			  I2C_REG_CTL(alg_data));
--		wait_reset(I2C_PNX_TIMEOUT, alg_data);
-+		wait_reset(alg_data);
- 	} else if (stat & mstatus_nai) {
- 		iowrite32(ioread32(I2C_REG_CTL(alg_data)) | mcntrl_reset,
- 			  I2C_REG_CTL(alg_data));
--		wait_reset(I2C_PNX_TIMEOUT, alg_data);
-+		wait_reset(alg_data);
- 	}
- }
- 
-@@ -612,6 +615,7 @@ static int __devinit i2c_pnx_probe(struc
- 	struct i2c_pnx_algo_data *alg_data;
- 	unsigned long freq;
- 	struct resource *res;
-+	u32 speed = I2C_PNX_SPEED_KHZ_DEFAULT * 1000;
- 
- 	alg_data = kzalloc(sizeof(*alg_data), GFP_KERNEL);
- 	if (!alg_data) {
-@@ -626,6 +630,22 @@ static int __devinit i2c_pnx_probe(struc
- 	alg_data->adapter.algo_data = alg_data;
- 	alg_data->adapter.nr = pdev->id;
- 
-+	alg_data->timeout = I2C_PNX_TIMEOUT_DEFAULT;
-+#ifdef CONFIG_OF
-+	alg_data->adapter.dev.of_node = of_node_get(pdev->dev.of_node);
-+	if (pdev->dev.of_node) {
-+		of_property_read_u32(pdev->dev.of_node, "clock-frequency",
-+				     &speed);
-+		/*
-+		 * At this point, it is planned to add an OF timeout property.
-+		 * As soon as there is a consensus about how to call and handle
-+		 * this, sth. like the following can be put here:
-+		 *
-+		 * of_property_read_u32(pdev->dev.of_node, "timeout",
-+		 *                      &alg_data->timeout);
-+		 */
-+	}
-+#endif
- 	alg_data->clk = clk_get(&pdev->dev, NULL);
- 	if (IS_ERR(alg_data->clk)) {
- 		ret = PTR_ERR(alg_data->clk);
-@@ -651,7 +671,7 @@ static int __devinit i2c_pnx_probe(struc
- 		dev_err(&pdev->dev,
- 		       "I/O region 0x%08x for I2C already in use.\n",
- 		       res->start);
--		ret = -ENODEV;
-+		ret = -ENOMEM;
- 		goto out_clkget;
- 	}
- 
-@@ -680,14 +700,14 @@ static int __devinit i2c_pnx_probe(struc
- 	 * the deglitching filter length.
- 	 */
- 
--	tmp = ((freq / 1000) / I2C_PNX_SPEED_KHZ) / 2 - 2;
-+	tmp = (freq / speed) / 2 - 2;
- 	if (tmp > 0x3FF)
- 		tmp = 0x3FF;
- 	iowrite32(tmp, I2C_REG_CKH(alg_data));
- 	iowrite32(tmp, I2C_REG_CKL(alg_data));
- 
- 	iowrite32(mcntrl_reset, I2C_REG_CTL(alg_data));
--	if (wait_reset(I2C_PNX_TIMEOUT, alg_data)) {
-+	if (wait_reset(alg_data)) {
- 		ret = -ENODEV;
- 		goto out_clock;
- 	}
-@@ -710,6 +730,8 @@ static int __devinit i2c_pnx_probe(struc
- 		goto out_irq;
- 	}
- 
-+	of_i2c_register_devices(&alg_data->adapter);
-+
- 	dev_dbg(&pdev->dev, "%s: Master at %#8x, irq %d.\n",
- 		alg_data->adapter.name, res->start, alg_data->irq);
- 
-@@ -748,10 +770,19 @@ static int __devexit i2c_pnx_remove(stru
- 	return 0;
- }
- 
-+#ifdef CONFIG_OF
-+static const struct of_device_id i2c_pnx_of_match[] = {
-+	{ .compatible = "nxp,pnx-i2c" },
-+	{ },
-+};
-+MODULE_DEVICE_TABLE(of, i2c_pnx_of_match);
-+#endif
-+
- static struct platform_driver i2c_pnx_driver = {
- 	.driver = {
- 		.name = "pnx-i2c",
- 		.owner = THIS_MODULE,
-+		.of_match_table = of_match_ptr(i2c_pnx_of_match),
- 	},
- 	.probe = i2c_pnx_probe,
- 	.remove = __devexit_p(i2c_pnx_remove),
---- linux-2.6.orig/include/linux/i2c-pnx.h
-+++ linux-2.6/include/linux/i2c-pnx.h
-@@ -32,6 +32,7 @@ struct i2c_pnx_algo_data {
- 	struct i2c_adapter	adapter;
- 	phys_addr_t		base;
- 	int			irq;
-+	u32			timeout;
- };
- 
- #endif /* __I2C_PNX_H__ */
+Right. I think Tejun was more of less aware of this.
+
+I was rather upset by this per-memcg dirty_limit idea indeed. I never
+expect it to work well when used extensively. My plan was to set the
+default memcg dirty_limit high enough, so that it's not hit in normal.
+Then Tejun came and proposed to (mis-)use dirty_limit as the way to
+convert the dirty pages' backpressure into real dirty throttling rate.
+No, that's just crazy idea!
+
+Come on, let's not over-use memcg's dirty_limit. It's there as the
+*last resort* to keep dirty pages under control so as to maintain
+interactive performance inside the cgroup. However if used extensively
+in the system (like dozens of memcgs all hit their dirty limits), the
+limit itself may stall random dirtiers and create interactive
+performance issues!
+
+In the recent days I've come up with the idea of memcg.dirty_setpoint
+for the blkcg backpressure stuff. We can use that instead.
+
+memcg.dirty_setpoint will scale proportionally with blkcg.writeout_rate.
+Imagine bdi_setpoint. It's all the same concepts. Why we need this?
+Because if blkcg A and B does 10:1 weights and are both doing buffered
+writes, their dirty pages should better be maintained around 10:1
+ratio to avoid underrun and hopefully achieve better IO size.
+memcg.dirty_limit cannot guarantee that goal.
+
+But be warned! Partitioning the dirty pages always means more
+fluctuations of dirty rates (and even stalls) that's perceivable by
+the user. Which means another limiting factor for the backpressure
+based IO controller to scale well.
+
+Thanks,
+Fengguang
