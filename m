@@ -1,74 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756792Ab2DTO1l (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Apr 2012 10:27:41 -0400
-Received: from mail-vb0-f46.google.com ([209.85.212.46]:46647 "EHLO
-	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756359Ab2DTO1i (ORCPT
+	id S1756838Ab2DTOjV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Apr 2012 10:39:21 -0400
+Received: from mail.work-microwave.de ([62.245.205.51]:34514 "EHLO
+	work-microwave.de" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1754768Ab2DTOjU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Apr 2012 10:27:38 -0400
-MIME-Version: 1.0
-In-Reply-To: <1334906476.3197.11.camel@pasglop>
-References: <1334906476.3197.11.camel@pasglop>
-Date: Fri, 20 Apr 2012 08:27:37 -0600
-X-Google-Sender-Auth: wftq3ILM9-eOgcaPa9U8Uzi6hWk
-Message-ID: <CAMLZHHTpNPbbMwrNmZf5Japk2b3gNZ7eAhU5xoG+a1jEPk96ig@mail.gmail.com>
-Subject: Re: Multitouch regression in 3.3 on thinkpad X220 clickpad
-From: Daniel Drake <dsd@laptop.org>
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Peter Hutterer <peter.hutterer@who-t.net>,
-        "X.Org Devel List" <xorg-devel@lists.freedesktop.org>,
-        Linux Kernel list <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Fri, 20 Apr 2012 10:39:20 -0400
+From: Roland Stigge <stigge@antcom.de>
+To: jic23@cam.ac.uk, gregkh@linuxfoundation.org, grant.likely@secretlab.ca,
+        rob.herring@calxeda.com, linux-iio@vger.kernel.org,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Cc: Roland Stigge <stigge@antcom.de>
+Subject: [PATCH RESEND v3] iio: Add device tree support to LPC32xx ADC
+Date: Fri, 20 Apr 2012 16:38:33 +0200
+Message-Id: <1334932713-19231-1-git-send-email-stigge@antcom.de>
+X-Mailer: git-send-email 1.7.9
+X-FEAS-SYSTEM-WL: rst@work-microwave.de, 192.168.11.78
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 20, 2012 at 1:21 AM, Benjamin Herrenschmidt
-<benh@kernel.crashing.org> wrote:
-> So Peter and I have been discussing a problem I observed on my brand new
-> ThinkPad X220 and it's multitouch "clickpad". I've been digging a bit
-> more today and bisected the regression to:
->
-> commit 7968a5dd492ccc38345013e534ad4c8d6eb60ed1
-> Input: synaptics - add support for Relative mode
->
-> Without that commit, I can draw two "traces" when using two fingers in
-> mtview (after removing the device from X), each follow one finger.
->
-> With that commit applied, this doesn't work anymore: it appears to be
-> unable to track more than one finger. IE. If i put a finger on the
-> touchpad, I can draw, but a second finger is then ignored (or causes one
-> or two spots in a random place to appear but that's about it).
->
-> Now other multitouch operations such as two finger scrolling seem to
-> work in X. I'm not familiar with the inner workings of the input layer
-> or the synaptic touchpads. I'll dig a bit more this week-end if I have
-> time, but it would save me plenty of that precious time if you guys
-> could hint me at things to look at :-)
+This patch adds device tree support to the LPC32xx's ADC.
 
-Sorry to cause you this trouble.
-It's the first I've heard of issues with this patch, and unfortunately
-I don't have any immediate diagnosis for you.
-The patch isn't supposed to change behaviour of the existing default
-mode which is called "absolute mode".
+Signed-off-by: Roland Stigge <stigge@antcom.de>
+Reviewed-by: Arnd Bergmann <arnd@arndb.de>
 
-What I would suggest looking at is
-synaptics_set_advanced_gesture_mode(). Is this being called, does it
-run to completion?
-You could also look at the the values passed to synaptics_mode_cmd() -
-how do they compare from good and bad drivers?
+---
 
-Does this line change over good/bad drivers?
-psmouse serio1: synaptics: Touchpad model: 1, fw: 8.0, id: 0x1e2b1,
-caps: 0xd001a3/0x940300/0x120c00
+NOTE: I separated out this patch from the first patch series of the LPC32xx
+device tree conversion because most of those patches are already applied to
+-next and are basically unrelated. The LPC32xx devicetree conversion builds
+upon this patch.
 
-Another approach may be to compare the communication with the device
-between good and bad drivers. This can be done with
-   echo 1 > /sys/module/i8042/parameters/debug
+Applies to v3.4-rc3
 
-The device specs are public and remarkably good:
-http://www.synaptics.com/sites/default/files/511-000275-01_RevB.pdf
+ Documentation/devicetree/bindings/staging/iio/adc/lpc32xx-adc.txt |   16 ++++++++++
+ drivers/staging/iio/adc/lpc32xx_adc.c                             |   10 ++++++
+ 2 files changed, 26 insertions(+)
 
-Daniel
+--- /dev/null
++++ linux-2.6/Documentation/devicetree/bindings/staging/iio/adc/lpc32xx-adc.txt
+@@ -0,0 +1,16 @@
++* NXP LPC32xx SoC ADC controller
++
++Required properties:
++- compatible: must be "nxp,lpc32xx-adc"
++- reg: physical base address of the controller and length of memory mapped
++  region.
++- interrupts: The ADC interrupt
++
++Example:
++
++	adc@40048000 {
++		compatible = "nxp,lpc32xx-adc";
++		reg = <0x40048000 0x1000>;
++		interrupt-parent = <&mic>;
++		interrupts = <39 0>;
++	};
+--- linux-2.6.orig/drivers/staging/iio/adc/lpc32xx_adc.c
++++ linux-2.6/drivers/staging/iio/adc/lpc32xx_adc.c
+@@ -30,6 +30,7 @@
+ #include <linux/clk.h>
+ #include <linux/err.h>
+ #include <linux/completion.h>
++#include <linux/of.h>
+ 
+ #include "../iio.h"
+ #include "../sysfs.h"
+@@ -221,12 +222,21 @@ static int __devexit lpc32xx_adc_remove(
+ 	return 0;
+ }
+ 
++#ifdef CONFIG_OF
++static const struct of_device_id lpc32xx_adc_match[] = {
++	{ .compatible = "nxp,lpc32xx-adc" },
++	{},
++};
++MODULE_DEVICE_TABLE(of, lpc32xx_adc_match);
++#endif
++
+ static struct platform_driver lpc32xx_adc_driver = {
+ 	.probe		= lpc32xx_adc_probe,
+ 	.remove		= __devexit_p(lpc32xx_adc_remove),
+ 	.driver		= {
+ 		.name	= MOD_NAME,
+ 		.owner	= THIS_MODULE,
++		.of_match_table = of_match_ptr(lpc32xx_adc_match),
+ 	},
+ };
+ 
