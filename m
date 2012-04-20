@@ -1,41 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754773Ab2DTOGI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Apr 2012 10:06:08 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:45076 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751433Ab2DTOGG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Apr 2012 10:06:06 -0400
+	id S1755311Ab2DTOLN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Apr 2012 10:11:13 -0400
+Received: from mailhub.sw.ru ([195.214.232.25]:43332 "EHLO relay.sw.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752884Ab2DTOLM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Apr 2012 10:11:12 -0400
+Subject: [PATCH v2] SUNRPC: skip dead but not buried clients on PipeFS events
+To: bfields@fieldses.org
+From: Stanislav Kinsbursky <skinsbursky@parallels.com>
+Cc: linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org, devel@openvz.org
+Date: Fri, 20 Apr 2012 18:11:02 +0400
+Message-ID: <20120420141042.7205.62608.stgit@localhost6.localdomain6>
+User-Agent: StGit/0.15
 MIME-Version: 1.0
-In-Reply-To: <20120420122120.097464672@linutronix.de>
-References: <20120420122120.097464672@linutronix.de>
-Date: Fri, 20 Apr 2012 16:06:04 +0200
-Message-ID: <CAFLxGvzgRpJq_BRrfgGh-V-k9XQmSvSN6hmK+6jm86Vy7v3EVg@mail.gmail.com>
-Subject: Re: [patch 00/18] SMP: Boot and CPU hotplug refactoring - Part 1
-From: richard -rw- weinberger <richard.weinberger@gmail.com>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: LKML <linux-kernel@vger.kernel.org>, linux-arch@vger.kernel.org,
-        Peter Zijlstra <peterz@infradead.org>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Ingo Molnar <mingo@kernel.org>,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 20, 2012 at 3:05 PM, Thomas Gleixner <tglx@linutronix.de> wrote:
-> This converts all architectures except m32r, mn10300, tile and UM to
-> the new core facility. These architecture are calling fork_idle() in
-> the very early boot code in smp_prepare_cpus() for unknown reasons.
-> I haven't analyzed yet, whether this is on purpose or can be moved
-> over to the generic facility. It'd be nice if the responsible maintainers
-> could look into that as well.
+v2: atomic_inc_return() was replaced by atomic_inc_not_zero().
 
-SMP is marked as broken on UM, so I don't have any objections. :-)
+These clients can't be safely dereferenced if their counter in 0.
 
--- 
-Thanks,
-//richard
+Signed-off-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
+
+---
+ net/sunrpc/clnt.c |    3 ++-
+ 1 files changed, 2 insertions(+), 1 deletions(-)
+
+diff --git a/net/sunrpc/clnt.c b/net/sunrpc/clnt.c
+index 6797246..d10ebc4 100644
+--- a/net/sunrpc/clnt.c
++++ b/net/sunrpc/clnt.c
+@@ -218,7 +218,8 @@ static struct rpc_clnt *rpc_get_client_for_event(struct net *net, int event)
+ 		if (((event == RPC_PIPEFS_MOUNT) && clnt->cl_dentry) ||
+ 		    ((event == RPC_PIPEFS_UMOUNT) && !clnt->cl_dentry))
+ 			continue;
+-		atomic_inc(&clnt->cl_count);
++		if (atomic_inc_not_zero(&clnt->cl_count) == 0)
++			continue;
+ 		spin_unlock(&sn->rpc_client_lock);
+ 		return clnt;
+ 	}
+
