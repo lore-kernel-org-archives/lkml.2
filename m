@@ -1,25 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756361Ab2DTWw6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Apr 2012 18:52:58 -0400
-Received: from intmgw001.ash2.facebook.com ([66.220.155.178]:50242 "EHLO
-	intmgw002.ash2.facebook.com" rhost-flags-OK-FAIL-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1756201Ab2DTWwz (ORCPT
+	id S932186Ab2DTWxG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Apr 2012 18:53:06 -0400
+Received: from outmail019.snc4.facebook.com ([66.220.144.153]:48871 "EHLO
+	intmgw001.snc4.facebook.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1756376Ab2DTWw7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Apr 2012 18:52:55 -0400
+	Fri, 20 Apr 2012 18:52:59 -0400
 From: Arun Sharma <asharma@fb.com>
 To: linux-kernel@vger.kernel.org
-Cc: Arun Sharma <asharma@fb.com>, Ingo Molnar <mingo@elte.hu>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@google.com>,
-        Namhyung Kim <namhyung.kim@lge.com>, Tom Zanussi <tzanussi@gmail.com>,
-        linux-perf-users@vger.kernel.org
-Subject: [PATCH 1/4] perf, x86: Allow multiple stacks
-Date: Fri, 20 Apr 2012 15:41:33 -0700
-Message-Id: <1334961696-19580-2-git-send-email-asharma@fb.com>
+Cc: Arun Sharma <asharma@fb.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>
+Subject: [PATCH 3/4] perf, x86: Check if user fp is valid
+Date: Fri, 20 Apr 2012 15:41:35 -0700
+Message-Id: <1334961696-19580-4-git-send-email-asharma@fb.com>
 X-Mailer: git-send-email 1.7.8.4
 In-Reply-To: <1334961696-19580-1-git-send-email-asharma@fb.com>
 References: <1334961696-19580-1-git-send-email-asharma@fb.com>
@@ -27,56 +22,94 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Without this patch, applications with two different stack
-regions (eg: native stack vs JIT stack) get truncated
-callchains even when RBP chaining is present. GDB shows proper
-stack traces and the frame pointer chaining is intact.
-
-This patch disables the (fp < RSP) check, hoping that other checks
-in the code save the day for us. In our limited testing, this
-didn't seem to break anything.
-
-In the long term, we could potentially have userspace advise
-the kernel on the range of valid stack addresses, so we don't
-spend a lot of time unwinding from bogus addresses.
-
 Signed-off-by: Arun Sharma <asharma@fb.com>
-Cc: Ingo Molnar <mingo@elte.hu>
-CC: Arnaldo Carvalho de Melo <acme@redhat.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Mike Galbraith <efault@gmx.de>
-Cc: Paul Mackerras <paulus@samba.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
 Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Stephane Eranian <eranian@google.com>
-Cc: Namhyung Kim <namhyung.kim@lge.com>
-Cc: Tom Zanussi <tzanussi@gmail.com>
+Cc: Ingo Molnar <mingo@elte.hu>
 Cc: linux-kernel@vger.kernel.org
-Cc: linux-perf-users@vger.kernel.org
 ---
- arch/x86/kernel/cpu/perf_event.c |    6 ------
- 1 files changed, 0 insertions(+), 6 deletions(-)
+ arch/x86/include/asm/uaccess.h   |   13 +++++++------
+ arch/x86/kernel/cpu/perf_event.c |   12 ++++++++++++
+ 2 files changed, 19 insertions(+), 6 deletions(-)
 
+diff --git a/arch/x86/include/asm/uaccess.h b/arch/x86/include/asm/uaccess.h
+index e054459..997d59b 100644
+--- a/arch/x86/include/asm/uaccess.h
++++ b/arch/x86/include/asm/uaccess.h
+@@ -32,9 +32,9 @@
+ 
+ #define segment_eq(a, b)	((a).seg == (b).seg)
+ 
+-#define __addr_ok(addr)					\
+-	((unsigned long __force)(addr) <		\
+-	 (current_thread_info()->addr_limit.seg))
++#define __cur_addr_limit	(current_thread_info()->addr_limit.seg)
++#define __addr_ok(addr) 	\
++	((unsigned long __force)(addr) < __cur_addr_limit)
+ 
+ /*
+  * Test whether a block of memory is a valid user space address.
+@@ -46,14 +46,14 @@
+  * This needs 33-bit (65-bit for x86_64) arithmetic. We have a carry...
+  */
+ 
+-#define __range_not_ok(addr, size)					\
++#define __range_not_ok(addr, size, limit)				\
+ ({									\
+ 	unsigned long flag, roksum;					\
+ 	__chk_user_ptr(addr);						\
+ 	asm("add %3,%1 ; sbb %0,%0 ; cmp %1,%4 ; sbb $0,%0"		\
+ 	    : "=&r" (flag), "=r" (roksum)				\
+ 	    : "1" (addr), "g" ((long)(size)),				\
+-	      "rm" (current_thread_info()->addr_limit.seg));		\
++	      "rm" (limit));						\
+ 	flag;								\
+ })
+ 
+@@ -76,7 +76,8 @@
+  * checks that the pointer is in the user space range - after calling
+  * this function, memory access functions may still return -EFAULT.
+  */
+-#define access_ok(type, addr, size) (likely(__range_not_ok(addr, size) == 0))
++#define access_ok(type, addr, size) \
++	(likely(__range_not_ok(addr, size, __cur_addr_limit) == 0))
+ 
+ /*
+  * The exception table consists of pairs of addresses: the first is the
 diff --git a/arch/x86/kernel/cpu/perf_event.c b/arch/x86/kernel/cpu/perf_event.c
-index bb8e034..9f98636 100644
+index 9f98636..3e4be2c 100644
 --- a/arch/x86/kernel/cpu/perf_event.c
 +++ b/arch/x86/kernel/cpu/perf_event.c
-@@ -1785,9 +1785,6 @@ perf_callchain_user32(struct pt_regs *regs, struct perf_callchain_entry *entry)
+@@ -1761,6 +1761,12 @@ perf_callchain_kernel(struct perf_callchain_entry *entry, struct pt_regs *regs)
+ 	dump_trace(NULL, regs, NULL, 0, &backtrace_ops, entry);
+ }
+ 
++static inline int
++valid_user_frame(const void __user *fp, unsigned long size)
++{
++	return (__range_not_ok(fp, size, TASK_SIZE) == 0);
++}
++
+ #ifdef CONFIG_COMPAT
+ 
+ #include <asm/compat.h>
+@@ -1785,6 +1791,9 @@ perf_callchain_user32(struct pt_regs *regs, struct perf_callchain_entry *entry)
  		if (bytes != sizeof(frame))
  			break;
  
--		if (fp < compat_ptr(regs->sp))
--			break;
--
++		if (!valid_user_frame(fp, sizeof(frame)))
++			break;
++
  		perf_callchain_store(entry, frame.return_address);
  		fp = compat_ptr(frame.next_frame);
  	}
-@@ -1831,9 +1828,6 @@ perf_callchain_user(struct perf_callchain_entry *entry, struct pt_regs *regs)
+@@ -1828,6 +1837,9 @@ perf_callchain_user(struct perf_callchain_entry *entry, struct pt_regs *regs)
  		if (bytes != sizeof(frame))
  			break;
  
--		if ((unsigned long)fp < regs->sp)
--			break;
--
++		if (!valid_user_frame(fp, sizeof(frame)))
++			break;
++
  		perf_callchain_store(entry, frame.return_address);
  		fp = frame.next_frame;
  	}
