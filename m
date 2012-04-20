@@ -1,59 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932485Ab2DTQOh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Apr 2012 12:14:37 -0400
-Received: from acsinet15.oracle.com ([141.146.126.227]:51790 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932077Ab2DTQOg (ORCPT
+	id S932411Ab2DTQRH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Apr 2012 12:17:07 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:37997 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754938Ab2DTQRF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Apr 2012 12:14:36 -0400
-Message-ID: <4F918B66.10107@oracle.com>
-Date: Fri, 20 Apr 2012 11:14:30 -0500
-From: Dave Kleikamp <dave.kleikamp@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120406 Thunderbird/11.0.1
+	Fri, 20 Apr 2012 12:17:05 -0400
 MIME-Version: 1.0
-To: Jeff Moyer <jmoyer@redhat.com>
-CC: "Maxim V. Patlasov" <mpatlasov@parallels.com>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Zach Brown <zab@zabbo.net>
-Subject: Re: [RFC PATCH v2 15/21] loop: use aio to perform io on the underlying
- file
-References: <1333122228-13633-1-git-send-email-dave.kleikamp@oracle.com> <1333122228-13633-16-git-send-email-dave.kleikamp@oracle.com> <4F917751.9040600@parallels.com> <4F917C2F.4020805@oracle.com> <x49mx66whty.fsf@segfault.boston.devel.redhat.com>
-In-Reply-To: <x49mx66whty.fsf@segfault.boston.devel.redhat.com>
-X-Enigmail-Version: 1.4
+In-Reply-To: <1334913084.2463.29.camel@laptop>
+References: <1334791449-402-1-git-send-email-asharma@fb.com> <1334913084.2463.29.camel@laptop>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Fri, 20 Apr 2012 09:16:42 -0700
+X-Google-Sender-Auth: 0CL5NqiBdEL6gR-aZxIprBr_rxw
+Message-ID: <CA+55aFwg-LvxYUGD_mD=V4mt=zi8J34hQu+ZBGAHH9yX8WET2Q@mail.gmail.com>
+Subject: Re: [PATCH] perf, x86: Disable sanity check
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Arun Sharma <asharma@fb.com>, linux-kernel@vger.kernel.org,
+        Ingo Molnar <mingo@elte.hu>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
+        Stephane Eranian <eranian@google.com>,
+        Namhyung Kim <namhyung.kim@lge.com>, Tom Zanussi <tzanussi@gmail.com>,
+        linux-perf-users@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
-X-CT-RefId: str=0001.0A090208.4F918B69.0094,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, Apr 20, 2012 at 2:11 AM, Peter Zijlstra <peterz@infradead.org> wrote:
+>
+> Makes me really nervous.. Ingo, Linus ?
 
+I don't care as long as this only *ever* triggers for user stacks, and
+the code verifies that. And I'm not sure it does, actually.
 
-On 04/20/2012 10:20 AM, Jeff Moyer wrote:
-> Dave Kleikamp <dave.kleikamp@oracle.com> writes:
-> 
->> On 04/20/2012 09:48 AM, Maxim V. Patlasov wrote:
->>> On 03/30/2012 07:43 PM, Dave Kleikamp wrote:
->>>> From: Zach Brown<zab@zabbo.net>
->>>>
->>>> This uses the new kernel aio interface to process loopback IO by
->>>> submitting concurrent direct aio.  Previously loop's IO was serialized
->>>> by synchronous processing in a thread.
->>>>
->>>
->>> The patch ignores REQ_FLUSH bit of bi_rw. Is it simply overlook?
->>
->> Good question. Since the loop device is sending only direct IO requests,
->> it shouldn't be necessary to explicitly flush page cache, but REQ_FLUSH
-> 
-> REQ_FLUSH isn't about the page cache, it's about flushing the volatile
-> disk write cache.  You need to handle that.
+Why am I not sure? Because it uses copy_from_user_nmi(), which in turn
+uses "access_ok()". But can we perhaps have the perf event happen
+*while* the kernel has done a "set_fs(KERNEL_DS)" - and we just
+happen to follow the user stack too? In which case we may be copying
+kernel memory.
 
-Yeah, and looking again at this code, I need to handle REQ_DISCARD as well.
+So I think this user stack following code is buggy in *other* ways.
 
-> 
-> Cheers,
-> Jeff
+Guys: stack following has to be *f^&%ing* careful! This shows yet
+again how people blithely follow frame pointers without verifying
+everything they damn well can.
+
+Also, I note that the deepest stack chain allowed is something
+*ridiculously* deep (like 255), and we use copy_from_user_nmi() for
+this each entry. Which is slow as hell. So I would suggest at least
+considering limiting that depth more.
+
+End result: I'm ok with removing that one test. But I want more tests
+to replace it. The user frame pointer had damn well better be in user
+space (and no, "access_ok()" is not valid or sufficient in interrupt
+context!) and I suspect there are other things you could check.
+
+                  Linus
