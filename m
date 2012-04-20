@@ -1,100 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755811Ab2DTV6Q (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Apr 2012 17:58:16 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:34023 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755114Ab2DTV6M (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Apr 2012 17:58:12 -0400
-Date: Fri, 20 Apr 2012 14:58:02 -0700
-From: "tip-bot for H. Peter Anvin" <hpa@zytor.com>
-Message-ID: <tip-d7abc0fa997972ddb6d3c403e03a6eefda0c0881@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        david.daney@cavium.com, tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        david.daney@cavium.com, tglx@linutronix.de
-In-Reply-To: <CA+55aFyijf43qSu3N9nWHEBwaGbb7T2Oq9A=9EyR=Jtyqfq_cQ@mail.gmail.com>
-References: <CA+55aFyijf43qSu3N9nWHEBwaGbb7T2Oq9A=9EyR=Jtyqfq_cQ@mail.gmail.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/extable] x86, extable:
-  Remove open-coded exception table entries in arch/x86/kernel/entry_64.S
-Git-Commit-ID: d7abc0fa997972ddb6d3c403e03a6eefda0c0881
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
-MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Fri, 20 Apr 2012 14:58:07 -0700 (PDT)
+	id S1755855Ab2DTV6Y (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Apr 2012 17:58:24 -0400
+Received: from mailhub.sw.ru ([195.214.232.25]:25039 "EHLO relay.sw.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755783Ab2DTV6V (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Apr 2012 17:58:21 -0400
+From: Glauber Costa <glommer@parallels.com>
+To: <cgroups@vger.kernel.org>
+Cc: <linux-mm@kvack.org>, <linux-kernel@vger.kernel.org>, <devel@openvz.org>,
+        <kamezawa.hiroyu@jp.fujitsu.com>, Michal Hocko <mhocko@suse.cz>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Greg Thelen <gthelen@google.com>,
+        Suleiman Souhlal <suleiman@google.com>,
+        Suleiman Souhlal <ssouhlal@FreeBSD.org>
+Subject: [PATCH 05/23] memcg: Reclaim when more than one page needed.
+Date: Fri, 20 Apr 2012 18:57:13 -0300
+Message-Id: <1334959051-18203-6-git-send-email-glommer@parallels.com>
+X-Mailer: git-send-email 1.7.7.6
+In-Reply-To: <1334959051-18203-1-git-send-email-glommer@parallels.com>
+References: <1334959051-18203-1-git-send-email-glommer@parallels.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  d7abc0fa997972ddb6d3c403e03a6eefda0c0881
-Gitweb:     http://git.kernel.org/tip/d7abc0fa997972ddb6d3c403e03a6eefda0c0881
-Author:     H. Peter Anvin <hpa@zytor.com>
-AuthorDate: Fri, 20 Apr 2012 12:19:50 -0700
-Committer:  H. Peter Anvin <hpa@zytor.com>
-CommitDate: Fri, 20 Apr 2012 13:51:38 -0700
+From: Suleiman Souhlal <ssouhlal@FreeBSD.org>
 
-x86, extable: Remove open-coded exception table entries in arch/x86/kernel/entry_64.S
+mem_cgroup_do_charge() was written before slab accounting, and expects
+three cases: being called for 1 page, being called for a stock of 32 pages,
+or being called for a hugepage.  If we call for 2 pages (and several slabs
+used in process creation are such, at least with the debug options I had),
+it assumed it's being called for stock and just retried without reclaiming.
 
-Remove open-coded exception table entries in arch/x86/kernel/entry_64.S,
-and replace them with _ASM_EXTABLE() macros; this will allow us to
-change the format and type of the exception table entries.
+Fix that by passing down a minsize argument in addition to the csize.
 
-Signed-off-by: H. Peter Anvin <hpa@zytor.com>
-Cc: David Daney <david.daney@cavium.com>
-Link: http://lkml.kernel.org/r/CA%2B55aFyijf43qSu3N9nWHEBwaGbb7T2Oq9A=9EyR=Jtyqfq_cQ@mail.gmail.com
+And what to do about that (csize == PAGE_SIZE && ret) retry?  If it's
+needed at all (and presumably is since it's there, perhaps to handle
+races), then it should be extended to more than PAGE_SIZE, yet how far?
+And should there be a retry count limit, of what?  For now retry up to
+COSTLY_ORDER (as page_alloc.c does), stay safe with a cond_resched(),
+and make sure not to do it if __GFP_NORETRY.
+
+Signed-off-by: Suleiman Souhlal <suleiman@google.com>
 ---
- arch/x86/kernel/entry_64.S |   16 ++++------------
- 1 files changed, 4 insertions(+), 12 deletions(-)
+ mm/memcontrol.c |   18 +++++++++++-------
+ 1 files changed, 11 insertions(+), 7 deletions(-)
 
-diff --git a/arch/x86/kernel/entry_64.S b/arch/x86/kernel/entry_64.S
-index cdc79b5..320852d 100644
---- a/arch/x86/kernel/entry_64.S
-+++ b/arch/x86/kernel/entry_64.S
-@@ -55,6 +55,7 @@
- #include <asm/paravirt.h>
- #include <asm/ftrace.h>
- #include <asm/percpu.h>
-+#include <asm/asm.h>
- #include <linux/err.h>
+diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+index 4b94b2d..cbffc4c 100644
+--- a/mm/memcontrol.c
++++ b/mm/memcontrol.c
+@@ -2187,7 +2187,8 @@ enum {
+ };
  
- /* Avoid __ASSEMBLER__'ifying <linux/audit.h> just for this.  */
-@@ -900,18 +901,12 @@ restore_args:
+ static int mem_cgroup_do_charge(struct mem_cgroup *memcg, gfp_t gfp_mask,
+-				unsigned int nr_pages, bool oom_check)
++				unsigned int nr_pages, unsigned int min_pages,
++				bool oom_check)
+ {
+ 	unsigned long csize = nr_pages * PAGE_SIZE;
+ 	struct mem_cgroup *mem_over_limit;
+@@ -2210,18 +2211,18 @@ static int mem_cgroup_do_charge(struct mem_cgroup *memcg, gfp_t gfp_mask,
+ 	} else
+ 		mem_over_limit = mem_cgroup_from_res_counter(fail_res, res);
+ 	/*
+-	 * nr_pages can be either a huge page (HPAGE_PMD_NR), a batch
+-	 * of regular pages (CHARGE_BATCH), or a single regular page (1).
+-	 *
+ 	 * Never reclaim on behalf of optional batching, retry with a
+ 	 * single page instead.
+ 	 */
+-	if (nr_pages == CHARGE_BATCH)
++	if (nr_pages > min_pages)
+ 		return CHARGE_RETRY;
  
- irq_return:
- 	INTERRUPT_RETURN
--
--	.section __ex_table, "a"
--	.quad irq_return, bad_iret
--	.previous
-+	_ASM_EXTABLE(irq_return, bad_iret)
+ 	if (!(gfp_mask & __GFP_WAIT))
+ 		return CHARGE_WOULDBLOCK;
  
- #ifdef CONFIG_PARAVIRT
- ENTRY(native_iret)
- 	iretq
--
--	.section __ex_table,"a"
--	.quad native_iret, bad_iret
--	.previous
-+	_ASM_EXTABLE(native_iret, bad_iret)
- #endif
++	if (gfp_mask & __GFP_NORETRY)
++		return CHARGE_NOMEM;
++
+ 	ret = mem_cgroup_reclaim(mem_over_limit, gfp_mask, flags);
+ 	if (mem_cgroup_margin(mem_over_limit) >= nr_pages)
+ 		return CHARGE_RETRY;
+@@ -2234,8 +2235,10 @@ static int mem_cgroup_do_charge(struct mem_cgroup *memcg, gfp_t gfp_mask,
+ 	 * unlikely to succeed so close to the limit, and we fall back
+ 	 * to regular pages anyway in case of failure.
+ 	 */
+-	if (nr_pages == 1 && ret)
++	if (nr_pages <= (PAGE_SIZE << PAGE_ALLOC_COSTLY_ORDER) && ret) {
++		cond_resched();
+ 		return CHARGE_RETRY;
++	}
  
- 	.section .fixup,"ax"
-@@ -1181,10 +1176,7 @@ gs_change:
- 	CFI_ENDPROC
- END(native_load_gs_index)
+ 	/*
+ 	 * At task move, charge accounts can be doubly counted. So, it's
+@@ -2369,7 +2372,8 @@ again:
+ 			nr_oom_retries = MEM_CGROUP_RECLAIM_RETRIES;
+ 		}
  
--	.section __ex_table,"a"
--	.align 8
--	.quad gs_change,bad_gs
--	.previous
-+	_ASM_EXTABLE(gs_change,bad_gs)
- 	.section .fixup,"ax"
- 	/* running with kernelgs */
- bad_gs:
+-		ret = mem_cgroup_do_charge(memcg, gfp_mask, batch, oom_check);
++		ret = mem_cgroup_do_charge(memcg, gfp_mask, batch, nr_pages,
++		    oom_check);
+ 		switch (ret) {
+ 		case CHARGE_OK:
+ 			break;
+-- 
+1.7.7.6
+
