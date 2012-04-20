@@ -1,69 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753934Ab2DTJyg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Apr 2012 05:54:36 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:51140 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752709Ab2DTJyf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Apr 2012 05:54:35 -0400
-Subject: Re: [RFC 1/2] kernel patch for dump user space stack tool
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Yanmin Zhang <yanmin_zhang@linux.intel.com>
-Cc: Cong Wang <xiyou.wangcong@gmail.com>,
-        "Tu, Xiaobing" <xiaobing.tu@intel.com>, Lin Ming <mlin@ss.pku.edu.cn>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "mingo@elte.hu" <mingo@elte.hu>,
-        "rusty@rustcorp.com.au" <rusty@rustcorp.com.au>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "rostedt@goodmis.org" <rostedt@goodmis.org>,
-        "Zuo, Jiao" <jiao.zuo@intel.com>
-In-Reply-To: <1334812653.14538.29.camel@ymzhang.sh.intel.com>
-References: <EE928378561BF1449699C96571234A740FCED62F@SHSMSX101.ccr.corp.intel.com>
-	 <4F8F8B9E.3040107@gmail.com>
-	 <1334812653.14538.29.camel@ymzhang.sh.intel.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 20 Apr 2012 11:54:28 +0200
-Message-ID: <1334915668.2463.43.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
+	id S1754059Ab2DTJ62 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Apr 2012 05:58:28 -0400
+Received: from smtp.citrix.com ([66.165.176.89]:1526 "EHLO SMTP.CITRIX.COM"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753670Ab2DTJ60 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Apr 2012 05:58:26 -0400
+X-IronPort-AV: E=Sophos;i="4.75,452,1330923600"; 
+   d="scan'208";a="24358205"
+Message-ID: <4F913340.4000202@citrix.com>
+Date: Fri, 20 Apr 2012 10:58:24 +0100
+From: Andrew Cooper <andrew.cooper3@citrix.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120329 Thunderbird/11.0.1
+MIME-Version: 1.0
+To: Lin Ming <mlin@ss.pku.edu.cn>
+CC: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [Xen-devel] [PATCH] xen/apic: implement io apic read with hypercall
+References: <1334913957.2863.1.camel@hp6530s>
+In-Reply-To: <1334913957.2863.1.camel@hp6530s>
+X-Enigmail-Version: 1.4
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-04-19 at 13:17 +0800, Yanmin Zhang wrote:
-> 1) We could collect the HEX-format call chain data and /proc/XXX/maps
-> of all the processes quickly, then parse them either after rebooting, or
-> after the issue is reported. It could catch the scene just at the time point
-> when the error happens. Our experiments shows the tool could collect the data
-> of all processes within 200ms.
+On 20/04/12 10:25, Lin Ming wrote:
+> Implements xen_io_apic_read with hypercall, so it returns proper IO-APIC
+> information instead of fabricated one.
+>
+> Signed-off-by: Lin Ming <mlin@ss.pku.edu.cn>
+> ---
+>  arch/x86/xen/apic.c |   16 +++++++++++-----
+>  1 files changed, 11 insertions(+), 5 deletions(-)
+>
+> diff --git a/arch/x86/xen/apic.c b/arch/x86/xen/apic.c
+> index aee16ab..f1f392d 100644
+> --- a/arch/x86/xen/apic.c
+> +++ b/arch/x86/xen/apic.c
+> @@ -1,14 +1,20 @@
+>  #include <linux/init.h>
+>  #include <asm/x86_init.h>
+> +#include <asm/apic.h>
+> +#include <xen/interface/physdev.h>
+> +#include <asm/xen/hypercall.h>
+>  
+>  unsigned int xen_io_apic_read(unsigned apic, unsigned reg)
+>  {
+> -	if (reg == 0x1)
+> -		return 0x00170020;
+> -	else if (reg == 0x0)
+> -		return apic << 24;
+> +	struct physdev_apic apic_op;
+> +	int ret;
+>  
+> -	return 0xff;
+> +	apic_op.apic_physbase = mpc_ioapic_addr(apic);
+> +	apic_op.reg = reg;
+> +	ret = HYPERVISOR_physdev_op(PHYSDEVOP_apic_read, &apic_op);
+> +	if (ret)
+> +		return ret;
+> +	return apic_op.value;
 
-No you can't, ever heard of address space randomization?
+Hypercall ret errors are negative, yet this function is unsigned.  Given
+that the previous function had no possible way to fail, perhaps on error
+you should fake up the values as before.
 
-> 2) The new tool won't stop the processes and have less impact on them.
-> Considering a scenario of performance bottleneck investigation, statistics collection
-> shouldn't have big impact on running processes. 
+>  }
+>  
+>  void __init xen_init_apic(void)
 
-Maybe.. on these tiny systems you're working on most tasks will not be
-runnable anyway since you only have 1 (maybe 2) cpus and what's running
-is your dumper process, so most everything isn't runnable, attaching and
-dumping stack of all tasks isn't really much more expensive than this.
-
-the open/read/close you do on the proc files, along with the readdir
-etc.. are system-calls just like the ptrace alternative.
-
-> 3) It could support both i386 and x86-64. I tried pstack and it doesn't work
-> with x86-64.
-
-Yeah, and you'll need to extend it to ARM/MIPS/etc.. whereas there is
-plenty of userspace around that can already work on all those platforms
--- if pstack cannot its weird, I'd think it would use all the regular
-binutils muck that already supports all the platforms.
-
-> 4) It follows /proc/XXX/stack interface and it's easy to use it.
-
-Uhm, not so very much, see your ASLR issue. Furthermore it requires all
-userspace be build with framepointers enabled -- which I think would be
-a good thing anyway -- but with which reality seems to disagree.
+-- 
+Andrew Cooper - Dom0 Kernel Engineer, Citrix XenServer
+T: +44 (0)1223 225 900, http://www.citrix.com
 
