@@ -1,59 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932601Ab2DTDsl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Apr 2012 23:48:41 -0400
-Received: from mga14.intel.com ([143.182.124.37]:55676 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932268Ab2DTDsk convert rfc822-to-8bit (ORCPT
+	id S1757123Ab2DTDvI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Apr 2012 23:51:08 -0400
+Received: from dalsmrelay2.nai.com ([205.227.136.216]:63531 "EHLO
+	dalsmrelay2.nai.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751300Ab2DTDvG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Apr 2012 23:48:40 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="133194628"
-From: "Pallala, Ramakrishna" <ramakrishna.pallala@intel.com>
-To: Mika Westerberg <mika.westerberg@iki.fi>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Anton Vorontsov <cbouatmailru@gmail.com>,
-        Anton Vorontsov <anton.vorontsov@linaro.org>
-Subject: RE: [PATCH v2] smb347_charger: Cleanup power supply registration
- code in probe
-Thread-Topic: [PATCH v2] smb347_charger: Cleanup power supply registration
- code in probe
-Thread-Index: AQHNHl/WbV8uvtA/zUm/xFF6SyZHTZajEUtw
-Date: Fri, 20 Apr 2012 03:48:35 +0000
-Message-ID: <D854C92F57B1B347B57E531E78D05EAD10EC08@BGSMSX102.gar.corp.intel.com>
-References: <1334809818-5958-1-git-send-email-ramakrishna.pallala@intel.com>
- <20120419190820.GB877@mwesterb-mobl.lan>
-In-Reply-To: <20120419190820.GB877@mwesterb-mobl.lan>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.223.10.10]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Thu, 19 Apr 2012 23:51:06 -0400
+Date: Fri, 20 Apr 2012 13:47:16 +1000
+From: Greg Ungerer <gerg@snapgear.com>
+Message-ID: <201204200347.q3K3lGJv011042@goober.corp.nai.org>
+CC: <gerg@uclinux.org>, <linux-kernel@vger.kernel.org>,
+        <linux-m68k@vger.kernel.org>, <geert@linux-m68k.org>
+Subject: [git pull] m68knommu arch fixes for 3.4
+To: <torvalds@linux-foundation.org>
+X-Mailer: mail (GNU Mailutils 2.1)
 MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Subject: Re: [PATCH v2] smb347_charger: Cleanup power supply registration code in probe
-> 
-> On Thu, Apr 19, 2012 at 10:00:18AM +0530, Ramakrishna Pallala wrote:
-> > This patch checks if the usb or mains charging is enabled by the
-> > platform before registering with the power supply class.
-> 
-> I still don't like the idea of having the power-supplies registered conditionally. Now
-> you need to check in every place whether the corresponding power-supply is registered or
-> not which makes the code uglier and more prone to errors.
+Hi Linus,
 
-These are the reasons behind this patch submission:
-1. if we don't support USB/AC charging don't enable it, saves
-	kernel resources and don't give user wrong idea about charging capabilities.
-2. if a platform driver or any other chip can do USB/AC charging they will register with PS and
-	user/userspace will not get confused b/w two sysfs interfaces.
+Can you please pull the m68knommu git tree:
 
-I will leave the decision the Anton.
+  git://git.kernel.org/pub/scm/linux/kernel/git/gerg/m68knommu.git for-linus
 
-Thanks,
-Ram
+It contains four fixes for 3.4. Two fix and clean up compilation for the
+nommu 68x328 CPU targets. The other two fix the platform definition and
+multi-function pin setup of the second eth interface on the ColdFire
+5275 SoC.
+
+Thanks
+Greg
+
+
+
+The following changes since commit e816b57a337ea3b755de72bec38c10c864f23015:
+  Linus Torvalds (1):
+        Linux 3.4-rc3
+
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/gerg/m68knommu.git for-linus
+
+Greg Ungerer (4):
+      m68knommu: remove the unused bootlogo.h processing for 68EZ328 and 68VZ328
+      m68knommu: move and fix the 68VZ328 platform bootlogo.h
+      m68knommu: fix id number for second eth device on 5275 ColdFire
+      m68knommu: make sure 2nd FEC eth interface pins are enabled on 5275 ColdFire
+
+ arch/m68k/configs/m5275evb_defconfig               |    1 -
+ arch/m68k/platform/527x/config.c                   |    2 --
+ arch/m68k/platform/68EZ328/Makefile                |    6 ------
+ arch/m68k/platform/68VZ328/Makefile                |    9 ++-------
+ arch/m68k/platform/{68EZ328 => 68VZ328}/bootlogo.h |    2 +-
+ arch/m68k/platform/coldfire/device.c               |    2 +-
+ 6 files changed, 4 insertions(+), 18 deletions(-)
+ rename arch/m68k/platform/{68EZ328 => 68VZ328}/bootlogo.h (99%)
