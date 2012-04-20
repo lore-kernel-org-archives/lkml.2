@@ -1,73 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754209Ab2DTKHF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Apr 2012 06:07:05 -0400
-Received: from e2.ny.us.ibm.com ([32.97.182.142]:56569 "EHLO e2.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753694Ab2DTKHC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Apr 2012 06:07:02 -0400
-Date: Fri, 20 Apr 2012 15:27:30 +0530
-From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: Steven Rostedt <rostedt@goodmis.org>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
-        LKML <linux-kernel@vger.kernel.org>, Linux-mm <linux-mm@kvack.org>,
-        Oleg Nesterov <oleg@redhat.com>, Andi Kleen <andi@firstfloor.org>,
-        Christoph Hellwig <hch@infradead.org>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Anton Arapov <anton@redhat.com>
-Subject: Re: [PATCH UPDATED 3/3] tracing: Provide trace events interface
- for uprobes
-Message-ID: <20120420095730.GB8357@linux.vnet.ibm.com>
-Reply-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-References: <20120409091133.8343.65289.sendpatchset@srdronam.in.ibm.com>
- <20120409091154.8343.50489.sendpatchset@srdronam.in.ibm.com>
- <20120411103043.GB29437@linux.vnet.ibm.com>
- <1334236456.23924.333.camel@gandalf.stny.rr.com>
- <20120414111206.GA24688@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-In-Reply-To: <20120414111206.GA24688@gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12042010-5112-0000-0000-0000073DFE52
+	id S1754243Ab2DTKLz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Apr 2012 06:11:55 -0400
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:42958 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753833Ab2DTKLx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Apr 2012 06:11:53 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Fri, 20 Apr 2012 19:11:33 +0900 (JST)
+Message-Id: <20120420.191133.488341439.d.hatayama@jp.fujitsu.com>
+To: avi@redhat.com
+Cc: dzickus@redhat.com, luto@mit.edu, gregkh@suse.de, kvm@vger.kernel.org,
+        joerg.roedel@amd.com, mtosatti@redhat.com, kexec@lists.infradead.org,
+        linux-kernel@vger.kernel.org, paul.gortmaker@windriver.com,
+        zhangyanfei@cn.fujitsu.com, ebiederm@xmission.com,
+        ludwig.nussel@suse.de
+Subject: Re: [PATCH 0/4] Export offsets of VMCS fields as note information
+ for kdump
+From: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>
+In-Reply-To: <4F900020.5010702@redhat.com>
+References: <4F8FF7AC.1060309@redhat.com>
+	<20120419.210119.246504497.d.hatayama@jp.fujitsu.com>
+	<4F900020.5010702@redhat.com>
+X-Mailer: Mew version 6.3 on Emacs 23.4 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Avi Kivity <avi@redhat.com>
+Subject: Re: [PATCH 0/4] Export offsets of VMCS fields as note information for kdump
+Date: Thu, 19 Apr 2012 15:08:00 +0300
 
-Hi Ingo, 
+> On 04/19/2012 03:01 PM, HATAYAMA Daisuke wrote:
+>> >> It would be not helpful for the qemu crash case you are concerned
+>> >> about. We want to use the guest state data to look into guest
+>> >> machine's image in the crasshed qemu.
+>> > 
+>> > Why?
+>> > 
+>>
+>> It seems natural to check the situation from guest machine's side when
+>> qemu crashs. Suppose a service is running on the guest machine, and
+>> then the qemu crash. Then, we may need to know the details of the
+>> progress of the service if it's important. What has been successfully
+>> done, and what has not yet.
+> 
+> How can a service on the guest be related to a qemu crash?  And how
+> would guest registers help?
 
-
-* Ingo Molnar <mingo@kernel.org> [2012-04-14 13:12:06]:
+I don't mean the service is related to qemu's crash. When qemu
+crashes, then the guest machine also crashes (although it doesn't
+notice anything). What I'm interested in here is guest machine side,
+not qemu side. I want to debug guest machine, not qemu.
 
 > 
-> * Steven Rostedt <rostedt@goodmis.org> wrote:
-> 
-> > I'm fine with what I see here (still need to fix what Masami 
-> > suggested).
-> > 
-> > Acked-by: Steven Rostedt <rostedt@goodmis.org>
-> 
-> Ok - Srikar, mind sending the latest (3-patch?) series again, 
-> with all suggestions and acks incorporated?
+> You can extract the list of running processes from a qemu crash dump
+> without looking at guest registers.  And most vcpus are running
+> asynchronously to qemu, so their register contents is irrelevant (if a
+> vcpu is running synchronously with qemu - it just exited to qemu and is
+> waiting for a response - then you'd see the details in qemu's call stack).
 > 
 
-I had re-posted the tracing bits http://lkml.org/lkml/2012/4/16/109
-Masami has added his ack to the last patch. So all the three patches are
-acked by Masami and Steven Rostedt. 
+Just as you say, we can refer to guest machine's memory without guest
+registers.
 
-Also the perf bits  were posted here http://lkml.org/lkml/2012/4/16/175. 
+The definitely necessary data in vmcs are RSP and RIP, which are not
+saved in anywhare of kvm module. The two registers are needed for back
+tracing to determine what processsing is being done on the guest
+machine at qemu crash.
 
-Any reason why these arent pulled in?
+There are other useful data in vmcs, but even if we don't have them,
+we can do what we want to do in exchange of usability.
 
--- 
-thanks and regards
-Srikar
+For example, we want IA32_EFER.LMA to determine whether guest machine
+is in 32-bit or 64-bit mode. But there are only two modes, we can
+perhaps try these in order in an ad-hoc way.
+
+Other control registers are also useful, but they are not so important
+than definitely needed.
+
+Thanks.
+HATAYAMA, Daisuke
 
