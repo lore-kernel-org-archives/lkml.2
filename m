@@ -1,69 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757592Ab2DTTdS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Apr 2012 15:33:18 -0400
-Received: from e37.co.us.ibm.com ([32.97.110.158]:50132 "EHLO
-	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757566Ab2DTTdH (ORCPT
+	id S1757580Ab2DTTdP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Apr 2012 15:33:15 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:58594 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751657Ab2DTTdH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 20 Apr 2012 15:33:07 -0400
-From: John Stultz <john.stultz@linaro.org>
-To: Linux Kernel <linux-kernel@vger.kernel.org>
-Cc: John Stultz <john.stultz@linaro.org>, Colin Cross <ccross@android.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Greg KH <gregkh@linuxfoundation.org>,
-        Android Kernel Team <kernel-team@android.com>
-Subject: [PATCH 0/4] Android Alarm Driver Cleanups (for staging-next/3.5)
-Date: Fri, 20 Apr 2012 12:31:43 -0700
-Message-Id: <1334950307-403-1-git-send-email-john.stultz@linaro.org>
-X-Mailer: git-send-email 1.7.3.2.146.gca209
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12042019-7408-0000-0000-00000461CD7A
+Date: Fri, 20 Apr 2012 12:32:45 -0700 (PDT)
+From: Hugh Dickins <hughd@google.com>
+X-X-Sender: hugh@eggly.anvils
+To: Linus Torvalds <torvalds@linux-foundation.org>
+cc: Al Viro <viro@zeniv.linux.org.uk>, linux-fsdevel@vger.kernel.org,
+        James Morris <jmorris@namei.org>,
+        linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org,
+        David Safford <safford@linux.vnet.ibm.com>,
+        Dmitry Kasatkin <dmitry.kasatkin@intel.com>,
+        Mimi Zohar <zohar@linux.vnet.ibm.com>,
+        David Miller <davem@davemloft.net>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [RFC] situation with fput() locking (was Re: [PULL REQUEST] :
+ ima-appraisal patches)
+In-Reply-To: <CA+55aFwVJ7SFbb3ZVxnon-Vv19pbNvUN4oungH479q7DUjBtwQ@mail.gmail.com>
+Message-ID: <alpine.LSU.2.00.1204201229020.1614@eggly.anvils>
+References: <1334754302.2137.8.camel@falcor> <alpine.LRH.2.02.1204190101380.30151@tundra.namei.org> <1334772473.2137.22.camel@falcor> <20120418183938.GH6589@ZenIV.linux.org.uk> <1334865448.2429.35.camel@falcor> <20120420004303.GB6871@ZenIV.linux.org.uk>
+ <alpine.LSU.2.00.1204201133340.1450@eggly.anvils> <20120420190418.GK6871@ZenIV.linux.org.uk> <CA+55aFwVJ7SFbb3ZVxnon-Vv19pbNvUN4oungH479q7DUjBtwQ@mail.gmail.com>
+User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch-set moves the Android alarm driver in staging to use
-the upstreamed CLOCK_BOOTTIME and alarmtimer interfaces, allowing
-us to greatly shrink the alarm driver.
+On Fri, 20 Apr 2012, Linus Torvalds wrote:
+> On Fri, Apr 20, 2012 at 12:04 PM, Al Viro <viro@zeniv.linux.org.uk> wrote:
+> >
+> > Deferring the final pass after dropping ->mmap_sem is going to be
+> > interesting; what would protect ->vm_next on those suckers?
+> 
+> Just remove them from the active list, and keep them linked to each
+> other using vm_next.
+> 
+> After all, the only case we care about is the case where the vma gets
+> removed entirely, so we just put them on their own list.
+> 
+> In fact, that's what we already do for other reasons. See
+> detach_vmas_to_be_unmapped().
+> 
+> So vm_next is actually entirely *private* by this time, and needs no
+> locking at all.
+> 
+> As far as I can tell, we could just make do_munmap() return that
+> private list, and then do the fput's and freeing of the list outside
+> the mmap_sem lock.
+> 
+> That actually looks pretty simple. There are a fair number of callers,
+> which looks to be the main annoyance. But fixing it up with some
+> pattern of "do finish_munmap after drooping the mmap_sem" doesn't look
+> *complicated*, just slightly annoying.
+> 
+> The *bigger* annoyance is actually "do_mmap()", which does a
+> do_munmap() as part of it, so it needs the same cleanup too.
+> 
+> There might be other cases that do munmap as part of their operation
+> (and that have the mmap_sem held outside of the caller), but
+> do_munmap() and do_mmap() seem to be the two obvious ones.
+> 
+> Many of the callers seem to do the mmap_sem() right around the call,
+> though (see binfmt_elf.c for example), so it really would be a rather
+> local fixup.
 
-The Google Android team has been using these patches in its AOSP tree
-for a little while without any reported issues.
+Yes, that's exactly how I was thinking of it.
 
-The only gotcha is that I needed to make one alarmtimer interface
-non-static in order to support the android alarm driver. This sort
-of is a grey area for the staging tree, but I'm the author of the
-upstreamed alarmtimer code, and Thomas (cc'ed) had no objection
-to this patch going in via the staging tree, instead of -tip so 
-this should be ok (and much simpler then dealing with
-cross-maintainer dependencies).
-
-Greg: Would you mind applying this set to staging-next for 3.5?
-
-thanks
--john
-
-CC: Colin Cross <ccross@android.com>
-CC: Thomas Gleixner <tglx@linutronix.de>
-CC: Greg KH <gregkh@linuxfoundation.org>
-CC: Android Kernel Team <kernel-team@android.com>
-
-John Stultz (4):
-  android-alarm: Convert ALARM_ELAPSED_REALTIME to use CLOCK_BOOTTIME
-  alarmtimer: Provide accessor to alarmtimer rtc device
-  android-alarm: Rework alarm-dev.c to use upstreamed alarmtimers
-  android-alarm: Remove unused android alarm in-kernel interfaces
-
- drivers/staging/android/Kconfig         |   21 +-
- drivers/staging/android/Makefile        |    1 -
- drivers/staging/android/alarm-dev.c     |  111 +++++-
- drivers/staging/android/alarm.c         |  601 -------------------------------
- drivers/staging/android/android_alarm.h |   59 ---
- include/linux/alarmtimer.h              |    3 +
- kernel/time/alarmtimer.c                |    4 +-
- 7 files changed, 106 insertions(+), 694 deletions(-)
- delete mode 100644 drivers/staging/android/alarm.c
-
--- 
-1.7.3.2.146.gca209
-
+Hugh
