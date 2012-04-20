@@ -1,75 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756861Ab2DTAVk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Apr 2012 20:21:40 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:52874 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753934Ab2DTAVi (ORCPT
+	id S1756921Ab2DTAVu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Apr 2012 20:21:50 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:45178 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753934Ab2DTAVr convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Apr 2012 20:21:38 -0400
-Date: Thu, 19 Apr 2012 17:21:25 -0700
-From: tip-bot for David Daney <david.daney@cavium.com>
-Message-ID: <tip-d219e2e86a407035303b987e4184ca0b1de53257@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        david.daney@cavium.com, tglx@linutronix.de, hpa@linux.intel.com
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        david.daney@cavium.com, tglx@linutronix.de, hpa@linux.intel.com
-In-Reply-To: <1334872799-14589-3-git-send-email-ddaney.cavm@gmail.com>
-References: <1334872799-14589-3-git-send-email-ddaney.cavm@gmail.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/extable] extable: Skip sorting if sorted at build time.
-Git-Commit-ID: d219e2e86a407035303b987e4184ca0b1de53257
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Thu, 19 Apr 2012 20:21:47 -0400
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Thu, 19 Apr 2012 17:21:31 -0700 (PDT)
+In-Reply-To: <Pine.LNX.4.64.1204200023500.2110@axis700.grange>
+References: <20120419020136.GB3443@windriver.com> <878vhrjs6x.fsf@laptop.org> <Pine.LNX.4.64.1204200023500.2110@axis700.grange>
+From: Paul Gortmaker <paul.gortmaker@windriver.com>
+Date: Thu, 19 Apr 2012 20:21:15 -0400
+X-Google-Sender-Auth: ioGlDeZ6nFbV66m_GxeeuqH7d00
+Message-ID: <CAP=VYLpQ7zMReYn-6OoZUnok7dGKS5C+Fdb2BU2FHZTM5wvpBg@mail.gmail.com>
+Subject: Re: linux-next: triage for April 18, 2012
+To: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+Cc: Chris Ball <cjb@laptop.org>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Magnus Damm <magnus.damm@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  d219e2e86a407035303b987e4184ca0b1de53257
-Gitweb:     http://git.kernel.org/tip/d219e2e86a407035303b987e4184ca0b1de53257
-Author:     David Daney <david.daney@cavium.com>
-AuthorDate: Thu, 19 Apr 2012 14:59:56 -0700
-Committer:  H. Peter Anvin <hpa@linux.intel.com>
-CommitDate: Thu, 19 Apr 2012 15:06:55 -0700
+On Thu, Apr 19, 2012 at 6:24 PM, Guennadi Liakhovetski
+<g.liakhovetski@gmx.de> wrote:
+> On Thu, 19 Apr 2012, Chris Ball wrote:
+>
+>> Hi,
+>>
+>> On Wed, Apr 18 2012, Paul Gortmaker wrote:
+>> > ARM:mackerel_defconfig,ag5evm_defconfig
+>> >     when:   Apr 19 (possibly earlier?)
+>> >     why:    pfc-sh7372.c: undefined reference to `mmc_detect_change'
+>> >     why:    pfc-sh73a0.c: undefined reference to `mmc_detect_change'
+>> >     status:
+>> >     fix:
+>> >     ref:    http://kisskb.ellerman.id.au/kisskb/buildresult/6131930/
+>> >     ref:    http://kisskb.ellerman.id.au/kisskb/buildresult/6131908/
+>>
+>> Adding Guennadi and Magnus to CC for this error (which is coming from
+>> tmio_mmc_cd_wakeup).
+>
+> ...waiting for these patches to make it in:
 
-extable: Skip sorting if sorted at build time.
+Thanks for the update, I'll add those links while we are waiting.
 
-If the build program sortextable has already sorted the exception
-table, don't sort it again.
+P.
 
-Signed-off-by: David Daney <david.daney@cavium.com>
-Link: http://lkml.kernel.org/r/1334872799-14589-3-git-send-email-ddaney.cavm@gmail.com
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
----
- kernel/extable.c |    8 +++++++-
- 1 files changed, 7 insertions(+), 1 deletions(-)
-
-diff --git a/kernel/extable.c b/kernel/extable.c
-index 5339705..fe35a63 100644
---- a/kernel/extable.c
-+++ b/kernel/extable.c
-@@ -35,10 +35,16 @@ DEFINE_MUTEX(text_mutex);
- extern struct exception_table_entry __start___ex_table[];
- extern struct exception_table_entry __stop___ex_table[];
- 
-+/* Cleared by build time tools if the table is already sorted. */
-+u32 __initdata main_extable_sort_needed = 1;
-+
- /* Sort the kernel's built-in exception table */
- void __init sort_main_extable(void)
- {
--	sort_extable(__start___ex_table, __stop___ex_table);
-+	if (main_extable_sort_needed)
-+		sort_extable(__start___ex_table, __stop___ex_table);
-+	else
-+		pr_notice("__ex_table already sorted, skipping sort\n");
- }
- 
- /* Given an address, look for it in the exception tables. */
+>
+> http://article.gmane.org/gmane.linux.ports.sh.devel/14412
+> http://article.gmane.org/gmane.linux.ports.sh.devel/14413
+>
+> Thanks
+> Guennadi
+> ---
+> Guennadi Liakhovetski, Ph.D.
+> Freelance Open-Source Software Developer
+> http://www.open-technology.de/
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-next" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
