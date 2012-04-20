@@ -1,66 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754267Ab2DTTZG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Apr 2012 15:25:06 -0400
-Received: from mail.df.lth.se ([194.47.250.12]:16217 "EHLO mail.df.lth.se"
+	id S1756673Ab2DTT3l (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Apr 2012 15:29:41 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:36573 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752665Ab2DTTZE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Apr 2012 15:25:04 -0400
-From: "Linus Walleij" <linus.walleij@linaro.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, Linus Walleij <linus.walleij@linaro.org>
-Subject: [GIT PULL] pinctrl fixes for v3.4
-Date: Fri, 20 Apr 2012 21:24:42 +0200
-Message-Id: <1334949882-5617-1-git-send-email-linus.walleij@linaro.org>
-X-Mailer: git-send-email 1.7.7.6
+	id S1755095Ab2DTT3k (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Apr 2012 15:29:40 -0400
+Date: Fri, 20 Apr 2012 21:29:37 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: Sam Ravnborg <sam@ravnborg.org>
+Cc: Tejun Heo <tj@kernel.org>, yinghai@kernel.org, linux-mm@kvack.org,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: Weirdness in __alloc_bootmem_node_high
+Message-ID: <20120420192937.GE15021@tiehlicka.suse.cz>
+References: <20120417155502.GE22687@tiehlicka.suse.cz>
+ <20120420182907.GG32324@google.com>
+ <20120420191418.GA3569@merkur.ravnborg.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120420191418.GA3569@merkur.ravnborg.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri 20-04-12 21:14:18, Sam Ravnborg wrote:
+> On Fri, Apr 20, 2012 at 11:29:07AM -0700, Tejun Heo wrote:
+> > On Tue, Apr 17, 2012 at 05:55:02PM +0200, Michal Hocko wrote:
+> > > Hi,
+> > > I just come across the following condition in __alloc_bootmem_node_high
+> > > which I have hard times to understand. I guess it is a bug and we need
+> > > something like the following. But, to be honest, I have no idea why we
+> > > care about those 128MB above MAX_DMA32_PFN.
+> > > ---
+> > >  mm/bootmem.c |    2 +-
+> > >  1 file changed, 1 insertion(+), 1 deletion(-)
+> > > 
+> > > diff --git a/mm/bootmem.c b/mm/bootmem.c
+> > > index 0131170..5adb072 100644
+> > > --- a/mm/bootmem.c
+> > > +++ b/mm/bootmem.c
+> > > @@ -737,7 +737,7 @@ void * __init __alloc_bootmem_node_high(pg_data_t *pgdat, unsigned long size,
+> > >  	/* update goal according ...MAX_DMA32_PFN */
+> > >  	end_pfn = pgdat->node_start_pfn + pgdat->node_spanned_pages;
+> > >  
+> > > -	if (end_pfn > MAX_DMA32_PFN + (128 >> (20 - PAGE_SHIFT)) &&
+> > > +	if (end_pfn > MAX_DMA32_PFN + (128 << (20 - PAGE_SHIFT)) &&
+> > >  	    (goal >> PAGE_SHIFT) < MAX_DMA32_PFN) {
+> > >  		void *ptr;
+> > >  		unsigned long new_goal;
+> > 
+> > Regardless of x86 not using it, this is a bug fix and this code path
+> > seems to be used by mips at least.
+> 
+> I took a quick look at this.
+> __alloc_bootmem_node_high() is used in mm/sparse.c - but only
+> if SPARSEMEM_VMEMMAP is enabled.
 
------BEGIN PGP SIGNED MESSAGE-----
-Hash: SHA1
+This is what I can see in the current (Linus) git:
+./arch/sparc/Kconfig:   select SPARSEMEM_VMEMMAP_ENABLE
+./arch/powerpc/Kconfig: select SPARSEMEM_VMEMMAP_ENABLE
+./arch/ia64/Kconfig:    select SPARSEMEM_VMEMMAP_ENABLE
+./arch/s390/Kconfig:    select SPARSEMEM_VMEMMAP_ENABLE
+./arch/s390/Kconfig:    select SPARSEMEM_VMEMMAP
+./arch/x86/Kconfig:     select SPARSEMEM_VMEMMAP_ENABLE if X86_64
 
-Hi Linus,
+So there are more arches which enable SPARSEMEM_VMEMMAP so the function
+is used. Or am I missing something?
 
-Here is a signed tag of the latest pin control fixes.
-
-- - Fixed compilation errors and warnings
-- - Stricter checks on the ops vtable
-
-Not much, still something.
-
-The following changes since commit 0034102808e0dbbf3a2394b82b1bb40b5778de9e:
-
-  Linux 3.4-rc2 (2012-04-07 18:30:41 -0700)
-
-are available in the git repository at:
-  git://git.kernel.org/pub/scm/linux/kernel/git/linusw/linux-pinctrl.git for-torvalds-20120418
-
-Dong Aisheng (1):
-      pinctrl: fix compile error if not select PINMUX support
-
-Stephen Warren (2):
-      pinctrl: include <linux/bug.h> to prevent compile errors
-      pinctrl: implement pinctrl_check_ops
-
- drivers/pinctrl/core.c          |   25 +++++++++++++++++++++----
- include/linux/pinctrl/machine.h |    4 +++-
- 2 files changed, 24 insertions(+), 5 deletions(-)
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJPkbdQAAoJEEEQszewGV1zyd8P/3BYsv8yjt/rJh41DMtD1GE+
-smk4KY986oC0y/q/0H/OFFlbcVm7qCcojDY2X25q7G1ct4fQYUG3GqACk+EMfpl5
-JX9wkI1ABYL1vpYO+SPELMUMcu1LKB6CHukPy2Fz/oMyKZX50AyTr+hkvtpUkEZx
-tn7ldfloDOIPDS6a/ryUtNma6NM3qsFc26Z+20uypMJz4NMrPbEE71PObmMHhfnH
-cXuztL2a4h1jwO/y8sNVUM19ZZwxw/gLfbMnWAUeww0zj4pEcvLyvzy4IWW4KmVC
-nzJ5XvBw+mlymcvJBB2XaM/xqkpOFkUfBDx4CrnpewMdRzHTGxmeGecKB8UI+Yar
-yfz5DxwhaJGquRKp2m/JFPyHxRRU+TE2R7dxUbSaQ0zmdxv6+LukNNVSmgcZbjm9
-kHlB4nRWRXX4KOpMbFvUqmF0YIs2Cc7/QN6+P6ZJSYvGjwdQYkuRS3ZgxertBa7E
-/aAGETXKjgmq+iWa+sNRF9OkW4jc1nRZGvrLL9BHLH4QiZeZPtL179KwvhYsBQq4
-hypiU6q4GulArX5a1TsPNF6eJpRWvp7A5iS2wGEbpg3uBKpf11hlzJ86ONhcq1Pt
-vp4EUIoY50NhuaxqR48UKXcGO8mJdZ+kVp3YOguEroXb/JqjVLPQYJUe91M2hVSm
-tb3rBGX+f+URQr1ZE72z
-=VOD4
------END PGP SIGNATURE-----
+-- 
+Michal Hocko
+SUSE Labs
+SUSE LINUX s.r.o.
+Lihovarska 1060/12
+190 00 Praha 9    
+Czech Republic
