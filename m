@@ -1,45 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932837Ab2DTPIa (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Apr 2012 11:08:30 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:38113 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932531Ab2DTPI1 (ORCPT
+	id S932789Ab2DTPHm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Apr 2012 11:07:42 -0400
+Received: from g4t0016.houston.hp.com ([15.201.24.19]:24320 "EHLO
+	g4t0016.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932425Ab2DTPHi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Apr 2012 11:08:27 -0400
-From: Wolfram Sang <w.sang@pengutronix.de>
-To: devicetree-discuss@lists.ozlabs.org
-Cc: Wolfram Sang <w.sang@pengutronix.de>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Randy Dunlap <rdunlap@xenotime.net>,
-        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] devicetree: bindings: gpio-i2c belongs to i2c not gpio
-Date: Fri, 20 Apr 2012 17:08:02 +0200
-Message-Id: <1334934487-19201-1-git-send-email-w.sang@pengutronix.de>
-X-Mailer: git-send-email 1.7.9.5
-X-SA-Exim-Connect-IP: 2001:6f8:1178:4:5054:ff:fe8d:eefb
-X-SA-Exim-Mail-From: w.sang@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+	Fri, 20 Apr 2012 11:07:38 -0400
+Subject: [PATCH 15/17] hpsa: add new RAID level "1(ADM)"
+To: james.bottomley@hansenpartnership.com
+From: "Stephen M. Cameron" <scameron@beardog.cce.hp.com>
+Cc: linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        matthew.gates@hp.com, stephenmcameron@gmail.com, thenzl@redhat.com,
+        akpm@linux-foundation.org, mikem@beardog.cce.hp.com
+Date: Fri, 20 Apr 2012 10:07:37 -0500
+Message-ID: <20120420150737.10596.86902.stgit@beardog.cce.hp.com>
+In-Reply-To: <20120420150349.10596.73732.stgit@beardog.cce.hp.com>
+References: <20120420150349.10596.73732.stgit@beardog.cce.hp.com>
+User-Agent: StGit/0.15
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-gpio-i2c describes an I2C controller (using gpios for data and clock),
-so it must be described in i2c, not gpio.
+From: Mike Miller <mikem@beardog.cce.hp.com>
 
-Signed-off-by: Wolfram Sang <w.sang@pengutronix.de>
+Signed-off-by: Mike Miller <mikem@beardog.cce.hp.com>
+Signed-off-by: Stephen M. Cameron <scameron@beardog.cce.hp.com>
 ---
- .../{gpio/gpio_i2c.txt => i2c/gpio-i2c.txt}        |    0
- 1 file changed, 0 insertions(+), 0 deletions(-)
- rename Documentation/devicetree/bindings/{gpio/gpio_i2c.txt => i2c/gpio-i2c.txt} (100%)
+ drivers/scsi/hpsa.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/Documentation/devicetree/bindings/gpio/gpio_i2c.txt b/Documentation/devicetree/bindings/i2c/gpio-i2c.txt
-similarity index 100%
-rename from Documentation/devicetree/bindings/gpio/gpio_i2c.txt
-rename to Documentation/devicetree/bindings/i2c/gpio-i2c.txt
--- 
-1.7.9.5
+diff --git a/drivers/scsi/hpsa.c b/drivers/scsi/hpsa.c
+index 67a0ad0..8213875 100644
+--- a/drivers/scsi/hpsa.c
++++ b/drivers/scsi/hpsa.c
+@@ -379,7 +379,7 @@ static inline int is_logical_dev_addr_mode(unsigned char scsi3addr[])
+ }
+ 
+ static const char *raid_label[] = { "0", "4", "1(1+0)", "5", "5+1", "ADG",
+-	"UNKNOWN"
++	"1(ADM)", "UNKNOWN"
+ };
+ #define RAID_UNKNOWN (ARRAY_SIZE(raid_label) - 1)
+ 
 
