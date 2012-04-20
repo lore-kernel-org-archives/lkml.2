@@ -1,181 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751952Ab2DTFXS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Apr 2012 01:23:18 -0400
-Received: from va3ehsobe003.messaging.microsoft.com ([216.32.180.13]:39951
-	"EHLO va3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751108Ab2DTFXQ (ORCPT
+	id S1751735Ab2DTF3m (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Apr 2012 01:29:42 -0400
+Received: from mail-pz0-f42.google.com ([209.85.210.42]:51892 "EHLO
+	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750758Ab2DTF3l (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Apr 2012 01:23:16 -0400
-X-SpamScore: -17
-X-BigFish: VPS-17(zz1803M936eK1432N98dKzz1202hzz8275bh8275dhz2dh668h839h944hd25h)
-X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
-X-WSS-ID: 0M2RIYJ-02-0IK-02
-X-M-MSG: 
-Date: Fri, 20 Apr 2012 13:23:01 +0800
-From: Aaron Lu <aaron.lu@amd.com>
-To: Lin Ming <ming.m.lin@intel.com>
-CC: "Rafael J. Wysocki" <rjw@sisk.pl>, lenb <lenb@kernel.org>,
-        linux-acpi <linux-acpi@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, Zhang Rui <rui.zhang@intel.com>,
-        "Huang, Ying" <ying.huang@intel.com>
-Subject: Re: [PATCH v2] ACPI: D3 states cleanup
-Message-ID: <20120420052259.GA21040@localhost.amd.com>
-References: <1334884749.4927.6.camel@minggr>
- <20120420022304.GA3001@localhost.amd.com>
- <1334891953.4927.19.camel@minggr>
+	Fri, 20 Apr 2012 01:29:41 -0400
+Date: Fri, 20 Apr 2012 13:30:17 +0800
+From: Shawn Guo <shawn.guo@linaro.org>
+To: Wolfram Sang <w.sang@pengutronix.de>
+Cc: Dong Aisheng <aisheng.dong@freescale.com>,
+        Huang Shijie <b32955@freescale.com>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Arnd Bergmann <arnd@arndb.de>
+Subject: Re: [PATCH V2 1/3] lib: add support for stmp-style devices
+Message-ID: <20120420053014.GK22219@S2101-09.ap.freescale.net>
+References: <1332368519-22660-1-git-send-email-w.sang@pengutronix.de>
+ <1332368519-22660-2-git-send-email-w.sang@pengutronix.de>
+ <4F73CCC6.6000001@freescale.com>
+ <20120329064320.GA20840@pengutronix.de>
+ <20120418090551.GA30966@shlinux2.ap.freescale.net>
+ <20120418092019.GB2232@pengutronix.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1334891953.4927.19.camel@minggr>
+In-Reply-To: <20120418092019.GB2232@pengutronix.de>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginalArrivalTime: 20 Apr 2012 05:23:01.0943 (UTC) FILETIME=[A7F5CC70:01CD1EB5]
-X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 20, 2012 at 11:19:13AM +0800, Lin Ming wrote:
-> On Fri, 2012-04-20 at 10:23 +0800, Aaron Lu wrote:
-> > Hi,
-> > 
-> > On Fri, Apr 20, 2012 at 09:19:09AM +0800, Lin Ming wrote:
-> > > There are two ACPI D3 states defined now:
-> > > ACPI_STATE_D3 and ACPI_STATE_D3_COLD.
-> > > 
-> > > But the uses of these states are not clear/correct in some code.
-> > > For example, some code refer ACPI_STATE_D3 as D3hot and others refer
-> > > it as D3cold.
-> > > 
-> > > This patch introduces ACPI_STATE_D3_HOT to refer to ACPI D3hot state.
-> > > And changes ACPI_STATE_D3 to refer to ACPI D3cold state only.
-> > > Also redefines ACPI_STATE_D3_COLD the same as ACPI_STATE_D3.
-> > > 
-> > 
-> > With this patch now, if a device has _PS3, then we will set its D3hot
-> > flag valid. This doesn't feel right to me, since per our discussion the
-> > other day, we should assume _PS3 will put the device into D3cold.
-> > 
-> > Or do you mean: if _PS3 is available, then both D3hot and D3cold is
-> > valid from the perspective of acpi, it is the individual driver's
-> > responsibility to decide which state is actually valid and will be used.
+On Wed, Apr 18, 2012 at 11:20:19AM +0200, Wolfram Sang wrote:
+> > If not, i guess include/linux/fsl which already exists may be the
+> > right place.
 > 
-> Right.
+> Which is a bad choice in my book. linux/dma would have been the proper
+> thing for mxs-dma.h, I'd think.
 > 
-> ACPI_STATE_D3(same as ACPI_STATE_D3_COLD now) is always valid.
-> 
+If it already exists, it will be the proper place.  We do not want to
+be too invasive to create folders in include/linux for every subsystem
+for only the need of fsl drivers.
 
-I mean, if _PS3 is available, can we say D3hot is valid?
+On the other hand, I have seen a clear need for include/linux/fsl.
+The following files are all good candidates to be moved there.
 
--Aaron
+  include/linux/fsl_devices.h
+  include/linux/fsl-diu-fb.h
+  include/linux/fsl_hypervisor.h
 
-> Lin Ming
-> 
-> > 
-> > -Aaron
-> > 
-> > > Acked-by: Rafael J. Wysocki <rjw@sisk.pl>
-> > > Signed-off-by: Lin Ming <ming.m.lin@intel.com>
-> > > ---
-> > >  drivers/acpi/power.c   |    2 +-
-> > >  drivers/acpi/scan.c    |    9 +--------
-> > >  drivers/pci/pci-acpi.c |    4 ++--
-> > >  include/acpi/actypes.h |    7 ++++---
-> > >  4 files changed, 8 insertions(+), 14 deletions(-)
-> > > 
-> > > diff --git a/drivers/acpi/power.c b/drivers/acpi/power.c
-> > > index 7049a7d..330bb4d 100644
-> > > --- a/drivers/acpi/power.c
-> > > +++ b/drivers/acpi/power.c
-> > > @@ -631,7 +631,7 @@ int acpi_power_get_inferred_state(struct acpi_device *device, int *state)
-> > >  	 * We know a device's inferred power state when all the resources
-> > >  	 * required for a given D-state are 'on'.
-> > >  	 */
-> > > -	for (i = ACPI_STATE_D0; i < ACPI_STATE_D3; i++) {
-> > > +	for (i = ACPI_STATE_D0; i < ACPI_STATE_D3_HOT; i++) {
-> > >  		list = &device->power.states[i].resources;
-> > >  		if (list->count < 1)
-> > >  			continue;
-> > > diff --git a/drivers/acpi/scan.c b/drivers/acpi/scan.c
-> > > index 767e2dc..fbf38ad 100644
-> > > --- a/drivers/acpi/scan.c
-> > > +++ b/drivers/acpi/scan.c
-> > > @@ -869,7 +869,7 @@ static int acpi_bus_get_power_flags(struct acpi_device *device)
-> > >  	/*
-> > >  	 * Enumerate supported power management states
-> > >  	 */
-> > > -	for (i = ACPI_STATE_D0; i <= ACPI_STATE_D3; i++) {
-> > > +	for (i = ACPI_STATE_D0; i <= ACPI_STATE_D3_HOT; i++) {
-> > >  		struct acpi_device_power_state *ps = &device->power.states[i];
-> > >  		char object_name[5] = { '_', 'P', 'R', '0' + i, '\0' };
-> > >  
-> > > @@ -884,13 +884,6 @@ static int acpi_bus_get_power_flags(struct acpi_device *device)
-> > >  				acpi_bus_add_power_resource(ps->resources.handles[j]);
-> > >  		}
-> > >  
-> > > -		/* The exist of _PR3 indicates D3Cold support */
-> > > -		if (i == ACPI_STATE_D3) {
-> > > -			status = acpi_get_handle(device->handle, object_name, &handle);
-> > > -			if (ACPI_SUCCESS(status))
-> > > -				device->power.states[ACPI_STATE_D3_COLD].flags.valid = 1;
-> > > -		}
-> > > -
-> > >  		/* Evaluate "_PSx" to see if we can do explicit sets */
-> > >  		object_name[2] = 'S';
-> > >  		status = acpi_get_handle(device->handle, object_name, &handle);
-> > > diff --git a/drivers/pci/pci-acpi.c b/drivers/pci/pci-acpi.c
-> > > index 0f150f2..1929c0c 100644
-> > > --- a/drivers/pci/pci-acpi.c
-> > > +++ b/drivers/pci/pci-acpi.c
-> > > @@ -200,7 +200,7 @@ static pci_power_t acpi_pci_choose_state(struct pci_dev *pdev)
-> > >  		return PCI_D1;
-> > >  	case ACPI_STATE_D2:
-> > >  		return PCI_D2;
-> > > -	case ACPI_STATE_D3:
-> > > +	case ACPI_STATE_D3_HOT:
-> > >  		return PCI_D3hot;
-> > >  	case ACPI_STATE_D3_COLD:
-> > >  		return PCI_D3cold;
-> > > @@ -223,7 +223,7 @@ static int acpi_pci_set_power_state(struct pci_dev *dev, pci_power_t state)
-> > >  		[PCI_D0] = ACPI_STATE_D0,
-> > >  		[PCI_D1] = ACPI_STATE_D1,
-> > >  		[PCI_D2] = ACPI_STATE_D2,
-> > > -		[PCI_D3hot] = ACPI_STATE_D3,
-> > > +		[PCI_D3hot] = ACPI_STATE_D3_HOT,
-> > >  		[PCI_D3cold] = ACPI_STATE_D3
-> > >  	};
-> > >  	int error = -EINVAL;
-> > > diff --git a/include/acpi/actypes.h b/include/acpi/actypes.h
-> > > index eba6604..e8bcc47 100644
-> > > --- a/include/acpi/actypes.h
-> > > +++ b/include/acpi/actypes.h
-> > > @@ -499,9 +499,10 @@ typedef u64 acpi_integer;
-> > >  #define ACPI_STATE_D0                   (u8) 0
-> > >  #define ACPI_STATE_D1                   (u8) 1
-> > >  #define ACPI_STATE_D2                   (u8) 2
-> > > -#define ACPI_STATE_D3                   (u8) 3
-> > > -#define ACPI_STATE_D3_COLD              (u8) 4
-> > > -#define ACPI_D_STATES_MAX               ACPI_STATE_D3_COLD
-> > > +#define ACPI_STATE_D3_HOT               (u8) 3
-> > > +#define ACPI_STATE_D3                   (u8) 4
-> > > +#define ACPI_STATE_D3_COLD              ACPI_STATE_D3
-> > > +#define ACPI_D_STATES_MAX               ACPI_STATE_D3
-> > >  #define ACPI_D_STATE_COUNT              5
-> > >  
-> > >  #define ACPI_STATE_C0                   (u8) 0
-> > > -- 
-> > > 1.7.2.5
-> > > 
-> > > 
-> > > 
-> > > 
-> > 
-> 
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-> 
+IMO, include/linux/stmp_device.h is just another good candidate.
 
+Oh, today I was asked by Fabio where is the good place for ssp-regs.h
+which will be shared by mxs-mmc and spi-mxs, as we are cleaning up
+<mach/*> from drivers.  I told him include/linux/fsl.
+
+-- 
+Regards,
+Shawn
