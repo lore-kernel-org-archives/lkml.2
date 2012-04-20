@@ -1,61 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757340Ab2DTSLj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Apr 2012 14:11:39 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:6802 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754830Ab2DTSLh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Apr 2012 14:11:37 -0400
-Subject: Re: remove unnecessary ftrace WARN_ONCE's.
-From: Steven Rostedt <srostedt@redhat.com>
-To: Dave Jones <davej@redhat.com>
-Cc: Linux Kernel <linux-kernel@vger.kernel.org>, laijs@cn.fujitsu.com,
-        fweisbec@gmail.com, mingo@elte.hu
-In-Reply-To: <20120420170356.GC2168@redhat.com>
-References: <20120412023132.GA7035@redhat.com>
-	 <20120420170356.GC2168@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-Organization: Red Hat
-Date: Fri, 20 Apr 2012 14:11:23 -0400
-Message-ID: <1334945483.5763.2.camel@fedora>
-Mime-Version: 1.0
+	id S1757360Ab2DTSTU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Apr 2012 14:19:20 -0400
+Received: from mx0b-00082601.pphosted.com ([67.231.153.30]:52152 "EHLO
+	mx0a-00082601.pphosted.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1754830Ab2DTSTS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Apr 2012 14:19:18 -0400
+Message-ID: <4F91A868.6090803@fb.com>
+Date: Fri, 20 Apr 2012 11:18:16 -0700
+From: Arun Sharma <asharma@fb.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:11.0) Gecko/20120327 Thunderbird/11.0.1
+MIME-Version: 1.0
+To: Peter Zijlstra <peterz@infradead.org>
+CC: <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>,
+        "Arnaldo Carvalho de Melo" <acme@redhat.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
+        "Stephane Eranian" <eranian@google.com>,
+        Namhyung Kim <namhyung.kim@lge.com>,
+        "Tom Zanussi" <tzanussi@gmail.com>, <linux-perf-users@vger.kernel.org>,
+        "Linus Torvalds" <torvalds@linux-foundation.org>
+Subject: Re: [PATCH] perf, x86: Disable sanity check
+References: <1334791449-402-1-git-send-email-asharma@fb.com> <1334913084.2463.29.camel@laptop>
+In-Reply-To: <1334913084.2463.29.camel@laptop>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
 Content-Transfer-Encoding: 7bit
+X-Originating-IP: [192.168.18.252]
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.6.7580,1.0.260,0.0.0000
+ definitions=2012-04-20_06:2012-04-20,2012-04-20,1970-01-01 signatures=0
+X-Proofpoint-Spam-Reason: safe
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2012-04-20 at 13:03 -0400, Dave Jones wrote:
-> On Wed, Apr 11, 2012 at 10:31:32PM -0400, Dave Jones wrote:
->  > These warnings are trivially triggerable by any user, and serve no useful purpose afaics
->  > Just -EINVAL and be done.
->  > 
->  > Signed-off-by: Dave Jones <davej@redhat.com>
->  > 
->  > diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
->  > index ed7b5d1..a745317 100644
->  > --- a/kernel/trace/trace.c
->  > +++ b/kernel/trace/trace.c
->  > @@ -4136,13 +4136,11 @@ tracing_buffers_splice_read(struct file *file, loff_t *ppos,
->  >  		return -ENOMEM;
->  >  
->  >  	if (*ppos & (PAGE_SIZE - 1)) {
->  > -		WARN_ONCE(1, "Ftrace: previous read must page-align\n");
->  >  		ret = -EINVAL;
->  >  		goto out;
->  >  	}
->  >  
->  >  	if (len & (PAGE_SIZE - 1)) {
->  > -		WARN_ONCE(1, "Ftrace: splice_read should page-align\n");
->  >  		if (len < PAGE_SIZE) {
->  >  			ret = -EINVAL;
->  >  			goto out;
->  > --
-> 
-> Anyone want to pick this up, or shall I just send it to Linus myself ?
+On 4/20/12 2:11 AM, Peter Zijlstra wrote:
+> Makes me really nervous.. Ingo, Linus ?
+>
+> 'normal' usespace can suffer from this too with signal stacks. Arun's
+> JIT case seems particularly weird in that his stacks don't strictly nest
+> but can cross over multiple times (makes one wonder why they bother with
+> multiple stacks..).
 
-I can pick this up, if you don't mind them going in on 3.5. As they are
-only WARN_ONCE errors, I don't think they are that big of a deal.
+It's a tracing JIT, which dynamically chooses between interpreted mode 
+and JIT mode. Translation is not necessarily a function at a time and 
+has to be guarded by types inferred at runtime. Each time they switch 
+between the two modes, they need to examine the non-native frames on the 
+stack. With a single stack design, they'd have to unwind the stack 
+looking for native frames vs JIT frames which adds complexity and cost.
 
--- Steve
+Like you observed, this is needed for other less complex cases as well.
 
+  -Arun
 
