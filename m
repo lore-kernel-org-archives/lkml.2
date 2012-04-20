@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754366Ab2DTNHh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Apr 2012 09:07:37 -0400
-Received: from www.linutronix.de ([62.245.132.108]:44821 "EHLO
+	id S1753879Ab2DTNIK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Apr 2012 09:08:10 -0400
+Received: from www.linutronix.de ([62.245.132.108]:44807 "EHLO
 	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752821Ab2DTNGA (ORCPT
+	with ESMTP id S1752593Ab2DTNF7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Apr 2012 09:06:00 -0400
-Message-Id: <20120420124557.035417523@linutronix.de>
+	Fri, 20 Apr 2012 09:05:59 -0400
+Message-Id: <20120420124557.855203626@linutronix.de>
 User-Agent: quilt/0.48-1
-Date: Fri, 20 Apr 2012 13:05:44 -0000
+Date: Fri, 20 Apr 2012 13:05:54 -0000
 From: Thomas Gleixner <tglx@linutronix.de>
 To: LKML <linux-kernel@vger.kernel.org>
 Cc: linux-arch@vger.kernel.org, Peter Zijlstra <peterz@infradead.org>,
@@ -17,24 +17,11 @@ Cc: linux-arch@vger.kernel.org, Peter Zijlstra <peterz@infradead.org>,
         "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
         Ingo Molnar <mingo@kernel.org>,
         "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        Matt Turner <mattst88@gmail.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Mike Frysinger <vapier@gentoo.org>,
-        Jesper Nilsson <jesper.nilsson@axis.com>,
-        Richard Kuo <rkuo@codeaurora.org>, Tony Luck <tony.luck@intel.com>,
-        Hirokazu Takata <takata@linux-m32r.org>,
-        Ralf Baechle <ralf@linux-mips.org>,
-        David Howells <dhowells@redhat.com>,
-        "James E.J. Bottomley" <jejb@parisc-linux.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Paul Mundt <lethal@linux-sh.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        Chris Metcalf <cmetcalf@tilera.com>,
-        Richard Weinberger <richard@nod.at>, x86@kernel.org
-Subject: [patch 03/18] smp: Add generic smpboot facility
+        Paul Mundt <lethal@linux-sh.org>
+Subject: [patch 15/18] sh: Use generic idle thread allocation
 References: <20120420122120.097464672@linutronix.de>
-Content-Disposition: inline; filename=smp-add-generic-smpboot-facility.patch
+Content-Disposition: inline;
+ filename=sh-use-generic-idle-thread-allocation.patch
 X-Linutronix-Spam-Score: -1.0
 X-Linutronix-Spam-Level: -
 X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
@@ -42,106 +29,68 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Start a new file, which will hold SMP and CPU hotplug related generic
-infrastructure.
-
 Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-Cc: Matt Turner <mattst88@gmail.com>
-Cc: Russell King <linux@arm.linux.org.uk>
-Cc: Mike Frysinger <vapier@gentoo.org>
-Cc: Jesper Nilsson <jesper.nilsson@axis.com>
-Cc: Richard Kuo <rkuo@codeaurora.org>
-Cc: Tony Luck <tony.luck@intel.com>
-Cc: Hirokazu Takata <takata@linux-m32r.org>
-Cc: Ralf Baechle <ralf@linux-mips.org>
-Cc: David Howells <dhowells@redhat.com>
-Cc: "James E.J. Bottomley" <jejb@parisc-linux.org>
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Cc: Martin Schwidefsky <schwidefsky@de.ibm.com>
 Cc: Paul Mundt <lethal@linux-sh.org>
-Cc: "David S. Miller" <davem@davemloft.net>
-Cc: Chris Metcalf <cmetcalf@tilera.com>
-Cc: Richard Weinberger <richard@nod.at>
-Cc: x86@kernel.org
 ---
- kernel/Makefile  |    1 +
- kernel/cpu.c     |    8 ++++++++
- kernel/smpboot.c |   12 ++++++++++++
- kernel/smpboot.h |    6 ++++++
- 4 files changed, 27 insertions(+)
+ arch/sh/Kconfig                 |    1 +
+ arch/sh/include/asm/processor.h |    4 ----
+ arch/sh/kernel/smp.c            |   14 +-------------
+ 3 files changed, 2 insertions(+), 17 deletions(-)
 
-Index: linux-2.6/kernel/Makefile
+Index: linux-2.6/arch/sh/Kconfig
 ===================================================================
---- linux-2.6.orig/kernel/Makefile
-+++ linux-2.6/kernel/Makefile
-@@ -43,6 +43,7 @@ obj-$(CONFIG_DEBUG_RT_MUTEXES) += rtmute
- obj-$(CONFIG_RT_MUTEX_TESTER) += rtmutex-tester.o
- obj-$(CONFIG_GENERIC_ISA_DMA) += dma.o
- obj-$(CONFIG_SMP) += smp.o
-+obj-$(CONFIG_SMP) += smpboot.o
- ifneq ($(CONFIG_SMP),y)
- obj-y += up.o
- endif
-Index: linux-2.6/kernel/cpu.c
+--- linux-2.6.orig/arch/sh/Kconfig
++++ linux-2.6/arch/sh/Kconfig
+@@ -28,6 +28,7 @@ config SUPERH
+ 	select RTC_LIB
+ 	select GENERIC_ATOMIC64
+ 	select GENERIC_IRQ_SHOW
++	select GENERIC_SMP_IDLE_THREAD
+ 	help
+ 	  The SuperH is a RISC processor targeted for use in embedded systems
+ 	  and consumer electronics; it was also used in the Sega Dreamcast
+Index: linux-2.6/arch/sh/include/asm/processor.h
 ===================================================================
---- linux-2.6.orig/kernel/cpu.c
-+++ linux-2.6/kernel/cpu.c
-@@ -17,6 +17,8 @@
- #include <linux/gfp.h>
- #include <linux/suspend.h>
+--- linux-2.6.orig/arch/sh/include/asm/processor.h
++++ linux-2.6/arch/sh/include/asm/processor.h
+@@ -85,10 +85,6 @@ struct sh_cpuinfo {
+ 	struct tlb_info itlb;
+ 	struct tlb_info dtlb;
  
-+#include "smpboot.h"
-+
- #ifdef CONFIG_SMP
- /* Serializes the updates to cpu_online_mask, cpu_present_mask */
- static DEFINE_MUTEX(cpu_add_remove_lock);
-@@ -300,6 +302,11 @@ static int __cpuinit _cpu_up(unsigned in
- 		return -EINVAL;
- 
- 	cpu_hotplug_begin();
-+
-+	ret = smpboot_prepare(cpu);
-+	if (ret)
-+		goto out;
-+
- 	ret = __cpu_notify(CPU_UP_PREPARE | mod, hcpu, -1, &nr_calls);
- 	if (ret) {
- 		nr_calls--;
-@@ -320,6 +327,7 @@ static int __cpuinit _cpu_up(unsigned in
- out_notify:
- 	if (ret != 0)
- 		__cpu_notify(CPU_UP_CANCELED | mod, hcpu, nr_calls, NULL);
-+out:
- 	cpu_hotplug_done();
- 
- 	return ret;
-Index: linux-2.6/kernel/smpboot.c
+-#ifdef CONFIG_SMP
+-	struct task_struct *idle;
+-#endif
+-
+ 	unsigned int phys_bits;
+ 	unsigned long flags;
+ } __attribute__ ((aligned(L1_CACHE_BYTES)));
+Index: linux-2.6/arch/sh/kernel/smp.c
 ===================================================================
---- /dev/null
-+++ linux-2.6/kernel/smpboot.c
-@@ -0,0 +1,12 @@
-+/*
-+ * Common SMP CPU bringup/teardown functions
-+ */
-+
-+#include "smpboot.h"
-+
-+/**
-+ * smpboot_prepare - generic smpboot preparation
-+ */
-+int __cpuinit smpboot_prepare(unsigned int cpu)
-+{
-+}
-Index: linux-2.6/kernel/smpboot.h
-===================================================================
---- /dev/null
-+++ linux-2.6/kernel/smpboot.h
-@@ -0,0 +1,6 @@
-+#ifndef SMPBOOT_H
-+#define SMPBOOT_H
-+
-+int smpboot_prepare(unsigned int cpu);
-+
-+#endif
+--- linux-2.6.orig/arch/sh/kernel/smp.c
++++ linux-2.6/arch/sh/kernel/smp.c
+@@ -220,22 +220,10 @@ extern struct {
+ 	void *thread_info;
+ } stack_start;
+ 
+-int __cpuinit __cpu_up(unsigned int cpu, struct task_struct *tidle)
++int __cpuinit __cpu_up(unsigned int cpu, struct task_struct *tsk)
+ {
+-	struct task_struct *tsk;
+ 	unsigned long timeout;
+ 
+-	tsk = cpu_data[cpu].idle;
+-	if (!tsk) {
+-		tsk = fork_idle(cpu);
+-		if (IS_ERR(tsk)) {
+-			pr_err("Failed forking idle task for cpu %d\n", cpu);
+-			return PTR_ERR(tsk);
+-		}
+-
+-		cpu_data[cpu].idle = tsk;
+-	}
+-
+ 	per_cpu(cpu_state, cpu) = CPU_UP_PREPARE;
+ 
+ 	/* Fill in data in head.S for secondary cpus */
 
 
