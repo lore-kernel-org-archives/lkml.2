@@ -1,84 +1,144 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754854Ab2DTKvE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Apr 2012 06:51:04 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:49543 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753810Ab2DTKvC convert rfc822-to-8bit (ORCPT
+	id S1754920Ab2DTKvp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Apr 2012 06:51:45 -0400
+Received: from mail-vb0-f46.google.com ([209.85.212.46]:50814 "EHLO
+	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754680Ab2DTKvo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Apr 2012 06:51:02 -0400
+	Fri, 20 Apr 2012 06:51:44 -0400
+Date: Fri, 20 Apr 2012 07:51:49 -0300
+From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+To: David Ahern <dsahern@gmail.com>
+Cc: Ingo Molnar <mingo@kernel.org>, linux-kernel@vger.kernel.org,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
+        Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Stephane Eranian <eranian@google.com>
+Subject: Re: [GIT PULL 00/13] Annotation improvements (G+ edition)
+Message-ID: <20120420105149.GA9679@infradead.org>
+References: <1334867644-2722-1-git-send-email-acme@infradead.org>
+ <4F90A74B.8040001@gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <CAPM=9tzma3o0aeikrqxadGae7MF_QUeQE0_k2ZkgS2tCOcjn9g@mail.gmail.com>
-References: <1334607965-9582-1-git-send-email-mjg@redhat.com>
-	<CAMuHMdVYSajTYmfXjtVRXhz0u=xW0LbQ5BxjR=n7PP77o0dXhw@mail.gmail.com>
-	<CAMuHMdUsMy1i+DSYt+tjGL-JX+DBY=v1JyMEPSyf8RwYCEkvxg@mail.gmail.com>
-	<CAPM=9tzma3o0aeikrqxadGae7MF_QUeQE0_k2ZkgS2tCOcjn9g@mail.gmail.com>
-Date: Fri, 20 Apr 2012 11:51:00 +0100
-Message-ID: <CAPM=9txHkpmTavs+PjW4jHzufQ_R7yYDU3DATVAhbb5MqcJG0Q@mail.gmail.com>
-Subject: Re: [PATCH V2 1/4] vgaarb: Add support for setting the default video device
-From: Dave Airlie <airlied@gmail.com>
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: Matthew Garrett <mjg@redhat.com>, linux-kernel@vger.kernel.org,
-        benh@kernel.crashing.org, airlied@redhat.com,
-        "Linux/m68k" <linux-m68k@vger.kernel.org>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <4F90A74B.8040001@gmail.com>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 20, 2012 at 11:49 AM, Dave Airlie <airlied@gmail.com> wrote:
-> On Wed, Apr 18, 2012 at 10:44 AM, Geert Uytterhoeven
-> <geert@linux-m68k.org> wrote:
->> On Wed, Apr 18, 2012 at 11:37, Geert Uytterhoeven <geert@linux-m68k.org> wrote:
->>> On Mon, Apr 16, 2012 at 22:26, Matthew Garrett <mjg@redhat.com> wrote:
->>>> --- a/include/linux/vgaarb.h
->>>> +++ b/include/linux/vgaarb.h
->>>> @@ -31,6 +31,7 @@
->>>>  #ifndef LINUX_VGA_H
->>>>  #define LINUX_VGA_H
->>>>
->>>> +#include <video/vga.h>
->>>
->>> Is this include really needed? x86_64/allmodconfig builds fine without it.
->>>
->>> It causes m68k/allmodconfig to fail with:
->>>
->>> In file included from include/linux/vgaarb.h:35,
->>>                 from drivers/gpu/drm/drm_irq.c:43:
->>> include/video/vga.h: In function ‘vga_mm_r’:
->>> include/video/vga.h:242: error: implicit declaration of function ‘z_readb’
->>> include/video/vga.h: In function ‘vga_mm_w’:
->>> include/video/vga.h:247: error: implicit declaration of function ‘z_writeb’
->>> include/video/vga.h: In function ‘vga_mm_w_fast’:
->>> include/video/vga.h:253: error: implicit declaration of function ‘z_writew’
->>> make[1]: *** [drivers/gpu/drm/drm_irq.o] Error 1
->>>
->>> http://kisskb.ellerman.id.au/kisskb/buildresult/6127136/
->>>
->>> Currently <video/vga.h> has a crude hack to make cirrusfb work on Amiga,
->>> but that's the only VGA support m68k has.
->>> There's also no <asm/vga.h>, so m68k/allmodconfig with CONFIG_AMIGA
->>> disabled now fails with:
->>>
->>> In file included from include/linux/vgaarb.h:34,
->>>                 from drivers/gpu/drm/drm_irq.c:42:
->>> include/video/vga.h:23:21: error: asm/vga.h: No such file or directory
->>> make[1]: *** [drivers/gpu/drm/drm_irq.o] Error 1
->>>
->>> Removing the #include <video/vga.h> fixes both cases.
->>
->> Anyway, I'll move the hack for cirrusfb on Amiga to <asm/vga.h> on m68k.
->>
->> You still may want to remove the include of <video/vga.h> if it's not needed.
->
-> I don't think its necessary, I'm dropping it here. should be gone in
-> -next soon after.
->
+Em Thu, Apr 19, 2012 at 06:01:15PM -0600, David Ahern escreveu:
+> Something hosed up on your send: I only have 9 of the 13, I don't
+> see the missing ones here: https://lkml.org/lkml/2012/4/19/, and the
+> subject line on the lkml summary page is messed up.
 
-Of course then I read the rest of the patches, and yes patch 4/4 would need it
-so we pick up the __ARCH_HAS define, unless we can think of a better
-place to put that.
+Subject line probably was git send-email asking if I wanted it to be
+UTF-8, due to the vertical line characters :-\
 
-Dave.
-> Dave.
+The others I'm checking now, but its all at git.k.o.
+
+- Arnaldo
+ 
+> David
+> 
+> 
+> On 4/19/12 2:33 PM, Arnaldo Carvalho de Melo wrote:
+> >Hi Ingo,
+> >
+> >	Please consider pulling,
+> >
+> >- Arnaldo
+> >
+> >The following changes since commit a385ec4f11bdcf81af094c03e2444ee9b7fad2e5:
+> >
+> >   Merge tag 'v3.4-rc2' into perf/core (2012-04-13 09:57:10 +0200)
+> >
+> >are available in the git repository at:
+> >
+> >
+> >   git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux perf/annotate
+> >
+> >for you to fetch changes up to 3f862fd076275c442dfe295eddb5650a6e0aecd4:
+> >
+> >   perf annotate: Add missing jump variants (2012-04-19 17:10:12 -0300)
+> >
+> >----------------------------------------------------------------
+> >Annotate improvements
+> >
+> >Now the default annotate browser uses a much more compact format, implementing
+> >suggestions made made by several people, notably Linus.
+> >
+> >Here is part of the new __list_del_entry annotation:
+> >
+> >__list_del_entry
+> >     8.47 â”‚      push   %rbp
+> >     8.47 â”‚      mov    (%rdi),%rdx
+> >    20.34 â”‚      mov    $0xdead000000100100,%rcx
+> >     3.39 â”‚      mov    0x8(%rdi),%rax
+> >     0.00 â”‚      mov    %rsp,%rbp
+> >     1.69 â”‚      cmp    %rcx,%rdx
+> >     0.00 â”‚      je     43
+> >     1.69 â”‚      mov    $0xdead000000200200,%rcx
+> >     3.39 â”‚      cmp    %rcx,%rax
+> >     0.00 â”‚      je     a3
+> >     5.08 â”‚      mov    (%rax),%r8
+> >    18.64 â”‚      cmp    %r8,%rdi
+> >     0.00 â”‚      jne    84
+> >     1.69 â”‚      mov    0x8(%rdx),%r8
+> >    25.42 â”‚      cmp    %r8,%rdi
+> >     0.00 â”‚      jne    65
+> >     1.69 â”‚      mov    %rax,0x8(%rdx)
+> >     0.00 â”‚      mov    %rdx,(%rax)
+> >     0.00 â”‚      leaveq
+> >     0.00 â”‚      retq
+> >     0.00 â”‚ 43:  mov    %rdx,%r8
+> >     0.00 â”‚      mov    %rdi,%rcx
+> >     0.00 â”‚      mov    $0xffffffff817cd6a8,%rdx
+> >     0.00 â”‚      mov    $0x31,%esi
+> >     0.00 â”‚      mov    $0xffffffff817cd6e0,%rdi
+> >     0.00 â”‚      xor    %eax,%eax
+> >     0.00 â”‚      callq  ffffffff8104eab0<warn_slowpath_fmt>
+> >     0.00 â”‚      leaveq
+> >     0.00 â”‚      retq
+> >     0.00 â”‚ 65:  mov    %rdi,%rcx
+> >     0.00 â”‚      mov    $0xffffffff817cd780,%rdx
+> >     0.00 â”‚      mov    $0x3a,%esi
+> >     0.00 â”‚      mov    $0xffffffff817cd6e0,%rdi
+> >     0.00 â”‚      xor    %eax,%eax
+> >     0.00 â”‚      callq  ffffffff8104eab0<warn_slowpath_fmt>
+> >     0.00 â”‚      leaveq
+> >     0.00 â”‚      retq
+> >
+> >The infrastructure is there to provide formatters for any instruction,
+> >like the one I'll do for call functions to elide the address.
+> >
+> >Signed-off-by: Arnaldo Carvalho de Melo<acme@redhat.com>
+> >
+> >----------------------------------------------------------------
+> >Arnaldo Carvalho de Melo (13):
+> >       perf annotate: Rename objdump_line to disasm_line
+> >       perf annotate: Parse instruction
+> >       perf annotate browser: Use the disasm_line instruction name and operand fields
+> >       perf annotate: Disassembler instruction parsing
+> >       perf annotate: Parse call targets earlier
+> >       perf annotate: Introduce scnprintf ins_ops method
+> >       perf annotate browser: Rename disasm_line_rb_node
+> >       perf symbols: Introduce symbol__size method
+> >       perf annotate browser: Hide non jump target addresses in offset mode
+> >       perf annotate browser: Align jump labels
+> >       perf annotate browser: Make lines more compact
+> >       perf annotate browser: Use a vertical line as percentage separator
+> >       perf annotate: Add missing jump variants
+> >
+> >  tools/perf/ui/browsers/annotate.c |  323 +++++++++++++++++++++----------------
+> >  tools/perf/util/annotate.c        |  263 +++++++++++++++++++++++++-----
+> >  tools/perf/util/annotate.h        |   32 +++-
+> >  tools/perf/util/symbol.h          |    5 +
+> >  tools/perf/util/util.c            |   10 ++
+> >  tools/perf/util/util.h            |    2 +
+> >  6 files changed, 446 insertions(+), 189 deletions(-)
