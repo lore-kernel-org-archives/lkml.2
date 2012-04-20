@@ -1,43 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756257Ab2DTXAm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Apr 2012 19:00:42 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41433 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751753Ab2DTXAl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Apr 2012 19:00:41 -0400
-Date: Fri, 20 Apr 2012 16:00:39 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: H Hartley Sweeten <hartleys@visionengravers.com>
-Cc: Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC PATCH 0/2] init: make sure syscall arguments are marked
- __user where needed
-Message-Id: <20120420160039.74c49a0c.akpm@linux-foundation.org>
-In-Reply-To: <201204161733.23830.hartleys@visionengravers.com>
-References: <201204161733.23830.hartleys@visionengravers.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1756423Ab2DTXBT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Apr 2012 19:01:19 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:34537 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753982Ab2DTXBR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Apr 2012 19:01:17 -0400
+Message-ID: <4F91EA5B.4000803@zytor.com>
+Date: Fri, 20 Apr 2012 15:59:39 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120329 Thunderbird/11.0.1
+MIME-Version: 1.0
+To: David Daney <ddaney.cavm@gmail.com>
+CC: Ralf Baechle <ralf@linux-mips.org>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, x86@kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Michal Marek <mmarek@suse.cz>, linux-kernel@vger.kernel.org,
+        linux-mips@linux-mips.org, Andrew Morton <akpm@linux-foundation.org>,
+        David Daney <david.daney@cavium.com>
+Subject: Re: [PATCH] scripts: Make sortextable handle relocations.
+References: <1334961679-14562-1-git-send-email-ddaney.cavm@gmail.com>
+In-Reply-To: <1334961679-14562-1-git-send-email-ddaney.cavm@gmail.com>
+X-Enigmail-Version: 1.4
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 16 Apr 2012 17:33:23 -0700
-H Hartley Sweeten <hartleys@visionengravers.com> wrote:
-
-> When using syscall routines in the kernel, some of the arguments
-> should be user pointers but are missing the __user markup. This
-> produces a number of sparse warnings of the format:    
->   
-> warning: incorrect type in argument 1 (different address spaces)
->    expected char [noderef] <asn:1>*dev_name
->    got char *name 
+On 04/20/2012 03:41 PM, David Daney wrote:
+> From: David Daney <david.daney@cavium.com>
 > 
-> Wrap the syscall routines in the private do_mounts.h header so that
-> the appropriate __user markups are added for the init mount code.
+> If there are relocations on the __ex_table section, they must be fixed
+> up after the table is sorted.
+> 
+> Also use the unaligned safe accessors from tools/{be,le}_byteshift.h
+> 
+> Signed-off-by: David Daney <david.daney@cavium.com>
+> ---
+> 
+> This should address HPA's concerns about the i386 relocations.  The
+> i386 kernel still boots after the sort, but I don't know how to test
+> the relocations, but they sure do look nice!  My MIPS64 kernels still
+> boot too, so that is also good.
+> 
 
-This makes rather a mess of do_mounts.c for pretty marginal benefit.
+Hi...
 
-Can we just make "make C=1" skip that file or something?
+This works for absolute relocations of the REL type, but not for
+relocations of the RELA type nor for non-absolute relocations (moving
+those changes the meaning.)
+
+I think Linus is right and the right thing to do is to switch to using
+relative entries in the exception table; I am currently testing a
+patchset to do exactly that (on x86).  It also has the benefit of making
+the table half the size on x86-64.  Then we can just zero out the
+.rel[a]__ex_table section and be done with it.
+
+The trick, of course, is that sorting a relative table is slightly
+different than sorting an absolute table -- the way I'm doing it for the
+in-kernel sorter (still needed for modules) is to add the intra-section
+offset to each entry (both sides) before sorting, then doing a *signed*
+sort, then denormalize again.  Alpha does it differently, with custom
+compare and swap routines.
+
+	-hpa
