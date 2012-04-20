@@ -1,54 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757395Ab2DTS3D (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Apr 2012 14:29:03 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:40933 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754824Ab2DTS3B (ORCPT
+	id S932426Ab2DTS3R (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Apr 2012 14:29:17 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:38237 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932213Ab2DTS3M (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Apr 2012 14:29:01 -0400
-From: Renzo Dani <arons7@gmail.com>
-To: laurent.pinchart@ideasonboard.com
-Cc: mchehab@infradead.org, linux-media@vger.kernel.org,
-        linux-kernel@vger.kernel.org, arons7@gmail.com
-Subject: [PATCH 1/1] Added GenesysLogic BW Microscope device id
-Date: Fri, 20 Apr 2012 20:28:43 +0200
-Message-Id: <1334946523-14618-1-git-send-email-arons7@gmail.com>
-X-Mailer: git-send-email 1.7.3.4
+	Fri, 20 Apr 2012 14:29:12 -0400
+Date: Fri, 20 Apr 2012 11:29:07 -0700
+From: Tejun Heo <tj@kernel.org>
+To: Michal Hocko <mhocko@suse.cz>
+Cc: yinghai@kernel.org, linux-mm@kvack.org,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: Weirdness in __alloc_bootmem_node_high
+Message-ID: <20120420182907.GG32324@google.com>
+References: <20120417155502.GE22687@tiehlicka.suse.cz>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120417155502.GE22687@tiehlicka.suse.cz>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Renzo Dani <arons7@gmail.com>
+On Tue, Apr 17, 2012 at 05:55:02PM +0200, Michal Hocko wrote:
+> Hi,
+> I just come across the following condition in __alloc_bootmem_node_high
+> which I have hard times to understand. I guess it is a bug and we need
+> something like the following. But, to be honest, I have no idea why we
+> care about those 128MB above MAX_DMA32_PFN.
+> ---
+>  mm/bootmem.c |    2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/mm/bootmem.c b/mm/bootmem.c
+> index 0131170..5adb072 100644
+> --- a/mm/bootmem.c
+> +++ b/mm/bootmem.c
+> @@ -737,7 +737,7 @@ void * __init __alloc_bootmem_node_high(pg_data_t *pgdat, unsigned long size,
+>  	/* update goal according ...MAX_DMA32_PFN */
+>  	end_pfn = pgdat->node_start_pfn + pgdat->node_spanned_pages;
+>  
+> -	if (end_pfn > MAX_DMA32_PFN + (128 >> (20 - PAGE_SHIFT)) &&
+> +	if (end_pfn > MAX_DMA32_PFN + (128 << (20 - PAGE_SHIFT)) &&
+>  	    (goal >> PAGE_SHIFT) < MAX_DMA32_PFN) {
+>  		void *ptr;
+>  		unsigned long new_goal;
 
+Regardless of x86 not using it, this is a bug fix and this code path
+seems to be used by mips at least.  Michal, can you please post proper
+signed-off patch?  The code is simply trying to use memory above DMA32
+limit if there seems to be enough space (128M) to avoid unnecessarily
+using DMA32 memory.
 
-Signed-off-by: Renzo Dani <arons7@gmail.com>
----
- drivers/media/video/uvc/uvc_driver.c |   11 ++++++++++-
- 1 files changed, 10 insertions(+), 1 deletions(-)
+Thanks.
 
-diff --git a/drivers/media/video/uvc/uvc_driver.c b/drivers/media/video/uvc/uvc_driver.c
-index 1d13172..b8c94b4 100644
---- a/drivers/media/video/uvc/uvc_driver.c
-+++ b/drivers/media/video/uvc/uvc_driver.c
-@@ -2176,7 +2176,16 @@ static struct usb_device_id uvc_ids[] = {
- 	  .bInterfaceSubClass	= 1,
- 	  .bInterfaceProtocol	= 0,
- 	  .driver_info		= UVC_QUIRK_STREAM_NO_FID },
--	/* Hercules Classic Silver */
-+	/* Genesys Logic USB 2.0 BW Microscope */
-+        { .match_flags          = USB_DEVICE_ID_MATCH_DEVICE
-+                                | USB_DEVICE_ID_MATCH_INT_INFO,
-+          .idVendor             = 0x05e3,
-+          .idProduct            = 0x0511,
-+          .bInterfaceClass      = USB_CLASS_VIDEO,
-+          .bInterfaceSubClass   = 1,
-+          .bInterfaceProtocol   = 0,
-+          .driver_info          = UVC_QUIRK_STREAM_NO_FID },
-+        /* Hercules Classic Silver */
- 	{ .match_flags		= USB_DEVICE_ID_MATCH_DEVICE
- 				| USB_DEVICE_ID_MATCH_INT_INFO,
- 	  .idVendor		= 0x06f8,
 -- 
-1.7.3.4
-
+tejun
