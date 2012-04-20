@@ -1,67 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932650Ab2DTHcK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Apr 2012 03:32:10 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:34408 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932343Ab2DTHcI convert rfc822-to-8bit (ORCPT
+	id S1755937Ab2DTHgE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Apr 2012 03:36:04 -0400
+Received: from mail176c2.megamailservers.com ([69.49.111.76]:57815 "EHLO
+	mail176c2.megamailservers.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754649Ab2DTHgB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Apr 2012 03:32:08 -0400
+	Fri, 20 Apr 2012 03:36:01 -0400
+X-Greylist: delayed 3447 seconds by postgrey-1.27 at vger.kernel.org; Fri, 20 Apr 2012 03:36:01 EDT
+X-Authenticated-User: konrad.gaisler.com
+Message-ID: <4F910312.3010900@gaisler.com>
+Date: Fri, 20 Apr 2012 08:32:50 +0200
+From: Konrad Eisele <konrad@gaisler.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:11.0) Gecko/20120312 Firefox/11.0 SeaMonkey/2.8
 MIME-Version: 1.0
-In-Reply-To: <20120419162905.GA3084@opensource.wolfsonmicro.com>
-References: <1334829097-32084-1-git-send-email-jaswinder.singh@linaro.org>
-	<20120419124204.GE3046@opensource.wolfsonmicro.com>
-	<CAJe_ZhfbFq98fT56CS-q4VoU8wnybj-+swfB+Jrknd3Zmt9V8g@mail.gmail.com>
-	<20120419162905.GA3084@opensource.wolfsonmicro.com>
-Date: Fri, 20 Apr 2012 13:02:06 +0530
-Message-ID: <CAJe_Zhd0H6kXBhqdynuZqhbcPq8ARWu5SMbs=hQT2n8stzRvXQ@mail.gmail.com>
-Subject: Re: [PATCH] regulator: Provide a check for dummy regulator
-From: Jassi Brar <jaswinder.singh@linaro.org>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: linux-kernel@vger.kernel.org, lrg@ti.com
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+To: yong.zhang0@gmail.com
+CC: sam@ravnborg.org, a.p.zijlstra@chello.nl, mingo@elte.hu,
+        linux-kernel@vger.kernel.org, sparclinux@vger.kernel.org,
+        davem@davemloft.net, daniel@gaisler.com,
+        Yong Zhang <yong.zhang@windriver.com>
+Subject: Re: [PATCH 1/1] sparc32,leon: add notify_cpu_starting()
+References: <20120420033634.GA13068@zhy> <1334903312-18526-1-git-send-email-konrad@gaisler.com>
+In-Reply-To: <1334903312-18526-1-git-send-email-konrad@gaisler.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-CSC: 0
+X-CHA: v=1.1 cv=r1DLTJ6I4WNtNSDbWOfumzxcbMy5NL/NTCl1I6dcIeE= c=1 sm=1
+		a=WtivZnh1UKgA:10 a=0Wa5ieas-ecA:10 a=U62ajLuCel8A:10 a=8nJEP1OIZ-IA:10
+		a=jXKJviUpWSOlMmIvGrHOfw==:17 a=t7CeM3EgAAAA:8 a=pGLkceISAAAA:8
+		a=ebG-ZW-8AAAA:8 a=Q_KVjGDA7x4jA4h9jjsA:9 a=wPNLvfGTeEIA:10
+		a=2e6ZYRoF4I4A:10 a=MSl-tDqOz04A:10 a=cCYF7-FHeg4A:10
+		a=jXKJviUpWSOlMmIvGrHOfw==:117
+X-CTCH-Spam: Unknown
+X-CTCH-RefID: str=0001.0A020203.4F91055B.001F,ss=1,re=0.000,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
+X-WHL: SLR
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 19 April 2012 21:59, Mark Brown <broonie@opensource.wolfsonmicro.com> wrote:
-> On Thu, Apr 19, 2012 at 07:35:03PM +0530, Jassi Brar wrote:
->
->> Another POV is :
->>   Is a consumer's need, to know if the gotten regulator is a real
->> or a dummy one, reasonable ?
->
-> Absolutely not, you're completely failing to understand what I said
-> about abstraction here.  *Nothing* about this is anything to do with
-> dummy regulators in the slightest, it's about supplies which are already
-> on at the time the driver powers the device up.  Doing this for dummy
-> regulators is not helpful, being enabled isn't in the slightest bit tied
-> to the fact that the regulator is a dummy regulator and it's silly to
-> optimise this only in the specific case where a dummy regulator (which
-> is in the first place only a crutch to keep systems with buggy regulator
-> setups going) is being used is silly.
->
-> I'd suggest checking with regulator_is_enabled() prior to power up, or
-> adding a notifier for physical enable events and using that.
->
-Sorry for being slow.
-How would you suggest one works out the following arrangement ?
+Hello Yong,
+Thank you for the patch, it works. The SMP is fully
+functional again for sparc-leon. I just added a "#include<linux/cpu.h>"
+to avoid compiler warning.
+Please someone in the cc-list, apply.
+-- Greetings Konrad
 
-Say, an audio CODEC chip has a simple PLL1 run by main voltage
-domain(Vmain). PLL1 can only support 11025x sample rates.
-Another PLL2 on the chip, powered by optional supply Vaux, could
-provide 8000x sample rates. Obviously low-end platforms could choose
-to not provide Vaux.
+Konrad Eisele wrote:
+> From: Yong Zhang<yong.zhang@windriver.com>
+>
+> Otherwise cpu_active_mask will not set, which lead to other issue.
+>
+> Signed-off-by: Yong Zhang<yong.zhang0@gmail.com>
+> Signed-off-by: Konrad Eisele<konrad@gaisler.com>
+> ---
+>   arch/sparc/kernel/leon_smp.c |    3 +++
+>   1 files changed, 3 insertions(+), 0 deletions(-)
+>
+> diff --git a/arch/sparc/kernel/leon_smp.c b/arch/sparc/kernel/leon_smp.c
+> index 1210fde..160cac9 100644
+> --- a/arch/sparc/kernel/leon_smp.c
+> +++ b/arch/sparc/kernel/leon_smp.c
+> @@ -23,6 +23,7 @@
+>   #include<linux/pm.h>
+>   #include<linux/delay.h>
+>   #include<linux/gfp.h>
+> +#include<linux/cpu.h>
+>
+>   #include<asm/cacheflush.h>
+>   #include<asm/tlbflush.h>
+> @@ -78,6 +79,8 @@ void __cpuinit leon_callin(void)
+>   	local_flush_tlb_all();
+>   	leon_configure_cache_smp();
+>
+> +	notify_cpu_starting(cpuid);
+> +
+>   	/* Get our local ticker going. */
+>   	smp_setup_percpu_timer();
+>
 
-The platform has some other drivers that need to have dummy regulator
-support enabled.
-
-How is the CODEC driver supposed to know if 'vaux' is actually present?
-Because if it isn't present, the driver wouldn't declare support for
-8000x  rates.
-regulator_get() would always succeed, and regulator_is_enabled() would
-always return 1, even if the vaux is not supplied.
-
-Thanks,
--Jassi
