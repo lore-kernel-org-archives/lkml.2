@@ -1,55 +1,152 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932778Ab2DTPJp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Apr 2012 11:09:45 -0400
-Received: from acsinet15.oracle.com ([141.146.126.227]:32211 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932531Ab2DTPJm (ORCPT
+	id S932673Ab2DTPHN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Apr 2012 11:07:13 -0400
+Received: from g4t0017.houston.hp.com ([15.201.24.20]:45301 "EHLO
+	g4t0017.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932132Ab2DTPHH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Apr 2012 11:09:42 -0400
-Message-ID: <4F917C2F.4020805@oracle.com>
-Date: Fri, 20 Apr 2012 10:09:35 -0500
-From: Dave Kleikamp <dave.kleikamp@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120406 Thunderbird/11.0.1
+	Fri, 20 Apr 2012 11:07:07 -0400
+Subject: [PATCH 09/17] hpsa: do aborts two ways
+To: james.bottomley@hansenpartnership.com
+From: "Stephen M. Cameron" <scameron@beardog.cce.hp.com>
+Cc: linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        matthew.gates@hp.com, stephenmcameron@gmail.com, thenzl@redhat.com,
+        akpm@linux-foundation.org, mikem@beardog.cce.hp.com
+Date: Fri, 20 Apr 2012 10:07:06 -0500
+Message-ID: <20120420150706.10596.71457.stgit@beardog.cce.hp.com>
+In-Reply-To: <20120420150349.10596.73732.stgit@beardog.cce.hp.com>
+References: <20120420150349.10596.73732.stgit@beardog.cce.hp.com>
+User-Agent: StGit/0.15
 MIME-Version: 1.0
-To: "Maxim V. Patlasov" <mpatlasov@parallels.com>
-CC: "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Zach Brown <zab@zabbo.net>
-Subject: Re: [RFC PATCH v2 15/21] loop: use aio to perform io on the underlying
- file
-References: <1333122228-13633-1-git-send-email-dave.kleikamp@oracle.com> <1333122228-13633-16-git-send-email-dave.kleikamp@oracle.com> <4F917751.9040600@parallels.com>
-In-Reply-To: <4F917751.9040600@parallels.com>
-X-Enigmail-Version: 1.4
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
-X-CT-RefId: str=0001.0A090201.4F917C34.012D,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/20/2012 09:48 AM, Maxim V. Patlasov wrote:
-> On 03/30/2012 07:43 PM, Dave Kleikamp wrote:
->> From: Zach Brown<zab@zabbo.net>
->>
->> This uses the new kernel aio interface to process loopback IO by
->> submitting concurrent direct aio.  Previously loop's IO was serialized
->> by synchronous processing in a thread.
->>
-> 
-> The patch ignores REQ_FLUSH bit of bi_rw. Is it simply overlook?
+From: Stephen M. Cameron <scameron@beardog.cce.hp.com>
 
-Good question. Since the loop device is sending only direct IO requests,
-it shouldn't be necessary to explicitly flush page cache, but REQ_FLUSH
-also guarantees that previous writes make it to media before the current
-write, so it looks like I need to add an explicit vfs_fsync() in the new
-path (conditional on REQ_FLUSH of course).
+When aborting a command, the tag is supposed to be
+specified as 64-bit little endian.  However, some smart
+arrays expect the tag of the command to be aborted to be
+specified in a strange byte order.  How to tell which sort
+of Smart Array firmware we're dealing with is not obvious.
+However, because of the way we construct our tags, the values
+of any outstanding tag when specified with the "strange" byte
+order will not collide with the value specified in the correct
+order.  That means we can safely attempt the abort both ways.
 
-Zach, thoughts?
+Signed-off-by: Stephen M. Cameron <stephenmcameron@gmail.com>
+---
+ drivers/scsi/hpsa.c |   74 ++++++++++++++++++++++++++++++++++++++++++++++++++-
+ 1 files changed, 72 insertions(+), 2 deletions(-)
 
-Shaggy
+diff --git a/drivers/scsi/hpsa.c b/drivers/scsi/hpsa.c
+index 9882ef4..c657642 100644
+--- a/drivers/scsi/hpsa.c
++++ b/drivers/scsi/hpsa.c
+@@ -2347,8 +2347,23 @@ static int hpsa_eh_device_reset_handler(struct scsi_cmnd *scsicmd)
+ 	return FAILED;
+ }
+ 
++static void swizzle_abort_tag(u8 *tag)
++{
++	u8 original_tag[8];
++
++	memcpy(original_tag, tag, 8);
++	tag[0] = original_tag[3];
++	tag[1] = original_tag[2];
++	tag[2] = original_tag[1];
++	tag[3] = original_tag[0];
++	tag[4] = original_tag[7];
++	tag[5] = original_tag[6];
++	tag[6] = original_tag[5];
++	tag[7] = original_tag[4];
++}
++
+ static int hpsa_send_abort(struct ctlr_info *h, unsigned char *scsi3addr,
+-	struct CommandList *abort)
++	struct CommandList *abort, int swizzle)
+ {
+ 	int rc = IO_OK;
+ 	struct CommandList *c;
+@@ -2361,6 +2376,8 @@ static int hpsa_send_abort(struct ctlr_info *h, unsigned char *scsi3addr,
+ 	}
+ 
+ 	fill_cmd(c, HPSA_ABORT_MSG, h, abort, 0, 0, scsi3addr, TYPE_MSG);
++	if (swizzle)
++		swizzle_abort_tag(&c->Request.CDB[4]);
+ 	hpsa_scsi_do_simple_cmd_core(h, c);
+ 	dev_dbg(&h->pdev->dev, "%s: Tag:0x%08x:%08x: do_simple_cmd_core completed.\n",
+ 		__func__, abort->Header.Tag.upper, abort->Header.Tag.lower);
+@@ -2420,6 +2437,59 @@ static struct CommandList *hpsa_find_cmd_in_queue(struct ctlr_info *h,
+ 	return NULL;
+ }
+ 
++static struct CommandList *hpsa_find_cmd_in_queue_by_tag(struct ctlr_info *h,
++					u8 *tag, struct list_head *queue_head)
++{
++	unsigned long flags;
++	struct CommandList *c;
++
++	spin_lock_irqsave(&h->lock, flags);
++	list_for_each_entry(c, queue_head, list) {
++		if (memcmp(&c->Header.Tag, tag, 8) != 0)
++			continue;
++		spin_unlock_irqrestore(&h->lock, flags);
++		return c;
++	}
++	spin_unlock_irqrestore(&h->lock, flags);
++	return NULL;
++}
++
++/* Some Smart Arrays need the abort tag swizzled, and some don't.  It's hard to
++ * tell which kind we're dealing with, so we send the abort both ways.  There
++ * shouldn't be any collisions between swizzled and unswizzled tags due to the
++ * way we construct our tags but we check anyway in case the assumptions which
++ * make this true someday become false.
++ */
++static int hpsa_send_abort_both_ways(struct ctlr_info *h,
++	unsigned char *scsi3addr, struct CommandList *abort)
++{
++	u8 swizzled_tag[8];
++	struct CommandList *c;
++	int rc = 0, rc2 = 0;
++
++	/* we do not expect to find the swizzled tag in our queue, but
++	 * check anyway just to be sure the assumptions which make this
++	 * the case haven't become wrong.
++	 */
++	memcpy(swizzled_tag, &abort->Request.CDB[4], 8);
++	swizzle_abort_tag(swizzled_tag);
++	c = hpsa_find_cmd_in_queue_by_tag(h, swizzled_tag, &h->cmpQ);
++	if (c != NULL) {
++		dev_warn(&h->pdev->dev, "Unexpectedly found byte-swapped tag in completion queue.\n");
++		return hpsa_send_abort(h, scsi3addr, abort, 0);
++	}
++	rc = hpsa_send_abort(h, scsi3addr, abort, 0);
++
++	/* if the command is still in our queue, we can't conclude that it was
++	 * aborted (it might have just completed normally) but in any case
++	 * we don't need to try to abort it another way.
++	 */
++	c = hpsa_find_cmd_in_queue(h, abort->scsi_cmd, &h->cmpQ);
++	if (c)
++		rc2 = hpsa_send_abort(h, scsi3addr, abort, 1);
++	return rc && rc2;
++}
++
+ /* Send an abort for the specified command.
+  *	If the device and controller support it,
+  *		send a task abort request.
+@@ -2504,7 +2574,7 @@ static int hpsa_eh_abort_handler(struct scsi_cmnd *sc)
+ 	 * by the firmware (but not to the scsi mid layer) but we can't
+ 	 * distinguish which.  Send the abort down.
+ 	 */
+-	rc = hpsa_send_abort(h, dev->scsi3addr, abort);
++	rc = hpsa_send_abort_both_ways(h, dev->scsi3addr, abort);
+ 	if (rc != 0) {
+ 		dev_dbg(&h->pdev->dev, "%s Request FAILED.\n", msg);
+ 		dev_warn(&h->pdev->dev, "FAILED abort on device C%d:B%d:T%d:L%d\n",
 
-> 
-> Thanks,
-> Maxim
