@@ -1,86 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756722Ab2DTCsw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Apr 2012 22:48:52 -0400
-Received: from cc-smtpout3.netcologne.de ([89.1.8.213]:33179 "EHLO
-	cc-smtpout3.netcologne.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751673Ab2DTCsv (ORCPT
+	id S1757015Ab2DTCtc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Apr 2012 22:49:32 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:64435 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752371Ab2DTCtb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Apr 2012 22:48:51 -0400
-X-Greylist: delayed 631 seconds by postgrey-1.27 at vger.kernel.org; Thu, 19 Apr 2012 22:48:51 EDT
-X-AuthUser: garloff@garloff.de
-References: <CABawtvMOtG3tsscoOD4P7VH-v8PWJL=JaoOoTwvzRi=aigvEdA@mail.gmail.com> <CABawtvMM8JeVbnRZagdogzdOVDoPaE6eAFPR3QPTEbuwOfLBsQ@mail.gmail.com>
-User-Agent: K-9 Mail for Android
-In-Reply-To: <CABawtvMM8JeVbnRZagdogzdOVDoPaE6eAFPR3QPTEbuwOfLBsQ@mail.gmail.com>
+	Thu, 19 Apr 2012 22:49:31 -0400
+Date: Thu, 19 Apr 2012 19:49:20 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Kyungmin Park <kyungmin.park@samsung.com>
+Cc: MyungJoo Ham <myungjoo.ham@samsung.com>, Arnd Bergmann <arnd@arndb.de>,
+        LKML <linux-kernel@vger.kernel.org>, NeilBrown <neilb@suse.de>,
+        Randy Dunlap <rdunlap@xenotime.net>,
+        Mike Lockwood <lockwood@android.com>,
+        Arve =?iso-8859-1?Q?Hj=F8nnevag?= <arve@android.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Morten CHRISTIANSEN <morten.christiansen@stericsson.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        John Stultz <john.stultz@linaro.org>,
+        Joerg Roedel <joerg.roedel@amd.com>, myungjoo.ham@gmail.com,
+        cw00.choi@samsung.com
+Subject: Re: [PATCH v8 1/6] Extcon (external connector): import Android's
+ switch class and modify.
+Message-ID: <20120420024920.GA17151@kroah.com>
+References: <20120418214703.GA31606@kroah.com>
+ <1334803298-24260-1-git-send-email-myungjoo.ham@samsung.com>
+ <1334803298-24260-2-git-send-email-myungjoo.ham@samsung.com>
+ <20120420023704.GA1399@kroah.com>
+ <CAH9JG2WRXPVuJz2mDYB+r=6n1FOwzSRwAFiJ35oTVz8E59dp7w@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain;
- charset=UTF-8
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
-Subject: Re: Fwd: [PATCH] drivers/acpi/numa.c: Add localities checking code against proximity domains to slit_valid()
-From: Kurt Garloff <kurt@garloff.de>
-Date: Thu, 19 Apr 2012 19:38:08 -0700
-To: ethan zhao <ethan.kernel@gmail.com>, len.brown@intel.com
-CC: linux-kernel@vger.kernel.org
-Message-ID: <3c0e0332-6cfb-4e4a-a599-2f4c86e45745@email.android.com>
+In-Reply-To: <CAH9JG2WRXPVuJz2mDYB+r=6n1FOwzSRwAFiJ35oTVz8E59dp7w@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ethan,
-
-
-
-
-
-ethan zhao <ethan.kernel@gmail.com> schrieb:
-
-> Some buggy BIOS/ACPI will set different number to SLIT localities and
-> SRAT proximity domains,
->  That will make NUMA configuration invalid and kernel will output
-> information like following
+On Fri, Apr 20, 2012 at 11:46:25AM +0900, Kyungmin Park wrote:
+> On 4/20/12, Greg KH <gregkh@linuxfoundation.org> wrote:
+> > On Thu, Apr 19, 2012 at 11:41:33AM +0900, MyungJoo Ham wrote:
+> >> External connector class (extcon) is based on and an extension of
+> >> Android kernel's switch class located at linux/drivers/switch/.
+> >
+> > Oh come on, this still breaks the build, it is as if you didn't even
+> > test this at all, or modify anything since I reported it as a problem to
+> > you yesterday:
+> >
+> > drivers/extcon/extcon_class.c:79:6: error: redefinition of
+> > ‘extcon_set_state’
+> > include/linux/extcon.h:80:20: note: previous definition of
+> > ‘extcon_set_state’ was here
+> > drivers/extcon/extcon_class.c:170:5: error: redefinition of
+> > ‘extcon_dev_register’
+> > include/linux/extcon.h:67:19: note: previous definition of
+> > ‘extcon_dev_register’ was here
+> > drivers/extcon/extcon_class.c:214:6: error: redefinition of
+> > ‘extcon_dev_unregister’
+> > include/linux/extcon.h:73:20: note: previous definition of
+> > ‘extcon_dev_unregister’ was here
+> >
+> > You can do better than this, I know you can.
 > 
-> NUMA:Warning:invalid distance parameter, from=-1 to=-1 distance=83
-> 
-> This patch adds some checking code to slit_valid() function in order
-> to check the SLIT localities
-> count against SRAT proximity domains number and give clear information
-> about ACPI bug.
-> 
-> Signed-off-by: ethan.zhao <ethan.kernel@gmail.com>
-> ---
->  drivers/acpi/numa.c |    7 +++++++
->  1 files changed, 7 insertions(+), 0 deletions(-)
-> 
-> diff --git a/drivers/acpi/numa.c b/drivers/acpi/numa.c
-> index e56f3be..55c8a8e 100644
-> --- a/drivers/acpi/numa.c
-> +++ b/drivers/acpi/numa.c
-> @@ -161,6 +161,13 @@ static __init int slit_valid(struct
-> acpi_table_slit
-> *slit)
->  {
->         int i, j;
->         int d = slit->locality_count;
-> +       int pxd = nodes_weight(nodes_found_map);
-> +       if (pxd != d) {
-> +               printk(KERN_INFO "ACPI: BIOS bug! SLIT localities
-> count %d
-> doesn't equal SRAT proximity domains number %d\n",
-> +                       d , pxd);
-> +               return 0;
-> +       }
-> +
->         for (i = 0; i < d; i++) {
->                 for (j = 0; j < d; j++)  {
->                         u8 val = slit->entry[d*i + j];
-> --
-> 1.7.1
+> Umm. can you show your EXTCON config? I think you build it as module.
+> it's tested it extcon on or not. anyway I'll test it as module and
+> check it.
 
-Patch looks good to me. When I first saw it I was wondering whether that should be controlled via some quirk entry. But probably it can't trigger if everything is correct so that it's probably unneeded complexity. Someone with more intimate knowledge of ACPI should confirm  that and this should be good to go.
+Yes, I selected to build it as a module, which, according to your patch,
+is a valid selection.
 
-
-Cheers, 
-
--- 
-Kurt Garloff <Kurt@Garloff.de>  [Köln/ Greven]
-(Sent from Android phone with K-9 Mail.)
+greg k-h
