@@ -1,67 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757333Ab2DTRiA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Apr 2012 13:38:00 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:50895 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757321Ab2DTRh6 (ORCPT
+	id S1756539Ab2DTRnk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Apr 2012 13:43:40 -0400
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:35229 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753310Ab2DTRnj convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Apr 2012 13:37:58 -0400
-Date: Fri, 20 Apr 2012 10:37:54 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Johan Hovold <jhovold@gmail.com>
-Cc: Richard Purdie <rpurdie@rpsys.net>, Samuel Ortiz <sameo@linux.intel.com>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, linux-fbdev@vger.kernel.org
-Subject: Re: [PATCH 2/4] misc: add LM3533 ambient light sensor driver
-Message-ID: <20120420173754.GA22222@kroah.com>
-References: <1334935826-12527-1-git-send-email-jhovold@gmail.com>
- <1334935826-12527-3-git-send-email-jhovold@gmail.com>
- <20120420155734.GE8327@kroah.com>
- <20120420172849.GB12376@localhost>
+	Fri, 20 Apr 2012 13:43:39 -0400
+Content-Type: text/plain; charset=utf-8; format=flowed; delsp=yes
+To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "PINTU KUMAR" <pintu_agarwal@yahoo.com>
+Subject: Re: Latest CMA patches required for kernel3.3 ?
+References: <1334939015.7870.YahooMailNeo@web162003.mail.bf1.yahoo.com>
+Date: Fri, 20 Apr 2012 19:43:36 +0200
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120420172849.GB12376@localhost>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 8BIT
+From: "Michal Nazarewicz" <mina86@mina86.com>
+Message-ID: <op.wc2riya33l0zgt@mpn-glaptop>
+In-Reply-To: <1334939015.7870.YahooMailNeo@web162003.mail.bf1.yahoo.com>
+User-Agent: Opera Mail/11.62 (Linux)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 20, 2012 at 07:28:49PM +0200, Johan Hovold wrote:
-> On Fri, Apr 20, 2012 at 08:57:34AM -0700, Greg Kroah-Hartman wrote:
-> > On Fri, Apr 20, 2012 at 05:30:24PM +0200, Johan Hovold wrote:
-> > > Add sub-driver for the ambient light sensor in National Semiconductor /
-> > > TI LM3533 lighting power chips.
-> > > 
-> > > Raw ADC values as well as current ALS zone can be retrieved through
-> > > sysfs. The ALS zone can also be read using a character device
-> > > (/dev/lm3533-als) which is updated on zone changes (interrupt driven or
-> > > polled).
-> > > 
-> > > The driver provides a configuration interface through sysfs.
-> > 
-> > Which seems to not be documented at all :(
-> 
-> There are the following sysfs entries for configuring ALS control:
+On Fri, 20 Apr 2012 18:23:35 +0200, PINTU KUMAR <pintu_agarwal@yahoo.com> wrote:
+> Can somebody point me to the latest CMA patches repository?
 
-<snip>
+git://git.linaro.org/people/mszyprowski/linux-dma-mapping.git 3.4-rc1-cma-v24
 
-That's fine, but you need a Documentation/ABI entry for any new sysfs
-file you create.
-> > What about using the iio interface for this instead?  Doesn't that
-> > already provide this standard interface you are looking for?
-> 
-> I had a look at iio last fall and decided not to use it at the time. I
-> can't remember exactly what the reasons were right now, so I'll have
-> to get back to you on this.
+> I need CMA patches for ubuntu.
+>
+> I upgraded my ubuntu kernel with kernel3.3 in order to use CMA.  But I think
+> CMA is not included with kernel 3.3 release.
 
-Please look into this, the iio framework is about to move out of the
-staging tree for 3.5, so there should not be any reason for you to
-create yet-another user api for this type of thing.
+No, it is not.  It also won't be in 3.4.  It may end up in 3.5.
 
-thanks,
-
-greg k-h
+-- 
+Best regards,                                         _     _
+.o. | Liege of Serenely Enlightened Majesty of      o' \,=./ `o
+..o | Computer Science,  Michał “mina86” Nazarewicz    (o o)
+ooo +----<email/xmpp: mpn@google.com>--------------ooO--(_)--Ooo--
