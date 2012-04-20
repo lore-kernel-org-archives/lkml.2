@@ -1,90 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757432Ab2DTSid (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Apr 2012 14:38:33 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:11860 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757385Ab2DTSic (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Apr 2012 14:38:32 -0400
-Date: Fri, 20 Apr 2012 20:37:18 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Ingo Molnar <mingo@elte.hu>, Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
-        LKML <linux-kernel@vger.kernel.org>, Linux-mm <linux-mm@kvack.org>,
-        Andi Kleen <andi@firstfloor.org>,
-        Christoph Hellwig <hch@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Anton Arapov <anton@redhat.com>
-Subject: Re: [RFC 0/6] uprobes: kill uprobes_srcu/uprobe_srcu_id
-Message-ID: <20120420183718.GA2236@redhat.com>
-References: <20120405222024.GA19154@redhat.com> <1334409396.2528.100.camel@twins> <20120414205200.GA9083@redhat.com> <1334487062.2528.113.camel@twins> <20120415195351.GA22095@redhat.com> <1334526513.28150.23.camel@twins> <20120415234401.GA32662@redhat.com> <1334571419.28150.30.camel@twins> <20120416214707.GA27639@redhat.com> <1334916861.2463.50.camel@laptop>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1334916861.2463.50.camel@laptop>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1757446Ab2DTSl4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Apr 2012 14:41:56 -0400
+Received: from g6t0187.atlanta.hp.com ([15.193.32.64]:14879 "EHLO
+	g6t0187.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755030Ab2DTSly (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Apr 2012 14:41:54 -0400
+Subject: Re: [PATCH 03/17] hpsa: enable bus master bit after
+ pci_enable_device
+From: Khalid Aziz <khalid.aziz@hp.com>
+To: "Stephen M. Cameron" <scameron@beardog.cce.hp.com>
+Cc: james.bottomley@hansenpartnership.com, linux-scsi@vger.kernel.org,
+        linux-kernel@vger.kernel.org, matthew.gates@hp.com,
+        stephenmcameron@gmail.com, thenzl@redhat.com,
+        akpm@linux-foundation.org, mikem@beardog.cce.hp.com
+In-Reply-To: <20120420150629.10596.51923.stgit@beardog.cce.hp.com>
+References: <20120420150349.10596.73732.stgit@beardog.cce.hp.com>
+	 <20120420150629.10596.51923.stgit@beardog.cce.hp.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 20 Apr 2012 12:41:50 -0600
+Message-ID: <1334947310.10129.124.camel@lyra>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/20, Peter Zijlstra wrote:
->
-> On Mon, 2012-04-16 at 23:47 +0200, Oleg Nesterov wrote:
-> > (And perhaps we can stop right here? I mean how often this can
-> >  slow down the debugger which installs int3 in the same mm?)
-> >
-> > Now we need to clear MMF_HAS_UPROBE somehowe, when the last
-> > uprobe goes away. Lets ignore uprobe_map/unmap for simplicity.
-> >
-> > 	- We add another flag, MMF_UPROBE_RECALC, it is set by
-> > 	  remove_breakpoint().
-> >
-> > 	- We change handle_swbp(). Ignoring all details it does:
-> >
-> > 		if (find_uprobe(vaddr))
-> > 			process_uprobe();
-> > 		else if (test_bit(MMF_HAS_UPROBE) && test_bit(MMF_UPROBE_RECALC))
-> > 			recalc_mmf_uprobe_flag();
-> >
-> > 	  where recalc_mmf_uprobe_flag() checks all vmas and either
-> > 	  clears both flags or MMF_UPROBE_RECALC only.
-> >
-> > 	  This is the really slow O(n) path, but it can only happen after
-> > 	  unregister, and only if we hit another non-uprobe breakpoint
-> > 	  in the same mm.
-> >
-> > Something like this. What do you think?
->
-> I think I can live with the simple set MMF_HAS_UPROBE and leave it at
-> that.
+On Fri, 2012-04-20 at 10:06 -0500, Stephen M. Cameron wrote:
+> From: Stephen M. Cameron <scameron@beardog.cce.hp.com>
+> 
+> pci_disable_device() disables the bus master bit and pci_enable_device does
+> not re-enable it.  It needs to be enabled.
+> 
+> Signed-off-by: Stephen M. Cameron <scameron@beardog.cce.hp.com>
+> ---
+>  drivers/scsi/hpsa.c |    6 ++++++
+>  1 files changed, 6 insertions(+), 0 deletions(-)
+> 
+> diff --git a/drivers/scsi/hpsa.c b/drivers/scsi/hpsa.c
+> index 5119ce6..363619d 100644
+> --- a/drivers/scsi/hpsa.c
+> +++ b/drivers/scsi/hpsa.c
+> @@ -3917,6 +3917,7 @@ static int __devinit hpsa_enter_simple_mode(struct ctlr_info *h)
+>  static int __devinit hpsa_pci_init(struct ctlr_info *h)
+>  {
+>  	int prod_index, err;
+> +	u16 command_register;
+>  
+>  	prod_index = hpsa_lookup_board_id(h->pdev, &h->board_id);
+>  	if (prod_index < 0)
+> @@ -3933,6 +3934,11 @@ static int __devinit hpsa_pci_init(struct ctlr_info *h)
+>  		return err;
+>  	}
+>  
+> +	/* Enable bus mastering (pci_disable_device may disable this) */
+> +	pci_read_config_word(h->pdev, PCI_COMMAND, &command_register);
+> +	command_register |= PCI_COMMAND_MASTER;
+> +	pci_write_config_word(h->pdev, PCI_COMMAND, command_register);
+> +
+>  	err = pci_request_regions(h->pdev, HPSA);
+>  	if (err) {
+>  		dev_err(&h->pdev->dev,
 
-Sure, I agree.
+Wouldn't it be better to use pci_set_master(h->pdev) to enable bus
+mastering?
 
-A false positive MMF_HAS_UPROBE can only slow down the non-uprobe
-int3 in the same ->mm, I think we can tolerate this.
-
-> The better optimization seems to be to not install breakpoints
-> when ->filter() excludes the task..
-
-Ah, this is another story. And I agree this is more important.
-
-So far I do not understand what we should do. Of course, it would
-be simple to add the filtering when we install the breakpoint but
-I don't think it is that simple, even if we ignore the nasty
-complications with multiple consumers with different filters.
-
-Say, a user wants to probe /sbin/init only. What if init forks?
-We should remove breakpoints from child->mm somehow.
-
-And then we also need the filtering in uprobe_mmap() at least.
-
-But yes, I agree, it would be very nice to do this.
-
-Oleg.
+-- 
+====================================================================
+Khalid Aziz                                         Unix Systems Lab
+(970)898-9214                                        Hewlett-Packard
+khalid.aziz@hp.com                                  Fort Collins, CO
 
