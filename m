@@ -1,138 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753487Ab2DTVLO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Apr 2012 17:11:14 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:53848 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750758Ab2DTVLN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Apr 2012 17:11:13 -0400
-Date: Fri, 20 Apr 2012 23:11:08 +0200
-From: Wolfram Sang <w.sang@pengutronix.de>
-To: Shawn Guo <shawn.guo@linaro.org>
-Cc: Dong Aisheng <aisheng.dong@freescale.com>,
-        Huang Shijie <b32955@freescale.com>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Arnd Bergmann <arnd@arndb.de>
-Subject: Re: [PATCH V2 1/3] lib: add support for stmp-style devices
-Message-ID: <20120420211108.GC12691@pengutronix.de>
-References: <1332368519-22660-1-git-send-email-w.sang@pengutronix.de>
- <1332368519-22660-2-git-send-email-w.sang@pengutronix.de>
- <4F73CCC6.6000001@freescale.com>
- <20120329064320.GA20840@pengutronix.de>
- <20120418090551.GA30966@shlinux2.ap.freescale.net>
- <20120418092019.GB2232@pengutronix.de>
- <20120420053014.GK22219@S2101-09.ap.freescale.net>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="8X7/QrJGcKSMr1RN"
-Content-Disposition: inline
-In-Reply-To: <20120420053014.GK22219@S2101-09.ap.freescale.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
-X-SA-Exim-Mail-From: wsa@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+	id S1753723Ab2DTVMh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Apr 2012 17:12:37 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:20251 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752394Ab2DTVMf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Apr 2012 17:12:35 -0400
+Date: Fri, 20 Apr 2012 17:13:00 -0400
+From: Jeff Layton <jlayton@redhat.com>
+To: Steve Dickson <SteveD@redhat.com>
+Cc: linux-fsdevel@vger.kernel.org, linux-nfs@vger.kernel.org,
+        linux-kernel@vger.kernel.org, miklos@szeredi.hu,
+        viro@ZenIV.linux.org.uk, hch@infradead.org,
+        michael.brantley@deshaw.com, sven.breuner@itwm.fraunhofer.de,
+        chuck.lever@oracle.com, pstaubach@exagrid.com, malahal@us.ibm.com,
+        bfields@fieldses.org, trond.myklebust@fys.uio.no, rees@umich.edu
+Subject: Re: [PATCH RFC v3] vfs: make fstatat retry once on ESTALE errors
+ from getattr call
+Message-ID: <20120420171300.326d6e36@corrin.poochiereds.net>
+In-Reply-To: <4F91C49D.8070908@RedHat.com>
+References: <1334316311-22331-1-git-send-email-jlayton@redhat.com>
+	<1334749927-26138-1-git-send-email-jlayton@redhat.com>
+	<20120420104055.511e15bc@tlielax.poochiereds.net>
+	<4F91C49D.8070908@RedHat.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, 20 Apr 2012 16:18:37 -0400
+Steve Dickson <SteveD@redhat.com> wrote:
 
---8X7/QrJGcKSMr1RN
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+> On 04/20/2012 10:40 AM, Jeff Layton wrote:
+> > I guess the questions at this point is:
+> > 
+> > 1) How representative is Peter's mkdir_test() of a real-world workload?
+> Reading your email I had to wonder the same thing... What application 
+> removes hierarchy of directories in a loop from two different clients?
+> I would suspect not many, if any... esp over NFS... 
+>  
 
-On Fri, Apr 20, 2012 at 01:30:17PM +0800, Shawn Guo wrote:
-> On Wed, Apr 18, 2012 at 11:20:19AM +0200, Wolfram Sang wrote:
-> > > If not, i guess include/linux/fsl which already exists may be the
-> > > right place.
-> >=20
-> > Which is a bad choice in my book. linux/dma would have been the proper
-> > thing for mxs-dma.h, I'd think.
-> >=20
-> If it already exists, it will be the proper place.  We do not want to
-> be too invasive to create folders in include/linux for every subsystem
-> for only the need of fsl drivers.
+Peter's test just happens to demonstrate the problem well, but one
+could envision someone removing a heirarchy of directories on the
+server while we're trying to do other operations in it. At that point,
+we can easily end up hitting an ESTALE twice while doing the lookup and
+returning ESTALE back to userspace.
 
-I think linux/dma would have made sense:
+> > 
+> > 2) if we assume that it is fairly representative of one, how can we
+> > achieve retrying indefinitely with NFS, or at least some large finite
+> > amount?
+> The amount of looping would be peer speculation. If the problem can
+> not be handled by one simple retry I would say we simply pass the
+> error up to the app... Its an application issue... 
+>  
 
-$:~/Kernel/linux/include/linux$ ll *dma*
--rw-r--r-- 1 ninja ninja  1809 Apr 15 23:32 dma-attrs.h
--rw-r--r-- 1 ninja ninja  8343 Apr 15 23:32 dma-buf.h
--rw-r--r-- 1 ninja ninja  4915 Aug 20  2011 dma-debug.h
--rw-r--r-- 1 ninja ninja   299 Nov  8 20:06 dma-direction.h
--rw-r--r-- 1 ninja ninja 33123 Apr 16 11:47 dmaengine.h
--rw-r--r-- 1 ninja ninja  7018 Apr 15 23:32 dma-mapping.h
--rw-r--r-- 1 ninja ninja   923 Aug 20  2011 dmapool.h
--rw-r--r-- 1 ninja ninja  1288 Mar 30 22:12 dma_remapping.h
--rw-r--r-- 1 ninja ninja  6933 Mar 30 22:12 dmar.h
--rw-r--r-- 1 ninja ninja  3203 Apr 15 23:32 dw_dmac.h
--rw-r--r-- 1 ninja ninja   157 Aug 20  2011 init_ohci1394_dma.h
--rw-r--r-- 1 ninja ninja  2463 Aug 20  2011 intel_mid_dma.h
--rw-r--r-- 1 ninja ninja  3305 Apr 15 23:32 nfs_idmap.h
--rw-r--r-- 1 ninja ninja   999 Aug 20  2011 pch_dma.h
--rw-r--r-- 1 ninja ninja   415 Aug 20  2011 pci-dma.h
--rw-r--r-- 1 ninja ninja   572 Apr 15 23:32 sa11x0-dma.h
--rw-r--r-- 1 ninja ninja  2631 Apr 15 23:32 sh_dma.h
--rw-r--r-- 1 ninja ninja   123 Mar 30 22:12 sirfsoc_dma.h
--rw-r--r-- 1 ninja ninja  1784 Aug 20  2011 timb_dma.h
+It's not an application issue. The application just asked the kernel
+to do an operation on a pathname. The only reason you're getting an
+ESTALE back in this situation is a shortcoming of the implementation.
 
-> On the other hand, I have seen a clear need for include/linux/fsl.
-> The following files are all good candidates to be moved there.
->=20
->   include/linux/fsl_devices.h
+We passed it a pathname after all, not a filehandle. ESTALE really has
+no place as a return code in that situation...
 
-I stumbled over this file some time ago. It is an arbitrary collection of s=
-tuff
-which should better be seperate. See 'fsl_spi_platform_data'? That should be
-cpm_spi_platform_data. It doesn't even fit to MPC5200 (which SPI driver
-unnecessarily includes this file), let alone i.MX, so calling it 'fsl' does=
-n't
-make sense at all. I fear similar confusion with a fsl-directory.
+> > 
+> > I have my doubts as to whether it would really be as big a problem for
+> > other filesystems as Miklos and others have asserted, but I'll take
+> > their word for it at the moment. What's the best way to contain this
+> > behavior to just those filesystems that want to retry indefinitely when
+> > they get an ESTALE? Would we need to go with an entirely new
+> > ESTALERETRY after all?
+> > 
+> Introducing a new errno to handle this problem would be overkill IMHO...
+> 
+> If we have to go to the looping approach, I would strong suggest we
+> make the file systems register for this type of behavior...
+> 
 
->   include/linux/fsl-diu-fb.h
+Returning ESTALERETRY would be registering for it in a way and it is
+somewhat cleaner than having to go all the way back up to the fstype to
+figure out whether you want to retry it or not.
 
-Sadly, another bad choice. It should have gone to include/video like all ot=
-her
-fb-drivers.
+There's also the non-trivial matter of needing to retry during the
+lookup itself. If the lookup just returns ESTALE, then you don't have
+any way to know whether the underlying fs wanted you to retry it or
+not...
 
->   include/linux/fsl_hypervisor.h
+I'm not thrilled with having to do all of this ESTALE to ESTALERETRY
+conversion and back, but it does give us a way to neatly deal with and
+ESTALE during the lookup.
 
-And that could simply stay in include/linux then, like kvm does.
-
-> IMO, include/linux/stmp_device.h is just another good candidate.
-
-Still not convinced, more the opposite.
-
-> Oh, today I was asked by Fabio where is the good place for ssp-regs.h
-> which will be shared by mxs-mmc and spi-mxs, as we are cleaning up
-> <mach/*> from drivers.  I told him include/linux/fsl.
-
-What's wrong with linux/spi? SPI devices capable of doing MMC as well shoul=
-dn't
-be much of a surprise, they are common.
-
-Also, what will happen if Freescale ever gets renamed?
-
-Regards,
-
-   Wolfram
-
---=20
-Pengutronix e.K.                           | Wolfram Sang                |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
-
---8X7/QrJGcKSMr1RN
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iEYEARECAAYFAk+R0OwACgkQD27XaX1/VRtWbACfdghCx5uTFTMVakPdcrBFjYYr
-lV4AoJ7lzIGA7sEk/QUp8lHT6FUXEbxE
-=bmXR
------END PGP SIGNATURE-----
-
---8X7/QrJGcKSMr1RN--
+-- 
+Jeff Layton <jlayton@redhat.com>
