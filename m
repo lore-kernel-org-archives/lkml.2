@@ -1,88 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752825Ab2DTTzo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Apr 2012 15:55:44 -0400
-Received: from mail.work-microwave.de ([62.245.205.51]:30330 "EHLO
-	work-microwave.de" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751211Ab2DTTzm (ORCPT
+	id S1752981Ab2DTT5X (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Apr 2012 15:57:23 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:51291 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751268Ab2DTT5V convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Apr 2012 15:55:42 -0400
-From: Roland Stigge <stigge@antcom.de>
-To: wim@iguana.be, grant.likely@secretlab.ca, rob.herring@calxeda.com,
-        linux-watchdog@vger.kernel.org, linux-kernel@vger.kernel.org,
-        arm@kernel.org, linux-arm-kernel@lists.infradead.org,
-        sshtylyov@mvista.com
-Cc: Roland Stigge <stigge@antcom.de>
-Subject: [PATCH v4] wdt: Device tree support for pnx4008-wdt
-Date: Fri, 20 Apr 2012 21:55:29 +0200
-Message-Id: <1334951729-1388-1-git-send-email-stigge@antcom.de>
-X-Mailer: git-send-email 1.7.9
-X-FEAS-SYSTEM-WL: rst@work-microwave.de, 192.168.11.78
+	Fri, 20 Apr 2012 15:57:21 -0400
+MIME-Version: 1.0
+In-Reply-To: <1334950527-5050-3-git-send-email-asharma@fb.com>
+References: <1334950527-5050-1-git-send-email-asharma@fb.com> <1334950527-5050-3-git-send-email-asharma@fb.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Fri, 20 Apr 2012 12:57:00 -0700
+X-Google-Sender-Auth: L66bZ_YywM4ZA8X81dQ4btqm4CI
+Message-ID: <CA+55aFwE=-52Ld=KW6QKmSSfUnSd5Jw90xEouvNHT_kSFm3FFQ@mail.gmail.com>
+Subject: Re: [PATCH 2/3] perf, x86: Don't leak kernel data via callchains
+To: Arun Sharma <asharma@fb.com>
+Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <peterz@infradead.org>,
+        Ingo Molnar <mingo@elte.hu>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds device tree support to pnx4008-wdt.c
+On Fri, Apr 20, 2012 at 12:35 PM, Arun Sharma <asharma@fb.com> wrote:
+>
+> +       set_fs(USER_DS);
 
-Signed-off-by: Roland Stigge <stigge@antcom.de>
-Reviewed-by: Arnd Bergmann <arnd@arndb.de>
+NAK.
 
----
+I really don't think this is the right thing to do. We're in random
+NMI context, set_fs() is not at all necessarily safe.
 
-Applies to v3.4-rc3
+No, the code needs to check the frame range by hand, not depend on current-fs.
 
-Changes since v3:
-* Fixed typo in patch description
+In fact, I'd argue that this is a bug in copy_from_user_nmi(), which
+should simply check the *user* address space explicitly, not using
+access_ok().
 
-Thanks to Sergei Shtylyov for reviewing!
-
- Documentation/devicetree/bindings/watchdog/pnx4008-wdt.txt |   13 +++++++++++++
- drivers/watchdog/pnx4008_wdt.c                             |   10 ++++++++++
- 2 files changed, 23 insertions(+)
-
---- /dev/null
-+++ linux-2.6/Documentation/devicetree/bindings/watchdog/pnx4008-wdt.txt
-@@ -0,0 +1,13 @@
-+* NXP PNX watchdog timer
-+
-+Required properties:
-+- compatible: must be "nxp,pnx4008-wdt"
-+- reg: physical base address of the controller and length of memory mapped
-+  region.
-+
-+Example:
-+
-+	watchdog@4003C000 {
-+		compatible = "nxp,pnx4008-wdt";
-+		reg = <0x4003C000 0x1000>;
-+	};
---- linux-2.6.orig/drivers/watchdog/pnx4008_wdt.c
-+++ linux-2.6/drivers/watchdog/pnx4008_wdt.c
-@@ -32,6 +32,7 @@
- #include <linux/io.h>
- #include <linux/slab.h>
- #include <linux/err.h>
-+#include <linux/of.h>
- #include <mach/hardware.h>
- 
- /* WatchDog Timer - Chapter 23 Page 207 */
-@@ -201,10 +202,19 @@ static int __devexit pnx4008_wdt_remove(
- 	return 0;
- }
- 
-+#ifdef CONFIG_OF
-+static const struct of_device_id pnx4008_wdt_match[] = {
-+	{ .compatible = "nxp,pnx4008-wdt" },
-+	{ }
-+};
-+MODULE_DEVICE_TABLE(of, pnx4008_wdt_match);
-+#endif
-+
- static struct platform_driver platform_wdt_driver = {
- 	.driver = {
- 		.name = "pnx4008-watchdog",
- 		.owner	= THIS_MODULE,
-+		.of_match_table = of_match_ptr(pnx4008_wdt_match),
- 	},
- 	.probe = pnx4008_wdt_probe,
- 	.remove = __devexit_p(pnx4008_wdt_remove),
+                   Linus
