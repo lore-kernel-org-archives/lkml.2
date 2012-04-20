@@ -1,66 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754301Ab2DTKM3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Apr 2012 06:12:29 -0400
-Received: from mga09.intel.com ([134.134.136.24]:6696 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754144Ab2DTKM1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Apr 2012 06:12:27 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
-   d="scan'208";a="132030537"
-Subject: Re: [PATCH] spi/spi-ep93xx.c: use dma_transfer_direction instead
- of dma_data_direction
-From: Vinod Koul <vinod.koul@linux.intel.com>
-To: Mika Westerberg <mika.westerberg@iki.fi>
-Cc: H Hartley Sweeten <hartleys@visionengravers.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        spi-devel-general@lists.sourceforge.net, grant.likely@secretlab.ca
-In-Reply-To: <20120419061020.GB18520@mwesterb-mobl.lan>
-References: <201204171846.37245.hartleys@visionengravers.com>
-	 <20120419061020.GB18520@mwesterb-mobl.lan>
+	id S1754318Ab2DTKO1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Apr 2012 06:14:27 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:53499 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753318Ab2DTKO0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Apr 2012 06:14:26 -0400
+Subject: Re: [RFC 0/6] uprobes: kill uprobes_srcu/uprobe_srcu_id
+From: Peter Zijlstra <peterz@infradead.org>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Ingo Molnar <mingo@elte.hu>, Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
+        LKML <linux-kernel@vger.kernel.org>, Linux-mm <linux-mm@kvack.org>,
+        Andi Kleen <andi@firstfloor.org>,
+        Christoph Hellwig <hch@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Anton Arapov <anton@redhat.com>
+In-Reply-To: <20120416214707.GA27639@redhat.com>
+References: <20120405222024.GA19154@redhat.com>
+	 <1334409396.2528.100.camel@twins> <20120414205200.GA9083@redhat.com>
+	 <1334487062.2528.113.camel@twins> <20120415195351.GA22095@redhat.com>
+	 <1334526513.28150.23.camel@twins> <20120415234401.GA32662@redhat.com>
+	 <1334571419.28150.30.camel@twins>  <20120416214707.GA27639@redhat.com>
 Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 20 Apr 2012 15:39:51 +0530
-Message-ID: <1334916592.31825.35.camel@vkoul-udesk3>
+Date: Fri, 20 Apr 2012 12:14:21 +0200
+Message-ID: <1334916861.2463.50.camel@laptop>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+X-Mailer: Evolution 2.32.2 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-04-19 at 09:10 +0300, Mika Westerberg wrote:
-> On Tue, Apr 17, 2012 at 06:46:36PM -0700, H Hartley Sweeten wrote:
-> > A new enum indicating the dma channel direction was introduced by:
-> > 
-> > commit 49920bc66984a512f4bcc7735a61642cd0e4d6f2
-> >     dmaengine: add new enum dma_transfer_direction
-> > 
-> > The following commit changed spi-ep93xx to use the new enum:
-> > 
-> > commit a485df4b4404379786c4bdd258bc528b2617449d
-> >     spi, serial: move to dma_transfer_direction
-> > 
-> > In doing so a sparse warning was introduced: 
-> > 
-> > warning: mixing different enum types
-> >    int enum dma_data_direction  versus
-> >    int enum dma_transfer_direction
-> > 
-> > This is produced because the 'dir' passed in ep93xx_spi_dma_prepare
-> > is an enum dma_data_direction and is being used to set the
-> > dma_slave_config 'direction' which is now an enum dma_transfer_direction.
-> > 
-> > Fix this by converting spi-ep93xx to use the new enum type in all
-> > places.
-> > 
-> > Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
-> > Cc: Grant Likely <grant.likely@secretlab.ca>
-> > Cc: Vinod Koul <vinod.koul@linux.intel.com>
+On Mon, 2012-04-16 at 23:47 +0200, Oleg Nesterov wrote:
+> On 04/16, Peter Zijlstra wrote:
+> >
+> > On Mon, 2012-04-16 at 01:44 +0200, Oleg Nesterov wrote:
+> >
+> > > And. I have another reason for down_write() in register/unregister.
+> > > I am still not sure this is possible (I had no time to try to
+> > > implement), but it seems to me we can kill the uprobe counter in
+> > > mm_struct.
+> >
+> > You mean by making register/unregister down_write, you're exclusive with
+> > munmap()
 > 
-> Acked-by: Mika Westerberg <mika.westerberg@iki.fi>
-Acked-by: Vinod Koul <vinod.koul@intel.com>
+> .. and with register/unregister.
+> 
+> Why do we need mm->uprobes_state.count? It is writeonly, except we
+> check it in the DIE_INT3 notifier before anything else to avoid the
+> unnecessary uprobes overhead.
 
--- 
-~Vinod
+and uprobe_munmap().
+
+> Suppose we kill it, and add the new MMF_HAS_UPROBE flag instead.
+> install_breakpoint() sets it unconditionally,
+> uprobe_pre_sstep_notifier() checks it.
+
+Argh, why are MMF_flags part of sched.h.. one would expect those to be
+in mm.h or mm_types.h.. somewhere near struct mm.
+
+> (And perhaps we can stop right here? I mean how often this can
+>  slow down the debugger which installs int3 in the same mm?)
+> 
+> Now we need to clear MMF_HAS_UPROBE somehowe, when the last
+> uprobe goes away. Lets ignore uprobe_map/unmap for simplicity.
+>
+> 	- We add another flag, MMF_UPROBE_RECALC, it is set by
+> 	  remove_breakpoint().
+> 
+> 	- We change handle_swbp(). Ignoring all details it does:
+> 
+> 		if (find_uprobe(vaddr))
+> 			process_uprobe();
+> 		else if (test_bit(MMF_HAS_UPROBE) && test_bit(MMF_UPROBE_RECALC))
+> 			recalc_mmf_uprobe_flag();
+> 
+> 	  where recalc_mmf_uprobe_flag() checks all vmas and either
+> 	  clears both flags or MMF_UPROBE_RECALC only.
+> 
+> 	  This is the really slow O(n) path, but it can only happen after
+> 	  unregister, and only if we hit another non-uprobe breakpoint
+> 	  in the same mm.
+> 
+> Something like this. What do you think?
+
+I think I can live with the simple set MMF_HAS_UPROBE and leave it at
+that. The better optimization seems to be to not install breakpoints
+when ->filter() excludes the task..
+
+It looks like we currently install the breakpoint unconditionally and
+only ->filter() once we hit the breakpoint, which is somewhat
+sub-optimal.
 
