@@ -1,42 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753885Ab2DTJxG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Apr 2012 05:53:06 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:60471 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751494Ab2DTJxF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Apr 2012 05:53:05 -0400
-Date: Fri, 20 Apr 2012 11:53:02 +0200 (CEST)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org
-Subject: [GIT] HID
-Message-ID: <alpine.LNX.2.00.1204201149400.29484@pobox.suse.cz>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1754042Ab2DTJxf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Apr 2012 05:53:35 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:54721 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753928Ab2DTJxV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Apr 2012 05:53:21 -0400
+Date: Fri, 20 Apr 2012 17:59:56 +0800
+From: Zheng Liu <gnehzuil.liu@gmail.com>
+To: Andreas Dilger <adilger@whamcloud.com>
+Cc: Lukas Czerner <lczerner@redhat.com>, Eric Sandeen <sandeen@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        "linux-ext4@vger.kernel.org" <linux-ext4@vger.kernel.org>,
+        Zheng Liu <wenqing.lz@taobao.com>
+Subject: Re: [RFC][PATCH 0/3] add FALLOC_FL_NO_HIDE_STALE flag in fallocate
+Message-ID: <20120420095956.GB30070@gmail.com>
+Mail-Followup-To: Andreas Dilger <adilger@whamcloud.com>,
+	Lukas Czerner <lczerner@redhat.com>,
+	Eric Sandeen <sandeen@redhat.com>,
+	"linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+	"linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+	"linux-ext4@vger.kernel.org" <linux-ext4@vger.kernel.org>,
+	Zheng Liu <wenqing.lz@taobao.com>
+References: <1334681618-9452-1-git-send-email-wenqing.lz@taobao.com>
+ <4F8DAAFE.40500@redhat.com>
+ <D225F088-A53F-4962-97AD-13C850BBA722@whamcloud.com>
+ <alpine.LFD.2.00.1204181015050.5310@dhcp-27-109.brq.redhat.com>
+ <20120418124811.GD3447@gmail.com>
+ <341F6DCC-1788-4ACC-A86E-A5D99CC05320@whamcloud.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <341F6DCC-1788-4ACC-A86E-A5D99CC05320@whamcloud.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus,
+On Wed, Apr 18, 2012 at 08:09:02AM -0700, Andreas Dilger wrote:
+> Looking at these performance numbers again, it would seem better if ext4 _was_ zero filling the whole file and converting the whole thing to initialized extents instead of leaving so many uninitialized extents behind.
+> 
+> The file size is 256MB, and the disk would have to be doing only 3.5MB/s for linear streaming writes to match the performance that you report, so a modern disk doing 50MB/s should be able to zero the whole file in 5s.
+> 
+> It seems the threshold for zeroing uninitialized extents is incorrect. EXT4_EXT_ZERO_LEN is only 7 blocks (28kB normally), but typical disks can write 64kB as easily as 4kB, so it would be interesting to change EXT4_EXT_ZERO_LEN to 16 and re-run your test. 
+> 
+> If that solves this particular test case, it wont necessarily the general case, but is still a useful fix.  If you submit a patch for this, please change this code to compare against 64kB instead of a block count, and also to take s_raid_stride into account if set, like:
+> 
+>         ext_zero_len = max(EXT4_EXT_ZERO_LEN * 1024 >> inode->i_blkbits,
+>                            EXT4_SB(inode->i_sb)->s_es->s_raid_stride);
+> 
+> This would write up to 64kB, or a full RAID stripe (since it already needs to seek that spindle), whichever is larger.  It isn't perfect, since it should really align the zero-out to the RAID stripe to avoid seeking two spindles, but it is a starting point. 
 
-please pull from
+Hi Andreas,
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/jikos/hid.git for-linus
+I set EXT4_EXT_ZERO_LEN to 16 and run the same benchmark again.  the result
+is the same as before.
 
-to receive fix for one particular device and change of 'default y' -> 
-'default n' for CONFIG_HID_BATTERY_STRENGTH which I have overlooked in the 
-initial merge of the battery support.
+I notice this commit (3977c965) and it set EXT4_EXT_ZERO_LEN to 7.  But
+in commit log, it doesn't describe why this value is set to 7.  As you
+said, I believe that the disk writes 64K as easily as as 4k in modern
+disk.  So maybe we can consider to set it to 16 or RAID stripe. :)
 
-Thanks.
-
-Jiri Kosina (1):
-      HID: tivo: fix support for bluetooth version of tivo Slide
-
-Josh Boyer (1):
-      HID: default HID_BATTERY_STRENGTH to no
-
- drivers/hid/Kconfig    |    2 +-
- drivers/hid/hid-tivo.c |    2 +-
- 2 files changed, 2 insertions(+), 2 deletions(-)
+Regards,
+Zheng
